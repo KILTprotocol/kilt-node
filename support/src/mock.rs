@@ -17,7 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 ///! This module contains utilities for testing.
-use codec::{Decode, Encode};
+use codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_core::sr25519;
 use sp_runtime::AccountId32;
@@ -112,7 +112,7 @@ pub mod mock_origin {
 	}
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeInfo, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeInfo, Default, MaxEncodedLen)]
 pub struct SubjectId(pub AccountId32);
 
 impl From<AccountId32> for SubjectId {

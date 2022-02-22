@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use codec::{Decode, Encode, WrapperTypeEncode};
+use codec::{Decode, Encode, MaxEncodedLen, WrapperTypeEncode};
 use frame_support::{
 	ensure,
 	storage::{bounded_btree_map::BoundedBTreeMap, bounded_btree_set::BoundedBTreeSet},
@@ -35,7 +35,7 @@ use crate::{
 };
 
 /// Types of verification keys a DID can control.
-#[derive(Clone, Decode, Debug, Encode, Eq, Ord, PartialEq, PartialOrd, TypeInfo)]
+#[derive(Clone, Decode, Debug, Encode, Eq, Ord, PartialEq, PartialOrd, TypeInfo, MaxEncodedLen)]
 pub enum DidVerificationKey {
 	/// An Ed25519 public key.
 	Ed25519(ed25519::Public),
@@ -86,14 +86,14 @@ impl From<ecdsa::Public> for DidVerificationKey {
 }
 
 /// Types of encryption keys a DID can control.
-#[derive(Clone, Copy, Decode, Debug, Encode, Eq, Ord, PartialEq, PartialOrd, TypeInfo)]
+#[derive(Clone, Copy, Decode, Debug, Encode, Eq, Ord, PartialEq, PartialOrd, TypeInfo, MaxEncodedLen)]
 pub enum DidEncryptionKey {
 	/// An X25519 public key.
 	X25519([u8; 32]),
 }
 
 /// A general public key under the control of the DID.
-#[derive(Clone, Decode, Debug, Encode, Eq, Ord, PartialEq, PartialOrd, TypeInfo)]
+#[derive(Clone, Decode, Debug, Encode, Eq, Ord, PartialEq, PartialOrd, TypeInfo, MaxEncodedLen)]
 pub enum DidPublicKey {
 	/// A verification key, used to generate and verify signatures.
 	PublicVerificationKey(DidVerificationKey),
@@ -115,7 +115,7 @@ impl From<DidEncryptionKey> for DidPublicKey {
 
 /// Verification methods a verification key can
 /// fulfil, according to the [DID specification](https://w3c.github.io/did-spec-registries/#verification-relationships).
-#[derive(Clone, Copy, Debug, Decode, Encode, PartialEq, Eq, TypeInfo)]
+#[derive(Clone, Copy, Debug, Decode, Encode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub enum DidVerificationKeyRelationship {
 	/// Key used to authenticate all the DID operations.
 	Authentication,
@@ -229,9 +229,9 @@ impl DidVerifiableIdentifier for runtime_common::DidIdentifier {
 ///
 /// It is currently used to keep track of all the past and current
 /// attestation keys a DID might control.
-#[derive(Clone, Debug, Decode, Encode, PartialEq, Ord, PartialOrd, Eq, TypeInfo)]
+#[derive(Clone, Debug, Decode, Encode, PartialEq, Ord, PartialOrd, Eq, TypeInfo, MaxEncodedLen)]
 #[scale_info(skip_type_params(T))]
-
+#[codec(mel_bound())]
 pub struct DidPublicKeyDetails<T: Config> {
 	/// A public key the DID controls.
 	pub key: DidPublicKey,
@@ -240,8 +240,9 @@ pub struct DidPublicKeyDetails<T: Config> {
 }
 
 /// The details associated to a DID identity.
-#[derive(Clone, Decode, Encode, PartialEq, TypeInfo)]
+#[derive(Clone, Decode, Encode, PartialEq, TypeInfo, MaxEncodedLen)]
 #[scale_info(skip_type_params(T))]
+#[codec(mel_bound())]
 
 pub struct DidDetails<T: Config> {
 	/// The ID of the authentication key, used to authenticate DID-related

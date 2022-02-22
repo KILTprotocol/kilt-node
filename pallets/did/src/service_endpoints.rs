@@ -17,7 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use crate::{errors::InputError, Config};
-use codec::{Decode, Encode};
+use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::{ensure, traits::Get, BoundedVec};
 use scale_info::TypeInfo;
 use sp_runtime::traits::SaturatedConversion;
@@ -43,8 +43,9 @@ pub(crate) type ServiceEndpointUrlEntries<T> =
 	BoundedVec<ServiceEndpointUrl<T>, <T as Config>::MaxNumberOfUrlsPerService>;
 
 /// A single service endpoint description.
-#[derive(Clone, Decode, Encode, PartialEq, Eq, TypeInfo)]
+#[derive(Clone, Decode, Encode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 #[scale_info(skip_type_params(T))]
+#[codec(mel_bound())]
 pub struct DidEndpoint<T: Config> {
 	/// The ID of the service endpoint. Allows the endpoint to be queried and
 	/// resolved directly.

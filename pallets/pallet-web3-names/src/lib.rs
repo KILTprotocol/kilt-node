@@ -69,7 +69,6 @@ pub mod pallet {
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
 	#[pallet::storage_version(STORAGE_VERSION)]
-	#[pallet::without_storage_info]
 	pub struct Pallet<T>(_);
 
 	/// Map of name -> ownership details.
@@ -111,9 +110,15 @@ pub mod pallet {
 		#[pallet::constant]
 		type MaxNameLength: Get<u32>;
 		/// The type of a name.
-		type Web3Name: FullCodec + Debug + PartialEq + Clone + TypeInfo + TryFrom<Vec<u8>, Error = Error<Self>>;
+		type Web3Name: FullCodec
+			+ Debug
+			+ PartialEq
+			+ Clone
+			+ TypeInfo
+			+ TryFrom<Vec<u8>, Error = Error<Self>>
+			+ MaxEncodedLen;
 		/// The type of a name owner.
-		type Web3NameOwner: Parameter + Default;
+		type Web3NameOwner: Parameter + Default + MaxEncodedLen;
 		/// Weight information for extrinsics in this pallet.
 		type WeightInfo: WeightInfo;
 	}

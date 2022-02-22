@@ -149,10 +149,11 @@ pub mod pallet {
 	pub const KILT_LAUNCH_ID: LockIdentifier = *b"kiltlnch";
 	pub const VESTING_ID: LockIdentifier = *b"vesting ";
 
-	#[derive(Debug, Encode, Decode, PartialEq, Eq, Clone, TypeInfo)]
+	#[derive(Debug, Encode, Decode, PartialEq, Eq, Clone, TypeInfo, MaxEncodedLen)]
 	#[scale_info(skip_type_params(T))]
+	#[codec(mel_bound())]
 	pub struct LockedBalance<T: Config> {
-		pub block: T::BlockNumber,
+		pub block: <T as frame_system::Config>::BlockNumber,
 		pub amount: <T as pallet_balances::Config>::Balance,
 	}
 
@@ -192,7 +193,6 @@ pub mod pallet {
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
 	#[pallet::storage_version(STORAGE_VERSION)]
-	#[pallet::without_storage_info]
 	pub struct Pallet<T>(_);
 
 	#[pallet::genesis_config]

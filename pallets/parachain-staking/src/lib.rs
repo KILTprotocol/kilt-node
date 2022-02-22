@@ -220,7 +220,6 @@ pub mod pallet {
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
 	#[pallet::storage_version(STORAGE_VERSION)]
-	#[pallet::without_storage_info]
 	pub struct Pallet<T>(PhantomData<T>);
 
 	/// Configuration trait of this pallet.
@@ -251,7 +250,8 @@ pub mod pallet {
 			+ From<u128>
 			+ Into<<Self as pallet_balances::Config>::Balance>
 			+ From<<Self as pallet_balances::Config>::Balance>
-			+ TypeInfo;
+			+ TypeInfo
+			+ MaxEncodedLen;
 
 		/// Minimum number of blocks validation rounds can last.
 		#[pallet::constant]
