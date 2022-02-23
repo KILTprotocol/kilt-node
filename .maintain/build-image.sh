@@ -1,6 +1,6 @@
 #!/bin/bash
 
-target_tag = $1
+target_tag=$1
 
 # build parachain image and standalone image
 docker build --cache-from $AWS_REGISTRY/kilt-parachain/collator:$target_tag --build-arg NODE_TYPE=kilt-parachain -t kiltprotocol/kilt-node:$target_tag .

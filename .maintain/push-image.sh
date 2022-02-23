@@ -1,7 +1,7 @@
 #!/bin/bash
 
-source_tag = $1
-target_tag = $2
+source_tag=$1
+target_tag=$2
 
 # publish to docker hub
 docker tag kiltprotocol/mashnet-node:$source_tag ${DOCKER_HUB_STANDALONE}:$target_tag
