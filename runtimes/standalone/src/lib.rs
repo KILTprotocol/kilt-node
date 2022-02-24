@@ -240,14 +240,10 @@ impl pallet_timestamp::Config for Runtime {
 	type WeightInfo = ();
 }
 
-parameter_types! {
-	pub const Deposit: Balance = 1_000;
-}
-
 impl pallet_indices::Config for Runtime {
 	type AccountIndex = Index;
 	type Currency = Balances;
-	type Deposit = Deposit;
+	type Deposit = constants::IndicesDeposit;
 	type Event = Event;
 	type WeightInfo = ();
 }
@@ -429,7 +425,7 @@ impl did::Config for Runtime {
 }
 
 parameter_types! {
-	pub const DidLookupDeposit: Balance = KILT;
+	pub const DidLookupDeposit: Balance = constants::did_lookup::DID_CONNECTION_DEPOSIT;
 }
 
 impl pallet_did_lookup::Config for Runtime {
@@ -518,19 +514,6 @@ impl pallet_utility::Config for Runtime {
 
 impl pallet_randomness_collective_flip::Config for Runtime {}
 
-// Start of proxy pallet configuration
-
-parameter_types! {
-	// One storage item; key size 32, value size 8; .
-	pub const ProxyDepositBase: Balance = KILT;
-	// Additional storage item size of 33 bytes.
-	pub const ProxyDepositFactor: Balance = KILT;
-	pub const MaxProxies: u16 = 32;
-	pub const AnnouncementDepositBase: Balance = KILT;
-	pub const AnnouncementDepositFactor: Balance = KILT;
-	pub const MaxPending: u16 = 32;
-}
-
 /// The type used to represent the kinds of proxying allowed.
 #[derive(
 	Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, RuntimeDebug, MaxEncodedLen, scale_info::TypeInfo,
@@ -596,14 +579,14 @@ impl pallet_proxy::Config for Runtime {
 	type Call = Call;
 	type Currency = Balances;
 	type ProxyType = ProxyType;
-	type ProxyDepositBase = ProxyDepositBase;
-	type ProxyDepositFactor = ProxyDepositFactor;
-	type MaxProxies = MaxProxies;
-	type WeightInfo = ();
-	type MaxPending = MaxPending;
+	type ProxyDepositBase = constants::proxy::ProxyDepositBase;
+	type ProxyDepositFactor = constants::proxy::ProxyDepositFactor;
+	type MaxProxies = constants::proxy::MaxProxies;
+	type MaxPending = constants::proxy::MaxPending;
 	type CallHasher = BlakeTwo256;
-	type AnnouncementDepositBase = AnnouncementDepositBase;
-	type AnnouncementDepositFactor = AnnouncementDepositFactor;
+	type AnnouncementDepositBase = constants::proxy::AnnouncementDepositBase;
+	type AnnouncementDepositFactor = constants::proxy::AnnouncementDepositFactor;
+	type WeightInfo = ();
 }
 
 construct_runtime!(

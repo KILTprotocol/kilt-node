@@ -16,7 +16,10 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::weights::{constants::WEIGHT_PER_SECOND, Weight};
+use frame_support::{
+	parameter_types,
+	weights::{constants::WEIGHT_PER_SECOND, Weight},
+};
 use sp_runtime::{Perbill, Perquintill};
 
 use crate::{Balance, BlockNumber};
@@ -78,10 +81,24 @@ pub const INFLATION_CONFIG: (Perquintill, Perquintill, Perquintill, Perquintill)
 /// Copied from Kusama & Polkadot runtime
 pub const MAX_VESTING_SCHEDULES: u32 = 28;
 
+/// Calculate the storage deposit based on the number of storage items and the
+/// combined byte size of those items.
+pub const fn deposit(items: u32, bytes: u32) -> Balance {
+	items as Balance * 500 * MILLI_KILT + (bytes as Balance) * 25 * MICRO_KILT
+}
+
+pub const INDICES_SIZE: u32 = 49;
+
+parameter_types! {
+	pub const ByteDeposit: Balance = deposit(0, 1);
+	pub const IndicesDeposit: Balance = deposit(1, INDICES_SIZE);
+}
+
 pub mod attestation {
 	use super::*;
 
-	pub const ATTESTATION_DEPOSIT: Balance = KILT;
+	pub const ATTESTATION_SIZE: u32 = 178;
+	pub const ATTESTATION_DEPOSIT: Balance = deposit(2, ATTESTATION_SIZE);
 }
 
 pub mod delegation {
@@ -96,12 +113,7 @@ pub mod delegation {
 }
 
 pub mod staking {
-	use sp_runtime::Perquintill;
-
-	use super::KILT;
-	#[cfg(not(feature = "fast-gov"))]
-	use super::{DAYS, HOURS};
-	use crate::{Balance, BlockNumber};
+	use super::*;
 
 	/// Minimum round length is 1 hour (300 * 12 second block times)
 	#[cfg(feature = "fast-gov")]
@@ -136,11 +148,9 @@ pub mod staking {
 }
 
 pub mod governance {
-	#[cfg(feature = "fast-gov")]
-	use super::MINUTES;
-	#[cfg(not(feature = "fast-gov"))]
-	use super::{DAYS, HOURS};
-	use crate::BlockNumber;
+	use super::*;
+
+	pub const MIN_DEPOSIT: Balance = KILT;
 
 	#[cfg(feature = "fast-gov")]
 	pub const LAUNCH_PERIOD: BlockNumber = 7 * MINUTES;
@@ -194,11 +204,11 @@ pub mod governance {
 }
 
 pub mod did {
-	use crate::BlockNumber;
+	use super::*;
 
-	use super::{Balance, HOURS, KILT, MILLI_KILT};
+	pub const DID_SIZE: u32 = 7418;
 
-	pub const DID_DEPOSIT: Balance = 2 * KILT;
+	pub const DID_DEPOSIT: Balance = deposit(2 + MAX_NUMBER_OF_SERVICES_PER_DID, DID_SIZE);
 	pub const DID_FEE: Balance = 50 * MILLI_KILT;
 	pub const MAX_KEY_AGREEMENT_KEYS: u32 = 10;
 	pub const MAX_URL_LENGTH: u32 = 200;
@@ -218,10 +228,15 @@ pub mod did {
 	pub const MAX_NUMBER_OF_URLS_PER_SERVICE: u32 = 1;
 }
 
-pub mod treasury {
-	use crate::{Balance, BlockNumber};
+pub mod did_lookup {
+	use super::*;
 
-	use super::{BLOCKS_PER_YEAR, KILT};
+	pub const CONNECTION_SIZE: u32 = 80;
+	pub const DID_CONNECTION_DEPOSIT: Balance = deposit(1, CONNECTION_SIZE);
+}
+
+pub mod treasury {
+	use super::*;
 
 	pub const INITIAL_PERIOD_LENGTH: BlockNumber = BLOCKS_PER_YEAR.saturating_mul(5);
 	const YEARLY_REWARD: Balance = 2_000_000u128 * KILT;
@@ -229,16 +244,34 @@ pub mod treasury {
 }
 
 pub mod proxy {
-	pub const MAX_PROXIES: u16 = 10;
-	pub const MAX_PENDING: u16 = 10;
+	use super::*;
+
+	parameter_types! {
+		// One storage item; key size 32, value size 8; .
+		pub const ProxyDepositBase: Balance = deposit(1, 8);
+		// Additional storage item size of 33 bytes.
+		pub const ProxyDepositFactor: Balance = deposit(0, 33);
+		pub const MaxProxies: u16 = 10;
+		pub const AnnouncementDepositBase: Balance = deposit(1, 8);
+		pub const AnnouncementDepositFactor: Balance = deposit(0, 66);
+		pub const MaxPending: u16 = 10;
+	}
 }
 
 pub mod web3_names {
-	use crate::Balance;
-
-	use super::KILT;
+	use super::*;
 
 	pub const MIN_LENGTH: u32 = 3;
 	pub const MAX_LENGTH: u32 = 32;
-	pub const DEPOSIT: Balance = 2 * KILT;
+
+	pub const NAME_SIZE: u32 = 121;
+	pub const DEPOSIT: Balance = deposit(2, NAME_SIZE);
+}
+
+pub mod preimage {
+	use super::*;
+	parameter_types! {
+		pub const PreimageMaxSize: u32 = 4096 * 1024;
+		pub const PreimageBaseDeposit: Balance = deposit(2, 64);
+	}
 }
