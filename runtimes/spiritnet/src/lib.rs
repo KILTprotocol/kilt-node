@@ -56,7 +56,6 @@ use runtime_common::{
 
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
-
 #[cfg(feature = "runtime-benchmarks")]
 use {frame_system::EnsureSigned, kilt_support::signature::AlwaysVerify, runtime_common::benchmarks::DummySignature};
 
@@ -359,7 +358,6 @@ parameter_types! {
 	pub const MinimumDeposit: Balance = constants::governance::MIN_DEPOSIT;
 	pub const EnactmentPeriod: BlockNumber = constants::governance::ENACTMENT_PERIOD;
 	pub const CooloffPeriod: BlockNumber = constants::governance::COOLOFF_PERIOD;
-	// One cent: $10,000 / MB
 	pub const InstantAllowed: bool = true;
 	pub const MaxVotes: u32 = 100;
 	pub const MaxProposals: u32 = 100;
@@ -875,7 +873,7 @@ construct_runtime! {
 		// System scheduler.
 		Scheduler: pallet_scheduler::{Pallet, Call, Storage, Event<T>} = 42,
 
-		// Proxy pallet
+		// Proxy pallet.
 		Proxy: pallet_proxy::{Pallet, Call, Storage, Event<T>} = 43,
 
 		// Preimage registrar

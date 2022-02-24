@@ -25,7 +25,7 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
-use codec::MaxEncodedLen;
+use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::{
 	construct_runtime, parameter_types,
 	traits::{EnsureOneOf, InstanceFilter, OnRuntimeUpgrade, PrivilegeCmp},
@@ -35,7 +35,7 @@ use frame_system::EnsureRoot;
 use sp_api::impl_runtime_apis;
 use sp_core::{
 	u32_trait::{_1, _2, _3, _5},
-	Decode, Encode, OpaqueMetadata,
+	OpaqueMetadata,
 };
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
