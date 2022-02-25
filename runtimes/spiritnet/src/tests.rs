@@ -23,7 +23,8 @@ use did::DeriveDidCallAuthorizationVerificationKeyRelationship;
 use pallet_treasury::BalanceOf;
 use pallet_web3_names::{Web3NameOf, Web3OwnershipOf};
 use runtime_common::constants::{
-	attestation::MAX_ATTESTATION_BYTE_LENGTH, did::MAX_DID_BYTE_LENGTH, did_lookup::MAX_CONNECTION_BYTE_LENGTH, web3_names::MAX_NAME_BYTE_LENGTH, MAX_INDICES_BYTE_LENGTH,
+	attestation::MAX_ATTESTATION_BYTE_LENGTH, did::MAX_DID_BYTE_LENGTH, did_lookup::MAX_CONNECTION_BYTE_LENGTH,
+	web3_names::MAX_NAME_BYTE_LENGTH, MAX_INDICES_BYTE_LENGTH,
 };
 
 use super::{Call, Runtime};
@@ -46,7 +47,10 @@ fn attestation_storage_sizes() {
 		<Runtime as attestation::Config>::MaxDelegatedAttestations,
 	>::max_encoded_len()
 		/ (<Runtime as attestation::Config>::MaxDelegatedAttestations::get() as usize);
-	assert_eq!(attestation_record + delegation_record, MAX_ATTESTATION_BYTE_LENGTH as usize)
+	assert_eq!(
+		attestation_record + delegation_record,
+		MAX_ATTESTATION_BYTE_LENGTH as usize
+	)
 }
 
 #[test]
