@@ -87,6 +87,7 @@ pub const fn deposit(items: u32, bytes: u32) -> Balance {
 	items as Balance * 70 * MILLI_KILT + (bytes as Balance) * 30 * MICRO_KILT
 }
 
+/// The size of an index in the index pallet
 pub const INDICES_SIZE: u32 = 49;
 
 parameter_types! {
