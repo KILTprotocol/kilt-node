@@ -87,7 +87,8 @@ pub const fn deposit(items: u32, bytes: u32) -> Balance {
 	items as Balance * 70 * MILLI_KILT + (bytes as Balance) * 30 * MICRO_KILT
 }
 
-/// The size of an index in the index pallet
+/// The size of an index in the index pallet.
+/// The size is checked in the runtime by a test.
 pub const MAX_INDICES_BYTE_LENGTH: u32 = 49;
 
 parameter_types! {
@@ -98,6 +99,7 @@ parameter_types! {
 pub mod attestation {
 	use super::*;
 
+	/// The size is checked in the runtime by a test.
 	pub const MAX_ATTESTATION_BYTE_LENGTH: u32 = 178;
 	pub const ATTESTATION_DEPOSIT: Balance = deposit(2, MAX_ATTESTATION_BYTE_LENGTH);
 }
@@ -207,6 +209,7 @@ pub mod governance {
 pub mod did {
 	use super::*;
 
+	/// The size is checked in the runtime by a test.
 	pub const MAX_DID_BYTE_LENGTH: u32 = 7418;
 
 	pub const DID_DEPOSIT: Balance = deposit(2 + MAX_NUMBER_OF_SERVICES_PER_DID, MAX_DID_BYTE_LENGTH);
@@ -232,6 +235,7 @@ pub mod did {
 pub mod did_lookup {
 	use super::*;
 
+	/// The size is checked in the runtime by a test.
 	pub const MAX_CONNECTION_BYTE_LENGTH: u32 = 80;
 	pub const DID_CONNECTION_DEPOSIT: Balance = deposit(1, MAX_CONNECTION_BYTE_LENGTH);
 }
@@ -265,6 +269,7 @@ pub mod web3_names {
 	pub const MIN_LENGTH: u32 = 3;
 	pub const MAX_LENGTH: u32 = 32;
 
+	/// The size is checked in the runtime by a test.
 	pub const MAX_NAME_BYTE_LENGTH: u32 = 121;
 	pub const DEPOSIT: Balance = deposit(2, MAX_NAME_BYTE_LENGTH);
 }
