@@ -192,7 +192,7 @@ pub mod pallet {
 			+ DeriveDidCallAuthorizationVerificationKeyRelationship;
 
 		/// Type for a DID subject identifier.
-		type DidIdentifier: Parameter + Default + DidVerifiableIdentifier + MaxEncodedLen;
+		type DidIdentifier: Parameter + DidVerifiableIdentifier + MaxEncodedLen;
 
 		/// Origin type expected by the proxied dispatchable calls.
 		#[cfg(not(feature = "runtime-benchmarks"))]

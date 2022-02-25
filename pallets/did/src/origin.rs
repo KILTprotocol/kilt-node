@@ -39,8 +39,6 @@ impl<OuterOrigin, DidIdentifier, AccountId> EnsureOrigin<OuterOrigin> for Ensure
 where
 	OuterOrigin: Into<Result<DidRawOrigin<DidIdentifier, AccountId>, OuterOrigin>>
 		+ From<DidRawOrigin<DidIdentifier, AccountId>>,
-	DidIdentifier: Default,
-	AccountId: Default,
 {
 	type Success = DidRawOrigin<DidIdentifier, AccountId>;
 

@@ -112,7 +112,7 @@ pub mod mock_origin {
 	}
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeInfo, Default, MaxEncodedLen)]
+#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeInfo, MaxEncodedLen)]
 pub struct SubjectId(pub AccountId32);
 
 impl From<AccountId32> for SubjectId {
