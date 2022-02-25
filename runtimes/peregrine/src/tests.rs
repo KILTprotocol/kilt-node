@@ -86,10 +86,12 @@ fn web3_name_storage_sizes() {
 
 	assert_eq!(owner_size + name_size, MAX_NAME_BYTE_LENGTH as usize)
 }
-type Indices = (<Runtime as frame_system::Config>::AccountId, BalanceOf<Runtime>, bool);
+
 
 #[test]
 fn indices_storage_sizes() {
+	type Indices = (<Runtime as frame_system::Config>::AccountId, BalanceOf<Runtime>, bool);
+
 	let size = Indices::max_encoded_len();
 	assert_eq!(size, MAX_INDICES_BYTE_LENGTH as usize)
 }
