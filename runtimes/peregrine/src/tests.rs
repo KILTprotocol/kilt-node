@@ -23,7 +23,7 @@ use did::DeriveDidCallAuthorizationVerificationKeyRelationship;
 use pallet_treasury::BalanceOf;
 use pallet_web3_names::{Web3NameOf, Web3OwnershipOf};
 use runtime_common::constants::{
-	attestation::MAX_ATTESTATION_SIZE, did::MAX_DID_SIZE, did_lookup::MAX_CONNECTION_SIZE, web3_names::MAX_NAME_SIZE, MAX_INDICES_SIZE,
+	attestation::MAX_ATTESTATION_BYTE_LENGTH, did::MAX_DID_BYTE_LENGTH, did_lookup::MAX_CONNECTION_BYTE_LENGTH, web3_names::MAX_NAME_BYTE_LENGTH, MAX_INDICES_BYTE_LENGTH,
 };
 
 use super::{Call, Runtime};
@@ -46,7 +46,7 @@ fn attestation_storage_sizes() {
 		<Runtime as attestation::Config>::MaxDelegatedAttestations,
 	>::max_encoded_len()
 		/ (<Runtime as attestation::Config>::MaxDelegatedAttestations::get() as usize);
-	assert_eq!(attestation_record + delegation_record, MAX_ATTESTATION_SIZE as usize)
+	assert_eq!(attestation_record + delegation_record, MAX_ATTESTATION_BYTE_LENGTH as usize)
 }
 
 #[test]
@@ -58,7 +58,7 @@ fn did_storage_sizes() {
 		* (<Runtime as did::Config>::MaxNumberOfServicesPerDid::get() as usize)
 		+ u32::max_encoded_len();
 
-	assert_eq!(did_size + did_endpoint_size, MAX_DID_SIZE as usize)
+	assert_eq!(did_size + did_endpoint_size, MAX_DID_BYTE_LENGTH as usize)
 }
 
 #[test]
@@ -72,7 +72,7 @@ fn did_lookup_storage_sizes() {
 			>>::Balance,
 		>::max_encoded_len();
 
-	assert_eq!(did_connection_size, MAX_CONNECTION_SIZE as usize)
+	assert_eq!(did_connection_size, MAX_CONNECTION_BYTE_LENGTH as usize)
 }
 
 #[test]
@@ -80,14 +80,14 @@ fn web3_name_storage_sizes() {
 	let owner_size = Web3NameOf::<Runtime>::max_encoded_len();
 	let name_size = Web3OwnershipOf::<Runtime>::max_encoded_len();
 
-	assert_eq!(owner_size + name_size, MAX_NAME_SIZE as usize)
+	assert_eq!(owner_size + name_size, MAX_NAME_BYTE_LENGTH as usize)
 }
 type Indices = (<Runtime as frame_system::Config>::AccountId, BalanceOf<Runtime>, bool);
 
 #[test]
 fn indices_storage_sizes() {
 	let size = Indices::max_encoded_len();
-	assert_eq!(size, MAX_INDICES_SIZE as usize)
+	assert_eq!(size, MAX_INDICES_BYTE_LENGTH as usize)
 }
 
 #[test]
