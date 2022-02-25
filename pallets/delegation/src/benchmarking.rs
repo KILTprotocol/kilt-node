@@ -218,7 +218,7 @@ benchmarks! {
 		where
 		T: core::fmt::Debug,
 		T::DelegationNodeId: From<T::Hash>,
-		T::DelegationEntityId: Default + From<sr25519::Public>,
+		T::DelegationEntityId: From<sr25519::Public>,
 		<T as ctype::Config>::CtypeCreatorId: From<T::DelegationEntityId>,
 		<<T as Config>::DelegationSignatureVerification as VerifySignature>::Signature: From<(
 			T::DelegationEntityId,
