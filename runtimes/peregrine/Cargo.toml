@@ -15,7 +15,7 @@ smallvec = "1.7.0"
 static_assertions = "1.1.0"
 
 hex-literal = {version = "0.3.4", optional = true}
-serde = {version = "1.0.124", optional = true, features = ["derive"]}
+serde = {version = "1.0.132", optional = true, features = ["derive"]}
 
 # RPC
 frame-system-rpc-runtime-api = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.17"}

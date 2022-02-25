@@ -24,14 +24,12 @@ spiritnet-runtime = {path = "../../runtimes/spiritnet"}
 clap = { version = "3.0", features = ["derive"] }
 codec = {package = "parity-scale-codec", version = "2.3.1"}
 derive_more = "0.99.16"
-exit-future = "0.1.4"
 futures = {version = "0.3.1", features = ["compat"]}
 hex-literal = "0.3.4"
 log = "0.4"
-parking_lot = "0.9.0"
-serde = {version = "1.0.124", features = ["derive"]}
-serde_json = "1.0.71"
-trie-root = "0.15.2"
+parking_lot = "0.12.0"
+serde = {version = "1.0.132", features = ["derive"]}
+serde_json = "1.0.74"
 
 # Substrate dependencies
 sc-basic-authorship = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.17"}

@@ -16,7 +16,7 @@ substrate-wasm-builder-runner = {version = "3.0.0"}
 kilt-support = {features = ["mock"], path = "../../support"}
 pallet-balances = {branch = "polkadot-v0.9.17", default-features = false, git = "https://github.com/paritytech/substrate"}
 runtime-common = {default-features = false, path = "../../runtimes/common"}
-serde = {version = "1.0.124"}
+serde = {version = "1.0.132"}
 sp-core = {branch = "polkadot-v0.9.17", default-features = false, git = "https://github.com/paritytech/substrate"}
 sp-keystore = {branch = "polkadot-v0.9.17", default-features = false, git = "https://github.com/paritytech/substrate"}
 
@@ -24,7 +24,7 @@ sp-keystore = {branch = "polkadot-v0.9.17", default-features = false, git = "htt
 codec = {default-features = false, features = ["derive"], package = "parity-scale-codec", version = "2.3.1"}
 log = "0.4"
 scale-info = {version = "1.0", default-features = false, features = ["derive"]}
-serde = {optional = true, version = "1.0.124"}
+serde = {optional = true, version = "1.0.132"}
 
 # Internal dependencies
 kilt-support = {default-features = false, path = "../../support"}

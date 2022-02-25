@@ -15,7 +15,7 @@ smallvec = "1.7.0"
 static_assertions = "1.1.0"
 
 hex-literal = {version = "0.3.4", optional = true}
-serde = {version = "1.0.124", optional = true, features = ["derive"]}
+serde = {version = "1.0.132", optional = true, features = ["derive"]}
 
 # RPC
 frame-system-rpc-runtime-api = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.17"}
@@ -86,6 +86,7 @@ xcm-builder = {git = "https://github.com/paritytech/polkadot", default-features 
 xcm-executor = {git = "https://github.com/paritytech/polkadot", default-features = false, branch = "release-v0.9.17"}
 
 # Benchmarking
+pallet-conviction-voting = {git = "https://github.com/paritytech/substrate", default-features = false, optional = true, branch = "polkadot-v0.9.17"}
 cumulus-pallet-session-benchmarking = {git = "https://github.com/paritytech/cumulus", default-features = false, optional = true, branch = "polkadot-v0.9.17"}
 frame-system-benchmarking = {git = "https://github.com/paritytech/substrate", default-features = false, optional = true, branch = "polkadot-v0.9.17"}
 rococo-runtime = {git = "https://github.com/paritytech/polkadot", default-features = false, optional = true, branch = "release-v0.9.17"}
@@ -114,6 +115,7 @@ runtime-benchmarks = [
   "kilt-support/runtime-benchmarks",
   "pallet-balances/runtime-benchmarks",
   "pallet-collective/runtime-benchmarks",
+  "pallet-conviction-voting/runtime-benchmarks",
   "pallet-democracy/runtime-benchmarks",
   "pallet-did-lookup/runtime-benchmarks",
   "pallet-indices/runtime-benchmarks",
@@ -155,6 +157,7 @@ std = [
   "pallet-authorship/std",
   "pallet-balances/std",
   "pallet-collective/std",
+  "pallet-conviction-voting/std",
   "pallet-democracy/std",
   "pallet-did-lookup/std",
   "pallet-indices/std",

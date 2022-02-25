@@ -14,7 +14,7 @@ substrate-wasm-builder-runner = {version = "3.0.0"}
 
 [dev-dependencies]
 env_logger = {version = "0.8.3"}
-serde = {version = "1.0.124"}
+serde = {version = "1.0.132"}
 
 ctype = {features = ["mock"], path = "../ctype"}
 pallet-balances = {branch = "polkadot-v0.9.17", default-features = false, git = "https://github.com/paritytech/substrate"}
