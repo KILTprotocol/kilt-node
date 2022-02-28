@@ -17,7 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use crate::chain_spec;
-use clap::{AppSettings, Parser};
+use clap::Parser;
 use std::{ops::Deref, path::PathBuf};
 
 pub(crate) const DEFAULT_RUNTIME: &str = "peregrine";
@@ -124,11 +124,11 @@ pub(crate) struct ExportGenesisWasmCommand {
 }
 
 #[derive(Debug, Parser)]
-#[clap(setting(
-	AppSettings::PropagateVersion |
-	AppSettings::ArgsNegateSubcommands |
-	AppSettings::SubcommandsNegateReqs,
-))]
+#[clap(
+	propagate_version = true,
+	args_conflicts_with_subcommands = true,
+	subcommand_negates_reqs = true
+)]
 pub(crate) struct Cli {
 	#[clap(subcommand)]
 	pub(crate) subcommand: Option<Subcommand>,
