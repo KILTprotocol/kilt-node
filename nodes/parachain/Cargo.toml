@@ -95,6 +95,8 @@ frame-benchmarking-cli = {git = "https://github.com/paritytech/substrate", branc
 
 # Runtime tests
 node-executor = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.17", optional = true}
+pallet-conviction-voting = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.17",  optional = true}
+pallet-referenda = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.17",  optional = true}
 try-runtime-cli = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.17", optional = true}
 
 [features]
@@ -104,13 +106,15 @@ fast-gov = [
   "runtime-common/fast-gov",
 ]
 runtime-benchmarks = [
+  "pallet-conviction-voting/runtime-benchmarks",
+  "pallet-referenda/runtime-benchmarks",
   "polkadot-service/runtime-benchmarks",
   "peregrine-runtime/runtime-benchmarks",
   "spiritnet-runtime/runtime-benchmarks",
 ]
 try-runtime = [
-  "peregrine-runtime/try-runtime",
   "node-executor",
+  "peregrine-runtime/try-runtime",
   "spiritnet-runtime/try-runtime",
   "try-runtime-cli",
 ]
