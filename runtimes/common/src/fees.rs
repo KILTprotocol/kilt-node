@@ -204,6 +204,8 @@ mod tests {
 	}
 
 	pub const TREASURY_ACC: AccountId = crate::AccountId::new([1u8; 32]);
+	const AUTHOR_ACC: AccountId = AccountId::new([2; 32]);
+
 	pub struct ToBeneficiary();
 	impl OnUnbalanced<NegativeImbalanceOf<Test>> for ToBeneficiary {
 		fn on_nonzero_unbalanced(amount: NegativeImbalanceOf<Test>) {
@@ -218,7 +220,7 @@ mod tests {
 		where
 			I: 'a,
 		{
-			Some(Default::default())
+			Some(AUTHOR_ACC)
 		}
 	}
 	impl pallet_authorship::Config for Test {
@@ -248,12 +250,12 @@ mod tests {
 			let tip = Balances::issue(20);
 
 			assert_eq!(Balances::free_balance(TREASURY_ACC), 0);
-			assert_eq!(Balances::free_balance(AccountId::default()), 0);
+			assert_eq!(Balances::free_balance(AUTHOR_ACC), 0);
 
 			SplitFeesByRatio::<Test, Ratio, ToBeneficiary, ToAuthor<Test>>::on_unbalanceds(vec![fee, tip].into_iter());
 
 			assert_eq!(Balances::free_balance(TREASURY_ACC), 5);
-			assert_eq!(Balances::free_balance(AccountId::default()), 25);
+			assert_eq!(Balances::free_balance(AUTHOR_ACC), 25);
 		});
 	}
 }

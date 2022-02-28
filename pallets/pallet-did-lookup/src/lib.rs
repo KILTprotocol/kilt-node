@@ -85,7 +85,7 @@ pub mod pallet {
 		type OriginSuccess: CallSources<AccountIdOf<Self>, DidIdentifierOf<Self>>;
 
 		/// The identifier to which accounts can get associated.
-		type DidIdentifier: Parameter + Default + MaxEncodedLen;
+		type DidIdentifier: Parameter + MaxEncodedLen;
 
 		/// The currency that is used to reserve funds for each did.
 		type Currency: ReservableCurrency<AccountIdOf<Self>>;
