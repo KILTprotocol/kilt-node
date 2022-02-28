@@ -41,11 +41,11 @@ fn call_size() {
 
 #[test]
 fn attestation_storage_sizes() {
+	type DelegationRecord =
+		BoundedVec<<Runtime as frame_system::Config>::Hash, <Runtime as attestation::Config>::MaxDelegatedAttestations>;
+
 	let attestation_record = attestation::AttestationDetails::<Runtime>::max_encoded_len();
-	let delegation_record = BoundedVec::<
-		<Runtime as frame_system::Config>::Hash,
-		<Runtime as attestation::Config>::MaxDelegatedAttestations,
-	>::max_encoded_len()
+	let delegation_record = DelegationRecord::max_encoded_len()
 		/ (<Runtime as attestation::Config>::MaxDelegatedAttestations::get() as usize);
 	assert_eq!(
 		attestation_record + delegation_record,
@@ -67,14 +67,16 @@ fn did_storage_sizes() {
 
 #[test]
 fn did_lookup_storage_sizes() {
-	let did_connection_size =
-		pallet_did_lookup::ConnectionRecord::<
+	type DidConnection =
+		pallet_did_lookup::ConnectionRecord<
 			<Runtime as pallet_did_lookup::Config>::DidIdentifier,
 			<Runtime as frame_system::Config>::AccountId,
 			<<Runtime as pallet_did_lookup::Config>::Currency as Currency<
 				<Runtime as frame_system::Config>::AccountId,
 			>>::Balance,
-		>::max_encoded_len();
+		>;
+
+	let did_connection_size = DidConnection::max_encoded_len();
 
 	assert_eq!(did_connection_size, MAX_CONNECTION_BYTE_LENGTH as usize)
 }
