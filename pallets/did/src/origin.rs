@@ -23,7 +23,7 @@ use frame_support::{
 };
 use kilt_support::traits::CallSources;
 use scale_info::TypeInfo;
-use sp_runtime::{AccountId32, RuntimeDebug};
+use sp_runtime::RuntimeDebug;
 use sp_std::marker::PhantomData;
 
 /// Origin for modules that support DID-based authorization.
@@ -40,7 +40,7 @@ where
 	OuterOrigin: Into<Result<DidRawOrigin<DidIdentifier, AccountId>, OuterOrigin>>
 		+ From<DidRawOrigin<DidIdentifier, AccountId>>,
 	DidIdentifier: From<AccountId>,
-	AccountId: From<AccountId32>,
+	AccountId: Clone + Decode,
 {
 	type Success = DidRawOrigin<DidIdentifier, AccountId>;
 
@@ -50,11 +50,12 @@ where
 
 	#[cfg(feature = "runtime-benchmarks")]
 	fn successful_origin() -> OuterOrigin {
-		const TEST_ACC: AccountId32 = AccountId32::new([0u8; 32]);
+		let zero_account_id = AccountId::decode(&mut sp_runtime::traits::TrailingZeroInput::zeroes())
+			.expect("infinite length input; no invalid inputs for type; qed");
 
 		OuterOrigin::from(DidRawOrigin {
-			id: AccountId::from(TEST_ACC.clone()).into(),
-			submitter: TEST_ACC.into(),
+			id: zero_account_id.clone().into(),
+			submitter: zero_account_id,
 		})
 	}
 }
