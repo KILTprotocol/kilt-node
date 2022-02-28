@@ -84,7 +84,7 @@ pub const MAX_VESTING_SCHEDULES: u32 = 28;
 /// Calculate the storage deposit based on the number of storage items and the
 /// combined byte size of those items.
 pub const fn deposit(items: u32, bytes: u32) -> Balance {
-	items as Balance * 70 * MILLI_KILT + (bytes as Balance) * 30 * MICRO_KILT
+	items as Balance * 63 * MILLI_KILT + (bytes as Balance) * 50 * MICRO_KILT
 }
 
 /// The size of an index in the index pallet.
