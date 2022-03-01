@@ -167,7 +167,6 @@ pub mod pallet {
 	#[pallet::getter(fn attestations)]
 	pub type Attestations<T> = StorageMap<_, Blake2_128Concat, ClaimHashOf<T>, AttestationDetails<T>>;
 
-	// TODO: Migrate... Either delete or rename
 	/// Delegated attestations stored on chain.
 	///
 	/// It maps from a delegation ID to a vector of claim hashes.
