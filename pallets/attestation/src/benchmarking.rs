@@ -32,7 +32,6 @@ benchmarks! {
 		where
 		T: core::fmt::Debug,
 		<T as Config>::EnsureOrigin: GenerateBenchmarkOrigin<T::Origin, T::AccountId, T::AttesterId>,
-		T::AttesterId: Default,
 		T: ctype::Config<CtypeCreatorId = T::AttesterId>,
 	}
 
