@@ -56,7 +56,6 @@ use runtime_common::{
 
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
-
 #[cfg(feature = "runtime-benchmarks")]
 use {frame_system::EnsureSigned, kilt_support::signature::AlwaysVerify, runtime_common::benchmarks::DummySignature};
 
@@ -177,7 +176,7 @@ parameter_types! {
 impl pallet_indices::Config for Runtime {
 	type AccountIndex = Index;
 	type Currency = pallet_balances::Pallet<Runtime>;
-	type Deposit = ExistentialDeposit;
+	type Deposit = constants::IndicesDeposit;
 	type Event = Event;
 	type WeightInfo = weights::pallet_indices::WeightInfo<Runtime>;
 }
@@ -294,20 +293,14 @@ impl kilt_launch::Config for Runtime {
 	type PalletId = pallet_id::Launch;
 }
 
-parameter_types! {
-	pub const PreimageMaxSize: u32 = 4096 * 1024;
-	// FIXME: Handle together with other deposits
-	pub const PreimageBaseDeposit: Balance = KILT;
-}
-
 impl pallet_preimage::Config for Runtime {
 	type WeightInfo = weights::pallet_preimage::WeightInfo<Runtime>;
 	type Event = Event;
 	type Currency = Balances;
 	type ManagerOrigin = EnsureRoot<AccountId>;
-	type MaxSize = PreimageMaxSize;
-	type BaseDeposit = PreimageBaseDeposit;
-	type ByteDeposit = PreimageByteDeposit;
+	type MaxSize = constants::preimage::PreimageMaxSize;
+	type BaseDeposit = constants::preimage::PreimageBaseDeposit;
+	type ByteDeposit = constants::ByteDeposit;
 }
 
 parameter_types! {
@@ -362,11 +355,9 @@ parameter_types! {
 	pub const LaunchPeriod: BlockNumber = constants::governance::LAUNCH_PERIOD;
 	pub const VotingPeriod: BlockNumber = constants::governance::VOTING_PERIOD;
 	pub const FastTrackVotingPeriod: BlockNumber = constants::governance::FAST_TRACK_VOTING_PERIOD;
-	pub const MinimumDeposit: Balance = KILT;
+	pub const MinimumDeposit: Balance = constants::governance::MIN_DEPOSIT;
 	pub const EnactmentPeriod: BlockNumber = constants::governance::ENACTMENT_PERIOD;
 	pub const CooloffPeriod: BlockNumber = constants::governance::COOLOFF_PERIOD;
-	// One cent: $10,000 / MB
-	pub const PreimageByteDeposit: Balance = 10 * MILLI_KILT;
 	pub const InstantAllowed: bool = true;
 	pub const MaxVotes: u32 = 100;
 	pub const MaxProposals: u32 = 100;
@@ -413,7 +404,7 @@ impl pallet_democracy::Config for Runtime {
 	// however they can only do it once and it lasts only for the cooloff period.
 	type VetoOrigin = pallet_collective::EnsureMember<AccountId, TechnicalCollective>;
 	type CooloffPeriod = CooloffPeriod;
-	type PreimageByteDeposit = PreimageByteDeposit;
+	type PreimageByteDeposit = constants::ByteDeposit;
 	type Slash = Treasury;
 	type Scheduler = Scheduler;
 	type PalletsOrigin = OriginCaller;
@@ -636,7 +627,7 @@ impl did::Config for Runtime {
 }
 
 parameter_types! {
-	pub const DidLookupDeposit: Balance = KILT;
+	pub const DidLookupDeposit: Balance = constants::did_lookup::DID_CONNECTION_DEPOSIT;
 }
 
 impl pallet_did_lookup::Config for Runtime {
@@ -757,19 +748,6 @@ impl pallet_utility::Config for Runtime {
 
 impl pallet_randomness_collective_flip::Config for Runtime {}
 
-// Start of proxy pallet configuration
-
-parameter_types! {
-	// One storage item; key size 32, value size 8; .
-	pub const ProxyDepositBase: Balance = KILT;
-	// Additional storage item size of 33 bytes.
-	pub const ProxyDepositFactor: Balance = KILT;
-	pub const MaxProxies: u16 = constants::proxy::MAX_PROXIES;
-	pub const AnnouncementDepositBase: Balance = KILT;
-	pub const AnnouncementDepositFactor: Balance = KILT;
-	pub const MaxPending: u16 = constants::proxy::MAX_PENDING;
-}
-
 /// The type used to represent the kinds of proxying allowed.
 #[derive(
 	Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, RuntimeDebug, MaxEncodedLen, scale_info::TypeInfo,
@@ -846,14 +824,14 @@ impl pallet_proxy::Config for Runtime {
 	type Call = Call;
 	type Currency = Balances;
 	type ProxyType = ProxyType;
-	type ProxyDepositBase = ProxyDepositBase;
-	type ProxyDepositFactor = ProxyDepositFactor;
-	type MaxProxies = MaxProxies;
-	type WeightInfo = weights::pallet_proxy::WeightInfo<Runtime>;
-	type MaxPending = MaxPending;
+	type ProxyDepositBase = constants::proxy::ProxyDepositBase;
+	type ProxyDepositFactor = constants::proxy::ProxyDepositFactor;
+	type MaxProxies = constants::proxy::MaxProxies;
+	type MaxPending = constants::proxy::MaxPending;
 	type CallHasher = BlakeTwo256;
-	type AnnouncementDepositBase = AnnouncementDepositBase;
-	type AnnouncementDepositFactor = AnnouncementDepositFactor;
+	type AnnouncementDepositBase = constants::proxy::AnnouncementDepositBase;
+	type AnnouncementDepositFactor = constants::proxy::AnnouncementDepositFactor;
+	type WeightInfo = weights::pallet_proxy::WeightInfo<Runtime>;
 }
 
 construct_runtime! {
@@ -895,7 +873,7 @@ construct_runtime! {
 		// System scheduler.
 		Scheduler: pallet_scheduler::{Pallet, Call, Storage, Event<T>} = 42,
 
-		// Proxy pallet
+		// Proxy pallet.
 		Proxy: pallet_proxy::{Pallet, Call, Storage, Event<T>} = 43,
 
 		// Preimage registrar

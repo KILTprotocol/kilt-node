@@ -39,8 +39,8 @@ impl<OuterOrigin, DidIdentifier, AccountId> EnsureOrigin<OuterOrigin> for Ensure
 where
 	OuterOrigin: Into<Result<DidRawOrigin<DidIdentifier, AccountId>, OuterOrigin>>
 		+ From<DidRawOrigin<DidIdentifier, AccountId>>,
-	DidIdentifier: Default,
-	AccountId: Default,
+	DidIdentifier: From<AccountId>,
+	AccountId: Clone + Decode,
 {
 	type Success = DidRawOrigin<DidIdentifier, AccountId>;
 
@@ -50,9 +50,12 @@ where
 
 	#[cfg(feature = "runtime-benchmarks")]
 	fn successful_origin() -> OuterOrigin {
+		let zero_account_id = AccountId::decode(&mut sp_runtime::traits::TrailingZeroInput::zeroes())
+			.expect("infinite length input; no invalid inputs for type; qed");
+
 		OuterOrigin::from(DidRawOrigin {
-			id: Default::default(),
-			submitter: Default::default(),
+			id: zero_account_id.clone().into(),
+			submitter: zero_account_id,
 		})
 	}
 }

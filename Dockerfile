@@ -15,7 +15,7 @@ COPY ./support /build/support
 COPY ./Cargo.lock /build/Cargo.lock
 COPY ./Cargo.toml /build/Cargo.toml
 
-RUN cargo build --release --features $FEATURES
+RUN cargo build --locked --release --features $FEATURES
 
 # ===== SECOND STAGE ======
 

@@ -17,20 +17,20 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use crate::chain_spec;
+use clap::Parser;
 use std::{ops::Deref, path::PathBuf};
-use structopt::StructOpt;
 
 pub(crate) const DEFAULT_RUNTIME: &str = "peregrine";
 
 /// Sub-commands supported by the collator.
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 pub(crate) enum Subcommand {
 	/// Export the genesis state of the parachain.
-	#[structopt(name = "export-genesis-state")]
+	#[clap(name = "export-genesis-state")]
 	ExportGenesisState(ExportGenesisStateCommand),
 
 	/// Export the genesis wasm of the parachain.
-	#[structopt(name = "export-genesis-wasm")]
+	#[clap(name = "export-genesis-wasm")]
 	ExportGenesisWasm(ExportGenesisWasmCommand),
 
 	/// Build a chain specification.
@@ -55,7 +55,7 @@ pub(crate) enum Subcommand {
 	Revert(sc_cli::RevertCmd),
 
 	/// The custom benchmark subcommmand benchmarking runtime pallets.
-	#[structopt(name = "benchmark", about = "Benchmark runtime pallets.")]
+	#[clap(name = "benchmark", about = "Benchmark runtime pallets.")]
 	Benchmark(frame_benchmarking_cli::BenchmarkCmd),
 
 	/// Try some command against runtime state.
@@ -69,13 +69,13 @@ pub(crate) enum Subcommand {
 }
 
 /// Command for building the genesis state of the parachain
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 pub(crate) struct BuildSpecCmd {
-	#[structopt(flatten)]
+	#[clap(flatten)]
 	pub(crate) inner_args: sc_cli::BuildSpecCmd,
 
 	/// The name of the runtime which should get executed.
-	#[structopt(long, default_value = DEFAULT_RUNTIME)]
+	#[clap(long, default_value = DEFAULT_RUNTIME)]
 	pub(crate) runtime: String,
 }
 
@@ -88,60 +88,60 @@ impl Deref for BuildSpecCmd {
 }
 
 /// Command for exporting the genesis state of the parachain
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 pub(crate) struct ExportGenesisStateCommand {
 	/// Output file name or stdout if unspecified.
-	#[structopt(parse(from_os_str))]
+	#[clap(parse(from_os_str))]
 	pub(crate) output: Option<PathBuf>,
 
 	/// Write output in binary. Default is to write in hex.
-	#[structopt(short, long)]
+	#[clap(short, long)]
 	pub(crate) raw: bool,
 
 	/// The name of the chain for that the genesis state should be exported.
-	#[structopt(long)]
+	#[clap(long)]
 	pub(crate) chain: Option<String>,
 
 	/// The name of the runtime which should get executed.
-	#[structopt(long, default_value = DEFAULT_RUNTIME)]
+	#[clap(long, default_value = DEFAULT_RUNTIME)]
 	pub(crate) runtime: String,
 }
 
 /// Command for exporting the genesis wasm file.
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 pub(crate) struct ExportGenesisWasmCommand {
 	/// Output file name or stdout if unspecified.
-	#[structopt(parse(from_os_str))]
+	#[clap(parse(from_os_str))]
 	pub(crate) output: Option<PathBuf>,
 
 	/// Write output in binary. Default is to write in hex.
-	#[structopt(short, long)]
+	#[clap(short, long)]
 	pub(crate) raw: bool,
 
 	/// The name of the chain for that the genesis wasm file should be exported.
-	#[structopt(long)]
+	#[clap(long)]
 	pub(crate) chain: Option<String>,
 }
 
-#[derive(Debug, StructOpt)]
-#[structopt(settings = &[
-	structopt::clap::AppSettings::GlobalVersion,
-	structopt::clap::AppSettings::ArgsNegateSubcommands,
-	structopt::clap::AppSettings::SubcommandsNegateReqs,
-])]
+#[derive(Debug, Parser)]
+#[clap(
+	propagate_version = true,
+	args_conflicts_with_subcommands = true,
+	subcommand_negates_reqs = true
+)]
 pub(crate) struct Cli {
-	#[structopt(subcommand)]
+	#[clap(subcommand)]
 	pub(crate) subcommand: Option<Subcommand>,
 
-	#[structopt(flatten)]
+	#[clap(flatten)]
 	pub(crate) run: cumulus_client_cli::RunCmd,
 
 	/// The name of the runtime which should get executed.
-	#[structopt(long, default_value = DEFAULT_RUNTIME)]
+	#[clap(long, default_value = DEFAULT_RUNTIME)]
 	pub(crate) runtime: String,
 
 	/// Relaychain arguments
-	#[structopt(raw = true)]
+	#[clap(raw = true)]
 	pub(crate) relaychain_args: Vec<String>,
 }
 
@@ -170,7 +170,7 @@ impl RelayChainCli {
 		Self {
 			base_path,
 			chain_id,
-			base: polkadot_cli::RunCmd::from_iter(relay_chain_args),
+			base: polkadot_cli::RunCmd::parse_from(relay_chain_args),
 		}
 	}
 }

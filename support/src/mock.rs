@@ -34,14 +34,15 @@ pub mod mock_origin {
 	use codec::{Decode, Encode};
 	use frame_support::{traits::EnsureOrigin, Parameter};
 	use scale_info::TypeInfo;
+	use sp_runtime::AccountId32;
 
 	use crate::traits::CallSources;
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
 		type Origin: From<Origin<Self>>;
-		type AccountId: Parameter + Default;
-		type SubjectId: Parameter + Default;
+		type AccountId: Parameter;
+		type SubjectId: Parameter;
 	}
 
 	/// A dummy pallet for adding an origin to the runtime that contains
@@ -61,12 +62,10 @@ pub mod mock_origin {
 	/// An origin that is split into sender and subject.
 	///
 	/// WARNING: This is only used for testing!
-	#[derive(Debug, Clone, Default, PartialEq, Eq, TypeInfo, Encode, Decode)]
+	#[derive(Debug, Clone, PartialEq, Eq, TypeInfo, Encode, Decode)]
 	pub struct DoubleOrigin<AccountId, SubjectId>(pub AccountId, pub SubjectId);
 
-	impl<AccountId: Clone + Default, SubjectId: Clone + Default> CallSources<AccountId, SubjectId>
-		for DoubleOrigin<AccountId, SubjectId>
-	{
+	impl<AccountId: Clone, SubjectId: Clone> CallSources<AccountId, SubjectId> for DoubleOrigin<AccountId, SubjectId> {
 		fn sender(&self) -> AccountId {
 			self.0.clone()
 		}
@@ -81,11 +80,12 @@ pub mod mock_origin {
 	/// WARNING: This is only used for testing!
 	pub struct EnsureDoubleOrigin<AccountId, SubjectId>(PhantomData<(AccountId, SubjectId)>);
 
-	impl<OuterOrigin, AccountId: Default, SubjectId: Default> EnsureOrigin<OuterOrigin>
-		for EnsureDoubleOrigin<AccountId, SubjectId>
+	impl<OuterOrigin, AccountId, SubjectId> EnsureOrigin<OuterOrigin> for EnsureDoubleOrigin<AccountId, SubjectId>
 	where
 		OuterOrigin:
 			Into<Result<DoubleOrigin<AccountId, SubjectId>, OuterOrigin>> + From<DoubleOrigin<AccountId, SubjectId>>,
+		AccountId: From<AccountId32>,
+		SubjectId: From<AccountId32>,
 	{
 		type Success = DoubleOrigin<AccountId, SubjectId>;
 
@@ -95,7 +95,9 @@ pub mod mock_origin {
 
 		#[cfg(feature = "runtime-benchmarks")]
 		fn successful_origin() -> OuterOrigin {
-			OuterOrigin::from(Default::default())
+			const TEST_ACC: AccountId32 = AccountId32::new([0u8; 32]);
+
+			OuterOrigin::from(DoubleOrigin(TEST_ACC.clone().into(), TEST_ACC.into()))
 		}
 	}
 
@@ -112,7 +114,7 @@ pub mod mock_origin {
 	}
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeInfo, Default, MaxEncodedLen)]
+#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeInfo, MaxEncodedLen)]
 pub struct SubjectId(pub AccountId32);
 
 impl From<AccountId32> for SubjectId {

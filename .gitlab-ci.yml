@@ -8,7 +8,7 @@ clippy:
   timeout: 1 hours
   script:
     - rustup component add clippy --toolchain nightly
-    - cargo +nightly clippy --all-features --all-targets -- -D warnings
+    - cargo +nightly clippy --all-features --all-targets --locked -- -D warnings
 
 fmt:
   image: paritytech/ci-linux:c4f0daf3-20220110
@@ -23,7 +23,7 @@ test:
   stage: test
   timeout: 1 hours
   script:
-    - cargo test --all --all-targets
+    - cargo test --all --all-targets --locked
 
 test-features:
   image: paritytech/ci-linux:c4f0daf3-20220110
