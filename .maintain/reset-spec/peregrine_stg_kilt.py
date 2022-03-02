@@ -10,9 +10,8 @@ def update_spec(input: typing.Dict):
 
     input.update({
         "bootNodes": [
-            "/dns4/bootnodes.kilt.io/tcp/30370/p2p/12D3KooWCAK9CjW1abcSx1UwVRSoyAYTR3AzS6qHnG9pddeU2Sra",
-            "/dns4/bootnodes.kilt.io/tcp/30371/p2p/12D3KooWLSzt9LjJwvQrZmM3AW6cR5ypVFHpmYJCRKs4HWFmTj5a",
-            "/dns4/bootnodes.kilt.io/tcp/30372/p2p/12D3KooWPo4pdXrg6E5vWzjRD4dFAWHz3YEsJZj3CDPcMa2iCPkX",
+            "/dns4/eyrie-2.kilt.io/tcp/30343/p2p/12D3KooWSkbfv1aauSUBhxk44bfWvUzWWu1dxbWxTLpvvX7o97xy",
+            "/dns4/eyrie-1.kilt.io/tcp/30345/p2p/12D3KooWR2wXmkcnQHZCLEpC9GJLtDJTYRoaMMcJrE6Xc8LioZtH",
         ],
         "chainType": "Live",
         "name": "KILT Peregrine Stagenet",
