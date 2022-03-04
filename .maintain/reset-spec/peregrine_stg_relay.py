@@ -6,6 +6,8 @@ def update_spec(input: typing.Dict):
     acc_bob = "5DL9V1dmkuZnzRD9R3cwdzowim3sBZZvz1iJhNxC5QjofikK"
     acc_charlie = "5DcKRxsjojmbJW7Scxnu7Ck5zXfpg1RxtrcyVjaMRx5YFWUR"
     acc_dave = "5E4ZYy9tTPpJPoScqm6PvLtr1MjsBEjbDufJQYhcuBtk6rNa"
+    acc_eve = "5ELCvQBGu8ur9UDSMAiqB4PrYXTnLGwcaUg63gtkxWtScEYm"
+    acc_ferdie = "5G6ThxmfSbHVt2u8WmZmTH3xeKBckFFDGA69E6cSXtYPaiwT"
 
     input.update({
         "bootNodes": [
@@ -17,8 +19,9 @@ def update_spec(input: typing.Dict):
             "/dns4/eyrie-3.kilt.io/tcp/30386/p2p/12D3KooWH65w2LXz8pTLZkdzU5YCocKbhs19a4i9aJp8EEs4fzbq",
         ],
         "chainType": "Live",
-        "name": "Peregrine Westend-Relay Stagenet",
-        "id": "westend_peregrine_relay_stagenet",
+        "name": "Peregrine-stg Westend-Relay",
+        "id": "westend_peregrine_stg_relay",
+        "protocolId": "Rkilt4",
         "telemetryEndpoints": [
             [
                 "/dns/telemetry-backend.kilt.io/tcp/8080/x-parity-wss/%2Fsubmit",
@@ -29,19 +32,27 @@ def update_spec(input: typing.Dict):
     input["genesis"]["runtime"]["balances"]["balances"] = [
         [
             acc_alice,
-            10000000000000000000000000000
+            1000000000000000000
         ],
         [
             acc_bob,
-            10000000000000000000000000000
+            1000000000000000000
         ],
         [
             acc_charlie,
-            10000000000000000000000000000
+            1000000000000000000
         ],
         [
             acc_dave,
-            10000000000000000000000000000
+            1000000000000000000
+        ],
+        [
+            acc_eve,
+            1000000000000000000
+        ],
+        [
+            acc_ferdie,
+            1000000000000000000
         ],
     ]
     input["genesis"]["runtime"]["session"]["keys"] = [
@@ -92,34 +103,70 @@ def update_spec(input: typing.Dict):
                 "para_assignment": "5FxM6yYBFvMeX3C2QrQDXJ8LhhzG5sPjgUtX77cX1wihHhVq",
                 "authority_discovery": "5FxM6yYBFvMeX3C2QrQDXJ8LhhzG5sPjgUtX77cX1wihHhVq"
             }
+        ],
+        [
+            acc_eve,
+            acc_eve,
+            {
+                "grandpa": "5GnPNFKvLRy9FF8N1G9YjGmjJA4cUsUC7WgEx3rDeMFnZsXk",
+                "babe": "5GKaEkaA8NVdpsruRcnpeLBNGzMcFsEfwEY3Jq7Vmw9brztR",
+                "im_online": "5GKaEkaA8NVdpsruRcnpeLBNGzMcFsEfwEY3Jq7Vmw9brztR",
+                "para_validator": "5GKaEkaA8NVdpsruRcnpeLBNGzMcFsEfwEY3Jq7Vmw9brztR",
+                "para_assignment": "5GKaEkaA8NVdpsruRcnpeLBNGzMcFsEfwEY3Jq7Vmw9brztR",
+                "authority_discovery": "5GKaEkaA8NVdpsruRcnpeLBNGzMcFsEfwEY3Jq7Vmw9brztR"
+            }
+        ],
+        [
+            acc_ferdie,
+            acc_ferdie,
+            {
+                "grandpa": "5CPW6uFwdjoHTj14C1VWiK96Cj2sJBALbC964zHaGAni3J2S",
+                "babe": "5CSYQMyi7iGVuHLgLNDXcpPXZgvWWrP7mqd1sHdBUSeafXf5",
+                "im_online": "5CSYQMyi7iGVuHLgLNDXcpPXZgvWWrP7mqd1sHdBUSeafXf5",
+                "para_validator": "5CSYQMyi7iGVuHLgLNDXcpPXZgvWWrP7mqd1sHdBUSeafXf5",
+                "para_assignment": "5CSYQMyi7iGVuHLgLNDXcpPXZgvWWrP7mqd1sHdBUSeafXf5",
+                "authority_discovery": "5CSYQMyi7iGVuHLgLNDXcpPXZgvWWrP7mqd1sHdBUSeafXf5"
+            }
         ]
     ]
     input["genesis"]["runtime"]["sudo"]["key"] = acc_alice
     input["genesis"]["runtime"]["staking"].update({
-        "validatorCount": 4,
+        "validatorCount": 6,
         "stakers": [
             [
                 acc_alice,
                 acc_alice,
-                1000000000000,
+                1000000000000000,
                 "Validator"
             ],
             [
                 acc_bob,
                 acc_bob,
-                1000000000000,
+                1000000000000000,
                 "Validator"
             ],
             [
                 acc_charlie,
                 acc_charlie,
-                1000000000000,
+                1000000000000000,
                 "Validator"
             ],
             [
                 acc_dave,
                 acc_dave,
-                1000000000000,
+                1000000000000000,
+                "Validator"
+            ],
+            [
+                acc_eve,
+                acc_eve,
+                1000000000000000,
+                "Validator"
+            ],
+            [
+                acc_ferdie,
+                acc_ferdie,
+                1000000000000000,
                 "Validator"
             ]
         ]
@@ -127,45 +174,48 @@ def update_spec(input: typing.Dict):
     input["genesis"]["runtime"]["configuration"]["config"].update(
         {
             "max_code_size": 3145728,
-            "max_head_data_size": 20480,
-            "max_upward_queue_count": 10,
-            "max_upward_queue_size": 51200,
-            "max_upward_message_size": 51200,
-            "max_upward_message_num_per_candidate": 10,
-            "hrmp_max_message_num_per_candidate": 10,
-            "validation_upgrade_frequency": 240,
-            "validation_upgrade_delay": 120,
+            "max_head_data_size": 32768,
+            "max_upward_queue_count": 8,
+            "max_upward_queue_size": 1048576,
+            "max_upward_message_size": 1048576,
+            "max_upward_message_num_per_candidate": 5,
+            "hrmp_max_message_num_per_candidate": 5,
+            "validation_upgrade_cooldown": 20,
+            "validation_upgrade_delay": 10,
             "max_pov_size": 5242880,
-            "max_downward_message_size": 51200,
-            "preferred_dispatchable_upward_messages_step_weight": 100000000000,
-            "hrmp_max_parachain_outbound_channels": 10,
-            "hrmp_max_parathread_outbound_channels": 0,
-            "hrmp_open_request_ttl": 2,
-            "hrmp_sender_deposit": 1009100000000000,
-            "hrmp_recipient_deposit": 1009100000000000,
-            "hrmp_channel_max_capacity": 1000,
-            "hrmp_channel_max_total_size": 102400,
-            "hrmp_max_parachain_inbound_channels": 10,
-            "hrmp_max_parathread_inbound_channels": 0,
-            "hrmp_channel_max_message_size": 102400,
-            "code_retention_period": 28800,
+            "max_downward_message_size": 1048576,
+            "ump_service_total_weight": 100000000000,
+            "hrmp_max_parachain_outbound_channels": 4,
+            "hrmp_max_parathread_outbound_channels": 4,
+            "hrmp_sender_deposit": 0,
+            "hrmp_recipient_deposit": 0,
+            "hrmp_channel_max_capacity": 8,
+            "hrmp_channel_max_total_size": 8192,
+            "hrmp_max_parachain_inbound_channels": 4,
+            "hrmp_max_parathread_inbound_channels": 4,
+            "hrmp_channel_max_message_size": 1048576,
+            "code_retention_period": 1200,
             "parathread_cores": 0,
             "parathread_retries": 0,
-            "group_rotation_frequency": 10,
-            "chain_availability_period": 5,
-            "thread_availability_period": 5,
-            "scheduling_lookahead": 1,
-            "max_validators_per_core": 5,
-            "max_validators": 200,
+            "group_rotation_frequency": 20,
+            "chain_availability_period": 4,
+            "thread_availability_period": 4,
+            "scheduling_lookahead": 0,
+            "max_validators_per_core": None,
+            "max_validators": None,
             "dispute_period": 6,
-            "dispute_post_conclusion_acceptance_period": 600,
+            "dispute_post_conclusion_acceptance_period": 100,
             "dispute_max_spam_slots": 2,
-            "dispute_conclusion_by_time_out_period": 600,
+            "dispute_conclusion_by_time_out_period": 200,
             "no_show_slots": 2,
-            "n_delay_tranches": 40,
+            "n_delay_tranches": 25,
             "zeroth_delay_tranche_width": 0,
-            "needed_approvals": 15,
-            "relay_vrf_modulo_samples": 1
+            "needed_approvals": 2,
+            "relay_vrf_modulo_samples": 2,
+            "ump_max_individual_weight": 20000000000,
+            "pvf_checking_enabled": False,
+            "pvf_voting_ttl": 2,
+            "minimum_validation_upgrade_delay": 5
         }
     )
 

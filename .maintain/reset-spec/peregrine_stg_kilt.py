@@ -14,9 +14,9 @@ def update_spec(input: typing.Dict):
             "/dns4/eyrie-1.kilt.io/tcp/30345/p2p/12D3KooWR2wXmkcnQHZCLEpC9GJLtDJTYRoaMMcJrE6Xc8LioZtH",
         ],
         "chainType": "Live",
-        "name": "KILT Peregrine Stagenet",
+        "name": "KILT Peregrine-stg",
         "id": "peregrine_stg_kilt",
-        "protocolId": "pkilt2",
+        "protocolId": "pkilt4",
         "para_id": para_id,
         "telemetryEndpoints": [
             [
