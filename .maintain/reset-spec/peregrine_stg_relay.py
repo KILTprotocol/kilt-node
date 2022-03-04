@@ -11,12 +11,12 @@ def update_spec(input: typing.Dict):
 
     input.update({
         "bootNodes": [
-            "/dns4/eyrie-1.kilt.io/tcp/30380/p2p/12D3KooWCwQHJnEv3xgvKdkhgex8XBGV42Pv9PsZm4Aoq6bie9Ye",
-            "/dns4/eyrie-1.kilt.io/tcp/30383/p2p/12D3KooWK7pmwnuHEb3aUZ3ZsqUVHXsNyZMAYGY3cySAa6HcHnwy",
-            "/dns4/eyrie-2.kilt.io/tcp/30381/p2p/12D3KooWDuMBrUwfozSc7WJR14PP4wF9LvYCFKCKYAJBVnGPN9Jz",
-            "/dns4/eyrie-2.kilt.io/tcp/30382/p2p/12D3KooWFspGrrF3dZjEaJr7wZcPRZ7bdtExZKPhxj4d68a6yfPT",
-            "/dns4/eyrie-3.kilt.io/tcp/30385/p2p/12D3KooWPcq2gfMxJmEjTMvG9rFHHR1UmEjcd7RjjZc99BRJaKNo",
-            "/dns4/eyrie-3.kilt.io/tcp/30386/p2p/12D3KooWH65w2LXz8pTLZkdzU5YCocKbhs19a4i9aJp8EEs4fzbq",
+            "/dns4/eyrie-1.kilt.io/tcp/30380/p2p/12D3KooWMJvZTCSNc2t8DKPSJH1LBqLrAWK5yxENfSJ3WPj1UMnP",
+            "/dns4/eyrie-1.kilt.io/tcp/30383/p2p/12D3KooWPkTuR4PFgYAXA5UPRkXJRLrE7t45AXM3obwrweNUUfuR",
+            "/dns4/eyrie-2.kilt.io/tcp/30381/p2p/12D3KooWEPScFexvmgxesjbwqzsVEuYYYf8t9wUnFK2U6SnPNWMY",
+            "/dns4/eyrie-2.kilt.io/tcp/30382/p2p/12D3KooWFYzkpamEy3M415hd93W7iNLt81kuqzhLKMdvTGmq9zuV",
+            "/dns4/eyrie-3.kilt.io/tcp/30385/p2p/12D3KooWSa1TqsrBuB32fMcGWfS3aZDT1NicsSVs7egPNXtsD5Am",
+            "/dns4/eyrie-3.kilt.io/tcp/30386/p2p/12D3KooWQNXPgLttsQLKA1PAEWNHzJBLQShPx1tUaMoJew4d3yke",
         ],
         "chainType": "Live",
         "name": "Peregrine-stg Westend-Relay",
