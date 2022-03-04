@@ -9,6 +9,7 @@ import json
 import typing
 import logging
 import tempfile
+import shutil
 
 logger = logging.getLogger(__name__)
 
@@ -217,4 +218,4 @@ if __name__ == "__main__":
         )
 
     if tmpdirname is not None and not args.debug:
-        os.rmdir(tmpdirname)
+        shutil.rmtree(tmpdirname)
