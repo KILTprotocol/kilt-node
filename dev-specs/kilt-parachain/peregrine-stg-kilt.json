@@ -1,5 +1,5 @@
 {
-  "name": "KILT Peregrine-stg",
+  "name": "KILT Peregrine Stagenet",
   "id": "peregrine_stg_kilt",
   "chainType": "Live",
   "bootNodes": [
