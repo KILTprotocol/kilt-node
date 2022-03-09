@@ -6,18 +6,17 @@ def update_spec(input: typing.Dict):
     acc_col_2 = "5FxhtaNtvGWTUQzmqq8NbKVVvz8AiXvaXxnSs8WbfBXYs79M"
     # not an initial collator
     acc_col_3 = "5CvmyN8kLcPKNg98A6nMmrPDqoNN8hJrmFfoYyCesCmfd3se"
-    para_id = 2001
+    para_id = 2000
 
     input.update({
         "bootNodes": [
-            "/dns4/bootnodes.kilt.io/tcp/30370/p2p/12D3KooWCAK9CjW1abcSx1UwVRSoyAYTR3AzS6qHnG9pddeU2Sra",
-            "/dns4/bootnodes.kilt.io/tcp/30371/p2p/12D3KooWLSzt9LjJwvQrZmM3AW6cR5ypVFHpmYJCRKs4HWFmTj5a",
-            "/dns4/bootnodes.kilt.io/tcp/30372/p2p/12D3KooWPo4pdXrg6E5vWzjRD4dFAWHz3YEsJZj3CDPcMa2iCPkX",
+            "/dns4/eyrie-1.kilt.io/tcp/30340/p2p/12D3KooWDRzUz3SenRC737aFrY1aPAVbiioqVMUL7otbupWtuk3B",
+            "/dns4/eyrie-2.kilt.io/tcp/30341/p2p/12D3KooWLSzt9LjJwvQrZmM3AW6cR5ypVFHpmYJCRKs4HWFmTj5a",
         ],
         "chainType": "Live",
         "name": "KILT Peregrine Stagenet",
         "id": "peregrine_stg_kilt",
-        "protocolId": "pkilt2",
+        "protocolId": "pkilt4",
         "para_id": para_id,
         "telemetryEndpoints": [
             [

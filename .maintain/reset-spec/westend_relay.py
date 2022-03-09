@@ -80,7 +80,7 @@ def update_spec(input: typing.Dict):
             "max_upward_message_size": 51200,
             "max_upward_message_num_per_candidate": 10,
             "hrmp_max_message_num_per_candidate": 10,
-            "validation_upgrade_frequency": 120,
+            "validation_upgrade_cooldown": 120,
             "validation_upgrade_delay": 60,
             "max_pov_size": 5242880,
             "max_downward_message_size": 51200,
