@@ -26,6 +26,8 @@ use scale_info::TypeInfo;
 use sp_runtime::RuntimeDebug;
 use sp_std::marker::PhantomData;
 
+use crate::{AccountIdOf, Config, DidSignature};
+
 /// Origin for modules that support DID-based authorization.
 #[derive(Clone, Decode, Encode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct DidRawOrigin<DidIdentifier, AccountId> {
@@ -100,4 +102,12 @@ mod tests {
 		let origin: <Test as frame_system::Config>::Origin = EnsureDidOrigin::successful_origin();
 		assert_ok!(EnsureDidOrigin::try_origin(origin));
 	}
+}
+
+#[derive(Clone, Decode, Encode, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[scale_info(skip_type_params(T))]
+#[codec(mel_bound())]
+pub enum DidSignatureOrAccount<T: Config> {
+	Signature(DidSignature),
+	Account(AccountIdOf<T>),
 }

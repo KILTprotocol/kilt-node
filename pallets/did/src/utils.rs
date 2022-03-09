@@ -22,7 +22,7 @@ use sp_std::vec::Vec;
 
 use crate::{did_details::DidPublicKey, Config, KeyIdOf};
 
-pub fn calculate_key_id<T: Config>(key: &DidPublicKey) -> KeyIdOf<T> {
+pub fn calculate_key_id<T: Config>(key: &DidPublicKey<T>) -> KeyIdOf<T> {
 	let hashed_values: Vec<u8> = key.encode();
 	T::Hashing::hash(&hashed_values)
 }

@@ -24,6 +24,7 @@ use sp_std::{marker::PhantomData, vec::Vec};
 use crate::{
 	did_details::{DidSignature, DidVerificationKeyRelationship},
 	errors::DidError,
+	origin::DidSignatureOrAccount,
 	Config, Did, Pallet, WeightInfo,
 };
 
@@ -43,9 +44,9 @@ impl<T: Config> VerifySignature for DidSignatureVerify<T> {
 
 		Pallet::verify_payload_signature_with_did_key_type(
 			payload,
-			signature,
 			&delegate_details,
 			DidVerificationKeyRelationship::Authentication,
+			DidSignatureOrAccount::Signature(signature.clone()),
 		)
 		.map_err(|err| match err {
 			// Should never happen as a DID has always a valid authentication key and UrlErrors are never thrown here.

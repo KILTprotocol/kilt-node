@@ -135,21 +135,23 @@ use frame_system::RawOrigin;
 pub mod pallet {
 	use super::*;
 	use crate::service_endpoints::utils as service_endpoints_utils;
+	use did_details::DidVerificationKey;
+	use errors::SignatureError;
 	use frame_support::{
 		pallet_prelude::*,
 		traits::{Currency, ExistenceRequirement, Imbalance, ReservableCurrency, StorageVersion},
 	};
 	use frame_system::pallet_prelude::*;
 	use kilt_support::traits::CallSources;
+	use origin::DidSignatureOrAccount;
 	use sp_runtime::traits::BadOrigin;
 
 	use crate::{
 		did_details::{
 			DeriveDidCallAuthorizationVerificationKeyRelationship, DidAuthorizedCallOperation, DidCreationDetails,
-			DidDetails, DidEncryptionKey, DidSignature, DidVerifiableIdentifier, DidVerificationKey,
-			RelationshipDeriveError,
+			DidDetails, DidEncryptionKey, DidSignature, DidVerifiableIdentifier, RelationshipDeriveError,
 		},
-		errors::{DidError, InputError, SignatureError, StorageError},
+		errors::{DidError, InputError, StorageError},
 		service_endpoints::{DidEndpoint, ServiceEndpointId},
 	};
 
@@ -192,7 +194,7 @@ pub mod pallet {
 			+ DeriveDidCallAuthorizationVerificationKeyRelationship;
 
 		/// Type for a DID subject identifier.
-		type DidIdentifier: Parameter + DidVerifiableIdentifier + MaxEncodedLen;
+		type DidIdentifier: Parameter + DidVerifiableIdentifier<Self> + MaxEncodedLen;
 
 		/// Origin type expected by the proxied dispatchable calls.
 		#[cfg(not(feature = "runtime-benchmarks"))]
@@ -601,7 +603,7 @@ pub mod pallet {
 		/// - Writes: Did
 		/// # </weight>
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::set_ed25519_authentication_key().max(<T as pallet::Config>::WeightInfo::set_sr25519_authentication_key()).max(<T as pallet::Config>::WeightInfo::set_ecdsa_authentication_key()))]
-		pub fn set_authentication_key(origin: OriginFor<T>, new_key: DidVerificationKey) -> DispatchResult {
+		pub fn set_authentication_key(origin: OriginFor<T>, new_key: DidVerificationKey<T>) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
 			let mut did_details = Did::<T>::get(&did_subject).ok_or(Error::<T>::DidNotPresent)?;
 
@@ -641,7 +643,7 @@ pub mod pallet {
 		/// - Writes: Did
 		/// # </weight>
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::set_ed25519_delegation_key().max(<T as pallet::Config>::WeightInfo::set_sr25519_delegation_key()).max(<T as pallet::Config>::WeightInfo::set_ecdsa_delegation_key()))]
-		pub fn set_delegation_key(origin: OriginFor<T>, new_key: DidVerificationKey) -> DispatchResult {
+		pub fn set_delegation_key(origin: OriginFor<T>, new_key: DidVerificationKey<T>) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
 			let mut did_details = Did::<T>::get(&did_subject).ok_or(Error::<T>::DidNotPresent)?;
 
@@ -708,7 +710,7 @@ pub mod pallet {
 		/// - Writes: Did
 		/// # </weight>
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::set_ed25519_attestation_key().max(<T as pallet::Config>::WeightInfo::set_sr25519_attestation_key()).max(<T as pallet::Config>::WeightInfo::set_ecdsa_attestation_key()))]
-		pub fn set_attestation_key(origin: OriginFor<T>, new_key: DidVerificationKey) -> DispatchResult {
+		pub fn set_attestation_key(origin: OriginFor<T>, new_key: DidVerificationKey<T>) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
 			let mut did_details = Did::<T>::get(&did_subject).ok_or(Error::<T>::DidNotPresent)?;
 
@@ -1022,7 +1024,7 @@ pub mod pallet {
 		pub fn submit_did_call(
 			origin: OriginFor<T>,
 			did_call: Box<DidAuthorizedCallOperation<T>>,
-			signature: DidSignature,
+			signature: Option<DidSignature>,
 		) -> DispatchResultWithPostInfo {
 			let who = ensure_signed(origin)?;
 			ensure!(did_call.submitter == who, Error::<T>::BadDidOrigin);
@@ -1042,7 +1044,13 @@ pub mod pallet {
 				verification_key_relationship,
 			};
 
-			Self::verify_did_operation_signature_and_increase_nonce(&wrapped_operation, &signature)
+			let right_origin = if let Some(sig) = signature {
+				DidSignatureOrAccount::<T>::Signature(sig)
+			} else {
+				DidSignatureOrAccount::<T>::Account(who.clone())
+			};
+
+			Self::verify_did_operation_signature_and_increase_nonce(&wrapped_operation, right_origin)
 				.map_err(Error::<T>::from)?;
 
 			log::debug!("Dispatch call from DID {:?}", did_identifier);
@@ -1083,7 +1091,7 @@ pub mod pallet {
 		/// # </weight>
 		pub fn verify_did_operation_signature_and_increase_nonce(
 			operation: &DidAuthorizedCallOperationWithVerificationRelationship<T>,
-			signature: &DidSignature,
+			auth_data: DidSignatureOrAccount<T>,
 		) -> Result<(), DidError> {
 			// Check that the tx has not expired.
 			Self::validate_block_number_value(operation.block_number)?;
@@ -1097,9 +1105,9 @@ pub mod pallet {
 			did_details.increase_tx_counter();
 			Self::verify_payload_signature_with_did_key_type(
 				&operation.encode(),
-				signature,
 				&did_details,
 				operation.verification_key_relationship,
+				auth_data,
 			)?;
 
 			Did::<T>::insert(&operation.did, did_details);
@@ -1145,9 +1153,9 @@ pub mod pallet {
 		/// key type.
 		pub fn verify_payload_signature_with_did_key_type(
 			payload: &Payload,
-			signature: &DidSignature,
 			did_details: &DidDetails<T>,
 			key_type: DidVerificationKeyRelationship,
+			auth_data: DidSignatureOrAccount<T>,
 		) -> Result<(), DidError> {
 			// Retrieve the needed verification key from the DID details, or generate an
 			// error if there is no key of the type required
@@ -1155,11 +1163,19 @@ pub mod pallet {
 				.get_verification_key_for_key_type(key_type)
 				.ok_or(DidError::StorageError(StorageError::DidKeyNotPresent(key_type)))?;
 
-			// Verify that the signature matches the expected format, otherwise generate
-			// an error
-			verification_key
-				.verify_signature(payload, signature)
-				.map_err(DidError::SignatureError)
+			match (verification_key, auth_data) {
+				(DidVerificationKey::<T>::Account(acc), DidSignatureOrAccount::<T>::Account(who)) if *acc == who => {
+					Ok(())
+				}
+				(_, DidSignatureOrAccount::<T>::Account(_)) => {
+					Err(DidError::SignatureError(SignatureError::InvalidSignatureFormat))
+				}
+				// Verify that the signature matches the expected format, otherwise generate
+				// an error
+				(_, DidSignatureOrAccount::<T>::Signature(sig)) => verification_key
+					.verify_signature(payload, &sig)
+					.map_err(DidError::SignatureError),
+			}
 		}
 
 		/// Deletes DID details from storage, including its linked service

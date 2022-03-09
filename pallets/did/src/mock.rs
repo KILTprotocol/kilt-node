@@ -329,7 +329,7 @@ pub fn get_ecdsa_delegation_key(default: bool) -> ecdsa::Pair {
 	}
 }
 
-pub fn generate_key_id(key: &DidPublicKey) -> TestKeyId {
+pub fn generate_key_id(key: &DidPublicKey<Test>) -> TestKeyId {
 	crate_utils::calculate_key_id::<Test>(key)
 }
 

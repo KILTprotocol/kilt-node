@@ -93,7 +93,7 @@ pub fn generate_base_did_creation_details<T: Config>(
 	}
 }
 
-pub fn generate_base_did_details<T>(authentication_key: DidVerificationKey) -> DidDetails<T>
+pub fn generate_base_did_details<T>(authentication_key: DidVerificationKey<T>) -> DidDetails<T>
 where
 	T: Config,
 	<T as frame_system::Config>::AccountId: From<runtime_common::AccountId>,

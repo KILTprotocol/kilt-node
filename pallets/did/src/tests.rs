@@ -34,6 +34,7 @@ use crate::{
 	errors::{DidError, SignatureError, StorageError},
 	mock::*,
 	mock_utils::*,
+	origin::DidSignatureOrAccount,
 	service_endpoints::DidEndpoint,
 };
 
@@ -2306,7 +2307,7 @@ fn check_did_not_found_call_error() {
 			Did::submit_did_call(
 				Origin::signed(caller),
 				Box::new(call_operation.operation),
-				did::DidSignature::from(signature)
+				Some(did::DidSignature::from(signature))
 			),
 			did::Error::<Test>::DidNotPresent
 		);
@@ -2338,7 +2339,7 @@ fn check_too_small_tx_counter_after_wrap_call_error() {
 				Did::submit_did_call(
 					Origin::signed(caller),
 					Box::new(call_operation.operation),
-					did::DidSignature::from(signature)
+					Some(did::DidSignature::from(signature))
 				),
 				did::Error::<Test>::InvalidNonce
 			);
@@ -2369,7 +2370,7 @@ fn check_too_small_tx_counter_call_error() {
 				Did::submit_did_call(
 					Origin::signed(caller),
 					Box::new(call_operation.operation),
-					did::DidSignature::from(signature)
+					Some(did::DidSignature::from(signature))
 				),
 				did::Error::<Test>::InvalidNonce
 			);
@@ -2399,7 +2400,7 @@ fn check_equal_tx_counter_call_error() {
 				Did::submit_did_call(
 					Origin::signed(caller),
 					Box::new(call_operation.operation),
-					did::DidSignature::from(signature)
+					Some(did::DidSignature::from(signature))
 				),
 				did::Error::<Test>::InvalidNonce
 			);
@@ -2429,7 +2430,7 @@ fn check_too_large_tx_counter_call_error() {
 				Did::submit_did_call(
 					Origin::signed(caller),
 					Box::new(call_operation.operation),
-					did::DidSignature::from(signature)
+					Some(did::DidSignature::from(signature))
 				),
 				did::Error::<Test>::InvalidNonce
 			);
@@ -2461,7 +2462,7 @@ fn check_tx_block_number_too_low_error() {
 				Did::submit_did_call(
 					Origin::signed(caller.clone()),
 					Box::new(call_operation.operation.clone()),
-					did::DidSignature::from(signature.clone())
+					Some(did::DidSignature::from(signature.clone()))
 				),
 				did::Error::<Test>::TransactionExpired
 			);
@@ -2471,7 +2472,7 @@ fn check_tx_block_number_too_low_error() {
 			assert_ok!(Did::submit_did_call(
 				Origin::signed(caller),
 				Box::new(call_operation.operation),
-				did::DidSignature::from(signature)
+				Some(did::DidSignature::from(signature))
 			));
 		});
 }
@@ -2504,7 +2505,7 @@ fn check_tx_block_number_too_high_error() {
 				Did::submit_did_call(
 					Origin::signed(caller.clone()),
 					Box::new(call_operation.operation.clone()),
-					did::DidSignature::from(signature.clone())
+					Some(did::DidSignature::from(signature.clone()))
 				),
 				did::Error::<Test>::TransactionExpired
 			);
@@ -2535,7 +2536,7 @@ fn check_verification_key_not_present_call_error() {
 				Did::submit_did_call(
 					Origin::signed(caller),
 					Box::new(call_operation.operation),
-					did::DidSignature::from(signature)
+					Some(did::DidSignature::from(signature))
 				),
 				did::Error::<Test>::VerificationKeyNotPresent
 			);
@@ -2565,7 +2566,7 @@ fn check_invalid_signature_format_call_error() {
 				Did::submit_did_call(
 					Origin::signed(caller),
 					Box::new(call_operation.operation),
-					did::DidSignature::from(signature)
+					Some(did::DidSignature::from(signature))
 				),
 				did::Error::<Test>::InvalidSignatureFormat
 			);
@@ -2593,7 +2594,7 @@ fn check_bad_submitter_error() {
 				Did::submit_did_call(
 					Origin::signed(caller),
 					Box::new(call_operation.operation),
-					did::DidSignature::from(signature)
+					Some(did::DidSignature::from(signature))
 				),
 				did::Error::<Test>::BadDidOrigin
 			);
@@ -2623,7 +2624,7 @@ fn check_invalid_signature_call_error() {
 				Did::submit_did_call(
 					Origin::signed(caller),
 					Box::new(call_operation.operation),
-					did::DidSignature::from(signature)
+					Some(did::DidSignature::from(signature))
 				),
 				did::Error::<Test>::InvalidSignature
 			);
@@ -2654,7 +2655,7 @@ fn check_call_attestation_key_successful() {
 			assert_ok!(Did::submit_did_call(
 				Origin::signed(caller),
 				Box::new(call_operation.operation),
-				did::DidSignature::from(signature)
+				Some(did::DidSignature::from(signature))
 			));
 		});
 }
@@ -2688,7 +2689,7 @@ fn check_call_attestation_key_error() {
 				Did::submit_did_call(
 					Origin::signed(caller),
 					Box::new(call_operation.operation),
-					did::DidSignature::from(signature)
+					Some(did::DidSignature::from(signature))
 				),
 				ctype::Error::<Test>::CTypeAlreadyExists
 			);
@@ -2719,7 +2720,7 @@ fn check_call_delegation_key_successful() {
 			assert_ok!(Did::submit_did_call(
 				Origin::signed(caller),
 				Box::new(call_operation.operation),
-				did::DidSignature::from(signature)
+				Some(did::DidSignature::from(signature))
 			));
 		});
 }
@@ -2753,7 +2754,7 @@ fn check_call_delegation_key_error() {
 				Did::submit_did_call(
 					Origin::signed(caller),
 					Box::new(call_operation.operation),
-					did::DidSignature::from(signature)
+					Some(did::DidSignature::from(signature))
 				),
 				ctype::Error::<Test>::CTypeAlreadyExists
 			);
@@ -2782,8 +2783,60 @@ fn check_call_authentication_key_successful() {
 			assert_ok!(Did::submit_did_call(
 				Origin::signed(caller),
 				Box::new(call_operation.operation),
-				did::DidSignature::from(signature)
+				Some(did::DidSignature::from(signature))
 			));
+		});
+}
+
+#[test]
+fn check_call_authentication_account_successful() {
+	let auth_key = get_sr25519_authentication_key(true);
+	let did = get_did_identifier_from_sr25519_key(auth_key.public());
+	let controller = ACCOUNT_00;
+
+	let mock_did = generate_base_did_details::<Test>(DidVerificationKey::Account(controller.clone()));
+
+	let call_operation = generate_test_did_call(
+		DidVerificationKeyRelationship::Authentication,
+		did.clone(),
+		controller.clone(),
+	);
+
+	ExtBuilder::default()
+		.with_dids(vec![(did, mock_did)])
+		.build(None)
+		.execute_with(|| {
+			assert_ok!(Did::submit_did_call(
+				Origin::signed(controller),
+				Box::new(call_operation.operation),
+				None,
+			));
+		});
+}
+
+#[test]
+fn check_call_authentication_wrong_account_error() {
+	let auth_key = get_sr25519_authentication_key(true);
+	let did = get_did_identifier_from_sr25519_key(auth_key.public());
+	let controller = ACCOUNT_00;
+	let caller = ACCOUNT_01;
+
+	let mock_did = generate_base_did_details::<Test>(DidVerificationKey::Account(controller.clone()));
+
+	let call_operation = generate_test_did_call(
+		DidVerificationKeyRelationship::Authentication,
+		did.clone(),
+		caller.clone(),
+	);
+
+	ExtBuilder::default()
+		.with_dids(vec![(did, mock_did)])
+		.build(None)
+		.execute_with(|| {
+			assert_err!(
+				Did::submit_did_call(Origin::signed(caller), Box::new(call_operation.operation), None,),
+				did::Error::<Test>::InvalidSignatureFormat
+			);
 		});
 }
 
@@ -2814,7 +2867,7 @@ fn check_call_authentication_key_error() {
 				Did::submit_did_call(
 					Origin::signed(caller),
 					Box::new(call_operation.operation),
-					did::DidSignature::from(signature)
+					Some(did::DidSignature::from(signature))
 				),
 				ctype::Error::<Test>::CTypeAlreadyExists
 			);
@@ -2841,7 +2894,7 @@ fn check_null_key_error() {
 			Did::submit_did_call(
 				Origin::signed(caller),
 				Box::new(call_operation.operation),
-				did::DidSignature::from(signature)
+				Some(did::DidSignature::from(signature))
 			),
 			did::Error::<Test>::UnsupportedDidAuthorizationCall
 		);
@@ -2867,7 +2920,7 @@ fn check_authentication_successful_operation_verification() {
 		.execute_with(|| {
 			assert_ok!(Did::verify_did_operation_signature_and_increase_nonce(
 				&call_operation,
-				&did::DidSignature::from(signature)
+				DidSignatureOrAccount::Signature(did::DidSignature::from(signature))
 			));
 			// Verify that the DID tx counter has increased
 			let did_details = Did::get_did(&call_operation.operation.did).expect("DID should be present on chain.");
@@ -2897,7 +2950,7 @@ fn check_attestation_successful_operation_verification() {
 		.execute_with(|| {
 			assert_ok!(Did::verify_did_operation_signature_and_increase_nonce(
 				&call_operation,
-				&did::DidSignature::from(signature)
+				DidSignatureOrAccount::Signature(did::DidSignature::from(signature))
 			));
 			// Verify that the DID tx counter has increased
 			let did_details = Did::get_did(&call_operation.operation.did).expect("DID should be present on chain.");
@@ -2930,7 +2983,7 @@ fn check_delegation_successful_operation_verification() {
 		.execute_with(|| {
 			assert_ok!(Did::verify_did_operation_signature_and_increase_nonce(
 				&call_operation,
-				&did::DidSignature::from(signature)
+				DidSignatureOrAccount::Signature(did::DidSignature::from(signature))
 			));
 			// Verify that the DID tx counter has increased
 			let did_details = Did::get_did(&call_operation.operation.did).expect("DID should be present on chain.");
@@ -2953,7 +3006,7 @@ fn check_did_not_present_operation_verification() {
 		assert_noop!(
 			Did::verify_did_operation_signature_and_increase_nonce(
 				&call_operation,
-				&did::DidSignature::from(signature)
+				DidSignatureOrAccount::Signature(did::DidSignature::from(signature))
 			),
 			DidError::StorageError(StorageError::DidNotPresent)
 		);
@@ -2980,7 +3033,7 @@ fn check_tx_counter_wrap_operation_verification() {
 		.execute_with(|| {
 			assert_ok!(Did::verify_did_operation_signature_and_increase_nonce(
 				&call_operation,
-				&did::DidSignature::from(signature)
+				DidSignatureOrAccount::Signature(did::DidSignature::from(signature))
 			));
 			// Verify that the DID tx counter has wrapped around
 			let did_details = Did::get_did(&call_operation.operation.did).expect("DID should be present on chain.");
@@ -3011,7 +3064,7 @@ fn check_smaller_counter_operation_verification() {
 			assert_noop!(
 				Did::verify_did_operation_signature_and_increase_nonce(
 					&call_operation,
-					&did::DidSignature::from(signature)
+					DidSignatureOrAccount::Signature(did::DidSignature::from(signature))
 				),
 				DidError::SignatureError(SignatureError::InvalidNonce)
 			);
@@ -3040,7 +3093,7 @@ fn check_equal_counter_operation_verification() {
 			assert_noop!(
 				Did::verify_did_operation_signature_and_increase_nonce(
 					&call_operation,
-					&did::DidSignature::from(signature)
+					DidSignatureOrAccount::Signature(did::DidSignature::from(signature))
 				),
 				DidError::SignatureError(SignatureError::InvalidNonce)
 			);
@@ -3069,7 +3122,7 @@ fn check_too_large_counter_operation_verification() {
 			assert_noop!(
 				Did::verify_did_operation_signature_and_increase_nonce(
 					&call_operation,
-					&did::DidSignature::from(signature)
+					DidSignatureOrAccount::Signature(did::DidSignature::from(signature))
 				),
 				DidError::SignatureError(SignatureError::InvalidNonce)
 			);
@@ -3094,7 +3147,7 @@ fn check_verification_key_not_present_operation_verification() {
 			assert_noop!(
 				Did::verify_did_operation_signature_and_increase_nonce(
 					&call_operation,
-					&did::DidSignature::from(signature)
+					DidSignatureOrAccount::Signature(did::DidSignature::from(signature))
 				),
 				DidError::StorageError(StorageError::DidKeyNotPresent(
 					DidVerificationKeyRelationship::AssertionMethod
@@ -3123,7 +3176,7 @@ fn check_invalid_signature_format_operation_verification() {
 			assert_noop!(
 				Did::verify_did_operation_signature_and_increase_nonce(
 					&call_operation,
-					&did::DidSignature::from(signature)
+					DidSignatureOrAccount::Signature(did::DidSignature::from(signature))
 				),
 				DidError::SignatureError(SignatureError::InvalidSignatureFormat)
 			);
@@ -3150,7 +3203,7 @@ fn check_invalid_signature_operation_verification() {
 			assert_noop!(
 				Did::verify_did_operation_signature_and_increase_nonce(
 					&call_operation,
-					&did::DidSignature::from(signature)
+					DidSignatureOrAccount::Signature(did::DidSignature::from(signature))
 				),
 				DidError::SignatureError(SignatureError::InvalidSignature)
 			);
