@@ -9,6 +9,7 @@ import json
 import typing
 import logging
 import tempfile
+import shutil
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +46,8 @@ def run_check_process(cmd: typing.List[str]):
 def make_custom_spec(tmp_dir, docker_img, plain_file, out_file, update_spec, spec, runtime=None):
     """Build a custom spec by exporting a chain spec and customize it using a python script.
     """
+    logger.debug("using directory '%s'", tmp_dir)
+
     cmd_plain_spec = base_docker_run_cmd() + [docker_img, "build-spec",
                                               "--chain", spec, "--disable-default-bootnode"]
 
@@ -54,6 +57,12 @@ def make_custom_spec(tmp_dir, docker_img, plain_file, out_file, update_spec, spe
     process = run_check_process(cmd_plain_spec)
 
     in_json = json.loads(process.stdout)
+
+    if args.debug:
+        with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", suffix=".json", delete=False) as tf:
+            json.dump(in_json, tf, indent="  ")
+            tf_name = tf.name
+        logger.debug("Writing unmodified spec to '%s'", tf_name)
 
     try:
         update_spec(in_json)
@@ -117,17 +126,17 @@ if __name__ == "__main__":
     import peregrine_stg_kilt
     import peregrine_stg_relay
 
-    logging.basicConfig(format='%(asctime)s:%(levelname)s: %(message)s',
-                        datefmt='%m-%d-%Y %H:%M:%S', level=logging.DEBUG)
+    logging.basicConfig(format="%(asctime)s:%(levelname)s: %(message)s",
+                        datefmt="%m-%d-%Y %H:%M:%S", level=logging.DEBUG)
 
     parser = argparse.ArgumentParser(
         description=("Reset the chainspec for our networks."
                      "VERIFY THAT THE SPEC IS CORRECT AFTER USE!!"
                      "Make sure that the current directory is the project root."),
         epilog="")
-    parser.add_argument('-v', '--verbose', action='count', default=0)
-    # parser.add_argument('-d', '--debug', action='store_true',
-    #                     default=False, help="enable debug mode, don't delete tmp files.")
+    parser.add_argument("-v", "--verbose", action="count", default=0)
+    parser.add_argument("-d", "--debug", action="store_true", dest="debug",
+                        default=False, help="enable debug mode, don't delete tmp files.")
 
     parser.add_argument("--image", "-i", dest="image", required=True,
                         help="docker image to use for building chain spec")
@@ -167,43 +176,46 @@ if __name__ == "__main__":
         make_native(args.image, SPIRITNET_KILT, "spiritnet-new", "spiritnet")
 
     if args.peregrine:
-        with tempfile.TemporaryDirectory() as tmpdirname:
-            make_custom_spec(
-                tmpdirname, args.image, "peregrine_kilt.plain.json",
-                PERE_KILT, peregrine_kilt.update_spec, "peregrine-new", "peregrine"
-            )
+        tmpdirname = tempfile.mkdtemp(suffix="peregrine")
+        make_custom_spec(
+            tmpdirname, args.image, "peregrine_kilt.plain.json",
+            PERE_KILT, peregrine_kilt.update_spec, "peregrine-new", "peregrine"
+        )
 
     if args.peregrine_relay:
-        with tempfile.TemporaryDirectory() as tmpdirname:
-            make_custom_spec(
-                tmpdirname, args.image, "peregrine_relay.plain.json",
-                PERE_RELAY, peregrine_relay.update_spec, "westend-local"
-            )
+        tmpdirname = tempfile.mkdtemp(suffix="peregrine_relay")
+        make_custom_spec(
+            tmpdirname, args.image, "peregrine_relay.plain.json",
+            PERE_RELAY, peregrine_relay.update_spec, "westend-local"
+        )
 
     if args.peregrine_dev:
-        with tempfile.TemporaryDirectory() as tmpdirname:
-            make_custom_spec(
-                tmpdirname, args.image, "peregrine_dev_kilt.plain.json",
-                PERE_DEV_KILT, peregrine_dev_kilt.update_spec, "peregrine-new", "peregrine"
-            )
+        tmpdirname = tempfile.mkdtemp(suffix="peregrine_dev")
+        make_custom_spec(
+            tmpdirname, args.image, "peregrine_dev_kilt.plain.json",
+            PERE_DEV_KILT, peregrine_dev_kilt.update_spec, "peregrine-new", "peregrine"
+        )
 
     if args.peregrine_relay_dev:
-        with tempfile.TemporaryDirectory() as tmpdirname:
-            make_custom_spec(
-                tmpdirname, args.image, "peregrine_dev_relay.plain.json",
-                PERE_DEV_RELAY, peregrine_dev_relay.update_spec, "westend-local"
-            )
+        tmpdirname = tempfile.mkdtemp(suffix="peregrine_relay_dev")
+        make_custom_spec(
+            tmpdirname, args.image, "peregrine_dev_relay.plain.json",
+            PERE_DEV_RELAY, peregrine_dev_relay.update_spec, "westend-local"
+        )
 
     if args.peregrine_stg:
-        with tempfile.TemporaryDirectory() as tmpdirname:
-            make_custom_spec(
-                tmpdirname, args.image, "peregrine_stg.plain.json",
-                PERE_STG_KILT, peregrine_stg_kilt.update_spec, "peregrine-new", "peregrine"
-            )
+        tmpdirname = tempfile.mkdtemp(suffix="peregrine_stg")
+        make_custom_spec(
+            tmpdirname, args.image, "peregrine_stg.plain.json",
+            PERE_STG_KILT, peregrine_stg_kilt.update_spec, "peregrine-new", "peregrine"
+        )
 
     if args.peregrine_relay_stg:
-        with tempfile.TemporaryDirectory() as tmpdirname:
-            make_custom_spec(
-                tmpdirname, args.image, "peregrine_stg_relay.plain.json",
-                PERE_STG_RELAY, peregrine_stg_relay.update_spec, "westend-local"
-            )
+        tmpdirname = tempfile.mkdtemp(suffix="peregrine_relay_stg")
+        make_custom_spec(
+            tmpdirname, args.image, "peregrine_stg_relay.plain.json",
+            PERE_STG_RELAY, peregrine_stg_relay.update_spec, "westend-local"
+        )
+
+    if tmpdirname is not None and not args.debug:
+        shutil.rmtree(tmpdirname)

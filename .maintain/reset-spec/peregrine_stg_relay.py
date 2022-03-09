@@ -6,17 +6,22 @@ def update_spec(input: typing.Dict):
     acc_bob = "5DL9V1dmkuZnzRD9R3cwdzowim3sBZZvz1iJhNxC5QjofikK"
     acc_charlie = "5DcKRxsjojmbJW7Scxnu7Ck5zXfpg1RxtrcyVjaMRx5YFWUR"
     acc_dave = "5E4ZYy9tTPpJPoScqm6PvLtr1MjsBEjbDufJQYhcuBtk6rNa"
+    acc_eve = "5ELCvQBGu8ur9UDSMAiqB4PrYXTnLGwcaUg63gtkxWtScEYm"
+    acc_ferdie = "5G6ThxmfSbHVt2u8WmZmTH3xeKBckFFDGA69E6cSXtYPaiwT"
 
     input.update({
         "bootNodes": [
-            "/dns4/bootnodes.kilt.io/tcp/30380/p2p/12D3KooWDRzUz3SenRC737aFrY1aPAVbiioqVMUL7otbupWtuk3B",
-            "/dns4/bootnodes.kilt.io/tcp/30381/p2p/12D3KooWLmZAehBfUxVMwL7uFc6yhdY7u2btCCVubjAjZafgAYWQ",
-            "/dns4/bootnodes.kilt.io/tcp/30382/p2p/12D3KooWEQhFBWGZXmBGzSsoHiNLD8e2VdCu17rVFHbPJzbmjUWC",
-            "/dns4/bootnodes.kilt.io/tcp/30383/p2p/12D3KooWRnGvdAf6xiGTQMdzHSrSXR5GWzc6JWvfUcACjGTpbzeq",
+            "/dns4/eyrie-1.kilt.io/tcp/30380/p2p/12D3KooWMJvZTCSNc2t8DKPSJH1LBqLrAWK5yxENfSJ3WPj1UMnP",
+            "/dns4/eyrie-1.kilt.io/tcp/30381/p2p/12D3KooWPkTuR4PFgYAXA5UPRkXJRLrE7t45AXM3obwrweNUUfuR",
+            "/dns4/eyrie-2.kilt.io/tcp/30382/p2p/12D3KooWEPScFexvmgxesjbwqzsVEuYYYf8t9wUnFK2U6SnPNWMY",
+            "/dns4/eyrie-2.kilt.io/tcp/30383/p2p/12D3KooWFYzkpamEy3M415hd93W7iNLt81kuqzhLKMdvTGmq9zuV",
+            "/dns4/eyrie-3.kilt.io/tcp/30384/p2p/12D3KooWSa1TqsrBuB32fMcGWfS3aZDT1NicsSVs7egPNXtsD5Am",
+            "/dns4/eyrie-3.kilt.io/tcp/30385/p2p/12D3KooWQNXPgLttsQLKA1PAEWNHzJBLQShPx1tUaMoJew4d3yke",
         ],
         "chainType": "Live",
-        "name": "Peregrine Westend-Relay Stagenet",
-        "id": "westend_peregrine_relay_stagenet",
+        "name": "Peregrine-stg Westend-Relay",
+        "id": "westend_peregrine_stg_relay",
+        "protocolId": "Rkilt4",
         "telemetryEndpoints": [
             [
                 "/dns/telemetry-backend.kilt.io/tcp/8080/x-parity-wss/%2Fsubmit",
@@ -27,19 +32,27 @@ def update_spec(input: typing.Dict):
     input["genesis"]["runtime"]["balances"]["balances"] = [
         [
             acc_alice,
-            10000000000000000000000000000
+            1000000000000000000
         ],
         [
             acc_bob,
-            10000000000000000000000000000
+            1000000000000000000
         ],
         [
             acc_charlie,
-            10000000000000000000000000000
+            1000000000000000000
         ],
         [
             acc_dave,
-            10000000000000000000000000000
+            1000000000000000000
+        ],
+        [
+            acc_eve,
+            1000000000000000000
+        ],
+        [
+            acc_ferdie,
+            1000000000000000000
         ],
     ]
     input["genesis"]["runtime"]["session"]["keys"] = [
@@ -90,34 +103,70 @@ def update_spec(input: typing.Dict):
                 "para_assignment": "5FxM6yYBFvMeX3C2QrQDXJ8LhhzG5sPjgUtX77cX1wihHhVq",
                 "authority_discovery": "5FxM6yYBFvMeX3C2QrQDXJ8LhhzG5sPjgUtX77cX1wihHhVq"
             }
+        ],
+        [
+            acc_eve,
+            acc_eve,
+            {
+                "grandpa": "5GKaEkaA8NVdpsruRcnpeLBNGzMcFsEfwEY3Jq7Vmw9brztR",
+                "babe": "5GnPNFKvLRy9FF8N1G9YjGmjJA4cUsUC7WgEx3rDeMFnZsXk",
+                "im_online": "5GnPNFKvLRy9FF8N1G9YjGmjJA4cUsUC7WgEx3rDeMFnZsXk",
+                "para_validator": "5GnPNFKvLRy9FF8N1G9YjGmjJA4cUsUC7WgEx3rDeMFnZsXk",
+                "para_assignment": "5GnPNFKvLRy9FF8N1G9YjGmjJA4cUsUC7WgEx3rDeMFnZsXk",
+                "authority_discovery": "5GnPNFKvLRy9FF8N1G9YjGmjJA4cUsUC7WgEx3rDeMFnZsXk"
+            }
+        ],
+        [
+            acc_ferdie,
+            acc_ferdie,
+            {
+                "grandpa": "5CSYQMyi7iGVuHLgLNDXcpPXZgvWWrP7mqd1sHdBUSeafXf5",
+                "babe": "5CPW6uFwdjoHTj14C1VWiK96Cj2sJBALbC964zHaGAni3J2S",
+                "im_online": "5CPW6uFwdjoHTj14C1VWiK96Cj2sJBALbC964zHaGAni3J2S",
+                "para_validator": "5CPW6uFwdjoHTj14C1VWiK96Cj2sJBALbC964zHaGAni3J2S",
+                "para_assignment": "5CPW6uFwdjoHTj14C1VWiK96Cj2sJBALbC964zHaGAni3J2S",
+                "authority_discovery": "5CPW6uFwdjoHTj14C1VWiK96Cj2sJBALbC964zHaGAni3J2S"
+            }
         ]
     ]
     input["genesis"]["runtime"]["sudo"]["key"] = acc_alice
     input["genesis"]["runtime"]["staking"].update({
-        "validatorCount": 4,
+        "validatorCount": 6,
         "stakers": [
             [
                 acc_alice,
                 acc_alice,
-                1000000000000,
+                1000000000000000,
                 "Validator"
             ],
             [
                 acc_bob,
                 acc_bob,
-                1000000000000,
+                1000000000000000,
                 "Validator"
             ],
             [
                 acc_charlie,
                 acc_charlie,
-                1000000000000,
+                1000000000000000,
                 "Validator"
             ],
             [
                 acc_dave,
                 acc_dave,
-                1000000000000,
+                1000000000000000,
+                "Validator"
+            ],
+            [
+                acc_eve,
+                acc_eve,
+                1000000000000000,
+                "Validator"
+            ],
+            [
+                acc_ferdie,
+                acc_ferdie,
+                1000000000000000,
                 "Validator"
             ]
         ]
@@ -125,45 +174,48 @@ def update_spec(input: typing.Dict):
     input["genesis"]["runtime"]["configuration"]["config"].update(
         {
             "max_code_size": 3145728,
-            "max_head_data_size": 20480,
-            "max_upward_queue_count": 10,
-            "max_upward_queue_size": 51200,
-            "max_upward_message_size": 51200,
-            "max_upward_message_num_per_candidate": 10,
-            "hrmp_max_message_num_per_candidate": 10,
-            "validation_upgrade_frequency": 240,
-            "validation_upgrade_delay": 120,
+            "max_head_data_size": 32768,
+            "max_upward_queue_count": 8,
+            "max_upward_queue_size": 1048576,
+            "max_upward_message_size": 1048576,
+            "max_upward_message_num_per_candidate": 5,
+            "hrmp_max_message_num_per_candidate": 5,
+            "validation_upgrade_cooldown": 20,
+            "validation_upgrade_delay": 10,
             "max_pov_size": 5242880,
-            "max_downward_message_size": 51200,
-            "preferred_dispatchable_upward_messages_step_weight": 100000000000,
-            "hrmp_max_parachain_outbound_channels": 10,
-            "hrmp_max_parathread_outbound_channels": 0,
-            "hrmp_open_request_ttl": 2,
-            "hrmp_sender_deposit": 1009100000000000,
-            "hrmp_recipient_deposit": 1009100000000000,
-            "hrmp_channel_max_capacity": 1000,
-            "hrmp_channel_max_total_size": 102400,
-            "hrmp_max_parachain_inbound_channels": 10,
-            "hrmp_max_parathread_inbound_channels": 0,
-            "hrmp_channel_max_message_size": 102400,
-            "code_retention_period": 28800,
+            "max_downward_message_size": 1048576,
+            "ump_service_total_weight": 100000000000,
+            "hrmp_max_parachain_outbound_channels": 4,
+            "hrmp_max_parathread_outbound_channels": 4,
+            "hrmp_sender_deposit": 0,
+            "hrmp_recipient_deposit": 0,
+            "hrmp_channel_max_capacity": 8,
+            "hrmp_channel_max_total_size": 8192,
+            "hrmp_max_parachain_inbound_channels": 4,
+            "hrmp_max_parathread_inbound_channels": 4,
+            "hrmp_channel_max_message_size": 1048576,
+            "code_retention_period": 1200,
             "parathread_cores": 0,
             "parathread_retries": 0,
-            "group_rotation_frequency": 10,
-            "chain_availability_period": 5,
-            "thread_availability_period": 5,
-            "scheduling_lookahead": 1,
-            "max_validators_per_core": 5,
-            "max_validators": 200,
+            "group_rotation_frequency": 20,
+            "chain_availability_period": 4,
+            "thread_availability_period": 4,
+            "scheduling_lookahead": 0,
+            "max_validators_per_core": None,
+            "max_validators": None,
             "dispute_period": 6,
-            "dispute_post_conclusion_acceptance_period": 600,
+            "dispute_post_conclusion_acceptance_period": 100,
             "dispute_max_spam_slots": 2,
-            "dispute_conclusion_by_time_out_period": 600,
+            "dispute_conclusion_by_time_out_period": 200,
             "no_show_slots": 2,
-            "n_delay_tranches": 40,
+            "n_delay_tranches": 25,
             "zeroth_delay_tranche_width": 0,
-            "needed_approvals": 15,
-            "relay_vrf_modulo_samples": 1
+            "needed_approvals": 2,
+            "relay_vrf_modulo_samples": 2,
+            "ump_max_individual_weight": 20000000000,
+            "pvf_checking_enabled": False,
+            "pvf_voting_ttl": 2,
+            "minimum_validation_upgrade_delay": 5
         }
     )
 
