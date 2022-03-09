@@ -6,12 +6,12 @@ def update_spec(input: typing.Dict):
     acc_col_2 = "5FxhtaNtvGWTUQzmqq8NbKVVvz8AiXvaXxnSs8WbfBXYs79M"
     # not an initial collator
     acc_col_3 = "5CvmyN8kLcPKNg98A6nMmrPDqoNN8hJrmFfoYyCesCmfd3se"
-    para_id = 2001
+    para_id = 2000
 
     input.update({
         "bootNodes": [
-            "/dns4/eyrie-2.kilt.io/tcp/30343/p2p/12D3KooWSkbfv1aauSUBhxk44bfWvUzWWu1dxbWxTLpvvX7o97xy",
-            "/dns4/eyrie-1.kilt.io/tcp/30345/p2p/12D3KooWR2wXmkcnQHZCLEpC9GJLtDJTYRoaMMcJrE6Xc8LioZtH",
+            "/dns4/eyrie-1.kilt.io/tcp/30340/p2p/12D3KooWDRzUz3SenRC737aFrY1aPAVbiioqVMUL7otbupWtuk3B",
+            "/dns4/eyrie-2.kilt.io/tcp/30341/p2p/12D3KooWLSzt9LjJwvQrZmM3AW6cR5ypVFHpmYJCRKs4HWFmTj5a",
         ],
         "chainType": "Live",
         "name": "KILT Peregrine Stagenet",
