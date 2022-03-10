@@ -70,8 +70,6 @@
 //!
 //! ## Assumptions
 //!
-//! - The maximum number of new key agreement keys that can be specified in a
-//!   creation or update operation is bounded by `MaxNewKeyAgreementKeys`.
 //! - After it is generated and signed by a client, a DID-authorised operation
 //!   can be submitted for evaluation anytime between the time the operation is
 //!   created and [MaxBlocksTxValidity] blocks after that. After this time has
@@ -124,7 +122,6 @@ use frame_system::ensure_signed;
 use sp_io::KillStorageResult;
 use sp_runtime::{
 	traits::{Saturating, Zero},
-	SaturatedConversion,
 };
 use sp_std::{boxed::Box, fmt::Debug, prelude::Clone};
 
@@ -134,7 +131,6 @@ use frame_system::RawOrigin;
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
-	use crate::service_endpoints::utils as service_endpoints_utils;
 	use frame_support::{
 		pallet_prelude::*,
 		traits::{Currency, ExistenceRequirement, Imbalance, ReservableCurrency, StorageVersion},
@@ -236,15 +232,10 @@ pub mod pallet {
 		#[pallet::constant]
 		type MaxPublicKeysPerDid: Get<u32>;
 
-		/// Maximum number of key agreement keys that can be added in a creation
-		/// operation.
-		#[pallet::constant]
-		type MaxNewKeyAgreementKeys: Get<u32>;
-
 		/// Maximum number of total key agreement keys that can be stored for a
 		/// DID subject.
 		///
-		/// Should be greater than `MaxNewKeyAgreementKeys`.
+		/// Should be smaller than `MaxPublicKeysPerDid`.
 		#[pallet::constant]
 		type MaxTotalKeyAgreementKeys: Get<u32> + Debug + Clone + PartialEq;
 
@@ -483,40 +474,14 @@ pub mod pallet {
 		/// Emits `DidCreated`.
 		///
 		/// # <weight>
-		/// - The transaction's complexity is mainly dependent on the number of
-		///   new key agreement keys and the number of new service endpoints
-		///   included in the operation.
-		/// ---------
-		/// Weight: O(K) + O(N) where K is the number of new key agreement
-		/// keys bounded by `MaxNewKeyAgreementKeys`, while N is the number of
-		/// new service endpoints bounded by `MaxNumberOfServicesPerDid`.
+		/// Weight: O(1)
 		/// - Reads: [Origin Account], Did, DidBlacklist
-		/// - Writes: Did (with K new key agreement keys), ServiceEndpoints
-		///   (with N new service endpoints), DidEndpointsCount
+		/// - Writes: Did
 		/// # </weight>
-		#[pallet::weight({
-			let new_key_agreement_keys = details.new_key_agreement_keys.len().saturated_into::<u32>();
-			// We only consider the number of new endpoints.
-			let new_services_count = details.new_service_details.len().saturated_into::<u32>();
-
-			let ed25519_weight = <T as pallet::Config>::WeightInfo::create_ed25519_keys(
-				new_key_agreement_keys,
-				new_services_count,
-			);
-			let sr25519_weight = <T as pallet::Config>::WeightInfo::create_sr25519_keys(
-				new_key_agreement_keys,
-				new_services_count,
-			);
-			let ecdsa_weight = <T as pallet::Config>::WeightInfo::create_ecdsa_keys(
-				new_key_agreement_keys,
-				new_services_count,
-			);
-
-			ed25519_weight.max(sr25519_weight).max(ecdsa_weight)
-		})]
+		#[pallet::weight(1)]
 		pub fn create(
 			origin: OriginFor<T>,
-			details: Box<DidCreationDetails<T>>,
+			details: DidCreationDetails<T>,
 			signature: DidSignature,
 		) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
@@ -548,13 +513,8 @@ pub mod pallet {
 				.verify_and_recover_signature(&details.encode(), &signature)
 				.map_err(Error::<T>::from)?;
 
-			// Validate all the size constraints for the service endpoints.
-			let input_service_endpoints = details.new_service_details.clone();
-			service_endpoints_utils::validate_new_service_endpoints(&input_service_endpoints)
-				.map_err(Error::<T>::from)?;
-
 			let did_entry =
-				DidDetails::from_creation_details(*details, account_did_auth_key).map_err(Error::<T>::from)?;
+				DidDetails::from_creation_details(details, account_did_auth_key).map_err(Error::<T>::from)?;
 
 			// *** No Fail beyond this call ***
 
@@ -574,10 +534,6 @@ pub mod pallet {
 			T::FeeCollector::on_unbalanced(imbalance);
 
 			Did::<T>::insert(&did_identifier, did_entry);
-			input_service_endpoints.iter().for_each(|service| {
-				ServiceEndpoints::<T>::insert(&did_identifier, &service.id, service.clone());
-			});
-			DidEndpointsCount::<T>::insert(&did_identifier, input_service_endpoints.len().saturated_into::<u32>());
 
 			Self::deposit_event(Event::DidCreated(sender, did_identifier));
 

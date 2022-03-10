@@ -124,197 +124,80 @@ benchmarks! {
 	}
 
 	/* create extrinsic */
-	create_ed25519_keys {
-		let n in 1 .. T::MaxNewKeyAgreementKeys::get();
-		// We only calculate weights based on how many endpoints are specified. For each endpoint, we use the max possible length and count for its components.
-		// This makes weight computation easier at runtime, at the cost of always having worst-case weights for any # of endpoints c.
-		let c in 1 .. T::MaxNumberOfServicesPerDid::get();
-
+	create_ed25519_key {
 		let submitter: AccountIdOf<T> = account(DEFAULT_ACCOUNT_ID, 0, DEFAULT_ACCOUNT_SEED);
 
 		make_free_for_did::<T>(&submitter);
 
 		let did_public_auth_key = get_ed25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(did_public_auth_key).into_account().into();
-		let did_key_agreement_keys = get_key_agreement_keys::<T>(n);
-		let did_public_att_key = get_ed25519_public_attestation_key();
-		let did_public_del_key = get_ed25519_public_delegation_key();
-		let service_endpoints = get_service_endpoints::<T>(
-			c,
-			T::MaxServiceIdLength::get(),
-			T::MaxNumberOfTypesPerService::get(),
-			T::MaxServiceTypeLength::get(),
-			T::MaxNumberOfUrlsPerService::get(),
-			T::MaxServiceUrlLength::get(),
-		);
 
-		let mut did_creation_details = generate_base_did_creation_details::<T>(did_subject.clone(), submitter.clone());
-		did_creation_details.new_key_agreement_keys = did_key_agreement_keys;
-		did_creation_details.new_attestation_key = Some(DidVerificationKey::from(did_public_att_key));
-		did_creation_details.new_delegation_key = Some(DidVerificationKey::from(did_public_del_key));
-		did_creation_details.new_service_details = service_endpoints.clone();
+		let did_creation_details = generate_base_did_creation_details::<T>(did_subject.clone(), submitter.clone());
 
-		let did_creation_signature = ed25519_sign(AUTHENTICATION_KEY_ID, &did_public_auth_key, did_creation_details.encode().as_ref()).expect("Failed to create DID signature from raw ed25519 signature.");
-	}: create(RawOrigin::Signed(submitter), Box::new(did_creation_details.clone()), DidSignature::from(did_creation_signature))
+		let origin = RawOrigin::Signed(submitter);
+		let did_creation_signature = DidSignature::from(ed25519_sign(AUTHENTICATION_KEY_ID, &did_public_auth_key, did_creation_details.encode().as_ref()).expect("Failed to create DID signature from raw ed25519 signature."));
+	}: create(origin, did_creation_details, did_creation_signature)
 	verify {
 		let stored_did = Did::<T>::get(&did_subject).expect("New DID should be stored on chain.");
 		let stored_key_agreement_keys_ids = stored_did.key_agreement_keys;
 
 		let expected_authentication_key_id = utils::calculate_key_id::<T>(&DidVerificationKey::from(did_public_auth_key).into());
-		let expected_attestation_key_id = utils::calculate_key_id::<T>(&DidVerificationKey::from(did_public_att_key).into());
-		let expected_delegation_key_id = utils::calculate_key_id::<T>(&DidVerificationKey::from(did_public_del_key).into());
 
 		assert_eq!(
 			stored_did.authentication_key,
 			expected_authentication_key_id
 		);
-		for new_key in did_creation_details.new_key_agreement_keys.iter().copied() {
-			assert!(
-				stored_key_agreement_keys_ids.contains(&utils::calculate_key_id::<T>(&new_key.into())))
-		}
-		assert_eq!(
-			stored_did.delegation_key,
-			Some(expected_delegation_key_id)
-		);
-		assert_eq!(
-			stored_did.attestation_key,
-			Some(expected_attestation_key_id)
-		);
-		assert_eq!(
-			DidEndpointsCount::<T>::get(&did_subject).saturated_into::<usize>(),
-			service_endpoints.len()
-		);
-		assert_eq!(
-			ServiceEndpoints::<T>::iter_prefix(&did_subject).count(),
-			service_endpoints.len()
-		);
 		assert_eq!(stored_did.last_tx_counter, 0u64);
 	}
 
-	create_sr25519_keys {
-		let n in 1 .. T::MaxNewKeyAgreementKeys::get();
-		let c in 1 .. T::MaxNumberOfServicesPerDid::get();
-
+	create_sr25519_key {
 		let submitter: AccountIdOf<T> = account(DEFAULT_ACCOUNT_ID, 0, DEFAULT_ACCOUNT_SEED);
+
 		make_free_for_did::<T>(&submitter);
 
 		let did_public_auth_key = get_sr25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(did_public_auth_key).into_account().into();
-		let did_key_agreement_keys = get_key_agreement_keys::<T>(n);
-		let did_public_att_key = get_sr25519_public_attestation_key();
-		let did_public_del_key = get_sr25519_public_delegation_key();
-		let service_endpoints = get_service_endpoints::<T>(
-			c,
-			T::MaxServiceIdLength::get(),
-			T::MaxNumberOfTypesPerService::get(),
-			T::MaxServiceTypeLength::get(),
-			T::MaxNumberOfUrlsPerService::get(),
-			T::MaxServiceUrlLength::get(),
-		);
 
-		let mut did_creation_details = generate_base_did_creation_details::<T>(did_subject.clone(), submitter.clone());
-		did_creation_details.new_key_agreement_keys = did_key_agreement_keys;
-		did_creation_details.new_attestation_key = Some(DidVerificationKey::from(did_public_att_key));
-		did_creation_details.new_delegation_key = Some(DidVerificationKey::from(did_public_del_key));
-		did_creation_details.new_service_details = service_endpoints.clone();
+		let did_creation_details = generate_base_did_creation_details::<T>(did_subject.clone(), submitter.clone());
 
-		let did_creation_signature = sr25519_sign(AUTHENTICATION_KEY_ID, &did_public_auth_key, did_creation_details.encode().as_ref()).expect("Failed to create DID signature from raw sr25519 signature.");
-	}: create(RawOrigin::Signed(submitter), Box::new(did_creation_details.clone()), DidSignature::from(did_creation_signature))
+		let origin = RawOrigin::Signed(submitter);
+		let did_creation_signature = DidSignature::from(sr25519_sign(AUTHENTICATION_KEY_ID, &did_public_auth_key, did_creation_details.encode().as_ref()).expect("Failed to create DID signature from raw sr25519 signature."));
+	}: create(origin, did_creation_details, did_creation_signature)
 	verify {
 		let stored_did = Did::<T>::get(&did_subject).expect("New DID should be stored on chain.");
 		let stored_key_agreement_keys_ids = stored_did.key_agreement_keys;
 
 		let expected_authentication_key_id = utils::calculate_key_id::<T>(&DidVerificationKey::from(did_public_auth_key).into());
-		let expected_attestation_key_id = utils::calculate_key_id::<T>(&DidVerificationKey::from(did_public_att_key).into());
-		let expected_delegation_key_id = utils::calculate_key_id::<T>(&DidVerificationKey::from(did_public_del_key).into());
 
 		assert_eq!(
 			stored_did.authentication_key,
 			expected_authentication_key_id
-		);
-		for new_key in did_creation_details.new_key_agreement_keys.iter().copied() {
-			assert!(
-				stored_key_agreement_keys_ids.contains(&utils::calculate_key_id::<T>(&new_key.into())))
-		}
-		assert_eq!(
-			stored_did.delegation_key,
-			Some(expected_delegation_key_id)
-		);
-		assert_eq!(
-			stored_did.attestation_key,
-			Some(expected_attestation_key_id)
-		);
-		assert_eq!(
-			DidEndpointsCount::<T>::get(&did_subject).saturated_into::<usize>(),
-			service_endpoints.len()
-		);
-		assert_eq!(
-			ServiceEndpoints::<T>::iter_prefix(&did_subject).count(),
-			service_endpoints.len()
 		);
 		assert_eq!(stored_did.last_tx_counter, 0u64);
 	}
 
-	create_ecdsa_keys {
-		let n in 1 .. T::MaxNewKeyAgreementKeys::get();
-		let c in 1 .. T::MaxNumberOfServicesPerDid::get();
-
+	create_ecdsa_key {
 		let submitter: AccountIdOf<T> = account(DEFAULT_ACCOUNT_ID, 0, DEFAULT_ACCOUNT_SEED);
+
 		make_free_for_did::<T>(&submitter);
 
-		let did_public_auth_key = get_ecdsa_public_authentication_key();
-		let did_subject: DidIdentifierOf<T> = MultiSigner::from(did_public_auth_key.clone()).into_account().into();
-		let did_key_agreement_keys = get_key_agreement_keys::<T>(n);
-		let did_public_att_key = get_ecdsa_public_attestation_key();
-		let did_public_del_key = get_ecdsa_public_delegation_key();
-		let service_endpoints = get_service_endpoints::<T>(
-			c,
-			T::MaxServiceIdLength::get(),
-			T::MaxNumberOfTypesPerService::get(),
-			T::MaxServiceTypeLength::get(),
-			T::MaxNumberOfUrlsPerService::get(),
-			T::MaxServiceUrlLength::get(),
-		);
+		let did_public_auth_key = get_ecdsa25519_public_authentication_key();
+		let did_subject: DidIdentifierOf<T> = MultiSigner::from(did_public_auth_key).into_account().into();
 
-		let mut did_creation_details = generate_base_did_creation_details::<T>(did_subject.clone(), submitter.clone());
-		did_creation_details.new_key_agreement_keys = did_key_agreement_keys;
-		did_creation_details.new_attestation_key = Some(DidVerificationKey::from(did_public_att_key.clone()));
-		did_creation_details.new_delegation_key = Some(DidVerificationKey::from(did_public_del_key.clone()));
-		did_creation_details.new_service_details = service_endpoints.clone();
+		let did_creation_details = generate_base_did_creation_details::<T>(did_subject.clone(), submitter.clone());
 
-		let did_creation_signature = ecdsa_sign(AUTHENTICATION_KEY_ID, &did_public_auth_key, did_creation_details.encode().as_ref()).expect("Failed to create DID signature from raw ecdsa signature.");
-	}: create(RawOrigin::Signed(submitter), Box::new(did_creation_details.clone()), DidSignature::from(did_creation_signature))
+		let origin = RawOrigin::Signed(submitter);
+		let did_creation_signature = DidSignature::from(ecdsa_sign(AUTHENTICATION_KEY_ID, &did_public_auth_key, did_creation_details.encode().as_ref()).expect("Failed to create DID signature from raw ecdsa signature."));
+	}: create(origin, did_creation_details, did_creation_signature)
 	verify {
 		let stored_did = Did::<T>::get(&did_subject).expect("New DID should be stored on chain.");
 		let stored_key_agreement_keys_ids = stored_did.key_agreement_keys;
 
 		let expected_authentication_key_id = utils::calculate_key_id::<T>(&DidVerificationKey::from(did_public_auth_key).into());
-		let expected_attestation_key_id = utils::calculate_key_id::<T>(&DidVerificationKey::from(did_public_att_key).into());
-		let expected_delegation_key_id = utils::calculate_key_id::<T>(&DidVerificationKey::from(did_public_del_key).into());
 
 		assert_eq!(
 			stored_did.authentication_key,
 			expected_authentication_key_id
-		);
-		for new_key in did_creation_details.new_key_agreement_keys.iter().copied() {
-			assert!(
-				stored_key_agreement_keys_ids.contains(&utils::calculate_key_id::<T>(&new_key.into())))
-		}
-		assert_eq!(
-			stored_did.delegation_key,
-			Some(expected_delegation_key_id)
-		);
-		assert_eq!(
-			stored_did.attestation_key,
-			Some(expected_attestation_key_id)
-		);
-		assert_eq!(
-			DidEndpointsCount::<T>::get(&did_subject).saturated_into::<usize>(),
-			service_endpoints.len()
-		);
-		assert_eq!(
-			ServiceEndpoints::<T>::iter_prefix(&did_subject).count(),
-			service_endpoints.len()
 		);
 		assert_eq!(stored_did.last_tx_counter, 0u64);
 	}
@@ -337,7 +220,8 @@ benchmarks! {
 
 		Did::<T>::insert(&did_subject, did_details);
 		save_service_endpoints(&did_subject, &service_endpoints);
-	}: _(RawOrigin::Signed(did_subject.clone()), c)
+		let origin = RawOrigin::Signed(did_subject.clone());
+	}: _(origin, c)
 	verify {
 		assert!(
 			Did::<T>::get(&did_subject).is_none()
@@ -369,7 +253,8 @@ benchmarks! {
 
 		Did::<T>::insert(&did_subject, did_details.clone());
 		save_service_endpoints(&did_subject, &service_endpoints);
-	}: _(RawOrigin::Signed(did_details.deposit.owner.clone()), did_subject.clone(), c)
+		let origin = RawOrigin::Signed(did_details.deposit.owner.clone());
+	}: _(origin, did_subject.clone(), c)
 	verify {
 		assert!(
 			Did::<T>::get(&did_subject).is_none()
@@ -395,8 +280,10 @@ benchmarks! {
 
 		let did_call_op = generate_base_did_call_operation::<T>(did_subject, submitter.clone());
 
-		let did_call_signature = ed25519_sign(AUTHENTICATION_KEY_ID, &did_public_auth_key, did_call_op.encode().as_ref()).expect("Failed to create DID signature from raw ed25519 signature.");
-	}: submit_did_call(RawOrigin::Signed(submitter), Box::new(did_call_op), DidSignature::from(did_call_signature))
+		let origin = RawOrigin::Signed(submitter);
+		let op = Box::new(did_call_op)
+		let did_call_signature = DidSignature::from(ed25519_sign(AUTHENTICATION_KEY_ID, &did_public_auth_key, did_call_op.encode().as_ref()).expect("Failed to create DID signature from raw ed25519 signature."));
+	}: submit_did_call(origin, op, did_call_signature)
 
 	submit_did_call_sr25519_key {
 		let submitter: AccountIdOf<T> = account(DEFAULT_ACCOUNT_ID, 0, DEFAULT_ACCOUNT_SEED);
@@ -409,8 +296,10 @@ benchmarks! {
 
 		let did_call_op = generate_base_did_call_operation::<T>(did_subject, submitter.clone());
 
-		let did_call_signature = sr25519_sign(AUTHENTICATION_KEY_ID, &did_public_auth_key, did_call_op.encode().as_ref()).expect("Failed to create DID signature from raw sr25519 signature.");
-	}: submit_did_call(RawOrigin::Signed(submitter), Box::new(did_call_op), DidSignature::from(did_call_signature))
+		let origin = RawOrigin::Signed(submitter);
+		let op = Box::new(did_call_op)
+		let did_call_signature = DidSignature::from(sr25519_sign(AUTHENTICATION_KEY_ID, &did_public_auth_key, did_call_op.encode().as_ref()).expect("Failed to create DID signature from raw sr25519 signature."));
+	}: submit_did_call(origin, op, did_call_signature)
 
 	submit_did_call_ecdsa_key {
 		let submitter: AccountIdOf<T> = account(DEFAULT_ACCOUNT_ID, 0, DEFAULT_ACCOUNT_SEED);
@@ -423,8 +312,10 @@ benchmarks! {
 
 		let did_call_op = generate_base_did_call_operation::<T>(did_subject, submitter.clone());
 
-		let did_call_signature = ecdsa_sign(AUTHENTICATION_KEY_ID, &did_public_auth_key, did_call_op.encode().as_ref()).expect("Failed to create DID signature from raw ecdsa signature.");
-	}: submit_did_call(RawOrigin::Signed(submitter), Box::new(did_call_op), DidSignature::from(did_call_signature))
+		let origin = RawOrigin::Signed(submitter);
+		let op = Box::new(did_call_op)
+		let did_call_signature = DidSignature::from(ecdsa_sign(AUTHENTICATION_KEY_ID, &did_public_auth_key, did_call_op.encode().as_ref()).expect("Failed to create DID signature from raw ecdsa signature."));
+	}: submit_did_call(origin, op, did_call_signature)
 
 	/* set_authentication_key extrinsic */
 	set_ed25519_authentication_key {
@@ -440,8 +331,9 @@ benchmarks! {
 
 		Did::<T>::insert(&did_subject, did_details);
 
-		let new_did_public_auth_key = ed25519_generate(UNUSED_KEY_ID, None);
-	}: set_authentication_key(RawOrigin::Signed(did_subject.clone()), DidVerificationKey::from(new_did_public_auth_key))
+		let origin = RawOrigin::Signed(did_subject.clone());
+		let new_did_public_auth_key = DidVerificationKey::from(ed25519_generate(UNUSED_KEY_ID, None));
+	}: set_authentication_key(origin, new_did_public_auth_key)
 	verify {
 		let auth_key_id = utils::calculate_key_id::<T>(&DidPublicKey::from(DidVerificationKey::from(new_did_public_auth_key)));
 		assert_eq!(Did::<T>::get(&did_subject).unwrap().authentication_key, auth_key_id);
@@ -460,8 +352,9 @@ benchmarks! {
 
 		Did::<T>::insert(&did_subject, did_details);
 
-		let new_did_public_auth_key = sr25519_generate(UNUSED_KEY_ID, None);
-	}: set_authentication_key(RawOrigin::Signed(did_subject.clone()), DidVerificationKey::from(new_did_public_auth_key))
+		let origin = RawOrigin::Signed(did_subject.clone());
+		let new_did_public_auth_key = DidVerificationKey::from(sr25519_generate(UNUSED_KEY_ID, None));
+	}: set_authentication_key(origin, new_did_public_auth_key)
 	verify {
 		let auth_key_id = utils::calculate_key_id::<T>(&DidPublicKey::from(DidVerificationKey::from(new_did_public_auth_key)));
 		assert_eq!(Did::<T>::get(&did_subject).unwrap().authentication_key, auth_key_id);
@@ -480,8 +373,9 @@ benchmarks! {
 
 		Did::<T>::insert(&did_subject, did_details);
 
-		let new_did_public_auth_key = ecdsa_generate(UNUSED_KEY_ID, None);
-	}: set_authentication_key(RawOrigin::Signed(did_subject.clone()), DidVerificationKey::from(new_did_public_auth_key.clone()))
+		let origin = RawOrigin::Signed(did_subject.clone());
+		let new_did_public_auth_key = DidVerificationKey::from(ecdsa_generate(UNUSED_KEY_ID, None));
+	}: set_authentication_key(origin, new_did_public_auth_key)
 	verify {
 		let auth_key_id = utils::calculate_key_id::<T>(&DidPublicKey::from(DidVerificationKey::from(new_did_public_auth_key)));
 		assert_eq!(Did::<T>::get(&did_subject).unwrap().authentication_key, auth_key_id);
@@ -502,7 +396,9 @@ benchmarks! {
 		assert_ok!(did_details.update_delegation_key(DidVerificationKey::from(old_delegation_key), block_number));
 
 		Did::<T>::insert(&did_subject, did_details);
-	}: set_delegation_key(RawOrigin::Signed(did_subject.clone()), DidVerificationKey::from(new_delegation_key))
+		let origin = RawOrigin::Signed(did_subject.clone());
+		let del_key = DidVerificationKey::from(new_delegation_key);
+	}: set_delegation_key(origin, new_delegation_key)
 	verify {
 		let new_delegation_key_id = utils::calculate_key_id::<T>(&DidPublicKey::from(DidVerificationKey::from(new_delegation_key)));
 		assert_eq!(Did::<T>::get(&did_subject).unwrap().delegation_key, Some(new_delegation_key_id));
@@ -522,7 +418,9 @@ benchmarks! {
 		assert_ok!(did_details.update_delegation_key(DidVerificationKey::from(old_delegation_key), block_number));
 
 		Did::<T>::insert(&did_subject, did_details);
-	}: set_delegation_key(RawOrigin::Signed(did_subject.clone()), DidVerificationKey::from(new_delegation_key))
+		let origin = RawOrigin::Signed(did_subject.clone());
+		let del_key = DidVerificationKey::from(new_delegation_key);
+	}: set_delegation_key(origin, new_delegation_key)
 	verify {
 		let new_delegation_key_id = utils::calculate_key_id::<T>(&DidPublicKey::from(DidVerificationKey::from(new_delegation_key)));
 		assert_eq!(Did::<T>::get(&did_subject).unwrap().delegation_key, Some(new_delegation_key_id));
@@ -542,7 +440,9 @@ benchmarks! {
 		assert_ok!(did_details.update_delegation_key(DidVerificationKey::from(old_delegation_key), block_number));
 
 		Did::<T>::insert(&did_subject, did_details);
-	}: set_delegation_key(RawOrigin::Signed(did_subject.clone()), DidVerificationKey::from(new_delegation_key.clone()))
+		let origin = RawOrigin::Signed(did_subject.clone());
+		let del_key = DidVerificationKey::from(new_delegation_key);
+	}: set_delegation_key(origin, new_delegation_key)
 	verify {
 		let new_delegation_key_id = utils::calculate_key_id::<T>(&DidPublicKey::from(DidVerificationKey::from(new_delegation_key)));
 		assert_eq!(Did::<T>::get(&did_subject).unwrap().delegation_key, Some(new_delegation_key_id));
@@ -562,7 +462,8 @@ benchmarks! {
 		assert_ok!(did_details.update_delegation_key(DidVerificationKey::from(old_delegation_key), block_number));
 
 		Did::<T>::insert(&did_subject, did_details);
-	}: remove_delegation_key(RawOrigin::Signed(did_subject.clone()))
+		let origin = RawOrigin::Signed(did_subject.clone());
+	}: remove_delegation_key(origin)
 	verify {
 		let did_details = Did::<T>::get(&did_subject).unwrap();
 		let delegation_key_id = utils::calculate_key_id::<T>(&DidPublicKey::from(DidVerificationKey::from(old_delegation_key)));
@@ -583,7 +484,8 @@ benchmarks! {
 		assert_ok!(did_details.update_delegation_key(DidVerificationKey::from(old_delegation_key), block_number));
 
 		Did::<T>::insert(&did_subject, did_details);
-	}: remove_delegation_key(RawOrigin::Signed(did_subject.clone()))
+		let origin = RawOrigin::Signed(did_subject.clone());
+	}: remove_delegation_key(origin)
 	verify {
 		let did_details = Did::<T>::get(&did_subject).unwrap();
 		let delegation_key_id = utils::calculate_key_id::<T>(&DidPublicKey::from(DidVerificationKey::from(old_delegation_key)));
@@ -604,7 +506,8 @@ benchmarks! {
 		assert_ok!(did_details.update_delegation_key(DidVerificationKey::from(old_delegation_key.clone()), block_number));
 
 		Did::<T>::insert(&did_subject, did_details);
-	}: remove_delegation_key(RawOrigin::Signed(did_subject.clone()))
+		let origin = RawOrigin::Signed(did_subject.clone());
+	}: remove_delegation_key(origin)
 	verify {
 		let did_details = Did::<T>::get(&did_subject).unwrap();
 		let delegation_key_id = utils::calculate_key_id::<T>(&DidPublicKey::from(DidVerificationKey::from(old_delegation_key)));
@@ -627,7 +530,9 @@ benchmarks! {
 		assert_ok!(did_details.update_attestation_key(DidVerificationKey::from(old_attestation_key), block_number));
 
 		Did::<T>::insert(&did_subject, did_details);
-	}: set_attestation_key(RawOrigin::Signed(did_subject.clone()), DidVerificationKey::from(new_attestation_key))
+		let origin = RawOrigin::Signed(did_subject.clone());
+		let att_key = DidVerificationKey::from(new_attestation_key);
+	}: set_attestation_key(origin, att_key)
 	verify {
 		let new_attestation_key_id = utils::calculate_key_id::<T>(&DidPublicKey::from(DidVerificationKey::from(new_attestation_key)));
 		assert_eq!(Did::<T>::get(&did_subject).unwrap().attestation_key, Some(new_attestation_key_id));
@@ -647,7 +552,9 @@ benchmarks! {
 		assert_ok!(did_details.update_attestation_key(DidVerificationKey::from(old_attestation_key), block_number));
 
 		Did::<T>::insert(&did_subject, did_details);
-	}: set_attestation_key(RawOrigin::Signed(did_subject.clone()), DidVerificationKey::from(new_attestation_key))
+		let origin = RawOrigin::Signed(did_subject.clone());
+		let att_key = DidVerificationKey::from(new_attestation_key);
+	}: set_attestation_key(origin, att_key)
 	verify {
 		let new_attestation_key_id = utils::calculate_key_id::<T>(&DidPublicKey::from(DidVerificationKey::from(new_attestation_key)));
 		assert_eq!(Did::<T>::get(&did_subject).unwrap().attestation_key, Some(new_attestation_key_id));
@@ -667,7 +574,9 @@ benchmarks! {
 		assert_ok!(did_details.update_attestation_key(DidVerificationKey::from(old_attestation_key), block_number));
 
 		Did::<T>::insert(&did_subject, did_details);
-	}: set_attestation_key(RawOrigin::Signed(did_subject.clone()), DidVerificationKey::from(new_attestation_key.clone()))
+		let origin = RawOrigin::Signed(did_subject.clone());
+		let att_key = DidVerificationKey::from(new_attestation_key);
+	}: set_attestation_key(origin, att_key)
 	verify {
 		let new_attestation_key_id = utils::calculate_key_id::<T>(&DidPublicKey::from(DidVerificationKey::from(new_attestation_key)));
 		assert_eq!(Did::<T>::get(&did_subject).unwrap().attestation_key, Some(new_attestation_key_id));
@@ -687,7 +596,8 @@ benchmarks! {
 		assert_ok!(did_details.update_attestation_key(DidVerificationKey::from(old_attestation_key), block_number));
 
 		Did::<T>::insert(&did_subject, did_details);
-	}: remove_attestation_key(RawOrigin::Signed(did_subject.clone()))
+		let origin = RawOrigin::Signed(did_subject.clone());
+	}: remove_attestation_key(origin)
 	verify {
 		let did_details = Did::<T>::get(&did_subject).unwrap();
 		let attestation_key_id = utils::calculate_key_id::<T>(&DidPublicKey::from(DidVerificationKey::from(old_attestation_key)));
@@ -708,7 +618,8 @@ benchmarks! {
 		assert_ok!(did_details.update_attestation_key(DidVerificationKey::from(old_attestation_key), block_number));
 
 		Did::<T>::insert(&did_subject, did_details);
-	}: remove_attestation_key(RawOrigin::Signed(did_subject.clone()))
+		let origin = RawOrigin::Signed(did_subject.clone());
+	}: remove_attestation_key(origin)
 	verify {
 		let did_details = Did::<T>::get(&did_subject).unwrap();
 		let attestation_key_id = utils::calculate_key_id::<T>(&DidPublicKey::from(DidVerificationKey::from(old_attestation_key)));
@@ -729,7 +640,8 @@ benchmarks! {
 		assert_ok!(did_details.update_attestation_key(DidVerificationKey::from(old_attestation_key.clone()), block_number));
 
 		Did::<T>::insert(&did_subject, did_details);
-	}: remove_attestation_key(RawOrigin::Signed(did_subject.clone()))
+		let origin = RawOrigin::Signed(did_subject.clone());
+	}: remove_attestation_key(origin)
 	verify {
 		let did_details = Did::<T>::get(&did_subject).unwrap();
 		let attestation_key_id = utils::calculate_key_id::<T>(&DidPublicKey::from(DidVerificationKey::from(old_attestation_key)));
@@ -755,7 +667,8 @@ benchmarks! {
 		assert_ok!(did_details.update_attestation_key(DidVerificationKey::from(get_ed25519_public_attestation_key()), block_number));
 
 		Did::<T>::insert(&did_subject, did_details);
-	}: add_key_agreement_key(RawOrigin::Signed(did_subject.clone()), new_key_agreement_key)
+		let origin = RawOrigin::Signed(did_subject.clone())
+	}: add_key_agreement_key(origin, new_key_agreement_key);
 	verify {
 		let new_key_agreement_key_id = utils::calculate_key_id::<T>(&DidPublicKey::from(new_key_agreement_key));
 		assert!(Did::<T>::get(&did_subject).unwrap().key_agreement_keys.contains(&new_key_agreement_key_id));
@@ -778,7 +691,8 @@ benchmarks! {
 		assert_ok!(did_details.update_attestation_key(DidVerificationKey::from(get_sr25519_public_attestation_key()), block_number));
 
 		Did::<T>::insert(&did_subject, did_details);
-	}: add_key_agreement_key(RawOrigin::Signed(did_subject.clone()), new_key_agreement_key)
+		let origin = RawOrigin::Signed(did_subject.clone());
+	}: add_key_agreement_key(origin, new_key_agreement_key)
 	verify {
 		let new_key_agreement_key_id = utils::calculate_key_id::<T>(&DidPublicKey::from(new_key_agreement_key));
 		assert!(Did::<T>::get(&did_subject).unwrap().key_agreement_keys.contains(&new_key_agreement_key_id));
@@ -801,7 +715,8 @@ benchmarks! {
 		assert_ok!(did_details.update_attestation_key(DidVerificationKey::from(get_ecdsa_public_attestation_key()), block_number));
 
 		Did::<T>::insert(&did_subject, did_details);
-	}: add_key_agreement_key(RawOrigin::Signed(did_subject.clone()), new_key_agreement_key)
+		let origin = RawOrigin::Signed(did_subject.clone());
+	}: add_key_agreement_key(origin, new_key_agreement_key)
 	verify {
 		let new_key_agreement_key_id = utils::calculate_key_id::<T>(&DidPublicKey::from(new_key_agreement_key));
 		assert!(Did::<T>::get(&did_subject).unwrap().key_agreement_keys.contains(&new_key_agreement_key_id));
@@ -825,7 +740,8 @@ benchmarks! {
 		assert_ok!(did_details.update_attestation_key(DidVerificationKey::from(get_ed25519_public_attestation_key()), block_number));
 
 		Did::<T>::insert(&did_subject, did_details);
-	}: remove_key_agreement_key(RawOrigin::Signed(did_subject.clone()), key_agreement_key_id)
+		let origin = RawOrigin::Signed(did_subject.clone());
+	}: remove_key_agreement_key(origin, key_agreement_key_id)
 	verify {
 		assert!(!Did::<T>::get(&did_subject).unwrap().key_agreement_keys.contains(&key_agreement_key_id));
 	}
@@ -847,7 +763,8 @@ benchmarks! {
 		assert_ok!(did_details.update_attestation_key(DidVerificationKey::from(get_sr25519_public_attestation_key()), block_number));
 
 		Did::<T>::insert(&did_subject, did_details);
-	}: remove_key_agreement_key(RawOrigin::Signed(did_subject.clone()), key_agreement_key_id)
+		let origin = RawOrigin::Signed(did_subject.clone());
+	}: remove_key_agreement_key(origin, key_agreement_key_id)
 	verify {
 		assert!(!Did::<T>::get(&did_subject).unwrap().key_agreement_keys.contains(&key_agreement_key_id));
 	}
@@ -869,7 +786,8 @@ benchmarks! {
 		assert_ok!(did_details.update_attestation_key(DidVerificationKey::from(get_ecdsa_public_attestation_key()), block_number));
 
 		Did::<T>::insert(&did_subject, did_details);
-	}: remove_key_agreement_key(RawOrigin::Signed(did_subject.clone()), key_agreement_key_id)
+		let origin = RawOrigin::Signed(did_subject.clone());
+	}: remove_key_agreement_key(origin, key_agreement_key_id)
 	verify {
 		assert!(!Did::<T>::get(&did_subject).unwrap().key_agreement_keys.contains(&key_agreement_key_id));
 	}
@@ -901,7 +819,9 @@ benchmarks! {
 		let did_details = generate_base_did_details::<T>(DidVerificationKey::from(public_auth_key));
 		Did::<T>::insert(&did_subject, did_details);
 		save_service_endpoints(&did_subject, &old_service_endpoints);
-	}: _(RawOrigin::Signed(did_subject.clone()), new_service_endpoint.clone())
+		let origin = RawOrigin::Signed(did_subject.clone());
+		let new_service_endpoint_clone = new_service_endpoint.clone();
+	}: _(origin, new_service_endpoint_clone)
 	verify {
 		assert_eq!(
 			ServiceEndpoints::<T>::get(&did_subject, &new_service_endpoint.id),
@@ -934,7 +854,9 @@ benchmarks! {
 		let did_details = generate_base_did_details::<T>(DidVerificationKey::from(public_auth_key));
 		Did::<T>::insert(&did_subject, did_details);
 		save_service_endpoints(&did_subject, &old_service_endpoints);
-	}: _(RawOrigin::Signed(did_subject.clone()), endpoint_id.clone())
+		let origin = RawOrigin::Signed(did_subject.clone());
+		let endpoint_id_clone = endpoint_id.clone();
+	}: _(origin, endpoint_id_clone)
 	verify {
 		assert!(
 			ServiceEndpoints::<T>::get(&did_subject, &endpoint_id).is_none()

@@ -140,22 +140,3 @@ impl<T: Config> DidEndpoint<T> {
 		}
 	}
 }
-
-pub mod utils {
-	use super::*;
-
-	pub(crate) fn validate_new_service_endpoints<T: Config>(endpoints: &[DidEndpoint<T>]) -> Result<(), InputError> {
-		// Check if up the maximum number of endpoints is provided.
-		ensure!(
-			endpoints.len() <= T::MaxNumberOfServicesPerDid::get().saturated_into(),
-			InputError::MaxServicesCountExceeded
-		);
-
-		// Then validate each service.
-		endpoints
-			.iter()
-			.try_for_each(DidEndpoint::<T>::validate_against_constraints)?;
-
-		Ok(())
-	}
-}

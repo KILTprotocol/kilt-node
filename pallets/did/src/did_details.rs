@@ -25,12 +25,11 @@ use frame_support::{
 use kilt_support::deposit::Deposit;
 use scale_info::TypeInfo;
 use sp_core::{ecdsa, ed25519, sr25519};
-use sp_runtime::{traits::Verify, MultiSignature, SaturatedConversion};
-use sp_std::{convert::TryInto, vec::Vec};
+use sp_runtime::{traits::Verify, MultiSignature};
+use sp_std::convert::TryInto;
 
 use crate::{
-	errors::{DidError, InputError, SignatureError, StorageError},
-	service_endpoints::DidEndpoint,
+	errors::{DidError, SignatureError, StorageError},
 	utils, AccountIdOf, BalanceOf, BlockNumberOf, Config, DidCallableOf, DidIdentifierOf, KeyIdOf, Payload,
 };
 
@@ -314,12 +313,6 @@ impl<T: Config> DidDetails<T> {
 		details: DidCreationDetails<T>,
 		new_auth_key: DidVerificationKey,
 	) -> Result<Self, DidError> {
-		ensure!(
-			details.new_key_agreement_keys.len()
-				<= <<T as Config>::MaxNewKeyAgreementKeys>::get().saturated_into::<usize>(),
-			InputError::MaxKeyAgreementKeysLimitExceeded
-		);
-
 		let current_block_number = frame_system::Pallet::<T>::block_number();
 
 		let deposit = Deposit {
@@ -328,17 +321,7 @@ impl<T: Config> DidDetails<T> {
 		};
 
 		// Creates a new DID with the given authentication key.
-		let mut new_did_details = DidDetails::new(new_auth_key, current_block_number, deposit)?;
-
-		new_did_details.add_key_agreement_keys(details.new_key_agreement_keys, current_block_number)?;
-
-		if let Some(attesation_key) = details.new_attestation_key {
-			new_did_details.update_attestation_key(attesation_key, current_block_number)?;
-		}
-
-		if let Some(delegation_key) = details.new_delegation_key {
-			new_did_details.update_delegation_key(delegation_key, current_block_number)?;
-		}
+		let new_did_details = DidDetails::new(new_auth_key, current_block_number, deposit)?;
 
 		Ok(new_did_details)
 	}
@@ -369,20 +352,6 @@ impl<T: Config> DidDetails<T> {
 				},
 			)
 			.map_err(|_| StorageError::MaxPublicKeysPerDidExceeded)?;
-		Ok(())
-	}
-
-	/// Add new key agreement keys to the DID.
-	///
-	/// The new keys are added to the set of public keys.
-	pub fn add_key_agreement_keys(
-		&mut self,
-		new_key_agreement_keys: DidNewKeyAgreementKeySet<T>,
-		block_number: BlockNumberOf<T>,
-	) -> Result<(), StorageError> {
-		for new_key_agreement_key in new_key_agreement_keys {
-			self.add_key_agreement_key(new_key_agreement_key, block_number)?;
-		}
 		Ok(())
 	}
 
@@ -545,13 +514,29 @@ impl<T: Config> DidDetails<T> {
 	}
 }
 
-pub(crate) type DidNewKeyAgreementKeySet<T> = BoundedBTreeSet<DidEncryptionKey, <T as Config>::MaxNewKeyAgreementKeys>;
+#[cfg(any(test, feature="runtime-benchmarks"))]
+impl<T: Config> DidDetails<T> {
+	/// Add new key agreement keys to the DID.
+	///
+	/// The new keys are added to the set of public keys.
+	pub fn add_key_agreement_keys(
+		&mut self,
+		new_key_agreement_keys: BoundedBTreeSet<DidEncryptionKey, <T as Config>::MaxTotalKeyAgreementKeys>,
+		block_number: BlockNumberOf<T>,
+	) -> Result<(), StorageError> {
+		for new_key_agreement_key in new_key_agreement_keys {
+			self.add_key_agreement_key(new_key_agreement_key, block_number)?;
+		}
+		Ok(())
+	}
+}
+
 pub(crate) type DidKeyAgreementKeySet<T> = BoundedBTreeSet<KeyIdOf<T>, <T as Config>::MaxTotalKeyAgreementKeys>;
 pub(crate) type DidPublicKeyMap<T> =
 	BoundedBTreeMap<KeyIdOf<T>, DidPublicKeyDetails<T>, <T as Config>::MaxPublicKeysPerDid>;
 
 /// The details of a new DID to create.
-#[derive(Clone, Decode, Encode, PartialEq, TypeInfo)]
+#[derive(Clone, Debug, Decode, Encode, PartialEq, TypeInfo)]
 #[scale_info(skip_type_params(T))]
 
 pub struct DidCreationDetails<T: Config> {
@@ -559,30 +544,6 @@ pub struct DidCreationDetails<T: Config> {
 	pub did: DidIdentifierOf<T>,
 	/// The authorised submitter of the creation operation.
 	pub submitter: AccountIdOf<T>,
-	/// The new key agreement keys.
-	pub new_key_agreement_keys: DidNewKeyAgreementKeySet<T>,
-	/// \[OPTIONAL\] The new attestation key.
-	pub new_attestation_key: Option<DidVerificationKey>,
-	/// \[OPTIONAL\] The new delegation key.
-	pub new_delegation_key: Option<DidVerificationKey>,
-	/// The service endpoints details.
-	pub new_service_details: Vec<DidEndpoint<T>>,
-}
-
-impl<T: Config> sp_std::fmt::Debug for DidCreationDetails<T> {
-	fn fmt(&self, f: &mut sp_std::fmt::Formatter<'_>) -> sp_std::fmt::Result {
-		f.debug_struct("DidCreationDetails")
-			.field("did", &self.did)
-			.field("submitter", &self.submitter)
-			.field(
-				"new_key_agreement_keys",
-				&self.new_key_agreement_keys.clone().into_inner(),
-			)
-			.field("new_attestation_key", &self.new_attestation_key)
-			.field("new_delegation_key", &self.new_delegation_key)
-			.field("new_service_details", &self.new_service_details)
-			.finish()
-	}
 }
 
 /// Errors that might occur while deriving the authorization verification key

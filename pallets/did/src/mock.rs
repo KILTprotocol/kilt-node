@@ -106,7 +106,6 @@ impl frame_system::Config for Test {
 }
 
 parameter_types! {
-	pub const MaxNewKeyAgreementKeys: u32 = 10u32;
 	#[derive(Debug, Clone, PartialEq)]
 	pub const MaxUrlLength: u32 = 200u32;
 	#[derive(Debug, Clone, PartialEq)]
@@ -148,7 +147,6 @@ impl Config for Test {
 	type Deposit = Deposit;
 	type Fee = DidFee;
 	type FeeCollector = ToAccount<Test>;
-	type MaxNewKeyAgreementKeys = MaxNewKeyAgreementKeys;
 	type MaxTotalKeyAgreementKeys = MaxTotalKeyAgreementKeys;
 	type MaxPublicKeysPerDid = MaxPublicKeysPerDid;
 	type MaxBlocksTxValidity = MaxBlocksTxValidity;

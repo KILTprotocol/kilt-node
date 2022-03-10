@@ -573,7 +573,6 @@ impl ctype::Config for Runtime {
 }
 
 parameter_types! {
-	pub const MaxNewKeyAgreementKeys: u32 = constants::did::MAX_KEY_AGREEMENT_KEYS;
 	#[derive(Debug, Clone, PartialEq)]
 	pub const MaxUrlLength: u32 = constants::did::MAX_URL_LENGTH;
 	pub const MaxPublicKeysPerDid: u32 = constants::did::MAX_PUBLIC_KEYS_PER_DID;
@@ -613,7 +612,6 @@ impl did::Config for Runtime {
 	#[cfg(feature = "runtime-benchmarks")]
 	type OriginSuccess = DidIdentifier;
 
-	type MaxNewKeyAgreementKeys = MaxNewKeyAgreementKeys;
 	type MaxTotalKeyAgreementKeys = MaxTotalKeyAgreementKeys;
 	type MaxPublicKeysPerDid = MaxPublicKeysPerDid;
 	type MaxBlocksTxValidity = MaxBlocksTxValidity;
