@@ -4,7 +4,7 @@ description = "Unique Web3 nicknames for KILT DIDs."
 edition = "2021"
 name = "pallet-web3-names"
 repository = "https://github.com/KILTprotocol/mashnet-node"
-version = "1.4.0"
+version = "1.5.0"
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
