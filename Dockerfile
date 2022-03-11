@@ -8,12 +8,7 @@ WORKDIR /build
 
 ARG FEATURES=default
 
-COPY ./nodes /build/nodes
-COPY ./pallets /build/pallets
-COPY ./runtimes /build/runtimes
-COPY ./support /build/support
-COPY ./Cargo.lock /build/Cargo.lock
-COPY ./Cargo.toml /build/Cargo.toml
+COPY . .
 
 RUN cargo build --locked --release --features $FEATURES
 
@@ -36,8 +31,7 @@ RUN apt-get update && \
        apt-get clean && \
        find /var/lib/apt/lists/ -type f -not -name lock -delete
 
-COPY ./LICENSE /build/LICENSE
-COPY ./README.md /build/README.md
+COPY ./LICENSE ./README.md /build/
 COPY --from=builder /build/target/release/$NODE_TYPE /usr/local/bin/node-executable
 
 RUN useradd -m -u 1000 -U -s /bin/sh -d /node node && \
