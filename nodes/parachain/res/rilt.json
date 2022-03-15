@@ -1,6 +1,6 @@
 {
   "name": "RILT",
-  "id": "kilt_rococo",
+  "id": "kilt_rococo_2",
   "chainType": "Live",
   "bootNodes": [
     "/dns4/bootnode.kilt.io/tcp/30365/p2p/12D3KooWS2h3rxqEC9bzrFNKVgrT1iaGz2UAWA1jVG1EB6dEoeJm",
@@ -12,7 +12,7 @@
       0
     ]
   ],
-  "protocolId": null,
+  "protocolId": "rilt-2",
   "properties": {
     "ss58Format": 38,
     "tokenDecimals": 15,
