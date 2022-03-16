@@ -887,7 +887,7 @@ fn execute_leave_candidates_with_delay() {
 					*collator
 				));
 				assert!(StakePallet::candidate_pool(&collator).is_none());
-				assert!(!StakePallet::is_active_candidate(collator).is_some());
+				assert!(StakePallet::is_active_candidate(collator).is_none());
 				assert_eq!(StakePallet::unstaking(collator).len(), 1);
 			}
 			assert_eq!(CandidatePool::<Test>::count(), 5, "Five collators left.");
@@ -906,7 +906,7 @@ fn execute_leave_candidates_with_delay() {
 					collator
 				));
 				assert!(StakePallet::candidate_pool(&collator).is_none());
-				assert!(!StakePallet::is_active_candidate(&collator).is_some());
+				assert!(StakePallet::is_active_candidate(&collator).is_none());
 				assert_eq!(StakePallet::unstaking(collator).len(), 1);
 			}
 			assert_eq!(CandidatePool::<Test>::count(), 2, "3 collators left.");
