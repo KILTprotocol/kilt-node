@@ -8,12 +8,7 @@ WORKDIR /build
 
 ARG FEATURES=default
 
-COPY ./nodes /build/nodes
-COPY ./pallets /build/pallets
-COPY ./runtimes /build/runtimes
-COPY ./support /build/support
-COPY ./Cargo.lock /build/Cargo.lock
-COPY ./Cargo.toml /build/Cargo.toml
+COPY . .
 
 RUN cargo build --locked --release --features $FEATURES
 
@@ -24,20 +19,6 @@ LABEL description="This is the 2nd stage: a very small image where we copy the k
 
 ARG NODE_TYPE=kilt-parachain
 
-# install tools and dependencies
-RUN apt-get update && \
-       DEBIAN_FRONTEND=noninteractive apt-get upgrade -y && \
-       DEBIAN_FRONTEND=noninteractive apt-get install -y \
-               libssl1.1 \
-               ca-certificates \
-               curl && \
-# apt cleanup
-       apt-get autoremove -y && \
-       apt-get clean && \
-       find /var/lib/apt/lists/ -type f -not -name lock -delete
-
-COPY ./LICENSE /build/LICENSE
-COPY ./README.md /build/README.md
 COPY --from=builder /build/target/release/$NODE_TYPE /usr/local/bin/node-executable
 
 RUN useradd -m -u 1000 -U -s /bin/sh -d /node node && \
