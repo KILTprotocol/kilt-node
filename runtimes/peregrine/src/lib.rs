@@ -758,6 +758,7 @@ pub enum ProxyType {
 	Governance,
 	ParachainStaking,
 	CancelProxy,
+	NonDepositClaiming,
 }
 
 impl Default for ProxyType {
@@ -793,6 +794,14 @@ impl InstanceFilter<Call> for ProxyType {
 				Call::Utility(..) |
 				Call::ParachainStaking(..)
 			),
+			// everything but reclaiming and transferring deposits
+			ProxyType::NonDepositClaiming => !matches!(c,
+				Call::Did(did::Call::reclaim_deposit) |
+				Call::Did(pallet_did_lookup::Call::reclaim_deposit) |
+				Call::Did(attestation::Call::reclaim_deposit) |
+				Call::Did(delegation::Call::reclaim_deposit) |
+				Call::Did(pallet_web3_names::Call::reclaim_deposit) |
+			),
 			ProxyType::Governance => matches!(
 				c,
 				Call::Democracy(..)
@@ -811,8 +820,16 @@ impl InstanceFilter<Call> for ProxyType {
 	fn is_superset(&self, o: &Self) -> bool {
 		match (self, o) {
 			(x, y) if x == y => true,
+			// "anything" always contains any subset
 			(ProxyType::Any, _) => true,
 			(_, ProxyType::Any) => false,
+			// reclaiming deposits is part of NonTransfer but not in NonDepositClaiming
+			(ProxyType::NonDepositClaiming, ProxyType::NonTransfer) => false,
+			// everything except NonTransfer and Any is part of NonDepositClaiming
+			(ProxyType::NonDepositClaiming, _) => true,
+			// Transfers are part of NonDepositClaiming but not in NonTransfer
+			(ProxyType::NonTransfer, ProxyType::NonDepositClaiming) => false,
+			// everything except NonDepositClaiming and Any is part of NonTransfer
 			(ProxyType::NonTransfer, _) => true,
 			_ => false,
 		}
