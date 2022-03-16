@@ -28,11 +28,11 @@ use sp_std::{
 use crate::{
 	did_details::{DidCreationDetails, DidDetails, DidEncryptionKey, DidVerificationKey},
 	errors::StorageError,
-	service_endpoints::DidEndpoint,
+	service_endpoints::{DidEndpoint, ServiceEndpointType, ServiceEndpointUrl},
 	AccountIdOf, BlockNumberOf, Config, DidIdentifierOf,
 };
 
-pub fn get_key_agreement_keys<T: Config>(
+pub(crate) fn get_key_agreement_keys<T: Config>(
 	n_keys: u32,
 ) -> BoundedBTreeSet<DidEncryptionKey, T::MaxTotalKeyAgreementKeys> {
 	BoundedBTreeSet::try_from(
@@ -51,7 +51,7 @@ pub fn get_key_agreement_keys<T: Config>(
 	.expect("Failed to convert key_agreement_keys to BoundedBTreeSet")
 }
 
-pub fn get_service_endpoints<T: Config>(
+pub(crate) fn get_service_endpoints<T: Config>(
 	count: u32,
 	endpoint_id_length: u32,
 	endpoint_type_count: u32,
@@ -82,14 +82,14 @@ pub fn get_service_endpoints<T: Config>(
 		.collect()
 }
 
-pub fn generate_base_did_creation_details<T: Config>(
+pub(crate) fn generate_base_did_creation_details<T: Config>(
 	did: DidIdentifierOf<T>,
 	submitter: AccountIdOf<T>,
 ) -> DidCreationDetails<T> {
 	DidCreationDetails { did, submitter }
 }
 
-pub fn generate_base_did_details<T>(authentication_key: DidVerificationKey) -> DidDetails<T>
+pub(crate) fn generate_base_did_details<T>(authentication_key: DidVerificationKey) -> DidDetails<T>
 where
 	T: Config,
 	<T as frame_system::Config>::AccountId: From<runtime_common::AccountId>,
@@ -105,6 +105,8 @@ where
 	.expect("Failed to generate new DidDetails from auth_key due to BoundedBTreeSet bound")
 }
 
+// Written this way to not break anything else. Might be refactored into a
+// function if needed.
 impl<T: Config> DidDetails<T> {
 	/// Add new key agreement keys to the DID.
 	///
@@ -119,5 +121,31 @@ impl<T: Config> DidDetails<T> {
 		}
 
 		Ok(())
+	}
+}
+
+// Written this way to not break anything else. Might be refactored into a
+// function if needed.
+impl<T: Config> DidEndpoint<T> {
+	pub(crate) fn new(id: Vec<u8>, types: Vec<Vec<u8>>, urls: Vec<Vec<u8>>) -> Self {
+		let bounded_id = id.try_into().expect("Service ID too long.");
+		let bounded_types = types
+			.iter()
+			.map(|el| el.to_vec().try_into().expect("Service type too long."))
+			.collect::<Vec<ServiceEndpointType<T>>>()
+			.try_into()
+			.expect("Too many types for the given service.");
+		let bounded_urls = urls
+			.iter()
+			.map(|el| el.to_vec().try_into().expect("Service URL too long."))
+			.collect::<Vec<ServiceEndpointUrl<T>>>()
+			.try_into()
+			.expect("Too many URLs for the given service.");
+
+		Self {
+			id: bounded_id,
+			service_types: bounded_types,
+			urls: bounded_urls,
+		}
 	}
 }

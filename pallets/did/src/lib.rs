@@ -344,9 +344,6 @@ pub mod pallet {
 		/// The call had parameters that conflicted with each other
 		/// or were invalid.
 		InvalidDidAuthorizationCall,
-		/// A number of new key agreement keys greater than the maximum allowed
-		/// has been provided.
-		MaxKeyAgreementKeysLimitExceeded,
 		/// The maximum number of public keys for this DID key identifier has
 		/// been reached.
 		MaxPublicKeysPerDidExceeded,
@@ -429,7 +426,6 @@ pub mod pallet {
 	impl<T> From<InputError> for Error<T> {
 		fn from(error: InputError) -> Self {
 			match error {
-				InputError::MaxKeyAgreementKeysLimitExceeded => Self::MaxKeyAgreementKeysLimitExceeded,
 				InputError::MaxIdLengthExceeded => Self::MaxServiceIdLengthExceeded,
 				InputError::MaxServicesCountExceeded => Self::MaxNumberOfServicesPerDidExceeded,
 				InputError::MaxTypeCountExceeded => Self::MaxNumberOfTypesPerServiceExceeded,

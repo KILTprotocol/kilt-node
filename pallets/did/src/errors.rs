@@ -85,9 +85,6 @@ pub enum SignatureError {
 /// constraints.
 #[derive(Debug, Eq, PartialEq, TypeInfo)]
 pub enum InputError {
-	/// A number of new key agreement keys greater than the maximum allowed has
-	/// been provided.
-	MaxKeyAgreementKeysLimitExceeded,
 	/// The maximum number of service endpoints for a DID has been exceeded.
 	MaxServicesCountExceeded,
 	/// The maximum number of URLs for a service endpoint has been exceeded.

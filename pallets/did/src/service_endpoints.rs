@@ -16,16 +16,12 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use crate::{errors::InputError, Config};
+use crate::{errors::InputError, utils as crate_utils, Config};
 use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::{ensure, traits::Get, BoundedVec};
 use scale_info::TypeInfo;
 use sp_runtime::traits::SaturatedConversion;
 use sp_std::str;
-#[cfg(any(test, feature = "runtime-benchmarks"))]
-use sp_std::{convert::TryInto, vec::Vec};
-
-use crate::utils as crate_utils;
 
 /// A bounded vector of bytes for a service endpoint ID.
 pub type ServiceEndpointId<T> = BoundedVec<u8, <T as Config>::MaxServiceIdLength>;
@@ -113,30 +109,5 @@ impl<T: Config> DidEndpoint<T> {
 			ensure!(crate_utils::is_valid_ascii_string(str_url), InputError::InvalidEncoding);
 		}
 		Ok(())
-	}
-}
-
-#[cfg(any(test, feature = "runtime-benchmarks"))]
-impl<T: Config> DidEndpoint<T> {
-	pub(crate) fn new(id: Vec<u8>, types: Vec<Vec<u8>>, urls: Vec<Vec<u8>>) -> Self {
-		let bounded_id = id.try_into().expect("Service ID too long.");
-		let bounded_types = types
-			.iter()
-			.map(|el| el.to_vec().try_into().expect("Service type too long."))
-			.collect::<Vec<ServiceEndpointType<T>>>()
-			.try_into()
-			.expect("Too many types for the given service.");
-		let bounded_urls = urls
-			.iter()
-			.map(|el| el.to_vec().try_into().expect("Service URL too long."))
-			.collect::<Vec<ServiceEndpointUrl<T>>>()
-			.try_into()
-			.expect("Too many URLs for the given service.");
-
-		Self {
-			id: bounded_id,
-			service_types: bounded_types,
-			urls: bounded_urls,
-		}
 	}
 }

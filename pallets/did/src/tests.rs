@@ -180,11 +180,7 @@ fn check_duplicate_did_creation() {
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
-				Did::create(
-					Origin::signed(ACCOUNT_00),
-					details,
-					did::DidSignature::from(signature)
-				),
+				Did::create(Origin::signed(ACCOUNT_00), details, did::DidSignature::from(signature)),
 				did::Error::<Test>::DidAlreadyPresent
 			);
 		});
@@ -211,11 +207,7 @@ fn check_unauthorised_submitter_did_creation_error() {
 		.execute_with(|| {
 			assert_noop!(
 				// Use ACCOUNT_00 to submit the transaction
-				Did::create(
-					Origin::signed(ACCOUNT_00),
-					details,
-					did::DidSignature::from(signature)
-				),
+				Did::create(Origin::signed(ACCOUNT_00), details, did::DidSignature::from(signature)),
 				BadOrigin
 			);
 		});
@@ -231,11 +223,7 @@ fn create_fail_insufficient_balance() {
 
 	ExtBuilder::default().build(None).execute_with(|| {
 		assert_noop!(
-			Did::create(
-				Origin::signed(ACCOUNT_00),
-				details,
-				did::DidSignature::from(signature)
-			),
+			Did::create(Origin::signed(ACCOUNT_00), details, did::DidSignature::from(signature)),
 			did::Error::<Test>::UnableToPayFees
 		);
 	});
@@ -258,11 +246,7 @@ fn check_did_already_deleted_creation() {
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
-				Did::create(
-					Origin::signed(ACCOUNT_00),
-					details,
-					did::DidSignature::from(signature)
-				),
+				Did::create(Origin::signed(ACCOUNT_00), details, did::DidSignature::from(signature)),
 				did::Error::<Test>::DidAlreadyDeleted
 			);
 		});
@@ -287,11 +271,7 @@ fn check_invalid_signature_format_did_creation() {
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
-				Did::create(
-					Origin::signed(ACCOUNT_00),
-					details,
-					did::DidSignature::from(signature)
-				),
+				Did::create(Origin::signed(ACCOUNT_00), details, did::DidSignature::from(signature)),
 				did::Error::<Test>::InvalidSignature
 			);
 		});
@@ -314,11 +294,7 @@ fn check_invalid_signature_did_creation() {
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
-				Did::create(
-					Origin::signed(ACCOUNT_00),
-					details,
-					did::DidSignature::from(signature)
-				),
+				Did::create(Origin::signed(ACCOUNT_00), details, did::DidSignature::from(signature)),
 				did::Error::<Test>::InvalidSignature
 			);
 		});
@@ -341,11 +317,7 @@ fn check_swapped_did_subject_did_creation() {
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
-				Did::create(
-					Origin::signed(ACCOUNT_00),
-					details,
-					did::DidSignature::from(signature)
-				),
+				Did::create(Origin::signed(ACCOUNT_00), details, did::DidSignature::from(signature)),
 				did::Error::<Test>::InvalidSignature
 			);
 		});
