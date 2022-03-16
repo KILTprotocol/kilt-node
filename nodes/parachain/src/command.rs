@@ -50,7 +50,7 @@ impl IdentifyChain for dyn sc_service::ChainSpec {
 	fn is_spiritnet(&self) -> bool {
 		self.id().contains("spiritnet")
 			|| self.id().eq("kilt_westend")
-			|| self.id().eq("kilt_rococo")
+			|| self.id().eq("kilt_rococo_2")
 			|| self.id().eq("kilt")
 	}
 }
