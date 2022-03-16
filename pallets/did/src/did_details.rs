@@ -530,7 +530,7 @@ pub struct DidCreationDetails<T: Config> {
 }
 
 impl<T: Config> sp_std::fmt::Debug for DidCreationDetails<T> {
-	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+	fn fmt(&self, f: &mut sp_std::fmt::Formatter<'_>) -> sp_std::fmt::Result {
 		f.debug_struct("DidCreationDetails")
 			.field("did", &self.did)
 			.field("submitter", &self.submitter)
@@ -588,7 +588,7 @@ pub struct DidAuthorizedCallOperation<T: Config> {
 }
 
 impl<T: Config> sp_std::fmt::Debug for DidAuthorizedCallOperation<T> {
-	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+	fn fmt(&self, f: &mut sp_std::fmt::Formatter<'_>) -> sp_std::fmt::Result {
 		f.debug_struct("DidAuthorizedCallOperation")
 			.field("did", &self.did)
 			.field("tx_counter", &self.tx_counter)
