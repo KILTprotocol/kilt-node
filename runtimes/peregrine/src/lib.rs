@@ -795,12 +795,13 @@ impl InstanceFilter<Call> for ProxyType {
 				Call::ParachainStaking(..)
 			),
 			// everything but reclaiming and transferring deposits
-			ProxyType::NonDepositClaiming => !matches!(c,
-				Call::Did(did::Call::reclaim_deposit) |
-				Call::Did(pallet_did_lookup::Call::reclaim_deposit) |
-				Call::Did(attestation::Call::reclaim_deposit) |
-				Call::Did(delegation::Call::reclaim_deposit) |
-				Call::Did(pallet_web3_names::Call::reclaim_deposit) |
+			ProxyType::NonDepositClaiming => !matches!(
+				c,
+				Call::Did(did::Call::reclaim_deposit { .. })
+					| Call::DidLookup(pallet_did_lookup::Call::reclaim_deposit { .. })
+					| Call::Attestation(attestation::Call::reclaim_deposit { .. })
+					| Call::Delegation(delegation::Call::reclaim_deposit { .. })
+					| Call::Web3Names(pallet_web3_names::Call::reclaim_deposit { .. })
 			),
 			ProxyType::Governance => matches!(
 				c,
