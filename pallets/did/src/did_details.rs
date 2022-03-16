@@ -514,29 +514,12 @@ impl<T: Config> DidDetails<T> {
 	}
 }
 
-#[cfg(any(test, feature="runtime-benchmarks"))]
-impl<T: Config> DidDetails<T> {
-	/// Add new key agreement keys to the DID.
-	///
-	/// The new keys are added to the set of public keys.
-	pub fn add_key_agreement_keys(
-		&mut self,
-		new_key_agreement_keys: BoundedBTreeSet<DidEncryptionKey, <T as Config>::MaxTotalKeyAgreementKeys>,
-		block_number: BlockNumberOf<T>,
-	) -> Result<(), StorageError> {
-		for new_key_agreement_key in new_key_agreement_keys {
-			self.add_key_agreement_key(new_key_agreement_key, block_number)?;
-		}
-		Ok(())
-	}
-}
-
 pub(crate) type DidKeyAgreementKeySet<T> = BoundedBTreeSet<KeyIdOf<T>, <T as Config>::MaxTotalKeyAgreementKeys>;
 pub(crate) type DidPublicKeyMap<T> =
 	BoundedBTreeMap<KeyIdOf<T>, DidPublicKeyDetails<T>, <T as Config>::MaxPublicKeysPerDid>;
 
 /// The details of a new DID to create.
-#[derive(Clone, Debug, Decode, Encode, PartialEq, TypeInfo)]
+#[derive(Clone, Decode, Encode, PartialEq, TypeInfo)]
 #[scale_info(skip_type_params(T))]
 
 pub struct DidCreationDetails<T: Config> {
@@ -544,6 +527,15 @@ pub struct DidCreationDetails<T: Config> {
 	pub did: DidIdentifierOf<T>,
 	/// The authorised submitter of the creation operation.
 	pub submitter: AccountIdOf<T>,
+}
+
+impl<T: Config> sp_std::fmt::Debug for DidCreationDetails<T> {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		f.debug_struct("DidCreationDetails")
+			.field("did", &self.did)
+			.field("submitter", &self.submitter)
+			.finish()
+	}
 }
 
 /// Errors that might occur while deriving the authorization verification key
@@ -579,7 +571,7 @@ pub trait DeriveDidCallAuthorizationVerificationKeyRelationship {
 /// A DID operation that wraps other extrinsic calls, allowing those
 /// extrinsic to have a DID origin and perform DID-based authorization upon
 /// their invocation.
-#[derive(Clone, Debug, Decode, Encode, PartialEq, TypeInfo)]
+#[derive(Clone, Decode, Encode, PartialEq, TypeInfo)]
 #[scale_info(skip_type_params(T))]
 
 pub struct DidAuthorizedCallOperation<T: Config> {
@@ -593,6 +585,18 @@ pub struct DidAuthorizedCallOperation<T: Config> {
 	pub block_number: BlockNumberOf<T>,
 	/// The account which is authorized to submit the did call.
 	pub submitter: AccountIdOf<T>,
+}
+
+impl<T: Config> sp_std::fmt::Debug for DidAuthorizedCallOperation<T> {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		f.debug_struct("DidAuthorizedCallOperation")
+			.field("did", &self.did)
+			.field("tx_counter", &self.tx_counter)
+			.field("call", &self.call)
+			.field("block_number", &self.block_number)
+			.field("submitter", &self.submitter)
+			.finish()
+	}
 }
 
 /// Wrapper around a [DidAuthorizedCallOperation].

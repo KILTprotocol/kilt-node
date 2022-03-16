@@ -27,11 +27,14 @@ use sp_std::{
 
 use crate::{
 	did_details::{DidCreationDetails, DidDetails, DidEncryptionKey, DidVerificationKey},
+	errors::StorageError,
 	service_endpoints::DidEndpoint,
 	AccountIdOf, BlockNumberOf, Config, DidIdentifierOf,
 };
 
-pub fn get_key_agreement_keys<T: Config>(n_keys: u32) -> BoundedBTreeSet<DidEncryptionKey, T::MaxTotalKeyAgreementKeys> {
+pub fn get_key_agreement_keys<T: Config>(
+	n_keys: u32,
+) -> BoundedBTreeSet<DidEncryptionKey, T::MaxTotalKeyAgreementKeys> {
 	BoundedBTreeSet::try_from(
 		(1..=n_keys)
 			.map(|i| {
@@ -83,10 +86,7 @@ pub fn generate_base_did_creation_details<T: Config>(
 	did: DidIdentifierOf<T>,
 	submitter: AccountIdOf<T>,
 ) -> DidCreationDetails<T> {
-	DidCreationDetails {
-		did,
-		submitter,
-	}
+	DidCreationDetails { did, submitter }
 }
 
 pub fn generate_base_did_details<T>(authentication_key: DidVerificationKey) -> DidDetails<T>
@@ -103,4 +103,21 @@ where
 		},
 	)
 	.expect("Failed to generate new DidDetails from auth_key due to BoundedBTreeSet bound")
+}
+
+impl<T: Config> DidDetails<T> {
+	/// Add new key agreement keys to the DID.
+	///
+	/// The new keys are added to the set of public keys.
+	pub fn add_key_agreement_keys(
+		&mut self,
+		new_key_agreement_keys: BoundedBTreeSet<DidEncryptionKey, <T as Config>::MaxTotalKeyAgreementKeys>,
+		block_number: BlockNumberOf<T>,
+	) -> Result<(), StorageError> {
+		for new_key_agreement_key in new_key_agreement_keys {
+			self.add_key_agreement_key(new_key_agreement_key, block_number)?;
+		}
+
+		Ok(())
+	}
 }

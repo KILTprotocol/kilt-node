@@ -120,9 +120,7 @@ use frame_support::{
 };
 use frame_system::ensure_signed;
 use sp_io::KillStorageResult;
-use sp_runtime::{
-	traits::{Saturating, Zero},
-};
+use sp_runtime::traits::{Saturating, Zero};
 use sp_std::{boxed::Box, fmt::Debug, prelude::Clone};
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -179,7 +177,7 @@ pub mod pallet {
 	pub(crate) type NegativeImbalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::NegativeImbalance;
 
 	#[pallet::config]
-	pub trait Config: frame_system::Config + Debug {
+	pub trait Config: frame_system::Config {
 		/// Type for a dispatchable call that can be proxied through the DID
 		/// pallet to support DID-based authorisation.
 		type Call: Parameter
@@ -479,11 +477,7 @@ pub mod pallet {
 		/// - Writes: Did
 		/// # </weight>
 		#[pallet::weight(1)]
-		pub fn create(
-			origin: OriginFor<T>,
-			details: DidCreationDetails<T>,
-			signature: DidSignature,
-		) -> DispatchResult {
+		pub fn create(origin: OriginFor<T>, details: DidCreationDetails<T>, signature: DidSignature) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
 
 			ensure!(sender == details.submitter, BadOrigin);
