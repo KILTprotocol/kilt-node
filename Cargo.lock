@@ -359,7 +359,7 @@ checksum = "065374052e7df7ee4047b1160cca5e1467a12351a40b3da123c870ba0b8eda2a"
 
 [[package]]
 name = "attestation"
-version = "1.4.1"
+version = "1.5.0"
 dependencies = [
  "ctype",
  "frame-benchmarking",
@@ -1364,7 +1364,7 @@ dependencies = [
 
 [[package]]
 name = "ctype"
-version = "1.4.1"
+version = "1.5.0"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -1837,7 +1837,7 @@ dependencies = [
 
 [[package]]
 name = "delegation"
-version = "1.4.1"
+version = "1.5.0"
 dependencies = [
  "attestation",
  "bitflags",
@@ -1886,7 +1886,7 @@ dependencies = [
 
 [[package]]
 name = "did"
-version = "1.4.1"
+version = "1.5.0"
 dependencies = [
  "ctype",
  "env_logger 0.8.4",
@@ -3501,7 +3501,7 @@ dependencies = [
 
 [[package]]
 name = "kilt-launch"
-version = "1.4.1"
+version = "1.5.0"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -3521,7 +3521,7 @@ dependencies = [
 
 [[package]]
 name = "kilt-parachain"
-version = "1.4.1"
+version = "1.5.0"
 dependencies = [
  "clap",
  "cumulus-client-cli",
@@ -3596,7 +3596,7 @@ dependencies = [
 
 [[package]]
 name = "kilt-support"
-version = "1.4.1"
+version = "1.5.0"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -4466,7 +4466,7 @@ checksum = "3e2e65a1a2e43cfcb47a895c4c8b10d1f4a61097f9f254f183aee60cad9c651d"
 
 [[package]]
 name = "mashnet-node"
-version = "1.4.1"
+version = "1.5.0"
 dependencies = [
  "clap",
  "frame-benchmarking",
@@ -4517,7 +4517,7 @@ dependencies = [
 
 [[package]]
 name = "mashnet-node-runtime"
-version = "1.4.1"
+version = "1.5.0"
 dependencies = [
  "attestation",
  "bitflags",
@@ -5619,7 +5619,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-did-lookup"
-version = "1.4.1"
+version = "1.5.0"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -5769,7 +5769,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-inflation"
-version = "1.4.1"
+version = "1.5.0"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -6300,7 +6300,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-web3-names"
-version = "1.4.0"
+version = "1.5.0"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -6366,7 +6366,7 @@ dependencies = [
 
 [[package]]
 name = "parachain-staking"
-version = "1.4.1"
+version = "1.5.0"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -6638,7 +6638,7 @@ checksum = "d4fd5641d01c8f18a23da7b6fe29298ff4b55afcccdf78973b24cf3175fee32e"
 
 [[package]]
 name = "peregrine-runtime"
-version = "1.4.1"
+version = "1.5.0"
 dependencies = [
  "attestation",
  "ctype",
@@ -8551,7 +8551,7 @@ dependencies = [
 
 [[package]]
 name = "runtime-common"
-version = "0.1.0"
+version = "1.5.0"
 dependencies = [
  "attestation",
  "frame-support",
@@ -10812,7 +10812,7 @@ checksum = "6e63cff320ae2c57904679ba7cb63280a3dc4613885beafb148ee7bf9aa9042d"
 
 [[package]]
 name = "spiritnet-runtime"
-version = "1.4.1"
+version = "1.5.0"
 dependencies = [
  "attestation",
  "ctype",

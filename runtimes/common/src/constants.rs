@@ -84,7 +84,7 @@ pub const MAX_VESTING_SCHEDULES: u32 = 28;
 /// Calculate the storage deposit based on the number of storage items and the
 /// combined byte size of those items.
 pub const fn deposit(items: u32, bytes: u32) -> Balance {
-	items as Balance * 63 * MILLI_KILT + (bytes as Balance) * 50 * MICRO_KILT
+	items as Balance * 56 * MILLI_KILT + (bytes as Balance) * 50 * MICRO_KILT
 }
 
 /// The size of an index in the index pallet.
@@ -210,7 +210,7 @@ pub mod did {
 	use super::*;
 
 	/// The size is checked in the runtime by a test.
-	pub const MAX_DID_BYTE_LENGTH: u32 = 7418;
+	pub const MAX_DID_BYTE_LENGTH: u32 = 9918;
 
 	pub const DID_DEPOSIT: Balance = deposit(2 + MAX_NUMBER_OF_SERVICES_PER_DID, MAX_DID_BYTE_LENGTH);
 	pub const DID_FEE: Balance = 50 * MILLI_KILT;
@@ -228,7 +228,7 @@ pub mod did {
 	pub const MAX_SERVICE_ID_LENGTH: u32 = 50;
 	pub const MAX_SERVICE_TYPE_LENGTH: u32 = 50;
 	pub const MAX_NUMBER_OF_TYPES_PER_SERVICE: u32 = 1;
-	pub const MAX_SERVICE_URL_LENGTH: u32 = 100;
+	pub const MAX_SERVICE_URL_LENGTH: u32 = 200;
 	pub const MAX_NUMBER_OF_URLS_PER_SERVICE: u32 = 1;
 }
 
