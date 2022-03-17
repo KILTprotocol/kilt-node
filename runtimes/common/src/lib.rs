@@ -37,6 +37,7 @@ use sp_runtime::{
 	FixedPointNumber, MultiSignature, Perquintill,
 };
 
+pub mod authorization;
 pub mod constants;
 pub mod fees;
 pub mod pallet_id;

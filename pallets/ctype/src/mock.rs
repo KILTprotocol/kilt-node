@@ -36,21 +36,28 @@ where
 
 #[cfg(test)]
 pub mod runtime {
-	use frame_support::parameter_types;
+	use frame_support::{parameter_types, weights::constants::RocksDbWeight};
 	use kilt_support::mock::{mock_origin, SubjectId};
-	use runtime_common::{Balance, Header, RocksDbWeight};
 	use sp_runtime::{
+		testing::Header,
 		traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
-		AccountId32,
+		AccountId32, MultiSignature,
 	};
 
 	use crate::{BalanceOf, Ctypes};
 
 	use super::*;
 
-	pub type TestCtypeHash = runtime_common::Hash;
 	pub type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 	pub type Block = frame_system::mocking::MockBlock<Test>;
+	pub type Hash = sp_core::H256;
+	pub type Balance = u128;
+	pub type Signature = MultiSignature;
+	pub type AccountPublic = <Signature as Verify>::Signer;
+	pub type AccountId = <AccountPublic as IdentifyAccount>::AccountId;
+
+	pub const UNIT: Balance = 10u128.pow(15);
+	pub const MILLI_UNIT: Balance = 10u128.pow(12);
 
 	frame_support::construct_runtime!(
 		pub enum Test where
@@ -75,9 +82,9 @@ pub mod runtime {
 		type Call = Call;
 		type Index = u64;
 		type BlockNumber = u64;
-		type Hash = runtime_common::Hash;
+		type Hash = Hash;
 		type Hashing = BlakeTwo256;
-		type AccountId = <<runtime_common::Signature as Verify>::Signer as IdentifyAccount>::AccountId;
+		type AccountId = AccountId;
 		type Lookup = IdentityLookup<Self::AccountId>;
 		type Header = Header;
 		type Event = ();
@@ -118,7 +125,7 @@ pub mod runtime {
 
 	impl mock_origin::Config for Test {
 		type Origin = Origin;
-		type AccountId = runtime_common::AccountId;
+		type AccountId = AccountId;
 		type SubjectId = SubjectId;
 	}
 
@@ -128,8 +135,8 @@ pub mod runtime {
 
 	impl Config for Test {
 		type CtypeCreatorId = SubjectId;
-		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<runtime_common::AccountId, SubjectId>;
-		type OriginSuccess = mock_origin::DoubleOrigin<runtime_common::AccountId, SubjectId>;
+		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<AccountId, SubjectId>;
+		type OriginSuccess = mock_origin::DoubleOrigin<AccountId, SubjectId>;
 		type Event = ();
 		type WeightInfo = ();
 
@@ -139,21 +146,21 @@ pub mod runtime {
 	}
 
 	pub(crate) const DID_00: SubjectId = SubjectId(AccountId32::new([1u8; 32]));
-	pub(crate) const ACCOUNT_00: runtime_common::AccountId = runtime_common::AccountId::new([1u8; 32]);
+	pub(crate) const ACCOUNT_00: AccountId = AccountId::new([1u8; 32]);
 
 	#[derive(Clone, Default)]
 	pub(crate) struct ExtBuilder {
-		ctypes_stored: Vec<(TestCtypeHash, SubjectId)>,
-		balances: Vec<(runtime_common::AccountId, BalanceOf<Test>)>,
+		ctypes_stored: Vec<(CtypeHashOf<Test>, SubjectId)>,
+		balances: Vec<(AccountId, BalanceOf<Test>)>,
 	}
 
 	impl ExtBuilder {
-		pub(crate) fn with_ctypes(mut self, ctypes: Vec<(TestCtypeHash, SubjectId)>) -> Self {
+		pub(crate) fn with_ctypes(mut self, ctypes: Vec<(CtypeHashOf<Test>, SubjectId)>) -> Self {
 			self.ctypes_stored = ctypes;
 			self
 		}
 
-		pub(crate) fn with_balances(mut self, balances: Vec<(runtime_common::AccountId, BalanceOf<Test>)>) -> Self {
+		pub(crate) fn with_balances(mut self, balances: Vec<(AccountId, BalanceOf<Test>)>) -> Self {
 			self.balances = balances;
 			self
 		}

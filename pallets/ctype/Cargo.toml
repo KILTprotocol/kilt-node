@@ -15,7 +15,6 @@ substrate-wasm-builder-runner = {version = "3.0.0"}
 [dev-dependencies]
 kilt-support = {features = ["mock"], path = "../../support"}
 pallet-balances = {branch = "polkadot-v0.9.17", default-features = false, git = "https://github.com/paritytech/substrate"}
-runtime-common = {default-features = false, path = "../../runtimes/common"}
 serde = {version = "1.0.132"}
 sp-core = {branch = "polkadot-v0.9.17", default-features = false, git = "https://github.com/paritytech/substrate"}
 sp-keystore = {branch = "polkadot-v0.9.17", default-features = false, git = "https://github.com/paritytech/substrate"}
@@ -28,7 +27,6 @@ serde = {optional = true, version = "1.0.132"}
 
 # Internal dependencies
 kilt-support = {default-features = false, path = "../../support"}
-runtime-common = {default-features = false, optional = true, path = "../../runtimes/common"}
 
 # Substrate dependencies
 frame-benchmarking = {branch = "polkadot-v0.9.17", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
@@ -44,7 +42,6 @@ sp-std = {branch = "polkadot-v0.9.17", default-features = false, git = "https://
 [features]
 default = ["std"]
 mock = [
-  "runtime-common",
   "pallet-balances",
   "serde",
   "sp-core",
@@ -62,7 +59,6 @@ std = [
   "frame-benchmarking/std",
   "frame-support/std",
   "frame-system/std",
-  "runtime-common/std",
   "kilt-support/std",
   "log/std",
   "pallet-balances/std",

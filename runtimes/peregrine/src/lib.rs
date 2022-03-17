@@ -46,8 +46,10 @@ use sp_runtime::{
 use sp_std::{cmp::Ordering, prelude::*};
 use sp_version::RuntimeVersion;
 
+use delegation::DelegationAc;
 pub use parachain_staking::InflationInfo;
 use runtime_common::{
+	authorization::{AuthorizationId, PalletAuthorize},
 	constants::{self, KILT, MICRO_KILT, MILLI_KILT},
 	fees::{ToAuthor, WeightToFee},
 	pallet_id, AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights, DidIdentifier,
@@ -510,6 +512,9 @@ impl attestation::Config for Runtime {
 	type Currency = Balances;
 	type Deposit = AttestationDeposit;
 	type MaxDelegatedAttestations = MaxDelegatedAttestations;
+	type AttesterId = DidIdentifier;
+	type AuthorizationId = AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>;
+	type AccessControl = PalletAuthorize<DelegationAc<Runtime>>;
 }
 
 parameter_types! {

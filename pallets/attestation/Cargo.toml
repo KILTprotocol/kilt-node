@@ -14,8 +14,7 @@ substrate-wasm-builder-runner = {version = "3.0.0"}
 
 [dev-dependencies]
 ctype = {features = ["mock"], path = "../ctype"}
-delegation = {features = ["mock"], path = "../delegation"}
-runtime-common = {default-features = false, path = "../../runtimes/common"}
+kilt-support = {features = ["mock"], path = "../../support"}
 
 pallet-balances = {branch = "polkadot-v0.9.17", default-features = false, git = "https://github.com/paritytech/substrate"}
 serde = {version = "1.0.132"}
@@ -31,9 +30,7 @@ serde = {optional = true, version = "1.0.132"}
 
 # Internal dependencies
 ctype = {default-features = false, path = "../ctype"}
-delegation = {default-features = false, path = "../delegation"}
 kilt-support = {default-features = false, path = "../../support"}
-runtime-common = {default-features = false, optional = true, path = "../../runtimes/common"}
 
 #External dependencies
 frame-benchmarking = {branch = "polkadot-v0.9.17", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
@@ -49,7 +46,6 @@ sp-std = {branch = "polkadot-v0.9.17", default-features = false, git = "https://
 [features]
 default = ["std"]
 mock = [
-  "runtime-common",
   "pallet-balances",
   "serde",
   "sp-core",
@@ -57,19 +53,17 @@ mock = [
   "sp-keystore",
 ]
 runtime-benchmarks = [
-  "delegation/runtime-benchmarks",
   "frame-benchmarking",
   "frame-support/runtime-benchmarks",
   "frame-system/runtime-benchmarks",
+  "kilt-support/runtime-benchmarks",
   "sp-core",
 ]
 std = [
   "codec/std",
   "ctype/std",
-  "delegation/std",
   "frame-support/std",
   "frame-system/std",
-  "runtime-common/std",
   "kilt-support/std",
   "log/std",
   "pallet-balances/std",
