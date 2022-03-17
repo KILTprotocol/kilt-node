@@ -362,7 +362,6 @@ name = "attestation"
 version = "1.6.2"
 dependencies = [
  "ctype",
- "delegation",
  "frame-benchmarking",
  "frame-support",
  "frame-system",
@@ -370,7 +369,6 @@ dependencies = [
  "log",
  "pallet-balances",
  "parity-scale-codec",
- "runtime-common",
  "scale-info",
  "serde",
  "sp-core",
@@ -1376,7 +1374,6 @@ dependencies = [
  "log",
  "pallet-balances",
  "parity-scale-codec",
- "runtime-common",
  "scale-info",
  "serde",
  "sp-core",
@@ -1843,6 +1840,7 @@ dependencies = [
 name = "delegation"
 version = "1.6.2"
 dependencies = [
+ "attestation",
  "bitflags",
  "ctype",
  "env_logger 0.8.4",
@@ -1853,7 +1851,6 @@ dependencies = [
  "log",
  "pallet-balances",
  "parity-scale-codec",
- "runtime-common",
  "scale-info",
  "serde",
  "sp-core",
@@ -8569,6 +8566,7 @@ dependencies = [
 name = "runtime-common"
 version = "1.6.2"
 dependencies = [
+ "attestation",
  "frame-support",
  "frame-system",
  "pallet-authorship",

@@ -100,7 +100,7 @@ pub mod attestation {
 	use super::*;
 
 	/// The size is checked in the runtime by a test.
-	pub const MAX_ATTESTATION_BYTE_LENGTH: u32 = 178;
+	pub const MAX_ATTESTATION_BYTE_LENGTH: u32 = 179;
 	pub const ATTESTATION_DEPOSIT: Balance = deposit(2, MAX_ATTESTATION_BYTE_LENGTH);
 }
 

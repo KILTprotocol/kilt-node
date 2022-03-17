@@ -246,21 +246,25 @@ impl Default for ExtBuilder {
 }
 
 impl ExtBuilder {
+	#[must_use]
 	pub(crate) fn with_balances(mut self, balances: Vec<(AccountId, Balance)>) -> Self {
 		self.balances = balances;
 		self
 	}
 
+	#[must_use]
 	pub(crate) fn with_collators(mut self, collators: Vec<(AccountId, Balance)>) -> Self {
 		self.collators = collators;
 		self
 	}
 
+	#[must_use]
 	pub(crate) fn with_delegators(mut self, delegators: Vec<(AccountId, AccountId, Balance)>) -> Self {
 		self.delegators = delegators;
 		self
 	}
 
+	#[must_use]
 	pub(crate) fn with_inflation(
 		mut self,
 		col_max: u64,
@@ -280,6 +284,7 @@ impl ExtBuilder {
 		self
 	}
 
+	#[must_use]
 	pub(crate) fn set_blocks_per_round(mut self, blocks_per_round: BlockNumber) -> Self {
 		self.blocks_per_round = blocks_per_round;
 		self

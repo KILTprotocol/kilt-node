@@ -128,11 +128,13 @@ pub struct ExtBuilder {
 }
 
 impl ExtBuilder {
+	#[must_use]
 	pub fn with_balances(mut self, balances: Vec<(AccountId, Balance)>) -> Self {
 		self.balances = balances;
 		self
 	}
 
+	#[must_use]
 	pub fn with_connections(mut self, connections: Vec<(AccountId, SubjectId, AccountId)>) -> Self {
 		self.connections = connections;
 		self

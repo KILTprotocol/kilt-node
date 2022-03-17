@@ -26,11 +26,13 @@ use frame_support::{
 	traits::{Currency, Get},
 };
 use frame_system::RawOrigin;
-use kilt_support::{signature::VerifySignature, traits::GenerateBenchmarkOrigin};
 use sp_core::{offchain::KeyTypeId, sr25519};
 use sp_io::crypto::sr25519_generate;
 use sp_runtime::traits::Zero;
 use sp_std::{num::NonZeroU32, vec::Vec};
+
+use attestation::AttestationAccessControl;
+use kilt_support::{signature::VerifySignature, traits::GenerateBenchmarkOrigin};
 
 const SEED: u32 = 0;
 const ONE_CHILD_PER_LEVEL: Option<NonZeroU32> = NonZeroU32::new(1);
@@ -375,6 +377,64 @@ benchmarks! {
 		assert!(!DelegationNodes::<T>::contains_key(child_id));
 		assert!(!DelegationNodes::<T>::contains_key(leaf_id));
 		assert!(<T as Config>::Currency::reserved_balance(&sender).is_zero());
+	}
+
+	can_attest {
+		let c = T::MaxParentChecks::get();
+
+		let ctype = Default::default();
+		let claim = Default::default();
+
+		let sender: T::AccountId = account("sender", 0, SEED);
+		let (root_acc, _, leaf_acc, leaf_id) = setup_delegations::<T>(c, ONE_CHILD_PER_LEVEL.expect(">0"), Permissions::DELEGATE | Permissions::ATTEST)?;
+		let root_acc: T::DelegationEntityId = root_acc.into();
+		let leaf_acc: T::DelegationEntityId = leaf_acc.into();
+
+		let ac = DelegationAc::<T>{
+			subject_node_id: leaf_id,
+			max_checks: c
+		};
+
+	}: { ac.can_attest(&leaf_acc, &ctype, &claim).expect("Should be allowed") }
+	verify {
+	}
+
+	can_revoke {
+		let c in 1 .. T::MaxParentChecks::get();
+
+		let ctype = Default::default();
+		let claim = Default::default();
+
+		let sender: T::AccountId = account("sender", 0, SEED);
+		let (root_acc, root_id, _, leaf_id) = setup_delegations::<T>(c, ONE_CHILD_PER_LEVEL.expect(">0"), Permissions::DELEGATE)?;
+		let root_acc: T::DelegationEntityId = root_acc.into();
+
+		let ac = DelegationAc::<T>{
+			subject_node_id: leaf_id,
+			max_checks: c
+		};
+
+	}: { ac.can_revoke(&root_acc, &ctype, &claim, &leaf_id).expect("Should be allowed") }
+	verify {
+	}
+
+	can_remove {
+		let c in 1 .. T::MaxParentChecks::get();
+
+		let ctype = Default::default();
+		let claim = Default::default();
+
+		let sender: T::AccountId = account("sender", 0, SEED);
+		let (root_acc, root_id, _, leaf_id) = setup_delegations::<T>(c, ONE_CHILD_PER_LEVEL.expect(">0"), Permissions::DELEGATE)?;
+		let root_acc: T::DelegationEntityId = root_acc.into();
+
+		let ac = DelegationAc::<T>{
+			subject_node_id: leaf_id,
+			max_checks: c
+		};
+
+	}: { ac.can_remove(&root_acc, &ctype, &claim, &leaf_id).expect("Should be allowed") }
+	verify {
 	}
 }
 
