@@ -100,7 +100,8 @@ where
 	let block_number = T::BlockNumber::zero();
 	let mut did_details = generate_base_did_details::<T>(auth_key);
 	assert_ok!(did_details.add_key_agreement_keys(
-		get_key_agreement_keys::<T>(T::MaxTotalKeyAgreementKeys::get()),
+		// MaxTotalKeyAgreementKeys max value assumes no attestation nor delegation key is present
+		get_key_agreement_keys::<T>(T::MaxTotalKeyAgreementKeys::get() - 2),
 		block_number
 	));
 	assert_ok!(did_details.update_attestation_key(
@@ -430,10 +431,9 @@ benchmarks! {
 		assert!(key_agreement_keys.remove(&new_key_agreement_key));
 
 		// fill up public keys to its max minus one size (due to removal of new key_agreement_key)
+		// no attestation or delegation key is stored, so # of key agreement keys = max # of public keys - 1 (authentication key)
 		let mut did_details = generate_base_did_details::<T>(DidVerificationKey::from(public_auth_key));
 		assert_ok!(did_details.add_key_agreement_keys(key_agreement_keys, block_number));
-		assert_ok!(did_details.update_delegation_key(DidVerificationKey::from(get_longest_public_key(DELEGATION_KEY_ID)), block_number));
-		assert_ok!(did_details.update_attestation_key(DidVerificationKey::from(get_longest_public_key(ATTESTATION_KEY_ID)), block_number));
 
 		Did::<T>::insert(&did_subject, did_details);
 		let origin = RawOrigin::Signed(did_subject.clone());
@@ -453,11 +453,10 @@ benchmarks! {
 		let key_agreement_key = *key_agreement_keys.clone().into_inner().iter().next().unwrap();
 		let key_agreement_key_id = utils::calculate_key_id::<T>(&DidPublicKey::from(key_agreement_key));
 
-		// fill up public keys to its max size because max public keys = # of max key agreement keys + 3
+		// fill up public keys to its max minus one size (due to removal of new key_agreement_key)
+		// no attestation or delegation key is stored, so # of key agreement keys = max # of public keys - 1 (authentication key)
 		let mut did_details = generate_base_did_details::<T>(DidVerificationKey::from(public_auth_key));
 		assert_ok!(did_details.add_key_agreement_keys(key_agreement_keys, block_number));
-		assert_ok!(did_details.update_delegation_key(DidVerificationKey::from(get_longest_public_key(DELEGATION_KEY_ID)), block_number));
-		assert_ok!(did_details.update_attestation_key(DidVerificationKey::from(get_longest_public_key(ATTESTATION_KEY_ID)), block_number));
 
 		Did::<T>::insert(&did_subject, did_details);
 		let origin = RawOrigin::Signed(did_subject.clone());

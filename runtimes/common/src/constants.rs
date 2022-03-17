@@ -214,7 +214,6 @@ pub mod did {
 
 	pub const DID_DEPOSIT: Balance = deposit(2 + MAX_NUMBER_OF_SERVICES_PER_DID, MAX_DID_BYTE_LENGTH);
 	pub const DID_FEE: Balance = 50 * MILLI_KILT;
-	pub const MAX_KEY_AGREEMENT_KEYS: u32 = 10;
 	pub const MAX_URL_LENGTH: u32 = 200;
 	// This has been reduced from the previous 100, but it might still need
 	// fine-tuning depending on our needs.
