@@ -325,7 +325,6 @@ pub(crate) mod runtime {
 	impl ExtBuilder {
 		#[must_use]
 		pub fn with_ctypes(mut self, ctypes: Vec<(CtypeHashOf<Test>, CtypeCreatorOf<Test>)>) -> Self {
-
 			self.ctypes = ctypes;
 			self
 		}
