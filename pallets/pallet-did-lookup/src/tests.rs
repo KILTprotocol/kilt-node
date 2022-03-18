@@ -26,7 +26,7 @@ use sp_runtime::{
 	MultiSignature, MultiSigner,
 };
 
-use crate::{mock::*, ConnectedDids, ConnectionRecord, Error};
+use crate::{mock::*, ConnectedDids, ConnectionRecord, Error, ConnectedAccounts};
 
 #[test]
 fn test_add_association_sender() {
@@ -46,6 +46,9 @@ fn test_add_association_sender() {
 					}
 				})
 			);
+			assert!(
+				ConnectedAccounts::<Test>::get(DID_00, ACCOUNT_00).is_some()
+			);
 			assert_eq!(
 				Balances::reserved_balance(ACCOUNT_00),
 				<Test as crate::Config>::Deposit::get()
@@ -62,6 +65,12 @@ fn test_add_association_sender() {
 						amount: 10,
 					}
 				})
+			);
+			assert!(
+				ConnectedAccounts::<Test>::get(DID_00, ACCOUNT_00).is_none()
+			);
+			assert!(
+				ConnectedAccounts::<Test>::get(DID_01, ACCOUNT_00).is_some()
 			);
 			assert_eq!(
 				Balances::reserved_balance(ACCOUNT_00),
@@ -100,6 +109,9 @@ fn test_add_association_account() {
 					}
 				})
 			);
+			assert!(
+				ConnectedAccounts::<Test>::get(DID_00, &account_hash_alice).is_some()
+			);
 			assert_eq!(
 				Balances::reserved_balance(ACCOUNT_00),
 				<Test as crate::Config>::Deposit::get()
@@ -123,6 +135,12 @@ fn test_add_association_account() {
 					}
 				})
 			);
+			assert!(
+				ConnectedAccounts::<Test>::get(DID_00, &account_hash_alice).is_none()
+			);
+			assert!(
+				ConnectedAccounts::<Test>::get(DID_01, &account_hash_alice).is_some()
+			);
 			assert_eq!(
 				Balances::reserved_balance(ACCOUNT_00),
 				<Test as crate::Config>::Deposit::get()
@@ -145,6 +163,12 @@ fn test_add_association_account() {
 						amount: 10,
 					}
 				})
+			);
+			assert!(
+				ConnectedAccounts::<Test>::get(DID_00, &account_hash_alice).is_none()
+			);
+			assert!(
+				ConnectedAccounts::<Test>::get(DID_01, &account_hash_alice).is_some()
 			);
 			assert_eq!(Balances::reserved_balance(ACCOUNT_00), 0);
 			assert_eq!(
@@ -211,6 +235,9 @@ fn test_remove_association_sender() {
 			// remove association
 			assert!(DidLookup::remove_sender_association(Origin::signed(ACCOUNT_00)).is_ok());
 			assert_eq!(ConnectedDids::<Test>::get(ACCOUNT_00), None);
+			assert!(
+				ConnectedAccounts::<Test>::get(DID_01, ACCOUNT_00).is_none()
+			);
 			assert_eq!(Balances::reserved_balance(ACCOUNT_00), 0);
 		});
 }
@@ -241,6 +268,9 @@ fn test_remove_association_account() {
 			)
 			.is_ok());
 			assert_eq!(ConnectedDids::<Test>::get(ACCOUNT_00), None);
+			assert!(
+				ConnectedAccounts::<Test>::get(DID_01, ACCOUNT_00).is_none()
+			);
 			assert_eq!(Balances::reserved_balance(ACCOUNT_01), 0);
 		});
 }

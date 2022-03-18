@@ -298,9 +298,10 @@ pub mod pallet {
 			CurrencyOf::<T>::reserve(&record.deposit.owner, record.deposit.amount)?;
 
 			ConnectedDids::<T>::mutate(&account, |did_entry| {
-				if let Some(old_did) = did_entry.replace(record) {
-					Self::deposit_event(Event::<T>::AssociationRemoved(account.clone(), old_did.did));
-					kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&old_did.deposit);
+				if let Some(old_connection) = did_entry.replace(record) {
+					ConnectedAccounts::<T>::remove(&old_connection.did, &account);
+					Self::deposit_event(Event::<T>::AssociationRemoved(account.clone(), old_connection.did));
+					kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&old_connection.deposit);
 				}
 			});
 			ConnectedAccounts::<T>::insert(&did_identifier, &account, ());
