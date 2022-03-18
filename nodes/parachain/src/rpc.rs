@@ -25,6 +25,10 @@
 
 use std::sync::Arc;
 
+use did_rpc::{DidApi, DidQuery};
+use frame_rpc_system::{FullSystem, SystemApi};
+use pallet_transaction_payment_rpc::{TransactionPayment, TransactionPaymentApi};
+use peregrine_runtime::{DidDoc, Web3Name};
 use polkadot_service::AuxStore;
 use runtime_common::{AccountId, Balance, Block, Index};
 use sc_service::Error;
@@ -54,12 +58,10 @@ where
 	C: Send + Sync + 'static,
 	C::Api: frame_rpc_system::AccountNonceApi<Block, AccountId, Index>,
 	C::Api: pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>,
+	C::Api: did_rpc::DidRuntimeApi<Block, Web3Name, DidDoc, AccountId>,
 	C::Api: BlockBuilder<Block>,
 	P: TransactionPool + Sync + Send + 'static,
 {
-	use frame_rpc_system::{FullSystem, SystemApi};
-	use pallet_transaction_payment_rpc::{TransactionPayment, TransactionPaymentApi};
-
 	let mut io = jsonrpc_core::IoHandler::default();
 	let FullDeps {
 		client,
@@ -74,6 +76,8 @@ where
 	)));
 
 	io.extend_with(TransactionPaymentApi::to_delegate(TransactionPayment::new(client)));
+
+	io.extend_with(DidApi::to_delegate(DidQuery::new(client)));
 
 	// Extend this RPC with a custom API by using the following syntax.
 	// `YourRpcStruct` should have a reference to a client, which is needed

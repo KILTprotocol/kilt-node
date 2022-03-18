@@ -46,14 +46,16 @@ use sp_runtime::{
 use sp_std::{cmp::Ordering, prelude::*};
 use sp_version::RuntimeVersion;
 
+
 use delegation::DelegationAc;
+use did::did_details::DidDetails;
 pub use parachain_staking::InflationInfo;
 use runtime_common::{
 	authorization::{AuthorizationId, PalletAuthorize},
 	constants::{self, KILT, MICRO_KILT, MILLI_KILT},
 	fees::{ToAuthor, WeightToFee},
-	pallet_id, AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights, DidIdentifier,
-	FeeSplit, Hash, Header, Index, Signature, SlowAdjustingFeeUpdate,
+	pallet_id, AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights, DidDocument,
+	DidIdentifier, FeeSplit, Hash, Header, Index, Signature, SlowAdjustingFeeUpdate,
 };
 
 #[cfg(feature = "std")]
@@ -970,6 +972,12 @@ pub type Executive = frame_executive::Executive<
 	pallet_did_lookup::migrations::LookupReverseIndexMigration<Runtime>,
 >;
 
+pub type Web3Name = pallet_web3_names::web3_name::AsciiWeb3Name<Runtime, MinNameLength, MaxNameLength>;
+pub type DidDoc = DidDocument<
+	DidDetails<Runtime>,
+	pallet_web3_names::web3_name::AsciiWeb3Name<Runtime, MinNameLength, MaxNameLength>,
+>;
+
 impl_runtime_apis! {
 	impl sp_api::Core<Block> for Runtime {
 		fn version() -> RuntimeVersion {
@@ -1071,6 +1079,31 @@ impl_runtime_apis! {
 	impl cumulus_primitives_core::CollectCollationInfo<Block> for Runtime {
 		fn collect_collation_info(header: &<Block as BlockT>::Header) -> cumulus_primitives_core::CollationInfo {
 			ParachainSystem::collect_collation_info(header)
+		}
+	}
+
+	impl did_rpc_runtime_api::DidApi<
+		Block,
+		Web3Name,
+		DidDoc,
+		AccountId
+	> for Runtime {
+		fn query_did_by_w3n(name: Web3Name) -> Option<DidDoc> {
+			pallet_web3_names::Owner::<Runtime>::get(&name)
+				.and_then(|owner_info| {
+					did::Did::<Runtime>::get(owner_info.owner)
+				})
+				.and_then(|did_details| {
+					Some(DidDoc {
+						accounts: vec![],
+						details: did_details,
+						web3name: Some(name),
+					})
+			})
+		}
+		fn query_did_by_account_id(account: AccountId) -> Option<DidDoc> {
+
+			None
 		}
 	}
 

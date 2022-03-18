@@ -15,6 +15,7 @@ smallvec = "1.7.0"
 
 attestation = {default-features = false, path = "../../pallets/attestation"}
 parachain-staking = {default-features = false, path = "../../pallets/parachain-staking"}
+# pallet-web3-names = {path = "../../pallet-web3-names", default-features = false}
 
 frame-support = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.17"}
 frame-system = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.17"}

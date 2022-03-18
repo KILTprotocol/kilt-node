@@ -19,6 +19,7 @@ substrate-build-script-utils = {git = "https://github.com/paritytech/substrate",
 peregrine-runtime = {path = "../../runtimes/peregrine"}
 runtime-common = {path = "../../runtimes/common"}
 spiritnet-runtime = {path = "../../runtimes/spiritnet"}
+did-rpc = {path = "../../rpc/did"}
 
 # External dependencies
 clap = { version = "3.1", features = ["derive"] }

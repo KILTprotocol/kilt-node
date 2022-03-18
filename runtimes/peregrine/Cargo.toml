@@ -20,18 +20,19 @@ serde = {version = "1.0.132", optional = true, features = ["derive"]}
 # RPC
 frame-system-rpc-runtime-api = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.17"}
 pallet-transaction-payment-rpc-runtime-api = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.17"}
+did-rpc-runtime-api = {path = "../../rpc/did/runtime-api", default-features = false}
 
 # KILT pallets & primitives
-attestation = {default-features = false, path = "../../pallets/attestation"}
-ctype = {default-features = false, path = "../../pallets/ctype"}
-delegation = {default-features = false, path = "../../pallets/delegation"}
-did = {default-features = false, path = "../../pallets/did"}
+attestation = {path = "../../pallets/attestation", default-features = false}
+ctype = {path = "../../pallets/ctype", default-features = false}
+delegation = {path = "../../pallets/delegation", default-features = false}
+did = {path = "../../pallets/did", default-features = false}
 kilt-launch = {path = "../../pallets/kilt-launch", default-features = false}
 kilt-support = {path = "../../support", default-features = false, optional = true}
-pallet-web3-names = {default-features = false, path = "../../pallets/pallet-web3-names"}
-pallet-did-lookup = {default-features = false, path = "../../pallets/pallet-did-lookup"}
+pallet-did-lookup = {path = "../../pallets/pallet-did-lookup", default-features = false}
 pallet-inflation = {path = "../../pallets/pallet-inflation", default-features = false}
-parachain-staking = {default-features = false, path = "../../pallets/parachain-staking"}
+pallet-web3-names = {path = "../../pallets/pallet-web3-names", default-features = false}
+parachain-staking = {path = "../../pallets/parachain-staking", default-features = false}
 runtime-common = {path = "../../runtimes/common", default-features = false}
 
 # Substrate dependencies
@@ -61,7 +62,7 @@ pallet-democracy = {git = "https://github.com/paritytech/substrate", default-fea
 pallet-indices = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.17"}
 pallet-membership = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.17"}
 pallet-preimage = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.17"}
-pallet-proxy = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.17" }
+pallet-proxy = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.17"}
 pallet-randomness-collective-flip = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.17"}
 pallet-scheduler = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.17"}
 pallet-session = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.17"}
@@ -132,6 +133,7 @@ runtime-benchmarks = [
   "sp-runtime/runtime-benchmarks",
 ]
 std = [
+  "did-rpc-runtime-api/std",
   "attestation/std",
   "codec/std",
   "ctype/std",

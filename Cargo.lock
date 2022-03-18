@@ -1910,6 +1910,31 @@ dependencies = [
 ]
 
 [[package]]
+name = "did-rpc"
+version = "1.5.0"
+dependencies = [
+ "did-rpc-runtime-api",
+ "jsonrpc-core",
+ "jsonrpc-core-client",
+ "jsonrpc-derive",
+ "parity-scale-codec",
+ "sp-api",
+ "sp-blockchain",
+ "sp-core",
+ "sp-rpc",
+ "sp-runtime",
+]
+
+[[package]]
+name = "did-rpc-runtime-api"
+version = "1.5.0"
+dependencies = [
+ "parity-scale-codec",
+ "sp-api",
+ "sp-runtime",
+]
+
+[[package]]
 name = "digest"
 version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3535,6 +3560,7 @@ dependencies = [
  "cumulus-relay-chain-interface",
  "cumulus-relay-chain-local",
  "derive_more",
+ "did-rpc",
  "frame-benchmarking",
  "frame-benchmarking-cli",
  "futures 0.3.21",
@@ -6658,6 +6684,7 @@ dependencies = [
  "cumulus-primitives-timestamp",
  "delegation",
  "did",
+ "did-rpc-runtime-api",
  "frame-benchmarking",
  "frame-executive",
  "frame-support",
@@ -10834,6 +10861,7 @@ dependencies = [
  "cumulus-primitives-timestamp",
  "delegation",
  "did",
+ "did-rpc-runtime-api",
  "frame-benchmarking",
  "frame-executive",
  "frame-support",
