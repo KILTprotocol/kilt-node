@@ -48,7 +48,7 @@ use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
 	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, NumberFor, OpaqueKeys, Verify},
 	transaction_validity::{TransactionSource, TransactionValidity},
-	ApplyExtrinsicResult, RuntimeDebug,
+	ApplyExtrinsicResult, RuntimeDebug, DispatchError,
 };
 pub use sp_runtime::{Perbill, Permill};
 use sp_std::prelude::*;
@@ -59,11 +59,11 @@ pub use pallet_timestamp::Call as TimestampCall;
 pub use attestation;
 pub use ctype;
 pub use delegation;
-pub use did;
+pub use did::{self, did_details::DidVerifiableIdentifier};
 pub use pallet_balances::Call as BalancesCall;
 pub use pallet_web3_names;
 use runtime_common::{
-	constants::{self, KILT, MICRO_KILT, MILLI_KILT},
+	constants::{self, KILT, MICRO_KILT, MILLI_KILT, did_lookup},
 	fees::ToAuthor,
 	pallet_id, AccountId, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature, SlowAdjustingFeeUpdate,
 };
@@ -394,6 +394,7 @@ impl did::Config for Runtime {
 	type DidIdentifier = DidIdentifier;
 	type Event = Event;
 	type Call = Call;
+	type CallProxy = DidProxy;
 	type Origin = Origin;
 	type Currency = Balances;
 	type Deposit = DidDeposit;
@@ -635,6 +636,35 @@ construct_runtime!(
 	}
 );
 
+pub enum DidProxy {
+	StoredDidProxy(Call, did::DidVerificationKeyRelationship),
+	InlineDidProxy(Call),
+}
+
+impl DidProxy {
+	pub fn from_call(call: Call) -> Result<Self, DispatchError> {
+		match call {
+			Call::Attestation { .. } | Call::Ctype { .. } => Ok(Self::StoredDidProxy(call, did::DidVerificationKeyRelationship::AssertionMethod)),
+			Call::Delegation { .. } => Ok(Self::StoredDidProxy(call, did::DidVerificationKeyRelationship::CapabilityDelegation)),
+			Call::Did(did::Call::create { .. }) => Ok(Self::InlineDidProxy(call)),
+			Call::Did { .. } => Ok(Self::StoredDidProxy(call, did::DidVerificationKeyRelationship::Authentication)),
+			Call::DidLookup{ .. } => Ok(Self::StoredDidProxy(call, did::DidVerificationKeyRelationship::Authentication)),
+			Call::Web3Names { .. } => Ok(Self::StoredDidProxy(call, did::DidVerificationKeyRelationship::Authentication)),
+			Call::Utility(pallet_utility::Call::batch { calls })
+		}
+	}
+}
+
+impl did::did_details::DidAuthorizedCallProxy<Runtime> for DidProxy {
+    fn verification_weight(call: &did::did_details::DidAuthorizedCallOperation<Runtime>, signature: &did::DidSignature) -> Weight {
+        0u64
+    }
+
+    fn verify_operation(call: &did::did_details::DidAuthorizedCallOperation<Runtime>, signature: &did::DidSignature) -> Result<(), DispatchError> {
+        Ok(())
+    }
+}
+
 impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 	fn derive_verification_key_relationship(&self) -> did::DeriveDidCallKeyRelationshipResult {
 		fn single_key_relationship(calls: &[Call]) -> did::DeriveDidCallKeyRelationshipResult {
@@ -672,12 +702,12 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 		}
 	}
 
-	// Always return a System::remark() extrinsic call
-	#[cfg(feature = "runtime-benchmarks")]
-	fn get_call_for_did_call_benchmark() -> Self {
-		Call::System(frame_system::Call::remark { remark: vec![] })
-	}
-}
+// 	// Always return a System::remark() extrinsic call
+// 	#[cfg(feature = "runtime-benchmarks")]
+// 	fn get_call_for_did_call_benchmark() -> Self {
+// 		Call::System(frame_system::Call::remark { remark: vec![] })
+// 	}
+// }
 
 /// The address format for describing accounts.
 pub type Address = sp_runtime::MultiAddress<AccountId, ()>;

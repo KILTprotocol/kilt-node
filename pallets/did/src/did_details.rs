@@ -20,12 +20,12 @@ use codec::{Decode, Encode, MaxEncodedLen, WrapperTypeEncode};
 use frame_support::{
 	ensure,
 	storage::{bounded_btree_map::BoundedBTreeMap, bounded_btree_set::BoundedBTreeSet},
-	traits::Get,
+	traits::Get, dispatch::Weight,
 };
 use kilt_support::deposit::Deposit;
 use scale_info::TypeInfo;
 use sp_core::{ecdsa, ed25519, sr25519};
-use sp_runtime::{traits::Verify, MultiSignature};
+use sp_runtime::{traits::Verify, MultiSignature, DispatchError};
 use sp_std::convert::TryInto;
 
 use crate::{
@@ -538,6 +538,21 @@ impl<T: Config> sp_std::fmt::Debug for DidCreationDetails<T> {
 	}
 }
 
+pub trait DidAuthorizedCallProxy<T: Config> {
+	fn verification_weight(call: &DidAuthorizedCallOperation<T>, signature: &DidSignature) -> Weight;
+	fn verify_operation(call: &DidAuthorizedCallOperation<T>, signature: &DidSignature) -> Result<(), DispatchError>;
+}
+
+
+
+
+
+
+
+
+
+
+
 /// Errors that might occur while deriving the authorization verification key
 /// relationship.
 #[derive(Clone, Debug, Decode, Encode, PartialEq)]
@@ -566,6 +581,10 @@ pub trait DeriveDidCallAuthorizationVerificationKeyRelationship {
 	// Return a call to dispatch in order to test the pallet proxy feature.
 	#[cfg(feature = "runtime-benchmarks")]
 	fn get_call_for_did_call_benchmark() -> Self;
+}
+
+pub trait VerifyInline<Identifier, Signature> {
+	fn verify(&self, identifier: &Identifier, signature: &Signature) -> Result<(), DispatchError>;
 }
 
 /// A DID operation that wraps other extrinsic calls, allowing those
