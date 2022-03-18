@@ -57,10 +57,11 @@ benchmarks! {
 			.into();
 
 		make_free_for_did::<T>(&caller);
-		let origin = T::EnsureOrigin::generate_origin(caller, did);
+		let origin = T::EnsureOrigin::generate_origin(caller, did.clone());
 	}: _<T::Origin>(origin, connected_acc_id, bn, sig)
 	verify {
 		assert!(ConnectedDids::<T>::get(T::AccountId::from(connected_acc)).is_some());
+		assert!(ConnectedAccounts::<T>::get(did, T::AccountId::from(connected_acc)).is_some());
 	}
 
 	associate_sender {
@@ -68,10 +69,11 @@ benchmarks! {
 		let did: T::DidIdentifier = account("did", 0, SEED);
 
 		make_free_for_did::<T>(&caller);
-		let origin = T::EnsureOrigin::generate_origin(caller.clone(), did);
+		let origin = T::EnsureOrigin::generate_origin(caller.clone(), did.clone());
 	}: _<T::Origin>(origin)
 	verify {
 		assert!(ConnectedDids::<T>::get(caller).is_some());
+		assert!(ConnectedAccounts::<T>::get(did, caller).is_some());
 	}
 
 	remove_sender_association {
@@ -79,12 +81,13 @@ benchmarks! {
 		let did: T::DidIdentifier = account("did", 0, SEED);
 
 		make_free_for_did::<T>(&caller);
-		Pallet::<T>::add_association(caller.clone(), did, caller.clone()).expect("should create association");
+		Pallet::<T>::add_association(caller.clone(), did.clone(), caller.clone()).expect("should create association");
 
 		let origin = RawOrigin::Signed(caller.clone());
 	}: _(origin)
 	verify {
 		assert!(ConnectedDids::<T>::get(caller).is_none());
+		assert!(ConnectedAccounts::<T>::get(did, caller).is_none());
 	}
 
 	remove_account_association {
@@ -94,10 +97,12 @@ benchmarks! {
 
 		Pallet::<T>::add_association(caller.clone(), did.clone(), caller.clone()).expect("should create association");
 
-		let origin = T::EnsureOrigin::generate_origin(caller.clone(), did);
-	}: _<T::Origin>(origin, caller.clone())
+		let origin = T::EnsureOrigin::generate_origin(caller.clone(), did.clone());
+		let caller_clone = caller.clone();
+	}: _<T::Origin>(origin, caller_clone)
 	verify {
 		assert!(ConnectedDids::<T>::get(caller).is_none());
+		assert!(ConnectedAccounts::<T>::get(did, caller).is_none());
 	}
 }
 
