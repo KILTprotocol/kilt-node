@@ -70,7 +70,7 @@ pub mod pallet {
 	/// The connection record type.
 	pub(crate) type ConnectionRecordOf<T> = ConnectionRecord<DidIdentifierOf<T>, AccountIdOf<T>, BalanceOf<T>>;
 
-	pub const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
+	pub const STORAGE_VERSION: StorageVersion = StorageVersion::new(2);
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
@@ -108,7 +108,12 @@ pub mod pallet {
 	/// Mapping from account identifiers to DIDs.
 	#[pallet::storage]
 	#[pallet::getter(fn connected_dids)]
-	pub type ConnectedDids<T> = StorageMap<_, Blake2_128Concat, AccountIdOf<T>, ConnectionRecordOf<T>>;
+	pub type ConnectedDids<T> = CountedStorageMap<_, Blake2_128Concat, AccountIdOf<T>, ConnectionRecordOf<T>>;
+
+	/// Mapping from account identifiers to DIDs.
+	#[pallet::storage]
+	#[pallet::getter(fn connected_accounts)]
+	pub type ConnectedAccounts<T> = StorageDoubleMap<_, Blake2_128Concat, DidIdentifierOf<T>, Blake2_128Concat, AccountIdOf<T>, ()>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -129,7 +134,7 @@ pub mod pallet {
 		/// and the account ID.
 		NotAuthorized,
 
-		/// The supplied proof of ownership was outdated and will not
+		/// The supplied proof of ownership was outdated.
 		OutdatedProof,
 
 		/// The account has insufficient funds and can't pay the fees or reserve
@@ -298,6 +303,7 @@ pub mod pallet {
 					kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&old_did.deposit);
 				}
 			});
+			ConnectedAccounts::<T>::insert(&did_identifier, &account, ());
 			Self::deposit_event(Event::AssociationEstablished(account, did_identifier));
 
 			Ok(())
@@ -305,6 +311,7 @@ pub mod pallet {
 
 		pub(crate) fn remove_association(account: AccountIdOf<T>) -> DispatchResult {
 			if let Some(connection) = ConnectedDids::<T>::take(&account) {
+				ConnectedAccounts::<T>::remove(&connection.did, &account);
 				kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&connection.deposit);
 				Self::deposit_event(Event::AssociationRemoved(account, connection.did));
 
