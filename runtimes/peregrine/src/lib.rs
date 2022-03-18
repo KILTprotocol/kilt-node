@@ -67,6 +67,8 @@ mod tests;
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
 
+mod migrations;
+
 mod weights;
 
 impl_opaque_keys! {
