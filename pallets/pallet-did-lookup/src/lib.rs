@@ -113,7 +113,8 @@ pub mod pallet {
 	/// Mapping from account identifiers to DIDs.
 	#[pallet::storage]
 	#[pallet::getter(fn connected_accounts)]
-	pub type ConnectedAccounts<T> = StorageDoubleMap<_, Blake2_128Concat, DidIdentifierOf<T>, Blake2_128Concat, AccountIdOf<T>, ()>;
+	pub type ConnectedAccounts<T> =
+		StorageDoubleMap<_, Blake2_128Concat, DidIdentifierOf<T>, Blake2_128Concat, AccountIdOf<T>, ()>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
