@@ -17,11 +17,8 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use crate::{DidLookup, Runtime, Weight};
-use frame_support::traits::OnRuntimeUpgrade;
+use frame_support::traits::{GetStorageVersion, OnRuntimeUpgrade};
 use sp_std::marker::PhantomData;
-
-#[cfg(feature = "try-runtime")]
-use frame_support::traits::GetStorageVersion;
 
 pub struct LookupReverseIndexMigration<T: pallet_did_lookup::Config>(PhantomData<T>);
 
