@@ -19,7 +19,7 @@
 
 //! Benchmarking
 
-use crate::{AccountIdOf, Call, Config, ConnectedDids, CurrencyOf, Pallet};
+use crate::{AccountIdOf, Call, Config, ConnectedAccounts, ConnectedDids, CurrencyOf, Pallet};
 
 use codec::Encode;
 use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
@@ -72,7 +72,7 @@ benchmarks! {
 		let origin = T::EnsureOrigin::generate_origin(caller.clone(), did.clone());
 	}: _<T::Origin>(origin)
 	verify {
-		assert!(ConnectedDids::<T>::get(caller).is_some());
+		assert!(ConnectedDids::<T>::get(&caller).is_some());
 		assert!(ConnectedAccounts::<T>::get(did, caller).is_some());
 	}
 
@@ -86,7 +86,7 @@ benchmarks! {
 		let origin = RawOrigin::Signed(caller.clone());
 	}: _(origin)
 	verify {
-		assert!(ConnectedDids::<T>::get(caller).is_none());
+		assert!(ConnectedDids::<T>::get(&caller).is_none());
 		assert!(ConnectedAccounts::<T>::get(did, caller).is_none());
 	}
 
@@ -101,7 +101,7 @@ benchmarks! {
 		let caller_clone = caller.clone();
 	}: _<T::Origin>(origin, caller_clone)
 	verify {
-		assert!(ConnectedDids::<T>::get(caller).is_none());
+		assert!(ConnectedDids::<T>::get(&caller).is_none());
 		assert!(ConnectedAccounts::<T>::get(did, caller).is_none());
 	}
 }
