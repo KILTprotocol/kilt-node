@@ -35,6 +35,7 @@ impl OnRuntimeUpgrade for LookupReverseIndexMigration<Runtime> {
 		// Account for the new storage version written below.
 		let initial_weight = <Runtime as frame_system::Config>::DbWeight::get().writes(1);
 
+		// Origin was disabled, so there cannot be any existing links. But we check just to be sure.
 		let total_weight: Weight = pallet_did_lookup::ConnectedDids::<Runtime>::iter().fold(
 			initial_weight,
 			|total_weight, (account, record)| {
