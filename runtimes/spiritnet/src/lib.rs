@@ -67,6 +67,7 @@ mod tests;
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
 
+mod migrations;
 mod weights;
 
 impl_opaque_keys! {
@@ -981,12 +982,7 @@ pub type Executive = frame_executive::Executive<
 	// Executes pallet hooks in reverse order of definition in construct_runtime
 	// If we want to switch to AllPalletsWithSystem, we need to reorder the staking pallets
 	AllPalletsReversedWithSystemFirst,
-	(
-		SchedulerMigrationV3,
-		delegation::migrations::v3::DelegationMigrationV3<Runtime>,
-		did::migrations::v4::DidMigrationV4<Runtime>,
-		parachain_staking::migrations::v7::ParachainStakingMigrationV7<Runtime>,
-	),
+	migrations::LookupReverseIndexMigration<Runtime>
 >;
 
 // Migration for scheduler pallet to move from a plain Call to a CallOrHash.
