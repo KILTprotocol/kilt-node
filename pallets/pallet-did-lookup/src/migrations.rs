@@ -31,7 +31,10 @@ impl<T: Config> OnRuntimeUpgrade for LookupReverseIndexMigration<T> {
 		assert!(Pallet::<T>::on_chain_storage_version() < Pallet::<T>::current_storage_version());
 		assert_eq!(ConnectedAccounts::<T>::iter().count(), 0);
 
-		log::info!("👥  DID lookup pallet to v{:?} passes PRE migrate checks ✅", Pallet::<T>::current_storage_version());
+		log::info!(
+			"👥  DID lookup pallet to {:?} passes PRE migrate checks ✅",
+			Pallet::<T>::current_storage_version()
+		);
 
 		Ok(())
 	}
@@ -52,7 +55,10 @@ impl<T: Config> OnRuntimeUpgrade for LookupReverseIndexMigration<T> {
 
 		Pallet::<T>::current_storage_version().put::<Pallet<T>>();
 
-		log::info!("👥  completed DID lookup pallet migration to v3 ✅",);
+		log::info!(
+			"👥  completed DID lookup pallet migration to {:?} ✅",
+			Pallet::<T>::current_storage_version()
+		);
 
 		total_weight
 	}
@@ -74,7 +80,10 @@ impl<T: Config> OnRuntimeUpgrade for LookupReverseIndexMigration<T> {
 			assert_eq!(entry.did, did);
 		});
 
-		log::info!("👥  DID lookup pallet to v{:?} passes POST migrate checks ✅", Pallet::<T>::current_storage_version());
+		log::info!(
+			"👥  DID lookup pallet to {:?} passes POST migrate checks ✅",
+			Pallet::<T>::current_storage_version()
+		);
 
 		Ok(())
 	}
