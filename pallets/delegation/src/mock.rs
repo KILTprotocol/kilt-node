@@ -464,14 +464,20 @@ pub(crate) mod runtime {
 		}
 
 		#[must_use]
-		pub fn with_ctypes(mut self, ctypes: Vec<(TestCtypeHash, SubjectId)>) -> Self {
+		pub fn with_ctypes(mut self, ctypes: Vec<(CtypeHashOf<Test>, SubjectId)>) -> Self {
 			self.ctypes = ctypes;
 			self
 		}
 
 		#[must_use]
-		pub fn with_delegations(mut self, delegations: Vec<(TestDelegationNodeId, DelegationNode<Test>)>) -> Self {
-			self.delegations_stored = delegations;
+		pub fn with_delegations(mut self, delegations: Vec<(DelegationNodeIdOf<Test>, DelegationNode<Test>)>) -> Self {
+			self.delegations = delegations;
+			self
+		}
+
+		#[must_use]
+		pub fn with_attestations(mut self, attestations: Vec<(ClaimHashOf<Test>, AttestationDetails<Test>)>) -> Self {
+			self.attestations = attestations;
 			self
 		}
 

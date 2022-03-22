@@ -109,7 +109,7 @@ pub mod pallet {
 	/// Mapping from account identifiers to DIDs.
 	#[pallet::storage]
 	#[pallet::getter(fn connected_dids)]
-	pub type ConnectedDids<T> = CountedStorageMap<_, Blake2_128Concat, AccountIdOf<T>, ConnectionRecordOf<T>>;
+	pub type ConnectedDids<T> = StorageMap<_, Blake2_128Concat, AccountIdOf<T>, ConnectionRecordOf<T>>;
 
 	/// Mapping from account identifiers to DIDs.
 	#[pallet::storage]

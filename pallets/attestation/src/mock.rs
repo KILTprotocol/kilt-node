@@ -324,22 +324,7 @@ pub(crate) mod runtime {
 
 	impl ExtBuilder {
 		#[must_use]
-		pub fn with_delegation_hierarchies(
-			mut self,
-			delegation_hierarchies: DelegationHierarchyInitialization<Test>,
-		) -> Self {
-			self.delegation_hierarchies = delegation_hierarchies;
-			self
-		}
-
-		#[must_use]
-		pub fn with_delegations(mut self, delegations: Vec<(TestDelegationNodeId, DelegationNode<Test>)>) -> Self {
-			self.delegations = delegations;
-			self
-		}
-
-		#[must_use]
-		pub fn with_ctypes(mut self, ctypes: Vec<(TestCtypeHash, CtypeCreatorOf<Test>)>) -> Self {
+		pub fn with_ctypes(mut self, ctypes: Vec<(CtypeHashOf<Test>, CtypeCreatorOf<Test>)>) -> Self {
 			self.ctypes = ctypes;
 			self
 		}
@@ -351,7 +336,7 @@ pub(crate) mod runtime {
 		}
 
 		#[must_use]
-		pub fn with_attestations(mut self, attestations: Vec<(TestClaimHash, AttestationDetails<Test>)>) -> Self {
+		pub fn with_attestations(mut self, attestations: Vec<(ClaimHashOf<Test>, AttestationDetails<Test>)>) -> Self {
 			self.attestations = attestations;
 			self
 		}
