@@ -26,6 +26,7 @@
 
 mod connection_record;
 pub mod default_weights;
+pub mod migrations;
 
 #[cfg(test)]
 mod tests;

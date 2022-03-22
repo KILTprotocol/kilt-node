@@ -67,7 +67,6 @@ mod tests;
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
 
-mod migrations;
 mod weights;
 
 impl_opaque_keys! {
@@ -978,7 +977,7 @@ pub type Executive = frame_executive::Executive<
 	// Executes pallet hooks in reverse order of definition in construct_runtime
 	// If we want to switch to AllPalletsWithSystem, we need to reorder the staking pallets
 	AllPalletsReversedWithSystemFirst,
-	migrations::LookupReverseIndexMigration<Runtime>,
+	pallet_did_lookup::migrations::LookupReverseIndexMigration<Runtime>,
 >;
 
 impl_runtime_apis! {
