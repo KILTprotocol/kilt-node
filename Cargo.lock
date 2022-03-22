@@ -5636,6 +5636,7 @@ dependencies = [
  "frame-support",
  "frame-system",
  "kilt-support",
+ "log",
  "pallet-balances",
  "parity-scale-codec",
  "runtime-common",

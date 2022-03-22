@@ -28,8 +28,10 @@ pub struct LookupReverseIndexMigration<T>(PhantomData<T>);
 impl<T: Config> OnRuntimeUpgrade for LookupReverseIndexMigration<T> {
 	#[cfg(feature = "try-runtime")]
 	fn pre_upgrade() -> Result<(), &'static str> {
-		assert!(Pallet::<T>::on_chain_storage_version() < Pallet::current_storage_version());
+		assert!(Pallet::<T>::on_chain_storage_version() < Pallet::<T>::current_storage_version());
 		assert_eq!(ConnectedAccounts::<T>::iter().count(), 0);
+
+		log::info!("👥  DID lookup pallet to v{:?} passes PRE migrate checks ✅", Pallet::<T>::current_storage_version());
 
 		Ok(())
 	}
@@ -50,6 +52,8 @@ impl<T: Config> OnRuntimeUpgrade for LookupReverseIndexMigration<T> {
 
 		Pallet::<T>::current_storage_version().put::<Pallet<T>>();
 
+		log::info!("👥  completed DID lookup pallet migration to v3 ✅",);
+
 		total_weight
 	}
 
@@ -69,6 +73,8 @@ impl<T: Config> OnRuntimeUpgrade for LookupReverseIndexMigration<T> {
 			let entry = ConnectedDids::<T>::get(account).expect("Should find a record for the given account.");
 			assert_eq!(entry.did, did);
 		});
+
+		log::info!("👥  DID lookup pallet to v{:?} passes POST migrate checks ✅", Pallet::<T>::current_storage_version());
 
 		Ok(())
 	}
