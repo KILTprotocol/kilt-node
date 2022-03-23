@@ -759,18 +759,18 @@ impl pallet_randomness_collective_flip::Config for Runtime {}
 )]
 pub enum ProxyType {
 	/// Allow for any call.
-	Any = 0,
+	Any,
 	/// Allow for calls that do not move tokens out of the caller's account.
-	NonTransfer = 1,
+	NonTransfer,
 	/// Allow for governance-related calls.
-	Governance = 2,
+	Governance,
 	/// Allow for staking-related calls.
-	ParachainStaking = 3,
+	ParachainStaking,
 	/// Allow for calls that cancel proxy information.
-	CancelProxy = 4,
+	CancelProxy,
 	/// Allow for calls that do not result in a deposit being claimed (e.g., for
 	/// attestations, delegations, or DIDs).
-	NonDepositClaiming = 5,
+	NonDepositClaiming,
 }
 
 impl Default for ProxyType {
