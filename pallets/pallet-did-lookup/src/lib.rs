@@ -111,7 +111,9 @@ pub mod pallet {
 	#[pallet::getter(fn connected_dids)]
 	pub type ConnectedDids<T> = StorageMap<_, Blake2_128Concat, AccountIdOf<T>, ConnectionRecordOf<T>>;
 
-	/// Mapping from account identifiers to DIDs.
+	/// Mapping from (DID + account identifier) -> ().
+	/// The empty tuple is used as a sentinel value to simply indicate the
+	/// presence of a given tuple in the map.
 	#[pallet::storage]
 	#[pallet::getter(fn connected_accounts)]
 	pub type ConnectedAccounts<T> =
