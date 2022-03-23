@@ -782,6 +782,7 @@ impl InstanceFilter<Call> for ProxyType {
 				c,
 				Call::Attestation(..)
 					| Call::Authorship(..)
+					// Excludes `Balances`
 					| Call::Council(..) | Call::Ctype(..)
 					| Call::Delegation(..)
 					| Call::Democracy(..)
@@ -823,7 +824,7 @@ impl InstanceFilter<Call> for ProxyType {
 							| attestation::Call::revoke { .. }
 					)
 					| Call::Authorship(..)
-					| Call::Balances(..)
+					// Excludes `Balances`
 					| Call::Council(..) | Call::Ctype(..)
 					| Call::Delegation(
 						// Excludes `reclaim_deposit`
