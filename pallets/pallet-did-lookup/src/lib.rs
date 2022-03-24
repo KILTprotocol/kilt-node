@@ -162,8 +162,8 @@ pub mod pallet {
 		///
 		/// # <weight>
 		/// Weight: O(1)
-		/// - Reads: ConnectedDids + DID Origin Check
-		/// - Writes: ConnectedDids
+		/// - Reads: ConnectedDids + ConnectedAccounts + DID Origin Check
+		/// - Writes: ConnectedDids + ConnectedAccounts
 		/// # </weight>
 		#[pallet::weight(<T as Config>::WeightInfo::associate_account())]
 		pub fn associate_account(
@@ -205,8 +205,8 @@ pub mod pallet {
 		///
 		/// # <weight>
 		/// Weight: O(1)
-		/// - Reads: ConnectedDids + DID Origin Check
-		/// - Writes: ConnectedDids
+		/// - Reads: ConnectedDids + ConnectedAccounts + DID Origin Check
+		/// - Writes: ConnectedDids + ConnectedAccounts
 		/// # </weight>
 		#[pallet::weight(<T as Config>::WeightInfo::associate_sender())]
 		pub fn associate_sender(origin: OriginFor<T>) -> DispatchResult {
@@ -231,8 +231,8 @@ pub mod pallet {
 		///
 		/// # <weight>
 		/// Weight: O(1)
-		/// - Reads: ConnectedDids
-		/// - Writes: ConnectedDids
+		/// - Reads: ConnectedDids + ConnectedAccounts + DID Origin Check
+		/// - Writes: ConnectedDids + ConnectedAccounts
 		/// # </weight>
 		#[pallet::weight(<T as Config>::WeightInfo::remove_sender_association())]
 		pub fn remove_sender_association(origin: OriginFor<T>) -> DispatchResult {
@@ -249,8 +249,8 @@ pub mod pallet {
 		///
 		/// # <weight>
 		/// Weight: O(1)
-		/// - Reads: ConnectedDids + DID Origin Check
-		/// - Writes: ConnectedDids
+		/// - Reads: ConnectedDids + ConnectedAccounts + DID Origin Check
+		/// - Writes: ConnectedDids + ConnectedAccounts
 		/// # </weight>
 		#[pallet::weight(<T as Config>::WeightInfo::remove_account_association())]
 		pub fn remove_account_association(origin: OriginFor<T>, account: AccountIdOf<T>) -> DispatchResult {
