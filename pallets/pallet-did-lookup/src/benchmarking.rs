@@ -48,6 +48,7 @@ benchmarks! {
 	associate_account {
 		let caller: T::AccountId = account("caller", 0, SEED);
 		let did: T::DidIdentifier = account("did", 0, SEED);
+		let previous_did: T::DidIdentifier = account("prev", 0, SEED + 1);
 		let connected_acc = sr25519_generate(KeyTypeId(*b"aura"), None);
 		let connected_acc_id: T::AccountId = connected_acc.into();
 		let bn: <T as frame_system::Config>::BlockNumber = 500_u32.into();
@@ -57,22 +58,33 @@ benchmarks! {
 			.into();
 
 		make_free_for_did::<T>(&caller);
+
+		// Add existing connected_acc -> previous_did connection that will be replaced
+		Pallet::<T>::add_association(caller.clone(), previous_did.clone(), connected_acc_id.clone()).expect("should create previous association");
+		assert!(ConnectedAccounts::<T>::get(&previous_did, T::AccountId::from(connected_acc)).is_some());
 		let origin = T::EnsureOrigin::generate_origin(caller, did.clone());
 	}: _<T::Origin>(origin, connected_acc_id, bn, sig)
 	verify {
 		assert!(ConnectedDids::<T>::get(T::AccountId::from(connected_acc)).is_some());
+		assert!(ConnectedAccounts::<T>::get(&previous_did, T::AccountId::from(connected_acc)).is_none());
 		assert!(ConnectedAccounts::<T>::get(did, T::AccountId::from(connected_acc)).is_some());
 	}
 
 	associate_sender {
 		let caller: T::AccountId = account("caller", 0, SEED);
 		let did: T::DidIdentifier = account("did", 0, SEED);
+		let previous_did: T::DidIdentifier = account("prev", 0, SEED + 1);
 
 		make_free_for_did::<T>(&caller);
+
+		// Add existing sender -> previous_did connection that will be replaced
+		Pallet::<T>::add_association(caller.clone(), previous_did.clone(), caller.clone()).expect("should create previous association");
+		assert!(ConnectedAccounts::<T>::get(&previous_did, &caller).is_some());
 		let origin = T::EnsureOrigin::generate_origin(caller.clone(), did.clone());
 	}: _<T::Origin>(origin)
 	verify {
 		assert!(ConnectedDids::<T>::get(&caller).is_some());
+		assert!(ConnectedAccounts::<T>::get(previous_did, &caller).is_none());
 		assert!(ConnectedAccounts::<T>::get(did, caller).is_some());
 	}
 
