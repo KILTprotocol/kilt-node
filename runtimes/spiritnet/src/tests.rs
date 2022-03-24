@@ -27,6 +27,9 @@ use runtime_common::constants::{
 	web3_names::MAX_NAME_BYTE_LENGTH, MAX_INDICES_BYTE_LENGTH,
 };
 
+#[cfg(test)]
+use runtime_common::{AccountId, BlockNumber};
+
 use super::{Call, Runtime};
 
 #[test]
@@ -118,6 +121,43 @@ fn test_derive_did_verification_relation_ctype() {
 	assert_eq!(
 		cb.derive_verification_key_relationship(),
 		Ok(did::DidVerificationKeyRelationship::AssertionMethod)
+	);
+}
+
+#[test]
+fn test_derive_did_key_web3name() {
+	assert_eq!(
+		Call::Web3Names(pallet_web3_names::Call::claim {
+			name: b"test-name".to_vec().try_into().unwrap()
+		})
+		.derive_verification_key_relationship(),
+		Ok(did::DidVerificationKeyRelationship::Authentication)
+	);
+
+	assert_eq!(
+		Call::Web3Names(pallet_web3_names::Call::release_by_owner {}).derive_verification_key_relationship(),
+		Ok(did::DidVerificationKeyRelationship::Authentication)
+	);
+}
+
+#[test]
+fn test_derive_did_key_lookup() {
+	assert_eq!(
+		Call::DidLookup(pallet_did_lookup::Call::associate_account {
+			account: AccountId::new([1u8; 32]),
+			expiration: BlockNumber::default(),
+			proof: sp_runtime::MultiSignature::from(sp_core::ed25519::Signature([0; 64])),
+		})
+		.derive_verification_key_relationship(),
+		Ok(did::DidVerificationKeyRelationship::Authentication)
+	);
+
+	assert_eq!(
+		Call::DidLookup(pallet_did_lookup::Call::remove_account_association {
+			account: AccountId::new([1u8; 32]),
+		})
+		.derive_verification_key_relationship(),
+		Ok(did::DidVerificationKeyRelationship::Authentication)
 	);
 }
 

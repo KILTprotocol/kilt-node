@@ -19,6 +19,7 @@ sp-keystore = {branch = "polkadot-v0.9.17", default-features = false, git = "htt
 
 [dependencies]
 codec = {default-features = false, features = ["derive"], package = "parity-scale-codec", version = "2.3.1"}
+log = "0.4"
 scale-info = {version = "1.0", default-features = false, features = ["derive"]}
 
 # KILT
@@ -49,7 +50,13 @@ std = [
   "frame-benchmarking/std",
   "frame-support/std",
   "frame-system/std",
+  "log/std",
   "scale-info/std",
   "sp-runtime/std",
   "sp-std/std",
+]
+
+try-runtime = [
+  "frame-support/try-runtime",
+  "kilt-support/try-runtime",
 ]
