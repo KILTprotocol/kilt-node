@@ -49,25 +49,25 @@ pub struct WeightInfo<T>(PhantomData<T>);
 impl<T: frame_system::Config> pallet_did_lookup::WeightInfo for WeightInfo<T> {
 	// Storage: System Account (r:1 w:1)
 	// Storage: DidLookup ConnectedDids (r:1 w:1)
-	// Storage: DidLookup ConnectedAccounts (r:0 w:1)
+	// Storage: DidLookup ConnectedAccounts (r:0 w:2)
 	fn associate_account() -> Weight {
-		(95_016_000 as Weight)
+		(111_855_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().writes(3 as Weight))
+			.saturating_add(T::DbWeight::get().writes(4 as Weight))
 	}
 	// Storage: System Account (r:1 w:1)
 	// Storage: DidLookup ConnectedDids (r:1 w:1)
-	// Storage: DidLookup ConnectedAccounts (r:0 w:1)
+	// Storage: DidLookup ConnectedAccounts (r:0 w:2)
 	fn associate_sender() -> Weight {
-		(36_565_000 as Weight)
+		(53_834_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().writes(3 as Weight))
+			.saturating_add(T::DbWeight::get().writes(4 as Weight))
 	}
 	// Storage: DidLookup ConnectedDids (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	// Storage: DidLookup ConnectedAccounts (r:0 w:1)
 	fn remove_sender_association() -> Weight {
-		(35_199_000 as Weight)
+		(35_194_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(2 as Weight))
 			.saturating_add(T::DbWeight::get().writes(3 as Weight))
 	}
@@ -75,7 +75,7 @@ impl<T: frame_system::Config> pallet_did_lookup::WeightInfo for WeightInfo<T> {
 	// Storage: System Account (r:1 w:1)
 	// Storage: DidLookup ConnectedAccounts (r:0 w:1)
 	fn remove_account_association() -> Weight {
-		(37_242_000 as Weight)
+		(38_608_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(2 as Weight))
 			.saturating_add(T::DbWeight::get().writes(3 as Weight))
 	}
