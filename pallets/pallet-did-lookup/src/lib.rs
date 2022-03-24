@@ -26,6 +26,7 @@
 
 mod connection_record;
 pub mod default_weights;
+pub mod migrations;
 
 #[cfg(test)]
 mod tests;
@@ -70,7 +71,7 @@ pub mod pallet {
 	/// The connection record type.
 	pub(crate) type ConnectionRecordOf<T> = ConnectionRecord<DidIdentifierOf<T>, AccountIdOf<T>, BalanceOf<T>>;
 
-	pub const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
+	pub const STORAGE_VERSION: StorageVersion = StorageVersion::new(2);
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
@@ -110,6 +111,14 @@ pub mod pallet {
 	#[pallet::getter(fn connected_dids)]
 	pub type ConnectedDids<T> = StorageMap<_, Blake2_128Concat, AccountIdOf<T>, ConnectionRecordOf<T>>;
 
+	/// Mapping from (DID + account identifier) -> ().
+	/// The empty tuple is used as a sentinel value to simply indicate the
+	/// presence of a given tuple in the map.
+	#[pallet::storage]
+	#[pallet::getter(fn connected_accounts)]
+	pub type ConnectedAccounts<T> =
+		StorageDoubleMap<_, Blake2_128Concat, DidIdentifierOf<T>, Blake2_128Concat, AccountIdOf<T>, ()>;
+
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
@@ -129,7 +138,7 @@ pub mod pallet {
 		/// and the account ID.
 		NotAuthorized,
 
-		/// The supplied proof of ownership was outdated and will not
+		/// The supplied proof of ownership was outdated.
 		OutdatedProof,
 
 		/// The account has insufficient funds and can't pay the fees or reserve
@@ -153,8 +162,8 @@ pub mod pallet {
 		///
 		/// # <weight>
 		/// Weight: O(1)
-		/// - Reads: ConnectedDids + DID Origin Check
-		/// - Writes: ConnectedDids
+		/// - Reads: ConnectedDids + ConnectedAccounts + DID Origin Check
+		/// - Writes: ConnectedDids + ConnectedAccounts
 		/// # </weight>
 		#[pallet::weight(<T as Config>::WeightInfo::associate_account())]
 		pub fn associate_account(
@@ -196,8 +205,8 @@ pub mod pallet {
 		///
 		/// # <weight>
 		/// Weight: O(1)
-		/// - Reads: ConnectedDids + DID Origin Check
-		/// - Writes: ConnectedDids
+		/// - Reads: ConnectedDids + ConnectedAccounts + DID Origin Check
+		/// - Writes: ConnectedDids + ConnectedAccounts
 		/// # </weight>
 		#[pallet::weight(<T as Config>::WeightInfo::associate_sender())]
 		pub fn associate_sender(origin: OriginFor<T>) -> DispatchResult {
@@ -222,8 +231,8 @@ pub mod pallet {
 		///
 		/// # <weight>
 		/// Weight: O(1)
-		/// - Reads: ConnectedDids
-		/// - Writes: ConnectedDids
+		/// - Reads: ConnectedDids + ConnectedAccounts + DID Origin Check
+		/// - Writes: ConnectedDids + ConnectedAccounts
 		/// # </weight>
 		#[pallet::weight(<T as Config>::WeightInfo::remove_sender_association())]
 		pub fn remove_sender_association(origin: OriginFor<T>) -> DispatchResult {
@@ -240,8 +249,8 @@ pub mod pallet {
 		///
 		/// # <weight>
 		/// Weight: O(1)
-		/// - Reads: ConnectedDids + DID Origin Check
-		/// - Writes: ConnectedDids
+		/// - Reads: ConnectedDids + ConnectedAccounts + DID Origin Check
+		/// - Writes: ConnectedDids + ConnectedAccounts
 		/// # </weight>
 		#[pallet::weight(<T as Config>::WeightInfo::remove_account_association())]
 		pub fn remove_account_association(origin: OriginFor<T>, account: AccountIdOf<T>) -> DispatchResult {
@@ -293,11 +302,13 @@ pub mod pallet {
 			CurrencyOf::<T>::reserve(&record.deposit.owner, record.deposit.amount)?;
 
 			ConnectedDids::<T>::mutate(&account, |did_entry| {
-				if let Some(old_did) = did_entry.replace(record) {
-					Self::deposit_event(Event::<T>::AssociationRemoved(account.clone(), old_did.did));
-					kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&old_did.deposit);
+				if let Some(old_connection) = did_entry.replace(record) {
+					ConnectedAccounts::<T>::remove(&old_connection.did, &account);
+					Self::deposit_event(Event::<T>::AssociationRemoved(account.clone(), old_connection.did));
+					kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&old_connection.deposit);
 				}
 			});
+			ConnectedAccounts::<T>::insert(&did_identifier, &account, ());
 			Self::deposit_event(Event::AssociationEstablished(account, did_identifier));
 
 			Ok(())
@@ -305,6 +316,7 @@ pub mod pallet {
 
 		pub(crate) fn remove_association(account: AccountIdOf<T>) -> DispatchResult {
 			if let Some(connection) = ConnectedDids::<T>::take(&account) {
+				ConnectedAccounts::<T>::remove(&connection.did, &account);
 				kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&connection.deposit);
 				Self::deposit_event(Event::AssociationRemoved(account, connection.did));
 
