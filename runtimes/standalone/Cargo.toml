@@ -152,6 +152,7 @@ try-runtime = [
   "pallet-aura/try-runtime",
   "pallet-authorship/try-runtime",
   "pallet-balances/try-runtime",
+  "pallet-did-lookup/try-runtime",
   "pallet-grandpa/try-runtime",
   "pallet-indices/try-runtime",
   "pallet-proxy/try-runtime",

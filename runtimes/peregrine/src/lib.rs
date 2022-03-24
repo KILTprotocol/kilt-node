@@ -28,7 +28,7 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::{
 	construct_runtime, parameter_types,
-	traits::{EnsureOneOf, InstanceFilter, OnRuntimeUpgrade, PrivilegeCmp},
+	traits::{EnsureOneOf, InstanceFilter, PrivilegeCmp},
 	weights::{constants::RocksDbWeight, Weight},
 };
 use frame_system::EnsureRoot;
@@ -927,6 +927,7 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 			Call::Did(did::Call::create { .. }) => Err(did::RelationshipDeriveError::NotCallableByDid),
 			Call::Did { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
 			Call::Web3Names { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
+			Call::DidLookup { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
 			Call::Utility(pallet_utility::Call::batch { calls }) => single_key_relationship(&calls[..]),
 			Call::Utility(pallet_utility::Call::batch_all { calls }) => single_key_relationship(&calls[..]),
 			#[cfg(not(feature = "runtime-benchmarks"))]
@@ -976,39 +977,8 @@ pub type Executive = frame_executive::Executive<
 	// Executes pallet hooks in reverse order of definition in construct_runtime
 	// If we want to switch to AllPalletsWithSystem, we need to reorder the staking pallets
 	AllPalletsReversedWithSystemFirst,
-	(
-		SchedulerMigrationV3,
-		delegation::migrations::v3::DelegationMigrationV3<Runtime>,
-		did::migrations::v4::DidMigrationV4<Runtime>,
-		parachain_staking::migrations::v7::ParachainStakingMigrationV7<Runtime>,
-	),
+	pallet_did_lookup::migrations::LookupReverseIndexMigration<Runtime>,
 >;
-
-// Migration for scheduler pallet to move from a plain Call to a CallOrHash.
-pub struct SchedulerMigrationV3;
-
-impl OnRuntimeUpgrade for SchedulerMigrationV3 {
-	fn on_runtime_upgrade() -> frame_support::weights::Weight {
-		Scheduler::migrate_v1_to_v3()
-	}
-
-	#[cfg(feature = "try-runtime")]
-	fn pre_upgrade() -> Result<(), &'static str> {
-		Scheduler::pre_migrate_to_v3()
-	}
-
-	#[cfg(feature = "try-runtime")]
-	fn post_upgrade() -> Result<(), &'static str> {
-		use frame_support::dispatch::GetStorageVersion;
-
-		Scheduler::post_migrate_to_v3()?;
-		log::info!(
-			"Scheduler migrated to version {:?}",
-			Scheduler::current_storage_version()
-		);
-		Ok(())
-	}
-}
 
 impl_runtime_apis! {
 	impl sp_api::Core<Block> for Runtime {

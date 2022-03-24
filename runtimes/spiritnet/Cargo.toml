@@ -210,6 +210,7 @@ try-runtime = [
   "pallet-balances/try-runtime",
   "pallet-collective/try-runtime",
   "pallet-democracy/try-runtime",
+  "pallet-did-lookup/try-runtime",
   "pallet-indices/try-runtime",
   "pallet-membership/try-runtime",
   "pallet-preimage/try-runtime",
