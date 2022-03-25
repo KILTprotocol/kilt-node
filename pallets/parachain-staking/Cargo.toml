@@ -3,7 +3,7 @@ authors = ["KILT <info@kilt.io>"]
 description = "Parachain parachain-staking pallet for collator delegation and selection as well as reward distribution"
 edition = "2021"
 name = "parachain-staking"
-version = "1.5.0"
+version = "1.6.0"
 
 [dev-dependencies]
 pallet-aura = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.17", default-features = false}
