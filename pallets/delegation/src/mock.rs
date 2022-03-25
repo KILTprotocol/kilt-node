@@ -506,6 +506,7 @@ pub(crate) mod runtime {
 			ext
 		}
 
+		#[cfg(feature = "runtime-benchmarks")]
 		pub fn build_with_keystore(self) -> sp_io::TestExternalities {
 			let mut ext = self.build();
 
