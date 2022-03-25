@@ -158,7 +158,6 @@ impl ExtBuilder {
 		ext
 	}
 
-	// allowance only required for clippy, this function is actually used
 	#[cfg(feature = "runtime-benchmarks")]
 	pub fn build_with_keystore(self) -> sp_io::TestExternalities {
 		let mut ext = self.build();
