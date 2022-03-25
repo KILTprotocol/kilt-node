@@ -2,7 +2,7 @@
 authors = ["KILT <info@kilt.io>"]
 edition = "2021"
 name = "spiritnet-runtime"
-version = "1.5.0"
+version = "1.6.0"
 
 [build-dependencies]
 substrate-wasm-builder = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.17"}
@@ -210,6 +210,7 @@ try-runtime = [
   "pallet-balances/try-runtime",
   "pallet-collective/try-runtime",
   "pallet-democracy/try-runtime",
+  "pallet-did-lookup/try-runtime",
   "pallet-indices/try-runtime",
   "pallet-membership/try-runtime",
   "pallet-preimage/try-runtime",

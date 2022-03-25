@@ -34,7 +34,7 @@ test-features:
 
 build:
   image:
-    name: amazon/aws-cli:2.2.38
+    name: kiltprotocol/kilt-ci:2.2.38
     entrypoint: [""]
   stage: build
   only:
@@ -46,7 +46,6 @@ build:
     DOCKER_HUB_PARACHAIN: "kiltprotocol/kilt-node"
     DOCKER_HUB_STANDALONE: "kiltprotocol/mashnet-node"
   before_script:
-    - amazon-linux-extras install docker
     - aws --version
     - docker --version
   script:

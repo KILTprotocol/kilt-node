@@ -2,7 +2,7 @@
 authors = ["KILT <info@kilt.io>"]
 edition = "2021"
 name = "mashnet-node-runtime"
-version = "1.5.0"
+version = "1.6.0"
 
 [build-dependencies]
 substrate-wasm-builder = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.17"}
@@ -152,6 +152,7 @@ try-runtime = [
   "pallet-aura/try-runtime",
   "pallet-authorship/try-runtime",
   "pallet-balances/try-runtime",
+  "pallet-did-lookup/try-runtime",
   "pallet-grandpa/try-runtime",
   "pallet-indices/try-runtime",
   "pallet-proxy/try-runtime",

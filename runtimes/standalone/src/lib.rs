@@ -114,7 +114,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("mashnet-node"),
 	impl_name: create_runtime_str!("mashnet-node"),
 	authoring_version: 4,
-	spec_version: 10500,
+	spec_version: 10600,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 2,
@@ -519,13 +519,15 @@ impl pallet_randomness_collective_flip::Config for Runtime {}
 	Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, RuntimeDebug, MaxEncodedLen, scale_info::TypeInfo,
 )]
 pub enum ProxyType {
+	/// Allow for any call.
 	Any,
+	/// Allow for calls that do not move tokens out of the caller's account.
 	NonTransfer,
+	/// Allow for staking-related calls.
 	CancelProxy,
-	Ctype,
-	Attestation,
-	Delegation,
-	Did,
+	/// Allow for calls that do not result in a deposit being claimed (e.g., for
+	/// attestations, delegations, or DIDs).
+	NonDepositClaiming,
 }
 
 impl Default for ProxyType {
@@ -540,34 +542,97 @@ impl InstanceFilter<Call> for ProxyType {
 			ProxyType::Any => true,
 			ProxyType::NonTransfer => matches!(
 				c,
-				Call::System(..) |
-				Call::Timestamp(..) |
-				Call::Indices(pallet_indices::Call::claim{..}) |
-				Call::Indices(pallet_indices::Call::free{..}) |
-				Call::Indices(pallet_indices::Call::freeze{..}) |
-				// Specifically omitting Indices `transfer`, `force_transfer`
-				// Specifically omitting the entire Balances pallet
-				Call::Authorship(..) |
-				Call::Session(..) |
-				Call::Vesting(pallet_vesting::Call::vest{..}) |
-				Call::Vesting(pallet_vesting::Call::vest_other{..}) |
-				// Specifically omitting Vesting `vested_transfer`, and `force_vested_transfer`
-				Call::Utility(..)
+				Call::Attestation(..)
+					| Call::Authorship(..)
+					// Excludes `Balances`
+					| Call::Ctype(..)
+					| Call::Delegation(..)
+					| Call::Did(..)
+					| Call::DidLookup(..)
+					| Call::Indices(
+						// Excludes `force_transfer`, and `transfer`
+						pallet_indices::Call::claim { .. }
+							| pallet_indices::Call::free { .. }
+							| pallet_indices::Call::freeze { .. }
+					)
+					| Call::Proxy(..)
+					| Call::Session(..)
+					// Excludes `Sudo`
+					| Call::System(..)
+					| Call::Timestamp(..)
+					| Call::Utility(..)
+					| Call::Web3Names(..),
 			),
-			ProxyType::Ctype => matches!(c, Call::Ctype(..)),
-			ProxyType::Delegation => matches!(c, Call::Delegation(..)),
-			ProxyType::Attestation => matches!(c, Call::Attestation(..)),
-			ProxyType::Did => matches!(c, Call::Did(..)),
-			ProxyType::CancelProxy => {
-				matches!(c, Call::Proxy(pallet_proxy::Call::reject_announcement { .. }))
-			}
+			ProxyType::NonDepositClaiming => matches!(
+				c,
+				Call::Attestation(
+						// Excludes `reclaim_deposit`
+						attestation::Call::add { .. }
+							| attestation::Call::remove { .. }
+							| attestation::Call::revoke { .. }
+					)
+					| Call::Authorship(..)
+					// Excludes `Balances`
+					| Call::Ctype(..)
+					| Call::Delegation(
+						// Excludes `reclaim_deposit`
+						delegation::Call::add_delegation { .. }
+							| delegation::Call::create_hierarchy { .. }
+							| delegation::Call::remove_delegation { .. }
+							| delegation::Call::revoke_delegation { .. }
+					)
+					| Call::Did(
+						// Excludes `reclaim_deposit`
+						did::Call::add_key_agreement_key { .. }
+							| did::Call::add_service_endpoint { .. }
+							| did::Call::create { .. }
+							| did::Call::delete { .. }
+							| did::Call::remove_attestation_key { .. }
+							| did::Call::remove_delegation_key { .. }
+							| did::Call::remove_key_agreement_key { .. }
+							| did::Call::remove_service_endpoint { .. }
+							| did::Call::set_attestation_key { .. }
+							| did::Call::set_authentication_key { .. }
+							| did::Call::set_delegation_key { .. }
+							| did::Call::submit_did_call { .. }
+					)
+					| Call::DidLookup(
+						// Excludes `reclaim_deposit`
+						pallet_did_lookup::Call::associate_account { .. }
+							| pallet_did_lookup::Call::associate_sender { .. }
+							| pallet_did_lookup::Call::remove_account_association { .. }
+							| pallet_did_lookup::Call::remove_sender_association { .. }
+					)
+					| Call::Indices(..)
+					| Call::Proxy(..)
+					| Call::Session(..)
+					// Excludes `Sudo`
+					| Call::System(..)
+					| Call::Timestamp(..)
+					| Call::Utility(..)
+					| Call::Web3Names(
+						// Excludes `ban`, and `reclaim_deposit`
+						pallet_web3_names::Call::claim { .. }
+							| pallet_web3_names::Call::release_by_owner { .. }
+							| pallet_web3_names::Call::unban { .. }
+					),
+			),
+			ProxyType::CancelProxy => matches!(c, Call::Proxy(pallet_proxy::Call::reject_announcement { .. })),
 		}
 	}
 	fn is_superset(&self, o: &Self) -> bool {
 		match (self, o) {
 			(x, y) if x == y => true,
+			// "anything" always contains any subset
 			(ProxyType::Any, _) => true,
 			(_, ProxyType::Any) => false,
+			// reclaiming deposits is part of NonTransfer but not in NonDepositClaiming
+			(ProxyType::NonDepositClaiming, ProxyType::NonTransfer) => false,
+			// everything except NonTransfer and Any is part of NonDepositClaiming
+			(ProxyType::NonDepositClaiming, _) => true,
+			// Transfers are part of NonDepositClaiming but not in NonTransfer
+			(ProxyType::NonTransfer, ProxyType::NonDepositClaiming) => false,
+			// everything except NonDepositClaiming and Any is part of NonTransfer
 			(ProxyType::NonTransfer, _) => true,
 			_ => false,
 		}
@@ -664,6 +729,7 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 			Call::Did(did::Call::create { .. }) => Err(did::RelationshipDeriveError::NotCallableByDid),
 			Call::Did { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
 			Call::Web3Names { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
+			Call::DidLookup { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
 			Call::Utility(pallet_utility::Call::batch { calls }) => single_key_relationship(&calls[..]),
 			Call::Utility(pallet_utility::Call::batch_all { calls }) => single_key_relationship(&calls[..]),
 			#[cfg(not(feature = "runtime-benchmarks"))]

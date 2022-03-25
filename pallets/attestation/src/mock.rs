@@ -291,6 +291,7 @@ pub(crate) mod runtime {
 	}
 
 	impl ExtBuilder {
+		#[must_use]
 		pub fn with_delegation_hierarchies(
 			mut self,
 			delegation_hierarchies: DelegationHierarchyInitialization<Test>,
@@ -299,21 +300,25 @@ pub(crate) mod runtime {
 			self
 		}
 
+		#[must_use]
 		pub fn with_delegations(mut self, delegations: Vec<(TestDelegationNodeId, DelegationNode<Test>)>) -> Self {
 			self.delegations = delegations;
 			self
 		}
 
+		#[must_use]
 		pub fn with_ctypes(mut self, ctypes: Vec<(TestCtypeHash, CtypeCreatorOf<Test>)>) -> Self {
 			self.ctypes = ctypes;
 			self
 		}
 
+		#[must_use]
 		pub fn with_balances(mut self, balances: Vec<(AccountIdOf<Test>, BalanceOf<Test>)>) -> Self {
 			self.balances = balances;
 			self
 		}
 
+		#[must_use]
 		pub fn with_attestations(mut self, attestations: Vec<(TestClaimHash, AttestationDetails<Test>)>) -> Self {
 			self.attestations = attestations;
 			self
@@ -354,6 +359,7 @@ pub(crate) mod runtime {
 			ext
 		}
 
+		#[cfg(feature = "runtime-benchmarks")]
 		pub fn build_with_keystore(self) -> sp_io::TestExternalities {
 			let mut ext = self.build();
 
