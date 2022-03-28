@@ -3525,7 +3525,7 @@ dependencies = [
 
 [[package]]
 name = "kilt-parachain"
-version = "1.5.0"
+version = "1.6.0"
 dependencies = [
  "clap",
  "cumulus-client-cli",
@@ -3600,7 +3600,7 @@ dependencies = [
 
 [[package]]
 name = "kilt-support"
-version = "1.5.0"
+version = "1.6.0"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -4470,7 +4470,7 @@ checksum = "3e2e65a1a2e43cfcb47a895c4c8b10d1f4a61097f9f254f183aee60cad9c651d"
 
 [[package]]
 name = "mashnet-node"
-version = "1.5.0"
+version = "1.6.0"
 dependencies = [
  "clap",
  "frame-benchmarking",
@@ -8567,7 +8567,7 @@ dependencies = [
 
 [[package]]
 name = "runtime-common"
-version = "1.5.0"
+version = "1.6.0"
 dependencies = [
  "frame-support",
  "frame-system",
