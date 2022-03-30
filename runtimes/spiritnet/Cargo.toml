@@ -143,6 +143,7 @@ std = [
   "cumulus-primitives-timestamp/std",
   "delegation/std",
   "did/std",
+  "did-rpc-runtime-api/std",
   "frame-benchmarking/std",
   "frame-executive/std",
   "frame-support/std",
