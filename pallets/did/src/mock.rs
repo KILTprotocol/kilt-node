@@ -16,9 +16,6 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-#![allow(clippy::from_over_into)]
-#![allow(dead_code)]
-
 use frame_support::{
 	parameter_types,
 	traits::{Currency, OnUnbalanced, ReservableCurrency},
@@ -27,13 +24,12 @@ use frame_support::{
 use frame_system::EnsureSigned;
 use pallet_balances::NegativeImbalance;
 use sp_core::{ecdsa, ed25519, sr25519, Pair};
-use sp_keystore::{testing::KeyStore, KeystoreExt};
 use sp_runtime::{
 	testing::{Header, H256},
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
 	MultiSignature, MultiSigner, SaturatedConversion,
 };
-use sp_std::sync::Arc;
+use sp_std::vec::Vec;
 
 use crate::{
 	self as did,
@@ -207,11 +203,8 @@ impl ctype::Config for Test {
 	type FeeCollector = ();
 }
 
-#[cfg(test)]
 pub(crate) const ACCOUNT_00: AccountId = AccountId::new([1u8; 32]);
-#[cfg(test)]
 pub(crate) const ACCOUNT_01: AccountId = AccountId::new([2u8; 32]);
-#[cfg(test)]
 pub(crate) const ACCOUNT_FEE: AccountId = AccountId::new([u8::MAX; 32]);
 
 const DEFAULT_AUTH_SEED: [u8; 32] = [4u8; 32];
@@ -392,6 +385,7 @@ impl DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 	// Always return a System::remark() extrinsic call
 	#[cfg(feature = "runtime-benchmarks")]
 	fn get_call_for_did_call_benchmark() -> Self {
+		use sp_std::vec;
 		Call::System(frame_system::Call::remark { remark: vec![] })
 	}
 }
@@ -418,7 +412,7 @@ pub fn generate_test_did_call(
 		verification_key_relationship: verification_key_required,
 	}
 }
-
+#[cfg(test)]
 #[allow(unused_must_use)]
 pub fn initialize_logger() {
 	env_logger::builder().is_test(true).try_init();
@@ -505,8 +499,8 @@ impl ExtBuilder {
 	pub fn build_with_keystore(self) -> sp_io::TestExternalities {
 		let mut ext = self.build(None);
 
-		let keystore = KeyStore::new();
-		ext.register_extension(KeystoreExt(Arc::new(keystore)));
+		let keystore = sp_keystore::testing::KeyStore::new();
+		ext.register_extension(sp_keystore::KeystoreExt(sp_std::sync::Arc::new(keystore)));
 
 		ext
 	}
