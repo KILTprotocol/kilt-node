@@ -36,6 +36,7 @@ type Balance = u128;
 type Signature = MultiSignature;
 type AccountPublic = <Signature as Verify>::Signer;
 type AccountId = <AccountPublic as IdentifyAccount>::AccountId;
+type Index = u64;
 type BlockNumber = u64;
 
 pub(crate) const TREASURY_ACC: AccountId = AccountId::new([1u8; 32]);
@@ -70,7 +71,7 @@ impl frame_system::Config for Test {
 	type DbWeight = ();
 	type Origin = Origin;
 	type Call = Call;
-	type Index = u64;
+	type Index = Index;
 	type BlockNumber = BlockNumber;
 	type Hash = Hash;
 	type Hashing = BlakeTwo256;

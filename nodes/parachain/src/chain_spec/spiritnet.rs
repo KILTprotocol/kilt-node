@@ -21,7 +21,7 @@
 use cumulus_primitives_core::ParaId;
 use hex_literal::hex;
 use runtime_common::{
-	constants::{INFLATION_CONFIG, KILT, MAX_COLLATOR_STAKE},
+	constants::{staking::MinCollatorStake, INFLATION_CONFIG, KILT, MAX_COLLATOR_STAKE},
 	AccountId, AuthorityId, Balance, BlockNumber,
 };
 use sc_service::ChainType;
@@ -29,9 +29,8 @@ use sc_telemetry::TelemetryEndpoints;
 use sp_core::{crypto::UncheckedInto, sr25519};
 use sp_runtime::traits::Zero;
 use spiritnet_runtime::{
-	BalancesConfig, CouncilConfig, GenesisConfig, InflationInfo, KiltLaunchConfig, MinCollatorStake,
-	ParachainInfoConfig, ParachainStakingConfig, SessionConfig, SystemConfig, TechnicalCommitteeConfig, VestingConfig,
-	WASM_BINARY,
+	BalancesConfig, CouncilConfig, GenesisConfig, InflationInfo, KiltLaunchConfig, ParachainInfoConfig,
+	ParachainStakingConfig, SessionConfig, SystemConfig, TechnicalCommitteeConfig, VestingConfig, WASM_BINARY,
 };
 
 use crate::chain_spec::{get_account_id_from_seed, get_from_seed, DEFAULT_PARA_ID, TELEMETRY_URL};

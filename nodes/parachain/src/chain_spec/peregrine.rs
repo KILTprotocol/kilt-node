@@ -21,12 +21,12 @@
 use cumulus_primitives_core::ParaId;
 use hex_literal::hex;
 use peregrine_runtime::{
-	BalancesConfig, CouncilConfig, GenesisConfig, InflationInfo, KiltLaunchConfig, MinCollatorStake,
-	ParachainInfoConfig, ParachainStakingConfig, SessionConfig, SudoConfig, SystemConfig, TechnicalCommitteeConfig,
-	VestingConfig, WASM_BINARY,
+	BalancesConfig, CouncilConfig, GenesisConfig, InflationInfo, KiltLaunchConfig, ParachainInfoConfig,
+	ParachainStakingConfig, SessionConfig, SudoConfig, SystemConfig, TechnicalCommitteeConfig, VestingConfig,
+	WASM_BINARY,
 };
 use runtime_common::{
-	constants::{INFLATION_CONFIG, MAX_COLLATOR_STAKE},
+	constants::{staking::MinCollatorStake, INFLATION_CONFIG, MAX_COLLATOR_STAKE},
 	AccountId, AuthorityId, Balance, BlockNumber,
 };
 use sc_service::ChainType;

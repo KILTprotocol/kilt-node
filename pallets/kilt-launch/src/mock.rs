@@ -23,7 +23,7 @@ use frame_support::{assert_noop, assert_ok, parameter_types, traits::GenesisBuil
 use frame_system as system;
 use pallet_balances::{BalanceLock, Locks, Reasons};
 use pallet_vesting::VestingInfo;
-use runtime_common::{constants::MIN_VESTED_TRANSFER_AMOUNT, AccountId, Balance, BlockNumber, Hash, Index};
+use runtime_common::{AccountId, Balance, BlockNumber, Hash, Index};
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, ConvertInto, IdentityLookup, Zero},
@@ -125,16 +125,12 @@ impl kilt_launch::Config for Test {
 	type PalletId = LaunchPalletId;
 }
 
-parameter_types! {
-	pub const MinVestedTransfer: Balance = MIN_VESTED_TRANSFER_AMOUNT;
-}
-
 impl pallet_vesting::Config for Test {
 	type Event = Event;
 	type Currency = Balances;
 	type BlockNumberToBalance = ConvertInto;
 	// disable vested transfers by setting min amount to max balance
-	type MinVestedTransfer = MinVestedTransfer;
+	type MinVestedTransfer = runtime_common::constants::MinVestedTransfer;
 	type WeightInfo = ();
 	const MAX_VESTING_SCHEDULES: u32 = runtime_common::constants::MAX_VESTING_SCHEDULES;
 }
