@@ -28,7 +28,7 @@ use sp_std::{
 use crate::{
 	did_details::{DidCreationDetails, DidDetails, DidEncryptionKey, DidNewKeyAgreementKeySet, DidVerificationKey},
 	service_endpoints::DidEndpoint,
-	AccountIdOf, BlockNumberOf, Config, DidIdentifierOf,
+	AccountIdOf, BlockNumberOf, Config, DidIdentifierOf, mock::AccountId,
 };
 
 pub fn get_key_agreement_keys<T: Config>(n_keys: u32) -> DidNewKeyAgreementKeySet<T> {
@@ -96,13 +96,13 @@ pub fn generate_base_did_creation_details<T: Config>(
 pub fn generate_base_did_details<T>(authentication_key: DidVerificationKey) -> DidDetails<T>
 where
 	T: Config,
-	<T as frame_system::Config>::AccountId: From<runtime_common::AccountId>,
+	<T as frame_system::Config>::AccountId: From<AccountId>,
 {
 	DidDetails::new(
 		authentication_key,
 		BlockNumberOf::<T>::default(),
 		Deposit {
-			owner: runtime_common::AccountId::new([0u8; 32]).into(),
+			owner: AccountId::new([0u8; 32]).into(),
 			amount: Zero::zero(),
 		},
 	)

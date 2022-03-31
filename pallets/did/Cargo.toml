@@ -18,13 +18,11 @@ serde = {version = "1.0.132"}
 
 ctype = {features = ["mock"], path = "../ctype"}
 pallet-balances = {branch = "polkadot-v0.9.17", default-features = false, git = "https://github.com/paritytech/substrate"}
-runtime-common = {default-features = false, path = "../../runtimes/common"}
 
 [dependencies]
 # Internal dependencies
 ctype = {optional = true, path = "../ctype"}
 kilt-support = {default-features = false, path = "../../support"}
-runtime-common = {default-features = false, path = "../../runtimes/common"}
 
 # External dependencies
 env_logger = {default-features = false, optional = true, version = "0.8.3"}
@@ -66,7 +64,6 @@ std = [
   "frame-support/std",
   "frame-system/std",
   "hex/std",
-  "runtime-common/std",
   "kilt-support/std",
   "kilt-support/std",
   "log/std",
