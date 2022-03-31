@@ -20,18 +20,7 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-#[cfg(feature = "std")]
-use serde::{Deserialize, Serialize};
-
-use constants::{AVERAGE_ON_INITIALIZE_RATIO, MAXIMUM_BLOCK_WEIGHT, NORMAL_DISPATCH_RATIO};
-use fees::SplitFeesByRatio;
-
-pub use sp_consensus_aura::sr25519::AuthorityId;
-
-pub use opaque::*;
-
 use codec::{Decode, Encode};
-pub use frame_support::weights::constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight};
 use frame_support::{parameter_types, traits::Currency, weights::DispatchClass};
 use frame_system::limits;
 use pallet_transaction_payment::{Multiplier, TargetedFeeAdjustment};
@@ -42,6 +31,15 @@ use sp_runtime::{
 	FixedPointNumber, MultiSignature, Perquintill,
 };
 use sp_std::vec::Vec;
+
+use constants::{AVERAGE_ON_INITIALIZE_RATIO, MAXIMUM_BLOCK_WEIGHT, NORMAL_DISPATCH_RATIO};
+use fees::SplitFeesByRatio;
+
+pub use sp_consensus_aura::sr25519::AuthorityId;
+
+pub use opaque::*;
+
+pub use frame_support::weights::constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight};
 
 pub mod authorization;
 pub mod constants;
@@ -160,11 +158,15 @@ pub type FeeSplit<R, B1, B2> = SplitFeesByRatio<R, FeeSplitRatio, B1, B2>;
 pub type SlowAdjustingFeeUpdate<R> =
 	TargetedFeeAdjustment<R, TargetBlockFullness, AdjustmentVariable, MinimumMultiplier>;
 
-#[derive(Encode, Decode, TypeInfo, PartialEq, Eq)]
-#[cfg_attr(feature = "std", derive(Debug, Serialize, Deserialize))]
-#[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
-pub struct DidDocument<DidDetails, Web3Name> {
-	pub details: DidDetails,
-	pub web3name: Option<Web3Name>,
-	pub accounts: Vec<AccountId>,
+#[derive(Encode, Decode, TypeInfo, PartialEq)]
+#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
+pub struct DidDocument {
+	pub identifier: DidIdentifier,
+	pub w3n: Option<Vec<u8>>,
 }
+
+pub type Web3Name<R> = pallet_web3_names::web3_name::AsciiWeb3Name<
+	R,
+	constants::web3_names::MinNameLength,
+	constants::web3_names::MaxNameLength,
+>;

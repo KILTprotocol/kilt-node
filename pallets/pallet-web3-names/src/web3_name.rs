@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use sp_std::{fmt::Debug, marker::PhantomData, vec::Vec};
+use sp_std::{fmt::Debug, marker::PhantomData, ops::Deref, vec::Vec};
 
 use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::{ensure, sp_runtime::SaturatedConversion, traits::Get, BoundedVec};
@@ -36,6 +36,20 @@ pub struct AsciiWeb3Name<T: Config, MinLength: Get<u32>, MaxLength: Get<u32>>(
 	PhantomData<(T, MinLength)>,
 );
 
+impl<T: Config> Deref for AsciiWeb3Name<T, T::MinNameLength, T::MaxNameLength> {
+	type Target = BoundedVec<u8, T::MaxNameLength>;
+
+	fn deref(&self) -> &Self::Target {
+		&self.0
+	}
+}
+
+impl<T: Config> From<AsciiWeb3Name<T, T::MinNameLength, T::MaxNameLength>> for Vec<u8> {
+	fn from(name: AsciiWeb3Name<T, T::MinNameLength, T::MaxNameLength>) -> Self {
+		name.0.into_inner()
+	}
+}
+
 impl<T: Config> TryFrom<Vec<u8>> for AsciiWeb3Name<T, T::MinNameLength, T::MaxNameLength> {
 	type Error = Error<T>;
 
@@ -52,13 +66,6 @@ impl<T: Config> TryFrom<Vec<u8>> for AsciiWeb3Name<T, T::MinNameLength, T::MaxNa
 		ensure!(is_valid_web3_name(&bounded_vec), Self::Error::InvalidWeb3NameCharacter);
 		Ok(Self(bounded_vec, PhantomData))
 	}
-}
-
-/// Verify that a given slice can be used as a web3 name.
-fn is_valid_web3_name(input: &[u8]) -> bool {
-	input
-		.iter()
-		.all(|c| matches!(c, b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_'))
 }
 
 impl<T: Config> Debug for AsciiWeb3Name<T, T::MinNameLength, T::MaxNameLength> {
@@ -79,6 +86,13 @@ impl<T: Config> Clone for AsciiWeb3Name<T, T::MinNameLength, T::MaxNameLength> {
 	fn clone(&self) -> Self {
 		Self(self.0.clone(), self.1)
 	}
+}
+
+/// Verify that a given slice can be used as a web3 name.
+fn is_valid_web3_name(input: &[u8]) -> bool {
+	input
+		.iter()
+		.all(|c| matches!(c, b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_'))
 }
 
 /// KILT web3 name ownership details.

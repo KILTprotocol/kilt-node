@@ -48,14 +48,13 @@ use sp_version::RuntimeVersion;
 
 
 use delegation::DelegationAc;
-use did::did_details::DidDetails;
 pub use parachain_staking::InflationInfo;
 use runtime_common::{
 	authorization::{AuthorizationId, PalletAuthorize},
 	constants::{self, KILT, MICRO_KILT, MILLI_KILT},
 	fees::{ToAuthor, WeightToFee},
 	pallet_id, AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights, DidDocument,
-	DidIdentifier, FeeSplit, Hash, Header, Index, Signature, SlowAdjustingFeeUpdate,
+	DidIdentifier, FeeSplit, Hash, Header, Index, Signature, SlowAdjustingFeeUpdate, Web3Name,
 };
 
 #[cfg(feature = "std")]
@@ -1084,26 +1083,29 @@ impl_runtime_apis! {
 
 	impl did_rpc_runtime_api::DidApi<
 		Block,
-		Web3Name,
-		DidDoc,
+		Vec<u8>,
+		DidDocument,
 		AccountId
 	> for Runtime {
-		fn query_did_by_w3n(name: Web3Name) -> Option<DidDoc> {
+		fn query_did_by_w3n(name: Vec<u8>) -> Option<DidDocument> {
+			let name: Web3Name<Runtime> = name.try_into().ok()?;
 			pallet_web3_names::Owner::<Runtime>::get(&name)
 				.and_then(|owner_info| {
-					did::Did::<Runtime>::get(owner_info.owner)
-				})
-				.and_then(|did_details| {
-					Some(DidDoc {
-						accounts: vec![],
-						details: did_details,
-						web3name: Some(name),
+					Some(DidDocument {
+						identifier: owner_info.owner,
+						w3n: Some(name.into()),
 					})
 			})
 		}
-		fn query_did_by_account_id(account: AccountId) -> Option<DidDoc> {
 
-			None
+		fn query_did_by_account_id(account: AccountId) -> Option<DidDocument> {
+			pallet_did_lookup::ConnectedDids::<Runtime>::get(account).and_then(|connection_record| {
+				let w3n = pallet_web3_names::Names::<Runtime>::get(&connection_record.did).map(Into::into);
+				Some(DidDocument {
+					identifier: connection_record.did,
+					w3n,
+				})
+			})
 		}
 	}
 
