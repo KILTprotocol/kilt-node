@@ -18,15 +18,15 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use codec::Codec;
+use sp_std::vec::Vec;
 
 sp_api::decl_runtime_apis! {
 	/// The API to query account nonce (aka transaction index).
-	pub trait DidApi<Web3Name, DidDocument, AccountId> where
-		Web3Name: Codec,
+	pub trait DidApi<DidDocument, AccountId> where
 		DidDocument: Codec,
 		AccountId: Codec,
 	{
-		fn query_did_by_w3n(name: Web3Name) -> Option<DidDocument>;
+		fn query_did_by_w3n(name: Vec<u8>) -> Option<DidDocument>;
 		fn query_did_by_account_id(account: AccountId) -> Option<DidDocument>;
 	}
 }

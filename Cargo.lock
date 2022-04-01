@@ -1932,6 +1932,7 @@ dependencies = [
  "parity-scale-codec",
  "sp-api",
  "sp-runtime",
+ "sp-std",
 ]
 
 [[package]]
@@ -4494,6 +4495,7 @@ name = "mashnet-node"
 version = "1.6.1"
 dependencies = [
  "clap",
+ "did-rpc",
  "frame-benchmarking",
  "frame-benchmarking-cli",
  "futures 0.3.21",
@@ -4549,6 +4551,7 @@ dependencies = [
  "ctype",
  "delegation",
  "did",
+ "did-rpc-runtime-api",
  "frame-benchmarking",
  "frame-executive",
  "frame-support",

@@ -23,11 +23,14 @@ delegation = {default-features = false, path = "../../pallets/delegation"}
 did = {default-features = false, path = "../../pallets/did"}
 kilt-launch = {default-features = false, path = "../../pallets/kilt-launch"}
 kilt-support = {path = "../../support", default-features = false, optional = true}
-pallet-web3-names = {default-features = false, path = "../../pallets/pallet-web3-names"}
 pallet-did-lookup = {default-features = false, path = "../../pallets/pallet-did-lookup"}
+pallet-web3-names = {default-features = false, path = "../../pallets/pallet-web3-names"}
 runtime-common = {path = "../../runtimes/common", default-features = false}
 
-# kilt specific
+# RPC
+did-rpc-runtime-api = {path = "../../rpc/did/runtime-api", default-features = false}
+frame-system-rpc-runtime-api = {branch = "polkadot-v0.9.17", default-features = false, git = "https://github.com/paritytech/substrate"}
+pallet-transaction-payment-rpc-runtime-api = {branch = "polkadot-v0.9.17", default-features = false, git = "https://github.com/paritytech/substrate"}
 
 # Benchmarking
 frame-system-benchmarking = {git = "https://github.com/paritytech/substrate", default-features = false, optional = true, branch = "polkadot-v0.9.17"}
@@ -37,7 +40,6 @@ frame-benchmarking = {branch = "polkadot-v0.9.17", default-features = false, git
 frame-executive = {branch = "polkadot-v0.9.17", default-features = false, git = "https://github.com/paritytech/substrate"}
 frame-support = {branch = "polkadot-v0.9.17", default-features = false, git = "https://github.com/paritytech/substrate"}
 frame-system = {branch = "polkadot-v0.9.17", default-features = false, git = "https://github.com/paritytech/substrate"}
-frame-system-rpc-runtime-api = {branch = "polkadot-v0.9.17", default-features = false, git = "https://github.com/paritytech/substrate"}
 pallet-aura = {branch = "polkadot-v0.9.17", default-features = false, git = "https://github.com/paritytech/substrate"}
 pallet-authorship = {branch = "polkadot-v0.9.17", default-features = false, git = "https://github.com/paritytech/substrate"}
 pallet-balances = {branch = "polkadot-v0.9.17", default-features = false, git = "https://github.com/paritytech/substrate"}
@@ -49,7 +51,6 @@ pallet-session = {branch = "polkadot-v0.9.17", default-features = false, git = "
 pallet-sudo = {branch = "polkadot-v0.9.17", default-features = false, git = "https://github.com/paritytech/substrate"}
 pallet-timestamp = {branch = "polkadot-v0.9.17", default-features = false, git = "https://github.com/paritytech/substrate"}
 pallet-transaction-payment = {branch = "polkadot-v0.9.17", default-features = false, git = "https://github.com/paritytech/substrate"}
-pallet-transaction-payment-rpc-runtime-api = {branch = "polkadot-v0.9.17", default-features = false, git = "https://github.com/paritytech/substrate"}
 pallet-utility = {branch = "polkadot-v0.9.17", default-features = false, git = "https://github.com/paritytech/substrate"}
 pallet-vesting = {branch = "polkadot-v0.9.17", default-features = false, git = "https://github.com/paritytech/substrate"}
 sp-api = {branch = "polkadot-v0.9.17", default-features = false, git = "https://github.com/paritytech/substrate"}
@@ -104,6 +105,7 @@ std = [
   "frame-support/std",
   "frame-system/std",
   "frame-system-rpc-runtime-api/std",
+  "did-rpc-runtime-api/std",
   "frame-try-runtime/std",
   "kilt-launch/std",
   "log/std",

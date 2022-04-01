@@ -18,6 +18,7 @@ vergen = "3.1.0"
 # Internal dependencies
 mashnet-node-runtime = {path = "../../runtimes/standalone"}
 runtime-common = {path = "../../runtimes/common"}
+did-rpc = {path = "../../rpc/did"}
 
 # External dependencies
 clap = { version = "3.1", features = ["derive"] }

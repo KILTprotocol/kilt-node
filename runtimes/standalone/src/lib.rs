@@ -28,16 +28,13 @@
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use codec::{Decode, Encode, MaxEncodedLen};
-use delegation::DelegationAc;
-use frame_support::traits::InstanceFilter;
-pub use frame_support::{
+use frame_support::{
 	construct_runtime, parameter_types,
-	traits::{Currency, FindAuthor, Imbalance, KeyOwnerProofSystem, OnUnbalanced, Randomness},
+	traits::{Currency, InstanceFilter, KeyOwnerProofSystem},
 	weights::{
-		constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
-		IdentityFee, Weight,
+		constants::{RocksDbWeight, WEIGHT_PER_SECOND},
+		IdentityFee,
 	},
-	ConsensusEngineId, StorageValue,
 };
 use frame_system::EnsureRoot;
 use pallet_grandpa::{fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
@@ -51,11 +48,20 @@ use sp_runtime::{
 	transaction_validity::{TransactionSource, TransactionValidity},
 	ApplyExtrinsicResult, RuntimeDebug,
 };
-pub use sp_runtime::{Perbill, Permill};
 use sp_std::prelude::*;
 use sp_version::RuntimeVersion;
 
+use delegation::DelegationAc;
+use runtime_common::{
+	authorization::{AuthorizationId, PalletAuthorize},
+	constants::{self, KILT, MICRO_KILT, MILLI_KILT},
+	fees::ToAuthor,
+	pallet_id, AccountId, Balance, BlockNumber, DidDocument, DidIdentifier, Hash, Index, Signature,
+	SlowAdjustingFeeUpdate, Web3Name,
+};
+
 pub use pallet_timestamp::Call as TimestampCall;
+pub use sp_runtime::{Perbill, Permill};
 
 pub use attestation;
 pub use ctype;
@@ -63,12 +69,6 @@ pub use delegation;
 pub use did;
 pub use pallet_balances::Call as BalancesCall;
 pub use pallet_web3_names;
-use runtime_common::{
-	authorization::{AuthorizationId, PalletAuthorize},
-	constants::{self, KILT, MICRO_KILT, MILLI_KILT},
-	fees::ToAuthor,
-	pallet_id, AccountId, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature, SlowAdjustingFeeUpdate,
-};
 
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
@@ -429,10 +429,6 @@ impl did::Config for Runtime {
 	type WeightInfo = ();
 }
 
-parameter_types! {
-	pub const DidLookupDeposit: Balance = constants::did_lookup::DID_CONNECTION_DEPOSIT;
-}
-
 impl pallet_did_lookup::Config for Runtime {
 	type Event = Event;
 	type Signature = Signature;
@@ -440,7 +436,7 @@ impl pallet_did_lookup::Config for Runtime {
 	type DidIdentifier = DidIdentifier;
 
 	type Currency = Balances;
-	type Deposit = DidLookupDeposit;
+	type Deposit = constants::did_lookup::DidLookupDeposit;
 
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
@@ -448,22 +444,16 @@ impl pallet_did_lookup::Config for Runtime {
 	type WeightInfo = ();
 }
 
-parameter_types! {
-	pub const Web3NameDeposit: Balance = constants::web3_names::DEPOSIT;
-	pub const MinNameLength: u32 = constants::web3_names::MIN_LENGTH;
-	pub const MaxNameLength: u32 = constants::web3_names::MAX_LENGTH;
-}
-
 impl pallet_web3_names::Config for Runtime {
 	type BanOrigin = EnsureRoot<AccountId>;
 	type OwnerOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
 	type Currency = Balances;
-	type Deposit = Web3NameDeposit;
+	type Deposit = constants::web3_names::Web3NameDeposit;
 	type Event = Event;
-	type MaxNameLength = MaxNameLength;
-	type MinNameLength = MinNameLength;
-	type Web3Name = pallet_web3_names::web3_name::AsciiWeb3Name<Runtime, MinNameLength, MaxNameLength>;
+	type MaxNameLength = constants::web3_names::MaxNameLength;
+	type MinNameLength = constants::web3_names::MinNameLength;
+	type Web3Name = Web3Name<Runtime>;
 	type Web3NameOwner = DidIdentifier;
 	type WeightInfo = ();
 }
@@ -910,6 +900,33 @@ impl_runtime_apis! {
 			// defined our key owner proof type as a bottom type (i.e. a type
 			// with no values).
 			None
+		}
+	}
+
+	impl did_rpc_runtime_api::DidApi<
+		Block,
+		DidDocument,
+		AccountId
+	> for Runtime {
+		fn query_did_by_w3n(name: Vec<u8>) -> Option<DidDocument> {
+			let name: Web3Name<Runtime> = name.try_into().ok()?;
+			pallet_web3_names::Owner::<Runtime>::get(&name)
+				.and_then(|owner_info| {
+					Some(DidDocument {
+						identifier: owner_info.owner,
+						w3n: Some(name.into()),
+					})
+			})
+		}
+
+		fn query_did_by_account_id(account: AccountId) -> Option<DidDocument> {
+			pallet_did_lookup::ConnectedDids::<Runtime>::get(account).and_then(|connection_record| {
+				let w3n = pallet_web3_names::Names::<Runtime>::get(&connection_record.did).map(Into::into);
+				Some(DidDocument {
+					identifier: connection_record.did,
+					w3n,
+				})
+			})
 		}
 	}
 

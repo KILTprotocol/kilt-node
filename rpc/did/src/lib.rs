@@ -28,9 +28,9 @@ use sp_runtime::{generic::BlockId, traits::Block as BlockT};
 pub use did_rpc_runtime_api::DidApi as DidRuntimeApi;
 
 #[rpc]
-pub trait DidApi<BlockHash, Web3Name, DidDoc, AccountId> {
+pub trait DidApi<BlockHash, DidDoc, AccountId> {
 	#[rpc(name = "did_queryByWeb3Name")]
-	fn query_did_by_w3n(&self, web3name: Web3Name, at: Option<BlockHash>) -> Result<Option<DidDoc>>;
+	fn query_did_by_w3n(&self, web3name: String, at: Option<BlockHash>) -> Result<Option<DidDoc>>;
 
 	#[rpc(name = "did_queryByAccount")]
 	fn query_did_by_account_id(&self, account: AccountId, at: Option<BlockHash>) -> Result<Option<DidDoc>>;
@@ -69,23 +69,21 @@ impl From<Error> for i64 {
 	}
 }
 
-impl<C, Block, Web3Name, DidDoc, AccountId> DidApi<<Block as BlockT>::Hash, Web3Name, DidDoc, AccountId>
-	for DidQuery<C, Block>
+impl<C, Block, DidDoc, AccountId> DidApi<<Block as BlockT>::Hash, DidDoc, AccountId> for DidQuery<C, Block>
 where
-	Web3Name: Codec,
-	DidDoc: Codec,
-	AccountId: Codec,
+	AccountId: Codec + std::marker::Send,
+	DidDoc: Codec + std::marker::Send,
 	Block: BlockT,
 	C: 'static + ProvideRuntimeApi<Block> + HeaderBackend<Block>,
-	C::Api: DidRuntimeApi<Block, Web3Name, DidDoc, AccountId>,
+	C::Api: DidRuntimeApi<Block, DidDoc, AccountId>,
 {
-	fn query_did_by_w3n(&self, web3name: Web3Name, at: Option<<Block as BlockT>::Hash>) -> Result<Option<DidDoc>> {
+	fn query_did_by_w3n(&self, web3name: String, at: Option<<Block as BlockT>::Hash>) -> Result<Option<DidDoc>> {
 		let api = self.client.runtime_api();
 		let at = BlockId::hash(at.unwrap_or_else(||
 			// If the block hash is not supplied assume the best block.
 			self.client.info().best_hash));
 
-		api.query_did_by_w3n(&at, web3name).map_err(|e| RpcError {
+		api.query_did_by_w3n(&at, web3name.into()).map_err(|e| RpcError {
 			code: ErrorCode::ServerError(Error::RuntimeError.into()),
 			message: "Unable to query dispatch info.".into(),
 			data: Some(e.to_string().into()),

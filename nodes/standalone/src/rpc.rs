@@ -25,8 +25,9 @@
 
 use std::sync::Arc;
 
+use did_rpc::{DidApi, DidQuery};
 use mashnet_node_runtime::opaque::Block;
-use runtime_common::{AccountId, Balance, Index};
+use runtime_common::{AccountId, Balance, Index, DidDocument};
 pub use sc_rpc_api::DenyUnsafe;
 use sc_transaction_pool_api::TransactionPool;
 use sp_api::ProvideRuntimeApi;
@@ -52,6 +53,7 @@ where
 	C::Api: frame_rpc_system::AccountNonceApi<Block, AccountId, Index>,
 	C::Api: pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>,
 	C::Api: BlockBuilder<Block>,
+	C::Api: did_rpc::DidRuntimeApi<Block, DidDocument, AccountId>,
 	P: TransactionPool + 'static,
 {
 	use frame_rpc_system::{FullSystem, SystemApi};
@@ -70,7 +72,11 @@ where
 		deny_unsafe,
 	)));
 
-	io.extend_with(TransactionPaymentApi::to_delegate(TransactionPayment::new(client)));
+	io.extend_with(TransactionPaymentApi::to_delegate(TransactionPayment::new(
+		client.clone(),
+	)));
+
+	io.extend_with(DidApi::to_delegate(DidQuery::new(client)));
 
 	// Extend this RPC with a custom API by using the following syntax.
 	// `YourRpcStruct` should have a reference to a client, which is needed
