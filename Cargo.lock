@@ -3510,7 +3510,6 @@ dependencies = [
  "pallet-balances",
  "pallet-vesting",
  "parity-scale-codec",
- "runtime-common",
  "scale-info",
  "serde",
  "sp-core",

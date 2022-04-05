@@ -414,12 +414,12 @@ pub fn generate_test_did_call(
 }
 #[cfg(test)]
 #[allow(unused_must_use)]
-pub fn initialize_logger() {
+pub(crate) fn initialize_logger() {
 	env_logger::builder().is_test(true).try_init();
 }
 
 #[derive(Clone, Default)]
-pub struct ExtBuilder {
+pub(crate) struct ExtBuilder {
 	dids_stored: Vec<(DidIdentifier, DidDetails<Test>)>,
 	service_endpoints: Vec<(DidIdentifier, Vec<DidEndpoint<Test>>)>,
 	deleted_dids: Vec<DidIdentifier>,

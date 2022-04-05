@@ -23,15 +23,23 @@ use frame_support::{assert_noop, assert_ok, parameter_types, traits::GenesisBuil
 use frame_system as system;
 use pallet_balances::{BalanceLock, Locks, Reasons};
 use pallet_vesting::VestingInfo;
-use runtime_common::{AccountId, Balance, BlockNumber, Hash, Index};
 use sp_runtime::{
 	testing::Header,
-	traits::{BlakeTwo256, ConvertInto, IdentityLookup, Zero},
-	AccountId32,
+	traits::{BlakeTwo256, ConvertInto, IdentifyAccount, IdentityLookup, Verify, Zero},
+	AccountId32, MultiSignature,
 };
 
-type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
-type Block = frame_system::mocking::MockBlock<Test>;
+pub(crate) type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
+pub(crate) type Block = frame_system::mocking::MockBlock<Test>;
+pub(crate) type Hash = sp_core::H256;
+pub(crate) type Balance = u128;
+pub(crate) type Signature = MultiSignature;
+pub(crate) type AccountPublic = <Signature as Verify>::Signer;
+pub(crate) type AccountId = <AccountPublic as IdentifyAccount>::AccountId;
+pub(crate) type Index = u64;
+pub(crate) type BlockNumber = u64;
+
+pub const MILLI_KILT: Balance = 10u128.pow(12);
 
 pub const PSEUDO_1: AccountId = AccountId32::new([1u8; 32]);
 pub const PSEUDO_2: AccountId = AccountId32::new([2u8; 32]);
@@ -125,21 +133,23 @@ impl kilt_launch::Config for Test {
 	type PalletId = LaunchPalletId;
 }
 
+parameter_types! {
+	pub const MinVestedTransfer: Balance = 100 * MILLI_KILT;
+}
+
 impl pallet_vesting::Config for Test {
 	type Event = Event;
 	type Currency = Balances;
 	type BlockNumberToBalance = ConvertInto;
 	// disable vested transfers by setting min amount to max balance
-	type MinVestedTransfer = runtime_common::constants::MinVestedTransfer;
+	type MinVestedTransfer = MinVestedTransfer;
 	type WeightInfo = ();
-	const MAX_VESTING_SCHEDULES: u32 = runtime_common::constants::MAX_VESTING_SCHEDULES;
+	const MAX_VESTING_SCHEDULES: u32 = 28;
 }
 
 pub struct ExtBuilder {
 	balance_locks: Vec<(AccountId, BlockNumber, Balance)>,
 	vesting: Vec<(AccountId, BlockNumber, Balance)>,
-	#[allow(dead_code)]
-	transfer_account: AccountId,
 }
 
 impl Default for ExtBuilder {
@@ -147,7 +157,6 @@ impl Default for ExtBuilder {
 		Self {
 			balance_locks: vec![],
 			vesting: vec![],
-			transfer_account: TRANSFER_ACCOUNT,
 		}
 	}
 }

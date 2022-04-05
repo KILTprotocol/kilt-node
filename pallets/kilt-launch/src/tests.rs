@@ -27,7 +27,6 @@ use frame_support::{
 };
 use pallet_balances::{BalanceLock, Locks, Reasons};
 use pallet_vesting::{Vesting as VestingStorage, VestingInfo};
-use runtime_common::{AccountId, BlockNumber};
 use sp_runtime::traits::Zero;
 
 #[test]
