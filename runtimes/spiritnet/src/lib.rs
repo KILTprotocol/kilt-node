@@ -53,8 +53,8 @@ use runtime_common::{
 	authorization::{AuthorizationId, PalletAuthorize},
 	constants::{self, KILT, MICRO_KILT, MILLI_KILT},
 	fees::{ToAuthor, WeightToFee},
-	pallet_id, AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights, DidDocument,
-	DidIdentifier, FeeSplit, Hash, Header, Index, Signature, SlowAdjustingFeeUpdate, Web3Name,
+	pallet_id, AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights, DidIdentifier,
+	FeeSplit, Hash, Header, Index, Signature, SlowAdjustingFeeUpdate, Web3Name,
 };
 
 #[cfg(feature = "std")]
@@ -1083,28 +1083,29 @@ impl_runtime_apis! {
 
 	impl did_rpc_runtime_api::DidApi<
 		Block,
-		Vec<u8>,
-		DidDocument,
+		DidIdentifier,
 		AccountId
 	> for Runtime {
-		fn query_did_by_w3n(name: Vec<u8>) -> Option<DidDocument> {
+		fn query_did_by_w3n(name: Vec<u8>) -> Option<did_rpc_runtime_api::RawDidDocument<DidIdentifier, AccountId>> {
 			let name: Web3Name<Runtime> = name.try_into().ok()?;
 			pallet_web3_names::Owner::<Runtime>::get(&name)
-				.and_then(|owner_info| {
-					Some(DidDocument {
+				.map(|owner_info| {
+					did_rpc_runtime_api::RawDidDocument {
 						identifier: owner_info.owner,
 						w3n: Some(name.into()),
-					})
+						accounts: None,
+					}
 			})
 		}
 
-		fn query_did_by_account_id(account: AccountId) -> Option<DidDocument> {
-			pallet_did_lookup::ConnectedDids::<Runtime>::get(account).and_then(|connection_record| {
+		fn query_did_by_account_id(account: AccountId) -> Option<did_rpc_runtime_api::RawDidDocument<DidIdentifier, AccountId>> {
+			pallet_did_lookup::ConnectedDids::<Runtime>::get(account).map(|connection_record| {
 				let w3n = pallet_web3_names::Names::<Runtime>::get(&connection_record.did).map(Into::into);
-				Some(DidDocument {
+				did_rpc_runtime_api::RawDidDocument {
 					identifier: connection_record.did,
 					w3n,
-				})
+					accounts: None,
+				}
 			})
 		}
 	}

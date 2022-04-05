@@ -29,7 +29,7 @@ use did_rpc::{DidApi, DidQuery};
 use frame_rpc_system::{FullSystem, SystemApi};
 use pallet_transaction_payment_rpc::{TransactionPayment, TransactionPaymentApi};
 use polkadot_service::AuxStore;
-use runtime_common::{AccountId, Balance, Block, DidDocument, Index};
+use runtime_common::{AccountId, Balance, Block, DidIdentifier, Index};
 use sc_service::Error;
 use sc_transaction_pool_api::TransactionPool;
 use sp_api::ProvideRuntimeApi;
@@ -57,7 +57,7 @@ where
 	C: Send + Sync + 'static,
 	C::Api: frame_rpc_system::AccountNonceApi<Block, AccountId, Index>,
 	C::Api: pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>,
-	C::Api: did_rpc::DidRuntimeApi<Block, Vec<u8>, DidDocument, AccountId>,
+	C::Api: did_rpc::DidRuntimeApi<Block, DidIdentifier, AccountId>,
 	C::Api: BlockBuilder<Block>,
 	P: TransactionPool + Sync + Send + 'static,
 {
@@ -74,7 +74,9 @@ where
 		deny_unsafe,
 	)));
 
-	io.extend_with(TransactionPaymentApi::to_delegate(TransactionPayment::new(client.clone())));
+	io.extend_with(TransactionPaymentApi::to_delegate(TransactionPayment::new(
+		client.clone(),
+	)));
 
 	io.extend_with(DidApi::to_delegate(DidQuery::new(client)));
 

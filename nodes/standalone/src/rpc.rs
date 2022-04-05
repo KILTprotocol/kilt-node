@@ -27,7 +27,7 @@ use std::sync::Arc;
 
 use did_rpc::{DidApi, DidQuery};
 use mashnet_node_runtime::opaque::Block;
-use runtime_common::{AccountId, Balance, Index, DidDocument};
+use runtime_common::{AccountId, Balance, Index, DidIdentifier};
 pub use sc_rpc_api::DenyUnsafe;
 use sc_transaction_pool_api::TransactionPool;
 use sp_api::ProvideRuntimeApi;
@@ -53,7 +53,7 @@ where
 	C::Api: frame_rpc_system::AccountNonceApi<Block, AccountId, Index>,
 	C::Api: pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>,
 	C::Api: BlockBuilder<Block>,
-	C::Api: did_rpc::DidRuntimeApi<Block, DidDocument, AccountId>,
+	C::Api: did_rpc::DidRuntimeApi<Block, DidIdentifier, AccountId>,
 	P: TransactionPool + 'static,
 {
 	use frame_rpc_system::{FullSystem, SystemApi};

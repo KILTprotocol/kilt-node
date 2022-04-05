@@ -56,8 +56,8 @@ use runtime_common::{
 	authorization::{AuthorizationId, PalletAuthorize},
 	constants::{self, KILT, MICRO_KILT, MILLI_KILT},
 	fees::ToAuthor,
-	pallet_id, AccountId, Balance, BlockNumber, DidDocument, DidIdentifier, Hash, Index, Signature,
-	SlowAdjustingFeeUpdate, Web3Name,
+	pallet_id, AccountId, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature, SlowAdjustingFeeUpdate,
+	Web3Name,
 };
 
 pub use pallet_timestamp::Call as TimestampCall;
@@ -905,26 +905,28 @@ impl_runtime_apis! {
 
 	impl did_rpc_runtime_api::DidApi<
 		Block,
-		DidDocument,
+		DidIdentifier,
 		AccountId
 	> for Runtime {
-		fn query_did_by_w3n(name: Vec<u8>) -> Option<DidDocument> {
+		fn query_did_by_w3n(name: Vec<u8>) -> Option<did_rpc_runtime_api::RawDidDocument<DidIdentifier, AccountId>> {
 			let name: Web3Name<Runtime> = name.try_into().ok()?;
 			pallet_web3_names::Owner::<Runtime>::get(&name)
 				.and_then(|owner_info| {
-					Some(DidDocument {
+					Some(did_rpc_runtime_api::RawDidDocument {
 						identifier: owner_info.owner,
 						w3n: Some(name.into()),
+						accounts: None,
 					})
 			})
 		}
 
-		fn query_did_by_account_id(account: AccountId) -> Option<DidDocument> {
+		fn query_did_by_account_id(account: AccountId) -> Option<did_rpc_runtime_api::RawDidDocument<DidIdentifier, AccountId>> {
 			pallet_did_lookup::ConnectedDids::<Runtime>::get(account).and_then(|connection_record| {
 				let w3n = pallet_web3_names::Names::<Runtime>::get(&connection_record.did).map(Into::into);
-				Some(DidDocument {
+				Some(did_rpc_runtime_api::RawDidDocument {
 					identifier: connection_record.did,
 					w3n,
+					accounts: None,
 				})
 			})
 		}

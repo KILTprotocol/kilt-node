@@ -20,17 +20,14 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use codec::{Decode, Encode};
 use frame_support::{parameter_types, traits::Currency, weights::DispatchClass};
 use frame_system::limits;
 use pallet_transaction_payment::{Multiplier, TargetedFeeAdjustment};
-use scale_info::TypeInfo;
 use sp_runtime::{
 	generic,
 	traits::{IdentifyAccount, Verify},
 	FixedPointNumber, MultiSignature, Perquintill,
 };
-use sp_std::vec::Vec;
 
 use constants::{AVERAGE_ON_INITIALIZE_RATIO, MAXIMUM_BLOCK_WEIGHT, NORMAL_DISPATCH_RATIO};
 use fees::SplitFeesByRatio;
@@ -157,13 +154,6 @@ pub type FeeSplit<R, B1, B2> = SplitFeesByRatio<R, FeeSplitRatio, B1, B2>;
 /// https://w3f-research.readthedocs.io/en/latest/polkadot/Token%20Economics.html#-2.-slow-adjusting-mechanism
 pub type SlowAdjustingFeeUpdate<R> =
 	TargetedFeeAdjustment<R, TargetBlockFullness, AdjustmentVariable, MinimumMultiplier>;
-
-#[derive(Encode, Decode, TypeInfo, PartialEq)]
-#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
-pub struct DidDocument {
-	pub identifier: DidIdentifier,
-	pub w3n: Option<Vec<u8>>,
-}
 
 pub type Web3Name<R> = pallet_web3_names::web3_name::AsciiWeb3Name<
 	R,
