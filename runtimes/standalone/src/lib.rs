@@ -911,23 +911,23 @@ impl_runtime_apis! {
 		fn query_did_by_w3n(name: Vec<u8>) -> Option<did_rpc_runtime_api::RawDidDocument<DidIdentifier, AccountId>> {
 			let name: Web3Name<Runtime> = name.try_into().ok()?;
 			pallet_web3_names::Owner::<Runtime>::get(&name)
-				.and_then(|owner_info| {
-					Some(did_rpc_runtime_api::RawDidDocument {
+				.map(|owner_info| {
+					did_rpc_runtime_api::RawDidDocument {
 						identifier: owner_info.owner,
 						w3n: Some(name.into()),
 						accounts: None,
-					})
+					}
 			})
 		}
 
 		fn query_did_by_account_id(account: AccountId) -> Option<did_rpc_runtime_api::RawDidDocument<DidIdentifier, AccountId>> {
-			pallet_did_lookup::ConnectedDids::<Runtime>::get(account).and_then(|connection_record| {
+			pallet_did_lookup::ConnectedDids::<Runtime>::get(account).map(|connection_record| {
 				let w3n = pallet_web3_names::Names::<Runtime>::get(&connection_record.did).map(Into::into);
-				Some(did_rpc_runtime_api::RawDidDocument {
+				did_rpc_runtime_api::RawDidDocument {
 					identifier: connection_record.did,
 					w3n,
 					accounts: None,
-				})
+				}
 			})
 		}
 	}
@@ -1019,7 +1019,7 @@ impl_runtime_apis! {
 
 	#[cfg(feature = "try-runtime")]
 	impl frame_try_runtime::TryRuntime<Block> for Runtime {
-		fn on_runtime_upgrade() -> (Weight, Weight) {
+		fn on_runtime_upgrade() -> (frame_support::pallet_prelude::Weight, frame_support::pallet_prelude::Weight) {
 			log::info!("try-runtime::on_runtime_upgrade standalone runtime.");
 			let weight = Executive::try_runtime_upgrade().map_err(|err|{
 				log::info!("try-runtime::on_runtime_upgrade failed with: {:?}", err);
@@ -1027,7 +1027,7 @@ impl_runtime_apis! {
 			}).unwrap();
 			(weight, BlockWeights::get().max_block)
 		}
-		fn execute_block_no_check(block: Block) -> Weight {
+		fn execute_block_no_check(block: Block) -> frame_support::pallet_prelude::Weight {
 			Executive::execute_block_no_check(block)
 		}
 	}

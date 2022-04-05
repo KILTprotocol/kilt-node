@@ -1080,23 +1080,23 @@ impl_runtime_apis! {
 		fn query_did_by_w3n(name: Vec<u8>) -> Option<did_rpc_runtime_api::RawDidDocument<DidIdentifier, AccountId>> {
 			let name: Web3Name<Runtime> = name.try_into().ok()?;
 			pallet_web3_names::Owner::<Runtime>::get(&name)
-				.and_then(|owner_info| {
-					Some(did_rpc_runtime_api::RawDidDocument {
+				.map(|owner_info| {
+					did_rpc_runtime_api::RawDidDocument {
 						identifier: owner_info.owner,
 						w3n: Some(name.into()),
 						accounts: None,
-					})
+					}
 			})
 		}
 
 		fn query_did_by_account_id(account: AccountId) -> Option<did_rpc_runtime_api::RawDidDocument<DidIdentifier, AccountId>> {
-			pallet_did_lookup::ConnectedDids::<Runtime>::get(account).and_then(|connection_record| {
+			pallet_did_lookup::ConnectedDids::<Runtime>::get(account).map(|connection_record| {
 				let w3n = pallet_web3_names::Names::<Runtime>::get(&connection_record.did).map(Into::into);
-				Some(did_rpc_runtime_api::RawDidDocument {
+				did_rpc_runtime_api::RawDidDocument {
 					identifier: connection_record.did,
 					w3n,
 					accounts: None,
-				})
+				}
 			})
 		}
 	}
