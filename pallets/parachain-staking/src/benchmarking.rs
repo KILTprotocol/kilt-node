@@ -26,7 +26,6 @@ use frame_support::{
 };
 use frame_system::{Pallet as System, RawOrigin};
 use pallet_session::Pallet as Session;
-use runtime_common::constants::BLOCKS_PER_YEAR;
 use sp_runtime::{
 	traits::{One, SaturatedConversion, StaticLookup},
 	Perquintill,
@@ -138,7 +137,7 @@ benchmarks! {
 	on_initialize_new_year {
 		let old = <InflationConfig<T>>::get();
 		assert_eq!(<LastRewardReduction<T>>::get(), T::BlockNumber::zero());
-		let block = (BLOCKS_PER_YEAR + 1u64).saturated_into::<T::BlockNumber>();
+		let block = (T::BLOCKS_PER_YEAR + 1u32.into()).saturated_into::<T::BlockNumber>();
 	}: { Pallet::<T>::on_initialize(block) }
 	verify {
 		let new = <InflationConfig<T>>::get();
@@ -187,6 +186,7 @@ benchmarks! {
 
 	set_inflation {
 		let inflation = InflationInfo::new(
+			T::BLOCKS_PER_YEAR.saturated_into(),
 			Perquintill::from_percent(10),
 			Perquintill::from_percent(15),
 			Perquintill::from_percent(40),
@@ -628,8 +628,8 @@ benchmarks! {
 impl_benchmark_test_suite!(
 	Pallet,
 	crate::mock::ExtBuilder::default()
-		.with_balances(vec![(u64::MAX, runtime_common::constants::KILT)])
-		.with_collators(vec![(u64::MAX, runtime_common::constants::KILT)])
+		.with_balances(vec![(u64::MAX, 1000 * crate::mock::MILLI_KILT)])
+		.with_collators(vec![(u64::MAX, 1000 * crate::mock::MILLI_KILT)])
 		.build(),
 	crate::mock::Test,
 );

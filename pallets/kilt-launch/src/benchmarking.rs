@@ -18,7 +18,7 @@
 
 use super::*;
 
-use crate::{BalanceLocks, BalanceOf, LockedBalance, Pallet as KiltLaunch, UnownedAccount, KILT_LAUNCH_ID};
+use crate::{BalanceLocks, BalanceOf, LockedBalance, Pallet as KiltLaunch, UnownedAccount};
 use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite, vec, whitelist_account, Zero};
 use frame_support::{
 	assert_ok,

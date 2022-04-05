@@ -21,7 +21,7 @@
 use cumulus_primitives_core::ParaId;
 use hex_literal::hex;
 use runtime_common::{
-	constants::{staking::MinCollatorStake, INFLATION_CONFIG, KILT, MAX_COLLATOR_STAKE},
+	constants::{kilt_inflation_config, staking::MinCollatorStake, KILT, MAX_COLLATOR_STAKE},
 	AccountId, AuthorityId, Balance, BlockNumber,
 };
 use sc_service::ChainType;
@@ -241,10 +241,6 @@ pub fn load_rilt_spec() -> Result<ChainSpec, String> {
 
 pub fn load_spiritnet_spec() -> Result<ChainSpec, String> {
 	ChainSpec::from_json_bytes(&include_bytes!("../../res/spiritnet.json")[..])
-}
-
-pub fn kilt_inflation_config() -> InflationInfo {
-	InflationInfo::from(INFLATION_CONFIG)
 }
 
 #[allow(clippy::too_many_arguments)]

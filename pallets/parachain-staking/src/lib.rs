@@ -192,7 +192,6 @@ pub mod pallet {
 	use frame_system::pallet_prelude::*;
 	use pallet_balances::{BalanceLock, Locks};
 	use pallet_session::ShouldEndSession;
-	use runtime_common::constants::BLOCKS_PER_YEAR;
 	use scale_info::TypeInfo;
 	use sp_runtime::{
 		traits::{Convert, One, SaturatedConversion, Saturating, StaticLookup, Zero},
@@ -349,6 +348,8 @@ pub mod pallet {
 
 		/// Weight information for extrinsics in this pallet.
 		type WeightInfo: WeightInfo;
+
+		const BLOCKS_PER_YEAR: Self::BlockNumber;
 	}
 
 	#[pallet::error]
@@ -548,7 +549,7 @@ pub mod pallet {
 				post_weight = <T as Config>::WeightInfo::on_initialize_round_update();
 			}
 			// check for InflationInfo update
-			if now > BLOCKS_PER_YEAR.saturated_into::<T::BlockNumber>() {
+			if now > T::BLOCKS_PER_YEAR.saturated_into::<T::BlockNumber>() {
 				post_weight = post_weight.saturating_add(Self::adjust_reward_rates(now));
 			}
 			// check for network reward
@@ -694,7 +695,10 @@ pub mod pallet {
 	#[pallet::genesis_build]
 	impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
 		fn build(&self) {
-			assert!(self.inflation_config.is_valid(), "Invalid inflation configuration");
+			assert!(
+				self.inflation_config.is_valid(T::BLOCKS_PER_YEAR.saturated_into()),
+				"Invalid inflation configuration"
+			);
 
 			<InflationConfig<T>>::put(self.inflation_config.clone());
 			MaxCollatorCandidateStake::<T>::put(self.max_candidate_stake);
@@ -783,13 +787,17 @@ pub mod pallet {
 			ensure_root(origin)?;
 
 			let inflation = InflationInfo::new(
+				T::BLOCKS_PER_YEAR.saturated_into(),
 				collator_max_rate_percentage,
 				collator_annual_reward_rate_percentage,
 				delegator_max_rate_percentage,
 				delegator_annual_reward_rate_percentage,
 			);
 
-			ensure!(inflation.is_valid(), Error::<T>::InvalidSchedule);
+			ensure!(
+				inflation.is_valid(T::BLOCKS_PER_YEAR.saturated_into()),
+				Error::<T>::InvalidSchedule
+			);
 			Self::deposit_event(Event::RoundInflationSet(
 				inflation.collator.max_rate,
 				inflation.collator.reward_rate.per_block,
@@ -2676,7 +2684,7 @@ pub mod pallet {
 		/// - Writes: LastRewardReduction, InflationConfig
 		/// # </weight>
 		fn adjust_reward_rates(now: T::BlockNumber) -> Weight {
-			let year = now / BLOCKS_PER_YEAR.saturated_into::<T::BlockNumber>();
+			let year = now / T::BLOCKS_PER_YEAR;
 			let last_update = <LastRewardReduction<T>>::get();
 			if year > last_update {
 				let inflation = <InflationConfig<T>>::get();
@@ -2690,6 +2698,7 @@ pub mod pallet {
 				};
 
 				let new_inflation = InflationInfo::new(
+					T::BLOCKS_PER_YEAR.saturated_into(),
 					inflation.collator.max_rate,
 					c_reward_rate,
 					inflation.delegator.max_rate,

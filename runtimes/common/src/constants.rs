@@ -65,7 +65,6 @@ pub const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
 /// We allow for 0.5 seconds of compute with a 12 second average block time.
 pub const MAXIMUM_BLOCK_WEIGHT: Weight = WEIGHT_PER_SECOND / 2;
 
-/// Inflation configuration which is used at genesis
 pub const INFLATION_CONFIG: (Perquintill, Perquintill, Perquintill, Perquintill) = (
 	// max collator staking rate
 	Perquintill::from_percent(40),
@@ -76,6 +75,21 @@ pub const INFLATION_CONFIG: (Perquintill, Perquintill, Perquintill, Perquintill)
 	// delegator reward rate
 	Perquintill::from_percent(8),
 );
+
+/// Inflation configuration which is used at genesis
+pub fn kilt_inflation_config() -> InflationInfo {
+	InflationInfo::new(
+		BLOCKS_PER_YEAR,
+		// max collator staking rate
+		Perquintill::from_percent(40),
+		// collator reward rate
+		Perquintill::from_percent(10),
+		// max delegator staking rate
+		Perquintill::from_percent(10),
+		// delegator reward rate
+		Perquintill::from_percent(8),
+	)
+}
 
 /// Calculate the storage deposit based on the number of storage items and the
 /// combined byte size of those items.
@@ -392,5 +406,16 @@ pub mod preimage {
 	parameter_types! {
 		pub const PreimageMaxSize: u32 = 4096 * 1024;
 		pub const PreimageBaseDeposit: Balance = deposit(2, 64);
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+	// TODO: static assert
+	#[allow(clippy::assertions_on_constants)]
+	#[test]
+	fn blocks_per_year_saturation() {
+		assert!(BLOCKS_PER_YEAR < u64::MAX);
 	}
 }

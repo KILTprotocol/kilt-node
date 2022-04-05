@@ -147,18 +147,10 @@ impl pallet_vesting::Config for Test {
 	const MAX_VESTING_SCHEDULES: u32 = 28;
 }
 
+#[derive(Default)]
 pub struct ExtBuilder {
 	balance_locks: Vec<(AccountId, BlockNumber, Balance)>,
 	vesting: Vec<(AccountId, BlockNumber, Balance)>,
-}
-
-impl Default for ExtBuilder {
-	fn default() -> Self {
-		Self {
-			balance_locks: vec![],
-			vesting: vec![],
-		}
-	}
 }
 
 /// Calls `migrate_genesis_account` and checks whether balance, vesting and

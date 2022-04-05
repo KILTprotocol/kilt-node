@@ -26,7 +26,7 @@ use peregrine_runtime::{
 	WASM_BINARY,
 };
 use runtime_common::{
-	constants::{staking::MinCollatorStake, INFLATION_CONFIG, MAX_COLLATOR_STAKE},
+	constants::{kilt_inflation_config, staking::MinCollatorStake, MAX_COLLATOR_STAKE},
 	AccountId, AuthorityId, Balance, BlockNumber,
 };
 use sc_service::ChainType;
@@ -136,10 +136,6 @@ pub fn make_new_spec() -> Result<ChainSpec, String> {
 			para_id: id.into(),
 		},
 	))
-}
-
-pub fn kilt_inflation_config() -> InflationInfo {
-	InflationInfo::from(INFLATION_CONFIG)
 }
 
 #[allow(clippy::too_many_arguments)]

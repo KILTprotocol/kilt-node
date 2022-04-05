@@ -630,6 +630,8 @@ impl parachain_staking::Config for Runtime {
 
 	type NetworkRewardBeneficiary = Treasury;
 	type WeightInfo = weights::parachain_staking::WeightInfo<Runtime>;
+
+	const BLOCKS_PER_YEAR: Self::BlockNumber = constants::BLOCKS_PER_YEAR;
 }
 
 impl pallet_utility::Config for Runtime {
