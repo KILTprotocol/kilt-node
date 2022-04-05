@@ -22,6 +22,8 @@ use frame_support::{
 };
 use sp_runtime::{Perbill, Perquintill};
 
+use parachain_staking::InflationInfo;
+
 use crate::{Balance, BlockNumber};
 
 /// This determines the average expected block time that we are targetting.
@@ -396,9 +398,6 @@ pub mod web3_names {
 		pub const MinNameLength: u32 = MIN_LENGTH;
 		pub const MaxNameLength: u32 = MAX_LENGTH;
 	}
-
-	// pub type Web3Name<R> = pallet_web3_names::web3_name::AsciiWeb3Name<R,
-	// MinNameLength, MaxNameLength>;
 }
 
 pub mod preimage {
