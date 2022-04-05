@@ -41,7 +41,7 @@ use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
 	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, OpaqueKeys, Verify},
 	transaction_validity::{TransactionSource, TransactionValidity},
-	ApplyExtrinsicResult, Perbill, Permill, Perquintill, RuntimeDebug,
+	ApplyExtrinsicResult, Perbill, Permill, RuntimeDebug,
 };
 use sp_std::{cmp::Ordering, prelude::*};
 use sp_version::RuntimeVersion;

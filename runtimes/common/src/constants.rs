@@ -204,7 +204,6 @@ pub mod staking {
 		/// The rate in percent for the network rewards
 		pub const NetworkRewardRate: Perquintill = NETWORK_REWARD_RATE;
 	}
-
 }
 
 pub mod governance {
