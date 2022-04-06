@@ -375,26 +375,6 @@ impl ctype::Config for Runtime {
 	type WeightInfo = ();
 }
 
-parameter_types! {
-	#[derive(Debug, Clone, PartialEq)]
-	pub const MaxUrlLength: u32 = constants::did::MAX_URL_LENGTH;
-	pub const MaxPublicKeysPerDid: u32 = constants::did::MAX_PUBLIC_KEYS_PER_DID;
-	#[derive(Debug, Clone, PartialEq)]
-	pub const MaxTotalKeyAgreementKeys: u32 = constants::did::MAX_TOTAL_KEY_AGREEMENT_KEYS;
-	#[derive(Debug, Clone, PartialEq)]
-	pub const MaxEndpointUrlsCount: u32 = constants::did::MAX_ENDPOINT_URLS_COUNT;
-	// Standalone block time is half the duration of a parachain block.
-	pub const MaxBlocksTxValidity: BlockNumber = constants::did::MAX_BLOCKS_TX_VALIDITY * 2;
-	pub const DidDeposit: Balance = constants::did::DID_DEPOSIT;
-	pub const DidFee: Balance = constants::did::DID_FEE;
-	pub const MaxNumberOfServicesPerDid: u32 = constants::did::MAX_NUMBER_OF_SERVICES_PER_DID;
-	pub const MaxServiceIdLength: u32 = constants::did::MAX_SERVICE_ID_LENGTH;
-	pub const MaxServiceTypeLength: u32 = constants::did::MAX_SERVICE_TYPE_LENGTH;
-	pub const MaxServiceUrlLength: u32 = constants::did::MAX_SERVICE_URL_LENGTH;
-	pub const MaxNumberOfTypesPerService: u32 = constants::did::MAX_NUMBER_OF_TYPES_PER_SERVICE;
-	pub const MaxNumberOfUrlsPerService: u32 = constants::did::MAX_NUMBER_OF_URLS_PER_SERVICE;
-}
-
 impl did::Config for Runtime {
 	type DidIdentifier = DidIdentifier;
 	type Event = Event;
@@ -411,19 +391,18 @@ impl did::Config for Runtime {
 	type OriginSuccess = did::DidRawOrigin<AccountId, Self::DidIdentifier>;
 
 	#[cfg(feature = "runtime-benchmarks")]
-	type EnsureOrigin = EnsureSigned<Self::DidIdentifier>;
+	type EnsureOrigin = EnsureSigned<DidIdentifier>;
 	#[cfg(feature = "runtime-benchmarks")]
-	type OriginSuccess = Self::DidIdentifier;
-
-	type MaxTotalKeyAgreementKeys = MaxTotalKeyAgreementKeys;
-	type MaxPublicKeysPerDid = MaxPublicKeysPerDid;
-	type MaxBlocksTxValidity = MaxBlocksTxValidity;
-	type MaxNumberOfServicesPerDid = MaxNumberOfServicesPerDid;
-	type MaxServiceIdLength = MaxServiceIdLength;
-	type MaxServiceTypeLength = MaxServiceTypeLength;
-	type MaxServiceUrlLength = MaxServiceUrlLength;
-	type MaxNumberOfTypesPerService = MaxNumberOfTypesPerService;
-	type MaxNumberOfUrlsPerService = MaxNumberOfUrlsPerService;
+	type OriginSuccess = DidIdentifier;
+	type MaxTotalKeyAgreementKeys = constants::did::MaxTotalKeyAgreementKeys;
+	type MaxPublicKeysPerDid = constants::did::MaxPublicKeysPerDid;
+	type MaxBlocksTxValidity = constants::did::MaxBlocksTxValidity;
+	type MaxNumberOfServicesPerDid = constants::did::MaxNumberOfServicesPerDid;
+	type MaxServiceIdLength = constants::did::MaxServiceIdLength;
+	type MaxServiceTypeLength = constants::did::MaxServiceTypeLength;
+	type MaxServiceUrlLength = constants::did::MaxServiceUrlLength;
+	type MaxNumberOfTypesPerService = constants::did::MaxNumberOfTypesPerService;
+	type MaxNumberOfUrlsPerService = constants::did::MaxNumberOfUrlsPerService;
 	type WeightInfo = ();
 }
 
@@ -494,17 +473,13 @@ impl pallet_authorship::Config for Runtime {
 	type EventHandler = ();
 }
 
-parameter_types! {
-	pub const MinVestedTransfer: Balance = constants::MIN_VESTED_TRANSFER_AMOUNT;
-}
-
 impl pallet_vesting::Config for Runtime {
 	type Event = Event;
 	type Currency = Balances;
 	type BlockNumberToBalance = ConvertInto;
 	// disable vested transfers by setting min amount to max balance
-	type MinVestedTransfer = MinVestedTransfer;
-	const MAX_VESTING_SCHEDULES: u32 = runtime_common::constants::MAX_VESTING_SCHEDULES;
+	type MinVestedTransfer = constants::MinVestedTransfer;
+	const MAX_VESTING_SCHEDULES: u32 = constants::MAX_VESTING_SCHEDULES;
 	type WeightInfo = ();
 }
 

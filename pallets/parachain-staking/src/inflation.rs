@@ -19,7 +19,6 @@
 //! Helper methods for computing issuance based on inflation
 use crate::{pallet::Config, types::BalanceOf};
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
-use runtime_common::constants::BLOCKS_PER_YEAR;
 use scale_info::TypeInfo;
 use sp_runtime::{traits::Saturating, Perquintill, RuntimeDebug};
 
@@ -41,15 +40,15 @@ impl MaxEncodedLen for RewardRate {
 }
 
 /// Convert annual reward rate to per_block.
-fn annual_to_per_block(rate: Perquintill) -> Perquintill {
-	rate / BLOCKS_PER_YEAR.max(1)
+fn annual_to_per_block(blocks_per_year: u64, rate: Perquintill) -> Perquintill {
+	rate / blocks_per_year.max(1)
 }
 
 impl RewardRate {
-	pub fn new(rate: Perquintill) -> Self {
+	pub fn new(blocks_per_year: u64, rate: Perquintill) -> Self {
 		RewardRate {
 			annual: rate,
-			per_block: annual_to_per_block(rate),
+			per_block: annual_to_per_block(blocks_per_year, rate),
 		}
 	}
 }
@@ -72,10 +71,10 @@ impl MaxEncodedLen for StakingInfo {
 }
 
 impl StakingInfo {
-	pub fn new(max_rate: Perquintill, annual_reward_rate: Perquintill) -> Self {
+	pub fn new(blocks_per_year: u64, max_rate: Perquintill, annual_reward_rate: Perquintill) -> Self {
 		StakingInfo {
 			max_rate,
-			reward_rate: RewardRate::new(annual_reward_rate),
+			reward_rate: RewardRate::new(blocks_per_year, annual_reward_rate),
 		}
 	}
 
@@ -112,43 +111,44 @@ impl InflationInfo {
 	///
 	/// Example: InflationInfo::new(Perquintill_from_percent(10), ...)
 	pub fn new(
+		blocks_per_year: u64,
 		collator_max_rate_percentage: Perquintill,
 		collator_annual_reward_rate_percentage: Perquintill,
 		delegator_max_rate_percentage: Perquintill,
 		delegator_annual_reward_rate_percentage: Perquintill,
 	) -> Self {
 		Self {
-			collator: StakingInfo::new(collator_max_rate_percentage, collator_annual_reward_rate_percentage),
-			delegator: StakingInfo::new(delegator_max_rate_percentage, delegator_annual_reward_rate_percentage),
+			collator: StakingInfo::new(
+				blocks_per_year,
+				collator_max_rate_percentage,
+				collator_annual_reward_rate_percentage,
+			),
+			delegator: StakingInfo::new(
+				blocks_per_year,
+				delegator_max_rate_percentage,
+				delegator_annual_reward_rate_percentage,
+			),
 		}
 	}
 
 	/// Check whether the annual reward rate is approx. the per_block reward
 	/// rate multiplied with the number of blocks per year
-	pub fn is_valid(&self) -> bool {
-		let years = BLOCKS_PER_YEAR;
+	pub fn is_valid(&self, blocks_per_year: u64) -> bool {
 		self.collator.reward_rate.annual
-			>= Perquintill::from_parts(self.collator.reward_rate.per_block.deconstruct().saturating_mul(years))
-			&& self.delegator.reward_rate.annual
-				>= Perquintill::from_parts(self.delegator.reward_rate.per_block.deconstruct().saturating_mul(years))
-	}
-}
-
-impl From<(Perquintill, Perquintill, Perquintill, Perquintill)> for InflationInfo {
-	fn from(
-		(
-			collator_max_rate_percentage,
-			collator_annual_reward_rate_percentage,
-			delegator_max_rate_percentage,
-			delegator_annual_reward_rate_percentage,
-		): (Perquintill, Perquintill, Perquintill, Perquintill),
-	) -> Self {
-		InflationInfo::new(
-			collator_max_rate_percentage,
-			collator_annual_reward_rate_percentage,
-			delegator_max_rate_percentage,
-			delegator_annual_reward_rate_percentage,
-		)
+			>= Perquintill::from_parts(
+				self.collator
+					.reward_rate
+					.per_block
+					.deconstruct()
+					.saturating_mul(blocks_per_year),
+			) && self.delegator.reward_rate.annual
+			>= Perquintill::from_parts(
+				self.delegator
+					.reward_rate
+					.per_block
+					.deconstruct()
+					.saturating_mul(blocks_per_year),
+			)
 	}
 }
 
@@ -157,8 +157,7 @@ mod tests {
 	use sp_runtime::Perbill;
 
 	use super::*;
-	use crate::mock::{almost_equal, ExtBuilder, Test, DECIMALS};
-	use runtime_common::constants::{BLOCKS_PER_YEAR, MAX_COLLATOR_STAKE};
+	use crate::mock::{almost_equal, ExtBuilder, Test, DECIMALS, MAX_COLLATOR_STAKE};
 
 	#[test]
 	fn perquintill() {
@@ -168,18 +167,15 @@ mod tests {
 		);
 	}
 
-	#[allow(clippy::assertions_on_constants)]
-	#[test]
-	fn blocks_per_year_saturation() {
-		assert!(BLOCKS_PER_YEAR < u64::MAX);
-	}
-
 	#[test]
 	fn annual_to_block_rate() {
 		let rate = Perquintill::one();
 		assert!(almost_equal(
 			rate * 10_000_000_000u128,
-			Perquintill::from_parts(annual_to_per_block(rate).deconstruct() * BLOCKS_PER_YEAR) * 10_000_000_000u128,
+			Perquintill::from_parts(
+				annual_to_per_block(<Test as Config>::BLOCKS_PER_YEAR, rate).deconstruct()
+					* <Test as Config>::BLOCKS_PER_YEAR
+			) * 10_000_000_000u128,
 			Perbill::from_perthousand(1)
 		));
 	}
@@ -187,6 +183,7 @@ mod tests {
 	#[test]
 	fn single_block_reward_collator() {
 		let inflation = InflationInfo::new(
+			<Test as Config>::BLOCKS_PER_YEAR,
 			Perquintill::from_percent(10),
 			Perquintill::from_percent(10),
 			Perquintill::from_percent(40),
@@ -214,15 +211,16 @@ mod tests {
 			.build()
 			.execute_with(|| {
 				let inflation = InflationInfo::new(
+					<Test as Config>::BLOCKS_PER_YEAR,
 					Perquintill::from_percent(10),
 					Perquintill::from_percent(15),
 					Perquintill::from_percent(40),
 					Perquintill::from_percent(10),
 				);
-				let years_u128: BalanceOf<Test> = BLOCKS_PER_YEAR as u128;
+				let years_u128: BalanceOf<Test> = <Test as Config>::BLOCKS_PER_YEAR as u128;
 
 				// Dummy checks for correct instantiation
-				assert!(inflation.is_valid());
+				assert!(inflation.is_valid(<Test as Config>::BLOCKS_PER_YEAR));
 				assert_eq!(inflation.collator.max_rate, Perquintill::from_percent(10));
 				assert_eq!(inflation.collator.reward_rate.annual, Perquintill::from_percent(15));
 				assert!(

@@ -21,12 +21,12 @@
 use cumulus_primitives_core::ParaId;
 use hex_literal::hex;
 use peregrine_runtime::{
-	BalancesConfig, CouncilConfig, GenesisConfig, InflationInfo, KiltLaunchConfig, MinCollatorStake,
-	ParachainInfoConfig, ParachainStakingConfig, SessionConfig, SudoConfig, SystemConfig, TechnicalCommitteeConfig,
-	VestingConfig, WASM_BINARY,
+	BalancesConfig, CouncilConfig, GenesisConfig, InflationInfo, KiltLaunchConfig, ParachainInfoConfig,
+	ParachainStakingConfig, SessionConfig, SudoConfig, SystemConfig, TechnicalCommitteeConfig, VestingConfig,
+	WASM_BINARY,
 };
 use runtime_common::{
-	constants::{INFLATION_CONFIG, MAX_COLLATOR_STAKE},
+	constants::{kilt_inflation_config, staking::MinCollatorStake, MAX_COLLATOR_STAKE},
 	AccountId, AuthorityId, Balance, BlockNumber,
 };
 use sc_service::ChainType;
@@ -136,10 +136,6 @@ pub fn make_new_spec() -> Result<ChainSpec, String> {
 			para_id: id.into(),
 		},
 	))
-}
-
-pub fn kilt_inflation_config() -> InflationInfo {
-	InflationInfo::from(INFLATION_CONFIG)
 }
 
 #[allow(clippy::too_many_arguments)]
