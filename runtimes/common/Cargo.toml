@@ -5,6 +5,7 @@ name = "runtime-common"
 version = "1.7.0"
 
 [dev-dependencies]
+did = {features = ["mock"], path = "../../pallets/did"}
 sp-io = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.24"}
 
 [dependencies]
@@ -15,6 +16,7 @@ serde = {version = "1.0.137", optional = true, features = ["derive"]}
 smallvec = "1.8.0"
 
 attestation = {default-features = false, path = "../../pallets/attestation"}
+did = {default-features = false, path = "../../pallets/did"}
 parachain-staking = {default-features = false, path = "../../pallets/parachain-staking"}
 
 frame-support = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.24"}
@@ -45,6 +47,7 @@ std = [
   "attestation/std",
   "parachain-staking/std",
   "codec/std",
+  "did/std",
   "frame-support/std",
   "frame-system/std",
   "pallet-transaction-payment/std",

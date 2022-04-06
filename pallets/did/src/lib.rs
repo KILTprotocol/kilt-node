@@ -99,11 +99,7 @@ mod utils;
 
 pub use crate::{
 	default_weights::WeightInfo,
-	did_details::{
-		DeriveDidCallAuthorizationVerificationType, DeriveDidVerificationTypeResult,
-		DidAuthorizedCallOperationWithVerificationRelationship, DidCallProxy, DidSignature, DidVerificationKeyRelationship,
-		RelationshipDeriveError,
-	},
+	did_details::*,
 	origin::{DidRawOrigin, EnsureDidOrigin},
 	pallet::*,
 	signature::DidSignatureVerify,
@@ -134,13 +130,11 @@ pub mod pallet {
 	};
 	use frame_system::pallet_prelude::*;
 	use kilt_support::traits::CallSources;
-	use sp_runtime::traits::BadOrigin;
 
 	use crate::{
 		did_details::{
-			DeriveDidCallAuthorizationVerificationType, DidAuthorizedCallOperation, DidCreationDetails,
-			DidDetails, DidEncryptionKey, DidSignature, DidVerifiableIdentifier, DidVerificationKey,
-			RelationshipDeriveError,
+			DeriveDidCallAuthorizationVerificationType, DidAuthorizedCallOperation, DidCreationDetails, DidDetails,
+			DidEncryptionKey, DidSignature, DidVerifiableIdentifier, DidVerificationKey, RelationshipDeriveError,
 		},
 		errors::{DidError, InputError, SignatureError, StorageError},
 		service_endpoints::{DidEndpoint, ServiceEndpointId},
@@ -473,18 +467,16 @@ pub mod pallet {
 		/// - Reads: [Origin Account], Did, DidBlacklist
 		/// - Writes: Did
 		/// # </weight>
-		#[pallet::weight(<T as pallet::Config>::WeightInfo::create_ed25519_key().max(<T as pallet::Config>::WeightInfo::create_sr25519_key()).max(<T as pallet::Config>::WeightInfo::create_ecdsa_key()))]
-		pub fn create(origin: OriginFor<T>, details: DidCreationDetails<T>, signature: DidSignature) -> DispatchResult {
-			let sender = ensure_signed(origin)?;
+		#[pallet::weight(0)]
+		pub fn create(origin: OriginFor<T>, auth_key: DidVerificationKey) -> DispatchResult {
+			let origin = T::EnsureOrigin::ensure_origin(origin)?;
 
-			ensure!(sender == details.submitter, BadOrigin);
-
-			let did_identifier = details.did.clone();
+			let did_identifier = origin.subject().clone();
 
 			// Check the free balance before we do any heavy work.
 			ensure!(
 				<T::Currency as ReservableCurrency<AccountIdOf<T>>>::can_reserve(
-					&sender,
+					&origin.sender(),
 					<T as Config>::Deposit::get() + <T as Config>::Fee::get()
 				),
 				Error::<T>::UnableToPayFees
@@ -500,12 +492,8 @@ pub mod pallet {
 			// otherwise generate a DidAlreadyPresent error.
 			ensure!(!Did::<T>::contains_key(&did_identifier), Error::<T>::DidAlreadyPresent);
 
-			let account_did_auth_key = did_identifier
-				.verify_and_recover_signature(&details.encode(), &signature)
+			let did_entry = DidDetails::from_creation_details(DidCreationDetails { auth_key }, origin.sender().clone())
 				.map_err(Error::<T>::from)?;
-
-			let did_entry =
-				DidDetails::from_creation_details(details, account_did_auth_key).map_err(Error::<T>::from)?;
 
 			// *** No Fail beyond this call ***
 
@@ -526,7 +514,7 @@ pub mod pallet {
 
 			Did::<T>::insert(&did_identifier, did_entry);
 
-			Self::deposit_event(Event::DidCreated(sender, did_identifier));
+			Self::deposit_event(Event::DidCreated(origin.sender(), did_identifier));
 
 			Ok(())
 		}
@@ -976,7 +964,7 @@ pub mod pallet {
 
 			let did_identifier = did_call.did.clone();
 
-			T::DidCallProxy::authorise(&did_call.call, &did_call.did, &signature)?;
+			T::DidCallProxy::authorise(&did_call, &signature)?;
 
 			log::debug!("Dispatch call from DID {:?}", did_identifier);
 

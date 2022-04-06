@@ -34,10 +34,9 @@ use sp_std::vec::Vec;
 use crate::{
 	self as did,
 	did_details::{
-		DeriveDidCallAuthorizationVerificationType, DeriveDidVerificationTypeResult,
-		DidAuthorizedCallOperation, DidAuthorizedCallOperationWithVerificationRelationship, DidDetails,
-		DidEncryptionKey, DidPublicKey, DidPublicKeyDetails, DidVerificationKey, DidVerificationKeyRelationship,
-		RelationshipDeriveError,
+		DeriveDidCallAuthorizationVerificationType, DeriveDidVerificationTypeResult, DidAuthorizedCallOperation,
+		DidAuthorizedCallOperationWithVerificationRelationship, DidDetails, DidEncryptionKey, DidPublicKey,
+		DidPublicKeyDetails, DidVerificationKey, DidVerificationKeyRelationship, RelationshipDeriveError,
 	},
 	service_endpoints::DidEndpoint,
 	utils as crate_utils, AccountIdOf, Config, CurrencyOf, DidBlacklist, DidEndpointsCount, KeyIdOf, ServiceEndpoints,

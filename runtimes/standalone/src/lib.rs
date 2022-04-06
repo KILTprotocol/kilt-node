@@ -44,7 +44,7 @@ use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
 	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, NumberFor, OpaqueKeys, Verify},
 	transaction_validity::{TransactionSource, TransactionValidity},
-	ApplyExtrinsicResult, RuntimeDebug,
+	ApplyExtrinsicResult, Perbill,
 };
 use sp_std::prelude::*;
 use sp_version::RuntimeVersion;
@@ -75,6 +75,8 @@ use frame_system::EnsureSigned;
 
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
+
+mod access_control;
 
 /// Digest item type.
 pub type DigestItem = generic::DigestItem;
@@ -295,7 +297,7 @@ impl attestation::Config for Runtime {
 	type MaxDelegatedAttestations = MaxDelegatedAttestations;
 	type AttesterId = DidIdentifier;
 	type AuthorizationId = AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>;
-	type AccessControl = PalletAuthorize<DelegationAc<Runtime>>;
+	type AccessControl = PalletAuthorize<delegation::DelegationAc<Runtime>>;
 }
 
 parameter_types! {
@@ -354,6 +356,7 @@ impl did::Config for Runtime {
 	type DidIdentifier = DidIdentifier;
 	type Event = Event;
 	type Call = Call;
+	type DidCallProxy = DidCallProxy<Self>;
 	type Origin = Origin;
 	type Currency = Balances;
 	type Deposit = constants::did::DidDeposit;
@@ -633,51 +636,6 @@ construct_runtime!(
 		Web3Names: pallet_web3_names = 38,
 	}
 );
-
-impl did::DeriveDidCallAuthorizationVerificationType for Call {
-	fn derive_verification_key_relationship(&self) -> did::DeriveDidVerificationTypeResult {
-		fn single_key_relationship(calls: &[Call]) -> did::DeriveDidVerificationTypeResult {
-			let init = calls
-				.get(0)
-				.ok_or(did::RelationshipDeriveError::InvalidCallParameter)?
-				.derive_verification_key_relationship()?;
-			calls
-				.iter()
-				.skip(1)
-				.map(Call::derive_verification_key_relationship)
-				.try_fold(init, |acc, next| {
-					if Ok(acc) == next {
-						Ok(acc)
-					} else {
-						Err(did::RelationshipDeriveError::InvalidCallParameter)
-					}
-				})
-		}
-		match self {
-			Call::Attestation { .. } => Ok(did::DidVerificationKeyType:: DidVerificationKeyRelationship::AssertionMethod),
-			Call::Ctype { .. } => Ok(did::DidVerificationKeyRelationship::AssertionMethod),
-			Call::Delegation { .. } => Ok(did::DidVerificationKeyRelationship::CapabilityDelegation),
-			// DID creation requires inline verification.
-			Call::Did(did::Call::create { .. }) => Err(did::RelationshipDeriveError::NotCallableByDid),
-			Call::Did { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
-			Call::Web3Names { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
-			Call::DidLookup { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
-			Call::Utility(pallet_utility::Call::batch { calls }) => single_key_relationship(&calls[..]),
-			Call::Utility(pallet_utility::Call::batch_all { calls }) => single_key_relationship(&calls[..]),
-			#[cfg(not(feature = "runtime-benchmarks"))]
-			_ => Err(did::RelationshipDeriveError::NotCallableByDid),
-			// By default, returns the authentication key
-			#[cfg(feature = "runtime-benchmarks")]
-			_ => Ok(did::DidVerificationKeyRelationship::Authentication),
-		}
-	}
-
-	// Always return a System::remark() extrinsic call
-	#[cfg(feature = "runtime-benchmarks")]
-	fn get_call_for_did_call_benchmark() -> Self {
-		Call::System(frame_system::Call::remark { remark: vec![] })
-	}
-}
 
 /// The address format for describing accounts.
 pub type Address = sp_runtime::MultiAddress<AccountId, ()>;
