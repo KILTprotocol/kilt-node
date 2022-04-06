@@ -480,6 +480,43 @@ impl pallet_membership::Config for Runtime {
 	type WeightInfo = weights::pallet_membership::WeightInfo<Runtime>;
 }
 
+pub struct CouncilProvider;
+impl frame_support::traits::SortedMembers<AccountId> for CouncilProvider {
+	fn contains(who: &AccountId) -> bool {
+		Council::is_member(who)
+	}
+
+	fn sorted_members() -> Vec<AccountId> {
+		Council::members()
+	}
+
+	#[cfg(feature = "runtime-benchmarks")]
+	fn add(_: &AccountId) {
+		unimplemented!()
+	}
+}
+
+impl frame_support::traits::ContainsLengthBound for CouncilProvider {
+	fn max_len() -> usize {
+		constants::governance::CouncilMaxMembers::get() as usize
+	}
+
+	fn min_len() -> usize {
+		0
+	}
+}
+
+impl pallet_tips::Config for Runtime {
+	type MaximumReasonLength = constants::tips::MaximumReasonLength;
+	type DataDepositPerByte = constants::tips::DataDepositPerByte;
+	type Tippers = CouncilProvider;
+	type TipCountdown = constants::tips::TipCountdown;
+	type TipFindersFee = constants::tips::TipFindersFee;
+	type TipReportDepositBase = constants::tips::TipReportDepositBase;
+	type Event = Event;
+	type WeightInfo = weights::pallet_tips::WeightInfo<Runtime>;
+}
+
 impl attestation::Config for Runtime {
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
@@ -870,6 +907,9 @@ construct_runtime! {
 		// Preimage registrar
 		Preimage: pallet_preimage::{Pallet, Call, Storage, Event<T>} = 44,
 
+		// Tips module.
+		Tips: pallet_tips::{Pallet, Call, Storage, Event<T>} = 45,
+
 		// KILT Pallets. Start indices 60 to leave room
 		KiltLaunch: kilt_launch = 60,
 		Ctype: ctype = 61,
@@ -1100,6 +1140,7 @@ impl_runtime_apis! {
 			list_benchmark!(list, extra, pallet_preimage, Preimage);
 			list_benchmark!(list, extra, pallet_scheduler, Scheduler);
 			list_benchmark!(list, extra, pallet_timestamp, Timestamp);
+			list_benchmark!(list, extra, pallet_tips, Tips);
 			list_benchmark!(list, extra, pallet_treasury, Treasury);
 			list_benchmark!(list, extra, pallet_utility, Utility);
 			list_benchmark!(list, extra, pallet_vesting, Vesting);
@@ -1168,6 +1209,7 @@ impl_runtime_apis! {
 			add_benchmark!(params, batches, pallet_session, SessionBench::<Runtime>);
 			add_benchmark!(params, batches, frame_system, SystemBench::<Runtime>);
 			add_benchmark!(params, batches, pallet_timestamp, Timestamp);
+			add_benchmark!(params, batches, pallet_tips, Tips);
 			add_benchmark!(params, batches, pallet_treasury, Treasury);
 			add_benchmark!(params, batches, pallet_utility, Utility);
 			add_benchmark!(params, batches, pallet_vesting, Vesting);
