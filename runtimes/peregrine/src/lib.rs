@@ -910,8 +910,6 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 			Call::Attestation { .. } => Ok(did::DidVerificationKeyRelationship::AssertionMethod),
 			Call::Ctype { .. } => Ok(did::DidVerificationKeyRelationship::AssertionMethod),
 			Call::Delegation { .. } => Ok(did::DidVerificationKeyRelationship::CapabilityDelegation),
-			// DID creation is not allowed through the DID proxy.
-			Call::Did(did::Call::create { .. }) => Err(did::RelationshipDeriveError::NotCallableByDid),
 			Call::Did { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
 			Call::Web3Names { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
 			Call::DidLookup { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
