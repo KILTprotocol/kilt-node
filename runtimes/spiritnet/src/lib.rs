@@ -971,12 +971,6 @@ pub type Executive = frame_executive::Executive<
 	pallet_did_lookup::migrations::LookupReverseIndexMigration<Runtime>,
 >;
 
-pub type Web3Name = pallet_web3_names::web3_name::AsciiWeb3Name<Runtime, MinNameLength, MaxNameLength>;
-pub type DidDoc = DidDocument<
-	DidDetails<Runtime>,
-	pallet_web3_names::web3_name::AsciiWeb3Name<Runtime, MinNameLength, MaxNameLength>,
->;
-
 impl_runtime_apis! {
 	impl sp_api::Core<Block> for Runtime {
 		fn version() -> RuntimeVersion {
