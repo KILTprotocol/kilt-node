@@ -31,7 +31,8 @@ pub struct DidDocument<DidIdentifier, AccountId, Web3Name> {
 
 /// The DidDocument with a Web3Name represented as a byte array.
 ///
-/// This will be returned by the runtime and processed by the client side RPC implementation. 
+/// This will be returned by the runtime and processed by the client side RPC
+/// implementation.
 pub type RawDidDocument<DidIdentifier, AccountId> = DidDocument<DidIdentifier, AccountId, Vec<u8>>;
 
 sp_api::decl_runtime_apis! {

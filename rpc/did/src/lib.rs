@@ -104,7 +104,8 @@ where
 				data: Some(e.to_string().into()),
 			}),
 			Ok(doc) => Ok(doc.map(|doc| DidDocument {
-				// convert the w3n from a byte array to a string. if it's invalid utf-8 which should never happen, we ignore the w3n and pretend it doesn't exist.
+				// convert the w3n from a byte array to a string. if it's invalid utf-8 which should never happen, we
+				// ignore the w3n and pretend it doesn't exist.
 				w3n: doc.w3n.and_then(|w3n| String::from_utf8(w3n).ok()),
 				accounts: doc.accounts,
 				identifier: doc.identifier,
@@ -129,7 +130,8 @@ where
 				data: Some(e.to_string().into()),
 			}),
 			Ok(doc) => Ok(doc.map(|doc| DidDocument {
-				// convert the w3n from a byte array to a string. if it's invalid utf-8 which should never happen, we ignore the w3n and pretend it doesn't exist.
+				// convert the w3n from a byte array to a string. if it's invalid utf-8 which should never happen, we
+				// ignore the w3n and pretend it doesn't exist.
 				w3n: doc.w3n.and_then(|w3n| String::from_utf8(w3n).ok()),
 				accounts: doc.accounts,
 				identifier: doc.identifier,

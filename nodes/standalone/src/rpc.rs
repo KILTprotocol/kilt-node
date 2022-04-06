@@ -27,7 +27,7 @@ use std::sync::Arc;
 
 use did_rpc::{DidApi, DidQuery};
 use mashnet_node_runtime::opaque::Block;
-use runtime_common::{AccountId, Balance, Index, DidIdentifier};
+use runtime_common::{AccountId, Balance, DidIdentifier, Index};
 pub use sc_rpc_api::DenyUnsafe;
 use sc_transaction_pool_api::TransactionPool;
 use sp_api::ProvideRuntimeApi;
