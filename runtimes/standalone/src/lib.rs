@@ -496,17 +496,13 @@ impl pallet_authorship::Config for Runtime {
 	type EventHandler = ();
 }
 
-parameter_types! {
-	pub const MinVestedTransfer: Balance = constants::MIN_VESTED_TRANSFER_AMOUNT;
-}
-
 impl pallet_vesting::Config for Runtime {
 	type Event = Event;
 	type Currency = Balances;
 	type BlockNumberToBalance = ConvertInto;
 	// disable vested transfers by setting min amount to max balance
-	type MinVestedTransfer = MinVestedTransfer;
-	const MAX_VESTING_SCHEDULES: u32 = runtime_common::constants::MAX_VESTING_SCHEDULES;
+	type MinVestedTransfer = constants::MinVestedTransfer;
+	const MAX_VESTING_SCHEDULES: u32 = constants::MAX_VESTING_SCHEDULES;
 	type WeightInfo = ();
 }
 

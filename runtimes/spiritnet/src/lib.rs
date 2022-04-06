@@ -41,7 +41,7 @@ use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
 	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, OpaqueKeys, Verify},
 	transaction_validity::{TransactionSource, TransactionValidity},
-	ApplyExtrinsicResult, Perbill, Permill, Perquintill, RuntimeDebug,
+	ApplyExtrinsicResult, Perbill, Permill, RuntimeDebug,
 };
 use sp_std::{cmp::Ordering, prelude::*};
 use sp_version::RuntimeVersion;
@@ -266,18 +266,14 @@ impl pallet_session::Config for Runtime {
 	type WeightInfo = weights::pallet_session::WeightInfo<Runtime>;
 }
 
-parameter_types! {
-	pub const MinVestedTransfer: Balance = constants::MIN_VESTED_TRANSFER_AMOUNT;
-}
-
 impl pallet_vesting::Config for Runtime {
 	type Event = Event;
 	type Currency = Balances;
 	type BlockNumberToBalance = ConvertInto;
 	// disable vested transfers by setting min amount to max balance
-	type MinVestedTransfer = MinVestedTransfer;
+	type MinVestedTransfer = constants::MinVestedTransfer;
 	type WeightInfo = weights::pallet_vesting::WeightInfo<Runtime>;
-	const MAX_VESTING_SCHEDULES: u32 = runtime_common::constants::MAX_VESTING_SCHEDULES;
+	const MAX_VESTING_SCHEDULES: u32 = constants::MAX_VESTING_SCHEDULES;
 }
 
 parameter_types! {
@@ -354,12 +350,6 @@ impl pallet_scheduler::Config for Runtime {
 }
 
 parameter_types! {
-	pub const LaunchPeriod: BlockNumber = constants::governance::LAUNCH_PERIOD;
-	pub const VotingPeriod: BlockNumber = constants::governance::VOTING_PERIOD;
-	pub const FastTrackVotingPeriod: BlockNumber = constants::governance::FAST_TRACK_VOTING_PERIOD;
-	pub const MinimumDeposit: Balance = constants::governance::MIN_DEPOSIT;
-	pub const EnactmentPeriod: BlockNumber = constants::governance::ENACTMENT_PERIOD;
-	pub const CooloffPeriod: BlockNumber = constants::governance::COOLOFF_PERIOD;
 	pub const InstantAllowed: bool = true;
 	pub const MaxVotes: u32 = 100;
 	pub const MaxProposals: u32 = 100;
@@ -369,11 +359,11 @@ impl pallet_democracy::Config for Runtime {
 	type Proposal = Call;
 	type Event = Event;
 	type Currency = Balances;
-	type EnactmentPeriod = EnactmentPeriod;
-	type VoteLockingPeriod = VotingPeriod;
-	type LaunchPeriod = LaunchPeriod;
-	type VotingPeriod = VotingPeriod;
-	type MinimumDeposit = MinimumDeposit;
+	type EnactmentPeriod = constants::governance::EnactmentPeriod;
+	type VoteLockingPeriod = constants::governance::VotingPeriod;
+	type LaunchPeriod = constants::governance::LaunchPeriod;
+	type VotingPeriod = constants::governance::VotingPeriod;
+	type MinimumDeposit = constants::governance::MinimumDeposit;
 	/// A straight majority of the council can decide what their next motion is.
 	type ExternalOrigin = pallet_collective::EnsureProportionAtLeast<_1, _2, AccountId, CouncilCollective>;
 	/// A majority can have the next scheduled referendum be a straight
@@ -388,7 +378,7 @@ impl pallet_democracy::Config for Runtime {
 	type FastTrackOrigin = pallet_collective::EnsureProportionAtLeast<_2, _3, AccountId, TechnicalCollective>;
 	type InstantOrigin = pallet_collective::EnsureProportionAtLeast<_1, _1, AccountId, TechnicalCollective>;
 	type InstantAllowed = InstantAllowed;
-	type FastTrackVotingPeriod = FastTrackVotingPeriod;
+	type FastTrackVotingPeriod = constants::governance::FastTrackVotingPeriod;
 	// To cancel a proposal which has been passed, 2/3 of the council must agree to
 	// it.
 	type CancellationOrigin = EnsureOneOf<
@@ -405,7 +395,7 @@ impl pallet_democracy::Config for Runtime {
 	// Any single technical committee member may veto a coming council proposal,
 	// however they can only do it once and it lasts only for the cooloff period.
 	type VetoOrigin = pallet_collective::EnsureMember<AccountId, TechnicalCollective>;
-	type CooloffPeriod = CooloffPeriod;
+	type CooloffPeriod = constants::governance::CooloffPeriod;
 	type PreimageByteDeposit = constants::ByteDeposit;
 	type Slash = Treasury;
 	type Scheduler = Scheduler;
@@ -453,28 +443,16 @@ impl pallet_treasury::Config for Runtime {
 	type MaxApprovals = MaxApprovals;
 }
 
-parameter_types! {
-	pub const CouncilMotionDuration: BlockNumber = constants::governance::COUNCIL_MOTION_DURATION;
-	pub const CouncilMaxProposals: u32 = 100;
-	pub const CouncilMaxMembers: u32 = 100;
-}
-
 type CouncilCollective = pallet_collective::Instance1;
 impl pallet_collective::Config<CouncilCollective> for Runtime {
 	type Origin = Origin;
 	type Proposal = Call;
 	type Event = Event;
-	type MotionDuration = CouncilMotionDuration;
-	type MaxProposals = CouncilMaxProposals;
-	type MaxMembers = CouncilMaxMembers;
+	type MotionDuration = constants::governance::CouncilMotionDuration;
+	type MaxProposals = constants::governance::CouncilMaxProposals;
+	type MaxMembers = constants::governance::CouncilMaxMembers;
 	type DefaultVote = pallet_collective::PrimeDefaultVote;
 	type WeightInfo = weights::pallet_collective::WeightInfo<Runtime>;
-}
-
-parameter_types! {
-	pub const TechnicalMotionDuration: BlockNumber = constants::governance::TECHNICAL_MOTION_DURATION;
-	pub const TechnicalMaxProposals: u32 = 100;
-	pub const TechnicalMaxMembers: u32 = 100;
 }
 
 type TechnicalCollective = pallet_collective::Instance2;
@@ -482,9 +460,9 @@ impl pallet_collective::Config<TechnicalCollective> for Runtime {
 	type Origin = Origin;
 	type Proposal = Call;
 	type Event = Event;
-	type MotionDuration = TechnicalMotionDuration;
-	type MaxProposals = TechnicalMaxProposals;
-	type MaxMembers = TechnicalMaxMembers;
+	type MotionDuration = constants::governance::TechnicalMotionDuration;
+	type MaxProposals = constants::governance::TechnicalMaxProposals;
+	type MaxMembers = constants::governance::TechnicalMaxMembers;
 	type DefaultVote = pallet_collective::PrimeDefaultVote;
 	type WeightInfo = weights::pallet_collective::WeightInfo<Runtime>;
 }
@@ -498,13 +476,8 @@ impl pallet_membership::Config for Runtime {
 	type PrimeOrigin = MoreThanHalfCouncil;
 	type MembershipInitialized = TechnicalCommittee;
 	type MembershipChanged = TechnicalCommittee;
-	type MaxMembers = TechnicalMaxMembers;
+	type MaxMembers = constants::governance::TechnicalMaxMembers;
 	type WeightInfo = weights::pallet_membership::WeightInfo<Runtime>;
-}
-
-parameter_types! {
-	pub const MaxDelegatedAttestations: u32 = 1000;
-	pub const AttestationDeposit: Balance = constants::attestation::ATTESTATION_DEPOSIT;
 }
 
 impl attestation::Config for Runtime {
@@ -515,21 +488,11 @@ impl attestation::Config for Runtime {
 	type WeightInfo = weights::attestation::WeightInfo<Runtime>;
 
 	type Currency = Balances;
-	type Deposit = AttestationDeposit;
-	type MaxDelegatedAttestations = MaxDelegatedAttestations;
+	type Deposit = constants::attestation::AttestationDeposit;
+	type MaxDelegatedAttestations = constants::attestation::MaxDelegatedAttestations;
 	type AttesterId = DidIdentifier;
 	type AuthorizationId = AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>;
 	type AccessControl = PalletAuthorize<DelegationAc<Runtime>>;
-}
-
-parameter_types! {
-	pub const MaxSignatureByteLength: u16 = constants::delegation::MAX_SIGNATURE_BYTE_LENGTH;
-	pub const MaxParentChecks: u32 = constants::delegation::MAX_PARENT_CHECKS;
-	pub const MaxRevocations: u32 = constants::delegation::MAX_REVOCATIONS;
-	pub const MaxRemovals: u32 = constants::delegation::MAX_REMOVALS;
-	#[derive(Clone)]
-	pub const MaxChildren: u32 = constants::delegation::MAX_CHILDREN;
-	pub const DelegationDeposit: Balance = constants::delegation::DELEGATION_DEPOSIT;
 }
 
 impl delegation::Config for Runtime {
@@ -550,24 +513,20 @@ impl delegation::Config for Runtime {
 	type DelegationSignatureVerification = AlwaysVerify<AccountId, Vec<u8>, Self::Signature>;
 
 	type Event = Event;
-	type MaxSignatureByteLength = MaxSignatureByteLength;
-	type MaxParentChecks = MaxParentChecks;
-	type MaxRevocations = MaxRevocations;
-	type MaxRemovals = MaxRemovals;
-	type MaxChildren = MaxChildren;
+	type MaxSignatureByteLength = constants::delegation::MaxSignatureByteLength;
+	type MaxParentChecks = constants::delegation::MaxParentChecks;
+	type MaxRevocations = constants::delegation::MaxRevocations;
+	type MaxRemovals = constants::delegation::MaxRemovals;
+	type MaxChildren = constants::delegation::MaxChildren;
 	type WeightInfo = weights::delegation::WeightInfo<Runtime>;
 	type Currency = Balances;
-	type Deposit = DelegationDeposit;
-}
-
-parameter_types! {
-	pub const Fee: Balance = MILLI_KILT;
+	type Deposit = constants::delegation::DelegationDeposit;
 }
 
 impl ctype::Config for Runtime {
 	type CtypeCreatorId = AccountId;
 	type Currency = Balances;
-	type Fee = Fee;
+	type Fee = constants::CtypeFee;
 	type FeeCollector = Treasury;
 
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
@@ -577,35 +536,14 @@ impl ctype::Config for Runtime {
 	type WeightInfo = weights::ctype::WeightInfo<Runtime>;
 }
 
-parameter_types! {
-	pub const MaxNewKeyAgreementKeys: u32 = constants::did::MAX_KEY_AGREEMENT_KEYS;
-	#[derive(Debug, Clone, PartialEq)]
-	pub const MaxUrlLength: u32 = constants::did::MAX_URL_LENGTH;
-	pub const MaxPublicKeysPerDid: u32 = constants::did::MAX_PUBLIC_KEYS_PER_DID;
-	#[derive(Debug, Clone, PartialEq)]
-	pub const MaxTotalKeyAgreementKeys: u32 = constants::did::MAX_TOTAL_KEY_AGREEMENT_KEYS;
-	#[derive(Debug, Clone, PartialEq)]
-	pub const MaxEndpointUrlsCount: u32 = constants::did::MAX_ENDPOINT_URLS_COUNT;
-	// Standalone block time is half the duration of a parachain block.
-	pub const MaxBlocksTxValidity: BlockNumber = constants::did::MAX_BLOCKS_TX_VALIDITY;
-	pub const DidDeposit: Balance = constants::did::DID_DEPOSIT;
-	pub const DidFee: Balance = constants::did::DID_FEE;
-	pub const MaxNumberOfServicesPerDid: u32 = constants::did::MAX_NUMBER_OF_SERVICES_PER_DID;
-	pub const MaxServiceIdLength: u32 = constants::did::MAX_SERVICE_ID_LENGTH;
-	pub const MaxServiceTypeLength: u32 = constants::did::MAX_SERVICE_TYPE_LENGTH;
-	pub const MaxServiceUrlLength: u32 = constants::did::MAX_SERVICE_URL_LENGTH;
-	pub const MaxNumberOfTypesPerService: u32 = constants::did::MAX_NUMBER_OF_TYPES_PER_SERVICE;
-	pub const MaxNumberOfUrlsPerService: u32 = constants::did::MAX_NUMBER_OF_URLS_PER_SERVICE;
-}
-
 impl did::Config for Runtime {
 	type DidIdentifier = DidIdentifier;
 	type Event = Event;
 	type Call = Call;
 	type Origin = Origin;
 	type Currency = Balances;
-	type Deposit = DidDeposit;
-	type Fee = DidFee;
+	type Deposit = constants::did::DidDeposit;
+	type Fee = constants::did::DidFee;
 	type FeeCollector = Treasury;
 
 	#[cfg(not(feature = "runtime-benchmarks"))]
@@ -618,21 +556,17 @@ impl did::Config for Runtime {
 	#[cfg(feature = "runtime-benchmarks")]
 	type OriginSuccess = DidIdentifier;
 
-	type MaxNewKeyAgreementKeys = MaxNewKeyAgreementKeys;
-	type MaxTotalKeyAgreementKeys = MaxTotalKeyAgreementKeys;
-	type MaxPublicKeysPerDid = MaxPublicKeysPerDid;
-	type MaxBlocksTxValidity = MaxBlocksTxValidity;
-	type MaxNumberOfServicesPerDid = MaxNumberOfServicesPerDid;
-	type MaxServiceIdLength = MaxServiceIdLength;
-	type MaxServiceTypeLength = MaxServiceTypeLength;
-	type MaxServiceUrlLength = MaxServiceUrlLength;
-	type MaxNumberOfTypesPerService = MaxNumberOfTypesPerService;
-	type MaxNumberOfUrlsPerService = MaxNumberOfUrlsPerService;
+	type MaxNewKeyAgreementKeys = constants::did::MaxNewKeyAgreementKeys;
+	type MaxTotalKeyAgreementKeys = constants::did::MaxTotalKeyAgreementKeys;
+	type MaxPublicKeysPerDid = constants::did::MaxPublicKeysPerDid;
+	type MaxBlocksTxValidity = constants::did::MaxBlocksTxValidity;
+	type MaxNumberOfServicesPerDid = constants::did::MaxNumberOfServicesPerDid;
+	type MaxServiceIdLength = constants::did::MaxServiceIdLength;
+	type MaxServiceTypeLength = constants::did::MaxServiceTypeLength;
+	type MaxServiceUrlLength = constants::did::MaxServiceUrlLength;
+	type MaxNumberOfTypesPerService = constants::did::MaxNumberOfTypesPerService;
+	type MaxNumberOfUrlsPerService = constants::did::MaxNumberOfUrlsPerService;
 	type WeightInfo = weights::did::WeightInfo<Runtime>;
-}
-
-parameter_types! {
-	pub const DidLookupDeposit: Balance = constants::did_lookup::DID_CONNECTION_DEPOSIT;
 }
 
 impl pallet_did_lookup::Config for Runtime {
@@ -642,7 +576,7 @@ impl pallet_did_lookup::Config for Runtime {
 	type DidIdentifier = DidIdentifier;
 
 	type Currency = Balances;
-	type Deposit = DidLookupDeposit;
+	type Deposit = constants::did_lookup::DidLookupDeposit;
 
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
@@ -650,98 +584,59 @@ impl pallet_did_lookup::Config for Runtime {
 	type WeightInfo = weights::pallet_did_lookup::WeightInfo<Runtime>;
 }
 
-parameter_types! {
-	pub const Web3NameDeposit: Balance = constants::web3_names::DEPOSIT;
-	pub const MinNameLength: u32 = constants::web3_names::MIN_LENGTH;
-	pub const MaxNameLength: u32 = constants::web3_names::MAX_LENGTH;
-}
-
 impl pallet_web3_names::Config for Runtime {
 	type BanOrigin = EnsureRoot<AccountId>;
 	type OwnerOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
 	type Currency = Balances;
-	type Deposit = Web3NameDeposit;
+	type Deposit = constants::web3_names::Web3NameDeposit;
 	type Event = Event;
-	type MaxNameLength = MaxNameLength;
-	type MinNameLength = MinNameLength;
-	type Web3Name = pallet_web3_names::web3_name::AsciiWeb3Name<Runtime, MinNameLength, MaxNameLength>;
+	type MaxNameLength = constants::web3_names::MaxNameLength;
+	type MinNameLength = constants::web3_names::MinNameLength;
+	type Web3Name = pallet_web3_names::web3_name::AsciiWeb3Name<
+		Runtime,
+		constants::web3_names::MinNameLength,
+		constants::web3_names::MaxNameLength,
+	>;
 	type Web3NameOwner = DidIdentifier;
 	type WeightInfo = weights::pallet_web3_names::WeightInfo<Runtime>;
 }
 
-parameter_types! {
-	pub const InitialPeriodLength: BlockNumber = constants::treasury::INITIAL_PERIOD_LENGTH;
-	pub const InitialPeriodReward: Balance = constants::treasury::INITIAL_PERIOD_REWARD_PER_BLOCK;
-}
-
 impl pallet_inflation::Config for Runtime {
 	type Currency = Balances;
-	type InitialPeriodLength = InitialPeriodLength;
-	type InitialPeriodReward = InitialPeriodReward;
+	type InitialPeriodLength = constants::treasury::InitialPeriodLength;
+	type InitialPeriodReward = constants::treasury::InitialPeriodReward;
 	type Beneficiary = Treasury;
 	type WeightInfo = weights::pallet_inflation::WeightInfo<Runtime>;
-}
-
-parameter_types! {
-	/// Minimum round length is 1 hour
-	pub const MinBlocksPerRound: BlockNumber = constants::staking::MIN_BLOCKS_PER_ROUND;
-	/// Default length of a round/session is 2 hours
-	pub const DefaultBlocksPerRound: BlockNumber = constants::staking::DEFAULT_BLOCKS_PER_ROUND;
-	/// Unstaked balance can be unlocked after 7 days
-	pub const StakeDuration: BlockNumber = constants::staking::STAKE_DURATION;
-	/// Collator exit requests are delayed by 4 hours (2 rounds/sessions)
-	pub const ExitQueueDelay: u32 = 2;
-	/// Minimum 16 collators selected per round, default at genesis and minimum forever after
-	pub const MinCollators: u32 = constants::staking::MIN_COLLATORS;
-	/// At least 4 candidates which cannot leave the network if there are no other candidates.
-	pub const MinRequiredCollators: u32 = 4;
-	/// We only allow one delegation per round.
-	pub const MaxDelegationsPerRound: u32 = 1;
-	/// Maximum 25 delegators per collator at launch, might be increased later
-	#[derive(Debug, PartialEq)]
-	pub const MaxDelegatorsPerCollator: u32 = constants::staking::MAX_DELEGATORS_PER_COLLATOR;
-	/// Maximum 1 collator per delegator at launch, will be increased later
-	#[derive(Debug, PartialEq)]
-	pub const MaxCollatorsPerDelegator: u32 = 1;
-	/// Minimum stake required to be reserved to be a collator is 10_000
-	pub const MinCollatorStake: Balance = 10_000 * KILT;
-	/// Minimum stake required to be reserved to be a delegator is 1000
-	pub const MinDelegatorStake: Balance = constants::staking::MIN_DELEGATOR_STAKE;
-	/// Maximum number of collator candidates
-	#[derive(Debug, PartialEq)]
-	pub const MaxCollatorCandidates: u32 = constants::staking::MAX_CANDIDATES;
-	/// Maximum number of concurrent requests to unlock unstaked balance
-	pub const MaxUnstakeRequests: u32 = 10;
-	/// The starting block number for the network rewards
-	pub const NetworkRewardStart: BlockNumber = constants::treasury::INITIAL_PERIOD_LENGTH;
-	/// The rate in percent for the network rewards
-	pub const NetworkRewardRate: Perquintill = constants::staking::NETWORK_REWARD_RATE;
 }
 
 impl parachain_staking::Config for Runtime {
 	type Event = Event;
 	type Currency = Balances;
 	type CurrencyBalance = Balance;
-	type MinBlocksPerRound = MinBlocksPerRound;
-	type DefaultBlocksPerRound = DefaultBlocksPerRound;
-	type StakeDuration = StakeDuration;
-	type ExitQueueDelay = ExitQueueDelay;
-	type MinCollators = MinCollators;
-	type MinRequiredCollators = MinRequiredCollators;
-	type MaxDelegationsPerRound = MaxDelegationsPerRound;
-	type MaxDelegatorsPerCollator = MaxDelegatorsPerCollator;
-	type MaxCollatorsPerDelegator = MaxCollatorsPerDelegator;
-	type MinCollatorStake = MinCollatorStake;
-	type MinCollatorCandidateStake = MinCollatorStake;
-	type MaxTopCandidates = MaxCollatorCandidates;
-	type MinDelegation = MinDelegatorStake;
-	type MinDelegatorStake = MinDelegatorStake;
-	type MaxUnstakeRequests = MaxUnstakeRequests;
-	type NetworkRewardRate = NetworkRewardRate;
-	type NetworkRewardStart = NetworkRewardStart;
+
+	type MinBlocksPerRound = constants::staking::MinBlocksPerRound;
+	type DefaultBlocksPerRound = constants::staking::DefaultBlocksPerRound;
+	type StakeDuration = constants::staking::StakeDuration;
+	type ExitQueueDelay = constants::staking::ExitQueueDelay;
+	type MinCollators = constants::staking::MinCollators;
+	type MinRequiredCollators = constants::staking::MinRequiredCollators;
+	type MaxDelegationsPerRound = constants::staking::MaxDelegationsPerRound;
+	type MaxDelegatorsPerCollator = constants::staking::MaxDelegatorsPerCollator;
+	type MaxCollatorsPerDelegator = constants::staking::MaxCollatorsPerDelegator;
+	type MinCollatorStake = constants::staking::MinCollatorStake;
+	type MinCollatorCandidateStake = constants::staking::MinCollatorStake;
+	type MaxTopCandidates = constants::staking::MaxCollatorCandidates;
+	type MinDelegation = constants::staking::MinDelegatorStake;
+	type MinDelegatorStake = constants::staking::MinDelegatorStake;
+	type MaxUnstakeRequests = constants::staking::MaxUnstakeRequests;
+	type NetworkRewardRate = constants::staking::NetworkRewardRate;
+	type NetworkRewardStart = constants::staking::NetworkRewardStart;
+
 	type NetworkRewardBeneficiary = Treasury;
 	type WeightInfo = weights::parachain_staking::WeightInfo<Runtime>;
+
+	const BLOCKS_PER_YEAR: Self::BlockNumber = constants::BLOCKS_PER_YEAR;
 }
 
 impl pallet_utility::Config for Runtime {

@@ -18,8 +18,7 @@
 
 use super::*;
 
-#[allow(unused)]
-use crate::{BalanceLocks, BalanceOf, LockedBalance, Pallet as KiltLaunch, UnownedAccount, KILT_LAUNCH_ID};
+use crate::{BalanceLocks, BalanceOf, LockedBalance, Pallet as KiltLaunch, UnownedAccount};
 use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite, vec, whitelist_account, Zero};
 use frame_support::{
 	assert_ok,
@@ -29,12 +28,11 @@ use frame_support::{
 use frame_system::{Pallet as System, RawOrigin};
 use pallet_balances::Locks;
 use pallet_vesting::{Vesting, VestingInfo};
-use runtime_common::{constants::KILT, Balance};
 use sp_runtime::traits::StaticLookup;
 use sp_std::convert::TryFrom;
 
 const SEED: u32 = 0;
-const AMOUNT: Balance = KILT;
+const AMOUNT: u128 = 1000;
 const PER_BLOCK: u32 = 100;
 const UNLOCK_BLOCK: u32 = 1337;
 
@@ -65,9 +63,8 @@ type GenesisSetup<T> = (
 /// addresses.
 fn genesis_setup<T: Config>(n: u32) -> Result<GenesisSetup<T>, &'static str>
 where
-	Balance: Into<<T as pallet_balances::Config>::Balance>,
-	Balance:
-		Into<<<T as pallet_vesting::Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance>,
+	<T as pallet_balances::Config>::Balance: From<u128>,
+	<<T as pallet_vesting::Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance: From<u128>,
 {
 	System::<T>::set_block_number(0u32.into());
 
@@ -114,7 +111,12 @@ where
 }
 
 benchmarks! {
-	where_clause { where T: core::fmt::Debug, Balance: Into<<T as pallet_balances::Config>::Balance>, Balance: Into<<<T as pallet_vesting::Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance>}
+	where_clause {
+	where
+		T: core::fmt::Debug,
+		<T as pallet_balances::Config>::Balance: From<u128>,
+		<<T as pallet_vesting::Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance: From<u128>,
+		}
 
 	change_transfer_account {
 		let transfer_account: T::AccountId = account("transfer_new", 0, SEED);

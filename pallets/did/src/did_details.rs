@@ -177,7 +177,7 @@ pub trait DidVerifiableIdentifier {
 	) -> Result<DidVerificationKey, SignatureError>;
 }
 
-impl DidVerifiableIdentifier for runtime_common::DidIdentifier {
+impl<I: AsRef<[u8; 32]>> DidVerifiableIdentifier for I {
 	fn verify_and_recover_signature(
 		&self,
 		payload: &Payload,

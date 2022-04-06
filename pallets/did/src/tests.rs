@@ -776,7 +776,7 @@ fn check_successful_authentication_key_update() {
 
 	let old_did_details = generate_base_did_details::<Test>(DidVerificationKey::from(old_auth_key.public()));
 
-	let new_block_number: TestBlockNumber = 1;
+	let new_block_number: BlockNumber = 1;
 
 	// Update authentication key. The old one should be removed.
 	ExtBuilder::default()
@@ -817,7 +817,7 @@ fn check_successful_authentication_key_max_public_keys_update() {
 	// MaxPublicKeysPerDid - MaxTotalKeyAgreementKeys many keys
 	did_details = fill_public_keys(did_details);
 
-	let new_block_number: TestBlockNumber = 1;
+	let new_block_number: BlockNumber = 1;
 
 	// Update authentication key. The old one should be removed.
 	ExtBuilder::default()
@@ -856,7 +856,7 @@ fn check_reused_key_authentication_key_update() {
 	// Same key for auth and del key
 	assert_ok!(old_did_details.update_delegation_key(DidVerificationKey::from(old_delegation_key.public()), 0u64));
 
-	let new_block_number: TestBlockNumber = 1;
+	let new_block_number: BlockNumber = 1;
 
 	ExtBuilder::default()
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
@@ -904,7 +904,7 @@ fn check_max_keys_authentication_key_update_error() {
 	// MaxPublicKeysPerDid - MaxTotalKeyAgreementKeys many keys
 	did_details = fill_public_keys(did_details);
 
-	let new_block_number: TestBlockNumber = 1;
+	let new_block_number: BlockNumber = 1;
 
 	// Update authentication key. Since the old one is not removed because it is the
 	// same as the delegation key, the update should fail as the max number of
@@ -930,7 +930,7 @@ fn check_did_not_present_authentication_key_update_error() {
 	let alice_did = get_did_identifier_from_ed25519_key(old_auth_key.public());
 	let new_auth_key = get_ed25519_authentication_key(false);
 
-	let new_block_number: TestBlockNumber = 1;
+	let new_block_number: BlockNumber = 1;
 
 	// Update authentication key. The old one should be removed.
 	ExtBuilder::default().build(None).execute_with(|| {
@@ -955,7 +955,7 @@ fn check_successful_delegation_key_update() {
 	let mut old_did_details = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()));
 	assert_ok!(old_did_details.update_delegation_key(DidVerificationKey::from(old_del_key.public()), 0u64));
 
-	let new_block_number: TestBlockNumber = 1;
+	let new_block_number: BlockNumber = 1;
 
 	// Update delegation key. The old one should be removed.
 	ExtBuilder::default()
@@ -998,7 +998,7 @@ fn check_successful_delegation_key_max_public_keys_update() {
 	// MaxPublicKeysPerDid - MaxTotalKeyAgreementKeys many keys
 	did_details = fill_public_keys(did_details);
 
-	let new_block_number: TestBlockNumber = 1;
+	let new_block_number: BlockNumber = 1;
 
 	// Update delegation key. The old one should be removed.
 	ExtBuilder::default()
@@ -1035,7 +1035,7 @@ fn check_reused_key_delegation_key_update() {
 	// Same key for auth and del key
 	assert_ok!(old_did_details.update_delegation_key(DidVerificationKey::from(old_del_key.public()), 0u64));
 
-	let new_block_number: TestBlockNumber = 1;
+	let new_block_number: BlockNumber = 1;
 
 	ExtBuilder::default()
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
@@ -1077,7 +1077,7 @@ fn check_max_public_keys_delegation_key_addition_error() {
 	// MaxPublicKeysPerDid - MaxTotalKeyAgreementKeys many keys
 	did_details = fill_public_keys(did_details);
 
-	let new_block_number: TestBlockNumber = 1;
+	let new_block_number: BlockNumber = 1;
 
 	// Update delegation key. The old one should be removed.
 	ExtBuilder::default()
@@ -1112,7 +1112,7 @@ fn check_max_public_keys_reused_key_delegation_key_update_error() {
 	// MaxPublicKeysPerDid - MaxTotalKeyAgreementKeys many keys
 	did_details = fill_public_keys(did_details);
 
-	let new_block_number: TestBlockNumber = 1;
+	let new_block_number: BlockNumber = 1;
 
 	// Update delegation key. The old one should not be removed as it is still used
 	// as authentication key.
@@ -1137,7 +1137,7 @@ fn check_did_not_present_delegation_key_update_error() {
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let new_del_key = get_sr25519_delegation_key(false);
 
-	let new_block_number: TestBlockNumber = 1;
+	let new_block_number: BlockNumber = 1;
 
 	// Update delegation key. The old one should be removed.
 	ExtBuilder::default().build(None).execute_with(|| {
@@ -1244,7 +1244,7 @@ fn check_successful_attestation_key_update() {
 	let mut old_did_details = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()));
 	assert_ok!(old_did_details.update_attestation_key(DidVerificationKey::from(old_att_key.public()), 0u64));
 
-	let new_block_number: TestBlockNumber = 1;
+	let new_block_number: BlockNumber = 1;
 
 	// Update attestation key. The old one should be removed.
 	ExtBuilder::default()
@@ -1286,7 +1286,7 @@ fn check_successful_attestation_key_max_public_keys_update() {
 	// MaxPublicKeysPerDid - MaxTotalKeyAgreementKeys many keys
 	did_details = fill_public_keys(did_details);
 
-	let new_block_number: TestBlockNumber = 1;
+	let new_block_number: BlockNumber = 1;
 
 	// Update attestation key. The old one should be removed.
 	ExtBuilder::default()
@@ -1322,7 +1322,7 @@ fn check_reused_key_attestation_key_update() {
 	// Same key for auth and att key
 	assert_ok!(old_did_details.update_attestation_key(DidVerificationKey::from(old_att_key.public()), 0u64));
 
-	let new_block_number: TestBlockNumber = 1;
+	let new_block_number: BlockNumber = 1;
 
 	ExtBuilder::default()
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
@@ -1364,7 +1364,7 @@ fn check_max_public_keys_attestation_key_addition_error() {
 	// MaxPublicKeysPerDid - MaxTotalKeyAgreementKeys many keys
 	did_details = fill_public_keys(did_details);
 
-	let new_block_number: TestBlockNumber = 1;
+	let new_block_number: BlockNumber = 1;
 
 	// Update attestation key. The old one should be removed.
 	ExtBuilder::default()
@@ -1399,7 +1399,7 @@ fn check_max_public_keys_reused_key_attestation_key_update_error() {
 	// MaxPublicKeysPerDid - MaxTotalKeyAgreementKeys many keys
 	did_details = fill_public_keys(did_details);
 
-	let new_block_number: TestBlockNumber = 1;
+	let new_block_number: BlockNumber = 1;
 
 	// Update attestation key. The old one should not be removed as it is still used
 	// as authentication key.
@@ -1424,7 +1424,7 @@ fn check_did_not_present_attestation_key_update_error() {
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let new_att_key = get_sr25519_delegation_key(false);
 
-	let new_block_number: TestBlockNumber = 1;
+	let new_block_number: BlockNumber = 1;
 
 	// Update delegation key. The old one should be removed.
 	ExtBuilder::default().build(None).execute_with(|| {
@@ -1528,7 +1528,7 @@ fn check_successful_key_agreement_key_addition() {
 
 	let old_did_details = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()));
 
-	let new_block_number: TestBlockNumber = 1;
+	let new_block_number: BlockNumber = 1;
 
 	ExtBuilder::default()
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
@@ -1568,7 +1568,7 @@ fn check_max_public_keys_key_agreement_key_addition_error() {
 	// MaxPublicKeysPerDid - MaxTotalKeyAgreementKeys many keys
 	did_details = fill_public_keys(did_details);
 
-	let new_block_number: TestBlockNumber = 1;
+	let new_block_number: BlockNumber = 1;
 
 	ExtBuilder::default()
 		.with_dids(vec![(alice_did.clone(), did_details)])
@@ -1588,7 +1588,7 @@ fn check_did_not_present_key_agreement_key_addition_error() {
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let new_enc_key = get_x25519_encryption_key(true);
 
-	let new_block_number: TestBlockNumber = 1;
+	let new_block_number: BlockNumber = 1;
 
 	// Update delegation key. The old one should be removed.
 	ExtBuilder::default().build(None).execute_with(|| {
