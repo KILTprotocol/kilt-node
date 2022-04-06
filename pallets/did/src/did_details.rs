@@ -18,6 +18,7 @@
 
 use codec::{Decode, Encode, MaxEncodedLen, WrapperTypeEncode};
 use frame_support::{
+	dispatch::Weight,
 	ensure,
 	storage::{bounded_btree_map::BoundedBTreeMap, bounded_btree_set::BoundedBTreeSet},
 	traits::Get,
@@ -25,7 +26,7 @@ use frame_support::{
 };
 use scale_info::TypeInfo;
 use sp_core::{ecdsa, ed25519, sr25519};
-use sp_runtime::{traits::Verify, MultiSignature};
+use sp_runtime::{traits::Verify, DispatchError, MultiSignature};
 use sp_std::convert::TryInto;
 
 use kilt_support::deposit::Deposit;
@@ -544,7 +545,22 @@ pub enum RelationshipDeriveError {
 	InvalidCallParameter,
 }
 
-pub type DeriveDidCallKeyRelationshipResult = Result<DidVerificationKeyRelationship, RelationshipDeriveError>;
+pub enum DidVerificationType {
+	Inline,
+	StoredVerificationKey(DidVerificationKeyRelationship),
+}
+
+impl DidVerificationType {
+	pub fn inline() -> Self {
+		Self::Inline
+	}
+
+	pub fn with_verification_key(relationship: DidVerificationKeyRelationship) -> Self {
+		Self::StoredVerificationKey(relationship)
+	}
+}
+
+pub type DeriveDidVerificationTypeResult = Result<DidVerificationType, RelationshipDeriveError>;
 
 /// Trait for extrinsic DID-based authorization.
 ///
@@ -553,10 +569,10 @@ pub type DeriveDidCallKeyRelationshipResult = Result<DidVerificationKeyRelations
 /// extrinsic to specify what DID key to use to perform signature validation
 /// over the byte-encoded operation. A result of None indicates that the
 /// extrinsic does not support DID-based authorization.
-pub trait DeriveDidCallAuthorizationVerificationKeyRelationship {
+pub trait DeriveDidCallAuthorizationVerificationType {
 	/// The type of the verification key to be used to validate the
 	/// wrapped extrinsic.
-	fn derive_verification_key_relationship(&self) -> DeriveDidCallKeyRelationshipResult;
+	fn derive_verification_key_relationship(&self) -> DeriveDidVerificationTypeResult;
 
 	// Return a call to dispatch in order to test the pallet proxy feature.
 	#[cfg(feature = "runtime-benchmarks")]
@@ -620,3 +636,13 @@ impl<T: Config> core::ops::Deref for DidAuthorizedCallOperationWithVerificationR
 // [DidAuthorizedCallOperationWithVerificationRelationship] encodes to
 // [DidAuthorizedCallOperation].
 impl<T: Config> WrapperTypeEncode for DidAuthorizedCallOperationWithVerificationRelationship<T> {}
+
+pub trait DidCallProxy<T: Config> {
+	fn weight(call: &DidCallableOf<T>) -> Weight;
+
+	fn authorise(
+		call: &DidCallableOf<T>,
+		did: &DidIdentifierOf<T>,
+		signature: &DidSignature,
+	) -> Result<(), DispatchError>;
+}

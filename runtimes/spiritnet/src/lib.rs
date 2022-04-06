@@ -877,10 +877,10 @@ construct_runtime! {
 	}
 }
 
-impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
-	fn derive_verification_key_relationship(&self) -> did::DeriveDidCallKeyRelationshipResult {
+impl did::DeriveDidCallAuthorizationVerificationType for Call {
+	fn derive_verification_key_relationship(&self) -> did::DeriveDidVerificationTypeResult {
 		/// ensure that all calls have the same VerificationKeyRelationship
-		fn single_key_relationship(calls: &[Call]) -> did::DeriveDidCallKeyRelationshipResult {
+		fn single_key_relationship(calls: &[Call]) -> did::DeriveDidVerificationTypeResult {
 			let init = calls
 				.get(0)
 				.ok_or(did::RelationshipDeriveError::InvalidCallParameter)?

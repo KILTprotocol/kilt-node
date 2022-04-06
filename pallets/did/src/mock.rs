@@ -34,7 +34,7 @@ use sp_std::vec::Vec;
 use crate::{
 	self as did,
 	did_details::{
-		DeriveDidCallAuthorizationVerificationKeyRelationship, DeriveDidCallKeyRelationshipResult,
+		DeriveDidCallAuthorizationVerificationType, DeriveDidVerificationTypeResult,
 		DidAuthorizedCallOperation, DidAuthorizedCallOperationWithVerificationRelationship, DidDetails,
 		DidEncryptionKey, DidPublicKey, DidPublicKeyDetails, DidVerificationKey, DidVerificationKeyRelationship,
 		RelationshipDeriveError,
@@ -354,8 +354,8 @@ pub(crate) fn get_none_key_call() -> Call {
 	})
 }
 
-impl DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
-	fn derive_verification_key_relationship(&self) -> DeriveDidCallKeyRelationshipResult {
+impl DeriveDidCallAuthorizationVerificationType for Call {
+	fn derive_verification_key_relationship(&self) -> DeriveDidVerificationTypeResult {
 		if *self == get_attestation_key_call() {
 			Ok(DidVerificationKeyRelationship::AssertionMethod)
 		} else if *self == get_authentication_key_call() {

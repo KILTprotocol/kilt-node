@@ -634,9 +634,9 @@ construct_runtime!(
 	}
 );
 
-impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
-	fn derive_verification_key_relationship(&self) -> did::DeriveDidCallKeyRelationshipResult {
-		fn single_key_relationship(calls: &[Call]) -> did::DeriveDidCallKeyRelationshipResult {
+impl did::DeriveDidCallAuthorizationVerificationType for Call {
+	fn derive_verification_key_relationship(&self) -> did::DeriveDidVerificationTypeResult {
+		fn single_key_relationship(calls: &[Call]) -> did::DeriveDidVerificationTypeResult {
 			let init = calls
 				.get(0)
 				.ok_or(did::RelationshipDeriveError::InvalidCallParameter)?
@@ -654,9 +654,12 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 				})
 		}
 		match self {
-			Call::Attestation { .. } => Ok(did::DidVerificationKeyRelationship::AssertionMethod),
+			Call::Attestation { .. } => Ok(did::DidVerificationKeyType:: DidVerificationKeyRelationship::AssertionMethod),
 			Call::Ctype { .. } => Ok(did::DidVerificationKeyRelationship::AssertionMethod),
 			Call::Delegation { .. } => Ok(did::DidVerificationKeyRelationship::CapabilityDelegation),
+			// DID creation requires inline verification.
+			Call::Did(did::Call::create { .. }) => Err(did::RelationshipDeriveError::NotCallableByDid),
+			Call::Did { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
 			Call::Web3Names { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
 			Call::DidLookup { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
 			Call::Utility(pallet_utility::Call::batch { calls }) => single_key_relationship(&calls[..]),

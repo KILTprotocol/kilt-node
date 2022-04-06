@@ -100,8 +100,8 @@ mod utils;
 pub use crate::{
 	default_weights::WeightInfo,
 	did_details::{
-		DeriveDidCallAuthorizationVerificationKeyRelationship, DeriveDidCallKeyRelationshipResult,
-		DidAuthorizedCallOperationWithVerificationRelationship, DidSignature, DidVerificationKeyRelationship,
+		DeriveDidCallAuthorizationVerificationType, DeriveDidVerificationTypeResult,
+		DidAuthorizedCallOperationWithVerificationRelationship, DidCallProxy, DidSignature, DidVerificationKeyRelationship,
 		RelationshipDeriveError,
 	},
 	origin::{DidRawOrigin, EnsureDidOrigin},
@@ -138,7 +138,7 @@ pub mod pallet {
 
 	use crate::{
 		did_details::{
-			DeriveDidCallAuthorizationVerificationKeyRelationship, DidAuthorizedCallOperation, DidCreationDetails,
+			DeriveDidCallAuthorizationVerificationType, DidAuthorizedCallOperation, DidCreationDetails,
 			DidDetails, DidEncryptionKey, DidSignature, DidVerifiableIdentifier, DidVerificationKey,
 			RelationshipDeriveError,
 		},
@@ -182,10 +182,12 @@ pub mod pallet {
 		type Call: Parameter
 			+ Dispatchable<Origin = <Self as Config>::Origin, PostInfo = PostDispatchInfo>
 			+ GetDispatchInfo
-			+ DeriveDidCallAuthorizationVerificationKeyRelationship;
+			+ DeriveDidCallAuthorizationVerificationType;
 
 		/// Type for a DID subject identifier.
 		type DidIdentifier: Parameter + DidVerifiableIdentifier + MaxEncodedLen;
+
+		type DidCallProxy: DidCallProxy<Self>;
 
 		/// Origin type expected by the proxied dispatchable calls.
 		#[cfg(not(feature = "runtime-benchmarks"))]
@@ -974,33 +976,16 @@ pub mod pallet {
 
 			let did_identifier = did_call.did.clone();
 
-			// Compute the right DID verification key to use to verify the operation
-			// signature
-			let verification_key_relationship = did_call
-				.call
-				.derive_verification_key_relationship()
-				.map_err(Error::<T>::from)?;
-
-			// Wrap the operation in the expected structure, specifying the key retrieved
-			let wrapped_operation = DidAuthorizedCallOperationWithVerificationRelationship {
-				operation: *did_call,
-				verification_key_relationship,
-			};
-
-			Self::verify_did_operation_signature_and_increase_nonce(&wrapped_operation, &signature)
-				.map_err(Error::<T>::from)?;
+			T::DidCallProxy::authorise(&did_call.call, &did_call.did, &signature)?;
 
 			log::debug!("Dispatch call from DID {:?}", did_identifier);
-
-			// Dispatch the referenced [Call] instance and return its result
-			let DidAuthorizedCallOperation { did, call, .. } = wrapped_operation.operation;
 
 			// *** No Fail beyond this point ***
 
 			#[cfg(not(feature = "runtime-benchmarks"))]
-			let result = call.dispatch(
+			let result = did_call.call.dispatch(
 				DidRawOrigin {
-					id: did,
+					id: did_call.did,
 					submitter: who,
 				}
 				.into(),
