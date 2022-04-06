@@ -385,8 +385,7 @@ impl DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 	// Always return a System::remark() extrinsic call
 	#[cfg(feature = "runtime-benchmarks")]
 	fn get_call_for_did_call_benchmark() -> Self {
-		use sp_std::vec;
-		Call::System(frame_system::Call::remark { remark: vec![] })
+		Call::System(frame_system::Call::remark { remark: sp_std::vec![] })
 	}
 }
 
