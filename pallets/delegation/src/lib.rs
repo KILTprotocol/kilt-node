@@ -73,6 +73,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::unused_unit)]
 
+mod access_control;
 pub mod default_weights;
 pub mod delegation_hierarchy;
 pub mod migrations;
@@ -86,8 +87,9 @@ pub mod benchmarking;
 #[cfg(test)]
 mod tests;
 
-pub use crate::{default_weights::WeightInfo, delegation_hierarchy::*, pallet::*};
+pub use crate::{access_control::DelegationAc, default_weights::WeightInfo, delegation_hierarchy::*, pallet::*};
 
+use codec::Encode;
 use frame_support::{
 	dispatch::DispatchResult,
 	ensure,
@@ -272,6 +274,8 @@ pub mod pallet {
 		UnauthorizedRemoval,
 		/// The delegation creator is not allowed to create the delegation.
 		UnauthorizedDelegation,
+		/// The operation wasn't allowed because of insufficient rights.
+		AccessDenied,
 		/// Max number of revocations for delegation nodes has been reached for
 		/// the operation.
 		ExceededRevocationBounds,

@@ -82,32 +82,39 @@ pub mod mock;
 #[cfg(feature = "runtime-benchmarks")]
 pub mod benchmarking;
 
+mod access_control;
 #[cfg(test)]
 mod tests;
 
-pub use crate::{attestations::AttestationDetails, default_weights::WeightInfo, pallet::*};
+pub use crate::{
+	access_control::AttestationAccessControl, attestations::AttestationDetails, default_weights::WeightInfo, pallet::*,
+};
 
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
-	use ctype::CtypeHashOf;
-	use delegation::DelegationNodeIdOf;
 	use frame_support::{
+		dispatch::{DispatchResult, DispatchResultWithPostInfo},
 		pallet_prelude::*,
 		traits::{Currency, Get, ReservableCurrency, StorageVersion},
-		BoundedVec,
 	};
 	use frame_system::pallet_prelude::*;
+	use sp_runtime::DispatchError;
+
+	use ctype::CtypeHashOf;
 	use kilt_support::{deposit::Deposit, traits::CallSources};
 
 	/// The current storage version.
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
 
 	/// Type of a claim hash.
-	pub(crate) type ClaimHashOf<T> = <T as frame_system::Config>::Hash;
+	pub type ClaimHashOf<T> = <T as frame_system::Config>::Hash;
 
 	/// Type of an attester identifier.
-	pub(crate) type AttesterOf<T> = delegation::DelegatorIdOf<T>;
+	pub(crate) type AttesterOf<T> = <T as Config>::AttesterId;
+
+	/// Authorization id type
+	pub(crate) type AuthorizationIdOf<T> = <T as Config>::AuthorizationId;
 
 	pub(crate) type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 
@@ -116,7 +123,7 @@ pub mod pallet {
 	pub(crate) type CurrencyOf<T> = <T as Config>::Currency;
 
 	#[pallet::config]
-	pub trait Config: frame_system::Config + ctype::Config + delegation::Config {
+	pub trait Config: frame_system::Config + ctype::Config {
 		type EnsureOrigin: EnsureOrigin<
 			Success = <Self as Config>::OriginSuccess,
 			<Self as frame_system::Config>::Origin,
@@ -136,6 +143,13 @@ pub mod pallet {
 		/// the same delegation.
 		#[pallet::constant]
 		type MaxDelegatedAttestations: Get<u32>;
+
+		type AttesterId: Parameter + MaxEncodedLen;
+
+		type AuthorizationId: Parameter + MaxEncodedLen;
+
+		type AccessControl: Parameter
+			+ AttestationAccessControl<Self::AttesterId, Self::AuthorizationId, CtypeHashOf<Self>, ClaimHashOf<Self>>;
 	}
 
 	#[pallet::pallet]
@@ -157,13 +171,9 @@ pub mod pallet {
 	///
 	/// It maps from a delegation ID to a vector of claim hashes.
 	#[pallet::storage]
-	#[pallet::getter(fn delegated_attestations)]
-	pub type DelegatedAttestations<T> = StorageMap<
-		_,
-		Blake2_128Concat,
-		DelegationNodeIdOf<T>,
-		BoundedVec<ClaimHashOf<T>, <T as Config>::MaxDelegatedAttestations>,
-	>;
+	#[pallet::getter(fn external_attestations)]
+	pub type ExternalAttestations<T> =
+		StorageDoubleMap<_, Twox64Concat, AuthorizationIdOf<T>, Blake2_128Concat, ClaimHashOf<T>, bool, ValueQuery>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -174,7 +184,7 @@ pub mod pallet {
 			AttesterOf<T>,
 			ClaimHashOf<T>,
 			CtypeHashOf<T>,
-			Option<DelegationNodeIdOf<T>>,
+			Option<AuthorizationIdOf<T>>,
 		),
 		/// An attestation has been revoked.
 		/// \[account id, claim hash\]
@@ -199,15 +209,6 @@ pub mod pallet {
 		/// The attestation CType does not match the CType specified in the
 		/// delegation hierarchy root.
 		CTypeMismatch,
-		/// The delegation node does not include the permission to create new
-		/// attestations. Only when the revoker is not the original attester.
-		DelegationUnauthorizedToAttest,
-		/// The delegation node has already been revoked.
-		/// Only when the revoker is not the original attester.
-		DelegationRevoked,
-		/// The delegation node owner is different than the attester.
-		/// Only when the revoker is not the original attester.
-		NotDelegatedToAttester,
 		/// The call origin is not authorized to change the attestation.
 		Unauthorized,
 		/// The maximum number of delegated attestations has already been
@@ -239,12 +240,15 @@ pub mod pallet {
 		///   DelegatedAttestations
 		/// - Writes: Attestations, (DelegatedAttestations)
 		/// # </weight>
-		#[pallet::weight(<T as pallet::Config>::WeightInfo::add())]
+		#[pallet::weight(
+			<T as pallet::Config>::WeightInfo::add()
+			.saturating_add(authorization.as_ref().map(|ac| ac.can_attest_weight()).unwrap_or(0))
+		)]
 		pub fn add(
 			origin: OriginFor<T>,
 			claim_hash: ClaimHashOf<T>,
 			ctype_hash: CtypeHashOf<T>,
-			delegation_id: Option<DelegationNodeIdOf<T>>,
+			authorization: Option<T::AccessControl>,
 		) -> DispatchResult {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 			let payer = source.sender();
@@ -261,34 +265,11 @@ pub mod pallet {
 			);
 
 			// Check for validity of the delegation node if specified.
-			let delegation_record = if let Some(delegation_id) = delegation_id {
-				let delegation = <delegation::DelegationNodes<T>>::get(delegation_id)
-					.ok_or(delegation::Error::<T>::DelegationNotFound)?;
-
-				ensure!(!delegation.details.revoked, Error::<T>::DelegationRevoked);
-
-				ensure!(delegation.details.owner == who, Error::<T>::NotDelegatedToAttester);
-
-				ensure!(
-					(delegation.details.permissions & delegation::Permissions::ATTEST)
-						== delegation::Permissions::ATTEST,
-					Error::<T>::DelegationUnauthorizedToAttest
-				);
-
-				// Check if the CType of the delegation is matching the CType of the attestation
-				let root = <delegation::DelegationHierarchies<T>>::get(delegation.hierarchy_root_id)
-					.ok_or(delegation::Error::<T>::HierarchyNotFound)?;
-				ensure!(root.ctype_hash == ctype_hash, Error::<T>::CTypeMismatch);
-
-				// If the attestation is based on a delegation, store separately
-				let mut delegated_attestations = <DelegatedAttestations<T>>::get(delegation_id).unwrap_or_default();
-				delegated_attestations
-					.try_push(claim_hash)
-					.map_err(|_| Error::<T>::MaxDelegatedAttestationsExceeded)?;
-				Some((delegation_id, delegated_attestations))
-			} else {
-				None
-			};
+			authorization
+				.as_ref()
+				.map(|ac| ac.can_attest(&who, &ctype_hash, &claim_hash))
+				.transpose()?;
+			let authorization_id = authorization.as_ref().map(|ac| ac.authorization_id());
 
 			let deposit = Pallet::<T>::reserve_deposit(payer, deposit_amount)?;
 
@@ -296,23 +277,22 @@ pub mod pallet {
 
 			log::debug!("insert Attestation");
 
-			// write delegation record, if any
-			if let Some((id, delegated_attestation)) = delegation_record {
-				<DelegatedAttestations<T>>::insert(id, delegated_attestation);
-			}
-
-			<Attestations<T>>::insert(
+			Attestations::<T>::insert(
 				&claim_hash,
 				AttestationDetails {
 					ctype_hash,
 					attester: who.clone(),
-					delegation_id,
+					authorization_id: authorization_id.clone(),
 					revoked: false,
 					deposit,
 				},
 			);
+			if let Some(authorization_id) = &authorization_id {
+				ExternalAttestations::<T>::insert(authorization_id, claim_hash, true);
+			}
 
-			Self::deposit_event(Event::AttestationCreated(who, claim_hash, ctype_hash, delegation_id));
+			Self::deposit_event(Event::AttestationCreated(who, claim_hash, ctype_hash, authorization_id));
+
 			Ok(())
 		}
 
@@ -333,11 +313,14 @@ pub mod pallet {
 		/// - Reads per delegation step P: delegation::Delegations
 		/// - Writes: Attestations, DelegatedAttestations
 		/// # </weight>
-		#[pallet::weight(<T as pallet::Config>::WeightInfo::revoke(*max_parent_checks))]
+		#[pallet::weight(
+			<T as pallet::Config>::WeightInfo::revoke()
+			.saturating_add(authorization.as_ref().map(|ac| ac.can_revoke_weight()).unwrap_or(0))
+		)]
 		pub fn revoke(
 			origin: OriginFor<T>,
 			claim_hash: ClaimHashOf<T>,
-			max_parent_checks: u32,
+			authorization: Option<T::AccessControl>,
 		) -> DispatchResultWithPostInfo {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 			let who = source.subject();
@@ -346,16 +329,20 @@ pub mod pallet {
 
 			ensure!(!attestation.revoked, Error::<T>::AlreadyRevoked);
 
-			let delegation_depth = if attestation.attester != who {
-				Self::verify_delegated_access(&who, &attestation, max_parent_checks)?
-			} else {
-				0
-			};
+			if attestation.attester != who {
+				let attestation_auth_id = attestation.authorization_id.as_ref().ok_or(Error::<T>::Unauthorized)?;
+				authorization.ok_or(Error::<T>::Unauthorized)?.can_revoke(
+					&who,
+					&attestation.ctype_hash,
+					&claim_hash,
+					attestation_auth_id,
+				)?;
+			}
 
 			// *** No Fail beyond this point ***
 
 			log::debug!("revoking Attestation");
-			<Attestations<T>>::insert(
+			Attestations::<T>::insert(
 				&claim_hash,
 				AttestationDetails {
 					revoked: true,
@@ -365,7 +352,7 @@ pub mod pallet {
 
 			Self::deposit_event(Event::AttestationRevoked(who, claim_hash));
 
-			Ok(Some(<T as pallet::Config>::WeightInfo::revoke(delegation_depth)).into())
+			Ok(Some(<T as pallet::Config>::WeightInfo::revoke()).into())
 		}
 
 		/// Remove an attestation.
@@ -385,22 +372,29 @@ pub mod pallet {
 		/// - Reads per delegation step P: delegation::Delegations
 		/// - Writes: Attestations, DelegatedAttestations
 		/// # </weight>
-		#[pallet::weight(<T as pallet::Config>::WeightInfo::remove(*max_parent_checks))]
+		#[pallet::weight(
+			<T as pallet::Config>::WeightInfo::remove()
+			.saturating_add(authorization.as_ref().map(|ac| ac.can_remove_weight()).unwrap_or(0))
+		)]
 		pub fn remove(
 			origin: OriginFor<T>,
 			claim_hash: ClaimHashOf<T>,
-			max_parent_checks: u32,
+			authorization: Option<T::AccessControl>,
 		) -> DispatchResultWithPostInfo {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 			let who = source.subject();
 
 			let attestation = Attestations::<T>::get(&claim_hash).ok_or(Error::<T>::AttestationNotFound)?;
 
-			let delegation_depth = if attestation.attester != who {
-				Self::verify_delegated_access(&who, &attestation, max_parent_checks)?
-			} else {
-				0
-			};
+			if attestation.attester != who {
+				let attestation_auth_id = attestation.authorization_id.as_ref().ok_or(Error::<T>::Unauthorized)?;
+				authorization.ok_or(Error::<T>::Unauthorized)?.can_remove(
+					&who,
+					&attestation.ctype_hash,
+					&claim_hash,
+					attestation_auth_id,
+				)?;
+			}
 
 			// *** No Fail beyond this point ***
 
@@ -409,7 +403,7 @@ pub mod pallet {
 			Self::remove_attestation(attestation, claim_hash);
 			Self::deposit_event(Event::AttestationRemoved(who, claim_hash));
 
-			Ok(Some(<T as pallet::Config>::WeightInfo::remove(delegation_depth)).into())
+			Ok(Some(<T as pallet::Config>::WeightInfo::remove()).into())
 		}
 
 		/// Reclaim a storage deposit by removing an attestation
@@ -440,28 +434,6 @@ pub mod pallet {
 	}
 
 	impl<T: Config> Pallet<T> {
-		/// Check the delegation tree if the attester is authorized to access
-		/// the attestation.
-		fn verify_delegated_access(
-			attester: &AttesterOf<T>,
-			attestation: &AttestationDetails<T>,
-			max_parent_checks: u32,
-		) -> Result<u32, DispatchError> {
-			// if there is no delegation id, access to this attestation wasn't delegated to
-			// anyone.
-			let delegation_id = attestation.delegation_id.ok_or(Error::<T>::Unauthorized)?;
-			ensure!(
-				max_parent_checks <= T::MaxParentChecks::get(),
-				delegation::Error::<T>::MaxParentChecksTooLarge
-			);
-			// Check whether the sender of the revocation controls the delegation node and
-			// that the delegation has not been revoked
-			let (is_delegating, delegation_depth) =
-				<delegation::Pallet<T>>::is_delegating(attester, &delegation_id, max_parent_checks)?;
-			ensure!(is_delegating, Error::<T>::Unauthorized);
-			Ok(delegation_depth)
-		}
-
 		/// Reserve the deposit and record the deposit on chain.
 		///
 		/// Fails if the `payer` has a balance less than deposit.
@@ -480,12 +452,8 @@ pub mod pallet {
 		fn remove_attestation(attestation: AttestationDetails<T>, claim_hash: ClaimHashOf<T>) {
 			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&attestation.deposit);
 			Attestations::<T>::remove(&claim_hash);
-			if let Some(delegation_id) = attestation.delegation_id {
-				DelegatedAttestations::<T>::mutate(&delegation_id, |maybe_attestations| {
-					if let Some(attestations) = maybe_attestations.as_mut() {
-						attestations.retain(|&elem| elem != claim_hash);
-					}
-				});
+			if let Some(authorization_id) = &attestation.authorization_id {
+				ExternalAttestations::<T>::remove(authorization_id, claim_hash);
 			}
 		}
 	}
