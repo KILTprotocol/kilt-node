@@ -381,8 +381,8 @@ impl did::Config for Runtime {
 	type Call = Call;
 	type Origin = Origin;
 	type Currency = Balances;
-	type Deposit = DidDeposit;
-	type Fee = DidFee;
+	type Deposit = constants::did::DidDeposit;
+	type Fee = constants::did::DidFee;
 	type FeeCollector = ToAuthor<Runtime>;
 
 	#[cfg(not(feature = "runtime-benchmarks"))]

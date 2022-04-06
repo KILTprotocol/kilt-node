@@ -293,14 +293,6 @@ pub fn get_sr25519_attestation_key(default: bool) -> sr25519::Pair {
 	}
 }
 
-pub fn get_ecdsa_attestation_key(default: bool) -> ecdsa::Pair {
-	if default {
-		ecdsa::Pair::from_seed(&DEFAULT_ATT_SEED)
-	} else {
-		ecdsa::Pair::from_seed(&ALTERNATIVE_ATT_SEED)
-	}
-}
-
 pub fn get_ed25519_delegation_key(default: bool) -> ed25519::Pair {
 	if default {
 		ed25519::Pair::from_seed(&DEFAULT_DEL_SEED)

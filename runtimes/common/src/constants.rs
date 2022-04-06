@@ -321,7 +321,6 @@ pub mod did {
 	pub const MAX_NUMBER_OF_URLS_PER_SERVICE: u32 = 1;
 
 	parameter_types! {
-		pub const MaxNewKeyAgreementKeys: u32 = MAX_KEY_AGREEMENT_KEYS;
 		#[derive(Debug, Clone, PartialEq)]
 		pub const MaxUrlLength: u32 = MAX_URL_LENGTH;
 		pub const MaxPublicKeysPerDid: u32 = MAX_PUBLIC_KEYS_PER_DID;

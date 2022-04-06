@@ -25,7 +25,7 @@ use frame_system::RawOrigin;
 use kilt_support::signature::VerifySignature;
 use sp_core::{crypto::KeyTypeId, ecdsa, ed25519, sr25519};
 use sp_io::crypto::{ecdsa_generate, ecdsa_sign, ed25519_generate, ed25519_sign, sr25519_generate, sr25519_sign};
-use sp_runtime::{traits::IdentifyAccount, AccountId32, MultiSigner};
+use sp_runtime::{traits::IdentifyAccount, AccountId32, MultiSigner, SaturatedConversion};
 use sp_std::{convert::TryInto, vec::Vec};
 
 use crate::{
@@ -94,7 +94,7 @@ fn generate_base_did_call_operation<T: Config>(
 // attestation.
 fn generate_full_did_details<T: Config>(auth_key: DidVerificationKey) -> DidDetails<T>
 where
-	<T as frame_system::Config>::AccountId: From<runtime_common::AccountId>,
+	<T as frame_system::Config>::AccountId: From<AccountId32>,
 {
 	let block_number = T::BlockNumber::zero();
 	let mut did_details = generate_base_did_details::<T>(auth_key);
