@@ -17,17 +17,18 @@ env_logger = {version = "0.8.3"}
 serde = {version = "1.0.132"}
 
 ctype = {features = ["mock"], path = "../ctype"}
+
+frame-benchmarking = {branch = "polkadot-v0.9.17", default-features = false, git = "https://github.com/paritytech/substrate"}
 pallet-balances = {branch = "polkadot-v0.9.17", default-features = false, git = "https://github.com/paritytech/substrate"}
-runtime-common = {default-features = false, path = "../../runtimes/common"}
+sp-keystore = {branch = "polkadot-v0.9.17", default-features = false, git = "https://github.com/paritytech/substrate"}
 
 [dependencies]
 # Internal dependencies
-ctype = {optional = true, path = "../ctype"}
+ctype = {path = "../ctype", optional = true}
 kilt-support = {default-features = false, path = "../../support"}
-runtime-common = {default-features = false, path = "../../runtimes/common"}
 
 # External dependencies
-env_logger = {default-features = false, optional = true, version = "0.8.3"}
+env_logger = {default-features = false, version = "0.8.3", optional = true}
 hex = {default-features = false, features = ["alloc"], version = "0.4.2"}
 log = "0.4"
 
@@ -42,7 +43,7 @@ sp-std = {branch = "polkadot-v0.9.17", default-features = false, git = "https://
 
 # benchmarking
 frame-benchmarking = {branch = "polkadot-v0.9.17", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
-pallet-balances = {optional = true, branch = "polkadot-v0.9.17", default-features = false, git = "https://github.com/paritytech/substrate"}
+pallet-balances = {branch = "polkadot-v0.9.17", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
 sp-keystore = {branch = "polkadot-v0.9.17", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
 
 [features]
@@ -66,7 +67,6 @@ std = [
   "frame-support/std",
   "frame-system/std",
   "hex/std",
-  "runtime-common/std",
   "kilt-support/std",
   "kilt-support/std",
   "log/std",

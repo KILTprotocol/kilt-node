@@ -18,7 +18,7 @@
 
 use frame_support::storage::bounded_btree_set::BoundedBTreeSet;
 use kilt_support::deposit::Deposit;
-use sp_runtime::{traits::Zero, SaturatedConversion};
+use sp_runtime::{traits::Zero, AccountId32, SaturatedConversion};
 use sp_std::{
 	collections::btree_set::BTreeSet,
 	convert::{TryFrom, TryInto},
@@ -96,13 +96,13 @@ pub fn generate_base_did_creation_details<T: Config>(
 pub fn generate_base_did_details<T>(authentication_key: DidVerificationKey) -> DidDetails<T>
 where
 	T: Config,
-	<T as frame_system::Config>::AccountId: From<runtime_common::AccountId>,
+	<T as frame_system::Config>::AccountId: From<AccountId32>,
 {
 	DidDetails::new(
 		authentication_key,
 		BlockNumberOf::<T>::default(),
 		Deposit {
-			owner: runtime_common::AccountId::new([0u8; 32]).into(),
+			owner: AccountId32::new([0u8; 32]).into(),
 			amount: Zero::zero(),
 		},
 	)

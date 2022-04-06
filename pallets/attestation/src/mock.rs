@@ -156,13 +156,11 @@ pub(crate) mod runtime {
 	use ctype::CtypeCreatorOf;
 	use frame_support::{parameter_types, weights::constants::RocksDbWeight};
 	use sp_core::{ed25519, sr25519, Pair};
-	use sp_keystore::{testing::KeyStore, KeystoreExt};
 	use sp_runtime::{
 		testing::Header,
 		traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
 		MultiSignature, MultiSigner,
 	};
-	use std::sync::Arc;
 
 	use kilt_support::mock::{mock_origin, SubjectId};
 
@@ -368,8 +366,8 @@ pub(crate) mod runtime {
 		pub fn build_with_keystore(self) -> sp_io::TestExternalities {
 			let mut ext = self.build();
 
-			let keystore = KeyStore::new();
-			ext.register_extension(KeystoreExt(Arc::new(keystore)));
+			let keystore = sp_keystore::testing::KeyStore::new();
+			ext.register_extension(sp_keystore::KeystoreExt(std::sync::Arc::new(keystore)));
 
 			ext
 		}
