@@ -35,6 +35,10 @@ runtime-benchmarks = [
   "sp-runtime/runtime-benchmarks",
 ]
 std = [
+  "parachain-staking/std",
+  "pallet-web3-names/std",
+  "did/std",
+  "attestation/std",
   "codec/std",
   "frame-support/std",
   "frame-system/std",
