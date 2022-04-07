@@ -33,6 +33,8 @@ runtime-benchmarks = [
   "sp-runtime/runtime-benchmarks",
 ]
 std = [
+  "attestation/std",
+  "parachain-staking/std",
   "codec/std",
   "frame-support/std",
   "frame-system/std",
