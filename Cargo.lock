@@ -8568,6 +8568,7 @@ dependencies = [
  "frame-system",
  "pallet-authorship",
  "pallet-balances",
+ "pallet-membership",
  "pallet-transaction-payment",
  "parachain-staking",
  "parity-scale-codec",

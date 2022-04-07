@@ -28,7 +28,11 @@ pub use sp_consensus_aura::sr25519::AuthorityId;
 pub use opaque::*;
 
 pub use frame_support::weights::constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight};
-use frame_support::{parameter_types, traits::Currency, weights::DispatchClass};
+use frame_support::{
+	parameter_types,
+	traits::{Contains, ContainsLengthBound, Currency, Get, SortedMembers},
+	weights::DispatchClass,
+};
 use frame_system::limits;
 use pallet_transaction_payment::{Multiplier, TargetedFeeAdjustment};
 use sp_runtime::{
@@ -36,6 +40,7 @@ use sp_runtime::{
 	traits::{IdentifyAccount, Verify},
 	FixedPointNumber, MultiSignature, Perquintill,
 };
+use sp_std::marker::PhantomData;
 
 pub mod authorization;
 pub mod constants;
@@ -153,3 +158,35 @@ pub type FeeSplit<R, B1, B2> = SplitFeesByRatio<R, FeeSplitRatio, B1, B2>;
 /// https://w3f-research.readthedocs.io/en/latest/polkadot/Token%20Economics.html#-2.-slow-adjusting-mechanism
 pub type SlowAdjustingFeeUpdate<R> =
 	TargetedFeeAdjustment<R, TargetBlockFullness, AdjustmentVariable, MinimumMultiplier>;
+
+pub struct InitialTippers<R>(PhantomData<R>);
+impl<R> ContainsLengthBound for InitialTippers<R>
+where
+	R: pallet_membership::Config,
+{
+	fn max_len() -> usize {
+		<R as pallet_membership::Config>::MaxMembers::get() as usize
+	}
+
+	fn min_len() -> usize {
+		0
+	}
+}
+
+impl<R> SortedMembers<R::AccountId> for InitialTippers<R>
+where
+	R: pallet_membership::Config + frame_system::Config,
+	pallet_membership::Pallet<R>: SortedMembers<R::AccountId> + Contains<R::AccountId>,
+{
+	fn sorted_members() -> sp_std::vec::Vec<R::AccountId> {
+		pallet_membership::Pallet::<R>::sorted_members()
+	}
+
+	#[cfg(feature = "runtime-benchmarks")]
+	fn add(who: &R::AccountId) {
+		pallet_membership::Members::<R>::mutate(|members| match members.binary_search_by(|m| m.cmp(who)) {
+			Ok(_) => (),
+			Err(pos) => members.insert(pos, who.clone()),
+		})
+	}
+}

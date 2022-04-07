@@ -475,41 +475,10 @@ impl pallet_membership::Config for Runtime {
 	type WeightInfo = weights::pallet_membership::WeightInfo<Runtime>;
 }
 
-pub struct CouncilProvider;
-impl frame_support::traits::SortedMembers<AccountId> for CouncilProvider {
-	fn contains(who: &AccountId) -> bool {
-		Council::is_member(who)
-	}
-
-	fn sorted_members() -> Vec<AccountId> {
-		Council::members()
-	}
-
-	#[cfg(feature = "runtime-benchmarks")]
-	fn add(who: &AccountId) {
-		pallet_collective::Members::<Runtime, pallet_collective::Instance1>::mutate(|members| {
-			match members.binary_search_by(|m| m.cmp(who)) {
-				Ok(_) => (),
-				Err(pos) => members.insert(pos, who.clone()),
-			}
-		})
-	}
-}
-
-impl frame_support::traits::ContainsLengthBound for CouncilProvider {
-	fn max_len() -> usize {
-		constants::governance::CouncilMaxMembers::get() as usize
-	}
-
-	fn min_len() -> usize {
-		0
-	}
-}
-
 impl pallet_tips::Config for Runtime {
 	type MaximumReasonLength = constants::tips::MaximumReasonLength;
 	type DataDepositPerByte = constants::ByteDeposit;
-	type Tippers = CouncilProvider;
+	type Tippers = runtime_common::InitialTippers<Runtime>;
 	type TipCountdown = constants::tips::TipCountdown;
 	type TipFindersFee = constants::tips::TipFindersFee;
 	type TipReportDepositBase = constants::tips::TipReportDepositBase;
