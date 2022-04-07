@@ -491,8 +491,13 @@ impl frame_support::traits::SortedMembers<AccountId> for CouncilProvider {
 	}
 
 	#[cfg(feature = "runtime-benchmarks")]
-	fn add(_: &AccountId) {
-		unimplemented!()
+	fn add(who: &AccountId) {
+		pallet_collective::Members::<Runtime, pallet_collective::Instance1>::mutate(|members| {
+			match members.binary_search_by(|m| m.cmp(who)) {
+				Ok(_) => (),
+				Err(pos) => members.insert(pos, who.clone()),
+			}
+		})
 	}
 }
 
@@ -508,7 +513,7 @@ impl frame_support::traits::ContainsLengthBound for CouncilProvider {
 
 impl pallet_tips::Config for Runtime {
 	type MaximumReasonLength = constants::tips::MaximumReasonLength;
-	type DataDepositPerByte = constants::tips::DataDepositPerByte;
+	type DataDepositPerByte = constants::ByteDeposit;
 	type Tippers = CouncilProvider;
 	type TipCountdown = constants::tips::TipCountdown;
 	type TipFindersFee = constants::tips::TipFindersFee;

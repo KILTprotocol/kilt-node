@@ -412,7 +412,6 @@ pub mod tips {
 	use super::*;
 
 	parameter_types! {
-		pub const DataDepositPerByte: Balance = deposit(0, 1);
 		pub const MaximumReasonLength: u32 = 16384;
 		pub const TipCountdown: BlockNumber = DAYS;
 		pub const TipFindersFee: Percent = Percent::from_percent(20);
