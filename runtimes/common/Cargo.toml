@@ -30,6 +30,9 @@ sp-std = {git = "https://github.com/paritytech/substrate", default-features = fa
 default = ["std"]
 fast-gov = []
 runtime-benchmarks = [
+  "attestation/runtime-benchmarks",
+  "frame-support/runtime-benchmarks",
+  "parachain-staking/runtime-benchmarks",
   "sp-runtime/runtime-benchmarks",
 ]
 std = [
