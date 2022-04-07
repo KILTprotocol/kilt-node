@@ -207,6 +207,7 @@ fn testnet_genesis(
 			phantom: Default::default(),
 		},
 		treasury: Default::default(),
+		tips_membership: Default::default(),
 		technical_membership: Default::default(),
 		democracy: Default::default(),
 		parachain_staking: ParachainStakingConfig {

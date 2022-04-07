@@ -467,7 +467,8 @@ impl pallet_collective::Config<TechnicalCollective> for Runtime {
 	type WeightInfo = weights::pallet_collective::WeightInfo<Runtime>;
 }
 
-impl pallet_membership::Config for Runtime {
+type TechnicalMembershipProvider = pallet_membership::Instance1;
+impl pallet_membership::Config<TechnicalMembershipProvider> for Runtime {
 	type Event = Event;
 	type AddOrigin = MoreThanHalfCouncil;
 	type RemoveOrigin = MoreThanHalfCouncil;
@@ -480,10 +481,24 @@ impl pallet_membership::Config for Runtime {
 	type WeightInfo = weights::pallet_membership::WeightInfo<Runtime>;
 }
 
+type TipsMembershipProvider = pallet_membership::Instance2;
+impl pallet_membership::Config<TipsMembershipProvider> for Runtime {
+	type Event = Event;
+	type AddOrigin = MoreThanHalfCouncil;
+	type RemoveOrigin = MoreThanHalfCouncil;
+	type SwapOrigin = MoreThanHalfCouncil;
+	type ResetOrigin = MoreThanHalfCouncil;
+	type PrimeOrigin = MoreThanHalfCouncil;
+	type MembershipInitialized = ();
+	type MembershipChanged = ();
+	type MaxMembers = constants::governance::TechnicalMaxMembers;
+	type WeightInfo = weights::pallet_membership::WeightInfo<Runtime>;
+}
+
 impl pallet_tips::Config for Runtime {
 	type MaximumReasonLength = constants::tips::MaximumReasonLength;
 	type DataDepositPerByte = constants::ByteDeposit;
-	type Tippers = runtime_common::InitialTippers<Runtime>;
+	type Tippers = runtime_common::Tippers<Runtime, TipsMembershipProvider>;
 	type TipCountdown = constants::tips::TipCountdown;
 	type TipFindersFee = constants::tips::TipFindersFee;
 	type TipReportDepositBase = constants::tips::TipReportDepositBase;
@@ -715,6 +730,7 @@ impl InstanceFilter<Call> for ProxyType {
 					| Call::System(..)
 					| Call::TechnicalCommittee(..)
 					| Call::TechnicalMembership(..)
+					| Call::TipsMembership(..)
 					| Call::Timestamp(..)
 					| Call::Treasury(..)
 					| Call::Utility(..)
@@ -777,6 +793,7 @@ impl InstanceFilter<Call> for ProxyType {
 					| Call::System(..)
 					| Call::TechnicalCommittee(..)
 					| Call::TechnicalMembership(..)
+					| Call::TipsMembership(..)
 					| Call::Timestamp(..)
 					| Call::Treasury(..)
 					| Call::Utility(..)
@@ -794,6 +811,7 @@ impl InstanceFilter<Call> for ProxyType {
 					| Call::Democracy(..)
 					| Call::TechnicalCommittee(..)
 					| Call::TechnicalMembership(..)
+					| Call::TipsMembership(..)
 					| Call::Treasury(..) | Call::Utility(..)
 			),
 			ProxyType::ParachainStaking => {
@@ -863,7 +881,7 @@ construct_runtime! {
 		Council: pallet_collective::<Instance1> = 31,
 		TechnicalCommittee: pallet_collective::<Instance2> = 32,
 		// placeholder: parachain council election = 33,
-		TechnicalMembership: pallet_membership = 34,
+		TechnicalMembership: pallet_membership::<Instance1> = 34,
 		Treasury: pallet_treasury = 35,
 
 		// Utility module.
@@ -881,8 +899,9 @@ construct_runtime! {
 		// Preimage registrar
 		Preimage: pallet_preimage::{Pallet, Call, Storage, Event<T>} = 44,
 
-		// Tips module.
-		Tips: pallet_tips::{Pallet, Call, Storage, Event<T>} = 45,
+		// Tips module to reward contributions to the ecosystem with small amount of KILTs.
+		TipsMembership: pallet_membership::<Instance2> = 45,
+		Tips: pallet_tips::{Pallet, Call, Storage, Event<T>} = 46,
 
 		// KILT Pallets. Start indices 60 to leave room
 		KiltLaunch: kilt_launch = 60,

@@ -159,13 +159,13 @@ pub type FeeSplit<R, B1, B2> = SplitFeesByRatio<R, FeeSplitRatio, B1, B2>;
 pub type SlowAdjustingFeeUpdate<R> =
 	TargetedFeeAdjustment<R, TargetBlockFullness, AdjustmentVariable, MinimumMultiplier>;
 
-pub struct InitialTippers<R>(PhantomData<R>);
-impl<R> ContainsLengthBound for InitialTippers<R>
+pub struct Tippers<R, I>(PhantomData<R>, PhantomData<I>);
+impl<R, I: 'static> ContainsLengthBound for Tippers<R, I>
 where
-	R: pallet_membership::Config,
+	R: pallet_membership::Config<I>,
 {
 	fn max_len() -> usize {
-		<R as pallet_membership::Config>::MaxMembers::get() as usize
+		<R as pallet_membership::Config<I>>::MaxMembers::get() as usize
 	}
 
 	fn min_len() -> usize {
@@ -173,18 +173,18 @@ where
 	}
 }
 
-impl<R> SortedMembers<R::AccountId> for InitialTippers<R>
+impl<R, I: 'static> SortedMembers<R::AccountId> for Tippers<R, I>
 where
-	R: pallet_membership::Config + frame_system::Config,
-	pallet_membership::Pallet<R>: SortedMembers<R::AccountId> + Contains<R::AccountId>,
+	R: pallet_membership::Config<I> + frame_system::Config,
+	pallet_membership::Pallet<R, I>: SortedMembers<R::AccountId> + Contains<R::AccountId>,
 {
 	fn sorted_members() -> sp_std::vec::Vec<R::AccountId> {
-		pallet_membership::Pallet::<R>::sorted_members()
+		pallet_membership::Pallet::<R, I>::sorted_members()
 	}
 
 	#[cfg(feature = "runtime-benchmarks")]
 	fn add(who: &R::AccountId) {
-		pallet_membership::Members::<R>::mutate(|members| match members.binary_search_by(|m| m.cmp(who)) {
+		pallet_membership::Members::<R, I>::mutate(|members| match members.binary_search_by(|m| m.cmp(who)) {
 			Ok(_) => (),
 			Err(pos) => members.insert(pos, who.clone()),
 		})
