@@ -23,8 +23,8 @@ delegation = {default-features = false, path = "../../pallets/delegation"}
 did = {default-features = false, path = "../../pallets/did"}
 kilt-launch = {default-features = false, path = "../../pallets/kilt-launch"}
 kilt-support = {path = "../../support", default-features = false, optional = true}
-pallet-web3-names = {default-features = false, path = "../../pallets/pallet-web3-names"}
 pallet-did-lookup = {default-features = false, path = "../../pallets/pallet-did-lookup"}
+pallet-web3-names = {default-features = false, path = "../../pallets/pallet-web3-names"}
 runtime-common = {path = "../../runtimes/common", default-features = false}
 
 # kilt specific
@@ -95,6 +95,7 @@ runtime-benchmarks = [
   "sp-runtime/runtime-benchmarks",
 ]
 std = [
+  "frame-benchmarking/std",
   "attestation/std",
   "codec/std",
   "ctype/std",

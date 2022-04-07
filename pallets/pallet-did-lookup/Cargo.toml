@@ -46,7 +46,6 @@ runtime-benchmarks = [
 ]
 
 std = [
-  "pallet-balances/std",
   "codec/std",
   "frame-benchmarking/std",
   "frame-support/std",
