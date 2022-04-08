@@ -26,7 +26,7 @@ use sp_runtime::{
 	MultiSignature, MultiSigner,
 };
 
-use crate::{mock::*, signature::get_wrapped_payload, ConnectedAccounts, ConnectedDids, ConnectionRecord, Error};
+use crate::{mock::*, ConnectedAccounts, ConnectedDids, ConnectionRecord, Error};
 
 #[test]
 fn test_add_association_sender() {
@@ -83,10 +83,10 @@ fn test_add_association_account() {
 			let expire_at: BlockNumber = 500;
 			let account_hash_alice = MultiSigner::from(pair_alice.public()).into_account();
 			let sig_alice_0 = MultiSignature::from(
-				pair_alice.sign(&get_wrapped_payload(&Encode::encode(&(&DID_00, expire_at))[..])[..]),
+				pair_alice.sign(&[b"<Bytes>", &Encode::encode(&(&DID_00, expire_at))[..], b"</Bytes>"].concat()[..]),
 			);
 			let sig_alice_1 = MultiSignature::from(
-				pair_alice.sign(&get_wrapped_payload(&Encode::encode(&(&DID_01, expire_at))[..])[..]),
+				pair_alice.sign(&[b"<Bytes>", &Encode::encode(&(&DID_01, expire_at))[..], b"</Bytes>"].concat()[..]),
 			);
 
 			// new association. No overwrite
@@ -200,7 +200,7 @@ fn test_add_association_account_expired() {
 			let account_hash_alice = MultiSigner::from(pair_alice.public()).into_account();
 			let expire_at: BlockNumber = 2;
 			let sig_alice_0 = MultiSignature::from(
-				pair_alice.sign(&get_wrapped_payload(&Encode::encode(&(&DID_01, expire_at))[..])[..]),
+				pair_alice.sign(&[b"<Bytes>", &Encode::encode(&(&DID_01, expire_at))[..], b"</Bytes>"].concat()[..]),
 			);
 			System::set_block_number(3);
 
