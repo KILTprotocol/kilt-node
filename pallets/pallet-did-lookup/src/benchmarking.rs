@@ -19,7 +19,9 @@
 
 //! Benchmarking
 
-use crate::{AccountIdOf, Call, Config, ConnectedAccounts, ConnectedDids, CurrencyOf, Pallet};
+use crate::{
+	signature::get_wrapped_payload, AccountIdOf, Call, Config, ConnectedAccounts, ConnectedDids, CurrencyOf, Pallet,
+};
 
 use codec::Encode;
 use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
@@ -57,7 +59,7 @@ benchmarks! {
 		let connected_acc_id: T::AccountId = connected_acc.into();
 		let bn: <T as frame_system::Config>::BlockNumber = 500_u32.into();
 
-		let sig: T::Signature = sp_io::crypto::sr25519_sign(KeyTypeId(*b"aura"), &connected_acc, &Encode::encode(&(&did, bn))[..])
+		let sig: T::Signature = sp_io::crypto::sr25519_sign(KeyTypeId(*b"aura"), &connected_acc, &get_wrapped_payload(&Encode::encode(&(&did, bn))[..]))
 			.ok_or("Error while building signature.")?
 			.into();
 
