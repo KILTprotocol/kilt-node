@@ -26,7 +26,7 @@ use sp_runtime::{
 	MultiSignature, MultiSigner,
 };
 
-use crate::{mock::*, ConnectedAccounts, ConnectedDids, ConnectionRecord, Error};
+use crate::{mock::*, ConnectedAccounts, ConnectedDids, ConnectionRecord, Error, signature::get_wrapped_payload};
 
 #[test]
 fn test_add_association_sender() {
@@ -82,8 +82,8 @@ fn test_add_association_account() {
 			let pair_alice = sr25519::Pair::from_seed(&*b"Alice                           ");
 			let expire_at: BlockNumber = 500;
 			let account_hash_alice = MultiSigner::from(pair_alice.public()).into_account();
-			let sig_alice_0 = MultiSignature::from(pair_alice.sign(&Encode::encode(&(&DID_00, expire_at))[..]));
-			let sig_alice_1 = MultiSignature::from(pair_alice.sign(&Encode::encode(&(&DID_01, expire_at))[..]));
+			let sig_alice_0 = MultiSignature::from(pair_alice.sign(&get_wrapped_payload(&Encode::encode(&(&DID_00, expire_at))[..])[..]));
+			let sig_alice_1 = MultiSignature::from(pair_alice.sign(&get_wrapped_payload(&Encode::encode(&(&DID_01, expire_at))[..])[..]));
 
 			// new association. No overwrite
 			assert!(DidLookup::associate_account(
@@ -170,8 +170,9 @@ fn test_add_association_account_invalid_signature() {
 		.execute_with(|| {
 			let pair_alice = sr25519::Pair::from_seed(&*b"Alice                           ");
 			let account_hash_alice = MultiSigner::from(pair_alice.public()).into_account();
-			let sig_alice_0 = MultiSignature::from(pair_alice.sign(&Encode::encode(&0_u64)[..]));
 			let expire_at: BlockNumber = 500;
+			// Try signing only the encoded tuple without the <Bytes>...</Bytes> wrapper
+			let sig_alice_0 = MultiSignature::from(pair_alice.sign(&Encode::encode(&(&DID_01, expire_at))[..]));
 
 			assert_noop!(
 				DidLookup::associate_account(
@@ -193,8 +194,8 @@ fn test_add_association_account_expired() {
 		.execute_with(|| {
 			let pair_alice = sr25519::Pair::from_seed(&*b"Alice                           ");
 			let account_hash_alice = MultiSigner::from(pair_alice.public()).into_account();
-			let sig_alice_0 = MultiSignature::from(pair_alice.sign(&Encode::encode(&0_u64)[..]));
 			let expire_at: BlockNumber = 2;
+			let sig_alice_0 = MultiSignature::from(pair_alice.sign(&get_wrapped_payload(&Encode::encode(&(&DID_01, expire_at))[..])[..]));
 			System::set_block_number(3);
 
 			assert_noop!(

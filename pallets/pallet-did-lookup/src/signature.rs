@@ -15,3 +15,11 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
+
+// According to https://github.com/polkadot-js/common/blob/master/packages/util/src/u8a/wrap.ts#L13=
+const PAYLOAD_BYTES_WRAPPER_PREFIX: &[u8; 7] = b"<Bytes>";
+const PAYLOAD_BYTES_WRAPPER_POSTFIX: &[u8; 8] = b"</Bytes>";
+
+pub(crate) fn get_wrapped_payload(payload: &[u8]) -> Vec<u8> {
+	PAYLOAD_BYTES_WRAPPER_PREFIX.iter().chain(payload.iter()).chain(PAYLOAD_BYTES_WRAPPER_POSTFIX.iter()).copied().collect()
+}

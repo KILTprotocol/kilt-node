@@ -55,6 +55,8 @@ pub mod pallet {
 
 	pub use crate::connection_record::ConnectionRecord;
 
+	use crate::signature::get_wrapped_payload;
+
 	/// The identifier to which the accounts can be associated.
 	pub(crate) type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 
@@ -182,8 +184,9 @@ pub mod pallet {
 				frame_system::Pallet::<T>::current_block_number() <= expiration,
 				Error::<T>::OutdatedProof
 			);
+			let encoded_payload = (&did_identifier, expiration).encode();
 			ensure!(
-				proof.verify(&(&did_identifier, expiration).encode()[..], &account),
+				proof.verify(&get_wrapped_payload(&encoded_payload[..])[..], &account),
 				Error::<T>::NotAuthorized
 			);
 			ensure!(
