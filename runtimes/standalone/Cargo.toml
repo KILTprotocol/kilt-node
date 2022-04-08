@@ -161,7 +161,7 @@ try-runtime = [
   "pallet-session/try-runtime",
   "pallet-sudo/try-runtime",
   "pallet-timestamp/try-runtime",
-  "pallet-web3-names/runtime-benchmarks",
+  "pallet-web3-names/try-runtime",
   "pallet-utility/try-runtime",
   "pallet-transaction-payment/try-runtime",
   "pallet-vesting/try-runtime",
