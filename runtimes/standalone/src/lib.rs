@@ -45,7 +45,7 @@ use sp_consensus_aura::{ed25519::AuthorityId as AuraId, SlotDuration};
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
-	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, NumberFor, OpaqueKeys, Verify},
+	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, NumberFor, OpaqueKeys},
 	transaction_validity::{TransactionSource, TransactionValidity},
 	ApplyExtrinsicResult, RuntimeDebug,
 };
@@ -68,7 +68,20 @@ pub use ctype;
 pub use delegation;
 pub use did;
 pub use pallet_balances::Call as BalancesCall;
+use pallet_did_lookup::{
+	migrations::EthereumMigration,
+};
 pub use pallet_web3_names;
+<<<<<<< HEAD
+=======
+
+use runtime_common::{
+	authorization::{AuthorizationId, PalletAuthorize},
+	constants::{self, KILT, MILLI_KILT},
+	fees::ToAuthor,
+	AccountId, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature, SlowAdjustingFeeUpdate,
+};
+>>>>>>> 327ce17f (feat: support linking ethereum accounts to DIDs)
 
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
@@ -415,8 +428,7 @@ impl did::Config for Runtime {
 
 impl pallet_did_lookup::Config for Runtime {
 	type Event = Event;
-	type Signature = Signature;
-	type Signer = <Signature as Verify>::Signer;
+
 	type DidIdentifier = DidIdentifier;
 
 	type Currency = Balances;
@@ -750,8 +762,14 @@ pub type SignedPayload = generic::SignedPayload<Call, SignedExtra>;
 /// Extrinsic type that has already been checked.
 pub type CheckedExtrinsic = generic::CheckedExtrinsic<AccountId, Call, SignedExtra>;
 /// Executive: handles dispatch to the various Pallets.
-pub type Executive =
-	frame_executive::Executive<Runtime, Block, frame_system::ChainContext<Runtime>, Runtime, AllPalletsWithSystem, ()>;
+pub type Executive = frame_executive::Executive<
+	Runtime,
+	Block,
+	frame_system::ChainContext<Runtime>,
+	Runtime,
+	AllPalletsWithSystem,
+	(EthereumMigration<Runtime>,),
+>;
 
 impl_runtime_apis! {
 	impl sp_api::Core<Block> for Runtime {
