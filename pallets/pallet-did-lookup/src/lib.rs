@@ -24,9 +24,11 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-mod connection_record;
 pub mod default_weights;
 pub mod migrations;
+
+mod connection_record;
+mod signature;
 
 #[cfg(test)]
 mod tests;
