@@ -16,6 +16,8 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use sp_std::vec::Vec;
+
 // According to https://github.com/polkadot-js/common/blob/master/packages/util/src/u8a/wrap.ts#L13=
 const PAYLOAD_BYTES_WRAPPER_PREFIX: &[u8; 7] = b"<Bytes>";
 const PAYLOAD_BYTES_WRAPPER_POSTFIX: &[u8; 8] = b"</Bytes>";
