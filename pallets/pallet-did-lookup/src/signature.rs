@@ -18,7 +18,8 @@
 
 use sp_std::vec::Vec;
 
-// According to https://github.com/polkadot-js/common/blob/master/packages/util/src/u8a/wrap.ts#L13=
+// According to https://github.com/polkadot-js/common/blob/5d5c7e4c0ace06e3301ccadfd3c3351955f1e251/packages/util/src/u8a/wrap.ts#L13
+
 const PAYLOAD_BYTES_WRAPPER_PREFIX: &[u8; 7] = b"<Bytes>";
 const PAYLOAD_BYTES_WRAPPER_POSTFIX: &[u8; 8] = b"</Bytes>";
 
