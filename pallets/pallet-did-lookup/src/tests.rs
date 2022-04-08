@@ -26,7 +26,7 @@ use sp_runtime::{
 	MultiSignature, MultiSigner,
 };
 
-use crate::{mock::*, ConnectedAccounts, ConnectedDids, ConnectionRecord, Error, signature::get_wrapped_payload};
+use crate::{mock::*, signature::get_wrapped_payload, ConnectedAccounts, ConnectedDids, ConnectionRecord, Error};
 
 #[test]
 fn test_add_association_sender() {
@@ -82,8 +82,12 @@ fn test_add_association_account() {
 			let pair_alice = sr25519::Pair::from_seed(&*b"Alice                           ");
 			let expire_at: BlockNumber = 500;
 			let account_hash_alice = MultiSigner::from(pair_alice.public()).into_account();
-			let sig_alice_0 = MultiSignature::from(pair_alice.sign(&get_wrapped_payload(&Encode::encode(&(&DID_00, expire_at))[..])[..]));
-			let sig_alice_1 = MultiSignature::from(pair_alice.sign(&get_wrapped_payload(&Encode::encode(&(&DID_01, expire_at))[..])[..]));
+			let sig_alice_0 = MultiSignature::from(
+				pair_alice.sign(&get_wrapped_payload(&Encode::encode(&(&DID_00, expire_at))[..])[..]),
+			);
+			let sig_alice_1 = MultiSignature::from(
+				pair_alice.sign(&get_wrapped_payload(&Encode::encode(&(&DID_01, expire_at))[..])[..]),
+			);
 
 			// new association. No overwrite
 			assert!(DidLookup::associate_account(
@@ -195,7 +199,9 @@ fn test_add_association_account_expired() {
 			let pair_alice = sr25519::Pair::from_seed(&*b"Alice                           ");
 			let account_hash_alice = MultiSigner::from(pair_alice.public()).into_account();
 			let expire_at: BlockNumber = 2;
-			let sig_alice_0 = MultiSignature::from(pair_alice.sign(&get_wrapped_payload(&Encode::encode(&(&DID_01, expire_at))[..])[..]));
+			let sig_alice_0 = MultiSignature::from(
+				pair_alice.sign(&get_wrapped_payload(&Encode::encode(&(&DID_01, expire_at))[..])[..]),
+			);
 			System::set_block_number(3);
 
 			assert_noop!(

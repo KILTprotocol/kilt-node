@@ -21,5 +21,10 @@ const PAYLOAD_BYTES_WRAPPER_PREFIX: &[u8; 7] = b"<Bytes>";
 const PAYLOAD_BYTES_WRAPPER_POSTFIX: &[u8; 8] = b"</Bytes>";
 
 pub(crate) fn get_wrapped_payload(payload: &[u8]) -> Vec<u8> {
-	PAYLOAD_BYTES_WRAPPER_PREFIX.iter().chain(payload.iter()).chain(PAYLOAD_BYTES_WRAPPER_POSTFIX.iter()).copied().collect()
+	PAYLOAD_BYTES_WRAPPER_PREFIX
+		.iter()
+		.chain(payload.iter())
+		.chain(PAYLOAD_BYTES_WRAPPER_POSTFIX.iter())
+		.copied()
+		.collect()
 }
