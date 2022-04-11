@@ -59,7 +59,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: DidLookup ConnectedDids (r:1 w:1)
 	// Storage: DidLookup ConnectedAccounts (r:0 w:2)
 	fn associate_account() -> Weight {
-		(111_846_000 as Weight)
+		(111_620_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(2 as Weight))
 			.saturating_add(T::DbWeight::get().writes(4 as Weight))
 	}
@@ -67,7 +67,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: DidLookup ConnectedDids (r:1 w:1)
 	// Storage: DidLookup ConnectedAccounts (r:0 w:2)
 	fn associate_sender() -> Weight {
-		(52_637_000 as Weight)
+		(52_259_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(2 as Weight))
 			.saturating_add(T::DbWeight::get().writes(4 as Weight))
 	}
@@ -75,7 +75,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: System Account (r:1 w:1)
 	// Storage: DidLookup ConnectedAccounts (r:0 w:1)
 	fn remove_sender_association() -> Weight {
-		(35_370_000 as Weight)
+		(34_356_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(2 as Weight))
 			.saturating_add(T::DbWeight::get().writes(3 as Weight))
 	}
@@ -83,7 +83,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: System Account (r:1 w:1)
 	// Storage: DidLookup ConnectedAccounts (r:0 w:1)
 	fn remove_account_association() -> Weight {
-		(36_181_000 as Weight)
+		(37_363_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(2 as Weight))
 			.saturating_add(T::DbWeight::get().writes(3 as Weight))
 	}
@@ -95,7 +95,7 @@ impl WeightInfo for () {
 	// Storage: DidLookup ConnectedDids (r:1 w:1)
 	// Storage: DidLookup ConnectedAccounts (r:0 w:2)
 	fn associate_account() -> Weight {
-		(111_846_000 as Weight)
+		(111_620_000 as Weight)
 			.saturating_add(RocksDbWeight::get().reads(2 as Weight))
 			.saturating_add(RocksDbWeight::get().writes(4 as Weight))
 	}
@@ -103,7 +103,7 @@ impl WeightInfo for () {
 	// Storage: DidLookup ConnectedDids (r:1 w:1)
 	// Storage: DidLookup ConnectedAccounts (r:0 w:2)
 	fn associate_sender() -> Weight {
-		(52_637_000 as Weight)
+		(52_259_000 as Weight)
 			.saturating_add(RocksDbWeight::get().reads(2 as Weight))
 			.saturating_add(RocksDbWeight::get().writes(4 as Weight))
 	}
@@ -111,7 +111,7 @@ impl WeightInfo for () {
 	// Storage: System Account (r:1 w:1)
 	// Storage: DidLookup ConnectedAccounts (r:0 w:1)
 	fn remove_sender_association() -> Weight {
-		(35_370_000 as Weight)
+		(34_356_000 as Weight)
 			.saturating_add(RocksDbWeight::get().reads(2 as Weight))
 			.saturating_add(RocksDbWeight::get().writes(3 as Weight))
 	}
@@ -119,7 +119,7 @@ impl WeightInfo for () {
 	// Storage: System Account (r:1 w:1)
 	// Storage: DidLookup ConnectedAccounts (r:0 w:1)
 	fn remove_account_association() -> Weight {
-		(36_181_000 as Weight)
+		(37_363_000 as Weight)
 			.saturating_add(RocksDbWeight::get().reads(2 as Weight))
 			.saturating_add(RocksDbWeight::get().writes(3 as Weight))
 	}
