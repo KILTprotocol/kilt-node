@@ -4475,7 +4475,6 @@ dependencies = [
  "jsonrpc-core",
  "log",
  "mashnet-node-runtime",
- "node-executor",
  "pallet-conviction-voting",
  "pallet-referenda",
  "pallet-transaction-payment-rpc",

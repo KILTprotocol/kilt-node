@@ -69,6 +69,7 @@ runtime-benchmarks = [
   "sp-io",
 ]
 std = [
+  "attestation/std",
   "codec/std",
   "ctype/std",
   "frame-support/std",

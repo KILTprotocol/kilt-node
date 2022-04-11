@@ -20,7 +20,7 @@ mashnet-node-runtime = {path = "../../runtimes/standalone"}
 runtime-common = {path = "../../runtimes/common"}
 
 # External dependencies
-clap = { version = "3.1", features = ["derive"] }
+clap = {version = "3.1", features = ["derive"]}
 futures = "0.3"
 hex-literal = "0.3.4"
 log = "0.4"
@@ -65,9 +65,8 @@ frame-benchmarking = {git = "https://github.com/paritytech/substrate", branch = 
 frame-benchmarking-cli = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.17"}
 
 # Runtime tests
-node-executor = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.17", optional = true}
-pallet-conviction-voting = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.17",  optional = true}
-pallet-referenda = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.17",  optional = true}
+pallet-conviction-voting = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.17", optional = true}
+pallet-referenda = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.17", optional = true}
 try-runtime-cli = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.17", optional = true}
 
 [features]
@@ -76,9 +75,9 @@ runtime-benchmarks = [
   "mashnet-node-runtime/runtime-benchmarks",
   "pallet-conviction-voting/runtime-benchmarks",
   "pallet-referenda/runtime-benchmarks",
+  "runtime-common/runtime-benchmarks"
 ]
 try-runtime = [
   "mashnet-node-runtime/try-runtime",
-  "node-executor",
   "try-runtime-cli",
 ]
