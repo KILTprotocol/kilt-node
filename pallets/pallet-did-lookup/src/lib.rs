@@ -24,9 +24,11 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-mod connection_record;
 pub mod default_weights;
 pub mod migrations;
+
+mod connection_record;
+mod signature;
 
 #[cfg(test)]
 mod tests;
@@ -52,6 +54,8 @@ pub mod pallet {
 	use sp_runtime::traits::{BlockNumberProvider, IdentifyAccount, Verify};
 
 	pub use crate::connection_record::ConnectionRecord;
+
+	use crate::signature::get_wrapped_payload;
 
 	/// The identifier to which the accounts can be associated.
 	pub(crate) type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
@@ -180,8 +184,9 @@ pub mod pallet {
 				frame_system::Pallet::<T>::current_block_number() <= expiration,
 				Error::<T>::OutdatedProof
 			);
+			let encoded_payload = (&did_identifier, expiration).encode();
 			ensure!(
-				proof.verify(&(&did_identifier, expiration).encode()[..], &account),
+				proof.verify(&get_wrapped_payload(&encoded_payload[..])[..], &account),
 				Error::<T>::NotAuthorized
 			);
 			ensure!(
