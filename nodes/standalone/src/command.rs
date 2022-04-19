@@ -25,9 +25,6 @@ use mashnet_node_runtime::opaque::Block;
 use sc_cli::{ChainSpec, RuntimeVersion, SubstrateCli};
 use sc_service::PartialComponents;
 
-#[cfg(feature = "try-runtime")]
-use node_executor::ExecutorDispatch;
-
 impl SubstrateCli for Cli {
 	fn impl_name() -> String {
 		"KILT Node".to_string()
@@ -155,7 +152,7 @@ pub fn run() -> sc_cli::Result<()> {
 				let task_manager = sc_service::TaskManager::new(config.tokio_handle.clone(), registry)
 					.map_err(|e| sc_cli::Error::Service(sc_service::Error::Prometheus(e)))?;
 
-				Ok((cmd.run::<Block, ExecutorDispatch>(config), task_manager))
+				Ok((cmd.run::<Block, service::ExecutorDispatch>(config), task_manager))
 			})
 		}
 		#[cfg(not(feature = "try-runtime"))]

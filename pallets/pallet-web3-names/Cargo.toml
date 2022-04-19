@@ -4,7 +4,7 @@ description = "Unique Web3 nicknames for KILT DIDs."
 edition = "2021"
 name = "pallet-web3-names"
 repository = "https://github.com/KILTprotocol/mashnet-node"
-version = "1.6.1"
+version = "1.6.2"
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
@@ -41,6 +41,7 @@ runtime-benchmarks = [
   "frame-benchmarking",
   "sp-io",
   "kilt-support/runtime-benchmarks",
+  "frame-support/runtime-benchmarks",
   "frame-system/runtime-benchmarks",
 ]
 
@@ -54,5 +55,7 @@ std = [
   "sp-std/std",
 ]
 
-
-try-runtime = []
+try-runtime = [
+  "frame-support/try-runtime",
+  "frame-system/try-runtime",
+]
