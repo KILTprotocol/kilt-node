@@ -337,6 +337,7 @@ fn testnet_genesis(
 		},
 		treasury: Default::default(),
 		technical_membership: Default::default(),
+		tips_membership: Default::default(),
 		democracy: Default::default(),
 	}
 }
