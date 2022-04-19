@@ -20,6 +20,7 @@ frame-support = {git = "https://github.com/paritytech/substrate", default-featur
 frame-system = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.17"}
 pallet-authorship = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.17"}
 pallet-balances = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.17"}
+pallet-membership = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.17"}
 pallet-transaction-payment = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.17"}
 sp-consensus-aura = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.17"}
 sp-core = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.17"}
@@ -43,6 +44,7 @@ std = [
   "frame-system/std",
   "pallet-transaction-payment/std",
   "pallet-balances/std",
+  "pallet-membership/std",
   "pallet-authorship/std",
   "scale-info/std",
   "serde",

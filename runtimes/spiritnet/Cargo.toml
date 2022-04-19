@@ -66,6 +66,7 @@ pallet-randomness-collective-flip = {git = "https://github.com/paritytech/substr
 pallet-scheduler = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.17"}
 pallet-session = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.17"}
 pallet-timestamp = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.17"}
+pallet-tips = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.17"}
 pallet-transaction-payment = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.17"}
 pallet-treasury = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.17"}
 pallet-utility = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.17"}
@@ -123,6 +124,7 @@ runtime-benchmarks = [
   "pallet-proxy/runtime-benchmarks",
   "pallet-scheduler/runtime-benchmarks",
   "pallet-timestamp/runtime-benchmarks",
+  "pallet-tips/runtime-benchmarks",
   "pallet-treasury/runtime-benchmarks",
   "pallet-web3-names/runtime-benchmarks",
   "pallet-utility/runtime-benchmarks",
@@ -166,6 +168,7 @@ std = [
   "pallet-scheduler/std",
   "pallet-session/std",
   "pallet-timestamp/std",
+  "pallet-tips/std",
   "pallet-transaction-payment-rpc-runtime-api/std",
   "pallet-transaction-payment/std",
   "pallet-treasury/std",
@@ -220,6 +223,7 @@ try-runtime = [
   "pallet-scheduler/try-runtime",
   "pallet-session/try-runtime",
   "pallet-timestamp/try-runtime",
+  "pallet-tips/try-runtime",
   "pallet-transaction-payment/try-runtime",
   "pallet-treasury/try-runtime",
   "pallet-web3-names/try-runtime",
