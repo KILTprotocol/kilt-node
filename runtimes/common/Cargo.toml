@@ -2,7 +2,7 @@
 authors = ["KILT <info@kilt.io>"]
 edition = "2021"
 name = "runtime-common"
-version = "1.6.1"
+version = "1.6.2"
 
 [dev-dependencies]
 sp-io = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.17"}
@@ -22,6 +22,7 @@ frame-support = {git = "https://github.com/paritytech/substrate", default-featur
 frame-system = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.17"}
 pallet-authorship = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.17"}
 pallet-balances = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.17"}
+pallet-membership = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.17"}
 pallet-transaction-payment = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.17"}
 sp-consensus-aura = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.17"}
 sp-core = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.17"}
@@ -32,6 +33,9 @@ sp-std = {git = "https://github.com/paritytech/substrate", default-features = fa
 default = ["std"]
 fast-gov = []
 runtime-benchmarks = [
+  "attestation/runtime-benchmarks",
+  "frame-support/runtime-benchmarks",
+  "parachain-staking/runtime-benchmarks",
   "sp-runtime/runtime-benchmarks",
 ]
 std = [
@@ -40,6 +44,9 @@ std = [
   "did/std",
   "frame-support/std",
   "frame-system/std",
+  "pallet-transaction-payment/std",
+  "pallet-balances/std",
+  "pallet-membership/std",
   "pallet-authorship/std",
   "pallet-balances/std",
   "pallet-transaction-payment/std",

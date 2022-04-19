@@ -2,7 +2,7 @@
 authors = ["KILT <info@kilt.io>"]
 edition = "2021"
 name = "spiritnet-runtime"
-version = "1.6.1"
+version = "1.6.2"
 
 [build-dependencies]
 substrate-wasm-builder = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.17"}
@@ -28,10 +28,10 @@ ctype = {default-features = false, path = "../../pallets/ctype"}
 delegation = {default-features = false, path = "../../pallets/delegation"}
 did = {default-features = false, path = "../../pallets/did"}
 kilt-launch = {path = "../../pallets/kilt-launch", default-features = false}
-pallet-web3-names = {path = "../../pallets/pallet-web3-names", default-features = false}
 kilt-support = {path = "../../support", default-features = false, optional = true}
 pallet-did-lookup = {default-features = false, path = "../../pallets/pallet-did-lookup"}
 pallet-inflation = {path = "../../pallets/pallet-inflation", default-features = false}
+pallet-web3-names = {path = "../../pallets/pallet-web3-names", default-features = false}
 parachain-staking = {default-features = false, path = "../../pallets/parachain-staking"}
 runtime-common = {path = "../../runtimes/common", default-features = false}
 
@@ -62,11 +62,12 @@ pallet-democracy = {git = "https://github.com/paritytech/substrate", default-fea
 pallet-indices = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.17"}
 pallet-membership = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.17"}
 pallet-preimage = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.17"}
-pallet-proxy = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.17" }
+pallet-proxy = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.17"}
 pallet-randomness-collective-flip = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.17"}
 pallet-scheduler = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.17"}
 pallet-session = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.17"}
 pallet-timestamp = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.17"}
+pallet-tips = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.17"}
 pallet-transaction-payment = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.17"}
 pallet-treasury = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.17"}
 pallet-utility = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.17"}
@@ -124,6 +125,7 @@ runtime-benchmarks = [
   "pallet-proxy/runtime-benchmarks",
   "pallet-scheduler/runtime-benchmarks",
   "pallet-timestamp/runtime-benchmarks",
+  "pallet-tips/runtime-benchmarks",
   "pallet-treasury/runtime-benchmarks",
   "pallet-web3-names/runtime-benchmarks",
   "pallet-utility/runtime-benchmarks",
@@ -168,11 +170,13 @@ std = [
   "pallet-scheduler/std",
   "pallet-session/std",
   "pallet-timestamp/std",
+  "pallet-tips/std",
   "pallet-transaction-payment-rpc-runtime-api/std",
   "pallet-transaction-payment/std",
   "pallet-treasury/std",
-  "pallet-web3-names/std",
+  "pallet-utility/std",
   "pallet-vesting/std",
+  "pallet-web3-names/std",
   "parachain-info/std",
   "parachain-staking/std",
   "polkadot-parachain/std",
@@ -221,6 +225,7 @@ try-runtime = [
   "pallet-scheduler/try-runtime",
   "pallet-session/try-runtime",
   "pallet-timestamp/try-runtime",
+  "pallet-tips/try-runtime",
   "pallet-transaction-payment/try-runtime",
   "pallet-treasury/try-runtime",
   "pallet-web3-names/try-runtime",

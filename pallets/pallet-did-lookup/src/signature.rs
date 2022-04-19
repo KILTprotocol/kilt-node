@@ -16,27 +16,18 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-pub mod attestation;
-pub mod ctype;
-pub mod delegation;
-pub mod did;
-pub mod frame_system;
-pub mod kilt_launch;
-pub mod pallet_balances;
-pub mod pallet_collective;
-pub mod pallet_democracy;
-pub mod pallet_did_lookup;
-pub mod pallet_indices;
-pub mod pallet_inflation;
-pub mod pallet_membership;
-pub mod pallet_preimage;
-pub mod pallet_proxy;
-pub mod pallet_scheduler;
-pub mod pallet_session;
-pub mod pallet_timestamp;
-pub mod pallet_tips;
-pub mod pallet_treasury;
-pub mod pallet_utility;
-pub mod pallet_vesting;
-pub mod pallet_web3_names;
-pub mod parachain_staking;
+use sp_std::vec::Vec;
+
+// According to https://github.com/polkadot-js/common/blob/5d5c7e4c0ace06e3301ccadfd3c3351955f1e251/packages/util/src/u8a/wrap.ts#L13
+
+const PAYLOAD_BYTES_WRAPPER_PREFIX: &[u8; 7] = b"<Bytes>";
+const PAYLOAD_BYTES_WRAPPER_POSTFIX: &[u8; 8] = b"</Bytes>";
+
+pub(crate) fn get_wrapped_payload(payload: &[u8]) -> Vec<u8> {
+	PAYLOAD_BYTES_WRAPPER_PREFIX
+		.iter()
+		.chain(payload.iter())
+		.chain(PAYLOAD_BYTES_WRAPPER_POSTFIX.iter())
+		.copied()
+		.collect()
+}

@@ -2,7 +2,7 @@
 authors = ["KILT <info@kilt.io>"]
 edition = "2021"
 name = "peregrine-runtime"
-version = "1.6.1"
+version = "1.6.2"
 
 [build-dependencies]
 substrate-wasm-builder = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.17"}
@@ -18,9 +18,9 @@ hex-literal = {version = "0.3.4", optional = true}
 serde = {version = "1.0.132", optional = true, features = ["derive"]}
 
 # RPC
+did-rpc-runtime-api = {path = "../../rpc/did/runtime-api", default-features = false}
 frame-system-rpc-runtime-api = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.17"}
 pallet-transaction-payment-rpc-runtime-api = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.17"}
-did-rpc-runtime-api = {path = "../../rpc/did/runtime-api", default-features = false}
 
 # KILT pallets & primitives
 attestation = {path = "../../pallets/attestation", default-features = false}
@@ -68,6 +68,7 @@ pallet-scheduler = {git = "https://github.com/paritytech/substrate", default-fea
 pallet-session = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.17"}
 pallet-sudo = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.17"}
 pallet-timestamp = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.17"}
+pallet-tips = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.17"}
 pallet-transaction-payment = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.17"}
 pallet-treasury = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.17"}
 pallet-utility = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.17"}
@@ -123,6 +124,7 @@ runtime-benchmarks = [
   "pallet-preimage/runtime-benchmarks",
   "pallet-scheduler/runtime-benchmarks",
   "pallet-timestamp/runtime-benchmarks",
+  "pallet-tips/runtime-benchmarks",
   "pallet-treasury/runtime-benchmarks",
   "pallet-vesting/runtime-benchmarks",
   "pallet-web3-names/runtime-benchmarks",
@@ -152,7 +154,6 @@ std = [
   "frame-system/std",
   "frame-try-runtime/std",
   "kilt-launch/std",
-  "runtime-common/std",
   "log/std",
   "pallet-aura/std",
   "pallet-authorship/std",
@@ -169,15 +170,18 @@ std = [
   "pallet-session/std",
   "pallet-sudo/std",
   "pallet-timestamp/std",
+  "pallet-tips/std",
   "pallet-transaction-payment-rpc-runtime-api/std",
   "pallet-transaction-payment/std",
   "pallet-treasury/std",
-  "pallet-web3-names/std",
+  "pallet-utility/std",
   "pallet-vesting/std",
+  "pallet-web3-names/std",
   "parachain-info/std",
   "parachain-staking/std",
   "polkadot-parachain/std",
   "rococo-runtime/std",
+  "runtime-common/std",
   "scale-info/std",
   "serde",
   "sp-api/std",
@@ -221,6 +225,7 @@ try-runtime = [
   "pallet-session/try-runtime",
   "pallet-sudo/try-runtime",
   "pallet-timestamp/try-runtime",
+  "pallet-tips/try-runtime",
   "pallet-transaction-payment/try-runtime",
   "pallet-treasury/try-runtime",
   "pallet-web3-names/try-runtime",
