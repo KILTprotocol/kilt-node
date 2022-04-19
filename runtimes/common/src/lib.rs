@@ -38,7 +38,7 @@ use pallet_transaction_payment::{Multiplier, TargetedFeeAdjustment};
 use sp_runtime::{
 	generic,
 	traits::{IdentifyAccount, Verify},
-	FixedPointNumber, MultiSignature, Perquintill,
+	FixedPointNumber, MultiSignature, Perquintill, SaturatedConversion,
 };
 use sp_std::marker::PhantomData;
 
@@ -165,7 +165,7 @@ where
 	R: pallet_membership::Config<I>,
 {
 	fn max_len() -> usize {
-		<R as pallet_membership::Config<I>>::MaxMembers::get() as usize
+		<R as pallet_membership::Config<I>>::MaxMembers::get().saturated_into()
 	}
 
 	fn min_len() -> usize {
@@ -175,7 +175,7 @@ where
 
 impl<R, I: 'static> SortedMembers<R::AccountId> for Tippers<R, I>
 where
-	R: pallet_membership::Config<I> + frame_system::Config,
+	R: pallet_membership::Config<I>,
 	pallet_membership::Pallet<R, I>: SortedMembers<R::AccountId> + Contains<R::AccountId>,
 {
 	fn sorted_members() -> sp_std::vec::Vec<R::AccountId> {
