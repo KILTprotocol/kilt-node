@@ -137,7 +137,6 @@ pub mod pallet {
 	use crate::service_endpoints::utils as service_endpoints_utils;
 	use frame_support::{
 		pallet_prelude::*,
-		storage::bounded_btree_set::BoundedBTreeSet,
 		traits::{Currency, ExistenceRequirement, Imbalance, ReservableCurrency, StorageVersion},
 	};
 	use frame_system::pallet_prelude::*;
@@ -174,9 +173,6 @@ pub mod pallet {
 
 	/// Type for a runtime extrinsic callable under DID-based authorisation.
 	pub type DidCallableOf<T> = <T as Config>::Call;
-
-	/// Type of a DID consumer's identifier.
-	pub type DidConsumer = [u8; 8];
 
 	/// Type for origin that supports a DID sender.
 	#[pallet::origin]
@@ -281,10 +277,6 @@ pub mod pallet {
 		#[pallet::constant]
 		type MaxNumberOfUrlsPerService: Get<u32>;
 
-		/// The maximum number of consumers a DID can have.
-		#[pallet::constant]
-		type MaxNumberOfConsumers: Get<u32>;
-
 		/// Weight information for extrinsics in this pallet.
 		type WeightInfo: WeightInfo;
 	}
@@ -309,18 +301,12 @@ pub mod pallet {
 	pub type ServiceEndpoints<T> =
 		StorageDoubleMap<_, Twox64Concat, DidIdentifierOf<T>, Blake2_128Concat, ServiceEndpointId<T>, DidEndpoint<T>>;
 
-	/// The consumers of each DID.
+	/// The # of consumers of each DID.
 	///
-	/// A DID cannot be deleted unless it has an empty set of consumers.
+	/// A DID cannot be deleted unless it has zero consumers.
 	#[pallet::storage]
 	#[pallet::getter(fn get_did_consumers)]
-	pub type DidConsumers<T> = StorageMap<
-		_,
-		Blake2_128Concat,
-		DidIdentifierOf<T>,
-		BoundedBTreeSet<DidConsumer, <T as Config>::MaxNumberOfConsumers>,
-		ValueQuery,
-	>;
+	pub type DidConsumers<T> = StorageMap<_, Blake2_128Concat, DidIdentifierOf<T>, u32, ValueQuery>;
 
 	/// Counter of service endpoints for each DID.
 	///
@@ -419,12 +405,10 @@ pub mod pallet {
 		/// The number of service endpoints stored under the DID is larger than
 		/// the number of endpoints to delete.
 		StoredEndpointsCountTooLarge,
-		/// The consumer with the given ID is already set for the DID.
-		ConsumerAlreadyPresent,
-		/// The consumer with the given ID is not set for the DID.
-		ConsumerNotPresent,
 		/// The maximum number of consumers for the DID has been reached.
 		MaxConsumersExceeded,
+		/// The DID has not depending consumers.
+		NoOutstandingConsumers,
 		/// The DID has some depending consumers preventing its deletion.
 		OutstandingConsumers,
 		/// An error that is not supposed to take place, yet it happened.
@@ -451,9 +435,8 @@ pub mod pallet {
 				StorageError::MaxPublicKeysPerDidExceeded => Self::MaxPublicKeysPerDidExceeded,
 				StorageError::MaxTotalKeyAgreementKeysExceeded => Self::MaxTotalKeyAgreementKeysExceeded,
 				StorageError::DidAlreadyDeleted => Self::DidAlreadyDeleted,
-				StorageError::ConsumerAlreadyPresent => Self::ConsumerAlreadyPresent,
-				StorageError::ConsumerNotPresent => Self::ConsumerNotPresent,
 				StorageError::MaxConsumersExceeded => Self::MaxConsumersExceeded,
+				StorageError::NoOutstandingConsumers => Self::NoOutstandingConsumers,
 				StorageError::OutstandingConsumers => Self::OutstandingConsumers,
 			}
 		}
@@ -1106,41 +1089,34 @@ pub mod pallet {
 	}
 
 	impl<T: Config> Pallet<T> {
-		/// Add the consumer with the provided ID to the given DID subject.
+		/// Increment the total number of consumers for the given DID subject.
 		///
-		/// It fails to execute either if the DID has already
-		/// [T::MaxNumberOfConsumers] consumers or if a consumer with the same
-		/// ID already exists.
-		pub fn add_consumer(did_subject: &DidIdentifierOf<T>, consumer: DidConsumer) -> Result<(), DidError> {
-			DidConsumers::<T>::try_mutate(&did_subject, |consumer_set| {
-				let is_consumer_absent = consumer_set
-					.try_insert(consumer)
-					.map_err(|_| DidError::StorageError(StorageError::MaxConsumersExceeded))?;
-				ensure!(
-					is_consumer_absent,
-					DidError::StorageError(StorageError::ConsumerAlreadyPresent)
-				);
+		/// It fails to execute if the DID has already the maximum number
+		/// of consumers.
+		pub fn increment_consumers(did_subject: &DidIdentifierOf<T>) -> Result<(), DidError> {
+			DidConsumers::<T>::try_mutate(&did_subject, |consumers| {
+				*consumers = consumers
+					.checked_add(1)
+					.ok_or(DidError::StorageError(StorageError::MaxConsumersExceeded))?;
 				Ok(())
 			})
 		}
 
-		/// Add the consumer with the provided ID from the given DID subject.
+		/// Decrement the total number of consumers for the given DID subject.
 		///
-		/// It fails to execute if the DID does not have already
-		/// a consumer with the ID provided.
-		pub fn remove_consumer(did_subject: &DidIdentifierOf<T>, consumer: &DidConsumer) -> Result<(), DidError> {
-			DidConsumers::<T>::try_mutate(&did_subject, |consumer_set| {
-				ensure!(
-					consumer_set.remove(consumer),
-					DidError::StorageError(StorageError::ConsumerNotPresent)
-				);
+		/// It fails to execute if the DID does not have any consumers.
+		pub fn decrement_consumers(did_subject: &DidIdentifierOf<T>) -> Result<(), DidError> {
+			DidConsumers::<T>::try_mutate(&did_subject, |consumers| {
+				*consumers = consumers
+					.checked_sub(1)
+					.ok_or(DidError::StorageError(StorageError::NoOutstandingConsumers))?;
 				Ok(())
 			})
 		}
 
 		/// Return `true` if the DID subject has any consumers depending on it.
 		pub(crate) fn has_consumers(did_subject: &DidIdentifierOf<T>) -> bool {
-			!DidConsumers::<T>::get(did_subject).is_empty()
+			DidConsumers::<T>::get(did_subject) > u32::zero()
 		}
 
 		/// Verify the validity (i.e., nonce, signature and mortality) of a

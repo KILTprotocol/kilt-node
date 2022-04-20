@@ -16,11 +16,8 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use std::collections::BTreeSet;
-
 use frame_support::{
 	parameter_types,
-	storage::bounded_btree_set::BoundedBTreeSet,
 	traits::{Currency, OnUnbalanced, ReservableCurrency},
 	weights::constants::RocksDbWeight,
 };
@@ -43,8 +40,8 @@ use crate::{
 		RelationshipDeriveError,
 	},
 	service_endpoints::DidEndpoint,
-	utils as crate_utils, AccountIdOf, Config, CurrencyOf, DidBlacklist, DidConsumer, DidConsumers, DidEndpointsCount,
-	KeyIdOf, ServiceEndpoints,
+	utils as crate_utils, AccountIdOf, Config, CurrencyOf, DidBlacklist, DidConsumers, DidEndpointsCount, KeyIdOf,
+	ServiceEndpoints,
 };
 #[cfg(not(feature = "runtime-benchmarks"))]
 use crate::{DidRawOrigin, EnsureDidOrigin};
@@ -128,7 +125,6 @@ parameter_types! {
 	pub const MaxServiceUrlLength: u32 = 100u32;
 	pub const MaxNumberOfTypesPerService: u32 = 1u32;
 	pub const MaxNumberOfUrlsPerService: u32 = 1u32;
-	pub const MaxNumberOfConsumers: u32 = 5u32;
 }
 
 pub struct ToAccount<R>(sp_std::marker::PhantomData<R>);
@@ -165,7 +161,6 @@ impl Config for Test {
 	type MaxServiceUrlLength = MaxServiceUrlLength;
 	type MaxNumberOfTypesPerService = MaxNumberOfTypesPerService;
 	type MaxNumberOfUrlsPerService = MaxNumberOfUrlsPerService;
-	type MaxNumberOfConsumers = MaxNumberOfConsumers;
 }
 
 parameter_types! {
@@ -428,7 +423,7 @@ pub(crate) struct ExtBuilder {
 	dids_stored: Vec<(DidIdentifier, DidDetails<Test>)>,
 	service_endpoints: Vec<(DidIdentifier, Vec<DidEndpoint<Test>>)>,
 	deleted_dids: Vec<DidIdentifier>,
-	consumers: Vec<(DidIdentifier, Vec<DidConsumer>)>,
+	consumers: Vec<(DidIdentifier, u32)>,
 	ctypes_stored: Vec<(CtypeHash, DidIdentifier)>,
 	balances: Vec<(AccountIdOf<Test>, Balance)>,
 }
@@ -465,7 +460,7 @@ impl ExtBuilder {
 	}
 
 	#[must_use]
-	pub fn with_consumers(mut self, consumers: Vec<(DidIdentifier, Vec<DidConsumer>)>) -> Self {
+	pub fn with_consumers(mut self, consumers: Vec<(DidIdentifier, u32)>) -> Self {
 		self.consumers = consumers;
 		self
 	}
@@ -503,12 +498,6 @@ impl ExtBuilder {
 				DidEndpointsCount::<Test>::insert(&did, endpoints.len().saturated_into::<u32>());
 			}
 			for (did_subject, consumers) in self.consumers.iter() {
-				let consumers: BoundedBTreeSet<DidConsumer, <Test as Config>::MaxNumberOfConsumers> = consumers
-					.iter()
-					.copied()
-					.collect::<BTreeSet<DidConsumer>>()
-					.try_into()
-					.expect("Failed to construct consumer BoundedBTreeSet for {did_subject}.");
 				DidConsumers::<Test>::insert(did_subject, consumers);
 			}
 		});

@@ -66,13 +66,11 @@ pub enum StorageError {
 	/// The DID has already been previously deleted.
 	DidAlreadyDeleted,
 	/// The consumer with the given ID is already set for the DID.
-	ConsumerAlreadyPresent,
-	/// The consumer with the given ID is not set for the DID.
-	ConsumerNotPresent,
-	/// The maximum number of consumers for the DID has been reached.
 	MaxConsumersExceeded,
 	/// The DID has some depending consumers preventing its deletion.
 	OutstandingConsumers,
+	/// The DID has not depending consumers.
+	NoOutstandingConsumers,
 }
 
 /// Error generated when validating a DID operation.

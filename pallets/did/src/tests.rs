@@ -35,7 +35,6 @@ use crate::{
 	mock::*,
 	mock_utils::*,
 	service_endpoints::DidEndpoint,
-	Config, DidConsumer, DidConsumers,
 };
 
 // create
@@ -2167,7 +2166,7 @@ fn check_did_with_consumers_deletion() {
 
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
-		.with_consumers(vec![(alice_did.clone(), vec![*b"00000000"])])
+		.with_consumers(vec![(alice_did.clone(), 1)])
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
@@ -3182,7 +3181,7 @@ fn check_invalid_signature_operation_verification() {
 // add_consumer, remove_consumer, has_consumers()
 
 #[test]
-fn check_add_remove_first_consumer() {
+fn check_add_and_remove_first_consumer() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let mock_did = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()));
@@ -3191,35 +3190,14 @@ fn check_add_remove_first_consumer() {
 		.with_dids(vec![(did.clone(), mock_did)])
 		.build(None)
 		.execute_with(|| {
-			assert_ok!(Did::add_consumer(&did, *b"testcons"));
+			assert_ok!(Did::increment_consumers(&did));
 
-			let did_consumers = DidConsumers::<Test>::get(&did);
-			assert_eq!(
-				did_consumers.into_iter().collect::<Vec<DidConsumer>>(),
-				vec![*b"testcons"]
-			);
+			assert_eq!(did::DidConsumers::<Test>::get(&did), 1);
 			assert!(Did::has_consumers(&did));
 
-			assert_ok!(Did::remove_consumer(&did, b"testcons"));
+			assert_ok!(Did::decrement_consumers(&did));
+			assert_eq!(did::DidConsumers::<Test>::get(&did), 0);
 			assert!(!Did::has_consumers(&did));
-		});
-}
-
-#[test]
-fn check_add_existing_consumer() {
-	let auth_key = get_sr25519_authentication_key(true);
-	let did = get_did_identifier_from_sr25519_key(auth_key.public());
-	let mock_did = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()));
-
-	ExtBuilder::default()
-		.with_dids(vec![(did.clone(), mock_did)])
-		.with_consumers(vec![(did.clone(), vec![*b"testcons"])])
-		.build(None)
-		.execute_with(|| {
-			assert_noop!(
-				Did::add_consumer(&did, *b"testcons"),
-				DidError::StorageError(StorageError::ConsumerAlreadyPresent)
-			);
 		});
 }
 
@@ -3228,25 +3206,20 @@ fn check_add_exceed_max_consumers() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let mock_did = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()));
-
-	let consumers = (0..<Test as Config>::MaxNumberOfConsumers::get())
-		.map(generate_consumer)
-		.collect();
-
 	ExtBuilder::default()
 		.with_dids(vec![(did.clone(), mock_did)])
-		.with_consumers(vec![(did.clone(), consumers)])
+		.with_consumers(vec![(did.clone(), u32::MAX)])
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
-				Did::add_consumer(&did, *b"testcons"),
+				Did::increment_consumers(&did),
 				DidError::StorageError(StorageError::MaxConsumersExceeded)
 			);
 		});
 }
 
 #[test]
-fn check_remove_nonexisting_consumer() {
+fn check_remove_with_zero_consumers() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let mock_did = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()));
@@ -3256,8 +3229,8 @@ fn check_remove_nonexisting_consumer() {
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
-				Did::remove_consumer(&did, b"testcons"),
-				DidError::StorageError(StorageError::ConsumerNotPresent)
+				Did::decrement_consumers(&did),
+				DidError::StorageError(StorageError::NoOutstandingConsumers)
 			);
 		});
 }

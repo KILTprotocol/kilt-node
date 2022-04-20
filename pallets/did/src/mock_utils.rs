@@ -28,7 +28,7 @@ use sp_std::{
 use crate::{
 	did_details::{DidCreationDetails, DidDetails, DidEncryptionKey, DidNewKeyAgreementKeySet, DidVerificationKey},
 	service_endpoints::DidEndpoint,
-	AccountIdOf, BlockNumberOf, Config, DidConsumer, DidIdentifierOf,
+	AccountIdOf, BlockNumberOf, Config, DidIdentifierOf,
 };
 
 pub fn get_key_agreement_keys<T: Config>(n_keys: u32) -> DidNewKeyAgreementKeySet<T> {
@@ -107,11 +107,4 @@ where
 		},
 	)
 	.expect("Failed to generate new DidDetails from auth_key due to BoundedBTreeSet bound")
-}
-
-pub fn generate_consumer(index: u32) -> DidConsumer {
-	let mut res: DidConsumer = [0; 8];
-	let i_as_bytes = index.to_be_bytes();
-	res[..i_as_bytes.len()].copy_from_slice(&i_as_bytes);
-	res
 }
