@@ -17,11 +17,11 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_support::dispatch::Weight;
-use sp_runtime::traits::Zero;
+use sp_runtime::{traits::Zero, DispatchError};
 
 use ctype::CtypeHashOf;
 
-use crate::{AccountIdOf, AttesterOf, AuthorizationIdOf, ClaimHashOf, Config};
+use crate::{AttesterOf, AuthorizationIdOf, ClaimHashOf, Config};
 
 /// Trait called by the attestation pallet for each of the lifecycle stages of
 /// an attestation.
@@ -34,7 +34,7 @@ pub trait OnAttestationLifecycle<T: Config> {
 		claim_hash: &ClaimHashOf<T>,
 		ctype_hash: &CtypeHashOf<T>,
 		authorization_id: &Option<AuthorizationIdOf<T>>,
-	) -> Weight;
+	) -> Result<Weight, DispatchError>;
 	/// The maximum weight that the handler for the attestation creation can
 	/// consume.
 	///
@@ -43,7 +43,7 @@ pub trait OnAttestationLifecycle<T: Config> {
 	fn attestation_created_max_weight() -> Weight;
 	/// The attestation with the provided claim hash and attester has been
 	/// revoked.
-	fn attestation_revoked(attester: &AttesterOf<T>, claim_hash: &ClaimHashOf<T>) -> Weight;
+	fn attestation_revoked(attester: &AttesterOf<T>, claim_hash: &ClaimHashOf<T>) -> Result<Weight, DispatchError>;
 	/// The maximum weight that the handler for the attestation revocation can
 	/// consume.
 	///
@@ -52,7 +52,7 @@ pub trait OnAttestationLifecycle<T: Config> {
 	fn attestation_revoked_max_weight() -> Weight;
 	/// The attestation with the provided claim hash and attester has been
 	/// removed.
-	fn attestation_removed(attester: &AttesterOf<T>, claim_hash: &ClaimHashOf<T>) -> Weight;
+	fn attestation_removed(attester: &AttesterOf<T>, claim_hash: &ClaimHashOf<T>) -> Result<Weight, DispatchError>;
 	/// The maximum weight that the handler for the attestation removal can
 	/// consume.
 	///
@@ -61,7 +61,7 @@ pub trait OnAttestationLifecycle<T: Config> {
 	fn attestation_removed_max_weight() -> Weight;
 	/// The deposit for the attestation with the provided claim hash and
 	/// attester has been claimed back.
-	fn deposit_reclaimed(attester: &AccountIdOf<T>, claim_hash: &ClaimHashOf<T>) -> Weight;
+	fn deposit_reclaimed(attester: &AttesterOf<T>, claim_hash: &ClaimHashOf<T>) -> Result<Weight, DispatchError>;
 	/// The maximum weight that the handler for the deposit reclaiming can
 	/// consume.
 	///
@@ -76,32 +76,32 @@ impl<T: Config> OnAttestationLifecycle<T> for () {
 		_claim_hash: &ClaimHashOf<T>,
 		_ctype_hash: &CtypeHashOf<T>,
 		_authorization_id: &Option<AuthorizationIdOf<T>>,
-	) -> Weight {
-		Weight::zero()
+	) -> Result<Weight, DispatchError> {
+		Ok(Weight::zero())
 	}
 
 	fn attestation_created_max_weight() -> Weight {
 		Weight::zero()
 	}
 
-	fn attestation_revoked(_attester: &AttesterOf<T>, _claim_hash: &ClaimHashOf<T>) -> Weight {
-		Weight::zero()
+	fn attestation_revoked(_attester: &AttesterOf<T>, _claim_hash: &ClaimHashOf<T>) -> Result<Weight, DispatchError> {
+		Ok(Weight::zero())
 	}
 
 	fn attestation_revoked_max_weight() -> Weight {
 		Weight::zero()
 	}
 
-	fn attestation_removed(_attester: &AttesterOf<T>, _claim_hash: &ClaimHashOf<T>) -> Weight {
-		Weight::zero()
+	fn attestation_removed(_attester: &AttesterOf<T>, _claim_hash: &ClaimHashOf<T>) -> Result<Weight, DispatchError> {
+		Ok(Weight::zero())
 	}
 
 	fn attestation_removed_max_weight() -> Weight {
 		Weight::zero()
 	}
 
-	fn deposit_reclaimed(_attester: &AccountIdOf<T>, _claim_hash: &ClaimHashOf<T>) -> Weight {
-		Weight::zero()
+	fn deposit_reclaimed(_attester: &AttesterOf<T>, _claim_hash: &ClaimHashOf<T>) -> Result<Weight, DispatchError> {
+		Ok(Weight::zero())
 	}
 
 	fn deposit_reclaimed_max_weight() -> Weight {

@@ -241,4 +241,12 @@ impl<T: frame_system::Config> did::WeightInfo for WeightInfo<T> {
 			.saturating_add((1_000_u64).saturating_mul(l as Weight))
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 	}
+	// TODO: re-run benchmarks with actual weights
+	fn increment_consumers() -> Weight {
+		0u64
+	}
+	// TODO: re-run benchmarks with actual weights
+	fn decrement_consumers() -> Weight {
+		0u64
+	}
 }

@@ -1029,6 +1029,30 @@ benchmarks! {
 		DidSignatureVerify::<T>::verify(&did_subject, &payload, &did_signature).expect("should verify");
 	}
 	verify {}
+
+	increment_consumers {
+		let did_public_auth_key = get_ed25519_public_authentication_key();
+		let did_subject: DidIdentifierOf<T> = MultiSigner::from(did_public_auth_key).into_account().into();
+
+		DidConsumers::<T>::insert(&did_subject, u32::MAX - 1);
+	}: {
+		_ = Pallet::<T>::increment_consumers(&did_subject)
+	}
+	verify {
+		assert_eq!(DidConsumers::<T>::get(&did_subject), u32::MAX);
+	}
+
+	decrement_consumers {
+		let did_public_auth_key = get_ed25519_public_authentication_key();
+		let did_subject: DidIdentifierOf<T> = MultiSigner::from(did_public_auth_key).into_account().into();
+
+		DidConsumers::<T>::insert(&did_subject, u32::MAX);
+	}: {
+		_ = Pallet::<T>::decrement_consumers(&did_subject)
+	}
+	verify {
+		assert_eq!(DidConsumers::<T>::get(&did_subject), u32::MAX - 1);
+	}
 }
 
 impl_benchmark_test_suite! {

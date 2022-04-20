@@ -80,6 +80,8 @@ pub trait WeightInfo {
 	fn signature_verification_sr25519(l: u32, ) -> Weight;
 	fn signature_verification_ed25519(l: u32, ) -> Weight;
 	fn signature_verification_ecdsa(l: u32, ) -> Weight;
+	fn increment_consumers() -> Weight;
+	fn decrement_consumers() -> Weight;
 }
 
 /// Weights for did using the Substrate node and recommended hardware.
@@ -275,6 +277,14 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add((1_000_u64).saturating_mul(l as Weight))
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 	}
+	// TODO: re-run benchmarks with actual weights
+	fn increment_consumers() -> Weight {
+		0u64
+	}
+	// TODO: re-run benchmarks with actual weights
+	fn decrement_consumers() -> Weight {
+		0u64
+	}
 }
 
 // For backwards compatibility and tests
@@ -468,5 +478,13 @@ impl WeightInfo for () {
 			// Standard Error: 0
 			.saturating_add((1_000_u64).saturating_mul(l as Weight))
 			.saturating_add(RocksDbWeight::get().reads(1_u64))
+	}
+	// TODO: re-run benchmarks with actual weights
+	fn increment_consumers() -> Weight {
+		0u64
+	}
+	// TODO: re-run benchmarks with actual weights
+	fn decrement_consumers() -> Weight {
+		0u64
 	}
 }

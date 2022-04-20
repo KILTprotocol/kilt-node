@@ -307,6 +307,7 @@ pub(crate) mod runtime {
 		type AttesterId = SubjectId;
 		type AuthorizationId = DelegationNodeIdOf<Self>;
 		type AccessControl = DelegationAc<Self>;
+		type LifecycleHandler = ();
 	}
 
 	parameter_types! {

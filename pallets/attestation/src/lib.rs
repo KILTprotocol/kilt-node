@@ -113,10 +113,10 @@ pub mod pallet {
 	pub type ClaimHashOf<T> = <T as frame_system::Config>::Hash;
 
 	/// Type of an attester identifier.
-	pub(crate) type AttesterOf<T> = <T as Config>::AttesterId;
+	pub type AttesterOf<T> = <T as Config>::AttesterId;
 
 	/// Authorization id type
-	pub(crate) type AuthorizationIdOf<T> = <T as Config>::AuthorizationId;
+	pub type AuthorizationIdOf<T> = <T as Config>::AuthorizationId;
 
 	pub(crate) type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 
@@ -304,7 +304,7 @@ pub mod pallet {
 					&claim_hash,
 					&ctype_hash,
 					&authorization_id,
-				));
+				)?);
 
 			Self::deposit_event(Event::AttestationCreated(who, claim_hash, ctype_hash, authorization_id));
 
@@ -369,7 +369,7 @@ pub mod pallet {
 			// weight.
 			let corrected_weight = <T as pallet::Config>::WeightInfo::revoke()
 				.saturating_add(authorization.as_ref().map(|ac| ac.can_attest_weight()).unwrap_or(0))
-				.saturating_add(T::LifecycleHandler::attestation_revoked(&who, &claim_hash));
+				.saturating_add(T::LifecycleHandler::attestation_revoked(&who, &claim_hash)?);
 
 			Self::deposit_event(Event::AttestationRevoked(who, claim_hash));
 
@@ -422,12 +422,12 @@ pub mod pallet {
 
 			log::debug!("removing Attestation");
 
-			Self::remove_attestation(attestation, claim_hash);
+			Self::remove_attestation(&attestation, claim_hash);
 			// Call the handler's attestation_removed method and calculate the corrected
 			// weight.
 			let corrected_weight = <T as pallet::Config>::WeightInfo::remove()
 				.saturating_add(authorization.as_ref().map(|ac| ac.can_attest_weight()).unwrap_or(0))
-				.saturating_add(T::LifecycleHandler::attestation_removed(&who, &claim_hash));
+				.saturating_add(T::LifecycleHandler::attestation_removed(&who, &claim_hash)?);
 
 			Self::deposit_event(Event::AttestationRemoved(who, claim_hash));
 
@@ -454,11 +454,12 @@ pub mod pallet {
 
 			log::debug!("removing Attestation");
 
-			Self::remove_attestation(attestation, claim_hash);
+			Self::remove_attestation(&attestation, claim_hash);
 			// Call the handler's attestation_removed method and calculate the corrected
 			// weight.
-			let corrected_weight = <T as pallet::Config>::WeightInfo::reclaim_deposit()
-				.saturating_add(T::LifecycleHandler::deposit_reclaimed(&who, &claim_hash));
+			let corrected_weight = <T as pallet::Config>::WeightInfo::reclaim_deposit().saturating_add(
+				T::LifecycleHandler::deposit_reclaimed(&attestation.attester, &claim_hash)?,
+			);
 			Self::deposit_event(Event::DepositReclaimed(who, claim_hash));
 
 			Ok(Some(corrected_weight).into())
@@ -481,7 +482,7 @@ pub mod pallet {
 			})
 		}
 
-		fn remove_attestation(attestation: AttestationDetails<T>, claim_hash: ClaimHashOf<T>) {
+		fn remove_attestation(attestation: &AttestationDetails<T>, claim_hash: ClaimHashOf<T>) {
 			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&attestation.deposit);
 			Attestations::<T>::remove(&claim_hash);
 			if let Some(authorization_id) = &attestation.authorization_id {
