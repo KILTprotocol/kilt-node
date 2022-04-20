@@ -299,6 +299,7 @@ pub mod pallet {
 			// weight.
 			let corrected_weight = <T as pallet::Config>::WeightInfo::add()
 				.saturating_add(authorization.as_ref().map(|ac| ac.can_attest_weight()).unwrap_or(0))
+				// FIXME: this should not fail here, as we got past the last possible failure.
 				.saturating_add(T::LifecycleHandler::attestation_created(
 					&who,
 					&claim_hash,
@@ -365,10 +366,12 @@ pub mod pallet {
 					..attestation
 				},
 			);
+
 			// Call the handler's attestation_revoked method and calculate the corrected
 			// weight.
 			let corrected_weight = <T as pallet::Config>::WeightInfo::revoke()
 				.saturating_add(authorization.as_ref().map(|ac| ac.can_attest_weight()).unwrap_or(0))
+				// FIXME: this should not fail here, as we got past the last possible failure.
 				.saturating_add(T::LifecycleHandler::attestation_revoked(&who, &claim_hash)?);
 
 			Self::deposit_event(Event::AttestationRevoked(who, claim_hash));
@@ -427,6 +430,7 @@ pub mod pallet {
 			// weight.
 			let corrected_weight = <T as pallet::Config>::WeightInfo::remove()
 				.saturating_add(authorization.as_ref().map(|ac| ac.can_attest_weight()).unwrap_or(0))
+				// FIXME: this should not fail here, as we got past the last possible failure.
 				.saturating_add(T::LifecycleHandler::attestation_removed(&who, &claim_hash)?);
 
 			Self::deposit_event(Event::AttestationRemoved(who, claim_hash));
@@ -458,6 +462,7 @@ pub mod pallet {
 			// Call the handler's attestation_removed method and calculate the corrected
 			// weight.
 			let corrected_weight = <T as pallet::Config>::WeightInfo::reclaim_deposit().saturating_add(
+				// FIXME: this should not fail here, as we got past the last possible failure.
 				T::LifecycleHandler::deposit_reclaimed(&attestation.attester, &claim_hash)?,
 			);
 			Self::deposit_event(Event::DepositReclaimed(who, claim_hash));
