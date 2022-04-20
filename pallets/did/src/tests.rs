@@ -35,6 +35,7 @@ use crate::{
 	mock::*,
 	mock_utils::*,
 	service_endpoints::DidEndpoint,
+	Config, DidConsumer, DidConsumers,
 };
 
 // create
@@ -2156,6 +2157,27 @@ fn check_did_not_present_deletion() {
 }
 
 #[test]
+fn check_did_with_consumers_deletion() {
+	let auth_key = get_ed25519_authentication_key(true);
+	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
+
+	let balance = <Test as did::Config>::Deposit::get()
+		+ <Test as did::Config>::Fee::get()
+		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
+
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, balance)])
+		.with_consumers(vec![(alice_did.clone(), vec![*b"00000000"])])
+		.build(None)
+		.execute_with(|| {
+			assert_noop!(
+				Did::delete(Origin::signed(alice_did), 0),
+				did::Error::<Test>::OutstandingConsumers
+			);
+		});
+}
+
+#[test]
 fn check_service_count_too_small_deletion_error() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
@@ -3153,6 +3175,89 @@ fn check_invalid_signature_operation_verification() {
 					&did::DidSignature::from(signature)
 				),
 				DidError::SignatureError(SignatureError::InvalidSignature)
+			);
+		});
+}
+
+// add_consumer, remove_consumer, has_consumers()
+
+#[test]
+fn check_add_remove_first_consumer() {
+	let auth_key = get_sr25519_authentication_key(true);
+	let did = get_did_identifier_from_sr25519_key(auth_key.public());
+	let mock_did = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()));
+
+	ExtBuilder::default()
+		.with_dids(vec![(did.clone(), mock_did)])
+		.build(None)
+		.execute_with(|| {
+			assert_ok!(Did::add_consumer(&did, *b"testcons"));
+
+			let did_consumers = DidConsumers::<Test>::get(&did);
+			assert_eq!(
+				did_consumers.into_iter().collect::<Vec<DidConsumer>>(),
+				vec![*b"testcons"]
+			);
+			assert!(Did::has_consumers(&did));
+
+			assert_ok!(Did::remove_consumer(&did, b"testcons"));
+			assert!(!Did::has_consumers(&did));
+		});
+}
+
+#[test]
+fn check_add_existing_consumer() {
+	let auth_key = get_sr25519_authentication_key(true);
+	let did = get_did_identifier_from_sr25519_key(auth_key.public());
+	let mock_did = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()));
+
+	ExtBuilder::default()
+		.with_dids(vec![(did.clone(), mock_did)])
+		.with_consumers(vec![(did.clone(), vec![*b"testcons"])])
+		.build(None)
+		.execute_with(|| {
+			assert_noop!(
+				Did::add_consumer(&did, *b"testcons"),
+				DidError::StorageError(StorageError::ConsumerAlreadyPresent)
+			);
+		});
+}
+
+#[test]
+fn check_add_exceed_max_consumers() {
+	let auth_key = get_sr25519_authentication_key(true);
+	let did = get_did_identifier_from_sr25519_key(auth_key.public());
+	let mock_did = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()));
+
+	let consumers = (0..<Test as Config>::MaxNumberOfConsumers::get())
+		.map(generate_consumer)
+		.collect();
+
+	ExtBuilder::default()
+		.with_dids(vec![(did.clone(), mock_did)])
+		.with_consumers(vec![(did.clone(), consumers)])
+		.build(None)
+		.execute_with(|| {
+			assert_noop!(
+				Did::add_consumer(&did, *b"testcons"),
+				DidError::StorageError(StorageError::MaxConsumersExceeded)
+			);
+		});
+}
+
+#[test]
+fn check_remove_nonexisting_consumer() {
+	let auth_key = get_sr25519_authentication_key(true);
+	let did = get_did_identifier_from_sr25519_key(auth_key.public());
+	let mock_did = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()));
+
+	ExtBuilder::default()
+		.with_dids(vec![(did.clone(), mock_did)])
+		.build(None)
+		.execute_with(|| {
+			assert_noop!(
+				Did::remove_consumer(&did, b"testcons"),
+				DidError::StorageError(StorageError::ConsumerNotPresent)
 			);
 		});
 }
