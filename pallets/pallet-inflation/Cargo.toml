@@ -12,9 +12,9 @@ targets = ["x86_64-unknown-linux-gnu"]
 [dev-dependencies]
 serde = {version = "1.0.132"}
 
-pallet-balances = {branch = "polkadot-v0.9.17", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-core = {branch = "polkadot-v0.9.17", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-io = {branch = "polkadot-v0.9.17", default-features = false, git = "https://github.com/paritytech/substrate"}
+pallet-balances = {branch = "polkadot-v0.9.17", git = "https://github.com/paritytech/substrate"}
+sp-core = {branch = "polkadot-v0.9.17", git = "https://github.com/paritytech/substrate"}
+sp-io = {branch = "polkadot-v0.9.17", git = "https://github.com/paritytech/substrate"}
 
 [dependencies]
 codec = {default-features = false, features = ["derive"], package = "parity-scale-codec", version = "2.3.1"}

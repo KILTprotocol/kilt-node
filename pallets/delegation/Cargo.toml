@@ -22,9 +22,9 @@ env_logger = {version = "0.8.4"}
 serde = {version = "1.0.132"}
 
 # Substrate dependencies
-pallet-balances = {branch = "polkadot-v0.9.17", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-core = {branch = "polkadot-v0.9.17", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-keystore = {branch = "polkadot-v0.9.17", default-features = false, git = "https://github.com/paritytech/substrate"}
+pallet-balances = {branch = "polkadot-v0.9.17", git = "https://github.com/paritytech/substrate"}
+sp-core = {branch = "polkadot-v0.9.17", git = "https://github.com/paritytech/substrate"}
+sp-keystore = {branch = "polkadot-v0.9.17", git = "https://github.com/paritytech/substrate"}
 
 [dependencies]
 # Internal dependencies

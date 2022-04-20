@@ -34,6 +34,8 @@ default = ["std"]
 fast-gov = []
 runtime-benchmarks = [
   "attestation/runtime-benchmarks",
+  "did/runtime-benchmarks",
+  "pallet-web3-names/runtime-benchmarks",
   "frame-support/runtime-benchmarks",
   "parachain-staking/runtime-benchmarks",
   "sp-runtime/runtime-benchmarks",

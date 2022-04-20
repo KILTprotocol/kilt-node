@@ -6,11 +6,11 @@ name = "parachain-staking"
 version = "1.6.2"
 
 [dev-dependencies]
-pallet-aura = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.17", default-features = false}
-pallet-timestamp = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.17", default-features = false}
-sp-consensus-aura = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.17", default-features = false}
-sp-core = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.17", default-features = false}
-sp-io = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.17", default-features = false}
+pallet-aura = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.17"}
+pallet-timestamp = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.17"}
+sp-consensus-aura = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.17"}
+sp-core = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.17"}
+sp-io = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.17"}
 
 [dependencies]
 hex-literal = "0.3.4"

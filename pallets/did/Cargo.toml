@@ -18,9 +18,9 @@ serde = {version = "1.0.132"}
 
 ctype = {features = ["mock"], path = "../ctype"}
 
-frame-benchmarking = {branch = "polkadot-v0.9.17", default-features = false, git = "https://github.com/paritytech/substrate"}
-pallet-balances = {branch = "polkadot-v0.9.17", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-keystore = {branch = "polkadot-v0.9.17", default-features = false, git = "https://github.com/paritytech/substrate"}
+frame-benchmarking = {branch = "polkadot-v0.9.17", git = "https://github.com/paritytech/substrate"}
+pallet-balances = {branch = "polkadot-v0.9.17", git = "https://github.com/paritytech/substrate"}
+sp-keystore = {branch = "polkadot-v0.9.17", git = "https://github.com/paritytech/substrate"}
 
 [dependencies]
 # Internal dependencies
