@@ -75,6 +75,7 @@
 
 pub mod attestations;
 pub mod default_weights;
+pub mod hooks;
 
 #[cfg(any(feature = "mock", test))]
 pub mod mock;
@@ -87,14 +88,15 @@ mod access_control;
 mod tests;
 
 pub use crate::{
-	access_control::AttestationAccessControl, attestations::AttestationDetails, default_weights::WeightInfo, pallet::*,
+	access_control::AttestationAccessControl, attestations::AttestationDetails, default_weights::WeightInfo,
+	hooks::OnAttestationLifecycle, pallet::*,
 };
 
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
 	use frame_support::{
-		dispatch::{DispatchResult, DispatchResultWithPostInfo},
+		dispatch::DispatchResultWithPostInfo,
 		pallet_prelude::*,
 		traits::{Currency, Get, ReservableCurrency, StorageVersion},
 	};
@@ -150,6 +152,8 @@ pub mod pallet {
 
 		type AccessControl: Parameter
 			+ AttestationAccessControl<Self::AttesterId, Self::AuthorizationId, CtypeHashOf<Self>, ClaimHashOf<Self>>;
+
+		type LifecycleHandler: OnAttestationLifecycle<Self>;
 	}
 
 	#[pallet::pallet]
@@ -243,13 +247,14 @@ pub mod pallet {
 		#[pallet::weight(
 			<T as pallet::Config>::WeightInfo::add()
 			.saturating_add(authorization.as_ref().map(|ac| ac.can_attest_weight()).unwrap_or(0))
+			.saturating_add(T::LifecycleHandler::attestation_created_max_weight())
 		)]
 		pub fn add(
 			origin: OriginFor<T>,
 			claim_hash: ClaimHashOf<T>,
 			ctype_hash: CtypeHashOf<T>,
 			authorization: Option<T::AccessControl>,
-		) -> DispatchResult {
+		) -> DispatchResultWithPostInfo {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 			let payer = source.sender();
 			let who = source.subject();
@@ -290,10 +295,20 @@ pub mod pallet {
 			if let Some(authorization_id) = &authorization_id {
 				ExternalAttestations::<T>::insert(authorization_id, claim_hash, true);
 			}
+			// Call the handler's attestation_created method and calculate the corrected
+			// weight.
+			let corrected_weight = <T as pallet::Config>::WeightInfo::add()
+				.saturating_add(authorization.as_ref().map(|ac| ac.can_attest_weight()).unwrap_or(0))
+				.saturating_add(T::LifecycleHandler::attestation_created(
+					&who,
+					&claim_hash,
+					&ctype_hash,
+					&authorization_id,
+				));
 
 			Self::deposit_event(Event::AttestationCreated(who, claim_hash, ctype_hash, authorization_id));
 
-			Ok(())
+			Ok(Some(corrected_weight).into())
 		}
 
 		/// Revoke an existing attestation.
@@ -316,6 +331,7 @@ pub mod pallet {
 		#[pallet::weight(
 			<T as pallet::Config>::WeightInfo::revoke()
 			.saturating_add(authorization.as_ref().map(|ac| ac.can_revoke_weight()).unwrap_or(0))
+			.saturating_add(T::LifecycleHandler::attestation_revoked_max_weight())
 		)]
 		pub fn revoke(
 			origin: OriginFor<T>,
@@ -331,7 +347,7 @@ pub mod pallet {
 
 			if attestation.attester != who {
 				let attestation_auth_id = attestation.authorization_id.as_ref().ok_or(Error::<T>::Unauthorized)?;
-				authorization.ok_or(Error::<T>::Unauthorized)?.can_revoke(
+				authorization.clone().ok_or(Error::<T>::Unauthorized)?.can_revoke(
 					&who,
 					&attestation.ctype_hash,
 					&claim_hash,
@@ -349,10 +365,15 @@ pub mod pallet {
 					..attestation
 				},
 			);
+			// Call the handler's attestation_revoked method and calculate the corrected
+			// weight.
+			let corrected_weight = <T as pallet::Config>::WeightInfo::revoke()
+				.saturating_add(authorization.as_ref().map(|ac| ac.can_attest_weight()).unwrap_or(0))
+				.saturating_add(T::LifecycleHandler::attestation_revoked(&who, &claim_hash));
 
 			Self::deposit_event(Event::AttestationRevoked(who, claim_hash));
 
-			Ok(Some(<T as pallet::Config>::WeightInfo::revoke()).into())
+			Ok(Some(corrected_weight).into())
 		}
 
 		/// Remove an attestation.
@@ -375,6 +396,7 @@ pub mod pallet {
 		#[pallet::weight(
 			<T as pallet::Config>::WeightInfo::remove()
 			.saturating_add(authorization.as_ref().map(|ac| ac.can_remove_weight()).unwrap_or(0))
+			.saturating_add(T::LifecycleHandler::attestation_removed_max_weight())
 		)]
 		pub fn remove(
 			origin: OriginFor<T>,
@@ -388,7 +410,7 @@ pub mod pallet {
 
 			if attestation.attester != who {
 				let attestation_auth_id = attestation.authorization_id.as_ref().ok_or(Error::<T>::Unauthorized)?;
-				authorization.ok_or(Error::<T>::Unauthorized)?.can_remove(
+				authorization.clone().ok_or(Error::<T>::Unauthorized)?.can_remove(
 					&who,
 					&attestation.ctype_hash,
 					&claim_hash,
@@ -401,9 +423,15 @@ pub mod pallet {
 			log::debug!("removing Attestation");
 
 			Self::remove_attestation(attestation, claim_hash);
+			// Call the handler's attestation_removed method and calculate the corrected
+			// weight.
+			let corrected_weight = <T as pallet::Config>::WeightInfo::remove()
+				.saturating_add(authorization.as_ref().map(|ac| ac.can_attest_weight()).unwrap_or(0))
+				.saturating_add(T::LifecycleHandler::attestation_removed(&who, &claim_hash));
+
 			Self::deposit_event(Event::AttestationRemoved(who, claim_hash));
 
-			Ok(Some(<T as pallet::Config>::WeightInfo::remove()).into())
+			Ok(Some(corrected_weight).into())
 		}
 
 		/// Reclaim a storage deposit by removing an attestation
@@ -415,8 +443,8 @@ pub mod pallet {
 		/// - Reads: [Origin Account], Attestations, DelegatedAttestations
 		/// - Writes: Attestations, DelegatedAttestations
 		/// # </weight>
-		#[pallet::weight(<T as pallet::Config>::WeightInfo::reclaim_deposit())]
-		pub fn reclaim_deposit(origin: OriginFor<T>, claim_hash: ClaimHashOf<T>) -> DispatchResult {
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::reclaim_deposit().saturating_add(T::LifecycleHandler::deposit_reclaimed_max_weight()))]
+		pub fn reclaim_deposit(origin: OriginFor<T>, claim_hash: ClaimHashOf<T>) -> DispatchResultWithPostInfo {
 			let who = ensure_signed(origin)?;
 			let attestation = Attestations::<T>::get(&claim_hash).ok_or(Error::<T>::AttestationNotFound)?;
 
@@ -427,9 +455,13 @@ pub mod pallet {
 			log::debug!("removing Attestation");
 
 			Self::remove_attestation(attestation, claim_hash);
+			// Call the handler's attestation_removed method and calculate the corrected
+			// weight.
+			let corrected_weight = <T as pallet::Config>::WeightInfo::reclaim_deposit()
+				.saturating_add(T::LifecycleHandler::deposit_reclaimed(&who, &claim_hash));
 			Self::deposit_event(Event::DepositReclaimed(who, claim_hash));
 
-			Ok(())
+			Ok(Some(corrected_weight).into())
 		}
 	}
 

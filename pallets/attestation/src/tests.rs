@@ -107,14 +107,14 @@ fn test_attest_unauthorized() {
 		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
 		.build()
 		.execute_with(|| {
-			assert_eq!(
+			assert_noop!(
 				Attestation::add(
 					DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
 					claim_hash,
 					ctype,
 					authorization_info
 				),
-				Err(DispatchError::Other("Unauthorized"))
+				DispatchError::Other("Unauthorized")
 			);
 		});
 }
