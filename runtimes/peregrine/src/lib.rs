@@ -1113,10 +1113,11 @@ impl_runtime_apis! {
 			let name: Web3Name<Runtime> = name.try_into().ok()?;
 			pallet_web3_names::Owner::<Runtime>::get(&name)
 				.map(|owner_info| {
+					let accounts = pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(&owner_info.owner).collect();
 					did_rpc_runtime_api::RawDidDocument {
 						identifier: owner_info.owner,
 						w3n: Some(name.into()),
-						accounts: None,
+						accounts,
 					}
 			})
 		}
@@ -1124,10 +1125,12 @@ impl_runtime_apis! {
 		fn query_did_by_account_id(account: AccountId) -> Option<did_rpc_runtime_api::RawDidDocument<DidIdentifier, AccountId>> {
 			pallet_did_lookup::ConnectedDids::<Runtime>::get(account).map(|connection_record| {
 				let w3n = pallet_web3_names::Names::<Runtime>::get(&connection_record.did).map(Into::into);
+				let accounts = pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(&connection_record.did).collect();
+
 				did_rpc_runtime_api::RawDidDocument {
 					identifier: connection_record.did,
 					w3n,
-					accounts: None,
+					accounts,
 				}
 			})
 		}

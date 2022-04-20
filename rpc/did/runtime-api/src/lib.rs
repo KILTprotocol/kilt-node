@@ -25,7 +25,7 @@ use sp_std::vec::Vec;
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 pub struct DidDocument<DidIdentifier, AccountId, Web3Name> {
 	pub identifier: DidIdentifier,
-	pub accounts: Option<Vec<AccountId>>,
+	pub accounts: Vec<AccountId>,
 	pub w3n: Option<Web3Name>,
 }
 
