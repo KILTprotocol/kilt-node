@@ -133,6 +133,9 @@ impl From<sr25519::Public> for SubjectId {
 	}
 }
 
+// FIXME: not working as intended. Goal is to have a test consumer that can
+// check that a given extrinsic has indeed incremented/decremented the refcount
+// of a specific identity.
 pub struct TestIdentityConsumer<Identity, Error>(Option<sp_std::marker::PhantomData<(Identity, Error)>>, u32);
 
 impl<Identity, Error> TestIdentityConsumer<Identity, Error> {
