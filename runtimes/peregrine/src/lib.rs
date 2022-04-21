@@ -47,7 +47,7 @@ use delegation::DelegationAc;
 pub use parachain_staking::InflationInfo;
 use runtime_common::{
 	authorization::{AuthorizationId, PalletAuthorize},
-	constants::{self, KILT, MICRO_KILT, MILLI_KILT},
+	constants::{self, KILT, MILLI_KILT},
 	fees::{ToAuthor, WeightToFee},
 	pallet_id, AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights, DidIdentifier,
 	FeeSplit, Hash, Header, Index, Signature, SlowAdjustingFeeUpdate,

@@ -47,7 +47,7 @@ use delegation::DelegationAc;
 pub use parachain_staking::InflationInfo;
 use runtime_common::{
 	authorization::{AuthorizationId, PalletAuthorize},
-	constants::{self, KILT, MICRO_KILT, MILLI_KILT},
+	constants::{self, KILT, MILLI_KILT},
 	fees::{ToAuthor, WeightToFee},
 	pallet_id, AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights, DidIdentifier,
 	FeeSplit, Hash, Header, Index, Signature, SlowAdjustingFeeUpdate,
@@ -167,7 +167,6 @@ impl pallet_timestamp::Config for Runtime {
 
 parameter_types! {
 	pub const ExistentialDeposit: u128 = 10 * MILLI_KILT;
-	pub const TransactionByteFee: u128 = MICRO_KILT;
 	pub const MaxLocks: u32 = 50;
 	pub const MaxReserves: u32 = 50;
 }

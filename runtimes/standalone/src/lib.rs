@@ -65,7 +65,7 @@ pub use pallet_balances::Call as BalancesCall;
 pub use pallet_web3_names;
 use runtime_common::{
 	authorization::{AuthorizationId, PalletAuthorize},
-	constants::{self, KILT, MICRO_KILT, MILLI_KILT},
+	constants::{self, KILT, MILLI_KILT},
 	fees::ToAuthor,
 	pallet_id, AccountId, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature, SlowAdjustingFeeUpdate,
 };
