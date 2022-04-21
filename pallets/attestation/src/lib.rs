@@ -154,7 +154,7 @@ pub mod pallet {
 		type AccessControl: Parameter
 			+ AttestationAccessControl<Self::AttesterId, Self::AuthorizationId, CtypeHashOf<Self>, ClaimHashOf<Self>>;
 
-		type IdentityConsumer: IdentityConsumer<Self::AttesterId, Error = DispatchError>;
+		type IdentityConsumer: IdentityConsumer<Self::AttesterId, u32, Error = DispatchError>;
 	}
 
 	#[pallet::pallet]

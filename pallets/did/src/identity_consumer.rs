@@ -16,19 +16,31 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use kilt_support::traits::{IdentityConsumer, IdentityDecrementer, IdentityIncrementer};
+use kilt_support::traits::{IdentityConsumer, IdentityCounter, IdentityDecrementer, IdentityIncrementer};
 use sp_runtime::DispatchError;
 
-use crate::{Config, DidIdentifierOf, Error, Pallet, WeightInfo};
+use crate::{Config, DidConsumers, DidIdentifierOf, Error, Pallet, WeightInfo};
 
 #[derive(Debug, PartialEq)]
 pub struct DidIncrementer<T>(T);
 
-impl<T: Config, Identity> IdentityIncrementer for DidIncrementer<(Option<T>, Identity)>
+impl<T: Config, Identity> IdentityCounter<u32> for DidIncrementer<(Option<T>, Identity)>
 where
-	// FIXME: remove dependency on
-	// Clone, and change Into to
-	// AsRef, if possible
+	// FIXME: remove dependency
+	// on Clone, and change Into
+	// to AsRef, if possible
+	Identity: Into<DidIdentifierOf<T>> + Clone,
+{
+	fn current_value(&self) -> u32 {
+		DidConsumers::<T>::get(&self.0 .1.clone().into())
+	}
+}
+
+impl<T: Config, Identity> IdentityIncrementer<u32> for DidIncrementer<(Option<T>, Identity)>
+where
+	// FIXME: remove dependency
+	// on Clone, and change Into
+	// to AsRef, if possible
 	Identity: Into<DidIdentifierOf<T>> + Clone,
 {
 	fn increment(&mut self) -> frame_support::dispatch::Weight {
@@ -40,11 +52,23 @@ where
 #[derive(Debug, PartialEq)]
 pub struct DidDecrementer<T>(T);
 
-impl<T: Config, Identity> IdentityDecrementer for DidDecrementer<(Option<T>, Identity)>
+impl<T: Config, Identity> IdentityCounter<u32> for DidDecrementer<(Option<T>, Identity)>
 where
-	// FIXME: remove dependency on
-	// Clone, and change Into to
-	// AsRef, if possible
+	// FIXME: remove dependency
+	// on Clone, and change Into
+	// to AsRef, if possible
+	Identity: Into<DidIdentifierOf<T>> + Clone,
+{
+	fn current_value(&self) -> u32 {
+		DidConsumers::<T>::get(&self.0 .1.clone().into())
+	}
+}
+
+impl<T: Config, Identity> IdentityDecrementer<u32> for DidDecrementer<(Option<T>, Identity)>
+where
+	// FIXME: remove dependency
+	// on Clone, and change Into
+	// to AsRef, if possible
 	Identity: Into<DidIdentifierOf<T>> + Clone,
 {
 	fn decrement(&mut self) -> frame_support::dispatch::Weight {
@@ -53,7 +77,7 @@ where
 	}
 }
 
-impl<T: Config, Identity> IdentityConsumer<Identity> for Pallet<T>
+impl<T: Config, Identity> IdentityConsumer<Identity, u32> for Pallet<T>
 where
 	// FIXME: remove dependency on
 	// Clone, and change Into to

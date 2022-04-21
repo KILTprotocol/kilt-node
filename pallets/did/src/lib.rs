@@ -1131,7 +1131,7 @@ pub mod pallet {
 
 		/// Return `true` if the DID subject has any consumers depending on it.
 		pub(crate) fn has_consumers(did_subject: &DidIdentifierOf<T>) -> bool {
-			!Self::can_decrement_consumers(did_subject)
+			Self::can_decrement_consumers(did_subject)
 		}
 
 		/// Verify the validity (i.e., nonce, signature and mortality) of a

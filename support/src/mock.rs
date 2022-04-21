@@ -24,7 +24,7 @@ use scale_info::TypeInfo;
 use sp_core::sr25519;
 use sp_runtime::{traits::Zero, AccountId32};
 
-use crate::traits::{IdentityConsumer, IdentityDecrementer, IdentityIncrementer};
+use crate::traits::{IdentityConsumer, IdentityCounter, IdentityDecrementer, IdentityIncrementer};
 
 /// This pallet only contains an origin which supports separated sender and
 /// subject.
@@ -147,25 +147,29 @@ impl<Identity, Error> Default for TestIdentityConsumer<Identity, Error> {
 	}
 }
 
-impl<Identity, Error> IdentityIncrementer for TestIdentityConsumer<Identity, Error> {
+impl<Identity, Error> IdentityCounter<u32> for TestIdentityConsumer<Identity, Error> {
+	fn current_value(&self) -> u32 {
+		self.1
+	}
+}
+
+impl<Identity, Error> IdentityIncrementer<u32> for TestIdentityConsumer<Identity, Error> {
 	fn increment(&mut self) -> Weight {
 		self.1 += 1;
 		Weight::zero()
 	}
 }
 
-impl<Identity, Error> IdentityDecrementer for TestIdentityConsumer<Identity, Error> {
+impl<Identity, Error> IdentityDecrementer<u32> for TestIdentityConsumer<Identity, Error> {
 	fn decrement(&mut self) -> Weight {
 		self.1 -= 1;
 		Weight::zero()
 	}
 }
 
-impl<Identity, Error> IdentityConsumer<Identity> for TestIdentityConsumer<Identity, Error> {
+impl<Identity, Error> IdentityConsumer<Identity, u32> for TestIdentityConsumer<Identity, Error> {
 	type IdentityIncrementer = Self;
-
 	type IdentityDecrementer = Self;
-
 	type Error = Error;
 
 	fn get_incrementer(_id: &Identity) -> Result<Self::IdentityIncrementer, Self::Error> {

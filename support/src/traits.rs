@@ -72,17 +72,21 @@ pub trait GenerateBenchmarkOrigin<OuterOrigin, AccountId, SubjectId> {
 	fn generate_origin(sender: AccountId, subject: SubjectId) -> OuterOrigin;
 }
 
-pub trait IdentityIncrementer {
+pub trait IdentityCounter<Value> {
+	fn current_value(&self) -> Value;
+}
+
+pub trait IdentityIncrementer<Value>: IdentityCounter<Value> {
 	fn increment(&mut self) -> Weight;
 }
 
-pub trait IdentityDecrementer {
+pub trait IdentityDecrementer<Value>: IdentityCounter<Value> {
 	fn decrement(&mut self) -> Weight;
 }
 
-pub trait IdentityConsumer<Identity> {
-	type IdentityIncrementer: IdentityIncrementer;
-	type IdentityDecrementer: IdentityDecrementer;
+pub trait IdentityConsumer<Identity, Value> {
+	type IdentityIncrementer: IdentityIncrementer<Value>;
+	type IdentityDecrementer: IdentityDecrementer<Value>;
 	type Error;
 
 	fn get_incrementer(id: &Identity) -> Result<Self::IdentityIncrementer, Self::Error>;
@@ -94,19 +98,37 @@ pub trait IdentityConsumer<Identity> {
 	}
 }
 
-impl IdentityIncrementer for () {
+impl<Value> IdentityCounter<Value> for ()
+where
+	Value: Default,
+{
+	fn current_value(&self) -> Value {
+		Value::default()
+	}
+}
+
+impl<Value> IdentityIncrementer<Value> for ()
+where
+	Value: Default,
+{
 	fn increment(&mut self) -> Weight {
 		Weight::zero()
 	}
 }
 
-impl IdentityDecrementer for () {
+impl<Value> IdentityDecrementer<Value> for ()
+where
+	Value: Default,
+{
 	fn decrement(&mut self) -> Weight {
 		Weight::zero()
 	}
 }
 
-impl<T> IdentityConsumer<T> for () {
+impl<T, Value> IdentityConsumer<T, Value> for ()
+where
+	Value: Default,
+{
 	type IdentityIncrementer = Self;
 	type IdentityDecrementer = Self;
 	type Error = DispatchError;
