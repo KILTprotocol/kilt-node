@@ -29,7 +29,7 @@ use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::{
 	construct_runtime, parameter_types,
 	traits::{Contains, EnsureOneOf, InstanceFilter, PrivilegeCmp},
-	weights::{constants::RocksDbWeight, Weight},
+	weights::{constants::RocksDbWeight, ConstantMultiplier, Weight},
 };
 use frame_system::EnsureRoot;
 use sp_api::impl_runtime_apis;
@@ -197,18 +197,12 @@ impl pallet_balances::Config for Runtime {
 	type ReserveIdentifier = [u8; 8];
 }
 
-parameter_types! {
-	/// This value increases the priority of `Operational` transactions by adding
-	/// a "virtual tip" that's equal to the `OperationalFeeMultiplier * final_fee`.
-	pub const OperationalFeeMultiplier: u8 = 5;
-}
-
 impl pallet_transaction_payment::Config for Runtime {
 	type OnChargeTransaction =
 		pallet_transaction_payment::CurrencyAdapter<Balances, FeeSplit<Runtime, Treasury, ToAuthor<Runtime>>>;
-	type TransactionByteFee = TransactionByteFee;
-	type OperationalFeeMultiplier = OperationalFeeMultiplier;
+	type OperationalFeeMultiplier = constants::fee::OperationalFeeMultiplier;
 	type WeightToFee = WeightToFee<Runtime>;
+	type LengthToFee = ConstantMultiplier<Balance, constants::fee::TransactionByteFee>;
 	type FeeMultiplierUpdate = SlowAdjustingFeeUpdate<Self>;
 }
 

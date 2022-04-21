@@ -21,6 +21,7 @@ use frame_support::{
 	weights::{DispatchClass, WeightToFeeCoefficient, WeightToFeeCoefficients, WeightToFeePolynomial},
 };
 use pallet_balances::WeightInfo;
+use pallet_transaction_payment::OnChargeTransaction;
 use smallvec::smallvec;
 use sp_runtime::Perbill;
 
@@ -90,18 +91,18 @@ pub struct WeightToFee<R>(sp_std::marker::PhantomData<R>);
 impl<R> WeightToFeePolynomial for WeightToFee<R>
 where
 	R: pallet_transaction_payment::Config,
-	<R as pallet_transaction_payment::Config>::TransactionByteFee: Get<Balance>,
 	R: frame_system::Config,
 	R: pallet_balances::Config,
+	u128: From<<<R as pallet_transaction_payment::Config>::OnChargeTransaction as OnChargeTransaction<R>>::Balance>,
 {
 	type Balance = Balance;
 	fn polynomial() -> WeightToFeeCoefficients<Self::Balance> {
 		// The should be fee
 		let wanted_fee: Balance = 10 * MILLI_KILT;
 
-		let per_byte_fee: u128 = <R as pallet_transaction_payment::Config>::TransactionByteFee::get();
 		// TODO: transfer_keep_alive is 288 byte long?
-		let byte_fee: u128 = 288_u128 * per_byte_fee;
+		let tx_len: u64 = 288;
+		let byte_fee: Balance = <R as pallet_transaction_payment::Config>::LengthToFee::calc(&tx_len).into();
 		let base_weight: Balance = <R as frame_system::Config>::BlockWeights::get()
 			.get(DispatchClass::Normal)
 			.base_extrinsic
