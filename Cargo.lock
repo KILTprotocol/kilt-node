@@ -8577,8 +8577,6 @@ name = "runtime-common"
 version = "1.6.2"
 dependencies = [
  "attestation",
- "ctype",
- "did",
  "frame-support",
  "frame-system",
  "pallet-authorship",

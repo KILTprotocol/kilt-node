@@ -14,8 +14,6 @@ serde = {version = "1.0.132", optional = true, features = ["derive"]}
 smallvec = "1.7.0"
 
 attestation = {default-features = false, path = "../../pallets/attestation"}
-ctype = {default-features = false, path = "../../pallets/ctype"}
-did = {default-features = false, path = "../../pallets/did"}
 parachain-staking = {default-features = false, path = "../../pallets/parachain-staking"}
 
 frame-support = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.17"}
