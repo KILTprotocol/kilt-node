@@ -18,9 +18,13 @@
 
 ///! This module contains utilities for testing.
 use codec::{Decode, Encode, MaxEncodedLen};
+
+use frame_support::dispatch::Weight;
 use scale_info::TypeInfo;
 use sp_core::sr25519;
-use sp_runtime::AccountId32;
+use sp_runtime::{traits::Zero, AccountId32};
+
+use crate::traits::{IdentityConsumer, IdentityDecrementer, IdentityIncrementer};
 
 /// This pallet only contains an origin which supports separated sender and
 /// subject.
@@ -126,5 +130,59 @@ impl From<AccountId32> for SubjectId {
 impl From<sr25519::Public> for SubjectId {
 	fn from(acc: sr25519::Public) -> Self {
 		SubjectId(acc.into())
+	}
+}
+
+pub struct TestIdentityConsumer<Identity, Error>(Option<sp_std::marker::PhantomData<(Identity, Error)>>, u32);
+
+impl<Identity, Error> TestIdentityConsumer<Identity, Error> {
+	pub fn new() -> Self {
+		Self(None, 0u32)
+	}
+}
+
+impl<Identity, Error> Default for TestIdentityConsumer<Identity, Error> {
+	fn default() -> Self {
+		Self::new()
+	}
+}
+
+impl<Identity, Error> IdentityIncrementer for TestIdentityConsumer<Identity, Error> {
+	fn increment(&mut self) -> Weight {
+		self.1 += 1;
+		Weight::zero()
+	}
+}
+
+impl<Identity, Error> IdentityDecrementer for TestIdentityConsumer<Identity, Error> {
+	fn decrement(&mut self) -> Weight {
+		self.1 -= 1;
+		Weight::zero()
+	}
+}
+
+impl<Identity, Error> IdentityConsumer<Identity> for TestIdentityConsumer<Identity, Error> {
+	type IdentityIncrementer = Self;
+
+	type IdentityDecrementer = Self;
+
+	type Error = Error;
+
+	fn get_incrementer(_id: &Identity) -> Result<Self::IdentityIncrementer, Self::Error> {
+		Ok(Self::default())
+	}
+
+	fn get_incrementer_max_weight() -> Weight {
+		Weight::zero()
+	}
+
+	fn get_decrementer(_id: &Identity) -> Result<Self::IdentityDecrementer, Self::Error> {
+		let mut def = Self::default();
+		def.increment();
+		Ok(def)
+	}
+
+	fn get_decrementer_max_weight() -> Weight {
+		Weight::zero()
 	}
 }

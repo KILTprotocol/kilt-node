@@ -87,8 +87,7 @@ mod access_control;
 mod tests;
 
 pub use crate::{
-	access_control::AttestationAccessControl, attestations::AttestationDetails, default_weights::WeightInfo,
-	pallet::*,
+	access_control::AttestationAccessControl, attestations::AttestationDetails, default_weights::WeightInfo, pallet::*,
 };
 
 #[frame_support::pallet]
@@ -103,7 +102,10 @@ pub mod pallet {
 	use sp_runtime::DispatchError;
 
 	use ctype::CtypeHashOf;
-	use kilt_support::{deposit::Deposit, traits::{CallSources, IdentityConsumer, IdentityDecrementer, IdentityIncrementer}};
+	use kilt_support::{
+		deposit::Deposit,
+		traits::{CallSources, IdentityConsumer, IdentityDecrementer, IdentityIncrementer},
+	};
 
 	/// The current storage version.
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
@@ -276,7 +278,7 @@ pub mod pallet {
 			let authorization_id = authorization.as_ref().map(|ac| ac.authorization_id());
 
 			let deposit = Pallet::<T>::reserve_deposit(payer, deposit_amount)?;
-			let attester_identity_consumer = T::IdentityConsumer::get_incrementer(&who)?;
+			let mut attester_identity_consumer = T::IdentityConsumer::get_incrementer(&who)?;
 
 			// *** No Fail beyond this point ***
 
@@ -349,7 +351,7 @@ pub mod pallet {
 					attestation_auth_id,
 				)?;
 			}
-			let attester_identity_consumer = T::IdentityConsumer::get_decrementer(&who)?;
+			let mut attester_identity_consumer = T::IdentityConsumer::get_decrementer(&who)?;
 
 			// *** No Fail beyond this point ***
 
@@ -414,7 +416,7 @@ pub mod pallet {
 					attestation_auth_id,
 				)?;
 			}
-			let attester_identity_consumer = T::IdentityConsumer::get_decrementer(&who)?;
+			let mut attester_identity_consumer = T::IdentityConsumer::get_decrementer(&who)?;
 
 			// *** No Fail beyond this point ***
 
@@ -447,7 +449,7 @@ pub mod pallet {
 			let attestation = Attestations::<T>::get(&claim_hash).ok_or(Error::<T>::AttestationNotFound)?;
 
 			ensure!(attestation.deposit.owner == who, Error::<T>::Unauthorized);
-			let attester_identity_consumer = T::IdentityConsumer::get_decrementer(&attestation.attester)?;
+			let mut attester_identity_consumer = T::IdentityConsumer::get_decrementer(&attestation.attester)?;
 
 			// *** No Fail beyond this point ***
 
@@ -456,9 +458,8 @@ pub mod pallet {
 			Self::remove_attestation(&attestation, claim_hash);
 			// Call the handler's attestation_removed method and calculate the corrected
 			// weight.
-			let corrected_weight = <T as pallet::Config>::WeightInfo::reclaim_deposit().saturating_add(
-				attester_identity_consumer.decrement(),
-			);
+			let corrected_weight = <T as pallet::Config>::WeightInfo::reclaim_deposit()
+				.saturating_add(attester_identity_consumer.decrement());
 			Self::deposit_event(Event::DepositReclaimed(who, claim_hash));
 
 			Ok(Some(corrected_weight).into())

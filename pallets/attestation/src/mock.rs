@@ -162,7 +162,7 @@ pub(crate) mod runtime {
 		MultiSignature, MultiSigner,
 	};
 
-	use kilt_support::mock::{mock_origin, SubjectId};
+	use kilt_support::mock::{mock_origin, SubjectId, TestIdentityConsumer};
 
 	use super::*;
 
@@ -283,7 +283,7 @@ pub(crate) mod runtime {
 		type AttesterId = SubjectId;
 		type AuthorizationId = SubjectId;
 		type AccessControl = MockAccessControl<Self>;
-		type IdentityConsumer = ();
+		type IdentityConsumer = TestIdentityConsumer<AttesterOf<Self>, DispatchError>;
 	}
 
 	pub(crate) const ACCOUNT_00: AccountId = AccountId::new([1u8; 32]);

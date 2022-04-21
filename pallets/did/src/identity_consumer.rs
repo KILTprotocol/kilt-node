@@ -16,57 +16,167 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use kilt_support::traits::{IdentityIncrementer, IdentityDecrementer, IdentityConsumer};
+use kilt_support::traits::{IdentityConsumer, IdentityDecrementer, IdentityIncrementer};
 
-use crate::{Config, Pallet, Error, DidIdentifierOf, WeightInfo};
+use crate::{
+	errors::{DidError, StorageError},
+	Config, DidIdentifierOf, Pallet, WeightInfo,
+};
 
+#[derive(Debug, PartialEq)]
 pub struct DidIncrementer<T>(T);
 
 impl<T: Config, Identity> IdentityIncrementer for DidIncrementer<(Option<T>, Identity)>
-	where Identity: AsRef<DidIdentifierOf<T>> {
-    fn increment(&self) -> frame_support::dispatch::Weight {
-		Pallet::<T>::increment_consumers_unsafe(self.0.1.as_ref());
-        T::WeightInfo::increment_consumers()
-    }
+where
+	// FIXME: remove dependency on
+	// Clone, and change Into to
+	// AsRef, if possible
+	Identity: Into<DidIdentifierOf<T>> + Clone,
+{
+	fn increment(&self) -> frame_support::dispatch::Weight {
+		Pallet::<T>::increment_consumers_unsafe(&self.0 .1.clone().into());
+		T::WeightInfo::increment_consumers()
+	}
 }
 
+#[derive(Debug, PartialEq)]
 pub struct DidDecrementer<T>(T);
 
 impl<T: Config, Identity> IdentityDecrementer for DidDecrementer<(Option<T>, Identity)>
-	where Identity: AsRef<DidIdentifierOf<T>> {
-    fn decrement(&self) -> frame_support::dispatch::Weight {
-        Pallet::<T>::decrement_consumers_unsafe(self.0.1.as_ref());
+where
+	// FIXME: remove dependency on
+	// Clone, and change Into to
+	// AsRef, if possible
+	Identity: Into<DidIdentifierOf<T>> + Clone,
+{
+	fn decrement(&self) -> frame_support::dispatch::Weight {
+		Pallet::<T>::decrement_consumers_unsafe(&self.0 .1.clone().into());
 		T::WeightInfo::decrement_consumers()
-    }
+	}
 }
 
 impl<T: Config, Identity> IdentityConsumer<Identity> for Pallet<T>
-	where Identity: AsRef<DidIdentifierOf<T>> + Clone {
-    type IdentityIncrementer = DidIncrementer<(Option<T>, Identity)>;
-    type IdentityDecrementer = DidDecrementer<(Option<T>, Identity)>;
-    type Error = Error<T>;
+where
+	// FIXME: remove dependency on
+	// Clone, and change Into to
+	// AsRef, if possible
+	Identity: Into<DidIdentifierOf<T>> + Clone,
+{
+	type IdentityIncrementer = DidIncrementer<(Option<T>, Identity)>;
+	type IdentityDecrementer = DidDecrementer<(Option<T>, Identity)>;
+	type Error = DidError;
 
-    fn get_incrementer(id: &Identity) -> Result<Self::IdentityIncrementer, Self::Error> {
-		if Self::can_increment_consumers(id.as_ref()) {
+	fn get_incrementer(id: &Identity) -> Result<Self::IdentityIncrementer, Self::Error> {
+		if Self::can_increment_consumers(&id.clone().into()) {
 			Ok(DidIncrementer((None, id.clone())))
 		} else {
-			Err(Self::Error::MaxConsumersExceeded)
+			Err(DidError::StorageError(StorageError::MaxConsumersExceeded))
 		}
-    }
+	}
 
-    fn get_incrementer_max_weight() -> frame_support::dispatch::Weight {
-        T::WeightInfo::increment_consumers()
-    }
+	fn get_incrementer_max_weight() -> frame_support::dispatch::Weight {
+		T::WeightInfo::increment_consumers()
+	}
 
-    fn get_decrementer(id: &Identity) -> Result<Self::IdentityDecrementer, Self::Error> {
-        if Self::can_decrement_consumers(id.as_ref()) {
+	fn get_decrementer(id: &Identity) -> Result<Self::IdentityDecrementer, Self::Error> {
+		if Self::can_decrement_consumers(&id.clone().into()) {
 			Ok(DidDecrementer((None, id.clone())))
 		} else {
-			Err(Self::Error::NoOutstandingConsumers)
+			Err(DidError::StorageError(StorageError::NoOutstandingConsumers))
 		}
-    }
+	}
 
-    fn get_decrementer_max_weight() -> frame_support::dispatch::Weight {
-        T::WeightInfo::decrement_consumers()
-    }
+	fn get_decrementer_max_weight() -> frame_support::dispatch::Weight {
+		T::WeightInfo::decrement_consumers()
+	}
+}
+
+#[cfg(test)]
+mod test {
+
+	use frame_support::assert_noop;
+	use sp_core::Pair;
+
+	use kilt_support::traits::{IdentityConsumer, IdentityDecrementer, IdentityIncrementer};
+
+	use crate::{
+		did_details::DidVerificationKey,
+		errors::{DidError, StorageError},
+		mock::{get_did_identifier_from_ed25519_key, get_ed25519_authentication_key, ExtBuilder, Test},
+		mock_utils::generate_base_did_details,
+		DidConsumers, Pallet,
+	};
+
+	#[test]
+	fn incrementer_ok() {
+		let auth_key = get_ed25519_authentication_key(true);
+		let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
+		let did_details = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()));
+
+		ExtBuilder::default()
+			.with_dids(vec![(alice_did.clone(), did_details)])
+			.build(None)
+			.execute_with(|| {
+				assert_eq!(DidConsumers::<Test>::get(&alice_did), 0);
+				let incrementer =
+					Pallet::<Test>::get_incrementer(&alice_did).expect("get_incrementer should not fail.");
+				incrementer.increment();
+				assert_eq!(DidConsumers::<Test>::get(&alice_did), 1);
+			});
+	}
+
+	#[test]
+	fn incrementer_max_limit() {
+		let auth_key = get_ed25519_authentication_key(true);
+		let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
+		let did_details = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()));
+
+		ExtBuilder::default()
+			.with_dids(vec![(alice_did.clone(), did_details)])
+			.with_consumers(vec![(alice_did.clone(), u32::MAX)])
+			.build(None)
+			.execute_with(|| {
+				assert_noop!(
+					Pallet::<Test>::get_incrementer(&alice_did),
+					DidError::StorageError(StorageError::MaxConsumersExceeded)
+				);
+			});
+	}
+
+	#[test]
+	fn decrementer_ok() {
+		let auth_key = get_ed25519_authentication_key(true);
+		let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
+		let did_details = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()));
+
+		ExtBuilder::default()
+			.with_dids(vec![(alice_did.clone(), did_details)])
+			.with_consumers(vec![(alice_did.clone(), u32::MAX)])
+			.build(None)
+			.execute_with(|| {
+				assert_eq!(DidConsumers::<Test>::get(&alice_did), u32::MAX);
+				let decrementer =
+					Pallet::<Test>::get_decrementer(&alice_did).expect("get_decrementer should not fail.");
+				decrementer.decrement();
+				assert_eq!(DidConsumers::<Test>::get(&alice_did), u32::MAX - 1);
+			});
+	}
+
+	#[test]
+	fn decrementer_min_limit() {
+		let auth_key = get_ed25519_authentication_key(true);
+		let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
+		let did_details = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()));
+
+		ExtBuilder::default()
+			.with_dids(vec![(alice_did.clone(), did_details)])
+			.with_consumers(vec![(alice_did.clone(), 0)])
+			.build(None)
+			.execute_with(|| {
+				assert_noop!(
+					Pallet::<Test>::get_decrementer(&alice_did),
+					DidError::StorageError(StorageError::NoOutstandingConsumers)
+				);
+			});
+	}
 }

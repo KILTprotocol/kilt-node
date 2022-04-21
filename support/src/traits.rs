@@ -73,23 +73,11 @@ pub trait GenerateBenchmarkOrigin<OuterOrigin, AccountId, SubjectId> {
 }
 
 pub trait IdentityIncrementer {
-	fn increment(&self) -> Weight;
-}
-
-impl IdentityIncrementer for () {
-	fn increment(&self) -> Weight {
-		Weight::zero()
-	}
+	fn increment(&mut self) -> Weight;
 }
 
 pub trait IdentityDecrementer {
-	fn decrement(&self) -> Weight;
-}
-
-impl IdentityDecrementer for () {
-	fn decrement(&self) -> Weight {
-		Weight::zero()
-	}
+	fn decrement(&mut self) -> Weight;
 }
 
 pub trait IdentityConsumer<Identity> {
@@ -103,6 +91,18 @@ pub trait IdentityConsumer<Identity> {
 	fn get_decrementer_max_weight() -> Weight;
 	fn has_consumers(id: &Identity) -> bool {
 		Self::get_decrementer(id).is_ok()
+	}
+}
+
+impl IdentityIncrementer for () {
+	fn increment(&mut self) -> Weight {
+		Weight::zero()
+	}
+}
+
+impl IdentityDecrementer for () {
+	fn decrement(&mut self) -> Weight {
+		Weight::zero()
 	}
 }
 
