@@ -16,6 +16,9 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use frame_support::dispatch::Weight;
+use sp_runtime::{traits::Zero, DispatchError};
+
 /// The sources of a call struct.
 ///
 /// This trait allows to differentiate between the sender of a call and the
@@ -67,4 +70,60 @@ pub trait VersionMigratorTrait<T>: Sized {
 #[cfg(feature = "runtime-benchmarks")]
 pub trait GenerateBenchmarkOrigin<OuterOrigin, AccountId, SubjectId> {
 	fn generate_origin(sender: AccountId, subject: SubjectId) -> OuterOrigin;
+}
+
+pub trait IdentityIncrementer {
+	fn increment(&self) -> Weight;
+}
+
+impl IdentityIncrementer for () {
+	fn increment(&self) -> Weight {
+		Weight::zero()
+	}
+}
+
+pub trait IdentityDecrementer {
+	fn decrement(&self) -> Weight;
+}
+
+impl IdentityDecrementer for () {
+	fn decrement(&self) -> Weight {
+		Weight::zero()
+	}
+}
+
+pub trait IdentityConsumer<Identity> {
+	type IdentityIncrementer: IdentityIncrementer;
+	type IdentityDecrementer: IdentityDecrementer;
+	type Error;
+
+	fn get_incrementer(id: &Identity) -> Result<Self::IdentityIncrementer, Self::Error>;
+	fn get_incrementer_max_weight() -> Weight;
+	fn get_decrementer(id: &Identity) -> Result<Self::IdentityDecrementer, Self::Error>;
+	fn get_decrementer_max_weight() -> Weight;
+	fn has_consumers(id: &Identity) -> bool {
+		Self::get_decrementer(id).is_ok()
+	}
+}
+
+impl<T> IdentityConsumer<T> for () {
+	type IdentityIncrementer = Self;
+	type IdentityDecrementer = Self;
+	type Error = DispatchError;
+
+	fn get_incrementer(_id: &T) -> Result<Self::IdentityIncrementer, Self::Error> {
+		Ok(())
+	}
+
+	fn get_incrementer_max_weight() -> Weight {
+		Weight::zero()
+	}
+
+	fn get_decrementer(_id: &T) -> Result<Self::IdentityDecrementer, Self::Error> {
+		Ok(())
+	}
+
+	fn get_decrementer_max_weight() -> Weight {
+		Weight::zero()
+	}
 }

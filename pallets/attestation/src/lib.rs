@@ -75,7 +75,6 @@
 
 pub mod attestations;
 pub mod default_weights;
-pub mod hooks;
 
 #[cfg(any(feature = "mock", test))]
 pub mod mock;
@@ -89,7 +88,7 @@ mod tests;
 
 pub use crate::{
 	access_control::AttestationAccessControl, attestations::AttestationDetails, default_weights::WeightInfo,
-	hooks::OnAttestationLifecycle, pallet::*,
+	pallet::*,
 };
 
 #[frame_support::pallet]
@@ -104,19 +103,19 @@ pub mod pallet {
 	use sp_runtime::DispatchError;
 
 	use ctype::CtypeHashOf;
-	use kilt_support::{deposit::Deposit, traits::CallSources};
+	use kilt_support::{deposit::Deposit, traits::{CallSources, IdentityConsumer, IdentityDecrementer, IdentityIncrementer}};
 
 	/// The current storage version.
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
 
 	/// Type of a claim hash.
-	pub type ClaimHashOf<T> = <T as frame_system::Config>::Hash;
+	pub(crate) type ClaimHashOf<T> = <T as frame_system::Config>::Hash;
 
 	/// Type of an attester identifier.
-	pub type AttesterOf<T> = <T as Config>::AttesterId;
+	pub(crate) type AttesterOf<T> = <T as Config>::AttesterId;
 
 	/// Authorization id type
-	pub type AuthorizationIdOf<T> = <T as Config>::AuthorizationId;
+	pub(crate) type AuthorizationIdOf<T> = <T as Config>::AuthorizationId;
 
 	pub(crate) type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 
@@ -153,7 +152,7 @@ pub mod pallet {
 		type AccessControl: Parameter
 			+ AttestationAccessControl<Self::AttesterId, Self::AuthorizationId, CtypeHashOf<Self>, ClaimHashOf<Self>>;
 
-		type LifecycleHandler: OnAttestationLifecycle<Self>;
+		type IdentityConsumer: IdentityConsumer<Self::AttesterId, Error = DispatchError>;
 	}
 
 	#[pallet::pallet]
@@ -247,7 +246,7 @@ pub mod pallet {
 		#[pallet::weight(
 			<T as pallet::Config>::WeightInfo::add()
 			.saturating_add(authorization.as_ref().map(|ac| ac.can_attest_weight()).unwrap_or(0))
-			.saturating_add(T::LifecycleHandler::attestation_created_max_weight())
+			.saturating_add(T::IdentityConsumer::get_incrementer_max_weight())
 		)]
 		pub fn add(
 			origin: OriginFor<T>,
@@ -277,6 +276,7 @@ pub mod pallet {
 			let authorization_id = authorization.as_ref().map(|ac| ac.authorization_id());
 
 			let deposit = Pallet::<T>::reserve_deposit(payer, deposit_amount)?;
+			let attester_identity_consumer = T::IdentityConsumer::get_incrementer(&who)?;
 
 			// *** No Fail beyond this point ***
 
@@ -299,13 +299,7 @@ pub mod pallet {
 			// weight.
 			let corrected_weight = <T as pallet::Config>::WeightInfo::add()
 				.saturating_add(authorization.as_ref().map(|ac| ac.can_attest_weight()).unwrap_or(0))
-				// FIXME: this should not fail here, as we got past the last possible failure.
-				.saturating_add(T::LifecycleHandler::attestation_created(
-					&who,
-					&claim_hash,
-					&ctype_hash,
-					&authorization_id,
-				)?);
+				.saturating_add(attester_identity_consumer.increment());
 
 			Self::deposit_event(Event::AttestationCreated(who, claim_hash, ctype_hash, authorization_id));
 
@@ -332,7 +326,7 @@ pub mod pallet {
 		#[pallet::weight(
 			<T as pallet::Config>::WeightInfo::revoke()
 			.saturating_add(authorization.as_ref().map(|ac| ac.can_revoke_weight()).unwrap_or(0))
-			.saturating_add(T::LifecycleHandler::attestation_revoked_max_weight())
+			.saturating_add(T::IdentityConsumer::get_decrementer_max_weight())
 		)]
 		pub fn revoke(
 			origin: OriginFor<T>,
@@ -355,6 +349,7 @@ pub mod pallet {
 					attestation_auth_id,
 				)?;
 			}
+			let attester_identity_consumer = T::IdentityConsumer::get_decrementer(&who)?;
 
 			// *** No Fail beyond this point ***
 
@@ -371,8 +366,7 @@ pub mod pallet {
 			// weight.
 			let corrected_weight = <T as pallet::Config>::WeightInfo::revoke()
 				.saturating_add(authorization.as_ref().map(|ac| ac.can_attest_weight()).unwrap_or(0))
-				// FIXME: this should not fail here, as we got past the last possible failure.
-				.saturating_add(T::LifecycleHandler::attestation_revoked(&who, &claim_hash)?);
+				.saturating_add(attester_identity_consumer.decrement());
 
 			Self::deposit_event(Event::AttestationRevoked(who, claim_hash));
 
@@ -399,7 +393,7 @@ pub mod pallet {
 		#[pallet::weight(
 			<T as pallet::Config>::WeightInfo::remove()
 			.saturating_add(authorization.as_ref().map(|ac| ac.can_remove_weight()).unwrap_or(0))
-			.saturating_add(T::LifecycleHandler::attestation_removed_max_weight())
+			.saturating_add(T::IdentityConsumer::get_decrementer_max_weight())
 		)]
 		pub fn remove(
 			origin: OriginFor<T>,
@@ -420,6 +414,7 @@ pub mod pallet {
 					attestation_auth_id,
 				)?;
 			}
+			let attester_identity_consumer = T::IdentityConsumer::get_decrementer(&who)?;
 
 			// *** No Fail beyond this point ***
 
@@ -430,8 +425,7 @@ pub mod pallet {
 			// weight.
 			let corrected_weight = <T as pallet::Config>::WeightInfo::remove()
 				.saturating_add(authorization.as_ref().map(|ac| ac.can_attest_weight()).unwrap_or(0))
-				// FIXME: this should not fail here, as we got past the last possible failure.
-				.saturating_add(T::LifecycleHandler::attestation_removed(&who, &claim_hash)?);
+				.saturating_add(attester_identity_consumer.decrement());
 
 			Self::deposit_event(Event::AttestationRemoved(who, claim_hash));
 
@@ -447,12 +441,13 @@ pub mod pallet {
 		/// - Reads: [Origin Account], Attestations, DelegatedAttestations
 		/// - Writes: Attestations, DelegatedAttestations
 		/// # </weight>
-		#[pallet::weight(<T as pallet::Config>::WeightInfo::reclaim_deposit().saturating_add(T::LifecycleHandler::deposit_reclaimed_max_weight()))]
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::reclaim_deposit().saturating_add(T::IdentityConsumer::get_decrementer_max_weight()))]
 		pub fn reclaim_deposit(origin: OriginFor<T>, claim_hash: ClaimHashOf<T>) -> DispatchResultWithPostInfo {
 			let who = ensure_signed(origin)?;
 			let attestation = Attestations::<T>::get(&claim_hash).ok_or(Error::<T>::AttestationNotFound)?;
 
 			ensure!(attestation.deposit.owner == who, Error::<T>::Unauthorized);
+			let attester_identity_consumer = T::IdentityConsumer::get_decrementer(&attestation.attester)?;
 
 			// *** No Fail beyond this point ***
 
@@ -462,8 +457,7 @@ pub mod pallet {
 			// Call the handler's attestation_removed method and calculate the corrected
 			// weight.
 			let corrected_weight = <T as pallet::Config>::WeightInfo::reclaim_deposit().saturating_add(
-				// FIXME: this should not fail here, as we got past the last possible failure.
-				T::LifecycleHandler::deposit_reclaimed(&attestation.attester, &claim_hash)?,
+				attester_identity_consumer.decrement(),
 			);
 			Self::deposit_event(Event::DepositReclaimed(who, claim_hash));
 

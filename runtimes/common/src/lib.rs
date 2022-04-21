@@ -45,7 +45,6 @@ use sp_std::marker::PhantomData;
 pub mod authorization;
 pub mod constants;
 pub mod fees;
-pub mod hooks;
 pub mod pallet_id;
 
 #[cfg(feature = "runtime-benchmarks")]

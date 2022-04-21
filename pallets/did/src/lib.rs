@@ -84,6 +84,7 @@ pub mod default_weights;
 pub mod did_details;
 pub mod errors;
 pub mod migrations;
+pub mod identity_consumer;
 pub mod origin;
 pub mod service_endpoints;
 
@@ -1089,16 +1090,34 @@ pub mod pallet {
 	}
 
 	impl<T: Config> Pallet<T> {
+
+		pub fn can_increment_consumers(did_subject: &DidIdentifierOf<T>) -> bool {
+			DidConsumers::<T>::get(did_subject) < u32::MAX
+		}
+
+		pub fn increment_consumers_unsafe(did_subject: &DidIdentifierOf<T>) {
+			DidConsumers::<T>::mutate(&did_subject, |consumers| {
+				*consumers += 1
+			})
+		}
+
 		/// Increment the total number of consumers for the given DID subject.
 		///
 		/// It fails to execute if the DID has already the maximum number
 		/// of consumers.
 		pub fn increment_consumers(did_subject: &DidIdentifierOf<T>) -> Result<(), DidError> {
-			DidConsumers::<T>::try_mutate(&did_subject, |consumers| {
-				*consumers = consumers
-					.checked_add(1)
-					.ok_or(DidError::StorageError(StorageError::MaxConsumersExceeded))?;
-				Ok(())
+			ensure!(Self::can_increment_consumers(did_subject), DidError::StorageError(StorageError::MaxConsumersExceeded));
+			Self::increment_consumers_unsafe(did_subject);
+			Ok(())
+		}
+
+		pub fn can_decrement_consumers(did_subject: &DidIdentifierOf<T>) -> bool {
+			DidConsumers::<T>::get(did_subject) > u32::MIN
+		}
+
+		pub fn decrement_consumers_unsafe(did_subject: &DidIdentifierOf<T>) {
+			DidConsumers::<T>::mutate(&did_subject, |consumers| {
+				*consumers -= 1
 			})
 		}
 
@@ -1106,17 +1125,14 @@ pub mod pallet {
 		///
 		/// It fails to execute if the DID does not have any consumers.
 		pub fn decrement_consumers(did_subject: &DidIdentifierOf<T>) -> Result<(), DidError> {
-			DidConsumers::<T>::try_mutate(&did_subject, |consumers| {
-				*consumers = consumers
-					.checked_sub(1)
-					.ok_or(DidError::StorageError(StorageError::NoOutstandingConsumers))?;
-				Ok(())
-			})
+			ensure!(Self::can_decrement_consumers(did_subject), DidError::StorageError(StorageError::NoOutstandingConsumers));
+			Self::decrement_consumers_unsafe(did_subject);
+			Ok(())
 		}
 
 		/// Return `true` if the DID subject has any consumers depending on it.
 		pub(crate) fn has_consumers(did_subject: &DidIdentifierOf<T>) -> bool {
-			DidConsumers::<T>::get(did_subject) > u32::zero()
+			DidConsumers::<T>::get(did_subject) > u32::MIN
 		}
 
 		/// Verify the validity (i.e., nonce, signature and mortality) of a
