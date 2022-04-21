@@ -17,11 +17,9 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use kilt_support::traits::{IdentityConsumer, IdentityDecrementer, IdentityIncrementer};
+use sp_runtime::DispatchError;
 
-use crate::{
-	errors::{DidError, StorageError},
-	Config, DidIdentifierOf, Pallet, WeightInfo,
-};
+use crate::{Config, DidIdentifierOf, Error, Pallet, WeightInfo};
 
 #[derive(Debug, PartialEq)]
 pub struct DidIncrementer<T>(T);
@@ -33,7 +31,7 @@ where
 	// AsRef, if possible
 	Identity: Into<DidIdentifierOf<T>> + Clone,
 {
-	fn increment(&self) -> frame_support::dispatch::Weight {
+	fn increment(&mut self) -> frame_support::dispatch::Weight {
 		Pallet::<T>::increment_consumers_unsafe(&self.0 .1.clone().into());
 		T::WeightInfo::increment_consumers()
 	}
@@ -49,7 +47,7 @@ where
 	// AsRef, if possible
 	Identity: Into<DidIdentifierOf<T>> + Clone,
 {
-	fn decrement(&self) -> frame_support::dispatch::Weight {
+	fn decrement(&mut self) -> frame_support::dispatch::Weight {
 		Pallet::<T>::decrement_consumers_unsafe(&self.0 .1.clone().into());
 		T::WeightInfo::decrement_consumers()
 	}
@@ -64,13 +62,13 @@ where
 {
 	type IdentityIncrementer = DidIncrementer<(Option<T>, Identity)>;
 	type IdentityDecrementer = DidDecrementer<(Option<T>, Identity)>;
-	type Error = DidError;
+	type Error = DispatchError;
 
 	fn get_incrementer(id: &Identity) -> Result<Self::IdentityIncrementer, Self::Error> {
 		if Self::can_increment_consumers(&id.clone().into()) {
 			Ok(DidIncrementer((None, id.clone())))
 		} else {
-			Err(DidError::StorageError(StorageError::MaxConsumersExceeded))
+			Err(Error::<T>::MaxConsumersExceeded.into())
 		}
 	}
 
@@ -82,7 +80,7 @@ where
 		if Self::can_decrement_consumers(&id.clone().into()) {
 			Ok(DidDecrementer((None, id.clone())))
 		} else {
-			Err(DidError::StorageError(StorageError::NoOutstandingConsumers))
+			Err(Error::<T>::NoOutstandingConsumers.into())
 		}
 	}
 
@@ -98,13 +96,13 @@ mod test {
 	use sp_core::Pair;
 
 	use kilt_support::traits::{IdentityConsumer, IdentityDecrementer, IdentityIncrementer};
+	use sp_runtime::DispatchError;
 
 	use crate::{
 		did_details::DidVerificationKey,
-		errors::{DidError, StorageError},
 		mock::{get_did_identifier_from_ed25519_key, get_ed25519_authentication_key, ExtBuilder, Test},
 		mock_utils::generate_base_did_details,
-		DidConsumers, Pallet,
+		DidConsumers, Error, Pallet,
 	};
 
 	#[test]
@@ -118,7 +116,7 @@ mod test {
 			.build(None)
 			.execute_with(|| {
 				assert_eq!(DidConsumers::<Test>::get(&alice_did), 0);
-				let incrementer =
+				let mut incrementer =
 					Pallet::<Test>::get_incrementer(&alice_did).expect("get_incrementer should not fail.");
 				incrementer.increment();
 				assert_eq!(DidConsumers::<Test>::get(&alice_did), 1);
@@ -138,7 +136,7 @@ mod test {
 			.execute_with(|| {
 				assert_noop!(
 					Pallet::<Test>::get_incrementer(&alice_did),
-					DidError::StorageError(StorageError::MaxConsumersExceeded)
+					DispatchError::from(Error::<Test>::MaxConsumersExceeded),
 				);
 			});
 	}
@@ -155,7 +153,7 @@ mod test {
 			.build(None)
 			.execute_with(|| {
 				assert_eq!(DidConsumers::<Test>::get(&alice_did), u32::MAX);
-				let decrementer =
+				let mut decrementer =
 					Pallet::<Test>::get_decrementer(&alice_did).expect("get_decrementer should not fail.");
 				decrementer.decrement();
 				assert_eq!(DidConsumers::<Test>::get(&alice_did), u32::MAX - 1);
@@ -175,7 +173,7 @@ mod test {
 			.execute_with(|| {
 				assert_noop!(
 					Pallet::<Test>::get_decrementer(&alice_did),
-					DidError::StorageError(StorageError::NoOutstandingConsumers)
+					DispatchError::from(Error::<Test>::NoOutstandingConsumers),
 				);
 			});
 	}

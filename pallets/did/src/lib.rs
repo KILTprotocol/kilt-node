@@ -83,8 +83,8 @@
 pub mod default_weights;
 pub mod did_details;
 pub mod errors;
-pub mod migrations;
 pub mod identity_consumer;
+pub mod migrations;
 pub mod origin;
 pub mod service_endpoints;
 
@@ -142,7 +142,7 @@ pub mod pallet {
 	};
 	use frame_system::pallet_prelude::*;
 	use kilt_support::traits::CallSources;
-	use sp_runtime::traits::BadOrigin;
+	use sp_runtime::{traits::BadOrigin, DispatchError};
 
 	use crate::{
 		did_details::{
@@ -436,9 +436,6 @@ pub mod pallet {
 				StorageError::MaxPublicKeysPerDidExceeded => Self::MaxPublicKeysPerDidExceeded,
 				StorageError::MaxTotalKeyAgreementKeysExceeded => Self::MaxTotalKeyAgreementKeysExceeded,
 				StorageError::DidAlreadyDeleted => Self::DidAlreadyDeleted,
-				StorageError::MaxConsumersExceeded => Self::MaxConsumersExceeded,
-				StorageError::NoOutstandingConsumers => Self::NoOutstandingConsumers,
-				StorageError::OutstandingConsumers => Self::OutstandingConsumers,
 			}
 		}
 	}
@@ -1090,23 +1087,23 @@ pub mod pallet {
 	}
 
 	impl<T: Config> Pallet<T> {
-
 		pub fn can_increment_consumers(did_subject: &DidIdentifierOf<T>) -> bool {
 			DidConsumers::<T>::get(did_subject) < u32::MAX
 		}
 
 		pub fn increment_consumers_unsafe(did_subject: &DidIdentifierOf<T>) {
-			DidConsumers::<T>::mutate(&did_subject, |consumers| {
-				*consumers += 1
-			})
+			DidConsumers::<T>::mutate(&did_subject, |consumers| *consumers += 1)
 		}
 
 		/// Increment the total number of consumers for the given DID subject.
 		///
 		/// It fails to execute if the DID has already the maximum number
 		/// of consumers.
-		pub fn increment_consumers(did_subject: &DidIdentifierOf<T>) -> Result<(), DidError> {
-			ensure!(Self::can_increment_consumers(did_subject), DidError::StorageError(StorageError::MaxConsumersExceeded));
+		pub fn increment_consumers(did_subject: &DidIdentifierOf<T>) -> Result<(), DispatchError> {
+			ensure!(
+				Self::can_increment_consumers(did_subject),
+				DispatchError::from(Error::<T>::MaxConsumersExceeded)
+			);
 			Self::increment_consumers_unsafe(did_subject);
 			Ok(())
 		}
@@ -1116,16 +1113,17 @@ pub mod pallet {
 		}
 
 		pub fn decrement_consumers_unsafe(did_subject: &DidIdentifierOf<T>) {
-			DidConsumers::<T>::mutate(&did_subject, |consumers| {
-				*consumers -= 1
-			})
+			DidConsumers::<T>::mutate(&did_subject, |consumers| *consumers -= 1)
 		}
 
 		/// Decrement the total number of consumers for the given DID subject.
 		///
 		/// It fails to execute if the DID does not have any consumers.
-		pub fn decrement_consumers(did_subject: &DidIdentifierOf<T>) -> Result<(), DidError> {
-			ensure!(Self::can_decrement_consumers(did_subject), DidError::StorageError(StorageError::NoOutstandingConsumers));
+		pub fn decrement_consumers(did_subject: &DidIdentifierOf<T>) -> Result<(), DispatchError> {
+			ensure!(
+				Self::can_decrement_consumers(did_subject),
+				DispatchError::from(Error::<T>::NoOutstandingConsumers)
+			);
 			Self::decrement_consumers_unsafe(did_subject);
 			Ok(())
 		}

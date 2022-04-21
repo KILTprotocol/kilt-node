@@ -111,7 +111,7 @@ pub mod pallet {
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
 
 	/// Type of a claim hash.
-	pub(crate) type ClaimHashOf<T> = <T as frame_system::Config>::Hash;
+	pub type ClaimHashOf<T> = <T as frame_system::Config>::Hash;
 
 	/// Type of an attester identifier.
 	pub(crate) type AttesterOf<T> = <T as Config>::AttesterId;

@@ -65,12 +65,6 @@ pub enum StorageError {
 	MaxTotalKeyAgreementKeysExceeded,
 	/// The DID has already been previously deleted.
 	DidAlreadyDeleted,
-	/// The consumer with the given ID is already set for the DID.
-	MaxConsumersExceeded,
-	/// The DID has some depending consumers preventing its deletion.
-	OutstandingConsumers,
-	/// The DID has not depending consumers.
-	NoOutstandingConsumers,
 }
 
 /// Error generated when validating a DID operation.

@@ -519,7 +519,7 @@ impl attestation::Config for Runtime {
 	type AttesterId = DidIdentifier;
 	type AuthorizationId = AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>;
 	type AccessControl = PalletAuthorize<DelegationAc<Runtime>>;
-	type LifecycleHandler = ();
+	type IdentityConsumer = ();
 }
 
 impl delegation::Config for Runtime {

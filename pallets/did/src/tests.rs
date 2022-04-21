@@ -21,7 +21,7 @@ use frame_support::{assert_err, assert_noop, assert_ok, traits::Currency};
 use sp_core::{ed25519, Pair};
 use sp_runtime::{
 	traits::{BadOrigin, Hash, Zero},
-	SaturatedConversion,
+	DispatchError, SaturatedConversion,
 };
 use sp_std::{
 	collections::btree_set::BTreeSet,
@@ -3213,7 +3213,7 @@ fn check_add_exceed_max_consumers() {
 		.execute_with(|| {
 			assert_noop!(
 				Did::increment_consumers(&did),
-				DidError::StorageError(StorageError::MaxConsumersExceeded)
+				DispatchError::from(did::Error::<Test>::MaxConsumersExceeded)
 			);
 		});
 }
@@ -3230,7 +3230,7 @@ fn check_remove_with_zero_consumers() {
 		.execute_with(|| {
 			assert_noop!(
 				Did::decrement_consumers(&did),
-				DidError::StorageError(StorageError::NoOutstandingConsumers)
+				DispatchError::from(did::Error::<Test>::NoOutstandingConsumers)
 			);
 		});
 }
