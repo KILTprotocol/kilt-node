@@ -136,6 +136,9 @@ impl From<sr25519::Public> for SubjectId {
 // FIXME: not working as intended. Goal is to have a test consumer that can
 // check that a given extrinsic has indeed incremented/decremented the refcount
 // of a specific identity.
+// One possible solution would be to expose a function to "reset" the test
+// consumer with a provided storage state, so that this function can be called
+// at the beginning of each test case.
 pub struct TestIdentityConsumer<Identity, Error>(Option<sp_std::marker::PhantomData<(Identity, Error)>>, u32);
 
 impl<Identity, Error> TestIdentityConsumer<Identity, Error> {

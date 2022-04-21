@@ -72,32 +72,45 @@ pub trait GenerateBenchmarkOrigin<OuterOrigin, AccountId, SubjectId> {
 	fn generate_origin(sender: AccountId, subject: SubjectId) -> OuterOrigin;
 }
 
+/// Trait to handle identity refcount counters.
 pub trait IdentityCounter<Value> {
 	fn current_value(&self) -> Value;
 }
 
+/// Trait to increment the refcount counter of an identity.
 pub trait IdentityIncrementer<Value>: IdentityCounter<Value> {
 	fn increment(&mut self) -> Weight;
 }
 
+/// Trait to decrement the refcount counter of an identity.
 pub trait IdentityDecrementer<Value>: IdentityCounter<Value> {
 	fn decrement(&mut self) -> Weight;
 }
 
+/// Trait that implements a builder for identity incrementers and decrementers.
+/// Only after performing preliminary checks, the respective incrementer or
+/// decrementer is returned and can be called to update an identity's refcount.
 pub trait IdentityConsumer<Identity, Value> {
 	type IdentityIncrementer: IdentityIncrementer<Value>;
 	type IdentityDecrementer: IdentityDecrementer<Value>;
 	type Error;
 
 	fn get_incrementer(id: &Identity) -> Result<Self::IdentityIncrementer, Self::Error>;
+	/// The maximum possible weight that the `get_incrementer` function can
+	/// take. It has to be at least as large as the weight returned by calling
+	/// `increment` on the incrementer.
 	fn get_incrementer_max_weight() -> Weight;
 	fn get_decrementer(id: &Identity) -> Result<Self::IdentityDecrementer, Self::Error>;
+	/// The maximum possible weight that the `get_decrementer` function can
+	/// take. It has to be at least as large as the weight returned by calling
+	/// `decrement` on the decrementer.
 	fn get_decrementer_max_weight() -> Weight;
 	fn has_consumers(id: &Identity) -> bool {
 		Self::get_decrementer(id).is_ok()
 	}
 }
 
+/// Mock implementation of the `IdentityCounter` trait for an empty tuple
 impl<Value> IdentityCounter<Value> for ()
 where
 	Value: Default,
