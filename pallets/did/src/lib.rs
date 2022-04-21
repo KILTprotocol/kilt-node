@@ -142,7 +142,7 @@ pub mod pallet {
 	};
 	use frame_system::pallet_prelude::*;
 	use kilt_support::traits::CallSources;
-	use sp_runtime::{traits::BadOrigin, DispatchError};
+	use sp_runtime::traits::BadOrigin;
 
 	use crate::{
 		did_details::{
@@ -341,6 +341,7 @@ pub mod pallet {
 		DidCallDispatched(DidIdentifierOf<T>, DispatchResult),
 	}
 
+	#[derive(PartialEq, Eq)]
 	#[pallet::error]
 	pub enum Error<T> {
 		/// The DID operation signature is not in the format the verification
@@ -1099,10 +1100,10 @@ pub mod pallet {
 		///
 		/// It fails to execute if the DID has already the maximum number
 		/// of consumers.
-		pub fn increment_consumers(did_subject: &DidIdentifierOf<T>) -> Result<(), DispatchError> {
+		pub fn increment_consumers(did_subject: &DidIdentifierOf<T>) -> Result<(), Error<T>> {
 			ensure!(
 				Self::can_increment_consumers(did_subject),
-				DispatchError::from(Error::<T>::MaxConsumersExceeded)
+				Error::<T>::MaxConsumersExceeded
 			);
 			Self::increment_consumers_unsafe(did_subject);
 			Ok(())
@@ -1119,10 +1120,10 @@ pub mod pallet {
 		/// Decrement the total number of consumers for the given DID subject.
 		///
 		/// It fails to execute if the DID does not have any consumers.
-		pub fn decrement_consumers(did_subject: &DidIdentifierOf<T>) -> Result<(), DispatchError> {
+		pub fn decrement_consumers(did_subject: &DidIdentifierOf<T>) -> Result<(), Error<T>> {
 			ensure!(
 				Self::can_decrement_consumers(did_subject),
-				DispatchError::from(Error::<T>::NoOutstandingConsumers)
+				Error::<T>::NoOutstandingConsumers
 			);
 			Self::decrement_consumers_unsafe(did_subject);
 			Ok(())
