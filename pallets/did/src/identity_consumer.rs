@@ -26,25 +26,19 @@ pub struct DidIncrementer<T>(T);
 
 impl<T: Config, Identity> IdentityCounter<u32> for DidIncrementer<(Option<T>, Identity)>
 where
-	// FIXME: remove dependency
-	// on Clone, and change Into
-	// to AsRef, if possible
-	Identity: Into<DidIdentifierOf<T>> + Clone,
+	Identity: sp_std::borrow::Borrow<DidIdentifierOf<T>>,
 {
 	fn current_value(&self) -> u32 {
-		DidConsumers::<T>::get(&self.0 .1.clone().into())
+		DidConsumers::<T>::get(self.0 .1.borrow())
 	}
 }
 
 impl<T: Config, Identity> IdentityIncrementer<u32> for DidIncrementer<(Option<T>, Identity)>
 where
-	// FIXME: remove dependency
-	// on Clone, and change Into
-	// to AsRef, if possible
-	Identity: Into<DidIdentifierOf<T>> + Clone,
+	Identity: sp_std::borrow::Borrow<DidIdentifierOf<T>>,
 {
 	fn increment(&mut self) -> frame_support::dispatch::Weight {
-		Pallet::<T>::increment_consumers_unsafe(&self.0 .1.clone().into());
+		Pallet::<T>::increment_consumers_unsafe(self.0 .1.borrow());
 		T::WeightInfo::increment_consumers()
 	}
 }
@@ -54,42 +48,33 @@ pub struct DidDecrementer<T>(T);
 
 impl<T: Config, Identity> IdentityCounter<u32> for DidDecrementer<(Option<T>, Identity)>
 where
-	// FIXME: remove dependency
-	// on Clone, and change Into
-	// to AsRef, if possible
-	Identity: Into<DidIdentifierOf<T>> + Clone,
+	Identity: sp_std::borrow::Borrow<DidIdentifierOf<T>>,
 {
 	fn current_value(&self) -> u32 {
-		DidConsumers::<T>::get(&self.0 .1.clone().into())
+		DidConsumers::<T>::get(self.0 .1.borrow())
 	}
 }
 
 impl<T: Config, Identity> IdentityDecrementer<u32> for DidDecrementer<(Option<T>, Identity)>
 where
-	// FIXME: remove dependency
-	// on Clone, and change Into
-	// to AsRef, if possible
-	Identity: Into<DidIdentifierOf<T>> + Clone,
+	Identity: sp_std::borrow::Borrow<DidIdentifierOf<T>>,
 {
 	fn decrement(&mut self) -> frame_support::dispatch::Weight {
-		Pallet::<T>::decrement_consumers_unsafe(&self.0 .1.clone().into());
+		Pallet::<T>::decrement_consumers_unsafe(self.0 .1.borrow());
 		T::WeightInfo::decrement_consumers()
 	}
 }
 
 impl<T: Config, Identity> IdentityConsumer<Identity, u32> for Pallet<T>
 where
-	// FIXME: remove dependency on
-	// Clone, and change Into to
-	// AsRef, if possible
-	Identity: Into<DidIdentifierOf<T>> + Clone,
+	Identity: sp_std::borrow::Borrow<DidIdentifierOf<T>> + Clone,
 {
 	type IdentityIncrementer = DidIncrementer<(Option<T>, Identity)>;
 	type IdentityDecrementer = DidDecrementer<(Option<T>, Identity)>;
 	type Error = DispatchError;
 
 	fn get_incrementer(id: &Identity) -> Result<Self::IdentityIncrementer, Self::Error> {
-		if Self::can_increment_consumers(&id.clone().into()) {
+		if Self::can_increment_consumers(id.borrow()) {
 			Ok(DidIncrementer((None, id.clone())))
 		} else {
 			Err(Error::<T>::MaxConsumersExceeded.into())
@@ -101,7 +86,7 @@ where
 	}
 
 	fn get_decrementer(id: &Identity) -> Result<Self::IdentityDecrementer, Self::Error> {
-		if Self::can_decrement_consumers(&id.clone().into()) {
+		if Self::can_decrement_consumers(id.borrow()) {
 			Ok(DidDecrementer((None, id.clone())))
 		} else {
 			Err(Error::<T>::NoOutstandingConsumers.into())
