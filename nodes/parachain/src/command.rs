@@ -17,7 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use crate::{
-	chain_spec,
+	chain_spec::{self, ParachainRuntime},
 	cli::{Cli, RelayChainCli, Subcommand},
 	service::{new_partial, PeregrineRuntimeExecutor, SpiritnetRuntimeExecutor},
 };
@@ -270,10 +270,9 @@ pub fn run() -> Result<()> {
 		Some(Subcommand::Benchmark(cmd)) => {
 			let runner = cli.create_runner(cmd)?;
 
-			// TODO: Improve case handling throughout Benchmark Subcommand
-			let is_spiritnet = match cli.runtime.as_str() {
-				"peregrine" => Ok(true),
-				"spiritnet" => Ok(false),
+			let runtime = match cli.runtime.as_str() {
+				"peregrine" => Ok(ParachainRuntime::Peregrine),
+				"spiritnet" => Ok(ParachainRuntime::Spiritnet),
 				_ => Err("Unknown runtime"),
 			}?;
 
@@ -281,10 +280,13 @@ pub fn run() -> Result<()> {
 			match cmd {
 				BenchmarkCmd::Pallet(cmd) => {
 					if cfg!(feature = "runtime-benchmarks") {
-						if is_spiritnet {
-							runner.sync_run(|config| cmd.run::<Block, PeregrineRuntimeExecutor>(config))
-						} else {
-							runner.sync_run(|config| cmd.run::<Block, SpiritnetRuntimeExecutor>(config))
+						match runtime {
+							ParachainRuntime::Spiritnet => {
+								runner.sync_run(|config| cmd.run::<Block, PeregrineRuntimeExecutor>(config))
+							}
+							ParachainRuntime::Peregrine => {
+								runner.sync_run(|config| cmd.run::<Block, SpiritnetRuntimeExecutor>(config))
+							}
 						}
 					} else {
 						Err("Benchmarking wasn't enabled when building the node. \
@@ -292,14 +294,15 @@ pub fn run() -> Result<()> {
 							.into())
 					}
 				}
-				BenchmarkCmd::Block(cmd) => runner.sync_run(|config| {
-					if is_spiritnet {
+				BenchmarkCmd::Block(cmd) => runner.sync_run(|config| match runtime {
+					ParachainRuntime::Spiritnet => {
 						let partials = new_partial::<spiritnet_runtime::RuntimeApi, SpiritnetRuntimeExecutor, _>(
 							&config,
 							crate::service::build_import_queue,
 						)?;
 						cmd.run(partials.client)
-					} else {
+					}
+					ParachainRuntime::Peregrine => {
 						let partials = new_partial::<peregrine_runtime::RuntimeApi, PeregrineRuntimeExecutor, _>(
 							&config,
 							crate::service::build_import_queue,
@@ -307,8 +310,8 @@ pub fn run() -> Result<()> {
 						cmd.run(partials.client)
 					}
 				}),
-				BenchmarkCmd::Storage(cmd) => runner.sync_run(|config| {
-					if is_spiritnet {
+				BenchmarkCmd::Storage(cmd) => runner.sync_run(|config| match runtime {
+					ParachainRuntime::Spiritnet => {
 						let partials = new_partial::<spiritnet_runtime::RuntimeApi, SpiritnetRuntimeExecutor, _>(
 							&config,
 							crate::service::build_import_queue,
@@ -318,7 +321,8 @@ pub fn run() -> Result<()> {
 						let storage = partials.backend.expose_storage();
 
 						cmd.run(config, partials.client.clone(), db, storage)
-					} else {
+					}
+					ParachainRuntime::Peregrine => {
 						let partials = new_partial::<peregrine_runtime::RuntimeApi, PeregrineRuntimeExecutor, _>(
 							&config,
 							crate::service::build_import_queue,

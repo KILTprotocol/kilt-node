@@ -73,3 +73,8 @@ pub fn get_properties(symbol: &str, decimals: u32, ss58format: u32) -> Propertie
 
 	properties
 }
+
+pub enum ParachainRuntime {
+	Peregrine,
+	Spiritnet,
+}
