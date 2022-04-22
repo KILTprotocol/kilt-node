@@ -19,7 +19,7 @@
 use std::sync::Arc;
 
 use codec::Codec;
-use did_rpc_runtime_api::DidDocument;
+use did_rpc_runtime_api::{DidDocument, ServiceEndpoint};
 use jsonrpc_core::{Error as RpcError, ErrorCode, Result};
 use jsonrpc_derive::rpc;
 use sp_api::ProvideRuntimeApi;
@@ -28,6 +28,27 @@ use sp_runtime::{generic::BlockId, traits::Block as BlockT};
 
 pub use did_rpc_runtime_api::DidApi as DidRuntimeApi;
 
+pub type RpcDidDocument<DidIdentifier, AccountId> =
+	DidDocument<DidIdentifier, AccountId, String, String, String, String>;
+
+fn raw_did_endpoint_to_rpc(
+	raw: ServiceEndpoint<Vec<u8>, Vec<u8>, Vec<u8>>,
+) -> Option<ServiceEndpoint<String, String, String>> {
+	Some(ServiceEndpoint {
+		id: String::from_utf8(raw.id).ok()?,
+		service_types: raw
+			.service_types
+			.into_iter()
+			.filter_map(|st| String::from_utf8(st).ok())
+			.collect(),
+		urls: raw
+			.urls
+			.into_iter()
+			.filter_map(|url| String::from_utf8(url).ok())
+			.collect(),
+	})
+}
+
 #[rpc]
 pub trait DidApi<BlockHash, DidIdentifier, AccountId> {
 	#[rpc(name = "did_queryByWeb3Name")]
@@ -35,14 +56,14 @@ pub trait DidApi<BlockHash, DidIdentifier, AccountId> {
 		&self,
 		web3name: String,
 		at: Option<BlockHash>,
-	) -> Result<Option<DidDocument<DidIdentifier, AccountId, String>>>;
+	) -> Result<Option<RpcDidDocument<DidIdentifier, AccountId>>>;
 
 	#[rpc(name = "did_queryByAccount")]
 	fn query_did_by_account_id(
 		&self,
 		account: AccountId,
 		at: Option<BlockHash>,
-	) -> Result<Option<DidDocument<DidIdentifier, AccountId, String>>>;
+	) -> Result<Option<RpcDidDocument<DidIdentifier, AccountId>>>;
 }
 
 /// A struct that implements the [`TransactionPaymentApi`].
@@ -91,7 +112,7 @@ where
 		&self,
 		web3name: String,
 		at: Option<<Block as BlockT>::Hash>,
-	) -> Result<Option<DidDocument<DidIdentifier, AccountId, String>>> {
+	) -> Result<Option<RpcDidDocument<DidIdentifier, AccountId>>> {
 		let api = self.client.runtime_api();
 		let at = BlockId::hash(at.unwrap_or_else(||
 			// If the block hash is not supplied assume the best block.
@@ -103,12 +124,17 @@ where
 				message: "Unable to query dispatch info.".into(),
 				data: Some(e.to_string().into()),
 			}),
-			Ok(doc) => Ok(doc.map(|doc| DidDocument {
+			Ok(doc) => Ok(doc.map(|doc| RpcDidDocument {
 				// convert the w3n from a byte array to a string. if it's invalid utf-8 which should never happen, we
 				// ignore the w3n and pretend it doesn't exist.
 				w3n: doc.w3n.and_then(|w3n| String::from_utf8(w3n).ok()),
 				accounts: doc.accounts,
 				identifier: doc.identifier,
+				service_endpoints: doc
+					.service_endpoints
+					.into_iter()
+					.filter_map(raw_did_endpoint_to_rpc)
+					.collect(),
 			})),
 		}
 	}
@@ -117,7 +143,7 @@ where
 		&self,
 		account: AccountId,
 		at: Option<<Block as BlockT>::Hash>,
-	) -> Result<Option<DidDocument<DidIdentifier, AccountId, String>>> {
+	) -> Result<Option<RpcDidDocument<DidIdentifier, AccountId>>> {
 		let api = self.client.runtime_api();
 		let at = BlockId::hash(at.unwrap_or_else(||
 			// If the block hash is not supplied assume the best block.
@@ -129,12 +155,17 @@ where
 				message: "Unable to query fee details.".into(),
 				data: Some(e.to_string().into()),
 			}),
-			Ok(doc) => Ok(doc.map(|doc| DidDocument {
+			Ok(doc) => Ok(doc.map(|doc| RpcDidDocument {
 				// convert the w3n from a byte array to a string. if it's invalid utf-8 which should never happen, we
 				// ignore the w3n and pretend it doesn't exist.
 				w3n: doc.w3n.and_then(|w3n| String::from_utf8(w3n).ok()),
 				accounts: doc.accounts,
 				identifier: doc.identifier,
+				service_endpoints: doc
+					.service_endpoints
+					.into_iter()
+					.filter_map(raw_did_endpoint_to_rpc)
+					.collect(),
 			})),
 		}
 	}

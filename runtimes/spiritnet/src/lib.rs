@@ -1117,10 +1117,13 @@ impl_runtime_apis! {
 			pallet_web3_names::Owner::<Runtime>::get(&name)
 				.map(|owner_info| {
 					let accounts = pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(&owner_info.owner).collect();
+					let service_endpoints = did::ServiceEndpoints::<Runtime>::iter_prefix(&owner_info.owner).map(|e|From::from(e.1)).collect();
+
 					did_rpc_runtime_api::RawDidDocument {
 						identifier: owner_info.owner,
 						w3n: Some(name.into()),
 						accounts,
+						service_endpoints,
 					}
 			})
 		}
@@ -1129,11 +1132,13 @@ impl_runtime_apis! {
 			pallet_did_lookup::ConnectedDids::<Runtime>::get(account).map(|connection_record| {
 				let w3n = pallet_web3_names::Names::<Runtime>::get(&connection_record.did).map(Into::into);
 				let accounts = pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(&connection_record.did).collect();
+				let service_endpoints = did::ServiceEndpoints::<Runtime>::iter_prefix(&connection_record.did).map(|e|From::from(e.1)).collect();
 
 				did_rpc_runtime_api::RawDidDocument {
 					identifier: connection_record.did,
 					w3n,
 					accounts,
+					service_endpoints,
 				}
 			})
 		}

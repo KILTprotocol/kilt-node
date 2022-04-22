@@ -23,17 +23,47 @@ use sp_std::vec::Vec;
 
 #[derive(Encode, Decode, TypeInfo, PartialEq)]
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
-pub struct DidDocument<DidIdentifier, AccountId, Web3Name> {
+pub struct ServiceEndpoint<Id, Type, Url> {
+	pub id: Id,
+	pub service_types: Vec<Type>,
+	pub urls: Vec<Url>,
+}
+
+impl<T: did::Config> From<did::service_endpoints::DidEndpoint<T>> for ServiceEndpoint<Vec<u8>, Vec<u8>, Vec<u8>> {
+	fn from(runtime_endpoint: did::service_endpoints::DidEndpoint<T>) -> Self {
+		ServiceEndpoint {
+			id: runtime_endpoint.id.into_inner(),
+			service_types: runtime_endpoint
+				.service_types
+				.into_inner()
+				.into_iter()
+				.map(|v| v.into_inner())
+				.collect(),
+			urls: runtime_endpoint
+				.urls
+				.into_inner()
+				.into_iter()
+				.map(|v| v.into_inner())
+				.collect(),
+		}
+	}
+}
+
+#[derive(Encode, Decode, TypeInfo, PartialEq)]
+#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
+pub struct DidDocument<DidIdentifier, AccountId, Web3Name, Id, Type, Url> {
 	pub identifier: DidIdentifier,
 	pub accounts: Vec<AccountId>,
 	pub w3n: Option<Web3Name>,
+	pub service_endpoints: Vec<ServiceEndpoint<Id, Type, Url>>,
 }
 
 /// The DidDocument with a Web3Name represented as a byte array.
 ///
 /// This will be returned by the runtime and processed by the client side RPC
 /// implementation.
-pub type RawDidDocument<DidIdentifier, AccountId> = DidDocument<DidIdentifier, AccountId, Vec<u8>>;
+pub type RawDidDocument<DidIdentifier, AccountId> =
+	DidDocument<DidIdentifier, AccountId, Vec<u8>, Vec<u8>, Vec<u8>, Vec<u8>>;
 
 sp_api::decl_runtime_apis! {
 	/// The API to query account nonce (aka transaction index).
