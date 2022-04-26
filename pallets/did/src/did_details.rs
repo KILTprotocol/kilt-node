@@ -231,13 +231,12 @@ impl<I: AsRef<[u8; 32]>> DidVerifiableIdentifier for I {
 /// It is currently used to keep track of all the past and current
 /// attestation keys a DID might control.
 #[derive(Clone, Debug, Decode, Encode, PartialEq, Ord, PartialOrd, Eq, TypeInfo, MaxEncodedLen)]
-#[scale_info(skip_type_params(T))]
 #[codec(mel_bound())]
-pub struct DidPublicKeyDetails<T: Config> {
+pub struct DidPublicKeyDetails<BlockNumber: MaxEncodedLen> {
 	/// A public key the DID controls.
 	pub key: DidPublicKey,
 	/// The block number in which the verification key was added to the DID.
-	pub block_number: BlockNumberOf<T>,
+	pub block_number: BlockNumber,
 }
 
 /// The details associated to a DID identity.
@@ -549,7 +548,7 @@ impl<T: Config> DidDetails<T> {
 pub(crate) type DidNewKeyAgreementKeySet<T> = BoundedBTreeSet<DidEncryptionKey, <T as Config>::MaxNewKeyAgreementKeys>;
 pub(crate) type DidKeyAgreementKeySet<T> = BoundedBTreeSet<KeyIdOf<T>, <T as Config>::MaxTotalKeyAgreementKeys>;
 pub(crate) type DidPublicKeyMap<T> =
-	BoundedBTreeMap<KeyIdOf<T>, DidPublicKeyDetails<T>, <T as Config>::MaxPublicKeysPerDid>;
+	BoundedBTreeMap<KeyIdOf<T>, DidPublicKeyDetails<BlockNumberOf<T>>, <T as Config>::MaxPublicKeysPerDid>;
 
 /// The details of a new DID to create.
 #[derive(Clone, Decode, Encode, PartialEq, TypeInfo, RuntimeDebug)]
