@@ -1142,6 +1142,19 @@ impl_runtime_apis! {
 				}
 			})
 		}
+
+		fn query_did(did: DidIdentifier) -> Option<did_rpc_runtime_api::RawDidDocument<DidIdentifier, AccountId>> {
+			let w3n = pallet_web3_names::Names::<Runtime>::get(&did).map(Into::into);
+			let accounts = pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(&did).collect();
+			let service_endpoints = did::ServiceEndpoints::<Runtime>::iter_prefix(&did).map(|e|From::from(e.1)).collect();
+
+			Some(did_rpc_runtime_api::RawDidDocument {
+				identifier: did,
+				w3n,
+				accounts,
+				service_endpoints,
+			})
+		}
 	}
 
 	#[cfg(feature = "runtime-benchmarks")]

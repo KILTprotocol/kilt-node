@@ -73,5 +73,6 @@ sp_api::decl_runtime_apis! {
 	{
 		fn query_did_by_w3n(name: Vec<u8>) -> Option<RawDidDocument<DidIdentifier, AccountId>>;
 		fn query_did_by_account_id(account: AccountId) -> Option<RawDidDocument<DidIdentifier, AccountId>>;
+		fn query_did(did: DidIdentifier) -> Option<RawDidDocument<DidIdentifier, AccountId>>;
 	}
 }

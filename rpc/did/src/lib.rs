@@ -64,6 +64,13 @@ pub trait DidApi<BlockHash, DidIdentifier, AccountId> {
 		account: AccountId,
 		at: Option<BlockHash>,
 	) -> Result<Option<RpcDidDocument<DidIdentifier, AccountId>>>;
+
+	#[rpc(name = "did_query")]
+	fn query_did(
+		&self,
+		account: DidIdentifier,
+		at: Option<BlockHash>,
+	) -> Result<Option<RpcDidDocument<DidIdentifier, AccountId>>>;
 }
 
 /// A struct that implements the [`TransactionPaymentApi`].
@@ -150,6 +157,37 @@ where
 			self.client.info().best_hash));
 
 		match api.query_did_by_account_id(&at, account) {
+			Err(e) => Err(RpcError {
+				code: ErrorCode::ServerError(Error::RuntimeError.into()),
+				message: "Unable to query fee details.".into(),
+				data: Some(e.to_string().into()),
+			}),
+			Ok(doc) => Ok(doc.map(|doc| RpcDidDocument {
+				// convert the w3n from a byte array to a string. if it's invalid utf-8 which should never happen, we
+				// ignore the w3n and pretend it doesn't exist.
+				w3n: doc.w3n.and_then(|w3n| String::from_utf8(w3n).ok()),
+				accounts: doc.accounts,
+				identifier: doc.identifier,
+				service_endpoints: doc
+					.service_endpoints
+					.into_iter()
+					.filter_map(raw_did_endpoint_to_rpc)
+					.collect(),
+			})),
+		}
+	}
+
+	fn query_did(
+		&self,
+		did: DidIdentifier,
+		at: Option<<Block as BlockT>::Hash>,
+	) -> Result<Option<RpcDidDocument<DidIdentifier, AccountId>>> {
+		let api = self.client.runtime_api();
+		let at = BlockId::hash(at.unwrap_or_else(||
+			// If the block hash is not supplied assume the best block.
+			self.client.info().best_hash));
+
+		match api.query_did(&at, did) {
 			Err(e) => Err(RpcError {
 				code: ErrorCode::ServerError(Error::RuntimeError.into()),
 				message: "Unable to query fee details.".into(),
