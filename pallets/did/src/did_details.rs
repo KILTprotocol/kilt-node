@@ -21,6 +21,7 @@ use frame_support::{
 	ensure,
 	storage::{bounded_btree_map::BoundedBTreeMap, bounded_btree_set::BoundedBTreeSet},
 	traits::Get,
+	RuntimeDebug,
 };
 use kilt_support::deposit::Deposit;
 use scale_info::TypeInfo;
@@ -551,7 +552,7 @@ pub(crate) type DidPublicKeyMap<T> =
 	BoundedBTreeMap<KeyIdOf<T>, DidPublicKeyDetails<T>, <T as Config>::MaxPublicKeysPerDid>;
 
 /// The details of a new DID to create.
-#[derive(Clone, Decode, Encode, PartialEq, TypeInfo)]
+#[derive(Clone, Decode, Encode, PartialEq, TypeInfo, RuntimeDebug)]
 #[scale_info(skip_type_params(T))]
 
 pub struct DidCreationDetails<T: Config> {
@@ -569,25 +570,9 @@ pub struct DidCreationDetails<T: Config> {
 	pub new_service_details: Vec<DidEndpoint<T>>,
 }
 
-impl<T: Config> sp_std::fmt::Debug for DidCreationDetails<T> {
-	fn fmt(&self, f: &mut sp_std::fmt::Formatter<'_>) -> sp_std::fmt::Result {
-		f.debug_struct("DidCreationDetails")
-			.field("did", &self.did)
-			.field("submitter", &self.submitter)
-			.field(
-				"new_key_agreement_keys",
-				&self.new_key_agreement_keys.clone().into_inner(),
-			)
-			.field("new_attestation_key", &self.new_attestation_key)
-			.field("new_delegation_key", &self.new_delegation_key)
-			.field("new_service_details", &self.new_service_details)
-			.finish()
-	}
-}
-
 /// Errors that might occur while deriving the authorization verification key
 /// relationship.
-#[derive(Clone, Debug, Decode, Encode, PartialEq)]
+#[derive(Clone, RuntimeDebug, Decode, Encode, PartialEq)]
 pub enum RelationshipDeriveError {
 	/// The call is not callable by a did origin.
 	NotCallableByDid,
@@ -618,7 +603,7 @@ pub trait DeriveDidCallAuthorizationVerificationKeyRelationship {
 /// A DID operation that wraps other extrinsic calls, allowing those
 /// extrinsic to have a DID origin and perform DID-based authorization upon
 /// their invocation.
-#[derive(Clone, Debug, Decode, Encode, PartialEq, TypeInfo)]
+#[derive(Clone, RuntimeDebug, Decode, Encode, PartialEq, TypeInfo)]
 #[scale_info(skip_type_params(T))]
 
 pub struct DidAuthorizedCallOperation<T: Config> {
@@ -638,7 +623,7 @@ pub struct DidAuthorizedCallOperation<T: Config> {
 ///
 /// It contains additional information about the type of DID key to used for
 /// authorization.
-#[derive(Clone, Debug, PartialEq, TypeInfo)]
+#[derive(Clone, RuntimeDebug, PartialEq, TypeInfo)]
 #[scale_info(skip_type_params(T))]
 
 pub struct DidAuthorizedCallOperationWithVerificationRelationship<T: Config> {
