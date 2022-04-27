@@ -686,8 +686,9 @@ pub mod pallet {
 	impl<T: Config> Default for GenesisConfig<T> {
 		fn default() -> Self {
 			Self {
-				stakers: vec![],
-				..Default::default()
+				stakers: Default::default(),
+				inflation_config: Default::default(),
+				max_candidate_stake: Default::default(),
 			}
 		}
 	}
