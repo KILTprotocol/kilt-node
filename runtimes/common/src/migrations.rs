@@ -48,7 +48,8 @@ impl<R: frame_system::Config> frame_support::traits::OnRuntimeUpgrade for Remove
 			frame_support::storage::migration::have_storage_value(
 				&hex!("37be294ab4b5aa76f1df3f80e7c180ef"),
 				// b"KiltLaunch"
-				b"TransferAccount",
+				// b"TransferAccount",
+				&hex!("73c7528dff85a7339c3d647527b5affb"),
 				&[]
 			)
 		);
@@ -56,7 +57,8 @@ impl<R: frame_system::Config> frame_support::traits::OnRuntimeUpgrade for Remove
 		assert!(frame_support::storage::migration::have_storage_value(
 			&hex!("37be294ab4b5aa76f1df3f80e7c180ef"),
 			// b"KiltLaunch",
-			b"TransferAccount",
+			// b"TransferAccount",
+			&hex!("73c7528dff85a7339c3d647527b5affb"),
 			&[]
 		));
 		Ok(())

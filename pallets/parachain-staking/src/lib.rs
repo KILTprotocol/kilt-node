@@ -144,7 +144,7 @@
 //!
 //! ## Genesis config
 //!
-//! The KiltLaunch pallet depends on the [`GenesisConfig`].
+//! The ParachainStaking pallet depends on the [`GenesisConfig`].
 //!
 //! ## Assumptions+
 //!

@@ -267,15 +267,6 @@ parameter_types! {
 	pub const AutoUnlockBound: u32 = 100;
 }
 
-impl kilt_launch::Config for Runtime {
-	type Event = Event;
-	type MaxClaims = MaxClaims;
-	type UsableBalance = UsableBalance;
-	type AutoUnlockBound = AutoUnlockBound;
-	type WeightInfo = weights::kilt_launch::WeightInfo<Runtime>;
-	type PalletId = pallet_id::Launch;
-}
-
 impl pallet_preimage::Config for Runtime {
 	type WeightInfo = weights::pallet_preimage::WeightInfo<Runtime>;
 	type Event = Event;
@@ -699,7 +690,6 @@ impl InstanceFilter<Call> for ProxyType {
 							| pallet_indices::Call::free { .. }
 							| pallet_indices::Call::freeze { .. }
 					)
-					// Excludes `KiltLaunch`
 					| Call::ParachainStaking(..)
 					// Excludes `ParachainSystem`
 					| Call::Preimage(..)
@@ -763,7 +753,6 @@ impl InstanceFilter<Call> for ProxyType {
 							| pallet_did_lookup::Call::remove_sender_association { .. }
 					)
 					| Call::Indices(..)
-					// Excludes `KiltLaunch`
 					| Call::ParachainStaking(..)
 					// Excludes `ParachainSystem`
 					| Call::Preimage(..)
@@ -885,7 +874,7 @@ construct_runtime! {
 		Tips: pallet_tips::{Pallet, Call, Storage, Event<T>} = 46,
 
 		// KILT Pallets. Start indices 60 to leave room
-		KiltLaunch: kilt_launch = 60,
+		// DELETED: KiltLaunch: kilt_launch = 60,
 		Ctype: ctype = 61,
 		Attestation: attestation = 62,
 		Delegation: delegation = 63,
@@ -1126,7 +1115,6 @@ impl_runtime_apis! {
 			list_benchmark!(list, extra, delegation, Delegation);
 			list_benchmark!(list, extra, did, Did);
 			list_benchmark!(list, extra, pallet_did_lookup, DidLookup);
-			list_benchmark!(list, extra, kilt_launch, KiltLaunch);
 			list_benchmark!(list, extra, pallet_inflation, Inflation);
 			list_benchmark!(list, extra, parachain_staking, ParachainStaking);
 			list_benchmark!(list, extra, pallet_web3_names, Web3Names);
@@ -1164,8 +1152,6 @@ impl_runtime_apis! {
 				// System Events
 				hex_literal::hex!("26aa394eea5630e07c48ae0c9558cef780d41e5e16056765bc8461851072c9d7")
 					.to_vec().into(),
-				// KiltLaunch transfer account
-				hex_literal::hex!("6a3c793cec9dbe330b349dc4eea6801090f5e71f53b1b41ad11afb4a313a282c").to_vec().into(),
 			];
 
 			let mut batches = Vec::<BenchmarkBatch>::new();
@@ -1195,7 +1181,6 @@ impl_runtime_apis! {
 			add_benchmark!(params, batches, delegation, Delegation);
 			add_benchmark!(params, batches, did, Did);
 			add_benchmark!(params, batches, pallet_did_lookup, DidLookup);
-			add_benchmark!(params, batches, kilt_launch, KiltLaunch);
 			add_benchmark!(params, batches, pallet_inflation, Inflation);
 			add_benchmark!(params, batches, parachain_staking, ParachainStaking);
 			add_benchmark!(params, batches, pallet_web3_names, Web3Names);

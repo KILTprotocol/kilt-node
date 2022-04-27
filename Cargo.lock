@@ -3770,25 +3770,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "kilt-launch"
-version = "1.6.2"
-dependencies = [
- "frame-benchmarking",
- "frame-support",
- "frame-system",
- "log",
- "pallet-balances",
- "pallet-vesting",
- "parity-scale-codec",
- "scale-info",
- "serde",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-std",
-]
-
-[[package]]
 name = "kilt-parachain"
 version = "1.6.2"
 dependencies = [
@@ -4797,7 +4778,6 @@ dependencies = [
  "frame-system-rpc-runtime-api",
  "frame-try-runtime",
  "hex-literal",
- "kilt-launch",
  "kilt-support",
  "log",
  "pallet-aura",
@@ -6953,7 +6933,6 @@ dependencies = [
  "frame-system-rpc-runtime-api",
  "frame-try-runtime",
  "hex-literal",
- "kilt-launch",
  "kilt-support",
  "log",
  "pallet-aura",
@@ -11211,7 +11190,6 @@ dependencies = [
  "frame-system-rpc-runtime-api",
  "frame-try-runtime",
  "hex-literal",
- "kilt-launch",
  "kilt-support",
  "log",
  "pallet-aura",
