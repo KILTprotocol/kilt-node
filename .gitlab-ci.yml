@@ -3,7 +3,7 @@ stages:
   - build
 
 clippy:
-  image: paritytech/ci-linux:c4f0daf3-20220110
+  image: paritytech/ci-linux:f203f298-20220421
   stage: test
   timeout: 1 hours
   script:
@@ -11,7 +11,7 @@ clippy:
     - cargo +nightly clippy --all-features --all-targets --locked -- -D warnings
 
 fmt:
-  image: paritytech/ci-linux:c4f0daf3-20220110
+  image: paritytech/ci-linux:f203f298-20220421
   stage: test
   timeout: 1 hours
   script:
@@ -19,14 +19,14 @@ fmt:
     - cargo +nightly fmt -- --check
 
 test:
-  image: paritytech/ci-linux:c4f0daf3-20220110
+  image: paritytech/ci-linux:f203f298-20220421
   stage: test
   timeout: 1 hours
   script:
     - cargo test --all --all-targets --locked
 
 test-features:
-  image: paritytech/ci-linux:c4f0daf3-20220110
+  image: paritytech/ci-linux:f203f298-20220421
   stage: test
   timeout: 1 hours
   script:

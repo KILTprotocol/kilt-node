@@ -29,7 +29,6 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use codec::{Decode, Encode, MaxEncodedLen};
 use delegation::DelegationAc;
-use frame_support::traits::InstanceFilter;
 pub use frame_support::{
 	construct_runtime, parameter_types,
 	traits::{Currency, FindAuthor, Imbalance, KeyOwnerProofSystem, OnUnbalanced, Randomness},
@@ -39,6 +38,7 @@ pub use frame_support::{
 	},
 	ConsensusEngineId, StorageValue,
 };
+use frame_support::{traits::InstanceFilter, weights::ConstantMultiplier};
 use frame_system::EnsureRoot;
 use pallet_grandpa::{fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
 use pallet_transaction_payment::{CurrencyAdapter, FeeDetails};
@@ -65,7 +65,7 @@ pub use pallet_balances::Call as BalancesCall;
 pub use pallet_web3_names;
 use runtime_common::{
 	authorization::{AuthorizationId, PalletAuthorize},
-	constants::{self, KILT, MICRO_KILT, MILLI_KILT},
+	constants::{self, KILT, MILLI_KILT},
 	fees::ToAuthor,
 	pallet_id, AccountId, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature, SlowAdjustingFeeUpdate,
 };
@@ -285,18 +285,11 @@ impl kilt_launch::Config for Runtime {
 	type PalletId = pallet_id::Launch;
 }
 
-parameter_types! {
-	pub const TransactionByteFee: Balance = MICRO_KILT;
-	/// This value increases the priority of `Operational` transactions by adding
-	/// a "virtual tip" that's equal to the `OperationalFeeMultiplier * final_fee`.
-	pub const OperationalFeeMultiplier: u8 = 5;
-}
-
 impl pallet_transaction_payment::Config for Runtime {
 	type OnChargeTransaction = CurrencyAdapter<Balances, runtime_common::fees::ToAuthor<Runtime>>;
-	type TransactionByteFee = TransactionByteFee;
-	type OperationalFeeMultiplier = OperationalFeeMultiplier;
+	type OperationalFeeMultiplier = constants::fee::OperationalFeeMultiplier;
 	type WeightToFee = IdentityFee<Balance>;
+	type LengthToFee = ConstantMultiplier<Balance, constants::fee::TransactionByteFee>;
 	type FeeMultiplierUpdate = SlowAdjustingFeeUpdate<Self>;
 }
 
