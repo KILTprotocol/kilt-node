@@ -15,6 +15,7 @@ sp-runtime = {git = "https://github.com/paritytech/substrate", default-features 
 sp-std = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.17"}
 
 did = {path = "../../../pallets/did", default-features = false}
+kilt-support = {path = "../../../support", default-features = false}
 
 [features]
 default = ["std"]
@@ -26,4 +27,5 @@ std = [
   "sp-std/std",
   "scale-info/std",
   "did/std",
+  "kilt-support/std",
 ]

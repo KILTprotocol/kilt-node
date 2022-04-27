@@ -15,13 +15,34 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
-use codec::{Decode, Encode, MaxEncodedLen};
+use codec::{Decode, Encode};
 use scale_info::TypeInfo;
+use sp_std::vec::Vec;
 
-/// An amount of balance reserved by the specified address.
-#[derive(Clone, Debug, Encode, Decode, PartialEq, TypeInfo, MaxEncodedLen)]
+#[derive(Encode, Decode, TypeInfo, PartialEq)]
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
-pub struct Deposit<Account, Balance> {
-	pub owner: Account,
-	pub amount: Balance,
+pub struct ServiceEndpoint<Id, Type, Url> {
+	pub id: Id,
+	pub service_types: Vec<Type>,
+	pub urls: Vec<Url>,
+}
+
+impl<T: did::Config> From<did::service_endpoints::DidEndpoint<T>> for ServiceEndpoint<Vec<u8>, Vec<u8>, Vec<u8>> {
+	fn from(runtime_endpoint: did::service_endpoints::DidEndpoint<T>) -> Self {
+		ServiceEndpoint {
+			id: runtime_endpoint.id.into_inner(),
+			service_types: runtime_endpoint
+				.service_types
+				.into_inner()
+				.into_iter()
+				.map(|v| v.into_inner())
+				.collect(),
+			urls: runtime_endpoint
+				.urls
+				.into_inner()
+				.into_iter()
+				.map(|v| v.into_inner())
+				.collect(),
+		}
+	}
 }

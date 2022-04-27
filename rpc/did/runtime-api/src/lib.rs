@@ -17,62 +17,45 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use codec::{Codec, Decode, Encode};
+use codec::{Codec, Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_std::vec::Vec;
 
-#[derive(Encode, Decode, TypeInfo, PartialEq)]
-#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
-pub struct ServiceEndpoint<Id, Type, Url> {
-	pub id: Id,
-	pub service_types: Vec<Type>,
-	pub urls: Vec<Url>,
-}
+mod did_details;
+mod service_endpoint;
 
-impl<T: did::Config> From<did::service_endpoints::DidEndpoint<T>> for ServiceEndpoint<Vec<u8>, Vec<u8>, Vec<u8>> {
-	fn from(runtime_endpoint: did::service_endpoints::DidEndpoint<T>) -> Self {
-		ServiceEndpoint {
-			id: runtime_endpoint.id.into_inner(),
-			service_types: runtime_endpoint
-				.service_types
-				.into_inner()
-				.into_iter()
-				.map(|v| v.into_inner())
-				.collect(),
-			urls: runtime_endpoint
-				.urls
-				.into_inner()
-				.into_iter()
-				.map(|v| v.into_inner())
-				.collect(),
-		}
-	}
-}
+pub use did_details::*;
+pub use service_endpoint::*;
 
 #[derive(Encode, Decode, TypeInfo, PartialEq)]
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
-pub struct DidDocument<DidIdentifier, AccountId, Web3Name, Id, Type, Url> {
+pub struct DidDocument<DidIdentifier, AccountId, Web3Name, Id, Type, Url, Balance, Key: Ord, BlockNumber: MaxEncodedLen>
+{
 	pub identifier: DidIdentifier,
 	pub accounts: Vec<AccountId>,
 	pub w3n: Option<Web3Name>,
 	pub service_endpoints: Vec<ServiceEndpoint<Id, Type, Url>>,
+	pub details: DidDetails<Key, BlockNumber, AccountId, Balance>,
 }
 
 /// The DidDocument with a Web3Name represented as a byte array.
 ///
 /// This will be returned by the runtime and processed by the client side RPC
 /// implementation.
-pub type RawDidDocument<DidIdentifier, AccountId> =
-	DidDocument<DidIdentifier, AccountId, Vec<u8>, Vec<u8>, Vec<u8>, Vec<u8>>;
+pub type RawDidDocument<DidIdentifier, AccountId, Balance, Key, BlockNumber> =
+	DidDocument<DidIdentifier, AccountId, Vec<u8>, Vec<u8>, Vec<u8>, Vec<u8>, Balance, Key, BlockNumber>;
 
 sp_api::decl_runtime_apis! {
 	/// The API to query account nonce (aka transaction index).
-	pub trait DidApi<DidIdentifier, AccountId> where
+	pub trait DidApi<DidIdentifier, AccountId, Balance, Key: Ord, BlockNumber> where
 		DidIdentifier: Codec,
 		AccountId: Codec,
+		BlockNumber: Codec + MaxEncodedLen,
+		Key: Codec,
+		Balance: Codec,
 	{
-		fn query_did_by_w3n(name: Vec<u8>) -> Option<RawDidDocument<DidIdentifier, AccountId>>;
-		fn query_did_by_account_id(account: AccountId) -> Option<RawDidDocument<DidIdentifier, AccountId>>;
-		fn query_did(did: DidIdentifier) -> Option<RawDidDocument<DidIdentifier, AccountId>>;
+		fn query_did_by_w3n(name: Vec<u8>) -> Option<RawDidDocument<DidIdentifier, AccountId, Balance, Key, BlockNumber>>;
+		fn query_did_by_account_id(account: AccountId) -> Option<RawDidDocument<DidIdentifier, AccountId, Balance, Key, BlockNumber>>;
+		fn query_did(did: DidIdentifier) -> Option<RawDidDocument<DidIdentifier, AccountId, Balance, Key, BlockNumber>>;
 	}
 }

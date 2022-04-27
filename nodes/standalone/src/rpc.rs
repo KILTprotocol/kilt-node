@@ -25,14 +25,15 @@
 
 use std::sync::Arc;
 
-use did_rpc::{DidApi, DidQuery};
-use mashnet_node_runtime::opaque::Block;
-use runtime_common::{AccountId, Balance, DidIdentifier, Index};
 pub use sc_rpc_api::DenyUnsafe;
 use sc_transaction_pool_api::TransactionPool;
 use sp_api::ProvideRuntimeApi;
 use sp_block_builder::BlockBuilder;
 use sp_blockchain::{Error as BlockChainError, HeaderBackend, HeaderMetadata};
+
+use did_rpc::{DidApi, DidQuery};
+use mashnet_node_runtime::opaque::Block;
+use runtime_common::{AccountId, Balance, BlockNumber, DidIdentifier, Hash, Index};
 
 /// Full client dependencies.
 pub struct FullDeps<C, P> {
@@ -53,7 +54,7 @@ where
 	C::Api: frame_rpc_system::AccountNonceApi<Block, AccountId, Index>,
 	C::Api: pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>,
 	C::Api: BlockBuilder<Block>,
-	C::Api: did_rpc::DidRuntimeApi<Block, DidIdentifier, AccountId>,
+	C::Api: did_rpc::DidRuntimeApi<Block, DidIdentifier, AccountId, Balance, Hash, BlockNumber>,
 	P: TransactionPool + 'static,
 {
 	use frame_rpc_system::{FullSystem, SystemApi};

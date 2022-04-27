@@ -412,7 +412,7 @@ where
 		+ pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>
 		+ sp_consensus_aura::AuraApi<Block, AuthorityId>
 		+ cumulus_primitives_core::CollectCollationInfo<Block>
-		+ did_rpc::DidRuntimeApi<Block, DidIdentifier, AccountId>,
+		+ did_rpc::DidRuntimeApi<Block, DidIdentifier, AccountId, Balance, Hash, BlockNumber>,
 	sc_client_api::StateBackendFor<TFullBackend<Block>, Block>: sp_api::StateBackend<BlakeTwo256>,
 {
 	let rpc_extensions_builder =

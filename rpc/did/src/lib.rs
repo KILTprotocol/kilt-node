@@ -18,7 +18,7 @@
 
 use std::sync::Arc;
 
-use codec::Codec;
+use codec::{Codec, MaxEncodedLen};
 use did_rpc_runtime_api::{DidDocument, ServiceEndpoint};
 use jsonrpc_core::{Error as RpcError, ErrorCode, Result};
 use jsonrpc_derive::rpc;
@@ -28,8 +28,8 @@ use sp_runtime::{generic::BlockId, traits::Block as BlockT};
 
 pub use did_rpc_runtime_api::DidApi as DidRuntimeApi;
 
-pub type RpcDidDocument<DidIdentifier, AccountId> =
-	DidDocument<DidIdentifier, AccountId, String, String, String, String>;
+pub type RpcDidDocument<DidIdentifier, AccountId, Balance, Key, BlockNumber> =
+	DidDocument<DidIdentifier, AccountId, String, String, String, String, Balance, Key, BlockNumber>;
 
 fn raw_did_endpoint_to_rpc(
 	raw: ServiceEndpoint<Vec<u8>, Vec<u8>, Vec<u8>>,
@@ -50,27 +50,31 @@ fn raw_did_endpoint_to_rpc(
 }
 
 #[rpc]
-pub trait DidApi<BlockHash, DidIdentifier, AccountId> {
+pub trait DidApi<BlockHash, DidIdentifier, AccountId, Balance, Key, BlockNumber>
+where
+	BlockNumber: MaxEncodedLen,
+	Key: Ord,
+{
 	#[rpc(name = "did_queryByWeb3Name")]
 	fn query_did_by_w3n(
 		&self,
 		web3name: String,
 		at: Option<BlockHash>,
-	) -> Result<Option<RpcDidDocument<DidIdentifier, AccountId>>>;
+	) -> Result<Option<RpcDidDocument<DidIdentifier, AccountId, Balance, Key, BlockNumber>>>;
 
 	#[rpc(name = "did_queryByAccount")]
 	fn query_did_by_account_id(
 		&self,
 		account: AccountId,
 		at: Option<BlockHash>,
-	) -> Result<Option<RpcDidDocument<DidIdentifier, AccountId>>>;
+	) -> Result<Option<RpcDidDocument<DidIdentifier, AccountId, Balance, Key, BlockNumber>>>;
 
 	#[rpc(name = "did_query")]
 	fn query_did(
 		&self,
 		account: DidIdentifier,
 		at: Option<BlockHash>,
-	) -> Result<Option<RpcDidDocument<DidIdentifier, AccountId>>>;
+	) -> Result<Option<RpcDidDocument<DidIdentifier, AccountId, Balance, Key, BlockNumber>>>;
 }
 
 /// A struct that implements the [`TransactionPaymentApi`].
@@ -106,20 +110,23 @@ impl From<Error> for i64 {
 	}
 }
 
-impl<C, Block, DidIdentifier, AccountId> DidApi<<Block as BlockT>::Hash, DidIdentifier, AccountId>
-	for DidQuery<C, Block>
+impl<C, Block, DidIdentifier, AccountId, Balance, Key, BlockNumber>
+	DidApi<<Block as BlockT>::Hash, DidIdentifier, AccountId, Balance, Key, BlockNumber> for DidQuery<C, Block>
 where
 	AccountId: Codec + std::marker::Send,
 	DidIdentifier: Codec + std::marker::Send,
+	Key: Codec + Ord,
+	Balance: Codec,
+	BlockNumber: Codec + MaxEncodedLen,
 	Block: BlockT,
 	C: 'static + ProvideRuntimeApi<Block> + HeaderBackend<Block>,
-	C::Api: DidRuntimeApi<Block, DidIdentifier, AccountId>,
+	C::Api: DidRuntimeApi<Block, DidIdentifier, AccountId, Balance, Key, BlockNumber>,
 {
 	fn query_did_by_w3n(
 		&self,
 		web3name: String,
 		at: Option<<Block as BlockT>::Hash>,
-	) -> Result<Option<RpcDidDocument<DidIdentifier, AccountId>>> {
+	) -> Result<Option<RpcDidDocument<DidIdentifier, AccountId, Balance, Key, BlockNumber>>> {
 		let api = self.client.runtime_api();
 		let at = BlockId::hash(at.unwrap_or_else(||
 			// If the block hash is not supplied assume the best block.
@@ -142,6 +149,7 @@ where
 					.into_iter()
 					.filter_map(raw_did_endpoint_to_rpc)
 					.collect(),
+				details: doc.details,
 			})),
 		}
 	}
@@ -150,7 +158,7 @@ where
 		&self,
 		account: AccountId,
 		at: Option<<Block as BlockT>::Hash>,
-	) -> Result<Option<RpcDidDocument<DidIdentifier, AccountId>>> {
+	) -> Result<Option<RpcDidDocument<DidIdentifier, AccountId, Balance, Key, BlockNumber>>> {
 		let api = self.client.runtime_api();
 		let at = BlockId::hash(at.unwrap_or_else(||
 			// If the block hash is not supplied assume the best block.
@@ -173,6 +181,7 @@ where
 					.into_iter()
 					.filter_map(raw_did_endpoint_to_rpc)
 					.collect(),
+				details: doc.details,
 			})),
 		}
 	}
@@ -181,7 +190,7 @@ where
 		&self,
 		did: DidIdentifier,
 		at: Option<<Block as BlockT>::Hash>,
-	) -> Result<Option<RpcDidDocument<DidIdentifier, AccountId>>> {
+	) -> Result<Option<RpcDidDocument<DidIdentifier, AccountId, Balance, Key, BlockNumber>>> {
 		let api = self.client.runtime_api();
 		let at = BlockId::hash(at.unwrap_or_else(||
 			// If the block hash is not supplied assume the best block.
@@ -204,6 +213,7 @@ where
 					.into_iter()
 					.filter_map(raw_did_endpoint_to_rpc)
 					.collect(),
+				details: doc.details,
 			})),
 		}
 	}
