@@ -59,6 +59,12 @@ where
 	Key: Ord,
 	Balance: FromStr + Display,
 {
+	/// Given a web3name this returns:
+	/// * the DID
+	/// * public keys stored for the did
+	/// * the web3name (optional)
+	/// * associated accounts
+	/// * service endpoints
 	#[rpc(name = "did_queryByWeb3Name")]
 	fn query_did_by_w3n(
 		&self,
@@ -66,6 +72,12 @@ where
 		at: Option<BlockHash>,
 	) -> Result<DidRpcResponse<DidIdentifier, AccountId, Balance, Key, BlockNumber>>;
 
+	/// Given an account this returns:
+	/// * the DID
+	/// * public keys stored for the did
+	/// * the web3name (optional)
+	/// * associated accounts
+	/// * service endpoints
 	#[rpc(name = "did_queryByAccount")]
 	fn query_did_by_account_id(
 		&self,
@@ -73,6 +85,12 @@ where
 		at: Option<BlockHash>,
 	) -> Result<DidRpcResponse<DidIdentifier, AccountId, Balance, Key, BlockNumber>>;
 
+	/// Given a did this returns:
+	/// * the DID
+	/// * public keys stored for the did
+	/// * the web3name (optional)
+	/// * associated accounts
+	/// * service endpoints
 	#[rpc(name = "did_query")]
 	fn query_did(
 		&self,

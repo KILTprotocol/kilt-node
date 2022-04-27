@@ -2871,10 +2871,7 @@ fn check_authentication_successful_operation_verification() {
 			));
 			// Verify that the DID tx counter has increased
 			let did_details = Did::get_did(&call_operation.operation.did).expect("DID should be present on chain.");
-			assert_eq!(
-				did_details.last_tx_counter,
-				mock_did.last_tx_counter + 1u64
-			);
+			assert_eq!(did_details.last_tx_counter, mock_did.last_tx_counter + 1u64);
 		});
 }
 
@@ -2901,10 +2898,7 @@ fn check_attestation_successful_operation_verification() {
 			));
 			// Verify that the DID tx counter has increased
 			let did_details = Did::get_did(&call_operation.operation.did).expect("DID should be present on chain.");
-			assert_eq!(
-				did_details.last_tx_counter,
-				mock_did.last_tx_counter + 1u64
-			);
+			assert_eq!(did_details.last_tx_counter, mock_did.last_tx_counter + 1u64);
 		});
 }
 
@@ -2934,10 +2928,7 @@ fn check_delegation_successful_operation_verification() {
 			));
 			// Verify that the DID tx counter has increased
 			let did_details = Did::get_did(&call_operation.operation.did).expect("DID should be present on chain.");
-			assert_eq!(
-				did_details.last_tx_counter,
-				mock_did.last_tx_counter + 1u64
-			);
+			assert_eq!(did_details.last_tx_counter, mock_did.last_tx_counter + 1u64);
 		});
 }
 

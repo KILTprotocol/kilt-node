@@ -82,8 +82,26 @@ sp_api::decl_runtime_apis! {
 		Key: Codec,
 		Balance: Codec,
 	{
+		/// Given a web3name this returns:
+		/// * the DID
+		/// * public keys stored for the did
+		/// * the web3name (optional)
+		/// * associated accounts
+		/// * service endpoints
 		fn query_did_by_w3n(name: Vec<u8>) -> Option<RawDidDocument<DidIdentifier, AccountId, Balance, Key, BlockNumber>>;
+		/// Given an account address this returns:
+		/// * the DID
+		/// * public keys stored for the did
+		/// * the web3name (optional)
+		/// * associated accounts
+		/// * service endpoints
 		fn query_did_by_account_id(account: AccountId) -> Option<RawDidDocument<DidIdentifier, AccountId, Balance, Key, BlockNumber>>;
+		/// Given a did this returns:
+		/// * the DID
+		/// * public keys stored for the did
+		/// * the web3name (optional)
+		/// * associated accounts
+		/// * service endpoints
 		fn query_did(did: DidIdentifier) -> Option<RawDidDocument<DidIdentifier, AccountId, Balance, Key, BlockNumber>>;
 	}
 }
