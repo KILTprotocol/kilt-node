@@ -57,3 +57,40 @@ mod serde_balance {
 			.map_err(|_| serde::de::Error::custom("Parse from string failed"))
 	}
 }
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[test]
+	fn should_serialize_and_deserialize_properly_with_string() {
+		let deposit = Deposit {
+			owner: 0_u8,
+			amount: 1_000_000_u128,
+		};
+
+		let json_str = r#"{"owner":0,"amount":"1000000"}"#;
+
+		assert_eq!(serde_json::to_string(&deposit).unwrap(), json_str);
+		assert_eq!(serde_json::from_str::<Deposit<u8, u128>>(json_str).unwrap(), deposit);
+
+		// should not panic
+		serde_json::to_value(&deposit).unwrap();
+	}
+
+	#[test]
+	fn should_serialize_and_deserialize_properly_large_value() {
+		let deposit = Deposit {
+			owner: 0_u8,
+			amount: 1_000_000_u128,
+		};
+
+		let json_str = r#"{"owner":0,"amount":"1000000"}"#;
+
+		assert_eq!(serde_json::to_string(&deposit).unwrap(), json_str);
+		assert_eq!(serde_json::from_str::<Deposit<u8, u128>>(json_str).unwrap(), deposit);
+
+		// should not panic
+		serde_json::to_value(&deposit).unwrap();
+	}
+}

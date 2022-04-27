@@ -18,6 +18,9 @@ sp-core = {branch = "polkadot-v0.9.17", default-features = false, git = "https:/
 sp-runtime = {branch = "polkadot-v0.9.17", default-features = false, git = "https://github.com/paritytech/substrate"}
 sp-std = {branch = "polkadot-v0.9.17", default-features = false, git = "https://github.com/paritytech/substrate"}
 
+[dev-dependencies]
+serde_json = "1.0.74"
+
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
 
