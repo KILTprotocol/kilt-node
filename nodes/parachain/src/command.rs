@@ -293,7 +293,7 @@ pub fn run() -> Result<()> {
 					cmd.run(partials.client)
 				}),
 				(BenchmarkCmd::Block(cmd), "peregrine") => runner.sync_run(|config| {
-					let partials = new_partial::<spiritnet_runtime::RuntimeApi, PeregrineRuntimeExecutor, _>(
+					let partials = new_partial::<peregrine_runtime::RuntimeApi, PeregrineRuntimeExecutor, _>(
 						&config,
 						crate::service::build_import_queue,
 					)?;
