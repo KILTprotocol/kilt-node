@@ -419,6 +419,17 @@ pub mod tips {
 	}
 }
 
+pub mod fee {
+	use super::*;
+
+	parameter_types! {
+		/// This value increases the priority of `Operational` transactions by adding
+		/// a "virtual tip" that's equal to the `OperationalFeeMultiplier * final_fee`.
+		pub const OperationalFeeMultiplier: u8 = 5;
+		pub const TransactionByteFee: Balance = MICRO_KILT;
+	}
+}
+
 #[cfg(test)]
 mod tests {
 	use super::*;
