@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use std::sync::Arc;
+use std::{fmt::Display, str::FromStr, sync::Arc};
 
 use codec::{Codec, MaxEncodedLen};
 use did_rpc_runtime_api::{DidDocument, ServiceEndpoint};
@@ -54,6 +54,7 @@ pub trait DidApi<BlockHash, DidIdentifier, AccountId, Balance, Key, BlockNumber>
 where
 	BlockNumber: MaxEncodedLen,
 	Key: Ord,
+	Balance: FromStr + Display,
 {
 	#[rpc(name = "did_queryByWeb3Name")]
 	fn query_did_by_w3n(
@@ -116,7 +117,7 @@ where
 	AccountId: Codec + std::marker::Send,
 	DidIdentifier: Codec + std::marker::Send,
 	Key: Codec + Ord,
-	Balance: Codec,
+	Balance: Codec + FromStr + Display,
 	BlockNumber: Codec + MaxEncodedLen,
 	Block: BlockT,
 	C: 'static + ProvideRuntimeApi<Block> + HeaderBackend<Block>,

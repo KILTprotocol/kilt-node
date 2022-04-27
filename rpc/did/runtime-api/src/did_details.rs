@@ -16,15 +16,31 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+#[cfg(feature = "std")]
+use serde::{Deserialize, Serialize};
+
 use codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
+
 
 use did::{did_details::DidPublicKeyDetails, AccountIdOf, BalanceOf, BlockNumberOf, KeyIdOf};
 use kilt_support::deposit::Deposit;
 
 #[derive(Encode, Decode, TypeInfo, Clone, Debug, PartialEq)]
-#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "std", serde(bound(
+	serialize = "
+		Balance: std::fmt::Display,
+		AccountId: Serialize,
+		Key: Serialize,
+		BlockNumber: Serialize",
+	deserialize = "
+		Balance: std::str::FromStr,
+		AccountId: Deserialize<'de>,
+		Key: Deserialize<'de>,
+		BlockNumber: Deserialize<'de>"
+)))]
 pub struct DidDetails<Key: Ord, BlockNumber: MaxEncodedLen, AccountId, Balance> {
 	pub authentication_key: Key,
 	pub key_agreement_keys: BTreeSet<Key>,
