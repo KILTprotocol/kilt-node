@@ -230,4 +230,5 @@ try-runtime = [
   "pallet-utility/try-runtime",
   "pallet-vesting/try-runtime",
   "parachain-staking/try-runtime",
+  "runtime-common/try-runtime",
 ]
