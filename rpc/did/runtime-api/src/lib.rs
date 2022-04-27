@@ -17,7 +17,6 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 #![cfg_attr(not(feature = "std"), no_std)]
 
-
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 
@@ -33,8 +32,10 @@ pub use service_endpoint::*;
 
 #[derive(Encode, Decode, TypeInfo, PartialEq)]
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "std", serde(bound(
-	serialize = "
+#[cfg_attr(
+	feature = "std",
+	serde(bound(
+		serialize = "
 		Balance: std::fmt::Display,
 		AccountId: Serialize,
 		Key: Serialize,
@@ -44,7 +45,7 @@ pub use service_endpoint::*;
 		Url: Serialize,
 		Id: Serialize,
 		Web3Name: Serialize,",
-	deserialize = "
+		deserialize = "
 		Balance: std::str::FromStr,
 		AccountId: Deserialize<'de>,
 		Key: Deserialize<'de>,
@@ -54,7 +55,8 @@ pub use service_endpoint::*;
 		Url: Deserialize<'de>,
 		Id: Deserialize<'de>,
 		Web3Name: Deserialize<'de>,"
-)))]
+	))
+)]
 pub struct DidDocument<DidIdentifier, AccountId, Web3Name, Id, Type, Url, Balance, Key: Ord, BlockNumber: MaxEncodedLen>
 {
 	pub identifier: DidIdentifier,

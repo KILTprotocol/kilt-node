@@ -13,6 +13,7 @@
 
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use codec::{Decode, Encode, MaxEncodedLen};
@@ -20,18 +21,28 @@ use scale_info::TypeInfo;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 
-
 /// An amount of balance reserved by the specified address.
 #[derive(Clone, Debug, Encode, Decode, PartialEq, TypeInfo, MaxEncodedLen)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[cfg_attr(feature = "std", serde(bound(serialize = "Balance: std::fmt::Display, Account: Serialize")))]
-#[cfg_attr(feature = "std", serde(bound(deserialize = "Balance: std::str::FromStr, Account: Deserialize<'de>")))]
+#[cfg_attr(
+	feature = "std",
+	serde(bound(
+		serialize = "
+		Balance: std::fmt::Display,
+		Account: Serialize",
+		deserialize = "
+		Balance: std::str::FromStr,
+		Account: Deserialize<'de>"
+	))
+)]
 pub struct Deposit<Account, Balance> {
 	pub owner: Account,
 	#[cfg_attr(feature = "std", serde(with = "serde_balance"))]
 	pub amount: Balance,
 }
 
+// This code was copied from https://github.com/paritytech/substrate/blob/ded44948e2d5a398abcb4e342b0513cb690961bb/frame/transaction-payment/src/types.rs#L113
+// It is needed because u128 cannot be serialized by serde out of the box.
 #[cfg(feature = "std")]
 mod serde_balance {
 	use serde::{Deserialize, Deserializer, Serializer};

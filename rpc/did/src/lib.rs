@@ -49,6 +49,9 @@ fn raw_did_endpoint_to_rpc(
 	})
 }
 
+pub type DidRpcResponse<DidIdentifier, AccountId, Balance, Key, BlockNumber> =
+	Option<RpcDidDocument<DidIdentifier, AccountId, Balance, Key, BlockNumber>>;
+
 #[rpc]
 pub trait DidApi<BlockHash, DidIdentifier, AccountId, Balance, Key, BlockNumber>
 where
@@ -61,21 +64,21 @@ where
 		&self,
 		web3name: String,
 		at: Option<BlockHash>,
-	) -> Result<Option<RpcDidDocument<DidIdentifier, AccountId, Balance, Key, BlockNumber>>>;
+	) -> Result<DidRpcResponse<DidIdentifier, AccountId, Balance, Key, BlockNumber>>;
 
 	#[rpc(name = "did_queryByAccount")]
 	fn query_did_by_account_id(
 		&self,
 		account: AccountId,
 		at: Option<BlockHash>,
-	) -> Result<Option<RpcDidDocument<DidIdentifier, AccountId, Balance, Key, BlockNumber>>>;
+	) -> Result<DidRpcResponse<DidIdentifier, AccountId, Balance, Key, BlockNumber>>;
 
 	#[rpc(name = "did_query")]
 	fn query_did(
 		&self,
 		account: DidIdentifier,
 		at: Option<BlockHash>,
-	) -> Result<Option<RpcDidDocument<DidIdentifier, AccountId, Balance, Key, BlockNumber>>>;
+	) -> Result<DidRpcResponse<DidIdentifier, AccountId, Balance, Key, BlockNumber>>;
 }
 
 /// A struct that implements the [`TransactionPaymentApi`].

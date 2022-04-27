@@ -29,7 +29,7 @@ use did_rpc::{DidApi, DidQuery};
 use frame_rpc_system::{FullSystem, SystemApi};
 use pallet_transaction_payment_rpc::{TransactionPayment, TransactionPaymentApi};
 use polkadot_service::AuxStore;
-use runtime_common::{AccountId, Balance, Block, DidIdentifier, Index, BlockNumber, Hash};
+use runtime_common::{AccountId, Balance, Block, BlockNumber, DidIdentifier, Hash, Index};
 use sc_service::Error;
 use sc_transaction_pool_api::TransactionPool;
 use sp_api::ProvideRuntimeApi;

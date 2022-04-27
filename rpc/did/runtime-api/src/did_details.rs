@@ -23,24 +23,26 @@ use codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 
-
 use did::{did_details::DidPublicKeyDetails, AccountIdOf, BalanceOf, BlockNumberOf, KeyIdOf};
 use kilt_support::deposit::Deposit;
 
 #[derive(Encode, Decode, TypeInfo, Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[cfg_attr(feature = "std", serde(bound(
-	serialize = "
+#[cfg_attr(
+	feature = "std",
+	serde(bound(
+		serialize = "
 		Balance: std::fmt::Display,
 		AccountId: Serialize,
 		Key: Serialize,
 		BlockNumber: Serialize",
-	deserialize = "
+		deserialize = "
 		Balance: std::str::FromStr,
 		AccountId: Deserialize<'de>,
 		Key: Deserialize<'de>,
 		BlockNumber: Deserialize<'de>"
-)))]
+	))
+)]
 pub struct DidDetails<Key: Ord, BlockNumber: MaxEncodedLen, AccountId, Balance> {
 	pub authentication_key: Key,
 	pub key_agreement_keys: BTreeSet<Key>,
@@ -58,8 +60,8 @@ impl<T: did::Config> From<did::did_details::DidDetails<T>>
 		Self {
 			authentication_key: did_details.authentication_key,
 			key_agreement_keys: did_details.key_agreement_keys.into(),
-			delegation_key: did_details.delegation_key.into(),
-			attestation_key: did_details.attestation_key.into(),
+			delegation_key: did_details.delegation_key,
+			attestation_key: did_details.attestation_key,
 			public_keys: did_details.public_keys.into(),
 			last_tx_counter: did_details.last_tx_counter,
 			deposit: did_details.deposit,
