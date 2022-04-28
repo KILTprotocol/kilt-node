@@ -14,10 +14,10 @@ substrate-wasm-builder-runner = "3.0.0"
 
 [dev-dependencies]
 kilt-support = {features = ["mock"], path = "../../support"}
-pallet-balances = {branch = "polkadot-v0.9.19", default-features = false, git = "https://github.com/paritytech/substrate"}
+pallet-balances = {branch = "polkadot-v0.9.19", git = "https://github.com/paritytech/substrate"}
 serde = "1.0.136"
-sp-core = {branch = "polkadot-v0.9.19", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-keystore = {branch = "polkadot-v0.9.19", default-features = false, git = "https://github.com/paritytech/substrate"}
+sp-core = {branch = "polkadot-v0.9.19", git = "https://github.com/paritytech/substrate"}
+sp-keystore = {branch = "polkadot-v0.9.19", git = "https://github.com/paritytech/substrate"}
 
 [dependencies]
 codec = {package = "parity-scale-codec", version = "3.1.2", default-features = false, features = ["derive"]}
