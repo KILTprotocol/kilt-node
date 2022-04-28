@@ -10,17 +10,17 @@ version = "1.6.2"
 targets = ["x86_64-unknown-linux-gnu"]
 
 [build-dependencies]
-substrate-wasm-builder-runner = {version = "3.0.0"}
+substrate-wasm-builder-runner = "3.0.0"
 
 [dev-dependencies]
-env_logger = {version = "0.8.3"}
-serde = {version = "1.0.132"}
+env_logger = "0.9.0"
+serde = "1.0.136"
 
 ctype = {features = ["mock"], path = "../ctype"}
 
-frame-benchmarking = {branch = "polkadot-v0.9.19", default-features = false, git = "https://github.com/paritytech/substrate"}
-pallet-balances = {branch = "polkadot-v0.9.19", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-keystore = {branch = "polkadot-v0.9.19", default-features = false, git = "https://github.com/paritytech/substrate"}
+frame-benchmarking = {branch = "polkadot-v0.9.19", git = "https://github.com/paritytech/substrate"}
+pallet-balances = {branch = "polkadot-v0.9.19", git = "https://github.com/paritytech/substrate"}
+sp-keystore = {branch = "polkadot-v0.9.19", git = "https://github.com/paritytech/substrate"}
 
 [dependencies]
 # Internal dependencies
@@ -28,14 +28,13 @@ ctype = {path = "../ctype", optional = true}
 kilt-support = {default-features = false, path = "../../support"}
 
 # External dependencies
-env_logger = {default-features = false, version = "0.8.3", optional = true}
-hex = {default-features = false, features = ["alloc"], version = "0.4.2"}
+hex = {default-features = false, features = ["alloc"], version = "0.4.3"}
 log = "0.4.16"
 
-codec = {package = "parity-scale-codec", version = "3.0.0", default-features = false, features = ["derive"]}
+codec = {package = "parity-scale-codec", version = "3.1.2", default-features = false, features = ["derive"]}
 frame-support = {branch = "polkadot-v0.9.19", default-features = false, git = "https://github.com/paritytech/substrate"}
 frame-system = {branch = "polkadot-v0.9.19", default-features = false, git = "https://github.com/paritytech/substrate"}
-scale-info = {version = "2.0.1", default-features = false, features = ["derive"]}
+scale-info = {version = "2.1.1", default-features = false, features = ["derive"]}
 sp-core = {branch = "polkadot-v0.9.19", default-features = false, git = "https://github.com/paritytech/substrate"}
 sp-io = {branch = "polkadot-v0.9.19", default-features = false, git = "https://github.com/paritytech/substrate"}
 sp-runtime = {branch = "polkadot-v0.9.19", default-features = false, git = "https://github.com/paritytech/substrate"}
@@ -50,7 +49,6 @@ sp-keystore = {branch = "polkadot-v0.9.19", default-features = false, git = "htt
 default = ["std"]
 mock = [
   "ctype",
-  "env_logger",
   "pallet-balances",
   "sp-keystore",
 ]

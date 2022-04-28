@@ -79,9 +79,9 @@ fn get_authority_keys_from_secret(seed: &str) -> (AccountId, AuraId, GrandpaId) 
 
 const TELEMETRY_URL: &str = "wss://telemetry-backend.kilt.io:8080/submit";
 
-const SPORRAN_AUTHORITY_ACC: [u8; 32] = hex!("0621f3a33afc66ab7973e3d2cdf86d30ab89aa3e717e8bb1db23a9cb1736061b");
+const SPORRAN_AUTHORITY_ACC: [u8; 32] = hex!("2c94fbcfe0a7db40579e12bc74d0f7215fe91ba51b3eade92799788ca549f373");
 const SPORRAN_AUTHORITY_SESSION: [u8; 32] = hex!("3bbaa842650064362767a1d9dd8899f531c80dc42eafb9599f4df0965e4a5299");
-const SPORRAN_FAUCET: [u8; 32] = hex!("2c9e9c40e15a2767e2d04dc1f05d824dd76d1d37bada3d7bb1d40eca29f3a4ff");
+const SPORRAN_FAUCET: [u8; 32] = hex!("780d87860ac7a02ebffa10e41a5a486efdebf63d595a44907ec0ced1d8626c4a");
 const TRANSFER_ACCOUNT: [u8; 32] = hex!("6a3c793cec9dbe330b349dc4eea6801090f5e71f53b1b41ad11afb4a313a282c");
 
 impl Alternative {

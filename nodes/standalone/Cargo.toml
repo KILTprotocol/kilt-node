@@ -10,8 +10,7 @@ name = "mashnet-node"
 path = "src/main.rs"
 
 [build-dependencies]
-build-script-utils = {package = "substrate-build-script-utils", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19"}
-vergen = "3.1.0"
+substrate-build-script-utils = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19"}
 
 [dependencies]
 
@@ -20,12 +19,12 @@ mashnet-node-runtime = {path = "../../runtimes/standalone"}
 runtime-common = {path = "../../runtimes/common"}
 
 # External dependencies
-clap = {version = "3.1", features = ["derive"]}
-futures = "0.3"
+clap = {version = "3.1.12", features = ["derive"]}
+futures = "0.3.21"
 hex-literal = "0.3.4"
 log = "0.4.16"
-serde = {version = "1.0.132", features = ["derive"]}
-serde_json = "1.0.74"
+serde = {version = "1.0.136", features = ["derive"]}
+serde_json = "1.0.79"
 
 # Substrate dependencies
 sc-basic-authorship = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.19"}
@@ -75,7 +74,7 @@ runtime-benchmarks = [
   "mashnet-node-runtime/runtime-benchmarks",
   "pallet-conviction-voting/runtime-benchmarks",
   "pallet-referenda/runtime-benchmarks",
-  "runtime-common/runtime-benchmarks"
+  "runtime-common/runtime-benchmarks",
 ]
 try-runtime = [
   "mashnet-node-runtime/try-runtime",

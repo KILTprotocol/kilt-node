@@ -10,7 +10,7 @@ version = "1.6.2"
 targets = ["x86_64-unknown-linux-gnu"]
 
 [build-dependencies]
-substrate-wasm-builder-runner = {version = "3.0.0"}
+substrate-wasm-builder-runner = "3.0.0"
 
 [dev-dependencies]
 attestation = {features = ["mock"], path = "../attestation"}
@@ -18,13 +18,13 @@ ctype = {features = ["mock"], path = "../ctype"}
 kilt-support = {features = ["mock"], path = "../../support"}
 
 # External dependencies
-env_logger = {version = "0.8.4"}
-serde = {version = "1.0.132"}
+env_logger = "0.9.0"
+serde = "1.0.136"
 
 # Substrate dependencies
-pallet-balances = {branch = "polkadot-v0.9.19", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-core = {branch = "polkadot-v0.9.19", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-keystore = {branch = "polkadot-v0.9.19", default-features = false, git = "https://github.com/paritytech/substrate"}
+pallet-balances = {branch = "polkadot-v0.9.19", git = "https://github.com/paritytech/substrate"}
+sp-core = {branch = "polkadot-v0.9.19", git = "https://github.com/paritytech/substrate"}
+sp-keystore = {branch = "polkadot-v0.9.19", git = "https://github.com/paritytech/substrate"}
 
 [dependencies]
 # Internal dependencies
@@ -34,10 +34,10 @@ kilt-support = {default-features = false, path = "../../support"}
 
 #External dependencies
 bitflags = {default-features = false, version = "1.3.2"}
-codec = {package = "parity-scale-codec", version = "3.0.0", default-features = false, features = ["derive"]}
+codec = {package = "parity-scale-codec", version = "3.1.2", default-features = false, features = ["derive"]}
 log = "0.4.16"
-scale-info = {version = "2.0.1", default-features = false, features = ["derive"]}
-serde = {version = "1.0.132", optional = true}
+scale-info = {version = "2.1.1", default-features = false, features = ["derive"]}
+serde = {version = "1.0.136", optional = true}
 
 # Substrate dependencies
 frame-benchmarking = {branch = "polkadot-v0.9.19", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}

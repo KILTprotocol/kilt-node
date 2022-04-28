@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::{traits::Get, BoundedVec, DefaultNoBound};
+use frame_support::{traits::Get, BoundedVec, DefaultNoBound, RuntimeDebug};
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_runtime::{traits::Zero, SaturatedConversion};
@@ -27,10 +27,10 @@ use sp_std::{
 };
 
 #[cfg(feature = "std")]
-use sp_std::{fmt, prelude::*};
+use sp_std::prelude::*;
 
 /// An ordered set backed by `BoundedVec`.
-#[derive(PartialEq, Eq, Encode, Decode, DefaultNoBound, Clone, TypeInfo, MaxEncodedLen)]
+#[derive(PartialEq, Eq, Encode, Decode, DefaultNoBound, Clone, TypeInfo, MaxEncodedLen, RuntimeDebug)]
 #[scale_info(skip_type_params(S))]
 #[codec(mel_bound(T: MaxEncodedLen))]
 pub struct OrderedSet<T, S: Get<u32>>(BoundedVec<T, S>);
@@ -227,17 +227,6 @@ impl<T: Ord + Clone, S: Get<u32>> OrderedSet<T, S> {
 	/// Sorts from greatest to lowest.
 	pub fn sort_greatest_to_lowest(&mut self) {
 		(self.0[..]).sort_by(|a, b| b.cmp(a));
-	}
-}
-
-#[cfg(feature = "std")]
-impl<T, S> fmt::Debug for OrderedSet<T, S>
-where
-	T: fmt::Debug,
-	S: Get<u32>,
-{
-	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		f.debug_tuple("OrderedSet").field(&self.0).finish()
 	}
 }
 
