@@ -123,21 +123,11 @@ mod tests {
 		];
 
 		for valid in valid_inputs {
-			assert!(
-				AsciiWeb3Name::<Test, <Test as Config>::MinNameLength, <Test as Config>::MaxNameLength>::try_from(
-					valid
-				)
-				.is_ok()
-			);
+			assert!(AsciiWeb3Name::<Test>::try_from(valid).is_ok());
 		}
 
 		for invalid in invalid_inputs {
-			assert!(
-				AsciiWeb3Name::<Test, <Test as Config>::MinNameLength, <Test as Config>::MaxNameLength>::try_from(
-					invalid
-				)
-				.is_err(),
-			);
+			assert!(AsciiWeb3Name::<Test>::try_from(invalid).is_err(),);
 		}
 	}
 }

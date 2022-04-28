@@ -103,7 +103,7 @@ impl pallet_balances::Config for Test {
 	type WeightInfo = ();
 }
 
-pub(crate) type TestWeb3Name = AsciiWeb3Name<Test, MinNameLength, MaxNameLength>;
+pub(crate) type TestWeb3Name = AsciiWeb3Name<Test>;
 pub(crate) type TestWeb3NameOwner = SubjectId;
 pub(crate) type TestWeb3NamePayer = AccountId;
 pub(crate) type TestOwnerOrigin = mock_origin::EnsureDoubleOrigin<TestWeb3NamePayer, TestWeb3NameOwner>;
