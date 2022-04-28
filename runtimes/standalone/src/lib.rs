@@ -456,7 +456,7 @@ impl pallet_web3_names::Config for Runtime {
 	type Event = Event;
 	type MaxNameLength = MaxNameLength;
 	type MinNameLength = MinNameLength;
-	type Web3Name = pallet_web3_names::web3_name::AsciiWeb3Name<Runtime, MinNameLength, MaxNameLength>;
+	type Web3Name = pallet_web3_names::web3_name::AsciiWeb3Name<Runtime>;
 	type Web3NameOwner = DidIdentifier;
 	type WeightInfo = ();
 }

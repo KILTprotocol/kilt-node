@@ -12,15 +12,15 @@ targets = ["x86_64-unknown-linux-gnu"]
 [dev-dependencies]
 kilt-support = {features = ["mock"], path = "../../support"}
 
-pallet-balances = {branch = "polkadot-v0.9.19", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-core = {branch = "polkadot-v0.9.19", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-io = {branch = "polkadot-v0.9.19", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-keystore = {branch = "polkadot-v0.9.19", default-features = false, git = "https://github.com/paritytech/substrate"}
+pallet-balances = {branch = "polkadot-v0.9.19", git = "https://github.com/paritytech/substrate"}
+sp-core = {branch = "polkadot-v0.9.19", git = "https://github.com/paritytech/substrate"}
+sp-io = {branch = "polkadot-v0.9.19", git = "https://github.com/paritytech/substrate"}
+sp-keystore = {branch = "polkadot-v0.9.19", git = "https://github.com/paritytech/substrate"}
 
 [dependencies]
-codec = {package = "parity-scale-codec", version = "3.0.0", default-features = false, features = ["derive"]}
+codec = {package = "parity-scale-codec", version = "3.1.2", default-features = false, features = ["derive"]}
 log = "0.4.16"
-scale-info = {version = "2.0.1", default-features = false, features = ["derive"]}
+scale-info = {version = "2.1.1", default-features = false, features = ["derive"]}
 
 # KILT
 kilt-support = {default-features = false, path = "../../support"}
