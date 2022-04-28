@@ -57,7 +57,6 @@ use runtime_common::{
 	constants::{self, KILT, MILLI_KILT},
 	fees::ToAuthor,
 	pallet_id, AccountId, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature, SlowAdjustingFeeUpdate,
-	Web3Name,
 };
 
 pub use pallet_timestamp::Call as TimestampCall;
@@ -446,7 +445,7 @@ impl pallet_web3_names::Config for Runtime {
 	type Event = Event;
 	type MaxNameLength = constants::web3_names::MaxNameLength;
 	type MinNameLength = constants::web3_names::MinNameLength;
-	type Web3Name = Web3Name<Runtime>;
+	type Web3Name = pallet_web3_names::web3_name::AsciiWeb3Name<Runtime>;
 	type Web3NameOwner = DidIdentifier;
 	type WeightInfo = ();
 }
@@ -912,7 +911,7 @@ impl_runtime_apis! {
 				BlockNumber
 			>
 		> {
-			let name: Web3Name<Runtime> = name.try_into().ok()?;
+			let name: pallet_web3_names::web3_name::AsciiWeb3Name<Runtime> = name.try_into().ok()?;
 			pallet_web3_names::Owner::<Runtime>::get(&name)
 				.and_then(|owner_info| {
 					did::Did::<Runtime>::get(&owner_info.owner).map(|details| (owner_info, details))

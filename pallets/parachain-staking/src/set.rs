@@ -30,7 +30,7 @@ use sp_std::{
 use sp_std::prelude::*;
 
 /// An ordered set backed by `BoundedVec`.
-#[derive(PartialEq, Eq, Encode, Decode, RuntimeDebug, DefaultNoBound, Clone, TypeInfo, MaxEncodedLen)]
+#[derive(PartialEq, Eq, Encode, Decode, DefaultNoBound, Clone, TypeInfo, MaxEncodedLen, RuntimeDebug)]
 #[scale_info(skip_type_params(S))]
 #[codec(mel_bound(T: MaxEncodedLen))]
 pub struct OrderedSet<T, S: Get<u32>>(BoundedVec<T, S>);

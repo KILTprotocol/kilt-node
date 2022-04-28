@@ -43,7 +43,7 @@ pub(crate) type ServiceEndpointUrlEntries<T> =
 	BoundedVec<ServiceEndpointUrl<T>, <T as Config>::MaxNumberOfUrlsPerService>;
 
 /// A single service endpoint description.
-#[derive(Clone, Decode, Encode, RuntimeDebug, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
+#[derive(Clone, Decode, RuntimeDebug, Encode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 #[scale_info(skip_type_params(T))]
 #[codec(mel_bound())]
 pub struct DidEndpoint<T: Config> {

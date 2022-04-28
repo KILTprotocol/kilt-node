@@ -23,11 +23,12 @@ use frame_support::{
 	traits::Get,
 	RuntimeDebug,
 };
-use kilt_support::deposit::Deposit;
 use scale_info::TypeInfo;
 use sp_core::{ecdsa, ed25519, sr25519};
 use sp_runtime::{traits::Verify, MultiSignature, SaturatedConversion};
 use sp_std::{convert::TryInto, vec::Vec};
+
+use kilt_support::deposit::Deposit;
 
 use crate::{
 	errors::{DidError, InputError, SignatureError, StorageError},
@@ -36,7 +37,7 @@ use crate::{
 };
 
 /// Types of verification keys a DID can control.
-#[derive(Clone, Decode, Debug, Encode, Eq, Ord, PartialEq, PartialOrd, TypeInfo, MaxEncodedLen)]
+#[derive(Clone, Decode, RuntimeDebug, Encode, Eq, Ord, PartialEq, PartialOrd, TypeInfo, MaxEncodedLen)]
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 pub enum DidVerificationKey {
 	/// An Ed25519 public key.
@@ -88,7 +89,7 @@ impl From<ecdsa::Public> for DidVerificationKey {
 }
 
 /// Types of encryption keys a DID can control.
-#[derive(Clone, Copy, Decode, Debug, Encode, Eq, Ord, PartialEq, PartialOrd, TypeInfo, MaxEncodedLen)]
+#[derive(Clone, Copy, Decode, RuntimeDebug, Encode, Eq, Ord, PartialEq, PartialOrd, TypeInfo, MaxEncodedLen)]
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 pub enum DidEncryptionKey {
 	/// An X25519 public key.
@@ -96,7 +97,7 @@ pub enum DidEncryptionKey {
 }
 
 /// A general public key under the control of the DID.
-#[derive(Clone, Decode, Debug, Encode, Eq, Ord, PartialEq, PartialOrd, TypeInfo, MaxEncodedLen)]
+#[derive(Clone, Decode, RuntimeDebug, Encode, Eq, Ord, PartialEq, PartialOrd, TypeInfo, MaxEncodedLen)]
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 pub enum DidPublicKey {
 	/// A verification key, used to generate and verify signatures.
@@ -119,7 +120,7 @@ impl From<DidEncryptionKey> for DidPublicKey {
 
 /// Verification methods a verification key can
 /// fulfil, according to the [DID specification](https://w3c.github.io/did-spec-registries/#verification-relationships).
-#[derive(Clone, Copy, Debug, Decode, Encode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
+#[derive(Clone, Copy, RuntimeDebug, Decode, Encode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub enum DidVerificationKeyRelationship {
 	/// Key used to authenticate all the DID operations.
 	Authentication,
@@ -132,7 +133,7 @@ pub enum DidVerificationKeyRelationship {
 }
 
 /// Types of signatures supported by this pallet.
-#[derive(Clone, Decode, Debug, Encode, Eq, PartialEq, TypeInfo)]
+#[derive(Clone, Decode, RuntimeDebug, Encode, Eq, PartialEq, TypeInfo)]
 pub enum DidSignature {
 	/// A Ed25519 signature.
 	Ed25519(ed25519::Signature),
@@ -233,7 +234,8 @@ impl<I: AsRef<[u8; 32]>> DidVerifiableIdentifier for I {
 ///
 /// It is currently used to keep track of all the past and current
 /// attestation keys a DID might control.
-#[derive(Clone, Debug, Decode, Encode, PartialEq, Ord, PartialOrd, Eq, TypeInfo, MaxEncodedLen)]
+#[derive(Clone, RuntimeDebug, Decode, Encode, PartialEq, Ord, PartialOrd, Eq, TypeInfo, MaxEncodedLen)]
+#[scale_info(skip_type_params(T))]
 #[codec(mel_bound())]
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 pub struct DidPublicKeyDetails<BlockNumber: MaxEncodedLen> {
@@ -545,7 +547,7 @@ pub(crate) type DidPublicKeyMap<T> =
 	BoundedBTreeMap<KeyIdOf<T>, DidPublicKeyDetails<BlockNumberOf<T>>, <T as Config>::MaxPublicKeysPerDid>;
 
 /// The details of a new DID to create.
-#[derive(Clone, Decode, Encode, PartialEq, TypeInfo, RuntimeDebug)]
+#[derive(Clone, RuntimeDebug, Decode, Encode, PartialEq, TypeInfo)]
 #[scale_info(skip_type_params(T))]
 
 pub struct DidCreationDetails<T: Config> {

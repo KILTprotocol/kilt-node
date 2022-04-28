@@ -82,7 +82,6 @@ const TELEMETRY_URL: &str = "wss://telemetry-backend.kilt.io:8080/submit";
 const SPORRAN_AUTHORITY_ACC: [u8; 32] = hex!("2c94fbcfe0a7db40579e12bc74d0f7215fe91ba51b3eade92799788ca549f373");
 const SPORRAN_AUTHORITY_SESSION: [u8; 32] = hex!("3bbaa842650064362767a1d9dd8899f531c80dc42eafb9599f4df0965e4a5299");
 const SPORRAN_FAUCET: [u8; 32] = hex!("780d87860ac7a02ebffa10e41a5a486efdebf63d595a44907ec0ced1d8626c4a");
-
 const TRANSFER_ACCOUNT: [u8; 32] = hex!("6a3c793cec9dbe330b349dc4eea6801090f5e71f53b1b41ad11afb4a313a282c");
 
 impl Alternative {

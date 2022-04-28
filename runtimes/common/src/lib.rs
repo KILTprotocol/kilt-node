@@ -191,9 +191,3 @@ where
 		})
 	}
 }
-
-pub type Web3Name<R> = pallet_web3_names::web3_name::AsciiWeb3Name<
-	R,
-	constants::web3_names::MinNameLength,
-	constants::web3_names::MaxNameLength,
->;
