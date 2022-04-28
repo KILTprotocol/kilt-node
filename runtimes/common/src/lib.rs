@@ -20,6 +20,14 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
+use constants::{AVERAGE_ON_INITIALIZE_RATIO, MAXIMUM_BLOCK_WEIGHT, NORMAL_DISPATCH_RATIO};
+use fees::SplitFeesByRatio;
+
+pub use sp_consensus_aura::sr25519::AuthorityId;
+
+pub use opaque::*;
+
+pub use frame_support::weights::constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight};
 use frame_support::{
 	parameter_types,
 	traits::{Contains, ContainsLengthBound, Currency, Get, SortedMembers},
@@ -33,16 +41,6 @@ use sp_runtime::{
 	FixedPointNumber, MultiSignature, Perquintill, SaturatedConversion,
 };
 use sp_std::marker::PhantomData;
-
-use crate::{
-	constants::{AVERAGE_ON_INITIALIZE_RATIO, MAXIMUM_BLOCK_WEIGHT, NORMAL_DISPATCH_RATIO},
-	fees::SplitFeesByRatio,
-};
-
-pub use frame_support::weights::constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight};
-pub use sp_consensus_aura::sr25519::AuthorityId;
-
-pub use crate::opaque::*;
 
 pub mod authorization;
 pub mod constants;
@@ -160,6 +158,7 @@ pub type FeeSplit<R, B1, B2> = SplitFeesByRatio<R, FeeSplitRatio, B1, B2>;
 /// https://w3f-research.readthedocs.io/en/latest/polkadot/Token%20Economics.html#-2.-slow-adjusting-mechanism
 pub type SlowAdjustingFeeUpdate<R> =
 	TargetedFeeAdjustment<R, TargetBlockFullness, AdjustmentVariable, MinimumMultiplier>;
+
 pub struct Tippers<R, I>(PhantomData<R>, PhantomData<I>);
 impl<R, I: 'static> ContainsLengthBound for Tippers<R, I>
 where

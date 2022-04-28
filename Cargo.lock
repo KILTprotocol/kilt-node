@@ -8906,14 +8906,12 @@ name = "runtime-common"
 version = "1.6.2"
 dependencies = [
  "attestation",
- "did",
  "frame-support",
  "frame-system",
  "pallet-authorship",
  "pallet-balances",
  "pallet-membership",
  "pallet-transaction-payment",
- "pallet-web3-names",
  "parachain-staking",
  "parity-scale-codec",
  "scale-info",
