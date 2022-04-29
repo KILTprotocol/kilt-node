@@ -135,7 +135,6 @@ runtime-benchmarks = [
   "sp-runtime/runtime-benchmarks",
 ]
 std = [
-  "did-rpc-runtime-api/std",
   "attestation/std",
   "codec/std",
   "ctype/std",
@@ -145,6 +144,7 @@ std = [
   "cumulus-primitives-core/std",
   "cumulus-primitives-timestamp/std",
   "delegation/std",
+  "did-rpc-runtime-api/std",
   "did/std",
   "frame-benchmarking/std",
   "frame-executive/std",

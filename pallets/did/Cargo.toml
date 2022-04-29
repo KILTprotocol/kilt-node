@@ -62,7 +62,6 @@ runtime-benchmarks = [
   "kilt-support/runtime-benchmarks",
 ]
 std = [
-  "serde",
   "codec/std",
   "ctype/std",
   "frame-support/std",
@@ -72,6 +71,7 @@ std = [
   "log/std",
   "pallet-balances/std",
   "scale-info/std",
+  "serde",
   "sp-core/std",
   "sp-io/std",
   "sp-keystore/std",
