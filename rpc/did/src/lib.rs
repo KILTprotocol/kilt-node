@@ -151,7 +151,7 @@ where
 	) -> Result<Option<RpcDidDocument<DidIdentifier, AccountId, Balance, Key, BlockNumber>>> {
 		let api = self.client.runtime_api();
 		let at = BlockId::hash(at.unwrap_or_else(||
-			// If the block hash is not supplied assume the best block.
+			// If the block hash is not provided, assume the best block.
 			self.client.info().best_hash));
 
 		match api.query_did_by_w3n(&at, web3name.into()) {
