@@ -8865,7 +8865,6 @@ dependencies = [
  "frame-support",
  "frame-system",
  "frame-try-runtime",
- "hex-literal",
  "log",
  "pallet-authorship",
  "pallet-balances",
