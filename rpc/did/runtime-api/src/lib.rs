@@ -57,7 +57,7 @@ pub use service_endpoint::*;
 		Web3Name: Deserialize<'de>,"
 	))
 )]
-pub struct DidDocument<DidIdentifier, AccountId, Web3Name, Id, Type, Url, Balance, Key: Ord, BlockNumber: MaxEncodedLen>
+pub struct DidLinkedInfo<DidIdentifier, AccountId, Web3Name, Id, Type, Url, Balance, Key: Ord, BlockNumber: MaxEncodedLen>
 {
 	pub identifier: DidIdentifier,
 	pub accounts: Vec<AccountId>,
@@ -66,12 +66,12 @@ pub struct DidDocument<DidIdentifier, AccountId, Web3Name, Id, Type, Url, Balanc
 	pub details: DidDetails<Key, BlockNumber, AccountId, Balance>,
 }
 
-/// The DidDocument with a Web3Name represented as a byte array.
+/// The DidLinkedInfo with a Web3Name represented as a byte array.
 ///
 /// This will be returned by the runtime and processed by the client side RPC
 /// implementation.
-pub type RawDidDocument<DidIdentifier, AccountId, Balance, Key, BlockNumber> =
-	DidDocument<DidIdentifier, AccountId, Vec<u8>, Vec<u8>, Vec<u8>, Vec<u8>, Balance, Key, BlockNumber>;
+pub type RawDidLinkedInfo<DidIdentifier, AccountId, Balance, Key, BlockNumber> =
+	DidLinkedInfo<DidIdentifier, AccountId, Vec<u8>, Vec<u8>, Vec<u8>, Vec<u8>, Balance, Key, BlockNumber>;
 
 sp_api::decl_runtime_apis! {
 	/// The API to query account nonce (aka transaction index).
@@ -88,20 +88,20 @@ sp_api::decl_runtime_apis! {
 		/// * the web3name (optional)
 		/// * associated accounts
 		/// * service endpoints
-		fn query_did_by_w3n(name: Vec<u8>) -> Option<RawDidDocument<DidIdentifier, AccountId, Balance, Key, BlockNumber>>;
+		fn query_did_by_w3n(name: Vec<u8>) -> Option<RawDidLinkedInfo<DidIdentifier, AccountId, Balance, Key, BlockNumber>>;
 		/// Given an account address this returns:
 		/// * the DID
 		/// * public keys stored for the did
 		/// * the web3name (optional)
 		/// * associated accounts
 		/// * service endpoints
-		fn query_did_by_account_id(account: AccountId) -> Option<RawDidDocument<DidIdentifier, AccountId, Balance, Key, BlockNumber>>;
+		fn query_did_by_account_id(account: AccountId) -> Option<RawDidLinkedInfo<DidIdentifier, AccountId, Balance, Key, BlockNumber>>;
 		/// Given a did this returns:
 		/// * the DID
 		/// * public keys stored for the did
 		/// * the web3name (optional)
 		/// * associated accounts
 		/// * service endpoints
-		fn query_did(did: DidIdentifier) -> Option<RawDidDocument<DidIdentifier, AccountId, Balance, Key, BlockNumber>>;
+		fn query_did(did: DidIdentifier) -> Option<RawDidLinkedInfo<DidIdentifier, AccountId, Balance, Key, BlockNumber>>;
 	}
 }

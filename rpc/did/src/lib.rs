@@ -19,7 +19,7 @@
 use std::{fmt::Display, str::FromStr, sync::Arc};
 
 use codec::{Codec, MaxEncodedLen};
-use did_rpc_runtime_api::{DidDocument, ServiceEndpoint};
+use did_rpc_runtime_api::{DidLinkedInfo, ServiceEndpoint};
 use jsonrpc_core::{Error as RpcError, ErrorCode, Result};
 use jsonrpc_derive::rpc;
 use sp_api::ProvideRuntimeApi;
@@ -28,8 +28,8 @@ use sp_runtime::{generic::BlockId, traits::Block as BlockT};
 
 pub use did_rpc_runtime_api::DidApi as DidRuntimeApi;
 
-pub type RpcDidDocument<DidIdentifier, AccountId, Balance, Key, BlockNumber> =
-	DidDocument<DidIdentifier, AccountId, String, String, String, String, Balance, Key, BlockNumber>;
+pub type RpcDidLinkedInfo<DidIdentifier, AccountId, Balance, Key, BlockNumber> =
+	DidLinkedInfo<DidIdentifier, AccountId, String, String, String, String, Balance, Key, BlockNumber>;
 
 fn raw_did_endpoint_to_rpc(
 	raw: ServiceEndpoint<Vec<u8>, Vec<u8>, Vec<u8>>,
@@ -50,7 +50,7 @@ fn raw_did_endpoint_to_rpc(
 }
 
 pub type DidRpcResponse<DidIdentifier, AccountId, Balance, Key, BlockNumber> =
-	Option<RpcDidDocument<DidIdentifier, AccountId, Balance, Key, BlockNumber>>;
+	Option<RpcDidLinkedInfo<DidIdentifier, AccountId, Balance, Key, BlockNumber>>;
 
 #[rpc]
 pub trait DidApi<BlockHash, DidIdentifier, AccountId, Balance, Key, BlockNumber>
@@ -148,7 +148,7 @@ where
 		&self,
 		web3name: String,
 		at: Option<<Block as BlockT>::Hash>,
-	) -> Result<Option<RpcDidDocument<DidIdentifier, AccountId, Balance, Key, BlockNumber>>> {
+	) -> Result<Option<RpcDidLinkedInfo<DidIdentifier, AccountId, Balance, Key, BlockNumber>>> {
 		let api = self.client.runtime_api();
 		let at = BlockId::hash(at.unwrap_or_else(||
 			// If the block hash is not provided, assume the best block.
@@ -160,7 +160,7 @@ where
 				message: "Unable to query dispatch info.".into(),
 				data: Some(e.to_string().into()),
 			}),
-			Ok(doc) => Ok(doc.map(|doc| RpcDidDocument {
+			Ok(doc) => Ok(doc.map(|doc| RpcDidLinkedInfo {
 				// convert the w3n from a byte array to a string. if it's invalid utf-8 which should never happen, we
 				// ignore the w3n and pretend it doesn't exist.
 				w3n: doc.w3n.and_then(|w3n| String::from_utf8(w3n).ok()),
@@ -180,7 +180,7 @@ where
 		&self,
 		account: AccountId,
 		at: Option<<Block as BlockT>::Hash>,
-	) -> Result<Option<RpcDidDocument<DidIdentifier, AccountId, Balance, Key, BlockNumber>>> {
+	) -> Result<Option<RpcDidLinkedInfo<DidIdentifier, AccountId, Balance, Key, BlockNumber>>> {
 		let api = self.client.runtime_api();
 		let at = BlockId::hash(at.unwrap_or_else(||
 			// If the block hash is not supplied assume the best block.
@@ -192,7 +192,7 @@ where
 				message: "Unable to query fee details.".into(),
 				data: Some(e.to_string().into()),
 			}),
-			Ok(doc) => Ok(doc.map(|doc| RpcDidDocument {
+			Ok(doc) => Ok(doc.map(|doc| RpcDidLinkedInfo {
 				// convert the w3n from a byte array to a string. if it's invalid utf-8 which should never happen, we
 				// ignore the w3n and pretend it doesn't exist.
 				w3n: doc.w3n.and_then(|w3n| String::from_utf8(w3n).ok()),
@@ -212,7 +212,7 @@ where
 		&self,
 		did: DidIdentifier,
 		at: Option<<Block as BlockT>::Hash>,
-	) -> Result<Option<RpcDidDocument<DidIdentifier, AccountId, Balance, Key, BlockNumber>>> {
+	) -> Result<Option<RpcDidLinkedInfo<DidIdentifier, AccountId, Balance, Key, BlockNumber>>> {
 		let api = self.client.runtime_api();
 		let at = BlockId::hash(at.unwrap_or_else(||
 			// If the block hash is not supplied assume the best block.
@@ -224,7 +224,7 @@ where
 				message: "Unable to query fee details.".into(),
 				data: Some(e.to_string().into()),
 			}),
-			Ok(doc) => Ok(doc.map(|doc| RpcDidDocument {
+			Ok(doc) => Ok(doc.map(|doc| RpcDidLinkedInfo {
 				// convert the w3n from a byte array to a string. if it's invalid utf-8 which should never happen, we
 				// ignore the w3n and pretend it doesn't exist.
 				w3n: doc.w3n.and_then(|w3n| String::from_utf8(w3n).ok()),
