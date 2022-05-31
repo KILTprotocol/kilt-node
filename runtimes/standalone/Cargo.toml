@@ -21,7 +21,6 @@ attestation = {default-features = false, path = "../../pallets/attestation"}
 ctype = {default-features = false, path = "../../pallets/ctype"}
 delegation = {default-features = false, path = "../../pallets/delegation"}
 did = {default-features = false, path = "../../pallets/did"}
-kilt-launch = {default-features = false, path = "../../pallets/kilt-launch"}
 kilt-support = {path = "../../support", default-features = false, optional = true}
 pallet-did-lookup = {default-features = false, path = "../../pallets/pallet-did-lookup"}
 pallet-web3-names = {default-features = false, path = "../../pallets/pallet-web3-names"}
@@ -81,7 +80,6 @@ runtime-benchmarks = [
   "frame-system/runtime-benchmarks",
   "frame-system-benchmarking",
   "hex-literal",
-  "kilt-launch/runtime-benchmarks",
   "runtime-common/runtime-benchmarks",
   "kilt-support",
   "kilt-support/runtime-benchmarks",
@@ -106,7 +104,6 @@ std = [
   "frame-system/std",
   "frame-system-rpc-runtime-api/std",
   "frame-try-runtime/std",
-  "kilt-launch/std",
   "log/std",
   "pallet-aura/std",
   "pallet-authorship/std",
@@ -149,7 +146,6 @@ try-runtime = [
   "frame-support/try-runtime",
   "frame-system/try-runtime",
   "frame-try-runtime",
-  "kilt-launch/try-runtime",
   "pallet-aura/try-runtime",
   "pallet-authorship/try-runtime",
   "pallet-balances/try-runtime",
