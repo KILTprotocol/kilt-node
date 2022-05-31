@@ -45,7 +45,7 @@ impl<R: frame_system::Config> frame_support::traits::OnRuntimeUpgrade for Remove
 		let prefix: [u8; 16] = sp_io::hashing::twox_128(b"KiltLaunch");
 
 		assert!(
-			sp_io::storage::next_key(&prefix).map_or(true, |next_key| next_key.starts_with(&prefix)),
+			sp_io::storage::next_key(&prefix).map_or(false, |next_key| next_key.starts_with(&prefix)),
 			"🚀 Pre check: Launch pallet storage does not exist!"
 		);
 		Ok(())
