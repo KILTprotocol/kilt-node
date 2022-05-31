@@ -188,7 +188,7 @@ const RILT_TRANS_ACC: [u8; 32] = hex!["6e016ca65cd213156c075da95c132bd1917762de0
 pub fn get_chain_spec_rilt() -> Result<ChainSpec, String> {
 	let properties = get_properties("RILT", 15, 38);
 	let wasm = WASM_BINARY.ok_or("No WASM")?;
-	let id: ParaId = 2015.into();
+	let id: ParaId = 2108.into();
 
 	Ok(ChainSpec::from_genesis(
 		"RILT",
