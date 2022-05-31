@@ -14,7 +14,6 @@ def update_spec(input: typing.Dict):
     input["properties"]["tokenSymbol"] = "PILT"
     input["genesis"]["runtime"]["parachainInfo"]["parachainId"] = para_id
     input["genesis"]["runtime"]["sudo"]["key"] = "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"
-    input["genesis"]["runtime"]["kiltLaunch"]["transferAccount"] = "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty"
     input["genesis"]["runtime"]["parachainStaking"]["stakers"] = [
         [
             "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
