@@ -28,7 +28,7 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::{
 	construct_runtime, parameter_types,
-	traits::{Contains, EnsureOneOf, InstanceFilter, PrivilegeCmp},
+	traits::{EnsureOneOf, InstanceFilter, PrivilegeCmp},
 	weights::{constants::RocksDbWeight, ConstantMultiplier, Weight},
 };
 use frame_system::EnsureRoot;
@@ -100,16 +100,6 @@ parameter_types! {
 	pub const SS58Prefix: u8 = 38;
 }
 
-pub struct BaseFilter;
-impl Contains<Call> for BaseFilter {
-	fn contains(c: &Call) -> bool {
-		!matches!(
-			c,
-			Call::KiltLaunch(kilt_launch::Call::locked_transfer { .. }) | Call::Delegation { .. }
-		)
-	}
-}
-
 impl frame_system::Config for Runtime {
 	/// The identifier used to distinguish between accounts.
 	type AccountId = AccountId;
@@ -143,7 +133,7 @@ impl frame_system::Config for Runtime {
 	type OnNewAccount = ();
 	type OnKilledAccount = ();
 	type DbWeight = RocksDbWeight;
-	type BaseCallFilter = BaseFilter;
+	type BaseCallFilter = frame_support::traits::Everything;
 	type SystemWeightInfo = weights::frame_system::WeightInfo<Runtime>;
 	type BlockWeights = BlockWeights;
 	type BlockLength = BlockLength;
@@ -270,15 +260,6 @@ parameter_types! {
 	pub const MaxClaims: u32 = 50;
 	pub const UsableBalance: Balance = KILT;
 	pub const AutoUnlockBound: u32 = 100;
-}
-
-impl kilt_launch::Config for Runtime {
-	type Event = Event;
-	type MaxClaims = MaxClaims;
-	type UsableBalance = UsableBalance;
-	type AutoUnlockBound = AutoUnlockBound;
-	type WeightInfo = weights::kilt_launch::WeightInfo<Runtime>;
-	type PalletId = pallet_id::Launch;
 }
 
 impl pallet_preimage::Config for Runtime {
@@ -700,7 +681,6 @@ impl InstanceFilter<Call> for ProxyType {
 							| pallet_indices::Call::free { .. }
 							| pallet_indices::Call::freeze { .. }
 					)
-					// Excludes `KiltLaunch`
 					| Call::ParachainStaking(..)
 					// Excludes `ParachainSystem`
 					| Call::Preimage(..)
@@ -763,7 +743,6 @@ impl InstanceFilter<Call> for ProxyType {
 							| pallet_did_lookup::Call::remove_sender_association { .. }
 					)
 					| Call::Indices(..)
-					// Excludes `KiltLaunch`
 					| Call::ParachainStaking(..)
 					// Excludes `ParachainSystem`
 					| Call::Preimage(..)
@@ -884,7 +863,7 @@ construct_runtime! {
 		Tips: pallet_tips::{Pallet, Call, Storage, Event<T>} = 46,
 
 		// KILT Pallets. Start indices 60 to leave room
-		KiltLaunch: kilt_launch = 60,
+		// DELETED:	KiltLaunch: kilt_launch = 60,
 		Ctype: ctype = 61,
 		Attestation: attestation = 62,
 		Delegation: delegation = 63,
@@ -980,7 +959,7 @@ pub type Executive = frame_executive::Executive<
 	// Executes pallet hooks in reverse order of definition in construct_runtime
 	// If we want to switch to AllPalletsWithSystem, we need to reorder the staking pallets
 	AllPalletsReversedWithSystemFirst,
-	pallet_did_lookup::migrations::LookupReverseIndexMigration<Runtime>,
+	runtime_common::migrations::RemoveKiltLaunch<Runtime>,
 >;
 
 impl_runtime_apis! {
@@ -1125,7 +1104,6 @@ impl_runtime_apis! {
 			list_benchmark!(list, extra, delegation, Delegation);
 			list_benchmark!(list, extra, did, Did);
 			list_benchmark!(list, extra, pallet_did_lookup, DidLookup);
-			list_benchmark!(list, extra, kilt_launch, KiltLaunch);
 			list_benchmark!(list, extra, pallet_inflation, Inflation);
 			list_benchmark!(list, extra, parachain_staking, ParachainStaking);
 			list_benchmark!(list, extra, pallet_web3_names, Web3Names);
@@ -1163,8 +1141,6 @@ impl_runtime_apis! {
 				// System Events
 				hex_literal::hex!("26aa394eea5630e07c48ae0c9558cef780d41e5e16056765bc8461851072c9d7")
 					.to_vec().into(),
-				// KiltLaunch transfer account
-				hex_literal::hex!("6a3c793cec9dbe330b349dc4eea6801090f5e71f53b1b41ad11afb4a313a282c").to_vec().into(),
 			];
 
 			let mut batches = Vec::<BenchmarkBatch>::new();
@@ -1194,7 +1170,6 @@ impl_runtime_apis! {
 			add_benchmark!(params, batches, delegation, Delegation);
 			add_benchmark!(params, batches, did, Did);
 			add_benchmark!(params, batches, pallet_did_lookup, DidLookup);
-			add_benchmark!(params, batches, kilt_launch, KiltLaunch);
 			add_benchmark!(params, batches, pallet_inflation, Inflation);
 			add_benchmark!(params, batches, parachain_staking, ParachainStaking);
 			add_benchmark!(params, batches, pallet_web3_names, Web3Names);

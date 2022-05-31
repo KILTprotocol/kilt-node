@@ -19,10 +19,9 @@
 //! KILT chain specification
 
 use mashnet_node_runtime::{
-	BalancesConfig, GenesisConfig, IndicesConfig, KiltLaunchConfig, SessionConfig, SudoConfig, SystemConfig,
-	VestingConfig, WASM_BINARY,
+	BalancesConfig, GenesisConfig, IndicesConfig, SessionConfig, SudoConfig, SystemConfig, VestingConfig, WASM_BINARY,
 };
-use runtime_common::{constants::BLOCKS_PER_YEAR, AccountId, AccountPublic, Balance, BlockNumber};
+use runtime_common::{AccountId, AccountPublic, Balance, BlockNumber};
 
 use hex_literal::hex;
 
@@ -81,8 +80,7 @@ const TELEMETRY_URL: &str = "wss://telemetry-backend.kilt.io:8080/submit";
 
 const SPORRAN_AUTHORITY_ACC: [u8; 32] = hex!("2c94fbcfe0a7db40579e12bc74d0f7215fe91ba51b3eade92799788ca549f373");
 const SPORRAN_AUTHORITY_SESSION: [u8; 32] = hex!("3bbaa842650064362767a1d9dd8899f531c80dc42eafb9599f4df0965e4a5299");
-const SPORRAN_FAUCET: [u8; 32] = hex!("780d87860ac7a02ebffa10e41a5a486efdebf63d595a44907ec0ced1d8626c4a");
-const TRANSFER_ACCOUNT: [u8; 32] = hex!("6a3c793cec9dbe330b349dc4eea6801090f5e71f53b1b41ad11afb4a313a282c");
+const SPORRAN_FAUCET: [u8; 32] = hex!("2c9e9c40e15a2767e2d04dc1f05d824dd76d1d37bada3d7bb1d40eca29f3a4ff");
 
 impl Alternative {
 	/// Get an actual chain config from one of the alternatives.
@@ -215,19 +213,6 @@ fn testnet_genesis(
 		aura: Default::default(),
 		grandpa: Default::default(),
 		sudo: SudoConfig { key: Some(root_key) },
-		kilt_launch: KiltLaunchConfig {
-			balance_locks: airdrop_accounts
-				.iter()
-				.cloned()
-				.map(|(who, amount, _, locking_length)| (who, locking_length * BLOCKS_PER_YEAR / 12, amount))
-				.collect(),
-			vesting: airdrop_accounts
-				.iter()
-				.cloned()
-				.map(|(who, amount, vesting_length, _)| (who, vesting_length * BLOCKS_PER_YEAR / 12, amount))
-				.collect(),
-			transfer_account: TRANSFER_ACCOUNT.into(),
-		},
 		vesting: VestingConfig { vesting: vec![] },
 	}
 }

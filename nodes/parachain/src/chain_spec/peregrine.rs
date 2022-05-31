@@ -21,9 +21,8 @@
 use cumulus_primitives_core::ParaId;
 use hex_literal::hex;
 use peregrine_runtime::{
-	BalancesConfig, CouncilConfig, GenesisConfig, InflationInfo, KiltLaunchConfig, ParachainInfoConfig,
-	ParachainStakingConfig, SessionConfig, SudoConfig, SystemConfig, TechnicalCommitteeConfig, VestingConfig,
-	WASM_BINARY,
+	BalancesConfig, CouncilConfig, GenesisConfig, InflationInfo, ParachainInfoConfig, ParachainStakingConfig,
+	SessionConfig, SudoConfig, SystemConfig, TechnicalCommitteeConfig, VestingConfig, WASM_BINARY,
 };
 use runtime_common::{
 	constants::{kilt_inflation_config, staking::MinCollatorStake, MAX_COLLATOR_STAKE},
@@ -37,8 +36,6 @@ use crate::chain_spec::{get_account_id_from_seed, get_from_seed, get_properties,
 
 /// Specialized `ChainSpec` for the normal parachain runtime.
 pub type ChainSpec = sc_service::GenericChainSpec<GenesisConfig, Extensions>;
-
-const TRANSFER_ACCOUNT: [u8; 32] = hex!["6a3c793cec9dbe330b349dc4eea6801090f5e71f53b1b41ad11afb4a313a282c"];
 
 pub fn make_dev_spec() -> Result<ChainSpec, String> {
 	let properties = get_properties("PILT", 15, 38);
@@ -177,19 +174,6 @@ fn testnet_genesis(
 		},
 		sudo: SudoConfig { key: Some(root_key) },
 		parachain_info: ParachainInfoConfig { parachain_id: id },
-		kilt_launch: KiltLaunchConfig {
-			vesting: airdrop_accounts
-				.iter()
-				.cloned()
-				.map(|(who, amount, vesting_length, _)| (who, vesting_length, amount))
-				.collect(),
-			balance_locks: airdrop_accounts
-				.iter()
-				.cloned()
-				.map(|(who, amount, _, locking_length)| (who, locking_length, amount))
-				.collect(),
-			transfer_account: TRANSFER_ACCOUNT.into(),
-		},
 		vesting: VestingConfig {
 			vesting: botlabs_accounts
 				.iter()
