@@ -183,7 +183,7 @@ const RILT_COL_SESSION_2: [u8; 32] = hex!["7cff6c7a53c4630a0a35f8793a04b66368157
 pub fn get_chain_spec_rilt() -> Result<ChainSpec, String> {
 	let properties = get_properties("RILT", 15, 38);
 	let wasm = WASM_BINARY.ok_or("No WASM")?;
-	let id: ParaId = 2108.into();
+	let id: ParaId = 2086.into();
 
 	Ok(ChainSpec::from_genesis(
 		"RILT",
