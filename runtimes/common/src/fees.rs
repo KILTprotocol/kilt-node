@@ -18,9 +18,11 @@
 
 use frame_support::{
 	traits::{Currency, Get, Imbalance, OnUnbalanced},
-	weights::{DispatchClass, WeightToFeeCoefficient, WeightToFeeCoefficients, WeightToFeePolynomial},
+	weights::{
+		DispatchClass, WeightToFee as WeightToFeeT, WeightToFeeCoefficient, WeightToFeeCoefficients,
+		WeightToFeePolynomial,
+	},
 };
-use frame_support::weights::WeightToFee as WeightToFeeT;
 use pallet_balances::WeightInfo;
 use pallet_transaction_payment::OnChargeTransaction;
 use smallvec::smallvec;
