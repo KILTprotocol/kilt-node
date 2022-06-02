@@ -3378,21 +3378,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "jsonrpc-core"
-version = "18.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "14f7f76aef2d054868398427f6c54943cf3d1caa9a7ec7d0c38d69df97a965eb"
-dependencies = [
- "futures 0.3.21",
- "futures-executor",
- "futures-util",
- "log",
- "serde",
- "serde_derive",
- "serde_json",
-]
-
-[[package]]
 name = "jsonrpsee"
 version = "0.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3568,7 +3553,7 @@ dependencies = [
  "frame-benchmarking-cli",
  "futures 0.3.21",
  "hex-literal",
- "jsonrpc-core",
+ "jsonrpsee",
  "log",
  "node-executor",
  "pallet-conviction-voting",
@@ -3588,11 +3573,12 @@ dependencies = [
  "sc-client-api",
  "sc-consensus",
  "sc-executor",
- "sc-finality-grandpa",
+ "sc-keystore",
  "sc-network",
  "sc-rpc",
  "sc-rpc-api",
  "sc-service",
+ "sc-sysinfo",
  "sc-telemetry",
  "sc-tracing",
  "sc-transaction-pool",
@@ -3606,14 +3592,12 @@ dependencies = [
  "sp-consensus-aura",
  "sp-core",
  "sp-inherents",
- "sp-io",
  "sp-keystore",
  "sp-offchain",
  "sp-runtime",
  "sp-session",
  "sp-timestamp",
  "sp-transaction-pool",
- "sp-trie",
  "spiritnet-runtime",
  "substrate-build-script-utils",
  "substrate-frame-rpc-system",
@@ -4536,13 +4520,15 @@ dependencies = [
  "clap",
  "frame-benchmarking",
  "frame-benchmarking-cli",
+ "frame-system",
  "futures 0.3.21",
  "hex-literal",
- "jsonrpc-core",
+ "jsonrpsee",
  "log",
  "mashnet-node-runtime",
  "pallet-conviction-voting",
  "pallet-referenda",
+ "pallet-transaction-payment",
  "pallet-transaction-payment-rpc",
  "runtime-common",
  "sc-basic-authorship",
@@ -4570,6 +4556,7 @@ dependencies = [
  "sp-core",
  "sp-finality-grandpa",
  "sp-inherents",
+ "sp-keyring",
  "sp-runtime",
  "sp-timestamp",
  "sp-transaction-pool",
