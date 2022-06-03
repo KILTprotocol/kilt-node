@@ -27,22 +27,29 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 pub mod default_weights;
+pub mod public_credential;
 
 pub use crate::{default_weights::WeightInfo, pallet::*};
 
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
-	use frame_support::{dispatch::DispatchResult, pallet_prelude::*, traits::StorageVersion};
-	use frame_system::pallet_prelude::*;
+	use frame_support::{
+		dispatch::DispatchResult, pallet_prelude::*, traits::StorageVersion, Blake2_128Concat, Twox64Concat,
+	};
+	use frame_system::pallet_prelude::{BlockNumberFor, *};
 
-	use attestation::AttesterOf;
+	use attestation::{AttesterOf, ClaimHashOf};
 	use kilt_support::traits::CallSources;
+
+	use crate::public_credential::PublicCredential;
 
 	/// The current storage version.
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
 
 	pub(crate) type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
+	// TODO: Replace with an enum that includes KILT DIDs and asset DIDs.
+	pub(crate) type SubjectIdOf<T> = AccountIdOf<T>;
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config + ctype::Config + attestation::Config {
@@ -54,6 +61,11 @@ pub mod pallet {
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 		type WeightInfo: WeightInfo;
 	}
+
+	#[pallet::storage]
+	#[pallet::getter(fn get_credential_info)]
+	pub type Credentials<T> =
+		StorageDoubleMap<_, Twox64Concat, SubjectIdOf<T>, Blake2_128Concat, ClaimHashOf<T>, BlockNumberFor<T>>;
 
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
@@ -77,7 +89,7 @@ pub mod pallet {
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
 		#[pallet::weight(0)]
-		pub fn add(_: OriginFor<T>) -> DispatchResult {
+		pub fn add(origin: OriginFor<T>, credential: PublicCredential) -> DispatchResult {
 			Ok(())
 		}
 	}

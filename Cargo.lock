@@ -3838,6 +3838,7 @@ version = "1.6.2"
 dependencies = [
  "frame-support",
  "frame-system",
+ "hex",
  "parity-scale-codec",
  "scale-info",
  "sp-core",
