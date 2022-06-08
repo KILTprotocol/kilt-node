@@ -50,6 +50,7 @@
 #![cfg_attr(rustfmt, rustfmt_skip)]
 #![allow(unused_parens)]
 #![allow(unused_imports)]
+#![allow(clippy::unnecessary_cast)]
 
 use frame_support::{traits::Get, weights::Weight};
 use sp_std::marker::PhantomData;
@@ -82,5 +83,11 @@ impl<T: frame_system::Config> pallet_treasury::WeightInfo for WeightInfo<T> {
 			.saturating_add(T::DbWeight::get().reads(3_u64.saturating_mul(p as Weight)))
 			.saturating_add(T::DbWeight::get().writes(2_u64))
 			.saturating_add(T::DbWeight::get().writes(3_u64.saturating_mul(p as Weight)))
+	}
+	// Storage: Treasury Approvals (r:1 w:1)
+	fn remove_approval() -> Weight {
+		(3_867_000 as Weight)
+			.saturating_add(T::DbWeight::get().reads(1 as Weight))
+			.saturating_add(T::DbWeight::get().writes(1 as Weight))
 	}
 }

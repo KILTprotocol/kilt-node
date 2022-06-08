@@ -165,7 +165,6 @@ pub(crate) mod mock;
 pub(crate) mod tests;
 
 mod inflation;
-pub mod migrations;
 mod set;
 mod types;
 

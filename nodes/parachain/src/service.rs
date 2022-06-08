@@ -16,6 +16,9 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+// rpc
+use jsonrpsee::RpcModule;
+
 use cumulus_client_cli::CollatorOptions;
 use cumulus_client_consensus_aura::{AuraConsensus, BuildAuraConsensusParams, SlotProportion};
 use cumulus_client_consensus_common::ParachainConsensus;
@@ -31,7 +34,7 @@ use polkadot_service::{CollatorPair, NativeExecutionDispatch};
 use sc_client_api::ExecutorProvider;
 use sc_executor::NativeElseWasmExecutor;
 use sc_network::NetworkService;
-use sc_service::{Configuration, Role, RpcExtensionBuilder, TFullBackend, TFullClient, TaskManager};
+use sc_service::{Configuration, Role, TFullBackend, TFullClient, TaskManager};
 use sc_telemetry::{Telemetry, TelemetryHandle, TelemetryWorker, TelemetryWorkerHandle};
 use sp_api::ConstructRuntimeApi;
 use sp_keystore::SyncCryptoStorePtr;
@@ -184,13 +187,20 @@ async fn build_relay_chain_interface(
 	telemetry_worker_handle: Option<TelemetryWorkerHandle>,
 	task_manager: &mut TaskManager,
 	collator_options: CollatorOptions,
+	hwbench: Option<sc_sysinfo::HwBench>,
 ) -> RelayChainResult<(Arc<(dyn RelayChainInterface + 'static)>, Option<CollatorPair>)> {
 	match collator_options.relay_chain_rpc_url {
 		Some(relay_chain_url) => Ok((
 			Arc::new(RelayChainRPCInterface::new(relay_chain_url).await?) as Arc<_>,
 			None,
 		)),
-		None => build_inprocess_relay_chain(polkadot_config, parachain_config, telemetry_worker_handle, task_manager),
+		None => build_inprocess_relay_chain(
+			polkadot_config,
+			parachain_config,
+			telemetry_worker_handle,
+			task_manager,
+			hwbench,
+		),
 	}
 }
 
@@ -199,15 +209,17 @@ async fn build_relay_chain_interface(
 ///
 /// This is the actual implementation that is abstract over the executor and the
 /// runtime api.
+#[allow(clippy::too_many_arguments)]
 #[sc_tracing::logging::prefix_logs_with("Parachain")]
 async fn start_node_impl<RuntimeApi, Executor, RB, BIQ, BIC>(
 	parachain_config: Configuration,
 	polkadot_config: Configuration,
 	collator_options: CollatorOptions,
 	id: ParaId,
-	rpc_ext_builder: RB,
+	_rpc_ext_builder: RB,
 	build_import_queue: BIQ,
 	build_consensus: BIC,
+	hwbench: Option<sc_sysinfo::HwBench>,
 ) -> sc_service::error::Result<(
 	TaskManager,
 	Arc<TFullClient<Block, RuntimeApi, NativeElseWasmExecutor<Executor>>>,
@@ -223,13 +235,14 @@ where
 		+ sp_api::ApiExt<Block, StateBackend = sc_client_api::StateBackendFor<TFullBackend<Block>, Block>>
 		+ sp_offchain::OffchainWorkerApi<Block>
 		+ sp_block_builder::BlockBuilder<Block>
-		+ cumulus_primitives_core::CollectCollationInfo<Block>,
+		+ cumulus_primitives_core::CollectCollationInfo<Block>
+		+ pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>
+		+ frame_rpc_system::AccountNonceApi<Block, AccountId, Index>,
 	sc_client_api::StateBackendFor<TFullBackend<Block>, Block>: sp_api::StateBackend<BlakeTwo256>,
 	Executor: sc_executor::NativeExecutionDispatch + 'static,
 	RB: FnOnce(
 			Arc<TFullClient<Block, RuntimeApi, NativeElseWasmExecutor<Executor>>>,
-			Arc<TransactionPool<Block, RuntimeApi, NativeElseWasmExecutor<Executor>>>,
-		) -> Box<dyn RpcExtensionBuilder<Output = jsonrpc_core::IoHandler<sc_rpc::Metadata>> + Send>
+		) -> Result<RpcModule<()>, sc_service::Error>
 		+ Send
 		+ 'static,
 	BIQ: FnOnce(
@@ -272,6 +285,7 @@ where
 		telemetry_worker_handle,
 		&mut task_manager,
 		collator_options.clone(),
+		hwbench.clone(),
 	)
 	.await
 	.map_err(|e| match e {
@@ -296,8 +310,23 @@ where
 		warp_sync: None,
 	})?;
 
+	let rpc_builder = {
+		let client = client.clone();
+		let transaction_pool = transaction_pool.clone();
+
+		Box::new(move |deny_unsafe, _| {
+			let deps = crate::rpc::FullDeps {
+				client: client.clone(),
+				pool: transaction_pool.clone(),
+				deny_unsafe,
+			};
+
+			crate::rpc::create_full(deps).map_err(Into::into)
+		})
+	};
+
 	sc_service::spawn_tasks(sc_service::SpawnTasksParams {
-		rpc_extensions_builder: rpc_ext_builder(client.clone(), transaction_pool.clone()),
+		rpc_builder,
 		client: client.clone(),
 		transaction_pool: transaction_pool.clone(),
 		task_manager: &mut task_manager,
@@ -308,6 +337,19 @@ where
 		system_rpc_tx,
 		telemetry: telemetry.as_mut(),
 	})?;
+
+	if let Some(hwbench) = hwbench {
+		sc_sysinfo::print_hwbench(&hwbench);
+
+		if let Some(ref mut telemetry) = telemetry {
+			let telemetry_handle = telemetry.handle();
+			task_manager.spawn_handle().spawn(
+				"telemetry_hwbench",
+				None,
+				sc_sysinfo::initialize_hwbench_telemetry(telemetry_handle, hwbench),
+			);
+		}
+	}
 
 	let announce_block = {
 		let network = network.clone();
@@ -332,13 +374,13 @@ where
 		let spawner = task_manager.spawn_handle();
 
 		let params = StartCollatorParams {
-			block_status: client.clone(),
-			client: client.clone(),
-			announce_block,
-			spawner,
 			para_id: id,
-			relay_chain_interface,
+			block_status: client.clone(),
+			announce_block,
+			client: client.clone(),
 			task_manager: &mut task_manager,
+			relay_chain_interface,
+			spawner,
 			parachain_consensus,
 			import_queue,
 			collator_key: collator_key.expect("Command line arguments do not allow this. qed"),
@@ -423,6 +465,7 @@ pub async fn start_node<RE, API>(
 	polkadot_config: Configuration,
 	collator_options: CollatorOptions,
 	id: ParaId,
+	hwbench: Option<sc_sysinfo::HwBench>,
 ) -> sc_service::error::Result<(TaskManager, Arc<TFullClient<Block, API, NativeElseWasmExecutor<RE>>>)>
 where
 	RE: sc_executor::NativeExecutionDispatch + 'static,
@@ -439,27 +482,12 @@ where
 		+ cumulus_primitives_core::CollectCollationInfo<Block>,
 	sc_client_api::StateBackendFor<TFullBackend<Block>, Block>: sp_api::StateBackend<BlakeTwo256>,
 {
-	let rpc_extensions_builder =
-		|client: Arc<TFullClient<Block, API, NativeElseWasmExecutor<RE>>>,
-		 pool: Arc<TransactionPool<Block, API, NativeElseWasmExecutor<RE>>>|
-		 -> Box<dyn RpcExtensionBuilder<Output = jsonrpc_core::IoHandler<sc_rpc::Metadata>> + std::marker::Send> {
-			Box::new(move |deny_unsafe, _| {
-				let deps = crate::rpc::FullDeps {
-					client: client.clone(),
-					pool: pool.clone(),
-					deny_unsafe,
-				};
-
-				crate::rpc::create_full(deps)
-			})
-		};
-
 	start_node_impl::<API, RE, _, _, _>(
 		parachain_config,
 		polkadot_config,
 		collator_options,
 		id,
-		rpc_extensions_builder,
+		|_| Ok(RpcModule::new(())),
 		build_import_queue::<RE, API>,
 		|client,
 		 prometheus_registry,
@@ -528,6 +556,7 @@ where
 				telemetry,
 			}))
 		},
+		hwbench,
 	)
 	.await
 }
