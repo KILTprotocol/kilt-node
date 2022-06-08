@@ -138,7 +138,7 @@ where
 			&sender,
 			<T as Config>::Currency::minimum_balance() + <T as Config>::Deposit::get() + <T as Config>::Deposit::get(),
 		);
-		let _ = Pallet::<T>::add_delegation(
+		Pallet::<T>::add_delegation(
 			<T as Config>::EnsureOrigin::generate_origin(sender.clone(), parent_acc_id.clone()),
 			delegation_id,
 			parent_id,
