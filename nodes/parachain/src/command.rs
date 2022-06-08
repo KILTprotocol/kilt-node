@@ -50,7 +50,7 @@ impl IdentifyChain for dyn sc_service::ChainSpec {
 	fn is_spiritnet(&self) -> bool {
 		self.id().contains("spiritnet")
 			|| self.id().eq("kilt_westend")
-			|| self.id().eq("kilt_rococo_2")
+			|| self.id().eq("kilt_rococo")
 			|| self.id().eq("kilt")
 	}
 }
@@ -77,7 +77,7 @@ fn load_spec(id: &str, runtime: &str) -> std::result::Result<Box<dyn sc_service:
 		("", "peregrine") => Ok(Box::new(chain_spec::peregrine::make_dev_spec()?)),
 		(path, "spiritnet") => Ok(Box::new(chain_spec::spiritnet::ChainSpec::from_json_file(path.into())?)),
 		(path, "peregrine") => Ok(Box::new(chain_spec::peregrine::ChainSpec::from_json_file(path.into())?)),
-		_ => Err("Unknown runtime".to_owned()),
+		_ => Err("Unknown KILT parachain spec".to_owned()),
 	}
 }
 
@@ -459,7 +459,7 @@ pub fn run() -> Result<()> {
 					.map(|r| r.0)
 					.map_err(Into::into)
 				} else {
-					Err("Unknown runtime".into())
+					Err("Unknown KILT parachain runtime, neither Spiritnet nor Peregrine".into())
 				}
 			})
 		}
