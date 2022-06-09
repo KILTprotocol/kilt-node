@@ -26,23 +26,29 @@
 //! - [`Pallet`]
 #![cfg_attr(not(feature = "std"), no_std)]
 
+pub mod assets;
+pub mod credentials;
 pub mod default_weights;
-pub mod public_credential;
 
 pub use crate::{default_weights::WeightInfo, pallet::*};
 
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
+	use codec::MaxEncodedLen;
 	use frame_support::{
-		dispatch::DispatchResult, pallet_prelude::*, traits::StorageVersion, Blake2_128Concat, Twox64Concat,
+		dispatch::DispatchResult,
+		pallet_prelude::*,
+		traits::{ConstU32, Get, StorageVersion},
+		Blake2_128Concat, Twox64Concat,
 	};
 	use frame_system::pallet_prelude::{BlockNumberFor, *};
+	use sp_core::H256;
 
-	use attestation::{AttesterOf, ClaimHashOf};
-	use kilt_support::traits::CallSources;
-
-	use crate::public_credential::PublicCredential;
+	use crate::credentials::{Claim, Credential};
+	use attestation::{Attestations, AttesterOf, ClaimHashOf};
+	use ctype::{CtypeHashOf, Ctypes};
+	use kilt_support::{signature::VerifySignature, traits::CallSources};
 
 	/// The current storage version.
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
@@ -51,14 +57,32 @@ pub mod pallet {
 	// TODO: Replace with an enum that includes KILT DIDs and asset DIDs.
 	pub(crate) type SubjectIdOf<T> = AccountIdOf<T>;
 
+	pub type CredentialOf<T> = Credential<
+		CtypeHashOf<T>,
+		BoundedVec<u8, ConstU32<10>>,
+		BoundedVec<u8, <T as Config>::MaxEncodedClaimContentLength>,
+		<T as Config>::CredentialSignature,
+		ClaimHashOf<T>,
+		H256,
+	>;
+
 	#[pallet::config]
-	pub trait Config: frame_system::Config + ctype::Config + attestation::Config {
+	pub trait Config: frame_system::Config + attestation::Config {
 		type EnsureOrigin: EnsureOrigin<
 			Success = <Self as Config>::OriginSuccess,
 			<Self as frame_system::Config>::Origin,
 		>;
-		type OriginSuccess: CallSources<AccountIdOf<Self>, AttesterOf<Self>>;
+		type CredentialSignatureVerification: VerifySignature<
+			SignerId = Self::CredentialClaimerIdentifier,
+			Payload = ClaimHashOf<Self>,
+			Signature = Self::CredentialSignature,
+		>;
+		type CredentialSignature: Parameter;
+		type CredentialClaimerIdentifier: Parameter + MaxEncodedLen;
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+		#[pallet::constant]
+		type MaxEncodedClaimContentLength: Get<u32>;
+		type OriginSuccess: CallSources<AccountIdOf<Self>, AttesterOf<Self>>;
 		type WeightInfo: WeightInfo;
 	}
 
@@ -89,7 +113,36 @@ pub mod pallet {
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
 		#[pallet::weight(0)]
-		pub fn add(origin: OriginFor<T>, credential: PublicCredential) -> DispatchResult {
+		pub fn add(origin: OriginFor<T>, credential: CredentialOf<T>) -> DispatchResult {
+			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
+			let attester = source.subject();
+			let payer = source.sender();
+
+			let Credential {
+				claim: Claim {
+					ctype_hash,
+					subject,
+					contents,
+				},
+				claimer_signature,
+				nonce,
+				claim_hash,
+			} = credential;
+
+			// Check that a CType exists.
+			ensure!(
+				Ctypes::<T>::contains_key(&credential.claim.ctype_hash),
+				// FIXME
+				Error::<T>::Test
+			);
+
+			// Check that an attestation with the same hash does NOT exist.
+			ensure!(
+				!Attestations::<T>::contains_key(&credential.claim_hash),
+				// FIXME
+				Error::<T>::Test
+			);
+
 			Ok(())
 		}
 	}

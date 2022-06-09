@@ -21,7 +21,6 @@ use deposit::Deposit;
 use frame_support::traits::{Currency, ReservableCurrency};
 use sp_runtime::traits::Zero;
 
-pub mod assets;
 pub mod deposit;
 pub mod signature;
 pub mod traits;

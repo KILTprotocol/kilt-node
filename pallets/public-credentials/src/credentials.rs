@@ -16,20 +16,22 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use codec::{Decode, Encode};
+use codec::{Decode, Encode, MaxEncodedLen};
+use scale_info::TypeInfo;
 
-#[derive(Encode, Decode, PartialEq, Eq, PartialOrd, Ord, sp_runtime::RuntimeDebug)]
-pub struct PublicCredential<AuthorizationId, ClaimerSignature, CTypeHash, Nonce, RootHash, SubjectId> {
-	pub claim: PublicCredentialClaim<CTypeHash, SubjectId>,
-	pub nonce: Nonce,
-	pub root_hash: RootHash,
-	pub authorization_id: Option<AuthorizationId>,
-	pub claimer_signature: Option<ClaimerSignature>,
+use frame_support::RuntimeDebug;
+
+#[derive(Encode, Decode, Clone, MaxEncodedLen, RuntimeDebug, PartialEq, Eq, PartialOrd, Ord, TypeInfo)]
+pub struct Claim<CtypeHash, SubjectIdentifier, Content> {
+	pub ctype_hash: CtypeHash,
+	pub subject: SubjectIdentifier,
+	pub contents: Content,
 }
 
-#[derive(Encode, Decode, PartialEq, Eq, PartialOrd, Ord, sp_runtime::RuntimeDebug)]
-pub struct PublicCredentialClaim<CTypeHash, SubjectId> {
-	pub ctype_hash: CTypeHash,
-	pub contents: Vec<u8>,
-	pub owner: SubjectId,
+#[derive(Encode, Decode, Clone, MaxEncodedLen, RuntimeDebug, PartialEq, Eq, PartialOrd, Ord, TypeInfo)]
+pub struct Credential<CtypeHash, SubjectIdentifier, ClaimContent, Signature, ClaimHash, Nonce> {
+	pub claim: Claim<CtypeHash, SubjectIdentifier, ClaimContent>,
+	pub claimer_signature: Option<Signature>,
+	pub nonce: Option<Nonce>,
+	pub claim_hash: ClaimHash,
 }
