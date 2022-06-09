@@ -1,8 +1,7 @@
 # this container builds the kilt-parachain binary from source files and the runtime library
 # pinned the version to avoid build cache invalidation
 
-# c4f0daf3-20220110 -> rust version rustc 1.58.0-nightly (46b8e7488 2021-11-07)
-FROM paritytech/ci-linux:f203f298-20220421 as builder
+FROM docker.io/paritytech/ci-linux:production as builder
 
 WORKDIR /build
 
