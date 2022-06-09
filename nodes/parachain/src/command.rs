@@ -24,9 +24,8 @@ use crate::{
 use codec::Encode;
 use cumulus_client_service::genesis::generate_genesis_block;
 use cumulus_primitives_core::ParaId;
-use frame_benchmarking_cli::BenchmarkCmd;
+use frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE};
 use log::info;
-use polkadot_parachain::primitives::AccountIdConversion;
 #[cfg(feature = "try-runtime")]
 use polkadot_service::TaskManager;
 use runtime_common::Block;
@@ -36,7 +35,7 @@ use sc_cli::{
 };
 use sc_service::config::{BasePath, PrometheusConfig};
 use sp_core::hexdisplay::HexDisplay;
-use sp_runtime::traits::Block as BlockT;
+use sp_runtime::traits::{AccountIdConversion, Block as BlockT};
 use std::{io::Write, net::SocketAddr};
 
 trait IdentifyChain {
@@ -51,7 +50,7 @@ impl IdentifyChain for dyn sc_service::ChainSpec {
 	fn is_spiritnet(&self) -> bool {
 		self.id().contains("spiritnet")
 			|| self.id().eq("kilt_westend")
-			|| self.id().eq("kilt_rococo_2")
+			|| self.id().eq("kilt_rococo")
 			|| self.id().eq("kilt")
 	}
 }
@@ -78,7 +77,7 @@ fn load_spec(id: &str, runtime: &str) -> std::result::Result<Box<dyn sc_service:
 		("", "peregrine") => Ok(Box::new(chain_spec::peregrine::make_dev_spec()?)),
 		(path, "spiritnet") => Ok(Box::new(chain_spec::spiritnet::ChainSpec::from_json_file(path.into())?)),
 		(path, "peregrine") => Ok(Box::new(chain_spec::peregrine::ChainSpec::from_json_file(path.into())?)),
-		_ => Err("Unknown runtime".to_owned()),
+		_ => Err("Unknown KILT parachain spec".to_owned()),
 	}
 }
 
@@ -322,6 +321,9 @@ pub fn run() -> Result<()> {
 					cmd.run(config, partials.client.clone(), db, storage)
 				}),
 				(BenchmarkCmd::Overhead(_), _) => Err("Unsupported benchmarking command".into()),
+				(BenchmarkCmd::Machine(cmd), _) => {
+					runner.sync_run(|config| cmd.run(&config, SUBSTRATE_REFERENCE_HARDWARE.clone()))
+				}
 				(_, _) => Err("Unknown parachain runtime".into()),
 			}
 		}
@@ -392,6 +394,15 @@ pub fn run() -> Result<()> {
 			let collator_options = cli.run.collator_options();
 
 			runner.run_node_until_exit(|config| async move {
+				let hwbench = if !cli.no_hardware_benchmarks {
+					config.database.path().map(|database_path| {
+						let _ = std::fs::create_dir_all(&database_path);
+						sc_sysinfo::gather_hwbench(Some(database_path))
+					})
+				} else {
+					None
+				};
+
 				let para_id = chain_spec::Extensions::try_get(&*config.chain_spec)
 					.map(|e| e.para_id)
 					.ok_or("Could not find parachain ID in chain-spec.")?;
@@ -405,7 +416,8 @@ pub fn run() -> Result<()> {
 
 				let id = ParaId::from(para_id);
 
-				let parachain_account = AccountIdConversion::<polkadot_primitives::v2::AccountId>::into_account(&id);
+				let parachain_account =
+					AccountIdConversion::<polkadot_primitives::v2::AccountId>::into_account_truncating(&id);
 
 				let state_version = RelayChainCli::native_runtime_version(&config.chain_spec).state_version();
 				let block: Block =
@@ -430,6 +442,7 @@ pub fn run() -> Result<()> {
 						polkadot_config,
 						collator_options,
 						id,
+						hwbench,
 					)
 					.await
 					.map(|r| r.0)
@@ -440,12 +453,13 @@ pub fn run() -> Result<()> {
 						polkadot_config,
 						collator_options,
 						id,
+						hwbench,
 					)
 					.await
 					.map(|r| r.0)
 					.map_err(Into::into)
 				} else {
-					Err("Unknown runtime".into())
+					Err("Unknown KILT parachain runtime, neither Spiritnet nor Peregrine".into())
 				}
 			})
 		}

@@ -18,7 +18,10 @@
 
 use frame_support::{
 	traits::{Currency, Get, Imbalance, OnUnbalanced},
-	weights::{DispatchClass, WeightToFeeCoefficient, WeightToFeeCoefficients, WeightToFeePolynomial},
+	weights::{
+		DispatchClass, WeightToFee as WeightToFeeT, WeightToFeeCoefficient, WeightToFeeCoefficients,
+		WeightToFeePolynomial,
+	},
 };
 use pallet_balances::WeightInfo;
 use pallet_transaction_payment::OnChargeTransaction;
@@ -102,7 +105,7 @@ where
 
 		// TODO: transfer_keep_alive is 288 byte long?
 		let tx_len: u64 = 288;
-		let byte_fee: Balance = <R as pallet_transaction_payment::Config>::LengthToFee::calc(&tx_len).into();
+		let byte_fee: Balance = <R as pallet_transaction_payment::Config>::LengthToFee::weight_to_fee(&tx_len).into();
 		let base_weight: Balance = <R as frame_system::Config>::BlockWeights::get()
 			.get(DispatchClass::Normal)
 			.base_extrinsic

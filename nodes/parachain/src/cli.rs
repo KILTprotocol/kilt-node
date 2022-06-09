@@ -137,6 +137,16 @@ pub(crate) struct Cli {
 	#[clap(flatten)]
 	pub(crate) run: cumulus_client_cli::RunCmd,
 
+	// Disable automatic hardware benchmarks.
+	///
+	/// By default these benchmarks are automatically ran at startup and measure
+	/// the CPU speed, the memory bandwidth and the disk speed.
+	///
+	/// The results are then printed out in the logs, and also sent as part of
+	/// telemetry, if telemetry is enabled.
+	#[clap(long)]
+	pub no_hardware_benchmarks: bool,
+
 	/// The name of the runtime which should get executed.
 	#[clap(long, default_value = DEFAULT_RUNTIME)]
 	pub(crate) runtime: String,
