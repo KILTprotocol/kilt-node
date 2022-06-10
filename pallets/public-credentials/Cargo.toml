@@ -24,7 +24,7 @@ scale-info = {version = "2.1.1", default-features = false, features = ["derive"]
 serde = {version = "1.0.137", optional = true}
 
 # Internal dependencies
-# attestation = {default-features = false, path = "../attestation"}
+attestation = {default-features = false, path = "../attestation"}
 ctype = {default-features = false, path = "../ctype"}
 kilt-support = {default-features = false, path = "../../support"}
 
@@ -57,7 +57,7 @@ runtime-benchmarks = [
 ]
 std = [
   "codec/std",
-  # "attestation/std",
+  "attestation/std",
   "ctype/std",
   "frame-support/std",
   "frame-system/std",

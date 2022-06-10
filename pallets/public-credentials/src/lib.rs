@@ -29,7 +29,7 @@
 pub mod credentials;
 pub mod default_weights;
 
-pub use crate::{credentials::*, pallet::*, default_weights::WeightInfo};
+pub use crate::{credentials::*, default_weights::WeightInfo, pallet::*};
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -37,11 +37,18 @@ pub mod pallet {
 
 	use codec::MaxEncodedLen;
 
-	use frame_support::{pallet_prelude::*, traits::{StorageVersion, IsType, ConstU32}, BoundedVec};
-	use kilt_support::{signature::VerifySignature, traits::CallSources};
-
-	use ctype::CtypeHashOf;
+	use frame_support::{
+		pallet_prelude::*,
+		sp_runtime::traits::Saturating,
+		traits::{Currency, IsType, ReservableCurrency, StorageVersion},
+		BoundedVec,
+	};
+	use frame_system::pallet_prelude::*;
 	use sp_core::H256;
+
+	use attestation::{AttesterOf, ClaimHashOf};
+	use ctype::CtypeHashOf;
+	use kilt_support::traits::CallSources;
 
 	/// The current storage version.
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
@@ -49,32 +56,29 @@ pub mod pallet {
 	pub(crate) type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 	// TODO: Replace with an enum that includes KILT DIDs and asset DIDs.
 	pub(crate) type SubjectIdOf<T> = AccountIdOf<T>;
-	// FIXME: replace with ClaimHashOf from attestation pallet
-	pub(crate) type ClaimHash = BoundedVec<u8, ConstU32<10>>;
+	pub(crate) type BalanceOf<T> = <<T as attestation::Config>::Currency as Currency<AccountIdOf<T>>>::Balance;
 
 	pub type CredentialOf<T> = Credential<
 		CtypeHashOf<T>,
 		SubjectIdOf<T>,
 		BoundedVec<u8, <T as Config>::MaxEncodedClaimContentLength>,
-		<T as Config>::CredentialSignature,
-		ClaimHash,
+		ClaimHashOf<T>,
 		H256,
 	>;
 
 	#[pallet::config]
-	pub trait Config: frame_system::Config {
+	pub trait Config: frame_system::Config + attestation::Config {
 		type CredentialClaimerIdentifier: Parameter + MaxEncodedLen;
-		type CredentialSignatureVerification: VerifySignature<
-			SignerId = Self::CredentialClaimerIdentifier,
-			Payload = ClaimHash,
-			Signature = Self::CredentialSignature,
+		#[pallet::constant]
+		type Deposit: Get<BalanceOf<Self>>;
+		type EnsureOrigin: EnsureOrigin<
+			Success = <Self as Config>::OriginSuccess,
+			<Self as frame_system::Config>::Origin,
 		>;
-		type CredentialSignature: Parameter;
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 		#[pallet::constant]
 		type MaxEncodedClaimContentLength: Get<u32>;
-		// FIXME: replace with AttesterOf from attestation pallet
-		type OriginSuccess: CallSources<AccountIdOf<Self>, AccountIdOf<Self>>;
+		type OriginSuccess: CallSources<AccountIdOf<Self>, AttesterOf<Self>>;
 		type WeightInfo: WeightInfo;
 	}
 
@@ -83,97 +87,144 @@ pub mod pallet {
 	#[pallet::storage_version(STORAGE_VERSION)]
 	pub struct Pallet<T>(_);
 
+	#[pallet::hooks]
+	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {}
+
+
+	#[pallet::storage]
+	#[pallet::getter(fn get_credential_info)]
+	pub type Credentials<T> =
+		StorageDoubleMap<_, Twox64Concat, SubjectIdOf<T>, Blake2_128Concat, ClaimHashOf<T>, CredentialEntry<BlockNumberFor<T>, Deposit<AccountIdOf<T>, BalanceOf<T>>>>;
+
+	// Reverse map to make sure that the same claim hash cannot be issued to two
+	// different subjects by issuing it to subject #1, then removing it only from
+	// the attestation pallet and then issuing it to subject #2.
+	// This map ensures that at any time a claim hash is only issued to a single
+	// subject.
+	#[pallet::storage]
+	#[pallet::getter(fn attested_claim_hashes)]
+	pub(crate) type CredentialsUnicityIndex<T> = StorageMap<_, Blake2_128Concat, ClaimHashOf<T>, SubjectIdOf<T>>;
+
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
-		TestEvent,
+		CredentialStored {
+			subject_id: SubjectIdOf<T>,
+			claim_hash: ClaimHashOf<T>,
+			block_number: BlockNumberFor<T>,
+		},
 	}
 
 	#[pallet::error]
 	pub enum Error<T> {
-		TestError,
+		CredentialIssued,
+		CredentialNotFound,
+		UnableToPayFees,
+	}
+
+	#[pallet::call]
+	impl<T: Config> Pallet<T> {
+		#[pallet::weight(0)]
+		pub fn add(origin: OriginFor<T>, credential: CredentialOf<T>) -> DispatchResult {
+			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
+			let attester = source.subject();
+			let payer = source.sender();
+			let deposit_amount = <T as Config>::Deposit::get();
+
+			let Credential {
+				claim: Claim {
+					ctype_hash,
+					subject,
+					contents: _,
+				},
+				claim_hash,
+				nonce: _,
+			} = credential;
+
+			// Check that the same attestation has not already been issued previously
+			// (potentially to a different subject)
+			ensure!(
+				!CredentialsUnicityIndex::<T>::contains_key(&claim_hash),
+				Error::<T>::AttestationCreated
+			);
+
+			// Check that enough funds can be reserved to pay for both attestation and
+			// public info deposits
+			let attestation_deposit_amount = <T as attestation::Config>::Deposit::get();
+			ensure!(
+				<<T as attestation::Config>::Currency as ReservableCurrency<AccountIdOf<T>>>::can_reserve(
+					&payer,
+					deposit_amount.saturating_add(attestation_deposit_amount)
+				),
+				Error::<T>::UnableToPayFees
+			);
+
+			// Delegate to the attestation pallet writing the attestation information and
+			// reserve its part of the deposit
+			attestation::Pallet::<T>::write_attestation(ctype_hash, claim_hash, attester, payer.clone(), None)?;
+
+			// *** No Fail beyond this point ***
+
+			// Take the rest of the deposit
+			let deposit = Self::reserve_deposit(payer, deposit_amount)
+			let block_number = frame_system::Pallet::<T>::block_number();
+
+			Credentials::<T>::insert(&subject, &claim_hash, CredentialEntry { deposit, block_number });
+			CredentialsUnicityIndex::<T>::insert(&claim_hash, subject.clone());
+
+			Self::deposit_event(Event::CredentialStored {
+				subject_id: subject,
+				claim_hash,
+				block_number,
+			});
+
+			Ok(())
+		}
+
+		#[pallet::weight(0)]
+		pub fn revoke(origin: OriginFor<T>, claim_hash: ClaimHashOf<T>) -> DispatchResult {
+			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
+			let attester = source.subject();
+
+			// Verifies that the credential exists.
+			ensure!(
+				CredentialsUnicityIndex::<T>::contains_key(&claim_hash),
+				Error::<T>::CredentialNotFound
+			);
+
+			// Delegate to the attestation pallet the revocation logic.
+			// This guarantees that the owner is calling this function.
+			attestation::Pallet::<T>::revoke_attestation(attester, claim_hash, None)?;
+
+			// *** No Fail beyond this point ***
+
+			// Take the rest of the deposit
+			<T as attestation::Config>::Currency::reserve(&payer, deposit_amount)?;
+
+			let block_number = frame_system::Pallet::<T>::block_number();
+
+			Credentials::<T>::insert(&subject, &claim_hash, block_number);
+			CredentialsUnicityIndex::<T>::insert(&claim_hash, subject.clone());
+
+			Self::deposit_event(Event::CredentialStored {
+				subject_id: subject,
+				claim_hash,
+				block_number,
+			});
+
+			Ok(())
+		}
+
+		pub(crate) fn reserve_deposit(
+			payer: AccountIdOf<T>,
+			deposit: BalanceOf<T>,
+		) -> Result<Deposit<AccountIdOf<T>, BalanceOf<T>>, DispatchError> {
+			CurrencyOf::<T>::reserve(&payer, deposit)?;
+
+			Ok(Deposit::<AccountIdOf<T>, BalanceOf<T>> {
+				owner: payer,
+				amount: deposit,
+			})
+		}
 	}
 }
-
-// pub mod assets;
-
-// #[frame_support::pallet]
-// pub mod pallet {
-// 	use codec::MaxEncodedLen;
-// 	use frame_support::{
-// 		dispatch::DispatchResult,
-// 		pallet_prelude::*,
-// 		traits::{ConstU32, Get, StorageVersion},
-// 		Blake2_128Concat, Twox64Concat,
-// 	};
-// 	use frame_system::pallet_prelude::{BlockNumberFor, *};
-// 	use sp_core::H256;
-
-// 	use crate::credentials::{Claim, Credential};
-// 	use attestation::{Attestations, AttesterOf, ClaimHashOf};
-// 	use ctype::{CtypeHashOf, Ctypes};
-// 	use kilt_support::{signature::VerifySignature, traits::CallSources};
-
-// 	#[pallet::config]
-// 	pub trait Config: frame_system::Config + attestation::Config {
-// 		type EnsureOrigin: EnsureOrigin<
-// 			Success = <Self as Config>::OriginSuccess,
-// 			<Self as frame_system::Config>::Origin,
-// 		>;
-		// type CredentialSignatureVerification: VerifySignature<
-		// 	SignerId = Self::CredentialClaimerIdentifier,
-		// 	Payload = ClaimHashOf<Self>,
-		// 	Signature = Self::CredentialSignature,
-		// >;
-		// type CredentialSignature: Parameter;
-		// type CredentialClaimerIdentifier: Parameter + MaxEncodedLen;
-// 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
-		// type OriginSuccess: CallSources<AccountIdOf<Self>, AttesterOf<Self>>;
-// 		type WeightInfo: WeightInfo;
-// 	}
-
-// 	#[pallet::storage]
-// 	#[pallet::getter(fn get_credential_info)]
-// 	pub type Credentials<T> =
-// 		StorageDoubleMap<_, Twox64Concat, SubjectIdOf<T>, Blake2_128Concat, ClaimHashOf<T>, BlockNumberFor<T>>;
-
-// 	#[pallet::hooks]
-// 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {}
-
-// 	#[pallet::call]
-// 	impl<T: Config> Pallet<T> {
-// 		#[pallet::weight(0)]
-// 		pub fn add(origin: OriginFor<T>, credential: CredentialOf<T>) -> DispatchResult {
-// 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
-// 			let attester = source.subject();
-// 			let payer = source.sender();
-
-// 			let Credential {
-// 				claim: Claim {
-// 					ctype_hash,
-// 					subject,
-// 					contents,
-// 				},
-// 				claimer_signature,
-// 				nonce,
-// 				claim_hash,
-// 			} = credential;
-
-// 			// Check that a CType exists.
-// 			ensure!(
-// 				Ctypes::<T>::contains_key(&credential.claim.ctype_hash),
-// 				// FIXME
-// 				Error::<T>::Test
-// 			);
-
-// 			// Check that an attestation with the same hash does NOT exist.
-// 			ensure!(
-// 				!Attestations::<T>::contains_key(&credential.claim_hash),
-// 				// FIXME
-// 				Error::<T>::Test
-// 			);
-
-// 			Ok(())
-// 		}
-// 	}
-// }

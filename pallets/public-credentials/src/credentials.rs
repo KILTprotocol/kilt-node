@@ -28,10 +28,15 @@ pub struct Claim<CtypeHash, SubjectIdentifier, Content> {
 	pub contents: Content,
 }
 
+// TODO: Add support for delegation and claimer's signature.
 #[derive(Encode, Decode, Clone, MaxEncodedLen, RuntimeDebug, PartialEq, Eq, PartialOrd, Ord, TypeInfo)]
-pub struct Credential<CtypeHash, SubjectIdentifier, ClaimContent, Signature, ClaimHash, Nonce> {
+pub struct Credential<CtypeHash, SubjectIdentifier, ClaimContent, ClaimHash, Nonce> {
 	pub claim: Claim<CtypeHash, SubjectIdentifier, ClaimContent>,
-	pub claimer_signature: Option<Signature>,
-	pub nonce: Option<Nonce>,
+	pub nonce: Nonce,
 	pub claim_hash: ClaimHash,
+}
+
+pub struct CredentialEntry<BlockNumber, Deposit> {
+	pub block_number: BlockNumber,
+	pub deposit: Deposit
 }

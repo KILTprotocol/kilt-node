@@ -8261,6 +8261,7 @@ dependencies = [
 name = "public-credentials"
 version = "1.6.2"
 dependencies = [
+ "attestation",
  "ctype",
  "frame-benchmarking",
  "frame-support",
