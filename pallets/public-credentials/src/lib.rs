@@ -48,7 +48,7 @@ pub mod pallet {
 
 	use attestation::{AttesterOf, ClaimHashOf};
 	use ctype::CtypeHashOf;
-	use kilt_support::traits::CallSources;
+	use kilt_support::{deposit::Deposit, traits::CallSources};
 
 	/// The current storage version.
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
@@ -57,6 +57,7 @@ pub mod pallet {
 	// TODO: Replace with an enum that includes KILT DIDs and asset DIDs.
 	pub(crate) type SubjectIdOf<T> = AccountIdOf<T>;
 	pub(crate) type BalanceOf<T> = <<T as attestation::Config>::Currency as Currency<AccountIdOf<T>>>::Balance;
+	pub(crate) type CurrencyOf<T> = <T as attestation::Config>::Currency;
 
 	pub type CredentialOf<T> = Credential<
 		CtypeHashOf<T>,
@@ -90,11 +91,16 @@ pub mod pallet {
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {}
 
-
 	#[pallet::storage]
 	#[pallet::getter(fn get_credential_info)]
-	pub type Credentials<T> =
-		StorageDoubleMap<_, Twox64Concat, SubjectIdOf<T>, Blake2_128Concat, ClaimHashOf<T>, CredentialEntry<BlockNumberFor<T>, Deposit<AccountIdOf<T>, BalanceOf<T>>>>;
+	pub type Credentials<T> = StorageDoubleMap<
+		_,
+		Twox64Concat,
+		SubjectIdOf<T>,
+		Blake2_128Concat,
+		ClaimHashOf<T>,
+		CredentialEntry<T>,
+	>;
 
 	// Reverse map to make sure that the same claim hash cannot be issued to two
 	// different subjects by issuing it to subject #1, then removing it only from
@@ -112,6 +118,10 @@ pub mod pallet {
 			subject_id: SubjectIdOf<T>,
 			claim_hash: ClaimHashOf<T>,
 			block_number: BlockNumberFor<T>,
+		},
+		CredentialRemoved {
+			subject_id: SubjectIdOf<T>,
+			claim_hash: ClaimHashOf<T>,
 		},
 	}
 
@@ -145,7 +155,7 @@ pub mod pallet {
 			// (potentially to a different subject)
 			ensure!(
 				!CredentialsUnicityIndex::<T>::contains_key(&claim_hash),
-				Error::<T>::AttestationCreated
+				Error::<T>::CredentialIssued
 			);
 
 			// Check that enough funds can be reserved to pay for both attestation and
@@ -163,10 +173,11 @@ pub mod pallet {
 			// reserve its part of the deposit
 			attestation::Pallet::<T>::write_attestation(ctype_hash, claim_hash, attester, payer.clone(), None)?;
 
+			// Take the rest of the deposit
+			let deposit = Self::reserve_deposit(payer, deposit_amount)?;
+
 			// *** No Fail beyond this point ***
 
-			// Take the rest of the deposit
-			let deposit = Self::reserve_deposit(payer, deposit_amount)
 			let block_number = frame_system::Pallet::<T>::block_number();
 
 			Credentials::<T>::insert(&subject, &claim_hash, CredentialEntry { deposit, block_number });
@@ -182,39 +193,48 @@ pub mod pallet {
 		}
 
 		#[pallet::weight(0)]
-		pub fn revoke(origin: OriginFor<T>, claim_hash: ClaimHashOf<T>) -> DispatchResult {
+		pub fn remove(origin: OriginFor<T>, claim_hash: ClaimHashOf<T>) -> DispatchResultWithPostInfo {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 			let attester = source.subject();
 
 			// Verifies that the credential exists.
-			ensure!(
-				CredentialsUnicityIndex::<T>::contains_key(&claim_hash),
-				Error::<T>::CredentialNotFound
-			);
+			let credential_subject =
+				CredentialsUnicityIndex::<T>::get(&claim_hash).ok_or(Error::<T>::CredentialNotFound)?;
+			// Should never happen if the line above succeeds.
+			let credential_entry =
+				Credentials::<T>::get(&credential_subject, &claim_hash).ok_or(Error::<T>::CredentialNotFound)?;
 
-			// Delegate to the attestation pallet the revocation logic.
+			// Delegate to the attestation pallet the removal logic.
 			// This guarantees that the owner is calling this function.
-			attestation::Pallet::<T>::revoke_attestation(attester, claim_hash, None)?;
+			let result = attestation::Pallet::<T>::remove_attestation(attester, claim_hash, None)?;
 
-			// *** No Fail beyond this point ***
+			Self::remove_credential_entry(credential_subject, claim_hash, credential_entry);
 
-			// Take the rest of the deposit
-			<T as attestation::Config>::Currency::reserve(&payer, deposit_amount)?;
+			Ok(result)
+		}
 
-			let block_number = frame_system::Pallet::<T>::block_number();
+		#[pallet::weight(0)]
+		pub fn reclaim_deposit(origin: OriginFor<T>, claim_hash: ClaimHashOf<T>) -> DispatchResult {
+			let who = ensure_signed(origin)?;
 
-			Credentials::<T>::insert(&subject, &claim_hash, block_number);
-			CredentialsUnicityIndex::<T>::insert(&claim_hash, subject.clone());
+			// Verifies that the credential exists.
+			let credential_subject =
+				CredentialsUnicityIndex::<T>::get(&claim_hash).ok_or(Error::<T>::CredentialNotFound)?;
+			// Should never happen if the line above succeeds.
+			let credential_entry =
+				Credentials::<T>::get(&credential_subject, &claim_hash).ok_or(Error::<T>::CredentialNotFound)?;
 
-			Self::deposit_event(Event::CredentialStored {
-				subject_id: subject,
-				claim_hash,
-				block_number,
-			});
+			// Delegate to the attestation pallet the removal logic.
+			// This guarantees that the owner is calling this function.
+			attestation::Pallet::<T>::reclaim_dep(who, claim_hash)?;
+
+			Self::remove_credential_entry(credential_subject, claim_hash, credential_entry);
 
 			Ok(())
 		}
+	}
 
+	impl<T: Config> Pallet<T> {
 		pub(crate) fn reserve_deposit(
 			payer: AccountIdOf<T>,
 			deposit: BalanceOf<T>,
@@ -225,6 +245,21 @@ pub mod pallet {
 				owner: payer,
 				amount: deposit,
 			})
+		}
+
+		pub(crate) fn remove_credential_entry(
+			credential_subject: SubjectIdOf<T>,
+			claim_hash: ClaimHashOf<T>,
+			credential: CredentialEntry<T>,
+		) {
+			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&credential.deposit);
+			Credentials::<T>::remove(&credential_subject, &claim_hash);
+			CredentialsUnicityIndex::<T>::remove(&claim_hash);
+
+			Self::deposit_event(Event::CredentialRemoved {
+				subject_id: credential_subject,
+				claim_hash,
+			});
 		}
 	}
 }

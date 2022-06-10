@@ -333,18 +333,8 @@ pub mod pallet {
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::reclaim_deposit())]
 		pub fn reclaim_deposit(origin: OriginFor<T>, claim_hash: ClaimHashOf<T>) -> DispatchResult {
 			let who = ensure_signed(origin)?;
-			let attestation = Attestations::<T>::get(&claim_hash).ok_or(Error::<T>::AttestationNotFound)?;
 
-			ensure!(attestation.deposit.owner == who, Error::<T>::Unauthorized);
-
-			// *** No Fail beyond this point ***
-
-			log::debug!("removing Attestation");
-
-			Self::remove_attestation_entry(attestation, claim_hash);
-			Self::deposit_event(Event::DepositReclaimed(who, claim_hash));
-
-			Ok(())
+			Self::reclaim_dep(who, claim_hash)
 		}
 	}
 
@@ -464,6 +454,22 @@ pub mod pallet {
 			Self::deposit_event(Event::AttestationRemoved(who, claim_hash));
 
 			Ok(Some(<T as pallet::Config>::WeightInfo::remove()).into())
+		}
+
+		// TODO: Change naming
+		pub fn reclaim_dep(sender: AccountIdOf<T>, claim_hash: ClaimHashOf<T>) -> DispatchResult {
+			let attestation = Attestations::<T>::get(&claim_hash).ok_or(Error::<T>::AttestationNotFound)?;
+
+			ensure!(attestation.deposit.owner == sender, Error::<T>::Unauthorized);
+
+			// *** No Fail beyond this point ***
+
+			log::debug!("removing Attestation");
+
+			Self::remove_attestation_entry(attestation, claim_hash);
+			Self::deposit_event(Event::DepositReclaimed(sender, claim_hash));
+
+			Ok(())
 		}
 
 		/// Reserve the deposit and record the deposit on chain.

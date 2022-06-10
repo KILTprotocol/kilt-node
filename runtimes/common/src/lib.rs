@@ -30,7 +30,7 @@ pub use opaque::*;
 pub use frame_support::weights::constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight};
 use frame_support::{
 	parameter_types,
-	traits::{Contains, ContainsLengthBound, Currency, Get, OnRuntimeUpgrade, SortedMembers},
+	traits::{Contains, ContainsLengthBound, Currency, Get, SortedMembers},
 	weights::DispatchClass,
 };
 use frame_system::limits;
