@@ -29,6 +29,9 @@
 pub mod credentials;
 pub mod default_weights;
 
+#[cfg(test)]
+mod mock;
+
 pub use crate::{credentials::*, default_weights::WeightInfo, pallet::*};
 
 #[frame_support::pallet]
@@ -130,6 +133,7 @@ pub mod pallet {
 		CredentialIssued,
 		CredentialNotFound,
 		UnableToPayFees,
+		InternalError,
 	}
 
 	#[pallet::call]
@@ -139,7 +143,9 @@ pub mod pallet {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 			let attester = source.subject();
 			let payer = source.sender();
+
 			let deposit_amount = <T as Config>::Deposit::get();
+			let attestation_deposit_amount = <T as attestation::Config>::Deposit::get();
 
 			let Credential {
 				claim: Claim {
@@ -160,7 +166,6 @@ pub mod pallet {
 
 			// Check that enough funds can be reserved to pay for both attestation and
 			// public info deposits
-			let attestation_deposit_amount = <T as attestation::Config>::Deposit::get();
 			ensure!(
 				<<T as attestation::Config>::Currency as ReservableCurrency<AccountIdOf<T>>>::can_reserve(
 					&payer,
@@ -173,10 +178,10 @@ pub mod pallet {
 			// reserve its part of the deposit
 			attestation::Pallet::<T>::write_attestation(ctype_hash, claim_hash, attester, payer.clone(), None)?;
 
-			// Take the rest of the deposit
-			let deposit = Self::reserve_deposit(payer, deposit_amount)?;
-
 			// *** No Fail beyond this point ***
+
+			// Take the rest of the deposit. Should never fail since we made sure that enough funds can be reserved.
+			let deposit = Self::reserve_deposit(payer, deposit_amount).map_err(|_| Error::<T>::InternalError)?;
 
 			let block_number = frame_system::Pallet::<T>::block_number();
 
@@ -197,15 +202,15 @@ pub mod pallet {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 			let attester = source.subject();
 
-			// Verifies that the credential exists.
+			// Verify that the credential exists
 			let credential_subject =
 				CredentialsUnicityIndex::<T>::get(&claim_hash).ok_or(Error::<T>::CredentialNotFound)?;
-			// Should never happen if the line above succeeds.
+			// Should never happen if the line above succeeds
 			let credential_entry =
-				Credentials::<T>::get(&credential_subject, &claim_hash).ok_or(Error::<T>::CredentialNotFound)?;
+				Credentials::<T>::get(&credential_subject, &claim_hash).ok_or(Error::<T>::InternalError)?;
 
-			// Delegate to the attestation pallet the removal logic.
-			// This guarantees that the owner is calling this function.
+			// Delegate to the attestation pallet the removal logic
+			// This guarantees that the authorized owner is calling this function
 			let result = attestation::Pallet::<T>::remove_attestation(attester, claim_hash, None)?;
 
 			Self::remove_credential_entry(credential_subject, claim_hash, credential_entry);
@@ -217,15 +222,15 @@ pub mod pallet {
 		pub fn reclaim_deposit(origin: OriginFor<T>, claim_hash: ClaimHashOf<T>) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
-			// Verifies that the credential exists.
+			// Verify that the credential exists
 			let credential_subject =
 				CredentialsUnicityIndex::<T>::get(&claim_hash).ok_or(Error::<T>::CredentialNotFound)?;
-			// Should never happen if the line above succeeds.
+			// Should never happen if the line above succeeds
 			let credential_entry =
-				Credentials::<T>::get(&credential_subject, &claim_hash).ok_or(Error::<T>::CredentialNotFound)?;
+				Credentials::<T>::get(&credential_subject, &claim_hash).ok_or(Error::<T>::InternalError)?;
 
 			// Delegate to the attestation pallet the removal logic.
-			// This guarantees that the owner is calling this function.
+			// This guarantees that the authorized owner is calling this function.
 			attestation::Pallet::<T>::reclaim_dep(who, claim_hash)?;
 
 			Self::remove_credential_entry(credential_subject, claim_hash, credential_entry);

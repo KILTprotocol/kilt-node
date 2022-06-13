@@ -7,7 +7,7 @@ repository = "https://github.com/KILTprotocol/mashnet-node"
 version = "1.6.2"
 
 [dev-dependencies]
-# attestation = {features = ["mock"], path = "../attestation"}
+attestation = {features = ["mock"], path = "../attestation"}
 ctype = {features = ["mock"], path = "../ctype"}
 kilt-support = {features = ["mock"], path = "../../support"}
 
@@ -41,13 +41,6 @@ sp-std = {branch = "polkadot-v0.9.23", default-features = false, git = "https://
 
 [features]
 default = ["std"]
-mock = [
-  "pallet-balances",
-  "serde",
-  "sp-core",
-  "sp-io",
-  "sp-keystore",
-]
 runtime-benchmarks = [
   "frame-benchmarking",
   "frame-support/runtime-benchmarks",
