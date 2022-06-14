@@ -44,7 +44,7 @@ pub mod pallet {
 		pallet_prelude::*,
 		sp_runtime::traits::Saturating,
 		traits::{Currency, IsType, ReservableCurrency, StorageVersion},
-		BoundedVec, Parameter,
+		Parameter,
 	};
 	use frame_system::pallet_prelude::*;
 	use sp_core::H256;
@@ -52,7 +52,6 @@ pub mod pallet {
 	use attestation::{AttesterOf, ClaimHashOf};
 	use ctype::CtypeHashOf;
 	use kilt_support::{
-		deposit::Deposit,
 		signature::{SignatureVerificationError, VerifySignature},
 		traits::CallSources,
 	};
@@ -61,19 +60,23 @@ pub mod pallet {
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
 
 	pub(crate) type AccountIdOf<T> = attestation::AccountIdOf<T>;
+	pub(crate) type BalanceOf<T> = <<T as attestation::Config>::Currency as Currency<AccountIdOf<T>>>::Balance;
+	pub(crate) type BlockNumberOf<T> = <T as frame_system::Config>::BlockNumber;
+	// No easy way to check whether the two currencies are the same and check for `can_withdraw` conditions.
+	// Maybe with #[transactional] we could stop caring and simply rollback if the two are the same and there is not enough
+	// for both operations.
+	pub(crate) type CurrencyOf<T> = <T as attestation::Config>::Currency;
 	// TODO: Replace with an enum that includes KILT DIDs and asset DIDs.
 	pub(crate) type SubjectIdOf<T> = <T as Config>::SubjectId;
-	pub(crate) type BalanceOf<T> = <<T as attestation::Config>::Currency as Currency<AccountIdOf<T>>>::Balance;
-	pub(crate) type CurrencyOf<T> = <T as attestation::Config>::Currency;
 
 	pub type CredentialOf<T> = Credential<
 		CtypeHashOf<T>,
 		SubjectIdOf<T>,
-		BoundedVec<u8, <T as Config>::MaxEncodedClaimContentLength>,
+		Vec<u8>,
 		ClaimHashOf<T>,
 		H256,
-		<T as Config>::ClaimerIdentifier,
-		<T as Config>::ClaimerSignature,
+		ClaimerSignatureInfo<<T as Config>::ClaimerIdentifier, <T as Config>::ClaimerSignature>,
+		<T as attestation::Config>::AccessControl
 	>;
 
 	#[pallet::config]
@@ -95,7 +98,7 @@ pub mod pallet {
 		#[pallet::constant]
 		type MaxEncodedClaimContentLength: Get<u32>;
 		type OriginSuccess: CallSources<AccountIdOf<Self>, AttesterOf<Self>>;
-		type SubjectId: Parameter + MaxEncodedLen;
+		type SubjectId: Parameter + MaxEncodedLen + TryFrom<Vec<u8>>;
 		type WeightInfo: WeightInfo;
 	}
 
@@ -110,13 +113,14 @@ pub mod pallet {
 	#[pallet::storage]
 	#[pallet::getter(fn get_credential_info)]
 	pub type Credentials<T> =
-		StorageDoubleMap<_, Twox64Concat, SubjectIdOf<T>, Blake2_128Concat, ClaimHashOf<T>, CredentialEntry<T>>;
+		StorageDoubleMap<_, Twox64Concat, SubjectIdOf<T>, Blake2_128Concat, ClaimHashOf<T>, CredentialEntryOf<T>>;
 
 	// Reverse map to make sure that the same claim hash cannot be issued to two
 	// different subjects by issuing it to subject #1, then removing it only from
 	// the attestation pallet and then issuing it to subject #2.
-	// This map ensures that at any time a claim hash is only issued to a single
+	// This map ensures that at any time a claim hash is only linked (i.e., issued) to a single
 	// subject.
+	// Not exposed to the outside world.
 	#[pallet::storage]
 	#[pallet::getter(fn attested_claim_hashes)]
 	pub(crate) type CredentialsUnicityIndex<T> = StorageMap<_, Blake2_128Concat, ClaimHashOf<T>, SubjectIdOf<T>>;
@@ -137,7 +141,7 @@ pub mod pallet {
 
 	#[pallet::error]
 	pub enum Error<T> {
-		CredentialIssued,
+		CredentialAlreadyIssued,
 		CredentialNotFound,
 		UnableToPayFees,
 		ClaimerInfoNotFound,
@@ -147,8 +151,9 @@ pub mod pallet {
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
+		#[allow(clippy::boxed_local)]
 		#[pallet::weight(0)]
-		pub fn add(origin: OriginFor<T>, credential: CredentialOf<T>) -> DispatchResult {
+		pub fn add(origin: OriginFor<T>, credential: Box<CredentialOf<T>>) -> DispatchResult {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 			let attester = source.subject();
 			let payer = source.sender();
@@ -165,19 +170,23 @@ pub mod pallet {
 				claim_hash,
 				nonce: _,
 				claimer_signature,
-			} = credential;
+				authorization_info,
+			} = *credential;
 
 			// Check that the same attestation has not already been issued previously
 			// (potentially to a different subject)
 			ensure!(
 				!CredentialsUnicityIndex::<T>::contains_key(&claim_hash),
-				Error::<T>::CredentialIssued
+				Error::<T>::CredentialAlreadyIssued
 			);
 
 			// Check that enough funds can be reserved to pay for both attestation and
-			// public info deposits
+			// public info deposits.
+			// It is harder to use two potentially different currencies while making sure that, if the same, the sum can be reserved,
+			// but if they are not, then each deposit could be reserved separately.
+			// We could switch to using `NamedReservableCurrency` to do that.
 			ensure!(
-				<<T as attestation::Config>::Currency as ReservableCurrency<AccountIdOf<T>>>::can_reserve(
+				<CurrencyOf<T> as ReservableCurrency<AccountIdOf<T>>>::can_reserve(
 					&payer,
 					deposit_amount.saturating_add(attestation_deposit_amount)
 				),
@@ -199,17 +208,17 @@ pub mod pallet {
 
 			// Delegate to the attestation pallet writing the attestation information and
 			// reserve its part of the deposit
-			attestation::Pallet::<T>::write_attestation(ctype_hash, claim_hash, attester, payer.clone(), None)?;
+			attestation::Pallet::<T>::write_attestation(ctype_hash, claim_hash, attester, payer.clone(), authorization_info)?;
 
 			// *** No Fail beyond this point ***
 
-			// Take the rest of the deposit. Should never fail since we made sure that
+			// Take the rest of the deposit. Should never fail since we made sure above that
 			// enough funds can be reserved.
-			let deposit = Self::reserve_deposit(payer, deposit_amount).map_err(|_| Error::<T>::InternalError)?;
+			let deposit = kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(payer, deposit_amount).map_err(|_| Error::<T>::InternalError)?;
 
 			let block_number = frame_system::Pallet::<T>::block_number();
 
-			Credentials::<T>::insert(&subject, &claim_hash, CredentialEntry { deposit, block_number });
+			Credentials::<T>::insert(&subject, &claim_hash, CredentialEntryOf { deposit, block_number });
 			CredentialsUnicityIndex::<T>::insert(&claim_hash, subject.clone());
 
 			Self::deposit_event(Event::CredentialStored {
@@ -222,7 +231,7 @@ pub mod pallet {
 		}
 
 		#[pallet::weight(0)]
-		pub fn remove(origin: OriginFor<T>, claim_hash: ClaimHashOf<T>) -> DispatchResultWithPostInfo {
+		pub fn remove(origin: OriginFor<T>, claim_hash: ClaimHashOf<T>, authorization: Option<T::AccessControl>) -> DispatchResultWithPostInfo {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 			let attester = source.subject();
 
@@ -235,7 +244,7 @@ pub mod pallet {
 
 			// Delegate to the attestation pallet the removal logic
 			// This guarantees that the authorized owner is calling this function
-			let result = attestation::Pallet::<T>::remove_attestation(attester, claim_hash, None)?;
+			let result = attestation::Pallet::<T>::remove_attestation(attester, claim_hash, authorization)?;
 
 			Self::remove_credential_entry(credential_subject, claim_hash, credential_entry);
 
@@ -264,22 +273,10 @@ pub mod pallet {
 	}
 
 	impl<T: Config> Pallet<T> {
-		pub(crate) fn reserve_deposit(
-			payer: AccountIdOf<T>,
-			deposit: BalanceOf<T>,
-		) -> Result<Deposit<AccountIdOf<T>, BalanceOf<T>>, DispatchError> {
-			CurrencyOf::<T>::reserve(&payer, deposit)?;
-
-			Ok(Deposit::<AccountIdOf<T>, BalanceOf<T>> {
-				owner: payer,
-				amount: deposit,
-			})
-		}
-
 		pub(crate) fn remove_credential_entry(
 			credential_subject: SubjectIdOf<T>,
 			claim_hash: ClaimHashOf<T>,
-			credential: CredentialEntry<T>,
+			credential: CredentialEntryOf<T>,
 		) {
 			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&credential.deposit);
 			Credentials::<T>::remove(&credential_subject, &claim_hash);

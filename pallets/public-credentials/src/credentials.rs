@@ -23,7 +23,7 @@ use frame_support::RuntimeDebug;
 
 use kilt_support::deposit::Deposit;
 
-use crate::{AccountIdOf, BalanceOf, Config};
+use crate::{AccountIdOf, BalanceOf, BlockNumberOf, Config};
 
 #[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq, PartialOrd, Ord, TypeInfo)]
 pub struct Claim<CtypeHash, SubjectIdentifier, Content> {
@@ -38,20 +38,19 @@ pub struct ClaimerSignatureInfo<ClaimerIdentifier, Signature> {
 	pub signature_payload: Signature,
 }
 
-// TODO: Add support for delegation.
 #[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq, PartialOrd, Ord, TypeInfo)]
-pub struct Credential<CtypeHash, SubjectIdentifier, ClaimContent, ClaimHash, Nonce, ClaimerIdentifier, ClaimerSignature>
-{
+pub struct Credential<CtypeHash, SubjectIdentifier, ClaimContent, ClaimHash, Nonce, ClaimerSignature, AuthorizationControl> {
 	pub claim: Claim<CtypeHash, SubjectIdentifier, ClaimContent>,
 	pub nonce: Nonce,
 	pub claim_hash: ClaimHash,
-	pub claimer_signature: Option<ClaimerSignatureInfo<ClaimerIdentifier, ClaimerSignature>>,
+	pub claimer_signature: Option<ClaimerSignature>,
+	pub authorization_info: Option<AuthorizationControl>,
 }
 
 #[derive(Encode, Decode, Clone, MaxEncodedLen, RuntimeDebug, PartialEq, Eq, PartialOrd, Ord, TypeInfo)]
 #[scale_info(skip_type_params(T))]
 #[codec(mel_bound())]
-pub struct CredentialEntry<T: Config> {
-	pub block_number: T::BlockNumber,
+pub struct CredentialEntryOf<T: Config> {
+	pub block_number: BlockNumberOf<T>,
 	pub deposit: Deposit<AccountIdOf<T>, BalanceOf<T>>,
 }

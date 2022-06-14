@@ -99,10 +99,9 @@ pub mod pallet {
 		traits::{Currency, Get, ReservableCurrency, StorageVersion},
 	};
 	use frame_system::pallet_prelude::*;
-	use sp_runtime::DispatchError;
 
 	use ctype::CtypeHashOf;
-	use kilt_support::{deposit::Deposit, traits::CallSources};
+	use kilt_support::traits::CallSources;
 
 	/// The current storage version.
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
@@ -364,7 +363,7 @@ pub mod pallet {
 				.transpose()?;
 			let authorization_id = authorization.as_ref().map(|ac| ac.authorization_id());
 
-			let deposit = Pallet::<T>::reserve_deposit(payer, deposit_amount)?;
+			let deposit = kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(payer, deposit_amount)?;
 
 			// *** No Fail beyond this point ***
 
@@ -470,21 +469,6 @@ pub mod pallet {
 			Self::deposit_event(Event::DepositReclaimed(sender, claim_hash));
 
 			Ok(())
-		}
-
-		/// Reserve the deposit and record the deposit on chain.
-		///
-		/// Fails if the `payer` has a balance less than deposit.
-		pub(crate) fn reserve_deposit(
-			payer: AccountIdOf<T>,
-			deposit: BalanceOf<T>,
-		) -> Result<Deposit<AccountIdOf<T>, BalanceOf<T>>, DispatchError> {
-			CurrencyOf::<T>::reserve(&payer, deposit)?;
-
-			Ok(Deposit::<AccountIdOf<T>, BalanceOf<T>> {
-				owner: payer,
-				amount: deposit,
-			})
 		}
 
 		fn remove_attestation_entry(attestation: AttestationDetails<T>, claim_hash: ClaimHashOf<T>) {

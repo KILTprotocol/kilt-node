@@ -16,11 +16,32 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 use codec::{Decode, Encode, MaxEncodedLen};
+use frame_support::traits::ReservableCurrency;
 use scale_info::TypeInfo;
+use sp_runtime::{DispatchError, traits::Zero};
 
 /// An amount of balance reserved by the specified address.
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, TypeInfo, MaxEncodedLen)]
 pub struct Deposit<Account, Balance> {
 	pub owner: Account,
 	pub amount: Balance,
+}
+
+pub fn reserve_deposit<Account, Currency: ReservableCurrency<Account>>(
+	account: Account,
+	deposit_amount: Currency::Balance,
+) -> Result<
+	Deposit<Account, Currency::Balance>,
+	DispatchError>
+{
+	Currency::reserve(&account, deposit_amount)?;
+	Ok(Deposit {
+		owner: account,
+		amount: deposit_amount,
+	})
+}
+
+pub fn free_deposit<Account, Currency: ReservableCurrency<Account>>(deposit: &Deposit<Account, Currency::Balance>) {
+	let err_amount = Currency::unreserve(&deposit.owner, deposit.amount);
+	debug_assert!(err_amount.is_zero());
 }
