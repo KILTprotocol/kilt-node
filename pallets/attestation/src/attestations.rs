@@ -24,7 +24,7 @@ use scale_info::TypeInfo;
 use crate::{AccountIdOf, AttesterOf, AuthorizationIdOf, BalanceOf, Config};
 
 /// An on-chain attestation written by an attester.
-#[derive(Clone, Debug, Encode, Decode, PartialEq, TypeInfo, MaxEncodedLen)]
+#[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 #[scale_info(skip_type_params(T))]
 #[codec(mel_bound())]
 pub struct AttestationDetails<T: Config> {

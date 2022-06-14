@@ -363,7 +363,7 @@ pub struct TotalStake<Balance: Default> {
 
 /// The number of delegations a delegator has done within the last session in
 /// which they delegated.
-#[derive(Default, Clone, Encode, Decode, RuntimeDebug, PartialEq, TypeInfo, MaxEncodedLen)]
+#[derive(Default, Clone, Encode, Decode, RuntimeDebug, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub struct DelegationCounter {
 	/// The index of the last delegation.
 	pub round: SessionIndex,
