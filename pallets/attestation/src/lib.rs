@@ -113,10 +113,10 @@ pub mod pallet {
 	/// Type of an attester identifier.
 	pub type AttesterOf<T> = <T as Config>::AttesterId;
 
+	pub type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
+
 	/// Authorization id type
 	pub(crate) type AuthorizationIdOf<T> = <T as Config>::AuthorizationId;
-
-	pub(crate) type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 
 	pub(crate) type BalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::Balance;
 

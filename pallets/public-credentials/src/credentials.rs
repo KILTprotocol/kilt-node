@@ -32,15 +32,23 @@ pub struct Claim<CtypeHash, SubjectIdentifier, Content> {
 	pub contents: Content,
 }
 
-// TODO: Add support for delegation and claimer's signature.
 #[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq, PartialOrd, Ord, TypeInfo)]
-pub struct Credential<CtypeHash, SubjectIdentifier, ClaimContent, ClaimHash, Nonce> {
+pub struct ClaimerSignatureInfo<ClaimerIdentifier, Signature> {
+	pub claimer_id: ClaimerIdentifier,
+	pub signature_payload: Signature,
+}
+
+// TODO: Add support for delegation.
+#[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq, PartialOrd, Ord, TypeInfo)]
+pub struct Credential<CtypeHash, SubjectIdentifier, ClaimContent, ClaimHash, Nonce, ClaimerIdentifier, ClaimerSignature>
+{
 	pub claim: Claim<CtypeHash, SubjectIdentifier, ClaimContent>,
 	pub nonce: Nonce,
 	pub claim_hash: ClaimHash,
+	pub claimer_signature: Option<ClaimerSignatureInfo<ClaimerIdentifier, ClaimerSignature>>,
 }
 
-#[derive(Encode, Decode, Clone, MaxEncodedLen, RuntimeDebug, TypeInfo)]
+#[derive(Encode, Decode, Clone, MaxEncodedLen, RuntimeDebug, PartialEq, Eq, PartialOrd, Ord, TypeInfo)]
 #[scale_info(skip_type_params(T))]
 #[codec(mel_bound())]
 pub struct CredentialEntry<T: Config> {

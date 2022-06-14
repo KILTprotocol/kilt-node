@@ -31,6 +31,8 @@ pub mod default_weights;
 
 #[cfg(test)]
 mod mock;
+#[cfg(test)]
+mod tests;
 
 pub use crate::{credentials::*, default_weights::WeightInfo, pallet::*};
 
@@ -38,27 +40,29 @@ pub use crate::{credentials::*, default_weights::WeightInfo, pallet::*};
 pub mod pallet {
 	use super::*;
 
-	use codec::MaxEncodedLen;
-
 	use frame_support::{
 		pallet_prelude::*,
 		sp_runtime::traits::Saturating,
 		traits::{Currency, IsType, ReservableCurrency, StorageVersion},
-		BoundedVec,
+		BoundedVec, Parameter,
 	};
 	use frame_system::pallet_prelude::*;
 	use sp_core::H256;
 
 	use attestation::{AttesterOf, ClaimHashOf};
 	use ctype::CtypeHashOf;
-	use kilt_support::{deposit::Deposit, traits::CallSources};
+	use kilt_support::{
+		deposit::Deposit,
+		signature::{SignatureVerificationError, VerifySignature},
+		traits::CallSources,
+	};
 
 	/// The current storage version.
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
 
-	pub(crate) type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
+	pub(crate) type AccountIdOf<T> = attestation::AccountIdOf<T>;
 	// TODO: Replace with an enum that includes KILT DIDs and asset DIDs.
-	pub(crate) type SubjectIdOf<T> = AccountIdOf<T>;
+	pub(crate) type SubjectIdOf<T> = <T as Config>::SubjectId;
 	pub(crate) type BalanceOf<T> = <<T as attestation::Config>::Currency as Currency<AccountIdOf<T>>>::Balance;
 	pub(crate) type CurrencyOf<T> = <T as attestation::Config>::Currency;
 
@@ -68,11 +72,19 @@ pub mod pallet {
 		BoundedVec<u8, <T as Config>::MaxEncodedClaimContentLength>,
 		ClaimHashOf<T>,
 		H256,
+		<T as Config>::ClaimerIdentifier,
+		<T as Config>::ClaimerSignature,
 	>;
 
 	#[pallet::config]
-	pub trait Config: frame_system::Config + attestation::Config {
-		type CredentialClaimerIdentifier: Parameter + MaxEncodedLen;
+	pub trait Config: frame_system::Config + ctype::Config + attestation::Config {
+		type ClaimerIdentifier: Parameter;
+		type ClaimerSignature: Parameter;
+		type ClaimerSignatureVerification: VerifySignature<
+			SignerId = Self::ClaimerIdentifier,
+			Payload = Vec<u8>,
+			Signature = Self::ClaimerSignature,
+		>;
 		#[pallet::constant]
 		type Deposit: Get<BalanceOf<Self>>;
 		type EnsureOrigin: EnsureOrigin<
@@ -83,6 +95,7 @@ pub mod pallet {
 		#[pallet::constant]
 		type MaxEncodedClaimContentLength: Get<u32>;
 		type OriginSuccess: CallSources<AccountIdOf<Self>, AttesterOf<Self>>;
+		type SubjectId: Parameter + MaxEncodedLen;
 		type WeightInfo: WeightInfo;
 	}
 
@@ -96,14 +109,8 @@ pub mod pallet {
 
 	#[pallet::storage]
 	#[pallet::getter(fn get_credential_info)]
-	pub type Credentials<T> = StorageDoubleMap<
-		_,
-		Twox64Concat,
-		SubjectIdOf<T>,
-		Blake2_128Concat,
-		ClaimHashOf<T>,
-		CredentialEntry<T>,
-	>;
+	pub type Credentials<T> =
+		StorageDoubleMap<_, Twox64Concat, SubjectIdOf<T>, Blake2_128Concat, ClaimHashOf<T>, CredentialEntry<T>>;
 
 	// Reverse map to make sure that the same claim hash cannot be issued to two
 	// different subjects by issuing it to subject #1, then removing it only from
@@ -133,6 +140,8 @@ pub mod pallet {
 		CredentialIssued,
 		CredentialNotFound,
 		UnableToPayFees,
+		ClaimerInfoNotFound,
+		InvalidClaimerSignature,
 		InternalError,
 	}
 
@@ -155,6 +164,7 @@ pub mod pallet {
 				},
 				claim_hash,
 				nonce: _,
+				claimer_signature,
 			} = credential;
 
 			// Check that the same attestation has not already been issued previously
@@ -173,6 +183,19 @@ pub mod pallet {
 				),
 				Error::<T>::UnableToPayFees
 			);
+
+			// Check the validity of the claimer's signature, if present.
+			if let Some(ClaimerSignatureInfo {
+				claimer_id,
+				signature_payload,
+			}) = claimer_signature
+			{
+				T::ClaimerSignatureVerification::verify(&claimer_id, &claim_hash.encode(), &signature_payload)
+					.map_err(|err| match err {
+						SignatureVerificationError::SignerInformationNotPresent => Error::<T>::ClaimerInfoNotFound,
+						SignatureVerificationError::SignatureInvalid => Error::<T>::InvalidClaimerSignature,
+					})?;
+			}
 
 			// Delegate to the attestation pallet writing the attestation information and
 			// reserve its part of the deposit
