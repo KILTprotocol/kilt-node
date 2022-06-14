@@ -203,7 +203,8 @@ pub mod pallet {
 
 			// *** No Fail beyond this point ***
 
-			// Take the rest of the deposit. Should never fail since we made sure that enough funds can be reserved.
+			// Take the rest of the deposit. Should never fail since we made sure that
+			// enough funds can be reserved.
 			let deposit = Self::reserve_deposit(payer, deposit_amount).map_err(|_| Error::<T>::InternalError)?;
 
 			let block_number = frame_system::Pallet::<T>::block_number();
