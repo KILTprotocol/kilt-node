@@ -26,6 +26,7 @@
 //! - [`Pallet`]
 #![cfg_attr(not(feature = "std"), no_std)]
 
+pub mod assets;
 pub mod credentials;
 pub mod default_weights;
 
@@ -66,12 +67,12 @@ pub mod pallet {
 	// Maybe with #[transactional] we could stop caring and simply rollback if the two are the same and there is not enough
 	// for both operations.
 	pub(crate) type CurrencyOf<T> = <T as attestation::Config>::Currency;
-	// TODO: Replace with an enum that includes KILT DIDs and asset DIDs.
 	pub(crate) type SubjectIdOf<T> = <T as Config>::SubjectId;
 
 	pub type CredentialOf<T> = Credential<
 		CtypeHashOf<T>,
-		SubjectIdOf<T>,
+		// Input subject_id is a raw byte array, converted within the extrinsic
+		Vec<u8>,
 		Vec<u8>,
 		ClaimHashOf<T>,
 		H256,
@@ -95,10 +96,8 @@ pub mod pallet {
 			<Self as frame_system::Config>::Origin,
 		>;
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
-		#[pallet::constant]
-		type MaxEncodedClaimContentLength: Get<u32>;
 		type OriginSuccess: CallSources<AccountIdOf<Self>, AttesterOf<Self>>;
-		type SubjectId: Parameter + MaxEncodedLen + TryFrom<Vec<u8>>;
+		type SubjectId: Parameter + MaxEncodedLen + TryFrom<Vec<u8>, Error = DispatchError>;
 		type WeightInfo: WeightInfo;
 	}
 
@@ -146,6 +145,7 @@ pub mod pallet {
 		UnableToPayFees,
 		ClaimerInfoNotFound,
 		InvalidClaimerSignature,
+		InvalidInput,
 		InternalError,
 	}
 
@@ -172,6 +172,9 @@ pub mod pallet {
 				claimer_signature,
 				authorization_info,
 			} = *credential;
+
+			// Try to decode subject ID to something usable
+			let subject = T::SubjectId::try_from(subject)?;
 
 			// Check that the same attestation has not already been issued previously
 			// (potentially to a different subject)
