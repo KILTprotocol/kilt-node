@@ -333,7 +333,7 @@ pub mod pallet {
 		pub fn reclaim_deposit(origin: OriginFor<T>, claim_hash: ClaimHashOf<T>) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
-			Self::reclaim_dep(who, claim_hash)
+			Self::unlock_deposit(who, claim_hash)
 		}
 	}
 
@@ -455,8 +455,7 @@ pub mod pallet {
 			Ok(Some(<T as pallet::Config>::WeightInfo::remove()).into())
 		}
 
-		// TODO: Change naming
-		pub fn reclaim_dep(sender: AccountIdOf<T>, claim_hash: ClaimHashOf<T>) -> DispatchResult {
+		pub fn unlock_deposit(sender: AccountIdOf<T>, claim_hash: ClaimHashOf<T>) -> DispatchResult {
 			let attestation = Attestations::<T>::get(&claim_hash).ok_or(Error::<T>::AttestationNotFound)?;
 
 			ensure!(attestation.deposit.owner == sender, Error::<T>::Unauthorized);

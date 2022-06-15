@@ -248,6 +248,7 @@ pub mod pallet {
 
 			Self::remove_credential_entry(credential_subject, claim_hash, credential_entry);
 
+			// TODO: return the actual fee used.
 			Ok(result)
 		}
 
@@ -264,7 +265,7 @@ pub mod pallet {
 
 			// Delegate to the attestation pallet the removal logic.
 			// This guarantees that the authorized owner is calling this function.
-			attestation::Pallet::<T>::reclaim_dep(who, claim_hash)?;
+			attestation::Pallet::<T>::unlock_deposit(who, claim_hash)?;
 
 			Self::remove_credential_entry(credential_subject, claim_hash, credential_entry);
 
@@ -273,7 +274,7 @@ pub mod pallet {
 	}
 
 	impl<T: Config> Pallet<T> {
-		pub(crate) fn remove_credential_entry(
+		fn remove_credential_entry(
 			credential_subject: SubjectIdOf<T>,
 			claim_hash: ClaimHashOf<T>,
 			credential: CredentialEntryOf<T>,
