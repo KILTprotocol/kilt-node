@@ -96,8 +96,9 @@ pub mod pallet {
 			<Self as frame_system::Config>::Origin,
 		>;
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+		type InputError: Into<DispatchError>;
 		type OriginSuccess: CallSources<AccountIdOf<Self>, AttesterOf<Self>>;
-		type SubjectId: Parameter + MaxEncodedLen + TryFrom<Vec<u8>, Error = DispatchError>;
+		type SubjectId: Parameter + MaxEncodedLen + TryFrom<Vec<u8>, Error = Self::InputError>;
 		type WeightInfo: WeightInfo;
 	}
 
@@ -174,7 +175,7 @@ pub mod pallet {
 			} = *credential;
 
 			// Try to decode subject ID to something usable
-			let subject = T::SubjectId::try_from(subject)?;
+			let subject = T::SubjectId::try_from(subject).map_err(|e| e.into())?;
 
 			// Check that the same attestation has not already been issued previously
 			// (potentially to a different subject)
