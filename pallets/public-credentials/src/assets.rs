@@ -34,8 +34,8 @@ pub mod chain_id {
 	#[derive(std::fmt::Debug, PartialEq, Eq, PartialOrd, Ord)]
 	pub enum ChainId<C> {
 		Eip155(Eip155Reference<C>),
-		Bip122(GenesisHexHashReference<C, 16>),
-		Dotsama(GenesisHexHashReference<C>),
+		Bip122(GenesisHexHashReference<C, 32>),
+		Dotsama(GenesisHexHashReference<C, 32>),
 		Solana(GenesisBase58HashReference<C>),
 		Generic(GenericChainId<C>),
 	}
@@ -48,9 +48,9 @@ pub mod chain_id {
 				// "eip155:" chains -> https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-3.md
 				[b'e', b'i', b'p', b'1', b'5', b'5', b':', chain_id @ ..] => Eip155Reference::<C>::try_from(chain_id).and_then(|reference| Ok(Self::Eip155(reference))),
 				// "bip122:" chains -> https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-4.md
-				[b'b', b'i', b'p', b'1', b'2', b'2', b':', chain_id @ ..] => GenesisHexHashReference::<C, 16>::try_from(chain_id).and_then(|reference| Ok(Self::Bip122(reference))),
+				[b'b', b'i', b'p', b'1', b'2', b'2', b':', chain_id @ ..] => GenesisHexHashReference::<C, 32>::try_from(chain_id).and_then(|reference| Ok(Self::Bip122(reference))),
 				// "polkadot" chains -> https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-13.md
-				[b'p', b'o', b'l', b'k', b'a', b'd', b'o', b't', b':', chain_id @ ..] => GenesisHexHashReference::<C, 16>::try_from(chain_id).and_then(|reference| Ok(Self::Dotsama(reference))),
+				[b'p', b'o', b'l', b'k', b'a', b'd', b'o', b't', b':', chain_id @ ..] => GenesisHexHashReference::<C, 32>::try_from(chain_id).and_then(|reference| Ok(Self::Dotsama(reference))),
 				// "solana" chains -> https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-30.md
 				[b's', b'o', b'l', b'a', b'n', b'a', b':', chain_id @ ..] => GenesisBase58HashReference::<C>::try_from(chain_id).and_then(|reference| Ok(Self::Solana(reference))),
 				chain_id => GenericChainId::<C>::try_from(chain_id).and_then(|id| Ok(Self::Generic(id))),
@@ -58,8 +58,51 @@ pub mod chain_id {
 		}
 	}
 
+	impl<C: Config> ChainId<C> {
+		pub fn ethereum_mainnet() -> Self {
+			Self::Eip155(Eip155Reference::<C>::from_slice_unsafe(b"1"))
+		}
+
+		pub fn moonriver_eth() -> Self {
+			// Info taken from https://chainlist.org/
+			Self::Eip155(Eip155Reference::<C>::from_slice_unsafe(b"1285"))
+		}
+
+		pub fn moonbeam_eth() -> Self {
+			// Info taken from https://chainlist.org/
+			Self::Eip155(Eip155Reference::<C>::from_slice_unsafe(b"1284"))
+		}
+
+		pub fn bitcoin_mainnet() -> Self {
+			Self::Bip122(GenesisHexHashReference::<C, 32>::from_slice_unsafe(b"000000000019d6689c085ae165831e93"))
+		}
+
+		pub fn polkadot() -> Self {
+			Self::Dotsama(GenesisHexHashReference::<C, 32>::from_slice_unsafe(b"91b171bb158e2d3848fa23a9f1c25182"))
+		}
+
+		pub fn kusama() -> Self {
+			Self::Dotsama(GenesisHexHashReference::<C, 32>::from_slice_unsafe(b"b0a8d493285c2df73290dfb7e61f870f"))
+		}
+
+		pub fn kilt_spiritnet() -> Self {
+			Self::Dotsama(GenesisHexHashReference::<C, 32>::from_slice_unsafe(b"411f057b9107718c9624d6aa4a3f23c1"))
+		}
+
+		pub fn solana_mainnet() -> Self {
+			Self::Solana(GenesisBase58HashReference::<C>::from_slice_unsafe(b"4sGjMW1sUnHzSxGspuhpqLDx6wiyjNtZ"))
+		}
+	}
+
 	#[derive(sp_runtime::RuntimeDebug, PartialEq, Eq, PartialOrd, Ord)]
 	pub struct Eip155Reference<C>(pub BoundedVec<u8, ConstU32<MAXIMUM_REFERENCE_LENGTH>>, Option<sp_std::marker::PhantomData<C>>);
+
+	impl<C: Config> Eip155Reference<C> {
+		#[allow(dead_code)]
+		pub(crate) fn from_slice_unsafe(slice: &[u8]) -> Self {
+			Self(slice.to_vec().try_into().unwrap(), None)
+		}
+	}
 
 	impl<C: Config> TryFrom<&[u8]> for Eip155Reference<C> {
 		type Error = Error<C>;
@@ -83,20 +126,35 @@ pub mod chain_id {
 	}
 
 	#[derive(sp_runtime::RuntimeDebug, PartialEq, Eq, PartialOrd, Ord)]
-	pub struct GenesisHexHashReference<C, const L: usize = 16>(pub [u8; L], Option<sp_std::marker::PhantomData<C>>);
+	pub struct GenesisHexHashReference<C, const L: usize = 32>(pub [u8; L], Option<sp_std::marker::PhantomData<C>>);
+
+	impl<C: Config, const L: usize> GenesisHexHashReference<C, L> {
+		#[allow(dead_code)]
+		pub(crate) fn from_slice_unsafe(slice: &[u8]) -> Self {
+			Self(slice.try_into().unwrap(), None)
+		}
+	}
 
 	impl<C: Config, const L: usize> TryFrom<&[u8]> for GenesisHexHashReference<C, L> {
 		type Error = Error<C>;
 
 		fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
-			let decoded = hex::decode(value).map_err(|_| Error::<C>::InvalidInput)?;
-			let inner: [u8; L] = decoded.try_into().map_err(|_| Error::<C>::InvalidInput)?;
+			// Verify it's a valid HEX string
+			hex::decode(value).map_err(|_| Error::<C>::InvalidInput)?;
+			let inner: [u8; L] = value.try_into().map_err(|_| Error::<C>::InvalidInput)?;
 			Ok(Self(inner, None))
 		}
 	}
 
 	#[derive(sp_runtime::RuntimeDebug, PartialEq, Eq, PartialOrd, Ord)]
 	pub struct GenesisBase58HashReference<C>(pub BoundedVec<u8, ConstU32<MAXIMUM_REFERENCE_LENGTH>>, Option<sp_std::marker::PhantomData<C>>);
+
+	impl<C: Config> GenesisBase58HashReference<C> {
+		#[allow(dead_code)]
+		pub(crate) fn from_slice_unsafe(slice: &[u8]) -> Self {
+			Self(slice.to_vec().try_into().unwrap(), None)
+		}
+	}
 
 	impl<C: Config> TryFrom<&[u8]> for GenesisBase58HashReference<C> {
 		type Error = Error<C>;
@@ -123,6 +181,14 @@ pub mod chain_id {
 	}
 
 	impl<C> GenericChainId<C> {
+		#[allow(dead_code)]
+		fn from_components_unsafe(namespace:&[u8], reference: &[u8]) -> Self {
+			Self {
+				namespace: namespace.to_vec().try_into().unwrap(),
+				reference: reference.to_vec().try_into().unwrap(),
+				_phantom: None
+			}
+		}
 		fn from_components(namespace: BoundedVec<u8, ConstU32<MAXIMUM_NAMESPACE_LENGTH>>, reference: BoundedVec<u8, ConstU32<MAXIMUM_REFERENCE_LENGTH>>) -> Self {
 			Self {
 				namespace,
@@ -298,6 +364,18 @@ pub mod chain_id {
 				println!("Testing wrong chain {:?}", chain);
 				assert!(ChainId::<Test>::try_from(chain.as_bytes().to_vec()).is_err(), "Chain ID {:?} should fail to parse for solana chains", chain);
 			}
+		}
+
+		#[test]
+		fn test_utility_functions() {
+			// These functions should never crash. We just check that here.
+			// ChainId::<Test>::ethereum_mainnet();
+			// ChainId::<Test>::moonbeam_eth();
+			ChainId::<Test>::bitcoin_mainnet();
+			// ChainId::<Test>::polkadot();
+			// ChainId::<Test>::kusama();
+			// ChainId::<Test>::kilt_spiritnet();
+			// ChainId::<Test>::solana_mainnet();
 		}
 	}
 }
