@@ -8263,10 +8263,12 @@ name = "public-credentials"
 version = "1.6.2"
 dependencies = [
  "attestation",
+ "base58",
  "ctype",
  "frame-benchmarking",
  "frame-support",
  "frame-system",
+ "hex",
  "kilt-support",
  "log",
  "pallet-balances",
