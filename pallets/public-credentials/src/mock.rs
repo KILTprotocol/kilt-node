@@ -23,8 +23,8 @@ use ctype::CtypeHashOf;
 use kilt_support::deposit::Deposit;
 
 use crate::{
-	AccountIdOf, BalanceOf, Claim, CurrencyOf, ClaimerSignatureInfo, Config, CredentialEntryOf, CredentialOf, Credentials,
-	CredentialsUnicityIndex, SubjectIdOf,
+	AccountIdOf, BalanceOf, Claim, ClaimerSignatureInfo, Config, CredentialEntryOf, CredentialOf, Credentials,
+	CredentialsUnicityIndex, CurrencyOf, SubjectIdOf,
 };
 
 pub(crate) type BlockNumber = u64;
@@ -58,8 +58,11 @@ pub fn insert_public_credentials<T: Config>(
 	claim_hash: ClaimHashOf<T>,
 	credential_entry: CredentialEntryOf<T>,
 ) {
-	kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(credential_entry.deposit.owner.clone(), credential_entry.deposit.amount)
-		.expect("Attester should have enough balance");
+	kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
+		credential_entry.deposit.owner.clone(),
+		credential_entry.deposit.amount,
+	)
+	.expect("Attester should have enough balance");
 
 	Credentials::<T>::insert(&subject_id, &claim_hash, credential_entry);
 	CredentialsUnicityIndex::<T>::insert(claim_hash, subject_id);
@@ -86,14 +89,14 @@ pub use crate::mock::runtime::*;
 pub(crate) mod runtime {
 	use super::*;
 
-	use codec::{Encode, Decode, MaxEncodedLen};
-	use scale_info::TypeInfo;
+	use codec::{Decode, Encode, MaxEncodedLen};
 	use frame_support::{
 		parameter_types,
 		traits::{ConstU128, ConstU16, ConstU32, ConstU64},
 		weights::constants::RocksDbWeight,
 	};
-	use sp_core::{sr25519, Pair,};
+	use scale_info::TypeInfo;
+	use sp_core::{sr25519, Pair};
 	use sp_runtime::{
 		testing::Header,
 		traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
@@ -114,7 +117,19 @@ pub(crate) mod runtime {
 	pub type AccountPublic = <MultiSignature as Verify>::Signer;
 	pub type AccountId = <AccountPublic as IdentifyAccount>::AccountId;
 
-	#[derive(Default, Encode, Clone, Decode, MaxEncodedLen, sp_runtime::RuntimeDebug, Eq, PartialEq, Ord, PartialOrd, TypeInfo)]
+	#[derive(
+		Default,
+		Encode,
+		Clone,
+		Decode,
+		MaxEncodedLen,
+		sp_runtime::RuntimeDebug,
+		Eq,
+		PartialEq,
+		Ord,
+		PartialOrd,
+		TypeInfo,
+	)]
 	pub struct TestSubjectId([u8; 32]);
 
 	impl core::ops::Deref for TestSubjectId {

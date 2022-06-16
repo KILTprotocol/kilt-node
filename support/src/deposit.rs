@@ -18,7 +18,7 @@
 use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::traits::ReservableCurrency;
 use scale_info::TypeInfo;
-use sp_runtime::{DispatchError, traits::Zero};
+use sp_runtime::{traits::Zero, DispatchError};
 
 /// An amount of balance reserved by the specified address.
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, TypeInfo, MaxEncodedLen)]
@@ -30,10 +30,7 @@ pub struct Deposit<Account, Balance> {
 pub fn reserve_deposit<Account, Currency: ReservableCurrency<Account>>(
 	account: Account,
 	deposit_amount: Currency::Balance,
-) -> Result<
-	Deposit<Account, Currency::Balance>,
-	DispatchError>
-{
+) -> Result<Deposit<Account, Currency::Balance>, DispatchError> {
 	Currency::reserve(&account, deposit_amount)?;
 	Ok(Deposit {
 		owner: account,

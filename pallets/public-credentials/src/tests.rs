@@ -58,8 +58,9 @@ fn add_with_no_signature_successful() {
 			));
 			let stored_attestation =
 				Attestations::<Test>::get(&claim_hash).expect("Attestation should be present on chain.");
-			let stored_public_credential_details = Credentials::<Test>::get(&TestSubjectId::try_from(subject_id.clone()).unwrap(), &claim_hash)
-				.expect("Public credential details should be present on chain.");
+			let stored_public_credential_details =
+				Credentials::<Test>::get(&TestSubjectId::try_from(subject_id.clone()).unwrap(), &claim_hash)
+					.expect("Public credential details should be present on chain.");
 
 			// Test interactions with attestation pallet
 			assert_eq!(stored_attestation.ctype_hash, ctype_hash);
@@ -73,7 +74,10 @@ fn add_with_no_signature_successful() {
 			);
 
 			// Check deposit reservation logic
-			assert_eq!(Balances::reserved_balance(ACCOUNT_00), public_credential_deposit + attestation_deposit);
+			assert_eq!(
+				Balances::reserved_balance(ACCOUNT_00),
+				public_credential_deposit + attestation_deposit
+			);
 
 			// Re-issuing the same credential will fail
 			assert_noop!(
@@ -85,7 +89,10 @@ fn add_with_no_signature_successful() {
 			);
 
 			// Check deposit has not changed
-			assert_eq!(Balances::reserved_balance(ACCOUNT_00), public_credential_deposit + attestation_deposit);
+			assert_eq!(
+				Balances::reserved_balance(ACCOUNT_00),
+				public_credential_deposit + attestation_deposit
+			);
 
 			System::set_block_number(1);
 
@@ -97,8 +104,9 @@ fn add_with_no_signature_successful() {
 
 			let stored_attestation =
 				Attestations::<Test>::get(&claim_hash_2).expect("Attestation #2 should be present on chain.");
-			let stored_public_credential_details = Credentials::<Test>::get(&TestSubjectId::try_from(subject_id.clone()).unwrap(), &claim_hash_2)
-				.expect("Public credential #2 details should be present on chain.");
+			let stored_public_credential_details =
+				Credentials::<Test>::get(&TestSubjectId::try_from(subject_id.clone()).unwrap(), &claim_hash_2)
+					.expect("Public credential #2 details should be present on chain.");
 
 			// Test interactions with attestation pallet
 			assert_eq!(stored_attestation.ctype_hash, ctype_hash);
@@ -106,10 +114,16 @@ fn add_with_no_signature_successful() {
 
 			// Test this pallet logic
 			assert_eq!(stored_public_credential_details.block_number, 1);
-			assert_eq!(CredentialsUnicityIndex::<Test>::get(&claim_hash_2), Some(subject_id.into()));
+			assert_eq!(
+				CredentialsUnicityIndex::<Test>::get(&claim_hash_2),
+				Some(subject_id.into())
+			);
 
 			// Deposit is 2x now
-			assert_eq!(Balances::reserved_balance(ACCOUNT_00), 2 * (public_credential_deposit + attestation_deposit));
+			assert_eq!(
+				Balances::reserved_balance(ACCOUNT_00),
+				2 * (public_credential_deposit + attestation_deposit)
+			);
 
 			// Deleting the attestation only from the attestation pallet will still fail
 			Attestation::reclaim_deposit(Origin::signed(ACCOUNT_00), claim_hash)
@@ -123,7 +137,10 @@ fn add_with_no_signature_successful() {
 			);
 
 			// Deposit should now be equal to 1 attestation + 2 public credentials
-			assert_eq!(Balances::reserved_balance(ACCOUNT_00), 2 * public_credential_deposit + attestation_deposit);
+			assert_eq!(
+				Balances::reserved_balance(ACCOUNT_00),
+				2 * public_credential_deposit + attestation_deposit
+			);
 		});
 }
 
@@ -159,8 +176,9 @@ fn add_with_claimer_signature_successful() {
 			));
 			let stored_attestation =
 				Attestations::<Test>::get(&claim_hash).expect("Attestation should be present on chain.");
-			let stored_public_credential_details = Credentials::<Test>::get(&TestSubjectId::try_from(subject_id.clone()).unwrap(), &claim_hash)
-				.expect("Public credential details should be present on chain.");
+			let stored_public_credential_details =
+				Credentials::<Test>::get(&TestSubjectId::try_from(subject_id.clone()).unwrap(), &claim_hash)
+					.expect("Public credential details should be present on chain.");
 
 			// Test interactions with attestation pallet
 			assert_eq!(stored_attestation.ctype_hash, ctype_hash);
@@ -168,7 +186,10 @@ fn add_with_claimer_signature_successful() {
 
 			// Test this pallet logic
 			assert_eq!(stored_public_credential_details.block_number, System::block_number());
-			assert_eq!(CredentialsUnicityIndex::<Test>::get(&claim_hash), Some(subject_id.try_into().unwrap()));
+			assert_eq!(
+				CredentialsUnicityIndex::<Test>::get(&claim_hash),
+				Some(subject_id.try_into().unwrap())
+			);
 		});
 }
 
@@ -178,7 +199,8 @@ fn add_not_enough_balance() {
 	let subject_id = SUBJECT_ID_00;
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 	let ctype_hash = get_ctype_hash::<Test>(true);
-	let new_credential = generate_base_public_credential_creation_op::<Test>(subject_id.into(), claim_hash, ctype_hash, None);
+	let new_credential =
+		generate_base_public_credential_creation_op::<Test>(subject_id.into(), claim_hash, ctype_hash, None);
 	let public_credential_deposit = <Test as Config>::Deposit::get();
 	let attestation_deposit = <Test as attestation::Config>::Deposit::get();
 
@@ -303,7 +325,9 @@ fn add_invalid_subject_id() {
 #[test]
 fn remove_successful() {
 	let attester = sr25519_did_from_seed(&ALICE_SEED);
-	let subject_id: SubjectIdOf<Test> = SUBJECT_ID_00.try_into().expect("Should not fail to parse test SubjectId.");
+	let subject_id: SubjectIdOf<Test> = SUBJECT_ID_00
+		.try_into()
+		.expect("Should not fail to parse test SubjectId.");
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 	let attestation: AttestationDetails<Test> = generate_base_attestation(attester.clone(), ACCOUNT_00);
 	let new_credential = generate_base_credential_entry(ACCOUNT_00, 0);
@@ -326,7 +350,10 @@ fn remove_successful() {
 			assert_eq!(Attestations::<Test>::get(&claim_hash), None);
 
 			// Test this pallet logic
-			assert_eq!(Credentials::<Test>::get(&TestSubjectId::try_from(subject_id.clone()).unwrap(), &claim_hash), None);
+			assert_eq!(
+				Credentials::<Test>::get(&TestSubjectId::try_from(subject_id.clone()).unwrap(), &claim_hash),
+				None
+			);
 			assert_eq!(CredentialsUnicityIndex::<Test>::get(&claim_hash), None);
 
 			// Check deposit release logic
@@ -362,7 +389,9 @@ fn remove_successful() {
 fn remove_unauthorized() {
 	let attester = sr25519_did_from_seed(&ALICE_SEED);
 	let wrong_attester = sr25519_did_from_seed(&BOB_SEED);
-	let subject_id: SubjectIdOf<Test> = SUBJECT_ID_00.try_into().expect("Should not fail to parse test SubjectId.");
+	let subject_id: SubjectIdOf<Test> = SUBJECT_ID_00
+		.try_into()
+		.expect("Should not fail to parse test SubjectId.");
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 	let attestation: AttestationDetails<Test> = generate_base_attestation(attester.clone(), ACCOUNT_00);
 	let new_credential = generate_base_credential_entry(ACCOUNT_00, 0);
@@ -388,7 +417,9 @@ fn remove_unauthorized() {
 #[test]
 fn reclaim_deposit_successful() {
 	let attester = sr25519_did_from_seed(&ALICE_SEED);
-	let subject_id: SubjectIdOf<Test> = SUBJECT_ID_00.try_into().expect("Should not fail to parse test SubjectId.");
+	let subject_id: SubjectIdOf<Test> = SUBJECT_ID_00
+		.try_into()
+		.expect("Should not fail to parse test SubjectId.");
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 	let attestation: AttestationDetails<Test> = generate_base_attestation(attester.clone(), ACCOUNT_00);
 	let new_credential = generate_base_credential_entry(ACCOUNT_00, 0);
@@ -410,7 +441,10 @@ fn reclaim_deposit_successful() {
 			assert_eq!(Attestations::<Test>::get(&claim_hash), None);
 
 			// Test this pallet logic
-			assert_eq!(Credentials::<Test>::get(&TestSubjectId::try_from(subject_id.clone()).unwrap(), &claim_hash), None);
+			assert_eq!(
+				Credentials::<Test>::get(&TestSubjectId::try_from(subject_id.clone()).unwrap(), &claim_hash),
+				None
+			);
 			assert_eq!(CredentialsUnicityIndex::<Test>::get(&claim_hash), None);
 
 			// Check deposit release logic
@@ -445,7 +479,9 @@ fn reclaim_deposit_successful() {
 #[test]
 fn reclaim_deposit_unauthorized() {
 	let attester = sr25519_did_from_seed(&ALICE_SEED);
-	let subject_id: SubjectIdOf<Test> = SUBJECT_ID_00.try_into().expect("Should not fail to parse test SubjectId.");
+	let subject_id: SubjectIdOf<Test> = SUBJECT_ID_00
+		.try_into()
+		.expect("Should not fail to parse test SubjectId.");
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 	let attestation: AttestationDetails<Test> = generate_base_attestation(attester.clone(), ACCOUNT_00);
 	let new_credential = generate_base_credential_entry(ACCOUNT_00, 0);

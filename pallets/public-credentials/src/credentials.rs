@@ -39,7 +39,15 @@ pub struct ClaimerSignatureInfo<ClaimerIdentifier, Signature> {
 }
 
 #[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq, PartialOrd, Ord, TypeInfo)]
-pub struct Credential<CtypeHash, SubjectIdentifier, ClaimContent, ClaimHash, Nonce, ClaimerSignature, AuthorizationControl> {
+pub struct Credential<
+	CtypeHash,
+	SubjectIdentifier,
+	ClaimContent,
+	ClaimHash,
+	Nonce,
+	ClaimerSignature,
+	AuthorizationControl,
+> {
 	pub claim: Claim<CtypeHash, SubjectIdentifier, ClaimContent>,
 	pub nonce: Nonce,
 	pub claim_hash: ClaimHash,

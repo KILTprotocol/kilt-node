@@ -141,8 +141,11 @@ where
 }
 
 pub fn insert_attestation<T: Config>(claim_hash: ClaimHashOf<T>, details: AttestationDetails<T>) {
-	kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(details.deposit.owner.clone(), details.deposit.amount)
-		.expect("Should have balance");
+	kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
+		details.deposit.owner.clone(),
+		details.deposit.amount,
+	)
+	.expect("Should have balance");
 
 	crate::Attestations::<T>::insert(&claim_hash, details.clone());
 	if let Some(delegation_id) = details.authorization_id.as_ref() {

@@ -63,8 +63,9 @@ pub mod pallet {
 	pub(crate) type AccountIdOf<T> = attestation::AccountIdOf<T>;
 	pub(crate) type BalanceOf<T> = <<T as attestation::Config>::Currency as Currency<AccountIdOf<T>>>::Balance;
 	pub(crate) type BlockNumberOf<T> = <T as frame_system::Config>::BlockNumber;
-	// No easy way to check whether the two currencies are the same and check for `can_withdraw` conditions.
-	// Maybe with #[transactional] we could stop caring and simply rollback if the two are the same and there is not enough
+	// No easy way to check whether the two currencies are the same and check for
+	// `can_withdraw` conditions. Maybe with #[transactional] we could stop caring
+	// and simply rollback if the two are the same and there is not enough
 	// for both operations.
 	pub(crate) type CurrencyOf<T> = <T as attestation::Config>::Currency;
 	pub(crate) type SubjectIdOf<T> = <T as Config>::SubjectId;
@@ -77,7 +78,7 @@ pub mod pallet {
 		ClaimHashOf<T>,
 		H256,
 		ClaimerSignatureInfo<<T as Config>::ClaimerIdentifier, <T as Config>::ClaimerSignature>,
-		<T as attestation::Config>::AccessControl
+		<T as attestation::Config>::AccessControl,
 	>;
 
 	#[pallet::config]
@@ -118,8 +119,8 @@ pub mod pallet {
 	// Reverse map to make sure that the same claim hash cannot be issued to two
 	// different subjects by issuing it to subject #1, then removing it only from
 	// the attestation pallet and then issuing it to subject #2.
-	// This map ensures that at any time a claim hash is only linked (i.e., issued) to a single
-	// subject.
+	// This map ensures that at any time a claim hash is only linked (i.e., issued)
+	// to a single subject.
 	// Not exposed to the outside world.
 	#[pallet::storage]
 	#[pallet::getter(fn attested_claim_hashes)]
@@ -186,9 +187,10 @@ pub mod pallet {
 
 			// Check that enough funds can be reserved to pay for both attestation and
 			// public info deposits.
-			// It is harder to use two potentially different currencies while making sure that, if the same, the sum can be reserved,
-			// but if they are not, then each deposit could be reserved separately.
-			// We could switch to using `NamedReservableCurrency` to do that.
+			// It is harder to use two potentially different currencies while making sure
+			// that, if the same, the sum can be reserved, but if they are not, then each
+			// deposit could be reserved separately. We could switch to using
+			// `NamedReservableCurrency` to do that.
 			ensure!(
 				<CurrencyOf<T> as ReservableCurrency<AccountIdOf<T>>>::can_reserve(
 					&payer,
@@ -212,13 +214,20 @@ pub mod pallet {
 
 			// Delegate to the attestation pallet writing the attestation information and
 			// reserve its part of the deposit
-			attestation::Pallet::<T>::write_attestation(ctype_hash, claim_hash, attester, payer.clone(), authorization_info)?;
+			attestation::Pallet::<T>::write_attestation(
+				ctype_hash,
+				claim_hash,
+				attester,
+				payer.clone(),
+				authorization_info,
+			)?;
 
 			// *** No Fail beyond this point ***
 
 			// Take the rest of the deposit. Should never fail since we made sure above that
 			// enough funds can be reserved.
-			let deposit = kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(payer, deposit_amount).map_err(|_| Error::<T>::InternalError)?;
+			let deposit = kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(payer, deposit_amount)
+				.map_err(|_| Error::<T>::InternalError)?;
 
 			let block_number = frame_system::Pallet::<T>::block_number();
 
@@ -235,7 +244,11 @@ pub mod pallet {
 		}
 
 		#[pallet::weight(0)]
-		pub fn remove(origin: OriginFor<T>, claim_hash: ClaimHashOf<T>, authorization: Option<T::AccessControl>) -> DispatchResultWithPostInfo {
+		pub fn remove(
+			origin: OriginFor<T>,
+			claim_hash: ClaimHashOf<T>,
+			authorization: Option<T::AccessControl>,
+		) -> DispatchResultWithPostInfo {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 			let attester = source.subject();
 
