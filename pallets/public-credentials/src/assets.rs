@@ -524,13 +524,13 @@ pub mod chain_id {
 		#[test]
 		fn test_utility_functions() {
 			// These functions should never crash. We just check that here.
-			// ChainId::<Test>::ethereum_mainnet();
-			// ChainId::<Test>::moonbeam_eth();
+			ChainId::<Test>::ethereum_mainnet();
+			ChainId::<Test>::moonbeam_eth();
 			ChainId::<Test>::bitcoin_mainnet();
-			// ChainId::<Test>::polkadot();
-			// ChainId::<Test>::kusama();
-			// ChainId::<Test>::kilt_spiritnet();
-			// ChainId::<Test>::solana_mainnet();
+			ChainId::<Test>::polkadot();
+			ChainId::<Test>::kusama();
+			ChainId::<Test>::kilt_spiritnet();
+			ChainId::<Test>::solana_mainnet();
 		}
 	}
 }
