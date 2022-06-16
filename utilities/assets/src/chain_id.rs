@@ -169,6 +169,7 @@ impl GenesisHexHashReference {
 	}
 }
 
+// FIXME: Ensure that a size is given for the expected hash length (less than the max allowed size).
 impl TryFrom<&[u8]> for GenesisHexHashReference {
 	type Error = ChainIdError;
 
@@ -198,6 +199,7 @@ impl TryFrom<&[u8]> for GenesisHexHashReference {
 	}
 }
 
+// FIXME: Ensure that a size is given for the expected hash length (less than the max allowed size).
 pub struct GenesisBase58HashReference(BoundedVec<u8, ConstU32<MAXIMUM_REFERENCE_LENGTH>>);
 
 impl GenesisBase58HashReference {
@@ -336,5 +338,262 @@ impl TryFrom<&[u8]> for ChainReference {
 			// Unchecked since we already checked for length
 			Ok(Self::from_slice_unchecked(value))
 		}
+	}
+}
+
+#[cfg(test)]
+mod test {
+	use super::*;
+
+	#[test]
+	fn test_eip155_chains() {
+		let valid_chains = [
+			"eip155:1",
+			"eip155:5",
+			"eip155:99999999999999999999999999999999",
+			"eip155:0",
+		];
+		for chain in valid_chains {
+			assert!(
+				ChainId::try_from(chain.as_bytes()).is_ok(),
+				"Chain ID {:?} should not fail to parse for eip155 chains",
+				chain
+			);
+		}
+
+		let invalid_chains = [
+			// Too short
+			"e",
+			"ei",
+			"eip",
+			"eip1",
+			"eip15",
+			"eip155",
+			"eip155:",
+			// Not a number
+			"eip155:a",
+			"eip155::",
+			"eip155:›",
+			"eip155:😁",
+			// Max chars + 1
+			"eip155:999999999999999999999999999999999",
+		];
+		for chain in invalid_chains {
+			assert!(
+				ChainId::try_from(chain.as_bytes()).is_err(),
+				"Chain ID {:?} should fail to parse for eip155 chains",
+				chain
+			);
+		}
+	}
+
+	#[test]
+	fn test_bip122_chains() {
+		let valid_chains = [
+			"bip122:000000000019d6689c085ae165831e93",
+			"bip122:12a765e31ffd4059bada1e25190f6e98",
+			"bip122:fdbe99b90c90bae7505796461471d89a",
+			"bip122:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+		];
+		for chain in valid_chains {
+			assert!(
+				ChainId::try_from(chain.as_bytes()).is_ok(),
+				"Chain ID {:?} should not fail to parse for polkadot chains",
+				chain
+			);
+		}
+
+		let invalid_chains = [
+			// Too short
+			"b",
+			"bi",
+			"bip",
+			"bip1",
+			"bip12",
+			"bip122",
+			"bip122:",
+			// Not an HEX string
+			"bip122:gg",
+			"bip122::",
+			"bip122:›",
+			"bip122:😁",
+			// Not the expected length
+			"bip122:a",
+			"bip122:aa",
+			"bip122:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+		];
+		for chain in invalid_chains {
+			assert!(
+				ChainId::try_from(chain.as_bytes()).is_err(),
+				"Chain ID {:?} should fail to parse for polkadot chains",
+				chain
+			);
+		}
+	}
+
+	#[test]
+	fn test_dotsama_chains() {
+		let valid_chains = [
+			"polkadot:b0a8d493285c2df73290dfb7e61f870f",
+			"polkadot:742a2ca70c2fda6cee4f8df98d64c4c6",
+			"polkadot:37e1f8125397a98630013a4dff89b54c",
+			"polkadot:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+		];
+		for chain in valid_chains {
+			assert!(
+				ChainId::try_from(chain.as_bytes()).is_ok(),
+				"Chain ID {:?} should not fail to parse for polkadot chains",
+				chain
+			);
+		}
+
+		let invalid_chains = [
+			// Too short
+			"p",
+			"po",
+			"pol",
+			"polk",
+			"polka",
+			"polkad",
+			"polkado",
+			"polkadot",
+			"polkadot:",
+			// Not an HEX string
+			"polkadot:gg",
+			"polkadot::",
+			"polkadot:›",
+			"polkadot:😁",
+			// Not the expected length
+			"polkadot:a",
+			"polkadot:aa",
+			"polkadot:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+		];
+		for chain in invalid_chains {
+			assert!(
+				ChainId::try_from(chain.as_bytes()).is_err(),
+				"Chain ID {:?} should fail to parse for polkadot chains",
+				chain
+			);
+		}
+	}
+
+	#[test]
+	fn test_solana_chains() {
+		let valid_chains = [
+			"solana:a",
+			"solana:4sGjMW1sUnHzSxGspuhpqLDx6wiyjNtZ",
+			"solana:8E9rvCKLFQia2Y35HXjjpWzj8weVo44K",
+		];
+		for chain in valid_chains {
+			assert!(
+				ChainId::try_from(chain.as_bytes()).is_ok(),
+				"Chain ID {:?} should not fail to parse for solana chains",
+				chain
+			);
+		}
+
+		let invalid_chains = [
+			// Too short
+			"s",
+			"so",
+			"sol",
+			"sola",
+			"solan",
+			"solana",
+			"solana:",
+			// Not a Base58 string
+			"solana::",
+			"solana:›",
+			"solana:😁",
+			"solana:random-string",
+			// Valid base58 text, too long (34 chars)
+			"solana:TJ24pxm996UCBScuQRwjYo4wvPjUa8pzKo",
+		];
+		for chain in invalid_chains {
+			assert!(
+				ChainId::try_from(chain.as_bytes()).is_err(),
+				"Chain ID {:?} should fail to parse for generic chains",
+				chain
+			);
+		}
+	}
+
+	#[test]
+	fn test_generic_chains() {
+		let valid_chains = [
+			// Edge cases
+			"abc:-",
+			"-as01-aa:A",
+			"12345678:abcdefghjklmnopqrstuvwxyzABCD012",
+			// Filecoin examples -> https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-23.md
+			"fil:t",
+			"fil:f",
+			// Tezos examples -> https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-26.md
+			"tezos:NetXdQprcVkpaWU",
+			"tezos:NetXm8tYqnMWky1",
+			// Cosmos examples -> https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-5.md
+			"cosmos:cosmoshub-2",
+			"cosmos:cosmoshub-3",
+			"cosmos:Binance-Chain-Tigris",
+			"cosmos:iov-mainnet",
+			"cosmos:x",
+			"cosmos:hash-",
+			"cosmos:hashed",
+			// Lisk examples -> https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-6.md
+			"lip9:9ee11e9df416b18b",
+			"lip9:e48feb88db5b5cf5",
+			// EOSIO examples -> https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-7.md
+			"eosio:aca376f206b8fc25a6ed44dbdc66547c",
+			"eosio:e70aaab8997e1dfce58fbfac80cbbb8f",
+			"eosio:4667b205c6838ef70ff7988f6e8257e8",
+			"eosio:1eaa0824707c8c16bd25145493bf062a",
+			// Stellar examples -> https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-28.md
+			"stellar:testnet",
+			"stellar:pubnet",
+		];
+		for chain in valid_chains {
+			println!("Testing right chain {:?}", chain);
+			assert!(
+				ChainId::try_from(chain.as_bytes()).is_ok(),
+				"Chain ID {:?} should not fail to parse for generic chains",
+				chain
+			);
+		}
+
+		let invalid_chains = [
+			// Too short
+			"a",
+			"ab",
+			"01:",
+			"ab-:",
+			// Too long
+			"123456789:1",
+			"12345678:123456789123456789123456789123456",
+			"123456789:123456789123456789123456789123456",
+			// Unallowed characters
+			"::",
+			"c?1:›",
+			"de:😁",
+		];
+		for chain in invalid_chains {
+			println!("Testing wrong chain {:?}", chain);
+			assert!(
+				ChainId::try_from(chain.as_bytes()).is_err(),
+				"Chain ID {:?} should fail to parse for solana chains",
+				chain
+			);
+		}
+	}
+
+	#[test]
+	fn test_utility_functions() {
+		// These functions should never crash. We just check that here.
+		ChainId::ethereum_mainnet();
+		ChainId::moonbeam_eth();
+		ChainId::bitcoin_mainnet();
+		ChainId::polkadot();
+		ChainId::kusama();
+		ChainId::kilt_spiritnet();
+		ChainId::solana_mainnet();
 	}
 }
