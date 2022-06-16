@@ -3532,6 +3532,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f9b7d56ba4a8344d6be9729995e6b06f928af29998cdf79fe390cbf6b1fee838"
 
 [[package]]
+name = "kilt-caip-assets"
+version = "1.6.2"
+dependencies = [
+ "frame-support",
+]
+
+[[package]]
 name = "kilt-parachain"
 version = "1.6.2"
 dependencies = [

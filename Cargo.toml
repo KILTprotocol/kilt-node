@@ -7,4 +7,5 @@ members = [
   "pallets/*",
   "runtimes/*",
   "support",
+  "utilities/*",
 ]

@@ -31,7 +31,7 @@ pub mod chain_id {
 	const MINIMUM_REFERENCE_LENGTH: u32 = 1;
 	const MAXIMUM_REFERENCE_LENGTH: u32 = 32;
 
-	#[derive(std::fmt::Debug, PartialEq, Eq, PartialOrd, Ord)]
+	#[derive(sp_runtime::RuntimeDebug, PartialEq, Eq, PartialOrd, Ord)]
 	pub enum ChainId<C> {
 		Eip155(Eip155Reference<C>),
 		Bip122(GenesisHexHashReference<C, 32>),
@@ -235,40 +235,38 @@ pub mod chain_id {
 			);
 			let mut components = value.split(|c| *c == b':');
 
-			if let (Some(namespace), Some(reference)) = (components.next(), components.next()) {
-				let namespace_length = namespace.iter().try_fold(0u32, |length, c| {
-					let new_length = length + 1;
-					if new_length > MAXIMUM_NAMESPACE_LENGTH {
-						return Err(Error::<C>::InvalidInput);
-					}
-					if !matches!(c, b'-' | b'a'..=b'z' | b'0'..=b'9') {
-						return Err(Error::<C>::InvalidInput);
-					}
-					Ok(new_length)
-				})?;
-				if namespace_length < MINIMUM_NAMESPACE_LENGTH {
+			let (namespace, reference) = (components.next().ok_or(Error::<C>::InvalidInput)?, components.next().ok_or(Error::<C>::InvalidInput)?);
+			let namespace_length = namespace.iter().try_fold(0u32, |length, c| {
+				let new_length = length + 1;
+				if new_length > MAXIMUM_NAMESPACE_LENGTH {
 					return Err(Error::<C>::InvalidInput);
 				}
+				if !matches!(c, b'-' | b'a'..=b'z' | b'0'..=b'9') {
+					return Err(Error::<C>::InvalidInput);
+				}
+				Ok(new_length)
+			})?;
+			if namespace_length < MINIMUM_NAMESPACE_LENGTH {
+				return Err(Error::<C>::InvalidInput);
+			}
 
-				let reference_length = reference.iter().try_fold(0u32, |length, c| {
-					let new_length = length + 1;
-					if new_length > MAXIMUM_REFERENCE_LENGTH {
-						return Err(Error::<C>::InvalidInput);
-					}
-					if !matches!(c, b'-' | b'a'..=b'z' | b'A'..=b'Z' |b'0'..=b'9') {
-						return Err(Error::<C>::InvalidInput);
-					}
-					Ok(new_length)
-				})?;
-				if reference_length < MINIMUM_REFERENCE_LENGTH {
+			let reference_length = reference.iter().try_fold(0u32, |length, c| {
+				let new_length = length + 1;
+				if new_length > MAXIMUM_REFERENCE_LENGTH {
 					return Err(Error::<C>::InvalidInput);
 				}
-				Ok(Self::from_components(
-					namespace.to_vec().try_into().unwrap(),
-					reference.to_vec().try_into().unwrap(),
-				))
-			} else {
-				Err(Error::<C>::InvalidInput)
+				if !matches!(c, b'-' | b'a'..=b'z' | b'A'..=b'Z' |b'0'..=b'9') {
+					return Err(Error::<C>::InvalidInput);
+				}
+				Ok(new_length)
+			})?;
+			if reference_length < MINIMUM_REFERENCE_LENGTH {
+				return Err(Error::<C>::InvalidInput);
+			}
+			Ok(Self::from_components(
+				namespace.to_vec().try_into().unwrap(),
+				reference.to_vec().try_into().unwrap(),
+			))
 			}
 		}
 	}
@@ -532,5 +530,19 @@ pub mod chain_id {
 			ChainId::<Test>::kilt_spiritnet();
 			ChainId::<Test>::solana_mainnet();
 		}
+	}
+}
+
+pub mod asset_id {
+	use super::chain_id::*;
+
+	const MINIMUM_NAMESPACE_LENGTH: u32 = 3;
+	const MAXIMUM_NAMESPACE_LENGTH: u32 = 8;
+	const MINIMUM_REFERENCE_LENGTH: u32 = 1;
+	const MAXIMUM_REFERENCE_LENGTH: u32 = 64;
+
+	#[derive(sp_runtime::RuntimeDebug, PartialEq, Eq, PartialOrd, Ord)]
+	pub enum AssetId<C> {
+
 	}
 }
