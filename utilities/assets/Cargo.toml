@@ -1,0 +1,18 @@
+[package]
+authors = ["KILT <info@kilt.io>"]
+description = "Asset DIDs and related structs, suitable for no_std environments."
+edition = "2021"
+name = "kilt-caip-assets"
+repository = "https://github.com/KILTprotocol/mashnet-node"
+version = "1.6.2"
+
+[dependencies]
+frame-support = {branch = "polkadot-v0.9.23", default-features = false, git = "https://github.com/paritytech/substrate"}
+base58 = {version = "0.2.0", default-features = false}
+
+[features]
+default = ["std"]
+
+std = [
+  "frame-support/std",
+]
