@@ -32,39 +32,76 @@ pub enum AssetError {
 }
 
 impl Asset {
-	pub fn ether() -> Self {
-		Self { chain_id: ChainId::Eip155(Eip155Reference::ethereum_mainnet()), asset_id: AssetId::Slip44(Slip44Reference::from_slice_unchecked(b"60")) }
+	pub fn ether_currency() -> Self {
+		Self {
+			chain_id: Eip155Reference::ethereum_mainnet().into(),
+			asset_id: Slip44Reference::from_slice_unchecked(b"60").into(),
+		}
 	}
 
-	pub fn bitcoin() -> Self {
-		Self { chain_id: ChainId::Bip122(GenesisHexHashReference::from_slice_unchecked(b"000000000019d6689c085ae165831e93")), asset_id: AssetId::Slip44(Slip44Reference::from_slice_unchecked(b"0")) }
+	pub fn bitcoin_currency() -> Self {
+		Self {
+			chain_id: ChainId::Bip122(GenesisHexHashReference::from_slice_unchecked(
+				b"000000000019d6689c085ae165831e93",
+			)),
+			asset_id: Slip44Reference::from_slice_unchecked(b"0").into(),
+		}
 	}
 
-	pub fn litecoin() -> Self {
-		Self { chain_id: ChainId::Bip122(GenesisHexHashReference::from_slice_unchecked(b"12a765e31ffd4059bada1e25190f6e98")), asset_id: AssetId::Slip44(Slip44Reference::from_slice_unchecked(b"2")) }
+	pub fn litecoin_currency() -> Self {
+		Self {
+			chain_id: ChainId::Bip122(GenesisHexHashReference::from_slice_unchecked(
+				b"12a765e31ffd4059bada1e25190f6e98",
+			)),
+			asset_id: Slip44Reference::from_slice_unchecked(b"2").into(),
+		}
 	}
 
-	pub fn dai() -> Self {
-		Self { chain_id: ChainId::Eip155(Eip155Reference::ethereum_mainnet()), asset_id: AssetId::Erc20(EvmSmartContractFungibleReference::from_slice_unchecked(b"0x6b175474e89094c44da98b954eedeac495271d0f")) }
+	pub fn dai_currency() -> Self {
+		Self {
+			chain_id: Eip155Reference::ethereum_mainnet().into(),
+			asset_id: EvmSmartContractFungibleReference::from_slice_unchecked(
+				b"6b175474e89094c44da98b954eedeac495271d0f",
+			)
+			.into(),
+		}
 	}
 
-	pub fn req() -> Self {
-		Self { chain_id: ChainId::Eip155(Eip155Reference::ethereum_mainnet()), asset_id: AssetId::Erc20(EvmSmartContractFungibleReference::from_slice_unchecked(b"0x8f8221afbb33998d8584a2b05749ba73c37a938a")) }
+	pub fn req_currency() -> Self {
+		Self {
+			chain_id: Eip155Reference::ethereum_mainnet().into(),
+			asset_id: EvmSmartContractFungibleReference::from_slice_unchecked(
+				b"8f8221afbb33998d8584a2b05749ba73c37a938a",
+			)
+			.into(),
+		}
 	}
 
 	pub fn cryptokitties_collection() -> Self {
-		Self { chain_id: ChainId::Eip155(Eip155Reference::ethereum_mainnet()), asset_id: AssetId::Erc721(EvmSmartContractNonFungibleReference::from_raw_unchecked(b"0x06012c8cf97BEaD5deAe237070F9587f8E7A266d", None)) }
+		Self {
+			chain_id: Eip155Reference::ethereum_mainnet().into(),
+			asset_id: AssetId::Erc721(EvmSmartContractNonFungibleReference::from_raw_unchecked(
+				b"06012c8cf97BEaD5deAe237070F9587f8E7A266d",
+				None,
+			)),
+		}
 	}
 
 	pub fn themanymatts_collection() -> Self {
-		Self { chain_id: ChainId::Eip155(Eip155Reference::ethereum_mainnet()), asset_id: AssetId::Erc1155(EvmSmartContractNonFungibleReference::from_raw_unchecked(b"0x28959Cf125ccB051E70711D0924a62FB28EAF186", None)) }
+		Self {
+			chain_id: Eip155Reference::ethereum_mainnet().into(),
+			asset_id: AssetId::Erc1155(EvmSmartContractNonFungibleReference::from_raw_unchecked(
+				b"28959Cf125ccB051E70711D0924a62FB28EAF186",
+				None,
+			)),
+		}
 	}
 }
 
 impl TryFrom<&[u8]> for Asset {
-    type Error = AssetError;
+	type Error = AssetError;
 
-    fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
+	fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
 		let mut components = value.split(|c| *c == b'.');
 
 		let chain_id = components
@@ -77,13 +114,13 @@ impl TryFrom<&[u8]> for Asset {
 			.ok_or(AssetError::InvalidInput)
 			.and_then(|input| AssetId::try_from(input).map_err(AssetError::AssetId))?;
 
-		Ok(Self{ chain_id, asset_id })
-    }
+		Ok(Self { chain_id, asset_id })
+	}
 }
 
 #[cfg(test)]
 mod test {
-    use super::*;
+	use super::*;
 
 	#[test]
 	fn test_valid_ids() {
@@ -106,8 +143,21 @@ mod test {
 			"eip155:1.erc1155:0x28959Cf125ccB051E70711D0924a62FB28EAF186:0",
 		];
 
+		// FIXME: Better test logic
 		for id in raw_ids {
 			assert!(Asset::try_from(id.as_bytes()).is_ok());
 		}
+	}
+
+	#[test]
+	fn test_helpers() {
+		// These functions should never crash. We just check that here.
+		Asset::ether_currency();
+		Asset::bitcoin_currency();
+		Asset::litecoin_currency();
+		Asset::dai_currency();
+		Asset::req_currency();
+		Asset::cryptokitties_collection();
+		Asset::themanymatts_collection();
 	}
 }

@@ -74,6 +74,18 @@ pub mod v1 {
 		Generic(GenericAssetId),
 	}
 
+	impl From<Slip44Reference> for AssetId {
+		fn from(reference: Slip44Reference) -> Self {
+			Self::Slip44(reference)
+		}
+	}
+
+	impl From<EvmSmartContractFungibleReference> for AssetId {
+		fn from(reference: EvmSmartContractFungibleReference) -> Self {
+			Self::Erc20(reference)
+		}
+	}
+
 	impl TryFrom<&[u8]> for AssetId {
 		type Error = AssetIdError;
 
@@ -179,7 +191,10 @@ pub mod v1 {
 	impl EvmSmartContractNonFungibleReference {
 		#[allow(dead_code)]
 		pub(crate) fn from_raw_unchecked(reference: &[u8], id: Option<&[u8]>) -> Self {
-			Self(reference.try_into().unwrap(), id.map(|id| id.try_into().unwrap()))
+			Self(
+				EvmSmartContractFungibleReference::from_slice_unchecked(reference),
+				id.map(|id| EvmSmartContractNonFungibleIdentifier::from_slice_unchecked(id)),
+			)
 		}
 	}
 

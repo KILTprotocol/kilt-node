@@ -63,6 +63,12 @@ mod v1 {
 		Generic(GenericChainId),
 	}
 
+	impl From<Eip155Reference> for ChainId {
+		fn from(reference: Eip155Reference) -> Self {
+			Self::Eip155(reference)
+		}
+	}
+
 	impl TryFrom<&[u8]> for ChainId {
 		type Error = ChainIdError;
 
@@ -92,17 +98,17 @@ mod v1 {
 
 	impl ChainId {
 		pub fn ethereum_mainnet() -> Self {
-			Self::Eip155(Eip155Reference::ethereum_mainnet())
+			Eip155Reference::ethereum_mainnet().into()
 		}
 
 		pub fn moonriver_eth() -> Self {
 			// Info taken from https://chainlist.org/
-			Self::Eip155(Eip155Reference::moonriver_eth())
+			Eip155Reference::moonriver_eth().into()
 		}
 
 		pub fn moonbeam_eth() -> Self {
 			// Info taken from https://chainlist.org/
-			Self::Eip155(Eip155Reference::moonbeam_eth())
+			Eip155Reference::moonbeam_eth().into()
 		}
 
 		pub fn bitcoin_mainnet() -> Self {
@@ -185,27 +191,19 @@ mod v1 {
 		}
 
 		pub fn bitcoin_mainnet() -> Self {
-			Self::from_slice_unchecked(
-				b"000000000019d6689c085ae165831e93",
-			)
+			Self::from_slice_unchecked(b"000000000019d6689c085ae165831e93")
 		}
 
 		pub fn polkadot() -> Self {
-			Self::from_slice_unchecked(
-				b"91b171bb158e2d3848fa23a9f1c25182",
-			)
+			Self::from_slice_unchecked(b"91b171bb158e2d3848fa23a9f1c25182")
 		}
 
 		pub fn kusama() -> Self {
-			Self::from_slice_unchecked(
-				b"b0a8d493285c2df73290dfb7e61f870f",
-			)
+			Self::from_slice_unchecked(b"b0a8d493285c2df73290dfb7e61f870f")
 		}
 
 		pub fn kilt_spiritnet() -> Self {
-			Self::from_slice_unchecked(
-				b"411f057b9107718c9624d6aa4a3f23c1",
-			)
+			Self::from_slice_unchecked(b"411f057b9107718c9624d6aa4a3f23c1")
 		}
 	}
 
@@ -246,9 +244,7 @@ mod v1 {
 		}
 
 		pub fn solana_mainnet() -> Self {
-			Self::from_slice_unchecked(
-				b"4sGjMW1sUnHzSxGspuhpqLDx6wiyjNtZ",
-			)
+			Self::from_slice_unchecked(b"4sGjMW1sUnHzSxGspuhpqLDx6wiyjNtZ")
 		}
 	}
 
@@ -625,7 +621,7 @@ mod v1 {
 		}
 
 		#[test]
-		fn test_utility_functions() {
+		fn test_helpers() {
 			// These functions should never crash. We just check that here.
 			ChainId::ethereum_mainnet();
 			ChainId::moonbeam_eth();
