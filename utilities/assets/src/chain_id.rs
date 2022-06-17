@@ -19,18 +19,20 @@
 use base58::FromBase58;
 use core::str;
 
-use frame_support::{sp_runtime::traits::CheckedConversion, traits::ConstU32, BoundedVec};
+use frame_support::{traits::ConstU32, BoundedVec};
 
-const MINIMUM_NAMESPACE_LENGTH: u32 = 3;
-const MAXIMUM_NAMESPACE_LENGTH: u32 = 8;
-const MINIMUM_REFERENCE_LENGTH: u32 = 1;
-const MAXIMUM_REFERENCE_LENGTH: u32 = 32;
+const MINIMUM_NAMESPACE_LENGTH: usize = 3;
+const MAXIMUM_NAMESPACE_LENGTH: usize = 8;
+const MAXIMUM_NAMESPACE_LENGTH_U32: u32 = MAXIMUM_NAMESPACE_LENGTH as u32;
+const MINIMUM_REFERENCE_LENGTH: usize = 1;
+const MAXIMUM_REFERENCE_LENGTH: usize = 32;
+const MAXIMUM_REFERENCE_LENGTH_U32: u32 = MAXIMUM_REFERENCE_LENGTH as u32;
 
 pub enum ChainId {
 	Eip155(Eip155Reference),
-	Bip122(GenesisHexHashReference),
-	Dotsama(GenesisHexHashReference),
-	Solana(GenesisBase58HashReference),
+	Bip122(GenesisHexHashReference<MAXIMUM_REFERENCE_LENGTH>),
+	Dotsama(GenesisHexHashReference<MAXIMUM_REFERENCE_LENGTH>),
+	Solana(GenesisBase58HashReference<MAXIMUM_REFERENCE_LENGTH>),
 	Generic(GenericChainId),
 }
 
@@ -125,7 +127,7 @@ impl ChainId {
 	}
 }
 
-pub struct Eip155Reference(BoundedVec<u8, ConstU32<MAXIMUM_REFERENCE_LENGTH>>);
+pub struct Eip155Reference(BoundedVec<u8, ConstU32<MAXIMUM_REFERENCE_LENGTH_U32>>);
 
 impl Eip155Reference {
 	#[allow(dead_code)]
@@ -138,10 +140,7 @@ impl TryFrom<&[u8]> for Eip155Reference {
 	type Error = ChainIdError;
 
 	fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
-		let input_length = value
-			.len()
-			.checked_into::<u32>()
-			.ok_or(ChainIdError::Reference(ReferenceError::TooLong))?;
+		let input_length = value.len();
 		if input_length < MINIMUM_REFERENCE_LENGTH {
 			Err(ChainIdError::Reference(ReferenceError::TooShort))
 		} else if input_length > MAXIMUM_REFERENCE_LENGTH {
@@ -160,24 +159,21 @@ impl TryFrom<&[u8]> for Eip155Reference {
 	}
 }
 
-pub struct GenesisHexHashReference(BoundedVec<u8, ConstU32<MAXIMUM_REFERENCE_LENGTH>>);
+// TODO: Add support for compilation-time checks on the value of L when supported.
+pub struct GenesisHexHashReference<const L: usize = MAXIMUM_REFERENCE_LENGTH>([u8; L]);
 
-impl GenesisHexHashReference {
+impl<const L: usize> GenesisHexHashReference<L> {
 	#[allow(dead_code)]
 	pub(crate) fn from_slice_unchecked(slice: &[u8]) -> Self {
-		Self(slice.to_vec().try_into().unwrap())
+		Self(slice.try_into().unwrap())
 	}
 }
 
-// FIXME: Ensure that a size is given for the expected hash length (less than the max allowed size).
-impl TryFrom<&[u8]> for GenesisHexHashReference {
+impl<const L: usize> TryFrom<&[u8]> for GenesisHexHashReference<L> {
 	type Error = ChainIdError;
 
 	fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
-		let input_length = value
-			.len()
-			.checked_into::<u32>()
-			.ok_or(ChainIdError::Reference(ReferenceError::TooLong))?;
+		let input_length = value.len();
 		if input_length < MINIMUM_REFERENCE_LENGTH {
 			Err(ChainIdError::Reference(ReferenceError::TooShort))
 		} else if input_length > MAXIMUM_REFERENCE_LENGTH {
@@ -193,30 +189,26 @@ impl TryFrom<&[u8]> for GenesisHexHashReference {
 					Ok(())
 				}
 			})?;
-			// Unchecked since we already checked for length
-			Ok(Self::from_slice_unchecked(value))
+			value.try_into().map(Self).map_err(|_| ChainIdError::InvalidFormat)
 		}
 	}
 }
 
 // FIXME: Ensure that a size is given for the expected hash length (less than the max allowed size).
-pub struct GenesisBase58HashReference(BoundedVec<u8, ConstU32<MAXIMUM_REFERENCE_LENGTH>>);
+pub struct GenesisBase58HashReference<const L: usize = MAXIMUM_REFERENCE_LENGTH>([u8; L]);
 
-impl GenesisBase58HashReference {
+impl<const L: usize> GenesisBase58HashReference<L> {
 	#[allow(dead_code)]
 	pub(crate) fn from_slice_unchecked(slice: &[u8]) -> Self {
 		Self(slice.to_vec().try_into().unwrap())
 	}
 }
 
-impl TryFrom<&[u8]> for GenesisBase58HashReference {
+impl<const L: usize> TryFrom<&[u8]> for GenesisBase58HashReference<L> {
 	type Error = ChainIdError;
 
 	fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
-		let input_length = value
-			.len()
-			.checked_into::<u32>()
-			.ok_or(ChainIdError::Reference(ReferenceError::TooLong))?;
+		let input_length = value.len();
 		if input_length < MINIMUM_REFERENCE_LENGTH {
 			Err(ChainIdError::Reference(ReferenceError::TooShort))
 		} else if input_length > MAXIMUM_REFERENCE_LENGTH {
@@ -228,8 +220,8 @@ impl TryFrom<&[u8]> for GenesisBase58HashReference {
 			decoded_string
 				.from_base58()
 				.map_err(|_| ChainIdError::Reference(ReferenceError::InvalidCharacter))?;
-			// Unchecked since we already checked for length
-			Ok(Self::from_slice_unchecked(value))
+
+			value.try_into().map(Self).map_err(|_| ChainIdError::InvalidFormat)
 		}
 	}
 }
@@ -253,8 +245,8 @@ impl TryFrom<&[u8]> for GenericChainId {
 	type Error = ChainIdError;
 
 	fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
-		let input_length = value.len().checked_into::<u32>().ok_or(ChainIdError::InvalidFormat)?;
-		if input_length > MINIMUM_NAMESPACE_LENGTH + MAXIMUM_NAMESPACE_LENGTH + 1 {
+		let input_length = value.len();
+		if input_length > MAXIMUM_NAMESPACE_LENGTH + MAXIMUM_REFERENCE_LENGTH + 1 {
 			return Err(ChainIdError::InvalidFormat);
 		}
 
@@ -273,7 +265,7 @@ impl TryFrom<&[u8]> for GenericChainId {
 	}
 }
 
-pub struct ChainNamespace(BoundedVec<u8, ConstU32<MAXIMUM_NAMESPACE_LENGTH>>);
+pub struct ChainNamespace(BoundedVec<u8, ConstU32<MAXIMUM_NAMESPACE_LENGTH_U32>>);
 
 impl ChainNamespace {
 	fn from_slice_unchecked(value: &[u8]) -> Self {
@@ -285,10 +277,7 @@ impl TryFrom<&[u8]> for ChainNamespace {
 	type Error = ChainIdError;
 
 	fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
-		let input_length = value
-			.len()
-			.checked_into::<u32>()
-			.ok_or(ChainIdError::Namespace(NamespaceError::TooLong))?;
+		let input_length = value.len();
 		if input_length < MINIMUM_NAMESPACE_LENGTH {
 			Err(ChainIdError::Namespace(NamespaceError::TooShort))
 		} else if input_length > MAXIMUM_NAMESPACE_LENGTH {
@@ -307,7 +296,7 @@ impl TryFrom<&[u8]> for ChainNamespace {
 	}
 }
 
-pub struct ChainReference(BoundedVec<u8, ConstU32<MAXIMUM_REFERENCE_LENGTH>>);
+pub struct ChainReference(BoundedVec<u8, ConstU32<MAXIMUM_REFERENCE_LENGTH_U32>>);
 
 impl ChainReference {
 	fn from_slice_unchecked(value: &[u8]) -> Self {
@@ -319,10 +308,7 @@ impl TryFrom<&[u8]> for ChainReference {
 	type Error = ChainIdError;
 
 	fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
-		let input_length = value
-			.len()
-			.checked_into::<u32>()
-			.ok_or(ChainIdError::Reference(ReferenceError::TooLong))?;
+		let input_length = value.len();
 		if input_length < MINIMUM_REFERENCE_LENGTH {
 			Err(ChainIdError::Reference(ReferenceError::TooShort))
 		} else if input_length > MAXIMUM_REFERENCE_LENGTH {
@@ -398,7 +384,7 @@ mod test {
 		for chain in valid_chains {
 			assert!(
 				ChainId::try_from(chain.as_bytes()).is_ok(),
-				"Chain ID {:?} should not fail to parse for polkadot chains",
+				"Chain ID {:?} should not fail to parse for bip122 chains",
 				chain
 			);
 		}
@@ -425,7 +411,7 @@ mod test {
 		for chain in invalid_chains {
 			assert!(
 				ChainId::try_from(chain.as_bytes()).is_err(),
-				"Chain ID {:?} should fail to parse for polkadot chains",
+				"Chain ID {:?} should fail to parse for bip122 chains",
 				chain
 			);
 		}
@@ -480,7 +466,6 @@ mod test {
 	#[test]
 	fn test_solana_chains() {
 		let valid_chains = [
-			"solana:a",
 			"solana:4sGjMW1sUnHzSxGspuhpqLDx6wiyjNtZ",
 			"solana:8E9rvCKLFQia2Y35HXjjpWzj8weVo44K",
 		];
@@ -552,7 +537,6 @@ mod test {
 			"stellar:pubnet",
 		];
 		for chain in valid_chains {
-			println!("Testing right chain {:?}", chain);
 			assert!(
 				ChainId::try_from(chain.as_bytes()).is_ok(),
 				"Chain ID {:?} should not fail to parse for generic chains",
@@ -576,7 +560,6 @@ mod test {
 			"de:😁",
 		];
 		for chain in invalid_chains {
-			println!("Testing wrong chain {:?}", chain);
 			assert!(
 				ChainId::try_from(chain.as_bytes()).is_err(),
 				"Chain ID {:?} should fail to parse for solana chains",
