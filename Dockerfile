@@ -2,7 +2,7 @@
 # pinned the version to avoid build cache invalidation
 
 # eb1f6a26-20220518 -> rust version rustc 1.62.0-nightly (cb96cc30c0ca 2022-05-05)
-FROM paritytech/ci-linux:eb1f6a26-20220518 as builder
+FROM paritytech/ci-linux:c75cee0971ca as builder
 
 WORKDIR /build
 
