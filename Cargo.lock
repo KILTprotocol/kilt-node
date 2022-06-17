@@ -3537,6 +3537,7 @@ version = "1.6.2"
 dependencies = [
  "base58",
  "frame-support",
+ "sp-runtime",
 ]
 
 [[package]]
