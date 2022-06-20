@@ -3532,12 +3532,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f9b7d56ba4a8344d6be9729995e6b06f928af29998cdf79fe390cbf6b1fee838"
 
 [[package]]
-name = "kilt-asset-did"
+name = "kilt-asset-dids"
 version = "1.6.2"
 dependencies = [
  "base58",
  "frame-support",
  "parity-scale-codec",
+ "scale-info",
 ]
 
 [[package]]
@@ -4611,6 +4612,7 @@ dependencies = [
  "pallet-vesting",
  "pallet-web3-names",
  "parity-scale-codec",
+ "public-credentials",
  "runtime-common",
  "scale-info",
  "serde",
@@ -8755,6 +8757,7 @@ dependencies = [
  "frame-support",
  "frame-system",
  "frame-try-runtime",
+ "kilt-asset-dids",
  "log",
  "pallet-authorship",
  "pallet-balances",
@@ -8762,6 +8765,7 @@ dependencies = [
  "pallet-transaction-payment",
  "parachain-staking",
  "parity-scale-codec",
+ "public-credentials",
  "scale-info",
  "serde",
  "smallvec",

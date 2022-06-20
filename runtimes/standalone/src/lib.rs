@@ -64,6 +64,7 @@ pub use delegation;
 pub use did;
 pub use pallet_balances::Call as BalancesCall;
 pub use pallet_web3_names;
+pub use public_credentials as pallet_public_credentials;
 use runtime_common::{
 	authorization::{AuthorizationId, PalletAuthorize},
 	constants::{self, KILT, MILLI_KILT},
@@ -500,6 +501,28 @@ impl pallet_utility::Config for Runtime {
 
 impl pallet_randomness_collective_flip::Config for Runtime {}
 
+impl pallet_public_credentials::Config for Runtime {
+	type ClaimerIdentifier = did::DidIdentifierOf<Self>;
+
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	type ClaimerSignature = did::DidSignature;
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	type ClaimerSignatureVerification = did::DidSignatureVerify<Self>;
+
+	#[cfg(feature = "runtime-benchmarks")]
+	type ClaimerSignature = runtime_common::benchmarks::DummySignature;
+	#[cfg(feature = "runtime-benchmarks")]
+	type ClaimerSignatureVerification = kilt_support::signature::AlwaysVerify<ClaimerIdentifier, Vec<u8>, Self::Signature>;
+
+	type Deposit = runtime_common::constants::public_credentials::Deposit;
+	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
+	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
+	type Event = Event;
+	type InputError = pallet_public_credentials::Error<Self>;
+	type SubjectId = runtime_common::assets::AssetId<Self>;
+	type WeightInfo = ();
+}
+
 /// The type used to represent the kinds of proxying allowed.
 #[derive(
 	Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, RuntimeDebug, MaxEncodedLen, scale_info::TypeInfo,
@@ -685,6 +708,7 @@ construct_runtime!(
 
 		Proxy: pallet_proxy::{Pallet, Call, Storage, Event<T>} = 37,
 		Web3Names: pallet_web3_names = 38,
+		PublicCredentials: pallet_public_credentials = 39,
 	}
 );
 
@@ -716,6 +740,7 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 			Call::Did { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
 			Call::Web3Names { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
 			Call::DidLookup { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
+			Call::PublicCredentials { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
 			Call::Utility(pallet_utility::Call::batch { calls }) => single_key_relationship(&calls[..]),
 			Call::Utility(pallet_utility::Call::batch_all { calls }) => single_key_relationship(&calls[..]),
 			#[cfg(not(feature = "runtime-benchmarks"))]

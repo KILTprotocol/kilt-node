@@ -55,8 +55,9 @@ mod v1 {
 	use super::*;
 
 	use codec::{Decode, Encode, MaxEncodedLen};
+	use scale_info::TypeInfo;
 
-	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen)]
+	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
 	pub enum ChainId {
 		Eip155(Eip155Reference),
 		Bip122(GenesisHexHashReference<MAXIMUM_REFERENCE_LENGTH>),
@@ -134,7 +135,7 @@ mod v1 {
 		}
 	}
 
-	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen)]
+	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
 	pub struct Eip155Reference(BoundedVec<u8, ConstU32<MAXIMUM_REFERENCE_LENGTH_U32>>);
 
 	impl Eip155Reference {
@@ -183,7 +184,7 @@ mod v1 {
 
 	// TODO: Add support for compilation-time checks on the value of L when
 	// supported.
-	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen)]
+	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
 	pub struct GenesisHexHashReference<const L: usize = MAXIMUM_REFERENCE_LENGTH>([u8; L]);
 
 	impl<const L: usize> GenesisHexHashReference<L> {
@@ -236,7 +237,7 @@ mod v1 {
 
 	// FIXME: Ensure that a size is given for the expected hash length (less than
 	// the max allowed size).
-	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen)]
+	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
 	pub struct GenesisBase58HashReference<const L: usize = MAXIMUM_REFERENCE_LENGTH>([u8; L]);
 
 	impl<const L: usize> GenesisBase58HashReference<L> {
@@ -272,7 +273,7 @@ mod v1 {
 		}
 	}
 
-	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen)]
+	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
 	pub struct GenericChainId {
 		pub namespace: ChainNamespace,
 		pub reference: ChainReference,
@@ -312,7 +313,7 @@ mod v1 {
 		}
 	}
 
-	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen)]
+	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
 	pub struct ChainNamespace(BoundedVec<u8, ConstU32<MAXIMUM_NAMESPACE_LENGTH_U32>>);
 
 	impl ChainNamespace {
@@ -344,7 +345,7 @@ mod v1 {
 		}
 	}
 
-	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen)]
+	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
 	pub struct ChainReference(BoundedVec<u8, ConstU32<MAXIMUM_REFERENCE_LENGTH_U32>>);
 
 	impl ChainReference {

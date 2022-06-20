@@ -430,6 +430,14 @@ pub mod fee {
 	}
 }
 
+pub mod public_credentials {
+	use super::*;
+
+	parameter_types! {
+		pub const Deposit: Balance = 0;
+	}
+}
+
 #[cfg(test)]
 mod tests {
 	use super::*;

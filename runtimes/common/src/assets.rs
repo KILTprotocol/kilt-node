@@ -16,16 +16,24 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-//! Library to parse the raw byte vectors into supported Asset DIDs, according to the spec.
-//!
-//! The library is suitable for no_std environment, such as WASM-based blockchain runtimes.
+use codec::{Encode, Decode, MaxEncodedLen};
+use scale_info::TypeInfo;
+use sp_runtime::RuntimeDebug;
+use sp_std::{marker::PhantomData, vec::Vec};
 
-#![cfg_attr(not(feature = "std"), no_std)]
+use kilt_asset_dids::Asset;
+use public_credentials::{Config, Error};
 
-pub mod asset;
-pub mod chain;
-pub mod v1;
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
+#[scale_info(skip_type_params(T))]
+#[codec(mel_bound())]
+pub struct AssetId<T: Config>(Asset, Option<PhantomData<T>>);
 
-pub use asset::*;
-pub use chain::*;
-pub use v1::*;
+impl<T: Config> TryFrom<Vec<u8>> for AssetId<T> {
+    type Error = Error<T>;
+
+    fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
+		let asset = Asset::try_from(&value[..]).map_err(|_| Error::<T>::InvalidInput)?;
+		Ok(Self(asset, None))
+    }
+}

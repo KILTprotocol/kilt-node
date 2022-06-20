@@ -26,9 +26,11 @@
 //! - [`Pallet`]
 #![cfg_attr(not(feature = "std"), no_std)]
 
-pub mod assets;
-pub mod credentials;
 pub mod default_weights;
+pub mod credentials;
+
+#[cfg(feature = "runtime-benchmarks")]
+mod benchmarking;
 
 #[cfg(test)]
 mod mock;
@@ -49,6 +51,7 @@ pub mod pallet {
 	};
 	use frame_system::pallet_prelude::*;
 	use sp_core::H256;
+	use sp_std::{boxed::Box, vec::Vec};
 
 	use attestation::{AttesterOf, ClaimHashOf};
 	use ctype::CtypeHashOf;

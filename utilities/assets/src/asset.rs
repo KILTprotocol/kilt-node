@@ -66,8 +66,9 @@ pub mod v1 {
 	use super::*;
 
 	use codec::{Decode, Encode, MaxEncodedLen};
+	use scale_info::TypeInfo;
 
-	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen)]
+	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
 	pub enum AssetId {
 		Slip44(Slip44Reference),
 		Erc20(EvmSmartContractFungibleReference),
@@ -114,7 +115,7 @@ pub mod v1 {
 		}
 	}
 
-	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen)]
+	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
 	pub struct Slip44Reference(BoundedVec<u8, ConstU32<MAXIMUM_REFERENCE_LENGTH_U32>>);
 
 	// Values taken from https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-20.md
@@ -148,7 +149,7 @@ pub mod v1 {
 		}
 	}
 
-	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen)]
+	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
 	pub struct EvmSmartContractFungibleReference([u8; EVM_SMART_CONTRACT_ADDRESS_LENGTH]);
 
 	// Values taken from https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-20.md
@@ -184,7 +185,7 @@ pub mod v1 {
 		}
 	}
 
-	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen)]
+	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
 	pub struct EvmSmartContractNonFungibleReference(
 		EvmSmartContractFungibleReference,
 		Option<EvmSmartContractNonFungibleIdentifier>,
@@ -222,7 +223,7 @@ pub mod v1 {
 		}
 	}
 
-	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen)]
+	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
 	pub struct EvmSmartContractNonFungibleIdentifier(BoundedVec<u8, ConstU32<MAXIMUM_IDENTIFIER_LENGTH_U32>>);
 
 	impl EvmSmartContractNonFungibleIdentifier {
@@ -258,7 +259,7 @@ pub mod v1 {
 		}
 	}
 
-	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen)]
+	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
 	pub struct GenericAssetId {
 		pub namespace: GenericAssetNamespace,
 		pub reference: GenericAssetReference,
@@ -309,7 +310,7 @@ pub mod v1 {
 		}
 	}
 
-	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen)]
+	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
 	pub struct GenericAssetNamespace(BoundedVec<u8, ConstU32<MAXIMUM_NAMESPACE_LENGTH_U32>>);
 
 	impl GenericAssetNamespace {
@@ -341,7 +342,7 @@ pub mod v1 {
 		}
 	}
 
-	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen)]
+	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
 	pub struct GenericAssetReference(BoundedVec<u8, ConstU32<MAXIMUM_REFERENCE_LENGTH_U32>>);
 
 	impl GenericAssetReference {
@@ -373,7 +374,7 @@ pub mod v1 {
 		}
 	}
 
-	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen)]
+	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
 	pub struct GenericAssetIdentifier(BoundedVec<u8, ConstU32<MAXIMUM_IDENTIFIER_LENGTH_U32>>);
 
 	impl GenericAssetIdentifier {
