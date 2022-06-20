@@ -435,6 +435,7 @@ pub mod public_credentials {
 
 	parameter_types! {
 		pub const Deposit: Balance = 0;
+		pub const MaxEncodedCredentialLength: u32 = 100_000;	// 100 Kb
 	}
 }
 

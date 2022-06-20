@@ -178,8 +178,10 @@ pub mod pallet {
 	use super::*;
 	pub use crate::inflation::{InflationInfo, RewardRate, StakingInfo};
 
+	#[cfg(feature = "std")]
+	use frame_support::assert_ok;
+
 	use frame_support::{
-		assert_ok,
 		pallet_prelude::*,
 		storage::bounded_btree_map::BoundedBTreeMap,
 		traits::{
