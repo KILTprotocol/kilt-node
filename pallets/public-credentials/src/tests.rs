@@ -16,6 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use codec::Encode;
 use frame_support::{assert_noop, assert_ok};
 use sp_runtime::traits::Zero;
 
@@ -189,6 +190,41 @@ fn add_with_claimer_signature_successful() {
 			assert_eq!(
 				CredentialsUnicityIndex::<Test>::get(&claim_hash),
 				Some(subject_id.try_into().unwrap())
+			);
+		});
+}
+
+#[test]
+fn add_credential_too_long() {
+	let attester = sr25519_did_from_seed(&ALICE_SEED);
+	let subject_id = SUBJECT_ID_00;
+	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
+	let ctype_hash = get_ctype_hash::<Test>(true);
+	let mut new_credential = generate_base_public_credential_creation_op::<Test>(
+		subject_id.into(),
+		claim_hash,
+		ctype_hash,
+		None
+	);
+	let encoded_credential_length_without_claims = new_credential.encode().len() - new_credential.claim.contents.len();
+	let max_claim_length = <Test as Config>::MaxEncodedCredentialLength::get() as usize - encoded_credential_length_without_claims;
+	new_credential.claim.contents = vec![0u8; max_claim_length];
+	// Sanity checks since the implementation of `codec::encode()` for some types prepends an additional byte to indicate length.
+	assert_eq!(new_credential.encode().len(), <Test as Config>::MaxEncodedCredentialLength::get() as usize + 1);
+	let public_credential_deposit = <Test as Config>::Deposit::get();
+	let attestation_deposit = <Test as attestation::Config>::Deposit::get();
+
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, public_credential_deposit + attestation_deposit)])
+		.with_ctypes(vec![(ctype_hash, attester.clone())])
+		.build()
+		.execute_with(|| {
+			assert_noop!(
+				PublicCredentials::add(
+					DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
+					Box::new(new_credential.clone())
+				),
+				Error::<Test>::CredentialTooLong
 			);
 		});
 }

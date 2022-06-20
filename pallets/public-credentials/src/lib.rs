@@ -45,7 +45,7 @@ pub mod pallet {
 
 	use frame_support::{
 		pallet_prelude::*,
-		sp_runtime::traits::Saturating,
+		sp_runtime::traits::{CheckedConversion, Saturating},
 		traits::{Currency, IsType, ReservableCurrency, StorageVersion},
 		Parameter,
 	};
@@ -101,6 +101,8 @@ pub mod pallet {
 		>;
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 		type InputError: Into<DispatchError>;
+		#[pallet::constant]
+		type MaxEncodedCredentialLength: Get<u32>;
 		type OriginSuccess: CallSources<AccountIdOf<Self>, AttesterOf<Self>>;
 		type SubjectId: Parameter + MaxEncodedLen + TryFrom<Vec<u8>, Error = Self::InputError>;
 		type WeightInfo: WeightInfo;
@@ -151,6 +153,7 @@ pub mod pallet {
 		ClaimerInfoNotFound,
 		InvalidClaimerSignature,
 		InvalidInput,
+		CredentialTooLong,
 		InternalError,
 	}
 
@@ -160,6 +163,13 @@ pub mod pallet {
 		#[pallet::weight(0)]
 		pub fn add(origin: OriginFor<T>, credential: Box<CredentialOf<T>>) -> DispatchResult {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
+
+			let encoded_credential_len: u32 = credential.encode().len().checked_into().ok_or(Error::<T>::CredentialTooLong)?;
+			ensure!(
+				encoded_credential_len <= T::MaxEncodedCredentialLength::get(),
+				Error::<T>::CredentialTooLong
+			);
+
 			let attester = source.subject();
 			let payer = source.sender();
 

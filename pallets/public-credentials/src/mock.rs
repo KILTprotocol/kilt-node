@@ -32,6 +32,8 @@ pub(crate) type Hash = sp_core::H256;
 pub(crate) type ClaimerSignatureInfoOf<Test> =
 	ClaimerSignatureInfo<<Test as Config>::ClaimerIdentifier, <Test as Config>::ClaimerSignature>;
 
+pub(crate) const DEFAULT_CLAIM_CONTENT_ENCODED_LENGTH: usize = 32;
+
 pub fn generate_base_public_credential_creation_op<T: Config>(
 	subject_id: Vec<u8>,
 	claim_hash: ClaimHashOf<T>,
@@ -42,9 +44,7 @@ pub fn generate_base_public_credential_creation_op<T: Config>(
 		claim: Claim {
 			ctype_hash,
 			subject: subject_id,
-			contents: vec![0; 32]
-				.try_into()
-				.expect("Vec should successfully be transformed into required BoundedVec."),
+			contents: vec![0; DEFAULT_CLAIM_CONTENT_ENCODED_LENGTH]
 		},
 		claim_hash,
 		claimer_signature,
@@ -250,17 +250,19 @@ pub(crate) mod runtime {
 	}
 
 	parameter_types! {
-		pub const CredDeposit: Balance = 10 * MILLI_UNIT;
+		pub const CredentialDeposit: Balance = 10 * MILLI_UNIT;
+		pub const MaxEncodedCredentialLength: u32 = 500;
 	}
 
 	impl Config for Test {
 		type ClaimerIdentifier = SubjectId;
 		type ClaimerSignature = (Self::ClaimerIdentifier, Vec<u8>);
 		type ClaimerSignatureVerification = EqualVerify<Self::ClaimerIdentifier, Vec<u8>>;
-		type Deposit = CredDeposit;
+		type Deposit = CredentialDeposit;
 		type EnsureOrigin = <Self as attestation::Config>::EnsureOrigin;
 		type Event = ();
 		type InputError = Error<Self>;
+		type MaxEncodedCredentialLength = MaxEncodedCredentialLength;
 		type OriginSuccess = <Self as attestation::Config>::OriginSuccess;
 		type SubjectId = TestSubjectId;
 		type WeightInfo = ();
