@@ -9,11 +9,13 @@ version = "1.6.2"
 [dependencies]
 base58 = {version = "0.2.0", default-features = false}
 
+codec = {package = "parity-scale-codec", version = "3.1.2", default-features = false, features = ["derive"]}
 frame-support = {branch = "polkadot-v0.9.23", default-features = false, git = "https://github.com/paritytech/substrate"}
 
 [features]
 default = ["std"]
 
 std = [
+  "codec/std",
   "frame-support/std",
 ]

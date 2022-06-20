@@ -16,6 +16,8 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use frame_support::sp_runtime::RuntimeDebug;
+
 use crate::*;
 
 #[derive(Debug, PartialEq, PartialOrd, Ord, Eq)]
@@ -24,7 +26,7 @@ pub struct Asset {
 	pub asset_id: AssetId,
 }
 
-#[derive(Debug, PartialEq, PartialOrd, Ord, Eq)]
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug)]
 pub enum AssetError {
 	ChainId(ChainIdError),
 	AssetId(AssetIdError),
