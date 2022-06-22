@@ -36,6 +36,7 @@ use frame_support::{
 		ConstantMultiplier, IdentityFee,
 	},
 };
+pub use frame_system::Call as SystemCall;
 use frame_system::EnsureRoot;
 use pallet_grandpa::{fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
 use pallet_transaction_payment::{CurrencyAdapter, FeeDetails};
@@ -56,7 +57,7 @@ use runtime_common::{
 	authorization::{AuthorizationId, PalletAuthorize},
 	constants::{self, KILT, MILLI_KILT},
 	fees::ToAuthor,
-	pallet_id, AccountId, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature, SlowAdjustingFeeUpdate,
+	AccountId, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature, SlowAdjustingFeeUpdate,
 };
 
 pub use pallet_timestamp::Call as TimestampCall;
@@ -273,15 +274,6 @@ parameter_types! {
 	pub const MaxClaims: u32 = 50;
 	pub const AutoUnlockBound: u32 = 100;
 	pub const UsableBalance: Balance = KILT;
-}
-
-impl kilt_launch::Config for Runtime {
-	type Event = Event;
-	type MaxClaims = MaxClaims;
-	type UsableBalance = UsableBalance;
-	type WeightInfo = ();
-	type AutoUnlockBound = AutoUnlockBound;
-	type PalletId = pallet_id::Launch;
 }
 
 impl pallet_transaction_payment::Config for Runtime {
@@ -676,7 +668,7 @@ construct_runtime!(
 
 		// Vesting. Usable initially, but removed once all vesting is finished.
 		Vesting: pallet_vesting = 33,
-		KiltLaunch: kilt_launch = 34,
+		// DELETED: KiltLaunch: kilt_launch = 34,
 		Utility: pallet_utility = 35,
 		// DELETED CrowdloanContributors: 36,
 
@@ -742,6 +734,7 @@ pub type SignedBlock = generic::SignedBlock<Block>;
 pub type BlockId = generic::BlockId<Block>;
 /// The SignedExtension to the basic transaction logic.
 pub type SignedExtra = (
+	frame_system::CheckNonZeroSender<Runtime>,
 	frame_system::CheckSpecVersion<Runtime>,
 	frame_system::CheckTxVersion<Runtime>,
 	frame_system::CheckGenesis<Runtime>,
@@ -752,20 +745,13 @@ pub type SignedExtra = (
 );
 /// Unchecked extrinsic type as expected by this runtime.
 pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<Address, Call, Signature, SignedExtra>;
+/// The payload being signed in transactions.
+pub type SignedPayload = generic::SignedPayload<Call, SignedExtra>;
 /// Extrinsic type that has already been checked.
 pub type CheckedExtrinsic = generic::CheckedExtrinsic<AccountId, Call, SignedExtra>;
 /// Executive: handles dispatch to the various Pallets.
-pub type Executive = frame_executive::Executive<
-	Runtime,
-	Block,
-	frame_system::ChainContext<Runtime>,
-	Runtime,
-	AllPalletsWithSystem,
-	(
-		delegation::migrations::v3::DelegationMigrationV3<Runtime>,
-		did::migrations::v4::DidMigrationV4<Runtime>,
-	),
->;
+pub type Executive =
+	frame_executive::Executive<Runtime, Block, frame_system::ChainContext<Runtime>, Runtime, AllPalletsWithSystem, ()>;
 
 impl_runtime_apis! {
 	impl sp_api::Core<Block> for Runtime {
@@ -1003,7 +989,6 @@ impl_runtime_apis! {
 			list_benchmark!(list, extra, frame_system, SystemBench::<Runtime>);
 			list_benchmark!(list, extra, pallet_balances, Balances);
 			list_benchmark!(list, extra, pallet_timestamp, Timestamp);
-			list_benchmark!(list, extra, kilt_launch, KiltLaunch);
 			list_benchmark!(list, extra, pallet_vesting, Vesting);
 
 			list_benchmark!(list, extra, did, Did);
@@ -1043,8 +1028,6 @@ impl_runtime_apis! {
 				// System Events
 				hex_literal::hex!("26aa394eea5630e07c48ae0c9558cef780d41e5e16056765bc8461851072c9d7")
 					.to_vec().into(),
-				// KiltLaunch transfer account
-				hex_literal::hex!("6a3c793cec9dbe330b349dc4eea6801090f5e71f53b1b41ad11afb4a313a282c").to_vec().into(),
 			];
 
 			let mut batches = Vec::<BenchmarkBatch>::new();
@@ -1054,7 +1037,6 @@ impl_runtime_apis! {
 			add_benchmark!(params, batches, frame_system, SystemBench::<Runtime>);
 			add_benchmark!(params, batches, pallet_balances, Balances);
 			add_benchmark!(params, batches, pallet_timestamp, Timestamp);
-			add_benchmark!(params, batches, kilt_launch, KiltLaunch);
 			add_benchmark!(params, batches, pallet_vesting, Vesting);
 
 			add_benchmark!(params, batches, did, Did);

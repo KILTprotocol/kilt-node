@@ -19,12 +19,13 @@
 use crate::{
 	chain_spec,
 	cli::{Cli, Subcommand},
+	command_helper::{inherent_benchmark_data, BenchmarkExtrinsicBuilder},
 	service,
 };
-use frame_benchmarking_cli::BenchmarkCmd;
+use frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE};
 use mashnet_node_runtime::opaque::Block;
 use sc_cli::{ChainSpec, RuntimeVersion, SubstrateCli};
-use sc_service::PartialComponents;
+use sc_service::{Arc, PartialComponents};
 
 impl SubstrateCli for Cli {
 	fn impl_name() -> String {
@@ -161,7 +162,13 @@ pub fn run() -> sc_cli::Result<()> {
 
 						cmd.run(config, client, db, storage)
 					}
-					BenchmarkCmd::Overhead(_) => Err("Unsupported benchmarking command".into()),
+					BenchmarkCmd::Overhead(cmd) => {
+						let PartialComponents { client, .. } = service::new_partial(&config)?;
+						let ext_builder = BenchmarkExtrinsicBuilder::new(client.clone());
+
+						cmd.run(config, client, inherent_benchmark_data()?, Arc::new(ext_builder))
+					}
+					BenchmarkCmd::Machine(cmd) => cmd.run(&config, SUBSTRATE_REFERENCE_HARDWARE.clone()),
 				}
 			})
 		}
@@ -182,6 +189,10 @@ pub fn run() -> sc_cli::Result<()> {
 		Some(Subcommand::TryRuntime) => Err("TryRuntime wasn't enabled when building the node. \
 				You can enable it with `--features try-runtime`."
 			.into()),
+		Some(Subcommand::ChainInfo(cmd)) => {
+			let runner = cli.create_runner(cmd)?;
+			runner.sync_run(|config| cmd.run::<Block>(&config))
+		}
 		None => {
 			let runner = cli.create_runner(&cli.run)?;
 			runner

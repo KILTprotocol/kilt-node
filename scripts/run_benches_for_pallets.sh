@@ -13,7 +13,6 @@ pallets=(
     ctype
     delegation
     did
-    kilt-launch
     parachain-staking
 )
 

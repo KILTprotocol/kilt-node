@@ -20,8 +20,11 @@ use std::{fmt::Display, str::FromStr, sync::Arc};
 
 use codec::{Codec, MaxEncodedLen};
 use did_rpc_runtime_api::{DidLinkedInfo, ServiceEndpoint};
-use jsonrpc_core::{Error as RpcError, ErrorCode, Result};
-use jsonrpc_derive::rpc;
+use jsonrpsee::{
+	core::{async_trait, RpcResult},
+	proc_macros::rpc,
+	types::error::{CallError, ErrorObject},
+};
 use sp_api::ProvideRuntimeApi;
 use sp_blockchain::HeaderBackend;
 use sp_runtime::{generic::BlockId, traits::Block as BlockT};
@@ -52,7 +55,7 @@ fn raw_did_endpoint_to_rpc(
 pub type DidRpcResponse<DidIdentifier, AccountId, Balance, Key, BlockNumber> =
 	Option<RpcDidLinkedInfo<DidIdentifier, AccountId, Balance, Key, BlockNumber>>;
 
-#[rpc]
+#[rpc(client, server)]
 pub trait DidApi<BlockHash, DidIdentifier, AccountId, Balance, Key, BlockNumber>
 where
 	BlockNumber: MaxEncodedLen,
@@ -65,12 +68,12 @@ where
 	/// * the web3name (optional)
 	/// * associated accounts
 	/// * service endpoints
-	#[rpc(name = "did_queryByWeb3Name")]
+	#[method(name = "did_queryByWeb3Name")]
 	fn query_did_by_w3n(
 		&self,
 		web3name: String,
 		at: Option<BlockHash>,
-	) -> Result<DidRpcResponse<DidIdentifier, AccountId, Balance, Key, BlockNumber>>;
+	) -> RpcResult<DidRpcResponse<DidIdentifier, AccountId, Balance, Key, BlockNumber>>;
 
 	/// Given an account this returns:
 	/// * the DID
@@ -78,12 +81,12 @@ where
 	/// * the web3name (optional)
 	/// * associated accounts
 	/// * service endpoints
-	#[rpc(name = "did_queryByAccount")]
+	#[method(name = "did_queryByAccount")]
 	fn query_did_by_account_id(
 		&self,
 		account: AccountId,
 		at: Option<BlockHash>,
-	) -> Result<DidRpcResponse<DidIdentifier, AccountId, Balance, Key, BlockNumber>>;
+	) -> RpcResult<DidRpcResponse<DidIdentifier, AccountId, Balance, Key, BlockNumber>>;
 
 	/// Given a did this returns:
 	/// * the DID
@@ -91,21 +94,21 @@ where
 	/// * the web3name (optional)
 	/// * associated accounts
 	/// * service endpoints
-	#[rpc(name = "did_query")]
+	#[method(name = "did_query")]
 	fn query_did(
 		&self,
 		account: DidIdentifier,
 		at: Option<BlockHash>,
-	) -> Result<DidRpcResponse<DidIdentifier, AccountId, Balance, Key, BlockNumber>>;
+	) -> RpcResult<DidRpcResponse<DidIdentifier, AccountId, Balance, Key, BlockNumber>>;
 }
 
-/// A struct that implements the [`TransactionPaymentApi`].
-pub struct DidQuery<C, P> {
-	client: Arc<C>,
-	_marker: std::marker::PhantomData<P>,
+/// A struct that implements the [`DidRuntimeApi`].
+pub struct DidQuery<Client, Block> {
+	client: Arc<Client>,
+	_marker: std::marker::PhantomData<Block>,
 }
 
-impl<C, P> DidQuery<C, P> {
+impl<C, B> DidQuery<C, B> {
 	/// Create new `DidQuery` with the given reference to the client.
 	pub fn new(client: Arc<C>) -> Self {
 		Self {
@@ -123,8 +126,8 @@ pub enum Error {
 	RuntimeError,
 }
 
-impl From<Error> for i64 {
-	fn from(e: Error) -> i64 {
+impl From<Error> for i32 {
+	fn from(e: Error) -> i32 {
 		match e {
 			Error::RuntimeError => 1,
 			Error::DecodeError => 2,
@@ -132,34 +135,35 @@ impl From<Error> for i64 {
 	}
 }
 
-impl<C, Block, DidIdentifier, AccountId, Balance, Key, BlockNumber>
-	DidApi<<Block as BlockT>::Hash, DidIdentifier, AccountId, Balance, Key, BlockNumber> for DidQuery<C, Block>
+#[async_trait]
+impl<Client, Block, DidIdentifier, AccountId, Balance, Key, BlockNumber>
+	DidApiServer<<Block as BlockT>::Hash, DidIdentifier, AccountId, Balance, Key, BlockNumber> for DidQuery<Client, Block>
 where
-	AccountId: Codec + std::marker::Send,
-	DidIdentifier: Codec + std::marker::Send,
+	AccountId: Codec + Send + Sync + 'static,
+	DidIdentifier: Codec + Send + Sync + 'static,
 	Key: Codec + Ord,
 	Balance: Codec + FromStr + Display,
 	BlockNumber: Codec + MaxEncodedLen,
 	Block: BlockT,
-	C: 'static + ProvideRuntimeApi<Block> + HeaderBackend<Block>,
-	C::Api: DidRuntimeApi<Block, DidIdentifier, AccountId, Balance, Key, BlockNumber>,
+	Client: Send + Sync + 'static + ProvideRuntimeApi<Block> + HeaderBackend<Block>,
+	Client::Api: DidRuntimeApi<Block, DidIdentifier, AccountId, Balance, Key, BlockNumber>,
 {
 	fn query_did_by_w3n(
 		&self,
 		web3name: String,
 		at: Option<<Block as BlockT>::Hash>,
-	) -> Result<Option<RpcDidLinkedInfo<DidIdentifier, AccountId, Balance, Key, BlockNumber>>> {
+	) -> RpcResult<Option<RpcDidLinkedInfo<DidIdentifier, AccountId, Balance, Key, BlockNumber>>> {
 		let api = self.client.runtime_api();
 		let at = BlockId::hash(at.unwrap_or_else(||
 			// If the block hash is not provided, assume the best block.
 			self.client.info().best_hash));
 
 		match api.query_did_by_w3n(&at, web3name.into()) {
-			Err(e) => Err(RpcError {
-				code: ErrorCode::ServerError(Error::RuntimeError.into()),
-				message: "Unable to query dispatch info.".into(),
-				data: Some(e.to_string().into()),
-			}),
+			Err(e) => Err(CallError::Custom(ErrorObject::owned(
+				Error::RuntimeError.into(),
+				"Unable to query DID by web3name.",
+				Some(format!("{:?}", e)),
+			)).into()),
 			Ok(doc) => Ok(doc.map(|doc| RpcDidLinkedInfo {
 				// convert the w3n from a byte array to a string. if it's invalid utf-8 which should never happen, we
 				// ignore the w3n and pretend it doesn't exist.
@@ -180,18 +184,18 @@ where
 		&self,
 		account: AccountId,
 		at: Option<<Block as BlockT>::Hash>,
-	) -> Result<Option<RpcDidLinkedInfo<DidIdentifier, AccountId, Balance, Key, BlockNumber>>> {
+	) -> RpcResult<Option<RpcDidLinkedInfo<DidIdentifier, AccountId, Balance, Key, BlockNumber>>> {
 		let api = self.client.runtime_api();
 		let at = BlockId::hash(at.unwrap_or_else(||
 			// If the block hash is not supplied assume the best block.
 			self.client.info().best_hash));
 
 		match api.query_did_by_account_id(&at, account) {
-			Err(e) => Err(RpcError {
-				code: ErrorCode::ServerError(Error::RuntimeError.into()),
-				message: "Unable to query fee details.".into(),
-				data: Some(e.to_string().into()),
-			}),
+			Err(e) => Err(CallError::Custom(ErrorObject::owned(
+				Error::RuntimeError.into(),
+				"Unable to query account by DID.",
+				Some(format!("{:?}", e)),
+			)).into()),
 			Ok(doc) => Ok(doc.map(|doc| RpcDidLinkedInfo {
 				// convert the w3n from a byte array to a string. if it's invalid utf-8 which should never happen, we
 				// ignore the w3n and pretend it doesn't exist.
@@ -212,18 +216,18 @@ where
 		&self,
 		did: DidIdentifier,
 		at: Option<<Block as BlockT>::Hash>,
-	) -> Result<Option<RpcDidLinkedInfo<DidIdentifier, AccountId, Balance, Key, BlockNumber>>> {
+	) -> RpcResult<Option<RpcDidLinkedInfo<DidIdentifier, AccountId, Balance, Key, BlockNumber>>> {
 		let api = self.client.runtime_api();
 		let at = BlockId::hash(at.unwrap_or_else(||
 			// If the block hash is not supplied assume the best block.
 			self.client.info().best_hash));
 
 		match api.query_did(&at, did) {
-			Err(e) => Err(RpcError {
-				code: ErrorCode::ServerError(Error::RuntimeError.into()),
-				message: "Unable to query fee details.".into(),
-				data: Some(e.to_string().into()),
-			}),
+			Err(e) => Err(CallError::Custom(ErrorObject::owned(
+				Error::RuntimeError.into(),
+				"Unable to query DID details.",
+				Some(format!("{:?}", e)),
+			)).into()),
 			Ok(doc) => Ok(doc.map(|doc| RpcDidLinkedInfo {
 				// convert the w3n from a byte array to a string. if it's invalid utf-8 which should never happen, we
 				// ignore the w3n and pretend it doesn't exist.

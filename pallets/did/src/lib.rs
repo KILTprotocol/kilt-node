@@ -83,7 +83,6 @@
 pub mod default_weights;
 pub mod did_details;
 pub mod errors;
-pub mod migrations;
 pub mod origin;
 pub mod service_endpoints;
 
