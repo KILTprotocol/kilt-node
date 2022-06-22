@@ -163,7 +163,8 @@ where
 				Error::RuntimeError.into(),
 				"Unable to query DID by web3name.",
 				Some(format!("{:?}", e)),
-			)).into()),
+			))
+			.into()),
 			Ok(doc) => Ok(doc.map(|doc| RpcDidLinkedInfo {
 				// convert the w3n from a byte array to a string. if it's invalid utf-8 which should never happen, we
 				// ignore the w3n and pretend it doesn't exist.
@@ -195,7 +196,8 @@ where
 				Error::RuntimeError.into(),
 				"Unable to query account by DID.",
 				Some(format!("{:?}", e)),
-			)).into()),
+			))
+			.into()),
 			Ok(doc) => Ok(doc.map(|doc| RpcDidLinkedInfo {
 				// convert the w3n from a byte array to a string. if it's invalid utf-8 which should never happen, we
 				// ignore the w3n and pretend it doesn't exist.
@@ -227,7 +229,8 @@ where
 				Error::RuntimeError.into(),
 				"Unable to query DID details.",
 				Some(format!("{:?}", e)),
-			)).into()),
+			))
+			.into()),
 			Ok(doc) => Ok(doc.map(|doc| RpcDidLinkedInfo {
 				// convert the w3n from a byte array to a string. if it's invalid utf-8 which should never happen, we
 				// ignore the w3n and pretend it doesn't exist.

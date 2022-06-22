@@ -57,9 +57,9 @@ where
 	C::Api: did_rpc::DidRuntimeApi<Block, DidIdentifier, AccountId, Balance, Hash, BlockNumber>,
 	P: TransactionPool + 'static,
 {
+	use did_rpc::{DidApiServer, DidQuery};
 	use frame_rpc_system::{System, SystemApiServer};
 	use pallet_transaction_payment_rpc::{TransactionPayment, TransactionPaymentApiServer};
-	use did_rpc::{DidQuery, DidApiServer};
 
 	let mut module = RpcModule::new(());
 	let FullDeps {

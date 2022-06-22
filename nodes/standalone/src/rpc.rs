@@ -27,12 +27,12 @@ use std::sync::Arc;
 
 use jsonrpsee::RpcModule;
 
+use runtime_common::{AccountId, Balance, Block, BlockNumber, DidIdentifier, Hash, Index};
 pub use sc_rpc_api::DenyUnsafe;
 use sc_transaction_pool_api::TransactionPool;
 use sp_api::ProvideRuntimeApi;
 use sp_block_builder::BlockBuilder;
 use sp_blockchain::{Error as BlockChainError, HeaderBackend, HeaderMetadata};
-use runtime_common::{AccountId, Balance, Block, BlockNumber, DidIdentifier, Hash, Index};
 
 /// Full client dependencies.
 pub struct FullDeps<C, P> {
@@ -56,9 +56,9 @@ where
 	C::Api: did_rpc::DidRuntimeApi<Block, DidIdentifier, AccountId, Balance, Hash, BlockNumber>,
 	P: TransactionPool + 'static,
 {
+	use did_rpc::{DidApiServer, DidQuery};
 	use frame_rpc_system::{System, SystemApiServer};
 	use pallet_transaction_payment_rpc::{TransactionPayment, TransactionPaymentApiServer};
-	use did_rpc::{DidQuery, DidApiServer};
 
 	let mut module = RpcModule::new(());
 	let FullDeps {

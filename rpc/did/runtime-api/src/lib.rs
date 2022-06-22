@@ -57,8 +57,17 @@ pub use service_endpoint::*;
 		Web3Name: Deserialize<'de>,"
 	))
 )]
-pub struct DidLinkedInfo<DidIdentifier, AccountId, Web3Name, Id, Type, Url, Balance, Key: Ord, BlockNumber: MaxEncodedLen>
-{
+pub struct DidLinkedInfo<
+	DidIdentifier,
+	AccountId,
+	Web3Name,
+	Id,
+	Type,
+	Url,
+	Balance,
+	Key: Ord,
+	BlockNumber: MaxEncodedLen,
+> {
 	pub identifier: DidIdentifier,
 	pub accounts: Vec<AccountId>,
 	pub w3n: Option<Web3Name>,

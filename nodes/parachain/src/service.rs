@@ -237,7 +237,8 @@ where
 		+ sp_block_builder::BlockBuilder<Block>
 		+ cumulus_primitives_core::CollectCollationInfo<Block>
 		+ pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>
-		+ frame_rpc_system::AccountNonceApi<Block, AccountId, Index>,
+		+ frame_rpc_system::AccountNonceApi<Block, AccountId, Index>
+		+ did_rpc::DidRuntimeApi<Block, DidIdentifier, AccountId, Balance, Hash, BlockNumber>,
 	sc_client_api::StateBackendFor<TFullBackend<Block>, Block>: sp_api::StateBackend<BlakeTwo256>,
 	Executor: sc_executor::NativeExecutionDispatch + 'static,
 	RB: FnOnce(
