@@ -54,11 +54,11 @@ where
 	C::Api: pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>,
 	C::Api: BlockBuilder<Block>,
 	C::Api: did_rpc::DidRuntimeApi<Block, DidIdentifier, AccountId, Balance, Hash, BlockNumber>,
-	P: TransactionPool + 'static,
+	P: TransactionPool + Sync + Send + 'static,
 {
-	use did_rpc::{DidApiServer, DidQuery};
 	use frame_rpc_system::{System, SystemApiServer};
 	use pallet_transaction_payment_rpc::{TransactionPayment, TransactionPaymentApiServer};
+	use did_rpc::{DidApiServer, DidQuery};
 
 	let mut module = RpcModule::new(());
 	let FullDeps {
@@ -69,6 +69,12 @@ where
 
 	module.merge(System::new(client.clone(), pool, deny_unsafe).into_rpc())?;
 	module.merge(TransactionPayment::new(client.clone()).into_rpc())?;
+
+	// Extend this RPC with a custom API by using the following syntax.
+	// `YourRpcStruct` should have a reference to a client, which is needed
+	// to call into the runtime.
+	//
+	// `module.merge(YourRpcStruct::new(ReferenceToClient).into_rpc())?;`
 	module.merge(DidQuery::new(client).into_rpc())?;
 
 	Ok(module)
