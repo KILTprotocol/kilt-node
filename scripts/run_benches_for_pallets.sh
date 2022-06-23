@@ -13,6 +13,9 @@ pallets=(
     ctype
     delegation
     did
+	pallet-did-lookup
+	pallet-inflation
+	pallet-web3-names
     parachain-staking
 )
 

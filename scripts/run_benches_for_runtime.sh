@@ -13,18 +13,25 @@ pallets=(
     ctype
     delegation
     did
-    parachain_staking
+	pallet-did-lookup
+	pallet-inflation
+	pallet-web3-names
+    parachain-staking
     frame_system
     pallet_balances
     pallet_collective
     pallet_democracy
     pallet_indices
     pallet_membership
+    pallet_preimage
+	pallet_proxy
     pallet_scheduler
+    pallet_session
     pallet_timestamp
+	pallet_tips
     pallet_treasury
     pallet_utility
-    pallet_session
+    pallet_vesting
 )
 
 echo "[+] Running all benchmarks for $runtime --chain=$chain"
