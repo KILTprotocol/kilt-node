@@ -35,6 +35,7 @@ for pallet in "${pallets[@]}"; do
     --execution=wasm \
     --wasm-execution=compiled \
     --heap-pages=4096 \
+	--record-proof \
     --output="./pallets/${pallet//_/-}/src/default_weights.rs" \
     --template=".maintain/weight-template.hbs"
 done
