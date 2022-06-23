@@ -28,7 +28,7 @@
 // --chain=spiritnet-dev
 // --steps=50
 // --repeat=20
-// --pallet=pallet-did-lookup
+// --pallet=pallet_did_lookup
 // --extrinsic=*
 // --execution=wasm
 // --wasm-execution=compiled
