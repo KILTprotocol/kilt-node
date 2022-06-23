@@ -13,42 +13,43 @@ pallets=(
     ctype
     delegation
     did
+    frame-system
+    pallet-balances
+    pallet-collective
+    pallet-democracy
 	pallet-did-lookup
+    pallet-indices
 	pallet-inflation
+    pallet-membership
+    pallet-preimage
+	pallet-proxy
+    pallet-scheduler
+    pallet-session
+    pallet-timestamp
+	pallet-tips
+    pallet-treasury
+    pallet-utility
+    pallet-vesting
 	pallet-web3-names
     parachain-staking
-    frame_system
-    pallet_balances
-    pallet_collective
-    pallet_democracy
-    pallet_indices
-    pallet_membership
-    pallet_preimage
-	pallet_proxy
-    pallet_scheduler
-    pallet_session
-    pallet_timestamp
-	pallet_tips
-    pallet_treasury
-    pallet_utility
-    pallet_vesting
 )
 
-echo "[+] Running all benchmarks for $runtime --chain=$chain"
+echo "[+] Running all runtime benchmarks for $runtime --chain=$chain"
 
 cargo build $standard_args
+
 for pallet in "${pallets[@]}"; do
     echo "Runtime: $runtime. Pallet: $pallet";
     # shellcheck disable=SC2086
-    ./target/release/kilt-parachain benchmark \
+    ./target/release/kilt-parachain benchmark pallet \
     --chain="${chain}" \
-    --steps=50 \
-    --repeat=20 \
+    --steps=1 \
+    --repeat=1 \
     --pallet="$pallet" \
     --extrinsic="*" \
     --execution=wasm \
     --wasm-execution=compiled \
     --heap-pages=4096 \
-    --output="./runtimes/${runtime}/src/weights/${pallet}.rs" \
+    --output="./runtimes/${runtime}/src/weights/${pallet/-/_}.rs" \
     --template=".maintain/runtime-weight-template.hbs"
 done

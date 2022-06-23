@@ -19,22 +19,22 @@ pallets=(
     parachain-staking
 )
 
-echo "[+] Running all benchmarks for $runtime --chain=$chain"
+echo "[+] Running all default weight benchmarks for $runtime --chain=$chain"
 
 cargo build $standard_args
 
 for pallet in "${pallets[@]}"; do
     echo "Runtime: $runtime. Pallet: $pallet";
     # shellcheck disable=SC2086
-    ./target/release/kilt-parachain benchmark \
+    ./target/release/kilt-parachain benchmark pallet \
     --chain="${chain}" \
-    --steps=50 \
-    --repeat=20 \
+    --steps=1 \
+    --repeat=1 \
     --pallet="$pallet" \
     --extrinsic="*" \
     --execution=wasm \
     --wasm-execution=compiled \
     --heap-pages=4096 \
-    --output="./pallets/${pallet}/src/default_weights.rs" \
+    --output="./pallets/${pallet/_/-}/src/default_weights.rs" \
     --template=".maintain/weight-template.hbs"
 done
