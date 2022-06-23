@@ -29,7 +29,7 @@ for pallet in "${pallets[@]}"; do
     ./target/release/kilt-parachain benchmark pallet \
     --chain="${chain}" \
     --steps=1 \
-    --repeat=1 \
+    --repeat=20 \
     --pallet="$pallet" \
     --extrinsic="*" \
     --execution=wasm \
