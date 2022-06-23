@@ -50,6 +50,6 @@ for pallet in "${pallets[@]}"; do
     --execution=wasm \
     --wasm-execution=compiled \
     --heap-pages=4096 \
-    --output="./runtimes/${runtime}/src/weights/${pallet/-/_}.rs" \
+    --output="./runtimes/${runtime}/src/weights/${pallet//-/_}.rs" \
     --template=".maintain/runtime-weight-template.hbs"
 done
