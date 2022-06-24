@@ -23,13 +23,19 @@
 //! other tests. Internal functions/structs can only be used in attestation
 //! tests.
 
-use ctype::CtypeHashOf;
-use delegation::DelegationNodeIdOf;
-use frame_support::traits::Get;
-use kilt_support::deposit::Deposit;
+use codec::{Decode, Encode};
+use frame_support::{dispatch::Weight, traits::Get};
+use scale_info::TypeInfo;
 use sp_core::H256;
+use sp_runtime::DispatchError;
 
-use crate::{AccountIdOf, AttestationDetails, AttesterOf, BalanceOf, ClaimHashOf, Config};
+use ctype::CtypeHashOf;
+use kilt_support::deposit::Deposit;
+
+use crate::{
+	pallet::AuthorizationIdOf, AccountIdOf, AttestationAccessControl, AttestationDetails, AttesterOf, BalanceOf,
+	ClaimHashOf, Config,
+};
 
 #[cfg(test)]
 pub use crate::mock::runtime::*;
@@ -37,7 +43,7 @@ pub use crate::mock::runtime::*;
 pub struct AttestationCreationDetails<T: Config> {
 	pub claim_hash: ClaimHashOf<T>,
 	pub ctype_hash: CtypeHashOf<T>,
-	pub delegation_id: Option<DelegationNodeIdOf<T>>,
+	pub authorization_id: Option<AuthorizationIdOf<T>>,
 }
 
 pub fn generate_base_attestation_creation_details<T: Config>(
@@ -47,21 +53,7 @@ pub fn generate_base_attestation_creation_details<T: Config>(
 	AttestationCreationDetails {
 		claim_hash,
 		ctype_hash: attestation.ctype_hash,
-		delegation_id: attestation.delegation_id,
-	}
-}
-
-pub struct AttestationRevocationDetails<T: Config> {
-	pub claim_hash: ClaimHashOf<T>,
-	pub max_parent_checks: u32,
-}
-
-pub fn generate_base_attestation_revocation_details<T: Config>(
-	claim_hash: ClaimHashOf<T>,
-) -> AttestationRevocationDetails<T> {
-	AttestationRevocationDetails {
-		claim_hash,
-		max_parent_checks: 0u32,
+		authorization_id: attestation.authorization_id,
 	}
 }
 
@@ -72,7 +64,7 @@ where
 {
 	AttestationDetails {
 		attester,
-		delegation_id: None,
+		authorization_id: None,
 		ctype_hash: ctype::mock::get_ctype_hash::<T>(true),
 		revoked: false,
 		deposit: Deposit::<AccountIdOf<T>, BalanceOf<T>> {
@@ -82,39 +74,110 @@ where
 	}
 }
 
+/// Authorize iff the subject of the origin and the provided attester id match.
+#[derive(Clone, Debug, Encode, Decode, TypeInfo, PartialEq, Eq)]
+#[scale_info(skip_type_params(T))]
+pub struct MockAccessControl<T: Config>(pub T::AttesterId);
+
+impl<T> AttestationAccessControl<T::AttesterId, T::AuthorizationId, CtypeHashOf<T>, ClaimHashOf<T>>
+	for MockAccessControl<T>
+where
+	T: Config<AuthorizationId = <T as Config>::AttesterId>,
+{
+	fn can_attest(
+		&self,
+		who: &T::AttesterId,
+		_ctype: &CtypeHashOf<T>,
+		_claim: &ClaimHashOf<T>,
+	) -> Result<Weight, DispatchError> {
+		if who == &self.0 {
+			Ok(0)
+		} else {
+			Err(DispatchError::Other("Unauthorized"))
+		}
+	}
+
+	fn can_revoke(
+		&self,
+		who: &T::AttesterId,
+		_ctype: &CtypeHashOf<T>,
+		_claim: &ClaimHashOf<T>,
+		authorization_id: &T::AuthorizationId,
+	) -> Result<Weight, DispatchError> {
+		if authorization_id == who {
+			Ok(0)
+		} else {
+			Err(DispatchError::Other("Unauthorized"))
+		}
+	}
+
+	fn can_remove(
+		&self,
+		who: &T::AttesterId,
+		_ctype: &CtypeHashOf<T>,
+		_claim: &ClaimHashOf<T>,
+		authorization_id: &T::AuthorizationId,
+	) -> Result<Weight, DispatchError> {
+		if authorization_id == who {
+			Ok(0)
+		} else {
+			Err(DispatchError::Other("Unauthorized"))
+		}
+	}
+
+	fn authorization_id(&self) -> T::AuthorizationId {
+		self.0.clone()
+	}
+
+	fn can_attest_weight(&self) -> Weight {
+		0
+	}
+	fn can_revoke_weight(&self) -> Weight {
+		0
+	}
+	fn can_remove_weight(&self) -> Weight {
+		0
+	}
+}
+
+pub fn insert_attestation<T: Config>(claim_hash: ClaimHashOf<T>, details: AttestationDetails<T>) {
+	crate::Pallet::<T>::reserve_deposit(details.deposit.owner.clone(), details.deposit.amount)
+		.expect("Should have balance");
+
+	crate::Attestations::<T>::insert(&claim_hash, details.clone());
+	if let Some(delegation_id) = details.authorization_id.as_ref() {
+		crate::ExternalAttestations::<T>::insert(delegation_id, claim_hash, true)
+	}
+}
+
 /// Mocks that are only used internally
 #[cfg(test)]
 pub(crate) mod runtime {
 	use ctype::CtypeCreatorOf;
 	use frame_support::{parameter_types, weights::constants::RocksDbWeight};
 	use sp_core::{ed25519, sr25519, Pair};
-	use sp_keystore::{testing::KeyStore, KeystoreExt};
 	use sp_runtime::{
 		testing::Header,
 		traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
-		MultiSigner,
+		MultiSignature, MultiSigner,
 	};
-	use std::sync::Arc;
 
-	use delegation::{mock::DelegationHierarchyInitialization, DelegationNode};
-	use kilt_support::{
-		mock::{mock_origin, SubjectId},
-		signature::EqualVerify,
-	};
-	use runtime_common::constants::{attestation::ATTESTATION_DEPOSIT, delegation::DELEGATION_DEPOSIT, MILLI_KILT};
+	use kilt_support::mock::{mock_origin, SubjectId};
 
 	use super::*;
-	use crate::Pallet;
 
 	type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 	type Block = frame_system::mocking::MockBlock<Test>;
 
-	type TestCtypeOwner = SubjectId;
-	type TestCtypeHash = runtime_common::Hash;
-	type TestDelegationNodeId = runtime_common::Hash;
-	type TestDelegatorId = SubjectId;
-	type TestClaimHash = runtime_common::Hash;
-	type TestBalance = runtime_common::Balance;
+	pub type Hash = sp_core::H256;
+	pub type Balance = u128;
+	pub type Signature = MultiSignature;
+	pub type AccountPublic = <Signature as Verify>::Signer;
+	pub type AccountId = <AccountPublic as IdentifyAccount>::AccountId;
+
+	pub const UNIT: Balance = 10u128.pow(15);
+	pub const MILLI_UNIT: Balance = 10u128.pow(12);
+	pub const ATTESTATION_DEPOSIT: Balance = 10 * MILLI_UNIT;
 
 	frame_support::construct_runtime!(
 		pub enum Test where
@@ -125,7 +188,6 @@ pub(crate) mod runtime {
 			System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
 			Attestation: crate::{Pallet, Call, Storage, Event<T>},
 			Ctype: ctype::{Pallet, Call, Storage, Event<T>},
-			Delegation: delegation::{Pallet, Call, Storage, Event<T>},
 			Balances: pallet_balances::{Pallet, Call, Storage, Event<T>},
 			MockOrigin: mock_origin::{Pallet, Origin<T>},
 		}
@@ -141,9 +203,9 @@ pub(crate) mod runtime {
 		type Call = Call;
 		type Index = u64;
 		type BlockNumber = u64;
-		type Hash = runtime_common::Hash;
+		type Hash = Hash;
 		type Hashing = BlakeTwo256;
-		type AccountId = <<runtime_common::Signature as Verify>::Signer as IdentifyAccount>::AccountId;
+		type AccountId = AccountId;
 		type Lookup = IdentityLookup<Self::AccountId>;
 		type Header = Header;
 		type Event = ();
@@ -152,7 +214,7 @@ pub(crate) mod runtime {
 		type Version = ();
 
 		type PalletInfo = PalletInfo;
-		type AccountData = pallet_balances::AccountData<TestBalance>;
+		type AccountData = pallet_balances::AccountData<Balance>;
 		type OnNewAccount = ();
 		type OnKilledAccount = ();
 		type BaseCallFilter = frame_support::traits::Everything;
@@ -165,13 +227,13 @@ pub(crate) mod runtime {
 	}
 
 	parameter_types! {
-		pub const ExistentialDeposit: TestBalance = MILLI_KILT;
+		pub const ExistentialDeposit: Balance = MILLI_UNIT;
 		pub const MaxLocks: u32 = 50;
 		pub const MaxReserves: u32 = 50;
 	}
 
 	impl pallet_balances::Config for Test {
-		type Balance = TestBalance;
+		type Balance = Balance;
 		type DustRemoval = ();
 		type Event = ();
 		type ExistentialDeposit = ExistentialDeposit;
@@ -183,13 +245,13 @@ pub(crate) mod runtime {
 	}
 
 	parameter_types! {
-		pub const Fee: TestBalance = 500;
+		pub const Fee: Balance = 500;
 	}
 
 	impl ctype::Config for Test {
-		type CtypeCreatorId = TestCtypeOwner;
-		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<runtime_common::AccountId, Self::CtypeCreatorId>;
-		type OriginSuccess = mock_origin::DoubleOrigin<runtime_common::AccountId, Self::CtypeCreatorId>;
+		type CtypeCreatorId = SubjectId;
+		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<AccountId, Self::CtypeCreatorId>;
+		type OriginSuccess = mock_origin::DoubleOrigin<AccountId, Self::CtypeCreatorId>;
 		type Event = ();
 		type WeightInfo = ();
 
@@ -198,65 +260,44 @@ pub(crate) mod runtime {
 		type FeeCollector = ();
 	}
 
-	parameter_types! {
-		pub const MaxSignatureByteLength: u16 = 64;
-		pub const MaxParentChecks: u32 = 5;
-		pub const MaxRevocations: u32 = 5;
-		pub const MaxRemovals: u32 = 5;
-		#[derive(Clone)]
-		pub const MaxChildren: u32 = 1000;
-		pub const DelegationDeposit: TestBalance = DELEGATION_DEPOSIT;
-	}
-
-	impl delegation::Config for Test {
-		type Signature = (Self::DelegationEntityId, Vec<u8>);
-		type DelegationSignatureVerification = EqualVerify<Self::DelegationEntityId, Vec<u8>>;
-		type DelegationEntityId = TestDelegatorId;
-		type DelegationNodeId = TestDelegationNodeId;
-		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<runtime_common::AccountId, Self::DelegationEntityId>;
-		type OriginSuccess = mock_origin::DoubleOrigin<runtime_common::AccountId, Self::DelegationEntityId>;
-		type Event = ();
-		type MaxSignatureByteLength = MaxSignatureByteLength;
-		type MaxParentChecks = MaxParentChecks;
-		type MaxRevocations = MaxRevocations;
-		type MaxRemovals = MaxRemovals;
-		type MaxChildren = MaxChildren;
-		type WeightInfo = ();
-
-		type Currency = Balances;
-		type Deposit = DelegationDeposit;
-	}
-
 	impl mock_origin::Config for Test {
 		type Origin = Origin;
-		type AccountId = runtime_common::AccountId;
+		type AccountId = AccountId;
 		type SubjectId = SubjectId;
 	}
 
 	parameter_types! {
 		pub const MaxDelegatedAttestations: u32 = 1000;
-		pub const Deposit: TestBalance = ATTESTATION_DEPOSIT;
+		pub const Deposit: Balance = ATTESTATION_DEPOSIT;
 	}
 
 	impl Config for Test {
-		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<runtime_common::AccountId, AttesterOf<Self>>;
-		type OriginSuccess = mock_origin::DoubleOrigin<runtime_common::AccountId, AttesterOf<Self>>;
+		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<AccountId, AttesterOf<Self>>;
+		type OriginSuccess = mock_origin::DoubleOrigin<AccountId, AttesterOf<Self>>;
 		type Event = ();
 		type WeightInfo = ();
 
 		type Currency = Balances;
 		type Deposit = Deposit;
 		type MaxDelegatedAttestations = MaxDelegatedAttestations;
+		type AttesterId = SubjectId;
+		type AuthorizationId = SubjectId;
+		type AccessControl = MockAccessControl<Self>;
 	}
 
-	pub(crate) const ACCOUNT_00: runtime_common::AccountId = runtime_common::AccountId::new([1u8; 32]);
-	pub(crate) const ACCOUNT_01: runtime_common::AccountId = runtime_common::AccountId::new([2u8; 32]);
+	pub(crate) const ACCOUNT_00: AccountId = AccountId::new([1u8; 32]);
+	pub(crate) const ACCOUNT_01: AccountId = AccountId::new([2u8; 32]);
 
 	pub(crate) const ALICE_SEED: [u8; 32] = [1u8; 32];
 	pub(crate) const BOB_SEED: [u8; 32] = [2u8; 32];
+	pub(crate) const CHARLIE_SEED: [u8; 32] = [3u8; 32];
 
-	const DEFAULT_CLAIM_HASH_SEED: u64 = 1u64;
-	const ALTERNATIVE_CLAIM_HASH_SEED: u64 = 2u64;
+	pub const CLAIM_HASH_SEED_01: u64 = 1u64;
+	pub const CLAIM_HASH_SEED_02: u64 = 2u64;
+
+	pub fn claim_hash_from_seed(seed: u64) -> Hash {
+		Hash::from_low_u64_be(seed)
+	}
 
 	pub fn ed25519_did_from_seed(seed: &[u8; 32]) -> SubjectId {
 		MultiSigner::from(ed25519::Pair::from_seed(seed).public())
@@ -270,44 +311,18 @@ pub(crate) mod runtime {
 			.into()
 	}
 
-	pub fn get_claim_hash(default: bool) -> TestClaimHash {
-		if default {
-			TestClaimHash::from_low_u64_be(DEFAULT_CLAIM_HASH_SEED)
-		} else {
-			TestClaimHash::from_low_u64_be(ALTERNATIVE_CLAIM_HASH_SEED)
-		}
-	}
-
 	#[derive(Clone, Default)]
 	pub struct ExtBuilder {
-		delegation_hierarchies: DelegationHierarchyInitialization<Test>,
-		delegations: Vec<(TestDelegationNodeId, DelegationNode<Test>)>,
-
 		/// initial ctypes & owners
-		ctypes: Vec<(TestCtypeHash, CtypeCreatorOf<Test>)>,
+		ctypes: Vec<(CtypeHashOf<Test>, CtypeCreatorOf<Test>)>,
 		/// endowed accounts with balances
 		balances: Vec<(AccountIdOf<Test>, BalanceOf<Test>)>,
-		attestations: Vec<(TestClaimHash, AttestationDetails<Test>)>,
+		attestations: Vec<(ClaimHashOf<Test>, AttestationDetails<Test>)>,
 	}
 
 	impl ExtBuilder {
 		#[must_use]
-		pub fn with_delegation_hierarchies(
-			mut self,
-			delegation_hierarchies: DelegationHierarchyInitialization<Test>,
-		) -> Self {
-			self.delegation_hierarchies = delegation_hierarchies;
-			self
-		}
-
-		#[must_use]
-		pub fn with_delegations(mut self, delegations: Vec<(TestDelegationNodeId, DelegationNode<Test>)>) -> Self {
-			self.delegations = delegations;
-			self
-		}
-
-		#[must_use]
-		pub fn with_ctypes(mut self, ctypes: Vec<(TestCtypeHash, CtypeCreatorOf<Test>)>) -> Self {
+		pub fn with_ctypes(mut self, ctypes: Vec<(CtypeHashOf<Test>, CtypeCreatorOf<Test>)>) -> Self {
 			self.ctypes = ctypes;
 			self
 		}
@@ -319,7 +334,7 @@ pub(crate) mod runtime {
 		}
 
 		#[must_use]
-		pub fn with_attestations(mut self, attestations: Vec<(TestClaimHash, AttestationDetails<Test>)>) -> Self {
+		pub fn with_attestations(mut self, attestations: Vec<(ClaimHashOf<Test>, AttestationDetails<Test>)>) -> Self {
 			self.attestations = attestations;
 			self
 		}
@@ -339,20 +354,8 @@ pub(crate) mod runtime {
 					ctype::Ctypes::<Test>::insert(ctype.0, ctype.1.clone());
 				}
 
-				delegation::mock::initialize_pallet(self.delegations, self.delegation_hierarchies);
-
 				for (claim_hash, details) in self.attestations {
-					Pallet::<Test>::reserve_deposit(details.deposit.owner.clone(), details.deposit.amount)
-						.expect("Should have balance");
-
-					crate::Attestations::<Test>::insert(&claim_hash, details.clone());
-					if let Some(delegation_id) = details.delegation_id.as_ref() {
-						crate::DelegatedAttestations::<Test>::try_mutate(delegation_id, |attestations| {
-							let attestations = attestations.get_or_insert_with(Default::default);
-							attestations.try_push(claim_hash)
-						})
-						.expect("Couldn't initialise delegated attestation");
-					}
+					insert_attestation(claim_hash, details);
 				}
 			});
 
@@ -363,8 +366,8 @@ pub(crate) mod runtime {
 		pub fn build_with_keystore(self) -> sp_io::TestExternalities {
 			let mut ext = self.build();
 
-			let keystore = KeyStore::new();
-			ext.register_extension(KeystoreExt(Arc::new(keystore)));
+			let keystore = sp_keystore::testing::KeyStore::new();
+			ext.register_extension(sp_keystore::KeystoreExt(std::sync::Arc::new(keystore)));
 
 			ext
 		}

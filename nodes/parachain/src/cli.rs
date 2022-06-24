@@ -54,8 +54,9 @@ pub(crate) enum Subcommand {
 	/// Revert the chain to a previous state.
 	Revert(sc_cli::RevertCmd),
 
-	/// The custom benchmark subcommmand benchmarking runtime pallets.
-	#[clap(name = "benchmark", about = "Benchmark runtime pallets.")]
+	/// Sub-commands concerned with benchmarking.
+	/// The pallet benchmarking moved to the `pallet` sub-command.
+	#[clap(subcommand)]
 	Benchmark(frame_benchmarking_cli::BenchmarkCmd),
 
 	/// Try some command against runtime state.
@@ -135,6 +136,16 @@ pub(crate) struct Cli {
 
 	#[clap(flatten)]
 	pub(crate) run: cumulus_client_cli::RunCmd,
+
+	// Disable automatic hardware benchmarks.
+	///
+	/// By default these benchmarks are automatically ran at startup and measure
+	/// the CPU speed, the memory bandwidth and the disk speed.
+	///
+	/// The results are then printed out in the logs, and also sent as part of
+	/// telemetry, if telemetry is enabled.
+	#[clap(long)]
+	pub no_hardware_benchmarks: bool,
 
 	/// The name of the runtime which should get executed.
 	#[clap(long, default_value = DEFAULT_RUNTIME)]

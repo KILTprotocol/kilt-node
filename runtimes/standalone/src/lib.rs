@@ -28,7 +28,7 @@
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use codec::{Decode, Encode, MaxEncodedLen};
-use frame_support::traits::InstanceFilter;
+use delegation::DelegationAc;
 pub use frame_support::{
 	construct_runtime, parameter_types,
 	traits::{Currency, FindAuthor, Imbalance, KeyOwnerProofSystem, OnUnbalanced, Randomness},
@@ -38,6 +38,8 @@ pub use frame_support::{
 	},
 	ConsensusEngineId, StorageValue,
 };
+use frame_support::{traits::InstanceFilter, weights::ConstantMultiplier};
+pub use frame_system::Call as SystemCall;
 use frame_system::EnsureRoot;
 use pallet_grandpa::{fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
 use pallet_transaction_payment::{CurrencyAdapter, FeeDetails};
@@ -63,9 +65,10 @@ pub use did;
 pub use pallet_balances::Call as BalancesCall;
 pub use pallet_web3_names;
 use runtime_common::{
-	constants::{self, KILT, MICRO_KILT, MILLI_KILT},
+	authorization::{AuthorizationId, PalletAuthorize},
+	constants::{self, KILT, MILLI_KILT},
 	fees::ToAuthor,
-	pallet_id, AccountId, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature, SlowAdjustingFeeUpdate,
+	AccountId, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature, SlowAdjustingFeeUpdate,
 };
 
 #[cfg(feature = "std")]
@@ -114,10 +117,10 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("mashnet-node"),
 	impl_name: create_runtime_str!("mashnet-node"),
 	authoring_version: 4,
-	spec_version: 10620,
+	spec_version: 10700,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
-	transaction_version: 3,
+	transaction_version: 4,
 	state_version: 0,
 };
 
@@ -274,27 +277,11 @@ parameter_types! {
 	pub const UsableBalance: Balance = KILT;
 }
 
-impl kilt_launch::Config for Runtime {
-	type Event = Event;
-	type MaxClaims = MaxClaims;
-	type UsableBalance = UsableBalance;
-	type WeightInfo = ();
-	type AutoUnlockBound = AutoUnlockBound;
-	type PalletId = pallet_id::Launch;
-}
-
-parameter_types! {
-	pub const TransactionByteFee: Balance = MICRO_KILT;
-	/// This value increases the priority of `Operational` transactions by adding
-	/// a "virtual tip" that's equal to the `OperationalFeeMultiplier * final_fee`.
-	pub const OperationalFeeMultiplier: u8 = 5;
-}
-
 impl pallet_transaction_payment::Config for Runtime {
 	type OnChargeTransaction = CurrencyAdapter<Balances, runtime_common::fees::ToAuthor<Runtime>>;
-	type TransactionByteFee = TransactionByteFee;
-	type OperationalFeeMultiplier = OperationalFeeMultiplier;
+	type OperationalFeeMultiplier = constants::fee::OperationalFeeMultiplier;
 	type WeightToFee = IdentityFee<Balance>;
+	type LengthToFee = ConstantMultiplier<Balance, constants::fee::TransactionByteFee>;
 	type FeeMultiplierUpdate = SlowAdjustingFeeUpdate<Self>;
 }
 
@@ -316,6 +303,9 @@ impl attestation::Config for Runtime {
 	type Currency = Balances;
 	type Deposit = AttestationDeposit;
 	type MaxDelegatedAttestations = MaxDelegatedAttestations;
+	type AttesterId = DidIdentifier;
+	type AuthorizationId = AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>;
+	type AccessControl = PalletAuthorize<DelegationAc<Runtime>>;
 }
 
 parameter_types! {
@@ -458,7 +448,7 @@ impl pallet_web3_names::Config for Runtime {
 	type Event = Event;
 	type MaxNameLength = MaxNameLength;
 	type MinNameLength = MinNameLength;
-	type Web3Name = pallet_web3_names::web3_name::AsciiWeb3Name<Runtime, MinNameLength, MaxNameLength>;
+	type Web3Name = pallet_web3_names::web3_name::AsciiWeb3Name<Runtime>;
 	type Web3NameOwner = DidIdentifier;
 	type WeightInfo = ();
 }
@@ -491,17 +481,13 @@ impl pallet_authorship::Config for Runtime {
 	type EventHandler = ();
 }
 
-parameter_types! {
-	pub const MinVestedTransfer: Balance = constants::MIN_VESTED_TRANSFER_AMOUNT;
-}
-
 impl pallet_vesting::Config for Runtime {
 	type Event = Event;
 	type Currency = Balances;
 	type BlockNumberToBalance = ConvertInto;
 	// disable vested transfers by setting min amount to max balance
-	type MinVestedTransfer = MinVestedTransfer;
-	const MAX_VESTING_SCHEDULES: u32 = runtime_common::constants::MAX_VESTING_SCHEDULES;
+	type MinVestedTransfer = constants::MinVestedTransfer;
+	const MAX_VESTING_SCHEDULES: u32 = constants::MAX_VESTING_SCHEDULES;
 	type WeightInfo = ();
 }
 
@@ -693,7 +679,7 @@ construct_runtime!(
 
 		// Vesting. Usable initially, but removed once all vesting is finished.
 		Vesting: pallet_vesting = 33,
-		KiltLaunch: kilt_launch = 34,
+		// DELETED: KiltLaunch: kilt_launch = 34,
 		Utility: pallet_utility = 35,
 		// DELETED CrowdloanContributors: 36,
 
@@ -759,6 +745,7 @@ pub type SignedBlock = generic::SignedBlock<Block>;
 pub type BlockId = generic::BlockId<Block>;
 /// The SignedExtension to the basic transaction logic.
 pub type SignedExtra = (
+	frame_system::CheckNonZeroSender<Runtime>,
 	frame_system::CheckSpecVersion<Runtime>,
 	frame_system::CheckTxVersion<Runtime>,
 	frame_system::CheckGenesis<Runtime>,
@@ -769,20 +756,13 @@ pub type SignedExtra = (
 );
 /// Unchecked extrinsic type as expected by this runtime.
 pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<Address, Call, Signature, SignedExtra>;
+/// The payload being signed in transactions.
+pub type SignedPayload = generic::SignedPayload<Call, SignedExtra>;
 /// Extrinsic type that has already been checked.
 pub type CheckedExtrinsic = generic::CheckedExtrinsic<AccountId, Call, SignedExtra>;
 /// Executive: handles dispatch to the various Pallets.
-pub type Executive = frame_executive::Executive<
-	Runtime,
-	Block,
-	frame_system::ChainContext<Runtime>,
-	Runtime,
-	AllPalletsWithSystem,
-	(
-		delegation::migrations::v3::DelegationMigrationV3<Runtime>,
-		did::migrations::v4::DidMigrationV4<Runtime>,
-	),
->;
+pub type Executive =
+	frame_executive::Executive<Runtime, Block, frame_system::ChainContext<Runtime>, Runtime, AllPalletsWithSystem, ()>;
 
 impl_runtime_apis! {
 	impl sp_api::Core<Block> for Runtime {
@@ -933,7 +913,6 @@ impl_runtime_apis! {
 			list_benchmark!(list, extra, frame_system, SystemBench::<Runtime>);
 			list_benchmark!(list, extra, pallet_balances, Balances);
 			list_benchmark!(list, extra, pallet_timestamp, Timestamp);
-			list_benchmark!(list, extra, kilt_launch, KiltLaunch);
 			list_benchmark!(list, extra, pallet_vesting, Vesting);
 
 			list_benchmark!(list, extra, did, Did);
@@ -973,8 +952,6 @@ impl_runtime_apis! {
 				// System Events
 				hex_literal::hex!("26aa394eea5630e07c48ae0c9558cef780d41e5e16056765bc8461851072c9d7")
 					.to_vec().into(),
-				// KiltLaunch transfer account
-				hex_literal::hex!("6a3c793cec9dbe330b349dc4eea6801090f5e71f53b1b41ad11afb4a313a282c").to_vec().into(),
 			];
 
 			let mut batches = Vec::<BenchmarkBatch>::new();
@@ -984,7 +961,6 @@ impl_runtime_apis! {
 			add_benchmark!(params, batches, frame_system, SystemBench::<Runtime>);
 			add_benchmark!(params, batches, pallet_balances, Balances);
 			add_benchmark!(params, batches, pallet_timestamp, Timestamp);
-			add_benchmark!(params, batches, kilt_launch, KiltLaunch);
 			add_benchmark!(params, batches, pallet_vesting, Vesting);
 
 			add_benchmark!(params, batches, did, Did);

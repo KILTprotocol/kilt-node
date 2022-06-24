@@ -21,7 +21,7 @@
 use cumulus_primitives_core::ParaId;
 use hex_literal::hex;
 use runtime_common::{
-	constants::{INFLATION_CONFIG, KILT, MAX_COLLATOR_STAKE},
+	constants::{kilt_inflation_config, staking::MinCollatorStake, KILT, MAX_COLLATOR_STAKE},
 	AccountId, AuthorityId, Balance, BlockNumber,
 };
 use sc_service::ChainType;
@@ -29,9 +29,8 @@ use sc_telemetry::TelemetryEndpoints;
 use sp_core::{crypto::UncheckedInto, sr25519};
 use sp_runtime::traits::Zero;
 use spiritnet_runtime::{
-	BalancesConfig, CouncilConfig, GenesisConfig, InflationInfo, KiltLaunchConfig, MinCollatorStake,
-	ParachainInfoConfig, ParachainStakingConfig, SessionConfig, SystemConfig, TechnicalCommitteeConfig, VestingConfig,
-	WASM_BINARY,
+	BalancesConfig, CouncilConfig, GenesisConfig, InflationInfo, ParachainInfoConfig, ParachainStakingConfig,
+	SessionConfig, SystemConfig, TechnicalCommitteeConfig, VestingConfig, WASM_BINARY,
 };
 
 use crate::chain_spec::{get_account_id_from_seed, get_from_seed, DEFAULT_PARA_ID, TELEMETRY_URL};
@@ -108,7 +107,6 @@ pub fn get_chain_spec_dev() -> Result<ChainSpec, String> {
 						10000000 * KILT,
 					),
 				],
-				hex!["6a3c793cec9dbe330b349dc4eea6801090f5e71f53b1b41ad11afb4a313a282c"].into(),
 				DEFAULT_PARA_ID,
 			)
 		},
@@ -128,7 +126,6 @@ const WILT_COL_ACC_1: [u8; 32] = hex!["e6cf13c86a5f174acba79ca361dc429d89eb704c6
 const WILT_COL_SESSION_1: [u8; 32] = hex!["e29df39b74777495ca00cd7a316ce98c5225d7088ae924b122fe0e2e6a4b5569"];
 const WILT_COL_ACC_2: [u8; 32] = hex!["e8ed0c2a40fb5a0bbb24c38f5c8cd83d79498ac029ac9f87497677f5701e3d2c"];
 const WILT_COL_SESSION_2: [u8; 32] = hex!["7cacfbce640321ba84a85f41dfb43c2a2ea14ed789c096ad62ee0491599b0f44"];
-const WILT_TRANS_ACC: [u8; 32] = hex!["aaf5308b81f962ffdaccaa22352cc95b7bef70033d9d0d5a7023ec5681f05954"];
 
 pub fn get_chain_spec_wilt() -> Result<ChainSpec, String> {
 	let properties = get_properties("WILT", 15, 38);
@@ -155,9 +152,7 @@ pub fn get_chain_spec_wilt() -> Result<ChainSpec, String> {
 				vec![
 					(WILT_COL_ACC_1.into(), 40000 * KILT),
 					(WILT_COL_ACC_2.into(), 40000 * KILT),
-					(WILT_TRANS_ACC.into(), 10000 * KILT),
 				],
-				WILT_TRANS_ACC.into(),
 				id,
 			)
 		},
@@ -184,12 +179,11 @@ const RILT_COL_ACC_1: [u8; 32] = hex!["6a5c355bca369a54c334542fd91cf70822be92f21
 const RILT_COL_SESSION_1: [u8; 32] = hex!["66c4ca0710c2c8a92504f281d992000508ce255543016545014cf0bfbbe71429"];
 const RILT_COL_ACC_2: [u8; 32] = hex!["768538a941d1e4730c31830ab85a54ff34aaaad1f81bdd246db11802a57a5412"];
 const RILT_COL_SESSION_2: [u8; 32] = hex!["7cff6c7a53c4630a0a35f8793a04b663681575bbfa43dbe5848b220bc4bd1963"];
-const RILT_TRANS_ACC: [u8; 32] = hex!["6e016ca65cd213156c075da95c132bd1917762de0026ee539c720999aded3216"];
 
 pub fn get_chain_spec_rilt() -> Result<ChainSpec, String> {
 	let properties = get_properties("RILT", 15, 38);
 	let wasm = WASM_BINARY.ok_or("No WASM")?;
-	let id: ParaId = 2015.into();
+	let id: ParaId = 2086.into();
 
 	Ok(ChainSpec::from_genesis(
 		"RILT",
@@ -211,9 +205,7 @@ pub fn get_chain_spec_rilt() -> Result<ChainSpec, String> {
 				vec![
 					(RILT_COL_ACC_1.into(), 1_000_000 * KILT),
 					(RILT_COL_ACC_2.into(), 1_000_000 * KILT),
-					(RILT_TRANS_ACC.into(), 10_000 * KILT),
 				],
-				RILT_TRANS_ACC.into(),
 				id,
 			)
 		},
@@ -244,10 +236,6 @@ pub fn load_spiritnet_spec() -> Result<ChainSpec, String> {
 	ChainSpec::from_json_bytes(&include_bytes!("../../res/spiritnet.json")[..])
 }
 
-pub fn kilt_inflation_config() -> InflationInfo {
-	InflationInfo::from(INFLATION_CONFIG)
-}
-
 #[allow(clippy::too_many_arguments)]
 fn testnet_genesis(
 	wasm_binary: &[u8],
@@ -256,7 +244,6 @@ fn testnet_genesis(
 	max_candidate_stake: Balance,
 	initial_authorities: Vec<(AccountId, AuthorityId)>,
 	endowed_accounts: Vec<(AccountId, Balance)>,
-	transfer_account: AccountId,
 	id: ParaId,
 ) -> GenesisConfig {
 	type VestingPeriod = BlockNumber;
@@ -291,19 +278,6 @@ fn testnet_genesis(
 				.collect(),
 		},
 		parachain_info: ParachainInfoConfig { parachain_id: id },
-		kilt_launch: KiltLaunchConfig {
-			vesting: claimable_accounts
-				.iter()
-				.cloned()
-				.map(|(who, amount, vesting_length, _)| (who, vesting_length, amount))
-				.collect(),
-			balance_locks: claimable_accounts
-				.iter()
-				.cloned()
-				.map(|(who, amount, _, locking_length)| (who, locking_length, amount))
-				.collect(),
-			transfer_account,
-		},
 		vesting: VestingConfig {
 			vesting: owned_accounts
 				.iter()
@@ -342,6 +316,7 @@ fn testnet_genesis(
 		},
 		treasury: Default::default(),
 		technical_membership: Default::default(),
+		tips_membership: Default::default(),
 		democracy: Default::default(),
 	}
 }

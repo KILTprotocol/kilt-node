@@ -27,7 +27,6 @@ use frame_support::{
 	weights::Weight,
 };
 use pallet_authorship::EventHandler;
-use runtime_common::constants::{staking::NETWORK_REWARD_RATE, treasury::INITIAL_PERIOD_LENGTH, KILT};
 use sp_consensus_aura::sr25519::AuthorityId;
 use sp_core::H256;
 use sp_runtime::{
@@ -38,16 +37,16 @@ use sp_runtime::{
 };
 use sp_std::fmt::Debug;
 
-pub use runtime_common::BlockNumber;
+pub(crate) type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
+pub(crate) type Block = frame_system::mocking::MockBlock<Test>;
+pub(crate) type Balance = u128;
+pub(crate) type AccountId = u64;
+pub(crate) type BlockNumber = u64;
 
-pub type AccountId = u64;
-pub type Balance = u128;
-pub const BLOCKS_PER_ROUND: BlockNumber = 5;
-pub const DECIMALS: Balance = KILT;
-
-type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
-type Block = frame_system::mocking::MockBlock<Test>;
-
+pub(crate) const MILLI_KILT: Balance = 10u128.pow(12);
+pub(crate) const MAX_COLLATOR_STAKE: Balance = 200_000 * 1000 * MILLI_KILT;
+pub(crate) const BLOCKS_PER_ROUND: BlockNumber = 5;
+pub(crate) const DECIMALS: Balance = 1000 * MILLI_KILT;
 pub(crate) const TREASURY_ACC: AccountId = u64::MAX;
 
 // Configure a mock runtime to test the pallet.
@@ -145,8 +144,8 @@ parameter_types! {
 	pub const MinDelegatorStake: Balance = 5;
 	pub const MinDelegation: Balance = 3;
 	pub const MaxUnstakeRequests: u32 = 6;
-	pub const NetworkRewardRate: Perquintill = NETWORK_REWARD_RATE;
-	pub const NetworkRewardStart: BlockNumber = INITIAL_PERIOD_LENGTH;
+	pub const NetworkRewardRate: Perquintill = Perquintill::from_percent(10);
+	pub const NetworkRewardStart: BlockNumber = 5 * 5 * 60 * 24 * 36525 / 100;
 }
 
 pub struct ToBeneficiary();
@@ -180,6 +179,7 @@ impl Config for Test {
 	type NetworkRewardStart = NetworkRewardStart;
 	type NetworkRewardBeneficiary = ToBeneficiary;
 	type WeightInfo = ();
+	const BLOCKS_PER_YEAR: Self::BlockNumber = 5 * 60 * 24 * 36525 / 100;
 }
 
 impl_opaque_keys! {
@@ -236,6 +236,7 @@ impl Default for ExtBuilder {
 			collators: vec![],
 			blocks_per_round: BLOCKS_PER_ROUND,
 			inflation_config: InflationInfo::new(
+				<Test as Config>::BLOCKS_PER_YEAR,
 				Perquintill::from_percent(10),
 				Perquintill::from_percent(15),
 				Perquintill::from_percent(40),
@@ -246,21 +247,25 @@ impl Default for ExtBuilder {
 }
 
 impl ExtBuilder {
+	#[must_use]
 	pub(crate) fn with_balances(mut self, balances: Vec<(AccountId, Balance)>) -> Self {
 		self.balances = balances;
 		self
 	}
 
+	#[must_use]
 	pub(crate) fn with_collators(mut self, collators: Vec<(AccountId, Balance)>) -> Self {
 		self.collators = collators;
 		self
 	}
 
+	#[must_use]
 	pub(crate) fn with_delegators(mut self, delegators: Vec<(AccountId, AccountId, Balance)>) -> Self {
 		self.delegators = delegators;
 		self
 	}
 
+	#[must_use]
 	pub(crate) fn with_inflation(
 		mut self,
 		col_max: u64,
@@ -270,6 +275,7 @@ impl ExtBuilder {
 		blocks_per_round: BlockNumber,
 	) -> Self {
 		self.inflation_config = InflationInfo::new(
+			<Test as Config>::BLOCKS_PER_YEAR,
 			Perquintill::from_percent(col_max),
 			Perquintill::from_percent(col_rewards),
 			Perquintill::from_percent(d_max),
@@ -280,6 +286,7 @@ impl ExtBuilder {
 		self
 	}
 
+	#[must_use]
 	pub(crate) fn set_blocks_per_round(mut self, blocks_per_round: BlockNumber) -> Self {
 		self.blocks_per_round = blocks_per_round;
 		self

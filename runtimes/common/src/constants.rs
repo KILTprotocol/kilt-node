@@ -20,7 +20,9 @@ use frame_support::{
 	parameter_types,
 	weights::{constants::WEIGHT_PER_SECOND, Weight},
 };
-use sp_runtime::{Perbill, Perquintill};
+use sp_runtime::{Perbill, Percent, Perquintill};
+
+use parachain_staking::InflationInfo;
 
 use crate::{Balance, BlockNumber};
 
@@ -41,7 +43,6 @@ pub const DAYS: BlockNumber = HOURS * 24;
 // Julian year as Substrate handles it
 pub const BLOCKS_PER_YEAR: BlockNumber = DAYS * 36525 / 100;
 
-pub const MIN_VESTED_TRANSFER_AMOUNT: Balance = 100 * MILLI_KILT;
 pub const MAX_COLLATOR_STAKE: Balance = 200_000 * KILT;
 
 /// One KILT
@@ -66,7 +67,6 @@ pub const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
 /// We allow for 0.5 seconds of compute with a 12 second average block time.
 pub const MAXIMUM_BLOCK_WEIGHT: Weight = WEIGHT_PER_SECOND / 2;
 
-/// Inflation configuration which is used at genesis
 pub const INFLATION_CONFIG: (Perquintill, Perquintill, Perquintill, Perquintill) = (
 	// max collator staking rate
 	Perquintill::from_percent(40),
@@ -78,8 +78,20 @@ pub const INFLATION_CONFIG: (Perquintill, Perquintill, Perquintill, Perquintill)
 	Perquintill::from_percent(8),
 );
 
-/// Copied from Kusama & Polkadot runtime
-pub const MAX_VESTING_SCHEDULES: u32 = 28;
+/// Inflation configuration which is used at genesis
+pub fn kilt_inflation_config() -> InflationInfo {
+	InflationInfo::new(
+		BLOCKS_PER_YEAR,
+		// max collator staking rate
+		Perquintill::from_percent(40),
+		// collator reward rate
+		Perquintill::from_percent(10),
+		// max delegator staking rate
+		Perquintill::from_percent(10),
+		// delegator reward rate
+		Perquintill::from_percent(8),
+	)
+}
 
 /// Calculate the storage deposit based on the number of storage items and the
 /// combined byte size of those items.
@@ -91,17 +103,31 @@ pub const fn deposit(items: u32, bytes: u32) -> Balance {
 /// The size is checked in the runtime by a test.
 pub const MAX_INDICES_BYTE_LENGTH: u32 = 49;
 
+/// Copied from Kusama & Polkadot runtime
+pub const MAX_VESTING_SCHEDULES: u32 = 28;
+
 parameter_types! {
+	/// Vesting Pallet. Copied from Kusama & Polkadot runtime
+	pub const MinVestedTransfer: Balance = 100 * MILLI_KILT;
+	/// Deposits per byte
 	pub const ByteDeposit: Balance = deposit(0, 1);
+	/// Index Pallet. Deposit taken for an account index
 	pub const IndicesDeposit: Balance = deposit(1, MAX_INDICES_BYTE_LENGTH);
+	/// CType Pallet. Per byte fee for a ctype.
+	pub const CtypeFee: Balance = MILLI_KILT;
 }
 
 pub mod attestation {
 	use super::*;
 
 	/// The size is checked in the runtime by a test.
-	pub const MAX_ATTESTATION_BYTE_LENGTH: u32 = 178;
+	pub const MAX_ATTESTATION_BYTE_LENGTH: u32 = 179;
 	pub const ATTESTATION_DEPOSIT: Balance = deposit(2, MAX_ATTESTATION_BYTE_LENGTH);
+
+	parameter_types! {
+		pub const MaxDelegatedAttestations: u32 = 1000;
+		pub const AttestationDeposit: Balance = ATTESTATION_DEPOSIT;
+	}
 }
 
 pub mod delegation {
@@ -113,6 +139,16 @@ pub mod delegation {
 	pub const MAX_REVOCATIONS: u32 = 5;
 	pub const MAX_REMOVALS: u32 = MAX_REVOCATIONS;
 	pub const MAX_CHILDREN: u32 = 1000;
+
+	parameter_types! {
+		pub const MaxSignatureByteLength: u16 = MAX_SIGNATURE_BYTE_LENGTH;
+		pub const MaxParentChecks: u32 = MAX_PARENT_CHECKS;
+		pub const MaxRevocations: u32 = MAX_REVOCATIONS;
+		pub const MaxRemovals: u32 = MAX_REMOVALS;
+		#[derive(Clone)]
+		pub const MaxChildren: u32 = MAX_CHILDREN;
+		pub const DelegationDeposit: Balance = DELEGATION_DEPOSIT;
+	}
 }
 
 pub mod staking {
@@ -148,6 +184,42 @@ pub mod staking {
 	pub const MIN_DELEGATOR_STAKE: Balance = 20 * KILT;
 
 	pub const NETWORK_REWARD_RATE: Perquintill = Perquintill::from_percent(10);
+
+	parameter_types! {
+		/// Minimum round length is 1 hour
+		pub const MinBlocksPerRound: BlockNumber = MIN_BLOCKS_PER_ROUND;
+		/// Default length of a round/session is 2 hours
+		pub const DefaultBlocksPerRound: BlockNumber = DEFAULT_BLOCKS_PER_ROUND;
+		/// Unstaked balance can be unlocked after 7 days
+		pub const StakeDuration: BlockNumber = STAKE_DURATION;
+		/// Collator exit requests are delayed by 4 hours (2 rounds/sessions)
+		pub const ExitQueueDelay: u32 = 2;
+		/// Minimum 16 collators selected per round, default at genesis and minimum forever after
+		pub const MinCollators: u32 = MIN_COLLATORS;
+		/// At least 4 candidates which cannot leave the network if there are no other candidates.
+		pub const MinRequiredCollators: u32 = 4;
+		/// We only allow one delegation per round.
+		pub const MaxDelegationsPerRound: u32 = 1;
+		/// Maximum 25 delegators per collator at launch, might be increased later
+		#[derive(Debug, PartialEq)]
+		pub const MaxDelegatorsPerCollator: u32 = MAX_DELEGATORS_PER_COLLATOR;
+		/// Maximum 1 collator per delegator at launch, will be increased later
+		#[derive(Debug, PartialEq)]
+		pub const MaxCollatorsPerDelegator: u32 = 1;
+		/// Minimum stake required to be reserved to be a collator is 10_000
+		pub const MinCollatorStake: Balance = 10_000 * KILT;
+		/// Minimum stake required to be reserved to be a delegator is 1000
+		pub const MinDelegatorStake: Balance = MIN_DELEGATOR_STAKE;
+		/// Maximum number of collator candidates
+		#[derive(Debug, PartialEq)]
+		pub const MaxCollatorCandidates: u32 = MAX_CANDIDATES;
+		/// Maximum number of concurrent requests to unlock unstaked balance
+		pub const MaxUnstakeRequests: u32 = 10;
+		/// The starting block number for the network rewards
+		pub const NetworkRewardStart: BlockNumber = super::treasury::INITIAL_PERIOD_LENGTH;
+		/// The rate in percent for the network rewards
+		pub const NetworkRewardRate: Perquintill = NETWORK_REWARD_RATE;
+	}
 }
 
 pub mod governance {
@@ -204,6 +276,24 @@ pub mod governance {
 	pub const TECHNICAL_MOTION_DURATION: BlockNumber = 4 * MINUTES;
 	#[cfg(not(feature = "fast-gov"))]
 	pub const TECHNICAL_MOTION_DURATION: BlockNumber = 3 * DAYS;
+
+	parameter_types! {
+		// Democracy Pallet
+		pub const LaunchPeriod: BlockNumber = LAUNCH_PERIOD;
+		pub const VotingPeriod: BlockNumber = VOTING_PERIOD;
+		pub const FastTrackVotingPeriod: BlockNumber = FAST_TRACK_VOTING_PERIOD;
+		pub const MinimumDeposit: Balance = MIN_DEPOSIT;
+		pub const EnactmentPeriod: BlockNumber = ENACTMENT_PERIOD;
+		pub const CooloffPeriod: BlockNumber = COOLOFF_PERIOD;
+		// Council Pallet
+		pub const CouncilMotionDuration: BlockNumber = COUNCIL_MOTION_DURATION;
+		pub const CouncilMaxProposals: u32 = 100;
+		pub const CouncilMaxMembers: u32 = 100;
+		// Technical Committee
+		pub const TechnicalMotionDuration: BlockNumber = TECHNICAL_MOTION_DURATION;
+		pub const TechnicalMaxProposals: u32 = 100;
+		pub const TechnicalMaxMembers: u32 = 100;
+	}
 }
 
 pub mod did {
@@ -230,6 +320,27 @@ pub mod did {
 	pub const MAX_NUMBER_OF_TYPES_PER_SERVICE: u32 = 1;
 	pub const MAX_SERVICE_URL_LENGTH: u32 = 200;
 	pub const MAX_NUMBER_OF_URLS_PER_SERVICE: u32 = 1;
+
+	parameter_types! {
+		pub const MaxNewKeyAgreementKeys: u32 = MAX_KEY_AGREEMENT_KEYS;
+		#[derive(Debug, Clone, PartialEq)]
+		pub const MaxUrlLength: u32 = MAX_URL_LENGTH;
+		pub const MaxPublicKeysPerDid: u32 = MAX_PUBLIC_KEYS_PER_DID;
+		#[derive(Debug, Clone, PartialEq)]
+		pub const MaxTotalKeyAgreementKeys: u32 = MAX_TOTAL_KEY_AGREEMENT_KEYS;
+		#[derive(Debug, Clone, PartialEq)]
+		pub const MaxEndpointUrlsCount: u32 = MAX_ENDPOINT_URLS_COUNT;
+		// Standalone block time is half the duration of a parachain block.
+		pub const MaxBlocksTxValidity: BlockNumber = MAX_BLOCKS_TX_VALIDITY;
+		pub const DidDeposit: Balance = DID_DEPOSIT;
+		pub const DidFee: Balance = DID_FEE;
+		pub const MaxNumberOfServicesPerDid: u32 = MAX_NUMBER_OF_SERVICES_PER_DID;
+		pub const MaxServiceIdLength: u32 = MAX_SERVICE_ID_LENGTH;
+		pub const MaxServiceTypeLength: u32 = MAX_SERVICE_TYPE_LENGTH;
+		pub const MaxServiceUrlLength: u32 = MAX_SERVICE_URL_LENGTH;
+		pub const MaxNumberOfTypesPerService: u32 = MAX_NUMBER_OF_TYPES_PER_SERVICE;
+		pub const MaxNumberOfUrlsPerService: u32 = MAX_NUMBER_OF_URLS_PER_SERVICE;
+	}
 }
 
 pub mod did_lookup {
@@ -238,6 +349,10 @@ pub mod did_lookup {
 	/// The size is checked in the runtime by a test.
 	pub const MAX_CONNECTION_BYTE_LENGTH: u32 = 80;
 	pub const DID_CONNECTION_DEPOSIT: Balance = deposit(1, MAX_CONNECTION_BYTE_LENGTH);
+
+	parameter_types! {
+		pub const DidLookupDeposit: Balance = DID_CONNECTION_DEPOSIT;
+	}
 }
 
 pub mod treasury {
@@ -246,6 +361,11 @@ pub mod treasury {
 	pub const INITIAL_PERIOD_LENGTH: BlockNumber = BLOCKS_PER_YEAR.saturating_mul(5);
 	const YEARLY_REWARD: Balance = 2_000_000u128 * KILT;
 	pub const INITIAL_PERIOD_REWARD_PER_BLOCK: Balance = YEARLY_REWARD / (BLOCKS_PER_YEAR as Balance);
+
+	parameter_types! {
+		pub const InitialPeriodLength: BlockNumber = INITIAL_PERIOD_LENGTH;
+		pub const InitialPeriodReward: Balance = INITIAL_PERIOD_REWARD_PER_BLOCK;
+	}
 }
 
 pub mod proxy {
@@ -272,6 +392,12 @@ pub mod web3_names {
 	/// The size is checked in the runtime by a test.
 	pub const MAX_NAME_BYTE_LENGTH: u32 = 121;
 	pub const DEPOSIT: Balance = deposit(2, MAX_NAME_BYTE_LENGTH);
+
+	parameter_types! {
+		pub const Web3NameDeposit: Balance = DEPOSIT;
+		pub const MinNameLength: u32 = MIN_LENGTH;
+		pub const MaxNameLength: u32 = MAX_LENGTH;
+	}
 }
 
 pub mod preimage {
@@ -279,5 +405,38 @@ pub mod preimage {
 	parameter_types! {
 		pub const PreimageMaxSize: u32 = 4096 * 1024;
 		pub const PreimageBaseDeposit: Balance = deposit(2, 64);
+	}
+}
+
+pub mod tips {
+	use super::*;
+
+	parameter_types! {
+		pub const MaximumReasonLength: u32 = 16384;
+		pub const TipCountdown: BlockNumber = DAYS;
+		pub const TipFindersFee: Percent = Percent::from_percent(20);
+		pub const TipReportDepositBase: Balance = deposit(1, 1);
+	}
+}
+
+pub mod fee {
+	use super::*;
+
+	parameter_types! {
+		/// This value increases the priority of `Operational` transactions by adding
+		/// a "virtual tip" that's equal to the `OperationalFeeMultiplier * final_fee`.
+		pub const OperationalFeeMultiplier: u8 = 5;
+		pub const TransactionByteFee: Balance = MICRO_KILT;
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+	// TODO: static assert
+	#[allow(clippy::assertions_on_constants)]
+	#[test]
+	fn blocks_per_year_saturation() {
+		assert!(BLOCKS_PER_YEAR < u64::MAX);
 	}
 }

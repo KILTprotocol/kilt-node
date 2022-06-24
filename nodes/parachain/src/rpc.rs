@@ -27,13 +27,15 @@ use std::sync::Arc;
 
 use polkadot_service::AuxStore;
 use runtime_common::{AccountId, Balance, Block, Index};
-use sc_service::Error;
 use sc_transaction_pool_api::TransactionPool;
 use sp_api::ProvideRuntimeApi;
 use sp_block_builder::BlockBuilder;
 use sp_blockchain::{Error as BlockChainError, HeaderBackend, HeaderMetadata};
 
 pub use sc_rpc_api::DenyUnsafe;
+
+/// A type representing all RPC extensions.
+pub type RpcExtension = jsonrpsee::RpcModule<()>;
 
 /// Full client dependencies.
 pub struct FullDeps<C, P> {
@@ -46,7 +48,7 @@ pub struct FullDeps<C, P> {
 }
 
 /// Instantiate all full RPC extensions.
-pub fn create_full<C, P>(deps: FullDeps<C, P>) -> Result<jsonrpc_core::IoHandler<sc_rpc::Metadata>, Error>
+pub fn create_full<C, P>(deps: FullDeps<C, P>) -> Result<RpcExtension, Box<dyn std::error::Error + Send + Sync>>
 where
 	C: ProvideRuntimeApi<Block>,
 	C: AuxStore,
@@ -57,29 +59,24 @@ where
 	C::Api: BlockBuilder<Block>,
 	P: TransactionPool + Sync + Send + 'static,
 {
-	use frame_rpc_system::{FullSystem, SystemApi};
-	use pallet_transaction_payment_rpc::{TransactionPayment, TransactionPaymentApi};
+	use frame_rpc_system::{System, SystemApiServer};
+	use pallet_transaction_payment_rpc::{TransactionPayment, TransactionPaymentApiServer};
 
-	let mut io = jsonrpc_core::IoHandler::default();
+	let mut module = RpcExtension::new(());
 	let FullDeps {
 		client,
 		pool,
 		deny_unsafe,
 	} = deps;
 
-	io.extend_with(SystemApi::to_delegate(FullSystem::new(
-		client.clone(),
-		pool,
-		deny_unsafe,
-	)));
-
-	io.extend_with(TransactionPaymentApi::to_delegate(TransactionPayment::new(client)));
+	module.merge(System::new(client.clone(), pool, deny_unsafe).into_rpc())?;
+	module.merge(TransactionPayment::new(client).into_rpc())?;
 
 	// Extend this RPC with a custom API by using the following syntax.
 	// `YourRpcStruct` should have a reference to a client, which is needed
 	// to call into the runtime.
-	// `io.extend_with(YourRpcTrait::to_delegate(YourRpcStruct::
-	// new(ReferenceToClient, ...)));`
+	// `module.merge(YourRpcTrait::into_rpc(YourRpcStruct::new(ReferenceToClient,
+	// ...)))?;`
 
-	Ok(io)
+	Ok(module)
 }

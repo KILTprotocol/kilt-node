@@ -103,7 +103,7 @@ impl pallet_balances::Config for Test {
 	type WeightInfo = ();
 }
 
-pub(crate) type TestWeb3Name = AsciiWeb3Name<Test, MinNameLength, MaxNameLength>;
+pub(crate) type TestWeb3Name = AsciiWeb3Name<Test>;
 pub(crate) type TestWeb3NameOwner = SubjectId;
 pub(crate) type TestWeb3NamePayer = AccountId;
 pub(crate) type TestOwnerOrigin = mock_origin::EnsureDoubleOrigin<TestWeb3NamePayer, TestWeb3NameOwner>;
@@ -156,16 +156,19 @@ pub struct ExtBuilder {
 }
 
 impl ExtBuilder {
+	#[must_use]
 	pub fn with_balances(mut self, balances: Vec<(TestWeb3NamePayer, Balance)>) -> Self {
 		self.balances = balances;
 		self
 	}
 
+	#[must_use]
 	pub fn with_web3_names(mut self, web3_names: Vec<(TestWeb3NameOwner, TestWeb3Name, TestWeb3NamePayer)>) -> Self {
 		self.claimed_web3_names = web3_names;
 		self
 	}
 
+	#[must_use]
 	pub fn with_banned_web3_names(mut self, web3_names: Vec<TestWeb3Name>) -> Self {
 		self.banned_web3_names = web3_names;
 		self

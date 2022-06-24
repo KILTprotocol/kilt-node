@@ -16,9 +16,6 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-#![allow(clippy::from_over_into)]
-#![allow(dead_code)]
-
 use frame_support::{
 	parameter_types,
 	traits::{Currency, OnUnbalanced, ReservableCurrency},
@@ -26,15 +23,13 @@ use frame_support::{
 };
 use frame_system::EnsureSigned;
 use pallet_balances::NegativeImbalance;
-use runtime_common::{constants::MICRO_KILT, AccountId, Balance};
 use sp_core::{ecdsa, ed25519, sr25519, Pair};
-use sp_keystore::{testing::KeyStore, KeystoreExt};
 use sp_runtime::{
 	testing::{Header, H256},
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
-	MultiSigner, SaturatedConversion,
+	MultiSignature, MultiSigner, SaturatedConversion,
 };
-use sp_std::sync::Arc;
+use sp_std::vec::Vec;
 
 use crate::{
 	self as did,
@@ -50,14 +45,20 @@ use crate::{
 #[cfg(not(feature = "runtime-benchmarks"))]
 use crate::{DidRawOrigin, EnsureDidOrigin};
 
-pub type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
-pub type Block = frame_system::mocking::MockBlock<Test>;
+pub(crate) type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
+pub(crate) type Block = frame_system::mocking::MockBlock<Test>;
+pub(crate) type Hash = sp_core::H256;
+pub(crate) type Balance = u128;
+pub(crate) type Signature = MultiSignature;
+pub(crate) type AccountPublic = <Signature as Verify>::Signer;
+pub(crate) type AccountId = <AccountPublic as IdentifyAccount>::AccountId;
+pub(crate) type Index = u64;
+pub(crate) type BlockNumber = u64;
 
-pub type TestDidIdentifier = runtime_common::AccountId;
-pub type TestKeyId = KeyIdOf<Test>;
-pub type TestBlockNumber = runtime_common::BlockNumber;
-pub type TestCtypeOwner = TestDidIdentifier;
-pub type TestCtypeHash = runtime_common::Hash;
+pub(crate) type DidIdentifier = AccountId;
+pub(crate) type CtypeHash = Hash;
+
+const MICRO_KILT: Balance = 10u128.pow(9);
 
 frame_support::construct_runtime!(
 	pub enum Test where
@@ -80,11 +81,11 @@ parameter_types! {
 impl frame_system::Config for Test {
 	type Origin = Origin;
 	type Call = Call;
-	type Index = u64;
-	type BlockNumber = u64;
-	type Hash = runtime_common::Hash;
+	type Index = Index;
+	type BlockNumber = BlockNumber;
+	type Hash = Hash;
 	type Hashing = BlakeTwo256;
-	type AccountId = <<runtime_common::Signature as Verify>::Signer as IdentifyAccount>::AccountId;
+	type AccountId = <<Signature as Verify>::Signer as IdentifyAccount>::AccountId;
 	type Lookup = IdentityLookup<Self::AccountId>;
 	type Header = Header;
 	type Event = ();
@@ -138,10 +139,10 @@ where
 }
 
 impl Config for Test {
-	type DidIdentifier = TestDidIdentifier;
+	type DidIdentifier = DidIdentifier;
 	type Origin = Origin;
 	type Call = Call;
-	type EnsureOrigin = EnsureSigned<TestDidIdentifier>;
+	type EnsureOrigin = EnsureSigned<DidIdentifier>;
 	type OriginSuccess = AccountId;
 	type Event = ();
 	type Currency = Balances;
@@ -185,16 +186,16 @@ parameter_types! {
 
 impl ctype::Config for Test {
 	#[cfg(feature = "runtime-benchmarks")]
-	type EnsureOrigin = EnsureSigned<TestDidIdentifier>;
+	type EnsureOrigin = EnsureSigned<DidIdentifier>;
 	#[cfg(feature = "runtime-benchmarks")]
-	type OriginSuccess = runtime_common::AccountId;
+	type OriginSuccess = AccountId;
 
 	#[cfg(not(feature = "runtime-benchmarks"))]
-	type EnsureOrigin = EnsureDidOrigin<TestCtypeOwner, runtime_common::AccountId>;
+	type EnsureOrigin = EnsureDidOrigin<DidIdentifier, AccountId>;
 	#[cfg(not(feature = "runtime-benchmarks"))]
-	type OriginSuccess = DidRawOrigin<runtime_common::AccountId, TestCtypeOwner>;
+	type OriginSuccess = DidRawOrigin<AccountId, DidIdentifier>;
 
-	type CtypeCreatorId = TestCtypeOwner;
+	type CtypeCreatorId = DidIdentifier;
 	type Event = ();
 	type WeightInfo = ();
 	type Currency = Balances;
@@ -202,12 +203,9 @@ impl ctype::Config for Test {
 	type FeeCollector = ();
 }
 
-#[cfg(test)]
-pub(crate) const ACCOUNT_00: runtime_common::AccountId = runtime_common::AccountId::new([1u8; 32]);
-#[cfg(test)]
-pub(crate) const ACCOUNT_01: runtime_common::AccountId = runtime_common::AccountId::new([2u8; 32]);
-#[cfg(test)]
-pub(crate) const ACCOUNT_FEE: runtime_common::AccountId = runtime_common::AccountId::new([u8::MAX; 32]);
+pub(crate) const ACCOUNT_00: AccountId = AccountId::new([1u8; 32]);
+pub(crate) const ACCOUNT_01: AccountId = AccountId::new([2u8; 32]);
+pub(crate) const ACCOUNT_FEE: AccountId = AccountId::new([u8::MAX; 32]);
 
 const DEFAULT_AUTH_SEED: [u8; 32] = [4u8; 32];
 const ALTERNATIVE_AUTH_SEED: [u8; 32] = [40u8; 32];
@@ -237,15 +235,15 @@ pub(crate) fn fill_public_keys(mut did_details: DidDetails<Test>) -> DidDetails<
 	did_details
 }
 
-pub fn get_did_identifier_from_ed25519_key(public_key: ed25519::Public) -> TestDidIdentifier {
+pub fn get_did_identifier_from_ed25519_key(public_key: ed25519::Public) -> DidIdentifier {
 	MultiSigner::from(public_key).into_account()
 }
 
-pub fn get_did_identifier_from_sr25519_key(public_key: sr25519::Public) -> TestDidIdentifier {
+pub fn get_did_identifier_from_sr25519_key(public_key: sr25519::Public) -> DidIdentifier {
 	MultiSigner::from(public_key).into_account()
 }
 
-pub fn get_did_identifier_from_ecdsa_key(public_key: ecdsa::Public) -> TestDidIdentifier {
+pub fn get_did_identifier_from_ecdsa_key(public_key: ecdsa::Public) -> DidIdentifier {
 	MultiSigner::from(public_key).into_account()
 }
 
@@ -329,7 +327,7 @@ pub fn get_ecdsa_delegation_key(default: bool) -> ecdsa::Pair {
 	}
 }
 
-pub fn generate_key_id(key: &DidPublicKey) -> TestKeyId {
+pub fn generate_key_id(key: &DidPublicKey) -> KeyIdOf<Test> {
 	crate_utils::calculate_key_id::<Test>(key)
 }
 
@@ -387,14 +385,14 @@ impl DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 	// Always return a System::remark() extrinsic call
 	#[cfg(feature = "runtime-benchmarks")]
 	fn get_call_for_did_call_benchmark() -> Self {
-		Call::System(frame_system::Call::remark { remark: vec![] })
+		Call::System(frame_system::Call::remark { remark: sp_std::vec![] })
 	}
 }
 
 pub fn generate_test_did_call(
 	verification_key_required: DidVerificationKeyRelationship,
-	caller: TestDidIdentifier,
-	submitter: runtime_common::AccountId,
+	caller: DidIdentifier,
+	submitter: AccountId,
 ) -> DidAuthorizedCallOperationWithVerificationRelationship<Test> {
 	let call = match verification_key_required {
 		DidVerificationKeyRelationship::AssertionMethod => get_attestation_key_call(),
@@ -413,43 +411,48 @@ pub fn generate_test_did_call(
 		verification_key_relationship: verification_key_required,
 	}
 }
-
+#[cfg(test)]
 #[allow(unused_must_use)]
-pub fn initialize_logger() {
+pub(crate) fn initialize_logger() {
 	env_logger::builder().is_test(true).try_init();
 }
 
 #[derive(Clone, Default)]
-pub struct ExtBuilder {
-	dids_stored: Vec<(TestDidIdentifier, DidDetails<Test>)>,
-	service_endpoints: Vec<(TestDidIdentifier, Vec<DidEndpoint<Test>>)>,
-	deleted_dids: Vec<TestDidIdentifier>,
-	ctypes_stored: Vec<(TestCtypeHash, TestCtypeOwner)>,
+pub(crate) struct ExtBuilder {
+	dids_stored: Vec<(DidIdentifier, DidDetails<Test>)>,
+	service_endpoints: Vec<(DidIdentifier, Vec<DidEndpoint<Test>>)>,
+	deleted_dids: Vec<DidIdentifier>,
+	ctypes_stored: Vec<(CtypeHash, DidIdentifier)>,
 	balances: Vec<(AccountIdOf<Test>, Balance)>,
 }
 
 impl ExtBuilder {
-	pub fn with_dids(mut self, dids: Vec<(TestDidIdentifier, DidDetails<Test>)>) -> Self {
+	#[must_use]
+	pub fn with_dids(mut self, dids: Vec<(DidIdentifier, DidDetails<Test>)>) -> Self {
 		self.dids_stored = dids;
 		self
 	}
 
-	pub fn with_endpoints(mut self, endpoints: Vec<(TestDidIdentifier, Vec<DidEndpoint<Test>>)>) -> Self {
+	#[must_use]
+	pub fn with_endpoints(mut self, endpoints: Vec<(DidIdentifier, Vec<DidEndpoint<Test>>)>) -> Self {
 		self.service_endpoints = endpoints;
 		self
 	}
 
+	#[must_use]
 	pub(crate) fn with_balances(mut self, balances: Vec<(AccountIdOf<Test>, Balance)>) -> Self {
 		self.balances = balances;
 		self
 	}
 
-	pub fn with_ctypes(mut self, ctypes: Vec<(TestCtypeHash, TestCtypeOwner)>) -> Self {
+	#[must_use]
+	pub fn with_ctypes(mut self, ctypes: Vec<(CtypeHash, DidIdentifier)>) -> Self {
 		self.ctypes_stored = ctypes;
 		self
 	}
 
-	pub fn with_deleted_dids(mut self, dids: Vec<TestDidIdentifier>) -> Self {
+	#[must_use]
+	pub fn with_deleted_dids(mut self, dids: Vec<DidIdentifier>) -> Self {
 		self.deleted_dids = dids;
 		self
 	}
@@ -495,8 +498,8 @@ impl ExtBuilder {
 	pub fn build_with_keystore(self) -> sp_io::TestExternalities {
 		let mut ext = self.build(None);
 
-		let keystore = KeyStore::new();
-		ext.register_extension(KeystoreExt(Arc::new(keystore)));
+		let keystore = sp_keystore::testing::KeyStore::new();
+		ext.register_extension(sp_keystore::KeystoreExt(sp_std::sync::Arc::new(keystore)));
 
 		ext
 	}

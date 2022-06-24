@@ -20,14 +20,21 @@ use frame_support::parameter_types;
 use kilt_support::mock::{mock_origin, SubjectId};
 use sp_runtime::{
 	testing::Header,
-	traits::{BlakeTwo256, IdentityLookup},
+	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
+	MultiSignature,
 };
 
 use crate as pallet_did_lookup;
-use runtime_common::{AccountId, AccountPublic, Balance, BlockHashCount, BlockNumber, Hash, Index, Signature};
 
-type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
-type Block = frame_system::mocking::MockBlock<Test>;
+pub(crate) type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
+pub(crate) type Block = frame_system::mocking::MockBlock<Test>;
+pub(crate) type Hash = sp_core::H256;
+pub(crate) type Balance = u128;
+pub(crate) type Signature = MultiSignature;
+pub(crate) type AccountPublic = <Signature as Verify>::Signer;
+pub(crate) type AccountId = <AccountPublic as IdentifyAccount>::AccountId;
+pub(crate) type Index = u64;
+pub(crate) type BlockNumber = u64;
 
 frame_support::construct_runtime!(
 	pub enum Test where
@@ -44,6 +51,7 @@ frame_support::construct_runtime!(
 
 parameter_types! {
 	pub const SS58Prefix: u8 = 38;
+	pub const BlockHashCount: BlockNumber = 2400;
 }
 
 impl frame_system::Config for Test {
@@ -116,8 +124,8 @@ impl mock_origin::Config for Test {
 	type SubjectId = SubjectId;
 }
 
-pub(crate) const ACCOUNT_00: runtime_common::AccountId = runtime_common::AccountId::new([1u8; 32]);
-pub(crate) const ACCOUNT_01: runtime_common::AccountId = runtime_common::AccountId::new([2u8; 32]);
+pub(crate) const ACCOUNT_00: AccountId = AccountId::new([1u8; 32]);
+pub(crate) const ACCOUNT_01: AccountId = AccountId::new([2u8; 32]);
 pub(crate) const DID_00: SubjectId = SubjectId(ACCOUNT_00);
 pub(crate) const DID_01: SubjectId = SubjectId(ACCOUNT_01);
 
@@ -128,11 +136,13 @@ pub struct ExtBuilder {
 }
 
 impl ExtBuilder {
+	#[must_use]
 	pub fn with_balances(mut self, balances: Vec<(AccountId, Balance)>) -> Self {
 		self.balances = balances;
 		self
 	}
 
+	#[must_use]
 	pub fn with_connections(mut self, connections: Vec<(AccountId, SubjectId, AccountId)>) -> Self {
 		self.connections = connections;
 		self
