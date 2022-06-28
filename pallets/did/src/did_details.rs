@@ -38,6 +38,7 @@ use crate::{
 
 /// Types of verification keys a DID can control.
 #[derive(Clone, Decode, RuntimeDebug, Encode, Eq, Ord, PartialEq, PartialOrd, TypeInfo, MaxEncodedLen)]
+#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 pub enum DidVerificationKey {
 	/// An Ed25519 public key.
 	Ed25519(ed25519::Public),
@@ -89,6 +90,7 @@ impl From<ecdsa::Public> for DidVerificationKey {
 
 /// Types of encryption keys a DID can control.
 #[derive(Clone, Copy, Decode, RuntimeDebug, Encode, Eq, Ord, PartialEq, PartialOrd, TypeInfo, MaxEncodedLen)]
+#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 pub enum DidEncryptionKey {
 	/// An X25519 public key.
 	X25519([u8; 32]),
@@ -96,6 +98,7 @@ pub enum DidEncryptionKey {
 
 /// A general public key under the control of the DID.
 #[derive(Clone, Decode, RuntimeDebug, Encode, Eq, Ord, PartialEq, PartialOrd, TypeInfo, MaxEncodedLen)]
+#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 pub enum DidPublicKey {
 	/// A verification key, used to generate and verify signatures.
 	PublicVerificationKey(DidVerificationKey),
@@ -234,11 +237,12 @@ impl<I: AsRef<[u8; 32]>> DidVerifiableIdentifier for I {
 #[derive(Clone, RuntimeDebug, Decode, Encode, PartialEq, Ord, PartialOrd, Eq, TypeInfo, MaxEncodedLen)]
 #[scale_info(skip_type_params(T))]
 #[codec(mel_bound())]
-pub struct DidPublicKeyDetails<T: Config> {
+#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
+pub struct DidPublicKeyDetails<BlockNumber: MaxEncodedLen> {
 	/// A public key the DID controls.
 	pub key: DidPublicKey,
 	/// The block number in which the verification key was added to the DID.
-	pub block_number: BlockNumberOf<T>,
+	pub block_number: BlockNumber,
 }
 
 /// The details associated to a DID identity.
@@ -249,16 +253,16 @@ pub struct DidPublicKeyDetails<T: Config> {
 pub struct DidDetails<T: Config> {
 	/// The ID of the authentication key, used to authenticate DID-related
 	/// operations.
-	pub(crate) authentication_key: KeyIdOf<T>,
+	pub authentication_key: KeyIdOf<T>,
 	/// The set of the key agreement key IDs, which can be used to encrypt
 	/// data addressed to the DID subject.
-	pub(crate) key_agreement_keys: DidKeyAgreementKeySet<T>,
+	pub key_agreement_keys: DidKeyAgreementKeySet<T>,
 	/// \[OPTIONAL\] The ID of the delegation key, used to verify the
 	/// signatures of the delegations created by the DID subject.
-	pub(crate) delegation_key: Option<KeyIdOf<T>>,
+	pub delegation_key: Option<KeyIdOf<T>>,
 	/// \[OPTIONAL\] The ID of the attestation key, used to verify the
 	/// signatures of the attestations created by the DID subject.
-	pub(crate) attestation_key: Option<KeyIdOf<T>>,
+	pub attestation_key: Option<KeyIdOf<T>>,
 	/// The map of public keys, with the key label as
 	/// the key map and the tuple (key, addition_block_number) as the map
 	/// value.
@@ -268,14 +272,14 @@ pub struct DidDetails<T: Config> {
 	/// the old attestation keys that have been rotated, i.e., they cannot
 	/// be used to create new attestations but can still be used to verify
 	/// previously issued attestations.
-	pub(crate) public_keys: DidPublicKeyMap<T>,
+	pub public_keys: DidPublicKeyMap<T>,
 	/// The counter used to avoid replay attacks, which is checked and
 	/// updated upon each DID operation involving with the subject as the
 	/// creator.
-	pub(crate) last_tx_counter: u64,
+	pub last_tx_counter: u64,
 	/// The deposit that was taken to incentivise fair use of the on chain
 	/// storage.
-	pub(crate) deposit: Deposit<AccountIdOf<T>, BalanceOf<T>>,
+	pub deposit: Deposit<AccountIdOf<T>, BalanceOf<T>>,
 }
 
 impl<T: Config> DidDetails<T> {
@@ -530,27 +534,17 @@ impl<T: Config> DidDetails<T> {
 	}
 
 	/// Increase the tx counter of the DID.
-	pub fn increase_tx_counter(&mut self) {
+	pub fn increase_tx_counter(&mut self) -> u64 {
 		// Since we have transaction mortality now, we can safely wrap nonces around.
 		self.last_tx_counter = self.last_tx_counter.wrapping_add(1);
-	}
-
-	/// Returns the last used tx counter for the DID.
-	pub fn get_tx_counter_value(&self) -> u64 {
 		self.last_tx_counter
-	}
-
-	/// Set the DID tx counter to an arbitrary value.
-	#[cfg(any(feature = "mock", test))]
-	pub fn set_tx_counter(&mut self, value: u64) {
-		self.last_tx_counter = value;
 	}
 }
 
 pub(crate) type DidNewKeyAgreementKeySet<T> = BoundedBTreeSet<DidEncryptionKey, <T as Config>::MaxNewKeyAgreementKeys>;
 pub(crate) type DidKeyAgreementKeySet<T> = BoundedBTreeSet<KeyIdOf<T>, <T as Config>::MaxTotalKeyAgreementKeys>;
 pub(crate) type DidPublicKeyMap<T> =
-	BoundedBTreeMap<KeyIdOf<T>, DidPublicKeyDetails<T>, <T as Config>::MaxPublicKeysPerDid>;
+	BoundedBTreeMap<KeyIdOf<T>, DidPublicKeyDetails<BlockNumberOf<T>>, <T as Config>::MaxPublicKeysPerDid>;
 
 /// The details of a new DID to create.
 #[derive(Clone, RuntimeDebug, Decode, Encode, PartialEq, TypeInfo)]

@@ -20,6 +20,7 @@ serde = {version = "1.0.137", optional = true, features = ["derive"]}
 # RPC
 frame-system-rpc-runtime-api = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.24"}
 pallet-transaction-payment-rpc-runtime-api = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.24"}
+did-rpc-runtime-api = {path = "../../rpc/did/runtime-api", default-features = false}
 
 # KILT pallets & primitives
 attestation = {default-features = false, path = "../../pallets/attestation"}
@@ -142,6 +143,7 @@ std = [
   "cumulus-primitives-timestamp/std",
   "delegation/std",
   "did/std",
+  "did-rpc-runtime-api/std",
   "frame-benchmarking/std",
   "frame-executive/std",
   "frame-support/std",

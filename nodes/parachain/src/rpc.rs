@@ -25,17 +25,15 @@
 
 use std::sync::Arc;
 
-use polkadot_service::AuxStore;
-use runtime_common::{AccountId, Balance, Block, Index};
+use jsonrpsee::RpcModule;
+
+pub use sc_rpc_api::DenyUnsafe;
 use sc_transaction_pool_api::TransactionPool;
 use sp_api::ProvideRuntimeApi;
 use sp_block_builder::BlockBuilder;
 use sp_blockchain::{Error as BlockChainError, HeaderBackend, HeaderMetadata};
 
-pub use sc_rpc_api::DenyUnsafe;
-
-/// A type representing all RPC extensions.
-pub type RpcExtension = jsonrpsee::RpcModule<()>;
+use runtime_common::{AccountId, Balance, Block, BlockNumber, DidIdentifier, Hash, Index};
 
 /// Full client dependencies.
 pub struct FullDeps<C, P> {
@@ -48,21 +46,22 @@ pub struct FullDeps<C, P> {
 }
 
 /// Instantiate all full RPC extensions.
-pub fn create_full<C, P>(deps: FullDeps<C, P>) -> Result<RpcExtension, Box<dyn std::error::Error + Send + Sync>>
+pub fn create_full<C, P>(deps: FullDeps<C, P>) -> Result<RpcModule<()>, Box<dyn std::error::Error + Send + Sync>>
 where
 	C: ProvideRuntimeApi<Block>,
-	C: AuxStore,
 	C: HeaderBackend<Block> + HeaderMetadata<Block, Error = BlockChainError> + 'static,
 	C: Send + Sync + 'static,
 	C::Api: frame_rpc_system::AccountNonceApi<Block, AccountId, Index>,
 	C::Api: pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>,
 	C::Api: BlockBuilder<Block>,
-	P: TransactionPool + Sync + Send + 'static,
+	C::Api: did_rpc::DidRuntimeApi<Block, DidIdentifier, AccountId, Balance, Hash, BlockNumber>,
+	P: TransactionPool + 'static,
 {
+	use did_rpc::{DidApiServer, DidQuery};
 	use frame_rpc_system::{System, SystemApiServer};
 	use pallet_transaction_payment_rpc::{TransactionPayment, TransactionPaymentApiServer};
 
-	let mut module = RpcExtension::new(());
+	let mut module = RpcModule::new(());
 	let FullDeps {
 		client,
 		pool,
@@ -70,13 +69,13 @@ where
 	} = deps;
 
 	module.merge(System::new(client.clone(), pool, deny_unsafe).into_rpc())?;
-	module.merge(TransactionPayment::new(client).into_rpc())?;
-
+	module.merge(TransactionPayment::new(client.clone()).into_rpc())?;
 	// Extend this RPC with a custom API by using the following syntax.
 	// `YourRpcStruct` should have a reference to a client, which is needed
 	// to call into the runtime.
-	// `module.merge(YourRpcTrait::into_rpc(YourRpcStruct::new(ReferenceToClient,
-	// ...)))?;`
+	//
+	// `module.merge(YourRpcStruct::new(ReferenceToClient).into_rpc())?;`
+	module.merge(DidQuery::new(client).into_rpc())?;
 
 	Ok(module)
 }
