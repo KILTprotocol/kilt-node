@@ -1097,7 +1097,7 @@ impl_runtime_apis! {
 				})
 				.map(|(owner_info, details)| {
 					let accounts = pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(&owner_info.owner).collect();
-					let service_endpoints = did::ServiceEndpoints::<Runtime>::iter_prefix(&owner_info.owner).map(|e|From::from(e.1)).collect();
+					let service_endpoints = did::ServiceEndpoints::<Runtime>::iter_prefix(&owner_info.owner).map(|e| From::from(e.1)).collect();
 
 					did_rpc_runtime_api::RawDidLinkedInfo {
 						identifier: owner_info.owner,
@@ -1125,7 +1125,7 @@ impl_runtime_apis! {
 				.map(|(connection_record, details)| {
 					let w3n = pallet_web3_names::Names::<Runtime>::get(&connection_record.did).map(Into::into);
 					let accounts = pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(&connection_record.did).collect();
-					let service_endpoints = did::ServiceEndpoints::<Runtime>::iter_prefix(&connection_record.did).map(|e|From::from(e.1)).collect();
+					let service_endpoints = did::ServiceEndpoints::<Runtime>::iter_prefix(&connection_record.did).map(|e| From::from(e.1)).collect();
 
 					did_rpc_runtime_api::RawDidLinkedInfo {
 						identifier: connection_record.did,
@@ -1149,7 +1149,7 @@ impl_runtime_apis! {
 			let details = did::Did::<Runtime>::get(&did)?;
 			let w3n = pallet_web3_names::Names::<Runtime>::get(&did).map(Into::into);
 			let accounts = pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(&did).collect();
-			let service_endpoints = did::ServiceEndpoints::<Runtime>::iter_prefix(&did).map(|e|From::from(e.1)).collect();
+			let service_endpoints = did::ServiceEndpoints::<Runtime>::iter_prefix(&did).map(|e| From::from(e.1)).collect();
 
 			Some(did_rpc_runtime_api::RawDidLinkedInfo {
 				identifier: did,
