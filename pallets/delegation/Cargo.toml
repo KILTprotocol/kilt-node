@@ -4,7 +4,7 @@ description = "Enables creating and revoking root nodes of delegation hierarchie
 edition = "2021"
 name = "delegation"
 repository = "https://github.com/KILTprotocol/mashnet-node"
-version = "1.6.2"
+version = "1.7.0"
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]

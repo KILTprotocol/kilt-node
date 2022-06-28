@@ -4,7 +4,7 @@ description = "Shared traits and structs used across the KILT pallets"
 edition = "2021"
 name = "kilt-support"
 repository = "https://github.com/KILTprotocol/mashnet-node"
-version = "1.6.2"
+version = "1.7.0"
 
 [dependencies]
 codec = {package = "parity-scale-codec", version = "3.1.2", default-features = false, features = ["derive"]}

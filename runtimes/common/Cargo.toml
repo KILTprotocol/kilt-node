@@ -2,7 +2,7 @@
 authors = ["KILT <info@kilt.io>"]
 edition = "2021"
 name = "runtime-common"
-version = "1.6.2"
+version = "1.7.0"
 
 [dev-dependencies]
 sp-io = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.24"}
