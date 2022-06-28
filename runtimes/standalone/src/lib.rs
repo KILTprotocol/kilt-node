@@ -1053,10 +1053,7 @@ impl_runtime_apis! {
 	impl frame_try_runtime::TryRuntime<Block> for Runtime {
 		fn on_runtime_upgrade() -> (frame_support::pallet_prelude::Weight, frame_support::pallet_prelude::Weight) {
 			log::info!("try-runtime::on_runtime_upgrade standalone runtime.");
-			let weight = Executive::try_runtime_upgrade().map_err(|err|{
-				log::info!("try-runtime::on_runtime_upgrade failed with: {:?}", err);
-				err
-			}).unwrap();
+			let weight = Executive::try_runtime_upgrade().unwrap();
 			(weight, BlockWeights::get().max_block)
 		}
 		fn execute_block_no_check(block: Block) -> frame_support::pallet_prelude::Weight {
