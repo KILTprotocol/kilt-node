@@ -20,6 +20,7 @@ sp-keystore = {branch = "polkadot-v0.9.24", git = "https://github.com/paritytech
 [dependencies]
 codec = {package = "parity-scale-codec", version = "3.1.2", default-features = false, features = ["derive"]}
 scale-info = {version = "2.1.1", default-features = false, features = ["derive"]}
+serde = {version = "1.0.136", optional = true}
 
 # KILT
 kilt-support = {default-features = false, path = "../../support"}
@@ -46,6 +47,7 @@ runtime-benchmarks = [
 ]
 
 std = [
+  "serde",
   "codec/std",
   "frame-benchmarking/std",
   "frame-support/std",

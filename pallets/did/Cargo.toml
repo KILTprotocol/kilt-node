@@ -30,6 +30,7 @@ kilt-support = {default-features = false, path = "../../support"}
 # External dependencies
 hex = {default-features = false, features = ["alloc"], version = "0.4.3"}
 log = "0.4.17"
+serde = {version = "1.0.136", optional = true, features = ["derive"]}
 
 codec = {package = "parity-scale-codec", version = "3.1.2", default-features = false, features = ["derive"]}
 frame-support = {branch = "polkadot-v0.9.24", default-features = false, git = "https://github.com/paritytech/substrate"}
@@ -70,6 +71,7 @@ std = [
   "log/std",
   "pallet-balances/std",
   "scale-info/std",
+  "serde",
   "sp-core/std",
   "sp-io/std",
   "sp-keystore/std",

@@ -16,6 +16,7 @@ substrate-build-script-utils = {git = "https://github.com/paritytech/substrate",
 [dependencies]
 
 # Internal dependencies
+did-rpc = {path = "../../rpc/did"}
 peregrine-runtime = {path = "../../runtimes/peregrine"}
 runtime-common = {path = "../../runtimes/common"}
 spiritnet-runtime = {path = "../../runtimes/spiritnet"}
@@ -37,15 +38,15 @@ frame-rpc-system = {package = "substrate-frame-rpc-system", git = "https://githu
 pallet-transaction-payment-rpc = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.24"}
 sc-basic-authorship = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.24"}
 sc-chain-spec = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.24"}
-sc-cli = {git = "https://github.com/paritytech/substrate", features = ["wasmtime"] , branch = "polkadot-v0.9.24"}
+sc-cli = {git = "https://github.com/paritytech/substrate", features = ["wasmtime"], branch = "polkadot-v0.9.24"}
 sc-client-api = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.24"}
 sc-consensus = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.24"}
-sc-executor = {git = "https://github.com/paritytech/substrate", features = ["wasmtime"] , branch = "polkadot-v0.9.24"}
+sc-executor = {git = "https://github.com/paritytech/substrate", features = ["wasmtime"], branch = "polkadot-v0.9.24"}
 sc-keystore = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.24"}
 sc-network = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.24"}
 sc-rpc = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.24"}
 sc-rpc-api = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.24"}
-sc-service = {git = "https://github.com/paritytech/substrate", features = ["wasmtime"] , branch = "polkadot-v0.9.24"}
+sc-service = {git = "https://github.com/paritytech/substrate", features = ["wasmtime"], branch = "polkadot-v0.9.24"}
 sc-sysinfo = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.24"}
 sc-telemetry = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.24"}
 sc-tracing = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.24"}
