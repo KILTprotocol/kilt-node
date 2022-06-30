@@ -44,9 +44,7 @@ use sp_std::{cmp::Ordering, prelude::*};
 use sp_version::RuntimeVersion;
 
 use delegation::DelegationAc;
-use pallet_did_lookup::{
-	migrations::EthereumMigration,
-};
+use pallet_did_lookup::migrations::EthereumMigration;
 pub use parachain_staking::InflationInfo;
 
 use runtime_common::{

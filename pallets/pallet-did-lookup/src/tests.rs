@@ -21,12 +21,18 @@ use frame_support::{assert_noop, assert_ok, crypto::ecdsa::ECDSAExt};
 use kilt_support::{deposit::Deposit, mock::mock_origin};
 use sha3::{Digest, Keccak256};
 use sp_runtime::{
-	app_crypto::{sr25519, Pair, ecdsa},
+	app_crypto::{ecdsa, sr25519, Pair},
 	traits::IdentifyAccount,
 	MultiSignature, MultiSigner,
 };
 
-use crate::{mock::*, ConnectedAccounts, ConnectedDids, ConnectionRecord, Error, AssociateAccountRequest, linkable_account::LinkableAccountId, account::{EthereumSignature, AccountId20}, signature::get_wrapped_payload};
+use crate::{
+	account::{AccountId20, EthereumSignature},
+	linkable_account::LinkableAccountId,
+	mock::*,
+	signature::get_wrapped_payload,
+	AssociateAccountRequest, ConnectedAccounts, ConnectedDids, ConnectionRecord, Error,
+};
 
 #[test]
 fn test_add_association_sender() {
@@ -106,7 +112,9 @@ fn test_add_association_account() {
 					}
 				})
 			);
-			assert!(ConnectedAccounts::<Test>::get(DID_00, &LinkableAccountId::from(account_hash_alice.clone())).is_some());
+			assert!(
+				ConnectedAccounts::<Test>::get(DID_00, &LinkableAccountId::from(account_hash_alice.clone())).is_some()
+			);
 			assert_eq!(
 				Balances::reserved_balance(ACCOUNT_00),
 				<Test as crate::Config>::Deposit::get()
@@ -132,8 +140,12 @@ fn test_add_association_account() {
 					}
 				})
 			);
-			assert!(ConnectedAccounts::<Test>::get(DID_00, &LinkableAccountId::from(account_hash_alice.clone())).is_none());
-			assert!(ConnectedAccounts::<Test>::get(DID_01, &LinkableAccountId::from(account_hash_alice.clone())).is_some());
+			assert!(
+				ConnectedAccounts::<Test>::get(DID_00, &LinkableAccountId::from(account_hash_alice.clone())).is_none()
+			);
+			assert!(
+				ConnectedAccounts::<Test>::get(DID_01, &LinkableAccountId::from(account_hash_alice.clone())).is_some()
+			);
 			assert_eq!(
 				Balances::reserved_balance(ACCOUNT_00),
 				<Test as crate::Config>::Deposit::get()
@@ -156,8 +168,12 @@ fn test_add_association_account() {
 					}
 				})
 			);
-			assert!(ConnectedAccounts::<Test>::get(DID_00, &LinkableAccountId::from(account_hash_alice.clone())).is_none());
-			assert!(ConnectedAccounts::<Test>::get(DID_01, &LinkableAccountId::from(account_hash_alice.clone())).is_some());
+			assert!(
+				ConnectedAccounts::<Test>::get(DID_00, &LinkableAccountId::from(account_hash_alice.clone())).is_none()
+			);
+			assert!(
+				ConnectedAccounts::<Test>::get(DID_01, &LinkableAccountId::from(account_hash_alice.clone())).is_some()
+			);
 			assert_eq!(Balances::reserved_balance(ACCOUNT_00), 0);
 			assert_eq!(
 				Balances::reserved_balance(ACCOUNT_01),
@@ -176,11 +192,8 @@ fn test_add_eth_association() {
 			let eth_pair = ecdsa::Pair::generate().0;
 			let eth_account = AccountId20(eth_pair.public().to_eth_address().unwrap());
 
-			let wrapped_payload = get_wrapped_payload(
-				&Encode::encode(&(&DID_00, expire_at))[..], 
-				&eth_account,
-			);
-			
+			let wrapped_payload = get_wrapped_payload(&Encode::encode(&(&DID_00, expire_at))[..], &eth_account);
+
 			let sig = eth_pair.sign_prehashed(&Keccak256::digest(&wrapped_payload).try_into().unwrap());
 
 			// new association. No overwrite
@@ -205,7 +218,6 @@ fn test_add_eth_association() {
 				Balances::reserved_balance(ACCOUNT_00),
 				<Test as crate::Config>::Deposit::get()
 			);
-
 		});
 }
 
@@ -312,7 +324,10 @@ fn test_remove_association_account_not_found() {
 			assert_eq!(ConnectedDids::<Test>::get(&LinkableAccountId::from(ACCOUNT_00)), None);
 
 			assert_noop!(
-				DidLookup::remove_account_association(mock_origin::DoubleOrigin(ACCOUNT_01, DID_01).into(), LinkableAccountId::from(ACCOUNT_00)),
+				DidLookup::remove_account_association(
+					mock_origin::DoubleOrigin(ACCOUNT_01, DID_01).into(),
+					LinkableAccountId::from(ACCOUNT_00)
+				),
 				Error::<Test>::AssociationNotFound
 			);
 		});
@@ -326,7 +341,10 @@ fn test_remove_association_account_not_authorized() {
 		.build()
 		.execute_with(|| {
 			assert_noop!(
-				DidLookup::remove_account_association(mock_origin::DoubleOrigin(ACCOUNT_01, DID_00).into(), ACCOUNT_00.into()),
+				DidLookup::remove_account_association(
+					mock_origin::DoubleOrigin(ACCOUNT_01, DID_00).into(),
+					ACCOUNT_00.into()
+				),
 				Error::<Test>::NotAuthorized
 			);
 			assert_eq!(

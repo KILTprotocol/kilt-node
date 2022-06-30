@@ -128,7 +128,6 @@ pub(crate) const DID_00: SubjectId = SubjectId(ACCOUNT_00);
 pub(crate) const DID_01: SubjectId = SubjectId(ACCOUNT_01);
 pub(crate) const LINKABLE_ACCOUNT_00: LinkableAccountId = LinkableAccountId::AccountId32(ACCOUNT_00);
 
-
 #[derive(Clone, Default)]
 pub struct ExtBuilder {
 	balances: Vec<(AccountId, Balance)>,

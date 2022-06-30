@@ -146,7 +146,7 @@ fn test_derive_did_key_lookup() {
 	assert_eq!(
 		Call::DidLookup(pallet_did_lookup::Call::associate_account {
 			req: AssociateAccountRequest::Substrate(
-				AccountId::new([1u8; 32]), 
+				AccountId::new([1u8; 32]),
 				sp_runtime::MultiSignature::from(sp_core::ed25519::Signature([0; 64]))
 			),
 			expiration: BlockNumber::default(),

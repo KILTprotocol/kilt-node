@@ -43,7 +43,7 @@ mod benchmarking;
 
 pub mod linkable_account;
 
-use codec::{Encode, Decode, MaxEncodedLen};
+use codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 
 pub use crate::{default_weights::WeightInfo, pallet::*};
@@ -59,7 +59,7 @@ pub enum AssociateAccountRequest {
 
 #[frame_support::pallet]
 pub mod pallet {
-	use super::{WeightInfo, linkable_account::{LinkableAccountId}, AssociateAccountRequest};
+	use super::{linkable_account::LinkableAccountId, AssociateAccountRequest, WeightInfo};
 
 	use frame_support::{
 		ensure,
@@ -68,7 +68,7 @@ pub mod pallet {
 	};
 	use frame_system::pallet_prelude::*;
 	use kilt_support::{deposit::Deposit, traits::CallSources};
-	use sp_runtime::{traits::{BlockNumberProvider, Verify}};
+	use sp_runtime::traits::{BlockNumberProvider, Verify};
 
 	pub use crate::connection_record::ConnectionRecord;
 
@@ -90,8 +90,6 @@ pub mod pallet {
 	pub(crate) type ConnectionRecordOf<T> = ConnectionRecord<DidIdentifierOf<T>, AccountIdOf<T>, BalanceOf<T>>;
 
 	pub const STORAGE_VERSION: StorageVersion = StorageVersion::new(2);
-
-
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
@@ -166,8 +164,10 @@ pub mod pallet {
 	}
 
 	#[pallet::call]
-	impl<T: Config> Pallet<T>  where T::AccountId: Into<LinkableAccountId> {
-		
+	impl<T: Config> Pallet<T>
+	where
+		T::AccountId: Into<LinkableAccountId>,
+	{
 		/// Associate the given account to the DID that authorized this call.
 		///
 		/// The account has to sign the DID and a blocknumber after which the
@@ -214,10 +214,9 @@ pub mod pallet {
 					ensure!(
 						proof.verify(&get_wrapped_payload(&encoded_payload[..], &acc)[..], &acc),
 						Error::<T>::NotAuthorized
-					);		
+					);
 					Self::add_association(sender, did_identifier, acc.into())?;
-
-				},
+				}
 				AssociateAccountRequest::Ethereum(acc, proof) => {
 					ensure!(
 						proof.verify(&get_wrapped_payload(&encoded_payload[..], &acc)[..], &acc),
@@ -226,7 +225,7 @@ pub mod pallet {
 					Self::add_association(sender, did_identifier, acc.into())?;
 				}
 			};
-			
+
 			Ok(())
 		}
 

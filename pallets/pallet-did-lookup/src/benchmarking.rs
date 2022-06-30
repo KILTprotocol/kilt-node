@@ -20,17 +20,21 @@
 //! Benchmarking
 
 use crate::{
-	signature::get_wrapped_payload, AccountIdOf, AccountId20, Call, Config, ConnectedAccounts, ConnectedDids, CurrencyOf, Pallet, linkable_account::{LinkableAccountId}, AssociateAccountRequest,
+	linkable_account::LinkableAccountId, signature::get_wrapped_payload, AccountId20, AccountIdOf,
+	AssociateAccountRequest, Call, Config, ConnectedAccounts, ConnectedDids, CurrencyOf, Pallet,
 };
 
 use codec::Encode;
 use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
-use frame_support::{traits::{Currency, Get}, crypto::ecdsa::ECDSAExt};
+use frame_support::{
+	crypto::ecdsa::ECDSAExt,
+	traits::{Currency, Get},
+};
 use frame_system::RawOrigin;
 use kilt_support::traits::GenerateBenchmarkOrigin;
-use sha3::{Keccak256, Digest};
-use sp_io::crypto::{sr25519_generate, ecdsa_generate};
-use sp_runtime::{app_crypto::{sr25519}, KeyTypeId, AccountId32};
+use sha3::{Digest, Keccak256};
+use sp_io::crypto::{ecdsa_generate, sr25519_generate};
+use sp_runtime::{app_crypto::sr25519, AccountId32, KeyTypeId};
 
 const SEED: u32 = 0;
 
@@ -94,10 +98,10 @@ benchmarks! {
 		let eth_account = AccountId20(eth_public_key.to_eth_address().unwrap());
 
 		let wrapped_payload = get_wrapped_payload(
-			&Encode::encode(&(&did, expire_at))[..], 
+			&Encode::encode(&(&did, expire_at))[..],
 			&eth_account,
 		);
-		
+
 		let sig = sp_io::crypto::ecdsa_sign_prehashed(
 			KeyTypeId(*b"aura"),
 			&eth_public_key,

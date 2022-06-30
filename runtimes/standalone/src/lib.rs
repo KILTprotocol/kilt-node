@@ -68,12 +68,8 @@ pub use ctype;
 pub use delegation;
 pub use did;
 pub use pallet_balances::Call as BalancesCall;
-use pallet_did_lookup::{
-	migrations::EthereumMigration,
-};
+use pallet_did_lookup::migrations::EthereumMigration;
 pub use pallet_web3_names;
-<<<<<<< HEAD
-=======
 
 use runtime_common::{
 	authorization::{AuthorizationId, PalletAuthorize},
@@ -81,7 +77,6 @@ use runtime_common::{
 	fees::ToAuthor,
 	AccountId, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature, SlowAdjustingFeeUpdate,
 };
->>>>>>> 327ce17f (feat: support linking ethereum accounts to DIDs)
 
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;

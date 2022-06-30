@@ -25,7 +25,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use codec::{Decode, Encode, MaxEncodedLen};
-use frame_support::{RuntimeDebug, crypto::ecdsa::ECDSAExt};
+use frame_support::{crypto::ecdsa::ECDSAExt, RuntimeDebug};
 use scale_info::TypeInfo;
 use sha3::{Digest, Keccak256};
 use sp_core::{ecdsa, H160, H256};
