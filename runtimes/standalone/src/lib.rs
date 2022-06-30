@@ -28,17 +28,14 @@
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use codec::{Decode, Encode, MaxEncodedLen};
-use delegation::DelegationAc;
-pub use frame_support::{
+use frame_support::{
 	construct_runtime, parameter_types,
-	traits::{Currency, FindAuthor, Imbalance, KeyOwnerProofSystem, OnUnbalanced, Randomness},
+	traits::{Currency, InstanceFilter, KeyOwnerProofSystem},
 	weights::{
-		constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
-		IdentityFee, Weight,
+		constants::{RocksDbWeight, WEIGHT_PER_SECOND},
+		ConstantMultiplier, IdentityFee,
 	},
-	ConsensusEngineId, StorageValue,
 };
-use frame_support::{traits::InstanceFilter, weights::ConstantMultiplier};
 pub use frame_system::Call as SystemCall;
 use frame_system::EnsureRoot;
 use pallet_grandpa::{fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
@@ -52,11 +49,19 @@ use sp_runtime::{
 	transaction_validity::{TransactionSource, TransactionValidity},
 	ApplyExtrinsicResult, RuntimeDebug,
 };
-pub use sp_runtime::{Perbill, Permill};
 use sp_std::prelude::*;
 use sp_version::RuntimeVersion;
 
+use delegation::DelegationAc;
+use runtime_common::{
+	authorization::{AuthorizationId, PalletAuthorize},
+	constants::{self, KILT, MILLI_KILT},
+	fees::ToAuthor,
+	AccountId, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature, SlowAdjustingFeeUpdate,
+};
+
 pub use pallet_timestamp::Call as TimestampCall;
+pub use sp_runtime::{Perbill, Permill};
 
 pub use attestation;
 pub use ctype;
@@ -65,12 +70,6 @@ pub use did;
 pub use pallet_balances::Call as BalancesCall;
 pub use pallet_web3_names;
 pub use public_credentials as pallet_public_credentials;
-use runtime_common::{
-	authorization::{AuthorizationId, PalletAuthorize},
-	constants::{self, KILT, MILLI_KILT},
-	fees::ToAuthor,
-	AccountId, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature, SlowAdjustingFeeUpdate,
-};
 
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
@@ -118,10 +117,10 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("mashnet-node"),
 	impl_name: create_runtime_str!("mashnet-node"),
 	authoring_version: 4,
-	spec_version: 10620,
+	spec_version: 10700,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
-	transaction_version: 3,
+	transaction_version: 4,
 	state_version: 0,
 };
 
@@ -415,10 +414,6 @@ impl did::Config for Runtime {
 	type WeightInfo = ();
 }
 
-parameter_types! {
-	pub const DidLookupDeposit: Balance = constants::did_lookup::DID_CONNECTION_DEPOSIT;
-}
-
 impl pallet_did_lookup::Config for Runtime {
 	type Event = Event;
 	type Signature = Signature;
@@ -426,7 +421,7 @@ impl pallet_did_lookup::Config for Runtime {
 	type DidIdentifier = DidIdentifier;
 
 	type Currency = Balances;
-	type Deposit = DidLookupDeposit;
+	type Deposit = constants::did_lookup::DidLookupDeposit;
 
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
@@ -434,21 +429,15 @@ impl pallet_did_lookup::Config for Runtime {
 	type WeightInfo = ();
 }
 
-parameter_types! {
-	pub const Web3NameDeposit: Balance = constants::web3_names::DEPOSIT;
-	pub const MinNameLength: u32 = constants::web3_names::MIN_LENGTH;
-	pub const MaxNameLength: u32 = constants::web3_names::MAX_LENGTH;
-}
-
 impl pallet_web3_names::Config for Runtime {
 	type BanOrigin = EnsureRoot<AccountId>;
 	type OwnerOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
 	type Currency = Balances;
-	type Deposit = Web3NameDeposit;
+	type Deposit = constants::web3_names::Web3NameDeposit;
 	type Event = Event;
-	type MaxNameLength = MaxNameLength;
-	type MinNameLength = MinNameLength;
+	type MaxNameLength = constants::web3_names::MaxNameLength;
+	type MinNameLength = constants::web3_names::MinNameLength;
 	type Web3Name = pallet_web3_names::web3_name::AsciiWeb3Name<Runtime>;
 	type Web3NameOwner = DidIdentifier;
 	type WeightInfo = ();
@@ -512,7 +501,8 @@ impl pallet_public_credentials::Config for Runtime {
 	#[cfg(feature = "runtime-benchmarks")]
 	type ClaimerSignature = runtime_common::benchmarks::DummySignature;
 	#[cfg(feature = "runtime-benchmarks")]
-	type ClaimerSignatureVerification = kilt_support::signature::AlwaysVerify<ClaimerIdentifier, Vec<u8>, Self::Signature>;
+	type ClaimerSignatureVerification =
+		kilt_support::signature::AlwaysVerify<Self::ClaimerIdentifier, Vec<u8>, Self::ClaimerSignature>;
 
 	type Deposit = runtime_common::constants::public_credentials::Deposit;
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
@@ -918,6 +908,93 @@ impl_runtime_apis! {
 		}
 	}
 
+	impl did_rpc_runtime_api::DidApi<
+		Block,
+		DidIdentifier,
+		AccountId,
+		Balance,
+		Hash,
+		BlockNumber
+	> for Runtime {
+		fn query_did_by_w3n(name: Vec<u8>) -> Option<did_rpc_runtime_api::RawDidLinkedInfo<
+				DidIdentifier,
+				AccountId,
+				Balance,
+				Hash,
+				BlockNumber
+			>
+		> {
+			let name: pallet_web3_names::web3_name::AsciiWeb3Name<Runtime> = name.try_into().ok()?;
+			pallet_web3_names::Owner::<Runtime>::get(&name)
+				.and_then(|owner_info| {
+					did::Did::<Runtime>::get(&owner_info.owner).map(|details| (owner_info, details))
+				})
+				.map(|(owner_info, details)| {
+					let accounts = pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(&owner_info.owner).collect();
+					let service_endpoints = did::ServiceEndpoints::<Runtime>::iter_prefix(&owner_info.owner).map(|e| From::from(e.1)).collect();
+
+					did_rpc_runtime_api::RawDidLinkedInfo {
+						identifier: owner_info.owner,
+						w3n: Some(name.into()),
+						accounts,
+						service_endpoints,
+						details: details.into(),
+					}
+			})
+		}
+
+		fn query_did_by_account_id(account: AccountId) -> Option<
+			did_rpc_runtime_api::RawDidLinkedInfo<
+				DidIdentifier,
+				AccountId,
+				Balance,
+				Hash,
+				BlockNumber
+			>
+		> {
+			pallet_did_lookup::ConnectedDids::<Runtime>::get(account)
+				.and_then(|owner_info| {
+					did::Did::<Runtime>::get(&owner_info.did).map(|details| (owner_info, details))
+				})
+				.map(|(connection_record, details)| {
+					let w3n = pallet_web3_names::Names::<Runtime>::get(&connection_record.did).map(Into::into);
+					let accounts = pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(&connection_record.did).collect();
+					let service_endpoints = did::ServiceEndpoints::<Runtime>::iter_prefix(&connection_record.did).map(|e| From::from(e.1)).collect();
+
+					did_rpc_runtime_api::RawDidLinkedInfo {
+						identifier: connection_record.did,
+						w3n,
+						accounts,
+						service_endpoints,
+						details: details.into(),
+					}
+				})
+		}
+
+		fn query_did(did: DidIdentifier) -> Option<
+			did_rpc_runtime_api::RawDidLinkedInfo<
+				DidIdentifier,
+				AccountId,
+				Balance,
+				Hash,
+				BlockNumber
+			>
+		> {
+			let details = did::Did::<Runtime>::get(&did)?;
+			let w3n = pallet_web3_names::Names::<Runtime>::get(&did).map(Into::into);
+			let accounts = pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(&did).collect();
+			let service_endpoints = did::ServiceEndpoints::<Runtime>::iter_prefix(&did).map(|e| From::from(e.1)).collect();
+
+			Some(did_rpc_runtime_api::RawDidLinkedInfo {
+				identifier: did,
+				w3n,
+				accounts,
+				service_endpoints,
+				details: details.into(),
+			})
+		}
+	}
+
 	#[cfg(feature = "runtime-benchmarks")]
 	impl frame_benchmarking::Benchmark<Block> for Runtime {
 		fn benchmark_metadata(extra: bool) -> (
@@ -1001,15 +1078,12 @@ impl_runtime_apis! {
 
 	#[cfg(feature = "try-runtime")]
 	impl frame_try_runtime::TryRuntime<Block> for Runtime {
-		fn on_runtime_upgrade() -> (Weight, Weight) {
+		fn on_runtime_upgrade() -> (frame_support::pallet_prelude::Weight, frame_support::pallet_prelude::Weight) {
 			log::info!("try-runtime::on_runtime_upgrade standalone runtime.");
-			let weight = Executive::try_runtime_upgrade().map_err(|err|{
-				log::info!("try-runtime::on_runtime_upgrade failed with: {:?}", err);
-				err
-			}).unwrap();
+			let weight = Executive::try_runtime_upgrade().unwrap();
 			(weight, BlockWeights::get().max_block)
 		}
-		fn execute_block_no_check(block: Block) -> Weight {
+		fn execute_block_no_check(block: Block) -> frame_support::pallet_prelude::Weight {
 			Executive::execute_block_no_check(block)
 		}
 	}

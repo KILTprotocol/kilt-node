@@ -42,8 +42,8 @@ use sp_runtime::{
 };
 use sp_std::marker::PhantomData;
 
-pub mod authorization;
 pub mod assets;
+pub mod authorization;
 pub mod constants;
 pub mod fees;
 pub mod migrations;

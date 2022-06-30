@@ -200,17 +200,18 @@ fn add_credential_too_long() {
 	let subject_id = SUBJECT_ID_00;
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 	let ctype_hash = get_ctype_hash::<Test>(true);
-	let mut new_credential = generate_base_public_credential_creation_op::<Test>(
-		subject_id.into(),
-		claim_hash,
-		ctype_hash,
-		None
-	);
+	let mut new_credential =
+		generate_base_public_credential_creation_op::<Test>(subject_id.into(), claim_hash, ctype_hash, None);
 	let encoded_credential_length_without_claims = new_credential.encode().len() - new_credential.claim.contents.len();
-	let max_claim_length = <Test as Config>::MaxEncodedCredentialLength::get() as usize - encoded_credential_length_without_claims;
+	let max_claim_length =
+		<Test as Config>::MaxEncodedCredentialLength::get() as usize - encoded_credential_length_without_claims;
 	new_credential.claim.contents = vec![0u8; max_claim_length];
-	// Sanity checks since the implementation of `codec::encode()` for some types prepends an additional byte to indicate length.
-	assert_eq!(new_credential.encode().len(), <Test as Config>::MaxEncodedCredentialLength::get() as usize + 1);
+	// Sanity checks since the implementation of `codec::encode()` for some types
+	// prepends an additional byte to indicate length.
+	assert_eq!(
+		new_credential.encode().len(),
+		<Test as Config>::MaxEncodedCredentialLength::get() as usize + 1
+	);
 	let public_credential_deposit = <Test as Config>::Deposit::get();
 	let attestation_deposit = <Test as attestation::Config>::Deposit::get();
 

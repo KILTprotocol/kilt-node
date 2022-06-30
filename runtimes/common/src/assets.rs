@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use codec::{Encode, Decode, MaxEncodedLen};
+use codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_runtime::RuntimeDebug;
 use sp_std::{marker::PhantomData, vec::Vec};
@@ -30,10 +30,10 @@ use public_credentials::{Config, Error};
 pub struct AssetId<T: Config>(Asset, Option<PhantomData<T>>);
 
 impl<T: Config> TryFrom<Vec<u8>> for AssetId<T> {
-    type Error = Error<T>;
+	type Error = Error<T>;
 
-    fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
+	fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
 		let asset = Asset::try_from(&value[..]).map_err(|_| Error::<T>::InvalidInput)?;
 		Ok(Self(asset, None))
-    }
+	}
 }

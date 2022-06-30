@@ -16,9 +16,11 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-//! Library to parse the raw byte vectors into supported Asset DIDs, according to the spec.
+//! Library to parse the raw byte vectors into supported Asset DIDs, according
+//! to the spec.
 //!
-//! The library is suitable for no_std environment, such as WASM-based blockchain runtimes.
+//! The library is suitable for no_std environment, such as WASM-based
+//! blockchain runtimes.
 
 #![cfg_attr(not(feature = "std"), no_std)]
 

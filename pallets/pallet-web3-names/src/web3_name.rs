@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use sp_std::{fmt::Debug, marker::PhantomData, vec::Vec};
+use sp_std::{fmt::Debug, marker::PhantomData, ops::Deref, vec::Vec};
 
 use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::{ensure, sp_runtime::SaturatedConversion, traits::Get, BoundedVec, RuntimeDebug};
@@ -35,6 +35,20 @@ pub struct AsciiWeb3Name<T: Config>(
 	pub(crate) BoundedVec<u8, T::MaxNameLength>,
 	PhantomData<(T, T::MinNameLength)>,
 );
+
+impl<T: Config> Deref for AsciiWeb3Name<T> {
+	type Target = BoundedVec<u8, T::MaxNameLength>;
+
+	fn deref(&self) -> &Self::Target {
+		&self.0
+	}
+}
+
+impl<T: Config> From<AsciiWeb3Name<T>> for Vec<u8> {
+	fn from(name: AsciiWeb3Name<T>) -> Self {
+		name.0.into_inner()
+	}
+}
 
 impl<T: Config> TryFrom<Vec<u8>> for AsciiWeb3Name<T> {
 	type Error = Error<T>;

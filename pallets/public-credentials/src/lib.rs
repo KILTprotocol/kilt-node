@@ -26,8 +26,8 @@
 //! - [`Pallet`]
 #![cfg_attr(not(feature = "std"), no_std)]
 
-pub mod default_weights;
 pub mod credentials;
+pub mod default_weights;
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
@@ -164,7 +164,11 @@ pub mod pallet {
 		pub fn add(origin: OriginFor<T>, credential: Box<CredentialOf<T>>) -> DispatchResult {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 
-			let encoded_credential_len: u32 = credential.encode().len().checked_into().ok_or(Error::<T>::CredentialTooLong)?;
+			let encoded_credential_len: u32 = credential
+				.encode()
+				.len()
+				.checked_into()
+				.ok_or(Error::<T>::CredentialTooLong)?;
 			ensure!(
 				encoded_credential_len <= T::MaxEncodedCredentialLength::get(),
 				Error::<T>::CredentialTooLong

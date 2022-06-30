@@ -18,10 +18,4 @@
 
 use frame_benchmarking::impl_benchmark_test_suite;
 
-use crate::Pallet;
-
-impl_benchmark_test_suite!(
-	Pallet,
-	crate::mock::ExtBuilder::default().build(),
-	crate::mock::Test,
-);
+impl_benchmark_test_suite!(Pallet, crate::mock::ExtBuilder::default().build(), crate::mock::Test,);

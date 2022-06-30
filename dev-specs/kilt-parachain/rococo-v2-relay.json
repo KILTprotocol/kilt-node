@@ -18,7 +18,7 @@
       0
     ]
   ],
-  "protocolId": "rococo_v2_2",
+  "protocolId": "rococo",
   "properties": {
     "ss58Format": 42,
     "tokenDecimals": 12,
