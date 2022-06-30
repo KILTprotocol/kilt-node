@@ -99,6 +99,31 @@ mod v1 {
 		}
 	}
 
+	impl TryFrom<Vec<u8>> for ChainId {
+		type Error = ChainIdError;
+
+		fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
+			Self::try_from(&value[..])
+		}
+	}
+
+	impl TryFrom<&'static str> for ChainId {
+		type Error = ChainIdError;
+
+		fn try_from(value: &'static str) -> Result<Self, Self::Error> {
+			Self::try_from(value.as_bytes())
+		}
+	}
+
+	#[cfg(feature = "std")]
+	impl TryFrom<String> for ChainId {
+		type Error = ChainIdError;
+
+		fn try_from(value: String) -> Result<Self, Self::Error> {
+			Self::try_from(value.as_bytes())
+		}
+	}
+
 	impl ChainId {
 		pub fn ethereum_mainnet() -> Self {
 			Eip155Reference::ethereum_mainnet().into()

@@ -35,6 +35,18 @@ pub enum AssetError {
 	InvalidInput,
 }
 
+impl From<ChainIdError> for AssetError {
+	fn from(err: ChainIdError) -> Self {
+		Self::ChainId(err)
+	}
+}
+
+impl From<AssetIdError> for AssetError {
+	fn from(err: AssetIdError) -> Self {
+		Self::AssetId(err)
+	}
+}
+
 impl Asset {
 	pub fn ether_currency() -> Self {
 		Self {
@@ -102,6 +114,12 @@ impl Asset {
 	}
 }
 
+impl Asset {
+	pub fn move_to<C>(&mut self, new_chain_id: C) where C: Into<ChainId> {
+		self.chain_id = new_chain_id.into()
+	}
+}
+
 impl TryFrom<&[u8]> for Asset {
 	type Error = AssetError;
 
@@ -122,12 +140,39 @@ impl TryFrom<&[u8]> for Asset {
 	}
 }
 
+impl TryFrom<Vec<u8>> for Asset {
+	type Error = AssetError;
+
+	fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
+		Self::try_from(&value[..])
+	}
+}
+
+impl TryFrom<&'static str> for Asset {
+	type Error = AssetError;
+
+	fn try_from(value: &'static str) -> Result<Self, Self::Error> {
+		Self::try_from(value.as_bytes())
+	}
+}
+
+#[cfg(feature = "std")]
+impl TryFrom<String> for Asset {
+	type Error = AssetError;
+
+	fn try_from(value: String) -> Result<Self, Self::Error> {
+		Self::try_from(value.as_bytes())
+	}
+}
+
 #[cfg(test)]
 mod test {
-	use super::*;
+	use frame_support::assert_ok;
+
+use super::*;
 
 	#[test]
-	fn test_valid_ids() {
+	fn valid_ids() {
 		let raw_ids = [
 			// Test cases from https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-20.md
 			"eip155:1.slip44:60",
@@ -154,7 +199,7 @@ mod test {
 	}
 
 	#[test]
-	fn test_helpers() {
+	fn helpers() {
 		// These functions should never crash. We just check that here.
 		Asset::ether_currency();
 		Asset::bitcoin_currency();
@@ -163,5 +208,17 @@ mod test {
 		Asset::req_currency();
 		Asset::cryptokitties_collection();
 		Asset::themanymatts_collection();
+	}
+
+	#[test]
+	fn chain_transfer() {
+		let mut old_asset = Asset::cryptokitties_collection();
+		let new_chain = ChainId::bitcoin_mainnet();
+		old_asset.move_to(new_chain.clone());
+		assert_eq!(old_asset.chain_id, new_chain);
+		// Test the trait constraints
+		let new_chain_namespace = Eip155Reference::ethereum_mainnet();
+		old_asset.move_to(new_chain_namespace.clone());
+		assert_eq!(old_asset.chain_id, new_chain_namespace.into());
 	}
 }

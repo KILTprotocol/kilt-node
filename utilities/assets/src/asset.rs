@@ -115,6 +115,31 @@ pub mod v1 {
 		}
 	}
 
+	impl TryFrom<Vec<u8>> for AssetId {
+		type Error = AssetIdError;
+
+		fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
+			Self::try_from(&value[..])
+		}
+	}
+
+	impl TryFrom<&'static str> for AssetId {
+		type Error = AssetIdError;
+
+		fn try_from(value: &'static str) -> Result<Self, Self::Error> {
+			Self::try_from(value.as_bytes())
+		}
+	}
+
+	#[cfg(feature = "std")]
+	impl TryFrom<String> for AssetId {
+		type Error = AssetIdError;
+
+		fn try_from(value: String) -> Result<Self, Self::Error> {
+			Self::try_from(value.as_bytes())
+		}
+	}
+
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
 	pub struct Slip44Reference(BoundedVec<u8, ConstU32<MAXIMUM_REFERENCE_LENGTH_U32>>);
 
