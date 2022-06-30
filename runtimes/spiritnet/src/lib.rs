@@ -29,7 +29,7 @@ use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::{
 	construct_runtime, parameter_types,
 	traits::{EnsureOneOf, InstanceFilter, PrivilegeCmp},
-	weights::{constants::RocksDbWeight, ConstantMultiplier, Weight},
+	weights::{ConstantMultiplier, Weight},
 };
 use frame_system::EnsureRoot;
 use sp_api::impl_runtime_apis;
@@ -132,7 +132,7 @@ impl frame_system::Config for Runtime {
 	type AccountData = pallet_balances::AccountData<Balance>;
 	type OnNewAccount = ();
 	type OnKilledAccount = ();
-	type DbWeight = RocksDbWeight;
+	type DbWeight = weights::rocksdb_weights::constants::RocksDbWeight;
 	type BaseCallFilter = frame_support::traits::Everything;
 	type SystemWeightInfo = weights::frame_system::WeightInfo<Runtime>;
 	type BlockWeights = BlockWeights;
