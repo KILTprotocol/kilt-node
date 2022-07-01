@@ -171,9 +171,7 @@ fn test_add_association_account() {
 			assert!(
 				ConnectedAccounts::<Test>::get(DID_00, &LinkableAccountId::from(account_hash_alice.clone())).is_none()
 			);
-			assert!(
-				ConnectedAccounts::<Test>::get(DID_01, &LinkableAccountId::from(account_hash_alice)).is_some()
-			);
+			assert!(ConnectedAccounts::<Test>::get(DID_01, &LinkableAccountId::from(account_hash_alice)).is_some());
 			assert_eq!(Balances::reserved_balance(ACCOUNT_00), 0);
 			assert_eq!(
 				Balances::reserved_balance(ACCOUNT_01),
