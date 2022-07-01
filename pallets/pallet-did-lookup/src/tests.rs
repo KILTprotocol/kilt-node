@@ -154,7 +154,7 @@ fn test_add_association_account() {
 			// overwrite existing deposit
 			assert!(DidLookup::associate_account(
 				mock_origin::DoubleOrigin(ACCOUNT_01, DID_01).into(),
-				AssociateAccountRequest::Substrate(account_hash_alice.clone(), sig_alice_1.clone()),
+				AssociateAccountRequest::Substrate(account_hash_alice.clone(), sig_alice_1),
 				expire_at,
 			)
 			.is_ok());
@@ -172,7 +172,7 @@ fn test_add_association_account() {
 				ConnectedAccounts::<Test>::get(DID_00, &LinkableAccountId::from(account_hash_alice.clone())).is_none()
 			);
 			assert!(
-				ConnectedAccounts::<Test>::get(DID_01, &LinkableAccountId::from(account_hash_alice.clone())).is_some()
+				ConnectedAccounts::<Test>::get(DID_01, &LinkableAccountId::from(account_hash_alice)).is_some()
 			);
 			assert_eq!(Balances::reserved_balance(ACCOUNT_00), 0);
 			assert_eq!(
@@ -199,12 +199,12 @@ fn test_add_eth_association() {
 			// new association. No overwrite
 			let res = DidLookup::associate_account(
 				mock_origin::DoubleOrigin(ACCOUNT_00, DID_00).into(),
-				AssociateAccountRequest::Ethereum(eth_account.clone(), EthereumSignature::from(sig)),
+				AssociateAccountRequest::Ethereum(eth_account, EthereumSignature::from(sig)),
 				expire_at,
 			);
 			assert!(res.is_ok());
 			assert_eq!(
-				ConnectedDids::<Test>::get(&LinkableAccountId::from(eth_account.clone())),
+				ConnectedDids::<Test>::get(&LinkableAccountId::from(eth_account)),
 				Some(ConnectionRecord {
 					did: DID_00,
 					deposit: Deposit {
@@ -213,7 +213,7 @@ fn test_add_eth_association() {
 					}
 				})
 			);
-			assert!(ConnectedAccounts::<Test>::get(DID_00, &LinkableAccountId::from(eth_account.clone())).is_some());
+			assert!(ConnectedAccounts::<Test>::get(DID_00, &LinkableAccountId::from(eth_account)).is_some());
 			assert_eq!(
 				Balances::reserved_balance(ACCOUNT_00),
 				<Test as crate::Config>::Deposit::get()
@@ -236,7 +236,7 @@ fn test_add_association_account_invalid_signature() {
 			assert_noop!(
 				DidLookup::associate_account(
 					mock_origin::DoubleOrigin(ACCOUNT_00, DID_01).into(),
-					AssociateAccountRequest::Substrate(account_hash_alice.clone(), sig_alice_0.clone()),
+					AssociateAccountRequest::Substrate(account_hash_alice, sig_alice_0),
 					expire_at,
 				),
 				Error::<Test>::NotAuthorized
@@ -261,7 +261,7 @@ fn test_add_association_account_expired() {
 			assert_noop!(
 				DidLookup::associate_account(
 					mock_origin::DoubleOrigin(ACCOUNT_00, DID_01).into(),
-					AssociateAccountRequest::Substrate(account_hash_alice.clone(), sig_alice_0.clone()),
+					AssociateAccountRequest::Substrate(account_hash_alice, sig_alice_0),
 					expire_at,
 				),
 				Error::<Test>::OutdatedProof
