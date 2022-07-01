@@ -26,6 +26,7 @@ use crate::{
 	signature,
 };
 
+#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, MaxEncodedLen, TypeInfo)]
 pub enum LinkableAccountId {
 	AccountId20(AccountId20),

@@ -111,14 +111,14 @@ benchmarks! {
 		make_free_for_did::<T>(&caller);
 
 		// Add existing connected_acc -> previous_did connection that will be replaced
-		Pallet::<T>::add_association(caller.clone(), previous_did.clone(), eth_account.clone().into()).expect("should create previous association");
-		assert!(ConnectedAccounts::<T>::get(&previous_did, LinkableAccountId::from(eth_account.clone())).is_some());
+		Pallet::<T>::add_association(caller.clone(), previous_did.clone(), eth_account.into()).expect("should create previous association");
+		assert!(ConnectedAccounts::<T>::get(&previous_did, LinkableAccountId::from(eth_account)).is_some());
 		let origin = T::EnsureOrigin::generate_origin(caller, did.clone());
-		let req = AssociateAccountRequest::Ethereum(eth_account.into(), sig.into());
+		let req = AssociateAccountRequest::Ethereum(eth_account, sig.into());
 	}: associate_account<T::Origin>(origin, req, expire_at)
 	verify {
-		assert!(ConnectedDids::<T>::get(LinkableAccountId::from(eth_account.clone())).is_some());
-		assert!(ConnectedAccounts::<T>::get(&previous_did, LinkableAccountId::from(eth_account.clone())).is_none());
+		assert!(ConnectedDids::<T>::get(LinkableAccountId::from(eth_account)).is_some());
+		assert!(ConnectedAccounts::<T>::get(&previous_did, LinkableAccountId::from(eth_account)).is_none());
 		assert!(ConnectedAccounts::<T>::get(did, LinkableAccountId::from(eth_account)).is_some());
 	}
 

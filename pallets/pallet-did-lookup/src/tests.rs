@@ -98,7 +98,7 @@ fn test_add_association_account() {
 			// new association. No overwrite
 			assert!(DidLookup::associate_account(
 				mock_origin::DoubleOrigin(ACCOUNT_00, DID_00).into(),
-				AssociateAccountRequest::Substrate(account_hash_alice.clone(), sig_alice_0.clone()),
+				AssociateAccountRequest::Substrate(account_hash_alice.clone(), sig_alice_0),
 				expire_at,
 			)
 			.is_ok());
