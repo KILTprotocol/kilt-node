@@ -31,10 +31,7 @@ use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::{
 	construct_runtime, parameter_types,
 	traits::{Currency, InstanceFilter, KeyOwnerProofSystem},
-	weights::{
-		constants::RocksDbWeight,
-		ConstantMultiplier, IdentityFee,
-	},
+	weights::{constants::RocksDbWeight, ConstantMultiplier, IdentityFee},
 };
 pub use frame_system::Call as SystemCall;
 use frame_system::EnsureRoot;
