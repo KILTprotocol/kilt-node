@@ -114,12 +114,6 @@ impl Asset {
 	}
 }
 
-impl Asset {
-	pub fn move_to<C>(&mut self, new_chain_id: C) where C: Into<ChainId> {
-		self.chain_id = new_chain_id.into()
-	}
-}
-
 impl TryFrom<&[u8]> for Asset {
 	type Error = AssetError;
 
@@ -167,9 +161,7 @@ impl TryFrom<String> for Asset {
 
 #[cfg(test)]
 mod test {
-	use frame_support::assert_ok;
-
-use super::*;
+	use super::*;
 
 	#[test]
 	fn valid_ids() {
@@ -208,17 +200,5 @@ use super::*;
 		Asset::req_currency();
 		Asset::cryptokitties_collection();
 		Asset::themanymatts_collection();
-	}
-
-	#[test]
-	fn chain_transfer() {
-		let mut old_asset = Asset::cryptokitties_collection();
-		let new_chain = ChainId::bitcoin_mainnet();
-		old_asset.move_to(new_chain.clone());
-		assert_eq!(old_asset.chain_id, new_chain);
-		// Test the trait constraints
-		let new_chain_namespace = Eip155Reference::ethereum_mainnet();
-		old_asset.move_to(new_chain_namespace.clone());
-		assert_eq!(old_asset.chain_id, new_chain_namespace.into());
 	}
 }
