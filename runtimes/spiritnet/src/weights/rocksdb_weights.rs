@@ -21,7 +21,7 @@
 //! HOSTNAME: ``, CPU: ``
 //!
 //! DATABASE: `RocksDb`, RUNTIME: `KILT Spiritnet`
-//! BLOCK-NUM: `BlockId::Number(1684659)`
+//! BLOCK-NUM: `BlockId::Number(1690338)`
 //! SKIP-WRITE: `false`, SKIP-READ: `false`, WARMUPS: `1`
 //! STATE-VERSION: `V1`, STATE-CACHE-SIZE: `0`
 //! WEIGHT-PATH: `runtimes/spiritnet/src/weights/rocksdb_weights.rs`
@@ -32,7 +32,7 @@
 //   benchmark
 //   storage
 //   --chain=spiritnet
-//   --base-path=/home/weich/spiritnet-db/parachain/
+//   --base-path=/home/weich/spiritnet-db/
 //   --template-path=.maintain/template-db-weight.hbs
 //   --state-version
 //   1
@@ -54,31 +54,31 @@ pub mod constants {
 			/// Calculated by multiplying the *Average* of all values with `1.1` and adding `0`.
 			///
 			/// Stats nanoseconds:
-			///   Min, Max: 7_330, 2_137_697
-			///   Average:  48_624
-			///   Median:   23_368
-			///   Std-Dev:  113173.39
+			///   Min, Max: 15_845, 2_496_821
+			///   Average:  73_624
+			///   Median:   41_331
+			///   Std-Dev:  145110.2
 			///
 			/// Percentiles nanoseconds:
-			///   99th: 682_900
-			///   95th: 179_679
-			///   75th: 28_961
-			read: 53_487 * constants::WEIGHT_PER_NANOS,
+			///   99th: 898_079
+			///   95th: 281_077
+			///   75th: 50_378
+			read: 80_987 * constants::WEIGHT_PER_NANOS,
 
 			/// Time to write one storage item.
 			/// Calculated by multiplying the *Average* of all values with `1.1` and adding `0`.
 			///
 			/// Stats nanoseconds:
-			///   Min, Max: 13_033, 2_461_814
-			///   Average:  80_297
-			///   Median:   54_905
-			///   Std-Dev:  115358.17
+			///   Min, Max: 29_273, 2_721_565
+			///   Average:  129_615
+			///   Median:   96_740
+			///   Std-Dev:  146315.77
 			///
 			/// Percentiles nanoseconds:
-			///   99th: 730_094
-			///   95th: 217_545
-			///   75th: 63_643
-			write: 88_327 * constants::WEIGHT_PER_NANOS,
+			///   99th: 966_008
+			///   95th: 325_593
+			///   75th: 112_787
+			write: 142_577 * constants::WEIGHT_PER_NANOS,
 		};
 	}
 
