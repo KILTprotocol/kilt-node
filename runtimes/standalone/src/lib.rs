@@ -32,7 +32,7 @@ use frame_support::{
 	construct_runtime, parameter_types,
 	traits::{Currency, InstanceFilter, KeyOwnerProofSystem},
 	weights::{
-		constants::{RocksDbWeight, WEIGHT_PER_SECOND},
+		constants::RocksDbWeight,
 		ConstantMultiplier, IdentityFee,
 	},
 };
@@ -138,9 +138,9 @@ const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
 parameter_types! {
 	pub const Version: RuntimeVersion = VERSION;
 	pub const BlockHashCount: BlockNumber = 2400;
-	/// We allow for 2 seconds of compute with a 6 second average block time.
+	/// We allow for 0.75 seconds of compute with a 1 second average block time.
 	pub BlockWeights: frame_system::limits::BlockWeights = frame_system::limits::BlockWeights
-		::with_sensible_defaults(2 * WEIGHT_PER_SECOND, NORMAL_DISPATCH_RATIO);
+		::default();
 	pub BlockLength: frame_system::limits::BlockLength = frame_system::limits::BlockLength
 		::max_with_normal_ratio(5 * 1024 * 1024, NORMAL_DISPATCH_RATIO);
 	pub const SS58Prefix: u8 = 38;
@@ -231,7 +231,8 @@ impl pallet_grandpa::Config for Runtime {
 }
 
 parameter_types! {
-	pub const MinimumPeriod: u64 = constants::SLOT_DURATION / 2;
+	// Minimum period 500ms -> block time 1s
+	pub const MinimumPeriod: u64 = 500;
 }
 
 impl pallet_timestamp::Config for Runtime {
