@@ -4605,7 +4605,6 @@ dependencies = [
  "frame-benchmarking-cli",
  "frame-system",
  "futures 0.3.21",
- "hex-literal",
  "jsonrpsee",
  "log",
  "mashnet-node-runtime",
