@@ -80,7 +80,7 @@ benchmarks! {
 		assert!(ConnectedAccounts::<T>::get(&previous_did, linkable_id.clone()).is_some());
 		let origin = T::EnsureOrigin::generate_origin(caller, did.clone());
 		let id_arg = linkable_id.clone();
-		let req = AssociateAccountRequest::Substrate(connected_acc_id.into(), sig.into());
+		let req = AssociateAccountRequest::Dotsama(connected_acc_id.into(), sig.into());
 	}: _<T::Origin>(origin, req, bn)
 	verify {
 		assert!(ConnectedDids::<T>::get(linkable_id.clone()).is_some());

@@ -110,9 +110,13 @@ impl From<[u8; 20]> for EthereumSigner {
 	}
 }
 
-impl From<ecdsa::Public> for EthereumSigner {
-	fn from(x: ecdsa::Public) -> Self {
-		Self(x.to_eth_address().unwrap())
+impl TryFrom<ecdsa::Public> for EthereumSigner {
+	type Error = &'static str;
+	fn try_from(x: ecdsa::Public) -> Result<Self, Self::Error> {
+		match x.to_eth_address() {
+			Ok(x) => Ok(Self(x)),
+			Err(_) => Err("invalid public key"),
+		}
 	}
 }
 
@@ -153,16 +157,8 @@ impl sp_runtime::traits::Verify for EthereumSignature {
 				// TODO actually, there is probably just a better way to go from Keccak digest.
 				AccountId20(H160::from(H256::from_slice(Keccak256::digest(&pubkey).as_slice())).0) == *signer
 			}
-			Err(sp_io::EcdsaVerifyError::BadRS) => {
-				log::trace!(target: "evm", "Error recovering: Incorrect value of R or S");
-				false
-			}
-			Err(sp_io::EcdsaVerifyError::BadV) => {
-				log::error!(target: "evm", "Error recovering: Incorrect value of V");
-				false
-			}
-			Err(sp_io::EcdsaVerifyError::BadSignature) => {
-				log::error!(target: "evm", "Error recovering: Invalid signature");
+			Err(_) => {
+				log::trace!("Error verifying signature");
 				false
 			}
 		}
@@ -187,7 +183,7 @@ mod tests {
 			.expect("example data is 20 bytes of valid hex");
 
 		let public_key = ecdsa::Pair::from_seed_slice(&secret_key).unwrap().public();
-		let account: EthereumSigner = public_key.into();
+		let account: EthereumSigner = public_key.try_into().unwrap();
 		let expected_account = AccountId20::from(expected_hex_account);
 		assert_eq!(account.into_account(), expected_account);
 	}
@@ -200,7 +196,7 @@ mod tests {
 			.expect("example data is 20 bytes of valid hex");
 
 		let public_key = ecdsa::Pair::from_seed_slice(&secret_key).unwrap().public();
-		let account: EthereumSigner = public_key.into();
+		let account: EthereumSigner = public_key.try_into().unwrap();
 		let expected_account = AccountId20::from(expected_hex_account);
 		assert_eq!(account.into_account(), expected_account);
 	}

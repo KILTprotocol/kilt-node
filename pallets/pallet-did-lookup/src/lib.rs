@@ -46,19 +46,18 @@ pub use crate::{default_weights::WeightInfo, pallet::*};
 
 use crate::account::{AccountId20, EthereumSignature};
 use codec::{Decode, Encode, MaxEncodedLen};
-use linkable_account::LinkableAccountId;
 use scale_info::TypeInfo;
 use sp_runtime::{AccountId32, MultiSignature};
 
 #[derive(Clone, Debug, Eq, PartialEq, Encode, Decode, MaxEncodedLen, TypeInfo)]
 pub enum AssociateAccountRequest {
-	Substrate(AccountId32, MultiSignature),
+	Dotsama(AccountId32, MultiSignature),
 	Ethereum(AccountId20, EthereumSignature),
 }
 
 #[frame_support::pallet]
 pub mod pallet {
-	use super::{linkable_account::{LinkableAccountId, LinkableAccountSigner}, AssociateAccountRequest, WeightInfo};
+	use super::{linkable_account::{LinkableAccountId}, AssociateAccountRequest, WeightInfo};
 
 	use frame_support::{
 		ensure,
@@ -92,6 +91,7 @@ pub mod pallet {
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
+
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 
 		/// The origin that can associate accounts to itself.
@@ -122,7 +122,6 @@ pub mod pallet {
 	pub struct Pallet<T>(_);
 
 	/// Mapping from account identifiers to DIDs.
-	/// new version of the storage
 	#[pallet::storage]
 	#[pallet::getter(fn connected_dids)]
 	pub type ConnectedDids<T> = StorageMap<_, Blake2_128Concat, LinkableAccountId, ConnectionRecordOf<T>>;
@@ -198,7 +197,6 @@ pub mod pallet {
 				frame_system::Pallet::<T>::current_block_number() <= expiration,
 				Error::<T>::OutdatedProof
 			);
-			let encoded_payload = (&did_identifier, expiration).encode();
 
 			ensure!(
 				<T::Currency as ReservableCurrency<AccountIdOf<T>>>::can_reserve(
@@ -353,7 +351,7 @@ pub mod pallet {
 		pub fn verify<T: Config>(&self, did_identifier: <T as Config>::DidIdentifier, expiration: <T as frame_system::Config>::BlockNumber) -> bool {
 			let encoded_payload = (&did_identifier, expiration).encode();
 			match self {
-				AssociateAccountRequest::Substrate(acc, proof) => {
+				AssociateAccountRequest::Dotsama(acc, proof) => {
 					proof.verify(&get_wrapped_payload(&encoded_payload[..], crate::signature::WrapType::Substrate)[..], acc)
 				}
 				AssociateAccountRequest::Ethereum(acc, proof) => {
@@ -364,8 +362,8 @@ pub mod pallet {
 
 		pub fn get_linkable_account(&self) -> LinkableAccountId {
 			match self {
-				AssociateAccountRequest::Substrate(acc, _) => acc.clone().into(),
-				AssociateAccountRequest::Ethereum(acc, _) => acc.clone().into(),
+				AssociateAccountRequest::Dotsama(acc, _) => LinkableAccountId::AccountId32(acc.clone()),
+				AssociateAccountRequest::Ethereum(acc, _) => LinkableAccountId::AccountId20(*acc),
 			}
 		}
 	}

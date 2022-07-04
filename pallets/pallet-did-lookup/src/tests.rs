@@ -98,7 +98,7 @@ fn test_add_association_account() {
 			// new association. No overwrite
 			assert!(DidLookup::associate_account(
 				mock_origin::DoubleOrigin(ACCOUNT_00, DID_00).into(),
-				AssociateAccountRequest::Substrate(account_hash_alice.clone(), sig_alice_0),
+				AssociateAccountRequest::Dotsama(account_hash_alice.clone(), sig_alice_0),
 				expire_at,
 			)
 			.is_ok());
@@ -123,7 +123,7 @@ fn test_add_association_account() {
 			// overwrite existing association
 			let res = DidLookup::associate_account(
 				mock_origin::DoubleOrigin(ACCOUNT_00, DID_01).into(),
-				AssociateAccountRequest::Substrate(account_hash_alice.clone(), sig_alice_1.clone()),
+				AssociateAccountRequest::Dotsama(account_hash_alice.clone(), sig_alice_1.clone()),
 				expire_at,
 			);
 			if let Err(err) = res {
@@ -154,7 +154,7 @@ fn test_add_association_account() {
 			// overwrite existing deposit
 			assert!(DidLookup::associate_account(
 				mock_origin::DoubleOrigin(ACCOUNT_01, DID_01).into(),
-				AssociateAccountRequest::Substrate(account_hash_alice.clone(), sig_alice_1),
+				AssociateAccountRequest::Dotsama(account_hash_alice.clone(), sig_alice_1),
 				expire_at,
 			)
 			.is_ok());
@@ -234,7 +234,7 @@ fn test_add_association_account_invalid_signature() {
 			assert_noop!(
 				DidLookup::associate_account(
 					mock_origin::DoubleOrigin(ACCOUNT_00, DID_01).into(),
-					AssociateAccountRequest::Substrate(account_hash_alice, sig_alice_0),
+					AssociateAccountRequest::Dotsama(account_hash_alice, sig_alice_0),
 					expire_at,
 				),
 				Error::<Test>::NotAuthorized
@@ -259,7 +259,7 @@ fn test_add_association_account_expired() {
 			assert_noop!(
 				DidLookup::associate_account(
 					mock_origin::DoubleOrigin(ACCOUNT_00, DID_01).into(),
-					AssociateAccountRequest::Substrate(account_hash_alice, sig_alice_0),
+					AssociateAccountRequest::Dotsama(account_hash_alice, sig_alice_0),
 					expire_at,
 				),
 				Error::<Test>::OutdatedProof

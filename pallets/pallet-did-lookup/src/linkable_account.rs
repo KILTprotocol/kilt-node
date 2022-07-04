@@ -23,7 +23,6 @@ use sp_runtime::{AccountId32, MultiSignature, MultiSigner};
 
 use crate::{
 	account::{AccountId20, EthereumSignature, EthereumSigner},
-	signature,
 };
 
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]

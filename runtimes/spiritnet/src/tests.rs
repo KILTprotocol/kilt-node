@@ -145,7 +145,7 @@ fn test_derive_did_key_web3name() {
 fn test_derive_did_key_lookup() {
 	assert_eq!(
 		Call::DidLookup(pallet_did_lookup::Call::associate_account {
-			req: AssociateAccountRequest::Substrate(
+			req: AssociateAccountRequest::Dotsama(
 				AccountId::new([1u8; 32]),
 				sp_runtime::MultiSignature::from(sp_core::ed25519::Signature([0; 64]))
 			),
