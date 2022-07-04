@@ -190,7 +190,7 @@ fn test_add_eth_association() {
 			let eth_pair = ecdsa::Pair::generate().0;
 			let eth_account = AccountId20(eth_pair.public().to_eth_address().unwrap());
 
-			let wrapped_payload = get_wrapped_payload(&Encode::encode(&(&DID_00, expire_at))[..], &eth_account);
+			let wrapped_payload = get_wrapped_payload(&Encode::encode(&(&DID_00, expire_at))[..], crate::signature::WrapType::Ethereum);
 
 			let sig = eth_pair.sign_prehashed(&Keccak256::digest(&wrapped_payload).try_into().unwrap());
 

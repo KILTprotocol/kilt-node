@@ -25,11 +25,11 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 pub mod account;
-mod connection_record;
-
 pub mod default_weights;
 pub mod migrations;
+pub mod linkable_account;
 
+mod connection_record;
 mod signature;
 
 #[cfg(test)]
@@ -41,14 +41,13 @@ mod mock;
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 
-pub mod linkable_account;
-
-use codec::{Decode, Encode, MaxEncodedLen};
-use scale_info::TypeInfo;
 
 pub use crate::{default_weights::WeightInfo, pallet::*};
 
 use crate::account::{AccountId20, EthereumSignature};
+use codec::{Decode, Encode, MaxEncodedLen};
+use linkable_account::LinkableAccountId;
+use scale_info::TypeInfo;
 use sp_runtime::{AccountId32, MultiSignature};
 
 #[derive(Clone, Debug, Eq, PartialEq, Encode, Decode, MaxEncodedLen, TypeInfo)]
@@ -59,7 +58,7 @@ pub enum AssociateAccountRequest {
 
 #[frame_support::pallet]
 pub mod pallet {
-	use super::{linkable_account::LinkableAccountId, AssociateAccountRequest, WeightInfo};
+	use super::{linkable_account::{LinkableAccountId, LinkableAccountSigner}, AssociateAccountRequest, WeightInfo};
 
 	use frame_support::{
 		ensure,
@@ -209,17 +208,22 @@ pub mod pallet {
 				Error::<T>::InsufficientFunds
 			);
 
+			ensure!(
+				req.verify::<T>(did_identifier.clone(), expiration),
+				Error::<T>::NotAuthorized
+			);
+
 			match req {
 				AssociateAccountRequest::Substrate(acc, proof) => {
 					ensure!(
-						proof.verify(&get_wrapped_payload(&encoded_payload[..], &acc)[..], &acc),
+						proof.verify(&get_wrapped_payload(&encoded_payload[..], crate::signature::WrapType::Substrate)[..], &acc),
 						Error::<T>::NotAuthorized
 					);
 					Self::add_association(sender, did_identifier, acc.into())?;
 				}
 				AssociateAccountRequest::Ethereum(acc, proof) => {
 					ensure!(
-						proof.verify(&get_wrapped_payload(&encoded_payload[..], &acc)[..], &acc),
+						proof.verify(&get_wrapped_payload(&encoded_payload[..], crate::signature::WrapType::Ethereum)[..], &acc),
 						Error::<T>::NotAuthorized
 					);
 					Self::add_association(sender, did_identifier, acc.into())?;
@@ -359,4 +363,19 @@ pub mod pallet {
 			}
 		}
 	}
+
+	impl AssociateAccountRequest {
+		pub fn verify<T: Config>(&self, did_identifier: <T as Config>::DidIdentifier, expiration: <T as frame_system::Config>::BlockNumber) -> bool {
+			let encoded_payload = (&did_identifier, expiration).encode();
+			match self {
+				AssociateAccountRequest::Substrate(acc, proof) => {
+					proof.verify(&get_wrapped_payload(&encoded_payload[..], crate::signature::WrapType::Substrate)[..], acc)
+				}
+				AssociateAccountRequest::Ethereum(acc, proof) => {
+					proof.verify(&get_wrapped_payload(&encoded_payload[..], crate::signature::WrapType::Ethereum)[..], acc)
+				}
+			}
+		}
+	}
+
 }

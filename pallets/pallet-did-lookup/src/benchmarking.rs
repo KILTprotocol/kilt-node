@@ -69,7 +69,7 @@ benchmarks! {
 			&connected_acc,
 			&get_wrapped_payload(
 				&Encode::encode(&(&did, bn))[..],
-				&linkable_id,
+				crate::signature::WrapType::Substrate,
 			))
 			.ok_or("Error while building signature.")?;
 
@@ -99,7 +99,7 @@ benchmarks! {
 
 		let wrapped_payload = get_wrapped_payload(
 			&Encode::encode(&(&did, expire_at))[..],
-			&eth_account,
+			crate::signature::WrapType::Ethereum,
 		);
 
 		let sig = sp_io::crypto::ecdsa_sign_prehashed(

@@ -17,6 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 // This code originally came from the purestake/moonbeam repo.
+// see https://github.com/PureStake/moonbeam/blob/74324db0cfacaad555064c839f17072b57cb35e3/primitives/account/src/lib.rs for reference.
 
 //! The Ethereum Signature implementation.
 //!
@@ -31,17 +32,10 @@ use sha3::{Digest, Keccak256};
 use sp_core::{ecdsa, H160, H256};
 
 #[cfg(feature = "std")]
-pub use sp_runtime::serde::{de::DeserializeOwned, Deserialize, Serialize};
+pub use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
-//TODO Maybe this should be upstreamed into Frontier (And renamed accordingly)
-// so that it can be used in palletEVM as well. It may also need more traits
-// such as AsRef, AsMut, etc like AccountId32 has.
-
-/// The account type to be used in Moonbeam. It is a wrapper for 20 fixed bytes.
-/// We prefer to use a dedicated type to prevent using arbitrary 20 byte arrays
-/// were AccountIds are expected. With the introduction of the `scale-info`
-/// crate this benefit extends even to non-Rust tools like Polkadot JS.
-
+/// The AccountId20 type.
+/// It is a 20-byte Ethereum address.
 #[derive(Eq, PartialEq, Copy, Clone, Encode, Decode, TypeInfo, MaxEncodedLen, Default, PartialOrd, Ord)]
 pub struct AccountId20(pub [u8; 20]);
 

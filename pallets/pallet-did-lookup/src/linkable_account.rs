@@ -45,27 +45,6 @@ impl From<AccountId32> for LinkableAccountId {
 	}
 }
 
-impl signature::GetWrapType for LinkableAccountId {
-	fn get_wrap_type(&self) -> signature::WrapType {
-		match self {
-			Self::AccountId20(_) => signature::WrapType::Ethereum,
-			Self::AccountId32(_) => signature::WrapType::Substrate,
-		}
-	}
-}
-
-impl signature::GetWrapType for AccountId32 {
-	fn get_wrap_type(&self) -> signature::WrapType {
-		signature::WrapType::Substrate
-	}
-}
-
-impl signature::GetWrapType for AccountId20 {
-	fn get_wrap_type(&self) -> signature::WrapType {
-		signature::WrapType::Ethereum
-	}
-}
-
 #[cfg(feature = "std")]
 impl std::fmt::Display for LinkableAccountId {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

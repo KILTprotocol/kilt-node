@@ -78,6 +78,7 @@ default = []
 runtime-benchmarks = [
   "mashnet-node-runtime/runtime-benchmarks",
   "pallet-conviction-voting/runtime-benchmarks",
+  "pallet-did-lookup/runtime-benchmarks",
   "pallet-referenda/runtime-benchmarks",
   "runtime-common/runtime-benchmarks",
 ]

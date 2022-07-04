@@ -29,4 +29,5 @@ std = [
   "scale-info/std",
   "did/std",
   "kilt-support/std",
+  "pallet-did-lookup/std",
 ]

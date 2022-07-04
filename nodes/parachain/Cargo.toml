@@ -107,6 +107,7 @@ fast-gov = [
 ]
 runtime-benchmarks = [
   "pallet-conviction-voting/runtime-benchmarks",
+  "pallet-did-lookup/runtime-benchmarks",
   "pallet-referenda/runtime-benchmarks",
   "polkadot-service/runtime-benchmarks",
   "peregrine-runtime/runtime-benchmarks",

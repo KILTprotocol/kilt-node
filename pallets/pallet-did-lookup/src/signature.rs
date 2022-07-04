@@ -27,12 +27,9 @@ pub enum WrapType {
 	Substrate,
 	Ethereum,
 }
-pub trait GetWrapType {
-	fn get_wrap_type(&self) -> WrapType;
-}
 
-pub(crate) fn get_wrapped_payload<A: GetWrapType>(payload: &[u8], account: &A) -> Vec<u8> {
-	match account.get_wrap_type() {
+pub(crate) fn get_wrapped_payload(payload: &[u8], wrap_type: WrapType) -> Vec<u8> {
+	match wrap_type {
 		WrapType::Substrate => PAYLOAD_BYTES_WRAPPER_PREFIX
 			.iter()
 			.chain(payload.iter())

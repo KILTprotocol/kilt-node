@@ -912,7 +912,7 @@ impl_runtime_apis! {
 					did::Did::<Runtime>::get(&owner_info.owner).map(|details| (owner_info, details))
 				})
 				.map(|(owner_info, details)| {
-					let accounts: Vec<LinkableAccountId> = pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(
+					let accounts = pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(
 						&owner_info.owner,
 					).collect();
 					let service_endpoints = did::ServiceEndpoints::<Runtime>::iter_prefix(&owner_info.owner).map(|e| From::from(e.1)).collect();
