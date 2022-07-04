@@ -213,22 +213,7 @@ pub mod pallet {
 				Error::<T>::NotAuthorized
 			);
 
-			match req {
-				AssociateAccountRequest::Substrate(acc, proof) => {
-					ensure!(
-						proof.verify(&get_wrapped_payload(&encoded_payload[..], crate::signature::WrapType::Substrate)[..], &acc),
-						Error::<T>::NotAuthorized
-					);
-					Self::add_association(sender, did_identifier, acc.into())?;
-				}
-				AssociateAccountRequest::Ethereum(acc, proof) => {
-					ensure!(
-						proof.verify(&get_wrapped_payload(&encoded_payload[..], crate::signature::WrapType::Ethereum)[..], &acc),
-						Error::<T>::NotAuthorized
-					);
-					Self::add_association(sender, did_identifier, acc.into())?;
-				}
-			};
+			Self::add_association(sender, did_identifier, req.get_linkable_account())?;
 
 			Ok(())
 		}
@@ -374,6 +359,13 @@ pub mod pallet {
 				AssociateAccountRequest::Ethereum(acc, proof) => {
 					proof.verify(&get_wrapped_payload(&encoded_payload[..], crate::signature::WrapType::Ethereum)[..], acc)
 				}
+			}
+		}
+
+		pub fn get_linkable_account(&self) -> LinkableAccountId {
+			match self {
+				AssociateAccountRequest::Substrate(acc, _) => acc.clone().into(),
+				AssociateAccountRequest::Ethereum(acc, _) => acc.clone().into(),
 			}
 		}
 	}
