@@ -26,8 +26,8 @@
 
 pub mod account;
 pub mod default_weights;
-pub mod migrations;
 pub mod linkable_account;
+pub mod migrations;
 
 mod connection_record;
 mod signature;
@@ -40,7 +40,6 @@ mod mock;
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
-
 
 pub use crate::{default_weights::WeightInfo, pallet::*};
 
@@ -57,7 +56,7 @@ pub enum AssociateAccountRequest {
 
 #[frame_support::pallet]
 pub mod pallet {
-	use super::{linkable_account::{LinkableAccountId}, AssociateAccountRequest, WeightInfo};
+	use super::{linkable_account::LinkableAccountId, AssociateAccountRequest, WeightInfo};
 
 	use frame_support::{
 		ensure,
@@ -91,7 +90,6 @@ pub mod pallet {
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
-
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 
 		/// The origin that can associate accounts to itself.
@@ -348,15 +346,21 @@ pub mod pallet {
 	}
 
 	impl AssociateAccountRequest {
-		pub fn verify<T: Config>(&self, did_identifier: <T as Config>::DidIdentifier, expiration: <T as frame_system::Config>::BlockNumber) -> bool {
+		pub fn verify<T: Config>(
+			&self,
+			did_identifier: <T as Config>::DidIdentifier,
+			expiration: <T as frame_system::Config>::BlockNumber,
+		) -> bool {
 			let encoded_payload = (&did_identifier, expiration).encode();
 			match self {
-				AssociateAccountRequest::Dotsama(acc, proof) => {
-					proof.verify(&get_wrapped_payload(&encoded_payload[..], crate::signature::WrapType::Substrate)[..], acc)
-				}
-				AssociateAccountRequest::Ethereum(acc, proof) => {
-					proof.verify(&get_wrapped_payload(&encoded_payload[..], crate::signature::WrapType::Ethereum)[..], acc)
-				}
+				AssociateAccountRequest::Dotsama(acc, proof) => proof.verify(
+					&get_wrapped_payload(&encoded_payload[..], crate::signature::WrapType::Substrate)[..],
+					acc,
+				),
+				AssociateAccountRequest::Ethereum(acc, proof) => proof.verify(
+					&get_wrapped_payload(&encoded_payload[..], crate::signature::WrapType::Ethereum)[..],
+					acc,
+				),
 			}
 		}
 
@@ -367,5 +371,4 @@ pub mod pallet {
 			}
 		}
 	}
-
 }

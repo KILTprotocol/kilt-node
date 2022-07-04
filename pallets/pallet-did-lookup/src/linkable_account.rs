@@ -17,13 +17,10 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use codec::{Decode, Encode, MaxEncodedLen};
-use frame_support::RuntimeDebug;
 use scale_info::TypeInfo;
-use sp_runtime::{AccountId32, MultiSignature, MultiSigner};
+use sp_runtime::AccountId32;
 
-use crate::{
-	account::{AccountId20, EthereumSignature, EthereumSigner},
-};
+use crate::account::AccountId20;
 
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, MaxEncodedLen, TypeInfo)]
@@ -50,64 +47,6 @@ impl std::fmt::Display for LinkableAccountId {
 		match self {
 			Self::AccountId20(account_id) => write!(f, "{}", account_id),
 			Self::AccountId32(account_id) => write!(f, "{}", account_id),
-		}
-	}
-}
-
-#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Eq, PartialEq, Clone, Encode, Decode, MaxEncodedLen, RuntimeDebug, TypeInfo)]
-pub enum LinkableAccountSignature {
-	MultiSignature(MultiSignature),
-	EthereumSignature(EthereumSignature),
-}
-
-impl From<MultiSignature> for LinkableAccountSignature {
-	fn from(signature: MultiSignature) -> Self {
-		Self::MultiSignature(signature)
-	}
-}
-
-impl From<EthereumSignature> for LinkableAccountSignature {
-	fn from(signature: EthereumSignature) -> Self {
-		Self::EthereumSignature(signature)
-	}
-}
-
-impl From<sp_core::sr25519::Signature> for LinkableAccountSignature {
-	fn from(signature: sp_core::sr25519::Signature) -> Self {
-		Self::MultiSignature(signature.into())
-	}
-}
-
-impl sp_runtime::traits::Verify for LinkableAccountSignature {
-	type Signer = LinkableAccountSigner;
-	fn verify<L: sp_runtime::traits::Lazy<[u8]>>(&self, msg: L, signer: &LinkableAccountId) -> bool {
-		match self {
-			LinkableAccountSignature::MultiSignature(sig) => match signer {
-				LinkableAccountId::AccountId32(id) => sig.verify(msg, id),
-				LinkableAccountId::AccountId20(_) => false,
-			},
-			LinkableAccountSignature::EthereumSignature(sig) => match signer {
-				LinkableAccountId::AccountId20(id) => sig.verify(msg, id),
-				LinkableAccountId::AccountId32(_) => false,
-			},
-		}
-	}
-}
-
-#[derive(Eq, PartialEq, Ord, PartialOrd, Clone, Encode, Decode, RuntimeDebug, TypeInfo)]
-#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
-pub enum LinkableAccountSigner {
-	MultiSigner(MultiSigner),
-	EthereumSigner(EthereumSigner),
-}
-
-impl sp_runtime::traits::IdentifyAccount for LinkableAccountSigner {
-	type AccountId = LinkableAccountId;
-	fn into_account(self) -> LinkableAccountId {
-		match self {
-			Self::MultiSigner(signer) => LinkableAccountId::AccountId32(signer.into_account()),
-			Self::EthereumSigner(signer) => LinkableAccountId::AccountId20(signer.into_account()),
 		}
 	}
 }
