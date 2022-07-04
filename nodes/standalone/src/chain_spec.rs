@@ -19,7 +19,7 @@
 //! KILT chain specification
 
 use mashnet_node_runtime::{
-	BalancesConfig, GenesisConfig, IndicesConfig, SessionConfig, SudoConfig, SystemConfig, VestingConfig, WASM_BINARY,
+	BalancesConfig, GenesisConfig, IndicesConfig, SessionConfig, SudoConfig, SystemConfig, WASM_BINARY,
 };
 use runtime_common::{AccountId, AccountPublic};
 
@@ -155,7 +155,6 @@ fn devnet_genesis(
 		aura: Default::default(),
 		grandpa: Default::default(),
 		sudo: SudoConfig { key: Some(root_key) },
-		vesting: VestingConfig { vesting: vec![] },
 	}
 }
 
