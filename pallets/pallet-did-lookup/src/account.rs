@@ -36,7 +36,7 @@ pub use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
 /// The AccountId20 type.
 /// It is a 20-byte Ethereum address.
-#[derive(Eq, PartialEq, Copy, Clone, Encode, Decode, TypeInfo, MaxEncodedLen, Default, PartialOrd, Ord)]
+#[derive(Eq, PartialEq, Copy, Clone, Encode, Decode, TypeInfo, MaxEncodedLen, Default, PartialOrd, Ord, RuntimeDebug)]
 pub struct AccountId20(pub [u8; 20]);
 
 #[cfg(feature = "std")]
@@ -49,12 +49,6 @@ impl std::fmt::Display for AccountId20 {
 	// Maybe this one https://github.com/miguelmota/rust-eth-checksum
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		write!(f, "{:?}", self.0)
-	}
-}
-
-impl core::fmt::Debug for AccountId20 {
-	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-		write!(f, "{:?}", H160(self.0))
 	}
 }
 
