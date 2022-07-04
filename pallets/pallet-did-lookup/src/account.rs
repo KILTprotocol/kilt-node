@@ -36,7 +36,9 @@ pub use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
 /// The AccountId20 type.
 /// It is a 20-byte Ethereum address.
-#[derive(Eq, PartialEq, Copy, Clone, Encode, Decode, TypeInfo, MaxEncodedLen, Default, PartialOrd, Ord, RuntimeDebug)]
+#[derive(
+	Eq, PartialEq, Copy, Clone, Encode, Decode, TypeInfo, MaxEncodedLen, Default, PartialOrd, Ord, RuntimeDebug,
+)]
 pub struct AccountId20(pub [u8; 20]);
 
 #[cfg(feature = "std")]
