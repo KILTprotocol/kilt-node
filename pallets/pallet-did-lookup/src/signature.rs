@@ -23,7 +23,7 @@ use sp_std::vec::Vec;
 const PAYLOAD_BYTES_WRAPPER_PREFIX: &[u8; 7] = b"<Bytes>";
 const PAYLOAD_BYTES_WRAPPER_POSTFIX: &[u8; 8] = b"</Bytes>";
 const ETHEREUM_SIGNATURE_PREFIX: &[u8; 26] = b"\x19Ethereum Signed Message:\n";
-pub enum WrapType {
+pub(crate) enum WrapType {
 	Substrate,
 	Ethereum,
 }
