@@ -16,20 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::{sp_runtime::RuntimeDebug, traits::ConstU32, BoundedVec};
-
-const MINIMUM_NAMESPACE_LENGTH: usize = 3;
-const MAXIMUM_NAMESPACE_LENGTH: usize = 8;
-const MAXIMUM_NAMESPACE_LENGTH_U32: u32 = MAXIMUM_NAMESPACE_LENGTH as u32;
-const MINIMUM_REFERENCE_LENGTH: usize = 1;
-const MAXIMUM_REFERENCE_LENGTH: usize = 64;
-const MAXIMUM_REFERENCE_LENGTH_U32: u32 = MAXIMUM_REFERENCE_LENGTH as u32;
-const MINIMUM_IDENTIFIER_LENGTH: usize = 1;
-const MAXIMUM_IDENTIFIER_LENGTH: usize = 78;
-const MAXIMUM_IDENTIFIER_LENGTH_U32: u32 = MAXIMUM_IDENTIFIER_LENGTH as u32;
-
-// 20 bytes -> 40 HEX characters
-const EVM_SMART_CONTRACT_ADDRESS_LENGTH: usize = 40;
+use frame_support::sp_runtime::RuntimeDebug;
 
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug)]
 pub enum AssetIdError {
@@ -60,15 +47,47 @@ pub enum IdentifierError {
 	InvalidCharacter,
 }
 
+impl From<NamespaceError> for AssetIdError {
+	fn from(err: NamespaceError) -> Self {
+        Self::Namespace(err)
+    }
+}
+
+impl From<ReferenceError> for AssetIdError {
+	fn from(err: ReferenceError) -> Self {
+        Self::Reference(err)
+    }
+}
+
+impl From<IdentifierError> for AssetIdError {
+	fn from(err: IdentifierError) -> Self {
+        Self::Identifier(err)
+    }
+}
+
 pub use v1::*;
 
 pub mod v1 {
-	use super::*;
+	use super::{AssetIdError, NamespaceError, ReferenceError, IdentifierError};
 
 	use codec::{Decode, Encode, MaxEncodedLen};
 	use scale_info::TypeInfo;
 
+	use frame_support::{sp_runtime::RuntimeDebug, traits::ConstU32, BoundedVec};
 	use sp_std::vec::Vec;
+
+	const MINIMUM_NAMESPACE_LENGTH: usize = 3;
+	const MAXIMUM_NAMESPACE_LENGTH: usize = 8;
+	const MAXIMUM_NAMESPACE_LENGTH_U32: u32 = MAXIMUM_NAMESPACE_LENGTH as u32;
+	const MINIMUM_REFERENCE_LENGTH: usize = 1;
+	const MAXIMUM_REFERENCE_LENGTH: usize = 64;
+	const MAXIMUM_REFERENCE_LENGTH_U32: u32 = MAXIMUM_REFERENCE_LENGTH as u32;
+	const MINIMUM_IDENTIFIER_LENGTH: usize = 1;
+	const MAXIMUM_IDENTIFIER_LENGTH: usize = 78;
+	const MAXIMUM_IDENTIFIER_LENGTH_U32: u32 = MAXIMUM_IDENTIFIER_LENGTH as u32;
+
+	// 20 bytes -> 40 HEX characters
+	const EVM_SMART_CONTRACT_ADDRESS_LENGTH: usize = 40;
 
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
 	pub enum AssetId {

@@ -16,18 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use base58::FromBase58;
-use core::str;
-
-use frame_support::{sp_runtime::RuntimeDebug, traits::ConstU32, BoundedVec};
-use sp_std::vec::Vec;
-
-const MINIMUM_NAMESPACE_LENGTH: usize = 3;
-const MAXIMUM_NAMESPACE_LENGTH: usize = 8;
-const MAXIMUM_NAMESPACE_LENGTH_U32: u32 = MAXIMUM_NAMESPACE_LENGTH as u32;
-const MINIMUM_REFERENCE_LENGTH: usize = 1;
-const MAXIMUM_REFERENCE_LENGTH: usize = 32;
-const MAXIMUM_REFERENCE_LENGTH_U32: u32 = MAXIMUM_REFERENCE_LENGTH as u32;
+use frame_support::sp_runtime::RuntimeDebug;
 
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug)]
 pub enum ChainIdError {
@@ -50,13 +39,39 @@ pub enum ReferenceError {
 	InvalidCharacter,
 }
 
+impl From<NamespaceError> for ChainIdError {
+    fn from(err: NamespaceError) -> Self {
+        Self::Namespace(err)
+    }
+}
+
+impl From<ReferenceError> for ChainIdError {
+    fn from(err: ReferenceError) -> Self {
+        Self::Reference(err)
+    }
+}
+
 pub use v1::*;
 
 mod v1 {
-	use super::*;
+	use super::{ChainIdError, NamespaceError, ReferenceError};
+
+	use base58::FromBase58;
+
+	use core::str;
 
 	use codec::{Decode, Encode, MaxEncodedLen};
 	use scale_info::TypeInfo;
+
+	use frame_support::{sp_runtime::RuntimeDebug, traits::ConstU32, BoundedVec};
+	use sp_std::vec::Vec;
+
+	const MINIMUM_NAMESPACE_LENGTH: usize = 3;
+	const MAXIMUM_NAMESPACE_LENGTH: usize = 8;
+	const MAXIMUM_NAMESPACE_LENGTH_U32: u32 = MAXIMUM_NAMESPACE_LENGTH as u32;
+	const MINIMUM_REFERENCE_LENGTH: usize = 1;
+	const MAXIMUM_REFERENCE_LENGTH: usize = 32;
+	const MAXIMUM_REFERENCE_LENGTH_U32: u32 = MAXIMUM_REFERENCE_LENGTH as u32;
 
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
 	pub enum ChainId {
