@@ -19,16 +19,13 @@
 //! KILT chain specification
 
 use mashnet_node_runtime::{
-	BalancesConfig, GenesisConfig, IndicesConfig, SessionConfig, SudoConfig, SystemConfig, VestingConfig, WASM_BINARY,
+	BalancesConfig, GenesisConfig, IndicesConfig, SessionConfig, SudoConfig, SystemConfig, WASM_BINARY,
 };
-use runtime_common::{AccountId, AccountPublic, Balance, BlockNumber};
-
-use hex_literal::hex;
+use runtime_common::{AccountId, AccountPublic};
 
 use sc_service::{self, ChainType, Properties};
-use sc_telemetry::TelemetryEndpoints;
 use sp_consensus_aura::ed25519::AuthorityId as AuraId;
-use sp_core::{crypto::UncheckedInto, ed25519, sr25519, Pair, Public};
+use sp_core::{ed25519, sr25519, Pair, Public};
 use sp_finality_grandpa::AuthorityId as GrandpaId;
 use sp_runtime::traits::IdentifyAccount;
 
@@ -48,8 +45,6 @@ pub enum Alternative {
 	Development,
 	/// Whatever the current runtime is, with simple Alice/Bob auths.
 	KiltTestnet,
-	/// Sporran Testnet
-	SporranTestnet,
 }
 
 /// Helper function to generate a crypto pair from seed
@@ -76,12 +71,6 @@ fn get_authority_keys_from_secret(seed: &str) -> (AccountId, AuraId, GrandpaId) 
 	)
 }
 
-const TELEMETRY_URL: &str = "wss://telemetry-backend.kilt.io:8080/submit";
-
-const SPORRAN_AUTHORITY_ACC: [u8; 32] = hex!("2c94fbcfe0a7db40579e12bc74d0f7215fe91ba51b3eade92799788ca549f373");
-const SPORRAN_AUTHORITY_SESSION: [u8; 32] = hex!("3bbaa842650064362767a1d9dd8899f531c80dc42eafb9599f4df0965e4a5299");
-const SPORRAN_FAUCET: [u8; 32] = hex!("2c9e9c40e15a2767e2d04dc1f05d824dd76d1d37bada3d7bb1d40eca29f3a4ff");
-
 impl Alternative {
 	/// Get an actual chain config from one of the alternatives.
 	pub(crate) fn load(self) -> Result<ChainSpec, String> {
@@ -98,7 +87,7 @@ impl Alternative {
 					"development",
 					ChainType::Development,
 					move || {
-						testnet_genesis(
+						devnet_genesis(
 							wasm_binary,
 							vec![get_authority_keys_from_secret("//Alice")],
 							get_account_id_from_secret::<ed25519::Public>("//Alice"),
@@ -120,39 +109,6 @@ impl Alternative {
 					None,
 				)
 			}
-			Alternative::SporranTestnet => {
-				properties.insert("tokenSymbol".into(), "SILT".into());
-				ChainSpec::from_genesis(
-					"Sporran",
-					"sporran",
-					ChainType::Development,
-					move || {
-						testnet_genesis(
-							wasm_binary,
-							vec![(
-								SPORRAN_AUTHORITY_ACC.into(),
-								SPORRAN_AUTHORITY_SESSION.unchecked_into(),
-								SPORRAN_AUTHORITY_SESSION.unchecked_into(),
-							)],
-							SPORRAN_AUTHORITY_ACC.into(),
-							vec![SPORRAN_FAUCET.into(), SPORRAN_AUTHORITY_ACC.into()],
-						)
-					},
-					vec![
-						"/dns4/bootnode.kilt.io/tcp/30340/p2p/12D3KooWGXaTjB6KmPHxyCx2dQLpS7p9vnXAYmprQMsVNnxYAWYa"
-							.parse()
-							.expect("bootnode address is formatted correctly; qed"),
-					],
-					Some(
-						TelemetryEndpoints::new(vec![(TELEMETRY_URL.to_string(), 0)])
-							.expect("SILT telemetry url is valid; qed"),
-					),
-					Some("SILT"),
-					None,
-					Some(properties),
-					None,
-				)
-			}
 			Alternative::KiltTestnet => ChainSpec::from_json_bytes(&include_bytes!("../res/testnet.json")[..])?,
 		})
 	}
@@ -161,26 +117,17 @@ impl Alternative {
 		match s {
 			"dev" => Some(Alternative::Development),
 			"kilt-testnet" => Some(Alternative::KiltTestnet),
-			"sporran-new" => Some(Alternative::SporranTestnet),
 			_ => None,
 		}
 	}
 }
 
-fn testnet_genesis(
+fn devnet_genesis(
 	wasm_binary: &[u8],
 	initial_authorities: Vec<(AccountId, AuraId, GrandpaId)>,
 	root_key: AccountId,
 	endowed_accounts: Vec<AccountId>,
 ) -> GenesisConfig {
-	type VestingPeriod = BlockNumber;
-	type LockingPeriod = BlockNumber;
-
-	// vesting and locks as initially designed
-	let airdrop_accounts_json = &include_bytes!("../res/genesis-testing/genesis_accounts.json")[..];
-	let airdrop_accounts: Vec<(AccountId, Balance, VestingPeriod, LockingPeriod)> =
-		serde_json::from_slice(airdrop_accounts_json).expect("Could not read from genesis_accounts.json");
-
 	GenesisConfig {
 		system: SystemConfig {
 			code: wasm_binary.to_vec(),
@@ -188,12 +135,7 @@ fn testnet_genesis(
 		indices: IndicesConfig { indices: vec![] },
 		transaction_payment: Default::default(),
 		balances: BalancesConfig {
-			balances: endowed_accounts
-				.iter()
-				.cloned()
-				.map(|a| (a, 1u128 << 90))
-				.chain(airdrop_accounts.iter().cloned().map(|(who, total, _, _)| (who, total)))
-				.collect(),
+			balances: endowed_accounts.iter().cloned().map(|a| (a, 1u128 << 90)).collect(),
 		},
 		session: SessionConfig {
 			keys: initial_authorities
@@ -213,7 +155,6 @@ fn testnet_genesis(
 		aura: Default::default(),
 		grandpa: Default::default(),
 		sudo: SudoConfig { key: Some(root_key) },
-		vesting: VestingConfig { vesting: vec![] },
 	}
 }
 
