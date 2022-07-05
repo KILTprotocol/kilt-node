@@ -18,14 +18,15 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use crate::account::{AccountId20, EthereumSignature};
-use crate::linkable_account::LinkableAccountId;
-use crate::signature::get_wrapped_payload;
+use crate::{
+	account::{AccountId20, EthereumSignature},
+	linkable_account::LinkableAccountId,
+	signature::get_wrapped_payload,
+};
 
 use codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
-use sp_runtime::{AccountId32, MultiSignature};
-use sp_runtime::traits::{Verify};
+use sp_runtime::{traits::Verify, AccountId32, MultiSignature};
 
 #[derive(Clone, Debug, Eq, PartialEq, Encode, Decode, MaxEncodedLen, TypeInfo)]
 pub enum AssociateAccountRequest {

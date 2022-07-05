@@ -29,9 +29,9 @@ pub mod default_weights;
 pub mod linkable_account;
 pub mod migrations;
 
+mod associate_account_request;
 mod connection_record;
 mod signature;
-mod associate_account_request;
 
 #[cfg(test)]
 mod tests;
@@ -57,10 +57,9 @@ pub mod pallet {
 	};
 	use frame_system::pallet_prelude::*;
 	use kilt_support::{deposit::Deposit, traits::CallSources};
-	use sp_runtime::traits::{BlockNumberProvider};
+	use sp_runtime::traits::BlockNumberProvider;
 
 	pub use crate::connection_record::ConnectionRecord;
-
 
 	/// The native identifier for accounts in this runtime.
 	pub(crate) type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
@@ -335,5 +334,4 @@ pub mod pallet {
 			}
 		}
 	}
-
 }
