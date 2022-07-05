@@ -16,6 +16,46 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_benchmarking::impl_benchmark_test_suite;
+use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
+use frame_support::traits::{Currency, Get};
+use sp_runtime::traits::Hash;
 
-impl_benchmark_test_suite!(Pallet, crate::mock::ExtBuilder::default().build(), crate::mock::Test,);
+use kilt_support::traits::GenerateBenchmarkOrigin;
+
+use crate::*;
+
+const SEED: u32 = 0;
+
+fn generate_credential<T: Config>() -> CredentialOf<T> {
+	let ctype_hash: T::Hash = T::Hash::default();
+	// let subject_id: Vec<u8> = b"
+	let claim_hash: T::Hash = T::Hashing::hash(b"claim");
+}
+
+benchmarks! {
+	where_clause {
+		where
+		T: core::fmt::Debug,
+		T: Config,
+		T: attestation::Config,
+		T: ctype::Config<CtypeCreatorId = T::AttesterId>,
+		<T as Config>::EnsureOrigin: GenerateBenchmarkOrigin<T::Origin, T::AccountId, <T as attestation::Config>::AttesterId>,
+	}
+
+	add {
+		let sender: T::AccountId = account("sender", 0, SEED);
+		let attester: T::AttesterId = account("attester", 0, SEED);
+
+		ctype::Ctypes::<T>::insert(&ctype_hash, attester.clone());
+		CurrencyOf::<T>::make_free_balance_be(&sender, <T as attestation::Config>::Deposit::get() + <T as attestation::Config>::Deposit::get() + <T as Config>::Deposit::get());
+
+		let origin = <T as Config>::EnsureOrigin::generate_origin(sender.clone(), attester.clone());
+	}: _<T::Origin>(origin, test)
+	verify {}
+}
+
+impl_benchmark_test_suite! {
+	Pallet,
+	crate::mock::ExtBuilder::default().build_with_keystore(),
+	crate::mock::Test
+}

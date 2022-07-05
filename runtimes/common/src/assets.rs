@@ -21,19 +21,19 @@ use scale_info::TypeInfo;
 use sp_runtime::RuntimeDebug;
 use sp_std::{marker::PhantomData, vec::Vec};
 
-use kilt_asset_dids::Asset;
+use kilt_asset_dids::AssetDid as AssetIdentifier;
 use public_credentials::{Config, Error};
 
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
 #[scale_info(skip_type_params(T))]
 #[codec(mel_bound())]
-pub struct AssetId<T: Config>(Asset, Option<PhantomData<T>>);
+pub struct AssetDid<T: Config>(AssetIdentifier, Option<PhantomData<T>>);
 
-impl<T: Config> TryFrom<Vec<u8>> for AssetId<T> {
+impl<T: Config> TryFrom<Vec<u8>> for AssetDid<T> {
 	type Error = Error<T>;
 
 	fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
-		let asset = Asset::try_from(&value[..]).map_err(|_| Error::<T>::InvalidInput)?;
+		let asset = AssetIdentifier::try_from(&value[..]).map_err(|_| Error::<T>::InvalidInput)?;
 		Ok(Self(asset, None))
 	}
 }

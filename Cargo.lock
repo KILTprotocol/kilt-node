@@ -8399,6 +8399,7 @@ dependencies = [
  "frame-support",
  "frame-system",
  "hex",
+ "kilt-asset-dids",
  "kilt-support",
  "log",
  "pallet-balances",

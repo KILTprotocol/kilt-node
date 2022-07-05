@@ -60,7 +60,7 @@ fn add_with_no_signature_successful() {
 			let stored_attestation =
 				Attestations::<Test>::get(&claim_hash).expect("Attestation should be present on chain.");
 			let stored_public_credential_details =
-				Credentials::<Test>::get(&TestSubjectId::try_from(subject_id.clone()).unwrap(), &claim_hash)
+				Credentials::<Test>::get(&TestSubjectId::try_from(subject_id).unwrap(), &claim_hash)
 					.expect("Public credential details should be present on chain.");
 
 			// Test interactions with attestation pallet
@@ -106,7 +106,7 @@ fn add_with_no_signature_successful() {
 			let stored_attestation =
 				Attestations::<Test>::get(&claim_hash_2).expect("Attestation #2 should be present on chain.");
 			let stored_public_credential_details =
-				Credentials::<Test>::get(&TestSubjectId::try_from(subject_id.clone()).unwrap(), &claim_hash_2)
+				Credentials::<Test>::get(&TestSubjectId::try_from(subject_id).unwrap(), &claim_hash_2)
 					.expect("Public credential #2 details should be present on chain.");
 
 			// Test interactions with attestation pallet
@@ -178,7 +178,7 @@ fn add_with_claimer_signature_successful() {
 			let stored_attestation =
 				Attestations::<Test>::get(&claim_hash).expect("Attestation should be present on chain.");
 			let stored_public_credential_details =
-				Credentials::<Test>::get(&TestSubjectId::try_from(subject_id.clone()).unwrap(), &claim_hash)
+				Credentials::<Test>::get(&TestSubjectId::try_from(subject_id).unwrap(), &claim_hash)
 					.expect("Public credential details should be present on chain.");
 
 			// Test interactions with attestation pallet
@@ -332,7 +332,7 @@ fn add_invalid_subject_id() {
 	let claimer_id = sr25519_did_from_seed(&CHARLIE_SEED);
 	let new_credential = generate_base_public_credential_creation_op::<Test>(
 		// 33 != expected size 32 -> triggers InvalidInput error
-		vec![200u8; 33].into(),
+		vec![200u8; 33],
 		claim_hash,
 		ctype_hash,
 		Some(ClaimerSignatureInfoOf::<Test> {
@@ -388,7 +388,7 @@ fn remove_successful() {
 
 			// Test this pallet logic
 			assert_eq!(
-				Credentials::<Test>::get(&TestSubjectId::try_from(subject_id.clone()).unwrap(), &claim_hash),
+				Credentials::<Test>::get(&subject_id, &claim_hash),
 				None
 			);
 			assert_eq!(CredentialsUnicityIndex::<Test>::get(&claim_hash), None);
@@ -479,7 +479,7 @@ fn reclaim_deposit_successful() {
 
 			// Test this pallet logic
 			assert_eq!(
-				Credentials::<Test>::get(&TestSubjectId::try_from(subject_id.clone()).unwrap(), &claim_hash),
+				Credentials::<Test>::get(&subject_id, &claim_hash),
 				None
 			);
 			assert_eq!(CredentialsUnicityIndex::<Test>::get(&claim_hash), None);

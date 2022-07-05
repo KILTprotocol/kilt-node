@@ -27,6 +27,7 @@ serde = {version = "1.0.137", optional = true}
 # Internal dependencies
 attestation = {default-features = false, path = "../attestation"}
 ctype = {default-features = false, path = "../ctype"}
+kilt-asset-dids = {default-features = false, path = "../../utilities/assets"}
 kilt-support = {default-features = false, path = "../../support"}
 
 #External dependencies
@@ -54,6 +55,7 @@ std = [
   "ctype/std",
   "frame-support/std",
   "frame-system/std",
+  "kilt-asset-dids/std",
   "kilt-support/std",
   "log/std",
   "pallet-balances/std",

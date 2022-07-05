@@ -24,31 +24,31 @@ use sp_std::vec::Vec;
 use crate::*;
 
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
-pub struct Asset {
+pub struct AssetDid {
 	pub chain_id: ChainId,
 	pub asset_id: AssetId,
 }
 
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug)]
-pub enum AssetError {
+pub enum AssetDidError {
 	ChainId(ChainIdError),
 	AssetId(AssetIdError),
 	InvalidInput,
 }
 
-impl From<ChainIdError> for AssetError {
+impl From<ChainIdError> for AssetDidError {
 	fn from(err: ChainIdError) -> Self {
 		Self::ChainId(err)
 	}
 }
 
-impl From<AssetIdError> for AssetError {
+impl From<AssetIdError> for AssetDidError {
 	fn from(err: AssetIdError) -> Self {
 		Self::AssetId(err)
 	}
 }
 
-impl Asset {
+impl AssetDid {
 	pub fn ether_currency() -> Self {
 		Self {
 			chain_id: Eip155Reference::ethereum_mainnet().into(),
@@ -115,36 +115,41 @@ impl Asset {
 	}
 }
 
-impl TryFrom<&[u8]> for Asset {
-	type Error = AssetError;
+impl TryFrom<&[u8]> for AssetDid {
+	type Error = AssetDidError;
 
 	fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
-		let mut components = value.split(|c| *c == b'.');
+		match value {
+			[b'd', b'i', b'd', b':', b'a', b's', b's', b'e', b't', b':', components @ ..] => {
+				let mut components = components.split(|c| *c == b'.');
 
-		let chain_id = components
-			.next()
-			.ok_or(AssetError::InvalidInput)
-			.and_then(|input| ChainId::try_from(input).map_err(AssetError::ChainId))?;
+				let chain_id = components
+					.next()
+					.ok_or(AssetDidError::InvalidInput)
+					.and_then(|input| ChainId::try_from(input).map_err(AssetDidError::ChainId))?;
 
-		let asset_id = components
-			.next()
-			.ok_or(AssetError::InvalidInput)
-			.and_then(|input| AssetId::try_from(input).map_err(AssetError::AssetId))?;
+				let asset_id = components
+					.next()
+					.ok_or(AssetDidError::InvalidInput)
+					.and_then(|input| AssetId::try_from(input).map_err(AssetDidError::AssetId))?;
 
-		Ok(Self { chain_id, asset_id })
+				Ok(Self { chain_id, asset_id })
+			},
+			_ => Err(AssetDidError::InvalidInput)
+		}
 	}
 }
 
-impl TryFrom<Vec<u8>> for Asset {
-	type Error = AssetError;
+impl TryFrom<Vec<u8>> for AssetDid {
+	type Error = AssetDidError;
 
 	fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
 		Self::try_from(&value[..])
 	}
 }
 
-impl TryFrom<&'static str> for Asset {
-	type Error = AssetError;
+impl TryFrom<&'static str> for AssetDid {
+	type Error = AssetDidError;
 
 	fn try_from(value: &'static str) -> Result<Self, Self::Error> {
 		Self::try_from(value.as_bytes())
@@ -152,8 +157,8 @@ impl TryFrom<&'static str> for Asset {
 }
 
 #[cfg(feature = "std")]
-impl TryFrom<String> for Asset {
-	type Error = AssetError;
+impl TryFrom<String> for AssetDid {
+	type Error = AssetDidError;
 
 	fn try_from(value: String) -> Result<Self, Self::Error> {
 		Self::try_from(value.as_bytes())
@@ -194,12 +199,12 @@ mod test {
 	#[test]
 	fn helpers() {
 		// These functions should never crash. We just check that here.
-		Asset::ether_currency();
-		Asset::bitcoin_currency();
-		Asset::litecoin_currency();
-		Asset::dai_currency();
-		Asset::req_currency();
-		Asset::cryptokitties_collection();
-		Asset::themanymatts_collection();
+		AssetDid::ether_currency();
+		AssetDid::bitcoin_currency();
+		AssetDid::litecoin_currency();
+		AssetDid::dai_currency();
+		AssetDid::req_currency();
+		AssetDid::cryptokitties_collection();
+		AssetDid::themanymatts_collection();
 	}
 }

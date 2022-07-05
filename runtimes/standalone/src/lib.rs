@@ -491,7 +491,7 @@ impl pallet_public_credentials::Config for Runtime {
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
 	type Event = Event;
 	type InputError = pallet_public_credentials::Error<Self>;
-	type SubjectId = runtime_common::assets::AssetId<Self>;
+	type SubjectId = runtime_common::assets::AssetDid<Self>;
 	type WeightInfo = ();
 }
 
