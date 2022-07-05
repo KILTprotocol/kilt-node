@@ -20,7 +20,7 @@ use codec::MaxEncodedLen;
 use frame_support::{traits::Currency, BoundedVec};
 
 use did::DeriveDidCallAuthorizationVerificationKeyRelationship;
-use pallet_did_lookup::AssociateAccountRequest;
+use pallet_did_lookup::associate_account_request::AssociateAccountRequest;
 use pallet_treasury::BalanceOf;
 use pallet_web3_names::{Web3NameOf, Web3OwnershipOf};
 use runtime_common::constants::{
