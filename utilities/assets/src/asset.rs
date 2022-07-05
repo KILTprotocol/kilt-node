@@ -68,6 +68,8 @@ pub mod v1 {
 	use codec::{Decode, Encode, MaxEncodedLen};
 	use scale_info::TypeInfo;
 
+	use sp_std::vec::Vec;
+
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
 	pub enum AssetId {
 		Slip44(Slip44Reference),

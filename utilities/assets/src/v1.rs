@@ -19,6 +19,7 @@ use codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 
 use frame_support::sp_runtime::RuntimeDebug;
+use sp_std::vec::Vec;
 
 use crate::*;
 

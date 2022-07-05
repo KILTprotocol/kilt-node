@@ -4,7 +4,7 @@ description = "Enables adding and revoking public credentials."
 edition = "2021"
 name = "public-credentials"
 repository = "https://github.com/KILTprotocol/mashnet-node"
-version = "1.6.2"
+version = "1.7.0"
 
 [dev-dependencies]
 attestation = {features = ["mock"], path = "../attestation"}

@@ -20,6 +20,7 @@ use base58::FromBase58;
 use core::str;
 
 use frame_support::{sp_runtime::RuntimeDebug, traits::ConstU32, BoundedVec};
+use sp_std::vec::Vec;
 
 const MINIMUM_NAMESPACE_LENGTH: usize = 3;
 const MAXIMUM_NAMESPACE_LENGTH: usize = 8;
