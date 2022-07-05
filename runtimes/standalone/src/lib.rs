@@ -537,6 +537,7 @@ impl InstanceFilter<Call> for ProxyType {
 							| pallet_indices::Call::freeze { .. }
 					)
 					| Call::Proxy(..)
+					| Call::PublicCredentials(..)
 					| Call::Session(..)
 					// Excludes `Sudo`
 					| Call::System(..)
@@ -586,6 +587,7 @@ impl InstanceFilter<Call> for ProxyType {
 					)
 					| Call::Indices(..)
 					| Call::Proxy(..)
+					| Call::PublicCredentials(..)
 					| Call::Session(..)
 					// Excludes `Sudo`
 					| Call::System(..)
@@ -711,7 +713,7 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 			Call::Did { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
 			Call::Web3Names { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
 			Call::DidLookup { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
-			Call::PublicCredentials { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
+			Call::PublicCredentials { .. } => Ok(did::DidVerificationKeyRelationship::AssertionMethod),
 			Call::Utility(pallet_utility::Call::batch { calls }) => single_key_relationship(&calls[..]),
 			Call::Utility(pallet_utility::Call::batch_all { calls }) => single_key_relationship(&calls[..]),
 			#[cfg(not(feature = "runtime-benchmarks"))]

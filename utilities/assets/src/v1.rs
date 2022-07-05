@@ -120,6 +120,7 @@ impl TryFrom<&[u8]> for AssetDid {
 
 	fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
 		match value {
+			// Asset DIDs must start with "did:asset:" to be considered further.
 			[b'd', b'i', b'd', b':', b'a', b's', b's', b'e', b't', b':', components @ ..] => {
 				let mut components = components.split(|c| *c == b'.');
 
@@ -192,7 +193,7 @@ mod test {
 
 		// FIXME: Better test logic
 		for id in raw_ids {
-			assert!(Asset::try_from(id.as_bytes()).is_ok());
+			assert!(AssetDid::try_from(id.as_bytes()).is_ok());
 		}
 	}
 

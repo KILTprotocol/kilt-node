@@ -18,6 +18,7 @@
 
 use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
 use frame_support::traits::{Currency, Get};
+use frame_system::RawOrigin;
 use sp_runtime::traits::Hash;
 
 use kilt_support::traits::GenerateBenchmarkOrigin;
@@ -26,11 +27,11 @@ use crate::*;
 
 const SEED: u32 = 0;
 
-fn generate_credential<T: Config>() -> CredentialOf<T> {
-	let ctype_hash: T::Hash = T::Hash::default();
-	// let subject_id: Vec<u8> = b"
-	let claim_hash: T::Hash = T::Hashing::hash(b"claim");
-}
+// fn generate_credential<T: Config>() -> CredentialOf<T> {
+// 	let ctype_hash: T::Hash = T::Hash::default();
+// 	// let subject_id: Vec<u8> = b"
+// 	let claim_hash: T::Hash = T::Hashing::hash(b"claim");
+// }
 
 benchmarks! {
 	where_clause {
@@ -39,18 +40,18 @@ benchmarks! {
 		T: Config,
 		T: attestation::Config,
 		T: ctype::Config<CtypeCreatorId = T::AttesterId>,
-		<T as Config>::EnsureOrigin: GenerateBenchmarkOrigin<T::Origin, T::AccountId, <T as attestation::Config>::AttesterId>,
+		<T as Config>::EnsureOrigin: GenerateBenchmarkOrigin<T::Origin, T::AccountId, T::AttesterId>,
 	}
 
 	add {
 		let sender: T::AccountId = account("sender", 0, SEED);
-		let attester: T::AttesterId = account("attester", 0, SEED);
+		// let attester: T::AttesterId = account("attester", 0, SEED);
+		let claim_hash: T::Hash = T::Hash::default();
 
-		ctype::Ctypes::<T>::insert(&ctype_hash, attester.clone());
-		CurrencyOf::<T>::make_free_balance_be(&sender, <T as attestation::Config>::Deposit::get() + <T as attestation::Config>::Deposit::get() + <T as Config>::Deposit::get());
-
-		let origin = <T as Config>::EnsureOrigin::generate_origin(sender.clone(), attester.clone());
-	}: _<T::Origin>(origin, test)
+		// // ctype::Ctypes::<T>::insert(&ctype_hash, attester.clone());
+		// CurrencyOf::<T>::make_free_balance_be(&sender, <T as attestation::Config>::Deposit::get() + <T as attestation::Config>::Deposit::get() + <T as Config>::Deposit::get());
+		let origin = RawOrigin::Signed(sender);
+	}: reclaim_deposit(origin, claim_hash)
 	verify {}
 }
 
