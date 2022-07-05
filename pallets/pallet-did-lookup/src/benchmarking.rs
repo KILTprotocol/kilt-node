@@ -33,8 +33,12 @@ use frame_support::{
 use frame_system::RawOrigin;
 use kilt_support::traits::GenerateBenchmarkOrigin;
 use sha3::{Digest, Keccak256};
-use sp_io::crypto::{ecdsa_generate, sr25519_generate, ed25519_generate};
-use sp_runtime::{app_crypto::{sr25519, ed25519}, AccountId32, KeyTypeId, traits::IdentifyAccount};
+use sp_io::crypto::{ecdsa_generate, ed25519_generate, sr25519_generate};
+use sp_runtime::{
+	app_crypto::{ed25519, sr25519},
+	traits::IdentifyAccount,
+	AccountId32, KeyTypeId,
+};
 
 const SEED: u32 = 0;
 
@@ -120,7 +124,7 @@ benchmarks! {
 		assert!(ConnectedAccounts::<T>::get(&previous_did, linkable_id.clone()).is_none());
 		assert!(ConnectedAccounts::<T>::get(did, linkable_id).is_some());
 	}
-	
+
 	associate_account_multisig_ed25519 {
 		let caller: T::AccountId = account("caller", 0, SEED);
 		let did: T::DidIdentifier = account("did", 0, SEED);

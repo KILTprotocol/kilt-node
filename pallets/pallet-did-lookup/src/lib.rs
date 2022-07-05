@@ -86,7 +86,7 @@ pub mod pallet {
 	/// The connection record type.
 	pub(crate) type ConnectionRecordOf<T> = ConnectionRecord<DidIdentifierOf<T>, AccountIdOf<T>, BalanceOf<T>>;
 
-	pub const STORAGE_VERSION: StorageVersion = StorageVersion::new(2);
+	pub const STORAGE_VERSION: StorageVersion = StorageVersion::new(3);
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {

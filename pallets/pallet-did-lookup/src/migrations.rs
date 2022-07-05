@@ -16,17 +16,19 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use crate::{linkable_account::LinkableAccountId, AccountIdOf, Config, ConnectionRecordOf, DidIdentifierOf, Pallet};
+use crate::{
+	linkable_account::LinkableAccountId, AccountIdOf, Config, ConnectionRecordOf, DidIdentifierOf, Pallet,
+	STORAGE_VERSION,
+};
 
 #[cfg(feature = "try-runtime")]
 use crate::{ConnectedAccounts as ConnectedAccountsV2, ConnectedDids as ConnectedDidsV2};
 
-use codec::Encode;
 use frame_support::{
 	migration::move_prefix,
 	storage::{storage_prefix, unhashed},
 	storage_alias,
-	traits::{Get, GetStorageVersion, OnRuntimeUpgrade, PalletInfoAccess, StorageVersion},
+	traits::{Get, GetStorageVersion, OnRuntimeUpgrade, PalletInfoAccess},
 	Blake2_128Concat,
 };
 use sp_std::marker::PhantomData;
@@ -68,7 +70,7 @@ where
 	T::AccountId: Into<LinkableAccountId>,
 {
 	fn on_runtime_upgrade() -> frame_support::weights::Weight {
-		if Pallet::<T>::current_storage_version() == StorageVersion::new(3) {
+		if Pallet::<T>::current_storage_version() == STORAGE_VERSION {
 			// already on version 3
 			<T as frame_system::Config>::DbWeight::get().reads_writes(1, 0)
 		} else {
@@ -81,28 +83,19 @@ where
 			// to undefined results. Thus, we write to a temporary storage and move that at
 			// the end. Else we iterate over every key more or less twice.
 			ConnectedDids::<T>::drain().for_each(|(acc_id32, value)| {
-				log::debug!(
-					"🔎 #{:?} Migrating ConnectedDid for account id {:?}",
-					connected_dids.encode(),
-					acc_id32.encode()
-				);
+				log::debug!("🔎 #{} Migrating ConnectedDid for account", connected_dids,);
 				let acc_id: LinkableAccountId = acc_id32.into();
 				TmpConnectedDids::<T>::insert(acc_id, value);
-				connected_dids += 1;
+				connected_dids = connected_dids.saturating_add(1);
 			});
-			log::info!("🔎 DidLookup: Migrated all {:?} ConnectedDids", connected_dids);
+			log::info!("🔎 DidLookup: Migrated all {} ConnectedDids", connected_dids);
 
 			// Migrate accounts
 			ConnectedAccounts::<T>::drain().for_each(|(did_id, acc_id32, val)| {
-				log::debug!(
-					"🔎 #{:?} Migrating ConnectedAccount for did_id {:?} and account id {:?}",
-					connected_accounts,
-					did_id.encode(),
-					acc_id32.encode()
-				);
+				log::debug!("🔎 #{:?} Migrating ConnectedAccount", connected_accounts,);
 				let acc_id: LinkableAccountId = acc_id32.into();
 				TmpConnectedAccounts::<T>::insert(did_id, acc_id, val);
-				connected_accounts += 1;
+				connected_accounts = connected_accounts.saturating_add(1);
 			});
 			log::info!("🔎 DidLookup: Migrated all {:?} ConnectedAccounts", connected_accounts);
 
@@ -110,7 +103,7 @@ where
 			move_storage::<Pallet<T>>(b"TmpConnectedDids", b"ConnectedDids");
 			move_storage::<Pallet<T>>(b"TmpConnectedAccounts", b"ConnectedAccounts");
 
-			StorageVersion::new(3).put::<Pallet<T>>();
+			STORAGE_VERSION.put::<Pallet<T>>();
 
 			<T as frame_system::Config>::DbWeight::get().reads_writes(
 				(connected_dids.saturating_add(connected_accounts)).saturating_mul(2),
