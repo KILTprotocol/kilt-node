@@ -20,7 +20,7 @@
 //! Benchmarking
 
 use crate::{
-	linkable_account::LinkableAccountId, signature::get_wrapped_payload, AccountId20, AccountIdOf,
+	linkable_account::LinkableAccountId, signature::get_wrapped_payload, account::AccountId20, AccountIdOf,
 	AssociateAccountRequest, Call, Config, ConnectedAccounts, ConnectedDids, CurrencyOf, Pallet,
 };
 
