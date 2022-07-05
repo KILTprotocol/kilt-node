@@ -88,6 +88,12 @@ mod v1 {
 		}
 	}
 
+	impl From<GenericChainId> for ChainId {
+		fn from(chain_id: GenericChainId) -> Self {
+			Self::Generic(chain_id)
+		}
+	}
+
 	impl TryFrom<&[u8]> for ChainId {
 		type Error = ChainIdError;
 
