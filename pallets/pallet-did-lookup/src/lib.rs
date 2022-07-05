@@ -31,6 +31,7 @@ pub mod migrations;
 
 mod connection_record;
 mod signature;
+mod associate_account_request;
 
 #[cfg(test)]
 mod tests;
@@ -43,16 +44,7 @@ mod benchmarking;
 
 pub use crate::{default_weights::WeightInfo, pallet::*};
 
-use crate::account::{AccountId20, EthereumSignature};
-use codec::{Decode, Encode, MaxEncodedLen};
-use scale_info::TypeInfo;
-use sp_runtime::{AccountId32, MultiSignature};
-
-#[derive(Clone, Debug, Eq, PartialEq, Encode, Decode, MaxEncodedLen, TypeInfo)]
-pub enum AssociateAccountRequest {
-	Dotsama(AccountId32, MultiSignature),
-	Ethereum(AccountId20, EthereumSignature),
-}
+use crate::associate_account_request::AssociateAccountRequest;
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -65,11 +57,10 @@ pub mod pallet {
 	};
 	use frame_system::pallet_prelude::*;
 	use kilt_support::{deposit::Deposit, traits::CallSources};
-	use sp_runtime::traits::{BlockNumberProvider, Verify};
+	use sp_runtime::traits::{BlockNumberProvider};
 
 	pub use crate::connection_record::ConnectionRecord;
 
-	use crate::signature::get_wrapped_payload;
 
 	/// The native identifier for accounts in this runtime.
 	pub(crate) type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
@@ -345,30 +336,4 @@ pub mod pallet {
 		}
 	}
 
-	impl AssociateAccountRequest {
-		pub fn verify<T: Config>(
-			&self,
-			did_identifier: <T as Config>::DidIdentifier,
-			expiration: <T as frame_system::Config>::BlockNumber,
-		) -> bool {
-			let encoded_payload = (&did_identifier, expiration).encode();
-			match self {
-				AssociateAccountRequest::Dotsama(acc, proof) => proof.verify(
-					&get_wrapped_payload(&encoded_payload[..], crate::signature::WrapType::Substrate)[..],
-					acc,
-				),
-				AssociateAccountRequest::Ethereum(acc, proof) => proof.verify(
-					&get_wrapped_payload(&encoded_payload[..], crate::signature::WrapType::Ethereum)[..],
-					acc,
-				),
-			}
-		}
-
-		pub fn get_linkable_account(&self) -> LinkableAccountId {
-			match self {
-				AssociateAccountRequest::Dotsama(acc, _) => LinkableAccountId::AccountId32(acc.clone()),
-				AssociateAccountRequest::Ethereum(acc, _) => LinkableAccountId::AccountId20(*acc),
-			}
-		}
-	}
 }
