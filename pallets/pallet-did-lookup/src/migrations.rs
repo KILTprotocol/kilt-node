@@ -70,7 +70,7 @@ where
 	T::AccountId: Into<LinkableAccountId>,
 {
 	fn on_runtime_upgrade() -> frame_support::weights::Weight {
-		if Pallet::<T>::current_storage_version() == STORAGE_VERSION {
+		if Pallet::<T>::on_chain_storage_version() == Pallet::<T>::current_storage_version() {
 			// already on version 3
 			<T as frame_system::Config>::DbWeight::get().reads_writes(1, 0)
 		} else {
@@ -103,7 +103,7 @@ where
 			move_storage::<Pallet<T>>(b"TmpConnectedDids", b"ConnectedDids");
 			move_storage::<Pallet<T>>(b"TmpConnectedAccounts", b"ConnectedAccounts");
 
-			STORAGE_VERSION.put::<Pallet<T>>();
+			Pallet::<T>::current_storage_version().put::<Pallet<T>>();
 
 			<T as frame_system::Config>::DbWeight::get().reads_writes(
 				(connected_dids.saturating_add(connected_accounts)).saturating_mul(2),
@@ -116,7 +116,7 @@ where
 
 	#[cfg(feature = "try-runtime")]
 	fn pre_upgrade() -> Result<(), &'static str> {
-		assert_eq!(Pallet::<T>::on_chain_storage_version(), 2);
+		assert_eq!(Pallet::<T>::on_chain_storage_version() < Pallet::<T>::current_storage_version());
 
 		// Store number of connected DIDs in temp storage
 		let connected_did_count: u64 = ConnectedDids::<T>::iter_keys().count().saturated_into();
@@ -138,7 +138,7 @@ where
 
 	#[cfg(feature = "try-runtime")]
 	fn post_upgrade() -> Result<(), &'static str> {
-		assert_eq!(Pallet::<T>::on_chain_storage_version(), 3);
+		assert_eq!(Pallet::<T>::on_chain_storage_version() == Pallet::<T>::current_storage_version());
 
 		// Check number of connected DIDs and accounts against pre-check result
 		let pre_connected_did_count = Self::get_temp_storage("pre_connected_did_count").unwrap_or(0u64);
