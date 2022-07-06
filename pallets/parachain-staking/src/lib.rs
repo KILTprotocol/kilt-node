@@ -144,7 +144,7 @@
 //!
 //! ## Genesis config
 //!
-//! The KiltLaunch pallet depends on the [`GenesisConfig`].
+//! The ParachainStaking pallet depends on the [`GenesisConfig`].
 //!
 //! ## Assumptions+
 //!
@@ -165,7 +165,6 @@ pub(crate) mod mock;
 pub(crate) mod tests;
 
 mod inflation;
-pub mod migrations;
 mod set;
 mod types;
 
@@ -686,8 +685,9 @@ pub mod pallet {
 	impl<T: Config> Default for GenesisConfig<T> {
 		fn default() -> Self {
 			Self {
-				stakers: vec![],
-				..Default::default()
+				stakers: Default::default(),
+				inflation_config: Default::default(),
+				max_candidate_stake: Default::default(),
 			}
 		}
 	}

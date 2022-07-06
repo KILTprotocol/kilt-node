@@ -29,14 +29,11 @@ use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::{
 	construct_runtime, parameter_types,
 	traits::{EnsureOneOf, InstanceFilter, PrivilegeCmp},
-	weights::{constants::RocksDbWeight, Weight},
+	weights::{constants::RocksDbWeight, ConstantMultiplier, Weight},
 };
 use frame_system::EnsureRoot;
 use sp_api::impl_runtime_apis;
-use sp_core::{
-	u32_trait::{_1, _2, _3, _5},
-	OpaqueMetadata,
-};
+use sp_core::OpaqueMetadata;
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
 	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, OpaqueKeys, Verify},
@@ -50,7 +47,7 @@ use delegation::DelegationAc;
 pub use parachain_staking::InflationInfo;
 use runtime_common::{
 	authorization::{AuthorizationId, PalletAuthorize},
-	constants::{self, KILT, MICRO_KILT, MILLI_KILT},
+	constants::{self, KILT, MILLI_KILT},
 	fees::{ToAuthor, WeightToFee},
 	pallet_id, AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights, DidIdentifier,
 	FeeSplit, Hash, Header, Index, Signature, SlowAdjustingFeeUpdate,
@@ -81,10 +78,10 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("mashnet-node"),
 	impl_name: create_runtime_str!("mashnet-node"),
 	authoring_version: 4,
-	spec_version: 10610,
+	spec_version: 10700,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
-	transaction_version: 3,
+	transaction_version: 4,
 	state_version: 0,
 };
 
@@ -160,7 +157,6 @@ impl pallet_timestamp::Config for Runtime {
 
 parameter_types! {
 	pub const ExistentialDeposit: u128 = 10 * MILLI_KILT;
-	pub const TransactionByteFee: u128 = MICRO_KILT;
 	pub const MaxLocks: u32 = 50;
 	pub const MaxReserves: u32 = 50;
 }
@@ -187,18 +183,12 @@ impl pallet_balances::Config for Runtime {
 	type ReserveIdentifier = [u8; 8];
 }
 
-parameter_types! {
-	/// This value increases the priority of `Operational` transactions by adding
-	/// a "virtual tip" that's equal to the `OperationalFeeMultiplier * final_fee`.
-	pub const OperationalFeeMultiplier: u8 = 5;
-}
-
 impl pallet_transaction_payment::Config for Runtime {
 	type OnChargeTransaction =
 		pallet_transaction_payment::CurrencyAdapter<Balances, FeeSplit<Runtime, Treasury, ToAuthor<Runtime>>>;
-	type TransactionByteFee = TransactionByteFee;
-	type OperationalFeeMultiplier = OperationalFeeMultiplier;
+	type OperationalFeeMultiplier = constants::fee::OperationalFeeMultiplier;
 	type WeightToFee = WeightToFee<Runtime>;
+	type LengthToFee = ConstantMultiplier<Balance, constants::fee::TransactionByteFee>;
 	type FeeMultiplierUpdate = SlowAdjustingFeeUpdate<Self>;
 }
 
@@ -277,15 +267,6 @@ parameter_types! {
 	pub const AutoUnlockBound: u32 = 100;
 }
 
-impl kilt_launch::Config for Runtime {
-	type Event = Event;
-	type MaxClaims = MaxClaims;
-	type UsableBalance = UsableBalance;
-	type AutoUnlockBound = AutoUnlockBound;
-	type WeightInfo = weights::kilt_launch::WeightInfo<Runtime>;
-	type PalletId = pallet_id::Launch;
-}
-
 impl pallet_preimage::Config for Runtime {
 	type WeightInfo = weights::pallet_preimage::WeightInfo<Runtime>;
 	type Event = Event;
@@ -302,10 +283,8 @@ parameter_types! {
 	pub const NoPreimagePostponement: Option<BlockNumber> = Some(10);
 }
 
-type ScheduleOrigin = EnsureOneOf<
-	EnsureRoot<AccountId>,
-	pallet_collective::EnsureProportionAtLeast<_1, _2, AccountId, CouncilCollective>,
->;
+type ScheduleOrigin =
+	EnsureOneOf<EnsureRoot<AccountId>, pallet_collective::EnsureProportionAtLeast<AccountId, CouncilCollective, 1, 2>>;
 
 /// Used the compare the privilege of an origin inside the scheduler.
 pub struct OriginPrivilegeCmp;
@@ -360,31 +339,31 @@ impl pallet_democracy::Config for Runtime {
 	type VotingPeriod = constants::governance::VotingPeriod;
 	type MinimumDeposit = constants::governance::MinimumDeposit;
 	/// A straight majority of the council can decide what their next motion is.
-	type ExternalOrigin = pallet_collective::EnsureProportionAtLeast<_1, _2, AccountId, CouncilCollective>;
+	type ExternalOrigin = pallet_collective::EnsureProportionAtLeast<AccountId, CouncilCollective, 1, 2>;
 	/// A majority can have the next scheduled referendum be a straight
 	/// majority-carries vote.
-	type ExternalMajorityOrigin = pallet_collective::EnsureProportionAtLeast<_1, _2, AccountId, CouncilCollective>;
+	type ExternalMajorityOrigin = pallet_collective::EnsureProportionAtLeast<AccountId, CouncilCollective, 1, 2>;
 	/// A unanimous council can have the next scheduled referendum be a straight
 	/// default-carries (NTB) vote.
-	type ExternalDefaultOrigin = pallet_collective::EnsureProportionAtLeast<_1, _1, AccountId, CouncilCollective>;
+	type ExternalDefaultOrigin = pallet_collective::EnsureProportionAtLeast<AccountId, CouncilCollective, 1, 1>;
 	/// Two thirds of the technical committee can have an
 	/// ExternalMajority/ExternalDefault vote be tabled immediately and with a
 	/// shorter voting/enactment period.
-	type FastTrackOrigin = pallet_collective::EnsureProportionAtLeast<_2, _3, AccountId, TechnicalCollective>;
-	type InstantOrigin = pallet_collective::EnsureProportionAtLeast<_1, _1, AccountId, TechnicalCollective>;
+	type FastTrackOrigin = pallet_collective::EnsureProportionAtLeast<AccountId, TechnicalCollective, 2, 3>;
+	type InstantOrigin = pallet_collective::EnsureProportionAtLeast<AccountId, TechnicalCollective, 1, 1>;
 	type InstantAllowed = InstantAllowed;
 	type FastTrackVotingPeriod = constants::governance::FastTrackVotingPeriod;
 	// To cancel a proposal which has been passed, 2/3 of the council must agree to
 	// it.
 	type CancellationOrigin = EnsureOneOf<
 		EnsureRoot<AccountId>,
-		pallet_collective::EnsureProportionAtLeast<_2, _3, AccountId, CouncilCollective>,
+		pallet_collective::EnsureProportionAtLeast<AccountId, CouncilCollective, 2, 3>,
 	>;
 	// To cancel a proposal before it has been passed, the technical committee must
 	// be unanimous or Root must agree.
 	type CancelProposalOrigin = EnsureOneOf<
 		EnsureRoot<AccountId>,
-		pallet_collective::EnsureProportionAtLeast<_1, _1, AccountId, TechnicalCollective>,
+		pallet_collective::EnsureProportionAtLeast<AccountId, TechnicalCollective, 1, 1>,
 	>;
 	type BlacklistOrigin = EnsureRoot<AccountId>;
 	// Any single technical committee member may veto a coming council proposal,
@@ -410,15 +389,11 @@ parameter_types! {
 	pub const MaxApprovals: u32 = 100;
 }
 
-type ApproveOrigin = EnsureOneOf<
-	EnsureRoot<AccountId>,
-	pallet_collective::EnsureProportionAtLeast<_3, _5, AccountId, CouncilCollective>,
->;
+type ApproveOrigin =
+	EnsureOneOf<EnsureRoot<AccountId>, pallet_collective::EnsureProportionAtLeast<AccountId, CouncilCollective, 3, 5>>;
 
-type MoreThanHalfCouncil = EnsureOneOf<
-	EnsureRoot<AccountId>,
-	pallet_collective::EnsureProportionMoreThan<_1, _2, AccountId, CouncilCollective>,
->;
+type MoreThanHalfCouncil =
+	EnsureOneOf<EnsureRoot<AccountId>, pallet_collective::EnsureProportionMoreThan<AccountId, CouncilCollective, 1, 2>>;
 
 impl pallet_treasury::Config for Runtime {
 	type PalletId = pallet_id::Treasury;
@@ -462,7 +437,8 @@ impl pallet_collective::Config<TechnicalCollective> for Runtime {
 	type WeightInfo = weights::pallet_collective::WeightInfo<Runtime>;
 }
 
-impl pallet_membership::Config for Runtime {
+type TechnicalMembershipProvider = pallet_membership::Instance1;
+impl pallet_membership::Config<TechnicalMembershipProvider> for Runtime {
 	type Event = Event;
 	type AddOrigin = MoreThanHalfCouncil;
 	type RemoveOrigin = MoreThanHalfCouncil;
@@ -473,6 +449,31 @@ impl pallet_membership::Config for Runtime {
 	type MembershipChanged = TechnicalCommittee;
 	type MaxMembers = constants::governance::TechnicalMaxMembers;
 	type WeightInfo = weights::pallet_membership::WeightInfo<Runtime>;
+}
+
+type TipsMembershipProvider = pallet_membership::Instance2;
+impl pallet_membership::Config<TipsMembershipProvider> for Runtime {
+	type Event = Event;
+	type AddOrigin = MoreThanHalfCouncil;
+	type RemoveOrigin = MoreThanHalfCouncil;
+	type SwapOrigin = MoreThanHalfCouncil;
+	type ResetOrigin = MoreThanHalfCouncil;
+	type PrimeOrigin = MoreThanHalfCouncil;
+	type MembershipInitialized = ();
+	type MembershipChanged = ();
+	type MaxMembers = constants::governance::TechnicalMaxMembers;
+	type WeightInfo = weights::pallet_membership::WeightInfo<Runtime>;
+}
+
+impl pallet_tips::Config for Runtime {
+	type MaximumReasonLength = constants::tips::MaximumReasonLength;
+	type DataDepositPerByte = constants::ByteDeposit;
+	type Tippers = runtime_common::Tippers<Runtime, TipsMembershipProvider>;
+	type TipCountdown = constants::tips::TipCountdown;
+	type TipFindersFee = constants::tips::TipFindersFee;
+	type TipReportDepositBase = constants::tips::TipReportDepositBase;
+	type Event = Event;
+	type WeightInfo = weights::pallet_tips::WeightInfo<Runtime>;
 }
 
 impl attestation::Config for Runtime {
@@ -586,11 +587,7 @@ impl pallet_web3_names::Config for Runtime {
 	type Event = Event;
 	type MaxNameLength = constants::web3_names::MaxNameLength;
 	type MinNameLength = constants::web3_names::MinNameLength;
-	type Web3Name = pallet_web3_names::web3_name::AsciiWeb3Name<
-		Runtime,
-		constants::web3_names::MinNameLength,
-		constants::web3_names::MaxNameLength,
-	>;
+	type Web3Name = pallet_web3_names::web3_name::AsciiWeb3Name<Runtime>;
 	type Web3NameOwner = DidIdentifier;
 	type WeightInfo = weights::pallet_web3_names::WeightInfo<Runtime>;
 }
@@ -687,7 +684,6 @@ impl InstanceFilter<Call> for ProxyType {
 							| pallet_indices::Call::free { .. }
 							| pallet_indices::Call::freeze { .. }
 					)
-					// Excludes `KiltLaunch`
 					| Call::ParachainStaking(..)
 					// Excludes `ParachainSystem`
 					| Call::Preimage(..)
@@ -698,6 +694,7 @@ impl InstanceFilter<Call> for ProxyType {
 					| Call::System(..)
 					| Call::TechnicalCommittee(..)
 					| Call::TechnicalMembership(..)
+					| Call::TipsMembership(..)
 					| Call::Timestamp(..)
 					| Call::Treasury(..)
 					| Call::Utility(..)
@@ -750,7 +747,6 @@ impl InstanceFilter<Call> for ProxyType {
 							| pallet_did_lookup::Call::remove_sender_association { .. }
 					)
 					| Call::Indices(..)
-					// Excludes `KiltLaunch`
 					| Call::ParachainStaking(..)
 					// Excludes `ParachainSystem`
 					| Call::Preimage(..)
@@ -778,6 +774,7 @@ impl InstanceFilter<Call> for ProxyType {
 					| Call::Democracy(..)
 					| Call::TechnicalCommittee(..)
 					| Call::TechnicalMembership(..)
+					| Call::TipsMembership(..)
 					| Call::Treasury(..) | Call::Utility(..)
 			),
 			ProxyType::ParachainStaking => {
@@ -848,7 +845,7 @@ construct_runtime! {
 		Council: pallet_collective::<Instance1> = 31,
 		TechnicalCommittee: pallet_collective::<Instance2> = 32,
 		// placeholder: parachain council election = 33,
-		TechnicalMembership: pallet_membership = 34,
+		TechnicalMembership: pallet_membership::<Instance1> = 34,
 		Treasury: pallet_treasury = 35,
 
 		// Utility module.
@@ -866,8 +863,12 @@ construct_runtime! {
 		// Preimage registrar
 		Preimage: pallet_preimage::{Pallet, Call, Storage, Event<T>} = 44,
 
+		// Tips module to reward contributions to the ecosystem with small amount of KILTs.
+		TipsMembership: pallet_membership::<Instance2> = 45,
+		Tips: pallet_tips::{Pallet, Call, Storage, Event<T>} = 46,
+
 		// KILT Pallets. Start indices 60 to leave room
-		KiltLaunch: kilt_launch = 60,
+		// DELETED: KiltLaunch: kilt_launch = 60,
 		Ctype: ctype = 61,
 		Attestation: attestation = 62,
 		Delegation: delegation = 63,
@@ -942,6 +943,7 @@ pub type SignedBlock = generic::SignedBlock<Block>;
 pub type BlockId = generic::BlockId<Block>;
 /// The SignedExtension to the basic transaction logic.
 pub type SignedExtra = (
+	frame_system::CheckNonZeroSender<Runtime>,
 	frame_system::CheckSpecVersion<Runtime>,
 	frame_system::CheckTxVersion<Runtime>,
 	frame_system::CheckGenesis<Runtime>,
@@ -963,7 +965,7 @@ pub type Executive = frame_executive::Executive<
 	// Executes pallet hooks in reverse order of definition in construct_runtime
 	// If we want to switch to AllPalletsWithSystem, we need to reorder the staking pallets
 	AllPalletsReversedWithSystemFirst,
-	pallet_did_lookup::migrations::LookupReverseIndexMigration<Runtime>,
+	runtime_common::migrations::RemoveKiltLaunch<Runtime>,
 >;
 
 impl_runtime_apis! {
@@ -1070,6 +1072,93 @@ impl_runtime_apis! {
 		}
 	}
 
+	impl did_rpc_runtime_api::DidApi<
+		Block,
+		DidIdentifier,
+		AccountId,
+		Balance,
+		Hash,
+		BlockNumber
+	> for Runtime {
+		fn query_did_by_w3n(name: Vec<u8>) -> Option<did_rpc_runtime_api::RawDidLinkedInfo<
+				DidIdentifier,
+				AccountId,
+				Balance,
+				Hash,
+				BlockNumber
+			>
+		> {
+			let name: pallet_web3_names::web3_name::AsciiWeb3Name<Runtime> = name.try_into().ok()?;
+			pallet_web3_names::Owner::<Runtime>::get(&name)
+				.and_then(|owner_info| {
+					did::Did::<Runtime>::get(&owner_info.owner).map(|details| (owner_info, details))
+				})
+				.map(|(owner_info, details)| {
+					let accounts = pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(&owner_info.owner).collect();
+					let service_endpoints = did::ServiceEndpoints::<Runtime>::iter_prefix(&owner_info.owner).map(|e| From::from(e.1)).collect();
+
+					did_rpc_runtime_api::RawDidLinkedInfo {
+						identifier: owner_info.owner,
+						w3n: Some(name.into()),
+						accounts,
+						service_endpoints,
+						details: details.into(),
+					}
+			})
+		}
+
+		fn query_did_by_account_id(account: AccountId) -> Option<
+			did_rpc_runtime_api::RawDidLinkedInfo<
+				DidIdentifier,
+				AccountId,
+				Balance,
+				Hash,
+				BlockNumber
+			>
+		> {
+			pallet_did_lookup::ConnectedDids::<Runtime>::get(account)
+				.and_then(|owner_info| {
+					did::Did::<Runtime>::get(&owner_info.did).map(|details| (owner_info, details))
+				})
+				.map(|(connection_record, details)| {
+					let w3n = pallet_web3_names::Names::<Runtime>::get(&connection_record.did).map(Into::into);
+					let accounts = pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(&connection_record.did).collect();
+					let service_endpoints = did::ServiceEndpoints::<Runtime>::iter_prefix(&connection_record.did).map(|e| From::from(e.1)).collect();
+
+					did_rpc_runtime_api::RawDidLinkedInfo {
+						identifier: connection_record.did,
+						w3n,
+						accounts,
+						service_endpoints,
+						details: details.into(),
+					}
+				})
+		}
+
+		fn query_did(did: DidIdentifier) -> Option<
+			did_rpc_runtime_api::RawDidLinkedInfo<
+				DidIdentifier,
+				AccountId,
+				Balance,
+				Hash,
+				BlockNumber
+			>
+		> {
+			let details = did::Did::<Runtime>::get(&did)?;
+			let w3n = pallet_web3_names::Names::<Runtime>::get(&did).map(Into::into);
+			let accounts = pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(&did).collect();
+			let service_endpoints = did::ServiceEndpoints::<Runtime>::iter_prefix(&did).map(|e| From::from(e.1)).collect();
+
+			Some(did_rpc_runtime_api::RawDidLinkedInfo {
+				identifier: did,
+				w3n,
+				accounts,
+				service_endpoints,
+				details: details.into(),
+			})
+		}
+	}
+
 	#[cfg(feature = "runtime-benchmarks")]
 	impl frame_benchmarking::Benchmark<Block> for Runtime {
 		fn benchmark_metadata(extra: bool) -> (
@@ -1096,6 +1185,7 @@ impl_runtime_apis! {
 			list_benchmark!(list, extra, pallet_preimage, Preimage);
 			list_benchmark!(list, extra, pallet_scheduler, Scheduler);
 			list_benchmark!(list, extra, pallet_timestamp, Timestamp);
+			list_benchmark!(list, extra, pallet_tips, Tips);
 			list_benchmark!(list, extra, pallet_treasury, Treasury);
 			list_benchmark!(list, extra, pallet_utility, Utility);
 			list_benchmark!(list, extra, pallet_vesting, Vesting);
@@ -1107,7 +1197,6 @@ impl_runtime_apis! {
 			list_benchmark!(list, extra, delegation, Delegation);
 			list_benchmark!(list, extra, did, Did);
 			list_benchmark!(list, extra, pallet_did_lookup, DidLookup);
-			list_benchmark!(list, extra, kilt_launch, KiltLaunch);
 			list_benchmark!(list, extra, pallet_inflation, Inflation);
 			list_benchmark!(list, extra, parachain_staking, ParachainStaking);
 			list_benchmark!(list, extra, pallet_web3_names, Web3Names);
@@ -1145,8 +1234,6 @@ impl_runtime_apis! {
 				// System Events
 				hex_literal::hex!("26aa394eea5630e07c48ae0c9558cef780d41e5e16056765bc8461851072c9d7")
 					.to_vec().into(),
-				// KiltLaunch transfer account
-				hex_literal::hex!("6a3c793cec9dbe330b349dc4eea6801090f5e71f53b1b41ad11afb4a313a282c").to_vec().into(),
 			];
 
 			let mut batches = Vec::<BenchmarkBatch>::new();
@@ -1164,6 +1251,7 @@ impl_runtime_apis! {
 			add_benchmark!(params, batches, pallet_session, SessionBench::<Runtime>);
 			add_benchmark!(params, batches, frame_system, SystemBench::<Runtime>);
 			add_benchmark!(params, batches, pallet_timestamp, Timestamp);
+			add_benchmark!(params, batches, pallet_tips, Tips);
 			add_benchmark!(params, batches, pallet_treasury, Treasury);
 			add_benchmark!(params, batches, pallet_utility, Utility);
 			add_benchmark!(params, batches, pallet_vesting, Vesting);
@@ -1175,7 +1263,6 @@ impl_runtime_apis! {
 			add_benchmark!(params, batches, delegation, Delegation);
 			add_benchmark!(params, batches, did, Did);
 			add_benchmark!(params, batches, pallet_did_lookup, DidLookup);
-			add_benchmark!(params, batches, kilt_launch, KiltLaunch);
 			add_benchmark!(params, batches, pallet_inflation, Inflation);
 			add_benchmark!(params, batches, parachain_staking, ParachainStaking);
 			add_benchmark!(params, batches, pallet_web3_names, Web3Names);
@@ -1193,10 +1280,7 @@ impl_runtime_apis! {
 	impl frame_try_runtime::TryRuntime<Block> for Runtime {
 		fn on_runtime_upgrade() -> (Weight, Weight) {
 			log::info!("try-runtime::on_runtime_upgrade peregrine runtime.");
-			let weight = Executive::try_runtime_upgrade().map_err(|err|{
-				log::info!("try-runtime::on_runtime_upgrade failed with: {:?}", err);
-				err
-			}).unwrap();
+			let weight = Executive::try_runtime_upgrade().unwrap();
 			(weight, BlockWeights::get().max_block)
 		}
 		fn execute_block_no_check(block: Block) -> Weight {

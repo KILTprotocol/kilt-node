@@ -2428,10 +2428,7 @@ fn check_authentication_successful_operation_verification() {
 			));
 			// Verify that the DID tx counter has increased
 			let did_details = Did::get_did(&call_operation.operation.did).expect("DID should be present on chain.");
-			assert_eq!(
-				did_details.get_tx_counter_value(),
-				mock_did.get_tx_counter_value() + 1u64
-			);
+			assert_eq!(did_details.last_tx_counter, mock_did.last_tx_counter + 1u64);
 		});
 }
 
@@ -2458,10 +2455,7 @@ fn check_attestation_successful_operation_verification() {
 			));
 			// Verify that the DID tx counter has increased
 			let did_details = Did::get_did(&call_operation.operation.did).expect("DID should be present on chain.");
-			assert_eq!(
-				did_details.get_tx_counter_value(),
-				mock_did.get_tx_counter_value() + 1u64
-			);
+			assert_eq!(did_details.last_tx_counter, mock_did.last_tx_counter + 1u64);
 		});
 }
 
@@ -2491,10 +2485,7 @@ fn check_delegation_successful_operation_verification() {
 			));
 			// Verify that the DID tx counter has increased
 			let did_details = Did::get_did(&call_operation.operation.did).expect("DID should be present on chain.");
-			assert_eq!(
-				did_details.get_tx_counter_value(),
-				mock_did.get_tx_counter_value() + 1u64
-			);
+			assert_eq!(did_details.last_tx_counter, mock_did.last_tx_counter + 1u64);
 		});
 }
 
@@ -2523,7 +2514,7 @@ fn check_tx_counter_wrap_operation_verification() {
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
 
 	let mut mock_did = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()));
-	mock_did.set_tx_counter(u64::MAX);
+	mock_did.last_tx_counter = u64::MAX;
 
 	let mut call_operation =
 		generate_test_did_call(DidVerificationKeyRelationship::Authentication, did.clone(), ACCOUNT_00);
@@ -2541,7 +2532,7 @@ fn check_tx_counter_wrap_operation_verification() {
 			));
 			// Verify that the DID tx counter has wrapped around
 			let did_details = Did::get_did(&call_operation.operation.did).expect("DID should be present on chain.");
-			assert_eq!(did_details.get_tx_counter_value(), 0u64);
+			assert_eq!(did_details.last_tx_counter, 0u64);
 		});
 }
 

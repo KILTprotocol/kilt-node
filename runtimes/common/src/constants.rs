@@ -20,7 +20,7 @@ use frame_support::{
 	parameter_types,
 	weights::{constants::WEIGHT_PER_SECOND, Weight},
 };
-use sp_runtime::{Perbill, Perquintill};
+use sp_runtime::{Perbill, Percent, Perquintill};
 
 use parachain_staking::InflationInfo;
 
@@ -403,6 +403,28 @@ pub mod preimage {
 	parameter_types! {
 		pub const PreimageMaxSize: u32 = 4096 * 1024;
 		pub const PreimageBaseDeposit: Balance = deposit(2, 64);
+	}
+}
+
+pub mod tips {
+	use super::*;
+
+	parameter_types! {
+		pub const MaximumReasonLength: u32 = 16384;
+		pub const TipCountdown: BlockNumber = DAYS;
+		pub const TipFindersFee: Percent = Percent::from_percent(20);
+		pub const TipReportDepositBase: Balance = deposit(1, 1);
+	}
+}
+
+pub mod fee {
+	use super::*;
+
+	parameter_types! {
+		/// This value increases the priority of `Operational` transactions by adding
+		/// a "virtual tip" that's equal to the `OperationalFeeMultiplier * final_fee`.
+		pub const OperationalFeeMultiplier: u8 = 5;
+		pub const TransactionByteFee: Balance = MICRO_KILT;
 	}
 }
 

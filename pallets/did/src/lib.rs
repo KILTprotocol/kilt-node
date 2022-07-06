@@ -81,7 +81,6 @@
 pub mod default_weights;
 pub mod did_details;
 pub mod errors;
-pub mod migrations;
 pub mod origin;
 pub mod service_endpoints;
 
@@ -172,8 +171,8 @@ pub mod pallet {
 	#[pallet::origin]
 	pub type Origin<T> = DidRawOrigin<DidIdentifierOf<T>, AccountIdOf<T>>;
 
+	pub type BalanceOf<T> = <CurrencyOf<T> as Currency<AccountIdOf<T>>>::Balance;
 	pub(crate) type CurrencyOf<T> = <T as Config>::Currency;
-	pub(crate) type BalanceOf<T> = <CurrencyOf<T> as Currency<AccountIdOf<T>>>::Balance;
 	pub(crate) type NegativeImbalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::NegativeImbalance;
 
 	#[pallet::config]
@@ -1078,7 +1077,7 @@ pub mod pallet {
 		fn validate_counter_value(counter: u64, did_details: &DidDetails<T>) -> Result<(), DidError> {
 			// Verify that the operation counter is equal to the stored one + 1,
 			// possibly wrapping around when u64::MAX is reached.
-			let expected_nonce_value = did_details.get_tx_counter_value().wrapping_add(1);
+			let expected_nonce_value = did_details.last_tx_counter.wrapping_add(1);
 			ensure!(
 				counter == expected_nonce_value,
 				DidError::SignatureError(SignatureError::InvalidNonce)

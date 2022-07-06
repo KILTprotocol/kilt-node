@@ -16,12 +16,10 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-#![cfg_attr(not(feature = "std"), no_std)]
-
-use sp_std::{fmt::Debug, marker::PhantomData, vec::Vec};
+use sp_std::{fmt::Debug, marker::PhantomData, ops::Deref, vec::Vec};
 
 use codec::{Decode, Encode, MaxEncodedLen};
-use frame_support::{ensure, sp_runtime::SaturatedConversion, traits::Get, BoundedVec};
+use frame_support::{ensure, sp_runtime::SaturatedConversion, traits::Get, BoundedVec, RuntimeDebug};
 use scale_info::TypeInfo;
 
 use crate::{Config, Error};
@@ -30,15 +28,29 @@ use crate::{Config, Error};
 ///
 /// It is bounded in size (inclusive range [MinLength, MaxLength]) and can only
 /// contain a subset of ASCII characters.
-#[derive(Encode, Decode, TypeInfo, MaxEncodedLen)]
+#[derive(Encode, Decode, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 #[scale_info(skip_type_params(T, MinLength, MaxLength))]
 #[codec(mel_bound())]
-pub struct AsciiWeb3Name<T: Config, MinLength: Get<u32>, MaxLength: Get<u32>>(
-	pub(crate) BoundedVec<u8, MaxLength>,
-	PhantomData<(T, MinLength)>,
+pub struct AsciiWeb3Name<T: Config>(
+	pub(crate) BoundedVec<u8, T::MaxNameLength>,
+	PhantomData<(T, T::MinNameLength)>,
 );
 
-impl<T: Config> TryFrom<Vec<u8>> for AsciiWeb3Name<T, T::MinNameLength, T::MaxNameLength> {
+impl<T: Config> Deref for AsciiWeb3Name<T> {
+	type Target = BoundedVec<u8, T::MaxNameLength>;
+
+	fn deref(&self) -> &Self::Target {
+		&self.0
+	}
+}
+
+impl<T: Config> From<AsciiWeb3Name<T>> for Vec<u8> {
+	fn from(name: AsciiWeb3Name<T>) -> Self {
+		name.0.into_inner()
+	}
+}
+
+impl<T: Config> TryFrom<Vec<u8>> for AsciiWeb3Name<T> {
 	type Error = Error<T>;
 
 	/// Fallible initialization from a provided byte vector if it is below the
@@ -63,21 +75,15 @@ fn is_valid_web3_name(input: &[u8]) -> bool {
 		.all(|c| matches!(c, b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_'))
 }
 
-impl<T: Config> Debug for AsciiWeb3Name<T, T::MinNameLength, T::MaxNameLength> {
-	fn fmt(&self, f: &mut sp_std::fmt::Formatter<'_>) -> sp_std::fmt::Result {
-		f.debug_tuple("AsciiWeb3Name").field(&self.0).finish()
-	}
-}
-
 // FIXME: did not find a way to automatically implement this.
-impl<T: Config> PartialEq for AsciiWeb3Name<T, T::MinNameLength, T::MaxNameLength> {
+impl<T: Config> PartialEq for AsciiWeb3Name<T> {
 	fn eq(&self, other: &Self) -> bool {
 		self.0 == other.0
 	}
 }
 
 // FIXME: did not find a way to automatically implement this.
-impl<T: Config> Clone for AsciiWeb3Name<T, T::MinNameLength, T::MaxNameLength> {
+impl<T: Config> Clone for AsciiWeb3Name<T> {
 	fn clone(&self) -> Self {
 		Self(self.0.clone(), self.1)
 	}
@@ -131,21 +137,11 @@ mod tests {
 		];
 
 		for valid in valid_inputs {
-			assert!(
-				AsciiWeb3Name::<Test, <Test as Config>::MinNameLength, <Test as Config>::MaxNameLength>::try_from(
-					valid
-				)
-				.is_ok()
-			);
+			assert!(AsciiWeb3Name::<Test>::try_from(valid).is_ok());
 		}
 
 		for invalid in invalid_inputs {
-			assert!(
-				AsciiWeb3Name::<Test, <Test as Config>::MinNameLength, <Test as Config>::MaxNameLength>::try_from(
-					invalid
-				)
-				.is_err(),
-			);
+			assert!(AsciiWeb3Name::<Test>::try_from(invalid).is_err(),);
 		}
 	}
 }
