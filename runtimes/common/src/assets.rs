@@ -24,9 +24,6 @@ use sp_std::{marker::PhantomData, vec::Vec};
 use kilt_asset_dids::AssetDid as AssetIdentifier;
 use public_credentials::{Config, Error};
 
-#[cfg(feature = "runtime-benchmarks")]
-use frame_support::traits::Get;
-
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
 #[scale_info(skip_type_params(T))]
 #[codec(mel_bound())]
@@ -43,24 +40,21 @@ impl<T: Config> TryFrom<Vec<u8>> for AssetDid<T> {
 
 #[cfg(feature = "runtime-benchmarks")]
 impl<T: Config> kilt_support::traits::DefaultForLength for AssetDid<T> {
-	fn get_default(length: u32) -> Self {
-		let prefix = b"did:asset";
+	fn get_default(length: usize) -> Self {
 		// Minimum length is 3 for namespace and 1 for reference
 		// https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-2.md
-		let default_chain_id = b"cns:c:";
 		// Minimum length is 3 for namespace and 1 for reference
 		// https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-19.md
-		let default_asset_reference = b"ans:a:";
-		let concatenated = &[&prefix[..], &default_chain_id[..], &default_asset_reference[..]].concat()[..];
-		let remaining_length_for_asset_id = T::MaxSubjectIdLength::get()
-			.checked_sub(concatenated.len() as u32)
-			.expect(&format!(
-				"The provided input value {} was not large enough to cover the minimum default case of {}.",
-				length,
-				concatenated.len()
-			));
-		assert!(remaining_length_for_asset_id > 0, "Test");
-		let asset_did = [&concatenated[..], &vec![b'0'; remaining_length_for_asset_id as usize][..]].concat();
-		Self::try_from(asset_did).expect("Asset DID default creation should not fail.")
+		const BASE_ID: &[u8] = b"did:asset:cns:c.asn:a";
+		const BASE_LENGTH: usize = BASE_ID.len();
+		assert!(length > BASE_LENGTH, "{}", format!(
+			"The provided input value {} was not large enough to cover the minimum default case of {}.",
+			length,
+			BASE_LENGTH
+		));
+		let remaining_length_for_asset_id = length - BASE_LENGTH;
+		// Pad the remaining space with 0s
+		let asset_did = [&BASE_ID[..], &vec![b'0'; remaining_length_for_asset_id][..]].concat();
+		Self::try_from(asset_did).expect("Asset DID creation failed for the length provided (most likely value too large).")
 	}
 }

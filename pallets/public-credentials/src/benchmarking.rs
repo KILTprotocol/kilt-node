@@ -36,7 +36,7 @@ const SEED: u32 = 0;
 #[cfg(test)]
 impl<T: Config> DefaultForLength for TestSubjectId {
 	// Copied over from the AssetDid implementation, as this pallet does not depend on that.
-	fn get_default(length: u32) -> Self {
+	fn get_default(length: usize) -> Self {
 		let prefix = b"did:asset";
 		// Minimum length is 3 for namespace and 1 for reference
 		// https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-2.md
@@ -75,7 +75,7 @@ benchmarks! {
 		let sender: T::AccountId = account("sender", 0, SEED);
 		let attester: T::AttesterId = account("attester", 0, SEED);
 		let claim_hash: T::Hash = T::Hash::default();
-		let subject_id = <T as Config>::SubjectId::get_default(n);
+		let subject_id = <T as Config>::SubjectId::get_default(n as usize);
 
 		// // ctype::Ctypes::<T>::insert(&ctype_hash, attester.clone());
 		// CurrencyOf::<T>::make_free_balance_be(&sender, <T as attestation::Config>::Deposit::get() + <T as attestation::Config>::Deposit::get() + <T as Config>::Deposit::get());
