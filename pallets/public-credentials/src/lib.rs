@@ -75,6 +75,7 @@ pub mod pallet {
 
 	pub type CredentialOf<T> = Credential<
 		CtypeHashOf<T>,
+		// Input is raw byte array then parsed within the extrinsic
 		BoundedVec<u8, <T as Config>::MaxSubjectIdLength>,
 		Vec<u8>,
 		ClaimHashOf<T>,

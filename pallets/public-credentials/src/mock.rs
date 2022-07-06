@@ -35,7 +35,7 @@ pub(crate) type ClaimerSignatureInfoOf<Test> =
 pub(crate) const DEFAULT_CLAIM_CONTENT_ENCODED_LENGTH: usize = 32;
 
 pub fn generate_base_public_credential_creation_op<T: Config>(
-	subject_id: T::SubjectId,
+	subject_id: Vec<u8>,
 	claim_hash: ClaimHashOf<T>,
 	ctype_hash: CtypeHashOf<T>,
 	claimer_signature: Option<ClaimerSignatureInfoOf<T>>,
@@ -43,7 +43,7 @@ pub fn generate_base_public_credential_creation_op<T: Config>(
 	CredentialOf::<T> {
 		claim: Claim {
 			ctype_hash,
-			subject: subject_id.try_into().expect("Subject ID too long"),
+			subject: subject_id.try_into().expect("Failed to cast subject ID to expected type."),
 			contents: vec![0; DEFAULT_CLAIM_CONTENT_ENCODED_LENGTH],
 		},
 		claim_hash,

@@ -54,7 +54,7 @@ impl<T: Config> kilt_support::traits::DefaultForLength for AssetDid<T> {
 		));
 		let remaining_length_for_asset_id = length - BASE_LENGTH;
 		// Pad the remaining space with 0s
-		let asset_did = [&BASE_ID[..], &vec![b'0'; remaining_length_for_asset_id][..]].concat();
+		let asset_did = [BASE_ID, &vec![b'0'; remaining_length_for_asset_id][..]].concat();
 		Self::try_from(asset_did).expect("Asset DID creation failed for the length provided (most likely value too large).")
 	}
 }
