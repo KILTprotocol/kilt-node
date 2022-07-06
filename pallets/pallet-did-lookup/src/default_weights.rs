@@ -47,6 +47,10 @@ use sp_std::marker::PhantomData;
 /// Weight functions needed for pallet_did_lookup.
 pub trait WeightInfo {
 	fn associate_account() -> Weight;
+	fn associate_eth_account() -> Weight;
+	fn associate_account_multisig_sr25519() -> Weight;
+	fn associate_account_multisig_ed25519() -> Weight;
+	fn associate_account_multisig_ecdsa() -> Weight;
 	fn associate_sender() -> Weight;
 	fn remove_sender_association() -> Weight;
 	fn remove_account_association() -> Weight;
@@ -59,7 +63,39 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: DidLookup ConnectedDids (r:1 w:1)
 	// Storage: DidLookup ConnectedAccounts (r:0 w:2)
 	fn associate_account() -> Weight {
-		(111_620_000 as Weight)
+		(116_160_000 as Weight)
+			.saturating_add(T::DbWeight::get().reads(2 as Weight))
+			.saturating_add(T::DbWeight::get().writes(4 as Weight))
+	}
+	// Storage: System Account (r:1 w:1)
+	// Storage: DidLookup ConnectedDids (r:1 w:1)
+	// Storage: DidLookup ConnectedAccounts (r:0 w:2)
+	fn associate_account_multisig_sr25519() -> Weight {
+		(116_143_000 as Weight)
+			.saturating_add(T::DbWeight::get().reads(2 as Weight))
+			.saturating_add(T::DbWeight::get().writes(4 as Weight))
+	}
+	// Storage: System Account (r:1 w:1)
+	// Storage: DidLookup ConnectedDids (r:1 w:1)
+	// Storage: DidLookup ConnectedAccounts (r:0 w:2)
+	fn associate_account_multisig_ed25519() -> Weight {
+		(113_240_000 as Weight)
+			.saturating_add(T::DbWeight::get().reads(2 as Weight))
+			.saturating_add(T::DbWeight::get().writes(4 as Weight))
+	}
+	// Storage: System Account (r:1 w:1)
+	// Storage: DidLookup ConnectedDids (r:1 w:1)
+	// Storage: DidLookup ConnectedAccounts (r:0 w:2)
+	fn associate_account_multisig_ecdsa() -> Weight {
+		(105_695_000 as Weight)
+			.saturating_add(T::DbWeight::get().reads(2 as Weight))
+			.saturating_add(T::DbWeight::get().writes(4 as Weight))
+	}
+	// Storage: System Account (r:1 w:1)
+	// Storage: DidLookup ConnectedDids (r:1 w:1)
+	// Storage: DidLookup ConnectedAccounts (r:0 w:2)
+	fn associate_eth_account() -> Weight {
+		(107_776_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(2 as Weight))
 			.saturating_add(T::DbWeight::get().writes(4 as Weight))
 	}
@@ -67,7 +103,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: DidLookup ConnectedDids (r:1 w:1)
 	// Storage: DidLookup ConnectedAccounts (r:0 w:2)
 	fn associate_sender() -> Weight {
-		(52_259_000 as Weight)
+		(57_371_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(2 as Weight))
 			.saturating_add(T::DbWeight::get().writes(4 as Weight))
 	}
@@ -75,7 +111,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: System Account (r:1 w:1)
 	// Storage: DidLookup ConnectedAccounts (r:0 w:1)
 	fn remove_sender_association() -> Weight {
-		(34_356_000 as Weight)
+		(37_335_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(2 as Weight))
 			.saturating_add(T::DbWeight::get().writes(3 as Weight))
 	}
@@ -83,7 +119,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: System Account (r:1 w:1)
 	// Storage: DidLookup ConnectedAccounts (r:0 w:1)
 	fn remove_account_association() -> Weight {
-		(37_363_000 as Weight)
+		(40_214_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(2 as Weight))
 			.saturating_add(T::DbWeight::get().writes(3 as Weight))
 	}
@@ -95,7 +131,39 @@ impl WeightInfo for () {
 	// Storage: DidLookup ConnectedDids (r:1 w:1)
 	// Storage: DidLookup ConnectedAccounts (r:0 w:2)
 	fn associate_account() -> Weight {
-		(111_620_000 as Weight)
+		(116_160_000 as Weight)
+			.saturating_add(RocksDbWeight::get().reads(2 as Weight))
+			.saturating_add(RocksDbWeight::get().writes(4 as Weight))
+	}
+	// Storage: System Account (r:1 w:1)
+	// Storage: DidLookup ConnectedDids (r:1 w:1)
+	// Storage: DidLookup ConnectedAccounts (r:0 w:2)
+	fn associate_account_multisig_sr25519() -> Weight {
+		(116_143_000 as Weight)
+			.saturating_add(RocksDbWeight::get().reads(2 as Weight))
+			.saturating_add(RocksDbWeight::get().writes(4 as Weight))
+	}
+	// Storage: System Account (r:1 w:1)
+	// Storage: DidLookup ConnectedDids (r:1 w:1)
+	// Storage: DidLookup ConnectedAccounts (r:0 w:2)
+	fn associate_account_multisig_ed25519() -> Weight {
+		(113_240_000 as Weight)
+			.saturating_add(RocksDbWeight::get().reads(2 as Weight))
+			.saturating_add(RocksDbWeight::get().writes(4 as Weight))
+	}
+	// Storage: System Account (r:1 w:1)
+	// Storage: DidLookup ConnectedDids (r:1 w:1)
+	// Storage: DidLookup ConnectedAccounts (r:0 w:2)
+	fn associate_account_multisig_ecdsa() -> Weight {
+		(105_695_000 as Weight)
+			.saturating_add(RocksDbWeight::get().reads(2 as Weight))
+			.saturating_add(RocksDbWeight::get().writes(4 as Weight))
+	}
+	// Storage: System Account (r:1 w:1)
+	// Storage: DidLookup ConnectedDids (r:1 w:1)
+	// Storage: DidLookup ConnectedAccounts (r:0 w:2)
+	fn associate_eth_account() -> Weight {
+		(107_776_000 as Weight)
 			.saturating_add(RocksDbWeight::get().reads(2 as Weight))
 			.saturating_add(RocksDbWeight::get().writes(4 as Weight))
 	}
@@ -103,7 +171,7 @@ impl WeightInfo for () {
 	// Storage: DidLookup ConnectedDids (r:1 w:1)
 	// Storage: DidLookup ConnectedAccounts (r:0 w:2)
 	fn associate_sender() -> Weight {
-		(52_259_000 as Weight)
+		(57_371_000 as Weight)
 			.saturating_add(RocksDbWeight::get().reads(2 as Weight))
 			.saturating_add(RocksDbWeight::get().writes(4 as Weight))
 	}
@@ -111,7 +179,7 @@ impl WeightInfo for () {
 	// Storage: System Account (r:1 w:1)
 	// Storage: DidLookup ConnectedAccounts (r:0 w:1)
 	fn remove_sender_association() -> Weight {
-		(34_356_000 as Weight)
+		(37_335_000 as Weight)
 			.saturating_add(RocksDbWeight::get().reads(2 as Weight))
 			.saturating_add(RocksDbWeight::get().writes(3 as Weight))
 	}
@@ -119,7 +187,7 @@ impl WeightInfo for () {
 	// Storage: System Account (r:1 w:1)
 	// Storage: DidLookup ConnectedAccounts (r:0 w:1)
 	fn remove_account_association() -> Weight {
-		(37_363_000 as Weight)
+		(40_214_000 as Weight)
 			.saturating_add(RocksDbWeight::get().reads(2 as Weight))
 			.saturating_add(RocksDbWeight::get().writes(3 as Weight))
 	}

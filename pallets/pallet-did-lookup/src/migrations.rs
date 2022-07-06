@@ -18,7 +18,6 @@
 
 use crate::{
 	linkable_account::LinkableAccountId, AccountIdOf, Config, ConnectionRecordOf, DidIdentifierOf, Pallet,
-	STORAGE_VERSION,
 };
 
 #[cfg(feature = "try-runtime")]

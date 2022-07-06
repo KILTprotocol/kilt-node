@@ -171,7 +171,12 @@ pub mod pallet {
 		/// - Reads: ConnectedDids + ConnectedAccounts + DID Origin Check
 		/// - Writes: ConnectedDids + ConnectedAccounts
 		/// # </weight>
-		#[pallet::weight(<T as Config>::WeightInfo::associate_account())]
+		#[pallet::weight(
+			<T as Config>::WeightInfo::associate_account_multisig_sr25519().max(
+			<T as Config>::WeightInfo::associate_account_multisig_ed25519().max(
+			<T as Config>::WeightInfo::associate_account_multisig_ecdsa().max(
+			<T as Config>::WeightInfo::associate_eth_account()	
+		))))]
 		pub fn associate_account(
 			origin: OriginFor<T>,
 			req: AssociateAccountRequest,
