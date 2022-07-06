@@ -51,7 +51,22 @@ impl<T: frame_system::Config> pallet_did_lookup::WeightInfo for WeightInfo<T> {
 	// Storage: System Account (r:1 w:1)
 	// Storage: DidLookup ConnectedDids (r:1 w:1)
 	// Storage: DidLookup ConnectedAccounts (r:0 w:2)
-	fn associate_account() -> Weight {
+	fn associate_eth_account() -> Weight {
+		(114_777_000 as Weight)
+			.saturating_add(T::DbWeight::get().reads(2 as Weight))
+			.saturating_add(T::DbWeight::get().writes(4 as Weight))
+	}
+	fn associate_account_multisig_ecdsa() -> Weight {
+		(114_777_000 as Weight)
+			.saturating_add(T::DbWeight::get().reads(2 as Weight))
+			.saturating_add(T::DbWeight::get().writes(4 as Weight))
+	}
+	fn associate_account_multisig_sr25519() -> Weight {
+		(114_777_000 as Weight)
+			.saturating_add(T::DbWeight::get().reads(2 as Weight))
+			.saturating_add(T::DbWeight::get().writes(4 as Weight))
+	}
+	fn associate_account_multisig_ed25519() -> Weight {
 		(114_777_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(2 as Weight))
 			.saturating_add(T::DbWeight::get().writes(4 as Weight))
