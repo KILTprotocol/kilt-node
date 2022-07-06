@@ -59,39 +59,6 @@ benchmarks! {
 		T::EnsureOrigin: GenerateBenchmarkOrigin<T::Origin, T::AccountId, T::DidIdentifier>,
 	}
 
-	associate_account {
-		let caller: T::AccountId = account("caller", 0, SEED);
-		let did: T::DidIdentifier = account("did", 0, SEED);
-		let previous_did: T::DidIdentifier = account("prev", 0, SEED + 1);
-		let connected_acc = sr25519_generate(KeyTypeId(*b"aura"), None);
-		let connected_acc_id: T::AccountId = connected_acc.into();
-		let linkable_id: LinkableAccountId = connected_acc_id.clone().into();
-		let bn: <T as frame_system::Config>::BlockNumber = 500_u32.into();
-
-		let sig = sp_io::crypto::sr25519_sign(
-			KeyTypeId(*b"aura"),
-			&connected_acc,
-			&get_wrapped_payload(
-				&Encode::encode(&(&did, bn))[..],
-				crate::signature::WrapType::Substrate,
-			))
-			.ok_or("Error while building signature.")?;
-
-		make_free_for_did::<T>(&caller);
-
-		// Add existing connected_acc -> previous_did connection that will be replaced
-		Pallet::<T>::add_association(caller.clone(), previous_did.clone(), linkable_id.clone()).expect("should create previous association");
-		assert!(ConnectedAccounts::<T>::get(&previous_did, linkable_id.clone()).is_some());
-		let origin = T::EnsureOrigin::generate_origin(caller, did.clone());
-		let id_arg = linkable_id.clone();
-		let req = AssociateAccountRequest::Dotsama(connected_acc_id.into(), sig.into());
-	}: _<T::Origin>(origin, req, bn)
-	verify {
-		assert!(ConnectedDids::<T>::get(linkable_id.clone()).is_some());
-		assert!(ConnectedAccounts::<T>::get(&previous_did, linkable_id.clone()).is_none());
-		assert!(ConnectedAccounts::<T>::get(did, linkable_id).is_some());
-	}
-
 	associate_account_multisig_sr25519 {
 		let caller: T::AccountId = account("caller", 0, SEED);
 		let did: T::DidIdentifier = account("did", 0, SEED);
