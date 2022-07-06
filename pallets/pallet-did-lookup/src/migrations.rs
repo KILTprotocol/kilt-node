@@ -58,37 +58,36 @@ where
 			// to undefined results. Thus, we write to a temporary storage and move that at
 			// the end. Else we iterate over every key more or less twice.
 			let mut connected_dids_buffer = vec![];
-			ConnectedDids::<T>::drain().for_each(|(acc_id32, value)| {
-				log::debug!("🔎 #{} Migrating ConnectedDid for account", connected_dids,);
+			for (acc_id32, value) in ConnectedDids::<T>::drain() {
 				let acc_id: LinkableAccountId = acc_id32.into();
 				connected_dids_buffer.push((acc_id, value));
 				connected_dids = connected_dids.saturating_add(1);
-			});
-			connected_dids_buffer.iter().for_each(|(acc_id, value)| {
+			}
+			for (acc_id, value) in &connected_dids_buffer {
 				ConnectedDidsV2::<T>::insert(acc_id, value);
-			});
-			log::info!("🔎 DidLookup: Migrated all {} ConnectedDids", connected_dids);
+			}
+			log::info!("🔎 DidLookup: Migrated all ConnectedDids");
 
 			// Migrate accounts
 			let mut connected_accounts_buffer = vec![];
-			ConnectedAccounts::<T>::drain().for_each(|(did_id, acc_id32, val)| {
-				log::debug!("🔎 #{:?} Migrating ConnectedAccount", connected_accounts,);
+			for (did_id, acc_id32, val) in ConnectedAccounts::<T>::drain() {
 				let acc_id: LinkableAccountId = acc_id32.into();
 				connected_accounts_buffer.push((did_id, acc_id, val));
 				connected_accounts = connected_accounts.saturating_add(1);
-			});
-			connected_accounts_buffer.iter().for_each(|(did_id, acc_id, val)| {
+			}
+			for (did_id, acc_id, val) in &connected_accounts_buffer {
 				ConnectedAccountsV2::<T>::insert(did_id, acc_id, val);
-			});
-			log::info!("🔎 DidLookup: Migrated all {:?} ConnectedAccounts", connected_accounts);
+			}
+			log::info!("🔎 DidLookup: Migrated all ConnectedAccounts");
 
 			Pallet::<T>::current_storage_version().put::<Pallet<T>>();
 
 			<T as frame_system::Config>::DbWeight::get().reads_writes(
 				// read every entry in ConnectedDids and ConnectedAccounts
-				connected_dids.saturating_add(connected_accounts)
-				// read the storage version
-				.saturating_add(1),
+				connected_dids
+					.saturating_add(connected_accounts)
+					// read the storage version
+					.saturating_add(1),
 				// for every storage entry remove the old + put the new entries
 				(connected_dids.saturating_add(connected_accounts))
 					.saturating_mul(2)
