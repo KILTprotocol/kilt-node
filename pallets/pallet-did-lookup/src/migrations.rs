@@ -18,7 +18,6 @@
 
 use crate::{linkable_account::LinkableAccountId, AccountIdOf, Config, ConnectionRecordOf, DidIdentifierOf, Pallet};
 
-#[cfg(feature = "try-runtime")]
 use crate::{ConnectedAccounts as ConnectedAccountsV2, ConnectedDids as ConnectedDidsV2};
 
 use frame_support::{
@@ -40,25 +39,6 @@ type ConnectedDids<T: Config> = StorageMap<Pallet<T>, Blake2_128Concat, AccountI
 #[storage_alias]
 type ConnectedAccounts<T: Config> =
 	StorageDoubleMap<Pallet<T>, Blake2_128Concat, DidIdentifierOf<T>, Blake2_128Concat, AccountIdOf<T>, ()>;
-#[storage_alias]
-type TmpConnectedDids<T: Config> = StorageMap<Pallet<T>, Blake2_128Concat, LinkableAccountId, ConnectionRecordOf<T>>;
-#[storage_alias]
-type TmpConnectedAccounts<T: Config> =
-	StorageDoubleMap<Pallet<T>, Blake2_128Concat, DidIdentifierOf<T>, Blake2_128Concat, LinkableAccountId, ()>;
-
-// Inspired by frame_support::storage::migration::move_storage_from_pallet
-fn move_storage<P: PalletInfoAccess>(old_storage_name: &[u8], new_storage_name: &[u8]) {
-	let pallet_name = <P as PalletInfoAccess>::name();
-
-	let old_prefix = storage_prefix(pallet_name.as_bytes(), old_storage_name);
-	let new_prefix = storage_prefix(pallet_name.as_bytes(), new_storage_name);
-	move_prefix(&old_prefix, &new_prefix);
-
-	if let Some(value) = unhashed::get_raw(&old_prefix) {
-		unhashed::put_raw(&new_prefix, &value);
-		unhashed::kill(&old_prefix);
-	}
-}
 
 pub struct EthereumMigration<T>(PhantomData<T>);
 
@@ -75,30 +55,35 @@ where
 			let mut connected_dids = 0u64;
 			let mut connected_accounts = 0u64;
 
+
 			// Migrate connected DIDs
 			// We should not write to the same storage item during drain because it can lead
 			// to undefined results. Thus, we write to a temporary storage and move that at
 			// the end. Else we iterate over every key more or less twice.
+			let mut connected_dids_buffer = vec![];
 			ConnectedDids::<T>::drain().for_each(|(acc_id32, value)| {
 				log::debug!("🔎 #{} Migrating ConnectedDid for account", connected_dids,);
 				let acc_id: LinkableAccountId = acc_id32.into();
-				TmpConnectedDids::<T>::insert(acc_id, value);
+				connected_dids_buffer.push((acc_id, value));
 				connected_dids = connected_dids.saturating_add(1);
+			});
+			connected_dids_buffer.iter().for_each(|(acc_id, value)| {
+				ConnectedDidsV2::<T>::insert(acc_id, value);
 			});
 			log::info!("🔎 DidLookup: Migrated all {} ConnectedDids", connected_dids);
 
 			// Migrate accounts
+			let mut connected_accounts_buffer = vec![];
 			ConnectedAccounts::<T>::drain().for_each(|(did_id, acc_id32, val)| {
 				log::debug!("🔎 #{:?} Migrating ConnectedAccount", connected_accounts,);
 				let acc_id: LinkableAccountId = acc_id32.into();
-				TmpConnectedAccounts::<T>::insert(did_id, acc_id, val);
+				connected_accounts_buffer.push((did_id, acc_id, val));
 				connected_accounts = connected_accounts.saturating_add(1);
 			});
+			connected_accounts_buffer.iter().for_each(|(did_id, acc_id, val)| {
+				ConnectedAccountsV2::<T>::insert(did_id, acc_id, val);
+			});
 			log::info!("🔎 DidLookup: Migrated all {:?} ConnectedAccounts", connected_accounts);
-
-			// Move TmpStorage
-			move_storage::<Pallet<T>>(b"TmpConnectedDids", b"ConnectedDids");
-			move_storage::<Pallet<T>>(b"TmpConnectedAccounts", b"ConnectedAccounts");
 
 			Pallet::<T>::current_storage_version().put::<Pallet<T>>();
 
