@@ -35,7 +35,7 @@ pub(crate) type ClaimerSignatureInfoOf<Test> =
 pub(crate) const DEFAULT_CLAIM_CONTENT_ENCODED_LENGTH: usize = 32;
 
 pub fn generate_base_public_credential_creation_op<T: Config>(
-	subject_id: Vec<u8>,
+	subject_id: T::SubjectId,
 	claim_hash: ClaimHashOf<T>,
 	ctype_hash: CtypeHashOf<T>,
 	claimer_signature: Option<ClaimerSignatureInfoOf<T>>,
@@ -43,7 +43,7 @@ pub fn generate_base_public_credential_creation_op<T: Config>(
 	CredentialOf::<T> {
 		claim: Claim {
 			ctype_hash,
-			subject: subject_id,
+			subject: subject_id.try_into().expect("Subject ID too long"),
 			contents: vec![0; DEFAULT_CLAIM_CONTENT_ENCODED_LENGTH],
 		},
 		claim_hash,
@@ -94,6 +94,7 @@ pub(crate) mod runtime {
 		parameter_types,
 		traits::{ConstU128, ConstU16, ConstU32, ConstU64},
 		weights::constants::RocksDbWeight,
+		BoundedVec,
 	};
 	use scale_info::TypeInfo;
 	use sp_core::{sr25519, Pair};
@@ -132,20 +133,20 @@ pub(crate) mod runtime {
 	)]
 	pub struct TestSubjectId([u8; 32]);
 
+	impl TryFrom<BoundedVec<u8, <Test as Config>::MaxSubjectIdLength>> for TestSubjectId {
+		type Error = Error<Test>;
+
+		fn try_from(value: BoundedVec<u8, <Test as Config>::MaxSubjectIdLength>) -> Result<Self, Self::Error> {
+			let inner: [u8; 32] = value.into_inner().try_into().map_err(|_| Error::<Test>::InvalidInput)?;
+			Ok(Self(inner))
+		}
+	}
+
 	impl core::ops::Deref for TestSubjectId {
 		type Target = [u8; 32];
 
 		fn deref(&self) -> &Self::Target {
 			&self.0
-		}
-	}
-
-	impl TryFrom<Vec<u8>> for TestSubjectId {
-		type Error = Error<Test>;
-
-		fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
-			let inner: [u8; 32] = value.try_into().map_err(|_| Error::<Test>::InvalidInput)?;
-			Ok(Self(inner))
 		}
 	}
 
@@ -252,6 +253,7 @@ pub(crate) mod runtime {
 	parameter_types! {
 		pub const CredentialDeposit: Balance = 10 * MILLI_UNIT;
 		pub const MaxEncodedCredentialLength: u32 = 500;
+		pub const MaxSubjectIdLength: u32 = 100;
 	}
 
 	impl Config for Test {
@@ -263,6 +265,7 @@ pub(crate) mod runtime {
 		type Event = ();
 		type InputError = Error<Self>;
 		type MaxEncodedCredentialLength = MaxEncodedCredentialLength;
+		type MaxSubjectIdLength = MaxSubjectIdLength;
 		type OriginSuccess = <Self as attestation::Config>::OriginSuccess;
 		type SubjectId = TestSubjectId;
 		type WeightInfo = ();

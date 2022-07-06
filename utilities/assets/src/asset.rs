@@ -49,26 +49,26 @@ pub enum IdentifierError {
 
 impl From<NamespaceError> for AssetIdError {
 	fn from(err: NamespaceError) -> Self {
-        Self::Namespace(err)
-    }
+		Self::Namespace(err)
+	}
 }
 
 impl From<ReferenceError> for AssetIdError {
 	fn from(err: ReferenceError) -> Self {
-        Self::Reference(err)
-    }
+		Self::Reference(err)
+	}
 }
 
 impl From<IdentifierError> for AssetIdError {
 	fn from(err: IdentifierError) -> Self {
-        Self::Identifier(err)
-    }
+		Self::Identifier(err)
+	}
 }
 
 pub use v1::*;
 
 pub mod v1 {
-	use super::{AssetIdError, NamespaceError, ReferenceError, IdentifierError};
+	use super::{AssetIdError, IdentifierError, NamespaceError, ReferenceError};
 
 	use codec::{Decode, Encode, MaxEncodedLen};
 	use scale_info::TypeInfo;

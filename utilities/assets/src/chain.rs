@@ -40,15 +40,15 @@ pub enum ReferenceError {
 }
 
 impl From<NamespaceError> for ChainIdError {
-    fn from(err: NamespaceError) -> Self {
-        Self::Namespace(err)
-    }
+	fn from(err: NamespaceError) -> Self {
+		Self::Namespace(err)
+	}
 }
 
 impl From<ReferenceError> for ChainIdError {
-    fn from(err: ReferenceError) -> Self {
-        Self::Reference(err)
-    }
+	fn from(err: ReferenceError) -> Self {
+		Self::Reference(err)
+	}
 }
 
 pub use v1::*;

@@ -16,6 +16,7 @@ smallvec = "1.8.0"
 
 attestation = {default-features = false, path = "../../pallets/attestation"}
 kilt-asset-dids = { default-features = false, path = "../../utilities/assets" }
+kilt-support = { default-features = false, optional = true, path = "../../support" }
 parachain-staking = {default-features = false, path = "../../pallets/parachain-staking"}
 public-credentials = {default-features = false, path = "../../pallets/public-credentials"}
 
@@ -40,6 +41,7 @@ fast-gov = []
 runtime-benchmarks = [
   "attestation/runtime-benchmarks",
   "frame-support/runtime-benchmarks",
+  "kilt-support/runtime-benchmarks",
   "parachain-staking/runtime-benchmarks",
   "public-credentials/runtime-benchmarks",
   "sp-runtime/runtime-benchmarks",
@@ -51,6 +53,7 @@ std = [
   "frame-support/std",
   "frame-system/std",
   "kilt-asset-dids/std",
+  "kilt-support/std",
   "pallet-transaction-payment/std",
   "pallet-balances/std",
   "pallet-membership/std",

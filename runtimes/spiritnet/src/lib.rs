@@ -45,6 +45,7 @@ use sp_version::RuntimeVersion;
 
 use delegation::DelegationAc;
 pub use parachain_staking::InflationInfo;
+pub use public_credentials as pallet_public_credentials;
 use runtime_common::{
 	authorization::{AuthorizationId, PalletAuthorize},
 	constants::{self, KILT, MILLI_KILT},
@@ -52,7 +53,6 @@ use runtime_common::{
 	pallet_id, AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights, DidIdentifier,
 	FeeSplit, Hash, Header, Index, Signature, SlowAdjustingFeeUpdate,
 };
-pub use public_credentials as pallet_public_credentials;
 
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;

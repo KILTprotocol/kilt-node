@@ -75,8 +75,7 @@ pub mod pallet {
 
 	pub type CredentialOf<T> = Credential<
 		CtypeHashOf<T>,
-		// Input subject_id is a raw byte array, converted within the extrinsic
-		Vec<u8>,
+		BoundedVec<u8, <T as Config>::MaxSubjectIdLength>,
 		Vec<u8>,
 		ClaimHashOf<T>,
 		H256,
@@ -103,8 +102,12 @@ pub mod pallet {
 		type InputError: Into<DispatchError>;
 		#[pallet::constant]
 		type MaxEncodedCredentialLength: Get<u32>;
+		#[pallet::constant]
+		type MaxSubjectIdLength: Get<u32>;
 		type OriginSuccess: CallSources<AccountIdOf<Self>, AttesterOf<Self>>;
-		type SubjectId: Parameter + MaxEncodedLen + TryFrom<Vec<u8>, Error = Self::InputError>;
+		type SubjectId: Parameter
+			+ MaxEncodedLen
+			+ TryFrom<BoundedVec<u8, Self::MaxSubjectIdLength>, Error = Self::InputError>;
 		type WeightInfo: WeightInfo;
 	}
 

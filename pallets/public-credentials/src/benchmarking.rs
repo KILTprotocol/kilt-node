@@ -21,7 +21,7 @@ use frame_support::traits::{Currency, Get};
 use frame_system::RawOrigin;
 use sp_runtime::traits::Hash;
 
-use kilt_support::traits::GenerateBenchmarkOrigin;
+use kilt_support::traits::{DefaultForLength, GenerateBenchmarkOrigin};
 
 use crate::*;
 
@@ -33,6 +33,31 @@ const SEED: u32 = 0;
 // 	let claim_hash: T::Hash = T::Hashing::hash(b"claim");
 // }
 
+#[cfg(test)]
+impl<T: Config> DefaultForLength for TestSubjectId {
+	// Copied over from the AssetDid implementation, as this pallet does not depend on that.
+	fn get_default(length: u32) -> Self {
+		let prefix = b"did:asset";
+		// Minimum length is 3 for namespace and 1 for reference
+		// https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-2.md
+		let default_chain_id = b"cns:c:";
+		// Minimum length is 3 for namespace and 1 for reference
+		// https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-19.md
+		let default_asset_reference = b"ans:a:";
+		let concatenated = &[&prefix[..], &default_chain_id[..], &default_asset_reference[..]].concat()[..];
+		let remaining_length_for_asset_id = T::MaxSubjectIdLength::get()
+			.checked_sub(concatenated.len() as u32)
+			.expect(&format!(
+				"The provided input value {} was not large enough to cover the minimum default case of {}.",
+				length,
+				concatenated.len()
+			));
+		assert!(remaining_length_for_asset_id > 0, "Test");
+		let asset_did = [&concatenated[..], &vec![b'0'; remaining_length_for_asset_id as usize][..]].concat();
+		Self::try_from(asset_did).expect("Asset DID default creation should not fail.")
+	}
+}
+
 benchmarks! {
 	where_clause {
 		where
@@ -41,12 +66,16 @@ benchmarks! {
 		T: attestation::Config,
 		T: ctype::Config<CtypeCreatorId = T::AttesterId>,
 		<T as Config>::EnsureOrigin: GenerateBenchmarkOrigin<T::Origin, T::AccountId, T::AttesterId>,
+		<T as Config>::SubjectId: DefaultForLength,
 	}
 
 	add {
+		// Minimum length for a valid asset DID is `did:asset:cns:c:ans:a:0` = 23
+		let n in 23 .. T::MaxSubjectIdLength::get();
 		let sender: T::AccountId = account("sender", 0, SEED);
-		// let attester: T::AttesterId = account("attester", 0, SEED);
+		let attester: T::AttesterId = account("attester", 0, SEED);
 		let claim_hash: T::Hash = T::Hash::default();
+		let subject_id = <T as Config>::SubjectId::get_default(n);
 
 		// // ctype::Ctypes::<T>::insert(&ctype_hash, attester.clone());
 		// CurrencyOf::<T>::make_free_balance_be(&sender, <T as attestation::Config>::Deposit::get() + <T as attestation::Config>::Deposit::get() + <T as Config>::Deposit::get());

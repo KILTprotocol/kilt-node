@@ -135,8 +135,8 @@ impl TryFrom<&[u8]> for AssetDid {
 					.and_then(|input| AssetId::try_from(input).map_err(AssetDidError::AssetId))?;
 
 				Ok(Self { chain_id, asset_id })
-			},
-			_ => Err(AssetDidError::InvalidInput)
+			}
+			_ => Err(AssetDidError::InvalidInput),
 		}
 	}
 }

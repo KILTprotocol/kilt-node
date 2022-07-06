@@ -387,10 +387,7 @@ fn remove_successful() {
 			assert_eq!(Attestations::<Test>::get(&claim_hash), None);
 
 			// Test this pallet logic
-			assert_eq!(
-				Credentials::<Test>::get(&subject_id, &claim_hash),
-				None
-			);
+			assert_eq!(Credentials::<Test>::get(&subject_id, &claim_hash), None);
 			assert_eq!(CredentialsUnicityIndex::<Test>::get(&claim_hash), None);
 
 			// Check deposit release logic
@@ -478,10 +475,7 @@ fn reclaim_deposit_successful() {
 			assert_eq!(Attestations::<Test>::get(&claim_hash), None);
 
 			// Test this pallet logic
-			assert_eq!(
-				Credentials::<Test>::get(&subject_id, &claim_hash),
-				None
-			);
+			assert_eq!(Credentials::<Test>::get(&subject_id, &claim_hash), None);
 			assert_eq!(CredentialsUnicityIndex::<Test>::get(&claim_hash), None);
 
 			// Check deposit release logic

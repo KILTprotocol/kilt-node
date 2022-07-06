@@ -68,3 +68,8 @@ pub trait VersionMigratorTrait<T>: Sized {
 pub trait GenerateBenchmarkOrigin<OuterOrigin, AccountId, SubjectId> {
 	fn generate_origin(sender: AccountId, subject: SubjectId) -> OuterOrigin;
 }
+
+#[cfg(feature = "runtime-benchmarks")]
+pub trait DefaultForLength {
+	fn get_default(length: u32) -> Self;
+}
