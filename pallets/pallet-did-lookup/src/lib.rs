@@ -25,10 +25,10 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 pub mod account;
+pub mod associate_account_request;
 pub mod default_weights;
 pub mod linkable_account;
 pub mod migrations;
-pub mod associate_account_request;
 
 mod connection_record;
 mod signature;

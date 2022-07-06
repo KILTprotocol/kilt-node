@@ -138,7 +138,10 @@ where
 
 	#[cfg(feature = "try-runtime")]
 	fn post_upgrade() -> Result<(), &'static str> {
-		assert_eq!(Pallet::<T>::on_chain_storage_version(), Pallet::<T>::current_storage_version());
+		assert_eq!(
+			Pallet::<T>::on_chain_storage_version(),
+			Pallet::<T>::current_storage_version()
+		);
 
 		// Check number of connected DIDs and accounts against pre-check result
 		let pre_connected_did_count = Self::get_temp_storage("pre_connected_did_count").unwrap_or(0u64);
