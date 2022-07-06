@@ -25,7 +25,7 @@ use frame_support::{
 	traits::{Get, GetStorageVersion, OnRuntimeUpgrade},
 	Blake2_128Concat,
 };
-use sp_std::marker::PhantomData;
+use sp_std::{marker::PhantomData, vec};
 
 #[cfg(feature = "try-runtime")]
 use frame_support::traits::OnRuntimeUpgradeHelpersExt;
@@ -52,7 +52,6 @@ where
 			log::info!("🔎 DidLookup: Initiating migration");
 			let mut connected_dids = 0u64;
 			let mut connected_accounts = 0u64;
-
 
 			// Migrate connected DIDs
 			// We should not write to the same storage item during drain because it can lead
@@ -86,10 +85,13 @@ where
 			Pallet::<T>::current_storage_version().put::<Pallet<T>>();
 
 			<T as frame_system::Config>::DbWeight::get().reads_writes(
-				connected_dids.saturating_add(connected_accounts), // read every storage entry
-				(connected_dids.saturating_add(connected_accounts))// for every storage entry remove the old + put the new entries
+				// read every storage entry
+				connected_dids.saturating_add(connected_accounts),
+				// for every storage entry remove the old + put the new entries
+				(connected_dids.saturating_add(connected_accounts))
 					.saturating_mul(2)
-					.saturating_add(1), // +1 for updating the storage version
+					// +1 for updating the storage version
+					.saturating_add(1),
 			)
 		}
 	}

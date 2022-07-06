@@ -23,8 +23,6 @@
 //!
 //! It includes the Verify and IdentifyAccount traits for the AccountId20
 
-#![cfg_attr(not(feature = "std"), no_std)]
-
 use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::{crypto::ecdsa::ECDSAExt, RuntimeDebug};
 use scale_info::TypeInfo;
