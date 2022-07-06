@@ -85,8 +85,10 @@ where
 			Pallet::<T>::current_storage_version().put::<Pallet<T>>();
 
 			<T as frame_system::Config>::DbWeight::get().reads_writes(
-				// read every storage entry
-				connected_dids.saturating_add(connected_accounts),
+				// read every entry in ConnectedDids and ConnectedAccounts
+				connected_dids.saturating_add(connected_accounts)
+				// read the storage version
+				.saturating_add(1),
 				// for every storage entry remove the old + put the new entries
 				(connected_dids.saturating_add(connected_accounts))
 					.saturating_mul(2)
