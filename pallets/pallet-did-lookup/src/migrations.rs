@@ -21,10 +21,8 @@ use crate::{linkable_account::LinkableAccountId, AccountIdOf, Config, Connection
 use crate::{ConnectedAccounts as ConnectedAccountsV2, ConnectedDids as ConnectedDidsV2};
 
 use frame_support::{
-	migration::move_prefix,
-	storage::{storage_prefix, unhashed},
 	storage_alias,
-	traits::{Get, GetStorageVersion, OnRuntimeUpgrade, PalletInfoAccess},
+	traits::{Get, GetStorageVersion, OnRuntimeUpgrade},
 	Blake2_128Concat,
 };
 use sp_std::marker::PhantomData;
@@ -88,10 +86,10 @@ where
 			Pallet::<T>::current_storage_version().put::<Pallet<T>>();
 
 			<T as frame_system::Config>::DbWeight::get().reads_writes(
-				(connected_dids.saturating_add(connected_accounts)).saturating_mul(2),
-				(connected_dids.saturating_add(connected_accounts))
+				connected_dids.saturating_add(connected_accounts), // read every storage entry
+				(connected_dids.saturating_add(connected_accounts))// for every storage entry remove the old + put the new entries
 					.saturating_mul(2)
-					.saturating_add(1),
+					.saturating_add(1), // +1 for updating the storage version
 			)
 		}
 	}
