@@ -17,21 +17,35 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
-use frame_support::traits::{Currency, Get};
-use frame_system::RawOrigin;
-use sp_runtime::traits::Hash;
+use frame_support::{BoundedVec, traits::{Currency, Get}};
 
+use attestation::ClaimHashOf;
+use ctype::CtypeHashOf;
 use kilt_support::traits::{DefaultForLength, GenerateBenchmarkOrigin};
 
 use crate::*;
 
 const SEED: u32 = 0;
 
-// fn generate_credential<T: Config>() -> CredentialOf<T> {
-// 	let ctype_hash: T::Hash = T::Hash::default();
-// 	// let subject_id: Vec<u8> = b"
-// 	let claim_hash: T::Hash = T::Hashing::hash(b"claim");
-// }
+fn generate_base_public_credential_creation_op<T: Config>(
+	subject_id: BoundedVec<u8, T::MaxSubjectIdLength>,
+	claim_hash: ClaimHashOf<T>,
+	ctype_hash: CtypeHashOf<T>,
+	contents: BoundedVec<u8, T::MaxEncodedClaimsLength>,
+	claimer_signature: Option<ClaimerSignatureInfo<T::ClaimerIdentifier, T::ClaimerSignature>>,
+) -> CredentialOf<T> {
+	CredentialOf::<T> {
+		claim: Claim {
+			ctype_hash,
+			subject: subject_id,
+			contents,
+		},
+		claim_hash,
+		claimer_signature,
+		nonce: Default::default(),
+		authorization_info: Default::default(),
+	}
+}
 
 #[cfg(test)]
 impl<T: Config> DefaultForLength for TestSubjectId {
@@ -63,21 +77,32 @@ benchmarks! {
 		T: attestation::Config,
 		T: ctype::Config<CtypeCreatorId = T::AttesterId>,
 		<T as Config>::EnsureOrigin: GenerateBenchmarkOrigin<T::Origin, T::AccountId, T::AttesterId>,
-		<T as Config>::SubjectId: DefaultForLength,
+		<T as Config>::SubjectId: DefaultForLength + Into<BoundedVec<u8, T::MaxSubjectIdLength>> + sp_std::fmt::Debug,
 	}
 
 	add {
 		// Minimum length for a valid asset DID is `did:asset:cns:c:ans:a:0` = 23
 		let n in 23 .. T::MaxSubjectIdLength::get();
+		let c in 1 .. T::MaxEncodedClaimsLength::get();
 		let sender: T::AccountId = account("sender", 0, SEED);
 		let attester: T::AttesterId = account("attester", 0, SEED);
 		let claim_hash: T::Hash = T::Hash::default();
+		let ctype_hash: T::Hash = T::Hash::default();
 		let subject_id = <T as Config>::SubjectId::get_default(n as usize);
+		let contents = BoundedVec::try_from(vec![0; c as usize]).expect("Contents should not fail.");
 
-		// // ctype::Ctypes::<T>::insert(&ctype_hash, attester.clone());
-		// CurrencyOf::<T>::make_free_balance_be(&sender, <T as attestation::Config>::Deposit::get() + <T as attestation::Config>::Deposit::get() + <T as Config>::Deposit::get());
-		let origin = RawOrigin::Signed(sender);
-	}: reclaim_deposit(origin, claim_hash)
+		let creation_op = Box::new(generate_base_public_credential_creation_op::<T>(
+			subject_id.into(),
+			claim_hash,
+			ctype_hash,
+			contents,
+			None,
+		));
+
+		ctype::Ctypes::<T>::insert(&ctype_hash, attester.clone());
+		CurrencyOf::<T>::make_free_balance_be(&sender, <T as attestation::Config>::Deposit::get() + <T as attestation::Config>::Deposit::get() + <T as Config>::Deposit::get());
+		let origin = <T as Config>::EnsureOrigin::generate_origin(sender, attester);
+	}: _<T::Origin>(origin, creation_op)
 	verify {}
 }
 

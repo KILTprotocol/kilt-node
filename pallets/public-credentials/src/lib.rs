@@ -77,7 +77,7 @@ pub mod pallet {
 		CtypeHashOf<T>,
 		// Input is raw byte array then parsed within the extrinsic
 		BoundedVec<u8, <T as Config>::MaxSubjectIdLength>,
-		Vec<u8>,
+		BoundedVec<u8, <T as Config>::MaxEncodedClaimsLength>,
 		ClaimHashOf<T>,
 		H256,
 		ClaimerSignatureInfo<<T as Config>::ClaimerIdentifier, <T as Config>::ClaimerSignature>,
@@ -102,7 +102,7 @@ pub mod pallet {
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 		type InputError: Into<DispatchError>;
 		#[pallet::constant]
-		type MaxEncodedCredentialLength: Get<u32>;
+		type MaxEncodedClaimsLength: Get<u32>;
 		#[pallet::constant]
 		type MaxSubjectIdLength: Get<u32>;
 		type OriginSuccess: CallSources<AccountIdOf<Self>, AttesterOf<Self>>;
@@ -158,6 +158,7 @@ pub mod pallet {
 		InvalidClaimerSignature,
 		InvalidInput,
 		CredentialTooLong,
+		SubjectTooLong,
 		InternalError,
 	}
 
@@ -168,14 +169,21 @@ pub mod pallet {
 		pub fn add(origin: OriginFor<T>, credential: Box<CredentialOf<T>>) -> DispatchResult {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 
-			let encoded_credential_len: u32 = credential
-				.encode()
+			let encoded_claims_len: u32 = credential.claim.contents
 				.len()
 				.checked_into()
 				.ok_or(Error::<T>::CredentialTooLong)?;
 			ensure!(
-				encoded_credential_len <= T::MaxEncodedCredentialLength::get(),
+				encoded_claims_len <= T::MaxEncodedClaimsLength::get(),
 				Error::<T>::CredentialTooLong
+			);
+			let encoded_subject_len: u32 = credential.claim.subject
+				.len()
+				.checked_into()
+				.ok_or(Error::<T>::CredentialTooLong)?;
+			ensure!(
+				encoded_subject_len <= T::MaxEncodedClaimsLength::get(),
+				Error::<T>::SubjectTooLong
 			);
 
 			let attester = source.subject();

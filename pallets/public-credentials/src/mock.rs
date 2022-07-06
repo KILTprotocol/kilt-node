@@ -44,7 +44,7 @@ pub fn generate_base_public_credential_creation_op<T: Config>(
 		claim: Claim {
 			ctype_hash,
 			subject: subject_id.try_into().expect("Failed to cast subject ID to expected type."),
-			contents: vec![0; DEFAULT_CLAIM_CONTENT_ENCODED_LENGTH],
+			contents: vec![0; DEFAULT_CLAIM_CONTENT_ENCODED_LENGTH].try_into().expect("Contents should fit into BoundedVec."),
 		},
 		claim_hash,
 		claimer_signature,
@@ -252,7 +252,7 @@ pub(crate) mod runtime {
 
 	parameter_types! {
 		pub const CredentialDeposit: Balance = 10 * MILLI_UNIT;
-		pub const MaxEncodedCredentialLength: u32 = 500;
+		pub const MaxEncodedClaimsLength: u32 = 500;
 		pub const MaxSubjectIdLength: u32 = 100;
 	}
 
@@ -264,7 +264,7 @@ pub(crate) mod runtime {
 		type EnsureOrigin = <Self as attestation::Config>::EnsureOrigin;
 		type Event = ();
 		type InputError = Error<Self>;
-		type MaxEncodedCredentialLength = MaxEncodedCredentialLength;
+		type MaxEncodedClaimsLength = MaxEncodedClaimsLength;
 		type MaxSubjectIdLength = MaxSubjectIdLength;
 		type OriginSuccess = <Self as attestation::Config>::OriginSuccess;
 		type SubjectId = TestSubjectId;
