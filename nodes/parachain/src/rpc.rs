@@ -33,6 +33,7 @@ use sp_api::ProvideRuntimeApi;
 use sp_block_builder::BlockBuilder;
 use sp_blockchain::{Error as BlockChainError, HeaderBackend, HeaderMetadata};
 
+use pallet_did_lookup::linkable_account::LinkableAccountId;
 use runtime_common::{AccountId, Balance, Block, BlockNumber, DidIdentifier, Hash, Index};
 
 /// Full client dependencies.
@@ -54,7 +55,7 @@ where
 	C::Api: frame_rpc_system::AccountNonceApi<Block, AccountId, Index>,
 	C::Api: pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>,
 	C::Api: BlockBuilder<Block>,
-	C::Api: did_rpc::DidRuntimeApi<Block, DidIdentifier, AccountId, Balance, Hash, BlockNumber>,
+	C::Api: did_rpc::DidRuntimeApi<Block, DidIdentifier, AccountId, LinkableAccountId, Balance, Hash, BlockNumber>,
 	P: TransactionPool + 'static,
 {
 	use did_rpc::{DidApiServer, DidQuery};

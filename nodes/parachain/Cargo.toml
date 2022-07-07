@@ -20,6 +20,7 @@ did-rpc = {path = "../../rpc/did"}
 peregrine-runtime = {path = "../../runtimes/peregrine"}
 runtime-common = {path = "../../runtimes/common"}
 spiritnet-runtime = {path = "../../runtimes/spiritnet"}
+pallet-did-lookup = {path = "../../pallets/pallet-did-lookup"}
 
 # External dependencies
 clap = {version = "3.1.18", features = ["derive"]}
@@ -106,6 +107,7 @@ fast-gov = [
 ]
 runtime-benchmarks = [
   "pallet-conviction-voting/runtime-benchmarks",
+  "pallet-did-lookup/runtime-benchmarks",
   "pallet-referenda/runtime-benchmarks",
   "polkadot-service/runtime-benchmarks",
   "peregrine-runtime/runtime-benchmarks",
