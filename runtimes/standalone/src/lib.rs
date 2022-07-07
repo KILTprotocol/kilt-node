@@ -50,7 +50,7 @@ use sp_std::prelude::*;
 use sp_version::RuntimeVersion;
 
 use delegation::DelegationAc;
-use pallet_did_lookup::linkable_account::LinkableAccountId;
+use pallet_did_lookup::{linkable_account::LinkableAccountId, migrations::EthereumMigration};
 use runtime_common::{
 	authorization::{AuthorizationId, PalletAuthorize},
 	constants::{self, KILT, MILLI_KILT},
@@ -66,7 +66,6 @@ pub use ctype;
 pub use delegation;
 pub use did;
 pub use pallet_balances::Call as BalancesCall;
-use pallet_did_lookup::migrations::EthereumMigration;
 pub use pallet_web3_names;
 
 #[cfg(feature = "std")]
