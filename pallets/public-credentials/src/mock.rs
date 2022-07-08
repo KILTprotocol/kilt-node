@@ -208,7 +208,7 @@ pub(crate) mod runtime {
 		type BlockLength = ();
 		type SS58Prefix = ConstU16<38>;
 		type OnSetCode = ();
-		type MaxConsumers = frame_support::traits::ConstU32<16>;
+		type MaxConsumers = ConstU32<16>;
 	}
 
 	impl pallet_balances::Config for Test {
@@ -306,7 +306,7 @@ pub(crate) mod runtime {
 		/// initial ctypes & owners
 		ctypes: Vec<(CtypeHashOf<Test>, CtypeCreatorOf<Test>)>,
 		/// endowed accounts with balances
-		balances: Vec<(attestation::AccountIdOf<Test>, BalanceOf<Test>)>,
+		balances: Vec<(AccountId, Balance)>,
 		attestations: Vec<(ClaimHashOf<Test>, AttestationDetails<Test>)>,
 		public_credentials: Vec<(<Test as Config>::SubjectId, ClaimHashOf<Test>, CredentialEntryOf<Test>)>,
 	}
@@ -319,7 +319,7 @@ pub(crate) mod runtime {
 		}
 
 		#[must_use]
-		pub fn with_balances(mut self, balances: Vec<(<attestation::AccountIdOf<Test>, BalanceOf<Test>)>) -> Self {
+		pub fn with_balances(mut self, balances: Vec<(AccountId, Balance)>) -> Self {
 			self.balances = balances;
 			self
 		}
@@ -333,7 +333,7 @@ pub(crate) mod runtime {
 		#[must_use]
 		pub fn with_public_credentials(
 			mut self,
-			credentials: Vec<(Test::SubjectId, ClaimHashOf<Test>, CredentialEntryOf<Test>)>,
+			credentials: Vec<(<Test as Config>::SubjectId, ClaimHashOf<Test>, CredentialEntryOf<Test>)>,
 		) -> Self {
 			self.public_credentials = credentials;
 			self
