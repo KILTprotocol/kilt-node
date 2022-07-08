@@ -17,7 +17,10 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
-use frame_support::{BoundedVec, traits::{Currency, Get}};
+use frame_support::{
+	traits::{Currency, Get},
+	BoundedVec,
+};
 
 use attestation::ClaimHashOf;
 use ctype::CtypeHashOf;
@@ -49,7 +52,8 @@ fn generate_base_public_credential_creation_op<T: Config>(
 
 #[cfg(test)]
 impl<T: Config> DefaultForLength for TestSubjectId {
-	// Copied over from the AssetDid implementation, as this pallet does not depend on that.
+	// Copied over from the AssetDid implementation, as this pallet does not depend
+	// on that.
 	fn get_default(length: usize) -> Self {
 		// Minimum length is 3 for namespace and 1 for reference
 		// https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-2.md
@@ -57,15 +61,19 @@ impl<T: Config> DefaultForLength for TestSubjectId {
 		// https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-19.md
 		const BASE_ID: &[u8] = b"did:asset:cns:c.asn:a";
 		const BASE_LENGTH: usize = BASE_ID.len();
-		assert!(length > BASE_LENGTH, "{}", format!(
-			"The provided input value {} was not large enough to cover the minimum default case of {}.",
-			length,
-			BASE_LENGTH
-		));
+		assert!(
+			length > BASE_LENGTH,
+			"{}",
+			format!(
+				"The provided input value {} was not large enough to cover the minimum default case of {}.",
+				length, BASE_LENGTH
+			)
+		);
 		let remaining_length_for_asset_id = length - BASE_LENGTH;
 		// Pad the remaining space with 0s
 		let asset_did = [BASE_ID, &vec![b'0'; remaining_length_for_asset_id][..]].concat();
-		Self::try_from(asset_did).expect("Asset DID creation failed for the length provided (most likely value too large).")
+		Self::try_from(asset_did)
+			.expect("Asset DID creation failed for the length provided (most likely value too large).")
 	}
 }
 

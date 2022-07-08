@@ -27,7 +27,7 @@ serde = {version = "1.0.137", optional = true}
 # Internal dependencies
 attestation = {default-features = false, path = "../attestation"}
 ctype = {default-features = false, path = "../ctype"}
-kilt-asset-dids = {default-features = false, path = "../../utilities/assets"}
+kilt-asset-dids = {default-features = false, path = "../../crates/assets"}
 kilt-support = {default-features = false, path = "../../support"}
 
 #External dependencies

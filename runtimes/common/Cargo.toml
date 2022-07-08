@@ -15,7 +15,7 @@ serde = {version = "1.0.137", optional = true, features = ["derive"]}
 smallvec = "1.8.0"
 
 attestation = {default-features = false, path = "../../pallets/attestation"}
-kilt-asset-dids = { default-features = false, path = "../../utilities/assets" }
+kilt-asset-dids = { default-features = false, path = "../../crates/assets" }
 kilt-support = { default-features = false, optional = true, path = "../../support" }
 parachain-staking = {default-features = false, path = "../../pallets/parachain-staking"}
 public-credentials = {default-features = false, path = "../../pallets/public-credentials"}

@@ -23,7 +23,7 @@ use attestation::{attestations::AttestationDetails, mock::generate_base_attestat
 use ctype::mock::get_ctype_hash;
 use kilt_support::mock::mock_origin::DoubleOrigin;
 
-use crate::{mock::*, Config, Credentials, CredentialsUnicityIndex, Error, SubjectIdOf};
+use crate::{mock::*, Config, Credentials, CredentialsUnicityIndex, Error};
 
 // add
 
@@ -325,7 +325,7 @@ fn add_invalid_subject_id() {
 #[test]
 fn remove_successful() {
 	let attester = sr25519_did_from_seed(&ALICE_SEED);
-	let subject_id: SubjectIdOf<Test> = SUBJECT_ID_00
+	let subject_id: <Test as Config>::SubjectId = SUBJECT_ID_00
 		.try_into()
 		.expect("Should not fail to parse test SubjectId.");
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
@@ -386,7 +386,7 @@ fn remove_successful() {
 fn remove_unauthorized() {
 	let attester = sr25519_did_from_seed(&ALICE_SEED);
 	let wrong_attester = sr25519_did_from_seed(&BOB_SEED);
-	let subject_id: SubjectIdOf<Test> = SUBJECT_ID_00
+	let subject_id: <Test as Config>::SubjectId = SUBJECT_ID_00
 		.try_into()
 		.expect("Should not fail to parse test SubjectId.");
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
@@ -414,7 +414,7 @@ fn remove_unauthorized() {
 #[test]
 fn reclaim_deposit_successful() {
 	let attester = sr25519_did_from_seed(&ALICE_SEED);
-	let subject_id: SubjectIdOf<Test> = SUBJECT_ID_00
+	let subject_id: <Test as Config>::SubjectId = SUBJECT_ID_00
 		.try_into()
 		.expect("Should not fail to parse test SubjectId.");
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
@@ -473,7 +473,7 @@ fn reclaim_deposit_successful() {
 #[test]
 fn reclaim_deposit_unauthorized() {
 	let attester = sr25519_did_from_seed(&ALICE_SEED);
-	let subject_id: SubjectIdOf<Test> = SUBJECT_ID_00
+	let subject_id: <Test as Config>::SubjectId = SUBJECT_ID_00
 		.try_into()
 		.expect("Should not fail to parse test SubjectId.");
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);

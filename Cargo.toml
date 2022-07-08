@@ -9,5 +9,5 @@ members = [
   "rpc/did/runtime-api",
   "runtimes/*",
   "support",
-  "utilities/*",
+  "crates/*",
 ]

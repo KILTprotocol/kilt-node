@@ -23,8 +23,8 @@ use ctype::CtypeHashOf;
 use kilt_support::deposit::Deposit;
 
 use crate::{
-	AccountIdOf, BalanceOf, Claim, ClaimerSignatureInfo, Config, CredentialEntryOf, CredentialOf, Credentials,
-	CredentialsUnicityIndex, CurrencyOf, SubjectIdOf,
+	BalanceOf, Claim, ClaimerSignatureInfo, Config, CredentialEntryOf, Credentials,
+	CredentialsUnicityIndex, CurrencyOf, InputCredentialOf
 };
 
 pub(crate) type BlockNumber = u64;
@@ -39,12 +39,16 @@ pub fn generate_base_public_credential_creation_op<T: Config>(
 	claim_hash: ClaimHashOf<T>,
 	ctype_hash: CtypeHashOf<T>,
 	claimer_signature: Option<ClaimerSignatureInfoOf<T>>,
-) -> CredentialOf<T> {
-	CredentialOf::<T> {
+) -> InputCredentialOf<T> {
+	InputCredentialOf::<T> {
 		claim: Claim {
 			ctype_hash,
-			subject: subject_id.try_into().expect("Failed to cast subject ID to expected type."),
-			contents: vec![0; DEFAULT_CLAIM_CONTENT_ENCODED_LENGTH].try_into().expect("Contents should fit into BoundedVec."),
+			subject: subject_id
+				.try_into()
+				.expect("Failed to cast subject ID to expected type."),
+			contents: vec![0; DEFAULT_CLAIM_CONTENT_ENCODED_LENGTH]
+				.try_into()
+				.expect("Contents should fit into BoundedVec."),
 		},
 		claim_hash,
 		claimer_signature,
@@ -54,11 +58,11 @@ pub fn generate_base_public_credential_creation_op<T: Config>(
 }
 
 pub fn insert_public_credentials<T: Config>(
-	subject_id: SubjectIdOf<T>,
+	subject_id: T::SubjectId,
 	claim_hash: ClaimHashOf<T>,
 	credential_entry: CredentialEntryOf<T>,
 ) {
-	kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
+	kilt_support::reserve_deposit::<T::AccountId, CurrencyOf<T>>(
 		credential_entry.deposit.owner.clone(),
 		credential_entry.deposit.amount,
 	)
@@ -69,12 +73,12 @@ pub fn insert_public_credentials<T: Config>(
 }
 
 pub fn generate_base_credential_entry<T: Config>(
-	payer: AccountIdOf<T>,
+	payer: T::AccountId,
 	block_number: <T as frame_system::Config>::BlockNumber,
 ) -> CredentialEntryOf<T> {
 	CredentialEntryOf::<T> {
 		block_number,
-		deposit: Deposit::<AccountIdOf<T>, BalanceOf<T>> {
+		deposit: Deposit::<T::AccountId, BalanceOf<T>> {
 			owner: payer,
 			amount: <T as Config>::Deposit::get(),
 		},
@@ -112,7 +116,7 @@ pub(crate) mod runtime {
 	use attestation::{mock::MockAccessControl, AttestationDetails, ClaimHashOf};
 	use ctype::{CtypeCreatorOf, CtypeHashOf};
 
-	use crate::{AccountIdOf, BalanceOf, Error};
+	use crate::Error;
 
 	pub type Balance = u128;
 	pub type AccountPublic = <MultiSignature as Verify>::Signer;
@@ -302,9 +306,9 @@ pub(crate) mod runtime {
 		/// initial ctypes & owners
 		ctypes: Vec<(CtypeHashOf<Test>, CtypeCreatorOf<Test>)>,
 		/// endowed accounts with balances
-		balances: Vec<(AccountIdOf<Test>, BalanceOf<Test>)>,
+		balances: Vec<(attestation::AccountIdOf<Test>, BalanceOf<Test>)>,
 		attestations: Vec<(ClaimHashOf<Test>, AttestationDetails<Test>)>,
-		public_credentials: Vec<(SubjectIdOf<Test>, ClaimHashOf<Test>, CredentialEntryOf<Test>)>,
+		public_credentials: Vec<(<Test as Config>::SubjectId, ClaimHashOf<Test>, CredentialEntryOf<Test>)>,
 	}
 
 	impl ExtBuilder {
@@ -315,7 +319,7 @@ pub(crate) mod runtime {
 		}
 
 		#[must_use]
-		pub fn with_balances(mut self, balances: Vec<(AccountIdOf<Test>, BalanceOf<Test>)>) -> Self {
+		pub fn with_balances(mut self, balances: Vec<(<attestation::AccountIdOf<Test>, BalanceOf<Test>)>) -> Self {
 			self.balances = balances;
 			self
 		}
@@ -329,7 +333,7 @@ pub(crate) mod runtime {
 		#[must_use]
 		pub fn with_public_credentials(
 			mut self,
-			credentials: Vec<(SubjectIdOf<Test>, ClaimHashOf<Test>, CredentialEntryOf<Test>)>,
+			credentials: Vec<(Test::SubjectId, ClaimHashOf<Test>, CredentialEntryOf<Test>)>,
 		) -> Self {
 			self.public_credentials = credentials;
 			self
