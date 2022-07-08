@@ -18,33 +18,50 @@
 
 use frame_support::sp_runtime::RuntimeDebug;
 
+/// An error in the asset ID parsing logic.
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug)]
 pub enum AssetIdError {
+	/// An error in the asset namespace parsing logic.
 	Namespace(NamespaceError),
+	/// An error in the asset reference parsing logic.
 	Reference(ReferenceError),
+	/// An error in the asset identifier parsing logic.
 	Identifier(IdentifierError),
+	/// A generic error not belonging to any of the other categories.
 	InvalidFormat,
 }
 
+/// An error in the asset namespace parsing logic.
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug)]
 pub enum NamespaceError {
+	/// Namespace too long.
 	TooLong,
+	/// Namespace too short.
 	TooShort,
-	InvalidCharacter,
+	/// A generic error not belonging to any of the other categories.
+	InvalidFormat,
 }
 
+/// An error in the asset reference parsing logic.
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug)]
 pub enum ReferenceError {
+	/// Reference too long.
 	TooLong,
+	/// Reference too short.
 	TooShort,
-	InvalidCharacter,
+	/// A generic error not belonging to any of the other categories.
+	InvalidFormat,
 }
 
+/// An error in the asset identifier parsing logic.
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug)]
 pub enum IdentifierError {
+	/// Identifier too long.
 	TooLong,
+	/// Identifier too short.
 	TooShort,
-	InvalidCharacter,
+	/// A generic error not belonging to any of the other categories.
+	InvalidFormat,
 }
 
 impl From<NamespaceError> for AssetIdError {
@@ -65,6 +82,8 @@ impl From<IdentifierError> for AssetIdError {
 	}
 }
 
+// Exported types. This will always only re-export the latest version by
+// default.
 pub use v1::*;
 
 pub mod v1 {
@@ -76,25 +95,36 @@ pub mod v1 {
 	use frame_support::{sp_runtime::RuntimeDebug, traits::ConstU32, BoundedVec};
 	use sp_std::vec::Vec;
 
-	const MINIMUM_NAMESPACE_LENGTH: usize = 3;
-	const MAXIMUM_NAMESPACE_LENGTH: usize = 8;
+	pub const MINIMUM_ASSET_ID_LENGTH: usize = MINIMUM_NAMESPACE_LENGTH + b":".len() + MINIMUM_REFERENCE_LENGTH;
+	pub const MAXIMUM_ASSET_ID_LENGTH: usize = MAXIMUM_NAMESPACE_LENGTH + b":".len() + MAXIMUM_REFERENCE_LENGTH + b":".len() + MAXIMUM_IDENTIFIER_LENGTH;
+
+	pub const MINIMUM_NAMESPACE_LENGTH: usize = 3;
+	pub const MAXIMUM_NAMESPACE_LENGTH: usize = 8;
 	const MAXIMUM_NAMESPACE_LENGTH_U32: u32 = MAXIMUM_NAMESPACE_LENGTH as u32;
-	const MINIMUM_REFERENCE_LENGTH: usize = 1;
-	const MAXIMUM_REFERENCE_LENGTH: usize = 64;
+	pub const MINIMUM_REFERENCE_LENGTH: usize = 1;
+	pub const MAXIMUM_REFERENCE_LENGTH: usize = 64;
 	const MAXIMUM_REFERENCE_LENGTH_U32: u32 = MAXIMUM_REFERENCE_LENGTH as u32;
-	const MINIMUM_IDENTIFIER_LENGTH: usize = 1;
-	const MAXIMUM_IDENTIFIER_LENGTH: usize = 78;
+	pub const MINIMUM_IDENTIFIER_LENGTH: usize = 1;
+	pub const MAXIMUM_IDENTIFIER_LENGTH: usize = 78;
 	const MAXIMUM_IDENTIFIER_LENGTH_U32: u32 = MAXIMUM_IDENTIFIER_LENGTH as u32;
 
 	// 20 bytes -> 40 HEX characters
 	const EVM_SMART_CONTRACT_ADDRESS_LENGTH: usize = 40;
 
+	// TODO: Add link to the Asset DID spec once merged.
+
+	/// The Asset ID component as specified in the Asset DID specification.
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
 	pub enum AssetId {
+		// A SLIP44 asset reference.
 		Slip44(Slip44Reference),
+		// An ERC20 asset reference.
 		Erc20(EvmSmartContractFungibleReference),
+		// An ERC721 asset reference.
 		Erc721(EvmSmartContractNonFungibleReference),
+		// An ERC1155 asset reference.
 		Erc1155(EvmSmartContractNonFungibleReference),
+		// A generic asset.
 		Generic(GenericAssetId),
 	}
 
@@ -115,22 +145,23 @@ pub mod v1 {
 
 		fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
 			match value {
-				// "slip44:" tokens -> https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-20.md
+				// "slip44:" assets -> https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-20.md
 				[b's', b'l', b'i', b'p', b'4', b'4', b':', asset_reference @ ..] => {
 					Slip44Reference::try_from(asset_reference).map(Self::Slip44)
 				}
-				// "erc20:" tokens -> https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-21.md
+				// "erc20:" assets -> https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-21.md
 				[b'e', b'r', b'c', b'2', b'0', b':', asset_reference @ ..] => {
 					EvmSmartContractFungibleReference::try_from(asset_reference).map(Self::Erc20)
 				}
-				// "erc721:" tokens -> https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-22.md
+				// "erc721:" assets -> https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-22.md
 				[b'e', b'r', b'c', b'7', b'2', b'1', b':', asset_reference @ ..] => {
 					EvmSmartContractNonFungibleReference::try_from(asset_reference).map(Self::Erc721)
 				}
-				// "erc1155:" tokens -> https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-29.md
+				// "erc1155:" assets-> https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-29.md
 				[b'e', b'r', b'c', b'1', b'1', b'5', b'5', b':', asset_reference @ ..] => {
 					EvmSmartContractNonFungibleReference::try_from(asset_reference).map(Self::Erc1155)
 				}
+				// Generic yet valid asset IDs
 				asset_id => GenericAssetId::try_from(asset_id).map(Self::Generic),
 			}
 		}
@@ -161,14 +192,24 @@ pub mod v1 {
 		}
 	}
 
+	/// A Slip44 asset reference.
+	/// It is a modification of the [CAIP-20 spec](https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-20.md)
+	/// according to the rules defined in the Asset DID method specification.
+	#[non_exhaustive]
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
-	pub struct Slip44Reference(BoundedVec<u8, ConstU32<MAXIMUM_REFERENCE_LENGTH_U32>>);
+	pub struct Slip44Reference(pub BoundedVec<u8, ConstU32<MAXIMUM_REFERENCE_LENGTH_U32>>);
 
-	// Values taken from https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-20.md
 	impl Slip44Reference {
-		#[allow(dead_code)]
+		/// [CAN PANIC]
+		/// Tries to create a Slip44 reference from the provided slice,
+		/// panicking if the slice is longer than the maximum length allowed.
 		pub(crate) fn from_slice_unchecked(slice: &[u8]) -> Self {
-			Self(slice.to_vec().try_into().unwrap())
+			Self(
+				slice
+					.to_vec()
+					.try_into()
+					.expect("Slip44Reference::from_slice_unchecked should never panic."),
+			)
 		}
 	}
 
@@ -178,13 +219,13 @@ pub mod v1 {
 		fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
 			let input_length = value.len();
 			if input_length < MINIMUM_REFERENCE_LENGTH {
-				Err(AssetIdError::Reference(ReferenceError::TooShort))
+				Err(ReferenceError::TooShort.into())
 			} else if input_length > MAXIMUM_REFERENCE_LENGTH {
-				Err(AssetIdError::Reference(ReferenceError::TooLong))
+				Err(ReferenceError::TooLong.into())
 			} else {
 				value.iter().try_for_each(|c| {
 					if !(b'0'..=b'9').contains(c) {
-						Err(AssetIdError::Reference(ReferenceError::InvalidCharacter))
+						Err(ReferenceError::InvalidFormat)
 					} else {
 						Ok(())
 					}
@@ -195,14 +236,24 @@ pub mod v1 {
 		}
 	}
 
+	/// An asset reference that is identifiable only by an EVM smart contract
+	/// (e.g., a fungible token). It is a modification of the [CAIP-21 spec](https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-21.md)
+	/// according to the rules defined in the Asset DID method specification.
+	#[non_exhaustive]
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
-	pub struct EvmSmartContractFungibleReference([u8; EVM_SMART_CONTRACT_ADDRESS_LENGTH]);
+	pub struct EvmSmartContractFungibleReference(pub [u8; EVM_SMART_CONTRACT_ADDRESS_LENGTH]);
 
-	// Values taken from https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-20.md
 	impl EvmSmartContractFungibleReference {
-		#[allow(dead_code)]
+		/// [CAN PANIC]
+		/// Tries to create an EvmSmartContractFungibleReference reference from
+		/// the provided slice, panicking if the slice is longer than the
+		/// maximum length allowed.
 		pub(crate) fn from_slice_unchecked(slice: &[u8]) -> Self {
-			Self(slice.try_into().unwrap())
+			Self(
+				slice
+					.try_into()
+					.expect("EvmSmartContractFungibleReference::from_slice_unchecked should never panic."),
+			)
 		}
 	}
 
@@ -214,10 +265,10 @@ pub mod v1 {
 				// If the prefix is "0x" => parse the address
 				[b'0', b'x', contract_address @ ..] => {
 					let inner: [u8; EVM_SMART_CONTRACT_ADDRESS_LENGTH] =
-						contract_address.try_into().map_err(|_| AssetIdError::InvalidFormat)?;
+						contract_address.try_into().map_err(|_| ReferenceError::InvalidFormat)?;
 					inner.iter().try_for_each(|c| {
 						if !matches!(c, b'0'..=b'9' | b'a'..=b'f' | b'A'..=b'F') {
-							Err(AssetIdError::Reference(ReferenceError::InvalidCharacter))
+							Err(ReferenceError::InvalidFormat)
 						} else {
 							Ok(())
 						}
@@ -226,19 +277,26 @@ pub mod v1 {
 					Ok(Self::from_slice_unchecked(contract_address))
 				}
 				// Otherwise fail
-				_ => Err(AssetIdError::InvalidFormat),
+				_ => Err(ReferenceError::InvalidFormat.into()),
 			}
 		}
 	}
 
+	/// An asset reference that is identifiable by an EVM smart contract and an
+	/// optional identifier (e.g., an NFT collection or instance thereof). It is a modification of the [CAIP-22 spec](https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-22.md) and [CAIP-29 spec](https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-29.md)
+	/// according to the rules defined in the Asset DID method specification.
+	#[non_exhaustive]
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
 	pub struct EvmSmartContractNonFungibleReference(
-		EvmSmartContractFungibleReference,
-		Option<EvmSmartContractNonFungibleIdentifier>,
+		pub EvmSmartContractFungibleReference,
+		pub Option<EvmSmartContractNonFungibleIdentifier>,
 	);
 
 	impl EvmSmartContractNonFungibleReference {
-		#[allow(dead_code)]
+		/// [CAN PANIC]
+		/// Tries to create an EvmSmartContractNonFungibleReference reference
+		/// from the provided raw components, panicking if the any of them is
+		/// longer than the maximum length allowed.
 		pub(crate) fn from_raw_unchecked(reference: &[u8], id: Option<&[u8]>) -> Self {
 			Self(
 				EvmSmartContractFungibleReference::from_slice_unchecked(reference),
@@ -255,7 +313,7 @@ pub mod v1 {
 
 			let reference = components
 				.next()
-				.ok_or(AssetIdError::InvalidFormat)
+				.ok_or_else(|| ReferenceError::InvalidFormat.into())
 				.and_then(EvmSmartContractFungibleReference::try_from)?;
 
 			let id = components
@@ -269,13 +327,24 @@ pub mod v1 {
 		}
 	}
 
+	/// An asset identifier for an EVM smart contract collection (e.g., an NFT
+	/// instance).
+	#[non_exhaustive]
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
-	pub struct EvmSmartContractNonFungibleIdentifier(BoundedVec<u8, ConstU32<MAXIMUM_IDENTIFIER_LENGTH_U32>>);
+	pub struct EvmSmartContractNonFungibleIdentifier(pub BoundedVec<u8, ConstU32<MAXIMUM_IDENTIFIER_LENGTH_U32>>);
 
 	impl EvmSmartContractNonFungibleIdentifier {
-		#[allow(dead_code)]
-		pub(crate) fn from_slice_unchecked(value: &[u8]) -> Self {
-			Self(value.to_vec().try_into().unwrap())
+		/// [CAN PANIC]
+		/// Tries to create an EvmSmartContractNonFungibleIdentifier reference
+		/// from the provided slice, panicking if the slice is longer than the
+		/// maximum length allowed.
+		fn from_slice_unchecked(value: &[u8]) -> Self {
+			Self(
+				value
+					.to_vec()
+					.try_into()
+					.expect("EvmSmartContractNonFungibleIdentifier::from_slice_unchecked should never panic."),
+			)
 		}
 	}
 
@@ -285,13 +354,13 @@ pub mod v1 {
 		fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
 			let input_length = value.len();
 			if input_length < MINIMUM_IDENTIFIER_LENGTH {
-				Err(AssetIdError::Identifier(IdentifierError::TooShort))
+				Err(IdentifierError::TooShort.into())
 			} else if input_length > MAXIMUM_IDENTIFIER_LENGTH {
-				Err(AssetIdError::Identifier(IdentifierError::TooLong))
+				Err(IdentifierError::TooLong.into())
 			} else {
 				value.iter().try_for_each(|c| {
 					if !matches!(c, b'0'..=b'9') {
-						Err(AssetIdError::Identifier(IdentifierError::InvalidCharacter))
+						Err(IdentifierError::InvalidFormat)
 					} else {
 						Ok(())
 					}
@@ -300,11 +369,12 @@ pub mod v1 {
 					.to_vec()
 					.try_into()
 					.map(Self)
-					.map_err(|_| AssetIdError::InvalidFormat)
+					.map_err(|_| IdentifierError::InvalidFormat.into())
 			}
 		}
 	}
 
+	/// A generic asset ID compliant with the [CAIP-19 spec](https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-19.md) that cannot be boxed in any of the supported variants.
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
 	pub struct GenericAssetId {
 		pub namespace: GenericAssetNamespace,
@@ -313,6 +383,10 @@ pub mod v1 {
 	}
 
 	impl GenericAssetId {
+		/// [CAN PANIC]
+		/// Tries to create a GenericAssetId identifier from the provided raw
+		/// components, panicking if the any of them is longer than the maximum
+		/// length allowed.\
 		#[allow(dead_code)]
 		fn from_raw_unchecked(namespace: &[u8], reference: &[u8], id: Option<&[u8]>) -> Self {
 			Self {
@@ -328,7 +402,7 @@ pub mod v1 {
 
 		fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
 			let input_length = value.len();
-			if input_length > MAXIMUM_NAMESPACE_LENGTH + MAXIMUM_REFERENCE_LENGTH + MAXIMUM_IDENTIFIER_LENGTH + 2 {
+			if input_length > MAXIMUM_ASSET_ID_LENGTH {
 				return Err(AssetIdError::InvalidFormat);
 			}
 
@@ -356,12 +430,23 @@ pub mod v1 {
 		}
 	}
 
+	/// A generic asset namespace as defined in the [CAIP-19 spec](https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-19.md).
+	#[non_exhaustive]
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
-	pub struct GenericAssetNamespace(BoundedVec<u8, ConstU32<MAXIMUM_NAMESPACE_LENGTH_U32>>);
+	pub struct GenericAssetNamespace(pub BoundedVec<u8, ConstU32<MAXIMUM_NAMESPACE_LENGTH_U32>>);
 
 	impl GenericAssetNamespace {
+		/// [CAN PANIC]
+		/// Tries to create a GenericAssetNamespace namespace from the provided
+		/// slice, panicking if the slice is longer than the maximum length
+		/// allowed.
 		fn from_slice_unchecked(value: &[u8]) -> Self {
-			Self(value.to_vec().try_into().unwrap())
+			Self(
+				value
+					.to_vec()
+					.try_into()
+					.expect("GenericAssetNamespace::from_slice_unchecked should never panic."),
+			)
 		}
 	}
 
@@ -371,13 +456,13 @@ pub mod v1 {
 		fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
 			let input_length = value.len();
 			if input_length < MINIMUM_NAMESPACE_LENGTH {
-				Err(AssetIdError::Namespace(NamespaceError::TooShort))
+				Err(NamespaceError::TooShort.into())
 			} else if input_length > MAXIMUM_NAMESPACE_LENGTH {
-				Err(AssetIdError::Namespace(NamespaceError::TooLong))
+				Err(NamespaceError::TooLong.into())
 			} else {
 				value.iter().try_for_each(|c| {
 					if !matches!(c, b'-' | b'a'..=b'z' | b'0'..=b'9') {
-						Err(AssetIdError::Namespace(NamespaceError::InvalidCharacter))
+						Err(NamespaceError::InvalidFormat)
 					} else {
 						Ok(())
 					}
@@ -388,12 +473,23 @@ pub mod v1 {
 		}
 	}
 
+	/// A generic asset reference as defined in the [CAIP-19 spec](https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-19.md).
+	#[non_exhaustive]
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
-	pub struct GenericAssetReference(BoundedVec<u8, ConstU32<MAXIMUM_REFERENCE_LENGTH_U32>>);
+	pub struct GenericAssetReference(pub BoundedVec<u8, ConstU32<MAXIMUM_REFERENCE_LENGTH_U32>>);
 
 	impl GenericAssetReference {
+		/// [CAN PANIC]
+		/// Tries to create a GenericAssetReference reference from the provided
+		/// slice, panicking if the slice is longer than the maximum length
+		/// allowed.
 		fn from_slice_unchecked(value: &[u8]) -> Self {
-			Self(value.to_vec().try_into().unwrap())
+			Self(
+				value
+					.to_vec()
+					.try_into()
+					.expect("GenericAssetReference::from_slice_unchecked should never panic."),
+			)
 		}
 	}
 
@@ -403,13 +499,13 @@ pub mod v1 {
 		fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
 			let input_length = value.len();
 			if input_length < MINIMUM_REFERENCE_LENGTH {
-				Err(AssetIdError::Reference(ReferenceError::TooShort))
+				Err(ReferenceError::TooShort.into())
 			} else if input_length > MAXIMUM_REFERENCE_LENGTH {
-				Err(AssetIdError::Reference(ReferenceError::TooLong))
+				Err(ReferenceError::TooLong.into())
 			} else {
 				value.iter().try_for_each(|c| {
 					if !matches!(c, b'-' | b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9') {
-						Err(AssetIdError::Reference(ReferenceError::InvalidCharacter))
+						Err(ReferenceError::InvalidFormat)
 					} else {
 						Ok(())
 					}
@@ -420,12 +516,23 @@ pub mod v1 {
 		}
 	}
 
+	/// A generic asset identifier as defined in the [CAIP-19 spec](https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-19.md).
+	#[non_exhaustive]
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
-	pub struct GenericAssetIdentifier(BoundedVec<u8, ConstU32<MAXIMUM_IDENTIFIER_LENGTH_U32>>);
+	pub struct GenericAssetIdentifier(pub BoundedVec<u8, ConstU32<MAXIMUM_IDENTIFIER_LENGTH_U32>>);
 
 	impl GenericAssetIdentifier {
+		/// [CAN PANIC]
+		/// Tries to create a GenericAssetIdentifier identifier from the
+		/// provided slice, panicking if the slice is longer than the maximum
+		/// length allowed.
 		fn from_slice_unchecked(value: &[u8]) -> Self {
-			Self(value.to_vec().try_into().unwrap())
+			Self(
+				value
+					.to_vec()
+					.try_into()
+					.expect("GenericAssetIdentifier::from_slice_unchecked should never panic."),
+			)
 		}
 	}
 
@@ -435,13 +542,13 @@ pub mod v1 {
 		fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
 			let input_length = value.len();
 			if input_length < MINIMUM_IDENTIFIER_LENGTH {
-				Err(AssetIdError::Identifier(IdentifierError::TooShort))
+				Err(IdentifierError::TooShort.into())
 			} else if input_length > MAXIMUM_IDENTIFIER_LENGTH {
-				Err(AssetIdError::Identifier(IdentifierError::TooLong))
+				Err(IdentifierError::TooLong.into())
 			} else {
 				value.iter().try_for_each(|c| {
 					if !matches!(c, b'-' | b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9') {
-						Err(AssetIdError::Identifier(IdentifierError::InvalidCharacter))
+						Err(IdentifierError::InvalidFormat)
 					} else {
 						Ok(())
 					}

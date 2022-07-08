@@ -48,7 +48,7 @@ pub mod default_weights;
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 
-#[cfg(test)]
+#[cfg(any(test, feature = "runtime-benchmarks"))]
 mod mock;
 #[cfg(test)]
 mod tests;
@@ -134,7 +134,7 @@ pub mod pallet {
 		/// raw attester-provided input.
 		type SubjectId: Parameter
 			+ MaxEncodedLen
-			+ TryFrom<BoundedVec<u8, Self::MaxSubjectIdLength>, Error = Self::InputError>;
+			+ TryFrom<InputSubjectIdOf<Self>, Error = Self::InputError>;
 		/// The weight info.
 		type WeightInfo: WeightInfo;
 

@@ -23,17 +23,25 @@ use sp_std::vec::Vec;
 
 use crate::*;
 
+pub const MINIMUM_ASSET_DID_LENGTH: usize = b"did:asset:".len() + MINIMUM_CHAIN_ID_LENGTH + b".".len() + MINIMUM_ASSET_ID_LENGTH;
+pub const MAXIMUM_ASSET_DID_LENGTH: usize = b"did:asset:".len() + MAXIMUM_CHAIN_ID_LENGTH + b".".len() + MAXIMUM_ASSET_ID_LENGTH;
+
+/// An Asset DID as specified in the Asset DID method specification.
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
 pub struct AssetDid {
 	pub chain_id: ChainId,
 	pub asset_id: AssetId,
 }
 
+/// An error in the Asset DID parsing logic.
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug)]
 pub enum AssetDidError {
+	/// An error in the chain ID parsing logic.
 	ChainId(ChainIdError),
+	/// An error in the asset ID parsing logic.
 	AssetId(AssetIdError),
-	InvalidInput,
+	/// A generic error not belonging to any of the other categories.
+	InvalidFormat,
 }
 
 impl From<ChainIdError> for AssetDidError {
@@ -120,23 +128,23 @@ impl TryFrom<&[u8]> for AssetDid {
 
 	fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
 		match value {
-			// Asset DIDs must start with "did:asset:" to be considered further.
+			// Asset DIDs must start with "did:asset:" to be valid. The "did:asset:" prefix is then stripped off.
 			[b'd', b'i', b'd', b':', b'a', b's', b's', b'e', b't', b':', components @ ..] => {
 				let mut components = components.split(|c| *c == b'.');
 
 				let chain_id = components
 					.next()
-					.ok_or(AssetDidError::InvalidInput)
+					.ok_or(AssetDidError::InvalidFormat)
 					.and_then(|input| ChainId::try_from(input).map_err(AssetDidError::ChainId))?;
 
 				let asset_id = components
 					.next()
-					.ok_or(AssetDidError::InvalidInput)
+					.ok_or(AssetDidError::InvalidFormat)
 					.and_then(|input| AssetId::try_from(input).map_err(AssetDidError::AssetId))?;
 
 				Ok(Self { chain_id, asset_id })
 			}
-			_ => Err(AssetDidError::InvalidInput),
+			_ => Err(AssetDidError::InvalidFormat),
 		}
 	}
 }
@@ -174,32 +182,36 @@ mod test {
 	fn valid_ids() {
 		let raw_ids = [
 			// Test cases from https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-20.md
-			"eip155:1.slip44:60",
-			"bip122:000000000019d6689c085ae165831e93.slip44:0",
-			"cosmos:cosmoshub-3.slip44:118",
-			"bip122:12a765e31ffd4059bada1e25190f6e98.slip44:2",
-			"cosmos:Binance-Chain-Tigris.slip44:714",
-			"cosmos:iov-mainnet.slip44:234",
+			"did:asset:eip155:1.slip44:60",
+			"did:asset:bip122:000000000019d6689c085ae165831e93.slip44:0",
+			"did:asset:cosmos:cosmoshub-3.slip44:118",
+			"did:asset:bip122:12a765e31ffd4059bada1e25190f6e98.slip44:2",
+			"did:asset:cosmos:Binance-Chain-Tigris.slip44:714",
+			"did:asset:cosmos:iov-mainnet.slip44:234",
 			// Test cases from https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-21.md
-			"eip155:1.erc20:0x6b175474e89094c44da98b954eedeac495271d0f",
-			"eip155:1.erc20:0x8f8221afbb33998d8584a2b05749ba73c37a938a",
+			"did:asset:eip155:1.erc20:0x6b175474e89094c44da98b954eedeac495271d0f",
+			"did:asset:eip155:1.erc20:0x8f8221afbb33998d8584a2b05749ba73c37a938a",
 			// Test cases from https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-22.md
-			"eip155:1.erc721:0x06012c8cf97BEaD5deAe237070F9587f8E7A266d",
-			"eip155:1.erc721:0x06012c8cf97BEaD5deAe237070F9587f8E7A266d:771769",
+			"did:asset:eip155:1.erc721:0x06012c8cf97BEaD5deAe237070F9587f8E7A266d",
+			"did:asset:eip155:1.erc721:0x06012c8cf97BEaD5deAe237070F9587f8E7A266d:771769",
 			// Test cases from https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-29.md
-			"eip155:1.erc1155:0x28959Cf125ccB051E70711D0924a62FB28EAF186",
-			"eip155:1.erc1155:0x28959Cf125ccB051E70711D0924a62FB28EAF186:0",
+			"did:asset:eip155:1.erc1155:0x28959Cf125ccB051E70711D0924a62FB28EAF186",
+			"did:asset:eip155:1.erc1155:0x28959Cf125ccB051E70711D0924a62FB28EAF186:0",
 		];
 
 		// FIXME: Better test logic
 		for id in raw_ids {
-			assert!(AssetDid::try_from(id.as_bytes()).is_ok());
+			assert!(
+				AssetDid::try_from(id.as_bytes()).is_ok(),
+				"Test for valid IDs failed for {:?}",
+				id
+			);
 		}
 	}
 
 	#[test]
 	fn helpers() {
-		// These functions should never crash. We just check that here.
+		// These functions should never panic. We just check that here.
 		AssetDid::ether_currency();
 		AssetDid::bitcoin_currency();
 		AssetDid::litecoin_currency();

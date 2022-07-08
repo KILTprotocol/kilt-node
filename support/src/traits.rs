@@ -69,9 +69,9 @@ pub trait GenerateBenchmarkOrigin<OuterOrigin, AccountId, SubjectId> {
 	fn generate_origin(sender: AccountId, subject: SubjectId) -> OuterOrigin;
 }
 
-/// Trait that allows types to implement a default value for a given length,
+/// Trait that allows types to implement a worst case value for a type,
 /// only when running benchmarks.
 #[cfg(feature = "runtime-benchmarks")]
-pub trait DefaultForLength {
-	fn get_default(length: usize) -> Self;
+pub trait GetWorstCase {
+	fn worst_case() -> Self;
 }

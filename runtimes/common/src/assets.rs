@@ -19,16 +19,39 @@
 use codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_runtime::RuntimeDebug;
-use sp_std::{marker::PhantomData, vec::Vec};
+use sp_std::marker::PhantomData;
 
 use kilt_asset_dids::AssetDid as AssetIdentifier;
-use public_credentials::{Config, Error};
+use public_credentials::{Config, Error, InputSubjectIdOf};
 
+#[cfg(feature = "runtime-benchmarks")]
+use kilt_asset_dids::{asset, chain};
+
+/// Thin wrapper around the `AssetDid` type, that transform the parsing errors
+/// to errors for the public-credentials crate.
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
 #[scale_info(skip_type_params(T))]
 #[codec(mel_bound())]
-pub struct AssetDid<T: Config>(AssetIdentifier, Option<PhantomData<T>>);
+pub struct AssetDid<T>(AssetIdentifier, Option<PhantomData<T>>);
 
+impl<T: Config> core::ops::Deref for AssetDid<T> {
+	type Target = AssetIdentifier;
+
+	fn deref(&self) -> &Self::Target {
+		&self.0
+	}
+}
+
+impl<T: Config> TryFrom<InputSubjectIdOf<T>> for AssetDid<T> {
+	type Error = Error<T>;
+
+	fn try_from(value: InputSubjectIdOf<T>) -> Result<Self, Self::Error> {
+		let asset = AssetIdentifier::try_from(&value[..]).map_err(|_| Error::<T>::InvalidInput)?;
+		Ok(Self(asset, None))
+	}
+}
+
+#[cfg(feature = "runtime-benchmarks")]
 impl<T: Config> TryFrom<Vec<u8>> for AssetDid<T> {
 	type Error = Error<T>;
 
@@ -39,22 +62,26 @@ impl<T: Config> TryFrom<Vec<u8>> for AssetDid<T> {
 }
 
 #[cfg(feature = "runtime-benchmarks")]
-impl<T: Config> kilt_support::traits::DefaultForLength for AssetDid<T> {
-	fn get_default(length: usize) -> Self {
-		// Minimum length is 3 for namespace and 1 for reference
-		// https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-2.md
-		// Minimum length is 3 for namespace and 1 for reference
-		// https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-19.md
-		const BASE_ID: &[u8] = b"did:asset:cns:c.asn:a";
-		const BASE_LENGTH: usize = BASE_ID.len();
-		assert!(length > BASE_LENGTH, "{}", format!(
-			"The provided input value {} was not large enough to cover the minimum default case of {}.",
-			length,
-			BASE_LENGTH
-		));
-		let remaining_length_for_asset_id = length - BASE_LENGTH;
-		// Pad the remaining space with 0s
-		let asset_did = [BASE_ID, &vec![b'0'; remaining_length_for_asset_id][..]].concat();
-		Self::try_from(asset_did).expect("Asset DID creation failed for the length provided (most likely value too large).")
+impl<T: Config> kilt_support::traits::GetWorstCase for AssetDid<T> {
+	fn worst_case() -> Self {
+		// Returns the worst case for an AssetDID, which is represented by the longest identifier according to the spec.
+		Self::try_from(
+			[
+				b"did:asset:",
+				// Chain part
+				&[b'0'; chain::MAXIMUM_NAMESPACE_LENGTH][..],
+				b":",
+				&[b'1'; chain::MAXIMUM_REFERENCE_LENGTH][..],
+				// "." separator
+				b".",
+				// Asset part
+				&[b'2'; asset::MAXIMUM_NAMESPACE_LENGTH][..],
+				b":",
+				&[b'3'; asset::MAXIMUM_REFERENCE_LENGTH][..],
+				b":",
+				&[b'4'; asset::MAXIMUM_IDENTIFIER_LENGTH][..]
+			].concat()
+		)
+		.expect("Worst case creation should not fail.")
 	}
 }

@@ -16,72 +16,35 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::traits::Get;
-
 use attestation::ClaimHashOf;
 use ctype::CtypeHashOf;
-use kilt_support::deposit::Deposit;
 
 use crate::{
-	BalanceOf, Claim, ClaimerSignatureInfo, Config, CredentialEntryOf, Credentials,
-	CredentialsUnicityIndex, CurrencyOf, InputCredentialOf
+	Claim, ClaimerSignatureInfo, Config,
+	InputClaimsContentOf, InputCredentialOf, InputSubjectIdOf
 };
 
-pub(crate) type BlockNumber = u64;
-pub(crate) type Hash = sp_core::H256;
 pub(crate) type ClaimerSignatureInfoOf<Test> =
 	ClaimerSignatureInfo<<Test as Config>::ClaimerIdentifier, <Test as Config>::ClaimerSignature>;
 
-pub(crate) const DEFAULT_CLAIM_CONTENT_ENCODED_LENGTH: usize = 32;
-
+// Generate a public credential using a many Default::default() as possible.
 pub fn generate_base_public_credential_creation_op<T: Config>(
-	subject_id: Vec<u8>,
+	subject_id: InputSubjectIdOf<T>,
 	claim_hash: ClaimHashOf<T>,
 	ctype_hash: CtypeHashOf<T>,
+	contents: InputClaimsContentOf<T>,
 	claimer_signature: Option<ClaimerSignatureInfoOf<T>>,
 ) -> InputCredentialOf<T> {
 	InputCredentialOf::<T> {
 		claim: Claim {
 			ctype_hash,
-			subject: subject_id
-				.try_into()
-				.expect("Failed to cast subject ID to expected type."),
-			contents: vec![0; DEFAULT_CLAIM_CONTENT_ENCODED_LENGTH]
-				.try_into()
-				.expect("Contents should fit into BoundedVec."),
+			subject: subject_id,
+			contents,
 		},
 		claim_hash,
 		claimer_signature,
 		nonce: Default::default(),
 		authorization_info: Default::default(),
-	}
-}
-
-pub fn insert_public_credentials<T: Config>(
-	subject_id: T::SubjectId,
-	claim_hash: ClaimHashOf<T>,
-	credential_entry: CredentialEntryOf<T>,
-) {
-	kilt_support::reserve_deposit::<T::AccountId, CurrencyOf<T>>(
-		credential_entry.deposit.owner.clone(),
-		credential_entry.deposit.amount,
-	)
-	.expect("Attester should have enough balance");
-
-	Credentials::<T>::insert(&subject_id, &claim_hash, credential_entry);
-	CredentialsUnicityIndex::<T>::insert(claim_hash, subject_id);
-}
-
-pub fn generate_base_credential_entry<T: Config>(
-	payer: T::AccountId,
-	block_number: <T as frame_system::Config>::BlockNumber,
-) -> CredentialEntryOf<T> {
-	CredentialEntryOf::<T> {
-		block_number,
-		deposit: Deposit::<T::AccountId, BalanceOf<T>> {
-			owner: payer,
-			amount: <T as Config>::Deposit::get(),
-		},
 	}
 }
 
@@ -96,7 +59,7 @@ pub(crate) mod runtime {
 	use codec::{Decode, Encode, MaxEncodedLen};
 	use frame_support::{
 		parameter_types,
-		traits::{ConstU128, ConstU16, ConstU32, ConstU64},
+		traits::{Get, ConstU128, ConstU16, ConstU32, ConstU64},
 		weights::constants::RocksDbWeight,
 		BoundedVec,
 	};
@@ -109,6 +72,7 @@ pub(crate) mod runtime {
 	};
 
 	use kilt_support::{
+		deposit::Deposit,
 		mock::{mock_origin, SubjectId},
 		signature::EqualVerify,
 	};
@@ -116,16 +80,19 @@ pub(crate) mod runtime {
 	use attestation::{mock::MockAccessControl, AttestationDetails, ClaimHashOf};
 	use ctype::{CtypeCreatorOf, CtypeHashOf};
 
-	use crate::Error;
+	use crate::{BalanceOf, CredentialsUnicityIndex, Credentials, CredentialEntryOf, CurrencyOf, Error, InputSubjectIdOf};
 
-	pub type Balance = u128;
-	pub type AccountPublic = <MultiSignature as Verify>::Signer;
-	pub type AccountId = <AccountPublic as IdentifyAccount>::AccountId;
+	pub(crate) type BlockNumber = u64;
+	pub(crate) type Balance = u128;
+	pub(crate) type Hash = sp_core::H256;
+	pub(crate) type AccountPublic = <MultiSignature as Verify>::Signer;
+	pub(crate) type AccountId = <AccountPublic as IdentifyAccount>::AccountId;
 
 	#[derive(
 		Default,
-		Encode,
 		Clone,
+		Copy,
+		Encode,
 		Decode,
 		MaxEncodedLen,
 		sp_runtime::RuntimeDebug,
@@ -137,7 +104,7 @@ pub(crate) mod runtime {
 	)]
 	pub struct TestSubjectId([u8; 32]);
 
-	impl TryFrom<BoundedVec<u8, <Test as Config>::MaxSubjectIdLength>> for TestSubjectId {
+	impl TryFrom<InputSubjectIdOf<Test>> for TestSubjectId {
 		type Error = Error<Test>;
 
 		fn try_from(value: BoundedVec<u8, <Test as Config>::MaxSubjectIdLength>) -> Result<Self, Self::Error> {
@@ -146,11 +113,16 @@ pub(crate) mod runtime {
 		}
 	}
 
-	impl core::ops::Deref for TestSubjectId {
-		type Target = [u8; 32];
+	#[cfg(feature = "runtime-benchmarks")]
+	impl kilt_support::traits::GetWorstCase for TestSubjectId {
+		fn worst_case() -> Self {
+			crate::mock::TestSubjectId::default()
+		}
+	}
 
-		fn deref(&self) -> &Self::Target {
-			&self.0
+	impl From<TestSubjectId> for InputSubjectIdOf<Test> {
+		fn from(value: TestSubjectId) -> Self {
+			value.0.to_vec().try_into().expect("Test subject ID should fit into the expected input subject ID of for the test runtime.")
 		}
 	}
 
@@ -160,7 +132,35 @@ pub(crate) mod runtime {
 		}
 	}
 
-	pub const MILLI_UNIT: Balance = 10u128.pow(12);
+	pub(crate) fn generate_base_credential_entry<T: Config>(
+		payer: T::AccountId,
+		block_number: <T as frame_system::Config>::BlockNumber,
+	) -> CredentialEntryOf<T> {
+		CredentialEntryOf::<T> {
+			block_number,
+			deposit: Deposit::<T::AccountId, BalanceOf<T>> {
+				owner: payer,
+				amount: <T as Config>::Deposit::get(),
+			},
+		}
+	}
+
+	fn insert_public_credentials<T: Config>(
+		subject_id: T::SubjectId,
+		claim_hash: ClaimHashOf<T>,
+		credential_entry: CredentialEntryOf<T>,
+	) {
+		kilt_support::reserve_deposit::<T::AccountId, CurrencyOf<T>>(
+			credential_entry.deposit.owner.clone(),
+			credential_entry.deposit.amount,
+		)
+		.expect("Attester should have enough balance");
+
+		Credentials::<T>::insert(&subject_id, &claim_hash, credential_entry);
+		CredentialsUnicityIndex::<T>::insert(claim_hash, subject_id);
+	}
+
+	pub(crate) const MILLI_UNIT: Balance = 10u128.pow(12);
 
 	frame_support::construct_runtime!(
 		pub enum Test where
@@ -282,7 +282,7 @@ pub(crate) mod runtime {
 	pub(crate) const BOB_SEED: [u8; 32] = [1u8; 32];
 	pub(crate) const CHARLIE_SEED: [u8; 32] = [2u8; 32];
 
-	pub(crate) const SUBJECT_ID_00: [u8; 32] = [100u8; 32];
+	pub(crate) const SUBJECT_ID_00: TestSubjectId = TestSubjectId([100u8; 32]);
 
 	pub(crate) const CLAIM_HASH_SEED_01: u64 = 1u64;
 	pub(crate) const CLAIM_HASH_SEED_02: u64 = 2u64;
@@ -302,7 +302,7 @@ pub(crate) mod runtime {
 	}
 
 	#[derive(Clone, Default)]
-	pub struct ExtBuilder {
+	pub(crate)struct ExtBuilder {
 		/// initial ctypes & owners
 		ctypes: Vec<(CtypeHashOf<Test>, CtypeCreatorOf<Test>)>,
 		/// endowed accounts with balances
@@ -339,7 +339,7 @@ pub(crate) mod runtime {
 			self
 		}
 
-		pub fn build(self) -> sp_io::TestExternalities {
+		pub(crate)fn build(self) -> sp_io::TestExternalities {
 			let mut storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
 			pallet_balances::GenesisConfig::<Test> {
 				balances: self.balances.clone(),
@@ -367,7 +367,7 @@ pub(crate) mod runtime {
 		}
 
 		#[cfg(feature = "runtime-benchmarks")]
-		pub fn build_with_keystore(self) -> sp_io::TestExternalities {
+		pub(crate) fn build_with_keystore(self) -> sp_io::TestExternalities {
 			let mut ext = self.build();
 
 			let keystore = sp_keystore::testing::KeyStore::new();

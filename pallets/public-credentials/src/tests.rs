@@ -23,7 +23,7 @@ use attestation::{attestations::AttestationDetails, mock::generate_base_attestat
 use ctype::mock::get_ctype_hash;
 use kilt_support::mock::mock_origin::DoubleOrigin;
 
-use crate::{mock::*, Config, Credentials, CredentialsUnicityIndex, Error};
+use crate::{mock::*, Config, Credentials, CredentialsUnicityIndex, Error, InputClaimsContentOf};
 
 // add
 
@@ -35,9 +35,9 @@ fn add_with_no_signature_successful() {
 	let claim_hash_2 = claim_hash_from_seed(CLAIM_HASH_SEED_02);
 	let ctype_hash = get_ctype_hash::<Test>(true);
 	let new_credential_1 =
-		generate_base_public_credential_creation_op::<Test>(subject_id.into(), claim_hash, ctype_hash, None);
+		generate_base_public_credential_creation_op::<Test>(subject_id.into(), claim_hash, ctype_hash, InputClaimsContentOf::<Test>::default(), None);
 	let new_credential_2 =
-		generate_base_public_credential_creation_op::<Test>(subject_id.into(), claim_hash_2, ctype_hash, None);
+		generate_base_public_credential_creation_op::<Test>(subject_id.into(), claim_hash_2, ctype_hash, InputClaimsContentOf::<Test>::default(), None);
 	let public_credential_deposit = <Test as Config>::Deposit::get();
 	let attestation_deposit = <Test as attestation::Config>::Deposit::get();
 
@@ -59,7 +59,7 @@ fn add_with_no_signature_successful() {
 			let stored_attestation =
 				Attestations::<Test>::get(&claim_hash).expect("Attestation should be present on chain.");
 			let stored_public_credential_details =
-				Credentials::<Test>::get(&TestSubjectId::try_from(subject_id).unwrap(), &claim_hash)
+				Credentials::<Test>::get(&subject_id, &claim_hash)
 					.expect("Public credential details should be present on chain.");
 
 			// Test interactions with attestation pallet
@@ -70,7 +70,7 @@ fn add_with_no_signature_successful() {
 			assert_eq!(stored_public_credential_details.block_number, 0);
 			assert_eq!(
 				CredentialsUnicityIndex::<Test>::get(&claim_hash),
-				Some(subject_id.into())
+				Some(subject_id)
 			);
 
 			// Check deposit reservation logic
@@ -105,7 +105,7 @@ fn add_with_no_signature_successful() {
 			let stored_attestation =
 				Attestations::<Test>::get(&claim_hash_2).expect("Attestation #2 should be present on chain.");
 			let stored_public_credential_details =
-				Credentials::<Test>::get(&TestSubjectId::try_from(subject_id).unwrap(), &claim_hash_2)
+				Credentials::<Test>::get(&subject_id, &claim_hash_2)
 					.expect("Public credential #2 details should be present on chain.");
 
 			// Test interactions with attestation pallet
@@ -116,7 +116,7 @@ fn add_with_no_signature_successful() {
 			assert_eq!(stored_public_credential_details.block_number, 1);
 			assert_eq!(
 				CredentialsUnicityIndex::<Test>::get(&claim_hash_2),
-				Some(subject_id.into())
+				Some(subject_id)
 			);
 
 			// Deposit is 2x now
@@ -157,6 +157,7 @@ fn add_with_claimer_signature_successful() {
 		subject_id.into(),
 		claim_hash,
 		ctype_hash,
+		InputClaimsContentOf::<Test>::default(),
 		Some(ClaimerSignatureInfoOf::<Test> {
 			claimer_id: claimer_id.clone(),
 			signature_payload: (claimer_id, hash_to_u8(claim_hash)),
@@ -177,7 +178,7 @@ fn add_with_claimer_signature_successful() {
 			let stored_attestation =
 				Attestations::<Test>::get(&claim_hash).expect("Attestation should be present on chain.");
 			let stored_public_credential_details =
-				Credentials::<Test>::get(&TestSubjectId::try_from(subject_id).unwrap(), &claim_hash)
+				Credentials::<Test>::get(&subject_id, &claim_hash)
 					.expect("Public credential details should be present on chain.");
 
 			// Test interactions with attestation pallet
@@ -188,7 +189,7 @@ fn add_with_claimer_signature_successful() {
 			assert_eq!(stored_public_credential_details.block_number, System::block_number());
 			assert_eq!(
 				CredentialsUnicityIndex::<Test>::get(&claim_hash),
-				Some(subject_id.try_into().unwrap())
+				Some(subject_id)
 			);
 		});
 }
@@ -200,7 +201,7 @@ fn add_not_enough_balance() {
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 	let ctype_hash = get_ctype_hash::<Test>(true);
 	let new_credential =
-		generate_base_public_credential_creation_op::<Test>(subject_id.into(), claim_hash, ctype_hash, None);
+		generate_base_public_credential_creation_op::<Test>(subject_id.into(), claim_hash, ctype_hash, InputClaimsContentOf::<Test>::default(), None);
 	let public_credential_deposit = <Test as Config>::Deposit::get();
 	let attestation_deposit = <Test as attestation::Config>::Deposit::get();
 
@@ -231,6 +232,7 @@ fn add_invalid_signature() {
 		subject_id.into(),
 		claim_hash,
 		ctype_hash,
+		InputClaimsContentOf::<Test>::default(),
 		Some(ClaimerSignatureInfoOf::<Test> {
 			claimer_id,
 			signature_payload: (sr25519_did_from_seed(&BOB_SEED), hash_to_u8(claim_hash)),
@@ -265,6 +267,7 @@ fn add_ctype_not_found() {
 		subject_id.into(),
 		claim_hash,
 		ctype_hash,
+		InputClaimsContentOf::<Test>::default(),
 		Some(ClaimerSignatureInfoOf::<Test> {
 			claimer_id: claimer_id.clone(),
 			signature_payload: (claimer_id, hash_to_u8(claim_hash)),
@@ -287,47 +290,12 @@ fn add_ctype_not_found() {
 		});
 }
 
-#[test]
-fn add_invalid_subject_id() {
-	let attester = sr25519_did_from_seed(&ALICE_SEED);
-	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
-	let ctype_hash = get_ctype_hash::<Test>(true);
-	let claimer_id = sr25519_did_from_seed(&CHARLIE_SEED);
-	let new_credential = generate_base_public_credential_creation_op::<Test>(
-		// 33 != expected size 32 -> triggers InvalidInput error
-		vec![200u8; 33],
-		claim_hash,
-		ctype_hash,
-		Some(ClaimerSignatureInfoOf::<Test> {
-			claimer_id: claimer_id.clone(),
-			signature_payload: (claimer_id, hash_to_u8(claim_hash)),
-		}),
-	);
-	let public_credential_deposit = <Test as Config>::Deposit::get();
-	let attestation_deposit = <Test as attestation::Config>::Deposit::get();
-
-	ExtBuilder::default()
-		.with_balances(vec![(ACCOUNT_00, public_credential_deposit + attestation_deposit)])
-		.build()
-		.execute_with(|| {
-			assert_noop!(
-				PublicCredentials::add(
-					DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
-					Box::new(new_credential.clone())
-				),
-				Error::<Test>::InvalidInput
-			);
-		});
-}
-
 // remove
 
 #[test]
 fn remove_successful() {
 	let attester = sr25519_did_from_seed(&ALICE_SEED);
-	let subject_id: <Test as Config>::SubjectId = SUBJECT_ID_00
-		.try_into()
-		.expect("Should not fail to parse test SubjectId.");
+	let subject_id: <Test as Config>::SubjectId = SUBJECT_ID_00;
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 	let attestation: AttestationDetails<Test> = generate_base_attestation(attester.clone(), ACCOUNT_00);
 	let new_credential = generate_base_credential_entry(ACCOUNT_00, 0);
@@ -338,7 +306,7 @@ fn remove_successful() {
 		.with_balances(vec![(ACCOUNT_00, public_credential_deposit + attestation_deposit)])
 		.with_ctypes(vec![(attestation.ctype_hash, attester.clone())])
 		.with_attestations(vec![(claim_hash, attestation.clone())])
-		.with_public_credentials(vec![(subject_id.clone(), claim_hash, new_credential)])
+		.with_public_credentials(vec![(subject_id, claim_hash, new_credential)])
 		.build()
 		.execute_with(|| {
 			assert_ok!(PublicCredentials::remove(
@@ -386,9 +354,7 @@ fn remove_successful() {
 fn remove_unauthorized() {
 	let attester = sr25519_did_from_seed(&ALICE_SEED);
 	let wrong_attester = sr25519_did_from_seed(&BOB_SEED);
-	let subject_id: <Test as Config>::SubjectId = SUBJECT_ID_00
-		.try_into()
-		.expect("Should not fail to parse test SubjectId.");
+	let subject_id: <Test as Config>::SubjectId = SUBJECT_ID_00;
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 	let attestation: AttestationDetails<Test> = generate_base_attestation(attester.clone(), ACCOUNT_00);
 	let new_credential = generate_base_credential_entry(ACCOUNT_00, 0);
@@ -414,9 +380,7 @@ fn remove_unauthorized() {
 #[test]
 fn reclaim_deposit_successful() {
 	let attester = sr25519_did_from_seed(&ALICE_SEED);
-	let subject_id: <Test as Config>::SubjectId = SUBJECT_ID_00
-		.try_into()
-		.expect("Should not fail to parse test SubjectId.");
+	let subject_id: <Test as Config>::SubjectId = SUBJECT_ID_00;
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 	let attestation: AttestationDetails<Test> = generate_base_attestation(attester.clone(), ACCOUNT_00);
 	let new_credential = generate_base_credential_entry(ACCOUNT_00, 0);
@@ -427,7 +391,7 @@ fn reclaim_deposit_successful() {
 		.with_balances(vec![(ACCOUNT_00, public_credential_deposit + attestation_deposit)])
 		.with_ctypes(vec![(attestation.ctype_hash, attester.clone())])
 		.with_attestations(vec![(claim_hash, attestation.clone())])
-		.with_public_credentials(vec![(subject_id.clone(), claim_hash, new_credential)])
+		.with_public_credentials(vec![(subject_id, claim_hash, new_credential)])
 		.build()
 		.execute_with(|| {
 			assert_ok!(PublicCredentials::reclaim_deposit(
@@ -473,9 +437,7 @@ fn reclaim_deposit_successful() {
 #[test]
 fn reclaim_deposit_unauthorized() {
 	let attester = sr25519_did_from_seed(&ALICE_SEED);
-	let subject_id: <Test as Config>::SubjectId = SUBJECT_ID_00
-		.try_into()
-		.expect("Should not fail to parse test SubjectId.");
+	let subject_id: <Test as Config>::SubjectId = SUBJECT_ID_00;
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 	let attestation: AttestationDetails<Test> = generate_base_attestation(attester.clone(), ACCOUNT_00);
 	let new_credential = generate_base_credential_entry(ACCOUNT_00, 0);

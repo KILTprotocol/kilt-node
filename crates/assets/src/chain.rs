@@ -18,25 +18,37 @@
 
 use frame_support::sp_runtime::RuntimeDebug;
 
+/// An error in the chain ID parsing logic.
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug)]
 pub enum ChainIdError {
+	/// An error in the chain namespace parsing logic.
 	Namespace(NamespaceError),
+	/// An error in the chain reference parsing logic.
 	Reference(ReferenceError),
+	/// A generic error not belonging to any of the other categories.
 	InvalidFormat,
 }
 
+/// An error in the chain namespace parsing logic.
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug)]
 pub enum NamespaceError {
+	/// Namespace too long.
 	TooLong,
+	/// Namespace too short.
 	TooShort,
-	InvalidCharacter,
+	/// A generic error not belonging to any of the other categories.
+	InvalidFormat,
 }
 
+/// An error in the chain reference parsing logic.
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug)]
 pub enum ReferenceError {
+	/// Reference too long.
 	TooLong,
+	/// Reference too short.
 	TooShort,
-	InvalidCharacter,
+	/// A generic error not belonging to any of the other categories.
+	InvalidFormat,
 }
 
 impl From<NamespaceError> for ChainIdError {
@@ -51,6 +63,8 @@ impl From<ReferenceError> for ChainIdError {
 	}
 }
 
+// Exported types. This will always only re-export the latest version by
+// default.
 pub use v1::*;
 
 mod v1 {
@@ -66,19 +80,30 @@ mod v1 {
 	use frame_support::{sp_runtime::RuntimeDebug, traits::ConstU32, BoundedVec};
 	use sp_std::vec::Vec;
 
-	const MINIMUM_NAMESPACE_LENGTH: usize = 3;
-	const MAXIMUM_NAMESPACE_LENGTH: usize = 8;
+	pub const MINIMUM_CHAIN_ID_LENGTH: usize = MINIMUM_NAMESPACE_LENGTH + b":".len() + MINIMUM_REFERENCE_LENGTH;
+	pub const MAXIMUM_CHAIN_ID_LENGTH: usize = MAXIMUM_NAMESPACE_LENGTH + b":".len() + MAXIMUM_REFERENCE_LENGTH;
+
+	pub const MINIMUM_NAMESPACE_LENGTH: usize = 3;
+	pub const MAXIMUM_NAMESPACE_LENGTH: usize = 8;
 	const MAXIMUM_NAMESPACE_LENGTH_U32: u32 = MAXIMUM_NAMESPACE_LENGTH as u32;
-	const MINIMUM_REFERENCE_LENGTH: usize = 1;
-	const MAXIMUM_REFERENCE_LENGTH: usize = 32;
+	pub const MINIMUM_REFERENCE_LENGTH: usize = 1;
+	pub const MAXIMUM_REFERENCE_LENGTH: usize = 32;
 	const MAXIMUM_REFERENCE_LENGTH_U32: u32 = MAXIMUM_REFERENCE_LENGTH as u32;
 
+	// TODO: Add link to the Asset DID spec once merged.
+
+	/// The Chain ID component as specified in the Asset DID specification.
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
 	pub enum ChainId {
+		// An EIP155 chain reference.
 		Eip155(Eip155Reference),
+		// A BIP122 chain reference.
 		Bip122(GenesisHexHashReference<MAXIMUM_REFERENCE_LENGTH>),
+		// A Dotsama chain reference.
 		Dotsama(GenesisHexHashReference<MAXIMUM_REFERENCE_LENGTH>),
+		// A Solana chain reference.
 		Solana(GenesisBase58HashReference<MAXIMUM_REFERENCE_LENGTH>),
+		// A generic chain.
 		Generic(GenericChainId),
 	}
 
@@ -147,59 +172,77 @@ mod v1 {
 	}
 
 	impl ChainId {
+		/// The chain ID for the Ethereum mainnet.
 		pub fn ethereum_mainnet() -> Self {
 			Eip155Reference::ethereum_mainnet().into()
 		}
 
+		/// The chain ID for the Moonriver EVM parachain.
 		pub fn moonriver_eth() -> Self {
 			// Info taken from https://chainlist.org/
 			Eip155Reference::moonriver_eth().into()
 		}
 
+		/// The chain ID for the Moonbeam EVM parachain.
 		pub fn moonbeam_eth() -> Self {
 			// Info taken from https://chainlist.org/
 			Eip155Reference::moonbeam_eth().into()
 		}
 
+		/// The chain ID for the Bitcoin mainnet.
 		pub fn bitcoin_mainnet() -> Self {
 			Self::Bip122(GenesisHexHashReference::bitcoin_mainnet())
 		}
 
+		/// The chain ID for the Polkadot relaychain.
 		pub fn polkadot() -> Self {
 			Self::Dotsama(GenesisHexHashReference::polkadot())
 		}
 
+		/// The chain ID for the Kusama relaychain.
 		pub fn kusama() -> Self {
 			Self::Dotsama(GenesisHexHashReference::kusama())
 		}
 
+		/// The chain ID for the KILT Spiritnet parachain.
 		pub fn kilt_spiritnet() -> Self {
 			Self::Dotsama(GenesisHexHashReference::kilt_spiritnet())
 		}
 
+		/// The chain ID for the Solana mainnet.
 		pub fn solana_mainnet() -> Self {
 			Self::Solana(GenesisBase58HashReference::solana_mainnet())
 		}
 	}
 
+	/// An EIP155 chain reference.
+	/// It is a modification of the [CAIP-3 spec](https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-3.md)
+	/// according to the rules defined in the Asset DID method specification.
+	#[non_exhaustive]
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
-	pub struct Eip155Reference(BoundedVec<u8, ConstU32<MAXIMUM_REFERENCE_LENGTH_U32>>);
+	pub struct Eip155Reference(pub BoundedVec<u8, ConstU32<MAXIMUM_REFERENCE_LENGTH_U32>>);
 
 	impl Eip155Reference {
-		#[allow(dead_code)]
+		/// [CAN PANIC]
+		/// Tries to create an Eip155Reference reference from the provided
+		/// slice, panicking if the slice is longer than the maximum length
+		/// allowed.
 		pub(crate) fn from_slice_unchecked(slice: &[u8]) -> Self {
-			Self(slice.to_vec().try_into().unwrap())
+			Self(slice.to_vec().try_into().expect("Eip155Reference::from_slice_unchecked should never panic."))
 		}
 
+		/// The EIP155 reference for the Ethereum mainnet.
 		pub fn ethereum_mainnet() -> Self {
 			Self::from_slice_unchecked(b"1")
 		}
 
+		/// The EIP155 reference for the Moonriver parachain.
 		pub fn moonriver_eth() -> Self {
 			// Info taken from https://chainlist.org/
 			Self::from_slice_unchecked(b"1285")
 		}
 
+		/// The EIP155 reference for the Moonbeam parachain.
 		pub fn moonbeam_eth() -> Self {
 			// Info taken from https://chainlist.org/
 			Self::from_slice_unchecked(b"1284")
@@ -212,13 +255,13 @@ mod v1 {
 		fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
 			let input_length = value.len();
 			if input_length < MINIMUM_REFERENCE_LENGTH {
-				Err(ChainIdError::Reference(ReferenceError::TooShort))
+				Err(ReferenceError::TooShort.into())
 			} else if input_length > MAXIMUM_REFERENCE_LENGTH {
-				Err(ChainIdError::Reference(ReferenceError::TooLong))
+				Err(ReferenceError::TooLong.into())
 			} else {
 				value.iter().try_for_each(|c| {
 					if !(b'0'..=b'9').contains(c) {
-						Err(ChainIdError::Reference(ReferenceError::InvalidCharacter))
+						Err(ReferenceError::InvalidFormat)
 					} else {
 						Ok(())
 					}
@@ -231,27 +274,37 @@ mod v1 {
 
 	// TODO: Add support for compilation-time checks on the value of L when
 	// supported.
+	/// A chain reference for CAIP-2 chains that are identified by a HEX genesis
+	/// hash.
+	#[non_exhaustive]
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
-	pub struct GenesisHexHashReference<const L: usize = MAXIMUM_REFERENCE_LENGTH>([u8; L]);
+	pub struct GenesisHexHashReference<const L: usize = MAXIMUM_REFERENCE_LENGTH>(pub [u8; L]);
 
 	impl<const L: usize> GenesisHexHashReference<L> {
-		#[allow(dead_code)]
+		/// [CAN PANIC]
+		/// Tries to create a GenesisHexHashReference reference from the
+		/// provided slice, panicking if the slice is longer than the maximum
+		/// length allowed.
 		pub(crate) fn from_slice_unchecked(slice: &[u8]) -> Self {
-			Self(slice.try_into().unwrap())
+			Self(slice.try_into().expect("GenesisHexHashReference::from_slice_unchecked should never panic."))
 		}
 
+		/// The CAIP-2 reference for the Bitcoin mainnet.
 		pub fn bitcoin_mainnet() -> Self {
 			Self::from_slice_unchecked(b"000000000019d6689c085ae165831e93")
 		}
 
+		/// The CAIP-2 reference for the Polkadot relaychain.
 		pub fn polkadot() -> Self {
 			Self::from_slice_unchecked(b"91b171bb158e2d3848fa23a9f1c25182")
 		}
 
+		/// The CAIP-2 reference for the Kusama relaychain.
 		pub fn kusama() -> Self {
 			Self::from_slice_unchecked(b"b0a8d493285c2df73290dfb7e61f870f")
 		}
 
+		/// The CAIP-2 reference for the KILT Spiritnet parachain.
 		pub fn kilt_spiritnet() -> Self {
 			Self::from_slice_unchecked(b"411f057b9107718c9624d6aa4a3f23c1")
 		}
@@ -263,16 +316,16 @@ mod v1 {
 		fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
 			let input_length = value.len();
 			if input_length < MINIMUM_REFERENCE_LENGTH {
-				Err(ChainIdError::Reference(ReferenceError::TooShort))
+				Err(ReferenceError::TooShort.into())
 			} else if input_length > MAXIMUM_REFERENCE_LENGTH {
-				Err(ChainIdError::Reference(ReferenceError::TooLong))
+				Err(ReferenceError::TooLong.into())
 			} else if input_length % 2 != 0 {
 				// Hex encoding can only have 2x characters
-				Err(ChainIdError::InvalidFormat)
+				Err(ReferenceError::InvalidFormat.into())
 			} else {
 				value.iter().try_for_each(|c| {
 					if !matches!(c, b'0'..=b'9' | b'a'..=b'f') {
-						Err(ChainIdError::Reference(ReferenceError::InvalidCharacter))
+						Err(ReferenceError::InvalidFormat)
 					} else {
 						Ok(())
 					}
@@ -284,15 +337,23 @@ mod v1 {
 
 	// FIXME: Ensure that a size is given for the expected hash length (less than
 	// the max allowed size).
+
+	/// A chain reference for CAIP-2 chains that are identified by a
+	/// Base58-encoded genesis hash.
+	#[non_exhaustive]
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
-	pub struct GenesisBase58HashReference<const L: usize = MAXIMUM_REFERENCE_LENGTH>([u8; L]);
+	pub struct GenesisBase58HashReference<const L: usize = MAXIMUM_REFERENCE_LENGTH>(pub [u8; L]);
 
 	impl<const L: usize> GenesisBase58HashReference<L> {
-		#[allow(dead_code)]
+		/// [CAN PANIC]
+		/// Tries to create a GenesisBase58HashReference reference from the
+		/// provided slice, panicking if the slice is longer than the maximum
+		/// length allowed.
 		pub(crate) fn from_slice_unchecked(slice: &[u8]) -> Self {
-			Self(slice.to_vec().try_into().unwrap())
+			Self(slice.to_vec().try_into().expect("GenesisBase58HashReference::from_slice_unchecked should never panic."))
 		}
 
+		/// The CAIP-2 reference for the Solana mainnet.
 		pub fn solana_mainnet() -> Self {
 			Self::from_slice_unchecked(b"4sGjMW1sUnHzSxGspuhpqLDx6wiyjNtZ")
 		}
@@ -304,34 +365,38 @@ mod v1 {
 		fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
 			let input_length = value.len();
 			if input_length < MINIMUM_REFERENCE_LENGTH {
-				Err(ChainIdError::Reference(ReferenceError::TooShort))
+				Err(ReferenceError::TooShort.into())
 			} else if input_length > MAXIMUM_REFERENCE_LENGTH {
-				Err(ChainIdError::Reference(ReferenceError::TooLong))
+				Err(ReferenceError::TooLong.into())
 			} else {
-				let decoded_string =
-					str::from_utf8(value).map_err(|_| ChainIdError::Reference(ReferenceError::InvalidCharacter))?;
+				let decoded_string = str::from_utf8(value).map_err(|_| ReferenceError::InvalidFormat)?;
 				// Check for proper base58 encoding
 				decoded_string
 					.from_base58()
-					.map_err(|_| ChainIdError::Reference(ReferenceError::InvalidCharacter))?;
+					.map_err(|_| ReferenceError::InvalidFormat)?;
 
 				value.try_into().map(Self).map_err(|_| ChainIdError::InvalidFormat)
 			}
 		}
 	}
 
+	/// A generic chain ID compliant with the [CAIP-2 spec](https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-2.md) that cannot be boxed in any of the supported variants.
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
 	pub struct GenericChainId {
-		pub namespace: ChainNamespace,
-		pub reference: ChainReference,
+		pub namespace: GenericChainNamespace,
+		pub reference: GenericChainReference,
 	}
 
 	impl GenericChainId {
+		/// [CAN PANIC]
+		/// Tries to create a GenericChainId identifier from the provided raw
+		/// components, panicking if the any of them is longer than the maximum
+		/// length allowed.\
 		#[allow(dead_code)]
 		fn from_raw_unchecked(namespace: &[u8], reference: &[u8]) -> Self {
 			Self {
-				namespace: ChainNamespace::from_slice_unchecked(namespace),
-				reference: ChainReference::from_slice_unchecked(reference),
+				namespace: GenericChainNamespace::from_slice_unchecked(namespace),
+				reference: GenericChainReference::from_slice_unchecked(reference),
 			}
 		}
 	}
@@ -341,7 +406,7 @@ mod v1 {
 
 		fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
 			let input_length = value.len();
-			if input_length > MAXIMUM_NAMESPACE_LENGTH + MAXIMUM_REFERENCE_LENGTH + 1 {
+			if input_length > MAXIMUM_CHAIN_ID_LENGTH {
 				return Err(ChainIdError::InvalidFormat);
 			}
 
@@ -350,38 +415,44 @@ mod v1 {
 			let namespace = components
 				.next()
 				.ok_or(ChainIdError::InvalidFormat)
-				.and_then(ChainNamespace::try_from)?;
+				.and_then(GenericChainNamespace::try_from)?;
 			let reference = components
 				.next()
 				.ok_or(ChainIdError::InvalidFormat)
-				.and_then(ChainReference::try_from)?;
+				.and_then(GenericChainReference::try_from)?;
 
 			Ok(Self { namespace, reference })
 		}
 	}
 
+	/// A generic chain namespace as defined in the [CAIP-2 spec](https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-2.md).
+	#[non_exhaustive]
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
-	pub struct ChainNamespace(BoundedVec<u8, ConstU32<MAXIMUM_NAMESPACE_LENGTH_U32>>);
+	pub struct GenericChainNamespace(pub BoundedVec<u8, ConstU32<MAXIMUM_NAMESPACE_LENGTH_U32>>);
 
-	impl ChainNamespace {
+	impl GenericChainNamespace {
+		/// [CAN PANIC]
+		/// Tries to create a GenericChainNamespace namespace from the provided
+		/// slice, panicking if the slice is longer than the maximum length
+		/// allowed.
 		fn from_slice_unchecked(value: &[u8]) -> Self {
-			Self(value.to_vec().try_into().unwrap())
+			Self(value.to_vec().try_into().expect("GenericChainNamespace::from_slice_unchecked should never panic."))
 		}
 	}
 
-	impl TryFrom<&[u8]> for ChainNamespace {
+	impl TryFrom<&[u8]> for GenericChainNamespace {
 		type Error = ChainIdError;
 
 		fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
 			let input_length = value.len();
 			if input_length < MINIMUM_NAMESPACE_LENGTH {
-				Err(ChainIdError::Namespace(NamespaceError::TooShort))
+				Err(NamespaceError::TooShort.into())
 			} else if input_length > MAXIMUM_NAMESPACE_LENGTH {
-				Err(ChainIdError::Namespace(NamespaceError::TooLong))
+				Err(NamespaceError::TooLong.into())
 			} else {
 				value.iter().try_for_each(|c| {
 					if !matches!(c, b'-' | b'a'..=b'z' | b'0'..=b'9') {
-						Err(ChainIdError::Namespace(NamespaceError::InvalidCharacter))
+						Err(NamespaceError::InvalidFormat)
 					} else {
 						Ok(())
 					}
@@ -392,28 +463,33 @@ mod v1 {
 		}
 	}
 
+	/// A generic chain reference as defined in the [CAIP-2 spec](https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-2.md).
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
-	pub struct ChainReference(BoundedVec<u8, ConstU32<MAXIMUM_REFERENCE_LENGTH_U32>>);
+	pub struct GenericChainReference(BoundedVec<u8, ConstU32<MAXIMUM_REFERENCE_LENGTH_U32>>);
 
-	impl ChainReference {
+	impl GenericChainReference {
+		/// [CAN PANIC]
+		/// Tries to create a GenericChainReference reference from the provided
+		/// slice, panicking if the slice is longer than the maximum length
+		/// allowed.
 		fn from_slice_unchecked(value: &[u8]) -> Self {
-			Self(value.to_vec().try_into().unwrap())
+			Self(value.to_vec().try_into().expect("GenericChainReference::from_slice_unchecked should never panic."))
 		}
 	}
 
-	impl TryFrom<&[u8]> for ChainReference {
+	impl TryFrom<&[u8]> for GenericChainReference {
 		type Error = ChainIdError;
 
 		fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
 			let input_length = value.len();
 			if input_length < MINIMUM_REFERENCE_LENGTH {
-				Err(ChainIdError::Reference(ReferenceError::TooShort))
+				Err(ReferenceError::TooShort.into())
 			} else if input_length > MAXIMUM_REFERENCE_LENGTH {
-				Err(ChainIdError::Reference(ReferenceError::TooLong))
+				Err(ReferenceError::TooLong.into())
 			} else {
 				value.iter().try_for_each(|c| {
 					if !matches!(c, b'-' | b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9') {
-						Err(ChainIdError::Reference(ReferenceError::InvalidCharacter))
+						Err(ReferenceError::InvalidFormat)
 					} else {
 						Ok(())
 					}
@@ -672,7 +748,7 @@ mod v1 {
 
 		#[test]
 		fn test_helpers() {
-			// These functions should never crash. We just check that here.
+			// These functions should never panic. We just check that here.
 			ChainId::ethereum_mainnet();
 			ChainId::moonbeam_eth();
 			ChainId::bitcoin_mainnet();
