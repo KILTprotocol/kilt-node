@@ -80,15 +80,24 @@ mod v1 {
 	use frame_support::{sp_runtime::RuntimeDebug, traits::ConstU32, BoundedVec};
 	use sp_std::vec::Vec;
 
+	/// The minimum length, including separator symbols, a chain ID can have according to the minimum values defined by the CAIP-2 definition.
 	pub const MINIMUM_CHAIN_ID_LENGTH: usize = MINIMUM_NAMESPACE_LENGTH + b":".len() + MINIMUM_REFERENCE_LENGTH;
+	/// The maximum length, including separator symbols, a chain ID can have according to the minimum values defined by the CAIP-2 definition.
 	pub const MAXIMUM_CHAIN_ID_LENGTH: usize = MAXIMUM_NAMESPACE_LENGTH + b":".len() + MAXIMUM_REFERENCE_LENGTH;
 
+	/// The minimum length of a valid chain ID namespace.
 	pub const MINIMUM_NAMESPACE_LENGTH: usize = 3;
+	/// The maximum length of a valid chain ID namespace.
 	pub const MAXIMUM_NAMESPACE_LENGTH: usize = 8;
 	const MAXIMUM_NAMESPACE_LENGTH_U32: u32 = MAXIMUM_NAMESPACE_LENGTH as u32;
+	/// The minimum length of a valid chain ID reference.
 	pub const MINIMUM_REFERENCE_LENGTH: usize = 1;
+	/// The maximum length of a valid chain ID reference.
 	pub const MAXIMUM_REFERENCE_LENGTH: usize = 32;
 	const MAXIMUM_REFERENCE_LENGTH_U32: u32 = MAXIMUM_REFERENCE_LENGTH as u32;
+
+	// Max value for 32-digit decimal values (used for EIP chains so far).
+	const MAXIMUM_DECIMAL_REFERENCE_VALUE: u128 = 99999999999999999999999999999999;
 
 	// TODO: Add link to the Asset DID spec once merged.
 
@@ -119,6 +128,7 @@ mod v1 {
 		}
 	}
 
+	/// Try to parse a `ChainId` instance from the provided UTF8-encoded input.
 	impl TryFrom<&[u8]> for ChainId {
 		type Error = ChainIdError;
 
@@ -146,6 +156,7 @@ mod v1 {
 		}
 	}
 
+	/// Try to parse a `ChainId` instance from the provided UTF8-encoded input.
 	impl TryFrom<Vec<u8>> for ChainId {
 		type Error = ChainIdError;
 
@@ -154,6 +165,7 @@ mod v1 {
 		}
 	}
 
+	/// Try to parse a `ChainId` instance from the provided UTF8-encoded input.
 	impl TryFrom<&'static str> for ChainId {
 		type Error = ChainIdError;
 
@@ -161,6 +173,7 @@ mod v1 {
 			Self::try_from(value.as_bytes())
 		}
 	}
+
 
 	#[cfg(feature = "std")]
 	impl TryFrom<String> for ChainId {
@@ -220,32 +233,33 @@ mod v1 {
 	/// according to the rules defined in the Asset DID method specification.
 	#[non_exhaustive]
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
-	pub struct Eip155Reference(pub BoundedVec<u8, ConstU32<MAXIMUM_REFERENCE_LENGTH_U32>>);
+	pub struct Eip155Reference(pub u128);
 
 	impl Eip155Reference {
-		/// [CAN PANIC]
-		/// Tries to create an Eip155Reference reference from the provided
-		/// slice, panicking if the slice is longer than the maximum length
-		/// allowed.
-		pub(crate) fn from_slice_unchecked(slice: &[u8]) -> Self {
-			Self(slice.to_vec().try_into().expect("Eip155Reference::from_slice_unchecked should never panic."))
-		}
 
 		/// The EIP155 reference for the Ethereum mainnet.
 		pub fn ethereum_mainnet() -> Self {
-			Self::from_slice_unchecked(b"1")
+			Self(1)
 		}
 
 		/// The EIP155 reference for the Moonriver parachain.
 		pub fn moonriver_eth() -> Self {
 			// Info taken from https://chainlist.org/
-			Self::from_slice_unchecked(b"1285")
+			Self(1285)
 		}
 
 		/// The EIP155 reference for the Moonbeam parachain.
 		pub fn moonbeam_eth() -> Self {
 			// Info taken from https://chainlist.org/
-			Self::from_slice_unchecked(b"1284")
+			Self(1284)
+		}
+	}
+
+	impl TryFrom<u128> for Eip155Reference {
+		type Error = ChainIdError;
+
+		fn try_from(value: u128) -> Result<Self, Self::Error> {
+			(value <= MAXIMUM_DECIMAL_REFERENCE_VALUE).then(|| Self(value)).ok_or_else(|| NamespaceError::TooLong.into())
 		}
 	}
 
@@ -259,21 +273,17 @@ mod v1 {
 			} else if input_length > MAXIMUM_REFERENCE_LENGTH {
 				Err(ReferenceError::TooLong.into())
 			} else {
-				value.iter().try_for_each(|c| {
-					if !(b'0'..=b'9').contains(c) {
-						Err(ReferenceError::InvalidFormat)
-					} else {
-						Ok(())
-					}
-				})?;
+				let decoded = str::from_utf8(value).map_err(|_| ReferenceError::InvalidFormat)?;
+				let parsed = decoded.parse::<u128>().map_err(|_| ReferenceError::InvalidFormat)?;
 				// Unchecked since we already checked for length
-				Ok(Self::from_slice_unchecked(value))
+				Ok(Self(parsed))
 			}
 		}
 	}
 
 	// TODO: Add support for compilation-time checks on the value of L when
 	// supported.
+
 	/// A chain reference for CAIP-2 chains that are identified by a HEX genesis
 	/// hash.
 	#[non_exhaustive]
