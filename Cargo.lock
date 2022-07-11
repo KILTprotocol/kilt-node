@@ -3566,6 +3566,7 @@ dependencies = [
  "base58",
  "frame-support",
  "hex",
+ "hex-literal",
  "parity-scale-codec",
  "scale-info",
  "sp-core",

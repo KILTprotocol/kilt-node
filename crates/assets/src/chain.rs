@@ -71,6 +71,7 @@ mod v1 {
 	use super::{ChainIdError, NamespaceError, ReferenceError};
 
 	use base58::FromBase58;
+	use hex_literal::hex;
 
 	use core::str;
 

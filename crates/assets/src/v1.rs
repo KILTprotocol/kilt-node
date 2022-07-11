@@ -17,6 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 use codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
+use hex_literal::hex;
 
 use frame_support::sp_runtime::RuntimeDebug;
 use sp_std::vec::Vec;
@@ -83,10 +84,7 @@ impl AssetDid {
 	pub fn dai_currency() -> Self {
 		Self {
 			chain_id: Eip155Reference::ethereum_mainnet().into(),
-			// Smart contract address 0x6b175474e89094c44da98b954eedeac495271d0f
-			asset_id: EvmSmartContractFungibleReference([
-				107, 23, 84, 116, 232, 144, 148, 196, 77, 169, 139, 149, 78, 237, 234, 196, 149, 39, 29, 15,
-			])
+			asset_id: EvmSmartContractFungibleReference(hex!("6b175474e89094c44da98b954eedeac495271d0f"))
 			.into(),
 		}
 	}
@@ -94,10 +92,7 @@ impl AssetDid {
 	pub fn req_currency() -> Self {
 		Self {
 			chain_id: Eip155Reference::ethereum_mainnet().into(),
-			// Smart contract address 0x8f8221afbb33998d8584a2b05749ba73c37a938a
-			asset_id: EvmSmartContractFungibleReference([
-				143, 130, 33, 175, 187, 51, 153, 141, 133, 132, 162, 176, 87, 73, 186, 115, 195, 122, 147, 138,
-			])
+			asset_id: EvmSmartContractFungibleReference(hex!("8f8221afbb33998d8584a2b05749ba73c37a938a"))
 			.into(),
 		}
 	}
@@ -105,11 +100,8 @@ impl AssetDid {
 	pub fn cryptokitties_collection() -> Self {
 		Self {
 			chain_id: Eip155Reference::ethereum_mainnet().into(),
-			// Smart contract address 0x06012c8cf97BEaD5deAe237070F9587f8E7A266d
 			asset_id: AssetId::Erc721(EvmSmartContractNonFungibleReference(
-				EvmSmartContractFungibleReference([
-					6, 1, 44, 140, 249, 123, 234, 213, 222, 174, 35, 112, 112, 249, 88, 127, 142, 122, 38, 109,
-				]),
+				EvmSmartContractFungibleReference(hex!("06012c8cf97BEaD5deAe237070F9587f8E7A266d")),
 				None,
 			)),
 		}
@@ -118,11 +110,8 @@ impl AssetDid {
 	pub fn themanymatts_collection() -> Self {
 		Self {
 			chain_id: Eip155Reference::ethereum_mainnet().into(),
-			// Smart contract address 0x28959Cf125ccB051E70711D0924a62FB28EAF186
 			asset_id: AssetId::Erc1155(EvmSmartContractNonFungibleReference(
-				EvmSmartContractFungibleReference([
-					40, 149, 156, 241, 37, 204, 176, 81, 231, 7, 17, 208, 146, 74, 98, 251, 40, 234, 241, 134,
-				]),
+				EvmSmartContractFungibleReference(hex!("28959Cf125ccB051E70711D0924a62FB28EAF186")),
 				None,
 			)),
 		}
