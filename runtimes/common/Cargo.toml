@@ -28,6 +28,10 @@ sp-core = {git = "https://github.com/paritytech/substrate", default-features = f
 sp-io = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.25"}
 sp-runtime = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.25"}
 sp-std = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.25"}
+xcm = {git = "https://github.com/paritytech/polkadot", default-features = false, branch = "release-v0.9.25"}
+xcm-executor = {git = "https://github.com/paritytech/polkadot", default-features = false, branch = "release-v0.9.25"}
+xcm-builder = {git = "https://github.com/paritytech/polkadot", default-features = false, branch = "release-v0.9.25"}
+polkadot-parachain = {git = "https://github.com/paritytech/polkadot", default-features = false, branch = "release-v0.9.25"}
 
 # Runtime tests
 frame-try-runtime = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.25", optional = true}
@@ -40,6 +44,7 @@ runtime-benchmarks = [
   "frame-support/runtime-benchmarks",
   "parachain-staking/runtime-benchmarks",
   "sp-runtime/runtime-benchmarks",
+  "xcm-builder/runtime-benchmarks",
 ]
 std = [
   "attestation/std",
@@ -58,6 +63,10 @@ std = [
   "sp-io/std",
   "sp-runtime/std",
   "sp-std/std",
+  "xcm/std",
+  "xcm-executor/std",
+  "xcm-builder/std",
+  "polkadot-parachain/std",
 ]
 try-runtime = [
   "frame-support/try-runtime",

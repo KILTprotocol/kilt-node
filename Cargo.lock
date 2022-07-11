@@ -1660,6 +1660,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "cumulus-pallet-dmp-queue"
+version = "0.1.0"
+source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.25#d08055df3d735e1a4ebf6a9f8054d72e5144c2ea"
+dependencies = [
+ "cumulus-primitives-core",
+ "frame-support",
+ "frame-system",
+ "log",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+ "xcm",
+ "xcm-executor",
+]
+
+[[package]]
 name = "cumulus-pallet-parachain-system"
 version = "0.1.0"
 source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.25#390042a01940a0a4d0b28eb196a2e9251f3cec33"
@@ -1712,6 +1730,22 @@ dependencies = [
  "parity-scale-codec",
  "sp-runtime",
  "sp-std",
+]
+
+[[package]]
+name = "cumulus-pallet-xcm"
+version = "0.1.0"
+source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.25#d08055df3d735e1a4ebf6a9f8054d72e5144c2ea"
+dependencies = [
+ "cumulus-primitives-core",
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+ "xcm",
 ]
 
 [[package]]
@@ -1782,6 +1816,23 @@ dependencies = [
  "sp-inherents",
  "sp-std",
  "sp-timestamp",
+]
+
+[[package]]
+name = "cumulus-primitives-utility"
+version = "0.1.0"
+source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.25#d08055df3d735e1a4ebf6a9f8054d72e5144c2ea"
+dependencies = [
+ "cumulus-primitives-core",
+ "frame-support",
+ "parity-scale-codec",
+ "polkadot-core-primitives",
+ "polkadot-parachain",
+ "polkadot-primitives",
+ "sp-runtime",
+ "sp-std",
+ "sp-trie",
+ "xcm",
 ]
 
 [[package]]
@@ -6884,11 +6935,14 @@ dependencies = [
  "attestation",
  "ctype",
  "cumulus-pallet-aura-ext",
+ "cumulus-pallet-dmp-queue",
  "cumulus-pallet-parachain-system",
  "cumulus-pallet-session-benchmarking",
+ "cumulus-pallet-xcm",
  "cumulus-pallet-xcmp-queue",
  "cumulus-primitives-core",
  "cumulus-primitives-timestamp",
+ "cumulus-primitives-utility",
  "delegation",
  "did",
  "did-rpc-runtime-api",
@@ -6925,10 +6979,12 @@ dependencies = [
  "pallet-utility",
  "pallet-vesting",
  "pallet-web3-names",
+ "pallet-xcm",
  "parachain-info",
  "parachain-staking",
  "parity-scale-codec",
  "polkadot-parachain",
+ "polkadot-runtime-common",
  "rococo-runtime",
  "runtime-common",
  "scale-info",
@@ -8944,6 +9000,7 @@ dependencies = [
  "pallet-transaction-payment",
  "parachain-staking",
  "parity-scale-codec",
+ "polkadot-parachain",
  "scale-info",
  "serde",
  "smallvec",
@@ -8952,6 +9009,9 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
+ "xcm",
+ "xcm-builder",
+ "xcm-executor",
 ]
 
 [[package]]
@@ -11263,11 +11323,14 @@ dependencies = [
  "attestation",
  "ctype",
  "cumulus-pallet-aura-ext",
+ "cumulus-pallet-dmp-queue",
  "cumulus-pallet-parachain-system",
  "cumulus-pallet-session-benchmarking",
+ "cumulus-pallet-xcm",
  "cumulus-pallet-xcmp-queue",
  "cumulus-primitives-core",
  "cumulus-primitives-timestamp",
+ "cumulus-primitives-utility",
  "delegation",
  "did",
  "did-rpc-runtime-api",
@@ -11303,10 +11366,12 @@ dependencies = [
  "pallet-utility",
  "pallet-vesting",
  "pallet-web3-names",
+ "pallet-xcm",
  "parachain-info",
  "parachain-staking",
  "parity-scale-codec",
  "polkadot-parachain",
+ "polkadot-runtime-common",
  "rococo-runtime",
  "runtime-common",
  "scale-info",
