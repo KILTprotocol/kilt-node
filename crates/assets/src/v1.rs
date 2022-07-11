@@ -62,36 +62,31 @@ impl AssetDid {
 	pub fn ether_currency() -> Self {
 		Self {
 			chain_id: Eip155Reference::ethereum_mainnet().into(),
-			asset_id: Slip44Reference::from_slice_unchecked(b"60").into(),
+			asset_id: Slip44Reference(60.into()).into(),
 		}
 	}
 
 	pub fn bitcoin_currency() -> Self {
-		// Self {
-		// 	chain_id: ChainId::Bip122(GenesisHexHash32Reference::from_slice_unchecked(
-		// 		b"000000000019d6689c085ae165831e93",
-		// 	)),
-		// 	asset_id: Slip44Reference::from_slice_unchecked(b"0").into(),
-		// }
-		todo!()
+		Self {
+			chain_id: ChainId::Bip122(GenesisHexHash32Reference::bitcoin_mainnet()),
+			asset_id: Slip44Reference(0.into()).into(),
+		}
 	}
 
 	pub fn litecoin_currency() -> Self {
-		// Self {
-		// 	chain_id: ChainId::Bip122(GenesisHexHash32Reference::from_slice_unchecked(
-		// 		b"12a765e31ffd4059bada1e25190f6e98",
-		// 	)),
-		// 	asset_id: Slip44Reference::from_slice_unchecked(b"2").into(),
-		// }
-		todo!()
+		Self {
+			chain_id: ChainId::Bip122(GenesisHexHash32Reference::litecoin_mainnet()),
+			asset_id: Slip44Reference(2.into()).into(),
+		}
 	}
 
 	pub fn dai_currency() -> Self {
 		Self {
 			chain_id: Eip155Reference::ethereum_mainnet().into(),
-			asset_id: EvmSmartContractFungibleReference::from_slice_unchecked(
-				b"6b175474e89094c44da98b954eedeac495271d0f",
-			)
+			// Smart contract address 0x6b175474e89094c44da98b954eedeac495271d0f
+			asset_id: EvmSmartContractFungibleReference([
+				107, 23, 84, 116, 232, 144, 148, 196, 77, 169, 139, 149, 78, 237, 234, 196, 149, 39, 29, 15,
+			])
 			.into(),
 		}
 	}
@@ -99,9 +94,10 @@ impl AssetDid {
 	pub fn req_currency() -> Self {
 		Self {
 			chain_id: Eip155Reference::ethereum_mainnet().into(),
-			asset_id: EvmSmartContractFungibleReference::from_slice_unchecked(
-				b"8f8221afbb33998d8584a2b05749ba73c37a938a",
-			)
+			// Smart contract address 0x8f8221afbb33998d8584a2b05749ba73c37a938a
+			asset_id: EvmSmartContractFungibleReference([
+				143, 130, 33, 175, 187, 51, 153, 141, 133, 132, 162, 176, 87, 73, 186, 115, 195, 122, 147, 138,
+			])
 			.into(),
 		}
 	}
@@ -109,8 +105,11 @@ impl AssetDid {
 	pub fn cryptokitties_collection() -> Self {
 		Self {
 			chain_id: Eip155Reference::ethereum_mainnet().into(),
-			asset_id: AssetId::Erc721(EvmSmartContractNonFungibleReference::from_raw_unchecked(
-				b"06012c8cf97BEaD5deAe237070F9587f8E7A266d",
+			// Smart contract address 0x06012c8cf97BEaD5deAe237070F9587f8E7A266d
+			asset_id: AssetId::Erc721(EvmSmartContractNonFungibleReference(
+				EvmSmartContractFungibleReference([
+					6, 1, 44, 140, 249, 123, 234, 213, 222, 174, 35, 112, 112, 249, 88, 127, 142, 122, 38, 109,
+				]),
 				None,
 			)),
 		}
@@ -119,63 +118,44 @@ impl AssetDid {
 	pub fn themanymatts_collection() -> Self {
 		Self {
 			chain_id: Eip155Reference::ethereum_mainnet().into(),
-			asset_id: AssetId::Erc1155(EvmSmartContractNonFungibleReference::from_raw_unchecked(
-				b"28959Cf125ccB051E70711D0924a62FB28EAF186",
+			// Smart contract address 0x28959Cf125ccB051E70711D0924a62FB28EAF186
+			asset_id: AssetId::Erc1155(EvmSmartContractNonFungibleReference(
+				EvmSmartContractFungibleReference([
+					40, 149, 156, 241, 37, 204, 176, 81, 231, 7, 17, 208, 146, 74, 98, 251, 40, 234, 241, 134,
+				]),
 				None,
 			)),
 		}
 	}
 }
 
-impl TryFrom<&[u8]> for AssetDid {
-	type Error = AssetDidError;
-
-	fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
-		match value {
-			// Asset DIDs must start with "did:asset:" to be valid. The "did:asset:" prefix is then stripped off.
-			[b'd', b'i', b'd', b':', b'a', b's', b's', b'e', b't', b':', components @ ..] => {
+impl AssetDid {
+	/// Try to parse an `AssetDID` instance from the provided UTF8-encoded
+	/// input.
+	pub fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetDidError>
+		where
+			I: AsRef<[u8]> + Into<Vec<u8>>,
+		{
+			match input.as_ref() {
+				// Asset DIDs must start with "did:asset:" to be valid. The "did:asset:" prefix is then stripped off.
+				[b'd', b'i', b'd', b':', b'a', b's', b's', b'e', b't', b':', components @ ..] => {
 				let mut components = components.split(|c| *c == b'.');
 
 				let chain_id = components
 					.next()
 					.ok_or(AssetDidError::InvalidFormat)
-					.and_then(|input| ChainId::try_from(input).map_err(AssetDidError::ChainId))?;
+					.and_then(|input| ChainId::from_utf8_encoded(input).map_err(AssetDidError::ChainId))?;
 
 				let asset_id = components
 					.next()
 					.ok_or(AssetDidError::InvalidFormat)
-					.and_then(|input| AssetId::try_from(input).map_err(AssetDidError::AssetId))?;
+					.and_then(|input| AssetId::from_utf8_encoded(input).map_err(AssetDidError::AssetId))?;
 
 				Ok(Self { chain_id, asset_id })
 			}
 			_ => Err(AssetDidError::InvalidFormat),
+			}
 		}
-	}
-}
-
-impl TryFrom<Vec<u8>> for AssetDid {
-	type Error = AssetDidError;
-
-	fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
-		Self::try_from(&value[..])
-	}
-}
-
-impl TryFrom<&'static str> for AssetDid {
-	type Error = AssetDidError;
-
-	fn try_from(value: &'static str) -> Result<Self, Self::Error> {
-		Self::try_from(value.as_bytes())
-	}
-}
-
-#[cfg(feature = "std")]
-impl TryFrom<String> for AssetDid {
-	type Error = AssetDidError;
-
-	fn try_from(value: String) -> Result<Self, Self::Error> {
-		Self::try_from(value.as_bytes())
-	}
 }
 
 #[cfg(test)]
@@ -206,7 +186,7 @@ mod test {
 		// FIXME: Better test logic
 		for id in raw_ids {
 			assert!(
-				AssetDid::try_from(id.as_bytes()).is_ok(),
+				AssetDid::from_utf8_encoded(id.as_bytes()).is_ok(),
 				"Test for valid IDs failed for {:?}",
 				id
 			);

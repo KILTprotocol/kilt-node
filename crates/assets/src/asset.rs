@@ -141,11 +141,14 @@ pub mod v1 {
 		}
 	}
 
-	impl TryFrom<&[u8]> for AssetId {
-		type Error = AssetIdError;
-
-		fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
-			match value {
+	impl AssetId {
+		/// Try to parse an `AssetId` instance from the provided UTF8-encoded
+		/// input.
+		pub fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetIdError>
+		where
+			I: AsRef<[u8]> + Into<Vec<u8>>,
+		{
+			match input.as_ref() {
 				// "slip44:" assets -> https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-20.md
 				[b's', b'l', b'i', b'p', b'4', b'4', b':', asset_reference @ ..] => {
 					Slip44Reference::from_utf8_encoded(asset_reference).map(Self::Slip44)
@@ -176,10 +179,12 @@ pub mod v1 {
 	pub struct Slip44Reference(pub U256);
 
 	impl Slip44Reference {
-		/// [CAN PANIC]
-		/// Tries to create a Slip44 reference from the provided slice,
-		/// panicking if the slice is longer than the maximum length allowed.
-		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetIdError> where I: AsRef<[u8]> + Into<Vec<u8>> {
+		/// Parse a UTF8-encoded decimal Slip44 asset reference, failing if the input
+		/// string is not valid.
+		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetIdError>
+		where
+			I: AsRef<[u8]> + Into<Vec<u8>>,
+		{
 			let input = input.as_ref();
 			let input_length = input.len();
 			if input_length < MINIMUM_REFERENCE_LENGTH {
@@ -200,10 +205,13 @@ pub mod v1 {
 
 		fn try_from(value: U256) -> Result<Self, Self::Error> {
 			// Max value for 64-digit decimal values (used for Slip44 references so far).
-			// TODO: This could be enforced at compilation time once constraints on generics will be available.
-			(value <= U256::from_str_radix("9999999999999999999999999999999999999999999999999999999999999999", 10).unwrap())
-				.then(|| Self(value))
-				.ok_or_else(|| ReferenceError::TooLong.into())
+			// TODO: This could be enforced at compilation time once constraints on generics
+			// will be available.
+			(value
+				<= U256::from_str_radix("9999999999999999999999999999999999999999999999999999999999999999", 10)
+					.unwrap())
+			.then(|| Self(value))
+			.ok_or_else(|| ReferenceError::TooLong.into())
 		}
 	}
 
@@ -221,7 +229,12 @@ pub mod v1 {
 	pub struct EvmSmartContractFungibleReference(pub [u8; 20]);
 
 	impl EvmSmartContractFungibleReference {
-		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetIdError> where I: AsRef<[u8]> + Into<Vec<u8>> {
+		/// Parse a UTF8-encoded smart contract HEX address (including the `0x` prefix), failing if the input
+		/// string is not valid.
+		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetIdError>
+		where
+			I: AsRef<[u8]> + Into<Vec<u8>>,
+		{
 			let input = input.as_ref();
 			match input {
 				// If the prefix is "0x" => parse the address
@@ -234,11 +247,11 @@ pub mod v1 {
 					} else {
 						let decoded = hex::decode(contract_address).map_err(|_| ReferenceError::InvalidFormat)?;
 						// Unwrap since we already checked for length
-						Ok(Self(Vec::<u8>::from(input).try_into().expect(
+						Ok(Self(decoded.try_into().expect(
 							"Creation of an EVM fungible asset reference should not fail at this point.",
 						)))
 					}
-				},
+				}
 				// Otherwise fail
 				_ => Err(ReferenceError::InvalidFormat.into()),
 			}
@@ -256,7 +269,12 @@ pub mod v1 {
 	);
 
 	impl EvmSmartContractNonFungibleReference {
-		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetIdError> where I: AsRef<[u8]> + Into<Vec<u8>> {
+		/// Parse a UTF8-encoded smart contract HEX address (including the `0x` prefix) + optional asset identifier, failing if the input
+		/// string is not valid.
+		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetIdError>
+		where
+			I: AsRef<[u8]> + Into<Vec<u8>>,
+		{
 			let mut components = input.as_ref().split(|c| *c == b':');
 
 			let reference = components
@@ -282,7 +300,12 @@ pub mod v1 {
 	pub struct EvmSmartContractNonFungibleIdentifier(pub BoundedVec<u8, ConstU32<MAXIMUM_IDENTIFIER_LENGTH_U32>>);
 
 	impl EvmSmartContractNonFungibleIdentifier {
-		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetIdError> where I: AsRef<[u8]> + Into<Vec<u8>> {
+		/// Parse a UTF8-encoded smart contract asset identifier, failing if the input
+		/// string is not valid.
+		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetIdError>
+		where
+			I: AsRef<[u8]> + Into<Vec<u8>>,
+		{
 			let input = input.as_ref();
 			let input_length = input.len();
 			if input_length < MINIMUM_IDENTIFIER_LENGTH {
@@ -315,11 +338,15 @@ pub mod v1 {
 	}
 
 	impl GenericAssetId {
-		#[allow(dead_code)]
-		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetIdError> where I: AsRef<[u8]> + Into<Vec<u8>> {
+		/// Parse a generic UTF8-encoded asset ID, failing if the input does not
+		/// respect the CAIP-19 requirements.
+		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetIdError>
+		where
+			I: AsRef<[u8]> + Into<Vec<u8>>,
+		{
 			let input = input.as_ref();
 			let input_length = input.len();
-			if input_length < MINIMUM_ASSET_ID_LENGTH || input_length > MAXIMUM_ASSET_ID_LENGTH {
+			if !(MINIMUM_ASSET_ID_LENGTH..=MAXIMUM_ASSET_ID_LENGTH).contains(&input_length) {
 				return Err(AssetIdError::InvalidFormat);
 			}
 
@@ -348,16 +375,19 @@ pub mod v1 {
 	}
 
 	/// A generic asset namespace as defined in the [CAIP-19 spec](https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-19.md).
+	/// It stores the provided UTF8-encoded namespace without trying to apply
+	/// any parsing/decoding logic.
 	#[non_exhaustive]
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
 	pub struct GenericAssetNamespace(pub BoundedVec<u8, ConstU32<MAXIMUM_NAMESPACE_LENGTH_U32>>);
 
 	impl GenericAssetNamespace {
-		/// [CAN PANIC]
-		/// Tries to create a GenericAssetNamespace namespace from the provided
-		/// slice, panicking if the slice is longer than the maximum length
-		/// allowed.
-		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetIdError> where I: AsRef<[u8]> + Into<Vec<u8>> {
+		/// Parse a generic UTF8-encoded asset namespace, failing if the input
+		/// does not respect the CAIP-19 requirements.
+		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetIdError>
+		where
+			I: AsRef<[u8]> + Into<Vec<u8>>,
+		{
 			let input = input.as_ref();
 			let input_length = input.len();
 			if input_length < MINIMUM_NAMESPACE_LENGTH {
@@ -386,7 +416,12 @@ pub mod v1 {
 	pub struct GenericAssetReference(pub BoundedVec<u8, ConstU32<MAXIMUM_REFERENCE_LENGTH_U32>>);
 
 	impl GenericAssetReference {
-		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetIdError> where I: AsRef<[u8]> + Into<Vec<u8>> {
+		/// Parse a generic UTF8-encoded asset reference, failing if the input
+		/// does not respect the CAIP-19 requirements.
+		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetIdError>
+		where
+			I: AsRef<[u8]> + Into<Vec<u8>>,
+		{
 			let input = input.as_ref();
 			let input_length = input.len();
 			if input_length < MINIMUM_REFERENCE_LENGTH {
@@ -415,7 +450,12 @@ pub mod v1 {
 	pub struct GenericAssetIdentifier(pub BoundedVec<u8, ConstU32<MAXIMUM_IDENTIFIER_LENGTH_U32>>);
 
 	impl GenericAssetIdentifier {
-		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetIdError> where I: AsRef<[u8]> + Into<Vec<u8>> {
+		/// Parse a generic UTF8-encoded asset identifier, failing if the input
+		/// does not respect the CAIP-19 requirements.
+		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetIdError>
+		where
+			I: AsRef<[u8]> + Into<Vec<u8>>,
+		{
 			let input = input.as_ref();
 			let input_length = input.len();
 			if input_length < MINIMUM_IDENTIFIER_LENGTH {
@@ -457,7 +497,7 @@ pub mod v1 {
 
 			for asset in valid_assets {
 				assert!(
-					AssetId::try_from(asset.as_bytes()).is_ok(),
+					AssetId::from_utf8_encoded(asset.as_bytes()).is_ok(),
 					"Asset ID {:?} should not fail to parse for slip44 assets",
 					asset
 				);
@@ -483,7 +523,7 @@ pub mod v1 {
 			];
 			for asset in invalid_assets {
 				assert!(
-					AssetId::try_from(asset.as_bytes()).is_err(),
+					AssetId::from_utf8_encoded(asset.as_bytes()).is_err(),
 					"Asset ID {:?} should fail to parse for slip44 assets",
 					asset
 				);
@@ -499,7 +539,7 @@ pub mod v1 {
 
 			for asset in valid_assets {
 				assert!(
-					AssetId::try_from(asset.as_bytes()).is_ok(),
+					AssetId::from_utf8_encoded(asset.as_bytes()).is_ok(),
 					"Asset ID {:?} should not fail to parse for erc20 assets",
 					asset
 				);
@@ -529,7 +569,7 @@ pub mod v1 {
 			];
 			for asset in invalid_assets {
 				assert!(
-					AssetId::try_from(asset.as_bytes()).is_err(),
+					AssetId::from_utf8_encoded(asset.as_bytes()).is_err(),
 					"Asset ID {:?} should fail to parse for erc20 assets",
 					asset
 				);
@@ -547,7 +587,7 @@ pub mod v1 {
 
 			for asset in valid_assets {
 				assert!(
-					AssetId::try_from(asset.as_bytes()).is_ok(),
+					AssetId::from_utf8_encoded(asset.as_bytes()).is_ok(),
 					"Asset ID {:?} should not fail to parse for erc721 assets",
 					asset
 				);
@@ -582,7 +622,7 @@ pub mod v1 {
 		];
 			for asset in invalid_assets {
 				assert!(
-					AssetId::try_from(asset.as_bytes()).is_err(),
+					AssetId::from_utf8_encoded(asset.as_bytes()).is_err(),
 					"Asset ID {:?} should fail to parse for erc721 assets",
 					asset
 				);
@@ -600,7 +640,7 @@ pub mod v1 {
 
 			for asset in valid_assets {
 				assert!(
-					AssetId::try_from(asset.as_bytes()).is_ok(),
+					AssetId::from_utf8_encoded(asset.as_bytes()).is_ok(),
 					"Asset ID {:?} should not fail to parse for erc1155 assets",
 					asset
 				);
@@ -636,7 +676,7 @@ pub mod v1 {
 		];
 			for asset in invalid_assets {
 				assert!(
-					AssetId::try_from(asset.as_bytes()).is_err(),
+					AssetId::from_utf8_encoded(asset.as_bytes()).is_err(),
 					"Asset ID {:?} should fail to parse for erc1155 assets",
 					asset
 				);
@@ -656,7 +696,7 @@ pub mod v1 {
 
 			for asset in valid_assets {
 				assert!(
-					AssetId::try_from(asset.as_bytes()).is_ok(),
+					AssetId::from_utf8_encoded(asset.as_bytes()).is_ok(),
 					"Asset ID {:?} should not fail to parse for generic assets",
 					asset
 				);
@@ -687,7 +727,7 @@ pub mod v1 {
 			];
 			for asset in invalid_assets {
 				assert!(
-					AssetId::try_from(asset.as_bytes()).is_err(),
+					AssetId::from_utf8_encoded(asset.as_bytes()).is_err(),
 					"Asset ID {:?} should fail to parse for generic assets",
 					asset
 				);

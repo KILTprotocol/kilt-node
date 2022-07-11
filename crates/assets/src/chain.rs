@@ -135,44 +135,49 @@ mod v1 {
 
 	impl ChainId {
 		/// The chain ID for the Ethereum mainnet.
-		pub const fn ethereum_mainnet() -> Self {
+		pub fn ethereum_mainnet() -> Self {
 			Eip155Reference::ethereum_mainnet().into()
 		}
 
 		/// The chain ID for the Moonriver EVM parachain.
-		pub const fn moonriver_eth() -> Self {
+		pub fn moonriver_eth() -> Self {
 			// Info taken from https://chainlist.org/
 			Eip155Reference::moonriver_eth().into()
 		}
 
 		/// The chain ID for the Moonbeam EVM parachain.
-		pub const fn moonbeam_eth() -> Self {
+		pub fn moonbeam_eth() -> Self {
 			// Info taken from https://chainlist.org/
 			Eip155Reference::moonbeam_eth().into()
 		}
 
 		/// The chain ID for the Bitcoin mainnet.
-		pub const fn bitcoin_mainnet() -> Self {
+		pub fn bitcoin_mainnet() -> Self {
 			Self::Bip122(GenesisHexHash32Reference::bitcoin_mainnet())
 		}
 
+		/// The chain ID for the Litecoin mainnet.
+		pub fn litecoin_mainnet() -> Self {
+			Self::Bip122(GenesisHexHash32Reference::litecoin_mainnet())
+		}
+
 		/// The chain ID for the Polkadot relaychain.
-		pub const fn polkadot() -> Self {
+		pub fn polkadot() -> Self {
 			Self::Dotsama(GenesisHexHash32Reference::polkadot())
 		}
 
 		/// The chain ID for the Kusama relaychain.
-		pub const fn kusama() -> Self {
+		pub fn kusama() -> Self {
 			Self::Dotsama(GenesisHexHash32Reference::kusama())
 		}
 
 		/// The chain ID for the KILT Spiritnet parachain.
-		pub const fn kilt_spiritnet() -> Self {
+		pub fn kilt_spiritnet() -> Self {
 			Self::Dotsama(GenesisHexHash32Reference::kilt_spiritnet())
 		}
 
 		/// The chain ID for the Solana mainnet.
-		pub const fn solana_mainnet() -> Self {
+		pub fn solana_mainnet() -> Self {
 			GenesisBase58Hash32Reference::solana_mainnet().into()
 		}
 	}
@@ -260,7 +265,8 @@ mod v1 {
 
 		fn try_from(value: u128) -> Result<Self, Self::Error> {
 			// Max value for 32-digit decimal values (used for EIP chains so far).
-			// TODO: This could be enforced at compilation time once constraints on generics will be available.
+			// TODO: This could be enforced at compilation time once constraints on generics
+			// will be available.
 			(value <= 99999999999999999999999999999999)
 				.then(|| Self(value))
 				.ok_or_else(|| ReferenceError::TooLong.into())
@@ -283,6 +289,12 @@ mod v1 {
 		/// The CAIP-2 reference for the Bitcoin mainnet.
 		pub const fn bitcoin_mainnet() -> Self {
 			// HEX decoding of bitcoin genesis hash 0x000000000019d6689c085ae165831e93
+			Self([18, 167, 101, 227, 31, 253, 64, 89, 186, 218, 30, 37, 25, 15, 110, 152])
+		}
+
+		/// The CAIP-2 reference for the Litecoin mainnet.
+		pub const fn litecoin_mainnet() -> Self {
+			// HEX decoding of litecoin genesis hash 0x12a765e31ffd4059bada1e25190f6e98
 			Self([0, 0, 0, 0, 0, 25, 214, 104, 156, 8, 90, 225, 101, 131, 30, 147])
 		}
 
@@ -321,7 +333,7 @@ mod v1 {
 			} else {
 				let decoded = hex::decode(input).map_err(|_| ReferenceError::InvalidFormat)?;
 				// Unwrap since we already checked for length
-				Ok(Self(Vec::<u8>::from(input).try_into().expect(
+				Ok(Self(decoded.try_into().expect(
 					"Creation of a generic HEX chain reference should not fail at this point.",
 				)))
 			}
@@ -336,7 +348,7 @@ mod v1 {
 
 	impl GenesisBase58Hash32Reference {
 		/// The CAIP-2 reference for the Solana mainnet.
-		pub const fn solana_mainnet() -> Self {
+		pub fn solana_mainnet() -> Self {
 			// Base58 decoding of Solana genesis hash 4sGjMW1sUnHzSxGspuhpqLDx6wiyjNtZ
 			Self(
 				vec![
@@ -363,14 +375,14 @@ mod v1 {
 			} else if input_length > MAXIMUM_REFERENCE_LENGTH {
 				Err(ReferenceError::TooLong.into())
 			} else {
-				let decoded_string = str::from_utf8(&input[..]).map_err(|_| ReferenceError::InvalidFormat)?;
+				let decoded_string = str::from_utf8(input).map_err(|_| ReferenceError::InvalidFormat)?;
 				let decoded = decoded_string
 					.from_base58()
 					.map_err(|_| ReferenceError::InvalidFormat)?;
 				// Max length in bytes of a 32-character Base58 string is 32 -> it is the string
 				// formed by all "1". Otherwise, it is always between 23 and 24 characters.
 				// Unwrap since we already checked for length.
-				Ok(Self(Vec::<u8>::from(input).try_into().expect(
+				Ok(Self(decoded.try_into().expect(
 					"Creation of a generic Base58 chain reference should not fail at this point.",
 				)))
 			}
@@ -394,7 +406,7 @@ mod v1 {
 		{
 			let input = input.as_ref();
 			let input_length = input.len();
-			if input_length < MINIMUM_CHAIN_ID_LENGTH || input_length > MAXIMUM_CHAIN_ID_LENGTH {
+			if !(MINIMUM_CHAIN_ID_LENGTH..=MAXIMUM_CHAIN_ID_LENGTH).contains(&input_length) {
 				return Err(ChainIdError::InvalidFormat);
 			}
 
@@ -735,6 +747,7 @@ mod v1 {
 			ChainId::ethereum_mainnet();
 			ChainId::moonbeam_eth();
 			ChainId::bitcoin_mainnet();
+			ChainId::litecoin_mainnet();
 			ChainId::polkadot();
 			ChainId::kusama();
 			ChainId::kilt_spiritnet();
