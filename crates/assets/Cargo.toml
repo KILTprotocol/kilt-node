@@ -8,11 +8,13 @@ version = "1.7.0"
 
 [dependencies]
 base58 = {version = "0.2.0", default-features = false}
+hex = {version = "0.4.3", default-features = false}
 
 codec = {package = "parity-scale-codec", version = "3.1.2", default-features = false, features = ["derive"]}
 scale-info = {version = "2.1.1", default-features = false, features = ["derive"]}
 
 frame-support = {branch = "polkadot-v0.9.24", default-features = false, git = "https://github.com/paritytech/substrate"}
+sp-core = {branch = "polkadot-v0.9.24", default-features = false, git = "https://github.com/paritytech/substrate"}
 sp-std = {branch = "polkadot-v0.9.24", default-features = false, git = "https://github.com/paritytech/substrate"}
 
 [features]
@@ -21,6 +23,8 @@ default = ["std"]
 std = [
   "codec/std",
   "frame-support/std",
+  "hex/std",
   "scale-info/std",
+  "sp-core/std",
   "sp-std/std",
 ]

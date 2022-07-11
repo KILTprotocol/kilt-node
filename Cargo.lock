@@ -3565,8 +3565,10 @@ version = "1.7.0"
 dependencies = [
  "base58",
  "frame-support",
+ "hex",
  "parity-scale-codec",
  "scale-info",
+ "sp-core",
  "sp-std",
 ]
 

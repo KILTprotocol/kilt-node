@@ -23,8 +23,10 @@ use sp_std::vec::Vec;
 
 use crate::*;
 
-pub const MINIMUM_ASSET_DID_LENGTH: usize = b"did:asset:".len() + MINIMUM_CHAIN_ID_LENGTH + b".".len() + MINIMUM_ASSET_ID_LENGTH;
-pub const MAXIMUM_ASSET_DID_LENGTH: usize = b"did:asset:".len() + MAXIMUM_CHAIN_ID_LENGTH + b".".len() + MAXIMUM_ASSET_ID_LENGTH;
+pub const MINIMUM_ASSET_DID_LENGTH: usize =
+	b"did:asset:".len() + MINIMUM_CHAIN_ID_LENGTH + b".".len() + MINIMUM_ASSET_ID_LENGTH;
+pub const MAXIMUM_ASSET_DID_LENGTH: usize =
+	b"did:asset:".len() + MAXIMUM_CHAIN_ID_LENGTH + b".".len() + MAXIMUM_ASSET_ID_LENGTH;
 
 /// An Asset DID as specified in the Asset DID method specification.
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
@@ -65,21 +67,23 @@ impl AssetDid {
 	}
 
 	pub fn bitcoin_currency() -> Self {
-		Self {
-			chain_id: ChainId::Bip122(GenesisHexHashReference::from_slice_unchecked(
-				b"000000000019d6689c085ae165831e93",
-			)),
-			asset_id: Slip44Reference::from_slice_unchecked(b"0").into(),
-		}
+		// Self {
+		// 	chain_id: ChainId::Bip122(GenesisHexHash32Reference::from_slice_unchecked(
+		// 		b"000000000019d6689c085ae165831e93",
+		// 	)),
+		// 	asset_id: Slip44Reference::from_slice_unchecked(b"0").into(),
+		// }
+		todo!()
 	}
 
 	pub fn litecoin_currency() -> Self {
-		Self {
-			chain_id: ChainId::Bip122(GenesisHexHashReference::from_slice_unchecked(
-				b"12a765e31ffd4059bada1e25190f6e98",
-			)),
-			asset_id: Slip44Reference::from_slice_unchecked(b"2").into(),
-		}
+		// Self {
+		// 	chain_id: ChainId::Bip122(GenesisHexHash32Reference::from_slice_unchecked(
+		// 		b"12a765e31ffd4059bada1e25190f6e98",
+		// 	)),
+		// 	asset_id: Slip44Reference::from_slice_unchecked(b"2").into(),
+		// }
+		todo!()
 	}
 
 	pub fn dai_currency() -> Self {

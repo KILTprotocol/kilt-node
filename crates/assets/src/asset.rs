@@ -92,11 +92,15 @@ pub mod v1 {
 	use codec::{Decode, Encode, MaxEncodedLen};
 	use scale_info::TypeInfo;
 
+	use core::str;
+
 	use frame_support::{sp_runtime::RuntimeDebug, traits::ConstU32, BoundedVec};
+	use sp_core::U256;
 	use sp_std::vec::Vec;
 
 	pub const MINIMUM_ASSET_ID_LENGTH: usize = MINIMUM_NAMESPACE_LENGTH + b":".len() + MINIMUM_REFERENCE_LENGTH;
-	pub const MAXIMUM_ASSET_ID_LENGTH: usize = MAXIMUM_NAMESPACE_LENGTH + b":".len() + MAXIMUM_REFERENCE_LENGTH + b":".len() + MAXIMUM_IDENTIFIER_LENGTH;
+	pub const MAXIMUM_ASSET_ID_LENGTH: usize =
+		MAXIMUM_NAMESPACE_LENGTH + b":".len() + MAXIMUM_REFERENCE_LENGTH + b":".len() + MAXIMUM_IDENTIFIER_LENGTH;
 
 	pub const MINIMUM_NAMESPACE_LENGTH: usize = 3;
 	pub const MAXIMUM_NAMESPACE_LENGTH: usize = 8;
@@ -107,9 +111,6 @@ pub mod v1 {
 	pub const MINIMUM_IDENTIFIER_LENGTH: usize = 1;
 	pub const MAXIMUM_IDENTIFIER_LENGTH: usize = 78;
 	const MAXIMUM_IDENTIFIER_LENGTH_U32: u32 = MAXIMUM_IDENTIFIER_LENGTH as u32;
-
-	// 20 bytes -> 40 HEX characters
-	const EVM_SMART_CONTRACT_ADDRESS_LENGTH: usize = 40;
 
 	// TODO: Add link to the Asset DID spec once merged.
 
@@ -147,48 +148,23 @@ pub mod v1 {
 			match value {
 				// "slip44:" assets -> https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-20.md
 				[b's', b'l', b'i', b'p', b'4', b'4', b':', asset_reference @ ..] => {
-					Slip44Reference::try_from(asset_reference).map(Self::Slip44)
+					Slip44Reference::from_utf8_encoded(asset_reference).map(Self::Slip44)
 				}
 				// "erc20:" assets -> https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-21.md
 				[b'e', b'r', b'c', b'2', b'0', b':', asset_reference @ ..] => {
-					EvmSmartContractFungibleReference::try_from(asset_reference).map(Self::Erc20)
+					EvmSmartContractFungibleReference::from_utf8_encoded(asset_reference).map(Self::Erc20)
 				}
 				// "erc721:" assets -> https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-22.md
 				[b'e', b'r', b'c', b'7', b'2', b'1', b':', asset_reference @ ..] => {
-					EvmSmartContractNonFungibleReference::try_from(asset_reference).map(Self::Erc721)
+					EvmSmartContractNonFungibleReference::from_utf8_encoded(asset_reference).map(Self::Erc721)
 				}
 				// "erc1155:" assets-> https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-29.md
 				[b'e', b'r', b'c', b'1', b'1', b'5', b'5', b':', asset_reference @ ..] => {
-					EvmSmartContractNonFungibleReference::try_from(asset_reference).map(Self::Erc1155)
+					EvmSmartContractNonFungibleReference::from_utf8_encoded(asset_reference).map(Self::Erc1155)
 				}
 				// Generic yet valid asset IDs
-				asset_id => GenericAssetId::try_from(asset_id).map(Self::Generic),
+				asset_id => GenericAssetId::from_utf8_encoded(asset_id).map(Self::Generic),
 			}
-		}
-	}
-
-	impl TryFrom<Vec<u8>> for AssetId {
-		type Error = AssetIdError;
-
-		fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
-			Self::try_from(&value[..])
-		}
-	}
-
-	impl TryFrom<&'static str> for AssetId {
-		type Error = AssetIdError;
-
-		fn try_from(value: &'static str) -> Result<Self, Self::Error> {
-			Self::try_from(value.as_bytes())
-		}
-	}
-
-	#[cfg(feature = "std")]
-	impl TryFrom<String> for AssetId {
-		type Error = AssetIdError;
-
-		fn try_from(value: String) -> Result<Self, Self::Error> {
-			Self::try_from(value.as_bytes())
 		}
 	}
 
@@ -197,42 +173,43 @@ pub mod v1 {
 	/// according to the rules defined in the Asset DID method specification.
 	#[non_exhaustive]
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
-	pub struct Slip44Reference(pub BoundedVec<u8, ConstU32<MAXIMUM_REFERENCE_LENGTH_U32>>);
+	pub struct Slip44Reference(pub U256);
 
 	impl Slip44Reference {
 		/// [CAN PANIC]
 		/// Tries to create a Slip44 reference from the provided slice,
 		/// panicking if the slice is longer than the maximum length allowed.
-		pub(crate) fn from_slice_unchecked(slice: &[u8]) -> Self {
-			Self(
-				slice
-					.to_vec()
-					.try_into()
-					.expect("Slip44Reference::from_slice_unchecked should never panic."),
-			)
-		}
-	}
-
-	impl TryFrom<&[u8]> for Slip44Reference {
-		type Error = AssetIdError;
-
-		fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
-			let input_length = value.len();
+		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetIdError> where I: AsRef<[u8]> + Into<Vec<u8>> {
+			let input = input.as_ref();
+			let input_length = input.len();
 			if input_length < MINIMUM_REFERENCE_LENGTH {
 				Err(ReferenceError::TooShort.into())
 			} else if input_length > MAXIMUM_REFERENCE_LENGTH {
 				Err(ReferenceError::TooLong.into())
 			} else {
-				value.iter().try_for_each(|c| {
-					if !(b'0'..=b'9').contains(c) {
-						Err(ReferenceError::InvalidFormat)
-					} else {
-						Ok(())
-					}
-				})?;
-				// Unchecked since we already checked for length
-				Ok(Self::from_slice_unchecked(value))
+				let decoded = str::from_utf8(input).map_err(|_| ReferenceError::InvalidFormat)?;
+				let parsed = U256::from_dec_str(decoded).map_err(|_| ReferenceError::InvalidFormat)?;
+				// Unchecked since we already checked for maximum length and hence maximum value
+				Ok(Self(parsed))
 			}
+		}
+	}
+
+	impl TryFrom<U256> for Slip44Reference {
+		type Error = AssetIdError;
+
+		fn try_from(value: U256) -> Result<Self, Self::Error> {
+			// Max value for 64-digit decimal values (used for Slip44 references so far).
+			// TODO: This could be enforced at compilation time once constraints on generics will be available.
+			(value <= U256::from_str_radix("9999999999999999999999999999999999999999999999999999999999999999", 10).unwrap())
+				.then(|| Self(value))
+				.ok_or_else(|| ReferenceError::TooLong.into())
+		}
+	}
+
+	impl From<u128> for Slip44Reference {
+		fn from(value: u128) -> Self {
+			Self(value.into())
 		}
 	}
 
@@ -241,41 +218,27 @@ pub mod v1 {
 	/// according to the rules defined in the Asset DID method specification.
 	#[non_exhaustive]
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
-	pub struct EvmSmartContractFungibleReference(pub [u8; EVM_SMART_CONTRACT_ADDRESS_LENGTH]);
+	pub struct EvmSmartContractFungibleReference(pub [u8; 20]);
 
 	impl EvmSmartContractFungibleReference {
-		/// [CAN PANIC]
-		/// Tries to create an EvmSmartContractFungibleReference reference from
-		/// the provided slice, panicking if the slice is longer than the
-		/// maximum length allowed.
-		pub(crate) fn from_slice_unchecked(slice: &[u8]) -> Self {
-			Self(
-				slice
-					.try_into()
-					.expect("EvmSmartContractFungibleReference::from_slice_unchecked should never panic."),
-			)
-		}
-	}
-
-	impl TryFrom<&[u8]> for EvmSmartContractFungibleReference {
-		type Error = AssetIdError;
-
-		fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
-			match value {
+		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetIdError> where I: AsRef<[u8]> + Into<Vec<u8>> {
+			let input = input.as_ref();
+			match input {
 				// If the prefix is "0x" => parse the address
 				[b'0', b'x', contract_address @ ..] => {
-					let inner: [u8; EVM_SMART_CONTRACT_ADDRESS_LENGTH] =
-						contract_address.try_into().map_err(|_| ReferenceError::InvalidFormat)?;
-					inner.iter().try_for_each(|c| {
-						if !matches!(c, b'0'..=b'9' | b'a'..=b'f' | b'A'..=b'F') {
-							Err(ReferenceError::InvalidFormat)
-						} else {
-							Ok(())
-						}
-					})?;
-					// Unchecked since we already checked for length
-					Ok(Self::from_slice_unchecked(contract_address))
-				}
+					let address_length = contract_address.len();
+					if address_length < MINIMUM_REFERENCE_LENGTH {
+						Err(ReferenceError::TooShort.into())
+					} else if address_length > MAXIMUM_REFERENCE_LENGTH {
+						Err(ReferenceError::TooLong.into())
+					} else {
+						let decoded = hex::decode(contract_address).map_err(|_| ReferenceError::InvalidFormat)?;
+						// Unwrap since we already checked for length
+						Ok(Self(Vec::<u8>::from(input).try_into().expect(
+							"Creation of an EVM fungible asset reference should not fail at this point.",
+						)))
+					}
+				},
 				// Otherwise fail
 				_ => Err(ReferenceError::InvalidFormat.into()),
 			}
@@ -293,35 +256,20 @@ pub mod v1 {
 	);
 
 	impl EvmSmartContractNonFungibleReference {
-		/// [CAN PANIC]
-		/// Tries to create an EvmSmartContractNonFungibleReference reference
-		/// from the provided raw components, panicking if the any of them is
-		/// longer than the maximum length allowed.
-		pub(crate) fn from_raw_unchecked(reference: &[u8], id: Option<&[u8]>) -> Self {
-			Self(
-				EvmSmartContractFungibleReference::from_slice_unchecked(reference),
-				id.map(EvmSmartContractNonFungibleIdentifier::from_slice_unchecked),
-			)
-		}
-	}
-
-	impl TryFrom<&[u8]> for EvmSmartContractNonFungibleReference {
-		type Error = AssetIdError;
-
-		fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
-			let mut components = value.split(|c| *c == b':');
+		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetIdError> where I: AsRef<[u8]> + Into<Vec<u8>> {
+			let mut components = input.as_ref().split(|c| *c == b':');
 
 			let reference = components
 				.next()
 				.ok_or_else(|| ReferenceError::InvalidFormat.into())
-				.and_then(EvmSmartContractFungibleReference::try_from)?;
+				.and_then(EvmSmartContractFungibleReference::from_utf8_encoded)?;
 
 			let id = components
 				.next()
 				// Transform Option<Result> to Result<Option> and bubble Err case up, keeping Ok(Option) for successful
 				// cases.
 				.map_or(Ok(None), |id| {
-					EvmSmartContractNonFungibleIdentifier::try_from(id).map(Some)
+					EvmSmartContractNonFungibleIdentifier::from_utf8_encoded(id).map(Some)
 				})?;
 			Ok(Self(reference, id))
 		}
@@ -334,47 +282,31 @@ pub mod v1 {
 	pub struct EvmSmartContractNonFungibleIdentifier(pub BoundedVec<u8, ConstU32<MAXIMUM_IDENTIFIER_LENGTH_U32>>);
 
 	impl EvmSmartContractNonFungibleIdentifier {
-		/// [CAN PANIC]
-		/// Tries to create an EvmSmartContractNonFungibleIdentifier reference
-		/// from the provided slice, panicking if the slice is longer than the
-		/// maximum length allowed.
-		fn from_slice_unchecked(value: &[u8]) -> Self {
-			Self(
-				value
-					.to_vec()
-					.try_into()
-					.expect("EvmSmartContractNonFungibleIdentifier::from_slice_unchecked should never panic."),
-			)
-		}
-	}
-
-	impl TryFrom<&[u8]> for EvmSmartContractNonFungibleIdentifier {
-		type Error = AssetIdError;
-
-		fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
-			let input_length = value.len();
+		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetIdError> where I: AsRef<[u8]> + Into<Vec<u8>> {
+			let input = input.as_ref();
+			let input_length = input.len();
 			if input_length < MINIMUM_IDENTIFIER_LENGTH {
 				Err(IdentifierError::TooShort.into())
 			} else if input_length > MAXIMUM_IDENTIFIER_LENGTH {
 				Err(IdentifierError::TooLong.into())
 			} else {
-				value.iter().try_for_each(|c| {
+				input.iter().try_for_each(|c| {
 					if !matches!(c, b'0'..=b'9') {
 						Err(IdentifierError::InvalidFormat)
 					} else {
 						Ok(())
 					}
 				})?;
-				value
-					.to_vec()
-					.try_into()
-					.map(Self)
-					.map_err(|_| IdentifierError::InvalidFormat.into())
+				// Unchecked since we already checked for length
+				Ok(Self(Vec::<u8>::from(input).try_into().expect(
+					"Creation of an asset non fungible identifier should not fail at this point.",
+				)))
 			}
 		}
 	}
 
 	/// A generic asset ID compliant with the [CAIP-19 spec](https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-19.md) that cannot be boxed in any of the supported variants.
+	#[non_exhaustive]
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
 	pub struct GenericAssetId {
 		pub namespace: GenericAssetNamespace,
@@ -383,44 +315,29 @@ pub mod v1 {
 	}
 
 	impl GenericAssetId {
-		/// [CAN PANIC]
-		/// Tries to create a GenericAssetId identifier from the provided raw
-		/// components, panicking if the any of them is longer than the maximum
-		/// length allowed.\
 		#[allow(dead_code)]
-		fn from_raw_unchecked(namespace: &[u8], reference: &[u8], id: Option<&[u8]>) -> Self {
-			Self {
-				namespace: GenericAssetNamespace::from_slice_unchecked(namespace),
-				reference: GenericAssetReference::from_slice_unchecked(reference),
-				id: id.map(GenericAssetIdentifier::from_slice_unchecked).or(None),
-			}
-		}
-	}
-
-	impl TryFrom<&[u8]> for GenericAssetId {
-		type Error = AssetIdError;
-
-		fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
-			let input_length = value.len();
-			if input_length > MAXIMUM_ASSET_ID_LENGTH {
+		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetIdError> where I: AsRef<[u8]> + Into<Vec<u8>> {
+			let input = input.as_ref();
+			let input_length = input.len();
+			if input_length < MINIMUM_ASSET_ID_LENGTH || input_length > MAXIMUM_ASSET_ID_LENGTH {
 				return Err(AssetIdError::InvalidFormat);
 			}
 
-			let mut components = value.split(|c| *c == b':');
+			let mut components = input.split(|c| *c == b':');
 
 			let namespace = components
 				.next()
 				.ok_or(AssetIdError::InvalidFormat)
-				.and_then(GenericAssetNamespace::try_from)?;
+				.and_then(GenericAssetNamespace::from_utf8_encoded)?;
 			let reference = components
 				.next()
 				.ok_or(AssetIdError::InvalidFormat)
-				.and_then(GenericAssetReference::try_from)?;
+				.and_then(GenericAssetReference::from_utf8_encoded)?;
 			let id = components
 				.next()
 				// Transform Option<Result> to Result<Option> and bubble Err case up, keeping Ok(Option) for successful
 				// cases.
-				.map_or(Ok(None), |id| GenericAssetIdentifier::try_from(id).map(Some))?;
+				.map_or(Ok(None), |id| GenericAssetIdentifier::from_utf8_encoded(id).map(Some))?;
 
 			Ok(Self {
 				namespace,
@@ -440,27 +357,15 @@ pub mod v1 {
 		/// Tries to create a GenericAssetNamespace namespace from the provided
 		/// slice, panicking if the slice is longer than the maximum length
 		/// allowed.
-		fn from_slice_unchecked(value: &[u8]) -> Self {
-			Self(
-				value
-					.to_vec()
-					.try_into()
-					.expect("GenericAssetNamespace::from_slice_unchecked should never panic."),
-			)
-		}
-	}
-
-	impl TryFrom<&[u8]> for GenericAssetNamespace {
-		type Error = AssetIdError;
-
-		fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
-			let input_length = value.len();
+		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetIdError> where I: AsRef<[u8]> + Into<Vec<u8>> {
+			let input = input.as_ref();
+			let input_length = input.len();
 			if input_length < MINIMUM_NAMESPACE_LENGTH {
 				Err(NamespaceError::TooShort.into())
 			} else if input_length > MAXIMUM_NAMESPACE_LENGTH {
 				Err(NamespaceError::TooLong.into())
 			} else {
-				value.iter().try_for_each(|c| {
+				input.iter().try_for_each(|c| {
 					if !matches!(c, b'-' | b'a'..=b'z' | b'0'..=b'9') {
 						Err(NamespaceError::InvalidFormat)
 					} else {
@@ -468,7 +373,9 @@ pub mod v1 {
 					}
 				})?;
 				// Unchecked since we already checked for length
-				Ok(Self::from_slice_unchecked(value))
+				Ok(Self(Vec::<u8>::from(input).try_into().expect(
+					"Creation of a generic asset namespace should not fail at this point.",
+				)))
 			}
 		}
 	}
@@ -479,31 +386,15 @@ pub mod v1 {
 	pub struct GenericAssetReference(pub BoundedVec<u8, ConstU32<MAXIMUM_REFERENCE_LENGTH_U32>>);
 
 	impl GenericAssetReference {
-		/// [CAN PANIC]
-		/// Tries to create a GenericAssetReference reference from the provided
-		/// slice, panicking if the slice is longer than the maximum length
-		/// allowed.
-		fn from_slice_unchecked(value: &[u8]) -> Self {
-			Self(
-				value
-					.to_vec()
-					.try_into()
-					.expect("GenericAssetReference::from_slice_unchecked should never panic."),
-			)
-		}
-	}
-
-	impl TryFrom<&[u8]> for GenericAssetReference {
-		type Error = AssetIdError;
-
-		fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
-			let input_length = value.len();
+		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetIdError> where I: AsRef<[u8]> + Into<Vec<u8>> {
+			let input = input.as_ref();
+			let input_length = input.len();
 			if input_length < MINIMUM_REFERENCE_LENGTH {
 				Err(ReferenceError::TooShort.into())
 			} else if input_length > MAXIMUM_REFERENCE_LENGTH {
 				Err(ReferenceError::TooLong.into())
 			} else {
-				value.iter().try_for_each(|c| {
+				input.iter().try_for_each(|c| {
 					if !matches!(c, b'-' | b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9') {
 						Err(ReferenceError::InvalidFormat)
 					} else {
@@ -511,7 +402,9 @@ pub mod v1 {
 					}
 				})?;
 				// Unchecked since we already checked for length
-				Ok(Self::from_slice_unchecked(value))
+				Ok(Self(Vec::<u8>::from(input).try_into().expect(
+					"Creation of a generic asset reference should not fail at this point.",
+				)))
 			}
 		}
 	}
@@ -522,31 +415,15 @@ pub mod v1 {
 	pub struct GenericAssetIdentifier(pub BoundedVec<u8, ConstU32<MAXIMUM_IDENTIFIER_LENGTH_U32>>);
 
 	impl GenericAssetIdentifier {
-		/// [CAN PANIC]
-		/// Tries to create a GenericAssetIdentifier identifier from the
-		/// provided slice, panicking if the slice is longer than the maximum
-		/// length allowed.
-		fn from_slice_unchecked(value: &[u8]) -> Self {
-			Self(
-				value
-					.to_vec()
-					.try_into()
-					.expect("GenericAssetIdentifier::from_slice_unchecked should never panic."),
-			)
-		}
-	}
-
-	impl TryFrom<&[u8]> for GenericAssetIdentifier {
-		type Error = AssetIdError;
-
-		fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
-			let input_length = value.len();
+		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetIdError> where I: AsRef<[u8]> + Into<Vec<u8>> {
+			let input = input.as_ref();
+			let input_length = input.len();
 			if input_length < MINIMUM_IDENTIFIER_LENGTH {
 				Err(IdentifierError::TooShort.into())
 			} else if input_length > MAXIMUM_IDENTIFIER_LENGTH {
 				Err(IdentifierError::TooLong.into())
 			} else {
-				value.iter().try_for_each(|c| {
+				input.iter().try_for_each(|c| {
 					if !matches!(c, b'-' | b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9') {
 						Err(IdentifierError::InvalidFormat)
 					} else {
@@ -554,7 +431,9 @@ pub mod v1 {
 					}
 				})?;
 				// Unchecked since we already checked for length
-				Ok(Self::from_slice_unchecked(value))
+				Ok(Self(Vec::<u8>::from(input).try_into().expect(
+					"Creation of a generic asset reference should not fail at this point.",
+				)))
 			}
 		}
 	}

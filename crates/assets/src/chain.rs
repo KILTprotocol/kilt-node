@@ -80,9 +80,11 @@ mod v1 {
 	use frame_support::{sp_runtime::RuntimeDebug, traits::ConstU32, BoundedVec};
 	use sp_std::vec::Vec;
 
-	/// The minimum length, including separator symbols, a chain ID can have according to the minimum values defined by the CAIP-2 definition.
+	/// The minimum length, including separator symbols, a chain ID can have
+	/// according to the minimum values defined by the CAIP-2 definition.
 	pub const MINIMUM_CHAIN_ID_LENGTH: usize = MINIMUM_NAMESPACE_LENGTH + b":".len() + MINIMUM_REFERENCE_LENGTH;
-	/// The maximum length, including separator symbols, a chain ID can have according to the minimum values defined by the CAIP-2 definition.
+	/// The maximum length, including separator symbols, a chain ID can have
+	/// according to the minimum values defined by the CAIP-2 definition.
 	pub const MAXIMUM_CHAIN_ID_LENGTH: usize = MAXIMUM_NAMESPACE_LENGTH + b":".len() + MAXIMUM_REFERENCE_LENGTH;
 
 	/// The minimum length of a valid chain ID namespace.
@@ -96,9 +98,6 @@ mod v1 {
 	pub const MAXIMUM_REFERENCE_LENGTH: usize = 32;
 	const MAXIMUM_REFERENCE_LENGTH_U32: u32 = MAXIMUM_REFERENCE_LENGTH as u32;
 
-	// Max value for 32-digit decimal values (used for EIP chains so far).
-	const MAXIMUM_DECIMAL_REFERENCE_VALUE: u128 = 99999999999999999999999999999999;
-
 	// TODO: Add link to the Asset DID spec once merged.
 
 	/// The Chain ID component as specified in the Asset DID specification.
@@ -107,11 +106,11 @@ mod v1 {
 		// An EIP155 chain reference.
 		Eip155(Eip155Reference),
 		// A BIP122 chain reference.
-		Bip122(GenesisHexHashReference<MAXIMUM_REFERENCE_LENGTH>),
+		Bip122(GenesisHexHash32Reference),
 		// A Dotsama chain reference.
-		Dotsama(GenesisHexHashReference<MAXIMUM_REFERENCE_LENGTH>),
+		Dotsama(GenesisHexHash32Reference),
 		// A Solana chain reference.
-		Solana(GenesisBase58HashReference<MAXIMUM_REFERENCE_LENGTH>),
+		Solana(GenesisBase58Hash32Reference),
 		// A generic chain.
 		Generic(GenericChainId),
 	}
@@ -122,109 +121,89 @@ mod v1 {
 		}
 	}
 
+	impl From<GenesisBase58Hash32Reference> for ChainId {
+		fn from(reference: GenesisBase58Hash32Reference) -> Self {
+			Self::Solana(reference)
+		}
+	}
+
 	impl From<GenericChainId> for ChainId {
 		fn from(chain_id: GenericChainId) -> Self {
 			Self::Generic(chain_id)
 		}
 	}
 
-	/// Try to parse a `ChainId` instance from the provided UTF8-encoded input.
-	impl TryFrom<&[u8]> for ChainId {
-		type Error = ChainIdError;
-
-		fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
-			match value {
-				// "eip155:" chains -> https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-3.md
-				[b'e', b'i', b'p', b'1', b'5', b'5', b':', chain_reference @ ..] => {
-					Eip155Reference::try_from(chain_reference).map(Self::Eip155)
-				}
-				// "bip122:" chains -> https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-4.md
-				[b'b', b'i', b'p', b'1', b'2', b'2', b':', chain_reference @ ..] => {
-					GenesisHexHashReference::try_from(chain_reference).map(Self::Bip122)
-				}
-				// "polkadot:" chains -> https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-13.md
-				[b'p', b'o', b'l', b'k', b'a', b'd', b'o', b't', b':', chain_reference @ ..] => {
-					GenesisHexHashReference::try_from(chain_reference).map(Self::Dotsama)
-				}
-				// "solana:" chains -> https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-30.md
-				[b's', b'o', b'l', b'a', b'n', b'a', b':', chain_reference @ ..] => {
-					GenesisBase58HashReference::try_from(chain_reference).map(Self::Solana)
-				}
-				// Other chains that are still compatible with the CAIP-2 spec -> https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-2.md
-				chain_id => GenericChainId::try_from(chain_id).map(Self::Generic),
-			}
-		}
-	}
-
-	/// Try to parse a `ChainId` instance from the provided UTF8-encoded input.
-	impl TryFrom<Vec<u8>> for ChainId {
-		type Error = ChainIdError;
-
-		fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
-			Self::try_from(&value[..])
-		}
-	}
-
-	/// Try to parse a `ChainId` instance from the provided UTF8-encoded input.
-	impl TryFrom<&'static str> for ChainId {
-		type Error = ChainIdError;
-
-		fn try_from(value: &'static str) -> Result<Self, Self::Error> {
-			Self::try_from(value.as_bytes())
-		}
-	}
-
-
-	#[cfg(feature = "std")]
-	impl TryFrom<String> for ChainId {
-		type Error = ChainIdError;
-
-		fn try_from(value: String) -> Result<Self, Self::Error> {
-			Self::try_from(value.as_bytes())
-		}
-	}
-
 	impl ChainId {
 		/// The chain ID for the Ethereum mainnet.
-		pub fn ethereum_mainnet() -> Self {
+		pub const fn ethereum_mainnet() -> Self {
 			Eip155Reference::ethereum_mainnet().into()
 		}
 
 		/// The chain ID for the Moonriver EVM parachain.
-		pub fn moonriver_eth() -> Self {
+		pub const fn moonriver_eth() -> Self {
 			// Info taken from https://chainlist.org/
 			Eip155Reference::moonriver_eth().into()
 		}
 
 		/// The chain ID for the Moonbeam EVM parachain.
-		pub fn moonbeam_eth() -> Self {
+		pub const fn moonbeam_eth() -> Self {
 			// Info taken from https://chainlist.org/
 			Eip155Reference::moonbeam_eth().into()
 		}
 
 		/// The chain ID for the Bitcoin mainnet.
-		pub fn bitcoin_mainnet() -> Self {
-			Self::Bip122(GenesisHexHashReference::bitcoin_mainnet())
+		pub const fn bitcoin_mainnet() -> Self {
+			Self::Bip122(GenesisHexHash32Reference::bitcoin_mainnet())
 		}
 
 		/// The chain ID for the Polkadot relaychain.
-		pub fn polkadot() -> Self {
-			Self::Dotsama(GenesisHexHashReference::polkadot())
+		pub const fn polkadot() -> Self {
+			Self::Dotsama(GenesisHexHash32Reference::polkadot())
 		}
 
 		/// The chain ID for the Kusama relaychain.
-		pub fn kusama() -> Self {
-			Self::Dotsama(GenesisHexHashReference::kusama())
+		pub const fn kusama() -> Self {
+			Self::Dotsama(GenesisHexHash32Reference::kusama())
 		}
 
 		/// The chain ID for the KILT Spiritnet parachain.
-		pub fn kilt_spiritnet() -> Self {
-			Self::Dotsama(GenesisHexHashReference::kilt_spiritnet())
+		pub const fn kilt_spiritnet() -> Self {
+			Self::Dotsama(GenesisHexHash32Reference::kilt_spiritnet())
 		}
 
 		/// The chain ID for the Solana mainnet.
-		pub fn solana_mainnet() -> Self {
-			Self::Solana(GenesisBase58HashReference::solana_mainnet())
+		pub const fn solana_mainnet() -> Self {
+			GenesisBase58Hash32Reference::solana_mainnet().into()
+		}
+	}
+
+	impl ChainId {
+		/// Try to parse a `ChainId` instance from the provided UTF8-encoded
+		/// input.
+		pub fn from_utf8_encoded<I>(input: I) -> Result<Self, ChainIdError>
+		where
+			I: AsRef<[u8]> + Into<Vec<u8>>,
+		{
+			match input.as_ref() {
+				// "eip155:" chains -> https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-3.md
+				[b'e', b'i', b'p', b'1', b'5', b'5', b':', chain_reference @ ..] => {
+					Eip155Reference::from_utf8_encoded(chain_reference).map(Self::Eip155)
+				}
+				// "bip122:" chains -> https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-4.md
+				[b'b', b'i', b'p', b'1', b'2', b'2', b':', chain_reference @ ..] => {
+					GenesisHexHash32Reference::from_utf8_encoded(chain_reference).map(Self::Bip122)
+				}
+				// "polkadot:" chains -> https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-13.md
+				[b'p', b'o', b'l', b'k', b'a', b'd', b'o', b't', b':', chain_reference @ ..] => {
+					GenesisHexHash32Reference::from_utf8_encoded(chain_reference).map(Self::Dotsama)
+				}
+				// "solana:" chains -> https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-30.md
+				[b's', b'o', b'l', b'a', b'n', b'a', b':', chain_reference @ ..] => {
+					GenesisBase58Hash32Reference::from_utf8_encoded(chain_reference).map(Self::Solana)
+				}
+				// Other chains that are still compatible with the CAIP-2 spec -> https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-2.md
+				chain_id => GenericChainId::from_utf8_encoded(chain_id).map(Self::Generic),
+			}
 		}
 	}
 
@@ -236,22 +215,43 @@ mod v1 {
 	pub struct Eip155Reference(pub u128);
 
 	impl Eip155Reference {
-
 		/// The EIP155 reference for the Ethereum mainnet.
-		pub fn ethereum_mainnet() -> Self {
+		pub const fn ethereum_mainnet() -> Self {
 			Self(1)
 		}
 
 		/// The EIP155 reference for the Moonriver parachain.
-		pub fn moonriver_eth() -> Self {
+		pub const fn moonriver_eth() -> Self {
 			// Info taken from https://chainlist.org/
 			Self(1285)
 		}
 
 		/// The EIP155 reference for the Moonbeam parachain.
-		pub fn moonbeam_eth() -> Self {
+		pub const fn moonbeam_eth() -> Self {
 			// Info taken from https://chainlist.org/
 			Self(1284)
+		}
+	}
+
+	impl Eip155Reference {
+		/// Parse a UTF8-encoded decimal chain reference, failing if the input
+		/// string is not valid.
+		pub fn from_utf8_encoded<I>(input: I) -> Result<Self, ChainIdError>
+		where
+			I: AsRef<[u8]> + Into<Vec<u8>>,
+		{
+			let input = input.as_ref();
+			let input_length = input.len();
+			if input_length < MINIMUM_REFERENCE_LENGTH {
+				Err(ReferenceError::TooShort.into())
+			} else if input_length > MAXIMUM_REFERENCE_LENGTH {
+				Err(ReferenceError::TooLong.into())
+			} else {
+				let decoded = str::from_utf8(input).map_err(|_| ReferenceError::InvalidFormat)?;
+				let parsed = decoded.parse::<u128>().map_err(|_| ReferenceError::InvalidFormat)?;
+				// Unchecked since we already checked for maximum length and hence maximum value
+				Ok(Self(parsed))
+			}
 		}
 	}
 
@@ -259,138 +259,126 @@ mod v1 {
 		type Error = ChainIdError;
 
 		fn try_from(value: u128) -> Result<Self, Self::Error> {
-			(value <= MAXIMUM_DECIMAL_REFERENCE_VALUE).then(|| Self(value)).ok_or_else(|| NamespaceError::TooLong.into())
+			// Max value for 32-digit decimal values (used for EIP chains so far).
+			// TODO: This could be enforced at compilation time once constraints on generics will be available.
+			(value <= 99999999999999999999999999999999)
+				.then(|| Self(value))
+				.ok_or_else(|| ReferenceError::TooLong.into())
 		}
 	}
 
-	impl TryFrom<&[u8]> for Eip155Reference {
-		type Error = ChainIdError;
-
-		fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
-			let input_length = value.len();
-			if input_length < MINIMUM_REFERENCE_LENGTH {
-				Err(ReferenceError::TooShort.into())
-			} else if input_length > MAXIMUM_REFERENCE_LENGTH {
-				Err(ReferenceError::TooLong.into())
-			} else {
-				let decoded = str::from_utf8(value).map_err(|_| ReferenceError::InvalidFormat)?;
-				let parsed = decoded.parse::<u128>().map_err(|_| ReferenceError::InvalidFormat)?;
-				// Unchecked since we already checked for length
-				Ok(Self(parsed))
-			}
+	impl From<u64> for Eip155Reference {
+		fn from(value: u64) -> Self {
+			Self(value.into())
 		}
 	}
-
-	// TODO: Add support for compilation-time checks on the value of L when
-	// supported.
 
 	/// A chain reference for CAIP-2 chains that are identified by a HEX genesis
-	/// hash.
+	/// hash of 32 characters.
 	#[non_exhaustive]
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
-	pub struct GenesisHexHashReference<const L: usize = MAXIMUM_REFERENCE_LENGTH>(pub [u8; L]);
+	pub struct GenesisHexHash32Reference(pub [u8; 16]);
 
-	impl<const L: usize> GenesisHexHashReference<L> {
-		/// [CAN PANIC]
-		/// Tries to create a GenesisHexHashReference reference from the
-		/// provided slice, panicking if the slice is longer than the maximum
-		/// length allowed.
-		pub(crate) fn from_slice_unchecked(slice: &[u8]) -> Self {
-			Self(slice.try_into().expect("GenesisHexHashReference::from_slice_unchecked should never panic."))
-		}
-
+	impl GenesisHexHash32Reference {
 		/// The CAIP-2 reference for the Bitcoin mainnet.
-		pub fn bitcoin_mainnet() -> Self {
-			Self::from_slice_unchecked(b"000000000019d6689c085ae165831e93")
+		pub const fn bitcoin_mainnet() -> Self {
+			// HEX decoding of bitcoin genesis hash 0x000000000019d6689c085ae165831e93
+			Self([0, 0, 0, 0, 0, 25, 214, 104, 156, 8, 90, 225, 101, 131, 30, 147])
 		}
 
 		/// The CAIP-2 reference for the Polkadot relaychain.
-		pub fn polkadot() -> Self {
-			Self::from_slice_unchecked(b"91b171bb158e2d3848fa23a9f1c25182")
+		pub const fn polkadot() -> Self {
+			// HEX decoding of Polkadot genesis hash 0x91b171bb158e2d3848fa23a9f1c25182
+			Self([145, 177, 113, 187, 21, 142, 45, 56, 72, 250, 35, 169, 241, 194, 81, 130])
 		}
 
 		/// The CAIP-2 reference for the Kusama relaychain.
-		pub fn kusama() -> Self {
-			Self::from_slice_unchecked(b"b0a8d493285c2df73290dfb7e61f870f")
+		pub const fn kusama() -> Self {
+			// HEX decoding of Kusama genesis hash 0xb0a8d493285c2df73290dfb7e61f870f
+			Self([176, 168, 212, 147, 40, 92, 45, 247, 50, 144, 223, 183, 230, 31, 135, 15])
 		}
 
 		/// The CAIP-2 reference for the KILT Spiritnet parachain.
-		pub fn kilt_spiritnet() -> Self {
-			Self::from_slice_unchecked(b"411f057b9107718c9624d6aa4a3f23c1")
+		pub const fn kilt_spiritnet() -> Self {
+			// HEX decoding of Kusama genesis hash 0x411f057b9107718c9624d6aa4a3f23c1
+			Self([65, 31, 5, 123, 145, 7, 113, 140, 150, 36, 214, 170, 74, 63, 35, 193])
 		}
 	}
 
-	impl<const L: usize> TryFrom<&[u8]> for GenesisHexHashReference<L> {
-		type Error = ChainIdError;
-
-		fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
-			let input_length = value.len();
+	impl GenesisHexHash32Reference {
+		/// Parse a UTF8-encoded HEX chain reference, failing if the input
+		/// string is not valid.
+		pub fn from_utf8_encoded<I>(input: I) -> Result<Self, ChainIdError>
+		where
+			I: AsRef<[u8]> + Into<Vec<u8>>,
+		{
+			let input = input.as_ref();
+			let input_length = input.len();
 			if input_length < MINIMUM_REFERENCE_LENGTH {
 				Err(ReferenceError::TooShort.into())
 			} else if input_length > MAXIMUM_REFERENCE_LENGTH {
 				Err(ReferenceError::TooLong.into())
-			} else if input_length % 2 != 0 {
-				// Hex encoding can only have 2x characters
-				Err(ReferenceError::InvalidFormat.into())
 			} else {
-				value.iter().try_for_each(|c| {
-					if !matches!(c, b'0'..=b'9' | b'a'..=b'f') {
-						Err(ReferenceError::InvalidFormat)
-					} else {
-						Ok(())
-					}
-				})?;
-				value.try_into().map(Self).map_err(|_| ChainIdError::InvalidFormat)
+				let decoded = hex::decode(input).map_err(|_| ReferenceError::InvalidFormat)?;
+				// Unwrap since we already checked for length
+				Ok(Self(Vec::<u8>::from(input).try_into().expect(
+					"Creation of a generic HEX chain reference should not fail at this point.",
+				)))
 			}
 		}
 	}
 
-	// FIXME: Ensure that a size is given for the expected hash length (less than
-	// the max allowed size).
-
 	/// A chain reference for CAIP-2 chains that are identified by a
-	/// Base58-encoded genesis hash.
+	/// Base58-encoded genesis hash of 32 characters.
 	#[non_exhaustive]
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
-	pub struct GenesisBase58HashReference<const L: usize = MAXIMUM_REFERENCE_LENGTH>(pub [u8; L]);
+	pub struct GenesisBase58Hash32Reference(pub BoundedVec<u8, ConstU32<32>>);
 
-	impl<const L: usize> GenesisBase58HashReference<L> {
-		/// [CAN PANIC]
-		/// Tries to create a GenesisBase58HashReference reference from the
-		/// provided slice, panicking if the slice is longer than the maximum
-		/// length allowed.
-		pub(crate) fn from_slice_unchecked(slice: &[u8]) -> Self {
-			Self(slice.to_vec().try_into().expect("GenesisBase58HashReference::from_slice_unchecked should never panic."))
-		}
-
+	impl GenesisBase58Hash32Reference {
 		/// The CAIP-2 reference for the Solana mainnet.
-		pub fn solana_mainnet() -> Self {
-			Self::from_slice_unchecked(b"4sGjMW1sUnHzSxGspuhpqLDx6wiyjNtZ")
+		pub const fn solana_mainnet() -> Self {
+			// Base58 decoding of Solana genesis hash 4sGjMW1sUnHzSxGspuhpqLDx6wiyjNtZ
+			Self(
+				vec![
+					187, 54, 81, 91, 131, 4, 217, 218, 81, 6, 169, 34, 88, 214, 125, 109, 223, 209, 236, 21, 49, 109,
+					82,
+				]
+				.try_into()
+				.expect("Well-known chain ID for solana mainnet should never fail."),
+			)
 		}
 	}
 
-	impl<const L: usize> TryFrom<&[u8]> for GenesisBase58HashReference<L> {
-		type Error = ChainIdError;
-
-		fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
-			let input_length = value.len();
+	impl GenesisBase58Hash32Reference {
+		/// Parse a UTF8-encoded Base58 chain reference, failing if the input
+		/// string is not valid.
+		pub fn from_utf8_encoded<I>(input: I) -> Result<Self, ChainIdError>
+		where
+			I: AsRef<[u8]> + Into<Vec<u8>>,
+		{
+			let input = input.as_ref();
+			let input_length = input.len();
 			if input_length < MINIMUM_REFERENCE_LENGTH {
 				Err(ReferenceError::TooShort.into())
 			} else if input_length > MAXIMUM_REFERENCE_LENGTH {
 				Err(ReferenceError::TooLong.into())
 			} else {
-				let decoded_string = str::from_utf8(value).map_err(|_| ReferenceError::InvalidFormat)?;
-				// Check for proper base58 encoding
-				decoded_string
+				let decoded_string = str::from_utf8(&input[..]).map_err(|_| ReferenceError::InvalidFormat)?;
+				let decoded = decoded_string
 					.from_base58()
 					.map_err(|_| ReferenceError::InvalidFormat)?;
-
-				value.try_into().map(Self).map_err(|_| ChainIdError::InvalidFormat)
+				// Max length in bytes of a 32-character Base58 string is 32 -> it is the string
+				// formed by all "1". Otherwise, it is always between 23 and 24 characters.
+				// Unwrap since we already checked for length.
+				Ok(Self(Vec::<u8>::from(input).try_into().expect(
+					"Creation of a generic Base58 chain reference should not fail at this point.",
+				)))
 			}
 		}
 	}
 
 	/// A generic chain ID compliant with the [CAIP-2 spec](https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-2.md) that cannot be boxed in any of the supported variants.
+	#[non_exhaustive]
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
 	pub struct GenericChainId {
 		pub namespace: GenericChainNamespace,
@@ -398,106 +386,89 @@ mod v1 {
 	}
 
 	impl GenericChainId {
-		/// [CAN PANIC]
-		/// Tries to create a GenericChainId identifier from the provided raw
-		/// components, panicking if the any of them is longer than the maximum
-		/// length allowed.\
-		#[allow(dead_code)]
-		fn from_raw_unchecked(namespace: &[u8], reference: &[u8]) -> Self {
-			Self {
-				namespace: GenericChainNamespace::from_slice_unchecked(namespace),
-				reference: GenericChainReference::from_slice_unchecked(reference),
-			}
-		}
-	}
-
-	impl TryFrom<&[u8]> for GenericChainId {
-		type Error = ChainIdError;
-
-		fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
-			let input_length = value.len();
-			if input_length > MAXIMUM_CHAIN_ID_LENGTH {
+		/// Parse a generic UTF8-encoded chain ID, failing if the input does not
+		/// respect the CAIP-2 requirements.
+		pub fn from_utf8_encoded<I>(input: I) -> Result<Self, ChainIdError>
+		where
+			I: AsRef<[u8]> + Into<Vec<u8>>,
+		{
+			let input = input.as_ref();
+			let input_length = input.len();
+			if input_length < MINIMUM_CHAIN_ID_LENGTH || input_length > MAXIMUM_CHAIN_ID_LENGTH {
 				return Err(ChainIdError::InvalidFormat);
 			}
 
-			let mut components = value.split(|c| *c == b':');
+			let mut components = input.split(|c| *c == b':');
 
 			let namespace = components
 				.next()
 				.ok_or(ChainIdError::InvalidFormat)
-				.and_then(GenericChainNamespace::try_from)?;
+				.and_then(GenericChainNamespace::from_utf8_encoded)?;
 			let reference = components
 				.next()
 				.ok_or(ChainIdError::InvalidFormat)
-				.and_then(GenericChainReference::try_from)?;
+				.and_then(GenericChainReference::from_utf8_encoded)?;
 
 			Ok(Self { namespace, reference })
 		}
 	}
 
 	/// A generic chain namespace as defined in the [CAIP-2 spec](https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-2.md).
+	/// It stores the provided UTF8-encoded namespace without trying to apply
+	/// any parsing/decoding logic.
 	#[non_exhaustive]
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
 	pub struct GenericChainNamespace(pub BoundedVec<u8, ConstU32<MAXIMUM_NAMESPACE_LENGTH_U32>>);
 
 	impl GenericChainNamespace {
-		/// [CAN PANIC]
-		/// Tries to create a GenericChainNamespace namespace from the provided
-		/// slice, panicking if the slice is longer than the maximum length
-		/// allowed.
-		fn from_slice_unchecked(value: &[u8]) -> Self {
-			Self(value.to_vec().try_into().expect("GenericChainNamespace::from_slice_unchecked should never panic."))
-		}
-	}
-
-	impl TryFrom<&[u8]> for GenericChainNamespace {
-		type Error = ChainIdError;
-
-		fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
-			let input_length = value.len();
+		/// Parse a generic UTF8-encoded chain namespace, failing if the input
+		/// does not respect the CAIP-2 requirements.
+		pub fn from_utf8_encoded<I>(input: I) -> Result<Self, ChainIdError>
+		where
+			I: AsRef<[u8]> + Into<Vec<u8>>,
+		{
+			let input = input.as_ref();
+			let input_length = input.len();
 			if input_length < MINIMUM_NAMESPACE_LENGTH {
 				Err(NamespaceError::TooShort.into())
 			} else if input_length > MAXIMUM_NAMESPACE_LENGTH {
 				Err(NamespaceError::TooLong.into())
 			} else {
-				value.iter().try_for_each(|c| {
+				input.iter().try_for_each(|c| {
 					if !matches!(c, b'-' | b'a'..=b'z' | b'0'..=b'9') {
 						Err(NamespaceError::InvalidFormat)
 					} else {
 						Ok(())
 					}
 				})?;
-				// Unchecked since we already checked for length
-				Ok(Self::from_slice_unchecked(value))
+				// Unwrap since we already checked for length
+				Ok(Self(Vec::<u8>::from(input).try_into().expect(
+					"Creation of a generic chain namespace should not fail at this point.",
+				)))
 			}
 		}
 	}
 
 	/// A generic chain reference as defined in the [CAIP-2 spec](https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-2.md).
+	#[non_exhaustive]
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
-	pub struct GenericChainReference(BoundedVec<u8, ConstU32<MAXIMUM_REFERENCE_LENGTH_U32>>);
+	pub struct GenericChainReference(pub BoundedVec<u8, ConstU32<MAXIMUM_REFERENCE_LENGTH_U32>>);
 
 	impl GenericChainReference {
-		/// [CAN PANIC]
-		/// Tries to create a GenericChainReference reference from the provided
-		/// slice, panicking if the slice is longer than the maximum length
-		/// allowed.
-		fn from_slice_unchecked(value: &[u8]) -> Self {
-			Self(value.to_vec().try_into().expect("GenericChainReference::from_slice_unchecked should never panic."))
-		}
-	}
-
-	impl TryFrom<&[u8]> for GenericChainReference {
-		type Error = ChainIdError;
-
-		fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
-			let input_length = value.len();
+		/// Parse a generic UTF8-encoded chain reference, failing if the input
+		/// does not respect the CAIP-2 requirements.
+		pub fn from_utf8_encoded<I>(input: I) -> Result<Self, ChainIdError>
+		where
+			I: AsRef<[u8]> + Into<Vec<u8>>,
+		{
+			let input = input.as_ref();
+			let input_length = input.len();
 			if input_length < MINIMUM_REFERENCE_LENGTH {
 				Err(ReferenceError::TooShort.into())
 			} else if input_length > MAXIMUM_REFERENCE_LENGTH {
 				Err(ReferenceError::TooLong.into())
 			} else {
-				value.iter().try_for_each(|c| {
+				input.iter().try_for_each(|c| {
 					if !matches!(c, b'-' | b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9') {
 						Err(ReferenceError::InvalidFormat)
 					} else {
@@ -505,7 +476,9 @@ mod v1 {
 					}
 				})?;
 				// Unchecked since we already checked for length
-				Ok(Self::from_slice_unchecked(value))
+				Ok(Self(Vec::<u8>::from(input).try_into().expect(
+					"Creation of a generic chain reference should not fail at this point.",
+				)))
 			}
 		}
 	}
@@ -524,7 +497,7 @@ mod v1 {
 			];
 			for chain in valid_chains {
 				assert!(
-					ChainId::try_from(chain.as_bytes()).is_ok(),
+					ChainId::from_utf8_encoded(chain.as_bytes()).is_ok(),
 					"Chain ID {:?} should not fail to parse for eip155 chains",
 					chain
 				);
@@ -550,7 +523,7 @@ mod v1 {
 			];
 			for chain in invalid_chains {
 				assert!(
-					ChainId::try_from(chain.as_bytes()).is_err(),
+					ChainId::from_utf8_encoded(chain.as_bytes()).is_err(),
 					"Chain ID {:?} should fail to parse for eip155 chains",
 					chain
 				);
@@ -567,7 +540,7 @@ mod v1 {
 			];
 			for chain in valid_chains {
 				assert!(
-					ChainId::try_from(chain.as_bytes()).is_ok(),
+					ChainId::from_utf8_encoded(chain.as_bytes()).is_ok(),
 					"Chain ID {:?} should not fail to parse for bip122 chains",
 					chain
 				);
@@ -595,7 +568,7 @@ mod v1 {
 			];
 			for chain in invalid_chains {
 				assert!(
-					ChainId::try_from(chain.as_bytes()).is_err(),
+					ChainId::from_utf8_encoded(chain.as_bytes()).is_err(),
 					"Chain ID {:?} should fail to parse for bip122 chains",
 					chain
 				);
@@ -612,7 +585,7 @@ mod v1 {
 			];
 			for chain in valid_chains {
 				assert!(
-					ChainId::try_from(chain.as_bytes()).is_ok(),
+					ChainId::from_utf8_encoded(chain.as_bytes()).is_ok(),
 					"Chain ID {:?} should not fail to parse for polkadot chains",
 					chain
 				);
@@ -642,7 +615,7 @@ mod v1 {
 			];
 			for chain in invalid_chains {
 				assert!(
-					ChainId::try_from(chain.as_bytes()).is_err(),
+					ChainId::from_utf8_encoded(chain.as_bytes()).is_err(),
 					"Chain ID {:?} should fail to parse for polkadot chains",
 					chain
 				);
@@ -657,7 +630,7 @@ mod v1 {
 			];
 			for chain in valid_chains {
 				assert!(
-					ChainId::try_from(chain.as_bytes()).is_ok(),
+					ChainId::from_utf8_encoded(chain.as_bytes()).is_ok(),
 					"Chain ID {:?} should not fail to parse for solana chains",
 					chain
 				);
@@ -683,7 +656,7 @@ mod v1 {
 			];
 			for chain in invalid_chains {
 				assert!(
-					ChainId::try_from(chain.as_bytes()).is_err(),
+					ChainId::from_utf8_encoded(chain.as_bytes()).is_err(),
 					"Chain ID {:?} should fail to parse for generic chains",
 					chain
 				);
@@ -725,7 +698,7 @@ mod v1 {
 			];
 			for chain in valid_chains {
 				assert!(
-					ChainId::try_from(chain.as_bytes()).is_ok(),
+					ChainId::from_utf8_encoded(chain.as_bytes()).is_ok(),
 					"Chain ID {:?} should not fail to parse for generic chains",
 					chain
 				);
@@ -749,7 +722,7 @@ mod v1 {
 			];
 			for chain in invalid_chains {
 				assert!(
-					ChainId::try_from(chain.as_bytes()).is_err(),
+					ChainId::from_utf8_encoded(chain.as_bytes()).is_err(),
 					"Chain ID {:?} should fail to parse for solana chains",
 					chain
 				);
