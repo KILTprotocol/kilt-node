@@ -332,10 +332,8 @@ mod v1 {
 				Err(ReferenceError::TooLong.into())
 			} else {
 				let decoded = hex::decode(input).map_err(|_| ReferenceError::InvalidFormat)?;
-				// Unwrap since we already checked for length
-				Ok(Self(decoded.try_into().expect(
-					"Creation of a generic HEX chain reference should not fail at this point.",
-				)))
+				let inner: [u8; 16] = decoded.try_into().map_err(|_| ReferenceError::InvalidFormat)?;
+				Ok(Self(inner))
 			}
 		}
 	}
@@ -381,10 +379,8 @@ mod v1 {
 					.map_err(|_| ReferenceError::InvalidFormat)?;
 				// Max length in bytes of a 32-character Base58 string is 32 -> it is the string
 				// formed by all "1". Otherwise, it is always between 23 and 24 characters.
-				// Unwrap since we already checked for length.
-				Ok(Self(decoded.try_into().expect(
-					"Creation of a generic Base58 chain reference should not fail at this point.",
-				)))
+				let inner: BoundedVec<u8, ConstU32<32>> = decoded.try_into().map_err(|_| ReferenceError::InvalidFormat)?;
+				Ok(Self(inner))
 			}
 		}
 	}
@@ -453,10 +449,7 @@ mod v1 {
 						Ok(())
 					}
 				})?;
-				// Unwrap since we already checked for length
-				Ok(Self(Vec::<u8>::from(input).try_into().expect(
-					"Creation of a generic chain namespace should not fail at this point.",
-				)))
+				Ok(Self(Vec::<u8>::from(input).try_into().map_err(|_| NamespaceError::InvalidFormat)?))
 			}
 		}
 	}
@@ -487,10 +480,7 @@ mod v1 {
 						Ok(())
 					}
 				})?;
-				// Unchecked since we already checked for length
-				Ok(Self(Vec::<u8>::from(input).try_into().expect(
-					"Creation of a generic chain reference should not fail at this point.",
-				)))
+				Ok(Self(Vec::<u8>::from(input).try_into().map_err(|_| ReferenceError::InvalidFormat)?))
 			}
 		}
 	}

@@ -246,10 +246,8 @@ pub mod v1 {
 						Err(ReferenceError::TooLong.into())
 					} else {
 						let decoded = hex::decode(contract_address).map_err(|_| ReferenceError::InvalidFormat)?;
-						// Unwrap since we already checked for length
-						Ok(Self(decoded.try_into().expect(
-							"Creation of an EVM fungible asset reference should not fail at this point.",
-						)))
+						let inner: [u8; 20] = decoded.try_into().map_err(|_| ReferenceError::InvalidFormat)?;
+						Ok(Self(inner))
 					}
 				}
 				// Otherwise fail
@@ -320,10 +318,8 @@ pub mod v1 {
 						Ok(())
 					}
 				})?;
-				// Unchecked since we already checked for length
-				Ok(Self(Vec::<u8>::from(input).try_into().expect(
-					"Creation of an asset non fungible identifier should not fail at this point.",
-				)))
+
+				Ok(Self(Vec::<u8>::from(input).try_into().map_err(|_| IdentifierError::InvalidFormat)?))
 			}
 		}
 	}
@@ -402,10 +398,7 @@ pub mod v1 {
 						Ok(())
 					}
 				})?;
-				// Unchecked since we already checked for length
-				Ok(Self(Vec::<u8>::from(input).try_into().expect(
-					"Creation of a generic asset namespace should not fail at this point.",
-				)))
+				Ok(Self(Vec::<u8>::from(input).try_into().map_err(|_| NamespaceError::InvalidFormat)?))
 			}
 		}
 	}
@@ -436,10 +429,7 @@ pub mod v1 {
 						Ok(())
 					}
 				})?;
-				// Unchecked since we already checked for length
-				Ok(Self(Vec::<u8>::from(input).try_into().expect(
-					"Creation of a generic asset reference should not fail at this point.",
-				)))
+				Ok(Self(Vec::<u8>::from(input).try_into().map_err(|_| ReferenceError::InvalidFormat)?))
 			}
 		}
 	}
@@ -470,10 +460,7 @@ pub mod v1 {
 						Ok(())
 					}
 				})?;
-				// Unchecked since we already checked for length
-				Ok(Self(Vec::<u8>::from(input).try_into().expect(
-					"Creation of a generic asset reference should not fail at this point.",
-				)))
+				Ok(Self(Vec::<u8>::from(input).try_into().map_err(|_| IdentifierError::InvalidFormat)?))
 			}
 		}
 	}
@@ -558,6 +545,8 @@ pub mod v1 {
 				"erc20::",
 				"erc20:›",
 				"erc20:😁",
+				// Max chars - 2
+				"erc20:0x8f8221AFBB33998D8584A2B05749BA73C37A93",
 				// Max chars - 1
 				"erc20:0x8f8221AFBB33998D8584A2B05749BA73C37A938",
 				// Max chars + 1
