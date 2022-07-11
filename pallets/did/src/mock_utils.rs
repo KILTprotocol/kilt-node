@@ -86,7 +86,11 @@ pub(crate) fn generate_base_did_creation_details<T: Config>(
 	did: DidIdentifierOf<T>,
 	submitter: AccountIdOf<T>,
 ) -> DidCreationDetails<T> {
-	DidCreationDetails { did, submitter }
+	DidCreationDetails {
+		did,
+		submitter,
+		call: None,
+	}
 }
 
 pub(crate) fn generate_base_did_details<T>(authentication_key: DidVerificationKey) -> DidDetails<T>

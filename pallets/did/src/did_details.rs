@@ -26,7 +26,7 @@ use frame_support::{
 use scale_info::TypeInfo;
 use sp_core::{ecdsa, ed25519, sr25519};
 use sp_runtime::{traits::Verify, MultiSignature};
-use sp_std::convert::TryInto;
+use sp_std::{boxed::Box, convert::TryInto};
 
 use kilt_support::deposit::Deposit;
 
@@ -522,6 +522,8 @@ pub struct DidCreationDetails<T: Config> {
 	pub did: DidIdentifierOf<T>,
 	/// The authorised submitter of the creation operation.
 	pub submitter: AccountIdOf<T>,
+	/// A follow up did call that will be executed after the DID was created.
+	pub call: Option<Box<DidCallableOf<T>>>,
 }
 
 impl<T: Config> sp_std::fmt::Debug for DidCreationDetails<T> {

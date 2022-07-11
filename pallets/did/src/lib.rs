@@ -502,29 +502,18 @@ pub mod pallet {
 				.verify_and_recover_signature(&details.encode(), &signature)
 				.map_err(Error::<T>::from)?;
 
+			let piggyback_call = details.call.clone();
 			let did_entry =
 				DidDetails::from_creation_details(details, account_did_auth_key).map_err(Error::<T>::from)?;
 
-			// *** No Fail beyond this call ***
+			Self::store_did(did_entry, did_identifier.clone(), sender.clone())?;
 
-			CurrencyOf::<T>::reserve(&did_entry.deposit.owner, did_entry.deposit.amount)?;
-
-			// Withdraw the fee. We made sure that enough balance is available. But if this
-			// fails, we don't withdraw anything.
-			let imbalance = <T::Currency as Currency<AccountIdOf<T>>>::withdraw(
-				&did_entry.deposit.owner,
-				T::Fee::get(),
-				WithdrawReasons::FEE,
-				ExistenceRequirement::AllowDeath,
-			)
-			.unwrap_or_else(|_| NegativeImbalanceOf::<T>::zero());
-
-			log::debug!("Creating DID {:?}", &did_identifier);
-			T::FeeCollector::on_unbalanced(imbalance);
-
-			Did::<T>::insert(&did_identifier, did_entry);
-
-			Self::deposit_event(Event::DidCreated(sender, did_identifier));
+			if let Some(call) = piggyback_call {
+				match Self::execute_did_call(sender, did_identifier, *call) {
+					Err(_) => {}
+					Ok(_) => {}
+				}
+			}
 
 			Ok(())
 		}
@@ -1017,6 +1006,55 @@ pub mod pallet {
 	}
 
 	impl<T: Config> Pallet<T> {
+		/// Stores a did and reserves the deposit.
+		fn store_did(
+			did_entry: DidDetails<T>,
+			did_identifier: DidIdentifierOf<T>,
+			sender: AccountIdOf<T>,
+		) -> Result<(), DispatchError> {
+			CurrencyOf::<T>::reserve(&did_entry.deposit.owner, did_entry.deposit.amount)?;
+
+			// Withdraw the fee. We made sure that enough balance is available. But if this
+			// fails, we don't withdraw anything.
+			let imbalance = <T::Currency as Currency<AccountIdOf<T>>>::withdraw(
+				&did_entry.deposit.owner,
+				T::Fee::get(),
+				WithdrawReasons::FEE,
+				ExistenceRequirement::AllowDeath,
+			)
+			.unwrap_or_else(|_| NegativeImbalanceOf::<T>::zero());
+
+			log::debug!("Creating DID {:?}", &did_identifier);
+			T::FeeCollector::on_unbalanced(imbalance);
+
+			Did::<T>::insert(&did_identifier, did_entry);
+
+			Self::deposit_event(Event::DidCreated(sender, did_identifier));
+
+			Ok(())
+		}
+
+		fn execute_did_call(
+			submitter: AccountIdOf<T>,
+			did: DidIdentifierOf<T>,
+			call: DidCallableOf<T>,
+		) -> DispatchResultWithPostInfo {
+			// Wrap the operation in the expected structure, specifying the key retrieved
+			let result = call.dispatch(
+				DidRawOrigin {
+					id: did.clone(),
+					submitter,
+				}
+				.into(),
+			);
+
+			let dispatch_event_payload = result.map(|_| ()).map_err(|e| e.error);
+
+			Self::deposit_event(Event::DidCallDispatched(did, dispatch_event_payload));
+
+			result
+		}
+
 		/// Verify the validity (i.e., nonce, signature and mortality) of a
 		/// DID-authorized operation and, if valid, update the DID state with
 		/// the latest nonce.
