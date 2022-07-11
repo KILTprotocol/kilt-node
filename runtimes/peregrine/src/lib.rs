@@ -42,6 +42,7 @@ use sp_runtime::{
 };
 use sp_std::{cmp::Ordering, prelude::*};
 use sp_version::RuntimeVersion;
+use xcm_executor::XcmExecutor;
 
 use delegation::DelegationAc;
 use pallet_did_lookup::{linkable_account::LinkableAccountId, migrations::EthereumMigration};
@@ -55,6 +56,8 @@ use runtime_common::{
 	FeeSplit, Hash, Header, Index, Signature, SlowAdjustingFeeUpdate,
 };
 
+use crate::xcm_config::{XcmConfig, XcmOriginToTransactDispatchOrigin};
+
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 #[cfg(feature = "runtime-benchmarks")]
@@ -67,6 +70,7 @@ mod tests;
 pub use sp_runtime::BuildStorage;
 
 mod weights;
+mod xcm_config;
 
 impl_opaque_keys! {
 	pub struct SessionKeys {
@@ -218,6 +222,23 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
 impl parachain_info::Config for Runtime {}
 
 impl cumulus_pallet_aura_ext::Config for Runtime {}
+
+impl cumulus_pallet_xcmp_queue::Config for Runtime {
+	type Event = Event;
+	type XcmExecutor = XcmExecutor<XcmConfig>;
+	type ChannelInfo = ParachainSystem;
+	type VersionWrapper = ();
+	type ExecuteOverweightOrigin = EnsureRoot<AccountId>;
+	type ControllerOrigin = EnsureRoot<AccountId>;
+	type ControllerOriginConverter = XcmOriginToTransactDispatchOrigin;
+	type WeightInfo = ();
+}
+
+impl cumulus_pallet_dmp_queue::Config for Runtime {
+	type Event = Event;
+	type XcmExecutor = XcmExecutor<XcmConfig>;
+	type ExecuteOverweightOrigin = EnsureRoot<AccountId>;
+}
 
 parameter_types! {
 	pub const MaxAuthorities: u32 = constants::staking::MAX_CANDIDATES;
@@ -760,6 +781,7 @@ impl InstanceFilter<Call> for ProxyType {
 					| Call::System(..)
 					| Call::TechnicalCommittee(..)
 					| Call::TechnicalMembership(..)
+					| Call::TipsMembership(..)
 					| Call::Timestamp(..)
 					| Call::Treasury(..)
 					| Call::Utility(..)
@@ -884,6 +906,10 @@ construct_runtime! {
 		// Parachains pallets. Start indices at 80 to leave room.
 		ParachainSystem: cumulus_pallet_parachain_system = 80,
 		ParachainInfo: parachain_info::{Pallet, Storage, Config} = 81,
+		XcmpQueue: cumulus_pallet_xcmp_queue::{Pallet, Call, Storage, Event<T>} = 82,
+		PolkadotXcm: pallet_xcm::{Pallet, Call, Event<T>, Origin, Config} = 83,
+		CumulusXcm: cumulus_pallet_xcm::{Pallet, Event<T>, Origin} = 84,
+		DmpQueue: cumulus_pallet_dmp_queue::{Pallet, Call, Storage, Event<T>} = 85,
 	}
 }
 

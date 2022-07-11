@@ -42,6 +42,7 @@ use sp_runtime::{
 };
 use sp_std::{cmp::Ordering, prelude::*};
 use sp_version::RuntimeVersion;
+use xcm_executor::XcmExecutor;
 
 use delegation::DelegationAc;
 use pallet_did_lookup::{linkable_account::LinkableAccountId, migrations::EthereumMigration};
@@ -55,6 +56,8 @@ use runtime_common::{
 	FeeSplit, Hash, Header, Index, Signature, SlowAdjustingFeeUpdate,
 };
 
+use crate::xcm_config::{XcmConfig, XcmOriginToTransactDispatchOrigin};
+
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 #[cfg(feature = "runtime-benchmarks")]
@@ -67,6 +70,7 @@ mod tests;
 pub use sp_runtime::BuildStorage;
 
 mod weights;
+mod xcm_config;
 
 impl_opaque_keys! {
 	pub struct SessionKeys {
@@ -213,6 +217,23 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
 impl parachain_info::Config for Runtime {}
 
 impl cumulus_pallet_aura_ext::Config for Runtime {}
+
+impl cumulus_pallet_xcmp_queue::Config for Runtime {
+	type Event = Event;
+	type XcmExecutor = XcmExecutor<XcmConfig>;
+	type ChannelInfo = ParachainSystem;
+	type VersionWrapper = ();
+	type ExecuteOverweightOrigin = EnsureRoot<AccountId>;
+	type ControllerOrigin = EnsureRoot<AccountId>;
+	type ControllerOriginConverter = XcmOriginToTransactDispatchOrigin;
+	type WeightInfo = ();
+}
+
+impl cumulus_pallet_dmp_queue::Config for Runtime {
+	type Event = Event;
+	type XcmExecutor = XcmExecutor<XcmConfig>;
+	type ExecuteOverweightOrigin = EnsureRoot<AccountId>;
+}
 
 parameter_types! {
 	pub const MaxAuthorities: u32 = constants::staking::MAX_CANDIDATES;
@@ -750,6 +771,7 @@ impl InstanceFilter<Call> for ProxyType {
 					| Call::Proxy(..)
 					| Call::Scheduler(..)
 					| Call::Session(..)
+					// Excludes `Sudo`
 					| Call::System(..)
 					| Call::TechnicalCommittee(..)
 					| Call::TechnicalMembership(..)
@@ -864,7 +886,7 @@ construct_runtime! {
 		Tips: pallet_tips::{Pallet, Call, Storage, Event<T>} = 46,
 
 		// KILT Pallets. Start indices 60 to leave room
-		// DELETED:	KiltLaunch: kilt_launch = 60,
+		// DELETED: KiltLaunch: kilt_launch = 60,
 		Ctype: ctype = 61,
 		Attestation: attestation = 62,
 		Delegation: delegation = 63,
@@ -877,6 +899,10 @@ construct_runtime! {
 		// Parachains pallets. Start indices at 80 to leave room.
 		ParachainSystem: cumulus_pallet_parachain_system = 80,
 		ParachainInfo: parachain_info::{Pallet, Storage, Config} = 81,
+		XcmpQueue: cumulus_pallet_xcmp_queue::{Pallet, Call, Storage, Event<T>} = 82,
+		PolkadotXcm: pallet_xcm::{Pallet, Call, Event<T>, Origin, Config} = 83,
+		CumulusXcm: cumulus_pallet_xcm::{Pallet, Event<T>, Origin} = 84,
+		DmpQueue: cumulus_pallet_dmp_queue::{Pallet, Call, Storage, Event<T>} = 85,
 	}
 }
 
@@ -1095,7 +1121,7 @@ impl_runtime_apis! {
 					did::Did::<Runtime>::get(&owner_info.owner).map(|details| (owner_info, details))
 				})
 				.map(|(owner_info, details)| {
-					let accounts: Vec<LinkableAccountId> = pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(&owner_info.owner).collect();
+					let accounts = pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(&owner_info.owner).collect();
 					let service_endpoints = did::ServiceEndpoints::<Runtime>::iter_prefix(&owner_info.owner).map(|e| From::from(e.1)).collect();
 
 					did_rpc_runtime_api::RawDidLinkedInfo {
