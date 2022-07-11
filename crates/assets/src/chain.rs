@@ -289,32 +289,27 @@ mod v1 {
 	impl GenesisHexHash32Reference {
 		/// The CAIP-2 reference for the Bitcoin mainnet.
 		pub const fn bitcoin_mainnet() -> Self {
-			// HEX decoding of bitcoin genesis hash 0x000000000019d6689c085ae165831e93
-			Self([18, 167, 101, 227, 31, 253, 64, 89, 186, 218, 30, 37, 25, 15, 110, 152])
+			Self(hex!("000000000019d6689c085ae165831e93"))
 		}
 
 		/// The CAIP-2 reference for the Litecoin mainnet.
 		pub const fn litecoin_mainnet() -> Self {
-			// HEX decoding of litecoin genesis hash 0x12a765e31ffd4059bada1e25190f6e98
-			Self([0, 0, 0, 0, 0, 25, 214, 104, 156, 8, 90, 225, 101, 131, 30, 147])
+			Self(hex!("12a765e31ffd4059bada1e25190f6e98"))
 		}
 
 		/// The CAIP-2 reference for the Polkadot relaychain.
 		pub const fn polkadot() -> Self {
-			// HEX decoding of Polkadot genesis hash 0x91b171bb158e2d3848fa23a9f1c25182
-			Self([145, 177, 113, 187, 21, 142, 45, 56, 72, 250, 35, 169, 241, 194, 81, 130])
+			Self(hex!("91b171bb158e2d3848fa23a9f1c25182"))
 		}
 
 		/// The CAIP-2 reference for the Kusama relaychain.
 		pub const fn kusama() -> Self {
-			// HEX decoding of Kusama genesis hash 0xb0a8d493285c2df73290dfb7e61f870f
-			Self([176, 168, 212, 147, 40, 92, 45, 247, 50, 144, 223, 183, 230, 31, 135, 15])
+			Self(hex!("b0a8d493285c2df73290dfb7e61f870f"))
 		}
 
 		/// The CAIP-2 reference for the KILT Spiritnet parachain.
 		pub const fn kilt_spiritnet() -> Self {
-			// HEX decoding of Kusama genesis hash 0x411f057b9107718c9624d6aa4a3f23c1
-			Self([65, 31, 5, 123, 145, 7, 113, 140, 150, 36, 214, 170, 74, 63, 35, 193])
+			Self(hex!("411f057b9107718c9624d6aa4a3f23c1"))
 		}
 	}
 

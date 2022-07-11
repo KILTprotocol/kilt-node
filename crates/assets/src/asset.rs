@@ -181,7 +181,7 @@ pub mod v1 {
 	impl Slip44Reference {
 		/// Parse a UTF8-encoded decimal Slip44 asset reference, failing if the input
 		/// string is not valid.
-		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetIdError>
+		pub fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetIdError>
 		where
 			I: AsRef<[u8]> + Into<Vec<u8>>,
 		{
@@ -231,7 +231,7 @@ pub mod v1 {
 	impl EvmSmartContractFungibleReference {
 		/// Parse a UTF8-encoded smart contract HEX address (including the `0x` prefix), failing if the input
 		/// string is not valid.
-		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetIdError>
+		pub fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetIdError>
 		where
 			I: AsRef<[u8]> + Into<Vec<u8>>,
 		{
@@ -269,7 +269,7 @@ pub mod v1 {
 	impl EvmSmartContractNonFungibleReference {
 		/// Parse a UTF8-encoded smart contract HEX address (including the `0x` prefix) + optional asset identifier, failing if the input
 		/// string is not valid.
-		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetIdError>
+		pub fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetIdError>
 		where
 			I: AsRef<[u8]> + Into<Vec<u8>>,
 		{
@@ -300,7 +300,7 @@ pub mod v1 {
 	impl EvmSmartContractNonFungibleIdentifier {
 		/// Parse a UTF8-encoded smart contract asset identifier, failing if the input
 		/// string is not valid.
-		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetIdError>
+		pub fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetIdError>
 		where
 			I: AsRef<[u8]> + Into<Vec<u8>>,
 		{
@@ -336,7 +336,7 @@ pub mod v1 {
 	impl GenericAssetId {
 		/// Parse a generic UTF8-encoded asset ID, failing if the input does not
 		/// respect the CAIP-19 requirements.
-		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetIdError>
+		pub fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetIdError>
 		where
 			I: AsRef<[u8]> + Into<Vec<u8>>,
 		{
@@ -380,7 +380,7 @@ pub mod v1 {
 	impl GenericAssetNamespace {
 		/// Parse a generic UTF8-encoded asset namespace, failing if the input
 		/// does not respect the CAIP-19 requirements.
-		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetIdError>
+		pub fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetIdError>
 		where
 			I: AsRef<[u8]> + Into<Vec<u8>>,
 		{
@@ -411,7 +411,7 @@ pub mod v1 {
 	impl GenericAssetReference {
 		/// Parse a generic UTF8-encoded asset reference, failing if the input
 		/// does not respect the CAIP-19 requirements.
-		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetIdError>
+		pub fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetIdError>
 		where
 			I: AsRef<[u8]> + Into<Vec<u8>>,
 		{
@@ -442,7 +442,7 @@ pub mod v1 {
 	impl GenericAssetIdentifier {
 		/// Parse a generic UTF8-encoded asset identifier, failing if the input
 		/// does not respect the CAIP-19 requirements.
-		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetIdError>
+		pub fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetIdError>
 		where
 			I: AsRef<[u8]> + Into<Vec<u8>>,
 		{
@@ -596,6 +596,8 @@ pub mod v1 {
 			"erc721::",
 			"erc721:›",
 			"erc721:😁",
+			// Max chars - 2
+			"erc721:0x8f8221AFBB33998D8584A2B05749BA73C37A93",
 			// Max chars - 1
 			"erc721:0x8f8221AFBB33998D8584A2B05749BA73C37A938",
 			// Max chars + 1
@@ -650,6 +652,8 @@ pub mod v1 {
 			"erc1155::",
 			"erc1155:›",
 			"erc1155:😁",
+			// Max chars - 2
+			"erc1155:0x8f8221AFBB33998D8584A2B05749BA73C37A93",
 			// Max chars - 1
 			"erc1155:0x8f8221AFBB33998D8584A2B05749BA73C37A938",
 			// Max chars + 1

@@ -46,7 +46,7 @@ impl<T: Config> TryFrom<InputSubjectIdOf<T>> for AssetDid<T> {
 	type Error = Error<T>;
 
 	fn try_from(value: InputSubjectIdOf<T>) -> Result<Self, Self::Error> {
-		let asset = AssetIdentifier::try_from(&value[..]).map_err(|_| Error::<T>::InvalidInput)?;
+		let asset = AssetIdentifier::from_utf8_encoded(&value[..]).map_err(|_| Error::<T>::InvalidInput)?;
 		Ok(Self(asset, None))
 	}
 }
@@ -56,7 +56,7 @@ impl<T: Config> TryFrom<Vec<u8>> for AssetDid<T> {
 	type Error = Error<T>;
 
 	fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
-		let asset = AssetIdentifier::try_from(&value[..]).map_err(|_| Error::<T>::InvalidInput)?;
+		let asset = AssetIdentifier::from_utf8_encoded(&value[..]).map_err(|_| Error::<T>::InvalidInput)?;
 		Ok(Self(asset, None))
 	}
 }
