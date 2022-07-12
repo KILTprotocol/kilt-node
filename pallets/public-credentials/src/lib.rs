@@ -243,7 +243,7 @@ pub mod pallet {
 		/// Emits `CredentialStored`.
 		#[allow(clippy::boxed_local)]
 		#[pallet::weight({
-			let signature_weight = credential.claimer_signature.as_ref().map(|info| <T as Config>::ClaimerSignatureVerification::weight(info.signature_payload.encoded_size())).unwrap_or(0);
+			let signature_weight = credential.claimer_signature.as_ref().map(|_| <T as Config>::ClaimerSignatureVerification::weight(credential.claim_hash.encoded_size())).unwrap_or(0);
 			let ac_weight = credential.authorization_info.as_ref().map(|ac| ac.can_attest_weight()).unwrap_or(0);
 			<T as Config>::WeightInfo::add(credential.claim.contents.len().saturated_into::<u32>()).saturating_add(signature_weight).saturating_add(ac_weight)
 		})]
