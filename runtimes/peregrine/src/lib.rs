@@ -663,7 +663,7 @@ impl public_credentials::Config for Runtime {
 	type Event = Event;
 	type InputError = public_credentials::Error<Self>;
 	type SubjectId = runtime_common::assets::AssetDid<Self>;
-	type WeightInfo = public_credentials::WeightInfo<Runtime>;
+	type WeightInfo = weights::public_credentials::WeightInfo<Runtime>;
 }
 
 /// The type used to represent the kinds of proxying allowed.

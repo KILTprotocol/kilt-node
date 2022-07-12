@@ -67,9 +67,10 @@ pub mod pallet {
 	};
 	use frame_system::pallet_prelude::*;
 	use sp_core::H256;
+	use sp_runtime::SaturatedConversion;
 	use sp_std::{boxed::Box, vec::Vec};
 
-	use attestation::{AttesterOf, ClaimHashOf};
+	use attestation::{AttestationAccessControl, AttesterOf, ClaimHashOf};
 	use ctype::CtypeHashOf;
 	use kilt_support::{
 		signature::{SignatureVerificationError, VerifySignature},
@@ -241,7 +242,11 @@ pub mod pallet {
 		///
 		/// Emits `CredentialStored`.
 		#[allow(clippy::boxed_local)]
-		#[pallet::weight(0)]
+		#[pallet::weight({
+			let signature_weight = credential.claimer_signature.as_ref().map(|info| <T as Config>::ClaimerSignatureVerification::weight(info.signature_payload.encoded_size())).unwrap_or(0);
+			let ac_weight = credential.authorization_info.as_ref().map(|ac| ac.can_attest_weight()).unwrap_or(0);
+			<T as Config>::WeightInfo::add(credential.claim.contents.len().saturated_into::<u32>()).saturating_add(signature_weight).saturating_add(ac_weight)
+		})]
 		pub fn add(origin: OriginFor<T>, credential: Box<InputCredentialOf<T>>) -> DispatchResult {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 
@@ -354,7 +359,10 @@ pub mod pallet {
 		/// subject, regardless of the identity of the attester.
 		///
 		/// Emits `CredentialRemoved`.
-		#[pallet::weight(0)]
+		#[pallet::weight({
+			let ac_weight = authorization.as_ref().map(|ac| ac.can_attest_weight()).unwrap_or(0);
+			<T as pallet::Config>::WeightInfo::remove().saturating_add(ac_weight)
+		})]
 		pub fn remove(
 			origin: OriginFor<T>,
 			claim_hash: ClaimHashOf<T>,
@@ -389,7 +397,7 @@ pub mod pallet {
 		/// the opposite is not true. Removing an attestation from the
 		/// attestation pallet still requires the deposit payer to also remove
 		/// any traces of the corresponding public credential from this pallet.
-		#[pallet::weight(0)]
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::reclaim_deposit())]
 		pub fn reclaim_deposit(origin: OriginFor<T>, claim_hash: ClaimHashOf<T>) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 

@@ -62,7 +62,8 @@ mod benchmarks {
 
 	impl<T: Config> From<AssetDid<T>> for InputSubjectIdOf<T> {
 		fn from(value: AssetDid<T>) -> Self {
-			// UTF-8 encode the asset DID (generates the string with the "did:asset:" prefix)
+			// UTF-8 encode the asset DID (generates the string with the "did:asset:"
+			// prefix)
 			value
 				.to_string()
 				.as_bytes()
