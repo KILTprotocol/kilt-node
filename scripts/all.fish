@@ -6,7 +6,7 @@ echo "Features check started..."
 
 for features in "--features default" "--all-features" "--features runtime-benchmarks" "--features try-runtime"
 	for package in (cargo workspaces list)
-		cargo check -p $package (echo $features | string split " ") > /dev/null ^ /dev/null
+		cargo check --all-targets -p $package (echo $features | string split " ") > /dev/null ^ /dev/null
 		if [ "$status" = "0" ]
 			echo -n "[ok]   "
 		else
@@ -18,7 +18,7 @@ end
 
 for features in "--features default" "--all-features" "--features runtime-benchmarks" "--features try-runtime"
 	for package in (cargo workspaces list)
-		cargo test -p $package (echo $features | string split " ") > /dev/null ^ /dev/null
+		cargo test --all-targets -p $package (echo $features | string split " ") > /dev/null ^ /dev/null
 		if [ "$status" = "0" ]
 			echo -n "[ok]   "
 		else
