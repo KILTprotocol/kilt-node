@@ -17,6 +17,7 @@ pallets=(
 	pallet-inflation
 	pallet-web3-names
     parachain-staking
+	public-credentials
 )
 
 echo "[+] Running all default weight benchmarks for $runtime --chain=$chain"
@@ -28,7 +29,7 @@ for pallet in "${pallets[@]}"; do
     # shellcheck disable=SC2086
     ./target/release/kilt-parachain benchmark pallet \
     --chain="${chain}" \
-    --steps=1 \
+    --steps=50 \
     --repeat=20 \
     --pallet="$pallet" \
     --extrinsic="*" \
