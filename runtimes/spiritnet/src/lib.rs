@@ -45,7 +45,7 @@ use sp_version::RuntimeVersion;
 
 use delegation::DelegationAc;
 pub use parachain_staking::InflationInfo;
-pub use public_credentials as pallet_public_credentials;
+pub use public_credentials;
 use runtime_common::{
 	authorization::{AuthorizationId, PalletAuthorize},
 	constants::{self, KILT, MILLI_KILT},
@@ -636,7 +636,7 @@ impl pallet_utility::Config for Runtime {
 
 impl pallet_randomness_collective_flip::Config for Runtime {}
 
-impl pallet_public_credentials::Config for Runtime {
+impl public_credentials::Config for Runtime {
 	type ClaimerIdentifier = did::DidIdentifierOf<Self>;
 
 	#[cfg(not(feature = "runtime-benchmarks"))]
@@ -656,10 +656,9 @@ impl pallet_public_credentials::Config for Runtime {
 	type MaxSubjectIdLength = runtime_common::constants::public_credentials::MaxSubjectIdLength;
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
 	type Event = Event;
-	type InputError = pallet_public_credentials::Error<Self>;
+	type InputError = public_credentials::Error<Self>;
 	type SubjectId = runtime_common::assets::AssetDid<Self>;
-	// TODO: replace with real weights
-	type WeightInfo = ();
+	type WeightInfo = public_credentials::WeightInfo<Runtime>;
 }
 
 /// The type used to represent the kinds of proxying allowed.
@@ -901,7 +900,7 @@ construct_runtime! {
 		Inflation: pallet_inflation = 66,
 		DidLookup: pallet_did_lookup = 67,
 		Web3Names: pallet_web3_names = 68,
-		PublicCredentials: pallet_public_credentials = 69,
+		PublicCredentials: public_credentials = 69,
 
 		// Parachains pallets. Start indices at 80 to leave room.
 		ParachainSystem: cumulus_pallet_parachain_system = 80,
@@ -1226,7 +1225,7 @@ impl_runtime_apis! {
 			list_benchmark!(list, extra, pallet_inflation, Inflation);
 			list_benchmark!(list, extra, parachain_staking, ParachainStaking);
 			list_benchmark!(list, extra, pallet_web3_names, Web3Names);
-			list_benchmark!(list, extra, pallet_public_credentials, PublicCredentials);
+			list_benchmark!(list, extra, public_credentials, PublicCredentials);
 
 			let storage_info = AllPalletsWithSystem::storage_info();
 
@@ -1293,7 +1292,7 @@ impl_runtime_apis! {
 			add_benchmark!(params, batches, pallet_inflation, Inflation);
 			add_benchmark!(params, batches, parachain_staking, ParachainStaking);
 			add_benchmark!(params, batches, pallet_web3_names, Web3Names);
-			add_benchmark!(params, batches, pallet_public_credentials, PublicCredentials);
+			add_benchmark!(params, batches, public_credentials, PublicCredentials);
 
 			// No benchmarks for these pallets
 			// add_benchmark!(params, batches, cumulus_pallet_parachain_system, ParachainSystem);

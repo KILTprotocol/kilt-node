@@ -66,7 +66,7 @@ pub use delegation;
 pub use did;
 pub use pallet_balances::Call as BalancesCall;
 pub use pallet_web3_names;
-pub use public_credentials as pallet_public_credentials;
+pub use public_credentials;
 
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
@@ -471,7 +471,7 @@ impl pallet_utility::Config for Runtime {
 
 impl pallet_randomness_collective_flip::Config for Runtime {}
 
-impl pallet_public_credentials::Config for Runtime {
+impl public_credentials::Config for Runtime {
 	type ClaimerIdentifier = did::DidIdentifierOf<Self>;
 
 	#[cfg(not(feature = "runtime-benchmarks"))]
@@ -491,7 +491,7 @@ impl pallet_public_credentials::Config for Runtime {
 	type MaxSubjectIdLength = runtime_common::constants::public_credentials::MaxSubjectIdLength;
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
 	type Event = Event;
-	type InputError = pallet_public_credentials::Error<Self>;
+	type InputError = public_credentials::Error<Self>;
 	type SubjectId = runtime_common::assets::AssetDid<Self>;
 	type WeightInfo = ();
 }
@@ -682,7 +682,7 @@ construct_runtime!(
 
 		Proxy: pallet_proxy::{Pallet, Call, Storage, Event<T>} = 37,
 		Web3Names: pallet_web3_names = 38,
-		PublicCredentials: pallet_public_credentials = 39,
+		PublicCredentials: public_credentials = 39,
 	}
 );
 
