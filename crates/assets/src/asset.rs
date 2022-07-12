@@ -96,7 +96,7 @@ pub mod v1 {
 
 	use frame_support::{sp_runtime::RuntimeDebug, traits::ConstU32, BoundedVec};
 	use sp_core::U256;
-	use sp_std::vec::Vec;
+	use sp_std::{fmt::Display, vec::Vec};
 
 	pub const MINIMUM_ASSET_ID_LENGTH: usize = MINIMUM_NAMESPACE_LENGTH + b":".len() + MINIMUM_REFERENCE_LENGTH;
 	pub const MAXIMUM_ASSET_ID_LENGTH: usize =
@@ -221,6 +221,12 @@ pub mod v1 {
 		}
 	}
 
+	impl Display for Slip44Reference {
+		fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+			write!(f, "{}", self.0)
+		}
+	}
+
 	/// An asset reference that is identifiable only by an EVM smart contract
 	/// (e.g., a fungible token). It is a modification of the [CAIP-21 spec](https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-21.md)
 	/// according to the rules defined in the Asset DID method specification.
@@ -253,6 +259,12 @@ pub mod v1 {
 				// Otherwise fail
 				_ => Err(ReferenceError::InvalidFormat.into()),
 			}
+		}
+	}
+
+	impl Display for EvmSmartContractFungibleReference {
+		fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+			write!(f, "{}", hex::encode(self.0))
 		}
 	}
 
@@ -289,6 +301,17 @@ pub mod v1 {
 					EvmSmartContractNonFungibleIdentifier::from_utf8_encoded(id).map(Some)
 				})?;
 			Ok(Self(reference, id))
+		}
+	}
+
+	impl Display for EvmSmartContractNonFungibleReference {
+		fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+			let id_output = if let Some(ref id) = &self.1 {
+				format!(":{}", id)
+			} else {
+				String::new()
+			};
+			write!(f, "{}{}", self.0, id_output)
 		}
 	}
 
@@ -329,6 +352,13 @@ pub mod v1 {
 						.map_err(|_| IdentifierError::InvalidFormat)?,
 				))
 			}
+		}
+	}
+
+	impl Display for EvmSmartContractNonFungibleIdentifier {
+		fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+			// We checked when the type is created that all characters are valid digits.
+			write!(f, "{}", str::from_utf8(&self.0).expect("Conversion of EvmSmartContractNonFungibleIdentifier to string should never fail."))
 		}
 	}
 
@@ -378,6 +408,14 @@ pub mod v1 {
 		}
 	}
 
+	impl Display for GenericAssetId {
+		fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+			// We checked when the type is created that all characters are valid digits.
+			write!(f, "{}:{}", self.namespace, self.reference)
+		}
+	}
+
+
 	/// A generic asset namespace as defined in the [CAIP-19 spec](https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-19.md).
 	/// It stores the provided UTF8-encoded namespace without trying to apply
 	/// any parsing/decoding logic.
@@ -412,6 +450,13 @@ pub mod v1 {
 						.map_err(|_| NamespaceError::InvalidFormat)?,
 				))
 			}
+		}
+	}
+
+	impl Display for GenericAssetNamespace {
+		fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+			// We checked when the type is created that all characters are valid UTF8 (actually ASCII) characters.
+			write!(f, "{}", str::from_utf8(&self.0).expect("Conversion of GenericAssetNamespace to string should never fail."))
 		}
 	}
 
@@ -450,6 +495,13 @@ pub mod v1 {
 		}
 	}
 
+	impl Display for GenericAssetReference {
+		fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+			// We checked when the type is created that all characters are valid UTF8 (actually ASCII) characters.
+			write!(f, "{}", str::from_utf8(&self.0).expect("Conversion of GenericAssetReference to string should never fail."))
+		}
+	}
+
 	/// A generic asset identifier as defined in the [CAIP-19 spec](https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-19.md).
 	#[non_exhaustive]
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
@@ -482,6 +534,13 @@ pub mod v1 {
 						.map_err(|_| IdentifierError::InvalidFormat)?,
 				))
 			}
+		}
+	}
+
+	impl Display for GenericAssetIdentifier {
+		fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+			// We checked when the type is created that all characters are valid UTF8 (actually ASCII) characters.
+			write!(f, "{}", str::from_utf8(&self.0).expect("Conversion of GenericAssetIdentifier to string should never fail."))
 		}
 	}
 
