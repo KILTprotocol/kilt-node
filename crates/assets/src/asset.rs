@@ -179,8 +179,8 @@ pub mod v1 {
 	pub struct Slip44Reference(pub U256);
 
 	impl Slip44Reference {
-		/// Parse a UTF8-encoded decimal Slip44 asset reference, failing if the input
-		/// string is not valid.
+		/// Parse a UTF8-encoded decimal Slip44 asset reference, failing if the
+		/// input string is not valid.
 		pub fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetIdError>
 		where
 			I: AsRef<[u8]> + Into<Vec<u8>>,
@@ -229,8 +229,8 @@ pub mod v1 {
 	pub struct EvmSmartContractFungibleReference(pub [u8; 20]);
 
 	impl EvmSmartContractFungibleReference {
-		/// Parse a UTF8-encoded smart contract HEX address (including the `0x` prefix), failing if the input
-		/// string is not valid.
+		/// Parse a UTF8-encoded smart contract HEX address (including the `0x`
+		/// prefix), failing if the input string is not valid.
 		pub fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetIdError>
 		where
 			I: AsRef<[u8]> + Into<Vec<u8>>,
@@ -267,7 +267,8 @@ pub mod v1 {
 	);
 
 	impl EvmSmartContractNonFungibleReference {
-		/// Parse a UTF8-encoded smart contract HEX address (including the `0x` prefix) + optional asset identifier, failing if the input
+		/// Parse a UTF8-encoded smart contract HEX address (including the `0x`
+		/// prefix) + optional asset identifier, failing if the input
 		/// string is not valid.
 		pub fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetIdError>
 		where
@@ -293,13 +294,16 @@ pub mod v1 {
 
 	/// An asset identifier for an EVM smart contract collection (e.g., an NFT
 	/// instance).
+	/// Since the identifier can be up to 78 characters long of an unknown
+	/// alphabet, this type simply contains the UTF-8 encoding of such an
+	/// identifier without applying any special parsing/decoding logic.
 	#[non_exhaustive]
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
 	pub struct EvmSmartContractNonFungibleIdentifier(pub BoundedVec<u8, ConstU32<MAXIMUM_IDENTIFIER_LENGTH_U32>>);
 
 	impl EvmSmartContractNonFungibleIdentifier {
-		/// Parse a UTF8-encoded smart contract asset identifier, failing if the input
-		/// string is not valid.
+		/// Parse a UTF8-encoded smart contract asset identifier, failing if the
+		/// input string is not valid.
 		pub fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetIdError>
 		where
 			I: AsRef<[u8]> + Into<Vec<u8>>,
@@ -319,7 +323,11 @@ pub mod v1 {
 					}
 				})?;
 
-				Ok(Self(Vec::<u8>::from(input).try_into().map_err(|_| IdentifierError::InvalidFormat)?))
+				Ok(Self(
+					Vec::<u8>::from(input)
+						.try_into()
+						.map_err(|_| IdentifierError::InvalidFormat)?,
+				))
 			}
 		}
 	}
@@ -398,7 +406,11 @@ pub mod v1 {
 						Ok(())
 					}
 				})?;
-				Ok(Self(Vec::<u8>::from(input).try_into().map_err(|_| NamespaceError::InvalidFormat)?))
+				Ok(Self(
+					Vec::<u8>::from(input)
+						.try_into()
+						.map_err(|_| NamespaceError::InvalidFormat)?,
+				))
 			}
 		}
 	}
@@ -429,7 +441,11 @@ pub mod v1 {
 						Ok(())
 					}
 				})?;
-				Ok(Self(Vec::<u8>::from(input).try_into().map_err(|_| ReferenceError::InvalidFormat)?))
+				Ok(Self(
+					Vec::<u8>::from(input)
+						.try_into()
+						.map_err(|_| ReferenceError::InvalidFormat)?,
+				))
 			}
 		}
 	}
@@ -460,7 +476,11 @@ pub mod v1 {
 						Ok(())
 					}
 				})?;
-				Ok(Self(Vec::<u8>::from(input).try_into().map_err(|_| IdentifierError::InvalidFormat)?))
+				Ok(Self(
+					Vec::<u8>::from(input)
+						.try_into()
+						.map_err(|_| IdentifierError::InvalidFormat)?,
+				))
 			}
 		}
 	}

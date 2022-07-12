@@ -64,7 +64,8 @@ impl<T: Config> TryFrom<Vec<u8>> for AssetDid<T> {
 #[cfg(feature = "runtime-benchmarks")]
 impl<T: Config> kilt_support::traits::GetWorstCase for AssetDid<T> {
 	fn worst_case() -> Self {
-		// Returns the worst case for an AssetDID, which is represented by the longest identifier according to the spec.
+		// Returns the worst case for an AssetDID, which is represented by the longest
+		// identifier according to the spec.
 		Self::try_from(
 			[
 				b"did:asset:",
@@ -79,8 +80,9 @@ impl<T: Config> kilt_support::traits::GetWorstCase for AssetDid<T> {
 				b":",
 				&[b'3'; asset::MAXIMUM_REFERENCE_LENGTH][..],
 				b":",
-				&[b'4'; asset::MAXIMUM_IDENTIFIER_LENGTH][..]
-			].concat()
+				&[b'4'; asset::MAXIMUM_IDENTIFIER_LENGTH][..],
+			]
+			.concat(),
 		)
 		.expect("Worst case creation should not fail.")
 	}

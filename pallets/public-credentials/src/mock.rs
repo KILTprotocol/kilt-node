@@ -19,10 +19,7 @@
 use attestation::ClaimHashOf;
 use ctype::CtypeHashOf;
 
-use crate::{
-	Claim, ClaimerSignatureInfo, Config,
-	InputClaimsContentOf, InputCredentialOf, InputSubjectIdOf
-};
+use crate::{Claim, ClaimerSignatureInfo, Config, InputClaimsContentOf, InputCredentialOf, InputSubjectIdOf};
 
 pub(crate) type ClaimerSignatureInfoOf<Test> =
 	ClaimerSignatureInfo<<Test as Config>::ClaimerIdentifier, <Test as Config>::ClaimerSignature>;
@@ -59,7 +56,7 @@ pub(crate) mod runtime {
 	use codec::{Decode, Encode, MaxEncodedLen};
 	use frame_support::{
 		parameter_types,
-		traits::{Get, ConstU128, ConstU16, ConstU32, ConstU64},
+		traits::{ConstU128, ConstU16, ConstU32, ConstU64, Get},
 		weights::constants::RocksDbWeight,
 		BoundedVec,
 	};
@@ -80,7 +77,9 @@ pub(crate) mod runtime {
 	use attestation::{mock::MockAccessControl, AttestationDetails, ClaimHashOf};
 	use ctype::{CtypeCreatorOf, CtypeHashOf};
 
-	use crate::{BalanceOf, CredentialsUnicityIndex, Credentials, CredentialEntryOf, CurrencyOf, Error, InputSubjectIdOf};
+	use crate::{
+		BalanceOf, CredentialEntryOf, Credentials, CredentialsUnicityIndex, CurrencyOf, Error, InputSubjectIdOf,
+	};
 
 	pub(crate) type BlockNumber = u64;
 	pub(crate) type Balance = u128;
@@ -115,6 +114,7 @@ pub(crate) mod runtime {
 
 	#[cfg(feature = "runtime-benchmarks")]
 	impl kilt_support::traits::GetWorstCase for TestSubjectId {
+		// Only used for benchmark testing, not really relevant.
 		fn worst_case() -> Self {
 			crate::mock::TestSubjectId::default()
 		}
@@ -122,7 +122,11 @@ pub(crate) mod runtime {
 
 	impl From<TestSubjectId> for InputSubjectIdOf<Test> {
 		fn from(value: TestSubjectId) -> Self {
-			value.0.to_vec().try_into().expect("Test subject ID should fit into the expected input subject ID of for the test runtime.")
+			value
+				.0
+				.to_vec()
+				.try_into()
+				.expect("Test subject ID should fit into the expected input subject ID of for the test runtime.")
 		}
 	}
 
@@ -302,7 +306,7 @@ pub(crate) mod runtime {
 	}
 
 	#[derive(Clone, Default)]
-	pub(crate)struct ExtBuilder {
+	pub(crate) struct ExtBuilder {
 		/// initial ctypes & owners
 		ctypes: Vec<(CtypeHashOf<Test>, CtypeCreatorOf<Test>)>,
 		/// endowed accounts with balances
@@ -339,7 +343,7 @@ pub(crate) mod runtime {
 			self
 		}
 
-		pub(crate)fn build(self) -> sp_io::TestExternalities {
+		pub(crate) fn build(self) -> sp_io::TestExternalities {
 			let mut storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
 			pallet_balances::GenesisConfig::<Test> {
 				balances: self.balances.clone(),

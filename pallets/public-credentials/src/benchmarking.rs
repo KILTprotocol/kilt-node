@@ -22,9 +22,9 @@ use frame_support::{
 	BoundedVec,
 };
 
-use kilt_support::traits::{GetWorstCase, GenerateBenchmarkOrigin};
+use kilt_support::traits::{GenerateBenchmarkOrigin, GetWorstCase};
 
-use crate::{*, mock::generate_base_public_credential_creation_op};
+use crate::{mock::generate_base_public_credential_creation_op, *};
 
 const SEED: u32 = 0;
 

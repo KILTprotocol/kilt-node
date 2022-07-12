@@ -34,10 +34,20 @@ fn add_with_no_signature_successful() {
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 	let claim_hash_2 = claim_hash_from_seed(CLAIM_HASH_SEED_02);
 	let ctype_hash = get_ctype_hash::<Test>(true);
-	let new_credential_1 =
-		generate_base_public_credential_creation_op::<Test>(subject_id.into(), claim_hash, ctype_hash, InputClaimsContentOf::<Test>::default(), None);
-	let new_credential_2 =
-		generate_base_public_credential_creation_op::<Test>(subject_id.into(), claim_hash_2, ctype_hash, InputClaimsContentOf::<Test>::default(), None);
+	let new_credential_1 = generate_base_public_credential_creation_op::<Test>(
+		subject_id.into(),
+		claim_hash,
+		ctype_hash,
+		InputClaimsContentOf::<Test>::default(),
+		None,
+	);
+	let new_credential_2 = generate_base_public_credential_creation_op::<Test>(
+		subject_id.into(),
+		claim_hash_2,
+		ctype_hash,
+		InputClaimsContentOf::<Test>::default(),
+		None,
+	);
 	let public_credential_deposit = <Test as Config>::Deposit::get();
 	let attestation_deposit = <Test as attestation::Config>::Deposit::get();
 
@@ -58,9 +68,8 @@ fn add_with_no_signature_successful() {
 			));
 			let stored_attestation =
 				Attestations::<Test>::get(&claim_hash).expect("Attestation should be present on chain.");
-			let stored_public_credential_details =
-				Credentials::<Test>::get(&subject_id, &claim_hash)
-					.expect("Public credential details should be present on chain.");
+			let stored_public_credential_details = Credentials::<Test>::get(&subject_id, &claim_hash)
+				.expect("Public credential details should be present on chain.");
 
 			// Test interactions with attestation pallet
 			assert_eq!(stored_attestation.ctype_hash, ctype_hash);
@@ -68,10 +77,7 @@ fn add_with_no_signature_successful() {
 
 			// Test this pallet logic
 			assert_eq!(stored_public_credential_details.block_number, 0);
-			assert_eq!(
-				CredentialsUnicityIndex::<Test>::get(&claim_hash),
-				Some(subject_id)
-			);
+			assert_eq!(CredentialsUnicityIndex::<Test>::get(&claim_hash), Some(subject_id));
 
 			// Check deposit reservation logic
 			assert_eq!(
@@ -104,9 +110,8 @@ fn add_with_no_signature_successful() {
 
 			let stored_attestation =
 				Attestations::<Test>::get(&claim_hash_2).expect("Attestation #2 should be present on chain.");
-			let stored_public_credential_details =
-				Credentials::<Test>::get(&subject_id, &claim_hash_2)
-					.expect("Public credential #2 details should be present on chain.");
+			let stored_public_credential_details = Credentials::<Test>::get(&subject_id, &claim_hash_2)
+				.expect("Public credential #2 details should be present on chain.");
 
 			// Test interactions with attestation pallet
 			assert_eq!(stored_attestation.ctype_hash, ctype_hash);
@@ -114,10 +119,7 @@ fn add_with_no_signature_successful() {
 
 			// Test this pallet logic
 			assert_eq!(stored_public_credential_details.block_number, 1);
-			assert_eq!(
-				CredentialsUnicityIndex::<Test>::get(&claim_hash_2),
-				Some(subject_id)
-			);
+			assert_eq!(CredentialsUnicityIndex::<Test>::get(&claim_hash_2), Some(subject_id));
 
 			// Deposit is 2x now
 			assert_eq!(
@@ -177,9 +179,8 @@ fn add_with_claimer_signature_successful() {
 			));
 			let stored_attestation =
 				Attestations::<Test>::get(&claim_hash).expect("Attestation should be present on chain.");
-			let stored_public_credential_details =
-				Credentials::<Test>::get(&subject_id, &claim_hash)
-					.expect("Public credential details should be present on chain.");
+			let stored_public_credential_details = Credentials::<Test>::get(&subject_id, &claim_hash)
+				.expect("Public credential details should be present on chain.");
 
 			// Test interactions with attestation pallet
 			assert_eq!(stored_attestation.ctype_hash, ctype_hash);
@@ -187,10 +188,7 @@ fn add_with_claimer_signature_successful() {
 
 			// Test this pallet logic
 			assert_eq!(stored_public_credential_details.block_number, System::block_number());
-			assert_eq!(
-				CredentialsUnicityIndex::<Test>::get(&claim_hash),
-				Some(subject_id)
-			);
+			assert_eq!(CredentialsUnicityIndex::<Test>::get(&claim_hash), Some(subject_id));
 		});
 }
 
@@ -200,8 +198,13 @@ fn add_not_enough_balance() {
 	let subject_id = SUBJECT_ID_00;
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 	let ctype_hash = get_ctype_hash::<Test>(true);
-	let new_credential =
-		generate_base_public_credential_creation_op::<Test>(subject_id.into(), claim_hash, ctype_hash, InputClaimsContentOf::<Test>::default(), None);
+	let new_credential = generate_base_public_credential_creation_op::<Test>(
+		subject_id.into(),
+		claim_hash,
+		ctype_hash,
+		InputClaimsContentOf::<Test>::default(),
+		None,
+	);
 	let public_credential_deposit = <Test as Config>::Deposit::get();
 	let attestation_deposit = <Test as attestation::Config>::Deposit::get();
 

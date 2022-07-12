@@ -132,9 +132,7 @@ pub mod pallet {
 		type OriginSuccess: CallSources<Self::AccountId, AttesterOf<Self>>;
 		/// The type of the credential subject ID after being parsed from the
 		/// raw attester-provided input.
-		type SubjectId: Parameter
-			+ MaxEncodedLen
-			+ TryFrom<InputSubjectIdOf<Self>, Error = Self::InputError>;
+		type SubjectId: Parameter + MaxEncodedLen + TryFrom<InputSubjectIdOf<Self>, Error = Self::InputError>;
 		/// The weight info.
 		type WeightInfo: WeightInfo;
 
@@ -280,7 +278,8 @@ pub mod pallet {
 			// It is harder to use two potentially different currencies while making sure
 			// that, if the same, the sum can be reserved, but if they are not, then each
 			// deposit could be reserved separately. We could switch to using
-			// `NamedReservableCurrency` to do that and check whether the name of the attestation currency matches the name of this pallet currency.
+			// `NamedReservableCurrency` to do that and check whether the name of the
+			// attestation currency matches the name of this pallet currency.
 			ensure!(
 				<CurrencyOf<T> as ReservableCurrency<T::AccountId>>::can_reserve(
 					&payer,
@@ -289,7 +288,8 @@ pub mod pallet {
 				Error::<T>::UnableToPayFees
 			);
 
-			// Check the validity of the claimer's signature, if present, over the credential root hash.
+			// Check the validity of the claimer's signature, if present, over the
+			// credential root hash.
 			if let Some(ClaimerSignatureInfo {
 				claimer_id,
 				signature_payload,
@@ -411,7 +411,8 @@ pub mod pallet {
 	}
 
 	impl<T: Config> Pallet<T> {
-		// Simple wrapper to remove entries from both storages when deleting a credential.
+		// Simple wrapper to remove entries from both storages when deleting a
+		// credential.
 		fn remove_credential_entry(
 			credential_subject: T::SubjectId,
 			claim_hash: ClaimHashOf<T>,

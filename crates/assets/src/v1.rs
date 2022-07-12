@@ -16,8 +16,8 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 use codec::{Decode, Encode, MaxEncodedLen};
-use scale_info::TypeInfo;
 use hex_literal::hex;
+use scale_info::TypeInfo;
 
 use frame_support::sp_runtime::RuntimeDebug;
 use sp_std::vec::Vec;
@@ -84,16 +84,14 @@ impl AssetDid {
 	pub fn dai_currency() -> Self {
 		Self {
 			chain_id: Eip155Reference::ethereum_mainnet().into(),
-			asset_id: EvmSmartContractFungibleReference(hex!("6b175474e89094c44da98b954eedeac495271d0f"))
-			.into(),
+			asset_id: EvmSmartContractFungibleReference(hex!("6b175474e89094c44da98b954eedeac495271d0f")).into(),
 		}
 	}
 
 	pub fn req_currency() -> Self {
 		Self {
 			chain_id: Eip155Reference::ethereum_mainnet().into(),
-			asset_id: EvmSmartContractFungibleReference(hex!("8f8221afbb33998d8584a2b05749ba73c37a938a"))
-			.into(),
+			asset_id: EvmSmartContractFungibleReference(hex!("8f8221afbb33998d8584a2b05749ba73c37a938a")).into(),
 		}
 	}
 
@@ -122,12 +120,12 @@ impl AssetDid {
 	/// Try to parse an `AssetDID` instance from the provided UTF8-encoded
 	/// input.
 	pub fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetDidError>
-		where
-			I: AsRef<[u8]> + Into<Vec<u8>>,
-		{
-			match input.as_ref() {
-				// Asset DIDs must start with "did:asset:" to be valid. The "did:asset:" prefix is then stripped off.
-				[b'd', b'i', b'd', b':', b'a', b's', b's', b'e', b't', b':', components @ ..] => {
+	where
+		I: AsRef<[u8]> + Into<Vec<u8>>,
+	{
+		match input.as_ref() {
+			// Asset DIDs must start with "did:asset:" to be valid. The "did:asset:" prefix is then stripped off.
+			[b'd', b'i', b'd', b':', b'a', b's', b's', b'e', b't', b':', components @ ..] => {
 				let mut components = components.split(|c| *c == b'.');
 
 				let chain_id = components
@@ -143,8 +141,8 @@ impl AssetDid {
 				Ok(Self { chain_id, asset_id })
 			}
 			_ => Err(AssetDidError::InvalidFormat),
-			}
 		}
+	}
 }
 
 #[cfg(test)]
@@ -172,7 +170,6 @@ mod test {
 			"did:asset:eip155:1.erc1155:0x28959Cf125ccB051E70711D0924a62FB28EAF186:0",
 		];
 
-		// FIXME: Better test logic
 		for id in raw_ids {
 			assert!(
 				AssetDid::from_utf8_encoded(id.as_bytes()).is_ok(),

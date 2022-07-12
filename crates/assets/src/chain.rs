@@ -185,7 +185,7 @@ mod v1 {
 
 	impl ChainId {
 		/// Try to parse a `ChainId` instance from the provided UTF8-encoded
-		/// input.
+		/// input, according to the AssetDID method rules.
 		pub fn from_utf8_encoded<I>(input: I) -> Result<Self, ChainIdError>
 		where
 			I: AsRef<[u8]> + Into<Vec<u8>>,
@@ -240,7 +240,7 @@ mod v1 {
 	}
 
 	impl Eip155Reference {
-		/// Parse a UTF8-encoded decimal chain reference, failing if the input
+		/// Parse a UTF8-encoded EIP155 chain reference, failing if the input
 		/// string is not valid.
 		pub fn from_utf8_encoded<I>(input: I) -> Result<Self, ChainIdError>
 		where
@@ -375,7 +375,8 @@ mod v1 {
 					.map_err(|_| ReferenceError::InvalidFormat)?;
 				// Max length in bytes of a 32-character Base58 string is 32 -> it is the string
 				// formed by all "1". Otherwise, it is always between 23 and 24 characters.
-				let inner: BoundedVec<u8, ConstU32<32>> = decoded.try_into().map_err(|_| ReferenceError::InvalidFormat)?;
+				let inner: BoundedVec<u8, ConstU32<32>> =
+					decoded.try_into().map_err(|_| ReferenceError::InvalidFormat)?;
 				Ok(Self(inner))
 			}
 		}
@@ -445,7 +446,11 @@ mod v1 {
 						Ok(())
 					}
 				})?;
-				Ok(Self(Vec::<u8>::from(input).try_into().map_err(|_| NamespaceError::InvalidFormat)?))
+				Ok(Self(
+					Vec::<u8>::from(input)
+						.try_into()
+						.map_err(|_| NamespaceError::InvalidFormat)?,
+				))
 			}
 		}
 	}
@@ -476,7 +481,11 @@ mod v1 {
 						Ok(())
 					}
 				})?;
-				Ok(Self(Vec::<u8>::from(input).try_into().map_err(|_| ReferenceError::InvalidFormat)?))
+				Ok(Self(
+					Vec::<u8>::from(input)
+						.try_into()
+						.map_err(|_| ReferenceError::InvalidFormat)?,
+				))
 			}
 		}
 	}
