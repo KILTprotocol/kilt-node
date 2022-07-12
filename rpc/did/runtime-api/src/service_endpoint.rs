@@ -15,35 +15,34 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
-
 use codec::{Decode, Encode};
 use scale_info::TypeInfo;
+use sp_std::vec::Vec;
 
-/// Storage version of the delegation pallet.
-#[derive(Copy, Clone, Encode, Eq, Decode, Ord, PartialEq, PartialOrd, TypeInfo)]
-pub enum DelegationStorageVersion {
-	V1,
-	V2,
+#[derive(Encode, Decode, TypeInfo, PartialEq)]
+#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
+pub struct ServiceEndpoint<Id, Type, Url> {
+	pub id: Id,
+	pub service_types: Vec<Type>,
+	pub urls: Vec<Url>,
 }
 
-#[cfg(feature = "try-runtime")]
-impl DelegationStorageVersion {
-	/// The latest storage version.
-	#[allow(dead_code)]
-	fn latest() -> Self {
-		Self::V2
-	}
-}
-
-// All nodes will default to this, which is not bad, as in case the "real"
-// version is a later one (i.e. the node has been started with already the
-// latest version), the migration will simply do nothing as there's nothing in
-// the old storage entries to migrate from.
-//
-// It might get updated in the future when we know that no node is running this
-// old version anymore.
-impl Default for DelegationStorageVersion {
-	fn default() -> Self {
-		Self::V2
+impl<T: did::Config> From<did::service_endpoints::DidEndpoint<T>> for ServiceEndpoint<Vec<u8>, Vec<u8>, Vec<u8>> {
+	fn from(runtime_endpoint: did::service_endpoints::DidEndpoint<T>) -> Self {
+		ServiceEndpoint {
+			id: runtime_endpoint.id.into_inner(),
+			service_types: runtime_endpoint
+				.service_types
+				.into_inner()
+				.into_iter()
+				.map(|v| v.into_inner())
+				.collect(),
+			urls: runtime_endpoint
+				.urls
+				.into_inner()
+				.into_iter()
+				.map(|v| v.into_inner())
+				.collect(),
+		}
 	}
 }

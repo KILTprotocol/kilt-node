@@ -28,8 +28,6 @@ use pallet_balances::{BalanceLock, Error as BalancesError, Reasons};
 use pallet_session::{SessionManager, ShouldEndSession};
 use sp_runtime::{traits::Zero, Perbill, Permill, Perquintill, SaturatedConversion};
 
-use runtime_common::constants::BLOCKS_PER_YEAR;
-
 use crate::{
 	mock::{
 		almost_equal, events, last_event, roll_to, AccountId, Balance, Balances, BlockNumber, Event as MetaEvent,
@@ -39,7 +37,7 @@ use crate::{
 	types::{
 		BalanceOf, Candidate, CandidateStatus, DelegationCounter, Delegator, RoundInfo, Stake, StakeOf, TotalStake,
 	},
-	CandidateCount, Config, Error, Event, InflationInfo, RewardRate, StakingInfo, STAKING_ID,
+	CandidatePool, Config, Error, Event, InflationInfo, RewardRate, StakingInfo, STAKING_ID,
 };
 
 #[test]
@@ -112,7 +110,7 @@ fn genesis() {
 				.try_into(),
 				Ok(StakePallet::top_candidates().into_bounded_vec())
 			);
-			assert_eq!(CandidateCount::<Test>::get(), 2);
+			assert_eq!(CandidatePool::<Test>::count(), 2);
 
 			// 1
 			assert_eq!(Balances::usable_balance(&1), 500);
@@ -212,7 +210,7 @@ fn genesis() {
 		.build()
 		.execute_with(|| {
 			assert!(System::events().is_empty());
-			assert_eq!(CandidateCount::<Test>::get(), 5);
+			assert_eq!(CandidatePool::<Test>::count(), 5);
 
 			// Collators
 			assert_eq!(
@@ -279,7 +277,7 @@ fn join_collator_candidates() {
 		.with_delegators(vec![(3, 1, 100), (4, 1, 100), (5, 2, 100), (6, 2, 100)])
 		.build()
 		.execute_with(|| {
-			assert_eq!(CandidateCount::<Test>::get(), 2);
+			assert_eq!(CandidatePool::<Test>::count(), 2);
 			assert_eq!(
 				StakePallet::total_collator_stake(),
 				TotalStake {
@@ -308,7 +306,7 @@ fn join_collator_candidates() {
 				BalancesError::<Test>::InsufficientBalance
 			);
 
-			assert_eq!(CandidateCount::<Test>::get(), 2);
+			assert_eq!(CandidatePool::<Test>::count(), 2);
 			assert!(System::events().is_empty());
 
 			assert_ok!(StakePallet::set_max_selected_candidates(Origin::root(), 5));
@@ -327,7 +325,7 @@ fn join_collator_candidates() {
 				Origin::signed(10),
 				StakePallet::max_candidate_stake()
 			));
-			assert_eq!(CandidateCount::<Test>::get(), 4);
+			assert_eq!(CandidatePool::<Test>::count(), 4);
 
 			assert_eq!(
 				last_event(),
@@ -354,7 +352,7 @@ fn collator_exit_executes_after_delay() {
 		.with_delegators(vec![(3, 1, 100), (4, 1, 100), (5, 2, 100), (6, 2, 100)])
 		.build()
 		.execute_with(|| {
-			assert_eq!(CandidateCount::<Test>::get(), 3);
+			assert_eq!(CandidatePool::<Test>::count(), 3);
 			assert_eq!(
 				StakePallet::total_collator_stake(),
 				TotalStake {
@@ -380,7 +378,7 @@ fn collator_exit_executes_after_delay() {
 			roll_to(11, vec![]);
 			assert_ok!(StakePallet::init_leave_candidates(Origin::signed(2)));
 			// Still three, candidate didn't leave yet
-			assert_eq!(CandidateCount::<Test>::get(), 3);
+			assert_eq!(CandidatePool::<Test>::count(), 3);
 			assert_noop!(
 				StakePallet::delegate_another_candidate(Origin::signed(3), 2, 10),
 				Error::<Test>::CannotDelegateIfLeaving
@@ -395,7 +393,7 @@ fn collator_exit_executes_after_delay() {
 
 			roll_to(21, vec![]);
 			assert_ok!(StakePallet::execute_leave_candidates(Origin::signed(2), 2));
-			assert_eq!(CandidateCount::<Test>::get(), 2);
+			assert_eq!(CandidatePool::<Test>::count(), 2);
 
 			// we must exclude leaving collators from rewards while
 			// holding them retroactively accountable for previous faults
@@ -512,7 +510,7 @@ fn exit_queue_with_events() {
 		.with_inflation(100, 15, 40, 10, BLOCKS_PER_ROUND)
 		.build()
 		.execute_with(|| {
-			assert_eq!(CandidateCount::<Test>::get(), 6);
+			assert_eq!(CandidatePool::<Test>::count(), 6);
 			assert_eq!(StakePallet::selected_candidates().into_inner(), vec![1, 2]);
 			assert_ok!(StakePallet::set_max_selected_candidates(Origin::root(), 5));
 			assert_eq!(StakePallet::selected_candidates().into_inner(), vec![1, 2, 3, 4, 5]);
@@ -537,7 +535,7 @@ fn exit_queue_with_events() {
 				MetaEvent::StakePallet(Event::CollatorScheduledExit(2, 5, 4))
 			);
 
-			assert_eq!(CandidateCount::<Test>::get(), 6, "No collators have left yet.");
+			assert_eq!(CandidatePool::<Test>::count(), 6, "No collators have left yet.");
 			roll_to(16, vec![]);
 			assert_ok!(StakePallet::execute_leave_candidates(Origin::signed(6), 6));
 			assert_ok!(StakePallet::init_leave_candidates(Origin::signed(4)));
@@ -551,15 +549,15 @@ fn exit_queue_with_events() {
 				Error::<Test>::AlreadyLeaving
 			);
 
-			assert_eq!(CandidateCount::<Test>::get(), 5, "Collator #5 left.");
+			assert_eq!(CandidatePool::<Test>::count(), 5, "Collator #5 left.");
 			roll_to(20, vec![]);
 			assert_ok!(StakePallet::execute_leave_candidates(Origin::signed(5), 5));
 			assert_eq!(StakePallet::selected_candidates().into_inner(), vec![1, 2, 3]);
-			assert_eq!(CandidateCount::<Test>::get(), 4, "Two out of six collators left.");
+			assert_eq!(CandidatePool::<Test>::count(), 4, "Two out of six collators left.");
 
 			roll_to(26, vec![]);
 			assert_ok!(StakePallet::execute_leave_candidates(Origin::signed(4), 4));
-			assert_eq!(CandidateCount::<Test>::get(), 3, "Three out of six collators left.");
+			assert_eq!(CandidatePool::<Test>::count(), 3, "Three out of six collators left.");
 
 			roll_to(30, vec![]);
 			let mut new_events = vec![
@@ -618,7 +616,7 @@ fn execute_leave_candidates_with_delay() {
 		.with_inflation(100, 15, 40, 10, BLOCKS_PER_ROUND)
 		.build()
 		.execute_with(|| {
-			assert_eq!(CandidateCount::<Test>::get(), 10);
+			assert_eq!(CandidatePool::<Test>::count(), 10);
 			assert_eq!(
 				StakePallet::total_collator_stake(),
 				TotalStake {
@@ -887,10 +885,10 @@ fn execute_leave_candidates_with_delay() {
 					*collator
 				));
 				assert!(StakePallet::candidate_pool(&collator).is_none());
-				assert!(!StakePallet::is_active_candidate(collator).is_some());
+				assert!(StakePallet::is_active_candidate(collator).is_none());
 				assert_eq!(StakePallet::unstaking(collator).len(), 1);
 			}
-			assert_eq!(CandidateCount::<Test>::get(), 5, "Five collators left.");
+			assert_eq!(CandidatePool::<Test>::count(), 5, "Five collators left.");
 
 			assert_eq!(StakePallet::total_collator_stake(), total_stake);
 			for delegator in 11u64..=14u64 {
@@ -906,10 +904,10 @@ fn execute_leave_candidates_with_delay() {
 					collator
 				));
 				assert!(StakePallet::candidate_pool(&collator).is_none());
-				assert!(!StakePallet::is_active_candidate(&collator).is_some());
+				assert!(StakePallet::is_active_candidate(&collator).is_none());
 				assert_eq!(StakePallet::unstaking(collator).len(), 1);
 			}
-			assert_eq!(CandidateCount::<Test>::get(), 2, "3 collators left.");
+			assert_eq!(CandidatePool::<Test>::count(), 2, "3 collators left.");
 		});
 }
 
@@ -1049,10 +1047,12 @@ fn multiple_delegations() {
 
 			roll_to(35, vec![]);
 			assert_ok!(StakePallet::execute_leave_candidates(Origin::signed(2), 2));
-			let mut unbonding_7 = BoundedBTreeMap::new();
+			let mut unbonding_7: BoundedBTreeMap<BlockNumber, BalanceOf<Test>, <Test as Config>::MaxUnstakeRequests> =
+				BoundedBTreeMap::new();
 			assert_ok!(unbonding_7.try_insert(35u64 + <Test as Config>::StakeDuration::get() as u64, 80));
 			assert_eq!(StakePallet::unstaking(7), unbonding_7);
-			let mut unbonding_11 = BoundedBTreeMap::new();
+			let mut unbonding_11: BoundedBTreeMap<BlockNumber, BalanceOf<Test>, <Test as Config>::MaxUnstakeRequests> =
+				BoundedBTreeMap::new();
 			assert_ok!(unbonding_11.try_insert(35u64 + <Test as Config>::StakeDuration::get() as u64, 11));
 			assert_eq!(StakePallet::unstaking(11), unbonding_11);
 
@@ -1458,6 +1458,7 @@ fn round_transitions() {
 	let d_max = 40;
 	let d_rewards = 10;
 	let inflation = InflationInfo::new(
+		<Test as Config>::BLOCKS_PER_YEAR,
 		Perquintill::from_percent(col_max),
 		Perquintill::from_percent(col_rewards),
 		Perquintill::from_percent(d_max),
@@ -1557,6 +1558,7 @@ fn round_transitions() {
 			assert_eq!(
 				StakePallet::inflation_config(),
 				InflationInfo::new(
+					<Test as Config>::BLOCKS_PER_YEAR,
 					Perquintill::from_percent(col_max),
 					Perquintill::from_percent(col_rewards),
 					Perquintill::from_percent(d_max),
@@ -1735,7 +1737,7 @@ fn coinbase_rewards_many_blocks_simple_check() {
 			let inflation = StakePallet::inflation_config();
 			let total_issuance = <Test as Config>::Currency::total_issuance();
 			assert_eq!(total_issuance, 160_000_000 * DECIMALS);
-			let end_block: BlockNumber = num_of_years * BLOCKS_PER_YEAR as BlockNumber;
+			let end_block: BlockNumber = num_of_years * Test::BLOCKS_PER_YEAR as BlockNumber;
 			// set round robin authoring
 			let authors: Vec<Option<AccountId>> = (0u64..=end_block).map(|i| Some(i % 2 + 1)).collect();
 			roll_to(end_block, authors);
@@ -2205,9 +2207,9 @@ fn update_inflation() {
 					},
 				},
 			};
-			assert!(!invalid_inflation.is_valid());
+			assert!(!invalid_inflation.is_valid(<Test as Config>::BLOCKS_PER_YEAR));
 			invalid_inflation.collator.reward_rate.per_block = Perquintill::zero();
-			assert!(!invalid_inflation.is_valid());
+			assert!(!invalid_inflation.is_valid(<Test as Config>::BLOCKS_PER_YEAR));
 
 			assert_ok!(StakePallet::set_inflation(
 				Origin::root(),
@@ -2254,7 +2256,8 @@ fn unlock_unstaked() {
 		.build()
 		.execute_with(|| {
 			assert_ok!(StakePallet::revoke_delegation(Origin::signed(2), 1));
-			let mut unstaking = BoundedBTreeMap::new();
+			let mut unstaking: BoundedBTreeMap<BlockNumber, BalanceOf<Test>, <Test as Config>::MaxUnstakeRequests> =
+				BoundedBTreeMap::new();
 			assert_ok!(unstaking.try_insert(3, 100));
 			let lock = BalanceLock {
 				id: STAKING_ID,
@@ -2311,7 +2314,8 @@ fn unlock_unstaked() {
 		.build()
 		.execute_with(|| {
 			assert_ok!(StakePallet::revoke_delegation(Origin::signed(2), 1));
-			let mut unstaking = BoundedBTreeMap::new();
+			let mut unstaking: BoundedBTreeMap<BlockNumber, BalanceOf<Test>, <Test as Config>::MaxUnstakeRequests> =
+				BoundedBTreeMap::new();
 			assert_ok!(unstaking.try_insert(3, 10));
 			let mut lock = BalanceLock {
 				id: STAKING_ID,
@@ -2370,7 +2374,8 @@ fn unlock_unstaked() {
 		.build()
 		.execute_with(|| {
 			assert_ok!(StakePallet::revoke_delegation(Origin::signed(2), 1));
-			let mut unstaking = BoundedBTreeMap::new();
+			let mut unstaking: BoundedBTreeMap<BlockNumber, BalanceOf<Test>, <Test as Config>::MaxUnstakeRequests> =
+				BoundedBTreeMap::new();
 			assert_ok!(unstaking.try_insert(3, 100));
 			let mut lock = BalanceLock {
 				id: STAKING_ID,
@@ -2445,7 +2450,8 @@ fn unlock_unstaked() {
 			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(2), 1, 10));
 			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(2), 1, 10));
 			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(2), 1, 10),);
-			let mut unstaking = BoundedBTreeMap::new();
+			let mut unstaking: BoundedBTreeMap<BlockNumber, BalanceOf<Test>, <Test as Config>::MaxUnstakeRequests> =
+				BoundedBTreeMap::new();
 			assert_ok!(unstaking.try_insert(3, 60));
 			let mut lock = BalanceLock {
 				id: STAKING_ID,
@@ -2663,7 +2669,7 @@ fn candidate_leaves() {
 					.collect::<Vec<u64>>(),
 				(1u64..11u64).collect::<Vec<u64>>()
 			);
-			assert_eq!(CandidateCount::<Test>::get(), 10);
+			assert_eq!(CandidatePool::<Test>::count(), 10);
 			assert_ok!(StakePallet::init_leave_candidates(Origin::signed(1)));
 			assert_eq!(
 				StakePallet::top_candidates()
@@ -2762,7 +2768,8 @@ fn candidate_leaves() {
 
 			roll_to(15, vec![]);
 			assert_ok!(StakePallet::execute_leave_candidates(Origin::signed(13), 1));
-			let mut unstaking = BoundedBTreeMap::new();
+			let mut unstaking: BoundedBTreeMap<BlockNumber, BalanceOf<Test>, <Test as Config>::MaxUnstakeRequests> =
+				BoundedBTreeMap::new();
 			assert_ok!(unstaking.try_insert(17, 100));
 			assert_eq!(StakePallet::unstaking(1), unstaking);
 			assert_eq!(StakePallet::unstaking(12), unstaking);
@@ -2794,7 +2801,7 @@ fn adjust_reward_rates() {
 		.build()
 		.execute_with(|| {
 			let inflation_0 = StakePallet::inflation_config();
-			let num_of_years = 3 * BLOCKS_PER_YEAR;
+			let num_of_years = 3 * <Test as Config>::BLOCKS_PER_YEAR;
 			// 1 authors every block
 			let authors: Vec<Option<AccountId>> = (0u64..=num_of_years).map(|_| Some(1u64)).collect();
 
@@ -2806,10 +2813,11 @@ fn adjust_reward_rates() {
 			assert!(!d_rewards_0.is_zero());
 
 			// finish first year
-			System::set_block_number(BLOCKS_PER_YEAR);
-			roll_to(BLOCKS_PER_YEAR + 1, vec![]);
+			System::set_block_number(<Test as Config>::BLOCKS_PER_YEAR);
+			roll_to(<Test as Config>::BLOCKS_PER_YEAR + 1, vec![]);
 			assert_eq!(StakePallet::last_reward_reduction(), 1u64);
 			let inflation_1 = InflationInfo::new(
+				<Test as Config>::BLOCKS_PER_YEAR,
 				inflation_0.collator.max_rate,
 				Perquintill::from_parts(98000000000000000),
 				inflation_0.delegator.max_rate,
@@ -2817,7 +2825,7 @@ fn adjust_reward_rates() {
 			);
 			assert_eq!(StakePallet::inflation_config(), inflation_1);
 			// reward once in 2nd year
-			roll_to(BLOCKS_PER_YEAR + 2, authors.clone());
+			roll_to(<Test as Config>::BLOCKS_PER_YEAR + 2, authors.clone());
 			let c_rewards_1 = Balances::free_balance(&1)
 				.saturating_sub(10_000_000 * DECIMALS)
 				.saturating_sub(c_rewards_0);
@@ -2833,10 +2841,11 @@ fn adjust_reward_rates() {
 			assert!(d_rewards_0 > d_rewards_1);
 
 			// finish 2nd year
-			System::set_block_number(2 * BLOCKS_PER_YEAR);
-			roll_to(2 * BLOCKS_PER_YEAR + 1, vec![]);
+			System::set_block_number(2 * <Test as Config>::BLOCKS_PER_YEAR);
+			roll_to(2 * <Test as Config>::BLOCKS_PER_YEAR + 1, vec![]);
 			assert_eq!(StakePallet::last_reward_reduction(), 2u64);
 			let inflation_2 = InflationInfo::new(
+				<Test as Config>::BLOCKS_PER_YEAR,
 				inflation_0.collator.max_rate,
 				Perquintill::from_parts(96040000000000000),
 				inflation_0.delegator.max_rate,
@@ -2844,7 +2853,7 @@ fn adjust_reward_rates() {
 			);
 			assert_eq!(StakePallet::inflation_config(), inflation_2);
 			// reward once in 3rd year
-			roll_to(2 * BLOCKS_PER_YEAR + 2, authors);
+			roll_to(2 * <Test as Config>::BLOCKS_PER_YEAR + 2, authors);
 			let c_rewards_2 = Balances::free_balance(&1)
 				.saturating_sub(10_000_000 * DECIMALS)
 				.saturating_sub(c_rewards_0)
@@ -3017,7 +3026,7 @@ fn force_remove_candidate() {
 		.with_delegators(vec![(4, 1, 50), (5, 1, 50)])
 		.build()
 		.execute_with(|| {
-			assert_eq!(CandidateCount::<Test>::get(), 3);
+			assert_eq!(CandidatePool::<Test>::count(), 3);
 			assert_ok!(StakePallet::delegate_another_candidate(Origin::signed(4), 2, 50));
 			assert_eq!(StakePallet::selected_candidates().into_inner(), vec![1, 2]);
 			assert!(StakePallet::unstaking(1).get(&3).is_none());
@@ -3047,7 +3056,7 @@ fn force_remove_candidate() {
 			assert_eq!(last_event(), MetaEvent::StakePallet(Event::CollatorRemoved(1, 200)));
 			assert!(!StakePallet::top_candidates().contains(&StakeOf::<Test> { owner: 1, amount: 100 }));
 			assert_eq!(StakePallet::selected_candidates().into_inner(), vec![2, 3]);
-			assert_eq!(CandidateCount::<Test>::get(), 2);
+			assert_eq!(CandidatePool::<Test>::count(), 2);
 			assert!(StakePallet::candidate_pool(1).is_none());
 			assert!(StakePallet::delegator_state(5).is_none());
 			assert_eq!(

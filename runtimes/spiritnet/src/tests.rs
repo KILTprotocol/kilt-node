@@ -16,9 +16,22 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use did::DeriveDidCallAuthorizationVerificationKeyRelationship;
+use codec::MaxEncodedLen;
+use frame_support::{traits::Currency, BoundedVec};
 
-use super::Call;
+use did::DeriveDidCallAuthorizationVerificationKeyRelationship;
+use pallet_did_lookup::associate_account_request::AssociateAccountRequest;
+use pallet_treasury::BalanceOf;
+use pallet_web3_names::{Web3NameOf, Web3OwnershipOf};
+use runtime_common::constants::{
+	attestation::MAX_ATTESTATION_BYTE_LENGTH, did::MAX_DID_BYTE_LENGTH, did_lookup::MAX_CONNECTION_BYTE_LENGTH,
+	web3_names::MAX_NAME_BYTE_LENGTH, MAX_INDICES_BYTE_LENGTH,
+};
+
+#[cfg(test)]
+use runtime_common::{AccountId, BlockNumber};
+
+use super::{Call, Runtime};
 
 #[test]
 fn call_size() {
@@ -28,6 +41,64 @@ fn call_size() {
 		the size of Call.
 		If the limit is too strong, maybe consider increase the limit to 300.",
 	);
+}
+
+#[test]
+fn attestation_storage_sizes() {
+	type DelegationRecord =
+		BoundedVec<<Runtime as frame_system::Config>::Hash, <Runtime as attestation::Config>::MaxDelegatedAttestations>;
+
+	let attestation_record = attestation::AttestationDetails::<Runtime>::max_encoded_len();
+	let delegation_record = DelegationRecord::max_encoded_len()
+		/ (<Runtime as attestation::Config>::MaxDelegatedAttestations::get() as usize);
+	assert_eq!(
+		attestation_record + delegation_record,
+		MAX_ATTESTATION_BYTE_LENGTH as usize
+	)
+}
+
+#[test]
+fn did_storage_sizes() {
+	let did_size = did::did_details::DidDetails::<Runtime>::max_encoded_len();
+
+	// service endpoints and counter
+	let did_endpoint_size = did::service_endpoints::DidEndpoint::<Runtime>::max_encoded_len()
+		* (<Runtime as did::Config>::MaxNumberOfServicesPerDid::get() as usize)
+		+ u32::max_encoded_len();
+
+	assert_eq!(did_size + did_endpoint_size, MAX_DID_BYTE_LENGTH as usize)
+}
+
+#[test]
+fn did_lookup_storage_sizes() {
+	type DidConnection =
+		pallet_did_lookup::ConnectionRecord<
+			<Runtime as pallet_did_lookup::Config>::DidIdentifier,
+			<Runtime as frame_system::Config>::AccountId,
+			<<Runtime as pallet_did_lookup::Config>::Currency as Currency<
+				<Runtime as frame_system::Config>::AccountId,
+			>>::Balance,
+		>;
+
+	let did_connection_size = DidConnection::max_encoded_len();
+
+	assert_eq!(did_connection_size, MAX_CONNECTION_BYTE_LENGTH as usize)
+}
+
+#[test]
+fn web3_name_storage_sizes() {
+	let owner_size = Web3NameOf::<Runtime>::max_encoded_len();
+	let name_size = Web3OwnershipOf::<Runtime>::max_encoded_len();
+
+	assert_eq!(owner_size + name_size, MAX_NAME_BYTE_LENGTH as usize)
+}
+
+#[test]
+fn indices_storage_sizes() {
+	type Indices = (<Runtime as frame_system::Config>::AccountId, BalanceOf<Runtime>, bool);
+
+	let size = Indices::max_encoded_len();
+	assert_eq!(size, MAX_INDICES_BYTE_LENGTH as usize)
 }
 
 #[test]
@@ -51,6 +122,45 @@ fn test_derive_did_verification_relation_ctype() {
 	assert_eq!(
 		cb.derive_verification_key_relationship(),
 		Ok(did::DidVerificationKeyRelationship::AssertionMethod)
+	);
+}
+
+#[test]
+fn test_derive_did_key_web3name() {
+	assert_eq!(
+		Call::Web3Names(pallet_web3_names::Call::claim {
+			name: b"test-name".to_vec().try_into().unwrap()
+		})
+		.derive_verification_key_relationship(),
+		Ok(did::DidVerificationKeyRelationship::Authentication)
+	);
+
+	assert_eq!(
+		Call::Web3Names(pallet_web3_names::Call::release_by_owner {}).derive_verification_key_relationship(),
+		Ok(did::DidVerificationKeyRelationship::Authentication)
+	);
+}
+
+#[test]
+fn test_derive_did_key_lookup() {
+	assert_eq!(
+		Call::DidLookup(pallet_did_lookup::Call::associate_account {
+			req: AssociateAccountRequest::Dotsama(
+				AccountId::new([1u8; 32]),
+				sp_runtime::MultiSignature::from(sp_core::ed25519::Signature([0; 64]))
+			),
+			expiration: BlockNumber::default(),
+		})
+		.derive_verification_key_relationship(),
+		Ok(did::DidVerificationKeyRelationship::Authentication)
+	);
+
+	assert_eq!(
+		Call::DidLookup(pallet_did_lookup::Call::remove_account_association {
+			account: AccountId::new([1u8; 32]).into(),
+		})
+		.derive_verification_key_relationship(),
+		Ok(did::DidVerificationKeyRelationship::Authentication)
 	);
 }
 

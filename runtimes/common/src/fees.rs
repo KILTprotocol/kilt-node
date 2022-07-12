@@ -18,9 +18,13 @@
 
 use frame_support::{
 	traits::{Currency, Get, Imbalance, OnUnbalanced},
-	weights::{DispatchClass, WeightToFeeCoefficient, WeightToFeeCoefficients, WeightToFeePolynomial},
+	weights::{
+		DispatchClass, WeightToFee as WeightToFeeT, WeightToFeeCoefficient, WeightToFeeCoefficients,
+		WeightToFeePolynomial,
+	},
 };
 use pallet_balances::WeightInfo;
+use pallet_transaction_payment::OnChargeTransaction;
 use smallvec::smallvec;
 use sp_runtime::Perbill;
 
@@ -68,8 +72,9 @@ where
 	<R as pallet_balances::Config>::Balance: Into<u128>,
 {
 	fn on_nonzero_unbalanced(amount: NegativeImbalanceOf<R>) {
-		let author = pallet_authorship::Pallet::<R>::author();
-		pallet_balances::Pallet::<R>::resolve_creating(&author, amount);
+		if let Some(author) = <pallet_authorship::Pallet<R>>::author() {
+			<pallet_balances::Pallet<R>>::resolve_creating(&author, amount);
+		}
 	}
 }
 
@@ -89,18 +94,18 @@ pub struct WeightToFee<R>(sp_std::marker::PhantomData<R>);
 impl<R> WeightToFeePolynomial for WeightToFee<R>
 where
 	R: pallet_transaction_payment::Config,
-	<R as pallet_transaction_payment::Config>::TransactionByteFee: Get<Balance>,
 	R: frame_system::Config,
 	R: pallet_balances::Config,
+	u128: From<<<R as pallet_transaction_payment::Config>::OnChargeTransaction as OnChargeTransaction<R>>::Balance>,
 {
 	type Balance = Balance;
 	fn polynomial() -> WeightToFeeCoefficients<Self::Balance> {
 		// The should be fee
 		let wanted_fee: Balance = 10 * MILLI_KILT;
 
-		let per_byte_fee: u128 = <R as pallet_transaction_payment::Config>::TransactionByteFee::get();
 		// TODO: transfer_keep_alive is 288 byte long?
-		let byte_fee: u128 = 288_u128 * per_byte_fee;
+		let tx_len: u64 = 288;
+		let byte_fee: Balance = <R as pallet_transaction_payment::Config>::LengthToFee::weight_to_fee(&tx_len).into();
 		let base_weight: Balance = <R as frame_system::Config>::BlockWeights::get()
 			.get(DispatchClass::Normal)
 			.base_extrinsic
@@ -187,6 +192,7 @@ mod tests {
 		type SystemWeightInfo = ();
 		type SS58Prefix = ();
 		type OnSetCode = ();
+		type MaxConsumers = frame_support::traits::ConstU32<16>;
 	}
 
 	impl pallet_balances::Config for Test {
@@ -202,6 +208,8 @@ mod tests {
 	}
 
 	pub const TREASURY_ACC: AccountId = crate::AccountId::new([1u8; 32]);
+	const AUTHOR_ACC: AccountId = AccountId::new([2; 32]);
+
 	pub struct ToBeneficiary();
 	impl OnUnbalanced<NegativeImbalanceOf<Test>> for ToBeneficiary {
 		fn on_nonzero_unbalanced(amount: NegativeImbalanceOf<Test>) {
@@ -216,7 +224,7 @@ mod tests {
 		where
 			I: 'a,
 		{
-			Some(Default::default())
+			Some(AUTHOR_ACC)
 		}
 	}
 	impl pallet_authorship::Config for Test {
@@ -246,12 +254,12 @@ mod tests {
 			let tip = Balances::issue(20);
 
 			assert_eq!(Balances::free_balance(TREASURY_ACC), 0);
-			assert_eq!(Balances::free_balance(AccountId::default()), 0);
+			assert_eq!(Balances::free_balance(AUTHOR_ACC), 0);
 
 			SplitFeesByRatio::<Test, Ratio, ToBeneficiary, ToAuthor<Test>>::on_unbalanceds(vec![fee, tip].into_iter());
 
 			assert_eq!(Balances::free_balance(TREASURY_ACC), 5);
-			assert_eq!(Balances::free_balance(AccountId::default()), 25);
+			assert_eq!(Balances::free_balance(AUTHOR_ACC), 25);
 		});
 	}
 }

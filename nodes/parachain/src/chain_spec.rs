@@ -19,7 +19,7 @@
 //! KILT chain specification
 
 use cumulus_primitives_core::ParaId;
-use polkadot_primitives::v1::LOWEST_PUBLIC_ID;
+use polkadot_primitives::v2::LOWEST_PUBLIC_ID;
 use runtime_common::{AccountId, AccountPublic};
 use sc_chain_spec::{ChainSpecExtension, ChainSpecGroup};
 use sc_service::Properties;

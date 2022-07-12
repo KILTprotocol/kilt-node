@@ -17,8 +17,8 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use crate::{errors::InputError, Config};
-use codec::{Decode, Encode};
-use frame_support::{ensure, traits::Get, BoundedVec};
+use codec::{Decode, Encode, MaxEncodedLen};
+use frame_support::{ensure, traits::Get, BoundedVec, RuntimeDebug};
 use scale_info::TypeInfo;
 use sp_runtime::traits::SaturatedConversion;
 use sp_std::str;
@@ -43,8 +43,9 @@ pub(crate) type ServiceEndpointUrlEntries<T> =
 	BoundedVec<ServiceEndpointUrl<T>, <T as Config>::MaxNumberOfUrlsPerService>;
 
 /// A single service endpoint description.
-#[derive(Clone, Decode, Encode, PartialEq, Eq, TypeInfo)]
+#[derive(Clone, Decode, RuntimeDebug, Encode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 #[scale_info(skip_type_params(T))]
+#[codec(mel_bound())]
 pub struct DidEndpoint<T: Config> {
 	/// The ID of the service endpoint. Allows the endpoint to be queried and
 	/// resolved directly.
@@ -53,16 +54,6 @@ pub struct DidEndpoint<T: Config> {
 	pub service_types: ServiceEndpointTypeEntries<T>,
 	/// A vector of URLs the service points to.
 	pub urls: ServiceEndpointUrlEntries<T>,
-}
-
-impl<T: Config> sp_std::fmt::Debug for DidEndpoint<T> {
-	fn fmt(&self, f: &mut sp_std::fmt::Formatter<'_>) -> sp_std::fmt::Result {
-		f.debug_struct("DidEndpoint")
-			.field("id", &self.id.clone().into_inner())
-			.field("service_types", &self.service_types.encode())
-			.field("urls", &self.urls.encode())
-			.finish()
-	}
 }
 
 impl<T: Config> DidEndpoint<T> {

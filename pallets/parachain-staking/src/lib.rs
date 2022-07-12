@@ -144,7 +144,7 @@
 //!
 //! ## Genesis config
 //!
-//! The KiltLaunch pallet depends on the [`GenesisConfig`].
+//! The ParachainStaking pallet depends on the [`GenesisConfig`].
 //!
 //! ## Assumptions+
 //!
@@ -165,7 +165,6 @@ pub(crate) mod mock;
 pub(crate) mod tests;
 
 mod inflation;
-pub mod migrations;
 mod set;
 mod types;
 
@@ -185,14 +184,13 @@ pub mod pallet {
 		storage::bounded_btree_map::BoundedBTreeMap,
 		traits::{
 			Currency, EstimateNextSessionRotation, Get, Imbalance, LockIdentifier, LockableCurrency, OnUnbalanced,
-			ReservableCurrency, WithdrawReasons,
+			ReservableCurrency, StorageVersion, WithdrawReasons,
 		},
 		BoundedVec,
 	};
 	use frame_system::pallet_prelude::*;
 	use pallet_balances::{BalanceLock, Locks};
 	use pallet_session::ShouldEndSession;
-	use runtime_common::constants::BLOCKS_PER_YEAR;
 	use scale_info::TypeInfo;
 	use sp_runtime::{
 		traits::{Convert, One, SaturatedConversion, Saturating, StaticLookup, Zero},
@@ -202,7 +200,6 @@ pub mod pallet {
 	use sp_std::prelude::*;
 
 	use crate::{
-		migrations::StakingStorageVersion,
 		set::OrderedSet,
 		types::{
 			BalanceOf, Candidate, CandidateOf, CandidateStatus, DelegationCounter, Delegator, NegativeImbalanceOf,
@@ -214,8 +211,13 @@ pub mod pallet {
 	/// Kilt-specific lock for staking rewards.
 	pub(crate) const STAKING_ID: LockIdentifier = *b"kiltpstk";
 
+	/// The current storage version.
+	const STORAGE_VERSION: StorageVersion = StorageVersion::new(7);
+
 	/// Pallet for parachain staking.
 	#[pallet::pallet]
+	#[pallet::generate_store(pub(super) trait Store)]
+	#[pallet::storage_version(STORAGE_VERSION)]
 	pub struct Pallet<T>(PhantomData<T>);
 
 	/// Configuration trait of this pallet.
@@ -246,7 +248,8 @@ pub mod pallet {
 			+ From<u128>
 			+ Into<<Self as pallet_balances::Config>::Balance>
 			+ From<<Self as pallet_balances::Config>::Balance>
-			+ TypeInfo;
+			+ TypeInfo
+			+ MaxEncodedLen;
 
 		/// Minimum number of blocks validation rounds can last.
 		#[pallet::constant]
@@ -344,6 +347,8 @@ pub mod pallet {
 
 		/// Weight information for extrinsics in this pallet.
 		type WeightInfo: WeightInfo;
+
+		const BLOCKS_PER_YEAR: Self::BlockNumber;
 	}
 
 	#[pallet::error]
@@ -543,7 +548,7 @@ pub mod pallet {
 				post_weight = <T as Config>::WeightInfo::on_initialize_round_update();
 			}
 			// check for InflationInfo update
-			if now > BLOCKS_PER_YEAR.saturated_into::<T::BlockNumber>() {
+			if now > T::BLOCKS_PER_YEAR.saturated_into::<T::BlockNumber>() {
 				post_weight = post_weight.saturating_add(Self::adjust_reward_rates(now));
 			}
 			// check for network reward
@@ -554,13 +559,6 @@ pub mod pallet {
 			post_weight
 		}
 	}
-
-	/// True if network has been upgraded to this version.
-	/// Storage version of the pallet.
-	///
-	/// This is set to v4 for new networks.
-	#[pallet::storage]
-	pub(crate) type StorageVersion<T: Config> = StorageValue<_, StakingStorageVersion, ValueQuery>;
 
 	/// The maximum number of collator candidates selected at each round.
 	#[pallet::storage]
@@ -598,20 +596,16 @@ pub mod pallet {
 	/// The staking information for a candidate.
 	///
 	/// It maps from an account to its information.
+	/// Moreover, it counts the number of candidates.
 	#[pallet::storage]
 	#[pallet::getter(fn candidate_pool)]
-	pub(crate) type CandidatePool<T: Config> = StorageMap<
+	pub(crate) type CandidatePool<T: Config> = CountedStorageMap<
 		_,
 		Twox64Concat,
 		T::AccountId,
 		Candidate<T::AccountId, BalanceOf<T>, T::MaxDelegatorsPerCollator>,
 		OptionQuery,
 	>;
-
-	/// The number of candidates in the pool.
-	#[pallet::storage]
-	#[pallet::getter(fn candidate_count)]
-	pub(crate) type CandidateCount<T: Config> = StorageValue<_, u32, ValueQuery>;
 
 	/// Total funds locked to back the currently selected collators.
 	/// The sum of all collator and their delegator stakes.
@@ -691,8 +685,9 @@ pub mod pallet {
 	impl<T: Config> Default for GenesisConfig<T> {
 		fn default() -> Self {
 			Self {
-				stakers: vec![],
-				..Default::default()
+				stakers: Default::default(),
+				inflation_config: Default::default(),
+				max_candidate_stake: Default::default(),
 			}
 		}
 	}
@@ -700,7 +695,10 @@ pub mod pallet {
 	#[pallet::genesis_build]
 	impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
 		fn build(&self) {
-			assert!(self.inflation_config.is_valid(), "Invalid inflation configuration");
+			assert!(
+				self.inflation_config.is_valid(T::BLOCKS_PER_YEAR.saturated_into()),
+				"Invalid inflation configuration"
+			);
 
 			<InflationConfig<T>>::put(self.inflation_config.clone());
 			MaxCollatorCandidateStake::<T>::put(self.max_candidate_stake);
@@ -789,13 +787,17 @@ pub mod pallet {
 			ensure_root(origin)?;
 
 			let inflation = InflationInfo::new(
+				T::BLOCKS_PER_YEAR.saturated_into(),
 				collator_max_rate_percentage,
 				collator_annual_reward_rate_percentage,
 				delegator_max_rate_percentage,
 				delegator_annual_reward_rate_percentage,
 			);
 
-			ensure!(inflation.is_valid(), Error::<T>::InvalidSchedule);
+			ensure!(
+				inflation.is_valid(T::BLOCKS_PER_YEAR.saturated_into()),
+				Error::<T>::InvalidSchedule
+			);
 			Self::deposit_event(Event::RoundInflationSet(
 				inflation.collator.max_rate,
 				inflation.collator.reward_rate.per_block,
@@ -1054,9 +1056,7 @@ pub mod pallet {
 		/// - Reads: [Origin Account], DelegatorState,
 		///   MaxCollatorCandidateStake, Locks, TotalCollatorStake,
 		///   TopCandidates, MaxSelectedCandidates, CandidatePool,
-		///   CandidateCount
 		/// - Writes: Locks, TotalCollatorStake, CandidatePool, TopCandidates,
-		///   CandidateCount
 		/// # </weight>
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::join_candidates(
 			T::MaxTopCandidates::get(),
@@ -1095,10 +1095,6 @@ pub mod pallet {
 				BalanceOf::<T>::zero(),
 			);
 			CandidatePool::<T>::insert(&sender, candidate);
-
-			CandidateCount::<T>::mutate(|count| {
-				*count = count.saturating_add(1);
-			});
 
 			Self::deposit_event(Event::JoinedCollatorCandidates(sender, stake));
 			Ok(Some(<T as pallet::Config>::WeightInfo::join_candidates(
@@ -1497,7 +1493,7 @@ pub mod pallet {
 			ensure!(amount >= T::MinDelegatorStake::get(), Error::<T>::NomStakeBelowMin);
 
 			// cannot be a collator candidate and delegator with same AccountId
-			ensure!(!Self::is_active_candidate(&acc).is_some(), Error::<T>::CandidateExists);
+			ensure!(Self::is_active_candidate(&acc).is_none(), Error::<T>::CandidateExists);
 			ensure!(
 				Unstaking::<T>::get(&acc).len().saturated_into::<u32>() < T::MaxUnstakeRequests::get(),
 				Error::<T>::CannotJoinBeforeUnlocking
@@ -1758,9 +1754,7 @@ pub mod pallet {
 		/// which is bounded by by `MaxCollatorsPerDelegator`.
 		/// - Reads: [Origin Account], DelegatorState, BlockNumber, Unstaking,
 		///   TopCandidates, MaxSelectedCandidates, C * CandidatePool,
-		///   CandidateCount
 		/// - Writes: Unstaking, CandidatePool, TotalCollatorStake,
-		///   CandidateCount
 		/// - Kills: DelegatorState
 		/// # </weight>
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::leave_delegators(
@@ -2153,8 +2147,7 @@ pub mod pallet {
 		) -> Option<(BalanceOf<T>, BalanceOf<T>)> {
 			top_candidates
 				.get(index)
-				.map(|stake| CandidatePool::<T>::get(&stake.owner))
-				.flatten()
+				.and_then(|stake| CandidatePool::<T>::get(&stake.owner))
 				// SAFETY: the total is always more than the stake
 				.map(|state| (state.stake, state.total - state.stake))
 		}
@@ -2612,7 +2605,6 @@ pub mod pallet {
 				.map(pallet_session::Pallet::<T>::disable_index);
 
 			CandidatePool::<T>::remove(&collator);
-			CandidateCount::<T>::mutate(|count| *count = count.saturating_sub(1));
 			Ok(())
 		}
 
@@ -2692,7 +2684,7 @@ pub mod pallet {
 		/// - Writes: LastRewardReduction, InflationConfig
 		/// # </weight>
 		fn adjust_reward_rates(now: T::BlockNumber) -> Weight {
-			let year = now / BLOCKS_PER_YEAR.saturated_into::<T::BlockNumber>();
+			let year = now / T::BLOCKS_PER_YEAR;
 			let last_update = <LastRewardReduction<T>>::get();
 			if year > last_update {
 				let inflation = <InflationConfig<T>>::get();
@@ -2706,6 +2698,7 @@ pub mod pallet {
 				};
 
 				let new_inflation = InflationInfo::new(
+					T::BLOCKS_PER_YEAR.saturated_into(),
 					inflation.collator.max_rate,
 					c_reward_rate,
 					inflation.delegator.max_rate,

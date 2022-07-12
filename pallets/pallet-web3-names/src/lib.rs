@@ -56,7 +56,6 @@ pub mod pallet {
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
 
 	pub type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
-	pub type BalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::Balance;
 	pub type BlockNumberFor<T> = <T as frame_system::Config>::BlockNumber;
 	pub type Web3NameOwnerOf<T> = <T as Config>::Web3NameOwner;
 	pub type Web3NameInput<T> = BoundedVec<u8, <T as Config>::MaxNameLength>;
@@ -65,6 +64,7 @@ pub mod pallet {
 		Web3NameOwnership<Web3NameOwnerOf<T>, Deposit<AccountIdOf<T>, BalanceOf<T>>, BlockNumberFor<T>>;
 
 	pub(crate) type CurrencyOf<T> = <T as Config>::Currency;
+	pub type BalanceOf<T> = <CurrencyOf<T> as Currency<AccountIdOf<T>>>::Balance;
 
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
@@ -110,9 +110,15 @@ pub mod pallet {
 		#[pallet::constant]
 		type MaxNameLength: Get<u32>;
 		/// The type of a name.
-		type Web3Name: FullCodec + Debug + PartialEq + Clone + TypeInfo + TryFrom<Vec<u8>, Error = Error<Self>>;
+		type Web3Name: FullCodec
+			+ Debug
+			+ PartialEq
+			+ Clone
+			+ TypeInfo
+			+ TryFrom<Vec<u8>, Error = Error<Self>>
+			+ MaxEncodedLen;
 		/// The type of a name owner.
-		type Web3NameOwner: Parameter + Default;
+		type Web3NameOwner: Parameter + MaxEncodedLen;
 		/// Weight information for extrinsics in this pallet.
 		type WeightInfo: WeightInfo;
 	}

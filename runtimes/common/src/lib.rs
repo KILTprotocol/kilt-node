@@ -28,17 +28,24 @@ pub use sp_consensus_aura::sr25519::AuthorityId;
 pub use opaque::*;
 
 pub use frame_support::weights::constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight};
-use frame_support::{parameter_types, traits::Currency, weights::DispatchClass};
+use frame_support::{
+	parameter_types,
+	traits::{Contains, ContainsLengthBound, Currency, Get, SortedMembers},
+	weights::DispatchClass,
+};
 use frame_system::limits;
 use pallet_transaction_payment::{Multiplier, TargetedFeeAdjustment};
 use sp_runtime::{
 	generic,
 	traits::{IdentifyAccount, Verify},
-	FixedPointNumber, MultiSignature, Perquintill,
+	FixedPointNumber, MultiSignature, Perquintill, SaturatedConversion,
 };
+use sp_std::marker::PhantomData;
 
+pub mod authorization;
 pub mod constants;
 pub mod fees;
+pub mod migrations;
 pub mod pallet_id;
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -152,3 +159,35 @@ pub type FeeSplit<R, B1, B2> = SplitFeesByRatio<R, FeeSplitRatio, B1, B2>;
 /// https://w3f-research.readthedocs.io/en/latest/polkadot/Token%20Economics.html#-2.-slow-adjusting-mechanism
 pub type SlowAdjustingFeeUpdate<R> =
 	TargetedFeeAdjustment<R, TargetBlockFullness, AdjustmentVariable, MinimumMultiplier>;
+
+pub struct Tippers<R, I>(PhantomData<R>, PhantomData<I>);
+impl<R, I: 'static> ContainsLengthBound for Tippers<R, I>
+where
+	R: pallet_membership::Config<I>,
+{
+	fn max_len() -> usize {
+		<R as pallet_membership::Config<I>>::MaxMembers::get().saturated_into()
+	}
+
+	fn min_len() -> usize {
+		0
+	}
+}
+
+impl<R, I: 'static> SortedMembers<R::AccountId> for Tippers<R, I>
+where
+	R: pallet_membership::Config<I>,
+	pallet_membership::Pallet<R, I>: SortedMembers<R::AccountId> + Contains<R::AccountId>,
+{
+	fn sorted_members() -> sp_std::vec::Vec<R::AccountId> {
+		pallet_membership::Pallet::<R, I>::sorted_members()
+	}
+
+	#[cfg(feature = "runtime-benchmarks")]
+	fn add(who: &R::AccountId) {
+		pallet_membership::Members::<R, I>::mutate(|members| match members.binary_search_by(|m| m.cmp(who)) {
+			Ok(_) => (),
+			Err(pos) => members.insert(pos, who.clone()),
+		})
+	}
+}

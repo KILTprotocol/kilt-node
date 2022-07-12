@@ -22,19 +22,30 @@ use frame_support::{
 	parameter_types,
 	traits::{Currency, OnFinalize, OnInitialize, OnUnbalanced},
 };
-use runtime_common::{
-	constants::treasury::{INITIAL_PERIOD_LENGTH, INITIAL_PERIOD_REWARD_PER_BLOCK},
-	AccountId, Balance, BlockHashCount, BlockNumber, Hash, Index,
-};
+
 use sp_runtime::{
 	testing::Header,
-	traits::{BlakeTwo256, IdentityLookup},
+	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
+	MultiSignature,
 };
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
+type Hash = sp_core::H256;
+type Balance = u128;
+type Signature = MultiSignature;
+type AccountPublic = <Signature as Verify>::Signer;
+type AccountId = <AccountPublic as IdentifyAccount>::AccountId;
+type Index = u64;
+type BlockNumber = u64;
 
-pub(crate) const TREASURY_ACC: AccountId = runtime_common::AccountId::new([1u8; 32]);
+pub(crate) const TREASURY_ACC: AccountId = AccountId::new([1u8; 32]);
+
+pub const BLOCKS_PER_YEAR: BlockNumber = 60_000 / 12_000 * 60 * 24 * 36525 / 100;
+pub const KILT: Balance = 10u128.pow(15);
+pub const INITIAL_PERIOD_LENGTH: BlockNumber = BLOCKS_PER_YEAR.saturating_mul(5);
+const YEARLY_REWARD: Balance = 2_000_000u128 * KILT;
+pub const INITIAL_PERIOD_REWARD_PER_BLOCK: Balance = YEARLY_REWARD / (BLOCKS_PER_YEAR as Balance);
 
 frame_support::construct_runtime!(
 	pub enum Test where
@@ -50,6 +61,7 @@ frame_support::construct_runtime!(
 
 parameter_types! {
 	pub const SS58Prefix: u8 = 38;
+	pub const BlockHashCount: BlockNumber = 2400;
 }
 
 impl frame_system::Config for Test {
@@ -76,6 +88,7 @@ impl frame_system::Config for Test {
 	type SystemWeightInfo = ();
 	type SS58Prefix = SS58Prefix;
 	type OnSetCode = ();
+	type MaxConsumers = frame_support::traits::ConstU32<16>;
 }
 
 parameter_types! {
@@ -119,9 +132,9 @@ impl pallet_inflation::Config for Test {
 
 pub(crate) fn roll_to(n: BlockNumber) {
 	while System::block_number() < n {
-		<AllPallets as OnFinalize<u64>>::on_finalize(System::block_number());
+		<AllPalletsWithSystem as OnFinalize<u64>>::on_finalize(System::block_number());
 		System::set_block_number(System::block_number() + 1);
-		<AllPallets as OnInitialize<u64>>::on_initialize(System::block_number());
+		<AllPalletsWithSystem as OnInitialize<u64>>::on_initialize(System::block_number());
 	}
 }
 

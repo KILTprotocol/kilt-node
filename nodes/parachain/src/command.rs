@@ -17,17 +17,17 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use crate::{
-	chain_spec,
+	chain_spec::{self},
 	cli::{Cli, RelayChainCli, Subcommand},
-	service::{new_partial, MashRuntimeExecutor, SpiritRuntimeExecutor, VoidRuntimeExecutor},
+	service::{new_partial, PeregrineRuntimeExecutor, SpiritnetRuntimeExecutor, VoidRuntimeExecutor},
 };
 use codec::Encode;
 use cumulus_client_service::genesis::generate_genesis_block;
 use cumulus_primitives_core::ParaId;
+use frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE};
 use log::info;
 #[cfg(feature = "try-runtime")]
-use node_executor::ExecutorDispatch;
-use polkadot_parachain::primitives::AccountIdConversion;
+use polkadot_service::TaskManager;
 use runtime_common::Block;
 use sc_cli::{
 	ChainSpec, CliConfiguration, DefaultConfigurationValues, ImportParams, KeystoreParams, NetworkParams, Result,
@@ -35,8 +35,34 @@ use sc_cli::{
 };
 use sc_service::config::{BasePath, PrometheusConfig};
 use sp_core::hexdisplay::HexDisplay;
-use sp_runtime::traits::Block as BlockT;
+use sp_runtime::traits::{AccountIdConversion, Block as BlockT};
 use std::{io::Write, net::SocketAddr};
+
+trait IdentifyChain {
+	fn is_peregrine(&self) -> bool;
+	fn is_spiritnet(&self) -> bool;
+}
+
+impl IdentifyChain for dyn sc_service::ChainSpec {
+	fn is_peregrine(&self) -> bool {
+		self.id().contains("peregrine") || self.id().eq("kilt_parachain_testnet")
+	}
+	fn is_spiritnet(&self) -> bool {
+		self.id().contains("spiritnet")
+			|| self.id().eq("kilt_westend")
+			|| self.id().eq("kilt_rococo")
+			|| self.id().eq("kilt")
+	}
+}
+
+impl<T: sc_service::ChainSpec + 'static> IdentifyChain for T {
+	fn is_peregrine(&self) -> bool {
+		<dyn sc_service::ChainSpec>::is_peregrine(self)
+	}
+	fn is_spiritnet(&self) -> bool {
+		<dyn sc_service::ChainSpec>::is_spiritnet(self)
+	}
+}
 
 fn load_spec(id: &str, runtime: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
 	match (id, runtime) {
@@ -54,7 +80,7 @@ fn load_spec(id: &str, runtime: &str) -> std::result::Result<Box<dyn sc_service:
 		("", "peregrine") => Ok(Box::new(chain_spec::peregrine::make_dev_spec()?)),
 		(path, "spiritnet") => Ok(Box::new(chain_spec::spiritnet::ChainSpec::from_json_file(path.into())?)),
 		(path, "peregrine") => Ok(Box::new(chain_spec::peregrine::ChainSpec::from_json_file(path.into())?)),
-		_ => Err("Unknown runtime".to_owned()),
+		_ => Err("Unknown KILT parachain spec".to_owned()),
 	}
 }
 
@@ -150,15 +176,16 @@ fn extract_genesis_wasm(chain_spec: &Box<dyn sc_service::ChainSpec>) -> Result<V
 		.ok_or_else(|| "Could not find wasm file in genesis state!".into())
 }
 
+// TODO: Make use of the macro in Benchmark cmd
 macro_rules! construct_async_run {
 	(|$components:ident, $cli:ident, $cmd:ident, $config:ident| $( $code:tt )* ) => {{
 		let runner = $cli.create_runner($cmd)?;
 		match $cli.runtime.as_str() {
 			"spiritnet" => {
 					runner.async_run(|$config| {
-						let $components = new_partial::<spiritnet_runtime::RuntimeApi, SpiritRuntimeExecutor, _>(
+						let $components = new_partial::<spiritnet_runtime::RuntimeApi, SpiritnetRuntimeExecutor, _>(
 							&$config,
-							crate::service::build_import_queue::<SpiritRuntimeExecutor, spiritnet_runtime::RuntimeApi>,
+							crate::service::build_import_queue::<SpiritnetRuntimeExecutor, spiritnet_runtime::RuntimeApi>,
 						)?;
 						let task_manager = $components.task_manager;
 						{ $( $code )* }.map(|v| (v, task_manager))
@@ -166,9 +193,9 @@ macro_rules! construct_async_run {
 				},
 			"peregrine" => {
 					runner.async_run(|$config| {
-						let $components = new_partial::<peregrine_runtime::RuntimeApi, MashRuntimeExecutor, _>(
+						let $components = new_partial::<peregrine_runtime::RuntimeApi, PeregrineRuntimeExecutor, _>(
 							&$config,
-							crate::service::build_import_queue::<MashRuntimeExecutor, peregrine_runtime::RuntimeApi>,
+							crate::service::build_import_queue::<PeregrineRuntimeExecutor, peregrine_runtime::RuntimeApi>,
 						)?;
 						let task_manager = $components.task_manager;
 						{ $( $code )* }.map(|v| (v, task_manager))
@@ -246,21 +273,71 @@ pub fn run() -> Result<()> {
 			})
 		}
 		Some(Subcommand::Revert(cmd)) => {
-			construct_async_run!(|components, cli, cmd, config| Ok(cmd.run(components.client, components.backend)))
+			construct_async_run!(|components, cli, cmd, config| Ok(cmd.run(
+				components.client,
+				components.backend,
+				None
+			)))
 		}
 		Some(Subcommand::Benchmark(cmd)) => {
-			if cfg!(feature = "runtime-benchmarks") {
-				let runner = cli.create_runner(cmd)?;
-				match cli.runtime.as_str() {
-					"peregrine" => runner.sync_run(|config| cmd.run::<Block, MashRuntimeExecutor>(config)),
-					"spiritnet" => runner.sync_run(|config| cmd.run::<Block, SpiritRuntimeExecutor>(config)),
-					"void" => runner.sync_run(|config| cmd.run::<Block, VoidRuntimeExecutor>(config)),
-					_ => Err("Unknown runtime".into()),
+			let runner = cli.create_runner(cmd)?;
+
+			// Switch on the concrete benchmark sub-command
+			match (cmd, cli.runtime.as_str()) {
+				(BenchmarkCmd::Pallet(cmd), runtime) => {
+					if cfg!(feature = "runtime-benchmarks") {
+						match runtime {
+							"spiritnet" => runner.sync_run(|config| cmd.run::<Block, SpiritnetRuntimeExecutor>(config)),
+							"peregrine" => runner.sync_run(|config| cmd.run::<Block, PeregrineRuntimeExecutor>(config)),
+							_ => Err("Unknown parachain runtime".into()),
+						}
+					} else {
+						Err("Benchmarking wasn't enabled when building the node. \
+							You can enable it with `--features runtime-benchmarks`."
+							.into())
+					}
 				}
-			} else {
-				Err("Benchmarking wasn't enabled when building the node. \
-				You can enable it with `--features runtime-benchmarks`."
-					.into())
+				(BenchmarkCmd::Block(cmd), "spiritnet") => runner.sync_run(|config| {
+					let partials = new_partial::<spiritnet_runtime::RuntimeApi, SpiritnetRuntimeExecutor, _>(
+						&config,
+						crate::service::build_import_queue,
+					)?;
+					cmd.run(partials.client)
+				}),
+				(BenchmarkCmd::Block(cmd), "peregrine") => runner.sync_run(|config| {
+					let partials = new_partial::<peregrine_runtime::RuntimeApi, PeregrineRuntimeExecutor, _>(
+						&config,
+						crate::service::build_import_queue,
+					)?;
+					cmd.run(partials.client)
+				}),
+				(BenchmarkCmd::Storage(cmd), "spiritnet") => runner.sync_run(|config| {
+					let partials = new_partial::<spiritnet_runtime::RuntimeApi, SpiritnetRuntimeExecutor, _>(
+						&config,
+						crate::service::build_import_queue,
+					)?;
+
+					let db = partials.backend.expose_db();
+					let storage = partials.backend.expose_storage();
+
+					cmd.run(config, partials.client.clone(), db, storage)
+				}),
+				(BenchmarkCmd::Storage(cmd), "peregrine") => runner.sync_run(|config| {
+					let partials = new_partial::<peregrine_runtime::RuntimeApi, PeregrineRuntimeExecutor, _>(
+						&config,
+						crate::service::build_import_queue,
+					)?;
+
+					let db = partials.backend.expose_db();
+					let storage = partials.backend.expose_storage();
+
+					cmd.run(config, partials.client.clone(), db, storage)
+				}),
+				(BenchmarkCmd::Overhead(_), _) => Err("Unsupported benchmarking command".into()),
+				(BenchmarkCmd::Machine(cmd), _) => {
+					runner.sync_run(|config| cmd.run(&config, SUBSTRATE_REFERENCE_HARDWARE.clone()))
+				}
+				(_, _) => Err("Unknown parachain runtime".into()),
 			}
 		}
 		Some(Subcommand::ExportGenesisState(params)) => {
@@ -268,8 +345,9 @@ pub fn run() -> Result<()> {
 			builder.with_profiling(sc_tracing::TracingReceiver::Log, "");
 			let _ = builder.init();
 
-			let block: Block =
-				generate_genesis_block(&load_spec(&params.chain.clone().unwrap_or_default(), &params.runtime)?)?;
+			let spec = load_spec(&params.chain.clone().unwrap_or_default(), &params.runtime)?;
+			let state_version = Cli::native_runtime_version(&spec).state_version();
+			let block: Block = generate_genesis_block(&spec, state_version)?;
 			let raw_header = block.header().encode();
 			let output_buf = if params.raw {
 				raw_header
@@ -308,15 +386,17 @@ pub fn run() -> Result<()> {
 		#[cfg(feature = "try-runtime")]
 		Some(Subcommand::TryRuntime(cmd)) => {
 			let runner = cli.create_runner(cmd)?;
-			runner.async_run(|config| {
-				// we don't need any of the components of new_partial, just a runtime, or a task
-				// manager to do `async_run`.
-				let registry = config.prometheus_config.as_ref().map(|cfg| &cfg.registry);
-				let task_manager = sc_service::TaskManager::new(config.tokio_handle.clone(), registry)
-					.map_err(|e| sc_cli::Error::Service(sc_service::Error::Prometheus(e)))?;
+			let registry = &runner.config().prometheus_config.as_ref().map(|cfg| &cfg.registry);
+			let task_manager = TaskManager::new(runner.config().tokio_handle.clone(), *registry)
+				.map_err(|e| format!("Error: {:?}", e))?;
 
-				Ok((cmd.run::<Block, ExecutorDispatch>(config), task_manager))
-			})
+			if runner.config().chain_spec.is_peregrine() {
+				runner.async_run(|config| Ok((cmd.run::<Block, PeregrineRuntimeExecutor>(config), task_manager)))
+			} else if runner.config().chain_spec.is_spiritnet() {
+				runner.async_run(|config| Ok((cmd.run::<Block, SpiritnetRuntimeExecutor>(config), task_manager)))
+			} else {
+				Err("Chain doesn't support try-runtime".into())
+			}
 		}
 		#[cfg(not(feature = "try-runtime"))]
 		Some(Subcommand::TryRuntime) => Err("TryRuntime wasn't enabled when building the node. \
@@ -324,8 +404,18 @@ pub fn run() -> Result<()> {
 			.into()),
 		None => {
 			let runner = cli.create_runner(&cli.run.normalize())?;
+			let collator_options = cli.run.collator_options();
 
 			runner.run_node_until_exit(|config| async move {
+				let hwbench = if !cli.no_hardware_benchmarks {
+					config.database.path().map(|database_path| {
+						let _ = std::fs::create_dir_all(&database_path);
+						sc_sysinfo::gather_hwbench(Some(database_path))
+					})
+				} else {
+					None
+				};
+
 				let para_id = chain_spec::Extensions::try_get(&*config.chain_spec)
 					.map(|e| e.para_id)
 					.ok_or("Could not find parachain ID in chain-spec.")?;
@@ -339,9 +429,12 @@ pub fn run() -> Result<()> {
 
 				let id = ParaId::from(para_id);
 
-				let parachain_account = AccountIdConversion::<polkadot_primitives::v0::AccountId>::into_account(&id);
+				let parachain_account =
+					AccountIdConversion::<polkadot_primitives::v2::AccountId>::into_account_truncating(&id);
 
-				let block: Block = generate_genesis_block(&config.chain_spec).map_err(|e| format!("{:?}", e))?;
+				let state_version = RelayChainCli::native_runtime_version(&config.chain_spec).state_version();
+				let block: Block =
+					generate_genesis_block(&config.chain_spec, state_version).map_err(|e| format!("{:?}", e))?;
 				let genesis_state = format!("0x{:?}", HexDisplay::from(&block.header().encode()));
 
 				let tokio_handle = config.tokio_handle.clone();
@@ -356,32 +449,40 @@ pub fn run() -> Result<()> {
 					if config.role.is_authority() { "yes" } else { "no" }
 				);
 
-				match cli.runtime.as_str() {
-					"peregrine" => crate::service::start_node::<MashRuntimeExecutor, peregrine_runtime::RuntimeApi>(
+				if config.chain_spec.is_peregrine() {
+					crate::service::start_node::<PeregrineRuntimeExecutor, peregrine_runtime::RuntimeApi>(
+						config,
+						polkadot_config,
+						collator_options,
+						id,
+						hwbench,
+					)
+					.await
+					.map(|r| r.0)
+					.map_err(Into::into)
+				} else if config.chain_spec.is_spiritnet() {
+					crate::service::start_node::<SpiritnetRuntimeExecutor, spiritnet_runtime::RuntimeApi>(
+						config,
+						polkadot_config,
+						collator_options,
+						id,
+						hwbench,
+					)
+					.await
+					.map(|r| r.0)
+
+					.map_err(Into::into)
+        } else if config.chain_spec.is_void() {
+					crate::service::start_node::<VoidRuntimeExecutor, void_runtime::RuntimeApi>(
 						config,
 						polkadot_config,
 						id,
 					)
 					.await
 					.map(|r| r.0)
-					.map_err(Into::into),
-					"spiritnet" => crate::service::start_node::<SpiritRuntimeExecutor, spiritnet_runtime::RuntimeApi>(
-						config,
-						polkadot_config,
-						id,
-					)
-					.await
-					.map(|r| r.0)
-					.map_err(Into::into),
-					"void" => crate::service::start_node::<VoidRuntimeExecutor, void_runtime::RuntimeApi>(
-						config,
-						polkadot_config,
-						id,
-					)
-					.await
-					.map(|r| r.0)
-					.map_err(Into::into),
-					_ => Err("Unknown runtime".into()),
+					.map_err(Into::into)
+				} else {
+					Err("Unknown KILT parachain runtime, neither Spiritnet nor Peregrine".into())
 				}
 			})
 		}
@@ -442,11 +543,24 @@ impl CliConfiguration<Self> for RelayChainCli {
 		self.base.base.rpc_ws(default_listen_port)
 	}
 
-	fn prometheus_config(&self, default_listen_port: u16) -> Result<Option<PrometheusConfig>> {
-		self.base.base.prometheus_config(default_listen_port)
+	fn prometheus_config(
+		&self,
+		default_listen_port: u16,
+		chain_spec: &Box<dyn ChainSpec>,
+	) -> Result<Option<PrometheusConfig>> {
+		self.base.base.prometheus_config(default_listen_port, chain_spec)
 	}
 
-	fn init<C: SubstrateCli>(&self) -> Result<()> {
+	fn init<F>(
+		&self,
+		_support_url: &String,
+		_impl_version: &String,
+		_logger_hook: F,
+		_config: &sc_service::Configuration,
+	) -> Result<()>
+	where
+		F: FnOnce(&mut sc_cli::LoggerBuilder, &sc_service::Configuration),
+	{
 		unreachable!("PolkadotCli is never initialized; qed");
 	}
 

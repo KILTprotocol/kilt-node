@@ -28,16 +28,12 @@
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use codec::{Decode, Encode, MaxEncodedLen};
-use frame_support::traits::InstanceFilter;
-pub use frame_support::{
+use frame_support::{
 	construct_runtime, parameter_types,
-	traits::{Currency, FindAuthor, Imbalance, KeyOwnerProofSystem, OnUnbalanced, Randomness},
-	weights::{
-		constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
-		IdentityFee, Weight,
-	},
-	ConsensusEngineId, StorageValue,
+	traits::{Currency, InstanceFilter, KeyOwnerProofSystem},
+	weights::{constants::RocksDbWeight, ConstantMultiplier, IdentityFee},
 };
+pub use frame_system::Call as SystemCall;
 use frame_system::EnsureRoot;
 use pallet_grandpa::{fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
 use pallet_transaction_payment::{CurrencyAdapter, FeeDetails};
@@ -46,15 +42,24 @@ use sp_consensus_aura::{ed25519::AuthorityId as AuraId, SlotDuration};
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
-	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, NumberFor, OpaqueKeys, Verify},
+	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, NumberFor, OpaqueKeys},
 	transaction_validity::{TransactionSource, TransactionValidity},
 	ApplyExtrinsicResult, RuntimeDebug,
 };
-pub use sp_runtime::{Perbill, Permill};
 use sp_std::prelude::*;
 use sp_version::RuntimeVersion;
 
+use delegation::DelegationAc;
+use pallet_did_lookup::{linkable_account::LinkableAccountId, migrations::EthereumMigration};
+use runtime_common::{
+	authorization::{AuthorizationId, PalletAuthorize},
+	constants::{self, KILT, MILLI_KILT},
+	fees::ToAuthor,
+	AccountId, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature, SlowAdjustingFeeUpdate,
+};
+
 pub use pallet_timestamp::Call as TimestampCall;
+pub use sp_runtime::{Perbill, Permill};
 
 pub use attestation;
 pub use ctype;
@@ -62,11 +67,6 @@ pub use delegation;
 pub use did;
 pub use pallet_balances::Call as BalancesCall;
 pub use pallet_web3_names;
-use runtime_common::{
-	constants::{self, KILT, MICRO_KILT, MILLI_KILT},
-	fees::ToAuthor,
-	pallet_id, AccountId, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature, SlowAdjustingFeeUpdate,
-};
 
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
@@ -114,10 +114,11 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("mashnet-node"),
 	impl_name: create_runtime_str!("mashnet-node"),
 	authoring_version: 4,
-	spec_version: 10400,
+	spec_version: 10700,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
-	transaction_version: 2,
+	transaction_version: 4,
+	state_version: 0,
 };
 
 /// The version information used to identify this runtime when compiled
@@ -130,16 +131,9 @@ pub fn native_version() -> NativeVersion {
 	}
 }
 
-const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
-
 parameter_types! {
 	pub const Version: RuntimeVersion = VERSION;
 	pub const BlockHashCount: BlockNumber = 2400;
-	/// We allow for 2 seconds of compute with a 6 second average block time.
-	pub BlockWeights: frame_system::limits::BlockWeights = frame_system::limits::BlockWeights
-		::with_sensible_defaults(2 * WEIGHT_PER_SECOND, NORMAL_DISPATCH_RATIO);
-	pub BlockLength: frame_system::limits::BlockLength = frame_system::limits::BlockLength
-		::max_with_normal_ratio(5 * 1024 * 1024, NORMAL_DISPATCH_RATIO);
 	pub const SS58Prefix: u8 = 38;
 }
 
@@ -149,9 +143,9 @@ impl frame_system::Config for Runtime {
 	/// The basic call filter to use in dispatchable.
 	type BaseCallFilter = frame_support::traits::Everything;
 	/// Block & extrinsics weights: base values and limits.
-	type BlockWeights = BlockWeights;
+	type BlockWeights = runtime_common::BlockWeights;
 	/// The maximum length of a block (in bytes).
-	type BlockLength = BlockLength;
+	type BlockLength = runtime_common::BlockLength;
 	/// The identifier used to distinguish between accounts.
 	type AccountId = AccountId;
 	/// The aggregated dispatch type that is available for extrinsics.
@@ -197,6 +191,7 @@ impl frame_system::Config for Runtime {
 	type SS58Prefix = SS58Prefix;
 	/// The set code logic, just the default since we're not a parachain.
 	type OnSetCode = ();
+	type MaxConsumers = frame_support::traits::ConstU32<16>;
 }
 
 parameter_types! {
@@ -227,7 +222,8 @@ impl pallet_grandpa::Config for Runtime {
 }
 
 parameter_types! {
-	pub const MinimumPeriod: u64 = constants::SLOT_DURATION / 2;
+	// Minimum period 500ms -> block time 1s
+	pub const MinimumPeriod: u64 = 500;
 }
 
 impl pallet_timestamp::Config for Runtime {
@@ -238,14 +234,10 @@ impl pallet_timestamp::Config for Runtime {
 	type WeightInfo = ();
 }
 
-parameter_types! {
-	pub const Deposit: Balance = 1_000;
-}
-
 impl pallet_indices::Config for Runtime {
 	type AccountIndex = Index;
 	type Currency = Balances;
-	type Deposit = Deposit;
+	type Deposit = constants::IndicesDeposit;
 	type Event = Event;
 	type WeightInfo = ();
 }
@@ -276,27 +268,11 @@ parameter_types! {
 	pub const UsableBalance: Balance = KILT;
 }
 
-impl kilt_launch::Config for Runtime {
-	type Event = Event;
-	type MaxClaims = MaxClaims;
-	type UsableBalance = UsableBalance;
-	type WeightInfo = ();
-	type AutoUnlockBound = AutoUnlockBound;
-	type PalletId = pallet_id::Launch;
-}
-
-parameter_types! {
-	pub const TransactionByteFee: Balance = MICRO_KILT;
-	/// This value increases the priority of `Operational` transactions by adding
-	/// a "virtual tip" that's equal to the `OperationalFeeMultiplier * final_fee`.
-	pub const OperationalFeeMultiplier: u8 = 5;
-}
-
 impl pallet_transaction_payment::Config for Runtime {
 	type OnChargeTransaction = CurrencyAdapter<Balances, runtime_common::fees::ToAuthor<Runtime>>;
-	type TransactionByteFee = TransactionByteFee;
-	type OperationalFeeMultiplier = OperationalFeeMultiplier;
+	type OperationalFeeMultiplier = constants::fee::OperationalFeeMultiplier;
 	type WeightToFee = IdentityFee<Balance>;
+	type LengthToFee = ConstantMultiplier<Balance, constants::fee::TransactionByteFee>;
 	type FeeMultiplierUpdate = SlowAdjustingFeeUpdate<Self>;
 }
 
@@ -318,6 +294,9 @@ impl attestation::Config for Runtime {
 	type Currency = Balances;
 	type Deposit = AttestationDeposit;
 	type MaxDelegatedAttestations = MaxDelegatedAttestations;
+	type AttesterId = DidIdentifier;
+	type AuthorizationId = AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>;
+	type AccessControl = PalletAuthorize<DelegationAc<Runtime>>;
 }
 
 parameter_types! {
@@ -426,18 +405,13 @@ impl did::Config for Runtime {
 	type WeightInfo = ();
 }
 
-parameter_types! {
-	pub const DidLookupDeposit: Balance = KILT;
-}
-
 impl pallet_did_lookup::Config for Runtime {
 	type Event = Event;
-	type Signature = Signature;
-	type Signer = <Signature as Verify>::Signer;
+
 	type DidIdentifier = DidIdentifier;
 
 	type Currency = Balances;
-	type Deposit = DidLookupDeposit;
+	type Deposit = constants::did_lookup::DidLookupDeposit;
 
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
@@ -445,22 +419,16 @@ impl pallet_did_lookup::Config for Runtime {
 	type WeightInfo = ();
 }
 
-parameter_types! {
-	pub const Web3NameDeposit: Balance = constants::web3_names::DEPOSIT;
-	pub const MinNameLength: u32 = constants::web3_names::MIN_LENGTH;
-	pub const MaxNameLength: u32 = constants::web3_names::MAX_LENGTH;
-}
-
 impl pallet_web3_names::Config for Runtime {
 	type BanOrigin = EnsureRoot<AccountId>;
 	type OwnerOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
 	type Currency = Balances;
-	type Deposit = Web3NameDeposit;
+	type Deposit = constants::web3_names::Web3NameDeposit;
 	type Event = Event;
-	type MaxNameLength = MaxNameLength;
-	type MinNameLength = MinNameLength;
-	type Web3Name = pallet_web3_names::web3_name::AsciiWeb3Name<Runtime, MinNameLength, MaxNameLength>;
+	type MaxNameLength = constants::web3_names::MaxNameLength;
+	type MinNameLength = constants::web3_names::MinNameLength;
+	type Web3Name = pallet_web3_names::web3_name::AsciiWeb3Name<Runtime>;
 	type Web3NameOwner = DidIdentifier;
 	type WeightInfo = ();
 }
@@ -493,20 +461,6 @@ impl pallet_authorship::Config for Runtime {
 	type EventHandler = ();
 }
 
-parameter_types! {
-	pub const MinVestedTransfer: Balance = constants::MIN_VESTED_TRANSFER_AMOUNT;
-}
-
-impl pallet_vesting::Config for Runtime {
-	type Event = Event;
-	type Currency = Balances;
-	type BlockNumberToBalance = ConvertInto;
-	// disable vested transfers by setting min amount to max balance
-	type MinVestedTransfer = MinVestedTransfer;
-	const MAX_VESTING_SCHEDULES: u32 = runtime_common::constants::MAX_VESTING_SCHEDULES;
-	type WeightInfo = ();
-}
-
 impl pallet_utility::Config for Runtime {
 	type Event = Event;
 	type Call = Call;
@@ -516,31 +470,20 @@ impl pallet_utility::Config for Runtime {
 
 impl pallet_randomness_collective_flip::Config for Runtime {}
 
-// Start of proxy pallet configuration
-
-parameter_types! {
-	// One storage item; key size 32, value size 8; .
-	pub const ProxyDepositBase: Balance = KILT;
-	// Additional storage item size of 33 bytes.
-	pub const ProxyDepositFactor: Balance = KILT;
-	pub const MaxProxies: u16 = 32;
-	pub const AnnouncementDepositBase: Balance = KILT;
-	pub const AnnouncementDepositFactor: Balance = KILT;
-	pub const MaxPending: u16 = 32;
-}
-
 /// The type used to represent the kinds of proxying allowed.
 #[derive(
 	Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, RuntimeDebug, MaxEncodedLen, scale_info::TypeInfo,
 )]
 pub enum ProxyType {
+	/// Allow for any call.
 	Any,
+	/// Allow for calls that do not move tokens out of the caller's account.
 	NonTransfer,
+	/// Allow for staking-related calls.
 	CancelProxy,
-	Ctype,
-	Attestation,
-	Delegation,
-	Did,
+	/// Allow for calls that do not result in a deposit being claimed (e.g., for
+	/// attestations, delegations, or DIDs).
+	NonDepositClaiming,
 }
 
 impl Default for ProxyType {
@@ -555,34 +498,97 @@ impl InstanceFilter<Call> for ProxyType {
 			ProxyType::Any => true,
 			ProxyType::NonTransfer => matches!(
 				c,
-				Call::System(..) |
-				Call::Timestamp(..) |
-				Call::Indices(pallet_indices::Call::claim{..}) |
-				Call::Indices(pallet_indices::Call::free{..}) |
-				Call::Indices(pallet_indices::Call::freeze{..}) |
-				// Specifically omitting Indices `transfer`, `force_transfer`
-				// Specifically omitting the entire Balances pallet
-				Call::Authorship(..) |
-				Call::Session(..) |
-				Call::Vesting(pallet_vesting::Call::vest{..}) |
-				Call::Vesting(pallet_vesting::Call::vest_other{..}) |
-				// Specifically omitting Vesting `vested_transfer`, and `force_vested_transfer`
-				Call::Utility(..)
+				Call::Attestation(..)
+					| Call::Authorship(..)
+					// Excludes `Balances`
+					| Call::Ctype(..)
+					| Call::Delegation(..)
+					| Call::Did(..)
+					| Call::DidLookup(..)
+					| Call::Indices(
+						// Excludes `force_transfer`, and `transfer`
+						pallet_indices::Call::claim { .. }
+							| pallet_indices::Call::free { .. }
+							| pallet_indices::Call::freeze { .. }
+					)
+					| Call::Proxy(..)
+					| Call::Session(..)
+					// Excludes `Sudo`
+					| Call::System(..)
+					| Call::Timestamp(..)
+					| Call::Utility(..)
+					| Call::Web3Names(..),
 			),
-			ProxyType::Ctype => matches!(c, Call::Ctype(..)),
-			ProxyType::Delegation => matches!(c, Call::Delegation(..)),
-			ProxyType::Attestation => matches!(c, Call::Attestation(..)),
-			ProxyType::Did => matches!(c, Call::Did(..)),
-			ProxyType::CancelProxy => {
-				matches!(c, Call::Proxy(pallet_proxy::Call::reject_announcement { .. }))
-			}
+			ProxyType::NonDepositClaiming => matches!(
+				c,
+				Call::Attestation(
+						// Excludes `reclaim_deposit`
+						attestation::Call::add { .. }
+							| attestation::Call::remove { .. }
+							| attestation::Call::revoke { .. }
+					)
+					| Call::Authorship(..)
+					// Excludes `Balances`
+					| Call::Ctype(..)
+					| Call::Delegation(
+						// Excludes `reclaim_deposit`
+						delegation::Call::add_delegation { .. }
+							| delegation::Call::create_hierarchy { .. }
+							| delegation::Call::remove_delegation { .. }
+							| delegation::Call::revoke_delegation { .. }
+					)
+					| Call::Did(
+						// Excludes `reclaim_deposit`
+						did::Call::add_key_agreement_key { .. }
+							| did::Call::add_service_endpoint { .. }
+							| did::Call::create { .. }
+							| did::Call::delete { .. }
+							| did::Call::remove_attestation_key { .. }
+							| did::Call::remove_delegation_key { .. }
+							| did::Call::remove_key_agreement_key { .. }
+							| did::Call::remove_service_endpoint { .. }
+							| did::Call::set_attestation_key { .. }
+							| did::Call::set_authentication_key { .. }
+							| did::Call::set_delegation_key { .. }
+							| did::Call::submit_did_call { .. }
+					)
+					| Call::DidLookup(
+						// Excludes `reclaim_deposit`
+						pallet_did_lookup::Call::associate_account { .. }
+							| pallet_did_lookup::Call::associate_sender { .. }
+							| pallet_did_lookup::Call::remove_account_association { .. }
+							| pallet_did_lookup::Call::remove_sender_association { .. }
+					)
+					| Call::Indices(..)
+					| Call::Proxy(..)
+					| Call::Session(..)
+					// Excludes `Sudo`
+					| Call::System(..)
+					| Call::Timestamp(..)
+					| Call::Utility(..)
+					| Call::Web3Names(
+						// Excludes `ban`, and `reclaim_deposit`
+						pallet_web3_names::Call::claim { .. }
+							| pallet_web3_names::Call::release_by_owner { .. }
+							| pallet_web3_names::Call::unban { .. }
+					),
+			),
+			ProxyType::CancelProxy => matches!(c, Call::Proxy(pallet_proxy::Call::reject_announcement { .. })),
 		}
 	}
 	fn is_superset(&self, o: &Self) -> bool {
 		match (self, o) {
 			(x, y) if x == y => true,
+			// "anything" always contains any subset
 			(ProxyType::Any, _) => true,
 			(_, ProxyType::Any) => false,
+			// reclaiming deposits is part of NonTransfer but not in NonDepositClaiming
+			(ProxyType::NonDepositClaiming, ProxyType::NonTransfer) => false,
+			// everything except NonTransfer and Any is part of NonDepositClaiming
+			(ProxyType::NonDepositClaiming, _) => true,
+			// Transfers are part of NonDepositClaiming but not in NonTransfer
+			(ProxyType::NonTransfer, ProxyType::NonDepositClaiming) => false,
+			// everything except NonDepositClaiming and Any is part of NonTransfer
 			(ProxyType::NonTransfer, _) => true,
 			_ => false,
 		}
@@ -594,14 +600,14 @@ impl pallet_proxy::Config for Runtime {
 	type Call = Call;
 	type Currency = Balances;
 	type ProxyType = ProxyType;
-	type ProxyDepositBase = ProxyDepositBase;
-	type ProxyDepositFactor = ProxyDepositFactor;
-	type MaxProxies = MaxProxies;
-	type WeightInfo = ();
-	type MaxPending = MaxPending;
+	type ProxyDepositBase = constants::proxy::ProxyDepositBase;
+	type ProxyDepositFactor = constants::proxy::ProxyDepositFactor;
+	type MaxProxies = constants::proxy::MaxProxies;
+	type MaxPending = constants::proxy::MaxPending;
 	type CallHasher = BlakeTwo256;
-	type AnnouncementDepositBase = AnnouncementDepositBase;
-	type AnnouncementDepositFactor = AnnouncementDepositFactor;
+	type AnnouncementDepositBase = constants::proxy::AnnouncementDepositBase;
+	type AnnouncementDepositFactor = constants::proxy::AnnouncementDepositFactor;
+	type WeightInfo = ();
 }
 
 construct_runtime!(
@@ -641,9 +647,8 @@ construct_runtime!(
 		// // System scheduler.
 		// Scheduler: pallet_scheduler = 32,
 
-		// Vesting. Usable initially, but removed once all vesting is finished.
-		Vesting: pallet_vesting = 33,
-		KiltLaunch: kilt_launch = 34,
+		// DELETED: Vesting: pallet_vesting = 33,
+		// DELETED: KiltLaunch: kilt_launch = 34,
 		Utility: pallet_utility = 35,
 		// DELETED CrowdloanContributors: 36,
 
@@ -679,6 +684,7 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 			Call::Did(did::Call::create { .. }) => Err(did::RelationshipDeriveError::NotCallableByDid),
 			Call::Did { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
 			Call::Web3Names { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
+			Call::DidLookup { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
 			Call::Utility(pallet_utility::Call::batch { calls }) => single_key_relationship(&calls[..]),
 			Call::Utility(pallet_utility::Call::batch_all { calls }) => single_key_relationship(&calls[..]),
 			#[cfg(not(feature = "runtime-benchmarks"))]
@@ -708,6 +714,7 @@ pub type SignedBlock = generic::SignedBlock<Block>;
 pub type BlockId = generic::BlockId<Block>;
 /// The SignedExtension to the basic transaction logic.
 pub type SignedExtra = (
+	frame_system::CheckNonZeroSender<Runtime>,
 	frame_system::CheckSpecVersion<Runtime>,
 	frame_system::CheckTxVersion<Runtime>,
 	frame_system::CheckGenesis<Runtime>,
@@ -718,11 +725,19 @@ pub type SignedExtra = (
 );
 /// Unchecked extrinsic type as expected by this runtime.
 pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<Address, Call, Signature, SignedExtra>;
+/// The payload being signed in transactions.
+pub type SignedPayload = generic::SignedPayload<Call, SignedExtra>;
 /// Extrinsic type that has already been checked.
 pub type CheckedExtrinsic = generic::CheckedExtrinsic<AccountId, Call, SignedExtra>;
 /// Executive: handles dispatch to the various Pallets.
-pub type Executive =
-	frame_executive::Executive<Runtime, Block, frame_system::ChainContext<Runtime>, Runtime, AllPallets>;
+pub type Executive = frame_executive::Executive<
+	Runtime,
+	Block,
+	frame_system::ChainContext<Runtime>,
+	Runtime,
+	AllPalletsWithSystem,
+	(EthereumMigration<Runtime>,),
+>;
 
 impl_runtime_apis! {
 	impl sp_api::Core<Block> for Runtime {
@@ -852,6 +867,99 @@ impl_runtime_apis! {
 		}
 	}
 
+	impl did_rpc_runtime_api::DidApi<
+		Block,
+		DidIdentifier,
+		AccountId,
+		LinkableAccountId,
+		Balance,
+		Hash,
+		BlockNumber
+	> for Runtime {
+		fn query_did_by_w3n(name: Vec<u8>) -> Option<did_rpc_runtime_api::RawDidLinkedInfo<
+				DidIdentifier,
+				AccountId,
+				LinkableAccountId,
+				Balance,
+				Hash,
+				BlockNumber
+			>
+		> {
+			let name: pallet_web3_names::web3_name::AsciiWeb3Name<Runtime> = name.try_into().ok()?;
+			pallet_web3_names::Owner::<Runtime>::get(&name)
+				.and_then(|owner_info| {
+					did::Did::<Runtime>::get(&owner_info.owner).map(|details| (owner_info, details))
+				})
+				.map(|(owner_info, details)| {
+					let accounts = pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(
+						&owner_info.owner,
+					).collect();
+					let service_endpoints = did::ServiceEndpoints::<Runtime>::iter_prefix(&owner_info.owner).map(|e| From::from(e.1)).collect();
+
+					did_rpc_runtime_api::RawDidLinkedInfo{
+						identifier: owner_info.owner,
+						w3n: Some(name.into()),
+						accounts,
+						service_endpoints,
+						details: details.into(),
+					}
+			})
+		}
+
+		fn query_did_by_account_id(account: LinkableAccountId) -> Option<
+			did_rpc_runtime_api::RawDidLinkedInfo<
+				DidIdentifier,
+				AccountId,
+				LinkableAccountId,
+				Balance,
+				Hash,
+				BlockNumber
+			>
+		> {
+			pallet_did_lookup::ConnectedDids::<Runtime>::get(account)
+				.and_then(|owner_info| {
+					did::Did::<Runtime>::get(&owner_info.did).map(|details| (owner_info, details))
+				})
+				.map(|(connection_record, details)| {
+					let w3n = pallet_web3_names::Names::<Runtime>::get(&connection_record.did).map(Into::into);
+					let accounts = pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(&connection_record.did).collect();
+					let service_endpoints = did::ServiceEndpoints::<Runtime>::iter_prefix(&connection_record.did).map(|e| From::from(e.1)).collect();
+
+					did_rpc_runtime_api::RawDidLinkedInfo {
+						identifier: connection_record.did,
+						w3n,
+						accounts,
+						service_endpoints,
+						details: details.into(),
+					}
+				})
+		}
+
+		fn query_did(did: DidIdentifier) -> Option<
+			did_rpc_runtime_api::RawDidLinkedInfo<
+				DidIdentifier,
+				AccountId,
+				LinkableAccountId,
+				Balance,
+				Hash,
+				BlockNumber
+			>
+		> {
+			let details = did::Did::<Runtime>::get(&did)?;
+			let w3n = pallet_web3_names::Names::<Runtime>::get(&did).map(Into::into);
+			let accounts = pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(&did).collect();
+			let service_endpoints = did::ServiceEndpoints::<Runtime>::iter_prefix(&did).map(|e| From::from(e.1)).collect();
+
+			Some(did_rpc_runtime_api::RawDidLinkedInfo {
+				identifier: did,
+				w3n,
+				accounts,
+				service_endpoints,
+				details: details.into(),
+			})
+		}
+	}
+
 	#[cfg(feature = "runtime-benchmarks")]
 	impl frame_benchmarking::Benchmark<Block> for Runtime {
 		fn benchmark_metadata(extra: bool) -> (
@@ -873,8 +981,6 @@ impl_runtime_apis! {
 			list_benchmark!(list, extra, frame_system, SystemBench::<Runtime>);
 			list_benchmark!(list, extra, pallet_balances, Balances);
 			list_benchmark!(list, extra, pallet_timestamp, Timestamp);
-			list_benchmark!(list, extra, kilt_launch, KiltLaunch);
-			list_benchmark!(list, extra, pallet_vesting, Vesting);
 
 			list_benchmark!(list, extra, did, Did);
 			list_benchmark!(list, extra, ctype, Ctype);
@@ -913,8 +1019,6 @@ impl_runtime_apis! {
 				// System Events
 				hex_literal::hex!("26aa394eea5630e07c48ae0c9558cef780d41e5e16056765bc8461851072c9d7")
 					.to_vec().into(),
-				// KiltLaunch transfer account
-				hex_literal::hex!("6a3c793cec9dbe330b349dc4eea6801090f5e71f53b1b41ad11afb4a313a282c").to_vec().into(),
 			];
 
 			let mut batches = Vec::<BenchmarkBatch>::new();
@@ -924,8 +1028,6 @@ impl_runtime_apis! {
 			add_benchmark!(params, batches, frame_system, SystemBench::<Runtime>);
 			add_benchmark!(params, batches, pallet_balances, Balances);
 			add_benchmark!(params, batches, pallet_timestamp, Timestamp);
-			add_benchmark!(params, batches, kilt_launch, KiltLaunch);
-			add_benchmark!(params, batches, pallet_vesting, Vesting);
 
 			add_benchmark!(params, batches, did, Did);
 			add_benchmark!(params, batches, ctype, Ctype);
@@ -939,15 +1041,12 @@ impl_runtime_apis! {
 
 	#[cfg(feature = "try-runtime")]
 	impl frame_try_runtime::TryRuntime<Block> for Runtime {
-		fn on_runtime_upgrade() -> (Weight, Weight) {
+		fn on_runtime_upgrade() -> (frame_support::pallet_prelude::Weight, frame_support::pallet_prelude::Weight) {
 			log::info!("try-runtime::on_runtime_upgrade standalone runtime.");
-			let weight = Executive::try_runtime_upgrade().map_err(|err|{
-				log::info!("try-runtime::on_runtime_upgrade failed with: {:?}", err);
-				err
-			}).unwrap();
-			(weight, BlockWeights::get().max_block)
+			let weight = Executive::try_runtime_upgrade().unwrap();
+			(weight, runtime_common::BlockWeights::get().max_block)
 		}
-		fn execute_block_no_check(block: Block) -> Weight {
+		fn execute_block_no_check(block: Block) -> frame_support::pallet_prelude::Weight {
 			Executive::execute_block_no_check(block)
 		}
 	}

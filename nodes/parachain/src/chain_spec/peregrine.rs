@@ -21,16 +21,15 @@
 use cumulus_primitives_core::ParaId;
 use hex_literal::hex;
 use peregrine_runtime::{
-	BalancesConfig, CouncilConfig, GenesisConfig, InflationInfo, KiltLaunchConfig, MinCollatorStake,
-	ParachainInfoConfig, ParachainStakingConfig, SessionConfig, SudoConfig, SystemConfig, TechnicalCommitteeConfig,
-	VestingConfig, WASM_BINARY,
+	BalancesConfig, CouncilConfig, GenesisConfig, InflationInfo, ParachainInfoConfig, ParachainStakingConfig,
+	SessionConfig, SudoConfig, SystemConfig, TechnicalCommitteeConfig, VestingConfig, WASM_BINARY,
 };
 use runtime_common::{
-	constants::{INFLATION_CONFIG, KILT, MAX_COLLATOR_STAKE},
+	constants::{kilt_inflation_config, staking::MinCollatorStake, MAX_COLLATOR_STAKE},
 	AccountId, AuthorityId, Balance, BlockNumber,
 };
 use sc_service::ChainType;
-use sp_core::{crypto::UncheckedInto, sr25519};
+use sp_core::sr25519;
 use sp_runtime::traits::Zero;
 
 use crate::chain_spec::{get_account_id_from_seed, get_from_seed, get_properties, Extensions, DEFAULT_PARA_ID};
@@ -38,15 +37,13 @@ use crate::chain_spec::{get_account_id_from_seed, get_from_seed, get_properties,
 /// Specialized `ChainSpec` for the normal parachain runtime.
 pub type ChainSpec = sc_service::GenericChainSpec<GenesisConfig, Extensions>;
 
-const TRANSFER_ACCOUNT: [u8; 32] = hex!["6a3c793cec9dbe330b349dc4eea6801090f5e71f53b1b41ad11afb4a313a282c"];
-
 pub fn make_dev_spec() -> Result<ChainSpec, String> {
 	let properties = get_properties("PILT", 15, 38);
 	let wasm = WASM_BINARY.ok_or("No WASM")?;
 
 	Ok(ChainSpec::from_genesis(
-		"KILT Peregrine Local",
-		"peregrine_local_testnet",
+		"KILT Peregrine Develop",
+		"kilt_peregrine_dev",
 		ChainType::Local,
 		move || {
 			testnet_genesis(
@@ -96,6 +93,7 @@ pub fn make_dev_spec() -> Result<ChainSpec, String> {
 		vec![],
 		None,
 		None,
+		None,
 		Some(properties),
 		Extensions {
 			relay_chain: "rococo_local_testnet".into(),
@@ -111,44 +109,22 @@ pub fn make_new_spec() -> Result<ChainSpec, String> {
 
 	Ok(ChainSpec::from_genesis(
 		"KILT Peregrine Testnet",
-		"kilt_parachain_testnet",
+		"kilt_peregrine_testnet",
 		ChainType::Live,
 		move || {
 			testnet_genesis(
 				wasm,
-				vec![
-					(
-						hex!["d206033ba2eadf615c510f2c11f32d931b27442e5cfb64884afa2241dfa66e70"].into(),
-						None,
-						10_000 * KILT,
-					),
-					(
-						hex!["b67fe6413ffe5cf91ae38a6475c37deea70a25c6c86b3dd17bb82d09efd9b350"].into(),
-						None,
-						10_000 * KILT,
-					),
-				],
+				vec![],
 				kilt_inflation_config(),
 				MAX_COLLATOR_STAKE,
 				hex!["d206033ba2eadf615c510f2c11f32d931b27442e5cfb64884afa2241dfa66e70"].into(),
-				vec![
-					(
-						hex!["d206033ba2eadf615c510f2c11f32d931b27442e5cfb64884afa2241dfa66e70"].into(),
-						hex!["d206033ba2eadf615c510f2c11f32d931b27442e5cfb64884afa2241dfa66e70"].unchecked_into(),
-					),
-					(
-						hex!["b67fe6413ffe5cf91ae38a6475c37deea70a25c6c86b3dd17bb82d09efd9b350"].into(),
-						hex!["b67fe6413ffe5cf91ae38a6475c37deea70a25c6c86b3dd17bb82d09efd9b350"].unchecked_into(),
-					),
-				],
-				vec![
-					hex!["d206033ba2eadf615c510f2c11f32d931b27442e5cfb64884afa2241dfa66e70"].into(),
-					hex!["b67fe6413ffe5cf91ae38a6475c37deea70a25c6c86b3dd17bb82d09efd9b350"].into(),
-				],
+				vec![],
+				vec![],
 				id,
 			)
 		},
 		Vec::new(),
+		None,
 		None,
 		None,
 		Some(properties),
@@ -157,10 +133,6 @@ pub fn make_new_spec() -> Result<ChainSpec, String> {
 			para_id: id.into(),
 		},
 	))
-}
-
-pub fn kilt_inflation_config() -> InflationInfo {
-	InflationInfo::from(INFLATION_CONFIG)
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -200,21 +172,8 @@ fn testnet_genesis(
 				.chain(botlabs_accounts.iter().cloned().map(|(who, total, _, _)| (who, total)))
 				.collect(),
 		},
-		sudo: SudoConfig { key: root_key },
+		sudo: SudoConfig { key: Some(root_key) },
 		parachain_info: ParachainInfoConfig { parachain_id: id },
-		kilt_launch: KiltLaunchConfig {
-			vesting: airdrop_accounts
-				.iter()
-				.cloned()
-				.map(|(who, amount, vesting_length, _)| (who, vesting_length, amount))
-				.collect(),
-			balance_locks: airdrop_accounts
-				.iter()
-				.cloned()
-				.map(|(who, amount, _, locking_length)| (who, locking_length, amount))
-				.collect(),
-			transfer_account: TRANSFER_ACCOUNT.into(),
-		},
 		vesting: VestingConfig {
 			vesting: botlabs_accounts
 				.iter()
@@ -232,6 +191,7 @@ fn testnet_genesis(
 			phantom: Default::default(),
 		},
 		treasury: Default::default(),
+		tips_membership: Default::default(),
 		technical_membership: Default::default(),
 		democracy: Default::default(),
 		parachain_staking: ParachainStakingConfig {
