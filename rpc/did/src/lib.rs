@@ -31,8 +31,18 @@ use sp_runtime::{generic::BlockId, traits::Block as BlockT};
 
 pub use did_rpc_runtime_api::DidApi as DidRuntimeApi;
 
-pub type RpcDidLinkedInfo<DidIdentifier, AccountId, Balance, Key, BlockNumber> =
-	DidLinkedInfo<DidIdentifier, AccountId, String, String, String, String, Balance, Key, BlockNumber>;
+pub type RpcDidLinkedInfo<DidIdentifier, AccountId, LinkableAccountId, Balance, Key, BlockNumber> = DidLinkedInfo<
+	DidIdentifier,
+	AccountId,
+	LinkableAccountId,
+	String,
+	String,
+	String,
+	String,
+	Balance,
+	Key,
+	BlockNumber,
+>;
 
 fn raw_did_endpoint_to_rpc(
 	raw: ServiceEndpoint<Vec<u8>, Vec<u8>, Vec<u8>>,
@@ -52,11 +62,11 @@ fn raw_did_endpoint_to_rpc(
 	})
 }
 
-pub type DidRpcResponse<DidIdentifier, AccountId, Balance, Key, BlockNumber> =
-	Option<RpcDidLinkedInfo<DidIdentifier, AccountId, Balance, Key, BlockNumber>>;
+pub type DidRpcResponse<DidIdentifier, AccountId, LinkableAccountId, Balance, Key, BlockNumber> =
+	Option<RpcDidLinkedInfo<DidIdentifier, AccountId, LinkableAccountId, Balance, Key, BlockNumber>>;
 
 #[rpc(client, server)]
-pub trait DidApi<BlockHash, DidIdentifier, AccountId, Balance, Key, BlockNumber>
+pub trait DidApi<BlockHash, DidIdentifier, AccountId, LinkableAccountId, Balance, Key, BlockNumber>
 where
 	BlockNumber: MaxEncodedLen,
 	Key: Ord,
@@ -73,7 +83,7 @@ where
 		&self,
 		web3name: String,
 		at: Option<BlockHash>,
-	) -> RpcResult<DidRpcResponse<DidIdentifier, AccountId, Balance, Key, BlockNumber>>;
+	) -> RpcResult<DidRpcResponse<DidIdentifier, AccountId, LinkableAccountId, Balance, Key, BlockNumber>>;
 
 	/// Given an account this returns:
 	/// * the DID
@@ -84,9 +94,9 @@ where
 	#[method(name = "did_queryByAccount")]
 	fn query_did_by_account_id(
 		&self,
-		account: AccountId,
+		account: LinkableAccountId,
 		at: Option<BlockHash>,
-	) -> RpcResult<DidRpcResponse<DidIdentifier, AccountId, Balance, Key, BlockNumber>>;
+	) -> RpcResult<DidRpcResponse<DidIdentifier, AccountId, LinkableAccountId, Balance, Key, BlockNumber>>;
 
 	/// Given a did this returns:
 	/// * the DID
@@ -99,7 +109,7 @@ where
 		&self,
 		account: DidIdentifier,
 		at: Option<BlockHash>,
-	) -> RpcResult<DidRpcResponse<DidIdentifier, AccountId, Balance, Key, BlockNumber>>;
+	) -> RpcResult<DidRpcResponse<DidIdentifier, AccountId, LinkableAccountId, Balance, Key, BlockNumber>>;
 }
 
 /// A struct that implements the [`DidRuntimeApi`].
@@ -136,23 +146,25 @@ impl From<Error> for i32 {
 }
 
 #[async_trait]
-impl<Client, Block, DidIdentifier, AccountId, Balance, Key, BlockNumber>
-	DidApiServer<<Block as BlockT>::Hash, DidIdentifier, AccountId, Balance, Key, BlockNumber> for DidQuery<Client, Block>
+impl<Client, Block, DidIdentifier, AccountId, LinkableAccountId, Balance, Key, BlockNumber>
+	DidApiServer<<Block as BlockT>::Hash, DidIdentifier, AccountId, LinkableAccountId, Balance, Key, BlockNumber>
+	for DidQuery<Client, Block>
 where
 	AccountId: Codec + Send + Sync + 'static,
+	LinkableAccountId: Codec + Send + Sync + 'static,
 	DidIdentifier: Codec + Send + Sync + 'static,
 	Key: Codec + Ord,
 	Balance: Codec + FromStr + Display,
 	BlockNumber: Codec + MaxEncodedLen,
 	Block: BlockT,
 	Client: Send + Sync + 'static + ProvideRuntimeApi<Block> + HeaderBackend<Block>,
-	Client::Api: DidRuntimeApi<Block, DidIdentifier, AccountId, Balance, Key, BlockNumber>,
+	Client::Api: DidRuntimeApi<Block, DidIdentifier, AccountId, LinkableAccountId, Balance, Key, BlockNumber>,
 {
 	fn query_did_by_w3n(
 		&self,
 		web3name: String,
 		at: Option<<Block as BlockT>::Hash>,
-	) -> RpcResult<Option<RpcDidLinkedInfo<DidIdentifier, AccountId, Balance, Key, BlockNumber>>> {
+	) -> RpcResult<Option<RpcDidLinkedInfo<DidIdentifier, AccountId, LinkableAccountId, Balance, Key, BlockNumber>>> {
 		let api = self.client.runtime_api();
 		let at = BlockId::hash(at.unwrap_or_else(||
 			// If the block hash is not provided, assume the best block.
@@ -183,9 +195,9 @@ where
 
 	fn query_did_by_account_id(
 		&self,
-		account: AccountId,
+		account: LinkableAccountId,
 		at: Option<<Block as BlockT>::Hash>,
-	) -> RpcResult<Option<RpcDidLinkedInfo<DidIdentifier, AccountId, Balance, Key, BlockNumber>>> {
+	) -> RpcResult<Option<RpcDidLinkedInfo<DidIdentifier, AccountId, LinkableAccountId, Balance, Key, BlockNumber>>> {
 		let api = self.client.runtime_api();
 		let at = BlockId::hash(at.unwrap_or_else(||
 			// If the block hash is not supplied assume the best block.
@@ -218,7 +230,7 @@ where
 		&self,
 		did: DidIdentifier,
 		at: Option<<Block as BlockT>::Hash>,
-	) -> RpcResult<Option<RpcDidLinkedInfo<DidIdentifier, AccountId, Balance, Key, BlockNumber>>> {
+	) -> RpcResult<Option<RpcDidLinkedInfo<DidIdentifier, AccountId, LinkableAccountId, Balance, Key, BlockNumber>>> {
 		let api = self.client.runtime_api();
 		let at = BlockId::hash(at.unwrap_or_else(||
 			// If the block hash is not supplied assume the best block.
