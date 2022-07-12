@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::{assert_noop, assert_ok};
+use frame_support::{assert_noop, assert_ok, traits::Get};
 use sp_runtime::traits::Zero;
 
 use attestation::{attestations::AttestationDetails, mock::generate_base_attestation, Attestations};
@@ -48,8 +48,8 @@ fn add_with_no_signature_successful() {
 		InputClaimsContentOf::<Test>::default(),
 		None,
 	);
-	let public_credential_deposit = <Test as Config>::Deposit::get();
-	let attestation_deposit = <Test as attestation::Config>::Deposit::get();
+	let public_credential_deposit: Balance = <Test as Config>::Deposit::get();
+	let attestation_deposit: Balance = <Test as attestation::Config>::Deposit::get();
 
 	ExtBuilder::default()
 		.with_balances(vec![(
@@ -153,8 +153,6 @@ fn add_with_claimer_signature_successful() {
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 	let ctype_hash = get_ctype_hash::<Test>(true);
 	let claimer_id = sr25519_did_from_seed(&BOB_SEED);
-	// FIXME: Change the definition of Signature so that we can simply use a tuple
-	// (claimer_id, claim_hash) as signature
 	let new_credential = generate_base_public_credential_creation_op::<Test>(
 		subject_id.into(),
 		claim_hash,
@@ -165,8 +163,8 @@ fn add_with_claimer_signature_successful() {
 			signature_payload: (claimer_id, hash_to_u8(claim_hash)),
 		}),
 	);
-	let public_credential_deposit = <Test as Config>::Deposit::get();
-	let attestation_deposit = <Test as attestation::Config>::Deposit::get();
+	let public_credential_deposit: Balance = <Test as Config>::Deposit::get();
+	let attestation_deposit: Balance = <Test as attestation::Config>::Deposit::get();
 
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, public_credential_deposit + attestation_deposit)])
@@ -205,8 +203,8 @@ fn add_not_enough_balance() {
 		InputClaimsContentOf::<Test>::default(),
 		None,
 	);
-	let public_credential_deposit = <Test as Config>::Deposit::get();
-	let attestation_deposit = <Test as attestation::Config>::Deposit::get();
+	let public_credential_deposit: Balance = <Test as Config>::Deposit::get();
+	let attestation_deposit: Balance = <Test as attestation::Config>::Deposit::get();
 
 	ExtBuilder::default()
 		// One less than the minimum required
@@ -241,8 +239,8 @@ fn add_invalid_signature() {
 			signature_payload: (sr25519_did_from_seed(&BOB_SEED), hash_to_u8(claim_hash)),
 		}),
 	);
-	let public_credential_deposit = <Test as Config>::Deposit::get();
-	let attestation_deposit = <Test as attestation::Config>::Deposit::get();
+	let public_credential_deposit: Balance = <Test as Config>::Deposit::get();
+	let attestation_deposit: Balance = <Test as attestation::Config>::Deposit::get();
 
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, public_credential_deposit + attestation_deposit)])
@@ -276,8 +274,8 @@ fn add_ctype_not_found() {
 			signature_payload: (claimer_id, hash_to_u8(claim_hash)),
 		}),
 	);
-	let public_credential_deposit = <Test as Config>::Deposit::get();
-	let attestation_deposit = <Test as attestation::Config>::Deposit::get();
+	let public_credential_deposit: Balance = <Test as Config>::Deposit::get();
+	let attestation_deposit: Balance = <Test as attestation::Config>::Deposit::get();
 
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, public_credential_deposit + attestation_deposit)])
@@ -302,8 +300,8 @@ fn remove_successful() {
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 	let attestation: AttestationDetails<Test> = generate_base_attestation(attester.clone(), ACCOUNT_00);
 	let new_credential = generate_base_credential_entry(ACCOUNT_00, 0);
-	let public_credential_deposit = <Test as Config>::Deposit::get();
-	let attestation_deposit = <Test as attestation::Config>::Deposit::get();
+	let public_credential_deposit: Balance = <Test as Config>::Deposit::get();
+	let attestation_deposit: Balance = <Test as attestation::Config>::Deposit::get();
 
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, public_credential_deposit + attestation_deposit)])
@@ -361,8 +359,8 @@ fn remove_unauthorized() {
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 	let attestation: AttestationDetails<Test> = generate_base_attestation(attester.clone(), ACCOUNT_00);
 	let new_credential = generate_base_credential_entry(ACCOUNT_00, 0);
-	let public_credential_deposit = <Test as Config>::Deposit::get();
-	let attestation_deposit = <Test as attestation::Config>::Deposit::get();
+	let public_credential_deposit: Balance = <Test as Config>::Deposit::get();
+	let attestation_deposit: Balance = <Test as attestation::Config>::Deposit::get();
 
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, public_credential_deposit + attestation_deposit)])
@@ -387,8 +385,8 @@ fn reclaim_deposit_successful() {
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 	let attestation: AttestationDetails<Test> = generate_base_attestation(attester.clone(), ACCOUNT_00);
 	let new_credential = generate_base_credential_entry(ACCOUNT_00, 0);
-	let public_credential_deposit = <Test as Config>::Deposit::get();
-	let attestation_deposit = <Test as attestation::Config>::Deposit::get();
+	let public_credential_deposit: Balance = <Test as Config>::Deposit::get();
+	let attestation_deposit: Balance = <Test as attestation::Config>::Deposit::get();
 
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, public_credential_deposit + attestation_deposit)])
@@ -444,8 +442,8 @@ fn reclaim_deposit_unauthorized() {
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 	let attestation: AttestationDetails<Test> = generate_base_attestation(attester.clone(), ACCOUNT_00);
 	let new_credential = generate_base_credential_entry(ACCOUNT_00, 0);
-	let public_credential_deposit = <Test as Config>::Deposit::get();
-	let attestation_deposit = <Test as attestation::Config>::Deposit::get();
+	let public_credential_deposit: Balance = <Test as Config>::Deposit::get();
+	let attestation_deposit: Balance = <Test as attestation::Config>::Deposit::get();
 
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, public_credential_deposit + attestation_deposit)])

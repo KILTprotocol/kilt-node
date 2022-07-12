@@ -55,7 +55,6 @@ pub(crate) mod runtime {
 
 	use codec::{Decode, Encode, MaxEncodedLen};
 	use frame_support::{
-		parameter_types,
 		traits::{ConstU128, ConstU16, ConstU32, ConstU64, Get},
 		weights::constants::RocksDbWeight,
 		BoundedVec,
@@ -239,11 +238,6 @@ pub(crate) mod runtime {
 		type FeeCollector = ();
 	}
 
-	// FIXME: Re-replace with ConstU128 when compilation issue fixed.
-	parameter_types! {
-		pub const AttDeposit: Balance = 100 * MILLI_UNIT;
-	}
-
 	impl attestation::Config for Test {
 		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<AccountId, Self::AttesterId>;
 		type OriginSuccess = mock_origin::DoubleOrigin<AccountId, Self::AttesterId>;
@@ -251,29 +245,23 @@ pub(crate) mod runtime {
 		type WeightInfo = ();
 
 		type Currency = Balances;
-		type Deposit = AttDeposit;
+		type Deposit = ConstU128<{100 * MILLI_UNIT}>;
 		type MaxDelegatedAttestations = ConstU32<0>;
 		type AttesterId = SubjectId;
 		type AuthorizationId = SubjectId;
 		type AccessControl = MockAccessControl<Self>;
 	}
 
-	parameter_types! {
-		pub const CredentialDeposit: Balance = 10 * MILLI_UNIT;
-		pub const MaxEncodedClaimsLength: u32 = 500;
-		pub const MaxSubjectIdLength: u32 = 100;
-	}
-
 	impl Config for Test {
 		type ClaimerIdentifier = SubjectId;
 		type ClaimerSignature = (Self::ClaimerIdentifier, Vec<u8>);
 		type ClaimerSignatureVerification = EqualVerify<Self::ClaimerIdentifier, Vec<u8>>;
-		type Deposit = CredentialDeposit;
+		type Deposit = ConstU128<{10 * MILLI_UNIT}>;
 		type EnsureOrigin = <Self as attestation::Config>::EnsureOrigin;
 		type Event = ();
 		type InputError = Error<Self>;
-		type MaxEncodedClaimsLength = MaxEncodedClaimsLength;
-		type MaxSubjectIdLength = MaxSubjectIdLength;
+		type MaxEncodedClaimsLength = ConstU32<500>;
+		type MaxSubjectIdLength = ConstU32<100>;
 		type OriginSuccess = <Self as attestation::Config>::OriginSuccess;
 		type SubjectId = TestSubjectId;
 		type WeightInfo = ();
