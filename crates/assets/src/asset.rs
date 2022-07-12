@@ -89,10 +89,10 @@ pub use v1::*;
 pub mod v1 {
 	use super::{AssetIdError, IdentifierError, NamespaceError, ReferenceError};
 
-	use codec::{Decode, Encode, MaxEncodedLen};
+	use codec::{alloc::string::ToString, Decode, Encode, MaxEncodedLen};
 	use scale_info::TypeInfo;
 
-	use core::str;
+	use core::{format_args, str};
 
 	use frame_support::{sp_runtime::RuntimeDebug, traits::ConstU32, BoundedVec};
 	use sp_core::U256;
@@ -319,9 +319,9 @@ pub mod v1 {
 	impl Display for EvmSmartContractNonFungibleReference {
 		fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
 			let id_output = if let Some(ref id) = &self.1 {
-				format!(":{}", id)
+				format_args!(":{}", id).to_string()
 			} else {
-				String::new()
+				"".to_string()
 			};
 			write!(f, "{}{}", self.0, id_output)
 		}
@@ -423,9 +423,9 @@ pub mod v1 {
 	impl Display for GenericAssetId {
 		fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
 			let id_output = if let Some(ref id) = &self.id {
-				format!(":{}", id)
+				format_args!(":{}", id).to_string()
 			} else {
-				String::new()
+				"".to_string()
 			};
 			write!(f, "{}:{}{}", self.namespace, self.reference, id_output)
 		}

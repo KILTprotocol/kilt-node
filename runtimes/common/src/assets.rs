@@ -55,14 +55,14 @@ impl<T: Config> TryFrom<InputSubjectIdOf<T>> for AssetDid<T> {
 mod benchmarks {
 	use super::*;
 
+	use codec::alloc::string::ToString;
 	use sp_std::vec::Vec;
 
 	use kilt_asset_dids::{asset, chain};
 
 	impl<T: Config> From<AssetDid<T>> for InputSubjectIdOf<T> {
 		fn from(value: AssetDid<T>) -> Self {
-			InputSubjectIdOf::<T>::try_from(value)
-				.expect("Reverse conversion AssetDid -> InputSubjectId should never fail.")
+			value.to_string().as_bytes().to_vec().try_into().expect("Reverse conversion AssetDid -> InputSubjectId should never fail.")
 		}
 	}
 
