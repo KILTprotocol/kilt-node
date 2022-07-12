@@ -62,7 +62,13 @@ mod benchmarks {
 
 	impl<T: Config> From<AssetDid<T>> for InputSubjectIdOf<T> {
 		fn from(value: AssetDid<T>) -> Self {
-			value.to_string().as_bytes().to_vec().try_into().expect("Reverse conversion AssetDid -> InputSubjectId should never fail.")
+			// UTF-8 encode the asset DID (generates the string with the "did:asset:" prefix)
+			value
+				.to_string()
+				.as_bytes()
+				.to_vec()
+				.try_into()
+				.expect("Reverse conversion AssetDid -> InputSubjectId should never fail.")
 		}
 	}
 

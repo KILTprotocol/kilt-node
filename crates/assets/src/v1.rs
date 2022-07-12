@@ -177,12 +177,10 @@ mod test {
 		];
 
 		for id in raw_ids {
-			let asset_did = AssetDid::from_utf8_encoded(id.as_bytes()).unwrap_or_else(|_| panic!("Test for valid IDs failed for {:?}", id));
+			let asset_did = AssetDid::from_utf8_encoded(id.as_bytes())
+				.unwrap_or_else(|_| panic!("Test for valid IDs failed for {:?}", id));
 			// Verify that the ToString implementation prints exactly the original input
-			assert_eq!(
-				asset_did.to_string().to_lowercase(),
-				id.to_lowercase()
-			);
+			assert_eq!(asset_did.to_string().to_lowercase(), id.to_lowercase());
 		}
 	}
 

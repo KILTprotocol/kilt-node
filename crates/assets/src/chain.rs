@@ -220,7 +220,7 @@ mod v1 {
 				Self::Eip155(eip155) => write!(f, "eip155:{}", eip155),
 				Self::Dotsama(dotsama) => write!(f, "polkadot:{}", dotsama),
 				Self::Solana(solana) => write!(f, "solana:{}", solana),
-				Self::Generic(generic) => write!(f, "{}", generic)
+				Self::Generic(generic) => write!(f, "{}", generic),
 			}
 		}
 	}
@@ -493,8 +493,13 @@ mod v1 {
 
 	impl Display for GenericChainNamespace {
 		fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-			// We checked when the type is created that all characters are valid UTF8 (actually ASCII) characters.
-			write!(f, "{}", str::from_utf8(&self.0).expect("Conversion of GenericChainNamespace to string should never fail."))
+			// We checked when the type is created that all characters are valid UTF8
+			// (actually ASCII) characters.
+			write!(
+				f,
+				"{}",
+				str::from_utf8(&self.0).expect("Conversion of GenericChainNamespace to string should never fail.")
+			)
 		}
 	}
 
@@ -535,8 +540,13 @@ mod v1 {
 
 	impl Display for GenericChainReference {
 		fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-			// We checked when the type is created that all characters are valid UTF8 (actually ASCII) characters.
-			write!(f, "{}", str::from_utf8(&self.0).expect("Conversion of GenericChainReference to string should never fail."))
+			// We checked when the type is created that all characters are valid UTF8
+			// (actually ASCII) characters.
+			write!(
+				f,
+				"{}",
+				str::from_utf8(&self.0).expect("Conversion of GenericChainReference to string should never fail.")
+			)
 		}
 	}
 
@@ -553,12 +563,10 @@ mod v1 {
 				"eip155:0",
 			];
 			for chain in valid_chains {
-				let chain_id = ChainId::from_utf8_encoded(chain.as_bytes()).unwrap_or_else(|_| panic!("Chain ID {:?} should not fail for eip155 chains", chain));
+				let chain_id = ChainId::from_utf8_encoded(chain.as_bytes())
+					.unwrap_or_else(|_| panic!("Chain ID {:?} should not fail for eip155 chains", chain));
 				// Verify that the ToString implementation prints exactly the original input
-				assert_eq!(
-					chain_id.to_string(),
-					chain
-				);
+				assert_eq!(chain_id.to_string(), chain);
 			}
 
 			let invalid_chains = [
@@ -597,12 +605,10 @@ mod v1 {
 				"bip122:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 			];
 			for chain in valid_chains {
-				let chain_id = ChainId::from_utf8_encoded(chain.as_bytes()).unwrap_or_else(|_| panic!("Chain ID {:?} should not fail for bip122 chains", chain));
+				let chain_id = ChainId::from_utf8_encoded(chain.as_bytes())
+					.unwrap_or_else(|_| panic!("Chain ID {:?} should not fail for bip122 chains", chain));
 				// Verify that the ToString implementation prints exactly the original input
-				assert_eq!(
-					chain_id.to_string(),
-					chain
-				);
+				assert_eq!(chain_id.to_string(), chain);
 			}
 
 			let invalid_chains = [
@@ -643,12 +649,10 @@ mod v1 {
 				"polkadot:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 			];
 			for chain in valid_chains {
-				let chain_id = ChainId::from_utf8_encoded(chain.as_bytes()).unwrap_or_else(|_| panic!("Chain ID {:?} should not fail for dotsama chains", chain));
+				let chain_id = ChainId::from_utf8_encoded(chain.as_bytes())
+					.unwrap_or_else(|_| panic!("Chain ID {:?} should not fail for dotsama chains", chain));
 				// Verify that the ToString implementation prints exactly the original input
-				assert_eq!(
-					chain_id.to_string(),
-					chain
-				);
+				assert_eq!(chain_id.to_string(), chain);
 			}
 
 			let invalid_chains = [
@@ -689,12 +693,10 @@ mod v1 {
 				"solana:8E9rvCKLFQia2Y35HXjjpWzj8weVo44K",
 			];
 			for chain in valid_chains {
-				let chain_id = ChainId::from_utf8_encoded(chain.as_bytes()).unwrap_or_else(|_| panic!("Chain ID {:?} should not fail for solana chains", chain));
+				let chain_id = ChainId::from_utf8_encoded(chain.as_bytes())
+					.unwrap_or_else(|_| panic!("Chain ID {:?} should not fail for solana chains", chain));
 				// Verify that the ToString implementation prints exactly the original input
-				assert_eq!(
-					chain_id.to_string(),
-					chain
-				);
+				assert_eq!(chain_id.to_string(), chain);
 			}
 
 			let invalid_chains = [
@@ -758,12 +760,10 @@ mod v1 {
 				"stellar:pubnet",
 			];
 			for chain in valid_chains {
-				let chain_id = ChainId::from_utf8_encoded(chain.as_bytes()).unwrap_or_else(|_| panic!("Chain ID {:?} should not fail for generic chains", chain));
+				let chain_id = ChainId::from_utf8_encoded(chain.as_bytes())
+					.unwrap_or_else(|_| panic!("Chain ID {:?} should not fail for generic chains", chain));
 				// Verify that the ToString implementation prints exactly the original input
-				assert_eq!(
-					chain_id.to_string(),
-					chain
-				);
+				assert_eq!(chain_id.to_string(), chain);
 			}
 
 			let invalid_chains = [
@@ -794,14 +794,8 @@ mod v1 {
 		#[test]
 		fn test_helpers() {
 			// These functions should never panic. We just check that here.
-			assert_eq!(
-				ChainId::ethereum_mainnet().to_string(),
-				"eip155:1"
-			);
-			assert_eq!(
-				ChainId::moonbeam_eth().to_string(),
-				"eip155:1284"
-			);
+			assert_eq!(ChainId::ethereum_mainnet().to_string(), "eip155:1");
+			assert_eq!(ChainId::moonbeam_eth().to_string(), "eip155:1284");
 			assert_eq!(
 				ChainId::bitcoin_mainnet().to_string(),
 				"bip122:000000000019d6689c085ae165831e93"

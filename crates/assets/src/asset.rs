@@ -370,7 +370,12 @@ pub mod v1 {
 	impl Display for EvmSmartContractNonFungibleIdentifier {
 		fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
 			// We checked when the type is created that all characters are valid digits.
-			write!(f, "{}", str::from_utf8(&self.0).expect("Conversion of EvmSmartContractNonFungibleIdentifier to string should never fail."))
+			write!(
+				f,
+				"{}",
+				str::from_utf8(&self.0)
+					.expect("Conversion of EvmSmartContractNonFungibleIdentifier to string should never fail.")
+			)
 		}
 	}
 
@@ -431,7 +436,6 @@ pub mod v1 {
 		}
 	}
 
-
 	/// A generic asset namespace as defined in the [CAIP-19 spec](https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-19.md).
 	/// It stores the provided UTF8-encoded namespace without trying to apply
 	/// any parsing/decoding logic.
@@ -471,8 +475,13 @@ pub mod v1 {
 
 	impl Display for GenericAssetNamespace {
 		fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-			// We checked when the type is created that all characters are valid UTF8 (actually ASCII) characters.
-			write!(f, "{}", str::from_utf8(&self.0).expect("Conversion of GenericAssetNamespace to string should never fail."))
+			// We checked when the type is created that all characters are valid UTF8
+			// (actually ASCII) characters.
+			write!(
+				f,
+				"{}",
+				str::from_utf8(&self.0).expect("Conversion of GenericAssetNamespace to string should never fail.")
+			)
 		}
 	}
 
@@ -513,8 +522,13 @@ pub mod v1 {
 
 	impl Display for GenericAssetReference {
 		fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-			// We checked when the type is created that all characters are valid UTF8 (actually ASCII) characters.
-			write!(f, "{}", str::from_utf8(&self.0).expect("Conversion of GenericAssetReference to string should never fail."))
+			// We checked when the type is created that all characters are valid UTF8
+			// (actually ASCII) characters.
+			write!(
+				f,
+				"{}",
+				str::from_utf8(&self.0).expect("Conversion of GenericAssetReference to string should never fail.")
+			)
 		}
 	}
 
@@ -555,8 +569,13 @@ pub mod v1 {
 
 	impl Display for GenericAssetIdentifier {
 		fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-			// We checked when the type is created that all characters are valid UTF8 (actually ASCII) characters.
-			write!(f, "{}", str::from_utf8(&self.0).expect("Conversion of GenericAssetIdentifier to string should never fail."))
+			// We checked when the type is created that all characters are valid UTF8
+			// (actually ASCII) characters.
+			write!(
+				f,
+				"{}",
+				str::from_utf8(&self.0).expect("Conversion of GenericAssetIdentifier to string should never fail.")
+			)
 		}
 	}
 
@@ -578,12 +597,10 @@ pub mod v1 {
 			];
 
 			for asset in valid_assets {
-				let asset_id = AssetId::from_utf8_encoded(asset.as_bytes()).unwrap_or_else(|_| panic!("Asset ID {:?} should not fail to parse for slip44 assets", asset));
+				let asset_id = AssetId::from_utf8_encoded(asset.as_bytes())
+					.unwrap_or_else(|_| panic!("Asset ID {:?} should not fail to parse for slip44 assets", asset));
 				// Verify that the ToString implementation prints exactly the original input
-				assert_eq!(
-					asset_id.to_string(),
-					asset
-				);
+				assert_eq!(asset_id.to_string(), asset);
 			}
 
 			let invalid_assets = [
@@ -621,12 +638,10 @@ pub mod v1 {
 			];
 
 			for asset in valid_assets {
-				let asset_id = AssetId::from_utf8_encoded(asset.as_bytes()).unwrap_or_else(|_| panic!("Asset ID {:?} should not fail to parse for erc20 assets", asset));
+				let asset_id = AssetId::from_utf8_encoded(asset.as_bytes())
+					.unwrap_or_else(|_| panic!("Asset ID {:?} should not fail to parse for erc20 assets", asset));
 				// Verify that the ToString implementation prints exactly the original input
-				assert_eq!(
-					asset_id.to_string(),
-					asset.to_lowercase()
-				);
+				assert_eq!(asset_id.to_string(), asset.to_lowercase());
 			}
 
 			let invalid_assets = [
@@ -672,12 +687,10 @@ pub mod v1 {
 		];
 
 			for asset in valid_assets {
-				let asset_id = AssetId::from_utf8_encoded(asset.as_bytes()).unwrap_or_else(|_| panic!("Asset ID {:?} should not fail to parse for erc721 assets", asset));
+				let asset_id = AssetId::from_utf8_encoded(asset.as_bytes())
+					.unwrap_or_else(|_| panic!("Asset ID {:?} should not fail to parse for erc721 assets", asset));
 				// Verify that the ToString implementation prints exactly the original input
-				assert_eq!(
-					asset_id.to_string(),
-					asset.to_lowercase()
-				);
+				assert_eq!(asset_id.to_string(), asset.to_lowercase());
 			}
 
 			let invalid_assets = [
@@ -728,12 +741,10 @@ pub mod v1 {
 		];
 
 			for asset in valid_assets {
-				let asset_id = AssetId::from_utf8_encoded(asset.as_bytes()).unwrap_or_else(|_| panic!("Asset ID {:?} should not fail to parse for erc1155 assets", asset));
+				let asset_id = AssetId::from_utf8_encoded(asset.as_bytes())
+					.unwrap_or_else(|_| panic!("Asset ID {:?} should not fail to parse for erc1155 assets", asset));
 				// Verify that the ToString implementation prints exactly the original input
-				assert_eq!(
-					asset_id.to_string(),
-					asset.to_lowercase()
-				);
+				assert_eq!(asset_id.to_string(), asset.to_lowercase());
 			}
 
 			let invalid_assets = [
@@ -787,12 +798,10 @@ pub mod v1 {
 		];
 
 			for asset in valid_assets {
-				let asset_id = AssetId::from_utf8_encoded(asset.as_bytes()).unwrap_or_else(|_| panic!("Asset ID {:?} should not fail to parse for generic assets", asset));
+				let asset_id = AssetId::from_utf8_encoded(asset.as_bytes())
+					.unwrap_or_else(|_| panic!("Asset ID {:?} should not fail to parse for generic assets", asset));
 				// Verify that the ToString implementation prints exactly the original input
-				assert_eq!(
-					asset_id.to_string(),
-					asset
-				);
+				assert_eq!(asset_id.to_string(), asset);
 			}
 
 			let invalid_assets = [
