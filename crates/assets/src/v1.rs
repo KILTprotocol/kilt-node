@@ -20,7 +20,7 @@ use hex_literal::hex;
 use scale_info::TypeInfo;
 
 use frame_support::sp_runtime::RuntimeDebug;
-use sp_std::vec::Vec;
+use sp_std::{fmt::Display, vec::Vec};
 
 use crate::*;
 
@@ -28,13 +28,6 @@ pub const MINIMUM_ASSET_DID_LENGTH: usize =
 	b"did:asset:".len() + MINIMUM_CHAIN_ID_LENGTH + b".".len() + MINIMUM_ASSET_ID_LENGTH;
 pub const MAXIMUM_ASSET_DID_LENGTH: usize =
 	b"did:asset:".len() + MAXIMUM_CHAIN_ID_LENGTH + b".".len() + MAXIMUM_ASSET_ID_LENGTH;
-
-/// An Asset DID as specified in the Asset DID method specification.
-#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
-pub struct AssetDid {
-	pub chain_id: ChainId,
-	pub asset_id: AssetId,
-}
 
 /// An error in the Asset DID parsing logic.
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug)]
@@ -57,6 +50,13 @@ impl From<AssetIdError> for AssetDidError {
 	fn from(err: AssetIdError) -> Self {
 		Self::AssetId(err)
 	}
+}
+
+/// An Asset DID as specified in the Asset DID method specification.
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
+pub struct AssetDid {
+	pub chain_id: ChainId,
+	pub asset_id: AssetId,
 }
 
 impl AssetDid {
@@ -145,6 +145,12 @@ impl AssetDid {
 	}
 }
 
+impl Display for AssetDid {
+	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+		write!(f, "did:asset:{}.{}", self.chain_id, self.asset_id)
+	}
+}
+
 #[cfg(test)]
 mod test {
 	use super::*;
@@ -171,10 +177,11 @@ mod test {
 		];
 
 		for id in raw_ids {
-			assert!(
-				AssetDid::from_utf8_encoded(id.as_bytes()).is_ok(),
-				"Test for valid IDs failed for {:?}",
-				id
+			let asset_did = AssetDid::from_utf8_encoded(id.as_bytes()).unwrap_or_else(|_| panic!("Test for valid IDs failed for {:?}", id));
+			// Verify that the ToString implementation prints exactly the original input
+			assert_eq!(
+				asset_did.to_string().to_lowercase(),
+				id.to_lowercase()
 			);
 		}
 	}

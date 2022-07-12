@@ -171,6 +171,18 @@ pub mod v1 {
 		}
 	}
 
+	impl Display for AssetId {
+		fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+			match self {
+				Self::Slip44(slip44) => write!(f, "slip44:{}", slip44),
+				Self::Erc20(erc20) => write!(f, "erc20:{}", erc20),
+				Self::Erc721(erc721) => write!(f, "erc721:{}", erc721),
+				Self::Erc1155(erc1155) => write!(f, "erc1155:{}", erc1155),
+				Self::Generic(generic) => write!(f, "{}", generic),
+			}
+		}
+	}
+
 	/// A Slip44 asset reference.
 	/// It is a modification of the [CAIP-20 spec](https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-20.md)
 	/// according to the rules defined in the Asset DID method specification.
@@ -410,8 +422,12 @@ pub mod v1 {
 
 	impl Display for GenericAssetId {
 		fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-			// We checked when the type is created that all characters are valid digits.
-			write!(f, "{}:{}", self.namespace, self.reference)
+			let id_output = if let Some(ref id) = &self.id {
+				format!(":{}", id)
+			} else {
+				String::new()
+			};
+			write!(f, "{}:{}{}", self.namespace, self.reference, id_output)
 		}
 	}
 
@@ -562,9 +578,10 @@ pub mod v1 {
 			];
 
 			for asset in valid_assets {
-				assert!(
-					AssetId::from_utf8_encoded(asset.as_bytes()).is_ok(),
-					"Asset ID {:?} should not fail to parse for slip44 assets",
+				let asset_id = AssetId::from_utf8_encoded(asset.as_bytes()).unwrap_or_else(|_| panic!("Asset ID {:?} should not fail to parse for slip44 assets", asset));
+				// Verify that the ToString implementation prints exactly the original input
+				assert_eq!(
+					asset_id.to_string(),
 					asset
 				);
 			}
@@ -604,10 +621,11 @@ pub mod v1 {
 			];
 
 			for asset in valid_assets {
-				assert!(
-					AssetId::from_utf8_encoded(asset.as_bytes()).is_ok(),
-					"Asset ID {:?} should not fail to parse for erc20 assets",
-					asset
+				let asset_id = AssetId::from_utf8_encoded(asset.as_bytes()).unwrap_or_else(|_| panic!("Asset ID {:?} should not fail to parse for erc20 assets", asset));
+				// Verify that the ToString implementation prints exactly the original input
+				assert_eq!(
+					asset_id.to_string(),
+					asset.to_lowercase()
 				);
 			}
 
@@ -654,10 +672,11 @@ pub mod v1 {
 		];
 
 			for asset in valid_assets {
-				assert!(
-					AssetId::from_utf8_encoded(asset.as_bytes()).is_ok(),
-					"Asset ID {:?} should not fail to parse for erc721 assets",
-					asset
+				let asset_id = AssetId::from_utf8_encoded(asset.as_bytes()).unwrap_or_else(|_| panic!("Asset ID {:?} should not fail to parse for erc721 assets", asset));
+				// Verify that the ToString implementation prints exactly the original input
+				assert_eq!(
+					asset_id.to_string(),
+					asset.to_lowercase()
 				);
 			}
 
@@ -709,10 +728,11 @@ pub mod v1 {
 		];
 
 			for asset in valid_assets {
-				assert!(
-					AssetId::from_utf8_encoded(asset.as_bytes()).is_ok(),
-					"Asset ID {:?} should not fail to parse for erc1155 assets",
-					asset
+				let asset_id = AssetId::from_utf8_encoded(asset.as_bytes()).unwrap_or_else(|_| panic!("Asset ID {:?} should not fail to parse for erc1155 assets", asset));
+				// Verify that the ToString implementation prints exactly the original input
+				assert_eq!(
+					asset_id.to_string(),
+					asset.to_lowercase()
 				);
 			}
 
@@ -767,9 +787,10 @@ pub mod v1 {
 		];
 
 			for asset in valid_assets {
-				assert!(
-					AssetId::from_utf8_encoded(asset.as_bytes()).is_ok(),
-					"Asset ID {:?} should not fail to parse for generic assets",
+				let asset_id = AssetId::from_utf8_encoded(asset.as_bytes()).unwrap_or_else(|_| panic!("Asset ID {:?} should not fail to parse for generic assets", asset));
+				// Verify that the ToString implementation prints exactly the original input
+				assert_eq!(
+					asset_id.to_string(),
 					asset
 				);
 			}

@@ -553,9 +553,10 @@ mod v1 {
 				"eip155:0",
 			];
 			for chain in valid_chains {
-				assert!(
-					ChainId::from_utf8_encoded(chain.as_bytes()).is_ok(),
-					"Chain ID {:?} should not fail to parse for eip155 chains",
+				let chain_id = ChainId::from_utf8_encoded(chain.as_bytes()).unwrap_or_else(|_| panic!("Chain ID {:?} should not fail for eip155 chains", chain));
+				// Verify that the ToString implementation prints exactly the original input
+				assert_eq!(
+					chain_id.to_string(),
 					chain
 				);
 			}
@@ -596,9 +597,10 @@ mod v1 {
 				"bip122:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 			];
 			for chain in valid_chains {
-				assert!(
-					ChainId::from_utf8_encoded(chain.as_bytes()).is_ok(),
-					"Chain ID {:?} should not fail to parse for bip122 chains",
+				let chain_id = ChainId::from_utf8_encoded(chain.as_bytes()).unwrap_or_else(|_| panic!("Chain ID {:?} should not fail for bip122 chains", chain));
+				// Verify that the ToString implementation prints exactly the original input
+				assert_eq!(
+					chain_id.to_string(),
 					chain
 				);
 			}
@@ -641,9 +643,10 @@ mod v1 {
 				"polkadot:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 			];
 			for chain in valid_chains {
-				assert!(
-					ChainId::from_utf8_encoded(chain.as_bytes()).is_ok(),
-					"Chain ID {:?} should not fail to parse for polkadot chains",
+				let chain_id = ChainId::from_utf8_encoded(chain.as_bytes()).unwrap_or_else(|_| panic!("Chain ID {:?} should not fail for dotsama chains", chain));
+				// Verify that the ToString implementation prints exactly the original input
+				assert_eq!(
+					chain_id.to_string(),
 					chain
 				);
 			}
@@ -686,9 +689,10 @@ mod v1 {
 				"solana:8E9rvCKLFQia2Y35HXjjpWzj8weVo44K",
 			];
 			for chain in valid_chains {
-				assert!(
-					ChainId::from_utf8_encoded(chain.as_bytes()).is_ok(),
-					"Chain ID {:?} should not fail to parse for solana chains",
+				let chain_id = ChainId::from_utf8_encoded(chain.as_bytes()).unwrap_or_else(|_| panic!("Chain ID {:?} should not fail for solana chains", chain));
+				// Verify that the ToString implementation prints exactly the original input
+				assert_eq!(
+					chain_id.to_string(),
 					chain
 				);
 			}
@@ -754,9 +758,10 @@ mod v1 {
 				"stellar:pubnet",
 			];
 			for chain in valid_chains {
-				assert!(
-					ChainId::from_utf8_encoded(chain.as_bytes()).is_ok(),
-					"Chain ID {:?} should not fail to parse for generic chains",
+				let chain_id = ChainId::from_utf8_encoded(chain.as_bytes()).unwrap_or_else(|_| panic!("Chain ID {:?} should not fail for generic chains", chain));
+				// Verify that the ToString implementation prints exactly the original input
+				assert_eq!(
+					chain_id.to_string(),
 					chain
 				);
 			}
