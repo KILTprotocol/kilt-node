@@ -70,7 +70,7 @@ pub use v1::*;
 mod v1 {
 	use super::{ChainIdError, NamespaceError, ReferenceError};
 
-	use base58::FromBase58;
+	use base58::{FromBase58, ToBase58};
 	use hex_literal::hex;
 
 	use core::str;
@@ -79,7 +79,7 @@ mod v1 {
 	use scale_info::TypeInfo;
 
 	use frame_support::{sp_runtime::RuntimeDebug, traits::ConstU32, BoundedVec};
-	use sp_std::{vec, vec::Vec};
+	use sp_std::{fmt::Display, vec, vec::Vec};
 
 	/// The minimum length, including separator symbols, a chain ID can have
 	/// according to the minimum values defined by the CAIP-2 definition.
@@ -213,6 +213,18 @@ mod v1 {
 		}
 	}
 
+	impl Display for ChainId {
+		fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+			match self {
+				Self::Bip122(bip122) => write!(f, "bip122:{}", bip122),
+				Self::Eip155(eip155) => write!(f, "eip155:{}", eip155),
+				Self::Dotsama(dotsama) => write!(f, "polkadot:{}", dotsama),
+				Self::Solana(solana) => write!(f, "solana:{}", solana),
+				Self::Generic(generic) => write!(f, "{}", generic)
+			}
+		}
+	}
+
 	/// An EIP155 chain reference.
 	/// It is a modification of the [CAIP-3 spec](https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-3.md)
 	/// according to the rules defined in the Asset DID method specification.
@@ -280,6 +292,12 @@ mod v1 {
 		}
 	}
 
+	impl Display for Eip155Reference {
+		fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+			write!(f, "{}", self.0)
+		}
+	}
+
 	/// A chain reference for CAIP-2 chains that are identified by a HEX genesis
 	/// hash of 32 characters.
 	#[non_exhaustive]
@@ -334,6 +352,12 @@ mod v1 {
 		}
 	}
 
+	impl Display for GenesisHexHash32Reference {
+		fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+			write!(f, "{}", hex::encode(self.0))
+		}
+	}
+
 	/// A chain reference for CAIP-2 chains that are identified by a
 	/// Base58-encoded genesis hash of 32 characters.
 	#[non_exhaustive]
@@ -382,6 +406,12 @@ mod v1 {
 		}
 	}
 
+	impl Display for GenesisBase58Hash32Reference {
+		fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+			write!(f, "{}", &self.0.to_base58())
+		}
+	}
+
 	/// A generic chain ID compliant with the [CAIP-2 spec](https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-2.md) that cannot be boxed in any of the supported variants.
 	#[non_exhaustive]
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
@@ -415,6 +445,12 @@ mod v1 {
 				.and_then(GenericChainReference::from_utf8_encoded)?;
 
 			Ok(Self { namespace, reference })
+		}
+	}
+
+	impl Display for GenericChainId {
+		fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+			write!(f, "{}:{}", self.namespace, self.reference)
 		}
 	}
 
@@ -455,6 +491,13 @@ mod v1 {
 		}
 	}
 
+	impl Display for GenericChainNamespace {
+		fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+			// We checked when the type is created that all characters are valid UTF8 (actually ASCII) characters.
+			write!(f, "{}", str::from_utf8(&self.0).expect("Conversion of GenericChainNamespace to string should never fail."))
+		}
+	}
+
 	/// A generic chain reference as defined in the [CAIP-2 spec](https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-2.md).
 	#[non_exhaustive]
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
@@ -487,6 +530,13 @@ mod v1 {
 						.map_err(|_| ReferenceError::InvalidFormat)?,
 				))
 			}
+		}
+	}
+
+	impl Display for GenericChainReference {
+		fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+			// We checked when the type is created that all characters are valid UTF8 (actually ASCII) characters.
+			write!(f, "{}", str::from_utf8(&self.0).expect("Conversion of GenericChainReference to string should never fail."))
 		}
 	}
 
@@ -739,14 +789,38 @@ mod v1 {
 		#[test]
 		fn test_helpers() {
 			// These functions should never panic. We just check that here.
-			ChainId::ethereum_mainnet();
-			ChainId::moonbeam_eth();
-			ChainId::bitcoin_mainnet();
-			ChainId::litecoin_mainnet();
-			ChainId::polkadot();
-			ChainId::kusama();
-			ChainId::kilt_spiritnet();
-			ChainId::solana_mainnet();
+			assert_eq!(
+				ChainId::ethereum_mainnet().to_string(),
+				"eip155:1"
+			);
+			assert_eq!(
+				ChainId::moonbeam_eth().to_string(),
+				"eip155:1284"
+			);
+			assert_eq!(
+				ChainId::bitcoin_mainnet().to_string(),
+				"bip122:000000000019d6689c085ae165831e93"
+			);
+			assert_eq!(
+				ChainId::litecoin_mainnet().to_string(),
+				"bip122:12a765e31ffd4059bada1e25190f6e98"
+			);
+			assert_eq!(
+				ChainId::polkadot().to_string(),
+				"polkadot:91b171bb158e2d3848fa23a9f1c25182"
+			);
+			assert_eq!(
+				ChainId::kusama().to_string(),
+				"polkadot:b0a8d493285c2df73290dfb7e61f870f"
+			);
+			assert_eq!(
+				ChainId::kilt_spiritnet().to_string(),
+				"polkadot:411f057b9107718c9624d6aa4a3f23c1"
+			);
+			assert_eq!(
+				ChainId::solana_mainnet().to_string(),
+				"solana:4sGjMW1sUnHzSxGspuhpqLDx6wiyjNtZ"
+			);
 		}
 	}
 }
