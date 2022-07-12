@@ -434,6 +434,7 @@ pub mod public_credentials {
 	use super::*;
 
 	parameter_types! {
+		// TODO: Update this value here
 		pub const Deposit: Balance = 0;
 		pub const MaxEncodedClaimsLength: u32 = 100_000;	// 100 Kb
 		pub const MaxSubjectIdLength: u32 = kilt_asset_dids::MAXIMUM_ASSET_DID_LENGTH as u32;

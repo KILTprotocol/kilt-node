@@ -384,7 +384,6 @@ pub mod pallet {
 
 			Self::remove_credential_entry(credential_subject, claim_hash, credential_entry);
 
-			// TODO: return the actual fee used.
 			Ok(result)
 		}
 
