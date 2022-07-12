@@ -245,7 +245,7 @@ pub(crate) mod runtime {
 		type WeightInfo = ();
 
 		type Currency = Balances;
-		type Deposit = ConstU128<{100 * MILLI_UNIT}>;
+		type Deposit = ConstU128<{ 100 * MILLI_UNIT }>;
 		type MaxDelegatedAttestations = ConstU32<0>;
 		type AttesterId = SubjectId;
 		type AuthorizationId = SubjectId;
@@ -256,7 +256,7 @@ pub(crate) mod runtime {
 		type ClaimerIdentifier = SubjectId;
 		type ClaimerSignature = (Self::ClaimerIdentifier, Vec<u8>);
 		type ClaimerSignatureVerification = EqualVerify<Self::ClaimerIdentifier, Vec<u8>>;
-		type Deposit = ConstU128<{10 * MILLI_UNIT}>;
+		type Deposit = ConstU128<{ 10 * MILLI_UNIT }>;
 		type EnsureOrigin = <Self as attestation::Config>::EnsureOrigin;
 		type Event = ();
 		type InputError = Error<Self>;
