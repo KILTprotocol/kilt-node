@@ -79,7 +79,7 @@ mod v1 {
 	use scale_info::TypeInfo;
 
 	use frame_support::{sp_runtime::RuntimeDebug, traits::ConstU32, BoundedVec};
-	use sp_std::vec::Vec;
+	use sp_std::{vec, vec::Vec};
 
 	/// The minimum length, including separator symbols, a chain ID can have
 	/// according to the minimum values defined by the CAIP-2 definition.

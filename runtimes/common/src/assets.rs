@@ -25,7 +25,7 @@ use kilt_asset_dids::AssetDid as AssetIdentifier;
 use public_credentials::{Config, Error, InputSubjectIdOf};
 
 #[cfg(feature = "runtime-benchmarks")]
-use kilt_asset_dids::{asset, chain};
+pub use benchmarks::*;
 
 /// Thin wrapper around the `AssetDid` type, that transform the parsing errors
 /// to errors for the public-credentials crate.
@@ -52,38 +52,52 @@ impl<T: Config> TryFrom<InputSubjectIdOf<T>> for AssetDid<T> {
 }
 
 #[cfg(feature = "runtime-benchmarks")]
-impl<T: Config> TryFrom<Vec<u8>> for AssetDid<T> {
-	type Error = Error<T>;
+mod benchmarks {
+	use super::*;
 
-	fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
-		let asset = AssetIdentifier::from_utf8_encoded(&value[..]).map_err(|_| Error::<T>::InvalidInput)?;
-		Ok(Self(asset, None))
+	use sp_std::vec::Vec;
+
+	use kilt_asset_dids::{asset, chain};
+
+	impl<T: Config> From<AssetDid<T>> for InputSubjectIdOf<T> {
+		fn from(value: AssetDid<T>) -> Self {
+			InputSubjectIdOf::<T>::try_from(value)
+				.expect("Reverse conversion AssetDid -> InputSubjectId should never fail.")
+		}
 	}
-}
 
-#[cfg(feature = "runtime-benchmarks")]
-impl<T: Config> kilt_support::traits::GetWorstCase for AssetDid<T> {
-	fn worst_case() -> Self {
-		// Returns the worst case for an AssetDID, which is represented by the longest
-		// identifier according to the spec.
-		Self::try_from(
-			[
-				b"did:asset:",
-				// Chain part
-				&[b'0'; chain::MAXIMUM_NAMESPACE_LENGTH][..],
-				b":",
-				&[b'1'; chain::MAXIMUM_REFERENCE_LENGTH][..],
-				// "." separator
-				b".",
-				// Asset part
-				&[b'2'; asset::MAXIMUM_NAMESPACE_LENGTH][..],
-				b":",
-				&[b'3'; asset::MAXIMUM_REFERENCE_LENGTH][..],
-				b":",
-				&[b'4'; asset::MAXIMUM_IDENTIFIER_LENGTH][..],
-			]
-			.concat(),
-		)
-		.expect("Worst case creation should not fail.")
+	impl<T: Config> TryFrom<Vec<u8>> for AssetDid<T> {
+		type Error = Error<T>;
+
+		fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
+			let asset = AssetIdentifier::from_utf8_encoded(&value[..]).map_err(|_| Error::<T>::InvalidInput)?;
+			Ok(Self(asset, None))
+		}
+	}
+
+	impl<T: Config> kilt_support::traits::GetWorstCase for AssetDid<T> {
+		fn worst_case() -> Self {
+			// Returns the worst case for an AssetDID, which is represented by the longest
+			// identifier according to the spec.
+			Self::try_from(
+				[
+					b"did:asset:",
+					// Chain part
+					&[b'0'; chain::MAXIMUM_NAMESPACE_LENGTH][..],
+					b":",
+					&[b'1'; chain::MAXIMUM_REFERENCE_LENGTH][..],
+					// "." separator
+					b".",
+					// Asset part
+					&[b'2'; asset::MAXIMUM_NAMESPACE_LENGTH][..],
+					b":",
+					&[b'3'; asset::MAXIMUM_REFERENCE_LENGTH][..],
+					b":",
+					&[b'4'; asset::MAXIMUM_IDENTIFIER_LENGTH][..],
+				]
+				.concat(),
+			)
+			.expect("Worst case creation should not fail.")
+		}
 	}
 }

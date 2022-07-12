@@ -18,9 +18,11 @@
 
 use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
 use frame_support::{
+	dispatch::RawOrigin,
 	traits::{Currency, Get},
 	BoundedVec,
 };
+use sp_std::{boxed::Box, vec};
 
 use kilt_support::traits::{GenerateBenchmarkOrigin, GetWorstCase};
 
@@ -49,7 +51,7 @@ benchmarks! {
 		let contents = BoundedVec::try_from(vec![0; c as usize]).expect("Contents should not fail.");
 
 		let creation_op = Box::new(generate_base_public_credential_creation_op::<T>(
-			subject_id.into(),
+			subject_id.clone().into(),
 			claim_hash,
 			ctype_hash,
 			contents,
@@ -60,7 +62,65 @@ benchmarks! {
 		CurrencyOf::<T>::make_free_balance_be(&sender, <T as attestation::Config>::Deposit::get() + <T as attestation::Config>::Deposit::get() + <T as Config>::Deposit::get());
 		let origin = <T as Config>::EnsureOrigin::generate_origin(sender, attester);
 	}: _<T::Origin>(origin, creation_op)
-	verify {}
+	verify {
+		assert!(Credentials::<T>::contains_key(subject_id, claim_hash));
+		assert!(CredentialsUnicityIndex::<T>::contains_key(claim_hash));
+	}
+
+	remove {
+		let sender: T::AccountId = account("sender", 0, SEED);
+		let attester: T::AttesterId = account("attester", 0, SEED);
+		let claim_hash: T::Hash = T::Hash::default();
+		let ctype_hash: T::Hash = T::Hash::default();
+		let subject_id = <T as Config>::SubjectId::worst_case();
+		let contents = BoundedVec::try_from(vec![0; <T as Config>::MaxEncodedClaimsLength::get() as usize]).expect("Contents should not fail.");
+		let origin = <T as Config>::EnsureOrigin::generate_origin(sender.clone(), attester.clone());
+
+		let creation_op = Box::new(generate_base_public_credential_creation_op::<T>(
+			subject_id.clone().into(),
+			claim_hash,
+			ctype_hash,
+			contents,
+			None,
+		));
+
+		CurrencyOf::<T>::make_free_balance_be(&sender, <T as attestation::Config>::Deposit::get() + <T as attestation::Config>::Deposit::get() + <T as Config>::Deposit::get());
+
+		ctype::Ctypes::<T>::insert(&ctype_hash, attester);
+		Pallet::<T>::add(origin.clone(), creation_op).expect("Pallet::add should not fail");
+	}: _<T::Origin>(origin, claim_hash, None)
+	verify {
+		assert!(!Credentials::<T>::contains_key(subject_id, claim_hash));
+		assert!(!CredentialsUnicityIndex::<T>::contains_key(claim_hash));
+	}
+
+	reclaim_deposit {
+		let sender: T::AccountId = account("sender", 0, SEED);
+		let attester: T::AttesterId = account("attester", 0, SEED);
+		let claim_hash: T::Hash = T::Hash::default();
+		let ctype_hash: T::Hash = T::Hash::default();
+		let subject_id = <T as Config>::SubjectId::worst_case();
+		let contents = BoundedVec::try_from(vec![0; <T as Config>::MaxEncodedClaimsLength::get() as usize]).expect("Contents should not fail.");
+		let origin = <T as Config>::EnsureOrigin::generate_origin(sender.clone(), attester.clone());
+
+		let creation_op = Box::new(generate_base_public_credential_creation_op::<T>(
+			subject_id.clone().into(),
+			claim_hash,
+			ctype_hash,
+			contents,
+			None,
+		));
+
+		CurrencyOf::<T>::make_free_balance_be(&sender, <T as attestation::Config>::Deposit::get() + <T as attestation::Config>::Deposit::get() + <T as Config>::Deposit::get());
+
+		ctype::Ctypes::<T>::insert(&ctype_hash, attester);
+		Pallet::<T>::add(origin, creation_op).expect("Pallet::add should not fail");
+		let origin = RawOrigin::Signed(sender);
+	}: _(origin, claim_hash)
+	verify {
+		assert!(!Credentials::<T>::contains_key(subject_id, claim_hash));
+		assert!(!CredentialsUnicityIndex::<T>::contains_key(claim_hash));
+	}
 }
 
 impl_benchmark_test_suite! {

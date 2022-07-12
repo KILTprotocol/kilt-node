@@ -652,7 +652,8 @@ impl pallet_public_credentials::Config for Runtime {
 
 	type Deposit = runtime_common::constants::public_credentials::Deposit;
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
-	type MaxEncodedCredentialLength = runtime_common::constants::public_credentials::MaxEncodedCredentialLength;
+	type MaxEncodedClaimsLength = runtime_common::constants::public_credentials::MaxEncodedClaimsLength;
+	type MaxSubjectIdLength = runtime_common::constants::public_credentials::MaxSubjectIdLength;
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
 	type Event = Event;
 	type InputError = pallet_public_credentials::Error<Self>;

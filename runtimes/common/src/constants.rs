@@ -435,7 +435,8 @@ pub mod public_credentials {
 
 	parameter_types! {
 		pub const Deposit: Balance = 0;
-		pub const MaxEncodedCredentialLength: u32 = 100_000;	// 100 Kb
+		pub const MaxEncodedClaimsLength: u32 = 100_000;	// 100 Kb
+		pub const MaxSubjectIdLength: u32 = kilt_asset_dids::MAXIMUM_ASSET_DID_LENGTH as u32;
 	}
 }
 
