@@ -10,20 +10,20 @@ version = "1.7.0"
 targets = ["x86_64-unknown-linux-gnu"]
 
 [build-dependencies]
-substrate-wasm-builder = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.24"}
+substrate-wasm-builder = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.25"}
 
 [dev-dependencies]
 ctype = {features = ["mock"], path = "../ctype"}
 kilt-support = {features = ["mock"], path = "../../support"}
 
-pallet-balances = {branch = "polkadot-v0.9.24", git = "https://github.com/paritytech/substrate"}
+pallet-balances = {branch = "polkadot-v0.9.25", git = "https://github.com/paritytech/substrate"}
 serde = "1.0.137"
-sp-core = {branch = "polkadot-v0.9.24", git = "https://github.com/paritytech/substrate"}
-sp-io = {branch = "polkadot-v0.9.24", git = "https://github.com/paritytech/substrate"}
-sp-keystore = {branch = "polkadot-v0.9.24", git = "https://github.com/paritytech/substrate"}
+sp-core = {branch = "polkadot-v0.9.25", git = "https://github.com/paritytech/substrate"}
+sp-io = {branch = "polkadot-v0.9.25", git = "https://github.com/paritytech/substrate"}
+sp-keystore = {branch = "polkadot-v0.9.25", git = "https://github.com/paritytech/substrate"}
 
 [dependencies]
-codec = {package = "parity-scale-codec", version = "3.1.2", default-features = false, features = ["derive"]}
+codec = {package = "parity-scale-codec", version = "3.1.5", default-features = false, features = ["derive"]}
 log = "0.4.17"
 scale-info = {version = "2.1.1", default-features = false, features = ["derive"]}
 serde = {version = "1.0.137", optional = true}
@@ -33,15 +33,15 @@ ctype = {default-features = false, path = "../ctype"}
 kilt-support = {default-features = false, path = "../../support"}
 
 #External dependencies
-frame-benchmarking = {branch = "polkadot-v0.9.24", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
-frame-support = {branch = "polkadot-v0.9.24", default-features = false, git = "https://github.com/paritytech/substrate"}
-frame-system = {branch = "polkadot-v0.9.24", default-features = false, git = "https://github.com/paritytech/substrate"}
-pallet-balances = {branch = "polkadot-v0.9.24", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
-sp-core = {branch = "polkadot-v0.9.24", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
-sp-io = {branch = "polkadot-v0.9.24", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
-sp-keystore = {branch = "polkadot-v0.9.24", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
-sp-runtime = {branch = "polkadot-v0.9.24", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-std = {branch = "polkadot-v0.9.24", default-features = false, git = "https://github.com/paritytech/substrate"}
+frame-benchmarking = {branch = "polkadot-v0.9.25", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
+frame-support = {branch = "polkadot-v0.9.25", default-features = false, git = "https://github.com/paritytech/substrate"}
+frame-system = {branch = "polkadot-v0.9.25", default-features = false, git = "https://github.com/paritytech/substrate"}
+pallet-balances = {branch = "polkadot-v0.9.25", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
+sp-core = {branch = "polkadot-v0.9.25", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
+sp-io = {branch = "polkadot-v0.9.25", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
+sp-keystore = {branch = "polkadot-v0.9.25", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
+sp-runtime = {branch = "polkadot-v0.9.25", default-features = false, git = "https://github.com/paritytech/substrate"}
+sp-std = {branch = "polkadot-v0.9.25", default-features = false, git = "https://github.com/paritytech/substrate"}
 
 [features]
 default = ["std"]
