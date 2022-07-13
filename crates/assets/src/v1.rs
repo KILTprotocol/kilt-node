@@ -130,7 +130,7 @@ impl AssetDid {
 	{
 		let input = input.as_ref();
 		let input_length = input.len();
-		if !(MINIMUM_CHAIN_ID_LENGTH..=MAXIMUM_CHAIN_ID_LENGTH).contains(&input_length) {
+		if !(MINIMUM_ASSET_DID_LENGTH..=MAXIMUM_ASSET_DID_LENGTH).contains(&input_length) {
 			return Err(AssetDidError::InvalidFormat);
 		}
 
