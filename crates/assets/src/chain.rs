@@ -83,10 +83,10 @@ mod v1 {
 
 	/// The minimum length, including separator symbols, a chain ID can have
 	/// according to the minimum values defined by the CAIP-2 definition.
-	pub const MINIMUM_CHAIN_ID_LENGTH: usize = MINIMUM_NAMESPACE_LENGTH + b":".len() + MINIMUM_REFERENCE_LENGTH;
+	pub const MINIMUM_CHAIN_ID_LENGTH: usize = MINIMUM_NAMESPACE_LENGTH + 1 + MINIMUM_REFERENCE_LENGTH;
 	/// The maximum length, including separator symbols, a chain ID can have
 	/// according to the minimum values defined by the CAIP-2 definition.
-	pub const MAXIMUM_CHAIN_ID_LENGTH: usize = MAXIMUM_NAMESPACE_LENGTH + b":".len() + MAXIMUM_REFERENCE_LENGTH;
+	pub const MAXIMUM_CHAIN_ID_LENGTH: usize = MAXIMUM_NAMESPACE_LENGTH + 1 + MAXIMUM_REFERENCE_LENGTH;
 
 	/// The minimum length of a valid chain ID namespace.
 	pub const MINIMUM_NAMESPACE_LENGTH: usize = 3;
@@ -98,6 +98,17 @@ mod v1 {
 	/// The maximum length of a valid chain ID reference.
 	pub const MAXIMUM_REFERENCE_LENGTH: usize = 32;
 	const MAXIMUM_REFERENCE_LENGTH_U32: u32 = MAXIMUM_REFERENCE_LENGTH as u32;
+
+	/// Separator between chain namespace and chain reference.
+	const NAMESPACE_REFERENCE_SEPARATOR: u8 = b':';
+	/// Namespace for Eip155 chains.
+	pub const EIP155_NAMESPACE: &[u8] = b"eip155";
+	/// Namespace for Bip122 chains.
+	pub const BIP122_NAMESPACE: &[u8] = b"bip122";
+	/// Namespace for Dotsama chains.
+	pub const DOTSAMA_NAMESPACE: &[u8] = b"polkadot";
+	/// Namespace for Solana chains.
+	pub const SOLANA_NAMESPACE: &[u8] = b"solana";
 
 	// TODO: Add link to the Asset DID spec once merged.
 
@@ -190,38 +201,72 @@ mod v1 {
 		where
 			I: AsRef<[u8]> + Into<Vec<u8>>,
 		{
-			match input.as_ref() {
+			let input = input.as_ref();
+			let input_length = input.len();
+			if !(MINIMUM_CHAIN_ID_LENGTH..=MAXIMUM_CHAIN_ID_LENGTH).contains(&input_length) {
+				return Err(ChainIdError::InvalidFormat);
+			}
+
+			let mut split = input.as_ref().splitn(2, |c| *c == NAMESPACE_REFERENCE_SEPARATOR);
+			let (namespace, reference) = (split.next(), split.next());
+
+			match (namespace, reference) {
 				// "eip155:" chains -> https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-3.md
-				[b'e', b'i', b'p', b'1', b'5', b'5', b':', chain_reference @ ..] => {
-					Eip155Reference::from_utf8_encoded(chain_reference).map(Self::Eip155)
+				(Some(EIP155_NAMESPACE), Some(eip155_reference)) => {
+					Eip155Reference::from_utf8_encoded(eip155_reference).map(Self::Eip155)
 				}
 				// "bip122:" chains -> https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-4.md
-				[b'b', b'i', b'p', b'1', b'2', b'2', b':', chain_reference @ ..] => {
-					GenesisHexHash32Reference::from_utf8_encoded(chain_reference).map(Self::Bip122)
+				(Some(BIP122_NAMESPACE), Some(bip122_reference)) => {
+					GenesisHexHash32Reference::from_utf8_encoded(bip122_reference).map(Self::Bip122)
 				}
 				// "polkadot:" chains -> https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-13.md
-				[b'p', b'o', b'l', b'k', b'a', b'd', b'o', b't', b':', chain_reference @ ..] => {
-					GenesisHexHash32Reference::from_utf8_encoded(chain_reference).map(Self::Dotsama)
+				(Some(DOTSAMA_NAMESPACE), Some(dotsama_reference)) => {
+					GenesisHexHash32Reference::from_utf8_encoded(dotsama_reference).map(Self::Dotsama)
 				}
 				// "solana:" chains -> https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-30.md
-				[b's', b'o', b'l', b'a', b'n', b'a', b':', chain_reference @ ..] => {
-					GenesisBase58Hash32Reference::from_utf8_encoded(chain_reference).map(Self::Solana)
+				(Some(SOLANA_NAMESPACE), Some(solana_reference)) => {
+					GenesisBase58Hash32Reference::from_utf8_encoded(solana_reference).map(Self::Solana)
 				}
 				// Other chains that are still compatible with the CAIP-2 spec -> https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-2.md
-				chain_id => GenericChainId::from_utf8_encoded(chain_id).map(Self::Generic),
+				_ => GenericChainId::from_utf8_encoded(input).map(Self::Generic),
 			}
 		}
 	}
 
 	impl Display for ChainId {
 		fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-			match self {
-				Self::Bip122(bip122) => write!(f, "bip122:{}", bip122),
-				Self::Eip155(eip155) => write!(f, "eip155:{}", eip155),
-				Self::Dotsama(dotsama) => write!(f, "polkadot:{}", dotsama),
-				Self::Solana(solana) => write!(f, "solana:{}", solana),
-				Self::Generic(generic) => write!(f, "{}", generic),
-			}
+			let (namespace, reference) = {
+				match self {
+					Self::Bip122(reference) => (
+						String::from_utf8(BIP122_NAMESPACE.into())
+							.expect("Conversion of Bip122 namespace to string should never fail."),
+						reference.to_string(),
+					),
+					Self::Eip155(reference) => (
+						String::from_utf8(EIP155_NAMESPACE.into())
+							.expect("Conversion of Eip155 namespace to string should never fail."),
+						reference.to_string(),
+					),
+					Self::Dotsama(reference) => (
+						String::from_utf8(DOTSAMA_NAMESPACE.into())
+							.expect("Conversion of Dotsama namespace to string should never fail."),
+						reference.to_string(),
+					),
+					Self::Solana(reference) => (
+						String::from_utf8(SOLANA_NAMESPACE.into())
+							.expect("Conversion of Solana namespace to string should never fail."),
+						reference.to_string(),
+					),
+					Self::Generic(generic) => (generic.namespace.to_string(), generic.reference.to_string()),
+				}
+			};
+			write!(
+				f,
+				"{}{}{}",
+				namespace,
+				char::from(NAMESPACE_REFERENCE_SEPARATOR),
+				reference
+			)
 		}
 	}
 
@@ -254,7 +299,7 @@ mod v1 {
 	impl Eip155Reference {
 		/// Parse a UTF8-encoded EIP155 chain reference, failing if the input
 		/// string is not valid.
-		pub fn from_utf8_encoded<I>(input: I) -> Result<Self, ChainIdError>
+		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, ChainIdError>
 		where
 			I: AsRef<[u8]> + Into<Vec<u8>>,
 		{
@@ -334,7 +379,7 @@ mod v1 {
 	impl GenesisHexHash32Reference {
 		/// Parse a UTF8-encoded HEX chain reference, failing if the input
 		/// string is not valid.
-		pub fn from_utf8_encoded<I>(input: I) -> Result<Self, ChainIdError>
+		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, ChainIdError>
 		where
 			I: AsRef<[u8]> + Into<Vec<u8>>,
 		{
@@ -382,7 +427,7 @@ mod v1 {
 	impl GenesisBase58Hash32Reference {
 		/// Parse a UTF8-encoded Base58 chain reference, failing if the input
 		/// string is not valid.
-		pub fn from_utf8_encoded<I>(input: I) -> Result<Self, ChainIdError>
+		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, ChainIdError>
 		where
 			I: AsRef<[u8]> + Into<Vec<u8>>,
 		{
@@ -423,34 +468,20 @@ mod v1 {
 	impl GenericChainId {
 		/// Parse a generic UTF8-encoded chain ID, failing if the input does not
 		/// respect the CAIP-2 requirements.
-		pub fn from_utf8_encoded<I>(input: I) -> Result<Self, ChainIdError>
+		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, ChainIdError>
 		where
 			I: AsRef<[u8]> + Into<Vec<u8>>,
 		{
-			let input = input.as_ref();
-			let input_length = input.len();
-			if !(MINIMUM_CHAIN_ID_LENGTH..=MAXIMUM_CHAIN_ID_LENGTH).contains(&input_length) {
-				return Err(ChainIdError::InvalidFormat);
+			let mut split = input.as_ref().splitn(2, |c| *c == NAMESPACE_REFERENCE_SEPARATOR);
+			let (namespace, reference) = (split.next(), split.next());
+
+			match (namespace, reference) {
+				(Some(namespace), Some(reference)) => Ok(Self {
+					namespace: GenericChainNamespace::from_utf8_encoded(namespace)?,
+					reference: GenericChainReference::from_utf8_encoded(reference)?,
+				}),
+				_ => Err(ChainIdError::InvalidFormat),
 			}
-
-			let mut components = input.split(|c| *c == b':');
-
-			let namespace = components
-				.next()
-				.ok_or(ChainIdError::InvalidFormat)
-				.and_then(GenericChainNamespace::from_utf8_encoded)?;
-			let reference = components
-				.next()
-				.ok_or(ChainIdError::InvalidFormat)
-				.and_then(GenericChainReference::from_utf8_encoded)?;
-
-			Ok(Self { namespace, reference })
-		}
-	}
-
-	impl Display for GenericChainId {
-		fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-			write!(f, "{}:{}", self.namespace, self.reference)
 		}
 	}
 
@@ -464,7 +495,7 @@ mod v1 {
 	impl GenericChainNamespace {
 		/// Parse a generic UTF8-encoded chain namespace, failing if the input
 		/// does not respect the CAIP-2 requirements.
-		pub fn from_utf8_encoded<I>(input: I) -> Result<Self, ChainIdError>
+		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, ChainIdError>
 		where
 			I: AsRef<[u8]> + Into<Vec<u8>>,
 		{
@@ -511,7 +542,7 @@ mod v1 {
 	impl GenericChainReference {
 		/// Parse a generic UTF8-encoded chain reference, failing if the input
 		/// does not respect the CAIP-2 requirements.
-		pub fn from_utf8_encoded<I>(input: I) -> Result<Self, ChainIdError>
+		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, ChainIdError>
 		where
 			I: AsRef<[u8]> + Into<Vec<u8>>,
 		{

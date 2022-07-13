@@ -25,9 +25,12 @@ use sp_std::{fmt::Display, vec::Vec};
 use crate::*;
 
 pub const MINIMUM_ASSET_DID_LENGTH: usize =
-	b"did:asset:".len() + MINIMUM_CHAIN_ID_LENGTH + b".".len() + MINIMUM_ASSET_ID_LENGTH;
+	DID_ASSET_PREFIX.len() + MINIMUM_CHAIN_ID_LENGTH + 1 + MINIMUM_ASSET_ID_LENGTH;
 pub const MAXIMUM_ASSET_DID_LENGTH: usize =
-	b"did:asset:".len() + MAXIMUM_CHAIN_ID_LENGTH + b".".len() + MAXIMUM_ASSET_ID_LENGTH;
+	DID_ASSET_PREFIX.len() + MAXIMUM_CHAIN_ID_LENGTH + 1 + MAXIMUM_ASSET_ID_LENGTH;
+
+const DID_ASSET_PREFIX: &[u8] = b"did:asset:";
+const CHAIN_ASSET_SEPARATOR: u8 = b'.';
 
 /// An error in the Asset DID parsing logic.
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug)]
@@ -123,21 +126,24 @@ impl AssetDid {
 	where
 		I: AsRef<[u8]> + Into<Vec<u8>>,
 	{
-		match input.as_ref() {
-			// Asset DIDs must start with "did:asset:" to be valid. The "did:asset:" prefix is then stripped off.
-			[b'd', b'i', b'd', b':', b'a', b's', b's', b'e', b't', b':', components @ ..] => {
-				let mut components = components.split(|c| *c == b'.');
+		let input = input.as_ref();
+		let input_length = input.len();
+		if !(MINIMUM_CHAIN_ID_LENGTH..=MAXIMUM_CHAIN_ID_LENGTH).contains(&input_length) {
+			return Err(AssetDidError::InvalidFormat);
+		}
 
-				let chain_id = components
-					.next()
-					.ok_or(AssetDidError::InvalidFormat)
-					.and_then(|input| ChainId::from_utf8_encoded(input).map_err(AssetDidError::ChainId))?;
+		let asset_id = input
+			.as_ref()
+			.strip_prefix(DID_ASSET_PREFIX)
+			.ok_or(AssetDidError::InvalidFormat)?;
 
-				let asset_id = components
-					.next()
-					.ok_or(AssetDidError::InvalidFormat)
-					.and_then(|input| AssetId::from_utf8_encoded(input).map_err(AssetDidError::AssetId))?;
+		let mut split = asset_id.splitn(2, |c| *c == CHAIN_ASSET_SEPARATOR);
+		let (chain, asset) = (split.next(), split.next());
 
+		match (chain, asset) {
+			(Some(chain), Some(asset)) => {
+				let chain_id = ChainId::from_utf8_encoded(chain).map_err(AssetDidError::ChainId)?;
+				let asset_id = AssetId::from_utf8_encoded(asset).map_err(AssetDidError::AssetId)?;
 				Ok(Self { chain_id, asset_id })
 			}
 			_ => Err(AssetDidError::InvalidFormat),
@@ -147,7 +153,15 @@ impl AssetDid {
 
 impl Display for AssetDid {
 	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-		write!(f, "did:asset:{}.{}", self.chain_id, self.asset_id)
+		write!(
+			f,
+			"{}{}{}{}",
+			String::from_utf8(DID_ASSET_PREFIX.into())
+				.expect("Conversion of Asset DID prefix to string should never fail."),
+			self.chain_id,
+			char::from(CHAIN_ASSET_SEPARATOR),
+			self.asset_id
+		)
 	}
 }
 

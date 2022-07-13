@@ -98,9 +98,9 @@ pub mod v1 {
 	use sp_core::U256;
 	use sp_std::{fmt::Display, vec::Vec};
 
-	pub const MINIMUM_ASSET_ID_LENGTH: usize = MINIMUM_NAMESPACE_LENGTH + b":".len() + MINIMUM_REFERENCE_LENGTH;
+	pub const MINIMUM_ASSET_ID_LENGTH: usize = MINIMUM_NAMESPACE_LENGTH + 1 + MINIMUM_REFERENCE_LENGTH;
 	pub const MAXIMUM_ASSET_ID_LENGTH: usize =
-		MAXIMUM_NAMESPACE_LENGTH + b":".len() + MAXIMUM_REFERENCE_LENGTH + b":".len() + MAXIMUM_IDENTIFIER_LENGTH;
+		MAXIMUM_NAMESPACE_LENGTH + 1 + MAXIMUM_REFERENCE_LENGTH + 1 + MAXIMUM_IDENTIFIER_LENGTH;
 
 	pub const MINIMUM_NAMESPACE_LENGTH: usize = 3;
 	pub const MAXIMUM_NAMESPACE_LENGTH: usize = 8;
@@ -111,6 +111,20 @@ pub mod v1 {
 	pub const MINIMUM_IDENTIFIER_LENGTH: usize = 1;
 	pub const MAXIMUM_IDENTIFIER_LENGTH: usize = 78;
 	const MAXIMUM_IDENTIFIER_LENGTH_U32: u32 = MAXIMUM_IDENTIFIER_LENGTH as u32;
+
+	/// Separator between asset namespace and asset reference.
+	const NAMESPACE_REFERENCE_SEPARATOR: u8 = b':';
+	/// Separator between asset reference and asset identifier.
+	const REFERENCE_IDENTIFIER_SEPARATOR: u8 = b':';
+
+	/// Namespace for Slip44 assets.
+	pub const SLIP44_NAMESPACE: &[u8] = b"slip44";
+	/// Namespace for Erc20 assets.
+	pub const ERC20_NAMESPACE: &[u8] = b"erc20";
+	/// Namespace for Erc721 assets.
+	pub const ERC721_NAMESPACE: &[u8] = b"erc721";
+	/// Namespace for Erc1155 assets.
+	pub const ERC1155_NAMESPACE: &[u8] = b"erc1155";
 
 	// TODO: Add link to the Asset DID spec once merged.
 
@@ -148,38 +162,116 @@ pub mod v1 {
 		where
 			I: AsRef<[u8]> + Into<Vec<u8>>,
 		{
-			match input.as_ref() {
+			let input = input.as_ref();
+			let input_length = input.len();
+			if !(MINIMUM_ASSET_ID_LENGTH..=MAXIMUM_ASSET_ID_LENGTH).contains(&input_length) {
+				return Err(AssetIdError::InvalidFormat);
+			}
+
+			let mut split = input.as_ref().splitn(2, |c| *c == NAMESPACE_REFERENCE_SEPARATOR);
+			let (namespace, reference) = (split.next(), split.next());
+
+			// Split the remaining reference to extract the identifier, if present
+			let (reference, identifier) = if let Some(r) = reference {
+				let mut split = r.splitn(2, |c| *c == REFERENCE_IDENTIFIER_SEPARATOR);
+				// Split the reference further, if present
+				(split.next(), split.next())
+			} else {
+				// Return the old reference, which is None if we are at this point
+				(reference, None)
+			};
+
+			match (namespace, reference, identifier) {
 				// "slip44:" assets -> https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-20.md
-				[b's', b'l', b'i', b'p', b'4', b'4', b':', asset_reference @ ..] => {
-					Slip44Reference::from_utf8_encoded(asset_reference).map(Self::Slip44)
+				(Some(SLIP44_NAMESPACE), Some(slip44_reference), identifier) => {
+					if identifier.is_some() {
+						Err(AssetIdError::InvalidFormat)
+					} else {
+						Slip44Reference::from_utf8_encoded(slip44_reference).map(Self::Slip44)
+					}
 				}
 				// "erc20:" assets -> https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-21.md
-				[b'e', b'r', b'c', b'2', b'0', b':', asset_reference @ ..] => {
-					EvmSmartContractFungibleReference::from_utf8_encoded(asset_reference).map(Self::Erc20)
+				(Some(ERC20_NAMESPACE), Some(erc20_reference), identifier) => {
+					if identifier.is_some() {
+						Err(AssetIdError::InvalidFormat)
+					} else {
+						EvmSmartContractFungibleReference::from_utf8_encoded(erc20_reference).map(Self::Erc20)
+					}
 				}
 				// "erc721:" assets -> https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-22.md
-				[b'e', b'r', b'c', b'7', b'2', b'1', b':', asset_reference @ ..] => {
-					EvmSmartContractNonFungibleReference::from_utf8_encoded(asset_reference).map(Self::Erc721)
+				(Some(ERC721_NAMESPACE), Some(erc721_reference), identifier) => {
+					let reference = EvmSmartContractFungibleReference::from_utf8_encoded(erc721_reference)?;
+					let identifier = identifier.map_or(Ok(None), |id| {
+						EvmSmartContractNonFungibleIdentifier::from_utf8_encoded(id).map(Some)
+					})?;
+					Ok(Self::Erc721(EvmSmartContractNonFungibleReference(
+						reference, identifier,
+					)))
 				}
 				// "erc1155:" assets-> https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-29.md
-				[b'e', b'r', b'c', b'1', b'1', b'5', b'5', b':', asset_reference @ ..] => {
-					EvmSmartContractNonFungibleReference::from_utf8_encoded(asset_reference).map(Self::Erc1155)
+				(Some(ERC1155_NAMESPACE), Some(erc1155_reference), identifier) => {
+					let reference = EvmSmartContractFungibleReference::from_utf8_encoded(erc1155_reference)?;
+					let identifier = identifier.map_or(Ok(None), |id| {
+						EvmSmartContractNonFungibleIdentifier::from_utf8_encoded(id).map(Some)
+					})?;
+					Ok(Self::Erc1155(EvmSmartContractNonFungibleReference(
+						reference, identifier,
+					)))
 				}
 				// Generic yet valid asset IDs
-				asset_id => GenericAssetId::from_utf8_encoded(asset_id).map(Self::Generic),
+				_ => GenericAssetId::from_utf8_encoded(input).map(Self::Generic),
 			}
 		}
 	}
 
 	impl Display for AssetId {
 		fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-			match self {
-				Self::Slip44(slip44) => write!(f, "slip44:{}", slip44),
-				Self::Erc20(erc20) => write!(f, "erc20:{}", erc20),
-				Self::Erc721(erc721) => write!(f, "erc721:{}", erc721),
-				Self::Erc1155(erc1155) => write!(f, "erc1155:{}", erc1155),
-				Self::Generic(generic) => write!(f, "{}", generic),
-			}
+			let (namespace, reference, identifier) = {
+				match self {
+					Self::Slip44(reference) => (
+						String::from_utf8(SLIP44_NAMESPACE.into())
+							.expect("Conversion of Slip44 namespace to string should never fail."),
+						reference.to_string(),
+						None,
+					),
+					Self::Erc20(reference) => (
+						String::from_utf8(ERC20_NAMESPACE.into())
+							.expect("Conversion of Erc20 namespace to string should never fail."),
+						reference.to_string(),
+						None,
+					),
+					Self::Erc721(reference) => (
+						String::from_utf8(ERC721_NAMESPACE.into())
+							.expect("Conversion of Erc721 namespace to string should never fail."),
+						reference.0.to_string(),
+						reference.1.as_ref().map(|id| id.to_string()),
+					),
+					Self::Erc1155(reference) => (
+						String::from_utf8(ERC1155_NAMESPACE.into())
+							.expect("Conversion of Erc1155 namespace to string should never fail."),
+						reference.0.to_string(),
+						reference.1.as_ref().map(|id| id.to_string()),
+					),
+					Self::Generic(generic) => (
+						generic.namespace.to_string(),
+						generic.reference.to_string(),
+						generic.id.as_ref().map(|id| id.to_string()),
+					),
+				}
+			};
+			let identifier = if let Some(id) = identifier {
+				format_args!("{}{}", char::from(REFERENCE_IDENTIFIER_SEPARATOR), id).to_string()
+			} else {
+				"".to_string()
+			};
+			write!(
+				f,
+				"{}{}{}{}",
+				namespace,
+				char::from(NAMESPACE_REFERENCE_SEPARATOR),
+				reference,
+				identifier
+			)
 		}
 	}
 
@@ -193,7 +285,7 @@ pub mod v1 {
 	impl Slip44Reference {
 		/// Parse a UTF8-encoded decimal Slip44 asset reference, failing if the
 		/// input string is not valid.
-		pub fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetIdError>
+		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetIdError>
 		where
 			I: AsRef<[u8]> + Into<Vec<u8>>,
 		{
@@ -249,7 +341,7 @@ pub mod v1 {
 	impl EvmSmartContractFungibleReference {
 		/// Parse a UTF8-encoded smart contract HEX address (including the `0x`
 		/// prefix), failing if the input string is not valid.
-		pub fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetIdError>
+		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetIdError>
 		where
 			I: AsRef<[u8]> + Into<Vec<u8>>,
 		{
@@ -290,43 +382,6 @@ pub mod v1 {
 		pub Option<EvmSmartContractNonFungibleIdentifier>,
 	);
 
-	impl EvmSmartContractNonFungibleReference {
-		/// Parse a UTF8-encoded smart contract HEX address (including the `0x`
-		/// prefix) + optional asset identifier, failing if the input
-		/// string is not valid.
-		pub fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetIdError>
-		where
-			I: AsRef<[u8]> + Into<Vec<u8>>,
-		{
-			let mut components = input.as_ref().split(|c| *c == b':');
-
-			let reference = components
-				.next()
-				.ok_or_else(|| ReferenceError::InvalidFormat.into())
-				.and_then(EvmSmartContractFungibleReference::from_utf8_encoded)?;
-
-			let id = components
-				.next()
-				// Transform Option<Result> to Result<Option> and bubble Err case up, keeping Ok(Option) for successful
-				// cases.
-				.map_or(Ok(None), |id| {
-					EvmSmartContractNonFungibleIdentifier::from_utf8_encoded(id).map(Some)
-				})?;
-			Ok(Self(reference, id))
-		}
-	}
-
-	impl Display for EvmSmartContractNonFungibleReference {
-		fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-			let id_output = if let Some(ref id) = &self.1 {
-				format_args!(":{}", id).to_string()
-			} else {
-				"".to_string()
-			};
-			write!(f, "{}{}", self.0, id_output)
-		}
-	}
-
 	/// An asset identifier for an EVM smart contract collection (e.g., an NFT
 	/// instance).
 	/// Since the identifier can be up to 78 characters long of an unknown
@@ -339,7 +394,7 @@ pub mod v1 {
 	impl EvmSmartContractNonFungibleIdentifier {
 		/// Parse a UTF8-encoded smart contract asset identifier, failing if the
 		/// input string is not valid.
-		pub fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetIdError>
+		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetIdError>
 		where
 			I: AsRef<[u8]> + Into<Vec<u8>>,
 		{
@@ -391,48 +446,33 @@ pub mod v1 {
 	impl GenericAssetId {
 		/// Parse a generic UTF8-encoded asset ID, failing if the input does not
 		/// respect the CAIP-19 requirements.
-		pub fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetIdError>
+		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetIdError>
 		where
 			I: AsRef<[u8]> + Into<Vec<u8>>,
 		{
-			let input = input.as_ref();
-			let input_length = input.len();
-			if !(MINIMUM_ASSET_ID_LENGTH..=MAXIMUM_ASSET_ID_LENGTH).contains(&input_length) {
-				return Err(AssetIdError::InvalidFormat);
-			}
+			let mut split = input.as_ref().splitn(2, |c| *c == NAMESPACE_REFERENCE_SEPARATOR);
+			let (namespace, reference) = (split.next(), split.next());
 
-			let mut components = input.split(|c| *c == b':');
-
-			let namespace = components
-				.next()
-				.ok_or(AssetIdError::InvalidFormat)
-				.and_then(GenericAssetNamespace::from_utf8_encoded)?;
-			let reference = components
-				.next()
-				.ok_or(AssetIdError::InvalidFormat)
-				.and_then(GenericAssetReference::from_utf8_encoded)?;
-			let id = components
-				.next()
-				// Transform Option<Result> to Result<Option> and bubble Err case up, keeping Ok(Option) for successful
-				// cases.
-				.map_or(Ok(None), |id| GenericAssetIdentifier::from_utf8_encoded(id).map(Some))?;
-
-			Ok(Self {
-				namespace,
-				reference,
-				id,
-			})
-		}
-	}
-
-	impl Display for GenericAssetId {
-		fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-			let id_output = if let Some(ref id) = &self.id {
-				format_args!(":{}", id).to_string()
+			// Split the remaining reference to extract the identifier, if present
+			let (reference, identifier) = if let Some(r) = reference {
+				let mut split = r.splitn(2, |c| *c == REFERENCE_IDENTIFIER_SEPARATOR);
+				// Split the reference further, if present
+				(split.next(), split.next())
 			} else {
-				"".to_string()
+				// Return the old reference, which is None if we are at this point
+				(reference, None)
 			};
-			write!(f, "{}:{}{}", self.namespace, self.reference, id_output)
+
+			match (namespace, reference, identifier) {
+				(Some(namespace), Some(reference), identifier) => Ok(Self {
+					namespace: GenericAssetNamespace::from_utf8_encoded(namespace)?,
+					reference: GenericAssetReference::from_utf8_encoded(reference)?,
+					// Transform Option<Result> to Result<Option> and bubble Err case up, keeping Ok(Option) for
+					// successful cases.
+					id: identifier.map_or(Ok(None), |id| GenericAssetIdentifier::from_utf8_encoded(id).map(Some))?,
+				}),
+				_ => Err(AssetIdError::InvalidFormat),
+			}
 		}
 	}
 
@@ -446,7 +486,7 @@ pub mod v1 {
 	impl GenericAssetNamespace {
 		/// Parse a generic UTF8-encoded asset namespace, failing if the input
 		/// does not respect the CAIP-19 requirements.
-		pub fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetIdError>
+		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetIdError>
 		where
 			I: AsRef<[u8]> + Into<Vec<u8>>,
 		{
@@ -493,7 +533,7 @@ pub mod v1 {
 	impl GenericAssetReference {
 		/// Parse a generic UTF8-encoded asset reference, failing if the input
 		/// does not respect the CAIP-19 requirements.
-		pub fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetIdError>
+		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetIdError>
 		where
 			I: AsRef<[u8]> + Into<Vec<u8>>,
 		{
@@ -540,7 +580,7 @@ pub mod v1 {
 	impl GenericAssetIdentifier {
 		/// Parse a generic UTF8-encoded asset identifier, failing if the input
 		/// does not respect the CAIP-19 requirements.
-		pub fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetIdError>
+		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetIdError>
 		where
 			I: AsRef<[u8]> + Into<Vec<u8>>,
 		{
