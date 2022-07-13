@@ -229,26 +229,42 @@ pub mod v1 {
 			let (namespace, reference, identifier) = {
 				match self {
 					Self::Slip44(reference) => (
-						String::from_utf8(SLIP44_NAMESPACE.into())
-							.expect("Conversion of Slip44 namespace to string should never fail."),
+						format_args!(
+							"{}",
+							str::from_utf8(SLIP44_NAMESPACE)
+								.expect("Conversion of Slip44 namespace to string should never fail.")
+						)
+						.to_string(),
 						reference.to_string(),
 						None,
 					),
 					Self::Erc20(reference) => (
-						String::from_utf8(ERC20_NAMESPACE.into())
-							.expect("Conversion of Erc20 namespace to string should never fail."),
+						format_args!(
+							"{}",
+							str::from_utf8(ERC20_NAMESPACE)
+								.expect("Conversion of Erc20 namespace to string should never fail.")
+						)
+						.to_string(),
 						reference.to_string(),
 						None,
 					),
 					Self::Erc721(reference) => (
-						String::from_utf8(ERC721_NAMESPACE.into())
-							.expect("Conversion of Erc721 namespace to string should never fail."),
+						format_args!(
+							"{}",
+							str::from_utf8(ERC721_NAMESPACE)
+								.expect("Conversion of Erc721 namespace to string should never fail.")
+						)
+						.to_string(),
 						reference.0.to_string(),
 						reference.1.as_ref().map(|id| id.to_string()),
 					),
 					Self::Erc1155(reference) => (
-						String::from_utf8(ERC1155_NAMESPACE.into())
-							.expect("Conversion of Erc1155 namespace to string should never fail."),
+						format_args!(
+							"{}",
+							str::from_utf8(ERC1155_NAMESPACE)
+								.expect("Conversion of Erc1155 namespace to string should never fail.")
+						)
+						.to_string(),
 						reference.0.to_string(),
 						reference.1.as_ref().map(|id| id.to_string()),
 					),

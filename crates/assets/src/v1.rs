@@ -22,6 +22,8 @@ use scale_info::TypeInfo;
 use frame_support::sp_runtime::RuntimeDebug;
 use sp_std::{fmt::Display, vec::Vec};
 
+use core::str;
+
 use crate::*;
 
 pub const MINIMUM_ASSET_DID_LENGTH: usize =
@@ -156,8 +158,7 @@ impl Display for AssetDid {
 		write!(
 			f,
 			"{}{}{}{}",
-			String::from_utf8(DID_ASSET_PREFIX.into())
-				.expect("Conversion of Asset DID prefix to string should never fail."),
+			str::from_utf8(DID_ASSET_PREFIX).expect("Conversion of Asset DID prefix to string should never fail."),
 			self.chain_id,
 			char::from(CHAIN_ASSET_SEPARATOR),
 			self.asset_id

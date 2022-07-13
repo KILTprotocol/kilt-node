@@ -75,7 +75,7 @@ mod v1 {
 
 	use core::str;
 
-	use codec::{Decode, Encode, MaxEncodedLen};
+	use codec::{alloc::string::ToString, Decode, Encode, MaxEncodedLen};
 	use scale_info::TypeInfo;
 
 	use frame_support::{sp_runtime::RuntimeDebug, traits::ConstU32, BoundedVec};
@@ -238,23 +238,39 @@ mod v1 {
 			let (namespace, reference) = {
 				match self {
 					Self::Bip122(reference) => (
-						String::from_utf8(BIP122_NAMESPACE.into())
-							.expect("Conversion of Bip122 namespace to string should never fail."),
+						format_args!(
+							"{}",
+							str::from_utf8(BIP122_NAMESPACE)
+								.expect("Conversion of Bip122 namespace to string should never fail.")
+						)
+						.to_string(),
 						reference.to_string(),
 					),
 					Self::Eip155(reference) => (
-						String::from_utf8(EIP155_NAMESPACE.into())
-							.expect("Conversion of Eip155 namespace to string should never fail."),
+						format_args!(
+							"{}",
+							str::from_utf8(EIP155_NAMESPACE)
+								.expect("Conversion of Eip155 namespace to string should never fail.")
+						)
+						.to_string(),
 						reference.to_string(),
 					),
 					Self::Dotsama(reference) => (
-						String::from_utf8(DOTSAMA_NAMESPACE.into())
-							.expect("Conversion of Dotsama namespace to string should never fail."),
+						format_args!(
+							"{}",
+							str::from_utf8(DOTSAMA_NAMESPACE)
+								.expect("Conversion of Dotsama namespace to string should never fail.")
+						)
+						.to_string(),
 						reference.to_string(),
 					),
 					Self::Solana(reference) => (
-						String::from_utf8(SOLANA_NAMESPACE.into())
-							.expect("Conversion of Solana namespace to string should never fail."),
+						format_args!(
+							"{}",
+							str::from_utf8(SOLANA_NAMESPACE)
+								.expect("Conversion of Solana namespace to string should never fail.")
+						)
+						.to_string(),
 						reference.to_string(),
 					),
 					Self::Generic(generic) => (generic.namespace.to_string(), generic.reference.to_string()),
