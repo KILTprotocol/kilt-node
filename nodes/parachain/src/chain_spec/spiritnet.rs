@@ -30,7 +30,7 @@ use sp_core::{crypto::UncheckedInto, sr25519};
 use sp_runtime::traits::Zero;
 use spiritnet_runtime::{
 	BalancesConfig, CouncilConfig, GenesisConfig, InflationInfo, ParachainInfoConfig, ParachainStakingConfig,
-	SessionConfig, SystemConfig, TechnicalCommitteeConfig, VestingConfig, WASM_BINARY, PolkadotXcmConfig,
+	PolkadotXcmConfig, SessionConfig, SystemConfig, TechnicalCommitteeConfig, VestingConfig, WASM_BINARY,
 };
 
 use crate::chain_spec::{get_account_id_from_seed, get_from_seed, DEFAULT_PARA_ID, TELEMETRY_URL};
