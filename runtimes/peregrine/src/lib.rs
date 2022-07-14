@@ -28,7 +28,7 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::{
 	construct_runtime, parameter_types,
-	traits::{EnsureOneOf, InstanceFilter, PrivilegeCmp},
+	traits::{EitherOfDiverse, InstanceFilter, PrivilegeCmp},
 	weights::{constants::RocksDbWeight, ConstantMultiplier, Weight},
 };
 use frame_system::EnsureRoot;
@@ -213,6 +213,7 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
 	type ReservedDmpWeight = ReservedDmpWeight;
 	type XcmpMessageHandler = ();
 	type ReservedXcmpWeight = ReservedXcmpWeight;
+	type CheckAssociatedRelayNumber = cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases;
 }
 
 impl parachain_info::Config for Runtime {}
@@ -285,8 +286,10 @@ parameter_types! {
 	pub const NoPreimagePostponement: Option<BlockNumber> = Some(10);
 }
 
-type ScheduleOrigin =
-	EnsureOneOf<EnsureRoot<AccountId>, pallet_collective::EnsureProportionAtLeast<AccountId, CouncilCollective, 1, 2>>;
+type ScheduleOrigin = EitherOfDiverse<
+	EnsureRoot<AccountId>,
+	pallet_collective::EnsureProportionAtLeast<AccountId, CouncilCollective, 1, 2>,
+>;
 
 /// Used the compare the privilege of an origin inside the scheduler.
 pub struct OriginPrivilegeCmp;
@@ -357,13 +360,13 @@ impl pallet_democracy::Config for Runtime {
 	type FastTrackVotingPeriod = constants::governance::FastTrackVotingPeriod;
 	// To cancel a proposal which has been passed, 2/3 of the council must agree to
 	// it.
-	type CancellationOrigin = EnsureOneOf<
+	type CancellationOrigin = EitherOfDiverse<
 		EnsureRoot<AccountId>,
 		pallet_collective::EnsureProportionAtLeast<AccountId, CouncilCollective, 2, 3>,
 	>;
 	// To cancel a proposal before it has been passed, the technical committee must
 	// be unanimous or Root must agree.
-	type CancelProposalOrigin = EnsureOneOf<
+	type CancelProposalOrigin = EitherOfDiverse<
 		EnsureRoot<AccountId>,
 		pallet_collective::EnsureProportionAtLeast<AccountId, TechnicalCollective, 1, 1>,
 	>;
@@ -391,11 +394,15 @@ parameter_types! {
 	pub const MaxApprovals: u32 = 100;
 }
 
-type ApproveOrigin =
-	EnsureOneOf<EnsureRoot<AccountId>, pallet_collective::EnsureProportionAtLeast<AccountId, CouncilCollective, 3, 5>>;
+type ApproveOrigin = EitherOfDiverse<
+	EnsureRoot<AccountId>,
+	pallet_collective::EnsureProportionAtLeast<AccountId, CouncilCollective, 3, 5>,
+>;
 
-type MoreThanHalfCouncil =
-	EnsureOneOf<EnsureRoot<AccountId>, pallet_collective::EnsureProportionMoreThan<AccountId, CouncilCollective, 1, 2>>;
+type MoreThanHalfCouncil = EitherOfDiverse<
+	EnsureRoot<AccountId>,
+	pallet_collective::EnsureProportionMoreThan<AccountId, CouncilCollective, 1, 2>,
+>;
 
 impl pallet_treasury::Config for Runtime {
 	type PalletId = pallet_id::Treasury;
@@ -408,6 +415,7 @@ impl pallet_treasury::Config for Runtime {
 	type ProposalBondMinimum = ProposalBondMinimum;
 	type ProposalBondMaximum = ();
 	type SpendPeriod = SpendPeriod;
+	type SpendOrigin = frame_support::traits::NeverEnsureOrigin<Balance>;
 	type Burn = Burn;
 	type BurnDestination = ();
 	type SpendFunds = ();
@@ -968,10 +976,7 @@ pub type Executive = frame_executive::Executive<
 	// Executes pallet hooks in reverse order of definition in construct_runtime
 	// If we want to switch to AllPalletsWithSystem, we need to reorder the staking pallets
 	AllPalletsReversedWithSystemFirst,
-	(
-		runtime_common::migrations::RemoveKiltLaunch<Runtime>,
-		EthereumMigration<Runtime>,
-	),
+	EthereumMigration<Runtime>,
 >;
 
 impl_runtime_apis! {
