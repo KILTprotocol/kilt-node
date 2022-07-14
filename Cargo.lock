@@ -8906,6 +8906,7 @@ dependencies = [
  "pallet-transaction-payment",
  "parachain-staking",
  "parity-scale-codec",
+ "polkadot-parachain",
  "scale-info",
  "serde",
  "smallvec",
@@ -8914,6 +8915,9 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
+ "xcm",
+ "xcm-builder",
+ "xcm-executor",
 ]
 
 [[package]]
