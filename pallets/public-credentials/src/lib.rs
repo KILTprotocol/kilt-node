@@ -351,7 +351,7 @@ pub mod pallet {
 		/// blockchain history, but only its link *from* the blockchain state
 		/// *to* the blockchain history is removed.
 		///
-		/// Clients parsing public credentials should consider should interpret
+		/// Clients parsing public credentials should interpret
 		/// the lack of such a link as the fact that the credential has been
 		/// removed by its attester some time in the past.
 		///
