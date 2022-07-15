@@ -68,13 +68,21 @@ pub type XcmOriginToTransactDispatchOrigin = (
 pub struct XcmConfig;
 impl xcm_executor::Config for XcmConfig {
 	type Call = Call;
+	// How we send Xcm messages
 	type XcmSender = XcmRouter;
 	// How to withdraw and deposit an asset.
 	type AssetTransactor = LocalAssetTransactor<Balances>;
 	type OriginConverter = XcmOriginToTransactDispatchOrigin;
+	// We only trust our own KILT asset reserve
 	type IsReserve = NativeAsset;
-	type IsTeleporter = (); // Teleporting is disabled.
+	// Teleporting is disabled.
+	type IsTeleporter = ();
+	// Invert a location.
+	// e.g. The relay chain is described as parent (MultiLocation(1, Here)))
+	// chain. When we invert that location it would be MultiLocation(0, X1(Parachain(2086))) since we are a
+	// child chain with ParaId 2086.
 	type LocationInverter = LocationInverter<Ancestry>;
+
 	type Barrier = Barrier;
 	type Weigher = FixedWeightBounds<UnitWeightCost, Call, MaxInstructions>;
 	type Trader = UsingComponents<WeightToFee<Runtime>, RelayLocation, AccountId, Balances, ToAuthor<Runtime>>;

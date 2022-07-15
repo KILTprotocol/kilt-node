@@ -35,13 +35,13 @@ parameter_types! {
 }
 
 match_types! {
-	pub type ParentOrParentsExecutivePlurality: impl Contains<MultiLocation> = {
-		MultiLocation { parents: 1, interior: Here } |
-		MultiLocation { parents: 1, interior: X1(Plurality { id: BodyId::Executive, .. }) }
+	// The legislative of our parent (i.e. Kusama majority vote).
+	pub type ParentLegislative: impl Contains<MultiLocation> = {
+		MultiLocation { parents: 1, interior: X1(Plurality { id: BodyId::Legislative, .. }) }
 	};
 }
 
-//TODO: move DenyThenTry to polkadot's xcm module.
+//Note: this might move to polkadot's xcm module.
 /// Deny executing the xcm message if it matches any of the Deny filter
 /// regardless of anything else. If it passes the Deny, and matches one of the
 /// Allow cases then it is let through.
@@ -66,7 +66,21 @@ where
 	}
 }
 
-// See issue #5233
+/// Deny ReserveTransfer to the relay chain. Allow
+pub type Barrier = DenyThenTry<
+	DenyReserveTransferToRelayChain,
+	(
+		// // We don't allow anything from any sibling chain, therefore we remove the following
+		// TakeWeightCredit,
+		// AllowTopLevelPaidExecutionFrom<Everything>,
+
+		// We allow everything from the relay chain if it was send by the relay chain legislative.
+		AllowUnpaidExecutionFrom<ParentLegislative>,
+		// ^^^ Parent and its exec plurality get free execution
+	),
+>;
+
+/// Reserved funds to the relay chain can't return. See https://github.com/paritytech/polkadot/issues/5233
 pub struct DenyReserveTransferToRelayChain;
 impl ShouldExecute for DenyReserveTransferToRelayChain {
 	fn should_execute<Call>(
@@ -123,16 +137,6 @@ impl ShouldExecute for DenyReserveTransferToRelayChain {
 		Ok(())
 	}
 }
-
-pub type Barrier = DenyThenTry<
-	DenyReserveTransferToRelayChain,
-	(
-		TakeWeightCredit,
-		AllowTopLevelPaidExecutionFrom<Everything>,
-		AllowUnpaidExecutionFrom<ParentOrParentsExecutivePlurality>,
-		// ^^^ Parent and its exec plurality get free execution
-	),
->;
 
 parameter_types! {
 	pub const RelayLocation: MultiLocation = MultiLocation::parent();
