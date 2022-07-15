@@ -40,7 +40,6 @@ build:
   only:
     - develop
     - master
-    - tags
   variables:
     DOCKER_HUB_PARACHAIN: "kiltprotocol/kilt-node"
     DOCKER_HUB_STANDALONE: "kiltprotocol/mashnet-node"
@@ -79,7 +78,7 @@ build:
 
 dev-release:
   image:
-    name: kiltprotocol/kilt-ci:2.2.38
+    name: amazon/aws-cli:2.2.38
     entrypoint: [""]
   stage: build
   only:
@@ -89,14 +88,21 @@ dev-release:
     DOCKER_HUB_PARACHAIN: "kiltprotocol/kilt-node"
     DOCKER_HUB_STANDALONE: "kiltprotocol/mashnet-node"
   before_script:
+    - amazon-linux-extras install docker
     - aws --version
     - docker --version
   script:
     - echo -n $CI_REGISTRY_TOKEN | docker login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
     - aws ecr get-login-password | docker login --username AWS --password-stdin $AWS_REGISTRY
 
-    - ./.maintain/build-image.sh build
-    - "if [[ ! -z ${CI_COMMIT_TAG} ]]; then ./.maintain/push-image.sh build ${CI_COMMIT_TAG}; fi"
+    - docker build --build-arg NODE_TYPE=kilt-parachain -t ${DOCKER_HUB_PARACHAIN}:develop .
+    - docker build --build-arg NODE_TYPE=mashnet-node -t ${DOCKER_HUB_STANDALONE}:develop .
+
+    - docker tag ${DOCKER_HUB_PARACHAIN}:develop ${DOCKER_HUB_PARACHAIN}:${CI_COMMIT_TAG:-$CI_COMMIT_SHORT_SHA}
+    - docker tag ${DOCKER_HUB_PARACHAIN}:develop $AWS_REGISTRY/kilt-parachain/collator:${CI_COMMIT_TAG:-$CI_COMMIT_SHORT_SHA}
+
+    - docker push ${DOCKER_HUB_PARACHAIN}:${CI_COMMIT_TAG:-$CI_COMMIT_SHORT_SHA}
+    - docker push $AWS_REGISTRY/kilt-parachain/collator:${CI_COMMIT_TAG:-$CI_COMMIT_SHORT_SHA}
 
 build-wasm-peregrine:
   image:
