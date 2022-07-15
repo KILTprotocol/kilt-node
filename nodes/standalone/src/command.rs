@@ -142,7 +142,6 @@ pub fn run() -> sc_cli::Result<()> {
 
 			runner.sync_run(|config| {
 				let PartialComponents { client, backend, .. } = service::new_partial(&config)?;
-
 				// This switch needs to be in the client, since the client decides
 				// which sub-commands it wants to support.
 				match cmd {
@@ -181,12 +180,11 @@ pub fn run() -> sc_cli::Result<()> {
 				let registry = config.prometheus_config.as_ref().map(|cfg| &cfg.registry);
 				let task_manager = sc_service::TaskManager::new(config.tokio_handle.clone(), registry)
 					.map_err(|e| sc_cli::Error::Service(sc_service::Error::Prometheus(e)))?;
-
 				Ok((cmd.run::<Block, service::ExecutorDispatch>(config), task_manager))
 			})
 		}
 		#[cfg(not(feature = "try-runtime"))]
-		Some(Subcommand::TryRuntime) => Err("TryRuntime wasn't enabled when building the node. \
+		Some(Subcommand::TryRuntime) => Err("TryRuntime wasn't enabled when building the standalone node. \
 				You can enable it with `--features try-runtime`."
 			.into()),
 		Some(Subcommand::ChainInfo(cmd)) => {
