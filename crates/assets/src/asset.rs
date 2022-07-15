@@ -291,6 +291,39 @@ pub mod v1 {
 		}
 	}
 
+	const fn check_namespace_length_bounds(namespace: &[u8]) -> Result<(), NamespaceError> {
+		let namespace_length = namespace.len();
+		if namespace_length < MINIMUM_NAMESPACE_LENGTH {
+			Err(NamespaceError::TooShort)
+		} else if namespace_length > MAXIMUM_NAMESPACE_LENGTH {
+			Err(NamespaceError::TooLong)
+		} else {
+			Ok(())
+		}
+	}
+
+	const fn check_reference_length_bounds(reference: &[u8]) -> Result<(), ReferenceError> {
+		let reference_length = reference.len();
+		if reference_length < MINIMUM_REFERENCE_LENGTH {
+			Err(ReferenceError::TooShort)
+		} else if reference_length > MAXIMUM_REFERENCE_LENGTH {
+			Err(ReferenceError::TooLong)
+		} else {
+			Ok(())
+		}
+	}
+
+	const fn check_identifier_length_bounds(identifier: &[u8]) -> Result<(), IdentifierError> {
+		let identifier_length = identifier.len();
+		if identifier_length < MINIMUM_IDENTIFIER_LENGTH {
+			Err(IdentifierError::TooShort)
+		} else if identifier_length > MAXIMUM_IDENTIFIER_LENGTH {
+			Err(IdentifierError::TooLong)
+		} else {
+			Ok(())
+		}
+	}
+
 	/// A Slip44 asset reference.
 	/// It is a modification of the [CAIP-20 spec](https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-20.md)
 	/// according to the rules defined in the Asset DID method specification.
@@ -306,17 +339,12 @@ pub mod v1 {
 			I: AsRef<[u8]> + Into<Vec<u8>>,
 		{
 			let input = input.as_ref();
-			let input_length = input.len();
-			if input_length < MINIMUM_REFERENCE_LENGTH {
-				Err(ReferenceError::TooShort.into())
-			} else if input_length > MAXIMUM_REFERENCE_LENGTH {
-				Err(ReferenceError::TooLong.into())
-			} else {
-				let decoded = str::from_utf8(input).map_err(|_| ReferenceError::InvalidFormat)?;
-				let parsed = U256::from_dec_str(decoded).map_err(|_| ReferenceError::InvalidFormat)?;
-				// Unchecked since we already checked for maximum length and hence maximum value
-				Ok(Self(parsed))
-			}
+			check_reference_length_bounds(input)?;
+
+			let decoded = str::from_utf8(input).map_err(|_| ReferenceError::InvalidFormat)?;
+			let parsed = U256::from_dec_str(decoded).map_err(|_| ReferenceError::InvalidFormat)?;
+			// Unchecked since we already checked for maximum length and hence maximum value
+			Ok(Self(parsed))
 		}
 	}
 
@@ -368,16 +396,11 @@ pub mod v1 {
 			match input {
 				// If the prefix is "0x" => parse the address
 				[b'0', b'x', contract_address @ ..] => {
-					let address_length = contract_address.len();
-					if address_length < MINIMUM_REFERENCE_LENGTH {
-						Err(ReferenceError::TooShort.into())
-					} else if address_length > MAXIMUM_REFERENCE_LENGTH {
-						Err(ReferenceError::TooLong.into())
-					} else {
-						let decoded = hex::decode(contract_address).map_err(|_| ReferenceError::InvalidFormat)?;
-						let inner: [u8; 20] = decoded.try_into().map_err(|_| ReferenceError::InvalidFormat)?;
-						Ok(Self(inner))
-					}
+					check_reference_length_bounds(contract_address)?;
+
+					let decoded = hex::decode(contract_address).map_err(|_| ReferenceError::InvalidFormat)?;
+					let inner: [u8; 20] = decoded.try_into().map_err(|_| ReferenceError::InvalidFormat)?;
+					Ok(Self(inner))
 				}
 				// Otherwise fail
 				_ => Err(ReferenceError::InvalidFormat.into()),
@@ -418,26 +441,21 @@ pub mod v1 {
 			I: AsRef<[u8]> + Into<Vec<u8>>,
 		{
 			let input = input.as_ref();
-			let input_length = input.len();
-			if input_length < MINIMUM_IDENTIFIER_LENGTH {
-				Err(IdentifierError::TooShort.into())
-			} else if input_length > MAXIMUM_IDENTIFIER_LENGTH {
-				Err(IdentifierError::TooLong.into())
-			} else {
-				input.iter().try_for_each(|c| {
-					if !matches!(c, b'0'..=b'9') {
-						Err(IdentifierError::InvalidFormat)
-					} else {
-						Ok(())
-					}
-				})?;
+			check_identifier_length_bounds(input)?;
 
-				Ok(Self(
-					Vec::<u8>::from(input)
-						.try_into()
-						.map_err(|_| IdentifierError::InvalidFormat)?,
-				))
-			}
+			input.iter().try_for_each(|c| {
+				if !matches!(c, b'0'..=b'9') {
+					Err(IdentifierError::InvalidFormat)
+				} else {
+					Ok(())
+				}
+			})?;
+
+			Ok(Self(
+				Vec::<u8>::from(input)
+					.try_into()
+					.map_err(|_| IdentifierError::InvalidFormat)?,
+			))
 		}
 	}
 
@@ -510,25 +528,20 @@ pub mod v1 {
 			I: AsRef<[u8]> + Into<Vec<u8>>,
 		{
 			let input = input.as_ref();
-			let input_length = input.len();
-			if input_length < MINIMUM_NAMESPACE_LENGTH {
-				Err(NamespaceError::TooShort.into())
-			} else if input_length > MAXIMUM_NAMESPACE_LENGTH {
-				Err(NamespaceError::TooLong.into())
-			} else {
-				input.iter().try_for_each(|c| {
-					if !matches!(c, b'-' | b'a'..=b'z' | b'0'..=b'9') {
-						Err(NamespaceError::InvalidFormat)
-					} else {
-						Ok(())
-					}
-				})?;
-				Ok(Self(
-					Vec::<u8>::from(input)
-						.try_into()
-						.map_err(|_| NamespaceError::InvalidFormat)?,
-				))
-			}
+			check_namespace_length_bounds(input)?;
+
+			input.iter().try_for_each(|c| {
+				if !matches!(c, b'-' | b'a'..=b'z' | b'0'..=b'9') {
+					Err(NamespaceError::InvalidFormat)
+				} else {
+					Ok(())
+				}
+			})?;
+			Ok(Self(
+				Vec::<u8>::from(input)
+					.try_into()
+					.map_err(|_| NamespaceError::InvalidFormat)?,
+			))
 		}
 	}
 
@@ -557,25 +570,20 @@ pub mod v1 {
 			I: AsRef<[u8]> + Into<Vec<u8>>,
 		{
 			let input = input.as_ref();
-			let input_length = input.len();
-			if input_length < MINIMUM_REFERENCE_LENGTH {
-				Err(ReferenceError::TooShort.into())
-			} else if input_length > MAXIMUM_REFERENCE_LENGTH {
-				Err(ReferenceError::TooLong.into())
-			} else {
-				input.iter().try_for_each(|c| {
-					if !matches!(c, b'-' | b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9') {
-						Err(ReferenceError::InvalidFormat)
-					} else {
-						Ok(())
-					}
-				})?;
-				Ok(Self(
-					Vec::<u8>::from(input)
-						.try_into()
-						.map_err(|_| ReferenceError::InvalidFormat)?,
-				))
-			}
+			check_reference_length_bounds(input)?;
+
+			input.iter().try_for_each(|c| {
+				if !matches!(c, b'-' | b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9') {
+					Err(ReferenceError::InvalidFormat)
+				} else {
+					Ok(())
+				}
+			})?;
+			Ok(Self(
+				Vec::<u8>::from(input)
+					.try_into()
+					.map_err(|_| ReferenceError::InvalidFormat)?,
+			))
 		}
 	}
 
@@ -604,25 +612,20 @@ pub mod v1 {
 			I: AsRef<[u8]> + Into<Vec<u8>>,
 		{
 			let input = input.as_ref();
-			let input_length = input.len();
-			if input_length < MINIMUM_IDENTIFIER_LENGTH {
-				Err(IdentifierError::TooShort.into())
-			} else if input_length > MAXIMUM_IDENTIFIER_LENGTH {
-				Err(IdentifierError::TooLong.into())
-			} else {
-				input.iter().try_for_each(|c| {
-					if !matches!(c, b'-' | b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9') {
-						Err(IdentifierError::InvalidFormat)
-					} else {
-						Ok(())
-					}
-				})?;
-				Ok(Self(
-					Vec::<u8>::from(input)
-						.try_into()
-						.map_err(|_| IdentifierError::InvalidFormat)?,
-				))
-			}
+			check_identifier_length_bounds(input)?;
+
+			input.iter().try_for_each(|c| {
+				if !matches!(c, b'-' | b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9') {
+					Err(IdentifierError::InvalidFormat)
+				} else {
+					Ok(())
+				}
+			})?;
+			Ok(Self(
+				Vec::<u8>::from(input)
+					.try_into()
+					.map_err(|_| IdentifierError::InvalidFormat)?,
+			))
 		}
 	}
 

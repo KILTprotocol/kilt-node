@@ -286,6 +286,28 @@ mod v1 {
 		}
 	}
 
+	const fn check_namespace_length_bounds(namespace: &[u8]) -> Result<(), NamespaceError> {
+		let namespace_length = namespace.len();
+		if namespace_length < MINIMUM_NAMESPACE_LENGTH {
+			Err(NamespaceError::TooShort)
+		} else if namespace_length > MAXIMUM_NAMESPACE_LENGTH {
+			Err(NamespaceError::TooLong)
+		} else {
+			Ok(())
+		}
+	}
+
+	const fn check_reference_length_bounds(reference: &[u8]) -> Result<(), ReferenceError> {
+		let reference_length = reference.len();
+		if reference_length < MINIMUM_REFERENCE_LENGTH {
+			Err(ReferenceError::TooShort)
+		} else if reference_length > MAXIMUM_REFERENCE_LENGTH {
+			Err(ReferenceError::TooLong)
+		} else {
+			Ok(())
+		}
+	}
+
 	/// An EIP155 chain reference.
 	/// It is a modification of the [CAIP-3 spec](https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-3.md)
 	/// according to the rules defined in the Asset DID method specification.
@@ -320,17 +342,12 @@ mod v1 {
 			I: AsRef<[u8]> + Into<Vec<u8>>,
 		{
 			let input = input.as_ref();
-			let input_length = input.len();
-			if input_length < MINIMUM_REFERENCE_LENGTH {
-				Err(ReferenceError::TooShort.into())
-			} else if input_length > MAXIMUM_REFERENCE_LENGTH {
-				Err(ReferenceError::TooLong.into())
-			} else {
-				let decoded = str::from_utf8(input).map_err(|_| ReferenceError::InvalidFormat)?;
-				let parsed = decoded.parse::<u128>().map_err(|_| ReferenceError::InvalidFormat)?;
-				// Unchecked since we already checked for maximum length and hence maximum value
-				Ok(Self(parsed))
-			}
+			check_reference_length_bounds(input)?;
+
+			let decoded = str::from_utf8(input).map_err(|_| ReferenceError::InvalidFormat)?;
+			let parsed = decoded.parse::<u128>().map_err(|_| ReferenceError::InvalidFormat)?;
+			// Unchecked since we already checked for maximum length and hence maximum value
+			Ok(Self(parsed))
 		}
 	}
 
@@ -402,16 +419,11 @@ mod v1 {
 			I: AsRef<[u8]> + Into<Vec<u8>>,
 		{
 			let input = input.as_ref();
-			let input_length = input.len();
-			if input_length < MINIMUM_REFERENCE_LENGTH {
-				Err(ReferenceError::TooShort.into())
-			} else if input_length > MAXIMUM_REFERENCE_LENGTH {
-				Err(ReferenceError::TooLong.into())
-			} else {
-				let decoded = hex::decode(input).map_err(|_| ReferenceError::InvalidFormat)?;
-				let inner: [u8; 16] = decoded.try_into().map_err(|_| ReferenceError::InvalidFormat)?;
-				Ok(Self(inner))
-			}
+			check_reference_length_bounds(input)?;
+
+			let decoded = hex::decode(input).map_err(|_| ReferenceError::InvalidFormat)?;
+			let inner: [u8; 16] = decoded.try_into().map_err(|_| ReferenceError::InvalidFormat)?;
+			Ok(Self(inner))
 		}
 	}
 
@@ -450,22 +462,17 @@ mod v1 {
 			I: AsRef<[u8]> + Into<Vec<u8>>,
 		{
 			let input = input.as_ref();
-			let input_length = input.len();
-			if input_length < MINIMUM_REFERENCE_LENGTH {
-				Err(ReferenceError::TooShort.into())
-			} else if input_length > MAXIMUM_REFERENCE_LENGTH {
-				Err(ReferenceError::TooLong.into())
-			} else {
-				let decoded_string = str::from_utf8(input).map_err(|_| ReferenceError::InvalidFormat)?;
-				let decoded = decoded_string
-					.from_base58()
-					.map_err(|_| ReferenceError::InvalidFormat)?;
-				// Max length in bytes of a 32-character Base58 string is 32 -> it is the string
-				// formed by all "1". Otherwise, it is always between 23 and 24 characters.
-				let inner: BoundedVec<u8, ConstU32<32>> =
-					decoded.try_into().map_err(|_| ReferenceError::InvalidFormat)?;
-				Ok(Self(inner))
-			}
+			check_reference_length_bounds(input)?;
+
+			let decoded_string = str::from_utf8(input).map_err(|_| ReferenceError::InvalidFormat)?;
+			let decoded = decoded_string
+				.from_base58()
+				.map_err(|_| ReferenceError::InvalidFormat)?;
+			// Max length in bytes of a 32-character Base58 string is 32 -> it is the string
+			// formed by all "1". Otherwise, it is always between 23 and 24 characters.
+			let inner: BoundedVec<u8, ConstU32<32>> =
+				decoded.try_into().map_err(|_| ReferenceError::InvalidFormat)?;
+			Ok(Self(inner))
 		}
 	}
 
@@ -518,25 +525,20 @@ mod v1 {
 			I: AsRef<[u8]> + Into<Vec<u8>>,
 		{
 			let input = input.as_ref();
-			let input_length = input.len();
-			if input_length < MINIMUM_NAMESPACE_LENGTH {
-				Err(NamespaceError::TooShort.into())
-			} else if input_length > MAXIMUM_NAMESPACE_LENGTH {
-				Err(NamespaceError::TooLong.into())
-			} else {
-				input.iter().try_for_each(|c| {
-					if !matches!(c, b'-' | b'a'..=b'z' | b'0'..=b'9') {
-						Err(NamespaceError::InvalidFormat)
-					} else {
-						Ok(())
-					}
-				})?;
-				Ok(Self(
-					Vec::<u8>::from(input)
-						.try_into()
-						.map_err(|_| NamespaceError::InvalidFormat)?,
-				))
-			}
+			check_namespace_length_bounds(input)?;
+
+			input.iter().try_for_each(|c| {
+				if !matches!(c, b'-' | b'a'..=b'z' | b'0'..=b'9') {
+					Err(NamespaceError::InvalidFormat)
+				} else {
+					Ok(())
+				}
+			})?;
+			Ok(Self(
+				Vec::<u8>::from(input)
+					.try_into()
+					.map_err(|_| NamespaceError::InvalidFormat)?,
+			))
 		}
 	}
 
@@ -565,25 +567,20 @@ mod v1 {
 			I: AsRef<[u8]> + Into<Vec<u8>>,
 		{
 			let input = input.as_ref();
-			let input_length = input.len();
-			if input_length < MINIMUM_REFERENCE_LENGTH {
-				Err(ReferenceError::TooShort.into())
-			} else if input_length > MAXIMUM_REFERENCE_LENGTH {
-				Err(ReferenceError::TooLong.into())
-			} else {
-				input.iter().try_for_each(|c| {
-					if !matches!(c, b'-' | b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9') {
-						Err(ReferenceError::InvalidFormat)
-					} else {
-						Ok(())
-					}
-				})?;
-				Ok(Self(
-					Vec::<u8>::from(input)
-						.try_into()
-						.map_err(|_| ReferenceError::InvalidFormat)?,
-				))
-			}
+			check_reference_length_bounds(input)?;
+
+			input.iter().try_for_each(|c| {
+				if !matches!(c, b'-' | b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9') {
+					Err(ReferenceError::InvalidFormat)
+				} else {
+					Ok(())
+				}
+			})?;
+			Ok(Self(
+				Vec::<u8>::from(input)
+					.try_into()
+					.map_err(|_| ReferenceError::InvalidFormat)?,
+			))
 		}
 	}
 
