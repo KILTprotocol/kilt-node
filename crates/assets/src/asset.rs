@@ -168,18 +168,7 @@ pub mod v1 {
 				return Err(AssetIdError::InvalidFormat);
 			}
 
-			let mut split = input.as_ref().splitn(2, |c| *c == NAMESPACE_REFERENCE_SEPARATOR);
-			let (namespace, reference) = (split.next(), split.next());
-
-			// Split the remaining reference to extract the identifier, if present
-			let (reference, identifier) = if let Some(r) = reference {
-				let mut split = r.splitn(2, |c| *c == REFERENCE_IDENTIFIER_SEPARATOR);
-				// Split the reference further, if present
-				(split.next(), split.next())
-			} else {
-				// Return the old reference, which is None if we are at this point
-				(reference, None)
-			};
+			let (namespace, reference, identifier) = split_components(input);
 
 			match (namespace, reference, identifier) {
 				// "slip44:" assets -> https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-20.md
@@ -322,6 +311,26 @@ pub mod v1 {
 		} else {
 			Ok(())
 		}
+	}
+
+	/// Split the given input into its components, i.e., namespace, reference,
+	/// and identifier, if the proper separators are found.
+	#[allow(clippy::type_complexity)]
+	fn split_components(input: &[u8]) -> (Option<&[u8]>, Option<&[u8]>, Option<&[u8]>) {
+		let mut split = input.splitn(2, |c| *c == NAMESPACE_REFERENCE_SEPARATOR);
+		let (namespace, reference) = (split.next(), split.next());
+
+		// Split the remaining reference to extract the identifier, if present
+		let (reference, identifier) = if let Some(r) = reference {
+			let mut split = r.splitn(2, |c| *c == REFERENCE_IDENTIFIER_SEPARATOR);
+			// Split the reference further, if present
+			(split.next(), split.next())
+		} else {
+			// Return the old reference, which is None if we are at this point
+			(reference, None)
+		};
+
+		(namespace, reference, identifier)
 	}
 
 	/// A Slip44 asset reference.
@@ -489,18 +498,7 @@ pub mod v1 {
 		where
 			I: AsRef<[u8]> + Into<Vec<u8>>,
 		{
-			let mut split = input.as_ref().splitn(2, |c| *c == NAMESPACE_REFERENCE_SEPARATOR);
-			let (namespace, reference) = (split.next(), split.next());
-
-			// Split the remaining reference to extract the identifier, if present
-			let (reference, identifier) = if let Some(r) = reference {
-				let mut split = r.splitn(2, |c| *c == REFERENCE_IDENTIFIER_SEPARATOR);
-				// Split the reference further, if present
-				(split.next(), split.next())
-			} else {
-				// Return the old reference, which is None if we are at this point
-				(reference, None)
-			};
+			let (namespace, reference, identifier) = split_components(input.as_ref());
 
 			match (namespace, reference, identifier) {
 				(Some(namespace), Some(reference), identifier) => Ok(Self {

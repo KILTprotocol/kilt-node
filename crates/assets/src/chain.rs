@@ -207,8 +207,7 @@ mod v1 {
 				return Err(ChainIdError::InvalidFormat);
 			}
 
-			let mut split = input.as_ref().splitn(2, |c| *c == NAMESPACE_REFERENCE_SEPARATOR);
-			let (namespace, reference) = (split.next(), split.next());
+			let (namespace, reference) = split_components(input);
 
 			match (namespace, reference) {
 				// "eip155:" chains -> https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-3.md
@@ -306,6 +305,13 @@ mod v1 {
 		} else {
 			Ok(())
 		}
+	}
+
+	/// Split the given input into its components, i.e., namespace, and
+	/// reference, if the proper separator is found.
+	fn split_components(input: &[u8]) -> (Option<&[u8]>, Option<&[u8]>) {
+		let mut split = input.as_ref().splitn(2, |c| *c == NAMESPACE_REFERENCE_SEPARATOR);
+		(split.next(), split.next())
 	}
 
 	/// An EIP155 chain reference.
@@ -496,8 +502,7 @@ mod v1 {
 		where
 			I: AsRef<[u8]> + Into<Vec<u8>>,
 		{
-			let mut split = input.as_ref().splitn(2, |c| *c == NAMESPACE_REFERENCE_SEPARATOR);
-			let (namespace, reference) = (split.next(), split.next());
+			let (namespace, reference) = split_components(input.as_ref());
 
 			match (namespace, reference) {
 				(Some(namespace), Some(reference)) => Ok(Self {
