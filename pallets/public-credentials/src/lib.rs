@@ -371,12 +371,7 @@ pub mod pallet {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 			let attester = source.subject();
 
-			// Verify that the credential exists
-			let credential_subject =
-				CredentialsUnicityIndex::<T>::get(&claim_hash).ok_or(Error::<T>::CredentialNotFound)?;
-			// Should never happen if the line above succeeds
-			let credential_entry =
-				Credentials::<T>::get(&credential_subject, &claim_hash).ok_or(Error::<T>::InternalError)?;
+			let (credential_subject, credential_entry) = Self::retrieve_credential_entry(&claim_hash)?;
 
 			// Delegate to the attestation pallet the removal logic
 			// This guarantees that the authorized attester is calling this function
@@ -400,12 +395,7 @@ pub mod pallet {
 		pub fn reclaim_deposit(origin: OriginFor<T>, claim_hash: ClaimHashOf<T>) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
-			// Verify that the credential exists
-			let credential_subject =
-				CredentialsUnicityIndex::<T>::get(&claim_hash).ok_or(Error::<T>::CredentialNotFound)?;
-			// Should never happen if the line above succeeds
-			let credential_entry =
-				Credentials::<T>::get(&credential_subject, &claim_hash).ok_or(Error::<T>::InternalError)?;
+			let (credential_subject, credential_entry) = Self::retrieve_credential_entry(&claim_hash)?;
 
 			// Delegate to the attestation pallet the removal logic.
 			// This guarantees that the authorized payer is calling this function.
@@ -433,6 +423,19 @@ pub mod pallet {
 				subject_id: credential_subject,
 				claim_hash,
 			});
+		}
+
+		fn retrieve_credential_entry(
+			claim_hash: &ClaimHashOf<T>,
+		) -> Result<(T::SubjectId, CredentialEntryOf<T>), Error<T>> {
+			// Verify that the credential exists
+			let credential_subject =
+				CredentialsUnicityIndex::<T>::get(&claim_hash).ok_or(Error::<T>::CredentialNotFound)?;
+
+			// Should never happen if the line above succeeds
+			Credentials::<T>::get(&credential_subject, &claim_hash)
+				.map(|entry| (credential_subject, entry))
+				.ok_or(Error::<T>::InternalError)
 		}
 	}
 }
