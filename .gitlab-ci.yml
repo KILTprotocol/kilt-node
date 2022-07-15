@@ -77,6 +77,27 @@ build:
     - docker push $AWS_REGISTRY/kilt-parachain/collator:latest-develop
     - docker push $AWS_REGISTRY/kilt-parachain/collator:${CI_COMMIT_TAG:-$CI_COMMIT_SHORT_SHA}
 
+dev-release:
+  image:
+    name: kiltprotocol/kilt-ci:2.2.38
+    entrypoint: [""]
+  stage: build
+  only:
+    refs:
+      - /^dev_.*$/
+  variables:
+    DOCKER_HUB_PARACHAIN: "kiltprotocol/kilt-node"
+    DOCKER_HUB_STANDALONE: "kiltprotocol/mashnet-node"
+  before_script:
+    - aws --version
+    - docker --version
+  script:
+    - echo -n $CI_REGISTRY_TOKEN | docker login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
+    - aws ecr get-login-password | docker login --username AWS --password-stdin $AWS_REGISTRY
+
+    - ./.maintain/build-image.sh build
+    - "if [[ ! -z ${CI_COMMIT_TAG} ]]; then ./.maintain/push-image.sh build ${CI_COMMIT_TAG}; fi"
+
 build-wasm-peregrine:
   image:
     name: paritytech/srtool:1.57.0
