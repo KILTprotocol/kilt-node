@@ -348,7 +348,7 @@ pub mod pallet {
 			let deposit_amount = <T as Config>::Deposit::get();
 
 			ensure!(
-				<ctype::Ctypes::<T>>::contains_key(&ctype_hash),
+				ctype::Ctypes::<T>::contains_key(&ctype_hash),
 				ctype::Error::<T>::CTypeNotFound
 			);
 			ensure!(
