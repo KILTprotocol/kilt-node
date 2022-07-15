@@ -341,9 +341,11 @@ mod v1 {
 			// Max value for 32-digit decimal values (used for EIP chains so far).
 			// TODO: This could be enforced at compilation time once constraints on generics
 			// will be available.
-			(value <= 99999999999999999999999999999999)
-				.then(|| Self(value))
-				.ok_or_else(|| ReferenceError::TooLong.into())
+			if value <= 99999999999999999999999999999999 {
+				Ok(Self(value))
+			} else {
+				Err(ReferenceError::TooLong.into())
+			}
 		}
 	}
 

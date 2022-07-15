@@ -327,11 +327,14 @@ pub mod v1 {
 			// Max value for 64-digit decimal values (used for Slip44 references so far).
 			// TODO: This could be enforced at compilation time once constraints on generics
 			// will be available.
-			(value
+			if value
 				<= U256::from_str_radix("9999999999999999999999999999999999999999999999999999999999999999", 10)
-					.unwrap())
-			.then(|| Self(value))
-			.ok_or_else(|| ReferenceError::TooLong.into())
+					.expect("Casting the maximum value for a Slip44 reference into a U256 should never fail.")
+			{
+				Ok(Self(value))
+			} else {
+				Err(ReferenceError::TooLong.into())
+			}
 		}
 	}
 
