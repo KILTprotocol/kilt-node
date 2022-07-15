@@ -470,8 +470,7 @@ mod v1 {
 				.map_err(|_| ReferenceError::InvalidFormat)?;
 			// Max length in bytes of a 32-character Base58 string is 32 -> it is the string
 			// formed by all "1". Otherwise, it is always between 23 and 24 characters.
-			let inner: BoundedVec<u8, ConstU32<32>> =
-				decoded.try_into().map_err(|_| ReferenceError::InvalidFormat)?;
+			let inner: BoundedVec<u8, ConstU32<32>> = decoded.try_into().map_err(|_| ReferenceError::InvalidFormat)?;
 			Ok(Self(inner))
 		}
 	}

@@ -415,7 +415,9 @@ pub mod v1 {
 	}
 
 	/// An asset reference that is identifiable by an EVM smart contract and an
-	/// optional identifier (e.g., an NFT collection or instance thereof). It is a modification of the [CAIP-22 spec](https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-22.md) and [CAIP-29 spec](https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-29.md)
+	/// optional identifier (e.g., an NFT collection or instance thereof). It is
+	/// a modification of the [CAIP-22 spec](https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-22.md) and
+	/// [CAIP-29 spec](https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-29.md)
 	/// according to the rules defined in the Asset DID method specification.
 	#[non_exhaustive]
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
