@@ -25,13 +25,13 @@ kilt-support = {path = "../../support", default-features = false, optional = tru
 pallet-did-lookup = {default-features = false, path = "../../pallets/pallet-did-lookup"}
 pallet-web3-names = {default-features = false, path = "../../pallets/pallet-web3-names"}
 public-credentials = {default-features = false, path = "../../pallets/public-credentials"}
+public-credentials-runtime-api = {default-features = false, path = "../../rpc/public-credentials/runtime-api"}
 runtime-common = {path = "../../runtimes/common", default-features = false}
 
 # RPC
 did-rpc-runtime-api = {path = "../../rpc/did/runtime-api", default-features = false}
 frame-system-rpc-runtime-api = {branch = "polkadot-v0.9.25", default-features = false, git = "https://github.com/paritytech/substrate"}
 pallet-transaction-payment-rpc-runtime-api = {branch = "polkadot-v0.9.25", default-features = false, git = "https://github.com/paritytech/substrate"}
-public-credentials-runtime-api = {path = "../../rpc/public-credentials/runtime-api", default-features = false}
 
 # Benchmarking
 frame-system-benchmarking = {git = "https://github.com/paritytech/substrate", default-features = false, optional = true, branch = "polkadot-v0.9.25"}

@@ -4716,6 +4716,7 @@ dependencies = [
  "pallet-web3-names",
  "parity-scale-codec",
  "public-credentials",
+ "public-credentials-runtime-api",
  "runtime-common",
  "scale-info",
  "serde",
@@ -8473,6 +8474,29 @@ dependencies = [
  "sp-io",
  "sp-keystore",
  "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "public-credentials-rpc"
+version = "1.7.0"
+dependencies = [
+ "jsonrpsee",
+ "parity-scale-codec",
+ "public-credentials-runtime-api",
+ "sp-api",
+ "sp-blockchain",
+ "sp-core",
+ "sp-rpc",
+ "sp-runtime",
+]
+
+[[package]]
+name = "public-credentials-runtime-api"
+version = "1.7.0"
+dependencies = [
+ "parity-scale-codec",
+ "sp-api",
  "sp-std",
 ]
 

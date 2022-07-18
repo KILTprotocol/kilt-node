@@ -990,12 +990,12 @@ impl_runtime_apis! {
 		}
 	}
 
-	impl public_credentials_runtime_api::PublicCredentialsApi<Block, runtime_common::assets::AssetDid<Runtime>, attestation::ClaimHashOf<Runtime>, public_credentials::CredentialEntryOf<Runtime>> for Runtime {
-		fn get_credential(subject: runtime_common::assets::AssetDid<Runtime>, credential_id: attestation::ClaimHashOf<Runtime>) -> Option<public_credentials::CredentialEntryOf<Runtime>> {
+	impl public_credentials_runtime_api::PublicCredentialsApi<Block, <Runtime as public_credentials::Config>::SubjectId, attestation::ClaimHashOf<Runtime>, public_credentials::CredentialEntryOf<Runtime>> for Runtime {
+		fn get_credential(subject: <Runtime as public_credentials::Config>::SubjectId, credential_id: attestation::ClaimHashOf<Runtime>) -> Option<public_credentials::CredentialEntryOf<Runtime>> {
 			public_credentials::Credentials::<Runtime>::get(&subject, &credential_id)
 		}
 
-		fn get_credentials(subject: runtime_common::assets::AssetDid<Runtime>) -> Vec<public_credentials::CredentialEntryOf<Runtime>> {
+		fn get_credentials(subject: <Runtime as public_credentials::Config>::SubjectId) -> Vec<public_credentials::CredentialEntryOf<Runtime>> {
 			public_credentials::Credentials::<Runtime>::iter_prefix_values(&subject).collect()
 		}
 	}

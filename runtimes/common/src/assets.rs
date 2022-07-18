@@ -51,6 +51,13 @@ impl<T: Config> TryFrom<InputSubjectIdOf<T>> for AssetDid<T> {
 	}
 }
 
+// #[cfg(feature = "std")]
+// impl<T: Config> TryFrom<String> for AssetDid<T> {
+// 	type Error = Error<T>;
+
+// 	fn try_from(value: String) ->
+// }
+
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarks {
 	use super::*;
