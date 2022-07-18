@@ -130,6 +130,7 @@ pub mod v1 {
 
 	/// The Asset ID component as specified in the Asset DID specification.
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
+	#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 	pub enum AssetId {
 		// A SLIP44 asset reference.
 		Slip44(Slip44Reference),
@@ -338,6 +339,7 @@ pub mod v1 {
 	/// according to the rules defined in the Asset DID method specification.
 	#[non_exhaustive]
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
+	#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 	pub struct Slip44Reference(pub U256);
 
 	impl Slip44Reference {
@@ -392,6 +394,7 @@ pub mod v1 {
 	/// according to the rules defined in the Asset DID method specification.
 	#[non_exhaustive]
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
+	#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 	pub struct EvmSmartContractFungibleReference(pub [u8; 20]);
 
 	impl EvmSmartContractFungibleReference {
@@ -430,6 +433,7 @@ pub mod v1 {
 	/// according to the rules defined in the Asset DID method specification.
 	#[non_exhaustive]
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
+	#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 	pub struct EvmSmartContractNonFungibleReference(
 		pub EvmSmartContractFungibleReference,
 		pub Option<EvmSmartContractNonFungibleIdentifier>,
@@ -442,6 +446,7 @@ pub mod v1 {
 	/// identifier without applying any special parsing/decoding logic.
 	#[non_exhaustive]
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
+	#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 	pub struct EvmSmartContractNonFungibleIdentifier(pub BoundedVec<u8, ConstU32<MAXIMUM_IDENTIFIER_LENGTH_U32>>);
 
 	impl EvmSmartContractNonFungibleIdentifier {
@@ -485,6 +490,7 @@ pub mod v1 {
 	/// A generic asset ID compliant with the [CAIP-19 spec](https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-19.md) that cannot be boxed in any of the supported variants.
 	#[non_exhaustive]
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
+	#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 	pub struct GenericAssetId {
 		pub namespace: GenericAssetNamespace,
 		pub reference: GenericAssetReference,
@@ -518,6 +524,7 @@ pub mod v1 {
 	/// any parsing/decoding logic.
 	#[non_exhaustive]
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
+	#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 	pub struct GenericAssetNamespace(pub BoundedVec<u8, ConstU32<MAXIMUM_NAMESPACE_LENGTH_U32>>);
 
 	impl GenericAssetNamespace {
@@ -560,6 +567,7 @@ pub mod v1 {
 	/// A generic asset reference as defined in the [CAIP-19 spec](https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-19.md).
 	#[non_exhaustive]
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
+	#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 	pub struct GenericAssetReference(pub BoundedVec<u8, ConstU32<MAXIMUM_REFERENCE_LENGTH_U32>>);
 
 	impl GenericAssetReference {
@@ -602,6 +610,7 @@ pub mod v1 {
 	/// A generic asset identifier as defined in the [CAIP-19 spec](https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-19.md).
 	#[non_exhaustive]
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
+	#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 	pub struct GenericAssetIdentifier(pub BoundedVec<u8, ConstU32<MAXIMUM_IDENTIFIER_LENGTH_U32>>);
 
 	impl GenericAssetIdentifier {

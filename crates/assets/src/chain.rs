@@ -114,6 +114,7 @@ mod v1 {
 
 	/// The Chain ID component as specified in the Asset DID specification.
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
+	#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 	pub enum ChainId {
 		// An EIP155 chain reference.
 		Eip155(Eip155Reference),
@@ -319,6 +320,7 @@ mod v1 {
 	/// according to the rules defined in the Asset DID method specification.
 	#[non_exhaustive]
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
+	#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 	pub struct Eip155Reference(pub u128);
 
 	impl Eip155Reference {
@@ -388,6 +390,7 @@ mod v1 {
 	/// hash of 32 characters.
 	#[non_exhaustive]
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
+	#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 	pub struct GenesisHexHash32Reference(pub [u8; 16]);
 
 	impl GenesisHexHash32Reference {
@@ -443,6 +446,7 @@ mod v1 {
 	/// Base58-encoded genesis hash of 32 characters.
 	#[non_exhaustive]
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
+	#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 	pub struct GenesisBase58Hash32Reference(pub BoundedVec<u8, ConstU32<32>>);
 
 	impl GenesisBase58Hash32Reference {
@@ -490,6 +494,7 @@ mod v1 {
 	/// A generic chain ID compliant with the [CAIP-2 spec](https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-2.md) that cannot be boxed in any of the supported variants.
 	#[non_exhaustive]
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
+	#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 	pub struct GenericChainId {
 		pub namespace: GenericChainNamespace,
 		pub reference: GenericChainReference,
@@ -519,6 +524,7 @@ mod v1 {
 	/// any parsing/decoding logic.
 	#[non_exhaustive]
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
+	#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 	pub struct GenericChainNamespace(pub BoundedVec<u8, ConstU32<MAXIMUM_NAMESPACE_LENGTH_U32>>);
 
 	impl GenericChainNamespace {
@@ -561,6 +567,7 @@ mod v1 {
 	/// A generic chain reference as defined in the [CAIP-2 spec](https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-2.md).
 	#[non_exhaustive]
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
+	#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 	pub struct GenericChainReference(pub BoundedVec<u8, ConstU32<MAXIMUM_REFERENCE_LENGTH_U32>>);
 
 	impl GenericChainReference {

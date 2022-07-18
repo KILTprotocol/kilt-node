@@ -30,6 +30,7 @@ pub use benchmarks::*;
 /// Thin wrapper around the `AssetDid` type, that transform the parsing errors
 /// to errors for the public-credentials crate.
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
+#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 #[scale_info(skip_type_params(T))]
 #[codec(mel_bound())]
 pub struct AssetDid<T>(AssetIdentifier, Option<PhantomData<T>>);
@@ -51,7 +52,6 @@ impl<T: Config> TryFrom<InputSubjectIdOf<T>> for AssetDid<T> {
 	}
 }
 
-// #[cfg(feature = "std")]
 // impl<T: Config> TryFrom<String> for AssetDid<T> {
 // 	type Error = Error<T>;
 

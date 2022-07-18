@@ -3595,6 +3595,7 @@ dependencies = [
  "hex-literal",
  "parity-scale-codec",
  "scale-info",
+ "serde",
  "sp-core",
  "sp-std",
 ]
@@ -4643,6 +4644,8 @@ dependencies = [
  "pallet-referenda",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc",
+ "public-credentials",
+ "public-credentials-rpc",
  "runtime-common",
  "sc-basic-authorship",
  "sc-cli",

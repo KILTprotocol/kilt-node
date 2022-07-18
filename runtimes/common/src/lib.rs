@@ -112,6 +112,23 @@ pub type DidIdentifier = AccountId;
 pub type NegativeImbalanceOf<T> =
 	<pallet_balances::Pallet<T> as Currency<<T as frame_system::Config>::AccountId>>::NegativeImbalance;
 
+// This code was copied from https://github.com/paritytech/substrate/blob/ded44948e2d5a398abcb4e342b0513cb690961bb/frame/transaction-payment/src/types.rs#L113
+// It is needed because u128 cannot be serialized by serde out of the box.
+#[cfg(feature = "std")]
+mod serde_balance {
+	use serde::{Deserialize, Deserializer, Serializer};
+
+	pub fn serialize<S: Serializer, T: std::fmt::Display>(t: &T, serializer: S) -> Result<S::Ok, S::Error> {
+		serializer.serialize_str(&t.to_string())
+	}
+
+	pub fn deserialize<'de, D: Deserializer<'de>, T: std::str::FromStr>(deserializer: D) -> Result<T, D::Error> {
+		let s = String::deserialize(deserializer)?;
+		s.parse::<T>()
+			.map_err(|_| serde::de::Error::custom("Parse from string failed"))
+	}
+}
+
 // Common constants used in all runtimes.
 parameter_types! {
 	pub const BlockHashCount: BlockNumber = 2400;
