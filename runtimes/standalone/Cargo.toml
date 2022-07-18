@@ -31,6 +31,7 @@ runtime-common = {path = "../../runtimes/common", default-features = false}
 did-rpc-runtime-api = {path = "../../rpc/did/runtime-api", default-features = false}
 frame-system-rpc-runtime-api = {branch = "polkadot-v0.9.25", default-features = false, git = "https://github.com/paritytech/substrate"}
 pallet-transaction-payment-rpc-runtime-api = {branch = "polkadot-v0.9.25", default-features = false, git = "https://github.com/paritytech/substrate"}
+public-credentials-runtime-api = {path = "../../rpc/public-credentials/runtime-api", default-features = false}
 
 # Benchmarking
 frame-system-benchmarking = {git = "https://github.com/paritytech/substrate", default-features = false, optional = true, branch = "polkadot-v0.9.25"}
@@ -125,6 +126,7 @@ std = [
   "pallet-web3-names/std",
   "pallet-vesting/std",
   "public-credentials/std",
+  "public-credentials-runtime-api/std",
   "runtime-common/std",
   "scale-info/std",
   "serde",

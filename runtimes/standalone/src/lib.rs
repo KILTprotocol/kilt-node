@@ -990,6 +990,16 @@ impl_runtime_apis! {
 		}
 	}
 
+	impl public_credentials_runtime_api::PublicCredentialsApi<Block, runtime_common::assets::AssetDid<Runtime>, attestation::ClaimHashOf<Runtime>, public_credentials::CredentialEntryOf<Runtime>> for Runtime {
+		fn get_credential(subject: runtime_common::assets::AssetDid<Runtime>, credential_id: attestation::ClaimHashOf<Runtime>) -> Option<public_credentials::CredentialEntryOf<Runtime>> {
+			public_credentials::Credentials::<Runtime>::get(&subject, &credential_id)
+		}
+
+		fn get_credentials(subject: runtime_common::assets::AssetDid<Runtime>) -> Vec<public_credentials::CredentialEntryOf<Runtime>> {
+			public_credentials::Credentials::<Runtime>::iter_prefix_values(&subject).collect()
+		}
+	}
+
 	#[cfg(feature = "runtime-benchmarks")]
 	impl frame_benchmarking::Benchmark<Block> for Runtime {
 		fn benchmark_metadata(extra: bool) -> (
