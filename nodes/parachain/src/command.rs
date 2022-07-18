@@ -41,6 +41,7 @@ use std::{io::Write, net::SocketAddr};
 trait IdentifyChain {
 	fn is_peregrine(&self) -> bool;
 	fn is_spiritnet(&self) -> bool;
+	fn is_void(&self) -> bool;
 }
 
 impl IdentifyChain for dyn sc_service::ChainSpec {
@@ -53,6 +54,9 @@ impl IdentifyChain for dyn sc_service::ChainSpec {
 			|| self.id().eq("kilt_rococo")
 			|| self.id().eq("kilt")
 	}
+	fn is_void(&self) -> bool {
+		self.id().contains("void")
+	}
 }
 
 impl<T: sc_service::ChainSpec + 'static> IdentifyChain for T {
@@ -61,6 +65,9 @@ impl<T: sc_service::ChainSpec + 'static> IdentifyChain for T {
 	}
 	fn is_spiritnet(&self) -> bool {
 		<dyn sc_service::ChainSpec>::is_spiritnet(self)
+	}
+	fn is_void(&self) -> bool {
+		<dyn sc_service::ChainSpec>::is_void(self)
 	}
 }
 
@@ -475,7 +482,9 @@ pub fn run() -> Result<()> {
 					crate::service::start_node::<VoidRuntimeExecutor, void_runtime::RuntimeApi>(
 						config,
 						polkadot_config,
+						collator_options,
 						id,
+						hwbench,
 					)
 					.await
 					.map(|r| r.0)

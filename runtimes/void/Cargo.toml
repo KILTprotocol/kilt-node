@@ -2,16 +2,16 @@
 authors = ["KILT <info@kilt.io>"]
 edition = "2021"
 name = "void-runtime"
-version = "1.4.0"
+version = "1.7.0"
 
 [build-dependencies]
 substrate-wasm-builder = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.24"}
 
 [dependencies]
-codec = {package = "parity-scale-codec", version = "2.3.1", default-features = false, features = ["derive"]}
+codec = {package = "parity-scale-codec", version = "3.1.2", default-features = false, features = ["derive"]}
 log = "0.4"
-scale-info = {version = "1.0", default-features = false, features = ["derive"]}
-smallvec = "1.7.0"
+scale-info = {version = "2.1.1", default-features = false, features = ["derive"]}
+smallvec = "1.8.0"
 static_assertions = "1.1.0"
 
 hex-literal = {version = "0.3.4", optional = true}

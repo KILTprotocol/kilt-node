@@ -33,8 +33,7 @@ use sp_api::ProvideRuntimeApi;
 use sp_block_builder::BlockBuilder;
 use sp_blockchain::{Error as BlockChainError, HeaderBackend, HeaderMetadata};
 
-use pallet_did_lookup::linkable_account::LinkableAccountId;
-use runtime_common::{AccountId, Balance, Block, BlockNumber, DidIdentifier, Hash, Index};
+use runtime_common::{AccountId, Balance, Block, Index};
 
 /// Full client dependencies.
 pub struct FullDeps<C, P> {
@@ -55,10 +54,8 @@ where
 	C::Api: frame_rpc_system::AccountNonceApi<Block, AccountId, Index>,
 	C::Api: pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>,
 	C::Api: BlockBuilder<Block>,
-	C::Api: did_rpc::DidRuntimeApi<Block, DidIdentifier, AccountId, LinkableAccountId, Balance, Hash, BlockNumber>,
 	P: TransactionPool + 'static,
 {
-	use did_rpc::{DidApiServer, DidQuery};
 	use frame_rpc_system::{System, SystemApiServer};
 	use pallet_transaction_payment_rpc::{TransactionPayment, TransactionPaymentApiServer};
 
@@ -70,13 +67,7 @@ where
 	} = deps;
 
 	module.merge(System::new(client.clone(), pool, deny_unsafe).into_rpc())?;
-	module.merge(TransactionPayment::new(client.clone()).into_rpc())?;
-	// Extend this RPC with a custom API by using the following syntax.
-	// `YourRpcStruct` should have a reference to a client, which is needed
-	// to call into the runtime.
-	//
-	// `module.merge(YourRpcStruct::new(ReferenceToClient).into_rpc())?;`
-	module.merge(DidQuery::new(client).into_rpc())?;
+	module.merge(TransactionPayment::new(client).into_rpc())?;
 
 	Ok(module)
 }

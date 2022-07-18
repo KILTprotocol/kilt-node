@@ -95,6 +95,7 @@ pub fn get_chain_spec_dev() -> Result<ChainSpec, String> {
 		vec![],
 		None,
 		None,
+		None,
 		Some(properties),
 		Extensions {
 			relay_chain: "rococo_local_testnet".into(),
@@ -127,6 +128,7 @@ pub fn get_chain_spec_void() -> Result<ChainSpec, String> {
 		vec![],
 		None,
 		None,
+		None,
 		Some(properties),
 		Extensions {
 			relay_chain: "kusama".into(),
@@ -148,7 +150,7 @@ fn testnet_genesis(
 	id: ParaId,
 ) -> GenesisConfig {
 	GenesisConfig {
-		sudo: SudoConfig { key: sudo },
+		sudo: SudoConfig { key: Some(sudo) },
 		system: SystemConfig {
 			code: wasm_binary.to_vec(),
 		},
