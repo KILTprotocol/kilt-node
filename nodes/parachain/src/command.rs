@@ -470,9 +470,8 @@ pub fn run() -> Result<()> {
 					)
 					.await
 					.map(|r| r.0)
-
 					.map_err(Into::into)
-        } else if config.chain_spec.is_void() {
+				} else if config.chain_spec.is_void() {
 					crate::service::start_node::<VoidRuntimeExecutor, void_runtime::RuntimeApi>(
 						config,
 						polkadot_config,
