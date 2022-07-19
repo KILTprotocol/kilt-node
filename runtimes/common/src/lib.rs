@@ -187,7 +187,9 @@ where
 	fn add(who: &R::AccountId) {
 		pallet_membership::Members::<R, I>::mutate(|members| match members.binary_search_by(|m| m.cmp(who)) {
 			Ok(_) => (),
-			Err(pos) => members.insert(pos, who.clone()),
+			Err(pos) => members
+				.try_insert(pos, who.clone())
+				.expect("Should not fail to add members"),
 		})
 	}
 }
