@@ -27,9 +27,9 @@ use std::sync::Arc;
 
 use jsonrpsee::RpcModule;
 
+use mashnet_node_runtime::Runtime;
 use pallet_did_lookup::linkable_account::LinkableAccountId;
 use public_credentials::CredentialEntryOf;
-use mashnet_node_runtime::Runtime;
 use runtime_common::{AccountId, Balance, Block, BlockNumber, DidIdentifier, Hash, Index};
 pub use sc_rpc_api::DenyUnsafe;
 use sc_transaction_pool_api::TransactionPool;
@@ -57,13 +57,18 @@ where
 	C::Api: pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>,
 	C::Api: BlockBuilder<Block>,
 	C::Api: did_rpc::DidRuntimeApi<Block, DidIdentifier, AccountId, LinkableAccountId, Balance, Hash, BlockNumber>,
-	C::Api: public_credentials_rpc::PublicCredentialsRuntimeApi<Block, runtime_common::assets::AssetDid<Runtime>, Hash, CredentialEntryOf<Runtime>>,
+	C::Api: public_credentials_rpc::PublicCredentialsRuntimeApi<
+		Block,
+		runtime_common::assets::AssetDid<Runtime>,
+		Hash,
+		CredentialEntryOf<Runtime>,
+	>,
 	P: TransactionPool + 'static,
 {
 	use did_rpc::{DidApiServer, DidQuery};
-	use public_credentials_rpc::{PublicCredentialsApiServer, PublicCredentialsQuery};
 	use frame_rpc_system::{System, SystemApiServer};
 	use pallet_transaction_payment_rpc::{TransactionPayment, TransactionPaymentApiServer};
+	use public_credentials_rpc::{PublicCredentialsApiServer, PublicCredentialsQuery};
 
 	let mut module = RpcModule::new(());
 	let FullDeps {
@@ -81,7 +86,7 @@ where
 	//
 	// `module.merge(YourRpcStruct::new(ReferenceToClient).into_rpc())?;`
 	module.merge(DidQuery::new(client.clone()).into_rpc())?;
-	module.merge(PublicCredentialsQuery::new(client).into_rpc())?;
+	module.merge(PublicCredentialsQuery::<C, Block, String, runtime_common::assets::AssetDid<Runtime>, Hash, CredentialEntryOf<Runtime>>::new(client).into_rpc())?;
 
 	Ok(module)
 }

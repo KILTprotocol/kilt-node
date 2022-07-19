@@ -32,25 +32,27 @@ use sp_blockchain::HeaderBackend;
 use sp_runtime::{generic::BlockId, traits::Block as BlockT};
 
 #[rpc(client, server)]
-pub trait PublicCredentialsApi<BlockHash> {
+pub trait PublicCredentialsApi<BlockHash, InputSubjectId> {
 	#[method(name = "get_credential")]
 	fn get_credential(
 		&self,
-		subject: String,
+		subject: InputSubjectId,
 		credential_id: [u8; 32],
 		at: Option<BlockHash>,
 	) -> RpcResult<Option<String>>;
 
 	#[method(name = "get_credentials")]
-	fn get_credentials(&self, subject: String, at: Option<BlockHash>) -> RpcResult<Vec<String>>;
+	fn get_credentials(&self, subject: InputSubjectId, at: Option<BlockHash>) -> RpcResult<Vec<String>>;
 }
 
-pub struct PublicCredentialsQuery<Client, Block, SubjectId, CredentialId, CredentialEntry> {
+pub struct PublicCredentialsQuery<Client, Block, InputSubjectId, SubjectId, CredentialId, CredentialEntry> {
 	client: Arc<Client>,
-	_marker: std::marker::PhantomData<(Block, SubjectId, CredentialId, CredentialEntry)>,
+	_marker: std::marker::PhantomData<(Block, InputSubjectId, SubjectId, CredentialId, CredentialEntry)>,
 }
 
-impl<Client, Block, SubjectId, CredentialId, CredentialEntry> PublicCredentialsQuery<Client, Block, SubjectId, CredentialId, CredentialEntry> {
+impl<Client, Block, InputSubjectId, SubjectId, CredentialId, CredentialEntry>
+	PublicCredentialsQuery<Client, Block, InputSubjectId, SubjectId, CredentialId, CredentialEntry>
+{
 	pub fn new(client: Arc<Client>) -> Self {
 		Self {
 			client,
@@ -76,20 +78,20 @@ impl From<Error> for i32 {
 }
 
 #[async_trait]
-impl<Client, Block, SubjectId, CredentialId, CredentialEntry>
-	PublicCredentialsApiServer<<Block as BlockT>::Hash>
-	for PublicCredentialsQuery<Client, Block, SubjectId, CredentialId, CredentialEntry>
+impl<Client, Block, InputSubjectId, SubjectId, CredentialId, CredentialEntry> PublicCredentialsApiServer<<Block as BlockT>::Hash, InputSubjectId>
+	for PublicCredentialsQuery<Client, Block, InputSubjectId, SubjectId, CredentialId, CredentialEntry>
 where
 	Block: BlockT,
 	Client: Send + Sync + 'static + ProvideRuntimeApi<Block> + HeaderBackend<Block>,
 	Client::Api: PublicCredentialsRuntimeApi<Block, SubjectId, CredentialId, CredentialEntry>,
-	SubjectId: Codec + Send + Sync + 'static + TryFrom<String>,
+	InputSubjectId: Codec + Send + Sync + 'static,
+	SubjectId: Codec + Send + Sync + 'static + TryFrom<InputSubjectId>,
 	CredentialId: Codec + Send + Sync + 'static + From<[u8; 32]>,
 	CredentialEntry: Codec + Send + Sync + 'static,
 {
 	fn get_credential(
 		&self,
-		subject: String,
+		subject: InputSubjectId,
 		credential_id: [u8; 32],
 		at: Option<<Block as BlockT>::Hash>,
 	) -> RpcResult<Option<String>> {
@@ -116,11 +118,7 @@ where
 		Ok(Some(String::default()))
 	}
 
-	fn get_credentials(
-		&self,
-		subject: String,
-		at: Option<<Block as BlockT>::Hash>,
-	) -> RpcResult<Vec<String>> {
+	fn get_credentials(&self, subject: InputSubjectId, at: Option<<Block as BlockT>::Hash>) -> RpcResult<Vec<String>> {
 		let api = self.client.runtime_api();
 		let at = BlockId::hash(at.unwrap_or_else(|| self.client.info().best_hash));
 
