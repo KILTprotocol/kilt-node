@@ -32,17 +32,17 @@ use sp_blockchain::HeaderBackend;
 use sp_runtime::{generic::BlockId, traits::Block as BlockT};
 
 #[rpc(client, server)]
-pub trait PublicCredentialsApi<BlockHash, InputSubjectId, InputCredentialId, OutputCredentialEntry> {
+pub trait PublicCredentialsApi<BlockHash> {
 	#[method(name = "get_credential")]
 	fn get_credential(
 		&self,
-		subject: InputSubjectId,
-		credential_id: InputCredentialId,
+		subject: String,
+		credential_id: [u8; 32],
 		at: Option<BlockHash>,
-	) -> RpcResult<Option<OutputCredentialEntry>>;
+	) -> RpcResult<Option<String>>;
 
 	#[method(name = "get_credentials")]
-	fn get_credentials(&self, subject: InputSubjectId, at: Option<BlockHash>) -> RpcResult<Vec<OutputCredentialEntry>>;
+	fn get_credentials(&self, subject: String, at: Option<BlockHash>) -> RpcResult<Vec<String>>;
 }
 
 pub struct PublicCredentialsQuery<Client, Block, SubjectId, CredentialId, CredentialEntry> {
@@ -76,26 +76,23 @@ impl From<Error> for i32 {
 }
 
 #[async_trait]
-impl<Client, Block, InputSubjectId, SubjectId, InputCredentialId, CredentialId, CredentialEntry, OutputCredentialEntry>
-	PublicCredentialsApiServer<<Block as BlockT>::Hash, InputSubjectId, InputCredentialId, OutputCredentialEntry>
+impl<Client, Block, SubjectId, CredentialId, CredentialEntry>
+	PublicCredentialsApiServer<<Block as BlockT>::Hash>
 	for PublicCredentialsQuery<Client, Block, SubjectId, CredentialId, CredentialEntry>
 where
 	Block: BlockT,
 	Client: Send + Sync + 'static + ProvideRuntimeApi<Block> + HeaderBackend<Block>,
 	Client::Api: PublicCredentialsRuntimeApi<Block, SubjectId, CredentialId, CredentialEntry>,
-	SubjectId: Codec + Send + Sync + 'static,
-	InputSubjectId: TryInto<SubjectId>,
-	CredentialId: Codec + Send + Sync + 'static,
-	InputCredentialId: TryInto<CredentialId>,
+	SubjectId: Codec + Send + Sync + 'static + TryFrom<String>,
+	CredentialId: Codec + Send + Sync + 'static + From<[u8; 32]>,
 	CredentialEntry: Codec + Send + Sync + 'static,
-	OutputCredentialEntry: TryFrom<CredentialEntry>,
 {
 	fn get_credential(
 		&self,
-		subject: InputSubjectId,
-		credential_id: InputCredentialId,
+		subject: String,
+		credential_id: [u8; 32],
 		at: Option<<Block as BlockT>::Hash>,
-	) -> RpcResult<Option<OutputCredentialEntry>> {
+	) -> RpcResult<Option<String>> {
 		let api = self.client.runtime_api();
 		let at = BlockId::hash(at.unwrap_or_else(|| self.client.info().best_hash));
 
@@ -107,13 +104,7 @@ where
 			))
 		})?;
 
-		let into_credential_id: CredentialId = credential_id.try_into().map_err(|_| {
-			CallError::Custom(ErrorObject::owned(
-				Error::Conversion.into(),
-				"Unable to convert input to a valid credential ID",
-				Option::<String>::None,
-			))
-		})?;
+		let into_credential_id: CredentialId = credential_id.into();
 
 		let credential = api.get_credential(&at, into_subject, into_credential_id).map_err(|_| {
 			CallError::Custom(ErrorObject::owned(
@@ -122,25 +113,14 @@ where
 				Option::<String>::None,
 			))
 		})?;
-		if let Some(cred) = credential {
-			let into_credential: OutputCredentialEntry = cred.try_into().map_err(|_| {
-				CallError::Custom(ErrorObject::owned(
-					Error::Internal.into(),
-					"Internal error when converting credential entry type.",
-					Option::<String>::None,
-				))
-			})?;
-			Ok(Some(into_credential))
-		} else {
-			Ok(None)
-		}
+		Ok(Some(String::default()))
 	}
 
 	fn get_credentials(
 		&self,
-		subject: InputSubjectId,
+		subject: String,
 		at: Option<<Block as BlockT>::Hash>,
-	) -> RpcResult<Vec<OutputCredentialEntry>> {
+	) -> RpcResult<Vec<String>> {
 		let api = self.client.runtime_api();
 		let at = BlockId::hash(at.unwrap_or_else(|| self.client.info().best_hash));
 
@@ -160,13 +140,6 @@ where
 			))
 		})?;
 
-		let into_credentials = credentials.into_iter().map(OutputCredentialEntry::try_from).collect::<Result<Vec<OutputCredentialEntry>, _>>().map_err(|_| {
-			CallError::Custom(ErrorObject::owned(
-				Error::Runtime.into(),
-				"Unable to get credentials",
-				Option::<String>::None,
-			))
-		})?;
-		Ok(into_credentials)
+		Ok(credentials.into_iter().map(|_| String::default()).collect())
 	}
 }

@@ -57,7 +57,7 @@ where
 	C::Api: pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>,
 	C::Api: BlockBuilder<Block>,
 	C::Api: did_rpc::DidRuntimeApi<Block, DidIdentifier, AccountId, LinkableAccountId, Balance, Hash, BlockNumber>,
-	C::Api: public_credentials_rpc::PublicCredentialsRuntimeApi<Block, String, Hash, CredentialEntryOf<Runtime>>,
+	C::Api: public_credentials_rpc::PublicCredentialsRuntimeApi<Block, runtime_common::assets::AssetDid<Runtime>, Hash, CredentialEntryOf<Runtime>>,
 	P: TransactionPool + 'static,
 {
 	use did_rpc::{DidApiServer, DidQuery};
@@ -80,7 +80,7 @@ where
 	// to call into the runtime.
 	//
 	// `module.merge(YourRpcStruct::new(ReferenceToClient).into_rpc())?;`
-	module.merge(DidQuery::new(client).into_rpc())?;
+	module.merge(DidQuery::new(client.clone()).into_rpc())?;
 	module.merge(PublicCredentialsQuery::new(client).into_rpc())?;
 
 	Ok(module)

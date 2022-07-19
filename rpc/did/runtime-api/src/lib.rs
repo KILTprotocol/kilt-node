@@ -17,9 +17,6 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 #![cfg_attr(not(feature = "std"), no_std)]
 
-#[cfg(feature = "std")]
-use serde::{Deserialize, Serialize};
-
 use codec::{Codec, Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_std::vec::Vec;
@@ -32,33 +29,6 @@ pub use service_endpoint::*;
 
 #[derive(Encode, Decode, TypeInfo, PartialEq)]
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(
-	feature = "std",
-	serde(bound(
-		serialize = "
-		Balance: std::fmt::Display,
-		AccountId: Serialize,
-		LinkableAccountId: Serialize,
-		Key: Serialize,
-		BlockNumber: Serialize,
-		DidIdentifier: Serialize,
-		Type: Serialize,
-		Url: Serialize,
-		Id: Serialize,
-		Web3Name: Serialize,",
-		deserialize = "
-		Balance: std::str::FromStr,
-		AccountId: Deserialize<'de>,
-		LinkableAccountId: Deserialize<'de>,
-		Key: Deserialize<'de>,
-		BlockNumber: Deserialize<'de>,
-		DidIdentifier: Deserialize<'de>,
-		Type: Deserialize<'de>,
-		Url: Deserialize<'de>,
-		Id: Deserialize<'de>,
-		Web3Name: Deserialize<'de>,"
-	))
-)]
 pub struct DidLinkedInfo<
 	DidIdentifier,
 	AccountId,

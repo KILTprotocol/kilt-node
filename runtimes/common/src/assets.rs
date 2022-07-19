@@ -31,6 +31,7 @@ pub use benchmarks::*;
 /// to errors for the public-credentials crate.
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "std", serde(bound = ""))]
 #[scale_info(skip_type_params(T))]
 #[codec(mel_bound())]
 pub struct AssetDid<T>(AssetIdentifier, Option<PhantomData<T>>);
@@ -52,11 +53,15 @@ impl<T: Config> TryFrom<InputSubjectIdOf<T>> for AssetDid<T> {
 	}
 }
 
-// impl<T: Config> TryFrom<String> for AssetDid<T> {
-// 	type Error = Error<T>;
+#[cfg(feature = "std")]
+impl<T: Config> TryFrom<String> for AssetDid<T> {
+	type Error = Error<T>;
 
-// 	fn try_from(value: String) ->
-// }
+	fn try_from(value: String) -> Result<Self, Self::Error> {
+		let asset = AssetIdentifier::from_utf8_encoded(value.as_bytes()).map_err(|_| Error::<T>::InvalidInput)?;
+		Ok(Self(asset, None))
+	}
+}
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarks {

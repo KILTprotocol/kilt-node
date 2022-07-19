@@ -8498,7 +8498,9 @@ dependencies = [
 name = "public-credentials-runtime-api"
 version = "1.7.0"
 dependencies = [
+ "frame-system",
  "parity-scale-codec",
+ "public-credentials",
  "sp-api",
  "sp-std",
 ]

@@ -28,21 +28,6 @@ use kilt_support::deposit::Deposit;
 
 #[derive(Encode, Decode, TypeInfo, Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[cfg_attr(
-	feature = "std",
-	serde(bound(
-		serialize = "
-		Balance: std::fmt::Display,
-		AccountId: Serialize,
-		Key: Serialize,
-		BlockNumber: Serialize",
-		deserialize = "
-		Balance: std::str::FromStr,
-		AccountId: Deserialize<'de>,
-		Key: Deserialize<'de>,
-		BlockNumber: Deserialize<'de>"
-	))
-)]
 pub struct DidDetails<Key: Ord, BlockNumber: MaxEncodedLen, AccountId, Balance> {
 	pub authentication_key: Key,
 	pub key_agreement_keys: BTreeSet<Key>,
