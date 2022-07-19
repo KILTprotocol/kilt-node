@@ -86,7 +86,7 @@ where
 	//
 	// `module.merge(YourRpcStruct::new(ReferenceToClient).into_rpc())?;`
 	module.merge(DidQuery::new(client.clone()).into_rpc())?;
-	module.merge(PublicCredentialsQuery::<C, Block, String, runtime_common::assets::AssetDid<Runtime>, Hash, CredentialEntryOf<Runtime>>::new(client).into_rpc())?;
+	module.merge(PublicCredentialsQuery::<C, Block, String, runtime_common::assets::AssetDid<Runtime>, Hash, Hash, CredentialEntryOf<Runtime>>::new(client).into_rpc())?;
 
 	Ok(module)
 }
