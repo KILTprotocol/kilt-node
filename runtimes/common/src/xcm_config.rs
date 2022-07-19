@@ -17,12 +17,12 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use core::marker::PhantomData;
-use frame_support::{log, match_types, parameter_types, traits::Everything, weights::Weight};
+use frame_support::{log, match_types, parameter_types, weights::Weight};
 use polkadot_parachain::primitives::Sibling;
 use xcm::latest::prelude::*;
 use xcm_builder::{
-	AccountId32Aliases, AllowTopLevelPaidExecutionFrom, AllowUnpaidExecutionFrom, CurrencyAdapter, IsConcrete,
-	ParentIsPreset, SiblingParachainConvertsVia, TakeWeightCredit,
+	AccountId32Aliases, AllowUnpaidExecutionFrom, CurrencyAdapter, IsConcrete, ParentIsPreset,
+	SiblingParachainConvertsVia,
 };
 use xcm_executor::traits::ShouldExecute;
 
@@ -70,13 +70,14 @@ where
 pub type Barrier = DenyThenTry<
 	DenyReserveTransferToRelayChain,
 	(
-		// // We don't allow anything from any sibling chain, therefore we remove the following
+		// // We don't allow anything from any sibling chain, therefore the following is not included here:
 		// TakeWeightCredit,
 		// AllowTopLevelPaidExecutionFrom<Everything>,
 
 		// We allow everything from the relay chain if it was send by the relay chain legislative.
+		// Since the relaychain doesn't own KILTs and missing fees shouldn't prevent calls from the relaychain
+		// legislative, we allow unpaid execution.
 		AllowUnpaidExecutionFrom<ParentLegislative>,
-		// ^^^ Parent and its exec plurality get free execution
 	),
 >;
 
@@ -140,14 +141,14 @@ impl ShouldExecute for DenyReserveTransferToRelayChain {
 
 parameter_types! {
 	pub const RelayLocation: MultiLocation = MultiLocation::parent();
-	pub const RelayNetwork: NetworkId = NetworkId::Any;
+	pub const HereLocation: MultiLocation = MultiLocation::here();
 }
 
 /// Type for specifying how a `MultiLocation` can be converted into an
 /// `AccountId`. This is used when determining ownership of accounts for asset
 /// transacting and when attempting to use XCM `Transact` in order to determine
 /// the dispatch Origin.
-pub type LocationToAccountId = (
+pub type LocationToAccountId<RelayNetwork> = (
 	// The parent (Relay-chain) origin converts to the parent `AccountId`.
 	ParentIsPreset<AccountId>,
 	// Sibling parachain origins convert to AccountId via the `ParaId::into`.
@@ -157,14 +158,13 @@ pub type LocationToAccountId = (
 );
 
 /// Means for transacting assets on this chain.
-pub type LocalAssetTransactor<Currency> = CurrencyAdapter<
+pub type LocalAssetTransactor<Currency, RelayNetwork> = CurrencyAdapter<
 	// Use this currency:
 	Currency,
 	// Use this currency when it is a fungible asset matching the given location or name:
-	//FIXME: 🥸
-	IsConcrete<RelayLocation>,
+	IsConcrete<HereLocation>,
 	// Do a simple punn to convert an AccountId32 MultiLocation into a native chain account ID:
-	LocationToAccountId,
+	LocationToAccountId<RelayNetwork>,
 	// Our chain's account ID type (we can't get away without mentioning it explicitly):
 	AccountId,
 	// We don't track any teleports.

@@ -30,17 +30,16 @@ use polkadot_runtime_common::impls::ToAuthor;
 use xcm::latest::prelude::*;
 use xcm_builder::{
 	EnsureXcmOrigin, FixedWeightBounds, LocationInverter, NativeAsset, RelayChainAsNative, SiblingParachainAsNative,
-	SignedAccountId32AsNative, SignedToAccountId32, SovereignSignedViaLocation, UsingComponents,
+	SignedAccountId32AsNative, SignedToAccountId32, UsingComponents,
 };
 use xcm_executor::XcmExecutor;
 
-use runtime_common::xcm_config::{
-	Barrier, LocalAssetTransactor, LocationToAccountId, MaxInstructions, RelayLocation, RelayNetwork, UnitWeightCost,
-};
+use runtime_common::xcm_config::{Barrier, LocalAssetTransactor, MaxInstructions, RelayLocation, UnitWeightCost};
 
 parameter_types! {
 	pub RelayChainOrigin: Origin = cumulus_pallet_xcm::Origin::Relay.into();
 	pub Ancestry: MultiLocation = Parachain(ParachainInfo::parachain_id().into()).into();
+	pub const RelayNetworkId: NetworkId = NetworkId::Kusama;
 }
 
 /// This is the type we use to convert an (incoming) XCM origin into a local
@@ -48,10 +47,11 @@ parameter_types! {
 /// `Transact`. There is an `OriginKind` which can biases the kind of local
 /// `Origin` it will become.
 pub type XcmOriginToTransactDispatchOrigin = (
-	// Sovereign account converter; this attempts to derive an `AccountId` from the origin location
-	// using `LocationToAccountId` and then turn that into the usual `Signed` origin. Useful for
-	// foreign chains who want to have a local sovereign account on this chain which they control.
-	SovereignSignedViaLocation<LocationToAccountId, Origin>,
+	// // Sovereign account converter; this attempts to derive an `AccountId` from the origin location
+	// // using `LocationToAccountId` and then turn that into the usual `Signed` origin. Useful for
+	// // foreign chains who want to have a local sovereign account on this chain which they control.
+	// SovereignSignedViaLocation<LocationToAccountId, Origin>,
+
 	// Native converter for Relay-chain (Parent) location; will converts to a `Relay` origin when
 	// recognized.
 	RelayChainAsNative<RelayChainOrigin, Origin>,
@@ -60,7 +60,7 @@ pub type XcmOriginToTransactDispatchOrigin = (
 	SiblingParachainAsNative<cumulus_pallet_xcm::Origin, Origin>,
 	// Native signed account converter; this just converts an `AccountId32` origin into a normal
 	// `Origin::Signed` origin of the same 32-byte value.
-	SignedAccountId32AsNative<RelayNetwork, Origin>,
+	SignedAccountId32AsNative<RelayNetworkId, Origin>,
 	// Xcm origins can be represented natively under the Xcm pallet's Xcm origin.
 	XcmPassthrough<Origin>,
 );
@@ -71,7 +71,7 @@ impl xcm_executor::Config for XcmConfig {
 	// How we send Xcm messages
 	type XcmSender = XcmRouter;
 	// How to withdraw and deposit an asset.
-	type AssetTransactor = LocalAssetTransactor<Balances>;
+	type AssetTransactor = LocalAssetTransactor<Balances, RelayNetworkId>;
 	type OriginConverter = XcmOriginToTransactDispatchOrigin;
 	// We only trust our own KILT asset reserve
 	type IsReserve = NativeAsset;
@@ -79,8 +79,8 @@ impl xcm_executor::Config for XcmConfig {
 	type IsTeleporter = ();
 	// Invert a location.
 	// e.g. The relay chain is described as parent (MultiLocation(1, Here)))
-	// chain. When we invert that location it would be MultiLocation(0, X1(Parachain(2086))) since we are a
-	// child chain with ParaId 2086.
+	// chain. When we invert that location it would be MultiLocation(0,
+	// X1(Parachain(2086))) since we are a child chain with ParaId 2086.
 	type LocationInverter = LocationInverter<Ancestry>;
 
 	type Barrier = Barrier;
@@ -93,7 +93,7 @@ impl xcm_executor::Config for XcmConfig {
 }
 
 /// No local origins on this chain are allowed to dispatch XCM sends/executions.
-pub type LocalOriginToLocation = SignedToAccountId32<Origin, AccountId, RelayNetwork>;
+pub type LocalOriginToLocation = SignedToAccountId32<Origin, AccountId, RelayNetworkId>;
 
 /// The means for routing XCM messages which are not for local execution into
 /// the right message queues.
