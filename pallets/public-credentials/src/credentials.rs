@@ -77,6 +77,7 @@ pub struct Credential<
 /// from archive nodes.
 #[derive(Encode, Decode, Clone, MaxEncodedLen, RuntimeDebug, PartialEq, Eq, PartialOrd, Ord, TypeInfo)]
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "std", serde(bound = ""))]
 #[scale_info(skip_type_params(T))]
 #[codec(mel_bound())]
 pub struct CredentialEntryOf<T: Config> {
