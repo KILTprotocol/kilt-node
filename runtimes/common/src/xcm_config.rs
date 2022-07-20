@@ -29,7 +29,7 @@ use xcm_executor::traits::ShouldExecute;
 use crate::AccountId;
 
 parameter_types! {
-	// One XCM operation is 1_000_000_000 weight - almost certainly a conservative estimate.
+	// One XCM operation is 1_000_000_000 weight, almost certainly a conservative estimate.
 	pub UnitWeightCost: Weight = 1_000_000_000;
 	pub const MaxInstructions: u32 = 100;
 }
@@ -41,10 +41,10 @@ match_types! {
 	};
 }
 
-//Note: this might move to polkadot's xcm module.
+// Note: This might move to polkadot's xcm module.
 /// Deny executing the xcm message if it matches any of the Deny filter
-/// regardless of anything else. If it passes the Deny, and matches one of the
-/// Allow cases then it is let through.
+/// regardless of anything else. If it passes the Deny and matches one of the
+/// Allow cases, then it is let through.
 pub struct DenyThenTry<Deny, Allow>(PhantomData<Deny>, PhantomData<Allow>)
 where
 	Deny: ShouldExecute,
@@ -117,7 +117,7 @@ impl ShouldExecute for DenyReserveTransferToRelayChain {
 			return Err(()); // Deny
 		}
 
-		// allow reserve transfers to arrive from relay chain
+		// Allow reserve transfers to arrive from relay chain
 		if matches!(
 			origin,
 			MultiLocation {

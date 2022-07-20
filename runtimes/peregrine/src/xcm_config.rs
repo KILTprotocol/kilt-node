@@ -46,7 +46,7 @@ parameter_types! {
 
 /// This is the type we use to convert an (incoming) XCM origin into a local
 /// `Origin` instance, ready for dispatching a transaction with Xcm's
-/// `Transact`. There is an `OriginKind` which can biases the kind of local
+/// `Transact`. There is an `OriginKind` which can bias the kind of local
 /// `Origin` it will become.
 pub type XcmOriginToTransactDispatchOrigin = (
 	// Sovereign account converter; this attempts to derive an `AccountId` from the origin location
@@ -91,9 +91,9 @@ pub type LocalOriginToLocation = SignedToAccountId32<Origin, AccountId, RelayNet
 /// The means for routing XCM messages which are not for local execution into
 /// the right message queues.
 pub type XcmRouter = (
-	// Two routers - use UMP to communicate with the relay chain:
+	// Two routers. Use UMP to communicate with the relay chain:
 	cumulus_primitives_utility::ParentAsUmp<ParachainSystem, ()>,
-	// ..and XCMP to communicate with the sibling chains.
+	// .. and XCMP to communicate with the sibling chains.
 	XcmpQueue,
 );
 
@@ -102,9 +102,9 @@ impl pallet_xcm::Config for Runtime {
 	type SendXcmOrigin = EnsureXcmOrigin<Origin, LocalOriginToLocation>;
 	type XcmRouter = XcmRouter;
 	type ExecuteXcmOrigin = EnsureXcmOrigin<Origin, LocalOriginToLocation>;
+	// Disable dispatchable execution on the XCM pallet.
+	// NOTE: For local testing this needs to be `Everything`.
 	type XcmExecuteFilter = Nothing;
-	// ^ Disable dispatchable execute on the XCM pallet.
-	// Needs to be `Everything` for local testing.
 	type XcmExecutor = XcmExecutor<XcmConfig>;
 	type XcmTeleportFilter = Everything;
 	type XcmReserveTransferFilter = Nothing;

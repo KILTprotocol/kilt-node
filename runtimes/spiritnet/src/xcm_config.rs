@@ -52,13 +52,13 @@ pub type XcmOriginToTransactDispatchOrigin = (
 	// // foreign chains who want to have a local sovereign account on this chain which they control.
 	// SovereignSignedViaLocation<LocationToAccountId, Origin>,
 
-	// Native converter for Relay-chain (Parent) location; will converts to a `Relay` origin when
+	// Native converter for Relay-chain (Parent) location which converts to a `Relay` origin when
 	// recognized.
 	RelayChainAsNative<RelayChainOrigin, Origin>,
-	// Native converter for sibling Parachains; will convert to a `SiblingPara` origin when
+	// Native converter for sibling Parachains which converts to a `SiblingPara` origin when
 	// recognized.
 	SiblingParachainAsNative<cumulus_pallet_xcm::Origin, Origin>,
-	// Native signed account converter; this just converts an `AccountId32` origin into a normal
+	// Native signed account converter which just converts an `AccountId32` origin into a normal
 	// `Origin::Signed` origin of the same 32-byte value.
 	SignedAccountId32AsNative<RelayNetworkId, Origin>,
 	// Xcm origins can be represented natively under the Xcm pallet's Xcm origin.
@@ -68,17 +68,17 @@ pub type XcmOriginToTransactDispatchOrigin = (
 pub struct XcmConfig;
 impl xcm_executor::Config for XcmConfig {
 	type Call = Call;
-	// How we send Xcm messages
+	// How we send Xcm messages.
 	type XcmSender = XcmRouter;
 	// How to withdraw and deposit an asset.
 	type AssetTransactor = LocalAssetTransactor<Balances, RelayNetworkId>;
 	type OriginConverter = XcmOriginToTransactDispatchOrigin;
-	// We only trust our own KILT asset reserve
+	// We only trust our own KILT asset reserve.
 	type IsReserve = NativeAsset;
 	// Teleporting is disabled.
 	type IsTeleporter = ();
 	// Invert a location.
-	// e.g. The relay chain is described as parent (MultiLocation(1, Here)))
+	// E.g., the relay chain is described as parent (MultiLocation(1, Here)))
 	// chain. When we invert that location it would be MultiLocation(0,
 	// X1(Parachain(2086))) since we are a child chain with ParaId 2086.
 	type LocationInverter = LocationInverter<Ancestry>;
@@ -98,9 +98,9 @@ pub type LocalOriginToLocation = SignedToAccountId32<Origin, AccountId, RelayNet
 /// The means for routing XCM messages which are not for local execution into
 /// the right message queues.
 pub type XcmRouter = (
-	// Two routers - use UMP to communicate with the relay chain:
+	// Two routers. Use UMP to communicate with the relay chain:
 	cumulus_primitives_utility::ParentAsUmp<ParachainSystem, ()>,
-	// ..and XCMP to communicate with the sibling chains.
+	// .. and XCMP to communicate with the sibling chains.
 	XcmpQueue,
 );
 
