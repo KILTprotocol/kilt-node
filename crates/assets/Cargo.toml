@@ -10,7 +10,6 @@ version = "1.7.0"
 base58 = {version = "0.2.0", default-features = false}
 hex = {version = "0.4.3", default-features = false}
 hex-literal = {version = "0.3.4", default-features = false}
-serde = { version = "1.0.136", optional = true, features = ["derive"] }
 
 codec = {package = "parity-scale-codec", version = "3.1.2", default-features = false, features = ["derive"]}
 scale-info = {version = "2.1.1", default-features = false, features = ["derive"]}
@@ -26,7 +25,6 @@ std = [
   "codec/std",
   "frame-support/std",
   "hex/std",
-  "serde",
   "scale-info/std",
   "sp-core/std",
   "sp-std/std",

@@ -3595,7 +3595,6 @@ dependencies = [
  "hex-literal",
  "parity-scale-codec",
  "scale-info",
- "serde",
  "sp-core",
  "sp-std",
 ]
