@@ -45,10 +45,7 @@ match_types! {
 /// Deny executing the xcm message if it matches any of the Deny filter
 /// regardless of anything else. If it passes the Deny and matches one of the
 /// Allow cases, then it is let through.
-pub struct DenyThenTry<Deny, Allow>(PhantomData<Deny>, PhantomData<Allow>)
-where
-	Deny: ShouldExecute,
-	Allow: ShouldExecute;
+pub struct DenyThenTry<Deny, Allow>(PhantomData<(Deny, Allow)>);
 
 impl<Deny, Allow> ShouldExecute for DenyThenTry<Deny, Allow>
 where
