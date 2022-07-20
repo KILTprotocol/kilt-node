@@ -63,13 +63,13 @@ where
 	}
 }
 
-/// Deny ReserveTransfer to the relay chain. Allow
-pub type Barrier = DenyThenTry<
+/// Explicitly deny ReserveTransfer to the relay chain. Allow calls from the relay chain governance.
+pub type XcmBarrier = DenyThenTry<
 	DenyReserveTransferToRelayChain,
 	(
-		// // We don't allow anything from any sibling chain, therefore the following is not included here:
-		// TakeWeightCredit,
-		// AllowTopLevelPaidExecutionFrom<Everything>,
+		// We don't allow anything from any sibling chain, therefore the following is not included here:
+		// * TakeWeightCredit
+		// * AllowTopLevelPaidExecutionFrom<Everything>
 
 		// We allow everything from the relay chain if it was send by the relay chain legislative.
 		// Since the relaychain doesn't own KILTs and missing fees shouldn't prevent calls from the relaychain

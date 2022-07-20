@@ -34,7 +34,7 @@ use xcm_builder::{
 };
 use xcm_executor::XcmExecutor;
 
-use runtime_common::xcm_config::{Barrier, LocalAssetTransactor, MaxInstructions, RelayLocation, UnitWeightCost};
+use runtime_common::xcm_config::{XcmBarrier, LocalAssetTransactor, MaxInstructions, RelayLocation, UnitWeightCost};
 
 parameter_types! {
 	pub RelayChainOrigin: Origin = cumulus_pallet_xcm::Origin::Relay.into();
@@ -47,10 +47,8 @@ parameter_types! {
 /// `Transact`. There is an `OriginKind` which can biases the kind of local
 /// `Origin` it will become.
 pub type XcmOriginToTransactDispatchOrigin = (
-	// // Sovereign account converter; this attempts to derive an `AccountId` from the origin location
-	// // using `LocationToAccountId` and then turn that into the usual `Signed` origin. Useful for
-	// // foreign chains who want to have a local sovereign account on this chain which they control.
-	// SovereignSignedViaLocation<LocationToAccountId, Origin>,
+	// We don't include `SovereignSignedViaLocation<LocationToAccountId, Origin>` since we don't want to allow other
+	// chains to manage accounts on our network.
 
 	// Native converter for Relay-chain (Parent) location which converts to a `Relay` origin when
 	// recognized.
@@ -82,8 +80,8 @@ impl xcm_executor::Config for XcmConfig {
 	// chain. When we invert that location it would be MultiLocation(0,
 	// X1(Parachain(2086))) since we are a child chain with ParaId 2086.
 	type LocationInverter = LocationInverter<Ancestry>;
-
-	type Barrier = Barrier;
+	// Which XCM instructions are allowed and which are not on our chain.
+	type Barrier = XcmBarrier;
 	type Weigher = FixedWeightBounds<UnitWeightCost, Call, MaxInstructions>;
 	type Trader = UsingComponents<WeightToFee<Runtime>, RelayLocation, AccountId, Balances, ToAuthor<Runtime>>;
 	type ResponseHandler = PolkadotXcm;
@@ -109,9 +107,9 @@ impl pallet_xcm::Config for Runtime {
 	type SendXcmOrigin = EnsureXcmOrigin<Origin, LocalOriginToLocation>;
 	type XcmRouter = XcmRouter;
 	type ExecuteXcmOrigin = EnsureXcmOrigin<Origin, LocalOriginToLocation>;
+	// Disable dispatchable execution on the XCM pallet.
+	// NOTE: For local testing this needs to be `Everything`.
 	type XcmExecuteFilter = Nothing;
-	// ^ Disable dispatchable execute on the XCM pallet.
-	// Needs to be `Everything` for local testing.
 	type XcmExecutor = XcmExecutor<XcmConfig>;
 	type XcmTeleportFilter = Everything;
 	type XcmReserveTransferFilter = Nothing;
@@ -121,7 +119,7 @@ impl pallet_xcm::Config for Runtime {
 	type Call = Call;
 
 	const VERSION_DISCOVERY_QUEUE_SIZE: u32 = 100;
-	// ^ Override for AdvertisedXcmVersion default
+	// Our latest supported XCM version.
 	type AdvertisedXcmVersion = pallet_xcm::CurrentXcmVersion;
 }
 
