@@ -23,8 +23,6 @@ use frame_support::RuntimeDebug;
 
 use kilt_support::deposit::Deposit;
 
-use crate::{BalanceOf, Config};
-
 /// The bulk of the credential, i.e., its (encoded) claims, subject, and Ctype.
 #[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq, PartialOrd, Ord, TypeInfo)]
 pub struct Claim<CtypeHash, SubjectIdentifier, Content> {
@@ -76,14 +74,10 @@ pub struct Credential<
 /// block. The block number is used to query the full content of the credential
 /// from archive nodes.
 #[derive(Encode, Decode, Clone, MaxEncodedLen, RuntimeDebug, PartialEq, Eq, PartialOrd, Ord, TypeInfo)]
-#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "std", serde(bound = ""))]
-#[scale_info(skip_type_params(T))]
-#[codec(mel_bound())]
-pub struct CredentialEntryOf<T: Config> {
+pub struct CredentialEntry<BlockNumber, AccountId, Balance> {
 	/// The block number in which the credential tx was evaluated and included
 	/// in the block.
-	pub block_number: T::BlockNumber,
+	pub block_number: BlockNumber,
 	/// The info about the credential deposit.
-	pub deposit: Deposit<T::AccountId, BalanceOf<T>>,
+	pub deposit: Deposit<AccountId, Balance>
 }

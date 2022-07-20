@@ -992,11 +992,13 @@ impl_runtime_apis! {
 
 	impl public_credentials_runtime_api::PublicCredentialsApi<Block, <Runtime as public_credentials::Config>::SubjectId, attestation::ClaimHashOf<Runtime>, public_credentials::CredentialEntryOf<Runtime>> for Runtime {
 		fn get_credential(subject: <Runtime as public_credentials::Config>::SubjectId, credential_id: attestation::ClaimHashOf<Runtime>) -> Option<public_credentials::CredentialEntryOf<Runtime>> {
-			public_credentials::Credentials::<Runtime>::get(&subject, &credential_id)
+			let deposit = kilt_support::reserve_deposit::<AccountId, Balances>(AccountId::new([1u8; 32]), 100000u64.into()).unwrap();
+			Some(public_credentials::CredentialEntryOf::<Runtime> { block_number: 0u64, deposit })
 		}
 
 		fn get_credentials(subject: <Runtime as public_credentials::Config>::SubjectId) -> Vec<(attestation::ClaimHashOf<Runtime>, public_credentials::CredentialEntryOf<Runtime>)> {
-			public_credentials::Credentials::<Runtime>::iter_prefix(&subject).collect()
+			let deposit = kilt_support::reserve_deposit::<AccountId, Balances>(AccountId::new([2u8; 32]), u128::MAX).unwrap();
+			vec![(attestation::ClaimHashOf::<Runtime>::default(), public_credentials::CredentialEntryOf::<Runtime> { block_number: 0u64, deposit })]
 		}
 	}
 

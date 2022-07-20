@@ -16,6 +16,8 @@ substrate-build-script-utils = {git = "https://github.com/paritytech/substrate",
 
 # Internal dependencies
 did-rpc = {path = "../../rpc/did"}
+kilt-support = {path = "../../support"}
+node-common = {path = "../common"}
 public-credentials = {path = "../../pallets/public-credentials"}
 public-credentials-rpc = {path = "../../rpc/public-credentials"}
 pallet-did-lookup = {path = "../../pallets/pallet-did-lookup"}

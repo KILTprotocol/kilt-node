@@ -1,0 +1,15 @@
+[package]
+authors = ["KILT <info@kilt.io>"]
+edition = "2021"
+name = "node-common"
+version = "1.7.0"
+
+[dependencies]
+
+kilt-support = {path = "../../support"}
+public-credentials = {path = "../../pallets/public-credentials"}
+
+serde = {version = "1.0.137", features = ["derive"]}
+
+[features]
+default = []

@@ -27,6 +27,9 @@ mod service_endpoint;
 pub use did_details::*;
 pub use service_endpoint::*;
 
+#[cfg(feature = "std")]
+use serde::{Serialize, Deserialize};
+
 #[derive(Encode, Decode, TypeInfo, PartialEq)]
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(
