@@ -32,26 +32,26 @@ use sp_blockchain::HeaderBackend;
 use sp_runtime::{generic::BlockId, traits::Block as BlockT};
 
 #[rpc(client, server)]
-pub trait PublicCredentialsApi<BlockHash, InputSubjectId, InputCredentialId, OutputCredentialEntry> {
+pub trait PublicCredentialsApi<BlockHash, OuterSubjectId, OuterCredentialId, OuterCredentialEntry> {
 	#[method(name = "get_credential")]
 	fn get_credential(
 		&self,
-		subject: InputSubjectId,
-		credential_id: InputCredentialId,
+		subject: OuterSubjectId,
+		credential_id: OuterCredentialId,
 		at: Option<BlockHash>,
-	) -> RpcResult<Option<OutputCredentialEntry>>;
+	) -> RpcResult<Option<OuterCredentialEntry>>;
 
 	#[method(name = "get_credentials")]
-	fn get_credentials(&self, subject: InputSubjectId, at: Option<BlockHash>) -> RpcResult<Vec<OutputCredentialEntry>>;
+	fn get_credentials(&self, subject: OuterSubjectId, at: Option<BlockHash>) -> RpcResult<Vec<(OuterCredentialId, OuterCredentialEntry)>>;
 }
 
-pub struct PublicCredentialsQuery<Client, Block, InputSubjectId, SubjectId, InputCredentialId, CredentialId, CredentialEntry, OutputCredentialEntry> {
+pub struct PublicCredentialsQuery<Client, Block, OuterSubjectId, SubjectId, OuterCredentialId, CredentialId, OuterCredentialEntry, CredentialEntry> {
 	client: Arc<Client>,
-	_marker: std::marker::PhantomData<(Block, InputSubjectId, SubjectId, InputCredentialId, CredentialId, CredentialEntry, OutputCredentialEntry)>,
+	_marker: std::marker::PhantomData<(Block, OuterSubjectId, SubjectId, OuterCredentialId, CredentialId, OuterCredentialEntry, CredentialEntry)>,
 }
 
-impl<Client, Block, InputSubjectId, SubjectId, InputCredentialId, CredentialId, CredentialEntry, OutputCredentialEntry>
-	PublicCredentialsQuery<Client, Block, InputSubjectId, SubjectId, InputCredentialId, CredentialId, CredentialEntry, OutputCredentialEntry>
+impl<Client, Block, OuterSubjectId, SubjectId, OuterCredentialId, CredentialId, OuterCredentialEntry, CredentialEntry>
+	PublicCredentialsQuery<Client, Block, OuterSubjectId, SubjectId, OuterCredentialId, CredentialId, OuterCredentialEntry, CredentialEntry>
 {
 	pub fn new(client: Arc<Client>) -> Self {
 		Self {
@@ -78,25 +78,25 @@ impl From<Error> for i32 {
 }
 
 #[async_trait]
-impl<Client, Block, InputSubjectId, SubjectId, InputCredentialId, CredentialId, CredentialEntry, OutputCredentialEntry> PublicCredentialsApiServer<<Block as BlockT>::Hash, InputSubjectId, InputCredentialId, OutputCredentialEntry>
-	for PublicCredentialsQuery<Client, Block, InputSubjectId, SubjectId, InputCredentialId, CredentialId, CredentialEntry, OutputCredentialEntry>
+impl<Client, Block, OuterSubjectId, SubjectId, OuterCredentialId, CredentialId, OuterCredentialEntry, CredentialEntry> PublicCredentialsApiServer<<Block as BlockT>::Hash, OuterSubjectId, OuterCredentialId, OuterCredentialEntry>
+	for PublicCredentialsQuery<Client, Block, OuterSubjectId, SubjectId, OuterCredentialId, CredentialId, OuterCredentialEntry, CredentialEntry>
 where
 	Block: BlockT,
 	Client: Send + Sync + 'static + ProvideRuntimeApi<Block> + HeaderBackend<Block>,
 	Client::Api: PublicCredentialsRuntimeApi<Block, SubjectId, CredentialId, CredentialEntry>,
-	InputSubjectId: Codec + Send + Sync + 'static,
-	SubjectId: Codec + Send + Sync + 'static + TryFrom<InputSubjectId>,
-	InputCredentialId: Codec + Send + Sync + 'static,
-	CredentialId: Codec + Send + Sync + 'static + TryFrom<InputCredentialId>,
+	OuterSubjectId: Codec + Send + Sync + 'static,
+	SubjectId: Codec + Send + Sync + 'static + TryFrom<OuterSubjectId>,
+	OuterCredentialId: Codec + Send + Sync + 'static,
+	CredentialId: Codec + Send + Sync + 'static + TryFrom<OuterCredentialId> + Into<OuterCredentialId>,
 	CredentialEntry: Codec + Send + Sync + 'static,
-	OutputCredentialEntry: Codec + Send + Sync + 'static + From<CredentialEntry>,
+	OuterCredentialEntry: Codec + Send + Sync + 'static + From<CredentialEntry>,
 {
 	fn get_credential(
 		&self,
-		subject: InputSubjectId,
-		credential_id: InputCredentialId,
+		subject: OuterSubjectId,
+		credential_id: OuterCredentialId,
 		at: Option<<Block as BlockT>::Hash>,
-	) -> RpcResult<Option<OutputCredentialEntry>> {
+	) -> RpcResult<Option<OuterCredentialEntry>> {
 		let api = self.client.runtime_api();
 		let at = BlockId::hash(at.unwrap_or_else(|| self.client.info().best_hash));
 
@@ -123,10 +123,10 @@ where
 				Option::<String>::None,
 			))
 		})?;
-		Ok(credential.map(OutputCredentialEntry::from))
+		Ok(credential.map(OuterCredentialEntry::from))
 	}
 
-	fn get_credentials(&self, subject: InputSubjectId, at: Option<<Block as BlockT>::Hash>) -> RpcResult<Vec<OutputCredentialEntry>> {
+	fn get_credentials(&self, subject: OuterSubjectId, at: Option<<Block as BlockT>::Hash>) -> RpcResult<Vec<(OuterCredentialId, OuterCredentialEntry)>> {
 		let api = self.client.runtime_api();
 		let at = BlockId::hash(at.unwrap_or_else(|| self.client.info().best_hash));
 
@@ -146,6 +146,6 @@ where
 			))
 		})?;
 
-		Ok(credentials.into_iter().map(|(_, v)| OutputCredentialEntry::from(v)).collect())
+		Ok(credentials.into_iter().map(|(id, entry)| (id.into(), entry.into())).collect())
 	}
 }
