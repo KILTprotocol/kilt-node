@@ -59,7 +59,6 @@ impl From<AssetIdError> for AssetDidError {
 
 /// An Asset DID as specified in the Asset DID method specification.
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
-#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 pub struct AssetDid {
 	pub chain_id: ChainId,
 	pub asset_id: AssetId,
