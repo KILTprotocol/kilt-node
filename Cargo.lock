@@ -8489,8 +8489,6 @@ dependencies = [
  "public-credentials-runtime-api",
  "sp-api",
  "sp-blockchain",
- "sp-core",
- "sp-rpc",
  "sp-runtime",
 ]
 
@@ -8498,7 +8496,6 @@ dependencies = [
 name = "public-credentials-runtime-api"
 version = "1.7.0"
 dependencies = [
- "frame-system",
  "parity-scale-codec",
  "public-credentials",
  "sp-api",

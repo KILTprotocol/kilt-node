@@ -146,6 +146,6 @@ where
 			))
 		})?;
 
-		Ok(credentials.into_iter().map(OutputCredentialEntry::from).collect())
+		Ok(credentials.into_iter().map(|(_, v)| OutputCredentialEntry::from(v)).collect())
 	}
 }
