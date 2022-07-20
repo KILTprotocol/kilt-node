@@ -94,8 +94,8 @@ impl xcm_executor::Config for XcmConfig {
 	type Trader = UsingComponents<WeightToFee<Runtime>, RelayLocation, AccountId, Balances, Treasury>;
 	type ResponseHandler = PolkadotXcm;
 	// What happens with assets that are left in the register after the XCM message
-	// was processed. PolkadotXcm has an AssetTrap that stores which asset was
-	// trapped.
+	// was processed. PolkadotXcm has an AssetTrap that stores a hash of the asset
+	// location, amount, version, etc.
 	type AssetTrap = PolkadotXcm;
 	type AssetClaims = PolkadotXcm;
 	type SubscriptionService = PolkadotXcm;
