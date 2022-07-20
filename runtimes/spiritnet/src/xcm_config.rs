@@ -17,8 +17,8 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use super::{
-	AccountId, Balances, Call, Event, Origin, ParachainInfo, ParachainSystem, PolkadotXcm, Runtime, WeightToFee,
-	XcmpQueue,
+	AccountId, Balances, Call, Event, Origin, ParachainInfo, ParachainSystem, PolkadotXcm, Runtime, Treasury,
+	WeightToFee, XcmpQueue,
 };
 
 use frame_support::{
@@ -26,7 +26,6 @@ use frame_support::{
 	traits::{Everything, Nothing},
 };
 use pallet_xcm::XcmPassthrough;
-use polkadot_runtime_common::impls::ToAuthor;
 use xcm::latest::prelude::*;
 use xcm_builder::{
 	EnsureXcmOrigin, FixedWeightBounds, LocationInverter, NativeAsset, RelayChainAsNative, SiblingParachainAsNative,
@@ -82,9 +81,16 @@ impl xcm_executor::Config for XcmConfig {
 	type LocationInverter = LocationInverter<Ancestry>;
 	// Which XCM instructions are allowed and which are not on our chain.
 	type Barrier = XcmBarrier;
+	// How XCM messages are weighted. Each transaction has a weight of
+	// `UnitWeightCost`.
 	type Weigher = FixedWeightBounds<UnitWeightCost, Call, MaxInstructions>;
-	type Trader = UsingComponents<WeightToFee<Runtime>, RelayLocation, AccountId, Balances, ToAuthor<Runtime>>;
+	// How weight is transformed into fees. The fees are not taken out of the
+	// Balances pallet here. Balances is only used if fees are dropped without being
+	// used. In that case they are put into the treasury.
+	type Trader = UsingComponents<WeightToFee<Runtime>, RelayLocation, AccountId, Balances, Treasury>;
 	type ResponseHandler = PolkadotXcm;
+	// What happens with assets that are left in the register after the XCM message
+	// was processed. PolkadotXcm has an AssetTrap that stores which asset was trapped.
 	type AssetTrap = PolkadotXcm;
 	type AssetClaims = PolkadotXcm;
 	type SubscriptionService = PolkadotXcm;
