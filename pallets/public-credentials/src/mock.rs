@@ -351,7 +351,7 @@ pub(crate) mod runtime {
 				}
 
 				for (subject_id, claim_hash, credential_entry) in self.public_credentials {
-					insert_public_credentials(subject_id, claim_hash, credential_entry);
+					insert_public_credentials::<Test>(subject_id, claim_hash, credential_entry);
 				}
 			});
 

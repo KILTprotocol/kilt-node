@@ -87,8 +87,7 @@ pub mod pallet {
 	/// The type of currency to use to reserve the required deposits.
 	/// Must match the definition of [<T as attestation::Config>::Currency].
 	pub(crate) type CurrencyOf<T> = <T as attestation::Config>::Currency;
-	/// The type of account's balances.
-	pub(crate) type BalanceOf<T> = <CurrencyOf<T> as Currency<attestation::AccountIdOf<T>>>::Balance;
+
 
 	/// The type of the credential subject input. It is bound in max length.
 	/// It is transformed inside the `add` operation into a [<T as
@@ -98,6 +97,11 @@ pub mod pallet {
 	pub type InputClaimsContentOf<T> = BoundedVec<u8, <T as Config>::MaxEncodedClaimsLength>;
 	pub type ClaimerSignatureOf<T> =
 		ClaimerSignatureInfo<<T as Config>::ClaimerIdentifier, <T as Config>::ClaimerSignature>;
+	pub type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
+	pub type BlockNumberOf<T> = <T as frame_system::Config>::BlockNumber;
+	pub type CredentialEntryOf<T> = CredentialEntry<BlockNumberOf<T>, AccountIdOf<T>, BalanceOf<T>>;
+	/// The type of account's balances.
+	pub type BalanceOf<T> = <CurrencyOf<T> as Currency<attestation::AccountIdOf<T>>>::Balance;
 
 	/// The type of a public credential as the pallet expects it.
 	pub type InputCredentialOf<T> = Credential<
@@ -326,7 +330,7 @@ pub mod pallet {
 
 			let block_number = frame_system::Pallet::<T>::block_number();
 
-			Credentials::<T>::insert(&subject, &claim_hash, CredentialEntryOf { deposit, block_number });
+			Credentials::<T>::insert(&subject, &claim_hash, CredentialEntryOf::<T> { deposit, block_number });
 			CredentialsUnicityIndex::<T>::insert(&claim_hash, subject.clone());
 
 			Self::deposit_event(Event::CredentialStored {

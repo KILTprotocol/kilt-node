@@ -84,12 +84,12 @@ where
 	Block: BlockT,
 	Client: Send + Sync + 'static + ProvideRuntimeApi<Block> + HeaderBackend<Block>,
 	Client::Api: PublicCredentialsRuntimeApi<Block, SubjectId, CredentialId, CredentialEntry>,
-	OuterSubjectId: Codec + Send + Sync + 'static,
+	OuterSubjectId: Send + Sync + 'static,
 	SubjectId: Codec + Send + Sync + 'static + TryFrom<OuterSubjectId>,
-	OuterCredentialId: Codec + Send + Sync + 'static,
+	OuterCredentialId: Send + Sync + 'static,
 	CredentialId: Codec + Send + Sync + 'static + TryFrom<OuterCredentialId> + Into<OuterCredentialId>,
 	CredentialEntry: Codec + Send + Sync + 'static,
-	OuterCredentialEntry: Codec + Send + Sync + 'static + From<CredentialEntry>,
+	OuterCredentialEntry: Send + Sync + 'static + From<CredentialEntry>,
 {
 	fn get_credential(
 		&self,

@@ -299,7 +299,7 @@ fn remove_successful() {
 	let subject_id: <Test as Config>::SubjectId = SUBJECT_ID_00;
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 	let attestation: AttestationDetails<Test> = generate_base_attestation(attester.clone(), ACCOUNT_00);
-	let new_credential = generate_base_credential_entry(ACCOUNT_00, 0);
+	let new_credential = generate_base_credential_entry::<Test>(ACCOUNT_00, 0);
 	let public_credential_deposit: Balance = <Test as Config>::Deposit::get();
 	let attestation_deposit: Balance = <Test as attestation::Config>::Deposit::get();
 
@@ -358,7 +358,7 @@ fn remove_unauthorized() {
 	let subject_id: <Test as Config>::SubjectId = SUBJECT_ID_00;
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 	let attestation: AttestationDetails<Test> = generate_base_attestation(attester.clone(), ACCOUNT_00);
-	let new_credential = generate_base_credential_entry(ACCOUNT_00, 0);
+	let new_credential = generate_base_credential_entry::<Test>(ACCOUNT_00, 0);
 	let public_credential_deposit: Balance = <Test as Config>::Deposit::get();
 	let attestation_deposit: Balance = <Test as attestation::Config>::Deposit::get();
 
@@ -384,7 +384,7 @@ fn reclaim_deposit_successful() {
 	let subject_id: <Test as Config>::SubjectId = SUBJECT_ID_00;
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 	let attestation: AttestationDetails<Test> = generate_base_attestation(attester.clone(), ACCOUNT_00);
-	let new_credential = generate_base_credential_entry(ACCOUNT_00, 0);
+	let new_credential = generate_base_credential_entry::<Test>(ACCOUNT_00, 0);
 	let public_credential_deposit: Balance = <Test as Config>::Deposit::get();
 	let attestation_deposit: Balance = <Test as attestation::Config>::Deposit::get();
 
@@ -441,7 +441,7 @@ fn reclaim_deposit_unauthorized() {
 	let subject_id: <Test as Config>::SubjectId = SUBJECT_ID_00;
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 	let attestation: AttestationDetails<Test> = generate_base_attestation(attester.clone(), ACCOUNT_00);
-	let new_credential = generate_base_credential_entry(ACCOUNT_00, 0);
+	let new_credential = generate_base_credential_entry::<Test>(ACCOUNT_00, 0);
 	let public_credential_deposit: Balance = <Test as Config>::Deposit::get();
 	let attestation_deposit: Balance = <Test as attestation::Config>::Deposit::get();
 
