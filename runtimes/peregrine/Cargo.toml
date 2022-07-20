@@ -21,6 +21,7 @@ serde = {version = "1.0.137", optional = true, features = ["derive"]}
 did-rpc-runtime-api = {path = "../../rpc/did/runtime-api", default-features = false}
 frame-system-rpc-runtime-api = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.25"}
 pallet-transaction-payment-rpc-runtime-api = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.25"}
+public-credentials-runtime-api = {path = "../../rpc/public-credentials/runtime-api", default-features = false}
 
 # KILT pallets & primitives
 attestation = {default-features = false, path = "../../pallets/attestation"}
@@ -179,6 +180,7 @@ std = [
   "parachain-staking/std",
   "polkadot-parachain/std",
   "public-credentials/std",
+  "public-credentials-runtime-api/std",
   "rococo-runtime/std",
   "runtime-common/std",
   "scale-info/std",
