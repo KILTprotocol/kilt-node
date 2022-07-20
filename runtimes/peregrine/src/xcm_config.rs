@@ -35,7 +35,7 @@ use xcm_builder::{
 use xcm_executor::XcmExecutor;
 
 use runtime_common::xcm_config::{
-	XcmBarrier, LocalAssetTransactor, LocationToAccountId, MaxInstructions, RelayLocation, UnitWeightCost,
+	LocalAssetTransactor, LocationToAccountId, MaxInstructions, RelayLocation, UnitWeightCost, XcmBarrier,
 };
 
 parameter_types! {
@@ -54,7 +54,6 @@ pub type XcmOriginToTransactDispatchOrigin = (
 	// foreign chains who want to have a local sovereign account on this chain which they control.
 	// In contrast to Spiritnet, it's fine to include this on peregrine for testing.
 	SovereignSignedViaLocation<LocationToAccountId<RelayNetworkId>, Origin>,
-
 	// Native converter for Relay-chain (Parent) location which converts to a `Relay` origin when
 	// recognized.
 	RelayChainAsNative<RelayChainOrigin, Origin>,

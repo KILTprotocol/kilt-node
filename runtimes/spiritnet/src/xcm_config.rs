@@ -34,7 +34,7 @@ use xcm_builder::{
 };
 use xcm_executor::XcmExecutor;
 
-use runtime_common::xcm_config::{XcmBarrier, LocalAssetTransactor, MaxInstructions, RelayLocation, UnitWeightCost};
+use runtime_common::xcm_config::{LocalAssetTransactor, MaxInstructions, RelayLocation, UnitWeightCost, XcmBarrier};
 
 parameter_types! {
 	pub RelayChainOrigin: Origin = cumulus_pallet_xcm::Origin::Relay.into();
