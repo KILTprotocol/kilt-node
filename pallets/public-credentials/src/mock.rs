@@ -57,7 +57,6 @@ pub(crate) mod runtime {
 	use frame_support::{
 		traits::{ConstU128, ConstU16, ConstU32, ConstU64, Get},
 		weights::constants::RocksDbWeight,
-		BoundedVec,
 	};
 	use scale_info::TypeInfo;
 	use sp_core::{sr25519, Pair};
@@ -102,12 +101,18 @@ pub(crate) mod runtime {
 	)]
 	pub struct TestSubjectId([u8; 32]);
 
-	impl TryFrom<InputSubjectIdOf<Test>> for TestSubjectId {
+	impl TryFrom<Vec<u8>> for TestSubjectId {
 		type Error = Error<Test>;
 
-		fn try_from(value: BoundedVec<u8, <Test as Config>::MaxSubjectIdLength>) -> Result<Self, Self::Error> {
-			let inner: [u8; 32] = value.into_inner().try_into().map_err(|_| Error::<Test>::InvalidInput)?;
+		fn try_from(value:Vec<u8>) -> Result<Self, Self::Error> {
+			let inner: [u8; 32] = value.try_into().map_err(|_| Error::<Test>::InvalidInput)?;
 			Ok(Self(inner))
+		}
+	}
+
+	impl From<TestSubjectId> for Vec<u8> {
+		fn from(value: TestSubjectId) -> Self {
+			value.0.into()
 		}
 	}
 

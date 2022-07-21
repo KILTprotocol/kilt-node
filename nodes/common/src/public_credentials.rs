@@ -18,8 +18,8 @@
 
 use serde::{Deserialize, Serialize};
 
-use public_credentials::{BlockNumberOf, AccountIdOf, BalanceOf, CredentialEntryOf};
 use kilt_support::deposit::Deposit;
+use public_credentials::CredentialEntry;
 
 #[derive(Serialize, Deserialize)]
 #[serde(bound(
@@ -32,18 +32,18 @@ use kilt_support::deposit::Deposit;
 	Balance: std::str::FromStr,
 	AccountId: Deserialize<'de>",
 ))]
-pub struct OuterCredentialEntry<BlockNumber, AccountId, Balance, T> {
+pub struct OuterCredentialEntry<BlockNumber, AccountId, Balance> {
 	pub block_number: BlockNumber,
 	pub deposit: Deposit<AccountId, Balance>,
-	_phantom: Option<std::marker::PhantomData<T>>,
 }
 
-impl<T: public_credentials::Config> From<CredentialEntryOf<T>> for OuterCredentialEntry<BlockNumberOf<T>, AccountIdOf<T>, BalanceOf<T>, T> {
-	fn from(value: CredentialEntryOf<T>) -> Self {
+impl<BlockNumber, AccountId, Balance> From<CredentialEntry<BlockNumber, AccountId, Balance>>
+	for OuterCredentialEntry<BlockNumber, AccountId, Balance>
+{
+	fn from(value: CredentialEntry<BlockNumber, AccountId, Balance>) -> Self {
 		Self {
 			block_number: value.block_number,
 			deposit: value.deposit,
-			_phantom: None,
 		}
 	}
 }

@@ -134,7 +134,9 @@ pub mod pallet {
 		type OriginSuccess: CallSources<Self::AccountId, AttesterOf<Self>>;
 		/// The type of the credential subject ID after being parsed from the
 		/// raw attester-provided input.
-		type SubjectId: Parameter + MaxEncodedLen + TryFrom<InputSubjectIdOf<Self>>;
+		// Vec<u8> instead of BoundedVec<u8, ...> because otherwise it becomes impossible for
+		// runtime-common to be independent of the `T: Config` constraint.
+		type SubjectId: Parameter + MaxEncodedLen + TryFrom<Vec<u8>>;
 		/// The weight info.
 		type WeightInfo: WeightInfo;
 
@@ -270,7 +272,7 @@ pub mod pallet {
 			} = *credential;
 
 			// Try to decode subject ID to something structured
-			let subject = T::SubjectId::try_from(subject).map_err(|_| Error::<T>::InvalidInput)?;
+			let subject = T::SubjectId::try_from(subject.into_inner()).map_err(|_| Error::<T>::InvalidInput)?;
 
 			// Check that the same attestation has not already been issued previously
 			// (potentially to a different subject)

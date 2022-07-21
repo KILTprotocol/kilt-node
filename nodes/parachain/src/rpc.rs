@@ -33,6 +33,7 @@ use sp_api::ProvideRuntimeApi;
 use sp_block_builder::BlockBuilder;
 use sp_blockchain::{Error as BlockChainError, HeaderBackend, HeaderMetadata};
 
+use public_credentials::CredentialEntry;
 use pallet_did_lookup::linkable_account::LinkableAccountId;
 use runtime_common::{AccountId, Balance, Block, BlockNumber, DidIdentifier, Hash, Index};
 
@@ -56,11 +57,18 @@ where
 	C::Api: pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>,
 	C::Api: BlockBuilder<Block>,
 	C::Api: did_rpc::DidRuntimeApi<Block, DidIdentifier, AccountId, LinkableAccountId, Balance, Hash, BlockNumber>,
+	C::Api: public_credentials_rpc::PublicCredentialsRuntimeApi<
+		Block,
+		runtime_common::assets::AssetDid,
+		Hash,
+		CredentialEntry<BlockNumber, AccountId, Balance>,
+	>,
 	P: TransactionPool + 'static,
 {
 	use did_rpc::{DidApiServer, DidQuery};
 	use frame_rpc_system::{System, SystemApiServer};
 	use pallet_transaction_payment_rpc::{TransactionPayment, TransactionPaymentApiServer};
+	use public_credentials_rpc::{PublicCredentialsApiServer, PublicCredentialsQuery};
 
 	let mut module = RpcModule::new(());
 	let FullDeps {
@@ -76,7 +84,20 @@ where
 	// to call into the runtime.
 	//
 	// `module.merge(YourRpcStruct::new(ReferenceToClient).into_rpc())?;`
-	module.merge(DidQuery::new(client).into_rpc())?;
+	module.merge(DidQuery::new(client.clone()).into_rpc())?;
+	module.merge(
+		PublicCredentialsQuery::<
+			C,
+			Block,
+			String,
+			runtime_common::assets::AssetDid,
+			Hash,
+			Hash,
+			node_common::OuterCredentialEntry<BlockNumber, AccountId, Balance>,
+			CredentialEntry<BlockNumber, AccountId, Balance>,
+		>::new(client)
+		.into_rpc(),
+	)?;
 
 	Ok(module)
 }

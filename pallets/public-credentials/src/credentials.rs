@@ -79,5 +79,5 @@ pub struct CredentialEntry<BlockNumber, AccountId, Balance> {
 	/// in the block.
 	pub block_number: BlockNumber,
 	/// The info about the credential deposit.
-	pub deposit: Deposit<AccountId, Balance>
+	pub deposit: Deposit<AccountId, Balance>,
 }

@@ -18,7 +18,6 @@ attestation = {default-features = false, path = "../../pallets/attestation"}
 kilt-asset-dids = { default-features = false, path = "../../crates/assets" }
 kilt-support = { default-features = false, optional = true, path = "../../support" }
 parachain-staking = {default-features = false, path = "../../pallets/parachain-staking"}
-public-credentials = {default-features = false, path = "../../pallets/public-credentials"}
 
 frame-support = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.25"}
 frame-system = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.25"}
@@ -43,7 +42,6 @@ runtime-benchmarks = [
   "frame-support/runtime-benchmarks",
   "kilt-support/runtime-benchmarks",
   "parachain-staking/runtime-benchmarks",
-  "public-credentials/runtime-benchmarks",
   "sp-runtime/runtime-benchmarks",
 ]
 std = [
@@ -58,7 +56,6 @@ std = [
   "pallet-balances/std",
   "pallet-membership/std",
   "pallet-authorship/std",
-  "public-credentials/std",
   "scale-info/std",
   "serde",
   "sp-consensus-aura/std",

@@ -22,7 +22,7 @@ use frame_support::{
 	traits::{Currency, Get},
 	BoundedVec,
 };
-use sp_std::{boxed::Box, vec};
+use sp_std::{boxed::Box, vec, vec::Vec};
 
 use kilt_support::traits::{GenerateBenchmarkOrigin, GetWorstCase};
 
@@ -38,7 +38,7 @@ benchmarks! {
 		T: attestation::Config,
 		T: ctype::Config<CtypeCreatorId = T::AttesterId>,
 		<T as Config>::EnsureOrigin: GenerateBenchmarkOrigin<T::Origin, T::AccountId, T::AttesterId>,
-		<T as Config>::SubjectId: GetWorstCase + Into<InputSubjectIdOf<T>> + sp_std::fmt::Debug,
+		<T as Config>::SubjectId: GetWorstCase + Into<Vec<u8>> + sp_std::fmt::Debug,
 	}
 
 	add {
@@ -51,7 +51,7 @@ benchmarks! {
 		let contents = BoundedVec::try_from(vec![0; c as usize]).expect("Contents should not fail.");
 
 		let creation_op = Box::new(generate_base_public_credential_creation_op::<T>(
-			subject_id.clone().into(),
+			subject_id.clone().into().try_into().expect("Input conversion should not fail."),
 			claim_hash,
 			ctype_hash,
 			contents,
@@ -77,7 +77,7 @@ benchmarks! {
 		let origin = <T as Config>::EnsureOrigin::generate_origin(sender.clone(), attester.clone());
 
 		let creation_op = Box::new(generate_base_public_credential_creation_op::<T>(
-			subject_id.clone().into(),
+			subject_id.clone().into().try_into().expect("Input conversion should not fail."),
 			claim_hash,
 			ctype_hash,
 			contents,
@@ -104,7 +104,7 @@ benchmarks! {
 		let origin = <T as Config>::EnsureOrigin::generate_origin(sender.clone(), attester.clone());
 
 		let creation_op = Box::new(generate_base_public_credential_creation_op::<T>(
-			subject_id.clone().into(),
+			subject_id.clone().into().try_into().expect("Input conversion should not fail."),
 			claim_hash,
 			ctype_hash,
 			contents,

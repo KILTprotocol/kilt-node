@@ -19,22 +19,18 @@
 use codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_runtime::RuntimeDebug;
-use sp_std::marker::PhantomData;
+use sp_std::vec::Vec;
 
 use kilt_asset_dids::AssetDid as AssetIdentifier;
-use public_credentials::{Config, Error, InputSubjectIdOf};
 
 #[cfg(feature = "runtime-benchmarks")]
 pub use benchmarks::*;
 
-/// Thin wrapper around the `AssetDid` type, that transform the parsing errors
-/// to errors for the public-credentials crate.
+/// Thin wrapper around the `AssetDid` type, that implements the required TryFrom<Vec<u8>> trait.
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
-#[scale_info(skip_type_params(T))]
-#[codec(mel_bound())]
-pub struct AssetDid<T>(AssetIdentifier, Option<PhantomData<T>>);
+pub struct AssetDid(AssetIdentifier);
 
-impl<T: Config> core::ops::Deref for AssetDid<T> {
+impl core::ops::Deref for AssetDid {
 	type Target = AssetIdentifier;
 
 	fn deref(&self) -> &Self::Target {
@@ -42,22 +38,22 @@ impl<T: Config> core::ops::Deref for AssetDid<T> {
 	}
 }
 
-impl<T: Config> TryFrom<InputSubjectIdOf<T>> for AssetDid<T> {
-	type Error = Error<T>;
+impl TryFrom<Vec<u8>> for AssetDid {
+	type Error = &'static str;
 
-	fn try_from(value: InputSubjectIdOf<T>) -> Result<Self, Self::Error> {
-		let asset = AssetIdentifier::from_utf8_encoded(&value[..]).map_err(|_| Error::<T>::InvalidInput)?;
-		Ok(Self(asset, None))
+	fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
+		let asset = AssetIdentifier::from_utf8_encoded(&value[..])
+			.map_err(|_| "Cannot convert provided input to a valid Asset DID.")?;
+		Ok(Self(asset))
 	}
 }
 
 #[cfg(feature = "std")]
-impl<T: Config> TryFrom<String> for AssetDid<T> {
-	type Error = Error<T>;
+impl TryFrom<String> for AssetDid {
+	type Error = &'static str;
 
 	fn try_from(value: String) -> Result<Self, Self::Error> {
-		let asset = AssetIdentifier::from_utf8_encoded(value.as_bytes()).map_err(|_| Error::<T>::InvalidInput)?;
-		Ok(Self(asset, None))
+		Self::try_from(value.into_bytes())
 	}
 }
 
@@ -70,29 +66,18 @@ mod benchmarks {
 
 	use kilt_asset_dids::{asset, chain};
 
-	impl<T: Config> From<AssetDid<T>> for InputSubjectIdOf<T> {
-		fn from(value: AssetDid<T>) -> Self {
+	impl From<AssetDid> for Vec<u8> {
+		fn from(value: AssetDid) -> Self {
 			// UTF-8 encode the asset DID (generates the string with the "did:asset:"
 			// prefix)
 			value
 				.to_string()
 				.as_bytes()
 				.to_vec()
-				.try_into()
-				.expect("Reverse conversion AssetDid -> InputSubjectId should never fail.")
 		}
 	}
 
-	impl<T: Config> TryFrom<Vec<u8>> for AssetDid<T> {
-		type Error = Error<T>;
-
-		fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
-			let asset = AssetIdentifier::from_utf8_encoded(&value[..]).map_err(|_| Error::<T>::InvalidInput)?;
-			Ok(Self(asset, None))
-		}
-	}
-
-	impl<T: Config> kilt_support::traits::GetWorstCase for AssetDid<T> {
+	impl kilt_support::traits::GetWorstCase for AssetDid {
 		fn worst_case() -> Self {
 			// Returns the worst case for an AssetDID, which is represented by the longest
 			// identifier according to the spec.

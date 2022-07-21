@@ -665,8 +665,7 @@ impl public_credentials::Config for Runtime {
 	type MaxSubjectIdLength = runtime_common::constants::public_credentials::MaxSubjectIdLength;
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
 	type Event = Event;
-	type InputError = public_credentials::Error<Self>;
-	type SubjectId = runtime_common::assets::AssetDid<Self>;
+	type SubjectId = runtime_common::assets::AssetDid;
 	type WeightInfo = weights::public_credentials::WeightInfo<Runtime>;
 }
 

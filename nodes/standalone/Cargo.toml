@@ -84,6 +84,7 @@ runtime-benchmarks = [
   "pallet-did-lookup/runtime-benchmarks",
   "pallet-referenda/runtime-benchmarks",
   "runtime-common/runtime-benchmarks",
+  "public-credentials/runtime-benchmarks",
 ]
 try-runtime = [
   "mashnet-node-runtime/try-runtime",
