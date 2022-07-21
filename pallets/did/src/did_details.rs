@@ -246,7 +246,7 @@ pub struct DidPublicKeyDetails<BlockNumber: MaxEncodedLen> {
 }
 
 /// The details associated to a DID identity.
-#[derive(Clone, Decode, Encode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
+#[derive(Clone, Decode, Encode, PartialEq, TypeInfo, MaxEncodedLen)]
 #[scale_info(skip_type_params(T))]
 #[codec(mel_bound())]
 
