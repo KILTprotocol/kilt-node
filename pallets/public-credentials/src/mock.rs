@@ -259,7 +259,6 @@ pub(crate) mod runtime {
 		type Deposit = ConstU128<{ 10 * MILLI_UNIT }>;
 		type EnsureOrigin = <Self as attestation::Config>::EnsureOrigin;
 		type Event = ();
-		type InputError = Error<Self>;
 		type MaxEncodedClaimsLength = ConstU32<500>;
 		type MaxSubjectIdLength = ConstU32<100>;
 		type OriginSuccess = <Self as attestation::Config>::OriginSuccess;

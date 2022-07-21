@@ -88,7 +88,6 @@ pub mod pallet {
 	/// Must match the definition of [<T as attestation::Config>::Currency].
 	pub(crate) type CurrencyOf<T> = <T as attestation::Config>::Currency;
 
-
 	/// The type of the credential subject input. It is bound in max length.
 	/// It is transformed inside the `add` operation into a [<T as
 	/// Config>::SubjectId].
@@ -130,14 +129,12 @@ pub mod pallet {
 		type EnsureOrigin: EnsureOrigin<Success = <Self as Config>::OriginSuccess, Self::Origin>;
 		/// The ubiquitous event type.
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
-		/// The error to return when the provided credential input is not valid.
-		type InputError: Into<DispatchError>;
 		/// The type of the origin when successfully converted from the outer
 		/// origin.
 		type OriginSuccess: CallSources<Self::AccountId, AttesterOf<Self>>;
 		/// The type of the credential subject ID after being parsed from the
 		/// raw attester-provided input.
-		type SubjectId: Parameter + MaxEncodedLen + TryFrom<InputSubjectIdOf<Self>, Error = Self::InputError>;
+		type SubjectId: Parameter + MaxEncodedLen + TryFrom<InputSubjectIdOf<Self>>;
 		/// The weight info.
 		type WeightInfo: WeightInfo;
 
@@ -273,7 +270,7 @@ pub mod pallet {
 			} = *credential;
 
 			// Try to decode subject ID to something structured
-			let subject = T::SubjectId::try_from(subject).map_err(|e| e.into())?;
+			let subject = T::SubjectId::try_from(subject).map_err(|_| Error::<T>::InvalidInput)?;
 
 			// Check that the same attestation has not already been issued previously
 			// (potentially to a different subject)
