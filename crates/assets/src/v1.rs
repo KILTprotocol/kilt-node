@@ -26,8 +26,18 @@ use core::str;
 
 use crate::*;
 
+/// The minimum length, including separator symbols, an asset DID can have
+/// according to the Asset DID specification.
+/// The minimum length is given by the length of the "did:asset:" prefix,
+/// plus the minimum length of a valid CAIP-2 chain ID, the minimum length of
+/// a valid CAIP-19 asset ID, and the separator symbol between the two.
 pub const MINIMUM_ASSET_DID_LENGTH: usize =
 	DID_ASSET_PREFIX.len() + MINIMUM_CHAIN_ID_LENGTH + 1 + MINIMUM_ASSET_ID_LENGTH;
+/// The maximum length, including separator symbols, an asset DID can have
+/// according to the Asset DID specification.
+/// The maximum length is given by the length of the "did:asset:" prefix,
+/// plus the maximum length of a valid CAIP-2 chain ID, the maximum length of
+/// a valid CAIP-19 asset ID, and the separator symbol between the two.
 pub const MAXIMUM_ASSET_DID_LENGTH: usize =
 	DID_ASSET_PREFIX.len() + MAXIMUM_CHAIN_ID_LENGTH + 1 + MAXIMUM_ASSET_ID_LENGTH;
 

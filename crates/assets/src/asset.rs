@@ -32,17 +32,27 @@ pub mod v1 {
 	use sp_core::U256;
 	use sp_std::{fmt::Display, vec::Vec};
 
+	/// The minimum length, including separator symbols, an asset ID can have
+	/// according to the minimum values defined by the CAIP-19 definition.
 	pub const MINIMUM_ASSET_ID_LENGTH: usize = MINIMUM_NAMESPACE_LENGTH + 1 + MINIMUM_REFERENCE_LENGTH;
+	/// The maximum length, including separator symbols, an asset ID can have
+	/// according to the minimum values defined by the CAIP-19 definition.
 	pub const MAXIMUM_ASSET_ID_LENGTH: usize =
 		MAXIMUM_NAMESPACE_LENGTH + 1 + MAXIMUM_REFERENCE_LENGTH + 1 + MAXIMUM_IDENTIFIER_LENGTH;
 
+	/// The minimum length of a valid asset ID namespace.
 	pub const MINIMUM_NAMESPACE_LENGTH: usize = 3;
+	/// The maximum length of a valid asset ID namespace.
 	pub const MAXIMUM_NAMESPACE_LENGTH: usize = 8;
 	const MAXIMUM_NAMESPACE_LENGTH_U32: u32 = MAXIMUM_NAMESPACE_LENGTH as u32;
+	/// The minimum length of a valid asset ID reference.
 	pub const MINIMUM_REFERENCE_LENGTH: usize = 1;
+	/// The maximum length of a valid asset ID reference.
 	pub const MAXIMUM_REFERENCE_LENGTH: usize = 64;
 	const MAXIMUM_REFERENCE_LENGTH_U32: u32 = MAXIMUM_REFERENCE_LENGTH as u32;
+	/// The minimum length of a valid asset ID identifier.
 	pub const MINIMUM_IDENTIFIER_LENGTH: usize = 1;
+	/// The maximum length of a valid asset ID reference.
 	pub const MAXIMUM_IDENTIFIER_LENGTH: usize = 78;
 	const MAXIMUM_IDENTIFIER_LENGTH_U32: u32 = MAXIMUM_IDENTIFIER_LENGTH as u32;
 
