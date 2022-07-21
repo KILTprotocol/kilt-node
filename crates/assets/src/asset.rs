@@ -112,7 +112,11 @@ pub mod v1 {
 				return Err(Error::InvalidFormat);
 			}
 
-			let (namespace, reference, identifier) = split_components(input);
+			let AssetComponents {
+				namespace,
+				reference,
+				identifier,
+			} = split_components(input);
 
 			match (namespace, reference, identifier) {
 				// "slip44:" assets -> https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-20.md
@@ -259,8 +263,7 @@ pub mod v1 {
 
 	/// Split the given input into its components, i.e., namespace, reference,
 	/// and identifier, if the proper separators are found.
-	#[allow(clippy::type_complexity)]
-	fn split_components(input: &[u8]) -> (Option<&[u8]>, Option<&[u8]>, Option<&[u8]>) {
+	fn split_components(input: &[u8]) -> AssetComponents {
 		let mut split = input.splitn(2, |c| *c == NAMESPACE_REFERENCE_SEPARATOR);
 		let (namespace, reference) = (split.next(), split.next());
 
@@ -274,7 +277,17 @@ pub mod v1 {
 			(reference, None)
 		};
 
-		(namespace, reference, identifier)
+		AssetComponents {
+			namespace,
+			reference,
+			identifier,
+		}
+	}
+
+	struct AssetComponents<'a> {
+		namespace: Option<&'a [u8]>,
+		reference: Option<&'a [u8]>,
+		identifier: Option<&'a [u8]>,
 	}
 
 	/// A Slip44 asset reference.
@@ -442,7 +455,11 @@ pub mod v1 {
 		where
 			I: AsRef<[u8]> + Into<Vec<u8>>,
 		{
-			let (namespace, reference, identifier) = split_components(input.as_ref());
+			let AssetComponents {
+				namespace,
+				reference,
+				identifier,
+			} = split_components(input.as_ref());
 
 			match (namespace, reference, identifier) {
 				(Some(namespace), Some(reference), identifier) => Ok(Self {
