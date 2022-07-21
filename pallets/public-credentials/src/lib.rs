@@ -100,7 +100,7 @@ pub mod pallet {
 	pub type BlockNumberOf<T> = <T as frame_system::Config>::BlockNumber;
 	pub type CredentialEntryOf<T> = CredentialEntry<BlockNumberOf<T>, AccountIdOf<T>, BalanceOf<T>>;
 	/// The type of account's balances.
-	pub type BalanceOf<T> = <CurrencyOf<T> as Currency<attestation::AccountIdOf<T>>>::Balance;
+	pub type BalanceOf<T> = <CurrencyOf<T> as Currency<AccountIdOf<T>>>::Balance;
 
 	/// The type of a public credential as the pallet expects it.
 	pub type InputCredentialOf<T> = Credential<
