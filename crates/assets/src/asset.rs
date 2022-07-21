@@ -412,7 +412,7 @@ pub mod v1 {
 			check_identifier_length_bounds(input)?;
 
 			input.iter().try_for_each(|c| {
-				if !matches!(c, b'0'..=b'9') {
+				if !(b'0'..=b'9').contains(c) {
 					Err(IdentifierError::InvalidFormat)
 				} else {
 					Ok(())
