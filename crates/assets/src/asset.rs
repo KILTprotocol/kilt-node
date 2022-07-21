@@ -360,17 +360,16 @@ pub mod v1 {
 			I: AsRef<[u8]> + Into<Vec<u8>>,
 		{
 			let input = input.as_ref();
-			match input {
-				// If the prefix is "0x" => parse the address
-				[b'0', b'x', contract_address @ ..] => {
-					check_reference_length_bounds(contract_address)?;
+			// If the prefix is "0x" => parse the address
+			if let [b'0', b'x', contract_address @ ..] = input {
+				check_reference_length_bounds(contract_address)?;
 
-					let decoded = hex::decode(contract_address).map_err(|_| ReferenceError::InvalidFormat)?;
-					let inner: [u8; 20] = decoded.try_into().map_err(|_| ReferenceError::InvalidFormat)?;
-					Ok(Self(inner))
-				}
-				// Otherwise fail
-				_ => Err(ReferenceError::InvalidFormat.into()),
+				let decoded = hex::decode(contract_address).map_err(|_| ReferenceError::InvalidFormat)?;
+				let inner: [u8; 20] = decoded.try_into().map_err(|_| ReferenceError::InvalidFormat)?;
+				Ok(Self(inner))
+			// Otherwise fail
+			} else {
+				Err(ReferenceError::InvalidFormat.into())
 			}
 		}
 	}
