@@ -325,6 +325,7 @@ mod v1 {
 			// Max value for 32-digit decimal values (used for EIP chains so far).
 			// TODO: This could be enforced at compilation time once constraints on generics
 			// will be available.
+			// https://rust-lang.github.io/rfcs/2000-const-generics.html
 			if value <= 99999999999999999999999999999999 {
 				Ok(Self(value))
 			} else {
