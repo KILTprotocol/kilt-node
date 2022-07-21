@@ -7,12 +7,12 @@ repository = "https://github.com/KILTprotocol/mashnet-node"
 version = "1.7.0"
 
 [dependencies]
+# External dependencies
 codec = {package = "parity-scale-codec", version = "3.1.5", default-features = false}
 
+# Substrate dependencies
 sp-api = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.25", default-features = false}
 sp-std = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.25", default-features = false}
-
-public-credentials = {path = "../../../pallets/public-credentials", default-features = false}
 
 [features]
 default = ["std"]
@@ -21,6 +21,4 @@ std = [
 
 	"sp-api/std",
 	"sp-std/std",
-
-  "public-credentials/std",
 ]

@@ -134,8 +134,9 @@ pub mod pallet {
 		type OriginSuccess: CallSources<Self::AccountId, AttesterOf<Self>>;
 		/// The type of the credential subject ID after being parsed from the
 		/// raw attester-provided input.
-		// Vec<u8> instead of BoundedVec<u8, ...> because otherwise it becomes impossible for
-		// runtime-common to be independent of the `T: Config` constraint.
+		// Vec<u8> instead of BoundedVec<u8, ...> because otherwise it becomes
+		// impossible for runtime-common to be independent of the `T: Config`
+		// constraint.
 		type SubjectId: Parameter + MaxEncodedLen + TryFrom<Vec<u8>>;
 		/// The weight info.
 		type WeightInfo: WeightInfo;

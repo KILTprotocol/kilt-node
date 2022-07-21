@@ -12,7 +12,7 @@ for features in "--features default" "--all-features" "--features runtime-benchm
 		else
 			echo -n "[fail] "
 		end
-		echo cargo check -p $package (echo $features | string split " ")
+		echo cargo check --all-targets -p $package (echo $features | string split " ")
 	end
 end
 
@@ -24,7 +24,7 @@ for features in "--features default" "--all-features" "--features runtime-benchm
 		else
 			echo -n "[fail] "
 		end
-		echo cargo test -p $package (echo $features | string split " ")
+		echo cargo test --all-targets -p $package (echo $features | string split " ")
 	end
 end
 

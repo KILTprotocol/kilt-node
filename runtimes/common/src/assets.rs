@@ -26,7 +26,8 @@ use kilt_asset_dids::AssetDid as AssetIdentifier;
 #[cfg(feature = "runtime-benchmarks")]
 pub use benchmarks::*;
 
-/// Thin wrapper around the `AssetDid` type, that implements the required TryFrom<Vec<u8>> trait.
+/// Thin wrapper around the `AssetDid` type, that implements the required
+/// TryFrom<Vec<u8>> trait.
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
 pub struct AssetDid(AssetIdentifier);
 
@@ -70,10 +71,7 @@ mod benchmarks {
 		fn from(value: AssetDid) -> Self {
 			// UTF-8 encode the asset DID (generates the string with the "did:asset:"
 			// prefix)
-			value
-				.to_string()
-				.as_bytes()
-				.to_vec()
+			value.to_string().as_bytes().to_vec()
 		}
 	}
 

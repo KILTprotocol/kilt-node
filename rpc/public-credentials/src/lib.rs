@@ -33,6 +33,8 @@ use sp_runtime::{generic::BlockId, traits::Block as BlockT};
 
 #[rpc(client, server)]
 pub trait PublicCredentialsApi<BlockHash, OuterSubjectId, OuterCredentialId, OuterCredentialEntry> {
+	/// Return a credential that matches the provided root hash and issued to
+	/// the provided subject, if found.
 	#[method(name = "get_credential")]
 	fn get_credential(
 		&self,
@@ -41,6 +43,8 @@ pub trait PublicCredentialsApi<BlockHash, OuterSubjectId, OuterCredentialId, Out
 		at: Option<BlockHash>,
 	) -> RpcResult<Option<OuterCredentialEntry>>;
 
+	/// Return all the credentials issued to the provided subject.
+	/// The result is a vector of (credential root hash, credential entry).
 	#[method(name = "get_credentials")]
 	fn get_credentials(
 		&self,

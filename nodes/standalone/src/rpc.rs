@@ -27,14 +27,16 @@ use std::sync::Arc;
 
 use jsonrpsee::RpcModule;
 
-use pallet_did_lookup::linkable_account::LinkableAccountId;
-use public_credentials::CredentialEntry;
-use runtime_common::{AccountId, Balance, Block, BlockNumber, DidIdentifier, Hash, Index};
 pub use sc_rpc_api::DenyUnsafe;
+
 use sc_transaction_pool_api::TransactionPool;
 use sp_api::ProvideRuntimeApi;
 use sp_block_builder::BlockBuilder;
 use sp_blockchain::{Error as BlockChainError, HeaderBackend, HeaderMetadata};
+
+use pallet_did_lookup::linkable_account::LinkableAccountId;
+use public_credentials::CredentialEntry;
+use runtime_common::{AccountId, Balance, Block, BlockNumber, DidIdentifier, Hash, Index};
 
 /// Full client dependencies.
 pub struct FullDeps<C, P> {
@@ -89,11 +91,17 @@ where
 		PublicCredentialsQuery::<
 			C,
 			Block,
+			// Input subject ID
 			String,
+			// Runtime subject ID
 			runtime_common::assets::AssetDid,
+			// Input/output credential ID
 			Hash,
+			// Runtime credential ID
 			Hash,
+			// Input/output credential entry
 			node_common::OuterCredentialEntry<BlockNumber, AccountId, Balance>,
+			// Runtime credential entry
 			CredentialEntry<BlockNumber, AccountId, Balance>,
 		>::new(client)
 		.into_rpc(),

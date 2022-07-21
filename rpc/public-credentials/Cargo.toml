@@ -6,22 +6,27 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-codec = { package = "parity-scale-codec", version = "3.1.5" }
+# Client dependencies
 jsonrpsee = { version = "0.14.0", features = ["server", "macros"] }
 
-public-credentials-runtime-api = {version = "1.7.0", path = "./runtime-api"}
+# External runtime dependencies
+codec = { package = "parity-scale-codec", version = "3.1.5" }
 
+# Substrate runtime dependencies
 sp-api = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.25"}
 sp-blockchain = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.25"}
 sp-runtime = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.25"}
+
+# Internal runtime dependencies
+public-credentials-runtime-api = {version = "1.7.0", path = "./runtime-api"}
 
 [features]
 default = ["std"]
 std = [
   "codec/std",
 
-  "public-credentials-runtime-api/std",
-
   "sp-api/std",
   "sp-runtime/std",
+
+  "public-credentials-runtime-api/std",
 ]

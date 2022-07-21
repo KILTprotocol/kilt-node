@@ -3686,7 +3686,6 @@ version = "1.7.0"
 dependencies = [
  "frame-support",
  "frame-system",
- "pallet-balances",
  "parity-scale-codec",
  "scale-info",
  "serde",
@@ -4639,7 +4638,6 @@ dependencies = [
  "frame-system",
  "futures 0.3.21",
  "jsonrpsee",
- "kilt-support",
  "log",
  "mashnet-node-runtime",
  "node-common",
@@ -8480,13 +8478,11 @@ dependencies = [
  "frame-support",
  "frame-system",
  "hex",
- "kilt-asset-dids",
  "kilt-support",
  "log",
  "pallet-balances",
  "parity-scale-codec",
  "scale-info",
- "serde",
  "sp-core",
  "sp-io",
  "sp-keystore",
@@ -8511,7 +8507,6 @@ name = "public-credentials-runtime-api"
 version = "1.7.0"
 dependencies = [
  "parity-scale-codec",
- "public-credentials",
  "sp-api",
  "sp-std",
 ]

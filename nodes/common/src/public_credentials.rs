@@ -32,6 +32,9 @@ use public_credentials::CredentialEntry;
 	Balance: std::str::FromStr,
 	AccountId: Deserialize<'de>",
 ))]
+// Thin wrapper around a runtime credential entry as specified in the
+// `public-credentials` pallet. This wrapper implements all the
+// (de-)serialization logic.
 pub struct OuterCredentialEntry<BlockNumber, AccountId, Balance> {
 	pub block_number: BlockNumber,
 	pub deposit: Deposit<AccountId, Balance>,

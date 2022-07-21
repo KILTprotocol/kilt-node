@@ -104,7 +104,7 @@ pub(crate) mod runtime {
 	impl TryFrom<Vec<u8>> for TestSubjectId {
 		type Error = Error<Test>;
 
-		fn try_from(value:Vec<u8>) -> Result<Self, Self::Error> {
+		fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
 			let inner: [u8; 32] = value.try_into().map_err(|_| Error::<Test>::InvalidInput)?;
 			Ok(Self(inner))
 		}

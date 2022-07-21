@@ -41,6 +41,22 @@ pub struct Deposit<Account, Balance> {
 	pub amount: Balance,
 }
 
+pub fn reserve_deposit<Account, Currency: ReservableCurrency<Account>>(
+	account: Account,
+	deposit_amount: Currency::Balance,
+) -> Result<Deposit<Account, Currency::Balance>, DispatchError> {
+	Currency::reserve(&account, deposit_amount)?;
+	Ok(Deposit {
+		owner: account,
+		amount: deposit_amount,
+	})
+}
+
+pub fn free_deposit<Account, Currency: ReservableCurrency<Account>>(deposit: &Deposit<Account, Currency::Balance>) {
+	let err_amount = Currency::unreserve(&deposit.owner, deposit.amount);
+	debug_assert!(err_amount.is_zero());
+}
+
 // This code was copied from https://github.com/paritytech/substrate/blob/ded44948e2d5a398abcb4e342b0513cb690961bb/frame/transaction-payment/src/types.rs#L113
 // It is needed because u128 cannot be serialized by serde out of the box.
 #[cfg(feature = "std")]
@@ -93,20 +109,4 @@ mod tests {
 		// should not panic
 		serde_json::to_value(&deposit).unwrap();
 	}
-}
-
-pub fn reserve_deposit<Account, Currency: ReservableCurrency<Account>>(
-	account: Account,
-	deposit_amount: Currency::Balance,
-) -> Result<Deposit<Account, Currency::Balance>, DispatchError> {
-	Currency::reserve(&account, deposit_amount)?;
-	Ok(Deposit {
-		owner: account,
-		amount: deposit_amount,
-	})
-}
-
-pub fn free_deposit<Account, Currency: ReservableCurrency<Account>>(deposit: &Deposit<Account, Currency::Balance>) {
-	let err_amount = Currency::unreserve(&deposit.owner, deposit.amount);
-	debug_assert!(err_amount.is_zero());
 }
