@@ -16,78 +16,12 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::sp_runtime::RuntimeDebug;
-
-/// An error in the asset ID parsing logic.
-#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug)]
-pub enum AssetIdError {
-	/// An error in the asset namespace parsing logic.
-	Namespace(NamespaceError),
-	/// An error in the asset reference parsing logic.
-	Reference(ReferenceError),
-	/// An error in the asset identifier parsing logic.
-	Identifier(IdentifierError),
-	/// A generic error not belonging to any of the other categories.
-	InvalidFormat,
-}
-
-/// An error in the asset namespace parsing logic.
-#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug)]
-pub enum NamespaceError {
-	/// Namespace too long.
-	TooLong,
-	/// Namespace too short.
-	TooShort,
-	/// A generic error not belonging to any of the other categories.
-	InvalidFormat,
-}
-
-/// An error in the asset reference parsing logic.
-#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug)]
-pub enum ReferenceError {
-	/// Reference too long.
-	TooLong,
-	/// Reference too short.
-	TooShort,
-	/// A generic error not belonging to any of the other categories.
-	InvalidFormat,
-}
-
-/// An error in the asset identifier parsing logic.
-#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug)]
-pub enum IdentifierError {
-	/// Identifier too long.
-	TooLong,
-	/// Identifier too short.
-	TooShort,
-	/// A generic error not belonging to any of the other categories.
-	InvalidFormat,
-}
-
-impl From<NamespaceError> for AssetIdError {
-	fn from(err: NamespaceError) -> Self {
-		Self::Namespace(err)
-	}
-}
-
-impl From<ReferenceError> for AssetIdError {
-	fn from(err: ReferenceError) -> Self {
-		Self::Reference(err)
-	}
-}
-
-impl From<IdentifierError> for AssetIdError {
-	fn from(err: IdentifierError) -> Self {
-		Self::Identifier(err)
-	}
-}
-
 // Exported types. This will always only re-export the latest version by
 // default.
 pub use v1::*;
 
 pub mod v1 {
-	use super::{AssetIdError, IdentifierError, NamespaceError, ReferenceError};
+	use crate::errors::asset::{Error, IdentifierError, NamespaceError, ReferenceError};
 
 	use codec::{alloc::string::ToString, Decode, Encode, MaxEncodedLen};
 	use scale_info::TypeInfo;
@@ -158,14 +92,14 @@ pub mod v1 {
 	impl AssetId {
 		/// Try to parse an `AssetId` instance from the provided UTF8-encoded
 		/// input.
-		pub fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetIdError>
+		pub fn from_utf8_encoded<I>(input: I) -> Result<Self, Error>
 		where
 			I: AsRef<[u8]> + Into<Vec<u8>>,
 		{
 			let input = input.as_ref();
 			let input_length = input.len();
 			if !(MINIMUM_ASSET_ID_LENGTH..=MAXIMUM_ASSET_ID_LENGTH).contains(&input_length) {
-				return Err(AssetIdError::InvalidFormat);
+				return Err(Error::InvalidFormat);
 			}
 
 			let (namespace, reference, identifier) = split_components(input);
@@ -174,7 +108,7 @@ pub mod v1 {
 				// "slip44:" assets -> https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-20.md
 				(Some(SLIP44_NAMESPACE), Some(slip44_reference), identifier) => {
 					if identifier.is_some() {
-						Err(AssetIdError::InvalidFormat)
+						Err(Error::InvalidFormat)
 					} else {
 						Slip44Reference::from_utf8_encoded(slip44_reference).map(Self::Slip44)
 					}
@@ -182,7 +116,7 @@ pub mod v1 {
 				// "erc20:" assets -> https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-21.md
 				(Some(ERC20_NAMESPACE), Some(erc20_reference), identifier) => {
 					if identifier.is_some() {
-						Err(AssetIdError::InvalidFormat)
+						Err(Error::InvalidFormat)
 					} else {
 						EvmSmartContractFungibleReference::from_utf8_encoded(erc20_reference).map(Self::Erc20)
 					}
@@ -343,7 +277,7 @@ pub mod v1 {
 	impl Slip44Reference {
 		/// Parse a UTF8-encoded decimal Slip44 asset reference, failing if the
 		/// input string is not valid.
-		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetIdError>
+		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, Error>
 		where
 			I: AsRef<[u8]> + Into<Vec<u8>>,
 		{
@@ -358,7 +292,7 @@ pub mod v1 {
 	}
 
 	impl TryFrom<U256> for Slip44Reference {
-		type Error = AssetIdError;
+		type Error = Error;
 
 		fn try_from(value: U256) -> Result<Self, Self::Error> {
 			// Max value for 64-digit decimal values (used for Slip44 references so far).
@@ -397,7 +331,7 @@ pub mod v1 {
 	impl EvmSmartContractFungibleReference {
 		/// Parse a UTF8-encoded smart contract HEX address (including the `0x`
 		/// prefix), failing if the input string is not valid.
-		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetIdError>
+		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, Error>
 		where
 			I: AsRef<[u8]> + Into<Vec<u8>>,
 		{
@@ -447,7 +381,7 @@ pub mod v1 {
 	impl EvmSmartContractNonFungibleIdentifier {
 		/// Parse a UTF8-encoded smart contract asset identifier, failing if the
 		/// input string is not valid.
-		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetIdError>
+		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, Error>
 		where
 			I: AsRef<[u8]> + Into<Vec<u8>>,
 		{
@@ -494,7 +428,7 @@ pub mod v1 {
 	impl GenericAssetId {
 		/// Parse a generic UTF8-encoded asset ID, failing if the input does not
 		/// respect the CAIP-19 requirements.
-		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetIdError>
+		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, Error>
 		where
 			I: AsRef<[u8]> + Into<Vec<u8>>,
 		{
@@ -508,7 +442,7 @@ pub mod v1 {
 					// successful cases.
 					id: identifier.map_or(Ok(None), |id| GenericAssetIdentifier::from_utf8_encoded(id).map(Some))?,
 				}),
-				_ => Err(AssetIdError::InvalidFormat),
+				_ => Err(Error::InvalidFormat),
 			}
 		}
 	}
@@ -523,7 +457,7 @@ pub mod v1 {
 	impl GenericAssetNamespace {
 		/// Parse a generic UTF8-encoded asset namespace, failing if the input
 		/// does not respect the CAIP-19 requirements.
-		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetIdError>
+		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, Error>
 		where
 			I: AsRef<[u8]> + Into<Vec<u8>>,
 		{
@@ -565,7 +499,7 @@ pub mod v1 {
 	impl GenericAssetReference {
 		/// Parse a generic UTF8-encoded asset reference, failing if the input
 		/// does not respect the CAIP-19 requirements.
-		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetIdError>
+		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, Error>
 		where
 			I: AsRef<[u8]> + Into<Vec<u8>>,
 		{
@@ -607,7 +541,7 @@ pub mod v1 {
 	impl GenericAssetIdentifier {
 		/// Parse a generic UTF8-encoded asset identifier, failing if the input
 		/// does not respect the CAIP-19 requirements.
-		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetIdError>
+		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, Error>
 		where
 			I: AsRef<[u8]> + Into<Vec<u8>>,
 		{

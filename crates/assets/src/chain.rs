@@ -16,59 +16,12 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::sp_runtime::RuntimeDebug;
-
-/// An error in the chain ID parsing logic.
-#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug)]
-pub enum ChainIdError {
-	/// An error in the chain namespace parsing logic.
-	Namespace(NamespaceError),
-	/// An error in the chain reference parsing logic.
-	Reference(ReferenceError),
-	/// A generic error not belonging to any of the other categories.
-	InvalidFormat,
-}
-
-/// An error in the chain namespace parsing logic.
-#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug)]
-pub enum NamespaceError {
-	/// Namespace too long.
-	TooLong,
-	/// Namespace too short.
-	TooShort,
-	/// A generic error not belonging to any of the other categories.
-	InvalidFormat,
-}
-
-/// An error in the chain reference parsing logic.
-#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug)]
-pub enum ReferenceError {
-	/// Reference too long.
-	TooLong,
-	/// Reference too short.
-	TooShort,
-	/// A generic error not belonging to any of the other categories.
-	InvalidFormat,
-}
-
-impl From<NamespaceError> for ChainIdError {
-	fn from(err: NamespaceError) -> Self {
-		Self::Namespace(err)
-	}
-}
-
-impl From<ReferenceError> for ChainIdError {
-	fn from(err: ReferenceError) -> Self {
-		Self::Reference(err)
-	}
-}
-
 // Exported types. This will always only re-export the latest version by
 // default.
 pub use v1::*;
 
 mod v1 {
-	use super::{ChainIdError, NamespaceError, ReferenceError};
+	use crate::errors::chain::{Error, NamespaceError, ReferenceError};
 
 	use base58::{FromBase58, ToBase58};
 	use hex_literal::hex;
@@ -197,14 +150,14 @@ mod v1 {
 	impl ChainId {
 		/// Try to parse a `ChainId` instance from the provided UTF8-encoded
 		/// input, according to the AssetDID method rules.
-		pub fn from_utf8_encoded<I>(input: I) -> Result<Self, ChainIdError>
+		pub fn from_utf8_encoded<I>(input: I) -> Result<Self, Error>
 		where
 			I: AsRef<[u8]> + Into<Vec<u8>>,
 		{
 			let input = input.as_ref();
 			let input_length = input.len();
 			if !(MINIMUM_CHAIN_ID_LENGTH..=MAXIMUM_CHAIN_ID_LENGTH).contains(&input_length) {
-				return Err(ChainIdError::InvalidFormat);
+				return Err(Error::InvalidFormat);
 			}
 
 			let (namespace, reference) = split_components(input);
@@ -343,7 +296,7 @@ mod v1 {
 	impl Eip155Reference {
 		/// Parse a UTF8-encoded EIP155 chain reference, failing if the input
 		/// string is not valid.
-		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, ChainIdError>
+		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, Error>
 		where
 			I: AsRef<[u8]> + Into<Vec<u8>>,
 		{
@@ -358,7 +311,7 @@ mod v1 {
 	}
 
 	impl TryFrom<u128> for Eip155Reference {
-		type Error = ChainIdError;
+		type Error = Error;
 
 		fn try_from(value: u128) -> Result<Self, Self::Error> {
 			// Max value for 32-digit decimal values (used for EIP chains so far).
@@ -420,7 +373,7 @@ mod v1 {
 	impl GenesisHexHash32Reference {
 		/// Parse a UTF8-encoded HEX chain reference, failing if the input
 		/// string is not valid.
-		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, ChainIdError>
+		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, Error>
 		where
 			I: AsRef<[u8]> + Into<Vec<u8>>,
 		{
@@ -463,7 +416,7 @@ mod v1 {
 	impl GenesisBase58Hash32Reference {
 		/// Parse a UTF8-encoded Base58 chain reference, failing if the input
 		/// string is not valid.
-		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, ChainIdError>
+		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, Error>
 		where
 			I: AsRef<[u8]> + Into<Vec<u8>>,
 		{
@@ -498,7 +451,7 @@ mod v1 {
 	impl GenericChainId {
 		/// Parse a generic UTF8-encoded chain ID, failing if the input does not
 		/// respect the CAIP-2 requirements.
-		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, ChainIdError>
+		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, Error>
 		where
 			I: AsRef<[u8]> + Into<Vec<u8>>,
 		{
@@ -509,7 +462,7 @@ mod v1 {
 					namespace: GenericChainNamespace::from_utf8_encoded(namespace)?,
 					reference: GenericChainReference::from_utf8_encoded(reference)?,
 				}),
-				_ => Err(ChainIdError::InvalidFormat),
+				_ => Err(Error::InvalidFormat),
 			}
 		}
 	}
@@ -524,7 +477,7 @@ mod v1 {
 	impl GenericChainNamespace {
 		/// Parse a generic UTF8-encoded chain namespace, failing if the input
 		/// does not respect the CAIP-2 requirements.
-		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, ChainIdError>
+		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, Error>
 		where
 			I: AsRef<[u8]> + Into<Vec<u8>>,
 		{
@@ -566,7 +519,7 @@ mod v1 {
 	impl GenericChainReference {
 		/// Parse a generic UTF8-encoded chain reference, failing if the input
 		/// does not respect the CAIP-2 requirements.
-		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, ChainIdError>
+		pub(crate) fn from_utf8_encoded<I>(input: I) -> Result<Self, Error>
 		where
 			I: AsRef<[u8]> + Into<Vec<u8>>,
 		{

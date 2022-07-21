@@ -34,29 +34,6 @@ pub const MAXIMUM_ASSET_DID_LENGTH: usize =
 const DID_ASSET_PREFIX: &[u8] = b"did:asset:";
 const CHAIN_ASSET_SEPARATOR: u8 = b'.';
 
-/// An error in the Asset DID parsing logic.
-#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug)]
-pub enum AssetDidError {
-	/// An error in the chain ID parsing logic.
-	ChainId(ChainIdError),
-	/// An error in the asset ID parsing logic.
-	AssetId(AssetIdError),
-	/// A generic error not belonging to any of the other categories.
-	InvalidFormat,
-}
-
-impl From<ChainIdError> for AssetDidError {
-	fn from(err: ChainIdError) -> Self {
-		Self::ChainId(err)
-	}
-}
-
-impl From<AssetIdError> for AssetDidError {
-	fn from(err: AssetIdError) -> Self {
-		Self::AssetId(err)
-	}
-}
-
 /// An Asset DID as specified in the Asset DID method specification.
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
 pub struct AssetDid {
