@@ -23,7 +23,7 @@ pub use v1::*;
 pub mod v1 {
 	use crate::errors::asset::{Error, IdentifierError, NamespaceError, ReferenceError};
 
-	use codec::{alloc::string::ToString, Decode, Encode, MaxEncodedLen};
+	use codec::{Decode, Encode, MaxEncodedLen};
 	use scale_info::TypeInfo;
 
 	use core::{format_args, str};
@@ -171,68 +171,70 @@ pub mod v1 {
 
 	impl Display for AssetId {
 		fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-			let (namespace, reference, identifier) = {
-				match self {
-					Self::Slip44(reference) => (
-						format_args!(
-							"{}",
-							str::from_utf8(SLIP44_NAMESPACE)
-								.expect("Conversion of Slip44 namespace to string should never fail.")
-						)
-						.to_string(),
-						reference.to_string(),
-						None,
-					),
-					Self::Erc20(reference) => (
-						format_args!(
-							"{}",
-							str::from_utf8(ERC20_NAMESPACE)
-								.expect("Conversion of Erc20 namespace to string should never fail.")
-						)
-						.to_string(),
-						reference.to_string(),
-						None,
-					),
-					Self::Erc721(reference) => (
-						format_args!(
-							"{}",
-							str::from_utf8(ERC721_NAMESPACE)
-								.expect("Conversion of Erc721 namespace to string should never fail.")
-						)
-						.to_string(),
-						reference.0.to_string(),
-						reference.1.as_ref().map(|id| id.to_string()),
-					),
-					Self::Erc1155(reference) => (
-						format_args!(
-							"{}",
-							str::from_utf8(ERC1155_NAMESPACE)
-								.expect("Conversion of Erc1155 namespace to string should never fail.")
-						)
-						.to_string(),
-						reference.0.to_string(),
-						reference.1.as_ref().map(|id| id.to_string()),
-					),
-					Self::Generic(generic) => (
-						generic.namespace.to_string(),
-						generic.reference.to_string(),
-						generic.id.as_ref().map(|id| id.to_string()),
-					),
+			match self {
+				Self::Slip44(reference) => {
+					write!(
+						f,
+						"{}",
+						str::from_utf8(SLIP44_NAMESPACE)
+							.expect("Conversion of Slip44 namespace to string should never fail.")
+					)?;
+					write!(f, "{}", char::from(NAMESPACE_REFERENCE_SEPARATOR))?;
+					reference.fmt(f)?;
 				}
-			};
-			let identifier = if let Some(id) = identifier {
-				format_args!("{}{}", char::from(REFERENCE_IDENTIFIER_SEPARATOR), id).to_string()
-			} else {
-				"".to_string()
-			};
-			write!(
-				f,
-				"{}{}{}{}",
-				namespace,
-				char::from(NAMESPACE_REFERENCE_SEPARATOR),
-				reference,
-				identifier
-			)
+				Self::Erc20(reference) => {
+					write!(
+						f,
+						"{}",
+						str::from_utf8(ERC20_NAMESPACE)
+							.expect("Conversion of Erc20 namespace to string should never fail.")
+					)?;
+					write!(f, "{}", char::from(NAMESPACE_REFERENCE_SEPARATOR))?;
+					reference.fmt(f)?;
+				}
+				Self::Erc721(EvmSmartContractNonFungibleReference(reference, identifier)) => {
+					write!(
+						f,
+						"{}",
+						str::from_utf8(ERC721_NAMESPACE)
+							.expect("Conversion of Erc721 namespace to string should never fail.")
+					)?;
+					write!(f, "{}", char::from(NAMESPACE_REFERENCE_SEPARATOR))?;
+					reference.fmt(f)?;
+					if let Some(id) = identifier {
+						write!(f, "{}", char::from(REFERENCE_IDENTIFIER_SEPARATOR))?;
+						id.fmt(f)?;
+					}
+				}
+				Self::Erc1155(EvmSmartContractNonFungibleReference(reference, identifier)) => {
+					write!(
+						f,
+						"{}",
+						str::from_utf8(ERC1155_NAMESPACE)
+							.expect("Conversion of Erc1155 namespace to string should never fail.")
+					)?;
+					write!(f, "{}", char::from(NAMESPACE_REFERENCE_SEPARATOR))?;
+					reference.fmt(f)?;
+					if let Some(id) = identifier {
+						write!(f, "{}", char::from(REFERENCE_IDENTIFIER_SEPARATOR))?;
+						id.fmt(f)?;
+					}
+				}
+				Self::Generic(GenericAssetId {
+					namespace,
+					reference,
+					id,
+				}) => {
+					namespace.fmt(f)?;
+					write!(f, "{}", char::from(NAMESPACE_REFERENCE_SEPARATOR))?;
+					reference.fmt(f)?;
+					if let Some(identifier) = id {
+						write!(f, "{}", char::from(REFERENCE_IDENTIFIER_SEPARATOR))?;
+						identifier.fmt(f)?;
+					}
+				}
+			}
+			Ok(())
 		}
 	}
 

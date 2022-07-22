@@ -28,7 +28,7 @@ mod v1 {
 
 	use core::str;
 
-	use codec::{alloc::string::ToString, Decode, Encode, MaxEncodedLen};
+	use codec::{Decode, Encode, MaxEncodedLen};
 	use scale_info::TypeInfo;
 
 	use frame_support::{sp_runtime::RuntimeDebug, traits::ConstU32, BoundedVec};
@@ -193,54 +193,54 @@ mod v1 {
 
 	impl Display for ChainId {
 		fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-			let (namespace, reference) = {
-				match self {
-					Self::Bip122(reference) => (
-						format_args!(
-							"{}",
-							str::from_utf8(BIP122_NAMESPACE)
-								.expect("Conversion of Bip122 namespace to string should never fail.")
-						)
-						.to_string(),
-						reference.to_string(),
-					),
-					Self::Eip155(reference) => (
-						format_args!(
-							"{}",
-							str::from_utf8(EIP155_NAMESPACE)
-								.expect("Conversion of Eip155 namespace to string should never fail.")
-						)
-						.to_string(),
-						reference.to_string(),
-					),
-					Self::Dotsama(reference) => (
-						format_args!(
-							"{}",
-							str::from_utf8(DOTSAMA_NAMESPACE)
-								.expect("Conversion of Dotsama namespace to string should never fail.")
-						)
-						.to_string(),
-						reference.to_string(),
-					),
-					Self::Solana(reference) => (
-						format_args!(
-							"{}",
-							str::from_utf8(SOLANA_NAMESPACE)
-								.expect("Conversion of Solana namespace to string should never fail.")
-						)
-						.to_string(),
-						reference.to_string(),
-					),
-					Self::Generic(generic) => (generic.namespace.to_string(), generic.reference.to_string()),
+			match self {
+				Self::Bip122(reference) => {
+					write!(
+						f,
+						"{}",
+						str::from_utf8(BIP122_NAMESPACE)
+							.expect("Conversion of Bip122 namespace to string should never fail.")
+					)?;
+					write!(f, "{}", char::from(NAMESPACE_REFERENCE_SEPARATOR))?;
+					reference.fmt(f)?;
 				}
-			};
-			write!(
-				f,
-				"{}{}{}",
-				namespace,
-				char::from(NAMESPACE_REFERENCE_SEPARATOR),
-				reference
-			)
+				Self::Eip155(reference) => {
+					write!(
+						f,
+						"{}",
+						str::from_utf8(EIP155_NAMESPACE)
+							.expect("Conversion of Eip155 namespace to string should never fail.")
+					)?;
+					write!(f, "{}", char::from(NAMESPACE_REFERENCE_SEPARATOR))?;
+					reference.fmt(f)?;
+				}
+				Self::Dotsama(reference) => {
+					write!(
+						f,
+						"{}",
+						str::from_utf8(DOTSAMA_NAMESPACE)
+							.expect("Conversion of Dotsama namespace to string should never fail.")
+					)?;
+					write!(f, "{}", char::from(NAMESPACE_REFERENCE_SEPARATOR))?;
+					reference.fmt(f)?;
+				}
+				Self::Solana(reference) => {
+					write!(
+						f,
+						"{}",
+						str::from_utf8(SOLANA_NAMESPACE)
+							.expect("Conversion of Solana namespace to string should never fail.")
+					)?;
+					write!(f, "{}", char::from(NAMESPACE_REFERENCE_SEPARATOR))?;
+					reference.fmt(f)?;
+				}
+				Self::Generic(GenericChainId { namespace, reference }) => {
+					namespace.fmt(f)?;
+					write!(f, "{}", char::from(NAMESPACE_REFERENCE_SEPARATOR))?;
+					reference.fmt(f)?;
+				}
+			}
+			Ok(())
 		}
 	}
 
