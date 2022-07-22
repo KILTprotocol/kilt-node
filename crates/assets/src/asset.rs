@@ -109,6 +109,12 @@ pub mod v1 {
 			let input = input.as_ref();
 			let input_length = input.len();
 			if !(MINIMUM_ASSET_ID_LENGTH..=MAXIMUM_ASSET_ID_LENGTH).contains(&input_length) {
+				log::trace!(
+					"Length of provided input {} is not included in the inclusive range [{},{}]",
+					input_length,
+					MINIMUM_ASSET_ID_LENGTH,
+					MAXIMUM_ASSET_ID_LENGTH
+				);
 				return Err(Error::InvalidFormat);
 			}
 
@@ -122,6 +128,7 @@ pub mod v1 {
 				// "slip44:" assets -> https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-20.md
 				(Some(SLIP44_NAMESPACE), Some(slip44_reference), identifier) => {
 					if identifier.is_some() {
+						log::trace!("Slip44 namespace does not accept an asset identifier.");
 						Err(Error::InvalidFormat)
 					} else {
 						Slip44Reference::from_utf8_encoded(slip44_reference).map(Self::Slip44)
@@ -130,6 +137,7 @@ pub mod v1 {
 				// "erc20:" assets -> https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-21.md
 				(Some(ERC20_NAMESPACE), Some(erc20_reference), identifier) => {
 					if identifier.is_some() {
+						log::trace!("Erc20 namespace does not accept an asset identifier.");
 						Err(Error::InvalidFormat)
 					} else {
 						EvmSmartContractFungibleReference::from_utf8_encoded(erc20_reference).map(Self::Erc20)
@@ -307,8 +315,14 @@ pub mod v1 {
 			let input = input.as_ref();
 			check_reference_length_bounds(input)?;
 
-			let decoded = str::from_utf8(input).map_err(|_| ReferenceError::InvalidFormat)?;
-			let parsed = U256::from_dec_str(decoded).map_err(|_| ReferenceError::InvalidFormat)?;
+			let decoded = str::from_utf8(input).map_err(|_| {
+				log::trace!("Provided input is not a valid UTF8 string as expected by a Slip44 reference.");
+				ReferenceError::InvalidFormat
+			})?;
+			let parsed = U256::from_dec_str(decoded).map_err(|_| {
+				log::trace!("Provided input is not a valid u256 value as expected by a Slip44 reference.");
+				ReferenceError::InvalidFormat
+			})?;
 			// Unchecked since we already checked for maximum length and hence maximum value
 			Ok(Self(parsed))
 		}
@@ -364,11 +378,18 @@ pub mod v1 {
 			if let [b'0', b'x', contract_address @ ..] = input {
 				check_reference_length_bounds(contract_address)?;
 
-				let decoded = hex::decode(contract_address).map_err(|_| ReferenceError::InvalidFormat)?;
-				let inner: [u8; 20] = decoded.try_into().map_err(|_| ReferenceError::InvalidFormat)?;
+				let decoded = hex::decode(contract_address).map_err(|_| {
+					log::trace!("Provided input is not a valid hex value as expected by a smart contract reference.");
+					ReferenceError::InvalidFormat
+				})?;
+				let inner: [u8; 20] = decoded.try_into().map_err(|_| {
+					log::trace!("Provided input is not 20 bytes long as expected by a smart contract reference.");
+					ReferenceError::InvalidFormat
+				})?;
 				Ok(Self(inner))
 			// Otherwise fail
 			} else {
+				log::trace!("Provided input does not have the `0x` prefix as expected by a smart contract reference.");
 				Err(ReferenceError::InvalidFormat.into())
 			}
 		}
@@ -413,6 +434,7 @@ pub mod v1 {
 
 			input.iter().try_for_each(|c| {
 				if !(b'0'..=b'9').contains(c) {
+					log::trace!("Provided input has some invalid values as expected by a smart contract-based asset identifier.");
 					Err(IdentifierError::InvalidFormat)
 				} else {
 					Ok(())
@@ -493,6 +515,7 @@ pub mod v1 {
 
 			input.iter().try_for_each(|c| {
 				if !matches!(c, b'-' | b'a'..=b'z' | b'0'..=b'9') {
+					log::trace!("Provided input has some invalid values as expected by a generic asset namespace.");
 					Err(NamespaceError::InvalidFormat)
 				} else {
 					Ok(())
@@ -535,6 +558,7 @@ pub mod v1 {
 
 			input.iter().try_for_each(|c| {
 				if !matches!(c, b'-' | b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9') {
+					log::trace!("Provided input has some invalid values as expected by a generic asset reference.");
 					Err(ReferenceError::InvalidFormat)
 				} else {
 					Ok(())
@@ -577,6 +601,7 @@ pub mod v1 {
 
 			input.iter().try_for_each(|c| {
 				if !matches!(c, b'-' | b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9') {
+					log::trace!("Provided input has some invalid values as expected by a generic asset identifier.");
 					Err(IdentifierError::InvalidFormat)
 				} else {
 					Ok(())

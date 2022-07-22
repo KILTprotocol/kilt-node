@@ -157,6 +157,12 @@ mod v1 {
 			let input = input.as_ref();
 			let input_length = input.len();
 			if !(MINIMUM_CHAIN_ID_LENGTH..=MAXIMUM_CHAIN_ID_LENGTH).contains(&input_length) {
+				log::trace!(
+					"Length of provided input {} is not included in the inclusive range [{},{}]",
+					input_length,
+					MINIMUM_CHAIN_ID_LENGTH,
+					MAXIMUM_CHAIN_ID_LENGTH
+				);
 				return Err(Error::InvalidFormat);
 			}
 
@@ -311,8 +317,14 @@ mod v1 {
 			let input = input.as_ref();
 			check_reference_length_bounds(input)?;
 
-			let decoded = str::from_utf8(input).map_err(|_| ReferenceError::InvalidFormat)?;
-			let parsed = decoded.parse::<u128>().map_err(|_| ReferenceError::InvalidFormat)?;
+			let decoded = str::from_utf8(input).map_err(|_| {
+				log::trace!("Provided input is not a valid UTF8 string as expected by an Eip155 reference.");
+				ReferenceError::InvalidFormat
+			})?;
+			let parsed = decoded.parse::<u128>().map_err(|_| {
+				log::trace!("Provided input is not a valid u128 value as expected by an Eip155 reference.");
+				ReferenceError::InvalidFormat
+			})?;
 			// Unchecked since we already checked for maximum length and hence maximum value
 			Ok(Self(parsed))
 		}
@@ -389,8 +401,14 @@ mod v1 {
 			let input = input.as_ref();
 			check_reference_length_bounds(input)?;
 
-			let decoded = hex::decode(input).map_err(|_| ReferenceError::InvalidFormat)?;
-			let inner: [u8; 16] = decoded.try_into().map_err(|_| ReferenceError::InvalidFormat)?;
+			let decoded = hex::decode(input).map_err(|_| {
+				log::trace!("Provided input is not a valid hex value as expected by a genesis HEX reference.");
+				ReferenceError::InvalidFormat
+			})?;
+			let inner: [u8; 16] = decoded.try_into().map_err(|_| {
+				log::trace!("Provided input is not 16 bytes long as expected by a genesis HEX reference.");
+				ReferenceError::InvalidFormat
+			})?;
 			Ok(Self(inner))
 		}
 	}
@@ -432,10 +450,14 @@ mod v1 {
 			let input = input.as_ref();
 			check_reference_length_bounds(input)?;
 
-			let decoded_string = str::from_utf8(input).map_err(|_| ReferenceError::InvalidFormat)?;
-			let decoded = decoded_string
-				.from_base58()
-				.map_err(|_| ReferenceError::InvalidFormat)?;
+			let decoded_string = str::from_utf8(input).map_err(|_| {
+				log::trace!("Provided input is not a valid UTF8 string as expected by a genesis base58 reference.");
+				ReferenceError::InvalidFormat
+			})?;
+			let decoded = decoded_string.from_base58().map_err(|_| {
+				log::trace!("Provided input is not a valid base58 value as expected by a genesis base58 reference.");
+				ReferenceError::InvalidFormat
+			})?;
 			// Max length in bytes of a 32-character Base58 string is 32 -> it is the string
 			// formed by all "1". Otherwise, it is always between 23 and 24 characters.
 			let inner: BoundedVec<u8, ConstU32<32>> = decoded.try_into().map_err(|_| ReferenceError::InvalidFormat)?;
@@ -495,6 +517,7 @@ mod v1 {
 
 			input.iter().try_for_each(|c| {
 				if !matches!(c, b'-' | b'a'..=b'z' | b'0'..=b'9') {
+					log::trace!("Provided input has some invalid values as expected by a generic chain namespace.");
 					Err(NamespaceError::InvalidFormat)
 				} else {
 					Ok(())
@@ -537,6 +560,7 @@ mod v1 {
 
 			input.iter().try_for_each(|c| {
 				if !matches!(c, b'-' | b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9') {
+					log::trace!("Provided input has some invalid values as expected by a generic chain reference.");
 					Err(ReferenceError::InvalidFormat)
 				} else {
 					Ok(())

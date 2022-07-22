@@ -118,6 +118,12 @@ impl AssetDid {
 		let input = input.as_ref();
 		let input_length = input.len();
 		if !(MINIMUM_ASSET_DID_LENGTH..=MAXIMUM_ASSET_DID_LENGTH).contains(&input_length) {
+			log::trace!(
+				"Length of provided input {} is not included in the inclusive range [{},{}]",
+				input_length,
+				MINIMUM_ASSET_DID_LENGTH,
+				MAXIMUM_ASSET_DID_LENGTH
+			);
 			return Err(AssetDidError::InvalidFormat);
 		}
 

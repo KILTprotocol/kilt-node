@@ -3593,6 +3593,7 @@ dependencies = [
  "frame-support",
  "hex",
  "hex-literal",
+ "log",
  "parity-scale-codec",
  "scale-info",
  "sp-core",
