@@ -17,6 +17,9 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 #![cfg_attr(not(feature = "std"), no_std)]
 
+#[cfg(feature = "std")]
+use serde::{Deserialize, Serialize};
+
 use codec::{Codec, Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_std::vec::Vec;
@@ -26,9 +29,6 @@ mod service_endpoint;
 
 pub use did_details::*;
 pub use service_endpoint::*;
-
-#[cfg(feature = "std")]
-use serde::{Deserialize, Serialize};
 
 #[derive(Encode, Decode, TypeInfo, PartialEq)]
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
