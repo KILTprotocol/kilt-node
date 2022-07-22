@@ -104,20 +104,11 @@ impl<
 	}
 }
 
+#[repr(i32)]
 pub enum Error {
-	Runtime,
+	Runtime = 1,
 	Conversion,
-	Internal,
-}
-
-impl From<Error> for i32 {
-	fn from(e: Error) -> Self {
-		match e {
-			Error::Runtime => 1,
-			Error::Conversion => 2,
-			Error::Internal => i32::MAX,
-		}
-	}
+	Internal = i32::MAX,
 }
 
 #[async_trait]
@@ -162,7 +153,7 @@ impl<
 
 		let into_subject: SubjectId = subject.try_into().map_err(|_| {
 			CallError::Custom(ErrorObject::owned(
-				Error::Conversion.into(),
+				Error::Conversion as i32,
 				"Unable to convert input to a valid subject ID.",
 				Option::<String>::None,
 			))
@@ -170,7 +161,7 @@ impl<
 
 		let into_credential_id: CredentialId = credential_id.try_into().map_err(|_| {
 			CallError::Custom(ErrorObject::owned(
-				Error::Conversion.into(),
+				Error::Conversion as i32,
 				"Unable to convert input to a valid credential ID.",
 				Option::<String>::None,
 			))
@@ -178,7 +169,7 @@ impl<
 
 		let credential = api.get_credential(&at, into_subject, into_credential_id).map_err(|_| {
 			CallError::Custom(ErrorObject::owned(
-				Error::Runtime.into(),
+				Error::Runtime as i32,
 				"Unable to get credential.",
 				Option::<String>::None,
 			))
@@ -196,7 +187,7 @@ impl<
 
 		let into_subject: SubjectId = subject.try_into().map_err(|_| {
 			CallError::Custom(ErrorObject::owned(
-				Error::Conversion.into(),
+				Error::Conversion as i32,
 				"Unable to convert input to a valid subject ID",
 				Option::<String>::None,
 			))
@@ -204,7 +195,7 @@ impl<
 
 		let credentials = api.get_credentials(&at, into_subject).map_err(|_| {
 			CallError::Custom(ErrorObject::owned(
-				Error::Runtime.into(),
+				Error::Runtime as i32,
 				"Unable to get credentials",
 				Option::<String>::None,
 			))
