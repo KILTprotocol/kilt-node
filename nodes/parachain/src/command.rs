@@ -55,7 +55,8 @@ impl IdentifyChain for dyn sc_service::ChainSpec {
 			|| self.id().eq("kilt")
 	}
 	fn is_void(&self) -> bool {
-		self.id().contains("void")
+		println!("id is {}", self.id());
+		self.id().to_lowercase().contains("void")
 	}
 }
 
@@ -87,7 +88,7 @@ fn load_spec(id: &str, runtime: &str) -> std::result::Result<Box<dyn sc_service:
 		("", "peregrine") => Ok(Box::new(chain_spec::peregrine::make_dev_spec()?)),
 		(path, "spiritnet") => Ok(Box::new(chain_spec::spiritnet::ChainSpec::from_json_file(path.into())?)),
 		(path, "peregrine") => Ok(Box::new(chain_spec::peregrine::ChainSpec::from_json_file(path.into())?)),
-		_ => Err("Unknown KILT parachain spec".to_owned()),
+		_ => Err(format!("Unknown KILT parachain spec (id: {} runtime: {})", id, runtime)),
 	}
 }
 

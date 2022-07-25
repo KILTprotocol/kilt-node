@@ -25,12 +25,14 @@ use sc_service::ChainType;
 use sp_core::{crypto::UncheckedInto, sr25519};
 
 use void_runtime::{
-	BalancesConfig, GenesisConfig, ParachainInfoConfig, SessionConfig, SudoConfig, SystemConfig, WASM_BINARY,
+	BalancesConfig, GenesisConfig, ParachainInfoConfig, SessionConfig, SudoConfig, SystemConfig, WASM_BINARY, PolkadotXcmConfig,
 };
 
 use crate::chain_spec::{get_account_id_from_seed, get_from_seed, DEFAULT_PARA_ID};
 
 use super::{get_properties, Extensions};
+
+const SAFE_XCM_VERSION: u32 = xcm::prelude::XCM_VERSION;
 
 /// Specialized `ChainSpec` for the normal parachain runtime.
 pub type ChainSpec = sc_service::GenericChainSpec<GenesisConfig, Extensions>;
@@ -172,6 +174,9 @@ fn testnet_genesis(
 					)
 				})
 				.collect::<Vec<_>>(),
+		},
+		polkadot_xcm: PolkadotXcmConfig {
+			safe_xcm_version: Some(SAFE_XCM_VERSION),
 		},
 	}
 }

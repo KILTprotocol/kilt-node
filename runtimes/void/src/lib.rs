@@ -29,6 +29,7 @@ use frame_support::{
 	construct_runtime, parameter_types,
 	weights::{constants::RocksDbWeight, ConstantMultiplier, IdentityFee, Weight},
 };
+use frame_system::EnsureRoot;
 use sp_api::impl_runtime_apis;
 use sp_core::OpaqueMetadata;
 use sp_runtime::{
@@ -39,17 +40,22 @@ use sp_runtime::{
 };
 use sp_std::prelude::*;
 use sp_version::RuntimeVersion;
+use xcm_executor::XcmExecutor;
 
 use runtime_common::{
-	constants, AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights, Hash, Header,
-	Index, Signature, SlowAdjustingFeeUpdate,
+	constants, fees::WeightToFee, AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber,
+	BlockWeights, Hash, Header, Index, Signature, SlowAdjustingFeeUpdate,
 };
+
+use crate::xcm_config::{XcmConfig, XcmOriginToTransactDispatchOrigin};
 
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
+
+mod xcm_config;
 
 impl_opaque_keys! {
 	pub struct SessionKeys {
@@ -63,7 +69,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("mashnet-node"),
 	impl_name: create_runtime_str!("mashnet-node"),
 	authoring_version: 4,
-	spec_version: 10700,
+	spec_version: 10710,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 2,
@@ -201,6 +207,23 @@ impl parachain_info::Config for Runtime {}
 
 impl cumulus_pallet_aura_ext::Config for Runtime {}
 
+impl cumulus_pallet_xcmp_queue::Config for Runtime {
+	type Event = Event;
+	type XcmExecutor = XcmExecutor<XcmConfig>;
+	type ChannelInfo = ParachainSystem;
+	type VersionWrapper = ();
+	type ExecuteOverweightOrigin = EnsureRoot<AccountId>;
+	type ControllerOrigin = EnsureRoot<AccountId>;
+	type ControllerOriginConverter = XcmOriginToTransactDispatchOrigin;
+	type WeightInfo = ();
+}
+
+impl cumulus_pallet_dmp_queue::Config for Runtime {
+	type Event = Event;
+	type XcmExecutor = XcmExecutor<XcmConfig>;
+	type ExecuteOverweightOrigin = EnsureRoot<AccountId>;
+}
+
 parameter_types! {
 	pub const MaxAuthorities: u32 = constants::staking::MAX_CANDIDATES;
 }
@@ -262,6 +285,15 @@ construct_runtime! {
 		// Parachains pallets. Start indices at 80 to leave room.
 		ParachainSystem: cumulus_pallet_parachain_system = 80,
 		ParachainInfo: parachain_info::{Pallet, Storage, Config} = 81,
+
+		// Wrap and unwrap XCMP messages to send and receive them. Queue them for later processing.
+		XcmpQueue: cumulus_pallet_xcmp_queue::{Pallet, Call, Storage, Event<T>} = 82,
+		// Build XCM scripts
+		PolkadotXcm: pallet_xcm::{Pallet, Call, Event<T>, Origin, Config} = 83,
+		// Does nothing cool. Provides an origin...
+		CumulusXcm: cumulus_pallet_xcm::{Pallet, Event<T>, Origin} = 84,
+		// Queue and DMP messages and pass them on to be executed
+		DmpQueue: cumulus_pallet_dmp_queue::{Pallet, Call, Storage, Event<T>} = 85,
 	}
 }
 
@@ -276,6 +308,7 @@ pub type SignedBlock = generic::SignedBlock<Block>;
 pub type BlockId = generic::BlockId<Block>;
 /// The SignedExtension to the basic transaction logic.
 pub type SignedExtra = (
+	frame_system::CheckNonZeroSender<Runtime>,
 	frame_system::CheckSpecVersion<Runtime>,
 	frame_system::CheckTxVersion<Runtime>,
 	frame_system::CheckGenesis<Runtime>,
