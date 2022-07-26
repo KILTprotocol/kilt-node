@@ -88,7 +88,8 @@ fn load_spec(id: &str, runtime: &str) -> std::result::Result<Box<dyn sc_service:
 		("", "peregrine") => Ok(Box::new(chain_spec::peregrine::make_dev_spec()?)),
 		(path, "spiritnet") => Ok(Box::new(chain_spec::spiritnet::ChainSpec::from_json_file(path.into())?)),
 		(path, "peregrine") => Ok(Box::new(chain_spec::peregrine::ChainSpec::from_json_file(path.into())?)),
-		_ => Err(format!("Unknown KILT parachain spec (id: {} runtime: {})", id, runtime)),
+		(path, "void") => Ok(Box::new(chain_spec::void::ChainSpec::from_json_file(path.into())?)),
+		_ => Err(format!("Unknown KILT runtime: {}", runtime)),
 	}
 }
 
