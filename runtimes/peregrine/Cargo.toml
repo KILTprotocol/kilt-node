@@ -76,7 +76,6 @@ pallet-vesting = {git = "https://github.com/paritytech/substrate", default-featu
 # Cumulus dependencies
 cumulus-pallet-aura-ext = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "polkadot-v0.9.25"}
 cumulus-pallet-parachain-system = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "polkadot-v0.9.25"}
-cumulus-pallet-xcmp-queue = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "polkadot-v0.9.25"}
 cumulus-primitives-core = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "polkadot-v0.9.25"}
 cumulus-primitives-timestamp = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "polkadot-v0.9.25"}
 parachain-info = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "polkadot-v0.9.25"}
@@ -90,7 +89,6 @@ xcm-executor = {git = "https://github.com/paritytech/polkadot", default-features
 # Benchmarking
 cumulus-pallet-session-benchmarking = {git = "https://github.com/paritytech/cumulus", default-features = false, optional = true, branch = "polkadot-v0.9.25"}
 frame-system-benchmarking = {git = "https://github.com/paritytech/substrate", default-features = false, optional = true, branch = "polkadot-v0.9.25"}
-rococo-runtime = {git = "https://github.com/paritytech/polkadot", default-features = false, optional = true, branch = "release-v0.9.25"}
 
 # Runtime tests
 frame-try-runtime = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.25", optional = true}
@@ -120,6 +118,7 @@ runtime-benchmarks = [
   "pallet-inflation/runtime-benchmarks",
   "pallet-membership/runtime-benchmarks",
   "pallet-preimage/runtime-benchmarks",
+  "pallet-proxy/runtime-benchmarks",
   "pallet-scheduler/runtime-benchmarks",
   "pallet-timestamp/runtime-benchmarks",
   "pallet-tips/runtime-benchmarks",
@@ -128,7 +127,6 @@ runtime-benchmarks = [
   "pallet-web3-names/runtime-benchmarks",
   "pallet-utility/runtime-benchmarks",
   "parachain-staking/runtime-benchmarks",
-  "rococo-runtime/runtime-benchmarks",
   "runtime-common/runtime-benchmarks",
   "sp-runtime/runtime-benchmarks",
 ]
@@ -138,7 +136,6 @@ std = [
   "ctype/std",
   "cumulus-pallet-aura-ext/std",
   "cumulus-pallet-parachain-system/std",
-  "cumulus-pallet-xcmp-queue/std",
   "cumulus-primitives-core/std",
   "cumulus-primitives-timestamp/std",
   "delegation/std",
@@ -176,7 +173,6 @@ std = [
   "parachain-info/std",
   "parachain-staking/std",
   "polkadot-parachain/std",
-  "rococo-runtime/std",
   "runtime-common/std",
   "scale-info/std",
   "serde",

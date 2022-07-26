@@ -29,9 +29,6 @@ sp-io = {git = "https://github.com/paritytech/substrate", default-features = fal
 sp-runtime = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.25"}
 sp-std = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.25"}
 
-# Runtime tests
-frame-try-runtime = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.25", optional = true}
-
 [features]
 default = ["std"]
 fast-gov = []
@@ -61,5 +58,4 @@ std = [
 ]
 try-runtime = [
   "frame-support/try-runtime",
-  "frame-try-runtime",
 ]

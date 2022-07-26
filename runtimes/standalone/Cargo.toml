@@ -51,7 +51,6 @@ pallet-sudo = {branch = "polkadot-v0.9.25", default-features = false, git = "htt
 pallet-timestamp = {branch = "polkadot-v0.9.25", default-features = false, git = "https://github.com/paritytech/substrate"}
 pallet-transaction-payment = {branch = "polkadot-v0.9.25", default-features = false, git = "https://github.com/paritytech/substrate"}
 pallet-utility = {branch = "polkadot-v0.9.25", default-features = false, git = "https://github.com/paritytech/substrate"}
-pallet-vesting = {branch = "polkadot-v0.9.25", default-features = false, git = "https://github.com/paritytech/substrate"}
 sp-api = {branch = "polkadot-v0.9.25", default-features = false, git = "https://github.com/paritytech/substrate"}
 sp-arithmetic = {branch = "polkadot-v0.9.25", default-features = false, git = "https://github.com/paritytech/substrate"}
 sp-block-builder = {branch = "polkadot-v0.9.25", default-features = false, git = "https://github.com/paritytech/substrate"}
@@ -89,7 +88,6 @@ runtime-benchmarks = [
   "pallet-indices/runtime-benchmarks",
   "pallet-timestamp/runtime-benchmarks",
   "pallet-web3-names/runtime-benchmarks",
-  "pallet-vesting/runtime-benchmarks",
   "pallet-proxy/runtime-benchmarks",
   "sp-runtime/runtime-benchmarks",
 ]
@@ -121,7 +119,6 @@ std = [
   "pallet-transaction-payment/std",
   "pallet-transaction-payment-rpc-runtime-api/std",
   "pallet-web3-names/std",
-  "pallet-vesting/std",
   "runtime-common/std",
   "scale-info/std",
   "serde",
@@ -162,5 +159,4 @@ try-runtime = [
   "pallet-web3-names/try-runtime",
   "pallet-utility/try-runtime",
   "pallet-transaction-payment/try-runtime",
-  "pallet-vesting/try-runtime",
 ]
