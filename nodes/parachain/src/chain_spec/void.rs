@@ -25,7 +25,8 @@ use sc_service::ChainType;
 use sp_core::{crypto::UncheckedInto, sr25519};
 
 use void_runtime::{
-	BalancesConfig, GenesisConfig, ParachainInfoConfig, SessionConfig, SudoConfig, SystemConfig, WASM_BINARY, PolkadotXcmConfig,
+	BalancesConfig, GenesisConfig, ParachainInfoConfig, PolkadotXcmConfig, SessionConfig, SudoConfig, SystemConfig,
+	WASM_BINARY,
 };
 
 use crate::chain_spec::{get_account_id_from_seed, get_from_seed, DEFAULT_PARA_ID};
