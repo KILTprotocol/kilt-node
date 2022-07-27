@@ -120,7 +120,6 @@ use frame_support::{
 	Parameter,
 };
 use frame_system::ensure_signed;
-use sp_io::KillStorageResult;
 use sp_runtime::{
 	traits::{Saturating, Zero},
 	SaturatedConversion,
@@ -1175,10 +1174,13 @@ pub mod pallet {
 
 			// This one can fail, albeit this should **never** be the case as we check for
 			// the preconditions above.
-			let storage_kill_result = ServiceEndpoints::<T>::remove_prefix(&did_subject, Some(current_endpoints_count));
-			// If some items are remaining, it means that there were more than
-			// the counter stored in `DidEndpointsCount`, and that should never happen.
-			if let KillStorageResult::SomeRemaining(_) = storage_kill_result {
+			// If some items are remaining (e.g. a continuation cursor exists), it means
+			// that there were more than the counter stored in `DidEndpointsCount`, and that
+			// should never happen.
+			if ServiceEndpoints::<T>::clear_prefix(&did_subject, current_endpoints_count, None)
+				.maybe_cursor
+				.is_some()
+			{
 				return Err(Error::<T>::InternalError.into());
 			};
 
