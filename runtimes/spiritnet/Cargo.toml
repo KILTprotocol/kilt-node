@@ -2,7 +2,7 @@
 authors = ["KILT <info@kilt.io>"]
 edition = "2021"
 name = "spiritnet-runtime"
-version = "1.7.0"
+version = "1.7.1"
 
 [build-dependencies]
 substrate-wasm-builder = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.25"}
@@ -18,20 +18,20 @@ hex-literal = {version = "0.3.4", optional = true}
 serde = {version = "1.0.137", optional = true, features = ["derive"]}
 
 # RPC
+did-rpc-runtime-api = {path = "../../rpc/did/runtime-api", default-features = false}
 frame-system-rpc-runtime-api = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.25"}
 pallet-transaction-payment-rpc-runtime-api = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.25"}
-did-rpc-runtime-api = {path = "../../rpc/did/runtime-api", default-features = false}
 
 # KILT pallets & primitives
-attestation = {default-features = false, path = "../../pallets/attestation"}
-ctype = {default-features = false, path = "../../pallets/ctype"}
-delegation = {default-features = false, path = "../../pallets/delegation"}
-did = {default-features = false, path = "../../pallets/did"}
+attestation = {path = "../../pallets/attestation", default-features = false}
+ctype = {path = "../../pallets/ctype", default-features = false}
+delegation = {path = "../../pallets/delegation", default-features = false}
+did = {path = "../../pallets/did", default-features = false}
 kilt-support = {path = "../../support", default-features = false, optional = true}
-pallet-did-lookup = {default-features = false, path = "../../pallets/pallet-did-lookup"}
+pallet-did-lookup = {path = "../../pallets/pallet-did-lookup", default-features = false}
 pallet-inflation = {path = "../../pallets/pallet-inflation", default-features = false}
 pallet-web3-names = {path = "../../pallets/pallet-web3-names", default-features = false}
-parachain-staking = {default-features = false, path = "../../pallets/parachain-staking"}
+parachain-staking = {path = "../../pallets/parachain-staking", default-features = false}
 runtime-common = {path = "../../runtimes/common", default-features = false}
 
 # Substrate dependencies
@@ -74,12 +74,17 @@ pallet-vesting = {git = "https://github.com/paritytech/substrate", default-featu
 
 # Cumulus dependencies
 cumulus-pallet-aura-ext = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "polkadot-v0.9.25"}
+cumulus-pallet-dmp-queue = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "polkadot-v0.9.25"}
 cumulus-pallet-parachain-system = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "polkadot-v0.9.25"}
+cumulus-pallet-xcm = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "polkadot-v0.9.25"}
+cumulus-pallet-xcmp-queue = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "polkadot-v0.9.25"}
 cumulus-primitives-core = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "polkadot-v0.9.25"}
 cumulus-primitives-timestamp = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "polkadot-v0.9.25"}
+cumulus-primitives-utility = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "polkadot-v0.9.25"}
 parachain-info = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "polkadot-v0.9.25"}
 
 # Polkadot dependencies
+pallet-xcm = {git = "https://github.com/paritytech/polkadot", default-features = false, branch = "release-v0.9.25"}
 polkadot-parachain = {git = "https://github.com/paritytech/polkadot", default-features = false, branch = "release-v0.9.25"}
 xcm = {git = "https://github.com/paritytech/polkadot", default-features = false, branch = "release-v0.9.25"}
 xcm-builder = {git = "https://github.com/paritytech/polkadot", default-features = false, branch = "release-v0.9.25"}
@@ -107,7 +112,6 @@ runtime-benchmarks = [
   "frame-system-benchmarking",
   "frame-system/runtime-benchmarks",
   "hex-literal",
-  "runtime-common/runtime-benchmarks",
   "kilt-support",
   "kilt-support/runtime-benchmarks",
   "pallet-balances/runtime-benchmarks",
@@ -123,23 +127,28 @@ runtime-benchmarks = [
   "pallet-timestamp/runtime-benchmarks",
   "pallet-tips/runtime-benchmarks",
   "pallet-treasury/runtime-benchmarks",
-  "pallet-web3-names/runtime-benchmarks",
   "pallet-utility/runtime-benchmarks",
   "pallet-vesting/runtime-benchmarks",
+  "pallet-web3-names/runtime-benchmarks",
   "parachain-staking/runtime-benchmarks",
+  "runtime-common/runtime-benchmarks",
   "sp-runtime/runtime-benchmarks",
+  "xcm-builder/runtime-benchmarks",
 ]
 std = [
   "attestation/std",
   "codec/std",
   "ctype/std",
   "cumulus-pallet-aura-ext/std",
+  "cumulus-pallet-dmp-queue/std",
   "cumulus-pallet-parachain-system/std",
+  "cumulus-pallet-xcm/std",
+  "cumulus-pallet-xcmp-queue/std",
   "cumulus-primitives-core/std",
   "cumulus-primitives-timestamp/std",
   "delegation/std",
-  "did/std",
   "did-rpc-runtime-api/std",
+  "did/std",
   "frame-benchmarking/std",
   "frame-executive/std",
   "frame-support/std",
@@ -218,9 +227,9 @@ try-runtime = [
   "pallet-tips/try-runtime",
   "pallet-transaction-payment/try-runtime",
   "pallet-treasury/try-runtime",
-  "pallet-web3-names/try-runtime",
   "pallet-utility/try-runtime",
   "pallet-vesting/try-runtime",
+  "pallet-web3-names/try-runtime",
   "parachain-staking/try-runtime",
   "runtime-common/try-runtime",
 ]

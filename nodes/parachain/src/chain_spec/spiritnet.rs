@@ -30,12 +30,14 @@ use sp_core::{crypto::UncheckedInto, sr25519};
 use sp_runtime::traits::Zero;
 use spiritnet_runtime::{
 	BalancesConfig, CouncilConfig, GenesisConfig, InflationInfo, ParachainInfoConfig, ParachainStakingConfig,
-	SessionConfig, SystemConfig, TechnicalCommitteeConfig, VestingConfig, WASM_BINARY,
+	PolkadotXcmConfig, SessionConfig, SystemConfig, TechnicalCommitteeConfig, VestingConfig, WASM_BINARY,
 };
 
 use crate::chain_spec::{get_account_id_from_seed, get_from_seed, DEFAULT_PARA_ID, TELEMETRY_URL};
 
 use super::{get_properties, Extensions};
+
+const SAFE_XCM_VERSION: u32 = xcm::prelude::XCM_VERSION;
 
 /// Specialized `ChainSpec` for the normal parachain runtime.
 pub type ChainSpec = sc_service::GenericChainSpec<GenesisConfig, Extensions>;
@@ -318,5 +320,8 @@ fn testnet_genesis(
 		technical_membership: Default::default(),
 		tips_membership: Default::default(),
 		democracy: Default::default(),
+		polkadot_xcm: PolkadotXcmConfig {
+			safe_xcm_version: Some(SAFE_XCM_VERSION),
+		},
 	}
 }
