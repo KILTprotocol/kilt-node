@@ -31,7 +31,7 @@ use sp_runtime::AccountId32;
 pub mod mock_origin {
 	use sp_std::marker::PhantomData;
 
-	use codec::{Decode, Encode};
+	use codec::{Decode, Encode, MaxEncodedLen};
 	use frame_support::{traits::EnsureOrigin, Parameter};
 	use scale_info::TypeInfo;
 	use sp_runtime::AccountId32;
@@ -62,7 +62,7 @@ pub mod mock_origin {
 	/// An origin that is split into sender and subject.
 	///
 	/// WARNING: This is only used for testing!
-	#[derive(Debug, Clone, PartialEq, Eq, TypeInfo, Encode, Decode)]
+	#[derive(Debug, Clone, PartialEq, Eq, TypeInfo, Encode, Decode, MaxEncodedLen)]
 	pub struct DoubleOrigin<AccountId, SubjectId>(pub AccountId, pub SubjectId);
 
 	impl<AccountId: Clone, SubjectId: Clone> CallSources<AccountId, SubjectId> for DoubleOrigin<AccountId, SubjectId> {
