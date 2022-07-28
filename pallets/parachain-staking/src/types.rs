@@ -269,7 +269,8 @@ where
 		}
 	}
 
-	/// Returns None if delegation was not found.
+	/// Returns Some(delegated_amount) if successfull, None if delegation was
+	/// not found.
 	pub fn inc_delegation(&mut self, collator: AccountId, more: Balance) -> Option<Balance> {
 		if let Ok(i) = self.delegations.linear_search(&Stake::<AccountId, Balance> {
 			owner: collator,
@@ -285,8 +286,8 @@ where
 		}
 	}
 
-	/// Returns Some(Some(balance)) if successful, None if delegation was not
-	/// found and Some(None) if delegated stake would underflow.
+	/// Returns Some(Some(delegated_amount)) if successful, None if delegation
+	/// was not found and Some(None) if delegated stake would underflow.
 	pub fn dec_delegation(&mut self, collator: AccountId, less: Balance) -> Option<Option<Balance>> {
 		if let Ok(i) = self.delegations.linear_search(&Stake::<AccountId, Balance> {
 			owner: collator,
