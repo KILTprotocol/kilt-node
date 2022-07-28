@@ -9,12 +9,14 @@ clippy:
   stage: test
   timeout: 1 hours
   script:
-    - rustup component add clippy --toolchain nightly
-    - cargo +nightly install cargo-udeps
-    - cargo +nightly clippy --all-features --all-targets --locked -- -D warnings
+    - rustup component list --installed
+    - rustup toolchain list
+    - rustup component add clippy
+    - cargo clippy --all-features --all-targets --locked -- -D warnings
+    - cargo install cargo-udeps
     # Unless there is a way to conditionally execute part of a job, cargo-udeps can only run after the project metadata has been correctly pulled in.
     # Open issue: https://github.com/est31/cargo-udeps/issues/97
-    - cargo +nightly udeps --all-features --all-targets --locked
+    - cargo udeps --all-features --all-targets --locked
 
 fmt:
   # Corresponds to paritytech/ci-linux:production at the time of this PR
@@ -23,8 +25,8 @@ fmt:
   stage: test
   timeout: 1 hours
   script:
-    - rustup component add rustfmt --toolchain nightly
-    - cargo +nightly fmt -- --check
+    - rustup component add rustfmt
+    - cargo fmt -- --check
 
 test:
   # Corresponds to paritytech/ci-linux:production at the time of this PR
