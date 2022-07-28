@@ -338,7 +338,7 @@ checksum = "065374052e7df7ee4047b1160cca5e1467a12351a40b3da123c870ba0b8eda2a"
 
 [[package]]
 name = "attestation"
-version = "1.7.0"
+version = "1.7.1"
 dependencies = [
  "ctype",
  "frame-benchmarking",
@@ -1421,7 +1421,7 @@ dependencies = [
 
 [[package]]
 name = "ctype"
-version = "1.7.0"
+version = "1.7.1"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -1454,7 +1454,7 @@ dependencies = [
 [[package]]
 name = "cumulus-client-cli"
 version = "0.1.0"
-source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.25#390042a01940a0a4d0b28eb196a2e9251f3cec33"
+source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.25#d08055df3d735e1a4ebf6a9f8054d72e5144c2ea"
 dependencies = [
  "clap",
  "parity-scale-codec",
@@ -1469,7 +1469,7 @@ dependencies = [
 [[package]]
 name = "cumulus-client-collator"
 version = "0.1.0"
-source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.25#390042a01940a0a4d0b28eb196a2e9251f3cec33"
+source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.25#d08055df3d735e1a4ebf6a9f8054d72e5144c2ea"
 dependencies = [
  "cumulus-client-consensus-common",
  "cumulus-client-network",
@@ -1493,7 +1493,7 @@ dependencies = [
 [[package]]
 name = "cumulus-client-consensus-aura"
 version = "0.1.0"
-source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.25#390042a01940a0a4d0b28eb196a2e9251f3cec33"
+source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.25#d08055df3d735e1a4ebf6a9f8054d72e5144c2ea"
 dependencies = [
  "async-trait",
  "cumulus-client-consensus-common",
@@ -1522,7 +1522,7 @@ dependencies = [
 [[package]]
 name = "cumulus-client-consensus-common"
 version = "0.1.0"
-source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.25#390042a01940a0a4d0b28eb196a2e9251f3cec33"
+source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.25#d08055df3d735e1a4ebf6a9f8054d72e5144c2ea"
 dependencies = [
  "async-trait",
  "cumulus-relay-chain-interface",
@@ -1543,7 +1543,7 @@ dependencies = [
 [[package]]
 name = "cumulus-client-network"
 version = "0.1.0"
-source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.25#390042a01940a0a4d0b28eb196a2e9251f3cec33"
+source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.25#d08055df3d735e1a4ebf6a9f8054d72e5144c2ea"
 dependencies = [
  "async-trait",
  "cumulus-relay-chain-interface",
@@ -1568,7 +1568,7 @@ dependencies = [
 [[package]]
 name = "cumulus-client-pov-recovery"
 version = "0.1.0"
-source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.25#390042a01940a0a4d0b28eb196a2e9251f3cec33"
+source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.25#d08055df3d735e1a4ebf6a9f8054d72e5144c2ea"
 dependencies = [
  "cumulus-primitives-core",
  "cumulus-relay-chain-interface",
@@ -1592,7 +1592,7 @@ dependencies = [
 [[package]]
 name = "cumulus-client-service"
 version = "0.1.0"
-source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.25#390042a01940a0a4d0b28eb196a2e9251f3cec33"
+source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.25#d08055df3d735e1a4ebf6a9f8054d72e5144c2ea"
 dependencies = [
  "cumulus-client-cli",
  "cumulus-client-collator",
@@ -1620,7 +1620,7 @@ dependencies = [
 [[package]]
 name = "cumulus-pallet-aura-ext"
 version = "0.1.0"
-source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.25#390042a01940a0a4d0b28eb196a2e9251f3cec33"
+source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.25#d08055df3d735e1a4ebf6a9f8054d72e5144c2ea"
 dependencies = [
  "frame-executive",
  "frame-support",
@@ -1636,9 +1636,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "cumulus-pallet-dmp-queue"
+version = "0.1.0"
+source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.25#d08055df3d735e1a4ebf6a9f8054d72e5144c2ea"
+dependencies = [
+ "cumulus-primitives-core",
+ "frame-support",
+ "frame-system",
+ "log",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+ "xcm",
+ "xcm-executor",
+]
+
+[[package]]
 name = "cumulus-pallet-parachain-system"
 version = "0.1.0"
-source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.25#390042a01940a0a4d0b28eb196a2e9251f3cec33"
+source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.25#d08055df3d735e1a4ebf6a9f8054d72e5144c2ea"
 dependencies = [
  "cumulus-pallet-parachain-system-proc-macro",
  "cumulus-primitives-core",
@@ -1668,7 +1686,7 @@ dependencies = [
 [[package]]
 name = "cumulus-pallet-parachain-system-proc-macro"
 version = "0.1.0"
-source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.25#390042a01940a0a4d0b28eb196a2e9251f3cec33"
+source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.25#d08055df3d735e1a4ebf6a9f8054d72e5144c2ea"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -1679,7 +1697,7 @@ dependencies = [
 [[package]]
 name = "cumulus-pallet-session-benchmarking"
 version = "3.0.0"
-source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.25#390042a01940a0a4d0b28eb196a2e9251f3cec33"
+source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.25#d08055df3d735e1a4ebf6a9f8054d72e5144c2ea"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -1691,9 +1709,44 @@ dependencies = [
 ]
 
 [[package]]
+name = "cumulus-pallet-xcm"
+version = "0.1.0"
+source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.25#d08055df3d735e1a4ebf6a9f8054d72e5144c2ea"
+dependencies = [
+ "cumulus-primitives-core",
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+ "xcm",
+]
+
+[[package]]
+name = "cumulus-pallet-xcmp-queue"
+version = "0.1.0"
+source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.25#d08055df3d735e1a4ebf6a9f8054d72e5144c2ea"
+dependencies = [
+ "cumulus-primitives-core",
+ "frame-support",
+ "frame-system",
+ "log",
+ "parity-scale-codec",
+ "rand_chacha 0.3.1",
+ "scale-info",
+ "sp-runtime",
+ "sp-std",
+ "xcm",
+ "xcm-executor",
+]
+
+[[package]]
 name = "cumulus-primitives-core"
 version = "0.1.0"
-source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.25#390042a01940a0a4d0b28eb196a2e9251f3cec33"
+source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.25#d08055df3d735e1a4ebf6a9f8054d72e5144c2ea"
 dependencies = [
  "frame-support",
  "parity-scale-codec",
@@ -1709,7 +1762,7 @@ dependencies = [
 [[package]]
 name = "cumulus-primitives-parachain-inherent"
 version = "0.1.0"
-source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.25#390042a01940a0a4d0b28eb196a2e9251f3cec33"
+source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.25#d08055df3d735e1a4ebf6a9f8054d72e5144c2ea"
 dependencies = [
  "async-trait",
  "cumulus-primitives-core",
@@ -1732,7 +1785,7 @@ dependencies = [
 [[package]]
 name = "cumulus-primitives-timestamp"
 version = "0.1.0"
-source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.25#390042a01940a0a4d0b28eb196a2e9251f3cec33"
+source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.25#d08055df3d735e1a4ebf6a9f8054d72e5144c2ea"
 dependencies = [
  "cumulus-primitives-core",
  "futures 0.3.21",
@@ -1743,9 +1796,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "cumulus-primitives-utility"
+version = "0.1.0"
+source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.25#d08055df3d735e1a4ebf6a9f8054d72e5144c2ea"
+dependencies = [
+ "cumulus-primitives-core",
+ "frame-support",
+ "parity-scale-codec",
+ "polkadot-core-primitives",
+ "polkadot-parachain",
+ "polkadot-primitives",
+ "sp-runtime",
+ "sp-std",
+ "sp-trie",
+ "xcm",
+]
+
+[[package]]
 name = "cumulus-relay-chain-inprocess-interface"
 version = "0.1.0"
-source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.25#390042a01940a0a4d0b28eb196a2e9251f3cec33"
+source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.25#d08055df3d735e1a4ebf6a9f8054d72e5144c2ea"
 dependencies = [
  "async-trait",
  "cumulus-primitives-core",
@@ -1775,7 +1845,7 @@ dependencies = [
 [[package]]
 name = "cumulus-relay-chain-interface"
 version = "0.1.0"
-source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.25#390042a01940a0a4d0b28eb196a2e9251f3cec33"
+source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.25#d08055df3d735e1a4ebf6a9f8054d72e5144c2ea"
 dependencies = [
  "async-trait",
  "cumulus-primitives-core",
@@ -1798,7 +1868,7 @@ dependencies = [
 [[package]]
 name = "cumulus-relay-chain-rpc-interface"
 version = "0.1.0"
-source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.25#390042a01940a0a4d0b28eb196a2e9251f3cec33"
+source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.25#d08055df3d735e1a4ebf6a9f8054d72e5144c2ea"
 dependencies = [
  "async-trait",
  "backoff",
@@ -1824,7 +1894,7 @@ dependencies = [
 [[package]]
 name = "cumulus-test-relay-sproof-builder"
 version = "0.1.0"
-source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.25#390042a01940a0a4d0b28eb196a2e9251f3cec33"
+source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.25#d08055df3d735e1a4ebf6a9f8054d72e5144c2ea"
 dependencies = [
  "cumulus-primitives-core",
  "parity-scale-codec",
@@ -1901,7 +1971,7 @@ dependencies = [
 
 [[package]]
 name = "delegation"
-version = "1.7.0"
+version = "1.7.1"
 dependencies = [
  "attestation",
  "bitflags",
@@ -1959,7 +2029,7 @@ dependencies = [
 
 [[package]]
 name = "did"
-version = "1.7.0"
+version = "1.7.1"
 dependencies = [
  "ctype",
  "env_logger",
@@ -3555,7 +3625,7 @@ checksum = "67c21572b4949434e4fc1e1978b99c5f77064153c59d998bf13ecd96fb5ecba7"
 
 [[package]]
 name = "kilt-parachain"
-version = "1.7.0"
+version = "1.7.1"
 dependencies = [
  "clap",
  "cumulus-client-cli",
@@ -3628,7 +3698,7 @@ dependencies = [
 
 [[package]]
 name = "kilt-support"
-version = "1.7.0"
+version = "1.7.1"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -4575,7 +4645,7 @@ checksum = "3e2e65a1a2e43cfcb47a895c4c8b10d1f4a61097f9f254f183aee60cad9c651d"
 
 [[package]]
 name = "mashnet-node"
-version = "1.7.0"
+version = "1.7.1"
 dependencies = [
  "clap",
  "did-rpc",
@@ -4626,7 +4696,7 @@ dependencies = [
 
 [[package]]
 name = "mashnet-node-runtime"
-version = "1.7.0"
+version = "1.7.1"
 dependencies = [
  "attestation",
  "bitflags",
@@ -5535,7 +5605,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-did-lookup"
-version = "1.7.0"
+version = "1.7.1"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -5705,7 +5775,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-inflation"
-version = "1.7.0"
+version = "1.7.1"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -6174,7 +6244,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-web3-names"
-version = "1.7.0"
+version = "1.7.1"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -6229,7 +6299,7 @@ dependencies = [
 [[package]]
 name = "parachain-info"
 version = "0.1.0"
-source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.25#390042a01940a0a4d0b28eb196a2e9251f3cec33"
+source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.25#d08055df3d735e1a4ebf6a9f8054d72e5144c2ea"
 dependencies = [
  "cumulus-primitives-core",
  "frame-support",
@@ -6241,7 +6311,7 @@ dependencies = [
 
 [[package]]
 name = "parachain-staking"
-version = "1.7.0"
+version = "1.7.1"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -6448,15 +6518,19 @@ checksum = "d4fd5641d01c8f18a23da7b6fe29298ff4b55afcccdf78973b24cf3175fee32e"
 
 [[package]]
 name = "peregrine-runtime"
-version = "1.7.0"
+version = "1.7.1"
 dependencies = [
  "attestation",
  "ctype",
  "cumulus-pallet-aura-ext",
+ "cumulus-pallet-dmp-queue",
  "cumulus-pallet-parachain-system",
  "cumulus-pallet-session-benchmarking",
+ "cumulus-pallet-xcm",
+ "cumulus-pallet-xcmp-queue",
  "cumulus-primitives-core",
  "cumulus-primitives-timestamp",
+ "cumulus-primitives-utility",
  "delegation",
  "did",
  "did-rpc-runtime-api",
@@ -6493,6 +6567,7 @@ dependencies = [
  "pallet-utility",
  "pallet-vesting",
  "pallet-web3-names",
+ "pallet-xcm",
  "parachain-info",
  "parachain-staking",
  "parity-scale-codec",
@@ -8498,7 +8573,7 @@ dependencies = [
 
 [[package]]
 name = "runtime-common"
-version = "1.7.0"
+version = "1.7.1"
 dependencies = [
  "attestation",
  "frame-support",
@@ -8510,6 +8585,7 @@ dependencies = [
  "pallet-transaction-payment",
  "parachain-staking",
  "parity-scale-codec",
+ "polkadot-parachain",
  "scale-info",
  "serde",
  "smallvec",
@@ -8518,6 +8594,9 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
+ "xcm",
+ "xcm-builder",
+ "xcm-executor",
 ]
 
 [[package]]
@@ -10824,15 +10903,19 @@ checksum = "6e63cff320ae2c57904679ba7cb63280a3dc4613885beafb148ee7bf9aa9042d"
 
 [[package]]
 name = "spiritnet-runtime"
-version = "1.7.0"
+version = "1.7.1"
 dependencies = [
  "attestation",
  "ctype",
  "cumulus-pallet-aura-ext",
+ "cumulus-pallet-dmp-queue",
  "cumulus-pallet-parachain-system",
  "cumulus-pallet-session-benchmarking",
+ "cumulus-pallet-xcm",
+ "cumulus-pallet-xcmp-queue",
  "cumulus-primitives-core",
  "cumulus-primitives-timestamp",
+ "cumulus-primitives-utility",
  "delegation",
  "did",
  "did-rpc-runtime-api",
@@ -10868,6 +10951,7 @@ dependencies = [
  "pallet-utility",
  "pallet-vesting",
  "pallet-web3-names",
+ "pallet-xcm",
  "parachain-info",
  "parachain-staking",
  "parity-scale-codec",
