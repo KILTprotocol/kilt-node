@@ -4,7 +4,7 @@ description = "Lookup the DID for a blockchain account."
 edition = "2021"
 name = "pallet-did-lookup"
 repository = "https://github.com/KILTprotocol/mashnet-node"
-version = "1.7.0"
+version = "1.7.1"
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]

@@ -3,7 +3,7 @@ authors = ["KILT <info@kilt.io>"]
 build = "build.rs"
 edition = "2021"
 name = "mashnet-node"
-version = "1.7.0"
+version = "1.7.1"
 
 [[bin]]
 name = "mashnet-node"
@@ -68,17 +68,13 @@ frame-benchmarking = {git = "https://github.com/paritytech/substrate", branch = 
 frame-benchmarking-cli = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.26"}
 
 # Runtime tests
-pallet-conviction-voting = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.26", optional = true}
-pallet-referenda = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.26", optional = true}
 try-runtime-cli = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.26", optional = true}
 
 [features]
 default = []
 runtime-benchmarks = [
   "mashnet-node-runtime/runtime-benchmarks",
-  "pallet-conviction-voting/runtime-benchmarks",
   "pallet-did-lookup/runtime-benchmarks",
-  "pallet-referenda/runtime-benchmarks",
   "runtime-common/runtime-benchmarks",
 ]
 try-runtime = [
