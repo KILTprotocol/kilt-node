@@ -30,8 +30,9 @@ use sp_runtime::{traits::Zero, Perbill, Permill, Perquintill, SaturatedConversio
 
 use crate::{
 	mock::{
-		almost_equal, events, last_event, roll_to, AccountId, Balance, Balances, BlockNumber, Event as MetaEvent,
-		ExtBuilder, Origin, Session, StakePallet, System, Test, BLOCKS_PER_ROUND, DECIMALS, TREASURY_ACC,
+		almost_equal, events, last_event, roll_to, roll_to_claim_rewards, AccountId, Balance, Balances, BlockNumber,
+		Event as MetaEvent, ExtBuilder, Origin, Session, StakePallet, System, Test, BLOCKS_PER_ROUND, DECIMALS,
+		TREASURY_ACC,
 	},
 	set::OrderedSet,
 	types::{
@@ -1628,7 +1629,7 @@ fn coinbase_rewards_few_blocks_detailed_check() {
 			assert_eq!(Balances::usable_balance(&5), user_5);
 
 			// 1 is block author for 1st block
-			roll_to(2, authors.clone());
+			roll_to_claim_rewards(2, authors.clone());
 			assert_eq!(Balances::usable_balance(&1), user_1 + c_rewards);
 			assert_eq!(Balances::usable_balance(&2), user_2);
 			assert_eq!(Balances::usable_balance(&3), user_3 + d_rewards / 2);
@@ -1636,7 +1637,7 @@ fn coinbase_rewards_few_blocks_detailed_check() {
 			assert_eq!(Balances::usable_balance(&5), user_5);
 
 			// 1 is block author for 2nd block
-			roll_to(3, authors.clone());
+			roll_to_claim_rewards(3, authors.clone());
 			assert_eq!(Balances::usable_balance(&1), user_1 + 2 * c_rewards);
 			assert_eq!(Balances::usable_balance(&2), user_2);
 			assert_eq!(Balances::usable_balance(&3), user_3 + d_rewards);
@@ -1644,7 +1645,7 @@ fn coinbase_rewards_few_blocks_detailed_check() {
 			assert_eq!(Balances::usable_balance(&5), user_5);
 
 			// 1 is block author for 3rd block
-			roll_to(4, authors.clone());
+			roll_to_claim_rewards(4, authors.clone());
 			assert_eq!(Balances::usable_balance(&1), user_1 + 3 * c_rewards);
 			assert_eq!(Balances::usable_balance(&2), user_2);
 			assert_eq!(Balances::usable_balance(&3), user_3 + d_rewards / 2 * 3);
@@ -1652,7 +1653,7 @@ fn coinbase_rewards_few_blocks_detailed_check() {
 			assert_eq!(Balances::usable_balance(&5), user_5);
 
 			// 2 is block author for 4th block
-			roll_to(5, authors.clone());
+			roll_to_claim_rewards(5, authors.clone());
 			assert_eq!(Balances::usable_balance(&1), user_1 + 3 * c_rewards);
 			assert_eq!(Balances::usable_balance(&2), user_2 + c_rewards);
 			assert_eq!(Balances::usable_balance(&3), user_3 + d_rewards / 2 * 3);
@@ -1661,7 +1662,7 @@ fn coinbase_rewards_few_blocks_detailed_check() {
 			assert_ok!(StakePallet::revoke_delegation(Origin::signed(5), 2));
 
 			// 2 is block author for 5th block
-			roll_to(6, authors);
+			roll_to_claim_rewards(6, authors);
 			assert_eq!(Balances::usable_balance(&1), user_1 + 3 * c_rewards);
 			assert_eq!(Balances::usable_balance(&2), user_2 + 2 * c_rewards);
 			assert_eq!(Balances::usable_balance(&3), user_3 + d_rewards / 2 * 3);
@@ -1685,7 +1686,7 @@ fn delegator_should_not_receive_rewards_after_revoking() {
 			let authors: Vec<Option<AccountId>> = (1u64..100u64).map(|_| Some(1u64)).collect();
 			assert_eq!(Balances::usable_balance(&1), Balance::zero());
 			assert_eq!(Balances::usable_balance(&2), Balance::zero());
-			roll_to(100, authors);
+			roll_to_claim_rewards(100, authors);
 			assert!(Balances::usable_balance(&1) > Balance::zero());
 			assert_ok!(StakePallet::unlock_unstaked(Origin::signed(2), 2));
 			assert_eq!(Balances::usable_balance(&2), 10_000_000 * DECIMALS);
@@ -1707,7 +1708,7 @@ fn delegator_should_not_receive_rewards_after_revoking() {
 			assert_eq!(Balances::usable_balance(&1), Balance::zero());
 			assert_eq!(Balances::usable_balance(&2), Balance::zero());
 			assert_eq!(Balances::usable_balance(&3), Balance::zero());
-			roll_to(100, authors);
+			roll_to_claim_rewards(100, authors);
 			assert!(Balances::usable_balance(&1) > Balance::zero());
 			assert!(Balances::usable_balance(&2) > Balance::zero());
 			assert_ok!(StakePallet::unlock_unstaked(Origin::signed(3), 3));
@@ -1740,7 +1741,7 @@ fn coinbase_rewards_many_blocks_simple_check() {
 			let end_block: BlockNumber = num_of_years * Test::BLOCKS_PER_YEAR as BlockNumber;
 			// set round robin authoring
 			let authors: Vec<Option<AccountId>> = (0u64..=end_block).map(|i| Some(i % 2 + 1)).collect();
-			roll_to(end_block, authors);
+			roll_to_claim_rewards(end_block, authors);
 
 			let rewards_1 = Balances::free_balance(&1).saturating_sub(40_000_000 * DECIMALS);
 			let rewards_2 = Balances::free_balance(&2).saturating_sub(40_000_000 * DECIMALS);
@@ -1847,7 +1848,7 @@ fn should_not_reward_delegators_below_min_stake() {
 			assert_eq!(Balances::usable_balance(&4), 5);
 
 			// should only reward 1
-			roll_to(4, authors);
+			roll_to_claim_rewards(4, authors);
 			assert!(Balances::usable_balance(&1) > Balance::zero());
 			assert_eq!(Balances::usable_balance(&4), 5);
 			assert_eq!(Balances::usable_balance(&2), Balance::zero());
@@ -2806,7 +2807,7 @@ fn adjust_reward_rates() {
 			let authors: Vec<Option<AccountId>> = (0u64..=num_of_years).map(|_| Some(1u64)).collect();
 
 			// reward once in first year
-			roll_to(2, authors.clone());
+			roll_to_claim_rewards(2, authors.clone());
 			let c_rewards_0 = Balances::free_balance(&1).saturating_sub(10_000_000 * DECIMALS);
 			let d_rewards_0 = Balances::free_balance(&2).saturating_sub(90_000_000 * DECIMALS);
 			assert!(!c_rewards_0.is_zero());
@@ -2814,7 +2815,10 @@ fn adjust_reward_rates() {
 
 			// finish first year
 			System::set_block_number(<Test as Config>::BLOCKS_PER_YEAR);
-			roll_to(<Test as Config>::BLOCKS_PER_YEAR + 1, vec![]);
+			roll_to_claim_rewards(<Test as Config>::BLOCKS_PER_YEAR + 1, vec![]);
+			// reward reduction should not happen automatically anymore
+			assert_eq!(StakePallet::last_reward_reduction(), 0u64);
+			assert_ok!(StakePallet::execute_pending_reward_change(Origin::signed(1)));
 			assert_eq!(StakePallet::last_reward_reduction(), 1u64);
 			let inflation_1 = InflationInfo::new(
 				<Test as Config>::BLOCKS_PER_YEAR,
@@ -2825,7 +2829,7 @@ fn adjust_reward_rates() {
 			);
 			assert_eq!(StakePallet::inflation_config(), inflation_1);
 			// reward once in 2nd year
-			roll_to(<Test as Config>::BLOCKS_PER_YEAR + 2, authors.clone());
+			roll_to_claim_rewards(<Test as Config>::BLOCKS_PER_YEAR + 2, authors.clone());
 			let c_rewards_1 = Balances::free_balance(&1)
 				.saturating_sub(10_000_000 * DECIMALS)
 				.saturating_sub(c_rewards_0);
@@ -2842,7 +2846,10 @@ fn adjust_reward_rates() {
 
 			// finish 2nd year
 			System::set_block_number(2 * <Test as Config>::BLOCKS_PER_YEAR);
-			roll_to(2 * <Test as Config>::BLOCKS_PER_YEAR + 1, vec![]);
+			roll_to_claim_rewards(2 * <Test as Config>::BLOCKS_PER_YEAR + 1, vec![]);
+			// reward reduction should not happen automatically anymore
+			assert_eq!(StakePallet::last_reward_reduction(), 1u64);
+			assert_ok!(StakePallet::execute_pending_reward_change(Origin::signed(1)));
 			assert_eq!(StakePallet::last_reward_reduction(), 2u64);
 			let inflation_2 = InflationInfo::new(
 				<Test as Config>::BLOCKS_PER_YEAR,
@@ -2853,7 +2860,7 @@ fn adjust_reward_rates() {
 			);
 			assert_eq!(StakePallet::inflation_config(), inflation_2);
 			// reward once in 3rd year
-			roll_to(2 * <Test as Config>::BLOCKS_PER_YEAR + 2, authors);
+			roll_to_claim_rewards(2 * <Test as Config>::BLOCKS_PER_YEAR + 2, authors);
 			let c_rewards_2 = Balances::free_balance(&1)
 				.saturating_sub(10_000_000 * DECIMALS)
 				.saturating_sub(c_rewards_0)
@@ -3418,7 +3425,7 @@ fn authorities_per_round() {
 			let inflation = StakePallet::inflation_config();
 
 			// roll to last block of round 0
-			roll_to(4, authors.clone());
+			roll_to_claim_rewards(4, authors.clone());
 			let reward_0 = inflation.collator.reward_rate.per_block * stake * 2;
 			assert_eq!(Balances::free_balance(1), stake + reward_0);
 			// increase max selected candidates which will become effective in round 2
@@ -3427,19 +3434,19 @@ fn authorities_per_round() {
 			// roll to last block of round 1
 			// should still multiply with 2 because the Authority set was chosen at start of
 			// round 1
-			roll_to(9, authors.clone());
+			roll_to_claim_rewards(9, authors.clone());
 			let reward_1 = inflation.collator.reward_rate.per_block * stake * 2;
 			assert_eq!(Balances::free_balance(1), stake + reward_0 + reward_1);
 
 			// roll to last block of round 2
 			// should multiply with 4 because there are only 4 candidates
-			roll_to(14, authors.clone());
+			roll_to_claim_rewards(14, authors.clone());
 			let reward_2 = inflation.collator.reward_rate.per_block * stake * 4;
 			assert_eq!(Balances::free_balance(1), stake + reward_0 + reward_1 + reward_2);
 
 			// roll to last block of round 3
 			// should multiply with 4 because there are only 4 candidates
-			roll_to(19, authors);
+			roll_to_claim_rewards(19, authors);
 			let reward_3 = inflation.collator.reward_rate.per_block * stake * 4;
 			assert_eq!(
 				Balances::free_balance(1),

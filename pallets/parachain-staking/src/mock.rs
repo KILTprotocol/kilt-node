@@ -22,7 +22,7 @@
 use super::*;
 use crate::{self as stake, types::NegativeImbalanceOf};
 use frame_support::{
-	construct_runtime, parameter_types,
+	assert_ok, construct_runtime, parameter_types,
 	traits::{Currency, GenesisBuild, OnFinalize, OnInitialize, OnUnbalanced},
 	weights::Weight,
 };
@@ -363,6 +363,30 @@ pub(crate) fn roll_to(n: BlockNumber, authors: Vec<Option<AccountId>>) {
 	while System::block_number() < n {
 		if let Some(Some(author)) = authors.get((System::block_number()) as usize) {
 			StakePallet::note_author(*author);
+		}
+		<AllPalletsReversedWithSystemFirst as OnFinalize<u64>>::on_finalize(System::block_number());
+		System::set_block_number(System::block_number() + 1);
+		<AllPalletsReversedWithSystemFirst as OnInitialize<u64>>::on_initialize(System::block_number());
+	}
+}
+
+#[allow(unused_must_use)]
+pub(crate) fn roll_to_claim_rewards(n: BlockNumber, authors: Vec<Option<AccountId>>) {
+	while System::block_number() < n {
+		if let Some(Some(author)) = authors.get((System::block_number()) as usize) {
+			StakePallet::note_author(*author);
+			// author must convert RewardCount to Rewards before claiming
+			assert_ok!(StakePallet::increment_collator_rewards(Origin::signed(*author)));
+			// author claims rewards
+			assert_ok!(StakePallet::claim_rewards_for(Origin::signed(*author), *author));
+
+			// claim rewards for delegators
+			let col_state = StakePallet::candidate_pool(author).expect("Block author must be candidate");
+			for delegation in col_state.delegators {
+				// NOTE: cannot use assert_ok! as we sometimes expect zero rewards for
+				// delegators such that the claiming would throw
+				StakePallet::claim_rewards_for(Origin::signed(*author), delegation.owner);
+			}
 		}
 		<AllPalletsReversedWithSystemFirst as OnFinalize<u64>>::on_finalize(System::block_number());
 		System::set_block_number(System::block_number() + 1);

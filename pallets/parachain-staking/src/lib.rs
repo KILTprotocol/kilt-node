@@ -821,7 +821,7 @@ pub mod pallet {
 
 			// set rewards for all collators and delegators due
 			CandidatePool::<T>::iter().for_each(|(id, state)| {
-				Self::inc_collator_reward(&id, state.stake);
+				Self::do_inc_collator_reward(&id, state.stake);
 			});
 
 			Self::deposit_event(Event::RoundInflationSet(
@@ -937,7 +937,6 @@ pub mod pallet {
 		/// - Reads: [Origin Account], Round
 		/// - Writes: Round
 		/// # </weight>
-		// TODO: Maybe refactor to set rewards for all network participants
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::set_blocks_per_round())]
 		pub fn set_blocks_per_round(origin: OriginFor<T>, new: T::BlockNumber) -> DispatchResult {
 			ensure_root(origin)?;
@@ -1397,7 +1396,7 @@ pub mod pallet {
 			CandidatePool::<T>::insert(&collator, state);
 
 			// increment rewards for origin + their delegators and reset reward counter
-			Self::inc_collator_reward(&collator, before_stake);
+			Self::do_inc_collator_reward(&collator, before_stake);
 
 			Self::deposit_event(Event::CollatorStakedMore(collator, before_stake, after_stake));
 			Ok(Some(<T as pallet::Config>::WeightInfo::candidate_stake_more(
@@ -1474,7 +1473,7 @@ pub mod pallet {
 			CandidatePool::<T>::insert(&collator, state);
 
 			// increment rewards for origin + their delegators and reset reward counter
-			Self::inc_collator_reward(&collator, before_stake);
+			Self::do_inc_collator_reward(&collator, before_stake);
 
 			Self::deposit_event(Event::CollatorStakedLess(collator, before_stake, after));
 			Ok(Some(<T as pallet::Config>::WeightInfo::candidate_stake_less(
@@ -1950,7 +1949,7 @@ pub mod pallet {
 			};
 
 			// set rewards and reset reward counter
-			Self::inc_delegator_reward(&delegator, stake_after.saturating_sub(more), &candidate);
+			Self::do_inc_delegator_reward(&delegator, stake_after.saturating_sub(more), &candidate);
 
 			CandidatePool::<T>::insert(&candidate, collator);
 			DelegatorState::<T>::insert(&delegator, delegations);
@@ -2042,7 +2041,7 @@ pub mod pallet {
 			};
 
 			// set rewards and reset reward counter
-			Self::inc_delegator_reward(&delegator, stake_after.saturating_add(less), &candidate);
+			Self::do_inc_delegator_reward(&delegator, stake_after.saturating_add(less), &candidate);
 
 			CandidatePool::<T>::insert(&candidate, collator);
 			DelegatorState::<T>::insert(&delegator, delegations);
@@ -2080,7 +2079,22 @@ pub mod pallet {
 			Ok(Some(<T as pallet::Config>::WeightInfo::unlock_unstaked(unstaking_len)).into())
 		}
 
-		// TODO: Benchmark, unit tests, docs
+		/// Claim block authoring rewards for the target address.
+		///
+		/// Requires `Rewards` to be set beforehand, which can by triggered by
+		/// any of the following options
+		/// * Calling increment_{collator, delegator}_rewards (active)
+		/// * Altering your stake (active)
+		/// * Leaving the network as a collator (active)
+		/// * Revoking a delegation as a delegator (active)
+		/// * Being a delegator whose collator left the network, altered their
+		///   stake or incremented rewards (passive)
+		///
+		/// The dispatch origin can be any signed one, e.g., anyone can claim
+		/// for anyone.
+		///
+		/// Emits `Rewarded`.
+		// TODO: Benchmark, unit tests
 		#[pallet::weight(0)]
 		pub fn claim_rewards_for(origin: OriginFor<T>, target: <T::Lookup as StaticLookup>::Source) -> DispatchResult {
 			ensure_signed(origin)?;
@@ -2088,7 +2102,7 @@ pub mod pallet {
 
 			// we could kill the storage entry but let's be safe in case the deposit fails
 			let rewards = Rewards::<T>::get(&target);
-			ensure!(rewards.is_zero(), Error::<T>::RewardsNotFound);
+			ensure!(!rewards.is_zero(), Error::<T>::RewardsNotFound);
 
 			// mint into target and reset rewards
 			let rewards = T::Currency::deposit_into_existing(&target, rewards)?;
@@ -2097,6 +2111,56 @@ pub mod pallet {
 			Self::deposit_event(Event::Rewarded(target, rewards.peek()));
 
 			Ok(())
+		}
+
+		/// Actively increment the rewards of a collator and their delegators.
+		///
+		/// The same effect is triggered by changing the stake or leaving the
+		/// network.
+		///
+		/// The dispatch origin must be a collator.
+		// TODO: Benchmark, unit tests
+		#[pallet::weight(0)]
+		pub fn increment_collator_rewards(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
+			let collator = ensure_signed(origin)?;
+			let state = CandidatePool::<T>::get(&collator).ok_or(Error::<T>::CandidateNotFound)?;
+
+			// early exit
+			let reward_count = RewardCount::<T>::get(&collator);
+			ensure!(!reward_count.is_zero(), Error::<T>::RewardsNotFound);
+
+			let weight = Self::do_inc_collator_reward(&collator, state.stake);
+			Ok(Some(weight).into())
+		}
+
+		/// Actively increment the rewards of a delegator for all their
+		/// delegations.
+		///
+		/// The same effect is triggered by changing the stake or revoking
+		/// delegations.
+		///
+		/// The dispatch origin must be a delegator.
+		// TODO: Benchmark, unit tests
+		#[pallet::weight(0)]
+		pub fn increment_delegator_rewards(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
+			let delegator = ensure_signed(origin)?;
+			let state = DelegatorState::<T>::get(&delegator).ok_or(Error::<T>::DelegatorNotFound)?;
+
+			// early exit
+			let reward_count = RewardCount::<T>::take(&delegator);
+			ensure!(!reward_count.is_zero(), Error::<T>::RewardsNotFound);
+
+			// iterate delegations
+			let mut post_weight: Weight = 0;
+			for delegation in state.delegations.into_iter() {
+				post_weight = post_weight.saturating_add(Self::do_inc_delegator_reward(
+					&delegator,
+					delegation.amount,
+					&delegation.owner,
+				));
+			}
+
+			Ok(Some(post_weight).into())
 		}
 
 		/// Executes the annual reduction of the reward rates for collators and
@@ -2140,7 +2204,7 @@ pub mod pallet {
 
 			// set rewards for all collators and delegators before updating reward rates
 			CandidatePool::<T>::iter().for_each(|(id, state)| {
-				Self::inc_collator_reward(&id, state.stake);
+				Self::do_inc_collator_reward(&id, state.stake);
 			});
 
 			// update inflation config
@@ -2436,7 +2500,7 @@ pub mod pallet {
 			let new_total = state.total;
 
 			// set rewards
-			Self::inc_delegator_reward(&delegator, delegator_stake, &collator);
+			Self::do_inc_delegator_reward(&delegator, delegator_stake, &collator);
 
 			// we don't unlock immediately
 			Self::prep_unstake(&delegator, delegator_stake, false)?;
@@ -2588,7 +2652,7 @@ pub mod pallet {
 				state.total = state.total.saturating_sub(stake_to_remove.amount);
 
 				// set rewards for kicked delegator
-				Self::inc_delegator_reward(&stake_to_remove.owner, stake_to_remove.amount, &state.id);
+				Self::do_inc_delegator_reward(&stake_to_remove.owner, stake_to_remove.amount, &state.id);
 
 				// update storage of kicked delegator
 				let kicked_delegator = Self::prep_kick_delegator(&stake_to_remove, &state.id)?;
@@ -2727,8 +2791,6 @@ pub mod pallet {
 		) -> DispatchResult {
 			// iterate over delegators
 			for stake in &state.delegators[..] {
-				// // increment rewards of delegator
-				// Self::inc_delegator_reward(&stake.owner, stake.amount, collator);
 				// prepare unstaking of delegator
 				Self::prep_unstake(&stake.owner, stake.amount, true)?;
 				// remove delegation from delegator state
@@ -2748,7 +2810,7 @@ pub mod pallet {
 			// *** No Fail beyond this point ***
 
 			// increment rewards of collator and their delegators
-			Self::inc_collator_reward(collator, state.stake);
+			Self::do_inc_collator_reward(collator, state.stake);
 
 			// disable validator for next session if they were in the set of validators
 			pallet_session::Pallet::<T>::validators()
@@ -2921,20 +2983,20 @@ pub mod pallet {
 		///
 		/// Resets all reward counters of the collator and their delegators to
 		/// zero.
-		fn inc_collator_reward(collator: &T::AccountId, stake: BalanceOf<T>) -> Weight {
+		fn do_inc_collator_reward(collator: &T::AccountId, stake: BalanceOf<T>) -> Weight {
 			let mut post_weight = Weight::zero();
 			// get reward counters
 			let col_reward_count = RewardCount::<T>::get(collator);
 
 			// set reward data for collator
 			Rewards::<T>::mutate(collator, |reward| {
-				reward.saturating_add(Self::calc_block_rewards_collator(stake, col_reward_count.into()))
+				*reward = reward.saturating_add(Self::calc_block_rewards_collator(stake, col_reward_count.into()));
 			});
 
 			// set reward data for delegators
 			if let Some(state) = CandidatePool::<T>::get(collator.clone()) {
 				for Stake { owner, amount } in state.delegators {
-					post_weight = post_weight.saturating_add(Self::inc_delegator_reward(&owner, amount, collator));
+					post_weight = post_weight.saturating_add(Self::do_inc_delegator_reward(&owner, amount, collator));
 					// Reset delegator counter since collator counter will be reset
 					RewardCount::<T>::insert(owner, 0);
 					post_weight = post_weight.saturating_add(T::DbWeight::get().reads(1));
@@ -2951,7 +3013,7 @@ pub mod pallet {
 		/// Increment the accumulated rewards of a delegator by consuming their
 		/// current rewards counter. The counter will be reset to the collator
 		/// counter.
-		fn inc_delegator_reward(acc: &T::AccountId, stake: BalanceOf<T>, col: &T::AccountId) -> Weight {
+		fn do_inc_delegator_reward(acc: &T::AccountId, stake: BalanceOf<T>, col: &T::AccountId) -> Weight {
 			// get reward counters
 			let del_reward_count = RewardCount::<T>::get(acc);
 			let col_reward_count = RewardCount::<T>::get(col);
@@ -2960,7 +3022,7 @@ pub mod pallet {
 			// only update if collator has higher reward count
 			if diff > 0 {
 				Rewards::<T>::mutate(acc, |reward| {
-					reward.saturating_add(Self::calc_block_rewards_delegator(stake, diff.into()))
+					*reward = reward.saturating_add(Self::calc_block_rewards_delegator(stake, diff.into()));
 				});
 				// TODO: Investigate whether we want to set this to some input variable to
 				// improve `add_collator_reward`
@@ -2990,9 +3052,8 @@ pub mod pallet {
 	where
 		T: Config + pallet_authorship::Config + pallet_session::Config,
 	{
-		// TODO: Docs
-		/// Increments the reward counter of the block author by the number of
-		/// collators.
+		/// Increments the reward counter of the block author by the current
+		/// number of collators in the session.
 		fn note_author(author: T::AccountId) {
 			// should always include state except if the collator has been forcedly removed
 			// via `force_remove_candidate` in the current or previous round
@@ -3000,7 +3061,7 @@ pub mod pallet {
 				// necessary to compensate for a potentially fluctuating number of collators
 				let authors = pallet_session::Pallet::<T>::validators();
 				RewardCount::<T>::mutate(&author, |count| {
-					count.saturating_add(authors.len().saturated_into::<u32>())
+					*count = count.saturating_add(authors.len().saturated_into::<u32>());
 				});
 			}
 
