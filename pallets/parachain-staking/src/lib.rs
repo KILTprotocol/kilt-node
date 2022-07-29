@@ -436,8 +436,9 @@ pub mod pallet {
 		/// The staking reward being unlocked does not exist.
 		/// Max unlocking requests reached.
 		NoMoreUnstaking,
-		/// There is no pending reward change.
-		NoPendingRewardChange,
+		/// The reward rate cannot be adjusted yet as an entire year has not
+		/// passed.
+		TooEarly,
 		/// Provided staked value is zero. Should never be thrown.
 		StakeNotFound,
 		/// Cannot unlock when Unstaked is empty.
@@ -539,8 +540,6 @@ pub mod pallet {
 		fn on_initialize(now: T::BlockNumber) -> frame_support::weights::Weight {
 			let mut post_weight = <T as Config>::WeightInfo::on_initialize_no_action();
 			let mut round = <Round<T>>::get();
-			let year = now / T::BLOCKS_PER_YEAR;
-			let last_update = LastRewardReduction::<T>::get();
 
 			// check for round update
 			if round.should_update(now) {
@@ -551,11 +550,6 @@ pub mod pallet {
 
 				Self::deposit_event(Event::NewRound(round.first, round.current));
 				post_weight = <T as Config>::WeightInfo::on_initialize_round_update();
-			}
-			// check for annual update of staking reward rates
-			if year > last_update {
-				PendingRewardChange::<T>::put(true);
-				post_weight = post_weight.saturating_add(T::DbWeight::get().writes(1));
 			}
 			// check for network reward and mint
 			// on success, mint each block
@@ -686,11 +680,6 @@ pub mod pallet {
 	#[pallet::storage]
 	#[pallet::getter(fn rewards)]
 	pub(crate) type Rewards<T: Config> = StorageMap<_, Twox64Concat, T::AccountId, BalanceOf<T>, ValueQuery>;
-
-	// TODO: Docs
-	#[pallet::storage]
-	#[pallet::getter(fn pending_reward_change)]
-	pub(crate) type PendingRewardChange<T: Config> = StorageValue<_, bool, OptionQuery>;
 
 	pub type GenesisStaker<T> = Vec<(
 		<T as frame_system::Config>::AccountId,
@@ -2114,25 +2103,20 @@ pub mod pallet {
 		/// delegators. Moreover, sets rewards for all collators and delegators
 		/// before adjusting the inflation.
 		///
-		/// Requires PendingRewardChange to be set to Some(true) which happens
-		/// once per year in `on_initialize`.
-		///
 		/// Emits `RoundInflationSet`.
 		// TODO: benchmark
 		#[pallet::weight(0)]
 		pub fn execute_pending_reward_change(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
 			ensure_signed(origin)?;
 
-			ensure!(
-				PendingRewardChange::<T>::get() == Some(true),
-				Error::<T>::NoPendingRewardChange
-			);
-
-			// Calculate new inflation based on last year
 			let now = frame_system::Pallet::<T>::block_number();
 			let year = now / T::BLOCKS_PER_YEAR;
-			let inflation = InflationConfig::<T>::get();
+			let last_update = LastRewardReduction::<T>::get();
 
+			ensure!(year > last_update, Error::<T>::TooEarly);
+
+			// Calculate new inflation based on last year
+			let inflation = InflationConfig::<T>::get();
 			// collator reward rate decreases by 2% p.a. of the previous one
 			let c_reward_rate = inflation.collator.reward_rate.annual * Perquintill::from_percent(98);
 			// delegator reward rate should be 6% in 2nd year and 0% afterwards
@@ -2158,8 +2142,6 @@ pub mod pallet {
 			CandidatePool::<T>::iter().for_each(|(id, state)| {
 				Self::inc_collator_reward(&id, state.stake);
 			});
-			// reset pending reward change
-			PendingRewardChange::<T>::put(false);
 
 			// update inflation config
 			InflationConfig::<T>::put(new_inflation.clone());
