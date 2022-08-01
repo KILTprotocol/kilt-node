@@ -34,16 +34,6 @@ pub struct Claim<CtypeHash, SubjectIdentifier, Content> {
 	pub contents: Content,
 }
 
-/// The type of a claimer's signature to prove the claimer's involvement in the
-/// public credential issuance process.
-#[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq, PartialOrd, Ord, TypeInfo)]
-pub struct ClaimerSignatureInfo<ClaimerIdentifier, Signature> {
-	/// The identifier of the claimer.
-	pub claimer_id: ClaimerIdentifier,
-	/// The signature of the claimer.
-	pub signature_payload: Signature,
-}
-
 /// The type of a credentials as incoming from the outside world.
 /// Some of its fields are parsed and/or transformed inside the `add` operation.
 #[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq, PartialOrd, Ord, TypeInfo)]
@@ -51,19 +41,10 @@ pub struct Credential<
 	CtypeHash,
 	SubjectIdentifier,
 	ClaimContent,
-	ClaimHash,
-	Nonce,
-	ClaimerSignature,
 	AuthorizationControl,
 > {
 	/// The credential content.
 	pub claim: Claim<CtypeHash, SubjectIdentifier, ClaimContent>,
-	/// The nonce used to generate the root hash.
-	pub nonce: Nonce,
-	/// The root hash of the credential claims.
-	pub claim_hash: ClaimHash,
-	/// The claimer's signature information.
-	pub claimer_signature: Option<ClaimerSignature>,
 	/// The authorization info to attest the credential.
 	pub authorization_info: Option<AuthorizationControl>,
 }

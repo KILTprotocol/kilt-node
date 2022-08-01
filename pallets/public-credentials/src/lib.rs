@@ -61,19 +61,17 @@ pub mod pallet {
 
 	use frame_support::{
 		pallet_prelude::*,
-		sp_runtime::traits::Saturating,
 		traits::{Currency, IsType, ReservableCurrency, StorageVersion},
 		Parameter,
 	};
 	use frame_system::pallet_prelude::*;
-	use sp_core::H256;
-	use sp_runtime::SaturatedConversion;
+	use sp_runtime::traits::{Hash, Saturating, SaturatedConversion};
 	use sp_std::{boxed::Box, vec::Vec};
 
 	use attestation::{AttestationAccessControl, AttesterOf, ClaimHashOf};
 	use ctype::CtypeHashOf;
 	use kilt_support::{
-		signature::{SignatureVerificationError, VerifySignature},
+		signature::VerifySignature,
 		traits::CallSources,
 	};
 
@@ -94,22 +92,18 @@ pub mod pallet {
 	pub type InputSubjectIdOf<T> = BoundedVec<u8, <T as Config>::MaxSubjectIdLength>;
 	/// The type of the credential subject input. It is bound in max length.
 	pub type InputClaimsContentOf<T> = BoundedVec<u8, <T as Config>::MaxEncodedClaimsLength>;
-	pub type ClaimerSignatureOf<T> =
-		ClaimerSignatureInfo<<T as Config>::ClaimerIdentifier, <T as Config>::ClaimerSignature>;
 	pub type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 	pub type BlockNumberOf<T> = <T as frame_system::Config>::BlockNumber;
 	pub type CredentialEntryOf<T> = CredentialEntry<BlockNumberOf<T>, AccountIdOf<T>, BalanceOf<T>>;
 	/// The type of account's balances.
 	pub type BalanceOf<T> = <CurrencyOf<T> as Currency<AccountIdOf<T>>>::Balance;
+	pub(crate) type CredentialIdOf<T> = <<T as Config>::CredentialHash as sp_runtime::traits::Hash>::Output;
 
 	/// The type of a public credential as the pallet expects it.
 	pub type InputCredentialOf<T> = Credential<
 		CtypeHashOf<T>,
 		InputSubjectIdOf<T>,
 		InputClaimsContentOf<T>,
-		ClaimHashOf<T>,
-		H256,
-		ClaimerSignatureOf<T>,
 		<T as attestation::Config>::AccessControl,
 	>;
 
@@ -129,6 +123,8 @@ pub mod pallet {
 		type EnsureOrigin: EnsureOrigin<Success = <Self as Config>::OriginSuccess, Self::Origin>;
 		/// The ubiquitous event type.
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+		/// The hashing algorithm to derive a credential identifier from the credential content.
+		type CredentialHash: Hash<Output = ClaimHashOf<Self>>;
 		/// The type of the origin when successfully converted from the outer
 		/// origin.
 		type OriginSuccess: CallSources<Self::AccountId, AttesterOf<Self>>;
@@ -192,14 +188,14 @@ pub mod pallet {
 			/// The subject of the new credential.
 			subject_id: T::SubjectId,
 			/// The root hash of the new credential.
-			claim_hash: ClaimHashOf<T>,
+			credential_id: ClaimHashOf<T>,
 		},
 		/// A public credentials has been removed.
 		CredentialRemoved {
 			/// The subject of the removed credential.
 			subject_id: T::SubjectId,
 			/// The root hash of the removed credential.
-			claim_hash: ClaimHashOf<T>,
+			credential_id: ClaimHashOf<T>,
 		},
 	}
 
@@ -247,9 +243,8 @@ pub mod pallet {
 		/// Emits `CredentialStored`.
 		#[allow(clippy::boxed_local)]
 		#[pallet::weight({
-			let signature_weight = credential.claimer_signature.as_ref().map(|_| <T as Config>::ClaimerSignatureVerification::weight(credential.claim_hash.encoded_size())).unwrap_or(0);
 			let ac_weight = credential.authorization_info.as_ref().map(|ac| ac.can_attest_weight()).unwrap_or(0);
-			<T as Config>::WeightInfo::add(credential.claim.contents.len().saturated_into::<u32>()).saturating_add(signature_weight).saturating_add(ac_weight)
+			<T as Config>::WeightInfo::add(credential.claim.contents.len().saturated_into::<u32>()).saturating_add(ac_weight)
 		})]
 		pub fn add(origin: OriginFor<T>, credential: Box<InputCredentialOf<T>>) -> DispatchResult {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
@@ -266,11 +261,10 @@ pub mod pallet {
 					subject,
 					contents: _,
 				},
-				claim_hash,
-				nonce: _,
-				claimer_signature,
 				authorization_info,
-			} = *credential;
+			} = *credential.clone();
+
+			let credential_id = T::CredentialHash::hash(&[&credential.encode()[..], &attester.encode()[..]].concat()[..]);
 
 			// Try to decode subject ID to something structured
 			let subject = T::SubjectId::try_from(subject.into_inner()).map_err(|_| Error::<T>::InvalidInput)?;
@@ -278,7 +272,7 @@ pub mod pallet {
 			// Check that the same attestation has not already been issued previously
 			// (potentially to a different subject)
 			ensure!(
-				!CredentialsUnicityIndex::<T>::contains_key(&claim_hash),
+				!CredentialsUnicityIndex::<T>::contains_key(&credential_id),
 				Error::<T>::CredentialAlreadyIssued
 			);
 
@@ -297,25 +291,11 @@ pub mod pallet {
 				Error::<T>::UnableToPayFees
 			);
 
-			// Check the validity of the claimer's signature, if present, over the
-			// credential root hash.
-			if let Some(ClaimerSignatureInfo {
-				claimer_id,
-				signature_payload,
-			}) = claimer_signature
-			{
-				T::ClaimerSignatureVerification::verify(&claimer_id, &claim_hash.encode(), &signature_payload)
-					.map_err(|err| match err {
-						SignatureVerificationError::SignerInformationNotPresent => Error::<T>::ClaimerInfoNotFound,
-						SignatureVerificationError::SignatureInvalid => Error::<T>::InvalidClaimerSignature,
-					})?;
-			}
-
 			// Delegate to the attestation pallet writing the attestation information and
 			// reserve its part of the deposit
 			attestation::Pallet::<T>::write_attestation(
 				ctype_hash,
-				claim_hash,
+				credential_id,
 				attester,
 				payer.clone(),
 				authorization_info,
@@ -330,12 +310,16 @@ pub mod pallet {
 
 			let block_number = frame_system::Pallet::<T>::block_number();
 
-			Credentials::<T>::insert(&subject, &claim_hash, CredentialEntryOf::<T> { deposit, block_number });
-			CredentialsUnicityIndex::<T>::insert(&claim_hash, subject.clone());
+			Credentials::<T>::insert(
+				&subject,
+				&credential_id,
+				CredentialEntryOf::<T> { deposit, block_number },
+			);
+			CredentialsUnicityIndex::<T>::insert(&credential_id, subject.clone());
 
 			Self::deposit_event(Event::CredentialStored {
 				subject_id: subject,
-				claim_hash,
+				credential_id,
 			});
 
 			Ok(())
@@ -369,19 +353,19 @@ pub mod pallet {
 		})]
 		pub fn remove(
 			origin: OriginFor<T>,
-			claim_hash: ClaimHashOf<T>,
+			credential_id: CredentialIdOf<T>,
 			authorization: Option<T::AccessControl>,
 		) -> DispatchResultWithPostInfo {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 			let attester = source.subject();
 
-			let (credential_subject, credential_entry) = Self::retrieve_credential_entry(&claim_hash)?;
+			let (credential_subject, credential_entry) = Self::retrieve_credential_entry(&credential_id)?;
 
 			// Delegate to the attestation pallet the removal logic
 			// This guarantees that the authorized attester is calling this function
-			let result = attestation::Pallet::<T>::remove_attestation(attester, claim_hash, authorization)?;
+			let result = attestation::Pallet::<T>::remove_attestation(attester, credential_id, authorization)?;
 
-			Self::remove_credential_entry(credential_subject, claim_hash, credential_entry);
+			Self::remove_credential_entry(credential_subject, credential_id, credential_entry);
 
 			Ok(result)
 		}
@@ -396,16 +380,16 @@ pub mod pallet {
 		/// attestation pallet still requires the deposit payer to also remove
 		/// any traces of the corresponding public credential from this pallet.
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::reclaim_deposit())]
-		pub fn reclaim_deposit(origin: OriginFor<T>, claim_hash: ClaimHashOf<T>) -> DispatchResult {
+		pub fn reclaim_deposit(origin: OriginFor<T>, credential_id: CredentialIdOf<T>) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
-			let (credential_subject, credential_entry) = Self::retrieve_credential_entry(&claim_hash)?;
+			let (credential_subject, credential_entry) = Self::retrieve_credential_entry(&credential_id)?;
 
 			// Delegate to the attestation pallet the removal logic.
 			// This guarantees that the authorized payer is calling this function.
-			attestation::Pallet::<T>::unlock_deposit(who, claim_hash)?;
+			attestation::Pallet::<T>::unlock_deposit(who, credential_id)?;
 
-			Self::remove_credential_entry(credential_subject, claim_hash, credential_entry);
+			Self::remove_credential_entry(credential_subject, credential_id, credential_entry);
 
 			Ok(())
 		}
@@ -416,28 +400,28 @@ pub mod pallet {
 		// credential.
 		fn remove_credential_entry(
 			credential_subject: T::SubjectId,
-			claim_hash: ClaimHashOf<T>,
+			credential_id: CredentialIdOf<T>,
 			credential: CredentialEntryOf<T>,
 		) {
 			kilt_support::free_deposit::<T::AccountId, CurrencyOf<T>>(&credential.deposit);
-			Credentials::<T>::remove(&credential_subject, &claim_hash);
-			CredentialsUnicityIndex::<T>::remove(&claim_hash);
+			Credentials::<T>::remove(&credential_subject, &credential_id);
+			CredentialsUnicityIndex::<T>::remove(&credential_id);
 
 			Self::deposit_event(Event::CredentialRemoved {
 				subject_id: credential_subject,
-				claim_hash,
+				credential_id,
 			});
 		}
 
 		fn retrieve_credential_entry(
-			claim_hash: &ClaimHashOf<T>,
+			credential_id: &CredentialIdOf<T>,
 		) -> Result<(T::SubjectId, CredentialEntryOf<T>), Error<T>> {
 			// Verify that the credential exists
 			let credential_subject =
-				CredentialsUnicityIndex::<T>::get(&claim_hash).ok_or(Error::<T>::CredentialNotFound)?;
+				CredentialsUnicityIndex::<T>::get(&credential_id).ok_or(Error::<T>::CredentialNotFound)?;
 
 			// Should never happen if the line above succeeds
-			Credentials::<T>::get(&credential_subject, &claim_hash)
+			Credentials::<T>::get(&credential_subject, &credential_id)
 				.map(|entry| (credential_subject, entry))
 				.ok_or(Error::<T>::InternalError)
 		}

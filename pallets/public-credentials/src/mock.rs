@@ -16,21 +16,15 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use attestation::ClaimHashOf;
 use ctype::CtypeHashOf;
 
-use crate::{Claim, ClaimerSignatureInfo, Config, InputClaimsContentOf, InputCredentialOf, InputSubjectIdOf};
-
-pub(crate) type ClaimerSignatureInfoOf<Test> =
-	ClaimerSignatureInfo<<Test as Config>::ClaimerIdentifier, <Test as Config>::ClaimerSignature>;
+use crate::{Claim, Config, InputClaimsContentOf, InputCredentialOf, InputSubjectIdOf};
 
 // Generate a public credential using a many Default::default() as possible.
 pub fn generate_base_public_credential_creation_op<T: Config>(
 	subject_id: InputSubjectIdOf<T>,
-	claim_hash: ClaimHashOf<T>,
 	ctype_hash: CtypeHashOf<T>,
 	contents: InputClaimsContentOf<T>,
-	claimer_signature: Option<ClaimerSignatureInfoOf<T>>,
 ) -> InputCredentialOf<T> {
 	InputCredentialOf::<T> {
 		claim: Claim {
@@ -38,9 +32,6 @@ pub fn generate_base_public_credential_creation_op<T: Config>(
 			subject: subject_id,
 			contents,
 		},
-		claim_hash,
-		claimer_signature,
-		nonce: Default::default(),
 		authorization_info: Default::default(),
 	}
 }
@@ -261,6 +252,7 @@ pub(crate) mod runtime {
 		type ClaimerIdentifier = SubjectId;
 		type ClaimerSignature = (Self::ClaimerIdentifier, Vec<u8>);
 		type ClaimerSignatureVerification = EqualVerify<Self::ClaimerIdentifier, Vec<u8>>;
+		type CredentialHash = BlakeTwo256;
 		type Deposit = ConstU128<{ 10 * MILLI_UNIT }>;
 		type EnsureOrigin = <Self as attestation::Config>::EnsureOrigin;
 		type Event = ();
@@ -276,7 +268,6 @@ pub(crate) mod runtime {
 
 	pub(crate) const ALICE_SEED: [u8; 32] = [0u8; 32];
 	pub(crate) const BOB_SEED: [u8; 32] = [1u8; 32];
-	pub(crate) const CHARLIE_SEED: [u8; 32] = [2u8; 32];
 
 	pub(crate) const SUBJECT_ID_00: TestSubjectId = TestSubjectId([100u8; 32]);
 
@@ -291,10 +282,6 @@ pub(crate) mod runtime {
 		MultiSigner::from(sr25519::Pair::from_seed(seed).public())
 			.into_account()
 			.into()
-	}
-
-	pub(crate) fn hash_to_u8<Hash: Encode>(hash: Hash) -> Vec<u8> {
-		hash.encode()
 	}
 
 	#[derive(Clone, Default)]
