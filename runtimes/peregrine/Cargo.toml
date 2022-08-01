@@ -15,7 +15,7 @@ smallvec = "1.8.0"
 static_assertions = "1.1.0"
 
 hex-literal = {version = "0.3.4", optional = true}
-serde = {version = "1.0.137", optional = true, features = ["derive"]}
+serde = {version = "1.0.140", optional = true, features = ["derive"]}
 
 # RPC
 did-rpc-runtime-api = {path = "../../rpc/did/runtime-api", default-features = false}

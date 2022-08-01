@@ -24,8 +24,8 @@ runtime-common = {path = "../../runtimes/common"}
 clap = {version = "3.2.10", features = ["derive"]}
 futures = "0.3.21"
 log = "0.4.17"
-serde = {version = "1.0.137", features = ["derive"]}
-serde_json = "1.0.79"
+serde = {version = "1.0.140", features = ["derive"]}
+serde_json = "1.0.82"
 
 # Substrate dependencies
 frame-system = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.26"}
