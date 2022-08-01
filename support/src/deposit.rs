@@ -24,25 +24,18 @@ use serde::{Deserialize, Serialize};
 /// An amount of balance reserved by the specified address.
 #[derive(Clone, Debug, Encode, Decode, PartialEq, TypeInfo, MaxEncodedLen)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[cfg_attr(
-	feature = "std",
-	serde(bound(
-		serialize = "
-		Balance: std::fmt::Display,
-		Account: Serialize",
-		deserialize = "
-		Balance: std::str::FromStr,
-		Account: Deserialize<'de>"
-	))
-)]
 pub struct Deposit<Account, Balance> {
 	pub owner: Account,
+	#[cfg_attr(
+		feature = "std",
+		serde(bound(serialize = "Balance: std::fmt::Display", deserialize = "Balance: std::str::FromStr"))
+	)]
 	#[cfg_attr(feature = "std", serde(with = "serde_balance"))]
 	pub amount: Balance,
 }
 
 // This code was copied from https://github.com/paritytech/substrate/blob/ded44948e2d5a398abcb4e342b0513cb690961bb/frame/transaction-payment/src/types.rs#L113
-// It is needed because u128 cannot be serialized by serde out of the box.
+// It is needed because u128 cannot be serialized by serde_json out of the box.
 #[cfg(feature = "std")]
 mod serde_balance {
 	use serde::{Deserialize, Deserializer, Serializer};
@@ -66,10 +59,10 @@ mod tests {
 	fn should_serialize_and_deserialize_properly_with_string() {
 		let deposit = Deposit {
 			owner: 0_u8,
-			amount: 1_000_000_u128,
+			amount: 0_u128,
 		};
 
-		let json_str = r#"{"owner":0,"amount":"1000000"}"#;
+		let json_str = r#"{"owner":0,"amount":"0"}"#;
 
 		assert_eq!(serde_json::to_string(&deposit).unwrap(), json_str);
 		assert_eq!(serde_json::from_str::<Deposit<u8, u128>>(json_str).unwrap(), deposit);
@@ -82,10 +75,10 @@ mod tests {
 	fn should_serialize_and_deserialize_properly_large_value() {
 		let deposit = Deposit {
 			owner: 0_u8,
-			amount: 1_000_000_u128,
+			amount: u128::MAX,
 		};
 
-		let json_str = r#"{"owner":0,"amount":"1000000"}"#;
+		let json_str = r#"{"owner":0,"amount":"340282366920938463463374607431768211455"}"#;
 
 		assert_eq!(serde_json::to_string(&deposit).unwrap(), json_str);
 		assert_eq!(serde_json::from_str::<Deposit<u8, u128>>(json_str).unwrap(), deposit);

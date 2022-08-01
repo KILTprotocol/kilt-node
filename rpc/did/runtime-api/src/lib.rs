@@ -32,33 +32,6 @@ pub use service_endpoint::*;
 
 #[derive(Encode, Decode, TypeInfo, PartialEq)]
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(
-	feature = "std",
-	serde(bound(
-		serialize = "
-		Balance: std::fmt::Display,
-		AccountId: Serialize,
-		LinkableAccountId: Serialize,
-		Key: Serialize,
-		BlockNumber: Serialize,
-		DidIdentifier: Serialize,
-		Type: Serialize,
-		Url: Serialize,
-		Id: Serialize,
-		Web3Name: Serialize,",
-		deserialize = "
-		Balance: std::str::FromStr,
-		AccountId: Deserialize<'de>,
-		LinkableAccountId: Deserialize<'de>,
-		Key: Deserialize<'de>,
-		BlockNumber: Deserialize<'de>,
-		DidIdentifier: Deserialize<'de>,
-		Type: Deserialize<'de>,
-		Url: Deserialize<'de>,
-		Id: Deserialize<'de>,
-		Web3Name: Deserialize<'de>,"
-	))
-)]
 pub struct DidLinkedInfo<
 	DidIdentifier,
 	AccountId,
@@ -75,6 +48,13 @@ pub struct DidLinkedInfo<
 	pub accounts: Vec<LinkableAccountId>,
 	pub w3n: Option<Web3Name>,
 	pub service_endpoints: Vec<ServiceEndpoint<Id, Type, Url>>,
+	#[cfg_attr(
+		feature = "std",
+		serde(bound(
+			serialize = "DidDetails<Key, BlockNumber, AccountId, Balance>: Serialize",
+			deserialize = "DidDetails<Key, BlockNumber, AccountId, Balance>: Deserialize<'de>"
+		))
+	)]
 	pub details: DidDetails<Key, BlockNumber, AccountId, Balance>,
 }
 
