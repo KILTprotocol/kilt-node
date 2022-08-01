@@ -740,12 +740,6 @@ pub mod pallet {
 		/// ShouldEndSession<_>>::should_end_session.
 		///
 		/// The dispatch origin must be Root.
-		///
-		/// # <weight>
-		/// Weight: O(1)
-		/// - Reads: [Origin Account]
-		/// - Writes: ForceNewRound
-		/// # </weight>
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::set_inflation())]
 		pub fn force_new_round(origin: OriginFor<T>) -> DispatchResult {
 			ensure_root(origin)?;
@@ -769,12 +763,6 @@ pub mod pallet {
 		/// The dispatch origin must be Root.
 		///
 		/// Emits `RoundInflationSet`.
-		///
-		/// # <weight>
-		/// Weight: O(1)
-		/// - Reads: [Origin Account]
-		/// - Writes: InflationConfig
-		/// # </weight>
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::set_inflation())]
 		pub fn set_inflation(
 			origin: OriginFor<T>,
@@ -831,20 +819,6 @@ pub mod pallet {
 		/// The dispatch origin must be Root.
 		///
 		/// Emits `MaxSelectedCandidatesSet`.
-		///
-		///
-		/// # <weight>
-		/// - The transaction's complexity is mainly dependent on updating the
-		///   `SelectedCandidates` storage in `select_top_candidates` which in
-		///   return depends on the number of `MaxSelectedCandidates` (N).
-		/// - For each N, we read `CandidatePool` from the storage.
-		/// ---------
-		/// Weight: O(N + D) where N is `MaxSelectedCandidates` bounded by
-		/// `MaxTopCandidates` and D is the number of delegators of a
-		/// candidate bounded by `MaxDelegatorsPerCollator`.
-		/// - Reads: MaxSelectedCandidates, TopCandidates, N * CandidatePool
-		/// - Writes: MaxSelectedCandidates
-		/// # </weight>
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::set_max_selected_candidates(
 			*new,
 			T::MaxDelegatorsPerCollator::get()
@@ -913,12 +887,6 @@ pub mod pallet {
 		/// The dispatch origin must be Root.
 		///
 		/// Emits `BlocksPerRoundSet`.
-		///
-		/// # <weight>
-		/// Weight: O(1)
-		/// - Reads: [Origin Account], Round
-		/// - Writes: Round
-		/// # </weight>
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::set_blocks_per_round())]
 		pub fn set_blocks_per_round(origin: OriginFor<T>, new: T::BlockNumber) -> DispatchResult {
 			ensure_root(origin)?;
@@ -948,12 +916,6 @@ pub mod pallet {
 		/// The dispatch origin must be Root.
 		///
 		/// Emits `MaxCandidateStakeChanged`.
-		///
-		/// # <weight>
-		/// Weight: O(1)
-		/// - Reads: [Origin Account], MaxCollatorCandidateStake
-		/// - Writes: Round
-		/// # </weight>
 		#[pallet::weight(<T as Config>::WeightInfo::set_max_candidate_stake())]
 		pub fn set_max_candidate_stake(origin: OriginFor<T>, new: BalanceOf<T>) -> DispatchResult {
 			ensure_root(origin)?;
@@ -1047,8 +1009,6 @@ pub mod pallet {
 		/// candidates nor of the delegators set.
 		///
 		/// Emits `JoinedCollatorCandidates`.
-		///
-		/// # <weight>
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::join_candidates(
 			T::MaxTopCandidates::get(),
 			T::MaxDelegatorsPerCollator::get()
@@ -1641,14 +1601,6 @@ pub mod pallet {
 		/// allowed range as set in the pallet's configuration.
 		///
 		/// Emits `DelegatorStakedLess`.
-		///
-		/// # <weight>
-		/// Weight: O(1)
-		/// - Reads: [Origin Account], DelegatorState, BlockNumber, Unstaking,
-		///   TopCandidates, CandidatePool, MaxSelectedCandidates
-		/// - Writes: Unstaking, DelegatorState, CandidatePool,
-		///   TotalCollatorStake
-		/// # </weight>
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::delegator_stake_less(
 			T::MaxTopCandidates::get(),
 			T::MaxDelegatorsPerCollator::get()
@@ -1882,11 +1834,6 @@ pub mod pallet {
 
 	impl<T: Config> Pallet<T> {
 		/// Check whether an account is currently delegating.
-		///
-		/// # <weight>
-		/// Weight: O(1)
-		/// - Reads: DelegatorState
-		/// # </weight>
 		pub fn is_delegator(acc: &T::AccountId) -> bool {
 			DelegatorState::<T>::get(acc).is_some()
 		}
@@ -1895,11 +1842,6 @@ pub mod pallet {
 		/// whether their state is CollatorStatus::Active.
 		///
 		/// Returns Some(is_active) if the account is a candidate, else None.
-		///
-		/// # <weight>
-		/// Weight: O(1)
-		/// - Reads: CandidatePool
-		/// # </weight>
 		pub fn is_active_candidate(acc: &T::AccountId) -> Option<bool> {
 			if let Some(state) = CandidatePool::<T>::get(acc) {
 				Some(state.status == CandidateStatus::Active)
@@ -1913,12 +1855,6 @@ pub mod pallet {
 		///
 		/// NOTE: It is assumed that the calling context checks whether the
 		/// collator candidate is currently active before calling this function.
-		///
-		/// # <weight>
-		/// Weight: O(1)
-		/// - Reads: TopCandidates, CandidatePool, TotalCollatorStake
-		/// - Writes: TopCandidates, TotalCollatorStake
-		/// # </weight>
 		fn update_top_candidates(
 			candidate: T::AccountId,
 			old_self: BalanceOf<T>,
@@ -2136,11 +2072,6 @@ pub mod pallet {
 		/// In case a collator from last round was replaced by a candidate with
 		/// the same total stake during sorting, we revert this swap to
 		/// prioritize collators over candidates.
-		///
-		/// # <weight>
-		/// Weight: O(1)
-		/// - Reads: TopCandidates, MaxSelectedCandidates
-		/// # </weight>
 		pub fn selected_candidates() -> BoundedVec<T::AccountId, T::MaxTopCandidates> {
 			let candidates = TopCandidates::<T>::get();
 
@@ -2174,12 +2105,6 @@ pub mod pallet {
 		///
 		/// Emits `DelegationReplaced` if the stake exceeds one of the current
 		/// delegations.
-		///
-		/// # <weight>
-		/// Weight: O(D) where D is the number of delegators for this collator
-		/// bounded by `MaxDelegatorsPerCollator`.
-		/// - Reads/Writes: 0
-		/// # </weight>
 		#[allow(clippy::type_complexity)]
 		fn do_update_delegator(
 			stake: Stake<T::AccountId, BalanceOf<T>>,
@@ -2229,13 +2154,6 @@ pub mod pallet {
 		///
 		/// Consumes unstaked balance which can be unlocked in the future up to
 		/// amount and updates `Unstaking` storage accordingly.
-		///
-		/// # <weight>
-		/// Weight: O(U) where U is the number of locked unstaking requests
-		/// bounded by `MaxUnstakeRequests`.
-		/// - Reads: Unstaking, Locks
-		/// - Writes: Unstaking, Locks
-		/// # </weight>
 		fn increase_lock(who: &T::AccountId, amount: BalanceOf<T>, more: BalanceOf<T>) -> Result<u32, DispatchError> {
 			ensure!(
 				pallet_balances::Pallet::<T>::free_balance(who) >= amount.into(),
@@ -2288,12 +2206,6 @@ pub mod pallet {
 		/// Throws if the amount is zero (unlikely) or if active unlocking
 		/// requests exceed limit. The latter defends against stake reduction
 		/// spamming.
-		///
-		/// # <weight>
-		/// Weight: O(1)
-		/// - Reads: BlockNumber, Unstaking
-		/// - Writes: Unstaking
-		/// # </weight>
 		fn prep_unstake(who: &T::AccountId, amount: BalanceOf<T>, is_removal: bool) -> DispatchResult {
 			// should never occur but let's be safe
 			ensure!(!amount.is_zero(), Error::<T>::StakeNotFound);
@@ -2327,16 +2239,6 @@ pub mod pallet {
 		/// Clear the CandidatePool of the candidate and remove all delegations
 		/// to the candidate. Moreover, prepare unstaking for the candidate and
 		/// their former delegations.
-		///
-		/// # <weight>
-		/// Weight: O(D + U) where D is the number of delegators of the collator
-		/// candidate bounded by `MaxDelegatorsPerCollator` and U is the
-		/// number of locked unstaking requests bounded by `MaxUnstakeRequests`.
-		/// - Reads: BlockNumber, D * DelegatorState, D * Unstaking
-		/// - Writes: D * DelegatorState, (D + 1) * Unstaking
-		/// - Kills: CandidatePool, DelegatorState for all delegators which only
-		///   delegated to the candidate
-		/// # </weight>
 		fn remove_candidate(
 			collator: &T::AccountId,
 			state: &CandidateOf<T, T::MaxDelegatorsPerCollator>,
@@ -2382,14 +2284,6 @@ pub mod pallet {
 
 		/// Withdraw all staked currency which was unstaked at least
 		/// `StakeDuration` blocks ago.
-		///
-		/// # <weight>
-		/// Weight: O(U) where U is the number of locked unstaking
-		/// requests bounded by `MaxUnstakeRequests`.
-		/// - Reads: Unstaking, Locks
-		/// - Writes: Unstaking, Locks
-		/// - Kills: Unstaking & Locks if no balance is locked anymore
-		/// # </weight>
 		fn do_unlock(who: &T::AccountId) -> Result<u32, DispatchError> {
 			let now = <frame_system::Pallet<T>>::block_number();
 			let mut unstaking = <Unstaking<T>>::get(who);
