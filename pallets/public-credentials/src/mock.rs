@@ -16,9 +16,13 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use ctype::CtypeHashOf;
+use codec::Encode;
+use sp_runtime::traits::Hash;
 
-use crate::{Claim, Config, InputClaimsContentOf, InputCredentialOf, InputSubjectIdOf};
+use ctype::CtypeHashOf;
+use attestation::AttesterOf;
+
+use crate::{Claim, Config, CredentialIdOf, InputClaimsContentOf, InputCredentialOf, InputSubjectIdOf};
 
 // Generate a public credential using a many Default::default() as possible.
 pub fn generate_base_public_credential_creation_op<T: Config>(
@@ -34,6 +38,13 @@ pub fn generate_base_public_credential_creation_op<T: Config>(
 		},
 		authorization_info: Default::default(),
 	}
+}
+
+pub fn generate_credential_id<T: Config>(
+	input_credential: &InputCredentialOf<T>,
+	attester: &AttesterOf<T>
+) -> CredentialIdOf<T> {
+	T::CredentialHash::hash(&[&input_credential.encode()[..], &attester.encode()[..]].concat()[..])
 }
 
 #[cfg(test)]
@@ -270,13 +281,6 @@ pub(crate) mod runtime {
 	pub(crate) const BOB_SEED: [u8; 32] = [1u8; 32];
 
 	pub(crate) const SUBJECT_ID_00: TestSubjectId = TestSubjectId([100u8; 32]);
-
-	pub(crate) const CLAIM_HASH_SEED_01: u64 = 1u64;
-	pub(crate) const CLAIM_HASH_SEED_02: u64 = 2u64;
-
-	pub(crate) fn claim_hash_from_seed(seed: u64) -> Hash {
-		Hash::from_low_u64_be(seed)
-	}
 
 	pub(crate) fn sr25519_did_from_seed(seed: &[u8; 32]) -> SubjectId {
 		MultiSigner::from(sr25519::Pair::from_seed(seed).public())
