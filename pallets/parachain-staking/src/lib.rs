@@ -3057,7 +3057,7 @@ pub mod pallet {
 		fn note_author(author: T::AccountId) {
 			// should always include state except if the collator has been forcedly removed
 			// via `force_remove_candidate` in the current or previous round
-			if CandidatePool::<T>::get(author.clone()).is_some() {
+			if CandidatePool::<T>::get(&author).is_some() {
 				// necessary to compensate for a potentially fluctuating number of collators
 				let authors = pallet_session::Pallet::<T>::validators();
 				RewardCount::<T>::mutate(&author, |count| {
