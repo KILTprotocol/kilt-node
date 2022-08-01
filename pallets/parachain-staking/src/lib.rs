@@ -126,10 +126,8 @@
 //!   by the provided amount down to `MinCandidateStake`.
 //! - `join_delegators` - Join the set of delegators by delegating to a collator
 //!   candidate.
-//! - `delegate_another_candidate` - Delegate to another collator candidate by
-//!   staking for them.
-//! - `leave_delegators` - Leave the set of delegators and revoke all
-//!   delegations. Since delegators do not have to run a node and cannot be
+//! - `leave_delegators` - Leave the set of delegators and revoke your
+//!   delegation. Since delegators do not have to run a node and cannot be
 //!   selected to become block authors, this exit is not delayed like it is for
 //!   collator candidates.
 //! - `revoke_delegation` - Revoke a single delegation to a collator candidate.
@@ -171,7 +169,6 @@ mod types;
 use frame_support::pallet;
 
 pub use crate::{default_weights::WeightInfo, pallet::*};
-use types::ReplacedDelegator;
 
 #[pallet]
 pub mod pallet {
@@ -291,10 +288,6 @@ pub mod pallet {
 		#[pallet::constant]
 		type MaxDelegatorsPerCollator: Get<u32> + Debug + PartialEq;
 
-		/// Maximum number of collators a single delegator can delegate.
-		#[pallet::constant]
-		type MaxCollatorsPerDelegator: Get<u32> + Debug + PartialEq;
-
 		/// Maximum size of the top candidates set.
 		#[pallet::constant]
 		type MaxTopCandidates: Get<u32> + Debug + PartialEq;
@@ -308,10 +301,6 @@ pub mod pallet {
 		/// candidates.
 		#[pallet::constant]
 		type MinCollatorCandidateStake: Get<BalanceOf<Self>>;
-
-		/// Minimum stake required for any account to be able to delegate.
-		#[pallet::constant]
-		type MinDelegation: Get<BalanceOf<Self>>;
 
 		/// Minimum stake required for any account to become a delegator.
 		#[pallet::constant]
@@ -368,8 +357,6 @@ pub mod pallet {
 		ValStakeBelowMin,
 		/// The account has already staked the maximum amount of funds possible.
 		ValStakeAboveMax,
-		/// The account has not staked enough funds to become a delegator.
-		NomStakeBelowMin,
 		/// The account has not staked enough funds to delegate a collator
 		/// candidate.
 		DelegationBelowMin,
@@ -586,13 +573,8 @@ pub mod pallet {
 	/// It maps from an account to its delegation details.
 	#[pallet::storage]
 	#[pallet::getter(fn delegator_state)]
-	pub(crate) type DelegatorState<T: Config> = StorageMap<
-		_,
-		Twox64Concat,
-		T::AccountId,
-		Delegator<T::AccountId, BalanceOf<T>, T::MaxCollatorsPerDelegator>,
-		OptionQuery,
-	>;
+	pub(crate) type DelegatorState<T: Config> =
+		StorageMap<_, Twox64Concat, T::AccountId, Delegator<T::AccountId, BalanceOf<T>>, OptionQuery>;
 
 	/// The staking information for a candidate.
 	///
@@ -1000,23 +982,6 @@ pub mod pallet {
 		/// Increments rewards of candidate and their delegators.
 		///
 		/// Emits `CandidateRemoved`.
-		///
-		/// # <weight>
-		/// - The transaction's complexity is mainly dependent on updating the
-		///   `SelectedCandidates` storage in `select_top_candidates` which in
-		///   return depends on the number of `MaxSelectedCandidates` (N).
-		/// - For each N, we read `CandidatePool` from the storage.
-		/// ---------
-		/// Weight: O(N + D) where N is `MaxSelectedCandidates` bounded by
-		/// `MaxTopCandidates` and D is the number of delegators of the
-		/// collator candidate bounded by `MaxDelegatorsPerCollator`.
-		/// - Reads: MaxCollatorCandidateStake, 2 * N * CandidatePool,
-		///   TopCandidates, BlockNumber, D * DelegatorState, D * Unstaking
-		/// - Writes: MaxCollatorCandidateStake, N * CandidatePool, D *
-		///   DelegatorState, (D + 1) * Unstaking
-		/// - Kills: CandidatePool, DelegatorState for all delegators which only
-		///   delegated to the candidate
-		/// # </weight>
 		#[pallet::weight(<T as Config>::WeightInfo::force_remove_candidate(
 			T::MaxTopCandidates::get(),
 			T::MaxDelegatorsPerCollator::get()
@@ -1084,14 +1049,6 @@ pub mod pallet {
 		/// Emits `JoinedCollatorCandidates`.
 		///
 		/// # <weight>
-		/// Weight: O(N + D) where N is `MaxSelectedCandidates` bounded by
-		/// `MaxTopCandidates` and D is the number of delegators for this
-		/// candidate bounded by `MaxDelegatorsPerCollator`.
-		/// - Reads: [Origin Account], DelegatorState,
-		///   MaxCollatorCandidateStake, Locks, TotalCollatorStake,
-		///   TopCandidates, MaxSelectedCandidates, CandidatePool,
-		/// - Writes: Locks, TotalCollatorStake, CandidatePool, TopCandidates,
-		/// # </weight>
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::join_candidates(
 			T::MaxTopCandidates::get(),
 			T::MaxDelegatorsPerCollator::get()
@@ -1165,20 +1122,6 @@ pub mod pallet {
 		/// rewards, until the end of the next session.
 		///
 		/// Emits `CollatorScheduledExit`.
-		///
-		/// # <weight>
-		/// - The transaction's complexity is mainly dependent on updating the
-		///   `SelectedCandidates` storage in `select_top_candidates` which in
-		///   return depends on the number of `MaxSelectedCandidates` (N).
-		/// - For each N, we read `CandidatePool` from the storage.
-		/// ---------
-		/// Weight: O(N + D) where N is `MaxSelectedCandidates` bounded by
-		/// `MaxTopCandidates` and D is the number of delegators for this
-		/// candidate bounded by `MaxDelegatorsPerCollator`.
-		/// - Reads: [Origin Account], TopCandidates, (N + 1) * CandidatePool,
-		///   TotalCollatorStake
-		/// - Writes: CandidatePool, TopCandidates, TotalCollatorStake
-		/// # </weight>
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::init_leave_candidates(
 			T::MaxTopCandidates::get(),
 			T::MaxTopCandidates::get().saturating_mul(T::MaxDelegatorsPerCollator::get())
@@ -1237,17 +1180,6 @@ pub mod pallet {
 		/// `cancel_leave_candidates`.
 		///
 		/// Emits `CollatorLeft`.
-		///
-		/// # <weight>
-		/// Weight: O(N + D + U) where  where N is `MaxSelectedCandidates`
-		/// bounded by `MaxTopCandidates`, D is the number of delegators for
-		/// this candidate bounded by `MaxDelegatorsPerCollator` and U is the
-		/// number of locked unstaking requests bounded by `MaxUnstakeRequests`.
-		/// - Reads: CandidatePool, Round, D * DelegatorState, D
-		///   * BlockNumber, D * Unstaking
-		/// - Writes: D * Unstaking, D * DelegatorState, Total
-		/// - Kills: CandidatePool, DelegatorState
-		/// # </weight>
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::execute_leave_candidates(
 			T::MaxTopCandidates::get(),
 			T::MaxDelegatorsPerCollator::get(),
@@ -1287,15 +1219,6 @@ pub mod pallet {
 		/// `init_leave_candidates`.
 		///
 		/// Emits `CollatorCanceledExit`.
-		///
-		/// # <weight>
-		/// Weight: O(N + D) where N is `MaxSelectedCandidates` bounded by
-		/// `MaxTopCandidates` and D is the number of delegators for this
-		/// candidate bounded by `MaxDelegatorsPerCollator`.
-		/// - Reads: [Origin Account], TotalCollatorStake, TopCandidates,
-		///   CandidatePool
-		/// - Writes: TotalCollatorStake, CandidatePool, TopCandidates
-		/// # </weight>
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::cancel_leave_candidates(
 			T::MaxTopCandidates::get(),
 			T::MaxDelegatorsPerCollator::get(),
@@ -1343,16 +1266,6 @@ pub mod pallet {
 		/// allowed range as set in the pallet's configuration.
 		///
 		/// Emits `CollatorStakedMore`.
-		///
-		/// # <weight>
-		/// Weight: O(N + D + U) where  where N is `MaxSelectedCandidates`
-		/// bounded by `MaxTopCandidates`, D is the number of delegators for
-		/// this candidate bounded by `MaxDelegatorsPerCollator` and U is the
-		/// number of locked unstaking requests bounded by `MaxUnstakeRequests`.
-		/// - Reads: [Origin Account], Locks, TotalCollatorStake,
-		///   MaxCollatorCandidateStake, TopCandidates, CandidatePool
-		/// - Writes: Locks, TotalCollatorStake, CandidatePool, TopCandidates
-		/// # </weight>
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::candidate_stake_more(
 			T::MaxTopCandidates::get(),
 			T::MaxDelegatorsPerCollator::get(),
@@ -1422,15 +1335,6 @@ pub mod pallet {
 		/// allowed range as set in the pallet's configuration.
 		///
 		/// Emits `CollatorStakedLess`.
-		///
-		/// # <weight>
-		/// Weight: O(N + D) where N is `MaxSelectedCandidates` bounded by
-		/// `MaxTopCandidates` and D is the number of delegators for this
-		/// candidate bounded by `MaxDelegatorsPerCollator`.
-		/// - Reads: [Origin Account], Unstaking, TopCandidates,
-		///   MaxSelectedCandidates, CandidatePool
-		/// - Writes: Unstaking, CandidatePool, TotalCollatorStake
-		/// # </weight>
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::candidate_stake_less(
 			T::MaxTopCandidates::get(),
 			T::MaxDelegatorsPerCollator::get()
@@ -1488,8 +1392,8 @@ pub mod pallet {
 		/// The account that wants to delegate cannot be part of the collator
 		/// candidates set as well.
 		///
-		/// The caller must _not_ have delegated before. Otherwise,
-		/// `delegate_another_candidate` should be called.
+		/// The caller must _not_ have a delegation. If that is the case, they
+		/// are required to first remove the delegation.
 		///
 		/// The amount staked must be larger than the minimum required to become
 		/// a delegator as set in the pallet's configuration.
@@ -1505,16 +1409,6 @@ pub mod pallet {
 		/// Emits `DelegationReplaced` if the candidate has
 		/// `MaxDelegatorsPerCollator` many delegations but this delegator
 		/// staked more than one of the other delegators of this candidate.
-		///
-		/// # <weight>
-		/// Weight: O(N + D) where N is `MaxSelectedCandidates` bounded by
-		/// `MaxTopCandidates` and D is the number of delegators for this
-		/// candidate bounded by `MaxDelegatorsPerCollator`.
-		/// - Reads: [Origin Account], DelegatorState, TopCandidates,
-		///   MaxSelectedCandidates, CandidatePool, LastDelegation, Round
-		/// - Writes: Locks, CandidatePool, DelegatorState, TotalCollatorStake,
-		///   LastDelegation
-		/// # </weight>
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::join_delegators(
 			T::MaxTopCandidates::get(),
 			T::MaxDelegatorsPerCollator::get()
@@ -1535,7 +1429,7 @@ pub mod pallet {
 
 			// first delegation
 			ensure!(DelegatorState::<T>::get(&acc).is_none(), Error::<T>::AlreadyDelegating);
-			ensure!(amount >= T::MinDelegatorStake::get(), Error::<T>::NomStakeBelowMin);
+			ensure!(amount >= T::MinDelegatorStake::get(), Error::<T>::DelegationBelowMin);
 
 			// cannot be a collator candidate and delegator with same AccountId
 			ensure!(Self::is_active_candidate(&acc).is_none(), Error::<T>::CandidateExists);
@@ -1568,11 +1462,10 @@ pub mod pallet {
 			// should never fail but let's be safe
 			ensure!(insert_delegator, Error::<T>::DelegatorExists);
 
-			// can only throw if MaxCollatorsPerDelegator is set to 0 which should never
-			// occur in practice, even if the delegator rewards are set to 0
-			let delegator_state = Delegator::try_new(collator.clone(), amount)
-				.map_err(|_| Error::<T>::MaxCollatorsPerDelegatorExceeded)?;
-
+			let delegator_state = Delegator {
+				amount,
+				owner: Some(collator.clone()),
+			};
 			let CandidateOf::<T, _> {
 				stake: old_stake,
 				total: old_total,
@@ -1581,12 +1474,11 @@ pub mod pallet {
 
 			// update state and potentially prepare kicking a delegator with less staked
 			// amount (includes setting rewards for kicked delegator)
-			let (state, maybe_kicked_delegator) = if num_delegations_pre_insertion == T::MaxDelegatorsPerCollator::get()
-			{
+			let state = if num_delegations_pre_insertion == T::MaxDelegatorsPerCollator::get() {
 				Self::do_update_delegator(delegation, state)?
 			} else {
 				state.total = state.total.saturating_add(amount);
-				(state, None)
+				state
 			};
 			let new_total = state.total;
 
@@ -1617,9 +1509,6 @@ pub mod pallet {
 			// initiate reward counter to match the current state of the candidate
 			RewardCount::<T>::insert(&acc, RewardCount::<T>::get(&collator));
 
-			// update or clear storage of potentially kicked delegator
-			Self::update_kicked_delegator_storage(maybe_kicked_delegator);
-
 			Self::deposit_event(Event::Delegation(acc, amount, collator, new_total));
 			Ok(Some(<T as pallet::Config>::WeightInfo::join_delegators(
 				n,
@@ -1628,166 +1517,8 @@ pub mod pallet {
 			.into())
 		}
 
-		/// Delegate another collator's candidate by staking some funds and
-		/// increasing the pallet's as well as the collator's total stake.
-		///
-		/// The account that wants to delegate cannot be part of the collator
-		/// candidates set as well.
-		///
-		/// The caller _must_ have delegated before. Otherwise,
-		/// `join_delegators` should be called.
-		///
-		/// If the delegator has already delegated the maximum number of
-		/// collator candidates, this operation will fail.
-		///
-		/// The amount staked must be larger than the minimum required to become
-		/// a delegator as set in the pallet's configuration.
-		///
-		/// As only `MaxDelegatorsPerCollator` are allowed to delegate a given
-		/// collator, the amount staked must be larger than the lowest one in
-		/// the current set of delegator for the operation to be meaningful.
-		///
-		/// The collator's total stake as well as the pallet's total stake are
-		/// increased accordingly.
-		///
-		/// NOTE: This transaction is expected to throw until we increase
-		/// `MaxCollatorsPerDelegator` by at least one, since it is currently
-		/// set to one.
-		///
-		/// Emits `Delegation`.
-		/// Emits `DelegationReplaced` if the candidate has
-		/// `MaxDelegatorsPerCollator` many delegations but this delegator
-		/// staked more than one of the other delegators of this candidate.
-		///
-		/// # <weight>
-		/// Weight: O(N + D) where N is `MaxSelectedCandidates` bounded by
-		/// `MaxTopCandidates` and D is the number of delegators for this
-		/// candidate bounded by `MaxDelegatorsPerCollator`.
-		/// - Reads: [Origin Account], DelegatorState, TopCandidates,
-		///   MaxSelectedCandidates, CandidatePool, LastDelegation, Round
-		/// - Writes: Locks, CandidatePool, DelegatorState, TotalCollatorStake,
-		///   LastDelegation
-		/// # </weight>
-		//
-		// NOTE: We can't benchmark this extrinsic until we have increased `MaxCollatorsPerDelegator` by at least 1,
-		// thus we use the closest weight we can get.
-		#[pallet::weight(<T as pallet::Config>::WeightInfo::join_delegators(
-			T::MaxTopCandidates::get(),
-			T::MaxDelegatorsPerCollator::get()
-		))]
-		pub fn delegate_another_candidate(
-			origin: OriginFor<T>,
-			collator: <T::Lookup as StaticLookup>::Source,
-			amount: BalanceOf<T>,
-		) -> DispatchResultWithPostInfo {
-			let acc = ensure_signed(origin)?;
-			let collator = T::Lookup::lookup(collator)?;
-			let mut delegator = DelegatorState::<T>::get(&acc).ok_or(Error::<T>::NotYetDelegating)?;
-
-			// check balance
-			ensure!(
-				pallet_balances::Pallet::<T>::free_balance(acc.clone())
-					>= delegator.total.saturating_add(amount).into(),
-				pallet_balances::Error::<T>::InsufficientBalance
-			);
-
-			// delegation after first
-			ensure!(amount >= T::MinDelegation::get(), Error::<T>::DelegationBelowMin);
-			ensure!(
-				(delegator.delegations.len().saturated_into::<u32>()) < T::MaxCollatorsPerDelegator::get(),
-				Error::<T>::MaxCollatorsPerDelegatorExceeded
-			);
-			// cannot delegate if number of delegations in this round exceeds
-			// MaxDelegationsPerRound
-			let delegation_counter = Self::get_delegation_counter(&acc)?;
-
-			// prepare new collator state
-			let mut state = CandidatePool::<T>::get(&collator).ok_or(Error::<T>::CandidateNotFound)?;
-			let num_delegations_pre_insertion: u32 = state.delegators.len().saturated_into();
-			ensure!(!state.is_leaving(), Error::<T>::CannotDelegateIfLeaving);
-
-			// attempt to insert delegation, check for uniqueness and update total delegated
-			// amount
-			// NOTE: excess is handled below because we support replacing a delegator
-			// with fewer stake
-			ensure!(
-				delegator
-					.add_delegation(Stake {
-						owner: collator.clone(),
-						amount
-					})
-					.unwrap_or(true),
-				Error::<T>::AlreadyDelegatedCollator
-			);
-			let delegation = Stake {
-				owner: acc.clone(),
-				amount,
-			};
-
-			// throws if delegation insertion exceeds bounded vec limit which we will handle
-			// below in Self::do_update_delegator
-			ensure!(
-				state.delegators.try_insert(delegation.clone()).unwrap_or(true),
-				Error::<T>::DelegatorExists
-			);
-
-			let CandidateOf::<T, _> {
-				stake: old_stake,
-				total: old_total,
-				..
-			} = state;
-
-			// update state and potentially prepare kicking a delegator with less staked
-			// amount (includes reward setting for kicked delegator)
-			let (state, maybe_kicked_delegator) = if num_delegations_pre_insertion == T::MaxDelegatorsPerCollator::get()
-			{
-				Self::do_update_delegator(delegation, state)?
-			} else {
-				state.total = state.total.saturating_add(amount);
-				(state, None)
-			};
-			let new_total = state.total;
-
-			// *** No Fail except during increase_lock beyond this point ***
-
-			// lock stake
-			Self::increase_lock(&acc, delegator.total, amount)?;
-
-			// update top candidates and total amount at stake
-			let n = if state.is_active() {
-				Self::update_top_candidates(
-					collator.clone(),
-					old_stake,
-					// safe because total >= stake
-					old_total - old_stake,
-					state.stake,
-					state.total - state.stake,
-				)
-			} else {
-				0u32
-			};
-
-			// update states
-			CandidatePool::<T>::insert(&collator, state);
-			DelegatorState::<T>::insert(&acc, delegator);
-			<LastDelegation<T>>::insert(&acc, delegation_counter);
-
-			// initiate reward counter to match the current state of the candidate
-			RewardCount::<T>::insert(&acc, RewardCount::<T>::get(&collator));
-
-			// update or clear storage of potentially kicked delegator
-			Self::update_kicked_delegator_storage(maybe_kicked_delegator);
-
-			Self::deposit_event(Event::Delegation(acc, amount, collator, new_total));
-			Ok(Some(<T as pallet::Config>::WeightInfo::join_delegators(
-				n,
-				T::MaxDelegatorsPerCollator::get(),
-			))
-			.into())
-		}
-
-		/// Leave the set of delegators and, by implication, revoke all ongoing
-		/// delegations.
+		/// Leave the set of delegators and, by implication, revoke the ingoing
+		/// delegation.
 		///
 		/// All staked funds are not unlocked immediately, but they are added to
 		/// the queue of pending unstaking, and will effectively be released
@@ -1798,19 +1529,10 @@ pub mod pallet {
 		/// their chances to be included in the set of candidates in the next
 		/// rounds.
 		///
-		/// Automatically increments the accumulated rewards of the origin for
-		/// each delegation.
+		/// Automatically increments the accumulated rewards of the origin the
+		/// current delegation.
 		///
 		/// Emits `DelegatorLeft`.
-		///
-		/// # <weight>
-		/// Weight: O(C) where C is the number of delegations for this delegator
-		/// which is bounded by by `MaxCollatorsPerDelegator`.
-		/// - Reads: [Origin Account], DelegatorState, BlockNumber, Unstaking,
-		///   TopCandidates, MaxSelectedCandidates, C * CandidatePool,
-		/// - Writes: Unstaking, CandidatePool, TotalCollatorStake,
-		/// - Kills: DelegatorState
-		/// # </weight>
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::leave_delegators(
 			T::MaxTopCandidates::get(),
 			T::MaxDelegatorsPerCollator::get()
@@ -1818,66 +1540,17 @@ pub mod pallet {
 		pub fn leave_delegators(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
 			let acc = ensure_signed(origin)?;
 			let delegator = DelegatorState::<T>::get(&acc).ok_or(Error::<T>::DelegatorNotFound)?;
-			let num_delegations: u32 = delegator.delegations.len().saturated_into();
-
-			// remove delegations and increment rewards
-			for stake in delegator.delegations.into_iter() {
-				Self::delegator_leaves_collator(acc.clone(), stake.owner.clone())?;
-			}
+			// should never throw
+			let collator = delegator.owner.ok_or(Error::<T>::DelegationNotFound)?;
+			Self::delegator_leaves_collator(acc.clone(), collator)?;
 
 			// *** No Fail beyond this point ***
 
 			DelegatorState::<T>::remove(&acc);
 
-			Self::deposit_event(Event::DelegatorLeft(acc, delegator.total));
+			Self::deposit_event(Event::DelegatorLeft(acc, delegator.amount));
 			Ok(Some(<T as pallet::Config>::WeightInfo::leave_delegators(
-				num_delegations,
-				T::MaxDelegatorsPerCollator::get(),
-			))
-			.into())
-		}
-
-		/// Terminates an ongoing delegation for a given collator candidate.
-		///
-		/// The staked funds are not unlocked immediately, but they are added to
-		/// the queue of pending unstaking, and will effectively be released
-		/// after `StakeDuration` blocks from the moment the delegation is
-		/// terminated.
-		///
-		/// This operation reduces the total stake of the pallet as well as the
-		/// stakes of the collator involved, potentially affecting its chances
-		/// to be included in the set of candidates in the next rounds.
-		///
-		/// Emits `DelegatorLeft`.
-		///
-		/// # <weight>
-		/// Weight: O(C) where C is the number of delegations for this delegator
-		/// which is bounded by by `MaxCollatorsPerDelegator`.
-		/// - Reads: [Origin Account], DelegatorState, BlockNumber, Unstaking,
-		///   Locks, TopCandidates, CandidatePool, MaxSelectedCandidates
-		/// - Writes: Unstaking, Locks, DelegatorState, CandidatePool,
-		///   TotalCollatorStake
-		/// - Kills: DelegatorState if the delegator has not delegated to
-		///   another collator
-		/// # </weight>
-		#[pallet::weight(<T as pallet::Config>::WeightInfo::revoke_delegation(
-			T::MaxCollatorsPerDelegator::get(),
-			T::MaxDelegatorsPerCollator::get()
-		))]
-		pub fn revoke_delegation(
-			origin: OriginFor<T>,
-			collator: <T::Lookup as StaticLookup>::Source,
-		) -> DispatchResultWithPostInfo {
-			let collator = T::Lookup::lookup(collator)?;
-			let delegator = ensure_signed(origin)?;
-
-			// *** No Fail except during delegator_revokes_collator beyond this point ***
-
-			// revoke delegation and increment rewards
-			let num_delegations = Self::delegator_revokes_collator(delegator, collator)?;
-
-			Ok(Some(<T as pallet::Config>::WeightInfo::revoke_delegation(
-				num_delegations,
+				1,
 				T::MaxDelegatorsPerCollator::get(),
 			))
 			.into())
@@ -1889,17 +1562,6 @@ pub mod pallet {
 		/// collator candidate to be added to it.
 		///
 		/// Emits `DelegatorStakedMore`.
-		///
-		/// # <weight>
-		/// Weight: O(N) + O(D) where N is `MaxSelectedCandidates` bounded
-		/// by `MaxTopCandidates` and D the number of total delegators for
-		/// this collator bounded by `MaxCollatorsPerDelegator`.
-		/// bounded by `MaxUnstakeRequests`.
-		/// - Reads: [Origin Account], DelegatorState, BlockNumber, Unstaking,
-		///   Locks, TopCandidates, CandidatePool, MaxSelectedCandidates
-		/// - Writes: Unstaking, Locks, DelegatorState, CandidatePool,
-		///   TotalCollatorStake
-		/// # </weight>
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::delegator_stake_more(
 			T::MaxTopCandidates::get(),
 			T::MaxDelegatorsPerCollator::get(),
@@ -1914,12 +1576,12 @@ pub mod pallet {
 			ensure!(!more.is_zero(), Error::<T>::ValStakeZero);
 
 			let candidate = T::Lookup::lookup(candidate)?;
-			let mut delegations = DelegatorState::<T>::get(&delegator).ok_or(Error::<T>::DelegatorNotFound)?;
+			let mut delegation = DelegatorState::<T>::get(&delegator).ok_or(Error::<T>::DelegatorNotFound)?;
 			let mut collator = CandidatePool::<T>::get(&candidate).ok_or(Error::<T>::CandidateNotFound)?;
 			ensure!(!collator.is_leaving(), Error::<T>::CannotDelegateIfLeaving);
-			let stake_after = delegations
+			let stake_after = delegation
 				.inc_delegation(candidate.clone(), more)
-				.ok_or(Error::<T>::DelegationNotFound)?;
+				.map_err(|_| Error::<T>::DelegationNotFound)?;
 
 			// *** No Fail except during increase_lock beyond this point ***
 
@@ -1952,7 +1614,7 @@ pub mod pallet {
 			Self::do_inc_delegator_reward(&delegator, stake_after.saturating_sub(more), &candidate);
 
 			CandidatePool::<T>::insert(&candidate, collator);
-			DelegatorState::<T>::insert(&delegator, delegations);
+			DelegatorState::<T>::insert(&delegator, delegation);
 
 			Self::deposit_event(Event::DelegatorStakedMore(delegator, candidate, before_total, after));
 			Ok(Some(<T as pallet::Config>::WeightInfo::delegator_stake_more(
@@ -2005,13 +1667,12 @@ pub mod pallet {
 			ensure!(!collator.is_leaving(), Error::<T>::CannotDelegateIfLeaving);
 			let stake_after = delegations
 				.dec_delegation(candidate.clone(), less)
-				.ok_or(Error::<T>::DelegationNotFound)?
+				.map_err(|_| Error::<T>::DelegationNotFound)?
 				.ok_or(Error::<T>::Underflow)?;
 
-			ensure!(stake_after >= T::MinDelegation::get(), Error::<T>::DelegationBelowMin);
 			ensure!(
-				delegations.total >= T::MinDelegatorStake::get(),
-				Error::<T>::NomStakeBelowMin
+				stake_after >= T::MinDelegatorStake::get(),
+				Error::<T>::DelegationBelowMin
 			);
 
 			// *** No Fail except during prep_unstake beyond this point ***
@@ -2142,25 +1803,19 @@ pub mod pallet {
 		/// The dispatch origin must be a delegator.
 		// TODO: Benchmark, unit tests
 		#[pallet::weight(0)]
-		pub fn increment_delegator_rewards(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
+		pub fn increment_delegator_rewards(origin: OriginFor<T>) -> DispatchResult {
 			let delegator = ensure_signed(origin)?;
-			let state = DelegatorState::<T>::get(&delegator).ok_or(Error::<T>::DelegatorNotFound)?;
+			let delegation = DelegatorState::<T>::get(&delegator).ok_or(Error::<T>::DelegatorNotFound)?;
+			// should never throw
+			let collator = delegation.owner.ok_or(Error::<T>::DelegationNotFound)?;
 
 			// early exit
 			let reward_count = RewardCount::<T>::take(&delegator);
 			ensure!(!reward_count.is_zero(), Error::<T>::RewardsNotFound);
 
-			// iterate delegations
-			let mut post_weight: Weight = 0;
-			for delegation in state.delegations.into_iter() {
-				post_weight = post_weight.saturating_add(Self::do_inc_delegator_reward(
-					&delegator,
-					delegation.amount,
-					&delegation.owner,
-				));
-			}
+			Self::do_inc_delegator_reward(&delegator, delegation.amount, &collator);
 
-			Ok(Some(post_weight).into())
+			Ok(())
 		}
 
 		/// Executes the annual reduction of the reward rates for collators and
@@ -2391,14 +2046,6 @@ pub mod pallet {
 		/// guarantee a single candidate's stake has changed, e.g. on genesis or
 		/// when a collator leaves. Otherwise, please use
 		/// [update_total_stake_by].
-		///
-		/// # <weight>
-		/// Weight: O(N) where N is `MaxSelectedCandidates` bounded by
-		/// `MaxTopCandidates`
-		/// - Reads: TopCandidates, MaxSelectedCandidates, N * CandidatePool,
-		///   TotalCollatorStake
-		/// - Writes: TotalCollatorStake
-		/// # </weight>
 		fn update_total_stake() -> (u32, u32) {
 			let mut num_of_delegators = 0u32;
 			let mut collator_stake = BalanceOf::<T>::zero();
@@ -2430,54 +2077,11 @@ pub mod pallet {
 			(collators.len().saturated_into(), num_of_delegators)
 		}
 
-		/// Update the delegator's state by removing the collator candidate from
-		/// the set of ongoing delegations.
-		///
-		/// # <weight>
-		/// Weight: O(D) where D is the number of total delegators for
-		/// this collator bounded by `MaxCollatorsPerDelegator`.
-		/// - Reads: [Origin Account], DelegatorState, BlockNumber, Unstaking,
-		///   Locks, TopCandidates, D * CandidatePool, MaxSelectedCandidates
-		/// - Writes: Unstaking, Locks, DelegatorState, CandidatePool,
-		///   TotalCollatorStake
-		/// - Kills: DelegatorState if the delegator has not delegated to
-		///   another collator
-		/// # </weight>
-		fn delegator_revokes_collator(acc: T::AccountId, collator: T::AccountId) -> Result<u32, DispatchError> {
-			let mut delegator = DelegatorState::<T>::get(&acc).ok_or(Error::<T>::DelegatorNotFound)?;
-			let old_total = delegator.total;
-			let num_delegations: u32 = delegator.delegations.len().saturated_into::<u32>();
-			let remaining = delegator
-				.rm_delegation(&collator)
-				.ok_or(Error::<T>::DelegationNotFound)?;
-
-			// remove delegation and increment rewards
-			if delegator.delegations.is_empty() {
-				// edge case; if no delegations remaining, leave set of delegators
-				Self::delegator_leaves_collator(acc.clone(), collator)?;
-				DelegatorState::<T>::remove(&acc);
-				Self::deposit_event(Event::DelegatorLeft(acc, old_total));
-			} else {
-				// can never fail iff MinDelegatorStake == MinDelegation
-				ensure!(remaining >= T::MinDelegatorStake::get(), Error::<T>::NomStakeBelowMin);
-				Self::delegator_leaves_collator(acc.clone(), collator)?;
-				DelegatorState::<T>::insert(&acc, delegator);
-			}
-			Ok(num_delegations)
-		}
-
 		/// Update the collator's state by removing the delegator's stake and
 		/// starting the process to unlock the delegator's staked funds as well
 		/// as incrementing their accumulated rewards.
 		///
 		/// This operation affects the pallet's total stake.
-		///
-		/// # <weight>
-		/// Weight: O(D) where D is the number of delegators for this
-		/// collator bounded by `MaxDelegatorsPerCollator`.
-		/// - Reads: CandidatePool, BlockNumber, Unstaking
-		/// - Writes: Unstaking, TotalCollatorStake, CandidatePool
-		/// # </weight>
 		fn delegator_leaves_collator(delegator: T::AccountId, collator: T::AccountId) -> DispatchResult {
 			let mut state = CandidatePool::<T>::get(&collator).ok_or(Error::<T>::CandidateNotFound)?;
 
@@ -2525,51 +2129,6 @@ pub mod pallet {
 				new_total,
 			));
 			Ok(())
-		}
-
-		/// Check for remaining delegations of the delegator which has been
-		/// removed from the given collator.
-		///
-		/// Returns the removed delegator's address and
-		/// * Either the updated delegator state if other delegations are still
-		///   remaining
-		/// * Or `None`, signalling the delegator state should be cleared once
-		///   the transaction cannot fail anymore.
-		fn prep_kick_delegator(
-			delegation: &StakeOf<T>,
-			collator: &T::AccountId,
-		) -> Result<ReplacedDelegator<T>, DispatchError> {
-			let mut state = DelegatorState::<T>::get(&delegation.owner).ok_or(Error::<T>::DelegatorNotFound)?;
-			state.rm_delegation(collator);
-
-			// we don't unlock immediately
-			Self::prep_unstake(&delegation.owner, delegation.amount, true)?;
-
-			// return state if not empty for later removal after all checks have passed
-			if state.delegations.is_empty() {
-				Ok(ReplacedDelegator {
-					who: delegation.owner.clone(),
-					state: None,
-				})
-			} else {
-				Ok(ReplacedDelegator {
-					who: delegation.owner.clone(),
-					state: Some(state),
-				})
-			}
-		}
-
-		/// Either clear the storage of a kicked delegator or update its
-		/// delegation state if it still contains other delegations.
-		fn update_kicked_delegator_storage(delegator: Option<ReplacedDelegator<T>>) {
-			match delegator {
-				Some(ReplacedDelegator {
-					who,
-					state: Some(state),
-				}) => DelegatorState::<T>::insert(who, state),
-				Some(ReplacedDelegator { who, .. }) => DelegatorState::<T>::remove(who),
-				_ => (),
-			}
 		}
 
 		/// Return the best `MaxSelectedCandidates` many candidates.
@@ -2625,13 +2184,7 @@ pub mod pallet {
 		fn do_update_delegator(
 			stake: Stake<T::AccountId, BalanceOf<T>>,
 			mut state: Candidate<T::AccountId, BalanceOf<T>, T::MaxDelegatorsPerCollator>,
-		) -> Result<
-			(
-				CandidateOf<T, T::MaxDelegatorsPerCollator>,
-				Option<ReplacedDelegator<T>>,
-			),
-			DispatchError,
-		> {
+		) -> Result<CandidateOf<T, T::MaxDelegatorsPerCollator>, DispatchError> {
 			// attempt to replace the last element of the set
 			let stake_to_remove = state
 				.delegators
@@ -2653,9 +2206,10 @@ pub mod pallet {
 
 				// set rewards for kicked delegator
 				Self::do_inc_delegator_reward(&stake_to_remove.owner, stake_to_remove.amount, &state.id);
-
-				// update storage of kicked delegator
-				let kicked_delegator = Self::prep_kick_delegator(&stake_to_remove, &state.id)?;
+				// prepare unstaking for kicked delegator
+				Self::prep_unstake(&stake_to_remove.owner, stake_to_remove.amount, true)?;
+				// remove Delegator state for kicked delegator
+				DelegatorState::<T>::remove(&stake_to_remove.owner);
 
 				Self::deposit_event(Event::DelegationReplaced(
 					stake.owner,
@@ -2665,11 +2219,9 @@ pub mod pallet {
 					state.id.clone(),
 					state.total,
 				));
-
-				Ok((state, Some(kicked_delegator)))
-			} else {
-				Ok((state, None))
 			}
+
+			Ok(state)
 		}
 
 		/// Either set or increase the BalanceLock of target account to
@@ -2795,13 +2347,10 @@ pub mod pallet {
 				Self::prep_unstake(&stake.owner, stake.amount, true)?;
 				// remove delegation from delegator state
 				if let Some(mut delegator) = DelegatorState::<T>::get(&stake.owner) {
-					if let Some(remaining) = delegator.rm_delegation(collator) {
-						if remaining.is_zero() {
-							DelegatorState::<T>::remove(&stake.owner);
-						} else {
-							DelegatorState::<T>::insert(&stake.owner, delegator);
-						}
-					}
+					delegator
+						.rm_delegation(collator.clone())
+						.map_err(|_| Error::<T>::DelegationNotFound)?;
+					DelegatorState::<T>::remove(&stake.owner);
 				}
 			}
 			// prepare unstaking of collator candidate
@@ -2888,15 +2437,11 @@ pub mod pallet {
 		/// Checks whether a delegator can still delegate in this round, e.g.,
 		/// if they have not delegated MaxDelegationsPerRound many times
 		/// already in this round.
-		///
-		/// # <weight>
-		/// Weight: O(1)
-		/// - Reads: LastDelegation, Round
-		/// # </weight>
 		fn get_delegation_counter(delegator: &T::AccountId) -> Result<DelegationCounter, DispatchError> {
 			let last_delegation = <LastDelegation<T>>::get(delegator);
 			let round = <Round<T>>::get();
 
+			// reset counter if the round advanced since last delegation
 			let counter = if last_delegation.round < round.current {
 				0u32
 			} else {
@@ -2904,7 +2449,7 @@ pub mod pallet {
 			};
 
 			ensure!(
-				T::MaxDelegationsPerRound::get() > counter,
+				counter < T::MaxDelegationsPerRound::get(),
 				Error::<T>::DelegationsPerRoundExceeded
 			);
 
@@ -2931,12 +2476,6 @@ pub mod pallet {
 		///
 		/// `col_reward_rate_per_block * col_max_stake * max_num_of_collators *
 		/// NetworkRewardRate`
-		///
-		/// # <weight>
-		/// Weight: O(1)
-		/// - Reads: InflationConfig, MaxCollatorCandidateStake,
-		///   MaxSelectedCandidates
-		/// # </weight>
 		fn get_network_reward() -> NegativeImbalanceOf<T> {
 			// Multiplication with Perquintill cannot overflow
 			let max_col_rewards = InflationConfig::<T>::get().collator.reward_rate.per_block

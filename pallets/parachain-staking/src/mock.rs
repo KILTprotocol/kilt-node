@@ -134,15 +134,13 @@ parameter_types! {
 	pub const ExitQueueDelay: u32 = 2;
 	pub const DefaultBlocksPerRound: BlockNumber = BLOCKS_PER_ROUND;
 	pub const MinCollators: u32 = 2;
+	pub const MaxDelegationsPerRound: u32 = 2;
 	#[derive(Debug, PartialEq)]
 	pub const MaxDelegatorsPerCollator: u32 = 4;
-	#[derive(Debug, PartialEq)]
-	pub const MaxCollatorsPerDelegator: u32 = 4;
 	pub const MinCollatorStake: Balance = 10;
 	#[derive(Debug, PartialEq)]
 	pub const MaxCollatorCandidates: u32 = 10;
 	pub const MinDelegatorStake: Balance = 5;
-	pub const MinDelegation: Balance = 3;
 	pub const MaxUnstakeRequests: u32 = 6;
 	pub const NetworkRewardRate: Perquintill = Perquintill::from_percent(10);
 	pub const NetworkRewardStart: BlockNumber = 5 * 5 * 60 * 24 * 36525 / 100;
@@ -166,14 +164,12 @@ impl Config for Test {
 	type ExitQueueDelay = ExitQueueDelay;
 	type MinCollators = MinCollators;
 	type MinRequiredCollators = MinCollators;
-	type MaxDelegationsPerRound = MaxDelegatorsPerCollator;
+	type MaxDelegationsPerRound = MaxDelegationsPerRound;
 	type MaxDelegatorsPerCollator = MaxDelegatorsPerCollator;
-	type MaxCollatorsPerDelegator = MaxCollatorsPerDelegator;
 	type MinCollatorStake = MinCollatorStake;
 	type MinCollatorCandidateStake = MinCollatorStake;
 	type MaxTopCandidates = MaxCollatorCandidates;
 	type MinDelegatorStake = MinDelegatorStake;
-	type MinDelegation = MinDelegation;
 	type MaxUnstakeRequests = MaxUnstakeRequests;
 	type NetworkRewardRate = NetworkRewardRate;
 	type NetworkRewardStart = NetworkRewardStart;
