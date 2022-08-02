@@ -50,6 +50,7 @@ use sp_std::marker::PhantomData;
 pub trait WeightInfo {
 	fn add(c: u32, ) -> Weight;
 	fn remove() -> Weight;
+	fn revoke() -> Weight;
 	fn reclaim_deposit() -> Weight;
 }
 
@@ -71,6 +72,11 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Attestation Attestations (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	fn remove() -> Weight {
+		(35_041_000 as Weight)
+			.saturating_add(T::DbWeight::get().reads(4 as Weight))
+			.saturating_add(T::DbWeight::get().writes(4 as Weight))
+	}
+	fn revoke() -> Weight {
 		(35_041_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(4 as Weight))
 			.saturating_add(T::DbWeight::get().writes(4 as Weight))
@@ -103,6 +109,11 @@ impl WeightInfo for () {
 	// Storage: Attestation Attestations (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	fn remove() -> Weight {
+		(35_041_000 as Weight)
+			.saturating_add(RocksDbWeight::get().reads(4 as Weight))
+			.saturating_add(RocksDbWeight::get().writes(4 as Weight))
+	}
+	fn revoke() -> Weight {
 		(35_041_000 as Weight)
 			.saturating_add(RocksDbWeight::get().reads(4 as Weight))
 			.saturating_add(RocksDbWeight::get().writes(4 as Weight))

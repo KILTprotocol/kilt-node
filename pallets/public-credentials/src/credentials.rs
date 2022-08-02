@@ -23,30 +23,16 @@ use frame_support::RuntimeDebug;
 
 use kilt_support::deposit::Deposit;
 
-/// The bulk of the credential, i.e., its (encoded) claims, subject, and Ctype.
+/// The type of a credentials as incoming from the outside world.
+/// Some of its fields are parsed and/or transformed inside the `add` operation.
 #[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq, PartialOrd, Ord, TypeInfo)]
-pub struct Claim<CtypeHash, SubjectIdentifier, Content> {
+pub struct Credential<CtypeHash, SubjectIdentifier, Claims> {
 	/// The Ctype of the credential.
 	pub ctype_hash: CtypeHash,
 	/// The credential subject ID as specified by the attester.
 	pub subject: SubjectIdentifier,
 	/// The credential claims.
-	pub contents: Content,
-}
-
-/// The type of a credentials as incoming from the outside world.
-/// Some of its fields are parsed and/or transformed inside the `add` operation.
-#[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq, PartialOrd, Ord, TypeInfo)]
-pub struct Credential<
-	CtypeHash,
-	SubjectIdentifier,
-	ClaimContent,
-	AuthorizationControl,
-> {
-	/// The credential content.
-	pub claim: Claim<CtypeHash, SubjectIdentifier, ClaimContent>,
-	/// The authorization info to attest the credential.
-	pub authorization_info: Option<AuthorizationControl>,
+	pub claims: Claims,
 }
 
 /// The entry in the blockchain state corresponding to a successful public
@@ -55,7 +41,9 @@ pub struct Credential<
 /// block. The block number is used to query the full content of the credential
 /// from archive nodes.
 #[derive(Encode, Decode, Clone, MaxEncodedLen, RuntimeDebug, PartialEq, Eq, PartialOrd, Ord, TypeInfo)]
-pub struct CredentialEntry<BlockNumber, AccountId, Balance> {
+pub struct CredentialEntry<Attester, BlockNumber, AccountId, Balance,> {
+	/// The attester of the credential.
+	pub attester: Attester,
 	/// The block number in which the credential tx was evaluated and included
 	/// in the block.
 	pub block_number: BlockNumber,

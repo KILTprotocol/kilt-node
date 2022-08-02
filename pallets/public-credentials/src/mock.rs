@@ -20,23 +20,19 @@ use codec::Encode;
 use sp_runtime::traits::Hash;
 
 use ctype::CtypeHashOf;
-use attestation::AttesterOf;
 
-use crate::{Claim, Config, CredentialIdOf, InputClaimsContentOf, InputCredentialOf, InputSubjectIdOf};
+use crate::{AttesterOf, Config, CredentialIdOf, InputClaimsContentOf, InputCredentialOf, InputSubjectIdOf};
 
 // Generate a public credential using a many Default::default() as possible.
 pub fn generate_base_public_credential_creation_op<T: Config>(
 	subject_id: InputSubjectIdOf<T>,
 	ctype_hash: CtypeHashOf<T>,
-	contents: InputClaimsContentOf<T>,
+	claims: InputClaimsContentOf<T>,
 ) -> InputCredentialOf<T> {
 	InputCredentialOf::<T> {
-		claim: Claim {
-			ctype_hash,
-			subject: subject_id,
-			contents,
-		},
-		authorization_info: Default::default(),
+		ctype_hash,
+		subject: subject_id,
+		claims,
 	}
 }
 
@@ -74,11 +70,10 @@ pub(crate) mod runtime {
 		signature::EqualVerify,
 	};
 
-	use attestation::{mock::MockAccessControl, AttestationDetails, ClaimHashOf};
 	use ctype::{CtypeCreatorOf, CtypeHashOf};
 
 	use crate::{
-		BalanceOf, CredentialEntryOf, Credentials, CredentialsUnicityIndex, CurrencyOf, Error, InputSubjectIdOf,
+		BalanceOf, CredentialEntryOf, Credentials, CredentialSubjects, CurrencyOf, Error, InputSubjectIdOf,
 	};
 
 	pub(crate) type BlockNumber = u64;
@@ -145,8 +140,10 @@ pub(crate) mod runtime {
 	pub(crate) fn generate_base_credential_entry<T: Config>(
 		payer: T::AccountId,
 		block_number: <T as frame_system::Config>::BlockNumber,
+		attester: T::AttesterId,
 	) -> CredentialEntryOf<T> {
 		CredentialEntryOf::<T> {
+			attester,
 			block_number,
 			deposit: Deposit::<T::AccountId, BalanceOf<T>> {
 				owner: payer,
@@ -157,7 +154,7 @@ pub(crate) mod runtime {
 
 	fn insert_public_credentials<T: Config>(
 		subject_id: T::SubjectId,
-		claim_hash: ClaimHashOf<T>,
+		credential_id: CredentialIdOf<T>,
 		credential_entry: CredentialEntryOf<T>,
 	) {
 		kilt_support::reserve_deposit::<T::AccountId, CurrencyOf<T>>(
@@ -166,8 +163,8 @@ pub(crate) mod runtime {
 		)
 		.expect("Attester should have enough balance");
 
-		Credentials::<T>::insert(&subject_id, &claim_hash, credential_entry);
-		CredentialsUnicityIndex::<T>::insert(claim_hash, subject_id);
+		Credentials::<T>::insert(&subject_id, &credential_id, credential_entry);
+		CredentialSubjects::<T>::insert(credential_id, subject_id);
 	}
 
 	pub(crate) const MILLI_UNIT: Balance = 10u128.pow(12);
@@ -179,7 +176,6 @@ pub(crate) mod runtime {
 			UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>,
 		{
 			System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
-			Attestation: attestation::{Pallet, Call, Storage, Event<T>},
 			Ctype: ctype::{Pallet, Call, Storage, Event<T>},
 			Balances: pallet_balances::{Pallet, Call, Storage, Event<T>},
 			MockOrigin: mock_origin::{Pallet, Origin<T>},
@@ -245,31 +241,17 @@ pub(crate) mod runtime {
 		type FeeCollector = ();
 	}
 
-	impl attestation::Config for Test {
-		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<AccountId, Self::AttesterId>;
-		type OriginSuccess = mock_origin::DoubleOrigin<AccountId, Self::AttesterId>;
-		type Event = ();
-		type WeightInfo = ();
-
-		type Currency = Balances;
-		type Deposit = ConstU128<{ 100 * MILLI_UNIT }>;
-		type MaxDelegatedAttestations = ConstU32<0>;
-		type AttesterId = SubjectId;
-		type AuthorizationId = SubjectId;
-		type AccessControl = MockAccessControl<Self>;
-	}
-
 	impl Config for Test {
-		type ClaimerIdentifier = SubjectId;
-		type ClaimerSignature = (Self::ClaimerIdentifier, Vec<u8>);
-		type ClaimerSignatureVerification = EqualVerify<Self::ClaimerIdentifier, Vec<u8>>;
+		type AttesterId = SubjectId;
+		type CredentialId = Hash;
 		type CredentialHash = BlakeTwo256;
+		type Currency = Balances;
 		type Deposit = ConstU128<{ 10 * MILLI_UNIT }>;
-		type EnsureOrigin = <Self as attestation::Config>::EnsureOrigin;
+		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<AccountId, Self::AttesterId>;
 		type Event = ();
 		type MaxEncodedClaimsLength = ConstU32<500>;
 		type MaxSubjectIdLength = ConstU32<100>;
-		type OriginSuccess = <Self as attestation::Config>::OriginSuccess;
+		type OriginSuccess = mock_origin::DoubleOrigin<AccountId, Self::AttesterId>;
 		type SubjectId = TestSubjectId;
 		type WeightInfo = ();
 	}
@@ -294,8 +276,7 @@ pub(crate) mod runtime {
 		ctypes: Vec<(CtypeHashOf<Test>, CtypeCreatorOf<Test>)>,
 		/// endowed accounts with balances
 		balances: Vec<(AccountId, Balance)>,
-		attestations: Vec<(ClaimHashOf<Test>, AttestationDetails<Test>)>,
-		public_credentials: Vec<(<Test as Config>::SubjectId, ClaimHashOf<Test>, CredentialEntryOf<Test>)>,
+		public_credentials: Vec<(<Test as Config>::SubjectId, CredentialIdOf<Test>, CredentialEntryOf<Test>)>,
 	}
 
 	impl ExtBuilder {
@@ -312,15 +293,9 @@ pub(crate) mod runtime {
 		}
 
 		#[must_use]
-		pub fn with_attestations(mut self, attestations: Vec<(ClaimHashOf<Test>, AttestationDetails<Test>)>) -> Self {
-			self.attestations = attestations;
-			self
-		}
-
-		#[must_use]
 		pub fn with_public_credentials(
 			mut self,
-			credentials: Vec<(<Test as Config>::SubjectId, ClaimHashOf<Test>, CredentialEntryOf<Test>)>,
+			credentials: Vec<(<Test as Config>::SubjectId, CredentialIdOf<Test>, CredentialEntryOf<Test>)>,
 		) -> Self {
 			self.public_credentials = credentials;
 			self
@@ -341,12 +316,8 @@ pub(crate) mod runtime {
 					ctype::Ctypes::<Test>::insert(ctype.0, ctype.1.clone());
 				}
 
-				for (claim_hash, details) in self.attestations {
-					attestation::mock::insert_attestation(claim_hash, details);
-				}
-
-				for (subject_id, claim_hash, credential_entry) in self.public_credentials {
-					insert_public_credentials::<Test>(subject_id, claim_hash, credential_entry);
+				for (subject_id, credential_id, credential_entry) in self.public_credentials {
+					insert_public_credentials::<Test>(subject_id, credential_id, credential_entry);
 				}
 			});
 

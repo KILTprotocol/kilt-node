@@ -8472,7 +8472,6 @@ dependencies = [
 name = "public-credentials"
 version = "1.7.0"
 dependencies = [
- "attestation",
  "base58",
  "ctype",
  "frame-benchmarking",
