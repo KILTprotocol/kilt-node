@@ -1489,8 +1489,8 @@ pub mod pallet {
 		/// their chances to be included in the set of candidates in the next
 		/// rounds.
 		///
-		/// Automatically increments the accumulated rewards of the origin of the
-		/// current delegation.
+		/// Automatically increments the accumulated rewards of the origin of
+		/// the current delegation.
 		///
 		/// Emits `DelegatorLeft`.
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::leave_delegators(
@@ -1707,7 +1707,7 @@ pub mod pallet {
 		/// for anyone.
 		///
 		/// Emits `Rewarded`.
-		// TODO: Benchmark, unit tests
+		// TODO: Benchmark
 		#[pallet::weight(0)]
 		pub fn claim_rewards_for(origin: OriginFor<T>, target: <T::Lookup as StaticLookup>::Source) -> DispatchResult {
 			ensure_signed(origin)?;
@@ -1732,7 +1732,7 @@ pub mod pallet {
 		/// network.
 		///
 		/// The dispatch origin must be a collator.
-		// TODO: Benchmark, unit tests
+		// TODO: Benchmark
 		#[pallet::weight(0)]
 		pub fn increment_collator_rewards(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
 			let collator = ensure_signed(origin)?;
@@ -1753,7 +1753,7 @@ pub mod pallet {
 		/// delegations.
 		///
 		/// The dispatch origin must be a delegator.
-		// TODO: Benchmark, unit tests
+		// TODO: Benchmark
 		#[pallet::weight(0)]
 		pub fn increment_delegator_rewards(origin: OriginFor<T>) -> DispatchResult {
 			let delegator = ensure_signed(origin)?;
@@ -1761,11 +1761,8 @@ pub mod pallet {
 			// should never throw
 			let collator = delegation.owner.ok_or(Error::<T>::DelegationNotFound)?;
 
-			// early exit
-			let reward_count = RewardCount::<T>::take(&delegator);
-			ensure!(!reward_count.is_zero(), Error::<T>::RewardsNotFound);
-
 			Self::do_inc_delegator_reward(&delegator, delegation.amount, &collator);
+			ensure!(!Rewards::<T>::get(&delegator).is_zero(), Error::<T>::RewardsNotFound);
 
 			Ok(())
 		}
@@ -2457,8 +2454,6 @@ pub mod pallet {
 				Rewards::<T>::mutate(acc, |reward| {
 					*reward = reward.saturating_add(Self::calc_block_rewards_delegator(stake, diff.into()));
 				});
-				// TODO: Investigate whether we want to set this to some input variable to
-				// improve `add_collator_reward`
 				RewardCount::<T>::insert(acc, col_reward_count);
 
 				// 4 reads from reward calc
@@ -2467,18 +2462,6 @@ pub mod pallet {
 				T::DbWeight::get().reads(2)
 			}
 		}
-
-		// [Post-launch TODO] Think about Collator stake or total stake?
-		// /// Attempts to add a collator candidate to the set of collator
-		// /// candidates which already reached its maximum size. On success,
-		// /// another collator with the minimum total stake is removed from the
-		// /// set. On failure, an error is returned. removing an already existing
-		// fn check_collator_candidate_inclusion(
-		// 	stake: Stake<T::AccountId, BalanceOf<T>>,
-		// 	mut candidates: OrderedSet<Stake<T::AccountId, BalanceOf<T>>,
-		// T::MaxTopCandidates>, ) -> Result<(), DispatchError> {
-		// 	todo!()
-		// }
 	}
 
 	impl<T> pallet_authorship::EventHandler<T::AccountId, T::BlockNumber> for Pallet<T>
