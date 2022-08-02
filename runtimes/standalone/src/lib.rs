@@ -422,7 +422,7 @@ impl pallet_did_lookup::Config for Runtime {
 
 impl pallet_web3_names::Config for Runtime {
 	type BanOrigin = EnsureRoot<AccountId>;
-	type OwnerOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
+	type OwnerOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>; 
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
 	type Currency = Balances;
 	type Deposit = constants::web3_names::Web3NameDeposit;
