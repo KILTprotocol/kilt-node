@@ -1477,7 +1477,7 @@ pub mod pallet {
 			.into())
 		}
 
-		/// Leave the set of delegators and, by implication, revoke the ingoing
+		/// Leave the set of delegators and, by implication, revoke the ongoing
 		/// delegation.
 		///
 		/// All staked funds are not unlocked immediately, but they are added to
@@ -1489,7 +1489,7 @@ pub mod pallet {
 		/// their chances to be included in the set of candidates in the next
 		/// rounds.
 		///
-		/// Automatically increments the accumulated rewards of the origin the
+		/// Automatically increments the accumulated rewards of the origin of the
 		/// current delegation.
 		///
 		/// Emits `DelegatorLeft`.
