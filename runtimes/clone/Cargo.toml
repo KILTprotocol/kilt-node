@@ -65,6 +65,7 @@ pallet-proxy = {git = "https://github.com/paritytech/substrate", default-feature
 pallet-randomness-collective-flip = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.26"}
 pallet-scheduler = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.26"}
 pallet-session = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.26"}
+pallet-sudo = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.26"}
 pallet-timestamp = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.26"}
 pallet-tips = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.26"}
 pallet-transaction-payment = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.26"}
@@ -138,6 +139,7 @@ runtime-benchmarks = [
   "xcm-builder/runtime-benchmarks",
 ]
 std = [
+  "pallet-sudo/std",
   "pallet-collator-selection/std",
   "attestation/std",
   "codec/std",
@@ -205,6 +207,7 @@ std = [
   "xcm/std",
 ]
 try-runtime = [
+  "pallet-sudo/try-runtime",
   "pallet-collator-selection/try-runtime",
   "attestation/try-runtime",
   "ctype/try-runtime",

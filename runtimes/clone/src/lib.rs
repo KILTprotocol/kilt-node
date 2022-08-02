@@ -876,6 +876,11 @@ impl pallet_collator_selection::Config for Runtime {
 	type WeightInfo = ();
 }
 
+impl pallet_sudo::Config for Runtime {
+	type Event = Event;
+	type Call = Call;
+}
+
 construct_runtime! {
 	pub enum Runtime where
 		Block = Block,
@@ -889,6 +894,7 @@ construct_runtime! {
 		Indices: pallet_indices::{Pallet, Call, Storage, Event<T>} = 5,
 		Balances: pallet_balances = 6,
 		TransactionPayment: pallet_transaction_payment::{Pallet, Storage, Event<T>} = 7,
+		Sudo: pallet_sudo = 8,
 
 		// Consensus support.
 		// The following order MUST NOT be changed: Authorship -> Staking -> Session -> Aura -> AuraExt
