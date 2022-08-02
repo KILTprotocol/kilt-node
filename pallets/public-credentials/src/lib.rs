@@ -232,10 +232,15 @@ pub mod pallet {
 			let deposit_amount = <T as Config>::Deposit::get();
 
 			let Credential {
-				ctype_hash: _,
+				ctype_hash,
 				subject,
 				claims: _,
 			} = credential.clone();
+
+			ensure!(
+				ctype::Ctypes::<T>::contains_key(&ctype_hash),
+				ctype::Error::<T>::CTypeNotFound
+			);
 
 			// Credential ID = H(<encoded_credential_input> || <attester_identifier>)
 			let credential_id =
@@ -249,12 +254,12 @@ pub mod pallet {
 				Error::<T>::CredentialAlreadyIssued
 			);
 
-			// *** No Fail beyond this point ***
-
 			// Take the rest of the deposit. Should never fail since we made sure above that
 			// enough funds can be reserved.
 			let deposit = kilt_support::reserve_deposit::<T::AccountId, CurrencyOf<T>>(payer, deposit_amount)
 				.map_err(|_| Error::<T>::UnableToPayFees)?;
+
+			// *** No Fail beyond this point ***
 
 			let block_number = frame_system::Pallet::<T>::block_number();
 
@@ -278,6 +283,76 @@ pub mod pallet {
 			Ok(())
 		}
 
+		/// Revokes a public credential.
+		///
+		/// If a credential was already revoked, this function does not fail but simply results
+		/// in a noop.
+		///
+		/// Only the original attester can revoke the credential.
+		///
+		/// Emits `CredentialRevoked`.
+		#[pallet::weight(0)]
+		pub fn revoke(origin: OriginFor<T>, credential_id: CredentialIdOf<T>) -> DispatchResult {
+			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
+			let caller = source.subject();
+
+			let credential_subject =
+				CredentialSubjects::<T>::get(&credential_id).ok_or(Error::<T>::CredentialNotFound)?;
+
+			// Fails if the credential does not exist OR the caller is different than the original attester.
+			Credentials::<T>::try_mutate(&credential_subject, &credential_id, |credential_entry| {
+				if let Some(credential) = credential_entry {
+					if caller != credential.attester {
+						Err(DispatchError::from(Error::<T>::Unauthorized))
+					} else {
+						credential.revoked = true;
+						Ok(())
+					}
+				} else {
+					Err(DispatchError::from(Error::<T>::CredentialNotFound))
+				}
+			})?;
+
+			Self::deposit_event(Event::CredentialRevoked { credential_id });
+
+			Ok(())
+		}
+
+		/// Unrevokes a public credential.
+		///
+		/// If a credential was not revoked, this function does not fail but simply results
+		/// in a noop.
+		///
+		/// Only the original attester can unrevoke the credential.
+		///
+		/// Emits `CredentialUnrevoked`.
+		#[pallet::weight(0)]
+		pub fn unrevoke(origin: OriginFor<T>, credential_id: CredentialIdOf<T>) -> DispatchResult {
+			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
+			let caller = source.subject();
+
+			let credential_subject =
+				CredentialSubjects::<T>::get(&credential_id).ok_or(Error::<T>::CredentialNotFound)?;
+
+			// Fails if the credential does not exist OR the caller is different than the original attester.
+			Credentials::<T>::try_mutate(&credential_subject, &credential_id, |credential_entry| {
+				if let Some(credential) = credential_entry {
+					if caller != credential.attester {
+						Err(DispatchError::from(Error::<T>::Unauthorized))
+					} else {
+						credential.revoked = false;
+						Ok(())
+					}
+				} else {
+					Err(DispatchError::from(Error::<T>::CredentialNotFound))
+				}
+			})?;
+
+			Self::deposit_event(Event::CredentialUnrevoked { credential_id });
+
+			Ok(())
+		}
+
 		/// Removes the information pertaining a public credential from the
 		/// chain.
 		///
@@ -296,67 +371,16 @@ pub mod pallet {
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::remove())]
 		pub fn remove(origin: OriginFor<T>, credential_id: CredentialIdOf<T>) -> DispatchResult {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
-			let attester = source.subject();
+			let caller = source.subject();
 
 			let (credential_subject, credential_entry) = Self::retrieve_credential_entry(&credential_id)?;
 
+			ensure!(
+				caller == credential_entry.attester,
+				Error::<T>::Unauthorized
+			);
+
 			Self::remove_credential_entry(credential_subject, credential_id, credential_entry);
-
-			Ok(())
-		}
-
-		/// Revokes a public credential.
-		///
-		/// If a credential was already revoked, this function does not fail but simply results
-		/// in a noop.
-		///
-		/// Emits `CredentialRevoked`.
-		#[pallet::weight(0)]
-		pub fn revoke(origin: OriginFor<T>, credential_id: CredentialIdOf<T>) -> DispatchResult {
-			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
-			let attester = source.subject();
-
-			let credential_subject =
-				CredentialSubjects::<T>::get(&credential_id).ok_or(Error::<T>::CredentialNotFound)?;
-
-			Credentials::<T>::try_mutate(&credential_subject, &credential_id, |credential_entry| {
-				if let Some(credential) = credential_entry {
-					credential.revoked = true;
-					Ok(())
-				} else {
-					Err(DispatchError::from(Error::<T>::CredentialNotFound))
-				}
-			})?;
-
-			Self::deposit_event(Event::CredentialRevoked { credential_id });
-
-			Ok(())
-		}
-
-		/// Unrevokes a public credential.
-		///
-		/// If a credential was not revoked, this function does not fail but simply results
-		/// in a noop.
-		///
-		/// Emits `CredentialUnrevoked`.
-		#[pallet::weight(0)]
-		pub fn unrevoke(origin: OriginFor<T>, credential_id: CredentialIdOf<T>) -> DispatchResult {
-			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
-			let attester = source.subject();
-
-			let credential_subject =
-				CredentialSubjects::<T>::get(&credential_id).ok_or(Error::<T>::CredentialNotFound)?;
-
-			Credentials::<T>::try_mutate(&credential_subject, &credential_id, |credential_entry| {
-				if let Some(credential) = credential_entry {
-					credential.revoked = false;
-					Ok(())
-				} else {
-					Err(DispatchError::from(Error::<T>::CredentialNotFound))
-				}
-			})?;
-
-			Self::deposit_event(Event::CredentialUnrevoked { credential_id });
 
 			Ok(())
 		}
@@ -365,16 +389,16 @@ pub mod pallet {
 		/// difference that the caller of this function must be the original
 		/// payer of the deposit, and not the original attester of the
 		/// credential.
-		///
-		/// It calls `attestation::reclaim_deposit()` internally, nevertheless
-		/// the opposite is not true. Removing an attestation from the
-		/// attestation pallet still requires the deposit payer to also remove
-		/// any traces of the corresponding public credential from this pallet.
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::reclaim_deposit())]
 		pub fn reclaim_deposit(origin: OriginFor<T>, credential_id: CredentialIdOf<T>) -> DispatchResult {
-			let who = ensure_signed(origin)?;
+			let submitter = ensure_signed(origin)?;
 
 			let (credential_subject, credential_entry) = Self::retrieve_credential_entry(&credential_id)?;
+
+			ensure!(
+				submitter == credential_entry.deposit.owner,
+				Error::<T>::Unauthorized
+			);
 
 			Self::remove_credential_entry(credential_subject, credential_id, credential_entry);
 

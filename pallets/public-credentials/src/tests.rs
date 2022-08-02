@@ -117,6 +117,33 @@ fn add_successful() {
 }
 
 #[test]
+fn add_ctype_not_existing() {
+	let attester = sr25519_did_from_seed(&ALICE_SEED);
+	let subject_id = SUBJECT_ID_00;
+	let ctype_hash = get_ctype_hash::<Test>(true);
+	let new_credential = generate_base_public_credential_creation_op::<Test>(
+		subject_id.into(),
+		ctype_hash,
+		InputClaimsContentOf::<Test>::default(),
+	);
+	let deposit: Balance = <Test as Config>::Deposit::get();
+
+	ExtBuilder::default()
+		// One less than the minimum required
+		.with_balances(vec![(ACCOUNT_00, deposit - 1)])
+		.build()
+		.execute_with(|| {
+			assert_noop!(
+				PublicCredentials::add(
+					DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
+					new_credential
+				),
+				ctype::Error::<Test>::CTypeNotFound
+			);
+		});
+}
+
+#[test]
 fn add_not_enough_balance() {
 	let attester = sr25519_did_from_seed(&ALICE_SEED);
 	let subject_id = SUBJECT_ID_00;
@@ -183,7 +210,45 @@ fn revoke_successful() {
 		});
 }
 
-// revoke
+#[test]
+fn revoke_credential_not_found() {
+	let attester = sr25519_did_from_seed(&ALICE_SEED);
+	let credential_id: CredentialIdOf<Test> = CredentialIdOf::<Test>::default();
+	let deposit: Balance = <Test as Config>::Deposit::get();
+
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, deposit)])
+		.build()
+		.execute_with(|| {
+			assert_noop!(PublicCredentials::revoke(
+				DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
+				credential_id,
+			), Error::<Test>::CredentialNotFound);
+		});
+}
+
+#[test]
+fn revoke_unauthorised() {
+	let attester = sr25519_did_from_seed(&ALICE_SEED);
+	let wrong_attester = sr25519_did_from_seed(&BOB_SEED);
+	let subject_id: <Test as Config>::SubjectId = SUBJECT_ID_00;
+	let new_credential = generate_base_credential_entry::<Test>(ACCOUNT_00, 0, attester);
+	let credential_id: CredentialIdOf<Test> = CredentialIdOf::<Test>::default();
+	let deposit: Balance = <Test as Config>::Deposit::get();
+
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, deposit)])
+		.with_public_credentials(vec![(subject_id, credential_id, new_credential)])
+		.build()
+		.execute_with(|| {
+			assert_noop!(PublicCredentials::revoke(
+				DoubleOrigin(ACCOUNT_00, wrong_attester.clone()).into(),
+				credential_id,
+			), Error::<Test>::Unauthorized);
+		});
+}
+
+// unrevoke
 
 #[test]
 fn unrevoke_successful() {
@@ -220,6 +285,44 @@ fn unrevoke_successful() {
 				.expect("Public credential details should be present on chain.");
 
 			assert_eq!(stored_public_credential_details, stored_public_credential_details_2);
+		});
+}
+
+#[test]
+fn unrevoke_credential_not_found() {
+	let attester = sr25519_did_from_seed(&ALICE_SEED);
+	let credential_id: CredentialIdOf<Test> = CredentialIdOf::<Test>::default();
+	let deposit: Balance = <Test as Config>::Deposit::get();
+
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, deposit)])
+		.build()
+		.execute_with(|| {
+			assert_noop!(PublicCredentials::unrevoke(
+				DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
+				credential_id,
+			), Error::<Test>::CredentialNotFound);
+		});
+}
+
+#[test]
+fn unrevoke_unauthorised() {
+	let attester = sr25519_did_from_seed(&ALICE_SEED);
+	let wrong_attester = sr25519_did_from_seed(&BOB_SEED);
+	let subject_id: <Test as Config>::SubjectId = SUBJECT_ID_00;
+	let new_credential = generate_base_credential_entry::<Test>(ACCOUNT_00, 0, attester);
+	let credential_id: CredentialIdOf<Test> = CredentialIdOf::<Test>::default();
+	let deposit: Balance = <Test as Config>::Deposit::get();
+
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, deposit)])
+		.with_public_credentials(vec![(subject_id, credential_id, new_credential)])
+		.build()
+		.execute_with(|| {
+			assert_noop!(PublicCredentials::unrevoke(
+				DoubleOrigin(ACCOUNT_00, wrong_attester.clone()).into(),
+				credential_id,
+			), Error::<Test>::Unauthorized);
 		});
 }
 
@@ -263,6 +366,44 @@ fn remove_successful() {
 		});
 }
 
+#[test]
+fn remove_credential_not_found() {
+	let attester = sr25519_did_from_seed(&ALICE_SEED);
+	let credential_id: CredentialIdOf<Test> = CredentialIdOf::<Test>::default();
+	let deposit: Balance = <Test as Config>::Deposit::get();
+
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, deposit)])
+		.build()
+		.execute_with(|| {
+			assert_noop!(PublicCredentials::remove(
+				DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
+				credential_id,
+			), Error::<Test>::CredentialNotFound);
+		});
+}
+
+#[test]
+fn remove_unauthorized() {
+	let attester = sr25519_did_from_seed(&ALICE_SEED);
+	let wrong_attester = sr25519_did_from_seed(&BOB_SEED);
+	let subject_id: <Test as Config>::SubjectId = SUBJECT_ID_00;
+	let new_credential = generate_base_credential_entry::<Test>(ACCOUNT_00, 0, attester);
+	let credential_id: CredentialIdOf<Test> = CredentialIdOf::<Test>::default();
+	let deposit: Balance = <Test as Config>::Deposit::get();
+
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, deposit)])
+		.with_public_credentials(vec![(subject_id, credential_id, new_credential)])
+		.build()
+		.execute_with(|| {
+			assert_noop!(PublicCredentials::remove(
+				DoubleOrigin(ACCOUNT_00, wrong_attester).into(),
+				credential_id,
+			), Error::<Test>::Unauthorized);
+		});
+}
+
 // reclaim_deposit
 
 #[test]
@@ -300,5 +441,41 @@ fn reclaim_deposit_successful() {
 				PublicCredentials::reclaim_deposit(Origin::signed(ACCOUNT_00), credential_id),
 				Error::<Test>::CredentialNotFound
 			);
+		});
+}
+
+#[test]
+fn reclaim_deposit_credential_not_found() {
+	let credential_id: CredentialIdOf<Test> = CredentialIdOf::<Test>::default();
+	let deposit: Balance = <Test as Config>::Deposit::get();
+
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, deposit)])
+		.build()
+		.execute_with(|| {
+			assert_noop!(PublicCredentials::reclaim_deposit(
+				Origin::signed(ACCOUNT_00),
+				credential_id
+			), Error::<Test>::CredentialNotFound);
+		});
+}
+
+#[test]
+fn reclaim_deposit_unauthorized() {
+	let attester = sr25519_did_from_seed(&ALICE_SEED);
+	let subject_id: <Test as Config>::SubjectId = SUBJECT_ID_00;
+	let new_credential = generate_base_credential_entry::<Test>(ACCOUNT_00, 0, attester);
+	let credential_id: CredentialIdOf<Test> = CredentialIdOf::<Test>::default();
+	let deposit: Balance = <Test as Config>::Deposit::get();
+
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, deposit)])
+		.with_public_credentials(vec![(subject_id, credential_id, new_credential)])
+		.build()
+		.execute_with(|| {
+			assert_noop!(PublicCredentials::reclaim_deposit(
+				Origin::signed(ACCOUNT_01),
+				credential_id
+			), Error::<Test>::Unauthorized);
 		});
 }
