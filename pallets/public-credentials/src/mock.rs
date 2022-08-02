@@ -19,9 +19,7 @@
 use codec::Encode;
 use sp_runtime::traits::Hash;
 
-use ctype::CtypeHashOf;
-
-use crate::{AttesterOf, Config, CredentialIdOf, InputClaimsContentOf, InputCredentialOf, InputSubjectIdOf};
+use crate::{AttesterOf, Config, CredentialIdOf, CtypeHashOf, InputClaimsContentOf, InputCredentialOf, InputSubjectIdOf};
 
 // Generate a public credential using a many Default::default() as possible.
 pub fn generate_base_public_credential_creation_op<T: Config>(
@@ -138,8 +136,10 @@ pub(crate) mod runtime {
 		payer: T::AccountId,
 		block_number: <T as frame_system::Config>::BlockNumber,
 		attester: T::AttesterId,
+		ctype_hash: Option<CtypeHashOf<T>>
 	) -> CredentialEntryOf<T> {
 		CredentialEntryOf::<T> {
+			ctype_hash: ctype_hash.unwrap_or_default(),
 			revoked: false,
 			attester,
 			block_number,

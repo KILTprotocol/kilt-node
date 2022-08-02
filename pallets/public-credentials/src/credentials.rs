@@ -41,7 +41,9 @@ pub struct Credential<CtypeHash, SubjectIdentifier, Claims> {
 /// block. The block number is used to query the full content of the credential
 /// from archive nodes.
 #[derive(Encode, Decode, Clone, MaxEncodedLen, RuntimeDebug, PartialEq, Eq, PartialOrd, Ord, TypeInfo)]
-pub struct CredentialEntry<Attester, BlockNumber, AccountId, Balance,> {
+pub struct CredentialEntry<CTypeHash, Attester, BlockNumber, AccountId, Balance,> {
+	/// The hash of the CType used for this attestation.
+	pub ctype_hash: CTypeHash,
 	/// The attester of the credential.
 	pub attester: Attester,
 	/// A flag indicating the revocation status of the credential

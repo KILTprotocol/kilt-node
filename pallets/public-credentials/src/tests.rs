@@ -68,6 +68,7 @@ fn add_successful() {
 			assert_eq!(stored_public_credential_details.attester, attester);
 			assert!(!stored_public_credential_details.revoked);
 			assert_eq!(stored_public_credential_details.block_number, 0);
+			assert_eq!(stored_public_credential_details.ctype_hash, ctype_hash_1);
 			assert_eq!(CredentialSubjects::<Test>::get(&credential_id_1), Some(subject_id));
 
 			// Check deposit reservation logic
@@ -106,6 +107,7 @@ fn add_successful() {
 			assert_eq!(stored_public_credential_details.attester, attester);
 			assert!(!stored_public_credential_details.revoked);
 			assert_eq!(stored_public_credential_details.block_number, 1);
+			assert_eq!(stored_public_credential_details.ctype_hash, ctype_hash_2);
 			assert_eq!(CredentialSubjects::<Test>::get(&credential_id_2), Some(subject_id));
 
 			// Deposit is 2x now
@@ -177,7 +179,7 @@ fn add_not_enough_balance() {
 fn revoke_successful() {
 	let attester = sr25519_did_from_seed(&ALICE_SEED);
 	let subject_id: <Test as Config>::SubjectId = SUBJECT_ID_00;
-	let new_credential = generate_base_credential_entry::<Test>(ACCOUNT_00, 0, attester.clone());
+	let new_credential = generate_base_credential_entry::<Test>(ACCOUNT_00, 0, attester.clone(), None);
 	let credential_id: CredentialIdOf<Test> = CredentialIdOf::<Test>::default();
 	let deposit: Balance = <Test as Config>::Deposit::get();
 
@@ -232,7 +234,7 @@ fn revoke_unauthorised() {
 	let attester = sr25519_did_from_seed(&ALICE_SEED);
 	let wrong_attester = sr25519_did_from_seed(&BOB_SEED);
 	let subject_id: <Test as Config>::SubjectId = SUBJECT_ID_00;
-	let new_credential = generate_base_credential_entry::<Test>(ACCOUNT_00, 0, attester);
+	let new_credential = generate_base_credential_entry::<Test>(ACCOUNT_00, 0, attester, None);
 	let credential_id: CredentialIdOf<Test> = CredentialIdOf::<Test>::default();
 	let deposit: Balance = <Test as Config>::Deposit::get();
 
@@ -254,7 +256,7 @@ fn revoke_unauthorised() {
 fn unrevoke_successful() {
 	let attester = sr25519_did_from_seed(&ALICE_SEED);
 	let subject_id: <Test as Config>::SubjectId = SUBJECT_ID_00;
-	let mut new_credential = generate_base_credential_entry::<Test>(ACCOUNT_00, 0, attester.clone());
+	let mut new_credential = generate_base_credential_entry::<Test>(ACCOUNT_00, 0, attester.clone(), None);
 	new_credential.revoked = true;
 	let credential_id: CredentialIdOf<Test> = CredentialIdOf::<Test>::default();
 	let deposit: Balance = <Test as Config>::Deposit::get();
@@ -310,7 +312,7 @@ fn unrevoke_unauthorised() {
 	let attester = sr25519_did_from_seed(&ALICE_SEED);
 	let wrong_attester = sr25519_did_from_seed(&BOB_SEED);
 	let subject_id: <Test as Config>::SubjectId = SUBJECT_ID_00;
-	let new_credential = generate_base_credential_entry::<Test>(ACCOUNT_00, 0, attester);
+	let new_credential = generate_base_credential_entry::<Test>(ACCOUNT_00, 0, attester, None);
 	let credential_id: CredentialIdOf<Test> = CredentialIdOf::<Test>::default();
 	let deposit: Balance = <Test as Config>::Deposit::get();
 
@@ -332,7 +334,7 @@ fn unrevoke_unauthorised() {
 fn remove_successful() {
 	let attester = sr25519_did_from_seed(&ALICE_SEED);
 	let subject_id: <Test as Config>::SubjectId = SUBJECT_ID_00;
-	let new_credential = generate_base_credential_entry::<Test>(ACCOUNT_00, 0, attester.clone());
+	let new_credential = generate_base_credential_entry::<Test>(ACCOUNT_00, 0, attester.clone(), None);
 	let credential_id: CredentialIdOf<Test> = CredentialIdOf::<Test>::default();
 	let deposit: Balance = <Test as Config>::Deposit::get();
 
@@ -388,7 +390,7 @@ fn remove_unauthorized() {
 	let attester = sr25519_did_from_seed(&ALICE_SEED);
 	let wrong_attester = sr25519_did_from_seed(&BOB_SEED);
 	let subject_id: <Test as Config>::SubjectId = SUBJECT_ID_00;
-	let new_credential = generate_base_credential_entry::<Test>(ACCOUNT_00, 0, attester);
+	let new_credential = generate_base_credential_entry::<Test>(ACCOUNT_00, 0, attester, None);
 	let credential_id: CredentialIdOf<Test> = CredentialIdOf::<Test>::default();
 	let deposit: Balance = <Test as Config>::Deposit::get();
 
@@ -410,7 +412,7 @@ fn remove_unauthorized() {
 fn reclaim_deposit_successful() {
 	let attester = sr25519_did_from_seed(&ALICE_SEED);
 	let subject_id: <Test as Config>::SubjectId = SUBJECT_ID_00;
-	let new_credential = generate_base_credential_entry::<Test>(ACCOUNT_00, 0, attester);
+	let new_credential = generate_base_credential_entry::<Test>(ACCOUNT_00, 0, attester, None);
 	let credential_id: CredentialIdOf<Test> = CredentialIdOf::<Test>::default();
 	let deposit: Balance = <Test as Config>::Deposit::get();
 
@@ -464,7 +466,7 @@ fn reclaim_deposit_credential_not_found() {
 fn reclaim_deposit_unauthorized() {
 	let attester = sr25519_did_from_seed(&ALICE_SEED);
 	let subject_id: <Test as Config>::SubjectId = SUBJECT_ID_00;
-	let new_credential = generate_base_credential_entry::<Test>(ACCOUNT_00, 0, attester);
+	let new_credential = generate_base_credential_entry::<Test>(ACCOUNT_00, 0, attester, None);
 	let credential_id: CredentialIdOf<Test> = CredentialIdOf::<Test>::default();
 	let deposit: Balance = <Test as Config>::Deposit::get();
 

@@ -68,7 +68,7 @@ pub mod pallet {
 	use sp_runtime::traits::{Hash, SaturatedConversion};
 	use sp_std::vec::Vec;
 
-	use ctype::CtypeHashOf;
+	pub use ctype::CtypeHashOf;
 	use kilt_support::traits::CallSources;
 
 	/// The current storage version.
@@ -89,7 +89,7 @@ pub mod pallet {
 	pub type InputClaimsContentOf<T> = BoundedVec<u8, <T as Config>::MaxEncodedClaimsLength>;
 	pub type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 	pub type BlockNumberOf<T> = <T as frame_system::Config>::BlockNumber;
-	pub type CredentialEntryOf<T> = CredentialEntry<AttesterOf<T>, BlockNumberOf<T>, AccountIdOf<T>, BalanceOf<T>>;
+	pub type CredentialEntryOf<T> = CredentialEntry<CtypeHashOf<T>, AttesterOf<T>, BlockNumberOf<T>, AccountIdOf<T>, BalanceOf<T>>;
 	/// Type of an attester identifier.
 	pub type AttesterOf<T> = <T as Config>::AttesterId;
 	/// The type of account's balances.
@@ -271,6 +271,7 @@ pub mod pallet {
 					attester,
 					deposit,
 					block_number,
+					ctype_hash,
 				},
 			);
 			CredentialSubjects::<T>::insert(&credential_id, subject.clone());
