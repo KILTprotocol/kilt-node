@@ -38,7 +38,7 @@ pub fn generate_base_public_credential_creation_op<T: Config>(
 
 pub fn generate_credential_id<T: Config>(
 	input_credential: &InputCredentialOf<T>,
-	attester: &AttesterOf<T>
+	attester: &AttesterOf<T>,
 ) -> CredentialIdOf<T> {
 	T::CredentialHash::hash(&[&input_credential.encode()[..], &attester.encode()[..]].concat()[..])
 }
@@ -67,14 +67,11 @@ pub(crate) mod runtime {
 	use kilt_support::{
 		deposit::Deposit,
 		mock::{mock_origin, SubjectId},
-		signature::EqualVerify,
 	};
 
 	use ctype::{CtypeCreatorOf, CtypeHashOf};
 
-	use crate::{
-		BalanceOf, CredentialEntryOf, Credentials, CredentialSubjects, CurrencyOf, Error, InputSubjectIdOf,
-	};
+	use crate::{BalanceOf, CredentialEntryOf, CredentialSubjects, Credentials, CurrencyOf, Error, InputSubjectIdOf};
 
 	pub(crate) type BlockNumber = u64;
 	pub(crate) type Balance = u128;
@@ -143,6 +140,7 @@ pub(crate) mod runtime {
 		attester: T::AttesterId,
 	) -> CredentialEntryOf<T> {
 		CredentialEntryOf::<T> {
+			revoked: false,
 			attester,
 			block_number,
 			deposit: Deposit::<T::AccountId, BalanceOf<T>> {
@@ -276,7 +274,11 @@ pub(crate) mod runtime {
 		ctypes: Vec<(CtypeHashOf<Test>, CtypeCreatorOf<Test>)>,
 		/// endowed accounts with balances
 		balances: Vec<(AccountId, Balance)>,
-		public_credentials: Vec<(<Test as Config>::SubjectId, CredentialIdOf<Test>, CredentialEntryOf<Test>)>,
+		public_credentials: Vec<(
+			<Test as Config>::SubjectId,
+			CredentialIdOf<Test>,
+			CredentialEntryOf<Test>,
+		)>,
 	}
 
 	impl ExtBuilder {
@@ -295,7 +297,11 @@ pub(crate) mod runtime {
 		#[must_use]
 		pub fn with_public_credentials(
 			mut self,
-			credentials: Vec<(<Test as Config>::SubjectId, CredentialIdOf<Test>, CredentialEntryOf<Test>)>,
+			credentials: Vec<(
+				<Test as Config>::SubjectId,
+				CredentialIdOf<Test>,
+				CredentialEntryOf<Test>,
+			)>,
 		) -> Self {
 			self.public_credentials = credentials;
 			self

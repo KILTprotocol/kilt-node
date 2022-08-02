@@ -44,6 +44,8 @@ pub struct Credential<CtypeHash, SubjectIdentifier, Claims> {
 pub struct CredentialEntry<Attester, BlockNumber, AccountId, Balance,> {
 	/// The attester of the credential.
 	pub attester: Attester,
+	/// A flag indicating the revocation status of the credential
+	pub revoked: bool,
 	/// The block number in which the credential tx was evaluated and included
 	/// in the block.
 	pub block_number: BlockNumber,

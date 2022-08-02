@@ -65,6 +65,8 @@ fn add_successful() {
 				.expect("Public credential details should be present on chain.");
 
 			// Test this pallet logic
+			assert_eq!(stored_public_credential_details.attester, attester);
+			assert!(!stored_public_credential_details.revoked);
 			assert_eq!(stored_public_credential_details.block_number, 0);
 			assert_eq!(CredentialSubjects::<Test>::get(&credential_id_1), Some(subject_id));
 
@@ -101,6 +103,8 @@ fn add_successful() {
 				.expect("Public credential #2 details should be present on chain.");
 
 			// Test this pallet logic
+			assert_eq!(stored_public_credential_details.attester, attester);
+			assert!(!stored_public_credential_details.revoked);
 			assert_eq!(stored_public_credential_details.block_number, 1);
 			assert_eq!(CredentialSubjects::<Test>::get(&credential_id_2), Some(subject_id));
 
@@ -140,29 +144,82 @@ fn add_not_enough_balance() {
 		});
 }
 
+// revoke
+
 #[test]
-fn add_ctype_not_found() {
+fn revoke_successful() {
 	let attester = sr25519_did_from_seed(&ALICE_SEED);
-	let subject_id = SUBJECT_ID_00;
-	let ctype_hash = get_ctype_hash::<Test>(true);
-	let new_credential = generate_base_public_credential_creation_op::<Test>(
-		subject_id.into(),
-		ctype_hash,
-		InputClaimsContentOf::<Test>::default(),
-	);
+	let subject_id: <Test as Config>::SubjectId = SUBJECT_ID_00;
+	let new_credential = generate_base_credential_entry::<Test>(ACCOUNT_00, 0, attester.clone());
+	let credential_id: CredentialIdOf<Test> = CredentialIdOf::<Test>::default();
 	let deposit: Balance = <Test as Config>::Deposit::get();
 
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, deposit)])
+		.with_public_credentials(vec![(subject_id, credential_id, new_credential)])
 		.build()
 		.execute_with(|| {
-			assert_noop!(
-				PublicCredentials::add(
-					DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
-					new_credential
-				),
-				ctype::Error::<Test>::CTypeNotFound
-			);
+			assert_ok!(PublicCredentials::revoke(
+				DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
+				credential_id,
+			));
+
+			let stored_public_credential_details = Credentials::<Test>::get(&subject_id, &credential_id)
+				.expect("Public credential details should be present on chain.");
+
+			// Test this pallet logic
+			assert!(stored_public_credential_details.revoked);
+
+			// Revoking the same credential does nothing
+			assert_ok!(PublicCredentials::revoke(
+				DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
+				credential_id,
+			));
+
+			let stored_public_credential_details_2 = Credentials::<Test>::get(&subject_id, &credential_id)
+				.expect("Public credential details should be present on chain.");
+
+			assert_eq!(stored_public_credential_details, stored_public_credential_details_2);
+		});
+}
+
+// revoke
+
+#[test]
+fn unrevoke_successful() {
+	let attester = sr25519_did_from_seed(&ALICE_SEED);
+	let subject_id: <Test as Config>::SubjectId = SUBJECT_ID_00;
+	let mut new_credential = generate_base_credential_entry::<Test>(ACCOUNT_00, 0, attester.clone());
+	new_credential.revoked = true;
+	let credential_id: CredentialIdOf<Test> = CredentialIdOf::<Test>::default();
+	let deposit: Balance = <Test as Config>::Deposit::get();
+
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, deposit)])
+		.with_public_credentials(vec![(subject_id, credential_id, new_credential)])
+		.build()
+		.execute_with(|| {
+			assert_ok!(PublicCredentials::unrevoke(
+				DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
+				credential_id,
+			));
+
+			let stored_public_credential_details = Credentials::<Test>::get(&subject_id, &credential_id)
+				.expect("Public credential details should be present on chain.");
+
+			// Test this pallet logic
+			assert!(!stored_public_credential_details.revoked);
+
+			// Unrevoking the same credential does nothing
+			assert_ok!(PublicCredentials::unrevoke(
+				DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
+				credential_id,
+			));
+
+			let stored_public_credential_details_2 = Credentials::<Test>::get(&subject_id, &credential_id)
+				.expect("Public credential details should be present on chain.");
+
+			assert_eq!(stored_public_credential_details, stored_public_credential_details_2);
 		});
 }
 

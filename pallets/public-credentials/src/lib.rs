@@ -69,9 +69,7 @@ pub mod pallet {
 	use sp_std::vec::Vec;
 
 	use ctype::CtypeHashOf;
-	use kilt_support::{
-		traits::CallSources,
-	};
+	use kilt_support::traits::CallSources;
 
 	/// The current storage version.
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
@@ -99,11 +97,7 @@ pub mod pallet {
 	pub(crate) type CredentialIdOf<T> = <<T as Config>::CredentialHash as sp_runtime::traits::Hash>::Output;
 
 	/// The type of a public credential as the pallet expects it.
-	pub type InputCredentialOf<T> = Credential<
-		CtypeHashOf<T>,
-		InputSubjectIdOf<T>,
-		InputClaimsContentOf<T>,
-	>;
+	pub type InputCredentialOf<T> = Credential<CtypeHashOf<T>, InputSubjectIdOf<T>, InputClaimsContentOf<T>>;
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config + ctype::Config {
@@ -188,6 +182,16 @@ pub mod pallet {
 			/// The id of the removed credential.
 			credential_id: CredentialIdOf<T>,
 		},
+		/// A public credentials has been revoked.
+		CredentialRevoked {
+			/// The id of the revoked credential.
+			credential_id: CredentialIdOf<T>,
+		},
+		/// A public credentials has been unrevoked.
+		CredentialUnrevoked {
+			/// The id of the unrevoked credential.
+			credential_id: CredentialIdOf<T>,
+		},
 	}
 
 	#[pallet::error]
@@ -234,7 +238,8 @@ pub mod pallet {
 			} = credential.clone();
 
 			// Credential ID = H(<encoded_credential_input> || <attester_identifier>)
-			let credential_id = T::CredentialHash::hash(&[&credential.encode()[..], &attester.encode()[..]].concat()[..]);
+			let credential_id =
+				T::CredentialHash::hash(&[&credential.encode()[..], &attester.encode()[..]].concat()[..]);
 
 			// Try to decode subject ID to something structured
 			let subject = T::SubjectId::try_from(subject.into_inner()).map_err(|_| Error::<T>::InvalidInput)?;
@@ -256,12 +261,14 @@ pub mod pallet {
 			Credentials::<T>::insert(
 				&subject,
 				&credential_id,
-				CredentialEntryOf::<T> { attester, deposit, block_number },
+				CredentialEntryOf::<T> {
+					revoked: false,
+					attester,
+					deposit,
+					block_number,
+				},
 			);
-			CredentialSubjects::<T>::insert(
-				&credential_id,
-				subject.clone()
-			);
+			CredentialSubjects::<T>::insert(&credential_id, subject.clone());
 
 			Self::deposit_event(Event::CredentialStored {
 				subject_id: subject,
@@ -287,16 +294,69 @@ pub mod pallet {
 		///
 		/// Emits `CredentialRemoved`.
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::remove())]
-		pub fn remove(
-			origin: OriginFor<T>,
-			credential_id: CredentialIdOf<T>,
-		) -> DispatchResult {
+		pub fn remove(origin: OriginFor<T>, credential_id: CredentialIdOf<T>) -> DispatchResult {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 			let attester = source.subject();
 
 			let (credential_subject, credential_entry) = Self::retrieve_credential_entry(&credential_id)?;
 
 			Self::remove_credential_entry(credential_subject, credential_id, credential_entry);
+
+			Ok(())
+		}
+
+		/// Revokes a public credential.
+		///
+		/// If a credential was already revoked, this function does not fail but simply results
+		/// in a noop.
+		///
+		/// Emits `CredentialRevoked`.
+		#[pallet::weight(0)]
+		pub fn revoke(origin: OriginFor<T>, credential_id: CredentialIdOf<T>) -> DispatchResult {
+			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
+			let attester = source.subject();
+
+			let credential_subject =
+				CredentialSubjects::<T>::get(&credential_id).ok_or(Error::<T>::CredentialNotFound)?;
+
+			Credentials::<T>::try_mutate(&credential_subject, &credential_id, |credential_entry| {
+				if let Some(credential) = credential_entry {
+					credential.revoked = true;
+					Ok(())
+				} else {
+					Err(DispatchError::from(Error::<T>::CredentialNotFound))
+				}
+			})?;
+
+			Self::deposit_event(Event::CredentialRevoked { credential_id });
+
+			Ok(())
+		}
+
+		/// Unrevokes a public credential.
+		///
+		/// If a credential was not revoked, this function does not fail but simply results
+		/// in a noop.
+		///
+		/// Emits `CredentialUnrevoked`.
+		#[pallet::weight(0)]
+		pub fn unrevoke(origin: OriginFor<T>, credential_id: CredentialIdOf<T>) -> DispatchResult {
+			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
+			let attester = source.subject();
+
+			let credential_subject =
+				CredentialSubjects::<T>::get(&credential_id).ok_or(Error::<T>::CredentialNotFound)?;
+
+			Credentials::<T>::try_mutate(&credential_subject, &credential_id, |credential_entry| {
+				if let Some(credential) = credential_entry {
+					credential.revoked = false;
+					Ok(())
+				} else {
+					Err(DispatchError::from(Error::<T>::CredentialNotFound))
+				}
+			})?;
+
+			Self::deposit_event(Event::CredentialUnrevoked { credential_id });
 
 			Ok(())
 		}
@@ -335,7 +395,6 @@ pub mod pallet {
 				.map(|entry| (credential_subject, entry))
 				.ok_or(Error::<T>::InternalError)
 		}
-
 
 		// Simple wrapper to remove entries from both storages when deleting a
 		// credential.
