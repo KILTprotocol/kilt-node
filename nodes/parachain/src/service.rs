@@ -46,7 +46,9 @@ use sp_runtime::traits::BlakeTwo256;
 
 use pallet_did_lookup::linkable_account::LinkableAccountId;
 use public_credentials::CredentialEntry;
-use runtime_common::{authorization::AuthorizationId, AccountId, AuthorityId, Balance, BlockNumber, DidIdentifier, Index};
+use runtime_common::{
+	authorization::AuthorizationId, AccountId, AuthorityId, Balance, BlockNumber, DidIdentifier, Index,
+};
 
 type Header = sp_runtime::generic::Header<BlockNumber, sp_runtime::traits::BlakeTwo256>;
 pub type Block = sp_runtime::generic::Block<Header, sp_runtime::OpaqueExtrinsic>;
@@ -244,11 +246,11 @@ where
 		+ frame_rpc_system::AccountNonceApi<Block, AccountId, Index>
 		+ did_rpc::DidRuntimeApi<Block, DidIdentifier, AccountId, LinkableAccountId, Balance, Hash, BlockNumber>
 		+ public_credentials_rpc::PublicCredentialsRuntimeApi<
-		Block,
-		runtime_common::assets::AssetDid,
-		Hash,
-		CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<Hash>>,
-	>,
+			Block,
+			runtime_common::assets::AssetDid,
+			Hash,
+			CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<Hash>>,
+		>,
 	sc_client_api::StateBackendFor<TFullBackend<Block>, Block>: sp_api::StateBackend<BlakeTwo256>,
 	Executor: sc_executor::NativeExecutionDispatch + 'static,
 	RB: FnOnce(
@@ -493,11 +495,11 @@ where
 		+ cumulus_primitives_core::CollectCollationInfo<Block>
 		+ did_rpc::DidRuntimeApi<Block, DidIdentifier, AccountId, LinkableAccountId, Balance, Hash, BlockNumber>
 		+ public_credentials_rpc::PublicCredentialsRuntimeApi<
-		Block,
-		runtime_common::assets::AssetDid,
-		Hash,
-		CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<Hash>>,
-	>,
+			Block,
+			runtime_common::assets::AssetDid,
+			Hash,
+			CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<Hash>>,
+		>,
 	sc_client_api::StateBackendFor<TFullBackend<Block>, Block>: sp_api::StateBackend<BlakeTwo256>,
 {
 	start_node_impl::<API, RE, _, _, _>(
