@@ -27,7 +27,7 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use frame_support::{
 	construct_runtime, parameter_types,
-	traits::{Contains},
+	traits::Contains,
 	weights::{constants::RocksDbWeight, ConstantMultiplier, Weight},
 	PalletId,
 };
@@ -40,18 +40,17 @@ use sp_runtime::{
 	transaction_validity::{TransactionSource, TransactionValidity},
 	ApplyExtrinsicResult,
 };
-use sp_std::{prelude::*};
+use sp_std::prelude::*;
 use sp_version::RuntimeVersion;
 use xcm::opaque::latest::BodyId;
 use xcm_executor::XcmExecutor;
 
 use pallet_did_lookup::linkable_account::LinkableAccountId;
 use runtime_common::{
-
 	constants::{self, HOURS, MILLI_KILT},
 	fees::{ToAuthor, WeightToFee},
-	 AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights,
-	FeeSplit, Hash, Header, Index, Signature, SlowAdjustingFeeUpdate,
+	AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights, FeeSplit, Hash, Header,
+	Index, Signature, SlowAdjustingFeeUpdate,
 };
 
 use crate::xcm_config::{XcmConfig, XcmOriginToTransactDispatchOrigin};

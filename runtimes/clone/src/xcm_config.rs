@@ -17,8 +17,8 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use super::{
-	AccountId, Balances, Call, Event, Origin, ParachainInfo, ParachainSystem, PolkadotXcm, Runtime,
-	WeightToFee, XcmpQueue,
+	AccountId, Balances, Call, Event, Origin, ParachainInfo, ParachainSystem, PolkadotXcm, Runtime, WeightToFee,
+	XcmpQueue,
 };
 
 use frame_support::{
