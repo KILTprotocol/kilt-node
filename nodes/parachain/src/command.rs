@@ -71,14 +71,15 @@ impl<T: sc_service::ChainSpec + 'static> IdentifyChain for T {
 fn load_spec(id: &str, runtime: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
 	match (id, runtime) {
 		("dev", _) => Ok(Box::new(chain_spec::peregrine::make_dev_spec()?)),
-		("peregrine-new", _) => Ok(Box::new(chain_spec::peregrine::make_new_spec()?)),
 		("spiritnet-dev", _) => Ok(Box::new(chain_spec::spiritnet::get_chain_spec_dev()?)),
+		("clone-dev", _) => Ok(Box::new(chain_spec::clone::get_chain_spec_dev()?)),
+		("peregrine-new", _) => Ok(Box::new(chain_spec::peregrine::make_new_spec()?)),
 		("wilt-new", _) => Ok(Box::new(chain_spec::spiritnet::get_chain_spec_wilt()?)),
 		("rilt-new", _) => Ok(Box::new(chain_spec::spiritnet::get_chain_spec_rilt()?)),
+		("clone-new", _) => Ok(Box::new(chain_spec::clone::get_chain_spec_cln()?)),
 		("rilt", _) => Ok(Box::new(chain_spec::spiritnet::load_rilt_spec()?)),
 		("spiritnet", _) => Ok(Box::new(chain_spec::spiritnet::load_spiritnet_spec()?)),
-		("clone-new", _) => Ok(Box::new(chain_spec::clone::get_chain_spec_cln()?)),
-		// ("clone", _) => Ok(Box::new(chain_spec::spiritnet::load_clone_spec()?)),
+		// ("clone", _) => Ok(Box::new(chain_spec::clone::load_clone_spec()?)),
 		("", "spiritnet") => Ok(Box::new(chain_spec::spiritnet::get_chain_spec_dev()?)),
 		("", "peregrine") => Ok(Box::new(chain_spec::peregrine::make_dev_spec()?)),
 		("", "clone") => Ok(Box::new(chain_spec::clone::get_chain_spec_dev()?)),

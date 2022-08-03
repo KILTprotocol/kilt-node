@@ -48,7 +48,7 @@ pub fn get_chain_spec_dev() -> Result<ChainSpec, String> {
 
 	Ok(ChainSpec::from_genesis(
 		"KILT clone Develop",
-		"kilt_clone_dev",
+		"cln_kilt_dev",
 		ChainType::Local,
 		move || {
 			testnet_genesis(
@@ -136,8 +136,8 @@ pub fn get_chain_spec_cln() -> Result<ChainSpec, String> {
 	let id: ParaId = 2085.into();
 
 	Ok(ChainSpec::from_genesis(
-		"Clone Chain",
-		"cln_kilt",
+		"KILT",
+		"cln_kilt_new",
 		ChainType::Live,
 		move || {
 			testnet_genesis(
@@ -173,7 +173,7 @@ pub fn get_chain_spec_cln() -> Result<ChainSpec, String> {
 		None,
 		Some(properties),
 		Extensions {
-			relay_chain: "westend".into(),
+			relay_chain: "polkadot".into(),
 			para_id: id.into(),
 		},
 	))

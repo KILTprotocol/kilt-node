@@ -28,7 +28,7 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::{
 	construct_runtime, parameter_types,
-	traits::{EitherOfDiverse, InstanceFilter, PrivilegeCmp},
+	traits::{Contains, EitherOfDiverse, InstanceFilter, PrivilegeCmp},
 	weights::{constants::RocksDbWeight, ConstantMultiplier, Weight},
 	PalletId,
 };
@@ -108,6 +108,13 @@ parameter_types! {
 	pub const SS58Prefix: u8 = 38;
 }
 
+pub struct CloneCallFilter;
+impl Contains<Call> for CloneCallFilter {
+	fn contains(call: &Call) -> bool {
+		matches!(call, Call::ParachainSystem(..) | Call::Sudo(..) | Call::Timestamp(..))
+	}
+}
+
 impl frame_system::Config for Runtime {
 	/// The identifier used to distinguish between accounts.
 	type AccountId = AccountId;
@@ -141,7 +148,7 @@ impl frame_system::Config for Runtime {
 	type OnNewAccount = ();
 	type OnKilledAccount = ();
 	type DbWeight = RocksDbWeight;
-	type BaseCallFilter = frame_support::traits::Nothing;
+	type BaseCallFilter = CloneCallFilter;
 	type SystemWeightInfo = weights::frame_system::WeightInfo<Runtime>;
 	type BlockWeights = BlockWeights;
 	type BlockLength = BlockLength;
