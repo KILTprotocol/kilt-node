@@ -42,6 +42,7 @@
 //!   functionalities are entirely delegated to the `attestation` pallet.
 #![cfg_attr(not(feature = "std"), no_std)]
 
+mod access_control;
 pub mod credentials;
 pub mod default_weights;
 
@@ -53,7 +54,10 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
-pub use crate::{credentials::*, default_weights::WeightInfo, pallet::*};
+pub use crate::{
+	access_control::AccessControl as PublicCredentialsAccessControl, credentials::*, default_weights::WeightInfo,
+	pallet::*,
+};
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -89,20 +93,39 @@ pub mod pallet {
 	pub type InputClaimsContentOf<T> = BoundedVec<u8, <T as Config>::MaxEncodedClaimsLength>;
 	pub type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 	pub type BlockNumberOf<T> = <T as frame_system::Config>::BlockNumber;
-	pub type CredentialEntryOf<T> = CredentialEntry<CtypeHashOf<T>, AttesterOf<T>, BlockNumberOf<T>, AccountIdOf<T>, BalanceOf<T>>;
+	pub type CredentialEntryOf<T> = CredentialEntry<
+		CtypeHashOf<T>,
+		AttesterOf<T>,
+		BlockNumberOf<T>,
+		AccountIdOf<T>,
+		BalanceOf<T>,
+		AuthorizationIdOf<T>,
+	>;
 	/// Type of an attester identifier.
 	pub type AttesterOf<T> = <T as Config>::AttesterId;
 	/// The type of account's balances.
 	pub type BalanceOf<T> = <CurrencyOf<T> as Currency<AccountIdOf<T>>>::Balance;
+	pub(crate) type AuthorizationIdOf<T> = <T as Config>::AuthorizationId;
 	pub(crate) type CredentialIdOf<T> = <<T as Config>::CredentialHash as sp_runtime::traits::Hash>::Output;
 
 	/// The type of a public credential as the pallet expects it.
-	pub type InputCredentialOf<T> = Credential<CtypeHashOf<T>, InputSubjectIdOf<T>, InputClaimsContentOf<T>>;
+	pub type InputCredentialOf<T> =
+		Credential<CtypeHashOf<T>, InputSubjectIdOf<T>, InputClaimsContentOf<T>, <T as Config>::AccessControl>;
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config + ctype::Config {
+		/// The access control logic.
+		type AccessControl: Parameter
+			+ PublicCredentialsAccessControl<
+				Self::AttesterId,
+				Self::AuthorizationId,
+				CtypeHashOf<Self>,
+				CredentialIdOf<Self>,
+			>;
 		/// The identifier of the credential attester.
 		type AttesterId: Parameter + MaxEncodedLen;
+		/// The identifier of the authorization info to perform access control for the different operations.
+		type AuthorizationId: Parameter + MaxEncodedLen;
 		/// The origin allowed to issue/revoke/remove public credentials.
 		type EnsureOrigin: EnsureOrigin<Success = <Self as Config>::OriginSuccess, Self::Origin>;
 		/// The ubiquitous event type.
@@ -222,7 +245,11 @@ pub mod pallet {
 		///
 		/// Emits `CredentialStored`.
 		#[allow(clippy::boxed_local)]
-		#[pallet::weight(<T as Config>::WeightInfo::add(credential.claims.len().saturated_into::<u32>()))]
+		#[pallet::weight({
+			let xt_weight = <T as Config>::WeightInfo::add(credential.claims.len().saturated_into::<u32>());
+			let ac_weight = credential.authorization.as_ref().map(|ac| ac.can_issue_weight()).unwrap_or(0);
+			xt_weight.saturating_add(ac_weight)
+		})]
 		pub fn add(origin: OriginFor<T>, credential: InputCredentialOf<T>) -> DispatchResult {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 
@@ -235,6 +262,7 @@ pub mod pallet {
 				ctype_hash,
 				subject,
 				claims: _,
+				authorization,
 			} = credential.clone();
 
 			ensure!(
@@ -245,6 +273,14 @@ pub mod pallet {
 			// Credential ID = H(<encoded_credential_input> || <attester_identifier>)
 			let credential_id =
 				T::CredentialHash::hash(&[&credential.encode()[..], &attester.encode()[..]].concat()[..]);
+
+			// Check for validity of the authorization info if specified.
+			authorization
+				.as_ref()
+				.map(|ac| ac.can_issue(&attester, &ctype_hash, &credential_id))
+				.transpose()
+				.map_err(|_| Error::<T>::Unauthorized)?;
+			let authorization_id = authorization.as_ref().map(|ac| ac.authorization_id());
 
 			// Try to decode subject ID to something structured
 			let subject = T::SubjectId::try_from(subject.into_inner()).map_err(|_| Error::<T>::InvalidInput)?;
@@ -272,6 +308,7 @@ pub mod pallet {
 					deposit,
 					block_number,
 					ctype_hash,
+					authorization_id,
 				},
 			);
 			CredentialSubjects::<T>::insert(&credential_id, subject.clone());
@@ -289,11 +326,19 @@ pub mod pallet {
 		/// If a credential was already revoked, this function does not fail but simply results
 		/// in a noop.
 		///
-		/// Only the original attester can revoke the credential.
+		/// Only authorized callers can revoke the credential.
 		///
 		/// Emits `CredentialRevoked`.
-		#[pallet::weight(0)]
-		pub fn revoke(origin: OriginFor<T>, credential_id: CredentialIdOf<T>) -> DispatchResult {
+		#[pallet::weight({
+			let xt_weight = <T as Config>::WeightInfo::revoke();
+			let ac_weight = credential.authorization.as_ref().map(|ac| ac.can_revoke_weight()).unwrap_or(0);
+			xt_weight.saturating_add(ac_weight)
+		})]
+		pub fn revoke(
+			origin: OriginFor<T>,
+			credential_id: CredentialIdOf<T>,
+			authorization: Option<T::AccessControl>,
+		) -> DispatchResult {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 			let caller = source.subject();
 
@@ -304,11 +349,15 @@ pub mod pallet {
 			Credentials::<T>::try_mutate(&credential_subject, &credential_id, |credential_entry| {
 				if let Some(credential) = credential_entry {
 					if caller != credential.attester {
-						Err(DispatchError::from(Error::<T>::Unauthorized))
-					} else {
-						credential.revoked = true;
-						Ok(())
+						let credential_auth_id =
+							credential.authorization_id.as_ref().ok_or(Error::<T>::Unauthorized)?;
+						authorization
+							.ok_or(Error::<T>::Unauthorized)?
+							.can_revoke(&caller, &credential.ctype_hash, &credential_id, credential_auth_id)
+							.map_err(|_| Error::<T>::Unauthorized)?;
 					}
+					credential.revoked = true;
+					Ok(())
 				} else {
 					Err(DispatchError::from(Error::<T>::CredentialNotFound))
 				}
@@ -324,11 +373,19 @@ pub mod pallet {
 		/// If a credential was not revoked, this function does not fail but simply results
 		/// in a noop.
 		///
-		/// Only the original attester can unrevoke the credential.
+		/// Only authorized callers can unrevoke the credential.
 		///
 		/// Emits `CredentialUnrevoked`.
-		#[pallet::weight(0)]
-		pub fn unrevoke(origin: OriginFor<T>, credential_id: CredentialIdOf<T>) -> DispatchResult {
+		#[pallet::weight({
+			let xt_weight = <T as Config>::WeightInfo::unrevoke();
+			let ac_weight = credential.authorization.as_ref().map(|ac| ac.can_unrevoke_weight()).unwrap_or(0);
+			xt_weight.saturating_add(ac_weight)
+		})]
+		pub fn unrevoke(
+			origin: OriginFor<T>,
+			credential_id: CredentialIdOf<T>,
+			authorization: Option<T::AccessControl>,
+		) -> DispatchResult {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 			let caller = source.subject();
 
@@ -339,11 +396,15 @@ pub mod pallet {
 			Credentials::<T>::try_mutate(&credential_subject, &credential_id, |credential_entry| {
 				if let Some(credential) = credential_entry {
 					if caller != credential.attester {
-						Err(DispatchError::from(Error::<T>::Unauthorized))
-					} else {
-						credential.revoked = false;
-						Ok(())
+						let credential_auth_id =
+							credential.authorization_id.as_ref().ok_or(Error::<T>::Unauthorized)?;
+						authorization
+							.ok_or(Error::<T>::Unauthorized)?
+							.can_revoke(&caller, &credential.ctype_hash, &credential_id, credential_auth_id)
+							.map_err(|_| Error::<T>::Unauthorized)?;
 					}
+					credential.revoked = false;
+					Ok(())
 				} else {
 					Err(DispatchError::from(Error::<T>::CredentialNotFound))
 				}
@@ -368,18 +429,39 @@ pub mod pallet {
 		/// This function fails if a credential already exists for the specified
 		/// subject.
 		///
+		/// Only authorized callers can remove the credential.
+		///
 		/// Emits `CredentialRemoved`.
-		#[pallet::weight(<T as pallet::Config>::WeightInfo::remove())]
-		pub fn remove(origin: OriginFor<T>, credential_id: CredentialIdOf<T>) -> DispatchResult {
+		#[pallet::weight({
+			let xt_weight = <T as Config>::WeightInfo::remove();
+			let ac_weight = credential.authorization.as_ref().map(|ac| ac.can_remove_weight()).unwrap_or(0);
+			xt_weight.saturating_add(ac_weight)
+		})]
+		pub fn remove(
+			origin: OriginFor<T>,
+			credential_id: CredentialIdOf<T>,
+			authorization: Option<T::AccessControl>,
+		) -> DispatchResult {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 			let caller = source.subject();
 
 			let (credential_subject, credential_entry) = Self::retrieve_credential_entry(&credential_id)?;
 
-			ensure!(
-				caller == credential_entry.attester,
-				Error::<T>::Unauthorized
-			);
+			if credential_entry.attester != caller {
+				let credential_auth_id = credential_entry
+					.authorization_id
+					.as_ref()
+					.ok_or(Error::<T>::Unauthorized)?;
+				authorization
+					.ok_or(Error::<T>::Unauthorized)?
+					.can_remove(
+						&caller,
+						&credential_entry.ctype_hash,
+						&credential_id,
+						credential_auth_id,
+					)
+					.map_err(|_| Error::<T>::Unauthorized)?;
+			}
 
 			Self::remove_credential_entry(credential_subject, credential_id, credential_entry);
 
@@ -396,10 +478,7 @@ pub mod pallet {
 
 			let (credential_subject, credential_entry) = Self::retrieve_credential_entry(&credential_id)?;
 
-			ensure!(
-				submitter == credential_entry.deposit.owner,
-				Error::<T>::Unauthorized
-			);
+			ensure!(submitter == credential_entry.deposit.owner, Error::<T>::Unauthorized);
 
 			Self::remove_credential_entry(credential_subject, credential_id, credential_entry);
 

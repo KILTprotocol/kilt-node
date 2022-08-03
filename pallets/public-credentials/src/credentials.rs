@@ -22,17 +22,18 @@ use scale_info::TypeInfo;
 use frame_support::RuntimeDebug;
 
 use kilt_support::deposit::Deposit;
-
 /// The type of a credentials as incoming from the outside world.
 /// Some of its fields are parsed and/or transformed inside the `add` operation.
 #[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq, PartialOrd, Ord, TypeInfo)]
-pub struct Credential<CtypeHash, SubjectIdentifier, Claims> {
+pub struct Credential<CtypeHash, SubjectIdentifier, Claims, AccessControl> {
 	/// The Ctype of the credential.
 	pub ctype_hash: CtypeHash,
 	/// The credential subject ID as specified by the attester.
 	pub subject: SubjectIdentifier,
 	/// The credential claims.
 	pub claims: Claims,
+	/// The access control logic to authorize the creation operation.
+	pub authorization: Option<AccessControl>,
 }
 
 /// The entry in the blockchain state corresponding to a successful public
@@ -41,7 +42,7 @@ pub struct Credential<CtypeHash, SubjectIdentifier, Claims> {
 /// block. The block number is used to query the full content of the credential
 /// from archive nodes.
 #[derive(Encode, Decode, Clone, MaxEncodedLen, RuntimeDebug, PartialEq, Eq, PartialOrd, Ord, TypeInfo)]
-pub struct CredentialEntry<CTypeHash, Attester, BlockNumber, AccountId, Balance,> {
+pub struct CredentialEntry<CTypeHash, Attester, BlockNumber, AccountId, Balance, AuthorizationId> {
 	/// The hash of the CType used for this attestation.
 	pub ctype_hash: CTypeHash,
 	/// The attester of the credential.
@@ -53,4 +54,7 @@ pub struct CredentialEntry<CTypeHash, Attester, BlockNumber, AccountId, Balance,
 	pub block_number: BlockNumber,
 	/// The info about the credential deposit.
 	pub deposit: Deposit<AccountId, Balance>,
+	/// The ID of the authorization information (e.g., a delegation node) used to authorize the
+	/// operation.
+	pub authorization_id: Option<AuthorizationId>,
 }

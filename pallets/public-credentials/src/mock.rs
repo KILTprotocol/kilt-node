@@ -31,6 +31,7 @@ pub fn generate_base_public_credential_creation_op<T: Config>(
 		ctype_hash,
 		subject: subject_id,
 		claims,
+		authorization: None,
 	}
 }
 
@@ -51,12 +52,14 @@ pub(crate) mod runtime {
 
 	use codec::{Decode, Encode, MaxEncodedLen};
 	use frame_support::{
+		dispatch::Weight,
 		traits::{ConstU128, ConstU16, ConstU32, ConstU64, Get},
 		weights::constants::RocksDbWeight,
 	};
 	use scale_info::TypeInfo;
 	use sp_core::{sr25519, Pair};
 	use sp_runtime::{
+		DispatchError,
 		testing::Header,
 		traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
 		MultiSignature, MultiSigner,
@@ -69,7 +72,7 @@ pub(crate) mod runtime {
 
 	use ctype::{CtypeCreatorOf, CtypeHashOf};
 
-	use crate::{BalanceOf, CredentialEntryOf, CredentialSubjects, Credentials, CurrencyOf, Error, InputSubjectIdOf};
+	use crate::{BalanceOf, Config, CredentialEntryOf, CredentialSubjects, Credentials, CurrencyOf, Error, InputSubjectIdOf, PublicCredentialsAccessControl};
 
 	pub(crate) type BlockNumber = u64;
 	pub(crate) type Balance = u128;
@@ -147,6 +150,7 @@ pub(crate) mod runtime {
 				owner: payer,
 				amount: <T as Config>::Deposit::get(),
 			},
+			authorization_id: None,
 		}
 	}
 
@@ -163,6 +167,91 @@ pub(crate) mod runtime {
 
 		Credentials::<T>::insert(&subject_id, &credential_id, credential_entry);
 		CredentialSubjects::<T>::insert(credential_id, subject_id);
+	}
+
+	/// Authorize iff the subject of the origin and the provided attester id match.
+	#[derive(Clone, Debug, Encode, Decode, TypeInfo, PartialEq, Eq)]
+	#[scale_info(skip_type_params(T))]
+	pub struct MockAccessControl<T: Config>(pub T::AttesterId);
+
+	impl<T> PublicCredentialsAccessControl<T::AttesterId, T::AuthorizationId, CtypeHashOf<T>, CredentialIdOf<T>>
+		for MockAccessControl<T>
+	where
+		T: Config<AuthorizationId = <T as Config>::AttesterId>,
+	{
+		fn can_issue(
+			&self,
+			who: &T::AttesterId,
+			_ctype: &CtypeHashOf<T>,
+			_credential_id: &CredentialIdOf<T>,
+		) -> Result<Weight, DispatchError> {
+			if who == &self.0 {
+				Ok(0)
+			} else {
+				Err(DispatchError::Other("Unauthorized"))
+			}
+		}
+
+		fn can_revoke(
+			&self,
+			who: &T::AttesterId,
+			_ctype: &CtypeHashOf<T>,
+			_credential_id: &CredentialIdOf<T>,
+			authorization_id: &T::AuthorizationId,
+		) -> Result<Weight, DispatchError> {
+			if authorization_id == who {
+				Ok(0)
+			} else {
+				Err(DispatchError::Other("Unauthorized"))
+			}
+		}
+
+		fn can_unrevoke(
+			&self,
+			who: &T::AttesterId,
+			_ctype: &CtypeHashOf<T>,
+			_credential_id: &CredentialIdOf<T>,
+			authorization_id: &T::AuthorizationId,
+		) -> Result<Weight, DispatchError> {
+			if authorization_id == who {
+				Ok(0)
+			} else {
+				Err(DispatchError::Other("Unauthorized"))
+			}
+		}
+
+		fn can_remove(
+			&self,
+			who: &T::AttesterId,
+			_ctype: &CtypeHashOf<T>,
+			_credential_id: &CredentialIdOf<T>,
+			authorization_id: &T::AuthorizationId,
+		) -> Result<Weight, DispatchError> {
+			println!("{:#?}", who);
+			println!("{:#?}", authorization_id);
+			if authorization_id == who {
+				Ok(0)
+			} else {
+				Err(DispatchError::Other("Unauthorized"))
+			}
+		}
+
+		fn authorization_id(&self) -> T::AuthorizationId {
+			self.0.clone()
+		}
+
+		fn can_issue_weight(&self) -> Weight {
+			0
+		}
+		fn can_revoke_weight(&self) -> Weight {
+			0
+		}
+		fn can_unrevoke_weight(&self) -> Weight {
+			0
+		}
+		fn can_remove_weight(&self) -> Weight {
+			0
+		}
 	}
 
 	pub(crate) const MILLI_UNIT: Balance = 10u128.pow(12);
@@ -240,7 +329,9 @@ pub(crate) mod runtime {
 	}
 
 	impl Config for Test {
+		type AccessControl = MockAccessControl<Self>;
 		type AttesterId = SubjectId;
+		type AuthorizationId = SubjectId;
 		type CredentialId = Hash;
 		type CredentialHash = BlakeTwo256;
 		type Currency = Balances;
