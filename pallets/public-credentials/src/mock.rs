@@ -19,7 +19,9 @@
 use codec::Encode;
 use sp_runtime::traits::Hash;
 
-use crate::{AttesterOf, Config, CredentialIdOf, CtypeHashOf, InputClaimsContentOf, InputCredentialOf, InputSubjectIdOf};
+use crate::{
+	AttesterOf, Config, CredentialIdOf, CtypeHashOf, InputClaimsContentOf, InputCredentialOf, InputSubjectIdOf,
+};
 
 // Generate a public credential using a many Default::default() as possible.
 pub fn generate_base_public_credential_creation_op<T: Config>(
@@ -59,10 +61,9 @@ pub(crate) mod runtime {
 	use scale_info::TypeInfo;
 	use sp_core::{sr25519, Pair};
 	use sp_runtime::{
-		DispatchError,
 		testing::Header,
 		traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
-		MultiSignature, MultiSigner,
+		DispatchError, MultiSignature, MultiSigner,
 	};
 
 	use kilt_support::{
@@ -72,7 +73,10 @@ pub(crate) mod runtime {
 
 	use ctype::{CtypeCreatorOf, CtypeHashOf};
 
-	use crate::{BalanceOf, Config, CredentialEntryOf, CredentialSubjects, Credentials, CurrencyOf, Error, InputSubjectIdOf, PublicCredentialsAccessControl};
+	use crate::{
+		BalanceOf, Config, CredentialEntryOf, CredentialSubjects, Credentials, CurrencyOf, Error, InputSubjectIdOf,
+		PublicCredentialsAccessControl,
+	};
 
 	pub(crate) type BlockNumber = u64;
 	pub(crate) type Balance = u128;
@@ -139,7 +143,7 @@ pub(crate) mod runtime {
 		payer: T::AccountId,
 		block_number: <T as frame_system::Config>::BlockNumber,
 		attester: T::AttesterId,
-		ctype_hash: Option<CtypeHashOf<T>>
+		ctype_hash: Option<CtypeHashOf<T>>,
 	) -> CredentialEntryOf<T> {
 		CredentialEntryOf::<T> {
 			ctype_hash: ctype_hash.unwrap_or_default(),
@@ -169,7 +173,8 @@ pub(crate) mod runtime {
 		CredentialSubjects::<T>::insert(credential_id, subject_id);
 	}
 
-	/// Authorize iff the subject of the origin and the provided attester id match.
+	/// Authorize iff the subject of the origin and the provided attester id
+	/// match.
 	#[derive(Clone, Debug, Encode, Decode, TypeInfo, PartialEq, Eq)]
 	#[scale_info(skip_type_params(T))]
 	pub struct MockAccessControl<T: Config>(pub T::AttesterId);

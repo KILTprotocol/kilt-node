@@ -54,7 +54,7 @@ pub struct CredentialEntry<CTypeHash, Attester, BlockNumber, AccountId, Balance,
 	pub block_number: BlockNumber,
 	/// The info about the credential deposit.
 	pub deposit: Deposit<AccountId, Balance>,
-	/// The ID of the authorization information (e.g., a delegation node) used to authorize the
-	/// operation.
+	/// The ID of the authorization information (e.g., a delegation node) used
+	/// to authorize the operation.
 	pub authorization_id: Option<AuthorizationId>,
 }

@@ -20,9 +20,10 @@ use frame_support::dispatch::Weight;
 use sp_runtime::DispatchError;
 
 pub trait AccessControl<AttesterId, AuthorizationId, Ctype, CredentialId> {
-	/// Decides whether the account is allowed to issue a credential with the given
-	/// information provided by the sender (&self).
-	fn can_issue(&self, who: &AttesterId, ctype: &Ctype, credential_id: &CredentialId) -> Result<Weight, DispatchError>;
+	/// Decides whether the account is allowed to issue a credential with the
+	/// given information provided by the sender (&self).
+	fn can_issue(&self, who: &AttesterId, ctype: &Ctype, credential_id: &CredentialId)
+		-> Result<Weight, DispatchError>;
 
 	/// Decides whether the account is allowed to revoke the credential with
 	/// the `authorization_id` and the access information provided by the sender
@@ -77,8 +78,8 @@ pub trait AccessControl<AttesterId, AuthorizationId, Ctype, CredentialId> {
 	fn can_remove_weight(&self) -> Weight;
 }
 
-impl<AttesterId, AuthorizationId, Ctype, CredentialId>
-AccessControl<AttesterId, AuthorizationId, Ctype, CredentialId> for ()
+impl<AttesterId, AuthorizationId, Ctype, CredentialId> AccessControl<AttesterId, AuthorizationId, Ctype, CredentialId>
+	for ()
 where
 	AuthorizationId: Default,
 {

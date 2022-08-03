@@ -56,7 +56,7 @@ fn add_successful_without_authorization() {
 
 			assert_ok!(PublicCredentials::add(
 				DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
-				new_credential_1.clone()
+				Box::new(new_credential_1.clone())
 			));
 			let stored_public_credential_details = Credentials::<Test>::get(&subject_id, &credential_id_1)
 				.expect("Public credential details should be present on chain.");
@@ -76,7 +76,7 @@ fn add_successful_without_authorization() {
 			assert_noop!(
 				PublicCredentials::add(
 					DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
-					new_credential_1.clone()
+					Box::new(new_credential_1.clone())
 				),
 				Error::<Test>::CredentialAlreadyIssued
 			);
@@ -89,7 +89,7 @@ fn add_successful_without_authorization() {
 			// Issuing a completely new credential will work
 			assert_ok!(PublicCredentials::add(
 				DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
-				new_credential_2.clone()
+				Box::new(new_credential_2.clone())
 			));
 
 			let stored_public_credential_details = Credentials::<Test>::get(&subject_id, &credential_id_2)
@@ -129,7 +129,7 @@ fn add_successful_with_authorization() {
 		.execute_with(|| {
 			assert_ok!(PublicCredentials::add(
 				DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
-				new_credential.clone()
+				Box::new(new_credential.clone())
 			));
 			let stored_public_credential_details = Credentials::<Test>::get(&subject_id, &credential_id)
 				.expect("Public credential details should be present on chain.");
@@ -166,7 +166,7 @@ fn add_unauthorized() {
 			assert_noop!(
 				PublicCredentials::add(
 					DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
-					new_credential.clone()
+					Box::new(new_credential.clone())
 				),
 				Error::<Test>::Unauthorized
 			);
@@ -191,7 +191,10 @@ fn add_ctype_not_existing() {
 		.build()
 		.execute_with(|| {
 			assert_noop!(
-				PublicCredentials::add(DoubleOrigin(ACCOUNT_00, attester.clone()).into(), new_credential),
+				PublicCredentials::add(
+					DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
+					Box::new(new_credential)
+				),
 				ctype::Error::<Test>::CTypeNotFound
 			);
 		});
@@ -216,7 +219,10 @@ fn add_not_enough_balance() {
 		.build()
 		.execute_with(|| {
 			assert_noop!(
-				PublicCredentials::add(DoubleOrigin(ACCOUNT_00, attester.clone()).into(), new_credential),
+				PublicCredentials::add(
+					DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
+					Box::new(new_credential)
+				),
 				Error::<Test>::UnableToPayFees
 			);
 		});
