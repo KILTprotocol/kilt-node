@@ -60,7 +60,8 @@ benchmarks! {
 		let credential_id = generate_credential_id::<T>(&creation_op, &attester);
 
 		ctype::Ctypes::<T>::insert(&ctype_hash, attester.clone());
-		CurrencyOf::<T>::make_free_balance_be(&sender, <T as Config>::Deposit::get());
+		// Has to be more than the deposit, we do 2x just to be safe
+		CurrencyOf::<T>::make_free_balance_be(&sender, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
 		let origin = <T as Config>::EnsureOrigin::generate_origin(sender, attester);
 	}: _<T::Origin>(origin, creation_op)
 	verify {
@@ -84,15 +85,15 @@ benchmarks! {
 		));
 		let credential_id = generate_credential_id::<T>(&creation_op, &attester);
 
-		CurrencyOf::<T>::make_free_balance_be(&sender, <T as Config>::Deposit::get());
+		// Has to be more than the deposit, we do 2x just to be safe
+		CurrencyOf::<T>::make_free_balance_be(&sender, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
 
 		ctype::Ctypes::<T>::insert(&ctype_hash, attester);
 		Pallet::<T>::add(origin.clone(), creation_op).expect("Pallet::add should not fail");
 		let credential_id_clone = credential_id.clone();
 	}: _<T::Origin>(origin, credential_id_clone, None)
 	verify {
-		assert!(!Credentials::<T>::contains_key(subject_id, &credential_id));
-		assert!(!CredentialSubjects::<T>::contains_key(credential_id));
+		assert!(Credentials::<T>::get(subject_id, &credential_id).expect("Credential should be present in storage").revoked);
 	}
 
 	unrevoke {
@@ -111,7 +112,8 @@ benchmarks! {
 		));
 		let credential_id = generate_credential_id::<T>(&creation_op, &attester);
 
-		CurrencyOf::<T>::make_free_balance_be(&sender, <T as Config>::Deposit::get());
+		// Has to be more than the deposit, we do 2x just to be safe
+		CurrencyOf::<T>::make_free_balance_be(&sender, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
 
 		ctype::Ctypes::<T>::insert(&ctype_hash, attester);
 		Pallet::<T>::add(origin.clone(), creation_op).expect("Pallet::add should not fail");
@@ -119,8 +121,7 @@ benchmarks! {
 		let credential_id_clone = credential_id.clone();
 	}: _<T::Origin>(origin, credential_id_clone, None)
 	verify {
-		assert!(!Credentials::<T>::contains_key(subject_id, &credential_id));
-		assert!(!CredentialSubjects::<T>::contains_key(credential_id));
+		assert!(!Credentials::<T>::get(subject_id, &credential_id).expect("Credential should be present in storage").revoked);
 	}
 
 	remove {
@@ -139,7 +140,8 @@ benchmarks! {
 		));
 		let credential_id = generate_credential_id::<T>(&creation_op, &attester);
 
-		CurrencyOf::<T>::make_free_balance_be(&sender, <T as Config>::Deposit::get());
+		// Has to be more than the deposit, we do 2x just to be safe
+		CurrencyOf::<T>::make_free_balance_be(&sender, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
 
 		ctype::Ctypes::<T>::insert(&ctype_hash, attester);
 		Pallet::<T>::add(origin.clone(), creation_op).expect("Pallet::add should not fail");
@@ -166,7 +168,8 @@ benchmarks! {
 		));
 		let credential_id = generate_credential_id::<T>(&creation_op, &attester);
 
-		CurrencyOf::<T>::make_free_balance_be(&sender, <T as Config>::Deposit::get());
+		// Has to be more than the deposit, we do 2x just to be safe
+		CurrencyOf::<T>::make_free_balance_be(&sender, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
 
 		ctype::Ctypes::<T>::insert(&ctype_hash, attester);
 		Pallet::<T>::add(origin, creation_op).expect("Pallet::add should not fail");
