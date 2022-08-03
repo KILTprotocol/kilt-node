@@ -31,7 +31,8 @@ use sp_api::ProvideRuntimeApi;
 use sp_blockchain::HeaderBackend;
 use sp_runtime::{generic::BlockId, traits::Block as BlockT};
 
-/// Filter that can be used after the credentials for a given subject have been retrieved from the blockchain state.
+/// Filter that can be used after the credentials for a given subject have been
+/// retrieved from the blockchain state.
 pub trait PublicCredentialsFilter<Credential> {
 	fn should_include(&self, credential: &Credential) -> bool;
 }

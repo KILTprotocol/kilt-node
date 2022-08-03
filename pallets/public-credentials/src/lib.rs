@@ -272,7 +272,8 @@ pub mod pallet {
 				ctype::Error::<T>::CTypeNotFound
 			);
 
-			// Credential ID = H(<scale_encoded_credential_input> || <scale_encoded_attester_identifier>)
+			// Credential ID = H(<scale_encoded_credential_input> ||
+			// <scale_encoded_attester_identifier>)
 			let credential_id =
 				T::CredentialHash::hash(&[&credential.encode()[..], &attester.encode()[..]].concat()[..]);
 
@@ -351,32 +352,13 @@ pub mod pallet {
 			let credential_subject =
 				CredentialSubjects::<T>::get(&credential_id).ok_or(Error::<T>::CredentialNotFound)?;
 
-			// Fails if the credential does not exist OR the caller is different than the
-			// original attester. If successful, saves the additional weight used for access
-			// control and returns it at the end of the function.
-			let ac_weight_used =
-				Credentials::<T>::try_mutate(&credential_subject, &credential_id, |credential_entry| {
-					if let Some(credential) = credential_entry {
-						// Additional weight is 0 if the caller is the attester, otherwise it's the
-						// value returned by the access control check, if it does not fail.
-						let additional_weight = if caller == credential.attester {
-							0
-						} else {
-							let credential_auth_id =
-								credential.authorization_id.as_ref().ok_or(Error::<T>::Unauthorized)?;
-							authorization
-								.ok_or(Error::<T>::Unauthorized)?
-								.can_revoke(&caller, &credential.ctype_hash, &credential_id, credential_auth_id)
-								.map_err(|_| Error::<T>::Unauthorized)?
-						};
-						// If authorization checks are ok, update the revocation status.
-						credential.revoked = true;
-						Ok(additional_weight)
-					} else {
-						// No weight is computed as the error is an early return.
-						Err(DispatchError::from(Error::<T>::CredentialNotFound))
-					}
-				})?;
+			let ac_weight_used = Self::set_credential_revocation_status(
+				&caller,
+				&credential_subject,
+				&credential_id,
+				authorization,
+				true,
+			)?;
 
 			Self::deposit_event(Event::CredentialRevoked { credential_id });
 
@@ -407,32 +389,13 @@ pub mod pallet {
 			let credential_subject =
 				CredentialSubjects::<T>::get(&credential_id).ok_or(Error::<T>::CredentialNotFound)?;
 
-			// Fails if the credential does not exist OR the caller is different than the
-			// original attester. If successful, saves the additional weight used for access
-			// control and returns it at the end of the function.
-			let ac_weight_used =
-				Credentials::<T>::try_mutate(&credential_subject, &credential_id, |credential_entry| {
-					if let Some(credential) = credential_entry {
-						// Additional weight is 0 if the caller is the attester, otherwise it's the
-						// value returned by the access control check, if it does not fail.
-						let additional_weight = if caller == credential.attester {
-							0
-						} else {
-							let credential_auth_id =
-								credential.authorization_id.as_ref().ok_or(Error::<T>::Unauthorized)?;
-							authorization
-								.ok_or(Error::<T>::Unauthorized)?
-								.can_revoke(&caller, &credential.ctype_hash, &credential_id, credential_auth_id)
-								.map_err(|_| Error::<T>::Unauthorized)?
-						};
-						// If authorization checks are ok, update the revocation status.
-						credential.revoked = false;
-						Ok(additional_weight)
-					} else {
-						// No weight is computed as the error is an early return.
-						Err(DispatchError::from(Error::<T>::CredentialNotFound))
-					}
-				})?;
+			let ac_weight_used = Self::set_credential_revocation_status(
+				&caller,
+				&credential_subject,
+				&credential_id,
+				authorization,
+				false,
+			)?;
 
 			Self::deposit_event(Event::CredentialUnrevoked { credential_id });
 
@@ -541,6 +504,40 @@ pub mod pallet {
 			Credentials::<T>::get(&credential_subject, &credential_id)
 				.map(|entry| (credential_subject, entry))
 				.ok_or(Error::<T>::InternalError)
+		}
+
+		fn set_credential_revocation_status(
+			caller: &AttesterOf<T>,
+			credential_subject: &T::SubjectId,
+			credential_id: &CredentialIdOf<T>,
+			authorization: Option<T::AccessControl>,
+			revocation: bool,
+		) -> Result<Weight, Error<T>> {
+			// Fails if the credential does not exist OR the caller is different than the
+			// original attester. If successful, saves the additional weight used for access
+			// control and returns it at the end of the function.
+			Credentials::<T>::try_mutate(&credential_subject, &credential_id, |credential_entry| {
+				if let Some(credential) = credential_entry {
+					// Additional weight is 0 if the caller is the attester, otherwise it's the
+					// value returned by the access control check, if it does not fail.
+					let additional_weight = if *caller == credential.attester {
+						0
+					} else {
+						let credential_auth_id =
+							credential.authorization_id.as_ref().ok_or(Error::<T>::Unauthorized)?;
+						authorization
+							.ok_or(Error::<T>::Unauthorized)?
+							.can_revoke(&caller, &credential.ctype_hash, &credential_id, credential_auth_id)
+							.map_err(|_| Error::<T>::Unauthorized)?
+					};
+					// If authorization checks are ok, update the revocation status.
+					credential.revoked = revocation;
+					Ok(additional_weight)
+				} else {
+					// No weight is computed as the error is an early return.
+					Err(Error::<T>::CredentialNotFound)
+				}
+			})
 		}
 	}
 }
