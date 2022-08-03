@@ -24,22 +24,6 @@ use public_credentials::CredentialEntry;
 use public_credentials_rpc::PublicCredentialsFilter;
 
 #[derive(Serialize, Deserialize)]
-#[serde(bound(
-	serialize = "
-	CTypeHash: Serialize,
-	Attester: Serialize,
-	BlockNumber: Serialize,
-	AccountId: Serialize,
-	Balance: std::fmt::Display,
-	AuthorizationId: Serialize",
-	deserialize = "
-	CTypeHash: Deserialize<'de>,
-	Attester: Deserialize<'de>,
-	BlockNumber: Deserialize<'de>,
-	AccountId: Deserialize<'de>,
-	Balance:  std::str::FromStr,
-	AuthorizationId: Deserialize<'de>"
-))]
 /// Thin wrapper around a runtime credential entry as specified in the
 /// `public-credentials` pallet. This wrapper implements all the
 /// (de-)serialization logic.
@@ -48,6 +32,10 @@ pub struct OuterCredentialEntry<CTypeHash, Attester, BlockNumber, AccountId, Bal
 	pub attester: Attester,
 	pub revoked: bool,
 	pub block_number: BlockNumber,
+	#[serde(bound(
+		serialize = "AccountId: Serialize, Balance: std::fmt::Display",
+		deserialize = "AccountId: Deserialize<'de>, Balance: std::str::FromStr"
+	))]
 	pub deposit: Deposit<AccountId, Balance>,
 	pub authorization_id: Option<AuthorizationId>,
 }
@@ -68,10 +56,13 @@ impl<CTypeHash, Attester, BlockNumber, AccountId, Balance, AuthorizationId>
 	}
 }
 
+/// Filter for public credentials retrieved for a provided subject as specified in the RPC interface.
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum PublicCredentialFilter<CTypeHash, Attester> {
+	/// Filter credentials that match a specified Ctype.
 	CtypeHash(CTypeHash),
+	/// Filter credentials that have been issued by the specified attester.
 	Attester(Attester),
 }
 
@@ -87,7 +78,7 @@ where
 		credential: &CredentialEntry<CTypeHash, Attester, BlockNumber, AccountId, Balance, AuthorizationId>,
 	) -> bool {
 		match self {
-			Self::CTypeHash(ctype_hash) => ctype_hash == &credential.ctype_hash,
+			Self::CtypeHash(ctype_hash) => ctype_hash == &credential.ctype_hash,
 			Self::Attester(attester) => attester == &credential.attester,
 		}
 	}

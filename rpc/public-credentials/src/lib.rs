@@ -31,6 +31,7 @@ use sp_api::ProvideRuntimeApi;
 use sp_blockchain::HeaderBackend;
 use sp_runtime::{generic::BlockId, traits::Block as BlockT};
 
+/// Filter that can be used after the credentials for a given subject have been retrieved from the blockchain state.
 pub trait PublicCredentialsFilter<Credential> {
 	fn should_include(&self, credential: &Credential) -> bool;
 }
@@ -49,7 +50,7 @@ pub trait PublicCredentialsApi<BlockHash, OuterSubjectId, OuterCredentialId, Out
 
 	/// Return all the credentials issued to the provided subject, optionally
 	/// filtering with the provided logic. The result is a vector of (credential
-	/// root hash, credential entry).
+	/// identifier, credential entry).
 	#[method(name = "get_credentials")]
 	fn get_credentials(
 		&self,
@@ -71,6 +72,7 @@ pub struct PublicCredentialsQuery<
 	CredentialFilter,
 > {
 	client: Arc<Client>,
+	#[allow(clippy::type_complexity)]
 	_marker: std::marker::PhantomData<(
 		Block,
 		OuterSubjectId,

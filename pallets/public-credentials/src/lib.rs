@@ -136,7 +136,7 @@ pub mod pallet {
 		type CredentialHash: Hash<Output = Self::CredentialId>;
 		/// The type of a credential identifier.
 		type CredentialId: Parameter + MaxEncodedLen;
-		/// The currency that is used to reserve funds for each attestation.
+		/// The currency that is used to reserve funds for each credential.
 		type Currency: ReservableCurrency<AccountIdOf<Self>>;
 		/// The type of the origin when successfully converted from the outer
 		/// origin.
@@ -272,7 +272,7 @@ pub mod pallet {
 				ctype::Error::<T>::CTypeNotFound
 			);
 
-			// Credential ID = H(<encoded_credential_input> || <attester_identifier>)
+			// Credential ID = H(<scale_encoded_credential_input> || <scale_encoded_attester_identifier>)
 			let credential_id =
 				T::CredentialHash::hash(&[&credential.encode()[..], &attester.encode()[..]].concat()[..]);
 
@@ -359,16 +359,17 @@ pub mod pallet {
 					if let Some(credential) = credential_entry {
 						// Additional weight is 0 if the caller is the attester, otherwise it's the
 						// value returned by the access control check, if it does not fail.
-						let additional_weight = if caller != credential.attester {
+						let additional_weight = if caller == credential.attester {
+							0
+						} else {
 							let credential_auth_id =
 								credential.authorization_id.as_ref().ok_or(Error::<T>::Unauthorized)?;
 							authorization
 								.ok_or(Error::<T>::Unauthorized)?
 								.can_revoke(&caller, &credential.ctype_hash, &credential_id, credential_auth_id)
 								.map_err(|_| Error::<T>::Unauthorized)?
-						} else {
-							0
 						};
+						// If authorization checks are ok, update the revocation status.
 						credential.revoked = true;
 						Ok(additional_weight)
 					} else {
@@ -414,16 +415,17 @@ pub mod pallet {
 					if let Some(credential) = credential_entry {
 						// Additional weight is 0 if the caller is the attester, otherwise it's the
 						// value returned by the access control check, if it does not fail.
-						let additional_weight = if caller != credential.attester {
+						let additional_weight = if caller == credential.attester {
+							0
+						} else {
 							let credential_auth_id =
 								credential.authorization_id.as_ref().ok_or(Error::<T>::Unauthorized)?;
 							authorization
 								.ok_or(Error::<T>::Unauthorized)?
 								.can_revoke(&caller, &credential.ctype_hash, &credential_id, credential_auth_id)
 								.map_err(|_| Error::<T>::Unauthorized)?
-						} else {
-							0
 						};
+						// If authorization checks are ok, update the revocation status.
 						credential.revoked = false;
 						Ok(additional_weight)
 					} else {
@@ -469,7 +471,9 @@ pub mod pallet {
 
 			let (credential_subject, credential_entry) = Self::retrieve_credential_entry(&credential_id)?;
 
-			let ac_weight_used = if credential_entry.attester != caller {
+			let ac_weight_used = if credential_entry.attester == caller {
+				0
+			} else {
 				let credential_auth_id = credential_entry
 					.authorization_id
 					.as_ref()
@@ -483,8 +487,6 @@ pub mod pallet {
 						credential_auth_id,
 					)
 					.map_err(|_| Error::<T>::Unauthorized)?
-			} else {
-				0
 			};
 
 			Self::remove_credential_entry(credential_subject, credential_id, credential_entry);
@@ -511,19 +513,6 @@ pub mod pallet {
 	}
 
 	impl<T: Config> Pallet<T> {
-		fn retrieve_credential_entry(
-			credential_id: &CredentialIdOf<T>,
-		) -> Result<(T::SubjectId, CredentialEntryOf<T>), Error<T>> {
-			// Verify that the credential exists
-			let credential_subject =
-				CredentialSubjects::<T>::get(&credential_id).ok_or(Error::<T>::CredentialNotFound)?;
-
-			// Should never happen if the line above succeeds
-			Credentials::<T>::get(&credential_subject, &credential_id)
-				.map(|entry| (credential_subject, entry))
-				.ok_or(Error::<T>::InternalError)
-		}
-
 		// Simple wrapper to remove entries from both storages when deleting a
 		// credential.
 		fn remove_credential_entry(
@@ -539,6 +528,19 @@ pub mod pallet {
 				subject_id: credential_subject,
 				credential_id,
 			});
+		}
+
+		fn retrieve_credential_entry(
+			credential_id: &CredentialIdOf<T>,
+		) -> Result<(T::SubjectId, CredentialEntryOf<T>), Error<T>> {
+			// Verify that the credential exists
+			let credential_subject =
+				CredentialSubjects::<T>::get(&credential_id).ok_or(Error::<T>::CredentialNotFound)?;
+
+			// Should never happen if the line above succeeds
+			Credentials::<T>::get(&credential_subject, &credential_id)
+				.map(|entry| (credential_subject, entry))
+				.ok_or(Error::<T>::InternalError)
 		}
 	}
 }

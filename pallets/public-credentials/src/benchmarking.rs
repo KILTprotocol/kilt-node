@@ -69,6 +69,7 @@ benchmarks! {
 		assert!(CredentialSubjects::<T>::contains_key(&credential_id));
 	}
 
+	// Very similar setup as `remove`
 	revoke {
 		let sender: T::AccountId = account("sender", 0, SEED);
 		let attester: T::AttesterId = account("attester", 0, SEED);
@@ -96,6 +97,7 @@ benchmarks! {
 		assert!(Credentials::<T>::get(subject_id, &credential_id).expect("Credential should be present in storage").revoked);
 	}
 
+	// Very similar setup as `remove`
 	unrevoke {
 		let sender: T::AccountId = account("sender", 0, SEED);
 		let attester: T::AttesterId = account("attester", 0, SEED);

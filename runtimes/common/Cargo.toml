@@ -43,7 +43,6 @@ runtime-benchmarks = [
   "frame-support/runtime-benchmarks",
   "kilt-support/runtime-benchmarks",
   "parachain-staking/runtime-benchmarks",
-  "public-credentials/runtime-benchmarks",
   "sp-runtime/runtime-benchmarks",
 ]
 std = [

@@ -659,7 +659,7 @@ impl public_credentials::Config for Runtime {
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
 	type Event = Event;
 	type SubjectId = runtime_common::assets::AssetDid;
-	type WeightInfo = ();
+	type WeightInfo = weights::public_credentials::WeightInfo<Runtime>;
 }
 
 /// The type used to represent the kinds of proxying allowed.
