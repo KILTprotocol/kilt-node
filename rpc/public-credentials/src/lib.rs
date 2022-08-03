@@ -31,8 +31,12 @@ use sp_api::ProvideRuntimeApi;
 use sp_blockchain::HeaderBackend;
 use sp_runtime::{generic::BlockId, traits::Block as BlockT};
 
+pub trait PublicCredentialsFilter<Credential> {
+	fn should_include(&self, credential: &Credential) -> bool;
+}
+
 #[rpc(client, server)]
-pub trait PublicCredentialsApi<BlockHash, OuterSubjectId, OuterCredentialId, OuterCredentialEntry> {
+pub trait PublicCredentialsApi<BlockHash, OuterSubjectId, OuterCredentialId, OuterCredentialEntry, CredentialFilter> {
 	/// Return a credential that matches the provided root hash and issued to
 	/// the provided subject, if found.
 	#[method(name = "get_credential")]
@@ -43,12 +47,14 @@ pub trait PublicCredentialsApi<BlockHash, OuterSubjectId, OuterCredentialId, Out
 		at: Option<BlockHash>,
 	) -> RpcResult<Option<OuterCredentialEntry>>;
 
-	/// Return all the credentials issued to the provided subject.
-	/// The result is a vector of (credential root hash, credential entry).
+	/// Return all the credentials issued to the provided subject, optionally
+	/// filtering with the provided logic. The result is a vector of (credential
+	/// root hash, credential entry).
 	#[method(name = "get_credentials")]
 	fn get_credentials(
 		&self,
 		subject: OuterSubjectId,
+		filter: Option<CredentialFilter>,
 		at: Option<BlockHash>,
 	) -> RpcResult<Vec<(OuterCredentialId, OuterCredentialEntry)>>;
 }
@@ -62,6 +68,7 @@ pub struct PublicCredentialsQuery<
 	CredentialId,
 	OuterCredentialEntry,
 	CredentialEntry,
+	CredentialFilter,
 > {
 	client: Arc<Client>,
 	_marker: std::marker::PhantomData<(
@@ -72,6 +79,7 @@ pub struct PublicCredentialsQuery<
 		CredentialId,
 		OuterCredentialEntry,
 		CredentialEntry,
+		CredentialFilter,
 	)>,
 }
 
@@ -84,6 +92,7 @@ impl<
 		CredentialId,
 		OuterCredentialEntry,
 		CredentialEntry,
+		CredentialFilter,
 	>
 	PublicCredentialsQuery<
 		Client,
@@ -94,6 +103,7 @@ impl<
 		CredentialId,
 		OuterCredentialEntry,
 		CredentialEntry,
+		CredentialFilter,
 	>
 {
 	pub fn new(client: Arc<Client>) -> Self {
@@ -121,7 +131,15 @@ impl<
 		CredentialId,
 		OuterCredentialEntry,
 		CredentialEntry,
-	> PublicCredentialsApiServer<<Block as BlockT>::Hash, OuterSubjectId, OuterCredentialId, OuterCredentialEntry>
+		CredentialFilter,
+	>
+	PublicCredentialsApiServer<
+		<Block as BlockT>::Hash,
+		OuterSubjectId,
+		OuterCredentialId,
+		OuterCredentialEntry,
+		CredentialFilter,
+	>
 	for PublicCredentialsQuery<
 		Client,
 		Block,
@@ -131,6 +149,7 @@ impl<
 		CredentialId,
 		OuterCredentialEntry,
 		CredentialEntry,
+		CredentialFilter,
 	> where
 	Block: BlockT,
 	Client: Send + Sync + 'static + ProvideRuntimeApi<Block> + HeaderBackend<Block>,
@@ -141,6 +160,7 @@ impl<
 	CredentialId: Codec + Send + Sync + 'static + TryFrom<OuterCredentialId> + Into<OuterCredentialId>,
 	CredentialEntry: Codec + Send + Sync + 'static,
 	OuterCredentialEntry: Send + Sync + 'static + From<CredentialEntry>,
+	CredentialFilter: Send + Sync + 'static + PublicCredentialsFilter<CredentialEntry>,
 {
 	fn get_credential(
 		&self,
@@ -180,6 +200,7 @@ impl<
 	fn get_credentials(
 		&self,
 		subject: OuterSubjectId,
+		filter: Option<CredentialFilter>,
 		at: Option<<Block as BlockT>::Hash>,
 	) -> RpcResult<Vec<(OuterCredentialId, OuterCredentialEntry)>> {
 		let api = self.client.runtime_api();
@@ -201,7 +222,16 @@ impl<
 			))
 		})?;
 
-		Ok(credentials
+		let filtered_credentials = if let Some(filter) = filter {
+			credentials
+				.into_iter()
+				.filter(|(_, credential_entry)| filter.should_include(credential_entry))
+				.collect()
+		} else {
+			credentials
+		};
+
+		Ok(filtered_credentials
 			.into_iter()
 			.map(|(id, entry)| (id.into(), entry.into()))
 			.collect())

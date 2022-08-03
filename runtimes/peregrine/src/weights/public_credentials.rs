@@ -20,13 +20,13 @@
 //!
 //! THIS FILE WAS AUTO-GENERATED USING THE SUBSTRATE BENCHMARK CLI VERSION 4.0.0-dev
 //! DATE: 2022-07-12, STEPS: `50`, REPEAT: 20, LOW RANGE: `[]`, HIGH RANGE: `[]`
-//! EXECUTION: Some(Wasm), WASM-EXECUTION: Compiled, CHAIN: Some("dev"), DB CACHE: 1024
+//! EXECUTION: Some(Wasm), WASM-EXECUTION: Compiled, CHAIN: Some("spiritnet-dev"), DB CACHE: 1024
 
 // Executed Command:
 // ./target/release/kilt-parachain
 // benchmark
 // pallet
-// --chain=dev
+// --chain=spiritnet-dev
 // --steps=50
 // --repeat=20
 // --pallet=public-credentials
@@ -35,7 +35,7 @@
 // --wasm-execution=compiled
 // --heap-pages=4096
 // --record-proof
-// --output=./runtimes/peregrine/src/weights/public_credentials.rs
+// --output=./runtimes/spiritnet/src/weights/public_credentials.rs
 // --template=.maintain/runtime-weight-template.hbs
 
 #![cfg_attr(rustfmt, rustfmt_skip)]
@@ -55,7 +55,7 @@ impl<T: frame_system::Config> public_credentials::WeightInfo for WeightInfo<T> {
 	// Storage: Attestation Attestations (r:1 w:1)
 	// Storage: PublicCredentials Credentials (r:0 w:1)
 	fn add(_c: u32, ) -> Weight {
-		(68_813_000 as Weight)
+		(62_093_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(4 as Weight))
 			.saturating_add(T::DbWeight::get().writes(4 as Weight))
 	}
@@ -64,7 +64,17 @@ impl<T: frame_system::Config> public_credentials::WeightInfo for WeightInfo<T> {
 	// Storage: Attestation Attestations (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	fn remove() -> Weight {
-		(71_537_000 as Weight)
+		(57_888_000 as Weight)
+			.saturating_add(T::DbWeight::get().reads(4 as Weight))
+			.saturating_add(T::DbWeight::get().writes(4 as Weight))
+	}
+	fn revoke() -> Weight {
+		(57_888_000 as Weight)
+			.saturating_add(T::DbWeight::get().reads(4 as Weight))
+			.saturating_add(T::DbWeight::get().writes(4 as Weight))
+	}
+	fn unrevoke() -> Weight {
+		(57_888_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(4 as Weight))
 			.saturating_add(T::DbWeight::get().writes(4 as Weight))
 	}
@@ -73,7 +83,7 @@ impl<T: frame_system::Config> public_credentials::WeightInfo for WeightInfo<T> {
 	// Storage: Attestation Attestations (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	fn reclaim_deposit() -> Weight {
-		(72_183_000 as Weight)
+		(59_140_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(4 as Weight))
 			.saturating_add(T::DbWeight::get().writes(4 as Weight))
 	}

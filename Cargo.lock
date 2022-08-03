@@ -5105,6 +5105,8 @@ version = "1.7.0"
 dependencies = [
  "kilt-support",
  "public-credentials",
+ "public-credentials-rpc",
+ "runtime-common",
  "serde",
 ]
 

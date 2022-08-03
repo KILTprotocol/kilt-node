@@ -121,10 +121,15 @@ impl<T: Config>
 	}
 }
 
-// Duplicates the same logic that exists for attestations, and uses the result of `can_revoke()` to define `can_unrevoke()`.
+// Duplicates the same logic that exists for attestations, and uses the result
+// of `can_revoke()` to define `can_unrevoke()`.
 impl<T: Config + public_credentials::Config>
-	public_credentials::PublicCredentialsAccessControl<DelegatorIdOf<T>, DelegationNodeIdOf<T>, CtypeHashOf<T>, CredentialIdOf<T>>
-	for DelegationAc<T>
+	public_credentials::PublicCredentialsAccessControl<
+		DelegatorIdOf<T>,
+		DelegationNodeIdOf<T>,
+		CtypeHashOf<T>,
+		CredentialIdOf<T>,
+	> for DelegationAc<T>
 {
 	fn can_issue(
 		&self,

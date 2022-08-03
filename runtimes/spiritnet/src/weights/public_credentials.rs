@@ -68,6 +68,16 @@ impl<T: frame_system::Config> public_credentials::WeightInfo for WeightInfo<T> {
 			.saturating_add(T::DbWeight::get().reads(4 as Weight))
 			.saturating_add(T::DbWeight::get().writes(4 as Weight))
 	}
+	fn revoke() -> Weight {
+		(57_888_000 as Weight)
+			.saturating_add(T::DbWeight::get().reads(4 as Weight))
+			.saturating_add(T::DbWeight::get().writes(4 as Weight))
+	}
+	fn unrevoke() -> Weight {
+		(57_888_000 as Weight)
+			.saturating_add(T::DbWeight::get().reads(4 as Weight))
+			.saturating_add(T::DbWeight::get().writes(4 as Weight))
+	}
 	// Storage: PublicCredentials CredentialsUnicityIndex (r:1 w:1)
 	// Storage: PublicCredentials Credentials (r:1 w:1)
 	// Storage: Attestation Attestations (r:1 w:1)
