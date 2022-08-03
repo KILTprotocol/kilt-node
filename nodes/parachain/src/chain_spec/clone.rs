@@ -19,14 +19,13 @@
 //! KILT chain specification
 
 use clone_runtime::{
-	BalancesConfig, CollatorSelectionConfig, CouncilConfig, GenesisConfig, InflationInfo, ParachainInfoConfig,
-	ParachainStakingConfig, PolkadotXcmConfig, SessionConfig, SudoConfig, SystemConfig, TechnicalCommitteeConfig,
-	WASM_BINARY,
+	BalancesConfig, CollatorSelectionConfig, GenesisConfig, ParachainInfoConfig, PolkadotXcmConfig, SessionConfig,
+	SudoConfig, SystemConfig, WASM_BINARY,
 };
 use cumulus_primitives_core::ParaId;
 use hex_literal::hex;
 use runtime_common::{
-	constants::{kilt_inflation_config, staking::MinCollatorStake, KILT, MAX_COLLATOR_STAKE},
+	constants::{staking::MinCollatorStake, KILT},
 	AccountId, AuthorityId, Balance,
 };
 use sc_service::ChainType;
@@ -65,8 +64,6 @@ pub fn get_chain_spec_dev() -> Result<ChainSpec, String> {
 						2 * MinCollatorStake::get(),
 					),
 				],
-				kilt_inflation_config(),
-				MAX_COLLATOR_STAKE,
 				vec![
 					(
 						get_account_id_from_seed::<sr25519::Public>("Alice"),
@@ -146,8 +143,6 @@ pub fn get_chain_spec_cln() -> Result<ChainSpec, String> {
 					(CLN_COL_ACC_1.into(), None, 30000 * KILT),
 					(CLN_COL_ACC_2.into(), None, 30000 * KILT),
 				],
-				kilt_inflation_config(),
-				MAX_COLLATOR_STAKE,
 				vec![
 					(CLN_COL_ACC_1.into(), CLN_COL_SESSION_1.unchecked_into()),
 					(CLN_COL_ACC_2.into(), CLN_COL_SESSION_2.unchecked_into()),
@@ -187,8 +182,6 @@ pub fn get_chain_spec_cln() -> Result<ChainSpec, String> {
 fn testnet_genesis(
 	wasm_binary: &[u8],
 	stakers: Vec<(AccountId, Option<AccountId>, Balance)>,
-	inflation_config: InflationInfo,
-	max_candidate_stake: Balance,
 	initial_authorities: Vec<(AccountId, AuthorityId)>,
 	endowed_accounts: Vec<(AccountId, Balance)>,
 	sudo: AccountId,
@@ -202,12 +195,6 @@ fn testnet_genesis(
 			balances: endowed_accounts.iter().cloned().collect(),
 		},
 		parachain_info: ParachainInfoConfig { parachain_id: id },
-		vesting: Default::default(),
-		parachain_staking: ParachainStakingConfig {
-			stakers: stakers.clone(),
-			inflation_config,
-			max_candidate_stake,
-		},
 		aura: Default::default(),
 		aura_ext: Default::default(),
 		parachain_system: Default::default(),
@@ -229,18 +216,6 @@ fn testnet_genesis(
 				.collect::<Vec<_>>(),
 		},
 		sudo: SudoConfig { key: Some(sudo) },
-		council: CouncilConfig {
-			members: initial_authorities.iter().map(|(acc, _)| acc).cloned().collect(),
-			phantom: Default::default(),
-		},
-		technical_committee: TechnicalCommitteeConfig {
-			members: initial_authorities.iter().map(|(acc, _)| acc).cloned().collect(),
-			phantom: Default::default(),
-		},
-		treasury: Default::default(),
-		technical_membership: Default::default(),
-		tips_membership: Default::default(),
-		democracy: Default::default(),
 		polkadot_xcm: PolkadotXcmConfig {
 			safe_xcm_version: Some(SAFE_XCM_VERSION),
 		},
