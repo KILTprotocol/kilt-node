@@ -71,7 +71,7 @@ impl<CTypeHash, Attester, BlockNumber, AccountId, Balance, AuthorizationId>
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum PublicCredentialFilter<CTypeHash, Attester> {
-	CTypeHash(CTypeHash),
+	CtypeHash(CTypeHash),
 	Attester(Attester),
 }
 
