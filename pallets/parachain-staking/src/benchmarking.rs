@@ -134,19 +134,6 @@ benchmarks! {
 		assert_eq!(<Round<T>>::get().current, 1u32);
 	}
 
-	on_initialize_new_year {
-		let old = <InflationConfig<T>>::get();
-		assert_eq!(<LastRewardReduction<T>>::get(), T::BlockNumber::zero());
-		let block = (T::BLOCKS_PER_YEAR + 1u32.into()).saturated_into::<T::BlockNumber>();
-	}: { Pallet::<T>::on_initialize(block) }
-	verify {
-		let new = <InflationConfig<T>>::get();
-		assert_eq!(<LastRewardReduction<T>>::get(), T::BlockNumber::one());
-		assert_eq!(new.collator.max_rate, old.collator.max_rate);
-		assert_eq!(new.delegator.max_rate, old.delegator.max_rate);
-		assert!(new.collator.reward_rate.annual < old.collator.reward_rate.annual);
-	}
-
 	on_initialize_network_rewards {
 		let issuance = T::Currency::total_issuance();
 		// if we only add by one, we also initialize a new year
@@ -185,6 +172,15 @@ benchmarks! {
 	}
 
 	set_inflation {
+		let n in 0 .. T::MaxTopCandidates::get();
+		let m in 0 .. T::MaxDelegatorsPerCollator::get();
+
+		let candidates = setup_collator_candidates::<T>(n, None);
+		for (i, c) in candidates.iter().enumerate() {
+			fill_delegators::<T>(m, c.clone(), i.saturated_into::<u32>());
+			Rewards::<T>::insert(&c, T::CurrencyBalance::one());
+		}
+
 		let inflation = InflationInfo::new(
 			T::BLOCKS_PER_YEAR.saturated_into(),
 			Perquintill::from_percent(10),
@@ -194,7 +190,10 @@ benchmarks! {
 		);
 	}: _(RawOrigin::Root, inflation.collator.max_rate, inflation.collator.reward_rate.annual, inflation.delegator.max_rate, inflation.delegator.reward_rate.annual)
 	verify {
-		assert_eq!(<InflationConfig<T>>::get(), inflation);
+		assert_eq!(InflationConfig::<T>::get(), inflation);
+		candidates.into_iter().for_each(|candidate| {
+			assert!(!Rewards::<T>::get(&candidate).is_zero());
+		});
 	}
 
 	set_max_selected_candidates {
@@ -548,6 +547,74 @@ benchmarks! {
 	verify {
 		assert_eq!(<MaxCollatorCandidateStake<T>>::get(), new);
 	}
+
+	increment_delegator_rewards {
+		let collator = setup_collator_candidates::<T>(1, None)[0].clone();
+		let delegator = fill_delegators::<T>(1, collator.clone(), COLLATOR_ACCOUNT_SEED)[0].clone();
+
+		// mock high values to compensate for tiny values in unit test env
+		let stake = T::CurrencyBalance::from(1_000_000_000_000_000_000u128);
+		DelegatorState::<T>::insert(&delegator, crate::types::Delegator { owner: Some(collator.clone()), amount: stake});
+		RewardCount::<T>::insert(&collator, u32::MAX);
+
+		assert!(Rewards::<T>::get(&delegator).is_zero());
+	}: _(RawOrigin::Signed(delegator.clone()))
+	verify {
+		assert!(!Rewards::<T>::get(&delegator).is_zero());
+	}
+
+	increment_collator_rewards {
+		let m in 1 .. T::MaxDelegatorsPerCollator::get();
+
+		let collator = setup_collator_candidates::<T>(1, None)[0].clone();
+		let delegators = fill_delegators::<T>(m, collator.clone(), COLLATOR_ACCOUNT_SEED);
+
+		// mock high counter to compensate for tiny amounts in unit test env
+		RewardCount::<T>::insert(&collator, u32::MAX);
+		assert!(Rewards::<T>::get(&collator).is_zero(), "reward {:?}", Rewards::<T>::get(&collator));
+	}: _(RawOrigin::Signed(collator.clone()))
+	verify {
+		assert!(!Rewards::<T>::get(&collator).is_zero());
+	}
+
+	claim_rewards_for {
+		let beneficiary = account("beneficiary", 0, 0);
+		let amount = T::MinCollatorCandidateStake::get();
+		T::Currency::make_free_balance_be(&beneficiary, amount);
+		Rewards::<T>::insert(&beneficiary, amount);
+		assert_eq!(pallet_balances::Pallet::<T>::usable_balance(&beneficiary), amount.into());
+		let unlookup_beneficiary = T::Lookup::unlookup(beneficiary.clone());
+	}: _(RawOrigin::Signed(beneficiary.clone()), unlookup_beneficiary)
+	verify {
+		assert!(Rewards::<T>::get(&beneficiary).is_zero());
+		assert_eq!(pallet_balances::Pallet::<T>::usable_balance(&beneficiary), (amount + amount).into());
+	}
+
+	execute_pending_reward_change {
+		// we need at least 1 collators
+		let n in 0 .. T::MaxTopCandidates::get();
+		// we need at least 1 delegator
+		let m in 0 .. T::MaxDelegatorsPerCollator::get();
+
+		let candidates = setup_collator_candidates::<T>(n, None);
+		for (i, c) in candidates.iter().enumerate() {
+			fill_delegators::<T>(m, c.clone(), i.saturated_into::<u32>());
+		}
+		let collator = candidates[0].clone();
+
+		let old = InflationConfig::<T>::get();
+		assert_eq!(LastRewardReduction::<T>::get(), T::BlockNumber::zero());
+		System::<T>::set_block_number(T::BLOCKS_PER_YEAR + T::BlockNumber::one());
+	}: _(RawOrigin::Signed(collator))
+	verify {
+		let new = InflationConfig::<T>::get();
+		assert_eq!(LastRewardReduction::<T>::get(), T::BlockNumber::one());
+		assert_eq!(new.collator.max_rate, old.collator.max_rate);
+		assert_eq!(new.delegator.max_rate, old.delegator.max_rate);
+		assert!(new.collator.reward_rate.annual < old.collator.reward_rate.annual);
+		assert!(new.delegator.reward_rate.annual < old.delegator.reward_rate.annual);
+	}
+
 }
 
 impl_benchmark_test_suite!(

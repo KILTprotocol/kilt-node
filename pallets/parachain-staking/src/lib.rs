@@ -740,7 +740,7 @@ pub mod pallet {
 		/// ShouldEndSession<_>>::should_end_session.
 		///
 		/// The dispatch origin must be Root.
-		#[pallet::weight(<T as pallet::Config>::WeightInfo::set_inflation())]
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::force_new_round())]
 		pub fn force_new_round(origin: OriginFor<T>) -> DispatchResult {
 			ensure_root(origin)?;
 
@@ -760,20 +760,21 @@ pub mod pallet {
 		///
 		/// The estimated average block time is twelve seconds.
 		///
+		/// NOTE: Iterates over CandidatePool for each candidate over their
+		/// delegators to set rewards. Needs to be improved when scaling up
+		/// `MaxTopCandidates`.
+		///
 		/// The dispatch origin must be Root.
 		///
 		/// Emits `RoundInflationSet`.
-		#[pallet::weight(<T as pallet::Config>::WeightInfo::set_inflation())]
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::set_inflation(T::MaxTopCandidates::get(), T::MaxDelegatorsPerCollator::get()))]
 		pub fn set_inflation(
 			origin: OriginFor<T>,
 			collator_max_rate_percentage: Perquintill,
 			collator_annual_reward_rate_percentage: Perquintill,
 			delegator_max_rate_percentage: Perquintill,
 			delegator_annual_reward_rate_percentage: Perquintill,
-		) -> DispatchResult {
-			// TODO: Enable after refactoring bench
-			// ) -> DispatchResultWithPostInfo {
-
+		) -> DispatchResultWithPostInfo {
 			ensure_root(origin)?;
 
 			let inflation = InflationInfo::new(
@@ -790,8 +791,9 @@ pub mod pallet {
 			);
 
 			// set rewards for all collators and delegators due
+			let mut num_delegators = 0;
 			CandidatePool::<T>::iter().for_each(|(id, state)| {
-				Self::do_inc_collator_reward(&id, state.stake);
+				num_delegators = num_delegators.max(Self::do_inc_collator_reward(&id, state.stake));
 			});
 
 			Self::deposit_event(Event::RoundInflationSet(
@@ -801,11 +803,11 @@ pub mod pallet {
 				inflation.delegator.reward_rate.per_block,
 			));
 			InflationConfig::<T>::put(inflation);
-			Ok(())
-			// TODO: Enable after refactoring bench
-			// Ok(Some(<T as
-			// pallet::Config>::WeightInfo::set_inflation(CandidatePool::<T>::
-			// count())))
+			Ok(Some(<T as pallet::Config>::WeightInfo::set_inflation(
+				CandidatePool::<T>::count(),
+				num_delegators.saturated_into(),
+			))
+			.into())
 		}
 
 		/// Set the maximum number of collator candidates that can be selected
@@ -1138,6 +1140,10 @@ pub mod pallet {
 		///
 		/// The exit request can be reversed by calling
 		/// `cancel_leave_candidates`.
+		///
+		/// NOTE: Iterates over CandidatePool for each candidate over their
+		/// delegators to set rewards. Needs to be improved when scaling up
+		/// `MaxTopCandidates`.
 		///
 		/// Emits `CollatorLeft`.
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::execute_leave_candidates(
@@ -1707,8 +1713,7 @@ pub mod pallet {
 		/// for anyone.
 		///
 		/// Emits `Rewarded`.
-		// TODO: Benchmark
-		#[pallet::weight(0)]
+		#[pallet::weight(<T as Config>::WeightInfo::claim_rewards_for())]
 		pub fn claim_rewards_for(origin: OriginFor<T>, target: <T::Lookup as StaticLookup>::Source) -> DispatchResult {
 			ensure_signed(origin)?;
 			let target = T::Lookup::lookup(target)?;
@@ -1732,8 +1737,7 @@ pub mod pallet {
 		/// network.
 		///
 		/// The dispatch origin must be a collator.
-		// TODO: Benchmark
-		#[pallet::weight(0)]
+		#[pallet::weight(<T as Config>::WeightInfo::increment_collator_rewards(T::MaxDelegatorsPerCollator::get()))]
 		pub fn increment_collator_rewards(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
 			let collator = ensure_signed(origin)?;
 			let state = CandidatePool::<T>::get(&collator).ok_or(Error::<T>::CandidateNotFound)?;
@@ -1742,8 +1746,11 @@ pub mod pallet {
 			let reward_count = RewardCount::<T>::get(&collator);
 			ensure!(!reward_count.is_zero(), Error::<T>::RewardsNotFound);
 
-			let weight = Self::do_inc_collator_reward(&collator, state.stake);
-			Ok(Some(weight).into())
+			let num_delegators = Self::do_inc_collator_reward(&collator, state.stake);
+			Ok(Some(<T as Config>::WeightInfo::increment_collator_rewards(
+				num_delegators.saturated_into(),
+			))
+			.into())
 		}
 
 		/// Actively increment the rewards of a delegator for all their
@@ -1753,8 +1760,7 @@ pub mod pallet {
 		/// delegations.
 		///
 		/// The dispatch origin must be a delegator.
-		// TODO: Benchmark
-		#[pallet::weight(0)]
+		#[pallet::weight(<T as Config>::WeightInfo::increment_delegator_rewards())]
 		pub fn increment_delegator_rewards(origin: OriginFor<T>) -> DispatchResult {
 			let delegator = ensure_signed(origin)?;
 			let delegation = DelegatorState::<T>::get(&delegator).ok_or(Error::<T>::DelegatorNotFound)?;
@@ -1772,8 +1778,7 @@ pub mod pallet {
 		/// before adjusting the inflation.
 		///
 		/// Emits `RoundInflationSet`.
-		// TODO: benchmark
-		#[pallet::weight(0)]
+		#[pallet::weight(<T as Config>::WeightInfo::execute_pending_reward_change(T::MaxTopCandidates::get(), T::MaxDelegatorsPerCollator::get()))]
 		pub fn execute_pending_reward_change(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
 			ensure_signed(origin)?;
 
@@ -1807,8 +1812,9 @@ pub mod pallet {
 			);
 
 			// set rewards for all collators and delegators before updating reward rates
+			let mut max_num_delegators = 0;
 			CandidatePool::<T>::iter().for_each(|(id, state)| {
-				Self::do_inc_collator_reward(&id, state.stake);
+				max_num_delegators = max_num_delegators.max(Self::do_inc_collator_reward(&id, state.stake));
 			});
 
 			// update inflation config
@@ -1821,10 +1827,10 @@ pub mod pallet {
 				new_inflation.delegator.reward_rate.per_block,
 			));
 
-			Ok(Some(
-				T::DbWeight::get()
-					.reads_writes(2, CandidatePool::<T>::count().saturated_into::<u64>().saturating_add(3)),
-			)
+			Ok(Some(<T as Config>::WeightInfo::execute_pending_reward_change(
+				CandidatePool::<T>::count(),
+				max_num_delegators.saturated_into(),
+			))
 			.into())
 		}
 	}
@@ -2377,7 +2383,11 @@ pub mod pallet {
 			T::Currency::issue(network_reward)
 		}
 
-		// TODO: Docs and naming improvement
+		/// Calculates the collator staking rewards for authoring `multiplier`
+		/// many blocks based on the given stake.
+		///
+		/// Depends on the current total issuance and staking reward
+		/// configuration for collators.
 		fn calc_block_rewards_collator(stake: BalanceOf<T>, multiplier: BalanceOf<T>) -> BalanceOf<T> {
 			let total_issuance = T::Currency::total_issuance();
 			let TotalStake {
@@ -2391,7 +2401,11 @@ pub mod pallet {
 				.compute_reward::<T>(stake, staking_rate, multiplier)
 		}
 
-		// TODO: Docs and naming improvement
+		/// Calculates the delegator staking rewards for `multiplier` many
+		/// blocks based on the given stake.
+		///
+		/// Depends on the current total issuance and staking reward
+		/// configuration for delegators.
 		fn calc_block_rewards_delegator(stake: BalanceOf<T>, multiplier: BalanceOf<T>) -> BalanceOf<T> {
 			let total_issuance = T::Currency::total_issuance();
 			let TotalStake {
@@ -2413,8 +2427,7 @@ pub mod pallet {
 		///
 		/// Resets all reward counters of the collator and their delegators to
 		/// zero.
-		fn do_inc_collator_reward(collator: &T::AccountId, stake: BalanceOf<T>) -> Weight {
-			let mut post_weight = Weight::zero();
+		fn do_inc_collator_reward(collator: &T::AccountId, stake: BalanceOf<T>) -> usize {
 			// get reward counters
 			let col_reward_count = RewardCount::<T>::get(collator);
 
@@ -2424,20 +2437,22 @@ pub mod pallet {
 			});
 
 			// set reward data for delegators
-			if let Some(state) = CandidatePool::<T>::get(collator.clone()) {
+			let num_delegators = if let Some(state) = CandidatePool::<T>::get(collator.clone()) {
+				let num_delegators = state.delegators.len();
 				for Stake { owner, amount } in state.delegators {
-					post_weight = post_weight.saturating_add(Self::do_inc_delegator_reward(&owner, amount, collator));
+					Self::do_inc_delegator_reward(&owner, amount, collator);
 					// Reset delegator counter since collator counter will be reset
 					RewardCount::<T>::insert(owner, 0);
-					post_weight = post_weight.saturating_add(T::DbWeight::get().reads(1));
 				}
-			}
+				num_delegators
+			} else {
+				0usize
+			};
 
 			// Reset collator reward count
 			RewardCount::<T>::insert(collator, 0);
 
-			// 4 reads from calc rewards
-			post_weight.saturating_add(T::DbWeight::get().reads_writes(5, 1))
+			num_delegators
 		}
 
 		/// Increment the accumulated rewards of a delegator by consuming their
