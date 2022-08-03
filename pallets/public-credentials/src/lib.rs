@@ -70,7 +70,7 @@ pub mod pallet {
 	};
 	use frame_system::pallet_prelude::*;
 	use sp_runtime::traits::{Hash, SaturatedConversion};
-	use sp_std::vec::Vec;
+	use sp_std::{boxed::Box, vec::Vec};
 
 	pub use ctype::CtypeHashOf;
 	use kilt_support::traits::CallSources;
@@ -106,7 +106,7 @@ pub mod pallet {
 	/// The type of account's balances.
 	pub type BalanceOf<T> = <CurrencyOf<T> as Currency<AccountIdOf<T>>>::Balance;
 	pub(crate) type AuthorizationIdOf<T> = <T as Config>::AuthorizationId;
-	pub(crate) type CredentialIdOf<T> = <<T as Config>::CredentialHash as sp_runtime::traits::Hash>::Output;
+	pub type CredentialIdOf<T> = <<T as Config>::CredentialHash as sp_runtime::traits::Hash>::Output;
 
 	/// The type of a public credential as the pallet expects it.
 	pub type InputCredentialOf<T> =

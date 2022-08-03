@@ -646,19 +646,12 @@ impl pallet_utility::Config for Runtime {
 impl pallet_randomness_collective_flip::Config for Runtime {}
 
 impl public_credentials::Config for Runtime {
-	type ClaimerIdentifier = did::DidIdentifierOf<Self>;
-
-	#[cfg(not(feature = "runtime-benchmarks"))]
-	type ClaimerSignature = did::DidSignature;
-	#[cfg(not(feature = "runtime-benchmarks"))]
-	type ClaimerSignatureVerification = did::DidSignatureVerify<Self>;
-
-	#[cfg(feature = "runtime-benchmarks")]
-	type ClaimerSignature = runtime_common::benchmarks::DummySignature;
-	#[cfg(feature = "runtime-benchmarks")]
-	type ClaimerSignatureVerification =
-		kilt_support::signature::AlwaysVerify<Self::ClaimerIdentifier, Vec<u8>, Self::ClaimerSignature>;
-
+	type AccessControl = PalletAuthorize<DelegationAc<Runtime>>;
+	type AttesterId = DidIdentifier;
+	type AuthorizationId = AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>;
+	type CredentialId = Hash;
+	type CredentialHash = BlakeTwo256;
+	type Currency = Balances;
 	type Deposit = runtime_common::constants::public_credentials::Deposit;
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
 	type MaxEncodedClaimsLength = runtime_common::constants::public_credentials::MaxEncodedClaimsLength;
@@ -666,7 +659,7 @@ impl public_credentials::Config for Runtime {
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
 	type Event = Event;
 	type SubjectId = runtime_common::assets::AssetDid;
-	type WeightInfo = weights::public_credentials::WeightInfo<Runtime>;
+	type WeightInfo = ();
 }
 
 /// The type used to represent the kinds of proxying allowed.

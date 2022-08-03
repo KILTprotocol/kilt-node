@@ -31,6 +31,7 @@ sp-keystore = {branch = "polkadot-v0.9.25", git = "https://github.com/paritytech
 attestation = {default-features = false, path = "../attestation"}
 ctype = {default-features = false, path = "../ctype"}
 kilt-support = {default-features = false, path = "../../support"}
+public-credentials = {default-features = false, path = "../public-credentials"}
 
 #External dependencies
 bitflags = {default-features = false, version = "1.3.2"}
@@ -77,6 +78,7 @@ std = [
   "kilt-support/std",
   "log/std",
   "pallet-balances/std",
+  "public-credentials/std",
   "scale-info/std",
   "sp-core/std",
   "sp-io/std",
