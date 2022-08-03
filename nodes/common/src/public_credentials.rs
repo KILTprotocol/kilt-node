@@ -70,19 +70,17 @@ impl<CTypeHash, Attester, BlockNumber, AccountId, Balance, AuthorizationId>
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub enum PublicCredentialFilter<CTypeHash, Attester, AuthorizationId> {
+pub enum PublicCredentialFilter<CTypeHash, Attester> {
 	CTypeHash(CTypeHash),
 	Attester(Attester),
-	AuthorizationId(AuthorizationId),
 }
 
 impl<CTypeHash, Attester, BlockNumber, AccountId, Balance, AuthorizationId>
 	PublicCredentialsFilter<CredentialEntry<CTypeHash, Attester, BlockNumber, AccountId, Balance, AuthorizationId>>
-	for PublicCredentialFilter<CTypeHash, Attester, AuthorizationId>
+	for PublicCredentialFilter<CTypeHash, Attester>
 where
 	CTypeHash: Eq,
 	Attester: Eq,
-	AuthorizationId: Eq,
 {
 	fn should_include(
 		&self,
@@ -91,7 +89,6 @@ where
 		match self {
 			Self::CTypeHash(ctype_hash) => ctype_hash == &credential.ctype_hash,
 			Self::Attester(attester) => attester == &credential.attester,
-			Self::AuthorizationId(authorization_id) => Some(authorization_id) == credential.authorization_id.as_ref(),
 		}
 	}
 }
