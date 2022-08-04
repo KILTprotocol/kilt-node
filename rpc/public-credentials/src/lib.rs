@@ -40,7 +40,7 @@ pub trait PublicCredentialsFilter<Credential> {
 #[rpc(client, server)]
 pub trait PublicCredentialsApi<BlockHash, OuterSubjectId, OuterCredentialId, OuterCredentialEntry, CredentialFilter> {
 	/// Return a credential that matches the provided credential ID, if found.
-	#[method(name = "get_credential")]
+	#[method(name = "credentials_get_credential")]
 	fn get_credential(
 		&self,
 		credential_id: OuterCredentialId,
@@ -50,7 +50,7 @@ pub trait PublicCredentialsApi<BlockHash, OuterSubjectId, OuterCredentialId, Out
 	/// Return all the credentials issued to the provided subject, optionally
 	/// filtering with the provided logic. The result is a vector of (credential
 	/// identifier, credential entry).
-	#[method(name = "get_credentials")]
+	#[method(name = "credentials_get_credentials")]
 	fn get_credentials(
 		&self,
 		subject: OuterSubjectId,
