@@ -175,9 +175,9 @@ pub fn get_chain_spec_cln() -> Result<ChainSpec, String> {
 	))
 }
 
-// pub fn load_clone_spec() -> Result<ChainSpec, String> {
-// 	ChainSpec::from_json_bytes(&include_bytes!("../../res/clone.json")[..])
-// }
+pub fn load_clone_spec() -> Result<ChainSpec, String> {
+	ChainSpec::from_json_bytes(&include_bytes!("../../res/clone.json")[..])
+}
 
 #[allow(clippy::too_many_arguments)]
 fn testnet_genesis(

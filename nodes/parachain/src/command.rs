@@ -79,7 +79,7 @@ fn load_spec(id: &str, runtime: &str) -> std::result::Result<Box<dyn sc_service:
 		("clone-new", _) => Ok(Box::new(chain_spec::clone::get_chain_spec_cln()?)),
 		("rilt", _) => Ok(Box::new(chain_spec::spiritnet::load_rilt_spec()?)),
 		("spiritnet", _) => Ok(Box::new(chain_spec::spiritnet::load_spiritnet_spec()?)),
-		// ("clone", _) => Ok(Box::new(chain_spec::clone::load_clone_spec()?)),
+		("clone", _) => Ok(Box::new(chain_spec::clone::load_clone_spec()?)),
 		("", "spiritnet") => Ok(Box::new(chain_spec::spiritnet::get_chain_spec_dev()?)),
 		("", "peregrine") => Ok(Box::new(chain_spec::peregrine::make_dev_spec()?)),
 		("", "clone") => Ok(Box::new(chain_spec::clone::get_chain_spec_dev()?)),
