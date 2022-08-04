@@ -122,19 +122,20 @@ pub fn get_chain_spec_dev() -> Result<ChainSpec, String> {
 	))
 }
 
-const CLN_COL_ACC_1: [u8; 32] = hex!["e6cf13c86a5f174acba79ca361dc429d89eb704c6a407af83f30b11ab8bc5045"];
-const CLN_COL_SESSION_1: [u8; 32] = hex!["e29df39b74777495ca00cd7a316ce98c5225d7088ae924b122fe0e2e6a4b5569"];
-const CLN_COL_ACC_2: [u8; 32] = hex!["e8ed0c2a40fb5a0bbb24c38f5c8cd83d79498ac029ac9f87497677f5701e3d2c"];
-const CLN_COL_SESSION_2: [u8; 32] = hex!["7cacfbce640321ba84a85f41dfb43c2a2ea14ed789c096ad62ee0491599b0f44"];
+const CLN_SUDO: [u8; 32] = hex!["14ab94d42fb790854e7c4813af55722e2007ce2070177bbe93d64cabe5f6ca6f"];
+const CLN_COL_ACC_1: [u8; 32] = hex!["d8f775301891bc245f2cbf2d64cf1c0e64d16632c02268fd2199c84b09ff7f7b"];
+const CLN_COL_SESSION_1: [u8; 32] = hex!["88245cdf5b5b517c48b0057e17c94c7ff71eeb7ba4665b3d07accdc0c3064915"];
+const CLN_COL_ACC_2: [u8; 32] = hex!["5c7c70470cb16b4702921f0b4e2a7109277354bd3d8e11b63bd7ed70510cf57f"];
+const CLN_COL_SESSION_2: [u8; 32] = hex!["487cf837b45261c45c45a38e66be1fb80dc7d755094b44661632ec30d3a5db01"];
 
 pub fn get_chain_spec_cln() -> Result<ChainSpec, String> {
-	let properties = get_properties("WILT", 15, 38);
+	let properties = get_properties("KILT", 15, 38);
 	let wasm = WASM_BINARY.ok_or("No WASM")?;
-	let id: ParaId = 2085.into();
+	let id: ParaId = 2057.into();
 
 	Ok(ChainSpec::from_genesis(
 		"KILT",
-		"cln_kilt_new",
+		"cln_kilt",
 		ChainType::Live,
 		move || {
 			testnet_genesis(
@@ -151,19 +152,19 @@ pub fn get_chain_spec_cln() -> Result<ChainSpec, String> {
 					(CLN_COL_ACC_1.into(), 40000 * KILT),
 					(CLN_COL_ACC_2.into(), 40000 * KILT),
 				],
-				CLN_COL_ACC_1.into(),
+				CLN_SUDO.into(),
 				id,
 			)
 		},
 		vec![
-			"/dns4/bootnode.kilt.io/tcp/30360/p2p/12D3KooWRPR7q1Rgwurd4QGyUUbVnN4nXYNVzbLeuhFsd9eXmHJk"
+			"/dns4/bootnode.kilt.io/tcp/30360/p2p/12D3KooWAyk4ZQe4RU7A6H8hFLjQGsXyNPTbfYW1qE2Atd4p8fN8"
 				.parse()
 				.expect("bootnode address is formatted correctly; qed"),
-			"/dns4/bootnode.kilt.io/tcp/30361/p2p/12D3KooWDAEqpTRsL76itsabbh4SeaqtCM6v9npQ8eCeqPbbuFE9"
+			"/dns4/bootnode.kilt.io/tcp/30361/p2p/12D3KooWHootMhedfGJAHWu8Bn8DVjmMLA8qnSP4jKJr7u27sU6w"
 				.parse()
 				.expect("bootnode address is formatted correctly; qed"),
 		],
-		Some(TelemetryEndpoints::new(vec![(TELEMETRY_URL.to_string(), 0)]).expect("WILT telemetry url is valid; qed")),
+		Some(TelemetryEndpoints::new(vec![(TELEMETRY_URL.to_string(), 0)]).expect("telemetry url is valid; qed")),
 		None,
 		None,
 		Some(properties),
