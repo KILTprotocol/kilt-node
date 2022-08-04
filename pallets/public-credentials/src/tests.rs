@@ -532,8 +532,8 @@ fn remove_successful() {
 			));
 
 			// Test this pallet logic
-			assert_eq!(Credentials::<Test>::get(&subject_id, &credential_id), None);
-			assert_eq!(CredentialSubjects::<Test>::get(&credential_id), None);
+			assert!(Credentials::<Test>::get(&subject_id, &credential_id).is_none());
+			assert!(CredentialSubjects::<Test>::get(&credential_id).is_none());
 
 			// Check deposit release logic
 			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
@@ -568,8 +568,8 @@ fn remove_same_attester_wrong_ac() {
 			));
 
 			// Test this pallet logic
-			assert_eq!(Credentials::<Test>::get(&subject_id, &credential_id), None);
-			assert_eq!(CredentialSubjects::<Test>::get(&credential_id), None);
+			assert!(Credentials::<Test>::get(&subject_id, &credential_id).is_none());
+			assert!(CredentialSubjects::<Test>::get(&credential_id).is_none());
 		});
 }
 
@@ -663,8 +663,8 @@ fn reclaim_deposit_successful() {
 			));
 
 			// Test this pallet logic
-			assert_eq!(Credentials::<Test>::get(&subject_id, &credential_id), None);
-			assert_eq!(CredentialSubjects::<Test>::get(&credential_id), None);
+			assert!(Credentials::<Test>::get(&subject_id, &credential_id).is_none());
+			assert!(CredentialSubjects::<Test>::get(&credential_id).is_none());
 
 			// Check deposit release logic
 			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());

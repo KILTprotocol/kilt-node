@@ -47,7 +47,7 @@ pub struct CredentialEntry<CTypeHash, Attester, BlockNumber, AccountId, Balance,
 	pub ctype_hash: CTypeHash,
 	/// The attester of the credential.
 	pub attester: Attester,
-	/// A flag indicating the revocation status of the credential
+	/// A flag indicating the revocation status of the credential.
 	pub revoked: bool,
 	/// The block number in which the credential tx was evaluated and included
 	/// in the block.

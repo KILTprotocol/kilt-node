@@ -181,9 +181,10 @@ pub mod pallet {
 		CredentialEntryOf<T>,
 	>;
 
-	// This map ensures that at any time a credential is only linked (i.e., issued)
-	// to a single subject, as it maps from a credential ID to the subject it was
-	// issued to.
+	/// A reverse index mapping from credential ID to the subject the credential
+	/// was issued to.
+	///
+	/// It it used to perform efficient lookup of credential given their ID.
 	#[pallet::storage]
 	#[pallet::getter(fn get_credential_subject)]
 	pub type CredentialSubjects<T> = StorageMap<_, Blake2_128Concat, CredentialIdOf<T>, <T as Config>::SubjectId>;
@@ -206,12 +207,12 @@ pub mod pallet {
 			/// The id of the removed credential.
 			credential_id: CredentialIdOf<T>,
 		},
-		/// A public credentials has been revoked.
+		/// A public credential has been revoked.
 		CredentialRevoked {
 			/// The id of the revoked credential.
 			credential_id: CredentialIdOf<T>,
 		},
-		/// A public credentials has been unrevoked.
+		/// A public credential has been unrevoked.
 		CredentialUnrevoked {
 			/// The id of the unrevoked credential.
 			credential_id: CredentialIdOf<T>,
@@ -332,7 +333,7 @@ pub mod pallet {
 		/// If a credential was already revoked, this function does not fail but
 		/// simply results in a noop.
 		///
-		/// Only authorized callers can revoke the credential.
+		/// /// The dispatch origin must be authorized to revoke the credential.
 		///
 		/// Emits `CredentialRevoked`.
 		#[pallet::weight({
@@ -369,7 +370,8 @@ pub mod pallet {
 		/// If a credential was not revoked, this function does not fail but
 		/// simply results in a noop.
 		///
-		/// Only authorized callers can unrevoke the credential.
+		/// /// The dispatch origin must be authorized to unrevoke the
+		/// credential.
 		///
 		/// Emits `CredentialUnrevoked`.
 		#[pallet::weight({
@@ -415,7 +417,7 @@ pub mod pallet {
 		/// This function fails if a credential already exists for the specified
 		/// subject.
 		///
-		/// Only authorized callers can remove the credential.
+		/// /// The dispatch origin must be authorized to remove the credential.
 		///
 		/// Emits `CredentialRemoved`.
 		#[pallet::weight({
