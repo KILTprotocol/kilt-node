@@ -59,7 +59,7 @@ impl<CTypeHash, Attester, BlockNumber, AccountId, Balance, AuthorizationId>
 /// Filter for public credentials retrieved for a provided subject as specified
 /// in the RPC interface.
 #[derive(Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "camelCase")]
 pub enum PublicCredentialFilter<CTypeHash, Attester> {
 	/// Filter credentials that match a specified Ctype.
 	CtypeHash(CTypeHash),
