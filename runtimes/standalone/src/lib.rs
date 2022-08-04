@@ -983,7 +983,8 @@ impl_runtime_apis! {
 	}
 
 	impl public_credentials_runtime_api::PublicCredentialsApi<Block, <Runtime as public_credentials::Config>::SubjectId, attestation::ClaimHashOf<Runtime>, public_credentials::CredentialEntryOf<Runtime>> for Runtime {
-		fn get_credential(subject: <Runtime as public_credentials::Config>::SubjectId, credential_id: attestation::ClaimHashOf<Runtime>) -> Option<public_credentials::CredentialEntryOf<Runtime>> {
+		fn get_credential(credential_id: attestation::ClaimHashOf<Runtime>) -> Option<public_credentials::CredentialEntryOf<Runtime>> {
+			let subject = public_credentials::CredentialSubjects::<Runtime>::get(&credential_id)?;
 			public_credentials::Credentials::<Runtime>::get(&subject, &credential_id)
 		}
 

@@ -29,7 +29,7 @@ sp_api::decl_runtime_apis! {
 		CredentialId: Codec,
 		CredentialEntry: Codec
 	{
-		fn get_credential(subject: SubjectId, credential_id: CredentialId) -> Option<CredentialEntry>;
+		fn get_credential(credential_id: CredentialId) -> Option<CredentialEntry>;
 		fn get_credentials(subject: SubjectId) -> Vec<(CredentialId, CredentialEntry)>;
 	}
 }

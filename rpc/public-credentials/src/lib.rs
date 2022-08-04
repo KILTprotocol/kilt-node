@@ -39,12 +39,10 @@ pub trait PublicCredentialsFilter<Credential> {
 
 #[rpc(client, server)]
 pub trait PublicCredentialsApi<BlockHash, OuterSubjectId, OuterCredentialId, OuterCredentialEntry, CredentialFilter> {
-	/// Return a credential that matches the provided root hash and issued to
-	/// the provided subject, if found.
+	/// Return a credential that matches the provided credential ID, if found.
 	#[method(name = "get_credential")]
 	fn get_credential(
 		&self,
-		subject: OuterSubjectId,
 		credential_id: OuterCredentialId,
 		at: Option<BlockHash>,
 	) -> RpcResult<Option<OuterCredentialEntry>>;
@@ -167,20 +165,11 @@ impl<
 {
 	fn get_credential(
 		&self,
-		subject: OuterSubjectId,
 		credential_id: OuterCredentialId,
 		at: Option<<Block as BlockT>::Hash>,
 	) -> RpcResult<Option<OuterCredentialEntry>> {
 		let api = self.client.runtime_api();
 		let at = BlockId::hash(at.unwrap_or_else(|| self.client.info().best_hash));
-
-		let into_subject: SubjectId = subject.try_into().map_err(|_| {
-			CallError::Custom(ErrorObject::owned(
-				Error::Conversion as i32,
-				"Unable to convert input to a valid subject ID.",
-				Option::<String>::None,
-			))
-		})?;
 
 		let into_credential_id: CredentialId = credential_id.try_into().map_err(|_| {
 			CallError::Custom(ErrorObject::owned(
@@ -190,7 +179,7 @@ impl<
 			))
 		})?;
 
-		let credential = api.get_credential(&at, into_subject, into_credential_id).map_err(|_| {
+		let credential = api.get_credential(&at, into_credential_id).map_err(|_| {
 			CallError::Custom(ErrorObject::owned(
 				Error::Runtime as i32,
 				"Unable to get credential.",
