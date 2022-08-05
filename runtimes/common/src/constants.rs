@@ -54,6 +54,8 @@ pub const MILLI_KILT: Balance = 10u128.pow(12);
 /// 0.000_001 KILT
 pub const MICRO_KILT: Balance = 10u128.pow(9);
 
+pub const EXISTENTIAL_DEPOSIT: Balance = 10 * MILLI_KILT;
+
 // 1 in 4 blocks (on average, not counting collisions) will be primary babe
 // blocks.
 pub const PRIMARY_PROBABILITY: (u64, u64) = (1, 4);
@@ -201,17 +203,17 @@ pub mod staking {
 		/// We only allow one delegation per round.
 		pub const MaxDelegationsPerRound: u32 = 1;
 		/// Maximum 25 delegators per collator at launch, might be increased later
-		#[derive(Debug, PartialEq)]
+		#[derive(Debug, Eq, PartialEq)]
 		pub const MaxDelegatorsPerCollator: u32 = MAX_DELEGATORS_PER_COLLATOR;
 		/// Maximum 1 collator per delegator at launch, will be increased later
-		#[derive(Debug, PartialEq)]
+		#[derive(Debug, Eq, PartialEq)]
 		pub const MaxCollatorsPerDelegator: u32 = 1;
 		/// Minimum stake required to be reserved to be a collator is 10_000
 		pub const MinCollatorStake: Balance = 10_000 * KILT;
 		/// Minimum stake required to be reserved to be a delegator is 1000
 		pub const MinDelegatorStake: Balance = MIN_DELEGATOR_STAKE;
 		/// Maximum number of collator candidates
-		#[derive(Debug, PartialEq)]
+		#[derive(Debug, Eq, PartialEq)]
 		pub const MaxCollatorCandidates: u32 = MAX_CANDIDATES;
 		/// Maximum number of concurrent requests to unlock unstaked balance
 		pub const MaxUnstakeRequests: u32 = 10;
@@ -323,12 +325,12 @@ pub mod did {
 
 	parameter_types! {
 		pub const MaxNewKeyAgreementKeys: u32 = MAX_KEY_AGREEMENT_KEYS;
-		#[derive(Debug, Clone, PartialEq)]
+		#[derive(Debug, Clone, Eq, PartialEq)]
 		pub const MaxUrlLength: u32 = MAX_URL_LENGTH;
 		pub const MaxPublicKeysPerDid: u32 = MAX_PUBLIC_KEYS_PER_DID;
-		#[derive(Debug, Clone, PartialEq)]
+		#[derive(Debug, Clone, Eq, PartialEq)]
 		pub const MaxTotalKeyAgreementKeys: u32 = MAX_TOTAL_KEY_AGREEMENT_KEYS;
-		#[derive(Debug, Clone, PartialEq)]
+		#[derive(Debug, Clone, Eq, PartialEq)]
 		pub const MaxEndpointUrlsCount: u32 = MAX_ENDPOINT_URLS_COUNT;
 		// Standalone block time is half the duration of a parachain block.
 		pub const MaxBlocksTxValidity: BlockNumber = MAX_BLOCKS_TX_VALIDITY;
