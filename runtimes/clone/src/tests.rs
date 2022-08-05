@@ -16,19 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use codec::MaxEncodedLen;
-use frame_support::{traits::Currency, BoundedVec};
-
-use pallet_did_lookup::associate_account_request::AssociateAccountRequest;
-use runtime_common::constants::{
-	attestation::MAX_ATTESTATION_BYTE_LENGTH, did::MAX_DID_BYTE_LENGTH, did_lookup::MAX_CONNECTION_BYTE_LENGTH,
-	web3_names::MAX_NAME_BYTE_LENGTH, MAX_INDICES_BYTE_LENGTH,
-};
-
-#[cfg(test)]
-use runtime_common::{AccountId, BlockNumber};
-
-use super::{Call, Runtime};
+use super::Call;
 
 #[test]
 fn call_size() {
