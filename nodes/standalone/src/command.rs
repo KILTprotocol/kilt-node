@@ -17,18 +17,17 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use crate::{
+	benchmarking::{inherent_benchmark_data, RemarkBuilder, TransferKeepAliveBuilder},
 	chain_spec,
 	cli::{Cli, Subcommand},
-	benchmarking::{inherent_benchmark_data, RemarkBuilder, TransferKeepAliveBuilder},
 	service,
 };
 use frame_benchmarking_cli::{BenchmarkCmd, ExtrinsicFactory, SUBSTRATE_REFERENCE_HARDWARE};
 use mashnet_node_runtime::opaque::Block;
 use runtime_common::constants::EXISTENTIAL_DEPOSIT;
 use sc_cli::{ChainSpec, RuntimeVersion, SubstrateCli};
-use sc_service::{PartialComponents};
+use sc_service::PartialComponents;
 use sp_keyring::Sr25519Keyring;
-
 
 impl SubstrateCli for Cli {
 	fn impl_name() -> String {
@@ -169,7 +168,7 @@ pub fn run() -> sc_cli::Result<()> {
 						let ext_builder = RemarkBuilder::new(client.clone());
 
 						cmd.run(config, client, inherent_benchmark_data()?, &ext_builder)
-					},
+					}
 					BenchmarkCmd::Extrinsic(cmd) => {
 						let PartialComponents { client, .. } = service::new_partial(&config)?;
 						// Register the *Remark* and *TKA* builders.

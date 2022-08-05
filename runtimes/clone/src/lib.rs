@@ -59,7 +59,8 @@ use crate::xcm_config::{XcmConfig, XcmOriginToTransactDispatchOrigin};
 use sp_version::NativeVersion;
 // TODO: Enable after adding delegation pallet
 // #[cfg(feature = "runtime-benchmarks")]
-// use {frame_system::EnsureSigned, kilt_support::signature::AlwaysVerify, runtime_common::benchmarks::DummySignature};
+// use {frame_system::EnsureSigned, kilt_support::signature::AlwaysVerify,
+// runtime_common::benchmarks::DummySignature};
 
 #[cfg(test)]
 mod tests;
