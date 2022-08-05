@@ -62,9 +62,6 @@ use sp_version::NativeVersion;
 // use {frame_system::EnsureSigned, kilt_support::signature::AlwaysVerify,
 // runtime_common::benchmarks::DummySignature};
 
-#[cfg(test)]
-mod tests;
-
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
 
