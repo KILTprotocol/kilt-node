@@ -85,7 +85,7 @@ fn test_add_association_account() {
 		.with_balances(vec![(ACCOUNT_00, 100), (ACCOUNT_01, 100)])
 		.build()
 		.execute_with(|| {
-			let pair_alice = sr25519::Pair::from_seed(&*b"Alice                           ");
+			let pair_alice = sr25519::Pair::from_seed(b"Alice                           ");
 			let expire_at: BlockNumber = 500;
 			let account_hash_alice = MultiSigner::from(pair_alice.public()).into_account();
 			let sig_alice_0 = MultiSignature::from(
@@ -228,7 +228,7 @@ fn test_add_association_account_invalid_signature() {
 		.with_balances(vec![(ACCOUNT_00, 100), (ACCOUNT_01, 100)])
 		.build()
 		.execute_with(|| {
-			let pair_alice = sr25519::Pair::from_seed(&*b"Alice                           ");
+			let pair_alice = sr25519::Pair::from_seed(b"Alice                           ");
 			let account_hash_alice = MultiSigner::from(pair_alice.public()).into_account();
 			let expire_at: BlockNumber = 500;
 			// Try signing only the encoded tuple without the <Bytes>...</Bytes> wrapper
@@ -251,7 +251,7 @@ fn test_add_association_account_expired() {
 		.with_balances(vec![(ACCOUNT_00, 100), (ACCOUNT_01, 100)])
 		.build()
 		.execute_with(|| {
-			let pair_alice = sr25519::Pair::from_seed(&*b"Alice                           ");
+			let pair_alice = sr25519::Pair::from_seed(b"Alice                           ");
 			let account_hash_alice = MultiSigner::from(pair_alice.public()).into_account();
 			let expire_at: BlockNumber = 2;
 			let sig_alice_0 = MultiSignature::from(
