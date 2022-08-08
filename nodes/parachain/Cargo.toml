@@ -16,11 +16,12 @@ substrate-build-script-utils = {git = "https://github.com/paritytech/substrate",
 [dependencies]
 
 # Internal dependencies
+clone-runtime = {path = "../../runtimes/clone"}
 did-rpc = {path = "../../rpc/did"}
+pallet-did-lookup = {path = "../../pallets/pallet-did-lookup"}
 peregrine-runtime = {path = "../../runtimes/peregrine"}
 runtime-common = {path = "../../runtimes/common"}
 spiritnet-runtime = {path = "../../runtimes/spiritnet"}
-pallet-did-lookup = {path = "../../pallets/pallet-did-lookup"}
 
 # External dependencies
 clap = {version = "3.2.10", features = ["derive"]}
