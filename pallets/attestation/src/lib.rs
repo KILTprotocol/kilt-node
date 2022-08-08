@@ -110,12 +110,12 @@ pub mod pallet {
 	pub type ClaimHashOf<T> = <T as frame_system::Config>::Hash;
 
 	/// Type of an attester identifier.
-	pub type AttesterOf<T> = <T as Config>::AttesterId;
-
-	pub type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
+	pub(crate) type AttesterOf<T> = <T as Config>::AttesterId;
 
 	/// Authorization id type
 	pub(crate) type AuthorizationIdOf<T> = <T as Config>::AuthorizationId;
+
+	pub(crate) type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 
 	pub(crate) type BalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::Balance;
 
@@ -252,8 +252,47 @@ pub mod pallet {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 			let payer = source.sender();
 			let who = source.subject();
+			let deposit_amount = <T as Config>::Deposit::get();
 
-			Self::write_attestation(ctype_hash, claim_hash, who, payer, authorization)
+			ensure!(
+				ctype::Ctypes::<T>::contains_key(&ctype_hash),
+				ctype::Error::<T>::CTypeNotFound
+			);
+			ensure!(
+				!Attestations::<T>::contains_key(&claim_hash),
+				Error::<T>::AlreadyAttested
+			);
+
+			// Check for validity of the delegation node if specified.
+			authorization
+				.as_ref()
+				.map(|ac| ac.can_attest(&who, &ctype_hash, &claim_hash))
+				.transpose()?;
+			let authorization_id = authorization.as_ref().map(|ac| ac.authorization_id());
+
+			let deposit = kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(payer, deposit_amount)?;
+
+			// *** No Fail beyond this point ***
+
+			log::debug!("insert Attestation");
+
+			Attestations::<T>::insert(
+				&claim_hash,
+				AttestationDetails {
+					ctype_hash,
+					attester: who.clone(),
+					authorization_id: authorization_id.clone(),
+					revoked: false,
+					deposit,
+				},
+			);
+			if let Some(authorization_id) = &authorization_id {
+				ExternalAttestations::<T>::insert(authorization_id, claim_hash, true);
+			}
+
+			Self::deposit_event(Event::AttestationCreated(who, claim_hash, ctype_hash, authorization_id));
+
+			Ok(())
 		}
 
 		/// Revoke an existing attestation.
@@ -285,7 +324,34 @@ pub mod pallet {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 			let who = source.subject();
 
-			Self::revoke_attestation(who, claim_hash, authorization)
+			let attestation = Attestations::<T>::get(&claim_hash).ok_or(Error::<T>::AttestationNotFound)?;
+
+			ensure!(!attestation.revoked, Error::<T>::AlreadyRevoked);
+
+			if attestation.attester != who {
+				let attestation_auth_id = attestation.authorization_id.as_ref().ok_or(Error::<T>::Unauthorized)?;
+				authorization.ok_or(Error::<T>::Unauthorized)?.can_revoke(
+					&who,
+					&attestation.ctype_hash,
+					&claim_hash,
+					attestation_auth_id,
+				)?;
+			}
+
+			// *** No Fail beyond this point ***
+
+			log::debug!("revoking Attestation");
+			Attestations::<T>::insert(
+				&claim_hash,
+				AttestationDetails {
+					revoked: true,
+					..attestation
+				},
+			);
+
+			Self::deposit_event(Event::AttestationRevoked(who, claim_hash));
+
+			Ok(Some(<T as pallet::Config>::WeightInfo::revoke()).into())
 		}
 
 		/// Remove an attestation.
@@ -317,122 +383,6 @@ pub mod pallet {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 			let who = source.subject();
 
-			Self::remove_attestation(who, claim_hash, authorization)
-		}
-
-		/// Reclaim a storage deposit by removing an attestation
-		///
-		/// Emits `DepositReclaimed`.
-		///
-		/// # <weight>
-		/// Weight: O(1)
-		/// - Reads: [Origin Account], Attestations, DelegatedAttestations
-		/// - Writes: Attestations, DelegatedAttestations
-		/// # </weight>
-		#[pallet::weight(<T as pallet::Config>::WeightInfo::reclaim_deposit())]
-		pub fn reclaim_deposit(origin: OriginFor<T>, claim_hash: ClaimHashOf<T>) -> DispatchResult {
-			let who = ensure_signed(origin)?;
-
-			Self::unlock_deposit(who, claim_hash)
-		}
-	}
-
-	impl<T: Config> Pallet<T> {
-		pub fn write_attestation(
-			ctype_hash: CtypeHashOf<T>,
-			claim_hash: ClaimHashOf<T>,
-			attester: AttesterOf<T>,
-			payer: AccountIdOf<T>,
-			authorization: Option<T::AccessControl>,
-		) -> DispatchResult {
-			let deposit_amount = <T as Config>::Deposit::get();
-
-			ensure!(
-				ctype::Ctypes::<T>::contains_key(&ctype_hash),
-				ctype::Error::<T>::CTypeNotFound
-			);
-			ensure!(
-				!Attestations::<T>::contains_key(&claim_hash),
-				Error::<T>::AlreadyAttested
-			);
-
-			// Check for validity of the delegation node if specified.
-			authorization
-				.as_ref()
-				.map(|ac| ac.can_attest(&attester, &ctype_hash, &claim_hash))
-				.transpose()?;
-			let authorization_id = authorization.as_ref().map(|ac| ac.authorization_id());
-
-			let deposit = kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(payer, deposit_amount)?;
-
-			// *** No Fail beyond this point ***
-
-			log::debug!("insert Attestation");
-
-			Attestations::<T>::insert(
-				&claim_hash,
-				AttestationDetails {
-					ctype_hash,
-					attester: attester.clone(),
-					authorization_id: authorization_id.clone(),
-					revoked: false,
-					deposit,
-				},
-			);
-			if let Some(authorization_id) = &authorization_id {
-				ExternalAttestations::<T>::insert(authorization_id, claim_hash, true);
-			}
-
-			Self::deposit_event(Event::AttestationCreated(
-				attester,
-				claim_hash,
-				ctype_hash,
-				authorization_id,
-			));
-
-			Ok(())
-		}
-
-		pub fn revoke_attestation(
-			who: AttesterOf<T>,
-			claim_hash: ClaimHashOf<T>,
-			authorization: Option<T::AccessControl>,
-		) -> DispatchResultWithPostInfo {
-			let attestation = Attestations::<T>::get(&claim_hash).ok_or(Error::<T>::AttestationNotFound)?;
-
-			ensure!(!attestation.revoked, Error::<T>::AlreadyRevoked);
-
-			if attestation.attester != who {
-				let attestation_auth_id = attestation.authorization_id.as_ref().ok_or(Error::<T>::Unauthorized)?;
-				authorization.ok_or(Error::<T>::Unauthorized)?.can_revoke(
-					&who,
-					&attestation.ctype_hash,
-					&claim_hash,
-					attestation_auth_id,
-				)?;
-			}
-
-			// *** No Fail beyond this point ***
-
-			log::debug!("revoking Attestation");
-			Attestations::<T>::insert(
-				&claim_hash,
-				AttestationDetails {
-					revoked: true,
-					..attestation
-				},
-			);
-
-			Self::deposit_event(Event::AttestationRevoked(who, claim_hash));
-
-			Ok(Some(<T as pallet::Config>::WeightInfo::revoke()).into())
-		}
-
-		pub fn remove_attestation(
-			who: AttesterOf<T>,
-			claim_hash: ClaimHashOf<T>,
-			authorization: Option<T::AccessControl>,
-		) -> DispatchResultWithPostInfo {
 			let attestation = Attestations::<T>::get(&claim_hash).ok_or(Error::<T>::AttestationNotFound)?;
 
 			if attestation.attester != who {
@@ -449,28 +399,41 @@ pub mod pallet {
 
 			log::debug!("removing Attestation");
 
-			Self::remove_attestation_entry(attestation, claim_hash);
+			Self::remove_attestation(attestation, claim_hash);
 			Self::deposit_event(Event::AttestationRemoved(who, claim_hash));
 
 			Ok(Some(<T as pallet::Config>::WeightInfo::remove()).into())
 		}
 
-		pub fn unlock_deposit(sender: AccountIdOf<T>, claim_hash: ClaimHashOf<T>) -> DispatchResult {
+		/// Reclaim a storage deposit by removing an attestation
+		///
+		/// Emits `DepositReclaimed`.
+		///
+		/// # <weight>
+		/// Weight: O(1)
+		/// - Reads: [Origin Account], Attestations, DelegatedAttestations
+		/// - Writes: Attestations, DelegatedAttestations
+		/// # </weight>
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::reclaim_deposit())]
+		pub fn reclaim_deposit(origin: OriginFor<T>, claim_hash: ClaimHashOf<T>) -> DispatchResult {
+			let who = ensure_signed(origin)?;
 			let attestation = Attestations::<T>::get(&claim_hash).ok_or(Error::<T>::AttestationNotFound)?;
 
-			ensure!(attestation.deposit.owner == sender, Error::<T>::Unauthorized);
+			ensure!(attestation.deposit.owner == who, Error::<T>::Unauthorized);
 
 			// *** No Fail beyond this point ***
 
 			log::debug!("removing Attestation");
 
-			Self::remove_attestation_entry(attestation, claim_hash);
-			Self::deposit_event(Event::DepositReclaimed(sender, claim_hash));
+			Self::remove_attestation(attestation, claim_hash);
+			Self::deposit_event(Event::DepositReclaimed(who, claim_hash));
 
 			Ok(())
 		}
+	}
 
-		fn remove_attestation_entry(attestation: AttestationDetails<T>, claim_hash: ClaimHashOf<T>) {
+	impl<T: Config> Pallet<T> {
+		fn remove_attestation(attestation: AttestationDetails<T>, claim_hash: ClaimHashOf<T>) {
 			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&attestation.deposit);
 			Attestations::<T>::remove(&claim_hash);
 			if let Some(authorization_id) = &attestation.authorization_id {

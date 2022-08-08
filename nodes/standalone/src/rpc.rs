@@ -28,7 +28,6 @@ use std::sync::Arc;
 use jsonrpsee::RpcModule;
 
 pub use sc_rpc_api::DenyUnsafe;
-
 use sc_transaction_pool_api::TransactionPool;
 use sp_api::ProvideRuntimeApi;
 use sp_block_builder::BlockBuilder;

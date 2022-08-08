@@ -547,7 +547,7 @@ pub(crate) type DidPublicKeyMap<T> =
 	BoundedBTreeMap<KeyIdOf<T>, DidPublicKeyDetails<BlockNumberOf<T>>, <T as Config>::MaxPublicKeysPerDid>;
 
 /// The details of a new DID to create.
-#[derive(Clone, RuntimeDebug, Decode, Encode, Eq, PartialEq, TypeInfo)]
+#[derive(Clone, RuntimeDebug, Decode, Encode, PartialEq, TypeInfo)]
 #[scale_info(skip_type_params(T))]
 
 pub struct DidCreationDetails<T: Config> {
@@ -567,7 +567,7 @@ pub struct DidCreationDetails<T: Config> {
 
 /// Errors that might occur while deriving the authorization verification key
 /// relationship.
-#[derive(Clone, RuntimeDebug, Decode, Encode, PartialEq, Eq)]
+#[derive(Clone, RuntimeDebug, Decode, Encode, PartialEq)]
 pub enum RelationshipDeriveError {
 	/// The call is not callable by a did origin.
 	NotCallableByDid,
@@ -598,7 +598,7 @@ pub trait DeriveDidCallAuthorizationVerificationKeyRelationship {
 /// A DID operation that wraps other extrinsic calls, allowing those
 /// extrinsic to have a DID origin and perform DID-based authorization upon
 /// their invocation.
-#[derive(Clone, RuntimeDebug, Decode, Encode, PartialEq, Eq, TypeInfo)]
+#[derive(Clone, RuntimeDebug, Decode, Encode, PartialEq, TypeInfo)]
 #[scale_info(skip_type_params(T))]
 
 pub struct DidAuthorizedCallOperation<T: Config> {

@@ -16,8 +16,6 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use std::{sync::Arc, time::Duration};
-
 // rpc
 use jsonrpsee::RpcModule;
 
@@ -33,8 +31,6 @@ use cumulus_relay_chain_inprocess_interface::build_inprocess_relay_chain;
 use cumulus_relay_chain_interface::{RelayChainError, RelayChainInterface, RelayChainResult};
 use cumulus_relay_chain_rpc_interface::RelayChainRPCInterface;
 use polkadot_service::{CollatorPair, NativeExecutionDispatch};
-use substrate_prometheus_endpoint::Registry;
-
 use sc_client_api::ExecutorProvider;
 use sc_executor::NativeElseWasmExecutor;
 use sc_network::NetworkService;
@@ -43,6 +39,8 @@ use sc_telemetry::{Telemetry, TelemetryHandle, TelemetryWorker, TelemetryWorkerH
 use sp_api::ConstructRuntimeApi;
 use sp_keystore::SyncCryptoStorePtr;
 use sp_runtime::traits::BlakeTwo256;
+use std::{sync::Arc, time::Duration};
+use substrate_prometheus_endpoint::Registry;
 
 use pallet_did_lookup::linkable_account::LinkableAccountId;
 use public_credentials::CredentialEntry;
