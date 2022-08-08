@@ -5033,7 +5033,6 @@ dependencies = [
  "kilt-support",
  "public-credentials",
  "public-credentials-rpc",
- "runtime-common",
  "serde",
 ]
 
