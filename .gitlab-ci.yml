@@ -9,12 +9,15 @@ clippy:
   stage: test
   timeout: 1 hours
   script:
-    - rustup component list --installed
-    - rustup toolchain list
     - rustup component add clippy
     - cargo clippy --all-features --all-targets --locked -- -D warnings
+
+udeps:
+    - rustup component list --installed
+    - rustup toolchain list
     - cargo install cargo-udeps
-    # Unless there is a way to conditionally execute part of a job, cargo-udeps can only run after the project metadata has been correctly pulled in.
+    - cargo check --all-features --all-targets --locked -- -D warnings
+    # Unless there is a way to conditionally execute part of a job, cargo-udeps can only run after the project metadata has been correctly pulled in, which happens with `cargo check`.
     # Open issue: https://github.com/est31/cargo-udeps/issues/97
     - cargo udeps --all-features --all-targets --locked
 
