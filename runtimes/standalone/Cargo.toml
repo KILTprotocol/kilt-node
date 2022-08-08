@@ -14,7 +14,7 @@ log = "0.4.17"
 scale-info = {version = "2.1.1", default-features = false, features = ["derive"]}
 
 hex-literal = {version = "0.3.4", optional = true}
-serde = {version = "1.0.137", optional = true, features = ["derive"]}
+serde = {version = "1.0.140", optional = true, features = ["derive"]}
 
 # kilt functionality
 attestation = {default-features = false, path = "../../pallets/attestation"}
