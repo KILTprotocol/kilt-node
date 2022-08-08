@@ -36,7 +36,9 @@ use sp_blockchain::{Error as BlockChainError, HeaderBackend, HeaderMetadata};
 
 use pallet_did_lookup::linkable_account::LinkableAccountId;
 use public_credentials::CredentialEntry;
-use runtime_common::{AccountId, Balance, Block, BlockNumber, DidIdentifier, Hash, Index};
+use runtime_common::{
+	authorization::AuthorizationId, AccountId, Balance, Block, BlockNumber, DidIdentifier, Hash, Index,
+};
 
 /// Full client dependencies.
 pub struct FullDeps<C, P> {
@@ -62,7 +64,7 @@ where
 		Block,
 		runtime_common::assets::AssetDid,
 		Hash,
-		CredentialEntry<BlockNumber, AccountId, Balance>,
+		CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<Hash>>,
 	>,
 	P: TransactionPool + 'static,
 {
@@ -100,9 +102,18 @@ where
 			// Runtime credential ID
 			Hash,
 			// Input/output credential entry
-			node_common::OuterCredentialEntry<BlockNumber, AccountId, Balance>,
+			node_common::OuterCredentialEntry<
+				Hash,
+				DidIdentifier,
+				BlockNumber,
+				AccountId,
+				Balance,
+				AuthorizationId<Hash>,
+			>,
 			// Runtime credential entry
-			CredentialEntry<BlockNumber, AccountId, Balance>,
+			CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<Hash>>,
+			// Credential filter
+			node_common::PublicCredentialFilter<Hash, DidIdentifier>,
 		>::new(client)
 		.into_rpc(),
 	)?;

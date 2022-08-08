@@ -16,33 +16,32 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use attestation::ClaimHashOf;
-use ctype::CtypeHashOf;
+use codec::Encode;
+use sp_runtime::traits::Hash;
 
-use crate::{Claim, ClaimerSignatureInfo, Config, InputClaimsContentOf, InputCredentialOf, InputSubjectIdOf};
-
-pub(crate) type ClaimerSignatureInfoOf<Test> =
-	ClaimerSignatureInfo<<Test as Config>::ClaimerIdentifier, <Test as Config>::ClaimerSignature>;
+use crate::{
+	AttesterOf, Config, CredentialIdOf, CtypeHashOf, InputClaimsContentOf, InputCredentialOf, InputSubjectIdOf,
+};
 
 // Generate a public credential using a many Default::default() as possible.
 pub fn generate_base_public_credential_creation_op<T: Config>(
 	subject_id: InputSubjectIdOf<T>,
-	claim_hash: ClaimHashOf<T>,
 	ctype_hash: CtypeHashOf<T>,
-	contents: InputClaimsContentOf<T>,
-	claimer_signature: Option<ClaimerSignatureInfoOf<T>>,
+	claims: InputClaimsContentOf<T>,
 ) -> InputCredentialOf<T> {
 	InputCredentialOf::<T> {
-		claim: Claim {
-			ctype_hash,
-			subject: subject_id,
-			contents,
-		},
-		claim_hash,
-		claimer_signature,
-		nonce: Default::default(),
-		authorization_info: Default::default(),
+		ctype_hash,
+		subject: subject_id,
+		claims,
+		authorization: None,
 	}
+}
+
+pub fn generate_credential_id<T: Config>(
+	input_credential: &InputCredentialOf<T>,
+	attester: &AttesterOf<T>,
+) -> CredentialIdOf<T> {
+	T::CredentialHash::hash(&[&input_credential.encode()[..], &attester.encode()[..]].concat()[..])
 }
 
 #[cfg(test)]
@@ -55,6 +54,7 @@ pub(crate) mod runtime {
 
 	use codec::{Decode, Encode, MaxEncodedLen};
 	use frame_support::{
+		dispatch::Weight,
 		traits::{ConstU128, ConstU16, ConstU32, ConstU64, Get},
 		weights::constants::RocksDbWeight,
 	};
@@ -63,20 +63,19 @@ pub(crate) mod runtime {
 	use sp_runtime::{
 		testing::Header,
 		traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
-		MultiSignature, MultiSigner,
+		DispatchError, MultiSignature, MultiSigner,
 	};
 
 	use kilt_support::{
 		deposit::Deposit,
 		mock::{mock_origin, SubjectId},
-		signature::EqualVerify,
 	};
 
-	use attestation::{mock::MockAccessControl, AttestationDetails, ClaimHashOf};
 	use ctype::{CtypeCreatorOf, CtypeHashOf};
 
 	use crate::{
-		BalanceOf, CredentialEntryOf, Credentials, CredentialsUnicityIndex, CurrencyOf, Error, InputSubjectIdOf,
+		BalanceOf, Config, CredentialEntryOf, CredentialSubjects, Credentials, CurrencyOf, Error, InputSubjectIdOf,
+		PublicCredentialsAccessControl,
 	};
 
 	pub(crate) type BlockNumber = u64;
@@ -143,19 +142,25 @@ pub(crate) mod runtime {
 	pub(crate) fn generate_base_credential_entry<T: Config>(
 		payer: T::AccountId,
 		block_number: <T as frame_system::Config>::BlockNumber,
+		attester: T::AttesterId,
+		ctype_hash: Option<CtypeHashOf<T>>,
 	) -> CredentialEntryOf<T> {
 		CredentialEntryOf::<T> {
+			ctype_hash: ctype_hash.unwrap_or_default(),
+			revoked: false,
+			attester,
 			block_number,
 			deposit: Deposit::<T::AccountId, BalanceOf<T>> {
 				owner: payer,
 				amount: <T as Config>::Deposit::get(),
 			},
+			authorization_id: None,
 		}
 	}
 
 	fn insert_public_credentials<T: Config>(
 		subject_id: T::SubjectId,
-		claim_hash: ClaimHashOf<T>,
+		credential_id: CredentialIdOf<T>,
 		credential_entry: CredentialEntryOf<T>,
 	) {
 		kilt_support::reserve_deposit::<T::AccountId, CurrencyOf<T>>(
@@ -164,8 +169,94 @@ pub(crate) mod runtime {
 		)
 		.expect("Attester should have enough balance");
 
-		Credentials::<T>::insert(&subject_id, &claim_hash, credential_entry);
-		CredentialsUnicityIndex::<T>::insert(claim_hash, subject_id);
+		Credentials::<T>::insert(&subject_id, &credential_id, credential_entry);
+		CredentialSubjects::<T>::insert(credential_id, subject_id);
+	}
+
+	/// Authorize iff the subject of the origin and the provided attester id
+	/// match.
+	#[derive(Clone, Debug, Encode, Decode, TypeInfo, PartialEq, Eq)]
+	#[scale_info(skip_type_params(T))]
+	pub struct MockAccessControl<T: Config>(pub T::AttesterId);
+
+	impl<T> PublicCredentialsAccessControl<T::AttesterId, T::AuthorizationId, CtypeHashOf<T>, CredentialIdOf<T>>
+		for MockAccessControl<T>
+	where
+		T: Config<AuthorizationId = <T as Config>::AttesterId>,
+	{
+		fn can_issue(
+			&self,
+			who: &T::AttesterId,
+			_ctype: &CtypeHashOf<T>,
+			_credential_id: &CredentialIdOf<T>,
+		) -> Result<Weight, DispatchError> {
+			if who == &self.0 {
+				Ok(0)
+			} else {
+				Err(DispatchError::Other("Unauthorized"))
+			}
+		}
+
+		fn can_revoke(
+			&self,
+			who: &T::AttesterId,
+			_ctype: &CtypeHashOf<T>,
+			_credential_id: &CredentialIdOf<T>,
+			authorization_id: &T::AuthorizationId,
+		) -> Result<Weight, DispatchError> {
+			if authorization_id == who {
+				Ok(0)
+			} else {
+				Err(DispatchError::Other("Unauthorized"))
+			}
+		}
+
+		fn can_unrevoke(
+			&self,
+			who: &T::AttesterId,
+			_ctype: &CtypeHashOf<T>,
+			_credential_id: &CredentialIdOf<T>,
+			authorization_id: &T::AuthorizationId,
+		) -> Result<Weight, DispatchError> {
+			if authorization_id == who {
+				Ok(0)
+			} else {
+				Err(DispatchError::Other("Unauthorized"))
+			}
+		}
+
+		fn can_remove(
+			&self,
+			who: &T::AttesterId,
+			_ctype: &CtypeHashOf<T>,
+			_credential_id: &CredentialIdOf<T>,
+			authorization_id: &T::AuthorizationId,
+		) -> Result<Weight, DispatchError> {
+			println!("{:#?}", who);
+			println!("{:#?}", authorization_id);
+			if authorization_id == who {
+				Ok(0)
+			} else {
+				Err(DispatchError::Other("Unauthorized"))
+			}
+		}
+
+		fn authorization_id(&self) -> T::AuthorizationId {
+			self.0.clone()
+		}
+
+		fn can_issue_weight(&self) -> Weight {
+			0
+		}
+		fn can_revoke_weight(&self) -> Weight {
+			0
+		}
+		fn can_unrevoke_weight(&self) -> Weight {
+			0
+		}
+		fn can_remove_weight(&self) -> Weight {
+			0
+		}
 	}
 
 	pub(crate) const MILLI_UNIT: Balance = 10u128.pow(12);
@@ -177,7 +268,6 @@ pub(crate) mod runtime {
 			UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>,
 		{
 			System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
-			Attestation: attestation::{Pallet, Call, Storage, Event<T>},
 			Ctype: ctype::{Pallet, Call, Storage, Event<T>},
 			Balances: pallet_balances::{Pallet, Call, Storage, Event<T>},
 			MockOrigin: mock_origin::{Pallet, Origin<T>},
@@ -243,30 +333,19 @@ pub(crate) mod runtime {
 		type FeeCollector = ();
 	}
 
-	impl attestation::Config for Test {
-		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<AccountId, Self::AttesterId>;
-		type OriginSuccess = mock_origin::DoubleOrigin<AccountId, Self::AttesterId>;
-		type Event = ();
-		type WeightInfo = ();
-
-		type Currency = Balances;
-		type Deposit = ConstU128<{ 100 * MILLI_UNIT }>;
-		type MaxDelegatedAttestations = ConstU32<0>;
+	impl Config for Test {
+		type AccessControl = MockAccessControl<Self>;
 		type AttesterId = SubjectId;
 		type AuthorizationId = SubjectId;
-		type AccessControl = MockAccessControl<Self>;
-	}
-
-	impl Config for Test {
-		type ClaimerIdentifier = SubjectId;
-		type ClaimerSignature = (Self::ClaimerIdentifier, Vec<u8>);
-		type ClaimerSignatureVerification = EqualVerify<Self::ClaimerIdentifier, Vec<u8>>;
+		type CredentialId = Hash;
+		type CredentialHash = BlakeTwo256;
+		type Currency = Balances;
 		type Deposit = ConstU128<{ 10 * MILLI_UNIT }>;
-		type EnsureOrigin = <Self as attestation::Config>::EnsureOrigin;
+		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<AccountId, Self::AttesterId>;
 		type Event = ();
 		type MaxEncodedClaimsLength = ConstU32<500>;
 		type MaxSubjectIdLength = ConstU32<100>;
-		type OriginSuccess = <Self as attestation::Config>::OriginSuccess;
+		type OriginSuccess = mock_origin::DoubleOrigin<AccountId, Self::AttesterId>;
 		type SubjectId = TestSubjectId;
 		type WeightInfo = ();
 	}
@@ -276,25 +355,13 @@ pub(crate) mod runtime {
 
 	pub(crate) const ALICE_SEED: [u8; 32] = [0u8; 32];
 	pub(crate) const BOB_SEED: [u8; 32] = [1u8; 32];
-	pub(crate) const CHARLIE_SEED: [u8; 32] = [2u8; 32];
 
 	pub(crate) const SUBJECT_ID_00: TestSubjectId = TestSubjectId([100u8; 32]);
-
-	pub(crate) const CLAIM_HASH_SEED_01: u64 = 1u64;
-	pub(crate) const CLAIM_HASH_SEED_02: u64 = 2u64;
-
-	pub(crate) fn claim_hash_from_seed(seed: u64) -> Hash {
-		Hash::from_low_u64_be(seed)
-	}
 
 	pub(crate) fn sr25519_did_from_seed(seed: &[u8; 32]) -> SubjectId {
 		MultiSigner::from(sr25519::Pair::from_seed(seed).public())
 			.into_account()
 			.into()
-	}
-
-	pub(crate) fn hash_to_u8<Hash: Encode>(hash: Hash) -> Vec<u8> {
-		hash.encode()
 	}
 
 	#[derive(Clone, Default)]
@@ -303,8 +370,11 @@ pub(crate) mod runtime {
 		ctypes: Vec<(CtypeHashOf<Test>, CtypeCreatorOf<Test>)>,
 		/// endowed accounts with balances
 		balances: Vec<(AccountId, Balance)>,
-		attestations: Vec<(ClaimHashOf<Test>, AttestationDetails<Test>)>,
-		public_credentials: Vec<(<Test as Config>::SubjectId, ClaimHashOf<Test>, CredentialEntryOf<Test>)>,
+		public_credentials: Vec<(
+			<Test as Config>::SubjectId,
+			CredentialIdOf<Test>,
+			CredentialEntryOf<Test>,
+		)>,
 	}
 
 	impl ExtBuilder {
@@ -321,15 +391,13 @@ pub(crate) mod runtime {
 		}
 
 		#[must_use]
-		pub fn with_attestations(mut self, attestations: Vec<(ClaimHashOf<Test>, AttestationDetails<Test>)>) -> Self {
-			self.attestations = attestations;
-			self
-		}
-
-		#[must_use]
 		pub fn with_public_credentials(
 			mut self,
-			credentials: Vec<(<Test as Config>::SubjectId, ClaimHashOf<Test>, CredentialEntryOf<Test>)>,
+			credentials: Vec<(
+				<Test as Config>::SubjectId,
+				CredentialIdOf<Test>,
+				CredentialEntryOf<Test>,
+			)>,
 		) -> Self {
 			self.public_credentials = credentials;
 			self
@@ -350,12 +418,8 @@ pub(crate) mod runtime {
 					ctype::Ctypes::<Test>::insert(ctype.0, ctype.1.clone());
 				}
 
-				for (claim_hash, details) in self.attestations {
-					attestation::mock::insert_attestation(claim_hash, details);
-				}
-
-				for (subject_id, claim_hash, credential_entry) in self.public_credentials {
-					insert_public_credentials::<Test>(subject_id, claim_hash, credential_entry);
+				for (subject_id, credential_id, credential_entry) in self.public_credentials {
+					insert_public_credentials::<Test>(subject_id, credential_id, credential_entry);
 				}
 			});
 

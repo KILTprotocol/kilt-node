@@ -22,50 +22,18 @@ use scale_info::TypeInfo;
 use frame_support::RuntimeDebug;
 
 use kilt_support::deposit::Deposit;
-
-/// The bulk of the credential, i.e., its (encoded) claims, subject, and Ctype.
+/// The type of a credentials as incoming from the outside world.
+/// Some of its fields are parsed and/or transformed inside the `add` operation.
 #[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq, PartialOrd, Ord, TypeInfo)]
-pub struct Claim<CtypeHash, SubjectIdentifier, Content> {
+pub struct Credential<CtypeHash, SubjectIdentifier, Claims, AccessControl> {
 	/// The Ctype of the credential.
 	pub ctype_hash: CtypeHash,
 	/// The credential subject ID as specified by the attester.
 	pub subject: SubjectIdentifier,
 	/// The credential claims.
-	pub contents: Content,
-}
-
-/// The type of a claimer's signature to prove the claimer's involvement in the
-/// public credential issuance process.
-#[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq, PartialOrd, Ord, TypeInfo)]
-pub struct ClaimerSignatureInfo<ClaimerIdentifier, Signature> {
-	/// The identifier of the claimer.
-	pub claimer_id: ClaimerIdentifier,
-	/// The signature of the claimer.
-	pub signature_payload: Signature,
-}
-
-/// The type of a credentials as incoming from the outside world.
-/// Some of its fields are parsed and/or transformed inside the `add` operation.
-#[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq, PartialOrd, Ord, TypeInfo)]
-pub struct Credential<
-	CtypeHash,
-	SubjectIdentifier,
-	ClaimContent,
-	ClaimHash,
-	Nonce,
-	ClaimerSignature,
-	AuthorizationControl,
-> {
-	/// The credential content.
-	pub claim: Claim<CtypeHash, SubjectIdentifier, ClaimContent>,
-	/// The nonce used to generate the root hash.
-	pub nonce: Nonce,
-	/// The root hash of the credential claims.
-	pub claim_hash: ClaimHash,
-	/// The claimer's signature information.
-	pub claimer_signature: Option<ClaimerSignature>,
-	/// The authorization info to attest the credential.
-	pub authorization_info: Option<AuthorizationControl>,
+	pub claims: Claims,
+	/// The access control logic to authorize the creation operation.
+	pub authorization: Option<AccessControl>,
 }
 
 /// The entry in the blockchain state corresponding to a successful public
@@ -74,10 +42,19 @@ pub struct Credential<
 /// block. The block number is used to query the full content of the credential
 /// from archive nodes.
 #[derive(Encode, Decode, Clone, MaxEncodedLen, RuntimeDebug, PartialEq, Eq, PartialOrd, Ord, TypeInfo)]
-pub struct CredentialEntry<BlockNumber, AccountId, Balance> {
+pub struct CredentialEntry<CTypeHash, Attester, BlockNumber, AccountId, Balance, AuthorizationId> {
+	/// The hash of the CType used for this attestation.
+	pub ctype_hash: CTypeHash,
+	/// The attester of the credential.
+	pub attester: Attester,
+	/// A flag indicating the revocation status of the credential.
+	pub revoked: bool,
 	/// The block number in which the credential tx was evaluated and included
 	/// in the block.
 	pub block_number: BlockNumber,
 	/// The info about the credential deposit.
 	pub deposit: Deposit<AccountId, Balance>,
+	/// The ID of the authorization information (e.g., a delegation node) used
+	/// to authorize the operation.
+	pub authorization_id: Option<AuthorizationId>,
 }

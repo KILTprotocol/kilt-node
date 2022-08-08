@@ -19,44 +19,36 @@
 use frame_support::{assert_noop, assert_ok, traits::Get};
 use sp_runtime::traits::Zero;
 
-use attestation::{attestations::AttestationDetails, mock::generate_base_attestation, Attestations};
 use ctype::mock::get_ctype_hash;
 use kilt_support::mock::mock_origin::DoubleOrigin;
 
-use crate::{mock::*, Config, Credentials, CredentialsUnicityIndex, Error, InputClaimsContentOf};
+use crate::{mock::*, Config, CredentialIdOf, CredentialSubjects, Credentials, Error, InputClaimsContentOf};
 
 // add
 
 #[test]
-fn add_with_no_signature_successful() {
+fn add_successful_without_authorization() {
 	let attester = sr25519_did_from_seed(&ALICE_SEED);
 	let subject_id = SUBJECT_ID_00;
-	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
-	let claim_hash_2 = claim_hash_from_seed(CLAIM_HASH_SEED_02);
-	let ctype_hash = get_ctype_hash::<Test>(true);
+	let ctype_hash_1 = get_ctype_hash::<Test>(true);
+	let ctype_hash_2 = get_ctype_hash::<Test>(false);
 	let new_credential_1 = generate_base_public_credential_creation_op::<Test>(
 		subject_id.into(),
-		claim_hash,
-		ctype_hash,
+		ctype_hash_1,
 		InputClaimsContentOf::<Test>::default(),
-		None,
 	);
+	let credential_id_1: CredentialIdOf<Test> = generate_credential_id::<Test>(&new_credential_1, &attester);
 	let new_credential_2 = generate_base_public_credential_creation_op::<Test>(
 		subject_id.into(),
-		claim_hash_2,
-		ctype_hash,
+		ctype_hash_2,
 		InputClaimsContentOf::<Test>::default(),
-		None,
 	);
-	let public_credential_deposit: Balance = <Test as Config>::Deposit::get();
-	let attestation_deposit: Balance = <Test as attestation::Config>::Deposit::get();
+	let credential_id_2: CredentialIdOf<Test> = generate_credential_id::<Test>(&new_credential_2, &attester);
+	let deposit: Balance = <Test as Config>::Deposit::get();
 
 	ExtBuilder::default()
-		.with_balances(vec![(
-			ACCOUNT_00,
-			(public_credential_deposit + attestation_deposit) * 2,
-		)])
-		.with_ctypes(vec![(ctype_hash, attester.clone())])
+		.with_balances(vec![(ACCOUNT_00, (deposit) * 2)])
+		.with_ctypes(vec![(ctype_hash_1, attester.clone()), (ctype_hash_2, attester.clone())])
 		.build()
 		.execute_with(|| {
 			// Check for 0 reserved deposit
@@ -66,24 +58,19 @@ fn add_with_no_signature_successful() {
 				DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
 				Box::new(new_credential_1.clone())
 			));
-			let stored_attestation =
-				Attestations::<Test>::get(&claim_hash).expect("Attestation should be present on chain.");
-			let stored_public_credential_details = Credentials::<Test>::get(&subject_id, &claim_hash)
+			let stored_public_credential_details = Credentials::<Test>::get(&subject_id, &credential_id_1)
 				.expect("Public credential details should be present on chain.");
 
-			// Test interactions with attestation pallet
-			assert_eq!(stored_attestation.ctype_hash, ctype_hash);
-			assert_eq!(stored_attestation.attester, attester);
-
 			// Test this pallet logic
+			assert_eq!(stored_public_credential_details.attester, attester);
+			assert!(!stored_public_credential_details.revoked);
 			assert_eq!(stored_public_credential_details.block_number, 0);
-			assert_eq!(CredentialsUnicityIndex::<Test>::get(&claim_hash), Some(subject_id));
+			assert_eq!(stored_public_credential_details.ctype_hash, ctype_hash_1);
+			assert_eq!(stored_public_credential_details.authorization_id, None);
+			assert_eq!(CredentialSubjects::<Test>::get(&credential_id_1), Some(subject_id));
 
 			// Check deposit reservation logic
-			assert_eq!(
-				Balances::reserved_balance(ACCOUNT_00),
-				public_credential_deposit + attestation_deposit
-			);
+			assert_eq!(Balances::reserved_balance(ACCOUNT_00), deposit);
 
 			// Re-issuing the same credential will fail
 			assert_noop!(
@@ -95,10 +82,7 @@ fn add_with_no_signature_successful() {
 			);
 
 			// Check deposit has not changed
-			assert_eq!(
-				Balances::reserved_balance(ACCOUNT_00),
-				public_credential_deposit + attestation_deposit
-			);
+			assert_eq!(Balances::reserved_balance(ACCOUNT_00), deposit);
 
 			System::set_block_number(1);
 
@@ -108,66 +92,38 @@ fn add_with_no_signature_successful() {
 				Box::new(new_credential_2.clone())
 			));
 
-			let stored_attestation =
-				Attestations::<Test>::get(&claim_hash_2).expect("Attestation #2 should be present on chain.");
-			let stored_public_credential_details = Credentials::<Test>::get(&subject_id, &claim_hash_2)
+			let stored_public_credential_details = Credentials::<Test>::get(&subject_id, &credential_id_2)
 				.expect("Public credential #2 details should be present on chain.");
 
-			// Test interactions with attestation pallet
-			assert_eq!(stored_attestation.ctype_hash, ctype_hash);
-			assert_eq!(stored_attestation.attester, attester);
-
 			// Test this pallet logic
+			assert_eq!(stored_public_credential_details.attester, attester);
+			assert!(!stored_public_credential_details.revoked);
 			assert_eq!(stored_public_credential_details.block_number, 1);
-			assert_eq!(CredentialsUnicityIndex::<Test>::get(&claim_hash_2), Some(subject_id));
+			assert_eq!(stored_public_credential_details.ctype_hash, ctype_hash_2);
+			assert_eq!(stored_public_credential_details.authorization_id, None);
+			assert_eq!(CredentialSubjects::<Test>::get(&credential_id_2), Some(subject_id));
 
 			// Deposit is 2x now
-			assert_eq!(
-				Balances::reserved_balance(ACCOUNT_00),
-				2 * (public_credential_deposit + attestation_deposit)
-			);
-
-			// Deleting the attestation only from the attestation pallet will still fail
-			Attestation::reclaim_deposit(Origin::signed(ACCOUNT_00), claim_hash)
-				.expect("Attestation deposit reclaim should not fail");
-			assert_noop!(
-				PublicCredentials::add(
-					DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
-					Box::new(new_credential_1.clone())
-				),
-				Error::<Test>::CredentialAlreadyIssued
-			);
-
-			// Deposit should now be equal to 1 attestation + 2 public credentials
-			assert_eq!(
-				Balances::reserved_balance(ACCOUNT_00),
-				2 * public_credential_deposit + attestation_deposit
-			);
+			assert_eq!(Balances::reserved_balance(ACCOUNT_00), 2 * deposit);
 		});
 }
 
 #[test]
-fn add_with_claimer_signature_successful() {
+fn add_successful_with_authorization() {
 	let attester = sr25519_did_from_seed(&ALICE_SEED);
 	let subject_id = SUBJECT_ID_00;
-	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 	let ctype_hash = get_ctype_hash::<Test>(true);
-	let claimer_id = sr25519_did_from_seed(&BOB_SEED);
-	let new_credential = generate_base_public_credential_creation_op::<Test>(
+	let mut new_credential = generate_base_public_credential_creation_op::<Test>(
 		subject_id.into(),
-		claim_hash,
 		ctype_hash,
 		InputClaimsContentOf::<Test>::default(),
-		Some(ClaimerSignatureInfoOf::<Test> {
-			claimer_id: claimer_id.clone(),
-			signature_payload: (claimer_id, hash_to_u8(claim_hash)),
-		}),
 	);
-	let public_credential_deposit: Balance = <Test as Config>::Deposit::get();
-	let attestation_deposit: Balance = <Test as attestation::Config>::Deposit::get();
+	new_credential.authorization = Some(MockAccessControl(attester.clone()));
+	let credential_id: CredentialIdOf<Test> = generate_credential_id::<Test>(&new_credential, &attester);
+	let deposit: Balance = <Test as Config>::Deposit::get();
 
 	ExtBuilder::default()
-		.with_balances(vec![(ACCOUNT_00, public_credential_deposit + attestation_deposit)])
+		.with_balances(vec![(ACCOUNT_00, deposit)])
 		.with_ctypes(vec![(ctype_hash, attester.clone())])
 		.build()
 		.execute_with(|| {
@@ -175,18 +131,72 @@ fn add_with_claimer_signature_successful() {
 				DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
 				Box::new(new_credential.clone())
 			));
-			let stored_attestation =
-				Attestations::<Test>::get(&claim_hash).expect("Attestation should be present on chain.");
-			let stored_public_credential_details = Credentials::<Test>::get(&subject_id, &claim_hash)
+			let stored_public_credential_details = Credentials::<Test>::get(&subject_id, &credential_id)
 				.expect("Public credential details should be present on chain.");
 
-			// Test interactions with attestation pallet
-			assert_eq!(stored_attestation.ctype_hash, ctype_hash);
-			assert_eq!(stored_attestation.attester, attester);
-
 			// Test this pallet logic
-			assert_eq!(stored_public_credential_details.block_number, System::block_number());
-			assert_eq!(CredentialsUnicityIndex::<Test>::get(&claim_hash), Some(subject_id));
+			assert_eq!(stored_public_credential_details.attester, attester);
+			assert!(!stored_public_credential_details.revoked);
+			assert_eq!(stored_public_credential_details.block_number, 0);
+			assert_eq!(stored_public_credential_details.ctype_hash, ctype_hash);
+			assert_eq!(stored_public_credential_details.authorization_id, Some(attester));
+			assert_eq!(CredentialSubjects::<Test>::get(&credential_id), Some(subject_id));
+		});
+}
+
+#[test]
+fn add_unauthorized() {
+	let attester = sr25519_did_from_seed(&ALICE_SEED);
+	let wrong_attester = sr25519_did_from_seed(&BOB_SEED);
+	let subject_id = SUBJECT_ID_00;
+	let ctype_hash = get_ctype_hash::<Test>(true);
+	let mut new_credential = generate_base_public_credential_creation_op::<Test>(
+		subject_id.into(),
+		ctype_hash,
+		InputClaimsContentOf::<Test>::default(),
+	);
+	new_credential.authorization = Some(MockAccessControl(wrong_attester));
+	let deposit: Balance = <Test as Config>::Deposit::get();
+
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, deposit)])
+		.with_ctypes(vec![(ctype_hash, attester.clone())])
+		.build()
+		.execute_with(|| {
+			assert_noop!(
+				PublicCredentials::add(
+					DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
+					Box::new(new_credential.clone())
+				),
+				Error::<Test>::Unauthorized
+			);
+		});
+}
+
+#[test]
+fn add_ctype_not_existing() {
+	let attester = sr25519_did_from_seed(&ALICE_SEED);
+	let subject_id = SUBJECT_ID_00;
+	let ctype_hash = get_ctype_hash::<Test>(true);
+	let new_credential = generate_base_public_credential_creation_op::<Test>(
+		subject_id.into(),
+		ctype_hash,
+		InputClaimsContentOf::<Test>::default(),
+	);
+	let deposit: Balance = <Test as Config>::Deposit::get();
+
+	ExtBuilder::default()
+		// One less than the minimum required
+		.with_balances(vec![(ACCOUNT_00, deposit - 1)])
+		.build()
+		.execute_with(|| {
+			assert_noop!(
+				PublicCredentials::add(
+					DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
+					Box::new(new_credential)
+				),
+				ctype::Error::<Test>::CTypeNotFound
+			);
 		});
 }
 
@@ -194,99 +204,308 @@ fn add_with_claimer_signature_successful() {
 fn add_not_enough_balance() {
 	let attester = sr25519_did_from_seed(&ALICE_SEED);
 	let subject_id = SUBJECT_ID_00;
-	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 	let ctype_hash = get_ctype_hash::<Test>(true);
 	let new_credential = generate_base_public_credential_creation_op::<Test>(
 		subject_id.into(),
-		claim_hash,
 		ctype_hash,
 		InputClaimsContentOf::<Test>::default(),
-		None,
 	);
-	let public_credential_deposit: Balance = <Test as Config>::Deposit::get();
-	let attestation_deposit: Balance = <Test as attestation::Config>::Deposit::get();
+	let deposit: Balance = <Test as Config>::Deposit::get();
 
 	ExtBuilder::default()
 		// One less than the minimum required
-		.with_balances(vec![(ACCOUNT_00, public_credential_deposit + attestation_deposit - 1)])
+		.with_balances(vec![(ACCOUNT_00, deposit - 1)])
 		.with_ctypes(vec![(ctype_hash, attester.clone())])
 		.build()
 		.execute_with(|| {
 			assert_noop!(
 				PublicCredentials::add(
 					DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
-					Box::new(new_credential.clone())
+					Box::new(new_credential)
 				),
 				Error::<Test>::UnableToPayFees
 			);
 		});
 }
 
+// revoke
+
 #[test]
-fn add_invalid_signature() {
+fn revoke_successful() {
 	let attester = sr25519_did_from_seed(&ALICE_SEED);
-	let subject_id = SUBJECT_ID_00;
-	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
-	let ctype_hash = get_ctype_hash::<Test>(true);
-	let claimer_id = sr25519_did_from_seed(&CHARLIE_SEED);
-	let new_credential = generate_base_public_credential_creation_op::<Test>(
-		subject_id.into(),
-		claim_hash,
-		ctype_hash,
-		InputClaimsContentOf::<Test>::default(),
-		Some(ClaimerSignatureInfoOf::<Test> {
-			claimer_id,
-			signature_payload: (sr25519_did_from_seed(&BOB_SEED), hash_to_u8(claim_hash)),
-		}),
-	);
-	let public_credential_deposit: Balance = <Test as Config>::Deposit::get();
-	let attestation_deposit: Balance = <Test as attestation::Config>::Deposit::get();
+	let subject_id: <Test as Config>::SubjectId = SUBJECT_ID_00;
+	let new_credential = generate_base_credential_entry::<Test>(ACCOUNT_00, 0, attester.clone(), None);
+	let credential_id: CredentialIdOf<Test> = CredentialIdOf::<Test>::default();
+	let deposit: Balance = <Test as Config>::Deposit::get();
 
 	ExtBuilder::default()
-		.with_balances(vec![(ACCOUNT_00, public_credential_deposit + attestation_deposit)])
-		.with_ctypes(vec![(ctype_hash, attester.clone())])
+		.with_balances(vec![(ACCOUNT_00, deposit)])
+		.with_public_credentials(vec![(subject_id, credential_id, new_credential)])
+		.build()
+		.execute_with(|| {
+			assert_ok!(PublicCredentials::revoke(
+				DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
+				credential_id,
+				None,
+			));
+
+			let stored_public_credential_details = Credentials::<Test>::get(&subject_id, &credential_id)
+				.expect("Public credential details should be present on chain.");
+
+			// Test this pallet logic
+			assert!(stored_public_credential_details.revoked);
+
+			// Revoking the same credential does nothing
+			assert_ok!(PublicCredentials::revoke(
+				DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
+				credential_id,
+				None,
+			));
+
+			let stored_public_credential_details_2 = Credentials::<Test>::get(&subject_id, &credential_id)
+				.expect("Public credential details should be present on chain.");
+
+			assert_eq!(stored_public_credential_details, stored_public_credential_details_2);
+		});
+}
+
+#[test]
+fn revoke_same_attester_wrong_ac() {
+	let attester = sr25519_did_from_seed(&ALICE_SEED);
+	let wrong_submitter = sr25519_did_from_seed(&BOB_SEED);
+	let subject_id: <Test as Config>::SubjectId = SUBJECT_ID_00;
+	let mut new_credential = generate_base_credential_entry::<Test>(ACCOUNT_00, 0, attester.clone(), None);
+	new_credential.authorization_id = Some(attester.clone());
+	let credential_id: CredentialIdOf<Test> = CredentialIdOf::<Test>::default();
+	let deposit: Balance = <Test as Config>::Deposit::get();
+
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, deposit)])
+		.with_public_credentials(vec![(subject_id, credential_id, new_credential)])
+		.build()
+		.execute_with(|| {
+			assert_ok!(PublicCredentials::revoke(
+				DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
+				credential_id,
+				Some(MockAccessControl(wrong_submitter))
+			));
+
+			let stored_public_credential_details = Credentials::<Test>::get(&subject_id, &credential_id)
+				.expect("Public credential details should be present on chain.");
+
+			// Test this pallet logic
+			assert!(stored_public_credential_details.revoked);
+		});
+}
+
+#[test]
+fn revoke_unauthorized() {
+	let attester = sr25519_did_from_seed(&ALICE_SEED);
+	let wrong_submitter = sr25519_did_from_seed(&BOB_SEED);
+	let subject_id: <Test as Config>::SubjectId = SUBJECT_ID_00;
+	let mut new_credential = generate_base_credential_entry::<Test>(ACCOUNT_00, 0, attester.clone(), None);
+	new_credential.authorization_id = Some(attester.clone());
+	let credential_id: CredentialIdOf<Test> = CredentialIdOf::<Test>::default();
+	let deposit: Balance = <Test as Config>::Deposit::get();
+
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, deposit)])
+		.with_public_credentials(vec![(subject_id, credential_id, new_credential)])
 		.build()
 		.execute_with(|| {
 			assert_noop!(
-				PublicCredentials::add(
-					DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
-					Box::new(new_credential.clone())
+				PublicCredentials::revoke(
+					DoubleOrigin(ACCOUNT_00, wrong_submitter).into(),
+					credential_id,
+					Some(MockAccessControl(attester))
 				),
-				Error::<Test>::InvalidClaimerSignature
+				Error::<Test>::Unauthorized
 			);
 		});
 }
 
 #[test]
-fn add_ctype_not_found() {
+fn revoke_ac_not_found() {
 	let attester = sr25519_did_from_seed(&ALICE_SEED);
-	let subject_id = SUBJECT_ID_00;
-	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
-	let ctype_hash = get_ctype_hash::<Test>(true);
-	let claimer_id = sr25519_did_from_seed(&CHARLIE_SEED);
-	let new_credential = generate_base_public_credential_creation_op::<Test>(
-		subject_id.into(),
-		claim_hash,
-		ctype_hash,
-		InputClaimsContentOf::<Test>::default(),
-		Some(ClaimerSignatureInfoOf::<Test> {
-			claimer_id: claimer_id.clone(),
-			signature_payload: (claimer_id, hash_to_u8(claim_hash)),
-		}),
-	);
-	let public_credential_deposit: Balance = <Test as Config>::Deposit::get();
-	let attestation_deposit: Balance = <Test as attestation::Config>::Deposit::get();
+	let wrong_submitter = sr25519_did_from_seed(&BOB_SEED);
+	let subject_id: <Test as Config>::SubjectId = SUBJECT_ID_00;
+	let mut new_credential = generate_base_credential_entry::<Test>(ACCOUNT_00, 0, attester.clone(), None);
+	new_credential.authorization_id = Some(attester);
+	let credential_id: CredentialIdOf<Test> = CredentialIdOf::<Test>::default();
+	let deposit: Balance = <Test as Config>::Deposit::get();
 
 	ExtBuilder::default()
-		.with_balances(vec![(ACCOUNT_00, public_credential_deposit + attestation_deposit)])
+		.with_balances(vec![(ACCOUNT_00, deposit)])
+		.with_public_credentials(vec![(subject_id, credential_id, new_credential)])
 		.build()
 		.execute_with(|| {
 			assert_noop!(
-				PublicCredentials::add(
-					DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
-					Box::new(new_credential.clone())
+				PublicCredentials::revoke(
+					DoubleOrigin(ACCOUNT_00, wrong_submitter.clone()).into(),
+					credential_id,
+					Some(MockAccessControl(wrong_submitter))
 				),
-				ctype::Error::<Test>::CTypeNotFound
+				Error::<Test>::Unauthorized
+			);
+		});
+}
+
+#[test]
+fn revoke_credential_not_found() {
+	let attester = sr25519_did_from_seed(&ALICE_SEED);
+	let credential_id: CredentialIdOf<Test> = CredentialIdOf::<Test>::default();
+	let deposit: Balance = <Test as Config>::Deposit::get();
+
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, deposit)])
+		.build()
+		.execute_with(|| {
+			assert_noop!(
+				PublicCredentials::revoke(DoubleOrigin(ACCOUNT_00, attester.clone()).into(), credential_id, None,),
+				Error::<Test>::CredentialNotFound
+			);
+		});
+}
+
+// unrevoke
+
+#[test]
+fn unrevoke_successful() {
+	let attester = sr25519_did_from_seed(&ALICE_SEED);
+	let subject_id: <Test as Config>::SubjectId = SUBJECT_ID_00;
+	let mut new_credential = generate_base_credential_entry::<Test>(ACCOUNT_00, 0, attester.clone(), None);
+	new_credential.revoked = true;
+	let credential_id: CredentialIdOf<Test> = CredentialIdOf::<Test>::default();
+	let deposit: Balance = <Test as Config>::Deposit::get();
+
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, deposit)])
+		.with_public_credentials(vec![(subject_id, credential_id, new_credential)])
+		.build()
+		.execute_with(|| {
+			assert_ok!(PublicCredentials::unrevoke(
+				DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
+				credential_id,
+				None,
+			));
+
+			let stored_public_credential_details = Credentials::<Test>::get(&subject_id, &credential_id)
+				.expect("Public credential details should be present on chain.");
+
+			// Test this pallet logic
+			assert!(!stored_public_credential_details.revoked);
+
+			// Unrevoking the same credential does nothing
+			assert_ok!(PublicCredentials::unrevoke(
+				DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
+				credential_id,
+				None,
+			));
+
+			let stored_public_credential_details_2 = Credentials::<Test>::get(&subject_id, &credential_id)
+				.expect("Public credential details should be present on chain.");
+
+			assert_eq!(stored_public_credential_details, stored_public_credential_details_2);
+		});
+}
+
+#[test]
+fn unrevoke_same_attester_wrong_ac() {
+	let attester = sr25519_did_from_seed(&ALICE_SEED);
+	let wrong_submitter = sr25519_did_from_seed(&BOB_SEED);
+	let subject_id: <Test as Config>::SubjectId = SUBJECT_ID_00;
+	let mut new_credential = generate_base_credential_entry::<Test>(ACCOUNT_00, 0, attester.clone(), None);
+	new_credential.revoked = true;
+	new_credential.authorization_id = Some(attester.clone());
+	let credential_id: CredentialIdOf<Test> = CredentialIdOf::<Test>::default();
+	let deposit: Balance = <Test as Config>::Deposit::get();
+
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, deposit)])
+		.with_public_credentials(vec![(subject_id, credential_id, new_credential)])
+		.build()
+		.execute_with(|| {
+			assert_ok!(PublicCredentials::unrevoke(
+				DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
+				credential_id,
+				Some(MockAccessControl(wrong_submitter))
+			));
+
+			let stored_public_credential_details = Credentials::<Test>::get(&subject_id, &credential_id)
+				.expect("Public credential details should be present on chain.");
+
+			// Test this pallet logic
+			assert!(!stored_public_credential_details.revoked);
+		});
+}
+
+#[test]
+fn unrevoke_unauthorized() {
+	let attester = sr25519_did_from_seed(&ALICE_SEED);
+	let wrong_submitter = sr25519_did_from_seed(&BOB_SEED);
+	let subject_id: <Test as Config>::SubjectId = SUBJECT_ID_00;
+	let mut new_credential = generate_base_credential_entry::<Test>(ACCOUNT_00, 0, attester.clone(), None);
+	new_credential.revoked = true;
+	new_credential.authorization_id = Some(attester.clone());
+	let credential_id: CredentialIdOf<Test> = CredentialIdOf::<Test>::default();
+	let deposit: Balance = <Test as Config>::Deposit::get();
+
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, deposit)])
+		.with_public_credentials(vec![(subject_id, credential_id, new_credential)])
+		.build()
+		.execute_with(|| {
+			assert_noop!(
+				PublicCredentials::unrevoke(
+					DoubleOrigin(ACCOUNT_00, wrong_submitter).into(),
+					credential_id,
+					Some(MockAccessControl(attester))
+				),
+				Error::<Test>::Unauthorized
+			);
+		});
+}
+
+#[test]
+fn unrevoke_ac_not_found() {
+	let attester = sr25519_did_from_seed(&ALICE_SEED);
+	let wrong_submitter = sr25519_did_from_seed(&BOB_SEED);
+	let subject_id: <Test as Config>::SubjectId = SUBJECT_ID_00;
+	let mut new_credential = generate_base_credential_entry::<Test>(ACCOUNT_00, 0, attester.clone(), None);
+	new_credential.revoked = true;
+	new_credential.authorization_id = Some(attester);
+	let credential_id: CredentialIdOf<Test> = CredentialIdOf::<Test>::default();
+	let deposit: Balance = <Test as Config>::Deposit::get();
+
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, deposit)])
+		.with_public_credentials(vec![(subject_id, credential_id, new_credential)])
+		.build()
+		.execute_with(|| {
+			assert_noop!(
+				PublicCredentials::unrevoke(
+					DoubleOrigin(ACCOUNT_00, wrong_submitter.clone()).into(),
+					credential_id,
+					Some(MockAccessControl(wrong_submitter))
+				),
+				Error::<Test>::Unauthorized
+			);
+		});
+}
+
+#[test]
+fn unrevoke_credential_not_found() {
+	let attester = sr25519_did_from_seed(&ALICE_SEED);
+	let credential_id: CredentialIdOf<Test> = CredentialIdOf::<Test>::default();
+	let deposit: Balance = <Test as Config>::Deposit::get();
+
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, deposit)])
+		.build()
+		.execute_with(|| {
+			assert_noop!(
+				PublicCredentials::unrevoke(DoubleOrigin(ACCOUNT_00, attester.clone()).into(), credential_id, None,),
+				Error::<Test>::CredentialNotFound
 			);
 		});
 }
@@ -297,81 +516,128 @@ fn add_ctype_not_found() {
 fn remove_successful() {
 	let attester = sr25519_did_from_seed(&ALICE_SEED);
 	let subject_id: <Test as Config>::SubjectId = SUBJECT_ID_00;
-	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
-	let attestation: AttestationDetails<Test> = generate_base_attestation(attester.clone(), ACCOUNT_00);
-	let new_credential = generate_base_credential_entry::<Test>(ACCOUNT_00, 0);
-	let public_credential_deposit: Balance = <Test as Config>::Deposit::get();
-	let attestation_deposit: Balance = <Test as attestation::Config>::Deposit::get();
+	let new_credential = generate_base_credential_entry::<Test>(ACCOUNT_00, 0, attester.clone(), None);
+	let credential_id: CredentialIdOf<Test> = CredentialIdOf::<Test>::default();
+	let deposit: Balance = <Test as Config>::Deposit::get();
 
 	ExtBuilder::default()
-		.with_balances(vec![(ACCOUNT_00, public_credential_deposit + attestation_deposit)])
-		.with_ctypes(vec![(attestation.ctype_hash, attester.clone())])
-		.with_attestations(vec![(claim_hash, attestation.clone())])
-		.with_public_credentials(vec![(subject_id, claim_hash, new_credential)])
+		.with_balances(vec![(ACCOUNT_00, deposit)])
+		.with_public_credentials(vec![(subject_id, credential_id, new_credential)])
 		.build()
 		.execute_with(|| {
 			assert_ok!(PublicCredentials::remove(
 				DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
-				claim_hash,
-				None
+				credential_id,
+				None,
 			));
-			// Test interactions with attestation pallet
-			assert_eq!(Attestations::<Test>::get(&claim_hash), None);
 
 			// Test this pallet logic
-			assert_eq!(Credentials::<Test>::get(&subject_id, &claim_hash), None);
-			assert_eq!(CredentialsUnicityIndex::<Test>::get(&claim_hash), None);
+			assert!(Credentials::<Test>::get(&subject_id, &credential_id).is_none());
+			assert!(CredentialSubjects::<Test>::get(&credential_id).is_none());
 
 			// Check deposit release logic
 			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
 
 			// Removing the same credential again will fail
 			assert_noop!(
-				PublicCredentials::remove(DoubleOrigin(ACCOUNT_00, attester.clone()).into(), claim_hash, None),
+				PublicCredentials::remove(DoubleOrigin(ACCOUNT_00, attester.clone()).into(), credential_id, None,),
 				Error::<Test>::CredentialNotFound
 			);
+		});
+}
 
-			// Adding only the attestation without the credential will also fail to remove
-			// the credential.
-			Attestation::add(
+#[test]
+fn remove_same_attester_wrong_ac() {
+	let attester = sr25519_did_from_seed(&ALICE_SEED);
+	let wrong_submitter = sr25519_did_from_seed(&BOB_SEED);
+	let subject_id: <Test as Config>::SubjectId = SUBJECT_ID_00;
+	let mut new_credential = generate_base_credential_entry::<Test>(ACCOUNT_00, 0, attester.clone(), None);
+	new_credential.authorization_id = Some(attester.clone());
+	let credential_id: CredentialIdOf<Test> = CredentialIdOf::<Test>::default();
+	let deposit: Balance = <Test as Config>::Deposit::get();
+
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, deposit)])
+		.with_public_credentials(vec![(subject_id, credential_id, new_credential)])
+		.build()
+		.execute_with(|| {
+			assert_ok!(PublicCredentials::remove(
 				DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
-				claim_hash,
-				attestation.ctype_hash,
-				None,
-			)
-			.expect("Adding the same attestation again should not fail");
+				credential_id,
+				Some(MockAccessControl(wrong_submitter))
+			));
 
-			assert_noop!(
-				PublicCredentials::remove(DoubleOrigin(ACCOUNT_00, attester.clone()).into(), claim_hash, None),
-				Error::<Test>::CredentialNotFound
-			);
-
-			// Check that only the attestation deposit is reserved
-			assert_eq!(Balances::reserved_balance(ACCOUNT_00), attestation_deposit);
+			// Test this pallet logic
+			assert!(Credentials::<Test>::get(&subject_id, &credential_id).is_none());
+			assert!(CredentialSubjects::<Test>::get(&credential_id).is_none());
 		});
 }
 
 #[test]
 fn remove_unauthorized() {
 	let attester = sr25519_did_from_seed(&ALICE_SEED);
-	let wrong_attester = sr25519_did_from_seed(&BOB_SEED);
+	let wrong_submitter = sr25519_did_from_seed(&BOB_SEED);
 	let subject_id: <Test as Config>::SubjectId = SUBJECT_ID_00;
-	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
-	let attestation: AttestationDetails<Test> = generate_base_attestation(attester.clone(), ACCOUNT_00);
-	let new_credential = generate_base_credential_entry::<Test>(ACCOUNT_00, 0);
-	let public_credential_deposit: Balance = <Test as Config>::Deposit::get();
-	let attestation_deposit: Balance = <Test as attestation::Config>::Deposit::get();
+	let mut new_credential = generate_base_credential_entry::<Test>(ACCOUNT_00, 0, attester.clone(), None);
+	new_credential.authorization_id = Some(attester.clone());
+	let credential_id: CredentialIdOf<Test> = CredentialIdOf::<Test>::default();
+	let deposit: Balance = <Test as Config>::Deposit::get();
 
 	ExtBuilder::default()
-		.with_balances(vec![(ACCOUNT_00, public_credential_deposit + attestation_deposit)])
-		.with_ctypes(vec![(attestation.ctype_hash, attester)])
-		.with_attestations(vec![(claim_hash, attestation)])
-		.with_public_credentials(vec![(subject_id, claim_hash, new_credential)])
+		.with_balances(vec![(ACCOUNT_00, deposit)])
+		.with_public_credentials(vec![(subject_id, credential_id, new_credential)])
 		.build()
 		.execute_with(|| {
 			assert_noop!(
-				PublicCredentials::remove(DoubleOrigin(ACCOUNT_00, wrong_attester).into(), claim_hash, None),
-				attestation::Error::<Test>::Unauthorized
+				PublicCredentials::remove(
+					DoubleOrigin(ACCOUNT_00, wrong_submitter).into(),
+					credential_id,
+					Some(MockAccessControl(attester))
+				),
+				Error::<Test>::Unauthorized
+			);
+		});
+}
+
+#[test]
+fn remove_ac_not_found() {
+	let attester = sr25519_did_from_seed(&ALICE_SEED);
+	let wrong_submitter = sr25519_did_from_seed(&BOB_SEED);
+	let subject_id: <Test as Config>::SubjectId = SUBJECT_ID_00;
+	let mut new_credential = generate_base_credential_entry::<Test>(ACCOUNT_00, 0, attester.clone(), None);
+	new_credential.authorization_id = Some(attester);
+	let credential_id: CredentialIdOf<Test> = CredentialIdOf::<Test>::default();
+	let deposit: Balance = <Test as Config>::Deposit::get();
+
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, deposit)])
+		.with_public_credentials(vec![(subject_id, credential_id, new_credential)])
+		.build()
+		.execute_with(|| {
+			assert_noop!(
+				PublicCredentials::remove(
+					DoubleOrigin(ACCOUNT_00, wrong_submitter.clone()).into(),
+					credential_id,
+					Some(MockAccessControl(wrong_submitter))
+				),
+				Error::<Test>::Unauthorized
+			);
+		});
+}
+
+#[test]
+fn remove_credential_not_found() {
+	let attester = sr25519_did_from_seed(&ALICE_SEED);
+	let credential_id: CredentialIdOf<Test> = CredentialIdOf::<Test>::default();
+	let deposit: Balance = <Test as Config>::Deposit::get();
+
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, deposit)])
+		.build()
+		.execute_with(|| {
+			assert_noop!(
+				PublicCredentials::remove(DoubleOrigin(ACCOUNT_00, attester.clone()).into(), credential_id, None,),
+				Error::<Test>::CredentialNotFound
 			);
 		});
 }
@@ -382,56 +648,53 @@ fn remove_unauthorized() {
 fn reclaim_deposit_successful() {
 	let attester = sr25519_did_from_seed(&ALICE_SEED);
 	let subject_id: <Test as Config>::SubjectId = SUBJECT_ID_00;
-	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
-	let attestation: AttestationDetails<Test> = generate_base_attestation(attester.clone(), ACCOUNT_00);
-	let new_credential = generate_base_credential_entry::<Test>(ACCOUNT_00, 0);
-	let public_credential_deposit: Balance = <Test as Config>::Deposit::get();
-	let attestation_deposit: Balance = <Test as attestation::Config>::Deposit::get();
+	let new_credential = generate_base_credential_entry::<Test>(ACCOUNT_00, 0, attester, None);
+	let credential_id: CredentialIdOf<Test> = CredentialIdOf::<Test>::default();
+	let deposit: Balance = <Test as Config>::Deposit::get();
 
 	ExtBuilder::default()
-		.with_balances(vec![(ACCOUNT_00, public_credential_deposit + attestation_deposit)])
-		.with_ctypes(vec![(attestation.ctype_hash, attester.clone())])
-		.with_attestations(vec![(claim_hash, attestation.clone())])
-		.with_public_credentials(vec![(subject_id, claim_hash, new_credential)])
+		.with_balances(vec![(ACCOUNT_00, deposit)])
+		.with_public_credentials(vec![(subject_id, credential_id, new_credential)])
 		.build()
 		.execute_with(|| {
 			assert_ok!(PublicCredentials::reclaim_deposit(
 				Origin::signed(ACCOUNT_00),
-				claim_hash
+				credential_id
 			));
-			// Test interactions with attestation pallet
-			assert_eq!(Attestations::<Test>::get(&claim_hash), None);
 
 			// Test this pallet logic
-			assert_eq!(Credentials::<Test>::get(&subject_id, &claim_hash), None);
-			assert_eq!(CredentialsUnicityIndex::<Test>::get(&claim_hash), None);
+			assert!(Credentials::<Test>::get(&subject_id, &credential_id).is_none());
+			assert!(CredentialSubjects::<Test>::get(&credential_id).is_none());
 
 			// Check deposit release logic
 			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
 
 			// Reclaiming the deposit for the same credential again will fail
 			assert_noop!(
-				PublicCredentials::reclaim_deposit(Origin::signed(ACCOUNT_00), claim_hash),
+				PublicCredentials::reclaim_deposit(Origin::signed(ACCOUNT_00), credential_id),
 				Error::<Test>::CredentialNotFound
 			);
-
-			// Adding only the attestation without the credential will also fail to reclaim
-			// the deposit for the credential.
-			Attestation::add(
-				DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
-				claim_hash,
-				attestation.ctype_hash,
-				None,
-			)
-			.expect("Adding the same attestation again should not fail");
 
 			assert_noop!(
-				PublicCredentials::reclaim_deposit(Origin::signed(ACCOUNT_00), claim_hash),
+				PublicCredentials::reclaim_deposit(Origin::signed(ACCOUNT_00), credential_id),
 				Error::<Test>::CredentialNotFound
 			);
+		});
+}
 
-			// Check that only the attestation deposit is reserved
-			assert_eq!(Balances::reserved_balance(ACCOUNT_00), attestation_deposit);
+#[test]
+fn reclaim_deposit_credential_not_found() {
+	let credential_id: CredentialIdOf<Test> = CredentialIdOf::<Test>::default();
+	let deposit: Balance = <Test as Config>::Deposit::get();
+
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, deposit)])
+		.build()
+		.execute_with(|| {
+			assert_noop!(
+				PublicCredentials::reclaim_deposit(Origin::signed(ACCOUNT_00), credential_id),
+				Error::<Test>::CredentialNotFound
+			);
 		});
 }
 
@@ -439,22 +702,18 @@ fn reclaim_deposit_successful() {
 fn reclaim_deposit_unauthorized() {
 	let attester = sr25519_did_from_seed(&ALICE_SEED);
 	let subject_id: <Test as Config>::SubjectId = SUBJECT_ID_00;
-	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
-	let attestation: AttestationDetails<Test> = generate_base_attestation(attester.clone(), ACCOUNT_00);
-	let new_credential = generate_base_credential_entry::<Test>(ACCOUNT_00, 0);
-	let public_credential_deposit: Balance = <Test as Config>::Deposit::get();
-	let attestation_deposit: Balance = <Test as attestation::Config>::Deposit::get();
+	let new_credential = generate_base_credential_entry::<Test>(ACCOUNT_00, 0, attester, None);
+	let credential_id: CredentialIdOf<Test> = CredentialIdOf::<Test>::default();
+	let deposit: Balance = <Test as Config>::Deposit::get();
 
 	ExtBuilder::default()
-		.with_balances(vec![(ACCOUNT_00, public_credential_deposit + attestation_deposit)])
-		.with_ctypes(vec![(attestation.ctype_hash, attester)])
-		.with_attestations(vec![(claim_hash, attestation)])
-		.with_public_credentials(vec![(subject_id, claim_hash, new_credential)])
+		.with_balances(vec![(ACCOUNT_00, deposit)])
+		.with_public_credentials(vec![(subject_id, credential_id, new_credential)])
 		.build()
 		.execute_with(|| {
 			assert_noop!(
-				PublicCredentials::reclaim_deposit(Origin::signed(ACCOUNT_01), claim_hash),
-				attestation::Error::<Test>::Unauthorized
+				PublicCredentials::reclaim_deposit(Origin::signed(ACCOUNT_01), credential_id),
+				Error::<Test>::Unauthorized
 			);
 		});
 }

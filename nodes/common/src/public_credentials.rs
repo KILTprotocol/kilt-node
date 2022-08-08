@@ -21,32 +21,66 @@ use serde::{Deserialize, Serialize};
 use kilt_support::deposit::Deposit;
 use public_credentials::CredentialEntry;
 
+use public_credentials_rpc::PublicCredentialsFilter;
+
 #[derive(Serialize, Deserialize)]
-#[serde(bound(
-	serialize = "
-	BlockNumber: Serialize,
-	Balance: std::fmt::Display,
-	AccountId: Serialize",
-	deserialize = "
-	BlockNumber: Deserialize<'de>,
-	Balance: std::str::FromStr,
-	AccountId: Deserialize<'de>",
-))]
 /// Thin wrapper around a runtime credential entry as specified in the
 /// `public-credentials` pallet. This wrapper implements all the
 /// (de-)serialization logic.
-pub struct OuterCredentialEntry<BlockNumber, AccountId, Balance> {
+pub struct OuterCredentialEntry<CTypeHash, Attester, BlockNumber, AccountId, Balance, AuthorizationId> {
+	pub ctype_hash: CTypeHash,
+	pub attester: Attester,
+	pub revoked: bool,
 	pub block_number: BlockNumber,
+	#[serde(bound(
+		serialize = "AccountId: Serialize, Balance: std::fmt::Display",
+		deserialize = "AccountId: Deserialize<'de>, Balance: std::str::FromStr"
+	))]
 	pub deposit: Deposit<AccountId, Balance>,
+	pub authorization_id: Option<AuthorizationId>,
 }
 
-impl<BlockNumber, AccountId, Balance> From<CredentialEntry<BlockNumber, AccountId, Balance>>
-	for OuterCredentialEntry<BlockNumber, AccountId, Balance>
+impl<CTypeHash, Attester, BlockNumber, AccountId, Balance, AuthorizationId>
+	From<CredentialEntry<CTypeHash, Attester, BlockNumber, AccountId, Balance, AuthorizationId>>
+	for OuterCredentialEntry<CTypeHash, Attester, BlockNumber, AccountId, Balance, AuthorizationId>
 {
-	fn from(value: CredentialEntry<BlockNumber, AccountId, Balance>) -> Self {
+	fn from(value: CredentialEntry<CTypeHash, Attester, BlockNumber, AccountId, Balance, AuthorizationId>) -> Self {
 		Self {
+			ctype_hash: value.ctype_hash,
+			attester: value.attester,
+			revoked: value.revoked,
 			block_number: value.block_number,
 			deposit: value.deposit,
+			authorization_id: value.authorization_id,
+		}
+	}
+}
+
+/// Filter for public credentials retrieved for a provided subject as specified
+/// in the RPC interface.
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum PublicCredentialFilter<CTypeHash, Attester> {
+	/// Filter credentials that match a specified Ctype.
+	CtypeHash(CTypeHash),
+	/// Filter credentials that have been issued by the specified attester.
+	Attester(Attester),
+}
+
+impl<CTypeHash, Attester, BlockNumber, AccountId, Balance, AuthorizationId>
+	PublicCredentialsFilter<CredentialEntry<CTypeHash, Attester, BlockNumber, AccountId, Balance, AuthorizationId>>
+	for PublicCredentialFilter<CTypeHash, Attester>
+where
+	CTypeHash: Eq,
+	Attester: Eq,
+{
+	fn should_include(
+		&self,
+		credential: &CredentialEntry<CTypeHash, Attester, BlockNumber, AccountId, Balance, AuthorizationId>,
+	) -> bool {
+		match self {
+			Self::CtypeHash(ctype_hash) => ctype_hash == &credential.ctype_hash,
+			Self::Attester(attester) => attester == &credential.attester,
 		}
 	}
 }

@@ -1946,6 +1946,7 @@ dependencies = [
  "log",
  "pallet-balances",
  "parity-scale-codec",
+ "public-credentials",
  "scale-info",
  "serde",
  "sp-core",
@@ -5104,6 +5105,8 @@ version = "1.7.0"
 dependencies = [
  "kilt-support",
  "public-credentials",
+ "public-credentials-rpc",
+ "runtime-common",
  "serde",
 ]
 
@@ -8472,7 +8475,6 @@ dependencies = [
 name = "public-credentials"
 version = "1.7.0"
 dependencies = [
- "attestation",
  "base58",
  "ctype",
  "frame-benchmarking",
@@ -8985,6 +8987,7 @@ dependencies = [
  "pallet-transaction-payment",
  "parachain-staking",
  "parity-scale-codec",
+ "public-credentials",
  "scale-info",
  "serde",
  "smallvec",

@@ -26,7 +26,10 @@ use sp_std::{boxed::Box, vec, vec::Vec};
 
 use kilt_support::traits::{GenerateBenchmarkOrigin, GetWorstCase};
 
-use crate::{mock::generate_base_public_credential_creation_op, *};
+use crate::{
+	mock::{generate_base_public_credential_creation_op, generate_credential_id},
+	*,
+};
 
 const SEED: u32 = 0;
 
@@ -35,7 +38,6 @@ benchmarks! {
 		where
 		T: core::fmt::Debug,
 		T: Config,
-		T: attestation::Config,
 		T: ctype::Config<CtypeCreatorId = T::AttesterId>,
 		<T as Config>::EnsureOrigin: GenerateBenchmarkOrigin<T::Origin, T::AccountId, T::AttesterId>,
 		<T as Config>::SubjectId: GetWorstCase + Into<Vec<u8>> + sp_std::fmt::Debug,
@@ -52,19 +54,76 @@ benchmarks! {
 
 		let creation_op = Box::new(generate_base_public_credential_creation_op::<T>(
 			subject_id.clone().into().try_into().expect("Input conversion should not fail."),
-			claim_hash,
 			ctype_hash,
 			contents,
-			None,
 		));
+		let credential_id = generate_credential_id::<T>(&creation_op, &attester);
 
 		ctype::Ctypes::<T>::insert(&ctype_hash, attester.clone());
-		CurrencyOf::<T>::make_free_balance_be(&sender, <T as attestation::Config>::Deposit::get() + <T as attestation::Config>::Deposit::get() + <T as Config>::Deposit::get());
+		// Has to be more than the deposit, we do 2x just to be safe
+		CurrencyOf::<T>::make_free_balance_be(&sender, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
 		let origin = <T as Config>::EnsureOrigin::generate_origin(sender, attester);
 	}: _<T::Origin>(origin, creation_op)
 	verify {
-		assert!(Credentials::<T>::contains_key(subject_id, claim_hash));
-		assert!(CredentialsUnicityIndex::<T>::contains_key(claim_hash));
+		assert!(Credentials::<T>::contains_key(subject_id, &credential_id));
+		assert!(CredentialSubjects::<T>::contains_key(&credential_id));
+	}
+
+	// Very similar setup as `remove`
+	revoke {
+		let sender: T::AccountId = account("sender", 0, SEED);
+		let attester: T::AttesterId = account("attester", 0, SEED);
+		let claim_hash: T::Hash = T::Hash::default();
+		let ctype_hash: T::Hash = T::Hash::default();
+		let subject_id = <T as Config>::SubjectId::worst_case();
+		let contents = BoundedVec::try_from(vec![0; <T as Config>::MaxEncodedClaimsLength::get() as usize]).expect("Contents should not fail.");
+		let origin = <T as Config>::EnsureOrigin::generate_origin(sender.clone(), attester.clone());
+
+		let creation_op = Box::new(generate_base_public_credential_creation_op::<T>(
+			subject_id.clone().into().try_into().expect("Input conversion should not fail."),
+			ctype_hash,
+			contents,
+		));
+		let credential_id = generate_credential_id::<T>(&creation_op, &attester);
+
+		// Has to be more than the deposit, we do 2x just to be safe
+		CurrencyOf::<T>::make_free_balance_be(&sender, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
+
+		ctype::Ctypes::<T>::insert(&ctype_hash, attester);
+		Pallet::<T>::add(origin.clone(), creation_op).expect("Pallet::add should not fail");
+		let credential_id_clone = credential_id.clone();
+	}: _<T::Origin>(origin, credential_id_clone, None)
+	verify {
+		assert!(Credentials::<T>::get(subject_id, &credential_id).expect("Credential should be present in storage").revoked);
+	}
+
+	// Very similar setup as `remove`
+	unrevoke {
+		let sender: T::AccountId = account("sender", 0, SEED);
+		let attester: T::AttesterId = account("attester", 0, SEED);
+		let claim_hash: T::Hash = T::Hash::default();
+		let ctype_hash: T::Hash = T::Hash::default();
+		let subject_id = <T as Config>::SubjectId::worst_case();
+		let contents = BoundedVec::try_from(vec![0; <T as Config>::MaxEncodedClaimsLength::get() as usize]).expect("Contents should not fail.");
+		let origin = <T as Config>::EnsureOrigin::generate_origin(sender.clone(), attester.clone());
+
+		let creation_op = Box::new(generate_base_public_credential_creation_op::<T>(
+			subject_id.clone().into().try_into().expect("Input conversion should not fail."),
+			ctype_hash,
+			contents,
+		));
+		let credential_id = generate_credential_id::<T>(&creation_op, &attester);
+
+		// Has to be more than the deposit, we do 2x just to be safe
+		CurrencyOf::<T>::make_free_balance_be(&sender, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
+
+		ctype::Ctypes::<T>::insert(&ctype_hash, attester);
+		Pallet::<T>::add(origin.clone(), creation_op).expect("Pallet::add should not fail");
+		Pallet::<T>::revoke(origin.clone(), credential_id.clone(), None).expect("Pallet::revoke should not fail");
+		let credential_id_clone = credential_id.clone();
+	}: _<T::Origin>(origin, credential_id_clone, None)
+	verify {
+		assert!(!Credentials::<T>::get(subject_id, &credential_id).expect("Credential should be present in storage").revoked);
 	}
 
 	remove {
@@ -78,20 +137,21 @@ benchmarks! {
 
 		let creation_op = Box::new(generate_base_public_credential_creation_op::<T>(
 			subject_id.clone().into().try_into().expect("Input conversion should not fail."),
-			claim_hash,
 			ctype_hash,
 			contents,
-			None,
 		));
+		let credential_id = generate_credential_id::<T>(&creation_op, &attester);
 
-		CurrencyOf::<T>::make_free_balance_be(&sender, <T as attestation::Config>::Deposit::get() + <T as attestation::Config>::Deposit::get() + <T as Config>::Deposit::get());
+		// Has to be more than the deposit, we do 2x just to be safe
+		CurrencyOf::<T>::make_free_balance_be(&sender, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
 
 		ctype::Ctypes::<T>::insert(&ctype_hash, attester);
 		Pallet::<T>::add(origin.clone(), creation_op).expect("Pallet::add should not fail");
-	}: _<T::Origin>(origin, claim_hash, None)
+		let credential_id_clone = credential_id.clone();
+	}: _<T::Origin>(origin, credential_id_clone, None)
 	verify {
-		assert!(!Credentials::<T>::contains_key(subject_id, claim_hash));
-		assert!(!CredentialsUnicityIndex::<T>::contains_key(claim_hash));
+		assert!(!Credentials::<T>::contains_key(subject_id, &credential_id));
+		assert!(!CredentialSubjects::<T>::contains_key(credential_id));
 	}
 
 	reclaim_deposit {
@@ -105,21 +165,22 @@ benchmarks! {
 
 		let creation_op = Box::new(generate_base_public_credential_creation_op::<T>(
 			subject_id.clone().into().try_into().expect("Input conversion should not fail."),
-			claim_hash,
 			ctype_hash,
 			contents,
-			None,
 		));
+		let credential_id = generate_credential_id::<T>(&creation_op, &attester);
 
-		CurrencyOf::<T>::make_free_balance_be(&sender, <T as attestation::Config>::Deposit::get() + <T as attestation::Config>::Deposit::get() + <T as Config>::Deposit::get());
+		// Has to be more than the deposit, we do 2x just to be safe
+		CurrencyOf::<T>::make_free_balance_be(&sender, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
 
 		ctype::Ctypes::<T>::insert(&ctype_hash, attester);
 		Pallet::<T>::add(origin, creation_op).expect("Pallet::add should not fail");
 		let origin = RawOrigin::Signed(sender);
-	}: _(origin, claim_hash)
+		let credential_id_clone = credential_id.clone();
+	}: _(origin, credential_id_clone)
 	verify {
-		assert!(!Credentials::<T>::contains_key(subject_id, claim_hash));
-		assert!(!CredentialsUnicityIndex::<T>::contains_key(claim_hash));
+		assert!(!Credentials::<T>::contains_key(subject_id, &credential_id));
+		assert!(!CredentialSubjects::<T>::contains_key(credential_id));
 	}
 }
 
