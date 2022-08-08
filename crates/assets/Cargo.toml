@@ -4,7 +4,7 @@ description = "Asset DIDs and related structs, suitable for no_std environments.
 edition = "2021"
 name = "kilt-asset-dids"
 repository = "https://github.com/KILTprotocol/kilt-node"
-version = "1.7.0"
+version = "1.7.1"
 
 [dependencies]
 base58 = {version = "0.2.0", default-features = false}
@@ -15,9 +15,9 @@ log = {version = "0.4.17", default-features = false}
 codec = {package = "parity-scale-codec", version = "3.1.2", default-features = false, features = ["derive"]}
 scale-info = {version = "2.1.1", default-features = false, features = ["derive"]}
 
-frame-support = {branch = "polkadot-v0.9.25", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-core = {branch = "polkadot-v0.9.25", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-std = {branch = "polkadot-v0.9.25", default-features = false, git = "https://github.com/paritytech/substrate"}
+frame-support = {branch = "polkadot-v0.9.26", default-features = false, git = "https://github.com/paritytech/substrate"}
+sp-core = {branch = "polkadot-v0.9.26", default-features = false, git = "https://github.com/paritytech/substrate"}
+sp-std = {branch = "polkadot-v0.9.26", default-features = false, git = "https://github.com/paritytech/substrate"}
 
 [features]
 default = ["std"]

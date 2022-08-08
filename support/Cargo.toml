@@ -4,7 +4,7 @@ description = "Shared traits and structs used across the KILT pallets"
 edition = "2021"
 name = "kilt-support"
 repository = "https://github.com/KILTprotocol/kilt-node"
-version = "1.7.0"
+version = "1.7.1"
 
 [dependencies]
 # External dependencies
@@ -13,14 +13,14 @@ scale-info = {version = "2.1.1", default-features = false, features = ["derive"]
 serde = {version = "1.0.136", optional = true, features = ["derive"]}
 
 # Substrate dependencies
-frame-support = {branch = "polkadot-v0.9.25", default-features = false, git = "https://github.com/paritytech/substrate"}
-frame-system = {branch = "polkadot-v0.9.25", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
-sp-core = {branch = "polkadot-v0.9.25", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-runtime = {branch = "polkadot-v0.9.25", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-std = {branch = "polkadot-v0.9.25", default-features = false, git = "https://github.com/paritytech/substrate"}
+frame-support = {branch = "polkadot-v0.9.26", default-features = false, git = "https://github.com/paritytech/substrate"}
+frame-system = {branch = "polkadot-v0.9.26", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
+sp-core = {branch = "polkadot-v0.9.26", default-features = false, git = "https://github.com/paritytech/substrate"}
+sp-runtime = {branch = "polkadot-v0.9.26", default-features = false, git = "https://github.com/paritytech/substrate"}
+sp-std = {branch = "polkadot-v0.9.26", default-features = false, git = "https://github.com/paritytech/substrate"}
 
 [dev-dependencies]
-serde_json = "1.0.79"
+serde_json = "1.0.82"
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
