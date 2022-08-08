@@ -349,6 +349,7 @@ fn collator_exit_executes_after_delay() {
 			(7, 100),
 			(8, 9),
 			(9, 4),
+			(10, 10),
 		])
 		.with_collators(vec![(1, 500), (2, 200), (7, 100)])
 		.with_delegators(vec![(3, 1, 100), (4, 1, 100), (5, 2, 100), (6, 2, 100)])
@@ -382,7 +383,7 @@ fn collator_exit_executes_after_delay() {
 			// Still three, candidate didn't leave yet
 			assert_eq!(CandidatePool::<Test>::count(), 3);
 			assert_noop!(
-				StakePallet::delegate_another_candidate(Origin::signed(3), 2, 10),
+				StakePallet::join_delegators(Origin::signed(10), 2, 10),
 				Error::<Test>::CannotDelegateIfLeaving
 			);
 			assert_eq!(StakePallet::selected_candidates().into_inner(), vec![1, 7]);
@@ -713,47 +714,31 @@ fn execute_leave_candidates_with_delay() {
 			}
 			assert_eq!(
 				StakePallet::delegator_state(11),
-				Some(
-					Delegator::<AccountId, Balance, <Test as Config>::MaxCollatorsPerDelegator> {
-						delegations: OrderedSet::from(
-							vec![StakeOf::<Test> { owner: 1, amount: 110 }].try_into().unwrap()
-						),
-						total: 110
-					}
-				)
+				Some(Delegator::<AccountId, Balance> {
+					owner: Some(1),
+					amount: 110,
+				})
 			);
 			assert_eq!(
 				StakePallet::delegator_state(12),
-				Some(
-					Delegator::<AccountId, Balance, <Test as Config>::MaxCollatorsPerDelegator> {
-						delegations: OrderedSet::from(
-							vec![StakeOf::<Test> { owner: 1, amount: 120 }].try_into().unwrap()
-						),
-						total: 120
-					}
-				)
+				Some(Delegator::<AccountId, Balance> {
+					owner: Some(1),
+					amount: 120
+				})
 			);
 			assert_eq!(
 				StakePallet::delegator_state(13),
-				Some(
-					Delegator::<AccountId, Balance, <Test as Config>::MaxCollatorsPerDelegator> {
-						delegations: OrderedSet::from(
-							vec![StakeOf::<Test> { owner: 2, amount: 130 }].try_into().unwrap()
-						),
-						total: 130
-					}
-				)
+				Some(Delegator::<AccountId, Balance> {
+					owner: Some(2),
+					amount: 130
+				})
 			);
 			assert_eq!(
 				StakePallet::delegator_state(14),
-				Some(
-					Delegator::<AccountId, Balance, <Test as Config>::MaxCollatorsPerDelegator> {
-						delegations: OrderedSet::from(
-							vec![StakeOf::<Test> { owner: 2, amount: 140 }].try_into().unwrap()
-						),
-						total: 140
-					}
-				)
+				Some(Delegator::<AccountId, Balance> {
+					owner: Some(2),
+					amount: 140
+				})
 			);
 			for delegator in 11u64..=14u64 {
 				assert!(StakePallet::is_delegator(&delegator));
@@ -830,47 +815,31 @@ fn execute_leave_candidates_with_delay() {
 			}
 			assert_eq!(
 				StakePallet::delegator_state(11),
-				Some(
-					Delegator::<AccountId, Balance, <Test as Config>::MaxCollatorsPerDelegator> {
-						delegations: OrderedSet::from(
-							vec![StakeOf::<Test> { owner: 1, amount: 110 }].try_into().unwrap()
-						),
-						total: 110
-					}
-				)
+				Some(Delegator::<AccountId, Balance> {
+					owner: Some(1),
+					amount: 110
+				})
 			);
 			assert_eq!(
 				StakePallet::delegator_state(12),
-				Some(
-					Delegator::<AccountId, Balance, <Test as Config>::MaxCollatorsPerDelegator> {
-						delegations: OrderedSet::from(
-							vec![StakeOf::<Test> { owner: 1, amount: 120 }].try_into().unwrap()
-						),
-						total: 120
-					}
-				)
+				Some(Delegator::<AccountId, Balance> {
+					owner: Some(1),
+					amount: 120
+				})
 			);
 			assert_eq!(
 				StakePallet::delegator_state(13),
-				Some(
-					Delegator::<AccountId, Balance, <Test as Config>::MaxCollatorsPerDelegator> {
-						delegations: OrderedSet::from(
-							vec![StakeOf::<Test> { owner: 2, amount: 130 }].try_into().unwrap()
-						),
-						total: 130
-					}
-				)
+				Some(Delegator::<AccountId, Balance> {
+					owner: Some(2),
+					amount: 130
+				})
 			);
 			assert_eq!(
 				StakePallet::delegator_state(14),
-				Some(
-					Delegator::<AccountId, Balance, <Test as Config>::MaxCollatorsPerDelegator> {
-						delegations: OrderedSet::from(
-							vec![StakeOf::<Test> { owner: 2, amount: 140 }].try_into().unwrap()
-						),
-						total: 140
-					}
-				)
+				Some(Delegator::<AccountId, Balance> {
+					owner: Some(2),
+					amount: 140
+				})
 			);
 			for delegator in 11u64..=14u64 {
 				assert!(StakePallet::is_delegator(&delegator));
@@ -913,6 +882,7 @@ fn execute_leave_candidates_with_delay() {
 		});
 }
 
+// FIXME: Re-enable or potentially remove entirely
 #[test]
 fn multiple_delegations() {
 	ExtBuilder::default()
@@ -929,6 +899,14 @@ fn multiple_delegations() {
 			(10, 100),
 			(11, 100),
 			(12, 100),
+			// new
+			(13, 100),
+			(14, 100),
+			(15, 100),
+			(16, 100),
+			(17, 100),
+			(18, 100),
+			(99, 1),
 		])
 		.with_collators(vec![(1, 20), (2, 20), (3, 20), (4, 20), (5, 10)])
 		.with_delegators(vec![(6, 1, 10), (7, 1, 10), (8, 2, 10), (9, 2, 10), (10, 1, 10)])
@@ -945,20 +923,16 @@ fn multiple_delegations() {
 			let mut expected = vec![Event::MaxSelectedCandidatesSet(2, 5), Event::NewRound(5, 1)];
 			assert_eq!(events(), expected);
 			assert_noop!(
-				StakePallet::delegate_another_candidate(Origin::signed(6), 1, 10),
-				Error::<Test>::AlreadyDelegatedCollator,
-			);
-			assert_noop!(
-				StakePallet::delegate_another_candidate(Origin::signed(6), 2, 2),
+				StakePallet::join_delegators(Origin::signed(13), 2, 2),
 				Error::<Test>::DelegationBelowMin,
 			);
-			assert_ok!(StakePallet::delegate_another_candidate(Origin::signed(6), 2, 10));
-			assert_ok!(StakePallet::delegate_another_candidate(Origin::signed(6), 4, 10));
-			assert_ok!(StakePallet::delegate_another_candidate(Origin::signed(6), 3, 10));
+			assert_ok!(StakePallet::join_delegators(Origin::signed(13), 2, 10));
+			assert_ok!(StakePallet::join_delegators(Origin::signed(14), 4, 10));
+			assert_ok!(StakePallet::join_delegators(Origin::signed(15), 3, 10));
 			assert_eq!(StakePallet::selected_candidates().into_inner(), vec![1, 2, 4, 3, 5]);
 			assert_noop!(
-				StakePallet::delegate_another_candidate(Origin::signed(6), 5, 10),
-				Error::<Test>::MaxCollatorsPerDelegatorExceeded,
+				StakePallet::join_delegators(Origin::signed(6), 5, 10),
+				Error::<Test>::AlreadyDelegating,
 			);
 
 			roll_to(
@@ -967,9 +941,9 @@ fn multiple_delegations() {
 			);
 			assert_eq!(StakePallet::selected_candidates().into_inner(), vec![1, 2, 4, 3, 5]);
 			let mut new = vec![
-				Event::Delegation(6, 10, 2, 50),
-				Event::Delegation(6, 10, 4, 30),
-				Event::Delegation(6, 10, 3, 30),
+				Event::Delegation(13, 10, 2, 50),
+				Event::Delegation(14, 10, 4, 30),
+				Event::Delegation(15, 10, 3, 30),
 				Event::NewRound(10, 2),
 				Event::NewRound(15, 3),
 			];
@@ -977,21 +951,21 @@ fn multiple_delegations() {
 			assert_eq!(events(), expected);
 
 			roll_to(21, vec![Some(1), Some(2), Some(3), Some(4), Some(5)]);
-			assert_ok!(StakePallet::delegate_another_candidate(Origin::signed(7), 2, 80));
+			assert_ok!(StakePallet::join_delegators(Origin::signed(16), 2, 80));
 			assert_noop!(
-				StakePallet::delegate_another_candidate(Origin::signed(7), 3, 11),
+				StakePallet::join_delegators(Origin::signed(99), 3, 11),
 				BalancesError::<Test>::InsufficientBalance
 			);
 			assert_noop!(
-				StakePallet::delegate_another_candidate(Origin::signed(10), 2, 10),
+				StakePallet::join_delegators(Origin::signed(17), 2, 10),
 				Error::<Test>::TooManyDelegators
 			);
-			// kick 6
-			assert!(StakePallet::unstaking(6).is_empty());
-			assert_ok!(StakePallet::delegate_another_candidate(Origin::signed(10), 2, 11));
-			assert!(StakePallet::delegator_state(6).is_some());
-			assert_eq!(StakePallet::unstaking(6).get(&23), Some(&10u128));
-			// kick 9
+			// kick 13 by staking 1 more (11 > 10)
+			assert!(StakePallet::unstaking(13).is_empty());
+			assert_ok!(StakePallet::join_delegators(Origin::signed(17), 2, 11));
+			assert!(StakePallet::delegator_state(13).is_none());
+			assert_eq!(StakePallet::unstaking(13).get(&23), Some(&10u128));
+			// kick 9 by staking 1 more (11 > 10)
 			assert!(StakePallet::unstaking(9).is_empty());
 			assert!(StakePallet::rewards(9).is_zero());
 			assert_ok!(StakePallet::join_delegators(Origin::signed(11), 2, 11));
@@ -1009,9 +983,9 @@ fn multiple_delegations() {
 			assert_eq!(StakePallet::selected_candidates().into_inner(), vec![2, 1, 4, 3, 5]);
 			let mut new2 = vec![
 				Event::NewRound(20, 4),
-				Event::Delegation(7, 80, 2, 130),
-				Event::DelegationReplaced(10, 11, 6, 10, 2, 131),
-				Event::Delegation(10, 11, 2, 131),
+				Event::Delegation(16, 80, 2, 130),
+				Event::DelegationReplaced(17, 11, 13, 10, 2, 131),
+				Event::Delegation(17, 11, 2, 131),
 				Event::DelegationReplaced(11, 11, 9, 10, 2, 132),
 				Event::Delegation(11, 11, 2, 132),
 				Event::NewRound(25, 5),
@@ -1035,53 +1009,53 @@ fn multiple_delegations() {
 			assert_eq!(events(), expected);
 
 			// test join_delegator errors
-			assert_ok!(StakePallet::delegate_another_candidate(Origin::signed(8), 1, 10));
+			assert_ok!(StakePallet::join_delegators(Origin::signed(18), 1, 10));
 			assert_noop!(
 				StakePallet::join_delegators(Origin::signed(12), 1, 10),
 				Error::<Test>::TooManyDelegators
 			);
-			assert_noop!(
-				StakePallet::delegate_another_candidate(Origin::signed(12), 1, 10),
-				Error::<Test>::NotYetDelegating
-			);
 			assert_ok!(StakePallet::join_delegators(Origin::signed(12), 1, 11));
 
 			// verify that delegations are removed after collator leaves, not before
-			assert_eq!(StakePallet::delegator_state(7).unwrap().total, 90);
-			assert_eq!(StakePallet::delegator_state(7).unwrap().delegations.len(), 2usize);
-			assert_eq!(StakePallet::delegator_state(11).unwrap().total, 11);
-			assert_eq!(StakePallet::delegator_state(11).unwrap().delegations.len(), 1usize);
-			// 6 already has 10 in
-			assert_eq!(Balances::usable_balance(&7), 10);
-			assert_eq!(Balances::usable_balance(&11), 89);
-			assert_eq!(Balances::free_balance(&7), 100);
-			assert_eq!(Balances::free_balance(&11), 100);
+			assert!(StakePallet::candidate_pool(2)
+				.unwrap()
+				.delegators
+				.contains(&StakeOf::<Test> { owner: 8, amount: 10 }));
+			assert!(StakePallet::candidate_pool(2)
+				.unwrap()
+				.delegators
+				.contains(&StakeOf::<Test> { owner: 17, amount: 11 }));
+			assert_eq!(StakePallet::delegator_state(8).unwrap().amount, 10);
+			assert_eq!(StakePallet::delegator_state(17).unwrap().amount, 11);
+			assert_eq!(Balances::usable_balance(&8), 90);
+			assert_eq!(Balances::usable_balance(&17), 89);
+			assert_eq!(Balances::free_balance(&8), 100);
+			assert_eq!(Balances::free_balance(&17), 100);
 
 			roll_to(35, vec![Some(1), Some(2), Some(3), Some(4)]);
 			assert_ok!(StakePallet::execute_leave_candidates(Origin::signed(2), 2));
-			let mut unbonding_7: BoundedBTreeMap<BlockNumber, BalanceOf<Test>, <Test as Config>::MaxUnstakeRequests> =
+			let mut unbonding_8: BoundedBTreeMap<BlockNumber, BalanceOf<Test>, <Test as Config>::MaxUnstakeRequests> =
 				BoundedBTreeMap::new();
-			assert_ok!(unbonding_7.try_insert(35u64 + <Test as Config>::StakeDuration::get() as u64, 80));
-			assert_eq!(StakePallet::unstaking(7), unbonding_7);
-			let mut unbonding_11: BoundedBTreeMap<BlockNumber, BalanceOf<Test>, <Test as Config>::MaxUnstakeRequests> =
+			assert_ok!(unbonding_8.try_insert(35u64 + <Test as Config>::StakeDuration::get() as u64, 10));
+			assert_eq!(StakePallet::unstaking(8), unbonding_8);
+			let mut unbonding_17: BoundedBTreeMap<BlockNumber, BalanceOf<Test>, <Test as Config>::MaxUnstakeRequests> =
 				BoundedBTreeMap::new();
-			assert_ok!(unbonding_11.try_insert(35u64 + <Test as Config>::StakeDuration::get() as u64, 11));
-			assert_eq!(StakePallet::unstaking(11), unbonding_11);
+			assert_ok!(unbonding_17.try_insert(35u64 + <Test as Config>::StakeDuration::get() as u64, 11));
+			assert_eq!(StakePallet::unstaking(17), unbonding_17);
 
 			roll_to(37, vec![Some(1), Some(2)]);
-			assert_eq!(StakePallet::delegator_state(7).unwrap().total, 10);
-			assert!(StakePallet::delegator_state(11).is_none());
-			assert_eq!(StakePallet::delegator_state(7).unwrap().delegations.len(), 1usize);
-			assert_ok!(StakePallet::unlock_unstaked(Origin::signed(7), 7));
-			assert_ok!(StakePallet::unlock_unstaked(Origin::signed(11), 11));
+			assert!(StakePallet::delegator_state(8).is_none());
+			assert!(StakePallet::delegator_state(17).is_none());
+			assert_ok!(StakePallet::unlock_unstaked(Origin::signed(8), 8));
+			assert_ok!(StakePallet::unlock_unstaked(Origin::signed(17), 17));
 			assert_noop!(
 				StakePallet::unlock_unstaked(Origin::signed(12), 12),
 				Error::<Test>::UnstakingIsEmpty
 			);
-			assert_eq!(Balances::usable_balance(&11), 100);
-			assert_eq!(Balances::usable_balance(&7), 90);
-			assert_eq!(Balances::free_balance(&11), 100);
-			assert_eq!(Balances::free_balance(&7), 100);
+			assert_eq!(Balances::usable_balance(&17), 100);
+			assert_eq!(Balances::usable_balance(&8), 100);
+			assert_eq!(Balances::free_balance(&17), 100);
+			assert_eq!(Balances::free_balance(&8), 100);
 		});
 }
 
@@ -1172,29 +1146,19 @@ fn should_update_total_stake() {
 			);
 
 			old_stake = StakePallet::total_collator_stake();
-			assert_ok!(StakePallet::delegate_another_candidate(Origin::signed(11), 2, 150));
-			assert_eq!(
-				StakePallet::total_collator_stake(),
-				TotalStake {
-					delegators: old_stake.delegators + 150,
-					..old_stake
-				}
-			);
-
-			old_stake = StakePallet::total_collator_stake();
-			assert_eq!(StakePallet::delegator_state(11).unwrap().total, 350);
+			assert_eq!(StakePallet::delegator_state(11).unwrap().amount, 200);
 			assert_ok!(StakePallet::leave_delegators(Origin::signed(11)));
 			assert_eq!(
 				StakePallet::total_collator_stake(),
 				TotalStake {
-					delegators: old_stake.delegators - 350,
+					delegators: old_stake.delegators - 200,
 					..old_stake
 				}
 			);
 
 			let old_stake = StakePallet::total_collator_stake();
-			assert_eq!(StakePallet::delegator_state(8).unwrap().total, 10);
-			assert_ok!(StakePallet::revoke_delegation(Origin::signed(8), 2));
+			assert_eq!(StakePallet::delegator_state(8).unwrap().amount, 10);
+			assert_ok!(StakePallet::leave_delegators(Origin::signed(8)));
 			assert_eq!(
 				StakePallet::total_collator_stake(),
 				TotalStake {
@@ -1259,10 +1223,6 @@ fn collators_bond() {
 			);
 			assert_noop!(
 				StakePallet::candidate_stake_less(Origin::signed(6), 50),
-				Error::<Test>::CandidateNotFound
-			);
-			assert_noop!(
-				StakePallet::delegate_another_candidate(Origin::signed(6), 50, 10),
 				Error::<Test>::CandidateNotFound
 			);
 			assert_ok!(StakePallet::candidate_stake_more(Origin::signed(1), 50));
@@ -1376,10 +1336,6 @@ fn delegators_bond() {
 				StakePallet::delegator_stake_less(Origin::signed(6), 1, 8),
 				Error::<Test>::DelegationBelowMin
 			);
-			assert_noop!(
-				StakePallet::delegator_stake_less(Origin::signed(6), 1, 6),
-				Error::<Test>::NomStakeBelowMin
-			);
 			assert_ok!(StakePallet::delegator_stake_more(Origin::signed(6), 1, 10));
 			assert_noop!(
 				StakePallet::delegator_stake_less(Origin::signed(6), 2, 5),
@@ -1391,7 +1347,7 @@ fn delegators_bond() {
 			);
 			assert_noop!(
 				StakePallet::join_delegators(Origin::signed(10), 1, 4),
-				Error::<Test>::NomStakeBelowMin
+				Error::<Test>::DelegationBelowMin
 			);
 
 			roll_to(9, vec![]);
@@ -1411,55 +1367,27 @@ fn delegators_bond() {
 }
 
 #[test]
-fn revoke_delegation_or_leave_delegators() {
+fn should_leave_delegators() {
 	ExtBuilder::default()
-		.with_balances(vec![
-			(1, 100),
-			(2, 100),
-			(3, 100),
-			(4, 100),
-			(5, 100),
-			(6, 100),
-			(7, 100),
-			(8, 100),
-			(9, 100),
-			(10, 100),
-		])
-		.with_collators(vec![(1, 20), (2, 20), (3, 20), (4, 20), (5, 10)])
-		.with_delegators(vec![(6, 1, 10), (7, 1, 10), (8, 2, 10), (9, 2, 10), (10, 1, 10)])
-		.set_blocks_per_round(5)
+		.with_balances(vec![(1, 100), (2, 100)])
+		.with_collators(vec![(1, 100)])
+		.with_delegators(vec![(2, 1, 100)])
 		.build()
 		.execute_with(|| {
-			roll_to(4, vec![]);
+			assert_ok!(StakePallet::leave_delegators(Origin::signed(2)));
+			assert!(StakePallet::delegator_state(2).is_none());
+			assert!(!StakePallet::candidate_pool(1)
+				.unwrap()
+				.delegators
+				.contains(&StakeOf::<Test> { owner: 2, amount: 100 }));
 			assert_noop!(
-				StakePallet::revoke_delegation(Origin::signed(1), 2),
+				StakePallet::leave_delegators(Origin::signed(2)),
 				Error::<Test>::DelegatorNotFound
-			);
-			assert_noop!(
-				StakePallet::revoke_delegation(Origin::signed(6), 2),
-				Error::<Test>::DelegationNotFound
 			);
 			assert_noop!(
 				StakePallet::leave_delegators(Origin::signed(1)),
 				Error::<Test>::DelegatorNotFound
 			);
-			assert_ok!(StakePallet::delegate_another_candidate(Origin::signed(6), 2, 3));
-			assert_ok!(StakePallet::delegate_another_candidate(Origin::signed(6), 3, 3));
-			assert_ok!(StakePallet::revoke_delegation(Origin::signed(6), 1));
-			// cannot revoke delegation because would leave remaining total below
-			// MinDelegatorStake
-			assert_noop!(
-				StakePallet::revoke_delegation(Origin::signed(6), 2),
-				Error::<Test>::NomStakeBelowMin
-			);
-			assert_noop!(
-				StakePallet::revoke_delegation(Origin::signed(6), 3),
-				Error::<Test>::NomStakeBelowMin
-			);
-			// can revoke both remaining by calling leave delegators
-			assert_ok!(StakePallet::leave_delegators(Origin::signed(6)));
-			// this leads to 8 leaving set of delegators
-			assert_ok!(StakePallet::revoke_delegation(Origin::signed(8), 2));
 		});
 }
 
@@ -1670,7 +1598,7 @@ fn coinbase_rewards_few_blocks_detailed_check() {
 			assert_eq!(Balances::usable_balance(&3), user_3 + d_rewards / 2 * 3);
 			assert_eq!(Balances::usable_balance(&4), user_4 + d_rewards / 4 * 3);
 			assert_eq!(Balances::usable_balance(&5), user_5 + d_rewards / 4);
-			assert_ok!(StakePallet::revoke_delegation(Origin::signed(5), 2));
+			assert_ok!(StakePallet::leave_delegators(Origin::signed(5)));
 
 			// 2 is block author for 5th block
 			roll_to_claim_rewards(6, authors);
@@ -1693,7 +1621,7 @@ fn delegator_should_not_receive_rewards_after_revoking() {
 		.with_inflation(10, 15, 40, 15, 5)
 		.build()
 		.execute_with(|| {
-			assert_ok!(StakePallet::revoke_delegation(Origin::signed(2), 1));
+			assert_ok!(StakePallet::leave_delegators(Origin::signed(2)));
 			let authors: Vec<Option<AccountId>> = (1u64..100u64).map(|_| Some(1u64)).collect();
 			assert_eq!(Balances::usable_balance(&1), Balance::zero());
 			assert_eq!(Balances::usable_balance(&2), Balance::zero());
@@ -1714,7 +1642,7 @@ fn delegator_should_not_receive_rewards_after_revoking() {
 		.with_inflation(10, 15, 40, 15, 5)
 		.build()
 		.execute_with(|| {
-			assert_ok!(StakePallet::revoke_delegation(Origin::signed(3), 1));
+			assert_ok!(StakePallet::leave_delegators(Origin::signed(3)));
 			let authors: Vec<Option<AccountId>> = (1u64..100u64).map(|_| Some(1u64)).collect();
 			assert_eq!(Balances::usable_balance(&1), Balance::zero());
 			assert_eq!(Balances::usable_balance(&2), Balance::zero());
@@ -2267,7 +2195,7 @@ fn unlock_unstaked() {
 		.with_delegators(vec![(2, 1, 100)])
 		.build()
 		.execute_with(|| {
-			assert_ok!(StakePallet::revoke_delegation(Origin::signed(2), 1));
+			assert_ok!(StakePallet::leave_delegators(Origin::signed(2)));
 			let mut unstaking: BoundedBTreeMap<BlockNumber, BalanceOf<Test>, <Test as Config>::MaxUnstakeRequests> =
 				BoundedBTreeMap::new();
 			assert_ok!(unstaking.try_insert(3, 100));
@@ -2286,7 +2214,7 @@ fn unlock_unstaked() {
 			// join delegators and revoke again --> consume unstaking at block 3
 			roll_to(2, vec![]);
 			assert_ok!(StakePallet::join_delegators(Origin::signed(2), 1, 100));
-			assert_ok!(StakePallet::revoke_delegation(Origin::signed(2), 1));
+			assert_ok!(StakePallet::leave_delegators(Origin::signed(2)));
 			unstaking.remove(&3);
 			assert_ok!(unstaking.try_insert(4, 100));
 			assert_eq!(StakePallet::unstaking(2), unstaking);
@@ -2325,7 +2253,7 @@ fn unlock_unstaked() {
 		.with_delegators(vec![(2, 1, 10)])
 		.build()
 		.execute_with(|| {
-			assert_ok!(StakePallet::revoke_delegation(Origin::signed(2), 1));
+			assert_ok!(StakePallet::leave_delegators(Origin::signed(2)));
 			let mut unstaking: BoundedBTreeMap<BlockNumber, BalanceOf<Test>, <Test as Config>::MaxUnstakeRequests> =
 				BoundedBTreeMap::new();
 			assert_ok!(unstaking.try_insert(3, 10));
@@ -2344,7 +2272,7 @@ fn unlock_unstaked() {
 			// join delegators and revoke again
 			roll_to(2, vec![]);
 			assert_ok!(StakePallet::join_delegators(Origin::signed(2), 1, 100));
-			assert_ok!(StakePallet::revoke_delegation(Origin::signed(2), 1));
+			assert_ok!(StakePallet::leave_delegators(Origin::signed(2)));
 			unstaking.remove(&3);
 			assert_ok!(unstaking.try_insert(4, 100));
 			lock.amount = 100;
@@ -2385,7 +2313,7 @@ fn unlock_unstaked() {
 		.with_delegators(vec![(2, 1, 100)])
 		.build()
 		.execute_with(|| {
-			assert_ok!(StakePallet::revoke_delegation(Origin::signed(2), 1));
+			assert_ok!(StakePallet::leave_delegators(Origin::signed(2)));
 			let mut unstaking: BoundedBTreeMap<BlockNumber, BalanceOf<Test>, <Test as Config>::MaxUnstakeRequests> =
 				BoundedBTreeMap::new();
 			assert_ok!(unstaking.try_insert(3, 100));
@@ -2404,7 +2332,7 @@ fn unlock_unstaked() {
 			// join delegators and revoke again
 			roll_to(2, vec![]);
 			assert_ok!(StakePallet::join_delegators(Origin::signed(2), 1, 10));
-			assert_ok!(StakePallet::revoke_delegation(Origin::signed(2), 1));
+			assert_ok!(StakePallet::leave_delegators(Origin::signed(2)));
 			assert_ok!(unstaking.try_insert(3, 90));
 			assert_ok!(unstaking.try_insert(4, 10));
 			assert_eq!(StakePallet::unstaking(2), unstaking);
@@ -2979,59 +2907,48 @@ fn decrease_max_candidate_stake() {
 #[test]
 fn exceed_delegations_per_round() {
 	ExtBuilder::default()
-		.with_balances(vec![(1, 100), (2, 100), (3, 100), (4, 100), (5, 100), (6, 100)])
-		.with_collators(vec![(1, 100), (2, 100), (3, 100), (4, 100), (5, 100)])
-		.with_delegators(vec![(6, 1, 10)])
+		.with_balances(vec![(1, 100), (2, 100)])
+		.with_collators(vec![(1, 100)])
+		.with_delegators(vec![(2, 1, 100)])
 		.build()
 		.execute_with(|| {
-			assert_ok!(StakePallet::delegate_another_candidate(Origin::signed(6), 2, 10));
-			assert_ok!(StakePallet::delegate_another_candidate(Origin::signed(6), 3, 10));
-			assert_ok!(StakePallet::delegate_another_candidate(Origin::signed(6), 4, 10));
-			assert_noop!(
-				StakePallet::delegate_another_candidate(Origin::signed(6), 5, 10),
-				Error::<Test>::MaxCollatorsPerDelegatorExceeded
-			);
-
-			// revoke delegation to allow one more collator for this delegator
-			assert_ok!(StakePallet::revoke_delegation(Origin::signed(6), 4));
+			// leave and re-join to set counter to 2 (= MaxDelegationsPerRound)
+			assert_ok!(StakePallet::leave_delegators(Origin::signed(2)));
+			assert_ok!(StakePallet::join_delegators(Origin::signed(2), 1, 100));
+			assert_ok!(StakePallet::leave_delegators(Origin::signed(2)));
 			// reached max delegations in this round
 			assert_noop!(
-				StakePallet::delegate_another_candidate(Origin::signed(6), 5, 10),
-				Error::<Test>::DelegationsPerRoundExceeded
-			);
-
-			// revoke all delegations in the same round
-			assert_ok!(StakePallet::leave_delegators(Origin::signed(6)));
-			assert_noop!(
-				StakePallet::join_delegators(Origin::signed(6), 1, 10),
+				StakePallet::join_delegators(Origin::signed(2), 1, 100),
 				Error::<Test>::DelegationsPerRoundExceeded
 			);
 
 			// roll to next round to clear DelegationCounter
 			roll_to(5, vec![]);
 			assert_eq!(
-				StakePallet::last_delegation(6),
-				DelegationCounter { round: 0, counter: 4 }
+				StakePallet::last_delegation(2),
+				DelegationCounter { round: 0, counter: 2 }
 			);
-			assert_ok!(StakePallet::join_delegators(Origin::signed(6), 1, 10),);
+			assert_ok!(StakePallet::join_delegators(Origin::signed(2), 1, 100));
+			// counter should be reset because the round changed
 			assert_eq!(
-				StakePallet::last_delegation(6),
+				StakePallet::last_delegation(2),
 				DelegationCounter { round: 1, counter: 1 }
 			);
-			assert_ok!(StakePallet::leave_delegators(Origin::signed(6)));
-			assert_ok!(StakePallet::join_delegators(Origin::signed(6), 1, 10),);
-			assert_ok!(StakePallet::leave_delegators(Origin::signed(6)));
-			assert_ok!(StakePallet::join_delegators(Origin::signed(6), 1, 10),);
-			assert_ok!(StakePallet::leave_delegators(Origin::signed(6)));
-			assert_ok!(StakePallet::join_delegators(Origin::signed(6), 1, 10),);
-			assert_ok!(StakePallet::leave_delegators(Origin::signed(6)));
-			assert_eq!(
-				StakePallet::last_delegation(6),
-				DelegationCounter { round: 1, counter: 4 }
-			);
+			// leave and re-join to set counter to 2 (= MaxDelegationsPerRound))
+			assert_ok!(StakePallet::leave_delegators(Origin::signed(2)));
+			assert_ok!(StakePallet::join_delegators(Origin::signed(2), 1, 100));
 			assert_noop!(
-				StakePallet::join_delegators(Origin::signed(6), 1, 10),
+				StakePallet::join_delegators(Origin::signed(2), 1, 100),
+				Error::<Test>::AlreadyDelegating
+			);
+			assert_ok!(StakePallet::leave_delegators(Origin::signed(2)));
+			assert_noop!(
+				StakePallet::join_delegators(Origin::signed(2), 1, 100),
 				Error::<Test>::DelegationsPerRoundExceeded
+			);
+			assert_eq!(
+				StakePallet::last_delegation(2),
+				DelegationCounter { round: 1, counter: 2 }
 			);
 		});
 }
@@ -3045,7 +2962,7 @@ fn force_remove_candidate() {
 		.build()
 		.execute_with(|| {
 			assert_eq!(CandidatePool::<Test>::count(), 3);
-			assert_ok!(StakePallet::delegate_another_candidate(Origin::signed(4), 2, 50));
+			assert_ok!(StakePallet::join_delegators(Origin::signed(6), 2, 50));
 			assert_eq!(StakePallet::selected_candidates().into_inner(), vec![1, 2]);
 			assert!(StakePallet::unstaking(1).get(&3).is_none());
 			assert!(StakePallet::unstaking(2).get(&3).is_none());
@@ -3076,14 +2993,8 @@ fn force_remove_candidate() {
 			assert_eq!(StakePallet::selected_candidates().into_inner(), vec![2, 3]);
 			assert_eq!(CandidatePool::<Test>::count(), 2);
 			assert!(StakePallet::candidate_pool(1).is_none());
+			assert!(StakePallet::delegator_state(4).is_none());
 			assert!(StakePallet::delegator_state(5).is_none());
-			assert_eq!(
-				StakePallet::delegator_state(4),
-				Some(Delegator {
-					delegations: OrderedSet::from(vec![StakeOf::<Test> { owner: 2, amount: 50 }].try_into().unwrap()),
-					total: 50
-				})
-			);
 			assert_eq!(StakePallet::unstaking(1).get(&3), Some(&100));
 			assert_eq!(StakePallet::unstaking(4).get(&3), Some(&50));
 			assert_eq!(StakePallet::unstaking(5).get(&3), Some(&50));
@@ -3275,7 +3186,7 @@ fn prioritize_collators() {
 					.unwrap()
 				)
 			);
-			assert_ok!(StakePallet::revoke_delegation(Origin::signed(7), 5));
+			assert_ok!(StakePallet::leave_delegators(Origin::signed(7)));
 			assert_eq!(StakePallet::selected_candidates().into_inner(), vec![3, 5]);
 			assert_eq!(
 				StakePallet::top_candidates(),
@@ -3305,9 +3216,11 @@ fn prioritize_delegators() {
 			(5, 1000),
 			(6, 1000),
 			(7, 1000),
+			(8, 1000),
+			(9, 1000),
 		])
 		.with_collators(vec![(1, 100), (2, 100), (3, 100)])
-		.with_delegators(vec![(5, 1, 100), (4, 2, 100), (7, 2, 100), (6, 2, 100)])
+		.with_delegators(vec![(4, 2, 100), (7, 2, 100), (6, 2, 100)])
 		.build()
 		.execute_with(|| {
 			assert_eq!(StakePallet::selected_candidates().into_inner(), vec![2, 1]);
@@ -3323,7 +3236,7 @@ fn prioritize_delegators() {
 					.unwrap()
 				)
 			);
-			assert_ok!(StakePallet::delegate_another_candidate(Origin::signed(5), 2, 110));
+			assert_ok!(StakePallet::join_delegators(Origin::signed(5), 2, 110));
 			assert_eq!(
 				StakePallet::candidate_pool(2).unwrap().delegators,
 				OrderedSet::from_sorted_set(
@@ -3332,17 +3245,6 @@ fn prioritize_delegators() {
 						StakeOf::<Test> { owner: 4, amount: 100 },
 						StakeOf::<Test> { owner: 7, amount: 100 },
 						StakeOf::<Test> { owner: 6, amount: 100 },
-					]
-					.try_into()
-					.unwrap()
-				)
-			);
-			assert_eq!(
-				StakePallet::delegator_state(5).unwrap().delegations,
-				OrderedSet::from_sorted_set(
-					vec![
-						StakeOf::<Test> { owner: 2, amount: 110 },
-						StakeOf::<Test> { owner: 1, amount: 100 }
 					]
 					.try_into()
 					.unwrap()
@@ -3359,17 +3261,6 @@ fn prioritize_delegators() {
 						StakeOf::<Test> { owner: 4, amount: 100 },
 						StakeOf::<Test> { owner: 7, amount: 100 },
 						StakeOf::<Test> { owner: 6, amount: 100 },
-					]
-					.try_into()
-					.unwrap()
-				)
-			);
-			assert_eq!(
-				StakePallet::delegator_state(5).unwrap().delegations,
-				OrderedSet::from_sorted_set(
-					vec![
-						StakeOf::<Test> { owner: 2, amount: 100 },
-						StakeOf::<Test> { owner: 1, amount: 100 }
 					]
 					.try_into()
 					.unwrap()
@@ -4162,66 +4053,67 @@ fn rewards_delegator_replaced() {
 		});
 }
 
-#[test]
-fn rewards_delegator_revokes_single_delegation() {
-	ExtBuilder::default()
-		.with_balances(vec![(1, DECIMALS), (2, 2 * DECIMALS)])
-		.with_collators(vec![(1, DECIMALS)])
-		.with_delegators(vec![(2, 1, DECIMALS)])
-		.build()
-		.execute_with(|| {
-			// note once to set counter to 1
-			StakePallet::note_author(1);
-			assert_eq!(StakePallet::reward_count(1), 1);
-			assert!(StakePallet::reward_count(2).is_zero());
-			assert!(StakePallet::reward_count(3).is_zero());
-			(1..=3).for_each(|id| {
-				assert!(StakePallet::rewards(id).is_zero(), "acc_id {:?}", id);
-			});
+// FIXME: Re-enable
+// #[test]
+// fn rewards_delegator_revokes_single_delegation() {
+// 	ExtBuilder::default()
+// 		.with_balances(vec![(1, DECIMALS), (2, 2 * DECIMALS)])
+// 		.with_collators(vec![(1, DECIMALS)])
+// 		.with_delegators(vec![(2, 1, DECIMALS)])
+// 		.build()
+// 		.execute_with(|| {
+// 			// note once to set counter to 1
+// 			StakePallet::note_author(1);
+// 			assert_eq!(StakePallet::reward_count(1), 1);
+// 			assert!(StakePallet::reward_count(2).is_zero());
+// 			assert!(StakePallet::reward_count(3).is_zero());
+// 			(1..=3).for_each(|id| {
+// 				assert!(StakePallet::rewards(id).is_zero(), "acc_id {:?}", id);
+// 			});
 
-			// stake more to trigger reward incrementing just for 3
-			assert_ok!(StakePallet::delegator_stake_more(Origin::signed(2), 1, DECIMALS));
-			// 1 should still have counter 1 but no rewards
-			assert_eq!(StakePallet::reward_count(1), 1);
-			assert!(StakePallet::rewards(1).is_zero());
-			// 2 should still have neither rewards nor counter
-			assert!(StakePallet::reward_count(2).is_zero());
-			assert!(StakePallet::rewards(2).is_zero());
-			// 3 should have rewards and the same counter as 1
-			assert_eq!(StakePallet::reward_count(3), 1);
-			assert!(!StakePallet::rewards(3).is_zero());
-		});
-}
+// 			// stake more to trigger reward incrementing just for 3
+// 			assert_ok!(StakePallet::delegator_stake_more(Origin::signed(2), 1,
+// DECIMALS)); 			// 1 should still have counter 1 but no rewards
+// 			assert_eq!(StakePallet::reward_count(1), 1);
+// 			assert!(StakePallet::rewards(1).is_zero());
+// 			// 2 should still have neither rewards nor counter
+// 			assert!(StakePallet::reward_count(2).is_zero());
+// 			assert!(StakePallet::rewards(2).is_zero());
+// 			// 3 should have rewards and the same counter as 1
+// 			assert_eq!(StakePallet::reward_count(3), 1);
+// 			assert!(!StakePallet::rewards(3).is_zero());
+// 		});
+// }
 
-#[test]
-fn rewards_delegator_leaves() {
-	ExtBuilder::default()
-		.with_balances(vec![(1, DECIMALS), (2, DECIMALS), (3, 2 * DECIMALS)])
-		.with_collators(vec![(1, DECIMALS), (2, DECIMALS)])
-		.with_delegators(vec![(3, 1, DECIMALS)])
-		.build()
-		.execute_with(|| {
-			assert_ok!(StakePallet::delegate_another_candidate(Origin::signed(3), 2, DECIMALS));
-			// note both collators once to set their counter to 2
-			StakePallet::note_author(1);
-			StakePallet::note_author(2);
-			assert_eq!(StakePallet::reward_count(1), 2);
-			assert_eq!(StakePallet::reward_count(2), 2);
-			assert!(StakePallet::reward_count(3).is_zero());
-			(1..=3).for_each(|id| {
-				assert!(StakePallet::rewards(id).is_zero(), "acc_id {:?}", id);
-			});
+// #[test]
+// fn rewards_delegator_leaves() {
+// 	ExtBuilder::default()
+// 		.with_balances(vec![(1, DECIMALS), (2, DECIMALS), (3, 2 * DECIMALS)])
+// 		.with_collators(vec![(1, DECIMALS), (2, DECIMALS)])
+// 		.with_delegators(vec![(3, 1, DECIMALS)])
+// 		.build()
+// 		.execute_with(|| {
+// 			assert_ok!(StakePallet::delegate_another_candidate(Origin::signed(3), 2,
+// DECIMALS)); 			// note both collators once to set their counter to 2
+// 			StakePallet::note_author(1);
+// 			StakePallet::note_author(2);
+// 			assert_eq!(StakePallet::reward_count(1), 2);
+// 			assert_eq!(StakePallet::reward_count(2), 2);
+// 			assert!(StakePallet::reward_count(3).is_zero());
+// 			(1..=3).for_each(|id| {
+// 				assert!(StakePallet::rewards(id).is_zero(), "acc_id {:?}", id);
+// 			});
 
-			// only 3 should have non-zero rewards and counter reset
-			assert_ok!(StakePallet::leave_delegators(Origin::signed(3)));
-			(1..=2).for_each(|id| {
-				assert_eq!(StakePallet::reward_count(id), 2, "acc_id {:?}", id);
-				assert!(StakePallet::rewards(id).is_zero(), "acc_id {:?}", id);
-			});
-			assert!(!StakePallet::rewards(3).is_zero());
-			assert_eq!(StakePallet::reward_count(3), 4);
-		});
-}
+// 			// only 3 should have non-zero rewards and counter reset
+// 			assert_ok!(StakePallet::leave_delegators(Origin::signed(3)));
+// 			(1..=2).for_each(|id| {
+// 				assert_eq!(StakePallet::reward_count(id), 2, "acc_id {:?}", id);
+// 				assert!(StakePallet::rewards(id).is_zero(), "acc_id {:?}", id);
+// 			});
+// 			assert!(!StakePallet::rewards(3).is_zero());
+// 			assert_eq!(StakePallet::reward_count(3), 4);
+// 		});
+// }
 
 // TODO:
 // rewards_delegator_revokes_single_delegation
