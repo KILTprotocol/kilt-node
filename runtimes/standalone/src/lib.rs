@@ -52,6 +52,7 @@ use sp_version::RuntimeVersion;
 use delegation::DelegationAc;
 use pallet_did_lookup::{linkable_account::LinkableAccountId, migrations::EthereumMigration};
 use runtime_common::{
+	assets::AssetDid,
 	authorization::{AuthorizationId, PalletAuthorize},
 	constants::{self, KILT, MILLI_KILT},
 	fees::ToAuthor,
@@ -983,13 +984,13 @@ impl_runtime_apis! {
 		}
 	}
 
-	impl public_credentials_runtime_api::PublicCredentialsApi<Block, <Runtime as public_credentials::Config>::SubjectId, attestation::ClaimHashOf<Runtime>, public_credentials::CredentialEntryOf<Runtime>> for Runtime {
-		fn get_credential(credential_id: attestation::ClaimHashOf<Runtime>) -> Option<public_credentials::CredentialEntryOf<Runtime>> {
+	impl public_credentials_runtime_api::PublicCredentialsApi<Block, AssetDid, Hash, public_credentials::CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>>> for Runtime {
+		fn get_credential(credential_id: Hash) -> Option<public_credentials::CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>>> {
 			let subject = public_credentials::CredentialSubjects::<Runtime>::get(&credential_id)?;
 			public_credentials::Credentials::<Runtime>::get(&subject, &credential_id)
 		}
 
-		fn get_credentials(subject: <Runtime as public_credentials::Config>::SubjectId) -> Vec<(attestation::ClaimHashOf<Runtime>, public_credentials::CredentialEntryOf<Runtime>)> {
+		fn get_credentials(subject: <Runtime as public_credentials::Config>::SubjectId) -> Vec<(Hash, public_credentials::CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>>)> {
 			public_credentials::Credentials::<Runtime>::iter_prefix(&subject).collect()
 		}
 	}

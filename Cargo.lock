@@ -975,6 +975,8 @@ dependencies = [
  "parachain-info",
  "parity-scale-codec",
  "polkadot-parachain",
+ "public-credentials",
+ "public-credentials-runtime-api",
  "runtime-common",
  "scale-info",
  "serde",
