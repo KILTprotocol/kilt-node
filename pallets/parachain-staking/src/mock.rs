@@ -379,7 +379,7 @@ pub(crate) fn roll_to(n: BlockNumber, authors: Vec<Option<AccountId>>) {
 /// Incrementelly traverses from the current block to the provided one and
 /// potentially sets a block authors.
 ///
-///  If existent, rewards of the block author and their delegators are
+/// If existent, rewards of the block author and their delegators are
 /// incremented and claimed.
 ///
 /// If for a block `i` the corresponding index of the authors input is set, this
