@@ -590,7 +590,7 @@ benchmarks! {
 		assert_eq!(pallet_balances::Pallet::<T>::usable_balance(&beneficiary), (amount + amount).into());
 	}
 
-	exectue_scheduled_reward_change {
+	execute_scheduled_reward_change {
 		// we need at least 1 collators
 		let n in 0 .. T::MaxTopCandidates::get();
 		// we need at least 1 delegator

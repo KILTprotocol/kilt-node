@@ -356,7 +356,7 @@ pub(crate) fn almost_equal(left: Balance, right: Balance, precision: Perbill) ->
 }
 
 /// Incrementelly traverses from the current block to the provided one and
-/// potentially sets a block authors.
+/// potentially sets block authors.
 ///
 /// If for a block `i` the corresponding index of the authors input is set, this
 /// account is regarded to be the block author and thus gets noted.
@@ -377,7 +377,7 @@ pub(crate) fn roll_to(n: BlockNumber, authors: Vec<Option<AccountId>>) {
 
 #[allow(unused_must_use)]
 /// Incrementelly traverses from the current block to the provided one and
-/// potentially sets a block authors.
+/// potentially sets block authors.
 ///
 /// If existent, rewards of the block author and their delegators are
 /// incremented and claimed.

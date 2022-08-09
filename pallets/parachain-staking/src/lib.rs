@@ -1785,8 +1785,8 @@ pub mod pallet {
 		/// before adjusting the inflation.
 		///
 		/// Emits `RoundInflationSet`.
-		#[pallet::weight(<T as Config>::WeightInfo::exectue_scheduled_reward_change(T::MaxTopCandidates::get(), T::MaxDelegatorsPerCollator::get()))]
-		pub fn exectue_scheduled_reward_change(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
+		#[pallet::weight(<T as Config>::WeightInfo::execute_scheduled_reward_change(T::MaxTopCandidates::get(), T::MaxDelegatorsPerCollator::get()))]
+		pub fn execute_scheduled_reward_change(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
 			ensure_signed(origin)?;
 
 			let now = frame_system::Pallet::<T>::block_number();
@@ -1834,7 +1834,7 @@ pub mod pallet {
 				new_inflation.delegator.reward_rate.per_block,
 			));
 
-			Ok(Some(<T as Config>::WeightInfo::exectue_scheduled_reward_change(
+			Ok(Some(<T as Config>::WeightInfo::execute_scheduled_reward_change(
 				CandidatePool::<T>::count(),
 				max_num_delegators.saturated_into(),
 			))

@@ -69,7 +69,7 @@ pub trait WeightInfo {
 	fn increment_delegator_rewards() -> Weight;
 	fn increment_collator_rewards(_m: u32, ) -> Weight;
 	fn claim_rewards_for() -> Weight;
-	fn exectue_scheduled_reward_change(n: u32, m: u32, ) -> Weight;
+	fn execute_scheduled_reward_change(n: u32, m: u32, ) -> Weight;
 }
 
 /// Weights for parachain_staking using the Substrate node and recommended hardware.
@@ -421,7 +421,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: ParachainStaking CounterForCandidatePool (r:1 w:0)
 	/// The range of component `n` is `[0, 75]`.
 	/// The range of component `m` is `[0, 35]`.
-	fn exectue_scheduled_reward_change(n: u32, m: u32, ) -> Weight {
+	fn execute_scheduled_reward_change(n: u32, m: u32, ) -> Weight {
 		(0 as Weight)
 			// Standard Error: 5_730_000
 			.saturating_add((202_623_000 as Weight).saturating_mul(n as Weight))
@@ -782,7 +782,7 @@ impl WeightInfo for () {
 	// Storage: ParachainStaking CounterForCandidatePool (r:1 w:0)
 	/// The range of component `n` is `[0, 75]`.
 	/// The range of component `m` is `[0, 35]`.
-	fn exectue_scheduled_reward_change(n: u32, m: u32, ) -> Weight {
+	fn execute_scheduled_reward_change(n: u32, m: u32, ) -> Weight {
 		(0 as Weight)
 			// Standard Error: 5_730_000
 			.saturating_add((202_623_000 as Weight).saturating_mul(n as Weight))

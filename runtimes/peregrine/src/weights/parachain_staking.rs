@@ -394,7 +394,7 @@ impl<T: frame_system::Config> parachain_staking::WeightInfo for WeightInfo<T> {
 	// Storage: ParachainStaking CounterForCandidatePool (r:1 w:0)
 	/// The range of component `n` is `[0, 75]`.
 	/// The range of component `m` is `[0, 35]`.
-	fn exectue_scheduled_reward_change(n: u32, m: u32, ) -> Weight {
+	fn execute_scheduled_reward_change(n: u32, m: u32, ) -> Weight {
 		(0 as Weight)
 			// Standard Error: 5_730_000
 			.saturating_add((202_623_000 as Weight).saturating_mul(n as Weight))
