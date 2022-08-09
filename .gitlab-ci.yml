@@ -22,7 +22,7 @@ udeps:
     - rustup component list --installed
     - rustup toolchain list
     - cargo install cargo-udeps
-    - cargo check --all-features --all-targets --locked -- -D warnings
+    - cargo check --all-features --all-targets --locked
     # Unless there is a way to conditionally execute part of a job, cargo-udeps can only run after the project metadata has been correctly pulled in, which happens with `cargo check`.
     # Open issue: https://github.com/est31/cargo-udeps/issues/97
     - cargo udeps --all-features --all-targets --locked
