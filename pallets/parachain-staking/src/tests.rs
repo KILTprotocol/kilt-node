@@ -3879,7 +3879,7 @@ fn rewards_candidate_stake_less() {
 				assert!(StakePallet::rewards(id).is_zero());
 			});
 
-			// stake more to trigger reward incrementing
+			// stake less to trigger reward incrementing
 			assert_ok!(StakePallet::candidate_stake_less(Origin::signed(1), DECIMALS));
 			(1..=3).for_each(|id| {
 				assert!(!StakePallet::rewards(id).is_zero(), "acc_id {:?}", id);
@@ -4036,7 +4036,7 @@ fn rewards_delegator_stake_less() {
 				assert!(StakePallet::rewards(id).is_zero(), "acc_id {:?}", id);
 			});
 
-			// stake more to trigger reward incrementing just for 3
+			// stake less to trigger reward incrementing just for 3
 			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(3), 1, DECIMALS));
 			// 1 should still have counter 1 but no rewards
 			assert_eq!(StakePallet::reward_count(1), 1);
@@ -4141,7 +4141,7 @@ fn rewards_set_inflation() {
 				hundred,
 				hundred
 			));
-			// rewards should be set and counter rese
+			// rewards should be set and counter reset
 			(1..=5).for_each(|id| {
 				assert!(StakePallet::reward_count(id).is_zero(), "acc_id {:?}", id);
 				assert!(!StakePallet::rewards(id).is_zero(), "acc_id {:?}", id);

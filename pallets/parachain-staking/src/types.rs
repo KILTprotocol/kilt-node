@@ -240,7 +240,7 @@ where
 		}
 	}
 
-	/// Returns Ok(delegated_amount) if successfull, `Err` if delegation was
+	/// Returns Ok(delegated_amount) if successful, `Err` if delegation was
 	/// not found.
 	pub fn inc_delegation(&mut self, collator: AccountId, more: Balance) -> Result<Balance, ()> {
 		if self.owner == Some(collator) {
