@@ -303,9 +303,8 @@ pub mod v1 {
 	/// A Slip44 asset reference.
 	/// It is a modification of the [CAIP-20 spec](https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-20.md)
 	/// according to the rules defined in the Asset DID method specification.
-	#[non_exhaustive]
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
-	pub struct Slip44Reference(pub U256);
+	pub struct Slip44Reference(pub(crate) U256);
 
 	impl Slip44Reference {
 		/// Parse a UTF8-encoded decimal Slip44 asset reference, failing if the
@@ -355,6 +354,13 @@ pub mod v1 {
 		}
 	}
 
+	// Getters
+	impl Slip44Reference {
+		pub fn inner(&self) -> &U256 {
+			&self.0
+		}
+	}
+
 	impl Display for Slip44Reference {
 		fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
 			write!(f, "{}", self.0)
@@ -364,9 +370,8 @@ pub mod v1 {
 	/// An asset reference that is identifiable only by an EVM smart contract
 	/// (e.g., a fungible token). It is a modification of the [CAIP-21 spec](https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-21.md)
 	/// according to the rules defined in the Asset DID method specification.
-	#[non_exhaustive]
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
-	pub struct EvmSmartContractFungibleReference(pub [u8; 20]);
+	pub struct EvmSmartContractFungibleReference(pub(crate) [u8; 20]);
 
 	impl EvmSmartContractFungibleReference {
 		/// Parse a UTF8-encoded smart contract HEX address (including the `0x`
@@ -397,6 +402,13 @@ pub mod v1 {
 		}
 	}
 
+	// Getters
+	impl EvmSmartContractFungibleReference {
+		pub fn inner(&self) -> &[u8] {
+			&self.0
+		}
+	}
+
 	impl Display for EvmSmartContractFungibleReference {
 		fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
 			write!(f, "0x{}", hex::encode(self.0))
@@ -408,21 +420,32 @@ pub mod v1 {
 	/// a modification of the [CAIP-22 spec](https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-22.md) and
 	/// [CAIP-29 spec](https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-29.md)
 	/// according to the rules defined in the Asset DID method specification.
-	#[non_exhaustive]
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
 	pub struct EvmSmartContractNonFungibleReference(
-		pub EvmSmartContractFungibleReference,
-		pub Option<EvmSmartContractNonFungibleIdentifier>,
+		pub(crate) EvmSmartContractFungibleReference,
+		pub(crate) Option<EvmSmartContractNonFungibleIdentifier>,
 	);
+
+	// Getters
+	impl EvmSmartContractNonFungibleReference {
+		pub fn smart_contract(&self) -> &EvmSmartContractFungibleReference {
+			&self.0
+		}
+
+		pub fn identifier(&self) -> &Option<EvmSmartContractNonFungibleIdentifier> {
+			&self.1
+		}
+	}
 
 	/// An asset identifier for an EVM smart contract collection (e.g., an NFT
 	/// instance).
 	/// Since the identifier can be up to 78 characters long of an unknown
 	/// alphabet, this type simply contains the UTF-8 encoding of such an
 	/// identifier without applying any special parsing/decoding logic.
-	#[non_exhaustive]
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
-	pub struct EvmSmartContractNonFungibleIdentifier(pub BoundedVec<u8, ConstU32<MAXIMUM_IDENTIFIER_LENGTH_U32>>);
+	pub struct EvmSmartContractNonFungibleIdentifier(
+		pub(crate) BoundedVec<u8, ConstU32<MAXIMUM_IDENTIFIER_LENGTH_U32>>,
+	);
 
 	impl EvmSmartContractNonFungibleIdentifier {
 		/// Parse a UTF8-encoded smart contract asset identifier, failing if the
@@ -451,6 +474,13 @@ pub mod v1 {
 		}
 	}
 
+	// Getters
+	impl EvmSmartContractNonFungibleIdentifier {
+		pub fn inner(&self) -> &[u8] {
+			&self.0
+		}
+	}
+
 	impl Display for EvmSmartContractNonFungibleIdentifier {
 		fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
 			// We checked when the type is created that all characters are valid digits.
@@ -464,12 +494,11 @@ pub mod v1 {
 	}
 
 	/// A generic asset ID compliant with the [CAIP-19 spec](https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-19.md) that cannot be boxed in any of the supported variants.
-	#[non_exhaustive]
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
 	pub struct GenericAssetId {
-		pub namespace: GenericAssetNamespace,
-		pub reference: GenericAssetReference,
-		pub id: Option<GenericAssetIdentifier>,
+		pub(crate) namespace: GenericAssetNamespace,
+		pub(crate) reference: GenericAssetReference,
+		pub(crate) id: Option<GenericAssetIdentifier>,
 	}
 
 	impl GenericAssetId {
@@ -498,12 +527,24 @@ pub mod v1 {
 		}
 	}
 
+	// Getters
+	impl GenericAssetId {
+		pub fn namespace(&self) -> &GenericAssetNamespace {
+			&self.namespace
+		}
+		pub fn reference(&self) -> &GenericAssetReference {
+			&self.reference
+		}
+		pub fn id(&self) -> &Option<GenericAssetIdentifier> {
+			&self.id
+		}
+	}
+
 	/// A generic asset namespace as defined in the [CAIP-19 spec](https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-19.md).
 	/// It stores the provided UTF8-encoded namespace without trying to apply
 	/// any parsing/decoding logic.
-	#[non_exhaustive]
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
-	pub struct GenericAssetNamespace(pub BoundedVec<u8, ConstU32<MAXIMUM_NAMESPACE_LENGTH_U32>>);
+	pub struct GenericAssetNamespace(pub(crate) BoundedVec<u8, ConstU32<MAXIMUM_NAMESPACE_LENGTH_U32>>);
 
 	impl GenericAssetNamespace {
 		/// Parse a generic UTF8-encoded asset namespace, failing if the input
@@ -531,6 +572,13 @@ pub mod v1 {
 		}
 	}
 
+	// Getters
+	impl GenericAssetNamespace {
+		pub fn inner(&self) -> &[u8] {
+			&self.0
+		}
+	}
+
 	impl Display for GenericAssetNamespace {
 		fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
 			// We checked when the type is created that all characters are valid UTF8
@@ -544,9 +592,8 @@ pub mod v1 {
 	}
 
 	/// A generic asset reference as defined in the [CAIP-19 spec](https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-19.md).
-	#[non_exhaustive]
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
-	pub struct GenericAssetReference(pub BoundedVec<u8, ConstU32<MAXIMUM_REFERENCE_LENGTH_U32>>);
+	pub struct GenericAssetReference(pub(crate) BoundedVec<u8, ConstU32<MAXIMUM_REFERENCE_LENGTH_U32>>);
 
 	impl GenericAssetReference {
 		/// Parse a generic UTF8-encoded asset reference, failing if the input
@@ -574,6 +621,13 @@ pub mod v1 {
 		}
 	}
 
+	// Getters
+	impl GenericAssetReference {
+		pub fn inner(&self) -> &[u8] {
+			&self.0
+		}
+	}
+
 	impl Display for GenericAssetReference {
 		fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
 			// We checked when the type is created that all characters are valid UTF8
@@ -587,9 +641,8 @@ pub mod v1 {
 	}
 
 	/// A generic asset identifier as defined in the [CAIP-19 spec](https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-19.md).
-	#[non_exhaustive]
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
-	pub struct GenericAssetIdentifier(pub BoundedVec<u8, ConstU32<MAXIMUM_IDENTIFIER_LENGTH_U32>>);
+	pub struct GenericAssetIdentifier(pub(crate) BoundedVec<u8, ConstU32<MAXIMUM_IDENTIFIER_LENGTH_U32>>);
 
 	impl GenericAssetIdentifier {
 		/// Parse a generic UTF8-encoded asset identifier, failing if the input
@@ -614,6 +667,13 @@ pub mod v1 {
 					.try_into()
 					.map_err(|_| IdentifierError::InvalidFormat)?,
 			))
+		}
+	}
+
+	// Getters
+	impl GenericAssetIdentifier {
+		pub fn inner(&self) -> &[u8] {
+			&self.0
 		}
 	}
 

@@ -284,9 +284,8 @@ mod v1 {
 	/// An EIP155 chain reference.
 	/// It is a modification of the [CAIP-3 spec](https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-3.md)
 	/// according to the rules defined in the Asset DID method specification.
-	#[non_exhaustive]
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
-	pub struct Eip155Reference(pub u128);
+	pub struct Eip155Reference(pub(crate) u128);
 
 	impl Eip155Reference {
 		/// The EIP155 reference for the Ethereum mainnet.
@@ -330,6 +329,13 @@ mod v1 {
 		}
 	}
 
+	// Getters
+	impl Eip155Reference {
+		pub fn inner(&self) -> &u128 {
+			&self.0
+		}
+	}
+
 	impl TryFrom<u128> for Eip155Reference {
 		type Error = Error;
 
@@ -360,9 +366,8 @@ mod v1 {
 
 	/// A chain reference for CAIP-2 chains that are identified by a HEX genesis
 	/// hash of 32 characters.
-	#[non_exhaustive]
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
-	pub struct GenesisHexHash32Reference(pub [u8; 16]);
+	pub struct GenesisHexHash32Reference(pub(crate) [u8; 16]);
 
 	impl GenesisHexHash32Reference {
 		/// The CAIP-2 reference for the Bitcoin mainnet.
@@ -413,6 +418,13 @@ mod v1 {
 		}
 	}
 
+	// Getters
+	impl GenesisHexHash32Reference {
+		pub fn inner(&self) -> &[u8] {
+			&self.0
+		}
+	}
+
 	impl Display for GenesisHexHash32Reference {
 		fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
 			write!(f, "{}", hex::encode(self.0))
@@ -421,9 +433,8 @@ mod v1 {
 
 	/// A chain reference for CAIP-2 chains that are identified by a
 	/// Base58-encoded genesis hash of 32 characters.
-	#[non_exhaustive]
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
-	pub struct GenesisBase58Hash32Reference(pub BoundedVec<u8, ConstU32<32>>);
+	pub struct GenesisBase58Hash32Reference(pub(crate) BoundedVec<u8, ConstU32<32>>);
 
 	impl GenesisBase58Hash32Reference {
 		/// The CAIP-2 reference for the Solana mainnet.
@@ -465,6 +476,13 @@ mod v1 {
 		}
 	}
 
+	// Getters
+	impl GenesisBase58Hash32Reference {
+		pub fn inner(&self) -> &[u8] {
+			&self.0
+		}
+	}
+
 	impl Display for GenesisBase58Hash32Reference {
 		fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
 			write!(f, "{}", &self.0.to_base58())
@@ -472,11 +490,10 @@ mod v1 {
 	}
 
 	/// A generic chain ID compliant with the [CAIP-2 spec](https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-2.md) that cannot be boxed in any of the supported variants.
-	#[non_exhaustive]
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
 	pub struct GenericChainId {
-		pub namespace: GenericChainNamespace,
-		pub reference: GenericChainReference,
+		pub(crate) namespace: GenericChainNamespace,
+		pub(crate) reference: GenericChainReference,
 	}
 
 	impl GenericChainId {
@@ -498,12 +515,21 @@ mod v1 {
 		}
 	}
 
+	// Getters
+	impl GenericChainId {
+		pub fn namespace(&self) -> &GenericChainNamespace {
+			&self.namespace
+		}
+		pub fn reference(&self) -> &GenericChainReference {
+			&self.reference
+		}
+	}
+
 	/// A generic chain namespace as defined in the [CAIP-2 spec](https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-2.md).
 	/// It stores the provided UTF8-encoded namespace without trying to apply
 	/// any parsing/decoding logic.
-	#[non_exhaustive]
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
-	pub struct GenericChainNamespace(pub BoundedVec<u8, ConstU32<MAXIMUM_NAMESPACE_LENGTH_U32>>);
+	pub struct GenericChainNamespace(pub(crate) BoundedVec<u8, ConstU32<MAXIMUM_NAMESPACE_LENGTH_U32>>);
 
 	impl GenericChainNamespace {
 		/// Parse a generic UTF8-encoded chain namespace, failing if the input
@@ -531,6 +557,13 @@ mod v1 {
 		}
 	}
 
+	// Getters
+	impl GenericChainNamespace {
+		pub fn inner(&self) -> &[u8] {
+			&self.0
+		}
+	}
+
 	impl Display for GenericChainNamespace {
 		fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
 			// We checked when the type is created that all characters are valid UTF8
@@ -544,9 +577,8 @@ mod v1 {
 	}
 
 	/// A generic chain reference as defined in the [CAIP-2 spec](https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-2.md).
-	#[non_exhaustive]
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
-	pub struct GenericChainReference(pub BoundedVec<u8, ConstU32<MAXIMUM_REFERENCE_LENGTH_U32>>);
+	pub struct GenericChainReference(pub(crate) BoundedVec<u8, ConstU32<MAXIMUM_REFERENCE_LENGTH_U32>>);
 
 	impl GenericChainReference {
 		/// Parse a generic UTF8-encoded chain reference, failing if the input
@@ -571,6 +603,13 @@ mod v1 {
 					.try_into()
 					.map_err(|_| ReferenceError::InvalidFormat)?,
 			))
+		}
+	}
+
+	// Getters
+	impl GenericChainReference {
+		pub fn inner(&self) -> &[u8] {
+			&self.0
 		}
 	}
 
