@@ -20,7 +20,7 @@ use frame_support::traits::{Currency, Get};
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_runtime::{
-	traits::{AtLeast32BitUnsigned, Saturating, Zero},
+	traits::{AtLeast32BitUnsigned, CheckedSub, Saturating, Zero},
 	RuntimeDebug,
 };
 use sp_staking::SessionIndex;
@@ -213,7 +213,7 @@ pub type Delegator<AccountId, Balance> = Stake<Option<AccountId>, Balance>;
 impl<AccountId, Balance> Delegator<AccountId, Balance>
 where
 	AccountId: Eq + Ord + Clone + Debug,
-	Balance: Copy + Add<Output = Balance> + Saturating + PartialOrd + Eq + Ord + Debug + Zero + Default,
+	Balance: Copy + Add<Output = Balance> + Saturating + PartialOrd + Eq + Ord + Debug + Zero + Default + CheckedSub,
 {
 	/// Adds a new delegation.
 	///
@@ -255,12 +255,10 @@ where
 	/// was not found and Ok(None) if delegated stake would underflow.
 	pub fn dec_delegation(&mut self, collator: AccountId, less: Balance) -> Result<Option<Balance>, ()> {
 		if self.owner == Some(collator) {
-			if self.amount > less {
-				self.amount = self.amount.saturating_sub(less);
-				Ok(Some(self.amount))
-			} else {
-				Ok(None)
-			}
+			Ok(self.amount.checked_sub(&less).map(|new| {
+				self.amount = new;
+				self.amount
+			}))
 		} else {
 			Err(())
 		}

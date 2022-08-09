@@ -647,10 +647,17 @@ pub mod pallet {
 	#[pallet::getter(fn last_reward_reduction)]
 	pub(crate) type LastRewardReduction<T: Config> = StorageValue<_, T::BlockNumber, ValueQuery>;
 
-	/// The counter of accumulated rewards for a collator candidate.
+	/// The counter of accumulated rewards for an account.
 	///
-	/// It maps from collator accounts to the number of block authored by them
-	/// since the last payout.
+	/// For collators, it reflects the number of authored blocks since the last
+	/// reward raise. Thus, everytime a collator authors a block, the
+	/// counter is increased. It is reset, when the collator increments their
+	/// rewards.
+	///
+	/// For delegators, it is used to determine the difference between the
+	/// delegator and corresponding collator when incrementing the delegator's
+	/// rewards. In this case, the counter is never incremented but reset to the
+	/// collator one when the delegator reward increment happens.
 	// TODO: Maybe rather use u64. Assuming 30 validators, u32 would suffice for 27 years of constant 12s blocktime.
 	#[pallet::storage]
 	#[pallet::getter(fn reward_count)]
@@ -1778,8 +1785,8 @@ pub mod pallet {
 		/// before adjusting the inflation.
 		///
 		/// Emits `RoundInflationSet`.
-		#[pallet::weight(<T as Config>::WeightInfo::execute_pending_reward_change(T::MaxTopCandidates::get(), T::MaxDelegatorsPerCollator::get()))]
-		pub fn execute_pending_reward_change(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
+		#[pallet::weight(<T as Config>::WeightInfo::exectue_scheduled_reward_change(T::MaxTopCandidates::get(), T::MaxDelegatorsPerCollator::get()))]
+		pub fn exectue_scheduled_reward_change(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
 			ensure_signed(origin)?;
 
 			let now = frame_system::Pallet::<T>::block_number();
@@ -1827,7 +1834,7 @@ pub mod pallet {
 				new_inflation.delegator.reward_rate.per_block,
 			));
 
-			Ok(Some(<T as Config>::WeightInfo::execute_pending_reward_change(
+			Ok(Some(<T as Config>::WeightInfo::exectue_scheduled_reward_change(
 				CandidatePool::<T>::count(),
 				max_num_delegators.saturated_into(),
 			))
@@ -2469,6 +2476,8 @@ pub mod pallet {
 				Rewards::<T>::mutate(acc, |reward| {
 					*reward = reward.saturating_add(Self::calc_block_rewards_delegator(stake, diff.into()));
 				});
+				// align with collator counter such that incrementing would
+				// lead to 0 rewards until the collator counter increases
 				RewardCount::<T>::insert(acc, col_reward_count);
 
 				// 4 reads from reward calc

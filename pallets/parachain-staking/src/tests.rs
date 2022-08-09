@@ -2757,7 +2757,7 @@ fn adjust_reward_rates() {
 			roll_to_claim_rewards(<Test as Config>::BLOCKS_PER_YEAR + 1, vec![]);
 			// reward reduction should not happen automatically anymore
 			assert_eq!(StakePallet::last_reward_reduction(), 0u64);
-			assert_ok!(StakePallet::execute_pending_reward_change(Origin::signed(1)));
+			assert_ok!(StakePallet::exectue_scheduled_reward_change(Origin::signed(1)));
 			assert_eq!(StakePallet::last_reward_reduction(), 1u64);
 			let inflation_1 = InflationInfo::new(
 				<Test as Config>::BLOCKS_PER_YEAR,
@@ -2788,7 +2788,7 @@ fn adjust_reward_rates() {
 			roll_to_claim_rewards(2 * <Test as Config>::BLOCKS_PER_YEAR + 1, vec![]);
 			// reward reduction should not happen automatically anymore
 			assert_eq!(StakePallet::last_reward_reduction(), 1u64);
-			assert_ok!(StakePallet::execute_pending_reward_change(Origin::signed(1)));
+			assert_ok!(StakePallet::exectue_scheduled_reward_change(Origin::signed(1)));
 			assert_eq!(StakePallet::last_reward_reduction(), 2u64);
 			let inflation_2 = InflationInfo::new(
 				<Test as Config>::BLOCKS_PER_YEAR,
@@ -4175,7 +4175,7 @@ fn rewards_yearly_inflation_adjustment() {
 			});
 
 			// execute to trigger reward increment
-			assert_ok!(StakePallet::execute_pending_reward_change(Origin::signed(1)));
+			assert_ok!(StakePallet::exectue_scheduled_reward_change(Origin::signed(1)));
 			(1..=5).for_each(|id| {
 				assert!(StakePallet::reward_count(id).is_zero(), "acc_id {:?}", id);
 				assert!(!StakePallet::rewards(id).is_zero(), "acc_id {:?}", id);

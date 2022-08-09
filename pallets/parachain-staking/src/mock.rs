@@ -355,6 +355,15 @@ pub(crate) fn almost_equal(left: Balance, right: Balance, precision: Perbill) ->
 	left.max(right) - left.min(right) <= err
 }
 
+/// Incrementelly traverses from the current block to the provided one and
+/// potentially sets a block authors.
+///
+/// If for a block `i` the corresponding index of the authors input is set, this
+/// account is regarded to be the block author and thus gets noted.
+///
+/// NOTE: At most, this updates the RewardCount of the block author but does not
+/// increment rewards or claim them. Please use `roll_to_claim_rewards` in that
+/// case.
 pub(crate) fn roll_to(n: BlockNumber, authors: Vec<Option<AccountId>>) {
 	while System::block_number() < n {
 		if let Some(Some(author)) = authors.get((System::block_number()) as usize) {
@@ -367,6 +376,14 @@ pub(crate) fn roll_to(n: BlockNumber, authors: Vec<Option<AccountId>>) {
 }
 
 #[allow(unused_must_use)]
+/// Incrementelly traverses from the current block to the provided one and
+/// potentially sets a block authors.
+///
+///  If existent, rewards of the block author and their delegators are
+/// incremented and claimed.
+///
+/// If for a block `i` the corresponding index of the authors input is set, this
+/// account is regarded to be the block author and thus gets noted.
 pub(crate) fn roll_to_claim_rewards(n: BlockNumber, authors: Vec<Option<AccountId>>) {
 	while System::block_number() < n {
 		if let Some(Some(author)) = authors.get((System::block_number()) as usize) {
