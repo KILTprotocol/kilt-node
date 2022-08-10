@@ -172,7 +172,7 @@ pub mod pallet {
 	/// A reverse index mapping from credential ID to the subject the credential
 	/// was issued to.
 	///
-	/// It it used to perform efficient lookup of credential given their ID.
+	/// It it used to perform efficient lookup of credentials given their ID.
 	#[pallet::storage]
 	#[pallet::getter(fn get_credential_subject)]
 	pub type CredentialSubjects<T> = StorageMap<_, Blake2_128Concat, CredentialIdOf<T>, <T as Config>::SubjectId>;
@@ -281,8 +281,6 @@ pub mod pallet {
 				Error::<T>::CredentialAlreadyIssued
 			);
 
-			// Take the rest of the deposit. Should never fail since we made sure above that
-			// enough funds can be reserved.
 			let deposit = kilt_support::reserve_deposit::<T::AccountId, CurrencyOf<T>>(payer, deposit_amount)
 				.map_err(|_| Error::<T>::UnableToPayFees)?;
 
@@ -321,7 +319,7 @@ pub mod pallet {
 		/// If a credential was already revoked, this function does not fail but
 		/// simply results in a noop.
 		///
-		/// /// The dispatch origin must be authorized to revoke the credential.
+		/// The dispatch origin must be authorized to revoke the credential.
 		///
 		/// Emits `CredentialRevoked`.
 		#[pallet::weight({
@@ -358,7 +356,7 @@ pub mod pallet {
 		/// If a credential was not revoked, this function does not fail but
 		/// simply results in a noop.
 		///
-		/// /// The dispatch origin must be authorized to unrevoke the
+		/// The dispatch origin must be authorized to unrevoke the
 		/// credential.
 		///
 		/// Emits `CredentialUnrevoked`.
@@ -405,7 +403,7 @@ pub mod pallet {
 		/// This function fails if a credential already exists for the specified
 		/// subject.
 		///
-		/// /// The dispatch origin must be authorized to remove the credential.
+		/// The dispatch origin must be authorized to remove the credential.
 		///
 		/// Emits `CredentialRemoved`.
 		#[pallet::weight({
@@ -441,6 +439,8 @@ pub mod pallet {
 					.map_err(|_| Error::<T>::Unauthorized)?
 			};
 
+			// Removes the credential from storage and generates a `CredentialRemoved`
+			// event.
 			Self::remove_credential_entry(credential_subject, credential_id, credential_entry);
 
 			Ok(Some(<T as Config>::WeightInfo::remove().saturating_add(ac_weight_used)).into())
@@ -458,6 +458,8 @@ pub mod pallet {
 
 			ensure!(submitter == credential_entry.deposit.owner, Error::<T>::Unauthorized);
 
+			// Removes the credential from storage and generates a `CredentialRemoved`
+			// event.
 			Self::remove_credential_entry(credential_subject, credential_id, credential_entry);
 
 			Ok(())
@@ -466,7 +468,7 @@ pub mod pallet {
 
 	impl<T: Config> Pallet<T> {
 		// Simple wrapper to remove entries from both storages when deleting a
-		// credential.
+		// credential and generate a `CredentialRemoved` event.
 		fn remove_credential_entry(
 			credential_subject: T::SubjectId,
 			credential_id: CredentialIdOf<T>,
