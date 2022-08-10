@@ -52,7 +52,6 @@ benchmarks! {
 		let c in 1 .. T::MaxEncodedClaimsLength::get();
 		let sender: T::AccountId = account("sender", 0, SEED);
 		let attester: T::AttesterId = account("attester", 0, SEED);
-		let claim_hash: T::Hash = T::Hash::default();
 		let ctype_hash: T::Hash = T::Hash::default();
 		let subject_id = <T as Config>::SubjectId::worst_case();
 		let contents = BoundedVec::try_from(vec![0; c as usize]).expect("Contents should not fail.");
@@ -77,7 +76,6 @@ benchmarks! {
 	revoke {
 		let sender: T::AccountId = account("sender", 0, SEED);
 		let attester: T::AttesterId = account("attester", 0, SEED);
-		let claim_hash: T::Hash = T::Hash::default();
 		let ctype_hash: T::Hash = T::Hash::default();
 		let subject_id = <T as Config>::SubjectId::worst_case();
 		let contents = BoundedVec::try_from(vec![0; <T as Config>::MaxEncodedClaimsLength::get() as usize]).expect("Contents should not fail.");
@@ -104,7 +102,6 @@ benchmarks! {
 	unrevoke {
 		let sender: T::AccountId = account("sender", 0, SEED);
 		let attester: T::AttesterId = account("attester", 0, SEED);
-		let claim_hash: T::Hash = T::Hash::default();
 		let ctype_hash: T::Hash = T::Hash::default();
 		let subject_id = <T as Config>::SubjectId::worst_case();
 		let contents = BoundedVec::try_from(vec![0; <T as Config>::MaxEncodedClaimsLength::get() as usize]).expect("Contents should not fail.");
@@ -131,7 +128,6 @@ benchmarks! {
 	remove {
 		let sender: T::AccountId = account("sender", 0, SEED);
 		let attester: T::AttesterId = account("attester", 0, SEED);
-		let claim_hash: T::Hash = T::Hash::default();
 		let ctype_hash: T::Hash = T::Hash::default();
 		let subject_id = <T as Config>::SubjectId::worst_case();
 		let contents = BoundedVec::try_from(vec![0; <T as Config>::MaxEncodedClaimsLength::get() as usize]).expect("Contents should not fail.");
@@ -158,7 +154,6 @@ benchmarks! {
 	reclaim_deposit {
 		let sender: T::AccountId = account("sender", 0, SEED);
 		let attester: T::AttesterId = account("attester", 0, SEED);
-		let claim_hash: T::Hash = T::Hash::default();
 		let ctype_hash: T::Hash = T::Hash::default();
 		let subject_id = <T as Config>::SubjectId::worst_case();
 		let contents = BoundedVec::try_from(vec![0; <T as Config>::MaxEncodedClaimsLength::get() as usize]).expect("Contents should not fail.");
