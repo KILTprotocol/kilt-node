@@ -25,7 +25,7 @@ scale-info = {version = "2.1.1", default-features = false, features = ["derive"]
 ctype = {default-features = false, path = "../ctype"}
 kilt-support = {default-features = false, path = "../../support"}
 
-#External dependencies
+# External dependencies
 frame-benchmarking = {branch = "polkadot-v0.9.26", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
 frame-support = {branch = "polkadot-v0.9.26", default-features = false, git = "https://github.com/paritytech/substrate"}
 frame-system = {branch = "polkadot-v0.9.26", default-features = false, git = "https://github.com/paritytech/substrate"}
