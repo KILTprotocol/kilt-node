@@ -960,7 +960,6 @@ dependencies = [
  "frame-system-rpc-runtime-api",
  "frame-try-runtime",
  "hex-literal",
- "kilt-support",
  "log",
  "pallet-aura",
  "pallet-authorship",
