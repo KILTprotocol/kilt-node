@@ -33,6 +33,11 @@ use crate::{
 
 const SEED: u32 = 0;
 
+fn reserve_balance<T: Config>(acc: &T::AccountId) {
+	// Has to be more than the deposit, we do 2x just to be safe
+	CurrencyOf::<T>::make_free_balance_be(acc, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
+}
+
 benchmarks! {
 	where_clause {
 		where
@@ -60,8 +65,7 @@ benchmarks! {
 		let credential_id = generate_credential_id::<T>(&creation_op, &attester);
 
 		ctype::Ctypes::<T>::insert(&ctype_hash, attester.clone());
-		// Has to be more than the deposit, we do 2x just to be safe
-		CurrencyOf::<T>::make_free_balance_be(&sender, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
+		reserve_balance::<T>(&sender);
 		let origin = <T as Config>::EnsureOrigin::generate_origin(sender, attester);
 	}: _<T::Origin>(origin, creation_op)
 	verify {
@@ -86,8 +90,7 @@ benchmarks! {
 		));
 		let credential_id = generate_credential_id::<T>(&creation_op, &attester);
 
-		// Has to be more than the deposit, we do 2x just to be safe
-		CurrencyOf::<T>::make_free_balance_be(&sender, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
+		reserve_balance::<T>(&sender);
 
 		ctype::Ctypes::<T>::insert(&ctype_hash, attester);
 		Pallet::<T>::add(origin.clone(), creation_op).expect("Pallet::add should not fail");
@@ -114,8 +117,7 @@ benchmarks! {
 		));
 		let credential_id = generate_credential_id::<T>(&creation_op, &attester);
 
-		// Has to be more than the deposit, we do 2x just to be safe
-		CurrencyOf::<T>::make_free_balance_be(&sender, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
+		reserve_balance::<T>(&sender);
 
 		ctype::Ctypes::<T>::insert(&ctype_hash, attester);
 		Pallet::<T>::add(origin.clone(), creation_op).expect("Pallet::add should not fail");
@@ -142,8 +144,7 @@ benchmarks! {
 		));
 		let credential_id = generate_credential_id::<T>(&creation_op, &attester);
 
-		// Has to be more than the deposit, we do 2x just to be safe
-		CurrencyOf::<T>::make_free_balance_be(&sender, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
+		reserve_balance::<T>(&sender);
 
 		ctype::Ctypes::<T>::insert(&ctype_hash, attester);
 		Pallet::<T>::add(origin.clone(), creation_op).expect("Pallet::add should not fail");
@@ -170,8 +171,7 @@ benchmarks! {
 		));
 		let credential_id = generate_credential_id::<T>(&creation_op, &attester);
 
-		// Has to be more than the deposit, we do 2x just to be safe
-		CurrencyOf::<T>::make_free_balance_be(&sender, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
+		reserve_balance::<T>(&sender);
 
 		ctype::Ctypes::<T>::insert(&ctype_hash, attester);
 		Pallet::<T>::add(origin, creation_op).expect("Pallet::add should not fail");
