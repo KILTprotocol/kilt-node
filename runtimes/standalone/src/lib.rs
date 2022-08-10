@@ -48,7 +48,7 @@ use sp_consensus_aura::{ed25519::AuthorityId as AuraId, SlotDuration};
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
-	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, NumberFor, OpaqueKeys, Verify},
+	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, NumberFor, OpaqueKeys, Verify},
 	transaction_validity::{TransactionSource, TransactionValidity},
 	ApplyExtrinsicResult, RuntimeDebug,
 };
@@ -134,16 +134,9 @@ pub fn native_version() -> NativeVersion {
 	}
 }
 
-const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
-
 parameter_types! {
 	pub const Version: RuntimeVersion = VERSION;
 	pub const BlockHashCount: BlockNumber = 2400;
-	/// We allow for 2 seconds of compute with a 6 second average block time.
-	pub BlockWeights: frame_system::limits::BlockWeights = frame_system::limits::BlockWeights
-		::with_sensible_defaults(2 * WEIGHT_PER_SECOND, NORMAL_DISPATCH_RATIO);
-	pub BlockLength: frame_system::limits::BlockLength = frame_system::limits::BlockLength
-		::max_with_normal_ratio(5 * 1024 * 1024, NORMAL_DISPATCH_RATIO);
 	pub const SS58Prefix: u8 = 38;
 }
 
@@ -153,9 +146,9 @@ impl frame_system::Config for Runtime {
 	/// The basic call filter to use in dispatchable.
 	type BaseCallFilter = frame_support::traits::Everything;
 	/// Block & extrinsics weights: base values and limits.
-	type BlockWeights = BlockWeights;
+	type BlockWeights = runtime_common::BlockWeights;
 	/// The maximum length of a block (in bytes).
-	type BlockLength = BlockLength;
+	type BlockLength = runtime_common::BlockLength;
 	/// The identifier used to distinguish between accounts.
 	type AccountId = AccountId;
 	/// The aggregated dispatch type that is available for extrinsics.
@@ -232,7 +225,8 @@ impl pallet_grandpa::Config for Runtime {
 }
 
 parameter_types! {
-	pub const MinimumPeriod: u64 = constants::SLOT_DURATION / 2;
+	// Minimum period 500ms -> block time 1s
+	pub const MinimumPeriod: u64 = 500;
 }
 
 impl pallet_timestamp::Config for Runtime {
@@ -481,16 +475,6 @@ impl pallet_authorship::Config for Runtime {
 	type EventHandler = ();
 }
 
-impl pallet_vesting::Config for Runtime {
-	type Event = Event;
-	type Currency = Balances;
-	type BlockNumberToBalance = ConvertInto;
-	// disable vested transfers by setting min amount to max balance
-	type MinVestedTransfer = constants::MinVestedTransfer;
-	const MAX_VESTING_SCHEDULES: u32 = constants::MAX_VESTING_SCHEDULES;
-	type WeightInfo = ();
-}
-
 impl pallet_utility::Config for Runtime {
 	type Event = Event;
 	type Call = Call;
@@ -677,8 +661,7 @@ construct_runtime!(
 		// // System scheduler.
 		// Scheduler: pallet_scheduler = 32,
 
-		// Vesting. Usable initially, but removed once all vesting is finished.
-		Vesting: pallet_vesting = 33,
+		// DELETED: Vesting: pallet_vesting = 33,
 		// DELETED: KiltLaunch: kilt_launch = 34,
 		Utility: pallet_utility = 35,
 		// DELETED CrowdloanContributors: 36,
@@ -913,7 +896,6 @@ impl_runtime_apis! {
 			list_benchmark!(list, extra, frame_system, SystemBench::<Runtime>);
 			list_benchmark!(list, extra, pallet_balances, Balances);
 			list_benchmark!(list, extra, pallet_timestamp, Timestamp);
-			list_benchmark!(list, extra, pallet_vesting, Vesting);
 
 			list_benchmark!(list, extra, did, Did);
 			list_benchmark!(list, extra, ctype, Ctype);
@@ -961,7 +943,6 @@ impl_runtime_apis! {
 			add_benchmark!(params, batches, frame_system, SystemBench::<Runtime>);
 			add_benchmark!(params, batches, pallet_balances, Balances);
 			add_benchmark!(params, batches, pallet_timestamp, Timestamp);
-			add_benchmark!(params, batches, pallet_vesting, Vesting);
 
 			add_benchmark!(params, batches, did, Did);
 			add_benchmark!(params, batches, ctype, Ctype);
@@ -977,11 +958,8 @@ impl_runtime_apis! {
 	impl frame_try_runtime::TryRuntime<Block> for Runtime {
 		fn on_runtime_upgrade() -> (Weight, Weight) {
 			log::info!("try-runtime::on_runtime_upgrade standalone runtime.");
-			let weight = Executive::try_runtime_upgrade().map_err(|err|{
-				log::info!("try-runtime::on_runtime_upgrade failed with: {:?}", err);
-				err
-			}).unwrap();
-			(weight, BlockWeights::get().max_block)
+			let weight = Executive::try_runtime_upgrade().unwrap();
+			(weight, runtime_common::BlockWeights::get().max_block)
 		}
 		fn execute_block_no_check(block: Block) -> Weight {
 			Executive::execute_block_no_check(block)
