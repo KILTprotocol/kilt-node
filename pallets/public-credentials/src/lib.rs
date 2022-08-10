@@ -18,8 +18,7 @@
 
 //! # Public credentials Pallet
 //!
-//! Provides means of issuing public KILT credentials to subjects, optionally on
-//! request of a third-party claimer.
+//! Provides means of issuing public KILT credentials to subjects.
 //!
 //! ### Terminology
 //!
@@ -27,19 +26,8 @@
 //!   to a subject. This could be an NFT Marketplace which issues authenticity
 //!   certificates to NFT collections.
 //!
-//! - **Claimer:**: A user that requests an attester to issue a credential to a
-//!   subject, i.e., an NFT collection. The request contains the signature of
-//!   the claimer, proving their involvement in the issuance process.
-//!
 //! - **Subject:**: The subject of a credential, i.e., the entity which the
 //!   claims in the credential refer to.
-//!
-//! ## Assumptions
-//!
-//! - This pallet is heavily relying on the functionalities of the `attestation`
-//!   pallet for all of its functions.
-//! - This pallet does not expose a `revoke` extrinsic, as revocation
-//!   functionalities are entirely delegated to the `attestation` pallet.
 #![cfg_attr(not(feature = "std"), no_std)]
 
 mod access_control;
