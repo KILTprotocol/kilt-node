@@ -90,7 +90,7 @@ impl<T: Config> Clone for AsciiWeb3Name<T> {
 }
 
 /// KILT web3 name ownership details.
-#[derive(Clone, Encode, Decode, Debug, PartialEq, TypeInfo, MaxEncodedLen)]
+#[derive(Clone, Encode, Decode, Debug, Eq, PartialEq, TypeInfo, MaxEncodedLen)]
 pub struct Web3NameOwnership<Owner, Deposit: MaxEncodedLen, BlockNumber> {
 	/// The owner of the web3 name.
 	pub owner: Owner,

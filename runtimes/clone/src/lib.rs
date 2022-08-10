@@ -57,6 +57,10 @@ use crate::xcm_config::{XcmConfig, XcmOriginToTransactDispatchOrigin};
 
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
+// TODO: Enable after adding delegation pallet
+// #[cfg(feature = "runtime-benchmarks")]
+// use {frame_system::EnsureSigned, kilt_support::signature::AlwaysVerify,
+// runtime_common::benchmarks::DummySignature};
 
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
@@ -589,9 +593,28 @@ impl_runtime_apis! {
 			list_benchmark!(list, extra, frame_system, SystemBench::<Runtime>);
 			list_benchmark!(list, extra, pallet_session, SessionBench::<Runtime>);
 			list_benchmark!(list, extra, pallet_balances, Balances);
+			// list_benchmark!(list, extra, pallet_collective, Council);
+			// list_benchmark!(list, extra, pallet_democracy, Democracy);
+			// list_benchmark!(list, extra, pallet_indices, Indices);
+			// list_benchmark!(list, extra, pallet_membership, TechnicalMembership);
+			// list_benchmark!(list, extra, pallet_preimage, Preimage);
+			// list_benchmark!(list, extra, pallet_scheduler, Scheduler);
+			list_benchmark!(list, extra, pallet_timestamp, Timestamp);
+			// list_benchmark!(list, extra, pallet_tips, Tips);
+			// list_benchmark!(list, extra, pallet_treasury, Treasury);
 			list_benchmark!(list, extra, pallet_utility, Utility);
+			// list_benchmark!(list, extra, pallet_vesting, Vesting);
+			// list_benchmark!(list, extra, pallet_proxy, Proxy);
 
 			// KILT
+			// list_benchmark!(list, extra, attestation, Attestation);
+			// list_benchmark!(list, extra, ctype, Ctype);
+			// list_benchmark!(list, extra, delegation, Delegation);
+			// list_benchmark!(list, extra, did, Did);
+			// list_benchmark!(list, extra, pallet_did_lookup, DidLookup);
+			// list_benchmark!(list, extra, pallet_inflation, Inflation);
+			// list_benchmark!(list, extra, parachain_staking, ParachainStaking);
+			// list_benchmark!(list, extra, pallet_web3_names, Web3Names);
 
 			let storage_info = AllPalletsWithSystem::storage_info();
 
@@ -634,12 +657,30 @@ impl_runtime_apis! {
 			// Substrate
 			add_benchmark!(params, batches, frame_benchmarking, BaselineBench::<Runtime>);
 			add_benchmark!(params, batches, pallet_balances, Balances);
+			// add_benchmark!(params, batches, pallet_collective, Council);
+			// add_benchmark!(params, batches, pallet_democracy, Democracy);
+			// add_benchmark!(params, batches, pallet_indices, Indices);
+			// add_benchmark!(params, batches, pallet_membership, TechnicalMembership);
+			// add_benchmark!(params, batches, pallet_preimage, Preimage);
+			// add_benchmark!(params, batches, pallet_scheduler, Scheduler);
 			add_benchmark!(params, batches, pallet_session, SessionBench::<Runtime>);
 			add_benchmark!(params, batches, frame_system, SystemBench::<Runtime>);
 			add_benchmark!(params, batches, pallet_timestamp, Timestamp);
+			// add_benchmark!(params, batches, pallet_tips, Tips);
+			// add_benchmark!(params, batches, pallet_treasury, Treasury);
 			add_benchmark!(params, batches, pallet_utility, Utility);
+			// add_benchmark!(params, batches, pallet_vesting, Vesting);
+			// add_benchmark!(params, batches, pallet_proxy, Proxy);
 
 			// KILT
+			// add_benchmark!(params, batches, attestation, Attestation);
+			// add_benchmark!(params, batches, ctype, Ctype);
+			// add_benchmark!(params, batches, delegation, Delegation);
+			// add_benchmark!(params, batches, did, Did);
+			// add_benchmark!(params, batches, pallet_did_lookup, DidLookup);
+			// add_benchmark!(params, batches, pallet_inflation, Inflation);
+			// add_benchmark!(params, batches, parachain_staking, ParachainStaking);
+			// add_benchmark!(params, batches, pallet_web3_names, Web3Names);
 
 			// No benchmarks for these pallets
 			// add_benchmark!(params, batches, cumulus_pallet_parachain_system, ParachainSystem);

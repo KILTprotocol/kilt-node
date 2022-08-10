@@ -135,10 +135,10 @@ parameter_types! {
 	pub const DefaultBlocksPerRound: BlockNumber = BLOCKS_PER_ROUND;
 	pub const MinCollators: u32 = 2;
 	pub const MaxDelegationsPerRound: u32 = 2;
-	#[derive(Debug, PartialEq)]
+	#[derive(Debug, Eq, PartialEq)]
 	pub const MaxDelegatorsPerCollator: u32 = 4;
 	pub const MinCollatorStake: Balance = 10;
-	#[derive(Debug, PartialEq)]
+	#[derive(Debug, Eq, PartialEq)]
 	pub const MaxCollatorCandidates: u32 = 10;
 	pub const MinDelegatorStake: Balance = 5;
 	pub const MaxUnstakeRequests: u32 = 6;

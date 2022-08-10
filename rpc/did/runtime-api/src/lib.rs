@@ -30,7 +30,7 @@ mod service_endpoint;
 pub use did_details::*;
 pub use service_endpoint::*;
 
-#[derive(Encode, Decode, TypeInfo, PartialEq)]
+#[derive(Encode, Decode, TypeInfo, Eq, PartialEq)]
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 pub struct DidLinkedInfo<
 	DidIdentifier,

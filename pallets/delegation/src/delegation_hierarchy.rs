@@ -129,7 +129,7 @@ impl<T: Config> DelegationNode<T> {
 }
 
 /// Delegation information attached to delegation nodes.
-#[derive(Clone, Debug, Encode, Decode, PartialEq, TypeInfo, MaxEncodedLen)]
+#[derive(Clone, Debug, Encode, Decode, Eq, PartialEq, TypeInfo, MaxEncodedLen)]
 #[scale_info(skip_type_params(T))]
 #[codec(mel_bound())]
 pub struct DelegationDetails<T: Config> {

@@ -11,14 +11,14 @@ codec = {package = "parity-scale-codec", version = "3.1.5", default-features = f
 scale-info = {version = "2.1.1", default-features = false, features = ["derive"]}
 serde = {version = "1.0.136", optional = true, features = ["derive"]}
 
-frame-support = {branch = "polkadot-v0.9.26", default-features = false, git = "https://github.com/paritytech/substrate"}
-frame-system = {branch = "polkadot-v0.9.26", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-core = {branch = "polkadot-v0.9.26", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-runtime = {branch = "polkadot-v0.9.26", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-std = {branch = "polkadot-v0.9.26", default-features = false, git = "https://github.com/paritytech/substrate"}
+frame-support = {branch = "polkadot-v0.9.27", default-features = false, git = "https://github.com/paritytech/substrate"}
+frame-system = {branch = "polkadot-v0.9.27", default-features = false, git = "https://github.com/paritytech/substrate"}
+sp-core = {branch = "polkadot-v0.9.27", default-features = false, git = "https://github.com/paritytech/substrate"}
+sp-runtime = {branch = "polkadot-v0.9.27", default-features = false, git = "https://github.com/paritytech/substrate"}
+sp-std = {branch = "polkadot-v0.9.27", default-features = false, git = "https://github.com/paritytech/substrate"}
 
 [dev-dependencies]
-serde_json = "1.0.82"
+serde_json = "1.0.83"
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
