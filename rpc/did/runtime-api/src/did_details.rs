@@ -26,7 +26,7 @@ use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 use did::{did_details::DidPublicKeyDetails, AccountIdOf, BalanceOf, BlockNumberOf, KeyIdOf};
 use kilt_support::deposit::Deposit;
 
-#[derive(Encode, Decode, TypeInfo, Clone, Debug, PartialEq)]
+#[derive(Encode, Decode, TypeInfo, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 pub struct DidDetails<Key: Ord, BlockNumber: MaxEncodedLen, AccountId, Balance> {
 	pub authentication_key: Key,

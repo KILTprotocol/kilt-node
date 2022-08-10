@@ -193,7 +193,7 @@ fn testnet_genesis(
 			code: wasm_binary.to_vec(),
 		},
 		balances: BalancesConfig {
-			balances: endowed_accounts,
+			balances: endowed_accounts.to_vec(),
 		},
 		parachain_info: ParachainInfoConfig { parachain_id: id },
 		aura: Default::default(),

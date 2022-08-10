@@ -22,7 +22,7 @@ use scale_info::TypeInfo;
 use serde::{Deserialize, Serialize};
 
 /// An amount of balance reserved by the specified address.
-#[derive(Clone, Debug, Encode, Decode, PartialEq, TypeInfo, MaxEncodedLen)]
+#[derive(Clone, Debug, Encode, Decode, Eq, PartialEq, TypeInfo, MaxEncodedLen)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 pub struct Deposit<Account, Balance> {
 	pub owner: Account,

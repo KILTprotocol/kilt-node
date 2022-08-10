@@ -18,6 +18,9 @@
 
 //! KILT chain specification
 
+// FIXME: Remove once ChainSpecGroup implements Eq
+#![allow(clippy::derive_partial_eq_without_eq)]
+
 use cumulus_primitives_core::ParaId;
 use polkadot_primitives::v2::LOWEST_PUBLIC_ID;
 use runtime_common::{AccountId, AccountPublic};
@@ -42,7 +45,7 @@ pub fn get_from_seed<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pair>::Pu
 }
 
 /// The extensions for the [`ChainSpec`].
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ChainSpecGroup, ChainSpecExtension)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, ChainSpecGroup, ChainSpecExtension)]
 #[serde(deny_unknown_fields)]
 pub struct Extensions {
 	/// The relay chain of the Parachain.
