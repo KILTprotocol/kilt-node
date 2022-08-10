@@ -446,10 +446,23 @@ pub mod pallet {
 			Ok(Some(<T as Config>::WeightInfo::remove().saturating_add(ac_weight_used)).into())
 		}
 
-		/// Performs the same function as the `remove` extrinsic, with the
-		/// difference that the caller of this function must be the original
-		/// payer of the deposit, and not the original attester of the
-		/// credential.
+		/// Removes the information pertaining a public credential from the
+		/// chain and returns the deposit to its payer.
+		///
+		/// The removal of the credential does not delete it entirely from the
+		/// blockchain history, but only its link *from* the blockchain state
+		/// *to* the blockchain history is removed.
+		///
+		/// Clients parsing public credentials should interpret
+		/// the lack of such a link as the fact that the credential has been
+		/// removed by its attester some time in the past.
+		///
+		/// This function fails if a credential already exists for the specified
+		/// subject.
+		///
+		/// The dispatch origin must be the owner of the deposit, hence not the credential's attester.
+		///
+		/// Emits `CredentialRemoved`.
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::reclaim_deposit())]
 		pub fn reclaim_deposit(origin: OriginFor<T>, credential_id: CredentialIdOf<T>) -> DispatchResult {
 			let submitter = ensure_signed(origin)?;
