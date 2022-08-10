@@ -139,6 +139,8 @@ pub(crate) mod runtime {
 		}
 	}
 
+	// Generates a basic credential entry using the provided input parameters and the default value for the other ones.
+	// The credential will be marked as non-revoked and with no authorization ID associated with it.
 	pub(crate) fn generate_base_credential_entry<T: Config>(
 		payer: T::AccountId,
 		block_number: <T as frame_system::Config>::BlockNumber,
