@@ -12,9 +12,6 @@ clippy:
     - rustup component add clippy --toolchain nightly
     - cargo +nightly clippy --all-features --all-targets --locked -- -D warnings
 
-
-    docker pull paritytech/ci-linux:51583d2c-20220805
-
 fmt:
   # Corresponds to paritytech/ci-linux:production at the time of this PR
   # https://hub.docker.com/layers/ci-linux/paritytech/ci-linux/production/images/sha256-3e13ead5d3a2aaca0ea5ffc8fedeef05f0ac9efe325c77b8b06d208d3c7e8ee6?context=explore
