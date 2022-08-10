@@ -4,8 +4,8 @@ stages:
 
 clippy:
   # Corresponds to paritytech/ci-linux:production at the time of this PR
-  # https://hub.docker.com/layers/ci-linux/paritytech/ci-linux/production/images/sha256-c75cee0971ca54e57a875fac8714eea2db754e621841cde702478783fc28ab90?context=explore
-  image: paritytech/ci-linux@sha256:c75cee0971ca54e57a875fac8714eea2db754e621841cde702478783fc28ab90
+  # https://hub.docker.com/layers/ci-linux/paritytech/ci-linux/production/images/sha256-3e13ead5d3a2aaca0ea5ffc8fedeef05f0ac9efe325c77b8b06d208d3c7e8ee6?context=explore
+  image: paritytech/ci-linux@sha256:3e13ead5d3a2aaca0ea5ffc8fedeef05f0ac9efe325c77b8b06d208d3c7e8ee6
   stage: test
   timeout: 1 hours
   script:
@@ -14,8 +14,8 @@ clippy:
 
 fmt:
   # Corresponds to paritytech/ci-linux:production at the time of this PR
-  # https://hub.docker.com/layers/ci-linux/paritytech/ci-linux/production/images/sha256-c75cee0971ca54e57a875fac8714eea2db754e621841cde702478783fc28ab90?context=explore
-  image: paritytech/ci-linux@sha256:c75cee0971ca54e57a875fac8714eea2db754e621841cde702478783fc28ab90
+  # https://hub.docker.com/layers/ci-linux/paritytech/ci-linux/production/images/sha256-3e13ead5d3a2aaca0ea5ffc8fedeef05f0ac9efe325c77b8b06d208d3c7e8ee6?context=explore
+  image: paritytech/ci-linux@sha256:3e13ead5d3a2aaca0ea5ffc8fedeef05f0ac9efe325c77b8b06d208d3c7e8ee6
   stage: test
   timeout: 1 hours
   script:
@@ -24,8 +24,8 @@ fmt:
 
 test:
   # Corresponds to paritytech/ci-linux:production at the time of this PR
-  # https://hub.docker.com/layers/ci-linux/paritytech/ci-linux/production/images/sha256-c75cee0971ca54e57a875fac8714eea2db754e621841cde702478783fc28ab90?context=explore
-  image: paritytech/ci-linux@sha256:c75cee0971ca54e57a875fac8714eea2db754e621841cde702478783fc28ab90
+  # https://hub.docker.com/layers/ci-linux/paritytech/ci-linux/production/images/sha256-3e13ead5d3a2aaca0ea5ffc8fedeef05f0ac9efe325c77b8b06d208d3c7e8ee6?context=explore
+  image: paritytech/ci-linux@sha256:3e13ead5d3a2aaca0ea5ffc8fedeef05f0ac9efe325c77b8b06d208d3c7e8ee6
   stage: test
   timeout: 1 hours
   script:
@@ -33,8 +33,8 @@ test:
 
 test-features:
   # Corresponds to paritytech/ci-linux:production at the time of this PR
-  # https://hub.docker.com/layers/ci-linux/paritytech/ci-linux/production/images/sha256-c75cee0971ca54e57a875fac8714eea2db754e621841cde702478783fc28ab90?context=explore
-  image: paritytech/ci-linux@sha256:c75cee0971ca54e57a875fac8714eea2db754e621841cde702478783fc28ab90
+  # https://hub.docker.com/layers/ci-linux/paritytech/ci-linux/production/images/sha256-3e13ead5d3a2aaca0ea5ffc8fedeef05f0ac9efe325c77b8b06d208d3c7e8ee6?context=explore
+  image: paritytech/ci-linux@sha256:3e13ead5d3a2aaca0ea5ffc8fedeef05f0ac9efe325c77b8b06d208d3c7e8ee6
   stage: test
   timeout: 1 hours
   script:
@@ -68,7 +68,7 @@ build:
 
 build-wasm-peregrine:
   image:
-    name: paritytech/srtool:1.60.0
+    name: paritytech/srtool:1.62.0
     entrypoint: [""]
   stage: build
   only:
@@ -88,7 +88,7 @@ build-wasm-peregrine:
 
 build-wasm-spiritnet:
   image:
-    name: paritytech/srtool:1.60.0
+    name: paritytech/srtool:1.62.0
     entrypoint: [""]
   stage: build
   only:

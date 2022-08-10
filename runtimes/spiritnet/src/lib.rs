@@ -52,7 +52,7 @@ pub use public_credentials;
 use runtime_common::{
 	assets::AssetDid,
 	authorization::{AuthorizationId, PalletAuthorize},
-	constants::{self, KILT, MILLI_KILT},
+	constants::{self, EXISTENTIAL_DEPOSIT, KILT},
 	fees::{ToAuthor, WeightToFee},
 	pallet_id, AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights, DidIdentifier,
 	FeeSplit, Hash, Header, Index, Signature, SlowAdjustingFeeUpdate,
@@ -164,7 +164,7 @@ impl pallet_timestamp::Config for Runtime {
 }
 
 parameter_types! {
-	pub const ExistentialDeposit: u128 = 10 * MILLI_KILT;
+	pub const ExistentialDeposit: u128 = EXISTENTIAL_DEPOSIT;
 	pub const MaxLocks: u32 = 50;
 	pub const MaxReserves: u32 = 50;
 }

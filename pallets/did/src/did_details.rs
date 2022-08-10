@@ -567,7 +567,7 @@ pub struct DidCreationDetails<T: Config> {
 
 /// Errors that might occur while deriving the authorization verification key
 /// relationship.
-#[derive(Clone, RuntimeDebug, Decode, Encode, PartialEq)]
+#[derive(Clone, RuntimeDebug, Decode, Encode, Eq, PartialEq)]
 pub enum RelationshipDeriveError {
 	/// The call is not callable by a did origin.
 	NotCallableByDid,
