@@ -2,8 +2,8 @@
 # pinned the version to avoid build cache invalidation
 
 # Corresponds to paritytech/ci-linux:production at the time of this PR
-# https://hub.docker.com/layers/ci-linux/paritytech/ci-linux/production/images/sha256-8a8d4f2eefb833d9b344090c42f40ba2de2736d9ff4c496aa31ea913f1e704e7?context=explore
-FROM paritytech/ci-linux@sha256:8a8d4f2eefb833d9b344090c42f40ba2de2736d9ff4c496aa31ea913f1e704e7 as builder
+# https://hub.docker.com/layers/ci-linux/paritytech/ci-linux/production/images/sha256-3e13ead5d3a2aaca0ea5ffc8fedeef05f0ac9efe325c77b8b06d208d3c7e8ee6?context=explore
+FROM paritytech/ci-linux@sha256:3e13ead5d3a2aaca0ea5ffc8fedeef05f0ac9efe325c77b8b06d208d3c7e8ee6 as builder
 
 WORKDIR /build
 

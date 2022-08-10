@@ -4,18 +4,21 @@ stages:
 
 clippy:
   # Corresponds to paritytech/ci-linux:production at the time of this PR
-  # https://hub.docker.com/layers/ci-linux/paritytech/ci-linux/production/images/sha256-8a8d4f2eefb833d9b344090c42f40ba2de2736d9ff4c496aa31ea913f1e704e7?context=explore
-  image: paritytech/ci-linux@sha256:8a8d4f2eefb833d9b344090c42f40ba2de2736d9ff4c496aa31ea913f1e704e7
+  # https://hub.docker.com/layers/ci-linux/paritytech/ci-linux/production/images/sha256-3e13ead5d3a2aaca0ea5ffc8fedeef05f0ac9efe325c77b8b06d208d3c7e8ee6?context=explore
+  image: paritytech/ci-linux@sha256:3e13ead5d3a2aaca0ea5ffc8fedeef05f0ac9efe325c77b8b06d208d3c7e8ee6
   stage: test
   timeout: 1 hours
   script:
     - rustup component add clippy --toolchain nightly
     - cargo +nightly clippy --all-features --all-targets --locked -- -D warnings
 
+
+    docker pull paritytech/ci-linux:51583d2c-20220805
+
 fmt:
   # Corresponds to paritytech/ci-linux:production at the time of this PR
-  # https://hub.docker.com/layers/ci-linux/paritytech/ci-linux/production/images/sha256-8a8d4f2eefb833d9b344090c42f40ba2de2736d9ff4c496aa31ea913f1e704e7?context=explore
-  image: paritytech/ci-linux@sha256:8a8d4f2eefb833d9b344090c42f40ba2de2736d9ff4c496aa31ea913f1e704e7
+  # https://hub.docker.com/layers/ci-linux/paritytech/ci-linux/production/images/sha256-3e13ead5d3a2aaca0ea5ffc8fedeef05f0ac9efe325c77b8b06d208d3c7e8ee6?context=explore
+  image: paritytech/ci-linux@sha256:3e13ead5d3a2aaca0ea5ffc8fedeef05f0ac9efe325c77b8b06d208d3c7e8ee6
   stage: test
   timeout: 1 hours
   script:
@@ -24,8 +27,8 @@ fmt:
 
 test:
   # Corresponds to paritytech/ci-linux:production at the time of this PR
-  # https://hub.docker.com/layers/ci-linux/paritytech/ci-linux/production/images/sha256-8a8d4f2eefb833d9b344090c42f40ba2de2736d9ff4c496aa31ea913f1e704e7?context=explore
-  image: paritytech/ci-linux@sha256:8a8d4f2eefb833d9b344090c42f40ba2de2736d9ff4c496aa31ea913f1e704e7
+  # https://hub.docker.com/layers/ci-linux/paritytech/ci-linux/production/images/sha256-3e13ead5d3a2aaca0ea5ffc8fedeef05f0ac9efe325c77b8b06d208d3c7e8ee6?context=explore
+  image: paritytech/ci-linux@sha256:3e13ead5d3a2aaca0ea5ffc8fedeef05f0ac9efe325c77b8b06d208d3c7e8ee6
   stage: test
   timeout: 1 hours
   script:
@@ -33,8 +36,8 @@ test:
 
 test-features:
   # Corresponds to paritytech/ci-linux:production at the time of this PR
-  # https://hub.docker.com/layers/ci-linux/paritytech/ci-linux/production/images/sha256-8a8d4f2eefb833d9b344090c42f40ba2de2736d9ff4c496aa31ea913f1e704e7?context=explore
-  image: paritytech/ci-linux@sha256:8a8d4f2eefb833d9b344090c42f40ba2de2736d9ff4c496aa31ea913f1e704e7
+  # https://hub.docker.com/layers/ci-linux/paritytech/ci-linux/production/images/sha256-3e13ead5d3a2aaca0ea5ffc8fedeef05f0ac9efe325c77b8b06d208d3c7e8ee6?context=explore
+  image: paritytech/ci-linux@sha256:3e13ead5d3a2aaca0ea5ffc8fedeef05f0ac9efe325c77b8b06d208d3c7e8ee6
   stage: test
   timeout: 1 hours
   script:
