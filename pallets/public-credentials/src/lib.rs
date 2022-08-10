@@ -460,7 +460,8 @@ pub mod pallet {
 		/// This function fails if a credential already exists for the specified
 		/// subject.
 		///
-		/// The dispatch origin must be the owner of the deposit, hence not the credential's attester.
+		/// The dispatch origin must be the owner of the deposit, hence not the
+		/// credential's attester.
 		///
 		/// Emits `CredentialRemoved`.
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::reclaim_deposit())]

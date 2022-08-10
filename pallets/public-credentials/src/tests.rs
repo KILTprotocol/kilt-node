@@ -186,8 +186,7 @@ fn add_ctype_not_existing() {
 	let deposit: Balance = <Test as Config>::Deposit::get();
 
 	ExtBuilder::default()
-		// One less than the minimum required
-		.with_balances(vec![(ACCOUNT_00, deposit - 1)])
+		.with_balances(vec![(ACCOUNT_00, deposit)])
 		.build()
 		.execute_with(|| {
 			assert_noop!(
@@ -196,6 +195,33 @@ fn add_ctype_not_existing() {
 					Box::new(new_credential)
 				),
 				ctype::Error::<Test>::CTypeNotFound
+			);
+		});
+}
+
+#[test]
+fn add_invalid_subject() {
+	let attester = sr25519_did_from_seed(&ALICE_SEED);
+	let subject_id = INVALID_SUBJECT_ID;
+	let ctype_hash = get_ctype_hash::<Test>(true);
+	let new_credential = generate_base_public_credential_creation_op::<Test>(
+		subject_id.into(),
+		ctype_hash,
+		InputClaimsContentOf::<Test>::default(),
+	);
+	let deposit: Balance = <Test as Config>::Deposit::get();
+
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, deposit)])
+		.with_ctypes(vec![(ctype_hash, attester.clone())])
+		.build()
+		.execute_with(|| {
+			assert_noop!(
+				PublicCredentials::add(
+					DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
+					Box::new(new_credential)
+				),
+				Error::<Test>::InvalidInput
 			);
 		});
 }

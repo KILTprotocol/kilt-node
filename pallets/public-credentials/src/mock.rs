@@ -103,9 +103,15 @@ pub(crate) mod runtime {
 	impl TryFrom<Vec<u8>> for TestSubjectId {
 		type Error = Error<Test>;
 
+		// Test failure for subject input. Fails if the input vector is too long or if
+		// the first byte is 255.
 		fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
 			let inner: [u8; 32] = value.try_into().map_err(|_| Error::<Test>::InvalidInput)?;
-			Ok(Self(inner))
+			if inner[0] == 255 {
+				Err(Error::<Test>::InvalidInput)
+			} else {
+				Ok(Self(inner))
+			}
 		}
 	}
 
@@ -139,8 +145,9 @@ pub(crate) mod runtime {
 		}
 	}
 
-	// Generates a basic credential entry using the provided input parameters and the default value for the other ones.
-	// The credential will be marked as non-revoked and with no authorization ID associated with it.
+	// Generates a basic credential entry using the provided input parameters and
+	// the default value for the other ones. The credential will be marked as
+	// non-revoked and with no authorization ID associated with it.
 	pub(crate) fn generate_base_credential_entry<T: Config>(
 		payer: T::AccountId,
 		block_number: <T as frame_system::Config>::BlockNumber,
@@ -359,6 +366,7 @@ pub(crate) mod runtime {
 	pub(crate) const BOB_SEED: [u8; 32] = [1u8; 32];
 
 	pub(crate) const SUBJECT_ID_00: TestSubjectId = TestSubjectId([100u8; 32]);
+	pub(crate) const INVALID_SUBJECT_ID: TestSubjectId = TestSubjectId([255u8; 32]);
 
 	pub(crate) fn sr25519_did_from_seed(seed: &[u8; 32]) -> SubjectId {
 		MultiSigner::from(sr25519::Pair::from_seed(seed).public())
