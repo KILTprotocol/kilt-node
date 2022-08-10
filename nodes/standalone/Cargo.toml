@@ -77,8 +77,8 @@ try-runtime-cli = {git = "https://github.com/paritytech/substrate", branch = "po
 default = []
 runtime-benchmarks = [
   "mashnet-node-runtime/runtime-benchmarks",
-  "public-credentials/runtime-benchmarks",
   "pallet-did-lookup/runtime-benchmarks",
+  "public-credentials/runtime-benchmarks",
   "runtime-common/runtime-benchmarks",
 ]
 try-runtime = [
