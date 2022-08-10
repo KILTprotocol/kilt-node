@@ -24,9 +24,7 @@ public-credentials-runtime-api = {version = "1.7.1", path = "./runtime-api"}
 default = ["std"]
 std = [
   "codec/std",
-
   "sp-api/std",
   "sp-runtime/std",
-
   "public-credentials-runtime-api/std",
 ]

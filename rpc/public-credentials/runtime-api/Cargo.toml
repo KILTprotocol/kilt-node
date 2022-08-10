@@ -18,7 +18,6 @@ sp-std = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0
 default = ["std"]
 std = [
 	"codec/std",
-
 	"sp-api/std",
 	"sp-std/std",
 ]

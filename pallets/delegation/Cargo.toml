@@ -33,7 +33,7 @@ ctype = {default-features = false, path = "../ctype"}
 kilt-support = {default-features = false, path = "../../support"}
 public-credentials = {default-features = false, path = "../public-credentials"}
 
-#External dependencies
+# External dependencies
 bitflags = {default-features = false, version = "1.3.2"}
 codec = {package = "parity-scale-codec", version = "3.1.5", default-features = false, features = ["derive"]}
 log = "0.4.17"
