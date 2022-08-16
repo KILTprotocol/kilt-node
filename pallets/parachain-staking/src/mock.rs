@@ -26,6 +26,7 @@ use frame_support::{
 	traits::{Currency, GenesisBuild, OnFinalize, OnInitialize, OnUnbalanced},
 	weights::Weight,
 };
+use kilt_support::traits::AllEnabled;
 use pallet_authorship::EventHandler;
 use sp_consensus_aura::sr25519::AuthorityId;
 use sp_core::H256;
@@ -169,15 +170,16 @@ impl Config for Test {
 	type MaxDelegationsPerRound = MaxDelegatorsPerCollator;
 	type MaxDelegatorsPerCollator = MaxDelegatorsPerCollator;
 	type MaxCollatorsPerDelegator = MaxCollatorsPerDelegator;
+	type MaxTopCandidates = MaxCollatorCandidates;
 	type MinCollatorStake = MinCollatorStake;
 	type MinCollatorCandidateStake = MinCollatorStake;
-	type MaxTopCandidates = MaxCollatorCandidates;
-	type MinDelegatorStake = MinDelegatorStake;
 	type MinDelegation = MinDelegation;
+	type MinDelegatorStake = MinDelegatorStake;
 	type MaxUnstakeRequests = MaxUnstakeRequests;
-	type NetworkRewardRate = NetworkRewardRate;
 	type NetworkRewardStart = NetworkRewardStart;
+	type NetworkRewardRate = NetworkRewardRate;
 	type NetworkRewardBeneficiary = ToBeneficiary;
+	type StakingControl = AllEnabled;
 	type WeightInfo = ();
 	const BLOCKS_PER_YEAR: Self::BlockNumber = 5 * 60 * 24 * 36525 / 100;
 }

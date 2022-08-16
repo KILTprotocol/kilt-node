@@ -658,6 +658,7 @@ impl parachain_staking::Config for Runtime {
 	type NetworkRewardStart = constants::staking::NetworkRewardStart;
 
 	type NetworkRewardBeneficiary = Treasury;
+	type StakingControl = DynFilter;
 	type WeightInfo = weights::parachain_staking::WeightInfo<Runtime>;
 
 	const BLOCKS_PER_YEAR: Self::BlockNumber = constants::BLOCKS_PER_YEAR;

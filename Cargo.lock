@@ -6201,6 +6201,7 @@ dependencies = [
  "frame-benchmarking",
  "frame-support",
  "frame-system",
+ "kilt-support",
  "log",
  "pallet-aura",
  "pallet-authorship",
