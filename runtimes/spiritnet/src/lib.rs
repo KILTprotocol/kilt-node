@@ -63,6 +63,7 @@ use sp_version::NativeVersion;
 #[cfg(feature = "runtime-benchmarks")]
 use {frame_system::EnsureSigned, kilt_support::signature::AlwaysVerify, runtime_common::benchmarks::DummySignature};
 
+mod filter;
 #[cfg(test)]
 mod tests;
 
@@ -845,6 +846,20 @@ impl pallet_proxy::Config for Runtime {
 	type WeightInfo = weights::pallet_proxy::WeightInfo<Runtime>;
 }
 
+impl pallet_dyn_filter::Config for Runtime {
+	type Event = Event;
+	type WeightInfo = pallet_dyn_filter::default_weights::SubstrateWeight<Runtime>;
+
+	type EnsureOrigin = EnsureRoot<AccountId>;
+
+	type GovernanceCall = filter::GovCalls;
+	type StakingCall = filter::StakeCalls;
+	type TransferCall = filter::TransferCalls;
+	type FeatureCall = filter::FeatureCalls;
+	type XcmCall = filter::XcmCalls;
+	type SystemCall = filter::SystemCalls;
+}
+
 construct_runtime! {
 	pub enum Runtime where
 		Block = Block,
@@ -874,6 +889,7 @@ construct_runtime! {
 		// placeholder: parachain council election = 33,
 		TechnicalMembership: pallet_membership::<Instance1> = 34,
 		Treasury: pallet_treasury = 35,
+		DynFilter: pallet_dyn_filter = 36,
 
 		// Utility module.
 		Utility: pallet_utility = 40,

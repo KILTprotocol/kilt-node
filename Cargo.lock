@@ -5483,6 +5483,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-dyn-filter"
+version = "1.7.1"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "itertools",
+ "kilt-support",
+ "lazy_static",
+ "log",
+ "pallet-balances",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-keystore",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-election-provider-multi-phase"
 version = "4.0.0-dev"
 source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.27#8eff668a42325aeb4433eace1604f4d286a6ec05"
@@ -6414,6 +6435,7 @@ dependencies = [
  "pallet-collective",
  "pallet-democracy",
  "pallet-did-lookup",
+ "pallet-dyn-filter",
  "pallet-indices",
  "pallet-inflation",
  "pallet-membership",
@@ -10741,6 +10763,7 @@ dependencies = [
  "pallet-collective",
  "pallet-democracy",
  "pallet-did-lookup",
+ "pallet-dyn-filter",
  "pallet-indices",
  "pallet-inflation",
  "pallet-membership",

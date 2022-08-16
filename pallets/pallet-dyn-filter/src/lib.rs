@@ -1,0 +1,174 @@
+// KILT Blockchain – https://botlabs.org
+// Copyright (C) 2019-2022 BOTLabs GmbH
+
+// The KILT Blockchain is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// The KILT Blockchain is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+// If you feel like getting in touch with us, you can do so at info@botlabs.org
+
+//! # DID lookup pallet
+//!
+//! This pallet stores a map from account IDs to DIDs.
+//!
+//! - [`Pallet`]
+
+#![cfg_attr(not(feature = "std"), no_std)]
+
+pub mod default_weights;
+
+#[cfg(test)]
+mod tests;
+
+#[cfg(test)]
+mod mock;
+
+#[cfg(feature = "runtime-benchmarks")]
+mod benchmarking;
+mod setting;
+
+pub use crate::{default_weights::WeightInfo, pallet::*};
+
+#[frame_support::pallet]
+pub mod pallet {
+
+	use frame_support::{
+		pallet_prelude::*,
+		traits::{Contains, StorageVersion},
+	};
+	use frame_system::pallet_prelude::*;
+	use kilt_support::traits::EnabledFunctionality;
+
+	use crate::{setting::FilterSettings, WeightInfo};
+
+	pub const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
+
+	#[pallet::config]
+	pub trait Config: frame_system::Config {
+		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+		/// The origin check for all DID calls inside this pallet.
+		type EnsureOrigin: EnsureOrigin<<Self as frame_system::Config>::Origin>;
+
+		/// Governance calls. (GovernanceCall contains all system calls, return true if call is contained in this set)
+		type GovernanceCall: Contains<<Self as frame_system::Config>::Call>;
+
+		/// Staking, delegating, collating calls. (return true if call is contained in this set)
+		type StakingCall: Contains<<Self as frame_system::Config>::Call>;
+
+		/// System calls are not filtered. (return true if call is contained in this set)
+		type TransferCall: Contains<<Self as frame_system::Config>::Call>;
+
+		/// System calls are not filtered. (return true if call is contained in this set)
+		type FeatureCall: Contains<<Self as frame_system::Config>::Call>;
+
+		/// System calls are not filtered. (return true if call is contained in this set)
+		type XcmCall: Contains<<Self as frame_system::Config>::Call>;
+
+		/// System calls are not filtered. (SystemCall contains all system calls, return true if system call)
+		type SystemCall: Contains<<Self as frame_system::Config>::Call>;
+
+		/// Weight information for extrinsics in this pallet.
+		type WeightInfo: WeightInfo;
+	}
+
+	#[pallet::pallet]
+	#[pallet::generate_store(pub(super) trait Store)]
+	#[pallet::storage_version(STORAGE_VERSION)]
+	pub struct Pallet<T>(_);
+
+	#[pallet::storage]
+	#[pallet::getter(fn connected_accounts)]
+	pub type Filter<T> = StorageValue<_, FilterSettings, ValueQuery>;
+
+	#[pallet::event]
+	#[pallet::generate_deposit(pub(super) fn deposit_event)]
+	pub enum Event<T: Config> {
+		NewFilterRules { rules: FilterSettings },
+	}
+
+	#[pallet::error]
+	pub enum Error<T> {}
+
+	#[pallet::call]
+	impl<T: Config> Pallet<T> {
+		#[pallet::weight(<T as Config>::WeightInfo::set_filter())]
+		pub fn set_filter(origin: OriginFor<T>, filter: FilterSettings) -> DispatchResult {
+			<T as Config>::EnsureOrigin::ensure_origin(origin)?;
+
+			Filter::<T>::set(filter);
+			Self::deposit_event(Event::<T>::NewFilterRules { rules: filter });
+			Ok(())
+		}
+	}
+
+	impl<T: Config> Contains<T::Call> for Pallet<T> {
+		fn contains(t: &T::Call) -> bool {
+			// true = call goes through
+
+			// System relevant calls cannot be filtered
+			if T::SystemCall::contains(t) {
+				return true;
+			}
+
+			let FilterSettings {
+				governance,
+				staking,
+				transfer,
+				feature,
+				xcm,
+			} = Filter::<T>::get();
+			if governance && T::GovernanceCall::contains(t) {
+				return false;
+			}
+			if staking && T::StakingCall::contains(t) {
+				return false;
+			}
+			if transfer && T::TransferCall::contains(t) {
+				return false;
+			}
+			if feature && T::FeatureCall::contains(t) {
+				return false;
+			}
+			if xcm && T::XcmCall::contains(t) {
+				return false;
+			}
+			true
+		}
+	}
+
+	impl<T: Config> EnabledFunctionality for Pallet<T> {
+		fn governance() -> bool {
+			let FilterSettings { governance, .. } = Filter::<T>::get();
+			return governance;
+		}
+
+		fn staking() -> bool {
+			let FilterSettings { staking, .. } = Filter::<T>::get();
+			return staking;
+		}
+
+		fn transfer() -> bool {
+			let FilterSettings { transfer, .. } = Filter::<T>::get();
+			return transfer;
+		}
+
+		fn feature() -> bool {
+			let FilterSettings { feature, .. } = Filter::<T>::get();
+			return feature;
+		}
+
+		fn xcm() -> bool {
+			let FilterSettings { xcm, .. } = Filter::<T>::get();
+			return xcm;
+		}
+	}
+}

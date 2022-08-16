@@ -68,3 +68,57 @@ pub trait VersionMigratorTrait<T>: Sized {
 pub trait GenerateBenchmarkOrigin<OuterOrigin, AccountId, SubjectId> {
 	fn generate_origin(sender: AccountId, subject: SubjectId) -> OuterOrigin;
 }
+
+pub trait EnabledFunctionality {
+	fn governance() -> bool;
+	fn staking() -> bool;
+	fn transfer() -> bool;
+	fn feature() -> bool;
+	fn xcm() -> bool;
+}
+
+pub struct AllEnabled;
+impl EnabledFunctionality for AllEnabled {
+	fn governance() -> bool {
+		true
+	}
+
+	fn staking() -> bool {
+		true
+	}
+
+	fn transfer() -> bool {
+		true
+	}
+
+	fn feature() -> bool {
+		true
+	}
+
+	fn xcm() -> bool {
+		true
+	}
+}
+
+pub struct AllDisabled;
+impl EnabledFunctionality for AllDisabled {
+	fn governance() -> bool {
+		false
+	}
+
+	fn staking() -> bool {
+		false
+	}
+
+	fn transfer() -> bool {
+		false
+	}
+
+	fn feature() -> bool {
+		false
+	}
+
+	fn xcm() -> bool {
+		false
+	}
+}
