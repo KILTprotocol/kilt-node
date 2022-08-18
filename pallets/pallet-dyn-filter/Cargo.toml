@@ -49,13 +49,13 @@ std = [
   "frame-benchmarking/std",
   "frame-support/std",
   "frame-system/std",
+  "kilt-support/std",
   "log/std",
   "scale-info/std",
   "sp-core/std",
   "sp-io/std",
   "sp-runtime/std",
   "sp-std/std",
-  "kilt-support/std",
 ]
 
 try-runtime = [

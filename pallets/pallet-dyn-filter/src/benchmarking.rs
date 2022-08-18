@@ -16,9 +16,26 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use super::*;
+use frame_benchmarking::{benchmarks, impl_benchmark_test_suite};
+use frame_support::traits::EnsureOrigin;
 
-benchmarks! {}
+use super::*;
+use crate::setting::FilterSettings;
+
+benchmarks! {
+	set_filter {
+		let new_filter = FilterSettings {
+			governance: true,
+			staking: true,
+			transfer: true,
+			feature: true,
+			xcm: true,
+		};
+		let origin = T::EnsureOrigin::successful_origin();
+	}: _<T::Origin>(origin, new_filter)
+	verify {
+	}
+}
 
 impl_benchmark_test_suite! {
 	Pallet,

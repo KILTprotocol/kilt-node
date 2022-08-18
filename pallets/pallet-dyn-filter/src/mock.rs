@@ -120,9 +120,10 @@ pub struct GovCalls;
 impl Contains<Call> for GovCalls {
 	fn contains(t: &Call) -> bool {
 		if let Call::System(frame_system::Call::remark { remark }) = t {
-			return &remark[..] == GOVERNANCE;
+			&remark[..] == GOVERNANCE
+		} else {
+			false
 		}
-		return false;
 	}
 }
 
@@ -130,9 +131,10 @@ pub struct StakingCalls;
 impl Contains<Call> for StakingCalls {
 	fn contains(t: &Call) -> bool {
 		if let Call::System(frame_system::Call::remark { remark }) = t {
-			return &remark[..] == STAKING;
+			&remark[..] == STAKING
+		} else {
+			false
 		}
-		return false;
 	}
 }
 
@@ -140,9 +142,10 @@ pub struct TransferCalls;
 impl Contains<Call> for TransferCalls {
 	fn contains(t: &Call) -> bool {
 		if let Call::System(frame_system::Call::remark { remark }) = t {
-			return &remark[..] == TRANSFER;
+			&remark[..] == TRANSFER
+		} else {
+			false
 		}
-		return false;
 	}
 }
 
@@ -150,18 +153,20 @@ pub struct FeatureCalls;
 impl Contains<Call> for FeatureCalls {
 	fn contains(t: &Call) -> bool {
 		if let Call::System(frame_system::Call::remark { remark }) = t {
-			return &remark[..] == FEATURE;
+			&remark[..] == FEATURE
+		} else {
+			false
 		}
-		return false;
 	}
 }
 pub struct XcmCalls;
 impl Contains<Call> for XcmCalls {
 	fn contains(t: &Call) -> bool {
 		if let Call::System(frame_system::Call::remark { remark }) = t {
-			return &remark[..] == XCM;
+			&remark[..] == XCM
+		} else {
+			false
 		}
-		return false;
 	}
 }
 
@@ -169,9 +174,10 @@ pub struct SystemCalls;
 impl Contains<Call> for SystemCalls {
 	fn contains(t: &Call) -> bool {
 		if let Call::System(frame_system::Call::remark { remark }) = t {
-			return &remark[..] == SYSTEM;
+			&remark[..] == SYSTEM
+		} else {
+			false
 		}
-		return false;
 	}
 }
 
@@ -181,9 +187,7 @@ pub struct ExtBuilder {}
 impl ExtBuilder {
 	pub fn build(self) -> sp_io::TestExternalities {
 		let storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
-		let ext = sp_io::TestExternalities::new(storage);
-
-		ext
+		sp_io::TestExternalities::new(storage)
 	}
 
 	#[cfg(feature = "runtime-benchmarks")]

@@ -16,9 +16,9 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-//! # DID lookup pallet
+//! # Dynamic Call Filter
 //!
-//! This pallet stores a map from account IDs to DIDs.
+//! Enable or disable specific features without a runtime upgrade.
 //!
 //! - [`Pallet`]
 
@@ -58,22 +58,28 @@ pub mod pallet {
 		/// The origin check for all DID calls inside this pallet.
 		type EnsureOrigin: EnsureOrigin<<Self as frame_system::Config>::Origin>;
 
-		/// Governance calls. (GovernanceCall contains all system calls, return true if call is contained in this set)
+		/// Governance calls. (GovernanceCall contains all system calls, return
+		/// true if call is contained in this set)
 		type GovernanceCall: Contains<<Self as frame_system::Config>::Call>;
 
-		/// Staking, delegating, collating calls. (return true if call is contained in this set)
+		/// Staking, delegating, collating calls. (return true if call is
+		/// contained in this set)
 		type StakingCall: Contains<<Self as frame_system::Config>::Call>;
 
-		/// System calls are not filtered. (return true if call is contained in this set)
+		/// System calls are not filtered. (return true if call is contained in
+		/// this set)
 		type TransferCall: Contains<<Self as frame_system::Config>::Call>;
 
-		/// System calls are not filtered. (return true if call is contained in this set)
+		/// System calls are not filtered. (return true if call is contained in
+		/// this set)
 		type FeatureCall: Contains<<Self as frame_system::Config>::Call>;
 
-		/// System calls are not filtered. (return true if call is contained in this set)
+		/// System calls are not filtered. (return true if call is contained in
+		/// this set)
 		type XcmCall: Contains<<Self as frame_system::Config>::Call>;
 
-		/// System calls are not filtered. (SystemCall contains all system calls, return true if system call)
+		/// System calls are not filtered. (SystemCall contains all system
+		/// calls, return true if system call)
 		type SystemCall: Contains<<Self as frame_system::Config>::Call>;
 
 		/// Weight information for extrinsics in this pallet.
@@ -126,49 +132,34 @@ pub mod pallet {
 				feature,
 				xcm,
 			} = Filter::<T>::get();
-			if governance && T::GovernanceCall::contains(t) {
-				return false;
-			}
-			if staking && T::StakingCall::contains(t) {
-				return false;
-			}
-			if transfer && T::TransferCall::contains(t) {
-				return false;
-			}
-			if feature && T::FeatureCall::contains(t) {
-				return false;
-			}
-			if xcm && T::XcmCall::contains(t) {
-				return false;
-			}
-			true
+
+			!((governance && T::GovernanceCall::contains(t))
+				|| (staking && T::StakingCall::contains(t))
+				|| (transfer && T::TransferCall::contains(t))
+				|| (feature && T::FeatureCall::contains(t))
+				|| (xcm && T::XcmCall::contains(t)))
 		}
 	}
 
 	impl<T: Config> EnabledFunctionality for Pallet<T> {
 		fn governance() -> bool {
-			let FilterSettings { governance, .. } = Filter::<T>::get();
-			return governance;
+			Filter::<T>::get().governance
 		}
 
 		fn staking() -> bool {
-			let FilterSettings { staking, .. } = Filter::<T>::get();
-			return staking;
+			Filter::<T>::get().staking
 		}
 
 		fn transfer() -> bool {
-			let FilterSettings { transfer, .. } = Filter::<T>::get();
-			return transfer;
+			Filter::<T>::get().transfer
 		}
 
 		fn feature() -> bool {
-			let FilterSettings { feature, .. } = Filter::<T>::get();
-			return feature;
+			Filter::<T>::get().feature
 		}
 
 		fn xcm() -> bool {
-			let FilterSettings { xcm, .. } = Filter::<T>::get();
-			return xcm;
+			Filter::<T>::get().xcm
 		}
 	}
 }
