@@ -5,16 +5,9 @@ use super::Call;
 pub struct GovCalls;
 impl Contains<Call> for GovCalls {
 	fn contains(t: &Call) -> bool {
-		matches!(
-			t,
-			Call::Democracy(..)
-				| Call::Council(..)
-				| Call::TechnicalCommittee(..)
-				| Call::Treasury(..)
-				| Call::TechnicalMembership(..)
-				| Call::TipsMembership(..)
-				| Call::Tips(..)
-		)
+		// We don't want to disable governance completely since we need it to set the
+		// filter.
+		matches!(t, Call::Treasury(..) | Call::TipsMembership(..) | Call::Tips(..))
 	}
 }
 
