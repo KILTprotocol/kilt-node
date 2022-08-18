@@ -626,6 +626,7 @@ impl pallet_inflation::Config for Runtime {
 	type InitialPeriodLength = constants::treasury::InitialPeriodLength;
 	type InitialPeriodReward = constants::treasury::InitialPeriodReward;
 	type Beneficiary = Treasury;
+	type Control = DynFilter;
 	type WeightInfo = weights::pallet_inflation::WeightInfo<Runtime>;
 }
 
@@ -847,11 +848,16 @@ impl pallet_proxy::Config for Runtime {
 	type WeightInfo = weights::pallet_proxy::WeightInfo<Runtime>;
 }
 
+type DynFilterOrigin = EitherOfDiverse<
+	EnsureRoot<AccountId>,
+	pallet_collective::EnsureProportionAtLeast<AccountId, CouncilCollective, 1, 1>,
+>;
+
 impl pallet_dyn_filter::Config for Runtime {
 	type Event = Event;
 	type WeightInfo = pallet_dyn_filter::default_weights::SubstrateWeight<Runtime>;
 
-	type EnsureOrigin = EnsureRoot<AccountId>;
+	type EnsureOrigin = DynFilterOrigin;
 
 	type GovernanceCall = filter::GovCalls;
 	type StakingCall = filter::StakeCalls;
