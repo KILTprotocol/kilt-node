@@ -34,7 +34,7 @@ mod mock;
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
-mod setting;
+pub mod setting;
 
 pub use crate::{default_weights::WeightInfo, pallet::*};
 
@@ -92,7 +92,7 @@ pub mod pallet {
 	pub struct Pallet<T>(_);
 
 	#[pallet::storage]
-	#[pallet::getter(fn connected_accounts)]
+	#[pallet::getter(fn filter_setting)]
 	pub type Filter<T> = StorageValue<_, FilterSettings, ValueQuery>;
 
 	#[pallet::event]

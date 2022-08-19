@@ -7,6 +7,7 @@ version = "1.7.1"
 
 [dev-dependencies]
 pallet-aura = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.27"}
+pallet-dyn-filter = {path = "../pallet-dyn-filter"}
 pallet-timestamp = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.27"}
 sp-consensus-aura = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.27"}
 sp-core = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.27"}

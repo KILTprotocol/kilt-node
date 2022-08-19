@@ -6207,6 +6207,7 @@ dependencies = [
  "pallet-aura",
  "pallet-authorship",
  "pallet-balances",
+ "pallet-dyn-filter",
  "pallet-session",
  "pallet-timestamp",
  "parity-scale-codec",

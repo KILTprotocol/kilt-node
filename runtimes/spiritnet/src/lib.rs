@@ -32,6 +32,7 @@ use frame_support::{
 	weights::{constants::RocksDbWeight, ConstantMultiplier, Weight},
 };
 use frame_system::EnsureRoot;
+use kilt_support::traits::AllEnabled;
 use sp_api::impl_runtime_apis;
 use sp_core::OpaqueMetadata;
 use sp_runtime::{
@@ -652,8 +653,10 @@ impl parachain_staking::Config for Runtime {
 	type MaxUnstakeRequests = constants::staking::MaxUnstakeRequests;
 	type NetworkRewardRate = constants::staking::NetworkRewardRate;
 	type NetworkRewardStart = constants::staking::NetworkRewardStart;
-
 	type NetworkRewardBeneficiary = Treasury;
+	#[cfg(feature = "runtime-benchmarks")]
+	type StakingControl = AllEnabled;
+	#[cfg(not(feature = "runtime-benchmarks"))]
 	type StakingControl = DynFilter;
 	type WeightInfo = weights::parachain_staking::WeightInfo<Runtime>;
 

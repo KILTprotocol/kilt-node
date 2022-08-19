@@ -25,13 +25,15 @@ use frame_support::{
 	BoundedVec,
 };
 use pallet_balances::{BalanceLock, Error as BalancesError, Reasons};
+use pallet_dyn_filter::setting::FilterSettings;
 use pallet_session::{SessionManager, ShouldEndSession};
 use sp_runtime::{traits::Zero, Perbill, Permill, Perquintill, SaturatedConversion};
 
 use crate::{
 	mock::{
-		almost_equal, events, last_event, roll_to, AccountId, Balance, Balances, BlockNumber, Event as MetaEvent,
-		ExtBuilder, Origin, Session, StakePallet, System, Test, BLOCKS_PER_ROUND, DECIMALS, TREASURY_ACC,
+		almost_equal, events, last_event, roll_to, AccountId, Balance, Balances, BlockNumber, DynFilter,
+		Event as MetaEvent, ExtBuilder, Origin, Session, StakePallet, System, Test, BLOCKS_PER_ROUND, DECIMALS,
+		FILTER_ALL_ENABLED, TREASURY_ACC,
 	},
 	set::OrderedSet,
 	types::{
@@ -3924,5 +3926,78 @@ fn update_total_stake_no_collator_changes() {
 					delegators: 110
 				}
 			);
+		});
+}
+
+#[test]
+fn dynamic_filter_works_for_staking_rewards() {
+	ExtBuilder::default()
+		.with_balances(vec![(1, 100 * DECIMALS), (2, 100 * DECIMALS)])
+		.with_collators(vec![(1, 100 * DECIMALS)])
+		.with_delegators(vec![(2, 1, 100 * DECIMALS)])
+		.build()
+		.execute_with(|| {
+			// filter off: rewards should be paid out
+			roll_to(2, vec![Some(1), Some(1)]);
+			let col_balance = Balances::free_balance(&1);
+			let del_balance = Balances::free_balance(&2);
+			assert!(col_balance > 100 * DECIMALS);
+			assert!(del_balance > 100 * DECIMALS);
+
+			// disable staking
+			let filter = FilterSettings {
+				staking: false,
+				..FILTER_ALL_ENABLED
+			};
+			assert_ok!(DynFilter::set_filter(Origin::root(), filter));
+
+			// filter enabled: rewards should not be paid out
+			roll_to(3, vec![Some(1), Some(1), Some(1)]);
+			assert_eq!(Balances::free_balance(&1), col_balance);
+			assert_eq!(Balances::free_balance(&2), del_balance);
+
+			// re-enable staking
+			assert_ok!(DynFilter::set_filter(Origin::root(), FILTER_ALL_ENABLED));
+			roll_to(4, vec![Some(1), Some(1), Some(1), Some(1)]);
+			assert!(Balances::free_balance(&1) > col_balance);
+			assert!(Balances::free_balance(&2) > del_balance);
+		});
+}
+
+#[test]
+fn dynamic_filter_works_for_network_rewards() {
+	let max_stake: Balance = 160_000_000 * DECIMALS;
+	let collators: Vec<(AccountId, Balance)> = (1u64..=<Test as Config>::MinCollators::get().into())
+		.map(|acc_id| (acc_id, max_stake))
+		.collect();
+	ExtBuilder::default()
+		.with_balances(collators.clone())
+		.with_collators(collators)
+		.build()
+		.execute_with(|| {
+			let network_reward_start = <Test as Config>::NetworkRewardStart::get();
+			let total_issuance_genesis = <Test as Config>::Currency::total_issuance();
+			System::set_block_number(network_reward_start);
+
+			// filter off: rewards should be minted
+			roll_to(network_reward_start + 1, vec![None]);
+			let total_issuance_1 = <Test as Config>::Currency::total_issuance();
+			assert!(total_issuance_1 > total_issuance_genesis);
+
+			// disable staking
+			let filter = FilterSettings {
+				staking: false,
+				..FILTER_ALL_ENABLED
+			};
+			assert_ok!(DynFilter::set_filter(Origin::root(), filter));
+
+			// filter enabled: rewards should not be minted
+			roll_to(network_reward_start + 2, vec![None]);
+			assert_eq!(total_issuance_1, <Test as Config>::Currency::total_issuance());
+
+			// re-enable staking
+			assert_ok!(DynFilter::set_filter(Origin::root(), FILTER_ALL_ENABLED));
+			roll_to(network_reward_start + 3, vec![None]);
+			assert!(<Test as Config>::Currency::total_issuance() > total_issuance_1);
 		});
 }
