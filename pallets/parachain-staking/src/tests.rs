@@ -3929,6 +3929,7 @@ fn update_total_stake_no_collator_changes() {
 		});
 }
 
+#[cfg(not(feature = "runtime-benchmarks"))]
 #[test]
 fn dynamic_filter_works_for_staking_rewards() {
 	ExtBuilder::default()
@@ -3964,6 +3965,7 @@ fn dynamic_filter_works_for_staking_rewards() {
 		});
 }
 
+#[cfg(not(feature = "runtime-benchmarks"))]
 #[test]
 fn dynamic_filter_works_for_network_rewards() {
 	let max_stake: Balance = 160_000_000 * DECIMALS;

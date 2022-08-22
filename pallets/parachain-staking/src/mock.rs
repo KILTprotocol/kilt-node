@@ -200,6 +200,9 @@ impl Config for Test {
 	type NetworkRewardStart = NetworkRewardStart;
 	type NetworkRewardRate = NetworkRewardRate;
 	type NetworkRewardBeneficiary = ToBeneficiary;
+	#[cfg(feature = "runtime-benchmarks")]
+	type StakingControl = kilt_support::traits::AllEnabled;
+	#[cfg(not(feature = "runtime-benchmarks"))]
 	type StakingControl = DynFilter;
 	type WeightInfo = ();
 	const BLOCKS_PER_YEAR: Self::BlockNumber = 5 * 60 * 24 * 36525 / 100;
