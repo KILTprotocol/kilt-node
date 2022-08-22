@@ -69,7 +69,10 @@ impl<T: sc_service::ChainSpec + 'static> IdentifyChain for T {
 }
 
 fn load_spec(id: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
-	let runtime = if id.contains("peregrine") || id.eq("kilt_parachain_testnet") {
+	let runtime = if id.to_lowercase().contains("spiritnet")
+		|| id.to_lowercase().contains("wilt")
+		|| id.to_lowercase().contains("rilt")
+	{
 		"spiritnet"
 	} else if id.to_lowercase().contains("cln_kilt") || id.to_lowercase().contains("clone") {
 		"clone"
