@@ -25,15 +25,13 @@ use frame_support::{
 	BoundedVec,
 };
 use pallet_balances::{BalanceLock, Error as BalancesError, Reasons};
-use pallet_dyn_filter::setting::FilterSettings;
 use pallet_session::{SessionManager, ShouldEndSession};
 use sp_runtime::{traits::Zero, Perbill, Permill, Perquintill, SaturatedConversion};
 
 use crate::{
 	mock::{
-		almost_equal, events, last_event, roll_to, AccountId, Balance, Balances, BlockNumber, DynFilter,
-		Event as MetaEvent, ExtBuilder, Origin, Session, StakePallet, System, Test, BLOCKS_PER_ROUND, DECIMALS,
-		FILTER_ALL_ENABLED, TREASURY_ACC,
+		almost_equal, events, last_event, roll_to, AccountId, Balance, Balances, BlockNumber, Event as MetaEvent,
+		ExtBuilder, Origin, Session, StakePallet, System, Test, BLOCKS_PER_ROUND, DECIMALS, TREASURY_ACC,
 	},
 	set::OrderedSet,
 	types::{
@@ -3946,11 +3944,11 @@ fn dynamic_filter_works_for_staking_rewards() {
 			assert!(del_balance > 100 * DECIMALS);
 
 			// disable staking
-			let filter = FilterSettings {
+			let filter = pallet_dyn_filter::setting::FilterSettings {
 				staking: false,
-				..FILTER_ALL_ENABLED
+				..crate::mock::FILTER_ALL_ENABLED
 			};
-			assert_ok!(DynFilter::set_filter(Origin::root(), filter));
+			assert_ok!(crate::mock::DynFilter::set_filter(Origin::root(), filter));
 
 			// filter enabled: rewards should not be paid out
 			roll_to(3, vec![Some(1), Some(1), Some(1)]);
@@ -3958,7 +3956,10 @@ fn dynamic_filter_works_for_staking_rewards() {
 			assert_eq!(Balances::free_balance(&2), del_balance);
 
 			// re-enable staking
-			assert_ok!(DynFilter::set_filter(Origin::root(), FILTER_ALL_ENABLED));
+			assert_ok!(crate::mock::DynFilter::set_filter(
+				Origin::root(),
+				crate::mock::FILTER_ALL_ENABLED
+			));
 			roll_to(4, vec![Some(1), Some(1), Some(1), Some(1)]);
 			assert!(Balances::free_balance(&1) > col_balance);
 			assert!(Balances::free_balance(&2) > del_balance);
@@ -3987,18 +3988,21 @@ fn dynamic_filter_works_for_network_rewards() {
 			assert!(total_issuance_1 > total_issuance_genesis);
 
 			// disable staking
-			let filter = FilterSettings {
+			let filter = pallet_dyn_filter::setting::FilterSettings {
 				staking: false,
-				..FILTER_ALL_ENABLED
+				..crate::mock::FILTER_ALL_ENABLED
 			};
-			assert_ok!(DynFilter::set_filter(Origin::root(), filter));
+			assert_ok!(crate::mock::DynFilter::set_filter(Origin::root(), filter));
 
 			// filter enabled: rewards should not be minted
 			roll_to(network_reward_start + 2, vec![None]);
 			assert_eq!(total_issuance_1, <Test as Config>::Currency::total_issuance());
 
 			// re-enable staking
-			assert_ok!(DynFilter::set_filter(Origin::root(), FILTER_ALL_ENABLED));
+			assert_ok!(crate::mock::DynFilter::set_filter(
+				Origin::root(),
+				crate::mock::FILTER_ALL_ENABLED
+			));
 			roll_to(network_reward_start + 3, vec![None]);
 			assert!(<Test as Config>::Currency::total_issuance() > total_issuance_1);
 		});
