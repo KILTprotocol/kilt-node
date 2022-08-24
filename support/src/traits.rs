@@ -16,6 +16,12 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use codec::{EncodeLike, FullCodec};
+use frame_support::weights::Weight;
+use scale_info::TypeInfo;
+use sp_std::vec::Vec;
+use xcm::latest::Xcm;
+
 /// The sources of a call struct.
 ///
 /// This trait allows to differentiate between the sender of a call and the
@@ -67,4 +73,32 @@ pub trait VersionMigratorTrait<T>: Sized {
 #[cfg(feature = "runtime-benchmarks")]
 pub trait GenerateBenchmarkOrigin<OuterOrigin, AccountId, SubjectId> {
 	fn generate_origin(sender: AccountId, subject: SubjectId) -> OuterOrigin;
+}
+
+// TODO: Docs
+
+pub trait RelayCallBuilder {
+	type AccountId: FullCodec;
+	type Balance: FullCodec;
+	type RelayChainCall: FullCodec + EncodeLike + sp_std::fmt::Debug + Clone + PartialEq + Eq + TypeInfo;
+
+	/// Execute multiple calls in a batch.
+	/// Param:
+	/// - calls: List of calls to be executed
+	fn utility_batch_call(calls: Vec<Self::RelayChainCall>) -> Self::RelayChainCall;
+
+	/// Execute a call, replacing the `Origin` with a sub-account.
+	///  params:
+	/// - call: The call to be executed. Can be nested with `utility_batch_call`
+	/// - index: The index of sub-account to be used as the new origin.
+	fn utility_as_derivative_call(call: Self::RelayChainCall, index: u16) -> Self::RelayChainCall;
+
+	/// Wrap the final calls into the Xcm format.
+	///  params:
+	/// - call: The call to be executed
+	/// - extra_fee: Extra fee (in staking currency) used for buy the `weight`
+	///   and `debt`.
+	/// - weight: the weight limit used for XCM.
+	/// - debt: the weight limit used to process the `call`.
+	fn finalize_call_into_xcm_message(call: Self::RelayChainCall, extra_fee: Self::Balance, weight: Weight) -> Xcm<()>;
 }

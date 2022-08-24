@@ -3647,15 +3647,18 @@ dependencies = [
 name = "kilt-support"
 version = "1.7.1"
 dependencies = [
+ "cumulus-primitives-core",
  "frame-support",
  "frame-system",
  "parity-scale-codec",
+ "polkadot-core-primitives",
  "scale-info",
  "serde",
  "serde_json",
  "sp-core",
  "sp-runtime",
  "sp-std",
+ "xcm",
 ]
 
 [[package]]
@@ -5871,6 +5874,37 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
+]
+
+[[package]]
+name = "pallet-relay-fork"
+version = "1.7.1"
+dependencies = [
+ "cumulus-primitives-core",
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "hex",
+ "impl-serde",
+ "kilt-support",
+ "libsecp256k1",
+ "log",
+ "pallet-balances",
+ "pallet-xcm",
+ "parachain-info",
+ "parity-scale-codec",
+ "polkadot-core-primitives",
+ "polkadot-runtime-common",
+ "rand 0.8.5",
+ "scale-info",
+ "serde",
+ "sha3 0.10.1",
+ "sp-core",
+ "sp-io",
+ "sp-keystore",
+ "sp-runtime",
+ "sp-std",
+ "xcm",
 ]
 
 [[package]]
