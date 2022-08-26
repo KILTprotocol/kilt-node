@@ -214,8 +214,8 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
 	type ReservedDmpWeight = ReservedDmpWeight;
 	type XcmpMessageHandler = XcmpQueue;
 	type ReservedXcmpWeight = ReservedXcmpWeight;
-	// TODO: Put in ForkPallet which impls trait s.t. we can switch between Strictly
-	// and Any
+	// We temporarily control this via the RelayMigration pallet which can toggle
+	// between strict and any.
 	type CheckAssociatedRelayNumber = RelayMigration;
 }
 
