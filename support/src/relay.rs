@@ -24,8 +24,8 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::unused_unit)]
 
-use codec::{Decode, Encode, EncodeLike, FullCodec};
-use frame_support::{traits::Get, weights::Weight, RuntimeDebug};
+use codec::{Decode, Encode, FullCodec};
+use frame_support::{traits::Get, weights::Weight};
 use frame_system::Config;
 use scale_info::TypeInfo;
 use sp_std::{boxed::Box, marker::PhantomData, prelude::*};
@@ -43,12 +43,20 @@ pub enum UtilityCall<RelayChainCall> {
 	BatchAll(Vec<RelayChainCall>),
 }
 
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
+pub enum RegistrarCall {
+	#[codec(index = 4)]
+	Swap(ParaId, ParaId),
+}
+
 /// The encoded index correspondes to Kusama's Runtime module configuration.
 /// https://github.com/paritytech/polkadot/blob/444e96ae34bcec8362f0f947a07bd912b32ca48f/runtime/kusama/src/lib.rs#L1379
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
 pub enum RelayChainCall {
 	#[codec(index = 24)]
 	Utility(Box<UtilityCall<Self>>),
+	#[codec(index = 70)]
+	Registrar(RegistrarCall),
 }
 
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
@@ -71,7 +79,11 @@ where
 		RelayChainCall::Utility(Box::new(UtilityCall::AsDerivative(index, call)))
 	}
 
-	fn finalize_call_into_xcm_message(call: Self::RelayChainCall, extra_fee: Self::Balance, weight: Weight) -> Xcm<()> {
+	fn swap_call(id: ParaId, other: ParaId) -> Self::RelayChainCall {
+		RelayChainCall::Registrar(RegistrarCall::Swap(id, other))
+	}
+
+	fn finalize_call_into_xcm_message(call: Vec<u8>, extra_fee: Self::Balance, weight: Weight) -> Xcm<()> {
 		let asset = MultiAsset {
 			id: Concrete(MultiLocation::here()),
 			fun: Fungibility::Fungible(extra_fee),
@@ -85,7 +97,7 @@ where
 			Transact {
 				origin_type: OriginKind::SovereignAccount,
 				require_weight_at_most: weight,
-				call: call.encode().into(),
+				call: call.into(),
 			},
 			RefundSurplus,
 			DepositAsset {

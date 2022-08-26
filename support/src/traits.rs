@@ -17,6 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use codec::{EncodeLike, FullCodec};
+use cumulus_primitives_core::ParaId;
 use frame_support::weights::Weight;
 use scale_info::TypeInfo;
 use sp_std::vec::Vec;
@@ -75,30 +76,39 @@ pub trait GenerateBenchmarkOrigin<OuterOrigin, AccountId, SubjectId> {
 	fn generate_origin(sender: AccountId, subject: SubjectId) -> OuterOrigin;
 }
 
-// TODO: Docs
-
+/// Trait to reflect calls to the relaychain which we support on the pallet
+/// level.
 pub trait RelayCallBuilder {
 	type AccountId: FullCodec;
 	type Balance: FullCodec;
 	type RelayChainCall: FullCodec + EncodeLike + sp_std::fmt::Debug + Clone + PartialEq + Eq + TypeInfo;
 
 	/// Execute multiple calls in a batch.
-	/// Param:
-	/// - calls: List of calls to be executed
+	///
+	/// * calls: The list of calls to be executed.
 	fn utility_batch_call(calls: Vec<Self::RelayChainCall>) -> Self::RelayChainCall;
 
 	/// Execute a call, replacing the `Origin` with a sub-account.
-	///  params:
-	/// - call: The call to be executed. Can be nested with `utility_batch_call`
-	/// - index: The index of sub-account to be used as the new origin.
+	///
+	/// * call: The call to be executed. Can be nested with
+	///   `utility_batch_call`.
+	/// * index: The index of the sub-account to be used as the new origin.
 	fn utility_as_derivative_call(call: Self::RelayChainCall, index: u16) -> Self::RelayChainCall;
 
-	/// Wrap the final calls into the Xcm format.
-	///  params:
-	/// - call: The call to be executed
-	/// - extra_fee: Extra fee (in staking currency) used for buy the `weight`
-	///   and `debt`.
-	/// - weight: the weight limit used for XCM.
-	/// - debt: the weight limit used to process the `call`.
-	fn finalize_call_into_xcm_message(call: Self::RelayChainCall, extra_fee: Self::Balance, weight: Weight) -> Xcm<()>;
+	/// Execute a parachain lease swap call.
+	///
+	/// * id: One of the two para ids. Typically, this should be the one of the
+	///   parachain that executes this XCM call, e.g. the source.
+	/// * other: The target para id with which the lease swap should be
+	///   executed.
+	fn swap_call(id: ParaId, other: ParaId) -> Self::RelayChainCall;
+
+	/// Wrap the final calls into the latest Xcm format.
+	///
+	/// * call: The relaychain call to be executed
+	/// * extra_fee: The extra fee (in relaychain currency) used for buying the
+	///   `weight` and `debt`.
+	/// * weight: The weight limit used for XCM.
+	/// * debt: The weight limit used to process the call.
+	fn finalize_call_into_xcm_message(call: Vec<u8>, extra_fee: Self::Balance, weight: Weight) -> Xcm<()>;
 }

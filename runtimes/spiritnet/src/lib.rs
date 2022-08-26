@@ -32,6 +32,7 @@ use frame_support::{
 	weights::{constants::RocksDbWeight, ConstantMultiplier, Weight},
 };
 use frame_system::EnsureRoot;
+use kilt_support::relay::RelayChainCallBuilder;
 use sp_api::impl_runtime_apis;
 use sp_core::OpaqueMetadata;
 use sp_runtime::{
@@ -213,7 +214,9 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
 	type ReservedDmpWeight = ReservedDmpWeight;
 	type XcmpMessageHandler = XcmpQueue;
 	type ReservedXcmpWeight = ReservedXcmpWeight;
-	type CheckAssociatedRelayNumber = cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases;
+	// TODO: Put in ForkPallet which impls trait s.t. we can switch between Strictly
+	// and Any
+	type CheckAssociatedRelayNumber = RelayMigration;
 }
 
 impl parachain_info::Config for Runtime {}
@@ -657,6 +660,12 @@ impl parachain_staking::Config for Runtime {
 	const BLOCKS_PER_YEAR: Self::BlockNumber = constants::BLOCKS_PER_YEAR;
 }
 
+impl pallet_relay_migration::Config for Runtime {
+	type Event = Event;
+	type ApproveOrigin = ApproveOrigin;
+	type RelayChainCallBuilder = RelayChainCallBuilder<Runtime, ParachainInfo>;
+}
+
 impl pallet_utility::Config for Runtime {
 	type Event = Event;
 	type Call = Call;
@@ -874,6 +883,7 @@ construct_runtime! {
 		// placeholder: parachain council election = 33,
 		TechnicalMembership: pallet_membership::<Instance1> = 34,
 		Treasury: pallet_treasury = 35,
+		RelayMigration: pallet_relay_migration::{Pallet, Call, Storage, Event<T>} = 36,
 
 		// Utility module.
 		Utility: pallet_utility = 40,

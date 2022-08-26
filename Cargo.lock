@@ -5877,31 +5877,23 @@ dependencies = [
 ]
 
 [[package]]
-name = "pallet-relay-fork"
+name = "pallet-relay-migration"
 version = "1.7.1"
 dependencies = [
+ "cumulus-pallet-parachain-system",
  "cumulus-primitives-core",
  "frame-benchmarking",
  "frame-support",
  "frame-system",
- "hex",
- "impl-serde",
  "kilt-support",
- "libsecp256k1",
  "log",
- "pallet-balances",
  "pallet-xcm",
- "parachain-info",
  "parity-scale-codec",
  "polkadot-core-primitives",
  "polkadot-runtime-common",
- "rand 0.8.5",
  "scale-info",
- "serde",
- "sha3 0.10.1",
  "sp-core",
  "sp-io",
- "sp-keystore",
  "sp-runtime",
  "sp-std",
  "xcm",
@@ -10799,6 +10791,7 @@ dependencies = [
  "pallet-preimage",
  "pallet-proxy",
  "pallet-randomness-collective-flip",
+ "pallet-relay-migration",
  "pallet-scheduler",
  "pallet-session",
  "pallet-timestamp",
