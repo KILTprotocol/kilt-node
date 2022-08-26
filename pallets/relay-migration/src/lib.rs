@@ -18,8 +18,9 @@
 
 //! # Relay migration initialization pallet
 //!
-//! This pallet changes the para ID and sends an XCM message to swap the
-//! parachain lease.
+//! This pallet provides means of sending an XCM messages to the relay chain by
+//! a configurable origin and switching the associated relay number block checks
+//! between strictly and any.
 //!
 //! - [`Pallet`]
 
