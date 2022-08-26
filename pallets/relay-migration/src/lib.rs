@@ -83,19 +83,15 @@ pub mod pallet {
 	}
 
 	#[pallet::error]
-	pub enum Error<T> {
-		/// The para id has already been changed throughout the lifetime of the
-		/// parachain.
-		ParaIdAlreadyChanged,
-	}
+	pub enum Error<T> {}
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
-		#[pallet::weight(100_000 + T::DbWeight::get().writes(1))]
 		/// Set an XCM call to the relay chain.
 		///
 		/// Has to be done pre migration.
 		// TODO: Weights
+		#[pallet::weight(100_000 + T::DbWeight::get().writes(1))]
 		pub fn send_swap_call_bytes(
 			origin: OriginFor<T>,
 			relay_call: Vec<u8>,
@@ -107,7 +103,7 @@ pub mod pallet {
 				T::RelayChainCallBuilder::finalize_call_into_xcm_message(relay_call, relay_balance, max_weight);
 
 			let result = pallet_xcm::Pallet::<T>::send_xcm(Here, Parent, xcm_message);
-			log::debug!("Sending XCM to swap para lease with result: {:?}", result);
+			log::debug!("Sending XCM with result: {:?}", result);
 
 			Self::deposit_event(Event::LeaseSwapInitiated);
 

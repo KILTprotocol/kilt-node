@@ -95,14 +95,14 @@ where
 				weight_limit: Unlimited,
 			},
 			Transact {
-				origin_type: OriginKind::SovereignAccount,
+				origin_type: OriginKind::Native,
 				require_weight_at_most: weight,
 				call: call.into(),
 			},
 			RefundSurplus,
 			DepositAsset {
 				assets: All.into(),
-				max_assets: u32::max_value(),
+				max_assets: 1,
 				beneficiary: MultiLocation {
 					parents: 0,
 					interior: X1(Parachain(ParachainId::get().into())),
