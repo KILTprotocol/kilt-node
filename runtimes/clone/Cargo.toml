@@ -58,6 +58,7 @@ pallet-utility = {git = "https://github.com/paritytech/substrate", default-featu
 cumulus-pallet-aura-ext = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "polkadot-v0.9.27"}
 cumulus-pallet-dmp-queue = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "polkadot-v0.9.27"}
 cumulus-pallet-parachain-system = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "polkadot-v0.9.27"}
+cumulus-pallet-solo-to-para = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "polkadot-v0.9.27"}
 cumulus-pallet-xcm = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "polkadot-v0.9.27"}
 cumulus-pallet-xcmp-queue = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "polkadot-v0.9.27"}
 cumulus-primitives-core = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "polkadot-v0.9.27"}
@@ -101,6 +102,7 @@ runtime-benchmarks = [
   "xcm-builder/runtime-benchmarks",
 ]
 std = [
+  "cumulus-pallet-solo-to-para/std",
   "pallet-sudo/std",
   "pallet-collator-selection/std",
   "codec/std",

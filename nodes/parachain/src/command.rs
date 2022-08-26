@@ -52,7 +52,7 @@ impl IdentifyChain for dyn sc_service::ChainSpec {
 		self.id().contains("spiritnet") || self.id().eq("kilt_westend") || self.id().eq("kilt_rococo")
 	}
 	fn is_clone(&self) -> bool {
-		self.id().to_lowercase().contains("cln_kilt")
+		self.id().to_lowercase().contains("cln_kilt") || self.id().to_lowercase().contains("clone")
 	}
 }
 
@@ -68,7 +68,21 @@ impl<T: sc_service::ChainSpec + 'static> IdentifyChain for T {
 	}
 }
 
-fn load_spec(id: &str, runtime: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
+fn load_spec(id: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
+	let runtime = if id.to_lowercase().contains("spiritnet")
+		|| id.to_lowercase().contains("wilt")
+		|| id.to_lowercase().contains("rilt")
+	{
+		"spiritnet"
+	} else if id.to_lowercase().contains("cln_kilt") || id.to_lowercase().contains("clone") {
+		"clone"
+	} else {
+		"peregrine"
+	};
+
+	log::info!("Load spec id: {}", id);
+	log::info!("The following runtime was chosen based on the spec id: {}", runtime);
+
 	match (id, runtime) {
 		("dev", _) => Ok(Box::new(chain_spec::peregrine::make_dev_spec()?)),
 		("spiritnet-dev", _) => Ok(Box::new(chain_spec::spiritnet::get_chain_spec_dev()?)),
@@ -80,6 +94,7 @@ fn load_spec(id: &str, runtime: &str) -> std::result::Result<Box<dyn sc_service:
 		("rilt", _) => Ok(Box::new(chain_spec::spiritnet::load_rilt_spec()?)),
 		("spiritnet", _) => Ok(Box::new(chain_spec::spiritnet::load_spiritnet_spec()?)),
 		("clone", _) => Ok(Box::new(chain_spec::clone::load_clone_spec()?)),
+		("clone2", _) => Ok(Box::new(chain_spec::clone::load_clone2_spec()?)),
 		("", "spiritnet") => Ok(Box::new(chain_spec::spiritnet::get_chain_spec_dev()?)),
 		("", "peregrine") => Ok(Box::new(chain_spec::peregrine::make_dev_spec()?)),
 		("", "clone") => Ok(Box::new(chain_spec::clone::get_chain_spec_dev()?)),
@@ -122,7 +137,7 @@ impl SubstrateCli for Cli {
 	}
 
 	fn load_spec(&self, id: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
-		load_spec(id, &self.runtime)
+		load_spec(id)
 	}
 
 	fn native_runtime_version(spec: &Box<dyn ChainSpec>) -> &'static RuntimeVersion {
