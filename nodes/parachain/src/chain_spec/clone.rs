@@ -135,7 +135,7 @@ pub fn get_chain_spec_cln() -> Result<ChainSpec, String> {
 
 	Ok(ChainSpec::from_genesis(
 		"Clone2",
-		"cln2_kilt",
+		"cln_kilt2",
 		ChainType::Live,
 		move || {
 			testnet_genesis(
