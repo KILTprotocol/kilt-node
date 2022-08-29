@@ -10,7 +10,7 @@
       0
     ]
   ],
-  "protocolId": null,
+  "protocolId": "cln2",
   "properties": {
     "ss58Format": 38,
     "tokenDecimals": 15,

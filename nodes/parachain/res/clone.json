@@ -12,7 +12,7 @@
       0
     ]
   ],
-  "protocolId": "kilt-2",
+  "protocolId": "cln1",
   "properties": {
     "ss58Format": 38,
     "tokenDecimals": 15,
