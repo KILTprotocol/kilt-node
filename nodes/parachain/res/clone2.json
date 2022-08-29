@@ -14,7 +14,7 @@
   "properties": {
     "ss58Format": 38,
     "tokenDecimals": 15,
-    "tokenSymbol": "KILT"
+    "tokenSymbol": "Unit"
   },
   "relay_chain": "polkadot",
   "para_id": 2086,

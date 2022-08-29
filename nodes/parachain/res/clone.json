@@ -2,10 +2,7 @@
   "name": "KILT",
   "id": "cln_kilt",
   "chainType": "Live",
-  "bootNodes": [
-    "/dns4/bootnode.kilt.io/tcp/30360/p2p/12D3KooWAyk4ZQe4RU7A6H8hFLjQGsXyNPTbfYW1qE2Atd4p8fN8",
-    "/dns4/bootnode.kilt.io/tcp/30361/p2p/12D3KooWHootMhedfGJAHWu8Bn8DVjmMLA8qnSP4jKJr7u27sU6w"
-  ],
+  "bootNodes": [],
   "telemetryEndpoints": [
     [
       "/dns/telemetry-backend.kilt.io/tcp/8080/x-parity-wss/%2Fsubmit",
@@ -16,7 +13,7 @@
   "properties": {
     "ss58Format": 38,
     "tokenDecimals": 15,
-    "tokenSymbol": "KILT"
+    "tokenSymbol": "Unit"
   },
   "relay_chain": "polkadot",
   "para_id": 2057,
