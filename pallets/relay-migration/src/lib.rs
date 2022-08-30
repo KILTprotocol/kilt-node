@@ -28,16 +28,6 @@
 
 pub use pallet::*;
 
-// TODO: Create modules and enable before merging!
-// #[cfg(test)]
-// mod mock;
-
-// #[cfg(test)]
-// mod tests;
-
-// #[cfg(feature = "runtime-benchmarks")]
-// mod benchmarking;
-
 #[frame_support::pallet]
 pub mod pallet {
 	use frame_support::pallet_prelude::*;
@@ -90,8 +80,7 @@ pub mod pallet {
 		/// Set an XCM call to the relay chain.
 		///
 		/// Has to be done pre migration.
-		// TODO: Weights
-		#[pallet::weight(100_000 + T::DbWeight::get().writes(1))]
+		#[pallet::weight(1_000_000 + T::DbWeight::get().reads_writes(10, 10))]
 		pub fn send_swap_call_bytes(
 			origin: OriginFor<T>,
 			relay_call: Vec<u8>,
@@ -114,8 +103,7 @@ pub mod pallet {
 		/// RelayNumberStrictlyIncreases.
 		///
 		/// Has to be done post migration.
-		// TODO: Weights
-		#[pallet::weight(10_000 + T::DbWeight::get().writes(1))]
+		#[pallet::weight(100_000 + T::DbWeight::get().reads_writes(1, 1))]
 		pub fn enable_strict_relay_number_check(origin: OriginFor<T>) -> DispatchResult {
 			T::ApproveOrigin::ensure_origin(origin)?;
 			RelayNumberStrictlyIncreases::<T>::put(true);
@@ -128,8 +116,7 @@ pub mod pallet {
 		/// Set the associated relay block number to be AnyRelayNumber.
 		///
 		/// Has to be done pre migration.
-		// TODO: Weights
-		#[pallet::weight(10_000 + T::DbWeight::get().writes(1))]
+		#[pallet::weight(100_000 + T::DbWeight::get().reads_writes(1, 1))]
 		pub fn disable_strict_relay_number_check(origin: OriginFor<T>) -> DispatchResult {
 			T::ApproveOrigin::ensure_origin(origin)?;
 			RelayNumberStrictlyIncreases::<T>::put(false);
