@@ -27,9 +27,10 @@ attestation = {path = "../../pallets/attestation", default-features = false}
 ctype = {path = "../../pallets/ctype", default-features = false}
 delegation = {path = "../../pallets/delegation", default-features = false}
 did = {path = "../../pallets/did", default-features = false}
-kilt-support = {path = "../../support", default-features = false, optional = true}
+kilt-support = {path = "../../support", default-features = false}
 pallet-did-lookup = {path = "../../pallets/pallet-did-lookup", default-features = false}
 pallet-inflation = {path = "../../pallets/pallet-inflation", default-features = false}
+pallet-relay-migration = {path = "../../pallets/relay-migration", default-features = false}
 pallet-web3-names = {path = "../../pallets/pallet-web3-names", default-features = false}
 parachain-staking = {path = "../../pallets/parachain-staking", default-features = false}
 runtime-common = {path = "../../runtimes/common", default-features = false}
@@ -112,7 +113,6 @@ runtime-benchmarks = [
   "frame-system-benchmarking",
   "frame-system/runtime-benchmarks",
   "hex-literal",
-  "kilt-support",
   "kilt-support/runtime-benchmarks",
   "pallet-balances/runtime-benchmarks",
   "pallet-collective/runtime-benchmarks",
@@ -155,6 +155,7 @@ std = [
   "frame-system-rpc-runtime-api/std",
   "frame-system/std",
   "frame-try-runtime/std",
+  "kilt-support/std",
   "log/std",
   "pallet-aura/std",
   "pallet-authorship/std",
@@ -165,6 +166,7 @@ std = [
   "pallet-indices/std",
   "pallet-inflation/std",
   "pallet-membership/std",
+  "pallet-relay-migration/std",
   "pallet-preimage/std",
   "pallet-proxy/std",
   "pallet-randomness-collective-flip/std",
