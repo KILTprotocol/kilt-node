@@ -27,7 +27,6 @@ use std::sync::Arc;
 
 use jsonrpsee::RpcModule;
 
-use pallet_did_lookup::linkable_account::LinkableAccountId;
 use runtime_common::{AccountId, Balance, Block, BlockNumber, DidIdentifier, Hash, Index};
 pub use sc_rpc_api::DenyUnsafe;
 use sc_transaction_pool_api::TransactionPool;
@@ -54,7 +53,7 @@ where
 	C::Api: frame_rpc_system::AccountNonceApi<Block, AccountId, Index>,
 	C::Api: pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>,
 	C::Api: BlockBuilder<Block>,
-	C::Api: did_rpc::DidRuntimeApi<Block, DidIdentifier, AccountId, LinkableAccountId, Balance, Hash, BlockNumber>,
+	C::Api: did_rpc::DidRuntimeApi<Block, DidIdentifier, AccountId, Balance, Hash, BlockNumber>,
 	P: TransactionPool + 'static,
 {
 	use did_rpc::{DidApiServer, DidQuery};

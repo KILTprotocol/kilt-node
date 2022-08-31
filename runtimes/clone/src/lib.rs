@@ -45,7 +45,6 @@ use sp_version::RuntimeVersion;
 use xcm::opaque::latest::BodyId;
 use xcm_executor::XcmExecutor;
 
-use pallet_did_lookup::linkable_account::LinkableAccountId;
 use runtime_common::{
 	constants::{self, HOURS, MILLI_KILT},
 	fees::{ToAuthor, WeightToFee},
@@ -536,7 +535,6 @@ impl_runtime_apis! {
 		Block,
 		AccountId,
 		AccountId,
-		LinkableAccountId,
 		Balance,
 		Hash,
 		BlockNumber
@@ -544,7 +542,6 @@ impl_runtime_apis! {
 		fn query_did_by_w3n(_: Vec<u8>) -> Option<did_rpc_runtime_api::RawDidLinkedInfo<
 				AccountId,
 				AccountId,
-				LinkableAccountId,
 				Balance,
 				Hash,
 				BlockNumber
@@ -553,11 +550,10 @@ impl_runtime_apis! {
 			None
 		}
 
-		fn query_did_by_account_id(_: LinkableAccountId) -> Option<
+		fn query_did_by_account_id(_: AccountId) -> Option<
 			did_rpc_runtime_api::RawDidLinkedInfo<
 				AccountId,
 				AccountId,
-				LinkableAccountId,
 				Balance,
 				Hash,
 				BlockNumber
@@ -570,7 +566,6 @@ impl_runtime_apis! {
 			did_rpc_runtime_api::RawDidLinkedInfo<
 				AccountId,
 				AccountId,
-				LinkableAccountId,
 				Balance,
 				Hash,
 				BlockNumber
