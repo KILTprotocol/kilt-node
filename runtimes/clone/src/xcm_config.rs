@@ -38,7 +38,7 @@ use runtime_common::xcm_config::{LocalAssetTransactor, MaxInstructions, RelayLoc
 parameter_types! {
 	pub RelayChainOrigin: Origin = cumulus_pallet_xcm::Origin::Relay.into();
 	pub Ancestry: MultiLocation = Parachain(ParachainInfo::parachain_id().into()).into();
-	pub const RelayNetworkId: NetworkId = NetworkId::Kusama;
+	pub const RelayNetworkId: NetworkId = NetworkId::Polkadot;
 }
 
 /// This is the type we use to convert an (incoming) XCM origin into a local
