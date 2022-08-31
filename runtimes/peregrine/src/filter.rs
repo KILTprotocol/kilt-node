@@ -2,22 +2,6 @@ use frame_support::traits::Contains;
 
 use super::Call;
 
-pub struct GovCalls;
-impl Contains<Call> for GovCalls {
-	fn contains(t: &Call) -> bool {
-		// We don't want to disable governance completely since we need it to set the
-		// filter.
-		matches!(t, Call::Treasury(..) | Call::TipsMembership(..) | Call::Tips(..))
-	}
-}
-
-pub struct StakeCalls;
-impl Contains<Call> for StakeCalls {
-	fn contains(t: &Call) -> bool {
-		matches!(t, Call::ParachainStaking(..) | Call::Session(..))
-	}
-}
-
 pub struct TransferCalls;
 impl Contains<Call> for TransferCalls {
 	fn contains(t: &Call) -> bool {

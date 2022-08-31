@@ -22,8 +22,6 @@ use scale_info::TypeInfo;
 
 #[derive(Copy, Clone, Encode, Decode, TypeInfo, MaxEncodedLen, Default, RuntimeDebug, PartialEq, Eq)]
 pub struct FilterSettings {
-	pub governance: bool,
-	pub staking: bool,
 	pub transfer: bool,
 	pub feature: bool,
 	pub xcm: bool,

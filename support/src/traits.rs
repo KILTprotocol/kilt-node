@@ -70,8 +70,6 @@ pub trait GenerateBenchmarkOrigin<OuterOrigin, AccountId, SubjectId> {
 }
 
 pub trait EnabledFunctionality {
-	fn governance() -> bool;
-	fn staking() -> bool;
 	fn transfer() -> bool;
 	fn feature() -> bool;
 	fn xcm() -> bool;
@@ -79,14 +77,6 @@ pub trait EnabledFunctionality {
 
 pub struct AllEnabled;
 impl EnabledFunctionality for AllEnabled {
-	fn governance() -> bool {
-		true
-	}
-
-	fn staking() -> bool {
-		true
-	}
-
 	fn transfer() -> bool {
 		true
 	}
@@ -102,14 +92,6 @@ impl EnabledFunctionality for AllEnabled {
 
 pub struct AllDisabled;
 impl EnabledFunctionality for AllDisabled {
-	fn governance() -> bool {
-		false
-	}
-
-	fn staking() -> bool {
-		false
-	}
-
 	fn transfer() -> bool {
 		false
 	}

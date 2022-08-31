@@ -23,7 +23,6 @@ use frame_support::{
 	traits::{Currency, OnFinalize, OnInitialize, OnUnbalanced},
 };
 
-use kilt_support::traits::AllEnabled;
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
@@ -128,7 +127,6 @@ impl pallet_inflation::Config for Test {
 	type InitialPeriodLength = InitialPeriodLength;
 	type InitialPeriodReward = InitialPeriodReward;
 	type Beneficiary = ToBeneficiary;
-	type Control = AllEnabled;
 	type WeightInfo = ();
 }
 

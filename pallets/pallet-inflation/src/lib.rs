@@ -51,8 +51,6 @@ pub mod pallet {
 	};
 	use frame_system::pallet_prelude::*;
 
-	use kilt_support::traits::EnabledFunctionality;
-
 	pub(crate) type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 	pub(crate) type BalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::Balance;
 	pub(crate) type NegativeImbalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::NegativeImbalance;
@@ -78,9 +76,6 @@ pub mod pallet {
 		/// The beneficiary to receive the rewards.
 		type Beneficiary: OnUnbalanced<NegativeImbalanceOf<Self>>;
 
-		/// This pallet can be enabled/disabled by the staking flag.
-		type Control: EnabledFunctionality;
-
 		/// Weight information for extrinsics in this pallet.
 		type WeightInfo: WeightInfo;
 	}
@@ -94,7 +89,7 @@ pub mod pallet {
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
 		fn on_initialize(now: T::BlockNumber) -> Weight {
 			// The complement of this is handled in ParachainStaking.
-			if now <= T::InitialPeriodLength::get() && T::Control::staking() {
+			if now <= T::InitialPeriodLength::get() {
 				let reward = T::Currency::issue(T::InitialPeriodReward::get());
 				T::Beneficiary::on_unbalanced(reward);
 				<T as Config>::WeightInfo::on_initialize_mint_to_treasury()

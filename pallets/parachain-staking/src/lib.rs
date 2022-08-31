@@ -189,7 +189,6 @@ pub mod pallet {
 		BoundedVec,
 	};
 	use frame_system::pallet_prelude::*;
-	use kilt_support::traits::EnabledFunctionality;
 	use pallet_balances::{BalanceLock, Locks};
 	use pallet_session::ShouldEndSession;
 	use scale_info::TypeInfo;
@@ -345,8 +344,6 @@ pub mod pallet {
 
 		/// The beneficiary to receive the network rewards.
 		type NetworkRewardBeneficiary: OnUnbalanced<NegativeImbalanceOf<Self>>;
-
-		type StakingControl: EnabledFunctionality;
 
 		/// Weight information for extrinsics in this pallet.
 		type WeightInfo: WeightInfo;
@@ -555,7 +552,7 @@ pub mod pallet {
 				post_weight = post_weight.saturating_add(Self::adjust_reward_rates(now));
 			}
 			// check for network reward
-			if now > T::NetworkRewardStart::get() && T::StakingControl::staking() {
+			if now > T::NetworkRewardStart::get() {
 				T::NetworkRewardBeneficiary::on_unbalanced(Self::get_network_reward());
 				post_weight = post_weight.saturating_add(<T as Config>::WeightInfo::on_initialize_network_rewards());
 			}
@@ -2829,13 +2826,6 @@ pub mod pallet {
 			let mut writes = Weight::zero();
 			// should always include state except if the collator has been forcedly removed
 			// via `force_remove_candidate` in the current or previous round
-			if !T::StakingControl::staking() {
-				return frame_system::Pallet::<T>::register_extra_weight_unchecked(
-					T::DbWeight::get().reads_writes(reads, writes),
-					DispatchClass::Mandatory,
-				);
-			}
-
 			if let Some(state) = CandidatePool::<T>::get(author.clone()) {
 				let total_issuance = T::Currency::total_issuance();
 				let TotalStake {

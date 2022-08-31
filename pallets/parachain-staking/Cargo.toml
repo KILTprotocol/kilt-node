@@ -7,7 +7,6 @@ version = "1.7.1"
 
 [dev-dependencies]
 pallet-aura = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.27"}
-pallet-dyn-filter = {path = "../pallet-dyn-filter"}
 pallet-timestamp = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.27"}
 sp-consensus-aura = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.27"}
 sp-core = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.27"}
@@ -28,8 +27,6 @@ sp-runtime = {git = "https://github.com/paritytech/substrate", branch = "polkado
 sp-staking = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.27", default-features = false}
 sp-std = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.27", default-features = false}
 
-kilt-support = {path = "../../support", default-features = false}
-
 # benchmarking
 frame-benchmarking = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.27", default-features = false, optional = true}
 
@@ -39,12 +36,10 @@ runtime-benchmarks = [
   "frame-benchmarking",
   "frame-support/runtime-benchmarks",
   "frame-system/runtime-benchmarks",
-  "kilt-support/runtime-benchmarks",
 ]
 std = [
   "frame-support/std",
   "frame-system/std",
-  "kilt-support/std",
   "log/std",
   "pallet-authorship/std",
   "pallet-balances/std",
@@ -58,5 +53,4 @@ std = [
 ]
 try-runtime = [
   "frame-support/try-runtime",
-  "kilt-support/try-runtime",
 ]

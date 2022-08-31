@@ -58,14 +58,6 @@ pub mod pallet {
 		/// The origin check for all DID calls inside this pallet.
 		type EnsureOrigin: EnsureOrigin<<Self as frame_system::Config>::Origin>;
 
-		/// Governance calls. (GovernanceCall contains all system calls, return
-		/// true if call is contained in this set)
-		type GovernanceCall: Contains<<Self as frame_system::Config>::Call>;
-
-		/// Staking, delegating, collating calls. (return true if call is
-		/// contained in this set)
-		type StakingCall: Contains<<Self as frame_system::Config>::Call>;
-
 		/// System calls are not filtered. (return true if call is contained in
 		/// this set)
 		type TransferCall: Contains<<Self as frame_system::Config>::Call>;
@@ -125,31 +117,15 @@ pub mod pallet {
 				return true;
 			}
 
-			let FilterSettings {
-				governance,
-				staking,
-				transfer,
-				feature,
-				xcm,
-			} = Filter::<T>::get();
+			let FilterSettings { transfer, feature, xcm } = Filter::<T>::get();
 
-			!((governance && T::GovernanceCall::contains(t))
-				|| (staking && T::StakingCall::contains(t))
-				|| (transfer && T::TransferCall::contains(t))
+			!((transfer && T::TransferCall::contains(t))
 				|| (feature && T::FeatureCall::contains(t))
 				|| (xcm && T::XcmCall::contains(t)))
 		}
 	}
 
 	impl<T: Config> EnabledFunctionality for Pallet<T> {
-		fn governance() -> bool {
-			Filter::<T>::get().governance
-		}
-
-		fn staking() -> bool {
-			Filter::<T>::get().staking
-		}
-
 		fn transfer() -> bool {
 			Filter::<T>::get().transfer
 		}

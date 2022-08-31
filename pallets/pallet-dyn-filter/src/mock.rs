@@ -83,27 +83,17 @@ impl crate::Config for Test {
 
 	type EnsureOrigin = EnsureRoot<AccountId>;
 	type FeatureCall = FeatureCalls;
-	type GovernanceCall = GovCalls;
-	type StakingCall = StakingCalls;
 	type TransferCall = TransferCalls;
 	type XcmCall = XcmCalls;
 	type SystemCall = SystemCalls;
 }
 
-pub(crate) const GOVERNANCE: &[u8] = b"gov";
-pub(crate) const STAKING: &[u8] = b"stk";
 pub(crate) const TRANSFER: &[u8] = b"trf";
 pub(crate) const FEATURE: &[u8] = b"fet";
 pub(crate) const XCM: &[u8] = b"xcm";
 pub(crate) const SYSTEM: &[u8] = b"system";
 
 lazy_static! {
-	pub static ref CALL_GOV: Call = Call::System(frame_system::Call::remark {
-		remark: GOVERNANCE.to_vec()
-	});
-	pub static ref CALL_STAKING: Call = Call::System(frame_system::Call::remark {
-		remark: STAKING.to_vec()
-	});
 	pub static ref CALL_TRANSFER: Call = Call::System(frame_system::Call::remark {
 		remark: TRANSFER.to_vec()
 	});
@@ -114,28 +104,6 @@ lazy_static! {
 	pub static ref CALL_SYSTEM: Call = Call::System(frame_system::Call::remark {
 		remark: SYSTEM.to_vec()
 	});
-}
-
-pub struct GovCalls;
-impl Contains<Call> for GovCalls {
-	fn contains(t: &Call) -> bool {
-		if let Call::System(frame_system::Call::remark { remark }) = t {
-			&remark[..] == GOVERNANCE
-		} else {
-			false
-		}
-	}
-}
-
-pub struct StakingCalls;
-impl Contains<Call> for StakingCalls {
-	fn contains(t: &Call) -> bool {
-		if let Call::System(frame_system::Call::remark { remark }) = t {
-			&remark[..] == STAKING
-		} else {
-			false
-		}
-	}
 }
 
 pub struct TransferCalls;

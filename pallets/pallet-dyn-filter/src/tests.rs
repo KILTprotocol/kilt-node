@@ -20,7 +20,7 @@ use frame_support::{assert_ok, traits::Contains};
 use itertools::Itertools;
 
 use crate::{
-	mock::{ExtBuilder, Origin, Test, CALL_FEATURE, CALL_GOV, CALL_STAKING, CALL_SYSTEM, CALL_TRANSFER, CALL_XCM},
+	mock::{ExtBuilder, Origin, Test, CALL_FEATURE, CALL_SYSTEM, CALL_TRANSFER, CALL_XCM},
 	setting::FilterSettings,
 	Pallet,
 };
@@ -28,52 +28,36 @@ use crate::{
 #[test]
 fn check_filter() {
 	ExtBuilder::default().build().execute_with(|| {
-		assert!(Pallet::<Test>::contains(&CALL_GOV));
-		assert!(Pallet::<Test>::contains(&CALL_STAKING));
 		assert!(Pallet::<Test>::contains(&CALL_TRANSFER));
 		assert!(Pallet::<Test>::contains(&CALL_FEATURE));
 		assert!(Pallet::<Test>::contains(&CALL_XCM));
 		assert!(Pallet::<Test>::contains(&CALL_SYSTEM));
 
-		for items in [true, false].iter().combinations_with_replacement(5) {
+		for items in [true, false].iter().combinations_with_replacement(3) {
 			assert_ok!(Pallet::<Test>::set_filter(
 				Origin::root(),
 				FilterSettings {
-					governance: *items[0],
-					staking: *items[1],
-					transfer: *items[2],
-					feature: *items[3],
-					xcm: *items[4],
+					transfer: *items[0],
+					feature: *items[1],
+					xcm: *items[2],
 				},
 			));
 
 			assert!(Pallet::<Test>::contains(&CALL_SYSTEM));
 			assert_ne!(
 				*items[0],
-				Pallet::<Test>::contains(&CALL_GOV),
-				"Didn't filter governance, Setting: {:?}",
-				items
-			);
-			assert_ne!(
-				*items[1],
-				Pallet::<Test>::contains(&CALL_STAKING),
-				"Didn't filter staking, Setting: {:?}",
-				items
-			);
-			assert_ne!(
-				*items[2],
 				Pallet::<Test>::contains(&CALL_TRANSFER),
 				"Didn't filter transfer, Setting: {:?}",
 				items
 			);
 			assert_ne!(
-				*items[3],
+				*items[1],
 				Pallet::<Test>::contains(&CALL_FEATURE),
 				"Didn't filter feature, Setting: {:?}",
 				items
 			);
 			assert_ne!(
-				*items[4],
+				*items[2],
 				Pallet::<Test>::contains(&CALL_XCM),
 				"Didn't filter xcm, Setting: {:?}",
 				items

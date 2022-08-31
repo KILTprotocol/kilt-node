@@ -30,8 +30,6 @@ frame-system = {branch = "polkadot-v0.9.27", default-features = false, git = "ht
 sp-runtime = {branch = "polkadot-v0.9.27", default-features = false, git = "https://github.com/paritytech/substrate"}
 sp-std = {branch = "polkadot-v0.9.27", default-features = false, git = "https://github.com/paritytech/substrate"}
 
-kilt-support = {path = "../../support", default-features = false}
-
 [features]
 default = ["std"]
 
@@ -39,7 +37,6 @@ runtime-benchmarks = [
   "frame-benchmarking",
   "frame-support/runtime-benchmarks",
   "frame-system/runtime-benchmarks",
-  "kilt-support/runtime-benchmarks",
 ]
 
 std = [
@@ -47,7 +44,6 @@ std = [
   "frame-benchmarking/std",
   "frame-support/std",
   "frame-system/std",
-  "kilt-support/std",
   "serde",
   "scale-info/std",
   "sp-runtime/std",

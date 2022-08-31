@@ -626,7 +626,6 @@ impl pallet_inflation::Config for Runtime {
 	type InitialPeriodLength = constants::treasury::InitialPeriodLength;
 	type InitialPeriodReward = constants::treasury::InitialPeriodReward;
 	type Beneficiary = Treasury;
-	type Control = DynFilter;
 	type WeightInfo = weights::pallet_inflation::WeightInfo<Runtime>;
 }
 
@@ -653,10 +652,6 @@ impl parachain_staking::Config for Runtime {
 	type NetworkRewardRate = constants::staking::NetworkRewardRate;
 	type NetworkRewardStart = constants::staking::NetworkRewardStart;
 	type NetworkRewardBeneficiary = Treasury;
-	#[cfg(feature = "runtime-benchmarks")]
-	type StakingControl = kilt_support::traits::AllEnabled;
-	#[cfg(not(feature = "runtime-benchmarks"))]
-	type StakingControl = DynFilter;
 	type WeightInfo = weights::parachain_staking::WeightInfo<Runtime>;
 
 	const BLOCKS_PER_YEAR: Self::BlockNumber = constants::BLOCKS_PER_YEAR;
@@ -861,8 +856,6 @@ impl pallet_dyn_filter::Config for Runtime {
 
 	type EnsureOrigin = DynFilterOrigin;
 
-	type GovernanceCall = filter::GovCalls;
-	type StakingCall = filter::StakeCalls;
 	type TransferCall = filter::TransferCalls;
 	type FeatureCall = filter::FeatureCalls;
 	type XcmCall = filter::XcmCalls;

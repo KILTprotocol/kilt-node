@@ -23,12 +23,10 @@ use super::*;
 use crate::{self as stake, types::NegativeImbalanceOf};
 use frame_support::{
 	construct_runtime, parameter_types,
-	traits::{Contains, Currency, GenesisBuild, OnFinalize, OnInitialize, OnUnbalanced},
+	traits::{Currency, GenesisBuild, OnFinalize, OnInitialize, OnUnbalanced},
 	weights::Weight,
 };
-use frame_system::EnsureRoot;
 use pallet_authorship::EventHandler;
-use pallet_dyn_filter::setting::FilterSettings;
 use sp_consensus_aura::sr25519::AuthorityId;
 use sp_core::H256;
 use sp_runtime::{
@@ -64,7 +62,6 @@ construct_runtime!(
 		StakePallet: stake::{Pallet, Call, Storage, Config<T>, Event<T>},
 		Session: pallet_session::{Pallet, Call, Storage, Event, Config<T>},
 		Aura: pallet_aura::{Pallet, Storage},
-		DynFilter: pallet_dyn_filter::{Pallet, Storage, Call, Event<T>},
 	}
 );
 
@@ -159,25 +156,6 @@ impl OnUnbalanced<NegativeImbalanceOf<Test>> for ToBeneficiary {
 	}
 }
 
-impl Contains<Call> for () {
-	fn contains(_t: &Call) -> bool {
-		true
-	}
-}
-
-impl pallet_dyn_filter::Config for Test {
-	type Event = Event;
-	type WeightInfo = ();
-
-	type EnsureOrigin = EnsureRoot<AccountId>;
-	type FeatureCall = ();
-	type GovernanceCall = ();
-	type StakingCall = ();
-	type TransferCall = ();
-	type XcmCall = ();
-	type SystemCall = ();
-}
-
 impl Config for Test {
 	type Event = Event;
 	type Currency = Balances;
@@ -191,19 +169,15 @@ impl Config for Test {
 	type MaxDelegationsPerRound = MaxDelegatorsPerCollator;
 	type MaxDelegatorsPerCollator = MaxDelegatorsPerCollator;
 	type MaxCollatorsPerDelegator = MaxCollatorsPerDelegator;
-	type MaxTopCandidates = MaxCollatorCandidates;
 	type MinCollatorStake = MinCollatorStake;
 	type MinCollatorCandidateStake = MinCollatorStake;
-	type MinDelegation = MinDelegation;
+	type MaxTopCandidates = MaxCollatorCandidates;
 	type MinDelegatorStake = MinDelegatorStake;
+	type MinDelegation = MinDelegation;
 	type MaxUnstakeRequests = MaxUnstakeRequests;
-	type NetworkRewardStart = NetworkRewardStart;
 	type NetworkRewardRate = NetworkRewardRate;
+	type NetworkRewardStart = NetworkRewardStart;
 	type NetworkRewardBeneficiary = ToBeneficiary;
-	#[cfg(feature = "runtime-benchmarks")]
-	type StakingControl = kilt_support::traits::AllEnabled;
-	#[cfg(not(feature = "runtime-benchmarks"))]
-	type StakingControl = DynFilter;
 	type WeightInfo = ();
 	const BLOCKS_PER_YEAR: Self::BlockNumber = 5 * 60 * 24 * 36525 / 100;
 }
@@ -240,14 +214,6 @@ impl pallet_timestamp::Config for Test {
 	type MinimumPeriod = MinimumPeriod;
 	type WeightInfo = ();
 }
-
-pub(crate) const FILTER_ALL_ENABLED: FilterSettings = FilterSettings {
-	governance: true,
-	staking: true,
-	transfer: true,
-	feature: true,
-	xcm: true,
-};
 
 pub(crate) struct ExtBuilder {
 	// endowed accounts with balances
@@ -382,12 +348,7 @@ impl ExtBuilder {
 			});
 		}
 
-		ext.execute_with(|| {
-			DynFilter::set_filter(Origin::root(), FILTER_ALL_ENABLED).expect("Could not set genesis dyn filter")
-		});
-
 		ext.execute_with(|| System::set_block_number(1));
-
 		ext
 	}
 }
