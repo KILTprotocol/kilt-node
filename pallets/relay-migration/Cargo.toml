@@ -1,0 +1,61 @@
+[package]
+authors = ["KILT <info@kilt.io>"]
+description = "Initiate migration to another relay chain"
+edition = "2021"
+name = "pallet-relay-migration"
+repository = "https://github.com/KILTprotocol/kilt-node"
+version = "1.7.1"
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+codec = {package = "parity-scale-codec", version = "3.1.5", default-features = false, features = ["derive"]}
+cumulus-pallet-parachain-system = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "polkadot-v0.9.27"}
+cumulus-primitives-core = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "polkadot-v0.9.27"}
+log = "0.4.17"
+pallet-xcm = {git = "https://github.com/paritytech/polkadot", default-features = false, branch = "release-v0.9.27"}
+polkadot-core-primitives = {git = "https://github.com/paritytech/polkadot", default-features = false, branch = "release-v0.9.27"}
+polkadot-runtime-common = {git = "https://github.com/paritytech/polkadot", default-features = false, branch = "release-v0.9.27"}
+scale-info = {version = "2.1.1", default-features = false, features = ["derive"]}
+xcm = {git = "https://github.com/paritytech/polkadot", default-features = false, branch = "release-v0.9.27"}
+
+# KILT
+kilt-support = {default-features = false, path = "../../support"}
+
+# Substrate dependencies
+frame-support = {branch = "polkadot-v0.9.27", default-features = false, git = "https://github.com/paritytech/substrate"}
+frame-system = {branch = "polkadot-v0.9.27", default-features = false, git = "https://github.com/paritytech/substrate"}
+sp-core = {branch = "polkadot-v0.9.27", default-features = false, git = "https://github.com/paritytech/substrate"}
+sp-io = {branch = "polkadot-v0.9.27", default-features = false, git = "https://github.com/paritytech/substrate"}
+sp-runtime = {branch = "polkadot-v0.9.27", default-features = false, git = "https://github.com/paritytech/substrate"}
+sp-std = {branch = "polkadot-v0.9.27", default-features = false, git = "https://github.com/paritytech/substrate"}
+
+# benchmarking
+frame-benchmarking = {branch = "polkadot-v0.9.27", optional = true, default-features = false, git = "https://github.com/paritytech/substrate"}
+
+[features]
+default = ["std"]
+std = [
+  "codec/std",
+  "cumulus-pallet-parachain-system/std",
+  "cumulus-primitives-core/std",
+  "frame-benchmarking/std",
+  "frame-support/std",
+  "frame-system/std",
+  "kilt-support/std",
+  "log/std",
+  "pallet-xcm/std",
+  "polkadot-core-primitives/std",
+  "polkadot-runtime-common/std",
+  "scale-info/std",
+  "sp-core/std",
+  "sp-io/std",
+  "sp-runtime/std",
+  "sp-std/std",
+  "xcm/std",
+]
+try-runtime = [
+  "frame-support/try-runtime",
+  "kilt-support/try-runtime",
+]

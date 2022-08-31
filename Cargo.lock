@@ -3661,15 +3661,18 @@ dependencies = [
 name = "kilt-support"
 version = "1.7.1"
 dependencies = [
+ "cumulus-primitives-core",
  "frame-support",
  "frame-system",
  "parity-scale-codec",
+ "polkadot-core-primitives",
  "scale-info",
  "serde",
  "serde_json",
  "sp-core",
  "sp-runtime",
  "sp-std",
+ "xcm",
 ]
 
 [[package]]
@@ -5870,6 +5873,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-relay-migration"
+version = "1.7.1"
+dependencies = [
+ "cumulus-pallet-parachain-system",
+ "cumulus-primitives-core",
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "kilt-support",
+ "log",
+ "pallet-xcm",
+ "parity-scale-codec",
+ "polkadot-core-primitives",
+ "polkadot-runtime-common",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+ "xcm",
+]
+
+[[package]]
 name = "pallet-scheduler"
 version = "4.0.0-dev"
 source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.27#8eff668a42325aeb4433eace1604f4d286a6ec05"
@@ -6434,6 +6460,7 @@ dependencies = [
  "pallet-preimage",
  "pallet-proxy",
  "pallet-randomness-collective-flip",
+ "pallet-relay-migration",
  "pallet-scheduler",
  "pallet-session",
  "pallet-sudo",
@@ -10760,6 +10787,7 @@ dependencies = [
  "pallet-preimage",
  "pallet-proxy",
  "pallet-randomness-collective-flip",
+ "pallet-relay-migration",
  "pallet-scheduler",
  "pallet-session",
  "pallet-timestamp",
