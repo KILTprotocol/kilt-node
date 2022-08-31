@@ -48,6 +48,7 @@ use delegation::DelegationAc;
 use pallet_did_lookup::{linkable_account::LinkableAccountId, migrations::EthereumMigration};
 pub use parachain_staking::InflationInfo;
 
+use kilt_support::relay::RelayChainCallBuilder;
 use runtime_common::{
 	authorization::{AuthorizationId, PalletAuthorize},
 	constants::{self, EXISTENTIAL_DEPOSIT, KILT},
@@ -219,7 +220,9 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
 	type ReservedDmpWeight = ReservedDmpWeight;
 	type XcmpMessageHandler = XcmpQueue;
 	type ReservedXcmpWeight = ReservedXcmpWeight;
-	type CheckAssociatedRelayNumber = cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases;
+	// We temporarily control this via the RelayMigration pallet which can toggle
+	// between strict and any.
+	type CheckAssociatedRelayNumber = RelayMigration;
 }
 
 impl parachain_info::Config for Runtime {}
@@ -663,6 +666,12 @@ impl parachain_staking::Config for Runtime {
 	const BLOCKS_PER_YEAR: Self::BlockNumber = constants::BLOCKS_PER_YEAR;
 }
 
+impl pallet_relay_migration::Config for Runtime {
+	type Event = Event;
+	type ApproveOrigin = ApproveOrigin;
+	type RelayChainCallBuilder = RelayChainCallBuilder<Runtime, ParachainInfo>;
+}
+
 impl pallet_utility::Config for Runtime {
 	type Event = Event;
 	type Call = Call;
@@ -899,7 +908,8 @@ construct_runtime! {
 		// placeholder: parachain council election = 33,
 		TechnicalMembership: pallet_membership::<Instance1> = 34,
 		Treasury: pallet_treasury = 35,
-		DynFilter: pallet_dyn_filter = 36,
+		RelayMigration: pallet_relay_migration::{Pallet, Call, Storage, Event<T>} = 36,
+		DynFilter: pallet_dyn_filter = 37,
 
 		// Utility module.
 		Utility: pallet_utility = 40,
