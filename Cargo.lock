@@ -4649,6 +4649,7 @@ dependencies = [
  "pallet-authorship",
  "pallet-balances",
  "pallet-did-lookup",
+ "pallet-dyn-filter",
  "pallet-grandpa",
  "pallet-indices",
  "pallet-proxy",

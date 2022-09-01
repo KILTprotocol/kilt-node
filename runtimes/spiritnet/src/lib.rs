@@ -141,7 +141,7 @@ impl frame_system::Config for Runtime {
 	type OnNewAccount = ();
 	type OnKilledAccount = ();
 	type DbWeight = RocksDbWeight;
-	type BaseCallFilter = frame_support::traits::Everything;
+	type BaseCallFilter = DynFilter;
 	type SystemWeightInfo = weights::frame_system::WeightInfo<Runtime>;
 	type BlockWeights = BlockWeights;
 	type BlockLength = BlockLength;
