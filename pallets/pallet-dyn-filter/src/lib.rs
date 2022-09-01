@@ -55,7 +55,8 @@ pub mod pallet {
 	pub trait Config: frame_system::Config {
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 
-		/// The origin check for the authorised entities that can change the filter.
+		/// The origin check for the authorised entities that can change the
+		/// filter.
 		type ApproveOrigin: EnsureOrigin<<Self as frame_system::Config>::Origin>;
 
 		/// TransferCall filters all calls that allow to transfer funds.
