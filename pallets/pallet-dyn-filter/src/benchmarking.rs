@@ -25,13 +25,11 @@ use crate::setting::FilterSettings;
 benchmarks! {
 	set_filter {
 		let new_filter = FilterSettings {
-			governance: true,
-			staking: true,
-			transfer: true,
-			feature: true,
-			xcm: true,
+			transfer_disabled: true,
+			feature_disabled: true,
+			xcm_disabled: true,
 		};
-		let origin = T::EnsureOrigin::successful_origin();
+		let origin = T::ApproveOrigin::successful_origin();
 	}: _<T::Origin>(origin, new_filter)
 	verify {
 	}
