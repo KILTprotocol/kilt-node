@@ -855,7 +855,7 @@ impl pallet_dyn_filter::Config for Runtime {
 	type Event = Event;
 	type WeightInfo = pallet_dyn_filter::default_weights::SubstrateWeight<Runtime>;
 
-	type EnsureOrigin = DynFilterOrigin;
+	type ApproveOrigin = DynFilterOrigin;
 
 	type TransferCall = filter::TransferCalls;
 	type FeatureCall = filter::FeatureCalls;

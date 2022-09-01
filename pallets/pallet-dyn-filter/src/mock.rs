@@ -81,17 +81,17 @@ impl crate::Config for Test {
 	type Event = Event;
 	type WeightInfo = ();
 
-	type EnsureOrigin = EnsureRoot<AccountId>;
+	type ApproveOrigin = EnsureRoot<AccountId>;
 	type FeatureCall = FeatureCalls;
 	type TransferCall = TransferCalls;
 	type XcmCall = XcmCalls;
 	type SystemCall = SystemCalls;
 }
 
-pub(crate) const TRANSFER: &[u8] = b"trf";
-pub(crate) const FEATURE: &[u8] = b"fet";
-pub(crate) const XCM: &[u8] = b"xcm";
-pub(crate) const SYSTEM: &[u8] = b"system";
+const TRANSFER: &[u8] = b"trf";
+const FEATURE: &[u8] = b"fet";
+const XCM: &[u8] = b"xcm";
+const SYSTEM: &[u8] = b"system";
 
 lazy_static! {
 	pub static ref CALL_TRANSFER: Call = Call::System(frame_system::Call::remark {

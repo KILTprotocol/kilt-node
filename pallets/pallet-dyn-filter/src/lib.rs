@@ -55,23 +55,21 @@ pub mod pallet {
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
-		/// The origin check for all calls inside this pallet.
-		type EnsureOrigin: EnsureOrigin<<Self as frame_system::Config>::Origin>;
 
-		/// System calls are not filtered. (return true if call is contained in
-		/// this set)
+		/// The origin check for all DID calls inside this pallet.
+		type ApproveOrigin: EnsureOrigin<<Self as frame_system::Config>::Origin>;
+
+		/// TransferCall filters all calls that allow to transfer funds.
 		type TransferCall: Contains<<Self as frame_system::Config>::Call>;
 
-		/// System calls are not filtered. (return true if call is contained in
-		/// this set)
+		/// FeatureCall filters all calls that provide the utility of the chain.
 		type FeatureCall: Contains<<Self as frame_system::Config>::Call>;
 
-		/// System calls are not filtered. (return true if call is contained in
-		/// this set)
+		/// XcmCall filters all calls that send messages to other chains
 		type XcmCall: Contains<<Self as frame_system::Config>::Call>;
 
-		/// System calls are not filtered. (SystemCall contains all system
-		/// calls, return true if system call)
+		/// System calls are not filtered. (SystemCall contains all calls that
+		/// are needed for block production, return true if system call)
 		type SystemCall: Contains<<Self as frame_system::Config>::Call>;
 
 		/// Weight information for extrinsics in this pallet.
@@ -100,7 +98,7 @@ pub mod pallet {
 	impl<T: Config> Pallet<T> {
 		#[pallet::weight(<T as Config>::WeightInfo::set_filter())]
 		pub fn set_filter(origin: OriginFor<T>, filter: FilterSettings) -> DispatchResult {
-			T::EnsureOrigin::ensure_origin(origin)?;
+			T::ApproveOrigin::ensure_origin(origin)?;
 
 			Filter::<T>::set(filter);
 			Self::deposit_event(Event::<T>::NewFilterRules { rules: filter });
@@ -109,9 +107,9 @@ pub mod pallet {
 	}
 
 	impl<T: Config> Contains<T::Call> for Pallet<T> {
-         /// The provided call goes through if this returns `true`. Else, it fails.
+		/// The provided call goes through if this returns `true`. Else, it
+		/// fails.
 		fn contains(t: &T::Call) -> bool {
-
 			// System relevant calls cannot be filtered
 			if T::SystemCall::contains(t) {
 				return true;
