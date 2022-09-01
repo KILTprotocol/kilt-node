@@ -46,7 +46,6 @@ pub mod pallet {
 		traits::{Contains, StorageVersion},
 	};
 	use frame_system::pallet_prelude::*;
-	use kilt_support::traits::EnabledFunctionality;
 
 	use crate::{setting::FilterSettings, WeightInfo};
 
@@ -124,20 +123,6 @@ pub mod pallet {
 			!((transfer && T::TransferCall::contains(t))
 				|| (feature && T::FeatureCall::contains(t))
 				|| (xcm && T::XcmCall::contains(t)))
-		}
-	}
-
-	impl<T: Config> EnabledFunctionality for Pallet<T> {
-		fn transfer() -> bool {
-			Filter::<T>::get().transfer_disabled
-		}
-
-		fn feature() -> bool {
-			Filter::<T>::get().feature_disabled
-		}
-
-		fn xcm() -> bool {
-			Filter::<T>::get().xcm_disabled
 		}
 	}
 }

@@ -5508,7 +5508,6 @@ dependencies = [
  "frame-support",
  "frame-system",
  "itertools",
- "kilt-support",
  "lazy_static",
  "log",
  "pallet-balances",

@@ -112,39 +112,3 @@ pub trait RelayCallBuilder {
 	/// * debt: The weight limit used to process the call.
 	fn finalize_call_into_xcm_message(call: Vec<u8>, extra_fee: Self::Balance, weight: Weight) -> Xcm<()>;
 }
-
-pub trait EnabledFunctionality {
-	fn transfer() -> bool;
-	fn feature() -> bool;
-	fn xcm() -> bool;
-}
-
-pub struct AllEnabled;
-impl EnabledFunctionality for AllEnabled {
-	fn transfer() -> bool {
-		true
-	}
-
-	fn feature() -> bool {
-		true
-	}
-
-	fn xcm() -> bool {
-		true
-	}
-}
-
-pub struct AllDisabled;
-impl EnabledFunctionality for AllDisabled {
-	fn transfer() -> bool {
-		false
-	}
-
-	fn feature() -> bool {
-		false
-	}
-
-	fn xcm() -> bool {
-		false
-	}
-}
