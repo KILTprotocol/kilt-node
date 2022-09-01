@@ -115,14 +115,14 @@ pub mod pallet {
 			}
 
 			let FilterSettings {
-				transfer_disabled: transfer,
-				feature_disabled: feature,
-				xcm_disabled: xcm,
+				transfer_disabled,
+				feature_disabled,
+				xcm_disabled,
 			} = Filter::<T>::get();
 
-			!((transfer && T::TransferCall::contains(t))
-				|| (feature && T::FeatureCall::contains(t))
-				|| (xcm && T::XcmCall::contains(t)))
+			!((transfer_disabled && T::TransferCall::contains(t))
+				|| (feature_disabled && T::FeatureCall::contains(t))
+				|| (xcm_disabled && T::XcmCall::contains(t)))
 		}
 	}
 }
