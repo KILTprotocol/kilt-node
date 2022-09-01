@@ -115,7 +115,11 @@ pub mod pallet {
 				return true;
 			}
 
-			let FilterSettings { transfer, feature, xcm } = Filter::<T>::get();
+			let FilterSettings {
+				transfer_disabled: transfer,
+				feature_disabled: feature,
+				xcm_disabled: xcm,
+			} = Filter::<T>::get();
 
 			!((transfer && T::TransferCall::contains(t))
 				|| (feature && T::FeatureCall::contains(t))
@@ -125,15 +129,15 @@ pub mod pallet {
 
 	impl<T: Config> EnabledFunctionality for Pallet<T> {
 		fn transfer() -> bool {
-			Filter::<T>::get().transfer
+			Filter::<T>::get().transfer_disabled
 		}
 
 		fn feature() -> bool {
-			Filter::<T>::get().feature
+			Filter::<T>::get().feature_disabled
 		}
 
 		fn xcm() -> bool {
-			Filter::<T>::get().xcm
+			Filter::<T>::get().xcm_disabled
 		}
 	}
 }

@@ -22,7 +22,7 @@ use scale_info::TypeInfo;
 
 #[derive(Copy, Clone, Encode, Decode, TypeInfo, MaxEncodedLen, Default, RuntimeDebug, PartialEq, Eq)]
 pub struct FilterSettings {
-	pub transfer: bool,
-	pub feature: bool,
-	pub xcm: bool,
+	pub transfer_disabled: bool,
+	pub feature_disabled: bool,
+	pub xcm_disabled: bool,
 }

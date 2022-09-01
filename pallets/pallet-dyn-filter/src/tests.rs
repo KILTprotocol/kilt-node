@@ -37,9 +37,9 @@ fn check_filter() {
 			assert_ok!(Pallet::<Test>::set_filter(
 				Origin::root(),
 				FilterSettings {
-					transfer: *items[0],
-					feature: *items[1],
-					xcm: *items[2],
+					transfer_disabled: *items[0],
+					feature_disabled: *items[1],
+					xcm_disabled: *items[2],
 				},
 			));
 
