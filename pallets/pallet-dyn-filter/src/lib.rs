@@ -55,7 +55,7 @@ pub mod pallet {
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
-		/// The origin check for all DID calls inside this pallet.
+		/// The origin check for all calls inside this pallet.
 		type EnsureOrigin: EnsureOrigin<<Self as frame_system::Config>::Origin>;
 
 		/// System calls are not filtered. (return true if call is contained in
@@ -100,7 +100,7 @@ pub mod pallet {
 	impl<T: Config> Pallet<T> {
 		#[pallet::weight(<T as Config>::WeightInfo::set_filter())]
 		pub fn set_filter(origin: OriginFor<T>, filter: FilterSettings) -> DispatchResult {
-			<T as Config>::EnsureOrigin::ensure_origin(origin)?;
+			T::EnsureOrigin::ensure_origin(origin)?;
 
 			Filter::<T>::set(filter);
 			Self::deposit_event(Event::<T>::NewFilterRules { rules: filter });
@@ -109,8 +109,8 @@ pub mod pallet {
 	}
 
 	impl<T: Config> Contains<T::Call> for Pallet<T> {
+         /// The provided call goes through if this returns `true`. Else, it fails.
 		fn contains(t: &T::Call) -> bool {
-			// true = call goes through
 
 			// System relevant calls cannot be filtered
 			if T::SystemCall::contains(t) {
