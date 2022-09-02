@@ -2,7 +2,7 @@
 authors = ["KILT <info@kilt.io>"]
 edition = "2021"
 name = "spiritnet-runtime"
-version = "1.7.1"
+version = "1.7.2"
 
 [build-dependencies]
 substrate-wasm-builder = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.27"}
