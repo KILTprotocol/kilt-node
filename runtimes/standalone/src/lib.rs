@@ -76,6 +76,8 @@ use frame_system::EnsureSigned;
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
 
+mod filter;
+
 /// Digest item type.
 pub type DigestItem = generic::DigestItem;
 
@@ -140,7 +142,7 @@ parameter_types! {
 
 impl frame_system::Config for Runtime {
 	/// The basic call filter to use in dispatchable.
-	type BaseCallFilter = frame_support::traits::Everything;
+	type BaseCallFilter = DynFilter;
 	/// Block & extrinsics weights: base values and limits.
 	type BlockWeights = runtime_common::BlockWeights;
 	/// The maximum length of a block (in bytes).
@@ -611,6 +613,18 @@ impl pallet_proxy::Config for Runtime {
 	type WeightInfo = ();
 }
 
+impl pallet_dyn_filter::Config for Runtime {
+	type Event = Event;
+	type WeightInfo = pallet_dyn_filter::default_weights::SubstrateWeight<Runtime>;
+
+	type ApproveOrigin = EnsureRoot<AccountId>;
+
+	type TransferCall = filter::TransferCalls;
+	type FeatureCall = filter::FeatureCalls;
+	type XcmCall = filter::XcmCalls;
+	type SystemCall = filter::SystemCalls;
+}
+
 construct_runtime!(
 	pub enum Runtime where
 		Block = Block,
@@ -644,6 +658,7 @@ construct_runtime!(
 		// ElectionsPhragmen: pallet_elections_phragmen = 28,
 		// TechnicalMembership: pallet_membership = 29,
 		// Treasury: pallet_treasury = 30,
+		DynFilter: pallet_dyn_filter = 31,
 
 		// // System scheduler.
 		// Scheduler: pallet_scheduler = 32,

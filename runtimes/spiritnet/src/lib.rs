@@ -63,6 +63,7 @@ use sp_version::NativeVersion;
 #[cfg(feature = "runtime-benchmarks")]
 use {frame_system::EnsureSigned, kilt_support::signature::AlwaysVerify, runtime_common::benchmarks::DummySignature};
 
+mod filter;
 #[cfg(test)]
 mod tests;
 
@@ -139,7 +140,7 @@ impl frame_system::Config for Runtime {
 	type OnNewAccount = ();
 	type OnKilledAccount = ();
 	type DbWeight = RocksDbWeight;
-	type BaseCallFilter = frame_support::traits::Everything;
+	type BaseCallFilter = DynFilter;
 	type SystemWeightInfo = weights::frame_system::WeightInfo<Runtime>;
 	type BlockWeights = BlockWeights;
 	type BlockLength = BlockLength;
@@ -653,7 +654,6 @@ impl parachain_staking::Config for Runtime {
 	type MaxUnstakeRequests = constants::staking::MaxUnstakeRequests;
 	type NetworkRewardRate = constants::staking::NetworkRewardRate;
 	type NetworkRewardStart = constants::staking::NetworkRewardStart;
-
 	type NetworkRewardBeneficiary = Treasury;
 	type WeightInfo = weights::parachain_staking::WeightInfo<Runtime>;
 
@@ -854,6 +854,23 @@ impl pallet_proxy::Config for Runtime {
 	type WeightInfo = weights::pallet_proxy::WeightInfo<Runtime>;
 }
 
+type DynFilterOrigin = EitherOfDiverse<
+	EnsureRoot<AccountId>,
+	pallet_collective::EnsureProportionAtLeast<AccountId, CouncilCollective, 1, 1>,
+>;
+
+impl pallet_dyn_filter::Config for Runtime {
+	type Event = Event;
+	type WeightInfo = pallet_dyn_filter::default_weights::SubstrateWeight<Runtime>;
+
+	type ApproveOrigin = DynFilterOrigin;
+
+	type TransferCall = filter::TransferCalls;
+	type FeatureCall = filter::FeatureCalls;
+	type XcmCall = filter::XcmCalls;
+	type SystemCall = filter::SystemCalls;
+}
+
 construct_runtime! {
 	pub enum Runtime where
 		Block = Block,
@@ -884,6 +901,7 @@ construct_runtime! {
 		TechnicalMembership: pallet_membership::<Instance1> = 34,
 		Treasury: pallet_treasury = 35,
 		RelayMigration: pallet_relay_migration::{Pallet, Call, Storage, Event<T>} = 36,
+		DynFilter: pallet_dyn_filter = 37,
 
 		// Utility module.
 		Utility: pallet_utility = 40,

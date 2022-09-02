@@ -4648,6 +4648,7 @@ dependencies = [
  "pallet-authorship",
  "pallet-balances",
  "pallet-did-lookup",
+ "pallet-dyn-filter",
  "pallet-grandpa",
  "pallet-indices",
  "pallet-proxy",
@@ -5481,6 +5482,26 @@ dependencies = [
  "frame-support",
  "frame-system",
  "kilt-support",
+ "log",
+ "pallet-balances",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-keystore",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "pallet-dyn-filter"
+version = "1.7.1"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "itertools",
+ "lazy_static",
  "log",
  "pallet-balances",
  "parity-scale-codec",
@@ -6447,6 +6468,7 @@ dependencies = [
  "pallet-collective",
  "pallet-democracy",
  "pallet-did-lookup",
+ "pallet-dyn-filter",
  "pallet-indices",
  "pallet-inflation",
  "pallet-membership",
@@ -10774,6 +10796,7 @@ dependencies = [
  "pallet-collective",
  "pallet-democracy",
  "pallet-did-lookup",
+ "pallet-dyn-filter",
  "pallet-indices",
  "pallet-inflation",
  "pallet-membership",
