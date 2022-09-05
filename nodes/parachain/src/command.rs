@@ -49,7 +49,10 @@ impl IdentifyChain for dyn sc_service::ChainSpec {
 		self.id().contains("peregrine") || self.id().eq("kilt_parachain_testnet")
 	}
 	fn is_spiritnet(&self) -> bool {
-		self.id().contains("spiritnet") || self.id().eq("kilt_westend") || self.id().eq("kilt_rococo")
+		self.id().eq("kilt")
+			|| self.id().contains("spiritnet")
+			|| self.id().eq("kilt_westend")
+			|| self.id().eq("kilt_rococo")
 	}
 	fn is_clone(&self) -> bool {
 		self.id().to_lowercase().contains("cln_kilt") || self.id().to_lowercase().contains("clone")
