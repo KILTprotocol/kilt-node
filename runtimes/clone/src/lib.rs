@@ -32,6 +32,7 @@ use frame_support::{
 	PalletId,
 };
 use frame_system::EnsureRoot;
+use pallet_did_lookup::linkable_account::LinkableAccountId;
 use sp_api::impl_runtime_apis;
 use sp_core::OpaqueMetadata;
 use sp_runtime::{
@@ -531,10 +532,12 @@ impl_runtime_apis! {
 		}
 	}
 
+	// Solely required from parachain client
 	impl did_rpc_runtime_api::DidApi<
 		Block,
 		AccountId,
 		AccountId,
+		LinkableAccountId,
 		Balance,
 		Hash,
 		BlockNumber
@@ -542,6 +545,7 @@ impl_runtime_apis! {
 		fn query_did_by_w3n(_: Vec<u8>) -> Option<did_rpc_runtime_api::RawDidLinkedInfo<
 				AccountId,
 				AccountId,
+				LinkableAccountId,
 				Balance,
 				Hash,
 				BlockNumber
@@ -550,10 +554,11 @@ impl_runtime_apis! {
 			None
 		}
 
-		fn query_did_by_account_id(_: AccountId) -> Option<
+		fn query_did_by_account_id(_: LinkableAccountId) -> Option<
 			did_rpc_runtime_api::RawDidLinkedInfo<
 				AccountId,
 				AccountId,
+				LinkableAccountId,
 				Balance,
 				Hash,
 				BlockNumber
@@ -566,6 +571,7 @@ impl_runtime_apis! {
 			did_rpc_runtime_api::RawDidLinkedInfo<
 				AccountId,
 				AccountId,
+				LinkableAccountId,
 				Balance,
 				Hash,
 				BlockNumber

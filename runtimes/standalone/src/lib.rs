@@ -42,7 +42,7 @@ use sp_consensus_aura::{ed25519::AuthorityId as AuraId, SlotDuration};
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
-	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, NumberFor, OpaqueKeys, Verify},
+	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, NumberFor, OpaqueKeys},
 	transaction_validity::{TransactionSource, TransactionValidity},
 	ApplyExtrinsicResult, RuntimeDebug,
 };
@@ -50,6 +50,7 @@ use sp_std::prelude::*;
 use sp_version::RuntimeVersion;
 
 use delegation::DelegationAc;
+use pallet_did_lookup::{linkable_account::LinkableAccountId, migrations::EthereumMigration};
 use runtime_common::{
 	authorization::{AuthorizationId, PalletAuthorize},
 	constants::{self, EXISTENTIAL_DEPOSIT, KILT},
@@ -409,8 +410,7 @@ impl did::Config for Runtime {
 
 impl pallet_did_lookup::Config for Runtime {
 	type Event = Event;
-	type Signature = Signature;
-	type Signer = <Signature as Verify>::Signer;
+
 	type DidIdentifier = DidIdentifier;
 
 	type Currency = Balances;
@@ -746,8 +746,14 @@ pub type SignedPayload = generic::SignedPayload<Call, SignedExtra>;
 /// Extrinsic type that has already been checked.
 pub type CheckedExtrinsic = generic::CheckedExtrinsic<AccountId, Call, SignedExtra>;
 /// Executive: handles dispatch to the various Pallets.
-pub type Executive =
-	frame_executive::Executive<Runtime, Block, frame_system::ChainContext<Runtime>, Runtime, AllPalletsWithSystem, ()>;
+pub type Executive = frame_executive::Executive<
+	Runtime,
+	Block,
+	frame_system::ChainContext<Runtime>,
+	Runtime,
+	AllPalletsWithSystem,
+	EthereumMigration<Runtime>,
+>;
 
 impl_runtime_apis! {
 	impl sp_api::Core<Block> for Runtime {
@@ -881,6 +887,7 @@ impl_runtime_apis! {
 		Block,
 		DidIdentifier,
 		AccountId,
+		LinkableAccountId,
 		Balance,
 		Hash,
 		BlockNumber
@@ -888,6 +895,7 @@ impl_runtime_apis! {
 		fn query_did_by_w3n(name: Vec<u8>) -> Option<did_rpc_runtime_api::RawDidLinkedInfo<
 				DidIdentifier,
 				AccountId,
+				LinkableAccountId,
 				Balance,
 				Hash,
 				BlockNumber
@@ -899,10 +907,12 @@ impl_runtime_apis! {
 					did::Did::<Runtime>::get(&owner_info.owner).map(|details| (owner_info, details))
 				})
 				.map(|(owner_info, details)| {
-					let accounts = pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(&owner_info.owner).collect();
+					let accounts = pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(
+						&owner_info.owner,
+					).collect();
 					let service_endpoints = did::ServiceEndpoints::<Runtime>::iter_prefix(&owner_info.owner).map(|e| From::from(e.1)).collect();
 
-					did_rpc_runtime_api::RawDidLinkedInfo {
+					did_rpc_runtime_api::RawDidLinkedInfo{
 						identifier: owner_info.owner,
 						w3n: Some(name.into()),
 						accounts,
@@ -912,10 +922,11 @@ impl_runtime_apis! {
 			})
 		}
 
-		fn query_did_by_account_id(account: AccountId) -> Option<
+		fn query_did_by_account_id(account: LinkableAccountId) -> Option<
 			did_rpc_runtime_api::RawDidLinkedInfo<
 				DidIdentifier,
 				AccountId,
+				LinkableAccountId,
 				Balance,
 				Hash,
 				BlockNumber
@@ -944,6 +955,7 @@ impl_runtime_apis! {
 			did_rpc_runtime_api::RawDidLinkedInfo<
 				DidIdentifier,
 				AccountId,
+				LinkableAccountId,
 				Balance,
 				Hash,
 				BlockNumber

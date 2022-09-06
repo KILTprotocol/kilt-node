@@ -36,7 +36,7 @@ use sp_api::impl_runtime_apis;
 use sp_core::OpaqueMetadata;
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
-	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, OpaqueKeys, Verify},
+	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, OpaqueKeys},
 	transaction_validity::{TransactionSource, TransactionValidity},
 	ApplyExtrinsicResult, Perbill, Permill, RuntimeDebug,
 };
@@ -45,6 +45,7 @@ use sp_version::RuntimeVersion;
 use xcm_executor::XcmExecutor;
 
 use delegation::DelegationAc;
+use pallet_did_lookup::{linkable_account::LinkableAccountId, migrations::EthereumMigration};
 pub use parachain_staking::InflationInfo;
 
 use kilt_support::relay::RelayChainCallBuilder;
@@ -597,8 +598,7 @@ impl did::Config for Runtime {
 
 impl pallet_did_lookup::Config for Runtime {
 	type Event = Event;
-	type Signature = Signature;
-	type Signer = <Signature as Verify>::Signer;
+
 	type DidIdentifier = DidIdentifier;
 
 	type Currency = Balances;
@@ -1030,7 +1030,7 @@ pub type Executive = frame_executive::Executive<
 	// Executes pallet hooks in reverse order of definition in construct_runtime
 	// If we want to switch to AllPalletsWithSystem, we need to reorder the staking pallets
 	AllPalletsReversedWithSystemFirst,
-	(),
+	EthereumMigration<Runtime>,
 >;
 
 impl_runtime_apis! {
@@ -1141,6 +1141,7 @@ impl_runtime_apis! {
 		Block,
 		DidIdentifier,
 		AccountId,
+		LinkableAccountId,
 		Balance,
 		Hash,
 		BlockNumber
@@ -1148,6 +1149,7 @@ impl_runtime_apis! {
 		fn query_did_by_w3n(name: Vec<u8>) -> Option<did_rpc_runtime_api::RawDidLinkedInfo<
 				DidIdentifier,
 				AccountId,
+				LinkableAccountId,
 				Balance,
 				Hash,
 				BlockNumber
@@ -1159,7 +1161,7 @@ impl_runtime_apis! {
 					did::Did::<Runtime>::get(&owner_info.owner).map(|details| (owner_info, details))
 				})
 				.map(|(owner_info, details)| {
-					let accounts = pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(&owner_info.owner).collect();
+					let accounts: Vec<LinkableAccountId> = pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(&owner_info.owner).collect();
 					let service_endpoints = did::ServiceEndpoints::<Runtime>::iter_prefix(&owner_info.owner).map(|e| From::from(e.1)).collect();
 
 					did_rpc_runtime_api::RawDidLinkedInfo {
@@ -1172,10 +1174,11 @@ impl_runtime_apis! {
 			})
 		}
 
-		fn query_did_by_account_id(account: AccountId) -> Option<
+		fn query_did_by_account_id(account: LinkableAccountId) -> Option<
 			did_rpc_runtime_api::RawDidLinkedInfo<
 				DidIdentifier,
 				AccountId,
+				LinkableAccountId,
 				Balance,
 				Hash,
 				BlockNumber
@@ -1204,6 +1207,7 @@ impl_runtime_apis! {
 			did_rpc_runtime_api::RawDidLinkedInfo<
 				DidIdentifier,
 				AccountId,
+				LinkableAccountId,
 				Balance,
 				Hash,
 				BlockNumber

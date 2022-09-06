@@ -24,7 +24,7 @@ use sp_runtime::{
 	MultiSignature,
 };
 
-use crate as pallet_did_lookup;
+use crate::{self as pallet_did_lookup, linkable_account::LinkableAccountId};
 
 pub(crate) type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 pub(crate) type Block = frame_system::mocking::MockBlock<Test>;
@@ -105,8 +105,6 @@ parameter_types! {
 
 impl pallet_did_lookup::Config for Test {
 	type Event = Event;
-	type Signature = Signature;
-	type Signer = AccountPublic;
 
 	type Currency = Balances;
 	type Deposit = DidLookupDeposit;
@@ -128,6 +126,7 @@ pub(crate) const ACCOUNT_00: AccountId = AccountId::new([1u8; 32]);
 pub(crate) const ACCOUNT_01: AccountId = AccountId::new([2u8; 32]);
 pub(crate) const DID_00: SubjectId = SubjectId(ACCOUNT_00);
 pub(crate) const DID_01: SubjectId = SubjectId(ACCOUNT_01);
+pub(crate) const LINKABLE_ACCOUNT_00: LinkableAccountId = LinkableAccountId::AccountId32(ACCOUNT_00);
 
 #[derive(Clone, Default)]
 pub struct ExtBuilder {
@@ -159,7 +158,7 @@ impl ExtBuilder {
 
 		ext.execute_with(|| {
 			for (sender, did, account) in self.connections {
-				pallet_did_lookup::Pallet::<Test>::add_association(sender, did, account)
+				pallet_did_lookup::Pallet::<Test>::add_association(sender, did, account.into())
 					.expect("Should create connection");
 			}
 		});
