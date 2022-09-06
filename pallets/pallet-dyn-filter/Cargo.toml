@@ -4,7 +4,7 @@ description = "Dynamically filter calls."
 edition = "2021"
 name = "pallet-dyn-filter"
 repository = "https://github.com/KILTprotocol/kilt-node"
-version = "1.7.1"
+version = "1.7.2"
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
