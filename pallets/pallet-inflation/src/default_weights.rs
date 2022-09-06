@@ -56,23 +56,23 @@ pub struct SubstrateWeight<T>(PhantomData<T>);
 impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: System Account (r:1 w:1)
 	fn on_initialize_mint_to_treasury() -> Weight {
-		(30_534_000_u64)
-			.saturating_add(T::DbWeight::get().reads(1_u64))
-			.saturating_add(T::DbWeight::get().writes(1_u64))
+		Weight::from_ref_time(30_534_000 as u64)
+			.saturating_add(T::DbWeight::get().reads(1u64))
+			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	fn on_initialize_no_action() -> Weight {
-		(386_000_u64)
+		Weight::from_ref_time(386_000 as u64)
 	}
 }
 
 // For backwards compatibility and tests
 impl WeightInfo for () {
 	fn on_initialize_mint_to_treasury() -> Weight {
-		(30_534_000_u64)
-			.saturating_add(RocksDbWeight::get().reads(1_u64))
-			.saturating_add(RocksDbWeight::get().writes(1_u64))
+		Weight::from_ref_time(30_534_000 as u64)
+			.saturating_add(RocksDbWeight::get().reads(1 as u64))
+			.saturating_add(RocksDbWeight::get().writes(1 as u64))
 	}
 	fn on_initialize_no_action() -> Weight {
-		(386_000_u64)
+		Weight::from_ref_time(386_000 as u64)
 	}
 }

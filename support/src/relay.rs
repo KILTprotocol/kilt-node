@@ -25,12 +25,11 @@
 #![allow(clippy::unused_unit)]
 
 use codec::{Decode, Encode, FullCodec};
-use frame_support::{traits::Get, weights::Weight};
+use frame_support::{traits::Get};
 use frame_system::Config;
 use scale_info::TypeInfo;
 use sp_std::{boxed::Box, marker::PhantomData, prelude::*};
 use xcm::latest::prelude::*;
-
 pub use cumulus_primitives_core::ParaId;
 
 use crate::traits::RelayCallBuilder;
@@ -83,7 +82,7 @@ where
 		RelayChainCall::Registrar(RegistrarCall::Swap(id, other))
 	}
 
-	fn finalize_call_into_xcm_message(call: Vec<u8>, extra_fee: Self::Balance, weight: Weight) -> Xcm<()> {
+	fn finalize_call_into_xcm_message(call: Vec<u8>, extra_fee: Self::Balance, weight: u64) -> Xcm<()> {
 		let asset = MultiAsset {
 			id: Concrete(MultiLocation::here()),
 			fun: Fungibility::Fungible(extra_fee),

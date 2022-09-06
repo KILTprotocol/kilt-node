@@ -18,7 +18,6 @@
 
 use codec::{EncodeLike, FullCodec};
 use cumulus_primitives_core::ParaId;
-use frame_support::weights::Weight;
 use scale_info::TypeInfo;
 use sp_std::vec::Vec;
 use xcm::latest::Xcm;
@@ -110,5 +109,5 @@ pub trait RelayCallBuilder {
 	///   `weight` and `debt`.
 	/// * weight: The weight limit used for XCM.
 	/// * debt: The weight limit used to process the call.
-	fn finalize_call_into_xcm_message(call: Vec<u8>, extra_fee: Self::Balance, weight: Weight) -> Xcm<()>;
+	fn finalize_call_into_xcm_message(call: Vec<u8>, extra_fee: Self::Balance, weight: u64) -> Xcm<()>;
 }
