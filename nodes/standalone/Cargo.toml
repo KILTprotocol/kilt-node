@@ -24,7 +24,7 @@ runtime-common = {path = "../../runtimes/common"}
 clap = {version = "3.2.20", features = ["derive"]}
 futures = "0.3.21"
 log = "0.4.17"
-serde = {version = "1.0.142", features = ["derive"]}
+serde = {version = "1.0.144", features = ["derive"]}
 serde_json = "1.0.83"
 
 # Substrate dependencies
@@ -58,7 +58,7 @@ sp-transaction-pool = {git = "https://github.com/paritytech/substrate", branch =
 
 # RPC related dependencies
 frame-rpc-system = {package = "substrate-frame-rpc-system", git = "https://github.com/paritytech/substrate", branch = "master"}
-jsonrpsee = { version = "0.14.0", features = ["server"] }
+jsonrpsee = { version = "0.15.1", features = ["server"] }
 pallet-transaction-payment-rpc = {git = "https://github.com/paritytech/substrate", branch = "master"}
 sc-rpc = {git = "https://github.com/paritytech/substrate", branch = "master"}
 sc-rpc-api = {git = "https://github.com/paritytech/substrate", branch = "master"}

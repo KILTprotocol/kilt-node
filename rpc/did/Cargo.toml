@@ -7,7 +7,7 @@ version = "1.6.2"
 
 [dependencies]
 codec = { package = "parity-scale-codec", version = "3.1.5" }
-jsonrpsee = { version = "0.14.0", features = ["server", "macros"] }
+jsonrpsee = { version = "0.15.1", features = ["server", "macros"] }
 
 did-rpc-runtime-api = {version = "1.6.2", path = "./runtime-api"}
 
