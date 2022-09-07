@@ -15,23 +15,28 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
-#![cfg_attr(not(feature = "std"), no_std)]
 
-use deposit::Deposit;
-use frame_support::traits::{Currency, ReservableCurrency};
-use sp_runtime::traits::Zero;
+use frame_benchmarking::{benchmarks, impl_benchmark_test_suite};
+use frame_support::traits::EnsureOrigin;
 
-pub mod deposit;
-#[cfg(any(feature = "runtime-benchmarks", feature = "mock"))]
-pub mod mock;
-pub mod relay;
-pub mod signature;
-pub mod traits;
+use super::*;
+use crate::setting::FilterSettings;
 
-pub fn free_deposit<A, C>(deposit: &Deposit<A, C::Balance>)
-where
-	C: Currency<A> + ReservableCurrency<A>,
-{
-	let err_amount = C::unreserve(&deposit.owner, deposit.amount);
-	debug_assert!(err_amount.is_zero());
+benchmarks! {
+	set_filter {
+		let new_filter = FilterSettings {
+			transfer_disabled: true,
+			feature_disabled: true,
+			xcm_disabled: true,
+		};
+		let origin = T::ApproveOrigin::successful_origin();
+	}: _<T::Origin>(origin, new_filter)
+	verify {
+	}
+}
+
+impl_benchmark_test_suite! {
+	Pallet,
+	crate::mock::ExtBuilder::default().build_with_keystore(),
+	crate::mock::Test
 }

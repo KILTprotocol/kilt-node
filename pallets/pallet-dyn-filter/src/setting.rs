@@ -15,23 +15,14 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
-#![cfg_attr(not(feature = "std"), no_std)]
 
-use deposit::Deposit;
-use frame_support::traits::{Currency, ReservableCurrency};
-use sp_runtime::traits::Zero;
+use codec::{Decode, Encode, MaxEncodedLen};
+use frame_support::RuntimeDebug;
+use scale_info::TypeInfo;
 
-pub mod deposit;
-#[cfg(any(feature = "runtime-benchmarks", feature = "mock"))]
-pub mod mock;
-pub mod relay;
-pub mod signature;
-pub mod traits;
-
-pub fn free_deposit<A, C>(deposit: &Deposit<A, C::Balance>)
-where
-	C: Currency<A> + ReservableCurrency<A>,
-{
-	let err_amount = C::unreserve(&deposit.owner, deposit.amount);
-	debug_assert!(err_amount.is_zero());
+#[derive(Copy, Clone, Encode, Decode, TypeInfo, MaxEncodedLen, Default, RuntimeDebug, PartialEq, Eq)]
+pub struct FilterSettings {
+	pub transfer_disabled: bool,
+	pub feature_disabled: bool,
+	pub xcm_disabled: bool,
 }

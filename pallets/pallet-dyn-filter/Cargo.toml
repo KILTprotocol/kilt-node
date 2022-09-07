@@ -1,32 +1,25 @@
 [package]
 authors = ["KILT <info@kilt.io>"]
-description = "Lookup the DID for a blockchain account."
+description = "Dynamically filter calls."
 edition = "2021"
-name = "pallet-did-lookup"
-repository = "https://github.com/KILTprotocol/mashnet-node"
+name = "pallet-dyn-filter"
+repository = "https://github.com/KILTprotocol/kilt-node"
 version = "1.7.2"
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dev-dependencies]
-kilt-support = {features = ["mock"], path = "../../support"}
-
-pallet-balances = {branch = "polkadot-v0.9.28", git = "https://github.com/paritytech/substrate"}
-rand = "0.8"
+itertools = "0.10.3"
+lazy_static = "1.4.0"
+pallet-balances = {branch = "polkadot-v0.9.28", default-features = false, git = "https://github.com/paritytech/substrate"}
 sp-core = {branch = "polkadot-v0.9.28", git = "https://github.com/paritytech/substrate"}
 sp-keystore = {branch = "polkadot-v0.9.28", git = "https://github.com/paritytech/substrate"}
 
 [dependencies]
-codec = {package = "parity-scale-codec", version = "3.1.2", default-features = false, features = ["derive"]}
-hex = {version = "0.4", default-features = false}
-libsecp256k1 = {version = "0.7", default-features = false, features = ["hmac"]}
+codec = {package = "parity-scale-codec", version = "3.1.5", default-features = false, features = ["derive"]}
 log = "0.4.17"
 scale-info = {version = "2.1.1", default-features = false, features = ["derive"]}
-sha3 = {version = "0.10", default-features = false}
-
-# KILT
-kilt-support = {default-features = false, path = "../../support"}
 
 # Substrate dependencies
 frame-support = {branch = "polkadot-v0.9.28", default-features = false, git = "https://github.com/paritytech/substrate"}
@@ -39,16 +32,11 @@ sp-std = {branch = "polkadot-v0.9.28", default-features = false, git = "https://
 # benchmarking
 frame-benchmarking = {branch = "polkadot-v0.9.28", optional = true, default-features = false, git = "https://github.com/paritytech/substrate"}
 
-# optional dependencies
-impl-serde = {version = "0.3.1", optional = true}
-serde = {version = "1.0.101", optional = true}
-
 [features]
 default = ["std"]
 
 runtime-benchmarks = [
   "frame-benchmarking",
-  "kilt-support/runtime-benchmarks",
   "frame-support/runtime-benchmarks",
   "frame-system/runtime-benchmarks",
 ]
@@ -58,11 +46,8 @@ std = [
   "frame-benchmarking/std",
   "frame-support/std",
   "frame-system/std",
-  "impl-serde",
   "log/std",
   "scale-info/std",
-  "serde",
-  "sha3/std",
   "sp-core/std",
   "sp-io/std",
   "sp-runtime/std",
@@ -71,5 +56,4 @@ std = [
 
 try-runtime = [
   "frame-support/try-runtime",
-  "kilt-support/try-runtime",
 ]

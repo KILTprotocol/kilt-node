@@ -15,23 +15,33 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
-#![cfg_attr(not(feature = "std"), no_std)]
 
-use deposit::Deposit;
-use frame_support::traits::{Currency, ReservableCurrency};
-use sp_runtime::traits::Zero;
+#![cfg_attr(rustfmt, rustfmt_skip)]
+#![allow(unused_parens)]
+#![allow(unused_imports)]
 
-pub mod deposit;
-#[cfg(any(feature = "runtime-benchmarks", feature = "mock"))]
-pub mod mock;
-pub mod relay;
-pub mod signature;
-pub mod traits;
+use frame_support::{traits::Get, weights::{Weight, constants::RocksDbWeight}};
+use sp_runtime::traits::Saturating;
+use sp_std::marker::PhantomData;
 
-pub fn free_deposit<A, C>(deposit: &Deposit<A, C::Balance>)
-where
-	C: Currency<A> + ReservableCurrency<A>,
-{
-	let err_amount = C::unreserve(&deposit.owner, deposit.amount);
-	debug_assert!(err_amount.is_zero());
+/// Weight functions needed for did.
+pub trait WeightInfo {
+	fn set_filter() -> Weight;
+
+}
+
+/// Weights for did using the Substrate node and recommended hardware.
+pub struct SubstrateWeight<T>(PhantomData<T>);
+impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
+	fn set_filter() -> Weight {
+		1_000_000.saturating_add(T::DbWeight::get().reads(1 as Weight))
+	}
+
+}
+
+// For backwards compatibility and tests
+impl WeightInfo for () {
+	fn set_filter() -> Weight {
+		1_000_000.saturating_add(RocksDbWeight::get().reads(1 as Weight))
+	}
 }

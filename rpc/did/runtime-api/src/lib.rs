@@ -32,6 +32,33 @@ pub use service_endpoint::*;
 
 #[derive(Encode, Decode, TypeInfo, Eq, PartialEq)]
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+	feature = "std",
+	serde(bound(
+		serialize = "
+		Balance: std::fmt::Display,
+		AccountId: Serialize,
+		LinkableAccountId: Serialize,
+		Key: Serialize,
+		BlockNumber: Serialize,
+		DidIdentifier: Serialize,
+		Type: Serialize,
+		Url: Serialize,
+		Id: Serialize,
+		Web3Name: Serialize,",
+		deserialize = "
+		Balance: std::str::FromStr,
+		AccountId: Deserialize<'de>,
+		LinkableAccountId: Deserialize<'de>,
+		Key: Deserialize<'de>,
+		BlockNumber: Deserialize<'de>,
+		DidIdentifier: Deserialize<'de>,
+		Type: Deserialize<'de>,
+		Url: Deserialize<'de>,
+		Id: Deserialize<'de>,
+		Web3Name: Deserialize<'de>,"
+	))
+)]
 pub struct DidLinkedInfo<
 	DidIdentifier,
 	AccountId,
