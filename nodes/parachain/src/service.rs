@@ -33,8 +33,7 @@ use cumulus_relay_chain_rpc_interface::{create_client_and_start_worker, RelayCha
 use polkadot_service::{CollatorPair, NativeExecutionDispatch};
 use sc_client_api::ExecutorProvider;
 use sc_executor::NativeElseWasmExecutor;
-use sc_network::NetworkService;
-use sc_network::NetworkBlock;
+use sc_network::{NetworkBlock, NetworkService};
 use sc_service::{Configuration, TFullBackend, TFullClient, TaskManager};
 use sc_telemetry::{Telemetry, TelemetryHandle, TelemetryWorker, TelemetryWorkerHandle};
 use sp_api::ConstructRuntimeApi;
@@ -209,7 +208,7 @@ async fn build_relay_chain_interface(
 		Some(relay_chain_url) => {
 			let client = create_client_and_start_worker(relay_chain_url, task_manager).await?;
 			Ok((Arc::new(RelayChainRpcInterface::new(client)) as Arc<_>, None))
-		},
+		}
 		None => build_inprocess_relay_chain(
 			polkadot_config,
 			parachain_config,
