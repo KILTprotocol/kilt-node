@@ -53,7 +53,6 @@ pallet-timestamp = {branch = "master", default-features = false, git = "https://
 pallet-transaction-payment = {branch = "master", default-features = false, git = "https://github.com/paritytech/substrate"}
 pallet-utility = {branch = "master", default-features = false, git = "https://github.com/paritytech/substrate"}
 sp-api = {branch = "master", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-arithmetic = {branch = "master", default-features = false, git = "https://github.com/paritytech/substrate"}
 sp-block-builder = {branch = "master", default-features = false, git = "https://github.com/paritytech/substrate"}
 sp-consensus-aura = {branch = "master", default-features = false, git = "https://github.com/paritytech/substrate"}
 sp-core = {branch = "master", default-features = false, git = "https://github.com/paritytech/substrate"}
@@ -71,6 +70,12 @@ frame-try-runtime = {git = "https://github.com/paritytech/substrate", default-fe
 
 [features]
 default = ["std"]
+# When enabled, the runtime API will not be build.
+#
+# This is required by Cumulus to access certain types of the
+# runtime without clashing with the runtime API exported functions
+# in WASM.
+disable-runtime-api = []
 runtime-benchmarks = [
   "attestation/runtime-benchmarks",
   "ctype/runtime-benchmarks",
@@ -126,7 +131,6 @@ std = [
   "scale-info/std",
   "serde",
   "sp-api/std",
-  "sp-arithmetic/std",
   "sp-block-builder/std",
   "sp-consensus-aura/std",
   "sp-core/std",

@@ -38,7 +38,6 @@ runtime-common = {path = "../../runtimes/common", default-features = false}
 
 # Substrate dependencies
 sp-api = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "master"}
-sp-arithmetic = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "master"}
 sp-block-builder = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "master"}
 sp-consensus-aura = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "master"}
 sp-core = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "master"}
@@ -101,6 +100,12 @@ frame-try-runtime = {git = "https://github.com/paritytech/substrate", default-fe
 
 [features]
 default = ["std"]
+# When enabled, the runtime API will not be build.
+#
+# This is required by Cumulus to access certain types of the
+# runtime without clashing with the runtime API exported functions
+# in WASM.
+disable-runtime-api = []
 fast-gov = ["runtime-common/fast-gov"]
 runtime-benchmarks = [
   "attestation/runtime-benchmarks",
@@ -148,6 +153,7 @@ std = [
   "cumulus-pallet-xcmp-queue/std",
   "cumulus-primitives-core/std",
   "cumulus-primitives-timestamp/std",
+  "cumulus-primitives-utility/std",
   "delegation/std",
   "did-rpc-runtime-api/std",
   "did/std",
@@ -183,6 +189,7 @@ std = [
   "pallet-utility/std",
   "pallet-vesting/std",
   "pallet-web3-names/std",
+  "pallet-xcm/std",
   "parachain-info/std",
   "parachain-staking/std",
   "polkadot-parachain/std",
@@ -190,7 +197,6 @@ std = [
   "scale-info/std",
   "serde",
   "sp-api/std",
-  "sp-arithmetic/std",
   "sp-block-builder/std",
   "sp-consensus-aura/std",
   "sp-core/std",
@@ -209,12 +215,18 @@ std = [
 try-runtime = [
   "attestation/try-runtime",
   "ctype/try-runtime",
+  "cumulus-pallet-aura-ext/try-runtime",
+  "cumulus-pallet-dmp-queue/try-runtime",
+  "cumulus-pallet-parachain-system/try-runtime",
+  "cumulus-pallet-xcm/try-runtime",
+  "cumulus-pallet-xcmp-queue/try-runtime",
   "delegation/try-runtime",
   "did/try-runtime",
   "frame-executive/try-runtime",
   "frame-support/try-runtime",
   "frame-system/try-runtime",
   "frame-try-runtime",
+  "kilt-support/try-runtime",
   "pallet-aura/try-runtime",
   "pallet-authorship/try-runtime",
   "pallet-balances/try-runtime",
@@ -223,10 +235,12 @@ try-runtime = [
   "pallet-did-lookup/try-runtime",
   "pallet-dyn-filter/try-runtime",
   "pallet-indices/try-runtime",
+  "pallet-inflation/try-runtime",
   "pallet-membership/try-runtime",
   "pallet-preimage/try-runtime",
   "pallet-proxy/try-runtime",
   "pallet-randomness-collective-flip/try-runtime",
+  "pallet-relay-migration/try-runtime",
   "pallet-scheduler/try-runtime",
   "pallet-session/try-runtime",
   "pallet-timestamp/try-runtime",
@@ -236,6 +250,8 @@ try-runtime = [
   "pallet-utility/try-runtime",
   "pallet-vesting/try-runtime",
   "pallet-web3-names/try-runtime",
+  "pallet-xcm/try-runtime",
+  "parachain-info/try-runtime",
   "parachain-staking/try-runtime",
   "runtime-common/try-runtime",
 ]
