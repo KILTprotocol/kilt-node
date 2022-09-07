@@ -10,7 +10,7 @@ version = "1.7.2"
 targets = ["x86_64-unknown-linux-gnu"]
 
 [build-dependencies]
-substrate-wasm-builder = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.27"}
+substrate-wasm-builder = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.28"}
 
 [dev-dependencies]
 env_logger = "0.9.0"
@@ -18,9 +18,9 @@ serde = "1.0.142"
 
 ctype = {features = ["mock"], path = "../ctype"}
 
-frame-benchmarking = {branch = "polkadot-v0.9.27", git = "https://github.com/paritytech/substrate"}
-pallet-balances = {branch = "polkadot-v0.9.27", git = "https://github.com/paritytech/substrate"}
-sp-keystore = {branch = "polkadot-v0.9.27", git = "https://github.com/paritytech/substrate"}
+frame-benchmarking = {branch = "polkadot-v0.9.28", git = "https://github.com/paritytech/substrate"}
+pallet-balances = {branch = "polkadot-v0.9.28", git = "https://github.com/paritytech/substrate"}
+sp-keystore = {branch = "polkadot-v0.9.28", git = "https://github.com/paritytech/substrate"}
 
 [dependencies]
 # Internal dependencies
@@ -33,18 +33,18 @@ log = "0.4.17"
 serde = {version = "1.0.136", optional = true, features = ["derive"]}
 
 codec = {package = "parity-scale-codec", version = "3.1.5", default-features = false, features = ["derive"]}
-frame-support = {branch = "polkadot-v0.9.27", default-features = false, git = "https://github.com/paritytech/substrate"}
-frame-system = {branch = "polkadot-v0.9.27", default-features = false, git = "https://github.com/paritytech/substrate"}
+frame-support = {branch = "polkadot-v0.9.28", default-features = false, git = "https://github.com/paritytech/substrate"}
+frame-system = {branch = "polkadot-v0.9.28", default-features = false, git = "https://github.com/paritytech/substrate"}
 scale-info = {version = "2.1.1", default-features = false, features = ["derive"]}
-sp-core = {branch = "polkadot-v0.9.27", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-io = {branch = "polkadot-v0.9.27", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-runtime = {branch = "polkadot-v0.9.27", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-std = {branch = "polkadot-v0.9.27", default-features = false, git = "https://github.com/paritytech/substrate"}
+sp-core = {branch = "polkadot-v0.9.28", default-features = false, git = "https://github.com/paritytech/substrate"}
+sp-io = {branch = "polkadot-v0.9.28", default-features = false, git = "https://github.com/paritytech/substrate"}
+sp-runtime = {branch = "polkadot-v0.9.28", default-features = false, git = "https://github.com/paritytech/substrate"}
+sp-std = {branch = "polkadot-v0.9.28", default-features = false, git = "https://github.com/paritytech/substrate"}
 
 # benchmarking
-frame-benchmarking = {branch = "polkadot-v0.9.27", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
-pallet-balances = {branch = "polkadot-v0.9.27", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
-sp-keystore = {branch = "polkadot-v0.9.27", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
+frame-benchmarking = {branch = "polkadot-v0.9.28", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
+pallet-balances = {branch = "polkadot-v0.9.28", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
+sp-keystore = {branch = "polkadot-v0.9.28", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
 
 [features]
 default = ["std"]
