@@ -1092,7 +1092,7 @@ fn exact_children_max_revocations_revoke_and_remove_root_error() {
 				Error::<Test>::ExceededRevocationBounds
 			);
 
-			// Only Delegation 2 should have been revoked
+			// No delegation should have been revoked because of transactional storage layer
 			assert!(
 				!Delegation::delegation_nodes(&operation.id)
 					.expect("Delegation root should be present on chain.")
@@ -1106,7 +1106,7 @@ fn exact_children_max_revocations_revoke_and_remove_root_error() {
 					.revoked
 			);
 			assert!(
-				Delegation::delegation_nodes(&delegation2_id)
+				!Delegation::delegation_nodes(&delegation2_id)
 					.expect("Delegation 2 should be present on chain.")
 					.details
 					.revoked
@@ -1134,21 +1134,22 @@ fn exact_children_max_revocations_revoke_and_remove_root_error() {
 				),
 				Error::<Test>::ExceededRemovalBounds
 			);
+			// Should not remove any delegation because of transactional storage layer
 			assert!(Delegation::delegation_nodes(&operation.id).is_some());
 			assert!(Delegation::delegation_nodes(&delegation1_id).is_some());
-			assert!(Delegation::delegation_nodes(&delegation2_id).is_none());
+			assert!(Delegation::delegation_nodes(&delegation2_id).is_some());
 			assert!(Delegation::delegation_nodes(&delegation3_id).is_some());
 			assert_eq!(Balances::reserved_balance(ACCOUNT_00), <Test as Config>::Deposit::get());
 			assert_eq!(
 				Balances::reserved_balance(ACCOUNT_01),
-				2 * <Test as Config>::Deposit::get()
+				3 * <Test as Config>::Deposit::get()
 			);
 
-			// Should be able to remove root now (because # of remaining children = 2)
+			// Should be able to remove root only with depth = #_of_children + 1
 			assert_ok!(Delegation::remove_delegation(
 				DoubleOrigin(ACCOUNT_00, revoker.clone()).into(),
 				operation.id,
-				operation.max_children
+				operation.max_children + 1
 			),);
 			assert!(Delegation::delegation_nodes(&operation.id).is_none());
 			assert!(Delegation::delegation_nodes(&delegation1_id).is_none());
@@ -2148,21 +2149,22 @@ fn remove_children_gas_runs_out() {
 			);
 			assert!(Delegation::delegation_nodes(&operation.id).is_some());
 			assert!(Delegation::delegation_nodes(&delegation1_id).is_some());
-			assert!(Delegation::delegation_nodes(&delegation2_id).is_none());
+			// Should still be existing because of transactional storage
+			assert!(Delegation::delegation_nodes(&delegation2_id).is_some());
 			assert!(Delegation::delegation_nodes(&delegation3_id).is_some());
 			assert!(Delegation::delegation_nodes(&delegation4_id).is_some());
 			assert_eq!(Balances::reserved_balance(ACCOUNT_00), <Test as Config>::Deposit::get());
 			assert_eq!(
 				Balances::reserved_balance(ACCOUNT_01),
-				2 * <Test as Config>::Deposit::get()
+				3 * <Test as Config>::Deposit::get()
 			);
 			assert_eq!(Balances::reserved_balance(ACCOUNT_02), <Test as Config>::Deposit::get());
 
-			// Should be able to remove root now because #_of_children = 3
+			// Should be able to remove root only with depth = #_of_children + 1
 			assert_ok!(Delegation::remove_delegation(
 				DoubleOrigin(ACCOUNT_00, revoker.clone()).into(),
 				operation.id,
-				operation.max_children
+				operation.max_children + 1
 			),);
 			assert!(Delegation::delegation_nodes(&operation.id).is_none());
 			assert!(Delegation::delegation_nodes(&delegation1_id).is_none());
