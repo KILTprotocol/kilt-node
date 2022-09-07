@@ -24,7 +24,6 @@ use crate::{self as stake, types::NegativeImbalanceOf};
 use frame_support::{
 	construct_runtime, parameter_types,
 	traits::{Currency, GenesisBuild, OnFinalize, OnInitialize, OnUnbalanced},
-	weights::Weight,
 };
 use pallet_authorship::EventHandler;
 use sp_consensus_aura::sr25519::AuthorityId;
@@ -67,7 +66,6 @@ construct_runtime!(
 
 parameter_types! {
 	pub const BlockHashCount: u64 = 250;
-	pub const MaximumBlockWeight: Weight = 1024;
 	pub const MaximumBlockLength: u32 = 2 * 1024;
 	pub const AvailableBlockRatio: Perbill = Perbill::one();
 	pub const SS58Prefix: u8 = 42;

@@ -21,16 +21,15 @@
 //! Provides means of of handling relaychain related utilities and
 //! business logic such as finalizing XCM calls.
 
-#![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::unused_unit)]
 
 use codec::{Decode, Encode, FullCodec};
-use frame_support::{traits::Get};
+pub use cumulus_primitives_core::ParaId;
+use frame_support::traits::Get;
 use frame_system::Config;
 use scale_info::TypeInfo;
 use sp_std::{boxed::Box, marker::PhantomData, prelude::*};
 use xcm::latest::prelude::*;
-pub use cumulus_primitives_core::ParaId;
 
 use crate::traits::RelayCallBuilder;
 

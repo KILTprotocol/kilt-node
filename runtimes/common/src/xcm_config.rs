@@ -17,7 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use core::marker::PhantomData;
-use frame_support::{log, match_types, parameter_types, weights::Weight};
+use frame_support::{log, match_types, parameter_types};
 use polkadot_parachain::primitives::Sibling;
 use xcm::latest::prelude::*;
 use xcm_builder::{
@@ -30,7 +30,7 @@ use crate::AccountId;
 
 parameter_types! {
 	// One XCM operation is 1_000_000_000 weight, almost certainly a conservative estimate.
-	pub UnitWeightCost: u64 = 1_000_000_000 as u64;
+	pub UnitWeightCost: u64 = 1_000_000_000u64;
 	pub const MaxInstructions: u32 = 100;
 }
 

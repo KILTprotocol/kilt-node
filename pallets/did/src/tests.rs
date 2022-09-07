@@ -849,7 +849,7 @@ fn check_successful_authentication_key_max_public_keys_update() {
 fn check_reused_key_authentication_key_update() {
 	let old_auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(old_auth_key.public());
-	let old_delegation_key = old_auth_key.clone();
+	let old_delegation_key = old_auth_key;
 	let new_auth_key = get_ed25519_authentication_key(false);
 
 	let mut old_did_details = generate_base_did_details::<Test>(DidVerificationKey::from(old_auth_key.public()));
@@ -892,7 +892,7 @@ fn check_reused_key_authentication_key_update() {
 fn check_max_keys_authentication_key_update_error() {
 	let old_auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(old_auth_key.public());
-	let delegation_key = old_auth_key.clone();
+	let delegation_key = old_auth_key;
 	let new_auth_key = get_ed25519_authentication_key(false);
 	let key_agreement_keys = get_key_agreement_keys::<Test>(MaxTotalKeyAgreementKeys::get());
 
@@ -1028,7 +1028,7 @@ fn check_successful_delegation_key_max_public_keys_update() {
 fn check_reused_key_delegation_key_update() {
 	let old_auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(old_auth_key.public());
-	let old_del_key = old_auth_key.clone();
+	let old_del_key = old_auth_key;
 	let new_del_key = get_sr25519_delegation_key(true);
 
 	let mut old_did_details = generate_base_did_details::<Test>(DidVerificationKey::from(old_auth_key.public()));
@@ -1099,7 +1099,7 @@ fn check_max_public_keys_delegation_key_addition_error() {
 fn check_max_public_keys_reused_key_delegation_key_update_error() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
-	let old_del_key = auth_key.clone();
+	let old_del_key = auth_key;
 	let new_del_key = get_sr25519_delegation_key(true);
 	let key_agreement_keys = get_key_agreement_keys::<Test>(MaxTotalKeyAgreementKeys::get());
 
@@ -1180,7 +1180,7 @@ fn check_successful_delegation_key_deletion() {
 #[test]
 fn check_successful_reused_delegation_key_deletion() {
 	let auth_key = get_ed25519_authentication_key(true);
-	let old_del_key = auth_key.clone();
+	let old_del_key = auth_key;
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 
 	let mut old_did_details = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()));
@@ -1315,7 +1315,7 @@ fn check_successful_attestation_key_max_public_keys_update() {
 fn check_reused_key_attestation_key_update() {
 	let old_auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(old_auth_key.public());
-	let old_att_key = old_auth_key.clone();
+	let old_att_key = old_auth_key;
 	let new_att_key = get_sr25519_attestation_key(true);
 
 	let mut old_did_details = generate_base_did_details::<Test>(DidVerificationKey::from(old_auth_key.public()));
@@ -1386,7 +1386,7 @@ fn check_max_public_keys_attestation_key_addition_error() {
 fn check_max_public_keys_reused_key_attestation_key_update_error() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
-	let old_att_key = auth_key.clone();
+	let old_att_key = auth_key;
 	let new_att_key = get_sr25519_delegation_key(true);
 	let key_agreement_keys = get_key_agreement_keys::<Test>(MaxTotalKeyAgreementKeys::get());
 
@@ -1467,7 +1467,7 @@ fn check_successful_attestation_key_deletion() {
 #[test]
 fn check_successful_reused_attestation_key_deletion() {
 	let auth_key = get_ed25519_authentication_key(true);
-	let old_att_key = auth_key.clone();
+	let old_att_key = auth_key;
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 
 	let mut old_did_details = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()));
