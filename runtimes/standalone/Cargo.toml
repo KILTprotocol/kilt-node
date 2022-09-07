@@ -71,6 +71,12 @@ frame-try-runtime = {git = "https://github.com/paritytech/substrate", default-fe
 
 [features]
 default = ["std"]
+# When enabled, the runtime API will not be build.
+#
+# This is required by Cumulus to access certain types of the
+# runtime without clashing with the runtime API exported functions
+# in WASM.
+disable-runtime-api = []
 runtime-benchmarks = [
   "attestation/runtime-benchmarks",
   "ctype/runtime-benchmarks",
@@ -126,7 +132,6 @@ std = [
   "scale-info/std",
   "serde",
   "sp-api/std",
-  "sp-arithmetic/std",
   "sp-block-builder/std",
   "sp-consensus-aura/std",
   "sp-core/std",

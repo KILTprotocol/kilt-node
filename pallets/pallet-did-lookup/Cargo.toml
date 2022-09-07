@@ -15,7 +15,6 @@ kilt-support = {features = ["mock"], path = "../../support"}
 pallet-balances = {branch = "polkadot-v0.9.28", git = "https://github.com/paritytech/substrate"}
 rand = "0.8"
 sp-core = {branch = "polkadot-v0.9.28", git = "https://github.com/paritytech/substrate"}
-sp-io = {branch = "polkadot-v0.9.28", git = "https://github.com/paritytech/substrate"}
 sp-keystore = {branch = "polkadot-v0.9.28", git = "https://github.com/paritytech/substrate"}
 
 [dependencies]

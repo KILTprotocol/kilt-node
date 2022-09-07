@@ -102,6 +102,12 @@ frame-try-runtime = {git = "https://github.com/paritytech/substrate", default-fe
 
 [features]
 default = ["std"]
+# When enabled, the runtime API will not be build.
+#
+# This is required by Cumulus to access certain types of the
+# runtime without clashing with the runtime API exported functions
+# in WASM.
+disable-runtime-api = []
 fast-gov = ["runtime-common/fast-gov"]
 runtime-benchmarks = [
   "attestation/runtime-benchmarks",
@@ -149,6 +155,7 @@ std = [
   "cumulus-pallet-xcmp-queue/std",
   "cumulus-primitives-core/std",
   "cumulus-primitives-timestamp/std",
+  "cumulus-primitives-utility/std",
   "delegation/std",
   "did-rpc-runtime-api/std",
   "did/std",
@@ -158,6 +165,7 @@ std = [
   "frame-system-rpc-runtime-api/std",
   "frame-system/std",
   "frame-try-runtime/std",
+  "kilt-support/std",
   "log/std",
   "pallet-aura/std",
   "pallet-authorship/std",
@@ -184,6 +192,7 @@ std = [
   "pallet-utility/std",
   "pallet-vesting/std",
   "pallet-web3-names/std",
+  "pallet-xcm/std",
   "parachain-info/std",
   "parachain-staking/std",
   "polkadot-parachain/std",
@@ -191,7 +200,6 @@ std = [
   "scale-info/std",
   "serde",
   "sp-api/std",
-  "sp-arithmetic/std",
   "sp-block-builder/std",
   "sp-consensus-aura/std",
   "sp-core/std",
@@ -216,6 +224,7 @@ try-runtime = [
   "frame-support/try-runtime",
   "frame-system/try-runtime",
   "frame-try-runtime",
+  "kilt-support/try-runtime",
   "pallet-aura/try-runtime",
   "pallet-authorship/try-runtime",
   "pallet-balances/try-runtime",
@@ -224,10 +233,12 @@ try-runtime = [
   "pallet-did-lookup/try-runtime",
   "pallet-dyn-filter/try-runtime",
   "pallet-indices/try-runtime",
+  "pallet-inflation/try-runtime",
   "pallet-membership/try-runtime",
   "pallet-preimage/try-runtime",
   "pallet-proxy/try-runtime",
   "pallet-randomness-collective-flip/try-runtime",
+  "pallet-relay-migration/try-runtime",
   "pallet-scheduler/try-runtime",
   "pallet-session/try-runtime",
   "pallet-sudo/try-runtime",
