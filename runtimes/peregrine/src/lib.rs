@@ -897,12 +897,12 @@ construct_runtime! {
 		Sudo: pallet_sudo = 8,
 
 		// Consensus support.
-		// The following order MUST NOT be changed: Authorship -> Staking -> Session -> Aura -> AuraExt
-		Authorship: pallet_authorship::{Pallet, Call, Storage} = 20,
-		ParachainStaking: parachain_staking = 21,
-		Session: pallet_session = 22,
-		Aura: pallet_aura = 23,
+		// The following order MUST NOT be changed: AuraExt -> Aura -> Session -> Staking -> Authorship
 		AuraExt: cumulus_pallet_aura_ext = 24,
+		Aura: pallet_aura = 23,
+		Session: pallet_session = 22,
+		ParachainStaking: parachain_staking = 21,
+		Authorship: pallet_authorship::{Pallet, Call, Storage} = 20,
 
 		// Governance stuff
 		Democracy: pallet_democracy = 30,
@@ -1038,9 +1038,8 @@ pub type Executive = frame_executive::Executive<
 	Block,
 	frame_system::ChainContext<Runtime>,
 	Runtime,
-	// Executes pallet hooks in reverse order of definition in construct_runtime
-	// If we want to switch to AllPalletsWithSystem, we need to reorder the staking pallets
-	AllPalletsReversedWithSystemFirst,
+	// Executes pallet hooks in the order of definition in construct_runtime
+	AllPalletsWithSystem,
 	EthereumMigration<Runtime>,
 >;
 

@@ -421,9 +421,8 @@ pub type Executive = frame_executive::Executive<
 	Block,
 	frame_system::ChainContext<Runtime>,
 	Runtime,
-	// Executes pallet hooks in reverse order of definition in construct_runtime
-	// If we want to switch to AllPalletsWithSystem, we need to reorder the staking pallets
-	AllPalletsReversedWithSystemFirst,
+	// Executes pallet hooks in the order of definition in construct_runtime
+	AllPalletsWithSystem,
 	(),
 >;
 
