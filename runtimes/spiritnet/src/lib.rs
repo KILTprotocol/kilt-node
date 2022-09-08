@@ -1226,6 +1226,12 @@ impl_runtime_apis! {
 		}
 	}
 
+	impl parachain_staking::runtime_api::GetStakingRewards<Block, AccountId, Balance> for Runtime {
+		fn get_staking_rewards(account: &AccountId) -> Balance {
+			ParachainStaking::get_staking_rewards(account)
+		}
+	}
+
 	#[cfg(feature = "runtime-benchmarks")]
 	impl frame_benchmarking::Benchmark<Block> for Runtime {
 		fn benchmark_metadata(extra: bool) -> (
