@@ -35,6 +35,7 @@ use crate::{
 		Event as MetaEvent, ExtBuilder, Origin, Session, StakePallet, System, Test, BLOCKS_PER_ROUND, DECIMALS,
 		TREASURY_ACC,
 	},
+	runtime_api::StakingRates,
 	set::OrderedSet,
 	types::{
 		BalanceOf, Candidate, CandidateStatus, DelegationCounter, Delegator, RoundInfo, Stake, StakeOf, TotalStake,
@@ -4265,5 +4266,74 @@ fn rewards_incrementing_and_claiming() {
 				StakePallet::increment_delegator_rewards(Origin::signed(1)),
 				Error::<Test>::DelegatorNotFound
 			);
+		});
+}
+
+#[test]
+fn api_get_unclaimed_staking_rewards() {
+	let stake = 100_000 * DECIMALS;
+	ExtBuilder::default()
+		.with_balances(vec![(1, stake), (2, stake), (3, 100 * stake)])
+		.with_collators(vec![(1, stake), (3, 2 * stake)])
+		.with_delegators(vec![(2, 1, stake)])
+		.build()
+		.execute_with(|| {
+			let inflation_config = StakePallet::inflation_config();
+
+			// Increment rewards of 1 and 2
+			roll_to(2, vec![None, Some(1)]);
+			assert_eq!(
+				StakePallet::get_unclaimed_staking_rewards(&1),
+				// Multiplying with 2 because there are two authors
+				inflation_config.collator.reward_rate.per_block * stake * 2
+			);
+			assert_eq!(
+				StakePallet::get_unclaimed_staking_rewards(&2),
+				inflation_config.delegator.reward_rate.per_block * stake * 2
+			);
+			assert!(StakePallet::get_unclaimed_staking_rewards(&3).is_zero());
+
+			// Should only increment rewards of 3
+			roll_to(3, vec![None, None, Some(3)]);
+			assert_eq!(
+				2 * StakePallet::get_unclaimed_staking_rewards(&1),
+				StakePallet::get_unclaimed_staking_rewards(&3),
+			);
+			assert_eq!(
+				StakePallet::get_unclaimed_staking_rewards(&2),
+				inflation_config.delegator.reward_rate.per_block * stake * 2
+			);
+		});
+}
+
+#[test]
+fn api_get_staking_rates() {
+	let stake = 100_000 * DECIMALS;
+	ExtBuilder::default()
+		.with_balances(vec![(1, stake), (2, stake), (3, 2 * stake)])
+		.with_collators(vec![(1, stake), (2, stake)])
+		.with_delegators(vec![(3, 1, stake)])
+		.with_inflation(25, 10, 25, 8, <Test as Config>::BLOCKS_PER_YEAR)
+		.build()
+		.execute_with(|| {
+			let mut rates = StakingRates {
+				collator_staking_rate: Perquintill::from_percent(50),
+				collator_reward_rate: Perquintill::from_percent(5),
+				delegator_staking_rate: Perquintill::from_percent(25),
+				delegator_reward_rate: Perquintill::from_percent(8),
+			};
+			// collators exceed max staking rate
+			assert_eq!(rates, StakePallet::get_staking_rates());
+
+			// candidates stake less to not exceed max staking rate
+			assert_ok!(StakePallet::candidate_stake_less(Origin::signed(1), stake / 2));
+			assert_ok!(StakePallet::candidate_stake_less(Origin::signed(2), stake / 2));
+			// delegator stakes more to exceed
+			assert_ok!(StakePallet::delegator_stake_more(Origin::signed(3), 1, stake));
+			rates.collator_staking_rate = Perquintill::from_percent(25);
+			rates.collator_reward_rate = Perquintill::from_percent(10);
+			rates.delegator_staking_rate = Perquintill::from_percent(50);
+			rates.delegator_reward_rate = Perquintill::from_percent(4);
+			assert_eq!(rates, StakePallet::get_staking_rates());
 		});
 }
