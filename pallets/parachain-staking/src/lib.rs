@@ -139,12 +139,21 @@
 //! - `unlock_unstaked` - Attempt to unlock previously unstaked balance from any
 //!   account. Succeeds if at least one unstake call happened at least
 //!   `StakeDuration` blocks ago.
+//! - `claim_rewards_for` - Claim block authoring rewards for the target
+//!   address.
+//! - `increment_collator_rewards` - Actively increment the rewards of a
+//!   collator and their delegators.
+//! - `increment_delegator_rewards`- Actively increment the rewards of a
+//!   delegator for all their delegations.
+//! - `execute_scheduled_reward_change` - Executes the annual reduction of the
+//!   reward rates for collators anddelegators. Moreover, sets rewards for all
+//!   collators and delegators before adjusting the inflation.
 //!
 //! ## Genesis config
 //!
 //! The ParachainStaking pallet depends on the [`GenesisConfig`].
 //!
-//! ## Assumptions+
+//! ## Assumptions
 //!
 //! - At the start of session s(i), the set of session ids for session s(i+1)
 //!   are chosen. These equal the set of selected candidates. Thus, we cannot
@@ -156,6 +165,7 @@
 #[cfg(feature = "runtime-benchmarks")]
 pub mod benchmarking;
 pub mod default_weights;
+pub mod runtime_api;
 
 #[cfg(test)]
 pub(crate) mod mock;
@@ -2424,6 +2434,33 @@ pub mod pallet {
 			InflationConfig::<T>::get()
 				.delegator
 				.compute_reward::<T>(stake, staking_rate, multiplier)
+		}
+
+		/// Calculates the staking rewards for a given account address.
+		///
+		/// At least used in Runtime API.
+		pub fn get_staking_rewards(acc: &T::AccountId) -> BalanceOf<T> {
+			let r_count = RewardCount::<T>::get(acc);
+			let rewards = Rewards::<T>::get(acc);
+
+			// exit early
+			if r_count.is_zero() && rewards.is_zero() {
+				return BalanceOf::<T>::zero();
+			}
+
+			if Self::is_active_candidate(acc).is_some() {
+				let stake = CandidatePool::<T>::get(acc)
+					.map(|state| state.stake)
+					.unwrap_or(BalanceOf::<T>::zero());
+				rewards.saturating_add(Self::calc_block_rewards_collator(stake, r_count.into()))
+			} else if Self::is_delegator(acc) {
+				let stake = DelegatorState::<T>::get(acc)
+					.map(|state| state.amount)
+					.unwrap_or(BalanceOf::<T>::zero());
+				rewards.saturating_add(Self::calc_block_rewards_collator(stake, r_count.into()))
+			} else {
+				BalanceOf::<T>::zero()
+			}
 		}
 
 		/// Increment the accumulated rewards of a collator by consuming their
