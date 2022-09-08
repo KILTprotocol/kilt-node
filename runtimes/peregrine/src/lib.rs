@@ -1235,8 +1235,14 @@ impl_runtime_apis! {
 	}
 
 	impl parachain_staking::runtime_api::GetStakingRewards<Block, AccountId, Balance> for Runtime {
-		fn get_staking_rewards(account: &AccountId) -> Balance {
-			ParachainStaking::get_staking_rewards(account)
+		fn get_unclaimed_staking_rewards(account: &AccountId) -> Balance {
+			ParachainStaking::get_unclaimed_staking_rewards(account)
+		}
+	}
+
+	impl parachain_staking::runtime_api::GetStakingRates<Block> for Runtime {
+		fn get_staking_rates() -> parachain_staking::runtime_api::StakingRates {
+			ParachainStaking::get_staking_rates()
 		}
 	}
 

@@ -18,6 +18,16 @@
 
 use frame_support::dispatch::fmt::Debug;
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
+use scale_info::TypeInfo;
+use sp_runtime::Perquintill;
+
+#[derive(Decode, Encode, TypeInfo, MaxEncodedLen, PartialEq, Eq, Debug)]
+pub struct StakingRates {
+	pub collator_staking_rate: Perquintill,
+	pub collator_reward_rate: Perquintill,
+	pub delegator_staking_rate: Perquintill,
+	pub delegator_reward_rate: Perquintill,
+}
 
 sp_api::decl_runtime_apis! {
 	pub trait GetStakingRewards<AccountId, Balance>
@@ -25,6 +35,10 @@ sp_api::decl_runtime_apis! {
 		AccountId:  Eq + PartialEq + Debug + Encode + Decode + Clone,
 		Balance: Encode + Decode + MaxEncodedLen + Copy + Clone + Debug + Eq + PartialEq
 	{
-		fn get_staking_rewards(account: &AccountId) -> Balance;
+		fn get_unclaimed_staking_rewards(account: &AccountId) -> Balance;
+	}
+
+	pub trait GetStakingRates {
+		fn get_staking_rates() -> StakingRates;
 	}
 }

@@ -551,7 +551,7 @@ pub mod pallet {
 			// check for network reward and mint
 			// on success, mint each block
 			if now > T::NetworkRewardStart::get() {
-				T::NetworkRewardBeneficiary::on_unbalanced(Self::get_network_reward());
+				T::NetworkRewardBeneficiary::on_unbalanced(Self::issue_network_reward());
 				post_weight = post_weight.saturating_add(<T as Config>::WeightInfo::on_initialize_network_rewards());
 			}
 			post_weight
@@ -2390,7 +2390,7 @@ pub mod pallet {
 		///
 		/// `col_reward_rate_per_block * col_max_stake * max_num_of_collators *
 		/// NetworkRewardRate`
-		fn get_network_reward() -> NegativeImbalanceOf<T> {
+		fn issue_network_reward() -> NegativeImbalanceOf<T> {
 			// Multiplication with Perquintill cannot overflow
 			let max_col_rewards = InflationConfig::<T>::get().collator.reward_rate.per_block
 				* MaxCollatorCandidateStake::<T>::get()
@@ -2439,25 +2439,24 @@ pub mod pallet {
 		/// Calculates the staking rewards for a given account address.
 		///
 		/// At least used in Runtime API.
-		pub fn get_staking_rewards(acc: &T::AccountId) -> BalanceOf<T> {
-			let r_count = RewardCount::<T>::get(acc);
+		pub fn get_unclaimed_staking_rewards(acc: &T::AccountId) -> BalanceOf<T> {
+			let mut reward_count = RewardCount::<T>::get(acc);
 			let rewards = Rewards::<T>::get(acc);
 
-			// exit early
-			if r_count.is_zero() && rewards.is_zero() {
-				return BalanceOf::<T>::zero();
-			}
-
-			if Self::is_active_candidate(acc).is_some() {
-				let stake = CandidatePool::<T>::get(acc)
-					.map(|state| state.stake)
-					.unwrap_or(BalanceOf::<T>::zero());
-				rewards.saturating_add(Self::calc_block_rewards_collator(stake, r_count.into()))
-			} else if Self::is_delegator(acc) {
+			if let Some(delegator_state) = DelegatorState::<T>::get(acc) {
+				// delegator reward count does not automatically inrement in order to be
+				// scalable
+				reward_count =
+					reward_count.saturating_add(delegator_state.owner.map(RewardCount::<T>::get).unwrap_or(0u32));
 				let stake = DelegatorState::<T>::get(acc)
 					.map(|state| state.amount)
-					.unwrap_or(BalanceOf::<T>::zero());
-				rewards.saturating_add(Self::calc_block_rewards_collator(stake, r_count.into()))
+					.unwrap_or_else(BalanceOf::<T>::zero);
+				rewards.saturating_add(Self::calc_block_rewards_delegator(stake, reward_count.into()))
+			} else if Self::is_active_candidate(acc).is_some() {
+				let stake = CandidatePool::<T>::get(acc)
+					.map(|state| state.stake)
+					.unwrap_or_else(BalanceOf::<T>::zero);
+				rewards.saturating_add(Self::calc_block_rewards_collator(stake, reward_count.into()))
 			} else {
 				BalanceOf::<T>::zero()
 			}
@@ -2521,6 +2520,33 @@ pub mod pallet {
 				T::DbWeight::get().reads_writes(6, 2)
 			} else {
 				T::DbWeight::get().reads(2)
+			}
+		}
+
+		/// Calculates the current staking and reward rates for collators and
+		/// delegators.
+		///
+		/// At least used in Runtime API.
+		pub fn get_staking_rates() -> runtime_api::StakingRates {
+			let total_issuance = T::Currency::total_issuance();
+			let total_stake = <TotalCollatorStake<T>>::get();
+			let inflation_config = InflationConfig::<T>::get();
+			let collator_staking_rate = Perquintill::from_rational(total_stake.collators, total_issuance);
+			let delegator_staking_rate = Perquintill::from_rational(total_stake.delegators, total_issuance);
+			let collator_reward_rate = Perquintill::from_rational(
+				inflation_config.collator.max_rate.deconstruct(),
+				collator_staking_rate.deconstruct(),
+			) * inflation_config.collator.reward_rate.annual;
+			let delegator_reward_rate = Perquintill::from_rational(
+				inflation_config.delegator.max_rate.deconstruct(),
+				delegator_staking_rate.deconstruct(),
+			) * inflation_config.delegator.reward_rate.annual;
+
+			runtime_api::StakingRates {
+				collator_staking_rate,
+				collator_reward_rate,
+				delegator_staking_rate,
+				delegator_reward_rate,
 			}
 		}
 	}
