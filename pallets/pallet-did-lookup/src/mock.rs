@@ -24,7 +24,7 @@ use sp_runtime::{
 	MultiSignature,
 };
 
-use crate::{self as pallet_did_lookup, account::AccountId20, linkable_account::LinkableAccountId};
+use crate::{self as pallet_did_lookup, linkable_account::LinkableAccountId};
 
 pub(crate) type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 pub(crate) type Block = frame_system::mocking::MockBlock<Test>;
