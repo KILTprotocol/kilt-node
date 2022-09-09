@@ -51,6 +51,7 @@ pub trait WeightInfo {
 	fn reclaim_deposit(n: u32, ) -> Weight;
 	fn ban(n: u32, ) -> Weight;
 	fn unban(n: u32, ) -> Weight;
+	fn transfer_deposit() -> Weight;
 }
 
 /// Weights for pallet_web3_names using the Substrate node and recommended hardware.
@@ -104,6 +105,12 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(1 as Weight))
 			.saturating_add(T::DbWeight::get().writes(1 as Weight))
 	}
+	fn transfer_deposit() -> Weight {
+		(20_297_000 as Weight)
+			// Standard Error: 1_000
+			.saturating_add(T::DbWeight::get().reads(1 as Weight))
+			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+	}
 }
 
 // For backwards compatibility and tests
@@ -153,6 +160,12 @@ impl WeightInfo for () {
 		(20_297_000 as Weight)
 			// Standard Error: 1_000
 			.saturating_add((32_000 as Weight).saturating_mul(n as Weight))
+			.saturating_add(RocksDbWeight::get().reads(1 as Weight))
+			.saturating_add(RocksDbWeight::get().writes(1 as Weight))
+	}
+	fn transfer_deposit() -> Weight {
+		(20_297_000 as Weight)
+			// Standard Error: 1_000
 			.saturating_add(RocksDbWeight::get().reads(1 as Weight))
 			.saturating_add(RocksDbWeight::get().writes(1 as Weight))
 	}
