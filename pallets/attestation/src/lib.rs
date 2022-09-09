@@ -431,6 +431,29 @@ pub mod pallet {
 
 			Ok(())
 		}
+
+		/// Transfer the storage deposit from one account to another.
+		///
+		/// If the currently required deposit is different, the new deposit
+		/// value will be reserved.
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::transfer_deposit())]
+		pub fn transfer_deposit(origin: OriginFor<T>, claim_hash: ClaimHashOf<T>) -> DispatchResult {
+			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
+			let subject = source.subject();
+			let sender = source.sender();
+
+			let attestation = Attestations::<T>::get(&claim_hash).ok_or(Error::<T>::AttestationNotFound)?;
+			ensure!(attestation.attester == subject, Error::<T>::Unauthorized);
+
+			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&attestation.deposit);
+			Self::deposit_event(Event::DepositReclaimed(sender.clone(), claim_hash));
+
+			let deposit_amount = <T as Config>::Deposit::get();
+			let deposit = Pallet::<T>::reserve_deposit(sender, deposit_amount)?;
+
+			Attestations::<T>::insert(&claim_hash, AttestationDetails { deposit, ..attestation });
+			Ok(())
+		}
 	}
 
 	impl<T: Config> Pallet<T> {
