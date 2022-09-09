@@ -54,16 +54,6 @@
 //!   attester. This could be an employe of a company which is authorized to
 //!   sign documents for their superiors.
 //!
-//! ## Interface
-//!
-//! ### Dispatchable Functions
-//! - `create_root` - Create a new root delegation based on a specific CType.
-//! - `add_delegation` - Add a new delegation node to an existing delegation
-//!   node acting as the root for the newly added node.
-//! - `revoke_root` - Revoke a delegation root which implicitly revokes the
-//!   entire delegation tree.
-//! - `revoke_delegation` - Revoke a delegation node and its sub delegations.
-//!
 //! ## Assumptions
 //!
 //! - The maximum depth of a delegation tree is bounded by `MaxParentChecks`.

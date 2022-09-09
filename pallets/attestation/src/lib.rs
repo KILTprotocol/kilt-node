@@ -51,18 +51,6 @@
 //!   attester. This could be an employe of a company which is authorized to
 //!   sign documents for their superiors.
 //!
-//! ## Interface
-//!
-//! ### Dispatchable Functions
-//! - `add` - Create a new attestation for a given claim which is based on a
-//!   CType. The attester can optionally provide a reference to an existing
-//!   delegation that will be saved along with the attestation itself in the
-//!   form of an attested delegation.
-//! - `revoke` - Revoke an existing attestation for a given claim. The revoker
-//!   must be either the creator of the attestation being revoked or an entity
-//!   that in the delegation tree is an ancestor of the attester, i.e., it was
-//!   either the delegator of the attester or an ancestor thereof.
-//!
 //! ## Assumptions
 //!
 //! - The claim which shall be attested is based on a CType and signed by the
