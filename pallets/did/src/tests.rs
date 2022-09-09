@@ -3276,7 +3276,7 @@ fn test_transfer_deposit_not_authorized() {
 		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
 
 	ExtBuilder::default()
-		.with_balances(vec![(alice_did.clone(), balance), (bob_did.clone(), balance)])
+		.with_balances(vec![(alice_did, balance), (bob_did.clone(), balance)])
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(

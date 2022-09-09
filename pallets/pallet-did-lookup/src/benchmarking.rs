@@ -251,9 +251,9 @@ benchmarks! {
 		make_free_for_did::<T>(&caller_0);
 		make_free_for_did::<T>(&caller_1);
 
-		Pallet::<T>::add_association(caller_0.clone(), did.clone(), linkable_id.clone()).expect("should create association");
+		Pallet::<T>::add_association(caller_0, did.clone(), linkable_id.clone()).expect("should create association");
 
-		let origin = T::EnsureOrigin::generate_origin(caller_1.clone(), did.clone());
+		let origin = T::EnsureOrigin::generate_origin(caller_1.clone(), did);
 		let id_arg = linkable_id.clone();
 	}: _<T::Origin>(origin, id_arg)
 	verify {

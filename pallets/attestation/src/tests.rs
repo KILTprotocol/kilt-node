@@ -491,7 +491,7 @@ fn test_transfer_deposit() {
 	let other_authorized: AttesterOf<Test> = sr25519_did_from_seed(&BOB_SEED);
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 	let mut attestation = generate_base_attestation::<Test>(attester.clone(), ACCOUNT_00);
-	attestation.authorization_id = Some(other_authorized.clone());
+	attestation.authorization_id = Some(other_authorized);
 
 	ExtBuilder::default()
 		.with_balances(vec![
@@ -527,7 +527,7 @@ fn test_transfer_deposit_insufficient_balance() {
 	let other_authorized: AttesterOf<Test> = sr25519_did_from_seed(&BOB_SEED);
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 	let mut attestation = generate_base_attestation::<Test>(attester.clone(), ACCOUNT_00);
-	attestation.authorization_id = Some(other_authorized.clone());
+	attestation.authorization_id = Some(other_authorized);
 
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
@@ -590,7 +590,7 @@ fn test_transfer_deposit_unauthorized() {
 
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
-		.with_ctypes(vec![(attestation.ctype_hash, attester.clone())])
+		.with_ctypes(vec![(attestation.ctype_hash, attester)])
 		.with_attestations(vec![(claim_hash, attestation)])
 		.build()
 		.execute_with(|| {

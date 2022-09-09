@@ -409,7 +409,7 @@ fn test_transfer_deposit_insufficient_balance() {
 	let initial_balance: Balance = <Test as Config>::Deposit::get() * 100;
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, initial_balance)])
-		.with_web3_names(vec![(DID_00, web3_name_00.clone(), ACCOUNT_00)])
+		.with_web3_names(vec![(DID_00, web3_name_00, ACCOUNT_00)])
 		.build()
 		.execute_with(|| {
 			assert_noop!(
@@ -461,7 +461,7 @@ fn test_transfer_deposit_not_found() {
 	let initial_balance: Balance = <Test as Config>::Deposit::get() * 100;
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, initial_balance)])
-		.with_web3_names(vec![(DID_00, web3_name_00.clone(), ACCOUNT_00)])
+		.with_web3_names(vec![(DID_00, web3_name_00, ACCOUNT_00)])
 		.build()
 		.execute_with(|| {
 			assert_noop!(

@@ -1038,7 +1038,7 @@ benchmarks! {
 
 		let did_details = generate_base_did_details::<T>(DidVerificationKey::from(did_public_auth_key));
 
-		Did::<T>::insert(&did_subject, did_details.clone());
+		Did::<T>::insert(&did_subject, did_details);
 
 		make_free_for_did::<T>(&did_account);
 	}: _(RawOrigin::Signed(did_subject.clone()))

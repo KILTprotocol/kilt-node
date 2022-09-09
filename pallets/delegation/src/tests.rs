@@ -2323,7 +2323,7 @@ fn test_transfer_deposit_unauthorized() {
 	);
 	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
 	let delegation_node =
-		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(parent_id), ACCOUNT_00);
+		generate_base_delegation_node(hierarchy_root_id, delegate, Some(parent_id), ACCOUNT_00);
 
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 2)])
@@ -2366,7 +2366,7 @@ fn test_transfer_deposit_not_found() {
 		.with_delegation_hierarchies(vec![(
 			hierarchy_root_id,
 			hierarchy_details,
-			root_owner.clone(),
+			root_owner,
 			ACCOUNT_00,
 		)])
 		.with_delegations(vec![(parent_id, parent_node)])

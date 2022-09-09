@@ -152,7 +152,7 @@ benchmarks! {
 		make_free_for_did::<T>(&caller_1);
 		Pallet::<T>::claim(origin_create, web3_name_input.clone()).expect("Should register the claimed web3 name.");
 
-		let origin = T::OwnerOrigin::generate_origin(caller_1.clone(), owner.clone());
+		let origin = T::OwnerOrigin::generate_origin(caller_1.clone(), owner);
 	}: _<T::Origin>(origin)
 	verify {
 		let web3_name = Web3NameOf::<T>::try_from(web3_name_input.to_vec()).unwrap();
