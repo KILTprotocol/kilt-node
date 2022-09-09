@@ -68,7 +68,8 @@ build:
 
 build-wasm-peregrine:
   image:
-    name: $AWS_REGISTRY/srtool:latest
+    name: $AWS_REGISTRY/kilt/srtool:latest
+    pull_policy: never
     entrypoint: [""]
   stage: build
   only:
@@ -88,7 +89,8 @@ build-wasm-peregrine:
 
 build-wasm-spiritnet:
   image:
-    name: $AWS_REGISTRY/srtool:latest
+    name: $AWS_REGISTRY/kilt/srtool:latest
+    pull_policy: never
     entrypoint: [""]
   stage: build
   only:
