@@ -15,6 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
+#![cfg_attr(not(feature = "std"), no_std)]
 
 use frame_support::dispatch::fmt::Debug;
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
@@ -30,15 +31,12 @@ pub struct StakingRates {
 }
 
 sp_api::decl_runtime_apis! {
-	pub trait GetStakingRewards<AccountId, Balance>
+	pub trait ParachainStakingApi<AccountId, Balance>
 	where
 		AccountId:  Eq + PartialEq + Debug + Encode + Decode + Clone,
 		Balance: Encode + Decode + MaxEncodedLen + Copy + Clone + Debug + Eq + PartialEq
 	{
 		fn get_unclaimed_staking_rewards(account: &AccountId) -> Balance;
-	}
-
-	pub trait GetStakingRates {
 		fn get_staking_rates() -> StakingRates;
 	}
 }
