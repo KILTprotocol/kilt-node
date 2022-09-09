@@ -108,6 +108,7 @@ pub mod pallet {
 	};
 	use frame_system::pallet_prelude::*;
 	use kilt_support::{
+		deposit::Deposit,
 		signature::{SignatureVerificationError, VerifySignature},
 		traits::CallSources,
 	};
@@ -657,6 +658,29 @@ pub mod pallet {
 			DelegationHierarchies::<T>::remove(&delegation_id);
 
 			Ok(Some(<T as Config>::WeightInfo::remove_delegation(removal_checks)).into())
+		}
+
+		#[pallet::weight(<T as Config>::WeightInfo::transfer_deposit())]
+		pub fn transfer_deposit(origin: OriginFor<T>, delegation_id: DelegationNodeIdOf<T>) -> DispatchResult {
+			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
+
+			let mut delegation = DelegationNodes::<T>::get(&delegation_id).ok_or(Error::<T>::DelegationNotFound)?;
+
+			// Deposit can only be removed by the owner of the deposit, not the
+			// parent or another ancestor.
+			ensure!(delegation.details.owner == source.subject(), Error::<T>::AccessDenied);
+
+			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&delegation.deposit);
+
+			delegation.deposit = Deposit {
+				owner: source.sender(),
+				amount: <T as Config>::Deposit::get(),
+			};
+			CurrencyOf::<T>::reserve(&delegation.deposit.owner, delegation.deposit.amount)?;
+
+			DelegationNodes::<T>::insert(&delegation_id, delegation);
+
+			Ok(())
 		}
 	}
 }
