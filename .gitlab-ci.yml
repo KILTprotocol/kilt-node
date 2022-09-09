@@ -68,7 +68,7 @@ build:
 
 build-wasm-peregrine:
   image:
-    name: $CI_REGISTRY/srtool:latest
+    name: $AWS_REGISTRY/srtool:latest
     entrypoint: [""]
   stage: build
   only:
@@ -88,7 +88,7 @@ build-wasm-peregrine:
 
 build-wasm-spiritnet:
   image:
-    name: $CI_REGISTRY/srtool:latest
+    name: $AWS_REGISTRY/srtool:latest
     entrypoint: [""]
   stage: build
   only:
