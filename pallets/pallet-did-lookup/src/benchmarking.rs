@@ -19,11 +19,6 @@
 
 //! Benchmarking
 
-use crate::{
-	account::AccountId20, linkable_account::LinkableAccountId, signature::get_wrapped_payload, AccountIdOf,
-	AssociateAccountRequest, Call, Config, ConnectedAccounts, ConnectedDids, CurrencyOf, Pallet,
-};
-
 use codec::Encode;
 use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
 use frame_support::{
@@ -31,13 +26,19 @@ use frame_support::{
 	traits::{Currency, Get},
 };
 use frame_system::RawOrigin;
-use kilt_support::traits::GenerateBenchmarkOrigin;
 use sha3::{Digest, Keccak256};
 use sp_io::crypto::{ecdsa_generate, ed25519_generate, sr25519_generate};
 use sp_runtime::{
 	app_crypto::{ed25519, sr25519},
 	traits::IdentifyAccount,
 	AccountId32, KeyTypeId,
+};
+
+use kilt_support::{deposit::Deposit, traits::GenerateBenchmarkOrigin};
+
+use crate::{
+	account::AccountId20, linkable_account::LinkableAccountId, signature::get_wrapped_payload, AccountIdOf,
+	AssociateAccountRequest, Call, Config, ConnectedAccounts, ConnectedDids, CurrencyOf, Pallet,
 };
 
 const SEED: u32 = 0;
@@ -240,6 +241,29 @@ benchmarks! {
 	verify {
 		assert!(ConnectedDids::<T>::get(&linkable_id).is_none());
 		assert!(ConnectedAccounts::<T>::get(did, linkable_id).is_none());
+	}
+
+	transfer_deposit {
+		let caller_0: T::AccountId = account("caller", 0, SEED);
+		let caller_1: T::AccountId = account("caller", 1, SEED);
+		let linkable_id: LinkableAccountId = caller_0.clone().into();
+		let did: T::DidIdentifier = account("did", 0, SEED);
+		make_free_for_did::<T>(&caller_0);
+		make_free_for_did::<T>(&caller_1);
+
+		Pallet::<T>::add_association(caller_0.clone(), did.clone(), linkable_id.clone()).expect("should create association");
+
+		let origin = T::EnsureOrigin::generate_origin(caller_1.clone(), did.clone());
+		let id_arg = linkable_id.clone();
+	}: _<T::Origin>(origin, id_arg)
+	verify {
+		assert_eq!(
+			ConnectedDids::<T>::get(&linkable_id).expect("should retain link").deposit,
+			Deposit {
+				owner: caller_1,
+				amount: <T as Config>::Deposit::get(),
+			},
+		);
 	}
 }
 
