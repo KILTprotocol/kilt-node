@@ -68,7 +68,7 @@ build:
 
 build-wasm-peregrine:
   image:
-    name: paritytech/srtool:1.60.0
+    name: $CI_REGISTRY/srtool:latest
     entrypoint: [""]
   stage: build
   only:
@@ -88,7 +88,7 @@ build-wasm-peregrine:
 
 build-wasm-spiritnet:
   image:
-    name: paritytech/srtool:1.60.0
+    name: $CI_REGISTRY/srtool:latest
     entrypoint: [""]
   stage: build
   only:
