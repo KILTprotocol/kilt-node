@@ -377,7 +377,7 @@ benchmarks! {
 
 		Did::<T>::insert(&did_subject, did_details.clone());
 		save_service_endpoints(&did_subject, &service_endpoints);
-		let origin = RawOrigin::Signed(did_details.deposit.owner.clone());
+		let origin = RawOrigin::Signed(did_details.deposit.owner);
 		let subject_clone = did_subject.clone();
 	}: _(origin, subject_clone, c)
 	verify {
@@ -461,7 +461,7 @@ benchmarks! {
 		let cloned_new_did_public_auth_key = new_did_public_auth_key.clone();
 	}: set_authentication_key(origin, cloned_new_did_public_auth_key)
 	verify {
-		let auth_key_id = utils::calculate_key_id::<T>(&DidPublicKey::from(DidVerificationKey::from(new_did_public_auth_key)));
+		let auth_key_id = utils::calculate_key_id::<T>(&DidPublicKey::from(new_did_public_auth_key));
 		assert_eq!(Did::<T>::get(&did_subject).unwrap().authentication_key, auth_key_id);
 	}
 
@@ -483,7 +483,7 @@ benchmarks! {
 		let cloned_new_did_public_auth_key = new_did_public_auth_key.clone();
 	}: set_authentication_key(origin, cloned_new_did_public_auth_key)
 	verify {
-		let auth_key_id = utils::calculate_key_id::<T>(&DidPublicKey::from(DidVerificationKey::from(new_did_public_auth_key)));
+		let auth_key_id = utils::calculate_key_id::<T>(&DidPublicKey::from(new_did_public_auth_key));
 		assert_eq!(Did::<T>::get(&did_subject).unwrap().authentication_key, auth_key_id);
 	}
 
