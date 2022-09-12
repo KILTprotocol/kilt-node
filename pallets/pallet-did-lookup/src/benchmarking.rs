@@ -244,23 +244,23 @@ benchmarks! {
 	}
 
 	transfer_deposit {
-		let caller_0: T::AccountId = account("caller", 0, SEED);
-		let caller_1: T::AccountId = account("caller", 1, SEED);
-		let linkable_id: LinkableAccountId = caller_0.clone().into();
+		let deposit_owner_old: T::AccountId = account("caller", 0, SEED);
+		let deposit_owner_new: T::AccountId = account("caller", 1, SEED);
+		let linkable_id: LinkableAccountId = deposit_owner_old.clone().into();
 		let did: T::DidIdentifier = account("did", 0, SEED);
-		make_free_for_did::<T>(&caller_0);
-		make_free_for_did::<T>(&caller_1);
+		make_free_for_did::<T>(&deposit_owner_old);
+		make_free_for_did::<T>(&deposit_owner_new);
 
-		Pallet::<T>::add_association(caller_0, did.clone(), linkable_id.clone()).expect("should create association");
+		Pallet::<T>::add_association(deposit_owner_old, did.clone(), linkable_id.clone()).expect("should create association");
 
-		let origin = T::EnsureOrigin::generate_origin(caller_1.clone(), did);
+		let origin = T::EnsureOrigin::generate_origin(deposit_owner_new.clone(), did);
 		let id_arg = linkable_id.clone();
 	}: _<T::Origin>(origin, id_arg)
 	verify {
 		assert_eq!(
 			ConnectedDids::<T>::get(&linkable_id).expect("should retain link").deposit,
 			Deposit {
-				owner: caller_1,
+				owner: deposit_owner_new,
 				amount: <T as Config>::Deposit::get(),
 			},
 		);

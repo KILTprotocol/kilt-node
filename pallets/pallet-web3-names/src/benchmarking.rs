@@ -139,25 +139,25 @@ benchmarks! {
 	}
 
 	transfer_deposit {
-		let caller_0: AccountIdOf<T> = account("caller", 0, CALLER_SEED);
-		let caller_1: AccountIdOf<T> = account("caller", 1, CALLER_SEED);
+		let deposit_owner_old: AccountIdOf<T> = account("caller", 0, CALLER_SEED);
+		let deposit_owner_new: AccountIdOf<T> = account("caller", 1, CALLER_SEED);
 		let owner: Web3NameOwnerOf<T> = account("owner", 0, OWNER_SEED);
 		let web3_name_input: BoundedVec<u8, T::MaxNameLength> = BoundedVec::try_from(
 			generate_web3_name_input(T::MaxNameLength::get().saturated_into())
 		).expect("BoundedVec creation should not fail.");
 		let web3_name_input_clone = web3_name_input.clone();
-		let origin_create = T::OwnerOrigin::generate_origin(caller_0.clone(), owner.clone());
+		let origin_create = T::OwnerOrigin::generate_origin(deposit_owner_old.clone(), owner.clone());
 
-		make_free_for_did::<T>(&caller_0);
-		make_free_for_did::<T>(&caller_1);
+		make_free_for_did::<T>(&deposit_owner_old);
+		make_free_for_did::<T>(&deposit_owner_new);
 		Pallet::<T>::claim(origin_create, web3_name_input.clone()).expect("Should register the claimed web3 name.");
 
-		let origin = T::OwnerOrigin::generate_origin(caller_1.clone(), owner);
+		let origin = T::OwnerOrigin::generate_origin(deposit_owner_new.clone(), owner);
 	}: _<T::Origin>(origin)
 	verify {
 		let web3_name = Web3NameOf::<T>::try_from(web3_name_input.to_vec()).unwrap();
 		assert_eq!(Owner::<T>::get(&web3_name).expect("w3n should exists").deposit, Deposit {
-			owner: caller_1,
+			owner: deposit_owner_new,
 			amount: <T as Config>::Deposit::get(),
 		});
 	}

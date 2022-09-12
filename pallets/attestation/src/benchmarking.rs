@@ -123,19 +123,19 @@ benchmarks! {
 
 	transfer_deposit {
 		let attester: T::AttesterId = account("attester", 0, SEED);
-		let sender_0: T::AccountId = account("sender", 0, SEED);
-		let sender_1: T::AccountId = account("sender", 1, SEED);
+		let deposit_owner_old: T::AccountId = account("sender", 0, SEED);
+		let deposit_owner_new: T::AccountId = account("sender", 1, SEED);
 		let claim_hash: T::Hash = T::Hashing::hash(b"claim");
 		let ctype_hash: T::Hash = T::Hash::default();
 
 		ctype::Ctypes::<T>::insert(&ctype_hash, attester.clone());
-		<T as Config>::Currency::make_free_balance_be(&sender_0, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
-		<T as Config>::Currency::make_free_balance_be(&sender_1, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
+		<T as Config>::Currency::make_free_balance_be(&deposit_owner_old, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
+		<T as Config>::Currency::make_free_balance_be(&deposit_owner_new, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
 
-		let origin = <T as Config>::EnsureOrigin::generate_origin(sender_0, attester.clone());
+		let origin = <T as Config>::EnsureOrigin::generate_origin(deposit_owner_old, attester.clone());
 		Pallet::<T>::add(origin, claim_hash, ctype_hash, None)?;
 		// revoke with root account
-		let origin = <T as Config>::EnsureOrigin::generate_origin(sender_1.clone(), attester.clone());
+		let origin = <T as Config>::EnsureOrigin::generate_origin(deposit_owner_new.clone(), attester.clone());
 	}: _<T::Origin>(origin, claim_hash)
 	verify {
 		assert_eq!(Attestations::<T>::get(claim_hash), Some(AttestationDetails {
@@ -144,7 +144,7 @@ benchmarks! {
 			authorization_id: None,
 			revoked: false,
 			deposit: kilt_support::deposit::Deposit {
-				owner: sender_1,
+				owner: deposit_owner_new,
 				amount: <T as Config>::Deposit::get(),
 			}
 		}));

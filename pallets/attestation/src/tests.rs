@@ -577,6 +577,7 @@ fn test_transfer_deposit_to_self() {
 					amount: <Test as Config>::Deposit::get()
 				}
 			);
+			// old deposit was 2x Deposit::get(), new deposit should be the the default deposit value.
 			assert_eq!(Balances::reserved_balance(ACCOUNT_00), <Test as Config>::Deposit::get());
 		});
 }
