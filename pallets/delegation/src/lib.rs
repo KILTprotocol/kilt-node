@@ -650,6 +650,14 @@ pub mod pallet {
 			Ok(Some(<T as Config>::WeightInfo::remove_delegation(removal_checks)).into())
 		}
 
+
+		/// Transfer the storage deposit from one account to another.
+		///
+		/// If the currently required deposit is different, the new deposit
+		/// value will be reserved.
+		///
+		/// The subject of the call must be the owner of the delegation node.
+		/// The sender of the call will be the new deposit owner.
 		#[pallet::weight(<T as Config>::WeightInfo::transfer_deposit())]
 		pub fn transfer_deposit(origin: OriginFor<T>, delegation_id: DelegationNodeIdOf<T>) -> DispatchResult {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;

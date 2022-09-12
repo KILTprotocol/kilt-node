@@ -424,6 +424,9 @@ pub mod pallet {
 		///
 		/// If the currently required deposit is different, the new deposit
 		/// value will be reserved.
+		///
+		/// The subject of the call must be the attester who issues the attestation.
+		/// The sender of the call will be the new deposit owner.
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::transfer_deposit())]
 		pub fn transfer_deposit(origin: OriginFor<T>, claim_hash: ClaimHashOf<T>) -> DispatchResult {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
