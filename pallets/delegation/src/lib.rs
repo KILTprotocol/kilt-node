@@ -656,7 +656,7 @@ pub mod pallet {
 
 			let mut delegation = DelegationNodes::<T>::get(&delegation_id).ok_or(Error::<T>::DelegationNotFound)?;
 
-			// Deposit can only be removed by the owner of the deposit, not the
+			// Deposit can only be swapped by the owner of the delegation node, not the
 			// parent or another ancestor.
 			ensure!(delegation.details.owner == source.subject(), Error::<T>::AccessDenied);
 
