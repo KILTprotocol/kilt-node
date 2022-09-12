@@ -395,7 +395,7 @@ fn test_transfer_deposit() {
 			(ACCOUNT_00, <Test as crate::Config>::Deposit::get() * 50),
 			(ACCOUNT_01, <Test as crate::Config>::Deposit::get() * 50),
 		])
-		.with_connections(vec![(ACCOUNT_00, DID_00, ACCOUNT_00)])
+		.with_connections(vec![(ACCOUNT_00, DID_00, LINKABLE_ACCOUNT_00)])
 		.build()
 		.execute_with(|| {
 			assert_ok!(DidLookup::transfer_deposit(
@@ -414,7 +414,7 @@ fn test_transfer_deposit() {
 fn test_transfer_deposit_insufficient_balance() {
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, <Test as crate::Config>::Deposit::get() * 50)])
-		.with_connections(vec![(ACCOUNT_00, DID_00, ACCOUNT_00)])
+		.with_connections(vec![(ACCOUNT_00, DID_00, LINKABLE_ACCOUNT_00)])
 		.build()
 		.execute_with(|| {
 			assert_noop!(
@@ -473,7 +473,7 @@ fn test_transfer_deposit_not_found() {
 fn test_transfer_deposit_not_authorized() {
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, <Test as crate::Config>::Deposit::get() * 50)])
-		.with_connections(vec![(ACCOUNT_00, DID_00, ACCOUNT_00)])
+		.with_connections(vec![(ACCOUNT_00, DID_00, LINKABLE_ACCOUNT_00)])
 		.build()
 		.execute_with(|| {
 			assert_noop!(
