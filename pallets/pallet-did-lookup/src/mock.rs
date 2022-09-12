@@ -164,7 +164,7 @@ pub(crate) fn insert_raw_connection<T: Config>(
 pub struct ExtBuilder {
 	balances: Vec<(AccountId, Balance)>,
 	/// list of connection (sender, did, connected address)
-	connections: Vec<(AccountId, SubjectId, AccountId)>,
+	connections: Vec<(AccountId, SubjectId, LinkableAccountId)>,
 }
 
 impl ExtBuilder {
@@ -176,7 +176,7 @@ impl ExtBuilder {
 
 	/// Add a connection: (sender, did, connected address)
 	#[must_use]
-	pub fn with_connections(mut self, connections: Vec<(AccountId, SubjectId, AccountId)>) -> Self {
+	pub fn with_connections(mut self, connections: Vec<(AccountId, SubjectId, LinkableAccountId)>) -> Self {
 		self.connections = connections;
 		self
 	}
@@ -192,7 +192,7 @@ impl ExtBuilder {
 
 		ext.execute_with(|| {
 			for (sender, did, account) in self.connections {
-				pallet_did_lookup::Pallet::<Test>::add_association(sender, did, account.into())
+				pallet_did_lookup::Pallet::<Test>::add_association(sender, did, account)
 					.expect("Should create connection");
 			}
 		});

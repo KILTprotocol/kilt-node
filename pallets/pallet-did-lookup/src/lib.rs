@@ -286,10 +286,9 @@ pub mod pallet {
 		/// - Writes: ConnectedDids
 		/// # </weight>
 		#[pallet::weight(<T as Config>::WeightInfo::remove_sender_association())]
-		pub fn reclaim_deposit(origin: OriginFor<T>, account: AccountIdOf<T>) -> DispatchResult {
+		pub fn reclaim_deposit(origin: OriginFor<T>, account: LinkableAccountId) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
-			let account: LinkableAccountId = account.into();
 			let record = ConnectedDids::<T>::get(&account).ok_or(Error::<T>::AssociationNotFound)?;
 			ensure!(record.deposit.owner == who, Error::<T>::NotAuthorized);
 			Self::remove_association(account)
