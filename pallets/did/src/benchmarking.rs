@@ -1041,7 +1041,8 @@ benchmarks! {
 		Did::<T>::insert(&did_subject, did_details);
 
 		make_free_for_did::<T>(&did_account);
-	}: _(RawOrigin::Signed(did_subject.clone()))
+		let origin = RawOrigin::Signed(did_subject.clone());
+	}: _(origin)
 	verify {
 		assert_eq!(
 			Did::<T>::get(&did_subject).expect("DID entry should be retained").deposit,
