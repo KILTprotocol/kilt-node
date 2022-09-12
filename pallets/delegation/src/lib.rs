@@ -662,12 +662,11 @@ pub mod pallet {
 
 			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&delegation.deposit);
 
+			CurrencyOf::<T>::reserve(&delegation.deposit.owner, delegation.deposit.amount)?;
 			delegation.deposit = Deposit {
 				owner: source.sender(),
 				amount: <T as Config>::Deposit::get(),
 			};
-			CurrencyOf::<T>::reserve(&delegation.deposit.owner, delegation.deposit.amount)?;
-
 			DelegationNodes::<T>::insert(&delegation_id, delegation);
 
 			Ok(())
