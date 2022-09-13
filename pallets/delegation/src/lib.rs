@@ -650,7 +650,6 @@ pub mod pallet {
 			Ok(Some(<T as Config>::WeightInfo::remove_delegation(removal_checks)).into())
 		}
 
-
 		/// Transfer the storage deposit from one account to another.
 		///
 		/// If the currently required deposit is different, the new deposit
