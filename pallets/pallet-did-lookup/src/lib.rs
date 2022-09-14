@@ -293,6 +293,33 @@ pub mod pallet {
 			ensure!(record.deposit.owner == who, Error::<T>::NotAuthorized);
 			Self::remove_association(account)
 		}
+
+		/// Transfer the storage deposit from one account to another.
+		///
+		/// If the currently required deposit is different, the new deposit
+		/// value will be reserved.
+		///
+		/// The subject of the call must be linked to the account.
+		/// The sender of the call will be the new deposit owner.
+		#[pallet::weight(<T as Config>::WeightInfo::transfer_deposit())]
+		pub fn transfer_deposit(origin: OriginFor<T>, account: LinkableAccountId) -> DispatchResult {
+			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
+
+			let record = ConnectedDids::<T>::get(&account).ok_or(Error::<T>::AssociationNotFound)?;
+			ensure!(record.did == source.subject(), Error::<T>::NotAuthorized);
+
+			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&record.deposit);
+
+			let amount = <T as Config>::Deposit::get();
+			let deposit = Deposit {
+				owner: source.sender(),
+				amount,
+			};
+			CurrencyOf::<T>::reserve(&deposit.owner, deposit.amount)?;
+
+			ConnectedDids::<T>::insert(&account, ConnectionRecord { deposit, ..record });
+			Ok(())
+		}
 	}
 
 	impl<T: Config> Pallet<T> {
