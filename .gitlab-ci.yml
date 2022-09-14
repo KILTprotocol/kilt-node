@@ -42,7 +42,7 @@ test-features:
 
 build:
   image:
-    name: kiltprotocol/kilt-ci:2.2.38
+    name: kiltprotocol/kilt-ci:2.7.31
     entrypoint: [""]
   stage: build
   only:
