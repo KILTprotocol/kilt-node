@@ -22,11 +22,12 @@ use codec::Encode;
 use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite, Zero};
 use frame_support::{assert_ok, traits::Currency};
 use frame_system::RawOrigin;
-use kilt_support::signature::VerifySignature;
 use sp_core::{crypto::KeyTypeId, ecdsa, ed25519, sr25519};
 use sp_io::crypto::{ecdsa_generate, ecdsa_sign, ed25519_generate, ed25519_sign, sr25519_generate, sr25519_sign};
 use sp_runtime::{traits::IdentifyAccount, AccountId32, MultiSigner};
 use sp_std::{convert::TryInto, vec::Vec};
+
+use kilt_support::{deposit::Deposit, signature::VerifySignature};
 
 use crate::{
 	did_details::{
@@ -1029,6 +1030,28 @@ benchmarks! {
 		DidSignatureVerify::<T>::verify(&did_subject, &payload, &did_signature).expect("should verify");
 	}
 	verify {}
+
+	transfer_deposit {
+		let did_public_auth_key = get_ed25519_public_authentication_key();
+		let did_subject: DidIdentifierOf<T> = MultiSigner::from(did_public_auth_key).into_account().into();
+		let did_account: AccountIdOf<T> = MultiSigner::from(did_public_auth_key).into_account().into();
+
+		let did_details = generate_base_did_details::<T>(DidVerificationKey::from(did_public_auth_key));
+
+		Did::<T>::insert(&did_subject, did_details);
+
+		make_free_for_did::<T>(&did_account);
+		let origin = RawOrigin::Signed(did_subject.clone());
+	}: _(origin)
+	verify {
+		assert_eq!(
+			Did::<T>::get(&did_subject).expect("DID entry should be retained").deposit,
+			Deposit {
+				owner: did_account,
+				amount: <T as Config>::Deposit::get()
+			},
+		)
+	}
 }
 
 impl_benchmark_test_suite! {
