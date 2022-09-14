@@ -16,22 +16,29 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::parameter_types;
+use frame_support::{parameter_types, traits::ReservableCurrency};
 use frame_system::EnsureRoot;
-use kilt_support::mock::{mock_origin, SubjectId};
+use kilt_support::{
+	deposit::Deposit,
+	mock::{mock_origin, SubjectId},
+};
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
 	MultiSignature,
 };
 
-use crate as pallet_web3_names;
-use crate::web3_name::AsciiWeb3Name;
+use crate::{
+	self as pallet_web3_names, web3_name::AsciiWeb3Name, AccountIdOf, BalanceOf, Config, CurrencyOf, Names, Owner,
+	Web3NameOf, Web3NameOwnerOf, Web3OwnershipOf,
+};
 
 pub(crate) type Balance = u128;
 
 type Index = u64;
 type BlockNumber = u64;
+type BlockNumberOf<T> = <T as frame_system::Config>::BlockNumber;
+
 type Hash = sp_core::H256;
 type Signature = MultiSignature;
 type AccountPublic = <Signature as Verify>::Signer;
@@ -146,6 +153,29 @@ pub(crate) const WEB3_NAME_01_INPUT: &[u8; 12] = b"web3_name_01";
 
 pub(crate) fn get_web3_name(web3_name_input: &[u8]) -> TestWeb3Name {
 	AsciiWeb3Name::try_from(web3_name_input.to_vec()).expect("Invalid web3 name input.")
+}
+
+pub(crate) fn insert_raw_w3n<T: Config>(
+	payer: AccountIdOf<T>,
+	owner: Web3NameOwnerOf<T>,
+	name: Web3NameOf<T>,
+	block_number: BlockNumberOf<T>,
+	deposit: BalanceOf<T>,
+) {
+	CurrencyOf::<T>::reserve(&payer, deposit).expect("Payer should have enough funds for deposit");
+
+	Names::<T>::insert(&owner, name.clone());
+	Owner::<T>::insert(
+		&name,
+		Web3OwnershipOf::<T> {
+			owner,
+			claimed_at: block_number,
+			deposit: Deposit {
+				owner: payer,
+				amount: deposit,
+			},
+		},
+	);
 }
 
 #[derive(Clone, Default)]

@@ -62,6 +62,18 @@ where
 	T: Config,
 	T::Hash: From<H256>,
 {
+	generate_base_attestation_with_deposit(attester, payer, <T as Config>::Deposit::get())
+}
+
+pub fn generate_base_attestation_with_deposit<T>(
+	attester: AttesterOf<T>,
+	payer: AccountIdOf<T>,
+	deposit: BalanceOf<T>,
+) -> AttestationDetails<T>
+where
+	T: Config,
+	T::Hash: From<H256>,
+{
 	AttestationDetails {
 		attester,
 		authorization_id: None,
@@ -69,7 +81,7 @@ where
 		revoked: false,
 		deposit: Deposit::<AccountIdOf<T>, BalanceOf<T>> {
 			owner: payer,
-			amount: <T as Config>::Deposit::get(),
+			amount: deposit,
 		},
 	}
 }

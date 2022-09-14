@@ -51,18 +51,6 @@
 //!   attester. This could be an employe of a company which is authorized to
 //!   sign documents for their superiors.
 //!
-//! ## Interface
-//!
-//! ### Dispatchable Functions
-//! - `add` - Create a new attestation for a given claim which is based on a
-//!   CType. The attester can optionally provide a reference to an existing
-//!   delegation that will be saved along with the attestation itself in the
-//!   form of an attested delegation.
-//! - `revoke` - Revoke an existing attestation for a given claim. The revoker
-//!   must be either the creator of the attestation being revoked or an entity
-//!   that in the delegation tree is an ancestor of the attester, i.e., it was
-//!   either the delegator of the attester or an ancestor thereof.
-//!
 //! ## Assumptions
 //!
 //! - The claim which shall be attested is based on a CType and signed by the
@@ -429,6 +417,32 @@ pub mod pallet {
 			Self::remove_attestation(attestation, claim_hash);
 			Self::deposit_event(Event::DepositReclaimed(who, claim_hash));
 
+			Ok(())
+		}
+
+		/// Transfer the storage deposit from one account to another.
+		///
+		/// If the currently required deposit is different, the new deposit
+		/// value will be reserved.
+		///
+		/// The subject of the call must be the attester who issues the
+		/// attestation. The sender of the call will be the new deposit owner.
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::transfer_deposit())]
+		pub fn transfer_deposit(origin: OriginFor<T>, claim_hash: ClaimHashOf<T>) -> DispatchResult {
+			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
+			let subject = source.subject();
+			let sender = source.sender();
+
+			let attestation = Attestations::<T>::get(&claim_hash).ok_or(Error::<T>::AttestationNotFound)?;
+			ensure!(attestation.attester == subject, Error::<T>::Unauthorized);
+
+			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&attestation.deposit);
+			Self::deposit_event(Event::DepositReclaimed(sender.clone(), claim_hash));
+
+			let deposit_amount = <T as Config>::Deposit::get();
+			let deposit = Pallet::<T>::reserve_deposit(sender, deposit_amount)?;
+
+			Attestations::<T>::insert(&claim_hash, AttestationDetails { deposit, ..attestation });
 			Ok(())
 		}
 	}
