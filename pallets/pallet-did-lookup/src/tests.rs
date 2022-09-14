@@ -22,7 +22,7 @@ use kilt_support::{deposit::Deposit, mock::mock_origin};
 use sha3::{Digest, Keccak256};
 use sp_runtime::{
 	app_crypto::{ecdsa, sr25519, Pair},
-	traits::IdentifyAccount,
+	traits::{IdentifyAccount, Zero},
 	MultiSignature, MultiSigner,
 };
 
@@ -422,4 +422,102 @@ fn test_reclaim_deposit_not_authorized() {
 				<Test as crate::Config>::Deposit::get()
 			);
 		});
+}
+
+// #############################################################################
+// transfer deposit
+
+#[test]
+fn test_transfer_deposit() {
+	ExtBuilder::default()
+		.with_balances(vec![
+			(ACCOUNT_00, <Test as crate::Config>::Deposit::get() * 50),
+			(ACCOUNT_01, <Test as crate::Config>::Deposit::get() * 50),
+		])
+		.with_connections(vec![(ACCOUNT_00, DID_00, LINKABLE_ACCOUNT_00)])
+		.build()
+		.execute_with(|| {
+			assert_ok!(DidLookup::transfer_deposit(
+				mock_origin::DoubleOrigin(ACCOUNT_01, DID_00).into(),
+				ACCOUNT_00.into()
+			));
+			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
+			assert_eq!(
+				Balances::reserved_balance(ACCOUNT_01),
+				<Test as crate::Config>::Deposit::get()
+			);
+		})
+}
+
+#[test]
+fn test_transfer_deposit_insufficient_balance() {
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, <Test as crate::Config>::Deposit::get() * 50)])
+		.with_connections(vec![(ACCOUNT_00, DID_00, LINKABLE_ACCOUNT_00)])
+		.build()
+		.execute_with(|| {
+			assert_noop!(
+				DidLookup::transfer_deposit(mock_origin::DoubleOrigin(ACCOUNT_01, DID_00).into(), ACCOUNT_00.into()),
+				pallet_balances::Error::<Test>::InsufficientBalance
+			);
+		})
+}
+
+/// Update the deposit amount
+#[test]
+fn test_transfer_deposit_to_self() {
+	ExtBuilder::default()
+		.with_balances(vec![
+			(ACCOUNT_00, <Test as crate::Config>::Deposit::get() * 50),
+			(ACCOUNT_01, <Test as crate::Config>::Deposit::get() * 50),
+		])
+		.build()
+		.execute_with(|| {
+			insert_raw_connection::<Test>(
+				ACCOUNT_00,
+				DID_00,
+				ACCOUNT_00.into(),
+				<Test as crate::Config>::Deposit::get() * 2,
+			);
+			assert_eq!(
+				Balances::reserved_balance(ACCOUNT_00),
+				<Test as crate::Config>::Deposit::get() * 2
+			);
+			assert_ok!(DidLookup::transfer_deposit(
+				mock_origin::DoubleOrigin(ACCOUNT_01, DID_00).into(),
+				ACCOUNT_00.into()
+			));
+			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
+			assert_eq!(
+				Balances::reserved_balance(ACCOUNT_01),
+				<Test as crate::Config>::Deposit::get()
+			);
+		})
+}
+
+#[test]
+fn test_transfer_deposit_not_found() {
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, <Test as crate::Config>::Deposit::get() * 50)])
+		.build()
+		.execute_with(|| {
+			assert_noop!(
+				DidLookup::transfer_deposit(mock_origin::DoubleOrigin(ACCOUNT_01, DID_00).into(), ACCOUNT_00.into()),
+				Error::<Test>::AssociationNotFound
+			);
+		})
+}
+
+#[test]
+fn test_transfer_deposit_not_authorized() {
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, <Test as crate::Config>::Deposit::get() * 50)])
+		.with_connections(vec![(ACCOUNT_00, DID_00, LINKABLE_ACCOUNT_00)])
+		.build()
+		.execute_with(|| {
+			assert_noop!(
+				DidLookup::transfer_deposit(mock_origin::DoubleOrigin(ACCOUNT_01, DID_01).into(), ACCOUNT_00.into()),
+				Error::<Test>::NotAuthorized
+			);
+		})
 }

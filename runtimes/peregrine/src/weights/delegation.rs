@@ -134,4 +134,9 @@ impl<T: frame_system::Config> delegation::WeightInfo for WeightInfo<T> {
 			.saturating_add(T::DbWeight::get().reads(1 as Weight))
 			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(c as Weight)))
 	}
+	fn transfer_deposit( ) -> Weight {
+		(8_448_000 as Weight)
+			// Standard Error: 17_000
+			.saturating_add(T::DbWeight::get().reads(1 as Weight))
+	}
 }

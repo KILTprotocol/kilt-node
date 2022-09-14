@@ -55,6 +55,7 @@ pub trait WeightInfo {
 	fn can_attest() -> Weight;
 	fn can_revoke(c: u32, ) -> Weight;
 	fn can_remove(c: u32, ) -> Weight;
+	fn transfer_deposit() -> Weight;
 }
 
 /// Weights for delegation using the Substrate node and recommended hardware.
@@ -146,6 +147,11 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(1 as Weight))
 			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(c as Weight)))
 	}
+	fn transfer_deposit( ) -> Weight {
+		(7_991_000 as Weight)
+			// Standard Error: 35_000
+			.saturating_add(T::DbWeight::get().reads(1 as Weight))
+	}
 }
 
 // For backwards compatibility and tests
@@ -235,5 +241,10 @@ impl WeightInfo for () {
 			.saturating_add((5_193_000 as Weight).saturating_mul(c as Weight))
 			.saturating_add(RocksDbWeight::get().reads(1 as Weight))
 			.saturating_add(RocksDbWeight::get().reads((1 as Weight).saturating_mul(c as Weight)))
+	}
+	fn transfer_deposit( ) -> Weight {
+		(7_991_000 as Weight)
+			// Standard Error: 35_000
+			.saturating_add(RocksDbWeight::get().reads(1 as Weight))
 	}
 }

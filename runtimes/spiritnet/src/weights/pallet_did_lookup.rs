@@ -104,4 +104,9 @@ impl<T: frame_system::Config> pallet_did_lookup::WeightInfo for WeightInfo<T> {
 			.saturating_add(T::DbWeight::get().reads(2 as Weight))
 			.saturating_add(T::DbWeight::get().writes(3 as Weight))
 	}
+	fn transfer_deposit() -> Weight {
+		(40_723_000 as Weight)
+			.saturating_add(T::DbWeight::get().reads(2 as Weight))
+			.saturating_add(T::DbWeight::get().writes(3 as Weight))
+	}
 }

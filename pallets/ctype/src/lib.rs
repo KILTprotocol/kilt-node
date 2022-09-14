@@ -33,12 +33,6 @@
 //!   full name, date of birth, access level and id number. Each of these are
 //!   referred to as an attribute of a credential.
 //!
-//! ## Interface
-//!
-//! ### Dispatchable Functions
-//! - `add` - Create a new CType from a given unique CType hash and associate it
-//!   with the origin of the call.
-//!
 //! ## Assumptions
 //!
 //! - The CType hash was created using our KILT JS-SDK.
