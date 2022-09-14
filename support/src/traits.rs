@@ -16,13 +16,6 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-
-
-
-
-
-
-
 /// The sources of a call struct.
 ///
 /// This trait allows to differentiate between the sender of a call and the
