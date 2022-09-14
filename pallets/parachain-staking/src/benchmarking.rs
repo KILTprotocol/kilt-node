@@ -436,8 +436,9 @@ benchmarks! {
 		// fill unstake BTreeMap by unstaked many entries of 1
 		fill_unstaking::<T>(&collator, Some(&delegator), u as u64);
 		assert_eq!(<DelegatorState<T>>::get(&delegator).unwrap().total, amount);
-		l
-		let origin = RawOrigin::Signed(delegator.clone());et unlookup_collator = T::Lookup::unlookup(collator.clone());
+		let unlookup_collator = T::Lookup::unlookup(collator.clone());
+
+		let origin = RawOrigin::Signed(delegator.clone());
 	}: _(origin, unlookup_collator, amount)
 	verify {
 		let state = <CandidatePool<T>>::get(&collator).unwrap();
@@ -585,7 +586,7 @@ benchmarks! {
 		let unlookup_candidate = T::Lookup::unlookup(candidate.clone());
 
 		let origin = RawOrigin::Signed(candidate.clone());
-	}: _(origin,  unlookup_candidate)
+	}: _(origin, unlookup_candidate)
 	verify {
 		assert_eq!(<Unstaking<T>>::get(&candidate).len().saturated_into::<u32>(), u.saturating_sub(1u32));
 		assert_eq!(pallet_balances::Pallet::<T>::usable_balance(&candidate), (free_balance - stake - stake + T::CurrencyBalance::one()).into());
