@@ -558,7 +558,8 @@ benchmarks! {
 		RewardCount::<T>::insert(&collator, u32::MAX);
 
 		assert!(Rewards::<T>::get(&delegator).is_zero());
-	}: _(RawOrigin::Signed(delegator.clone()))
+		let origin = RawOrigin::Signed(delegator.clone());
+	}: _(origin)
 	verify {
 		assert!(!Rewards::<T>::get(&delegator).is_zero());
 	}
@@ -572,19 +573,20 @@ benchmarks! {
 		// mock high counter to compensate for tiny amounts in unit test env
 		RewardCount::<T>::insert(&collator, u32::MAX);
 		assert!(Rewards::<T>::get(&collator).is_zero(), "reward {:?}", Rewards::<T>::get(&collator));
-	}: _(RawOrigin::Signed(collator.clone()))
+		let origin = RawOrigin::Signed(collator.clone());
+	}: _(origin)
 	verify {
 		assert!(!Rewards::<T>::get(&collator).is_zero());
 	}
 
-	claim_rewards_for {
+	claim_rewards {
 		let beneficiary = account("beneficiary", 0, 0);
 		let amount = T::MinCollatorCandidateStake::get();
 		T::Currency::make_free_balance_be(&beneficiary, amount);
 		Rewards::<T>::insert(&beneficiary, amount);
 		assert_eq!(pallet_balances::Pallet::<T>::usable_balance(&beneficiary), amount.into());
-		let unlookup_beneficiary = T::Lookup::unlookup(beneficiary.clone());
-	}: _(RawOrigin::Signed(beneficiary.clone()), unlookup_beneficiary)
+		let origin = RawOrigin::Signed(beneficiary.clone());
+	}: _(origin)
 	verify {
 		assert!(Rewards::<T>::get(&beneficiary).is_zero());
 		assert_eq!(pallet_balances::Pallet::<T>::usable_balance(&beneficiary), (amount + amount).into());

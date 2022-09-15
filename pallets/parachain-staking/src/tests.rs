@@ -4203,7 +4203,7 @@ fn rewards_incrementing_and_claiming() {
 			);
 			(1..=3).for_each(|id| {
 				assert_noop!(
-					StakePallet::claim_rewards_for(Origin::signed(id), id),
+					StakePallet::claim_rewards(Origin::signed(id)),
 					Error::<Test>::RewardsNotFound,
 				);
 			});
@@ -4216,7 +4216,7 @@ fn rewards_incrementing_and_claiming() {
 			// claiming should not be possible before incrementing rewards
 			(1..=3).for_each(|id| {
 				assert_noop!(
-					StakePallet::claim_rewards_for(Origin::signed(id), id),
+					StakePallet::claim_rewards(Origin::signed(id)),
 					Error::<Test>::RewardsNotFound
 				);
 			});
@@ -4242,7 +4242,7 @@ fn rewards_incrementing_and_claiming() {
 			assert!(!StakePallet::rewards(3).is_zero());
 
 			// claim for 1 to move rewards into balance
-			assert_ok!(StakePallet::claim_rewards_for(Origin::signed(3), 1));
+			assert_ok!(StakePallet::claim_rewards(Origin::signed(1)));
 			assert!(StakePallet::reward_count(1).is_zero());
 			assert!(StakePallet::rewards(1).is_zero());
 			// delegator situation should be unchanged
@@ -4251,7 +4251,7 @@ fn rewards_incrementing_and_claiming() {
 			assert_eq!(Balances::free_balance(&3), DECIMALS);
 
 			// claim for 2 to move rewards into balance
-			assert_ok!(StakePallet::claim_rewards_for(Origin::signed(1), 2));
+			assert_ok!(StakePallet::claim_rewards(Origin::signed(2)));
 			assert!(Balances::free_balance(&2) > DECIMALS);
 			assert!(StakePallet::reward_count(2).is_zero());
 			assert!(StakePallet::rewards(2).is_zero());

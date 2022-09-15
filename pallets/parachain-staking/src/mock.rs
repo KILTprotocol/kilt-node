@@ -391,14 +391,14 @@ pub(crate) fn roll_to_claim_rewards(n: BlockNumber, authors: Vec<Option<AccountI
 			// author must convert RewardCount to Rewards before claiming
 			assert_ok!(StakePallet::increment_collator_rewards(Origin::signed(*author)));
 			// author claims rewards
-			assert_ok!(StakePallet::claim_rewards_for(Origin::signed(*author), *author));
+			assert_ok!(StakePallet::claim_rewards(Origin::signed(*author)));
 
 			// claim rewards for delegators
 			let col_state = StakePallet::candidate_pool(author).expect("Block author must be candidate");
 			for delegation in col_state.delegators {
 				// NOTE: cannot use assert_ok! as we sometimes expect zero rewards for
 				// delegators such that the claiming would throw
-				StakePallet::claim_rewards_for(Origin::signed(*author), delegation.owner);
+				StakePallet::claim_rewards(Origin::signed(delegation.owner));
 			}
 		}
 		<AllPalletsReversedWithSystemFirst as OnFinalize<u64>>::on_finalize(System::block_number());

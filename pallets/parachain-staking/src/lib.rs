@@ -139,8 +139,7 @@
 //! - `unlock_unstaked` - Attempt to unlock previously unstaked balance from any
 //!   account. Succeeds if at least one unstake call happened at least
 //!   `StakeDuration` blocks ago.
-//! - `claim_rewards_for` - Claim block authoring rewards for the target
-//!   address.
+//! - `claim_rewards` - Claim block authoring rewards for the calling origin.
 //! - `increment_collator_rewards` - Actively increment the rewards of a
 //!   collator and their delegators.
 //! - `increment_delegator_rewards`- Actively increment the rewards of a
@@ -1730,10 +1729,9 @@ pub mod pallet {
 		/// for anyone.
 		///
 		/// Emits `Rewarded`.
-		#[pallet::weight(<T as Config>::WeightInfo::claim_rewards_for())]
-		pub fn claim_rewards_for(origin: OriginFor<T>, target: <T::Lookup as StaticLookup>::Source) -> DispatchResult {
-			ensure_signed(origin)?;
-			let target = T::Lookup::lookup(target)?;
+		#[pallet::weight(<T as Config>::WeightInfo::claim_rewards())]
+		pub fn claim_rewards(origin: OriginFor<T>) -> DispatchResult {
+			let target = ensure_signed(origin)?;
 
 			// we could kill the storage entry but let's be safe in case the deposit fails
 			let rewards = Rewards::<T>::get(&target);

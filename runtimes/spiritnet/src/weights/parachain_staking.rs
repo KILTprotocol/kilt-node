@@ -380,7 +380,7 @@ impl<T: frame_system::Config> parachain_staking::WeightInfo for WeightInfo<T> {
 	}
 	// Storage: ParachainStaking Rewards (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
-	fn claim_rewards_for() -> Weight {
+	fn claim_rewards() -> Weight {
 		(29_833_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(2 as Weight))
 			.saturating_add(T::DbWeight::get().writes(2 as Weight))

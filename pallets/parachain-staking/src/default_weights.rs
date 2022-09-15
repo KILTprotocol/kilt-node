@@ -68,7 +68,7 @@ pub trait WeightInfo {
 	fn set_max_candidate_stake() -> Weight;
 	fn increment_delegator_rewards() -> Weight;
 	fn increment_collator_rewards(_m: u32, ) -> Weight;
-	fn claim_rewards_for() -> Weight;
+	fn claim_rewards() -> Weight;
 	fn execute_scheduled_reward_change(n: u32, m: u32, ) -> Weight;
 }
 
@@ -407,7 +407,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	}
 	// Storage: ParachainStaking Rewards (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
-	fn claim_rewards_for() -> Weight {
+	fn claim_rewards() -> Weight {
 		(29_833_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(2 as Weight))
 			.saturating_add(T::DbWeight::get().writes(2 as Weight))
@@ -768,7 +768,7 @@ impl WeightInfo for () {
 	}
 	// Storage: ParachainStaking Rewards (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
-	fn claim_rewards_for() -> Weight {
+	fn claim_rewards() -> Weight {
 		(29_833_000 as Weight)
 			.saturating_add(RocksDbWeight::get().reads(2 as Weight))
 			.saturating_add(RocksDbWeight::get().writes(2 as Weight))
