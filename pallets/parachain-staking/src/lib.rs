@@ -102,52 +102,6 @@
 //!   until a specified block number. Multiple locks always operate over the
 //!   same funds, so they "overlay" rather than "stack"
 //!
-//! ## Interface
-//!
-//! ### Dispatchable Functions
-//! - `set_inflation` - Change the inflation configuration. Requires sudo.
-//! - `set_max_selected_candidates` - Change the number of collator candidates
-//!   which can be selected to be in the set of block authors. Requires sudo.
-//! - `set_blocks_per_round` - Change the number of blocks of a round. Shorter
-//!   rounds enable more frequent changes of the selected candidates, earlier
-//!   unlockal from unstaking and earlier collator leaving. Requires sudo.
-//! - `increase_max_candidate_stake_by` - Increase the maximum amount which can
-//!   be staked by a collator candidate.
-//! - `decrease_max_candidate_stake_by` - Decrease the maximum amount which can
-//!   be staked by a collator candidate.
-//! - `join_candidates` - Join the set of collator candidates by staking at
-//!   least `MinCandidateStake` and at most `MaxCollatorCandidateStake`.
-//! - `init_leave_candidates` - Request to leave the set of collators. Unstaking
-//!   and storage clean-up is delayed until executing the exit at least
-//!   ExitQueueDelay rounds later.
-//! - `candidate_stake_more` - Increase your own stake as a collator candidate
-//!   by the provided amount up to `MaxCollatorCandidateStake`.
-//! - `candidate_stake_less` - Decrease your own stake as a collator candidate
-//!   by the provided amount down to `MinCandidateStake`.
-//! - `join_delegators` - Join the set of delegators by delegating to a collator
-//!   candidate.
-//! - `leave_delegators` - Leave the set of delegators and revoke your
-//!   delegation. Since delegators do not have to run a node and cannot be
-//!   selected to become block authors, this exit is not delayed like it is for
-//!   collator candidates.
-//! - `revoke_delegation` - Revoke a single delegation to a collator candidate.
-//! - `delegator_stake_more` - Increase your own stake as a delegator and the
-//!   delegated collator candidate's total stake.
-//! - `delegator_stake_less` - Decrease your own stake as a delegator and the
-//!   delegated collator candidate's total stake by the provided amount down to
-//!   `MinDelegatorStake`.
-//! - `unlock_unstaked` - Attempt to unlock previously unstaked balance from any
-//!   account. Succeeds if at least one unstake call happened at least
-//!   `StakeDuration` blocks ago.
-//! - `claim_rewards` - Claim block authoring rewards for the calling origin.
-//! - `increment_collator_rewards` - Actively increment the rewards of a
-//!   collator and their delegators.
-//! - `increment_delegator_rewards`- Actively increment the rewards of a
-//!   delegator for all their delegations.
-//! - `execute_scheduled_reward_change` - Executes the annual reduction of the
-//!   reward rates for collators anddelegators. Moreover, sets rewards for all
-//!   collators and delegators before adjusting the inflation.
-//!
 //! ## Genesis config
 //!
 //! The ParachainStaking pallet depends on the [`GenesisConfig`].

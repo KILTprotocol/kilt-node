@@ -246,7 +246,8 @@ benchmarks! {
 		let new_candidate = account("new_collator", u32::MAX , COLLATOR_ACCOUNT_SEED);
 		T::Currency::make_free_balance_be(&new_candidate, min_candidate_stake);
 
-	}: _(RawOrigin::Signed(new_candidate.clone()), min_candidate_stake)
+		let origin = RawOrigin::Signed(new_candidate.clone());
+	}: _(origin, min_candidate_stake)
 	verify {
 		let candidates = TopCandidates::<T>::get();
 		assert!(candidates.into_iter().any(|other| other.owner == new_candidate));
@@ -264,7 +265,8 @@ benchmarks! {
 		let now = <Round<T>>::get().current;
 		let candidate = candidates[0].clone();
 
-	}: _(RawOrigin::Signed(candidate.clone()))
+		let origin = RawOrigin::Signed(candidate.clone());
+	}: _(origin)
 	verify {
 		let candidates = TopCandidates::<T>::get();
 		assert!(!candidates.into_iter().any(|other| other.owner == candidate));
@@ -284,7 +286,8 @@ benchmarks! {
 		let candidate = candidates[0].clone();
 		assert_ok!(<Pallet<T>>::init_leave_candidates(RawOrigin::Signed(candidate.clone()).into()));
 
-	}: _(RawOrigin::Signed(candidate.clone()))
+		let origin = RawOrigin::Signed(candidate.clone());
+	}: _(origin)
 	verify {
 		let candidates = TopCandidates::<T>::get();
 		assert!(candidates.into_iter().any(|other| other.owner == candidate));
@@ -320,7 +323,8 @@ benchmarks! {
 		}
 		let unlookup_candidate = T::Lookup::unlookup(candidate.clone());
 
-	}: _(RawOrigin::Signed(candidate.clone()), unlookup_candidate)
+		let origin = RawOrigin::Signed(candidate.clone());
+	}: _(origin, unlookup_candidate)
 	verify {
 		// should have one more entry in Unstaking
 		assert_eq!(<Unstaking<T>>::get(&candidate).len().saturated_into::<u32>(), u.saturating_add(1u32));
@@ -347,7 +351,8 @@ benchmarks! {
 		// fill unstake BTreeMap by unstaked many entries of 1
 		fill_unstaking::<T>(&candidate, None, u as u64);
 
-	}: _(RawOrigin::Signed(candidate.clone()), more_stake)
+		let origin = RawOrigin::Signed(candidate.clone());
+	}: _(origin, more_stake)
 	verify {
 		let new_stake = <CandidatePool<T>>::get(&candidate).unwrap().stake;
 		assert!(<Unstaking<T>>::get(candidate).is_empty());
@@ -374,7 +379,8 @@ benchmarks! {
 		let new_stake = <CandidatePool<T>>::get(&candidate).unwrap().stake;
 		assert_eq!(new_stake, old_stake + more_stake);
 
-	}: _(RawOrigin::Signed(candidate.clone()), more_stake)
+		let origin = RawOrigin::Signed(candidate.clone());
+	}: _(origin, more_stake)
 	verify {
 		let new_stake = <CandidatePool<T>>::get(&candidate).unwrap().stake;
 		assert_eq!(new_stake, old_stake);
@@ -394,7 +400,9 @@ benchmarks! {
 		T::Currency::make_free_balance_be(&delegator, amount + amount + amount + amount);
 		let unlookup_collator = T::Lookup::unlookup(collator.clone());
 
-	}: _(RawOrigin::Signed(delegator.clone()), unlookup_collator, amount)
+
+		let origin = RawOrigin::Signed(delegator.clone());
+	}: _(origin, unlookup_collator, amount)
 	verify {
 		let state = <CandidatePool<T>>::get(&collator).unwrap();
 		assert!(state.delegators.into_iter().any(|x| x.owner == delegator));
@@ -428,7 +436,9 @@ benchmarks! {
 		fill_unstaking::<T>(&collator, Some(&delegator), u as u64);
 		assert_eq!(<DelegatorState<T>>::get(&delegator).unwrap().amount, amount);
 		let unlookup_collator = T::Lookup::unlookup(collator.clone());
-	}: _(RawOrigin::Signed(delegator.clone()), unlookup_collator, amount)
+
+		let origin = RawOrigin::Signed(delegator.clone());
+	}: _(origin, unlookup_collator, amount)
 	verify {
 		let state = <CandidatePool<T>>::get(&collator).unwrap();
 		assert!(state.delegators.into_iter().any(|x| x.owner == delegator));
@@ -465,7 +475,8 @@ benchmarks! {
 		assert_eq!(<Unstaking<T>>::get(&delegator).len(), 1);
 		let unlookup_collator = T::Lookup::unlookup(collator.clone());
 
-	}: _(RawOrigin::Signed(delegator.clone()), unlookup_collator, amount)
+		let origin = RawOrigin::Signed(delegator.clone());
+	}: _(origin, unlookup_collator, amount)
 	verify {
 		let state = <CandidatePool<T>>::get(&collator).unwrap();
 		assert!(state.delegators.into_iter().any(|x| x.owner == delegator));
@@ -501,7 +512,8 @@ benchmarks! {
 		assert_eq!(<DelegatorState<T>>::get(&delegator).unwrap().amount, T::MinDelegatorStake::get() + amount);
 		assert_eq!(<Unstaking<T>>::get(&delegator).len(), 1);
 
-	}: _(RawOrigin::Signed(delegator.clone()))
+		let origin = RawOrigin::Signed(delegator.clone());
+	}: _(origin)
 	verify {
 		let state = <CandidatePool<T>>::get(&collator).unwrap();
 		assert!(!state.delegators.into_iter().any(|x| x.owner == delegator));
@@ -534,7 +546,8 @@ benchmarks! {
 		assert_eq!(pallet_balances::Pallet::<T>::usable_balance(&candidate), (free_balance - stake - stake).into());
 		let unlookup_candidate = T::Lookup::unlookup(candidate.clone());
 
-	}: _(RawOrigin::Signed(candidate.clone()),  unlookup_candidate)
+		let origin = RawOrigin::Signed(candidate.clone());
+	}: _(origin, unlookup_candidate)
 	verify {
 		assert_eq!(<Unstaking<T>>::get(&candidate).len().saturated_into::<u32>(), u.saturating_sub(1u32));
 		assert_eq!(pallet_balances::Pallet::<T>::usable_balance(&candidate), (free_balance - stake - stake + T::CurrencyBalance::one()).into());
