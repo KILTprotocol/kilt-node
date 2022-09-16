@@ -20,7 +20,6 @@
 //!
 //! Provides means of of handling relaychain related utilities and
 //! business logic such as finalizing XCM calls.
-
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::unused_unit)]
 

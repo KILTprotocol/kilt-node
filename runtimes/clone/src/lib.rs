@@ -533,7 +533,7 @@ impl_runtime_apis! {
 	}
 
 	// Solely required from parachain client
-	impl did_rpc_runtime_api::DidApi<
+	impl kilt_runtime_api::did::DidApi<
 		Block,
 		AccountId,
 		AccountId,
@@ -542,7 +542,7 @@ impl_runtime_apis! {
 		Hash,
 		BlockNumber
 	> for Runtime {
-		fn query_did_by_w3n(_: Vec<u8>) -> Option<did_rpc_runtime_api::RawDidLinkedInfo<
+		fn query_did_by_w3n(_: Vec<u8>) -> Option<kilt_runtime_api::did::RawDidLinkedInfo<
 				AccountId,
 				AccountId,
 				LinkableAccountId,
@@ -555,7 +555,7 @@ impl_runtime_apis! {
 		}
 
 		fn query_did_by_account_id(_: LinkableAccountId) -> Option<
-			did_rpc_runtime_api::RawDidLinkedInfo<
+			kilt_runtime_api::did::RawDidLinkedInfo<
 				AccountId,
 				AccountId,
 				LinkableAccountId,
@@ -568,7 +568,7 @@ impl_runtime_apis! {
 		}
 
 		fn query_did(_: AccountId) -> Option<
-			did_rpc_runtime_api::RawDidLinkedInfo<
+			kilt_runtime_api::did::RawDidLinkedInfo<
 				AccountId,
 				AccountId,
 				LinkableAccountId,

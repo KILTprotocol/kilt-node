@@ -18,8 +18,8 @@ hex-literal = {version = "0.3.4", optional = true}
 serde = {version = "1.0.142", optional = true, features = ["derive"]}
 
 # RPC
-did-rpc-runtime-api = {path = "../../rpc/did/runtime-api", default-features = false}
 frame-system-rpc-runtime-api = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.28"}
+kilt-runtime-api = {path = "../../runtime-api", default-features = false}
 pallet-transaction-payment-rpc-runtime-api = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.28"}
 
 # KILT pallets & primitives
@@ -157,7 +157,6 @@ std = [
   "cumulus-primitives-timestamp/std",
   "cumulus-primitives-utility/std",
   "delegation/std",
-  "did-rpc-runtime-api/std",
   "did/std",
   "frame-benchmarking/std",
   "frame-executive/std",
@@ -165,6 +164,7 @@ std = [
   "frame-system-rpc-runtime-api/std",
   "frame-system/std",
   "frame-try-runtime/std",
+  "kilt-runtime-api/std",
   "kilt-support/std",
   "log/std",
   "pallet-aura/std",

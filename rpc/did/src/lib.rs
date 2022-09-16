@@ -19,17 +19,17 @@
 use std::{fmt::Display, str::FromStr, sync::Arc};
 
 use codec::{Codec, MaxEncodedLen};
-use did_rpc_runtime_api::{DidLinkedInfo, ServiceEndpoint};
 use jsonrpsee::{
 	core::{async_trait, RpcResult},
 	proc_macros::rpc,
 	types::error::{CallError, ErrorObject},
 };
+use kilt_runtime_api::did::{DidLinkedInfo, ServiceEndpoint};
 use sp_api::ProvideRuntimeApi;
 use sp_blockchain::HeaderBackend;
 use sp_runtime::{generic::BlockId, traits::Block as BlockT};
 
-pub use did_rpc_runtime_api::DidApi as DidRuntimeApi;
+pub use kilt_runtime_api::did::DidApi as DidRuntimeApi;
 
 pub type RpcDidLinkedInfo<DidIdentifier, AccountId, LinkableAccountId, Balance, Key, BlockNumber> = DidLinkedInfo<
 	DidIdentifier,

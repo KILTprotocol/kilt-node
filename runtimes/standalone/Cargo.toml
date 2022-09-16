@@ -28,8 +28,8 @@ pallet-web3-names = {default-features = false, path = "../../pallets/pallet-web3
 runtime-common = {path = "../../runtimes/common", default-features = false}
 
 # RPC
-did-rpc-runtime-api = {path = "../../rpc/did/runtime-api", default-features = false}
 frame-system-rpc-runtime-api = {branch = "polkadot-v0.9.28", default-features = false, git = "https://github.com/paritytech/substrate"}
+kilt-runtime-api = {path = "../../runtime-api", default-features = false}
 pallet-transaction-payment-rpc-runtime-api = {branch = "polkadot-v0.9.28", default-features = false, git = "https://github.com/paritytech/substrate"}
 
 # Benchmarking
@@ -110,8 +110,8 @@ std = [
   "frame-support/std",
   "frame-system/std",
   "frame-system-rpc-runtime-api/std",
-  "did-rpc-runtime-api/std",
   "frame-try-runtime/std",
+  "kilt-runtime-api/std",
   "log/std",
   "pallet-aura/std",
   "pallet-authorship/std",

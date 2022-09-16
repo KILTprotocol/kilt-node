@@ -17,9 +17,9 @@ static_assertions = "1.1.0"
 hex-literal = {version = "0.3.4", optional = true}
 serde = {version = "1.0.137", optional = true, features = ["derive"]}
 
-# RPC
-did-rpc-runtime-api = {path = "../../rpc/did/runtime-api", default-features = false}
+# RPC / 
 frame-system-rpc-runtime-api = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.28"}
+kilt-runtime-api = {path = "../../runtime-api", default-features = false}
 pallet-transaction-payment-rpc-runtime-api = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.28"}
 
 # KILT pallets & primitives
@@ -115,12 +115,12 @@ std = [
   "cumulus-primitives-core/std",
   "cumulus-primitives-timestamp/std",
   "cumulus-primitives-utility/std",
-  "did-rpc-runtime-api/std",
   "frame-executive/std",
   "frame-support/std",
   "frame-system-rpc-runtime-api/std",
   "frame-system/std",
   "frame-try-runtime/std",
+  "kilt-runtime-api/std",
   "log/std",
   "pallet-aura/std",
   "pallet-authorship/std",

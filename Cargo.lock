@@ -966,7 +966,6 @@ dependencies = [
  "cumulus-primitives-core",
  "cumulus-primitives-timestamp",
  "cumulus-primitives-utility",
- "did-rpc-runtime-api",
  "frame-benchmarking",
  "frame-executive",
  "frame-support",
@@ -975,6 +974,7 @@ dependencies = [
  "frame-system-rpc-runtime-api",
  "frame-try-runtime",
  "hex-literal",
+ "kilt-runtime-api",
  "log",
  "pallet-aura",
  "pallet-authorship",
@@ -1998,30 +1998,15 @@ dependencies = [
 
 [[package]]
 name = "did-rpc"
-version = "1.6.2"
+version = "1.7.2"
 dependencies = [
- "did-rpc-runtime-api",
  "jsonrpsee",
+ "kilt-runtime-api",
  "parity-scale-codec",
  "sp-api",
  "sp-blockchain",
  "sp-core",
  "sp-runtime",
-]
-
-[[package]]
-name = "did-rpc-runtime-api"
-version = "1.6.2"
-dependencies = [
- "did",
- "kilt-support",
- "pallet-did-lookup",
- "parity-scale-codec",
- "scale-info",
- "serde",
- "sp-api",
- "sp-runtime",
- "sp-std",
 ]
 
 [[package]]
@@ -3669,6 +3654,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "kilt-runtime-api"
+version = "1.7.2"
+dependencies = [
+ "did",
+ "kilt-support",
+ "pallet-did-lookup",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "sp-api",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "kilt-support"
 version = "1.7.2"
 dependencies = [
@@ -4645,7 +4645,6 @@ dependencies = [
  "ctype",
  "delegation",
  "did",
- "did-rpc-runtime-api",
  "frame-benchmarking",
  "frame-executive",
  "frame-support",
@@ -4654,6 +4653,7 @@ dependencies = [
  "frame-system-rpc-runtime-api",
  "frame-try-runtime",
  "hex-literal",
+ "kilt-runtime-api",
  "kilt-support",
  "log",
  "pallet-aura",
@@ -6252,6 +6252,7 @@ dependencies = [
  "frame-benchmarking",
  "frame-support",
  "frame-system",
+ "kilt-runtime-api",
  "log",
  "pallet-aura",
  "pallet-authorship",
@@ -6471,7 +6472,6 @@ dependencies = [
  "cumulus-primitives-utility",
  "delegation",
  "did",
- "did-rpc-runtime-api",
  "frame-benchmarking",
  "frame-executive",
  "frame-support",
@@ -6480,6 +6480,7 @@ dependencies = [
  "frame-system-rpc-runtime-api",
  "frame-try-runtime",
  "hex-literal",
+ "kilt-runtime-api",
  "kilt-support",
  "log",
  "pallet-aura",
@@ -10783,7 +10784,6 @@ dependencies = [
  "cumulus-primitives-utility",
  "delegation",
  "did",
- "did-rpc-runtime-api",
  "frame-benchmarking",
  "frame-executive",
  "frame-support",
@@ -10792,6 +10792,7 @@ dependencies = [
  "frame-system-rpc-runtime-api",
  "frame-try-runtime",
  "hex-literal",
+ "kilt-runtime-api",
  "kilt-support",
  "log",
  "pallet-aura",
