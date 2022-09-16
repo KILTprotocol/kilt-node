@@ -2395,19 +2395,22 @@ pub mod pallet {
 			let mut reward_count = RewardCount::<T>::get(acc);
 			let rewards = Rewards::<T>::get(acc);
 
+			// delegators and collators need to be handled differently
 			if let Some(delegator_state) = DelegatorState::<T>::get(acc) {
-				// delegator reward count does not automatically inrement in order to be
-				// scalable
+				// delegator reward counts do not automatically increment in order to be
+				// scalable, see [increment_delegator_rewards] for details
+				// therefore, we need to query the counter of the collator
+				// (`delegator_stare.owner`)
 				reward_count =
 					reward_count.saturating_add(delegator_state.owner.map(RewardCount::<T>::get).unwrap_or(0u32));
-				let stake = DelegatorState::<T>::get(acc)
-					.map(|state| state.amount)
-					.unwrap_or_else(BalanceOf::<T>::zero);
+				let stake = delegator_state.amount;
+				// rewards += stake * (self_count + collator_count) * delegator_reward_rate
 				rewards.saturating_add(Self::calc_block_rewards_delegator(stake, reward_count.into()))
 			} else if Self::is_active_candidate(acc).is_some() {
 				let stake = CandidatePool::<T>::get(acc)
 					.map(|state| state.stake)
 					.unwrap_or_else(BalanceOf::<T>::zero);
+				// rewards += stake * self_count * collator_reward_rate
 				rewards.saturating_add(Self::calc_block_rewards_collator(stake, reward_count.into()))
 			} else {
 				BalanceOf::<T>::zero()
@@ -2481,7 +2484,7 @@ pub mod pallet {
 		/// At least used in Runtime API.
 		pub fn get_staking_rates() -> runtime_api::StakingRates {
 			let total_issuance = T::Currency::total_issuance();
-			let total_stake = <TotalCollatorStake<T>>::get();
+			let total_stake = TotalCollatorStake::<T>::get();
 			let inflation_config = InflationConfig::<T>::get();
 			let collator_staking_rate = Perquintill::from_rational(total_stake.collators, total_issuance);
 			let delegator_staking_rate = Perquintill::from_rational(total_stake.delegators, total_issuance);
