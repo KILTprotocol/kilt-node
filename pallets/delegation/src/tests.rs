@@ -1092,7 +1092,7 @@ fn exact_children_max_revocations_revoke_and_remove_root_error() {
 				Error::<Test>::ExceededRevocationBounds
 			);
 
-			// Only Delegation 2 should have been revoked
+			// No delegation should have been revoked because of transactional storage layer
 			assert!(
 				!Delegation::delegation_nodes(&operation.id)
 					.expect("Delegation root should be present on chain.")
@@ -1106,7 +1106,7 @@ fn exact_children_max_revocations_revoke_and_remove_root_error() {
 					.revoked
 			);
 			assert!(
-				Delegation::delegation_nodes(&delegation2_id)
+				!Delegation::delegation_nodes(&delegation2_id)
 					.expect("Delegation 2 should be present on chain.")
 					.details
 					.revoked
@@ -1134,21 +1134,22 @@ fn exact_children_max_revocations_revoke_and_remove_root_error() {
 				),
 				Error::<Test>::ExceededRemovalBounds
 			);
+			// Should not remove any delegation because of transactional storage layer
 			assert!(Delegation::delegation_nodes(&operation.id).is_some());
 			assert!(Delegation::delegation_nodes(&delegation1_id).is_some());
-			assert!(Delegation::delegation_nodes(&delegation2_id).is_none());
+			assert!(Delegation::delegation_nodes(&delegation2_id).is_some());
 			assert!(Delegation::delegation_nodes(&delegation3_id).is_some());
 			assert_eq!(Balances::reserved_balance(ACCOUNT_00), <Test as Config>::Deposit::get());
 			assert_eq!(
 				Balances::reserved_balance(ACCOUNT_01),
-				2 * <Test as Config>::Deposit::get()
+				3 * <Test as Config>::Deposit::get()
 			);
 
-			// Should be able to remove root now (because # of remaining children = 2)
+			// Should be able to remove root only with depth = #_of_children + 1
 			assert_ok!(Delegation::remove_delegation(
 				DoubleOrigin(ACCOUNT_00, revoker.clone()).into(),
 				operation.id,
-				operation.max_children
+				operation.max_children + 1
 			),);
 			assert!(Delegation::delegation_nodes(&operation.id).is_none());
 			assert!(Delegation::delegation_nodes(&delegation1_id).is_none());
@@ -2148,21 +2149,22 @@ fn remove_children_gas_runs_out() {
 			);
 			assert!(Delegation::delegation_nodes(&operation.id).is_some());
 			assert!(Delegation::delegation_nodes(&delegation1_id).is_some());
-			assert!(Delegation::delegation_nodes(&delegation2_id).is_none());
+			// Should still be existing because of transactional storage
+			assert!(Delegation::delegation_nodes(&delegation2_id).is_some());
 			assert!(Delegation::delegation_nodes(&delegation3_id).is_some());
 			assert!(Delegation::delegation_nodes(&delegation4_id).is_some());
 			assert_eq!(Balances::reserved_balance(ACCOUNT_00), <Test as Config>::Deposit::get());
 			assert_eq!(
 				Balances::reserved_balance(ACCOUNT_01),
-				2 * <Test as Config>::Deposit::get()
+				3 * <Test as Config>::Deposit::get()
 			);
 			assert_eq!(Balances::reserved_balance(ACCOUNT_02), <Test as Config>::Deposit::get());
 
-			// Should be able to remove root now because #_of_children = 3
+			// Should be able to remove root only with depth = #_of_children + 1
 			assert_ok!(Delegation::remove_delegation(
 				DoubleOrigin(ACCOUNT_00, revoker.clone()).into(),
 				operation.id,
-				operation.max_children
+				operation.max_children + 1
 			),);
 			assert!(Delegation::delegation_nodes(&operation.id).is_none());
 			assert!(Delegation::delegation_nodes(&delegation1_id).is_none());
@@ -2171,6 +2173,203 @@ fn remove_children_gas_runs_out() {
 			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
 			assert!(Balances::reserved_balance(ACCOUNT_01).is_zero());
 			assert!(Balances::reserved_balance(ACCOUNT_02).is_zero());
+		});
+}
+
+// #############################################################################
+// transfer deposit
+
+#[test]
+fn test_transfer_deposit() {
+	let root_owner = ed25519_did_from_seed(&ALICE_SEED);
+	let delegate = ed25519_did_from_seed(&BOB_SEED);
+
+	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
+	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
+	let parent_node = generate_base_delegation_node(
+		hierarchy_root_id,
+		root_owner.clone(),
+		Some(hierarchy_root_id),
+		ACCOUNT_00,
+	);
+	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
+	let delegation_node =
+		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(parent_id), ACCOUNT_00);
+
+	ExtBuilder::default()
+		.with_balances(vec![
+			(ACCOUNT_00, <Test as Config>::Deposit::get() * 2),
+			(ACCOUNT_01, <Test as Config>::Deposit::get()),
+		])
+		.with_ctypes(vec![(hierarchy_details.ctype_hash, root_owner.clone())])
+		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, root_owner, ACCOUNT_00)])
+		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
+		.build()
+		.execute_with(|| {
+			assert_eq!(
+				Balances::reserved_balance(ACCOUNT_00),
+				<Test as Config>::Deposit::get() * 3
+			);
+			assert!(Balances::reserved_balance(ACCOUNT_01).is_zero());
+			assert_ok!(Delegation::transfer_deposit(
+				DoubleOrigin(ACCOUNT_01, delegate).into(),
+				delegation_id
+			));
+
+			// ACCOUNT_00 has still one deposit (there are two nodes)
+			assert_eq!(
+				Balances::reserved_balance(ACCOUNT_00),
+				<Test as Config>::Deposit::get() * 2
+			);
+			assert_eq!(Balances::reserved_balance(ACCOUNT_01), <Test as Config>::Deposit::get());
+		});
+}
+
+#[test]
+fn test_transfer_deposit_insufficient_balance() {
+	let root_owner = ed25519_did_from_seed(&ALICE_SEED);
+	let delegate = ed25519_did_from_seed(&BOB_SEED);
+
+	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
+	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
+	let parent_node = generate_base_delegation_node(
+		hierarchy_root_id,
+		root_owner.clone(),
+		Some(hierarchy_root_id),
+		ACCOUNT_00,
+	);
+	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
+	let delegation_node =
+		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(parent_id), ACCOUNT_00);
+
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 2)])
+		.with_ctypes(vec![(hierarchy_details.ctype_hash, root_owner.clone())])
+		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, root_owner, ACCOUNT_00)])
+		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
+		.build()
+		.execute_with(|| {
+			assert_eq!(
+				Balances::reserved_balance(ACCOUNT_00),
+				<Test as Config>::Deposit::get() * 3
+			);
+			assert!(Balances::reserved_balance(ACCOUNT_01).is_zero());
+			assert_noop!(
+				Delegation::transfer_deposit(DoubleOrigin(ACCOUNT_01, delegate).into(), delegation_id),
+				pallet_balances::Error::<Test>::InsufficientBalance
+			);
+		});
+}
+
+/// Update the deposit amount
+#[test]
+fn test_transfer_deposit_to_self() {
+	let root_owner = ed25519_did_from_seed(&ALICE_SEED);
+	let delegate = ed25519_did_from_seed(&BOB_SEED);
+
+	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
+	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
+	let parent_node = generate_base_delegation_node(
+		hierarchy_root_id,
+		root_owner.clone(),
+		Some(hierarchy_root_id),
+		ACCOUNT_00,
+	);
+	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
+	let mut delegation_node =
+		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(parent_id), ACCOUNT_00);
+	delegation_node.deposit.amount = <Test as Config>::Deposit::get() * 2;
+
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 4)])
+		.with_ctypes(vec![(hierarchy_details.ctype_hash, root_owner.clone())])
+		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, root_owner, ACCOUNT_00)])
+		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
+		.build()
+		.execute_with(|| {
+			assert_eq!(
+				Balances::reserved_balance(ACCOUNT_00),
+				<Test as Config>::Deposit::get() * 3
+			);
+			assert_ok!(Delegation::transfer_deposit(
+				DoubleOrigin(ACCOUNT_00, delegate).into(),
+				delegation_id
+			));
+
+			// ACCOUNT_00 has still one deposit (there are two nodes)
+			assert_eq!(
+				Balances::reserved_balance(ACCOUNT_00),
+				<Test as Config>::Deposit::get() * 2
+			);
+		});
+}
+
+#[test]
+fn test_transfer_deposit_unauthorized() {
+	let root_owner = ed25519_did_from_seed(&ALICE_SEED);
+	let delegate = ed25519_did_from_seed(&BOB_SEED);
+
+	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
+	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
+	let parent_node = generate_base_delegation_node(
+		hierarchy_root_id,
+		root_owner.clone(),
+		Some(hierarchy_root_id),
+		ACCOUNT_00,
+	);
+	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
+	let delegation_node = generate_base_delegation_node(hierarchy_root_id, delegate, Some(parent_id), ACCOUNT_00);
+
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 2)])
+		.with_ctypes(vec![(hierarchy_details.ctype_hash, root_owner.clone())])
+		.with_delegation_hierarchies(vec![(
+			hierarchy_root_id,
+			hierarchy_details,
+			root_owner.clone(),
+			ACCOUNT_00,
+		)])
+		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
+		.build()
+		.execute_with(|| {
+			assert_noop!(
+				Delegation::transfer_deposit(DoubleOrigin(ACCOUNT_01, root_owner).into(), delegation_id),
+				Error::<Test>::AccessDenied
+			);
+		});
+}
+
+#[test]
+fn test_transfer_deposit_not_found() {
+	let root_owner = ed25519_did_from_seed(&ALICE_SEED);
+	let delegate = ed25519_did_from_seed(&BOB_SEED);
+
+	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
+	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
+	let parent_node = generate_base_delegation_node(
+		hierarchy_root_id,
+		root_owner.clone(),
+		Some(hierarchy_root_id),
+		ACCOUNT_00,
+	);
+	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
+
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 2)])
+		.with_ctypes(vec![(hierarchy_details.ctype_hash, root_owner.clone())])
+		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, root_owner, ACCOUNT_00)])
+		.with_delegations(vec![(parent_id, parent_node)])
+		.build()
+		.execute_with(|| {
+			assert_noop!(
+				Delegation::transfer_deposit(DoubleOrigin(ACCOUNT_01, delegate).into(), delegation_id),
+				Error::<Test>::DelegationNotFound
+			);
 		});
 }
 

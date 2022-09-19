@@ -4,8 +4,8 @@ stages:
 
 clippy:
   # Corresponds to paritytech/ci-linux:production at the time of this PR
-  # https://hub.docker.com/layers/ci-linux/paritytech/ci-linux/production/images/sha256-3e13ead5d3a2aaca0ea5ffc8fedeef05f0ac9efe325c77b8b06d208d3c7e8ee6?context=explore
-  image: paritytech/ci-linux@sha256:3e13ead5d3a2aaca0ea5ffc8fedeef05f0ac9efe325c77b8b06d208d3c7e8ee6
+  # https://hub.docker.com/layers/ci-linux/paritytech/ci-linux/production/images/sha256-4e8c072ea12bc17d99cb531adb58dea5a4c7d4880a8a86525052d24d1454e89e?context=explore
+  image: paritytech/ci-linux@sha256:4e8c072ea12bc17d99cb531adb58dea5a4c7d4880a8a86525052d24d1454e89e
   stage: test
   timeout: 1 hours
   script:
@@ -14,8 +14,8 @@ clippy:
 
 fmt:
   # Corresponds to paritytech/ci-linux:production at the time of this PR
-  # https://hub.docker.com/layers/ci-linux/paritytech/ci-linux/production/images/sha256-3e13ead5d3a2aaca0ea5ffc8fedeef05f0ac9efe325c77b8b06d208d3c7e8ee6?context=explore
-  image: paritytech/ci-linux@sha256:3e13ead5d3a2aaca0ea5ffc8fedeef05f0ac9efe325c77b8b06d208d3c7e8ee6
+  # https://hub.docker.com/layers/ci-linux/paritytech/ci-linux/production/images/sha256-4e8c072ea12bc17d99cb531adb58dea5a4c7d4880a8a86525052d24d1454e89e?context=explore
+  image: paritytech/ci-linux@sha256:4e8c072ea12bc17d99cb531adb58dea5a4c7d4880a8a86525052d24d1454e89e
   stage: test
   timeout: 1 hours
   script:
@@ -24,8 +24,8 @@ fmt:
 
 test:
   # Corresponds to paritytech/ci-linux:production at the time of this PR
-  # https://hub.docker.com/layers/ci-linux/paritytech/ci-linux/production/images/sha256-3e13ead5d3a2aaca0ea5ffc8fedeef05f0ac9efe325c77b8b06d208d3c7e8ee6?context=explore
-  image: paritytech/ci-linux@sha256:3e13ead5d3a2aaca0ea5ffc8fedeef05f0ac9efe325c77b8b06d208d3c7e8ee6
+  # https://hub.docker.com/layers/ci-linux/paritytech/ci-linux/production/images/sha256-4e8c072ea12bc17d99cb531adb58dea5a4c7d4880a8a86525052d24d1454e89e?context=explore
+  image: paritytech/ci-linux@sha256:4e8c072ea12bc17d99cb531adb58dea5a4c7d4880a8a86525052d24d1454e89e
   stage: test
   timeout: 1 hours
   script:
@@ -33,8 +33,8 @@ test:
 
 test-features:
   # Corresponds to paritytech/ci-linux:production at the time of this PR
-  # https://hub.docker.com/layers/ci-linux/paritytech/ci-linux/production/images/sha256-3e13ead5d3a2aaca0ea5ffc8fedeef05f0ac9efe325c77b8b06d208d3c7e8ee6?context=explore
-  image: paritytech/ci-linux@sha256:3e13ead5d3a2aaca0ea5ffc8fedeef05f0ac9efe325c77b8b06d208d3c7e8ee6
+  # https://hub.docker.com/layers/ci-linux/paritytech/ci-linux/production/images/sha256-4e8c072ea12bc17d99cb531adb58dea5a4c7d4880a8a86525052d24d1454e89e?context=explore
+  image: paritytech/ci-linux@sha256:4e8c072ea12bc17d99cb531adb58dea5a4c7d4880a8a86525052d24d1454e89e
   stage: test
   timeout: 1 hours
   script:
@@ -42,7 +42,7 @@ test-features:
 
 build:
   image:
-    name: kiltprotocol/kilt-ci:2.2.38
+    name: kiltprotocol/kilt-ci:2.7.31
     entrypoint: [""]
   stage: build
   only:
@@ -59,6 +59,7 @@ build:
   script:
     - echo -n $CI_REGISTRY_TOKEN | docker login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
     - aws ecr get-login-password | docker login --username AWS --password-stdin $AWS_REGISTRY
+    - ./.maintain/docker-auth-config.sh
 
     - ./.maintain/build-image.sh build
     - "if [[ ! -z ${CI_COMMIT_BRANCH} ]]; then ./.maintain/push-image.sh build ${CI_COMMIT_SHORT_SHA}; fi"
@@ -68,7 +69,8 @@ build:
 
 build-wasm-peregrine:
   image:
-    name: paritytech/srtool:1.62.0
+    name: $AWS_REGISTRY/kilt/srtool:latest
+    pull_policy: never
     entrypoint: [""]
   stage: build
   only:
@@ -88,7 +90,8 @@ build-wasm-peregrine:
 
 build-wasm-spiritnet:
   image:
-    name: paritytech/srtool:1.62.0
+    name: $AWS_REGISTRY/kilt/srtool:latest
+    pull_policy: never
     entrypoint: [""]
   stage: build
   only:

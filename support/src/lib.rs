@@ -22,5 +22,6 @@ pub use deposit::{free_deposit, reserve_deposit};
 
 #[cfg(any(feature = "runtime-benchmarks", feature = "mock"))]
 pub mod mock;
+pub mod relay;
 pub mod signature;
 pub mod traits;

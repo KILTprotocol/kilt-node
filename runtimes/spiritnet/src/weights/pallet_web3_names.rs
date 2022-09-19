@@ -96,4 +96,10 @@ impl<T: frame_system::Config> pallet_web3_names::WeightInfo for WeightInfo<T> {
 			.saturating_add(T::DbWeight::get().reads(1 as Weight))
 			.saturating_add(T::DbWeight::get().writes(1 as Weight))
 	}
+	fn transfer_deposit() -> Weight {
+		(19_648_000 as Weight)
+			// Standard Error: 1_000
+			.saturating_add(T::DbWeight::get().reads(1 as Weight))
+			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+	}
 }

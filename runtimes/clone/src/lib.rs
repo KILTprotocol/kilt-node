@@ -32,6 +32,7 @@ use frame_support::{
 	PalletId,
 };
 use frame_system::EnsureRoot;
+use pallet_did_lookup::linkable_account::LinkableAccountId;
 use sp_api::impl_runtime_apis;
 use sp_core::OpaqueMetadata;
 use sp_runtime::{
@@ -45,7 +46,6 @@ use sp_version::RuntimeVersion;
 use xcm::opaque::latest::BodyId;
 use xcm_executor::XcmExecutor;
 
-use pallet_did_lookup::linkable_account::LinkableAccountId;
 use runtime_common::{
 	assets::AssetDid,
 	authorization::AuthorizationId,
@@ -82,7 +82,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("KILT"),
 	impl_name: create_runtime_str!("KILT"),
 	authoring_version: 0,
-	spec_version: 10710,
+	spec_version: 10720,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 0,
@@ -203,7 +203,7 @@ parameter_types! {
 
 impl cumulus_pallet_parachain_system::Config for Runtime {
 	type Event = Event;
-	type OnSystemEvent = ();
+	type OnSystemEvent = cumulus_pallet_solo_to_para::Pallet<Runtime>;
 	type SelfParaId = parachain_info::Pallet<Runtime>;
 	type OutboundXcmpMessageSource = XcmpQueue;
 	type DmpMessageHandler = DmpQueue;
@@ -216,6 +216,10 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
 impl parachain_info::Config for Runtime {}
 
 impl cumulus_pallet_aura_ext::Config for Runtime {}
+
+impl cumulus_pallet_solo_to_para::Config for Runtime {
+	type Event = Event;
+}
 
 impl cumulus_pallet_xcmp_queue::Config for Runtime {
 	type Event = Event;
@@ -333,6 +337,7 @@ construct_runtime! {
 		Session: pallet_session = 23,
 		Aura: pallet_aura = 24,
 		AuraExt: cumulus_pallet_aura_ext = 25,
+		SoloToPara: cumulus_pallet_solo_to_para::{Pallet, Call, Storage, Event} = 26,
 
 		// Governance stuff
 		// Democracy: pallet_democracy = 30,
@@ -407,6 +412,7 @@ pub type SignedExtra = (
 	frame_system::CheckNonce<Runtime>,
 	frame_system::CheckWeight<Runtime>,
 	pallet_transaction_payment::ChargeTransactionPayment<Runtime>,
+	cumulus_pallet_solo_to_para::CheckSudo<Runtime>,
 );
 /// Unchecked extrinsic type as expected by this runtime.
 pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<Address, Call, Signature, SignedExtra>;
@@ -528,6 +534,7 @@ impl_runtime_apis! {
 		}
 	}
 
+	// Solely required from parachain client
 	impl did_rpc_runtime_api::DidApi<
 		Block,
 		AccountId,

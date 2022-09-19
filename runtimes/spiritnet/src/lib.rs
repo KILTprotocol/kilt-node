@@ -49,6 +49,7 @@ use pallet_did_lookup::{linkable_account::LinkableAccountId, migrations::Ethereu
 pub use parachain_staking::InflationInfo;
 pub use public_credentials;
 
+use kilt_support::relay::RelayChainCallBuilder;
 use runtime_common::{
 	assets::AssetDid,
 	authorization::{AuthorizationId, PalletAuthorize},
@@ -65,6 +66,7 @@ use sp_version::NativeVersion;
 #[cfg(feature = "runtime-benchmarks")]
 use {frame_system::EnsureSigned, kilt_support::signature::AlwaysVerify, runtime_common::benchmarks::DummySignature};
 
+mod filter;
 #[cfg(test)]
 mod tests;
 
@@ -86,7 +88,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("kilt-spiritnet"),
 	impl_name: create_runtime_str!("kilt-spiritnet"),
 	authoring_version: 1,
-	spec_version: 10710,
+	spec_version: 10720,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 3,
@@ -141,7 +143,7 @@ impl frame_system::Config for Runtime {
 	type OnNewAccount = ();
 	type OnKilledAccount = ();
 	type DbWeight = RocksDbWeight;
-	type BaseCallFilter = frame_support::traits::Everything;
+	type BaseCallFilter = DynFilter;
 	type SystemWeightInfo = weights::frame_system::WeightInfo<Runtime>;
 	type BlockWeights = BlockWeights;
 	type BlockLength = BlockLength;
@@ -215,7 +217,9 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
 	type ReservedDmpWeight = ReservedDmpWeight;
 	type XcmpMessageHandler = XcmpQueue;
 	type ReservedXcmpWeight = ReservedXcmpWeight;
-	type CheckAssociatedRelayNumber = cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases;
+	// We temporarily control this via the RelayMigration pallet which can toggle
+	// between strict and any.
+	type CheckAssociatedRelayNumber = RelayMigration;
 }
 
 impl parachain_info::Config for Runtime {}
@@ -652,11 +656,16 @@ impl parachain_staking::Config for Runtime {
 	type MaxUnstakeRequests = constants::staking::MaxUnstakeRequests;
 	type NetworkRewardRate = constants::staking::NetworkRewardRate;
 	type NetworkRewardStart = constants::staking::NetworkRewardStart;
-
 	type NetworkRewardBeneficiary = Treasury;
 	type WeightInfo = weights::parachain_staking::WeightInfo<Runtime>;
 
 	const BLOCKS_PER_YEAR: Self::BlockNumber = constants::BLOCKS_PER_YEAR;
+}
+
+impl pallet_relay_migration::Config for Runtime {
+	type Event = Event;
+	type ApproveOrigin = ApproveOrigin;
+	type RelayChainCallBuilder = RelayChainCallBuilder<Runtime, ParachainInfo>;
 }
 
 impl pallet_utility::Config for Runtime {
@@ -872,6 +881,23 @@ impl pallet_proxy::Config for Runtime {
 	type WeightInfo = weights::pallet_proxy::WeightInfo<Runtime>;
 }
 
+type DynFilterOrigin = EitherOfDiverse<
+	EnsureRoot<AccountId>,
+	pallet_collective::EnsureProportionAtLeast<AccountId, CouncilCollective, 1, 1>,
+>;
+
+impl pallet_dyn_filter::Config for Runtime {
+	type Event = Event;
+	type WeightInfo = pallet_dyn_filter::default_weights::SubstrateWeight<Runtime>;
+
+	type ApproveOrigin = DynFilterOrigin;
+
+	type TransferCall = filter::TransferCalls;
+	type FeatureCall = filter::FeatureCalls;
+	type XcmCall = filter::XcmCalls;
+	type SystemCall = filter::SystemCalls;
+}
+
 construct_runtime! {
 	pub enum Runtime where
 		Block = Block,
@@ -901,6 +927,8 @@ construct_runtime! {
 		// placeholder: parachain council election = 33,
 		TechnicalMembership: pallet_membership::<Instance1> = 34,
 		Treasury: pallet_treasury = 35,
+		RelayMigration: pallet_relay_migration::{Pallet, Call, Storage, Event<T>} = 36,
+		DynFilter: pallet_dyn_filter = 37,
 
 		// Utility module.
 		Utility: pallet_utility = 40,
@@ -935,16 +963,16 @@ construct_runtime! {
 
 		// Parachains pallets. Start indices at 80 to leave room.
 
-		// Many other things but also: Send and receive DMP and XCMP messages
+		// Among others: Send and receive DMP and XCMP messages.
 		ParachainSystem: cumulus_pallet_parachain_system = 80,
 		ParachainInfo: parachain_info::{Pallet, Storage, Config} = 81,
 		// Wrap and unwrap XCMP messages to send and receive them. Queue them for later processing.
 		XcmpQueue: cumulus_pallet_xcmp_queue::{Pallet, Call, Storage, Event<T>} = 82,
-		// Build XCM scripts
+		// Build XCM scripts.
 		PolkadotXcm: pallet_xcm::{Pallet, Call, Event<T>, Origin, Config} = 83,
-		// Does nothing cool. Provides an origin...
+		// Does nothing cool, just provides an origin.
 		CumulusXcm: cumulus_pallet_xcm::{Pallet, Event<T>, Origin} = 84,
-		// Queue and DMP messages and pass them on to be executed
+		// Queue and pass DMP messages on to be executed.
 		DmpQueue: cumulus_pallet_dmp_queue::{Pallet, Call, Storage, Event<T>} = 85,
 	}
 }
@@ -1031,7 +1059,7 @@ pub type Executive = frame_executive::Executive<
 	// Executes pallet hooks in reverse order of definition in construct_runtime
 	// If we want to switch to AllPalletsWithSystem, we need to reorder the staking pallets
 	AllPalletsReversedWithSystemFirst,
-	(EthereumMigration<Runtime>,),
+	EthereumMigration<Runtime>,
 >;
 
 impl_runtime_apis! {

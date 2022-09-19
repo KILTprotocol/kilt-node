@@ -1,20 +1,20 @@
 [package]
 edition = "2021"
 name = "did-rpc"
-version = "1.7.1"
+version = "1.7.2"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 codec = { package = "parity-scale-codec", version = "3.1.5" }
-jsonrpsee = { version = "0.14.0", features = ["server", "macros"] }
+jsonrpsee = { version = "0.15.1", features = ["server", "macros"] }
 
-did-rpc-runtime-api = {version = "1.7.1", path = "./runtime-api"}
+did-rpc-runtime-api = {version = "1.7.2", path = "./runtime-api"}
 
-sp-api = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.27"}
-sp-blockchain = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.27"}
-sp-core = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.27"}
-sp-runtime = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.27"}
+sp-api = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.28"}
+sp-blockchain = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.28"}
+sp-core = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.28"}
+sp-runtime = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.28"}
 
 [features]
 default = ["std"]

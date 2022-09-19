@@ -49,6 +49,7 @@ use pallet_did_lookup::{linkable_account::LinkableAccountId, migrations::Ethereu
 pub use parachain_staking::InflationInfo;
 pub use public_credentials;
 
+use kilt_support::relay::RelayChainCallBuilder;
 use runtime_common::{
 	assets::AssetDid,
 	authorization::{AuthorizationId, PalletAuthorize},
@@ -65,6 +66,7 @@ use sp_version::NativeVersion;
 #[cfg(feature = "runtime-benchmarks")]
 use {frame_system::EnsureSigned, kilt_support::signature::AlwaysVerify, runtime_common::benchmarks::DummySignature};
 
+mod filter;
 #[cfg(test)]
 mod tests;
 
@@ -86,7 +88,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("mashnet-node"),
 	impl_name: create_runtime_str!("mashnet-node"),
 	authoring_version: 4,
-	spec_version: 10710,
+	spec_version: 10720,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 4,
@@ -141,7 +143,7 @@ impl frame_system::Config for Runtime {
 	type OnNewAccount = ();
 	type OnKilledAccount = ();
 	type DbWeight = RocksDbWeight;
-	type BaseCallFilter = frame_support::traits::Everything;
+	type BaseCallFilter = DynFilter;
 	type SystemWeightInfo = weights::frame_system::WeightInfo<Runtime>;
 	type BlockWeights = BlockWeights;
 	type BlockLength = BlockLength;
@@ -220,7 +222,9 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
 	type ReservedDmpWeight = ReservedDmpWeight;
 	type XcmpMessageHandler = XcmpQueue;
 	type ReservedXcmpWeight = ReservedXcmpWeight;
-	type CheckAssociatedRelayNumber = cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases;
+	// We temporarily control this via the RelayMigration pallet which can toggle
+	// between strict and any.
+	type CheckAssociatedRelayNumber = RelayMigration;
 }
 
 impl parachain_info::Config for Runtime {}
@@ -664,6 +668,12 @@ impl parachain_staking::Config for Runtime {
 	const BLOCKS_PER_YEAR: Self::BlockNumber = constants::BLOCKS_PER_YEAR;
 }
 
+impl pallet_relay_migration::Config for Runtime {
+	type Event = Event;
+	type ApproveOrigin = ApproveOrigin;
+	type RelayChainCallBuilder = RelayChainCallBuilder<Runtime, ParachainInfo>;
+}
+
 impl pallet_utility::Config for Runtime {
 	type Event = Event;
 	type Call = Call;
@@ -863,6 +873,23 @@ impl InstanceFilter<Call> for ProxyType {
 	}
 }
 
+type DynFilterOrigin = EitherOfDiverse<
+	EnsureRoot<AccountId>,
+	pallet_collective::EnsureProportionAtLeast<AccountId, CouncilCollective, 1, 1>,
+>;
+
+impl pallet_dyn_filter::Config for Runtime {
+	type Event = Event;
+	type WeightInfo = pallet_dyn_filter::default_weights::SubstrateWeight<Runtime>;
+
+	type ApproveOrigin = DynFilterOrigin;
+
+	type TransferCall = filter::TransferCalls;
+	type FeatureCall = filter::FeatureCalls;
+	type XcmCall = filter::XcmCalls;
+	type SystemCall = filter::SystemCalls;
+}
+
 impl pallet_proxy::Config for Runtime {
 	type Event = Event;
 	type Call = Call;
@@ -908,6 +935,8 @@ construct_runtime! {
 		// placeholder: parachain council election = 33,
 		TechnicalMembership: pallet_membership::<Instance1> = 34,
 		Treasury: pallet_treasury = 35,
+		RelayMigration: pallet_relay_migration::{Pallet, Call, Storage, Event<T>} = 36,
+		DynFilter: pallet_dyn_filter = 37,
 
 		// Utility module.
 		Utility: pallet_utility = 40,

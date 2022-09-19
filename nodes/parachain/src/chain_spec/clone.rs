@@ -131,11 +131,11 @@ const CLN_COL_SESSION_2: [u8; 32] = hex!["487cf837b45261c45c45a38e66be1fb80dc7d7
 pub fn get_chain_spec_cln() -> Result<ChainSpec, String> {
 	let properties = get_properties("KILT", 15, 38);
 	let wasm = WASM_BINARY.ok_or("No WASM")?;
-	let id: ParaId = 2057.into();
+	let id: ParaId = 2086.into();
 
 	Ok(ChainSpec::from_genesis(
-		"KILT",
-		"cln_kilt",
+		"Clone2",
+		"cln_kilt2",
 		ChainType::Live,
 		move || {
 			testnet_genesis(
@@ -151,19 +151,13 @@ pub fn get_chain_spec_cln() -> Result<ChainSpec, String> {
 				vec![
 					(CLN_COL_ACC_1.into(), 40000 * KILT),
 					(CLN_COL_ACC_2.into(), 40000 * KILT),
+					(CLN_SUDO.into(), 40000 * KILT),
 				],
 				CLN_SUDO.into(),
 				id,
 			)
 		},
-		vec![
-			"/dns4/bootnode.kilt.io/tcp/30360/p2p/12D3KooWAyk4ZQe4RU7A6H8hFLjQGsXyNPTbfYW1qE2Atd4p8fN8"
-				.parse()
-				.expect("bootnode address is formatted correctly; qed"),
-			"/dns4/bootnode.kilt.io/tcp/30361/p2p/12D3KooWHootMhedfGJAHWu8Bn8DVjmMLA8qnSP4jKJr7u27sU6w"
-				.parse()
-				.expect("bootnode address is formatted correctly; qed"),
-		],
+		vec![],
 		Some(TelemetryEndpoints::new(vec![(TELEMETRY_URL.to_string(), 0)]).expect("telemetry url is valid; qed")),
 		None,
 		None,
@@ -177,6 +171,10 @@ pub fn get_chain_spec_cln() -> Result<ChainSpec, String> {
 
 pub fn load_clone_spec() -> Result<ChainSpec, String> {
 	ChainSpec::from_json_bytes(&include_bytes!("../../res/clone.json")[..])
+}
+
+pub fn load_clone2_spec() -> Result<ChainSpec, String> {
+	ChainSpec::from_json_bytes(&include_bytes!("../../res/clone2.json")[..])
 }
 
 #[allow(clippy::too_many_arguments)]

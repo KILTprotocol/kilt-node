@@ -16,15 +16,21 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::parameter_types;
-use kilt_support::mock::{mock_origin, SubjectId};
+use frame_support::{parameter_types, traits::ReservableCurrency};
+use kilt_support::{
+	deposit::Deposit,
+	mock::{mock_origin, SubjectId},
+};
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
 	MultiSignature,
 };
 
-use crate::{self as pallet_did_lookup, linkable_account::LinkableAccountId};
+use crate::{
+	self as pallet_did_lookup, linkable_account::LinkableAccountId, AccountIdOf, BalanceOf, Config, ConnectedAccounts,
+	ConnectedDids, ConnectionRecord, CurrencyOf, DidIdentifierOf,
+};
 
 pub(crate) type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 pub(crate) type Block = frame_system::mocking::MockBlock<Test>;
@@ -128,10 +134,37 @@ pub(crate) const DID_00: SubjectId = SubjectId(ACCOUNT_00);
 pub(crate) const DID_01: SubjectId = SubjectId(ACCOUNT_01);
 pub(crate) const LINKABLE_ACCOUNT_00: LinkableAccountId = LinkableAccountId::AccountId32(ACCOUNT_00);
 
+pub(crate) fn insert_raw_connection<T: Config>(
+	sender: AccountIdOf<T>,
+	did_identifier: DidIdentifierOf<T>,
+	account: LinkableAccountId,
+	deposit: BalanceOf<T>,
+) {
+	let deposit = Deposit {
+		owner: sender,
+		amount: deposit,
+	};
+	let record = ConnectionRecord {
+		deposit,
+		did: did_identifier.clone(),
+	};
+
+	CurrencyOf::<T>::reserve(&record.deposit.owner, record.deposit.amount).expect("Account should have enough balance");
+
+	ConnectedDids::<T>::mutate(&account, |did_entry| {
+		if let Some(old_connection) = did_entry.replace(record) {
+			ConnectedAccounts::<T>::remove(&old_connection.did, &account);
+			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&old_connection.deposit);
+		}
+	});
+	ConnectedAccounts::<T>::insert(&did_identifier, &account, ());
+}
+
 #[derive(Clone, Default)]
 pub struct ExtBuilder {
 	balances: Vec<(AccountId, Balance)>,
-	connections: Vec<(AccountId, SubjectId, AccountId)>,
+	/// list of connection (sender, did, connected address)
+	connections: Vec<(AccountId, SubjectId, LinkableAccountId)>,
 }
 
 impl ExtBuilder {
@@ -141,8 +174,9 @@ impl ExtBuilder {
 		self
 	}
 
+	/// Add a connection: (sender, did, connected address)
 	#[must_use]
-	pub fn with_connections(mut self, connections: Vec<(AccountId, SubjectId, AccountId)>) -> Self {
+	pub fn with_connections(mut self, connections: Vec<(AccountId, SubjectId, LinkableAccountId)>) -> Self {
 		self.connections = connections;
 		self
 	}
@@ -158,7 +192,7 @@ impl ExtBuilder {
 
 		ext.execute_with(|| {
 			for (sender, did, account) in self.connections {
-				pallet_did_lookup::Pallet::<Test>::add_association(sender, did, account.into())
+				pallet_did_lookup::Pallet::<Test>::add_association(sender, did, account)
 					.expect("Should create connection");
 			}
 		});
