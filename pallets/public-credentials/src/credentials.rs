@@ -22,6 +22,7 @@ use scale_info::TypeInfo;
 use frame_support::RuntimeDebug;
 
 use kilt_support::deposit::Deposit;
+
 /// The type of a credentials as incoming from the outside world.
 /// Some of its fields are parsed and/or transformed inside the `add` operation.
 #[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq, PartialOrd, Ord, TypeInfo)]
