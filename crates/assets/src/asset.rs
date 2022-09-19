@@ -126,22 +126,20 @@ pub mod v1 {
 
 			match (namespace, reference, identifier) {
 				// "slip44:" assets -> https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-20.md
-				(Some(SLIP44_NAMESPACE), Some(slip44_reference), identifier) => {
-					if identifier.is_some() {
-						log::trace!("Slip44 namespace does not accept an asset identifier.");
-						Err(Error::InvalidFormat)
-					} else {
-						Slip44Reference::from_utf8_encoded(slip44_reference).map(Self::Slip44)
-					}
+				(Some(SLIP44_NAMESPACE), _, Some(_)) => {
+					log::trace!("Slip44 namespace does not accept an asset identifier.");
+					Err(Error::InvalidFormat)
+				}
+				(Some(SLIP44_NAMESPACE), Some(slip44_reference), None) => {
+					Slip44Reference::from_utf8_encoded(slip44_reference).map(Self::Slip44)
 				}
 				// "erc20:" assets -> https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-21.md
-				(Some(ERC20_NAMESPACE), Some(erc20_reference), identifier) => {
-					if identifier.is_some() {
-						log::trace!("Erc20 namespace does not accept an asset identifier.");
-						Err(Error::InvalidFormat)
-					} else {
-						EvmSmartContractFungibleReference::from_utf8_encoded(erc20_reference).map(Self::Erc20)
-					}
+				(Some(ERC20_NAMESPACE), _, Some(_)) => {
+					log::trace!("Erc20 namespace does not accept an asset identifier.");
+					Err(Error::InvalidFormat)
+				}
+				(Some(ERC20_NAMESPACE), Some(erc20_reference), None) => {
+					EvmSmartContractFungibleReference::from_utf8_encoded(erc20_reference).map(Self::Erc20)
 				}
 				// "erc721:" assets -> https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-22.md
 				(Some(ERC721_NAMESPACE), Some(erc721_reference), identifier) => {
