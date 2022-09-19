@@ -13,7 +13,7 @@ sp-core = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v
 sp-io = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.28"}
 
 [dependencies]
-kilt-runtime-api = {path = "../../runtime-api", default-features = false}
+kilt-runtime-api-staking = {path = "../../runtime-api/staking", default-features = false}
 
 log = "0.4.17"
 parity-scale-codec = {version = "3.1.5", default-features = false, features = ["derive"]}
@@ -43,6 +43,7 @@ runtime-benchmarks = [
 std = [
   "frame-support/std",
   "frame-system/std",
+  "kilt-runtime-api-staking/std",
   "log/std",
   "pallet-authorship/std",
   "pallet-balances/std",

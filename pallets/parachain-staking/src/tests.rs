@@ -24,7 +24,7 @@ use frame_support::{
 	assert_noop, assert_ok, storage::bounded_btree_map::BoundedBTreeMap, traits::EstimateNextSessionRotation,
 	BoundedVec,
 };
-use kilt_runtime_api::staking::StakingRates;
+use kilt_runtime_api_staking::StakingRates;
 use pallet_authorship::EventHandler;
 use pallet_balances::{BalanceLock, Error as BalancesError, Reasons};
 use pallet_session::{SessionManager, ShouldEndSession};

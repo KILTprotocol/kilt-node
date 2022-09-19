@@ -19,7 +19,8 @@ serde = {version = "1.0.142", optional = true, features = ["derive"]}
 
 # RPC
 frame-system-rpc-runtime-api = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.28"}
-kilt-runtime-api = {path = "../../runtime-api", default-features = false}
+kilt-runtime-api-did = {path = "../../runtime-api/did", default-features = false}
+kilt-runtime-api-staking = {path = "../../runtime-api/staking", default-features = false}
 pallet-transaction-payment-rpc-runtime-api = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.28"}
 
 # KILT pallets & primitives
@@ -163,7 +164,8 @@ std = [
   "frame-system-rpc-runtime-api/std",
   "frame-system/std",
   "frame-try-runtime/std",
-  "kilt-runtime-api/std",
+  "kilt-runtime-api-did/std",
+  "kilt-runtime-api-staking/std",
   "kilt-support/std",
   "log/std",
   "pallet-aura/std",

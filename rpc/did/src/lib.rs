@@ -24,12 +24,12 @@ use jsonrpsee::{
 	proc_macros::rpc,
 	types::error::{CallError, ErrorObject},
 };
-use kilt_runtime_api::did::{DidLinkedInfo, ServiceEndpoint};
+use kilt_runtime_api_did::{DidLinkedInfo, ServiceEndpoint};
 use sp_api::ProvideRuntimeApi;
 use sp_blockchain::HeaderBackend;
 use sp_runtime::{generic::BlockId, traits::Block as BlockT};
 
-pub use kilt_runtime_api::did::DidApi as DidRuntimeApi;
+pub use kilt_runtime_api_did::DidApi as DidRuntimeApi;
 
 pub type RpcDidLinkedInfo<DidIdentifier, AccountId, LinkableAccountId, Balance, Key, BlockNumber> = DidLinkedInfo<
 	DidIdentifier,

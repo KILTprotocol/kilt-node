@@ -29,7 +29,7 @@ runtime-common = {path = "../../runtimes/common", default-features = false}
 
 # RPC
 frame-system-rpc-runtime-api = {branch = "polkadot-v0.9.28", default-features = false, git = "https://github.com/paritytech/substrate"}
-kilt-runtime-api = {path = "../../runtime-api", default-features = false}
+kilt-runtime-api-did = {path = "../../runtime-api/did", default-features = false}
 pallet-transaction-payment-rpc-runtime-api = {branch = "polkadot-v0.9.28", default-features = false, git = "https://github.com/paritytech/substrate"}
 
 # Benchmarking
@@ -111,7 +111,7 @@ std = [
   "frame-system/std",
   "frame-system-rpc-runtime-api/std",
   "frame-try-runtime/std",
-  "kilt-runtime-api/std",
+  "kilt-runtime-api-did/std",
   "log/std",
   "pallet-aura/std",
   "pallet-authorship/std",

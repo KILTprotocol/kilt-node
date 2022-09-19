@@ -62,7 +62,7 @@ impl<T: Config> Pallet<T> {
 	/// delegators.
 	///
 	/// At least used in Runtime API.
-	pub fn get_staking_rates() -> kilt_runtime_api::staking::StakingRates {
+	pub fn get_staking_rates() -> kilt_runtime_api_staking::StakingRates {
 		let total_issuance = T::Currency::total_issuance();
 		let total_stake = TotalCollatorStake::<T>::get();
 		let inflation_config = InflationConfig::<T>::get();
@@ -77,7 +77,7 @@ impl<T: Config> Pallet<T> {
 			delegator_staking_rate.deconstruct(),
 		) * inflation_config.delegator.reward_rate.annual;
 
-		kilt_runtime_api::staking::StakingRates {
+		kilt_runtime_api_staking::StakingRates {
 			collator_staking_rate,
 			collator_reward_rate,
 			delegator_staking_rate,

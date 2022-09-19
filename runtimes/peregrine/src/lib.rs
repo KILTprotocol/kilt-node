@@ -1143,7 +1143,7 @@ impl_runtime_apis! {
 		}
 	}
 
-	impl kilt_runtime_api::did::DidApi<
+	impl kilt_runtime_api_did::DidApi<
 		Block,
 		DidIdentifier,
 		AccountId,
@@ -1152,7 +1152,7 @@ impl_runtime_apis! {
 		Hash,
 		BlockNumber
 	> for Runtime {
-		fn query_did_by_w3n(name: Vec<u8>) -> Option<kilt_runtime_api::did::RawDidLinkedInfo<
+		fn query_did_by_w3n(name: Vec<u8>) -> Option<kilt_runtime_api_did::RawDidLinkedInfo<
 				DidIdentifier,
 				AccountId,
 				LinkableAccountId,
@@ -1170,7 +1170,7 @@ impl_runtime_apis! {
 					let accounts = pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(&owner_info.owner).collect();
 					let service_endpoints = did::ServiceEndpoints::<Runtime>::iter_prefix(&owner_info.owner).map(|e| From::from(e.1)).collect();
 
-					kilt_runtime_api::did::RawDidLinkedInfo {
+					kilt_runtime_api_did::RawDidLinkedInfo {
 						identifier: owner_info.owner,
 						w3n: Some(name.into()),
 						accounts,
@@ -1181,7 +1181,7 @@ impl_runtime_apis! {
 		}
 
 		fn query_did_by_account_id(account: LinkableAccountId) -> Option<
-			kilt_runtime_api::did::RawDidLinkedInfo<
+			kilt_runtime_api_did::RawDidLinkedInfo<
 				DidIdentifier,
 				AccountId,
 				LinkableAccountId,
@@ -1199,7 +1199,7 @@ impl_runtime_apis! {
 					let accounts = pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(&connection_record.did).collect();
 					let service_endpoints = did::ServiceEndpoints::<Runtime>::iter_prefix(&connection_record.did).map(|e| From::from(e.1)).collect();
 
-					kilt_runtime_api::did::RawDidLinkedInfo {
+					kilt_runtime_api_did::RawDidLinkedInfo {
 						identifier: connection_record.did,
 						w3n,
 						accounts,
@@ -1210,7 +1210,7 @@ impl_runtime_apis! {
 		}
 
 		fn query_did(did: DidIdentifier) -> Option<
-			kilt_runtime_api::did::RawDidLinkedInfo<
+			kilt_runtime_api_did::RawDidLinkedInfo<
 				DidIdentifier,
 				AccountId,
 				LinkableAccountId,
@@ -1224,7 +1224,7 @@ impl_runtime_apis! {
 			let accounts = pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(&did).collect();
 			let service_endpoints = did::ServiceEndpoints::<Runtime>::iter_prefix(&did).map(|e| From::from(e.1)).collect();
 
-			Some(kilt_runtime_api::did::RawDidLinkedInfo {
+			Some(kilt_runtime_api_did::RawDidLinkedInfo {
 				identifier: did,
 				w3n,
 				accounts,
@@ -1234,12 +1234,12 @@ impl_runtime_apis! {
 		}
 	}
 
-	impl kilt_runtime_api::staking::ParachainStakingApi<Block, AccountId, Balance> for Runtime {
+	impl kilt_runtime_api_staking::ParachainStakingApi<Block, AccountId, Balance> for Runtime {
 		fn get_unclaimed_staking_rewards(account: &AccountId) -> Balance {
 			ParachainStaking::get_unclaimed_staking_rewards(account)
 		}
 
-		fn get_staking_rates() -> kilt_runtime_api::staking::StakingRates {
+		fn get_staking_rates() -> kilt_runtime_api_staking::StakingRates {
 			ParachainStaking::get_staking_rates()
 		}
 	}
