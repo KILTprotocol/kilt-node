@@ -37,6 +37,7 @@ use pallet_did_lookup::linkable_account::LinkableAccountId;
 use public_credentials::CredentialEntry;
 use runtime_common::{
 	authorization::AuthorizationId, AccountId, Balance, Block, BlockNumber, DidIdentifier, Hash, Index,
+	assets::AssetDid
 };
 
 /// Full client dependencies.
@@ -61,7 +62,7 @@ where
 	C::Api: did_rpc::DidRuntimeApi<Block, DidIdentifier, AccountId, LinkableAccountId, Balance, Hash, BlockNumber>,
 	C::Api: public_credentials_rpc::PublicCredentialsRuntimeApi<
 		Block,
-		runtime_common::assets::AssetDid,
+		AssetDid,
 		Hash,
 		CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<Hash>>,
 	>,
@@ -95,7 +96,7 @@ where
 			// Input subject ID
 			String,
 			// Runtime subject ID
-			runtime_common::assets::AssetDid,
+			AssetDid,
 			// Input/output credential ID
 			Hash,
 			// Runtime credential ID

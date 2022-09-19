@@ -46,6 +46,7 @@ use pallet_did_lookup::linkable_account::LinkableAccountId;
 use public_credentials::CredentialEntry;
 use runtime_common::{
 	authorization::AuthorizationId, AccountId, AuthorityId, Balance, BlockNumber, DidIdentifier, Index,
+	assets::AssetDid,
 };
 
 type Header = sp_runtime::generic::Header<BlockNumber, sp_runtime::traits::BlakeTwo256>;
@@ -259,7 +260,7 @@ where
 		+ did_rpc::DidRuntimeApi<Block, DidIdentifier, AccountId, LinkableAccountId, Balance, Hash, BlockNumber>
 		+ public_credentials_rpc::PublicCredentialsRuntimeApi<
 			Block,
-			runtime_common::assets::AssetDid,
+			AssetDid,
 			Hash,
 			CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<Hash>>,
 		>,
@@ -504,7 +505,7 @@ where
 		+ did_rpc::DidRuntimeApi<Block, DidIdentifier, AccountId, LinkableAccountId, Balance, Hash, BlockNumber>
 		+ public_credentials_rpc::PublicCredentialsRuntimeApi<
 			Block,
-			runtime_common::assets::AssetDid,
+			AssetDid,
 			Hash,
 			CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<Hash>>,
 		>,
