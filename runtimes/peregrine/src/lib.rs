@@ -1036,7 +1036,10 @@ pub type Executive = frame_executive::Executive<
 	// Executes pallet hooks in reverse order of definition in construct_runtime
 	// If we want to switch to AllPalletsWithSystem, we need to reorder the staking pallets
 	AllPalletsReversedWithSystemFirst,
-	EthereumMigration<Runtime>,
+	(
+		EthereumMigration<Runtime>,
+		parachain_staking::migration::StakingPayoutRefactor<Runtime>,
+	),
 >;
 
 impl_runtime_apis! {
