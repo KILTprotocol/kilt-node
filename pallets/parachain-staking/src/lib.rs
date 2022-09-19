@@ -124,6 +124,7 @@ pub(crate) mod mock;
 #[cfg(test)]
 pub(crate) mod tests;
 
+pub mod api;
 mod inflation;
 mod set;
 mod types;
@@ -2356,7 +2357,7 @@ pub mod pallet {
 		///
 		/// Depends on the current total issuance and staking reward
 		/// configuration for collators.
-		fn calc_block_rewards_collator(stake: BalanceOf<T>, multiplier: BalanceOf<T>) -> BalanceOf<T> {
+		pub(crate) fn calc_block_rewards_collator(stake: BalanceOf<T>, multiplier: BalanceOf<T>) -> BalanceOf<T> {
 			let total_issuance = T::Currency::total_issuance();
 			let TotalStake {
 				collators: total_collators,
@@ -2374,7 +2375,7 @@ pub mod pallet {
 		///
 		/// Depends on the current total issuance and staking reward
 		/// configuration for delegators.
-		fn calc_block_rewards_delegator(stake: BalanceOf<T>, multiplier: BalanceOf<T>) -> BalanceOf<T> {
+		pub(crate) fn calc_block_rewards_delegator(stake: BalanceOf<T>, multiplier: BalanceOf<T>) -> BalanceOf<T> {
 			let total_issuance = T::Currency::total_issuance();
 			let TotalStake {
 				delegators: total_delegators,
@@ -2385,35 +2386,6 @@ pub mod pallet {
 			InflationConfig::<T>::get()
 				.delegator
 				.compute_reward::<T>(stake, staking_rate, multiplier)
-		}
-
-		/// Calculates the staking rewards for a given account address.
-		///
-		/// At least used in Runtime API.
-		pub fn get_unclaimed_staking_rewards(acc: &T::AccountId) -> BalanceOf<T> {
-			let mut reward_count = RewardCount::<T>::get(acc);
-			let rewards = Rewards::<T>::get(acc);
-
-			// delegators and collators need to be handled differently
-			if let Some(delegator_state) = DelegatorState::<T>::get(acc) {
-				// delegator reward counts do not automatically increment in order to be
-				// scalable, see [increment_delegator_rewards] for details
-				// therefore, we need to query the counter of the collator
-				// (`delegator_stare.owner`)
-				reward_count =
-					reward_count.saturating_add(delegator_state.owner.map(RewardCount::<T>::get).unwrap_or(0u32));
-				let stake = delegator_state.amount;
-				// rewards += stake * (self_count + collator_count) * delegator_reward_rate
-				rewards.saturating_add(Self::calc_block_rewards_delegator(stake, reward_count.into()))
-			} else if Self::is_active_candidate(acc).is_some() {
-				let stake = CandidatePool::<T>::get(acc)
-					.map(|state| state.stake)
-					.unwrap_or_else(BalanceOf::<T>::zero);
-				// rewards += stake * self_count * collator_reward_rate
-				rewards.saturating_add(Self::calc_block_rewards_collator(stake, reward_count.into()))
-			} else {
-				BalanceOf::<T>::zero()
-			}
 		}
 
 		/// Increment the accumulated rewards of a collator by consuming their
@@ -2474,33 +2446,6 @@ pub mod pallet {
 				T::DbWeight::get().reads_writes(6, 2)
 			} else {
 				T::DbWeight::get().reads(2)
-			}
-		}
-
-		/// Calculates the current staking and reward rates for collators and
-		/// delegators.
-		///
-		/// At least used in Runtime API.
-		pub fn get_staking_rates() -> kilt_runtime_api::staking::StakingRates {
-			let total_issuance = T::Currency::total_issuance();
-			let total_stake = TotalCollatorStake::<T>::get();
-			let inflation_config = InflationConfig::<T>::get();
-			let collator_staking_rate = Perquintill::from_rational(total_stake.collators, total_issuance);
-			let delegator_staking_rate = Perquintill::from_rational(total_stake.delegators, total_issuance);
-			let collator_reward_rate = Perquintill::from_rational(
-				inflation_config.collator.max_rate.deconstruct(),
-				collator_staking_rate.deconstruct(),
-			) * inflation_config.collator.reward_rate.annual;
-			let delegator_reward_rate = Perquintill::from_rational(
-				inflation_config.delegator.max_rate.deconstruct(),
-				delegator_staking_rate.deconstruct(),
-			) * inflation_config.delegator.reward_rate.annual;
-
-			kilt_runtime_api::staking::StakingRates {
-				collator_staking_rate,
-				collator_reward_rate,
-				delegator_staking_rate,
-				delegator_reward_rate,
 			}
 		}
 	}
