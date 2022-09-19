@@ -135,13 +135,12 @@ impl AssetDid {
 		let mut split = asset_id.splitn(2, |c| *c == CHAIN_ASSET_SEPARATOR);
 		let (chain, asset) = (split.next(), split.next());
 
-		match (chain, asset) {
-			(Some(chain), Some(asset)) => {
-				let chain_id = ChainId::from_utf8_encoded(chain).map_err(AssetDidError::ChainId)?;
-				let asset_id = AssetId::from_utf8_encoded(asset).map_err(AssetDidError::AssetId)?;
-				Ok(Self { chain_id, asset_id })
-			}
-			_ => Err(AssetDidError::InvalidFormat),
+		if let (Some(chain), Some(asset)) = (chain, asset) {
+			let chain_id = ChainId::from_utf8_encoded(chain).map_err(AssetDidError::ChainId)?;
+			let asset_id = AssetId::from_utf8_encoded(asset).map_err(AssetDidError::AssetId)?;
+			Ok(Self { chain_id, asset_id })
+		} else {
+			Err(AssetDidError::InvalidFormat)?
 		}
 	}
 }
