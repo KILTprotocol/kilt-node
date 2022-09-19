@@ -804,7 +804,13 @@ impl InstanceFilter<Call> for ProxyType {
 					// Excludes `ParachainSystem`
 					| Call::Preimage(..)
 					| Call::Proxy(..)
-					| Call::PublicCredentials(..)
+					| Call::PublicCredentials(
+						// Excludes `reclaim_deposit`
+						public_credentials::Call::add { .. }
+						| public_credentials::Call::revoke { .. }
+						| public_credentials::Call::unrevoke { .. }
+						| public_credentials::Call::remove { .. }
+					)
 					| Call::Scheduler(..)
 					| Call::Session(..)
 					// Excludes `Sudo`

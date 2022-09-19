@@ -582,7 +582,13 @@ impl InstanceFilter<Call> for ProxyType {
 					)
 					| Call::Indices(..)
 					| Call::Proxy(..)
-					| Call::PublicCredentials(..)
+					| Call::PublicCredentials(
+						// Excludes `reclaim_deposit`
+						public_credentials::Call::add { .. }
+						| public_credentials::Call::revoke { .. }
+						| public_credentials::Call::unrevoke { .. }
+						| public_credentials::Call::remove { .. }
+					)
 					| Call::Session(..)
 					// Excludes `Sudo`
 					| Call::System(..)
