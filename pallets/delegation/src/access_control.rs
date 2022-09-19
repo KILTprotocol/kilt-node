@@ -88,9 +88,10 @@ impl<T: Config>
 		// NOTE: The node IDs of the sender (provided by the user through `who`) and
 		// attester (provided by the attestation pallet through on-chain storage) can be
 		// different!
-		match Pallet::<T>::is_delegating(who, attester_node_id, self.max_checks)? {
-			(true, checks) => Ok(<T as Config>::WeightInfo::can_revoke(checks)),
-			_ => Err(Error::<T>::AccessDenied.into()),
+		if let (true, checks) = Pallet::<T>::is_delegating(who, attester_node_id, self.max_checks)? {
+			Ok(<T as Config>::WeightInfo::can_revoke(checks))
+		} else {
+			Err(Error::<T>::AccessDenied.into())
 		}
 	}
 
@@ -166,9 +167,10 @@ impl<T: Config + public_credentials::Config>
 		// NOTE: The node IDs of the sender (provided by the user through `who`) and
 		// attester (provided by the attestation pallet through on-chain storage) can be
 		// different!
-		match Pallet::<T>::is_delegating(who, attester_node_id, self.max_checks)? {
-			(true, checks) => Ok(<T as Config>::WeightInfo::can_revoke(checks)),
-			_ => Err(Error::<T>::AccessDenied.into()),
+		if let (true, checks) = Pallet::<T>::is_delegating(who, attester_node_id, self.max_checks)? {
+			Ok(<T as Config>::WeightInfo::can_revoke(checks))
+		} else {
+			Err(Error::<T>::AccessDenied.into())
 		}
 	}
 
