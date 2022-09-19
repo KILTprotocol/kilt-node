@@ -4295,14 +4295,28 @@ fn api_get_unclaimed_staking_rewards() {
 
 			// Should only increment rewards of 3
 			roll_to(3, vec![None, None, Some(3)]);
+			let rewards_1 = StakePallet::get_unclaimed_staking_rewards(&1);
+			let rewards_2 = StakePallet::get_unclaimed_staking_rewards(&2);
+			let rewards_3 = StakePallet::get_unclaimed_staking_rewards(&3);
 			assert_eq!(
-				2 * StakePallet::get_unclaimed_staking_rewards(&1),
-				StakePallet::get_unclaimed_staking_rewards(&3),
+				2 * rewards_1,
+				rewards_3,
 			);
 			assert_eq!(
-				StakePallet::get_unclaimed_staking_rewards(&2),
+				rewards_2,
 				inflation_config.delegator.reward_rate.per_block * stake * 2
 			);
+
+			// API and actual claiming should match
+			assert_ok!(StakePallet::increment_collator_rewards(Origin::signed(1)));
+			assert_ok!(StakePallet::claim_rewards(Origin::signed(1)));
+			assert_eq!(rewards_1, Balances::usable_balance(&1));
+			assert_ok!(StakePallet::increment_delegator_rewards(Origin::signed(2)));
+			assert_ok!(StakePallet::claim_rewards(Origin::signed(2)));
+			assert_eq!(rewards_2, Balances::usable_balance(&2));
+			assert_ok!(StakePallet::increment_collator_rewards(Origin::signed(3)));
+			assert_ok!(StakePallet::claim_rewards(Origin::signed(3)));
+			assert_eq!(rewards_3 + 98 * stake, Balances::usable_balance(&3));
 		});
 }
 
