@@ -45,8 +45,8 @@ use substrate_prometheus_endpoint::Registry;
 use pallet_did_lookup::linkable_account::LinkableAccountId;
 use public_credentials::CredentialEntry;
 use runtime_common::{
-	authorization::AuthorizationId, AccountId, AuthorityId, Balance, BlockNumber, DidIdentifier, Index,
-	assets::AssetDid,
+	assets::AssetDid, authorization::AuthorizationId, AccountId, AuthorityId, Balance, BlockNumber, DidIdentifier,
+	Index,
 };
 
 type Header = sp_runtime::generic::Header<BlockNumber, sp_runtime::traits::BlakeTwo256>;

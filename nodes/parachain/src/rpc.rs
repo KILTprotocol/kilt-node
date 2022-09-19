@@ -36,8 +36,8 @@ use sp_blockchain::{Error as BlockChainError, HeaderBackend, HeaderMetadata};
 use pallet_did_lookup::linkable_account::LinkableAccountId;
 use public_credentials::CredentialEntry;
 use runtime_common::{
-	authorization::AuthorizationId, AccountId, Balance, Block, BlockNumber, DidIdentifier, Hash, Index,
-	assets::AssetDid
+	assets::AssetDid, authorization::AuthorizationId, AccountId, Balance, Block, BlockNumber, DidIdentifier, Hash,
+	Index,
 };
 
 /// Full client dependencies.
