@@ -52,8 +52,8 @@ use runtime_common::{
 	authorization::{AuthorizationId, PalletAuthorize},
 	constants::{self, EXISTENTIAL_DEPOSIT, KILT},
 	fees::{ToAuthor, WeightToFee},
-	pallet_id, AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights, DidIdentifier,
-	FeeSplit, Hash, Header, Index, Signature, SlowAdjustingFeeUpdate,
+	migrations, pallet_id, AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights,
+	DidIdentifier, FeeSplit, Hash, Header, Index, Signature, SlowAdjustingFeeUpdate,
 };
 
 use crate::xcm_config::{XcmConfig, XcmOriginToTransactDispatchOrigin};
@@ -1006,7 +1006,7 @@ pub type Executive = frame_executive::Executive<
 	// Executes pallet hooks in reverse order of definition in construct_runtime
 	// If we want to switch to AllPalletsWithSystem, we need to reorder the staking pallets
 	AllPalletsReversedWithSystemFirst,
-	(),
+	migrations::RemoveRelocationPallets<Runtime>,
 >;
 
 impl_runtime_apis! {

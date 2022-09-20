@@ -52,8 +52,8 @@ use runtime_common::{
 	authorization::{AuthorizationId, PalletAuthorize},
 	constants::{self, EXISTENTIAL_DEPOSIT, KILT},
 	fees::{ToAuthor, WeightToFee},
-	pallet_id, AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights, DidIdentifier,
-	FeeSplit, Hash, Header, Index, Signature, SlowAdjustingFeeUpdate,
+	migrations, pallet_id, AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights,
+	DidIdentifier, FeeSplit, Hash, Header, Index, Signature, SlowAdjustingFeeUpdate,
 };
 
 use crate::xcm_config::{XcmConfig, XcmOriginToTransactDispatchOrigin};
@@ -63,11 +63,11 @@ use sp_version::NativeVersion;
 #[cfg(feature = "runtime-benchmarks")]
 use {frame_system::EnsureSigned, kilt_support::signature::AlwaysVerify, runtime_common::benchmarks::DummySignature};
 
-#[cfg(test)]
-mod tests;
-
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
+
+#[cfg(test)]
+mod tests;
 
 mod weights;
 mod xcm_config;
@@ -1012,7 +1012,7 @@ pub type Executive = frame_executive::Executive<
 	// Executes pallet hooks in reverse order of definition in construct_runtime
 	// If we want to switch to AllPalletsWithSystem, we need to reorder the staking pallets
 	AllPalletsReversedWithSystemFirst,
-	(),
+	migrations::RemoveRelocationPallets<Runtime>,
 >;
 
 impl_runtime_apis! {
