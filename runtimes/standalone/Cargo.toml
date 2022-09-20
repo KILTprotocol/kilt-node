@@ -25,6 +25,8 @@ kilt-support = {path = "../../support", default-features = false, optional = tru
 pallet-did-lookup = {default-features = false, path = "../../pallets/pallet-did-lookup"}
 pallet-dyn-filter = {default-features = false, path = "../../pallets/pallet-dyn-filter"}
 pallet-web3-names = {default-features = false, path = "../../pallets/pallet-web3-names"}
+public-credentials = {default-features = false, path = "../../pallets/public-credentials"}
+public-credentials-runtime-api = {default-features = false, path = "../../rpc/public-credentials/runtime-api"}
 runtime-common = {path = "../../runtimes/common", default-features = false}
 
 # RPC
@@ -97,6 +99,7 @@ runtime-benchmarks = [
   "pallet-timestamp/runtime-benchmarks",
   "pallet-web3-names/runtime-benchmarks",
   "pallet-proxy/runtime-benchmarks",
+  "public-credentials/runtime-benchmarks",
   "sp-runtime/runtime-benchmarks",
 ]
 std = [
@@ -128,6 +131,8 @@ std = [
   "pallet-transaction-payment/std",
   "pallet-transaction-payment-rpc-runtime-api/std",
   "pallet-web3-names/std",
+  "public-credentials/std",
+  "public-credentials-runtime-api/std",
   "runtime-common/std",
   "scale-info/std",
   "serde",
@@ -168,4 +173,5 @@ try-runtime = [
   "pallet-web3-names/try-runtime",
   "pallet-utility/try-runtime",
   "pallet-transaction-payment/try-runtime",
+  "public-credentials/try-runtime",
 ]

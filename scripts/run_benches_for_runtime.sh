@@ -32,6 +32,7 @@ pallets=(
     pallet-vesting
 	pallet-web3-names
     parachain-staking
+	public-credentials
 )
 
 echo "[+] Running all runtime benchmarks for $runtime --chain=$chain"

@@ -991,6 +991,8 @@ dependencies = [
  "parachain-info",
  "parity-scale-codec",
  "polkadot-parachain",
+ "public-credentials",
+ "public-credentials-runtime-api",
  "runtime-common",
  "scale-info",
  "serde",
@@ -1929,6 +1931,7 @@ dependencies = [
  "log",
  "pallet-balances",
  "parity-scale-codec",
+ "public-credentials",
  "scale-info",
  "serde",
  "sp-core",
@@ -1998,7 +2001,7 @@ dependencies = [
 
 [[package]]
 name = "did-rpc"
-version = "1.6.2"
+version = "1.7.2"
 dependencies = [
  "did-rpc-runtime-api",
  "jsonrpsee",
@@ -2011,7 +2014,7 @@ dependencies = [
 
 [[package]]
 name = "did-rpc-runtime-api"
-version = "1.6.2"
+version = "1.7.2"
 dependencies = [
  "did",
  "kilt-support",
@@ -3594,6 +3597,21 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f9b7d56ba4a8344d6be9729995e6b06f928af29998cdf79fe390cbf6b1fee838"
 
 [[package]]
+name = "kilt-asset-dids"
+version = "1.7.2"
+dependencies = [
+ "base58",
+ "frame-support",
+ "hex",
+ "hex-literal",
+ "log",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-std",
+]
+
+[[package]]
 name = "kilt-parachain"
 version = "1.7.2"
 dependencies = [
@@ -3618,6 +3636,7 @@ dependencies = [
  "hex-literal",
  "jsonrpsee",
  "log",
+ "node-common",
  "pallet-did-lookup",
  "pallet-transaction-payment-rpc",
  "parity-scale-codec",
@@ -3627,6 +3646,8 @@ dependencies = [
  "polkadot-parachain",
  "polkadot-primitives",
  "polkadot-service",
+ "public-credentials",
+ "public-credentials-rpc",
  "runtime-common",
  "sc-basic-authorship",
  "sc-chain-spec",
@@ -4598,9 +4619,12 @@ dependencies = [
  "jsonrpsee",
  "log",
  "mashnet-node-runtime",
+ "node-common",
  "pallet-did-lookup",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc",
+ "public-credentials",
+ "public-credentials-rpc",
  "runtime-common",
  "sc-basic-authorship",
  "sc-cli",
@@ -4673,6 +4697,8 @@ dependencies = [
  "pallet-utility",
  "pallet-web3-names",
  "parity-scale-codec",
+ "public-credentials",
+ "public-credentials-runtime-api",
  "runtime-common",
  "scale-info",
  "serde",
@@ -5045,6 +5071,16 @@ dependencies = [
  "bitflags",
  "cfg-if 1.0.0",
  "libc",
+]
+
+[[package]]
+name = "node-common"
+version = "1.7.2"
+dependencies = [
+ "kilt-support",
+ "public-credentials",
+ "public-credentials-rpc",
+ "serde",
 ]
 
 [[package]]
@@ -6511,6 +6547,8 @@ dependencies = [
  "parachain-staking",
  "parity-scale-codec",
  "polkadot-parachain",
+ "public-credentials",
+ "public-credentials-runtime-api",
  "runtime-common",
  "scale-info",
  "serde",
@@ -7991,6 +8029,49 @@ dependencies = [
 ]
 
 [[package]]
+name = "public-credentials"
+version = "1.7.2"
+dependencies = [
+ "base58",
+ "ctype",
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "hex",
+ "kilt-support",
+ "log",
+ "pallet-balances",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-keystore",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "public-credentials-rpc"
+version = "1.7.2"
+dependencies = [
+ "jsonrpsee",
+ "parity-scale-codec",
+ "public-credentials-runtime-api",
+ "sp-api",
+ "sp-blockchain",
+ "sp-runtime",
+]
+
+[[package]]
+name = "public-credentials-runtime-api"
+version = "1.7.2"
+dependencies = [
+ "parity-scale-codec",
+ "sp-api",
+ "sp-std",
+]
+
+[[package]]
 name = "quick-error"
 version = "1.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8440,6 +8521,8 @@ dependencies = [
  "attestation",
  "frame-support",
  "frame-system",
+ "kilt-asset-dids",
+ "kilt-support",
  "log",
  "pallet-authorship",
  "pallet-balances",
@@ -8448,6 +8531,7 @@ dependencies = [
  "parachain-staking",
  "parity-scale-codec",
  "polkadot-parachain",
+ "public-credentials",
  "scale-info",
  "serde",
  "smallvec",
@@ -10822,6 +10906,8 @@ dependencies = [
  "parachain-staking",
  "parity-scale-codec",
  "polkadot-parachain",
+ "public-credentials",
+ "public-credentials-runtime-api",
  "runtime-common",
  "scale-info",
  "serde",

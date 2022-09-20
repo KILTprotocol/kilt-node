@@ -76,6 +76,13 @@ pub trait GenerateBenchmarkOrigin<OuterOrigin, AccountId, SubjectId> {
 	fn generate_origin(sender: AccountId, subject: SubjectId) -> OuterOrigin;
 }
 
+/// Trait that allows types to implement a worst case value for a type,
+/// only when running benchmarks.
+#[cfg(feature = "runtime-benchmarks")]
+pub trait GetWorstCase {
+	fn worst_case() -> Self;
+}
+
 /// Trait to reflect calls to the relaychain which we support on the pallet
 /// level.
 pub trait RelayCallBuilder {

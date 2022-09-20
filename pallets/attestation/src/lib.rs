@@ -87,10 +87,9 @@ pub mod pallet {
 		traits::{Currency, Get, ReservableCurrency, StorageVersion},
 	};
 	use frame_system::pallet_prelude::*;
-	use sp_runtime::DispatchError;
 
 	use ctype::CtypeHashOf;
-	use kilt_support::{deposit::Deposit, traits::CallSources};
+	use kilt_support::traits::CallSources;
 
 	/// The current storage version.
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
@@ -244,11 +243,11 @@ pub mod pallet {
 			let deposit_amount = <T as Config>::Deposit::get();
 
 			ensure!(
-				<ctype::Ctypes<T>>::contains_key(&ctype_hash),
+				ctype::Ctypes::<T>::contains_key(&ctype_hash),
 				ctype::Error::<T>::CTypeNotFound
 			);
 			ensure!(
-				!<Attestations<T>>::contains_key(&claim_hash),
+				!Attestations::<T>::contains_key(&claim_hash),
 				Error::<T>::AlreadyAttested
 			);
 
@@ -259,7 +258,7 @@ pub mod pallet {
 				.transpose()?;
 			let authorization_id = authorization.as_ref().map(|ac| ac.authorization_id());
 
-			let deposit = Pallet::<T>::reserve_deposit(payer, deposit_amount)?;
+			let deposit = kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(payer, deposit_amount)?;
 
 			// *** No Fail beyond this point ***
 
@@ -313,7 +312,7 @@ pub mod pallet {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 			let who = source.subject();
 
-			let attestation = <Attestations<T>>::get(&claim_hash).ok_or(Error::<T>::AttestationNotFound)?;
+			let attestation = Attestations::<T>::get(&claim_hash).ok_or(Error::<T>::AttestationNotFound)?;
 
 			ensure!(!attestation.revoked, Error::<T>::AlreadyRevoked);
 
@@ -440,7 +439,7 @@ pub mod pallet {
 			Self::deposit_event(Event::DepositReclaimed(sender.clone(), claim_hash));
 
 			let deposit_amount = <T as Config>::Deposit::get();
-			let deposit = Pallet::<T>::reserve_deposit(sender, deposit_amount)?;
+			let deposit = kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(sender, deposit_amount)?;
 
 			Attestations::<T>::insert(&claim_hash, AttestationDetails { deposit, ..attestation });
 			Ok(())
@@ -448,21 +447,6 @@ pub mod pallet {
 	}
 
 	impl<T: Config> Pallet<T> {
-		/// Reserve the deposit and record the deposit on chain.
-		///
-		/// Fails if the `payer` has a balance less than deposit.
-		pub(crate) fn reserve_deposit(
-			payer: AccountIdOf<T>,
-			deposit: BalanceOf<T>,
-		) -> Result<Deposit<AccountIdOf<T>, BalanceOf<T>>, DispatchError> {
-			CurrencyOf::<T>::reserve(&payer, deposit)?;
-
-			Ok(Deposit::<AccountIdOf<T>, BalanceOf<T>> {
-				owner: payer,
-				amount: deposit,
-			})
-		}
-
 		fn remove_attestation(attestation: AttestationDetails<T>, claim_hash: ClaimHashOf<T>) {
 			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&attestation.deposit);
 			Attestations::<T>::remove(&claim_hash);

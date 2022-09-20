@@ -34,7 +34,11 @@ use sp_block_builder::BlockBuilder;
 use sp_blockchain::{Error as BlockChainError, HeaderBackend, HeaderMetadata};
 
 use pallet_did_lookup::linkable_account::LinkableAccountId;
-use runtime_common::{AccountId, Balance, Block, BlockNumber, DidIdentifier, Hash, Index};
+use public_credentials::CredentialEntry;
+use runtime_common::{
+	assets::AssetDid, authorization::AuthorizationId, AccountId, Balance, Block, BlockNumber, DidIdentifier, Hash,
+	Index,
+};
 
 /// Full client dependencies.
 pub struct FullDeps<C, P> {
@@ -56,11 +60,18 @@ where
 	C::Api: pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>,
 	C::Api: BlockBuilder<Block>,
 	C::Api: did_rpc::DidRuntimeApi<Block, DidIdentifier, AccountId, LinkableAccountId, Balance, Hash, BlockNumber>,
+	C::Api: public_credentials_rpc::PublicCredentialsRuntimeApi<
+		Block,
+		AssetDid,
+		Hash,
+		CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<Hash>>,
+	>,
 	P: TransactionPool + 'static,
 {
 	use did_rpc::{DidApiServer, DidQuery};
 	use frame_rpc_system::{System, SystemApiServer};
 	use pallet_transaction_payment_rpc::{TransactionPayment, TransactionPaymentApiServer};
+	use public_credentials_rpc::{PublicCredentialsApiServer, PublicCredentialsQuery};
 
 	let mut module = RpcModule::new(());
 	let FullDeps {
@@ -76,7 +87,35 @@ where
 	// to call into the runtime.
 	//
 	// `module.merge(YourRpcStruct::new(ReferenceToClient).into_rpc())?;`
-	module.merge(DidQuery::new(client).into_rpc())?;
+	module.merge(DidQuery::new(client.clone()).into_rpc())?;
+	module.merge(
+		PublicCredentialsQuery::<
+			C,
+			Block,
+			// Input subject ID
+			String,
+			// Runtime subject ID
+			AssetDid,
+			// Input/output credential ID
+			Hash,
+			// Runtime credential ID
+			Hash,
+			// Input/output credential entry
+			node_common::OuterCredentialEntry<
+				Hash,
+				DidIdentifier,
+				BlockNumber,
+				AccountId,
+				Balance,
+				AuthorizationId<Hash>,
+			>,
+			// Runtime credential entry
+			CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<Hash>>,
+			// Credential filter
+			node_common::PublicCredentialFilter<Hash, DidIdentifier>,
+		>::new(client)
+		.into_rpc(),
+	)?;
 
 	Ok(module)
 }

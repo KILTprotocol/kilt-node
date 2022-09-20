@@ -23,6 +23,7 @@ use sp_runtime::DispatchError;
 
 use attestation::ClaimHashOf;
 use ctype::CtypeHashOf;
+use public_credentials::CredentialIdOf;
 
 use crate::{
 	default_weights::WeightInfo, Config, DelegationHierarchies, DelegationNodeIdOf, DelegationNodes, DelegatorIdOf,
@@ -87,9 +88,10 @@ impl<T: Config>
 		// NOTE: The node IDs of the sender (provided by the user through `who`) and
 		// attester (provided by the attestation pallet through on-chain storage) can be
 		// different!
-		match Pallet::<T>::is_delegating(who, attester_node_id, self.max_checks)? {
-			(true, checks) => Ok(<T as Config>::WeightInfo::can_revoke(checks)),
-			_ => Err(Error::<T>::AccessDenied.into()),
+		if let (true, checks) = Pallet::<T>::is_delegating(who, attester_node_id, self.max_checks)? {
+			Ok(<T as Config>::WeightInfo::can_revoke(checks))
+		} else {
+			Err(Error::<T>::AccessDenied.into())
 		}
 	}
 
@@ -112,6 +114,99 @@ impl<T: Config>
 	}
 
 	fn can_revoke_weight(&self) -> Weight {
+		<T as Config>::WeightInfo::can_revoke(self.max_checks)
+	}
+
+	fn can_remove_weight(&self) -> Weight {
+		<T as Config>::WeightInfo::can_remove(self.max_checks)
+	}
+}
+
+// Duplicates the same logic that exists for attestations, and uses the result
+// of `can_revoke()` to define `can_unrevoke()`.
+impl<T: Config + public_credentials::Config>
+	public_credentials::PublicCredentialsAccessControl<
+		DelegatorIdOf<T>,
+		DelegationNodeIdOf<T>,
+		CtypeHashOf<T>,
+		CredentialIdOf<T>,
+	> for DelegationAc<T>
+{
+	fn can_issue(
+		&self,
+		who: &DelegatorIdOf<T>,
+		ctype: &CtypeHashOf<T>,
+		_credential_id: &CredentialIdOf<T>,
+	) -> Result<Weight, DispatchError> {
+		let delegation_node =
+			DelegationNodes::<T>::get(self.authorization_id()).ok_or(Error::<T>::DelegationNotFound)?;
+		let root =
+			DelegationHierarchies::<T>::get(delegation_node.hierarchy_root_id).ok_or(Error::<T>::DelegationNotFound)?;
+		ensure!(
+			// has permission
+			((delegation_node.details.permissions & Permissions::ATTEST) == Permissions::ATTEST)
+				// not revoked
+				&& !delegation_node.details.revoked
+				// is owner of delegation
+				&& &delegation_node.details.owner == who
+				// delegation matches the ctype
+				&& &root.ctype_hash == ctype,
+			Error::<T>::AccessDenied
+		);
+
+		Ok(<T as Config>::WeightInfo::can_attest())
+	}
+
+	fn can_revoke(
+		&self,
+		who: &DelegatorIdOf<T>,
+		_ctype: &CtypeHashOf<T>,
+		_credential_id: &CredentialIdOf<T>,
+		attester_node_id: &DelegationNodeIdOf<T>,
+	) -> Result<Weight, DispatchError> {
+		// NOTE: The node IDs of the sender (provided by the user through `who`) and
+		// attester (provided by the attestation pallet through on-chain storage) can be
+		// different!
+		if let (true, checks) = Pallet::<T>::is_delegating(who, attester_node_id, self.max_checks)? {
+			Ok(<T as Config>::WeightInfo::can_revoke(checks))
+		} else {
+			Err(Error::<T>::AccessDenied.into())
+		}
+	}
+
+	fn can_unrevoke(
+		&self,
+		who: &DelegatorIdOf<T>,
+		ctype: &CtypeHashOf<T>,
+		credential_id: &CredentialIdOf<T>,
+		attester_node_id: &DelegationNodeIdOf<T>,
+	) -> Result<Weight, DispatchError> {
+		self.can_revoke(who, ctype, credential_id, attester_node_id)
+	}
+
+	fn can_remove(
+		&self,
+		who: &DelegatorIdOf<T>,
+		ctype: &CtypeHashOf<T>,
+		credential_id: &CredentialIdOf<T>,
+		auth_id: &DelegationNodeIdOf<T>,
+	) -> Result<Weight, DispatchError> {
+		self.can_revoke(who, ctype, credential_id, auth_id)
+	}
+
+	fn authorization_id(&self) -> DelegationNodeIdOf<T> {
+		self.subject_node_id
+	}
+
+	fn can_issue_weight(&self) -> Weight {
+		<T as Config>::WeightInfo::can_attest()
+	}
+
+	fn can_revoke_weight(&self) -> Weight {
+		<T as Config>::WeightInfo::can_revoke(self.max_checks)
+	}
+
+	fn can_unrevoke_weight(&self) -> Weight {
 		<T as Config>::WeightInfo::can_revoke(self.max_checks)
 	}
 

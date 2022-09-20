@@ -18,8 +18,11 @@ substrate-build-script-utils = {git = "https://github.com/paritytech/substrate",
 # Internal dependencies
 clone-runtime = {path = "../../runtimes/clone"}
 did-rpc = {path = "../../rpc/did"}
+node-common = {path = "../common"}
 pallet-did-lookup = {path = "../../pallets/pallet-did-lookup"}
 peregrine-runtime = {path = "../../runtimes/peregrine"}
+public-credentials = {path = "../../pallets/public-credentials"}
+public-credentials-rpc = {path = "../../rpc/public-credentials"}
 runtime-common = {path = "../../runtimes/common"}
 spiritnet-runtime = {path = "../../runtimes/spiritnet"}
 
@@ -107,6 +110,7 @@ runtime-benchmarks = [
   "pallet-did-lookup/runtime-benchmarks",
   "polkadot-service/runtime-benchmarks",
   "peregrine-runtime/runtime-benchmarks",
+  "public-credentials/runtime-benchmarks",
   "spiritnet-runtime/runtime-benchmarks",
 ]
 try-runtime = [

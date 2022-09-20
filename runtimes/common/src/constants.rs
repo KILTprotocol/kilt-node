@@ -432,6 +432,21 @@ pub mod fee {
 	}
 }
 
+pub mod public_credentials {
+	use super::*;
+
+	/// The size is checked in the runtime by a test.
+	pub const MAX_PUBLIC_CREDENTIAL_STORAGE_LENGTH: u32 = 355;
+	// Each credential would have a different deposit, so no multiplier here
+	pub const PUBLIC_CREDENTIAL_DEPOSIT: Balance = deposit(1, MAX_PUBLIC_CREDENTIAL_STORAGE_LENGTH);
+
+	parameter_types! {
+		pub const Deposit: Balance = PUBLIC_CREDENTIAL_DEPOSIT;
+		pub const MaxEncodedClaimsLength: u32 = 100_000;	// 100 Kb
+		pub const MaxSubjectIdLength: u32 = kilt_asset_dids::MAXIMUM_ASSET_DID_LENGTH as u32;
+	}
+}
+
 #[cfg(test)]
 mod tests {
 	use super::*;
