@@ -16,8 +16,11 @@ substrate-build-script-utils = {git = "https://github.com/paritytech/substrate",
 
 # Internal dependencies
 did-rpc = {path = "../../rpc/did"}
-pallet-did-lookup = {path = "../../pallets/pallet-did-lookup"}
 mashnet-node-runtime = {path = "../../runtimes/standalone"}
+node-common = {path = "../common"}
+pallet-did-lookup = {path = "../../pallets/pallet-did-lookup"}
+public-credentials = {path = "../../pallets/public-credentials"}
+public-credentials-rpc = {path = "../../rpc/public-credentials"}
 runtime-common = {path = "../../runtimes/common"}
 
 # External dependencies
@@ -75,6 +78,7 @@ default = []
 runtime-benchmarks = [
   "mashnet-node-runtime/runtime-benchmarks",
   "pallet-did-lookup/runtime-benchmarks",
+  "public-credentials/runtime-benchmarks",
   "runtime-common/runtime-benchmarks",
 ]
 try-runtime = [

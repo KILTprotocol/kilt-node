@@ -17,6 +17,7 @@ pallets=(
 	pallet-inflation
 	pallet-web3-names
     parachain-staking
+	public-credentials
 )
 
 echo "[+] Running all default weight benchmarks for $runtime --chain=$chain"

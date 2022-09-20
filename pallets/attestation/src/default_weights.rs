@@ -51,6 +51,7 @@ pub trait WeightInfo {
 	fn revoke() -> Weight;
 	fn remove() -> Weight;
 	fn reclaim_deposit() -> Weight;
+	fn transfer_deposit() -> Weight;
 }
 
 /// Weights for attestation using the Substrate node and recommended hardware.
@@ -82,6 +83,11 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(3 as u64))
 			.saturating_add(T::DbWeight::get().writes(3 as u64))
 	}
+	fn transfer_deposit() -> Weight {
+		(56_873_000_u64)
+			.saturating_add(T::DbWeight::get().reads(3_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
+	}
 }
 
 // For backwards compatibility and tests
@@ -111,5 +117,10 @@ impl WeightInfo for () {
 		Weight::from_ref_time(56_873_000 as u64)
 			.saturating_add(RocksDbWeight::get().reads(3 as u64))
 			.saturating_add(RocksDbWeight::get().writes(3 as u64))
+	}
+	fn transfer_deposit() -> Weight {
+		(56_873_000_u64)
+			.saturating_add(RocksDbWeight::get().reads(3_u64))
+			.saturating_add(RocksDbWeight::get().writes(3_u64))
 	}
 }

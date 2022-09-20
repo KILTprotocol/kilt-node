@@ -330,6 +330,31 @@ pub mod pallet {
 
 			Ok(())
 		}
+
+		/// Transfer the storage deposit from one account to another.
+		///
+		/// If the currently required deposit is different, the new deposit
+		/// value will be reserved.
+		///
+		/// The subject of the call must be the owner of the web3name.
+		/// The sender of the call will be the new deposit owner.
+		#[pallet::weight(<T as Config>::WeightInfo::transfer_deposit())]
+		pub fn transfer_deposit(origin: OriginFor<T>) -> DispatchResult {
+			let source = <T as Config>::OwnerOrigin::ensure_origin(origin)?;
+			let w3n_owner = source.subject();
+			let name = Names::<T>::get(&w3n_owner).ok_or(Error::<T>::Web3NameNotFound)?;
+			let w3n_entry = Owner::<T>::get(&name).ok_or(Error::<T>::Web3NameNotFound)?;
+
+			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&w3n_entry.deposit);
+			let deposit = Deposit {
+				owner: source.sender(),
+				amount: T::Deposit::get(),
+			};
+			CurrencyOf::<T>::reserve(&deposit.owner, deposit.amount)?;
+			Owner::<T>::insert(&name, Web3OwnershipOf::<T> { deposit, ..w3n_entry });
+
+			Ok(())
+		}
 	}
 
 	impl<T: Config> Pallet<T> {

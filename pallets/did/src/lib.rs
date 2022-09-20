@@ -138,7 +138,7 @@ pub mod pallet {
 		traits::{Currency, ExistenceRequirement, Imbalance, ReservableCurrency, StorageVersion},
 	};
 	use frame_system::pallet_prelude::*;
-	use kilt_support::traits::CallSources;
+	use kilt_support::{deposit::Deposit, traits::CallSources};
 	use sp_runtime::traits::BadOrigin;
 
 	use crate::{
@@ -1066,6 +1066,31 @@ pub mod pallet {
 			Self::deposit_event(Event::DidCallDispatched(did_identifier, dispatch_event_payload));
 
 			result
+		}
+
+		/// Transfer the storage deposit from one account to another.
+		///
+		/// If the currently required deposit is different, the new deposit
+		/// value will be reserved.
+		///
+		/// The subject of the call must be the did owner.
+		/// The sender of the call will be the new deposit owner.
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::transfer_deposit())]
+		pub fn transfer_deposit(origin: OriginFor<T>) -> DispatchResult {
+			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
+			let subject = source.subject();
+			let sender = source.sender();
+
+			let did_entry = Did::<T>::get(&subject).ok_or(Error::<T>::DidNotPresent)?;
+
+			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&did_entry.deposit);
+
+			let amount = <T as Config>::Deposit::get();
+			let deposit = Deposit { owner: sender, amount };
+			CurrencyOf::<T>::reserve(&deposit.owner, deposit.amount)?;
+
+			Did::<T>::insert(&subject, DidDetails { deposit, ..did_entry });
+			Ok(())
 		}
 	}
 

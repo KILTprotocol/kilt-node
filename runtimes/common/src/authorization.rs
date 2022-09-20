@@ -21,8 +21,10 @@ use scale_info::TypeInfo;
 use sp_runtime::DispatchError;
 
 use attestation::AttestationAccessControl;
+use public_credentials::PublicCredentialsAccessControl;
 
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
+#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 pub enum AuthorizationId<DelegationId> {
 	Delegation(DelegationId),
 }
@@ -43,9 +45,8 @@ where
 		ctype: &Ctype,
 		claim: &ClaimHash,
 	) -> Result<frame_support::dispatch::Weight, DispatchError> {
-		match self {
-			PalletAuthorize::Delegation(ac) => ac.can_attest(who, ctype, claim),
-		}
+		let PalletAuthorize::Delegation(ac) = self;
+		ac.can_attest(who, ctype, claim)
 	}
 
 	fn can_revoke(
@@ -55,11 +56,8 @@ where
 		claim: &ClaimHash,
 		auth_id: &AuthorizationId<DelegationId>,
 	) -> Result<frame_support::dispatch::Weight, DispatchError> {
-		match (self, auth_id) {
-			(PalletAuthorize::Delegation(ac), AuthorizationId::Delegation(auth_id)) => {
-				ac.can_revoke(who, ctype, claim, auth_id)
-			} // _ => Err(DispatchError::Other("unauthorized")),
-		}
+		let (PalletAuthorize::Delegation(ac), AuthorizationId::Delegation(auth_id)) = (self, auth_id);
+		ac.can_revoke(who, ctype, claim, auth_id)
 	}
 
 	fn can_remove(
@@ -69,32 +67,98 @@ where
 		claim: &ClaimHash,
 		auth_id: &AuthorizationId<DelegationId>,
 	) -> Result<frame_support::dispatch::Weight, DispatchError> {
-		match (self, auth_id) {
-			(PalletAuthorize::Delegation(ac), AuthorizationId::Delegation(auth_id)) => {
-				ac.can_remove(who, ctype, claim, auth_id)
-			} // _ => Err(DispatchError::Other("unauthorized")),
-		}
+		let (PalletAuthorize::Delegation(ac), AuthorizationId::Delegation(auth_id)) = (self, auth_id);
+		ac.can_remove(who, ctype, claim, auth_id)
 	}
 
 	fn authorization_id(&self) -> AuthorizationId<DelegationId> {
-		match self {
-			PalletAuthorize::Delegation(ac) => AuthorizationId::Delegation(ac.authorization_id()),
-		}
+		let PalletAuthorize::Delegation(ac) = self;
+		AuthorizationId::Delegation(ac.authorization_id())
 	}
 
 	fn can_attest_weight(&self) -> Weight {
-		match self {
-			PalletAuthorize::Delegation(ac) => ac.can_attest_weight(),
-		}
+		let PalletAuthorize::Delegation(ac) = self;
+		ac.can_attest_weight()
 	}
 	fn can_revoke_weight(&self) -> Weight {
-		match self {
-			PalletAuthorize::Delegation(ac) => ac.can_revoke_weight(),
-		}
+		let PalletAuthorize::Delegation(ac) = self;
+		ac.can_revoke_weight()
 	}
 	fn can_remove_weight(&self) -> Weight {
-		match self {
-			PalletAuthorize::Delegation(ac) => ac.can_remove_weight(),
-		}
+		let PalletAuthorize::Delegation(ac) = self;
+		ac.can_remove_weight()
+	}
+}
+
+impl<AttesterId, DelegationAc, DelegationId, Ctype, CredentialId>
+	PublicCredentialsAccessControl<AttesterId, AuthorizationId<DelegationId>, Ctype, CredentialId>
+	for PalletAuthorize<DelegationAc>
+where
+	DelegationAc: PublicCredentialsAccessControl<AttesterId, DelegationId, Ctype, CredentialId>,
+{
+	fn can_issue(
+		&self,
+		who: &AttesterId,
+		ctype: &Ctype,
+		credential_id: &CredentialId,
+	) -> Result<frame_support::dispatch::Weight, DispatchError> {
+		let PalletAuthorize::Delegation(ac) = self;
+		ac.can_issue(who, ctype, credential_id)
+	}
+
+	fn can_revoke(
+		&self,
+		who: &AttesterId,
+		ctype: &Ctype,
+		credential_id: &CredentialId,
+		auth_id: &AuthorizationId<DelegationId>,
+	) -> Result<frame_support::dispatch::Weight, DispatchError> {
+		let (PalletAuthorize::Delegation(ac), AuthorizationId::Delegation(auth_id)) = (self, auth_id);
+		ac.can_revoke(who, ctype, credential_id, auth_id)
+	}
+
+	fn can_unrevoke(
+		&self,
+		who: &AttesterId,
+		ctype: &Ctype,
+		credential_id: &CredentialId,
+		auth_id: &AuthorizationId<DelegationId>,
+	) -> Result<frame_support::dispatch::Weight, DispatchError> {
+		let (PalletAuthorize::Delegation(ac), AuthorizationId::Delegation(auth_id)) = (self, auth_id);
+		ac.can_unrevoke(who, ctype, credential_id, auth_id)
+	}
+
+	fn can_remove(
+		&self,
+		who: &AttesterId,
+		ctype: &Ctype,
+		credential_id: &CredentialId,
+		auth_id: &AuthorizationId<DelegationId>,
+	) -> Result<frame_support::dispatch::Weight, DispatchError> {
+		let (PalletAuthorize::Delegation(ac), AuthorizationId::Delegation(auth_id)) = (self, auth_id);
+		ac.can_remove(who, ctype, credential_id, auth_id)
+	}
+
+	fn authorization_id(&self) -> AuthorizationId<DelegationId> {
+		let PalletAuthorize::Delegation(ac) = self;
+		AuthorizationId::Delegation(ac.authorization_id())
+	}
+
+	fn can_issue_weight(&self) -> Weight {
+		let PalletAuthorize::Delegation(ac) = self;
+		ac.can_issue_weight()
+	}
+	fn can_revoke_weight(&self) -> Weight {
+		let PalletAuthorize::Delegation(ac) = self;
+		ac.can_revoke_weight()
+	}
+
+	fn can_unrevoke_weight(&self) -> Weight {
+		let PalletAuthorize::Delegation(ac) = self;
+		ac.can_unrevoke_weight()
+	}
+	fn can_remove_weight(&self) -> Weight {
+		let PalletAuthorize::Delegation(ac) = self;
+		ac.can_remove_weight()
 	}
 }

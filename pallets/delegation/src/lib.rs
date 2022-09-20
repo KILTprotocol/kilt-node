@@ -54,16 +54,6 @@
 //!   attester. This could be an employe of a company which is authorized to
 //!   sign documents for their superiors.
 //!
-//! ## Interface
-//!
-//! ### Dispatchable Functions
-//! - `create_root` - Create a new root delegation based on a specific CType.
-//! - `add_delegation` - Add a new delegation node to an existing delegation
-//!   node acting as the root for the newly added node.
-//! - `revoke_root` - Revoke a delegation root which implicitly revokes the
-//!   entire delegation tree.
-//! - `revoke_delegation` - Revoke a delegation node and its sub delegations.
-//!
 //! ## Assumptions
 //!
 //! - The maximum depth of a delegation tree is bounded by `MaxParentChecks`.
@@ -108,6 +98,7 @@ pub mod pallet {
 	};
 	use frame_system::pallet_prelude::*;
 	use kilt_support::{
+		deposit::Deposit,
 		signature::{SignatureVerificationError, VerifySignature},
 		traits::CallSources,
 	};
@@ -657,6 +648,36 @@ pub mod pallet {
 			DelegationHierarchies::<T>::remove(&delegation_id);
 
 			Ok(Some(<T as Config>::WeightInfo::remove_delegation(removal_checks)).into())
+		}
+
+		/// Transfer the storage deposit from one account to another.
+		///
+		/// If the currently required deposit is different, the new deposit
+		/// value will be reserved.
+		///
+		/// The subject of the call must be the owner of the delegation node.
+		/// The sender of the call will be the new deposit owner.
+		#[pallet::weight(<T as Config>::WeightInfo::transfer_deposit())]
+		pub fn transfer_deposit(origin: OriginFor<T>, delegation_id: DelegationNodeIdOf<T>) -> DispatchResult {
+			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
+
+			let mut delegation = DelegationNodes::<T>::get(&delegation_id).ok_or(Error::<T>::DelegationNotFound)?;
+
+			// Deposit can only be swapped by the owner of the delegation node, not the
+			// parent or another ancestor.
+			ensure!(delegation.details.owner == source.subject(), Error::<T>::AccessDenied);
+
+			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&delegation.deposit);
+
+			let deposit = Deposit {
+				owner: source.sender(),
+				amount: <T as Config>::Deposit::get(),
+			};
+			CurrencyOf::<T>::reserve(&deposit.owner, deposit.amount)?;
+			delegation.deposit = deposit;
+			DelegationNodes::<T>::insert(&delegation_id, delegation);
+
+			Ok(())
 		}
 	}
 }

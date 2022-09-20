@@ -3147,3 +3147,141 @@ fn check_invalid_signature_operation_verification() {
 			);
 		});
 }
+
+// #############################################################################
+// transfer deposit
+
+#[test]
+fn test_transfer_deposit() {
+	let auth_key = get_ed25519_authentication_key(true);
+	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
+	let mut did_details = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()));
+	did_details.deposit.owner = ACCOUNT_00;
+	did_details.deposit.amount = <Test as did::Config>::Deposit::get();
+
+	let balance = <Test as did::Config>::Deposit::get() * 2
+		+ <Test as did::Config>::Fee::get() * 2
+		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
+
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, balance), (alice_did.clone(), balance)])
+		.with_dids(vec![(alice_did.clone(), did_details)])
+		.build(None)
+		.execute_with(|| {
+			assert_eq!(
+				Balances::reserved_balance(ACCOUNT_00),
+				<Test as did::Config>::Deposit::get()
+			);
+			assert_ok!(Did::transfer_deposit(Origin::signed(alice_did.clone())));
+			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
+			assert_eq!(
+				Balances::reserved_balance(alice_did),
+				<Test as did::Config>::Deposit::get()
+			);
+		});
+}
+
+#[test]
+fn test_transfer_deposit_insufficient_balance() {
+	let auth_key = get_ed25519_authentication_key(true);
+	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
+	let mut did_details = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()));
+	did_details.deposit.owner = ACCOUNT_00;
+	did_details.deposit.amount = <Test as did::Config>::Deposit::get();
+
+	let balance = <Test as did::Config>::Deposit::get() * 2
+		+ <Test as did::Config>::Fee::get() * 2
+		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
+
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, balance)])
+		.with_dids(vec![(alice_did.clone(), did_details)])
+		.build(None)
+		.execute_with(|| {
+			assert_noop!(
+				Did::transfer_deposit(Origin::signed(alice_did.clone())),
+				pallet_balances::Error::<Test>::InsufficientBalance
+			);
+		});
+}
+
+/// Update the deposit amount
+#[test]
+fn test_transfer_deposit_to_self() {
+	let auth_key = get_ed25519_authentication_key(true);
+	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
+	let mut did_details = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()));
+	did_details.deposit.owner = alice_did.clone();
+	did_details.deposit.amount = <Test as did::Config>::Deposit::get() * 2;
+
+	let balance = <Test as did::Config>::Deposit::get() * 2
+		+ <Test as did::Config>::Fee::get() * 2
+		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
+
+	ExtBuilder::default()
+		.with_balances(vec![(alice_did.clone(), balance)])
+		.with_dids(vec![(alice_did.clone(), did_details)])
+		.build(None)
+		.execute_with(|| {
+			assert_eq!(
+				Balances::reserved_balance(alice_did.clone()),
+				<Test as did::Config>::Deposit::get() * 2
+			);
+			assert_ok!(Did::transfer_deposit(Origin::signed(alice_did.clone())));
+			assert_eq!(
+				Balances::reserved_balance(alice_did.clone()),
+				<Test as did::Config>::Deposit::get()
+			);
+			assert_eq!(
+				Did::get_did(&alice_did)
+					.expect("DID should be present on chain.")
+					.deposit,
+				kilt_support::deposit::Deposit {
+					owner: alice_did,
+					amount: <Test as did::Config>::Deposit::get(),
+				}
+			);
+		});
+}
+
+#[test]
+fn test_transfer_deposit_not_found() {
+	let auth_key = get_ed25519_authentication_key(true);
+	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
+
+	let balance = <Test as did::Config>::Deposit::get() * 2
+		+ <Test as did::Config>::Fee::get() * 2
+		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
+
+	ExtBuilder::default()
+		.with_balances(vec![(alice_did.clone(), balance)])
+		.build(None)
+		.execute_with(|| {
+			assert_noop!(
+				Did::transfer_deposit(Origin::signed(alice_did.clone())),
+				crate::Error::<Test>::DidNotPresent
+			);
+		});
+}
+
+#[test]
+fn test_transfer_deposit_not_authorized() {
+	let alice_auth_key = get_ed25519_authentication_key(true);
+	let bob_auth_key = get_ed25519_authentication_key(false);
+	let alice_did = get_did_identifier_from_ed25519_key(alice_auth_key.public());
+	let bob_did = get_did_identifier_from_ed25519_key(bob_auth_key.public());
+
+	let balance = <Test as did::Config>::Deposit::get() * 2
+		+ <Test as did::Config>::Fee::get() * 2
+		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
+
+	ExtBuilder::default()
+		.with_balances(vec![(alice_did, balance), (bob_did.clone(), balance)])
+		.build(None)
+		.execute_with(|| {
+			assert_noop!(
+				Did::transfer_deposit(Origin::signed(bob_did.clone())),
+				crate::Error::<Test>::DidNotPresent
+			);
+		});
+}

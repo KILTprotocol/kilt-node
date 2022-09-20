@@ -42,7 +42,7 @@ test-features:
 
 build:
   image:
-    name: kiltprotocol/kilt-ci:2.2.38
+    name: kiltprotocol/kilt-ci:2.7.31
     entrypoint: [""]
   stage: build
   only:
@@ -59,6 +59,7 @@ build:
   script:
     - echo -n $CI_REGISTRY_TOKEN | docker login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
     - aws ecr get-login-password | docker login --username AWS --password-stdin $AWS_REGISTRY
+    - ./.maintain/docker-auth-config.sh
 
     - ./.maintain/build-image.sh build
     - "if [[ ! -z ${CI_COMMIT_BRANCH} ]]; then ./.maintain/push-image.sh build ${CI_COMMIT_SHORT_SHA}; fi"
@@ -68,7 +69,8 @@ build:
 
 build-wasm-peregrine:
   image:
-    name: paritytech/srtool:1.60.0
+    name: $AWS_REGISTRY/kilt/srtool:latest
+    pull_policy: never
     entrypoint: [""]
   stage: build
   only:
@@ -88,7 +90,8 @@ build-wasm-peregrine:
 
 build-wasm-spiritnet:
   image:
-    name: paritytech/srtool:1.60.0
+    name: $AWS_REGISTRY/kilt/srtool:latest
+    pull_policy: never
     entrypoint: [""]
   stage: build
   only:

@@ -19,11 +19,6 @@
 
 //! Benchmarking
 
-use crate::{
-	account::AccountId20, linkable_account::LinkableAccountId, signature::get_wrapped_payload, AccountIdOf,
-	AssociateAccountRequest, Call, Config, ConnectedAccounts, ConnectedDids, CurrencyOf, Pallet,
-};
-
 use codec::Encode;
 use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
 use frame_support::{
@@ -31,13 +26,19 @@ use frame_support::{
 	traits::{Currency, Get},
 };
 use frame_system::RawOrigin;
-use kilt_support::traits::GenerateBenchmarkOrigin;
 use sha3::{Digest, Keccak256};
 use sp_io::crypto::{ecdsa_generate, ed25519_generate, sr25519_generate};
 use sp_runtime::{
 	app_crypto::{ed25519, sr25519},
 	traits::IdentifyAccount,
 	AccountId32, KeyTypeId,
+};
+
+use kilt_support::{deposit::Deposit, traits::GenerateBenchmarkOrigin};
+
+use crate::{
+	account::AccountId20, linkable_account::LinkableAccountId, signature::get_wrapped_payload, AccountIdOf,
+	AssociateAccountRequest, Call, Config, ConnectedAccounts, ConnectedDids, CurrencyOf, Pallet,
 };
 
 const SEED: u32 = 0;
@@ -240,6 +241,29 @@ benchmarks! {
 	verify {
 		assert!(ConnectedDids::<T>::get(&linkable_id).is_none());
 		assert!(ConnectedAccounts::<T>::get(did, linkable_id).is_none());
+	}
+
+	transfer_deposit {
+		let deposit_owner_old: T::AccountId = account("caller", 0, SEED);
+		let deposit_owner_new: T::AccountId = account("caller", 1, SEED);
+		let linkable_id: LinkableAccountId = deposit_owner_old.clone().into();
+		let did: T::DidIdentifier = account("did", 0, SEED);
+		make_free_for_did::<T>(&deposit_owner_old);
+		make_free_for_did::<T>(&deposit_owner_new);
+
+		Pallet::<T>::add_association(deposit_owner_old, did.clone(), linkable_id.clone()).expect("should create association");
+
+		let origin = T::EnsureOrigin::generate_origin(deposit_owner_new.clone(), did);
+		let id_arg = linkable_id.clone();
+	}: _<T::Origin>(origin, id_arg)
+	verify {
+		assert_eq!(
+			ConnectedDids::<T>::get(&linkable_id).expect("should retain link").deposit,
+			Deposit {
+				owner: deposit_owner_new,
+				amount: <T as Config>::Deposit::get(),
+			},
+		);
 	}
 }
 

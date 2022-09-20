@@ -34,6 +34,7 @@ pallet-inflation = {path = "../../pallets/pallet-inflation", default-features = 
 pallet-relay-migration = {path = "../../pallets/relay-migration", default-features = false}
 pallet-web3-names = {path = "../../pallets/pallet-web3-names", default-features = false}
 parachain-staking = {path = "../../pallets/parachain-staking", default-features = false}
+public-credentials = {default-features = false, path = "../../pallets/public-credentials"}
 runtime-common = {path = "../../runtimes/common", default-features = false}
 
 # Substrate dependencies
@@ -138,6 +139,7 @@ runtime-benchmarks = [
   "pallet-vesting/runtime-benchmarks",
   "pallet-web3-names/runtime-benchmarks",
   "parachain-staking/runtime-benchmarks",
+  "public-credentials/runtime-benchmarks",
   "runtime-common/runtime-benchmarks",
   "sp-runtime/runtime-benchmarks",
   "xcm-builder/runtime-benchmarks",
@@ -193,6 +195,8 @@ std = [
   "parachain-info/std",
   "parachain-staking/std",
   "polkadot-parachain/std",
+  "public-credentials/std",
+  "public-credentials-runtime-api/std",
   "runtime-common/std",
   "scale-info/std",
   "serde",
@@ -253,5 +257,6 @@ try-runtime = [
   "pallet-xcm/try-runtime",
   "parachain-info/try-runtime",
   "parachain-staking/try-runtime",
+  "public-credentials/try-runtime",
   "runtime-common/try-runtime",
 ]

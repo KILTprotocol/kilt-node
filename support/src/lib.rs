@@ -17,21 +17,11 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use deposit::Deposit;
-use frame_support::traits::{Currency, ReservableCurrency};
-use sp_runtime::traits::Zero;
-
 pub mod deposit;
+pub use deposit::{free_deposit, reserve_deposit};
+
 #[cfg(any(feature = "runtime-benchmarks", feature = "mock"))]
 pub mod mock;
 pub mod relay;
 pub mod signature;
 pub mod traits;
-
-pub fn free_deposit<A, C>(deposit: &Deposit<A, C::Balance>)
-where
-	C: Currency<A> + ReservableCurrency<A>,
-{
-	let err_amount = C::unreserve(&deposit.owner, deposit.amount);
-	debug_assert!(err_amount.is_zero());
-}

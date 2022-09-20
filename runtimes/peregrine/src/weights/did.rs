@@ -297,4 +297,9 @@ impl<T: frame_system::Config> did::WeightInfo for WeightInfo<T> {
 			.saturating_add(Weight::from_ref_time(1_000 as u64).saturating_mul(l as u64))
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 	}
+	fn transfer_deposit() -> Weight {
+		(61_756_000_u64)
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().writes(2_u64))
+	}
 }

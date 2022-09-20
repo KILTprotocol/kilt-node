@@ -24,6 +24,7 @@ pallet-transaction-payment-rpc-runtime-api = {git = "https://github.com/parityte
 
 # KILT pallets & primitives
 pallet-did-lookup = {path = "../../pallets/pallet-did-lookup", default-features = false}
+public-credentials = {path = "../../pallets/public-credentials", default-features = false}
 runtime-common = {path = "../../runtimes/common", default-features = false}
 
 # Substrate dependencies
@@ -100,6 +101,7 @@ runtime-benchmarks = [
   "pallet-did-lookup/runtime-benchmarks",
   "pallet-timestamp/runtime-benchmarks",
   "pallet-utility/runtime-benchmarks",
+  "public-credentials/runtime-benchmarks",
   "runtime-common/runtime-benchmarks",
   "sp-runtime/runtime-benchmarks",
   "xcm-builder/runtime-benchmarks",
@@ -136,6 +138,8 @@ std = [
   "pallet-xcm/std",
   "parachain-info/std",
   "polkadot-parachain/std",
+  "public-credentials/std",
+  "public-credentials-runtime-api/std",
   "runtime-common/std",
   "scale-info/std",
   "serde",
