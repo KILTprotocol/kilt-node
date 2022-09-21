@@ -237,7 +237,7 @@ pub mod pallet {
 		#[allow(clippy::boxed_local)]
 		#[pallet::weight({
 			let xt_weight = <T as Config>::WeightInfo::add(credential.claims.len().saturated_into::<u32>());
-			let ac_weight = credential.authorization.as_ref().map(|ac| ac.can_issue_weight()).unwrap_or(0);
+			let ac_weight = credential.authorization.as_ref().map(|ac| ac.can_issue_weight()).unwrap_or(Weight::zero());
 			xt_weight.saturating_add(ac_weight)
 		})]
 		pub fn add(origin: OriginFor<T>, credential: Box<InputCredentialOf<T>>) -> DispatchResultWithPostInfo {
@@ -309,7 +309,7 @@ pub mod pallet {
 
 			Ok(Some(
 				<T as Config>::WeightInfo::add(credential.claims.len().saturated_into::<u32>())
-					.saturating_add(ac_weight.unwrap_or(0)),
+					.saturating_add(ac_weight.unwrap_or(Weight::zero())),
 			)
 			.into())
 		}
@@ -324,7 +324,7 @@ pub mod pallet {
 		/// Emits `CredentialRevoked`.
 		#[pallet::weight({
 			let xt_weight = <T as Config>::WeightInfo::revoke();
-			let ac_weight = authorization.as_ref().map(|ac| ac.can_revoke_weight()).unwrap_or(0);
+			let ac_weight = authorization.as_ref().map(|ac| ac.can_revoke_weight()).unwrap_or(Weight::zero());
 			xt_weight.saturating_add(ac_weight)
 		})]
 		pub fn revoke(
@@ -362,7 +362,7 @@ pub mod pallet {
 		/// Emits `CredentialUnrevoked`.
 		#[pallet::weight({
 			let xt_weight = <T as Config>::WeightInfo::unrevoke();
-			let ac_weight = authorization.as_ref().map(|ac| ac.can_unrevoke_weight()).unwrap_or(0);
+			let ac_weight = authorization.as_ref().map(|ac| ac.can_unrevoke_weight()).unwrap_or(Weight::zero());
 			xt_weight.saturating_add(ac_weight)
 		})]
 		pub fn unrevoke(
@@ -408,7 +408,7 @@ pub mod pallet {
 		/// Emits `CredentialRemoved`.
 		#[pallet::weight({
 			let xt_weight = <T as Config>::WeightInfo::remove();
-			let ac_weight = authorization.as_ref().map(|ac| ac.can_remove_weight()).unwrap_or(0);
+			let ac_weight = authorization.as_ref().map(|ac| ac.can_remove_weight()).unwrap_or(Weight::zero());
 			xt_weight.saturating_add(ac_weight)
 		})]
 		pub fn remove(
@@ -422,7 +422,7 @@ pub mod pallet {
 			let (credential_subject, credential_entry) = Self::retrieve_credential_entry(&credential_id)?;
 
 			let ac_weight_used = if credential_entry.attester == caller {
-				0
+				Weight::zero()
 			} else {
 				let credential_auth_id = credential_entry
 					.authorization_id
@@ -526,7 +526,7 @@ pub mod pallet {
 					// Additional weight is 0 if the caller is the attester, otherwise it's the
 					// value returned by the access control check, if it does not fail.
 					let additional_weight = if *caller == credential.attester {
-						0
+						Weight::zero()
 					} else {
 						let credential_auth_id =
 							credential.authorization_id.as_ref().ok_or(Error::<T>::Unauthorized)?;

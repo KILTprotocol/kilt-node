@@ -148,9 +148,9 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().reads((1 as u64).saturating_mul(c as u64)))
 	}
 	fn transfer_deposit( ) -> Weight {
-		(7_991_000 as Weight)
+		Weight::from_ref_time(7_991_000 as u64)
 			// Standard Error: 35_000
-			.saturating_add(T::DbWeight::get().reads(1 as Weight))
+			.saturating_add(T::DbWeight::get().reads(1 as u64))
 	}
 }
 
@@ -243,8 +243,8 @@ impl WeightInfo for () {
 			.saturating_add(RocksDbWeight::get().reads((1 as u64).saturating_mul(c as u64)))
 	}
 	fn transfer_deposit( ) -> Weight {
-		(7_991_000 as Weight)
+		Weight::from_ref_time(7_991_000 as u64)
 			// Standard Error: 35_000
-			.saturating_add(RocksDbWeight::get().reads(1 as Weight))
+			.saturating_add(RocksDbWeight::get().reads(1 as u64))
 	}
 }

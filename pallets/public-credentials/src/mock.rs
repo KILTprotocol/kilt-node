@@ -200,7 +200,7 @@ pub(crate) mod runtime {
 			_credential_id: &CredentialIdOf<T>,
 		) -> Result<Weight, DispatchError> {
 			if who == &self.0 {
-				Ok(0)
+				Ok(Weight::zero())
 			} else {
 				Err(DispatchError::Other("Unauthorized"))
 			}
@@ -214,7 +214,7 @@ pub(crate) mod runtime {
 			authorization_id: &T::AuthorizationId,
 		) -> Result<Weight, DispatchError> {
 			if authorization_id == who {
-				Ok(0)
+				Ok(Weight::zero())
 			} else {
 				Err(DispatchError::Other("Unauthorized"))
 			}
@@ -228,7 +228,7 @@ pub(crate) mod runtime {
 			authorization_id: &T::AuthorizationId,
 		) -> Result<Weight, DispatchError> {
 			if authorization_id == who {
-				Ok(0)
+				Ok(Weight::zero())
 			} else {
 				Err(DispatchError::Other("Unauthorized"))
 			}
@@ -244,7 +244,7 @@ pub(crate) mod runtime {
 			println!("{:#?}", who);
 			println!("{:#?}", authorization_id);
 			if authorization_id == who {
-				Ok(0)
+				Ok(Weight::zero())
 			} else {
 				Err(DispatchError::Other("Unauthorized"))
 			}
@@ -255,16 +255,16 @@ pub(crate) mod runtime {
 		}
 
 		fn can_issue_weight(&self) -> Weight {
-			0
+			Weight::zero()
 		}
 		fn can_revoke_weight(&self) -> Weight {
-			0
+			Weight::zero()
 		}
 		fn can_unrevoke_weight(&self) -> Weight {
-			0
+			Weight::zero()
 		}
 		fn can_remove_weight(&self) -> Weight {
-			0
+			Weight::zero()
 		}
 	}
 

@@ -77,7 +77,7 @@ impl<T: frame_system::Config> attestation::WeightInfo for WeightInfo<T> {
 			.saturating_add(T::DbWeight::get().writes(2 as u64))
 	}
 	fn transfer_deposit() -> Weight {
-		(56_873_000_u64)
+		Weight::from_ref_time(56_873_000_u64)
 			.saturating_add(T::DbWeight::get().reads(3_u64))
 			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
