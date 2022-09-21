@@ -17,13 +17,13 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use codec::{Decode, Encode, MaxEncodedLen};
+use frame_support::traits::ReservableCurrency;
 use scale_info::TypeInfo;
-#[cfg(feature = "std")]
-use serde::{Deserialize, Serialize};
+use sp_runtime::{traits::Zero, DispatchError};
 
 /// An amount of balance reserved by the specified address.
-#[derive(Clone, Debug, Encode, Decode, Eq, PartialEq, TypeInfo, MaxEncodedLen)]
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Clone, Debug, Encode, Decode, Eq, PartialEq, Ord, PartialOrd, TypeInfo, MaxEncodedLen)]
+#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 pub struct Deposit<Account, Balance> {
 	pub owner: Account,
 	#[cfg_attr(
@@ -32,6 +32,22 @@ pub struct Deposit<Account, Balance> {
 	)]
 	#[cfg_attr(feature = "std", serde(with = "serde_balance"))]
 	pub amount: Balance,
+}
+
+pub fn reserve_deposit<Account, Currency: ReservableCurrency<Account>>(
+	account: Account,
+	deposit_amount: Currency::Balance,
+) -> Result<Deposit<Account, Currency::Balance>, DispatchError> {
+	Currency::reserve(&account, deposit_amount)?;
+	Ok(Deposit {
+		owner: account,
+		amount: deposit_amount,
+	})
+}
+
+pub fn free_deposit<Account, Currency: ReservableCurrency<Account>>(deposit: &Deposit<Account, Currency::Balance>) {
+	let err_amount = Currency::unreserve(&deposit.owner, deposit.amount);
+	debug_assert!(err_amount.is_zero());
 }
 
 // This code was copied from https://github.com/paritytech/substrate/blob/ded44948e2d5a398abcb4e342b0513cb690961bb/frame/transaction-payment/src/types.rs#L113

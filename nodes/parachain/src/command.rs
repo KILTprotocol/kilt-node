@@ -98,6 +98,7 @@ fn load_spec(id: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, St
 		("spiritnet", _) => Ok(Box::new(chain_spec::spiritnet::load_spiritnet_spec()?)),
 		("clone", _) => Ok(Box::new(chain_spec::clone::load_clone_spec()?)),
 		("clone2", _) => Ok(Box::new(chain_spec::clone::load_clone2_spec()?)),
+		("clone3", _) => Ok(Box::new(chain_spec::clone::load_clone3_spec()?)),
 		("", "spiritnet") => Ok(Box::new(chain_spec::spiritnet::get_chain_spec_dev()?)),
 		("", "peregrine") => Ok(Box::new(chain_spec::peregrine::make_dev_spec()?)),
 		("", "clone") => Ok(Box::new(chain_spec::clone::get_chain_spec_dev()?)),

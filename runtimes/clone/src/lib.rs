@@ -47,10 +47,12 @@ use xcm::opaque::latest::BodyId;
 use xcm_executor::XcmExecutor;
 
 use runtime_common::{
+	assets::AssetDid,
+	authorization::AuthorizationId,
 	constants::{self, HOURS, MILLI_KILT},
 	fees::{ToAuthor, WeightToFee},
-	AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights, FeeSplit, Hash, Header,
-	Index, Signature, SlowAdjustingFeeUpdate,
+	AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights, DidIdentifier, FeeSplit,
+	Hash, Header, Index, Signature, SlowAdjustingFeeUpdate,
 };
 
 use crate::xcm_config::{XcmConfig, XcmOriginToTransactDispatchOrigin};
@@ -578,6 +580,16 @@ impl_runtime_apis! {
 			>
 		> {
 			None
+		}
+	}
+
+	impl public_credentials_runtime_api::PublicCredentialsApi<Block, AssetDid, Hash, public_credentials::CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<Hash>>> for Runtime {
+		fn get_credential(_credential_id: Hash) -> Option<public_credentials::CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<Hash>>> {
+			None
+		}
+
+		fn get_credentials(_subject: AssetDid) -> Vec<(Hash, public_credentials::CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<Hash>>)> {
+			vec![]
 		}
 	}
 

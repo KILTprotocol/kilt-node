@@ -34,7 +34,7 @@ use kilt_support::deposit::Deposit;
 
 use crate::{
 	pallet::AuthorizationIdOf, AccountIdOf, AttestationAccessControl, AttestationDetails, AttesterOf, BalanceOf,
-	ClaimHashOf, Config,
+	ClaimHashOf, Config, CurrencyOf,
 };
 
 #[cfg(test)]
@@ -153,8 +153,11 @@ where
 }
 
 pub fn insert_attestation<T: Config>(claim_hash: ClaimHashOf<T>, details: AttestationDetails<T>) {
-	crate::Pallet::<T>::reserve_deposit(details.deposit.owner.clone(), details.deposit.amount)
-		.expect("Should have balance");
+	kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
+		details.deposit.owner.clone(),
+		details.deposit.amount,
+	)
+	.expect("Should have balance");
 
 	crate::Attestations::<T>::insert(&claim_hash, details.clone());
 	if let Some(delegation_id) = details.authorization_id.as_ref() {

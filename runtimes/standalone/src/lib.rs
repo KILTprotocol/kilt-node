@@ -52,6 +52,7 @@ use sp_version::RuntimeVersion;
 use delegation::DelegationAc;
 use pallet_did_lookup::{linkable_account::LinkableAccountId, migrations::EthereumMigration};
 use runtime_common::{
+	assets::AssetDid,
 	authorization::{AuthorizationId, PalletAuthorize},
 	constants::{self, EXISTENTIAL_DEPOSIT, KILT},
 	fees::ToAuthor,
@@ -67,6 +68,7 @@ pub use delegation;
 pub use did;
 pub use pallet_balances::Call as BalancesCall;
 pub use pallet_web3_names;
+pub use public_credentials;
 
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
@@ -473,6 +475,23 @@ impl pallet_utility::Config for Runtime {
 
 impl pallet_randomness_collective_flip::Config for Runtime {}
 
+impl public_credentials::Config for Runtime {
+	type AccessControl = PalletAuthorize<DelegationAc<Runtime>>;
+	type AttesterId = DidIdentifier;
+	type AuthorizationId = AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>;
+	type CredentialId = Hash;
+	type CredentialHash = BlakeTwo256;
+	type Currency = Balances;
+	type Deposit = runtime_common::constants::public_credentials::Deposit;
+	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
+	type MaxEncodedClaimsLength = runtime_common::constants::public_credentials::MaxEncodedClaimsLength;
+	type MaxSubjectIdLength = runtime_common::constants::public_credentials::MaxSubjectIdLength;
+	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
+	type Event = Event;
+	type SubjectId = runtime_common::assets::AssetDid;
+	type WeightInfo = ();
+}
+
 /// The type used to represent the kinds of proxying allowed.
 #[derive(
 	Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, RuntimeDebug, MaxEncodedLen, scale_info::TypeInfo,
@@ -515,6 +534,7 @@ impl InstanceFilter<Call> for ProxyType {
 							| pallet_indices::Call::freeze { .. }
 					)
 					| Call::Proxy(..)
+					| Call::PublicCredentials(..)
 					| Call::Session(..)
 					// Excludes `Sudo`
 					| Call::System(..)
@@ -564,6 +584,13 @@ impl InstanceFilter<Call> for ProxyType {
 					)
 					| Call::Indices(..)
 					| Call::Proxy(..)
+					| Call::PublicCredentials(
+						// Excludes `reclaim_deposit`
+						public_credentials::Call::add { .. }
+						| public_credentials::Call::revoke { .. }
+						| public_credentials::Call::unrevoke { .. }
+						| public_credentials::Call::remove { .. }
+					)
 					| Call::Session(..)
 					// Excludes `Sudo`
 					| Call::System(..)
@@ -670,6 +697,7 @@ construct_runtime!(
 
 		Proxy: pallet_proxy::{Pallet, Call, Storage, Event<T>} = 37,
 		Web3Names: pallet_web3_names = 38,
+		PublicCredentials: public_credentials = 39,
 	}
 );
 
@@ -701,6 +729,7 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 			Call::Did { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
 			Call::Web3Names { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
 			Call::DidLookup { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
+			Call::PublicCredentials { .. } => Ok(did::DidVerificationKeyRelationship::AssertionMethod),
 			Call::Utility(pallet_utility::Call::batch { calls }) => single_key_relationship(&calls[..]),
 			Call::Utility(pallet_utility::Call::batch_all { calls }) => single_key_relationship(&calls[..]),
 			#[cfg(not(feature = "runtime-benchmarks"))]
@@ -973,6 +1002,17 @@ impl_runtime_apis! {
 				service_endpoints,
 				details: details.into(),
 			})
+		}
+	}
+
+	impl public_credentials_runtime_api::PublicCredentialsApi<Block, AssetDid, Hash, public_credentials::CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>>> for Runtime {
+		fn get_credential(credential_id: Hash) -> Option<public_credentials::CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>>> {
+			let subject = public_credentials::CredentialSubjects::<Runtime>::get(&credential_id)?;
+			public_credentials::Credentials::<Runtime>::get(&subject, &credential_id)
+		}
+
+		fn get_credentials(subject: <Runtime as public_credentials::Config>::SubjectId) -> Vec<(Hash, public_credentials::CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>>)> {
+			public_credentials::Credentials::<Runtime>::iter_prefix(&subject).collect()
 		}
 	}
 

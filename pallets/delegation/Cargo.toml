@@ -3,7 +3,7 @@ authors = ["KILT <info@kilt.io>"]
 description = "Enables creating and revoking root nodes of delegation hierarchies; adding and revoking delegation nodes based on root nodes."
 edition = "2021"
 name = "delegation"
-repository = "https://github.com/KILTprotocol/mashnet-node"
+repository = "https://github.com/KILTprotocol/kilt-node"
 version = "1.7.2"
 
 [package.metadata.docs.rs]
@@ -31,8 +31,9 @@ sp-keystore = {branch = "polkadot-v0.9.28", git = "https://github.com/paritytech
 attestation = {default-features = false, path = "../attestation"}
 ctype = {default-features = false, path = "../ctype"}
 kilt-support = {default-features = false, path = "../../support"}
+public-credentials = {default-features = false, path = "../public-credentials"}
 
-#External dependencies
+# External dependencies
 bitflags = {default-features = false, version = "1.3.2"}
 codec = {package = "parity-scale-codec", version = "3.1.5", default-features = false, features = ["derive"]}
 log = "0.4.17"
@@ -77,6 +78,7 @@ std = [
   "kilt-support/std",
   "log/std",
   "pallet-balances/std",
+  "public-credentials/std",
   "scale-info/std",
   "sp-core/std",
   "sp-io/std",

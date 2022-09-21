@@ -21,6 +21,7 @@ serde = {version = "1.0.142", optional = true, features = ["derive"]}
 did-rpc-runtime-api = {path = "../../rpc/did/runtime-api", default-features = false}
 frame-system-rpc-runtime-api = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.28"}
 pallet-transaction-payment-rpc-runtime-api = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.28"}
+public-credentials-runtime-api = {path = "../../rpc/public-credentials/runtime-api", default-features = false}
 
 # KILT pallets & primitives
 attestation = {path = "../../pallets/attestation", default-features = false}
@@ -34,6 +35,7 @@ pallet-inflation = {path = "../../pallets/pallet-inflation", default-features = 
 pallet-relay-migration = {path = "../../pallets/relay-migration", default-features = false}
 pallet-web3-names = {path = "../../pallets/pallet-web3-names", default-features = false}
 parachain-staking = {path = "../../pallets/parachain-staking", default-features = false}
+public-credentials = {default-features = false, path = "../../pallets/public-credentials"}
 runtime-common = {path = "../../runtimes/common", default-features = false}
 
 # Substrate dependencies
@@ -139,6 +141,7 @@ runtime-benchmarks = [
   "pallet-vesting/runtime-benchmarks",
   "pallet-web3-names/runtime-benchmarks",
   "parachain-staking/runtime-benchmarks",
+  "public-credentials/runtime-benchmarks",
   "runtime-common/runtime-benchmarks",
   "sp-runtime/runtime-benchmarks",
   "xcm-builder/runtime-benchmarks",
@@ -194,6 +197,8 @@ std = [
   "parachain-info/std",
   "parachain-staking/std",
   "polkadot-parachain/std",
+  "public-credentials/std",
+  "public-credentials-runtime-api/std",
   "runtime-common/std",
   "scale-info/std",
   "serde",
@@ -247,5 +252,6 @@ try-runtime = [
   "pallet-vesting/try-runtime",
   "pallet-web3-names/try-runtime",
   "parachain-staking/try-runtime",
+  "public-credentials/try-runtime",
   "runtime-common/try-runtime",
 ]

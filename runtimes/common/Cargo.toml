@@ -9,12 +9,15 @@ version = "1.7.2"
 [dependencies]
 codec = {package = "parity-scale-codec", version = "3.1.5", default-features = false, features = ["derive"]}
 log = "0.4.17"
+kilt-asset-dids = { default-features = false, path = "../../crates/assets" }
 scale-info = {version = "2.1.1", default-features = false, features = ["derive"]}
 serde = {version = "1.0.142", optional = true, features = ["derive"]}
 smallvec = "1.8.0"
 
 attestation = {default-features = false, path = "../../pallets/attestation"}
+kilt-support = { default-features = false, optional = true, path = "../../support" }
 parachain-staking = {default-features = false, path = "../../pallets/parachain-staking"}
+public-credentials = {default-features = false, path = "../../pallets/public-credentials"}
 
 frame-support = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.28"}
 frame-system = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.28"}
@@ -39,6 +42,7 @@ fast-gov = []
 runtime-benchmarks = [
   "attestation/runtime-benchmarks",
   "frame-support/runtime-benchmarks",
+  "kilt-support/runtime-benchmarks",
   "parachain-staking/runtime-benchmarks",
   "polkadot-parachain/runtime-benchmarks",
   "sp-runtime/runtime-benchmarks",
@@ -49,12 +53,15 @@ std = [
   "codec/std",
   "frame-support/std",
   "frame-system/std",
+  "kilt-asset-dids/std",
+  "kilt-support/std",
   "pallet-authorship/std",
   "pallet-balances/std",
   "pallet-membership/std",
   "pallet-transaction-payment/std",
   "parachain-staking/std",
   "polkadot-parachain/std",
+  "public-credentials/std",
   "scale-info/std",
   "serde",
   "sp-consensus-aura/std",

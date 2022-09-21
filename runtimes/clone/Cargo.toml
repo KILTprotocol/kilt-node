@@ -21,9 +21,11 @@ serde = {version = "1.0.137", optional = true, features = ["derive"]}
 did-rpc-runtime-api = {path = "../../rpc/did/runtime-api", default-features = false}
 frame-system-rpc-runtime-api = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.28"}
 pallet-transaction-payment-rpc-runtime-api = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.28"}
+public-credentials-runtime-api = {path = "../../rpc/public-credentials/runtime-api", default-features = false}
 
 # KILT pallets & primitives
 pallet-did-lookup = {path = "../../pallets/pallet-did-lookup", default-features = false}
+public-credentials = {path = "../../pallets/public-credentials", default-features = false}
 runtime-common = {path = "../../runtimes/common", default-features = false}
 
 # Substrate dependencies
@@ -100,6 +102,7 @@ runtime-benchmarks = [
   "pallet-did-lookup/runtime-benchmarks",
   "pallet-timestamp/runtime-benchmarks",
   "pallet-utility/runtime-benchmarks",
+  "public-credentials/runtime-benchmarks",
   "runtime-common/runtime-benchmarks",
   "sp-runtime/runtime-benchmarks",
   "xcm-builder/runtime-benchmarks",
@@ -136,6 +139,8 @@ std = [
   "pallet-xcm/std",
   "parachain-info/std",
   "polkadot-parachain/std",
+  "public-credentials/std",
+  "public-credentials-runtime-api/std",
   "runtime-common/std",
   "scale-info/std",
   "serde",
@@ -170,5 +175,6 @@ try-runtime = [
   "pallet-timestamp/try-runtime",
   "pallet-transaction-payment/try-runtime",
   "pallet-utility/try-runtime",
+  "public-credentials/try-runtime",
   "runtime-common/try-runtime",
 ]

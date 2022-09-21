@@ -3,7 +3,7 @@ authors = ["KILT <info@kilt.io>"]
 description = "Enables adding CTypes."
 edition = "2021"
 name = "ctype"
-repository = "https://github.com/KILTprotocol/mashnet-node"
+repository = "https://github.com/KILTprotocol/kilt-node"
 version = "1.7.2"
 
 [package.metadata.docs.rs]
