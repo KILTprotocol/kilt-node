@@ -1102,14 +1102,14 @@ impl_runtime_apis! {
 	#[cfg(feature = "try-runtime")]
 	impl frame_try_runtime::TryRuntime<Block> for Runtime {
 		fn on_runtime_upgrade() -> (Weight, Weight) {
-			log::info!("try-runtime::on_runtime_upgrade polkadot.");
+			log::info!("try-runtime::on_runtime_upgrade mashnet-node standalone.");
 			let weight = Executive::try_runtime_upgrade().unwrap();
 			(weight, runtime_common::BlockWeights::get().max_block)
 		}
 
 		fn execute_block(block: Block, state_root_check: bool, select: frame_try_runtime::TryStateSelect) -> Weight {
 			log::info!(
-				target: "runtime::polkadot", "try-runtime: executing block #{} ({:?}) / root checks: {:?} / sanity-checks: {:?}",
+				target: "runtime::mashnet_node_standalone", "try-runtime: executing block #{} ({:?}) / root checks: {:?} / sanity-checks: {:?}",
 				block.header.number,
 				block.header.hash(),
 				state_root_check,
