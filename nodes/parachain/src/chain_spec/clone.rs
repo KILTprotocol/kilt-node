@@ -177,6 +177,10 @@ pub fn load_clone2_spec() -> Result<ChainSpec, String> {
 	ChainSpec::from_json_bytes(&include_bytes!("../../res/clone2.json")[..])
 }
 
+pub fn load_clone3_spec() -> Result<ChainSpec, String> {
+	ChainSpec::from_json_bytes(&include_bytes!("../../res/clone3.json")[..])
+}
+
 #[allow(clippy::too_many_arguments)]
 fn testnet_genesis(
 	wasm_binary: &[u8],
