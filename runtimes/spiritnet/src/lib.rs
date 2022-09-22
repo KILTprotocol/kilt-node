@@ -916,12 +916,13 @@ construct_runtime! {
 		TransactionPayment: pallet_transaction_payment::{Pallet, Storage, Event<T>} = 7,
 
 		// Consensus support.
-		// The following order MUST NOT be changed: AuraExt -> Aura -> Session -> Staking -> Authorship
-		AuraExt: cumulus_pallet_aura_ext = 24,
+		// The following order MUST NOT be changed: Aura -> Session -> Staking -> Authorship -> AuraExt
+		// Dependencies: AuraExt on Aura, Authorship and Session on ParachainStaking
 		Aura: pallet_aura = 23,
 		Session: pallet_session = 22,
 		ParachainStaking: parachain_staking = 21,
 		Authorship: pallet_authorship::{Pallet, Call, Storage} = 20,
+		AuraExt: cumulus_pallet_aura_ext = 24,
 
 		// Governance stuff
 		Democracy: pallet_democracy = 30,
