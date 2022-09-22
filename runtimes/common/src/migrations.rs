@@ -16,7 +16,6 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use sp_io::MultiRemovalResults;
 use sp_std::marker::PhantomData;
 
 use frame_support::{
@@ -30,24 +29,35 @@ impl<R: frame_system::Config> OnRuntimeUpgrade for RemoveRelocationPallets<R> {
 	#[cfg(feature = "try-runtime")]
 	fn pre_upgrade() -> Result<(), &'static str> {
 		log::info!("Pre check RemoveRelocationPallets.");
-		let has_storage = frame_support::storage::migration::have_storage_value(
+		let has_migration_storage = frame_support::storage::migration::have_storage_value(
 			b"RelayMigration",
 			b"RelayNumberStrictlyIncreases",
 			b"",
-		) && frame_support::storage::migration::have_storage_value(b"DynFilter", b"Filter", b"");
-		if has_storage {
-			Ok(())
-		} else {
-			Err("Pallets not present")
+		);
+		let has_filter_storage = frame_support::storage::migration::have_storage_value(b"DynFilter", b"Filter", b"");
+
+		match (has_migration_storage, has_filter_storage) {
+			(false, false) => Err("Pallets not present"),
+			(true, false) => Err("DynFilter not present"),
+			(false, true) => Err("RelayMigration not present"),
+			_ => Ok(()),
 		}
 	}
 
 	fn on_runtime_upgrade() -> frame_support::weights::Weight {
 		let entries: u32 = 1;
-		// there is no sensible action in case of a failure. We will check manually
-		// after the migration was done.
-		let _ = frame_support::storage::unhashed::clear_prefix(&Twox128::hash(b"RelayMigration"), Some(entries), None);
-		let _ = frame_support::storage::unhashed::clear_prefix(&Twox128::hash(b"DynFilter"), Some(entries), None);
+		if frame_support::storage::unhashed::clear_prefix(&Twox128::hash(b"RelayMigration"), Some(entries), None)
+			.maybe_cursor
+			.is_some()
+		{
+			log::warn!("Pallet RelayMigration not removed entirely")
+		}
+		if frame_support::storage::unhashed::clear_prefix(&Twox128::hash(b"DynFilter"), Some(entries), None)
+			.maybe_cursor
+			.is_some()
+		{
+			log::warn!("Pallet DynFilter not removed entirely")
+		}
 
 		<R as frame_system::Config>::DbWeight::get().writes((entries * 2).into())
 	}
@@ -55,15 +65,18 @@ impl<R: frame_system::Config> OnRuntimeUpgrade for RemoveRelocationPallets<R> {
 	#[cfg(feature = "try-runtime")]
 	fn post_upgrade() -> Result<(), &'static str> {
 		log::info!("Post check RemoveRelocationPallets.");
-		let has_storage = frame_support::storage::migration::have_storage_value(
+		let has_migration_storage = frame_support::storage::migration::have_storage_value(
 			b"RelayMigration",
 			b"RelayNumberStrictlyIncreases",
 			b"",
-		) && frame_support::storage::migration::have_storage_value(b"DynFilter", b"Filter", b"");
-		if !has_storage {
-			Ok(())
-		} else {
-			Err("Pallets not present")
+		);
+		let has_filter_storage = frame_support::storage::migration::have_storage_value(b"DynFilter", b"Filter", b"");
+
+		match (has_migration_storage, has_filter_storage) {
+			(false, false) => Ok(()),
+			(true, false) => Err("RelayMigration still present"),
+			(false, true) => Err("DynFilter still present"),
+			(true, true) => Err("Pallets still present"),
 		}
 	}
 }
