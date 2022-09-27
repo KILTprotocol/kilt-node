@@ -45,7 +45,7 @@ impl<R: frame_system::Config> OnRuntimeUpgrade for RemoveRelocationPallets<R> {
 	}
 
 	fn on_runtime_upgrade() -> frame_support::weights::Weight {
-		let entries: u32 = 1;
+		let entries: u32 = 2;
 		if frame_support::storage::unhashed::clear_prefix(&Twox128::hash(b"RelayMigration"), Some(entries), None)
 			.maybe_cursor
 			.is_some()
