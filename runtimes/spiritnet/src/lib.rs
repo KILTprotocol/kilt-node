@@ -26,9 +26,10 @@
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use codec::{Decode, Encode, MaxEncodedLen};
+use cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases;
 use frame_support::{
 	construct_runtime, parameter_types,
-	traits::{EitherOfDiverse, InstanceFilter, PrivilegeCmp},
+	traits::{EitherOfDiverse, Everything, InstanceFilter, PrivilegeCmp},
 	weights::{constants::RocksDbWeight, ConstantMultiplier, Weight},
 };
 use frame_system::EnsureRoot;
@@ -47,13 +48,12 @@ use xcm_executor::XcmExecutor;
 use delegation::DelegationAc;
 pub use parachain_staking::InflationInfo;
 
-use kilt_support::relay::RelayChainCallBuilder;
 use runtime_common::{
 	authorization::{AuthorizationId, PalletAuthorize},
 	constants::{self, EXISTENTIAL_DEPOSIT, KILT},
 	fees::{ToAuthor, WeightToFee},
-	pallet_id, AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights, DidIdentifier,
-	FeeSplit, Hash, Header, Index, Signature, SlowAdjustingFeeUpdate,
+	migrations, pallet_id, AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights,
+	DidIdentifier, FeeSplit, Hash, Header, Index, Signature, SlowAdjustingFeeUpdate,
 };
 
 use crate::xcm_config::{XcmConfig, XcmOriginToTransactDispatchOrigin};
@@ -63,7 +63,6 @@ use sp_version::NativeVersion;
 #[cfg(feature = "runtime-benchmarks")]
 use {frame_system::EnsureSigned, kilt_support::signature::AlwaysVerify, runtime_common::benchmarks::DummySignature};
 
-mod filter;
 #[cfg(test)]
 mod tests;
 
@@ -140,7 +139,7 @@ impl frame_system::Config for Runtime {
 	type OnNewAccount = ();
 	type OnKilledAccount = ();
 	type DbWeight = RocksDbWeight;
-	type BaseCallFilter = DynFilter;
+	type BaseCallFilter = Everything;
 	type SystemWeightInfo = weights::frame_system::WeightInfo<Runtime>;
 	type BlockWeights = BlockWeights;
 	type BlockLength = BlockLength;
@@ -216,7 +215,7 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
 	type ReservedXcmpWeight = ReservedXcmpWeight;
 	// We temporarily control this via the RelayMigration pallet which can toggle
 	// between strict and any.
-	type CheckAssociatedRelayNumber = RelayMigration;
+	type CheckAssociatedRelayNumber = RelayNumberStrictlyIncreases;
 }
 
 impl parachain_info::Config for Runtime {}
@@ -660,12 +659,6 @@ impl parachain_staking::Config for Runtime {
 	const BLOCKS_PER_YEAR: Self::BlockNumber = constants::BLOCKS_PER_YEAR;
 }
 
-impl pallet_relay_migration::Config for Runtime {
-	type Event = Event;
-	type ApproveOrigin = ApproveOrigin;
-	type RelayChainCallBuilder = RelayChainCallBuilder<Runtime, ParachainInfo>;
-}
-
 impl pallet_utility::Config for Runtime {
 	type Event = Event;
 	type Call = Call;
@@ -854,23 +847,6 @@ impl pallet_proxy::Config for Runtime {
 	type WeightInfo = weights::pallet_proxy::WeightInfo<Runtime>;
 }
 
-type DynFilterOrigin = EitherOfDiverse<
-	EnsureRoot<AccountId>,
-	pallet_collective::EnsureProportionAtLeast<AccountId, CouncilCollective, 1, 1>,
->;
-
-impl pallet_dyn_filter::Config for Runtime {
-	type Event = Event;
-	type WeightInfo = pallet_dyn_filter::default_weights::SubstrateWeight<Runtime>;
-
-	type ApproveOrigin = DynFilterOrigin;
-
-	type TransferCall = filter::TransferCalls;
-	type FeatureCall = filter::FeatureCalls;
-	type XcmCall = filter::XcmCalls;
-	type SystemCall = filter::SystemCalls;
-}
-
 construct_runtime! {
 	pub enum Runtime where
 		Block = Block,
@@ -900,8 +876,8 @@ construct_runtime! {
 		// placeholder: parachain council election = 33,
 		TechnicalMembership: pallet_membership::<Instance1> = 34,
 		Treasury: pallet_treasury = 35,
-		RelayMigration: pallet_relay_migration::{Pallet, Call, Storage, Event<T>} = 36,
-		DynFilter: pallet_dyn_filter = 37,
+		// DELETED: RelayMigration: pallet_relay_migration::{Pallet, Call, Storage, Event<T>} = 36,
+		// DELETED: DynFilter: pallet_dyn_filter = 37,
 
 		// Utility module.
 		Utility: pallet_utility = 40,
@@ -1030,7 +1006,7 @@ pub type Executive = frame_executive::Executive<
 	// Executes pallet hooks in reverse order of definition in construct_runtime
 	// If we want to switch to AllPalletsWithSystem, we need to reorder the staking pallets
 	AllPalletsReversedWithSystemFirst,
-	(),
+	migrations::RemoveRelocationPallets<Runtime>,
 >;
 
 impl_runtime_apis! {
