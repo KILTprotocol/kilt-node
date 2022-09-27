@@ -16,13 +16,6 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use codec::{EncodeLike, FullCodec};
-use cumulus_primitives_core::ParaId;
-use frame_support::weights::Weight;
-use scale_info::TypeInfo;
-use sp_std::vec::Vec;
-use xcm::latest::Xcm;
-
 /// The sources of a call struct.
 ///
 /// This trait allows to differentiate between the sender of a call and the
@@ -74,41 +67,4 @@ pub trait VersionMigratorTrait<T>: Sized {
 #[cfg(feature = "runtime-benchmarks")]
 pub trait GenerateBenchmarkOrigin<OuterOrigin, AccountId, SubjectId> {
 	fn generate_origin(sender: AccountId, subject: SubjectId) -> OuterOrigin;
-}
-
-/// Trait to reflect calls to the relaychain which we support on the pallet
-/// level.
-pub trait RelayCallBuilder {
-	type AccountId: FullCodec;
-	type Balance: FullCodec;
-	type RelayChainCall: FullCodec + EncodeLike + sp_std::fmt::Debug + Clone + PartialEq + Eq + TypeInfo;
-
-	/// Execute multiple calls in a batch.
-	///
-	/// * calls: The list of calls to be executed.
-	fn utility_batch_call(calls: Vec<Self::RelayChainCall>) -> Self::RelayChainCall;
-
-	/// Execute a call, replacing the `Origin` with a sub-account.
-	///
-	/// * call: The call to be executed. Can be nested with
-	///   `utility_batch_call`.
-	/// * index: The index of the sub-account to be used as the new origin.
-	fn utility_as_derivative_call(call: Self::RelayChainCall, index: u16) -> Self::RelayChainCall;
-
-	/// Execute a parachain lease swap call.
-	///
-	/// * id: One of the two para ids. Typically, this should be the one of the
-	///   parachain that executes this XCM call, e.g. the source.
-	/// * other: The target para id with which the lease swap should be
-	///   executed.
-	fn swap_call(id: ParaId, other: ParaId) -> Self::RelayChainCall;
-
-	/// Wrap the final calls into the latest Xcm format.
-	///
-	/// * call: The relaychain call to be executed
-	/// * extra_fee: The extra fee (in relaychain currency) used for buying the
-	///   `weight` and `debt`.
-	/// * weight: The weight limit used for XCM.
-	/// * debt: The weight limit used to process the call.
-	fn finalize_call_into_xcm_message(call: Vec<u8>, extra_fee: Self::Balance, weight: Weight) -> Xcm<()>;
 }

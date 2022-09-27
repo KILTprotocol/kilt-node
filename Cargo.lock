@@ -4648,7 +4648,6 @@ dependencies = [
  "pallet-authorship",
  "pallet-balances",
  "pallet-did-lookup",
- "pallet-dyn-filter",
  "pallet-grandpa",
  "pallet-indices",
  "pallet-proxy",
@@ -5494,26 +5493,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pallet-dyn-filter"
-version = "1.7.3"
-dependencies = [
- "frame-benchmarking",
- "frame-support",
- "frame-system",
- "itertools",
- "lazy_static",
- "log",
- "pallet-balances",
- "parity-scale-codec",
- "scale-info",
- "sp-core",
- "sp-io",
- "sp-keystore",
- "sp-runtime",
- "sp-std",
-]
-
-[[package]]
 name = "pallet-election-provider-multi-phase"
 version = "4.0.0-dev"
 source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.27#5bfdbab8ba28523ef10e365627fed64ef2b77cbf"
@@ -5884,29 +5863,6 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
-]
-
-[[package]]
-name = "pallet-relay-migration"
-version = "1.7.3"
-dependencies = [
- "cumulus-pallet-parachain-system",
- "cumulus-primitives-core",
- "frame-benchmarking",
- "frame-support",
- "frame-system",
- "kilt-support",
- "log",
- "pallet-xcm",
- "parity-scale-codec",
- "polkadot-core-primitives",
- "polkadot-runtime-common",
- "scale-info",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-std",
- "xcm",
 ]
 
 [[package]]
@@ -6468,14 +6424,12 @@ dependencies = [
  "pallet-collective",
  "pallet-democracy",
  "pallet-did-lookup",
- "pallet-dyn-filter",
  "pallet-indices",
  "pallet-inflation",
  "pallet-membership",
  "pallet-preimage",
  "pallet-proxy",
  "pallet-randomness-collective-flip",
- "pallet-relay-migration",
  "pallet-scheduler",
  "pallet-session",
  "pallet-sudo",
@@ -10796,14 +10750,12 @@ dependencies = [
  "pallet-collective",
  "pallet-democracy",
  "pallet-did-lookup",
- "pallet-dyn-filter",
  "pallet-indices",
  "pallet-inflation",
  "pallet-membership",
  "pallet-preimage",
  "pallet-proxy",
  "pallet-randomness-collective-flip",
- "pallet-relay-migration",
  "pallet-scheduler",
  "pallet-session",
  "pallet-timestamp",

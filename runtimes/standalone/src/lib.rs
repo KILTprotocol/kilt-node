@@ -30,7 +30,7 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::{
 	construct_runtime, parameter_types,
-	traits::{Currency, InstanceFilter, KeyOwnerProofSystem},
+	traits::{Currency, Everything, InstanceFilter, KeyOwnerProofSystem},
 	weights::{constants::RocksDbWeight, ConstantMultiplier, IdentityFee},
 };
 pub use frame_system::Call as SystemCall;
@@ -75,8 +75,6 @@ use frame_system::EnsureSigned;
 
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
-
-mod filter;
 
 /// Digest item type.
 pub type DigestItem = generic::DigestItem;
@@ -142,7 +140,7 @@ parameter_types! {
 
 impl frame_system::Config for Runtime {
 	/// The basic call filter to use in dispatchable.
-	type BaseCallFilter = DynFilter;
+	type BaseCallFilter = Everything;
 	/// Block & extrinsics weights: base values and limits.
 	type BlockWeights = runtime_common::BlockWeights;
 	/// The maximum length of a block (in bytes).
@@ -613,18 +611,6 @@ impl pallet_proxy::Config for Runtime {
 	type WeightInfo = ();
 }
 
-impl pallet_dyn_filter::Config for Runtime {
-	type Event = Event;
-	type WeightInfo = pallet_dyn_filter::default_weights::SubstrateWeight<Runtime>;
-
-	type ApproveOrigin = EnsureRoot<AccountId>;
-
-	type TransferCall = filter::TransferCalls;
-	type FeatureCall = filter::FeatureCalls;
-	type XcmCall = filter::XcmCalls;
-	type SystemCall = filter::SystemCalls;
-}
-
 construct_runtime!(
 	pub enum Runtime where
 		Block = Block,
@@ -658,7 +644,6 @@ construct_runtime!(
 		// ElectionsPhragmen: pallet_elections_phragmen = 28,
 		// TechnicalMembership: pallet_membership = 29,
 		// Treasury: pallet_treasury = 30,
-		DynFilter: pallet_dyn_filter = 31,
 
 		// // System scheduler.
 		// Scheduler: pallet_scheduler = 32,
