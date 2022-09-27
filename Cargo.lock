@@ -339,7 +339,7 @@ checksum = "065374052e7df7ee4047b1160cca5e1467a12351a40b3da123c870ba0b8eda2a"
 
 [[package]]
 name = "attestation"
-version = "1.7.3"
+version = "1.7.4"
 dependencies = [
  "ctype",
  "frame-benchmarking",
@@ -952,7 +952,7 @@ dependencies = [
 
 [[package]]
 name = "clone-runtime"
-version = "1.7.3"
+version = "1.7.4"
 dependencies = [
  "cumulus-pallet-aura-ext",
  "cumulus-pallet-dmp-queue",
@@ -1344,7 +1344,7 @@ dependencies = [
 
 [[package]]
 name = "ctype"
-version = "1.7.3"
+version = "1.7.4"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -1914,7 +1914,7 @@ dependencies = [
 
 [[package]]
 name = "delegation"
-version = "1.7.3"
+version = "1.7.4"
 dependencies = [
  "attestation",
  "bitflags",
@@ -1972,7 +1972,7 @@ dependencies = [
 
 [[package]]
 name = "did"
-version = "1.7.3"
+version = "1.7.4"
 dependencies = [
  "ctype",
  "env_logger",
@@ -1996,7 +1996,7 @@ dependencies = [
 
 [[package]]
 name = "did-rpc"
-version = "1.7.3"
+version = "1.7.4"
 dependencies = [
  "did-rpc-runtime-api",
  "jsonrpsee",
@@ -2009,7 +2009,7 @@ dependencies = [
 
 [[package]]
 name = "did-rpc-runtime-api"
-version = "1.7.3"
+version = "1.7.4"
 dependencies = [
  "did",
  "kilt-support",
@@ -3585,7 +3585,7 @@ checksum = "f9b7d56ba4a8344d6be9729995e6b06f928af29998cdf79fe390cbf6b1fee838"
 
 [[package]]
 name = "kilt-parachain"
-version = "1.7.3"
+version = "1.7.4"
 dependencies = [
  "clap",
  "clone-runtime",
@@ -3659,7 +3659,7 @@ dependencies = [
 
 [[package]]
 name = "kilt-support"
-version = "1.7.3"
+version = "1.7.4"
 dependencies = [
  "cumulus-primitives-core",
  "frame-support",
@@ -4576,7 +4576,7 @@ dependencies = [
 
 [[package]]
 name = "mashnet-node"
-version = "1.7.3"
+version = "1.7.4"
 dependencies = [
  "clap",
  "did-rpc",
@@ -4626,7 +4626,7 @@ dependencies = [
 
 [[package]]
 name = "mashnet-node-runtime"
-version = "1.7.3"
+version = "1.7.4"
 dependencies = [
  "attestation",
  "bitflags",
@@ -5475,7 +5475,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-did-lookup"
-version = "1.7.3"
+version = "1.7.4"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -5639,7 +5639,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-inflation"
-version = "1.7.3"
+version = "1.7.4"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -6118,7 +6118,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-web3-names"
-version = "1.7.3"
+version = "1.7.4"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -6185,7 +6185,7 @@ dependencies = [
 
 [[package]]
 name = "parachain-staking"
-version = "1.7.3"
+version = "1.7.4"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -6392,7 +6392,7 @@ checksum = "d4fd5641d01c8f18a23da7b6fe29298ff4b55afcccdf78973b24cf3175fee32e"
 
 [[package]]
 name = "peregrine-runtime"
-version = "1.7.3"
+version = "1.7.4"
 dependencies = [
  "attestation",
  "ctype",
@@ -8372,7 +8372,7 @@ dependencies = [
 
 [[package]]
 name = "runtime-common"
-version = "1.7.3"
+version = "1.7.4"
 dependencies = [
  "attestation",
  "frame-support",
@@ -10718,7 +10718,7 @@ checksum = "6e63cff320ae2c57904679ba7cb63280a3dc4613885beafb148ee7bf9aa9042d"
 
 [[package]]
 name = "spiritnet-runtime"
-version = "1.7.3"
+version = "1.7.4"
 dependencies = [
  "attestation",
  "ctype",
