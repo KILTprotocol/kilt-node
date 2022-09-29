@@ -964,6 +964,7 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 			Call::DidLookup { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
 			Call::Utility(pallet_utility::Call::batch { calls }) => single_key_relationship(&calls[..]),
 			Call::Utility(pallet_utility::Call::batch_all { calls }) => single_key_relationship(&calls[..]),
+			Call::Utility(pallet_utility::Call::force_batch { calls }) => single_key_relationship(&calls[..]),
 			#[cfg(not(feature = "runtime-benchmarks"))]
 			_ => Err(did::RelationshipDeriveError::NotCallableByDid),
 			// By default, returns the authentication key
