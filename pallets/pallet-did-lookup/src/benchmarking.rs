@@ -38,7 +38,7 @@ use kilt_support::{deposit::Deposit, traits::GenerateBenchmarkOrigin};
 
 use crate::{
 	account::AccountId20, linkable_account::LinkableAccountId, signature::get_wrapped_payload, AccountIdOf,
-	AssociateAccountRequest, Call, Config, ConnectedAccounts, ConnectedDids, CurrencyOf, Pallet,
+	AssociateAccountRequest, RuntimeCall, Config, ConnectedAccounts, ConnectedDids, CurrencyOf, Pallet,
 };
 
 const SEED: u32 = 0;

@@ -103,10 +103,10 @@ parameter_types! {
 	pub const SS58Prefix: u8 = 38;
 }
 
-pub struct CloneCallFilter;
-impl Contains<Call> for CloneCallFilter {
-	fn contains(call: &Call) -> bool {
-		matches!(call, Call::ParachainSystem(..) | Call::Sudo(..) | Call::Timestamp(..))
+pub struct CloneRuntimeCallFilter;
+impl Contains<RuntimeCall> for CloneRuntimeCallFilter {
+	fn contains(call: &RuntimeCall) -> bool {
+		matches!(call, RuntimeCall::ParachainSystem(..) | RuntimeCall::Sudo(..) | RuntimeCall::Timestamp(..))
 	}
 }
 
@@ -114,7 +114,7 @@ impl frame_system::Config for Runtime {
 	/// The identifier used to distinguish between accounts.
 	type AccountId = AccountId;
 	/// The aggregated dispatch type that is available for extrinsics.
-	type Call = Call;
+	type RuntimeCall = RuntimeCall;
 	/// The lookup mechanism to get account ID from whatever is passed in
 	/// dispatchers.
 	type Lookup = AccountIdLookup<AccountId, ()>;
@@ -129,7 +129,7 @@ impl frame_system::Config for Runtime {
 	/// The header type.
 	type Header = runtime_common::Header;
 	/// The ubiquitous event type.
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	/// The ubiquitous origin type.
 	type Origin = Origin;
 	/// Maximum number of block number to block hash mappings to keep (oldest
@@ -143,7 +143,7 @@ impl frame_system::Config for Runtime {
 	type OnNewAccount = ();
 	type OnKilledAccount = ();
 	type DbWeight = RocksDbWeight;
-	type BaseCallFilter = CloneCallFilter;
+	type BaseRuntimeCallFilter = CloneRuntimeCallFilter;
 	type SystemWeightInfo = weights::frame_system::WeightInfo<Runtime>;
 	type BlockWeights = BlockWeights;
 	type BlockLength = BlockLength;
@@ -175,7 +175,7 @@ impl pallet_balances::Config for Runtime {
 	/// The type for recording an account's balance.
 	type Balance = Balance;
 	/// The ubiquitous event type.
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type DustRemoval = ();
 	type ExistentialDeposit = ExistentialDeposit;
 	type AccountStore = System;
@@ -186,7 +186,7 @@ impl pallet_balances::Config for Runtime {
 }
 
 impl pallet_transaction_payment::Config for Runtime {
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type OnChargeTransaction =
 		pallet_transaction_payment::CurrencyAdapter<Balances, FeeSplit<Runtime, (), ToAuthor<Runtime>>>;
 	type OperationalFeeMultiplier = constants::fee::OperationalFeeMultiplier;
@@ -201,8 +201,8 @@ parameter_types! {
 }
 
 impl cumulus_pallet_parachain_system::Config for Runtime {
-	type Event = Event;
-	type OnSystemEvent = cumulus_pallet_solo_to_para::Pallet<Runtime>;
+	type RuntimeEvent = RuntimeEvent;
+	type OnSystemRuntimeEvent = cumulus_pallet_solo_to_para::Pallet<Runtime>;
 	type SelfParaId = parachain_info::Pallet<Runtime>;
 	type OutboundXcmpMessageSource = XcmpQueue;
 	type DmpMessageHandler = DmpQueue;
@@ -217,11 +217,11 @@ impl parachain_info::Config for Runtime {}
 impl cumulus_pallet_aura_ext::Config for Runtime {}
 
 impl cumulus_pallet_solo_to_para::Config for Runtime {
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 }
 
 impl cumulus_pallet_xcmp_queue::Config for Runtime {
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type XcmExecutor = XcmExecutor<XcmConfig>;
 	type ChannelInfo = ParachainSystem;
 	type VersionWrapper = PolkadotXcm;
@@ -232,7 +232,7 @@ impl cumulus_pallet_xcmp_queue::Config for Runtime {
 }
 
 impl cumulus_pallet_dmp_queue::Config for Runtime {
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type XcmExecutor = XcmExecutor<XcmConfig>;
 	type ExecuteOverweightOrigin = EnsureRoot<AccountId>;
 }
@@ -256,7 +256,7 @@ impl pallet_authorship::Config for Runtime {
 	type FindAuthor = pallet_session::FindAccountFromAuthorIndex<Self, Aura>;
 	type UncleGenerations = UncleGenerations;
 	type FilterUncle = ();
-	type EventHandler = ();
+	type RuntimeEventHandler = ();
 }
 
 parameter_types! {
@@ -265,7 +265,7 @@ parameter_types! {
 }
 
 impl pallet_session::Config for Runtime {
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type ValidatorId = AccountId;
 	type ValidatorIdOf = pallet_collator_selection::IdentityCollator;
 	type ShouldEndSession = pallet_session::PeriodicSessions<Period, Offset>;
@@ -277,9 +277,9 @@ impl pallet_session::Config for Runtime {
 }
 
 impl pallet_utility::Config for Runtime {
-	type Event = Event;
-	type Call = Call;
-	type PalletsOrigin = OriginCaller;
+	type RuntimeEvent = RuntimeEvent;
+	type RuntimeCall = RuntimeCall;
+	type PalletsOrigin = OriginRuntimeCaller;
 	type WeightInfo = weights::pallet_utility::WeightInfo<Runtime>;
 }
 
@@ -293,7 +293,7 @@ parameter_types! {
 }
 
 impl pallet_collator_selection::Config for Runtime {
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type Currency = Balances;
 	type UpdateOrigin = EnsureRoot<AccountId>;
 	type PotId = PotId;
@@ -309,8 +309,8 @@ impl pallet_collator_selection::Config for Runtime {
 }
 
 impl pallet_sudo::Config for Runtime {
-	type Event = Event;
-	type Call = Call;
+	type RuntimeEvent = RuntimeEvent;
+	type RuntimeCall = RuntimeCall;
 }
 
 construct_runtime! {
@@ -323,20 +323,20 @@ construct_runtime! {
 		// RandomnessCollectiveFlip: pallet_randomness_collective_flip = 1,
 
 		Timestamp: pallet_timestamp = 2,
-		// Indices: pallet_indices::{Pallet, Call, Storage, Event<T>} = 5,
+		// Indices: pallet_indices::{Pallet, RuntimeCall, Storage, RuntimeEvent<T>} = 5,
 		Balances: pallet_balances = 6,
-		TransactionPayment: pallet_transaction_payment::{Pallet, Storage, Event<T>} = 7,
+		TransactionPayment: pallet_transaction_payment::{Pallet, Storage, RuntimeEvent<T>} = 7,
 		Sudo: pallet_sudo = 8,
 
 		// Consensus support.
 		// The following order MUST NOT be changed: Authorship -> Staking -> Session -> Aura -> AuraExt
-		Authorship: pallet_authorship::{Pallet, Call, Storage} = 20,
+		Authorship: pallet_authorship::{Pallet, RuntimeCall, Storage} = 20,
 		// ParachainStaking: parachain_staking = 21,
-		CollatorSelection: pallet_collator_selection::{Pallet, Call, Storage, Event<T>, Config<T>} = 22,
+		CollatorSelection: pallet_collator_selection::{Pallet, RuntimeCall, Storage, RuntimeEvent<T>, Config<T>} = 22,
 		Session: pallet_session = 23,
 		Aura: pallet_aura = 24,
 		AuraExt: cumulus_pallet_aura_ext = 25,
-		SoloToPara: cumulus_pallet_solo_to_para::{Pallet, Call, Storage, Event} = 26,
+		SoloToPara: cumulus_pallet_solo_to_para::{Pallet, RuntimeCall, Storage, RuntimeEvent} = 26,
 
 		// Governance stuff
 		// Democracy: pallet_democracy = 30,
@@ -353,17 +353,17 @@ construct_runtime! {
 		// Vesting: pallet_vesting = 41,
 
 		// System scheduler.
-		// Scheduler: pallet_scheduler::{Pallet, Call, Storage, Event<T>} = 42,
+		// Scheduler: pallet_scheduler::{Pallet, RuntimeCall, Storage, RuntimeEvent<T>} = 42,
 
 		// Proxy pallet.
-		// Proxy: pallet_proxy::{Pallet, Call, Storage, Event<T>} = 43,
+		// Proxy: pallet_proxy::{Pallet, RuntimeCall, Storage, RuntimeEvent<T>} = 43,
 
 		// Preimage registrar
-		// Preimage: pallet_preimage::{Pallet, Call, Storage, Event<T>} = 44,
+		// Preimage: pallet_preimage::{Pallet, RuntimeCall, Storage, RuntimeEvent<T>} = 44,
 
 		// Tips module to reward contributions to the ecosystem with small amount of KILTs.
 		// TipsMembership: pallet_membership::<Instance2> = 45,
-		// Tips: pallet_tips::{Pallet, Call, Storage, Event<T>} = 46,
+		// Tips: pallet_tips::{Pallet, RuntimeCall, Storage, RuntimeEvent<T>} = 46,
 
 		// KILT Pallets. Start indices 60 to leave room
 		// DELETED: KiltLaunch: kilt_launch = 60,
@@ -382,13 +382,13 @@ construct_runtime! {
 		ParachainSystem: cumulus_pallet_parachain_system = 80,
 		ParachainInfo: parachain_info::{Pallet, Storage, Config} = 81,
 		// Wrap and unwrap XCMP messages to send and receive them. Queue them for later processing.
-		XcmpQueue: cumulus_pallet_xcmp_queue::{Pallet, Call, Storage, Event<T>} = 82,
+		XcmpQueue: cumulus_pallet_xcmp_queue::{Pallet, RuntimeCall, Storage, RuntimeEvent<T>} = 82,
 		// Build XCM scripts
-		PolkadotXcm: pallet_xcm::{Pallet, Call, Event<T>, Origin, Config} = 83,
+		PolkadotXcm: pallet_xcm::{Pallet, RuntimeCall, RuntimeEvent<T>, Origin, Config} = 83,
 		// Does nothing cool. Provides an origin...
-		CumulusXcm: cumulus_pallet_xcm::{Pallet, Event<T>, Origin} = 84,
+		CumulusXcm: cumulus_pallet_xcm::{Pallet, RuntimeEvent<T>, Origin} = 84,
 		// Queue and DMP messages and pass them on to be executed
-		DmpQueue: cumulus_pallet_dmp_queue::{Pallet, Call, Storage, Event<T>} = 85,
+		DmpQueue: cumulus_pallet_dmp_queue::{Pallet, RuntimeCall, Storage, RuntimeEvent<T>} = 85,
 	}
 }
 
@@ -414,9 +414,9 @@ pub type SignedExtra = (
 	cumulus_pallet_solo_to_para::CheckSudo<Runtime>,
 );
 /// Unchecked extrinsic type as expected by this runtime.
-pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<Address, Call, Signature, SignedExtra>;
+pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<Address, RuntimeCall, Signature, SignedExtra>;
 /// Extrinsic type that has already been checked.
-pub type CheckedExtrinsic = generic::CheckedExtrinsic<AccountId, Call, SignedExtra>;
+pub type CheckedExtrinsic = generic::CheckedExtrinsic<AccountId, RuntimeCall, SignedExtra>;
 /// Executive: handles dispatch to the various modules.
 pub type Executive = frame_executive::Executive<
 	Runtime,
@@ -660,10 +660,10 @@ impl_runtime_apis! {
 				// Execution Phase
 				hex_literal::hex!("26aa394eea5630e07c48ae0c9558cef7ff553b5a9862a516939d82b3d3d8661a")
 					.to_vec().into(),
-				// Event Count
+				// RuntimeEvent Count
 				hex_literal::hex!("26aa394eea5630e07c48ae0c9558cef70a98fdbe9ce6c55837576c60c7af3850")
 					.to_vec().into(),
-				// System Events
+				// System RuntimeEvents
 				hex_literal::hex!("26aa394eea5630e07c48ae0c9558cef780d41e5e16056765bc8461851072c9d7")
 					.to_vec().into(),
 			];

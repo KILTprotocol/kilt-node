@@ -1,48 +1,48 @@
 use frame_support::traits::Contains;
 
-use super::Call;
+use super::RuntimeCall;
 
-pub struct TransferCalls;
-impl Contains<Call> for TransferCalls {
-	fn contains(t: &Call) -> bool {
+pub struct TransferRuntimeCalls;
+impl Contains<RuntimeCall> for TransferRuntimeCalls {
+	fn contains(t: &RuntimeCall) -> bool {
 		matches!(
 			t,
-			Call::Balances(..)
-				| Call::Indices(pallet_indices::Call::force_transfer { .. } | pallet_indices::Call::transfer { .. })
-				| Call::Vesting(
-					pallet_vesting::Call::force_vested_transfer { .. } | pallet_vesting::Call::vested_transfer { .. }
+			RuntimeCall::Balances(..)
+				| RuntimeCall::Indices(pallet_indices::RuntimeCall::force_transfer { .. } | pallet_indices::RuntimeCall::transfer { .. })
+				| RuntimeCall::Vesting(
+					pallet_vesting::RuntimeCall::force_vested_transfer { .. } | pallet_vesting::RuntimeCall::vested_transfer { .. }
 				)
 		)
 	}
 }
 
-pub struct FeatureCalls;
-impl Contains<Call> for FeatureCalls {
-	fn contains(t: &Call) -> bool {
+pub struct FeatureRuntimeCalls;
+impl Contains<RuntimeCall> for FeatureRuntimeCalls {
+	fn contains(t: &RuntimeCall) -> bool {
 		matches!(
 			t,
-			Call::Attestation(..)
-				| Call::Ctype(..)
-				| Call::Delegation(..)
-				| Call::Did(..) | Call::DidLookup(..)
-				| Call::Web3Names(..)
+			RuntimeCall::Attestation(..)
+				| RuntimeCall::Ctype(..)
+				| RuntimeCall::Delegation(..)
+				| RuntimeCall::Did(..) | RuntimeCall::DidLookup(..)
+				| RuntimeCall::Web3Names(..)
 		)
 	}
 }
 
-pub struct XcmCalls;
-impl Contains<Call> for XcmCalls {
-	fn contains(t: &Call) -> bool {
-		matches!(t, Call::PolkadotXcm(..))
+pub struct XcmRuntimeCalls;
+impl Contains<RuntimeCall> for XcmRuntimeCalls {
+	fn contains(t: &RuntimeCall) -> bool {
+		matches!(t, RuntimeCall::PolkadotXcm(..))
 	}
 }
 
-pub struct SystemCalls;
-impl Contains<Call> for SystemCalls {
-	fn contains(t: &Call) -> bool {
+pub struct SystemRuntimeCalls;
+impl Contains<RuntimeCall> for SystemRuntimeCalls {
+	fn contains(t: &RuntimeCall) -> bool {
 		matches!(
 			t,
-			Call::System(_) | Call::ParachainSystem(..) | Call::Timestamp(..) | Call::Sudo(..)
+			RuntimeCall::System(_) | RuntimeCall::ParachainSystem(..) | RuntimeCall::Timestamp(..) | RuntimeCall::Sudo(..)
 		)
 	}
 }

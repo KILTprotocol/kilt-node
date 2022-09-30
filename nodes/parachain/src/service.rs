@@ -131,6 +131,7 @@ where
 	Executor: NativeExecutionDispatch + 'static,
 	BIQ: FnOnce(
 		Arc<TFullClient<Block, RuntimeApi, NativeElseWasmExecutor<Executor>>>,
+		Arc<TFullBackend<Block>>,
 		&Configuration,
 		Option<TelemetryHandle>,
 		&TaskManager,
@@ -181,6 +182,7 @@ where
 
 	let import_queue = build_import_queue(
 		client.clone(),
+		backend.clone(),
 		config,
 		telemetry.as_ref().map(|telemetry| telemetry.handle()),
 		&task_manager,
@@ -273,6 +275,7 @@ where
 		+ 'static,
 	BIQ: FnOnce(
 		Arc<TFullClient<Block, RuntimeApi, NativeElseWasmExecutor<Executor>>>,
+		Arc<TFullBackend<Block>>,
 		&Configuration,
 		Option<TelemetryHandle>,
 		&TaskManager,
@@ -290,6 +293,7 @@ where
 		Arc<NetworkService<Block, Hash>>,
 		SyncCryptoStorePtr,
 		bool,
+		Arc<TFullBackend<Block>>,
 	) -> Result<Box<dyn ParachainConsensus<Block>>, sc_service::Error>,
 {
 	let parachain_config = prepare_node_config(parachain_config);
@@ -391,6 +395,7 @@ where
 			network,
 			params.keystore_container.sync_keystore(),
 			force_authoring,
+			backend,
 		)?;
 
 		let spawner = task_manager.spawn_handle();
@@ -476,6 +481,7 @@ where
 			can_author_with: sp_consensus::CanAuthorWithNativeVersion::new(client.executor().clone()),
 			spawner: &task_manager.spawn_essential_handle(),
 			telemetry,
+			backend,
 		},
 	)
 	.map_err(Into::into)
@@ -526,7 +532,8 @@ where
 		 transaction_pool,
 		 sync_oracle,
 		 keystore,
-		 force_authoring| {
+		 force_authoring,
+		 backend| {
 			let slot_duration = cumulus_client_consensus_aura::slot_duration(&*client)?;
 
 			let proposer_factory = sc_basic_authorship::ProposerFactory::with_proof_recording(
@@ -539,6 +546,8 @@ where
 
 			Ok(AuraConsensus::build::<
 				sp_consensus_aura::sr25519::AuthorityPair,
+				_,
+				_,
 				_,
 				_,
 				_,
@@ -583,6 +592,7 @@ where
 				// And a maximum of 750ms if slots are skipped
 				max_block_proposal_slot_portion: Some(SlotProportion::new(1f32 / 16f32)),
 				telemetry,
+				backend
 			}))
 		},
 		hwbench,

@@ -33,7 +33,7 @@ use kilt_support::deposit::Deposit;
 use crate::{
 	errors::{DidError, InputError, SignatureError, StorageError},
 	service_endpoints::DidEndpoint,
-	utils, AccountIdOf, BalanceOf, BlockNumberOf, Config, DidCallableOf, DidIdentifierOf, KeyIdOf, Payload,
+	utils, AccountIdOf, BalanceOf, BlockNumberOf, Config, DidRuntimeCallableOf, DidIdentifierOf, KeyIdOf, Payload,
 };
 
 /// Types of verification keys a DID can control.
@@ -570,25 +570,25 @@ pub struct DidCreationDetails<T: Config> {
 #[derive(Clone, RuntimeDebug, Decode, Encode, Eq, PartialEq)]
 pub enum RelationshipDeriveError {
 	/// The call is not callable by a did origin.
-	NotCallableByDid,
+	NotRuntimeCallableByDid,
 
 	/// The parameters of the call where invalid.
-	InvalidCallParameter,
+	InvalidRuntimeCallParameter,
 }
 
-pub type DeriveDidCallKeyRelationshipResult = Result<DidVerificationKeyRelationship, RelationshipDeriveError>;
+pub type DeriveDidRuntimeCallKeyRelationshipResult = Result<DidVerificationKeyRelationship, RelationshipDeriveError>;
 
 /// Trait for extrinsic DID-based authorization.
 ///
 /// The trait allows
-/// [DidAuthorizedCallOperations](DidAuthorizedCallOperation) wrapping an
+/// [DidAuthorizedRuntimeCallOperations](DidAuthorizedRuntimeCallOperation) wrapping an
 /// extrinsic to specify what DID key to use to perform signature validation
 /// over the byte-encoded operation. A result of None indicates that the
 /// extrinsic does not support DID-based authorization.
-pub trait DeriveDidCallAuthorizationVerificationKeyRelationship {
+pub trait DeriveDidRuntimeCallAuthorizationVerificationKeyRelationship {
 	/// The type of the verification key to be used to validate the
 	/// wrapped extrinsic.
-	fn derive_verification_key_relationship(&self) -> DeriveDidCallKeyRelationshipResult;
+	fn derive_verification_key_relationship(&self) -> DeriveDidRuntimeCallKeyRelationshipResult;
 
 	// Return a call to dispatch in order to test the pallet proxy feature.
 	#[cfg(feature = "runtime-benchmarks")]
@@ -601,35 +601,35 @@ pub trait DeriveDidCallAuthorizationVerificationKeyRelationship {
 #[derive(Clone, RuntimeDebug, Decode, Encode, PartialEq, TypeInfo)]
 #[scale_info(skip_type_params(T))]
 
-pub struct DidAuthorizedCallOperation<T: Config> {
+pub struct DidAuthorizedRuntimeCallOperation<T: Config> {
 	/// The DID identifier.
 	pub did: DidIdentifierOf<T>,
 	/// The DID tx counter.
 	pub tx_counter: u64,
 	/// The extrinsic call to authorize with the DID.
-	pub call: DidCallableOf<T>,
+	pub call: DidRuntimeCallableOf<T>,
 	/// The block number at which the operation was created.
 	pub block_number: BlockNumberOf<T>,
 	/// The account which is authorized to submit the did call.
 	pub submitter: AccountIdOf<T>,
 }
 
-/// Wrapper around a [DidAuthorizedCallOperation].
+/// Wrapper around a [DidAuthorizedRuntimeCallOperation].
 ///
 /// It contains additional information about the type of DID key to used for
 /// authorization.
 #[derive(Clone, RuntimeDebug, PartialEq, TypeInfo)]
 #[scale_info(skip_type_params(T))]
 
-pub struct DidAuthorizedCallOperationWithVerificationRelationship<T: Config> {
-	/// The wrapped [DidAuthorizedCallOperation].
-	pub operation: DidAuthorizedCallOperation<T>,
+pub struct DidAuthorizedRuntimeCallOperationWithVerificationRelationship<T: Config> {
+	/// The wrapped [DidAuthorizedRuntimeCallOperation].
+	pub operation: DidAuthorizedRuntimeCallOperation<T>,
 	/// The type of DID key to use for authorization.
 	pub verification_key_relationship: DidVerificationKeyRelationship,
 }
 
-impl<T: Config> core::ops::Deref for DidAuthorizedCallOperationWithVerificationRelationship<T> {
-	type Target = DidAuthorizedCallOperation<T>;
+impl<T: Config> core::ops::Deref for DidAuthorizedRuntimeCallOperationWithVerificationRelationship<T> {
+	type Target = DidAuthorizedRuntimeCallOperation<T>;
 
 	fn deref(&self) -> &Self::Target {
 		&self.operation
@@ -637,6 +637,6 @@ impl<T: Config> core::ops::Deref for DidAuthorizedCallOperationWithVerificationR
 }
 
 // Opaque implementation.
-// [DidAuthorizedCallOperationWithVerificationRelationship] encodes to
-// [DidAuthorizedCallOperation].
-impl<T: Config> WrapperTypeEncode for DidAuthorizedCallOperationWithVerificationRelationship<T> {}
+// [DidAuthorizedRuntimeCallOperationWithVerificationRelationship] encodes to
+// [DidAuthorizedRuntimeCallOperation].
+impl<T: Config> WrapperTypeEncode for DidAuthorizedRuntimeCallOperationWithVerificationRelationship<T> {}

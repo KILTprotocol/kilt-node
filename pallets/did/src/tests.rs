@@ -2843,7 +2843,7 @@ fn check_null_key_error() {
 				Box::new(call_operation.operation),
 				did::DidSignature::from(signature)
 			),
-			did::Error::<Test>::UnsupportedDidAuthorizationCall
+			did::Error::<Test>::UnsupportedDidAuthorizationRuntimeCall
 		);
 	});
 }

@@ -13,3 +13,6 @@ members = [
   "support",
   "crates/*",
 ]
+
+# [patch.'https://github.com/paritytech/polkadot']
+# xcm-executor = { rev = "7725d4b5a12eb503a2380ac534468b87b4476f03" }

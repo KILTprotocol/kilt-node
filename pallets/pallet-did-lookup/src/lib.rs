@@ -56,7 +56,7 @@ pub mod pallet {
 		traits::{Currency, ReservableCurrency, StorageVersion},
 	};
 	use frame_system::pallet_prelude::*;
-	use kilt_support::{deposit::Deposit, traits::CallSources};
+	use kilt_support::{deposit::Deposit, traits::RuntimeCallSources};
 	use sp_runtime::traits::BlockNumberProvider;
 
 	pub use crate::connection_record::ConnectionRecord;
@@ -80,13 +80,13 @@ pub mod pallet {
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
-		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
 		/// The origin that can associate accounts to itself.
 		type EnsureOrigin: EnsureOrigin<Success = Self::OriginSuccess, <Self as frame_system::Config>::Origin>;
 
 		/// The information that is returned by the origin check.
-		type OriginSuccess: CallSources<AccountIdOf<Self>, DidIdentifierOf<Self>>;
+		type OriginSuccess: RuntimeCallSources<AccountIdOf<Self>, DidIdentifierOf<Self>>;
 
 		/// The identifier to which accounts can get associated.
 		type DidIdentifier: Parameter + MaxEncodedLen;

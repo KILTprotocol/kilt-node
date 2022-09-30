@@ -22,7 +22,7 @@
 //! hex string) on chain and associate it with their account id.
 //!
 //! - [`Config`]
-//! - [`Call`]
+//! - [`RuntimeCall`]
 //! - [`Pallet`]
 //!
 //! ### Terminology
@@ -65,7 +65,7 @@ pub mod pallet {
 		traits::{Currency, ExistenceRequirement, OnUnbalanced, StorageVersion, WithdrawReasons},
 	};
 	use frame_system::pallet_prelude::*;
-	use kilt_support::traits::CallSources;
+	use kilt_support::traits::RuntimeCallSources;
 	use sp_runtime::{traits::Saturating, SaturatedConversion};
 	use sp_std::vec::Vec;
 
@@ -86,8 +86,9 @@ pub mod pallet {
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
 		type EnsureOrigin: EnsureOrigin<Success = Self::OriginSuccess, <Self as frame_system::Config>::Origin>;
-		type OriginSuccess: CallSources<AccountIdOf<Self>, CtypeCreatorOf<Self>>;
-		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+		type OriginSuccess: RuntimeCallSources<AccountIdOf<Self>, CtypeCreatorOf<Self>>;
+		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
+
 		type Currency: Currency<AccountIdOf<Self>>;
 		type WeightInfo: WeightInfo;
 		type CtypeCreatorId: Parameter + MaxEncodedLen;

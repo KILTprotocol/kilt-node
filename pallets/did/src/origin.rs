@@ -21,7 +21,7 @@ use frame_support::{
 	codec::{Decode, Encode},
 	traits::EnsureOrigin,
 };
-use kilt_support::traits::CallSources;
+use kilt_support::traits::RuntimeCallSources;
 use scale_info::TypeInfo;
 use sp_runtime::RuntimeDebug;
 use sp_std::marker::PhantomData;
@@ -60,7 +60,7 @@ where
 	}
 }
 
-impl<DidIdentifier: Clone, AccountId: Clone> CallSources<AccountId, DidIdentifier>
+impl<DidIdentifier: Clone, AccountId: Clone> RuntimeCallSources<AccountId, DidIdentifier>
 	for DidRawOrigin<DidIdentifier, AccountId>
 {
 	fn sender(&self) -> AccountId {

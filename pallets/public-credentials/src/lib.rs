@@ -61,7 +61,7 @@ pub mod pallet {
 	use sp_std::{boxed::Box, vec::Vec};
 
 	pub use ctype::CtypeHashOf;
-	use kilt_support::traits::CallSources;
+	use kilt_support::traits::RuntimeCallSources;
 
 	/// The current storage version.
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
@@ -118,7 +118,8 @@ pub mod pallet {
 		/// The origin allowed to issue/revoke/remove public credentials.
 		type EnsureOrigin: EnsureOrigin<Success = <Self as Config>::OriginSuccess, Self::Origin>;
 		/// The ubiquitous event type.
-		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
+
 		/// The hashing algorithm to derive a credential identifier from the
 		/// credential content.
 		type CredentialHash: Hash<Output = Self::CredentialId>;
@@ -128,7 +129,7 @@ pub mod pallet {
 		type Currency: ReservableCurrency<AccountIdOf<Self>>;
 		/// The type of the origin when successfully converted from the outer
 		/// origin.
-		type OriginSuccess: CallSources<Self::AccountId, AttesterOf<Self>>;
+		type OriginSuccess: RuntimeCallSources<Self::AccountId, AttesterOf<Self>>;
 		/// The type of the credential subject ID after being parsed from the
 		/// raw attester-provided input.
 		// Vec<u8> instead of BoundedVec<u8, ...> because otherwise it becomes

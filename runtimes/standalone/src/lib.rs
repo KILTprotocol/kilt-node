@@ -33,7 +33,7 @@ use frame_support::{
 	traits::{Currency, InstanceFilter, KeyOwnerProofSystem},
 	weights::{constants::RocksDbWeight, ConstantMultiplier, IdentityFee},
 };
-pub use frame_system::Call as SystemCall;
+pub use frame_system::RuntimeCall as SystemRuntimeCall;
 use frame_system::EnsureRoot;
 use pallet_grandpa::{fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
 use pallet_transaction_payment::{CurrencyAdapter, FeeDetails};
@@ -59,14 +59,14 @@ use runtime_common::{
 	AccountId, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature, SlowAdjustingFeeUpdate,
 };
 
-pub use pallet_timestamp::Call as TimestampCall;
+pub use pallet_timestamp::RuntimeCall as TimestampRuntimeCall;
 pub use sp_runtime::{Perbill, Permill};
 
 pub use attestation;
 pub use ctype;
 pub use delegation;
 pub use did;
-pub use pallet_balances::Call as BalancesCall;
+pub use pallet_balances::RuntimeCall as BalancesRuntimeCall;
 pub use pallet_web3_names;
 pub use public_credentials;
 
@@ -149,7 +149,7 @@ parameter_types! {
 
 impl frame_system::Config for Runtime {
 	/// The basic call filter to use in dispatchable.
-	type BaseCallFilter = DynFilter;
+	type BaseRuntimeCallFilter = DynFilter;
 	/// Block & extrinsics weights: base values and limits.
 	type BlockWeights = runtime_common::BlockWeights;
 	/// The maximum length of a block (in bytes).
@@ -157,7 +157,7 @@ impl frame_system::Config for Runtime {
 	/// The identifier used to distinguish between accounts.
 	type AccountId = AccountId;
 	/// The aggregated dispatch type that is available for extrinsics.
-	type Call = Call;
+	type RuntimeCall = RuntimeCall;
 	/// The lookup mechanism to get account ID from whatever is passed in
 	/// dispatchers.
 	type Lookup = AccountIdLookup<AccountId, ()>;
@@ -172,7 +172,7 @@ impl frame_system::Config for Runtime {
 	/// The header type.
 	type Header = generic::Header<BlockNumber, BlakeTwo256>;
 	/// The ubiquitous event type.
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	/// The ubiquitous origin type.
 	type Origin = Origin;
 	/// Maximum number of block number to block hash mappings to keep (oldest
@@ -213,8 +213,8 @@ impl pallet_aura::Config for Runtime {
 }
 
 impl pallet_grandpa::Config for Runtime {
-	type Event = Event;
-	type Call = Call;
+	type RuntimeEvent = RuntimeEvent;
+	type RuntimeCall = RuntimeCall;
 
 	type KeyOwnerProofSystem = ();
 
@@ -246,7 +246,7 @@ impl pallet_indices::Config for Runtime {
 	type AccountIndex = Index;
 	type Currency = Balances;
 	type Deposit = constants::IndicesDeposit;
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type WeightInfo = ();
 }
 
@@ -263,7 +263,7 @@ impl pallet_balances::Config for Runtime {
 	/// The type for recording an account's balance.
 	type Balance = Balance;
 	/// The ubiquitous event type.
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type DustRemoval = ();
 	type ExistentialDeposit = ExistentialDeposit;
 	type AccountStore = System;
@@ -277,7 +277,7 @@ parameter_types! {
 }
 
 impl pallet_transaction_payment::Config for Runtime {
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type OnChargeTransaction = CurrencyAdapter<Balances, runtime_common::fees::ToAuthor<Runtime>>;
 	type OperationalFeeMultiplier = constants::fee::OperationalFeeMultiplier;
 	type WeightToFee = IdentityFee<Balance>;
@@ -286,8 +286,8 @@ impl pallet_transaction_payment::Config for Runtime {
 }
 
 impl pallet_sudo::Config for Runtime {
-	type Event = Event;
-	type Call = Call;
+	type RuntimeEvent = RuntimeEvent;
+	type RuntimeCall = RuntimeCall;
 }
 
 parameter_types! {
@@ -298,7 +298,7 @@ parameter_types! {
 impl attestation::Config for Runtime {
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
 	type OriginSuccess = did::DidRawOrigin<DidIdentifier, AccountId>;
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type WeightInfo = ();
 	type Currency = Balances;
 	type Deposit = AttestationDeposit;
@@ -333,7 +333,7 @@ impl delegation::Config for Runtime {
 	type DelegationNodeId = Hash;
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type MaxSignatureByteLength = MaxSignatureByteLength;
 	type MaxParentChecks = MaxParentChecks;
 	type MaxRevocations = MaxRevocations;
@@ -356,7 +356,7 @@ impl ctype::Config for Runtime {
 	type CtypeCreatorId = DidIdentifier;
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type WeightInfo = ();
 }
 
@@ -383,8 +383,8 @@ parameter_types! {
 
 impl did::Config for Runtime {
 	type DidIdentifier = DidIdentifier;
-	type Event = Event;
-	type Call = Call;
+	type RuntimeEvent = RuntimeEvent;
+	type RuntimeCall = RuntimeCall;
 	type Origin = Origin;
 	type Currency = Balances;
 	type Deposit = DidDeposit;
@@ -415,7 +415,7 @@ impl did::Config for Runtime {
 }
 
 impl pallet_did_lookup::Config for Runtime {
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 
 	type DidIdentifier = DidIdentifier;
 
@@ -434,7 +434,7 @@ impl pallet_web3_names::Config for Runtime {
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
 	type Currency = Balances;
 	type Deposit = constants::web3_names::Web3NameDeposit;
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type MaxNameLength = constants::web3_names::MaxNameLength;
 	type MinNameLength = constants::web3_names::MinNameLength;
 	type Web3Name = pallet_web3_names::web3_name::AsciiWeb3Name<Runtime>;
@@ -448,7 +448,7 @@ parameter_types! {
 }
 
 impl pallet_session::Config for Runtime {
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type ValidatorId = AccountId;
 	type ValidatorIdOf = ();
 	type ShouldEndSession = pallet_session::PeriodicSessions<Period, Offset>;
@@ -467,13 +467,13 @@ impl pallet_authorship::Config for Runtime {
 	type FindAuthor = pallet_session::FindAccountFromAuthorIndex<Self, Aura>;
 	type UncleGenerations = UncleGenerations;
 	type FilterUncle = ();
-	type EventHandler = ();
+	type RuntimeEventHandler = ();
 }
 
 impl pallet_utility::Config for Runtime {
-	type Event = Event;
-	type Call = Call;
-	type PalletsOrigin = OriginCaller;
+	type RuntimeEvent = RuntimeEvent;
+	type RuntimeCall = RuntimeCall;
+	type PalletsOrigin = OriginRuntimeCaller;
 	type WeightInfo = ();
 }
 
@@ -491,7 +491,7 @@ impl public_credentials::Config for Runtime {
 	type MaxEncodedClaimsLength = runtime_common::constants::public_credentials::MaxEncodedClaimsLength;
 	type MaxSubjectIdLength = runtime_common::constants::public_credentials::MaxSubjectIdLength;
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type SubjectId = runtime_common::assets::AssetDid;
 	type WeightInfo = ();
 }
@@ -518,96 +518,96 @@ impl Default for ProxyType {
 	}
 }
 
-impl InstanceFilter<Call> for ProxyType {
-	fn filter(&self, c: &Call) -> bool {
+impl InstanceFilter<RuntimeCall> for ProxyType {
+	fn filter(&self, c: &RuntimeCall) -> bool {
 		match self {
 			ProxyType::Any => true,
 			ProxyType::NonTransfer => matches!(
 				c,
-				Call::Attestation(..)
-					| Call::Authorship(..)
+				RuntimeCall::Attestation(..)
+					| RuntimeCall::Authorship(..)
 					// Excludes `Balances`
-					| Call::Ctype(..)
-					| Call::Delegation(..)
-					| Call::Did(..)
-					| Call::DidLookup(..)
-					| Call::Indices(
+					| RuntimeCall::Ctype(..)
+					| RuntimeCall::Delegation(..)
+					| RuntimeCall::Did(..)
+					| RuntimeCall::DidLookup(..)
+					| RuntimeCall::Indices(
 						// Excludes `force_transfer`, and `transfer`
-						pallet_indices::Call::claim { .. }
-							| pallet_indices::Call::free { .. }
-							| pallet_indices::Call::freeze { .. }
+						pallet_indices::RuntimeCall::claim { .. }
+							| pallet_indices::RuntimeCall::free { .. }
+							| pallet_indices::RuntimeCall::freeze { .. }
 					)
-					| Call::Proxy(..)
-					| Call::PublicCredentials(..)
-					| Call::Session(..)
+					| RuntimeCall::Proxy(..)
+					| RuntimeCall::PublicCredentials(..)
+					| RuntimeCall::Session(..)
 					// Excludes `Sudo`
-					| Call::System(..)
-					| Call::Timestamp(..)
-					| Call::Utility(..)
-					| Call::Web3Names(..),
+					| RuntimeCall::System(..)
+					| RuntimeCall::Timestamp(..)
+					| RuntimeCall::Utility(..)
+					| RuntimeCall::Web3Names(..),
 			),
 			ProxyType::NonDepositClaiming => matches!(
 				c,
-				Call::Attestation(
+				RuntimeCall::Attestation(
 						// Excludes `reclaim_deposit`
-						attestation::Call::add { .. }
-							| attestation::Call::remove { .. }
-							| attestation::Call::revoke { .. }
+						attestation::RuntimeCall::add { .. }
+							| attestation::RuntimeCall::remove { .. }
+							| attestation::RuntimeCall::revoke { .. }
 					)
-					| Call::Authorship(..)
+					| RuntimeCall::Authorship(..)
 					// Excludes `Balances`
-					| Call::Ctype(..)
-					| Call::Delegation(
+					| RuntimeCall::Ctype(..)
+					| RuntimeCall::Delegation(
 						// Excludes `reclaim_deposit`
-						delegation::Call::add_delegation { .. }
-							| delegation::Call::create_hierarchy { .. }
-							| delegation::Call::remove_delegation { .. }
-							| delegation::Call::revoke_delegation { .. }
+						delegation::RuntimeCall::add_delegation { .. }
+							| delegation::RuntimeCall::create_hierarchy { .. }
+							| delegation::RuntimeCall::remove_delegation { .. }
+							| delegation::RuntimeCall::revoke_delegation { .. }
 					)
-					| Call::Did(
+					| RuntimeCall::Did(
 						// Excludes `reclaim_deposit`
-						did::Call::add_key_agreement_key { .. }
-							| did::Call::add_service_endpoint { .. }
-							| did::Call::create { .. }
-							| did::Call::delete { .. }
-							| did::Call::remove_attestation_key { .. }
-							| did::Call::remove_delegation_key { .. }
-							| did::Call::remove_key_agreement_key { .. }
-							| did::Call::remove_service_endpoint { .. }
-							| did::Call::set_attestation_key { .. }
-							| did::Call::set_authentication_key { .. }
-							| did::Call::set_delegation_key { .. }
-							| did::Call::submit_did_call { .. }
+						did::RuntimeCall::add_key_agreement_key { .. }
+							| did::RuntimeCall::add_service_endpoint { .. }
+							| did::RuntimeCall::create { .. }
+							| did::RuntimeCall::delete { .. }
+							| did::RuntimeCall::remove_attestation_key { .. }
+							| did::RuntimeCall::remove_delegation_key { .. }
+							| did::RuntimeCall::remove_key_agreement_key { .. }
+							| did::RuntimeCall::remove_service_endpoint { .. }
+							| did::RuntimeCall::set_attestation_key { .. }
+							| did::RuntimeCall::set_authentication_key { .. }
+							| did::RuntimeCall::set_delegation_key { .. }
+							| did::RuntimeCall::submit_did_call { .. }
 					)
-					| Call::DidLookup(
+					| RuntimeCall::DidLookup(
 						// Excludes `reclaim_deposit`
-						pallet_did_lookup::Call::associate_account { .. }
-							| pallet_did_lookup::Call::associate_sender { .. }
-							| pallet_did_lookup::Call::remove_account_association { .. }
-							| pallet_did_lookup::Call::remove_sender_association { .. }
+						pallet_did_lookup::RuntimeCall::associate_account { .. }
+							| pallet_did_lookup::RuntimeCall::associate_sender { .. }
+							| pallet_did_lookup::RuntimeCall::remove_account_association { .. }
+							| pallet_did_lookup::RuntimeCall::remove_sender_association { .. }
 					)
-					| Call::Indices(..)
-					| Call::Proxy(..)
-					| Call::PublicCredentials(
+					| RuntimeCall::Indices(..)
+					| RuntimeCall::Proxy(..)
+					| RuntimeCall::PublicCredentials(
 						// Excludes `reclaim_deposit`
-						public_credentials::Call::add { .. }
-						| public_credentials::Call::revoke { .. }
-						| public_credentials::Call::unrevoke { .. }
-						| public_credentials::Call::remove { .. }
+						public_credentials::RuntimeCall::add { .. }
+						| public_credentials::RuntimeCall::revoke { .. }
+						| public_credentials::RuntimeCall::unrevoke { .. }
+						| public_credentials::RuntimeCall::remove { .. }
 					)
-					| Call::Session(..)
+					| RuntimeCall::Session(..)
 					// Excludes `Sudo`
-					| Call::System(..)
-					| Call::Timestamp(..)
-					| Call::Utility(..)
-					| Call::Web3Names(
+					| RuntimeCall::System(..)
+					| RuntimeCall::Timestamp(..)
+					| RuntimeCall::Utility(..)
+					| RuntimeCall::Web3Names(
 						// Excludes `ban`, and `reclaim_deposit`
-						pallet_web3_names::Call::claim { .. }
-							| pallet_web3_names::Call::release_by_owner { .. }
-							| pallet_web3_names::Call::unban { .. }
+						pallet_web3_names::RuntimeCall::claim { .. }
+							| pallet_web3_names::RuntimeCall::release_by_owner { .. }
+							| pallet_web3_names::RuntimeCall::unban { .. }
 					),
 			),
-			ProxyType::CancelProxy => matches!(c, Call::Proxy(pallet_proxy::Call::reject_announcement { .. })),
+			ProxyType::CancelProxy => matches!(c, RuntimeCall::Proxy(pallet_proxy::RuntimeCall::reject_announcement { .. })),
 		}
 	}
 	fn is_superset(&self, o: &Self) -> bool {
@@ -630,30 +630,30 @@ impl InstanceFilter<Call> for ProxyType {
 }
 
 impl pallet_proxy::Config for Runtime {
-	type Event = Event;
-	type Call = Call;
+	type RuntimeEvent = RuntimeEvent;
+	type RuntimeCall = RuntimeCall;
 	type Currency = Balances;
 	type ProxyType = ProxyType;
 	type ProxyDepositBase = constants::proxy::ProxyDepositBase;
 	type ProxyDepositFactor = constants::proxy::ProxyDepositFactor;
 	type MaxProxies = constants::proxy::MaxProxies;
 	type MaxPending = constants::proxy::MaxPending;
-	type CallHasher = BlakeTwo256;
+	type RuntimeCallHasher = BlakeTwo256;
 	type AnnouncementDepositBase = constants::proxy::AnnouncementDepositBase;
 	type AnnouncementDepositFactor = constants::proxy::AnnouncementDepositFactor;
 	type WeightInfo = ();
 }
 
 impl pallet_dyn_filter::Config for Runtime {
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type WeightInfo = pallet_dyn_filter::default_weights::SubstrateWeight<Runtime>;
 
 	type ApproveOrigin = EnsureRoot<AccountId>;
 
-	type TransferCall = filter::TransferCalls;
-	type FeatureCall = filter::FeatureCalls;
-	type XcmCall = filter::XcmCalls;
-	type SystemCall = filter::SystemCalls;
+	type TransferRuntimeCall = filter::TransferRuntimeCalls;
+	type FeatureRuntimeCall = filter::FeatureRuntimeCalls;
+	type XcmRuntimeCall = filter::XcmRuntimeCalls;
+	type SystemRuntimeCall = filter::SystemRuntimeCalls;
 }
 
 construct_runtime!(
@@ -699,45 +699,45 @@ construct_runtime!(
 		Utility: pallet_utility = 35,
 		// DELETED CrowdloanContributors: 36,
 
-		Proxy: pallet_proxy::{Pallet, Call, Storage, Event<T>} = 37,
+		Proxy: pallet_proxy::{Pallet, RuntimeCall, Storage, RuntimeEvent<T>} = 37,
 		Web3Names: pallet_web3_names = 38,
 		PublicCredentials: public_credentials = 39,
 	}
 );
 
-impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
-	fn derive_verification_key_relationship(&self) -> did::DeriveDidCallKeyRelationshipResult {
-		fn single_key_relationship(calls: &[Call]) -> did::DeriveDidCallKeyRelationshipResult {
+impl did::DeriveDidRuntimeCallAuthorizationVerificationKeyRelationship for RuntimeCall {
+	fn derive_verification_key_relationship(&self) -> did::DeriveDidRuntimeCallKeyRelationshipResult {
+		fn single_key_relationship(calls: &[RuntimeCall]) -> did::DeriveDidRuntimeCallKeyRelationshipResult {
 			let init = calls
 				.get(0)
-				.ok_or(did::RelationshipDeriveError::InvalidCallParameter)?
+				.ok_or(did::RelationshipDeriveError::InvalidRuntimeCallParameter)?
 				.derive_verification_key_relationship()?;
 			calls
 				.iter()
 				.skip(1)
-				.map(Call::derive_verification_key_relationship)
+				.map(RuntimeCall::derive_verification_key_relationship)
 				.try_fold(init, |acc, next| {
 					if Ok(acc) == next {
 						Ok(acc)
 					} else {
-						Err(did::RelationshipDeriveError::InvalidCallParameter)
+						Err(did::RelationshipDeriveError::InvalidRuntimeCallParameter)
 					}
 				})
 		}
 		match self {
-			Call::Attestation { .. } => Ok(did::DidVerificationKeyRelationship::AssertionMethod),
-			Call::Ctype { .. } => Ok(did::DidVerificationKeyRelationship::AssertionMethod),
-			Call::Delegation { .. } => Ok(did::DidVerificationKeyRelationship::CapabilityDelegation),
+			RuntimeCall::Attestation { .. } => Ok(did::DidVerificationKeyRelationship::AssertionMethod),
+			RuntimeCall::Ctype { .. } => Ok(did::DidVerificationKeyRelationship::AssertionMethod),
+			RuntimeCall::Delegation { .. } => Ok(did::DidVerificationKeyRelationship::CapabilityDelegation),
 			// DID creation is not allowed through the DID proxy.
-			Call::Did(did::Call::create { .. }) => Err(did::RelationshipDeriveError::NotCallableByDid),
-			Call::Did { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
-			Call::Web3Names { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
-			Call::DidLookup { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
-			Call::PublicCredentials { .. } => Ok(did::DidVerificationKeyRelationship::AssertionMethod),
-			Call::Utility(pallet_utility::Call::batch { calls }) => single_key_relationship(&calls[..]),
-			Call::Utility(pallet_utility::Call::batch_all { calls }) => single_key_relationship(&calls[..]),
+			RuntimeCall::Did(did::RuntimeCall::create { .. }) => Err(did::RelationshipDeriveError::NotRuntimeCallableByDid),
+			RuntimeCall::Did { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
+			RuntimeCall::Web3Names { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
+			RuntimeCall::DidLookup { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
+			RuntimeCall::PublicCredentials { .. } => Ok(did::DidVerificationKeyRelationship::AssertionMethod),
+			RuntimeCall::Utility(pallet_utility::RuntimeCall::batch { calls }) => single_key_relationship(&calls[..]),
+			RuntimeCall::Utility(pallet_utility::RuntimeCall::batch_all { calls }) => single_key_relationship(&calls[..]),
 			#[cfg(not(feature = "runtime-benchmarks"))]
-			_ => Err(did::RelationshipDeriveError::NotCallableByDid),
+			_ => Err(did::RelationshipDeriveError::NotRuntimeCallableByDid),
 			// By default, returns the authentication key
 			#[cfg(feature = "runtime-benchmarks")]
 			_ => Ok(did::DidVerificationKeyRelationship::Authentication),
@@ -747,7 +747,7 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 	// Always return a System::remark() extrinsic call
 	#[cfg(feature = "runtime-benchmarks")]
 	fn get_call_for_did_call_benchmark() -> Self {
-		Call::System(frame_system::Call::remark { remark: vec![] })
+		RuntimeCall::System(frame_system::RuntimeCall::remark { remark: vec![] })
 	}
 }
 
@@ -773,11 +773,11 @@ pub type SignedExtra = (
 	pallet_transaction_payment::ChargeTransactionPayment<Runtime>,
 );
 /// Unchecked extrinsic type as expected by this runtime.
-pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<Address, Call, Signature, SignedExtra>;
+pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<Address, RuntimeCall, Signature, SignedExtra>;
 /// The payload being signed in transactions.
-pub type SignedPayload = generic::SignedPayload<Call, SignedExtra>;
+pub type SignedPayload = generic::SignedPayload<RuntimeCall, SignedExtra>;
 /// Extrinsic type that has already been checked.
-pub type CheckedExtrinsic = generic::CheckedExtrinsic<AccountId, Call, SignedExtra>;
+pub type CheckedExtrinsic = generic::CheckedExtrinsic<AccountId, RuntimeCall, SignedExtra>;
 /// Executive: handles dispatch to the various Pallets.
 pub type Executive = frame_executive::Executive<
 	Runtime,
@@ -1073,10 +1073,10 @@ impl_runtime_apis! {
 				// Execution Phase
 				hex_literal::hex!("26aa394eea5630e07c48ae0c9558cef7ff553b5a9862a516939d82b3d3d8661a")
 					.to_vec().into(),
-				// Event Count
+				// RuntimeEvent Count
 				hex_literal::hex!("26aa394eea5630e07c48ae0c9558cef70a98fdbe9ce6c55837576c60c7af3850")
 					.to_vec().into(),
-				// System Events
+				// System RuntimeEvents
 				hex_literal::hex!("26aa394eea5630e07c48ae0c9558cef780d41e5e16056765bc8461851072c9d7")
 					.to_vec().into(),
 			];

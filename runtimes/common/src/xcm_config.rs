@@ -52,9 +52,9 @@ where
 	Deny: ShouldExecute,
 	Allow: ShouldExecute,
 {
-	fn should_execute<Call>(
+	fn should_execute<RuntimeCall>(
 		origin: &MultiLocation,
-		message: &mut Xcm<Call>,
+		message: &mut Xcm<RuntimeCall>,
 		max_weight: u64,
 		weight_credit: &mut u64,
 	) -> Result<(), ()> {
@@ -82,9 +82,9 @@ pub type XcmBarrier = DenyThenTry<
 /// Reserved funds to the relay chain can't return. See https://github.com/paritytech/polkadot/issues/5233
 pub struct DenyReserveTransferToRelayChain;
 impl ShouldExecute for DenyReserveTransferToRelayChain {
-	fn should_execute<Call>(
+	fn should_execute<RuntimeCall>(
 		origin: &MultiLocation,
-		message: &mut Xcm<Call>,
+		message: &mut Xcm<RuntimeCall>,
 		_max_weight: u64,
 		_weight_credit: &mut u64,
 	) -> Result<(), ()> {

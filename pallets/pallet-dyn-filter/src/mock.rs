@@ -40,8 +40,8 @@ frame_support::construct_runtime!(
 		NodeBlock = Block,
 		UncheckedExtrinsic = UncheckedExtrinsic,
 	{
-		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
-		DynFilter: crate::{Pallet, Storage, Call, Event<T>},
+		System: frame_system::{Pallet, RuntimeCall, Config, Storage, RuntimeEvent<T>},
+		DynFilter: crate::{Pallet, Storage, RuntimeCall, RuntimeEvent<T>},
 	}
 );
 
@@ -51,12 +51,12 @@ parameter_types! {
 }
 
 impl frame_system::Config for Test {
-	type BaseCallFilter = frame_support::traits::Everything;
+	type BaseRuntimeCallFilter = frame_support::traits::Everything;
 	type BlockWeights = ();
 	type BlockLength = ();
 	type DbWeight = ();
 	type Origin = Origin;
-	type Call = Call;
+	type RuntimeCall = RuntimeCall;
 	type Index = Index;
 	type BlockNumber = BlockNumber;
 	type Hash = Hash;
@@ -64,7 +64,7 @@ impl frame_system::Config for Test {
 	type AccountId = AccountId;
 	type Lookup = IdentityLookup<Self::AccountId>;
 	type Header = Header;
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type BlockHashCount = BlockHashCount;
 	type Version = ();
 	type PalletInfo = PalletInfo;
@@ -78,14 +78,14 @@ impl frame_system::Config for Test {
 }
 
 impl crate::Config for Test {
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type WeightInfo = ();
 
 	type ApproveOrigin = EnsureRoot<AccountId>;
-	type FeatureCall = FeatureCalls;
-	type TransferCall = TransferCalls;
-	type XcmCall = XcmCalls;
-	type SystemCall = SystemCalls;
+	type FeatureRuntimeCall = FeatureRuntimeCalls;
+	type TransferRuntimeCall = TransferRuntimeCalls;
+	type XcmRuntimeCall = XcmRuntimeCalls;
+	type SystemRuntimeCall = SystemRuntimeCalls;
 }
 
 const TRANSFER: &[u8] = b"trf";
@@ -94,22 +94,22 @@ const XCM: &[u8] = b"xcm";
 const SYSTEM: &[u8] = b"system";
 
 lazy_static! {
-	pub static ref CALL_TRANSFER: Call = Call::System(frame_system::Call::remark {
+	pub static ref CALL_TRANSFER: RuntimeCall = RuntimeCall::System(frame_system::RuntimeCall::remark {
 		remark: TRANSFER.to_vec()
 	});
-	pub static ref CALL_FEATURE: Call = Call::System(frame_system::Call::remark {
+	pub static ref CALL_FEATURE: RuntimeCall = RuntimeCall::System(frame_system::RuntimeCall::remark {
 		remark: FEATURE.to_vec()
 	});
-	pub static ref CALL_XCM: Call = Call::System(frame_system::Call::remark { remark: XCM.to_vec() });
-	pub static ref CALL_SYSTEM: Call = Call::System(frame_system::Call::remark {
+	pub static ref CALL_XCM: RuntimeCall = RuntimeCall::System(frame_system::RuntimeCall::remark { remark: XCM.to_vec() });
+	pub static ref CALL_SYSTEM: RuntimeCall = RuntimeCall::System(frame_system::RuntimeCall::remark {
 		remark: SYSTEM.to_vec()
 	});
 }
 
-pub struct TransferCalls;
-impl Contains<Call> for TransferCalls {
-	fn contains(t: &Call) -> bool {
-		if let Call::System(frame_system::Call::remark { remark }) = t {
+pub struct TransferRuntimeCalls;
+impl Contains<RuntimeCall> for TransferRuntimeCalls {
+	fn contains(t: &RuntimeCall) -> bool {
+		if let RuntimeCall::System(frame_system::RuntimeCall::remark { remark }) = t {
 			&remark[..] == TRANSFER
 		} else {
 			false
@@ -117,20 +117,20 @@ impl Contains<Call> for TransferCalls {
 	}
 }
 
-pub struct FeatureCalls;
-impl Contains<Call> for FeatureCalls {
-	fn contains(t: &Call) -> bool {
-		if let Call::System(frame_system::Call::remark { remark }) = t {
+pub struct FeatureRuntimeCalls;
+impl Contains<RuntimeCall> for FeatureRuntimeCalls {
+	fn contains(t: &RuntimeCall) -> bool {
+		if let RuntimeCall::System(frame_system::RuntimeCall::remark { remark }) = t {
 			&remark[..] == FEATURE
 		} else {
 			false
 		}
 	}
 }
-pub struct XcmCalls;
-impl Contains<Call> for XcmCalls {
-	fn contains(t: &Call) -> bool {
-		if let Call::System(frame_system::Call::remark { remark }) = t {
+pub struct XcmRuntimeCalls;
+impl Contains<RuntimeCall> for XcmRuntimeCalls {
+	fn contains(t: &RuntimeCall) -> bool {
+		if let RuntimeCall::System(frame_system::RuntimeCall::remark { remark }) = t {
 			&remark[..] == XCM
 		} else {
 			false
@@ -138,10 +138,10 @@ impl Contains<Call> for XcmCalls {
 	}
 }
 
-pub struct SystemCalls;
-impl Contains<Call> for SystemCalls {
-	fn contains(t: &Call) -> bool {
-		if let Call::System(frame_system::Call::remark { remark }) = t {
+pub struct SystemRuntimeCalls;
+impl Contains<RuntimeCall> for SystemRuntimeCalls {
+	fn contains(t: &RuntimeCall) -> bool {
+		if let RuntimeCall::System(frame_system::RuntimeCall::remark { remark }) = t {
 			&remark[..] == SYSTEM
 		} else {
 			false

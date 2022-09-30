@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-//! # Dynamic Call Filter
+//! # Dynamic RuntimeCall Filter
 //!
 //! Enable or disable specific features without a runtime upgrade.
 //!
@@ -53,24 +53,25 @@ pub mod pallet {
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
-		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
 		/// The origin check for the authorised entities that can change the
 		/// filter.
 		type ApproveOrigin: EnsureOrigin<<Self as frame_system::Config>::Origin>;
 
-		/// TransferCall filters all calls that allow to transfer funds.
-		type TransferCall: Contains<<Self as frame_system::Config>::Call>;
+		/// TransferRuntimeCall filters all calls that allow to transfer funds.
+		type TransferRuntimeCall: Contains<<Self as frame_system::Config>::RuntimeCall>;
 
-		/// FeatureCall filters all calls that provide the utility of the chain.
-		type FeatureCall: Contains<<Self as frame_system::Config>::Call>;
+		/// FeatureRuntimeCall filters all calls that provide the utility of the
+		/// chain.
+		type FeatureRuntimeCall: Contains<<Self as frame_system::Config>::RuntimeCall>;
 
-		/// XcmCall filters all calls that send messages to other chains
-		type XcmCall: Contains<<Self as frame_system::Config>::Call>;
+		/// XcmRuntimeCall filters all calls that send messages to other chains
+		type XcmRuntimeCall: Contains<<Self as frame_system::Config>::RuntimeCall>;
 
-		/// System calls are not filtered. (SystemCall contains all calls that
-		/// are needed for block production, return true if system call)
-		type SystemCall: Contains<<Self as frame_system::Config>::Call>;
+		/// System calls are not filtered. (SystemRuntimeCall contains all calls
+		/// that are needed for block production, return true if system call)
+		type SystemRuntimeCall: Contains<<Self as frame_system::Config>::RuntimeCall>;
 
 		/// Weight information for extrinsics in this pallet.
 		type WeightInfo: WeightInfo;
@@ -106,12 +107,12 @@ pub mod pallet {
 		}
 	}
 
-	impl<T: Config> Contains<T::Call> for Pallet<T> {
+	impl<T: Config> Contains<T::RuntimeCall> for Pallet<T> {
 		/// The provided call goes through if this returns `true`. Else, it
 		/// fails.
-		fn contains(t: &T::Call) -> bool {
+		fn contains(t: &T::RuntimeCall) -> bool {
 			// System relevant calls cannot be filtered
-			if T::SystemCall::contains(t) {
+			if T::SystemRuntimeCall::contains(t) {
 				return true;
 			}
 
@@ -121,9 +122,9 @@ pub mod pallet {
 				xcm_disabled,
 			} = Filter::<T>::get();
 
-			!((transfer_disabled && T::TransferCall::contains(t))
-				|| (feature_disabled && T::FeatureCall::contains(t))
-				|| (xcm_disabled && T::XcmCall::contains(t)))
+			!((transfer_disabled && T::TransferRuntimeCall::contains(t))
+				|| (feature_disabled && T::FeatureRuntimeCall::contains(t))
+				|| (xcm_disabled && T::XcmRuntimeCall::contains(t)))
 		}
 	}
 }

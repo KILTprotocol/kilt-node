@@ -11,10 +11,10 @@ jsonrpsee = { version = "0.15.1", features = ["server", "macros"] }
 
 did-rpc-runtime-api = {version = "1.7.2", path = "./runtime-api"}
 
-sp-api = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.29"}
-sp-blockchain = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.29"}
-sp-core = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.29"}
-sp-runtime = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.29"}
+sp-api = {git = "https://github.com/paritytech/substrate", default-features = false, rev = "dc22e48e1da70b84fb7b8a1ffc2076cf1b6e1d99" }
+sp-blockchain = {git = "https://github.com/paritytech/substrate", default-features = false, rev = "dc22e48e1da70b84fb7b8a1ffc2076cf1b6e1d99" }
+sp-core = {git = "https://github.com/paritytech/substrate", default-features = false, rev = "dc22e48e1da70b84fb7b8a1ffc2076cf1b6e1d99" }
+sp-runtime = {git = "https://github.com/paritytech/substrate", default-features = false, rev = "dc22e48e1da70b84fb7b8a1ffc2076cf1b6e1d99" }
 
 [features]
 default = ["std"]

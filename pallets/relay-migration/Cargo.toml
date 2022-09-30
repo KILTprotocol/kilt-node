@@ -11,28 +11,28 @@ targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
 codec = {package = "parity-scale-codec", version = "3.1.5", default-features = false, features = ["derive"]}
-cumulus-pallet-parachain-system = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "polkadot-v0.9.29"}
-cumulus-primitives-core = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "polkadot-v0.9.29"}
+cumulus-pallet-parachain-system = {git = "https://github.com/paritytech/cumulus", default-features = false, rev = "5b5f1d0862be053c399c76ed95174da293fb537e" }
+cumulus-primitives-core = {git = "https://github.com/paritytech/cumulus", default-features = false, rev = "5b5f1d0862be053c399c76ed95174da293fb537e" }
 log = "0.4.17"
-pallet-xcm = {git = "https://github.com/paritytech/polkadot", default-features = false, branch = "release-v0.9.29"}
-polkadot-core-primitives = {git = "https://github.com/paritytech/polkadot", default-features = false, branch = "release-v0.9.29"}
-polkadot-runtime-common = {git = "https://github.com/paritytech/polkadot", default-features = false, branch = "release-v0.9.29"}
+pallet-xcm = {git = "https://github.com/paritytech/polkadot", default-features = false, rev = "7725d4b5a12eb503a2380ac534468b87b4476f03" }
+polkadot-core-primitives = {git = "https://github.com/paritytech/polkadot", default-features = false, rev = "7725d4b5a12eb503a2380ac534468b87b4476f03" }
+polkadot-runtime-common = {git = "https://github.com/paritytech/polkadot", default-features = false, rev = "7725d4b5a12eb503a2380ac534468b87b4476f03" }
 scale-info = {version = "2.1.1", default-features = false, features = ["derive"]}
-xcm = {git = "https://github.com/paritytech/polkadot", default-features = false, branch = "release-v0.9.29"}
+xcm = {git = "https://github.com/paritytech/polkadot", default-features = false, rev = "7725d4b5a12eb503a2380ac534468b87b4476f03" }
 
 # KILT
 kilt-support = {default-features = false, path = "../../support"}
 
 # Substrate dependencies
-frame-support = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
-frame-system = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-core = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-io = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-runtime = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-std = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
+frame-support = { default-features = false, git = "https://github.com/paritytech/substrate", rev = "dc22e48e1da70b84fb7b8a1ffc2076cf1b6e1d99" }
+frame-system = { default-features = false, git = "https://github.com/paritytech/substrate", rev = "dc22e48e1da70b84fb7b8a1ffc2076cf1b6e1d99" }
+sp-core = { default-features = false, git = "https://github.com/paritytech/substrate", rev = "dc22e48e1da70b84fb7b8a1ffc2076cf1b6e1d99" }
+sp-io = { default-features = false, git = "https://github.com/paritytech/substrate", rev = "dc22e48e1da70b84fb7b8a1ffc2076cf1b6e1d99" }
+sp-runtime = { default-features = false, git = "https://github.com/paritytech/substrate", rev = "dc22e48e1da70b84fb7b8a1ffc2076cf1b6e1d99" }
+sp-std = { default-features = false, git = "https://github.com/paritytech/substrate", rev = "dc22e48e1da70b84fb7b8a1ffc2076cf1b6e1d99" }
 
 # benchmarking
-frame-benchmarking = {branch = "polkadot-v0.9.29", optional = true, default-features = false, git = "https://github.com/paritytech/substrate"}
+frame-benchmarking = { optional = true, default-features = false, git = "https://github.com/paritytech/substrate", rev = "dc22e48e1da70b84fb7b8a1ffc2076cf1b6e1d99" }
 
 [features]
 default = ["std"]

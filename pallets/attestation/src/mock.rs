@@ -200,10 +200,10 @@ pub(crate) mod runtime {
 			NodeBlock = Block,
 			UncheckedExtrinsic = UncheckedExtrinsic,
 		{
-			System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
-			Attestation: crate::{Pallet, Call, Storage, Event<T>},
-			Ctype: ctype::{Pallet, Call, Storage, Event<T>},
-			Balances: pallet_balances::{Pallet, Call, Storage, Event<T>},
+			System: frame_system::{Pallet, RuntimeCall, Config, Storage, RuntimeEvent<T>},
+			Attestation: crate::{Pallet, RuntimeCall, Storage, RuntimeEvent<T>},
+			Ctype: ctype::{Pallet, RuntimeCall, Storage, RuntimeEvent<T>},
+			Balances: pallet_balances::{Pallet, RuntimeCall, Storage, RuntimeEvent<T>},
 			MockOrigin: mock_origin::{Pallet, Origin<T>},
 		}
 	);
@@ -215,7 +215,7 @@ pub(crate) mod runtime {
 
 	impl frame_system::Config for Test {
 		type Origin = Origin;
-		type Call = Call;
+		type RuntimeCall = RuntimeCall;
 		type Index = u64;
 		type BlockNumber = u64;
 		type Hash = Hash;
@@ -223,7 +223,7 @@ pub(crate) mod runtime {
 		type AccountId = AccountId;
 		type Lookup = IdentityLookup<Self::AccountId>;
 		type Header = Header;
-		type Event = ();
+		type RuntimeEvent = ();
 		type BlockHashCount = BlockHashCount;
 		type DbWeight = RocksDbWeight;
 		type Version = ();
@@ -232,7 +232,7 @@ pub(crate) mod runtime {
 		type AccountData = pallet_balances::AccountData<Balance>;
 		type OnNewAccount = ();
 		type OnKilledAccount = ();
-		type BaseCallFilter = frame_support::traits::Everything;
+		type BaseRuntimeCallFilter = frame_support::traits::Everything;
 		type SystemWeightInfo = ();
 		type BlockWeights = ();
 		type BlockLength = ();
@@ -250,7 +250,7 @@ pub(crate) mod runtime {
 	impl pallet_balances::Config for Test {
 		type Balance = Balance;
 		type DustRemoval = ();
-		type Event = ();
+		type RuntimeEvent = ();
 		type ExistentialDeposit = ExistentialDeposit;
 		type AccountStore = System;
 		type WeightInfo = ();
@@ -267,7 +267,7 @@ pub(crate) mod runtime {
 		type CtypeCreatorId = SubjectId;
 		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<AccountId, Self::CtypeCreatorId>;
 		type OriginSuccess = mock_origin::DoubleOrigin<AccountId, Self::CtypeCreatorId>;
-		type Event = ();
+		type RuntimeEvent = ();
 		type WeightInfo = ();
 
 		type Currency = Balances;
@@ -289,7 +289,7 @@ pub(crate) mod runtime {
 	impl Config for Test {
 		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<AccountId, AttesterOf<Self>>;
 		type OriginSuccess = mock_origin::DoubleOrigin<AccountId, AttesterOf<Self>>;
-		type Event = ();
+		type RuntimeEvent = ();
 		type WeightInfo = ();
 
 		type Currency = Balances;

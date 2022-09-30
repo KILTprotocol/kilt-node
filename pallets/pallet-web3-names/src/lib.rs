@@ -48,7 +48,7 @@ pub mod pallet {
 	use frame_system::pallet_prelude::*;
 	use sp_std::{fmt::Debug, vec::Vec};
 
-	use kilt_support::{deposit::Deposit, traits::CallSources};
+	use kilt_support::{deposit::Deposit, traits::RuntimeCallSources};
 
 	use super::WeightInfo;
 	use crate::web3_name::Web3NameOwnership;
@@ -95,14 +95,15 @@ pub mod pallet {
 		/// The origin allowed to perform regular operations.
 		type OwnerOrigin: EnsureOrigin<Success = Self::OriginSuccess, <Self as frame_system::Config>::Origin>;
 		/// The type of origin after a successful origin check.
-		type OriginSuccess: CallSources<AccountIdOf<Self>, Web3NameOwnerOf<Self>>;
+		type OriginSuccess: RuntimeCallSources<AccountIdOf<Self>, Web3NameOwnerOf<Self>>;
 		/// The currency type to reserve and release deposits.
 		type Currency: ReservableCurrency<AccountIdOf<Self>>;
 		/// The amount of KILT to deposit to claim a name.
 		#[pallet::constant]
 		type Deposit: Get<BalanceOf<Self>>;
 		/// The overarching event type.
-		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
+
 		/// The min encoded length of a name.
 		#[pallet::constant]
 		type MinNameLength: Get<u32>;

@@ -24,7 +24,7 @@
 //! appending them to the root node resulting in a tree structure.
 //!
 //! - [`Config`]
-//! - [`Call`]
+//! - [`RuntimeCall`]
 //! - [`Pallet`]
 //!
 //! ### Terminology
@@ -100,7 +100,7 @@ pub mod pallet {
 	use kilt_support::{
 		deposit::Deposit,
 		signature::{SignatureVerificationError, VerifySignature},
-		traits::CallSources,
+		traits::RuntimeCallSources,
 	};
 	use scale_info::TypeInfo;
 
@@ -143,8 +143,9 @@ pub mod pallet {
 			Success = <Self as Config>::OriginSuccess,
 			<Self as frame_system::Config>::Origin,
 		>;
-		type OriginSuccess: CallSources<AccountIdOf<Self>, DelegatorIdOf<Self>>;
-		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+		type OriginSuccess: RuntimeCallSources<AccountIdOf<Self>, DelegatorIdOf<Self>>;
+		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
+
 		type WeightInfo: WeightInfo;
 
 		/// The currency that is used to reserve funds for each delegation.

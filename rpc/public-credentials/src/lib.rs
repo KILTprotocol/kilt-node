@@ -24,7 +24,7 @@ use codec::Codec;
 use jsonrpsee::{
 	core::{async_trait, RpcResult},
 	proc_macros::rpc,
-	types::error::{CallError, ErrorObject},
+	types::error::{RuntimeCallError, ErrorObject},
 };
 
 use sp_api::ProvideRuntimeApi;
@@ -172,7 +172,7 @@ impl<
 		let at = BlockId::hash(at.unwrap_or_else(|| self.client.info().best_hash));
 
 		let into_credential_id: CredentialId = credential_id.try_into().map_err(|_| {
-			CallError::Custom(ErrorObject::owned(
+			RuntimeCallError::Custom(ErrorObject::owned(
 				Error::Conversion as i32,
 				"Unable to convert input to a valid credential ID.",
 				Option::<String>::None,
@@ -180,7 +180,7 @@ impl<
 		})?;
 
 		let credential = api.get_credential(&at, into_credential_id).map_err(|_| {
-			CallError::Custom(ErrorObject::owned(
+			RuntimeCallError::Custom(ErrorObject::owned(
 				Error::Runtime as i32,
 				"Unable to get credential.",
 				Option::<String>::None,
@@ -199,7 +199,7 @@ impl<
 		let at = BlockId::hash(at.unwrap_or_else(|| self.client.info().best_hash));
 
 		let into_subject: SubjectId = subject.try_into().map_err(|_| {
-			CallError::Custom(ErrorObject::owned(
+			RuntimeCallError::Custom(ErrorObject::owned(
 				Error::Conversion as i32,
 				"Unable to convert input to a valid subject ID",
 				Option::<String>::None,
@@ -207,7 +207,7 @@ impl<
 		})?;
 
 		let credentials = api.get_credentials(&at, into_subject).map_err(|_| {
-			CallError::Custom(ErrorObject::owned(
+			RuntimeCallError::Custom(ErrorObject::owned(
 				Error::Runtime as i32,
 				"Unable to get credentials",
 				Option::<String>::None,

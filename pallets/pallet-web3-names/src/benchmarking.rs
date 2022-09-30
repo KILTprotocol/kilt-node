@@ -29,7 +29,7 @@ use sp_runtime::app_crypto::sr25519;
 
 use kilt_support::{deposit::Deposit, traits::GenerateBenchmarkOrigin};
 
-use crate::{AccountIdOf, Banned, Call, Config, CurrencyOf, Names, Owner, Pallet, Web3NameOf, Web3NameOwnerOf};
+use crate::{AccountIdOf, Banned, RuntimeCall, Config, CurrencyOf, Names, Owner, Pallet, Web3NameOf, Web3NameOwnerOf};
 
 const CALLER_SEED: u32 = 0;
 const OWNER_SEED: u32 = 1;

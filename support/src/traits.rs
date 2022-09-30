@@ -27,7 +27,7 @@ use xcm::latest::Xcm;
 /// This trait allows to differentiate between the sender of a call and the
 /// subject of the call. The sender account submitted the call to the chain and
 /// might pay all fees and deposits that are required by the call.
-pub trait CallSources<S, P> {
+pub trait RuntimeCallSources<S, P> {
 	/// The sender of the call who will pay for all deposits and fees.
 	fn sender(&self) -> S;
 
@@ -35,7 +35,7 @@ pub trait CallSources<S, P> {
 	fn subject(&self) -> P;
 }
 
-impl<S: Clone> CallSources<S, S> for S {
+impl<S: Clone> RuntimeCallSources<S, S> for S {
 	fn sender(&self) -> S {
 		self.clone()
 	}
@@ -45,7 +45,7 @@ impl<S: Clone> CallSources<S, S> for S {
 	}
 }
 
-impl<S: Clone, P: Clone> CallSources<S, P> for (S, P) {
+impl<S: Clone, P: Clone> RuntimeCallSources<S, P> for (S, P) {
 	fn sender(&self) -> S {
 		self.0.clone()
 	}
@@ -84,22 +84,22 @@ pub trait GetWorstCase {
 
 /// Trait to reflect calls to the relaychain which we support on the pallet
 /// level.
-pub trait RelayCallBuilder {
+pub trait RelayRuntimeCallBuilder {
 	type AccountId: FullCodec;
 	type Balance: FullCodec;
-	type RelayChainCall: FullCodec + EncodeLike + sp_std::fmt::Debug + Clone + PartialEq + Eq + TypeInfo;
+	type RelayChainRuntimeCall: FullCodec + EncodeLike + sp_std::fmt::Debug + Clone + PartialEq + Eq + TypeInfo;
 
 	/// Execute multiple calls in a batch.
 	///
 	/// * calls: The list of calls to be executed.
-	fn utility_batch_call(calls: Vec<Self::RelayChainCall>) -> Self::RelayChainCall;
+	fn utility_batch_call(calls: Vec<Self::RelayChainRuntimeCall>) -> Self::RelayChainRuntimeCall;
 
 	/// Execute a call, replacing the `Origin` with a sub-account.
 	///
 	/// * call: The call to be executed. Can be nested with
 	///   `utility_batch_call`.
 	/// * index: The index of the sub-account to be used as the new origin.
-	fn utility_as_derivative_call(call: Self::RelayChainCall, index: u16) -> Self::RelayChainCall;
+	fn utility_as_derivative_call(call: Self::RelayChainRuntimeCall, index: u16) -> Self::RelayChainRuntimeCall;
 
 	/// Execute a parachain lease swap call.
 	///
@@ -107,7 +107,7 @@ pub trait RelayCallBuilder {
 	///   parachain that executes this XCM call, e.g. the source.
 	/// * other: The target para id with which the lease swap should be
 	///   executed.
-	fn swap_call(id: ParaId, other: ParaId) -> Self::RelayChainCall;
+	fn swap_call(id: ParaId, other: ParaId) -> Self::RelayChainRuntimeCall;
 
 	/// Wrap the final calls into the latest Xcm format.
 	///

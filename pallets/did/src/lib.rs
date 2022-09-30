@@ -26,7 +26,7 @@
 //! X25519 for encryption keys.
 //!
 //! - [`Config`]
-//! - [`Call`]
+//! - [`RuntimeCall`]
 //! - [`Origin`]
 //! - [`Pallet`]
 //!
@@ -102,8 +102,8 @@ mod utils;
 pub use crate::{
 	default_weights::WeightInfo,
 	did_details::{
-		DeriveDidCallAuthorizationVerificationKeyRelationship, DeriveDidCallKeyRelationshipResult,
-		DidAuthorizedCallOperationWithVerificationRelationship, DidSignature, DidVerificationKeyRelationship,
+		DeriveDidRuntimeCallAuthorizationVerificationKeyRelationship, DeriveDidRuntimeCallKeyRelationshipResult,
+		DidAuthorizedRuntimeCallOperationWithVerificationRelationship, DidSignature, DidVerificationKeyRelationship,
 		RelationshipDeriveError,
 	},
 	origin::{DidRawOrigin, EnsureDidOrigin},
@@ -138,14 +138,14 @@ pub mod pallet {
 		traits::{Currency, ExistenceRequirement, Imbalance, ReservableCurrency, StorageVersion},
 	};
 	use frame_system::pallet_prelude::*;
-	use kilt_support::{deposit::Deposit, traits::CallSources};
+	use kilt_support::{deposit::Deposit, traits::RuntimeCallSources};
 	use sp_runtime::traits::BadOrigin;
 
 	use crate::{
 		did_details::{
-			DeriveDidCallAuthorizationVerificationKeyRelationship, DidAuthorizedCallOperation, DidCreationDetails,
-			DidDetails, DidEncryptionKey, DidSignature, DidVerifiableIdentifier, DidVerificationKey,
-			RelationshipDeriveError,
+			DeriveDidRuntimeCallAuthorizationVerificationKeyRelationship, DidAuthorizedRuntimeCallOperation,
+			DidCreationDetails, DidDetails, DidEncryptionKey, DidSignature, DidVerifiableIdentifier,
+			DidVerificationKey, RelationshipDeriveError,
 		},
 		errors::{DidError, InputError, SignatureError, StorageError},
 		service_endpoints::{DidEndpoint, ServiceEndpointId},
@@ -170,7 +170,7 @@ pub mod pallet {
 	pub type BlockNumberOf<T> = <T as frame_system::Config>::BlockNumber;
 
 	/// Type for a runtime extrinsic callable under DID-based authorisation.
-	pub type DidCallableOf<T> = <T as Config>::Call;
+	pub type DidRuntimeCallableOf<T> = <T as Config>::RuntimeCall;
 
 	/// Type for origin that supports a DID sender.
 	#[pallet::origin]
@@ -184,10 +184,10 @@ pub mod pallet {
 	pub trait Config: frame_system::Config + Debug {
 		/// Type for a dispatchable call that can be proxied through the DID
 		/// pallet to support DID-based authorisation.
-		type Call: Parameter
+		type RuntimeCall: Parameter
 			+ Dispatchable<Origin = <Self as Config>::Origin, PostInfo = PostDispatchInfo>
 			+ GetDispatchInfo
-			+ DeriveDidCallAuthorizationVerificationKeyRelationship;
+			+ DeriveDidRuntimeCallAuthorizationVerificationKeyRelationship;
 
 		/// Type for a DID subject identifier.
 		type DidIdentifier: Parameter + DidVerifiableIdentifier + MaxEncodedLen;
@@ -205,10 +205,10 @@ pub mod pallet {
 		>;
 
 		/// The return type when the DID origin check was successful.
-		type OriginSuccess: CallSources<AccountIdOf<Self>, DidIdentifierOf<Self>>;
+		type OriginSuccess: RuntimeCallSources<AccountIdOf<Self>, DidIdentifierOf<Self>>;
 
 		/// Overarching event type.
-		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
 		/// The currency that is used to reserve funds for each did.
 		type Currency: ReservableCurrency<AccountIdOf<Self>>;
@@ -328,7 +328,7 @@ pub mod pallet {
 		DidDeleted(DidIdentifierOf<T>),
 		/// A DID-authorised call has been executed.
 		/// \[DID caller, dispatch result\]
-		DidCallDispatched(DidIdentifierOf<T>, DispatchResult),
+		DidRuntimeCallDispatched(DidIdentifierOf<T>, DispatchResult),
 	}
 
 	#[pallet::error]
@@ -349,10 +349,10 @@ pub mod pallet {
 		/// The DID operation nonce is not equal to the current DID nonce + 1.
 		InvalidNonce,
 		/// The called extrinsic does not support DID authorisation.
-		UnsupportedDidAuthorizationCall,
+		UnsupportedDidAuthorizationRuntimeCall,
 		/// The call had parameters that conflicted with each other
 		/// or were invalid.
-		InvalidDidAuthorizationCall,
+		InvalidDidAuthorizationRuntimeCall,
 		/// A number of new key agreement keys greater than the maximum allowed
 		/// has been provided.
 		MaxKeyAgreementKeysLimitExceeded,
@@ -453,8 +453,8 @@ pub mod pallet {
 	impl<T> From<RelationshipDeriveError> for Error<T> {
 		fn from(error: RelationshipDeriveError) -> Self {
 			match error {
-				RelationshipDeriveError::InvalidCallParameter => Self::InvalidDidAuthorizationCall,
-				RelationshipDeriveError::NotCallableByDid => Self::UnsupportedDidAuthorizationCall,
+				RelationshipDeriveError::InvalidRuntimeCallParameter => Self::InvalidDidAuthorizationRuntimeCall,
+				RelationshipDeriveError::NotRuntimeCallableByDid => Self::UnsupportedDidAuthorizationRuntimeCall,
 			}
 		}
 	}
@@ -981,12 +981,12 @@ pub mod pallet {
 		///
 		/// A call submitted through this extrinsic must be signed with the
 		/// right DID key, depending on the call. This information is provided
-		/// by the `DidAuthorizedCallOperation` parameter, which specifies the
-		/// DID subject acting as the origin of the call, the DID's tx counter
-		/// (nonce), the dispatchable to call in case signature verification
-		/// succeeds, the type of DID key to use to verify the operation
-		/// signature, and the block number the operation was targeting for
-		/// inclusion, when it was created and signed.
+		/// by the `DidAuthorizedRuntimeCallOperation` parameter, which
+		/// specifies the DID subject acting as the origin of the call, the
+		/// DID's tx counter (nonce), the dispatchable to call in case signature
+		/// verification succeeds, the type of DID key to use to verify the
+		/// operation signature, and the block number the operation was
+		/// targeting for inclusion, when it was created and signed.
 		///
 		/// In case the signature is incorrect, the nonce is not valid, the
 		/// required key is not present for the specified DID, or the block
@@ -1001,7 +1001,7 @@ pub mod pallet {
 		/// execute the extrinsic and it does not have to be tied in any way to
 		/// the KILT account identifying the DID subject.
 		///
-		/// Emits `DidCallDispatched`.
+		/// Emits `DidRuntimeCallDispatched`.
 		///
 		/// # <weight>
 		/// Weight: O(1) + weight of the dispatched call
@@ -1019,7 +1019,7 @@ pub mod pallet {
 		})]
 		pub fn submit_did_call(
 			origin: OriginFor<T>,
-			did_call: Box<DidAuthorizedCallOperation<T>>,
+			did_call: Box<DidAuthorizedRuntimeCallOperation<T>>,
 			signature: DidSignature,
 		) -> DispatchResultWithPostInfo {
 			let who = ensure_signed(origin)?;
@@ -1035,7 +1035,7 @@ pub mod pallet {
 				.map_err(Error::<T>::from)?;
 
 			// Wrap the operation in the expected structure, specifying the key retrieved
-			let wrapped_operation = DidAuthorizedCallOperationWithVerificationRelationship {
+			let wrapped_operation = DidAuthorizedRuntimeCallOperationWithVerificationRelationship {
 				operation: *did_call,
 				verification_key_relationship,
 			};
@@ -1045,8 +1045,8 @@ pub mod pallet {
 
 			log::debug!("Dispatch call from DID {:?}", did_identifier);
 
-			// Dispatch the referenced [Call] instance and return its result
-			let DidAuthorizedCallOperation { did, call, .. } = wrapped_operation.operation;
+			// Dispatch the referenced [RuntimeCall] instance and return its result
+			let DidAuthorizedRuntimeCallOperation { did, call, .. } = wrapped_operation.operation;
 
 			// *** No Fail beyond this point ***
 
@@ -1063,7 +1063,10 @@ pub mod pallet {
 
 			let dispatch_event_payload = result.map(|_| ()).map_err(|e| e.error);
 
-			Self::deposit_event(Event::DidCallDispatched(did_identifier, dispatch_event_payload));
+			Self::deposit_event(RuntimeEveRuntimeCallDidRuntimeCallDispatched(
+				did_identifier,
+				dispatch_event_payload,
+			));
 
 			result
 		}
@@ -1105,7 +1108,7 @@ pub mod pallet {
 		/// - Writes: Did
 		/// # </weight>
 		pub fn verify_did_operation_signature_and_increase_nonce(
-			operation: &DidAuthorizedCallOperationWithVerificationRelationship<T>,
+			operation: &DidAuthorizedRuntimeCallOperationWithVerificationRelationship<T>,
 			signature: &DidSignature,
 		) -> Result<(), DidError> {
 			// Check that the tx has not expired.

@@ -21,7 +21,7 @@
 //! Provides means of adding KILT attestations on chain and revoking them.
 //!
 //! - [`Config`]
-//! - [`Call`]
+//! - [`RuntimeCall`]
 //! - [`Pallet`]
 //!
 //! ### Terminology
@@ -89,7 +89,7 @@ pub mod pallet {
 	use frame_system::pallet_prelude::*;
 
 	use ctype::CtypeHashOf;
-	use kilt_support::traits::CallSources;
+	use kilt_support::traits::RuntimeCallSources;
 
 	/// The current storage version.
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
@@ -115,8 +115,9 @@ pub mod pallet {
 			Success = <Self as Config>::OriginSuccess,
 			<Self as frame_system::Config>::Origin,
 		>;
-		type OriginSuccess: CallSources<AccountIdOf<Self>, AttesterOf<Self>>;
-		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+		type OriginSuccess: RuntimeCallSources<AccountIdOf<Self>, AttesterOf<Self>>;
+		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
+
 		type WeightInfo: WeightInfo;
 
 		/// The currency that is used to reserve funds for each attestation.
@@ -278,7 +279,12 @@ pub mod pallet {
 				ExternalAttestations::<T>::insert(authorization_id, claim_hash, true);
 			}
 
-			Self::deposit_event(Event::AttestationCreated(who, claim_hash, ctype_hash, authorization_id));
+			Self::deposit_event(Event::AttestationCreated(
+				who,
+				claim_hash,
+				ctype_hash,
+				authorization_id,
+			));
 
 			Ok(())
 		}

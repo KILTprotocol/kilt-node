@@ -17,7 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use super::{
-	AccountId, Balances, Call, Event, Origin, ParachainInfo, ParachainSystem, PolkadotXcm, Runtime, WeightToFee,
+	AccountId, Balances, RuntimeCall, RuntimeEvent, Origin, ParachainInfo, ParachainSystem, PolkadotXcm, Runtime, WeightToFee,
 	XcmpQueue,
 };
 
@@ -64,7 +64,7 @@ pub type XcmOriginToTransactDispatchOrigin = (
 
 pub struct XcmConfig;
 impl xcm_executor::Config for XcmConfig {
-	type Call = Call;
+	type RuntimeCall = RuntimeCall;
 	// How we send Xcm messages.
 	type XcmSender = XcmRouter;
 	// How to withdraw and deposit an asset.
@@ -83,7 +83,7 @@ impl xcm_executor::Config for XcmConfig {
 	type Barrier = XcmBarrier;
 	// How XCM messages are weighted. Each transaction has a weight of
 	// `UnitWeightCost`.
-	type Weigher = FixedWeightBounds<UnitWeightCost, Call, MaxInstructions>;
+	type Weigher = FixedWeightBounds<UnitWeightCost, RuntimeCall, MaxInstructions>;
 	// How weight is transformed into fees. The fees are not taken out of the
 	// Balances pallet here. Balances is only used if fees are dropped without being
 	// used. In that case they are put into the treasury.
@@ -110,7 +110,7 @@ pub type XcmRouter = (
 );
 
 impl pallet_xcm::Config for Runtime {
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type SendXcmOrigin = EnsureXcmOrigin<Origin, LocalOriginToLocation>;
 	type XcmRouter = XcmRouter;
 	type ExecuteXcmOrigin = EnsureXcmOrigin<Origin, LocalOriginToLocation>;
@@ -120,10 +120,10 @@ impl pallet_xcm::Config for Runtime {
 	type XcmExecutor = XcmExecutor<XcmConfig>;
 	type XcmTeleportFilter = Everything;
 	type XcmReserveTransferFilter = Nothing;
-	type Weigher = FixedWeightBounds<UnitWeightCost, Call, MaxInstructions>;
+	type Weigher = FixedWeightBounds<UnitWeightCost, RuntimeCall, MaxInstructions>;
 	type LocationInverter = LocationInverter<Ancestry>;
 	type Origin = Origin;
-	type Call = Call;
+	type RuntimeCall = RuntimeCall;
 
 	const VERSION_DISCOVERY_QUEUE_SIZE: u32 = 100;
 	// Our latest supported XCM version.
@@ -131,6 +131,6 @@ impl pallet_xcm::Config for Runtime {
 }
 
 impl cumulus_pallet_xcm::Config for Runtime {
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type XcmExecutor = XcmExecutor<XcmConfig>;
 }

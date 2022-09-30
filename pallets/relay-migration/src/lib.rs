@@ -32,7 +32,7 @@ pub use pallet::*;
 pub mod pallet {
 	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
-	use kilt_support::traits::RelayCallBuilder;
+	use kilt_support::traits::RelayRuntimeCallBuilder;
 	use sp_std::vec::Vec;
 	use xcm::v2::{Junctions::Here, Parent};
 
@@ -42,14 +42,14 @@ pub mod pallet {
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config + pallet_xcm::Config {
-		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
 		/// Origin from which calls of this pallet can be made.
 		type ApproveOrigin: EnsureOrigin<<Self as frame_system::Config>::Origin>;
 
-		/// The Call builder for communicating with RelayChain via XCM
+		/// The RuntimeCall builder for communicating with RelayChain via XCM
 		/// messaging.
-		type RelayChainCallBuilder: RelayCallBuilder<
+		type RelayChainRuntimeCallBuilder: RelayRuntimeCallBuilder<
 			AccountId = Self::AccountId,
 			Balance = polkadot_core_primitives::Balance,
 		>;
@@ -89,7 +89,7 @@ pub mod pallet {
 		) -> DispatchResult {
 			T::ApproveOrigin::ensure_origin(origin)?;
 			let xcm_message =
-				T::RelayChainCallBuilder::finalize_call_into_xcm_message(relay_call, relay_balance, max_weight);
+				T::RelayChainRuntimeCallBuilder::finalize_call_into_xcm_message(relay_call, relay_balance, max_weight);
 
 			let result = pallet_xcm::Pallet::<T>::send_xcm(Here, Parent, xcm_message);
 			log::debug!("Sending XCM with result: {:?}", result);

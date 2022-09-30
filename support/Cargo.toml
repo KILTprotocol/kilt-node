@@ -12,14 +12,14 @@ codec = {package = "parity-scale-codec", version = "3.1.5", default-features = f
 scale-info = {version = "2.1.1", default-features = false, features = ["derive"]}
 serde = {version = "1.0.136", optional = true, features = ["derive"]}
 
-cumulus-primitives-core = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/cumulus"}
-frame-support = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
-frame-system = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
-polkadot-core-primitives = {branch = "release-v0.9.29", default-features = false, git = "https://github.com/paritytech/polkadot"}
-sp-core = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-runtime = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-std = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
-xcm = {branch = "release-v0.9.29", default-features = false, git = "https://github.com/paritytech/polkadot"}
+cumulus-primitives-core = { default-features = false, git = "https://github.com/paritytech/cumulus", rev = "5b5f1d0862be053c399c76ed95174da293fb537e" }
+frame-support = { default-features = false, git = "https://github.com/paritytech/substrate", rev = "dc22e48e1da70b84fb7b8a1ffc2076cf1b6e1d99" }
+frame-system = { default-features = false, git = "https://github.com/paritytech/substrate", rev = "dc22e48e1da70b84fb7b8a1ffc2076cf1b6e1d99" }
+polkadot-core-primitives = { default-features = false, git = "https://github.com/paritytech/polkadot", rev = "7725d4b5a12eb503a2380ac534468b87b4476f03" }
+sp-core = { default-features = false, git = "https://github.com/paritytech/substrate", rev = "dc22e48e1da70b84fb7b8a1ffc2076cf1b6e1d99" }
+sp-runtime = { default-features = false, git = "https://github.com/paritytech/substrate", rev = "dc22e48e1da70b84fb7b8a1ffc2076cf1b6e1d99" }
+sp-std = { default-features = false, git = "https://github.com/paritytech/substrate", rev = "dc22e48e1da70b84fb7b8a1ffc2076cf1b6e1d99" }
+xcm = { default-features = false, git = "https://github.com/paritytech/polkadot", rev = "7725d4b5a12eb503a2380ac534468b87b4476f03" }
 
 [dev-dependencies]
 serde_json = "1.0.83"

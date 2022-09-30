@@ -23,7 +23,7 @@ use did_rpc_runtime_api::{DidLinkedInfo, ServiceEndpoint};
 use jsonrpsee::{
 	core::{async_trait, RpcResult},
 	proc_macros::rpc,
-	types::error::{CallError, ErrorObject},
+	types::error::{RuntimeCallError, ErrorObject},
 };
 use sp_api::ProvideRuntimeApi;
 use sp_blockchain::HeaderBackend;
@@ -171,7 +171,7 @@ where
 			self.client.info().best_hash));
 
 		match api.query_did_by_w3n(&at, web3name.into()) {
-			Err(e) => Err(CallError::Custom(ErrorObject::owned(
+			Err(e) => Err(RuntimeCallError::Custom(ErrorObject::owned(
 				Error::RuntimeError.into(),
 				"Unable to query DID by web3name.",
 				Some(format!("{:?}", e)),
@@ -204,7 +204,7 @@ where
 			self.client.info().best_hash));
 
 		match api.query_did_by_account_id(&at, account) {
-			Err(e) => Err(CallError::Custom(ErrorObject::owned(
+			Err(e) => Err(RuntimeCallError::Custom(ErrorObject::owned(
 				Error::RuntimeError.into(),
 				"Unable to query account by DID.",
 				Some(format!("{:?}", e)),
@@ -237,7 +237,7 @@ where
 			self.client.info().best_hash));
 
 		match api.query_did(&at, did) {
-			Err(e) => Err(CallError::Custom(ErrorObject::owned(
+			Err(e) => Err(RuntimeCallError::Custom(ErrorObject::owned(
 				Error::RuntimeError.into(),
 				"Unable to query DID details.",
 				Some(format!("{:?}", e)),

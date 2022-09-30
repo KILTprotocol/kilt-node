@@ -34,8 +34,8 @@ use sp_std::vec::Vec;
 use crate::{
 	self as did,
 	did_details::{
-		DeriveDidCallAuthorizationVerificationKeyRelationship, DeriveDidCallKeyRelationshipResult,
-		DidAuthorizedCallOperation, DidAuthorizedCallOperationWithVerificationRelationship, DidDetails,
+		DeriveDidRuntimeCallAuthorizationVerificationKeyRelationship, DeriveDidRuntimeCallKeyRelationshipResult,
+		DidAuthorizedRuntimeCallOperation, DidAuthorizedRuntimeCallOperationWithVerificationRelationship, DidDetails,
 		DidEncryptionKey, DidPublicKey, DidPublicKeyDetails, DidVerificationKey, DidVerificationKeyRelationship,
 		RelationshipDeriveError,
 	},
@@ -66,10 +66,10 @@ frame_support::construct_runtime!(
 		NodeBlock = Block,
 		UncheckedExtrinsic = UncheckedExtrinsic,
 	{
-		Did: did::{Pallet, Call, Storage, Event<T>, Origin<T>},
-		Ctype: ctype::{Pallet, Call, Storage, Event<T>},
-		Balances: pallet_balances::{Pallet, Call, Storage, Event<T>},
-		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
+		Did: did::{Pallet, RuntimeCall, Storage, RuntimeEvent<T>, Origin<T>},
+		Ctype: ctype::{Pallet, RuntimeCall, Storage, RuntimeEvent<T>},
+		Balances: pallet_balances::{Pallet, RuntimeCall, Storage, RuntimeEvent<T>},
+		System: frame_system::{Pallet, RuntimeCall, Config, Storage, RuntimeEvent<T>},
 	}
 );
 
@@ -80,7 +80,7 @@ parameter_types! {
 
 impl frame_system::Config for Test {
 	type Origin = Origin;
-	type Call = Call;
+	type RuntimeCall = RuntimeCall;
 	type Index = Index;
 	type BlockNumber = BlockNumber;
 	type Hash = Hash;
@@ -88,7 +88,7 @@ impl frame_system::Config for Test {
 	type AccountId = <<Signature as Verify>::Signer as IdentifyAccount>::AccountId;
 	type Lookup = IdentityLookup<Self::AccountId>;
 	type Header = Header;
-	type Event = ();
+	type RuntimeEvent = ();
 	type BlockHashCount = BlockHashCount;
 	type DbWeight = RocksDbWeight;
 	type Version = ();
@@ -97,7 +97,7 @@ impl frame_system::Config for Test {
 	type AccountData = pallet_balances::AccountData<Balance>;
 	type OnNewAccount = ();
 	type OnKilledAccount = ();
-	type BaseCallFilter = frame_support::traits::Everything;
+	type BaseRuntimeCallFilter = frame_support::traits::Everything;
 	type SystemWeightInfo = ();
 	type BlockWeights = ();
 	type BlockLength = ();
@@ -141,10 +141,10 @@ where
 impl Config for Test {
 	type DidIdentifier = DidIdentifier;
 	type Origin = Origin;
-	type Call = Call;
+	type RuntimeCall = RuntimeCall;
 	type EnsureOrigin = EnsureSigned<DidIdentifier>;
 	type OriginSuccess = AccountId;
-	type Event = ();
+	type RuntimeEvent = ();
 	type Currency = Balances;
 	type Deposit = Deposit;
 	type Fee = DidFee;
@@ -171,7 +171,7 @@ parameter_types! {
 impl pallet_balances::Config for Test {
 	type Balance = Balance;
 	type DustRemoval = ();
-	type Event = ();
+	type RuntimeEvent = ();
 	type ExistentialDeposit = ExistentialDeposit;
 	type AccountStore = System;
 	type WeightInfo = ();
@@ -196,7 +196,7 @@ impl ctype::Config for Test {
 	type OriginSuccess = DidRawOrigin<AccountId, DidIdentifier>;
 
 	type CtypeCreatorId = DidIdentifier;
-	type Event = ();
+	type RuntimeEvent = ();
 	type WeightInfo = ();
 	type Currency = Balances;
 	type Fee = Fee;
@@ -334,38 +334,38 @@ pub fn generate_key_id(key: &DidPublicKey) -> KeyIdOf<Test> {
 pub(crate) fn get_attestation_key_test_input() -> Vec<u8> {
 	[0u8; 32].to_vec()
 }
-pub(crate) fn get_attestation_key_call() -> Call {
-	Call::Ctype(ctype::Call::add {
+pub(crate) fn get_attestation_key_call() -> RuntimeCall {
+	RuntimeCall::Ctype(ctype::RuntimeCall::add {
 		ctype: get_attestation_key_test_input(),
 	})
 }
 pub(crate) fn get_authentication_key_test_input() -> Vec<u8> {
 	[1u8; 32].to_vec()
 }
-pub(crate) fn get_authentication_key_call() -> Call {
-	Call::Ctype(ctype::Call::add {
+pub(crate) fn get_authentication_key_call() -> RuntimeCall {
+	RuntimeCall::Ctype(ctype::RuntimeCall::add {
 		ctype: get_authentication_key_test_input(),
 	})
 }
 pub(crate) fn get_delegation_key_test_input() -> Vec<u8> {
 	[2u8; 32].to_vec()
 }
-pub(crate) fn get_delegation_key_call() -> Call {
-	Call::Ctype(ctype::Call::add {
+pub(crate) fn get_delegation_key_call() -> RuntimeCall {
+	RuntimeCall::Ctype(ctype::RuntimeCall::add {
 		ctype: get_delegation_key_test_input(),
 	})
 }
 pub(crate) fn get_none_key_test_input() -> Vec<u8> {
 	[3u8; 32].to_vec()
 }
-pub(crate) fn get_none_key_call() -> Call {
-	Call::Ctype(ctype::Call::add {
+pub(crate) fn get_none_key_call() -> RuntimeCall {
+	RuntimeCall::Ctype(ctype::RuntimeCall::add {
 		ctype: get_none_key_test_input(),
 	})
 }
 
-impl DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
-	fn derive_verification_key_relationship(&self) -> DeriveDidCallKeyRelationshipResult {
+impl DeriveDidRuntimeCallAuthorizationVerificationKeyRelationship for RuntimeCall {
+	fn derive_verification_key_relationship(&self) -> DeriveDidRuntimeCallKeyRelationshipResult {
 		if *self == get_attestation_key_call() {
 			Ok(DidVerificationKeyRelationship::AssertionMethod)
 		} else if *self == get_authentication_key_call() {
@@ -378,14 +378,14 @@ impl DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 				// Always require an authentication key to dispatch calls during benchmarking
 				return Ok(DidVerificationKeyRelationship::Authentication);
 			}
-			Err(RelationshipDeriveError::NotCallableByDid)
+			Err(RelationshipDeriveError::NotRuntimeCallableByDid)
 		}
 	}
 
 	// Always return a System::remark() extrinsic call
 	#[cfg(feature = "runtime-benchmarks")]
 	fn get_call_for_did_call_benchmark() -> Self {
-		Call::System(frame_system::Call::remark { remark: sp_std::vec![] })
+		RuntimeCall::System(frame_system::RuntimeCall::remark { remark: sp_std::vec![] })
 	}
 }
 
@@ -393,15 +393,15 @@ pub fn generate_test_did_call(
 	verification_key_required: DidVerificationKeyRelationship,
 	caller: DidIdentifier,
 	submitter: AccountId,
-) -> DidAuthorizedCallOperationWithVerificationRelationship<Test> {
+) -> DidAuthorizedRuntimeCallOperationWithVerificationRelationship<Test> {
 	let call = match verification_key_required {
 		DidVerificationKeyRelationship::AssertionMethod => get_attestation_key_call(),
 		DidVerificationKeyRelationship::Authentication => get_authentication_key_call(),
 		DidVerificationKeyRelationship::CapabilityDelegation => get_delegation_key_call(),
 		_ => get_none_key_call(),
 	};
-	DidAuthorizedCallOperationWithVerificationRelationship {
-		operation: DidAuthorizedCallOperation {
+	DidAuthorizedRuntimeCallOperationWithVerificationRelationship {
+		operation: DidAuthorizedRuntimeCallOperation {
 			did: caller,
 			call,
 			tx_counter: 1u64,

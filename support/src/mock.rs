@@ -36,7 +36,7 @@ pub mod mock_origin {
 	use scale_info::TypeInfo;
 	use sp_runtime::AccountId32;
 
-	use crate::traits::CallSources;
+	use crate::traits::RuntimeCallSources;
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
@@ -65,7 +65,7 @@ pub mod mock_origin {
 	#[derive(Debug, Clone, PartialEq, Eq, TypeInfo, Encode, Decode, MaxEncodedLen)]
 	pub struct DoubleOrigin<AccountId, SubjectId>(pub AccountId, pub SubjectId);
 
-	impl<AccountId: Clone, SubjectId: Clone> CallSources<AccountId, SubjectId> for DoubleOrigin<AccountId, SubjectId> {
+	impl<AccountId: Clone, SubjectId: Clone> RuntimeCallSources<AccountId, SubjectId> for DoubleOrigin<AccountId, SubjectId> {
 		fn sender(&self) -> AccountId {
 			self.0.clone()
 		}

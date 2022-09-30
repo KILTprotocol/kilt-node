@@ -53,8 +53,8 @@ frame_support::construct_runtime!(
 		NodeBlock = Block,
 		UncheckedExtrinsic = UncheckedExtrinsic,
 	{
-		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
-		Balances: pallet_balances::{Pallet, Call, Storage, Event<T>},
+		System: frame_system::{Pallet, RuntimeCall, Config, Storage, RuntimeEvent<T>},
+		Balances: pallet_balances::{Pallet, RuntimeCall, Storage, RuntimeEvent<T>},
 		Inflation: pallet_inflation::{Pallet, Storage},
 	}
 );
@@ -65,12 +65,12 @@ parameter_types! {
 }
 
 impl frame_system::Config for Test {
-	type BaseCallFilter = frame_support::traits::Everything;
+	type BaseRuntimeCallFilter = frame_support::traits::Everything;
 	type BlockWeights = ();
 	type BlockLength = ();
 	type DbWeight = ();
 	type Origin = Origin;
-	type Call = Call;
+	type RuntimeCall = RuntimeCall;
 	type Index = Index;
 	type BlockNumber = BlockNumber;
 	type Hash = Hash;
@@ -78,7 +78,7 @@ impl frame_system::Config for Test {
 	type AccountId = AccountId;
 	type Lookup = IdentityLookup<Self::AccountId>;
 	type Header = Header;
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type BlockHashCount = BlockHashCount;
 	type Version = ();
 	type PalletInfo = PalletInfo;
@@ -102,7 +102,7 @@ impl pallet_balances::Config for Test {
 	type MaxReserves = MaxReserves;
 	type ReserveIdentifier = [u8; 8];
 	type Balance = Balance;
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type DustRemoval = ();
 	type ExistentialDeposit = ExistentialDeposit;
 	type AccountStore = System;

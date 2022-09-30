@@ -65,9 +65,9 @@ pub mod runtime {
 			NodeBlock = Block,
 			UncheckedExtrinsic = UncheckedExtrinsic,
 		{
-			System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
-			Ctype: crate::{Pallet, Call, Storage, Event<T>},
-			Balances: pallet_balances::{Pallet, Call, Storage, Event<T>},
+			System: frame_system::{Pallet, RuntimeCall, Config, Storage, RuntimeEvent<T>},
+			Ctype: crate::{Pallet, RuntimeCall, Storage, RuntimeEvent<T>},
+			Balances: pallet_balances::{Pallet, RuntimeCall, Storage, RuntimeEvent<T>},
 			MockOrigin: mock_origin::{Pallet, Origin<T>},
 		}
 	);
@@ -79,7 +79,7 @@ pub mod runtime {
 
 	impl frame_system::Config for Test {
 		type Origin = Origin;
-		type Call = Call;
+		type RuntimeCall = RuntimeCall;
 		type Index = u64;
 		type BlockNumber = u64;
 		type Hash = Hash;
@@ -87,7 +87,7 @@ pub mod runtime {
 		type AccountId = AccountId;
 		type Lookup = IdentityLookup<Self::AccountId>;
 		type Header = Header;
-		type Event = ();
+		type RuntimeEvent = ();
 		type BlockHashCount = BlockHashCount;
 		type DbWeight = RocksDbWeight;
 		type Version = ();
@@ -96,7 +96,7 @@ pub mod runtime {
 		type AccountData = pallet_balances::AccountData<Balance>;
 		type OnNewAccount = ();
 		type OnKilledAccount = ();
-		type BaseCallFilter = frame_support::traits::Everything;
+		type BaseRuntimeCallFilter = frame_support::traits::Everything;
 		type SystemWeightInfo = ();
 		type BlockWeights = ();
 		type BlockLength = ();
@@ -114,7 +114,7 @@ pub mod runtime {
 	impl pallet_balances::Config for Test {
 		type Balance = Balance;
 		type DustRemoval = ();
-		type Event = ();
+		type RuntimeEvent = ();
 		type ExistentialDeposit = ExistentialDeposit;
 		type AccountStore = System;
 		type WeightInfo = ();
@@ -137,7 +137,7 @@ pub mod runtime {
 		type CtypeCreatorId = SubjectId;
 		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<AccountId, SubjectId>;
 		type OriginSuccess = mock_origin::DoubleOrigin<AccountId, SubjectId>;
-		type Event = ();
+		type RuntimeEvent = ();
 		type WeightInfo = ();
 
 		type Currency = Balances;

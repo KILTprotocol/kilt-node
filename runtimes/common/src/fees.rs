@@ -153,9 +153,9 @@ mod tests {
 			NodeBlock = Block,
 			UncheckedExtrinsic = UncheckedExtrinsic,
 		{
-			System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
-			Authorship: pallet_authorship::{Pallet, Call, Storage, Inherent},
-			Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
+			System: frame_system::{Pallet, RuntimeCall, Config, Storage, RuntimeEvent<T>},
+			Authorship: pallet_authorship::{Pallet, RuntimeCall, Storage, Inherent},
+			Balances: pallet_balances::{Pallet, RuntimeCall, Storage, Config<T>, RuntimeEvent<T>},
 		}
 	);
 
@@ -175,17 +175,17 @@ mod tests {
 	}
 
 	impl frame_system::Config for Test {
-		type BaseCallFilter = frame_support::traits::Everything;
+		type BaseRuntimeCallFilter = frame_support::traits::Everything;
 		type Origin = Origin;
 		type Index = u64;
 		type BlockNumber = u64;
-		type Call = Call;
+		type RuntimeCall = RuntimeCall;
 		type Hash = H256;
 		type Hashing = BlakeTwo256;
 		type AccountId = AccountId;
 		type Lookup = IdentityLookup<Self::AccountId>;
 		type Header = Header;
-		type Event = Event;
+		type RuntimeEvent = RuntimeEvent;
 		type BlockHashCount = BlockHashCount;
 		type BlockLength = BlockLength;
 		type BlockWeights = BlockWeights;
@@ -203,7 +203,7 @@ mod tests {
 
 	impl pallet_balances::Config for Test {
 		type Balance = u64;
-		type Event = Event;
+		type RuntimeEvent = RuntimeEvent;
 		type DustRemoval = ();
 		type ExistentialDeposit = ();
 		type AccountStore = System;
@@ -237,7 +237,7 @@ mod tests {
 		type FindAuthor = OneAuthor;
 		type UncleGenerations = ();
 		type FilterUncle = ();
-		type EventHandler = ();
+		type RuntimeEventHandler = ();
 	}
 
 	pub fn new_test_ext() -> sp_io::TestExternalities {

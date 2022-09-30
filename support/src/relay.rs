@@ -31,18 +31,18 @@ use scale_info::TypeInfo;
 use sp_std::{boxed::Box, marker::PhantomData, prelude::*};
 use xcm::latest::prelude::*;
 
-use crate::traits::RelayCallBuilder;
+use crate::traits::RelayRuntimeCallBuilder;
 
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
-pub enum UtilityCall<RelayChainCall> {
+pub enum UtilityRuntimeCall<RelayChainRuntimeCall> {
 	#[codec(index = 1)]
-	AsDerivative(u16, RelayChainCall),
+	AsDerivative(u16, RelayChainRuntimeCall),
 	#[codec(index = 2)]
-	BatchAll(Vec<RelayChainCall>),
+	BatchAll(Vec<RelayChainRuntimeCall>),
 }
 
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
-pub enum RegistrarCall {
+pub enum RegistrarRuntimeCall {
 	#[codec(index = 4)]
 	Swap(ParaId, ParaId),
 }
@@ -50,35 +50,35 @@ pub enum RegistrarCall {
 /// The encoded index correspondes to Kusama's Runtime module configuration.
 /// https://github.com/paritytech/polkadot/blob/444e96ae34bcec8362f0f947a07bd912b32ca48f/runtime/kusama/src/lib.rs#L1379
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
-pub enum RelayChainCall {
+pub enum RelayChainRuntimeCall {
 	#[codec(index = 24)]
-	Utility(Box<UtilityCall<Self>>),
+	Utility(Box<UtilityRuntimeCall<Self>>),
 	#[codec(index = 70)]
-	Registrar(RegistrarCall),
+	Registrar(RegistrarRuntimeCall),
 }
 
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
-pub struct RelayChainCallBuilder<T: Config, ParachainId: Get<ParaId>>(PhantomData<(T, ParachainId)>);
+pub struct RelayChainRuntimeCallBuilder<T: Config, ParachainId: Get<ParaId>>(PhantomData<(T, ParachainId)>);
 
-impl<T: Config, ParachainId: Get<ParaId>> RelayCallBuilder for RelayChainCallBuilder<T, ParachainId>
+impl<T: Config, ParachainId: Get<ParaId>> RelayRuntimeCallBuilder for RelayChainRuntimeCallBuilder<T, ParachainId>
 where
 	T::AccountId: FullCodec,
-	RelayChainCall: FullCodec,
+	RelayChainRuntimeCall: FullCodec,
 {
 	type AccountId = T::AccountId;
 	type Balance = polkadot_core_primitives::Balance;
-	type RelayChainCall = RelayChainCall;
+	type RelayChainRuntimeCall = RelayChainRuntimeCall;
 
-	fn utility_batch_call(calls: Vec<Self::RelayChainCall>) -> Self::RelayChainCall {
-		RelayChainCall::Utility(Box::new(UtilityCall::BatchAll(calls)))
+	fn utility_batch_call(calls: Vec<Self::RelayChainRuntimeCall>) -> Self::RelayChainRuntimeCall {
+		RelayChainRuntimeCall::Utility(Box::new(UtilityRuntimeCall::BatchAll(calls)))
 	}
 
-	fn utility_as_derivative_call(call: Self::RelayChainCall, index: u16) -> Self::RelayChainCall {
-		RelayChainCall::Utility(Box::new(UtilityCall::AsDerivative(index, call)))
+	fn utility_as_derivative_call(call: Self::RelayChainRuntimeCall, index: u16) -> Self::RelayChainRuntimeCall {
+		RelayChainRuntimeCall::Utility(Box::new(UtilityRuntimeCall::AsDerivative(index, call)))
 	}
 
-	fn swap_call(id: ParaId, other: ParaId) -> Self::RelayChainCall {
-		RelayChainCall::Registrar(RegistrarCall::Swap(id, other))
+	fn swap_call(id: ParaId, other: ParaId) -> Self::RelayChainRuntimeCall {
+		RelayChainRuntimeCall::Registrar(RegistrarRuntimeCall::Swap(id, other))
 	}
 
 	fn finalize_call_into_xcm_message(call: Vec<u8>, extra_fee: Self::Balance, weight: u64) -> Xcm<()> {
