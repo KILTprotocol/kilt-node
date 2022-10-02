@@ -49,7 +49,7 @@ build:
     refs:
       - develop
       - master
-      - /[0-9]+(?:\.[0-9]+){2}(?:-[0-9]+)?$
+      - /[0-9]+(?:\.[0-9]+){2}(?:-[0-9]+)?$/
   variables:
     DOCKER_HUB_PARACHAIN: "kiltprotocol/kilt-node"
     DOCKER_HUB_STANDALONE: "kiltprotocol/mashnet-node"
@@ -74,7 +74,7 @@ build-wasm-peregrine:
   only:
     - develop
     - master
-    - /[0-9]+(?:\.[0-9]+){2}(?:-[0-9]+)?$
+    - /[0-9]+(?:\.[0-9]+){2}(?:-[0-9]+)?$/
   script:
     - export PACKAGE=peregrine-runtime
     - export RUNTIME_DIR=runtimes/peregrine
@@ -95,7 +95,7 @@ build-wasm-spiritnet:
   only:
     - develop
     - master
-    - /[0-9]+(?:\.[0-9]+){2}(?:-[0-9]+)?$
+    - /[0-9]+(?:\.[0-9]+){2}(?:-[0-9]+)?$/
   script:
     - export PACKAGE=spiritnet-runtime
     - export RUNTIME_DIR=runtimes/spiritnet
