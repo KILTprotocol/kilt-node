@@ -3,7 +3,7 @@ authors = ["KILT <info@kilt.io>"]
 description = "Enables creating and revoking root nodes of delegation hierarchies; adding and revoking delegation nodes based on root nodes."
 edition = "2021"
 name = "delegation"
-repository = "https://github.com/KILTprotocol/mashnet-node"
+repository = "https://github.com/KILTprotocol/kilt-node"
 version = "1.7.4"
 
 [package.metadata.docs.rs]
