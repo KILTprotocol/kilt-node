@@ -2,7 +2,7 @@
 authors = ["KILT <info@kilt.io>"]
 edition = "2021"
 name = "peregrine-runtime"
-version = "1.7.2"
+version = "1.7.4"
 
 [build-dependencies]
 substrate-wasm-builder = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.28"}
@@ -30,9 +30,7 @@ delegation = {path = "../../pallets/delegation", default-features = false}
 did = {path = "../../pallets/did", default-features = false}
 kilt-support = {path = "../../support", default-features = false}
 pallet-did-lookup = {path = "../../pallets/pallet-did-lookup", default-features = false}
-pallet-dyn-filter = {path = "../../pallets/pallet-dyn-filter", default-features = false}
 pallet-inflation = {path = "../../pallets/pallet-inflation", default-features = false}
-pallet-relay-migration = {path = "../../pallets/relay-migration", default-features = false}
 pallet-web3-names = {path = "../../pallets/pallet-web3-names", default-features = false}
 parachain-staking = {path = "../../pallets/parachain-staking", default-features = false}
 public-credentials = {default-features = false, path = "../../pallets/public-credentials"}
@@ -128,7 +126,6 @@ runtime-benchmarks = [
   "pallet-collective/runtime-benchmarks",
   "pallet-democracy/runtime-benchmarks",
   "pallet-did-lookup/runtime-benchmarks",
-  "pallet-dyn-filter/runtime-benchmarks",
   "pallet-indices/runtime-benchmarks",
   "pallet-inflation/runtime-benchmarks",
   "pallet-membership/runtime-benchmarks",
@@ -177,11 +174,9 @@ std = [
   "pallet-collective/std",
   "pallet-democracy/std",
   "pallet-did-lookup/std",
-  "pallet-dyn-filter/std",
   "pallet-indices/std",
   "pallet-inflation/std",
   "pallet-membership/std",
-  "pallet-relay-migration/std",
   "pallet-preimage/std",
   "pallet-proxy/std",
   "pallet-randomness-collective-flip/std",
@@ -237,14 +232,12 @@ try-runtime = [
   "pallet-collective/try-runtime",
   "pallet-democracy/try-runtime",
   "pallet-did-lookup/try-runtime",
-  "pallet-dyn-filter/try-runtime",
   "pallet-indices/try-runtime",
   "pallet-inflation/try-runtime",
   "pallet-membership/try-runtime",
   "pallet-preimage/try-runtime",
   "pallet-proxy/try-runtime",
   "pallet-randomness-collective-flip/try-runtime",
-  "pallet-relay-migration/try-runtime",
   "pallet-scheduler/try-runtime",
   "pallet-session/try-runtime",
   "pallet-sudo/try-runtime",

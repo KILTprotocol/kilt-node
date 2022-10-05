@@ -82,7 +82,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("KILT"),
 	impl_name: create_runtime_str!("KILT"),
 	authoring_version: 0,
-	spec_version: 10720,
+	spec_version: 10740,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 0,

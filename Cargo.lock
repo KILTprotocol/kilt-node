@@ -339,7 +339,7 @@ checksum = "065374052e7df7ee4047b1160cca5e1467a12351a40b3da123c870ba0b8eda2a"
 
 [[package]]
 name = "attestation"
-version = "1.7.2"
+version = "1.7.4"
 dependencies = [
  "ctype",
  "frame-benchmarking",
@@ -954,7 +954,7 @@ dependencies = [
 
 [[package]]
 name = "clone-runtime"
-version = "1.7.2"
+version = "1.7.4"
 dependencies = [
  "cumulus-pallet-aura-ext",
  "cumulus-pallet-dmp-queue",
@@ -1347,7 +1347,7 @@ dependencies = [
 
 [[package]]
 name = "ctype"
-version = "1.7.2"
+version = "1.7.4"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -1918,7 +1918,7 @@ dependencies = [
 
 [[package]]
 name = "delegation"
-version = "1.7.2"
+version = "1.7.4"
 dependencies = [
  "attestation",
  "bitflags",
@@ -1977,7 +1977,7 @@ dependencies = [
 
 [[package]]
 name = "did"
-version = "1.7.2"
+version = "1.7.4"
 dependencies = [
  "ctype",
  "env_logger",
@@ -2001,7 +2001,7 @@ dependencies = [
 
 [[package]]
 name = "did-rpc"
-version = "1.7.2"
+version = "1.7.4"
 dependencies = [
  "did-rpc-runtime-api",
  "jsonrpsee",
@@ -2014,7 +2014,7 @@ dependencies = [
 
 [[package]]
 name = "did-rpc-runtime-api"
-version = "1.7.2"
+version = "1.7.4"
 dependencies = [
  "did",
  "kilt-support",
@@ -3613,7 +3613,7 @@ dependencies = [
 
 [[package]]
 name = "kilt-parachain"
-version = "1.7.2"
+version = "1.7.4"
 dependencies = [
  "clap",
  "clone-runtime",
@@ -3691,7 +3691,7 @@ dependencies = [
 
 [[package]]
 name = "kilt-support"
-version = "1.7.2"
+version = "1.7.4"
 dependencies = [
  "cumulus-primitives-core",
  "frame-support",
@@ -4608,7 +4608,7 @@ dependencies = [
 
 [[package]]
 name = "mashnet-node"
-version = "1.7.2"
+version = "1.7.4"
 dependencies = [
  "clap",
  "did-rpc",
@@ -4662,7 +4662,7 @@ dependencies = [
 
 [[package]]
 name = "mashnet-node-runtime"
-version = "1.7.2"
+version = "1.7.4"
 dependencies = [
  "attestation",
  "bitflags",
@@ -4684,7 +4684,6 @@ dependencies = [
  "pallet-authorship",
  "pallet-balances",
  "pallet-did-lookup",
- "pallet-dyn-filter",
  "pallet-grandpa",
  "pallet-indices",
  "pallet-proxy",
@@ -5524,7 +5523,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-did-lookup"
-version = "1.7.2"
+version = "1.7.4"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -5540,26 +5539,6 @@ dependencies = [
  "scale-info",
  "serde",
  "sha3 0.10.2",
- "sp-core",
- "sp-io",
- "sp-keystore",
- "sp-runtime",
- "sp-std",
-]
-
-[[package]]
-name = "pallet-dyn-filter"
-version = "1.7.2"
-dependencies = [
- "frame-benchmarking",
- "frame-support",
- "frame-system",
- "itertools",
- "lazy_static",
- "log",
- "pallet-balances",
- "parity-scale-codec",
- "scale-info",
  "sp-core",
  "sp-io",
  "sp-keystore",
@@ -5714,7 +5693,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-inflation"
-version = "1.7.2"
+version = "1.7.4"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -5938,29 +5917,6 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
-]
-
-[[package]]
-name = "pallet-relay-migration"
-version = "1.7.2"
-dependencies = [
- "cumulus-pallet-parachain-system",
- "cumulus-primitives-core",
- "frame-benchmarking",
- "frame-support",
- "frame-system",
- "kilt-support",
- "log",
- "pallet-xcm",
- "parity-scale-codec",
- "polkadot-core-primitives",
- "polkadot-runtime-common",
- "scale-info",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-std",
- "xcm",
 ]
 
 [[package]]
@@ -6216,7 +6172,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-web3-names"
-version = "1.7.2"
+version = "1.7.4"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -6283,7 +6239,7 @@ dependencies = [
 
 [[package]]
 name = "parachain-staking"
-version = "1.7.2"
+version = "1.7.4"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -6491,7 +6447,7 @@ checksum = "d4fd5641d01c8f18a23da7b6fe29298ff4b55afcccdf78973b24cf3175fee32e"
 
 [[package]]
 name = "peregrine-runtime"
-version = "1.7.2"
+version = "1.7.4"
 dependencies = [
  "attestation",
  "ctype",
@@ -6523,14 +6479,12 @@ dependencies = [
  "pallet-collective",
  "pallet-democracy",
  "pallet-did-lookup",
- "pallet-dyn-filter",
  "pallet-indices",
  "pallet-inflation",
  "pallet-membership",
  "pallet-preimage",
  "pallet-proxy",
  "pallet-randomness-collective-flip",
- "pallet-relay-migration",
  "pallet-scheduler",
  "pallet-session",
  "pallet-sudo",
@@ -8516,7 +8470,7 @@ dependencies = [
 
 [[package]]
 name = "runtime-common"
-version = "1.7.2"
+version = "1.7.4"
 dependencies = [
  "attestation",
  "frame-support",
@@ -10851,7 +10805,7 @@ checksum = "6e63cff320ae2c57904679ba7cb63280a3dc4613885beafb148ee7bf9aa9042d"
 
 [[package]]
 name = "spiritnet-runtime"
-version = "1.7.2"
+version = "1.7.4"
 dependencies = [
  "attestation",
  "ctype",
@@ -10883,14 +10837,12 @@ dependencies = [
  "pallet-collective",
  "pallet-democracy",
  "pallet-did-lookup",
- "pallet-dyn-filter",
  "pallet-indices",
  "pallet-inflation",
  "pallet-membership",
  "pallet-preimage",
  "pallet-proxy",
  "pallet-randomness-collective-flip",
- "pallet-relay-migration",
  "pallet-scheduler",
  "pallet-session",
  "pallet-timestamp",

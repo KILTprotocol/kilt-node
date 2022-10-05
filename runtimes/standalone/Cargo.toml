@@ -2,7 +2,7 @@
 authors = ["KILT <info@kilt.io>"]
 edition = "2021"
 name = "mashnet-node-runtime"
-version = "1.7.2"
+version = "1.7.4"
 
 [build-dependencies]
 substrate-wasm-builder = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.28"}
@@ -23,7 +23,6 @@ delegation = {default-features = false, path = "../../pallets/delegation"}
 did = {default-features = false, path = "../../pallets/did"}
 kilt-support = {path = "../../support", default-features = false, optional = true}
 pallet-did-lookup = {default-features = false, path = "../../pallets/pallet-did-lookup"}
-pallet-dyn-filter = {default-features = false, path = "../../pallets/pallet-dyn-filter"}
 pallet-web3-names = {default-features = false, path = "../../pallets/pallet-web3-names"}
 public-credentials = {default-features = false, path = "../../pallets/public-credentials"}
 public-credentials-runtime-api = {default-features = false, path = "../../rpc/public-credentials/runtime-api"}
@@ -94,7 +93,6 @@ runtime-benchmarks = [
   "kilt-support/runtime-benchmarks",
   "pallet-balances/runtime-benchmarks",
   "pallet-did-lookup/runtime-benchmarks",
-  "pallet-dyn-filter/runtime-benchmarks",
   "pallet-indices/runtime-benchmarks",
   "pallet-timestamp/runtime-benchmarks",
   "pallet-web3-names/runtime-benchmarks",
@@ -120,7 +118,6 @@ std = [
   "pallet-authorship/std",
   "pallet-balances/std",
   "pallet-did-lookup/std",
-  "pallet-dyn-filter/std",
   "pallet-grandpa/std",
   "pallet-indices/std",
   "pallet-proxy/std",
@@ -162,7 +159,6 @@ try-runtime = [
   "pallet-authorship/try-runtime",
   "pallet-balances/try-runtime",
   "pallet-did-lookup/try-runtime",
-  "pallet-dyn-filter/try-runtime",
   "pallet-grandpa/try-runtime",
   "pallet-indices/try-runtime",
   "pallet-proxy/try-runtime",
