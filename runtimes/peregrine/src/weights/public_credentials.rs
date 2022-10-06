@@ -54,40 +54,40 @@ impl<T: frame_system::Config> public_credentials::WeightInfo for WeightInfo<T> {
 	// Storage: System Account (r:1 w:1)
 	// Storage: PublicCredentials CredentialSubjects (r:0 w:1)
 	fn add(c: u32, ) -> Weight {
-		(64_513_000 as Weight)
+		Weight::from_ref_time(64_513_000 as u64)
 			// Standard Error: 0
-			.saturating_add((2_000 as Weight).saturating_mul(c as Weight))
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
-			.saturating_add(T::DbWeight::get().writes(3 as Weight))
+			.saturating_add(Weight::from_ref_time(2_000 as u64).saturating_mul(c as u64))
+			.saturating_add(T::DbWeight::get().reads(3 as u64))
+			.saturating_add(T::DbWeight::get().writes(3 as u64))
 	}
 	// Storage: PublicCredentials CredentialSubjects (r:1 w:0)
 	// Storage: PublicCredentials Credentials (r:1 w:1)
 	fn revoke() -> Weight {
-		(39_447_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(39_447_000 as u64)
+			.saturating_add(T::DbWeight::get().reads(2 as u64))
+			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	// Storage: PublicCredentials CredentialSubjects (r:1 w:0)
 	// Storage: PublicCredentials Credentials (r:1 w:1)
 	fn unrevoke() -> Weight {
-		(39_183_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(39_183_000 as u64)
+			.saturating_add(T::DbWeight::get().reads(2 as u64))
+			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	// Storage: PublicCredentials CredentialSubjects (r:1 w:1)
 	// Storage: PublicCredentials Credentials (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	fn remove() -> Weight {
-		(62_565_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
-			.saturating_add(T::DbWeight::get().writes(3 as Weight))
+		Weight::from_ref_time(62_565_000 as u64)
+			.saturating_add(T::DbWeight::get().reads(3 as u64))
+			.saturating_add(T::DbWeight::get().writes(3 as u64))
 	}
 	// Storage: PublicCredentials CredentialSubjects (r:1 w:1)
 	// Storage: PublicCredentials Credentials (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	fn reclaim_deposit() -> Weight {
-		(62_648_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
-			.saturating_add(T::DbWeight::get().writes(3 as Weight))
+		Weight::from_ref_time(62_648_000 as u64)
+			.saturating_add(T::DbWeight::get().reads(3 as u64))
+			.saturating_add(T::DbWeight::get().writes(3 as u64))
 	}
 }

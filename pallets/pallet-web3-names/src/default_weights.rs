@@ -62,54 +62,54 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Web3Names Banned (r:1 w:0)
 	// Storage: System Account (r:1 w:1)
 	fn claim(n: u32, ) -> Weight {
-		(51_814_000 as Weight)
+		Weight::from_ref_time(51_814_000 as u64)
 			// Standard Error: 2_000
-			.saturating_add((42_000 as Weight).saturating_mul(n as Weight))
-			.saturating_add(T::DbWeight::get().reads(4 as Weight))
-			.saturating_add(T::DbWeight::get().writes(3 as Weight))
+			.saturating_add(Weight::from_ref_time(42_000 as u64).saturating_mul(n as u64))
+			.saturating_add(T::DbWeight::get().reads(4 as u64))
+			.saturating_add(T::DbWeight::get().writes(3 as u64))
 	}
 	// Storage: Web3Names Names (r:1 w:1)
 	// Storage: Web3Names Owner (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	fn release_by_owner() -> Weight {
-		(44_267_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
-			.saturating_add(T::DbWeight::get().writes(3 as Weight))
+		Weight::from_ref_time(44_267_000 as u64)
+			.saturating_add(T::DbWeight::get().reads(3 as u64))
+			.saturating_add(T::DbWeight::get().writes(3 as u64))
 	}
 	// Storage: Web3Names Owner (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	// Storage: Web3Names Names (r:0 w:1)
 	fn reclaim_deposit(n: u32, ) -> Weight {
-		(43_834_000 as Weight)
+		Weight::from_ref_time(43_834_000 as u64)
 			// Standard Error: 3_000
-			.saturating_add((19_000 as Weight).saturating_mul(n as Weight))
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().writes(3 as Weight))
+			.saturating_add(Weight::from_ref_time(19_000 as u64).saturating_mul(n as u64))
+			.saturating_add(T::DbWeight::get().reads(2 as u64))
+			.saturating_add(T::DbWeight::get().writes(3 as u64))
 	}
 	// Storage: Web3Names Banned (r:1 w:1)
 	// Storage: Web3Names Owner (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	// Storage: Web3Names Names (r:0 w:1)
 	fn ban(n: u32, ) -> Weight {
-		(47_315_000 as Weight)
+		Weight::from_ref_time(47_315_000 as u64)
 			// Standard Error: 5_000
-			.saturating_add((43_000 as Weight).saturating_mul(n as Weight))
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
-			.saturating_add(T::DbWeight::get().writes(4 as Weight))
+			.saturating_add(Weight::from_ref_time(43_000 as u64).saturating_mul(n as u64))
+			.saturating_add(T::DbWeight::get().reads(3 as u64))
+			.saturating_add(T::DbWeight::get().writes(4 as u64))
 	}
 	// Storage: Web3Names Banned (r:1 w:1)
 	fn unban(n: u32, ) -> Weight {
-		(20_297_000 as Weight)
+		Weight::from_ref_time(20_297_000 as u64)
 			// Standard Error: 1_000
-			.saturating_add((32_000 as Weight).saturating_mul(n as Weight))
-			.saturating_add(T::DbWeight::get().reads(1 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+			.saturating_add(Weight::from_ref_time(32_000 as u64).saturating_mul(n as u64))
+			.saturating_add(T::DbWeight::get().reads(1 as u64))
+			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	fn transfer_deposit() -> Weight {
-		(20_297_000 as Weight)
+		Weight::from_ref_time(20_297_000 as u64)
 			// Standard Error: 1_000
-			.saturating_add(T::DbWeight::get().reads(1 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+			.saturating_add(T::DbWeight::get().reads(1 as u64))
+			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 }
 
@@ -120,53 +120,53 @@ impl WeightInfo for () {
 	// Storage: Web3Names Banned (r:1 w:0)
 	// Storage: System Account (r:1 w:1)
 	fn claim(n: u32, ) -> Weight {
-		(51_814_000 as Weight)
+		Weight::from_ref_time(51_814_000 as u64)
 			// Standard Error: 2_000
-			.saturating_add((42_000 as Weight).saturating_mul(n as Weight))
-			.saturating_add(RocksDbWeight::get().reads(4 as Weight))
-			.saturating_add(RocksDbWeight::get().writes(3 as Weight))
+			.saturating_add(Weight::from_ref_time(42_000 as u64).saturating_mul(n as u64))
+			.saturating_add(RocksDbWeight::get().reads(4 as u64))
+			.saturating_add(RocksDbWeight::get().writes(3 as u64))
 	}
 	// Storage: Web3Names Names (r:1 w:1)
 	// Storage: Web3Names Owner (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	fn release_by_owner() -> Weight {
-		(44_267_000 as Weight)
-			.saturating_add(RocksDbWeight::get().reads(3 as Weight))
-			.saturating_add(RocksDbWeight::get().writes(3 as Weight))
+		Weight::from_ref_time(44_267_000 as u64)
+			.saturating_add(RocksDbWeight::get().reads(3 as u64))
+			.saturating_add(RocksDbWeight::get().writes(3 as u64))
 	}
 	// Storage: Web3Names Owner (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	// Storage: Web3Names Names (r:0 w:1)
 	fn reclaim_deposit(n: u32, ) -> Weight {
-		(43_834_000 as Weight)
+		Weight::from_ref_time(43_834_000 as u64)
 			// Standard Error: 3_000
-			.saturating_add((19_000 as Weight).saturating_mul(n as Weight))
-			.saturating_add(RocksDbWeight::get().reads(2 as Weight))
-			.saturating_add(RocksDbWeight::get().writes(3 as Weight))
+			.saturating_add(Weight::from_ref_time(19_000 as u64).saturating_mul(n as u64))
+			.saturating_add(RocksDbWeight::get().reads(2 as u64))
+			.saturating_add(RocksDbWeight::get().writes(3 as u64))
 	}
 	// Storage: Web3Names Banned (r:1 w:1)
 	// Storage: Web3Names Owner (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	// Storage: Web3Names Names (r:0 w:1)
 	fn ban(n: u32, ) -> Weight {
-		(47_315_000 as Weight)
+		Weight::from_ref_time(47_315_000 as u64)
 			// Standard Error: 5_000
-			.saturating_add((43_000 as Weight).saturating_mul(n as Weight))
-			.saturating_add(RocksDbWeight::get().reads(3 as Weight))
-			.saturating_add(RocksDbWeight::get().writes(4 as Weight))
+			.saturating_add(Weight::from_ref_time(43_000 as u64).saturating_mul(n as u64))
+			.saturating_add(RocksDbWeight::get().reads(3 as u64))
+			.saturating_add(RocksDbWeight::get().writes(4 as u64))
 	}
 	// Storage: Web3Names Banned (r:1 w:1)
 	fn unban(n: u32, ) -> Weight {
-		(20_297_000 as Weight)
+		Weight::from_ref_time(20_297_000 as u64)
 			// Standard Error: 1_000
-			.saturating_add((32_000 as Weight).saturating_mul(n as Weight))
-			.saturating_add(RocksDbWeight::get().reads(1 as Weight))
-			.saturating_add(RocksDbWeight::get().writes(1 as Weight))
+			.saturating_add(Weight::from_ref_time(32_000 as u64).saturating_mul(n as u64))
+			.saturating_add(RocksDbWeight::get().reads(1 as u64))
+			.saturating_add(RocksDbWeight::get().writes(1 as u64))
 	}
 	fn transfer_deposit() -> Weight {
-		(20_297_000 as Weight)
+		Weight::from_ref_time(20_297_000 as u64)
 			// Standard Error: 1_000
-			.saturating_add(RocksDbWeight::get().reads(1 as Weight))
-			.saturating_add(RocksDbWeight::get().writes(1 as Weight))
+			.saturating_add(RocksDbWeight::get().reads(1 as u64))
+			.saturating_add(RocksDbWeight::get().writes(1 as u64))
 	}
 }

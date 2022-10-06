@@ -808,7 +808,7 @@ impl<T: Config> Pallet<T> {
 		max_revocations: u32,
 	) -> Result<(u32, Weight), DispatchError> {
 		let mut revocations: u32 = 0;
-		let mut consumed_weight: Weight = 0;
+		let mut consumed_weight: Weight = Weight::zero();
 		if let Some(delegation_node) = <DelegationNodes<T>>::get(delegation) {
 			// Iterate children and revoke all nodes
 			for child in delegation_node.children.iter() {
@@ -844,7 +844,7 @@ impl<T: Config> Pallet<T> {
 		max_revocations: u32,
 	) -> Result<(u32, Weight), DispatchError> {
 		let mut revocations: u32 = 0;
-		let mut consumed_weight: Weight = 0;
+		let mut consumed_weight: Weight = Weight::zero();
 		// Retrieve delegation node from storage
 		let mut delegation_node = <DelegationNodes<T>>::get(*delegation).ok_or(Error::<T>::DelegationNotFound)?;
 		consumed_weight = consumed_weight.saturating_add(T::DbWeight::get().reads(1));
@@ -891,7 +891,7 @@ impl<T: Config> Pallet<T> {
 	/// # </weight>
 	fn remove_children(delegation: &DelegationNodeIdOf<T>, max_removals: u32) -> Result<(u32, Weight), DispatchError> {
 		let mut removals: u32 = 0;
-		let mut consumed_weight: Weight = 0;
+		let mut consumed_weight: Weight = Weight::zero();
 
 		// Can't clear storage until we have reached a leaf
 		if let Some(mut delegation_node) = DelegationNodes::<T>::get(delegation) {
@@ -930,7 +930,7 @@ impl<T: Config> Pallet<T> {
 	/// # </weight>
 	fn remove(delegation: &DelegationNodeIdOf<T>, max_removals: u32) -> Result<(u32, Weight), DispatchError> {
 		let mut removals: u32 = 0;
-		let mut consumed_weight: Weight = 0;
+		let mut consumed_weight: Weight = Weight::zero();
 
 		// Retrieve delegation node from storage
 		// Storage removal has to be postponed until children have been removed

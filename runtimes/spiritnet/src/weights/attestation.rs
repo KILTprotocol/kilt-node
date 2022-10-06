@@ -52,32 +52,32 @@ impl<T: frame_system::Config> attestation::WeightInfo for WeightInfo<T> {
 	// Storage: Attestation Attestations (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	fn add() -> Weight {
-		(38_475_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
-			.saturating_add(T::DbWeight::get().writes(2 as Weight))
+		Weight::from_ref_time(38_475_000 as u64)
+			.saturating_add(T::DbWeight::get().reads(3 as u64))
+			.saturating_add(T::DbWeight::get().writes(2 as u64))
 	}
 	// Storage: Attestation Attestations (r:1 w:1)
 	fn revoke() -> Weight {
-		(22_274_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(1 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(22_274_000 as u64)
+			.saturating_add(T::DbWeight::get().reads(1 as u64))
+			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	// Storage: Attestation Attestations (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	fn remove() -> Weight {
-		(37_192_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().writes(2 as Weight))
+		Weight::from_ref_time(37_192_000 as u64)
+			.saturating_add(T::DbWeight::get().reads(2 as u64))
+			.saturating_add(T::DbWeight::get().writes(2 as u64))
 	}
 	// Storage: Attestation Attestations (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	fn reclaim_deposit() -> Weight {
-		(37_573_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().writes(2 as Weight))
+		Weight::from_ref_time(37_573_000 as u64)
+			.saturating_add(T::DbWeight::get().reads(2 as u64))
+			.saturating_add(T::DbWeight::get().writes(2 as u64))
 	}
 	fn transfer_deposit() -> Weight {
-		(56_873_000_u64)
+		Weight::from_ref_time(56_873_000_u64)
 			.saturating_add(T::DbWeight::get().reads(3_u64))
 			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}

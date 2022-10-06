@@ -2782,8 +2782,8 @@ pub mod pallet {
 		/// - Writes: (D + 1) * Balance
 		/// # </weight>
 		fn note_author(author: T::AccountId) {
-			let mut reads = Weight::one();
-			let mut writes = Weight::zero();
+			let mut reads = 1u64;
+			let mut writes = 0u64;
 			// should always include state except if the collator has been forcedly removed
 			// via `force_remove_candidate` in the current or previous round
 			if let Some(state) = CandidatePool::<T>::get(author.clone()) {
@@ -2804,7 +2804,7 @@ pub mod pallet {
 						.collator
 						.compute_reward::<T>(state.stake, c_staking_rate, authors_per_round);
 				Self::do_reward(&author, amt_due_collator);
-				writes = writes.saturating_add(Weight::one());
+				writes = writes.saturating_add(1u64);
 
 				// Reward delegators
 				for Stake { owner, amount } in state.delegators {
@@ -2814,7 +2814,7 @@ pub mod pallet {
 								.delegator
 								.compute_reward::<T>(amount, d_staking_rate, authors_per_round);
 						Self::do_reward(&owner, due);
-						writes = writes.saturating_add(Weight::one());
+						writes = writes.saturating_add(1u64);
 					}
 				}
 				reads = reads.saturating_add(4);

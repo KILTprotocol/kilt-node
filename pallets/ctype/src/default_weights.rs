@@ -56,21 +56,21 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: System Account (r:2 w:2)
 	// Storage: Ctype Ctypes (r:1 w:1)
 	fn add(l: u32, ) -> Weight {
-		(5_346_000_u64)
+		Weight::from_ref_time(5_346_000 as u64)
 			// Standard Error: 0
-			.saturating_add((2_000_u64).saturating_mul(l as Weight))
-			.saturating_add(T::DbWeight::get().reads(3_u64))
-			.saturating_add(T::DbWeight::get().writes(3_u64))
+			.saturating_add(Weight::from_ref_time(2_000 as u64).saturating_mul(l as u64))
+			.saturating_add(T::DbWeight::get().reads(3 as u64))
+			.saturating_add(T::DbWeight::get().writes(3 as u64))
 	}
 }
 
 // For backwards compatibility and tests
 impl WeightInfo for () {
 	fn add(l: u32, ) -> Weight {
-		(5_346_000_u64)
+		Weight::from_ref_time(5_346_000 as u64)
 			// Standard Error: 0
-			.saturating_add((2_000_u64).saturating_mul(l as Weight))
-			.saturating_add(RocksDbWeight::get().reads(3_u64))
-			.saturating_add(RocksDbWeight::get().writes(3_u64))
+			.saturating_add(Weight::from_ref_time(2_000 as u64).saturating_mul(l as u64))
+			.saturating_add(RocksDbWeight::get().reads(3 as u64))
+			.saturating_add(RocksDbWeight::get().writes(3 as u64))
 	}
 }

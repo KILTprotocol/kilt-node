@@ -10,17 +10,16 @@ version = "1.7.4"
 # External dependencies
 codec = {package = "parity-scale-codec", version = "3.1.5", default-features = false, features = ["derive"]}
 scale-info = {version = "2.1.1", default-features = false, features = ["derive"]}
-serde = {version = "1.0.136", optional = true, features = ["derive"]}
+serde = {version = "1.0.142", optional = true, features = ["derive"]}
 
-# Substrate dependencies
-cumulus-primitives-core = {branch = "polkadot-v0.9.28", default-features = false, git = "https://github.com/paritytech/cumulus"}
-frame-support = {branch = "polkadot-v0.9.28", default-features = false, git = "https://github.com/paritytech/substrate"}
-frame-system = {branch = "polkadot-v0.9.28", default-features = false, git = "https://github.com/paritytech/substrate"}
-polkadot-core-primitives = {branch = "release-v0.9.28", default-features = false, git = "https://github.com/paritytech/polkadot"}
-sp-core = {branch = "polkadot-v0.9.28", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-runtime = {branch = "polkadot-v0.9.28", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-std = {branch = "polkadot-v0.9.28", default-features = false, git = "https://github.com/paritytech/substrate"}
-xcm = {branch = "release-v0.9.28", default-features = false, git = "https://github.com/paritytech/polkadot"}
+cumulus-primitives-core = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/cumulus"}
+frame-support = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
+frame-system = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
+polkadot-core-primitives = {branch = "release-v0.9.29", default-features = false, git = "https://github.com/paritytech/polkadot"}
+sp-core = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
+sp-runtime = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
+sp-std = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
+xcm = {branch = "release-v0.9.29", default-features = false, git = "https://github.com/paritytech/polkadot"}
 
 [dev-dependencies]
 serde_json = "1.0.83"

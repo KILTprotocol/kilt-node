@@ -59,10 +59,6 @@ use crate::xcm_config::{XcmConfig, XcmOriginToTransactDispatchOrigin};
 
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
-// TODO: Enable after adding delegation pallet
-// #[cfg(feature = "runtime-benchmarks")]
-// use {frame_system::EnsureSigned, kilt_support::signature::AlwaysVerify,
-// runtime_common::benchmarks::DummySignature};
 
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
@@ -197,8 +193,8 @@ impl pallet_transaction_payment::Config for Runtime {
 }
 
 parameter_types! {
-	pub const ReservedXcmpWeight: Weight = constants::MAXIMUM_BLOCK_WEIGHT / 4;
-	pub const ReservedDmpWeight: Weight = constants::MAXIMUM_BLOCK_WEIGHT / 4;
+	pub const ReservedXcmpWeight: Weight = constants::MAXIMUM_BLOCK_WEIGHT.saturating_div(4);
+	pub const ReservedDmpWeight: Weight = constants::MAXIMUM_BLOCK_WEIGHT.saturating_div(4);
 }
 
 impl cumulus_pallet_parachain_system::Config for Runtime {
@@ -424,9 +420,8 @@ pub type Executive = frame_executive::Executive<
 	Block,
 	frame_system::ChainContext<Runtime>,
 	Runtime,
-	// Executes pallet hooks in reverse order of definition in construct_runtime
-	// If we want to switch to AllPalletsWithSystem, we need to reorder the staking pallets
-	AllPalletsReversedWithSystemFirst,
+	// Executes pallet hooks in the order of definition in construct_runtime
+	AllPalletsWithSystem,
 	(),
 >;
 
@@ -713,12 +708,20 @@ impl_runtime_apis! {
 	#[cfg(feature = "try-runtime")]
 	impl frame_try_runtime::TryRuntime<Block> for Runtime {
 		fn on_runtime_upgrade() -> (Weight, Weight) {
-			log::info!("try-runtime::on_runtime_upgrade spiritnet runtime.");
+			log::info!("try-runtime::on_runtime_upgrade clone.");
 			let weight = Executive::try_runtime_upgrade().unwrap();
 			(weight, BlockWeights::get().max_block)
 		}
-		fn execute_block_no_check(block: Block) -> Weight {
-			Executive::execute_block_no_check(block)
+
+		fn execute_block(block: Block, state_root_check: bool, select: frame_try_runtime::TryStateSelect) -> Weight {
+			log::info!(
+				target: "runtime::clone", "try-runtime: executing block #{} ({:?}) / root checks: {:?} / sanity-checks: {:?}",
+				block.header.number,
+				block.header.hash(),
+				state_root_check,
+				select,
+			);
+			Executive::try_execute_block(block, state_root_check, select).expect("try_execute_block failed")
 		}
 	}
 }
