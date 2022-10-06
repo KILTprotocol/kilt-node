@@ -76,7 +76,6 @@ default = ["std"]
 # This is required by Cumulus to access certain types of the
 # runtime without clashing with the runtime API exported functions
 # in WASM.
-disable-runtime-api = []
 runtime-benchmarks = [
   "attestation/runtime-benchmarks",
   "ctype/runtime-benchmarks",
