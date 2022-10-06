@@ -51,58 +51,58 @@ impl<T: frame_system::Config> pallet_tips::WeightInfo for WeightInfo<T> {
 	// Storage: Tips Reasons (r:1 w:1)
 	// Storage: Tips Tips (r:1 w:1)
 	fn report_awesome(r: u32, ) -> Weight {
-		(40_570_000 as Weight)
+		Weight::from_ref_time(40_570_000 as u64)
 			// Standard Error: 0
-			.saturating_add((2_000 as Weight).saturating_mul(r as Weight))
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().writes(2 as Weight))
+			.saturating_add(Weight::from_ref_time(2_000 as u64).saturating_mul(r as u64))
+			.saturating_add(T::DbWeight::get().reads(2 as u64))
+			.saturating_add(T::DbWeight::get().writes(2 as u64))
 	}
 	// Storage: Tips Tips (r:1 w:1)
 	// Storage: Tips Reasons (r:0 w:1)
 	fn retract_tip() -> Weight {
-		(39_413_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(1 as Weight))
-			.saturating_add(T::DbWeight::get().writes(2 as Weight))
+		Weight::from_ref_time(39_413_000 as u64)
+			.saturating_add(T::DbWeight::get().reads(1 as u64))
+			.saturating_add(T::DbWeight::get().writes(2 as u64))
 	}
 	// Storage: TipsMembership Members (r:1 w:0)
 	// Storage: Tips Reasons (r:1 w:1)
 	// Storage: Tips Tips (r:0 w:1)
 	fn tip_new(r: u32, t: u32, ) -> Weight {
-		(25_679_000 as Weight)
+		Weight::from_ref_time(25_679_000 as u64)
 			// Standard Error: 0
-			.saturating_add((2_000 as Weight).saturating_mul(r as Weight))
+			.saturating_add(Weight::from_ref_time(2_000 as u64).saturating_mul(r as u64))
 			// Standard Error: 0
-			.saturating_add((43_000 as Weight).saturating_mul(t as Weight))
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().writes(2 as Weight))
+			.saturating_add(Weight::from_ref_time(43_000 as u64).saturating_mul(t as u64))
+			.saturating_add(T::DbWeight::get().reads(2 as u64))
+			.saturating_add(T::DbWeight::get().writes(2 as u64))
 	}
 	// Storage: TipsMembership Members (r:1 w:0)
 	// Storage: Tips Tips (r:1 w:1)
 	fn tip(t: u32, ) -> Weight {
-		(15_006_000 as Weight)
+		Weight::from_ref_time(15_006_000 as u64)
 			// Standard Error: 0
-			.saturating_add((234_000 as Weight).saturating_mul(t as Weight))
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+			.saturating_add(Weight::from_ref_time(234_000 as u64).saturating_mul(t as u64))
+			.saturating_add(T::DbWeight::get().reads(2 as u64))
+			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	// Storage: Tips Tips (r:1 w:1)
 	// Storage: TipsMembership Members (r:1 w:0)
 	// Storage: System Account (r:2 w:2)
 	// Storage: Tips Reasons (r:0 w:1)
 	fn close_tip(t: u32, ) -> Weight {
-		(64_454_000 as Weight)
+		Weight::from_ref_time(64_454_000 as u64)
 			// Standard Error: 0
-			.saturating_add((184_000 as Weight).saturating_mul(t as Weight))
-			.saturating_add(T::DbWeight::get().reads(4 as Weight))
-			.saturating_add(T::DbWeight::get().writes(4 as Weight))
+			.saturating_add(Weight::from_ref_time(184_000 as u64).saturating_mul(t as u64))
+			.saturating_add(T::DbWeight::get().reads(4 as u64))
+			.saturating_add(T::DbWeight::get().writes(4 as u64))
 	}
 	// Storage: Tips Tips (r:1 w:1)
 	// Storage: Tips Reasons (r:0 w:1)
 	fn slash_tip(t: u32, ) -> Weight {
-		(21_757_000 as Weight)
+		Weight::from_ref_time(21_757_000 as u64)
 			// Standard Error: 0
-			.saturating_add((19_000 as Weight).saturating_mul(t as Weight))
-			.saturating_add(T::DbWeight::get().reads(1 as Weight))
-			.saturating_add(T::DbWeight::get().writes(2 as Weight))
+			.saturating_add(Weight::from_ref_time(19_000 as u64).saturating_mul(t as u64))
+			.saturating_add(T::DbWeight::get().reads(1 as u64))
+			.saturating_add(T::DbWeight::get().writes(2 as u64))
 	}
 }

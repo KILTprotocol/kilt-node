@@ -53,85 +53,85 @@ impl<T: frame_system::Config> delegation::WeightInfo for WeightInfo<T> {
 	// Storage: System Account (r:1 w:1)
 	// Storage: Delegation DelegationNodes (r:0 w:1)
 	fn create_hierarchy() -> Weight {
-		(42_445_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
-			.saturating_add(T::DbWeight::get().writes(3 as Weight))
+		Weight::from_ref_time(42_445_000 as u64)
+			.saturating_add(T::DbWeight::get().reads(3 as u64))
+			.saturating_add(T::DbWeight::get().writes(3 as u64))
 	}
 	// Storage: Delegation DelegationNodes (r:2 w:2)
 	// Storage: System Account (r:1 w:1)
 	fn add_delegation() -> Weight {
-		(50_201_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
-			.saturating_add(T::DbWeight::get().writes(3 as Weight))
+		Weight::from_ref_time(50_201_000 as u64)
+			.saturating_add(T::DbWeight::get().reads(3 as u64))
+			.saturating_add(T::DbWeight::get().writes(3 as u64))
 	}
 	// Storage: Delegation DelegationNodes (r:1 w:1)
 	// Storage: Delegation DelegationHierarchies (r:1 w:0)
 	fn revoke_delegation_root_child(r: u32, c: u32, ) -> Weight {
-		(20_845_000 as Weight)
+		Weight::from_ref_time(20_845_000 as u64)
 			// Standard Error: 26_000
-			.saturating_add((14_255_000 as Weight).saturating_mul(r as Weight))
+			.saturating_add(Weight::from_ref_time(14_255_000 as u64).saturating_mul(r as u64))
 			// Standard Error: 26_000
-			.saturating_add((39_000 as Weight).saturating_mul(c as Weight))
-			.saturating_add(T::DbWeight::get().reads(1 as Weight))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(r as Weight)))
-			.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(r as Weight)))
+			.saturating_add(Weight::from_ref_time(39_000 as u64).saturating_mul(c as u64))
+			.saturating_add(T::DbWeight::get().reads(1 as u64))
+			.saturating_add(T::DbWeight::get().reads((1 as u64).saturating_mul(r as u64)))
+			.saturating_add(T::DbWeight::get().writes((1 as u64).saturating_mul(r as u64)))
 	}
 	// Storage: Delegation DelegationNodes (r:6 w:1)
 	// Storage: Delegation DelegationHierarchies (r:1 w:0)
 	fn revoke_delegation_leaf(r: u32, c: u32, ) -> Weight {
-		(35_096_000 as Weight)
+		Weight::from_ref_time(35_096_000 as u64)
 			// Standard Error: 28_000
-			.saturating_add((70_000 as Weight).saturating_mul(r as Weight))
+			.saturating_add(Weight::from_ref_time(70_000 as u64).saturating_mul(r as u64))
 			// Standard Error: 28_000
-			.saturating_add((5_074_000 as Weight).saturating_mul(c as Weight))
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(c as Weight)))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+			.saturating_add(Weight::from_ref_time(5_074_000 as u64).saturating_mul(c as u64))
+			.saturating_add(T::DbWeight::get().reads(2 as u64))
+			.saturating_add(T::DbWeight::get().reads((1 as u64).saturating_mul(c as u64)))
+			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	// Storage: Delegation DelegationNodes (r:2 w:2)
 	// Storage: System Account (r:1 w:1)
 	// Storage: Delegation DelegationHierarchies (r:1 w:1)
 	fn remove_delegation(r: u32, ) -> Weight {
-		(56_155_000 as Weight)
+		Weight::from_ref_time(56_155_000 as u64)
 			// Standard Error: 39_000
-			.saturating_add((24_122_000 as Weight).saturating_mul(r as Weight))
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(r as Weight)))
-			.saturating_add(T::DbWeight::get().writes(3 as Weight))
-			.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(r as Weight)))
+			.saturating_add(Weight::from_ref_time(24_122_000 as u64).saturating_mul(r as u64))
+			.saturating_add(T::DbWeight::get().reads(3 as u64))
+			.saturating_add(T::DbWeight::get().reads((1 as u64).saturating_mul(r as u64)))
+			.saturating_add(T::DbWeight::get().writes(3 as u64))
+			.saturating_add(T::DbWeight::get().writes((1 as u64).saturating_mul(r as u64)))
 	}
 	// Storage: Delegation DelegationNodes (r:2 w:2)
 	// Storage: System Account (r:1 w:1)
 	// Storage: Delegation DelegationHierarchies (r:0 w:1)
 	fn reclaim_deposit(r: u32, ) -> Weight {
-		(48_349_000 as Weight)
+		Weight::from_ref_time(48_349_000 as u64)
 			// Standard Error: 49_000
-			.saturating_add((24_335_000 as Weight).saturating_mul(r as Weight))
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(r as Weight)))
-			.saturating_add(T::DbWeight::get().writes(3 as Weight))
-			.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(r as Weight)))
+			.saturating_add(Weight::from_ref_time(24_335_000 as u64).saturating_mul(r as u64))
+			.saturating_add(T::DbWeight::get().reads(2 as u64))
+			.saturating_add(T::DbWeight::get().reads((1 as u64).saturating_mul(r as u64)))
+			.saturating_add(T::DbWeight::get().writes(3 as u64))
+			.saturating_add(T::DbWeight::get().writes((1 as u64).saturating_mul(r as u64)))
 	}
 	// Storage: Delegation DelegationNodes (r:1 w:0)
 	// Storage: Delegation DelegationHierarchies (r:1 w:0)
 	fn can_attest() -> Weight {
-		(13_495_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
+		Weight::from_ref_time(13_495_000 as u64)
+			.saturating_add(T::DbWeight::get().reads(2 as u64))
 	}
 	// Storage: Delegation DelegationNodes (r:2 w:0)
 	fn can_revoke(c: u32, ) -> Weight {
-		(8_438_000 as Weight)
+		Weight::from_ref_time(8_438_000 as u64)
 			// Standard Error: 18_000
-			.saturating_add((5_037_000 as Weight).saturating_mul(c as Weight))
-			.saturating_add(T::DbWeight::get().reads(1 as Weight))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(c as Weight)))
+			.saturating_add(Weight::from_ref_time(5_037_000 as u64).saturating_mul(c as u64))
+			.saturating_add(T::DbWeight::get().reads(1 as u64))
+			.saturating_add(T::DbWeight::get().reads((1 as u64).saturating_mul(c as u64)))
 	}
 	// Storage: Delegation DelegationNodes (r:2 w:0)
 	fn can_remove(c: u32, ) -> Weight {
-		(8_448_000 as Weight)
+		Weight::from_ref_time(8_448_000 as u64)
 			// Standard Error: 17_000
-			.saturating_add((5_022_000 as Weight).saturating_mul(c as Weight))
-			.saturating_add(T::DbWeight::get().reads(1 as Weight))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(c as Weight)))
+			.saturating_add(Weight::from_ref_time(5_022_000 as u64).saturating_mul(c as u64))
+			.saturating_add(T::DbWeight::get().reads(1 as u64))
+			.saturating_add(T::DbWeight::get().reads((1 as u64).saturating_mul(c as u64)))
 	}
 }
