@@ -29,12 +29,9 @@ spiritnet-runtime = {path = "../../runtimes/spiritnet"}
 # External dependencies
 clap = {version = "3.2.20", features = ["derive"]}
 codec = {package = "parity-scale-codec", version = "3.1.5"}
-derive_more = "0.99.17"
-futures = {version = "0.3.21", features = ["compat"]}
 hex-literal = "0.3.4"
 jsonrpsee = {version = "0.15.1", features = ["server"]}
 log = "0.4.17"
-parking_lot = "0.12.1"
 serde = {version = "1.0.144", features = ["derive"]}
 serde_json = "1.0.83"
 
@@ -47,9 +44,7 @@ sc-cli = {git = "https://github.com/paritytech/substrate", features = ["wasmtime
 sc-client-api = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.29"}
 sc-consensus = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.29"}
 sc-executor = {git = "https://github.com/paritytech/substrate", features = ["wasmtime"], branch = "polkadot-v0.9.29"}
-sc-keystore = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.29"}
 sc-network = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.29"}
-sc-rpc = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.29"}
 sc-rpc-api = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.29"}
 sc-service = {git = "https://github.com/paritytech/substrate", features = ["wasmtime"], branch = "polkadot-v0.9.29"}
 sc-sysinfo = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.29"}
@@ -63,7 +58,6 @@ sp-blockchain = {git = "https://github.com/paritytech/substrate", branch = "polk
 sp-consensus = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.29"}
 sp-consensus-aura = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.29"}
 sp-core = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.29"}
-sp-inherents = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.29"}
 sp-keystore = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.29"}
 sp-offchain = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.29"}
 sp-runtime = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.29"}
@@ -74,7 +68,6 @@ substrate-prometheus-endpoint = {git = "https://github.com/paritytech/substrate"
 
 # Cumulus dependencies
 cumulus-client-cli = {git = "https://github.com/paritytech/cumulus", branch = "polkadot-v0.9.29"}
-cumulus-client-collator = {git = "https://github.com/paritytech/cumulus", branch = "polkadot-v0.9.29"}
 cumulus-client-consensus-aura = {git = "https://github.com/paritytech/cumulus", branch = "polkadot-v0.9.29"}
 cumulus-client-consensus-common = {git = "https://github.com/paritytech/cumulus", branch = "polkadot-v0.9.29"}
 cumulus-client-network = {git = "https://github.com/paritytech/cumulus", branch = "polkadot-v0.9.29"}
@@ -87,7 +80,6 @@ cumulus-relay-chain-rpc-interface = {git = "https://github.com/paritytech/cumulu
 
 # Polkadot dependencies
 polkadot-cli = {git = "https://github.com/paritytech/polkadot", branch = "release-v0.9.29"}
-polkadot-parachain = {git = "https://github.com/paritytech/polkadot", branch = "release-v0.9.29"}
 polkadot-primitives = {git = "https://github.com/paritytech/polkadot", branch = "release-v0.9.29"}
 polkadot-service = {git = "https://github.com/paritytech/polkadot", branch = "release-v0.9.29"}
 xcm = {git = "https://github.com/paritytech/polkadot", branch = "release-v0.9.29"}

@@ -26,9 +26,6 @@ sp-keystore = {branch = "polkadot-v0.9.29", git = "https://github.com/paritytech
 # Internal dependencies
 ctype = {path = "../ctype", optional = true}
 kilt-support = {default-features = false, path = "../../support"}
-
-# External dependencies
-hex = {default-features = false, features = ["alloc"], version = "0.4.3"}
 log = "0.4.17"
 serde = {version = "1.0.142", optional = true, features = ["derive"]}
 
@@ -66,7 +63,6 @@ std = [
   "ctype/std",
   "frame-support/std",
   "frame-system/std",
-  "hex/std",
   "kilt-support/std",
   "log/std",
   "pallet-balances/std",

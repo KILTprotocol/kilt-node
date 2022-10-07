@@ -13,7 +13,6 @@ did-rpc-runtime-api = {version = "1.7.2", path = "./runtime-api"}
 
 sp-api = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.29"}
 sp-blockchain = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.29"}
-sp-core = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.29"}
 sp-runtime = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.29"}
 
 [features]
@@ -22,6 +21,5 @@ std = [
   "codec/std",
   "did-rpc-runtime-api/std",
   "sp-api/std",
-  "sp-core/std",
   "sp-runtime/std",
 ]

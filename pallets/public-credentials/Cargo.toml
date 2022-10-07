@@ -16,9 +16,6 @@ sp-keystore = {branch = "polkadot-v0.9.29", git = "https://github.com/paritytech
 
 [dependencies]
 codec = {package = "parity-scale-codec", version = "3.1.2", default-features = false, features = ["derive"]}
-base58 = {version = "0.2.0"}
-hex = {default-features = false, version = "0.4.3"}
-log = "0.4.17"
 scale-info = {version = "2.1.1", default-features = false, features = ["derive"]}
 
 # Internal dependencies
@@ -46,7 +43,6 @@ runtime-benchmarks = [
 ]
 std = [
   "codec/std",
-  "log/std",
   "scale-info/std",
 
   "ctype/std",
