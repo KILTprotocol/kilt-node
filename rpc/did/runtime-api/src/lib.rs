@@ -103,6 +103,7 @@ pub type RawDidLinkedInfo<DidIdentifier, AccountId, LinkableAccountId, Balance, 
 >;
 
 sp_api::decl_runtime_apis! {
+	#[api_version(2)]
 	/// The API to query account nonce (aka transaction index).
 	pub trait DidApi<DidIdentifier, AccountId, LinkableAccountId, Balance, Key: Ord, BlockNumber> where
 		DidIdentifier: Codec,
@@ -125,6 +126,9 @@ sp_api::decl_runtime_apis! {
 		/// * the web3name (optional)
 		/// * associated accounts
 		/// * service endpoints
+		// See https://paritytech.github.io/substrate/master/sp_api/macro.decl_runtime_apis.html#declaring-multiple-api-versions for more details
+		#[changed_in(2)]
+		fn query_did_by_account_id(account: AccountId) -> Option<RawDidLinkedInfo<DidIdentifier, AccountId, AccountId, Balance, Key, BlockNumber>>;
 		fn query_did_by_account_id(account: LinkableAccountId) -> Option<RawDidLinkedInfo<DidIdentifier, AccountId, LinkableAccountId, Balance, Key, BlockNumber>>;
 		/// Given a did this returns:
 		/// * the DID
@@ -132,6 +136,6 @@ sp_api::decl_runtime_apis! {
 		/// * the web3name (optional)
 		/// * associated accounts
 		/// * service endpoints
-		fn query_did(did: DidIdentifier) -> Option<RawDidLinkedInfo<DidIdentifier, AccountId, LinkableAccountId,Balance, Key, BlockNumber>>;
+		fn query_did(did: DidIdentifier) -> Option<RawDidLinkedInfo<DidIdentifier, AccountId, LinkableAccountId, Balance, Key, BlockNumber>>;
 	}
 }
