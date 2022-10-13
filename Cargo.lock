@@ -2006,19 +2006,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "did-rpc"
-version = "1.7.4"
-dependencies = [
- "did-rpc-runtime-api",
- "jsonrpsee 0.14.0",
- "parity-scale-codec",
- "sp-api",
- "sp-blockchain",
- "sp-core",
- "sp-runtime",
-]
-
-[[package]]
 name = "did-rpc-runtime-api"
 version = "1.7.4"
 dependencies = [
@@ -3466,10 +3453,8 @@ checksum = "11e017217fcd18da0a25296d3693153dd19c8a6aadab330b3595285d075385d1"
 dependencies = [
  "jsonrpsee-core 0.14.0",
  "jsonrpsee-http-server 0.14.0",
- "jsonrpsee-proc-macros 0.14.0",
  "jsonrpsee-types 0.14.0",
  "jsonrpsee-ws-server 0.14.0",
- "tracing",
 ]
 
 [[package]]
@@ -3480,7 +3465,7 @@ checksum = "8bd0d559d5e679b1ab2f869b486a11182923863b1b3ee8b421763cdd707b783a"
 dependencies = [
  "jsonrpsee-core 0.15.1",
  "jsonrpsee-http-server 0.15.1",
- "jsonrpsee-proc-macros 0.15.1",
+ "jsonrpsee-proc-macros",
  "jsonrpsee-types 0.15.1",
  "jsonrpsee-ws-client",
  "jsonrpsee-ws-server 0.15.1",
@@ -3601,18 +3586,6 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-futures",
-]
-
-[[package]]
-name = "jsonrpsee-proc-macros"
-version = "0.14.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "874cf3f6a027cebf36cae767feca9aa2e8a8f799880e49eb5540819fcbd8eada"
-dependencies = [
- "proc-macro-crate",
- "proc-macro2",
- "quote",
- "syn",
 ]
 
 [[package]]
@@ -3741,14 +3714,13 @@ dependencies = [
  "cumulus-relay-chain-interface",
  "cumulus-relay-chain-rpc-interface",
  "derive_more",
- "did-rpc",
  "frame-benchmarking",
  "frame-benchmarking-cli",
  "futures 0.3.24",
  "hex-literal",
  "jsonrpsee 0.14.0",
  "log",
- "pallet-did-lookup",
+ "node-common",
  "pallet-transaction-payment-rpc",
  "parity-scale-codec",
  "parking_lot 0.12.1",
@@ -4719,7 +4691,6 @@ name = "mashnet-node"
 version = "1.7.4"
 dependencies = [
  "clap",
- "did-rpc",
  "frame-benchmarking",
  "frame-benchmarking-cli",
  "frame-system",
@@ -4727,6 +4698,7 @@ dependencies = [
  "jsonrpsee 0.15.1",
  "log",
  "mashnet-node-runtime",
+ "node-common",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc",
  "runtime-common",
@@ -5171,6 +5143,14 @@ dependencies = [
  "bitflags",
  "cfg-if 1.0.0",
  "libc",
+]
+
+[[package]]
+name = "node-common"
+version = "1.7.4"
+dependencies = [
+ "kilt-support",
+ "serde",
 ]
 
 [[package]]

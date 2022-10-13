@@ -17,8 +17,7 @@ substrate-build-script-utils = {git = "https://github.com/paritytech/substrate",
 
 # Internal dependencies
 clone-runtime = {path = "../../runtimes/clone"}
-did-rpc = {path = "../../rpc/did"}
-pallet-did-lookup = {path = "../../pallets/pallet-did-lookup"}
+node-common = {path = "../common"}
 peregrine-runtime = {path = "../../runtimes/peregrine"}
 runtime-common = {path = "../../runtimes/common"}
 spiritnet-runtime = {path = "../../runtimes/spiritnet"}
@@ -103,7 +102,6 @@ fast-gov = [
   "runtime-common/fast-gov",
 ]
 runtime-benchmarks = [
-  "pallet-did-lookup/runtime-benchmarks",
   "polkadot-service/runtime-benchmarks",
   "peregrine-runtime/runtime-benchmarks",
   "spiritnet-runtime/runtime-benchmarks",
