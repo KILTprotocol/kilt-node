@@ -42,7 +42,6 @@ use sp_runtime::traits::BlakeTwo256;
 use std::{sync::Arc, time::Duration};
 use substrate_prometheus_endpoint::Registry;
 
-use pallet_did_lookup::linkable_account::LinkableAccountId;
 use public_credentials::CredentialEntry;
 use runtime_common::{
 	assets::AssetDid, authorization::AuthorizationId, AccountId, AuthorityId, Balance, BlockNumber, DidIdentifier,
@@ -257,7 +256,6 @@ where
 		+ cumulus_primitives_core::CollectCollationInfo<Block>
 		+ pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>
 		+ frame_rpc_system::AccountNonceApi<Block, AccountId, Index>
-		+ did_rpc::DidRuntimeApi<Block, DidIdentifier, AccountId, LinkableAccountId, Balance, Hash, BlockNumber>
 		+ public_credentials_rpc::PublicCredentialsRuntimeApi<
 			Block,
 			AssetDid,
@@ -502,7 +500,6 @@ where
 		+ pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>
 		+ sp_consensus_aura::AuraApi<Block, AuthorityId>
 		+ cumulus_primitives_core::CollectCollationInfo<Block>
-		+ did_rpc::DidRuntimeApi<Block, DidIdentifier, AccountId, LinkableAccountId, Balance, Hash, BlockNumber>
 		+ public_credentials_rpc::PublicCredentialsRuntimeApi<
 			Block,
 			AssetDid,

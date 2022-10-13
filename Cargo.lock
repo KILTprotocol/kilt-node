@@ -2009,19 +2009,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "did-rpc"
-version = "1.7.4"
-dependencies = [
- "did-rpc-runtime-api",
- "jsonrpsee",
- "parity-scale-codec",
- "sp-api",
- "sp-blockchain",
- "sp-core",
- "sp-runtime",
-]
-
-[[package]]
 name = "did-rpc-runtime-api"
 version = "1.7.4"
 dependencies = [
@@ -3657,7 +3644,6 @@ dependencies = [
  "cumulus-relay-chain-interface",
  "cumulus-relay-chain-rpc-interface",
  "derive_more",
- "did-rpc",
  "frame-benchmarking",
  "frame-benchmarking-cli",
  "futures 0.3.24",
@@ -3665,7 +3651,6 @@ dependencies = [
  "jsonrpsee",
  "log",
  "node-common",
- "pallet-did-lookup",
  "pallet-transaction-payment-rpc",
  "parity-scale-codec",
  "parking_lot 0.12.1",
@@ -4638,7 +4623,6 @@ name = "mashnet-node"
 version = "1.7.4"
 dependencies = [
  "clap",
- "did-rpc",
  "frame-benchmarking",
  "frame-benchmarking-cli",
  "frame-system",
@@ -4647,7 +4631,6 @@ dependencies = [
  "log",
  "mashnet-node-runtime",
  "node-common",
- "pallet-did-lookup",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc",
  "public-credentials",
