@@ -104,7 +104,7 @@ pub type RawDidLinkedInfo<DidIdentifier, AccountId, LinkableAccountId, Balance, 
 
 sp_api::decl_runtime_apis! {
 	#[api_version(2)]
-	/// The API to query account nonce (aka transaction index).
+	/// The API to query DID information.
 	pub trait DidApi<DidIdentifier, AccountId, LinkableAccountId, Balance, Key: Ord, BlockNumber> where
 		DidIdentifier: Codec,
 		AccountId: Codec,
@@ -119,6 +119,8 @@ sp_api::decl_runtime_apis! {
 		/// * the web3name (optional)
 		/// * associated accounts
 		/// * service endpoints
+		#[changed_in(2)]
+		fn query_did_by_w3n(name: Vec<u8>) -> Option<RawDidLinkedInfo<DidIdentifier, AccountId, AccountId, Balance, Key, BlockNumber>>;
 		fn query_did_by_w3n(name: Vec<u8>) -> Option<RawDidLinkedInfo<DidIdentifier, AccountId, LinkableAccountId, Balance, Key, BlockNumber>>;
 		/// Given an account address this returns:
 		/// * the DID
@@ -136,6 +138,8 @@ sp_api::decl_runtime_apis! {
 		/// * the web3name (optional)
 		/// * associated accounts
 		/// * service endpoints
+		#[changed_in(2)]
+		fn query_did(did: DidIdentifier) -> Option<RawDidLinkedInfo<DidIdentifier, AccountId, AccountId, Balance, Key, BlockNumber>>;
 		fn query_did(did: DidIdentifier) -> Option<RawDidLinkedInfo<DidIdentifier, AccountId, LinkableAccountId, Balance, Key, BlockNumber>>;
 	}
 }
