@@ -142,4 +142,35 @@ sp_api::decl_runtime_apis! {
 		fn query_did(did: DidIdentifier) -> Option<RawDidLinkedInfo<DidIdentifier, AccountId, AccountId, Balance, Key, BlockNumber>>;
 		fn query_did(did: DidIdentifier) -> Option<RawDidLinkedInfo<DidIdentifier, AccountId, LinkableAccountId, Balance, Key, BlockNumber>>;
 	}
+
+	pub trait Did<DidIdentifier, AccountId, LinkableAccountId, Balance, Key: Ord, BlockNumber> where
+		DidIdentifier: Codec,
+		AccountId: Codec,
+		LinkableAccountId: Codec,
+		BlockNumber: Codec + MaxEncodedLen,
+		Key: Codec,
+		Balance: Codec,
+	{
+		/// Given a web3name this returns:
+		/// * the DID
+		/// * public keys stored for the did
+		/// * the web3name (optional)
+		/// * associated accounts
+		/// * service endpoints
+		fn query_by_web3_name(name: Vec<u8>) -> Option<RawDidLinkedInfo<DidIdentifier, AccountId, LinkableAccountId, Balance, Key, BlockNumber>>;
+		/// Given an account address this returns:
+		/// * the DID
+		/// * public keys stored for the did
+		/// * the web3name (optional)
+		/// * associated accounts
+		/// * service endpoints
+		fn query_by_account(account: LinkableAccountId) -> Option<RawDidLinkedInfo<DidIdentifier, AccountId, LinkableAccountId, Balance, Key, BlockNumber>>;
+		/// Given a did this returns:
+		/// * the DID
+		/// * public keys stored for the did
+		/// * the web3name (optional)
+		/// * associated accounts
+		/// * service endpoints
+		fn query(did: DidIdentifier) -> Option<RawDidLinkedInfo<DidIdentifier, AccountId, LinkableAccountId, Balance, Key, BlockNumber>>;
+	}
 }
