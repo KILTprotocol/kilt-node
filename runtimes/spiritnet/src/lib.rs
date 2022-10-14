@@ -1283,7 +1283,7 @@ impl_runtime_apis! {
 		}
 	}
 
-	impl public_credentials_runtime_api::PublicCredentials<Block, AssetDid, Hash, public_credentials::CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>>> for Runtime {
+	impl public_credentials_runtime_api::PublicCredentialsApi<Block, AssetDid, Hash, public_credentials::CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>>> for Runtime {
 		fn get_credential(credential_id: Hash) -> Option<public_credentials::CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>>> {
 			let subject = public_credentials::CredentialSubjects::<Runtime>::get(&credential_id)?;
 			public_credentials::Credentials::<Runtime>::get(&subject, &credential_id)
