@@ -24,7 +24,7 @@ use sp_std::vec::Vec;
 
 sp_api::decl_runtime_apis! {
 	/// The API to query public credentials for a subject.
-	pub trait PublicCredentialsApi<SubjectId, CredentialId, CredentialEntry> where
+	pub trait PublicCredentials<SubjectId, CredentialId, CredentialEntry> where
 		SubjectId: Codec,
 		CredentialId: Codec,
 		CredentialEntry: Codec
