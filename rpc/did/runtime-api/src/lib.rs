@@ -103,6 +103,7 @@ pub type RawDidLinkedInfo<DidIdentifier, AccountId, LinkableAccountId, Balance, 
 >;
 
 sp_api::decl_runtime_apis! {
+	// TODO: Remove this runtime API when the SDK team agrees that it is time to introduce a breaking change.
 	#[api_version(2)]
 	/// The API to query DID information.
 	pub trait DidApi<DidIdentifier, AccountId, LinkableAccountId, Balance, Key: Ord, BlockNumber> where
