@@ -4,7 +4,7 @@ description = "Enables adding and revoking attestations."
 edition = "2021"
 name = "attestation"
 repository = "https://github.com/KILTprotocol/kilt-node"
-version = "1.7.4"
+version = "1.7.5"
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
