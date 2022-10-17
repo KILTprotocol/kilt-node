@@ -28,7 +28,7 @@ codec = {package = "parity-scale-codec", version = "3.1.5"}
 derive_more = "0.99.17"
 futures = {version = "0.3.21", features = ["compat"]}
 hex-literal = "0.3.4"
-jsonrpsee = {version = "0.14.0", features = ["server"]}
+jsonrpsee = {version = "0.15.1", features = ["server"]}
 log = "0.4.17"
 parking_lot = "0.12.1"
 serde = {version = "1.0.144", features = ["derive"]}

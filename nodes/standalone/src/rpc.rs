@@ -27,7 +27,6 @@ use std::sync::Arc;
 
 use jsonrpsee::RpcModule;
 
-use runtime_common::{AccountId, Balance, Block, BlockNumber, DidIdentifier, Hash, Index};
 pub use sc_rpc_api::DenyUnsafe;
 use sc_transaction_pool_api::TransactionPool;
 use sp_api::ProvideRuntimeApi;
@@ -35,7 +34,7 @@ use sp_block_builder::BlockBuilder;
 use sp_blockchain::{Error as BlockChainError, HeaderBackend, HeaderMetadata};
 
 use runtime_common::{
-	assets::AssetDid, authorization::AuthorizationId, AccountId, Balance, Block, BlockNumber, DidIdentifier, Hash,
+	AccountId, Balance, Block,
 	Index,
 };
 
