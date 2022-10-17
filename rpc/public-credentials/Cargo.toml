@@ -1,6 +1,6 @@
 [package]
 name = "public-credentials-rpc"
-version = "1.7.2"
+version = "1.8.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -18,7 +18,7 @@ sp-blockchain = {git = "https://github.com/paritytech/substrate", default-featur
 sp-runtime = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.29"}
 
 # Internal runtime dependencies
-public-credentials-runtime-api = {version = "1.7.2", path = "./runtime-api"}
+public-credentials-runtime-api = {version = "1.8.0", path = "./runtime-api"}
 
 [features]
 default = ["std"]

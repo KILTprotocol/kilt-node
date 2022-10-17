@@ -4,7 +4,7 @@ description = "Runtime APIs for dealing with public credentials."
 edition = "2021"
 name = "public-credentials-runtime-api"
 repository = "https://github.com/KILTprotocol/kilt-node"
-version = "1.7.2"
+version = "1.8.0"
 
 [dependencies]
 # External dependencies
