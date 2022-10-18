@@ -90,7 +90,7 @@ pub type RawDidLinkedInfo<DidIdentifier, AccountId, Balance, Key, BlockNumber> =
 	DidLinkedInfo<DidIdentifier, AccountId, Vec<u8>, Vec<u8>, Vec<u8>, Vec<u8>, Balance, Key, BlockNumber>;
 
 sp_api::decl_runtime_apis! {
-	/// The API to query account nonce (aka transaction index).
+	/// The API to query DID information.
 	pub trait DidApi<DidIdentifier, AccountId, Balance, Key: Ord, BlockNumber> where
 		DidIdentifier: Codec,
 		AccountId: Codec,
@@ -111,6 +111,7 @@ sp_api::decl_runtime_apis! {
 		/// * the web3name (optional)
 		/// * associated accounts
 		/// * service endpoints
+		// See https://paritytech.github.io/substrate/master/sp_api/macro.decl_runtime_apis.html#declaring-multiple-api-versions for more details
 		fn query_did_by_account_id(account: AccountId) -> Option<RawDidLinkedInfo<DidIdentifier, AccountId, Balance, Key, BlockNumber>>;
 		/// Given a did this returns:
 		/// * the DID
@@ -119,5 +120,36 @@ sp_api::decl_runtime_apis! {
 		/// * associated accounts
 		/// * service endpoints
 		fn query_did(did: DidIdentifier) -> Option<RawDidLinkedInfo<DidIdentifier, AccountId, Balance, Key, BlockNumber>>;
+	}
+
+	pub trait Did<DidIdentifier, AccountId, LinkableAccountId, Balance, Key: Ord, BlockNumber> where
+		DidIdentifier: Codec,
+		AccountId: Codec,
+		LinkableAccountId: Codec,
+		BlockNumber: Codec + MaxEncodedLen,
+		Key: Codec,
+		Balance: Codec,
+	{
+		/// Given a web3name this returns:
+		/// * the DID
+		/// * public keys stored for the did
+		/// * the web3name (optional)
+		/// * associated accounts
+		/// * service endpoints
+		fn query_by_web3_name(name: Vec<u8>) -> Option<RawDidLinkedInfo<DidIdentifier, AccountId, Balance, Key, BlockNumber>>;
+		/// Given an account address this returns:
+		/// * the DID
+		/// * public keys stored for the did
+		/// * the web3name (optional)
+		/// * associated accounts
+		/// * service endpoints
+		fn query_by_account(account: AccountId) -> Option<RawDidLinkedInfo<DidIdentifier, AccountId, Balance, Key, BlockNumber>>;
+		/// Given a did this returns:
+		/// * the DID
+		/// * public keys stored for the did
+		/// * the web3name (optional)
+		/// * associated accounts
+		/// * service endpoints
+		fn query(did: DidIdentifier) -> Option<RawDidLinkedInfo<DidIdentifier, AccountId, Balance, Key, BlockNumber>>;
 	}
 }

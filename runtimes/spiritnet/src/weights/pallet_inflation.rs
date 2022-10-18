@@ -50,11 +50,11 @@ pub struct WeightInfo<T>(PhantomData<T>);
 impl<T: frame_system::Config> pallet_inflation::WeightInfo for WeightInfo<T> {
 	// Storage: System Account (r:1 w:1)
 	fn on_initialize_mint_to_treasury() -> Weight {
-		(30_864_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(1 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(30_864_000 as u64)
+			.saturating_add(T::DbWeight::get().reads(1 as u64))
+			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	fn on_initialize_no_action() -> Weight {
-		(263_000 as Weight)
+		Weight::from_ref_time(263_000 as u64)
 	}
 }
