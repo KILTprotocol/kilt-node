@@ -17,7 +17,6 @@ substrate-build-script-utils = {git = "https://github.com/paritytech/substrate",
 
 # Internal dependencies
 clone-runtime = {path = "../../runtimes/clone"}
-node-common = {path = "../common"}
 peregrine-runtime = {path = "../../runtimes/peregrine"}
 runtime-common = {path = "../../runtimes/common"}
 spiritnet-runtime = {path = "../../runtimes/spiritnet"}

@@ -52,8 +52,8 @@ use runtime_common::{
 	authorization::{AuthorizationId, PalletAuthorize},
 	constants::{self, EXISTENTIAL_DEPOSIT, KILT},
 	fees::{ToAuthor, WeightToFee},
-	pallet_id, AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights,
-	DidIdentifier, FeeSplit, Hash, Header, Index, Signature, SlowAdjustingFeeUpdate,
+	pallet_id, AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights, DidIdentifier,
+	FeeSplit, Hash, Header, Index, Signature, SlowAdjustingFeeUpdate,
 };
 
 use crate::xcm_config::{XcmConfig, XcmOriginToTransactDispatchOrigin};
@@ -1119,14 +1119,12 @@ impl_runtime_apis! {
 		Block,
 		DidIdentifier,
 		AccountId,
-		AccountId,
 		Balance,
 		Hash,
 		BlockNumber
 	> for Runtime {
 		fn query_did_by_w3n(name: Vec<u8>) -> Option<did_rpc_runtime_api::RawDidLinkedInfo<
 				DidIdentifier,
-				AccountId,
 				AccountId,
 				Balance,
 				Hash,
@@ -1156,7 +1154,6 @@ impl_runtime_apis! {
 			did_rpc_runtime_api::RawDidLinkedInfo<
 				DidIdentifier,
 				AccountId,
-				AccountId,
 				Balance,
 				Hash,
 				BlockNumber
@@ -1184,7 +1181,6 @@ impl_runtime_apis! {
 		fn query_did(did: DidIdentifier) -> Option<
 			did_rpc_runtime_api::RawDidLinkedInfo<
 				DidIdentifier,
-				AccountId,
 				AccountId,
 				Balance,
 				Hash,

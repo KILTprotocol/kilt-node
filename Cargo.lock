@@ -3631,7 +3631,6 @@ dependencies = [
  "hex-literal",
  "jsonrpsee",
  "log",
- "node-common",
  "pallet-transaction-payment-rpc",
  "parity-scale-codec",
  "parking_lot 0.12.1",
@@ -4609,7 +4608,6 @@ dependencies = [
  "jsonrpsee",
  "log",
  "mashnet-node-runtime",
- "node-common",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc",
  "runtime-common",
@@ -5054,14 +5052,6 @@ dependencies = [
  "bitflags",
  "cfg-if 1.0.0",
  "libc",
-]
-
-[[package]]
-name = "node-common"
-version = "1.7.5"
-dependencies = [
- "kilt-support",
- "serde",
 ]
 
 [[package]]

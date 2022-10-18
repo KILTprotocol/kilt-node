@@ -75,7 +75,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("KILT"),
 	impl_name: create_runtime_str!("KILT"),
 	authoring_version: 0,
-	spec_version: 10740,
+	spec_version: 10750,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 0,
@@ -530,13 +530,11 @@ impl_runtime_apis! {
 		Block,
 		AccountId,
 		AccountId,
-		AccountId,
 		Balance,
 		Hash,
 		BlockNumber
 	> for Runtime {
 		fn query_did_by_w3n(_: Vec<u8>) -> Option<did_rpc_runtime_api::RawDidLinkedInfo<
-				AccountId,
 				AccountId,
 				AccountId,
 				Balance,
@@ -551,7 +549,6 @@ impl_runtime_apis! {
 			did_rpc_runtime_api::RawDidLinkedInfo<
 				AccountId,
 				AccountId,
-				AccountId,
 				Balance,
 				Hash,
 				BlockNumber
@@ -562,7 +559,6 @@ impl_runtime_apis! {
 
 		fn query_did(_: AccountId) -> Option<
 			did_rpc_runtime_api::RawDidLinkedInfo<
-				AccountId,
 				AccountId,
 				AccountId,
 				Balance,

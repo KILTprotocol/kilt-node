@@ -42,10 +42,7 @@ use sp_runtime::traits::BlakeTwo256;
 use std::{sync::Arc, time::Duration};
 use substrate_prometheus_endpoint::Registry;
 
-use runtime_common::{
-	 AccountId, AuthorityId, Balance, BlockNumber,
-	Index,
-};
+use runtime_common::{AccountId, AuthorityId, Balance, BlockNumber, Index};
 
 type Header = sp_runtime::generic::Header<BlockNumber, sp_runtime::traits::BlakeTwo256>;
 pub type Block = sp_runtime::generic::Block<Header, sp_runtime::OpaqueExtrinsic>;
@@ -210,7 +207,7 @@ async fn build_relay_chain_interface(
 		Some(relay_chain_url) => {
 			let client = create_client_and_start_worker(relay_chain_url, task_manager).await?;
 			Ok((Arc::new(RelayChainRpcInterface::new(client)) as Arc<_>, None))
-		},
+		}
 		None => build_inprocess_relay_chain(
 			polkadot_config,
 			parachain_config,

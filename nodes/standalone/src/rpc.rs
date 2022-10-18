@@ -33,10 +33,7 @@ use sp_api::ProvideRuntimeApi;
 use sp_block_builder::BlockBuilder;
 use sp_blockchain::{Error as BlockChainError, HeaderBackend, HeaderMetadata};
 
-use runtime_common::{
-	AccountId, Balance, Block,
-	Index,
-};
+use runtime_common::{AccountId, Balance, Block, Index};
 
 /// Full client dependencies.
 pub struct FullDeps<C, P> {
@@ -70,7 +67,7 @@ where
 	} = deps;
 
 	module.merge(System::new(client.clone(), pool, deny_unsafe).into_rpc())?;
-	module.merge(TransactionPayment::new(client.clone()).into_rpc())?;
+	module.merge(TransactionPayment::new(client).into_rpc())?;
 
 	// Extend this RPC with a custom API by using the following syntax.
 	// `YourRpcStruct` should have a reference to a client, which is needed
