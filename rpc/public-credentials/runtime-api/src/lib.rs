@@ -24,12 +24,13 @@ use sp_std::vec::Vec;
 
 sp_api::decl_runtime_apis! {
 	/// The API to query public credentials for a subject.
-	pub trait PublicCredentials<SubjectId, CredentialId, CredentialEntry> where
+	pub trait PublicCredentials<SubjectId, CredentialId, CredentialEntry, Error> where
 		SubjectId: Codec,
 		CredentialId: Codec,
-		CredentialEntry: Codec
+		CredentialEntry: Codec,
+		Error: Codec,
 	{
 		fn get_credential(credential_id: CredentialId) -> Option<CredentialEntry>;
-		fn get_credentials(subject: SubjectId) -> Vec<(CredentialId, CredentialEntry)>;
+		fn get_credentials(subject: SubjectId) -> Result<Vec<(CredentialId, CredentialEntry)>, Error>;
 	}
 }

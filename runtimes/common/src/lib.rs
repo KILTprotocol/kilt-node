@@ -45,6 +45,7 @@ use sp_std::marker::PhantomData;
 pub mod assets;
 pub mod authorization;
 pub mod constants;
+pub mod errors;
 pub mod fees;
 pub mod migrations;
 pub mod pallet_id;

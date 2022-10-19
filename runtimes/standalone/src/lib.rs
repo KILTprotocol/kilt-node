@@ -56,6 +56,7 @@ use runtime_common::{
 	assets::AssetDid,
 	authorization::{AuthorizationId, PalletAuthorize},
 	constants::{self, EXISTENTIAL_DEPOSIT, KILT},
+	errors::PublicCredentialsApiError,
 	fees::ToAuthor,
 	AccountId, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature, SlowAdjustingFeeUpdate,
 };
@@ -1041,14 +1042,15 @@ impl_runtime_apis! {
 		}
 	}
 
-	impl public_credentials_runtime_api::PublicCredentials<Block, AssetDid, Hash, public_credentials::CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>>> for Runtime {
+	impl public_credentials_runtime_api::PublicCredentials<Block, Vec<u8>, Hash, public_credentials::CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>>, PublicCredentialsApiError> for Runtime {
 		fn get_credential(credential_id: Hash) -> Option<public_credentials::CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>>> {
 			let subject = public_credentials::CredentialSubjects::<Runtime>::get(&credential_id)?;
 			public_credentials::Credentials::<Runtime>::get(&subject, &credential_id)
 		}
 
-		fn get_credentials(subject: <Runtime as public_credentials::Config>::SubjectId) -> Vec<(Hash, public_credentials::CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>>)> {
-			public_credentials::Credentials::<Runtime>::iter_prefix(&subject).collect()
+		fn get_credentials(subject: Vec<u8>) -> Result<Vec<(Hash, public_credentials::CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>>)>, PublicCredentialsApiError> {
+			let asset_did = AssetDid::try_from(subject).map_err(|_| PublicCredentialsApiError::InvalidSubjectId)?;
+			Ok(public_credentials::Credentials::<Runtime>::iter_prefix(&asset_did).collect())
 		}
 	}
 
