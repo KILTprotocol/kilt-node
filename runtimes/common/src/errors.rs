@@ -16,11 +16,10 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use codec::{Decode, Encode, MaxEncodedLen};
+use codec::{Decode, Encode};
 use scale_info::TypeInfo;
-use sp_runtime::RuntimeDebug;
 
-#[derive(RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
+#[derive(Encode, Decode, TypeInfo)]
 pub enum PublicCredentialsApiError {
 	InvalidSubjectId,
 }
