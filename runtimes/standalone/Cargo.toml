@@ -21,7 +21,7 @@ attestation = {default-features = false, path = "../../pallets/attestation"}
 ctype = {default-features = false, path = "../../pallets/ctype"}
 delegation = {default-features = false, path = "../../pallets/delegation"}
 did = {default-features = false, path = "../../pallets/did"}
-kilt-support = {path = "../../support", default-features = false, optional = true}
+kilt-support = {path = "../../support", default-features = false}
 pallet-did-lookup = {default-features = false, path = "../../pallets/pallet-did-lookup"}
 pallet-web3-names = {default-features = false, path = "../../pallets/pallet-web3-names"}
 public-credentials = {default-features = false, path = "../../pallets/public-credentials"}
@@ -87,7 +87,6 @@ runtime-benchmarks = [
   "frame-system-benchmarking",
   "hex-literal",
   "runtime-common/runtime-benchmarks",
-  "kilt-support",
   "kilt-support/runtime-benchmarks",
   "pallet-balances/runtime-benchmarks",
   "pallet-did-lookup/runtime-benchmarks",
@@ -111,6 +110,7 @@ std = [
   "frame-system-rpc-runtime-api/std",
   "did-rpc-runtime-api/std",
   "frame-try-runtime/std",
+  "kilt-support/std",
   "log/std",
   "pallet-aura/std",
   "pallet-authorship/std",

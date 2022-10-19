@@ -58,12 +58,6 @@ where
 	C::Api: frame_rpc_system::AccountNonceApi<Block, AccountId, Index>,
 	C::Api: pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>,
 	C::Api: BlockBuilder<Block>,
-	C::Api: public_credentials_rpc::PublicCredentialsRuntimeApi<
-		Block,
-		AssetDid,
-		Hash,
-		CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<Hash>>,
-	>,
 	P: TransactionPool + 'static,
 {
 	use frame_rpc_system::{System, SystemApiServer};
@@ -84,34 +78,6 @@ where
 	// to call into the runtime.
 	//
 	// `module.merge(YourRpcStruct::new(ReferenceToClient).into_rpc())?;`
-	module.merge(
-		PublicCredentialsQuery::<
-			C,
-			Block,
-			// Input subject ID
-			String,
-			// Runtime subject ID
-			AssetDid,
-			// Input/output credential ID
-			Hash,
-			// Runtime credential ID
-			Hash,
-			// Input/output credential entry
-			node_common::OuterCredentialEntry<
-				Hash,
-				DidIdentifier,
-				BlockNumber,
-				AccountId,
-				Balance,
-				AuthorizationId<Hash>,
-			>,
-			// Runtime credential entry
-			CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<Hash>>,
-			// Credential filter
-			node_common::PublicCredentialFilter<Hash, DidIdentifier>,
-		>::new(client)
-		.into_rpc(),
-	)?;
 
 	Ok(module)
 }

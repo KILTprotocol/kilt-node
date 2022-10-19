@@ -51,9 +51,10 @@ use sp_version::RuntimeVersion;
 
 use delegation::DelegationAc;
 use did_rpc_runtime_api::runtime_decl_for_DidApi::DidApiV2;
+use kilt_support::traits::ItemFilter;
 use pallet_did_lookup::{linkable_account::LinkableAccountId, migrations::EthereumMigration};
 use runtime_common::{
-	assets::AssetDid,
+	assets::{AssetDid, PublicCredentialsFilter},
 	authorization::{AuthorizationId, PalletAuthorize},
 	constants::{self, EXISTENTIAL_DEPOSIT, KILT},
 	errors::PublicCredentialsApiError,
@@ -1042,15 +1043,20 @@ impl_runtime_apis! {
 		}
 	}
 
-	impl public_credentials_runtime_api::PublicCredentials<Block, Vec<u8>, Hash, public_credentials::CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>>, PublicCredentialsApiError> for Runtime {
+	impl public_credentials_runtime_api::PublicCredentials<Block, Vec<u8>, Hash, public_credentials::CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>>, PublicCredentialsFilter<Hash, AccountId>, PublicCredentialsApiError> for Runtime {
 		fn get_credential(credential_id: Hash) -> Option<public_credentials::CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>>> {
 			let subject = public_credentials::CredentialSubjects::<Runtime>::get(&credential_id)?;
 			public_credentials::Credentials::<Runtime>::get(&subject, &credential_id)
 		}
 
-		fn get_credentials(subject: Vec<u8>) -> Result<Vec<(Hash, public_credentials::CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>>)>, PublicCredentialsApiError> {
+		fn get_credentials(subject: Vec<u8>, filter: Option<PublicCredentialsFilter<Hash, AccountId>>) -> Result<Vec<(Hash, public_credentials::CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>>)>, PublicCredentialsApiError> {
 			let asset_did = AssetDid::try_from(subject).map_err(|_| PublicCredentialsApiError::InvalidSubjectId)?;
-			Ok(public_credentials::Credentials::<Runtime>::iter_prefix(&asset_did).collect())
+			let credentials_prefix = public_credentials::Credentials::<Runtime>::iter_prefix(&asset_did);
+			if let Some(filter) = filter {
+				Ok(credentials_prefix.filter(|(_, entry)| filter.should_include(&entry)).collect())
+			} else {
+				Ok(credentials_prefix.collect())
+			}
 		}
 	}
 

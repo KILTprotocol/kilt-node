@@ -22,15 +22,18 @@ use codec::Codec;
 
 use sp_std::vec::Vec;
 
+use kilt_support::traits::ItemFilter;
+
 sp_api::decl_runtime_apis! {
 	/// The API to query public credentials for a subject.
-	pub trait PublicCredentials<SubjectId, CredentialId, CredentialEntry, Error> where
+	pub trait PublicCredentials<SubjectId, CredentialId, CredentialEntry, Filter, Error> where
 		SubjectId: Codec,
 		CredentialId: Codec,
 		CredentialEntry: Codec,
+		Filter: Codec + ItemFilter<CredentialEntry>,
 		Error: Codec,
 	{
 		fn get_credential(credential_id: CredentialId) -> Option<CredentialEntry>;
-		fn get_credentials(subject: SubjectId) -> Result<Vec<(CredentialId, CredentialEntry)>, Error>;
+		fn get_credentials(subject: SubjectId, filter: Option<Filter>) -> Result<Vec<(CredentialId, CredentialEntry)>, Error>;
 	}
 }
