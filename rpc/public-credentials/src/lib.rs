@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-pub use public_credentials_runtime_api::PublicCredentialsApi as PublicCredentialsRuntimeApi;
+pub use public_credentials_runtime_api::PublicCredentials as PublicCredentialsRuntimeApi;
 
 use std::sync::Arc;
 
