@@ -37,12 +37,12 @@ use sp_std::marker::PhantomData;
 
 /// Weights for `{{pallet}}`.
 pub struct WeightInfo<T>(PhantomData<T>);
-impl<T: frame_system::Config> WeightInfo<T> {
+impl<T: frame_system::Config> {{pallet}}::WeightInfo for WeightInfo<T> {
 	{{#each benchmarks as |benchmark|}}
 	{{#each benchmark.comments as |comment|}}
 	// {{comment}}
 	{{/each}}
-	pub(crate) fn {{benchmark.name~}}
+	fn {{benchmark.name~}}
 	(
 		{{~#each benchmark.components as |c| ~}}
 		{{~#if (not c.is_used)}}_{{/if}}{{c.name}}: u32, {{/each~}}
