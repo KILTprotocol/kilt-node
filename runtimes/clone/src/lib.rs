@@ -46,9 +46,8 @@ use sp_version::RuntimeVersion;
 use xcm::opaque::latest::BodyId;
 use xcm_executor::XcmExecutor;
 
-use kilt_support::traits::ItemFilter;
 use runtime_common::{
-	assets::{AssetDid, PublicCredentialsFilter},
+	assets::PublicCredentialsFilter,
 	authorization::AuthorizationId,
 	constants::{self, HOURS, MILLI_KILT},
 	errors::PublicCredentialsApiError,
@@ -581,11 +580,11 @@ impl_runtime_apis! {
 	}
 
 	impl public_credentials_runtime_api::PublicCredentials<Block, Vec<u8>, Hash, public_credentials::CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<Hash>>, PublicCredentialsFilter<Hash, AccountId>, PublicCredentialsApiError> for Runtime {
-		fn get_credential(credential_id: Hash) -> Option<public_credentials::CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<Hash>>> {
+		fn get_credential(_credential_id: Hash) -> Option<public_credentials::CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<Hash>>> {
 			None
 		}
 
-		fn get_credentials(subject: Vec<u8>, filter: Option<PublicCredentialsFilter<Hash, AccountId>>) -> Result<Vec<(Hash, public_credentials::CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<Hash>>)>, PublicCredentialsApiError> {
+		fn get_credentials(_subject: Vec<u8>, _filter: Option<PublicCredentialsFilter<Hash, AccountId>>) -> Result<Vec<(Hash, public_credentials::CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<Hash>>)>, PublicCredentialsApiError> {
 			Ok(vec![])
 		}
 	}

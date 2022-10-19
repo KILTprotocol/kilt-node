@@ -42,11 +42,7 @@ use sp_runtime::traits::BlakeTwo256;
 use std::{sync::Arc, time::Duration};
 use substrate_prometheus_endpoint::Registry;
 
-use public_credentials::CredentialEntry;
-use runtime_common::{
-	assets::AssetDid, authorization::AuthorizationId, AccountId, AuthorityId, Balance, BlockNumber, DidIdentifier,
-	Index,
-};
+use runtime_common::{AccountId, AuthorityId, Balance, BlockNumber, Index};
 
 type Header = sp_runtime::generic::Header<BlockNumber, sp_runtime::traits::BlakeTwo256>;
 pub type Block = sp_runtime::generic::Block<Header, sp_runtime::OpaqueExtrinsic>;

@@ -1301,7 +1301,7 @@ impl_runtime_apis! {
 			let asset_did = AssetDid::try_from(subject).map_err(|_| PublicCredentialsApiError::InvalidSubjectId)?;
 			let credentials_prefix = public_credentials::Credentials::<Runtime>::iter_prefix(&asset_did);
 			if let Some(filter) = filter {
-				Ok(credentials_prefix.filter(|(_, entry)| filter.should_include(&entry)).collect())
+				Ok(credentials_prefix.filter(|(_, entry)| filter.should_include(entry)).collect())
 			} else {
 				Ok(credentials_prefix.collect())
 			}
