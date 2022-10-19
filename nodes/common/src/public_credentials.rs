@@ -18,12 +18,11 @@
 
 use serde::{Deserialize, Serialize};
 
-use kilt_support::deposit::Deposit;
+use kilt_support::{deposit::Deposit, traits::ItemFilter};
 use public_credentials::CredentialEntry;
 
-use public_credentials_rpc::PublicCredentialsFilter;
-
 #[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 /// Thin wrapper around a runtime credential entry as specified in the
 /// `public-credentials` pallet. This wrapper implements all the
 /// (de-)serialization logic.
@@ -68,7 +67,7 @@ pub enum PublicCredentialFilter<CTypeHash, Attester> {
 }
 
 impl<CTypeHash, Attester, BlockNumber, AccountId, Balance, AuthorizationId>
-	PublicCredentialsFilter<CredentialEntry<CTypeHash, Attester, BlockNumber, AccountId, Balance, AuthorizationId>>
+	ItemFilter<CredentialEntry<CTypeHash, Attester, BlockNumber, AccountId, Balance, AuthorizationId>>
 	for PublicCredentialFilter<CTypeHash, Attester>
 where
 	CTypeHash: Eq,

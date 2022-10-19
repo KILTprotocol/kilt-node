@@ -31,11 +31,7 @@ use sp_api::ProvideRuntimeApi;
 use sp_blockchain::HeaderBackend;
 use sp_runtime::{generic::BlockId, traits::Block as BlockT};
 
-/// Filter that can be used after the credentials for a given subject have been
-/// retrieved from the blockchain state.
-pub trait PublicCredentialsFilter<Credential> {
-	fn should_include(&self, credential: &Credential) -> bool;
-}
+use kilt_support::traits::ItemFilter;
 
 #[rpc(client, server, namespace = "publicCredentials")]
 pub trait PublicCredentialsApi<BlockHash, OuterSubjectId, OuterCredentialId, OuterCredentialEntry, CredentialFilter> {
@@ -161,7 +157,7 @@ impl<
 	CredentialId: Codec + Send + Sync + 'static + TryFrom<OuterCredentialId> + Into<OuterCredentialId>,
 	CredentialEntry: Codec + Send + Sync + 'static,
 	OuterCredentialEntry: Send + Sync + 'static + From<CredentialEntry>,
-	CredentialFilter: Send + Sync + 'static + PublicCredentialsFilter<CredentialEntry>,
+	CredentialFilter: Send + Sync + 'static + ItemFilter<CredentialEntry>,
 {
 	fn get_credential(
 		&self,

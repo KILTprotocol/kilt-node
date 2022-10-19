@@ -8019,6 +8019,7 @@ name = "public-credentials-rpc"
 version = "1.8.0"
 dependencies = [
  "jsonrpsee",
+ "kilt-support",
  "parity-scale-codec",
  "public-credentials-runtime-api",
  "sp-api",
