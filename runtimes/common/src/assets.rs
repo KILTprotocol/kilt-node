@@ -65,12 +65,17 @@ impl TryFrom<String> for AssetDid {
 
 /// Filter for public credentials retrieved for a provided subject as specified
 /// in the runtime API interface.
-#[derive(Encode, Decode, TypeInfo)]
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
 pub enum PublicCredentialsFilter<CTypeHash, Attester> {
 	/// Filter credentials that match a specified Ctype.
 	CtypeHash(CTypeHash),
 	/// Filter credentials that have been issued by the specified attester.
 	Attester(Attester),
+}
+
+#[test]
+fn test_filter() {
+	print!("{:?}", PublicCredentialsFilter::<Hash, AccountId>::type_info());
 }
 
 impl ItemFilter<CredentialEntry<Hash, AccountId, BlockNumber, AccountId, Balance, AuthorizationId<Hash>>>

@@ -62,7 +62,6 @@ where
 {
 	use frame_rpc_system::{System, SystemApiServer};
 	use pallet_transaction_payment_rpc::{TransactionPayment, TransactionPaymentApiServer};
-	use public_credentials_rpc::{PublicCredentialsApiServer, PublicCredentialsQuery};
 
 	let mut module = RpcModule::new(());
 	let FullDeps {

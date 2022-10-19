@@ -255,7 +255,7 @@ where
 		+ sp_block_builder::BlockBuilder<Block>
 		+ cumulus_primitives_core::CollectCollationInfo<Block>
 		+ pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>
-		+ frame_rpc_system::AccountNonceApi<Block, AccountId, Index>
+		+ frame_rpc_system::AccountNonceApi<Block, AccountId, Index>,
 	sc_client_api::StateBackendFor<TFullBackend<Block>, Block>: sp_api::StateBackend<BlakeTwo256>,
 	Executor: sc_executor::NativeExecutionDispatch + 'static,
 	RB: FnOnce(
@@ -493,13 +493,7 @@ where
 		+ frame_rpc_system::AccountNonceApi<Block, AccountId, Index>
 		+ pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>
 		+ sp_consensus_aura::AuraApi<Block, AuthorityId>
-		+ cumulus_primitives_core::CollectCollationInfo<Block>
-		+ public_credentials_rpc::PublicCredentialsRuntimeApi<
-			Block,
-			AssetDid,
-			Hash,
-			CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<Hash>>,
-		>,
+		+ cumulus_primitives_core::CollectCollationInfo<Block>,
 	sc_client_api::StateBackendFor<TFullBackend<Block>, Block>: sp_api::StateBackend<BlakeTwo256>,
 {
 	start_node_impl::<API, RE, _, _, _>(
