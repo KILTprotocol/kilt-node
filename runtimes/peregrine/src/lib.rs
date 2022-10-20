@@ -58,8 +58,8 @@ use runtime_common::{
 	constants::{self, EXISTENTIAL_DEPOSIT, KILT},
 	errors::PublicCredentialsApiError,
 	fees::{ToAuthor, WeightToFee},
-	migrations, pallet_id, AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights,
-	DidIdentifier, FeeSplit, Hash, Header, Index, Signature, SlowAdjustingFeeUpdate,
+	pallet_id, AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights, DidIdentifier,
+	FeeSplit, Hash, Header, Index, Signature, SlowAdjustingFeeUpdate,
 };
 
 use crate::xcm_config::{XcmConfig, XcmOriginToTransactDispatchOrigin};
@@ -1045,7 +1045,7 @@ pub type Executive = frame_executive::Executive<
 	Runtime,
 	// Executes pallet hooks in the order of definition in construct_runtime
 	AllPalletsWithSystem,
-	(EthereumMigration<Runtime>, migrations::RemoveRelocationPallets<Runtime>),
+	EthereumMigration<Runtime>,
 >;
 
 impl_runtime_apis! {

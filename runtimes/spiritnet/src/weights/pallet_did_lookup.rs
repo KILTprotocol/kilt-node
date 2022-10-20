@@ -45,7 +45,7 @@
 use frame_support::{traits::Get, weights::Weight};
 use sp_std::marker::PhantomData;
 
-/// Weight functions for `pallet_did_lookup`.
+/// Weights for `pallet_did_lookup`.
 pub struct WeightInfo<T>(PhantomData<T>);
 impl<T: frame_system::Config> pallet_did_lookup::WeightInfo for WeightInfo<T> {
 	// Storage: System Account (r:1 w:1)
