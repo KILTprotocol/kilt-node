@@ -75,3 +75,8 @@ pub trait GenerateBenchmarkOrigin<OuterOrigin, AccountId, SubjectId> {
 pub trait GetWorstCase {
 	fn worst_case() -> Self;
 }
+
+/// Generic filter.
+pub trait ItemFilter<Item> {
+	fn should_include(&self, credential: &Item) -> bool;
+}

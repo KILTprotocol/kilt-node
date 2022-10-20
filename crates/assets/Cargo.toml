@@ -4,7 +4,7 @@ description = "Asset DIDs and related structs, suitable for no_std environments.
 edition = "2021"
 name = "kilt-asset-dids"
 repository = "https://github.com/KILTprotocol/kilt-node"
-version = "1.7.2"
+version = "1.8.0"
 
 [dependencies]
 # External dependencies

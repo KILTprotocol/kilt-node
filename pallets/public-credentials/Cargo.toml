@@ -4,7 +4,7 @@ description = "Enables adding and revoking public credentials."
 edition = "2021"
 name = "public-credentials"
 repository = "https://github.com/KILTprotocol/kilt-node"
-version = "1.7.2"
+version = "1.8.0"
 
 [dev-dependencies]
 ctype = {features = ["mock"], path = "../ctype"}

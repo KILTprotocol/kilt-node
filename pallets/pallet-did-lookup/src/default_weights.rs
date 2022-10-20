@@ -23,7 +23,7 @@
 //! EXECUTION: Some(Wasm), WASM-EXECUTION: Compiled, CHAIN: Some("spiritnet-dev"), DB CACHE: 1024
 
 // Executed Command:
-// target/release/kilt-parachain
+// ./target/release/kilt-parachain
 // benchmark
 // pallet
 // --chain=spiritnet-dev
@@ -34,7 +34,7 @@
 // --execution=wasm
 // --wasm-execution=compiled
 // --heap-pages=4096
-// --output=pallets/pallet-did-lookup/src/default_weights.rs
+// --output=./pallets/pallet-did-lookup/src/default_weights.rs
 // --template=.maintain/weight-template.hbs
 
 #![cfg_attr(rustfmt, rustfmt_skip)]

@@ -50,11 +50,14 @@ use sp_std::prelude::*;
 use sp_version::RuntimeVersion;
 
 use delegation::DelegationAc;
+use did_rpc_runtime_api::runtime_decl_for_DidApi::DidApiV2;
+use kilt_support::traits::ItemFilter;
 use pallet_did_lookup::{linkable_account::LinkableAccountId, migrations::EthereumMigration};
 use runtime_common::{
-	assets::AssetDid,
+	assets::{AssetDid, PublicCredentialsFilter},
 	authorization::{AuthorizationId, PalletAuthorize},
 	constants::{self, EXISTENTIAL_DEPOSIT, KILT},
+	errors::PublicCredentialsApiError,
 	fees::ToAuthor,
 	AccountId, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature, SlowAdjustingFeeUpdate,
 };
@@ -117,7 +120,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("mashnet-node"),
 	impl_name: create_runtime_str!("mashnet-node"),
 	authoring_version: 4,
-	spec_version: 10740,
+	spec_version: 10800,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 4,
@@ -992,14 +995,68 @@ impl_runtime_apis! {
 		}
 	}
 
-	impl public_credentials_runtime_api::PublicCredentialsApi<Block, AssetDid, Hash, public_credentials::CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>>> for Runtime {
+	impl did_rpc_runtime_api::Did<
+		Block,
+		DidIdentifier,
+		AccountId,
+		LinkableAccountId,
+		Balance,
+		Hash,
+		BlockNumber
+	> for Runtime {
+		fn query_by_web3_name(name: Vec<u8>) -> Option<did_rpc_runtime_api::RawDidLinkedInfo<
+				DidIdentifier,
+				AccountId,
+				LinkableAccountId,
+				Balance,
+				Hash,
+				BlockNumber
+			>
+		> {
+			Self::query_did_by_w3n(name)
+		}
+
+		fn query_by_account(account: LinkableAccountId) -> Option<
+			did_rpc_runtime_api::RawDidLinkedInfo<
+				DidIdentifier,
+				AccountId,
+				LinkableAccountId,
+				Balance,
+				Hash,
+				BlockNumber
+			>
+		> {
+			Self::query_did_by_account_id(account)
+		}
+
+		fn query(did: DidIdentifier) -> Option<
+			did_rpc_runtime_api::RawDidLinkedInfo<
+				DidIdentifier,
+				AccountId,
+				LinkableAccountId,
+				Balance,
+				Hash,
+				BlockNumber
+			>
+		> {
+			Self::query_did(did)
+		}
+	}
+
+	impl public_credentials_runtime_api::PublicCredentials<Block, Vec<u8>, Hash, public_credentials::CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>>, PublicCredentialsFilter<Hash, AccountId>, PublicCredentialsApiError> for Runtime {
 		fn get_credential(credential_id: Hash) -> Option<public_credentials::CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>>> {
 			let subject = public_credentials::CredentialSubjects::<Runtime>::get(&credential_id)?;
 			public_credentials::Credentials::<Runtime>::get(&subject, &credential_id)
 		}
 
-		fn get_credentials(subject: <Runtime as public_credentials::Config>::SubjectId) -> Vec<(Hash, public_credentials::CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>>)> {
-			public_credentials::Credentials::<Runtime>::iter_prefix(&subject).collect()
+		fn get_credentials(subject: Vec<u8>, filter: Option<PublicCredentialsFilter<Hash, AccountId>>) -> Result<Vec<(Hash, public_credentials::CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>>)>, PublicCredentialsApiError> {
+			let asset_did = AssetDid::try_from(subject).map_err(|_| PublicCredentialsApiError::InvalidSubjectId)?;
+			let credentials_prefix = public_credentials::Credentials::<Runtime>::iter_prefix(&asset_did);
+			if let Some(filter) = filter {
+				Ok(credentials_prefix.filter(|(_, entry)| filter.should_include(entry)).collect())
+			} else {
+				Ok(credentials_prefix.collect())
+			}
 		}
 	}
 

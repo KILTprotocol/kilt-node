@@ -44,14 +44,13 @@ for pallet in "${pallets[@]}"; do
     # shellcheck disable=SC2086
     ./target/release/kilt-parachain benchmark pallet \
     --chain="${chain}" \
-    --steps=1 \
+    --steps=50 \
     --repeat=20 \
     --pallet="$pallet" \
     --extrinsic="*" \
     --execution=wasm \
     --wasm-execution=compiled \
     --heap-pages=4096 \
-	--record-proof \
     --output="./runtimes/${runtime}/src/weights/${pallet//-/_}.rs" \
     --template=".maintain/runtime-weight-template.hbs"
 done
