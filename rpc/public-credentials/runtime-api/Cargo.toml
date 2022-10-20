@@ -14,10 +14,14 @@ codec = {package = "parity-scale-codec", version = "3.1.5", default-features = f
 sp-api = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.29", default-features = false}
 sp-std = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.29", default-features = false}
 
+# Internal dependencies
+kilt-support = {path = "../../../support/", default-features = false}
+
 [features]
 default = ["std"]
 std = [
 	"codec/std",
+  "kilt-support/std",
 	"sp-api/std",
 	"sp-std/std",
 ]

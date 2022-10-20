@@ -16,9 +16,7 @@ substrate-build-script-utils = {git = "https://github.com/paritytech/substrate",
 
 # Internal dependencies
 mashnet-node-runtime = {path = "../../runtimes/standalone"}
-node-common = {path = "../common"}
 public-credentials = {path = "../../pallets/public-credentials"}
-public-credentials-rpc = {path = "../../rpc/public-credentials"}
 runtime-common = {path = "../../runtimes/common"}
 
 # External dependencies

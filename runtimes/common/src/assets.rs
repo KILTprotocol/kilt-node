@@ -23,6 +23,11 @@ use sp_std::vec::Vec;
 
 use kilt_asset_dids::AssetDid as AssetIdentifier;
 
+use kilt_support::traits::ItemFilter;
+use public_credentials::CredentialEntry;
+
+use crate::{authorization::AuthorizationId, AccountId, Balance, BlockNumber, Hash};
+
 #[cfg(feature = "runtime-benchmarks")]
 pub use benchmarks::*;
 
@@ -55,6 +60,30 @@ impl TryFrom<String> for AssetDid {
 
 	fn try_from(value: String) -> Result<Self, Self::Error> {
 		Self::try_from(value.into_bytes())
+	}
+}
+
+/// Filter for public credentials retrieved for a provided subject as specified
+/// in the runtime API interface.
+#[derive(Encode, Decode, TypeInfo)]
+pub enum PublicCredentialsFilter<CTypeHash, Attester> {
+	/// Filter credentials that match a specified Ctype.
+	CtypeHash(CTypeHash),
+	/// Filter credentials that have been issued by the specified attester.
+	Attester(Attester),
+}
+
+impl ItemFilter<CredentialEntry<Hash, AccountId, BlockNumber, AccountId, Balance, AuthorizationId<Hash>>>
+	for PublicCredentialsFilter<Hash, AccountId>
+{
+	fn should_include(
+		&self,
+		credential: &CredentialEntry<Hash, AccountId, BlockNumber, AccountId, Balance, AuthorizationId<Hash>>,
+	) -> bool {
+		match self {
+			Self::CtypeHash(ctype_hash) => ctype_hash == &credential.ctype_hash,
+			Self::Attester(attester) => attester == &credential.attester,
+		}
 	}
 }
 

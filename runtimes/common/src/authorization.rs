@@ -24,7 +24,6 @@ use attestation::AttestationAccessControl;
 use public_credentials::PublicCredentialsAccessControl;
 
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
-#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 pub enum AuthorizationId<DelegationId> {
 	Delegation(DelegationId),
 }

@@ -984,6 +984,7 @@ dependencies = [
  "frame-system-rpc-runtime-api",
  "frame-try-runtime",
  "hex-literal",
+ "kilt-support",
  "log",
  "pallet-aura",
  "pallet-authorship",
@@ -3650,7 +3651,6 @@ dependencies = [
  "hex-literal",
  "jsonrpsee",
  "log",
- "node-common",
  "pallet-transaction-payment-rpc",
  "parity-scale-codec",
  "parking_lot 0.12.1",
@@ -3660,7 +3660,6 @@ dependencies = [
  "polkadot-primitives",
  "polkadot-service",
  "public-credentials",
- "public-credentials-rpc",
  "runtime-common",
  "sc-basic-authorship",
  "sc-chain-spec",
@@ -4630,11 +4629,9 @@ dependencies = [
  "jsonrpsee",
  "log",
  "mashnet-node-runtime",
- "node-common",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc",
  "public-credentials",
- "public-credentials-rpc",
  "runtime-common",
  "sc-basic-authorship",
  "sc-cli",
@@ -5079,16 +5076,6 @@ dependencies = [
  "bitflags",
  "cfg-if 1.0.0",
  "libc",
-]
-
-[[package]]
-name = "node-common"
-version = "1.8.0"
-dependencies = [
- "kilt-support",
- "public-credentials",
- "public-credentials-rpc",
- "serde",
 ]
 
 [[package]]
@@ -8015,21 +8002,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "public-credentials-rpc"
-version = "1.8.0"
-dependencies = [
- "jsonrpsee",
- "parity-scale-codec",
- "public-credentials-runtime-api",
- "sp-api",
- "sp-blockchain",
- "sp-runtime",
-]
-
-[[package]]
 name = "public-credentials-runtime-api"
 version = "1.8.0"
 dependencies = [
+ "kilt-support",
  "parity-scale-codec",
  "sp-api",
  "sp-std",

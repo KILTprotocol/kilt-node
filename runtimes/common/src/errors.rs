@@ -16,6 +16,10 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-pub mod public_credentials;
+use codec::{Decode, Encode};
+use scale_info::TypeInfo;
 
-pub use crate::public_credentials::*;
+#[derive(Encode, Decode, TypeInfo)]
+pub enum PublicCredentialsApiError {
+	InvalidSubjectId,
+}
