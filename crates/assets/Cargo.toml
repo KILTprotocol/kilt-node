@@ -9,7 +9,7 @@ version = "1.8.0"
 [dependencies]
 # External dependencies
 base58 = {version = "0.2.0", default-features = false}
-hex = {version = "0.4.3", default-features = false}
+hex = {version = "0.4.3", default-features = false, features = ["alloc"]}
 hex-literal = {version = "0.3.4", default-features = false}
 log = {version = "0.4.17", default-features = false}
 

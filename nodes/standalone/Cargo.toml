@@ -16,15 +16,10 @@ substrate-build-script-utils = {git = "https://github.com/paritytech/substrate",
 
 # Internal dependencies
 mashnet-node-runtime = {path = "../../runtimes/standalone"}
-public-credentials = {path = "../../pallets/public-credentials"}
 runtime-common = {path = "../../runtimes/common"}
 
 # External dependencies
 clap = {version = "3.2.20", features = ["derive"]}
-futures = "0.3.21"
-log = "0.4.17"
-serde = {version = "1.0.144", features = ["derive"]}
-serde_json = "1.0.83"
 
 # Substrate dependencies
 frame-system = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.29"}
@@ -38,7 +33,6 @@ sc-executor = {git = "https://github.com/paritytech/substrate", branch = "polkad
 sc-finality-grandpa = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.29"}
 sp-keyring = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.29"}
 sc-keystore = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.29"}
-sc-network = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.29"} 
 sc-service = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.29"}
 sc-telemetry = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.29"}
 sc-transaction-pool = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.29"}
@@ -53,13 +47,11 @@ sp-finality-grandpa = {git = "https://github.com/paritytech/substrate", branch =
 sp-inherents = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.29"}
 sp-runtime = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.29"}
 sp-timestamp = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.29"}
-sp-transaction-pool = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.29"}
 
 # RPC related dependencies
 frame-rpc-system = {package = "substrate-frame-rpc-system", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.29"}
 jsonrpsee = { version = "0.15.1", features = ["server"] }
 pallet-transaction-payment-rpc = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.29"}
-sc-rpc = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.29"}
 sc-rpc-api = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.29"}
 
 # Benchmarking
@@ -73,7 +65,6 @@ try-runtime-cli = {git = "https://github.com/paritytech/substrate", branch = "po
 default = []
 runtime-benchmarks = [
   "mashnet-node-runtime/runtime-benchmarks",
-  "public-credentials/runtime-benchmarks",
   "runtime-common/runtime-benchmarks",
 ]
 try-runtime = [
