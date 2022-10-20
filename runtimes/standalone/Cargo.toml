@@ -8,13 +8,11 @@ version = "1.8.0"
 substrate-wasm-builder = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.29"}
 
 [dependencies]
-bitflags = {default-features = false, version = "1.3.2"}
 codec = {package = "parity-scale-codec", version = "3.1.5", default-features = false, features = ["derive"]}
 log = "0.4.17"
 scale-info = {version = "2.1.1", default-features = false, features = ["derive"]}
 
 hex-literal = {version = "0.3.4", optional = true}
-serde = {version = "1.0.144", optional = true, features = ["derive"]}
 
 # kilt functionality
 attestation = {default-features = false, path = "../../pallets/attestation"}
@@ -58,7 +56,6 @@ sp-block-builder = {branch = "polkadot-v0.9.29", default-features = false, git =
 sp-consensus-aura = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
 sp-core = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
 sp-inherents = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-io = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
 sp-offchain = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
 sp-runtime = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
 sp-session = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
@@ -130,13 +127,11 @@ std = [
   "public-credentials-runtime-api/std",
   "runtime-common/std",
   "scale-info/std",
-  "serde",
   "sp-api/std",
   "sp-block-builder/std",
   "sp-consensus-aura/std",
   "sp-core/std",
   "sp-inherents/std",
-  "sp-io/std",
   "sp-offchain/std",
   "sp-runtime/std",
   "sp-session/std",

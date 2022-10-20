@@ -11,11 +11,8 @@ substrate-wasm-builder = {git = "https://github.com/paritytech/substrate", branc
 codec = {package = "parity-scale-codec", version = "3.1.5", default-features = false, features = ["derive"]}
 log = "0.4.17"
 scale-info = {version = "2.1.1", default-features = false, features = ["derive"]}
-smallvec = "1.8.0"
-static_assertions = "1.1.0"
 
 hex-literal = {version = "0.3.4", optional = true}
-serde = {version = "1.0.144", optional = true, features = ["derive"]}
 
 # RPC
 did-rpc-runtime-api = {path = "../../rpc/did/runtime-api", default-features = false}
@@ -42,7 +39,6 @@ sp-block-builder = {git = "https://github.com/paritytech/substrate", default-fea
 sp-consensus-aura = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.29"}
 sp-core = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.29"}
 sp-inherents = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.29"}
-sp-io = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.29"}
 sp-offchain = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.29"}
 sp-runtime = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.29"}
 sp-session = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.29"}
@@ -87,7 +83,6 @@ parachain-info = {git = "https://github.com/paritytech/cumulus", default-feature
 
 # Polkadot dependencies
 pallet-xcm = {git = "https://github.com/paritytech/polkadot", default-features = false, branch = "release-v0.9.29"}
-polkadot-parachain = {git = "https://github.com/paritytech/polkadot", default-features = false, branch = "release-v0.9.29"}
 xcm = {git = "https://github.com/paritytech/polkadot", default-features = false, branch = "release-v0.9.29"}
 xcm-builder = {git = "https://github.com/paritytech/polkadot", default-features = false, branch = "release-v0.9.29"}
 xcm-executor = {git = "https://github.com/paritytech/polkadot", default-features = false, branch = "release-v0.9.29"}
@@ -192,18 +187,15 @@ std = [
   "pallet-xcm/std",
   "parachain-info/std",
   "parachain-staking/std",
-  "polkadot-parachain/std",
   "public-credentials/std",
   "public-credentials-runtime-api/std",
   "runtime-common/std",
   "scale-info/std",
-  "serde",
   "sp-api/std",
   "sp-block-builder/std",
   "sp-consensus-aura/std",
   "sp-core/std",
   "sp-inherents/std",
-  "sp-io/std",
   "sp-offchain/std",
   "sp-runtime/std",
   "sp-session/std",

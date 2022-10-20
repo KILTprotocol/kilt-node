@@ -26,7 +26,6 @@ sp-keystore = {branch = "polkadot-v0.9.29", git = "https://github.com/paritytech
 codec = {package = "parity-scale-codec", version = "3.1.5", default-features = false, features = ["derive"]}
 log = "0.4.17"
 scale-info = {version = "2.1.1", default-features = false, features = ["derive"]}
-serde = {version = "1.0.144", optional = true}
 
 # Internal dependencies
 ctype = {default-features = false, path = "../ctype"}
@@ -47,7 +46,6 @@ sp-std = {branch = "polkadot-v0.9.29", default-features = false, git = "https://
 default = ["std"]
 mock = [
   "pallet-balances",
-  "serde",
   "sp-core",
   "sp-io",
   "sp-keystore",
