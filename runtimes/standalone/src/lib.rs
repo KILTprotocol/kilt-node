@@ -50,7 +50,6 @@ use sp_std::prelude::*;
 use sp_version::RuntimeVersion;
 
 use delegation::DelegationAc;
-use did_rpc_runtime_api::runtime_decl_for_DidApi::DidApiV2;
 use kilt_support::traits::ItemFilter;
 use pallet_did_lookup::{linkable_account::LinkableAccountId, migrations::EthereumMigration};
 use runtime_common::{
@@ -902,7 +901,7 @@ impl_runtime_apis! {
 		}
 	}
 
-	impl did_rpc_runtime_api::DidApi<
+	impl did_rpc_runtime_api::Did<
 		Block,
 		DidIdentifier,
 		AccountId,
@@ -911,7 +910,7 @@ impl_runtime_apis! {
 		Hash,
 		BlockNumber
 	> for Runtime {
-		fn query_did_by_w3n(name: Vec<u8>) -> Option<did_rpc_runtime_api::RawDidLinkedInfo<
+		fn query_by_web3_name(name: Vec<u8>) -> Option<did_rpc_runtime_api::RawDidLinkedInfo<
 				DidIdentifier,
 				AccountId,
 				LinkableAccountId,
@@ -941,7 +940,7 @@ impl_runtime_apis! {
 			})
 		}
 
-		fn query_did_by_account_id(account: LinkableAccountId) -> Option<
+		fn query_by_account(account: LinkableAccountId) -> Option<
 			did_rpc_runtime_api::RawDidLinkedInfo<
 				DidIdentifier,
 				AccountId,
@@ -970,7 +969,7 @@ impl_runtime_apis! {
 				})
 		}
 
-		fn query_did(did: DidIdentifier) -> Option<
+		fn query(did: DidIdentifier) -> Option<
 			did_rpc_runtime_api::RawDidLinkedInfo<
 				DidIdentifier,
 				AccountId,
@@ -992,54 +991,6 @@ impl_runtime_apis! {
 				service_endpoints,
 				details: details.into(),
 			})
-		}
-	}
-
-	impl did_rpc_runtime_api::Did<
-		Block,
-		DidIdentifier,
-		AccountId,
-		LinkableAccountId,
-		Balance,
-		Hash,
-		BlockNumber
-	> for Runtime {
-		fn query_by_web3_name(name: Vec<u8>) -> Option<did_rpc_runtime_api::RawDidLinkedInfo<
-				DidIdentifier,
-				AccountId,
-				LinkableAccountId,
-				Balance,
-				Hash,
-				BlockNumber
-			>
-		> {
-			Self::query_did_by_w3n(name)
-		}
-
-		fn query_by_account(account: LinkableAccountId) -> Option<
-			did_rpc_runtime_api::RawDidLinkedInfo<
-				DidIdentifier,
-				AccountId,
-				LinkableAccountId,
-				Balance,
-				Hash,
-				BlockNumber
-			>
-		> {
-			Self::query_did_by_account_id(account)
-		}
-
-		fn query(did: DidIdentifier) -> Option<
-			did_rpc_runtime_api::RawDidLinkedInfo<
-				DidIdentifier,
-				AccountId,
-				LinkableAccountId,
-				Balance,
-				Hash,
-				BlockNumber
-			>
-		> {
-			Self::query_did(did)
 		}
 	}
 

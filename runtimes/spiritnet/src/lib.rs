@@ -46,7 +46,6 @@ use sp_version::RuntimeVersion;
 use xcm_executor::XcmExecutor;
 
 use delegation::DelegationAc;
-use did_rpc_runtime_api::runtime_decl_for_DidApi::DidApiV2;
 use kilt_support::traits::ItemFilter;
 use pallet_did_lookup::{linkable_account::LinkableAccountId, migrations::EthereumMigration};
 pub use parachain_staking::InflationInfo;
@@ -1146,7 +1145,7 @@ impl_runtime_apis! {
 		}
 	}
 
-	impl did_rpc_runtime_api::DidApi<
+	impl did_rpc_runtime_api::Did<
 		Block,
 		DidIdentifier,
 		AccountId,
@@ -1155,7 +1154,7 @@ impl_runtime_apis! {
 		Hash,
 		BlockNumber
 	> for Runtime {
-		fn query_did_by_w3n(name: Vec<u8>) -> Option<did_rpc_runtime_api::RawDidLinkedInfo<
+		fn query_by_web3_name(name: Vec<u8>) -> Option<did_rpc_runtime_api::RawDidLinkedInfo<
 				DidIdentifier,
 				AccountId,
 				LinkableAccountId,
@@ -1170,10 +1169,12 @@ impl_runtime_apis! {
 					did::Did::<Runtime>::get(&owner_info.owner).map(|details| (owner_info, details))
 				})
 				.map(|(owner_info, details)| {
-					let accounts: Vec<LinkableAccountId> = pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(&owner_info.owner).collect();
+					let accounts = pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(
+						&owner_info.owner,
+					).collect();
 					let service_endpoints = did::ServiceEndpoints::<Runtime>::iter_prefix(&owner_info.owner).map(|e| From::from(e.1)).collect();
 
-					did_rpc_runtime_api::RawDidLinkedInfo {
+					did_rpc_runtime_api::RawDidLinkedInfo{
 						identifier: owner_info.owner,
 						w3n: Some(name.into()),
 						accounts,
@@ -1183,7 +1184,7 @@ impl_runtime_apis! {
 			})
 		}
 
-		fn query_did_by_account_id(account: LinkableAccountId) -> Option<
+		fn query_by_account(account: LinkableAccountId) -> Option<
 			did_rpc_runtime_api::RawDidLinkedInfo<
 				DidIdentifier,
 				AccountId,
@@ -1212,7 +1213,7 @@ impl_runtime_apis! {
 				})
 		}
 
-		fn query_did(did: DidIdentifier) -> Option<
+		fn query(did: DidIdentifier) -> Option<
 			did_rpc_runtime_api::RawDidLinkedInfo<
 				DidIdentifier,
 				AccountId,
@@ -1234,54 +1235,6 @@ impl_runtime_apis! {
 				service_endpoints,
 				details: details.into(),
 			})
-		}
-	}
-
-		impl did_rpc_runtime_api::Did<
-		Block,
-		DidIdentifier,
-		AccountId,
-		LinkableAccountId,
-		Balance,
-		Hash,
-		BlockNumber
-	> for Runtime {
-		fn query_by_web3_name(name: Vec<u8>) -> Option<did_rpc_runtime_api::RawDidLinkedInfo<
-				DidIdentifier,
-				AccountId,
-				LinkableAccountId,
-				Balance,
-				Hash,
-				BlockNumber
-			>
-		> {
-			Self::query_did_by_w3n(name)
-		}
-
-		fn query_by_account(account: LinkableAccountId) -> Option<
-			did_rpc_runtime_api::RawDidLinkedInfo<
-				DidIdentifier,
-				AccountId,
-				LinkableAccountId,
-				Balance,
-				Hash,
-				BlockNumber
-			>
-		> {
-			Self::query_did_by_account_id(account)
-		}
-
-		fn query(did: DidIdentifier) -> Option<
-			did_rpc_runtime_api::RawDidLinkedInfo<
-				DidIdentifier,
-				AccountId,
-				LinkableAccountId,
-				Balance,
-				Hash,
-				BlockNumber
-			>
-		> {
-			Self::query_did(did)
 		}
 	}
 
