@@ -486,7 +486,7 @@ fn test_reclaim_deposit_not_found() {
 // transfer deposit
 
 #[test]
-fn test_transfer_deposit() {
+fn test_change_deposit_owner() {
 	let attester: AttesterOf<Test> = sr25519_did_from_seed(&ALICE_SEED);
 	let other_authorized: AttesterOf<Test> = sr25519_did_from_seed(&BOB_SEED);
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
@@ -503,7 +503,7 @@ fn test_transfer_deposit() {
 		.build()
 		.execute_with(|| {
 			assert_eq!(Balances::reserved_balance(ACCOUNT_00), <Test as Config>::Deposit::get());
-			assert_ok!(Attestation::transfer_deposit(
+			assert_ok!(Attestation::change_deposit_owner(
 				DoubleOrigin(ACCOUNT_01, attester).into(),
 				claim_hash
 			));
@@ -522,7 +522,7 @@ fn test_transfer_deposit() {
 }
 
 #[test]
-fn test_transfer_deposit_insufficient_balance() {
+fn test_change_deposit_owner_insufficient_balance() {
 	let attester: AttesterOf<Test> = sr25519_did_from_seed(&ALICE_SEED);
 	let other_authorized: AttesterOf<Test> = sr25519_did_from_seed(&BOB_SEED);
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
@@ -537,7 +537,7 @@ fn test_transfer_deposit_insufficient_balance() {
 		.execute_with(|| {
 			assert_eq!(Balances::reserved_balance(ACCOUNT_00), <Test as Config>::Deposit::get());
 			assert_noop!(
-				Attestation::transfer_deposit(DoubleOrigin(ACCOUNT_01, attester).into(), claim_hash),
+				Attestation::change_deposit_owner(DoubleOrigin(ACCOUNT_01, attester).into(), claim_hash),
 				pallet_balances::Error::<Test>::InsufficientBalance
 			);
 		});
@@ -545,7 +545,7 @@ fn test_transfer_deposit_insufficient_balance() {
 
 /// Update the deposit amount
 #[test]
-fn test_transfer_deposit_to_self() {
+fn test_change_deposit_owner_to_self() {
 	let attester: AttesterOf<Test> = sr25519_did_from_seed(&BOB_SEED);
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 	let attestation = generate_base_attestation_with_deposit::<Test>(
@@ -564,7 +564,7 @@ fn test_transfer_deposit_to_self() {
 				Balances::reserved_balance(ACCOUNT_00),
 				<Test as Config>::Deposit::get() * 2
 			);
-			assert_ok!(Attestation::transfer_deposit(
+			assert_ok!(Attestation::change_deposit_owner(
 				DoubleOrigin(ACCOUNT_00, attester).into(),
 				claim_hash
 			));
@@ -584,7 +584,7 @@ fn test_transfer_deposit_to_self() {
 }
 
 #[test]
-fn test_transfer_deposit_unauthorized() {
+fn test_change_deposit_owner_unauthorized() {
 	let attester: AttesterOf<Test> = sr25519_did_from_seed(&BOB_SEED);
 	let evil_actor: AttesterOf<Test> = sr25519_did_from_seed(&ALICE_SEED);
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
@@ -597,14 +597,14 @@ fn test_transfer_deposit_unauthorized() {
 		.build()
 		.execute_with(|| {
 			assert_noop!(
-				Attestation::transfer_deposit(DoubleOrigin(ACCOUNT_00, evil_actor).into(), claim_hash),
+				Attestation::change_deposit_owner(DoubleOrigin(ACCOUNT_00, evil_actor).into(), claim_hash),
 				attestation::Error::<Test>::Unauthorized,
 			);
 		});
 }
 
 #[test]
-fn test_transfer_deposit_not_found() {
+fn test_change_deposit_owner_not_found() {
 	let attester: AttesterOf<Test> = sr25519_did_from_seed(&BOB_SEED);
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 	let attestation = generate_base_attestation::<Test>(attester.clone(), ACCOUNT_00);
@@ -615,7 +615,7 @@ fn test_transfer_deposit_not_found() {
 		.build()
 		.execute_with(|| {
 			assert_noop!(
-				Attestation::transfer_deposit(DoubleOrigin(ACCOUNT_00, attester).into(), claim_hash),
+				Attestation::change_deposit_owner(DoubleOrigin(ACCOUNT_00, attester).into(), claim_hash),
 				attestation::Error::<Test>::AttestationNotFound,
 			);
 		});

@@ -138,7 +138,7 @@ benchmarks! {
 		assert!(Banned::<T>::get(&web3_name).is_none());
 	}
 
-	transfer_deposit {
+	change_deposit_owner {
 		let deposit_owner_old: AccountIdOf<T> = account("caller", 0, CALLER_SEED);
 		let deposit_owner_new: AccountIdOf<T> = account("caller", 1, CALLER_SEED);
 		let owner: Web3NameOwnerOf<T> = account("owner", 0, OWNER_SEED);

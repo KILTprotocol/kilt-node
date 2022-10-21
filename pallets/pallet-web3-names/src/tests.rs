@@ -378,7 +378,7 @@ fn unbanning_unauthorized_origin() {
 // transfer deposit
 
 #[test]
-fn test_transfer_deposit() {
+fn test_change_deposit_owner() {
 	let web3_name_00 = get_web3_name(WEB3_NAME_00_INPUT);
 	let initial_balance: Balance = <Test as Config>::Deposit::get() * 100;
 	ExtBuilder::default()
@@ -386,7 +386,7 @@ fn test_transfer_deposit() {
 		.with_web3_names(vec![(DID_00, web3_name_00.clone(), ACCOUNT_00)])
 		.build()
 		.execute_with(|| {
-			assert_ok!(Pallet::<Test>::transfer_deposit(
+			assert_ok!(Pallet::<Test>::change_deposit_owner(
 				mock_origin::DoubleOrigin(ACCOUNT_01, DID_00).into(),
 			));
 			assert_eq!(
@@ -404,7 +404,7 @@ fn test_transfer_deposit() {
 }
 
 #[test]
-fn test_transfer_deposit_insufficient_balance() {
+fn test_change_deposit_owner_insufficient_balance() {
 	let web3_name_00 = get_web3_name(WEB3_NAME_00_INPUT);
 	let initial_balance: Balance = <Test as Config>::Deposit::get() * 100;
 	ExtBuilder::default()
@@ -413,7 +413,7 @@ fn test_transfer_deposit_insufficient_balance() {
 		.build()
 		.execute_with(|| {
 			assert_noop!(
-				Pallet::<Test>::transfer_deposit(mock_origin::DoubleOrigin(ACCOUNT_01, DID_00).into(),),
+				Pallet::<Test>::change_deposit_owner(mock_origin::DoubleOrigin(ACCOUNT_01, DID_00).into(),),
 				pallet_balances::Error::<Test>::InsufficientBalance
 			);
 		})
@@ -421,7 +421,7 @@ fn test_transfer_deposit_insufficient_balance() {
 
 /// Update the deposit amount
 #[test]
-fn test_transfer_deposit_to_self() {
+fn test_change_deposit_owner_to_self() {
 	let web3_name_00 = get_web3_name(WEB3_NAME_00_INPUT);
 	let initial_balance: Balance = <Test as Config>::Deposit::get() * 100;
 	ExtBuilder::default()
@@ -439,7 +439,7 @@ fn test_transfer_deposit_to_self() {
 				Balances::reserved_balance(ACCOUNT_00),
 				<Test as Config>::Deposit::get() * 2
 			);
-			assert_ok!(Pallet::<Test>::transfer_deposit(
+			assert_ok!(Pallet::<Test>::change_deposit_owner(
 				mock_origin::DoubleOrigin(ACCOUNT_00, DID_00).into(),
 			));
 			assert_eq!(
@@ -456,7 +456,7 @@ fn test_transfer_deposit_to_self() {
 }
 
 #[test]
-fn test_transfer_deposit_not_found() {
+fn test_change_deposit_owner_not_found() {
 	let web3_name_00 = get_web3_name(WEB3_NAME_00_INPUT);
 	let initial_balance: Balance = <Test as Config>::Deposit::get() * 100;
 	ExtBuilder::default()
@@ -465,7 +465,7 @@ fn test_transfer_deposit_not_found() {
 		.build()
 		.execute_with(|| {
 			assert_noop!(
-				Pallet::<Test>::transfer_deposit(mock_origin::DoubleOrigin(ACCOUNT_00, DID_01).into(),),
+				Pallet::<Test>::change_deposit_owner(mock_origin::DoubleOrigin(ACCOUNT_00, DID_01).into(),),
 				Error::<Test>::Web3NameNotFound
 			);
 		})

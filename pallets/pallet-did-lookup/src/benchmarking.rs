@@ -243,7 +243,7 @@ benchmarks! {
 		assert!(ConnectedAccounts::<T>::get(did, linkable_id).is_none());
 	}
 
-	transfer_deposit {
+	change_deposit_owner {
 		let deposit_owner_old: T::AccountId = account("caller", 0, SEED);
 		let deposit_owner_new: T::AccountId = account("caller", 1, SEED);
 		let linkable_id: LinkableAccountId = deposit_owner_old.clone().into();

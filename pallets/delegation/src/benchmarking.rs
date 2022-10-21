@@ -437,7 +437,7 @@ benchmarks! {
 	verify {
 	}
 
-	transfer_deposit {
+	change_deposit_owner {
 		let deposit_owner_old: T::AccountId = account("sender", 0, SEED);
 		let deposit_owner_new: T::AccountId = account("sender", 1, SEED);
 		let (root_acc, hierarchy_id, _, leaf_id) = setup_delegations::<T>(1, ONE_CHILD_PER_LEVEL.expect(">0"), Permissions::DELEGATE)?;

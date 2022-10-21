@@ -2180,7 +2180,7 @@ fn remove_children_gas_runs_out() {
 // transfer deposit
 
 #[test]
-fn test_transfer_deposit() {
+fn test_change_deposit_owner() {
 	let root_owner = ed25519_did_from_seed(&ALICE_SEED);
 	let delegate = ed25519_did_from_seed(&BOB_SEED);
 
@@ -2212,7 +2212,7 @@ fn test_transfer_deposit() {
 				<Test as Config>::Deposit::get() * 3
 			);
 			assert!(Balances::reserved_balance(ACCOUNT_01).is_zero());
-			assert_ok!(Delegation::transfer_deposit(
+			assert_ok!(Delegation::change_deposit_owner(
 				DoubleOrigin(ACCOUNT_01, delegate).into(),
 				delegation_id
 			));
@@ -2227,7 +2227,7 @@ fn test_transfer_deposit() {
 }
 
 #[test]
-fn test_transfer_deposit_insufficient_balance() {
+fn test_change_deposit_owner_insufficient_balance() {
 	let root_owner = ed25519_did_from_seed(&ALICE_SEED);
 	let delegate = ed25519_did_from_seed(&BOB_SEED);
 
@@ -2257,7 +2257,7 @@ fn test_transfer_deposit_insufficient_balance() {
 			);
 			assert!(Balances::reserved_balance(ACCOUNT_01).is_zero());
 			assert_noop!(
-				Delegation::transfer_deposit(DoubleOrigin(ACCOUNT_01, delegate).into(), delegation_id),
+				Delegation::change_deposit_owner(DoubleOrigin(ACCOUNT_01, delegate).into(), delegation_id),
 				pallet_balances::Error::<Test>::InsufficientBalance
 			);
 		});
@@ -2265,7 +2265,7 @@ fn test_transfer_deposit_insufficient_balance() {
 
 /// Update the deposit amount
 #[test]
-fn test_transfer_deposit_to_self() {
+fn test_change_deposit_owner_to_self() {
 	let root_owner = ed25519_did_from_seed(&ALICE_SEED);
 	let delegate = ed25519_did_from_seed(&BOB_SEED);
 
@@ -2294,7 +2294,7 @@ fn test_transfer_deposit_to_self() {
 				Balances::reserved_balance(ACCOUNT_00),
 				<Test as Config>::Deposit::get() * 3
 			);
-			assert_ok!(Delegation::transfer_deposit(
+			assert_ok!(Delegation::change_deposit_owner(
 				DoubleOrigin(ACCOUNT_00, delegate).into(),
 				delegation_id
 			));
@@ -2308,7 +2308,7 @@ fn test_transfer_deposit_to_self() {
 }
 
 #[test]
-fn test_transfer_deposit_unauthorized() {
+fn test_change_deposit_owner_unauthorized() {
 	let root_owner = ed25519_did_from_seed(&ALICE_SEED);
 	let delegate = ed25519_did_from_seed(&BOB_SEED);
 
@@ -2337,14 +2337,14 @@ fn test_transfer_deposit_unauthorized() {
 		.build()
 		.execute_with(|| {
 			assert_noop!(
-				Delegation::transfer_deposit(DoubleOrigin(ACCOUNT_01, root_owner).into(), delegation_id),
+				Delegation::change_deposit_owner(DoubleOrigin(ACCOUNT_01, root_owner).into(), delegation_id),
 				Error::<Test>::AccessDenied
 			);
 		});
 }
 
 #[test]
-fn test_transfer_deposit_not_found() {
+fn test_change_deposit_owner_not_found() {
 	let root_owner = ed25519_did_from_seed(&ALICE_SEED);
 	let delegate = ed25519_did_from_seed(&BOB_SEED);
 
@@ -2367,7 +2367,7 @@ fn test_transfer_deposit_not_found() {
 		.build()
 		.execute_with(|| {
 			assert_noop!(
-				Delegation::transfer_deposit(DoubleOrigin(ACCOUNT_01, delegate).into(), delegation_id),
+				Delegation::change_deposit_owner(DoubleOrigin(ACCOUNT_01, delegate).into(), delegation_id),
 				Error::<Test>::DelegationNotFound
 			);
 		});

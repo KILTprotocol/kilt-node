@@ -56,7 +56,7 @@ pub trait WeightInfo {
 	fn can_attest() -> Weight;
 	fn can_revoke(c: u32, ) -> Weight;
 	fn can_remove(c: u32, ) -> Weight;
-	fn transfer_deposit() -> Weight;
+	fn change_deposit_owner() -> Weight;
 }
 
 /// Weights for delegation using the Substrate node and recommended hardware.
@@ -154,7 +154,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().reads((1 as u64).saturating_mul(c as u64)))
 	}
-	fn transfer_deposit( ) -> Weight {
+	fn change_deposit_owner( ) -> Weight {
 		Weight::from_ref_time(7_991_000 as u64)
 			// Standard Error: 35_000
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
@@ -255,7 +255,7 @@ impl WeightInfo for () {
 			.saturating_add(RocksDbWeight::get().reads(1 as u64))
 			.saturating_add(RocksDbWeight::get().reads((1 as u64).saturating_mul(c as u64)))
 	}
-	fn transfer_deposit( ) -> Weight {
+	fn change_deposit_owner( ) -> Weight {
 		Weight::from_ref_time(7_991_000 as u64)
 			// Standard Error: 35_000
 			.saturating_add(RocksDbWeight::get().reads(1 as u64))

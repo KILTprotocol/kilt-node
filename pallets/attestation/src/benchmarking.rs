@@ -121,7 +121,7 @@ benchmarks! {
 		assert!(!Attestations::<T>::contains_key(claim_hash));
 	}
 
-	transfer_deposit {
+	change_deposit_owner {
 		let attester: T::AttesterId = account("attester", 0, SEED);
 		let deposit_owner_old: T::AccountId = account("sender", 0, SEED);
 		let deposit_owner_new: T::AccountId = account("sender", 1, SEED);
