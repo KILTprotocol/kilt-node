@@ -40,15 +40,19 @@ pub use crate::{default_weights::WeightInfo, pallet::*};
 pub mod pallet {
 	use codec::FullCodec;
 	use frame_support::{
+		error::BadOrigin,
 		pallet_prelude::*,
 		sp_runtime::SaturatedConversion,
 		traits::{Currency, ReservableCurrency, StorageVersion},
 		Blake2_128Concat,
 	};
-	use frame_system::pallet_prelude::*;
+	use frame_system::{pallet_prelude::*};
 	use sp_std::{fmt::Debug, vec::Vec};
 
-	use kilt_support::{deposit::Deposit, traits::CallSources};
+	use kilt_support::{
+		deposit::Deposit,
+		traits::{CallSources, StorageItemMeter},
+	};
 
 	use super::WeightInfo;
 	use crate::web3_name::Web3NameOwnership;
@@ -343,15 +347,25 @@ pub mod pallet {
 			let source = <T as Config>::OwnerOrigin::ensure_origin(origin)?;
 			let w3n_owner = source.subject();
 			let name = Names::<T>::get(&w3n_owner).ok_or(Error::<T>::Web3NameNotFound)?;
-			let w3n_entry = Owner::<T>::get(&name).ok_or(Error::<T>::Web3NameNotFound)?;
+			Web3NameStorageMeter::<T>::change_deposit_owner(&name, source.sender())?;
 
-			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&w3n_entry.deposit);
-			let deposit = Deposit {
-				owner: source.sender(),
-				amount: T::Deposit::get(),
-			};
-			CurrencyOf::<T>::reserve(&deposit.owner, deposit.amount)?;
-			Owner::<T>::insert(&name, Web3OwnershipOf::<T> { deposit, ..w3n_entry });
+			Ok(())
+		}
+
+		/// Changes the deposit owner.
+		///
+		/// The balance that is reserved by the current deposit owner will be
+		/// freed and balance of the new deposit owner will get reserved.
+		///
+		/// The subject of the call must be the owner of the web3name.
+		/// The sender of the call will be the new deposit owner.
+		#[pallet::weight(<T as Config>::WeightInfo::change_deposit_owner())]
+		pub fn update_deposit(origin: OriginFor<T>, name: T::Web3Name) -> DispatchResult {
+			let source = ensure_signed(origin)?;
+			let w3n_entry = Owner::<T>::get(&name).ok_or(Error::<T>::Web3NameNotFound)?;
+			ensure!(w3n_entry.deposit.owner == source, BadOrigin);
+
+			Web3NameStorageMeter::<T>::update_deposit(&name)?;
 
 			Ok(())
 		}
@@ -488,6 +502,33 @@ pub mod pallet {
 		/// preconditions again.
 		fn unban_name(name: &Web3NameOf<T>) {
 			Banned::<T>::remove(name);
+		}
+	}
+
+	struct Web3NameStorageMeter<T: Config>(PhantomData<T>);
+	impl<T: Config> StorageItemMeter<AccountIdOf<T>, T::Web3Name> for Web3NameStorageMeter<T> {
+		type Currency = T::Currency;
+
+		fn deposit(
+			key: &T::Web3Name,
+		) -> Result<Deposit<AccountIdOf<T>, <Self::Currency as Currency<AccountIdOf<T>>>::Balance>, DispatchError> {
+			let w3n_entry = Owner::<T>::get(&key).ok_or(Error::<T>::Web3NameNotFound)?;
+
+			Ok(w3n_entry.deposit)
+		}
+
+		fn deposit_amount(_key: &T::Web3Name) -> <Self::Currency as Currency<AccountIdOf<T>>>::Balance {
+			T::Deposit::get()
+		}
+
+		fn store_deposit(
+			key: &T::Web3Name,
+			deposit: Deposit<AccountIdOf<T>, <Self::Currency as Currency<AccountIdOf<T>>>::Balance>,
+		) -> Result<(), DispatchError> {
+			let w3n_entry = Owner::<T>::get(&key).ok_or(Error::<T>::Web3NameNotFound)?;
+			Owner::<T>::insert(&key, Web3OwnershipOf::<T> { deposit, ..w3n_entry });
+
+			Ok(())
 		}
 	}
 }

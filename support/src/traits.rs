@@ -16,6 +16,11 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use frame_support::traits::{Currency, ReservableCurrency};
+use sp_runtime::DispatchError;
+
+use crate::{deposit::Deposit, free_deposit};
+
 /// The sources of a call struct.
 ///
 /// This trait allows to differentiate between the sender of a call and the
@@ -79,4 +84,51 @@ pub trait GetWorstCase {
 /// Generic filter.
 pub trait ItemFilter<Item> {
 	fn should_include(&self, credential: &Item) -> bool;
+}
+
+pub trait StorageItemMeter<AccountId, Key> {
+	type Currency: ReservableCurrency<AccountId>;
+
+	fn deposit(
+		key: &Key,
+	) -> Result<Deposit<AccountId, <Self::Currency as Currency<AccountId>>::Balance>, DispatchError>;
+
+	fn deposit_amount(key: &Key) -> <Self::Currency as Currency<AccountId>>::Balance;
+
+	fn store_deposit(
+		key: &Key,
+		deposit: Deposit<AccountId, <Self::Currency as Currency<AccountId>>::Balance>,
+	) -> Result<(), DispatchError>;
+
+	fn change_deposit_owner(key: &Key, new_owner: AccountId) -> Result<(), DispatchError> {
+		let deposit = Self::deposit(key)?;
+
+		free_deposit::<AccountId, Self::Currency>(&deposit);
+
+		let deposit = Deposit {
+			owner: new_owner,
+			amount: Self::deposit_amount(&key),
+		};
+		Self::Currency::reserve(&deposit.owner, deposit.amount)?;
+
+		Self::store_deposit(&key, deposit)?;
+
+		Ok(())
+	}
+
+	fn update_deposit(key: &Key) -> Result<(), DispatchError> {
+		let deposit = Self::deposit(key)?;
+
+		free_deposit::<AccountId, Self::Currency>(&deposit);
+
+		let deposit = Deposit {
+			amount: Self::deposit_amount(&key),
+			..deposit
+		};
+		Self::Currency::reserve(&deposit.owner, deposit.amount)?;
+
+		Self::store_deposit(&key, deposit)?;
+
+		Ok(())
+	}
 }
