@@ -51,7 +51,7 @@ pub mod pallet {
 
 	use kilt_support::{
 		deposit::Deposit,
-		traits::{CallSources, StorageItemMeter},
+		traits::{CallSources, StorageMeter},
 	};
 
 	use super::WeightInfo;
@@ -506,7 +506,7 @@ pub mod pallet {
 	}
 
 	struct Web3NameStorageMeter<T: Config>(PhantomData<T>);
-	impl<T: Config> StorageItemMeter<AccountIdOf<T>, T::Web3Name> for Web3NameStorageMeter<T> {
+	impl<T: Config> StorageMeter<AccountIdOf<T>, T::Web3Name> for Web3NameStorageMeter<T> {
 		type Currency = T::Currency;
 
 		fn deposit(

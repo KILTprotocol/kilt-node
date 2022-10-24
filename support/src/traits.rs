@@ -86,7 +86,7 @@ pub trait ItemFilter<Item> {
 	fn should_include(&self, credential: &Item) -> bool;
 }
 
-pub trait StorageItemMeter<AccountId, Key> {
+pub trait StorageMeter<AccountId, Key> {
 	type Currency: ReservableCurrency<AccountId>;
 
 	fn deposit(
@@ -107,7 +107,7 @@ pub trait StorageItemMeter<AccountId, Key> {
 
 		let deposit = Deposit {
 			owner: new_owner,
-			amount: Self::deposit_amount(&key),
+			..deposit
 		};
 		Self::Currency::reserve(&deposit.owner, deposit.amount)?;
 
