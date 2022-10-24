@@ -688,7 +688,7 @@ pub mod pallet {
 		/// # <weight>
 		/// Weight: O(1)
 		/// # </weight>
-		fn calculate_delegation_creation_hash(
+		pub(crate) fn calculate_delegation_creation_hash(
 			delegation_id: &DelegationNodeIdOf<T>,
 			root_id: &DelegationNodeIdOf<T>,
 			parent_id: &DelegationNodeIdOf<T>,
@@ -706,7 +706,7 @@ pub mod pallet {
 		/// Creates a new root node with the given details and store the new
 		/// hierarchy in the hierarchies storage and the new root node in the
 		/// nodes storage.
-		fn create_and_store_new_hierarchy(
+		pub(crate) fn create_and_store_new_hierarchy(
 			root_id: DelegationNodeIdOf<T>,
 			hierarchy_details: DelegationHierarchyDetails<T>,
 			hierarchy_owner: DelegatorIdOf<T>,
