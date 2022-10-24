@@ -457,7 +457,10 @@ fn test_change_deposit_owner_insufficient_balance() {
 		.build()
 		.execute_with(|| {
 			assert_noop!(
-				DidLookup::change_deposit_owner(mock_origin::DoubleOrigin(ACCOUNT_01, DID_00).into(), ACCOUNT_00.into()),
+				DidLookup::change_deposit_owner(
+					mock_origin::DoubleOrigin(ACCOUNT_01, DID_00).into(),
+					ACCOUNT_00.into()
+				),
 				pallet_balances::Error::<Test>::InsufficientBalance
 			);
 		})
@@ -502,7 +505,10 @@ fn test_change_deposit_owner_not_found() {
 		.build()
 		.execute_with(|| {
 			assert_noop!(
-				DidLookup::change_deposit_owner(mock_origin::DoubleOrigin(ACCOUNT_01, DID_00).into(), ACCOUNT_00.into()),
+				DidLookup::change_deposit_owner(
+					mock_origin::DoubleOrigin(ACCOUNT_01, DID_00).into(),
+					ACCOUNT_00.into()
+				),
 				Error::<Test>::AssociationNotFound
 			);
 		})
@@ -516,7 +522,10 @@ fn test_change_deposit_owner_not_authorized() {
 		.build()
 		.execute_with(|| {
 			assert_noop!(
-				DidLookup::change_deposit_owner(mock_origin::DoubleOrigin(ACCOUNT_01, DID_01).into(), ACCOUNT_00.into()),
+				DidLookup::change_deposit_owner(
+					mock_origin::DoubleOrigin(ACCOUNT_01, DID_01).into(),
+					ACCOUNT_00.into()
+				),
 				Error::<Test>::NotAuthorized
 			);
 		})

@@ -352,13 +352,9 @@ pub mod pallet {
 			Ok(())
 		}
 
-		/// Changes the deposit owner.
+		/// Updates the deposit amount to the current deposit rate.
 		///
-		/// The balance that is reserved by the current deposit owner will be
-		/// freed and balance of the new deposit owner will get reserved.
-		///
-		/// The subject of the call must be the owner of the web3name.
-		/// The sender of the call will be the new deposit owner.
+		/// The sender must be the deposit owner.
 		#[pallet::weight(<T as Config>::WeightInfo::change_deposit_owner())]
 		pub fn update_deposit(origin: OriginFor<T>, name: T::Web3Name) -> DispatchResult {
 			let source = ensure_signed(origin)?;

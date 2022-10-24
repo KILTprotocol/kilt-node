@@ -138,7 +138,10 @@ pub mod pallet {
 		traits::{Currency, ExistenceRequirement, Imbalance, ReservableCurrency, StorageVersion},
 	};
 	use frame_system::pallet_prelude::*;
-	use kilt_support::{deposit::Deposit, traits::CallSources};
+	use kilt_support::{
+		deposit::Deposit,
+		traits::{CallSources, StorageMeter},
+	};
 	use sp_runtime::traits::BadOrigin;
 
 	use crate::{
@@ -1081,15 +1084,23 @@ pub mod pallet {
 			let subject = source.subject();
 			let sender = source.sender();
 
-			let did_entry = Did::<T>::get(&subject).ok_or(Error::<T>::DidNotPresent)?;
+			DidMeter::<T>::change_deposit_owner(&subject, sender)?;
 
-			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&did_entry.deposit);
+			Ok(())
+		}
 
-			let amount = <T as Config>::Deposit::get();
-			let deposit = Deposit { owner: sender, amount };
-			CurrencyOf::<T>::reserve(&deposit.owner, deposit.amount)?;
+		/// Updates the deposit amount to the current deposit rate.
+		///
+		/// The sender must be the deposit owner.
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::change_deposit_owner())]
+		pub fn update_deposit(origin: OriginFor<T>, did: DidIdentifierOf<T>) -> DispatchResult {
+			let sender = ensure_signed(origin)?;
 
-			Did::<T>::insert(&subject, DidDetails { deposit, ..did_entry });
+			let did_entry = Did::<T>::get(&did).ok_or(Error::<T>::DidNotPresent)?;
+			ensure!(did_entry.deposit.owner == sender, BadOrigin);
+
+			DidMeter::<T>::update_deposit(&did)?;
+
 			Ok(())
 		}
 	}
@@ -1221,6 +1232,32 @@ pub mod pallet {
 			log::debug!("Deleting DID {:?}", did_subject);
 
 			Self::deposit_event(Event::DidDeleted(did_subject));
+
+			Ok(())
+		}
+	}
+
+	struct DidMeter<T: Config>(PhantomData<T>);
+	impl<T: Config> StorageMeter<AccountIdOf<T>, DidIdentifierOf<T>> for DidMeter<T> {
+		type Currency = T::Currency;
+
+		fn deposit(
+			key: &DidIdentifierOf<T>,
+		) -> Result<Deposit<AccountIdOf<T>, <Self::Currency as Currency<AccountIdOf<T>>>::Balance>, DispatchError> {
+			let did_entry = Did::<T>::get(&key).ok_or(Error::<T>::DidNotPresent)?;
+			Ok(did_entry.deposit)
+		}
+
+		fn deposit_amount(_key: &DidIdentifierOf<T>) -> <Self::Currency as Currency<AccountIdOf<T>>>::Balance {
+			T::Deposit::get()
+		}
+
+		fn store_deposit(
+			key: &DidIdentifierOf<T>,
+			deposit: Deposit<AccountIdOf<T>, <Self::Currency as Currency<AccountIdOf<T>>>::Balance>,
+		) -> Result<(), DispatchError> {
+			let did_entry = Did::<T>::get(&key).ok_or(Error::<T>::DidNotPresent)?;
+			Did::<T>::insert(&key, DidDetails { deposit, ..did_entry });
 
 			Ok(())
 		}

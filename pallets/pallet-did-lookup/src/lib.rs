@@ -56,7 +56,10 @@ pub mod pallet {
 		traits::{Currency, ReservableCurrency, StorageVersion},
 	};
 	use frame_system::pallet_prelude::*;
-	use kilt_support::{deposit::Deposit, traits::CallSources};
+	use kilt_support::{
+		deposit::Deposit,
+		traits::{CallSources, StorageMeter},
+	};
 	use sp_runtime::traits::BlockNumberProvider;
 
 	pub use crate::connection_record::ConnectionRecord;
@@ -304,21 +307,25 @@ pub mod pallet {
 		#[pallet::weight(<T as Config>::WeightInfo::change_deposit_owner())]
 		pub fn change_deposit_owner(origin: OriginFor<T>, account: LinkableAccountId) -> DispatchResult {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
+			let subject = source.subject();
 
 			let record = ConnectedDids::<T>::get(&account).ok_or(Error::<T>::AssociationNotFound)?;
-			ensure!(record.did == source.subject(), Error::<T>::NotAuthorized);
+			ensure!(record.did == subject, Error::<T>::NotAuthorized);
 
-			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&record.deposit);
+			LinkableAccountMeter::<T>::change_deposit_owner(&account, source.sender())
+		}
 
-			let amount = <T as Config>::Deposit::get();
-			let deposit = Deposit {
-				owner: source.sender(),
-				amount,
-			};
-			CurrencyOf::<T>::reserve(&deposit.owner, deposit.amount)?;
+		/// Updates the deposit amount to the current deposit rate.
+		///
+		/// The sender must be the deposit owner.
+		#[pallet::weight(<T as Config>::WeightInfo::change_deposit_owner())]
+		pub fn update_deposit(origin: OriginFor<T>, account: LinkableAccountId) -> DispatchResult {
+			let source = ensure_signed(origin)?;
 
-			ConnectedDids::<T>::insert(&account, ConnectionRecord { deposit, ..record });
-			Ok(())
+			let record = ConnectedDids::<T>::get(&account).ok_or(Error::<T>::AssociationNotFound)?;
+			ensure!(record.deposit.owner == source, Error::<T>::NotAuthorized);
+
+			LinkableAccountMeter::<T>::update_deposit(&account)
 		}
 	}
 
@@ -363,6 +370,32 @@ pub mod pallet {
 			} else {
 				Err(Error::<T>::AssociationNotFound.into())
 			}
+		}
+	}
+
+	struct LinkableAccountMeter<T: Config>(PhantomData<T>);
+	impl<T: Config> StorageMeter<AccountIdOf<T>, LinkableAccountId> for LinkableAccountMeter<T> {
+		type Currency = T::Currency;
+
+		fn deposit(
+			key: &LinkableAccountId,
+		) -> Result<Deposit<AccountIdOf<T>, <Self::Currency as Currency<AccountIdOf<T>>>::Balance>, DispatchError> {
+			let record = ConnectedDids::<T>::get(&key).ok_or(Error::<T>::AssociationNotFound)?;
+			Ok(record.deposit)
+		}
+
+		fn deposit_amount(_key: &LinkableAccountId) -> <Self::Currency as Currency<AccountIdOf<T>>>::Balance {
+			T::Deposit::get()
+		}
+
+		fn store_deposit(
+			key: &LinkableAccountId,
+			deposit: Deposit<AccountIdOf<T>, <Self::Currency as Currency<AccountIdOf<T>>>::Balance>,
+		) -> Result<(), DispatchError> {
+			let record = ConnectedDids::<T>::get(&key).ok_or(Error::<T>::AssociationNotFound)?;
+			ConnectedDids::<T>::insert(&key, ConnectionRecord { deposit, ..record });
+
+			Ok(())
 		}
 	}
 }

@@ -89,17 +89,20 @@ pub trait ItemFilter<Item> {
 pub trait StorageMeter<AccountId, Key> {
 	type Currency: ReservableCurrency<AccountId>;
 
+	#[must_use]
 	fn deposit(
 		key: &Key,
 	) -> Result<Deposit<AccountId, <Self::Currency as Currency<AccountId>>::Balance>, DispatchError>;
 
 	fn deposit_amount(key: &Key) -> <Self::Currency as Currency<AccountId>>::Balance;
 
+	#[must_use]
 	fn store_deposit(
 		key: &Key,
 		deposit: Deposit<AccountId, <Self::Currency as Currency<AccountId>>::Balance>,
 	) -> Result<(), DispatchError>;
 
+	#[must_use]
 	fn change_deposit_owner(key: &Key, new_owner: AccountId) -> Result<(), DispatchError> {
 		let deposit = Self::deposit(key)?;
 
@@ -116,6 +119,7 @@ pub trait StorageMeter<AccountId, Key> {
 		Ok(())
 	}
 
+	#[must_use]
 	fn update_deposit(key: &Key) -> Result<(), DispatchError> {
 		let deposit = Self::deposit(key)?;
 

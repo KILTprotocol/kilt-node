@@ -85,8 +85,9 @@ use frame_support::{
 	pallet_prelude::Weight,
 	traits::{Get, ReservableCurrency},
 };
+use kilt_support::traits::StorageMeter;
 use sp_runtime::{traits::Hash, DispatchError};
-use sp_std::vec::Vec;
+use sp_std::{marker::PhantomData, vec::Vec};
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -661,21 +662,29 @@ pub mod pallet {
 		pub fn change_deposit_owner(origin: OriginFor<T>, delegation_id: DelegationNodeIdOf<T>) -> DispatchResult {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 
-			let mut delegation = DelegationNodes::<T>::get(&delegation_id).ok_or(Error::<T>::DelegationNotFound)?;
+			let delegation = DelegationNodes::<T>::get(&delegation_id).ok_or(Error::<T>::DelegationNotFound)?;
 
 			// Deposit can only be swapped by the owner of the delegation node, not the
 			// parent or another ancestor.
 			ensure!(delegation.details.owner == source.subject(), Error::<T>::AccessDenied);
 
-			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&delegation.deposit);
+			DelegationMeter::<T>::change_deposit_owner(&delegation_id, source.sender())
+		}
 
-			let deposit = Deposit {
-				owner: source.sender(),
-				amount: <T as Config>::Deposit::get(),
-			};
-			CurrencyOf::<T>::reserve(&deposit.owner, deposit.amount)?;
-			delegation.deposit = deposit;
-			DelegationNodes::<T>::insert(&delegation_id, delegation);
+		/// Updates the deposit amount to the current deposit rate.
+		///
+		/// The sender must be the deposit owner.
+		#[pallet::weight(<T as Config>::WeightInfo::change_deposit_owner())]
+		pub fn update_deposit(origin: OriginFor<T>, delegation_id: DelegationNodeIdOf<T>) -> DispatchResult {
+			let sender = ensure_signed(origin)?;
+
+			let delegation = DelegationNodes::<T>::get(&delegation_id).ok_or(Error::<T>::DelegationNotFound)?;
+
+			// Deposit can only be swapped by the owner of the delegation node, not the
+			// parent or another ancestor.
+			ensure!(delegation.deposit.owner == sender, Error::<T>::AccessDenied);
+
+			DelegationMeter::<T>::update_deposit(&delegation_id)?;
 
 			Ok(())
 		}
@@ -688,7 +697,7 @@ pub mod pallet {
 		/// # <weight>
 		/// Weight: O(1)
 		/// # </weight>
-		fn calculate_delegation_creation_hash(
+		pub(crate) fn calculate_delegation_creation_hash(
 			delegation_id: &DelegationNodeIdOf<T>,
 			root_id: &DelegationNodeIdOf<T>,
 			parent_id: &DelegationNodeIdOf<T>,
@@ -706,7 +715,7 @@ pub mod pallet {
 		/// Creates a new root node with the given details and store the new
 		/// hierarchy in the hierarchies storage and the new root node in the
 		/// nodes storage.
-		fn create_and_store_new_hierarchy(
+		pub(crate) fn create_and_store_new_hierarchy(
 			root_id: DelegationNodeIdOf<T>,
 			hierarchy_details: DelegationHierarchyDetails<T>,
 			hierarchy_owner: DelegatorIdOf<T>,
@@ -966,6 +975,38 @@ pub mod pallet {
 			Self::deposit_event(Event::DelegationRemoved(delegation_node.deposit.owner, *delegation));
 			removals = removals.saturating_add(1);
 			Ok((removals, consumed_weight))
+		}
+	}
+
+	struct DelegationMeter<T: Config>(PhantomData<T>);
+	impl<T: Config> StorageMeter<AccountIdOf<T>, DelegationNodeIdOf<T>> for DelegationMeter<T> {
+		type Currency = <T as Config>::Currency;
+
+		fn deposit(
+			key: &DelegationNodeIdOf<T>,
+		) -> Result<Deposit<AccountIdOf<T>, <Self::Currency as Currency<AccountIdOf<T>>>::Balance>, DispatchError> {
+			let delegation_node = DelegationNodes::<T>::get(key).ok_or(Error::<T>::DelegationNotFound)?;
+			Ok(delegation_node.deposit)
+		}
+
+		fn deposit_amount(_key: &DelegationNodeIdOf<T>) -> <Self::Currency as Currency<AccountIdOf<T>>>::Balance {
+			<T as Config>::Deposit::get()
+		}
+
+		fn store_deposit(
+			key: &DelegationNodeIdOf<T>,
+			deposit: Deposit<AccountIdOf<T>, <Self::Currency as Currency<AccountIdOf<T>>>::Balance>,
+		) -> Result<(), DispatchError> {
+			let delegation_node = DelegationNodes::<T>::get(key).ok_or(Error::<T>::DelegationNotFound)?;
+			DelegationNodes::<T>::insert(
+				key,
+				DelegationNode {
+					deposit,
+					..delegation_node
+				},
+			);
+
+			Ok(())
 		}
 	}
 }
