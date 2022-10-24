@@ -680,287 +680,292 @@ pub mod pallet {
 			Ok(())
 		}
 	}
-}
 
-impl<T: Config> Pallet<T> {
-	/// Calculate the hash of all values of a delegation creation transaction.
-	///
-	/// # <weight>
-	/// Weight: O(1)
-	/// # </weight>
-	fn calculate_delegation_creation_hash(
-		delegation_id: &DelegationNodeIdOf<T>,
-		root_id: &DelegationNodeIdOf<T>,
-		parent_id: &DelegationNodeIdOf<T>,
-		permissions: &Permissions,
-	) -> T::Hash {
-		// Add all values to an u8 vector.
-		let mut hashed_values: Vec<u8> = delegation_id.as_ref().to_vec();
-		hashed_values.extend_from_slice(root_id.as_ref());
-		hashed_values.extend_from_slice(parent_id.as_ref());
-		hashed_values.extend_from_slice(permissions.as_u8().as_ref());
-		// Hash the resulting vector
-		T::Hashing::hash(&hashed_values)
-	}
-
-	/// Creates a new root node with the given details and store the new
-	/// hierarchy in the hierarchies storage and the new root node in the nodes
-	/// storage.
-	fn create_and_store_new_hierarchy(
-		root_id: DelegationNodeIdOf<T>,
-		hierarchy_details: DelegationHierarchyDetails<T>,
-		hierarchy_owner: DelegatorIdOf<T>,
-		deposit_owner: AccountIdOf<T>,
-	) -> DispatchResult {
-		CurrencyOf::<T>::reserve(&deposit_owner, <T as Config>::Deposit::get())?;
-
-		// *** No Fail beyond this point ***
-
-		let root_node = DelegationNode::new_root_node(
-			root_id,
-			DelegationDetails::default_with_owner(hierarchy_owner),
-			deposit_owner,
-			<T as Config>::Deposit::get(),
-		);
-
-		DelegationNodes::<T>::insert(root_id, root_node);
-		<DelegationHierarchies<T>>::insert(root_id, hierarchy_details);
-
-		Ok(())
-	}
-
-	// Adds the given node to the storage and updates the parent node to include the
-	// given node as child.
-	//
-	// This function assumes that the parent node is already stored on the chain. If
-	// not, the behaviour of the system is undefined.
-	pub(crate) fn store_delegation_under_parent(
-		delegation_id: DelegationNodeIdOf<T>,
-		delegation_node: DelegationNode<T>,
-		parent_id: DelegationNodeIdOf<T>,
-		mut parent_node: DelegationNode<T>,
-		deposit_owner: AccountIdOf<T>,
-	) -> DispatchResult {
-		CurrencyOf::<T>::reserve(&deposit_owner, <T as Config>::Deposit::get())?;
-
-		// Add the new node as a child of that node
-		parent_node.try_add_child(delegation_id)?;
-
-		// *** No Fail beyond this point ***
-
-		<DelegationNodes<T>>::insert(delegation_id, delegation_node);
-		<DelegationNodes<T>>::insert(parent_id, parent_node);
-		Ok(())
-	}
-
-	/// Check if an identity is the owner of the given delegation node or any
-	/// node up the hierarchy, and if the delegation has not been yet revoked.
-	///
-	/// It checks whether the conditions are required for the given node,
-	/// otherwise it goes up up to `max_parent_checks` nodes, including the root
-	/// node, to check whether the given identity is a valid delegator of the
-	/// given delegation.
-	///
-	/// # <weight>
-	/// Weight: O(P) where P is the number of steps required to verify that
-	/// the dispatch Origin controls the delegation entitled to revoke the
-	/// attestation. It is bounded by `max_parent_checks`.
-	/// - Reads: Roots, P * Delegations
-	/// # </weight>
-	pub fn is_delegating(
-		identity: &DelegatorIdOf<T>,
-		delegation: &DelegationNodeIdOf<T>,
-		max_parent_checks: u32,
-	) -> Result<(bool, u32), DispatchError> {
-		let delegation_node = <DelegationNodes<T>>::get(delegation).ok_or(Error::<T>::DelegationNotFound)?;
-
-		// Check if the given account is the owner of the delegation and that the
-		// delegation has not been revoked
-		if &delegation_node.details.owner == identity {
-			Ok((!delegation_node.details.revoked, 0u32))
-		} else if let Some(parent) = delegation_node.parent {
-			// Only decrease (and perhaps fail) remaining_lookups if there are more parents
-			// to visit
-			let remaining_lookups = max_parent_checks
-				.checked_sub(1)
-				.ok_or(Error::<T>::MaxSearchDepthReached)?;
-
-			// Recursively check upwards in hierarchy
-			Self::is_delegating(identity, &parent, remaining_lookups)
-		} else {
-			// Return false and return max_parent_checks as no other check is performed
-			Ok((false, max_parent_checks))
+	impl<T: Config> Pallet<T> {
+		/// Calculate the hash of all values of a delegation creation
+		/// transaction.
+		///
+		/// # <weight>
+		/// Weight: O(1)
+		/// # </weight>
+		pub(crate) fn calculate_delegation_creation_hash(
+			delegation_id: &DelegationNodeIdOf<T>,
+			root_id: &DelegationNodeIdOf<T>,
+			parent_id: &DelegationNodeIdOf<T>,
+			permissions: &Permissions,
+		) -> T::Hash {
+			// Add all values to an u8 vector.
+			let mut hashed_values: Vec<u8> = delegation_id.as_ref().to_vec();
+			hashed_values.extend_from_slice(root_id.as_ref());
+			hashed_values.extend_from_slice(parent_id.as_ref());
+			hashed_values.extend_from_slice(permissions.as_u8().as_ref());
+			// Hash the resulting vector
+			T::Hashing::hash(&hashed_values)
 		}
-	}
 
-	/// Revokes all children of a delegation.
-	/// Returns the number of revoked delegations and the consumed weight.
-	///
-	/// # <weight>
-	/// Weight: O(C) where C is the number of children of the delegation node
-	/// which is bounded by `max_children`.
-	/// - Reads: C * Delegations
-	/// - Writes: C * Delegations (indirectly in `revoke`)
-	/// # </weight>
-	fn revoke_children(
-		delegation: &DelegationNodeIdOf<T>,
-		sender: &DelegatorIdOf<T>,
-		max_revocations: u32,
-	) -> Result<(u32, Weight), DispatchError> {
-		let mut revocations: u32 = 0;
-		let mut consumed_weight: Weight = Weight::zero();
-		if let Some(delegation_node) = <DelegationNodes<T>>::get(delegation) {
-			// Iterate children and revoke all nodes
-			for child in delegation_node.children.iter() {
-				let remaining_revocations = max_revocations
-					.checked_sub(revocations)
-					.ok_or(Error::<T>::ExceededRevocationBounds)?;
-
-				// Check whether we ran out of gas
-				ensure!(remaining_revocations > 0, Error::<T>::ExceededRevocationBounds);
-
-				Self::revoke(child, sender, remaining_revocations).map(|(r, w)| {
-					revocations = revocations.saturating_add(r);
-					consumed_weight = consumed_weight.saturating_add(w);
-				})?;
-			}
-		}
-		Ok((revocations, consumed_weight.saturating_add(T::DbWeight::get().reads(1))))
-	}
-
-	/// Revoke a delegation and all of its children recursively.
-	///
-	/// Emits DelegationRevoked for each revoked node.
-	///
-	/// # <weight>
-	/// Weight: O(C) where C is the number of children of the root which is
-	/// bounded by `max_children`.
-	/// - Reads: C * Delegations
-	/// - Writes: C * Delegations
-	/// # </weight>
-	fn revoke(
-		delegation: &DelegationNodeIdOf<T>,
-		sender: &DelegatorIdOf<T>,
-		max_revocations: u32,
-	) -> Result<(u32, Weight), DispatchError> {
-		let mut revocations: u32 = 0;
-		let mut consumed_weight: Weight = Weight::zero();
-		// Retrieve delegation node from storage
-		let mut delegation_node = <DelegationNodes<T>>::get(*delegation).ok_or(Error::<T>::DelegationNotFound)?;
-		consumed_weight = consumed_weight.saturating_add(T::DbWeight::get().reads(1));
-
-		// Check if already revoked
-		if !delegation_node.details.revoked {
-			// First revoke all children recursively
-			let remaining_revocations = max_revocations
-				.checked_sub(1)
-				.ok_or(Error::<T>::ExceededRevocationBounds)?;
-			Self::revoke_children(delegation, sender, remaining_revocations).map(|(r, w)| {
-				revocations = revocations.saturating_add(r);
-				consumed_weight = consumed_weight.saturating_add(w);
-			})?;
-
-			// If we run out of revocation gas, we only revoke children. The tree will be
-			// changed but is still valid.
-			ensure!(revocations < max_revocations, Error::<T>::ExceededRevocationBounds);
+		/// Creates a new root node with the given details and store the new
+		/// hierarchy in the hierarchies storage and the new root node in the
+		/// nodes storage.
+		pub(crate) fn create_and_store_new_hierarchy(
+			root_id: DelegationNodeIdOf<T>,
+			hierarchy_details: DelegationHierarchyDetails<T>,
+			hierarchy_owner: DelegatorIdOf<T>,
+			deposit_owner: AccountIdOf<T>,
+		) -> DispatchResult {
+			CurrencyOf::<T>::reserve(&deposit_owner, <T as Config>::Deposit::get())?;
 
 			// *** No Fail beyond this point ***
 
-			// Set revoked flag and store delegation node
-			delegation_node.details.revoked = true;
-			<DelegationNodes<T>>::insert(*delegation, delegation_node);
-			consumed_weight = consumed_weight.saturating_add(T::DbWeight::get().writes(1));
-			// Deposit event that the delegation has been revoked
-			Self::deposit_event(Event::DelegationRevoked(sender.clone(), *delegation));
-			revocations = revocations.saturating_add(1);
+			let root_node = DelegationNode::new_root_node(
+				root_id,
+				DelegationDetails::default_with_owner(hierarchy_owner),
+				deposit_owner,
+				<T as Config>::Deposit::get(),
+			);
+
+			DelegationNodes::<T>::insert(root_id, root_node);
+			<DelegationHierarchies<T>>::insert(root_id, hierarchy_details);
+
+			Ok(())
 		}
-		Ok((revocations, consumed_weight))
-	}
 
-	/// Removes all children of a delegation.
-	/// Returns the number of removed delegations and the consumed weight.
-	///
-	/// Updates the children BTreeSet after each child removal in case the
-	/// entire root removal runs out of gas and stops prematurely.
-	///
-	/// # <weight>
-	/// Weight: O(C) where C is the number of children of the delegation node
-	/// which is bounded by `max_children`.
-	/// - Writes: C * Delegations
-	/// - Reads: C * Delegations
-	/// # </weight>
-	fn remove_children(delegation: &DelegationNodeIdOf<T>, max_removals: u32) -> Result<(u32, Weight), DispatchError> {
-		let mut removals: u32 = 0;
-		let mut consumed_weight: Weight = Weight::zero();
+		// Adds the given node to the storage and updates the parent node to include the
+		// given node as child.
+		//
+		// This function assumes that the parent node is already stored on the chain. If
+		// not, the behaviour of the system is undefined.
+		pub(crate) fn store_delegation_under_parent(
+			delegation_id: DelegationNodeIdOf<T>,
+			delegation_node: DelegationNode<T>,
+			parent_id: DelegationNodeIdOf<T>,
+			mut parent_node: DelegationNode<T>,
+			deposit_owner: AccountIdOf<T>,
+		) -> DispatchResult {
+			CurrencyOf::<T>::reserve(&deposit_owner, <T as Config>::Deposit::get())?;
 
-		// Can't clear storage until we have reached a leaf
-		if let Some(mut delegation_node) = DelegationNodes::<T>::get(delegation) {
-			// Iterate and remove all children
-			for child in delegation_node.clone().children.iter() {
-				let remaining_removals = max_removals
-					.checked_sub(removals)
-					.ok_or(Error::<T>::ExceededRemovalBounds)?;
+			// Add the new node as a child of that node
+			parent_node.try_add_child(delegation_id)?;
 
-				// Check whether we ran out of gas
-				ensure!(remaining_removals > 0, Error::<T>::ExceededRemovalBounds);
+			// *** No Fail beyond this point ***
 
-				Self::remove(child, remaining_removals).map(|(r, w)| {
-					removals = removals.saturating_add(r);
+			<DelegationNodes<T>>::insert(delegation_id, delegation_node);
+			<DelegationNodes<T>>::insert(parent_id, parent_node);
+			Ok(())
+		}
+
+		/// Check if an identity is the owner of the given delegation node or
+		/// any node up the hierarchy, and if the delegation has not been yet
+		/// revoked.
+		///
+		/// It checks whether the conditions are required for the given node,
+		/// otherwise it goes up up to `max_parent_checks` nodes, including the
+		/// root node, to check whether the given identity is a valid delegator
+		/// of the given delegation.
+		///
+		/// # <weight>
+		/// Weight: O(P) where P is the number of steps required to verify that
+		/// the dispatch Origin controls the delegation entitled to revoke the
+		/// attestation. It is bounded by `max_parent_checks`.
+		/// - Reads: Roots, P * Delegations
+		/// # </weight>
+		pub fn is_delegating(
+			identity: &DelegatorIdOf<T>,
+			delegation: &DelegationNodeIdOf<T>,
+			max_parent_checks: u32,
+		) -> Result<(bool, u32), DispatchError> {
+			let delegation_node = <DelegationNodes<T>>::get(delegation).ok_or(Error::<T>::DelegationNotFound)?;
+
+			// Check if the given account is the owner of the delegation and that the
+			// delegation has not been revoked
+			if &delegation_node.details.owner == identity {
+				Ok((!delegation_node.details.revoked, 0u32))
+			} else if let Some(parent) = delegation_node.parent {
+				// Only decrease (and perhaps fail) remaining_lookups if there are more parents
+				// to visit
+				let remaining_lookups = max_parent_checks
+					.checked_sub(1)
+					.ok_or(Error::<T>::MaxSearchDepthReached)?;
+
+				// Recursively check upwards in hierarchy
+				Self::is_delegating(identity, &parent, remaining_lookups)
+			} else {
+				// Return false and return max_parent_checks as no other check is performed
+				Ok((false, max_parent_checks))
+			}
+		}
+
+		/// Revokes all children of a delegation.
+		/// Returns the number of revoked delegations and the consumed weight.
+		///
+		/// # <weight>
+		/// Weight: O(C) where C is the number of children of the delegation
+		/// node which is bounded by `max_children`.
+		/// - Reads: C * Delegations
+		/// - Writes: C * Delegations (indirectly in `revoke`)
+		/// # </weight>
+		fn revoke_children(
+			delegation: &DelegationNodeIdOf<T>,
+			sender: &DelegatorIdOf<T>,
+			max_revocations: u32,
+		) -> Result<(u32, Weight), DispatchError> {
+			let mut revocations: u32 = 0;
+			let mut consumed_weight: Weight = Weight::zero();
+			if let Some(delegation_node) = <DelegationNodes<T>>::get(delegation) {
+				// Iterate children and revoke all nodes
+				for child in delegation_node.children.iter() {
+					let remaining_revocations = max_revocations
+						.checked_sub(revocations)
+						.ok_or(Error::<T>::ExceededRevocationBounds)?;
+
+					// Check whether we ran out of gas
+					ensure!(remaining_revocations > 0, Error::<T>::ExceededRevocationBounds);
+
+					Self::revoke(child, sender, remaining_revocations).map(|(r, w)| {
+						revocations = revocations.saturating_add(r);
+						consumed_weight = consumed_weight.saturating_add(w);
+					})?;
+				}
+			}
+			Ok((revocations, consumed_weight.saturating_add(T::DbWeight::get().reads(1))))
+		}
+
+		/// Revoke a delegation and all of its children recursively.
+		///
+		/// Emits DelegationRevoked for each revoked node.
+		///
+		/// # <weight>
+		/// Weight: O(C) where C is the number of children of the root which is
+		/// bounded by `max_children`.
+		/// - Reads: C * Delegations
+		/// - Writes: C * Delegations
+		/// # </weight>
+		fn revoke(
+			delegation: &DelegationNodeIdOf<T>,
+			sender: &DelegatorIdOf<T>,
+			max_revocations: u32,
+		) -> Result<(u32, Weight), DispatchError> {
+			let mut revocations: u32 = 0;
+			let mut consumed_weight: Weight = Weight::zero();
+			// Retrieve delegation node from storage
+			let mut delegation_node = <DelegationNodes<T>>::get(*delegation).ok_or(Error::<T>::DelegationNotFound)?;
+			consumed_weight = consumed_weight.saturating_add(T::DbWeight::get().reads(1));
+
+			// Check if already revoked
+			if !delegation_node.details.revoked {
+				// First revoke all children recursively
+				let remaining_revocations = max_revocations
+					.checked_sub(1)
+					.ok_or(Error::<T>::ExceededRevocationBounds)?;
+				Self::revoke_children(delegation, sender, remaining_revocations).map(|(r, w)| {
+					revocations = revocations.saturating_add(r);
 					consumed_weight = consumed_weight.saturating_add(w);
 				})?;
 
-				// Remove child from set and update parent node in case of pre-emptive stops due
-				// to insufficient removal gas
-				delegation_node.children.remove(child);
-				DelegationNodes::<T>::insert(delegation, delegation_node.clone());
+				// If we run out of revocation gas, we only revoke children. The tree will be
+				// changed but is still valid.
+				ensure!(revocations < max_revocations, Error::<T>::ExceededRevocationBounds);
+
+				// *** No Fail beyond this point ***
+
+				// Set revoked flag and store delegation node
+				delegation_node.details.revoked = true;
+				<DelegationNodes<T>>::insert(*delegation, delegation_node);
+				consumed_weight = consumed_weight.saturating_add(T::DbWeight::get().writes(1));
+				// Deposit event that the delegation has been revoked
+				Self::deposit_event(Event::DelegationRevoked(sender.clone(), *delegation));
+				revocations = revocations.saturating_add(1);
 			}
+			Ok((revocations, consumed_weight))
 		}
-		Ok((removals, consumed_weight.saturating_add(T::DbWeight::get().reads(1))))
-	}
 
-	/// Remove a delegation and all of its children recursively.
-	///
-	/// Emits DelegationRevoked for each revoked node.
-	///
-	/// # <weight>
-	/// Weight: O(C) where C is the number of children of the root which is
-	/// bounded by `max_children`.
-	/// - Reads: 2 * C * Delegations, C * Balance
-	/// - Writes: C * Delegations, C * Balance
-	/// # </weight>
-	fn remove(delegation: &DelegationNodeIdOf<T>, max_removals: u32) -> Result<(u32, Weight), DispatchError> {
-		let mut removals: u32 = 0;
-		let mut consumed_weight: Weight = Weight::zero();
+		/// Removes all children of a delegation.
+		/// Returns the number of removed delegations and the consumed weight.
+		///
+		/// Updates the children BTreeSet after each child removal in case the
+		/// entire root removal runs out of gas and stops prematurely.
+		///
+		/// # <weight>
+		/// Weight: O(C) where C is the number of children of the delegation
+		/// node which is bounded by `max_children`.
+		/// - Writes: C * Delegations
+		/// - Reads: C * Delegations
+		/// # </weight>
+		fn remove_children(
+			delegation: &DelegationNodeIdOf<T>,
+			max_removals: u32,
+		) -> Result<(u32, Weight), DispatchError> {
+			let mut removals: u32 = 0;
+			let mut consumed_weight: Weight = Weight::zero();
 
-		// Retrieve delegation node from storage
-		// Storage removal has to be postponed until children have been removed
+			// Can't clear storage until we have reached a leaf
+			if let Some(mut delegation_node) = DelegationNodes::<T>::get(delegation) {
+				// Iterate and remove all children
+				for child in delegation_node.clone().children.iter() {
+					let remaining_removals = max_removals
+						.checked_sub(removals)
+						.ok_or(Error::<T>::ExceededRemovalBounds)?;
 
-		let delegation_node = DelegationNodes::<T>::get(*delegation).ok_or(Error::<T>::DelegationNotFound)?;
-		consumed_weight = consumed_weight.saturating_add(T::DbWeight::get().reads(1));
+					// Check whether we ran out of gas
+					ensure!(remaining_removals > 0, Error::<T>::ExceededRemovalBounds);
 
-		// First remove all children recursively
-		let remaining_removals = max_removals.checked_sub(1).ok_or(Error::<T>::ExceededRemovalBounds)?;
-		Self::remove_children(delegation, remaining_removals).map(|(r, w)| {
-			removals = removals.saturating_add(r);
-			consumed_weight = consumed_weight.saturating_add(w);
-		})?;
+					Self::remove(child, remaining_removals).map(|(r, w)| {
+						removals = removals.saturating_add(r);
+						consumed_weight = consumed_weight.saturating_add(w);
+					})?;
 
-		// If we run out of removal gas, we only remove children. The tree will be
-		// changed but is still valid.
-		ensure!(removals < max_removals, Error::<T>::ExceededRemovalBounds);
+					// Remove child from set and update parent node in case of pre-emptive stops due
+					// to insufficient removal gas
+					delegation_node.children.remove(child);
+					DelegationNodes::<T>::insert(delegation, delegation_node.clone());
+				}
+			}
+			Ok((removals, consumed_weight.saturating_add(T::DbWeight::get().reads(1))))
+		}
 
-		// *** No Fail beyond this point ***
+		/// Remove a delegation and all of its children recursively.
+		///
+		/// Emits DelegationRevoked for each revoked node.
+		///
+		/// # <weight>
+		/// Weight: O(C) where C is the number of children of the root which is
+		/// bounded by `max_children`.
+		/// - Reads: 2 * C * Delegations, C * Balance
+		/// - Writes: C * Delegations, C * Balance
+		/// # </weight>
+		fn remove(delegation: &DelegationNodeIdOf<T>, max_removals: u32) -> Result<(u32, Weight), DispatchError> {
+			let mut removals: u32 = 0;
+			let mut consumed_weight: Weight = Weight::zero();
 
-		// We can clear storage now that all children have been removed
-		DelegationNodes::<T>::remove(*delegation);
+			// Retrieve delegation node from storage
+			// Storage removal has to be postponed until children have been removed
 
-		kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&delegation_node.deposit);
+			let delegation_node = DelegationNodes::<T>::get(*delegation).ok_or(Error::<T>::DelegationNotFound)?;
+			consumed_weight = consumed_weight.saturating_add(T::DbWeight::get().reads(1));
 
-		consumed_weight = consumed_weight.saturating_add(T::DbWeight::get().reads_writes(1, 2));
+			// First remove all children recursively
+			let remaining_removals = max_removals.checked_sub(1).ok_or(Error::<T>::ExceededRemovalBounds)?;
+			Self::remove_children(delegation, remaining_removals).map(|(r, w)| {
+				removals = removals.saturating_add(r);
+				consumed_weight = consumed_weight.saturating_add(w);
+			})?;
 
-		// Deposit event that the delegation has been removed
-		Self::deposit_event(Event::DelegationRemoved(delegation_node.deposit.owner, *delegation));
-		removals = removals.saturating_add(1);
-		Ok((removals, consumed_weight))
+			// If we run out of removal gas, we only remove children. The tree will be
+			// changed but is still valid.
+			ensure!(removals < max_removals, Error::<T>::ExceededRemovalBounds);
+
+			// *** No Fail beyond this point ***
+
+			// We can clear storage now that all children have been removed
+			DelegationNodes::<T>::remove(*delegation);
+
+			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&delegation_node.deposit);
+
+			consumed_weight = consumed_weight.saturating_add(T::DbWeight::get().reads_writes(1, 2));
+
+			// Deposit event that the delegation has been removed
+			Self::deposit_event(Event::DelegationRemoved(delegation_node.deposit.owner, *delegation));
+			removals = removals.saturating_add(1);
+			Ok((removals, consumed_weight))
+		}
 	}
 }
