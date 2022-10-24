@@ -111,7 +111,7 @@ pub trait StorageMeter<AccountId, Key> {
 		};
 		Self::Currency::reserve(&deposit.owner, deposit.amount)?;
 
-		Self::store_deposit(&key, deposit)?;
+		Self::store_deposit(key, deposit)?;
 
 		Ok(())
 	}
@@ -122,12 +122,12 @@ pub trait StorageMeter<AccountId, Key> {
 		free_deposit::<AccountId, Self::Currency>(&deposit);
 
 		let deposit = Deposit {
-			amount: Self::deposit_amount(&key),
+			amount: Self::deposit_amount(key),
 			..deposit
 		};
 		Self::Currency::reserve(&deposit.owner, deposit.amount)?;
 
-		Self::store_deposit(&key, deposit)?;
+		Self::store_deposit(key, deposit)?;
 
 		Ok(())
 	}

@@ -46,7 +46,7 @@ pub mod pallet {
 		traits::{Currency, ReservableCurrency, StorageVersion},
 		Blake2_128Concat,
 	};
-	use frame_system::{pallet_prelude::*};
+	use frame_system::pallet_prelude::*;
 	use sp_std::{fmt::Debug, vec::Vec};
 
 	use kilt_support::{
