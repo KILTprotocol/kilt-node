@@ -29,8 +29,8 @@ for pallet in "${pallets[@]}"; do
     # shellcheck disable=SC2086
     ./target/release/kilt-parachain benchmark pallet \
     --chain="${chain}" \
-    --steps=2 \
-    --repeat=1 \
+    --steps=50 \
+    --repeat=20 \
     --pallet="$pallet" \
     --extrinsic="*" \
     --execution=wasm \
