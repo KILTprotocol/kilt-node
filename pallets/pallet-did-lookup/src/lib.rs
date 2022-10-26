@@ -312,7 +312,7 @@ pub mod pallet {
 			let record = ConnectedDids::<T>::get(&account).ok_or(Error::<T>::AssociationNotFound)?;
 			ensure!(record.did == subject, Error::<T>::NotAuthorized);
 
-			LinkableAccountMeter::<T>::change_deposit_owner(&account, source.sender())
+			LinkableAccountDepositCollector::<T>::change_deposit_owner(&account, source.sender())
 		}
 
 		/// Updates the deposit amount to the current deposit rate.
@@ -325,7 +325,7 @@ pub mod pallet {
 			let record = ConnectedDids::<T>::get(&account).ok_or(Error::<T>::AssociationNotFound)?;
 			ensure!(record.deposit.owner == source, DispatchError::BadOrigin);
 
-			LinkableAccountMeter::<T>::update_deposit(&account)
+			LinkableAccountDepositCollector::<T>::update_deposit(&account)
 		}
 	}
 
@@ -373,8 +373,8 @@ pub mod pallet {
 		}
 	}
 
-	struct LinkableAccountMeter<T: Config>(PhantomData<T>);
-	impl<T: Config> StorageDepositCollector<AccountIdOf<T>, LinkableAccountId> for LinkableAccountMeter<T> {
+	struct LinkableAccountDepositCollector<T: Config>(PhantomData<T>);
+	impl<T: Config> StorageDepositCollector<AccountIdOf<T>, LinkableAccountId> for LinkableAccountDepositCollector<T> {
 		type Currency = T::Currency;
 
 		fn deposit(

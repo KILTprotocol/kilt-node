@@ -669,7 +669,7 @@ pub mod pallet {
 			// parent or another ancestor.
 			ensure!(delegation.details.owner == source.subject(), Error::<T>::AccessDenied);
 
-			DelegationMeter::<T>::change_deposit_owner(&delegation_id, source.sender())
+			DelegationDepositCollector::<T>::change_deposit_owner(&delegation_id, source.sender())
 		}
 
 		/// Updates the deposit amount to the current deposit rate.
@@ -685,7 +685,7 @@ pub mod pallet {
 			// parent or another ancestor.
 			ensure!(delegation.deposit.owner == sender, BadOrigin);
 
-			DelegationMeter::<T>::update_deposit(&delegation_id)?;
+			DelegationDepositCollector::<T>::update_deposit(&delegation_id)?;
 
 			Ok(())
 		}
@@ -979,8 +979,8 @@ pub mod pallet {
 		}
 	}
 
-	struct DelegationMeter<T: Config>(PhantomData<T>);
-	impl<T: Config> StorageDepositCollector<AccountIdOf<T>, DelegationNodeIdOf<T>> for DelegationMeter<T> {
+	struct DelegationDepositCollector<T: Config>(PhantomData<T>);
+	impl<T: Config> StorageDepositCollector<AccountIdOf<T>, DelegationNodeIdOf<T>> for DelegationDepositCollector<T> {
 		type Currency = <T as Config>::Currency;
 
 		fn deposit(

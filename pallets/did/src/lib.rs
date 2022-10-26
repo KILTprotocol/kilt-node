@@ -1084,7 +1084,7 @@ pub mod pallet {
 			let subject = source.subject();
 			let sender = source.sender();
 
-			DidMeter::<T>::change_deposit_owner(&subject, sender)?;
+			DidDepositCollector::<T>::change_deposit_owner(&subject, sender)?;
 
 			Ok(())
 		}
@@ -1099,7 +1099,7 @@ pub mod pallet {
 			let did_entry = Did::<T>::get(&did).ok_or(Error::<T>::DidNotPresent)?;
 			ensure!(did_entry.deposit.owner == sender, BadOrigin);
 
-			DidMeter::<T>::update_deposit(&did)?;
+			DidDepositCollector::<T>::update_deposit(&did)?;
 
 			Ok(())
 		}
@@ -1237,8 +1237,8 @@ pub mod pallet {
 		}
 	}
 
-	struct DidMeter<T: Config>(PhantomData<T>);
-	impl<T: Config> StorageDepositCollector<AccountIdOf<T>, DidIdentifierOf<T>> for DidMeter<T> {
+	struct DidDepositCollector<T: Config>(PhantomData<T>);
+	impl<T: Config> StorageDepositCollector<AccountIdOf<T>, DidIdentifierOf<T>> for DidDepositCollector<T> {
 		type Currency = T::Currency;
 
 		fn deposit(
