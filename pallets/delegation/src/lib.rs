@@ -85,7 +85,7 @@ use frame_support::{
 	pallet_prelude::Weight,
 	traits::{Get, ReservableCurrency},
 };
-use kilt_support::traits::StorageMeter;
+use kilt_support::traits::StorageDepositCollector;
 use sp_runtime::{traits::Hash, DispatchError};
 use sp_std::{marker::PhantomData, vec::Vec};
 
@@ -94,6 +94,7 @@ pub mod pallet {
 
 	use super::*;
 	use frame_support::{
+		error::BadOrigin,
 		pallet_prelude::*,
 		traits::{Currency, StorageVersion},
 	};
@@ -674,7 +675,7 @@ pub mod pallet {
 		/// Updates the deposit amount to the current deposit rate.
 		///
 		/// The sender must be the deposit owner.
-		#[pallet::weight(<T as Config>::WeightInfo::change_deposit_owner())]
+		#[pallet::weight(<T as Config>::WeightInfo::update_deposit())]
 		pub fn update_deposit(origin: OriginFor<T>, delegation_id: DelegationNodeIdOf<T>) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
 
@@ -682,7 +683,7 @@ pub mod pallet {
 
 			// Deposit can only be swapped by the owner of the delegation node, not the
 			// parent or another ancestor.
-			ensure!(delegation.deposit.owner == sender, Error::<T>::AccessDenied);
+			ensure!(delegation.deposit.owner == sender, BadOrigin);
 
 			DelegationMeter::<T>::update_deposit(&delegation_id)?;
 
@@ -979,7 +980,7 @@ pub mod pallet {
 	}
 
 	struct DelegationMeter<T: Config>(PhantomData<T>);
-	impl<T: Config> StorageMeter<AccountIdOf<T>, DelegationNodeIdOf<T>> for DelegationMeter<T> {
+	impl<T: Config> StorageDepositCollector<AccountIdOf<T>, DelegationNodeIdOf<T>> for DelegationMeter<T> {
 		type Currency = <T as Config>::Currency;
 
 		fn deposit(

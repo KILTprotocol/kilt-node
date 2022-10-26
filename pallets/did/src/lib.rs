@@ -140,7 +140,7 @@ pub mod pallet {
 	use frame_system::pallet_prelude::*;
 	use kilt_support::{
 		deposit::Deposit,
-		traits::{CallSources, StorageMeter},
+		traits::{CallSources, StorageDepositCollector},
 	};
 	use sp_runtime::traits::BadOrigin;
 
@@ -1092,7 +1092,7 @@ pub mod pallet {
 		/// Updates the deposit amount to the current deposit rate.
 		///
 		/// The sender must be the deposit owner.
-		#[pallet::weight(<T as pallet::Config>::WeightInfo::change_deposit_owner())]
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::update_deposit())]
 		pub fn update_deposit(origin: OriginFor<T>, did: DidIdentifierOf<T>) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
 
@@ -1238,7 +1238,7 @@ pub mod pallet {
 	}
 
 	struct DidMeter<T: Config>(PhantomData<T>);
-	impl<T: Config> StorageMeter<AccountIdOf<T>, DidIdentifierOf<T>> for DidMeter<T> {
+	impl<T: Config> StorageDepositCollector<AccountIdOf<T>, DidIdentifierOf<T>> for DidMeter<T> {
 		type Currency = T::Currency;
 
 		fn deposit(

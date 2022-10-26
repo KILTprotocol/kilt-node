@@ -51,7 +51,7 @@ pub mod pallet {
 
 	use kilt_support::{
 		deposit::Deposit,
-		traits::{CallSources, StorageMeter},
+		traits::{CallSources, StorageDepositCollector},
 	};
 
 	use super::WeightInfo;
@@ -347,7 +347,7 @@ pub mod pallet {
 			let source = <T as Config>::OwnerOrigin::ensure_origin(origin)?;
 			let w3n_owner = source.subject();
 			let name = Names::<T>::get(&w3n_owner).ok_or(Error::<T>::Web3NameNotFound)?;
-			Web3NameStorageMeter::<T>::change_deposit_owner(&name, source.sender())?;
+			Web3NameStorageDepositCollector::<T>::change_deposit_owner(&name, source.sender())?;
 
 			Ok(())
 		}
@@ -355,13 +355,14 @@ pub mod pallet {
 		/// Updates the deposit amount to the current deposit rate.
 		///
 		/// The sender must be the deposit owner.
-		#[pallet::weight(<T as Config>::WeightInfo::change_deposit_owner())]
-		pub fn update_deposit(origin: OriginFor<T>, name: T::Web3Name) -> DispatchResult {
+		#[pallet::weight(<T as Config>::WeightInfo::update_deposit())]
+		pub fn update_deposit(origin: OriginFor<T>, name_input: Web3NameInput<T>) -> DispatchResult {
 			let source = ensure_signed(origin)?;
+			let name = Web3NameOf::<T>::try_from(name_input.into_inner()).map_err(DispatchError::from)?;
 			let w3n_entry = Owner::<T>::get(&name).ok_or(Error::<T>::Web3NameNotFound)?;
 			ensure!(w3n_entry.deposit.owner == source, BadOrigin);
 
-			Web3NameStorageMeter::<T>::update_deposit(&name)?;
+			Web3NameStorageDepositCollector::<T>::update_deposit(&name)?;
 
 			Ok(())
 		}
@@ -501,8 +502,8 @@ pub mod pallet {
 		}
 	}
 
-	struct Web3NameStorageMeter<T: Config>(PhantomData<T>);
-	impl<T: Config> StorageMeter<AccountIdOf<T>, T::Web3Name> for Web3NameStorageMeter<T> {
+	struct Web3NameStorageDepositCollector<T: Config>(PhantomData<T>);
+	impl<T: Config> StorageDepositCollector<AccountIdOf<T>, T::Web3Name> for Web3NameStorageDepositCollector<T> {
 		type Currency = T::Currency;
 
 		fn deposit(

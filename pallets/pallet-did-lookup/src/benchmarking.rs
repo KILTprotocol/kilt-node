@@ -265,6 +265,31 @@ benchmarks! {
 			},
 		);
 	}
+
+	update_deposit {
+		let deposit_owner: T::AccountId = account("caller", 0, SEED);
+		let linkable_id: LinkableAccountId = deposit_owner.clone().into();
+		let did: T::DidIdentifier = account("did", 0, SEED);
+		make_free_for_did::<T>(&deposit_owner);
+
+		Pallet::<T>::add_association(
+			deposit_owner.clone(),
+			did.clone(),
+			linkable_id.clone()
+		).expect("should create association");
+
+		let origin = RawOrigin::Signed(deposit_owner.clone());
+		let id_arg = linkable_id.clone();
+	}: _(origin, id_arg)
+	verify {
+		assert_eq!(
+			ConnectedDids::<T>::get(&linkable_id).expect("should retain link").deposit,
+			Deposit {
+				owner: deposit_owner,
+				amount: <T as Config>::Deposit::get(),
+			},
+		);
+	}
 }
 
 #[cfg(test)]

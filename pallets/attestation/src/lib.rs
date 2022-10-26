@@ -83,6 +83,7 @@ pub mod pallet {
 	use super::*;
 	use frame_support::{
 		dispatch::{DispatchResult, DispatchResultWithPostInfo},
+		error::BadOrigin,
 		pallet_prelude::*,
 		traits::{Currency, Get, ReservableCurrency, StorageVersion},
 	};
@@ -91,7 +92,7 @@ pub mod pallet {
 	use ctype::CtypeHashOf;
 	use kilt_support::{
 		deposit::Deposit,
-		traits::{CallSources, StorageMeter},
+		traits::{CallSources, StorageDepositCollector},
 	};
 
 	/// The current storage version.
@@ -438,7 +439,7 @@ pub mod pallet {
 			let attestation = Attestations::<T>::get(&claim_hash).ok_or(Error::<T>::AttestationNotFound)?;
 			ensure!(attestation.attester == subject, Error::<T>::Unauthorized);
 
-			AttestationStorageMeter::<T>::change_deposit_owner(&claim_hash, sender)?;
+			AttestationStorageDepositCollector::<T>::change_deposit_owner(&claim_hash, sender)?;
 
 			Ok(())
 		}
@@ -446,14 +447,14 @@ pub mod pallet {
 		/// Updates the deposit amount to the current deposit rate.
 		///
 		/// The sender must be the deposit owner.
-		#[pallet::weight(<T as pallet::Config>::WeightInfo::change_deposit_owner())]
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::update_deposit())]
 		pub fn update_deposit(origin: OriginFor<T>, claim_hash: ClaimHashOf<T>) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
 
 			let attestation = Attestations::<T>::get(&claim_hash).ok_or(Error::<T>::AttestationNotFound)?;
-			ensure!(attestation.deposit.owner == sender, Error::<T>::Unauthorized);
+			ensure!(attestation.deposit.owner == sender, BadOrigin);
 
-			AttestationStorageMeter::<T>::update_deposit(&claim_hash)?;
+			AttestationStorageDepositCollector::<T>::update_deposit(&claim_hash)?;
 
 			Ok(())
 		}
@@ -469,8 +470,8 @@ pub mod pallet {
 		}
 	}
 
-	struct AttestationStorageMeter<T: Config>(PhantomData<T>);
-	impl<T: Config> StorageMeter<AccountIdOf<T>, ClaimHashOf<T>> for AttestationStorageMeter<T> {
+	struct AttestationStorageDepositCollector<T: Config>(PhantomData<T>);
+	impl<T: Config> StorageDepositCollector<AccountIdOf<T>, ClaimHashOf<T>> for AttestationStorageDepositCollector<T> {
 		type Currency = <T as Config>::Currency;
 
 		fn deposit(

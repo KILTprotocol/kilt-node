@@ -86,7 +86,7 @@ pub trait ItemFilter<Item> {
 	fn should_include(&self, credential: &Item) -> bool;
 }
 
-pub trait StorageMeter<AccountId, Key> {
+pub trait StorageDepositCollector<AccountId, Key> {
 	type Currency: ReservableCurrency<AccountId>;
 
 	#[must_use]

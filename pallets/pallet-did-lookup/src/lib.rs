@@ -58,7 +58,7 @@ pub mod pallet {
 	use frame_system::pallet_prelude::*;
 	use kilt_support::{
 		deposit::Deposit,
-		traits::{CallSources, StorageMeter},
+		traits::{CallSources, StorageDepositCollector},
 	};
 	use sp_runtime::traits::BlockNumberProvider;
 
@@ -318,12 +318,12 @@ pub mod pallet {
 		/// Updates the deposit amount to the current deposit rate.
 		///
 		/// The sender must be the deposit owner.
-		#[pallet::weight(<T as Config>::WeightInfo::change_deposit_owner())]
+		#[pallet::weight(<T as Config>::WeightInfo::update_deposit())]
 		pub fn update_deposit(origin: OriginFor<T>, account: LinkableAccountId) -> DispatchResult {
 			let source = ensure_signed(origin)?;
 
 			let record = ConnectedDids::<T>::get(&account).ok_or(Error::<T>::AssociationNotFound)?;
-			ensure!(record.deposit.owner == source, Error::<T>::NotAuthorized);
+			ensure!(record.deposit.owner == source, DispatchError::BadOrigin);
 
 			LinkableAccountMeter::<T>::update_deposit(&account)
 		}
@@ -374,7 +374,7 @@ pub mod pallet {
 	}
 
 	struct LinkableAccountMeter<T: Config>(PhantomData<T>);
-	impl<T: Config> StorageMeter<AccountIdOf<T>, LinkableAccountId> for LinkableAccountMeter<T> {
+	impl<T: Config> StorageDepositCollector<AccountIdOf<T>, LinkableAccountId> for LinkableAccountMeter<T> {
 		type Currency = T::Currency;
 
 		fn deposit(

@@ -543,46 +543,6 @@ fn test_change_deposit_owner_insufficient_balance() {
 		});
 }
 
-/// Update the deposit amount
-#[test]
-fn test_change_deposit_owner_to_self() {
-	let attester: AttesterOf<Test> = sr25519_did_from_seed(&BOB_SEED);
-	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
-	let attestation = generate_base_attestation_with_deposit::<Test>(
-		attester.clone(),
-		ACCOUNT_00,
-		<Test as Config>::Deposit::get() * 2,
-	);
-
-	ExtBuilder::default()
-		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
-		.with_ctypes(vec![(attestation.ctype_hash, attester.clone())])
-		.with_attestations(vec![(claim_hash, attestation)])
-		.build()
-		.execute_with(|| {
-			assert_eq!(
-				Balances::reserved_balance(ACCOUNT_00),
-				<Test as Config>::Deposit::get() * 2
-			);
-			assert_ok!(Attestation::change_deposit_owner(
-				DoubleOrigin(ACCOUNT_00, attester).into(),
-				claim_hash
-			));
-			assert_eq!(
-				Attestation::attestations(claim_hash)
-					.expect("Attestation must be retained")
-					.deposit,
-				Deposit {
-					owner: ACCOUNT_00,
-					amount: <Test as Config>::Deposit::get()
-				}
-			);
-			// old deposit was 2x Deposit::get(), new deposit should be the the default
-			// deposit value.
-			assert_eq!(Balances::reserved_balance(ACCOUNT_00), <Test as Config>::Deposit::get());
-		});
-}
-
 #[test]
 fn test_change_deposit_owner_unauthorized() {
 	let attester: AttesterOf<Test> = sr25519_did_from_seed(&BOB_SEED);
@@ -617,6 +577,74 @@ fn test_change_deposit_owner_not_found() {
 			assert_noop!(
 				Attestation::change_deposit_owner(DoubleOrigin(ACCOUNT_00, attester).into(), claim_hash),
 				attestation::Error::<Test>::AttestationNotFound,
+			);
+		});
+}
+
+/// Update the deposit amount
+#[test]
+fn test_update_deposit() {
+	let attester: AttesterOf<Test> = sr25519_did_from_seed(&BOB_SEED);
+	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
+	let attestation = generate_base_attestation_with_deposit::<Test>(
+		attester.clone(),
+		ACCOUNT_00,
+		<Test as Config>::Deposit::get() * 2,
+	);
+
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
+		.with_ctypes(vec![(attestation.ctype_hash, attester.clone())])
+		.with_attestations(vec![(claim_hash, attestation)])
+		.build()
+		.execute_with(|| {
+			assert_eq!(
+				Balances::reserved_balance(ACCOUNT_00),
+				<Test as Config>::Deposit::get() * 2
+			);
+			assert_ok!(Attestation::update_deposit(
+				Origin::signed(ACCOUNT_00).into(),
+				claim_hash
+			));
+			assert_eq!(
+				Attestation::attestations(claim_hash)
+					.expect("Attestation must be retained")
+					.deposit,
+				Deposit {
+					owner: ACCOUNT_00,
+					amount: <Test as Config>::Deposit::get()
+				}
+			);
+			// old deposit was 2x Deposit::get(), new deposit should be the the default
+			// deposit value.
+			assert_eq!(Balances::reserved_balance(ACCOUNT_00), <Test as Config>::Deposit::get());
+		});
+}
+
+/// Update the deposit amount
+#[test]
+fn test_update_deposit_unauthorized() {
+	let attester: AttesterOf<Test> = sr25519_did_from_seed(&BOB_SEED);
+	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
+	let attestation = generate_base_attestation_with_deposit::<Test>(
+		attester.clone(),
+		ACCOUNT_00,
+		<Test as Config>::Deposit::get() * 2,
+	);
+
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
+		.with_ctypes(vec![(attestation.ctype_hash, attester.clone())])
+		.with_attestations(vec![(claim_hash, attestation)])
+		.build()
+		.execute_with(|| {
+			assert_eq!(
+				Balances::reserved_balance(ACCOUNT_00),
+				<Test as Config>::Deposit::get() * 2
+			);
+			assert_noop!(
+				Attestation::update_deposit(Origin::signed(ACCOUNT_01).into(), claim_hash),
+				DispatchError::BadOrigin
 			);
 		});
 }

@@ -135,4 +135,9 @@ impl<T: frame_system::Config> delegation::WeightInfo for WeightInfo<T> {
 			// Standard Error: 17_000
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 	}
+	fn update_deposit() -> Weight {
+		Weight::from_ref_time(56_873_000_u64)
+			.saturating_add(T::DbWeight::get().reads(3_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
+	}
 }
