@@ -27,8 +27,8 @@
 // benchmark
 // pallet
 // --chain=dev
-// --steps=2
-// --repeat=1
+// --steps=50
+// --repeat=20
 // --pallet=public-credentials
 // --extrinsic=*
 // --execution=wasm
@@ -62,22 +62,24 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: System Account (r:1 w:1)
 	// Storage: PublicCredentials CredentialSubjects (r:0 w:1)
 	/// The range of component `c` is `[1, 100000]`.
-	fn add(_c: u32, ) -> Weight {
-		Weight::from_ref_time(374_474_000 as u64)
+	fn add(c: u32, ) -> Weight {
+		Weight::from_ref_time(73_189_000 as u64)
+			// Standard Error: 0
+			.saturating_add(Weight::from_ref_time(2_000 as u64).saturating_mul(c as u64))
 			.saturating_add(T::DbWeight::get().reads(3 as u64))
 			.saturating_add(T::DbWeight::get().writes(3 as u64))
 	}
 	// Storage: PublicCredentials CredentialSubjects (r:1 w:0)
 	// Storage: PublicCredentials Credentials (r:1 w:1)
 	fn revoke() -> Weight {
-		Weight::from_ref_time(54_190_000 as u64)
+		Weight::from_ref_time(44_346_000 as u64)
 			.saturating_add(T::DbWeight::get().reads(2 as u64))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	// Storage: PublicCredentials CredentialSubjects (r:1 w:0)
 	// Storage: PublicCredentials Credentials (r:1 w:1)
 	fn unrevoke() -> Weight {
-		Weight::from_ref_time(54_649_000 as u64)
+		Weight::from_ref_time(44_326_000 as u64)
 			.saturating_add(T::DbWeight::get().reads(2 as u64))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
@@ -85,7 +87,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: PublicCredentials Credentials (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	fn remove() -> Weight {
-		Weight::from_ref_time(83_139_000 as u64)
+		Weight::from_ref_time(69_563_000 as u64)
 			.saturating_add(T::DbWeight::get().reads(3 as u64))
 			.saturating_add(T::DbWeight::get().writes(3 as u64))
 	}
@@ -93,7 +95,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: PublicCredentials Credentials (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	fn reclaim_deposit() -> Weight {
-		Weight::from_ref_time(85_687_000 as u64)
+		Weight::from_ref_time(68_692_000 as u64)
 			.saturating_add(T::DbWeight::get().reads(3 as u64))
 			.saturating_add(T::DbWeight::get().writes(3 as u64))
 	}
@@ -106,22 +108,24 @@ impl WeightInfo for () {
 	// Storage: System Account (r:1 w:1)
 	// Storage: PublicCredentials CredentialSubjects (r:0 w:1)
 	/// The range of component `c` is `[1, 100000]`.
-	fn add(_c: u32, ) -> Weight {
-		Weight::from_ref_time(374_474_000 as u64)
+	fn add(c: u32, ) -> Weight {
+		Weight::from_ref_time(73_189_000 as u64)
+			// Standard Error: 0
+			.saturating_add(Weight::from_ref_time(2_000 as u64).saturating_mul(c as u64))
 			.saturating_add(RocksDbWeight::get().reads(3 as u64))
 			.saturating_add(RocksDbWeight::get().writes(3 as u64))
 	}
 	// Storage: PublicCredentials CredentialSubjects (r:1 w:0)
 	// Storage: PublicCredentials Credentials (r:1 w:1)
 	fn revoke() -> Weight {
-		Weight::from_ref_time(54_190_000 as u64)
+		Weight::from_ref_time(44_346_000 as u64)
 			.saturating_add(RocksDbWeight::get().reads(2 as u64))
 			.saturating_add(RocksDbWeight::get().writes(1 as u64))
 	}
 	// Storage: PublicCredentials CredentialSubjects (r:1 w:0)
 	// Storage: PublicCredentials Credentials (r:1 w:1)
 	fn unrevoke() -> Weight {
-		Weight::from_ref_time(54_649_000 as u64)
+		Weight::from_ref_time(44_326_000 as u64)
 			.saturating_add(RocksDbWeight::get().reads(2 as u64))
 			.saturating_add(RocksDbWeight::get().writes(1 as u64))
 	}
@@ -129,7 +133,7 @@ impl WeightInfo for () {
 	// Storage: PublicCredentials Credentials (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	fn remove() -> Weight {
-		Weight::from_ref_time(83_139_000 as u64)
+		Weight::from_ref_time(69_563_000 as u64)
 			.saturating_add(RocksDbWeight::get().reads(3 as u64))
 			.saturating_add(RocksDbWeight::get().writes(3 as u64))
 	}
@@ -137,7 +141,7 @@ impl WeightInfo for () {
 	// Storage: PublicCredentials Credentials (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	fn reclaim_deposit() -> Weight {
-		Weight::from_ref_time(85_687_000 as u64)
+		Weight::from_ref_time(68_692_000 as u64)
 			.saturating_add(RocksDbWeight::get().reads(3 as u64))
 			.saturating_add(RocksDbWeight::get().writes(3 as u64))
 	}

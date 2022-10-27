@@ -27,8 +27,8 @@
 // benchmark
 // pallet
 // --chain=dev
-// --steps=2
-// --repeat=1
+// --steps=50
+// --repeat=20
 // --pallet=attestation
 // --extrinsic=*
 // --execution=wasm
@@ -62,41 +62,41 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Attestation Attestations (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	fn add() -> Weight {
-		Weight::from_ref_time(75_976_000 as u64)
+		Weight::from_ref_time(54_712_000 as u64)
 			.saturating_add(T::DbWeight::get().reads(3 as u64))
 			.saturating_add(T::DbWeight::get().writes(2 as u64))
 	}
 	// Storage: Attestation Attestations (r:1 w:1)
 	fn revoke() -> Weight {
-		Weight::from_ref_time(42_119_000 as u64)
+		Weight::from_ref_time(33_260_000 as u64)
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	// Storage: Attestation Attestations (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	fn remove() -> Weight {
-		Weight::from_ref_time(60_200_000 as u64)
+		Weight::from_ref_time(51_711_000 as u64)
 			.saturating_add(T::DbWeight::get().reads(2 as u64))
 			.saturating_add(T::DbWeight::get().writes(2 as u64))
 	}
 	// Storage: Attestation Attestations (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	fn reclaim_deposit() -> Weight {
-		Weight::from_ref_time(59_527_000 as u64)
+		Weight::from_ref_time(51_974_000 as u64)
 			.saturating_add(T::DbWeight::get().reads(2 as u64))
 			.saturating_add(T::DbWeight::get().writes(2 as u64))
 	}
 	// Storage: Attestation Attestations (r:1 w:1)
 	// Storage: System Account (r:2 w:2)
 	fn change_deposit_owner() -> Weight {
-		Weight::from_ref_time(79_907_000 as u64)
+		Weight::from_ref_time(67_325_000 as u64)
 			.saturating_add(T::DbWeight::get().reads(3 as u64))
 			.saturating_add(T::DbWeight::get().writes(3 as u64))
 	}
 	// Storage: Attestation Attestations (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	fn update_deposit() -> Weight {
-		Weight::from_ref_time(71_729_000 as u64)
+		Weight::from_ref_time(61_917_000 as u64)
 			.saturating_add(T::DbWeight::get().reads(2 as u64))
 			.saturating_add(T::DbWeight::get().writes(2 as u64))
 	}
@@ -108,41 +108,41 @@ impl WeightInfo for () {
 	// Storage: Attestation Attestations (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	fn add() -> Weight {
-		Weight::from_ref_time(75_976_000 as u64)
+		Weight::from_ref_time(54_712_000 as u64)
 			.saturating_add(RocksDbWeight::get().reads(3 as u64))
 			.saturating_add(RocksDbWeight::get().writes(2 as u64))
 	}
 	// Storage: Attestation Attestations (r:1 w:1)
 	fn revoke() -> Weight {
-		Weight::from_ref_time(42_119_000 as u64)
+		Weight::from_ref_time(33_260_000 as u64)
 			.saturating_add(RocksDbWeight::get().reads(1 as u64))
 			.saturating_add(RocksDbWeight::get().writes(1 as u64))
 	}
 	// Storage: Attestation Attestations (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	fn remove() -> Weight {
-		Weight::from_ref_time(60_200_000 as u64)
+		Weight::from_ref_time(51_711_000 as u64)
 			.saturating_add(RocksDbWeight::get().reads(2 as u64))
 			.saturating_add(RocksDbWeight::get().writes(2 as u64))
 	}
 	// Storage: Attestation Attestations (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	fn reclaim_deposit() -> Weight {
-		Weight::from_ref_time(59_527_000 as u64)
+		Weight::from_ref_time(51_974_000 as u64)
 			.saturating_add(RocksDbWeight::get().reads(2 as u64))
 			.saturating_add(RocksDbWeight::get().writes(2 as u64))
 	}
 	// Storage: Attestation Attestations (r:1 w:1)
 	// Storage: System Account (r:2 w:2)
 	fn change_deposit_owner() -> Weight {
-		Weight::from_ref_time(79_907_000 as u64)
+		Weight::from_ref_time(67_325_000 as u64)
 			.saturating_add(RocksDbWeight::get().reads(3 as u64))
 			.saturating_add(RocksDbWeight::get().writes(3 as u64))
 	}
 	// Storage: Attestation Attestations (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	fn update_deposit() -> Weight {
-		Weight::from_ref_time(71_729_000 as u64)
+		Weight::from_ref_time(61_917_000 as u64)
 			.saturating_add(RocksDbWeight::get().reads(2 as u64))
 			.saturating_add(RocksDbWeight::get().writes(2 as u64))
 	}

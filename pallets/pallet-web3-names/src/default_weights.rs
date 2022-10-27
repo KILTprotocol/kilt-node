@@ -27,8 +27,8 @@
 // benchmark
 // pallet
 // --chain=dev
-// --steps=2
-// --repeat=1
+// --steps=50
+// --repeat=20
 // --pallet=pallet-web3-names
 // --extrinsic=*
 // --execution=wasm
@@ -64,8 +64,10 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Web3Names Banned (r:1 w:0)
 	// Storage: System Account (r:1 w:1)
 	/// The range of component `n` is `[3, 32]`.
-	fn claim(_n: u32, ) -> Weight {
-		Weight::from_ref_time(39_380_000 as u64)
+	fn claim(n: u32, ) -> Weight {
+		Weight::from_ref_time(59_454_000 as u64)
+			// Standard Error: 3_000
+			.saturating_add(Weight::from_ref_time(23_000 as u64).saturating_mul(n as u64))
 			.saturating_add(T::DbWeight::get().reads(4 as u64))
 			.saturating_add(T::DbWeight::get().writes(3 as u64))
 	}
@@ -73,7 +75,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Web3Names Owner (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	fn release_by_owner() -> Weight {
-		Weight::from_ref_time(32_554_000 as u64)
+		Weight::from_ref_time(57_004_000 as u64)
 			.saturating_add(T::DbWeight::get().reads(3 as u64))
 			.saturating_add(T::DbWeight::get().writes(3 as u64))
 	}
@@ -81,8 +83,10 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: System Account (r:1 w:1)
 	// Storage: Web3Names Names (r:0 w:1)
 	/// The range of component `n` is `[3, 32]`.
-	fn reclaim_deposit(_n: u32, ) -> Weight {
-		Weight::from_ref_time(29_695_000 as u64)
+	fn reclaim_deposit(n: u32, ) -> Weight {
+		Weight::from_ref_time(53_009_000 as u64)
+			// Standard Error: 1_000
+			.saturating_add(Weight::from_ref_time(25_000 as u64).saturating_mul(n as u64))
 			.saturating_add(T::DbWeight::get().reads(2 as u64))
 			.saturating_add(T::DbWeight::get().writes(3 as u64))
 	}
@@ -91,15 +95,19 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: System Account (r:1 w:1)
 	// Storage: Web3Names Names (r:0 w:1)
 	/// The range of component `n` is `[3, 32]`.
-	fn ban(_n: u32, ) -> Weight {
-		Weight::from_ref_time(32_594_000 as u64)
+	fn ban(n: u32, ) -> Weight {
+		Weight::from_ref_time(57_921_000 as u64)
+			// Standard Error: 1_000
+			.saturating_add(Weight::from_ref_time(40_000 as u64).saturating_mul(n as u64))
 			.saturating_add(T::DbWeight::get().reads(3 as u64))
 			.saturating_add(T::DbWeight::get().writes(4 as u64))
 	}
 	// Storage: Web3Names Banned (r:1 w:1)
 	/// The range of component `n` is `[3, 32]`.
-	fn unban(_n: u32, ) -> Weight {
-		Weight::from_ref_time(18_222_000 as u64)
+	fn unban(n: u32, ) -> Weight {
+		Weight::from_ref_time(31_647_000 as u64)
+			// Standard Error: 1_000
+			.saturating_add(Weight::from_ref_time(44_000 as u64).saturating_mul(n as u64))
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
@@ -107,14 +115,14 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Web3Names Owner (r:1 w:1)
 	// Storage: System Account (r:2 w:2)
 	fn change_deposit_owner() -> Weight {
-		Weight::from_ref_time(41_507_000 as u64)
+		Weight::from_ref_time(69_614_000 as u64)
 			.saturating_add(T::DbWeight::get().reads(4 as u64))
 			.saturating_add(T::DbWeight::get().writes(3 as u64))
 	}
 	// Storage: Web3Names Owner (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	fn update_deposit() -> Weight {
-		Weight::from_ref_time(34_192_000 as u64)
+		Weight::from_ref_time(61_177_000 as u64)
 			.saturating_add(T::DbWeight::get().reads(2 as u64))
 			.saturating_add(T::DbWeight::get().writes(2 as u64))
 	}
@@ -127,8 +135,10 @@ impl WeightInfo for () {
 	// Storage: Web3Names Banned (r:1 w:0)
 	// Storage: System Account (r:1 w:1)
 	/// The range of component `n` is `[3, 32]`.
-	fn claim(_n: u32, ) -> Weight {
-		Weight::from_ref_time(39_380_000 as u64)
+	fn claim(n: u32, ) -> Weight {
+		Weight::from_ref_time(59_454_000 as u64)
+			// Standard Error: 3_000
+			.saturating_add(Weight::from_ref_time(23_000 as u64).saturating_mul(n as u64))
 			.saturating_add(RocksDbWeight::get().reads(4 as u64))
 			.saturating_add(RocksDbWeight::get().writes(3 as u64))
 	}
@@ -136,7 +146,7 @@ impl WeightInfo for () {
 	// Storage: Web3Names Owner (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	fn release_by_owner() -> Weight {
-		Weight::from_ref_time(32_554_000 as u64)
+		Weight::from_ref_time(57_004_000 as u64)
 			.saturating_add(RocksDbWeight::get().reads(3 as u64))
 			.saturating_add(RocksDbWeight::get().writes(3 as u64))
 	}
@@ -144,8 +154,10 @@ impl WeightInfo for () {
 	// Storage: System Account (r:1 w:1)
 	// Storage: Web3Names Names (r:0 w:1)
 	/// The range of component `n` is `[3, 32]`.
-	fn reclaim_deposit(_n: u32, ) -> Weight {
-		Weight::from_ref_time(29_695_000 as u64)
+	fn reclaim_deposit(n: u32, ) -> Weight {
+		Weight::from_ref_time(53_009_000 as u64)
+			// Standard Error: 1_000
+			.saturating_add(Weight::from_ref_time(25_000 as u64).saturating_mul(n as u64))
 			.saturating_add(RocksDbWeight::get().reads(2 as u64))
 			.saturating_add(RocksDbWeight::get().writes(3 as u64))
 	}
@@ -154,15 +166,19 @@ impl WeightInfo for () {
 	// Storage: System Account (r:1 w:1)
 	// Storage: Web3Names Names (r:0 w:1)
 	/// The range of component `n` is `[3, 32]`.
-	fn ban(_n: u32, ) -> Weight {
-		Weight::from_ref_time(32_594_000 as u64)
+	fn ban(n: u32, ) -> Weight {
+		Weight::from_ref_time(57_921_000 as u64)
+			// Standard Error: 1_000
+			.saturating_add(Weight::from_ref_time(40_000 as u64).saturating_mul(n as u64))
 			.saturating_add(RocksDbWeight::get().reads(3 as u64))
 			.saturating_add(RocksDbWeight::get().writes(4 as u64))
 	}
 	// Storage: Web3Names Banned (r:1 w:1)
 	/// The range of component `n` is `[3, 32]`.
-	fn unban(_n: u32, ) -> Weight {
-		Weight::from_ref_time(18_222_000 as u64)
+	fn unban(n: u32, ) -> Weight {
+		Weight::from_ref_time(31_647_000 as u64)
+			// Standard Error: 1_000
+			.saturating_add(Weight::from_ref_time(44_000 as u64).saturating_mul(n as u64))
 			.saturating_add(RocksDbWeight::get().reads(1 as u64))
 			.saturating_add(RocksDbWeight::get().writes(1 as u64))
 	}
@@ -170,14 +186,14 @@ impl WeightInfo for () {
 	// Storage: Web3Names Owner (r:1 w:1)
 	// Storage: System Account (r:2 w:2)
 	fn change_deposit_owner() -> Weight {
-		Weight::from_ref_time(41_507_000 as u64)
+		Weight::from_ref_time(69_614_000 as u64)
 			.saturating_add(RocksDbWeight::get().reads(4 as u64))
 			.saturating_add(RocksDbWeight::get().writes(3 as u64))
 	}
 	// Storage: Web3Names Owner (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	fn update_deposit() -> Weight {
-		Weight::from_ref_time(34_192_000 as u64)
+		Weight::from_ref_time(61_177_000 as u64)
 			.saturating_add(RocksDbWeight::get().reads(2 as u64))
 			.saturating_add(RocksDbWeight::get().writes(2 as u64))
 	}

@@ -27,8 +27,8 @@
 // benchmark
 // pallet
 // --chain=dev
-// --steps=2
-// --repeat=1
+// --steps=50
+// --repeat=20
 // --pallet=did
 // --extrinsic=*
 // --execution=wasm
@@ -96,11 +96,11 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	/// The range of component `n` is `[1, 10]`.
 	/// The range of component `c` is `[1, 25]`.
 	fn create_ed25519_keys(n: u32, c: u32, ) -> Weight {
-		Weight::from_ref_time(269_881_000 as u64)
-			// Standard Error: 1_538_000
-			.saturating_add(Weight::from_ref_time(1_162_000 as u64).saturating_mul(n as u64))
-			// Standard Error: 576_000
-			.saturating_add(Weight::from_ref_time(5_977_000 as u64).saturating_mul(c as u64))
+		Weight::from_ref_time(156_568_000 as u64)
+			// Standard Error: 15_000
+			.saturating_add(Weight::from_ref_time(1_515_000 as u64).saturating_mul(n as u64))
+			// Standard Error: 6_000
+			.saturating_add(Weight::from_ref_time(6_249_000 as u64).saturating_mul(c as u64))
 			.saturating_add(T::DbWeight::get().reads(4 as u64))
 			.saturating_add(T::DbWeight::get().writes(4 as u64))
 			.saturating_add(T::DbWeight::get().writes((1 as u64).saturating_mul(c as u64)))
@@ -113,11 +113,11 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	/// The range of component `n` is `[1, 10]`.
 	/// The range of component `c` is `[1, 25]`.
 	fn create_sr25519_keys(n: u32, c: u32, ) -> Weight {
-		Weight::from_ref_time(258_090_000 as u64)
-			// Standard Error: 1_941_000
-			.saturating_add(Weight::from_ref_time(1_789_000 as u64).saturating_mul(n as u64))
-			// Standard Error: 728_000
-			.saturating_add(Weight::from_ref_time(6_517_000 as u64).saturating_mul(c as u64))
+		Weight::from_ref_time(158_785_000 as u64)
+			// Standard Error: 15_000
+			.saturating_add(Weight::from_ref_time(1_536_000 as u64).saturating_mul(n as u64))
+			// Standard Error: 6_000
+			.saturating_add(Weight::from_ref_time(6_746_000 as u64).saturating_mul(c as u64))
 			.saturating_add(T::DbWeight::get().reads(4 as u64))
 			.saturating_add(T::DbWeight::get().writes(4 as u64))
 			.saturating_add(T::DbWeight::get().writes((1 as u64).saturating_mul(c as u64)))
@@ -129,10 +129,12 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Did ServiceEndpoints (r:0 w:25)
 	/// The range of component `n` is `[1, 10]`.
 	/// The range of component `c` is `[1, 25]`.
-	fn create_ecdsa_keys(_n: u32, c: u32, ) -> Weight {
-		Weight::from_ref_time(309_058_000 as u64)
-			// Standard Error: 4_496_000
-			.saturating_add(Weight::from_ref_time(3_173_000 as u64).saturating_mul(c as u64))
+	fn create_ecdsa_keys(n: u32, c: u32, ) -> Weight {
+		Weight::from_ref_time(147_617_000 as u64)
+			// Standard Error: 16_000
+			.saturating_add(Weight::from_ref_time(1_261_000 as u64).saturating_mul(n as u64))
+			// Standard Error: 6_000
+			.saturating_add(Weight::from_ref_time(5_862_000 as u64).saturating_mul(c as u64))
 			.saturating_add(T::DbWeight::get().reads(4 as u64))
 			.saturating_add(T::DbWeight::get().writes(4 as u64))
 			.saturating_add(T::DbWeight::get().writes((1 as u64).saturating_mul(c as u64)))
@@ -142,162 +144,168 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Did DidBlacklist (r:0 w:1)
 	// Storage: Did ServiceEndpoints (r:0 w:1)
 	/// The range of component `c` is `[1, 25]`.
-	fn delete(_c: u32, ) -> Weight {
-		Weight::from_ref_time(110_103_000 as u64)
+	fn delete(c: u32, ) -> Weight {
+		Weight::from_ref_time(48_314_000 as u64)
+			// Standard Error: 4_000
+			.saturating_add(Weight::from_ref_time(1_611_000 as u64).saturating_mul(c as u64))
 			.saturating_add(T::DbWeight::get().reads(2 as u64))
-			.saturating_add(T::DbWeight::get().writes(28 as u64))
+			.saturating_add(T::DbWeight::get().writes(3 as u64))
+			.saturating_add(T::DbWeight::get().writes((1 as u64).saturating_mul(c as u64)))
 	}
 	// Storage: Did Did (r:1 w:1)
 	// Storage: Did DidEndpointsCount (r:1 w:1)
 	// Storage: Did DidBlacklist (r:0 w:1)
 	// Storage: Did ServiceEndpoints (r:0 w:1)
 	/// The range of component `c` is `[1, 25]`.
-	fn reclaim_deposit(_c: u32, ) -> Weight {
-		Weight::from_ref_time(107_238_000 as u64)
+	fn reclaim_deposit(c: u32, ) -> Weight {
+		Weight::from_ref_time(50_942_000 as u64)
+			// Standard Error: 4_000
+			.saturating_add(Weight::from_ref_time(1_614_000 as u64).saturating_mul(c as u64))
 			.saturating_add(T::DbWeight::get().reads(2 as u64))
-			.saturating_add(T::DbWeight::get().writes(28 as u64))
+			.saturating_add(T::DbWeight::get().writes(3 as u64))
+			.saturating_add(T::DbWeight::get().writes((1 as u64).saturating_mul(c as u64)))
 	}
 	// Storage: Did Did (r:1 w:1)
 	fn submit_did_call_ed25519_key() -> Weight {
-		Weight::from_ref_time(166_469_000 as u64)
+		Weight::from_ref_time(96_097_000 as u64)
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	fn submit_did_call_sr25519_key() -> Weight {
-		Weight::from_ref_time(167_171_000 as u64)
+		Weight::from_ref_time(97_185_000 as u64)
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	fn submit_did_call_ecdsa_key() -> Weight {
-		Weight::from_ref_time(150_779_000 as u64)
+		Weight::from_ref_time(84_231_000 as u64)
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	fn set_ed25519_authentication_key() -> Weight {
-		Weight::from_ref_time(73_275_000 as u64)
+		Weight::from_ref_time(46_605_000 as u64)
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	fn set_sr25519_authentication_key() -> Weight {
-		Weight::from_ref_time(75_231_000 as u64)
+		Weight::from_ref_time(46_186_000 as u64)
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	fn set_ecdsa_authentication_key() -> Weight {
-		Weight::from_ref_time(72_750_000 as u64)
+		Weight::from_ref_time(46_031_000 as u64)
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	fn set_ed25519_delegation_key() -> Weight {
-		Weight::from_ref_time(72_637_000 as u64)
+		Weight::from_ref_time(45_554_000 as u64)
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	fn set_sr25519_delegation_key() -> Weight {
-		Weight::from_ref_time(77_045_000 as u64)
+		Weight::from_ref_time(45_981_000 as u64)
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	fn set_ecdsa_delegation_key() -> Weight {
-		Weight::from_ref_time(75_585_000 as u64)
+		Weight::from_ref_time(45_505_000 as u64)
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	fn remove_ed25519_delegation_key() -> Weight {
-		Weight::from_ref_time(65_958_000 as u64)
+		Weight::from_ref_time(42_688_000 as u64)
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	fn remove_sr25519_delegation_key() -> Weight {
-		Weight::from_ref_time(35_225_000 as u64)
+		Weight::from_ref_time(43_356_000 as u64)
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	fn remove_ecdsa_delegation_key() -> Weight {
-		Weight::from_ref_time(41_362_000 as u64)
+		Weight::from_ref_time(43_238_000 as u64)
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	fn set_ed25519_attestation_key() -> Weight {
-		Weight::from_ref_time(40_287_000 as u64)
+		Weight::from_ref_time(45_835_000 as u64)
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	fn set_sr25519_attestation_key() -> Weight {
-		Weight::from_ref_time(34_950_000 as u64)
+		Weight::from_ref_time(45_858_000 as u64)
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	fn set_ecdsa_attestation_key() -> Weight {
-		Weight::from_ref_time(37_170_000 as u64)
+		Weight::from_ref_time(45_606_000 as u64)
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	fn remove_ed25519_attestation_key() -> Weight {
-		Weight::from_ref_time(40_914_000 as u64)
+		Weight::from_ref_time(43_042_000 as u64)
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	fn remove_sr25519_attestation_key() -> Weight {
-		Weight::from_ref_time(69_596_000 as u64)
+		Weight::from_ref_time(43_135_000 as u64)
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	fn remove_ecdsa_attestation_key() -> Weight {
-		Weight::from_ref_time(68_130_000 as u64)
+		Weight::from_ref_time(43_196_000 as u64)
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	fn add_ed25519_key_agreement_key() -> Weight {
-		Weight::from_ref_time(68_665_000 as u64)
+		Weight::from_ref_time(45_306_000 as u64)
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	fn add_sr25519_key_agreement_key() -> Weight {
-		Weight::from_ref_time(66_069_000 as u64)
+		Weight::from_ref_time(45_347_000 as u64)
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	fn add_ecdsa_key_agreement_key() -> Weight {
-		Weight::from_ref_time(67_720_000 as u64)
+		Weight::from_ref_time(45_586_000 as u64)
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	fn remove_ed25519_key_agreement_key() -> Weight {
-		Weight::from_ref_time(62_866_000 as u64)
+		Weight::from_ref_time(43_320_000 as u64)
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	fn remove_sr25519_key_agreement_key() -> Weight {
-		Weight::from_ref_time(69_018_000 as u64)
+		Weight::from_ref_time(43_477_000 as u64)
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	fn remove_ecdsa_key_agreement_key() -> Weight {
-		Weight::from_ref_time(65_124_000 as u64)
+		Weight::from_ref_time(43_470_000 as u64)
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
@@ -305,46 +313,52 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Did DidEndpointsCount (r:1 w:1)
 	// Storage: Did ServiceEndpoints (r:1 w:1)
 	fn add_service_endpoint() -> Weight {
-		Weight::from_ref_time(76_964_000 as u64)
+		Weight::from_ref_time(52_338_000 as u64)
 			.saturating_add(T::DbWeight::get().reads(3 as u64))
 			.saturating_add(T::DbWeight::get().writes(2 as u64))
 	}
 	// Storage: Did ServiceEndpoints (r:1 w:1)
 	// Storage: Did DidEndpointsCount (r:1 w:1)
 	fn remove_service_endpoint() -> Weight {
-		Weight::from_ref_time(63_038_000 as u64)
+		Weight::from_ref_time(45_053_000 as u64)
 			.saturating_add(T::DbWeight::get().reads(2 as u64))
 			.saturating_add(T::DbWeight::get().writes(2 as u64))
 	}
 	// Storage: Did Did (r:1 w:0)
 	/// The range of component `l` is `[1, 5242880]`.
-	fn signature_verification_sr25519(_l: u32, ) -> Weight {
-		Weight::from_ref_time(16_516_457_000 as u64)
+	fn signature_verification_sr25519(l: u32, ) -> Weight {
+		Weight::from_ref_time(35_292_000 as u64)
+			// Standard Error: 0
+			.saturating_add(Weight::from_ref_time(4_000 as u64).saturating_mul(l as u64))
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:0)
 	/// The range of component `l` is `[1, 5242880]`.
-	fn signature_verification_ed25519(_l: u32, ) -> Weight {
-		Weight::from_ref_time(12_728_731_000 as u64)
+	fn signature_verification_ed25519(l: u32, ) -> Weight {
+		Weight::from_ref_time(33_666_000 as u64)
+			// Standard Error: 0
+			.saturating_add(Weight::from_ref_time(2_000 as u64).saturating_mul(l as u64))
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:0)
 	/// The range of component `l` is `[1, 5242880]`.
-	fn signature_verification_ecdsa(_l: u32, ) -> Weight {
-		Weight::from_ref_time(7_282_501_000 as u64)
+	fn signature_verification_ecdsa(l: u32, ) -> Weight {
+		Weight::from_ref_time(23_193_000 as u64)
+			// Standard Error: 0
+			.saturating_add(Weight::from_ref_time(1_000 as u64).saturating_mul(l as u64))
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	fn change_deposit_owner() -> Weight {
-		Weight::from_ref_time(82_854_000 as u64)
+		Weight::from_ref_time(62_213_000 as u64)
 			.saturating_add(T::DbWeight::get().reads(2 as u64))
 			.saturating_add(T::DbWeight::get().writes(2 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	fn update_deposit() -> Weight {
-		Weight::from_ref_time(84_145_000 as u64)
+		Weight::from_ref_time(64_533_000 as u64)
 			.saturating_add(T::DbWeight::get().reads(2 as u64))
 			.saturating_add(T::DbWeight::get().writes(2 as u64))
 	}
@@ -360,11 +374,11 @@ impl WeightInfo for () {
 	/// The range of component `n` is `[1, 10]`.
 	/// The range of component `c` is `[1, 25]`.
 	fn create_ed25519_keys(n: u32, c: u32, ) -> Weight {
-		Weight::from_ref_time(269_881_000 as u64)
-			// Standard Error: 1_538_000
-			.saturating_add(Weight::from_ref_time(1_162_000 as u64).saturating_mul(n as u64))
-			// Standard Error: 576_000
-			.saturating_add(Weight::from_ref_time(5_977_000 as u64).saturating_mul(c as u64))
+		Weight::from_ref_time(156_568_000 as u64)
+			// Standard Error: 15_000
+			.saturating_add(Weight::from_ref_time(1_515_000 as u64).saturating_mul(n as u64))
+			// Standard Error: 6_000
+			.saturating_add(Weight::from_ref_time(6_249_000 as u64).saturating_mul(c as u64))
 			.saturating_add(RocksDbWeight::get().reads(4 as u64))
 			.saturating_add(RocksDbWeight::get().writes(4 as u64))
 			.saturating_add(RocksDbWeight::get().writes((1 as u64).saturating_mul(c as u64)))
@@ -377,11 +391,11 @@ impl WeightInfo for () {
 	/// The range of component `n` is `[1, 10]`.
 	/// The range of component `c` is `[1, 25]`.
 	fn create_sr25519_keys(n: u32, c: u32, ) -> Weight {
-		Weight::from_ref_time(258_090_000 as u64)
-			// Standard Error: 1_941_000
-			.saturating_add(Weight::from_ref_time(1_789_000 as u64).saturating_mul(n as u64))
-			// Standard Error: 728_000
-			.saturating_add(Weight::from_ref_time(6_517_000 as u64).saturating_mul(c as u64))
+		Weight::from_ref_time(158_785_000 as u64)
+			// Standard Error: 15_000
+			.saturating_add(Weight::from_ref_time(1_536_000 as u64).saturating_mul(n as u64))
+			// Standard Error: 6_000
+			.saturating_add(Weight::from_ref_time(6_746_000 as u64).saturating_mul(c as u64))
 			.saturating_add(RocksDbWeight::get().reads(4 as u64))
 			.saturating_add(RocksDbWeight::get().writes(4 as u64))
 			.saturating_add(RocksDbWeight::get().writes((1 as u64).saturating_mul(c as u64)))
@@ -393,10 +407,12 @@ impl WeightInfo for () {
 	// Storage: Did ServiceEndpoints (r:0 w:25)
 	/// The range of component `n` is `[1, 10]`.
 	/// The range of component `c` is `[1, 25]`.
-	fn create_ecdsa_keys(_n: u32, c: u32, ) -> Weight {
-		Weight::from_ref_time(309_058_000 as u64)
-			// Standard Error: 4_496_000
-			.saturating_add(Weight::from_ref_time(3_173_000 as u64).saturating_mul(c as u64))
+	fn create_ecdsa_keys(n: u32, c: u32, ) -> Weight {
+		Weight::from_ref_time(147_617_000 as u64)
+			// Standard Error: 16_000
+			.saturating_add(Weight::from_ref_time(1_261_000 as u64).saturating_mul(n as u64))
+			// Standard Error: 6_000
+			.saturating_add(Weight::from_ref_time(5_862_000 as u64).saturating_mul(c as u64))
 			.saturating_add(RocksDbWeight::get().reads(4 as u64))
 			.saturating_add(RocksDbWeight::get().writes(4 as u64))
 			.saturating_add(RocksDbWeight::get().writes((1 as u64).saturating_mul(c as u64)))
@@ -406,162 +422,168 @@ impl WeightInfo for () {
 	// Storage: Did DidBlacklist (r:0 w:1)
 	// Storage: Did ServiceEndpoints (r:0 w:1)
 	/// The range of component `c` is `[1, 25]`.
-	fn delete(_c: u32, ) -> Weight {
-		Weight::from_ref_time(110_103_000 as u64)
+	fn delete(c: u32, ) -> Weight {
+		Weight::from_ref_time(48_314_000 as u64)
+			// Standard Error: 4_000
+			.saturating_add(Weight::from_ref_time(1_611_000 as u64).saturating_mul(c as u64))
 			.saturating_add(RocksDbWeight::get().reads(2 as u64))
-			.saturating_add(RocksDbWeight::get().writes(28 as u64))
+			.saturating_add(RocksDbWeight::get().writes(3 as u64))
+			.saturating_add(RocksDbWeight::get().writes((1 as u64).saturating_mul(c as u64)))
 	}
 	// Storage: Did Did (r:1 w:1)
 	// Storage: Did DidEndpointsCount (r:1 w:1)
 	// Storage: Did DidBlacklist (r:0 w:1)
 	// Storage: Did ServiceEndpoints (r:0 w:1)
 	/// The range of component `c` is `[1, 25]`.
-	fn reclaim_deposit(_c: u32, ) -> Weight {
-		Weight::from_ref_time(107_238_000 as u64)
+	fn reclaim_deposit(c: u32, ) -> Weight {
+		Weight::from_ref_time(50_942_000 as u64)
+			// Standard Error: 4_000
+			.saturating_add(Weight::from_ref_time(1_614_000 as u64).saturating_mul(c as u64))
 			.saturating_add(RocksDbWeight::get().reads(2 as u64))
-			.saturating_add(RocksDbWeight::get().writes(28 as u64))
+			.saturating_add(RocksDbWeight::get().writes(3 as u64))
+			.saturating_add(RocksDbWeight::get().writes((1 as u64).saturating_mul(c as u64)))
 	}
 	// Storage: Did Did (r:1 w:1)
 	fn submit_did_call_ed25519_key() -> Weight {
-		Weight::from_ref_time(166_469_000 as u64)
+		Weight::from_ref_time(96_097_000 as u64)
 			.saturating_add(RocksDbWeight::get().reads(1 as u64))
 			.saturating_add(RocksDbWeight::get().writes(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	fn submit_did_call_sr25519_key() -> Weight {
-		Weight::from_ref_time(167_171_000 as u64)
+		Weight::from_ref_time(97_185_000 as u64)
 			.saturating_add(RocksDbWeight::get().reads(1 as u64))
 			.saturating_add(RocksDbWeight::get().writes(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	fn submit_did_call_ecdsa_key() -> Weight {
-		Weight::from_ref_time(150_779_000 as u64)
+		Weight::from_ref_time(84_231_000 as u64)
 			.saturating_add(RocksDbWeight::get().reads(1 as u64))
 			.saturating_add(RocksDbWeight::get().writes(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	fn set_ed25519_authentication_key() -> Weight {
-		Weight::from_ref_time(73_275_000 as u64)
+		Weight::from_ref_time(46_605_000 as u64)
 			.saturating_add(RocksDbWeight::get().reads(1 as u64))
 			.saturating_add(RocksDbWeight::get().writes(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	fn set_sr25519_authentication_key() -> Weight {
-		Weight::from_ref_time(75_231_000 as u64)
+		Weight::from_ref_time(46_186_000 as u64)
 			.saturating_add(RocksDbWeight::get().reads(1 as u64))
 			.saturating_add(RocksDbWeight::get().writes(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	fn set_ecdsa_authentication_key() -> Weight {
-		Weight::from_ref_time(72_750_000 as u64)
+		Weight::from_ref_time(46_031_000 as u64)
 			.saturating_add(RocksDbWeight::get().reads(1 as u64))
 			.saturating_add(RocksDbWeight::get().writes(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	fn set_ed25519_delegation_key() -> Weight {
-		Weight::from_ref_time(72_637_000 as u64)
+		Weight::from_ref_time(45_554_000 as u64)
 			.saturating_add(RocksDbWeight::get().reads(1 as u64))
 			.saturating_add(RocksDbWeight::get().writes(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	fn set_sr25519_delegation_key() -> Weight {
-		Weight::from_ref_time(77_045_000 as u64)
+		Weight::from_ref_time(45_981_000 as u64)
 			.saturating_add(RocksDbWeight::get().reads(1 as u64))
 			.saturating_add(RocksDbWeight::get().writes(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	fn set_ecdsa_delegation_key() -> Weight {
-		Weight::from_ref_time(75_585_000 as u64)
+		Weight::from_ref_time(45_505_000 as u64)
 			.saturating_add(RocksDbWeight::get().reads(1 as u64))
 			.saturating_add(RocksDbWeight::get().writes(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	fn remove_ed25519_delegation_key() -> Weight {
-		Weight::from_ref_time(65_958_000 as u64)
+		Weight::from_ref_time(42_688_000 as u64)
 			.saturating_add(RocksDbWeight::get().reads(1 as u64))
 			.saturating_add(RocksDbWeight::get().writes(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	fn remove_sr25519_delegation_key() -> Weight {
-		Weight::from_ref_time(35_225_000 as u64)
+		Weight::from_ref_time(43_356_000 as u64)
 			.saturating_add(RocksDbWeight::get().reads(1 as u64))
 			.saturating_add(RocksDbWeight::get().writes(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	fn remove_ecdsa_delegation_key() -> Weight {
-		Weight::from_ref_time(41_362_000 as u64)
+		Weight::from_ref_time(43_238_000 as u64)
 			.saturating_add(RocksDbWeight::get().reads(1 as u64))
 			.saturating_add(RocksDbWeight::get().writes(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	fn set_ed25519_attestation_key() -> Weight {
-		Weight::from_ref_time(40_287_000 as u64)
+		Weight::from_ref_time(45_835_000 as u64)
 			.saturating_add(RocksDbWeight::get().reads(1 as u64))
 			.saturating_add(RocksDbWeight::get().writes(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	fn set_sr25519_attestation_key() -> Weight {
-		Weight::from_ref_time(34_950_000 as u64)
+		Weight::from_ref_time(45_858_000 as u64)
 			.saturating_add(RocksDbWeight::get().reads(1 as u64))
 			.saturating_add(RocksDbWeight::get().writes(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	fn set_ecdsa_attestation_key() -> Weight {
-		Weight::from_ref_time(37_170_000 as u64)
+		Weight::from_ref_time(45_606_000 as u64)
 			.saturating_add(RocksDbWeight::get().reads(1 as u64))
 			.saturating_add(RocksDbWeight::get().writes(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	fn remove_ed25519_attestation_key() -> Weight {
-		Weight::from_ref_time(40_914_000 as u64)
+		Weight::from_ref_time(43_042_000 as u64)
 			.saturating_add(RocksDbWeight::get().reads(1 as u64))
 			.saturating_add(RocksDbWeight::get().writes(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	fn remove_sr25519_attestation_key() -> Weight {
-		Weight::from_ref_time(69_596_000 as u64)
+		Weight::from_ref_time(43_135_000 as u64)
 			.saturating_add(RocksDbWeight::get().reads(1 as u64))
 			.saturating_add(RocksDbWeight::get().writes(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	fn remove_ecdsa_attestation_key() -> Weight {
-		Weight::from_ref_time(68_130_000 as u64)
+		Weight::from_ref_time(43_196_000 as u64)
 			.saturating_add(RocksDbWeight::get().reads(1 as u64))
 			.saturating_add(RocksDbWeight::get().writes(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	fn add_ed25519_key_agreement_key() -> Weight {
-		Weight::from_ref_time(68_665_000 as u64)
+		Weight::from_ref_time(45_306_000 as u64)
 			.saturating_add(RocksDbWeight::get().reads(1 as u64))
 			.saturating_add(RocksDbWeight::get().writes(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	fn add_sr25519_key_agreement_key() -> Weight {
-		Weight::from_ref_time(66_069_000 as u64)
+		Weight::from_ref_time(45_347_000 as u64)
 			.saturating_add(RocksDbWeight::get().reads(1 as u64))
 			.saturating_add(RocksDbWeight::get().writes(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	fn add_ecdsa_key_agreement_key() -> Weight {
-		Weight::from_ref_time(67_720_000 as u64)
+		Weight::from_ref_time(45_586_000 as u64)
 			.saturating_add(RocksDbWeight::get().reads(1 as u64))
 			.saturating_add(RocksDbWeight::get().writes(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	fn remove_ed25519_key_agreement_key() -> Weight {
-		Weight::from_ref_time(62_866_000 as u64)
+		Weight::from_ref_time(43_320_000 as u64)
 			.saturating_add(RocksDbWeight::get().reads(1 as u64))
 			.saturating_add(RocksDbWeight::get().writes(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	fn remove_sr25519_key_agreement_key() -> Weight {
-		Weight::from_ref_time(69_018_000 as u64)
+		Weight::from_ref_time(43_477_000 as u64)
 			.saturating_add(RocksDbWeight::get().reads(1 as u64))
 			.saturating_add(RocksDbWeight::get().writes(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	fn remove_ecdsa_key_agreement_key() -> Weight {
-		Weight::from_ref_time(65_124_000 as u64)
+		Weight::from_ref_time(43_470_000 as u64)
 			.saturating_add(RocksDbWeight::get().reads(1 as u64))
 			.saturating_add(RocksDbWeight::get().writes(1 as u64))
 	}
@@ -569,46 +591,52 @@ impl WeightInfo for () {
 	// Storage: Did DidEndpointsCount (r:1 w:1)
 	// Storage: Did ServiceEndpoints (r:1 w:1)
 	fn add_service_endpoint() -> Weight {
-		Weight::from_ref_time(76_964_000 as u64)
+		Weight::from_ref_time(52_338_000 as u64)
 			.saturating_add(RocksDbWeight::get().reads(3 as u64))
 			.saturating_add(RocksDbWeight::get().writes(2 as u64))
 	}
 	// Storage: Did ServiceEndpoints (r:1 w:1)
 	// Storage: Did DidEndpointsCount (r:1 w:1)
 	fn remove_service_endpoint() -> Weight {
-		Weight::from_ref_time(63_038_000 as u64)
+		Weight::from_ref_time(45_053_000 as u64)
 			.saturating_add(RocksDbWeight::get().reads(2 as u64))
 			.saturating_add(RocksDbWeight::get().writes(2 as u64))
 	}
 	// Storage: Did Did (r:1 w:0)
 	/// The range of component `l` is `[1, 5242880]`.
-	fn signature_verification_sr25519(_l: u32, ) -> Weight {
-		Weight::from_ref_time(16_516_457_000 as u64)
+	fn signature_verification_sr25519(l: u32, ) -> Weight {
+		Weight::from_ref_time(35_292_000 as u64)
+			// Standard Error: 0
+			.saturating_add(Weight::from_ref_time(4_000 as u64).saturating_mul(l as u64))
 			.saturating_add(RocksDbWeight::get().reads(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:0)
 	/// The range of component `l` is `[1, 5242880]`.
-	fn signature_verification_ed25519(_l: u32, ) -> Weight {
-		Weight::from_ref_time(12_728_731_000 as u64)
+	fn signature_verification_ed25519(l: u32, ) -> Weight {
+		Weight::from_ref_time(33_666_000 as u64)
+			// Standard Error: 0
+			.saturating_add(Weight::from_ref_time(2_000 as u64).saturating_mul(l as u64))
 			.saturating_add(RocksDbWeight::get().reads(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:0)
 	/// The range of component `l` is `[1, 5242880]`.
-	fn signature_verification_ecdsa(_l: u32, ) -> Weight {
-		Weight::from_ref_time(7_282_501_000 as u64)
+	fn signature_verification_ecdsa(l: u32, ) -> Weight {
+		Weight::from_ref_time(23_193_000 as u64)
+			// Standard Error: 0
+			.saturating_add(Weight::from_ref_time(1_000 as u64).saturating_mul(l as u64))
 			.saturating_add(RocksDbWeight::get().reads(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	fn change_deposit_owner() -> Weight {
-		Weight::from_ref_time(82_854_000 as u64)
+		Weight::from_ref_time(62_213_000 as u64)
 			.saturating_add(RocksDbWeight::get().reads(2 as u64))
 			.saturating_add(RocksDbWeight::get().writes(2 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	fn update_deposit() -> Weight {
-		Weight::from_ref_time(84_145_000 as u64)
+		Weight::from_ref_time(64_533_000 as u64)
 			.saturating_add(RocksDbWeight::get().reads(2 as u64))
 			.saturating_add(RocksDbWeight::get().writes(2 as u64))
 	}

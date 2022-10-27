@@ -27,8 +27,8 @@
 // benchmark
 // pallet
 // --chain=dev
-// --steps=2
-// --repeat=1
+// --steps=50
+// --repeat=20
 // --pallet=parachain-staking
 // --extrinsic=*
 // --execution=wasm
@@ -76,12 +76,12 @@ pub struct SubstrateWeight<T>(PhantomData<T>);
 impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: ParachainStaking Round (r:1 w:0)
 	fn on_initialize_no_action() -> Weight {
-		Weight::from_ref_time(16_164_000 as u64)
+		Weight::from_ref_time(7_644_000 as u64)
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 	}
 	// Storage: ParachainStaking Round (r:1 w:1)
 	fn on_initialize_round_update() -> Weight {
-		Weight::from_ref_time(38_880_000 as u64)
+		Weight::from_ref_time(22_739_000 as u64)
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
@@ -89,7 +89,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: ParachainStaking LastRewardReduction (r:1 w:1)
 	// Storage: ParachainStaking InflationConfig (r:1 w:1)
 	fn on_initialize_new_year() -> Weight {
-		Weight::from_ref_time(52_992_000 as u64)
+		Weight::from_ref_time(35_545_000 as u64)
 			.saturating_add(T::DbWeight::get().reads(3 as u64))
 			.saturating_add(T::DbWeight::get().writes(3 as u64))
 	}
@@ -100,38 +100,38 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: ParachainStaking MaxSelectedCandidates (r:1 w:0)
 	// Storage: System Account (r:1 w:1)
 	fn on_initialize_network_rewards() -> Weight {
-		Weight::from_ref_time(89_810_000 as u64)
+		Weight::from_ref_time(68_945_000 as u64)
 			.saturating_add(T::DbWeight::get().reads(6 as u64))
 			.saturating_add(T::DbWeight::get().writes(4 as u64))
 	}
 	// Storage: ParachainStaking ForceNewRound (r:0 w:1)
 	fn force_new_round() -> Weight {
-		Weight::from_ref_time(17_808_000 as u64)
+		Weight::from_ref_time(8_627_000 as u64)
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	// Storage: ParachainStaking InflationConfig (r:0 w:1)
 	fn set_inflation() -> Weight {
-		Weight::from_ref_time(46_576_000 as u64)
+		Weight::from_ref_time(23_990_000 as u64)
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	// Storage: ParachainStaking MaxSelectedCandidates (r:1 w:1)
 	// Storage: ParachainStaking TopCandidates (r:1 w:0)
 	// Storage: ParachainStaking TotalCollatorStake (r:1 w:1)
-	// Storage: ParachainStaking CandidatePool (r:59 w:0)
+	// Storage: ParachainStaking CandidatePool (r:1 w:0)
 	/// The range of component `n` is `[16, 75]`.
 	/// The range of component `m` is `[0, 35]`.
 	fn set_max_selected_candidates(n: u32, m: u32, ) -> Weight {
 		Weight::from_ref_time(0 as u64)
-			// Standard Error: 291_000
-			.saturating_add(Weight::from_ref_time(17_306_000 as u64).saturating_mul(n as u64))
-			// Standard Error: 490_000
-			.saturating_add(Weight::from_ref_time(25_042_000 as u64).saturating_mul(m as u64))
+			// Standard Error: 169_000
+			.saturating_add(Weight::from_ref_time(18_266_000 as u64).saturating_mul(n as u64))
+			// Standard Error: 283_000
+			.saturating_add(Weight::from_ref_time(26_614_000 as u64).saturating_mul(m as u64))
 			.saturating_add(T::DbWeight::get().reads((1 as u64).saturating_mul(n as u64)))
 			.saturating_add(T::DbWeight::get().writes(2 as u64))
 	}
 	// Storage: ParachainStaking Round (r:1 w:1)
 	fn set_blocks_per_round() -> Weight {
-		Weight::from_ref_time(64_099_000 as u64)
+		Weight::from_ref_time(29_804_000 as u64)
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
@@ -149,10 +149,10 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	/// The range of component `m` is `[0, 35]`.
 	fn force_remove_candidate(n: u32, m: u32, ) -> Weight {
 		Weight::from_ref_time(0 as u64)
-			// Standard Error: 878_000
-			.saturating_add(Weight::from_ref_time(11_398_000 as u64).saturating_mul(n as u64))
-			// Standard Error: 1_455_000
-			.saturating_add(Weight::from_ref_time(42_688_000 as u64).saturating_mul(m as u64))
+			// Standard Error: 169_000
+			.saturating_add(Weight::from_ref_time(17_396_000 as u64).saturating_mul(n as u64))
+			// Standard Error: 278_000
+			.saturating_add(Weight::from_ref_time(46_555_000 as u64).saturating_mul(m as u64))
 			.saturating_add(T::DbWeight::get().reads(25 as u64))
 			.saturating_add(T::DbWeight::get().reads((2 as u64).saturating_mul(m as u64)))
 			.saturating_add(T::DbWeight::get().writes(7 as u64))
@@ -172,10 +172,10 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	/// The range of component `m` is `[0, 35]`.
 	fn join_candidates(n: u32, m: u32, ) -> Weight {
 		Weight::from_ref_time(0 as u64)
-			// Standard Error: 1_125_000
-			.saturating_add(Weight::from_ref_time(10_431_000 as u64).saturating_mul(n as u64))
-			// Standard Error: 2_346_000
-			.saturating_add(Weight::from_ref_time(22_043_000 as u64).saturating_mul(m as u64))
+			// Standard Error: 147_000
+			.saturating_add(Weight::from_ref_time(14_073_000 as u64).saturating_mul(n as u64))
+			// Standard Error: 306_000
+			.saturating_add(Weight::from_ref_time(28_518_000 as u64).saturating_mul(m as u64))
 			.saturating_add(T::DbWeight::get().reads(10 as u64))
 			.saturating_add(T::DbWeight::get().writes(7 as u64))
 	}
@@ -188,10 +188,10 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	/// The range of component `m` is `[0, 35]`.
 	fn init_leave_candidates(n: u32, m: u32, ) -> Weight {
 		Weight::from_ref_time(0 as u64)
-			// Standard Error: 3_631_000
-			.saturating_add(Weight::from_ref_time(11_739_000 as u64).saturating_mul(n as u64))
-			// Standard Error: 5_913_000
-			.saturating_add(Weight::from_ref_time(26_212_000 as u64).saturating_mul(m as u64))
+			// Standard Error: 172_000
+			.saturating_add(Weight::from_ref_time(17_595_000 as u64).saturating_mul(n as u64))
+			// Standard Error: 279_000
+			.saturating_add(Weight::from_ref_time(32_521_000 as u64).saturating_mul(m as u64))
 			.saturating_add(T::DbWeight::get().reads(21 as u64))
 			.saturating_add(T::DbWeight::get().writes(3 as u64))
 	}
@@ -203,10 +203,10 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	/// The range of component `m` is `[0, 35]`.
 	fn cancel_leave_candidates(n: u32, m: u32, ) -> Weight {
 		Weight::from_ref_time(0 as u64)
-			// Standard Error: 308_000
-			.saturating_add(Weight::from_ref_time(12_409_000 as u64).saturating_mul(n as u64))
-			// Standard Error: 502_000
-			.saturating_add(Weight::from_ref_time(28_169_000 as u64).saturating_mul(m as u64))
+			// Standard Error: 181_000
+			.saturating_add(Weight::from_ref_time(18_150_000 as u64).saturating_mul(n as u64))
+			// Standard Error: 295_000
+			.saturating_add(Weight::from_ref_time(33_465_000 as u64).saturating_mul(m as u64))
 			.saturating_add(T::DbWeight::get().reads(5 as u64))
 			.saturating_add(T::DbWeight::get().writes(3 as u64))
 	}
@@ -222,10 +222,10 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	/// The range of component `m` is `[0, 35]`.
 	fn execute_leave_candidates(n: u32, m: u32, ) -> Weight {
 		Weight::from_ref_time(0 as u64)
-			// Standard Error: 10_972_000
-			.saturating_add(Weight::from_ref_time(8_583_000 as u64).saturating_mul(n as u64))
-			// Standard Error: 17_868_000
-			.saturating_add(Weight::from_ref_time(40_141_000 as u64).saturating_mul(m as u64))
+			// Standard Error: 179_000
+			.saturating_add(Weight::from_ref_time(20_967_000 as u64).saturating_mul(n as u64))
+			// Standard Error: 291_000
+			.saturating_add(Weight::from_ref_time(53_106_000 as u64).saturating_mul(m as u64))
 			.saturating_add(T::DbWeight::get().reads(7 as u64))
 			.saturating_add(T::DbWeight::get().reads((2 as u64).saturating_mul(m as u64)))
 			.saturating_add(T::DbWeight::get().writes(5 as u64))
@@ -242,14 +242,12 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	/// The range of component `n` is `[1, 74]`.
 	/// The range of component `m` is `[0, 35]`.
 	/// The range of component `u` is `[0, 9]`.
-	fn candidate_stake_more(n: u32, m: u32, u: u32, ) -> Weight {
+	fn candidate_stake_more(n: u32, m: u32, _u: u32, ) -> Weight {
 		Weight::from_ref_time(0 as u64)
-			// Standard Error: 13_000
-			.saturating_add(Weight::from_ref_time(8_094_000 as u64).saturating_mul(n as u64))
-			// Standard Error: 27_000
-			.saturating_add(Weight::from_ref_time(16_895_000 as u64).saturating_mul(m as u64))
-			// Standard Error: 106_000
-			.saturating_add(Weight::from_ref_time(542_000 as u64).saturating_mul(u as u64))
+			// Standard Error: 144_000
+			.saturating_add(Weight::from_ref_time(18_838_000 as u64).saturating_mul(n as u64))
+			// Standard Error: 299_000
+			.saturating_add(Weight::from_ref_time(38_595_000 as u64).saturating_mul(m as u64))
 			.saturating_add(T::DbWeight::get().reads(8 as u64))
 			.saturating_add(T::DbWeight::get().writes(6 as u64))
 	}
@@ -262,10 +260,10 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	/// The range of component `m` is `[0, 35]`.
 	fn candidate_stake_less(n: u32, m: u32, ) -> Weight {
 		Weight::from_ref_time(0 as u64)
-			// Standard Error: 488_000
-			.saturating_add(Weight::from_ref_time(7_836_000 as u64).saturating_mul(n as u64))
-			// Standard Error: 1_019_000
-			.saturating_add(Weight::from_ref_time(16_218_000 as u64).saturating_mul(m as u64))
+			// Standard Error: 164_000
+			.saturating_add(Weight::from_ref_time(17_508_000 as u64).saturating_mul(n as u64))
+			// Standard Error: 340_000
+			.saturating_add(Weight::from_ref_time(36_007_000 as u64).saturating_mul(m as u64))
 			.saturating_add(T::DbWeight::get().reads(5 as u64))
 			.saturating_add(T::DbWeight::get().writes(4 as u64))
 	}
@@ -283,10 +281,10 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	/// The range of component `m` is `[1, 34]`.
 	fn join_delegators(n: u32, m: u32, ) -> Weight {
 		Weight::from_ref_time(0 as u64)
-			// Standard Error: 396_000
-			.saturating_add(Weight::from_ref_time(8_099_000 as u64).saturating_mul(n as u64))
-			// Standard Error: 888_000
-			.saturating_add(Weight::from_ref_time(15_152_000 as u64).saturating_mul(m as u64))
+			// Standard Error: 156_000
+			.saturating_add(Weight::from_ref_time(17_315_000 as u64).saturating_mul(n as u64))
+			// Standard Error: 348_000
+			.saturating_add(Weight::from_ref_time(37_587_000 as u64).saturating_mul(m as u64))
 			.saturating_add(T::DbWeight::get().reads(11 as u64))
 			.saturating_add(T::DbWeight::get().writes(8 as u64))
 	}
@@ -303,10 +301,10 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	/// The range of component `u` is `[1, 9]`.
 	fn delegator_stake_more(n: u32, m: u32, _u: u32, ) -> Weight {
 		Weight::from_ref_time(0 as u64)
-			// Standard Error: 323_000
-			.saturating_add(Weight::from_ref_time(8_006_000 as u64).saturating_mul(n as u64))
-			// Standard Error: 724_000
-			.saturating_add(Weight::from_ref_time(16_549_000 as u64).saturating_mul(m as u64))
+			// Standard Error: 136_000
+			.saturating_add(Weight::from_ref_time(18_809_000 as u64).saturating_mul(n as u64))
+			// Standard Error: 302_000
+			.saturating_add(Weight::from_ref_time(40_732_000 as u64).saturating_mul(m as u64))
 			.saturating_add(T::DbWeight::get().reads(8 as u64))
 			.saturating_add(T::DbWeight::get().writes(7 as u64))
 	}
@@ -320,10 +318,10 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	/// The range of component `m` is `[1, 34]`.
 	fn delegator_stake_less(n: u32, m: u32, ) -> Weight {
 		Weight::from_ref_time(0 as u64)
-			// Standard Error: 149_000
-			.saturating_add(Weight::from_ref_time(7_840_000 as u64).saturating_mul(n as u64))
-			// Standard Error: 334_000
-			.saturating_add(Weight::from_ref_time(16_126_000 as u64).saturating_mul(m as u64))
+			// Standard Error: 160_000
+			.saturating_add(Weight::from_ref_time(17_708_000 as u64).saturating_mul(n as u64))
+			// Standard Error: 357_000
+			.saturating_add(Weight::from_ref_time(38_430_000 as u64).saturating_mul(m as u64))
 			.saturating_add(T::DbWeight::get().reads(6 as u64))
 			.saturating_add(T::DbWeight::get().writes(5 as u64))
 	}
@@ -337,10 +335,10 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	/// The range of component `m` is `[1, 34]`.
 	fn revoke_delegation(n: u32, m: u32, ) -> Weight {
 		Weight::from_ref_time(0 as u64)
-			// Standard Error: 257_000
-			.saturating_add(Weight::from_ref_time(7_922_000 as u64).saturating_mul(n as u64))
-			// Standard Error: 577_000
-			.saturating_add(Weight::from_ref_time(16_262_000 as u64).saturating_mul(m as u64))
+			// Standard Error: 159_000
+			.saturating_add(Weight::from_ref_time(17_904_000 as u64).saturating_mul(n as u64))
+			// Standard Error: 353_000
+			.saturating_add(Weight::from_ref_time(38_761_000 as u64).saturating_mul(m as u64))
 			.saturating_add(T::DbWeight::get().reads(6 as u64))
 			.saturating_add(T::DbWeight::get().writes(5 as u64))
 	}
@@ -354,10 +352,10 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	/// The range of component `m` is `[1, 34]`.
 	fn leave_delegators(n: u32, m: u32, ) -> Weight {
 		Weight::from_ref_time(0 as u64)
-			// Standard Error: 242_000
-			.saturating_add(Weight::from_ref_time(8_102_000 as u64).saturating_mul(n as u64))
-			// Standard Error: 543_000
-			.saturating_add(Weight::from_ref_time(16_735_000 as u64).saturating_mul(m as u64))
+			// Standard Error: 156_000
+			.saturating_add(Weight::from_ref_time(18_081_000 as u64).saturating_mul(n as u64))
+			// Standard Error: 347_000
+			.saturating_add(Weight::from_ref_time(39_078_000 as u64).saturating_mul(m as u64))
 			.saturating_add(T::DbWeight::get().reads(6 as u64))
 			.saturating_add(T::DbWeight::get().writes(5 as u64))
 	}
@@ -365,14 +363,16 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Balances Locks (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	/// The range of component `u` is `[1, 9]`.
-	fn unlock_unstaked(_u: u32, ) -> Weight {
-		Weight::from_ref_time(40_978_000 as u64)
+	fn unlock_unstaked(u: u32, ) -> Weight {
+		Weight::from_ref_time(58_027_000 as u64)
+			// Standard Error: 13_000
+			.saturating_add(Weight::from_ref_time(185_000 as u64).saturating_mul(u as u64))
 			.saturating_add(T::DbWeight::get().reads(3 as u64))
 			.saturating_add(T::DbWeight::get().writes(3 as u64))
 	}
 	// Storage: ParachainStaking MaxCollatorCandidateStake (r:0 w:1)
 	fn set_max_candidate_stake() -> Weight {
-		Weight::from_ref_time(19_482_000 as u64)
+		Weight::from_ref_time(22_670_000 as u64)
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 }
@@ -381,12 +381,12 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 impl WeightInfo for () {
 	// Storage: ParachainStaking Round (r:1 w:0)
 	fn on_initialize_no_action() -> Weight {
-		Weight::from_ref_time(16_164_000 as u64)
+		Weight::from_ref_time(7_644_000 as u64)
 			.saturating_add(RocksDbWeight::get().reads(1 as u64))
 	}
 	// Storage: ParachainStaking Round (r:1 w:1)
 	fn on_initialize_round_update() -> Weight {
-		Weight::from_ref_time(38_880_000 as u64)
+		Weight::from_ref_time(22_739_000 as u64)
 			.saturating_add(RocksDbWeight::get().reads(1 as u64))
 			.saturating_add(RocksDbWeight::get().writes(1 as u64))
 	}
@@ -394,7 +394,7 @@ impl WeightInfo for () {
 	// Storage: ParachainStaking LastRewardReduction (r:1 w:1)
 	// Storage: ParachainStaking InflationConfig (r:1 w:1)
 	fn on_initialize_new_year() -> Weight {
-		Weight::from_ref_time(52_992_000 as u64)
+		Weight::from_ref_time(35_545_000 as u64)
 			.saturating_add(RocksDbWeight::get().reads(3 as u64))
 			.saturating_add(RocksDbWeight::get().writes(3 as u64))
 	}
@@ -405,38 +405,38 @@ impl WeightInfo for () {
 	// Storage: ParachainStaking MaxSelectedCandidates (r:1 w:0)
 	// Storage: System Account (r:1 w:1)
 	fn on_initialize_network_rewards() -> Weight {
-		Weight::from_ref_time(89_810_000 as u64)
+		Weight::from_ref_time(68_945_000 as u64)
 			.saturating_add(RocksDbWeight::get().reads(6 as u64))
 			.saturating_add(RocksDbWeight::get().writes(4 as u64))
 	}
 	// Storage: ParachainStaking ForceNewRound (r:0 w:1)
 	fn force_new_round() -> Weight {
-		Weight::from_ref_time(17_808_000 as u64)
+		Weight::from_ref_time(8_627_000 as u64)
 			.saturating_add(RocksDbWeight::get().writes(1 as u64))
 	}
 	// Storage: ParachainStaking InflationConfig (r:0 w:1)
 	fn set_inflation() -> Weight {
-		Weight::from_ref_time(46_576_000 as u64)
+		Weight::from_ref_time(23_990_000 as u64)
 			.saturating_add(RocksDbWeight::get().writes(1 as u64))
 	}
 	// Storage: ParachainStaking MaxSelectedCandidates (r:1 w:1)
 	// Storage: ParachainStaking TopCandidates (r:1 w:0)
 	// Storage: ParachainStaking TotalCollatorStake (r:1 w:1)
-	// Storage: ParachainStaking CandidatePool (r:59 w:0)
+	// Storage: ParachainStaking CandidatePool (r:1 w:0)
 	/// The range of component `n` is `[16, 75]`.
 	/// The range of component `m` is `[0, 35]`.
 	fn set_max_selected_candidates(n: u32, m: u32, ) -> Weight {
 		Weight::from_ref_time(0 as u64)
-			// Standard Error: 291_000
-			.saturating_add(Weight::from_ref_time(17_306_000 as u64).saturating_mul(n as u64))
-			// Standard Error: 490_000
-			.saturating_add(Weight::from_ref_time(25_042_000 as u64).saturating_mul(m as u64))
+			// Standard Error: 169_000
+			.saturating_add(Weight::from_ref_time(18_266_000 as u64).saturating_mul(n as u64))
+			// Standard Error: 283_000
+			.saturating_add(Weight::from_ref_time(26_614_000 as u64).saturating_mul(m as u64))
 			.saturating_add(RocksDbWeight::get().reads((1 as u64).saturating_mul(n as u64)))
 			.saturating_add(RocksDbWeight::get().writes(2 as u64))
 	}
 	// Storage: ParachainStaking Round (r:1 w:1)
 	fn set_blocks_per_round() -> Weight {
-		Weight::from_ref_time(64_099_000 as u64)
+		Weight::from_ref_time(29_804_000 as u64)
 			.saturating_add(RocksDbWeight::get().reads(1 as u64))
 			.saturating_add(RocksDbWeight::get().writes(1 as u64))
 	}
@@ -454,10 +454,10 @@ impl WeightInfo for () {
 	/// The range of component `m` is `[0, 35]`.
 	fn force_remove_candidate(n: u32, m: u32, ) -> Weight {
 		Weight::from_ref_time(0 as u64)
-			// Standard Error: 878_000
-			.saturating_add(Weight::from_ref_time(11_398_000 as u64).saturating_mul(n as u64))
-			// Standard Error: 1_455_000
-			.saturating_add(Weight::from_ref_time(42_688_000 as u64).saturating_mul(m as u64))
+			// Standard Error: 169_000
+			.saturating_add(Weight::from_ref_time(17_396_000 as u64).saturating_mul(n as u64))
+			// Standard Error: 278_000
+			.saturating_add(Weight::from_ref_time(46_555_000 as u64).saturating_mul(m as u64))
 			.saturating_add(RocksDbWeight::get().reads(25 as u64))
 			.saturating_add(RocksDbWeight::get().reads((2 as u64).saturating_mul(m as u64)))
 			.saturating_add(RocksDbWeight::get().writes(7 as u64))
@@ -477,10 +477,10 @@ impl WeightInfo for () {
 	/// The range of component `m` is `[0, 35]`.
 	fn join_candidates(n: u32, m: u32, ) -> Weight {
 		Weight::from_ref_time(0 as u64)
-			// Standard Error: 1_125_000
-			.saturating_add(Weight::from_ref_time(10_431_000 as u64).saturating_mul(n as u64))
-			// Standard Error: 2_346_000
-			.saturating_add(Weight::from_ref_time(22_043_000 as u64).saturating_mul(m as u64))
+			// Standard Error: 147_000
+			.saturating_add(Weight::from_ref_time(14_073_000 as u64).saturating_mul(n as u64))
+			// Standard Error: 306_000
+			.saturating_add(Weight::from_ref_time(28_518_000 as u64).saturating_mul(m as u64))
 			.saturating_add(RocksDbWeight::get().reads(10 as u64))
 			.saturating_add(RocksDbWeight::get().writes(7 as u64))
 	}
@@ -493,10 +493,10 @@ impl WeightInfo for () {
 	/// The range of component `m` is `[0, 35]`.
 	fn init_leave_candidates(n: u32, m: u32, ) -> Weight {
 		Weight::from_ref_time(0 as u64)
-			// Standard Error: 3_631_000
-			.saturating_add(Weight::from_ref_time(11_739_000 as u64).saturating_mul(n as u64))
-			// Standard Error: 5_913_000
-			.saturating_add(Weight::from_ref_time(26_212_000 as u64).saturating_mul(m as u64))
+			// Standard Error: 172_000
+			.saturating_add(Weight::from_ref_time(17_595_000 as u64).saturating_mul(n as u64))
+			// Standard Error: 279_000
+			.saturating_add(Weight::from_ref_time(32_521_000 as u64).saturating_mul(m as u64))
 			.saturating_add(RocksDbWeight::get().reads(21 as u64))
 			.saturating_add(RocksDbWeight::get().writes(3 as u64))
 	}
@@ -508,10 +508,10 @@ impl WeightInfo for () {
 	/// The range of component `m` is `[0, 35]`.
 	fn cancel_leave_candidates(n: u32, m: u32, ) -> Weight {
 		Weight::from_ref_time(0 as u64)
-			// Standard Error: 308_000
-			.saturating_add(Weight::from_ref_time(12_409_000 as u64).saturating_mul(n as u64))
-			// Standard Error: 502_000
-			.saturating_add(Weight::from_ref_time(28_169_000 as u64).saturating_mul(m as u64))
+			// Standard Error: 181_000
+			.saturating_add(Weight::from_ref_time(18_150_000 as u64).saturating_mul(n as u64))
+			// Standard Error: 295_000
+			.saturating_add(Weight::from_ref_time(33_465_000 as u64).saturating_mul(m as u64))
 			.saturating_add(RocksDbWeight::get().reads(5 as u64))
 			.saturating_add(RocksDbWeight::get().writes(3 as u64))
 	}
@@ -527,10 +527,10 @@ impl WeightInfo for () {
 	/// The range of component `m` is `[0, 35]`.
 	fn execute_leave_candidates(n: u32, m: u32, ) -> Weight {
 		Weight::from_ref_time(0 as u64)
-			// Standard Error: 10_972_000
-			.saturating_add(Weight::from_ref_time(8_583_000 as u64).saturating_mul(n as u64))
-			// Standard Error: 17_868_000
-			.saturating_add(Weight::from_ref_time(40_141_000 as u64).saturating_mul(m as u64))
+			// Standard Error: 179_000
+			.saturating_add(Weight::from_ref_time(20_967_000 as u64).saturating_mul(n as u64))
+			// Standard Error: 291_000
+			.saturating_add(Weight::from_ref_time(53_106_000 as u64).saturating_mul(m as u64))
 			.saturating_add(RocksDbWeight::get().reads(7 as u64))
 			.saturating_add(RocksDbWeight::get().reads((2 as u64).saturating_mul(m as u64)))
 			.saturating_add(RocksDbWeight::get().writes(5 as u64))
@@ -547,14 +547,12 @@ impl WeightInfo for () {
 	/// The range of component `n` is `[1, 74]`.
 	/// The range of component `m` is `[0, 35]`.
 	/// The range of component `u` is `[0, 9]`.
-	fn candidate_stake_more(n: u32, m: u32, u: u32, ) -> Weight {
+	fn candidate_stake_more(n: u32, m: u32, _u: u32, ) -> Weight {
 		Weight::from_ref_time(0 as u64)
-			// Standard Error: 13_000
-			.saturating_add(Weight::from_ref_time(8_094_000 as u64).saturating_mul(n as u64))
-			// Standard Error: 27_000
-			.saturating_add(Weight::from_ref_time(16_895_000 as u64).saturating_mul(m as u64))
-			// Standard Error: 106_000
-			.saturating_add(Weight::from_ref_time(542_000 as u64).saturating_mul(u as u64))
+			// Standard Error: 144_000
+			.saturating_add(Weight::from_ref_time(18_838_000 as u64).saturating_mul(n as u64))
+			// Standard Error: 299_000
+			.saturating_add(Weight::from_ref_time(38_595_000 as u64).saturating_mul(m as u64))
 			.saturating_add(RocksDbWeight::get().reads(8 as u64))
 			.saturating_add(RocksDbWeight::get().writes(6 as u64))
 	}
@@ -567,10 +565,10 @@ impl WeightInfo for () {
 	/// The range of component `m` is `[0, 35]`.
 	fn candidate_stake_less(n: u32, m: u32, ) -> Weight {
 		Weight::from_ref_time(0 as u64)
-			// Standard Error: 488_000
-			.saturating_add(Weight::from_ref_time(7_836_000 as u64).saturating_mul(n as u64))
-			// Standard Error: 1_019_000
-			.saturating_add(Weight::from_ref_time(16_218_000 as u64).saturating_mul(m as u64))
+			// Standard Error: 164_000
+			.saturating_add(Weight::from_ref_time(17_508_000 as u64).saturating_mul(n as u64))
+			// Standard Error: 340_000
+			.saturating_add(Weight::from_ref_time(36_007_000 as u64).saturating_mul(m as u64))
 			.saturating_add(RocksDbWeight::get().reads(5 as u64))
 			.saturating_add(RocksDbWeight::get().writes(4 as u64))
 	}
@@ -588,10 +586,10 @@ impl WeightInfo for () {
 	/// The range of component `m` is `[1, 34]`.
 	fn join_delegators(n: u32, m: u32, ) -> Weight {
 		Weight::from_ref_time(0 as u64)
-			// Standard Error: 396_000
-			.saturating_add(Weight::from_ref_time(8_099_000 as u64).saturating_mul(n as u64))
-			// Standard Error: 888_000
-			.saturating_add(Weight::from_ref_time(15_152_000 as u64).saturating_mul(m as u64))
+			// Standard Error: 156_000
+			.saturating_add(Weight::from_ref_time(17_315_000 as u64).saturating_mul(n as u64))
+			// Standard Error: 348_000
+			.saturating_add(Weight::from_ref_time(37_587_000 as u64).saturating_mul(m as u64))
 			.saturating_add(RocksDbWeight::get().reads(11 as u64))
 			.saturating_add(RocksDbWeight::get().writes(8 as u64))
 	}
@@ -608,10 +606,10 @@ impl WeightInfo for () {
 	/// The range of component `u` is `[1, 9]`.
 	fn delegator_stake_more(n: u32, m: u32, _u: u32, ) -> Weight {
 		Weight::from_ref_time(0 as u64)
-			// Standard Error: 323_000
-			.saturating_add(Weight::from_ref_time(8_006_000 as u64).saturating_mul(n as u64))
-			// Standard Error: 724_000
-			.saturating_add(Weight::from_ref_time(16_549_000 as u64).saturating_mul(m as u64))
+			// Standard Error: 136_000
+			.saturating_add(Weight::from_ref_time(18_809_000 as u64).saturating_mul(n as u64))
+			// Standard Error: 302_000
+			.saturating_add(Weight::from_ref_time(40_732_000 as u64).saturating_mul(m as u64))
 			.saturating_add(RocksDbWeight::get().reads(8 as u64))
 			.saturating_add(RocksDbWeight::get().writes(7 as u64))
 	}
@@ -625,10 +623,10 @@ impl WeightInfo for () {
 	/// The range of component `m` is `[1, 34]`.
 	fn delegator_stake_less(n: u32, m: u32, ) -> Weight {
 		Weight::from_ref_time(0 as u64)
-			// Standard Error: 149_000
-			.saturating_add(Weight::from_ref_time(7_840_000 as u64).saturating_mul(n as u64))
-			// Standard Error: 334_000
-			.saturating_add(Weight::from_ref_time(16_126_000 as u64).saturating_mul(m as u64))
+			// Standard Error: 160_000
+			.saturating_add(Weight::from_ref_time(17_708_000 as u64).saturating_mul(n as u64))
+			// Standard Error: 357_000
+			.saturating_add(Weight::from_ref_time(38_430_000 as u64).saturating_mul(m as u64))
 			.saturating_add(RocksDbWeight::get().reads(6 as u64))
 			.saturating_add(RocksDbWeight::get().writes(5 as u64))
 	}
@@ -642,10 +640,10 @@ impl WeightInfo for () {
 	/// The range of component `m` is `[1, 34]`.
 	fn revoke_delegation(n: u32, m: u32, ) -> Weight {
 		Weight::from_ref_time(0 as u64)
-			// Standard Error: 257_000
-			.saturating_add(Weight::from_ref_time(7_922_000 as u64).saturating_mul(n as u64))
-			// Standard Error: 577_000
-			.saturating_add(Weight::from_ref_time(16_262_000 as u64).saturating_mul(m as u64))
+			// Standard Error: 159_000
+			.saturating_add(Weight::from_ref_time(17_904_000 as u64).saturating_mul(n as u64))
+			// Standard Error: 353_000
+			.saturating_add(Weight::from_ref_time(38_761_000 as u64).saturating_mul(m as u64))
 			.saturating_add(RocksDbWeight::get().reads(6 as u64))
 			.saturating_add(RocksDbWeight::get().writes(5 as u64))
 	}
@@ -659,10 +657,10 @@ impl WeightInfo for () {
 	/// The range of component `m` is `[1, 34]`.
 	fn leave_delegators(n: u32, m: u32, ) -> Weight {
 		Weight::from_ref_time(0 as u64)
-			// Standard Error: 242_000
-			.saturating_add(Weight::from_ref_time(8_102_000 as u64).saturating_mul(n as u64))
-			// Standard Error: 543_000
-			.saturating_add(Weight::from_ref_time(16_735_000 as u64).saturating_mul(m as u64))
+			// Standard Error: 156_000
+			.saturating_add(Weight::from_ref_time(18_081_000 as u64).saturating_mul(n as u64))
+			// Standard Error: 347_000
+			.saturating_add(Weight::from_ref_time(39_078_000 as u64).saturating_mul(m as u64))
 			.saturating_add(RocksDbWeight::get().reads(6 as u64))
 			.saturating_add(RocksDbWeight::get().writes(5 as u64))
 	}
@@ -670,14 +668,16 @@ impl WeightInfo for () {
 	// Storage: Balances Locks (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	/// The range of component `u` is `[1, 9]`.
-	fn unlock_unstaked(_u: u32, ) -> Weight {
-		Weight::from_ref_time(40_978_000 as u64)
+	fn unlock_unstaked(u: u32, ) -> Weight {
+		Weight::from_ref_time(58_027_000 as u64)
+			// Standard Error: 13_000
+			.saturating_add(Weight::from_ref_time(185_000 as u64).saturating_mul(u as u64))
 			.saturating_add(RocksDbWeight::get().reads(3 as u64))
 			.saturating_add(RocksDbWeight::get().writes(3 as u64))
 	}
 	// Storage: ParachainStaking MaxCollatorCandidateStake (r:0 w:1)
 	fn set_max_candidate_stake() -> Weight {
-		Weight::from_ref_time(19_482_000 as u64)
+		Weight::from_ref_time(22_670_000 as u64)
 			.saturating_add(RocksDbWeight::get().writes(1 as u64))
 	}
 }
