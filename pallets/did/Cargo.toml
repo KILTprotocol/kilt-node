@@ -14,7 +14,6 @@ substrate-wasm-builder = {git = "https://github.com/paritytech/substrate", branc
 
 [dev-dependencies]
 env_logger = "0.9.0"
-serde = "1.0.144"
 
 ctype = {features = ["mock"], path = "../ctype"}
 
@@ -27,7 +26,6 @@ sp-keystore = {branch = "polkadot-v0.9.29", git = "https://github.com/paritytech
 ctype = {path = "../ctype", optional = true}
 kilt-support = {default-features = false, path = "../../support"}
 log = "0.4.17"
-serde = {version = "1.0.142", optional = true, features = ["derive"]}
 
 codec = {package = "parity-scale-codec", version = "3.1.5", default-features = false, features = ["derive"]}
 frame-support = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
@@ -67,7 +65,6 @@ std = [
   "log/std",
   "pallet-balances/std",
   "scale-info/std",
-  "serde",
   "sp-core/std",
   "sp-io/std",
   "sp-keystore/std",
