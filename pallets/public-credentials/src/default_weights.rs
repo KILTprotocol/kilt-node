@@ -52,6 +52,8 @@ pub trait WeightInfo {
 	fn unrevoke() -> Weight;
 	fn remove() -> Weight;
 	fn reclaim_deposit() -> Weight;
+	fn change_deposit_owner() -> Weight;
+	fn update_deposit() -> Weight;
 }
 
 /// Weights for public_credentials using the Substrate node and recommended hardware.
@@ -99,6 +101,16 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(3 as u64))
 			.saturating_add(T::DbWeight::get().writes(3 as u64))
 	}
+	fn change_deposit_owner() -> Weight {
+		Weight::from_ref_time(68_692_000 as u64)
+			.saturating_add(T::DbWeight::get().reads(3 as u64))
+			.saturating_add(T::DbWeight::get().writes(3 as u64))
+	}
+	fn update_deposit() -> Weight {
+		Weight::from_ref_time(68_692_000 as u64)
+			.saturating_add(T::DbWeight::get().reads(3 as u64))
+			.saturating_add(T::DbWeight::get().writes(3 as u64))
+	}
 }
 
 // For backwards compatibility and tests
@@ -141,6 +153,16 @@ impl WeightInfo for () {
 	// Storage: PublicCredentials Credentials (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	fn reclaim_deposit() -> Weight {
+		Weight::from_ref_time(68_692_000 as u64)
+			.saturating_add(RocksDbWeight::get().reads(3 as u64))
+			.saturating_add(RocksDbWeight::get().writes(3 as u64))
+	}
+	fn change_deposit_owner() -> Weight {
+		Weight::from_ref_time(68_692_000 as u64)
+			.saturating_add(RocksDbWeight::get().reads(3 as u64))
+			.saturating_add(RocksDbWeight::get().writes(3 as u64))
+	}
+	fn update_deposit() -> Weight {
 		Weight::from_ref_time(68_692_000 as u64)
 			.saturating_add(RocksDbWeight::get().reads(3 as u64))
 			.saturating_add(RocksDbWeight::get().writes(3 as u64))

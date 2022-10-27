@@ -177,6 +177,73 @@ benchmarks! {
 		assert!(!Credentials::<T>::contains_key(subject_id, &credential_id));
 		assert!(!CredentialSubjects::<T>::contains_key(credential_id));
 	}
+
+	change_deposit_owner {
+		let deposit_owner_old: AccountIdOf<T> = account("caller", 0, SEED);
+		let deposit_owner_new: AccountIdOf<T> = account("caller", 1, SEED);
+		let attester: T::AttesterId = account("attester", 0, SEED);
+		let ctype_hash: T::Hash = T::Hash::default();
+		let subject_id = <T as Config>::SubjectId::worst_case();
+		let contents = BoundedVec::try_from(vec![0; <T as Config>::MaxEncodedClaimsLength::get() as usize]).expect("Contents should not fail.");
+		let origin = <T as Config>::EnsureOrigin::generate_origin(deposit_owner_old.clone(), attester.clone());
+
+		let creation_op = Box::new(generate_base_public_credential_creation_op::<T>(
+			subject_id.clone().into().try_into().expect("Input conversion should not fail."),
+			ctype_hash,
+			contents,
+		));
+		let credential_id = generate_credential_id::<T>(&creation_op, &attester);
+
+		reserve_balance::<T>(&deposit_owner_old);
+		reserve_balance::<T>(&deposit_owner_new);
+
+		ctype::Ctypes::<T>::insert(&ctype_hash, attester.clone());
+		Pallet::<T>::add(origin, creation_op).expect("Pallet::add should not fail");
+		let credential_id_clone = credential_id.clone();
+		let origin = <T as Config>::EnsureOrigin::generate_origin(deposit_owner_new.clone(), attester.clone());
+	}: _<T::Origin>(origin, credential_id_clone)
+	verify {
+		assert_eq!(
+			Credentials::<T>::get(subject_id, &credential_id)
+				.expect("Credential should be present in storage")
+				.deposit
+				.owner,
+			deposit_owner_new
+		);
+	}
+
+	update_deposit {
+		let deposit_owner: AccountIdOf<T> = account("caller", 0, SEED);
+		let attester: T::AttesterId = account("attester", 0, SEED);
+		let ctype_hash: T::Hash = T::Hash::default();
+		let subject_id = <T as Config>::SubjectId::worst_case();
+		let contents = BoundedVec::try_from(vec![0; <T as Config>::MaxEncodedClaimsLength::get() as usize]).expect("Contents should not fail.");
+		let origin = <T as Config>::EnsureOrigin::generate_origin(deposit_owner.clone(), attester.clone());
+
+		let creation_op = Box::new(generate_base_public_credential_creation_op::<T>(
+			subject_id.clone().into().try_into().expect("Input conversion should not fail."),
+			ctype_hash,
+			contents,
+		));
+		let credential_id = generate_credential_id::<T>(&creation_op, &attester);
+
+		reserve_balance::<T>(&deposit_owner);
+
+		ctype::Ctypes::<T>::insert(&ctype_hash, attester);
+		Pallet::<T>::add(origin, creation_op).expect("Pallet::add should not fail");
+		let credential_id_clone = credential_id.clone();
+
+		let origin = RawOrigin::Signed(deposit_owner.clone());
+	}: _(origin, credential_id_clone)
+	verify {
+		assert_eq!(
+			Credentials::<T>::get(subject_id, &credential_id)
+				.expect("Credential should be present in storage")
+				.deposit
+				.amount,
+			T::Deposit::get()
+		);
+	}
 }
 
 impl_benchmark_test_suite! {

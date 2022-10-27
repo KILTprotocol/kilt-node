@@ -153,16 +153,17 @@ pub(crate) mod runtime {
 		block_number: <T as frame_system::Config>::BlockNumber,
 		attester: T::AttesterId,
 		ctype_hash: Option<CtypeHashOf<T>>,
+		deposit: Option<Deposit<T::AccountId, BalanceOf<T>>>,
 	) -> CredentialEntryOf<T> {
 		CredentialEntryOf::<T> {
 			ctype_hash: ctype_hash.unwrap_or_default(),
 			revoked: false,
 			attester,
 			block_number,
-			deposit: Deposit::<T::AccountId, BalanceOf<T>> {
+			deposit: deposit.unwrap_or(Deposit::<T::AccountId, BalanceOf<T>> {
 				owner: payer,
 				amount: <T as Config>::Deposit::get(),
-			},
+			}),
 			authorization_id: None,
 		}
 	}
