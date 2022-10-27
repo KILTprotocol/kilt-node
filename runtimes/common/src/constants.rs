@@ -67,7 +67,7 @@ pub const AVERAGE_ON_INITIALIZE_RATIO: Perbill = Perbill::from_percent(10);
 /// used by  Operational  extrinsics.
 pub const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
 /// We allow for 0.5 seconds of compute with a 12 second average block time.
-pub const MAXIMUM_BLOCK_WEIGHT: Weight = WEIGHT_PER_SECOND / 2;
+pub const MAXIMUM_BLOCK_WEIGHT: Weight = WEIGHT_PER_SECOND.saturating_div(2);
 
 pub const INFLATION_CONFIG: (Perquintill, Perquintill, Perquintill, Perquintill) = (
 	// max collator staking rate
@@ -426,6 +426,21 @@ pub mod fee {
 		/// a "virtual tip" that's equal to the `OperationalFeeMultiplier * final_fee`.
 		pub const OperationalFeeMultiplier: u8 = 5;
 		pub const TransactionByteFee: Balance = MICRO_KILT;
+	}
+}
+
+pub mod public_credentials {
+	use super::*;
+
+	/// The size is checked in the runtime by a test.
+	pub const MAX_PUBLIC_CREDENTIAL_STORAGE_LENGTH: u32 = 355;
+	// Each credential would have a different deposit, so no multiplier here
+	pub const PUBLIC_CREDENTIAL_DEPOSIT: Balance = deposit(1, MAX_PUBLIC_CREDENTIAL_STORAGE_LENGTH);
+
+	parameter_types! {
+		pub const Deposit: Balance = PUBLIC_CREDENTIAL_DEPOSIT;
+		pub const MaxEncodedClaimsLength: u32 = 100_000;	// 100 Kb
+		pub const MaxSubjectIdLength: u32 = kilt_asset_dids::MAXIMUM_ASSET_DID_LENGTH as u32;
 	}
 }
 

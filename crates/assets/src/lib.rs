@@ -16,27 +16,22 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_benchmarking::{benchmarks, impl_benchmark_test_suite};
-use frame_support::traits::EnsureOrigin;
+//! Library to parse the raw byte vectors into supported Asset DIDs, according
+//! to the spec.
+//!
+//! The library is suitable for no_std environment, such as WASM-based
+//! blockchain runtimes.
 
-use super::*;
-use crate::setting::FilterSettings;
+#![cfg_attr(not(feature = "std"), no_std)]
 
-benchmarks! {
-	set_filter {
-		let new_filter = FilterSettings {
-			transfer_disabled: true,
-			feature_disabled: true,
-			xcm_disabled: true,
-		};
-		let origin = T::ApproveOrigin::successful_origin();
-	}: _<T::Origin>(origin, new_filter)
-	verify {
-	}
-}
+pub mod asset;
+pub mod chain;
+pub mod v1;
 
-impl_benchmark_test_suite! {
-	Pallet,
-	crate::mock::ExtBuilder::default().build_with_keystore(),
-	crate::mock::Test
-}
+mod errors;
+
+// Re-export relevant types
+pub use asset::*;
+pub use chain::*;
+pub use errors::*;
+pub use v1::*;

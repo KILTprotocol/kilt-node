@@ -103,8 +103,8 @@ pub type RawDidLinkedInfo<DidIdentifier, AccountId, LinkableAccountId, Balance, 
 >;
 
 sp_api::decl_runtime_apis! {
-	/// The API to query account nonce (aka transaction index).
-	pub trait DidApi<DidIdentifier, AccountId, LinkableAccountId, Balance, Key: Ord, BlockNumber> where
+	#[api_version(2)]
+	pub trait Did<DidIdentifier, AccountId, LinkableAccountId, Balance, Key: Ord, BlockNumber> where
 		DidIdentifier: Codec,
 		AccountId: Codec,
 		LinkableAccountId: Codec,
@@ -118,20 +118,26 @@ sp_api::decl_runtime_apis! {
 		/// * the web3name (optional)
 		/// * associated accounts
 		/// * service endpoints
-		fn query_did_by_w3n(name: Vec<u8>) -> Option<RawDidLinkedInfo<DidIdentifier, AccountId, LinkableAccountId, Balance, Key, BlockNumber>>;
+		#[changed_in(2)]
+		fn query_by_web3_name(name: Vec<u8>) -> Option<RawDidLinkedInfo<DidIdentifier, AccountId, AccountId, Balance, Key, BlockNumber>>;
+		fn query_by_web3_name(name: Vec<u8>) -> Option<RawDidLinkedInfo<DidIdentifier, AccountId, LinkableAccountId, Balance, Key, BlockNumber>>;
 		/// Given an account address this returns:
 		/// * the DID
 		/// * public keys stored for the did
 		/// * the web3name (optional)
 		/// * associated accounts
 		/// * service endpoints
-		fn query_did_by_account_id(account: LinkableAccountId) -> Option<RawDidLinkedInfo<DidIdentifier, AccountId, LinkableAccountId, Balance, Key, BlockNumber>>;
+		#[changed_in(2)]
+		fn query_by_account(account: AccountId) -> Option<RawDidLinkedInfo<DidIdentifier, AccountId, AccountId, Balance, Key, BlockNumber>>;
+		fn query_by_account(account: LinkableAccountId) -> Option<RawDidLinkedInfo<DidIdentifier, AccountId, LinkableAccountId, Balance, Key, BlockNumber>>;
 		/// Given a did this returns:
 		/// * the DID
 		/// * public keys stored for the did
 		/// * the web3name (optional)
 		/// * associated accounts
 		/// * service endpoints
-		fn query_did(did: DidIdentifier) -> Option<RawDidLinkedInfo<DidIdentifier, AccountId, LinkableAccountId,Balance, Key, BlockNumber>>;
+		#[changed_in(2)]
+		fn query(did: DidIdentifier) -> Option<RawDidLinkedInfo<DidIdentifier, AccountId, AccountId, Balance, Key, BlockNumber>>;
+		fn query(did: DidIdentifier) -> Option<RawDidLinkedInfo<DidIdentifier, AccountId, LinkableAccountId, Balance, Key, BlockNumber>>;
 	}
 }

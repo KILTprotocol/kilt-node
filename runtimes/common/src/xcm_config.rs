@@ -17,7 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use core::marker::PhantomData;
-use frame_support::{log, match_types, parameter_types, weights::Weight};
+use frame_support::{log, match_types, parameter_types};
 use polkadot_parachain::primitives::Sibling;
 use xcm::latest::prelude::*;
 use xcm_builder::{
@@ -30,7 +30,7 @@ use crate::AccountId;
 
 parameter_types! {
 	// One XCM operation is 1_000_000_000 weight, almost certainly a conservative estimate.
-	pub UnitWeightCost: Weight = 1_000_000_000;
+	pub UnitWeightCost: u64 = 1_000_000_000;
 	pub const MaxInstructions: u32 = 100;
 }
 
@@ -55,8 +55,8 @@ where
 	fn should_execute<Call>(
 		origin: &MultiLocation,
 		message: &mut Xcm<Call>,
-		max_weight: Weight,
-		weight_credit: &mut Weight,
+		max_weight: u64,
+		weight_credit: &mut u64,
 	) -> Result<(), ()> {
 		Deny::should_execute(origin, message, max_weight, weight_credit)?;
 		Allow::should_execute(origin, message, max_weight, weight_credit)
@@ -85,8 +85,8 @@ impl ShouldExecute for DenyReserveTransferToRelayChain {
 	fn should_execute<Call>(
 		origin: &MultiLocation,
 		message: &mut Xcm<Call>,
-		_max_weight: Weight,
-		_weight_credit: &mut Weight,
+		_max_weight: u64,
+		_weight_credit: &mut u64,
 	) -> Result<(), ()> {
 		if message.0.iter().any(|inst| {
 			matches!(
