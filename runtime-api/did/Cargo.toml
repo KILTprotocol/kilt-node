@@ -12,7 +12,6 @@ scale-info = { version = "2.1.1", default-features = false, features = ["derive"
 
 # Internal dependencies
 did = {path = "../../pallets/did", default-features = false}
-pallet-did-lookup = {path = "../../pallets/pallet-did-lookup", default-features = false}
 kilt-support = {path = "../../support", default-features = false}
 
 # Substrate dependencies

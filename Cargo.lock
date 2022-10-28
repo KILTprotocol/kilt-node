@@ -3665,7 +3665,6 @@ version = "1.8.0"
 dependencies = [
  "did",
  "kilt-support",
- "pallet-did-lookup",
  "parity-scale-codec",
  "scale-info",
  "sp-api",
@@ -3690,7 +3689,6 @@ dependencies = [
  "scale-info",
  "sp-api",
  "sp-runtime",
- "sp-std",
 ]
 
 [[package]]
@@ -6223,7 +6221,6 @@ dependencies = [
  "parity-scale-codec",
  "scale-info",
  "serde",
- "sp-api",
  "sp-consensus-aura",
  "sp-core",
  "sp-io",
