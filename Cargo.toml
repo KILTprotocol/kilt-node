@@ -6,7 +6,6 @@ members = [
   "nodes/*",
   "pallets/*",
   "runtime-api/*",
-  "rpc/public-credentials/runtime-api",
   "runtimes/*",
   "support",
   "crates/*",

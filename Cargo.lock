@@ -984,6 +984,7 @@ dependencies = [
  "frame-try-runtime",
  "hex-literal",
  "kilt-runtime-api-did",
+ "kilt-runtime-api-public-credentials",
  "log",
  "pallet-aura",
  "pallet-authorship",
@@ -1000,7 +1001,6 @@ dependencies = [
  "parachain-info",
  "parity-scale-codec",
  "public-credentials",
- "public-credentials-runtime-api",
  "runtime-common",
  "scale-info",
  "sp-api",
@@ -3673,8 +3673,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "kilt-runtime-api-public-credentials"
+version = "1.8.0"
+dependencies = [
+ "kilt-support",
+ "parity-scale-codec",
+ "sp-api",
+ "sp-std",
+]
+
+[[package]]
 name = "kilt-runtime-api-staking"
-version = "1.7.2"
+version = "1.8.0"
 dependencies = [
  "parity-scale-codec",
  "scale-info",
@@ -4654,6 +4664,7 @@ dependencies = [
  "frame-try-runtime",
  "hex-literal",
  "kilt-runtime-api-did",
+ "kilt-runtime-api-public-credentials",
  "kilt-support",
  "log",
  "pallet-aura",
@@ -4673,7 +4684,6 @@ dependencies = [
  "pallet-web3-names",
  "parity-scale-codec",
  "public-credentials",
- "public-credentials-runtime-api",
  "runtime-common",
  "scale-info",
  "sp-api",
@@ -6432,6 +6442,7 @@ dependencies = [
  "frame-try-runtime",
  "hex-literal",
  "kilt-runtime-api-did",
+ "kilt-runtime-api-public-credentials",
  "kilt-runtime-api-staking",
  "kilt-support",
  "log",
@@ -6463,7 +6474,6 @@ dependencies = [
  "parachain-staking",
  "parity-scale-codec",
  "public-credentials",
- "public-credentials-runtime-api",
  "runtime-common",
  "scale-info",
  "sp-api",
@@ -7956,16 +7966,6 @@ dependencies = [
  "sp-io",
  "sp-keystore",
  "sp-runtime",
- "sp-std",
-]
-
-[[package]]
-name = "public-credentials-runtime-api"
-version = "1.8.0"
-dependencies = [
- "kilt-support",
- "parity-scale-codec",
- "sp-api",
  "sp-std",
 ]
 
@@ -10784,6 +10784,7 @@ dependencies = [
  "frame-try-runtime",
  "hex-literal",
  "kilt-runtime-api-did",
+ "kilt-runtime-api-public-credentials",
  "kilt-runtime-api-staking",
  "kilt-support",
  "log",
@@ -10814,7 +10815,6 @@ dependencies = [
  "parachain-staking",
  "parity-scale-codec",
  "public-credentials",
- "public-credentials-runtime-api",
  "runtime-common",
  "scale-info",
  "sp-api",

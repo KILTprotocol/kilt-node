@@ -16,10 +16,10 @@ hex-literal = {version = "0.3.4", optional = true}
 
 # RPC
 frame-system-rpc-runtime-api = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.29"}
-pallet-transaction-payment-rpc-runtime-api = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.29"}
 kilt-runtime-api-did = {path = "../../runtime-api/did", default-features = false}
+kilt-runtime-api-public-credentials = {path = "../../runtime-api/public-credentials", default-features = false}
 kilt-runtime-api-staking = {path = "../../runtime-api/staking", default-features = false}
-public-credentials-runtime-api = {path = "../../rpc/public-credentials/runtime-api", default-features = false}
+pallet-transaction-payment-rpc-runtime-api = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.29"}
 
 # KILT pallets & primitives
 attestation = {path = "../../pallets/attestation", default-features = false}
@@ -158,6 +158,7 @@ std = [
   "frame-system/std",
   "frame-try-runtime/std",
   "kilt-runtime-api-did/std",
+  "kilt-runtime-api-public-credentials/std",
   "kilt-runtime-api-staking/std",
   "kilt-support/std",
   "log/std",
@@ -187,7 +188,6 @@ std = [
   "parachain-info/std",
   "parachain-staking/std",
   "public-credentials/std",
-  "public-credentials-runtime-api/std",
   "runtime-common/std",
   "scale-info/std",
   "sp-api/std",

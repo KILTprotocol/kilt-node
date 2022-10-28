@@ -30,15 +30,15 @@ pub struct StakingRates {
 }
 
 sp_api::decl_runtime_apis! {
+	/// The API to query staking and reward rates.
 	pub trait Staking<AccountId, Balance>
 	where
 		AccountId: Codec,
 		Balance: Codec
 	{
-		/// Calculates the staking rewards for a given account address.
+		/// Returns the current staking rewards for a given account address.
 		fn get_unclaimed_staking_rewards(account: &AccountId) -> Balance;
-
-		/// Calculates the current staking and reward rates for collators and
+		/// Returns the current staking and reward rates for collators and
 		/// delegators.
 		fn get_staking_rates() -> StakingRates;
 	}
