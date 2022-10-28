@@ -20,7 +20,6 @@ use scale_info::TypeInfo;
 use sp_std::vec::Vec;
 
 #[derive(Encode, Decode, TypeInfo, Eq, PartialEq)]
-#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 pub struct ServiceEndpoint<Id, Type, Url> {
 	pub id: Id,
 	pub service_types: Vec<Type>,

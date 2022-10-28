@@ -29,18 +29,12 @@ use scale_info::TypeInfo;
 use sha3::{Digest, Keccak256};
 use sp_core::{ecdsa, H160, H256};
 
-#[cfg(feature = "std")]
-pub use serde::{de::DeserializeOwned, Deserialize, Serialize};
-
 /// The AccountId20 type.
 /// It is a 20-byte Ethereum address.
 #[derive(
 	Eq, PartialEq, Copy, Clone, Encode, Decode, TypeInfo, MaxEncodedLen, Default, PartialOrd, Ord, RuntimeDebug,
 )]
 pub struct AccountId20(pub [u8; 20]);
-
-#[cfg(feature = "std")]
-impl_serde::impl_fixed_hash_serde!(AccountId20, 20);
 
 #[cfg(feature = "std")]
 impl std::fmt::Display for AccountId20 {
@@ -88,7 +82,6 @@ impl std::str::FromStr for AccountId20 {
 
 /// Public key for an Ethereum / Moonbeam compatible account
 #[derive(Eq, PartialEq, Ord, PartialOrd, Clone, Encode, Decode, RuntimeDebug, TypeInfo)]
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 pub struct EthereumSigner([u8; 20]);
 
 impl sp_runtime::traits::IdentifyAccount for EthereumSigner {
@@ -130,7 +123,6 @@ impl std::fmt::Display for EthereumSigner {
 	}
 }
 
-#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Eq, PartialEq, Clone, Encode, Decode, MaxEncodedLen, RuntimeDebug, TypeInfo)]
 pub struct EthereumSignature(ecdsa::Signature);
 
