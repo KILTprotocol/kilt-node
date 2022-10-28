@@ -1253,7 +1253,7 @@ impl_runtime_apis! {
 		}
 	}
 
-	impl kilt_runtime_api_staking::ParachainStakingApi<Block, AccountId, Balance> for Runtime {
+	impl kilt_runtime_api_staking::Staking<Block, AccountId, Balance> for Runtime {
 		fn get_unclaimed_staking_rewards(account: &AccountId) -> Balance {
 			ParachainStaking::get_unclaimed_staking_rewards(account)
 		}

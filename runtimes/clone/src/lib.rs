@@ -531,7 +531,7 @@ impl_runtime_apis! {
 	}
 
 	// Solely required from parachain client
-	impl kilt_runtime_api_did::DidApi<
+	impl kilt_runtime_api_did::Did<
 		Block,
 		AccountId,
 		AccountId,
