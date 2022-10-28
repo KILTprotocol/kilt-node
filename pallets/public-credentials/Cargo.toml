@@ -1,0 +1,60 @@
+[package]
+authors = ["KILT <info@kilt.io>"]
+description = "Enables adding and revoking public credentials."
+edition = "2021"
+name = "public-credentials"
+repository = "https://github.com/KILTprotocol/kilt-node"
+version = "1.8.0"
+
+[dev-dependencies]
+ctype = {features = ["mock"], path = "../ctype"}
+kilt-support = {features = ["mock"], path = "../../support"}
+
+pallet-balances = {branch = "polkadot-v0.9.29", git = "https://github.com/paritytech/substrate"}
+sp-io = {branch = "polkadot-v0.9.29", git = "https://github.com/paritytech/substrate"}
+sp-keystore = {branch = "polkadot-v0.9.29", git = "https://github.com/paritytech/substrate"}
+
+[dependencies]
+codec = {package = "parity-scale-codec", version = "3.1.2", default-features = false, features = ["derive"]}
+scale-info = {version = "2.1.1", default-features = false, features = ["derive"]}
+
+# Internal dependencies
+ctype = {default-features = false, path = "../ctype"}
+kilt-support = {default-features = false, path = "../../support"}
+
+# External dependencies
+frame-benchmarking = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
+frame-support = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
+frame-system = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
+sp-core = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
+sp-io = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
+sp-keystore = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
+sp-runtime = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
+sp-std = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
+
+[features]
+default = ["std"]
+runtime-benchmarks = [
+  "kilt-support/runtime-benchmarks",
+
+  "frame-benchmarking",
+  "frame-support/runtime-benchmarks",
+  "frame-system/runtime-benchmarks",
+]
+std = [
+  "codec/std",
+  "scale-info/std",
+
+  "ctype/std",
+  "kilt-support/std",
+
+  "frame-support/std",
+  "frame-system/std",
+  "sp-core/std",
+  "sp-io/std",
+  "sp-runtime/std",
+  "sp-std/std",
+]
+try-runtime = [
+  "frame-support/try-runtime",
+]

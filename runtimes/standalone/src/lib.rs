@@ -30,7 +30,7 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::{
 	construct_runtime, parameter_types,
-	traits::{Currency, InstanceFilter, KeyOwnerProofSystem},
+	traits::{Currency, Everything, InstanceFilter, KeyOwnerProofSystem},
 	weights::{constants::RocksDbWeight, ConstantMultiplier, IdentityFee},
 };
 pub use frame_system::Call as SystemCall;
@@ -50,10 +50,13 @@ use sp_std::prelude::*;
 use sp_version::RuntimeVersion;
 
 use delegation::DelegationAc;
+use kilt_support::traits::ItemFilter;
 use pallet_did_lookup::{linkable_account::LinkableAccountId, migrations::EthereumMigration};
 use runtime_common::{
+	assets::{AssetDid, PublicCredentialsFilter},
 	authorization::{AuthorizationId, PalletAuthorize},
 	constants::{self, EXISTENTIAL_DEPOSIT, KILT},
+	errors::PublicCredentialsApiError,
 	fees::ToAuthor,
 	AccountId, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature, SlowAdjustingFeeUpdate,
 };
@@ -67,17 +70,17 @@ pub use delegation;
 pub use did;
 pub use pallet_balances::Call as BalancesCall;
 pub use pallet_web3_names;
+pub use public_credentials;
 
+#[cfg(feature = "try-runtime")]
+use frame_support::pallet_prelude::Weight;
+#[cfg(feature = "runtime-benchmarks")]
+use frame_system::EnsureSigned;
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 
-#[cfg(feature = "runtime-benchmarks")]
-use frame_system::EnsureSigned;
-
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
-
-mod filter;
 
 /// Digest item type.
 pub type DigestItem = generic::DigestItem;
@@ -116,7 +119,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("mashnet-node"),
 	impl_name: create_runtime_str!("mashnet-node"),
 	authoring_version: 4,
-	spec_version: 10720,
+	spec_version: 10800,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 4,
@@ -143,7 +146,7 @@ parameter_types! {
 
 impl frame_system::Config for Runtime {
 	/// The basic call filter to use in dispatchable.
-	type BaseCallFilter = DynFilter;
+	type BaseCallFilter = Everything;
 	/// Block & extrinsics weights: base values and limits.
 	type BlockWeights = runtime_common::BlockWeights;
 	/// The maximum length of a block (in bytes).
@@ -473,6 +476,23 @@ impl pallet_utility::Config for Runtime {
 
 impl pallet_randomness_collective_flip::Config for Runtime {}
 
+impl public_credentials::Config for Runtime {
+	type AccessControl = PalletAuthorize<DelegationAc<Runtime>>;
+	type AttesterId = DidIdentifier;
+	type AuthorizationId = AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>;
+	type CredentialId = Hash;
+	type CredentialHash = BlakeTwo256;
+	type Currency = Balances;
+	type Deposit = runtime_common::constants::public_credentials::Deposit;
+	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
+	type MaxEncodedClaimsLength = runtime_common::constants::public_credentials::MaxEncodedClaimsLength;
+	type MaxSubjectIdLength = runtime_common::constants::public_credentials::MaxSubjectIdLength;
+	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
+	type Event = Event;
+	type SubjectId = runtime_common::assets::AssetDid;
+	type WeightInfo = ();
+}
+
 /// The type used to represent the kinds of proxying allowed.
 #[derive(
 	Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, RuntimeDebug, MaxEncodedLen, scale_info::TypeInfo,
@@ -515,6 +535,7 @@ impl InstanceFilter<Call> for ProxyType {
 							| pallet_indices::Call::freeze { .. }
 					)
 					| Call::Proxy(..)
+					| Call::PublicCredentials(..)
 					| Call::Session(..)
 					// Excludes `Sudo`
 					| Call::System(..)
@@ -564,6 +585,13 @@ impl InstanceFilter<Call> for ProxyType {
 					)
 					| Call::Indices(..)
 					| Call::Proxy(..)
+					| Call::PublicCredentials(
+						// Excludes `reclaim_deposit`
+						public_credentials::Call::add { .. }
+						| public_credentials::Call::revoke { .. }
+						| public_credentials::Call::unrevoke { .. }
+						| public_credentials::Call::remove { .. }
+					)
 					| Call::Session(..)
 					// Excludes `Sudo`
 					| Call::System(..)
@@ -613,18 +641,6 @@ impl pallet_proxy::Config for Runtime {
 	type WeightInfo = ();
 }
 
-impl pallet_dyn_filter::Config for Runtime {
-	type Event = Event;
-	type WeightInfo = pallet_dyn_filter::default_weights::SubstrateWeight<Runtime>;
-
-	type ApproveOrigin = EnsureRoot<AccountId>;
-
-	type TransferCall = filter::TransferCalls;
-	type FeatureCall = filter::FeatureCalls;
-	type XcmCall = filter::XcmCalls;
-	type SystemCall = filter::SystemCalls;
-}
-
 construct_runtime!(
 	pub enum Runtime where
 		Block = Block,
@@ -658,7 +674,6 @@ construct_runtime!(
 		// ElectionsPhragmen: pallet_elections_phragmen = 28,
 		// TechnicalMembership: pallet_membership = 29,
 		// Treasury: pallet_treasury = 30,
-		DynFilter: pallet_dyn_filter = 31,
 
 		// // System scheduler.
 		// Scheduler: pallet_scheduler = 32,
@@ -670,6 +685,7 @@ construct_runtime!(
 
 		Proxy: pallet_proxy::{Pallet, Call, Storage, Event<T>} = 37,
 		Web3Names: pallet_web3_names = 38,
+		PublicCredentials: public_credentials = 39,
 	}
 );
 
@@ -701,8 +717,10 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 			Call::Did { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
 			Call::Web3Names { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
 			Call::DidLookup { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
+			Call::PublicCredentials { .. } => Ok(did::DidVerificationKeyRelationship::AssertionMethod),
 			Call::Utility(pallet_utility::Call::batch { calls }) => single_key_relationship(&calls[..]),
 			Call::Utility(pallet_utility::Call::batch_all { calls }) => single_key_relationship(&calls[..]),
+			Call::Utility(pallet_utility::Call::force_batch { calls }) => single_key_relationship(&calls[..]),
 			#[cfg(not(feature = "runtime-benchmarks"))]
 			_ => Err(did::RelationshipDeriveError::NotCallableByDid),
 			// By default, returns the authentication key
@@ -883,7 +901,7 @@ impl_runtime_apis! {
 		}
 	}
 
-	impl kilt_runtime_api_did::DidApi<
+	impl kilt_runtime_api_did::Did<
 		Block,
 		DidIdentifier,
 		AccountId,
@@ -892,7 +910,7 @@ impl_runtime_apis! {
 		Hash,
 		BlockNumber
 	> for Runtime {
-		fn query_did_by_w3n(name: Vec<u8>) -> Option<kilt_runtime_api_did::RawDidLinkedInfo<
+		fn query_by_web3_name(name: Vec<u8>) -> Option<kilt_runtime_api_did::RawDidLinkedInfo<
 				DidIdentifier,
 				AccountId,
 				LinkableAccountId,
@@ -922,7 +940,7 @@ impl_runtime_apis! {
 			})
 		}
 
-		fn query_did_by_account_id(account: LinkableAccountId) -> Option<
+		fn query_by_account(account: LinkableAccountId) -> Option<
 			kilt_runtime_api_did::RawDidLinkedInfo<
 				DidIdentifier,
 				AccountId,
@@ -951,7 +969,7 @@ impl_runtime_apis! {
 				})
 		}
 
-		fn query_did(did: DidIdentifier) -> Option<
+		fn query(did: DidIdentifier) -> Option<
 			kilt_runtime_api_did::RawDidLinkedInfo<
 				DidIdentifier,
 				AccountId,
@@ -973,6 +991,23 @@ impl_runtime_apis! {
 				service_endpoints,
 				details: details.into(),
 			})
+		}
+	}
+
+	impl public_credentials_runtime_api::PublicCredentials<Block, Vec<u8>, Hash, public_credentials::CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>>, PublicCredentialsFilter<Hash, AccountId>, PublicCredentialsApiError> for Runtime {
+		fn get_credential(credential_id: Hash) -> Option<public_credentials::CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>>> {
+			let subject = public_credentials::CredentialSubjects::<Runtime>::get(&credential_id)?;
+			public_credentials::Credentials::<Runtime>::get(&subject, &credential_id)
+		}
+
+		fn get_credentials(subject: Vec<u8>, filter: Option<PublicCredentialsFilter<Hash, AccountId>>) -> Result<Vec<(Hash, public_credentials::CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>>)>, PublicCredentialsApiError> {
+			let asset_did = AssetDid::try_from(subject).map_err(|_| PublicCredentialsApiError::InvalidSubjectId)?;
+			let credentials_prefix = public_credentials::Credentials::<Runtime>::iter_prefix(&asset_did);
+			if let Some(filter) = filter {
+				Ok(credentials_prefix.filter(|(_, entry)| filter.should_include(entry)).collect())
+			} else {
+				Ok(credentials_prefix.collect())
+			}
 		}
 	}
 
@@ -1057,13 +1092,21 @@ impl_runtime_apis! {
 
 	#[cfg(feature = "try-runtime")]
 	impl frame_try_runtime::TryRuntime<Block> for Runtime {
-		fn on_runtime_upgrade() -> (frame_support::pallet_prelude::Weight, frame_support::pallet_prelude::Weight) {
-			log::info!("try-runtime::on_runtime_upgrade standalone runtime.");
+		fn on_runtime_upgrade() -> (Weight, Weight) {
+			log::info!("try-runtime::on_runtime_upgrade mashnet-node standalone.");
 			let weight = Executive::try_runtime_upgrade().unwrap();
 			(weight, runtime_common::BlockWeights::get().max_block)
 		}
-		fn execute_block_no_check(block: Block) -> frame_support::pallet_prelude::Weight {
-			Executive::execute_block_no_check(block)
+
+		fn execute_block(block: Block, state_root_check: bool, select: frame_try_runtime::TryStateSelect) -> Weight {
+			log::info!(
+				target: "runtime::mashnet_node_standalone", "try-runtime: executing block #{} ({:?}) / root checks: {:?} / sanity-checks: {:?}",
+				block.header.number,
+				block.header.hash(),
+				state_root_check,
+				select,
+			);
+			Executive::try_execute_block(block, state_root_check, select).expect("try_execute_block failed")
 		}
 	}
 }
