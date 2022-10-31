@@ -94,12 +94,12 @@ where
 		Default::default()
 	}
 	fn can_attest_weight(&self) -> Weight {
-		0
+		Weight::zero()
 	}
 	fn can_revoke_weight(&self) -> Weight {
-		0
+		Weight::zero()
 	}
 	fn can_remove_weight(&self) -> Weight {
-		0
+		Weight::zero()
 	}
 }

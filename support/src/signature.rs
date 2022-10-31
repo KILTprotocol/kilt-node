@@ -20,7 +20,7 @@ use frame_support::dispatch::Weight;
 use scale_info::TypeInfo;
 
 #[cfg(any(test, feature = "mock", feature = "runtime-benchmarks"))]
-use {sp_runtime::traits::Zero, sp_std::marker::PhantomData};
+use sp_std::marker::PhantomData;
 
 /// The Result of the signature verification.
 pub type SignatureVerificationResult = Result<(), SignatureVerificationError>;

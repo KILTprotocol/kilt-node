@@ -17,9 +17,6 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 #![cfg_attr(not(feature = "std"), no_std)]
 
-#[cfg(feature = "std")]
-use serde::{Deserialize, Serialize};
-
 use codec::{Codec, Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_std::vec::Vec;
@@ -31,34 +28,6 @@ pub use did_details::*;
 pub use service_endpoint::*;
 
 #[derive(Encode, Decode, TypeInfo, Eq, PartialEq)]
-#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(
-	feature = "std",
-	serde(bound(
-		serialize = "
-		Balance: std::fmt::Display,
-		AccountId: Serialize,
-		LinkableAccountId: Serialize,
-		Key: Serialize,
-		BlockNumber: Serialize,
-		DidIdentifier: Serialize,
-		Type: Serialize,
-		Url: Serialize,
-		Id: Serialize,
-		Web3Name: Serialize,",
-		deserialize = "
-		Balance: std::str::FromStr,
-		AccountId: Deserialize<'de>,
-		LinkableAccountId: Deserialize<'de>,
-		Key: Deserialize<'de>,
-		BlockNumber: Deserialize<'de>,
-		DidIdentifier: Deserialize<'de>,
-		Type: Deserialize<'de>,
-		Url: Deserialize<'de>,
-		Id: Deserialize<'de>,
-		Web3Name: Deserialize<'de>,"
-	))
-)]
 pub struct DidLinkedInfo<
 	DidIdentifier,
 	AccountId,
@@ -75,13 +44,6 @@ pub struct DidLinkedInfo<
 	pub accounts: Vec<LinkableAccountId>,
 	pub w3n: Option<Web3Name>,
 	pub service_endpoints: Vec<ServiceEndpoint<Id, Type, Url>>,
-	#[cfg_attr(
-		feature = "std",
-		serde(bound(
-			serialize = "DidDetails<Key, BlockNumber, AccountId, Balance>: Serialize",
-			deserialize = "DidDetails<Key, BlockNumber, AccountId, Balance>: Deserialize<'de>"
-		))
-	)]
 	pub details: DidDetails<Key, BlockNumber, AccountId, Balance>,
 }
 
@@ -103,8 +65,8 @@ pub type RawDidLinkedInfo<DidIdentifier, AccountId, LinkableAccountId, Balance, 
 >;
 
 sp_api::decl_runtime_apis! {
-	/// The API to query account nonce (aka transaction index).
-	pub trait DidApi<DidIdentifier, AccountId, LinkableAccountId, Balance, Key: Ord, BlockNumber> where
+	#[api_version(2)]
+	pub trait Did<DidIdentifier, AccountId, LinkableAccountId, Balance, Key: Ord, BlockNumber> where
 		DidIdentifier: Codec,
 		AccountId: Codec,
 		LinkableAccountId: Codec,
@@ -118,20 +80,26 @@ sp_api::decl_runtime_apis! {
 		/// * the web3name (optional)
 		/// * associated accounts
 		/// * service endpoints
-		fn query_did_by_w3n(name: Vec<u8>) -> Option<RawDidLinkedInfo<DidIdentifier, AccountId, LinkableAccountId, Balance, Key, BlockNumber>>;
+		#[changed_in(2)]
+		fn query_by_web3_name(name: Vec<u8>) -> Option<RawDidLinkedInfo<DidIdentifier, AccountId, AccountId, Balance, Key, BlockNumber>>;
+		fn query_by_web3_name(name: Vec<u8>) -> Option<RawDidLinkedInfo<DidIdentifier, AccountId, LinkableAccountId, Balance, Key, BlockNumber>>;
 		/// Given an account address this returns:
 		/// * the DID
 		/// * public keys stored for the did
 		/// * the web3name (optional)
 		/// * associated accounts
 		/// * service endpoints
-		fn query_did_by_account_id(account: LinkableAccountId) -> Option<RawDidLinkedInfo<DidIdentifier, AccountId, LinkableAccountId, Balance, Key, BlockNumber>>;
+		#[changed_in(2)]
+		fn query_by_account(account: AccountId) -> Option<RawDidLinkedInfo<DidIdentifier, AccountId, AccountId, Balance, Key, BlockNumber>>;
+		fn query_by_account(account: LinkableAccountId) -> Option<RawDidLinkedInfo<DidIdentifier, AccountId, LinkableAccountId, Balance, Key, BlockNumber>>;
 		/// Given a did this returns:
 		/// * the DID
 		/// * public keys stored for the did
 		/// * the web3name (optional)
 		/// * associated accounts
 		/// * service endpoints
-		fn query_did(did: DidIdentifier) -> Option<RawDidLinkedInfo<DidIdentifier, AccountId, LinkableAccountId,Balance, Key, BlockNumber>>;
+		#[changed_in(2)]
+		fn query(did: DidIdentifier) -> Option<RawDidLinkedInfo<DidIdentifier, AccountId, AccountId, Balance, Key, BlockNumber>>;
+		fn query(did: DidIdentifier) -> Option<RawDidLinkedInfo<DidIdentifier, AccountId, LinkableAccountId, Balance, Key, BlockNumber>>;
 	}
 }

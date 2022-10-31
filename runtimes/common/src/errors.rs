@@ -16,32 +16,10 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-#![cfg_attr(rustfmt, rustfmt_skip)]
-#![allow(unused_parens)]
-#![allow(unused_imports)]
+use codec::{Decode, Encode};
+use scale_info::TypeInfo;
 
-use frame_support::{traits::Get, weights::{Weight, constants::RocksDbWeight}};
-use sp_runtime::traits::Saturating;
-use sp_std::marker::PhantomData;
-
-/// Weight functions needed for did.
-pub trait WeightInfo {
-	fn set_filter() -> Weight;
-
-}
-
-/// Weights for did using the Substrate node and recommended hardware.
-pub struct SubstrateWeight<T>(PhantomData<T>);
-impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
-	fn set_filter() -> Weight {
-		1_000_000.saturating_add(T::DbWeight::get().reads(1 as Weight))
-	}
-
-}
-
-// For backwards compatibility and tests
-impl WeightInfo for () {
-	fn set_filter() -> Weight {
-		1_000_000.saturating_add(RocksDbWeight::get().reads(1 as Weight))
-	}
+#[derive(Encode, Decode, TypeInfo)]
+pub enum PublicCredentialsApiError {
+	InvalidSubjectId,
 }
