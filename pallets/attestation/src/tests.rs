@@ -594,7 +594,7 @@ fn test_update_deposit() {
 
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
-		.with_ctypes(vec![(attestation.ctype_hash, attester.clone())])
+		.with_ctypes(vec![(attestation.ctype_hash, attester)])
 		.with_attestations(vec![(claim_hash, attestation)])
 		.build()
 		.execute_with(|| {
@@ -603,7 +603,7 @@ fn test_update_deposit() {
 				<Test as Config>::Deposit::get() * 2
 			);
 			assert_ok!(Attestation::update_deposit(
-				Origin::signed(ACCOUNT_00).into(),
+				Origin::signed(ACCOUNT_00),
 				claim_hash
 			));
 			assert_eq!(
@@ -634,7 +634,7 @@ fn test_update_deposit_unauthorized() {
 
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
-		.with_ctypes(vec![(attestation.ctype_hash, attester.clone())])
+		.with_ctypes(vec![(attestation.ctype_hash, attester)])
 		.with_attestations(vec![(claim_hash, attestation)])
 		.build()
 		.execute_with(|| {
@@ -643,7 +643,7 @@ fn test_update_deposit_unauthorized() {
 				<Test as Config>::Deposit::get() * 2
 			);
 			assert_noop!(
-				Attestation::update_deposit(Origin::signed(ACCOUNT_01).into(), claim_hash),
+				Attestation::update_deposit(Origin::signed(ACCOUNT_01), claim_hash),
 				DispatchError::BadOrigin
 			);
 		});

@@ -815,7 +815,7 @@ fn test_change_deposit_owner_unauthorized() {
 	let new_credential = generate_base_credential_entry::<Test>(
 		ACCOUNT_00,
 		0,
-		attester.clone(),
+		attester,
 		None,
 		Some(Deposit {
 			owner: ACCOUNT_00,

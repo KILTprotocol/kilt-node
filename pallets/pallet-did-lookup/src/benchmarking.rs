@@ -274,7 +274,7 @@ benchmarks! {
 
 		Pallet::<T>::add_association(
 			deposit_owner.clone(),
-			did.clone(),
+			did,
 			linkable_id.clone()
 		).expect("should create association");
 

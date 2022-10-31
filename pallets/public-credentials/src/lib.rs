@@ -592,7 +592,7 @@ pub mod pallet {
 		fn deposit(
 			credential_id: &CredentialIdOf<T>,
 		) -> Result<Deposit<AccountIdOf<T>, <Self::Currency as Currency<AccountIdOf<T>>>::Balance>, DispatchError> {
-			let (_, credential_entry) = Pallet::<T>::retrieve_credential_entry(&credential_id)?;
+			let (_, credential_entry) = Pallet::<T>::retrieve_credential_entry(credential_id)?;
 			Ok(credential_entry.deposit)
 		}
 

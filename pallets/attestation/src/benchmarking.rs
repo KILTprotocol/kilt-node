@@ -158,7 +158,7 @@ benchmarks! {
 		<T as Config>::Currency::make_free_balance_be(&deposit_owner, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
 
 		let origin = <T as Config>::EnsureOrigin::generate_origin(deposit_owner.clone(), attester.clone());
-		Pallet::<T>::add(origin.clone(), claim_hash, ctype_hash, None).expect("claim should be added");
+		Pallet::<T>::add(origin, claim_hash, ctype_hash, None).expect("claim should be added");
 
 		let origin = RawOrigin::Signed(deposit_owner.clone());
 	}: _(origin, claim_hash)

@@ -471,7 +471,7 @@ benchmarks! {
 			<T as Config>::Currency::minimum_balance() + <T as Config>::Deposit::get(),
 		);
 
-		let origin = RawOrigin::Signed(deposit_owner.clone());
+		let origin = RawOrigin::Signed(deposit_owner);
 	}: _(origin, hierarchy_id)
 	verify {
 	}

@@ -1098,7 +1098,7 @@ benchmarks! {
 
 		make_free_for_did::<T>(&did_account);
 		CurrencyOf::<T>::reserve(&did_account, did_details.deposit.amount).expect("should reserve currency");
-		Did::<T>::insert(&did_subject, did_details.clone());
+		Did::<T>::insert(&did_subject, did_details);
 
 		let origin = RawOrigin::Signed(did_subject.clone());
 	}: _(origin)

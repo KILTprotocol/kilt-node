@@ -2346,7 +2346,7 @@ fn test_update_deposit() {
 	);
 	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
 	let mut delegation_node =
-		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(parent_id), ACCOUNT_00);
+		generate_base_delegation_node(hierarchy_root_id, delegate, Some(parent_id), ACCOUNT_00);
 	delegation_node.deposit.amount = <Test as Config>::Deposit::get() * 2;
 
 	ExtBuilder::default()
@@ -2361,7 +2361,7 @@ fn test_update_deposit() {
 				<Test as Config>::Deposit::get() * 3
 			);
 			assert_ok!(Delegation::update_deposit(
-				Origin::signed(ACCOUNT_00).into(),
+				Origin::signed(ACCOUNT_00),
 				delegation_id
 			));
 
@@ -2389,7 +2389,7 @@ fn test_update_deposit_unauthorized() {
 	);
 	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
 	let mut delegation_node =
-		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(parent_id), ACCOUNT_00);
+		generate_base_delegation_node(hierarchy_root_id, delegate, Some(parent_id), ACCOUNT_00);
 	delegation_node.deposit.amount = <Test as Config>::Deposit::get() * 2;
 
 	ExtBuilder::default()
@@ -2404,7 +2404,7 @@ fn test_update_deposit_unauthorized() {
 				<Test as Config>::Deposit::get() * 3
 			);
 			assert_noop!(
-				Delegation::update_deposit(Origin::signed(ACCOUNT_01).into(), delegation_id),
+				Delegation::update_deposit(Origin::signed(ACCOUNT_01), delegation_id),
 				DispatchError::BadOrigin
 			);
 		});

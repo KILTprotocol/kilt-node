@@ -169,7 +169,7 @@ benchmarks! {
 			generate_web3_name_input(T::MaxNameLength::get().saturated_into())
 		).expect("BoundedVec creation should not fail.");
 		let web3_name_input_clone = web3_name_input.clone();
-		let origin_create = T::OwnerOrigin::generate_origin(deposit_owner.clone(), owner.clone());
+		let origin_create = T::OwnerOrigin::generate_origin(deposit_owner.clone(), owner);
 
 		make_free_for_did::<T>(&deposit_owner);
 		Pallet::<T>::claim(origin_create, web3_name_input.clone()).expect("Should register the claimed web3 name.");
