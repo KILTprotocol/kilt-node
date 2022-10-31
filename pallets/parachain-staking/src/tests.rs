@@ -329,7 +329,7 @@ fn join_collator_candidates() {
 
 			assert_eq!(
 				last_event(),
-				MetaEvent::StakePallet(Event::JoinedCollatorCandidates(10, StakePallet::max_candidate_stake()))
+				MetaEvent::StakePallet(Event::JoinedCollatorCandidates(10, StakePallet::max_candidate_stake(),))
 			);
 		});
 }
@@ -2443,13 +2443,13 @@ fn unlock_unstaked() {
 			assert_ok!(StakePallet::candidate_stake_less(Origin::signed(1), 10));
 			assert_ok!(StakePallet::candidate_stake_less(Origin::signed(1), 10));
 			assert_ok!(StakePallet::candidate_stake_less(Origin::signed(1), 10));
-			assert_ok!(StakePallet::candidate_stake_less(Origin::signed(1), 10));
+			assert_ok!(StakePallet::candidate_stake_less(Origin::signed(1), 10),);
 			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(2), 1, 10));
 			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(2), 1, 10));
 			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(2), 1, 10));
 			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(2), 1, 10));
 			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(2), 1, 10));
-			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(2), 1, 10));
+			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(2), 1, 10),);
 			let mut unstaking: BoundedBTreeMap<BlockNumber, BalanceOf<Test>, <Test as Config>::MaxUnstakeRequests> =
 				BoundedBTreeMap::new();
 			assert_ok!(unstaking.try_insert(3, 60));
@@ -2471,8 +2471,8 @@ fn unlock_unstaked() {
 			assert_eq!(Balances::locks(2), vec![lock.clone()]);
 
 			roll_to(2, vec![]);
-			assert_ok!(StakePallet::candidate_stake_less(Origin::signed(1), 10));
-			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(2), 1, 10));
+			assert_ok!(StakePallet::candidate_stake_less(Origin::signed(1), 10),);
+			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(2), 1, 10),);
 			assert_ok!(unstaking.try_insert(4, 10));
 			assert_eq!(Balances::locks(1), vec![lock.clone()]);
 			assert_eq!(Balances::locks(2), vec![lock.clone()]);
@@ -2487,8 +2487,8 @@ fn unlock_unstaked() {
 			assert_eq!(Balances::locks(2), vec![lock.clone()]);
 
 			roll_to(3, vec![]);
-			assert_ok!(StakePallet::candidate_stake_less(Origin::signed(1), 10));
-			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(2), 1, 10));
+			assert_ok!(StakePallet::candidate_stake_less(Origin::signed(1), 10),);
+			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(2), 1, 10),);
 			assert_ok!(unstaking.try_insert(5, 10));
 			assert_ok!(unstaking.try_insert(5, 10));
 			assert_eq!(Balances::locks(1), vec![lock.clone()]);
@@ -2995,17 +2995,17 @@ fn exceed_delegations_per_round() {
 				StakePallet::last_delegation(6),
 				DelegationCounter { round: 0, counter: 4 }
 			);
-			assert_ok!(StakePallet::join_delegators(Origin::signed(6), 1, 10));
+			assert_ok!(StakePallet::join_delegators(Origin::signed(6), 1, 10),);
 			assert_eq!(
 				StakePallet::last_delegation(6),
 				DelegationCounter { round: 1, counter: 1 }
 			);
 			assert_ok!(StakePallet::leave_delegators(Origin::signed(6)));
-			assert_ok!(StakePallet::join_delegators(Origin::signed(6), 1, 10));
+			assert_ok!(StakePallet::join_delegators(Origin::signed(6), 1, 10),);
 			assert_ok!(StakePallet::leave_delegators(Origin::signed(6)));
-			assert_ok!(StakePallet::join_delegators(Origin::signed(6), 1, 10));
+			assert_ok!(StakePallet::join_delegators(Origin::signed(6), 1, 10),);
 			assert_ok!(StakePallet::leave_delegators(Origin::signed(6)));
-			assert_ok!(StakePallet::join_delegators(Origin::signed(6), 1, 10));
+			assert_ok!(StakePallet::join_delegators(Origin::signed(6), 1, 10),);
 			assert_ok!(StakePallet::leave_delegators(Origin::signed(6)));
 			assert_eq!(
 				StakePallet::last_delegation(6),
