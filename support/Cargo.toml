@@ -10,16 +10,12 @@ version = "1.8.0"
 # External dependencies
 codec = {package = "parity-scale-codec", version = "3.1.5", default-features = false, features = ["derive"]}
 scale-info = {version = "2.1.1", default-features = false, features = ["derive"]}
-serde = {version = "1.0.142", optional = true, features = ["derive"]}
 
 frame-support = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
 frame-system = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
 sp-core = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
 sp-runtime = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
 sp-std = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
-
-[dev-dependencies]
-serde_json = "1.0.83"
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
@@ -37,7 +33,6 @@ std = [
   "frame-support/std",
   "frame-system/std",
   "scale-info/std",
-  "serde",
   "sp-core/std",
   "sp-runtime/std",
   "sp-std/std",
