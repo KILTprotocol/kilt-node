@@ -4305,12 +4305,17 @@ fn api_get_unclaimed_staking_rewards() {
 			assert_ok!(StakePallet::increment_collator_rewards(Origin::signed(1)));
 			assert_ok!(StakePallet::claim_rewards(Origin::signed(1)));
 			assert_eq!(rewards_1, Balances::usable_balance(&1));
+			assert!(StakePallet::get_unclaimed_staking_rewards(&1).is_zero());
+			
 			assert_ok!(StakePallet::increment_delegator_rewards(Origin::signed(2)));
 			assert_ok!(StakePallet::claim_rewards(Origin::signed(2)));
 			assert_eq!(rewards_2, Balances::usable_balance(&2));
+			assert!(StakePallet::get_unclaimed_staking_rewards(&2).is_zero());
+			
 			assert_ok!(StakePallet::increment_collator_rewards(Origin::signed(3)));
 			assert_ok!(StakePallet::claim_rewards(Origin::signed(3)));
 			assert_eq!(rewards_3 + 98 * stake, Balances::usable_balance(&3));
+			assert!(StakePallet::get_unclaimed_staking_rewards(&3).is_zero());
 		});
 }
 
