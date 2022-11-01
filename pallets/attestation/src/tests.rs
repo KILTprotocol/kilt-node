@@ -602,10 +602,7 @@ fn test_update_deposit() {
 				Balances::reserved_balance(ACCOUNT_00),
 				<Test as Config>::Deposit::get() * 2
 			);
-			assert_ok!(Attestation::update_deposit(
-				Origin::signed(ACCOUNT_00),
-				claim_hash
-			));
+			assert_ok!(Attestation::update_deposit(Origin::signed(ACCOUNT_00), claim_hash));
 			assert_eq!(
 				Attestation::attestations(claim_hash)
 					.expect("Attestation must be retained")

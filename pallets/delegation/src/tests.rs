@@ -2345,8 +2345,7 @@ fn test_update_deposit() {
 		ACCOUNT_00,
 	);
 	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
-	let mut delegation_node =
-		generate_base_delegation_node(hierarchy_root_id, delegate, Some(parent_id), ACCOUNT_00);
+	let mut delegation_node = generate_base_delegation_node(hierarchy_root_id, delegate, Some(parent_id), ACCOUNT_00);
 	delegation_node.deposit.amount = <Test as Config>::Deposit::get() * 2;
 
 	ExtBuilder::default()
@@ -2360,10 +2359,7 @@ fn test_update_deposit() {
 				Balances::reserved_balance(ACCOUNT_00),
 				<Test as Config>::Deposit::get() * 3
 			);
-			assert_ok!(Delegation::update_deposit(
-				Origin::signed(ACCOUNT_00),
-				delegation_id
-			));
+			assert_ok!(Delegation::update_deposit(Origin::signed(ACCOUNT_00), delegation_id));
 
 			// ACCOUNT_00 has still one deposit (there are two nodes)
 			assert_eq!(
@@ -2388,8 +2384,7 @@ fn test_update_deposit_unauthorized() {
 		ACCOUNT_00,
 	);
 	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
-	let mut delegation_node =
-		generate_base_delegation_node(hierarchy_root_id, delegate, Some(parent_id), ACCOUNT_00);
+	let mut delegation_node = generate_base_delegation_node(hierarchy_root_id, delegate, Some(parent_id), ACCOUNT_00);
 	delegation_node.deposit.amount = <Test as Config>::Deposit::get() * 2;
 
 	ExtBuilder::default()
