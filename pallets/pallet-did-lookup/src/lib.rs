@@ -323,7 +323,7 @@ pub mod pallet {
 			let source = ensure_signed(origin)?;
 
 			let record = ConnectedDids::<T>::get(&account).ok_or(Error::<T>::AssociationNotFound)?;
-			ensure!(record.deposit.owner == source, DispatchError::BadOrigin);
+			ensure!(record.deposit.owner == source, Error::<T>::NotAuthorized);
 
 			LinkableAccountDepositCollector::<T>::update_deposit(&account)
 		}

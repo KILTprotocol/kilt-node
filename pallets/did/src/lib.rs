@@ -1097,7 +1097,7 @@ pub mod pallet {
 			let sender = ensure_signed(origin)?;
 
 			let did_entry = Did::<T>::get(&did).ok_or(Error::<T>::DidNotPresent)?;
-			ensure!(did_entry.deposit.owner == sender, BadOrigin);
+			ensure!(did_entry.deposit.owner == sender, Error::<T>::BadDidOrigin);
 
 			DidDepositCollector::<T>::update_deposit(&did)?;
 

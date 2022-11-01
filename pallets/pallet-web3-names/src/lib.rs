@@ -40,7 +40,6 @@ pub use crate::{default_weights::WeightInfo, pallet::*};
 pub mod pallet {
 	use codec::FullCodec;
 	use frame_support::{
-		error::BadOrigin,
 		pallet_prelude::*,
 		sp_runtime::SaturatedConversion,
 		traits::{Currency, ReservableCurrency, StorageVersion},
@@ -173,6 +172,8 @@ pub mod pallet {
 		Web3NameTooLong,
 		/// A name that contains not allowed characters is being claimed.
 		InvalidWeb3NameCharacter,
+		/// The origin was not authorized to perform that action
+		Unauthorized,
 	}
 
 	#[pallet::hooks]
@@ -360,7 +361,7 @@ pub mod pallet {
 			let source = ensure_signed(origin)?;
 			let name = Web3NameOf::<T>::try_from(name_input.into_inner()).map_err(DispatchError::from)?;
 			let w3n_entry = Owner::<T>::get(&name).ok_or(Error::<T>::Web3NameNotFound)?;
-			ensure!(w3n_entry.deposit.owner == source, BadOrigin);
+			ensure!(w3n_entry.deposit.owner == source, Error::<T>::Unauthorized);
 
 			Web3NameStorageDepositCollector::<T>::update_deposit(&name)?;
 

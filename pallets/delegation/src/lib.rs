@@ -94,7 +94,6 @@ pub mod pallet {
 
 	use super::*;
 	use frame_support::{
-		error::BadOrigin,
 		pallet_prelude::*,
 		traits::{Currency, StorageVersion},
 	};
@@ -683,7 +682,7 @@ pub mod pallet {
 
 			// Deposit can only be swapped by the owner of the delegation node, not the
 			// parent or another ancestor.
-			ensure!(delegation.deposit.owner == sender, BadOrigin);
+			ensure!(delegation.deposit.owner == sender, Error::<T>::AccessDenied);
 
 			DelegationDepositCollector::<T>::update_deposit(&delegation_id)?;
 

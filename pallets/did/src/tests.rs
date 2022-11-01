@@ -35,6 +35,7 @@ use crate::{
 	mock::*,
 	mock_utils::*,
 	service_endpoints::DidEndpoint,
+	Error,
 };
 
 // create
@@ -3316,7 +3317,7 @@ fn test_update_deposit_unauthorized() {
 			);
 			assert_noop!(
 				Did::update_deposit(Origin::signed(bob_did.clone()), alice_did.clone()),
-				BadOrigin
+				Error::<Test>::BadDidOrigin
 			);
 		});
 }

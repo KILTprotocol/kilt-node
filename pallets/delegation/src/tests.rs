@@ -24,7 +24,7 @@ use crate::{
 	mock::{runtime::*, *},
 	Config, Error,
 };
-use sp_runtime::{traits::Zero, DispatchError};
+use sp_runtime::traits::Zero;
 
 // submit_delegation_root_creation_operation()
 
@@ -2400,7 +2400,7 @@ fn test_update_deposit_unauthorized() {
 			);
 			assert_noop!(
 				Delegation::update_deposit(Origin::signed(ACCOUNT_01), delegation_id),
-				DispatchError::BadOrigin
+				Error::<Test>::AccessDenied
 			);
 		});
 }

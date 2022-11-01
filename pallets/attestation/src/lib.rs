@@ -83,7 +83,6 @@ pub mod pallet {
 	use super::*;
 	use frame_support::{
 		dispatch::{DispatchResult, DispatchResultWithPostInfo},
-		error::BadOrigin,
 		pallet_prelude::*,
 		traits::{Currency, Get, ReservableCurrency, StorageVersion},
 	};
@@ -452,7 +451,7 @@ pub mod pallet {
 			let sender = ensure_signed(origin)?;
 
 			let attestation = Attestations::<T>::get(&claim_hash).ok_or(Error::<T>::AttestationNotFound)?;
-			ensure!(attestation.deposit.owner == sender, BadOrigin);
+			ensure!(attestation.deposit.owner == sender, Error::<T>::Unauthorized);
 
 			AttestationStorageDepositCollector::<T>::update_deposit(&claim_hash)?;
 

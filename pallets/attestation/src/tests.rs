@@ -25,7 +25,7 @@ use kilt_support::{deposit::Deposit, mock::mock_origin::DoubleOrigin};
 use crate::{
 	self as attestation,
 	mock::{runtime::Balances, *},
-	AttestationAccessControl, AttesterOf, Config,
+	AttestationAccessControl, AttesterOf, Config, Error,
 };
 
 // #############################################################################
@@ -641,7 +641,7 @@ fn test_update_deposit_unauthorized() {
 			);
 			assert_noop!(
 				Attestation::update_deposit(Origin::signed(ACCOUNT_01), claim_hash),
-				DispatchError::BadOrigin
+				Error::<Test>::Unauthorized
 			);
 		});
 }

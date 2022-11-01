@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::{assert_noop, assert_ok, error::BadOrigin, BoundedVec};
+use frame_support::{assert_noop, assert_ok, BoundedVec};
 
 use frame_system::RawOrigin;
 use kilt_support::{deposit::Deposit, mock::mock_origin};
@@ -495,7 +495,7 @@ fn test_update_deposit_unauthorized() {
 					Origin::signed(ACCOUNT_01),
 					WEB3_NAME_00_INPUT.to_vec().try_into().unwrap()
 				),
-				BadOrigin
+				Error::<Test>::Unauthorized
 			);
 		})
 }
