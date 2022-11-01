@@ -567,7 +567,7 @@ benchmarks! {
 
 		// mock high values to compensate for tiny values in unit test env
 		let stake = T::CurrencyBalance::from(1_000_000_000_000_000_000u128);
-		DelegatorState::<T>::insert(&delegator, crate::types::Delegator { owner: Some(collator.clone()), amount: stake});
+		DelegatorState::<T>::insert(&delegator, crate::types::Delegator { owner: collator.clone(), amount: stake});
 		RewardCount::<T>::insert(&collator, u32::MAX);
 
 		assert!(Rewards::<T>::get(&delegator).is_zero());

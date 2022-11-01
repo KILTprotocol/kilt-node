@@ -209,7 +209,7 @@ where
 	}
 }
 
-pub type Delegator<AccountId, Balance> = Stake<Option<AccountId>, Balance>;
+pub type Delegator<AccountId, Balance> = Stake<AccountId, Balance>;
 impl<AccountId, Balance> Delegator<AccountId, Balance>
 where
 	AccountId: Eq + Ord + Clone + Debug,
@@ -218,9 +218,8 @@ where
 	/// Returns Ok if the delegation for the
 	/// collator exists and `Err` otherwise.
 	pub fn try_clear(&mut self, collator: AccountId) -> Result<(), ()> {
-		if self.owner == Some(collator) {
+		if self.owner == collator {
 			self.amount = Balance::zero();
-			self.owner = None;
 			Ok(())
 		} else {
 			Err(())
@@ -230,7 +229,7 @@ where
 	/// Returns Ok(delegated_amount) if successful, `Err` if delegation was
 	/// not found.
 	pub fn try_increment(&mut self, collator: AccountId, more: Balance) -> Result<Balance, ()> {
-		if self.owner == Some(collator) {
+		if self.owner == collator {
 			self.amount = self.amount.saturating_add(more);
 			Ok(self.amount)
 		} else {
@@ -241,7 +240,7 @@ where
 	/// Returns Ok(Some(delegated_amount)) if successful, `Err` if delegation
 	/// was not found and Ok(None) if delegated stake would underflow.
 	pub fn try_decrement(&mut self, collator: AccountId, less: Balance) -> Result<Option<Balance>, ()> {
-		if self.owner == Some(collator) {
+		if self.owner == collator {
 			Ok(self.amount.checked_sub(&less).map(|new| {
 				self.amount = new;
 				self.amount

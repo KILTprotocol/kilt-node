@@ -16,8 +16,6 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-#![cfg_attr(not(feature = "std"), no_std)]
-
 use crate::{
 	set::OrderedSet,
 	types::{BalanceOf, Delegator, Stake},
@@ -125,10 +123,14 @@ fn migrate_delegators<T: Config>() -> u64 {
 		_,
 	>(|maybe_old| {
 		counter += 1;
-		maybe_old.map(|old| Delegator {
-			amount: old.total,
-			owner: old.delegations.get(0).map(|stake| stake.owner.clone()),
-		})
+		maybe_old
+			.map(|old| {
+				old.delegations.get(0).map(|stake| Delegator {
+					amount: old.total,
+					owner: stake.owner.clone(),
+				})
+			})
+			.unwrap_or(None)
 	});
 
 	counter

@@ -1401,7 +1401,7 @@ pub mod pallet {
 
 			let delegator_state = Delegator {
 				amount,
-				owner: Some(collator.clone()),
+				owner: collator.clone(),
 			};
 			let CandidateOf::<T, _> {
 				stake: old_stake,
@@ -1477,8 +1477,7 @@ pub mod pallet {
 		pub fn leave_delegators(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
 			let acc = ensure_signed(origin)?;
 			let delegator = DelegatorState::<T>::get(&acc).ok_or(Error::<T>::DelegatorNotFound)?;
-			// should never throw
-			let collator = delegator.owner.ok_or(Error::<T>::DelegationNotFound)?;
+			let collator = delegator.owner;
 			Self::delegator_leaves_collator(acc.clone(), collator)?;
 
 			// *** No Fail beyond this point ***
@@ -1734,8 +1733,7 @@ pub mod pallet {
 		pub fn increment_delegator_rewards(origin: OriginFor<T>) -> DispatchResult {
 			let delegator = ensure_signed(origin)?;
 			let delegation = DelegatorState::<T>::get(&delegator).ok_or(Error::<T>::DelegatorNotFound)?;
-			// should never throw
-			let collator = delegation.owner.ok_or(Error::<T>::DelegationNotFound)?;
+			let collator = delegation.owner;
 
 			Self::do_inc_delegator_reward(&delegator, delegation.amount, &collator);
 			ensure!(!Rewards::<T>::get(&delegator).is_zero(), Error::<T>::RewardsNotFound);
@@ -2402,8 +2400,7 @@ pub mod pallet {
 				// scalable, see [increment_delegator_rewards] for details
 				// therefore, we need to query the counter of the collator
 				// (`delegator_stare.owner`)
-				reward_count =
-					reward_count.saturating_add(delegator_state.owner.map(RewardCount::<T>::get).unwrap_or(0u32));
+				reward_count = reward_count.saturating_add(RewardCount::<T>::get(&delegator_state.owner));
 				let stake = delegator_state.amount;
 				// rewards += stake * (self_count + collator_count) * delegator_reward_rate
 				rewards.saturating_add(Self::calc_block_rewards_delegator(stake, reward_count.into()))

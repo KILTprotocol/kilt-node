@@ -715,31 +715,19 @@ fn execute_leave_candidates_with_delay() {
 			}
 			assert_eq!(
 				StakePallet::delegator_state(11),
-				Some(Delegator::<AccountId, Balance> {
-					owner: Some(1),
-					amount: 110,
-				})
+				Some(Delegator::<AccountId, Balance> { owner: 1, amount: 110 })
 			);
 			assert_eq!(
 				StakePallet::delegator_state(12),
-				Some(Delegator::<AccountId, Balance> {
-					owner: Some(1),
-					amount: 120
-				})
+				Some(Delegator::<AccountId, Balance> { owner: 1, amount: 120 })
 			);
 			assert_eq!(
 				StakePallet::delegator_state(13),
-				Some(Delegator::<AccountId, Balance> {
-					owner: Some(2),
-					amount: 130
-				})
+				Some(Delegator::<AccountId, Balance> { owner: 2, amount: 130 })
 			);
 			assert_eq!(
 				StakePallet::delegator_state(14),
-				Some(Delegator::<AccountId, Balance> {
-					owner: Some(2),
-					amount: 140
-				})
+				Some(Delegator::<AccountId, Balance> { owner: 2, amount: 140 })
 			);
 			for delegator in 11u64..=14u64 {
 				assert!(StakePallet::is_delegator(&delegator));
@@ -816,31 +804,19 @@ fn execute_leave_candidates_with_delay() {
 			}
 			assert_eq!(
 				StakePallet::delegator_state(11),
-				Some(Delegator::<AccountId, Balance> {
-					owner: Some(1),
-					amount: 110
-				})
+				Some(Delegator::<AccountId, Balance> { owner: 1, amount: 110 })
 			);
 			assert_eq!(
 				StakePallet::delegator_state(12),
-				Some(Delegator::<AccountId, Balance> {
-					owner: Some(1),
-					amount: 120
-				})
+				Some(Delegator::<AccountId, Balance> { owner: 1, amount: 120 })
 			);
 			assert_eq!(
 				StakePallet::delegator_state(13),
-				Some(Delegator::<AccountId, Balance> {
-					owner: Some(2),
-					amount: 130
-				})
+				Some(Delegator::<AccountId, Balance> { owner: 2, amount: 130 })
 			);
 			assert_eq!(
 				StakePallet::delegator_state(14),
-				Some(Delegator::<AccountId, Balance> {
-					owner: Some(2),
-					amount: 140
-				})
+				Some(Delegator::<AccountId, Balance> { owner: 2, amount: 140 })
 			);
 			for delegator in 11u64..=14u64 {
 				assert!(StakePallet::is_delegator(&delegator));
