@@ -490,14 +490,14 @@ pub mod pallet {
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
 		fn on_initialize(now: T::BlockNumber) -> frame_support::weights::Weight {
 			let mut post_weight = <T as Config>::WeightInfo::on_initialize_no_action();
-			let mut round = <Round<T>>::get();
+			let mut round = Round::<T>::get();
 
 			// check for round update
 			if round.should_update(now) {
 				// mutate round
 				round.update(now);
 				// start next round
-				<Round<T>>::put(round);
+				Round::<T>::put(round);
 
 				Self::deposit_event(Event::NewRound(round.first, round.current));
 				post_weight = <T as Config>::WeightInfo::on_initialize_round_update();
@@ -680,13 +680,13 @@ pub mod pallet {
 					"Account does not have enough balance to stake."
 				);
 				if let Some(delegated_val) = opt_val {
-					assert_ok!(<Pallet<T>>::join_delegators(
+					assert_ok!(Pallet::<T>::join_delegators(
 						T::Origin::from(Some(actor.clone()).into()),
 						T::Lookup::unlookup(delegated_val.clone()),
 						balance,
 					));
 				} else {
-					assert_ok!(<Pallet<T>>::join_candidates(
+					assert_ok!(Pallet::<T>::join_candidates(
 						T::Origin::from(Some(actor.clone()).into()),
 						balance
 					));
@@ -695,11 +695,11 @@ pub mod pallet {
 			// Set total selected candidates to minimum config
 			MaxSelectedCandidates::<T>::put(T::MinCollators::get());
 
-			<Pallet<T>>::update_total_stake();
+			Pallet::<T>::update_total_stake();
 
 			// Start Round 0 at Block 0
 			let round: RoundInfo<T::BlockNumber> = RoundInfo::new(0u32, 0u32.into(), T::DefaultBlocksPerRound::get());
-			<Round<T>>::put(round);
+			Round::<T>::put(round);
 		}
 	}
 
@@ -718,7 +718,7 @@ pub mod pallet {
 			// set force_new_round handle which, at the start of the next block, will
 			// trigger `should_end_session` in `Session::on_initialize` and update the
 			// current round
-			<ForceNewRound<T>>::put(true);
+			ForceNewRound::<T>::put(true);
 
 			Ok(())
 		}
@@ -865,11 +865,11 @@ pub mod pallet {
 			ensure_root(origin)?;
 			ensure!(new >= T::MinBlocksPerRound::get(), Error::<T>::CannotSetBelowMin);
 
-			let old_round = <Round<T>>::get();
+			let old_round = Round::<T>::get();
 
 			// *** No Fail beyond this point ***
 
-			<Round<T>>::put(RoundInfo {
+			Round::<T>::put(RoundInfo {
 				length: new,
 				..old_round
 			});
@@ -1069,7 +1069,7 @@ pub mod pallet {
 				Error::<T>::TooFewCollatorCandidates
 			);
 
-			let now = <Round<T>>::get().current;
+			let now = Round::<T>::get().current;
 			let when = now.saturating_add(T::ExitQueueDelay::get());
 			state.leave_candidates(when);
 
@@ -1129,7 +1129,7 @@ pub mod pallet {
 			let collator = T::Lookup::lookup(collator)?;
 			let state = CandidatePool::<T>::get(&collator).ok_or(Error::<T>::CandidateNotFound)?;
 			ensure!(state.is_leaving(), Error::<T>::NotLeaving);
-			ensure!(state.can_exit(<Round<T>>::get().current), Error::<T>::CannotLeaveYet);
+			ensure!(state.can_exit(Round::<T>::get().current), Error::<T>::CannotLeaveYet);
 
 			let num_delegators = state.delegators.len().saturated_into::<u32>();
 			let total_amount = state.total;
@@ -1441,7 +1441,7 @@ pub mod pallet {
 			// update states
 			CandidatePool::<T>::insert(&collator, state);
 			DelegatorState::<T>::insert(&acc, delegator_state);
-			<LastDelegation<T>>::insert(&acc, delegation_counter);
+			LastDelegation::<T>::insert(&acc, delegation_counter);
 
 			// initiate reward counter to match the current state of the candidate
 			RewardCount::<T>::insert(&acc, RewardCount::<T>::get(&collator));
@@ -1687,13 +1687,12 @@ pub mod pallet {
 		pub fn claim_rewards(origin: OriginFor<T>) -> DispatchResult {
 			let target = ensure_signed(origin)?;
 
-			// we could kill the storage entry but let's be safe in case the deposit fails
-			let rewards = Rewards::<T>::get(&target);
+			// reset rewards
+			let rewards = Rewards::<T>::take(&target);
 			ensure!(!rewards.is_zero(), Error::<T>::RewardsNotFound);
 
-			// mint into target and reset rewards
+			// mint into target
 			let rewards = T::Currency::deposit_into_existing(&target, rewards)?;
-			Rewards::<T>::remove(&target);
 
 			Self::deposit_event(Event::Rewarded(target, rewards.peek()));
 
@@ -2136,7 +2135,7 @@ pub mod pallet {
 			// *** No Fail except during Unstaking mutation beyond this point ***
 
 			// update Unstaking by consuming up to {amount | more}
-			<Unstaking<T>>::try_mutate(who, |unstaking| -> DispatchResult {
+			Unstaking::<T>::try_mutate(who, |unstaking| -> DispatchResult {
 				// reduce {amount | more} by unstaking until either {amount | more} is zero or
 				// no unstaking is left
 				// if more is set, we only want to reduce by more to achieve 100 - 40 + 30 = 90
@@ -2181,9 +2180,9 @@ pub mod pallet {
 			// should never occur but let's be safe
 			ensure!(!amount.is_zero(), Error::<T>::StakeNotFound);
 
-			let now = <frame_system::Pallet<T>>::block_number();
+			let now = frame_system::Pallet::<T>::block_number();
 			let unlock_block = now.saturating_add(T::StakeDuration::get());
-			let mut unstaking = <Unstaking<T>>::get(who);
+			let mut unstaking = Unstaking::<T>::get(who);
 
 			let allowed_unstakings = if is_removal {
 				// the account was forcedly removed and we allow to fill all unstake requests
@@ -2203,7 +2202,7 @@ pub mod pallet {
 			unstaking
 				.try_insert(unlock_block, amount)
 				.map_err(|_| Error::<T>::NoMoreUnstaking)?;
-			<Unstaking<T>>::insert(who, unstaking);
+			Unstaking::<T>::insert(who, unstaking);
 			Ok(())
 		}
 
@@ -2256,8 +2255,8 @@ pub mod pallet {
 		/// Withdraw all staked currency which was unstaked at least
 		/// `StakeDuration` blocks ago.
 		fn do_unlock(who: &T::AccountId) -> Result<u32, DispatchError> {
-			let now = <frame_system::Pallet<T>>::block_number();
-			let mut unstaking = <Unstaking<T>>::get(who);
+			let now = frame_system::Pallet::<T>::block_number();
+			let mut unstaking = Unstaking::<T>::get(who);
 			let unstaking_len = unstaking.len().saturated_into::<u32>();
 			ensure!(!unstaking.is_empty(), Error::<T>::UnstakingIsEmpty);
 
@@ -2290,10 +2289,10 @@ pub mod pallet {
 
 			if total_locked.is_zero() {
 				T::Currency::remove_lock(STAKING_ID, who);
-				<Unstaking<T>>::remove(who);
+				Unstaking::<T>::remove(who);
 			} else {
 				T::Currency::set_lock(STAKING_ID, who, total_locked, WithdrawReasons::all());
-				<Unstaking<T>>::insert(who, unstaking);
+				Unstaking::<T>::insert(who, unstaking);
 			}
 
 			Ok(unstaking_len)
@@ -2303,8 +2302,8 @@ pub mod pallet {
 		/// if they have not delegated MaxDelegationsPerRound many times
 		/// already in this round.
 		fn get_delegation_counter(delegator: &T::AccountId) -> Result<DelegationCounter, DispatchError> {
-			let last_delegation = <LastDelegation<T>>::get(delegator);
-			let round = <Round<T>>::get();
+			let last_delegation = LastDelegation::<T>::get(delegator);
+			let round = Round::<T>::get();
 
 			// reset counter if the round advanced since last delegation
 			let counter = if last_delegation.round < round.current {
@@ -2361,7 +2360,7 @@ pub mod pallet {
 			let TotalStake {
 				collators: total_collators,
 				..
-			} = <TotalCollatorStake<T>>::get();
+			} = TotalCollatorStake::<T>::get();
 			let staking_rate = Perquintill::from_rational(total_collators, total_issuance);
 
 			InflationConfig::<T>::get()
@@ -2379,7 +2378,7 @@ pub mod pallet {
 			let TotalStake {
 				delegators: total_delegators,
 				..
-			} = <TotalCollatorStake<T>>::get();
+			} = TotalCollatorStake::<T>::get();
 			let staking_rate = Perquintill::from_rational(total_delegators, total_issuance);
 
 			InflationConfig::<T>::get()
@@ -2544,7 +2543,7 @@ pub mod pallet {
 			log::debug!(
 				"assembling new collators for new session {} at #{:?}",
 				new_index,
-				<frame_system::Pallet<T>>::block_number(),
+				frame_system::Pallet::<T>::block_number(),
 			);
 
 			frame_system::Pallet::<T>::register_extra_weight_unchecked(
@@ -2578,19 +2577,19 @@ pub mod pallet {
 				DispatchClass::Mandatory,
 			);
 
-			let mut round = <Round<T>>::get();
+			let mut round = Round::<T>::get();
 			// always update when a new round should start
 			if round.should_update(now) {
 				true
-			} else if <ForceNewRound<T>>::get() {
+			} else if ForceNewRound::<T>::get() {
 				frame_system::Pallet::<T>::register_extra_weight_unchecked(
 					T::DbWeight::get().writes(2),
 					DispatchClass::Mandatory,
 				);
 				// check for forced new round
-				<ForceNewRound<T>>::put(false);
+				ForceNewRound::<T>::put(false);
 				round.update(now);
-				<Round<T>>::put(round);
+				Round::<T>::put(round);
 				Self::deposit_event(Event::NewRound(round.first, round.current));
 				true
 			} else {
@@ -2601,11 +2600,11 @@ pub mod pallet {
 
 	impl<T: Config> EstimateNextSessionRotation<T::BlockNumber> for Pallet<T> {
 		fn average_session_length() -> T::BlockNumber {
-			<Round<T>>::get().length
+			Round::<T>::get().length
 		}
 
 		fn estimate_current_session_progress(now: T::BlockNumber) -> (Option<Permill>, Weight) {
-			let round = <Round<T>>::get();
+			let round = Round::<T>::get();
 			let passed_blocks = now.saturating_sub(round.first);
 
 			(
@@ -2616,7 +2615,7 @@ pub mod pallet {
 		}
 
 		fn estimate_next_session_rotation(_now: T::BlockNumber) -> (Option<T::BlockNumber>, Weight) {
-			let round = <Round<T>>::get();
+			let round = Round::<T>::get();
 
 			(
 				Some(round.first + round.length),
