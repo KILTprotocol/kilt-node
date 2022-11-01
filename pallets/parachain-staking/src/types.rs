@@ -215,22 +215,9 @@ where
 	AccountId: Eq + Ord + Clone + Debug,
 	Balance: Copy + Add<Output = Balance> + Saturating + PartialOrd + Eq + Ord + Debug + Zero + Default + CheckedSub,
 {
-	/// Adds a new delegation.
-	///
-	/// If already delegating to someone, this call will fail.
-	pub fn add_delegation(&mut self, stake: Stake<AccountId, Balance>) -> Result<(), ()> {
-		if self.owner.is_none() && self.amount.is_zero() {
-			self.owner = Some(stake.owner);
-			self.amount = stake.amount;
-			Ok(())
-		} else {
-			Err(())
-		}
-	}
-
 	/// Returns Ok if the delegation for the
 	/// collator exists and `Err` otherwise.
-	pub fn rm_delegation(&mut self, collator: AccountId) -> Result<(), ()> {
+	pub fn try_clear(&mut self, collator: AccountId) -> Result<(), ()> {
 		if self.owner == Some(collator) {
 			self.amount = Balance::zero();
 			self.owner = None;
@@ -242,7 +229,7 @@ where
 
 	/// Returns Ok(delegated_amount) if successful, `Err` if delegation was
 	/// not found.
-	pub fn inc_delegation(&mut self, collator: AccountId, more: Balance) -> Result<Balance, ()> {
+	pub fn try_increment(&mut self, collator: AccountId, more: Balance) -> Result<Balance, ()> {
 		if self.owner == Some(collator) {
 			self.amount = self.amount.saturating_add(more);
 			Ok(self.amount)
@@ -253,7 +240,7 @@ where
 
 	/// Returns Ok(Some(delegated_amount)) if successful, `Err` if delegation
 	/// was not found and Ok(None) if delegated stake would underflow.
-	pub fn dec_delegation(&mut self, collator: AccountId, less: Balance) -> Result<Option<Balance>, ()> {
+	pub fn try_decrement(&mut self, collator: AccountId, less: Balance) -> Result<Option<Balance>, ()> {
 		if self.owner == Some(collator) {
 			Ok(self.amount.checked_sub(&less).map(|new| {
 				self.amount = new;

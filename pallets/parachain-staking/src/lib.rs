@@ -1517,7 +1517,7 @@ pub mod pallet {
 			let mut collator = CandidatePool::<T>::get(&candidate).ok_or(Error::<T>::CandidateNotFound)?;
 			ensure!(!collator.is_leaving(), Error::<T>::CannotDelegateIfLeaving);
 			let stake_after = delegation
-				.inc_delegation(candidate.clone(), more)
+				.try_increment(candidate.clone(), more)
 				.map_err(|_| Error::<T>::DelegationNotFound)?;
 
 			// *** No Fail except during increase_lock beyond this point ***
@@ -1595,7 +1595,7 @@ pub mod pallet {
 			let mut collator = CandidatePool::<T>::get(&candidate).ok_or(Error::<T>::CandidateNotFound)?;
 			ensure!(!collator.is_leaving(), Error::<T>::CannotDelegateIfLeaving);
 			let stake_after = delegations
-				.dec_delegation(candidate.clone(), less)
+				.try_decrement(candidate.clone(), less)
 				.map_err(|_| Error::<T>::DelegationNotFound)?
 				.ok_or(Error::<T>::Underflow)?;
 
@@ -2223,7 +2223,7 @@ pub mod pallet {
 				// remove delegation from delegator state
 				if let Some(mut delegator) = DelegatorState::<T>::get(&stake.owner) {
 					delegator
-						.rm_delegation(collator.clone())
+						.try_clear(collator.clone())
 						.map_err(|_| Error::<T>::DelegationNotFound)?;
 					DelegatorState::<T>::remove(&stake.owner);
 				}
