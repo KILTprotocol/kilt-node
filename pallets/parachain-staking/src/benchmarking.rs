@@ -100,7 +100,6 @@ where
 		if let Some(delegator) = delegator {
 			assert_ok!(Pallet::<T>::delegator_stake_less(
 				RawOrigin::Signed(delegator.clone()).into(),
-				T::Lookup::unlookup(collator.clone()),
 				T::CurrencyBalance::one()
 			));
 		} else {
@@ -429,16 +428,15 @@ benchmarks! {
 
 		// increase stake so we can unstake, because current stake is minimum
 		T::Currency::make_free_balance_be(&delegator, T::CurrencyBalance::from(u128::MAX));
-		assert_ok!(Pallet::<T>::delegator_stake_more(RawOrigin::Signed(delegator.clone()).into(), T::Lookup::unlookup(collator.clone()), T::CurrencyBalance::from(u as u64)));
+		assert_ok!(Pallet::<T>::delegator_stake_more(RawOrigin::Signed(delegator.clone()).into(), T::CurrencyBalance::from(u as u64)));
 		assert_eq!(DelegatorState::<T>::get(&delegator).unwrap().amount, amount + T::CurrencyBalance::from(u as u64));
 
 		// fill unstake BTreeMap by unstaked many entries of 1
 		fill_unstaking::<T>(&collator, Some(&delegator), u as u64);
 		assert_eq!(DelegatorState::<T>::get(&delegator).unwrap().amount, amount);
-		let unlookup_collator = T::Lookup::unlookup(collator.clone());
 
 		let origin = RawOrigin::Signed(delegator.clone());
-	}: _(origin, unlookup_collator, amount)
+	}: _(origin, amount)
 	verify {
 		let state = CandidatePool::<T>::get(&collator).unwrap();
 		assert!(state.delegators.into_iter().any(|x| x.owner == delegator));
@@ -466,17 +464,16 @@ benchmarks! {
 
 		// increase stake so we can unstake, because current stake is minimum
 		T::Currency::make_free_balance_be(&delegator, T::CurrencyBalance::from(u128::MAX));
-		assert_ok!(Pallet::<T>::delegator_stake_more(RawOrigin::Signed(delegator.clone()).into(), T::Lookup::unlookup(collator.clone()), amount + amount));
+		assert_ok!(Pallet::<T>::delegator_stake_more(RawOrigin::Signed(delegator.clone()).into(), amount + amount));
 		assert_eq!(DelegatorState::<T>::get(&delegator).unwrap().amount, T::MinDelegatorStake::get() + amount + amount);
 
 		// decrease stake once so we have an unstaking entry for this block
-		assert_ok!(Pallet::<T>::delegator_stake_less(RawOrigin::Signed(delegator.clone()).into(), T::Lookup::unlookup(collator.clone()), amount));
+		assert_ok!(Pallet::<T>::delegator_stake_less(RawOrigin::Signed(delegator.clone()).into(), amount));
 		assert_eq!(DelegatorState::<T>::get(&delegator).unwrap().amount, T::MinDelegatorStake::get() + amount);
 		assert_eq!(Unstaking::<T>::get(&delegator).len(), 1);
-		let unlookup_collator = T::Lookup::unlookup(collator.clone());
 
 		let origin = RawOrigin::Signed(delegator.clone());
-	}: _(origin, unlookup_collator, amount)
+	}: _(origin, amount)
 	verify {
 		let state = CandidatePool::<T>::get(&collator).unwrap();
 		assert!(state.delegators.into_iter().any(|x| x.owner == delegator));
@@ -504,11 +501,11 @@ benchmarks! {
 
 		// increase stake so we can unstake, because current stake is minimum
 		T::Currency::make_free_balance_be(&delegator, T::CurrencyBalance::from(u128::MAX));
-		assert_ok!(Pallet::<T>::delegator_stake_more(RawOrigin::Signed(delegator.clone()).into(), T::Lookup::unlookup(collator.clone()), amount + amount));
+		assert_ok!(Pallet::<T>::delegator_stake_more(RawOrigin::Signed(delegator.clone()).into(), amount + amount));
 		assert_eq!(DelegatorState::<T>::get(&delegator).unwrap().amount, T::MinDelegatorStake::get() + amount + amount);
 
 		// decrease stake once so we have an unstaking entry for this block
-		assert_ok!(Pallet::<T>::delegator_stake_less(RawOrigin::Signed(delegator.clone()).into(), T::Lookup::unlookup(collator.clone()), amount));
+		assert_ok!(Pallet::<T>::delegator_stake_less(RawOrigin::Signed(delegator.clone()).into(), amount));
 		assert_eq!(DelegatorState::<T>::get(&delegator).unwrap().amount, T::MinDelegatorStake::get() + amount);
 		assert_eq!(Unstaking::<T>::get(&delegator).len(), 1);
 

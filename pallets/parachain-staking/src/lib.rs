@@ -1487,16 +1487,12 @@ pub mod pallet {
 			T::MaxDelegatorsPerCollator::get(),
 			T::MaxUnstakeRequests::get().saturated_into::<u32>())
 		)]
-		pub fn delegator_stake_more(
-			origin: OriginFor<T>,
-			candidate: <T::Lookup as StaticLookup>::Source,
-			more: BalanceOf<T>,
-		) -> DispatchResultWithPostInfo {
+		pub fn delegator_stake_more(origin: OriginFor<T>, more: BalanceOf<T>) -> DispatchResultWithPostInfo {
 			let delegator = ensure_signed(origin)?;
 			ensure!(!more.is_zero(), Error::<T>::ValStakeZero);
 
-			let candidate = T::Lookup::lookup(candidate)?;
 			let mut delegation = DelegatorState::<T>::get(&delegator).ok_or(Error::<T>::DelegatorNotFound)?;
+			let candidate = delegation.owner.clone();
 			let mut collator = CandidatePool::<T>::get(&candidate).ok_or(Error::<T>::CandidateNotFound)?;
 			ensure!(!collator.is_leaving(), Error::<T>::CannotDelegateIfLeaving);
 			let stake_after = delegation
@@ -1565,19 +1561,15 @@ pub mod pallet {
 			T::MaxTopCandidates::get(),
 			T::MaxDelegatorsPerCollator::get()
 		))]
-		pub fn delegator_stake_less(
-			origin: OriginFor<T>,
-			candidate: <T::Lookup as StaticLookup>::Source,
-			less: BalanceOf<T>,
-		) -> DispatchResultWithPostInfo {
+		pub fn delegator_stake_less(origin: OriginFor<T>, less: BalanceOf<T>) -> DispatchResultWithPostInfo {
 			let delegator = ensure_signed(origin)?;
 			ensure!(!less.is_zero(), Error::<T>::ValStakeZero);
 
-			let candidate = T::Lookup::lookup(candidate)?;
-			let mut delegations = DelegatorState::<T>::get(&delegator).ok_or(Error::<T>::DelegatorNotFound)?;
+			let mut delegation = DelegatorState::<T>::get(&delegator).ok_or(Error::<T>::DelegatorNotFound)?;
+			let candidate = delegation.owner.clone();
 			let mut collator = CandidatePool::<T>::get(&candidate).ok_or(Error::<T>::CandidateNotFound)?;
 			ensure!(!collator.is_leaving(), Error::<T>::CannotDelegateIfLeaving);
-			let stake_after = delegations
+			let stake_after = delegation
 				.try_decrement(candidate.clone(), less)
 				.map_err(|_| Error::<T>::DelegationNotFound)?
 				.ok_or(Error::<T>::Underflow)?;
@@ -1617,7 +1609,7 @@ pub mod pallet {
 			Self::do_inc_delegator_reward(&delegator, stake_after.saturating_add(less), &candidate);
 
 			CandidatePool::<T>::insert(&candidate, collator);
-			DelegatorState::<T>::insert(&delegator, delegations);
+			DelegatorState::<T>::insert(&delegator, delegation);
 
 			Self::deposit_event(Event::DelegatorStakedLess(delegator, candidate, before_total, after));
 			Ok(Some(<T as pallet::Config>::WeightInfo::delegator_stake_less(
