@@ -15,7 +15,6 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
-#![cfg_attr(not(feature = "std"), no_std)]
 
 use frame_support::dispatch::fmt::Debug;
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};

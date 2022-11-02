@@ -355,7 +355,7 @@ impl<T: frame_system::Config> parachain_staking::WeightInfo for WeightInfo<T> {
 	// Storage: ParachainStaking TotalCollatorStake (r:1 w:0)
 	// Storage: ParachainStaking InflationConfig (r:1 w:0)
 	/// The range of component `m` is `[0, 35]`.
-	fn increment_collator_rewards(_m: u32, ) -> Weight {
+	fn increment_collator_rewards() -> Weight {
 		Weight::from_ref_time(366_611_000 as u64)
 			.saturating_add(T::DbWeight::get().reads(75 as u64))
 			.saturating_add(T::DbWeight::get().writes(72 as u64))

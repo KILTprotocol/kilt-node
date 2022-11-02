@@ -568,28 +568,27 @@ benchmarks! {
 		// mock high values to compensate for tiny values in unit test env
 		let stake = T::CurrencyBalance::from(1_000_000_000_000_000_000u128);
 		DelegatorState::<T>::insert(&delegator, crate::types::Delegator { owner: collator.clone(), amount: stake});
-		RewardCount::<T>::insert(&collator, u32::MAX);
+		BlocksAuthored::<T>::insert(&collator, u64::MAX.into());
 
 		assert!(Rewards::<T>::get(&delegator).is_zero());
 		let origin = RawOrigin::Signed(delegator.clone());
 	}: _(origin)
 	verify {
 		assert!(!Rewards::<T>::get(&delegator).is_zero());
+		assert_eq!(BlocksRewarded::<T>::get(&delegator), u64::MAX.into());
 	}
 
 	increment_collator_rewards {
-		let m in 1 .. T::MaxDelegatorsPerCollator::get();
-
 		let collator = setup_collator_candidates::<T>(1, None)[0].clone();
-		let delegators = fill_delegators::<T>(m, collator.clone(), COLLATOR_ACCOUNT_SEED);
 
 		// mock high counter to compensate for tiny amounts in unit test env
-		RewardCount::<T>::insert(&collator, u32::MAX);
+		BlocksAuthored::<T>::insert(&collator, u64::MAX.into());
 		assert!(Rewards::<T>::get(&collator).is_zero(), "reward {:?}", Rewards::<T>::get(&collator));
 		let origin = RawOrigin::Signed(collator.clone());
 	}: _(origin)
 	verify {
 		assert!(!Rewards::<T>::get(&collator).is_zero());
+		assert_eq!(BlocksRewarded::<T>::get(&collator), u64::MAX.into());
 	}
 
 	claim_rewards {

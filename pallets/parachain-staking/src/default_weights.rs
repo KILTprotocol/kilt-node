@@ -67,7 +67,7 @@ pub trait WeightInfo {
 	fn unlock_unstaked(u: u32, ) -> Weight;
 	fn set_max_candidate_stake() -> Weight;
 	fn increment_delegator_rewards() -> Weight;
-	fn increment_collator_rewards(_m: u32, ) -> Weight;
+	fn increment_collator_rewards() -> Weight;
 	fn claim_rewards() -> Weight;
 	fn execute_scheduled_reward_change(n: u32, m: u32, ) -> Weight;
 }
@@ -382,7 +382,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {// KILT Blockch
 	// Storage: ParachainStaking TotalCollatorStake (r:1 w:0)
 	// Storage: ParachainStaking InflationConfig (r:1 w:0)
 	/// The range of component `m` is `[0, 35]`.
-	fn increment_collator_rewards(_m: u32, ) -> Weight {
+	fn increment_collator_rewards() -> Weight {
 		Weight::from_ref_time(366_611_000 as u64)
 			.saturating_add(T::DbWeight::get().reads(75 as u64))
 			.saturating_add(T::DbWeight::get().writes(72 as u64))
@@ -725,7 +725,7 @@ impl WeightInfo for () {
 	// Storage: ParachainStaking TotalCollatorStake (r:1 w:0)
 	// Storage: ParachainStaking InflationConfig (r:1 w:0)
 	/// The range of component `m` is `[0, 35]`.
-	fn increment_collator_rewards(_m: u32, ) -> Weight {
+	fn increment_collator_rewards() -> Weight {
 		Weight::from_ref_time(366_611_000 as u64)
 			.saturating_add(RocksDbWeight::get().reads(75 as u64))
 			.saturating_add(RocksDbWeight::get().writes(72 as u64))
