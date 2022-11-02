@@ -19,8 +19,8 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use crate::{
-	types::BalanceOf, CandidatePool, Config, DelegatorState, InflationConfig, Pallet, RewardCount, Rewards,
-	TotalCollatorStake,
+	types::BalanceOf, CandidatePool, Config, DelegatorState, InflationConfig, Pallet, Rewards,
+	TotalCollatorStake, BlocksRewarded, BlocksAuthored,
 };
 use frame_support::traits::Currency;
 use sp_runtime::{
@@ -31,28 +31,32 @@ use sp_runtime::{
 impl<T: Config> Pallet<T> {
 	/// Calculates the staking rewards for a given account address.
 	///
+	/// Subtracts the number of rewarded blocks from the number of authored
+	/// blocks by the collator and multiplies that with the current stake
+	/// as well as reward rate.
+	///
 	/// At least used in Runtime API.
 	pub fn get_unclaimed_staking_rewards(acc: &T::AccountId) -> BalanceOf<T> {
-		let mut reward_count = RewardCount::<T>::get(acc);
+		let count_rewarded = BlocksRewarded::<T>::get(acc);
 		let rewards = Rewards::<T>::get(acc);
 
 		// delegators and collators need to be handled differently
 		if let Some(delegator_state) = DelegatorState::<T>::get(acc) {
-			// delegator reward counts do not automatically increment in order to be
-			// scalable, see [increment_delegator_rewards] for details
-			// therefore, we need to query the counter of the collator
-			// (`delegator_stare.owner`)
-			reward_count =
-				reward_count.saturating_add(delegator_state.owner.map(RewardCount::<T>::get).unwrap_or(0u32));
+			// #blocks for unclaimed staking rewards equals
+			// #blocks_authored_by_collator - #blocks_claimed_by_delegator
+			let count_unclaimed = BlocksAuthored::<T>::get(&delegator_state.owner).saturating_sub(count_rewarded);
 			let stake = delegator_state.amount;
-			// rewards += stake * (self_count + collator_count) * delegator_reward_rate
-			rewards.saturating_add(Self::calc_block_rewards_delegator(stake, reward_count.into()))
+			// rewards += stake * reward_count * delegator_reward_rate
+			rewards.saturating_add(Self::calc_block_rewards_delegator(stake, count_unclaimed.into()))
 		} else if Self::is_active_candidate(acc).is_some() {
+			// #blocks for unclaimed staking rewards equals
+			// #blocks_authored_by_collator - #blocks_claimed_by_collator
+			let count_unclaimed = BlocksAuthored::<T>::get(acc).saturating_sub(count_rewarded);
 			let stake = CandidatePool::<T>::get(acc)
 				.map(|state| state.stake)
 				.unwrap_or_else(BalanceOf::<T>::zero);
 			// rewards += stake * self_count * collator_reward_rate
-			rewards.saturating_add(Self::calc_block_rewards_collator(stake, reward_count.into()))
+			rewards.saturating_add(Self::calc_block_rewards_collator(stake, count_unclaimed.into()))
 		} else {
 			BalanceOf::<T>::zero()
 		}

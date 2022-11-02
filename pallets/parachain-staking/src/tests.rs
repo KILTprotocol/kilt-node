@@ -715,31 +715,19 @@ fn execute_leave_candidates_with_delay() {
 			}
 			assert_eq!(
 				StakePallet::delegator_state(11),
-				Some(Delegator::<AccountId, Balance> {
-					owner: Some(1),
-					amount: 110,
-				})
+				Some(Delegator::<AccountId, Balance> { owner: 1, amount: 110 })
 			);
 			assert_eq!(
 				StakePallet::delegator_state(12),
-				Some(Delegator::<AccountId, Balance> {
-					owner: Some(1),
-					amount: 120
-				})
+				Some(Delegator::<AccountId, Balance> { owner: 1, amount: 120 })
 			);
 			assert_eq!(
 				StakePallet::delegator_state(13),
-				Some(Delegator::<AccountId, Balance> {
-					owner: Some(2),
-					amount: 130
-				})
+				Some(Delegator::<AccountId, Balance> { owner: 2, amount: 130 })
 			);
 			assert_eq!(
 				StakePallet::delegator_state(14),
-				Some(Delegator::<AccountId, Balance> {
-					owner: Some(2),
-					amount: 140
-				})
+				Some(Delegator::<AccountId, Balance> { owner: 2, amount: 140 })
 			);
 			for delegator in 11u64..=14u64 {
 				assert!(StakePallet::is_delegator(&delegator));
@@ -816,31 +804,19 @@ fn execute_leave_candidates_with_delay() {
 			}
 			assert_eq!(
 				StakePallet::delegator_state(11),
-				Some(Delegator::<AccountId, Balance> {
-					owner: Some(1),
-					amount: 110
-				})
+				Some(Delegator::<AccountId, Balance> { owner: 1, amount: 110 })
 			);
 			assert_eq!(
 				StakePallet::delegator_state(12),
-				Some(Delegator::<AccountId, Balance> {
-					owner: Some(1),
-					amount: 120
-				})
+				Some(Delegator::<AccountId, Balance> { owner: 1, amount: 120 })
 			);
 			assert_eq!(
 				StakePallet::delegator_state(13),
-				Some(Delegator::<AccountId, Balance> {
-					owner: Some(2),
-					amount: 130
-				})
+				Some(Delegator::<AccountId, Balance> { owner: 2, amount: 130 })
 			);
 			assert_eq!(
 				StakePallet::delegator_state(14),
-				Some(Delegator::<AccountId, Balance> {
-					owner: Some(2),
-					amount: 140
-				})
+				Some(Delegator::<AccountId, Balance> { owner: 2, amount: 140 })
 			);
 			for delegator in 11u64..=14u64 {
 				assert!(StakePallet::is_delegator(&delegator));
@@ -970,8 +946,9 @@ fn multiple_delegations() {
 			assert!(StakePallet::unstaking(9).is_empty());
 			assert!(StakePallet::rewards(9).is_zero());
 			assert_ok!(StakePallet::join_delegators(Origin::signed(11), 2, 11));
-			// 11 should be initiated with the same reward counter as their collator 2
-			assert_eq!(StakePallet::reward_count(2), StakePallet::reward_count(11));
+			// 11 should be initiated with the same rewarded counter as the authored counter
+			// by their collator 2
+			assert_eq!(StakePallet::blocks_rewarded(2), StakePallet::blocks_authored(11));
 
 			assert!(StakePallet::delegator_state(9).is_none());
 			assert_eq!(StakePallet::unstaking(9).get(&23), Some(&10u128));
@@ -1109,13 +1086,13 @@ fn should_update_total_stake() {
 			);
 
 			old_stake = StakePallet::total_collator_stake();
-			assert_ok!(StakePallet::delegator_stake_more(Origin::signed(7), 1, 50));
+			assert_ok!(StakePallet::delegator_stake_more(Origin::signed(7), 50));
 			assert_noop!(
-				StakePallet::delegator_stake_more(Origin::signed(7), 1, 0),
+				StakePallet::delegator_stake_more(Origin::signed(7), 0),
 				Error::<Test>::ValStakeZero
 			);
 			assert_noop!(
-				StakePallet::delegator_stake_less(Origin::signed(7), 1, 0),
+				StakePallet::delegator_stake_less(Origin::signed(7), 0),
 				Error::<Test>::ValStakeZero
 			);
 			assert_eq!(
@@ -1127,7 +1104,7 @@ fn should_update_total_stake() {
 			);
 
 			old_stake = StakePallet::total_collator_stake();
-			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(7), 1, 50));
+			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(7), 50));
 			assert_eq!(
 				StakePallet::total_collator_stake(),
 				TotalStake {
@@ -1310,40 +1287,24 @@ fn delegators_bond() {
 				Error::<Test>::AlreadyDelegating
 			);
 			assert_noop!(
-				StakePallet::delegator_stake_more(Origin::signed(1), 2, 50),
+				StakePallet::delegator_stake_more(Origin::signed(1), 50),
 				Error::<Test>::DelegatorNotFound
 			);
 			assert_noop!(
-				StakePallet::delegator_stake_less(Origin::signed(1), 2, 50),
+				StakePallet::delegator_stake_less(Origin::signed(1), 50),
 				Error::<Test>::DelegatorNotFound
 			);
 			assert_noop!(
-				StakePallet::delegator_stake_more(Origin::signed(6), 2, 50),
-				Error::<Test>::DelegationNotFound
-			);
-			assert_noop!(
-				StakePallet::delegator_stake_more(Origin::signed(7), 6, 50),
-				Error::<Test>::CandidateNotFound
-			);
-			assert_noop!(
-				StakePallet::delegator_stake_less(Origin::signed(7), 6, 50),
-				Error::<Test>::CandidateNotFound
-			);
-			assert_noop!(
-				StakePallet::delegator_stake_less(Origin::signed(6), 1, 11),
+				StakePallet::delegator_stake_less(Origin::signed(6), 11),
 				Error::<Test>::Underflow
 			);
 			assert_noop!(
-				StakePallet::delegator_stake_less(Origin::signed(6), 1, 8),
+				StakePallet::delegator_stake_less(Origin::signed(6), 8),
 				Error::<Test>::DelegationBelowMin
 			);
-			assert_ok!(StakePallet::delegator_stake_more(Origin::signed(6), 1, 10));
+			assert_ok!(StakePallet::delegator_stake_more(Origin::signed(6), 10));
 			assert_noop!(
-				StakePallet::delegator_stake_less(Origin::signed(6), 2, 5),
-				Error::<Test>::DelegationNotFound
-			);
-			assert_noop!(
-				StakePallet::delegator_stake_more(Origin::signed(6), 1, 81),
+				StakePallet::delegator_stake_more(Origin::signed(6), 81),
 				BalancesError::<Test>::InsufficientBalance
 			);
 			assert_noop!(
@@ -2385,12 +2346,12 @@ fn unlock_unstaked() {
 			assert_ok!(StakePallet::candidate_stake_less(Origin::signed(1), 10));
 			assert_ok!(StakePallet::candidate_stake_less(Origin::signed(1), 10));
 			assert_ok!(StakePallet::candidate_stake_less(Origin::signed(1), 10),);
-			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(2), 1, 10));
-			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(2), 1, 10));
-			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(2), 1, 10));
-			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(2), 1, 10));
-			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(2), 1, 10));
-			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(2), 1, 10),);
+			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(2), 10));
+			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(2), 10));
+			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(2), 10));
+			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(2), 10));
+			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(2), 10));
+			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(2), 10),);
 			let mut unstaking: BoundedBTreeMap<BlockNumber, BalanceOf<Test>, <Test as Config>::MaxUnstakeRequests> =
 				BoundedBTreeMap::new();
 			assert_ok!(unstaking.try_insert(3, 60));
@@ -2413,7 +2374,7 @@ fn unlock_unstaked() {
 
 			roll_to(2, vec![]);
 			assert_ok!(StakePallet::candidate_stake_less(Origin::signed(1), 10),);
-			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(2), 1, 10),);
+			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(2), 10),);
 			assert_ok!(unstaking.try_insert(4, 10));
 			assert_eq!(Balances::locks(1), vec![lock.clone()]);
 			assert_eq!(Balances::locks(2), vec![lock.clone()]);
@@ -2429,7 +2390,7 @@ fn unlock_unstaked() {
 
 			roll_to(3, vec![]);
 			assert_ok!(StakePallet::candidate_stake_less(Origin::signed(1), 10),);
-			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(2), 1, 10),);
+			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(2), 10),);
 			assert_ok!(unstaking.try_insert(5, 10));
 			assert_ok!(unstaking.try_insert(5, 10));
 			assert_eq!(Balances::locks(1), vec![lock.clone()]);
@@ -2449,13 +2410,13 @@ fn unlock_unstaked() {
 			// reach MaxUnstakeRequests
 			roll_to(4, vec![]);
 			assert_ok!(StakePallet::candidate_stake_less(Origin::signed(1), 10));
-			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(2), 1, 10));
+			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(2), 10));
 			roll_to(5, vec![]);
 			assert_ok!(StakePallet::candidate_stake_less(Origin::signed(1), 10));
-			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(2), 1, 10));
+			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(2), 10));
 			roll_to(6, vec![]);
 			assert_ok!(StakePallet::candidate_stake_less(Origin::signed(1), 10));
-			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(2), 1, 10));
+			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(2), 10));
 			assert_ok!(unstaking.try_insert(6, 10));
 			assert_ok!(unstaking.try_insert(7, 10));
 			assert_ok!(unstaking.try_insert(8, 10));
@@ -2470,7 +2431,7 @@ fn unlock_unstaked() {
 				Error::<Test>::NoMoreUnstaking
 			);
 			assert_noop!(
-				StakePallet::delegator_stake_less(Origin::signed(2), 1, 10),
+				StakePallet::delegator_stake_less(Origin::signed(2), 10),
 				Error::<Test>::NoMoreUnstaking
 			);
 			assert_ok!(StakePallet::unlock_unstaked(Origin::signed(1), 1));
@@ -2485,10 +2446,10 @@ fn unlock_unstaked() {
 			assert_eq!(Balances::locks(1), vec![lock.clone()]);
 			assert_eq!(Balances::locks(2), vec![lock.clone()]);
 			assert_ok!(StakePallet::candidate_stake_less(Origin::signed(1), 40));
-			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(2), 1, 40));
+			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(2), 40));
 			assert_ok!(unstaking.try_insert(9, 40));
 			assert_ok!(StakePallet::candidate_stake_more(Origin::signed(1), 30));
-			assert_ok!(StakePallet::delegator_stake_more(Origin::signed(2), 1, 30));
+			assert_ok!(StakePallet::delegator_stake_more(Origin::signed(2), 30));
 			unstaking.remove(&8);
 			assert_ok!(unstaking.try_insert(9, 20));
 			assert_eq!(StakePallet::unstaking(1), unstaking);
@@ -2549,14 +2510,14 @@ fn kick_delegator_with_full_unstaking() {
 			// Fill unstake requests
 			for block in 1u64..1u64.saturating_add(max_unstake_reqs as u64) {
 				System::set_block_number(block);
-				assert_ok!(StakePallet::delegator_stake_less(Origin::signed(5), 1, 1));
+				assert_ok!(StakePallet::delegator_stake_less(Origin::signed(5), 1));
 			}
 			assert_eq!(StakePallet::unstaking(5).into_inner().len(), max_unstake_reqs);
 
 			// Additional unstake should fail
 			System::set_block_number(100);
 			assert_noop!(
-				StakePallet::delegator_stake_less(Origin::signed(5), 1, 1),
+				StakePallet::delegator_stake_less(Origin::signed(5), 1),
 				Error::<Test>::NoMoreUnstaking
 			);
 
@@ -2624,11 +2585,11 @@ fn candidate_leaves() {
 				Error::<Test>::CannotDelegateIfLeaving
 			);
 			assert_noop!(
-				StakePallet::delegator_stake_more(Origin::signed(12), 1, 1),
+				StakePallet::delegator_stake_more(Origin::signed(12), 1),
 				Error::<Test>::CannotDelegateIfLeaving
 			);
 			assert_noop!(
-				StakePallet::delegator_stake_less(Origin::signed(12), 1, 1),
+				StakePallet::delegator_stake_less(Origin::signed(12), 1),
 				Error::<Test>::CannotDelegateIfLeaving
 			);
 			assert_noop!(
@@ -2805,11 +2766,12 @@ fn adjust_reward_rates() {
 				.saturating_sub(10_000_000 * DECIMALS)
 				.saturating_sub(c_rewards_0)
 				.saturating_sub(c_rewards_1);
+			assert!(c_rewards_1 > c_rewards_2);
+			// should be zero because we set reward rate to zero
 			let d_rewards_2 = Balances::free_balance(&2)
 				.saturating_sub(90_000_000 * DECIMALS)
 				.saturating_sub(d_rewards_0)
 				.saturating_sub(d_rewards_1);
-			assert!(c_rewards_1 > c_rewards_2);
 			assert!(d_rewards_2.is_zero());
 		});
 }
@@ -3171,7 +3133,7 @@ fn prioritize_collators() {
 			);
 
 			// 7 decreases delegation
-			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(7), 5, 10));
+			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(7), 10));
 			assert_eq!(StakePallet::selected_candidates().into_inner(), vec![5, 3]);
 			assert_eq!(
 				StakePallet::top_candidates(),
@@ -3253,7 +3215,7 @@ fn prioritize_delegators() {
 			);
 
 			// delegate_less
-			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(5), 2, 10));
+			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(5), 10));
 			assert_eq!(
 				StakePallet::candidate_pool(2).unwrap().delegators,
 				OrderedSet::from_sorted_set(
@@ -3269,7 +3231,7 @@ fn prioritize_delegators() {
 			);
 
 			// delegate_more
-			assert_ok!(StakePallet::delegator_stake_more(Origin::signed(6), 2, 10));
+			assert_ok!(StakePallet::delegator_stake_more(Origin::signed(6), 10));
 			assert_eq!(
 				StakePallet::candidate_pool(2).unwrap().delegators,
 				OrderedSet::from_sorted_set(
@@ -3283,7 +3245,7 @@ fn prioritize_delegators() {
 					.unwrap()
 				)
 			);
-			assert_ok!(StakePallet::delegator_stake_more(Origin::signed(7), 2, 10));
+			assert_ok!(StakePallet::delegator_stake_more(Origin::signed(7), 10));
 			assert_eq!(
 				StakePallet::candidate_pool(2).unwrap().delegators,
 				OrderedSet::from_sorted_set(
@@ -3657,7 +3619,7 @@ fn update_total_stake_collators_stay() {
 					delegators: 150
 				}
 			);
-			assert_ok!(StakePallet::delegator_stake_more(Origin::signed(3), 1, 10));
+			assert_ok!(StakePallet::delegator_stake_more(Origin::signed(3), 10));
 			assert_eq!(
 				StakePallet::total_collator_stake(),
 				TotalStake {
@@ -3665,7 +3627,7 @@ fn update_total_stake_collators_stay() {
 					delegators: 160
 				}
 			);
-			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(4), 2, 5));
+			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(4), 5));
 			assert_eq!(
 				StakePallet::total_collator_stake(),
 				TotalStake {
@@ -3711,10 +3673,10 @@ fn update_total_stake_displace_collators() {
 					delegators: 105
 				}
 			);
-			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(8), 4, 45));
+			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(8), 45));
 
 			// 3 is pushed out by delegator staking less
-			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(7), 3, 45));
+			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(7), 45));
 			assert_eq!(
 				StakePallet::total_collator_stake(),
 				TotalStake {
@@ -3810,7 +3772,7 @@ fn update_total_stake_no_collator_changes() {
 					delegators: 110
 				}
 			);
-			assert_ok!(StakePallet::delegator_stake_more(Origin::signed(5), 1, 10));
+			assert_ok!(StakePallet::delegator_stake_more(Origin::signed(5), 10));
 			assert_eq!(
 				StakePallet::total_collator_stake(),
 				TotalStake {
@@ -3826,7 +3788,7 @@ fn update_total_stake_no_collator_changes() {
 					delegators: 110
 				}
 			);
-			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(6), 2, 10));
+			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(6), 10));
 			assert_eq!(
 				StakePallet::total_collator_stake(),
 				TotalStake {
@@ -3847,18 +3809,30 @@ fn rewards_candidate_stake_more() {
 		.execute_with(|| {
 			// note once to set counter to 1
 			StakePallet::note_author(1);
-			assert_eq!(StakePallet::reward_count(1), 1);
-			assert!(StakePallet::reward_count(2).is_zero());
-			assert!(StakePallet::reward_count(3).is_zero());
+			assert_eq!(StakePallet::blocks_authored(1), 1);
+			assert!(StakePallet::blocks_authored(2).is_zero());
+			assert!(StakePallet::blocks_authored(3).is_zero());
 			(1..=3).for_each(|id| {
-				assert!(StakePallet::rewards(id).is_zero(), "acc_id {:?}", id);
+				assert!(StakePallet::blocks_rewarded(id).is_zero());
+				assert!(StakePallet::rewards(id).is_zero());
 			});
 
-			// stake more to trigger reward incrementing
+			// stake less to trigger reward incrementing for collator
 			assert_ok!(StakePallet::candidate_stake_more(Origin::signed(1), DECIMALS));
-			(1..=3).for_each(|id| {
-				assert!(!StakePallet::rewards(id).is_zero(), "acc_id {:?}", id);
-				assert!(StakePallet::reward_count(id).is_zero(), "acc_id {:?}", id);
+			assert!(!StakePallet::rewards(1).is_zero());
+			assert!(!StakePallet::blocks_rewarded(1).is_zero());
+			// delegator reward storage should be untouched
+			(2..=3).for_each(|id| {
+				assert!(
+					StakePallet::rewards(id).is_zero(),
+					"Rewards not zero for acc_id {:?}",
+					id
+				);
+				assert!(
+					StakePallet::blocks_rewarded(id).is_zero(),
+					"BlocksRewaeded not zero for acc_id {:?}",
+					id
+				);
 			});
 		});
 }
@@ -3873,18 +3847,30 @@ fn rewards_candidate_stake_less() {
 		.execute_with(|| {
 			// note once to set counter to 1
 			StakePallet::note_author(1);
-			assert_eq!(StakePallet::reward_count(1), 1);
-			assert!(StakePallet::reward_count(2).is_zero());
-			assert!(StakePallet::reward_count(3).is_zero());
+			assert_eq!(StakePallet::blocks_authored(1), 1);
+			assert!(StakePallet::blocks_authored(2).is_zero());
+			assert!(StakePallet::blocks_authored(3).is_zero());
 			(1..=3).for_each(|id| {
+				assert!(StakePallet::blocks_rewarded(id).is_zero());
 				assert!(StakePallet::rewards(id).is_zero());
 			});
 
-			// stake less to trigger reward incrementing
+			// stake less to trigger reward incrementing for collator
 			assert_ok!(StakePallet::candidate_stake_less(Origin::signed(1), DECIMALS));
-			(1..=3).for_each(|id| {
-				assert!(!StakePallet::rewards(id).is_zero(), "acc_id {:?}", id);
-				assert!(StakePallet::reward_count(id).is_zero(), "acc_id {:?}", id);
+			assert!(!StakePallet::rewards(1).is_zero());
+			assert!(!StakePallet::blocks_rewarded(1).is_zero());
+			// delegator reward storage should be untouched
+			(2..=3).for_each(|id| {
+				assert!(
+					StakePallet::rewards(id).is_zero(),
+					"Rewards not zero for acc_id {:?}",
+					id
+				);
+				assert!(
+					StakePallet::blocks_rewarded(id).is_zero(),
+					"BlocksRewaeded not zero for acc_id {:?}",
+					id
+				);
 			});
 		});
 }
@@ -3922,22 +3908,37 @@ fn rewards_candidate_leave_network() {
 					Some(2),
 				],
 			);
-			assert_eq!(StakePallet::reward_count(1), 4 * 2);
+			// Only authored should be bumped for collator, not rewarded
+			assert_eq!(StakePallet::blocks_authored(1), 4 * 2);
+			assert!(StakePallet::blocks_rewarded(1).is_zero());
 
 			// count for delegators should not be incremented
-			assert!(StakePallet::reward_count(2).is_zero());
-			assert!(StakePallet::reward_count(3).is_zero());
+			assert!(StakePallet::blocks_rewarded(2).is_zero());
+			assert!(StakePallet::blocks_rewarded(3).is_zero());
 
 			// rewards should not be incremented
 			(1..=3).for_each(|id| {
 				assert!(StakePallet::rewards(id).is_zero());
 			});
 
-			// execute leave intent to trigger reward incrementing
+			// execute leave intent to trigger reward incrementing for collator and
+			// delegators
 			assert_ok!(StakePallet::execute_leave_candidates(Origin::signed(1), 1));
-			(1..=3).for_each(|id| {
-				assert!(!StakePallet::rewards(id).is_zero(), "acc_id {:?}", id);
-				assert!(StakePallet::reward_count(id).is_zero(), "acc_id {:?}", id);
+
+			// reward counting storages should be killed for collator
+			assert!(StakePallet::blocks_authored(1).is_zero());
+			assert!(StakePallet::blocks_rewarded(1).is_zero());
+			assert!(!StakePallet::rewards(1).is_zero());
+
+			// reward counting storages should NOT be killed for delegators
+			(2..=3).for_each(|id| {
+				assert!(!StakePallet::rewards(id).is_zero(), "Zero rewards acc_id {:?}", id);
+				assert_eq!(
+					StakePallet::blocks_rewarded(id),
+					4 * 2,
+					"Rewarded blocks Delegator {:?} do not match up with exited collator",
+					id
+				);
 			});
 		});
 }
@@ -3962,19 +3963,29 @@ fn rewards_force_remove_candidate() {
 
 			// removing triggers reward increment for collator 1 and delegators 4, 5
 			assert_ok!(StakePallet::force_remove_candidate(Origin::root(), 1));
+			// rewarded counter storage should be killed for collator
+			assert!(StakePallet::blocks_authored(1).is_zero());
+			assert!(StakePallet::blocks_rewarded(1).is_zero());
 			(1..=3).for_each(|id| {
-				assert!(!StakePallet::rewards(id).is_zero(), "acc_id {:?}", id);
-				assert!(StakePallet::reward_count(id).is_zero(), "acc_id {:?}", id);
+				assert!(!StakePallet::rewards(id).is_zero(), "Zero rewards for acc_id {:?}", id);
+				if id > 1 {
+					assert_eq!(
+						StakePallet::blocks_rewarded(id),
+						2,
+						"Rewarded counter does not match for delegator {:?}",
+						id
+					);
+				}
 			});
 			(4..=5).for_each(|id| {
 				assert!(StakePallet::rewards(id).is_zero(), "acc_id {:?}", id);
-				assert!(StakePallet::reward_count(id).is_zero(), "acc_id {:?}", id);
+				assert!(StakePallet::blocks_rewarded(id).is_zero(), "acc_id {:?}", id);
 			});
 		});
 }
 
 #[test]
-fn reward_count_join_delegators() {
+fn blocks_rewarded_join_delegators() {
 	ExtBuilder::default()
 		.with_balances(vec![(1, 100), (2, 100)])
 		.with_collators(vec![(1, 100)])
@@ -3982,10 +3993,12 @@ fn reward_count_join_delegators() {
 		.execute_with(|| {
 			// note once to set counter to 1
 			StakePallet::note_author(1);
-			assert_eq!(StakePallet::reward_count(1), 1);
+			assert_eq!(StakePallet::blocks_authored(1), 1);
+			assert!(StakePallet::blocks_rewarded(1).is_zero());
 			assert_ok!(StakePallet::join_delegators(Origin::signed(2), 1, 100));
-			// delegator should have same counter as collator upon joining
-			assert_eq!(StakePallet::reward_count(2), 1);
+			// delegator's rewarded counter should equal of collator's authored counter upon
+			// joining
+			assert_eq!(StakePallet::blocks_rewarded(2), StakePallet::blocks_authored(1));
 		});
 }
 
@@ -3999,23 +4012,24 @@ fn rewards_delegator_stake_more() {
 		.execute_with(|| {
 			// note once to set counter to 1
 			StakePallet::note_author(1);
-			assert_eq!(StakePallet::reward_count(1), 1);
-			assert!(StakePallet::reward_count(2).is_zero());
-			assert!(StakePallet::reward_count(3).is_zero());
+			assert_eq!(StakePallet::blocks_authored(1), 1);
+			assert!(StakePallet::blocks_rewarded(2).is_zero());
+			assert!(StakePallet::blocks_rewarded(3).is_zero());
 			(1..=3).for_each(|id| {
 				assert!(StakePallet::rewards(id).is_zero(), "acc_id {:?}", id);
 			});
 
-			// stake more to trigger reward incrementing just for 3
-			assert_ok!(StakePallet::delegator_stake_more(Origin::signed(3), 1, DECIMALS));
+			// stake less to trigger reward incrementing just for 3
+			assert_ok!(StakePallet::delegator_stake_more(Origin::signed(3), DECIMALS));
 			// 1 should still have counter 1 but no rewards
-			assert_eq!(StakePallet::reward_count(1), 1);
+			assert_eq!(StakePallet::blocks_authored(1), 1);
+			assert!(StakePallet::blocks_rewarded(1).is_zero());
 			assert!(StakePallet::rewards(1).is_zero());
 			// 2 should still have neither rewards nor counter
-			assert!(StakePallet::reward_count(2).is_zero());
+			assert!(StakePallet::blocks_rewarded(2).is_zero());
 			assert!(StakePallet::rewards(2).is_zero());
 			// 3 should have rewards and the same counter as 1
-			assert_eq!(StakePallet::reward_count(3), 1);
+			assert_eq!(StakePallet::blocks_rewarded(3), 1);
 			assert!(!StakePallet::rewards(3).is_zero());
 		});
 }
@@ -4030,23 +4044,24 @@ fn rewards_delegator_stake_less() {
 		.execute_with(|| {
 			// note once to set counter to 1
 			StakePallet::note_author(1);
-			assert_eq!(StakePallet::reward_count(1), 1);
-			assert!(StakePallet::reward_count(2).is_zero());
-			assert!(StakePallet::reward_count(3).is_zero());
+			assert_eq!(StakePallet::blocks_authored(1), 1);
+			assert!(StakePallet::blocks_rewarded(2).is_zero());
+			assert!(StakePallet::blocks_rewarded(3).is_zero());
 			(1..=3).for_each(|id| {
 				assert!(StakePallet::rewards(id).is_zero(), "acc_id {:?}", id);
 			});
 
 			// stake less to trigger reward incrementing just for 3
-			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(3), 1, DECIMALS));
+			assert_ok!(StakePallet::delegator_stake_less(Origin::signed(3), DECIMALS));
 			// 1 should still have counter 1 but no rewards
-			assert_eq!(StakePallet::reward_count(1), 1);
+			assert_eq!(StakePallet::blocks_authored(1), 1);
+			assert!(StakePallet::blocks_rewarded(1).is_zero());
 			assert!(StakePallet::rewards(1).is_zero());
 			// 2 should still have neither rewards nor counter
-			assert!(StakePallet::reward_count(2).is_zero());
+			assert!(StakePallet::blocks_rewarded(2).is_zero());
 			assert!(StakePallet::rewards(2).is_zero());
 			// 3 should have rewards and the same counter as 1
-			assert_eq!(StakePallet::reward_count(3), 1);
+			assert_eq!(StakePallet::blocks_rewarded(3), 1);
 			assert!(!StakePallet::rewards(3).is_zero());
 		});
 }
@@ -4073,16 +4088,16 @@ fn rewards_delegator_replaced() {
 		.execute_with(|| {
 			// note once to set counter to 1
 			StakePallet::note_author(1);
-			assert_eq!(StakePallet::reward_count(1), 1);
+			assert_eq!(StakePallet::blocks_authored(1), 1);
 
 			// 6 kicks 5
 			assert_ok!(StakePallet::join_delegators(Origin::signed(6), 1, 2 * DECIMALS));
 			// 5 should have rewards and counter updated
 			assert!(!StakePallet::rewards(5).is_zero());
-			assert_eq!(StakePallet::reward_count(5), 1);
+			assert_eq!(StakePallet::blocks_rewarded(5), 1);
 			// 6 should not have rewards but same counter as former collator
 			assert!(StakePallet::rewards(6).is_zero());
-			assert_eq!(StakePallet::reward_count(6), 1);
+			assert_eq!(StakePallet::blocks_rewarded(6), 1);
 		});
 }
 
@@ -4096,21 +4111,22 @@ fn rewards_delegator_leaves() {
 		.execute_with(|| {
 			// note collator once to set their counter to 1
 			StakePallet::note_author(1);
-			assert_eq!(StakePallet::reward_count(1), 1);
-			assert!(StakePallet::reward_count(2).is_zero());
-			assert!(StakePallet::reward_count(3).is_zero());
+			assert_eq!(StakePallet::blocks_authored(1), 1);
+			assert!(StakePallet::blocks_rewarded(2).is_zero());
+			assert!(StakePallet::blocks_rewarded(3).is_zero());
 			(1..=3).for_each(|id| {
 				assert!(StakePallet::rewards(id).is_zero(), "acc_id {:?}", id);
 			});
 
-			// only 3 should have non-zero rewards and their counter reset
+			// only 3 should have non-zero rewards
 			assert_ok!(StakePallet::leave_delegators(Origin::signed(3)));
-			assert_eq!(StakePallet::reward_count(1), 1);
+			assert!(StakePallet::blocks_rewarded(1).is_zero());
 			assert!(StakePallet::rewards(1).is_zero());
-			assert!(StakePallet::reward_count(2).is_zero());
+			assert!(StakePallet::blocks_rewarded(2).is_zero());
 			assert!(StakePallet::rewards(2).is_zero());
 			assert!(!StakePallet::rewards(3).is_zero());
-			assert_eq!(StakePallet::reward_count(3), 1);
+			// counter should be reset due to leaving
+			assert!(StakePallet::blocks_rewarded(3).is_zero());
 		});
 }
 
@@ -4142,9 +4158,9 @@ fn rewards_set_inflation() {
 				hundred,
 				hundred
 			));
-			// rewards should be set and counter reset
+			// rewards and counters should be set
 			(1..=5).for_each(|id| {
-				assert!(StakePallet::reward_count(id).is_zero(), "acc_id {:?}", id);
+				assert!(!StakePallet::blocks_rewarded(id).is_zero(), "acc_id {:?}", id);
 				assert!(!StakePallet::rewards(id).is_zero(), "acc_id {:?}", id);
 			});
 		});
@@ -4169,6 +4185,8 @@ fn rewards_yearly_inflation_adjustment() {
 			StakePallet::note_author(2);
 			System::set_block_number(<Test as Config>::BLOCKS_PER_YEAR - 1);
 			roll_to_claim_rewards(<Test as Config>::BLOCKS_PER_YEAR + 1, vec![]);
+			assert!(!StakePallet::blocks_authored(1).is_zero());
+			assert!(!StakePallet::blocks_authored(2).is_zero());
 
 			// rewards should not be triggered before executing pending adjustment
 			(1..=5).for_each(|id| {
@@ -4178,8 +4196,12 @@ fn rewards_yearly_inflation_adjustment() {
 			// execute to trigger reward increment
 			assert_ok!(StakePallet::execute_scheduled_reward_change(Origin::signed(1)));
 			(1..=5).for_each(|id| {
-				assert!(StakePallet::reward_count(id).is_zero(), "acc_id {:?}", id);
-				assert!(!StakePallet::rewards(id).is_zero(), "acc_id {:?}", id);
+				assert!(
+					!StakePallet::blocks_rewarded(id).is_zero(),
+					"Zero rewarded blocks for acc_id {:?}",
+					id
+				);
+				assert!(!StakePallet::rewards(id).is_zero(), "Zero rewards for acc_id {:?}", id);
 			});
 		});
 }
@@ -4192,15 +4214,7 @@ fn rewards_incrementing_and_claiming() {
 		.with_delegators(vec![(2, 1, DECIMALS), (3, 1, DECIMALS)])
 		.build()
 		.execute_with(|| {
-			// claiming or incrementing should not be possible with zero counter
-			assert_noop!(
-				StakePallet::increment_collator_rewards(Origin::signed(1)),
-				Error::<Test>::RewardsNotFound
-			);
-			assert_noop!(
-				StakePallet::increment_delegator_rewards(Origin::signed(2)),
-				Error::<Test>::RewardsNotFound
-			);
+			// claiming should not be possible with zero counters
 			(1..=3).for_each(|id| {
 				assert_noop!(
 					StakePallet::claim_rewards(Origin::signed(id)),
@@ -4210,8 +4224,8 @@ fn rewards_incrementing_and_claiming() {
 
 			// note once to set counter to 1
 			StakePallet::note_author(1);
-			assert_eq!(StakePallet::reward_count(1), 1);
-			assert!(StakePallet::reward_count(2).is_zero());
+			assert_eq!(StakePallet::blocks_authored(1), 1);
+			assert!(StakePallet::blocks_rewarded(2).is_zero());
 
 			// claiming should not be possible before incrementing rewards
 			(1..=3).for_each(|id| {
@@ -4223,37 +4237,36 @@ fn rewards_incrementing_and_claiming() {
 
 			// increment rewards for 2 and match counter to collator
 			assert_ok!(StakePallet::increment_delegator_rewards(Origin::signed(2)));
-			assert_eq!(StakePallet::reward_count(2), 1);
+			assert_eq!(StakePallet::blocks_rewarded(2), 1);
 			let rewards_2 = StakePallet::rewards(2);
 			assert!(!rewards_2.is_zero());
-			assert!(StakePallet::reward_count(3).is_zero());
+			assert!(StakePallet::blocks_rewarded(3).is_zero());
 			assert!(StakePallet::rewards(3).is_zero());
 
-			// should set rewards for delegator 3 as well
+			// should only update rewards for collator as well
 			assert_ok!(StakePallet::increment_collator_rewards(Origin::signed(1)));
-			assert!(StakePallet::reward_count(1).is_zero());
+			assert_eq!(StakePallet::blocks_rewarded(1), StakePallet::blocks_authored(1));
 			assert!(!StakePallet::rewards(1).is_zero());
-			// counter of delegators should be reset to 0 (= cols counter)
-			assert!(StakePallet::reward_count(2).is_zero());
-			assert!(StakePallet::reward_count(3).is_zero());
 			// rewards of 2 should not be changed
 			assert_eq!(StakePallet::rewards(2), rewards_2);
-			// 3 should have rewards now (passively)
-			assert!(!StakePallet::rewards(3).is_zero());
+			// 3 should still not have blocks rewarded bumped
+			assert!(StakePallet::blocks_rewarded(3).is_zero());
 
 			// claim for 1 to move rewards into balance
 			assert_ok!(StakePallet::claim_rewards(Origin::signed(1)));
-			assert!(StakePallet::reward_count(1).is_zero());
 			assert!(StakePallet::rewards(1).is_zero());
 			// delegator situation should be unchanged
 			assert!(Balances::free_balance(&1) > DECIMALS);
 			assert_eq!(Balances::free_balance(&2), DECIMALS);
 			assert_eq!(Balances::free_balance(&3), DECIMALS);
 
+			// incrementing again should not change anything because collator has not
+			// authored blocks since last inc
+			assert_ok!(StakePallet::increment_delegator_rewards(Origin::signed(2)));
+			assert_eq!(StakePallet::blocks_rewarded(2), 1);
 			// claim for 2 to move rewards into balance
 			assert_ok!(StakePallet::claim_rewards(Origin::signed(2)));
 			assert!(Balances::free_balance(&2) > DECIMALS);
-			assert!(StakePallet::reward_count(2).is_zero());
 			assert!(StakePallet::rewards(2).is_zero());
 			assert_eq!(Balances::free_balance(&3), DECIMALS);
 
@@ -4305,12 +4318,17 @@ fn api_get_unclaimed_staking_rewards() {
 			assert_ok!(StakePallet::increment_collator_rewards(Origin::signed(1)));
 			assert_ok!(StakePallet::claim_rewards(Origin::signed(1)));
 			assert_eq!(rewards_1, Balances::usable_balance(&1));
+			assert!(StakePallet::get_unclaimed_staking_rewards(&1).is_zero());
+
 			assert_ok!(StakePallet::increment_delegator_rewards(Origin::signed(2)));
 			assert_ok!(StakePallet::claim_rewards(Origin::signed(2)));
 			assert_eq!(rewards_2, Balances::usable_balance(&2));
+			assert!(StakePallet::get_unclaimed_staking_rewards(&2).is_zero());
+
 			assert_ok!(StakePallet::increment_collator_rewards(Origin::signed(3)));
 			assert_ok!(StakePallet::claim_rewards(Origin::signed(3)));
 			assert_eq!(rewards_3 + 98 * stake, Balances::usable_balance(&3));
+			assert!(StakePallet::get_unclaimed_staking_rewards(&3).is_zero());
 		});
 }
 
@@ -4337,7 +4355,7 @@ fn api_get_staking_rates() {
 			assert_ok!(StakePallet::candidate_stake_less(Origin::signed(1), stake / 2));
 			assert_ok!(StakePallet::candidate_stake_less(Origin::signed(2), stake / 2));
 			// delegator stakes more to exceed
-			assert_ok!(StakePallet::delegator_stake_more(Origin::signed(3), 1, stake));
+			assert_ok!(StakePallet::delegator_stake_more(Origin::signed(3), stake));
 			rates.collator_staking_rate = Perquintill::from_percent(25);
 			rates.collator_reward_rate = Perquintill::from_percent(10);
 			rates.delegator_staking_rate = Perquintill::from_percent(50);
