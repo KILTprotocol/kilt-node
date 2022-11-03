@@ -19,9 +19,9 @@ targets = ["x86_64-unknown-linux-gnu"]
 substrate-wasm-builder.workspace = true
 
 [dev-dependencies]
-attestation = {features = ["mock"], path = "../attestation"}
-ctype = {features = ["mock"], path = "../ctype"}
-kilt-support = {features = ["mock"], path = "../../support"}
+attestation = {workspace = true, features = ["mock"]}
+ctype = {workspace = true, features = ["mock"]}
+kilt-support = {workspace = true, features = ["mock"]}
 
 # Substrate dependencies
 pallet-balances = {workspace = true, features = ["std"]}
@@ -30,10 +30,10 @@ sp-keystore = {workspace = true, features = ["std"]}
 
 [dependencies]
 # Internal dependencies
-attestation = {default-features = false, path = "../attestation"}
-ctype = {default-features = false, path = "../ctype"}
-kilt-support = {default-features = false, path = "../../support"}
-public-credentials = {default-features = false, path = "../public-credentials"}
+attestation.workspace = true
+ctype.workspace = true
+kilt-support.workspace = true
+public-credentials.workspace = true
 
 # External dependencies
 bitflags.workspace = true

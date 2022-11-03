@@ -18,8 +18,8 @@ codec = {package = "parity-scale-codec", workspace = true, default-features = fa
 scale-info = {workspace = true, default-features = false, features = ["derive"]}
 
 # Internal dependencies
-did = {path = "../../pallets/did", default-features = false}
-kilt-support = {path = "../../support", default-features = false}
+did.workspace = true
+kilt-support.workspace = true
 
 # Substrate dependencies
 sp-api.workspace = true

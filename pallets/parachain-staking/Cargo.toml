@@ -27,7 +27,7 @@ scale-info = {workspace = true, features = ["derive", "serde"]}
 serde = {workspace = true, optional = true}
 
 # Internal dependencies
-kilt-runtime-api-staking = {path = "../../runtime-api/staking", default-features = false}
+kilt-runtime-api-staking.workspace = true
 
 # Substrate dependencies
 frame-support.workspace = true

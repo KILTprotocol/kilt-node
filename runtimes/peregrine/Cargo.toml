@@ -25,23 +25,23 @@ hex-literal = {workspace = true, optional = true}
 
 # RPC & Runtime API
 frame-system-rpc-runtime-api.workspace = true
-kilt-runtime-api-did = {path = "../../runtime-api/did", default-features = false}
-kilt-runtime-api-public-credentials = {path = "../../runtime-api/public-credentials", default-features = false}
-kilt-runtime-api-staking = {path = "../../runtime-api/staking", default-features = false}
+kilt-runtime-api-did.workspace = true
+kilt-runtime-api-public-credentials.workspace = true
+kilt-runtime-api-staking.workspace = true
 pallet-transaction-payment-rpc-runtime-api.workspace = true
 
 # KILT pallets & primitives
-attestation = {path = "../../pallets/attestation", default-features = false}
-ctype = {path = "../../pallets/ctype", default-features = false}
-delegation = {path = "../../pallets/delegation", default-features = false}
-did = {path = "../../pallets/did", default-features = false}
-kilt-support = {path = "../../support", default-features = false}
-pallet-did-lookup = {path = "../../pallets/pallet-did-lookup", default-features = false}
-pallet-inflation = {path = "../../pallets/pallet-inflation", default-features = false}
-pallet-web3-names = {path = "../../pallets/pallet-web3-names", default-features = false}
-parachain-staking = {path = "../../pallets/parachain-staking", default-features = false}
-public-credentials = {default-features = false, path = "../../pallets/public-credentials"}
-runtime-common = {path = "../../runtimes/common", default-features = false}
+attestation.workspace = true
+ctype.workspace = true
+delegation.workspace = true
+did.workspace = true
+kilt-support.workspace = true
+pallet-did-lookup.workspace = true
+pallet-inflation.workspace = true
+pallet-web3-names.workspace = true
+parachain-staking.workspace = true
+public-credentials.workspace = true
+runtime-common.workspace = true
 
 # Substrate dependencies
 sp-api.workspace = true

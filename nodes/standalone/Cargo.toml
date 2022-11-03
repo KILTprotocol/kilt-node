@@ -26,9 +26,8 @@ clap = {workspace = true, features = ["derive"]}
 jsonrpsee = {workspace = true, features = ["server"]}
 
 # Internal dependencies
-mashnet-node-runtime = {path = "../../runtimes/standalone"}
-runtime-common = {path = "../../runtimes/common"}
-
+mashnet-node-runtime = {workspace = true, features = ["std"]}
+runtime-common = {workspace = true, features = ["std"]}
 
 # Substrate dependencies
 frame-system = {workspace = true, features = ["std"]}

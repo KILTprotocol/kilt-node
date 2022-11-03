@@ -31,10 +31,10 @@ serde = {workspace = true, features = ["derive"]}
 serde_json.workspace = true
 
 # Internal dependencies
-clone-runtime = {path = "../../runtimes/clone"}
-peregrine-runtime = {path = "../../runtimes/peregrine"}
-runtime-common = {path = "../../runtimes/common"}
-spiritnet-runtime = {path = "../../runtimes/spiritnet"}
+clone-runtime = {workspace = true, features = ["std"]}
+peregrine-runtime = {workspace = true, features = ["std"]}
+runtime-common = {workspace = true, features = ["std"]}
+spiritnet-runtime = {workspace = true, features = ["std"]}
 
 # Substrate dependencies
 sc-basic-authorship = {workspace = true}

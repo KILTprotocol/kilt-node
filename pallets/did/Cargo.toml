@@ -21,7 +21,7 @@ substrate-wasm-builder.workspace = true
 [dev-dependencies]
 env_logger.workspace = true
 
-ctype = {features = ["mock"], path = "../ctype"}
+ctype = {workspace = true, features = ["mock"]}
 
 frame-benchmarking = {workspace = true, features = ["std"]}
 pallet-balances = {workspace = true, features = ["std"]}
@@ -32,8 +32,9 @@ sp-keystore = {workspace = true, features = ["std"]}
 log.workspace = true
 
 # Internal dependencies
-ctype = {path = "../ctype", optional = true}
-kilt-support = {default-features = false, path = "../../support"}
+kilt-support.workspace = true
+
+ctype = {workspace = true, optional = true}
 
 # Substrate dependencies
 codec = {package = "parity-scale-codec", workspace = true, features = ["derive"]}

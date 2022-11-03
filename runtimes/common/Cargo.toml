@@ -19,15 +19,15 @@ sp-io = {workspace = true, features = ["std"]}
 # External dependencies
 codec = {package = "parity-scale-codec", workspace = true, features = ["derive"]}
 log.workspace = true
-kilt-asset-dids = { default-features = false, path = "../../crates/assets" }
+kilt-asset-dids.workspace = true
 scale-info = {workspace = true, features = ["derive"]}
 smallvec.workspace = true
 
 # Internal dependencies
-attestation = {default-features = false, path = "../../pallets/attestation"}
-kilt-support = {default-features = false, path = "../../support"}
-parachain-staking = {default-features = false, path = "../../pallets/parachain-staking"}
-public-credentials = {default-features = false, path = "../../pallets/public-credentials"}
+attestation.workspace = true
+kilt-support.workspace = true
+parachain-staking.workspace = true
+public-credentials.workspace = true
 
 # Substrate dependencies
 frame-support.workspace = true

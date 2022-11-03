@@ -13,8 +13,8 @@ name = "public-credentials"
 description = "Enables adding and revoking public credentials."
 
 [dev-dependencies]
-ctype = {features = ["mock"], path = "../ctype"}
-kilt-support = {features = ["mock"], path = "../../support"}
+ctype = {workspace = true, features = ["mock"]}
+kilt-support = {workspace = true, features = ["mock"]}
 
 pallet-balances = {workspace = true, features = ["std"]}
 sp-io = {workspace = true, features = ["std"]}
@@ -26,8 +26,8 @@ codec = {package = "parity-scale-codec", workspace = true, features = ["derive"]
 scale-info = {workspace = true, features = ["derive"]}
 
 # Internal dependencies
-ctype = {default-features = false, path = "../ctype"}
-kilt-support = {default-features = false, path = "../../support"}
+ctype.workspace = true
+kilt-support.workspace = true
 
 # Substrate dependencies
 frame-benchmarking = {workspace = true, optional = true}
