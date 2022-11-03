@@ -487,7 +487,7 @@ pub mod pallet {
 		/// The balance that is reserved by the current deposit owner will be
 		/// freed and balance of the new deposit owner will get reserved.
 		///
-		/// The subject of the call must be the owner of the web3name.
+		/// The subject of the call must be the owner of the credential.
 		/// The sender of the call will be the new deposit owner.
 		#[pallet::weight(<T as Config>::WeightInfo::change_deposit_owner())]
 		pub fn change_deposit_owner(origin: OriginFor<T>, credential_id: CredentialIdOf<T>) -> DispatchResult {
