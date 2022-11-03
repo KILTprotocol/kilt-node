@@ -1,10 +1,16 @@
+cargo-features = ["workspace-inheritance"]
+
 [package]
-authors = ["KILT <info@kilt.io>"]
-description = "Enables adding and revoking public credentials."
-edition = "2021"
+authors.workspace = true
+documentation.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license-file.workspace = true
+readme.workspace = true
+repository.workspace = true
+version.workspace = true
 name = "public-credentials"
-repository = "https://github.com/KILTprotocol/kilt-node"
-version = "1.8.0"
+description = "Enables adding and revoking public credentials."
 
 [dev-dependencies]
 ctype = {features = ["mock"], path = "../ctype"}

@@ -10,3 +10,18 @@ members = [
   "support",
   "crates/*",
 ]
+
+[workspace.package]
+authors = ["KILT <info@kilt.io>"]
+documentation = "https://docs.kilt.io"
+edition = "2021"
+homepage = "https://kilt.io/"
+license-file = "LICENSE"
+readme = "README.md"
+repository = "https://github.com/KILTprotocol/kilt-node"
+version = "1.8.0"
+
+[workspace.dependencies]
+
+# Build deps
+substrate-wasm-builder = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.29"}

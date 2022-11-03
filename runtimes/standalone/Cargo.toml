@@ -1,8 +1,11 @@
+cargo-features = ["workspace-inheritance"]
+
 [package]
 authors = ["KILT <info@kilt.io>"]
 edition = "2021"
-name = "mashnet-node-runtime"
 version = "1.8.0"
+name = "mashnet-node-runtime"
+description = "Standalone runtime for KILT development"
 
 [build-dependencies]
 substrate-wasm-builder = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.29"}

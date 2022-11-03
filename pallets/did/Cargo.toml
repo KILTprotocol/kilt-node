@@ -1,16 +1,22 @@
+cargo-features = ["workspace-inheritance"]
+
 [package]
-authors = ["KILT <info@kilt.io>"]
-description = "Enables adding and removing decentralized identifiers (DIDs)."
-edition = "2021"
+authors.workspace = true
+documentation.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license-file.workspace = true
+readme.workspace = true
+repository.workspace = true
+version.workspace = true
 name = "did"
-repository = "https://github.com/KILTprotocol/kilt-node"
-version = "1.8.0"
+description = "Enables adding and removing decentralized identifiers (DIDs)."
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
 
 [build-dependencies]
-substrate-wasm-builder = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.29"}
+substrate-wasm-builder.workspace = true
 
 [dev-dependencies]
 env_logger = "0.9.0"

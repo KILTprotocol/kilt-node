@@ -1,10 +1,17 @@
+cargo-features = ["workspace-inheritance"]
+
 [package]
-authors = ["KILT <info@kilt.io>"]
-build = "build.rs"
-description = "KILT parachain"
-edition = "2021"
+authors.workspace = true
+documentation.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license-file.workspace = true
+readme.workspace = true
+repository.workspace = true
+version.workspace = true
 name = "kilt-parachain"
-version = "1.8.0"
+description = "Client for KILT parachain."
+build = "build.rs"
 
 [[bin]]
 name = "kilt-parachain"

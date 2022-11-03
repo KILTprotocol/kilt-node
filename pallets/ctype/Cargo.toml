@@ -1,3 +1,5 @@
+cargo-features = ["workspace-inheritance"]
+
 [package]
 authors = ["KILT <info@kilt.io>"]
 description = "Enables adding CTypes."

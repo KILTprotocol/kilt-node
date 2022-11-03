@@ -1,8 +1,16 @@
+cargo-features = ["workspace-inheritance"]
+
 [package]
-authors = ["KILT <info@kilt.io>"]
-edition = "2021"
+authors.workspace = true
+documentation.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license-file.workspace = true
+readme.workspace = true
+repository.workspace = true
+version.workspace = true
 name = "peregrine-runtime"
-version = "1.8.0"
+description = "Parachain runtime for KILT Testnets."
 
 [build-dependencies]
 substrate-wasm-builder = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.29"}

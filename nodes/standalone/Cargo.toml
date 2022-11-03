@@ -1,9 +1,17 @@
+cargo-features = ["workspace-inheritance"]
+
 [package]
-authors = ["KILT <info@kilt.io>"]
-build = "build.rs"
-edition = "2021"
+authors.workspace = true
+documentation.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license-file.workspace = true
+readme.workspace = true
+repository.workspace = true
+version.workspace = true
 name = "mashnet-node"
-version = "1.8.0"
+description = "Client for KILT standalone development chain."
+build = "build.rs"
 
 [[bin]]
 name = "mashnet-node"
