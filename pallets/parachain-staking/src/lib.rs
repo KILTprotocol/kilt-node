@@ -1426,7 +1426,7 @@ pub mod pallet {
 			DelegatorState::<T>::insert(&acc, delegator_state);
 			LastDelegation::<T>::insert(&acc, delegation_counter);
 
-			// initiate rewarded counter to match the current autored counter of the
+			// initiate rewarded counter to match the current authored counter of the
 			// candidate
 			BlocksRewarded::<T>::insert(&acc, BlocksAuthored::<T>::get(&collator));
 
