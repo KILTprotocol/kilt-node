@@ -5,8 +5,7 @@ panic = "unwind"
 members = [
   "nodes/*",
   "pallets/*",
-  "rpc/did/runtime-api",
-  "rpc/public-credentials/runtime-api",
+  "runtime-api/*",
   "runtimes/*",
   "support",
   "crates/*",

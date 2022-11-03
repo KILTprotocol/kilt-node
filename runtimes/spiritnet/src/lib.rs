@@ -1143,7 +1143,7 @@ impl_runtime_apis! {
 		}
 	}
 
-	impl did_rpc_runtime_api::Did<
+	impl kilt_runtime_api_did::Did<
 		Block,
 		DidIdentifier,
 		AccountId,
@@ -1152,7 +1152,7 @@ impl_runtime_apis! {
 		Hash,
 		BlockNumber
 	> for Runtime {
-		fn query_by_web3_name(name: Vec<u8>) -> Option<did_rpc_runtime_api::RawDidLinkedInfo<
+		fn query_by_web3_name(name: Vec<u8>) -> Option<kilt_runtime_api_did::RawDidLinkedInfo<
 				DidIdentifier,
 				AccountId,
 				LinkableAccountId,
@@ -1172,7 +1172,7 @@ impl_runtime_apis! {
 					).collect();
 					let service_endpoints = did::ServiceEndpoints::<Runtime>::iter_prefix(&owner_info.owner).map(|e| From::from(e.1)).collect();
 
-					did_rpc_runtime_api::RawDidLinkedInfo{
+					kilt_runtime_api_did::RawDidLinkedInfo{
 						identifier: owner_info.owner,
 						w3n: Some(name.into()),
 						accounts,
@@ -1183,7 +1183,7 @@ impl_runtime_apis! {
 		}
 
 		fn query_by_account(account: LinkableAccountId) -> Option<
-			did_rpc_runtime_api::RawDidLinkedInfo<
+			kilt_runtime_api_did::RawDidLinkedInfo<
 				DidIdentifier,
 				AccountId,
 				LinkableAccountId,
@@ -1201,7 +1201,7 @@ impl_runtime_apis! {
 					let accounts = pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(&connection_record.did).collect();
 					let service_endpoints = did::ServiceEndpoints::<Runtime>::iter_prefix(&connection_record.did).map(|e| From::from(e.1)).collect();
 
-					did_rpc_runtime_api::RawDidLinkedInfo {
+					kilt_runtime_api_did::RawDidLinkedInfo {
 						identifier: connection_record.did,
 						w3n,
 						accounts,
@@ -1212,7 +1212,7 @@ impl_runtime_apis! {
 		}
 
 		fn query(did: DidIdentifier) -> Option<
-			did_rpc_runtime_api::RawDidLinkedInfo<
+			kilt_runtime_api_did::RawDidLinkedInfo<
 				DidIdentifier,
 				AccountId,
 				LinkableAccountId,
@@ -1226,7 +1226,7 @@ impl_runtime_apis! {
 			let accounts = pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(&did).collect();
 			let service_endpoints = did::ServiceEndpoints::<Runtime>::iter_prefix(&did).map(|e| From::from(e.1)).collect();
 
-			Some(did_rpc_runtime_api::RawDidLinkedInfo {
+			Some(kilt_runtime_api_did::RawDidLinkedInfo {
 				identifier: did,
 				w3n,
 				accounts,
@@ -1236,7 +1236,7 @@ impl_runtime_apis! {
 		}
 	}
 
-	impl public_credentials_runtime_api::PublicCredentials<Block, Vec<u8>, Hash, public_credentials::CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>>, PublicCredentialsFilter<Hash, AccountId>, PublicCredentialsApiError> for Runtime {
+	impl kilt_runtime_api_public_credentials::PublicCredentials<Block, Vec<u8>, Hash, public_credentials::CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>>, PublicCredentialsFilter<Hash, AccountId>, PublicCredentialsApiError> for Runtime {
 		fn get_credential(credential_id: Hash) -> Option<public_credentials::CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>>> {
 			let subject = public_credentials::CredentialSubjects::<Runtime>::get(&credential_id)?;
 			public_credentials::Credentials::<Runtime>::get(&subject, &credential_id)
@@ -1253,12 +1253,12 @@ impl_runtime_apis! {
 		}
 	}
 
-	impl parachain_staking::runtime_api::ParachainStakingApi<Block, AccountId, Balance> for Runtime {
+	impl kilt_runtime_api_staking::Staking<Block, AccountId, Balance> for Runtime {
 		fn get_unclaimed_staking_rewards(account: &AccountId) -> Balance {
 			ParachainStaking::get_unclaimed_staking_rewards(account)
 		}
 
-		fn get_staking_rates() -> parachain_staking::runtime_api::StakingRates {
+		fn get_staking_rates() -> kilt_runtime_api_staking::StakingRates {
 			ParachainStaking::get_staking_rates()
 		}
 	}

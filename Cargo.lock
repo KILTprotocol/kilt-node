@@ -975,7 +975,6 @@ dependencies = [
  "cumulus-primitives-core",
  "cumulus-primitives-timestamp",
  "cumulus-primitives-utility",
- "did-rpc-runtime-api",
  "frame-benchmarking",
  "frame-executive",
  "frame-support",
@@ -984,6 +983,8 @@ dependencies = [
  "frame-system-rpc-runtime-api",
  "frame-try-runtime",
  "hex-literal",
+ "kilt-runtime-api-did",
+ "kilt-runtime-api-public-credentials",
  "log",
  "pallet-aura",
  "pallet-authorship",
@@ -1000,7 +1001,6 @@ dependencies = [
  "parachain-info",
  "parity-scale-codec",
  "public-credentials",
- "public-credentials-runtime-api",
  "runtime-common",
  "scale-info",
  "sp-api",
@@ -1997,18 +1997,6 @@ dependencies = [
  "sp-runtime",
  "sp-std",
  "substrate-wasm-builder",
-]
-
-[[package]]
-name = "did-rpc-runtime-api"
-version = "1.8.0"
-dependencies = [
- "did",
- "kilt-support",
- "parity-scale-codec",
- "scale-info",
- "sp-api",
- "sp-std",
 ]
 
 [[package]]
@@ -3672,6 +3660,38 @@ dependencies = [
 ]
 
 [[package]]
+name = "kilt-runtime-api-did"
+version = "1.8.0"
+dependencies = [
+ "did",
+ "kilt-support",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-api",
+ "sp-std",
+]
+
+[[package]]
+name = "kilt-runtime-api-public-credentials"
+version = "1.8.0"
+dependencies = [
+ "kilt-support",
+ "parity-scale-codec",
+ "sp-api",
+ "sp-std",
+]
+
+[[package]]
+name = "kilt-runtime-api-staking"
+version = "1.8.0"
+dependencies = [
+ "parity-scale-codec",
+ "scale-info",
+ "sp-api",
+ "sp-runtime",
+]
+
+[[package]]
 name = "kilt-support"
 version = "1.8.0"
 dependencies = [
@@ -4633,7 +4653,6 @@ dependencies = [
  "ctype",
  "delegation",
  "did",
- "did-rpc-runtime-api",
  "frame-benchmarking",
  "frame-executive",
  "frame-support",
@@ -4642,6 +4661,8 @@ dependencies = [
  "frame-system-rpc-runtime-api",
  "frame-try-runtime",
  "hex-literal",
+ "kilt-runtime-api-did",
+ "kilt-runtime-api-public-credentials",
  "kilt-support",
  "log",
  "pallet-aura",
@@ -4661,7 +4682,6 @@ dependencies = [
  "pallet-web3-names",
  "parity-scale-codec",
  "public-credentials",
- "public-credentials-runtime-api",
  "runtime-common",
  "scale-info",
  "sp-api",
@@ -6191,6 +6211,7 @@ dependencies = [
  "frame-benchmarking",
  "frame-support",
  "frame-system",
+ "kilt-runtime-api-staking",
  "log",
  "pallet-aura",
  "pallet-authorship",
@@ -6200,7 +6221,6 @@ dependencies = [
  "parity-scale-codec",
  "scale-info",
  "serde",
- "sp-api",
  "sp-consensus-aura",
  "sp-core",
  "sp-io",
@@ -6410,7 +6430,6 @@ dependencies = [
  "cumulus-primitives-utility",
  "delegation",
  "did",
- "did-rpc-runtime-api",
  "frame-benchmarking",
  "frame-executive",
  "frame-support",
@@ -6419,6 +6438,9 @@ dependencies = [
  "frame-system-rpc-runtime-api",
  "frame-try-runtime",
  "hex-literal",
+ "kilt-runtime-api-did",
+ "kilt-runtime-api-public-credentials",
+ "kilt-runtime-api-staking",
  "kilt-support",
  "log",
  "pallet-aura",
@@ -6449,7 +6471,6 @@ dependencies = [
  "parachain-staking",
  "parity-scale-codec",
  "public-credentials",
- "public-credentials-runtime-api",
  "runtime-common",
  "scale-info",
  "sp-api",
@@ -7942,16 +7963,6 @@ dependencies = [
  "sp-io",
  "sp-keystore",
  "sp-runtime",
- "sp-std",
-]
-
-[[package]]
-name = "public-credentials-runtime-api"
-version = "1.8.0"
-dependencies = [
- "kilt-support",
- "parity-scale-codec",
- "sp-api",
  "sp-std",
 ]
 
@@ -10761,7 +10772,6 @@ dependencies = [
  "cumulus-primitives-utility",
  "delegation",
  "did",
- "did-rpc-runtime-api",
  "frame-benchmarking",
  "frame-executive",
  "frame-support",
@@ -10770,6 +10780,9 @@ dependencies = [
  "frame-system-rpc-runtime-api",
  "frame-try-runtime",
  "hex-literal",
+ "kilt-runtime-api-did",
+ "kilt-runtime-api-public-credentials",
+ "kilt-runtime-api-staking",
  "kilt-support",
  "log",
  "pallet-aura",
@@ -10799,7 +10812,6 @@ dependencies = [
  "parachain-staking",
  "parity-scale-codec",
  "public-credentials",
- "public-credentials-runtime-api",
  "runtime-common",
  "scale-info",
  "sp-api",
@@ -11512,7 +11524,7 @@ version = "1.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "97fee6b57c6a41524a810daee9286c02d7752c4253064d0b05472833a438f675"
 dependencies = [
- "cfg-if 1.0.0",
+ "cfg-if 0.1.10",
  "digest 0.10.3",
  "rand 0.8.5",
  "static_assertions",

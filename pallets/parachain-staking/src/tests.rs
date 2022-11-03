@@ -24,6 +24,7 @@ use frame_support::{
 	assert_noop, assert_ok, storage::bounded_btree_map::BoundedBTreeMap, traits::EstimateNextSessionRotation,
 	BoundedVec,
 };
+use kilt_runtime_api_staking::StakingRates;
 use pallet_authorship::EventHandler;
 use pallet_balances::{BalanceLock, Error as BalancesError, Reasons};
 use pallet_session::{SessionManager, ShouldEndSession};
@@ -35,7 +36,6 @@ use crate::{
 		Event as MetaEvent, ExtBuilder, Origin, Session, StakePallet, System, Test, BLOCKS_PER_ROUND, DECIMALS,
 		TREASURY_ACC,
 	},
-	runtime_api::StakingRates,
 	set::OrderedSet,
 	types::{
 		BalanceOf, Candidate, CandidateStatus, DelegationCounter, Delegator, RoundInfo, Stake, StakeOf, TotalStake,

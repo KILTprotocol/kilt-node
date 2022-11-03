@@ -16,26 +16,33 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::dispatch::fmt::Debug;
-use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
+use codec::{Decode, Encode};
 use scale_info::TypeInfo;
-use sp_runtime::Perquintill;
+use sp_std::vec::Vec;
 
-#[derive(Decode, Encode, TypeInfo, MaxEncodedLen, PartialEq, Eq, Debug)]
-pub struct StakingRates {
-	pub collator_staking_rate: Perquintill,
-	pub collator_reward_rate: Perquintill,
-	pub delegator_staking_rate: Perquintill,
-	pub delegator_reward_rate: Perquintill,
+#[derive(Encode, Decode, TypeInfo, Eq, PartialEq)]
+pub struct ServiceEndpoint<Id, Type, Url> {
+	pub id: Id,
+	pub service_types: Vec<Type>,
+	pub urls: Vec<Url>,
 }
 
-sp_api::decl_runtime_apis! {
-	pub trait ParachainStakingApi<AccountId, Balance>
-	where
-		AccountId:  Eq + PartialEq + Debug + Encode + Decode + Clone,
-		Balance: Encode + Decode + MaxEncodedLen + Copy + Clone + Debug + Eq + PartialEq
-	{
-		fn get_unclaimed_staking_rewards(account: &AccountId) -> Balance;
-		fn get_staking_rates() -> StakingRates;
+impl<T: did::Config> From<did::service_endpoints::DidEndpoint<T>> for ServiceEndpoint<Vec<u8>, Vec<u8>, Vec<u8>> {
+	fn from(runtime_endpoint: did::service_endpoints::DidEndpoint<T>) -> Self {
+		ServiceEndpoint {
+			id: runtime_endpoint.id.into_inner(),
+			service_types: runtime_endpoint
+				.service_types
+				.into_inner()
+				.into_iter()
+				.map(|v| v.into_inner())
+				.collect(),
+			urls: runtime_endpoint
+				.urls
+				.into_inner()
+				.into_iter()
+				.map(|v| v.into_inner())
+				.collect(),
+		}
 	}
 }
