@@ -16,13 +16,14 @@ description = "Standalone runtime for KILT development"
 substrate-wasm-builder.workspace = true
 
 [dependencies]
+# External dependencies
 codec = {package = "parity-scale-codec", workspace = true, features = ["derive"]}
 log.workspace = true
 scale-info = {workspace = true, features = ["derive"]}
 
 hex-literal = {workspace = true, optional = true}
 
-# kilt functionality
+# KILT pallets & primitives
 attestation = {default-features = false, path = "../../pallets/attestation"}
 ctype = {default-features = false, path = "../../pallets/ctype"}
 delegation = {default-features = false, path = "../../pallets/delegation"}
@@ -33,16 +34,13 @@ pallet-web3-names = {default-features = false, path = "../../pallets/pallet-web3
 public-credentials = {default-features = false, path = "../../pallets/public-credentials"}
 runtime-common = {path = "../../runtimes/common", default-features = false}
 
-# RPC
+# RPC & Runtime API
 frame-system-rpc-runtime-api.workspace = true
 kilt-runtime-api-did = {path = "../../runtime-api/did", default-features = false}
 kilt-runtime-api-public-credentials = {path = "../../runtime-api/public-credentials", default-features = false}
 pallet-transaction-payment-rpc-runtime-api.workspace = true
 
-# Benchmarking
-frame-system-benchmarking = {workspace = true, optional = true}
-
-# Substrate
+# Substrate dependencies
 frame-benchmarking.workspace = true
 frame-executive.workspace = true
 frame-support.workspace = true
@@ -71,16 +69,14 @@ sp-std.workspace = true
 sp-transaction-pool.workspace = true
 sp-version.workspace = true
 
+# Benchmarking dependencies
+frame-system-benchmarking = {workspace = true, optional = true}
+
 # Runtime tests
 frame-try-runtime = { workspace = true, optional = true}
 
 [features]
 default = ["std"]
-# When enabled, the runtime API will not be build.
-#
-# This is required by Cumulus to access certain types of the
-# runtime without clashing with the runtime API exported functions
-# in WASM.
 runtime-benchmarks = [
   "attestation/runtime-benchmarks",
   "ctype/runtime-benchmarks",

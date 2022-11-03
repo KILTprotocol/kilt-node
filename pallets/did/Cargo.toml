@@ -28,14 +28,14 @@ pallet-balances = {workspace = true, features = ["std"]}
 sp-keystore = {workspace = true, features = ["std"]}
 
 [dependencies]
-# Internal
+# External dependencies
 log.workspace = true
 
-# KILT
+# Internal dependencies
 ctype = {path = "../ctype", optional = true}
 kilt-support = {default-features = false, path = "../../support"}
 
-# Substrate
+# Substrate dependencies
 codec = {package = "parity-scale-codec", workspace = true, features = ["derive"]}
 frame-support.workspace = true
 frame-system.workspace = true
@@ -45,7 +45,7 @@ sp-io.workspace = true
 sp-runtime.workspace = true
 sp-std.workspace = true
 
-# Benchmarking
+# Benchmarking dependencies
 frame-benchmarking = {workspace = true, optional = true}
 pallet-balances = {workspace = true, optional = true}
 sp-keystore = {workspace = true, optional = true}

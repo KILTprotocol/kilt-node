@@ -21,10 +21,11 @@ sp-core = {workspace = true, features = ["std"]}
 sp-io = {workspace = true, features = ["std"]}
 
 [dependencies]
+# External dependencies
 codec = {package = "parity-scale-codec", workspace = true, features = ["derive"]}
 scale-info = {workspace = true, features = ["derive"]}
 
-# benchmarking
+# Benchmarking dependencies
 frame-benchmarking = {workspace = true, optional = true}
 
 # Substrate dependencies
@@ -35,13 +36,11 @@ sp-std.workspace = true
 
 [features]
 default = ["std"]
-
 runtime-benchmarks = [
   "frame-benchmarking",
   "frame-support/runtime-benchmarks",
   "frame-system/runtime-benchmarks",
 ]
-
 std = [
   "frame-benchmarking/std",
   "frame-support/std",
@@ -50,7 +49,6 @@ std = [
   "sp-runtime/std",
   "sp-std/std",
 ]
-
 try-runtime = [
   "frame-support/try-runtime",
 ]

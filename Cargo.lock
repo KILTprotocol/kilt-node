@@ -1926,7 +1926,6 @@ dependencies = [
  "attestation",
  "bitflags",
  "ctype",
- "env_logger",
  "frame-benchmarking",
  "frame-support",
  "frame-system",

@@ -23,9 +23,6 @@ attestation = {features = ["mock"], path = "../attestation"}
 ctype = {features = ["mock"], path = "../ctype"}
 kilt-support = {features = ["mock"], path = "../../support"}
 
-# External dependencies
-env_logger.workspace = true
-
 # Substrate dependencies
 pallet-balances = {workspace = true, features = ["std"]}
 sp-core = {workspace = true, features = ["std"]}

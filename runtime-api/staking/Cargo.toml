@@ -12,14 +12,12 @@ version.workspace = true
 name = "kilt-runtime-api-staking"
 description = "Runtime APIs for dealing with parachain staking."
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 # External dependencies
 codec = {package = "parity-scale-codec", workspace = true, features = ["derive"]}
 scale-info = {workspace = true, features = ["derive"]}
 
-# External dependencies
+# Substrate dependencies
 sp-api.workspace = true
 sp-runtime.workspace = true
 

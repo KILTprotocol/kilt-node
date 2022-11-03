@@ -19,14 +19,8 @@ path = "src/main.rs"
 
 [build-dependencies]
 substrate-build-script-utils.workspace = true
+
 [dependencies]
-
-# Internal dependencies
-clone-runtime = {path = "../../runtimes/clone"}
-peregrine-runtime = {path = "../../runtimes/peregrine"}
-runtime-common = {path = "../../runtimes/common"}
-spiritnet-runtime = {path = "../../runtimes/spiritnet"}
-
 # External dependencies
 clap = {workspace = true, features = ["derive"]}
 codec.workspace = true
@@ -35,6 +29,12 @@ jsonrpsee = {workspace = true, features = ["server"]}
 log.workspace = true
 serde = {workspace = true, features = ["derive"]}
 serde_json.workspace = true
+
+# Internal dependencies
+clone-runtime = {path = "../../runtimes/clone"}
+peregrine-runtime = {path = "../../runtimes/peregrine"}
+runtime-common = {path = "../../runtimes/common"}
+spiritnet-runtime = {path = "../../runtimes/spiritnet"}
 
 # Substrate dependencies
 sc-basic-authorship = {workspace = true}

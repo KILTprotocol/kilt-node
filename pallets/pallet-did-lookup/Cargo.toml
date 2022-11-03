@@ -25,6 +25,7 @@ sp-io = {workspace = true, features = ["std"]}
 sp-keystore = {workspace = true, features = ["std"]}
 
 [dependencies]
+# External dependencies
 codec = {package = "parity-scale-codec", workspace = true, features = ["derive"]}
 hex.workspace = true
 libsecp256k1 = {workspace = true, features = ["hmac"]}
@@ -32,7 +33,7 @@ log.workspace = true
 scale-info = {workspace = true, features = ["derive"]}
 sha3.workspace = true
 
-# KILT
+# Internal dependencies
 kilt-support = {default-features = false, path = "../../support"}
 
 # Substrate dependencies
@@ -43,19 +44,17 @@ sp-io.workspace = true
 sp-runtime.workspace = true
 sp-std.workspace = true
 
-# benchmarking
+# Benchmarking dependencies
 frame-benchmarking = {workspace = true, optional = true}
 
 [features]
 default = ["std"]
-
 runtime-benchmarks = [
   "frame-benchmarking",
   "kilt-support/runtime-benchmarks",
   "frame-support/runtime-benchmarks",
   "frame-system/runtime-benchmarks",
 ]
-
 std = [
   "codec/std",
   "frame-benchmarking/std",
@@ -69,7 +68,6 @@ std = [
   "sp-runtime/std",
   "sp-std/std",
 ]
-
 try-runtime = [
   "frame-support/try-runtime",
   "kilt-support/try-runtime",

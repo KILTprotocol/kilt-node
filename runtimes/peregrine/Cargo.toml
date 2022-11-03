@@ -16,13 +16,14 @@ description = "Parachain runtime for KILT Testnets."
 substrate-wasm-builder.workspace = true
 
 [dependencies]
+# External dependencies
 codec = {package = "parity-scale-codec", workspace = true, features = ["derive"]}
 log.workspace = true
 scale-info = {workspace = true, features = ["derive"]}
 
 hex-literal = {workspace = true, optional = true}
 
-# RPC
+# RPC & Runtime API
 frame-system-rpc-runtime-api.workspace = true
 kilt-runtime-api-did = {path = "../../runtime-api/did", default-features = false}
 kilt-runtime-api-public-credentials = {path = "../../runtime-api/public-credentials", default-features = false}
@@ -96,7 +97,7 @@ xcm.workspace = true
 xcm-builder.workspace = true
 xcm-executor.workspace = true
 
-# Benchmarking
+# Benchmarking dependencies
 cumulus-pallet-session-benchmarking = {workspace = true, optional = true}
 frame-system-benchmarking = {workspace = true, optional = true}
 
@@ -105,11 +106,6 @@ frame-try-runtime = {workspace = true, optional = true}
 
 [features]
 default = ["std"]
-# When enabled, the runtime API will not be build.
-#
-# This is required by Cumulus to access certain types of the
-# runtime without clashing with the runtime API exported functions
-# in WASM.
 fast-gov = ["runtime-common/fast-gov"]
 runtime-benchmarks = [
   "attestation/runtime-benchmarks",

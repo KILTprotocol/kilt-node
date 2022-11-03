@@ -21,6 +21,7 @@ sp-io = {workspace = true, features = ["std"]}
 sp-keystore = {workspace = true, features = ["std"]}
 
 [dependencies]
+# External dependencies
 codec = {package = "parity-scale-codec", workspace = true, features = ["derive"]}
 scale-info = {workspace = true, features = ["derive"]}
 
@@ -28,7 +29,7 @@ scale-info = {workspace = true, features = ["derive"]}
 ctype = {default-features = false, path = "../ctype"}
 kilt-support = {default-features = false, path = "../../support"}
 
-# External dependencies
+# Substrate dependencies
 frame-benchmarking = {workspace = true, optional = true}
 frame-support.workspace = true
 frame-system.workspace = true

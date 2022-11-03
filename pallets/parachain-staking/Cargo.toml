@@ -20,13 +20,16 @@ sp-core = {workspace = true, features = ["std"]}
 sp-io = {workspace = true, features = ["std"]}
 
 [dependencies]
-kilt-runtime-api-staking = {path = "../../runtime-api/staking", default-features = false}
-
+# External dependencies
 codec = {package = "parity-scale-codec", workspace = true, features = ["derive"]}
 log.workspace = true
 scale-info = {workspace = true, features = ["derive", "serde"]}
 serde = {workspace = true, optional = true}
 
+# Internal dependencies
+kilt-runtime-api-staking = {path = "../../runtime-api/staking", default-features = false}
+
+# Substrate dependencies
 frame-support.workspace = true
 frame-system.workspace = true
 pallet-authorship.workspace = true
@@ -36,7 +39,7 @@ sp-runtime.workspace = true
 sp-staking.workspace = true
 sp-std.workspace = true
 
-# benchmarking
+# Benchmarking dependencies
 frame-benchmarking = {workspace = true, optional = true}
 
 [features]

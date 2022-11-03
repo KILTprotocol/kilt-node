@@ -25,9 +25,11 @@ sp-core = {workspace = true, features = ["std"]}
 sp-keystore = {workspace = true, features = ["std"]}
 
 [dependencies]
+# External dependencies
 codec = {package = "parity-scale-codec", workspace = true, features = ["derive"]}
 log.workspace = true
 scale-info = {workspace = true, features = ["derive"]}
+
 # Internal dependencies
 kilt-support = {default-features = false, path = "../../support"}
 

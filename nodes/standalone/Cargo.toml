@@ -19,15 +19,16 @@ path = "src/main.rs"
 
 [build-dependencies]
 substrate-build-script-utils.workspace = true
+
 [dependencies]
+# External dependencies
+clap = {workspace = true, features = ["derive"]}
+jsonrpsee = {workspace = true, features = ["server"]}
 
 # Internal dependencies
 mashnet-node-runtime = {path = "../../runtimes/standalone"}
 runtime-common = {path = "../../runtimes/common"}
 
-# External dependencies
-clap = { workspace = true, features = ["derive"]}
-jsonrpsee = { workspace = true, features = ["server"] }
 
 # Substrate dependencies
 frame-system = {workspace = true, features = ["std"]}
