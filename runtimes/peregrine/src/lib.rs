@@ -651,11 +651,9 @@ impl parachain_staking::Config for Runtime {
 	type MinRequiredCollators = constants::staking::MinRequiredCollators;
 	type MaxDelegationsPerRound = constants::staking::MaxDelegationsPerRound;
 	type MaxDelegatorsPerCollator = constants::staking::MaxDelegatorsPerCollator;
-	type MaxCollatorsPerDelegator = constants::staking::MaxCollatorsPerDelegator;
 	type MinCollatorStake = constants::staking::MinCollatorStake;
 	type MinCollatorCandidateStake = constants::staking::MinCollatorStake;
 	type MaxTopCandidates = constants::staking::MaxCollatorCandidates;
-	type MinDelegation = constants::staking::MinDelegatorStake;
 	type MinDelegatorStake = constants::staking::MinDelegatorStake;
 	type MaxUnstakeRequests = constants::staking::MaxUnstakeRequests;
 	type NetworkRewardRate = constants::staking::NetworkRewardRate;
@@ -1258,6 +1256,16 @@ impl_runtime_apis! {
 			} else {
 				Ok(credentials_prefix.collect())
 			}
+		}
+	}
+
+	impl parachain_staking::runtime_api::ParachainStakingApi<Block, AccountId, Balance> for Runtime {
+		fn get_unclaimed_staking_rewards(account: &AccountId) -> Balance {
+			ParachainStaking::get_unclaimed_staking_rewards(account)
+		}
+
+		fn get_staking_rates() -> parachain_staking::runtime_api::StakingRates {
+			ParachainStaking::get_staking_rates()
 		}
 	}
 

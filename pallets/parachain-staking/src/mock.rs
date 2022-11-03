@@ -22,7 +22,7 @@
 use super::*;
 use crate::{self as stake, types::NegativeImbalanceOf};
 use frame_support::{
-	construct_runtime, parameter_types,
+	assert_ok, construct_runtime, parameter_types,
 	traits::{Currency, GenesisBuild, OnFinalize, OnInitialize, OnUnbalanced},
 };
 use pallet_authorship::EventHandler;
@@ -132,15 +132,13 @@ parameter_types! {
 	pub const ExitQueueDelay: u32 = 2;
 	pub const DefaultBlocksPerRound: BlockNumber = BLOCKS_PER_ROUND;
 	pub const MinCollators: u32 = 2;
+	pub const MaxDelegationsPerRound: u32 = 2;
 	#[derive(Debug, Eq, PartialEq)]
 	pub const MaxDelegatorsPerCollator: u32 = 4;
-	#[derive(Debug, Eq, PartialEq)]
-	pub const MaxCollatorsPerDelegator: u32 = 4;
 	pub const MinCollatorStake: Balance = 10;
 	#[derive(Debug, Eq, PartialEq)]
 	pub const MaxCollatorCandidates: u32 = 10;
 	pub const MinDelegatorStake: Balance = 5;
-	pub const MinDelegation: Balance = 3;
 	pub const MaxUnstakeRequests: u32 = 6;
 	pub const NetworkRewardRate: Perquintill = Perquintill::from_percent(10);
 	pub const NetworkRewardStart: BlockNumber = 5 * 5 * 60 * 24 * 36525 / 100;
@@ -164,14 +162,12 @@ impl Config for Test {
 	type ExitQueueDelay = ExitQueueDelay;
 	type MinCollators = MinCollators;
 	type MinRequiredCollators = MinCollators;
-	type MaxDelegationsPerRound = MaxDelegatorsPerCollator;
+	type MaxDelegationsPerRound = MaxDelegationsPerRound;
 	type MaxDelegatorsPerCollator = MaxDelegatorsPerCollator;
-	type MaxCollatorsPerDelegator = MaxCollatorsPerDelegator;
 	type MinCollatorStake = MinCollatorStake;
 	type MinCollatorCandidateStake = MinCollatorStake;
 	type MaxTopCandidates = MaxCollatorCandidates;
 	type MinDelegatorStake = MinDelegatorStake;
-	type MinDelegation = MinDelegation;
 	type MaxUnstakeRequests = MaxUnstakeRequests;
 	type NetworkRewardRate = NetworkRewardRate;
 	type NetworkRewardStart = NetworkRewardStart;
@@ -357,10 +353,53 @@ pub(crate) fn almost_equal(left: Balance, right: Balance, precision: Perbill) ->
 	left.max(right) - left.min(right) <= err
 }
 
+/// Incrementelly traverses from the current block to the provided one and
+/// potentially sets block authors.
+///
+/// If for a block `i` the corresponding index of the authors input is set, this
+/// account is regarded to be the block author and thus gets noted.
+///
+/// NOTE: At most, this updates the RewardCount of the block author but does not
+/// increment rewards or claim them. Please use `roll_to_claim_rewards` in that
+/// case.
 pub(crate) fn roll_to(n: BlockNumber, authors: Vec<Option<AccountId>>) {
 	while System::block_number() < n {
 		if let Some(Some(author)) = authors.get((System::block_number()) as usize) {
 			StakePallet::note_author(*author);
+		}
+		<AllPalletsWithSystem as OnFinalize<u64>>::on_finalize(System::block_number());
+		System::set_block_number(System::block_number() + 1);
+		<AllPalletsWithSystem as OnInitialize<u64>>::on_initialize(System::block_number());
+	}
+}
+
+#[allow(unused_must_use)]
+/// Incrementelly traverses from the current block to the provided one and
+/// potentially sets block authors.
+///
+/// If existent, rewards of the block author and their delegators are
+/// incremented and claimed.
+///
+/// If for a block `i` the corresponding index of the authors input is set, this
+/// account is regarded to be the block author and thus gets noted.
+pub(crate) fn roll_to_claim_rewards(n: BlockNumber, authors: Vec<Option<AccountId>>) {
+	while System::block_number() < n {
+		if let Some(Some(author)) = authors.get((System::block_number()) as usize) {
+			StakePallet::note_author(*author);
+			// author has to increment rewards before claiming
+			assert_ok!(StakePallet::increment_collator_rewards(Origin::signed(*author)));
+			// author claims rewards
+			assert_ok!(StakePallet::claim_rewards(Origin::signed(*author)));
+
+			// claim rewards for delegators
+			let col_state = StakePallet::candidate_pool(author).expect("Block author must be candidate");
+			for delegation in col_state.delegators {
+				// delegator has to increment rewards before claiming
+				StakePallet::increment_delegator_rewards(Origin::signed(delegation.owner));
+				// NOTE: cannot use assert_ok! as we sometimes expect zero rewards for
+				// delegators such that the claiming would throw
+				StakePallet::claim_rewards(Origin::signed(delegation.owner));
+			}
 		}
 		<AllPalletsWithSystem as OnFinalize<u64>>::on_finalize(System::block_number());
 		System::set_block_number(System::block_number() + 1);

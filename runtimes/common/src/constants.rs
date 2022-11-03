@@ -205,9 +205,6 @@ pub mod staking {
 		/// Maximum 25 delegators per collator at launch, might be increased later
 		#[derive(Debug, Eq, PartialEq)]
 		pub const MaxDelegatorsPerCollator: u32 = MAX_DELEGATORS_PER_COLLATOR;
-		/// Maximum 1 collator per delegator at launch, will be increased later
-		#[derive(Debug, Eq, PartialEq)]
-		pub const MaxCollatorsPerDelegator: u32 = 1;
 		/// Minimum stake required to be reserved to be a collator is 10_000
 		pub const MinCollatorStake: Balance = 10_000 * KILT;
 		/// Minimum stake required to be reserved to be a delegator is 1000
