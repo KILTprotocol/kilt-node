@@ -43,7 +43,7 @@ public-credentials = {default-features = false, path = "../../pallets/public-cre
 runtime-common = {path = "../../runtimes/common", default-features = false}
 
 # Substrate dependencies
-sp-api = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.29"}
+sp-api.workspace = true
 sp-block-builder = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.29"}
 sp-consensus-aura = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.29"}
 sp-core = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.29"}
