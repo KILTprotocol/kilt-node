@@ -19,8 +19,8 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use crate::{
-	types::BalanceOf, CandidatePool, Config, DelegatorState, InflationConfig, Pallet, Rewards,
-	TotalCollatorStake, BlocksRewarded, BlocksAuthored,
+	types::BalanceOf, BlocksAuthored, BlocksRewarded, CandidatePool, Config, DelegatorState, InflationConfig, Pallet,
+	Rewards, TotalCollatorStake,
 };
 use frame_support::traits::Currency;
 use sp_runtime::{
