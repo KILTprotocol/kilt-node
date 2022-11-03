@@ -22,6 +22,7 @@ use crate::{
 };
 
 use super::*;
+use codec::{Decode, Encode, MaxEncodedLen};
 use core::marker::PhantomData;
 use frame_support::{
 	dispatch::GetStorageVersion,
@@ -31,7 +32,6 @@ use frame_support::{
 	weights::Weight,
 	RuntimeDebug,
 };
-use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 
 #[cfg(feature = "try-runtime")]

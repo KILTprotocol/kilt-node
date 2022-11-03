@@ -18,8 +18,7 @@ name = "kilt-parachain"
 path = "src/main.rs"
 
 [build-dependencies]
-substrate-build-script-utils = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.29"}
-
+substrate-build-script-utils.workspace = true
 [dependencies]
 
 # Internal dependencies
@@ -93,7 +92,7 @@ frame-benchmarking = {workspace = true, features = ["std"]}
 frame-benchmarking-cli = {workspace = true}
 
 # Runtime tests
-try-runtime-cli = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.29", optional = true}
+try-runtime-cli = {workspace = true, optional = true}
 
 [features]
 default = []

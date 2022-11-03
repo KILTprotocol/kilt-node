@@ -16,27 +16,27 @@ description = "Enables adding and revoking public credentials."
 ctype = {features = ["mock"], path = "../ctype"}
 kilt-support = {features = ["mock"], path = "../../support"}
 
-pallet-balances = {branch = "polkadot-v0.9.29", git = "https://github.com/paritytech/substrate"}
-sp-io = {branch = "polkadot-v0.9.29", git = "https://github.com/paritytech/substrate"}
-sp-keystore = {branch = "polkadot-v0.9.29", git = "https://github.com/paritytech/substrate"}
+pallet-balances = {workspace = true, features = ["std"]}
+sp-io = {workspace = true, features = ["std"]}
+sp-keystore = {workspace = true, features = ["std"]}
 
 [dependencies]
-codec = {package = "parity-scale-codec", version = "3.1.2", default-features = false, features = ["derive"]}
-scale-info = {version = "2.1.1", default-features = false, features = ["derive"]}
+codec = {package = "parity-scale-codec", workspace = true, features = ["derive"]}
+scale-info = {workspace = true, features = ["derive"]}
 
 # Internal dependencies
 ctype = {default-features = false, path = "../ctype"}
 kilt-support = {default-features = false, path = "../../support"}
 
 # External dependencies
-frame-benchmarking = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
-frame-support = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
-frame-system = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-core = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-io = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
-sp-keystore = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
-sp-runtime = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-std = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
+frame-benchmarking = {workspace = true, optional = true}
+frame-support.workspace = true
+frame-system.workspace = true
+sp-core.workspace = true
+sp-io = {workspace = true, optional = true}
+sp-keystore = {workspace = true, optional = true}
+sp-runtime.workspace = true
+sp-std.workspace = true
 
 [features]
 default = ["std"]
