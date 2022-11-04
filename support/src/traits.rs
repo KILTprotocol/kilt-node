@@ -16,6 +16,11 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use frame_support::traits::{Currency, ReservableCurrency};
+use sp_runtime::DispatchError;
+
+use crate::{deposit::Deposit, free_deposit};
+
 /// The sources of a call struct.
 ///
 /// This trait allows to differentiate between the sender of a call and the
@@ -79,4 +84,69 @@ pub trait GetWorstCase {
 /// Generic filter.
 pub trait ItemFilter<Item> {
 	fn should_include(&self, credential: &Item) -> bool;
+}
+
+pub trait StorageDepositCollector<AccountId, Key> {
+	type Currency: ReservableCurrency<AccountId>;
+
+	/// Returns the deposit of the storage entry that is stored behind the key.
+	fn deposit(
+		key: &Key,
+	) -> Result<Deposit<AccountId, <Self::Currency as Currency<AccountId>>::Balance>, DispatchError>;
+
+	/// Returns the deposit amount that should be reserved for the storage entry
+	/// behind the key.
+	///
+	/// This value can differ from the actual deposit that is reserved at the
+	/// time, since the deposit can be changed.
+	fn deposit_amount(key: &Key) -> <Self::Currency as Currency<AccountId>>::Balance;
+
+	/// Store the new deposit information in the storage entry behind the key.
+	fn store_deposit(
+		key: &Key,
+		deposit: Deposit<AccountId, <Self::Currency as Currency<AccountId>>::Balance>,
+	) -> Result<(), DispatchError>;
+
+	/// Change the deposit owner.
+	///
+	/// The deposit balance of the current owner will be freed, while the
+	/// deposit balance of the new owner will get reserved. The deposit amount
+	/// will not change even if the required byte and item fees were updated.
+	fn change_deposit_owner(key: &Key, new_owner: AccountId) -> Result<(), DispatchError> {
+		let deposit = Self::deposit(key)?;
+
+		free_deposit::<AccountId, Self::Currency>(&deposit);
+
+		let deposit = Deposit {
+			owner: new_owner,
+			..deposit
+		};
+		Self::Currency::reserve(&deposit.owner, deposit.amount)?;
+
+		Self::store_deposit(key, deposit)?;
+
+		Ok(())
+	}
+
+	/// Update the deposit amount.
+	///
+	/// In case the required deposit per item and byte changed, this function
+	/// updates the deposit amount. It either frees parts of the reserved
+	/// balance in case the deposit was lowered or reserves more balance when
+	/// the deposit was raised.
+	fn update_deposit(key: &Key) -> Result<(), DispatchError> {
+		let deposit = Self::deposit(key)?;
+
+		free_deposit::<AccountId, Self::Currency>(&deposit);
+
+		let deposit = Deposit {
+			amount: Self::deposit_amount(key),
+			..deposit
+		};
+		Self::Currency::reserve(&deposit.owner, deposit.amount)?;
+
+		Self::store_deposit(key, deposit)?;
+
+		Ok(())
+	}
 }

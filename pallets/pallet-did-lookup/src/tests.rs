@@ -428,7 +428,7 @@ fn test_reclaim_deposit_not_authorized() {
 // transfer deposit
 
 #[test]
-fn test_transfer_deposit() {
+fn test_change_deposit_owner() {
 	ExtBuilder::default()
 		.with_balances(vec![
 			(ACCOUNT_00, <Test as crate::Config>::Deposit::get() * 50),
@@ -437,7 +437,7 @@ fn test_transfer_deposit() {
 		.with_connections(vec![(ACCOUNT_00, DID_00, LINKABLE_ACCOUNT_00)])
 		.build()
 		.execute_with(|| {
-			assert_ok!(DidLookup::transfer_deposit(
+			assert_ok!(DidLookup::change_deposit_owner(
 				mock_origin::DoubleOrigin(ACCOUNT_01, DID_00).into(),
 				ACCOUNT_00.into()
 			));
@@ -450,22 +450,57 @@ fn test_transfer_deposit() {
 }
 
 #[test]
-fn test_transfer_deposit_insufficient_balance() {
+fn test_change_deposit_owner_insufficient_balance() {
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, <Test as crate::Config>::Deposit::get() * 50)])
 		.with_connections(vec![(ACCOUNT_00, DID_00, LINKABLE_ACCOUNT_00)])
 		.build()
 		.execute_with(|| {
 			assert_noop!(
-				DidLookup::transfer_deposit(mock_origin::DoubleOrigin(ACCOUNT_01, DID_00).into(), ACCOUNT_00.into()),
+				DidLookup::change_deposit_owner(
+					mock_origin::DoubleOrigin(ACCOUNT_01, DID_00).into(),
+					ACCOUNT_00.into()
+				),
 				pallet_balances::Error::<Test>::InsufficientBalance
 			);
 		})
 }
 
-/// Update the deposit amount
 #[test]
-fn test_transfer_deposit_to_self() {
+fn test_change_deposit_owner_not_found() {
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, <Test as crate::Config>::Deposit::get() * 50)])
+		.build()
+		.execute_with(|| {
+			assert_noop!(
+				DidLookup::change_deposit_owner(
+					mock_origin::DoubleOrigin(ACCOUNT_01, DID_00).into(),
+					ACCOUNT_00.into()
+				),
+				Error::<Test>::AssociationNotFound
+			);
+		})
+}
+
+#[test]
+fn test_change_deposit_owner_not_authorized() {
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, <Test as crate::Config>::Deposit::get() * 50)])
+		.with_connections(vec![(ACCOUNT_00, DID_00, LINKABLE_ACCOUNT_00)])
+		.build()
+		.execute_with(|| {
+			assert_noop!(
+				DidLookup::change_deposit_owner(
+					mock_origin::DoubleOrigin(ACCOUNT_01, DID_01).into(),
+					ACCOUNT_00.into()
+				),
+				Error::<Test>::NotAuthorized
+			);
+		})
+}
+
+#[test]
+fn test_update_deposit() {
 	ExtBuilder::default()
 		.with_balances(vec![
 			(ACCOUNT_00, <Test as crate::Config>::Deposit::get() * 50),
@@ -483,40 +518,35 @@ fn test_transfer_deposit_to_self() {
 				Balances::reserved_balance(ACCOUNT_00),
 				<Test as crate::Config>::Deposit::get() * 2
 			);
-			assert_ok!(DidLookup::transfer_deposit(
-				mock_origin::DoubleOrigin(ACCOUNT_01, DID_00).into(),
-				ACCOUNT_00.into()
-			));
-			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
+			assert_ok!(DidLookup::update_deposit(Origin::signed(ACCOUNT_00), ACCOUNT_00.into()));
 			assert_eq!(
-				Balances::reserved_balance(ACCOUNT_01),
+				Balances::reserved_balance(ACCOUNT_00),
 				<Test as crate::Config>::Deposit::get()
 			);
 		})
 }
 
 #[test]
-fn test_transfer_deposit_not_found() {
+fn test_update_deposit_unauthorized() {
 	ExtBuilder::default()
-		.with_balances(vec![(ACCOUNT_00, <Test as crate::Config>::Deposit::get() * 50)])
+		.with_balances(vec![
+			(ACCOUNT_00, <Test as crate::Config>::Deposit::get() * 50),
+			(ACCOUNT_01, <Test as crate::Config>::Deposit::get() * 50),
+		])
 		.build()
 		.execute_with(|| {
-			assert_noop!(
-				DidLookup::transfer_deposit(mock_origin::DoubleOrigin(ACCOUNT_01, DID_00).into(), ACCOUNT_00.into()),
-				Error::<Test>::AssociationNotFound
+			insert_raw_connection::<Test>(
+				ACCOUNT_00,
+				DID_00,
+				ACCOUNT_00.into(),
+				<Test as crate::Config>::Deposit::get() * 2,
 			);
-		})
-}
-
-#[test]
-fn test_transfer_deposit_not_authorized() {
-	ExtBuilder::default()
-		.with_balances(vec![(ACCOUNT_00, <Test as crate::Config>::Deposit::get() * 50)])
-		.with_connections(vec![(ACCOUNT_00, DID_00, LINKABLE_ACCOUNT_00)])
-		.build()
-		.execute_with(|| {
+			assert_eq!(
+				Balances::reserved_balance(ACCOUNT_00),
+				<Test as crate::Config>::Deposit::get() * 2
+			);
 			assert_noop!(
-				DidLookup::transfer_deposit(mock_origin::DoubleOrigin(ACCOUNT_01, DID_01).into(), ACCOUNT_00.into()),
+				DidLookup::update_deposit(Origin::signed(ACCOUNT_01), ACCOUNT_00.into()),
 				Error::<Test>::NotAuthorized
 			);
 		})

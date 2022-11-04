@@ -243,7 +243,7 @@ benchmarks! {
 		assert!(ConnectedAccounts::<T>::get(did, linkable_id).is_none());
 	}
 
-	transfer_deposit {
+	change_deposit_owner {
 		let deposit_owner_old: T::AccountId = account("caller", 0, SEED);
 		let deposit_owner_new: T::AccountId = account("caller", 1, SEED);
 		let linkable_id: LinkableAccountId = deposit_owner_old.clone().into();
@@ -261,6 +261,31 @@ benchmarks! {
 			ConnectedDids::<T>::get(&linkable_id).expect("should retain link").deposit,
 			Deposit {
 				owner: deposit_owner_new,
+				amount: <T as Config>::Deposit::get(),
+			},
+		);
+	}
+
+	update_deposit {
+		let deposit_owner: T::AccountId = account("caller", 0, SEED);
+		let linkable_id: LinkableAccountId = deposit_owner.clone().into();
+		let did: T::DidIdentifier = account("did", 0, SEED);
+		make_free_for_did::<T>(&deposit_owner);
+
+		Pallet::<T>::add_association(
+			deposit_owner.clone(),
+			did,
+			linkable_id.clone()
+		).expect("should create association");
+
+		let origin = RawOrigin::Signed(deposit_owner.clone());
+		let id_arg = linkable_id.clone();
+	}: _(origin, id_arg)
+	verify {
+		assert_eq!(
+			ConnectedDids::<T>::get(&linkable_id).expect("should retain link").deposit,
+			Deposit {
+				owner: deposit_owner,
 				amount: <T as Config>::Deposit::get(),
 			},
 		);

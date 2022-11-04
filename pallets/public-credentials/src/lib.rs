@@ -61,7 +61,10 @@ pub mod pallet {
 	use sp_std::{boxed::Box, vec::Vec};
 
 	pub use ctype::CtypeHashOf;
-	use kilt_support::traits::CallSources;
+	use kilt_support::{
+		deposit::Deposit,
+		traits::{CallSources, StorageDepositCollector},
+	};
 
 	/// The current storage version.
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
@@ -478,6 +481,42 @@ pub mod pallet {
 
 			Ok(())
 		}
+
+		/// Changes the deposit owner.
+		///
+		/// The balance that is reserved by the current deposit owner will be
+		/// freed and balance of the new deposit owner will get reserved.
+		///
+		/// The subject of the call must be the owner of the credential.
+		/// The sender of the call will be the new deposit owner.
+		#[pallet::weight(<T as Config>::WeightInfo::change_deposit_owner())]
+		pub fn change_deposit_owner(origin: OriginFor<T>, credential_id: CredentialIdOf<T>) -> DispatchResult {
+			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
+			let subject = source.subject();
+
+			let (_, credential_entry) = Self::retrieve_credential_entry(&credential_id)?;
+
+			ensure!(subject == credential_entry.attester, Error::<T>::Unauthorized);
+
+			PublicCredentialDepositCollector::<T>::change_deposit_owner(&credential_id, source.sender())?;
+
+			Ok(())
+		}
+
+		/// Updates the deposit amount to the current deposit rate.
+		///
+		/// The sender must be the deposit owner.
+		#[pallet::weight(<T as Config>::WeightInfo::update_deposit())]
+		pub fn update_deposit(origin: OriginFor<T>, credential_id: CredentialIdOf<T>) -> DispatchResult {
+			let source = ensure_signed(origin)?;
+			let (_, credential_entry) = Self::retrieve_credential_entry(&credential_id)?;
+
+			ensure!(source == credential_entry.deposit.owner, Error::<T>::Unauthorized);
+
+			PublicCredentialDepositCollector::<T>::update_deposit(&credential_id)?;
+
+			Ok(())
+		}
 	}
 
 	impl<T: Config> Pallet<T> {
@@ -541,6 +580,38 @@ pub mod pallet {
 				} else {
 					// No weight is computed as the error is an early return.
 					Err(Error::<T>::CredentialNotFound)
+				}
+			})
+		}
+	}
+
+	struct PublicCredentialDepositCollector<T: Config>(PhantomData<T>);
+	impl<T: Config> StorageDepositCollector<AccountIdOf<T>, CredentialIdOf<T>> for PublicCredentialDepositCollector<T> {
+		type Currency = <T as Config>::Currency;
+
+		fn deposit(
+			credential_id: &CredentialIdOf<T>,
+		) -> Result<Deposit<AccountIdOf<T>, <Self::Currency as Currency<AccountIdOf<T>>>::Balance>, DispatchError> {
+			let (_, credential_entry) = Pallet::<T>::retrieve_credential_entry(credential_id)?;
+			Ok(credential_entry.deposit)
+		}
+
+		fn deposit_amount(_credential_id: &CredentialIdOf<T>) -> <Self::Currency as Currency<AccountIdOf<T>>>::Balance {
+			T::Deposit::get()
+		}
+
+		fn store_deposit(
+			credential_id: &CredentialIdOf<T>,
+			deposit: Deposit<AccountIdOf<T>, <Self::Currency as Currency<AccountIdOf<T>>>::Balance>,
+		) -> Result<(), DispatchError> {
+			let credential_subject =
+				CredentialSubjects::<T>::get(&credential_id).ok_or(Error::<T>::CredentialNotFound)?;
+			Credentials::<T>::try_mutate(&credential_subject, &credential_id, |credential_entry| {
+				if let Some(credential) = credential_entry {
+					credential.deposit = deposit;
+					Ok(())
+				} else {
+					Err(Error::<T>::CredentialNotFound.into())
 				}
 			})
 		}

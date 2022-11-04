@@ -726,7 +726,8 @@ impl InstanceFilter<Call> for ProxyType {
 				Call::Attestation(..)
 					| Call::Authorship(..)
 					// Excludes `Balances`
-					| Call::Council(..) | Call::Ctype(..)
+					| Call::Council(..)
+					| Call::Ctype(..)
 					| Call::Delegation(..)
 					| Call::Democracy(..)
 					| Call::Did(..)
@@ -744,7 +745,6 @@ impl InstanceFilter<Call> for ProxyType {
 					| Call::PublicCredentials(..)
 					| Call::Scheduler(..)
 					| Call::Session(..)
-					// Excludes `Sudo`
 					| Call::System(..)
 					| Call::TechnicalCommittee(..)
 					| Call::TechnicalMembership(..)
@@ -766,16 +766,21 @@ impl InstanceFilter<Call> for ProxyType {
 						attestation::Call::add { .. }
 							| attestation::Call::remove { .. }
 							| attestation::Call::revoke { .. }
+							| attestation::Call::change_deposit_owner { .. }
+							| attestation::Call::update_deposit { .. }
 					)
 					| Call::Authorship(..)
 					// Excludes `Balances`
-					| Call::Council(..) | Call::Ctype(..)
+					| Call::Council(..)
+					| Call::Ctype(..)
 					| Call::Delegation(
 						// Excludes `reclaim_deposit`
 						delegation::Call::add_delegation { .. }
 							| delegation::Call::create_hierarchy { .. }
 							| delegation::Call::remove_delegation { .. }
 							| delegation::Call::revoke_delegation { .. }
+							| delegation::Call::update_deposit { .. }
+							| delegation::Call::change_deposit_owner { .. }
 					)
 					| Call::Democracy(..)
 					| Call::Did(
@@ -792,6 +797,8 @@ impl InstanceFilter<Call> for ProxyType {
 							| did::Call::set_authentication_key { .. }
 							| did::Call::set_delegation_key { .. }
 							| did::Call::submit_did_call { .. }
+							| did::Call::update_deposit { .. }
+							| did::Call::change_deposit_owner { .. }
 					)
 					| Call::DidLookup(
 						// Excludes `reclaim_deposit`
@@ -799,6 +806,8 @@ impl InstanceFilter<Call> for ProxyType {
 							| pallet_did_lookup::Call::associate_sender { .. }
 							| pallet_did_lookup::Call::remove_account_association { .. }
 							| pallet_did_lookup::Call::remove_sender_association { .. }
+							| pallet_did_lookup::Call::update_deposit { .. }
+							| pallet_did_lookup::Call::change_deposit_owner { .. }
 					)
 					| Call::Indices(..)
 					| Call::ParachainStaking(..)
@@ -811,6 +820,8 @@ impl InstanceFilter<Call> for ProxyType {
 						| public_credentials::Call::revoke { .. }
 						| public_credentials::Call::unrevoke { .. }
 						| public_credentials::Call::remove { .. }
+						| public_credentials::Call::update_deposit { .. }
+						| public_credentials::Call::change_deposit_owner { .. }
 					)
 					| Call::Scheduler(..)
 					| Call::Session(..)
@@ -828,6 +839,8 @@ impl InstanceFilter<Call> for ProxyType {
 						pallet_web3_names::Call::claim { .. }
 							| pallet_web3_names::Call::release_by_owner { .. }
 							| pallet_web3_names::Call::unban { .. }
+							| pallet_web3_names::Call::update_deposit { .. }
+							| pallet_web3_names::Call::change_deposit_owner { .. }
 					),
 			),
 			ProxyType::Governance => matches!(
@@ -845,6 +858,7 @@ impl InstanceFilter<Call> for ProxyType {
 			ProxyType::CancelProxy => matches!(c, Call::Proxy(pallet_proxy::Call::reject_announcement { .. })),
 		}
 	}
+
 	fn is_superset(&self, o: &Self) -> bool {
 		match (self, o) {
 			(x, y) if x == y => true,
