@@ -42,7 +42,7 @@ use sp_consensus_aura::{ed25519::AuthorityId as AuraId, SlotDuration};
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
-	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, NumberFor, OpaqueKeys},
+	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, NumberFor, OpaqueKeys, Verify},
 	transaction_validity::{TransactionSource, TransactionValidity},
 	ApplyExtrinsicResult, RuntimeDebug,
 };
@@ -51,7 +51,6 @@ use sp_version::RuntimeVersion;
 
 use delegation::DelegationAc;
 use kilt_support::traits::ItemFilter;
-use pallet_did_lookup::linkable_account::LinkableAccountId;
 use runtime_common::{
 	assets::{AssetDid, PublicCredentialsFilter},
 	authorization::{AuthorizationId, PalletAuthorize},
@@ -413,7 +412,8 @@ impl did::Config for Runtime {
 
 impl pallet_did_lookup::Config for Runtime {
 	type Event = Event;
-
+	type Signature = Signature;
+	type Signer = <Signature as Verify>::Signer;
 	type DidIdentifier = DidIdentifier;
 
 	type Currency = Balances;
@@ -912,7 +912,7 @@ impl_runtime_apis! {
 		Block,
 		DidIdentifier,
 		AccountId,
-		LinkableAccountId,
+		AccountId,
 		Balance,
 		Hash,
 		BlockNumber
@@ -920,7 +920,6 @@ impl_runtime_apis! {
 		fn query_by_web3_name(name: Vec<u8>) -> Option<kilt_runtime_api_did::RawDidLinkedInfo<
 				DidIdentifier,
 				AccountId,
-				LinkableAccountId,
 				Balance,
 				Hash,
 				BlockNumber
@@ -932,9 +931,7 @@ impl_runtime_apis! {
 					did::Did::<Runtime>::get(&owner_info.owner).map(|details| (owner_info, details))
 				})
 				.map(|(owner_info, details)| {
-					let accounts = pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(
-						&owner_info.owner,
-					).collect();
+					let accounts = pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(&owner_info.owner).collect();
 					let service_endpoints = did::ServiceEndpoints::<Runtime>::iter_prefix(&owner_info.owner).map(|e| From::from(e.1)).collect();
 
 					kilt_runtime_api_did::RawDidLinkedInfo{
@@ -947,11 +944,10 @@ impl_runtime_apis! {
 			})
 		}
 
-		fn query_by_account(account: LinkableAccountId) -> Option<
+		fn query_by_account(account: AccountId) -> Option<
 			kilt_runtime_api_did::RawDidLinkedInfo<
 				DidIdentifier,
 				AccountId,
-				LinkableAccountId,
 				Balance,
 				Hash,
 				BlockNumber
@@ -980,7 +976,6 @@ impl_runtime_apis! {
 			kilt_runtime_api_did::RawDidLinkedInfo<
 				DidIdentifier,
 				AccountId,
-				LinkableAccountId,
 				Balance,
 				Hash,
 				BlockNumber

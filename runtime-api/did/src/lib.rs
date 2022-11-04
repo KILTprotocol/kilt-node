@@ -32,7 +32,6 @@ pub use service_endpoint::*;
 pub struct DidLinkedInfo<
 	DidIdentifier,
 	AccountId,
-	LinkableAccountId,
 	Web3Name,
 	Id,
 	Type,
@@ -42,7 +41,7 @@ pub struct DidLinkedInfo<
 	BlockNumber: MaxEncodedLen,
 > {
 	pub identifier: DidIdentifier,
-	pub accounts: Vec<LinkableAccountId>,
+	pub accounts: Vec<AccountId>,
 	pub w3n: Option<Web3Name>,
 	pub service_endpoints: Vec<ServiceEndpoint<Id, Type, Url>>,
 	pub details: DidDetails<Key, BlockNumber, AccountId, Balance>,
@@ -52,25 +51,14 @@ pub struct DidLinkedInfo<
 ///
 /// This will be returned by the runtime and processed by the client side RPC
 /// implementation.
-pub type RawDidLinkedInfo<DidIdentifier, AccountId, LinkableAccountId, Balance, Key, BlockNumber> = DidLinkedInfo<
-	DidIdentifier,
-	AccountId,
-	LinkableAccountId,
-	Vec<u8>,
-	Vec<u8>,
-	Vec<u8>,
-	Vec<u8>,
-	Balance,
-	Key,
-	BlockNumber,
->;
+pub type RawDidLinkedInfo<DidIdentifier, AccountId, Balance, Key, BlockNumber> =
+	DidLinkedInfo<DidIdentifier, AccountId, Vec<u8>, Vec<u8>, Vec<u8>, Vec<u8>, Balance, Key, BlockNumber>;
 
 sp_api::decl_runtime_apis! {
-	#[api_version(2)]
+	#[api_version(1)]
 	pub trait Did<DidIdentifier, AccountId, LinkableAccountId, Balance, Key: Ord, BlockNumber> where
 		DidIdentifier: Codec,
 		AccountId: Codec,
-		LinkableAccountId: Codec,
 		BlockNumber: Codec + MaxEncodedLen,
 		Key: Codec,
 		Balance: Codec,
@@ -81,26 +69,20 @@ sp_api::decl_runtime_apis! {
 		/// * the web3name (optional)
 		/// * associated accounts
 		/// * service endpoints
-		#[changed_in(2)]
-		fn query_by_web3_name(name: Vec<u8>) -> Option<RawDidLinkedInfo<DidIdentifier, AccountId, AccountId, Balance, Key, BlockNumber>>;
-		fn query_by_web3_name(name: Vec<u8>) -> Option<RawDidLinkedInfo<DidIdentifier, AccountId, LinkableAccountId, Balance, Key, BlockNumber>>;
+		fn query_by_web3_name(name: Vec<u8>) -> Option<RawDidLinkedInfo<DidIdentifier, AccountId, Balance, Key, BlockNumber>>;
 		/// Given an account address this returns:
 		/// * the DID
 		/// * public keys stored for the did
 		/// * the web3name (optional)
 		/// * associated accounts
 		/// * service endpoints
-		#[changed_in(2)]
-		fn query_by_account(account: AccountId) -> Option<RawDidLinkedInfo<DidIdentifier, AccountId, AccountId, Balance, Key, BlockNumber>>;
-		fn query_by_account(account: LinkableAccountId) -> Option<RawDidLinkedInfo<DidIdentifier, AccountId, LinkableAccountId, Balance, Key, BlockNumber>>;
+		fn query_by_account(account: AccountId) -> Option<RawDidLinkedInfo<DidIdentifier, AccountId, Balance, Key, BlockNumber>>;
 		/// Given a did this returns:
 		/// * the DID
 		/// * public keys stored for the did
 		/// * the web3name (optional)
 		/// * associated accounts
 		/// * service endpoints
-		#[changed_in(2)]
-		fn query(did: DidIdentifier) -> Option<RawDidLinkedInfo<DidIdentifier, AccountId, AccountId, Balance, Key, BlockNumber>>;
-		fn query(did: DidIdentifier) -> Option<RawDidLinkedInfo<DidIdentifier, AccountId, LinkableAccountId, Balance, Key, BlockNumber>>;
+		fn query(did: DidIdentifier) -> Option<RawDidLinkedInfo<DidIdentifier, AccountId, Balance, Key, BlockNumber>>;
 	}
 }

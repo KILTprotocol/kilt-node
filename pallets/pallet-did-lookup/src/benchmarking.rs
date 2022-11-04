@@ -19,27 +19,17 @@
 
 //! Benchmarking
 
+use crate::{
+	signature::get_wrapped_payload, AccountIdOf, Call, Config, ConnectedAccounts, ConnectedDids, CurrencyOf, Pallet,
+};
+
 use codec::Encode;
 use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
-use frame_support::{
-	crypto::ecdsa::ECDSAExt,
-	traits::{Currency, Get},
-};
+use frame_support::traits::{Currency, Get};
 use frame_system::RawOrigin;
-use sha3::{Digest, Keccak256};
-use sp_io::crypto::{ecdsa_generate, ed25519_generate, sr25519_generate};
-use sp_runtime::{
-	app_crypto::{ed25519, sr25519},
-	traits::IdentifyAccount,
-	AccountId32, KeyTypeId,
-};
-
 use kilt_support::{deposit::Deposit, traits::GenerateBenchmarkOrigin};
-
-use crate::{
-	account::AccountId20, linkable_account::LinkableAccountId, signature::get_wrapped_payload, AccountIdOf,
-	AssociateAccountRequest, Call, Config, ConnectedAccounts, ConnectedDids, CurrencyOf, Pallet,
-};
+use sp_io::crypto::sr25519_generate;
+use sp_runtime::{app_crypto::sr25519, KeyTypeId};
 
 const SEED: u32 = 0;
 
@@ -55,198 +45,88 @@ fn make_free_for_did<T: Config>(account: &AccountIdOf<T>) {
 benchmarks! {
 	where_clause {
 		where
-		T::AccountId: From<sr25519::Public> + From<ed25519::Public> + Into<LinkableAccountId> + Into<AccountId32>,
+		T::AccountId: From<sr25519::Public>,
 		T::DidIdentifier: From<T::AccountId>,
+		T::Signature: From<sr25519::Signature>,
 		T::EnsureOrigin: GenerateBenchmarkOrigin<T::Origin, T::AccountId, T::DidIdentifier>,
 	}
 
-	associate_account_multisig_sr25519 {
+	associate_account {
 		let caller: T::AccountId = account("caller", 0, SEED);
 		let did: T::DidIdentifier = account("did", 0, SEED);
 		let previous_did: T::DidIdentifier = account("prev", 0, SEED + 1);
 		let connected_acc = sr25519_generate(KeyTypeId(*b"aura"), None);
 		let connected_acc_id: T::AccountId = connected_acc.into();
-		let linkable_id: LinkableAccountId = connected_acc_id.clone().into();
 		let bn: <T as frame_system::Config>::BlockNumber = 500_u32.into();
 
-		let sig = sp_io::crypto::sr25519_sign(
-			KeyTypeId(*b"aura"),
-			&connected_acc,
-			&get_wrapped_payload(
-				&Encode::encode(&(&did, bn))[..],
-				crate::signature::WrapType::Substrate,
-			))
-			.ok_or("Error while building signature.")?;
+		let sig: T::Signature = sp_io::crypto::sr25519_sign(KeyTypeId(*b"aura"), &connected_acc, &get_wrapped_payload(&Encode::encode(&(&did, bn))[..]))
+			.ok_or("Error while building signature.")?
+			.into();
 
 		make_free_for_did::<T>(&caller);
 
 		// Add existing connected_acc -> previous_did connection that will be replaced
-		Pallet::<T>::add_association(caller.clone(), previous_did.clone(), linkable_id.clone()).expect("should create previous association");
-		assert!(ConnectedAccounts::<T>::get(&previous_did, linkable_id.clone()).is_some());
+		Pallet::<T>::add_association(caller.clone(), previous_did.clone(), connected_acc_id.clone()).expect("should create previous association");
+		assert!(ConnectedAccounts::<T>::get(&previous_did, T::AccountId::from(connected_acc)).is_some());
 		let origin = T::EnsureOrigin::generate_origin(caller, did.clone());
-		let id_arg = linkable_id.clone();
-		let req = AssociateAccountRequest::Dotsama(connected_acc_id.into(), sig.into());
-	}: associate_account<T::Origin>(origin, req, bn)
+	}: _<T::Origin>(origin, connected_acc_id, bn, sig)
 	verify {
-		assert!(ConnectedDids::<T>::get(linkable_id.clone()).is_some());
-		assert!(ConnectedAccounts::<T>::get(&previous_did, linkable_id.clone()).is_none());
-		assert!(ConnectedAccounts::<T>::get(did, linkable_id).is_some());
-	}
-
-	associate_account_multisig_ed25519 {
-		let caller: T::AccountId = account("caller", 0, SEED);
-		let did: T::DidIdentifier = account("did", 0, SEED);
-		let previous_did: T::DidIdentifier = account("prev", 0, SEED + 1);
-		let connected_acc = ed25519_generate(KeyTypeId(*b"aura"), None);
-		let connected_acc_id: T::AccountId = connected_acc.into();
-		let linkable_id: LinkableAccountId = connected_acc_id.clone().into();
-		let bn: <T as frame_system::Config>::BlockNumber = 500_u32.into();
-
-		let sig = sp_io::crypto::ed25519_sign(
-			KeyTypeId(*b"aura"),
-			&connected_acc,
-			&get_wrapped_payload(
-				&Encode::encode(&(&did, bn))[..],
-				crate::signature::WrapType::Substrate,
-			))
-			.ok_or("Error while building signature.")?;
-
-		make_free_for_did::<T>(&caller);
-
-		// Add existing connected_acc -> previous_did connection that will be replaced
-		Pallet::<T>::add_association(caller.clone(), previous_did.clone(), linkable_id.clone()).expect("should create previous association");
-		assert!(ConnectedAccounts::<T>::get(&previous_did, linkable_id.clone()).is_some());
-		let origin = T::EnsureOrigin::generate_origin(caller, did.clone());
-		let id_arg = linkable_id.clone();
-		let req = AssociateAccountRequest::Dotsama(connected_acc_id.into(), sig.into());
-	}: associate_account<T::Origin>(origin, req, bn)
-	verify {
-		assert!(ConnectedDids::<T>::get(linkable_id.clone()).is_some());
-		assert!(ConnectedAccounts::<T>::get(&previous_did, linkable_id.clone()).is_none());
-		assert!(ConnectedAccounts::<T>::get(did, linkable_id).is_some());
-	}
-
-	associate_account_multisig_ecdsa {
-		let caller: T::AccountId = account("caller", 0, SEED);
-		let did: T::DidIdentifier = account("did", 0, SEED);
-		let previous_did: T::DidIdentifier = account("prev", 0, SEED + 1);
-		let connected_acc = ecdsa_generate(KeyTypeId(*b"aura"), None);
-		let connected_acc_id = sp_runtime::MultiSigner::from(connected_acc).into_account();
-		let linkable_id: LinkableAccountId = connected_acc_id.clone().into();
-		let bn: <T as frame_system::Config>::BlockNumber = 500_u32.into();
-
-		let sig = sp_io::crypto::ecdsa_sign(
-			KeyTypeId(*b"aura"),
-			&connected_acc,
-			&get_wrapped_payload(
-				&Encode::encode(&(&did, bn))[..],
-				crate::signature::WrapType::Substrate,
-			))
-			.ok_or("Error while building signature.")?;
-
-		make_free_for_did::<T>(&caller);
-
-		// Add existing connected_acc -> previous_did connection that will be replaced
-		Pallet::<T>::add_association(caller.clone(), previous_did.clone(), linkable_id.clone()).expect("should create previous association");
-		assert!(ConnectedAccounts::<T>::get(&previous_did, linkable_id.clone()).is_some());
-		let origin = T::EnsureOrigin::generate_origin(caller, did.clone());
-		let id_arg = linkable_id.clone();
-		let req = AssociateAccountRequest::Dotsama(connected_acc_id, sig.into());
-	}: associate_account<T::Origin>(origin, req, bn)
-	verify {
-		assert!(ConnectedDids::<T>::get(linkable_id.clone()).is_some());
-		assert!(ConnectedAccounts::<T>::get(&previous_did, linkable_id.clone()).is_none());
-		assert!(ConnectedAccounts::<T>::get(did, linkable_id).is_some());
-	}
-
-	associate_eth_account {
-		let caller: T::AccountId = account("caller", 0, SEED);
-		let did: T::DidIdentifier = account("did", 0, SEED);
-		let previous_did: T::DidIdentifier = account("prev", 0, SEED + 1);
-		let expire_at: <T as frame_system::Config>::BlockNumber = 500_u32.into();
-
-		let eth_public_key = ecdsa_generate(KeyTypeId(*b"aura"), None);
-		let eth_account = AccountId20(eth_public_key.to_eth_address().unwrap());
-
-		let wrapped_payload = get_wrapped_payload(
-			&Encode::encode(&(&did, expire_at))[..],
-			crate::signature::WrapType::Ethereum,
-		);
-
-		let sig = sp_io::crypto::ecdsa_sign_prehashed(
-			KeyTypeId(*b"aura"),
-			&eth_public_key,
-			&Keccak256::digest(&wrapped_payload).try_into().unwrap(),
-		).ok_or("Error while building signature.")?;
-
-		make_free_for_did::<T>(&caller);
-
-		// Add existing connected_acc -> previous_did connection that will be replaced
-		Pallet::<T>::add_association(caller.clone(), previous_did.clone(), eth_account.into()).expect("should create previous association");
-		assert!(ConnectedAccounts::<T>::get(&previous_did, LinkableAccountId::from(eth_account)).is_some());
-		let origin = T::EnsureOrigin::generate_origin(caller, did.clone());
-		let req = AssociateAccountRequest::Ethereum(eth_account, sig.into());
-	}: associate_account<T::Origin>(origin, req, expire_at)
-	verify {
-		assert!(ConnectedDids::<T>::get(LinkableAccountId::from(eth_account)).is_some());
-		assert!(ConnectedAccounts::<T>::get(&previous_did, LinkableAccountId::from(eth_account)).is_none());
-		assert!(ConnectedAccounts::<T>::get(did, LinkableAccountId::from(eth_account)).is_some());
+		assert!(ConnectedDids::<T>::get(T::AccountId::from(connected_acc)).is_some());
+		assert!(ConnectedAccounts::<T>::get(&previous_did, T::AccountId::from(connected_acc)).is_none());
+		assert!(ConnectedAccounts::<T>::get(did, T::AccountId::from(connected_acc)).is_some());
 	}
 
 	associate_sender {
 		let caller: T::AccountId = account("caller", 0, SEED);
-		let linkable_id: LinkableAccountId = caller.clone().into();
 		let did: T::DidIdentifier = account("did", 0, SEED);
 		let previous_did: T::DidIdentifier = account("prev", 0, SEED + 1);
 
 		make_free_for_did::<T>(&caller);
 
 		// Add existing sender -> previous_did connection that will be replaced
-		Pallet::<T>::add_association(caller.clone(), previous_did.clone(), caller.clone().into()).expect("should create previous association");
-		assert!(ConnectedAccounts::<T>::get(&previous_did, &linkable_id).is_some());
-		let origin = T::EnsureOrigin::generate_origin(caller, did.clone());
+		Pallet::<T>::add_association(caller.clone(), previous_did.clone(), caller.clone()).expect("should create previous association");
+		assert!(ConnectedAccounts::<T>::get(&previous_did, &caller).is_some());
+		let origin = T::EnsureOrigin::generate_origin(caller.clone(), did.clone());
 	}: _<T::Origin>(origin)
 	verify {
-		assert!(ConnectedDids::<T>::get(&linkable_id).is_some());
-		assert!(ConnectedAccounts::<T>::get(previous_did, &linkable_id).is_none());
-		assert!(ConnectedAccounts::<T>::get(did, linkable_id).is_some());
+		assert!(ConnectedDids::<T>::get(&caller).is_some());
+		assert!(ConnectedAccounts::<T>::get(previous_did, &caller).is_none());
+		assert!(ConnectedAccounts::<T>::get(did, caller).is_some());
 	}
 
 	remove_sender_association {
 		let caller: T::AccountId = account("caller", 0, SEED);
-		let linkable_id: LinkableAccountId = caller.clone().into();
 		let did: T::DidIdentifier = account("did", 0, SEED);
 
 		make_free_for_did::<T>(&caller);
-		Pallet::<T>::add_association(caller.clone(), did.clone(), linkable_id.clone()).expect("should create association");
+		Pallet::<T>::add_association(caller.clone(), did.clone(), caller.clone()).expect("should create association");
 
-		let origin = RawOrigin::Signed(caller);
+		let origin = RawOrigin::Signed(caller.clone());
 	}: _(origin)
 	verify {
-		assert!(ConnectedDids::<T>::get(&linkable_id).is_none());
-		assert!(ConnectedAccounts::<T>::get(did, linkable_id).is_none());
+		assert!(ConnectedDids::<T>::get(&caller).is_none());
+		assert!(ConnectedAccounts::<T>::get(did, caller).is_none());
 	}
 
 	remove_account_association {
 		let caller: T::AccountId = account("caller", 0, SEED);
-		let linkable_id: LinkableAccountId = caller.clone().into();
 		let did: T::DidIdentifier = account("did", 0, SEED);
 		make_free_for_did::<T>(&caller);
 
-		Pallet::<T>::add_association(caller.clone(), did.clone(), linkable_id.clone()).expect("should create association");
+		Pallet::<T>::add_association(caller.clone(), did.clone(), caller.clone()).expect("should create association");
 
-		let origin = T::EnsureOrigin::generate_origin(caller, did.clone());
-		let id_arg = linkable_id.clone();
-	}: _<T::Origin>(origin, id_arg)
+		let origin = T::EnsureOrigin::generate_origin(caller.clone(), did.clone());
+		let caller_clone = caller.clone();
+	}: _<T::Origin>(origin, caller_clone)
 	verify {
-		assert!(ConnectedDids::<T>::get(&linkable_id).is_none());
-		assert!(ConnectedAccounts::<T>::get(did, linkable_id).is_none());
+		assert!(ConnectedDids::<T>::get(&caller).is_none());
+		assert!(ConnectedAccounts::<T>::get(did, caller).is_none());
 	}
 
 	change_deposit_owner {
 		let deposit_owner_old: T::AccountId = account("caller", 0, SEED);
 		let deposit_owner_new: T::AccountId = account("caller", 1, SEED);
-		let linkable_id: LinkableAccountId = deposit_owner_old.clone().into();
+		let linkable_id: T::AccountId = deposit_owner_old.clone();
 		let did: T::DidIdentifier = account("did", 0, SEED);
 		make_free_for_did::<T>(&deposit_owner_old);
 		make_free_for_did::<T>(&deposit_owner_new);
@@ -268,7 +148,7 @@ benchmarks! {
 
 	update_deposit {
 		let deposit_owner: T::AccountId = account("caller", 0, SEED);
-		let linkable_id: LinkableAccountId = deposit_owner.clone().into();
+		let linkable_id: T::AccountId = deposit_owner.clone();
 		let did: T::DidIdentifier = account("did", 0, SEED);
 		make_free_for_did::<T>(&deposit_owner);
 
