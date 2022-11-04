@@ -89,7 +89,10 @@ pub mod pallet {
 	use frame_system::pallet_prelude::*;
 
 	use ctype::CtypeHashOf;
-	use kilt_support::traits::CallSources;
+	use kilt_support::{
+		deposit::Deposit,
+		traits::{CallSources, StorageDepositCollector},
+	};
 
 	/// The current storage version.
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
@@ -419,15 +422,15 @@ pub mod pallet {
 			Ok(())
 		}
 
-		/// Transfer the storage deposit from one account to another.
+		/// Changes the deposit owner.
 		///
-		/// If the currently required deposit is different, the new deposit
-		/// value will be reserved.
+		/// The balance that is reserved by the current deposit owner will be
+		/// freed and balance of the new deposit owner will get reserved.
 		///
 		/// The subject of the call must be the attester who issues the
 		/// attestation. The sender of the call will be the new deposit owner.
-		#[pallet::weight(<T as pallet::Config>::WeightInfo::transfer_deposit())]
-		pub fn transfer_deposit(origin: OriginFor<T>, claim_hash: ClaimHashOf<T>) -> DispatchResult {
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::change_deposit_owner())]
+		pub fn change_deposit_owner(origin: OriginFor<T>, claim_hash: ClaimHashOf<T>) -> DispatchResult {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 			let subject = source.subject();
 			let sender = source.sender();
@@ -435,13 +438,23 @@ pub mod pallet {
 			let attestation = Attestations::<T>::get(&claim_hash).ok_or(Error::<T>::AttestationNotFound)?;
 			ensure!(attestation.attester == subject, Error::<T>::Unauthorized);
 
-			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&attestation.deposit);
-			Self::deposit_event(Event::DepositReclaimed(sender.clone(), claim_hash));
+			AttestationStorageDepositCollector::<T>::change_deposit_owner(&claim_hash, sender)?;
 
-			let deposit_amount = <T as Config>::Deposit::get();
-			let deposit = kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(sender, deposit_amount)?;
+			Ok(())
+		}
 
-			Attestations::<T>::insert(&claim_hash, AttestationDetails { deposit, ..attestation });
+		/// Updates the deposit amount to the current deposit rate.
+		///
+		/// The sender must be the deposit owner.
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::update_deposit())]
+		pub fn update_deposit(origin: OriginFor<T>, claim_hash: ClaimHashOf<T>) -> DispatchResult {
+			let sender = ensure_signed(origin)?;
+
+			let attestation = Attestations::<T>::get(&claim_hash).ok_or(Error::<T>::AttestationNotFound)?;
+			ensure!(attestation.deposit.owner == sender, Error::<T>::Unauthorized);
+
+			AttestationStorageDepositCollector::<T>::update_deposit(&claim_hash)?;
+
 			Ok(())
 		}
 	}
@@ -453,6 +466,32 @@ pub mod pallet {
 			if let Some(authorization_id) = &attestation.authorization_id {
 				ExternalAttestations::<T>::remove(authorization_id, claim_hash);
 			}
+		}
+	}
+
+	struct AttestationStorageDepositCollector<T: Config>(PhantomData<T>);
+	impl<T: Config> StorageDepositCollector<AccountIdOf<T>, ClaimHashOf<T>> for AttestationStorageDepositCollector<T> {
+		type Currency = <T as Config>::Currency;
+
+		fn deposit(
+			key: &ClaimHashOf<T>,
+		) -> Result<Deposit<AccountIdOf<T>, <Self::Currency as Currency<AccountIdOf<T>>>::Balance>, DispatchError> {
+			let attestation = Attestations::<T>::get(key).ok_or(Error::<T>::AttestationNotFound)?;
+			Ok(attestation.deposit)
+		}
+
+		fn deposit_amount(_key: &ClaimHashOf<T>) -> <Self::Currency as Currency<AccountIdOf<T>>>::Balance {
+			T::Deposit::get()
+		}
+
+		fn store_deposit(
+			key: &ClaimHashOf<T>,
+			deposit: Deposit<AccountIdOf<T>, <Self::Currency as Currency<AccountIdOf<T>>>::Balance>,
+		) -> Result<(), DispatchError> {
+			let attestation = Attestations::<T>::get(key).ok_or(Error::<T>::AttestationNotFound)?;
+			Attestations::<T>::insert(key, AttestationDetails { deposit, ..attestation });
+
+			Ok(())
 		}
 	}
 }

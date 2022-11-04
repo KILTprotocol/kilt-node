@@ -20,7 +20,10 @@ use super::*;
 
 use codec::Encode;
 use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite, Zero};
-use frame_support::{assert_ok, traits::Currency};
+use frame_support::{
+	assert_ok,
+	traits::{Currency, ReservableCurrency},
+};
 use frame_system::RawOrigin;
 use sp_core::{crypto::KeyTypeId, ecdsa, ed25519, sr25519};
 use sp_io::crypto::{ecdsa_generate, ecdsa_sign, ed25519_generate, ed25519_sign, sr25519_generate, sr25519_sign};
@@ -87,6 +90,8 @@ fn get_ecdsa_public_delegation_key() -> ecdsa::Public {
 
 fn make_free_for_did<T: Config>(account: &AccountIdOf<T>) {
 	let balance = <CurrencyOf<T> as Currency<AccountIdOf<T>>>::minimum_balance()
+		+ <T as Config>::Deposit::get()
+		+ <T as Config>::Deposit::get()
 		+ <T as Config>::Deposit::get()
 		+ <T as Config>::Fee::get();
 	<CurrencyOf<T> as Currency<AccountIdOf<T>>>::make_free_balance_be(account, balance);
@@ -1082,18 +1087,47 @@ benchmarks! {
 	}
 	verify {}
 
-	transfer_deposit {
+	change_deposit_owner {
 		let did_public_auth_key = get_ed25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(did_public_auth_key).into_account().into();
 		let did_account: AccountIdOf<T> = MultiSigner::from(did_public_auth_key).into_account().into();
 
-		let did_details = generate_base_did_details::<T>(DidVerificationKey::from(did_public_auth_key));
-
-		Did::<T>::insert(&did_subject, did_details);
+		let mut did_details = generate_base_did_details::<T>(DidVerificationKey::from(did_public_auth_key));
+		did_details.deposit.amount = <T as Config>::Deposit::get();
+		did_details.deposit.owner = did_account.clone();
 
 		make_free_for_did::<T>(&did_account);
+		CurrencyOf::<T>::reserve(&did_account, did_details.deposit.amount).expect("should reserve currency");
+		Did::<T>::insert(&did_subject, did_details);
+
 		let origin = RawOrigin::Signed(did_subject.clone());
 	}: _(origin)
+	verify {
+		assert_eq!(
+			Did::<T>::get(&did_subject).expect("DID entry should be retained").deposit,
+			Deposit {
+				owner: did_account,
+				amount: <T as Config>::Deposit::get()
+			},
+		)
+	}
+
+	update_deposit {
+		let did_public_auth_key = get_ed25519_public_authentication_key();
+		let did_subject: DidIdentifierOf<T> = MultiSigner::from(did_public_auth_key).into_account().into();
+		let did_account: AccountIdOf<T> = MultiSigner::from(did_public_auth_key).into_account().into();
+
+		let mut did_details = generate_base_did_details::<T>(DidVerificationKey::from(did_public_auth_key));
+		did_details.deposit.amount = <T as Config>::Deposit::get() + <T as Config>::Deposit::get();
+		did_details.deposit.owner = did_account.clone();
+
+		Did::<T>::insert(&did_subject, did_details.clone());
+		make_free_for_did::<T>(&did_account);
+		CurrencyOf::<T>::reserve(&did_account, did_details.deposit.amount).expect("should reserve currency");
+
+		let origin = RawOrigin::Signed(did_subject.clone());
+		let did_to_update = did_subject.clone();
+	}: _(origin, did_to_update)
 	verify {
 		assert_eq!(
 			Did::<T>::get(&did_subject).expect("DID entry should be retained").deposit,

@@ -35,6 +35,7 @@ use crate::{
 	mock::*,
 	mock_utils::*,
 	service_endpoints::DidEndpoint,
+	Error,
 };
 
 // create
@@ -1678,7 +1679,7 @@ fn check_service_addition_no_prior_service_successful() {
 			assert_ok!(Did::add_service_endpoint(
 				Origin::signed(alice_did.clone()),
 				new_service_endpoint.clone()
-			),);
+			));
 			let stored_endpoint = did::pallet::ServiceEndpoints::<Test>::get(&alice_did, &new_service_endpoint.id)
 				.expect("Service endpoint should be stored.");
 			assert_eq!(stored_endpoint, new_service_endpoint);
@@ -1715,7 +1716,7 @@ fn check_service_addition_one_from_full_successful() {
 			assert_ok!(Did::add_service_endpoint(
 				Origin::signed(alice_did.clone()),
 				new_service_endpoint.clone()
-			),);
+			));
 			assert_eq!(
 				did::pallet::DidEndpointsCount::<Test>::get(&alice_did),
 				<Test as did::Config>::MaxNumberOfServicesPerDid::get()
@@ -2008,7 +2009,7 @@ fn check_service_deletion_successful() {
 			assert_ok!(Did::remove_service_endpoint(
 				Origin::signed(alice_did.clone()),
 				old_service_endpoint.id
-			),);
+			));
 			// Counter should be deleted from the storage.
 			assert_eq!(did::pallet::DidEndpointsCount::<Test>::get(&alice_did), 0);
 			assert_eq!(
@@ -3152,7 +3153,7 @@ fn check_invalid_signature_operation_verification() {
 // transfer deposit
 
 #[test]
-fn test_transfer_deposit() {
+fn test_change_deposit_owner() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let mut did_details = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()));
@@ -3172,7 +3173,7 @@ fn test_transfer_deposit() {
 				Balances::reserved_balance(ACCOUNT_00),
 				<Test as did::Config>::Deposit::get()
 			);
-			assert_ok!(Did::transfer_deposit(Origin::signed(alice_did.clone())));
+			assert_ok!(Did::change_deposit_owner(Origin::signed(alice_did.clone())));
 			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
 			assert_eq!(
 				Balances::reserved_balance(alice_did),
@@ -3182,7 +3183,7 @@ fn test_transfer_deposit() {
 }
 
 #[test]
-fn test_transfer_deposit_insufficient_balance() {
+fn test_change_deposit_owner_insufficient_balance() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let mut did_details = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()));
@@ -3199,15 +3200,57 @@ fn test_transfer_deposit_insufficient_balance() {
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
-				Did::transfer_deposit(Origin::signed(alice_did.clone())),
+				Did::change_deposit_owner(Origin::signed(alice_did.clone())),
 				pallet_balances::Error::<Test>::InsufficientBalance
+			);
+		});
+}
+
+#[test]
+fn test_change_deposit_owner_not_found() {
+	let auth_key = get_ed25519_authentication_key(true);
+	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
+
+	let balance = <Test as did::Config>::Deposit::get() * 2
+		+ <Test as did::Config>::Fee::get() * 2
+		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
+
+	ExtBuilder::default()
+		.with_balances(vec![(alice_did.clone(), balance)])
+		.build(None)
+		.execute_with(|| {
+			assert_noop!(
+				Did::change_deposit_owner(Origin::signed(alice_did.clone())),
+				crate::Error::<Test>::DidNotPresent
+			);
+		});
+}
+
+#[test]
+fn test_change_deposit_owner_not_authorized() {
+	let alice_auth_key = get_ed25519_authentication_key(true);
+	let bob_auth_key = get_ed25519_authentication_key(false);
+	let alice_did = get_did_identifier_from_ed25519_key(alice_auth_key.public());
+	let bob_did = get_did_identifier_from_ed25519_key(bob_auth_key.public());
+
+	let balance = <Test as did::Config>::Deposit::get() * 2
+		+ <Test as did::Config>::Fee::get() * 2
+		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
+
+	ExtBuilder::default()
+		.with_balances(vec![(alice_did, balance), (bob_did.clone(), balance)])
+		.build(None)
+		.execute_with(|| {
+			assert_noop!(
+				Did::change_deposit_owner(Origin::signed(bob_did.clone())),
+				crate::Error::<Test>::DidNotPresent
 			);
 		});
 }
 
 /// Update the deposit amount
 #[test]
-fn test_transfer_deposit_to_self() {
+fn test_update_deposit() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let mut did_details = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()));
@@ -3227,7 +3270,10 @@ fn test_transfer_deposit_to_self() {
 				Balances::reserved_balance(alice_did.clone()),
 				<Test as did::Config>::Deposit::get() * 2
 			);
-			assert_ok!(Did::transfer_deposit(Origin::signed(alice_did.clone())));
+			assert_ok!(Did::update_deposit(
+				Origin::signed(alice_did.clone()),
+				alice_did.clone()
+			));
 			assert_eq!(
 				Balances::reserved_balance(alice_did.clone()),
 				<Test as did::Config>::Deposit::get()
@@ -3245,9 +3291,16 @@ fn test_transfer_deposit_to_self() {
 }
 
 #[test]
-fn test_transfer_deposit_not_found() {
-	let auth_key = get_ed25519_authentication_key(true);
-	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
+fn test_update_deposit_unauthorized() {
+	let alice_auth_key = get_ed25519_authentication_key(true);
+	let alice_did = get_did_identifier_from_ed25519_key(alice_auth_key.public());
+
+	let bob_auth_key = get_ed25519_authentication_key(false);
+	let bob_did = get_did_identifier_from_ed25519_key(bob_auth_key.public());
+
+	let mut did_details = generate_base_did_details::<Test>(DidVerificationKey::from(alice_auth_key.public()));
+	did_details.deposit.owner = alice_did.clone();
+	did_details.deposit.amount = <Test as did::Config>::Deposit::get() * 2;
 
 	let balance = <Test as did::Config>::Deposit::get() * 2
 		+ <Test as did::Config>::Fee::get() * 2
@@ -3255,33 +3308,16 @@ fn test_transfer_deposit_not_found() {
 
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), balance)])
+		.with_dids(vec![(alice_did.clone(), did_details)])
 		.build(None)
 		.execute_with(|| {
-			assert_noop!(
-				Did::transfer_deposit(Origin::signed(alice_did.clone())),
-				crate::Error::<Test>::DidNotPresent
+			assert_eq!(
+				Balances::reserved_balance(alice_did.clone()),
+				<Test as did::Config>::Deposit::get() * 2
 			);
-		});
-}
-
-#[test]
-fn test_transfer_deposit_not_authorized() {
-	let alice_auth_key = get_ed25519_authentication_key(true);
-	let bob_auth_key = get_ed25519_authentication_key(false);
-	let alice_did = get_did_identifier_from_ed25519_key(alice_auth_key.public());
-	let bob_did = get_did_identifier_from_ed25519_key(bob_auth_key.public());
-
-	let balance = <Test as did::Config>::Deposit::get() * 2
-		+ <Test as did::Config>::Fee::get() * 2
-		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
-
-	ExtBuilder::default()
-		.with_balances(vec![(alice_did, balance), (bob_did.clone(), balance)])
-		.build(None)
-		.execute_with(|| {
 			assert_noop!(
-				Did::transfer_deposit(Origin::signed(bob_did.clone())),
-				crate::Error::<Test>::DidNotPresent
+				Did::update_deposit(Origin::signed(bob_did.clone()), alice_did.clone()),
+				Error::<Test>::BadDidOrigin
 			);
 		});
 }

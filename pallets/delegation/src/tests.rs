@@ -1150,7 +1150,7 @@ fn exact_children_max_revocations_revoke_and_remove_root_error() {
 				DoubleOrigin(ACCOUNT_00, revoker.clone()).into(),
 				operation.id,
 				operation.max_children + 1
-			),);
+			));
 			assert!(Delegation::delegation_nodes(&operation.id).is_none());
 			assert!(Delegation::delegation_nodes(&delegation1_id).is_none());
 			assert!(Delegation::delegation_nodes(&delegation3_id).is_none());
@@ -2074,7 +2074,7 @@ fn remove_single_hierarchy() {
 				DoubleOrigin(ACCOUNT_00, creator.clone()).into(),
 				hierarchy_root_id,
 				0
-			),);
+			));
 			assert!(Delegation::delegation_hierarchies(hierarchy_root_id).is_none());
 			assert!(Delegation::delegation_nodes(hierarchy_root_id).is_none());
 			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
@@ -2165,7 +2165,7 @@ fn remove_children_gas_runs_out() {
 				DoubleOrigin(ACCOUNT_00, revoker.clone()).into(),
 				operation.id,
 				operation.max_children + 1
-			),);
+			));
 			assert!(Delegation::delegation_nodes(&operation.id).is_none());
 			assert!(Delegation::delegation_nodes(&delegation1_id).is_none());
 			assert!(Delegation::delegation_nodes(&delegation2_id).is_none());
@@ -2180,7 +2180,7 @@ fn remove_children_gas_runs_out() {
 // transfer deposit
 
 #[test]
-fn test_transfer_deposit() {
+fn test_change_deposit_owner() {
 	let root_owner = ed25519_did_from_seed(&ALICE_SEED);
 	let delegate = ed25519_did_from_seed(&BOB_SEED);
 
@@ -2212,7 +2212,7 @@ fn test_transfer_deposit() {
 				<Test as Config>::Deposit::get() * 3
 			);
 			assert!(Balances::reserved_balance(ACCOUNT_01).is_zero());
-			assert_ok!(Delegation::transfer_deposit(
+			assert_ok!(Delegation::change_deposit_owner(
 				DoubleOrigin(ACCOUNT_01, delegate).into(),
 				delegation_id
 			));
@@ -2227,7 +2227,7 @@ fn test_transfer_deposit() {
 }
 
 #[test]
-fn test_transfer_deposit_insufficient_balance() {
+fn test_change_deposit_owner_insufficient_balance() {
 	let root_owner = ed25519_did_from_seed(&ALICE_SEED);
 	let delegate = ed25519_did_from_seed(&BOB_SEED);
 
@@ -2257,58 +2257,14 @@ fn test_transfer_deposit_insufficient_balance() {
 			);
 			assert!(Balances::reserved_balance(ACCOUNT_01).is_zero());
 			assert_noop!(
-				Delegation::transfer_deposit(DoubleOrigin(ACCOUNT_01, delegate).into(), delegation_id),
+				Delegation::change_deposit_owner(DoubleOrigin(ACCOUNT_01, delegate).into(), delegation_id),
 				pallet_balances::Error::<Test>::InsufficientBalance
 			);
 		});
 }
 
-/// Update the deposit amount
 #[test]
-fn test_transfer_deposit_to_self() {
-	let root_owner = ed25519_did_from_seed(&ALICE_SEED);
-	let delegate = ed25519_did_from_seed(&BOB_SEED);
-
-	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
-	let hierarchy_details = generate_base_delegation_hierarchy_details();
-	let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
-	let parent_node = generate_base_delegation_node(
-		hierarchy_root_id,
-		root_owner.clone(),
-		Some(hierarchy_root_id),
-		ACCOUNT_00,
-	);
-	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
-	let mut delegation_node =
-		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(parent_id), ACCOUNT_00);
-	delegation_node.deposit.amount = <Test as Config>::Deposit::get() * 2;
-
-	ExtBuilder::default()
-		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 4)])
-		.with_ctypes(vec![(hierarchy_details.ctype_hash, root_owner.clone())])
-		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, root_owner, ACCOUNT_00)])
-		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
-		.build()
-		.execute_with(|| {
-			assert_eq!(
-				Balances::reserved_balance(ACCOUNT_00),
-				<Test as Config>::Deposit::get() * 3
-			);
-			assert_ok!(Delegation::transfer_deposit(
-				DoubleOrigin(ACCOUNT_00, delegate).into(),
-				delegation_id
-			));
-
-			// ACCOUNT_00 has still one deposit (there are two nodes)
-			assert_eq!(
-				Balances::reserved_balance(ACCOUNT_00),
-				<Test as Config>::Deposit::get() * 2
-			);
-		});
-}
-
-#[test]
-fn test_transfer_deposit_unauthorized() {
+fn test_change_deposit_owner_unauthorized() {
 	let root_owner = ed25519_did_from_seed(&ALICE_SEED);
 	let delegate = ed25519_did_from_seed(&BOB_SEED);
 
@@ -2337,14 +2293,14 @@ fn test_transfer_deposit_unauthorized() {
 		.build()
 		.execute_with(|| {
 			assert_noop!(
-				Delegation::transfer_deposit(DoubleOrigin(ACCOUNT_01, root_owner).into(), delegation_id),
+				Delegation::change_deposit_owner(DoubleOrigin(ACCOUNT_01, root_owner).into(), delegation_id),
 				Error::<Test>::AccessDenied
 			);
 		});
 }
 
 #[test]
-fn test_transfer_deposit_not_found() {
+fn test_change_deposit_owner_not_found() {
 	let root_owner = ed25519_did_from_seed(&ALICE_SEED);
 	let delegate = ed25519_did_from_seed(&BOB_SEED);
 
@@ -2367,8 +2323,84 @@ fn test_transfer_deposit_not_found() {
 		.build()
 		.execute_with(|| {
 			assert_noop!(
-				Delegation::transfer_deposit(DoubleOrigin(ACCOUNT_01, delegate).into(), delegation_id),
+				Delegation::change_deposit_owner(DoubleOrigin(ACCOUNT_01, delegate).into(), delegation_id),
 				Error::<Test>::DelegationNotFound
+			);
+		});
+}
+
+/// Update the deposit amount
+#[test]
+fn test_update_deposit() {
+	let root_owner = ed25519_did_from_seed(&ALICE_SEED);
+	let delegate = ed25519_did_from_seed(&BOB_SEED);
+
+	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
+	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
+	let parent_node = generate_base_delegation_node(
+		hierarchy_root_id,
+		root_owner.clone(),
+		Some(hierarchy_root_id),
+		ACCOUNT_00,
+	);
+	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
+	let mut delegation_node = generate_base_delegation_node(hierarchy_root_id, delegate, Some(parent_id), ACCOUNT_00);
+	delegation_node.deposit.amount = <Test as Config>::Deposit::get() * 2;
+
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 4)])
+		.with_ctypes(vec![(hierarchy_details.ctype_hash, root_owner.clone())])
+		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, root_owner, ACCOUNT_00)])
+		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
+		.build()
+		.execute_with(|| {
+			assert_eq!(
+				Balances::reserved_balance(ACCOUNT_00),
+				<Test as Config>::Deposit::get() * 3
+			);
+			assert_ok!(Delegation::update_deposit(Origin::signed(ACCOUNT_00), delegation_id));
+
+			// ACCOUNT_00 has still one deposit (there are two nodes)
+			assert_eq!(
+				Balances::reserved_balance(ACCOUNT_00),
+				<Test as Config>::Deposit::get() * 2
+			);
+		});
+}
+
+#[test]
+fn test_update_deposit_unauthorized() {
+	let root_owner = ed25519_did_from_seed(&ALICE_SEED);
+	let delegate = ed25519_did_from_seed(&BOB_SEED);
+
+	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
+	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
+	let parent_node = generate_base_delegation_node(
+		hierarchy_root_id,
+		root_owner.clone(),
+		Some(hierarchy_root_id),
+		ACCOUNT_00,
+	);
+	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
+	let mut delegation_node = generate_base_delegation_node(hierarchy_root_id, delegate, Some(parent_id), ACCOUNT_00);
+	delegation_node.deposit.amount = <Test as Config>::Deposit::get() * 2;
+
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 4)])
+		.with_ctypes(vec![(hierarchy_details.ctype_hash, root_owner.clone())])
+		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, root_owner, ACCOUNT_00)])
+		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
+		.build()
+		.execute_with(|| {
+			assert_eq!(
+				Balances::reserved_balance(ACCOUNT_00),
+				<Test as Config>::Deposit::get() * 3
+			);
+			assert_noop!(
+				Delegation::update_deposit(Origin::signed(ACCOUNT_01), delegation_id),
+				Error::<Test>::AccessDenied
 			);
 		});
 }

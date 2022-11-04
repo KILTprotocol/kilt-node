@@ -25,7 +25,7 @@ pub mod web3_name;
 
 mod default_weights;
 
-#[cfg(test)]
+#[cfg(any(test, feature = "runtime-benchmarks"))]
 mod mock;
 
 #[cfg(test)]
@@ -48,7 +48,10 @@ pub mod pallet {
 	use frame_system::pallet_prelude::*;
 	use sp_std::{fmt::Debug, vec::Vec};
 
-	use kilt_support::{deposit::Deposit, traits::CallSources};
+	use kilt_support::{
+		deposit::Deposit,
+		traits::{CallSources, StorageDepositCollector},
+	};
 
 	use super::WeightInfo;
 	use crate::web3_name::Web3NameOwnership;
@@ -169,6 +172,8 @@ pub mod pallet {
 		Web3NameTooLong,
 		/// A name that contains not allowed characters is being claimed.
 		InvalidWeb3NameCharacter,
+		/// The origin was not authorized to perform that action
+		Unauthorized,
 	}
 
 	#[pallet::hooks]
@@ -331,27 +336,34 @@ pub mod pallet {
 			Ok(())
 		}
 
-		/// Transfer the storage deposit from one account to another.
+		/// Changes the deposit owner.
 		///
-		/// If the currently required deposit is different, the new deposit
-		/// value will be reserved.
+		/// The balance that is reserved by the current deposit owner will be
+		/// freed and balance of the new deposit owner will get reserved.
 		///
 		/// The subject of the call must be the owner of the web3name.
 		/// The sender of the call will be the new deposit owner.
-		#[pallet::weight(<T as Config>::WeightInfo::transfer_deposit())]
-		pub fn transfer_deposit(origin: OriginFor<T>) -> DispatchResult {
+		#[pallet::weight(<T as Config>::WeightInfo::change_deposit_owner())]
+		pub fn change_deposit_owner(origin: OriginFor<T>) -> DispatchResult {
 			let source = <T as Config>::OwnerOrigin::ensure_origin(origin)?;
 			let w3n_owner = source.subject();
 			let name = Names::<T>::get(&w3n_owner).ok_or(Error::<T>::Web3NameNotFound)?;
-			let w3n_entry = Owner::<T>::get(&name).ok_or(Error::<T>::Web3NameNotFound)?;
+			Web3NameStorageDepositCollector::<T>::change_deposit_owner(&name, source.sender())?;
 
-			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&w3n_entry.deposit);
-			let deposit = Deposit {
-				owner: source.sender(),
-				amount: T::Deposit::get(),
-			};
-			CurrencyOf::<T>::reserve(&deposit.owner, deposit.amount)?;
-			Owner::<T>::insert(&name, Web3OwnershipOf::<T> { deposit, ..w3n_entry });
+			Ok(())
+		}
+
+		/// Updates the deposit amount to the current deposit rate.
+		///
+		/// The sender must be the deposit owner.
+		#[pallet::weight(<T as Config>::WeightInfo::update_deposit())]
+		pub fn update_deposit(origin: OriginFor<T>, name_input: Web3NameInput<T>) -> DispatchResult {
+			let source = ensure_signed(origin)?;
+			let name = Web3NameOf::<T>::try_from(name_input.into_inner()).map_err(DispatchError::from)?;
+			let w3n_entry = Owner::<T>::get(&name).ok_or(Error::<T>::Web3NameNotFound)?;
+			ensure!(w3n_entry.deposit.owner == source, Error::<T>::Unauthorized);
+
+			Web3NameStorageDepositCollector::<T>::update_deposit(&name)?;
 
 			Ok(())
 		}
@@ -488,6 +500,33 @@ pub mod pallet {
 		/// preconditions again.
 		fn unban_name(name: &Web3NameOf<T>) {
 			Banned::<T>::remove(name);
+		}
+	}
+
+	struct Web3NameStorageDepositCollector<T: Config>(PhantomData<T>);
+	impl<T: Config> StorageDepositCollector<AccountIdOf<T>, T::Web3Name> for Web3NameStorageDepositCollector<T> {
+		type Currency = T::Currency;
+
+		fn deposit(
+			key: &T::Web3Name,
+		) -> Result<Deposit<AccountIdOf<T>, <Self::Currency as Currency<AccountIdOf<T>>>::Balance>, DispatchError> {
+			let w3n_entry = Owner::<T>::get(&key).ok_or(Error::<T>::Web3NameNotFound)?;
+
+			Ok(w3n_entry.deposit)
+		}
+
+		fn deposit_amount(_key: &T::Web3Name) -> <Self::Currency as Currency<AccountIdOf<T>>>::Balance {
+			T::Deposit::get()
+		}
+
+		fn store_deposit(
+			key: &T::Web3Name,
+			deposit: Deposit<AccountIdOf<T>, <Self::Currency as Currency<AccountIdOf<T>>>::Balance>,
+		) -> Result<(), DispatchError> {
+			let w3n_entry = Owner::<T>::get(&key).ok_or(Error::<T>::Web3NameNotFound)?;
+			Owner::<T>::insert(&key, Web3OwnershipOf::<T> { deposit, ..w3n_entry });
+
+			Ok(())
 		}
 	}
 }

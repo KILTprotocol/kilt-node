@@ -85,8 +85,9 @@ use frame_support::{
 	pallet_prelude::Weight,
 	traits::{Get, ReservableCurrency},
 };
+use kilt_support::traits::StorageDepositCollector;
 use sp_runtime::{traits::Hash, DispatchError};
-use sp_std::vec::Vec;
+use sp_std::{marker::PhantomData, vec::Vec};
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -650,32 +651,40 @@ pub mod pallet {
 			Ok(Some(<T as Config>::WeightInfo::remove_delegation(removal_checks)).into())
 		}
 
-		/// Transfer the storage deposit from one account to another.
+		/// Changes the deposit owner.
 		///
-		/// If the currently required deposit is different, the new deposit
-		/// value will be reserved.
+		/// The balance that is reserved by the current deposit owner will be
+		/// freed and balance of the new deposit owner will get reserved.
 		///
 		/// The subject of the call must be the owner of the delegation node.
 		/// The sender of the call will be the new deposit owner.
-		#[pallet::weight(<T as Config>::WeightInfo::transfer_deposit())]
-		pub fn transfer_deposit(origin: OriginFor<T>, delegation_id: DelegationNodeIdOf<T>) -> DispatchResult {
+		#[pallet::weight(<T as Config>::WeightInfo::change_deposit_owner())]
+		pub fn change_deposit_owner(origin: OriginFor<T>, delegation_id: DelegationNodeIdOf<T>) -> DispatchResult {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 
-			let mut delegation = DelegationNodes::<T>::get(&delegation_id).ok_or(Error::<T>::DelegationNotFound)?;
+			let delegation = DelegationNodes::<T>::get(&delegation_id).ok_or(Error::<T>::DelegationNotFound)?;
 
 			// Deposit can only be swapped by the owner of the delegation node, not the
 			// parent or another ancestor.
 			ensure!(delegation.details.owner == source.subject(), Error::<T>::AccessDenied);
 
-			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&delegation.deposit);
+			DelegationDepositCollector::<T>::change_deposit_owner(&delegation_id, source.sender())
+		}
 
-			let deposit = Deposit {
-				owner: source.sender(),
-				amount: <T as Config>::Deposit::get(),
-			};
-			CurrencyOf::<T>::reserve(&deposit.owner, deposit.amount)?;
-			delegation.deposit = deposit;
-			DelegationNodes::<T>::insert(&delegation_id, delegation);
+		/// Updates the deposit amount to the current deposit rate.
+		///
+		/// The sender must be the deposit owner.
+		#[pallet::weight(<T as Config>::WeightInfo::update_deposit())]
+		pub fn update_deposit(origin: OriginFor<T>, delegation_id: DelegationNodeIdOf<T>) -> DispatchResult {
+			let sender = ensure_signed(origin)?;
+
+			let delegation = DelegationNodes::<T>::get(&delegation_id).ok_or(Error::<T>::DelegationNotFound)?;
+
+			// Deposit can only be swapped by the owner of the delegation node, not the
+			// parent or another ancestor.
+			ensure!(delegation.deposit.owner == sender, Error::<T>::AccessDenied);
+
+			DelegationDepositCollector::<T>::update_deposit(&delegation_id)?;
 
 			Ok(())
 		}
@@ -966,6 +975,38 @@ pub mod pallet {
 			Self::deposit_event(Event::DelegationRemoved(delegation_node.deposit.owner, *delegation));
 			removals = removals.saturating_add(1);
 			Ok((removals, consumed_weight))
+		}
+	}
+
+	struct DelegationDepositCollector<T: Config>(PhantomData<T>);
+	impl<T: Config> StorageDepositCollector<AccountIdOf<T>, DelegationNodeIdOf<T>> for DelegationDepositCollector<T> {
+		type Currency = <T as Config>::Currency;
+
+		fn deposit(
+			key: &DelegationNodeIdOf<T>,
+		) -> Result<Deposit<AccountIdOf<T>, <Self::Currency as Currency<AccountIdOf<T>>>::Balance>, DispatchError> {
+			let delegation_node = DelegationNodes::<T>::get(key).ok_or(Error::<T>::DelegationNotFound)?;
+			Ok(delegation_node.deposit)
+		}
+
+		fn deposit_amount(_key: &DelegationNodeIdOf<T>) -> <Self::Currency as Currency<AccountIdOf<T>>>::Balance {
+			<T as Config>::Deposit::get()
+		}
+
+		fn store_deposit(
+			key: &DelegationNodeIdOf<T>,
+			deposit: Deposit<AccountIdOf<T>, <Self::Currency as Currency<AccountIdOf<T>>>::Balance>,
+		) -> Result<(), DispatchError> {
+			let delegation_node = DelegationNodes::<T>::get(key).ok_or(Error::<T>::DelegationNotFound)?;
+			DelegationNodes::<T>::insert(
+				key,
+				DelegationNode {
+					deposit,
+					..delegation_node
+				},
+			);
+
+			Ok(())
 		}
 	}
 }

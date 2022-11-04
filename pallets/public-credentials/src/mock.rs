@@ -17,10 +17,14 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use codec::Encode;
+use frame_support::traits::Get;
 use sp_runtime::traits::Hash;
 
+use kilt_support::deposit::Deposit;
+
 use crate::{
-	AttesterOf, Config, CredentialIdOf, CtypeHashOf, InputClaimsContentOf, InputCredentialOf, InputSubjectIdOf,
+	AttesterOf, BalanceOf, Config, CredentialEntryOf, CredentialIdOf, CredentialSubjects, Credentials, CtypeHashOf,
+	CurrencyOf, InputClaimsContentOf, InputCredentialOf, InputSubjectIdOf,
 };
 
 // Generate a public credential using a many Default::default() as possible.
@@ -44,6 +48,44 @@ pub fn generate_credential_id<T: Config>(
 	T::CredentialHash::hash(&[&input_credential.encode()[..], &attester.encode()[..]].concat()[..])
 }
 
+/// Generates a basic credential entry using the provided input parameters
+/// and the default value for the other ones. The credential will be marked
+/// as non-revoked and with no authorization ID associated with it.
+pub(crate) fn generate_base_credential_entry<T: Config>(
+	payer: T::AccountId,
+	block_number: <T as frame_system::Config>::BlockNumber,
+	attester: T::AttesterId,
+	ctype_hash: Option<CtypeHashOf<T>>,
+	deposit: Option<Deposit<T::AccountId, BalanceOf<T>>>,
+) -> CredentialEntryOf<T> {
+	CredentialEntryOf::<T> {
+		ctype_hash: ctype_hash.unwrap_or_default(),
+		revoked: false,
+		attester,
+		block_number,
+		deposit: deposit.unwrap_or(Deposit::<T::AccountId, BalanceOf<T>> {
+			owner: payer,
+			amount: <T as Config>::Deposit::get(),
+		}),
+		authorization_id: None,
+	}
+}
+
+pub(crate) fn insert_public_credentials<T: Config>(
+	subject_id: T::SubjectId,
+	credential_id: CredentialIdOf<T>,
+	credential_entry: CredentialEntryOf<T>,
+) {
+	kilt_support::reserve_deposit::<T::AccountId, CurrencyOf<T>>(
+		credential_entry.deposit.owner.clone(),
+		credential_entry.deposit.amount,
+	)
+	.expect("Attester should have enough balance");
+
+	Credentials::<T>::insert(&subject_id, &credential_id, credential_entry);
+	CredentialSubjects::<T>::insert(credential_id, subject_id);
+}
+
 #[cfg(test)]
 pub use crate::mock::runtime::*;
 
@@ -55,7 +97,7 @@ pub(crate) mod runtime {
 	use codec::{Decode, Encode, MaxEncodedLen};
 	use frame_support::{
 		dispatch::Weight,
-		traits::{ConstU128, ConstU16, ConstU32, ConstU64, Get},
+		traits::{ConstU128, ConstU16, ConstU32, ConstU64},
 		weights::constants::RocksDbWeight,
 	};
 	use scale_info::TypeInfo;
@@ -66,17 +108,11 @@ pub(crate) mod runtime {
 		DispatchError, MultiSignature, MultiSigner,
 	};
 
-	use kilt_support::{
-		deposit::Deposit,
-		mock::{mock_origin, SubjectId},
-	};
+	use kilt_support::mock::{mock_origin, SubjectId};
 
 	use ctype::{CtypeCreatorOf, CtypeHashOf};
 
-	use crate::{
-		BalanceOf, Config, CredentialEntryOf, CredentialSubjects, Credentials, CurrencyOf, Error, InputSubjectIdOf,
-		PublicCredentialsAccessControl,
-	};
+	use crate::{Config, CredentialEntryOf, Error, InputSubjectIdOf, PublicCredentialsAccessControl};
 
 	pub(crate) type BlockNumber = u64;
 	pub(crate) type Balance = u128;
@@ -143,43 +179,6 @@ pub(crate) mod runtime {
 		fn from(value: [u8; 32]) -> Self {
 			Self(value)
 		}
-	}
-
-	/// Generates a basic credential entry using the provided input parameters
-	/// and the default value for the other ones. The credential will be marked
-	/// as non-revoked and with no authorization ID associated with it.
-	pub(crate) fn generate_base_credential_entry<T: Config>(
-		payer: T::AccountId,
-		block_number: <T as frame_system::Config>::BlockNumber,
-		attester: T::AttesterId,
-		ctype_hash: Option<CtypeHashOf<T>>,
-	) -> CredentialEntryOf<T> {
-		CredentialEntryOf::<T> {
-			ctype_hash: ctype_hash.unwrap_or_default(),
-			revoked: false,
-			attester,
-			block_number,
-			deposit: Deposit::<T::AccountId, BalanceOf<T>> {
-				owner: payer,
-				amount: <T as Config>::Deposit::get(),
-			},
-			authorization_id: None,
-		}
-	}
-
-	fn insert_public_credentials<T: Config>(
-		subject_id: T::SubjectId,
-		credential_id: CredentialIdOf<T>,
-		credential_entry: CredentialEntryOf<T>,
-	) {
-		kilt_support::reserve_deposit::<T::AccountId, CurrencyOf<T>>(
-			credential_entry.deposit.owner.clone(),
-			credential_entry.deposit.amount,
-		)
-		.expect("Attester should have enough balance");
-
-		Credentials::<T>::insert(&subject_id, &credential_id, credential_entry);
-		CredentialSubjects::<T>::insert(credential_id, subject_id);
 	}
 
 	/// Authorize iff the subject of the origin and the provided attester id
