@@ -110,7 +110,8 @@ pub trait StorageDepositCollector<AccountId, Key> {
 	/// Change the deposit owner.
 	///
 	/// The deposit balance of the current owner will be freed, while the
-	/// deposit balance of the new owner will get reserved.
+	/// deposit balance of the new owner will get reserved. The deposit amount
+	/// will not change even if the required byte and item fees were updated.
 	fn change_deposit_owner(key: &Key, new_owner: AccountId) -> Result<(), DispatchError> {
 		let deposit = Self::deposit(key)?;
 
