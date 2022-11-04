@@ -1,36 +1,46 @@
+cargo-features = ["workspace-inheritance"]
+
 [package]
-authors = ["KILT <info@kilt.io>"]
-description = "Parachain parachain-staking pallet for collator delegation and selection as well as reward distribution"
-edition = "2021"
+authors.workspace = true
+documentation.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license-file.workspace = true
+readme.workspace = true
+repository.workspace = true
+version.workspace = true
 name = "parachain-staking"
-version = "1.8.0"
+description = "Parachain parachain-staking pallet for collator delegation and selection as well as reward distribution"
 
 [dev-dependencies]
-pallet-aura = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.29"}
-pallet-timestamp = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.29"}
-sp-consensus-aura = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.29"}
-sp-core = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.29"}
-sp-io = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.29"}
+pallet-aura = {workspace = true, features = ["std"]}
+pallet-timestamp = {workspace = true, features = ["std"]}
+sp-consensus-aura = {workspace = true, features = ["std"]}
+sp-core = {workspace = true, features = ["std"]}
+sp-io = {workspace = true, features = ["std"]}
 
 [dependencies]
-kilt-runtime-api-staking = {path = "../../runtime-api/staking", default-features = false}
+# External dependencies
+codec = {package = "parity-scale-codec", workspace = true, features = ["derive"]}
+log.workspace = true
+scale-info = {workspace = true, features = ["derive", "serde"]}
+serde = {workspace = true, optional = true}
 
-log = "0.4.17"
-parity-scale-codec = {version = "3.1.5", default-features = false, features = ["derive"]}
-scale-info = {version = "2.1.1", default-features = false, features = ["derive", "serde"]}
-serde = {version = "1.0.144", optional = true}
+# Internal dependencies
+kilt-runtime-api-staking.workspace = true
 
-frame-support = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.29", default-features = false}
-frame-system = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.29", default-features = false}
-pallet-authorship = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.29", default-features = false}
-pallet-balances = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.29", default-features = false}
-pallet-session = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.29", default-features = false}
-sp-runtime = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.29", default-features = false}
-sp-staking = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.29", default-features = false}
-sp-std = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.29", default-features = false}
+# Substrate dependencies
+frame-support.workspace = true
+frame-system.workspace = true
+pallet-authorship.workspace = true
+pallet-balances.workspace = true
+pallet-session.workspace = true
+sp-runtime.workspace = true
+sp-staking.workspace = true
+sp-std.workspace = true
 
-# benchmarking
-frame-benchmarking = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.29", default-features = false, optional = true}
+# Benchmarking dependencies
+frame-benchmarking = {workspace = true, optional = true}
 
 [features]
 default = ["std"]
@@ -40,6 +50,7 @@ runtime-benchmarks = [
   "frame-system/runtime-benchmarks",
 ]
 std = [
+  "codec/std",
   "frame-support/std",
   "frame-system/std",
   "kilt-runtime-api-staking/std",
@@ -47,7 +58,6 @@ std = [
   "pallet-authorship/std",
   "pallet-balances/std",
   "pallet-session/std",
-  "parity-scale-codec/std",
   "scale-info/std",
   "serde",
   "sp-runtime/std",

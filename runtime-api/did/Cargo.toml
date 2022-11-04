@@ -1,22 +1,29 @@
-[package]
-edition = "2021"
-name = "kilt-runtime-api-did"
-version = "1.8.0"
+cargo-features = ["workspace-inheritance"]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[package]
+authors.workspace = true
+documentation.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license-file.workspace = true
+readme.workspace = true
+repository.workspace = true
+version.workspace = true
+name = "kilt-runtime-api-did"
+description = "Runtime APIs for dealing with DIDs."
 
 [dependencies]
 # External dependencies
-codec = { package = "parity-scale-codec", version = "3.1.5", default-features = false, features = ["derive"] }
-scale-info = { version = "2.1.1", default-features = false, features = ["derive"] }
+codec = {package = "parity-scale-codec", workspace = true, default-features = false, features = ["derive"]}
+scale-info = {workspace = true, default-features = false, features = ["derive"]}
 
 # Internal dependencies
-did = {path = "../../pallets/did", default-features = false}
-kilt-support = {path = "../../support", default-features = false}
+did.workspace = true
+kilt-support.workspace = true
 
 # Substrate dependencies
-sp-api = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.29"}
-sp-std = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.29"}
+sp-api.workspace = true
+sp-std.workspace = true
 
 [features]
 default = ["std"]

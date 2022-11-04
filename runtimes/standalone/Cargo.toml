@@ -1,78 +1,82 @@
+cargo-features = ["workspace-inheritance"]
+
 [package]
-authors = ["KILT <info@kilt.io>"]
-edition = "2021"
+authors.workspace = true
+documentation.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license-file.workspace = true
+readme.workspace = true
+repository.workspace = true
+version.workspace = true
 name = "mashnet-node-runtime"
-version = "1.8.0"
+description = "Standalone runtime for KILT development"
 
 [build-dependencies]
-substrate-wasm-builder = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.29"}
+substrate-wasm-builder.workspace = true
 
 [dependencies]
-codec = {package = "parity-scale-codec", version = "3.1.5", default-features = false, features = ["derive"]}
-log = "0.4.17"
-scale-info = {version = "2.1.1", default-features = false, features = ["derive"]}
+# External dependencies
+codec = {package = "parity-scale-codec", workspace = true, features = ["derive"]}
+log.workspace = true
+scale-info = {workspace = true, features = ["derive"]}
 
-hex-literal = {version = "0.3.4", optional = true}
+hex-literal = {workspace = true, optional = true}
 
-# kilt functionality
-attestation = {default-features = false, path = "../../pallets/attestation"}
-ctype = {default-features = false, path = "../../pallets/ctype"}
-delegation = {default-features = false, path = "../../pallets/delegation"}
-did = {default-features = false, path = "../../pallets/did"}
-kilt-support = {path = "../../support", default-features = false}
-pallet-did-lookup = {default-features = false, path = "../../pallets/pallet-did-lookup"}
-pallet-web3-names = {default-features = false, path = "../../pallets/pallet-web3-names"}
-public-credentials = {default-features = false, path = "../../pallets/public-credentials"}
-runtime-common = {path = "../../runtimes/common", default-features = false}
+# KILT pallets & primitives
+attestation.workspace = true
+ctype.workspace = true
+delegation.workspace = true
+did.workspace = true
+kilt-support.workspace = true
+pallet-did-lookup.workspace = true
+pallet-web3-names.workspace = true
+public-credentials.workspace = true
+runtime-common.workspace = true
 
-# RPC
-frame-system-rpc-runtime-api = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
-kilt-runtime-api-did = {path = "../../runtime-api/did", default-features = false}
-kilt-runtime-api-public-credentials = {path = "../../runtime-api/public-credentials", default-features = false}
-pallet-transaction-payment-rpc-runtime-api = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
+# RPC & Runtime API
+frame-system-rpc-runtime-api.workspace = true
+kilt-runtime-api-did.workspace = true
+kilt-runtime-api-public-credentials.workspace = true
+pallet-transaction-payment-rpc-runtime-api.workspace = true
 
-# Benchmarking
-frame-system-benchmarking = {git = "https://github.com/paritytech/substrate", default-features = false, optional = true, branch = "polkadot-v0.9.29"}
+# Substrate dependencies
+frame-benchmarking.workspace = true
+frame-executive.workspace = true
+frame-support.workspace = true
+frame-system.workspace = true
+pallet-aura.workspace = true
+pallet-authorship.workspace = true
+pallet-balances.workspace = true
+pallet-grandpa.workspace = true
+pallet-indices.workspace = true
+pallet-proxy.workspace = true
+pallet-randomness-collective-flip.workspace = true
+pallet-session.workspace = true
+pallet-sudo.workspace = true
+pallet-timestamp.workspace = true
+pallet-transaction-payment.workspace = true
+pallet-utility.workspace = true
+sp-api.workspace = true
+sp-block-builder.workspace = true
+sp-consensus-aura.workspace = true
+sp-core.workspace = true
+sp-inherents.workspace = true
+sp-offchain.workspace = true
+sp-runtime.workspace = true
+sp-session.workspace = true
+sp-std.workspace = true
+sp-transaction-pool.workspace = true
+sp-version.workspace = true
 
-# Substrate
-frame-benchmarking = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
-frame-executive = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
-frame-support = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
-frame-system = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
-pallet-aura = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
-pallet-authorship = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
-pallet-balances = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
-pallet-grandpa = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
-pallet-indices = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
-pallet-proxy = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
-pallet-randomness-collective-flip = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
-pallet-session = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
-pallet-sudo = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
-pallet-timestamp = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
-pallet-transaction-payment = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
-pallet-utility = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-api = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-block-builder = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-consensus-aura = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-core = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-inherents = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-offchain = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-runtime = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-session = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-std = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-transaction-pool = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-version = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
+# Benchmarking dependencies
+frame-system-benchmarking = {workspace = true, optional = true}
 
 # Runtime tests
-frame-try-runtime = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.29", optional = true}
+frame-try-runtime = {workspace = true, optional = true}
 
 [features]
 default = ["std"]
-# When enabled, the runtime API will not be build.
-#
-# This is required by Cumulus to access certain types of the
-# runtime without clashing with the runtime API exported functions
-# in WASM.
 runtime-benchmarks = [
   "attestation/runtime-benchmarks",
   "ctype/runtime-benchmarks",

@@ -1,55 +1,60 @@
+cargo-features = ["workspace-inheritance"]
+
 [package]
-authors = ["KILT <info@kilt.io>"]
-description = "Lookup the DID for a blockchain account."
-edition = "2021"
+authors.workspace = true
+documentation.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license-file.workspace = true
+readme.workspace = true
+repository.workspace = true
+version.workspace = true
 name = "pallet-did-lookup"
-repository = "https://github.com/KILTprotocol/kilt-node"
-version = "1.8.0"
+description = "Lookup the DID for a blockchain account."
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dev-dependencies]
-kilt-support = {features = ["mock"], path = "../../support"}
+kilt-support = {workspace = true, features = ["mock"]}
 
-pallet-balances = {branch = "polkadot-v0.9.29", git = "https://github.com/paritytech/substrate"}
+pallet-balances = {workspace = true, features = ["std"]}
 rand = "0.8"
-sp-core = {branch = "polkadot-v0.9.29", git = "https://github.com/paritytech/substrate"}
-sp-io = {branch = "polkadot-v0.9.29", git = "https://github.com/paritytech/substrate"}
-sp-keystore = {branch = "polkadot-v0.9.29", git = "https://github.com/paritytech/substrate"}
+sp-core = {workspace = true, features = ["std"]}
+sp-io = {workspace = true, features = ["std"]}
+sp-keystore = {workspace = true, features = ["std"]}
 
 [dependencies]
-codec = {package = "parity-scale-codec", version = "3.1.2", default-features = false, features = ["derive"]}
-hex = {version = "0.4", default-features = false}
-libsecp256k1 = {version = "0.7", default-features = false, features = ["hmac"]}
-log = "0.4.17"
-scale-info = {version = "2.1.1", default-features = false, features = ["derive"]}
-sha3 = {version = "0.10", default-features = false}
+# External dependencies
+codec = {package = "parity-scale-codec", workspace = true, features = ["derive"]}
+hex.workspace = true
+libsecp256k1 = {workspace = true, features = ["hmac"]}
+log.workspace = true
+scale-info = {workspace = true, features = ["derive"]}
+sha3.workspace = true
 
-# KILT
-kilt-support = {default-features = false, path = "../../support"}
+# Internal dependencies
+kilt-support.workspace = true
 
 # Substrate dependencies
-frame-support = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
-frame-system = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-core = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-io = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-runtime = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-std = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
+frame-support.workspace = true
+frame-system.workspace = true
+sp-core.workspace = true
+sp-io.workspace = true
+sp-runtime.workspace = true
+sp-std.workspace = true
 
-# benchmarking
-frame-benchmarking = {branch = "polkadot-v0.9.29", optional = true, default-features = false, git = "https://github.com/paritytech/substrate"}
+# Benchmarking dependencies
+frame-benchmarking = {workspace = true, optional = true}
 
 [features]
 default = ["std"]
-
 runtime-benchmarks = [
   "frame-benchmarking",
   "kilt-support/runtime-benchmarks",
   "frame-support/runtime-benchmarks",
   "frame-system/runtime-benchmarks",
 ]
-
 std = [
   "codec/std",
   "frame-benchmarking/std",
@@ -63,7 +68,6 @@ std = [
   "sp-runtime/std",
   "sp-std/std",
 ]
-
 try-runtime = [
   "frame-support/try-runtime",
   "kilt-support/try-runtime",

@@ -1,36 +1,43 @@
+cargo-features = ["workspace-inheritance"]
+
 [package]
-authors = ["KILT <info@kilt.io>"]
-description = "Enables adding and revoking public credentials."
-edition = "2021"
+authors.workspace = true
+documentation.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license-file.workspace = true
+readme.workspace = true
+repository.workspace = true
+version.workspace = true
 name = "public-credentials"
-repository = "https://github.com/KILTprotocol/kilt-node"
-version = "1.8.0"
+description = "Enables adding and revoking public credentials."
 
 [dev-dependencies]
-ctype = {features = ["mock"], path = "../ctype"}
-kilt-support = {features = ["mock"], path = "../../support"}
+ctype = {workspace = true, features = ["mock"]}
+kilt-support = {workspace = true, features = ["mock"]}
 
-pallet-balances = {branch = "polkadot-v0.9.29", git = "https://github.com/paritytech/substrate"}
-sp-io = {branch = "polkadot-v0.9.29", git = "https://github.com/paritytech/substrate"}
-sp-keystore = {branch = "polkadot-v0.9.29", git = "https://github.com/paritytech/substrate"}
+pallet-balances = {workspace = true, features = ["std"]}
+sp-io = {workspace = true, features = ["std"]}
+sp-keystore = {workspace = true, features = ["std"]}
 
 [dependencies]
-codec = {package = "parity-scale-codec", version = "3.1.2", default-features = false, features = ["derive"]}
-scale-info = {version = "2.1.1", default-features = false, features = ["derive"]}
+# External dependencies
+codec = {package = "parity-scale-codec", workspace = true, features = ["derive"]}
+scale-info = {workspace = true, features = ["derive"]}
 
 # Internal dependencies
-ctype = {default-features = false, path = "../ctype"}
-kilt-support = {default-features = false, path = "../../support"}
+ctype.workspace = true
+kilt-support.workspace = true
 
-# External dependencies
-frame-benchmarking = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
-frame-support = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
-frame-system = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-core = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-io = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
-sp-keystore = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
-sp-runtime = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-std = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
+# Substrate dependencies
+frame-benchmarking = {workspace = true, optional = true}
+frame-support.workspace = true
+frame-system.workspace = true
+sp-core.workspace = true
+sp-io = {workspace = true, optional = true}
+sp-keystore = {workspace = true, optional = true}
+sp-runtime.workspace = true
+sp-std.workspace = true
 
 [features]
 default = ["std"]

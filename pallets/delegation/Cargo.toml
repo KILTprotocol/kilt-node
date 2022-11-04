@@ -1,53 +1,56 @@
+cargo-features = ["workspace-inheritance"]
+
 [package]
-authors = ["KILT <info@kilt.io>"]
-description = "Enables creating and revoking root nodes of delegation hierarchies; adding and revoking delegation nodes based on root nodes."
-edition = "2021"
+authors.workspace = true
+documentation.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license-file.workspace = true
+readme.workspace = true
+repository.workspace = true
+version.workspace = true
 name = "delegation"
-repository = "https://github.com/KILTprotocol/kilt-node"
-version = "1.8.0"
+description = "Enables creating and revoking root nodes of delegation hierarchies; adding and revoking delegation nodes based on root nodes."
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
 
 [build-dependencies]
-substrate-wasm-builder = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.29"}
+substrate-wasm-builder.workspace = true
 
 [dev-dependencies]
-attestation = {features = ["mock"], path = "../attestation"}
-ctype = {features = ["mock"], path = "../ctype"}
-kilt-support = {features = ["mock"], path = "../../support"}
-
-# External dependencies
-env_logger = "0.9.0"
+attestation = {workspace = true, features = ["mock"]}
+ctype = {workspace = true, features = ["mock"]}
+kilt-support = {workspace = true, features = ["mock"]}
 
 # Substrate dependencies
-pallet-balances = {branch = "polkadot-v0.9.29", git = "https://github.com/paritytech/substrate"}
-sp-core = {branch = "polkadot-v0.9.29", git = "https://github.com/paritytech/substrate"}
-sp-keystore = {branch = "polkadot-v0.9.29", git = "https://github.com/paritytech/substrate"}
+pallet-balances = {workspace = true, features = ["std"]}
+sp-core = {workspace = true, features = ["std"]}
+sp-keystore = {workspace = true, features = ["std"]}
 
 [dependencies]
 # Internal dependencies
-attestation = {default-features = false, path = "../attestation"}
-ctype = {default-features = false, path = "../ctype"}
-kilt-support = {default-features = false, path = "../../support"}
-public-credentials = {default-features = false, path = "../public-credentials"}
+attestation.workspace = true
+ctype.workspace = true
+kilt-support.workspace = true
+public-credentials.workspace = true
 
 # External dependencies
-bitflags = {default-features = false, version = "1.3.2"}
-codec = {package = "parity-scale-codec", version = "3.1.5", default-features = false, features = ["derive"]}
-log = "0.4.17"
-scale-info = {version = "2.1.1", default-features = false, features = ["derive"]}
+bitflags.workspace = true
+codec = {package = "parity-scale-codec", workspace = true, features = ["derive"]}
+log.workspace = true
+scale-info = {workspace = true, features = ["derive"]}
 
 # Substrate dependencies
-frame-benchmarking = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
-frame-support = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
-frame-system = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
-pallet-balances = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
-sp-core = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
-sp-io = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
-sp-keystore = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
-sp-runtime = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-std = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
+frame-benchmarking = {workspace = true, optional = true}
+frame-support.workspace = true
+frame-system.workspace = true
+pallet-balances = {workspace = true, optional = true}
+sp-core = {workspace = true, optional = true}
+sp-io = {workspace = true, optional = true}
+sp-keystore = {workspace = true, optional = true}
+sp-runtime.workspace = true
+sp-std.workspace = true
 
 [features]
 default = ["std"]

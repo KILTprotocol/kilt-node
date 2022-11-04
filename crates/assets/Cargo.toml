@@ -1,30 +1,35 @@
+cargo-features = ["workspace-inheritance"]
+
 [package]
-authors = ["KILT <info@kilt.io>"]
-description = "Asset DIDs and related structs, suitable for no_std environments."
-edition = "2021"
+authors.workspace = true
+documentation.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license-file.workspace = true
+readme.workspace = true
+repository.workspace = true
+version.workspace = true
 name = "kilt-asset-dids"
-repository = "https://github.com/KILTprotocol/kilt-node"
-version = "1.8.0"
+description = "Asset DIDs and related structs, suitable for no_std environments."
 
 [dependencies]
 # External dependencies
-base58 = {version = "0.2.0", default-features = false}
-hex = {version = "0.4.3", default-features = false, features = ["alloc"]}
-hex-literal = {version = "0.3.4", default-features = false}
-log = {version = "0.4.17", default-features = false}
+base58.workspace = true
+hex = {workspace = true, features = ["alloc"]}
+hex-literal.workspace = true
+log.workspace = true
 
 # Parity dependencies
-codec = {package = "parity-scale-codec", version = "3.1.2", default-features = false, features = ["derive"]}
-scale-info = {version = "2.1.1", default-features = false, features = ["derive"]}
+codec = {package = "parity-scale-codec", workspace = true, features = ["derive"]}
+scale-info = {workspace = true, features = ["derive"]}
 
 # Substrate dependencies
-frame-support = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-core = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-std = {branch = "polkadot-v0.9.29", default-features = false, git = "https://github.com/paritytech/substrate"}
+frame-support.workspace = true
+sp-core.workspace = true
+sp-std.workspace = true
 
 [features]
 default = ["std"]
-
 std = [
   "codec/std",
   "hex/std",
