@@ -27,9 +27,9 @@
 // benchmark
 // pallet
 // --chain=spiritnet-dev
-// --steps=50
+// --steps=1
 // --repeat=20
-// --pallet=pallet-did-lookup
+// --pallet=pallet_did_lookup
 // --extrinsic=*
 // --execution=wasm
 // --wasm-execution=compiled
@@ -51,32 +51,8 @@ impl<T: frame_system::Config> pallet_did_lookup::WeightInfo for WeightInfo<T> {
 	// Storage: System Account (r:1 w:1)
 	// Storage: DidLookup ConnectedDids (r:1 w:1)
 	// Storage: DidLookup ConnectedAccounts (r:0 w:2)
-	fn associate_account_multisig_sr25519() -> Weight {
-		Weight::from_ref_time(133_866_000 as u64)
-			.saturating_add(T::DbWeight::get().reads(2 as u64))
-			.saturating_add(T::DbWeight::get().writes(4 as u64))
-	}
-	// Storage: System Account (r:1 w:1)
-	// Storage: DidLookup ConnectedDids (r:1 w:1)
-	// Storage: DidLookup ConnectedAccounts (r:0 w:2)
-	fn associate_account_multisig_ed25519() -> Weight {
-		Weight::from_ref_time(132_369_000 as u64)
-			.saturating_add(T::DbWeight::get().reads(2 as u64))
-			.saturating_add(T::DbWeight::get().writes(4 as u64))
-	}
-	// Storage: System Account (r:1 w:1)
-	// Storage: DidLookup ConnectedDids (r:1 w:1)
-	// Storage: DidLookup ConnectedAccounts (r:0 w:2)
-	fn associate_account_multisig_ecdsa() -> Weight {
-		Weight::from_ref_time(121_141_000 as u64)
-			.saturating_add(T::DbWeight::get().reads(2 as u64))
-			.saturating_add(T::DbWeight::get().writes(4 as u64))
-	}
-	// Storage: System Account (r:1 w:1)
-	// Storage: DidLookup ConnectedDids (r:1 w:1)
-	// Storage: DidLookup ConnectedAccounts (r:0 w:2)
-	fn associate_eth_account() -> Weight {
-		Weight::from_ref_time(122_417_000 as u64)
+	fn associate_account() -> Weight {
+		Weight::from_ref_time(133_386_000 as u64)
 			.saturating_add(T::DbWeight::get().reads(2 as u64))
 			.saturating_add(T::DbWeight::get().writes(4 as u64))
 	}
@@ -84,7 +60,7 @@ impl<T: frame_system::Config> pallet_did_lookup::WeightInfo for WeightInfo<T> {
 	// Storage: DidLookup ConnectedDids (r:1 w:1)
 	// Storage: DidLookup ConnectedAccounts (r:0 w:2)
 	fn associate_sender() -> Weight {
-		Weight::from_ref_time(73_413_000 as u64)
+		Weight::from_ref_time(72_692_000 as u64)
 			.saturating_add(T::DbWeight::get().reads(2 as u64))
 			.saturating_add(T::DbWeight::get().writes(4 as u64))
 	}
@@ -92,7 +68,7 @@ impl<T: frame_system::Config> pallet_did_lookup::WeightInfo for WeightInfo<T> {
 	// Storage: System Account (r:1 w:1)
 	// Storage: DidLookup ConnectedAccounts (r:0 w:1)
 	fn remove_sender_association() -> Weight {
-		Weight::from_ref_time(53_910_000 as u64)
+		Weight::from_ref_time(52_441_000 as u64)
 			.saturating_add(T::DbWeight::get().reads(2 as u64))
 			.saturating_add(T::DbWeight::get().writes(3 as u64))
 	}
@@ -100,21 +76,21 @@ impl<T: frame_system::Config> pallet_did_lookup::WeightInfo for WeightInfo<T> {
 	// Storage: System Account (r:1 w:1)
 	// Storage: DidLookup ConnectedAccounts (r:0 w:1)
 	fn remove_account_association() -> Weight {
-		Weight::from_ref_time(55_750_000 as u64)
+		Weight::from_ref_time(54_371_000 as u64)
 			.saturating_add(T::DbWeight::get().reads(2 as u64))
 			.saturating_add(T::DbWeight::get().writes(3 as u64))
 	}
 	// Storage: DidLookup ConnectedDids (r:1 w:1)
 	// Storage: System Account (r:2 w:2)
 	fn change_deposit_owner() -> Weight {
-		Weight::from_ref_time(68_431_000 as u64)
+		Weight::from_ref_time(67_853_000 as u64)
 			.saturating_add(T::DbWeight::get().reads(3 as u64))
 			.saturating_add(T::DbWeight::get().writes(3 as u64))
 	}
 	// Storage: DidLookup ConnectedDids (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	fn update_deposit() -> Weight {
-		Weight::from_ref_time(62_217_000 as u64)
+		Weight::from_ref_time(62_103_000 as u64)
 			.saturating_add(T::DbWeight::get().reads(2 as u64))
 			.saturating_add(T::DbWeight::get().writes(2 as u64))
 	}

@@ -5505,7 +5505,6 @@ dependencies = [
  "log",
  "pallet-balances",
  "parity-scale-codec",
- "rand 0.8.5",
  "scale-info",
  "sha3 0.10.2",
  "sp-core",
