@@ -19,7 +19,7 @@ homepage = "https://kilt.io/"
 license-file = "LICENSE"
 readme = "README.md"
 repository = "https://github.com/KILTprotocol/kilt-node"
-version = "1.8.0"
+version = "1.9.0"
 
 [workspace.dependencies]
 # Build deps
