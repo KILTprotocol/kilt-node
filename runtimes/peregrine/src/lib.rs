@@ -47,7 +47,7 @@ use xcm_executor::XcmExecutor;
 
 use delegation::DelegationAc;
 use kilt_support::traits::ItemFilter;
-use pallet_did_lookup::{linkable_account::LinkableAccountId, migrations::EthereumMigration};
+use pallet_did_lookup::linkable_account::LinkableAccountId;
 pub use parachain_staking::InflationInfo;
 pub use public_credentials;
 
@@ -1056,7 +1056,7 @@ pub type Executive = frame_executive::Executive<
 	Runtime,
 	// Executes pallet hooks in the order of definition in construct_runtime
 	AllPalletsWithSystem,
-	EthereumMigration<Runtime>,
+	parachain_staking::migration::StakingPayoutRefactor<Runtime>,
 >;
 
 impl_runtime_apis! {

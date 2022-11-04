@@ -16,6 +16,8 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+#![cfg_attr(not(feature = "std"), no_std)]
+
 use crate::{
 	set::OrderedSet,
 	types::{BalanceOf, Delegator, Stake},
@@ -26,18 +28,19 @@ use codec::{Decode, Encode, MaxEncodedLen};
 use core::marker::PhantomData;
 use frame_support::{
 	dispatch::GetStorageVersion,
-	pallet_prelude::ValueQuery,
+	pallet_prelude::{StorageVersion, ValueQuery},
 	parameter_types, storage_alias,
 	traits::{Get, OnRuntimeUpgrade},
 	weights::Weight,
-	RuntimeDebug,
+	Blake2_128Concat, RuntimeDebug,
 };
 use scale_info::TypeInfo;
+use sp_runtime::traits::Zero;
 
 #[cfg(feature = "try-runtime")]
 use sp_runtime::SaturatedConversion;
 
-// Old types
+// Old delegator type needed for translating storage map
 #[derive(Encode, Decode, Eq, MaxEncodedLen, PartialEq, RuntimeDebug, TypeInfo)]
 #[scale_info(skip_type_params(MaxCollatorsPerDelegator))]
 #[codec(mel_bound(AccountId: MaxEncodedLen, Balance: MaxEncodedLen))]
@@ -48,6 +51,14 @@ pub struct DelegatorOld<AccountId: Eq + Ord, Balance: Eq + Ord, MaxCollatorsPerD
 parameter_types! {
 	const MaxCollatorsPerDelegator: u32 = 1;
 }
+// Old delegator state map required for pre checks
+#[storage_alias]
+type DelegatorStateOld<T: Config> = StorageMap<
+	Pallet<T>,
+	Blake2_128Concat,
+	<T as frame_system::Config>::AccountId,
+	DelegatorOld<<T as frame_system::Config>::AccountId, BalanceOf<T>, MaxCollatorsPerDelegator>,
+>;
 
 /// Number of delegators post migration
 #[storage_alias]
@@ -60,37 +71,56 @@ impl<T: Config> OnRuntimeUpgrade for StakingPayoutRefactor<T> {
 		let onchain = Pallet::<T>::on_chain_storage_version();
 
 		log::info!(
-			"Running migration with current storage version {:?} / onchain {:?}",
+			"💰 Running migration with current storage version {:?} / onchain {:?}",
 			current,
 			onchain
 		);
 
 		if current == 8 && onchain == 7 {
 			let num_delegators = migrate_delegators::<T>();
+			log::info!("💰 Migrated {:?} delegator states", num_delegators);
+			StorageVersion::new(8).put::<Pallet<T>>();
 			T::DbWeight::get().reads_writes(num_delegators, num_delegators)
 		} else {
-			log::info!("StakingPayoutRefactor did not execute. This probably should be removed");
+			log::info!("💰 StakingPayoutRefactor did not execute. This probably should be removed");
 			T::DbWeight::get().reads(1)
 		}
 	}
 
 	#[cfg(feature = "try-runtime")]
 	fn pre_upgrade() -> Result<(), &'static str> {
-		use sp_runtime::traits::Zero;
-
-		let current = Pallet::<T>::current_storage_version();
+		let current = Pallet::<T>::on_chain_storage_version();
 
 		assert_eq!(
 			current, 7,
-			"ParachainStaking StorageVersion is {:?} instead of 7",
+			"ParachainStaking on-chain StorageVersion is {:?} instead of 7",
 			current
 		);
+
+		// sanity check each old entry
+		for delegator in DelegatorStateOld::<T>::iter_values() {
+			assert!(
+				delegator.delegations.is_empty(),
+				"There exists a delegator without a collator in pre migration!"
+			);
+			assert!(
+				!delegator.total.is_zero(),
+				"There exists a delegator without any self stake in pre migration!",
+			)
+		}
+		log::info!(
+			"💰 Staking migration pre check: {:?} delegators",
+			DelegatorStateOld::<T>::iter().count()
+		);
+
 		assert!(
 			CounterForDelegators::<T>::get().is_zero(),
 			"CounterForDelegators already set."
 		);
-		// store number of delegators before migration
+		// store number of delegators before migration to check against in post
+		// migration
 		CounterForDelegators::<T>::put(DelegatorState::<T>::iter_keys().count().saturated_into::<u32>());
+
 		Ok(())
 	}
 
@@ -112,26 +142,46 @@ impl<T: Config> OnRuntimeUpgrade for StakingPayoutRefactor<T> {
 			"Number of delegators changed during migration! Before {:?} vs. now {:?}",
 			old_num_delegators, new_num_delegators
 		);
+		log::info!(
+			"💰 Number of delegators: Before {:?} vs. after {:?}",
+			old_num_delegators,
+			new_num_delegators
+		);
+
+		// sanity check each new entry
+		for delegator in DelegatorState::<T>::iter_values() {
+			assert!(
+				!delegator.amount.is_zero(),
+				"There exists a delegator without any self stake in post migration!",
+			)
+		}
+
+		log::info!("💰 Post staking payout refactor upgrade checks match up.");
 		Ok(())
 	}
 }
 
+/// Translate all values from the DelegatorState StorageMap from old to new
 fn migrate_delegators<T: Config>() -> u64 {
-	let mut counter = 0;
-	DelegatorState::<T>::translate_values::<
-		Option<DelegatorOld<T::AccountId, BalanceOf<T>, MaxCollatorsPerDelegator>>,
-		_,
-	>(|maybe_old| {
-		counter += 1;
-		maybe_old
-			.map(|old| {
-				old.delegations.get(0).map(|stake| Delegator {
-					amount: old.total,
-					owner: stake.owner.clone(),
-				})
-			})
-			.unwrap_or(None)
-	});
+	let mut num_translations = 0;
+	DelegatorState::<T>::translate_values(
+		|old: DelegatorOld<T::AccountId, BalanceOf<T>, MaxCollatorsPerDelegator>| {
+			num_translations += 1;
 
-	counter
+			// Should never occur because of pre checks but let's be save
+			if old.total.is_zero() {
+				log::debug!("Translating delegator with 0 stake amount")
+			}
+			if old.delegations.get(0).is_none() {
+				log::debug!("Translating delegator without collator")
+			}
+
+			old.delegations.get(0).map(|stake| Delegator {
+				amount: old.total,
+				owner: stake.owner.clone(),
+			})
+		},
+	);
+
+	num_translations
 }
