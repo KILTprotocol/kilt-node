@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
+use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite, Zero};
 use frame_support::{
 	dispatch::RawOrigin,
 	traits::{Currency, Get},
@@ -24,10 +24,16 @@ use frame_support::{
 };
 use sp_std::{boxed::Box, vec, vec::Vec};
 
-use kilt_support::traits::{GenerateBenchmarkOrigin, GetWorstCase};
+use kilt_support::{
+	deposit::Deposit,
+	traits::{GenerateBenchmarkOrigin, GetWorstCase},
+};
 
 use crate::{
-	mock::{generate_base_public_credential_creation_op, generate_credential_id},
+	mock::{
+		generate_base_credential_entry, generate_base_public_credential_creation_op, generate_credential_id,
+		insert_public_credentials,
+	},
 	*,
 };
 
@@ -46,6 +52,7 @@ benchmarks! {
 		T: ctype::Config<CtypeCreatorId = T::AttesterId>,
 		<T as Config>::EnsureOrigin: GenerateBenchmarkOrigin<T::Origin, T::AccountId, T::AttesterId>,
 		<T as Config>::SubjectId: GetWorstCase + Into<Vec<u8>> + sp_std::fmt::Debug,
+		<T as Config>::CredentialId: Default,
 	}
 
 	add {
@@ -217,20 +224,27 @@ benchmarks! {
 		let attester: T::AttesterId = account("attester", 0, SEED);
 		let ctype_hash: T::Hash = T::Hash::default();
 		let subject_id = <T as Config>::SubjectId::worst_case();
-		let contents = BoundedVec::try_from(vec![0; <T as Config>::MaxEncodedClaimsLength::get() as usize]).expect("Contents should not fail.");
 		let origin = <T as Config>::EnsureOrigin::generate_origin(deposit_owner.clone(), attester.clone());
 
-		let creation_op = Box::new(generate_base_public_credential_creation_op::<T>(
-			subject_id.clone().into().try_into().expect("Input conversion should not fail."),
-			ctype_hash,
-			contents,
-		));
-		let credential_id = generate_credential_id::<T>(&creation_op, &attester);
-
 		reserve_balance::<T>(&deposit_owner);
+		ctype::Ctypes::<T>::insert(&ctype_hash, attester.clone());
 
-		ctype::Ctypes::<T>::insert(&ctype_hash, attester);
-		Pallet::<T>::add(origin, creation_op).expect("Pallet::add should not fail");
+		let credential_entry = generate_base_credential_entry::<T>(
+			deposit_owner.clone(),
+			T::BlockNumber::zero(),
+			attester,
+			Some(ctype_hash),
+			Some(Deposit::<T::AccountId, BalanceOf<T>> {
+				owner: deposit_owner.clone(),
+				amount: <T as Config>::Deposit::get() + <T as Config>::Deposit::get(),
+			})
+		);
+		let credential_id: CredentialIdOf<T> = Default::default();
+		insert_public_credentials::<T>(
+			subject_id.clone(),
+			credential_id.clone(),
+			credential_entry
+		);
 		let credential_id_clone = credential_id.clone();
 
 		let origin = RawOrigin::Signed(deposit_owner);

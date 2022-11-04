@@ -25,7 +25,7 @@ pub mod web3_name;
 
 mod default_weights;
 
-#[cfg(test)]
+#[cfg(any(test, feature = "runtime-benchmarks"))]
 mod mock;
 
 #[cfg(test)]
