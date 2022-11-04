@@ -531,7 +531,7 @@ impl_runtime_apis! {
 	}
 
 	// Solely required from parachain client
-	impl did_rpc_runtime_api::Did<
+	impl kilt_runtime_api_did::Did<
 		Block,
 		AccountId,
 		AccountId,
@@ -540,7 +540,7 @@ impl_runtime_apis! {
 		Hash,
 		BlockNumber
 	> for Runtime {
-		fn query_by_web3_name(_: Vec<u8>) -> Option<did_rpc_runtime_api::RawDidLinkedInfo<
+		fn query_by_web3_name(_: Vec<u8>) -> Option<kilt_runtime_api_did::RawDidLinkedInfo<
 				AccountId,
 				AccountId,
 				LinkableAccountId,
@@ -553,7 +553,7 @@ impl_runtime_apis! {
 		}
 
 		fn query_by_account(_: LinkableAccountId) -> Option<
-			did_rpc_runtime_api::RawDidLinkedInfo<
+			kilt_runtime_api_did::RawDidLinkedInfo<
 				AccountId,
 				AccountId,
 				LinkableAccountId,
@@ -566,7 +566,7 @@ impl_runtime_apis! {
 		}
 
 		fn query(_: AccountId) -> Option<
-			did_rpc_runtime_api::RawDidLinkedInfo<
+			kilt_runtime_api_did::RawDidLinkedInfo<
 				AccountId,
 				AccountId,
 				LinkableAccountId,
@@ -579,7 +579,7 @@ impl_runtime_apis! {
 		}
 	}
 
-	impl public_credentials_runtime_api::PublicCredentials<Block, Vec<u8>, Hash, public_credentials::CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<Hash>>, PublicCredentialsFilter<Hash, AccountId>, PublicCredentialsApiError> for Runtime {
+	impl kilt_runtime_api_public_credentials::PublicCredentials<Block, Vec<u8>, Hash, public_credentials::CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<Hash>>, PublicCredentialsFilter<Hash, AccountId>, PublicCredentialsApiError> for Runtime {
 		fn get_credential(_credential_id: Hash) -> Option<public_credentials::CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<Hash>>> {
 			None
 		}

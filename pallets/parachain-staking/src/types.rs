@@ -20,16 +20,14 @@ use frame_support::traits::{Currency, Get};
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_runtime::{
-	traits::{AtLeast32BitUnsigned, Saturating, Zero},
+	traits::{AtLeast32BitUnsigned, CheckedSub, Saturating, Zero},
 	RuntimeDebug,
 };
 use sp_staking::SessionIndex;
 use sp_std::{
 	cmp::Ordering,
-	convert::TryInto,
 	fmt::Debug,
 	ops::{Add, Sub},
-	vec,
 };
 
 use crate::{set::OrderedSet, Config};
@@ -211,99 +209,44 @@ where
 	}
 }
 
-#[derive(Encode, Decode, Eq, MaxEncodedLen, PartialEq, RuntimeDebug, TypeInfo)]
-#[scale_info(skip_type_params(MaxCollatorsPerDelegator))]
-#[codec(mel_bound(AccountId: MaxEncodedLen, Balance: MaxEncodedLen))]
-pub struct Delegator<AccountId: Eq + Ord, Balance: Eq + Ord, MaxCollatorsPerDelegator: Get<u32>> {
-	pub delegations: OrderedSet<Stake<AccountId, Balance>, MaxCollatorsPerDelegator>,
-	pub total: Balance,
-}
-
-impl<AccountId, Balance, MaxCollatorsPerDelegator> Delegator<AccountId, Balance, MaxCollatorsPerDelegator>
+pub type Delegator<AccountId, Balance> = Stake<AccountId, Balance>;
+impl<AccountId, Balance> Delegator<AccountId, Balance>
 where
 	AccountId: Eq + Ord + Clone + Debug,
-	Balance: Copy + Add<Output = Balance> + Saturating + PartialOrd + Eq + Ord + Debug + Zero,
-	MaxCollatorsPerDelegator: Get<u32> + Debug + PartialEq,
+	Balance: Copy + Add<Output = Balance> + Saturating + PartialOrd + Eq + Ord + Debug + Zero + Default + CheckedSub,
 {
-	pub fn try_new(collator: AccountId, amount: Balance) -> Result<Self, ()> {
-		Ok(Delegator {
-			delegations: OrderedSet::from(
-				vec![Stake {
-					owner: collator,
-					amount,
-				}]
-				.try_into()?,
-			),
-			total: amount,
-		})
-	}
-
-	/// Adds a new delegation.
-	///
-	/// If already delegating to the same account, this call returns false and
-	/// doesn't insert the new delegation.
-	pub fn add_delegation(&mut self, stake: Stake<AccountId, Balance>) -> Result<bool, ()> {
-		let amt = stake.amount;
-		if self.delegations.try_insert(stake).map_err(|_| ())? {
-			self.total = self.total.saturating_add(amt);
-			Ok(true)
+	/// Returns Ok if the delegation for the
+	/// collator exists and `Err` otherwise.
+	pub fn try_clear(&mut self, collator: AccountId) -> Result<(), ()> {
+		if self.owner == collator {
+			self.amount = Balance::zero();
+			Ok(())
 		} else {
-			Ok(false)
+			Err(())
 		}
 	}
 
-	/// Returns Some(remaining stake for delegator) if the delegation for the
-	/// collator exists. Returns `None` otherwise.
-	pub fn rm_delegation(&mut self, collator: &AccountId) -> Option<Balance> {
-		let amt = self.delegations.remove(&Stake::<AccountId, Balance> {
-			owner: collator.clone(),
-			// amount is irrelevant for removal
-			amount: Balance::zero(),
-		});
-
-		if let Some(Stake::<AccountId, Balance> { amount: balance, .. }) = amt {
-			self.total = self.total.saturating_sub(balance);
-			Some(self.total)
+	/// Returns Ok(delegated_amount) if successful, `Err` if delegation was
+	/// not found.
+	pub fn try_increment(&mut self, collator: AccountId, more: Balance) -> Result<Balance, ()> {
+		if self.owner == collator {
+			self.amount = self.amount.saturating_add(more);
+			Ok(self.amount)
 		} else {
-			None
+			Err(())
 		}
 	}
 
-	/// Returns None if delegation was not found.
-	pub fn inc_delegation(&mut self, collator: AccountId, more: Balance) -> Option<Balance> {
-		if let Ok(i) = self.delegations.linear_search(&Stake::<AccountId, Balance> {
-			owner: collator,
-			amount: Balance::zero(),
-		}) {
-			self.delegations
-				.mutate(|vec| vec[i].amount = vec[i].amount.saturating_add(more));
-			self.total = self.total.saturating_add(more);
-			self.delegations.sort_greatest_to_lowest();
-			Some(self.delegations[i].amount)
+	/// Returns Ok(Some(delegated_amount)) if successful, `Err` if delegation
+	/// was not found and Ok(None) if delegated stake would underflow.
+	pub fn try_decrement(&mut self, collator: AccountId, less: Balance) -> Result<Option<Balance>, ()> {
+		if self.owner == collator {
+			Ok(self.amount.checked_sub(&less).map(|new| {
+				self.amount = new;
+				self.amount
+			}))
 		} else {
-			None
-		}
-	}
-
-	/// Returns Some(Some(balance)) if successful, None if delegation was not
-	/// found and Some(None) if delegated stake would underflow.
-	pub fn dec_delegation(&mut self, collator: AccountId, less: Balance) -> Option<Option<Balance>> {
-		if let Ok(i) = self.delegations.linear_search(&Stake::<AccountId, Balance> {
-			owner: collator,
-			amount: Balance::zero(),
-		}) {
-			if self.delegations[i].amount > less {
-				self.delegations
-					.mutate(|vec| vec[i].amount = vec[i].amount.saturating_sub(less));
-				self.total = self.total.saturating_sub(less);
-				self.delegations.sort_greatest_to_lowest();
-				Some(Some(self.delegations[i].amount))
-			} else {
-				// underflow error; should rm entire delegation
-				Some(None)
-			}
-		} else {
-			None
+			Err(())
 		}
 	}
 }
@@ -369,13 +312,6 @@ pub struct DelegationCounter {
 	pub round: SessionIndex,
 	/// The number of delegations made within round.
 	pub counter: u32,
-}
-
-/// Internal type which is only used when a delegator is replaced by another
-/// one to delay the storage entry removal until failure cannot happen anymore.
-pub(crate) struct ReplacedDelegator<T: Config> {
-	pub who: AccountIdOf<T>,
-	pub state: Option<Delegator<AccountIdOf<T>, BalanceOf<T>, T::MaxCollatorsPerDelegator>>,
 }
 
 pub type AccountIdOf<T> = <T as frame_system::Config>::AccountId;

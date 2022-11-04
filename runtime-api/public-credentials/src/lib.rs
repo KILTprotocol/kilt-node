@@ -19,7 +19,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use codec::Codec;
-
 use sp_std::vec::Vec;
 
 use kilt_support::traits::ItemFilter;

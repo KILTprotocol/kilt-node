@@ -15,10 +15,10 @@ scale-info = {version = "2.1.1", default-features = false, features = ["derive"]
 hex-literal = {version = "0.3.4", optional = true}
 
 # RPC
-did-rpc-runtime-api = {path = "../../rpc/did/runtime-api", default-features = false}
 frame-system-rpc-runtime-api = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.29"}
+kilt-runtime-api-did = {path = "../../runtime-api/did", default-features = false}
+kilt-runtime-api-public-credentials = {path = "../../runtime-api/public-credentials", default-features = false}
 pallet-transaction-payment-rpc-runtime-api = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.29"}
-public-credentials-runtime-api = {path = "../../rpc/public-credentials/runtime-api", default-features = false}
 
 # KILT pallets & primitives
 pallet-did-lookup = {path = "../../pallets/pallet-did-lookup", default-features = false}
@@ -112,12 +112,13 @@ std = [
   "cumulus-primitives-core/std",
   "cumulus-primitives-timestamp/std",
   "cumulus-primitives-utility/std",
-  "did-rpc-runtime-api/std",
   "frame-executive/std",
   "frame-support/std",
   "frame-system-rpc-runtime-api/std",
   "frame-system/std",
   "frame-try-runtime/std",
+  "kilt-runtime-api-did/std",
+  "kilt-runtime-api-public-credentials/std",
   "log/std",
   "pallet-aura/std",
   "pallet-authorship/std",
@@ -133,7 +134,6 @@ std = [
   "pallet-xcm/std",
   "parachain-info/std",
   "public-credentials/std",
-  "public-credentials-runtime-api/std",
   "runtime-common/std",
   "scale-info/std",
   "sp-api/std",
