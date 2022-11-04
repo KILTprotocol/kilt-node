@@ -38,7 +38,9 @@ const CALLER_SEED: u32 = 0;
 const OWNER_SEED: u32 = 1;
 
 fn make_free_for_did<T: Config>(account: &AccountIdOf<T>) {
-	let balance = <CurrencyOf<T> as Currency<AccountIdOf<T>>>::minimum_balance() + <T as Config>::Deposit::get();
+	let balance = <CurrencyOf<T> as Currency<AccountIdOf<T>>>::minimum_balance()
+		+ <T as Config>::Deposit::get()
+		+ <T as Config>::Deposit::get();
 	<CurrencyOf<T> as Currency<AccountIdOf<T>>>::make_free_balance_be(account, balance);
 }
 
