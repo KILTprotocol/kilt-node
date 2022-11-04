@@ -766,7 +766,6 @@ impl InstanceFilter<Call> for ProxyType {
 							| attestation::Call::revoke { .. }
 							| attestation::Call::change_deposit_owner { .. }
 							| attestation::Call::update_deposit { .. }
-							| attestation::Call::change_deposit_owner { .. }
 					)
 					| Call::Authorship(..)
 					// Excludes `Balances`
@@ -849,8 +848,7 @@ impl InstanceFilter<Call> for ProxyType {
 					| Call::TechnicalCommittee(..)
 					| Call::TechnicalMembership(..)
 					| Call::TipsMembership(..)
-					| Call::Treasury(..)
-					| Call::Utility(..)
+					| Call::Treasury(..) | Call::Utility(..)
 			),
 			ProxyType::ParachainStaking => {
 				matches!(c, Call::ParachainStaking(..) | Call::Session(..) | Call::Utility(..))
@@ -858,6 +856,7 @@ impl InstanceFilter<Call> for ProxyType {
 			ProxyType::CancelProxy => matches!(c, Call::Proxy(pallet_proxy::Call::reject_announcement { .. })),
 		}
 	}
+
 	fn is_superset(&self, o: &Self) -> bool {
 		match (self, o) {
 			(x, y) if x == y => true,
