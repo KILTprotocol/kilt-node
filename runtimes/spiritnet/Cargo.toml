@@ -26,7 +26,6 @@ hex-literal = {workspace = true, optional = true}
 # RPC & Runtime API
 frame-system-rpc-runtime-api.workspace = true
 kilt-runtime-api-did.workspace = true
-kilt-runtime-api-public-credentials.workspace = true
 kilt-runtime-api-staking.workspace = true
 pallet-transaction-payment-rpc-runtime-api.workspace = true
 
@@ -40,7 +39,6 @@ pallet-did-lookup.workspace = true
 pallet-inflation.workspace = true
 pallet-web3-names.workspace = true
 parachain-staking.workspace = true
-public-credentials.workspace = true
 runtime-common.workspace = true
 
 # Substrate dependencies
@@ -136,7 +134,6 @@ runtime-benchmarks = [
   "pallet-vesting/runtime-benchmarks",
   "pallet-web3-names/runtime-benchmarks",
   "parachain-staking/runtime-benchmarks",
-  "public-credentials/runtime-benchmarks",
   "runtime-common/runtime-benchmarks",
   "sp-runtime/runtime-benchmarks",
   "xcm-builder/runtime-benchmarks",
@@ -162,7 +159,6 @@ std = [
   "frame-system/std",
   "frame-try-runtime/std",
   "kilt-runtime-api-did/std",
-  "kilt-runtime-api-public-credentials/std",
   "kilt-runtime-api-staking/std",
   "kilt-support/std",
   "log/std",
@@ -191,7 +187,6 @@ std = [
   "pallet-xcm/std",
   "parachain-info/std",
   "parachain-staking/std",
-  "public-credentials/std",
   "runtime-common/std",
   "scale-info/std",
   "sp-api/std",
@@ -248,6 +243,5 @@ try-runtime = [
   "pallet-xcm/try-runtime",
   "parachain-info/try-runtime",
   "parachain-staking/try-runtime",
-  "public-credentials/try-runtime",
   "runtime-common/try-runtime",
 ]
