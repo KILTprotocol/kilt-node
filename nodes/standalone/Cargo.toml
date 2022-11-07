@@ -24,6 +24,7 @@ substrate-build-script-utils.workspace = true
 # External dependencies
 clap = {workspace = true, features = ["derive"]}
 jsonrpsee = {workspace = true, features = ["server"]}
+hex-literal.workspace = true
 
 # Internal dependencies
 mashnet-node-runtime = {workspace = true, features = ["std"]}

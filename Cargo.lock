@@ -4610,6 +4610,7 @@ dependencies = [
  "frame-benchmarking",
  "frame-benchmarking-cli",
  "frame-system",
+ "hex-literal",
  "jsonrpsee",
  "mashnet-node-runtime",
  "pallet-transaction-payment",
