@@ -580,11 +580,11 @@ impl_runtime_apis! {
 	}
 
 	impl kilt_runtime_api_public_credentials::PublicCredentials<Block, Vec<u8>, Hash, public_credentials::CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<Hash>>, PublicCredentialsFilter<Hash, AccountId>, PublicCredentialsApiError> for Runtime {
-		fn get_credential(_credential_id: Hash) -> Option<public_credentials::CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<Hash>>> {
+		fn get_by_id(_credential_id: Hash) -> Option<public_credentials::CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<Hash>>> {
 			None
 		}
 
-		fn get_credentials(_subject: Vec<u8>, _filter: Option<PublicCredentialsFilter<Hash, AccountId>>) -> Result<Vec<(Hash, public_credentials::CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<Hash>>)>, PublicCredentialsApiError> {
+		fn get_by_subject(_subject: Vec<u8>, _filter: Option<PublicCredentialsFilter<Hash, AccountId>>) -> Result<Vec<(Hash, public_credentials::CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<Hash>>)>, PublicCredentialsApiError> {
 			Ok(vec![])
 		}
 	}
