@@ -33,10 +33,10 @@ sp_api::decl_runtime_apis! {
 		Error: Codec,
 	{
 		/// Return the public credential with the specified ID, if found.
-		fn get_credential(credential_id: CredentialId) -> Option<CredentialEntry>;
+		fn get_by_id(credential_id: CredentialId) -> Option<CredentialEntry>;
 		/// Return all the public credentials linked to the specified subject.
 		/// An optional filter can be passed to be applied to the result before being returned to the client.
 		/// It returns an error if the provided specified subject ID is not valid.
-		fn get_credentials(subject: SubjectId, filter: Option<Filter>) -> Result<Vec<(CredentialId, CredentialEntry)>, Error>;
+		fn get_by_subject(subject: SubjectId, filter: Option<Filter>) -> Result<Vec<(CredentialId, CredentialEntry)>, Error>;
 	}
 }
