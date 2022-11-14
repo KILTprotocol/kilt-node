@@ -51,8 +51,32 @@ impl<T: frame_system::Config> pallet_did_lookup::WeightInfo for WeightInfo<T> {
 	// Storage: System Account (r:1 w:1)
 	// Storage: DidLookup ConnectedDids (r:1 w:1)
 	// Storage: DidLookup ConnectedAccounts (r:0 w:2)
-	fn associate_account() -> Weight {
-		Weight::from_ref_time(131_772_000 as u64)
+	fn associate_account_multisig_sr25519() -> Weight {
+		Weight::from_ref_time(133_866_000 as u64)
+			.saturating_add(T::DbWeight::get().reads(2 as u64))
+			.saturating_add(T::DbWeight::get().writes(4 as u64))
+	}
+	// Storage: System Account (r:1 w:1)
+	// Storage: DidLookup ConnectedDids (r:1 w:1)
+	// Storage: DidLookup ConnectedAccounts (r:0 w:2)
+	fn associate_account_multisig_ed25519() -> Weight {
+		Weight::from_ref_time(132_369_000 as u64)
+			.saturating_add(T::DbWeight::get().reads(2 as u64))
+			.saturating_add(T::DbWeight::get().writes(4 as u64))
+	}
+	// Storage: System Account (r:1 w:1)
+	// Storage: DidLookup ConnectedDids (r:1 w:1)
+	// Storage: DidLookup ConnectedAccounts (r:0 w:2)
+	fn associate_account_multisig_ecdsa() -> Weight {
+		Weight::from_ref_time(121_141_000 as u64)
+			.saturating_add(T::DbWeight::get().reads(2 as u64))
+			.saturating_add(T::DbWeight::get().writes(4 as u64))
+	}
+	// Storage: System Account (r:1 w:1)
+	// Storage: DidLookup ConnectedDids (r:1 w:1)
+	// Storage: DidLookup ConnectedAccounts (r:0 w:2)
+	fn associate_eth_account() -> Weight {
+		Weight::from_ref_time(122_417_000 as u64)
 			.saturating_add(T::DbWeight::get().reads(2 as u64))
 			.saturating_add(T::DbWeight::get().writes(4 as u64))
 	}
