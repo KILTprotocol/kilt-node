@@ -28,9 +28,10 @@ use sp_runtime::{
 };
 
 use crate::{
-	self as pallet_did_lookup, AccountIdOf, BalanceOf, Config, ConnectedAccounts, ConnectedDids, ConnectionRecord,
-	CurrencyOf, DidIdentifierOf,
+	self as pallet_did_lookup, linkable_account::LinkableAccountId, AccountIdOf, BalanceOf, Config, ConnectedAccounts,
+	ConnectedDids, ConnectionRecord, CurrencyOf, DidIdentifierOf,
 };
+
 pub(crate) type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 pub(crate) type Block = frame_system::mocking::MockBlock<Test>;
 pub(crate) type Hash = sp_core::H256;
@@ -110,8 +111,6 @@ parameter_types! {
 
 impl pallet_did_lookup::Config for Test {
 	type Event = Event;
-	type Signature = Signature;
-	type Signer = AccountPublic;
 
 	type Currency = Balances;
 	type Deposit = DidLookupDeposit;
@@ -133,11 +132,12 @@ pub(crate) const ACCOUNT_00: AccountId = AccountId::new([1u8; 32]);
 pub(crate) const ACCOUNT_01: AccountId = AccountId::new([2u8; 32]);
 pub(crate) const DID_00: SubjectId = SubjectId(ACCOUNT_00);
 pub(crate) const DID_01: SubjectId = SubjectId(ACCOUNT_01);
+pub(crate) const LINKABLE_ACCOUNT_00: LinkableAccountId = LinkableAccountId::AccountId32(ACCOUNT_00);
 
 pub(crate) fn insert_raw_connection<T: Config>(
 	sender: AccountIdOf<T>,
 	did_identifier: DidIdentifierOf<T>,
-	account: AccountIdOf<T>,
+	account: LinkableAccountId,
 	deposit: BalanceOf<T>,
 ) {
 	let deposit = Deposit {
@@ -164,7 +164,7 @@ pub(crate) fn insert_raw_connection<T: Config>(
 pub struct ExtBuilder {
 	balances: Vec<(AccountId, Balance)>,
 	/// list of connection (sender, did, connected address)
-	connections: Vec<(AccountId, SubjectId, AccountId)>,
+	connections: Vec<(AccountId, SubjectId, LinkableAccountId)>,
 }
 
 impl ExtBuilder {
@@ -176,7 +176,7 @@ impl ExtBuilder {
 
 	/// Add a connection: (sender, did, connected address)
 	#[must_use]
-	pub fn with_connections(mut self, connections: Vec<(AccountId, SubjectId, AccountId)>) -> Self {
+	pub fn with_connections(mut self, connections: Vec<(AccountId, SubjectId, LinkableAccountId)>) -> Self {
 		self.connections = connections;
 		self
 	}

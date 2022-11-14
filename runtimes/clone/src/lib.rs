@@ -32,6 +32,7 @@ use frame_support::{
 	PalletId,
 };
 use frame_system::EnsureRoot;
+use pallet_did_lookup::linkable_account::LinkableAccountId;
 use sp_api::impl_runtime_apis;
 use sp_core::OpaqueMetadata;
 use sp_runtime::{
@@ -534,7 +535,7 @@ impl_runtime_apis! {
 		Block,
 		AccountId,
 		AccountId,
-		AccountId,
+		LinkableAccountId,
 		Balance,
 		Hash,
 		BlockNumber
@@ -542,6 +543,7 @@ impl_runtime_apis! {
 		fn query_by_web3_name(_: Vec<u8>) -> Option<kilt_runtime_api_did::RawDidLinkedInfo<
 				AccountId,
 				AccountId,
+				LinkableAccountId,
 				Balance,
 				Hash,
 				BlockNumber
@@ -550,10 +552,11 @@ impl_runtime_apis! {
 			None
 		}
 
-		fn query_by_account(_: AccountId) -> Option<
+		fn query_by_account(_: LinkableAccountId) -> Option<
 			kilt_runtime_api_did::RawDidLinkedInfo<
 				AccountId,
 				AccountId,
+				LinkableAccountId,
 				Balance,
 				Hash,
 				BlockNumber
@@ -566,6 +569,7 @@ impl_runtime_apis! {
 			kilt_runtime_api_did::RawDidLinkedInfo<
 				AccountId,
 				AccountId,
+				LinkableAccountId,
 				Balance,
 				Hash,
 				BlockNumber

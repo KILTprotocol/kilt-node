@@ -20,6 +20,7 @@ use codec::MaxEncodedLen;
 use frame_support::{traits::Currency, BoundedVec};
 
 use did::DeriveDidCallAuthorizationVerificationKeyRelationship;
+use pallet_did_lookup::associate_account_request::AssociateAccountRequest;
 use pallet_treasury::BalanceOf;
 use pallet_web3_names::{Web3NameOf, Web3OwnershipOf};
 use runtime_common::{
@@ -159,9 +160,11 @@ fn test_derive_did_key_web3name() {
 fn test_derive_did_key_lookup() {
 	assert_eq!(
 		Call::DidLookup(pallet_did_lookup::Call::associate_account {
-			account: AccountId::new([1u8; 32]),
+			req: AssociateAccountRequest::Dotsama(
+				AccountId::new([1u8; 32]),
+				sp_runtime::MultiSignature::from(sp_core::ed25519::Signature([0; 64]))
+			),
 			expiration: BlockNumber::default(),
-			proof: sp_runtime::MultiSignature::from(sp_core::ed25519::Signature([0; 64])),
 		})
 		.derive_verification_key_relationship(),
 		Ok(did::DidVerificationKeyRelationship::Authentication)
@@ -169,7 +172,7 @@ fn test_derive_did_key_lookup() {
 
 	assert_eq!(
 		Call::DidLookup(pallet_did_lookup::Call::remove_account_association {
-			account: AccountId::new([1u8; 32]),
+			account: AccountId::new([1u8; 32]).into(),
 		})
 		.derive_verification_key_relationship(),
 		Ok(did::DidVerificationKeyRelationship::Authentication)
