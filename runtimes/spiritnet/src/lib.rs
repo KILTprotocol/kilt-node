@@ -46,12 +46,16 @@ use sp_version::RuntimeVersion;
 use xcm_executor::XcmExecutor;
 
 use delegation::DelegationAc;
+use kilt_support::traits::ItemFilter;
 use pallet_did_lookup::linkable_account::LinkableAccountId;
 pub use parachain_staking::InflationInfo;
+pub use public_credentials;
 
 use runtime_common::{
+	assets::{AssetDid, PublicCredentialsFilter},
 	authorization::{AuthorizationId, PalletAuthorize},
 	constants::{self, EXISTENTIAL_DEPOSIT, KILT},
+	errors::PublicCredentialsApiError,
 	fees::{ToAuthor, WeightToFee},
 	pallet_id, AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights, DidIdentifier,
 	FeeSplit, Hash, Header, Index, Signature, SlowAdjustingFeeUpdate,
@@ -666,6 +670,23 @@ impl pallet_utility::Config for Runtime {
 
 impl pallet_randomness_collective_flip::Config for Runtime {}
 
+impl public_credentials::Config for Runtime {
+	type AccessControl = PalletAuthorize<DelegationAc<Runtime>>;
+	type AttesterId = DidIdentifier;
+	type AuthorizationId = AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>;
+	type CredentialId = Hash;
+	type CredentialHash = BlakeTwo256;
+	type Currency = Balances;
+	type Deposit = runtime_common::constants::public_credentials::Deposit;
+	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
+	type MaxEncodedClaimsLength = runtime_common::constants::public_credentials::MaxEncodedClaimsLength;
+	type MaxSubjectIdLength = runtime_common::constants::public_credentials::MaxSubjectIdLength;
+	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
+	type Event = Event;
+	type SubjectId = runtime_common::assets::AssetDid;
+	type WeightInfo = weights::public_credentials::WeightInfo<Runtime>;
+}
+
 /// The type used to represent the kinds of proxying allowed.
 #[derive(
 	Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, RuntimeDebug, MaxEncodedLen, scale_info::TypeInfo,
@@ -717,6 +738,7 @@ impl InstanceFilter<Call> for ProxyType {
 					// Excludes `ParachainSystem`
 					| Call::Preimage(..)
 					| Call::Proxy(..)
+					| Call::PublicCredentials(..)
 					| Call::Scheduler(..)
 					| Call::Session(..)
 					| Call::System(..)
@@ -788,6 +810,15 @@ impl InstanceFilter<Call> for ProxyType {
 					// Excludes `ParachainSystem`
 					| Call::Preimage(..)
 					| Call::Proxy(..)
+					| Call::PublicCredentials(
+						// Excludes `reclaim_deposit`
+						public_credentials::Call::add { .. }
+						| public_credentials::Call::revoke { .. }
+						| public_credentials::Call::unrevoke { .. }
+						| public_credentials::Call::remove { .. }
+						| public_credentials::Call::update_deposit { .. }
+						| public_credentials::Call::change_deposit_owner { .. }
+					)
 					| Call::Scheduler(..)
 					| Call::Session(..)
 					// Excludes `Sudo`
@@ -920,6 +951,7 @@ construct_runtime! {
 		Inflation: pallet_inflation = 66,
 		DidLookup: pallet_did_lookup = 67,
 		Web3Names: pallet_web3_names = 68,
+		PublicCredentials: public_credentials = 69,
 
 		// Parachains pallets. Start indices at 80 to leave room.
 
@@ -967,6 +999,7 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 			Call::Did(did::Call::create { .. }) => Err(did::RelationshipDeriveError::NotCallableByDid),
 			Call::Did { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
 			Call::Web3Names { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
+			Call::PublicCredentials { .. } => Ok(did::DidVerificationKeyRelationship::AssertionMethod),
 			Call::DidLookup { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
 			Call::Utility(pallet_utility::Call::batch { calls }) => single_key_relationship(&calls[..]),
 			Call::Utility(pallet_utility::Call::batch_all { calls }) => single_key_relationship(&calls[..]),
@@ -1219,6 +1252,23 @@ impl_runtime_apis! {
 		}
 	}
 
+	impl kilt_runtime_api_public_credentials::PublicCredentials<Block, Vec<u8>, Hash, public_credentials::CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>>, PublicCredentialsFilter<Hash, AccountId>, PublicCredentialsApiError> for Runtime {
+		fn get_by_id(credential_id: Hash) -> Option<public_credentials::CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>>> {
+			let subject = public_credentials::CredentialSubjects::<Runtime>::get(&credential_id)?;
+			public_credentials::Credentials::<Runtime>::get(&subject, &credential_id)
+		}
+
+		fn get_by_subject(subject: Vec<u8>, filter: Option<PublicCredentialsFilter<Hash, AccountId>>) -> Result<Vec<(Hash, public_credentials::CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>>)>, PublicCredentialsApiError> {
+			let asset_did = AssetDid::try_from(subject).map_err(|_| PublicCredentialsApiError::InvalidSubjectId)?;
+			let credentials_prefix = public_credentials::Credentials::<Runtime>::iter_prefix(&asset_did);
+			if let Some(filter) = filter {
+				Ok(credentials_prefix.filter(|(_, entry)| filter.should_include(entry)).collect())
+			} else {
+				Ok(credentials_prefix.collect())
+			}
+		}
+	}
+
 	impl kilt_runtime_api_staking::Staking<Block, AccountId, Balance> for Runtime {
 		fn get_unclaimed_staking_rewards(account: &AccountId) -> Balance {
 			ParachainStaking::get_unclaimed_staking_rewards(account)
@@ -1270,6 +1320,7 @@ impl_runtime_apis! {
 			list_benchmark!(list, extra, pallet_inflation, Inflation);
 			list_benchmark!(list, extra, parachain_staking, ParachainStaking);
 			list_benchmark!(list, extra, pallet_web3_names, Web3Names);
+			list_benchmark!(list, extra, public_credentials, PublicCredentials);
 
 			let storage_info = AllPalletsWithSystem::storage_info();
 
@@ -1336,6 +1387,7 @@ impl_runtime_apis! {
 			add_benchmark!(params, batches, pallet_inflation, Inflation);
 			add_benchmark!(params, batches, parachain_staking, ParachainStaking);
 			add_benchmark!(params, batches, pallet_web3_names, Web3Names);
+			add_benchmark!(params, batches, public_credentials, PublicCredentials);
 
 			// No benchmarks for these pallets
 			// add_benchmark!(params, batches, cumulus_pallet_parachain_system, ParachainSystem);
