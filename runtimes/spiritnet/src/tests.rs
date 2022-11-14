@@ -26,7 +26,8 @@ use pallet_web3_names::{Web3NameOf, Web3OwnershipOf};
 use runtime_common::{
 	constants::{
 		attestation::MAX_ATTESTATION_BYTE_LENGTH, did::MAX_DID_BYTE_LENGTH, did_lookup::MAX_CONNECTION_BYTE_LENGTH,
-		web3_names::MAX_NAME_BYTE_LENGTH, MAX_INDICES_BYTE_LENGTH,
+		public_credentials::MAX_PUBLIC_CREDENTIAL_STORAGE_LENGTH, web3_names::MAX_NAME_BYTE_LENGTH,
+		MAX_INDICES_BYTE_LENGTH,
 	},
 	AccountId, BlockNumber,
 };
@@ -99,6 +100,20 @@ fn indices_storage_sizes() {
 
 	let size = Indices::max_encoded_len();
 	assert_eq!(size, MAX_INDICES_BYTE_LENGTH as usize)
+}
+
+#[test]
+fn public_credentials_storage_sizes() {
+	// Stored in Credentials
+	let credential_entry_max_size = public_credentials::CredentialEntryOf::<Runtime>::max_encoded_len();
+	// Stored in CredentialsUnicityIndex
+	let subject_id_max_size = <Runtime as public_credentials::Config>::SubjectId::max_encoded_len();
+
+	// Each credential would have a different deposit, so no multiplier here
+	assert_eq!(
+		credential_entry_max_size + subject_id_max_size,
+		MAX_PUBLIC_CREDENTIAL_STORAGE_LENGTH as usize
+	)
 }
 
 #[test]
