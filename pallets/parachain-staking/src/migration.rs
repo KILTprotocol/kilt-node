@@ -16,8 +16,6 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-#![cfg_attr(not(feature = "std"), no_std)]
-
 use crate::{
 	set::OrderedSet,
 	types::{BalanceOf, Delegator, Stake},
