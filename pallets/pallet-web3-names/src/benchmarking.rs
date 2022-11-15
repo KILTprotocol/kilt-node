@@ -53,8 +53,8 @@ benchmarks! {
 		where
 		T::AccountId: From<sr25519::Public>,
 		T::Web3NameOwner: From<T::AccountId>,
-		T::OwnerOrigin: GenerateBenchmarkOrigin<T::Origin, T::AccountId, T::Web3NameOwner>,
-		T::BanOrigin: EnsureOrigin<T::Origin>,
+		T::OwnerOrigin: GenerateBenchmarkOrigin<T::RuntimeOrigin, T::AccountId, T::Web3NameOwner>,
+		T::BanOrigin: EnsureOrigin<T::RuntimeOrigin>,
 	}
 
 	claim {
@@ -66,7 +66,7 @@ benchmarks! {
 		let origin = T::OwnerOrigin::generate_origin(caller.clone(), owner.clone());
 
 		make_free_for_did::<T>(&caller);
-	}: _<T::Origin>(origin, web3_name_input_clone)
+	}: _<T::RuntimeOrigin>(origin, web3_name_input_clone)
 	verify {
 		let web3_name = Web3NameOf::<T>::try_from(web3_name_input.to_vec()).unwrap();
 		assert!(Names::<T>::get(&owner).is_some());
@@ -81,7 +81,7 @@ benchmarks! {
 
 		make_free_for_did::<T>(&caller);
 		Pallet::<T>::claim(origin.clone(), web3_name_input.clone()).expect("Should register the claimed web3 name.");
-	}: _<T::Origin>(origin)
+	}: _<T::RuntimeOrigin>(origin)
 	verify {
 		let web3_name = Web3NameOf::<T>::try_from(web3_name_input.to_vec()).unwrap();
 		assert!(Names::<T>::get(&owner).is_none());
@@ -95,7 +95,7 @@ benchmarks! {
 		let web3_name_input: BoundedVec<u8, T::MaxNameLength> = BoundedVec::try_from(generate_web3_name_input(n.saturated_into())).expect("BoundedVec creation should not fail.");
 		let web3_name_input_clone = web3_name_input.clone();
 		let did_origin = T::OwnerOrigin::generate_origin(caller.clone(), owner.clone());
-		let signed_origin = RawOrigin::Signed(caller.clone());
+		let signed_origin = RawRuntimeOrigin::signed(caller.clone());
 
 		make_free_for_did::<T>(&caller);
 		Pallet::<T>::claim(did_origin, web3_name_input.clone()).expect("Should register the claimed web3 name.");
@@ -158,7 +158,7 @@ benchmarks! {
 		Pallet::<T>::claim(origin_create, web3_name_input.clone()).expect("Should register the claimed web3 name.");
 
 		let origin = T::OwnerOrigin::generate_origin(deposit_owner_new.clone(), owner);
-	}: _<T::Origin>(origin)
+	}: _<T::RuntimeOrigin>(origin)
 	verify {
 		let web3_name = Web3NameOf::<T>::try_from(web3_name_input.to_vec()).unwrap();
 		assert_eq!(Owner::<T>::get(&web3_name).expect("w3n should exists").deposit, Deposit {
@@ -184,7 +184,7 @@ benchmarks! {
 			<T as Config>::Deposit::get() + <T as Config>::Deposit::get()
 		);
 
-		let origin = RawOrigin::Signed(deposit_owner.clone());
+		let origin = RawRuntimeOrigin::signed(deposit_owner.clone());
 	}: _(origin, web3_name_input)
 	verify {
 		assert_eq!(Owner::<T>::get(&web3_name).expect("w3n should exists").deposit, Deposit {

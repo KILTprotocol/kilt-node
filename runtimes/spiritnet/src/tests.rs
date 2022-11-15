@@ -118,16 +118,16 @@ fn public_credentials_storage_sizes() {
 
 #[test]
 fn test_derive_did_verification_relation_ctype() {
-	let c1 = Call::Ctype(ctype::Call::add {
+	let c1 = RuntimeCall::Ctype(ctype::Call::add {
 		ctype: vec![0, 1, 2, 3],
 	});
-	let c2 = Call::Ctype(ctype::Call::add {
+	let c2 = RuntimeCall::Ctype(ctype::Call::add {
 		ctype: vec![0, 1, 2, 3, 3],
 	});
-	let c3 = Call::Ctype(ctype::Call::add {
+	let c3 = RuntimeCall::Ctype(ctype::Call::add {
 		ctype: vec![0, 1, 2, 3, 3],
 	});
-	let c4 = Call::Ctype(ctype::Call::add {
+	let c4 = RuntimeCall::Ctype(ctype::Call::add {
 		ctype: vec![0, 1, 2, 100],
 	});
 
@@ -181,16 +181,16 @@ fn test_derive_did_key_lookup() {
 
 #[test]
 fn test_derive_did_verification_relation_fail() {
-	let c1 = Call::Ctype(ctype::Call::add {
+	let c1 = RuntimeCall::Ctype(ctype::Call::add {
 		ctype: vec![0, 1, 2, 3],
 	});
-	let c2 = Call::Ctype(ctype::Call::add {
+	let c2 = RuntimeCall::Ctype(ctype::Call::add {
 		ctype: vec![0, 1, 2, 3, 3],
 	});
-	let c3 = Call::System(frame_system::Call::remark {
+	let c3 = RuntimeCall::System(frame_system::Call::remark {
 		remark: vec![0, 1, 2, 3, 3],
 	});
-	let c4 = Call::Ctype(ctype::Call::add {
+	let c4 = RuntimeCall::Ctype(ctype::Call::add {
 		ctype: vec![0, 1, 2, 100],
 	});
 
@@ -212,16 +212,16 @@ fn test_derive_did_verification_relation_fail() {
 
 #[test]
 fn test_derive_did_verification_relation_nested_fail() {
-	let c1 = Call::Ctype(ctype::Call::add {
+	let c1 = RuntimeCall::Ctype(ctype::Call::add {
 		ctype: vec![0, 1, 2, 3],
 	});
-	let c2 = Call::Ctype(ctype::Call::add {
+	let c2 = RuntimeCall::Ctype(ctype::Call::add {
 		ctype: vec![0, 1, 2, 3, 3],
 	});
-	let f3 = Call::System(frame_system::Call::remark {
+	let f3 = RuntimeCall::System(frame_system::Call::remark {
 		remark: vec![0, 1, 2, 3, 3],
 	});
-	let c4 = Call::Ctype(ctype::Call::add {
+	let c4 = RuntimeCall::Ctype(ctype::Call::add {
 		ctype: vec![0, 1, 2, 100],
 	});
 
@@ -247,13 +247,13 @@ fn test_derive_did_verification_relation_nested_fail() {
 
 #[test]
 fn test_derive_did_verification_relation_nested() {
-	let c1 = Call::Ctype(ctype::Call::add {
+	let c1 = RuntimeCall::Ctype(ctype::Call::add {
 		ctype: vec![0, 1, 2, 3],
 	});
-	let c2 = Call::Ctype(ctype::Call::add {
+	let c2 = RuntimeCall::Ctype(ctype::Call::add {
 		ctype: vec![0, 1, 2, 3, 3],
 	});
-	let c4 = Call::Ctype(ctype::Call::add {
+	let c4 = RuntimeCall::Ctype(ctype::Call::add {
 		ctype: vec![0, 1, 2, 100],
 	});
 
@@ -272,7 +272,7 @@ fn test_derive_did_verification_relation_nested() {
 
 #[test]
 fn test_derive_did_verification_relation_single() {
-	let c1 = Call::Ctype(ctype::Call::add {
+	let c1 = RuntimeCall::Ctype(ctype::Call::add {
 		ctype: vec![0, 1, 2, 3],
 	});
 

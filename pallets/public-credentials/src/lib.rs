@@ -119,9 +119,9 @@ pub mod pallet {
 		/// for the different operations.
 		type AuthorizationId: Parameter + MaxEncodedLen;
 		/// The origin allowed to issue/revoke/remove public credentials.
-		type EnsureOrigin: EnsureOrigin<Success = <Self as Config>::OriginSuccess, Self::Origin>;
+		type EnsureOrigin: EnsureOrigin<Self::RuntimeOrigin, Success = <Self as Config>::OriginSuccess>;
 		/// The ubiquitous event type.
-		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 		/// The hashing algorithm to derive a credential identifier from the
 		/// credential content.
 		type CredentialHash: Hash<Output = Self::CredentialId>;

@@ -188,7 +188,7 @@ pub mod pallet {
 		/// Type for a dispatchable call that can be proxied through the DID
 		/// pallet to support DID-based authorisation.
 		type Call: Parameter
-			+ Dispatchable<Origin = <Self as Config>::Origin, PostInfo = PostDispatchInfo>
+			+ Dispatchable<PostInfo = PostDispatchInfo, RuntimeOrigin = <Self as Config>::Origin>
 			+ GetDispatchInfo
 			+ DeriveDidCallAuthorizationVerificationKeyRelationship;
 
@@ -203,15 +203,15 @@ pub mod pallet {
 
 		/// The origin check for all DID calls inside this pallet.
 		type EnsureOrigin: EnsureOrigin<
+			<Self as frame_system::Config>::RuntimeOrigin,
 			Success = <Self as Config>::OriginSuccess,
-			<Self as frame_system::Config>::Origin,
 		>;
 
 		/// The return type when the DID origin check was successful.
 		type OriginSuccess: CallSources<AccountIdOf<Self>, DidIdentifierOf<Self>>;
 
 		/// Overarching event type.
-		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
 		/// The currency that is used to reserve funds for each did.
 		type Currency: ReservableCurrency<AccountIdOf<Self>>;
@@ -1062,7 +1062,7 @@ pub mod pallet {
 				.into(),
 			);
 			#[cfg(feature = "runtime-benchmarks")]
-			let result = call.dispatch(RawOrigin::Signed(did).into());
+			let result = call.dispatch(RawRuntimeOrigin::signed(did).into());
 
 			let dispatch_event_payload = result.map(|_| ()).map_err(|e| e.error);
 
