@@ -8378,6 +8378,7 @@ name = "runtime-common"
 version = "1.9.0"
 dependencies = [
  "attestation",
+ "cumulus-primitives-core",
  "frame-support",
  "frame-system",
  "kilt-asset-dids",
