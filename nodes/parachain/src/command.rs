@@ -25,7 +25,7 @@ use codec::Encode;
 use cumulus_client_cli::generate_genesis_block;
 use cumulus_primitives_core::ParaId;
 use frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE};
-use log::info;
+use log::{info, warn};
 #[cfg(feature = "try-runtime")]
 use polkadot_service::TaskManager;
 use runtime_common::Block;
@@ -336,6 +336,16 @@ pub fn run() -> Result<()> {
 					)?;
 					cmd.run(partials.client)
 				}),
+				#[cfg(not(feature = "runtime-benchmarks"))]
+				(BenchmarkCmd::Storage(_), _) => {
+					return Err(sc_cli::Error::Input(
+						"Compile with --features=runtime-benchmarks \
+						to enable storage benchmarks."
+							.into(),
+					)
+					.into())
+				}
+				#[cfg(feature = "runtime-benchmarks")]
 				(BenchmarkCmd::Storage(cmd), "spiritnet") => runner.sync_run(|config| {
 					let partials = new_partial::<spiritnet_runtime::RuntimeApi, SpiritnetRuntimeExecutor, _>(
 						&config,
@@ -347,6 +357,7 @@ pub fn run() -> Result<()> {
 
 					cmd.run(config, partials.client.clone(), db, storage)
 				}),
+				#[cfg(feature = "runtime-benchmarks")]
 				(BenchmarkCmd::Storage(cmd), "peregrine") => runner.sync_run(|config| {
 					let partials = new_partial::<peregrine_runtime::RuntimeApi, PeregrineRuntimeExecutor, _>(
 						&config,
@@ -358,6 +369,7 @@ pub fn run() -> Result<()> {
 
 					cmd.run(config, partials.client.clone(), db, storage)
 				}),
+				#[cfg(feature = "runtime-benchmarks")]
 				(BenchmarkCmd::Storage(cmd), "clone") => runner.sync_run(|config| {
 					let partials = new_partial::<clone_runtime::RuntimeApi, CloneRuntimeExecutor, _>(
 						&config,
@@ -445,6 +457,10 @@ pub fn run() -> Result<()> {
 					"Is collating: {}",
 					if config.role.is_authority() { "yes" } else { "no" }
 				);
+
+				if collator_options.relay_chain_rpc_url.is_some() && cli.relay_chain_args.len() > 0 {
+					warn!("Detected relay chain node arguments together with --relay-chain-rpc-url. This command starts a minimal Polkadot node that only uses a network-related subset of all relay chain CLI options.");
+				}
 
 				if config.chain_spec.is_peregrine() {
 					crate::service::start_node::<PeregrineRuntimeExecutor, peregrine_runtime::RuntimeApi>(

@@ -108,15 +108,15 @@ pub(crate) struct Cli {
 	///
 	/// The results are then printed out in the logs, and also sent as part of
 	/// telemetry, if telemetry is enabled.
-	#[command(long)]
+	#[arg(long)]
 	pub no_hardware_benchmarks: bool,
 
 	/// The name of the runtime which should get executed.
-	#[command(long, default_value = DEFAULT_RUNTIME)]
+	#[arg(long, default_value = DEFAULT_RUNTIME)]
 	pub(crate) runtime: String,
 
 	/// Relaychain arguments
-	#[command(raw = true)]
+	#[arg(raw = true)]
 	pub(crate) relaychain_args: Vec<String>,
 }
 
