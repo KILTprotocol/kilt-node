@@ -407,7 +407,6 @@ pub mod web3_names {
 pub mod preimage {
 	use super::*;
 	parameter_types! {
-		pub const PreimageMaxSize: u32 = 4096 * 1024;
 		pub const PreimageBaseDeposit: Balance = deposit(2, 64);
 	}
 }
