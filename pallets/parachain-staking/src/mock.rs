@@ -123,7 +123,7 @@ impl pallet_authorship::Config for Test {
 	type FindAuthor = pallet_session::FindAccountFromAuthorIndex<Self, Aura>;
 	type UncleGenerations = ();
 	type FilterUncle = ();
-	type RuntimeEventHandler = Pallet<Test>;
+	type EventHandler = Pallet<Test>;
 }
 
 parameter_types! {
@@ -337,7 +337,7 @@ impl ExtBuilder {
 
 		if self.blocks_per_round != BLOCKS_PER_ROUND {
 			ext.execute_with(|| {
-				StakePallet::set_blocks_per_round(Origin::root(), self.blocks_per_round)
+				StakePallet::set_blocks_per_round(RuntimeOrigin::root(), self.blocks_per_round)
 					.expect("Ran into issues when setting blocks_per_round");
 			});
 		}
@@ -407,8 +407,8 @@ pub(crate) fn roll_to_claim_rewards(n: BlockNumber, authors: Vec<Option<AccountI
 	}
 }
 
-pub(crate) fn last_event() -> Event {
-	System::events().pop().expect("Event expected").event
+pub(crate) fn last_event() -> pallet::Event<Test> {
+	events().pop().expect("Event expected")
 }
 
 pub(crate) fn events() -> Vec<pallet::Event<Test>> {
@@ -416,7 +416,7 @@ pub(crate) fn events() -> Vec<pallet::Event<Test>> {
 		.into_iter()
 		.map(|r| r.event)
 		.filter_map(|e| {
-			if let Event::StakePallet(inner) = e {
+			if let RuntimeEvent::StakePallet(inner) = e {
 				Some(inner)
 			} else {
 				None

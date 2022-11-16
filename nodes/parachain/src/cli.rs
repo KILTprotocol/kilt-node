@@ -64,9 +64,6 @@ pub(crate) enum Subcommand {
 	/// be enabled.
 	#[cfg(not(feature = "try-runtime"))]
 	TryRuntime,
-
-	/// Db meta columns information.
-	ChainInfo(sc_cli::ChainInfoCmd),
 }
 
 /// Command for building the genesis state of the parachain
@@ -76,7 +73,7 @@ pub(crate) struct BuildSpecCmd {
 	pub(crate) inner_args: sc_cli::BuildSpecCmd,
 
 	/// The name of the runtime which should get executed.
-	#[command(long, default_value = DEFAULT_RUNTIME)]
+	#[arg(long, default_value = DEFAULT_RUNTIME)]
 	pub(crate) runtime: String,
 }
 
@@ -117,7 +114,7 @@ pub(crate) struct Cli {
 
 	/// Relaychain arguments
 	#[arg(raw = true)]
-	pub(crate) relaychain_args: Vec<String>,
+	pub(crate) relay_chain_args: Vec<String>,
 }
 
 #[derive(Debug)]

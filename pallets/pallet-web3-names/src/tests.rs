@@ -193,7 +193,7 @@ fn releasing_by_payer_successful() {
 		.execute_with(|| {
 			assert_ok!(Pallet::<Test>::reclaim_deposit(
 				// Submitter == deposit payer
-				RawRuntimeOrigin::signed(ACCOUNT_00).into(),
+				RawOrigin::Signed(ACCOUNT_00).into(),
 				web3_name_00.clone().0,
 			));
 			assert!(Names::<Test>::get(&DID_00).is_none());
@@ -216,7 +216,7 @@ fn releasing_not_found() {
 		);
 		// Fail to claim by payer
 		assert_noop!(
-			Pallet::<Test>::reclaim_deposit(RawRuntimeOrigin::signed(ACCOUNT_00).into(), web3_name_00.0),
+			Pallet::<Test>::reclaim_deposit(RawOrigin::Signed(ACCOUNT_00).into(), web3_name_00.0),
 			Error::<Test>::Web3NameNotFound
 		);
 	})
@@ -232,7 +232,7 @@ fn releasing_not_authorized() {
 		.execute_with(|| {
 			// Fail to claim by different payer
 			assert_noop!(
-				Pallet::<Test>::reclaim_deposit(RawRuntimeOrigin::signed(ACCOUNT_01).into(), web3_name_00.clone().0),
+				Pallet::<Test>::reclaim_deposit(RawOrigin::Signed(ACCOUNT_01).into(), web3_name_00.clone().0),
 				Error::<Test>::NotAuthorized
 			);
 		})
@@ -305,7 +305,7 @@ fn banning_unauthorized_origin() {
 	ExtBuilder::default().build().execute_with(|| {
 		// Signer origin
 		assert_noop!(
-			Pallet::<Test>::ban(RawRuntimeOrigin::signed(ACCOUNT_00).into(), web3_name_00.clone().0),
+			Pallet::<Test>::ban(RawOrigin::Signed(ACCOUNT_00).into(), web3_name_00.clone().0),
 			DispatchError::BadOrigin
 		);
 		// Owner origin
@@ -360,7 +360,7 @@ fn unbanning_unauthorized_origin() {
 		.execute_with(|| {
 			// Signer origin
 			assert_noop!(
-				Pallet::<Test>::unban(RawRuntimeOrigin::signed(ACCOUNT_00).into(), web3_name_00.clone().0),
+				Pallet::<Test>::unban(RawOrigin::Signed(ACCOUNT_00).into(), web3_name_00.clone().0),
 				DispatchError::BadOrigin
 			);
 			// Owner origin

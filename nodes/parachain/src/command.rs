@@ -271,7 +271,7 @@ pub fn run() -> Result<()> {
 					&config,
 					[RelayChainCli::executable_name()]
 						.iter()
-						.chain(cli.relaychain_args.iter()),
+						.chain(cli.relay_chain_args.iter()),
 				);
 
 				let polkadot_config =
@@ -433,7 +433,7 @@ pub fn run() -> Result<()> {
 					&config,
 					[RelayChainCli::executable_name()]
 						.iter()
-						.chain(cli.relaychain_args.iter()),
+						.chain(cli.relay_chain_args.iter()),
 				);
 
 				let id = ParaId::from(para_id);

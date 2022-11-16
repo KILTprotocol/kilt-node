@@ -220,7 +220,7 @@ benchmarks! {
 		make_free_for_did::<T>(&caller);
 		Pallet::<T>::add_association(caller.clone(), did.clone(), linkable_id.clone()).expect("should create association");
 
-		let origin = RawRuntimeOrigin::signed(caller);
+		let origin = RawOrigin::Signed(caller);
 	}: _(origin)
 	verify {
 		assert!(ConnectedDids::<T>::get(&linkable_id).is_none());
@@ -278,7 +278,7 @@ benchmarks! {
 			linkable_id.clone()
 		).expect("should create association");
 
-		let origin = RawRuntimeOrigin::signed(deposit_owner.clone());
+		let origin = RawOrigin::Signed(deposit_owner.clone());
 		let id_arg = linkable_id.clone();
 	}: _(origin, id_arg)
 	verify {

@@ -146,6 +146,7 @@ cumulus-client-service = {git = "https://github.com/paritytech/cumulus", branch 
 cumulus-primitives-parachain-inherent = {git = "https://github.com/paritytech/cumulus", branch = "polkadot-v0.9.32"}
 cumulus-relay-chain-inprocess-interface = {git = "https://github.com/paritytech/cumulus", branch = "polkadot-v0.9.32"}
 cumulus-relay-chain-interface = {git = "https://github.com/paritytech/cumulus", branch = "polkadot-v0.9.32"}
+cumulus-relay-chain-minimal-node = {git = "https://github.com/paritytech/cumulus", branch = "polkadot-v0.9.32"}
 cumulus-relay-chain-rpc-interface = {git = "https://github.com/paritytech/cumulus", branch = "polkadot-v0.9.32"}
 pallet-transaction-payment-rpc = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.32"}
 polkadot-cli = {git = "https://github.com/paritytech/polkadot", branch = "release-v0.9.32"}

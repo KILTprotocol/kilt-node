@@ -370,7 +370,7 @@ benchmarks! {
 		let child_delegation = DelegationNodes::<T>::get(child_id).ok_or("Child of root should have delegation id")?;
 		assert!(!<T as Config>::Currency::reserved_balance(&sender).is_zero());
 
-		let origin = RawRuntimeOrigin::signed(sender.clone());
+		let origin = RawOrigin::Signed(sender.clone());
 	}: _(origin, hierarchy_id, r)
 	verify {
 		assert!(!DelegationNodes::<T>::contains_key(hierarchy_id));
@@ -471,7 +471,7 @@ benchmarks! {
 			<T as Config>::Currency::minimum_balance() + <T as Config>::Deposit::get(),
 		);
 
-		let origin = RawRuntimeOrigin::signed(deposit_owner);
+		let origin = RawOrigin::Signed(deposit_owner);
 	}: _(origin, hierarchy_id)
 	verify {
 	}

@@ -177,7 +177,7 @@ benchmarks! {
 
 		ctype::Ctypes::<T>::insert(&ctype_hash, attester);
 		Pallet::<T>::add(origin, creation_op).expect("Pallet::add should not fail");
-		let origin = RawRuntimeOrigin::signed(sender);
+		let origin = RawOrigin::Signed(sender);
 		let credential_id_clone = credential_id.clone();
 	}: _(origin, credential_id_clone)
 	verify {
@@ -247,7 +247,7 @@ benchmarks! {
 		);
 		let credential_id_clone = credential_id.clone();
 
-		let origin = RawRuntimeOrigin::signed(deposit_owner);
+		let origin = RawOrigin::Signed(deposit_owner);
 	}: _(origin, credential_id_clone)
 	verify {
 		assert_eq!(

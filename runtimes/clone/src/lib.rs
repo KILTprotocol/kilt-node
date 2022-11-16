@@ -429,6 +429,22 @@ pub type Executive = frame_executive::Executive<
 	(),
 >;
 
+#[cfg(feature = "runtime-benchmarks")]
+#[macro_use]
+extern crate frame_benchmarking;
+
+#[cfg(feature = "runtime-benchmarks")]
+mod benches {
+	define_benchmarks!(
+		[frame_benchmarking, Baseline::<Runtime>]
+		[frame_system, SystemBench::<Runtime>]
+		[pallet_session, SessionBench::<Runtime>]
+		[pallet_balances, Balances]
+		[pallet_timestamp, Timestamp]
+		[pallet_utility, Utility]
+	);
+}
+
 impl_runtime_apis! {
 	impl sp_api::Core<Block> for Runtime {
 		fn version() -> RuntimeVersion {
@@ -615,58 +631,31 @@ impl_runtime_apis! {
 			Vec<frame_benchmarking::BenchmarkList>,
 			Vec<frame_support::traits::StorageInfo>,
 		) {
-			use frame_benchmarking::{list_benchmark, baseline, Benchmarking, BenchmarkList};
+			use frame_benchmarking::{Benchmarking, BenchmarkList};
 			use frame_support::traits::StorageInfoTrait;
+
 			use frame_system_benchmarking::Pallet as SystemBench;
 			use cumulus_pallet_session_benchmarking::Pallet as SessionBench;
-			use baseline::Pallet as BaselineBench;
+			use frame_benchmarking::baseline::Pallet as Baseline;
 
 			let mut list = Vec::<BenchmarkList>::new();
-
-			// Substrate
-			list_benchmark!(list, extra, frame_benchmarking, BaselineBench::<Runtime>);
-			list_benchmark!(list, extra, frame_system, SystemBench::<Runtime>);
-			list_benchmark!(list, extra, pallet_session, SessionBench::<Runtime>);
-			list_benchmark!(list, extra, pallet_balances, Balances);
-			// list_benchmark!(list, extra, pallet_collective, Council);
-			// list_benchmark!(list, extra, pallet_democracy, Democracy);
-			// list_benchmark!(list, extra, pallet_indices, Indices);
-			// list_benchmark!(list, extra, pallet_membership, TechnicalMembership);
-			// list_benchmark!(list, extra, pallet_preimage, Preimage);
-			// list_benchmark!(list, extra, pallet_scheduler, Scheduler);
-			list_benchmark!(list, extra, pallet_timestamp, Timestamp);
-			// list_benchmark!(list, extra, pallet_tips, Tips);
-			// list_benchmark!(list, extra, pallet_treasury, Treasury);
-			list_benchmark!(list, extra, pallet_utility, Utility);
-			// list_benchmark!(list, extra, pallet_vesting, Vesting);
-			// list_benchmark!(list, extra, pallet_proxy, Proxy);
-
-			// KILT
-			// list_benchmark!(list, extra, attestation, Attestation);
-			// list_benchmark!(list, extra, ctype, Ctype);
-			// list_benchmark!(list, extra, delegation, Delegation);
-			// list_benchmark!(list, extra, did, Did);
-			// list_benchmark!(list, extra, pallet_did_lookup, DidLookup);
-			// list_benchmark!(list, extra, pallet_inflation, Inflation);
-			// list_benchmark!(list, extra, parachain_staking, ParachainStaking);
-			// list_benchmark!(list, extra, pallet_web3_names, Web3Names);
+			list_benchmarks!(list, extra);
 
 			let storage_info = AllPalletsWithSystem::storage_info();
-
-			(list, storage_info)
+			return (list, storage_info)
 		}
 
 		fn dispatch_benchmark(
 			config: frame_benchmarking::BenchmarkConfig
 		) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, sp_runtime::RuntimeString> {
-			use frame_benchmarking::{baseline, Benchmarking, BenchmarkBatch, add_benchmark, TrackedStorageKey};
+			use frame_benchmarking::{Benchmarking, BenchmarkBatch, TrackedStorageKey};
 			use frame_system_benchmarking::Pallet as SystemBench;
 			use cumulus_pallet_session_benchmarking::Pallet as SessionBench;
-			use baseline::Pallet as BaselineBench;
+			use frame_benchmarking::baseline::Pallet as Baseline;
 
 			impl frame_system_benchmarking::Config for Runtime {}
 			impl cumulus_pallet_session_benchmarking::Config for Runtime {}
-			impl baseline::Config for Runtime {}
+			impl frame_benchmarking::baseline::Config for Runtime {}
 
 			let whitelist: Vec<TrackedStorageKey> = vec![
 				// Block Number
@@ -689,37 +678,7 @@ impl_runtime_apis! {
 			let mut batches = Vec::<BenchmarkBatch>::new();
 			let params = (&config, &whitelist);
 
-			// Substrate
-			add_benchmark!(params, batches, frame_benchmarking, BaselineBench::<Runtime>);
-			add_benchmark!(params, batches, pallet_balances, Balances);
-			// add_benchmark!(params, batches, pallet_collective, Council);
-			// add_benchmark!(params, batches, pallet_democracy, Democracy);
-			// add_benchmark!(params, batches, pallet_indices, Indices);
-			// add_benchmark!(params, batches, pallet_membership, TechnicalMembership);
-			// add_benchmark!(params, batches, pallet_preimage, Preimage);
-			// add_benchmark!(params, batches, pallet_scheduler, Scheduler);
-			add_benchmark!(params, batches, pallet_session, SessionBench::<Runtime>);
-			add_benchmark!(params, batches, frame_system, SystemBench::<Runtime>);
-			add_benchmark!(params, batches, pallet_timestamp, Timestamp);
-			// add_benchmark!(params, batches, pallet_tips, Tips);
-			// add_benchmark!(params, batches, pallet_treasury, Treasury);
-			add_benchmark!(params, batches, pallet_utility, Utility);
-			// add_benchmark!(params, batches, pallet_vesting, Vesting);
-			// add_benchmark!(params, batches, pallet_proxy, Proxy);
-
-			// KILT
-			// add_benchmark!(params, batches, attestation, Attestation);
-			// add_benchmark!(params, batches, ctype, Ctype);
-			// add_benchmark!(params, batches, delegation, Delegation);
-			// add_benchmark!(params, batches, did, Did);
-			// add_benchmark!(params, batches, pallet_did_lookup, DidLookup);
-			// add_benchmark!(params, batches, pallet_inflation, Inflation);
-			// add_benchmark!(params, batches, parachain_staking, ParachainStaking);
-			// add_benchmark!(params, batches, pallet_web3_names, Web3Names);
-
-			// No benchmarks for these pallets
-			// add_benchmark!(params, batches, cumulus_pallet_parachain_system, ParachainSystem);
-			// add_benchmark!(params, batches, parachain_info, ParachainInfo);
+			add_benchmarks!(params, batches);
 
 			if batches.is_empty() { return Err("Benchmark not found for this pallet.".into()) }
 			Ok(batches)

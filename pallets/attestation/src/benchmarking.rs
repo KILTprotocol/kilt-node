@@ -114,7 +114,7 @@ benchmarks! {
 
 		let origin = <T as Config>::EnsureOrigin::generate_origin(sender.clone(), attester);
 		Pallet::<T>::add(origin, claim_hash, ctype_hash, None)?;
-		let origin = RawRuntimeOrigin::signed(sender);
+		let origin = RawOrigin::Signed(sender);
 	}: _(origin, claim_hash)
 	verify {
 		assert!(!Attestations::<T>::contains_key(claim_hash));
@@ -160,7 +160,7 @@ benchmarks! {
 		let origin = <T as Config>::EnsureOrigin::generate_origin(deposit_owner.clone(), attester.clone());
 		Pallet::<T>::add(origin, claim_hash, ctype_hash, None).expect("claim should be added");
 
-		let origin = RawRuntimeOrigin::signed(deposit_owner.clone());
+		let origin = RawOrigin::Signed(deposit_owner.clone());
 	}: _(origin, claim_hash)
 	verify {
 		assert_eq!(Attestations::<T>::get(claim_hash), Some(AttestationDetails {

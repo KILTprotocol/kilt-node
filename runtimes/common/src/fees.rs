@@ -133,7 +133,7 @@ where
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use frame_support::{parameter_types, traits::FindAuthor, weights::DispatchClass};
+	use frame_support::{dispatch::DispatchClass, parameter_types, traits::FindAuthor};
 	use frame_system::limits;
 	use sp_core::H256;
 	use sp_runtime::{

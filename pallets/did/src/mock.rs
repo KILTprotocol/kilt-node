@@ -140,8 +140,8 @@ where
 
 impl Config for Test {
 	type DidIdentifier = DidIdentifier;
-	type RuntimeOrigin = RuntimeOrigin;
-	type RuntimeCall = RuntimeCall;
+	type Origin = RuntimeOrigin;
+	type Call = RuntimeCall;
 	type EnsureOrigin = EnsureSigned<DidIdentifier>;
 	type OriginSuccess = AccountId;
 	type RuntimeEvent = ();

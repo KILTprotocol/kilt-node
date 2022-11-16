@@ -1062,7 +1062,7 @@ pub mod pallet {
 				.into(),
 			);
 			#[cfg(feature = "runtime-benchmarks")]
-			let result = call.dispatch(RawRuntimeOrigin::signed(did).into());
+			let result = call.dispatch(RawOrigin::Signed(did).into());
 
 			let dispatch_event_payload = result.map(|_| ()).map_err(|e| e.error);
 
