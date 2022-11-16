@@ -204,7 +204,7 @@ parameter_types! {
 
 impl pallet_timestamp::Config for Test {
 	type Moment = u64;
-	type OnTimestampSet = ();
+	type OnTimestampSet = Aura;
 	type MinimumPeriod = MinimumPeriod;
 	type WeightInfo = ();
 }
