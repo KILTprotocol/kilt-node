@@ -443,7 +443,7 @@ where
 	cumulus_client_consensus_aura::import_queue::<sp_consensus_aura::sr25519::AuthorityPair, _, _, _, _, _>(
 		cumulus_client_consensus_aura::ImportQueueParams {
 			block_import: client.clone(),
-			client: client.clone(),
+			client,
 			create_inherent_data_providers: move |_, _| async move {
 				let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
 
