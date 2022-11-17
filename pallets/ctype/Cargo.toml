@@ -57,6 +57,7 @@ runtime-benchmarks = [
   "frame-system/runtime-benchmarks",
   "frame-support/runtime-benchmarks",
   "kilt-support/runtime-benchmarks",
+  "sp-runtime/runtime-benchmarks",
 ]
 std = [
   "codec/std",
@@ -75,4 +76,5 @@ std = [
 ]
 try-runtime = [
   "frame-support/try-runtime",
+  "frame-system/try-runtime",
 ]
