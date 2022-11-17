@@ -16,12 +16,10 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use codec::{EncodeLike, FullCodec};
-use cumulus_primitives_core::ParaId;
-use frame_support::weights::Weight;
-use scale_info::TypeInfo;
-use sp_std::vec::Vec;
-use xcm::latest::Xcm;
+use frame_support::traits::{Currency, ReservableCurrency};
+use sp_runtime::DispatchError;
+
+use crate::{deposit::Deposit, free_deposit};
 
 /// The sources of a call struct.
 ///
@@ -83,39 +81,72 @@ pub trait GetWorstCase {
 	fn worst_case() -> Self;
 }
 
-/// Trait to reflect calls to the relaychain which we support on the pallet
-/// level.
-pub trait RelayCallBuilder {
-	type AccountId: FullCodec;
-	type Balance: FullCodec;
-	type RelayChainCall: FullCodec + EncodeLike + sp_std::fmt::Debug + Clone + PartialEq + Eq + TypeInfo;
+/// Generic filter.
+pub trait ItemFilter<Item> {
+	fn should_include(&self, credential: &Item) -> bool;
+}
 
-	/// Execute multiple calls in a batch.
-	///
-	/// * calls: The list of calls to be executed.
-	fn utility_batch_call(calls: Vec<Self::RelayChainCall>) -> Self::RelayChainCall;
+pub trait StorageDepositCollector<AccountId, Key> {
+	type Currency: ReservableCurrency<AccountId>;
 
-	/// Execute a call, replacing the `Origin` with a sub-account.
-	///
-	/// * call: The call to be executed. Can be nested with
-	///   `utility_batch_call`.
-	/// * index: The index of the sub-account to be used as the new origin.
-	fn utility_as_derivative_call(call: Self::RelayChainCall, index: u16) -> Self::RelayChainCall;
+	/// Returns the deposit of the storage entry that is stored behind the key.
+	fn deposit(
+		key: &Key,
+	) -> Result<Deposit<AccountId, <Self::Currency as Currency<AccountId>>::Balance>, DispatchError>;
 
-	/// Execute a parachain lease swap call.
+	/// Returns the deposit amount that should be reserved for the storage entry
+	/// behind the key.
 	///
-	/// * id: One of the two para ids. Typically, this should be the one of the
-	///   parachain that executes this XCM call, e.g. the source.
-	/// * other: The target para id with which the lease swap should be
-	///   executed.
-	fn swap_call(id: ParaId, other: ParaId) -> Self::RelayChainCall;
+	/// This value can differ from the actual deposit that is reserved at the
+	/// time, since the deposit can be changed.
+	fn deposit_amount(key: &Key) -> <Self::Currency as Currency<AccountId>>::Balance;
 
-	/// Wrap the final calls into the latest Xcm format.
+	/// Store the new deposit information in the storage entry behind the key.
+	fn store_deposit(
+		key: &Key,
+		deposit: Deposit<AccountId, <Self::Currency as Currency<AccountId>>::Balance>,
+	) -> Result<(), DispatchError>;
+
+	/// Change the deposit owner.
 	///
-	/// * call: The relaychain call to be executed
-	/// * extra_fee: The extra fee (in relaychain currency) used for buying the
-	///   `weight` and `debt`.
-	/// * weight: The weight limit used for XCM.
-	/// * debt: The weight limit used to process the call.
-	fn finalize_call_into_xcm_message(call: Vec<u8>, extra_fee: Self::Balance, weight: Weight) -> Xcm<()>;
+	/// The deposit balance of the current owner will be freed, while the
+	/// deposit balance of the new owner will get reserved. The deposit amount
+	/// will not change even if the required byte and item fees were updated.
+	fn change_deposit_owner(key: &Key, new_owner: AccountId) -> Result<(), DispatchError> {
+		let deposit = Self::deposit(key)?;
+
+		free_deposit::<AccountId, Self::Currency>(&deposit);
+
+		let deposit = Deposit {
+			owner: new_owner,
+			..deposit
+		};
+		Self::Currency::reserve(&deposit.owner, deposit.amount)?;
+
+		Self::store_deposit(key, deposit)?;
+
+		Ok(())
+	}
+
+	/// Update the deposit amount.
+	///
+	/// In case the required deposit per item and byte changed, this function
+	/// updates the deposit amount. It either frees parts of the reserved
+	/// balance in case the deposit was lowered or reserves more balance when
+	/// the deposit was raised.
+	fn update_deposit(key: &Key) -> Result<(), DispatchError> {
+		let deposit = Self::deposit(key)?;
+
+		free_deposit::<AccountId, Self::Currency>(&deposit);
+
+		let deposit = Deposit {
+			amount: Self::deposit_amount(key),
+			..deposit
+		};
+		Self::Currency::reserve(&deposit.owner, deposit.amount)?;
+
+		Self::store_deposit(key, deposit)?;
+
+		Ok(())
+	}
 }

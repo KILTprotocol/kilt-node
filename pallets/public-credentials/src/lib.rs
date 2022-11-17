@@ -61,7 +61,10 @@ pub mod pallet {
 	use sp_std::{boxed::Box, vec::Vec};
 
 	pub use ctype::CtypeHashOf;
-	use kilt_support::traits::CallSources;
+	use kilt_support::{
+		deposit::Deposit,
+		traits::{CallSources, StorageDepositCollector},
+	};
 
 	/// The current storage version.
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
@@ -237,7 +240,7 @@ pub mod pallet {
 		#[allow(clippy::boxed_local)]
 		#[pallet::weight({
 			let xt_weight = <T as Config>::WeightInfo::add(credential.claims.len().saturated_into::<u32>());
-			let ac_weight = credential.authorization.as_ref().map(|ac| ac.can_issue_weight()).unwrap_or(0);
+			let ac_weight = credential.authorization.as_ref().map(|ac| ac.can_issue_weight()).unwrap_or(Weight::zero());
 			xt_weight.saturating_add(ac_weight)
 		})]
 		pub fn add(origin: OriginFor<T>, credential: Box<InputCredentialOf<T>>) -> DispatchResultWithPostInfo {
@@ -309,7 +312,7 @@ pub mod pallet {
 
 			Ok(Some(
 				<T as Config>::WeightInfo::add(credential.claims.len().saturated_into::<u32>())
-					.saturating_add(ac_weight.unwrap_or(0)),
+					.saturating_add(ac_weight.unwrap_or(Weight::zero())),
 			)
 			.into())
 		}
@@ -324,7 +327,7 @@ pub mod pallet {
 		/// Emits `CredentialRevoked`.
 		#[pallet::weight({
 			let xt_weight = <T as Config>::WeightInfo::revoke();
-			let ac_weight = authorization.as_ref().map(|ac| ac.can_revoke_weight()).unwrap_or(0);
+			let ac_weight = authorization.as_ref().map(|ac| ac.can_revoke_weight()).unwrap_or(Weight::zero());
 			xt_weight.saturating_add(ac_weight)
 		})]
 		pub fn revoke(
@@ -362,7 +365,7 @@ pub mod pallet {
 		/// Emits `CredentialUnrevoked`.
 		#[pallet::weight({
 			let xt_weight = <T as Config>::WeightInfo::unrevoke();
-			let ac_weight = authorization.as_ref().map(|ac| ac.can_unrevoke_weight()).unwrap_or(0);
+			let ac_weight = authorization.as_ref().map(|ac| ac.can_unrevoke_weight()).unwrap_or(Weight::zero());
 			xt_weight.saturating_add(ac_weight)
 		})]
 		pub fn unrevoke(
@@ -408,7 +411,7 @@ pub mod pallet {
 		/// Emits `CredentialRemoved`.
 		#[pallet::weight({
 			let xt_weight = <T as Config>::WeightInfo::remove();
-			let ac_weight = authorization.as_ref().map(|ac| ac.can_remove_weight()).unwrap_or(0);
+			let ac_weight = authorization.as_ref().map(|ac| ac.can_remove_weight()).unwrap_or(Weight::zero());
 			xt_weight.saturating_add(ac_weight)
 		})]
 		pub fn remove(
@@ -422,7 +425,7 @@ pub mod pallet {
 			let (credential_subject, credential_entry) = Self::retrieve_credential_entry(&credential_id)?;
 
 			let ac_weight_used = if credential_entry.attester == caller {
-				0
+				Weight::zero()
 			} else {
 				let credential_auth_id = credential_entry
 					.authorization_id
@@ -478,6 +481,42 @@ pub mod pallet {
 
 			Ok(())
 		}
+
+		/// Changes the deposit owner.
+		///
+		/// The balance that is reserved by the current deposit owner will be
+		/// freed and balance of the new deposit owner will get reserved.
+		///
+		/// The subject of the call must be the owner of the credential.
+		/// The sender of the call will be the new deposit owner.
+		#[pallet::weight(<T as Config>::WeightInfo::change_deposit_owner())]
+		pub fn change_deposit_owner(origin: OriginFor<T>, credential_id: CredentialIdOf<T>) -> DispatchResult {
+			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
+			let subject = source.subject();
+
+			let (_, credential_entry) = Self::retrieve_credential_entry(&credential_id)?;
+
+			ensure!(subject == credential_entry.attester, Error::<T>::Unauthorized);
+
+			PublicCredentialDepositCollector::<T>::change_deposit_owner(&credential_id, source.sender())?;
+
+			Ok(())
+		}
+
+		/// Updates the deposit amount to the current deposit rate.
+		///
+		/// The sender must be the deposit owner.
+		#[pallet::weight(<T as Config>::WeightInfo::update_deposit())]
+		pub fn update_deposit(origin: OriginFor<T>, credential_id: CredentialIdOf<T>) -> DispatchResult {
+			let source = ensure_signed(origin)?;
+			let (_, credential_entry) = Self::retrieve_credential_entry(&credential_id)?;
+
+			ensure!(source == credential_entry.deposit.owner, Error::<T>::Unauthorized);
+
+			PublicCredentialDepositCollector::<T>::update_deposit(&credential_id)?;
+
+			Ok(())
+		}
 	}
 
 	impl<T: Config> Pallet<T> {
@@ -526,7 +565,7 @@ pub mod pallet {
 					// Additional weight is 0 if the caller is the attester, otherwise it's the
 					// value returned by the access control check, if it does not fail.
 					let additional_weight = if *caller == credential.attester {
-						0
+						Weight::zero()
 					} else {
 						let credential_auth_id =
 							credential.authorization_id.as_ref().ok_or(Error::<T>::Unauthorized)?;
@@ -541,6 +580,38 @@ pub mod pallet {
 				} else {
 					// No weight is computed as the error is an early return.
 					Err(Error::<T>::CredentialNotFound)
+				}
+			})
+		}
+	}
+
+	struct PublicCredentialDepositCollector<T: Config>(PhantomData<T>);
+	impl<T: Config> StorageDepositCollector<AccountIdOf<T>, CredentialIdOf<T>> for PublicCredentialDepositCollector<T> {
+		type Currency = <T as Config>::Currency;
+
+		fn deposit(
+			credential_id: &CredentialIdOf<T>,
+		) -> Result<Deposit<AccountIdOf<T>, <Self::Currency as Currency<AccountIdOf<T>>>::Balance>, DispatchError> {
+			let (_, credential_entry) = Pallet::<T>::retrieve_credential_entry(credential_id)?;
+			Ok(credential_entry.deposit)
+		}
+
+		fn deposit_amount(_credential_id: &CredentialIdOf<T>) -> <Self::Currency as Currency<AccountIdOf<T>>>::Balance {
+			T::Deposit::get()
+		}
+
+		fn store_deposit(
+			credential_id: &CredentialIdOf<T>,
+			deposit: Deposit<AccountIdOf<T>, <Self::Currency as Currency<AccountIdOf<T>>>::Balance>,
+		) -> Result<(), DispatchError> {
+			let credential_subject =
+				CredentialSubjects::<T>::get(&credential_id).ok_or(Error::<T>::CredentialNotFound)?;
+			Credentials::<T>::try_mutate(&credential_subject, &credential_id, |credential_entry| {
+				if let Some(credential) = credential_entry {
+					credential.deposit = deposit;
+					Ok(())
+				} else {
+					Err(Error::<T>::CredentialNotFound.into())
 				}
 			})
 		}

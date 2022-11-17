@@ -25,20 +25,17 @@
 
 use std::sync::Arc;
 
-use jsonrpsee::RpcModule;
-
+use sc_client_api::AuxStore;
 pub use sc_rpc_api::DenyUnsafe;
 use sc_transaction_pool_api::TransactionPool;
 use sp_api::ProvideRuntimeApi;
 use sp_block_builder::BlockBuilder;
 use sp_blockchain::{Error as BlockChainError, HeaderBackend, HeaderMetadata};
 
-use pallet_did_lookup::linkable_account::LinkableAccountId;
-use public_credentials::CredentialEntry;
-use runtime_common::{
-	assets::AssetDid, authorization::AuthorizationId, AccountId, Balance, Block, BlockNumber, DidIdentifier, Hash,
-	Index,
-};
+use runtime_common::{AccountId, Balance, Block, Index};
+
+/// A type representing all RPC extensions.
+pub type RpcExtension = jsonrpsee::RpcModule<()>;
 
 /// Full client dependencies.
 pub struct FullDeps<C, P> {
@@ -50,30 +47,25 @@ pub struct FullDeps<C, P> {
 	pub deny_unsafe: DenyUnsafe,
 }
 
-/// Instantiate all full RPC extensions.
-pub fn create_full<C, P>(deps: FullDeps<C, P>) -> Result<RpcModule<()>, Box<dyn std::error::Error + Send + Sync>>
+/// Instantiate all RPC extensions.
+pub fn create_full<C, P>(deps: FullDeps<C, P>) -> Result<RpcExtension, Box<dyn std::error::Error + Send + Sync>>
 where
-	C: ProvideRuntimeApi<Block>,
-	C: HeaderBackend<Block> + HeaderMetadata<Block, Error = BlockChainError> + 'static,
-	C: Send + Sync + 'static,
-	C::Api: frame_rpc_system::AccountNonceApi<Block, AccountId, Index>,
+	C: ProvideRuntimeApi<Block>
+		+ HeaderBackend<Block>
+		+ AuxStore
+		+ HeaderMetadata<Block, Error = BlockChainError>
+		+ Send
+		+ Sync
+		+ 'static,
 	C::Api: pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>,
+	C::Api: substrate_frame_rpc_system::AccountNonceApi<Block, AccountId, Index>,
 	C::Api: BlockBuilder<Block>,
-	C::Api: did_rpc::DidRuntimeApi<Block, DidIdentifier, AccountId, LinkableAccountId, Balance, Hash, BlockNumber>,
-	C::Api: public_credentials_rpc::PublicCredentialsRuntimeApi<
-		Block,
-		AssetDid,
-		Hash,
-		CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<Hash>>,
-	>,
 	P: TransactionPool + 'static,
 {
-	use did_rpc::{DidApiServer, DidQuery};
-	use frame_rpc_system::{System, SystemApiServer};
 	use pallet_transaction_payment_rpc::{TransactionPayment, TransactionPaymentApiServer};
-	use public_credentials_rpc::{PublicCredentialsApiServer, PublicCredentialsQuery};
+	use substrate_frame_rpc_system::{System, SystemApiServer};
 
-	let mut module = RpcModule::new(());
+	let mut module = RpcExtension::new(());
 	let FullDeps {
 		client,
 		pool,
@@ -81,41 +73,12 @@ where
 	} = deps;
 
 	module.merge(System::new(client.clone(), pool, deny_unsafe).into_rpc())?;
-	module.merge(TransactionPayment::new(client.clone()).into_rpc())?;
+	module.merge(TransactionPayment::new(client).into_rpc())?;
 	// Extend this RPC with a custom API by using the following syntax.
 	// `YourRpcStruct` should have a reference to a client, which is needed
 	// to call into the runtime.
 	//
 	// `module.merge(YourRpcStruct::new(ReferenceToClient).into_rpc())?;`
-	module.merge(DidQuery::new(client.clone()).into_rpc())?;
-	module.merge(
-		PublicCredentialsQuery::<
-			C,
-			Block,
-			// Input subject ID
-			String,
-			// Runtime subject ID
-			AssetDid,
-			// Input/output credential ID
-			Hash,
-			// Runtime credential ID
-			Hash,
-			// Input/output credential entry
-			node_common::OuterCredentialEntry<
-				Hash,
-				DidIdentifier,
-				BlockNumber,
-				AccountId,
-				Balance,
-				AuthorizationId<Hash>,
-			>,
-			// Runtime credential entry
-			CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<Hash>>,
-			// Credential filter
-			node_common::PublicCredentialFilter<Hash, DidIdentifier>,
-		>::new(client)
-		.into_rpc(),
-	)?;
 
 	Ok(module)
 }

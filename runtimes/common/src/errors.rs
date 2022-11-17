@@ -16,27 +16,10 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_benchmarking::{benchmarks, impl_benchmark_test_suite};
-use frame_support::traits::EnsureOrigin;
+use codec::{Decode, Encode};
+use scale_info::TypeInfo;
 
-use super::*;
-use crate::setting::FilterSettings;
-
-benchmarks! {
-	set_filter {
-		let new_filter = FilterSettings {
-			transfer_disabled: true,
-			feature_disabled: true,
-			xcm_disabled: true,
-		};
-		let origin = T::ApproveOrigin::successful_origin();
-	}: _<T::Origin>(origin, new_filter)
-	verify {
-	}
-}
-
-impl_benchmark_test_suite! {
-	Pallet,
-	crate::mock::ExtBuilder::default().build_with_keystore(),
-	crate::mock::Test
+#[derive(Encode, Decode, TypeInfo)]
+pub enum PublicCredentialsApiError {
+	InvalidSubjectId,
 }

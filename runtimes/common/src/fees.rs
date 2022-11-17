@@ -19,7 +19,7 @@
 use frame_support::{
 	traits::{Currency, Get, Imbalance, OnUnbalanced},
 	weights::{
-		DispatchClass, WeightToFee as WeightToFeeT, WeightToFeeCoefficient, WeightToFeeCoefficients,
+		DispatchClass, Weight, WeightToFee as WeightToFeeT, WeightToFeeCoefficient, WeightToFeeCoefficients,
 		WeightToFeePolynomial,
 	},
 };
@@ -105,15 +105,21 @@ where
 
 		// TODO: transfer_keep_alive is 288 byte long?
 		let tx_len: u64 = 288;
-		let byte_fee: Balance = <R as pallet_transaction_payment::Config>::LengthToFee::weight_to_fee(&tx_len).into();
-		let base_weight: Balance = <R as frame_system::Config>::BlockWeights::get()
+		let byte_fee: Balance =
+			<R as pallet_transaction_payment::Config>::LengthToFee::weight_to_fee(&Weight::from_ref_time(tx_len))
+				.into();
+		let base_weight: Weight = <R as frame_system::Config>::BlockWeights::get()
 			.get(DispatchClass::Normal)
-			.base_extrinsic
-			.into();
-		let tx_weight: Balance = <R as pallet_balances::Config>::WeightInfo::transfer_keep_alive().into();
-		let unbalanced_fee: Balance = base_weight + tx_weight;
+			.base_extrinsic;
+		let base_weight_fee: Balance =
+			<R as pallet_transaction_payment::Config>::LengthToFee::weight_to_fee(&base_weight).into();
+		let tx_weight_fee: Balance = <R as pallet_transaction_payment::Config>::LengthToFee::weight_to_fee(
+			&<R as pallet_balances::Config>::WeightInfo::transfer_keep_alive(),
+		)
+		.into();
+		let unbalanced_fee: Balance = base_weight_fee.saturating_add(tx_weight_fee);
 
-		let wanted_weight_fee: Balance = wanted_fee - byte_fee;
+		let wanted_weight_fee: Balance = wanted_fee.saturating_sub(byte_fee);
 
 		smallvec![WeightToFeeCoefficient {
 			degree: 1,
@@ -156,12 +162,12 @@ mod tests {
 	parameter_types! {
 		pub const BlockHashCount: u64 = 250;
 		pub BlockWeights: limits::BlockWeights = limits::BlockWeights::builder()
-			.base_block(10)
+			.base_block(Weight::from_ref_time(10u64))
 			.for_class(DispatchClass::all(), |weight| {
-				weight.base_extrinsic = 100;
+				weight.base_extrinsic = Weight::from_ref_time(100u64);
 			})
 			.for_class(DispatchClass::non_mandatory(), |weight| {
-				weight.max_total = Some(1024);
+				weight.max_total = Some(Weight::from_ref_time(1024u64));
 			})
 			.build_or_panic();
 		pub BlockLength: limits::BlockLength = limits::BlockLength::max(2 * 1024);

@@ -103,7 +103,7 @@ where
 		_claim: &ClaimHashOf<T>,
 	) -> Result<Weight, DispatchError> {
 		if who == &self.0 {
-			Ok(0)
+			Ok(Weight::zero())
 		} else {
 			Err(DispatchError::Other("Unauthorized"))
 		}
@@ -117,7 +117,7 @@ where
 		authorization_id: &T::AuthorizationId,
 	) -> Result<Weight, DispatchError> {
 		if authorization_id == who {
-			Ok(0)
+			Ok(Weight::zero())
 		} else {
 			Err(DispatchError::Other("Unauthorized"))
 		}
@@ -131,7 +131,7 @@ where
 		authorization_id: &T::AuthorizationId,
 	) -> Result<Weight, DispatchError> {
 		if authorization_id == who {
-			Ok(0)
+			Ok(Weight::zero())
 		} else {
 			Err(DispatchError::Other("Unauthorized"))
 		}
@@ -142,13 +142,13 @@ where
 	}
 
 	fn can_attest_weight(&self) -> Weight {
-		0
+		Weight::zero()
 	}
 	fn can_revoke_weight(&self) -> Weight {
-		0
+		Weight::zero()
 	}
 	fn can_remove_weight(&self) -> Weight {
-		0
+		Weight::zero()
 	}
 }
 

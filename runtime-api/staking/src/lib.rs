@@ -18,18 +18,29 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use codec::Codec;
+use codec::{Codec, Decode, Encode, MaxEncodedLen};
+use scale_info::TypeInfo;
+use sp_runtime::Perquintill;
 
-use sp_std::vec::Vec;
+#[derive(Decode, Encode, TypeInfo, MaxEncodedLen, PartialEq, Eq, Debug)]
+pub struct StakingRates {
+	pub collator_staking_rate: Perquintill,
+	pub collator_reward_rate: Perquintill,
+	pub delegator_staking_rate: Perquintill,
+	pub delegator_reward_rate: Perquintill,
+}
 
 sp_api::decl_runtime_apis! {
-	/// The API to query public credentials for a subject.
-	pub trait PublicCredentialsApi<SubjectId, CredentialId, CredentialEntry> where
-		SubjectId: Codec,
-		CredentialId: Codec,
-		CredentialEntry: Codec
+	/// The API to query staking and reward rates.
+	pub trait Staking<AccountId, Balance>
+	where
+		AccountId: Codec,
+		Balance: Codec
 	{
-		fn get_credential(credential_id: CredentialId) -> Option<CredentialEntry>;
-		fn get_credentials(subject: SubjectId) -> Vec<(CredentialId, CredentialEntry)>;
+		/// Returns the current staking rewards for a given account address.
+		fn get_unclaimed_staking_rewards(account: &AccountId) -> Balance;
+		/// Returns the current staking and reward rates for collators and
+		/// delegators.
+		fn get_staking_rates() -> StakingRates;
 	}
 }
