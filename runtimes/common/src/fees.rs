@@ -133,6 +133,7 @@ where
 #[cfg(test)]
 mod tests {
 	use super::*;
+	use crate::{AccountId, MAXIMUM_BLOCK_WEIGHT, NORMAL_DISPATCH_RATIO};
 	use frame_support::{dispatch::DispatchClass, parameter_types, traits::FindAuthor};
 	use frame_system::limits;
 	use sp_core::H256;
@@ -141,8 +142,6 @@ mod tests {
 		traits::{BlakeTwo256, IdentityLookup},
 		Perbill,
 	};
-
-	use crate::AccountId;
 
 	type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 	type Block = frame_system::mocking::MockBlock<Test>;
@@ -161,15 +160,24 @@ mod tests {
 
 	parameter_types! {
 		pub const BlockHashCount: u64 = 250;
+		// One to one clone of our runtimes' blockweight
 		pub BlockWeights: limits::BlockWeights = limits::BlockWeights::builder()
-			.base_block(Weight::from_ref_time(10u64))
-			.for_class(DispatchClass::all(), |weight| {
-				weight.base_extrinsic = Weight::from_ref_time(100u64);
-			})
-			.for_class(DispatchClass::non_mandatory(), |weight| {
-				weight.max_total = Some(Weight::from_ref_time(1024u64));
-			})
-			.build_or_panic();
+		.base_block(Weight::from_ref_time(10))
+		.for_class(DispatchClass::all(), |weights| {
+			weights.base_extrinsic = Weight::from_ref_time(5);
+		})
+		.for_class(DispatchClass::Normal, |weights| {
+			weights.max_total = Some(NORMAL_DISPATCH_RATIO * MAXIMUM_BLOCK_WEIGHT);
+		})
+		.for_class(DispatchClass::Operational, |weights| {
+			weights.base_extrinsic = Weight::from_ref_time(10);
+			weights.max_total = Some(MAXIMUM_BLOCK_WEIGHT);
+			weights.reserved = Some(
+				MAXIMUM_BLOCK_WEIGHT - NORMAL_DISPATCH_RATIO * MAXIMUM_BLOCK_WEIGHT
+			);
+		})
+		.avg_block_initialization(Perbill::from_percent(0))
+		.build_or_panic();
 		pub BlockLength: limits::BlockLength = limits::BlockLength::max(2 * 1024);
 		pub const AvailableBlockRatio: Perbill = Perbill::one();
 	}
