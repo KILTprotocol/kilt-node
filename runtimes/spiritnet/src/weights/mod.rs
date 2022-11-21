@@ -39,3 +39,4 @@ pub mod pallet_utility;
 pub mod pallet_vesting;
 pub mod pallet_web3_names;
 pub mod parachain_staking;
+pub mod public_credentials;

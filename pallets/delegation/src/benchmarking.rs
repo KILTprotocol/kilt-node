@@ -437,7 +437,7 @@ benchmarks! {
 	verify {
 	}
 
-	transfer_deposit {
+	change_deposit_owner {
 		let deposit_owner_old: T::AccountId = account("sender", 0, SEED);
 		let deposit_owner_new: T::AccountId = account("sender", 1, SEED);
 		let (root_acc, hierarchy_id, _, leaf_id) = setup_delegations::<T>(1, ONE_CHILD_PER_LEVEL.expect(">0"), Permissions::DELEGATE)?;
@@ -456,6 +456,24 @@ benchmarks! {
 	}: _<T::Origin>(origin, hierarchy_id)
 	verify {
 		assert_eq!(<T as Config>::Currency::reserved_balance(&deposit_owner_new), <T as Config>::Deposit::get());
+	}
+
+	update_deposit {
+		let deposit_owner: T::AccountId = account("sender", 0, SEED);
+		let (root_acc, hierarchy_id, _, leaf_id) = setup_delegations::<T>(1, ONE_CHILD_PER_LEVEL.expect(">0"), Permissions::DELEGATE)?;
+		let root_node = DelegationNodes::<T>::get(hierarchy_id).expect("Root hierarchy node should be present on chain.");
+		let children: BoundedBTreeSet<T::DelegationNodeId, T::MaxChildren> = root_node.children;
+		let child_id: T::DelegationNodeId = *children.iter().next().ok_or("Root should have children")?;
+		let child_delegation = DelegationNodes::<T>::get(child_id).ok_or("Child of root should have delegation id")?;
+
+		<T as Config>::Currency::make_free_balance_be(
+			&deposit_owner,
+			<T as Config>::Currency::minimum_balance() + <T as Config>::Deposit::get(),
+		);
+
+		let origin = RawOrigin::Signed(deposit_owner);
+	}: _(origin, hierarchy_id)
+	verify {
 	}
 }
 

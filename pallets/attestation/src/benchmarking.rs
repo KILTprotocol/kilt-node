@@ -114,14 +114,13 @@ benchmarks! {
 
 		let origin = <T as Config>::EnsureOrigin::generate_origin(sender.clone(), attester);
 		Pallet::<T>::add(origin, claim_hash, ctype_hash, None)?;
-		// revoke with root account
 		let origin = RawOrigin::Signed(sender);
 	}: _(origin, claim_hash)
 	verify {
 		assert!(!Attestations::<T>::contains_key(claim_hash));
 	}
 
-	transfer_deposit {
+	change_deposit_owner {
 		let attester: T::AttesterId = account("attester", 0, SEED);
 		let deposit_owner_old: T::AccountId = account("sender", 0, SEED);
 		let deposit_owner_new: T::AccountId = account("sender", 1, SEED);
@@ -134,7 +133,6 @@ benchmarks! {
 
 		let origin = <T as Config>::EnsureOrigin::generate_origin(deposit_owner_old, attester.clone());
 		Pallet::<T>::add(origin, claim_hash, ctype_hash, None)?;
-		// revoke with root account
 		let origin = <T as Config>::EnsureOrigin::generate_origin(deposit_owner_new.clone(), attester.clone());
 	}: _<T::Origin>(origin, claim_hash)
 	verify {
@@ -145,6 +143,33 @@ benchmarks! {
 			revoked: false,
 			deposit: kilt_support::deposit::Deposit {
 				owner: deposit_owner_new,
+				amount: <T as Config>::Deposit::get(),
+			}
+		}));
+	}
+
+	update_deposit {
+		let attester: T::AttesterId = account("attester", 0, SEED);
+		let deposit_owner: T::AccountId = account("sender", 0, SEED);
+		let claim_hash: T::Hash = T::Hashing::hash(b"claim");
+		let ctype_hash: T::Hash = T::Hash::default();
+
+		ctype::Ctypes::<T>::insert(&ctype_hash, attester.clone());
+		<T as Config>::Currency::make_free_balance_be(&deposit_owner, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
+
+		let origin = <T as Config>::EnsureOrigin::generate_origin(deposit_owner.clone(), attester.clone());
+		Pallet::<T>::add(origin, claim_hash, ctype_hash, None).expect("claim should be added");
+
+		let origin = RawOrigin::Signed(deposit_owner.clone());
+	}: _(origin, claim_hash)
+	verify {
+		assert_eq!(Attestations::<T>::get(claim_hash), Some(AttestationDetails {
+			ctype_hash,
+			attester,
+			authorization_id: None,
+			revoked: false,
+			deposit: kilt_support::deposit::Deposit {
+				owner: deposit_owner,
 				amount: <T as Config>::Deposit::get(),
 			}
 		}));

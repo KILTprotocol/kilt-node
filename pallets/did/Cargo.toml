@@ -1,50 +1,55 @@
+cargo-features = ["workspace-inheritance"]
+
 [package]
-authors = ["KILT <info@kilt.io>"]
-description = "Enables adding and removing decentralized identifiers (DIDs)."
-edition = "2021"
+authors.workspace = true
+documentation.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license-file.workspace = true
+readme.workspace = true
+repository.workspace = true
+version.workspace = true
 name = "did"
-repository = "https://github.com/KILTprotocol/mashnet-node"
-version = "1.7.2"
+description = "Enables adding and removing decentralized identifiers (DIDs)."
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
 
 [build-dependencies]
-substrate-wasm-builder = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.28"}
+substrate-wasm-builder.workspace = true
 
 [dev-dependencies]
-env_logger = "0.9.0"
-serde = "1.0.142"
+env_logger.workspace = true
 
-ctype = {features = ["mock"], path = "../ctype"}
+ctype = {workspace = true, features = ["mock"]}
 
-frame-benchmarking = {branch = "polkadot-v0.9.28", git = "https://github.com/paritytech/substrate"}
-pallet-balances = {branch = "polkadot-v0.9.28", git = "https://github.com/paritytech/substrate"}
-sp-keystore = {branch = "polkadot-v0.9.28", git = "https://github.com/paritytech/substrate"}
+frame-benchmarking = {workspace = true, features = ["std"]}
+pallet-balances = {workspace = true, features = ["std"]}
+sp-keystore = {workspace = true, features = ["std"]}
 
 [dependencies]
-# Internal dependencies
-ctype = {path = "../ctype", optional = true}
-kilt-support = {default-features = false, path = "../../support"}
-
 # External dependencies
-hex = {default-features = false, features = ["alloc"], version = "0.4.3"}
-log = "0.4.17"
-serde = {version = "1.0.136", optional = true, features = ["derive"]}
+log.workspace = true
 
-codec = {package = "parity-scale-codec", version = "3.1.5", default-features = false, features = ["derive"]}
-frame-support = {branch = "polkadot-v0.9.28", default-features = false, git = "https://github.com/paritytech/substrate"}
-frame-system = {branch = "polkadot-v0.9.28", default-features = false, git = "https://github.com/paritytech/substrate"}
-scale-info = {version = "2.1.1", default-features = false, features = ["derive"]}
-sp-core = {branch = "polkadot-v0.9.28", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-io = {branch = "polkadot-v0.9.28", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-runtime = {branch = "polkadot-v0.9.28", default-features = false, git = "https://github.com/paritytech/substrate"}
-sp-std = {branch = "polkadot-v0.9.28", default-features = false, git = "https://github.com/paritytech/substrate"}
+# Internal dependencies
+kilt-support.workspace = true
 
-# benchmarking
-frame-benchmarking = {branch = "polkadot-v0.9.28", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
-pallet-balances = {branch = "polkadot-v0.9.28", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
-sp-keystore = {branch = "polkadot-v0.9.28", default-features = false, git = "https://github.com/paritytech/substrate", optional = true}
+ctype = {workspace = true, optional = true}
+
+# Substrate dependencies
+codec = {package = "parity-scale-codec", workspace = true, features = ["derive"]}
+frame-support.workspace = true
+frame-system.workspace = true
+scale-info = {workspace = true, features = ["derive"]}
+sp-core.workspace = true
+sp-io.workspace = true
+sp-runtime.workspace = true
+sp-std.workspace = true
+
+# Benchmarking dependencies
+frame-benchmarking = {workspace = true, optional = true}
+pallet-balances = {workspace = true, optional = true}
+sp-keystore = {workspace = true, optional = true}
 
 [features]
 default = ["std"]
@@ -66,12 +71,10 @@ std = [
   "ctype/std",
   "frame-support/std",
   "frame-system/std",
-  "hex/std",
   "kilt-support/std",
   "log/std",
   "pallet-balances/std",
   "scale-info/std",
-  "serde",
   "sp-core/std",
   "sp-io/std",
   "sp-keystore/std",

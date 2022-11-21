@@ -26,9 +26,10 @@
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use codec::{Decode, Encode, MaxEncodedLen};
+use cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases;
 use frame_support::{
 	construct_runtime, parameter_types,
-	traits::{EitherOfDiverse, InstanceFilter, PrivilegeCmp},
+	traits::{EitherOfDiverse, Everything, InstanceFilter, PrivilegeCmp},
 	weights::{constants::RocksDbWeight, ConstantMultiplier, Weight},
 };
 use frame_system::EnsureRoot;
@@ -45,13 +46,16 @@ use sp_version::RuntimeVersion;
 use xcm_executor::XcmExecutor;
 
 use delegation::DelegationAc;
-use pallet_did_lookup::{linkable_account::LinkableAccountId, migrations::EthereumMigration};
+use kilt_support::traits::ItemFilter;
+use pallet_did_lookup::linkable_account::LinkableAccountId;
 pub use parachain_staking::InflationInfo;
+pub use public_credentials;
 
-use kilt_support::relay::RelayChainCallBuilder;
 use runtime_common::{
+	assets::{AssetDid, PublicCredentialsFilter},
 	authorization::{AuthorizationId, PalletAuthorize},
 	constants::{self, EXISTENTIAL_DEPOSIT, KILT},
+	errors::PublicCredentialsApiError,
 	fees::{ToAuthor, WeightToFee},
 	pallet_id, AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights, DidIdentifier,
 	FeeSplit, Hash, Header, Index, Signature, SlowAdjustingFeeUpdate,
@@ -64,12 +68,11 @@ use sp_version::NativeVersion;
 #[cfg(feature = "runtime-benchmarks")]
 use {frame_system::EnsureSigned, kilt_support::signature::AlwaysVerify, runtime_common::benchmarks::DummySignature};
 
-mod filter;
-#[cfg(test)]
-mod tests;
-
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
+
+#[cfg(test)]
+mod tests;
 
 mod weights;
 mod xcm_config;
@@ -86,10 +89,10 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("mashnet-node"),
 	impl_name: create_runtime_str!("mashnet-node"),
 	authoring_version: 4,
-	spec_version: 10720,
+	spec_version: 10900,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
-	transaction_version: 4,
+	transaction_version: 5,
 	state_version: 0,
 };
 
@@ -141,7 +144,7 @@ impl frame_system::Config for Runtime {
 	type OnNewAccount = ();
 	type OnKilledAccount = ();
 	type DbWeight = RocksDbWeight;
-	type BaseCallFilter = DynFilter;
+	type BaseCallFilter = Everything;
 	type SystemWeightInfo = weights::frame_system::WeightInfo<Runtime>;
 	type BlockWeights = BlockWeights;
 	type BlockLength = BlockLength;
@@ -207,8 +210,8 @@ impl pallet_sudo::Config for Runtime {
 }
 
 parameter_types! {
-	pub const ReservedXcmpWeight: Weight = constants::MAXIMUM_BLOCK_WEIGHT / 4;
-	pub const ReservedDmpWeight: Weight = constants::MAXIMUM_BLOCK_WEIGHT / 4;
+	pub const ReservedXcmpWeight: Weight = constants::MAXIMUM_BLOCK_WEIGHT.saturating_div(4);
+	pub const ReservedDmpWeight: Weight = constants::MAXIMUM_BLOCK_WEIGHT.saturating_div(4);
 }
 
 impl cumulus_pallet_parachain_system::Config for Runtime {
@@ -220,9 +223,7 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
 	type ReservedDmpWeight = ReservedDmpWeight;
 	type XcmpMessageHandler = XcmpQueue;
 	type ReservedXcmpWeight = ReservedXcmpWeight;
-	// We temporarily control this via the RelayMigration pallet which can toggle
-	// between strict and any.
-	type CheckAssociatedRelayNumber = RelayMigration;
+	type CheckAssociatedRelayNumber = RelayNumberStrictlyIncreases;
 }
 
 impl parachain_info::Config for Runtime {}
@@ -650,11 +651,9 @@ impl parachain_staking::Config for Runtime {
 	type MinRequiredCollators = constants::staking::MinRequiredCollators;
 	type MaxDelegationsPerRound = constants::staking::MaxDelegationsPerRound;
 	type MaxDelegatorsPerCollator = constants::staking::MaxDelegatorsPerCollator;
-	type MaxCollatorsPerDelegator = constants::staking::MaxCollatorsPerDelegator;
 	type MinCollatorStake = constants::staking::MinCollatorStake;
 	type MinCollatorCandidateStake = constants::staking::MinCollatorStake;
 	type MaxTopCandidates = constants::staking::MaxCollatorCandidates;
-	type MinDelegation = constants::staking::MinDelegatorStake;
 	type MinDelegatorStake = constants::staking::MinDelegatorStake;
 	type MaxUnstakeRequests = constants::staking::MaxUnstakeRequests;
 	type NetworkRewardRate = constants::staking::NetworkRewardRate;
@@ -666,12 +665,6 @@ impl parachain_staking::Config for Runtime {
 	const BLOCKS_PER_YEAR: Self::BlockNumber = constants::BLOCKS_PER_YEAR;
 }
 
-impl pallet_relay_migration::Config for Runtime {
-	type Event = Event;
-	type ApproveOrigin = ApproveOrigin;
-	type RelayChainCallBuilder = RelayChainCallBuilder<Runtime, ParachainInfo>;
-}
-
 impl pallet_utility::Config for Runtime {
 	type Event = Event;
 	type Call = Call;
@@ -680,6 +673,23 @@ impl pallet_utility::Config for Runtime {
 }
 
 impl pallet_randomness_collective_flip::Config for Runtime {}
+
+impl public_credentials::Config for Runtime {
+	type AccessControl = PalletAuthorize<DelegationAc<Runtime>>;
+	type AttesterId = DidIdentifier;
+	type AuthorizationId = AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>;
+	type CredentialId = Hash;
+	type CredentialHash = BlakeTwo256;
+	type Currency = Balances;
+	type Deposit = runtime_common::constants::public_credentials::Deposit;
+	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
+	type MaxEncodedClaimsLength = runtime_common::constants::public_credentials::MaxEncodedClaimsLength;
+	type MaxSubjectIdLength = runtime_common::constants::public_credentials::MaxSubjectIdLength;
+	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
+	type Event = Event;
+	type SubjectId = runtime_common::assets::AssetDid;
+	type WeightInfo = weights::public_credentials::WeightInfo<Runtime>;
+}
 
 /// The type used to represent the kinds of proxying allowed.
 #[derive(
@@ -716,7 +726,8 @@ impl InstanceFilter<Call> for ProxyType {
 				Call::Attestation(..)
 					| Call::Authorship(..)
 					// Excludes `Balances`
-					| Call::Council(..) | Call::Ctype(..)
+					| Call::Council(..)
+					| Call::Ctype(..)
 					| Call::Delegation(..)
 					| Call::Democracy(..)
 					| Call::Did(..)
@@ -731,9 +742,9 @@ impl InstanceFilter<Call> for ProxyType {
 					// Excludes `ParachainSystem`
 					| Call::Preimage(..)
 					| Call::Proxy(..)
+					| Call::PublicCredentials(..)
 					| Call::Scheduler(..)
 					| Call::Session(..)
-					// Excludes `Sudo`
 					| Call::System(..)
 					| Call::TechnicalCommittee(..)
 					| Call::TechnicalMembership(..)
@@ -755,16 +766,21 @@ impl InstanceFilter<Call> for ProxyType {
 						attestation::Call::add { .. }
 							| attestation::Call::remove { .. }
 							| attestation::Call::revoke { .. }
+							| attestation::Call::change_deposit_owner { .. }
+							| attestation::Call::update_deposit { .. }
 					)
 					| Call::Authorship(..)
 					// Excludes `Balances`
-					| Call::Council(..) | Call::Ctype(..)
+					| Call::Council(..)
+					| Call::Ctype(..)
 					| Call::Delegation(
 						// Excludes `reclaim_deposit`
 						delegation::Call::add_delegation { .. }
 							| delegation::Call::create_hierarchy { .. }
 							| delegation::Call::remove_delegation { .. }
 							| delegation::Call::revoke_delegation { .. }
+							| delegation::Call::update_deposit { .. }
+							| delegation::Call::change_deposit_owner { .. }
 					)
 					| Call::Democracy(..)
 					| Call::Did(
@@ -781,6 +797,8 @@ impl InstanceFilter<Call> for ProxyType {
 							| did::Call::set_authentication_key { .. }
 							| did::Call::set_delegation_key { .. }
 							| did::Call::submit_did_call { .. }
+							| did::Call::update_deposit { .. }
+							| did::Call::change_deposit_owner { .. }
 					)
 					| Call::DidLookup(
 						// Excludes `reclaim_deposit`
@@ -788,12 +806,23 @@ impl InstanceFilter<Call> for ProxyType {
 							| pallet_did_lookup::Call::associate_sender { .. }
 							| pallet_did_lookup::Call::remove_account_association { .. }
 							| pallet_did_lookup::Call::remove_sender_association { .. }
+							| pallet_did_lookup::Call::update_deposit { .. }
+							| pallet_did_lookup::Call::change_deposit_owner { .. }
 					)
 					| Call::Indices(..)
 					| Call::ParachainStaking(..)
 					// Excludes `ParachainSystem`
 					| Call::Preimage(..)
 					| Call::Proxy(..)
+					| Call::PublicCredentials(
+						// Excludes `reclaim_deposit`
+						public_credentials::Call::add { .. }
+						| public_credentials::Call::revoke { .. }
+						| public_credentials::Call::unrevoke { .. }
+						| public_credentials::Call::remove { .. }
+						| public_credentials::Call::update_deposit { .. }
+						| public_credentials::Call::change_deposit_owner { .. }
+					)
 					| Call::Scheduler(..)
 					| Call::Session(..)
 					// Excludes `Sudo`
@@ -810,6 +839,8 @@ impl InstanceFilter<Call> for ProxyType {
 						pallet_web3_names::Call::claim { .. }
 							| pallet_web3_names::Call::release_by_owner { .. }
 							| pallet_web3_names::Call::unban { .. }
+							| pallet_web3_names::Call::update_deposit { .. }
+							| pallet_web3_names::Call::change_deposit_owner { .. }
 					),
 			),
 			ProxyType::Governance => matches!(
@@ -827,6 +858,7 @@ impl InstanceFilter<Call> for ProxyType {
 			ProxyType::CancelProxy => matches!(c, Call::Proxy(pallet_proxy::Call::reject_announcement { .. })),
 		}
 	}
+
 	fn is_superset(&self, o: &Self) -> bool {
 		match (self, o) {
 			(x, y) if x == y => true,
@@ -844,23 +876,6 @@ impl InstanceFilter<Call> for ProxyType {
 			_ => false,
 		}
 	}
-}
-
-type DynFilterOrigin = EitherOfDiverse<
-	EnsureRoot<AccountId>,
-	pallet_collective::EnsureProportionAtLeast<AccountId, CouncilCollective, 1, 1>,
->;
-
-impl pallet_dyn_filter::Config for Runtime {
-	type Event = Event;
-	type WeightInfo = pallet_dyn_filter::default_weights::SubstrateWeight<Runtime>;
-
-	type ApproveOrigin = DynFilterOrigin;
-
-	type TransferCall = filter::TransferCalls;
-	type FeatureCall = filter::FeatureCalls;
-	type XcmCall = filter::XcmCalls;
-	type SystemCall = filter::SystemCalls;
 }
 
 impl pallet_proxy::Config for Runtime {
@@ -894,11 +909,12 @@ construct_runtime! {
 		Sudo: pallet_sudo = 8,
 
 		// Consensus support.
-		// The following order MUST NOT be changed: Authorship -> Staking -> Session -> Aura -> AuraExt
-		Authorship: pallet_authorship::{Pallet, Call, Storage} = 20,
-		ParachainStaking: parachain_staking = 21,
-		Session: pallet_session = 22,
+		// The following order MUST NOT be changed: Aura -> Session -> Staking -> Authorship -> AuraExt
+		// Dependencies: AuraExt on Aura, Authorship and Session on ParachainStaking
 		Aura: pallet_aura = 23,
+		Session: pallet_session = 22,
+		ParachainStaking: parachain_staking = 21,
+		Authorship: pallet_authorship::{Pallet, Call, Storage} = 20,
 		AuraExt: cumulus_pallet_aura_ext = 24,
 
 		// Governance stuff
@@ -908,8 +924,8 @@ construct_runtime! {
 		// placeholder: parachain council election = 33,
 		TechnicalMembership: pallet_membership::<Instance1> = 34,
 		Treasury: pallet_treasury = 35,
-		RelayMigration: pallet_relay_migration::{Pallet, Call, Storage, Event<T>} = 36,
-		DynFilter: pallet_dyn_filter = 37,
+		// DELETED: RelayMigration: pallet_relay_migration::{Pallet, Call, Storage, Event<T>} = 36,
+		// DELETED: DynFilter: pallet_dyn_filter = 37,
 
 		// Utility module.
 		Utility: pallet_utility = 40,
@@ -940,6 +956,7 @@ construct_runtime! {
 		Inflation: pallet_inflation = 66,
 		DidLookup: pallet_did_lookup = 67,
 		Web3Names: pallet_web3_names = 68,
+		PublicCredentials: public_credentials = 69,
 
 		// Parachains pallets. Start indices at 80 to leave room.
 
@@ -988,8 +1005,10 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 			Call::Did { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
 			Call::Web3Names { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
 			Call::DidLookup { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
+			Call::PublicCredentials { .. } => Ok(did::DidVerificationKeyRelationship::AssertionMethod),
 			Call::Utility(pallet_utility::Call::batch { calls }) => single_key_relationship(&calls[..]),
 			Call::Utility(pallet_utility::Call::batch_all { calls }) => single_key_relationship(&calls[..]),
+			Call::Utility(pallet_utility::Call::force_batch { calls }) => single_key_relationship(&calls[..]),
 			#[cfg(not(feature = "runtime-benchmarks"))]
 			_ => Err(did::RelationshipDeriveError::NotCallableByDid),
 			// By default, returns the authentication key
@@ -1035,10 +1054,9 @@ pub type Executive = frame_executive::Executive<
 	Block,
 	frame_system::ChainContext<Runtime>,
 	Runtime,
-	// Executes pallet hooks in reverse order of definition in construct_runtime
-	// If we want to switch to AllPalletsWithSystem, we need to reorder the staking pallets
-	AllPalletsReversedWithSystemFirst,
-	EthereumMigration<Runtime>,
+	// Executes pallet hooks in the order of definition in construct_runtime
+	AllPalletsWithSystem,
+	parachain_staking::migration::StakingPayoutRefactor<Runtime>,
 >;
 
 impl_runtime_apis! {
@@ -1145,7 +1163,7 @@ impl_runtime_apis! {
 		}
 	}
 
-	impl did_rpc_runtime_api::DidApi<
+	impl kilt_runtime_api_did::Did<
 		Block,
 		DidIdentifier,
 		AccountId,
@@ -1154,7 +1172,7 @@ impl_runtime_apis! {
 		Hash,
 		BlockNumber
 	> for Runtime {
-		fn query_did_by_w3n(name: Vec<u8>) -> Option<did_rpc_runtime_api::RawDidLinkedInfo<
+		fn query_by_web3_name(name: Vec<u8>) -> Option<kilt_runtime_api_did::RawDidLinkedInfo<
 				DidIdentifier,
 				AccountId,
 				LinkableAccountId,
@@ -1169,10 +1187,12 @@ impl_runtime_apis! {
 					did::Did::<Runtime>::get(&owner_info.owner).map(|details| (owner_info, details))
 				})
 				.map(|(owner_info, details)| {
-					let accounts = pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(&owner_info.owner).collect();
+					let accounts = pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(
+						&owner_info.owner,
+					).collect();
 					let service_endpoints = did::ServiceEndpoints::<Runtime>::iter_prefix(&owner_info.owner).map(|e| From::from(e.1)).collect();
 
-					did_rpc_runtime_api::RawDidLinkedInfo {
+					kilt_runtime_api_did::RawDidLinkedInfo{
 						identifier: owner_info.owner,
 						w3n: Some(name.into()),
 						accounts,
@@ -1182,8 +1202,8 @@ impl_runtime_apis! {
 			})
 		}
 
-		fn query_did_by_account_id(account: LinkableAccountId) -> Option<
-			did_rpc_runtime_api::RawDidLinkedInfo<
+		fn query_by_account(account: LinkableAccountId) -> Option<
+			kilt_runtime_api_did::RawDidLinkedInfo<
 				DidIdentifier,
 				AccountId,
 				LinkableAccountId,
@@ -1201,7 +1221,7 @@ impl_runtime_apis! {
 					let accounts = pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(&connection_record.did).collect();
 					let service_endpoints = did::ServiceEndpoints::<Runtime>::iter_prefix(&connection_record.did).map(|e| From::from(e.1)).collect();
 
-					did_rpc_runtime_api::RawDidLinkedInfo {
+					kilt_runtime_api_did::RawDidLinkedInfo {
 						identifier: connection_record.did,
 						w3n,
 						accounts,
@@ -1211,8 +1231,8 @@ impl_runtime_apis! {
 				})
 		}
 
-		fn query_did(did: DidIdentifier) -> Option<
-			did_rpc_runtime_api::RawDidLinkedInfo<
+		fn query(did: DidIdentifier) -> Option<
+			kilt_runtime_api_did::RawDidLinkedInfo<
 				DidIdentifier,
 				AccountId,
 				LinkableAccountId,
@@ -1226,13 +1246,40 @@ impl_runtime_apis! {
 			let accounts = pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(&did).collect();
 			let service_endpoints = did::ServiceEndpoints::<Runtime>::iter_prefix(&did).map(|e| From::from(e.1)).collect();
 
-			Some(did_rpc_runtime_api::RawDidLinkedInfo {
+			Some(kilt_runtime_api_did::RawDidLinkedInfo {
 				identifier: did,
 				w3n,
 				accounts,
 				service_endpoints,
 				details: details.into(),
 			})
+		}
+	}
+
+	impl kilt_runtime_api_public_credentials::PublicCredentials<Block, Vec<u8>, Hash, public_credentials::CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>>, PublicCredentialsFilter<Hash, AccountId>, PublicCredentialsApiError> for Runtime {
+		fn get_by_id(credential_id: Hash) -> Option<public_credentials::CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>>> {
+			let subject = public_credentials::CredentialSubjects::<Runtime>::get(&credential_id)?;
+			public_credentials::Credentials::<Runtime>::get(&subject, &credential_id)
+		}
+
+		fn get_by_subject(subject: Vec<u8>, filter: Option<PublicCredentialsFilter<Hash, AccountId>>) -> Result<Vec<(Hash, public_credentials::CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>>)>, PublicCredentialsApiError> {
+			let asset_did = AssetDid::try_from(subject).map_err(|_| PublicCredentialsApiError::InvalidSubjectId)?;
+			let credentials_prefix = public_credentials::Credentials::<Runtime>::iter_prefix(&asset_did);
+			if let Some(filter) = filter {
+				Ok(credentials_prefix.filter(|(_, entry)| filter.should_include(entry)).collect())
+			} else {
+				Ok(credentials_prefix.collect())
+			}
+		}
+	}
+
+	impl kilt_runtime_api_staking::Staking<Block, AccountId, Balance> for Runtime {
+		fn get_unclaimed_staking_rewards(account: &AccountId) -> Balance {
+			ParachainStaking::get_unclaimed_staking_rewards(account)
+		}
+
+		fn get_staking_rates() -> kilt_runtime_api_staking::StakingRates {
+			ParachainStaking::get_staking_rates()
 		}
 	}
 
@@ -1277,6 +1324,7 @@ impl_runtime_apis! {
 			list_benchmark!(list, extra, pallet_inflation, Inflation);
 			list_benchmark!(list, extra, parachain_staking, ParachainStaking);
 			list_benchmark!(list, extra, pallet_web3_names, Web3Names);
+			list_benchmark!(list, extra, public_credentials, PublicCredentials);
 
 			let storage_info = AllPalletsWithSystem::storage_info();
 
@@ -1343,6 +1391,7 @@ impl_runtime_apis! {
 			add_benchmark!(params, batches, pallet_inflation, Inflation);
 			add_benchmark!(params, batches, parachain_staking, ParachainStaking);
 			add_benchmark!(params, batches, pallet_web3_names, Web3Names);
+			add_benchmark!(params, batches, public_credentials, PublicCredentials);
 
 			// No benchmarks for these pallets
 			// add_benchmark!(params, batches, cumulus_pallet_parachain_system, ParachainSystem);
@@ -1356,12 +1405,20 @@ impl_runtime_apis! {
 	#[cfg(feature = "try-runtime")]
 	impl frame_try_runtime::TryRuntime<Block> for Runtime {
 		fn on_runtime_upgrade() -> (Weight, Weight) {
-			log::info!("try-runtime::on_runtime_upgrade peregrine runtime.");
+			log::info!("try-runtime::on_runtime_upgrade peregrine.");
 			let weight = Executive::try_runtime_upgrade().unwrap();
 			(weight, BlockWeights::get().max_block)
 		}
-		fn execute_block_no_check(block: Block) -> Weight {
-			Executive::execute_block_no_check(block)
+
+		fn execute_block(block: Block, state_root_check: bool, select: frame_try_runtime::TryStateSelect) -> Weight {
+			log::info!(
+				target: "runtime::peregrine", "try-runtime: executing block #{} ({:?}) / root checks: {:?} / sanity-checks: {:?}",
+				block.header.number,
+				block.header.hash(),
+				state_root_check,
+				select,
+			);
+			Executive::try_execute_block(block, state_root_check, select).expect("try_execute_block failed")
 		}
 	}
 }

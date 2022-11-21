@@ -22,7 +22,6 @@ use sp_runtime::AccountId32;
 
 use crate::account::AccountId20;
 
-#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, MaxEncodedLen, TypeInfo)]
 pub enum LinkableAccountId {
 	AccountId20(AccountId20),
