@@ -12,7 +12,7 @@ cargo_run_benchmarks="cargo run --locked --quiet --profile=production"
 current_folder="$(basename "$PWD")"
 
 get_arg optional --repo "$@"
-repository="${out:=$current_folder}"
+repository="mashnet-node"
 
 echo "Repo: $repository"
 
