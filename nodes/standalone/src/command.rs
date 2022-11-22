@@ -47,7 +47,7 @@ impl SubstrateCli for Cli {
 	}
 
 	fn support_url() -> String {
-		"https://github.com/KILTprotocol/mashnet-node/issues/new".to_string()
+		"https://github.com/KILTprotocol/kilt-node/issues/new".to_string()
 	}
 
 	fn copyright_start_year() -> i32 {

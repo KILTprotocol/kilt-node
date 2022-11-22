@@ -16,51 +16,107 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use crate::{Config, ConnectedAccounts, ConnectedDids, Pallet};
+use crate::{linkable_account::LinkableAccountId, AccountIdOf, Config, ConnectionRecordOf, DidIdentifierOf, Pallet};
+
+use crate::{ConnectedAccounts as ConnectedAccountsV2, ConnectedDids as ConnectedDidsV2};
+
 use frame_support::{
-	dispatch::Weight,
+	storage_alias,
 	traits::{Get, GetStorageVersion, OnRuntimeUpgrade},
+	Blake2_128Concat,
 };
-use sp_std::marker::PhantomData;
+use sp_std::{marker::PhantomData, vec};
 
-pub struct LookupReverseIndexMigration<T>(PhantomData<T>);
+#[cfg(feature = "try-runtime")]
+use frame_support::traits::OnRuntimeUpgradeHelpersExt;
+#[cfg(feature = "try-runtime")]
+use sp_runtime::SaturatedConversion;
 
-impl<T: Config> OnRuntimeUpgrade for LookupReverseIndexMigration<T> {
+#[storage_alias]
+type ConnectedDids<T: Config> = StorageMap<Pallet<T>, Blake2_128Concat, AccountIdOf<T>, ConnectionRecordOf<T>>;
+#[storage_alias]
+type ConnectedAccounts<T: Config> =
+	StorageDoubleMap<Pallet<T>, Blake2_128Concat, DidIdentifierOf<T>, Blake2_128Concat, AccountIdOf<T>, ()>;
+
+pub struct EthereumMigration<T>(PhantomData<T>);
+
+impl<T: crate::pallet::Config> OnRuntimeUpgrade for EthereumMigration<T>
+where
+	T::AccountId: Into<LinkableAccountId>,
+{
+	fn on_runtime_upgrade() -> frame_support::weights::Weight {
+		if Pallet::<T>::on_chain_storage_version() == Pallet::<T>::current_storage_version() {
+			// already on version 3
+			<T as frame_system::Config>::DbWeight::get().reads_writes(1, 0)
+		} else {
+			log::info!("🔎 DidLookup: Initiating migration");
+			let mut connected_dids = 0u64;
+			let mut connected_accounts = 0u64;
+
+			// Migrate connected DIDs
+			// We should not write to the same storage item during drain because it can lead
+			// to undefined results. Thus, we write to a temporary storage and move that at
+			// the end. Else we iterate over every key more or less twice.
+			let mut connected_dids_buffer = vec![];
+			for (acc_id32, value) in ConnectedDids::<T>::drain() {
+				let acc_id: LinkableAccountId = acc_id32.into();
+				connected_dids_buffer.push((acc_id, value));
+				connected_dids = connected_dids.saturating_add(1);
+			}
+			for (acc_id, value) in &connected_dids_buffer {
+				ConnectedDidsV2::<T>::insert(acc_id, value);
+			}
+			log::info!("🔎 DidLookup: Migrated all ConnectedDids");
+
+			// Migrate accounts
+			let mut connected_accounts_buffer = vec![];
+			for (did_id, acc_id32, val) in ConnectedAccounts::<T>::drain() {
+				let acc_id: LinkableAccountId = acc_id32.into();
+				connected_accounts_buffer.push((did_id, acc_id, val));
+				connected_accounts = connected_accounts.saturating_add(1);
+			}
+			for (did_id, acc_id, val) in &connected_accounts_buffer {
+				ConnectedAccountsV2::<T>::insert(did_id, acc_id, val);
+			}
+			log::info!("🔎 DidLookup: Migrated all ConnectedAccounts");
+
+			Pallet::<T>::current_storage_version().put::<Pallet<T>>();
+
+			<T as frame_system::Config>::DbWeight::get().reads_writes(
+				// read every entry in ConnectedDids and ConnectedAccounts
+				connected_dids
+					.saturating_add(connected_accounts)
+					// read the storage version
+					.saturating_add(1),
+				// for every storage entry remove the old + put the new entries
+				(connected_dids.saturating_add(connected_accounts))
+					.saturating_mul(2)
+					// +1 for updating the storage version
+					.saturating_add(1),
+			)
+		}
+	}
+
 	#[cfg(feature = "try-runtime")]
 	fn pre_upgrade() -> Result<(), &'static str> {
 		assert!(Pallet::<T>::on_chain_storage_version() < Pallet::<T>::current_storage_version());
-		assert_eq!(ConnectedAccounts::<T>::iter().count(), 0);
 
+		// Store number of connected DIDs in temp storage
+		let connected_did_count: u64 = ConnectedDids::<T>::iter_keys().count().saturated_into();
+		Self::set_temp_storage(connected_did_count, "pre_connected_did_count");
 		log::info!(
-			"👥  DID lookup pallet to {:?} passes PRE migrate checks ✅",
-			Pallet::<T>::current_storage_version()
+			"🔎 DidLookup pre migration: Number of connected DIDs {:?}",
+			connected_did_count
 		);
 
+		// Store number of connected accounts in temp storage
+		let connected_account_count: u64 = ConnectedAccounts::<T>::iter_keys().count().saturated_into();
+		Self::set_temp_storage(connected_account_count, "pre_connected_account_count");
+		log::info!(
+			"🔎 DidLookup pre migration: Number of connected accounts {:?}",
+			connected_account_count
+		);
 		Ok(())
-	}
-
-	fn on_runtime_upgrade() -> frame_support::weights::Weight {
-		// Account for the new storage version written below.
-		let initial_weight = T::DbWeight::get().writes(1);
-
-		// Origin was disabled, so there cannot be any existing links. But we check just
-		// to be sure.
-		let total_weight: Weight =
-			ConnectedDids::<T>::iter().fold(initial_weight, |total_weight, (account, record)| {
-				ConnectedAccounts::<T>::insert(record.did, account, ());
-				// One read for the `ConnectedDids` entry, one write for the new
-				// `ConnectedAccounts` entry.
-				total_weight.saturating_add(T::DbWeight::get().reads_writes(1, 1))
-			});
-
-		Pallet::<T>::current_storage_version().put::<Pallet<T>>();
-
-		log::info!(
-			"👥  completed DID lookup pallet migration to {:?} ✅",
-			Pallet::<T>::current_storage_version()
-		);
-
-		total_weight
 	}
 
 	#[cfg(feature = "try-runtime")]
@@ -70,20 +126,20 @@ impl<T: Config> OnRuntimeUpgrade for LookupReverseIndexMigration<T> {
 			Pallet::<T>::current_storage_version()
 		);
 
-		// Verify DID -> Account integrity.
-		ConnectedDids::<T>::iter().for_each(|(account, record)| {
-			assert!(ConnectedAccounts::<T>::contains_key(record.did, account));
-		});
-		// Verify Account -> DID integrity.
-		ConnectedAccounts::<T>::iter().for_each(|(did, account, _)| {
-			let entry = ConnectedDids::<T>::get(account).expect("Should find a record for the given account.");
-			assert_eq!(entry.did, did);
-		});
-
-		log::info!(
-			"👥  DID lookup pallet to {:?} passes POST migrate checks ✅",
-			Pallet::<T>::current_storage_version()
+		// Check number of connected DIDs and accounts against pre-check result
+		let pre_connected_did_count = Self::get_temp_storage("pre_connected_did_count").unwrap_or(0u64);
+		let pre_connected_account_count = Self::get_temp_storage("pre_connected_account_count").unwrap_or(0u64);
+		assert_eq!(
+			ConnectedDidsV2::<T>::iter().count().saturated_into::<u64>(),
+			pre_connected_did_count,
+			"Number of connected DIDs does not match"
 		);
+		assert_eq!(
+			ConnectedAccountsV2::<T>::iter_keys().count().saturated_into::<u64>(),
+			pre_connected_account_count,
+			"Number of connected accounts does not match"
+		);
+		log::info!("🔎 DidLookup: Post migration checks successful");
 
 		Ok(())
 	}

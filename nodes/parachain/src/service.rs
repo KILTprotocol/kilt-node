@@ -251,7 +251,7 @@ where
 		+ sp_block_builder::BlockBuilder<Block>
 		+ cumulus_primitives_core::CollectCollationInfo<Block>
 		+ pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>
-		+ frame_rpc_system::AccountNonceApi<Block, AccountId, Index>,
+		+ substrate_frame_rpc_system::AccountNonceApi<Block, AccountId, Index>,
 	sc_client_api::StateBackendFor<TFullBackend<Block>, Block>: sp_api::StateBackend<BlakeTwo256>,
 	Executor: sc_executor::NativeExecutionDispatch + 'static,
 	RB: FnOnce(
@@ -438,7 +438,7 @@ where
 		+ sp_api::ApiExt<Block, StateBackend = sc_client_api::StateBackendFor<TFullBackend<Block>, Block>>
 		+ sp_offchain::OffchainWorkerApi<Block>
 		+ sp_block_builder::BlockBuilder<Block>
-		+ frame_rpc_system::AccountNonceApi<Block, AccountId, Index>
+		+ substrate_frame_rpc_system::AccountNonceApi<Block, AccountId, Index>
 		+ pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>
 		+ sp_consensus_aura::AuraApi<Block, AuthorityId>
 		+ cumulus_primitives_core::CollectCollationInfo<Block>,
@@ -486,7 +486,7 @@ where
 		+ sp_api::ApiExt<Block, StateBackend = sc_client_api::StateBackendFor<TFullBackend<Block>, Block>>
 		+ sp_offchain::OffchainWorkerApi<Block>
 		+ sp_block_builder::BlockBuilder<Block>
-		+ frame_rpc_system::AccountNonceApi<Block, AccountId, Index>
+		+ substrate_frame_rpc_system::AccountNonceApi<Block, AccountId, Index>
 		+ pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>
 		+ sp_consensus_aura::AuraApi<Block, AuthorityId>
 		+ cumulus_primitives_core::CollectCollationInfo<Block>,

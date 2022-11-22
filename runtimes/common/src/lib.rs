@@ -16,8 +16,6 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-//! Primitives used by the Parachains Tick, Trick and Track.
-
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use constants::{AVERAGE_ON_INITIALIZE_RATIO, MAXIMUM_BLOCK_WEIGHT, NORMAL_DISPATCH_RATIO};
@@ -42,8 +40,10 @@ use sp_runtime::{
 };
 use sp_std::marker::PhantomData;
 
+pub mod assets;
 pub mod authorization;
 pub mod constants;
+pub mod errors;
 pub mod fees;
 pub mod migrations;
 pub mod pallet_id;

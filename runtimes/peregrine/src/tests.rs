@@ -20,15 +20,17 @@ use codec::MaxEncodedLen;
 use frame_support::{traits::Currency, BoundedVec};
 
 use did::DeriveDidCallAuthorizationVerificationKeyRelationship;
+use pallet_did_lookup::associate_account_request::AssociateAccountRequest;
 use pallet_treasury::BalanceOf;
 use pallet_web3_names::{Web3NameOf, Web3OwnershipOf};
-use runtime_common::constants::{
-	attestation::MAX_ATTESTATION_BYTE_LENGTH, did::MAX_DID_BYTE_LENGTH, did_lookup::MAX_CONNECTION_BYTE_LENGTH,
-	web3_names::MAX_NAME_BYTE_LENGTH, MAX_INDICES_BYTE_LENGTH,
+use runtime_common::{
+	constants::{
+		attestation::MAX_ATTESTATION_BYTE_LENGTH, did::MAX_DID_BYTE_LENGTH, did_lookup::MAX_CONNECTION_BYTE_LENGTH,
+		public_credentials::MAX_PUBLIC_CREDENTIAL_STORAGE_LENGTH, web3_names::MAX_NAME_BYTE_LENGTH,
+		MAX_INDICES_BYTE_LENGTH,
+	},
+	AccountId, BlockNumber,
 };
-
-#[cfg(test)]
-use runtime_common::{AccountId, BlockNumber};
 
 use super::{Call, Runtime};
 
@@ -101,6 +103,20 @@ fn indices_storage_sizes() {
 }
 
 #[test]
+fn public_credentials_storage_sizes() {
+	// Stored in Credentials
+	let credential_entry_max_size = public_credentials::CredentialEntryOf::<Runtime>::max_encoded_len();
+	// Stored in CredentialsUnicityIndex
+	let subject_id_max_size = <Runtime as public_credentials::Config>::SubjectId::max_encoded_len();
+
+	// Each credential would have a different deposit, so no multiplier here
+	assert_eq!(
+		credential_entry_max_size + subject_id_max_size,
+		MAX_PUBLIC_CREDENTIAL_STORAGE_LENGTH as usize
+	)
+}
+
+#[test]
 fn test_derive_did_verification_relation_ctype() {
 	let c1 = Call::Ctype(ctype::Call::add {
 		ctype: vec![0, 1, 2, 3],
@@ -144,9 +160,11 @@ fn test_derive_did_key_web3name() {
 fn test_derive_did_key_lookup() {
 	assert_eq!(
 		Call::DidLookup(pallet_did_lookup::Call::associate_account {
-			account: AccountId::new([1u8; 32]),
+			req: AssociateAccountRequest::Dotsama(
+				AccountId::new([1u8; 32]),
+				sp_runtime::MultiSignature::from(sp_core::ed25519::Signature([0; 64]))
+			),
 			expiration: BlockNumber::default(),
-			proof: sp_runtime::MultiSignature::from(sp_core::ed25519::Signature([0; 64])),
 		})
 		.derive_verification_key_relationship(),
 		Ok(did::DidVerificationKeyRelationship::Authentication)
@@ -154,7 +172,7 @@ fn test_derive_did_key_lookup() {
 
 	assert_eq!(
 		Call::DidLookup(pallet_did_lookup::Call::remove_account_association {
-			account: AccountId::new([1u8; 32]),
+			account: AccountId::new([1u8; 32]).into(),
 		})
 		.derive_verification_key_relationship(),
 		Ok(did::DidVerificationKeyRelationship::Authentication)

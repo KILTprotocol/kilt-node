@@ -34,7 +34,7 @@ use kilt_support::deposit::Deposit;
 
 use crate::{
 	pallet::AuthorizationIdOf, AccountIdOf, AttestationAccessControl, AttestationDetails, AttesterOf, BalanceOf,
-	ClaimHashOf, Config,
+	ClaimHashOf, Config, CurrencyOf,
 };
 
 #[cfg(test)]
@@ -62,6 +62,18 @@ where
 	T: Config,
 	T::Hash: From<H256>,
 {
+	generate_base_attestation_with_deposit(attester, payer, <T as Config>::Deposit::get())
+}
+
+pub fn generate_base_attestation_with_deposit<T>(
+	attester: AttesterOf<T>,
+	payer: AccountIdOf<T>,
+	deposit: BalanceOf<T>,
+) -> AttestationDetails<T>
+where
+	T: Config,
+	T::Hash: From<H256>,
+{
 	AttestationDetails {
 		attester,
 		authorization_id: None,
@@ -69,7 +81,7 @@ where
 		revoked: false,
 		deposit: Deposit::<AccountIdOf<T>, BalanceOf<T>> {
 			owner: payer,
-			amount: <T as Config>::Deposit::get(),
+			amount: deposit,
 		},
 	}
 }
@@ -141,8 +153,11 @@ where
 }
 
 pub fn insert_attestation<T: Config>(claim_hash: ClaimHashOf<T>, details: AttestationDetails<T>) {
-	crate::Pallet::<T>::reserve_deposit(details.deposit.owner.clone(), details.deposit.amount)
-		.expect("Should have balance");
+	kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
+		details.deposit.owner.clone(),
+		details.deposit.amount,
+	)
+	.expect("Should have balance");
 
 	crate::Attestations::<T>::insert(&claim_hash, details.clone());
 	if let Some(delegation_id) = details.authorization_id.as_ref() {
