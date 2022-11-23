@@ -16,16 +16,21 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::parameter_types;
-use kilt_support::mock::{mock_origin, SubjectId};
+use frame_support::{parameter_types, traits::ReservableCurrency};
+use kilt_support::{
+	deposit::Deposit,
+	mock::{mock_origin, SubjectId},
+};
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
 	MultiSignature,
 };
 
-use crate as pallet_did_lookup;
-
+use crate::{
+	self as pallet_did_lookup, AccountIdOf, BalanceOf, Config, ConnectedAccounts, ConnectedDids, ConnectionRecord,
+	CurrencyOf, DidIdentifierOf,
+};
 pub(crate) type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 pub(crate) type Block = frame_system::mocking::MockBlock<Test>;
 pub(crate) type Hash = sp_core::H256;
@@ -129,9 +134,36 @@ pub(crate) const ACCOUNT_01: AccountId = AccountId::new([2u8; 32]);
 pub(crate) const DID_00: SubjectId = SubjectId(ACCOUNT_00);
 pub(crate) const DID_01: SubjectId = SubjectId(ACCOUNT_01);
 
+pub(crate) fn insert_raw_connection<T: Config>(
+	sender: AccountIdOf<T>,
+	did_identifier: DidIdentifierOf<T>,
+	account: AccountIdOf<T>,
+	deposit: BalanceOf<T>,
+) {
+	let deposit = Deposit {
+		owner: sender,
+		amount: deposit,
+	};
+	let record = ConnectionRecord {
+		deposit,
+		did: did_identifier.clone(),
+	};
+
+	CurrencyOf::<T>::reserve(&record.deposit.owner, record.deposit.amount).expect("Account should have enough balance");
+
+	ConnectedDids::<T>::mutate(&account, |did_entry| {
+		if let Some(old_connection) = did_entry.replace(record) {
+			ConnectedAccounts::<T>::remove(&old_connection.did, &account);
+			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&old_connection.deposit);
+		}
+	});
+	ConnectedAccounts::<T>::insert(&did_identifier, &account, ());
+}
+
 #[derive(Clone, Default)]
 pub struct ExtBuilder {
 	balances: Vec<(AccountId, Balance)>,
+	/// list of connection (sender, did, connected address)
 	connections: Vec<(AccountId, SubjectId, AccountId)>,
 }
 
@@ -142,6 +174,7 @@ impl ExtBuilder {
 		self
 	}
 
+	/// Add a connection: (sender, did, connected address)
 	#[must_use]
 	pub fn with_connections(mut self, connections: Vec<(AccountId, SubjectId, AccountId)>) -> Self {
 		self.connections = connections;

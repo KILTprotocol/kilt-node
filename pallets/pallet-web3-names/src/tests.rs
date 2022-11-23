@@ -22,8 +22,9 @@ use frame_system::RawOrigin;
 use kilt_support::{deposit::Deposit, mock::mock_origin};
 use sp_runtime::{traits::Zero, DispatchError};
 
-use crate::{mock::*, Banned, Error, Names, Owner, Pallet, Web3OwnershipOf};
+use crate::{mock::*, Banned, Config, Error, Names, Owner, Pallet, Web3OwnershipOf};
 
+// #############################################################################
 // Name claiming
 
 #[test]
@@ -60,7 +61,7 @@ fn claiming_successful() {
 				}
 			);
 			// Test that the deposit was reserved correctly.
-			assert_eq!(Balances::reserved_balance(ACCOUNT_00), Web3NameDeposit::get(),);
+			assert_eq!(Balances::reserved_balance(ACCOUNT_00), Web3NameDeposit::get());
 			assert_eq!(
 				Balances::free_balance(ACCOUNT_00),
 				initial_balance - Web3NameDeposit::get(),
@@ -120,7 +121,7 @@ fn claiming_invalid() {
 			}
 			for input in invalid_web3_names.iter() {
 				assert_noop!(
-					Pallet::<Test>::claim(mock_origin::DoubleOrigin(ACCOUNT_00, DID_00).into(), input.clone(),),
+					Pallet::<Test>::claim(mock_origin::DoubleOrigin(ACCOUNT_00, DID_00).into(), input.clone()),
 					Error::<Test>::InvalidWeb3NameCharacter,
 				);
 			}
@@ -156,6 +157,7 @@ fn claiming_not_enough_funds() {
 		})
 }
 
+// #############################################################################
 // Name releasing
 
 #[test]
@@ -209,7 +211,7 @@ fn releasing_not_found() {
 	ExtBuilder::default().build().execute_with(|| {
 		// Fail to claim by owner
 		assert_noop!(
-			Pallet::<Test>::release_by_owner(mock_origin::DoubleOrigin(ACCOUNT_00, DID_00).into(),),
+			Pallet::<Test>::release_by_owner(mock_origin::DoubleOrigin(ACCOUNT_00, DID_00).into()),
 			Error::<Test>::OwnerNotFound
 		);
 		// Fail to claim by payer
@@ -244,7 +246,7 @@ fn releasing_banned() {
 		.build()
 		.execute_with(|| {
 			assert_noop!(
-				Pallet::<Test>::release_by_owner(mock_origin::DoubleOrigin(ACCOUNT_00, DID_00).into(),),
+				Pallet::<Test>::release_by_owner(mock_origin::DoubleOrigin(ACCOUNT_00, DID_00).into()),
 				// A banned name will be removed from the map of used names, so it will be considered not
 				// existing.
 				Error::<Test>::OwnerNotFound
@@ -252,6 +254,7 @@ fn releasing_banned() {
 		})
 }
 
+// #############################################################################
 // Name banning
 
 #[test]
@@ -265,7 +268,7 @@ fn banning_successful() {
 		.build()
 		.execute_with(|| {
 			// Ban a claimed name
-			assert_ok!(Pallet::<Test>::ban(RawOrigin::Root.into(), web3_name_00.clone().0),);
+			assert_ok!(Pallet::<Test>::ban(RawOrigin::Root.into(), web3_name_00.clone().0));
 
 			assert!(Names::<Test>::get(&DID_00).is_none());
 			assert!(Owner::<Test>::get(&web3_name_00).is_none());
@@ -275,7 +278,7 @@ fn banning_successful() {
 			assert_eq!(Balances::free_balance(ACCOUNT_00), initial_balance);
 
 			// Ban an unclaimed name
-			assert_ok!(Pallet::<Test>::ban(RawOrigin::Root.into(), web3_name_01.clone().0),);
+			assert_ok!(Pallet::<Test>::ban(RawOrigin::Root.into(), web3_name_01.clone().0));
 
 			assert!(Owner::<Test>::get(&web3_name_01).is_none());
 			assert!(Banned::<Test>::get(&web3_name_01).is_some());
@@ -316,6 +319,7 @@ fn banning_unauthorized_origin() {
 	})
 }
 
+// #############################################################################
 // Name unbanning
 
 #[test]
@@ -326,7 +330,7 @@ fn unbanning_successful() {
 		.with_banned_web3_names(vec![web3_name_00.clone()])
 		.build()
 		.execute_with(|| {
-			assert_ok!(Pallet::<Test>::unban(RawOrigin::Root.into(), web3_name_00.clone().0),);
+			assert_ok!(Pallet::<Test>::unban(RawOrigin::Root.into(), web3_name_00.clone().0));
 
 			// Test that claiming is possible again
 			assert_ok!(Pallet::<Test>::claim(
@@ -366,6 +370,132 @@ fn unbanning_unauthorized_origin() {
 					web3_name_00.clone().0
 				),
 				DispatchError::BadOrigin
+			);
+		})
+}
+
+// #############################################################################
+// transfer deposit
+
+#[test]
+fn test_change_deposit_owner() {
+	let web3_name_00 = get_web3_name(WEB3_NAME_00_INPUT);
+	let initial_balance: Balance = <Test as Config>::Deposit::get() * 100;
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, initial_balance), (ACCOUNT_01, initial_balance)])
+		.with_web3_names(vec![(DID_00, web3_name_00.clone(), ACCOUNT_00)])
+		.build()
+		.execute_with(|| {
+			assert_ok!(Pallet::<Test>::change_deposit_owner(
+				mock_origin::DoubleOrigin(ACCOUNT_01, DID_00).into(),
+			));
+			assert_eq!(
+				Owner::<Test>::get(&web3_name_00)
+					.expect("w3n should be retained")
+					.deposit,
+				Deposit {
+					owner: ACCOUNT_01,
+					amount: <Test as Config>::Deposit::get()
+				}
+			);
+			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
+			assert_eq!(Balances::reserved_balance(ACCOUNT_01), <Test as Config>::Deposit::get());
+		})
+}
+
+#[test]
+fn test_change_deposit_owner_insufficient_balance() {
+	let web3_name_00 = get_web3_name(WEB3_NAME_00_INPUT);
+	let initial_balance: Balance = <Test as Config>::Deposit::get() * 100;
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, initial_balance)])
+		.with_web3_names(vec![(DID_00, web3_name_00, ACCOUNT_00)])
+		.build()
+		.execute_with(|| {
+			assert_noop!(
+				Pallet::<Test>::change_deposit_owner(mock_origin::DoubleOrigin(ACCOUNT_01, DID_00).into()),
+				pallet_balances::Error::<Test>::InsufficientBalance
+			);
+		})
+}
+
+#[test]
+fn test_change_deposit_owner_not_found() {
+	let web3_name_00 = get_web3_name(WEB3_NAME_00_INPUT);
+	let initial_balance: Balance = <Test as Config>::Deposit::get() * 100;
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, initial_balance)])
+		.with_web3_names(vec![(DID_00, web3_name_00, ACCOUNT_00)])
+		.build()
+		.execute_with(|| {
+			assert_noop!(
+				Pallet::<Test>::change_deposit_owner(mock_origin::DoubleOrigin(ACCOUNT_00, DID_01).into()),
+				Error::<Test>::Web3NameNotFound
+			);
+		})
+}
+
+#[test]
+fn test_update_deposit() {
+	let web3_name_00 = get_web3_name(WEB3_NAME_00_INPUT);
+	let initial_balance: Balance = <Test as Config>::Deposit::get() * 100;
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, initial_balance)])
+		.build()
+		.execute_with(|| {
+			insert_raw_w3n::<Test>(
+				ACCOUNT_00,
+				DID_00,
+				web3_name_00.clone(),
+				12,
+				<Test as Config>::Deposit::get() * 2,
+			);
+			assert_eq!(
+				Balances::reserved_balance(ACCOUNT_00),
+				<Test as Config>::Deposit::get() * 2
+			);
+			assert_ok!(Pallet::<Test>::update_deposit(
+				Origin::signed(ACCOUNT_00),
+				WEB3_NAME_00_INPUT.to_vec().try_into().unwrap()
+			));
+			assert_eq!(
+				Owner::<Test>::get(&web3_name_00)
+					.expect("w3n should be retained")
+					.deposit,
+				Deposit {
+					owner: ACCOUNT_00,
+					amount: <Test as Config>::Deposit::get()
+				}
+			);
+			assert_eq!(Balances::reserved_balance(ACCOUNT_00), <Test as Config>::Deposit::get());
+		})
+}
+
+#[test]
+fn test_update_deposit_unauthorized() {
+	let web3_name_00 = get_web3_name(WEB3_NAME_00_INPUT);
+	let initial_balance: Balance = <Test as Config>::Deposit::get() * 100;
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, initial_balance)])
+		.build()
+		.execute_with(|| {
+			insert_raw_w3n::<Test>(
+				ACCOUNT_00,
+				DID_00,
+				web3_name_00.clone(),
+				12,
+				<Test as Config>::Deposit::get() * 2,
+			);
+			assert_eq!(
+				Balances::reserved_balance(ACCOUNT_00),
+				<Test as Config>::Deposit::get() * 2
+			);
+			assert_noop!(
+				Pallet::<Test>::update_deposit(
+					Origin::signed(ACCOUNT_01),
+					WEB3_NAME_00_INPUT.to_vec().try_into().unwrap()
+				),
+				Error::<Test>::Unauthorized
 			);
 		})
 }

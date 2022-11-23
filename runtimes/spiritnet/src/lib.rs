@@ -84,10 +84,10 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("kilt-spiritnet"),
 	impl_name: create_runtime_str!("kilt-spiritnet"),
 	authoring_version: 1,
-	spec_version: 10750,
+	spec_version: 10801,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
-	transaction_version: 3,
+	transaction_version: 4,
 	state_version: 0,
 };
 
@@ -156,7 +156,7 @@ parameter_types! {
 impl pallet_timestamp::Config for Runtime {
 	/// A timestamp: milliseconds since the unix epoch.
 	type Moment = u64;
-	type OnTimestampSet = ();
+	type OnTimestampSet = Aura;
 	type MinimumPeriod = MinimumPeriod;
 	type WeightInfo = weights::pallet_timestamp::WeightInfo<Runtime>;
 }
@@ -644,11 +644,9 @@ impl parachain_staking::Config for Runtime {
 	type MinRequiredCollators = constants::staking::MinRequiredCollators;
 	type MaxDelegationsPerRound = constants::staking::MaxDelegationsPerRound;
 	type MaxDelegatorsPerCollator = constants::staking::MaxDelegatorsPerCollator;
-	type MaxCollatorsPerDelegator = constants::staking::MaxCollatorsPerDelegator;
 	type MinCollatorStake = constants::staking::MinCollatorStake;
 	type MinCollatorCandidateStake = constants::staking::MinCollatorStake;
 	type MaxTopCandidates = constants::staking::MaxCollatorCandidates;
-	type MinDelegation = constants::staking::MinDelegatorStake;
 	type MinDelegatorStake = constants::staking::MinDelegatorStake;
 	type MaxUnstakeRequests = constants::staking::MaxUnstakeRequests;
 	type NetworkRewardRate = constants::staking::NetworkRewardRate;
@@ -703,7 +701,8 @@ impl InstanceFilter<Call> for ProxyType {
 				Call::Attestation(..)
 					| Call::Authorship(..)
 					// Excludes `Balances`
-					| Call::Council(..) | Call::Ctype(..)
+					| Call::Council(..)
+					| Call::Ctype(..)
 					| Call::Delegation(..)
 					| Call::Democracy(..)
 					| Call::Did(..)
@@ -741,16 +740,21 @@ impl InstanceFilter<Call> for ProxyType {
 						attestation::Call::add { .. }
 							| attestation::Call::remove { .. }
 							| attestation::Call::revoke { .. }
+							| attestation::Call::change_deposit_owner { .. }
+							| attestation::Call::update_deposit { .. }
 					)
 					| Call::Authorship(..)
 					// Excludes `Balances`
-					| Call::Council(..) | Call::Ctype(..)
+					| Call::Council(..)
+					| Call::Ctype(..)
 					| Call::Delegation(
 						// Excludes `reclaim_deposit`
 						delegation::Call::add_delegation { .. }
 							| delegation::Call::create_hierarchy { .. }
 							| delegation::Call::remove_delegation { .. }
 							| delegation::Call::revoke_delegation { .. }
+							| delegation::Call::update_deposit { .. }
+							| delegation::Call::change_deposit_owner { .. }
 					)
 					| Call::Democracy(..)
 					| Call::Did(
@@ -767,6 +771,8 @@ impl InstanceFilter<Call> for ProxyType {
 							| did::Call::set_authentication_key { .. }
 							| did::Call::set_delegation_key { .. }
 							| did::Call::submit_did_call { .. }
+							| did::Call::update_deposit { .. }
+							| did::Call::change_deposit_owner { .. }
 					)
 					| Call::DidLookup(
 						// Excludes `reclaim_deposit`
@@ -774,6 +780,8 @@ impl InstanceFilter<Call> for ProxyType {
 							| pallet_did_lookup::Call::associate_sender { .. }
 							| pallet_did_lookup::Call::remove_account_association { .. }
 							| pallet_did_lookup::Call::remove_sender_association { .. }
+							| pallet_did_lookup::Call::update_deposit { .. }
+							| pallet_did_lookup::Call::change_deposit_owner { .. }
 					)
 					| Call::Indices(..)
 					| Call::ParachainStaking(..)
@@ -796,6 +804,8 @@ impl InstanceFilter<Call> for ProxyType {
 						pallet_web3_names::Call::claim { .. }
 							| pallet_web3_names::Call::release_by_owner { .. }
 							| pallet_web3_names::Call::unban { .. }
+							| pallet_web3_names::Call::update_deposit { .. }
+							| pallet_web3_names::Call::change_deposit_owner { .. }
 					),
 			),
 			ProxyType::Governance => matches!(
@@ -813,6 +823,7 @@ impl InstanceFilter<Call> for ProxyType {
 			ProxyType::CancelProxy => matches!(c, Call::Proxy(pallet_proxy::Call::reject_announcement { .. })),
 		}
 	}
+
 	fn is_superset(&self, o: &Self) -> bool {
 		match (self, o) {
 			(x, y) if x == y => true,
@@ -1005,10 +1016,10 @@ pub type Executive = frame_executive::Executive<
 	Block,
 	frame_system::ChainContext<Runtime>,
 	Runtime,
-	// Executes pallet hooks in reverse order of definition in construct_runtime
-	// If we want to switch to AllPalletsWithSystem, we need to reorder the staking pallets
+	// Executes pallet hooks in the order of definition in construct_runtime
 	AllPalletsWithSystem,
-	(),
+	// EthereumMigration<Runtime>,
+	parachain_staking::migration::StakingPayoutRefactor<Runtime>,
 >;
 
 impl_runtime_apis! {
@@ -1115,15 +1126,16 @@ impl_runtime_apis! {
 		}
 	}
 
-	impl did_rpc_runtime_api::DidApi<
+	impl kilt_runtime_api_did::Did<
 		Block,
 		DidIdentifier,
+		AccountId,
 		AccountId,
 		Balance,
 		Hash,
 		BlockNumber
 	> for Runtime {
-		fn query_did_by_w3n(name: Vec<u8>) -> Option<did_rpc_runtime_api::RawDidLinkedInfo<
+		fn query_by_web3_name(name: Vec<u8>) -> Option<kilt_runtime_api_did::RawDidLinkedInfo<
 				DidIdentifier,
 				AccountId,
 				Balance,
@@ -1137,98 +1149,12 @@ impl_runtime_apis! {
 					did::Did::<Runtime>::get(&owner_info.owner).map(|details| (owner_info, details))
 				})
 				.map(|(owner_info, details)| {
-					let accounts = pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(&owner_info.owner).collect();
+					let accounts = pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(
+						&owner_info.owner,
+					).collect();
 					let service_endpoints = did::ServiceEndpoints::<Runtime>::iter_prefix(&owner_info.owner).map(|e| From::from(e.1)).collect();
 
-					did_rpc_runtime_api::RawDidLinkedInfo {
-						identifier: owner_info.owner,
-						w3n: Some(name.into()),
-						accounts,
-						service_endpoints,
-						details: details.into(),
-					}
-			})
-		}
-
-		fn query_did_by_account_id(account: AccountId) -> Option<
-			did_rpc_runtime_api::RawDidLinkedInfo<
-				DidIdentifier,
-				AccountId,
-				Balance,
-				Hash,
-				BlockNumber
-			>
-		> {
-			pallet_did_lookup::ConnectedDids::<Runtime>::get(account)
-				.and_then(|owner_info| {
-					did::Did::<Runtime>::get(&owner_info.did).map(|details| (owner_info, details))
-				})
-				.map(|(connection_record, details)| {
-					let w3n = pallet_web3_names::Names::<Runtime>::get(&connection_record.did).map(Into::into);
-					let accounts = pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(&connection_record.did).collect();
-					let service_endpoints = did::ServiceEndpoints::<Runtime>::iter_prefix(&connection_record.did).map(|e| From::from(e.1)).collect();
-
-					did_rpc_runtime_api::RawDidLinkedInfo {
-						identifier: connection_record.did,
-						w3n,
-						accounts,
-						service_endpoints,
-						details: details.into(),
-					}
-				})
-		}
-
-		fn query_did(did: DidIdentifier) -> Option<
-			did_rpc_runtime_api::RawDidLinkedInfo<
-				DidIdentifier,
-				AccountId,
-				Balance,
-				Hash,
-				BlockNumber
-			>
-		> {
-			let details = did::Did::<Runtime>::get(&did)?;
-			let w3n = pallet_web3_names::Names::<Runtime>::get(&did).map(Into::into);
-			let accounts = pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(&did).collect();
-			let service_endpoints = did::ServiceEndpoints::<Runtime>::iter_prefix(&did).map(|e| From::from(e.1)).collect();
-
-			Some(did_rpc_runtime_api::RawDidLinkedInfo {
-				identifier: did,
-				w3n,
-				accounts,
-				service_endpoints,
-				details: details.into(),
-			})
-		}
-	}
-
-	impl did_rpc_runtime_api::Did<
-		Block,
-		DidIdentifier,
-		AccountId,
-		AccountId,
-		Balance,
-		Hash,
-		BlockNumber
-	> for Runtime {
-		fn query_by_web3_name(name: Vec<u8>) -> Option<did_rpc_runtime_api::RawDidLinkedInfo<
-				DidIdentifier,
-				AccountId,
-				Balance,
-				Hash,
-				BlockNumber
-			>
-		> {
-			let name: pallet_web3_names::web3_name::AsciiWeb3Name<Runtime> = name.try_into().ok()?;
-			pallet_web3_names::Owner::<Runtime>::get(&name)
-				.and_then(|owner_info| {
-					did::Did::<Runtime>::get(&owner_info.owner).map(|details| (owner_info, details))
-				})
-				.map(|(owner_info, details)| {
-					let accounts = pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(&owner_info.owner).collect();
-					let service_endpoints = did::ServiceEndpoints::<Runtime>::iter_prefix(&owner_info.owner).map(|e| From::from(e.1)).collect();
-
-					did_rpc_runtime_api::RawDidLinkedInfo {
+					kilt_runtime_api_did::RawDidLinkedInfo{
 						identifier: owner_info.owner,
 						w3n: Some(name.into()),
 						accounts,
@@ -1239,7 +1165,7 @@ impl_runtime_apis! {
 		}
 
 		fn query_by_account(account: AccountId) -> Option<
-			did_rpc_runtime_api::RawDidLinkedInfo<
+			kilt_runtime_api_did::RawDidLinkedInfo<
 				DidIdentifier,
 				AccountId,
 				Balance,
@@ -1256,7 +1182,7 @@ impl_runtime_apis! {
 					let accounts = pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(&connection_record.did).collect();
 					let service_endpoints = did::ServiceEndpoints::<Runtime>::iter_prefix(&connection_record.did).map(|e| From::from(e.1)).collect();
 
-					did_rpc_runtime_api::RawDidLinkedInfo {
+					kilt_runtime_api_did::RawDidLinkedInfo {
 						identifier: connection_record.did,
 						w3n,
 						accounts,
@@ -1267,7 +1193,7 @@ impl_runtime_apis! {
 		}
 
 		fn query(did: DidIdentifier) -> Option<
-			did_rpc_runtime_api::RawDidLinkedInfo<
+			kilt_runtime_api_did::RawDidLinkedInfo<
 				DidIdentifier,
 				AccountId,
 				Balance,
@@ -1280,13 +1206,23 @@ impl_runtime_apis! {
 			let accounts = pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(&did).collect();
 			let service_endpoints = did::ServiceEndpoints::<Runtime>::iter_prefix(&did).map(|e| From::from(e.1)).collect();
 
-			Some(did_rpc_runtime_api::RawDidLinkedInfo {
+			Some(kilt_runtime_api_did::RawDidLinkedInfo {
 				identifier: did,
 				w3n,
 				accounts,
 				service_endpoints,
 				details: details.into(),
 			})
+		}
+	}
+
+	impl kilt_runtime_api_staking::Staking<Block, AccountId, Balance> for Runtime {
+		fn get_unclaimed_staking_rewards(account: &AccountId) -> Balance {
+			ParachainStaking::get_unclaimed_staking_rewards(account)
+		}
+
+		fn get_staking_rates() -> kilt_runtime_api_staking::StakingRates {
+			ParachainStaking::get_staking_rates()
 		}
 	}
 

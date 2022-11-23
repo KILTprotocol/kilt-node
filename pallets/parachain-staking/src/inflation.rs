@@ -18,7 +18,7 @@
 
 //! Helper methods for computing issuance based on inflation
 use crate::{pallet::Config, types::BalanceOf};
-use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
+use codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_runtime::{traits::Saturating, Perquintill, RuntimeDebug};
 

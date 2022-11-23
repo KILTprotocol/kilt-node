@@ -27,7 +27,7 @@ use codec::Encode;
 use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
 use frame_support::traits::{Currency, Get};
 use frame_system::RawOrigin;
-use kilt_support::traits::GenerateBenchmarkOrigin;
+use kilt_support::{deposit::Deposit, traits::GenerateBenchmarkOrigin};
 use sp_io::crypto::sr25519_generate;
 use sp_runtime::{app_crypto::sr25519, KeyTypeId};
 
@@ -121,6 +121,54 @@ benchmarks! {
 	verify {
 		assert!(ConnectedDids::<T>::get(&caller).is_none());
 		assert!(ConnectedAccounts::<T>::get(did, caller).is_none());
+	}
+
+	change_deposit_owner {
+		let deposit_owner_old: T::AccountId = account("caller", 0, SEED);
+		let deposit_owner_new: T::AccountId = account("caller", 1, SEED);
+		let linkable_id: T::AccountId = deposit_owner_old.clone();
+		let did: T::DidIdentifier = account("did", 0, SEED);
+		make_free_for_did::<T>(&deposit_owner_old);
+		make_free_for_did::<T>(&deposit_owner_new);
+
+		Pallet::<T>::add_association(deposit_owner_old, did.clone(), linkable_id.clone()).expect("should create association");
+
+		let origin = T::EnsureOrigin::generate_origin(deposit_owner_new.clone(), did);
+		let id_arg = linkable_id.clone();
+	}: _<T::Origin>(origin, id_arg)
+	verify {
+		assert_eq!(
+			ConnectedDids::<T>::get(&linkable_id).expect("should retain link").deposit,
+			Deposit {
+				owner: deposit_owner_new,
+				amount: <T as Config>::Deposit::get(),
+			},
+		);
+	}
+
+	update_deposit {
+		let deposit_owner: T::AccountId = account("caller", 0, SEED);
+		let linkable_id: T::AccountId = deposit_owner.clone();
+		let did: T::DidIdentifier = account("did", 0, SEED);
+		make_free_for_did::<T>(&deposit_owner);
+
+		Pallet::<T>::add_association(
+			deposit_owner.clone(),
+			did,
+			linkable_id.clone()
+		).expect("should create association");
+
+		let origin = RawOrigin::Signed(deposit_owner.clone());
+		let id_arg = linkable_id.clone();
+	}: _(origin, id_arg)
+	verify {
+		assert_eq!(
+			ConnectedDids::<T>::get(&linkable_id).expect("should retain link").deposit,
+			Deposit {
+				owner: deposit_owner,
+				amount: <T as Config>::Deposit::get(),
+			},
+		);
 	}
 }
 

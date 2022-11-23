@@ -21,7 +21,7 @@ use frame_support::{assert_noop, assert_ok};
 use kilt_support::{deposit::Deposit, mock::mock_origin};
 use sp_runtime::{
 	app_crypto::{sr25519, Pair},
-	traits::IdentifyAccount,
+	traits::{IdentifyAccount, Zero},
 	MultiSignature, MultiSigner,
 };
 
@@ -30,7 +30,10 @@ use crate::{mock::*, ConnectedAccounts, ConnectedDids, ConnectionRecord, Error};
 #[test]
 fn test_add_association_sender() {
 	ExtBuilder::default()
-		.with_balances(vec![(ACCOUNT_00, 100), (ACCOUNT_01, 100)])
+		.with_balances(vec![
+			(ACCOUNT_00, <Test as crate::Config>::Deposit::get() * 50),
+			(ACCOUNT_01, <Test as crate::Config>::Deposit::get() * 50),
+		])
 		.build()
 		.execute_with(|| {
 			// new association. No overwrite
@@ -75,7 +78,10 @@ fn test_add_association_sender() {
 #[test]
 fn test_add_association_account() {
 	ExtBuilder::default()
-		.with_balances(vec![(ACCOUNT_00, 100), (ACCOUNT_01, 100)])
+		.with_balances(vec![
+			(ACCOUNT_00, <Test as crate::Config>::Deposit::get() * 50),
+			(ACCOUNT_01, <Test as crate::Config>::Deposit::get() * 50),
+		])
 		.build()
 		.execute_with(|| {
 			let pair_alice = sr25519::Pair::from_seed(b"Alice                           ");
@@ -168,7 +174,10 @@ fn test_add_association_account() {
 #[test]
 fn test_add_association_account_invalid_signature() {
 	ExtBuilder::default()
-		.with_balances(vec![(ACCOUNT_00, 100), (ACCOUNT_01, 100)])
+		.with_balances(vec![
+			(ACCOUNT_00, <Test as crate::Config>::Deposit::get() * 50),
+			(ACCOUNT_01, <Test as crate::Config>::Deposit::get() * 50),
+		])
 		.build()
 		.execute_with(|| {
 			let pair_alice = sr25519::Pair::from_seed(b"Alice                           ");
@@ -192,7 +201,10 @@ fn test_add_association_account_invalid_signature() {
 #[test]
 fn test_add_association_account_expired() {
 	ExtBuilder::default()
-		.with_balances(vec![(ACCOUNT_00, 100), (ACCOUNT_01, 100)])
+		.with_balances(vec![
+			(ACCOUNT_00, <Test as crate::Config>::Deposit::get() * 50),
+			(ACCOUNT_01, <Test as crate::Config>::Deposit::get() * 50),
+		])
 		.build()
 		.execute_with(|| {
 			let pair_alice = sr25519::Pair::from_seed(b"Alice                           ");
@@ -218,7 +230,10 @@ fn test_add_association_account_expired() {
 #[test]
 fn test_remove_association_sender() {
 	ExtBuilder::default()
-		.with_balances(vec![(ACCOUNT_00, 100), (ACCOUNT_01, 100)])
+		.with_balances(vec![
+			(ACCOUNT_00, <Test as crate::Config>::Deposit::get() * 50),
+			(ACCOUNT_01, <Test as crate::Config>::Deposit::get() * 50),
+		])
 		.with_connections(vec![(ACCOUNT_00, DID_01, ACCOUNT_00)])
 		.build()
 		.execute_with(|| {
@@ -233,7 +248,10 @@ fn test_remove_association_sender() {
 #[test]
 fn test_remove_association_sender_not_found() {
 	ExtBuilder::default()
-		.with_balances(vec![(ACCOUNT_00, 100), (ACCOUNT_01, 100)])
+		.with_balances(vec![
+			(ACCOUNT_00, <Test as crate::Config>::Deposit::get() * 50),
+			(ACCOUNT_01, <Test as crate::Config>::Deposit::get() * 50),
+		])
 		.build()
 		.execute_with(|| {
 			assert_noop!(
@@ -246,7 +264,10 @@ fn test_remove_association_sender_not_found() {
 #[test]
 fn test_remove_association_account() {
 	ExtBuilder::default()
-		.with_balances(vec![(ACCOUNT_00, 100), (ACCOUNT_01, 100)])
+		.with_balances(vec![
+			(ACCOUNT_00, <Test as crate::Config>::Deposit::get() * 50),
+			(ACCOUNT_01, <Test as crate::Config>::Deposit::get() * 50),
+		])
 		.with_connections(vec![(ACCOUNT_01, DID_01, ACCOUNT_00)])
 		.build()
 		.execute_with(|| {
@@ -264,7 +285,10 @@ fn test_remove_association_account() {
 #[test]
 fn test_remove_association_account_not_found() {
 	ExtBuilder::default()
-		.with_balances(vec![(ACCOUNT_00, 100), (ACCOUNT_01, 100)])
+		.with_balances(vec![
+			(ACCOUNT_00, <Test as crate::Config>::Deposit::get() * 50),
+			(ACCOUNT_01, <Test as crate::Config>::Deposit::get() * 50),
+		])
 		.build()
 		.execute_with(|| {
 			assert_eq!(ConnectedDids::<Test>::get(ACCOUNT_00), None);
@@ -279,7 +303,10 @@ fn test_remove_association_account_not_found() {
 #[test]
 fn test_remove_association_account_not_authorized() {
 	ExtBuilder::default()
-		.with_balances(vec![(ACCOUNT_00, 100), (ACCOUNT_01, 100)])
+		.with_balances(vec![
+			(ACCOUNT_00, <Test as crate::Config>::Deposit::get() * 50),
+			(ACCOUNT_01, <Test as crate::Config>::Deposit::get() * 50),
+		])
 		.with_connections(vec![(ACCOUNT_01, DID_01, ACCOUNT_00)])
 		.build()
 		.execute_with(|| {
@@ -297,7 +324,10 @@ fn test_remove_association_account_not_authorized() {
 #[test]
 fn test_reclaim_deposit() {
 	ExtBuilder::default()
-		.with_balances(vec![(ACCOUNT_00, 100), (ACCOUNT_01, 100)])
+		.with_balances(vec![
+			(ACCOUNT_00, <Test as crate::Config>::Deposit::get() * 50),
+			(ACCOUNT_01, <Test as crate::Config>::Deposit::get() * 50),
+		])
 		.with_connections(vec![(ACCOUNT_01, DID_01, ACCOUNT_00)])
 		.build()
 		.execute_with(|| {
@@ -309,7 +339,10 @@ fn test_reclaim_deposit() {
 #[test]
 fn test_reclaim_deposit_not_authorized() {
 	ExtBuilder::default()
-		.with_balances(vec![(ACCOUNT_00, 100), (ACCOUNT_01, 100)])
+		.with_balances(vec![
+			(ACCOUNT_00, <Test as crate::Config>::Deposit::get() * 50),
+			(ACCOUNT_01, <Test as crate::Config>::Deposit::get() * 50),
+		])
 		.with_connections(vec![(ACCOUNT_01, DID_01, ACCOUNT_00)])
 		.build()
 		.execute_with(|| {
@@ -322,4 +355,123 @@ fn test_reclaim_deposit_not_authorized() {
 				<Test as crate::Config>::Deposit::get()
 			);
 		});
+}
+
+// #############################################################################
+// transfer deposit
+
+#[test]
+fn test_change_deposit_owner() {
+	ExtBuilder::default()
+		.with_balances(vec![
+			(ACCOUNT_00, <Test as crate::Config>::Deposit::get() * 50),
+			(ACCOUNT_01, <Test as crate::Config>::Deposit::get() * 50),
+		])
+		.with_connections(vec![(ACCOUNT_00, DID_00, ACCOUNT_00)])
+		.build()
+		.execute_with(|| {
+			assert_ok!(DidLookup::change_deposit_owner(
+				mock_origin::DoubleOrigin(ACCOUNT_01, DID_00).into(),
+				ACCOUNT_00
+			));
+			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
+			assert_eq!(
+				Balances::reserved_balance(ACCOUNT_01),
+				<Test as crate::Config>::Deposit::get()
+			);
+		})
+}
+
+#[test]
+fn test_change_deposit_owner_insufficient_balance() {
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, <Test as crate::Config>::Deposit::get() * 50)])
+		.with_connections(vec![(ACCOUNT_00, DID_00, ACCOUNT_00)])
+		.build()
+		.execute_with(|| {
+			assert_noop!(
+				DidLookup::change_deposit_owner(mock_origin::DoubleOrigin(ACCOUNT_01, DID_00).into(), ACCOUNT_00),
+				pallet_balances::Error::<Test>::InsufficientBalance
+			);
+		})
+}
+
+#[test]
+fn test_change_deposit_owner_not_found() {
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, <Test as crate::Config>::Deposit::get() * 50)])
+		.build()
+		.execute_with(|| {
+			assert_noop!(
+				DidLookup::change_deposit_owner(mock_origin::DoubleOrigin(ACCOUNT_01, DID_00).into(), ACCOUNT_00),
+				Error::<Test>::AssociationNotFound
+			);
+		})
+}
+
+#[test]
+fn test_change_deposit_owner_not_authorized() {
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, <Test as crate::Config>::Deposit::get() * 50)])
+		.with_connections(vec![(ACCOUNT_00, DID_00, ACCOUNT_00)])
+		.build()
+		.execute_with(|| {
+			assert_noop!(
+				DidLookup::change_deposit_owner(mock_origin::DoubleOrigin(ACCOUNT_01, DID_01).into(), ACCOUNT_00),
+				Error::<Test>::NotAuthorized
+			);
+		})
+}
+
+#[test]
+fn test_update_deposit() {
+	ExtBuilder::default()
+		.with_balances(vec![
+			(ACCOUNT_00, <Test as crate::Config>::Deposit::get() * 50),
+			(ACCOUNT_01, <Test as crate::Config>::Deposit::get() * 50),
+		])
+		.build()
+		.execute_with(|| {
+			insert_raw_connection::<Test>(
+				ACCOUNT_00,
+				DID_00,
+				ACCOUNT_00,
+				<Test as crate::Config>::Deposit::get() * 2,
+			);
+			assert_eq!(
+				Balances::reserved_balance(ACCOUNT_00),
+				<Test as crate::Config>::Deposit::get() * 2
+			);
+			assert_ok!(DidLookup::update_deposit(Origin::signed(ACCOUNT_00), ACCOUNT_00));
+			assert_eq!(
+				Balances::reserved_balance(ACCOUNT_00),
+				<Test as crate::Config>::Deposit::get()
+			);
+		})
+}
+
+#[test]
+fn test_update_deposit_unauthorized() {
+	ExtBuilder::default()
+		.with_balances(vec![
+			(ACCOUNT_00, <Test as crate::Config>::Deposit::get() * 50),
+			(ACCOUNT_01, <Test as crate::Config>::Deposit::get() * 50),
+		])
+		.build()
+		.execute_with(|| {
+			insert_raw_connection::<Test>(
+				ACCOUNT_00,
+				DID_00,
+				ACCOUNT_00,
+				<Test as crate::Config>::Deposit::get() * 2,
+			);
+			assert_eq!(
+				Balances::reserved_balance(ACCOUNT_00),
+				<Test as crate::Config>::Deposit::get() * 2
+			);
+			assert_noop!(
+				DidLookup::update_deposit(Origin::signed(ACCOUNT_01), ACCOUNT_00),
+				Error::<Test>::NotAuthorized
+			);
+		})
 }

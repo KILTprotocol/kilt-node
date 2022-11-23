@@ -1,0 +1,67 @@
+cargo-features = ["workspace-inheritance"]
+
+[package]
+authors.workspace = true
+documentation.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license-file.workspace = true
+readme.workspace = true
+repository.workspace = true
+version.workspace = true
+name = "public-credentials"
+description = "Enables adding and revoking public credentials."
+
+[dev-dependencies]
+ctype = {workspace = true, features = ["mock"]}
+kilt-support = {workspace = true, features = ["mock"]}
+
+pallet-balances = {workspace = true, features = ["std"]}
+sp-io = {workspace = true, features = ["std"]}
+sp-keystore = {workspace = true, features = ["std"]}
+
+[dependencies]
+# External dependencies
+codec = {package = "parity-scale-codec", workspace = true, features = ["derive"]}
+scale-info = {workspace = true, features = ["derive"]}
+
+# Internal dependencies
+ctype.workspace = true
+kilt-support.workspace = true
+
+# Substrate dependencies
+frame-benchmarking = {workspace = true, optional = true}
+frame-support.workspace = true
+frame-system.workspace = true
+sp-core.workspace = true
+sp-io = {workspace = true, optional = true}
+sp-keystore = {workspace = true, optional = true}
+sp-runtime.workspace = true
+sp-std.workspace = true
+
+[features]
+default = ["std"]
+runtime-benchmarks = [
+  "kilt-support/runtime-benchmarks",
+
+  "frame-benchmarking",
+  "frame-support/runtime-benchmarks",
+  "frame-system/runtime-benchmarks",
+]
+std = [
+  "codec/std",
+  "scale-info/std",
+
+  "ctype/std",
+  "kilt-support/std",
+
+  "frame-support/std",
+  "frame-system/std",
+  "sp-core/std",
+  "sp-io/std",
+  "sp-runtime/std",
+  "sp-std/std",
+]
+try-runtime = [
+  "frame-support/try-runtime",
+]

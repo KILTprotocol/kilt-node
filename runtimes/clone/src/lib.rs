@@ -46,10 +46,13 @@ use xcm::opaque::latest::BodyId;
 use xcm_executor::XcmExecutor;
 
 use runtime_common::{
+	assets::PublicCredentialsFilter,
+	authorization::AuthorizationId,
 	constants::{self, HOURS, MILLI_KILT},
+	errors::PublicCredentialsApiError,
 	fees::{ToAuthor, WeightToFee},
-	AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights, FeeSplit, Hash, Header,
-	Index, Signature, SlowAdjustingFeeUpdate,
+	AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights, DidIdentifier, FeeSplit,
+	Hash, Header, Index, Signature, SlowAdjustingFeeUpdate,
 };
 
 use crate::xcm_config::{XcmConfig, XcmOriginToTransactDispatchOrigin};
@@ -75,7 +78,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("KILT"),
 	impl_name: create_runtime_str!("KILT"),
 	authoring_version: 0,
-	spec_version: 10750,
+	spec_version: 10801,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 0,
@@ -154,7 +157,7 @@ parameter_types! {
 impl pallet_timestamp::Config for Runtime {
 	/// A timestamp: milliseconds since the unix epoch.
 	type Moment = u64;
-	type OnTimestampSet = ();
+	type OnTimestampSet = Aura;
 	type MinimumPeriod = MinimumPeriod;
 	type WeightInfo = weights::pallet_timestamp::WeightInfo<Runtime>;
 }
@@ -526,15 +529,17 @@ impl_runtime_apis! {
 		}
 	}
 
-	impl did_rpc_runtime_api::DidApi<
+	// Solely required from parachain client
+	impl kilt_runtime_api_did::Did<
 		Block,
+		AccountId,
 		AccountId,
 		AccountId,
 		Balance,
 		Hash,
 		BlockNumber
 	> for Runtime {
-		fn query_did_by_w3n(_: Vec<u8>) -> Option<did_rpc_runtime_api::RawDidLinkedInfo<
+		fn query_by_web3_name(_: Vec<u8>) -> Option<kilt_runtime_api_did::RawDidLinkedInfo<
 				AccountId,
 				AccountId,
 				Balance,
@@ -545,8 +550,8 @@ impl_runtime_apis! {
 			None
 		}
 
-		fn query_did_by_account_id(_: AccountId) -> Option<
-			did_rpc_runtime_api::RawDidLinkedInfo<
+		fn query_by_account(_: AccountId) -> Option<
+			kilt_runtime_api_did::RawDidLinkedInfo<
 				AccountId,
 				AccountId,
 				Balance,
@@ -557,8 +562,8 @@ impl_runtime_apis! {
 			None
 		}
 
-		fn query_did(_: AccountId) -> Option<
-			did_rpc_runtime_api::RawDidLinkedInfo<
+		fn query(_: AccountId) -> Option<
+			kilt_runtime_api_did::RawDidLinkedInfo<
 				AccountId,
 				AccountId,
 				Balance,
@@ -567,6 +572,16 @@ impl_runtime_apis! {
 			>
 		> {
 			None
+		}
+	}
+
+	impl kilt_runtime_api_public_credentials::PublicCredentials<Block, Vec<u8>, Hash, public_credentials::CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<Hash>>, PublicCredentialsFilter<Hash, AccountId>, PublicCredentialsApiError> for Runtime {
+		fn get_by_id(_credential_id: Hash) -> Option<public_credentials::CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<Hash>>> {
+			None
+		}
+
+		fn get_by_subject(_subject: Vec<u8>, _filter: Option<PublicCredentialsFilter<Hash, AccountId>>) -> Result<Vec<(Hash, public_credentials::CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<Hash>>)>, PublicCredentialsApiError> {
+			Ok(vec![])
 		}
 	}
 

@@ -22,13 +22,13 @@ use frame_support::{traits::Currency, BoundedVec};
 use did::DeriveDidCallAuthorizationVerificationKeyRelationship;
 use pallet_treasury::BalanceOf;
 use pallet_web3_names::{Web3NameOf, Web3OwnershipOf};
-use runtime_common::constants::{
-	attestation::MAX_ATTESTATION_BYTE_LENGTH, did::MAX_DID_BYTE_LENGTH, did_lookup::MAX_CONNECTION_BYTE_LENGTH,
-	web3_names::MAX_NAME_BYTE_LENGTH, MAX_INDICES_BYTE_LENGTH,
+use runtime_common::{
+	constants::{
+		attestation::MAX_ATTESTATION_BYTE_LENGTH, did::MAX_DID_BYTE_LENGTH, did_lookup::MAX_CONNECTION_BYTE_LENGTH,
+		web3_names::MAX_NAME_BYTE_LENGTH, MAX_INDICES_BYTE_LENGTH,
+	},
+	AccountId, BlockNumber,
 };
-
-#[cfg(test)]
-use runtime_common::{AccountId, BlockNumber};
 
 use super::{Call, Runtime};
 

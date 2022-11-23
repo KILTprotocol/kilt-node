@@ -38,7 +38,6 @@ use crate::{
 
 /// Types of verification keys a DID can control.
 #[derive(Clone, Decode, RuntimeDebug, Encode, Eq, Ord, PartialEq, PartialOrd, TypeInfo, MaxEncodedLen)]
-#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 pub enum DidVerificationKey {
 	/// An Ed25519 public key.
 	Ed25519(ed25519::Public),
@@ -90,7 +89,6 @@ impl From<ecdsa::Public> for DidVerificationKey {
 
 /// Types of encryption keys a DID can control.
 #[derive(Clone, Copy, Decode, RuntimeDebug, Encode, Eq, Ord, PartialEq, PartialOrd, TypeInfo, MaxEncodedLen)]
-#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 pub enum DidEncryptionKey {
 	/// An X25519 public key.
 	X25519([u8; 32]),
@@ -98,7 +96,6 @@ pub enum DidEncryptionKey {
 
 /// A general public key under the control of the DID.
 #[derive(Clone, Decode, RuntimeDebug, Encode, Eq, Ord, PartialEq, PartialOrd, TypeInfo, MaxEncodedLen)]
-#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 pub enum DidPublicKey {
 	/// A verification key, used to generate and verify signatures.
 	PublicVerificationKey(DidVerificationKey),
@@ -237,7 +234,6 @@ impl<I: AsRef<[u8; 32]>> DidVerifiableIdentifier for I {
 #[derive(Clone, RuntimeDebug, Decode, Encode, PartialEq, Ord, PartialOrd, Eq, TypeInfo, MaxEncodedLen)]
 #[scale_info(skip_type_params(T))]
 #[codec(mel_bound())]
-#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 pub struct DidPublicKeyDetails<BlockNumber: MaxEncodedLen> {
 	/// A public key the DID controls.
 	pub key: DidPublicKey,

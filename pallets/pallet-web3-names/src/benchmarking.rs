@@ -17,7 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 #![cfg(feature = "runtime-benchmarks")]
 
-use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite, vec, Vec};
+use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite, vec, Vec, Zero};
 use frame_support::{
 	pallet_prelude::EnsureOrigin,
 	sp_runtime::SaturatedConversion,
@@ -27,15 +27,20 @@ use frame_support::{
 use frame_system::RawOrigin;
 use sp_runtime::app_crypto::sr25519;
 
-use kilt_support::traits::GenerateBenchmarkOrigin;
+use kilt_support::{deposit::Deposit, traits::GenerateBenchmarkOrigin};
 
-use crate::{AccountIdOf, Banned, Call, Config, CurrencyOf, Names, Owner, Pallet, Web3NameOf, Web3NameOwnerOf};
+use crate::{
+	mock::insert_raw_w3n, AccountIdOf, Banned, Call, Config, CurrencyOf, Names, Owner, Pallet, Web3NameOf,
+	Web3NameOwnerOf,
+};
 
 const CALLER_SEED: u32 = 0;
 const OWNER_SEED: u32 = 1;
 
 fn make_free_for_did<T: Config>(account: &AccountIdOf<T>) {
-	let balance = <CurrencyOf<T> as Currency<AccountIdOf<T>>>::minimum_balance() + <T as Config>::Deposit::get();
+	let balance = <CurrencyOf<T> as Currency<AccountIdOf<T>>>::minimum_balance()
+		+ <T as Config>::Deposit::get()
+		+ <T as Config>::Deposit::get();
 	<CurrencyOf<T> as Currency<AccountIdOf<T>>>::make_free_balance_be(account, balance);
 }
 
@@ -136,6 +141,56 @@ benchmarks! {
 		assert!(Names::<T>::get(&owner).is_none());
 		assert!(Owner::<T>::get(&web3_name).is_none());
 		assert!(Banned::<T>::get(&web3_name).is_none());
+	}
+
+	change_deposit_owner {
+		let deposit_owner_old: AccountIdOf<T> = account("caller", 0, CALLER_SEED);
+		let deposit_owner_new: AccountIdOf<T> = account("caller", 1, CALLER_SEED);
+		let owner: Web3NameOwnerOf<T> = account("owner", 0, OWNER_SEED);
+		let web3_name_input: BoundedVec<u8, T::MaxNameLength> = BoundedVec::try_from(
+			generate_web3_name_input(T::MaxNameLength::get().saturated_into())
+		).expect("BoundedVec creation should not fail.");
+		let web3_name_input_clone = web3_name_input.clone();
+		let origin_create = T::OwnerOrigin::generate_origin(deposit_owner_old.clone(), owner.clone());
+
+		make_free_for_did::<T>(&deposit_owner_old);
+		make_free_for_did::<T>(&deposit_owner_new);
+		Pallet::<T>::claim(origin_create, web3_name_input.clone()).expect("Should register the claimed web3 name.");
+
+		let origin = T::OwnerOrigin::generate_origin(deposit_owner_new.clone(), owner);
+	}: _<T::Origin>(origin)
+	verify {
+		let web3_name = Web3NameOf::<T>::try_from(web3_name_input.to_vec()).unwrap();
+		assert_eq!(Owner::<T>::get(&web3_name).expect("w3n should exists").deposit, Deposit {
+			owner: deposit_owner_new,
+			amount: <T as Config>::Deposit::get(),
+		});
+	}
+
+	update_deposit {
+		let deposit_owner: AccountIdOf<T> = account("caller", 0, CALLER_SEED);
+		let owner: Web3NameOwnerOf<T> = account("owner", 0, OWNER_SEED);
+		let web3_name_input: BoundedVec<u8, T::MaxNameLength> = BoundedVec::try_from(
+			generate_web3_name_input(T::MaxNameLength::get().saturated_into())
+		).expect("BoundedVec creation should not fail.");
+		let web3_name = Web3NameOf::<T>::try_from(web3_name_input.to_vec()).unwrap();
+
+		make_free_for_did::<T>(&deposit_owner);
+		insert_raw_w3n::<T>(
+			deposit_owner.clone(),
+			owner,
+			web3_name.clone(),
+			T::BlockNumber::zero(),
+			<T as Config>::Deposit::get() + <T as Config>::Deposit::get()
+		);
+
+		let origin = RawOrigin::Signed(deposit_owner.clone());
+	}: _(origin, web3_name_input)
+	verify {
+		assert_eq!(Owner::<T>::get(&web3_name).expect("w3n should exists").deposit, Deposit {
+			owner: deposit_owner,
+			amount: <T as Config>::Deposit::get(),
+		});
 	}
 }
 

@@ -50,8 +50,11 @@ pub mod pallet {
 		traits::{Currency, ReservableCurrency, StorageVersion},
 	};
 	use frame_system::pallet_prelude::*;
-	use kilt_support::{deposit::Deposit, traits::CallSources};
-	use sp_runtime::traits::{BlockNumberProvider, IdentifyAccount, Verify};
+	use kilt_support::{
+		deposit::Deposit,
+		traits::{CallSources, StorageDepositCollector},
+	};
+	use sp_runtime::traits::BlockNumberProvider;
 
 	pub use crate::connection_record::ConnectionRecord;
 
@@ -80,8 +83,8 @@ pub mod pallet {
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
-		type Signature: Verify<Signer = Self::Signer> + Parameter;
-		type Signer: IdentifyAccount<AccountId = AccountIdOf<Self>> + Parameter;
+		type Signature: sp_runtime::traits::Verify<Signer = Self::Signer> + Parameter;
+		type Signer: sp_runtime::traits::IdentifyAccount<AccountId = AccountIdOf<Self>> + Parameter;
 
 		/// The origin that can associate accounts to itself.
 		type EnsureOrigin: EnsureOrigin<Success = Self::OriginSuccess, <Self as frame_system::Config>::Origin>;
@@ -186,7 +189,7 @@ pub mod pallet {
 			);
 			let encoded_payload = (&did_identifier, expiration).encode();
 			ensure!(
-				proof.verify(&get_wrapped_payload(&encoded_payload[..])[..], &account),
+				sp_runtime::traits::Verify::verify(&proof, &get_wrapped_payload(&encoded_payload[..])[..], &account),
 				Error::<T>::NotAuthorized
 			);
 			ensure!(
@@ -286,6 +289,37 @@ pub mod pallet {
 			ensure!(record.deposit.owner == who, Error::<T>::NotAuthorized);
 			Self::remove_association(account)
 		}
+
+		/// Changes the deposit owner.
+		///
+		/// The balance that is reserved by the current deposit owner will be
+		/// freed and balance of the new deposit owner will get reserved.
+		///
+		/// The subject of the call must be linked to the account.
+		/// The sender of the call will be the new deposit owner.
+		#[pallet::weight(<T as Config>::WeightInfo::change_deposit_owner())]
+		pub fn change_deposit_owner(origin: OriginFor<T>, account: AccountIdOf<T>) -> DispatchResult {
+			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
+			let subject = source.subject();
+
+			let record = ConnectedDids::<T>::get(&account).ok_or(Error::<T>::AssociationNotFound)?;
+			ensure!(record.did == subject, Error::<T>::NotAuthorized);
+
+			LinkableAccountDepositCollector::<T>::change_deposit_owner(&account, source.sender())
+		}
+
+		/// Updates the deposit amount to the current deposit rate.
+		///
+		/// The sender must be the deposit owner.
+		#[pallet::weight(<T as Config>::WeightInfo::update_deposit())]
+		pub fn update_deposit(origin: OriginFor<T>, account: AccountIdOf<T>) -> DispatchResult {
+			let source = ensure_signed(origin)?;
+
+			let record = ConnectedDids::<T>::get(&account).ok_or(Error::<T>::AssociationNotFound)?;
+			ensure!(record.deposit.owner == source, Error::<T>::NotAuthorized);
+
+			LinkableAccountDepositCollector::<T>::update_deposit(&account)
+		}
 	}
 
 	impl<T: Config> Pallet<T> {
@@ -329,6 +363,32 @@ pub mod pallet {
 			} else {
 				Err(Error::<T>::AssociationNotFound.into())
 			}
+		}
+	}
+
+	struct LinkableAccountDepositCollector<T: Config>(PhantomData<T>);
+	impl<T: Config> StorageDepositCollector<AccountIdOf<T>, AccountIdOf<T>> for LinkableAccountDepositCollector<T> {
+		type Currency = T::Currency;
+
+		fn deposit(
+			key: &AccountIdOf<T>,
+		) -> Result<Deposit<AccountIdOf<T>, <Self::Currency as Currency<AccountIdOf<T>>>::Balance>, DispatchError> {
+			let record = ConnectedDids::<T>::get(&key).ok_or(Error::<T>::AssociationNotFound)?;
+			Ok(record.deposit)
+		}
+
+		fn deposit_amount(_key: &AccountIdOf<T>) -> <Self::Currency as Currency<AccountIdOf<T>>>::Balance {
+			T::Deposit::get()
+		}
+
+		fn store_deposit(
+			key: &AccountIdOf<T>,
+			deposit: Deposit<AccountIdOf<T>, <Self::Currency as Currency<AccountIdOf<T>>>::Balance>,
+		) -> Result<(), DispatchError> {
+			let record = ConnectedDids::<T>::get(&key).ok_or(Error::<T>::AssociationNotFound)?;
+			ConnectedDids::<T>::insert(&key, ConnectionRecord { deposit, ..record });
+
+			Ok(())
 		}
 	}
 }

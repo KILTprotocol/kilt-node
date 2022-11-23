@@ -141,7 +141,7 @@ mod tests {
 		}
 
 		for invalid in invalid_inputs {
-			assert!(AsciiWeb3Name::<Test>::try_from(invalid).is_err(),);
+			assert!(AsciiWeb3Name::<Test>::try_from(invalid).is_err());
 		}
 	}
 }
