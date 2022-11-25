@@ -61,6 +61,7 @@ pub mod pallet {
 		traits::{CallSources, StorageDepositCollector},
 	};
 	use sp_runtime::traits::BlockNumberProvider;
+	use sp_std::vec::Vec;
 
 	pub use crate::connection_record::ConnectionRecord;
 
@@ -122,8 +123,25 @@ pub mod pallet {
 	/// presence of a given tuple in the map.
 	#[pallet::storage]
 	#[pallet::getter(fn connected_accounts)]
+	/// Iterates over old connected did storage map and checks whether any raw
+	/// key still exists in the low level storage.
+	///
+	/// Since the new `ConnectedDidsV2` and old `ConnectedDids` typed storage
+	/// maps have the same pallet and storage prefixes, both result in the same
+	/// final storage map key. For some reason, keys in the new map can still be
+	/// iterated over in the old one. E.g., the new keytype can be decoded into
+	/// the old one such that both maps have the same number of keys despite
+	/// killing every old key during the migration.
+	///
+	/// However, we can check the old raw keys which should not exist in storage
+	/// after migrating, e.g. `unhashed::exists(old_raw_key)` is expected to be
+	/// false.
 	pub type ConnectedAccounts<T> =
 		StorageDoubleMap<_, Blake2_128Concat, DidIdentifierOf<T>, Blake2_128Concat, LinkableAccountId, ()>;
+
+	#[pallet::storage]
+	#[pallet::getter(fn migration_ongoing)]
+	pub type MigrationOngoing<T> = StorageValue<_, bool, ValueQuery>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -133,6 +151,19 @@ pub mod pallet {
 
 		/// An association between a DID and an account ID was removed.
 		AssociationRemoved(LinkableAccountId, DidIdentifierOf<T>),
+
+		/// An connected account_id was migrated to the LinkableAccountId type.
+		Migrated {
+			did_id: DidIdentifierOf<T>,
+			account_id: LinkableAccountId,
+		},
+
+		/// All AccountIds have been migrated to LinkableAccountId.
+		MigrationCompleted,
+
+		/// The migration has been validated given raw key and shall continue
+		/// with the next_key.
+		MigrationVerified { next_key: Vec<u8> },
 	}
 
 	#[pallet::error]
@@ -150,6 +181,17 @@ pub mod pallet {
 		/// The account has insufficient funds and can't pay the fees or reserve
 		/// the deposit.
 		InsufficientFunds,
+
+		/// The provided AccountId was already migrated to LinkableAccountId
+		AlreadyMigrated,
+
+		/// There are still pre migration keys in the storage implying an
+		/// ongoing migration.
+		MigrationKeysPersist,
+
+		/// The migration storages have different sizes implying an ongoing
+		/// migration.
+		MigrationStorageSizeMismatch,
 	}
 
 	#[pallet::call]
@@ -326,6 +368,48 @@ pub mod pallet {
 			ensure!(record.deposit.owner == source, Error::<T>::NotAuthorized);
 
 			LinkableAccountDepositCollector::<T>::update_deposit(&account)
+		}
+
+		// TODO: Docs, weights
+		#[pallet::weight(T::DbWeight::get().reads_writes(2, 4))]
+		pub fn migrate_account_id(origin: OriginFor<T>, account_id: AccountIdOf<T>) -> DispatchResult {
+			ensure_signed(origin)?;
+			// TODO: Do we need to ensure whether MigrationOngoing? Shouldn't due to
+			// CallFilter.
+
+			let linkable_account_id: LinkableAccountId = account_id.clone().into();
+			let did_id = crate::migrations::do_migrate_account_id::<T>(account_id, linkable_account_id.clone())
+				.ok_or(Error::<T>::AlreadyMigrated)?;
+
+			Self::deposit_event(Event::<T>::Migrated {
+				account_id: linkable_account_id,
+				did_id,
+			});
+
+			Ok(())
+		}
+
+		// TODO: Docs, weights
+		#[pallet::weight(T::DbWeight::get().reads_writes(1, 2))]
+		pub fn verify_migration(origin: OriginFor<T>) -> DispatchResult {
+			ensure_signed(origin)?;
+			// TODO: Do we need to ensure whether MigrationOngoing? Shouldn't due to
+			// CallFilter.
+
+			ensure!(
+				crate::migrations::check_storage_size::<T>(),
+				Error::<T>::MigrationStorageSizeMismatch
+			);
+			// Safety check, should always succeed when upper one succeeds
+			ensure!(
+				crate::migrations::do_verify_migration::<T>(),
+				Error::<T>::MigrationKeysPersist
+			);
+
+			MigrationOngoing::<T>::set(false);
+			Self::deposit_event(Event::<T>::MigrationCompleted);
+
+			Ok(())
 		}
 	}
 

@@ -30,7 +30,7 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::{
 	construct_runtime, parameter_types,
-	traits::{Currency, Everything, InstanceFilter, KeyOwnerProofSystem},
+	traits::{Currency, InstanceFilter, KeyOwnerProofSystem},
 	weights::{constants::RocksDbWeight, ConstantMultiplier, IdentityFee},
 };
 pub use frame_system::Call as SystemCall;
@@ -142,11 +142,26 @@ parameter_types! {
 	pub const SS58Prefix: u8 = 38;
 }
 
-// Configure FRAME pallets to include in runtime.
+pub struct MigrationFilter;
+impl frame_support::traits::Contains<Call> for MigrationFilter {
+	fn contains(c: &Call) -> bool {
+		match c {
+			// Enable DidLookup migration calls for ongoing migration
+			Call::DidLookup(
+				pallet_did_lookup::Call::verify_migration { .. } | pallet_did_lookup::Call::migrate_account_id { .. },
+			) => DidLookup::migration_ongoing(),
+			// For all other DidLookup calls, check whether migration is ongoing
+			Call::DidLookup(_) => !DidLookup::migration_ongoing(),
+			// Enable all non-DidLookup calls
+			_ => true,
+		}
+	}
+}
 
+// Configure FRAME pallets to include in runtime.
 impl frame_system::Config for Runtime {
 	/// The basic call filter to use in dispatchable.
-	type BaseCallFilter = Everything;
+	type BaseCallFilter = MigrationFilter;
 	/// Block & extrinsics weights: base values and limits.
 	type BlockWeights = runtime_common::BlockWeights;
 	/// The maximum length of a block (in bytes).
