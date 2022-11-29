@@ -9,7 +9,6 @@ clippy:
   stage: test
   timeout: 1 hours
   script:
-    - rustup show
     - cargo clippy --all-features --all-targets --locked -- -D warnings
 
 fmt:
