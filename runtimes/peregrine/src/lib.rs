@@ -1056,7 +1056,7 @@ pub type Executive = frame_executive::Executive<
 	Runtime,
 	// Executes pallet hooks in the order of definition in construct_runtime
 	AllPalletsWithSystem,
-	parachain_staking::migration::StakingPayoutRefactor<Runtime>,
+	runtime_common::migrations::AddCTypeBlockNumber<Runtime>,
 >;
 
 impl_runtime_apis! {

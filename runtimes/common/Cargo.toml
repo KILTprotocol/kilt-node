@@ -23,6 +23,7 @@ smallvec.workspace = true
 
 # Internal dependencies
 attestation.workspace = true
+ctype.workspace = true
 kilt-support.workspace = true
 parachain-staking.workspace = true
 public-credentials.workspace = true
@@ -51,6 +52,7 @@ default = ["std"]
 fast-gov = []
 runtime-benchmarks = [
   "attestation/runtime-benchmarks",
+  "ctype/runtime-benchmarks",
   "frame-support/runtime-benchmarks",
   "kilt-support/runtime-benchmarks",
   "parachain-staking/runtime-benchmarks",
@@ -61,6 +63,7 @@ runtime-benchmarks = [
 std = [
   "attestation/std",
   "codec/std",
+  "ctype/std",
   "frame-support/std",
   "frame-system/std",
   "kilt-asset-dids/std",

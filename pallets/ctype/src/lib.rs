@@ -73,7 +73,7 @@ pub mod pallet {
 	use sp_std::vec::Vec;
 
 	/// The current storage version.
-	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
+	const STORAGE_VERSION: StorageVersion = StorageVersion::new(2);
 
 	/// Type of a CType hash.
 	pub type CtypeHashOf<T> = <T as frame_system::Config>::Hash;

@@ -16,67 +16,67 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use frame_support::{
+	pallet_prelude::ValueQuery,
+	storage_alias,
+	traits::{GetStorageVersion, OnRuntimeUpgrade},
+};
+use sp_runtime::traits::{Get, Zero};
 use sp_std::marker::PhantomData;
 
-use frame_support::{
-	traits::{Get, OnRuntimeUpgrade},
-	StorageHasher, Twox128,
-};
+use ctype::{CtypeCreatorOf, CtypeEntryOf};
 
-pub struct RemoveRelocationPallets<R>(PhantomData<R>);
+#[storage_alias]
+type MigrationCounter<T: ctype::Config> = StorageValue<ctype::Pallet<T>, u32, ValueQuery>;
 
-impl<R: frame_system::Config> OnRuntimeUpgrade for RemoveRelocationPallets<R> {
+pub struct AddCTypeBlockNumber<R>(PhantomData<R>);
+
+impl<T: ctype::Config> OnRuntimeUpgrade for AddCTypeBlockNumber<T> {
 	#[cfg(feature = "try-runtime")]
 	fn pre_upgrade() -> Result<(), &'static str> {
-		log::info!("Pre check RemoveRelocationPallets.");
-		let has_migration_storage = frame_support::storage::migration::have_storage_value(
-			b"RelayMigration",
-			b"RelayNumberStrictlyIncreases",
-			b"",
-		);
-		let has_filter_storage = frame_support::storage::migration::have_storage_value(b"DynFilter", b"Filter", b"");
+		assert_eq!(ctype::Pallet::<T>::on_chain_storage_version(), 1,);
+		assert!(MigrationCounter::<T>::get().is_zero());
 
-		match (has_migration_storage, has_filter_storage) {
-			(false, false) => Err("Pallets not present"),
-			(true, false) => Err("DynFilter not present"),
-			(false, true) => Err("RelayMigration not present"),
-			_ => Ok(()),
-		}
+		let ctypes_to_migrate = ctype::Ctypes::<T>::iter().count();
+
+		log::info!("💰 CType pallet pre check: {:?} CTypes", ctypes_to_migrate);
+
+		MigrationCounter::<T>::set(ctypes_to_migrate as u32);
+		Ok(())
 	}
 
 	fn on_runtime_upgrade() -> frame_support::weights::Weight {
-		let entries: u32 = 2;
-		if frame_support::storage::unhashed::clear_prefix(&Twox128::hash(b"RelayMigration"), Some(entries), None)
-			.maybe_cursor
-			.is_some()
-		{
-			log::warn!("Pallet RelayMigration not removed entirely")
-		}
-		if frame_support::storage::unhashed::clear_prefix(&Twox128::hash(b"DynFilter"), Some(entries), None)
-			.maybe_cursor
-			.is_some()
-		{
-			log::warn!("Pallet DynFilter not removed entirely")
-		}
+		let current = ctype::Pallet::<T>::current_storage_version();
+		let onchain = ctype::Pallet::<T>::on_chain_storage_version();
 
-		<R as frame_system::Config>::DbWeight::get().writes((entries * 2).into())
+		log::info!(
+			"💰 Running migration with current storage version {:?} / onchain {:?}",
+			current,
+			onchain
+		);
+
+		let mut num_translations = 0u64;
+
+		ctype::Ctypes::<T>::translate_values(|old: CtypeCreatorOf<T>| {
+			num_translations = num_translations.saturating_add(1);
+			Some(CtypeEntryOf::<T> {
+				creator: old,
+				creation_block_number: <T as frame_system::Config>::BlockNumber::zero(),
+			})
+		});
+		current.put::<ctype::Pallet<T>>();
+
+		// Num translations + old version read and new version write
+		T::DbWeight::get().reads_writes(num_translations.saturating_add(1), num_translations.saturating_add(1))
 	}
 
 	#[cfg(feature = "try-runtime")]
 	fn post_upgrade() -> Result<(), &'static str> {
-		log::info!("Post check RemoveRelocationPallets.");
-		let has_migration_storage = frame_support::storage::migration::have_storage_value(
-			b"RelayMigration",
-			b"RelayNumberStrictlyIncreases",
-			b"",
-		);
-		let has_filter_storage = frame_support::storage::migration::have_storage_value(b"DynFilter", b"Filter", b"");
+		assert_eq!(ctype::Pallet::<T>::on_chain_storage_version(), 2);
 
-		match (has_migration_storage, has_filter_storage) {
-			(false, false) => Ok(()),
-			(true, false) => Err("RelayMigration still present"),
-			(false, true) => Err("DynFilter still present"),
-			(true, true) => Err("Pallets still present"),
-		}
+		assert_eq!(MigrationCounter::<T>::get(), ctype::Ctypes::<T>::iter().count() as u32);
+
+		log::info!("💰 CType pallet post checks ok ✅");
+		Ok(())
 	}
 }

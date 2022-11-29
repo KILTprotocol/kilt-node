@@ -8414,6 +8414,7 @@ name = "runtime-common"
 version = "1.9.0"
 dependencies = [
  "attestation",
+ "ctype",
  "frame-support",
  "frame-system",
  "kilt-asset-dids",
