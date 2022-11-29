@@ -148,7 +148,7 @@ where
 		)?;
 
 		// only return first leaf
-		first_leaf = first_leaf.or(Some((delegation_acc_public, delegation_acc_id, delegation_id)));
+		first_leaf = first_leaf.or_else(|| Some((delegation_acc_public, delegation_acc_id, delegation_id)));
 	}
 
 	let (leaf_acc_public, leaf_acc_id, leaf_id) =
