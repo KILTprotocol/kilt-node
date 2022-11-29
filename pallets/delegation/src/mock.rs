@@ -183,6 +183,7 @@ pub(crate) mod runtime {
 	};
 
 	use attestation::{mock::insert_attestation, AttestationDetails, ClaimHashOf};
+	use ctype::CtypeEntryOf;
 	use kilt_support::{
 		mock::{mock_origin, SubjectId},
 		signature::EqualVerify,
@@ -491,7 +492,13 @@ pub(crate) mod runtime {
 
 			ext.execute_with(|| {
 				for (ctype_hash, owner) in self.ctypes.iter() {
-					ctype::Ctypes::<Test>::insert(ctype_hash, owner);
+					ctype::Ctypes::<Test>::insert(
+						ctype_hash,
+						CtypeEntryOf::<Test> {
+							creator: owner.clone(),
+							creation_block_number: 0,
+						},
+					);
 				}
 
 				initialize_pallet(self.delegations, self.delegation_hierarchies);

@@ -168,7 +168,6 @@ pub fn insert_attestation<T: Config>(claim_hash: ClaimHashOf<T>, details: Attest
 /// Mocks that are only used internally
 #[cfg(test)]
 pub(crate) mod runtime {
-	use ctype::CtypeCreatorOf;
 	use frame_support::{parameter_types, weights::constants::RocksDbWeight};
 	use sp_core::{ed25519, sr25519, Pair};
 	use sp_runtime::{
@@ -177,6 +176,7 @@ pub(crate) mod runtime {
 		MultiSignature, MultiSigner,
 	};
 
+	use ctype::{CtypeCreatorOf, CtypeEntryOf};
 	use kilt_support::mock::{mock_origin, SubjectId};
 
 	use super::*;
@@ -366,7 +366,13 @@ pub(crate) mod runtime {
 
 			ext.execute_with(|| {
 				for ctype in self.ctypes {
-					ctype::Ctypes::<Test>::insert(ctype.0, ctype.1.clone());
+					ctype::Ctypes::<Test>::insert(
+						ctype.0,
+						CtypeEntryOf::<Test> {
+							creator: ctype.1.clone(),
+							creation_block_number: 0,
+						},
+					);
 				}
 
 				for (claim_hash, details) in self.attestations {

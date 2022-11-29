@@ -110,7 +110,7 @@ pub(crate) mod runtime {
 
 	use kilt_support::mock::{mock_origin, SubjectId};
 
-	use ctype::{CtypeCreatorOf, CtypeHashOf};
+	use ctype::{CtypeCreatorOf, CtypeEntryOf, CtypeHashOf};
 
 	use crate::{Config, CredentialEntryOf, Error, InputSubjectIdOf, PublicCredentialsAccessControl};
 
@@ -424,7 +424,13 @@ pub(crate) mod runtime {
 
 			ext.execute_with(|| {
 				for ctype in self.ctypes {
-					ctype::Ctypes::<Test>::insert(ctype.0, ctype.1.clone());
+					ctype::Ctypes::<Test>::insert(
+						ctype.0,
+						CtypeEntryOf::<Test> {
+							creator: ctype.1.clone(),
+							creation_block_number: 0,
+						},
+					);
 				}
 
 				for (subject_id, credential_id, credential_entry) in self.public_credentials {

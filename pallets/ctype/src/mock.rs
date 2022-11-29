@@ -44,7 +44,7 @@ pub mod runtime {
 		AccountId32, MultiSignature,
 	};
 
-	use crate::{BalanceOf, Ctypes};
+	use crate::{BalanceOf, CtypeEntryOf, Ctypes};
 
 	use super::*;
 
@@ -176,7 +176,13 @@ pub mod runtime {
 
 			ext.execute_with(|| {
 				for (ctype_hash, owner) in self.ctypes_stored.iter() {
-					Ctypes::<Test>::insert(ctype_hash, owner);
+					Ctypes::<Test>::insert(
+						ctype_hash,
+						CtypeEntryOf::<Test> {
+							creator: owner.clone(),
+							creation_block_number: 0,
+						},
+					);
 				}
 			});
 

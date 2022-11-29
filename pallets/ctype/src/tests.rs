@@ -19,7 +19,7 @@
 use frame_support::{assert_noop, assert_ok, sp_runtime::traits::Hash};
 use kilt_support::mock::mock_origin::DoubleOrigin;
 
-use crate::{self as ctype, mock::runtime::*};
+use crate::{self as ctype, mock::runtime::*, CtypeEntryOf};
 
 // submit_ctype_creation_operation
 
@@ -34,6 +34,7 @@ fn check_successful_ctype_creation() {
 		.with_balances(vec![(deposit_owner.clone(), initial_balance)])
 		.build()
 		.execute_with(|| {
+			System::set_block_number(200);
 			assert_ok!(Ctype::add(
 				DoubleOrigin(deposit_owner.clone(), creator.clone()).into(),
 				ctype
@@ -41,7 +42,13 @@ fn check_successful_ctype_creation() {
 			let stored_ctype_creator = Ctype::ctypes(&ctype_hash).expect("CType hash should be present on chain.");
 
 			// Verify the CType has the right owner
-			assert_eq!(stored_ctype_creator, creator);
+			assert_eq!(
+				stored_ctype_creator,
+				CtypeEntryOf::<Test> {
+					creator,
+					creation_block_number: 200
+				}
+			);
 			assert_eq!(
 				Balances::free_balance(deposit_owner),
 				initial_balance.saturating_sub(<Test as ctype::Config>::Fee::get())

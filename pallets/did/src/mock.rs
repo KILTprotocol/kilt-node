@@ -472,7 +472,13 @@ impl ExtBuilder {
 
 		ext.execute_with(|| {
 			for (ctype_hash, owner) in self.ctypes_stored.iter() {
-				ctype::Ctypes::<Test>::insert(ctype_hash, owner);
+				ctype::Ctypes::<Test>::insert(
+					ctype_hash,
+					ctype::CtypeEntryOf::<Test> {
+						creator: owner.to_owned(),
+						creation_block_number: 0,
+					},
+				);
 			}
 
 			for did in self.dids_stored.iter() {

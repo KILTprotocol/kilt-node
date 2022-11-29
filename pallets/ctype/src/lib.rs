@@ -42,6 +42,7 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
+pub mod ctype_entry;
 pub mod default_weights;
 
 #[cfg(any(feature = "mock", test))]
@@ -58,6 +59,8 @@ pub use crate::{default_weights::WeightInfo, pallet::*};
 
 #[frame_support::pallet]
 pub mod pallet {
+	use crate::ctype_entry::CtypeEntry;
+
 	use super::*;
 	use frame_support::{
 		pallet_prelude::*,
@@ -74,6 +77,8 @@ pub mod pallet {
 
 	/// Type of a CType hash.
 	pub type CtypeHashOf<T> = <T as frame_system::Config>::Hash;
+
+	pub type CtypeEntryOf<T> = CtypeEntry<<T as Config>::CtypeCreatorId, BlockNumberFor<T>>;
 
 	/// Type of a CType creator.
 	pub type CtypeCreatorOf<T> = <T as Config>::CtypeCreatorId;
@@ -105,10 +110,11 @@ pub mod pallet {
 
 	/// CTypes stored on chain.
 	///
-	/// It maps from a CType hash to its creator.
+	/// It maps from a CType hash to its creator and block number in which it
+	/// was created.
 	#[pallet::storage]
 	#[pallet::getter(fn ctypes)]
-	pub type Ctypes<T> = StorageMap<_, Blake2_128Concat, CtypeHashOf<T>, CtypeCreatorOf<T>>;
+	pub type Ctypes<T> = StorageMap<_, Blake2_128Concat, CtypeHashOf<T>, CtypeEntryOf<T>>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -176,7 +182,13 @@ pub mod pallet {
 
 			T::FeeCollector::on_unbalanced(imbalance);
 			log::debug!("Creating CType with hash {:?} and creator {:?}", hash, creator);
-			Ctypes::<T>::insert(hash, creator.clone());
+			Ctypes::<T>::insert(
+				hash,
+				CtypeEntryOf::<T> {
+					creator: creator.clone(),
+					creation_block_number: frame_system::Pallet::<T>::block_number(),
+				},
+			);
 
 			Self::deposit_event(Event::CTypeCreated(creator, hash));
 
