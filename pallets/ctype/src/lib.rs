@@ -160,7 +160,7 @@ pub mod pallet {
 
 			let hash = <T as frame_system::Config>::Hashing::hash(&ctype[..]);
 
-			ensure!(!Ctypes::<T>::contains_key(&hash), Error::<T>::CTypeAlreadyExists);
+			ensure!(!Ctypes::<T>::contains_key(hash), Error::<T>::CTypeAlreadyExists);
 
 			// *** No Fail except during withdraw beyond this point  ***
 
@@ -176,7 +176,7 @@ pub mod pallet {
 
 			T::FeeCollector::on_unbalanced(imbalance);
 			log::debug!("Creating CType with hash {:?} and creator {:?}", hash, creator);
-			Ctypes::<T>::insert(&hash, creator.clone());
+			Ctypes::<T>::insert(hash, creator.clone());
 
 			Self::deposit_event(Event::CTypeCreated(creator, hash));
 

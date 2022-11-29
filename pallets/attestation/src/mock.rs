@@ -159,7 +159,7 @@ pub fn insert_attestation<T: Config>(claim_hash: ClaimHashOf<T>, details: Attest
 	)
 	.expect("Should have balance");
 
-	crate::Attestations::<T>::insert(&claim_hash, details.clone());
+	crate::Attestations::<T>::insert(claim_hash, details.clone());
 	if let Some(delegation_id) = details.authorization_id.as_ref() {
 		crate::ExternalAttestations::<T>::insert(delegation_id, claim_hash, true)
 	}

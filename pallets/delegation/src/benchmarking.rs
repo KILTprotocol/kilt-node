@@ -74,7 +74,7 @@ where
 		<T as Config>::Currency::minimum_balance() + <T as Config>::Deposit::get() + <T as Config>::Deposit::get(),
 	);
 
-	ctype::Ctypes::<T>::insert(&ctype_hash, T::CtypeCreatorId::from(root_acc.clone()));
+	ctype::Ctypes::<T>::insert(ctype_hash, T::CtypeCreatorId::from(root_acc.clone()));
 
 	Pallet::<T>::create_hierarchy(
 		<T as Config>::EnsureOrigin::generate_origin(sender, root_acc.clone()),
@@ -148,7 +148,7 @@ where
 		)?;
 
 		// only return first leaf
-		first_leaf = first_leaf.or(Some((delegation_acc_public, delegation_acc_id, delegation_id)));
+		first_leaf = first_leaf.or_else(|| Some((delegation_acc_public, delegation_acc_id, delegation_id)));
 	}
 
 	let (leaf_acc_public, leaf_acc_id, leaf_id) =
@@ -234,7 +234,7 @@ benchmarks! {
 		let creator: T::DelegationEntityId = account("creator", 0, SEED);
 		let ctype = <T::Hash as Default>::default();
 		let delegation = generate_delegation_id::<T>(0);
-		ctype::Ctypes::<T>::insert(&ctype, <T as ctype::Config>::CtypeCreatorId::from(creator.clone()));
+		ctype::Ctypes::<T>::insert(ctype, <T as ctype::Config>::CtypeCreatorId::from(creator.clone()));
 		<T as Config>::Currency::make_free_balance_be(
 			&sender,
 			<T as Config>::Currency::minimum_balance() + <T as Config>::Deposit::get(),

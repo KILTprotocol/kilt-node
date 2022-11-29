@@ -1244,7 +1244,7 @@ pub mod pallet {
 		fn deposit(
 			key: &DidIdentifierOf<T>,
 		) -> Result<Deposit<AccountIdOf<T>, <Self::Currency as Currency<AccountIdOf<T>>>::Balance>, DispatchError> {
-			let did_entry = Did::<T>::get(&key).ok_or(Error::<T>::DidNotPresent)?;
+			let did_entry = Did::<T>::get(key).ok_or(Error::<T>::DidNotPresent)?;
 			Ok(did_entry.deposit)
 		}
 
@@ -1256,8 +1256,8 @@ pub mod pallet {
 			key: &DidIdentifierOf<T>,
 			deposit: Deposit<AccountIdOf<T>, <Self::Currency as Currency<AccountIdOf<T>>>::Balance>,
 		) -> Result<(), DispatchError> {
-			let did_entry = Did::<T>::get(&key).ok_or(Error::<T>::DidNotPresent)?;
-			Did::<T>::insert(&key, DidDetails { deposit, ..did_entry });
+			let did_entry = Did::<T>::get(key).ok_or(Error::<T>::DidNotPresent)?;
+			Did::<T>::insert(key, DidDetails { deposit, ..did_entry });
 
 			Ok(())
 		}
