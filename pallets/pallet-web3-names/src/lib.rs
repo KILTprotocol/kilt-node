@@ -383,7 +383,7 @@ pub mod pallet {
 		) -> Result<Web3NameOf<T>, DispatchError> {
 			let name = Web3NameOf::<T>::try_from(name_input.into_inner()).map_err(DispatchError::from)?;
 
-			ensure!(!Names::<T>::contains_key(&owner), Error::<T>::OwnerAlreadyExists);
+			ensure!(!Names::<T>::contains_key(owner), Error::<T>::OwnerAlreadyExists);
 			ensure!(!Owner::<T>::contains_key(&name), Error::<T>::Web3NameAlreadyClaimed);
 			ensure!(!Banned::<T>::contains_key(&name), Error::<T>::Web3NameBanned);
 
@@ -423,7 +423,7 @@ pub mod pallet {
 		/// Specifically:
 		/// - The owner has a previously claimed name
 		fn check_releasing_preconditions(owner: &Web3NameOwnerOf<T>) -> Result<Web3NameOf<T>, DispatchError> {
-			let name = Names::<T>::get(&owner).ok_or(Error::<T>::OwnerNotFound)?;
+			let name = Names::<T>::get(owner).ok_or(Error::<T>::OwnerNotFound)?;
 
 			Ok(name)
 		}
@@ -480,7 +480,7 @@ pub mod pallet {
 		/// `check_banning_preconditions` as it does not verify all the
 		/// preconditions again.
 		pub(crate) fn ban_name(name: &Web3NameOf<T>) {
-			Banned::<T>::insert(&name, ());
+			Banned::<T>::insert(name, ());
 		}
 
 		/// Verify that the unbanning preconditions are verified.
@@ -510,7 +510,7 @@ pub mod pallet {
 		fn deposit(
 			key: &T::Web3Name,
 		) -> Result<Deposit<AccountIdOf<T>, <Self::Currency as Currency<AccountIdOf<T>>>::Balance>, DispatchError> {
-			let w3n_entry = Owner::<T>::get(&key).ok_or(Error::<T>::Web3NameNotFound)?;
+			let w3n_entry = Owner::<T>::get(key).ok_or(Error::<T>::Web3NameNotFound)?;
 
 			Ok(w3n_entry.deposit)
 		}
@@ -523,8 +523,8 @@ pub mod pallet {
 			key: &T::Web3Name,
 			deposit: Deposit<AccountIdOf<T>, <Self::Currency as Currency<AccountIdOf<T>>>::Balance>,
 		) -> Result<(), DispatchError> {
-			let w3n_entry = Owner::<T>::get(&key).ok_or(Error::<T>::Web3NameNotFound)?;
-			Owner::<T>::insert(&key, Web3OwnershipOf::<T> { deposit, ..w3n_entry });
+			let w3n_entry = Owner::<T>::get(key).ok_or(Error::<T>::Web3NameNotFound)?;
+			Owner::<T>::insert(key, Web3OwnershipOf::<T> { deposit, ..w3n_entry });
 
 			Ok(())
 		}

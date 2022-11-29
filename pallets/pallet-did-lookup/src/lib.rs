@@ -380,7 +380,7 @@ pub mod pallet {
 		fn deposit(
 			key: &LinkableAccountId,
 		) -> Result<Deposit<AccountIdOf<T>, <Self::Currency as Currency<AccountIdOf<T>>>::Balance>, DispatchError> {
-			let record = ConnectedDids::<T>::get(&key).ok_or(Error::<T>::AssociationNotFound)?;
+			let record = ConnectedDids::<T>::get(key).ok_or(Error::<T>::AssociationNotFound)?;
 			Ok(record.deposit)
 		}
 
@@ -392,8 +392,8 @@ pub mod pallet {
 			key: &LinkableAccountId,
 			deposit: Deposit<AccountIdOf<T>, <Self::Currency as Currency<AccountIdOf<T>>>::Balance>,
 		) -> Result<(), DispatchError> {
-			let record = ConnectedDids::<T>::get(&key).ok_or(Error::<T>::AssociationNotFound)?;
-			ConnectedDids::<T>::insert(&key, ConnectionRecord { deposit, ..record });
+			let record = ConnectedDids::<T>::get(key).ok_or(Error::<T>::AssociationNotFound)?;
+			ConnectedDids::<T>::insert(key, ConnectionRecord { deposit, ..record });
 
 			Ok(())
 		}
