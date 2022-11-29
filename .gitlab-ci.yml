@@ -10,7 +10,7 @@ clippy:
   timeout: 1 hours
   script:
     - rustup show
-    - cargo +nightly clippy --all-features --all-targets --locked -- -D warnings
+    - cargo clippy --all-features --all-targets --locked -- -D warnings
 
 fmt:
   # Corresponds to paritytech/ci-linux:production at the time of this PR
@@ -19,7 +19,7 @@ fmt:
   stage: test
   timeout: 1 hours
   script:
-    - cargo +nightly fmt -- --check
+    - cargo fmt -- --check
 
 test:
   # Corresponds to paritytech/ci-linux:production at the time of this PR
