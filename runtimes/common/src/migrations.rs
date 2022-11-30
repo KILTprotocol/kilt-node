@@ -37,9 +37,10 @@ impl<T: ctype::Config> OnRuntimeUpgrade for AddCTypeBlockNumber<T> {
 		assert_eq!(ctype::Pallet::<T>::on_chain_storage_version(), 0,);
 		assert!(MigrationCounter::<T>::get().is_zero());
 
-		let ctypes_to_migrate = ctype::Ctypes::<T>::iter().count();
+		// Use iter_keys() on new storage so it won't try to decode values.
+		let ctypes_to_migrate = ctype::Ctypes::<T>::iter_keys().count();
 
-		log::info!("💰 CType pallet pre check: {:?} CTypes", ctypes_to_migrate);
+		log::info!("🪪  CType pallet pre check: {:?} CTypes to migrate", ctypes_to_migrate);
 
 		MigrationCounter::<T>::set(ctypes_to_migrate as u32);
 		Ok(())
@@ -56,12 +57,13 @@ impl<T: ctype::Config> OnRuntimeUpgrade for AddCTypeBlockNumber<T> {
 		);
 
 		let mut num_translations = 0u64;
+		let default_block_number = <T as frame_system::Config>::BlockNumber::zero();
 
 		ctype::Ctypes::<T>::translate_values(|old: CtypeCreatorOf<T>| {
 			num_translations = num_translations.saturating_add(1);
 			Some(CtypeEntryOf::<T> {
 				creator: old,
-				creation_block_number: <T as frame_system::Config>::BlockNumber::zero(),
+				creation_block_number: default_block_number,
 			})
 		});
 		current.put::<ctype::Pallet<T>>();
@@ -74,9 +76,17 @@ impl<T: ctype::Config> OnRuntimeUpgrade for AddCTypeBlockNumber<T> {
 	fn post_upgrade() -> Result<(), &'static str> {
 		assert_eq!(ctype::Pallet::<T>::on_chain_storage_version(), 1);
 
+		// Use iter() on new storage so it also checks that the new values can be
+		// decoded after the migration.
 		assert_eq!(MigrationCounter::<T>::get(), ctype::Ctypes::<T>::iter().count() as u32);
+		if let Some(ctype_entry) = ctype::Ctypes::<T>::iter_values().last() {
+			assert!(ctype_entry.creation_block_number.is_zero());
+		}
 
-		log::info!("💰 CType pallet post checks ok ✅");
+		log::info!(
+			"🪪  CType pallet post checks ok, all {:} CTypes have been migrated ✅",
+			MigrationCounter::<T>::get()
+		);
 		Ok(())
 	}
 }
