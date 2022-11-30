@@ -67,7 +67,7 @@ pub mod pallet {
 		sp_runtime::traits::Hash,
 		traits::{Currency, ExistenceRequirement, OnUnbalanced, StorageVersion, WithdrawReasons},
 	};
-	use frame_system::pallet_prelude::*;
+	use frame_system::pallet_prelude::{BlockNumberFor, *};
 	use kilt_support::traits::CallSources;
 	use sp_runtime::{traits::Saturating, SaturatedConversion};
 	use sp_std::vec::Vec;
@@ -91,6 +91,7 @@ pub mod pallet {
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
 		type EnsureOrigin: EnsureOrigin<Success = Self::OriginSuccess, <Self as frame_system::Config>::Origin>;
+		type OverarchingOrigin: EnsureOrigin<<Self as frame_system::Config>::Origin>;
 		type OriginSuccess: CallSources<AccountIdOf<Self>, CtypeCreatorOf<Self>>;
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 		type Currency: Currency<AccountIdOf<Self>>;
@@ -191,6 +192,25 @@ pub mod pallet {
 			);
 
 			Self::deposit_event(Event::CTypeCreated(creator, hash));
+
+			Ok(())
+		}
+
+		#[pallet::weight(0)]
+		pub fn set_block_number(
+			origin: OriginFor<T>,
+			ctype_hash: CtypeHashOf<T>,
+			block_number: BlockNumberFor<T>,
+		) -> DispatchResult {
+			T::OverarchingOrigin::ensure_origin(origin)?;
+			Ctypes::<T>::try_mutate(ctype_hash, |ctype_entry| -> Result<(), Error<T>> {
+				if let Some(ctype_entry) = ctype_entry {
+					ctype_entry.creation_block_number = block_number;
+					Ok(())
+				} else {
+					Err(Error::<T>::CTypeNotFound)
+				}
+			})?;
 
 			Ok(())
 		}

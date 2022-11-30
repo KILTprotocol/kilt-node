@@ -17,9 +17,11 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_support::{assert_noop, assert_ok, sp_runtime::traits::Hash};
+use frame_system::RawOrigin;
 use kilt_support::mock::mock_origin::DoubleOrigin;
+use sp_runtime::DispatchError;
 
-use crate::{self as ctype, mock::runtime::*, CtypeEntryOf};
+use crate::{self as ctype, mock::runtime::*, CtypeEntryOf, Ctypes, Error};
 
 // submit_ctype_creation_operation
 
@@ -87,4 +89,61 @@ fn check_duplicate_ctype_creation() {
 				ctype::Error::<Test>::CTypeAlreadyExists
 			);
 		});
+}
+
+// set_block_number
+
+#[test]
+fn set_block_number_ok() {
+	let creator = DID_00;
+	let ctype = [9u8; 256].to_vec();
+	let ctype_hash = <Test as frame_system::Config>::Hashing::hash(&ctype[..]);
+	let new_block_number = 500u64;
+
+	ExtBuilder::default()
+		.with_ctypes(vec![(ctype_hash, creator)])
+		.build()
+		.execute_with(|| {
+			assert_ok!(Ctype::set_block_number(
+				RawOrigin::Signed(ACCOUNT_00).into(),
+				ctype_hash,
+				new_block_number
+			));
+			assert_eq!(
+				Ctypes::<Test>::get(ctype_hash)
+					.expect("CType with provided hash should exist.")
+					.creation_block_number,
+				new_block_number
+			);
+		})
+}
+
+#[test]
+fn set_block_number_ctype_not_found() {
+	let ctype = [9u8; 256].to_vec();
+	let ctype_hash = <Test as frame_system::Config>::Hashing::hash(&ctype[..]);
+
+	ExtBuilder::default().build().execute_with(|| {
+		assert_noop!(
+			Ctype::set_block_number(RawOrigin::Signed(ACCOUNT_00).into(), ctype_hash, 100u64),
+			Error::<Test>::CTypeNotFound
+		);
+	})
+}
+
+#[test]
+fn set_block_number_bad_origin() {
+	let creator = DID_00;
+	let ctype = [9u8; 256].to_vec();
+	let ctype_hash = <Test as frame_system::Config>::Hashing::hash(&ctype[..]);
+
+	ExtBuilder::default()
+		.with_ctypes(vec![(ctype_hash, creator)])
+		.build()
+		.execute_with(|| {
+			assert_noop!(
+				Ctype::set_block_number(RawOrigin::Signed(ACCOUNT_01).into(), ctype_hash, 100u64),
+				DispatchError::BadOrigin
+			);
+		})
 }
