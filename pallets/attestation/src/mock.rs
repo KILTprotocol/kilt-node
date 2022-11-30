@@ -169,6 +169,7 @@ pub fn insert_attestation<T: Config>(claim_hash: ClaimHashOf<T>, details: Attest
 #[cfg(test)]
 pub(crate) mod runtime {
 	use frame_support::{parameter_types, weights::constants::RocksDbWeight};
+	use frame_system::EnsureSigned;
 	use sp_core::{ed25519, sr25519, Pair};
 	use sp_runtime::{
 		testing::Header,
@@ -267,6 +268,7 @@ pub(crate) mod runtime {
 		type CtypeCreatorId = SubjectId;
 		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<AccountId, Self::CtypeCreatorId>;
 		type OriginSuccess = mock_origin::DoubleOrigin<AccountId, Self::CtypeCreatorId>;
+		type OverarchingOrigin = EnsureSigned<AccountId>;
 		type Event = ();
 		type WeightInfo = ();
 

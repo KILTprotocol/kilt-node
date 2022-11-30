@@ -100,6 +100,7 @@ pub(crate) mod runtime {
 		traits::{ConstU128, ConstU16, ConstU32, ConstU64},
 		weights::constants::RocksDbWeight,
 	};
+	use frame_system::EnsureSigned;
 	use scale_info::TypeInfo;
 	use sp_core::{sr25519, Pair};
 	use sp_runtime::{
@@ -333,6 +334,7 @@ pub(crate) mod runtime {
 		type CtypeCreatorId = SubjectId;
 		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<AccountId, Self::CtypeCreatorId>;
 		type OriginSuccess = mock_origin::DoubleOrigin<AccountId, Self::CtypeCreatorId>;
+		type OverarchingOrigin = EnsureSigned<AccountId>;
 		type Event = ();
 		type WeightInfo = ();
 

@@ -196,6 +196,7 @@ impl ctype::Config for Test {
 	type OriginSuccess = DidRawOrigin<AccountId, DidIdentifier>;
 
 	type CtypeCreatorId = DidIdentifier;
+	type OverarchingOrigin = EnsureSigned<AccountId>;
 	type Event = ();
 	type WeightInfo = ();
 	type Currency = Balances;
