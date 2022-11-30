@@ -74,7 +74,7 @@ benchmarks! {
 
 		let initial_balance = <T as Config>::Fee::get() * ctype.len().try_into().unwrap() + <T as Config>::Currency::minimum_balance();
 		<T as Config>::Currency::make_free_balance_be(&caller, initial_balance);
-		let origin = T::EnsureOrigin::generate_origin(caller, did.clone());
+		let origin = T::EnsureOrigin::generate_origin(caller, did);
 		Pallet::<T>::add(origin, ctype).expect("CType creation should not fail.");
 		let overarching_origin = T::OverarchingOrigin::successful_origin();
 

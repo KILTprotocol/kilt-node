@@ -430,7 +430,7 @@ pub(crate) mod runtime {
 						ctype.0,
 						CtypeEntryOf::<Test> {
 							creator: ctype.1.clone(),
-							creation_block_number: 0,
+							creation_block_number: System::block_number(),
 						},
 					);
 				}

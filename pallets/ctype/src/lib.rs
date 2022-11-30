@@ -59,8 +59,6 @@ pub use crate::{default_weights::WeightInfo, pallet::*};
 
 #[frame_support::pallet]
 pub mod pallet {
-	use crate::ctype_entry::CtypeEntry;
-
 	use super::*;
 	use frame_support::{
 		pallet_prelude::*,
@@ -71,6 +69,8 @@ pub mod pallet {
 	use kilt_support::traits::CallSources;
 	use sp_runtime::{traits::Saturating, SaturatedConversion};
 	use sp_std::vec::Vec;
+
+	use crate::ctype_entry::CtypeEntry;
 
 	/// The current storage version.
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(2);

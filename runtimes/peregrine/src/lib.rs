@@ -566,6 +566,8 @@ impl ctype::Config for Runtime {
 
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
+	// 3/5 of the technical committees can override the block number of one or more
+	// CTypes.
 	type OverarchingOrigin = CTypeBlockNumberSetOrigin;
 
 	type Event = Event;

@@ -18,10 +18,11 @@
 
 use frame_support::{assert_noop, assert_ok, sp_runtime::traits::Hash};
 use frame_system::RawOrigin;
-use kilt_support::mock::mock_origin::DoubleOrigin;
 use sp_runtime::DispatchError;
 
-use crate::{self as ctype, mock::runtime::*, CtypeEntryOf, Ctypes, Error};
+use kilt_support::mock::mock_origin::DoubleOrigin;
+
+use crate::{self as ctype, mock::runtime::*};
 
 // submit_ctype_creation_operation
 
@@ -43,10 +44,10 @@ fn check_successful_ctype_creation() {
 			));
 			let stored_ctype_creator = Ctype::ctypes(&ctype_hash).expect("CType hash should be present on chain.");
 
-			// Verify the CType has the right owner
+			// Verify the CType has the right owner and block number
 			assert_eq!(
 				stored_ctype_creator,
-				CtypeEntryOf::<Test> {
+				ctype::CtypeEntryOf::<Test> {
 					creator,
 					creation_block_number: 200
 				}
@@ -110,7 +111,7 @@ fn set_block_number_ok() {
 				new_block_number
 			));
 			assert_eq!(
-				Ctypes::<Test>::get(ctype_hash)
+				ctype::Ctypes::<Test>::get(ctype_hash)
 					.expect("CType with provided hash should exist.")
 					.creation_block_number,
 				new_block_number
@@ -126,7 +127,7 @@ fn set_block_number_ctype_not_found() {
 	ExtBuilder::default().build().execute_with(|| {
 		assert_noop!(
 			Ctype::set_block_number(RawOrigin::Signed(ACCOUNT_00).into(), ctype_hash, 100u64),
-			Error::<Test>::CTypeNotFound
+			ctype::Error::<Test>::CTypeNotFound
 		);
 	})
 }

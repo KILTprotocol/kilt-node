@@ -498,7 +498,7 @@ pub(crate) mod runtime {
 						ctype_hash,
 						CtypeEntryOf::<Test> {
 							creator: owner.clone(),
-							creation_block_number: 0,
+							creation_block_number: System::block_number(),
 						},
 					);
 				}
