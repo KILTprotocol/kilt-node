@@ -65,7 +65,7 @@ pub mod pallet {
 		sp_runtime::traits::Hash,
 		traits::{Currency, ExistenceRequirement, OnUnbalanced, StorageVersion, WithdrawReasons},
 	};
-	use frame_system::pallet_prelude::{BlockNumberFor, *};
+	use frame_system::pallet_prelude::*;
 	use kilt_support::traits::CallSources;
 	use sp_runtime::{traits::Saturating, SaturatedConversion};
 	use sp_std::vec::Vec;
@@ -123,6 +123,9 @@ pub mod pallet {
 		/// A new CType has been created.
 		/// \[creator identifier, CType hash\]
 		CTypeCreated(CtypeCreatorOf<T>, CtypeHashOf<T>),
+		/// Information about a CType has been updated.
+		/// \[CType hash\]
+		CTypeUpdated(CtypeHashOf<T>),
 	}
 
 	#[pallet::error]
@@ -196,6 +199,9 @@ pub mod pallet {
 			Ok(())
 		}
 
+		/// Set the creation block number for a given CType, if found.
+		///
+		/// Emits `CTypeUpdated`.
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::set_block_number())]
 		pub fn set_block_number(
 			origin: OriginFor<T>,
@@ -211,6 +217,8 @@ pub mod pallet {
 					Err(Error::<T>::CTypeNotFound)
 				}
 			})?;
+
+			Self::deposit_event(Event::CTypeUpdated(ctype_hash));
 
 			Ok(())
 		}
