@@ -57,4 +57,10 @@ impl<T: frame_system::Config> ctype::WeightInfo for WeightInfo<T> {
 			.saturating_add(T::DbWeight::get().reads(3 as u64))
 			.saturating_add(T::DbWeight::get().writes(3 as u64))
 	}
+	// Storage: Ctype Ctypes (r:1 w:1)
+	fn set_block_number() -> Weight {
+		Weight::from_ref_time(19_549_000 as u64)
+			.saturating_add(T::DbWeight::get().reads(1 as u64))
+			.saturating_add(T::DbWeight::get().writes(1 as u64))
+	}
 }

@@ -196,7 +196,7 @@ pub mod pallet {
 			Ok(())
 		}
 
-		#[pallet::weight(0)]
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::set_block_number())]
 		pub fn set_block_number(
 			origin: OriginFor<T>,
 			ctype_hash: CtypeHashOf<T>,

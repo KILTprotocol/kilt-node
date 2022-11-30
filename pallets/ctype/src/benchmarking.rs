@@ -19,7 +19,7 @@
 use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
 use frame_support::{
 	sp_runtime::traits::Hash,
-	traits::{Currency, Get},
+	traits::{Currency, EnsureOrigin, Get},
 };
 use sp_std::{
 	convert::{TryFrom, TryInto},
@@ -40,6 +40,7 @@ benchmarks! {
 		<<T as Config>::Currency as Currency<AccountIdOf<T>>>::Balance: TryFrom<usize>,
 		<<<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance as TryFrom<usize>>::Error: Debug,
 		T::EnsureOrigin: GenerateBenchmarkOrigin<T::Origin, T::AccountId, T::CtypeCreatorId>,
+		T::BlockNumber: From<u64>,
 	}
 
 	add {
@@ -61,6 +62,28 @@ benchmarks! {
 
 		// Verify the CType has the right owner
 		assert_eq!(stored_ctype_entry.creator, did);
+	}
+
+	set_block_number {
+		let caller = account("caller", 0, SEED);
+		let did: T::CtypeCreatorId = account("did", 0, SEED);
+
+		let ctype: Vec<u8> = (0u8..u8::MAX).cycle().take(MAX_CTYPE_SIZE.try_into().unwrap()).collect();
+		let ctype_hash = <T as frame_system::Config>::Hashing::hash(&ctype[..]);
+		let new_block_number = 500u64.into();
+
+		let initial_balance = <T as Config>::Fee::get() * ctype.len().try_into().unwrap() + <T as Config>::Currency::minimum_balance();
+		<T as Config>::Currency::make_free_balance_be(&caller, initial_balance);
+		let origin = T::EnsureOrigin::generate_origin(caller, did.clone());
+		Pallet::<T>::add(origin, ctype).expect("CType creation should not fail.");
+		let overarching_origin = T::OverarchingOrigin::successful_origin();
+
+	}: _<T::Origin>(overarching_origin, ctype_hash, new_block_number)
+	verify {
+		let stored_ctype_entry = Ctypes::<T>::get(ctype_hash).expect("CType hash should be present on chain.");
+
+		// Verify the CType has the right block number
+		assert_eq!(stored_ctype_entry.creation_block_number, new_block_number);
 	}
 }
 
