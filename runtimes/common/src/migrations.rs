@@ -34,7 +34,7 @@ pub struct AddCTypeBlockNumber<R>(PhantomData<R>);
 impl<T: ctype::Config> OnRuntimeUpgrade for AddCTypeBlockNumber<T> {
 	#[cfg(feature = "try-runtime")]
 	fn pre_upgrade() -> Result<(), &'static str> {
-		assert_eq!(ctype::Pallet::<T>::on_chain_storage_version(), 1,);
+		assert_eq!(ctype::Pallet::<T>::on_chain_storage_version(), 0,);
 		assert!(MigrationCounter::<T>::get().is_zero());
 
 		let ctypes_to_migrate = ctype::Ctypes::<T>::iter().count();
@@ -72,7 +72,7 @@ impl<T: ctype::Config> OnRuntimeUpgrade for AddCTypeBlockNumber<T> {
 
 	#[cfg(feature = "try-runtime")]
 	fn post_upgrade() -> Result<(), &'static str> {
-		assert_eq!(ctype::Pallet::<T>::on_chain_storage_version(), 2);
+		assert_eq!(ctype::Pallet::<T>::on_chain_storage_version(), 1);
 
 		assert_eq!(MigrationCounter::<T>::get(), ctype::Ctypes::<T>::iter().count() as u32);
 
