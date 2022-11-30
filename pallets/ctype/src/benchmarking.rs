@@ -57,10 +57,10 @@ benchmarks! {
 
 	}: _<T::Origin>(origin, ctype)
 	verify {
-		let stored_ctype_creator: T::CtypeCreatorId = Ctypes::<T>::get(ctype_hash).expect("CType hash should be present on chain.");
+		let stored_ctype_entry = Ctypes::<T>::get(ctype_hash).expect("CType hash should be present on chain.");
 
 		// Verify the CType has the right owner
-		assert_eq!(stored_ctype_creator, did);
+		assert_eq!(stored_ctype_entry.creator, did);
 	}
 }
 
