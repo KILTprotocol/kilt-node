@@ -1703,7 +1703,7 @@ fn should_not_reward_delegators_below_min_stake() {
 				amount: delegator_stake_below_min,
 			};
 			assert_eq!(state.delegators.try_insert(impossible_bond), Ok(true));
-			<crate::CandidatePool<Test>>::insert(&1u64, state);
+			<crate::CandidatePool<Test>>::insert(1u64, state);
 
 			let authors: Vec<Option<AccountId>> = vec![Some(1u64), Some(1u64), Some(1u64), Some(1u64)];
 			assert_eq!(Balances::usable_balance(&1), Balance::zero());

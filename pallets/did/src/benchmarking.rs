@@ -115,9 +115,9 @@ fn generate_base_did_call_operation<T: Config>(
 
 fn save_service_endpoints<T: Config>(did_subject: &DidIdentifierOf<T>, endpoints: &[DidEndpoint<T>]) {
 	for endpoint in endpoints.iter() {
-		ServiceEndpoints::<T>::insert(&did_subject, &endpoint.id, endpoint.clone());
+		ServiceEndpoints::<T>::insert(did_subject, &endpoint.id, endpoint.clone());
 	}
-	DidEndpointsCount::<T>::insert(&did_subject, endpoints.len().saturated_into::<u32>());
+	DidEndpointsCount::<T>::insert(did_subject, endpoints.len().saturated_into::<u32>());
 }
 
 benchmarks! {

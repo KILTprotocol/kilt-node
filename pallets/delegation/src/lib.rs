@@ -324,12 +324,12 @@ pub mod pallet {
 			let creator = source.subject();
 
 			ensure!(
-				!<DelegationHierarchies<T>>::contains_key(&root_node_id),
+				!<DelegationHierarchies<T>>::contains_key(root_node_id),
 				Error::<T>::HierarchyAlreadyExists
 			);
 
 			ensure!(
-				<ctype::Ctypes<T>>::contains_key(&ctype_hash),
+				<ctype::Ctypes<T>>::contains_key(ctype_hash),
 				<ctype::Error<T>>::CTypeNotFound
 			);
 
@@ -397,11 +397,11 @@ pub mod pallet {
 			let delegator = source.subject();
 
 			ensure!(
-				!<DelegationNodes<T>>::contains_key(&delegation_id),
+				!<DelegationNodes<T>>::contains_key(delegation_id),
 				Error::<T>::DelegationAlreadyExists
 			);
 
-			let parent_node = <DelegationNodes<T>>::get(&parent_id).ok_or(Error::<T>::ParentDelegationNotFound)?;
+			let parent_node = <DelegationNodes<T>>::get(parent_id).ok_or(Error::<T>::ParentDelegationNotFound)?;
 			let hierarchy_root_id = parent_node.hierarchy_root_id;
 
 			// Calculate the hash root
@@ -501,7 +501,7 @@ pub mod pallet {
 			let invoker = <T as Config>::EnsureOrigin::ensure_origin(origin)?.subject();
 
 			ensure!(
-				<DelegationNodes<T>>::contains_key(&delegation_id),
+				<DelegationNodes<T>>::contains_key(delegation_id),
 				Error::<T>::DelegationNotFound
 			);
 
@@ -525,7 +525,7 @@ pub mod pallet {
 			let (revocation_checks, _) = Self::revoke(&delegation_id, &invoker, max_revocations.saturating_add(1))?;
 
 			// If the revoked node is a root node, emit also a HierarchyRevoked event.
-			if DelegationHierarchies::<T>::contains_key(&delegation_id) {
+			if DelegationHierarchies::<T>::contains_key(delegation_id) {
 				Self::deposit_event(Event::HierarchyRevoked(invoker, delegation_id));
 			}
 
@@ -574,7 +574,7 @@ pub mod pallet {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 			let invoker = source.subject();
 
-			let delegation = DelegationNodes::<T>::get(&delegation_id).ok_or(Error::<T>::DelegationNotFound)?;
+			let delegation = DelegationNodes::<T>::get(delegation_id).ok_or(Error::<T>::DelegationNotFound)?;
 
 			// Node can only be removed by owner of the node, not the parent or another
 			// ancestor
@@ -589,7 +589,7 @@ pub mod pallet {
 			let (removal_checks, _) = Self::remove(&delegation_id, max_removals.saturating_add(1))?;
 
 			// If the removed node is a root node, emit also a HierarchyRemoved event.
-			if DelegationHierarchies::<T>::take(&delegation_id).is_some() {
+			if DelegationHierarchies::<T>::take(delegation_id).is_some() {
 				Self::deposit_event(Event::HierarchyRemoved(invoker, delegation_id));
 			}
 
@@ -628,7 +628,7 @@ pub mod pallet {
 		) -> DispatchResultWithPostInfo {
 			let who = ensure_signed(origin)?;
 
-			let delegation = DelegationNodes::<T>::get(&delegation_id).ok_or(Error::<T>::DelegationNotFound)?;
+			let delegation = DelegationNodes::<T>::get(delegation_id).ok_or(Error::<T>::DelegationNotFound)?;
 
 			// Deposit can only be removed by the owner of the deposit, not the
 			// parent or another ancestor.
@@ -646,7 +646,7 @@ pub mod pallet {
 			// Delete the delegation hierarchy details, if the provided ID was for a root
 			// node. No event generated as we don't have information about the owner DID
 			// here.
-			DelegationHierarchies::<T>::remove(&delegation_id);
+			DelegationHierarchies::<T>::remove(delegation_id);
 
 			Ok(Some(<T as Config>::WeightInfo::remove_delegation(removal_checks)).into())
 		}
@@ -662,7 +662,7 @@ pub mod pallet {
 		pub fn change_deposit_owner(origin: OriginFor<T>, delegation_id: DelegationNodeIdOf<T>) -> DispatchResult {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 
-			let delegation = DelegationNodes::<T>::get(&delegation_id).ok_or(Error::<T>::DelegationNotFound)?;
+			let delegation = DelegationNodes::<T>::get(delegation_id).ok_or(Error::<T>::DelegationNotFound)?;
 
 			// Deposit can only be swapped by the owner of the delegation node, not the
 			// parent or another ancestor.
@@ -678,7 +678,7 @@ pub mod pallet {
 		pub fn update_deposit(origin: OriginFor<T>, delegation_id: DelegationNodeIdOf<T>) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
 
-			let delegation = DelegationNodes::<T>::get(&delegation_id).ok_or(Error::<T>::DelegationNotFound)?;
+			let delegation = DelegationNodes::<T>::get(delegation_id).ok_or(Error::<T>::DelegationNotFound)?;
 
 			// Deposit can only be swapped by the owner of the delegation node, not the
 			// parent or another ancestor.

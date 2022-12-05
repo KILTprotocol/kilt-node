@@ -259,7 +259,7 @@ pub mod pallet {
 			} = *credential.clone();
 
 			ensure!(
-				ctype::Ctypes::<T>::contains_key(&ctype_hash),
+				ctype::Ctypes::<T>::contains_key(ctype_hash),
 				ctype::Error::<T>::CTypeNotFound
 			);
 
@@ -542,10 +542,10 @@ pub mod pallet {
 		) -> Result<(T::SubjectId, CredentialEntryOf<T>), Error<T>> {
 			// Verify that the credential exists
 			let credential_subject =
-				CredentialSubjects::<T>::get(&credential_id).ok_or(Error::<T>::CredentialNotFound)?;
+				CredentialSubjects::<T>::get(credential_id).ok_or(Error::<T>::CredentialNotFound)?;
 
 			// Should never happen if the line above succeeds
-			Credentials::<T>::get(&credential_subject, &credential_id)
+			Credentials::<T>::get(&credential_subject, credential_id)
 				.map(|entry| (credential_subject, entry))
 				.ok_or(Error::<T>::InternalError)
 		}
@@ -560,7 +560,7 @@ pub mod pallet {
 			// Fails if the credential does not exist OR the caller is different than the
 			// original attester. If successful, saves the additional weight used for access
 			// control and returns it at the end of the function.
-			Credentials::<T>::try_mutate(&credential_subject, &credential_id, |credential_entry| {
+			Credentials::<T>::try_mutate(credential_subject, credential_id, |credential_entry| {
 				if let Some(credential) = credential_entry {
 					// Additional weight is 0 if the caller is the attester, otherwise it's the
 					// value returned by the access control check, if it does not fail.
@@ -605,8 +605,8 @@ pub mod pallet {
 			deposit: Deposit<AccountIdOf<T>, <Self::Currency as Currency<AccountIdOf<T>>>::Balance>,
 		) -> Result<(), DispatchError> {
 			let credential_subject =
-				CredentialSubjects::<T>::get(&credential_id).ok_or(Error::<T>::CredentialNotFound)?;
-			Credentials::<T>::try_mutate(&credential_subject, &credential_id, |credential_entry| {
+				CredentialSubjects::<T>::get(credential_id).ok_or(Error::<T>::CredentialNotFound)?;
+			Credentials::<T>::try_mutate(&credential_subject, credential_id, |credential_entry| {
 				if let Some(credential) = credential_entry {
 					credential.deposit = deposit;
 					Ok(())

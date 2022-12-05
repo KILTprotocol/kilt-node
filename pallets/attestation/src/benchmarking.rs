@@ -41,7 +41,7 @@ benchmarks! {
 		let claim_hash: T::Hash = T::Hashing::hash(b"claim");
 		let ctype_hash: T::Hash = T::Hash::default();
 
-		ctype::Ctypes::<T>::insert(&ctype_hash, attester.clone());
+		ctype::Ctypes::<T>::insert(ctype_hash, attester.clone());
 		<T as Config>::Currency::make_free_balance_be(&sender, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
 
 		let origin = <T as Config>::EnsureOrigin::generate_origin(sender.clone(), attester.clone());
@@ -66,7 +66,7 @@ benchmarks! {
 		let claim_hash: T::Hash = T::Hashing::hash(b"claim");
 		let ctype_hash: T::Hash = T::Hash::default();
 
-		ctype::Ctypes::<T>::insert(&ctype_hash, attester.clone());
+		ctype::Ctypes::<T>::insert(ctype_hash, attester.clone());
 		<T as Config>::Currency::make_free_balance_be(&sender, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
 
 		let origin = <T as Config>::EnsureOrigin::generate_origin(sender.clone(), attester.clone());
@@ -92,7 +92,7 @@ benchmarks! {
 		let claim_hash: T::Hash = T::Hashing::hash(b"claim");
 		let ctype_hash: T::Hash = T::Hash::default();
 
-		ctype::Ctypes::<T>::insert(&ctype_hash, attester.clone());
+		ctype::Ctypes::<T>::insert(ctype_hash, attester.clone());
 		<T as Config>::Currency::make_free_balance_be(&sender, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
 
 		let origin = <T as Config>::EnsureOrigin::generate_origin(sender.clone(), attester.clone());
@@ -109,7 +109,7 @@ benchmarks! {
 		let claim_hash: T::Hash = T::Hashing::hash(b"claim");
 		let ctype_hash: T::Hash = T::Hash::default();
 
-		ctype::Ctypes::<T>::insert(&ctype_hash, attester.clone());
+		ctype::Ctypes::<T>::insert(ctype_hash, attester.clone());
 		<T as Config>::Currency::make_free_balance_be(&sender, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
 
 		let origin = <T as Config>::EnsureOrigin::generate_origin(sender.clone(), attester);
@@ -127,7 +127,7 @@ benchmarks! {
 		let claim_hash: T::Hash = T::Hashing::hash(b"claim");
 		let ctype_hash: T::Hash = T::Hash::default();
 
-		ctype::Ctypes::<T>::insert(&ctype_hash, attester.clone());
+		ctype::Ctypes::<T>::insert(ctype_hash, attester.clone());
 		<T as Config>::Currency::make_free_balance_be(&deposit_owner_old, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
 		<T as Config>::Currency::make_free_balance_be(&deposit_owner_new, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
 
@@ -154,7 +154,7 @@ benchmarks! {
 		let claim_hash: T::Hash = T::Hashing::hash(b"claim");
 		let ctype_hash: T::Hash = T::Hash::default();
 
-		ctype::Ctypes::<T>::insert(&ctype_hash, attester.clone());
+		ctype::Ctypes::<T>::insert(ctype_hash, attester.clone());
 		<T as Config>::Currency::make_free_balance_be(&deposit_owner, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
 
 		let origin = <T as Config>::EnsureOrigin::generate_origin(deposit_owner.clone(), attester.clone());

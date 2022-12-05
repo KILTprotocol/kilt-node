@@ -246,11 +246,11 @@ pub mod pallet {
 			let deposit_amount = <T as Config>::Deposit::get();
 
 			ensure!(
-				ctype::Ctypes::<T>::contains_key(&ctype_hash),
+				ctype::Ctypes::<T>::contains_key(ctype_hash),
 				ctype::Error::<T>::CTypeNotFound
 			);
 			ensure!(
-				!Attestations::<T>::contains_key(&claim_hash),
+				!Attestations::<T>::contains_key(claim_hash),
 				Error::<T>::AlreadyAttested
 			);
 
@@ -268,7 +268,7 @@ pub mod pallet {
 			log::debug!("insert Attestation");
 
 			Attestations::<T>::insert(
-				&claim_hash,
+				claim_hash,
 				AttestationDetails {
 					ctype_hash,
 					attester: who.clone(),
@@ -315,7 +315,7 @@ pub mod pallet {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 			let who = source.subject();
 
-			let attestation = Attestations::<T>::get(&claim_hash).ok_or(Error::<T>::AttestationNotFound)?;
+			let attestation = Attestations::<T>::get(claim_hash).ok_or(Error::<T>::AttestationNotFound)?;
 
 			ensure!(!attestation.revoked, Error::<T>::AlreadyRevoked);
 
@@ -333,7 +333,7 @@ pub mod pallet {
 
 			log::debug!("revoking Attestation");
 			Attestations::<T>::insert(
-				&claim_hash,
+				claim_hash,
 				AttestationDetails {
 					revoked: true,
 					..attestation
@@ -374,7 +374,7 @@ pub mod pallet {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 			let who = source.subject();
 
-			let attestation = Attestations::<T>::get(&claim_hash).ok_or(Error::<T>::AttestationNotFound)?;
+			let attestation = Attestations::<T>::get(claim_hash).ok_or(Error::<T>::AttestationNotFound)?;
 
 			if attestation.attester != who {
 				let attestation_auth_id = attestation.authorization_id.as_ref().ok_or(Error::<T>::Unauthorized)?;
@@ -408,7 +408,7 @@ pub mod pallet {
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::reclaim_deposit())]
 		pub fn reclaim_deposit(origin: OriginFor<T>, claim_hash: ClaimHashOf<T>) -> DispatchResult {
 			let who = ensure_signed(origin)?;
-			let attestation = Attestations::<T>::get(&claim_hash).ok_or(Error::<T>::AttestationNotFound)?;
+			let attestation = Attestations::<T>::get(claim_hash).ok_or(Error::<T>::AttestationNotFound)?;
 
 			ensure!(attestation.deposit.owner == who, Error::<T>::Unauthorized);
 
@@ -435,7 +435,7 @@ pub mod pallet {
 			let subject = source.subject();
 			let sender = source.sender();
 
-			let attestation = Attestations::<T>::get(&claim_hash).ok_or(Error::<T>::AttestationNotFound)?;
+			let attestation = Attestations::<T>::get(claim_hash).ok_or(Error::<T>::AttestationNotFound)?;
 			ensure!(attestation.attester == subject, Error::<T>::Unauthorized);
 
 			AttestationStorageDepositCollector::<T>::change_deposit_owner(&claim_hash, sender)?;
@@ -450,7 +450,7 @@ pub mod pallet {
 		pub fn update_deposit(origin: OriginFor<T>, claim_hash: ClaimHashOf<T>) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
 
-			let attestation = Attestations::<T>::get(&claim_hash).ok_or(Error::<T>::AttestationNotFound)?;
+			let attestation = Attestations::<T>::get(claim_hash).ok_or(Error::<T>::AttestationNotFound)?;
 			ensure!(attestation.deposit.owner == sender, Error::<T>::Unauthorized);
 
 			AttestationStorageDepositCollector::<T>::update_deposit(&claim_hash)?;
@@ -462,7 +462,7 @@ pub mod pallet {
 	impl<T: Config> Pallet<T> {
 		fn remove_attestation(attestation: AttestationDetails<T>, claim_hash: ClaimHashOf<T>) {
 			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&attestation.deposit);
-			Attestations::<T>::remove(&claim_hash);
+			Attestations::<T>::remove(claim_hash);
 			if let Some(authorization_id) = &attestation.authorization_id {
 				ExternalAttestations::<T>::remove(authorization_id, claim_hash);
 			}

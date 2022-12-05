@@ -58,7 +58,7 @@ fn add_successful_without_authorization() {
 				DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
 				Box::new(new_credential_1.clone())
 			));
-			let stored_public_credential_details = Credentials::<Test>::get(&subject_id, &credential_id_1)
+			let stored_public_credential_details = Credentials::<Test>::get(subject_id, credential_id_1)
 				.expect("Public credential details should be present on chain.");
 
 			// Test this pallet logic
@@ -67,7 +67,7 @@ fn add_successful_without_authorization() {
 			assert_eq!(stored_public_credential_details.block_number, 0);
 			assert_eq!(stored_public_credential_details.ctype_hash, ctype_hash_1);
 			assert_eq!(stored_public_credential_details.authorization_id, None);
-			assert_eq!(CredentialSubjects::<Test>::get(&credential_id_1), Some(subject_id));
+			assert_eq!(CredentialSubjects::<Test>::get(credential_id_1), Some(subject_id));
 
 			// Check deposit reservation logic
 			assert_eq!(Balances::reserved_balance(ACCOUNT_00), deposit);
@@ -92,7 +92,7 @@ fn add_successful_without_authorization() {
 				Box::new(new_credential_2.clone())
 			));
 
-			let stored_public_credential_details = Credentials::<Test>::get(&subject_id, &credential_id_2)
+			let stored_public_credential_details = Credentials::<Test>::get(subject_id, credential_id_2)
 				.expect("Public credential #2 details should be present on chain.");
 
 			// Test this pallet logic
@@ -101,7 +101,7 @@ fn add_successful_without_authorization() {
 			assert_eq!(stored_public_credential_details.block_number, 1);
 			assert_eq!(stored_public_credential_details.ctype_hash, ctype_hash_2);
 			assert_eq!(stored_public_credential_details.authorization_id, None);
-			assert_eq!(CredentialSubjects::<Test>::get(&credential_id_2), Some(subject_id));
+			assert_eq!(CredentialSubjects::<Test>::get(credential_id_2), Some(subject_id));
 
 			// Deposit is 2x now
 			assert_eq!(Balances::reserved_balance(ACCOUNT_00), 2 * deposit);
@@ -131,7 +131,7 @@ fn add_successful_with_authorization() {
 				DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
 				Box::new(new_credential.clone())
 			));
-			let stored_public_credential_details = Credentials::<Test>::get(&subject_id, &credential_id)
+			let stored_public_credential_details = Credentials::<Test>::get(subject_id, credential_id)
 				.expect("Public credential details should be present on chain.");
 
 			// Test this pallet logic
@@ -140,7 +140,7 @@ fn add_successful_with_authorization() {
 			assert_eq!(stored_public_credential_details.block_number, 0);
 			assert_eq!(stored_public_credential_details.ctype_hash, ctype_hash);
 			assert_eq!(stored_public_credential_details.authorization_id, Some(attester));
-			assert_eq!(CredentialSubjects::<Test>::get(&credential_id), Some(subject_id));
+			assert_eq!(CredentialSubjects::<Test>::get(credential_id), Some(subject_id));
 		});
 }
 
@@ -275,7 +275,7 @@ fn revoke_successful() {
 				None,
 			));
 
-			let stored_public_credential_details = Credentials::<Test>::get(&subject_id, &credential_id)
+			let stored_public_credential_details = Credentials::<Test>::get(subject_id, credential_id)
 				.expect("Public credential details should be present on chain.");
 
 			// Test this pallet logic
@@ -288,7 +288,7 @@ fn revoke_successful() {
 				None,
 			));
 
-			let stored_public_credential_details_2 = Credentials::<Test>::get(&subject_id, &credential_id)
+			let stored_public_credential_details_2 = Credentials::<Test>::get(subject_id, credential_id)
 				.expect("Public credential details should be present on chain.");
 
 			assert_eq!(stored_public_credential_details, stored_public_credential_details_2);
@@ -316,7 +316,7 @@ fn revoke_same_attester_wrong_ac() {
 				Some(MockAccessControl(wrong_submitter))
 			));
 
-			let stored_public_credential_details = Credentials::<Test>::get(&subject_id, &credential_id)
+			let stored_public_credential_details = Credentials::<Test>::get(subject_id, credential_id)
 				.expect("Public credential details should be present on chain.");
 
 			// Test this pallet logic
@@ -415,7 +415,7 @@ fn unrevoke_successful() {
 				None,
 			));
 
-			let stored_public_credential_details = Credentials::<Test>::get(&subject_id, &credential_id)
+			let stored_public_credential_details = Credentials::<Test>::get(subject_id, credential_id)
 				.expect("Public credential details should be present on chain.");
 
 			// Test this pallet logic
@@ -428,7 +428,7 @@ fn unrevoke_successful() {
 				None,
 			));
 
-			let stored_public_credential_details_2 = Credentials::<Test>::get(&subject_id, &credential_id)
+			let stored_public_credential_details_2 = Credentials::<Test>::get(subject_id, credential_id)
 				.expect("Public credential details should be present on chain.");
 
 			assert_eq!(stored_public_credential_details, stored_public_credential_details_2);
@@ -457,7 +457,7 @@ fn unrevoke_same_attester_wrong_ac() {
 				Some(MockAccessControl(wrong_submitter))
 			));
 
-			let stored_public_credential_details = Credentials::<Test>::get(&subject_id, &credential_id)
+			let stored_public_credential_details = Credentials::<Test>::get(subject_id, credential_id)
 				.expect("Public credential details should be present on chain.");
 
 			// Test this pallet logic
@@ -558,8 +558,8 @@ fn remove_successful() {
 			));
 
 			// Test this pallet logic
-			assert!(Credentials::<Test>::get(&subject_id, &credential_id).is_none());
-			assert!(CredentialSubjects::<Test>::get(&credential_id).is_none());
+			assert!(Credentials::<Test>::get(subject_id, credential_id).is_none());
+			assert!(CredentialSubjects::<Test>::get(credential_id).is_none());
 
 			// Check deposit release logic
 			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
@@ -594,8 +594,8 @@ fn remove_same_attester_wrong_ac() {
 			));
 
 			// Test this pallet logic
-			assert!(Credentials::<Test>::get(&subject_id, &credential_id).is_none());
-			assert!(CredentialSubjects::<Test>::get(&credential_id).is_none());
+			assert!(Credentials::<Test>::get(subject_id, credential_id).is_none());
+			assert!(CredentialSubjects::<Test>::get(credential_id).is_none());
 		});
 }
 
@@ -689,8 +689,8 @@ fn reclaim_deposit_successful() {
 			));
 
 			// Test this pallet logic
-			assert!(Credentials::<Test>::get(&subject_id, &credential_id).is_none());
-			assert!(CredentialSubjects::<Test>::get(&credential_id).is_none());
+			assert!(Credentials::<Test>::get(subject_id, credential_id).is_none());
+			assert!(CredentialSubjects::<Test>::get(credential_id).is_none());
 
 			// Check deposit release logic
 			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
@@ -775,7 +775,7 @@ fn test_change_deposit_owner() {
 
 			// Check
 			assert_eq!(
-				Credentials::<Test>::get(&subject_id, &credential_id)
+				Credentials::<Test>::get(subject_id, credential_id)
 					.expect("credential should exist")
 					.deposit
 					.owner,
@@ -867,7 +867,7 @@ fn test_update_deposit() {
 
 			// Check
 			assert_eq!(
-				Credentials::<Test>::get(&subject_id, &credential_id)
+				Credentials::<Test>::get(subject_id, credential_id)
 					.expect("credential should exist")
 					.deposit
 					.amount,

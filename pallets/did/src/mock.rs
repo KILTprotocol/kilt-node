@@ -481,13 +481,13 @@ impl ExtBuilder {
 					.expect("Deposit owner should have enough balance");
 			}
 			for did in self.deleted_dids.iter() {
-				DidBlacklist::<Test>::insert(&did, ());
+				DidBlacklist::<Test>::insert(did, ());
 			}
 			for (did, endpoints) in self.service_endpoints.iter() {
 				for endpoint in endpoints.iter() {
-					ServiceEndpoints::<Test>::insert(&did, &endpoint.id, endpoint)
+					ServiceEndpoints::<Test>::insert(did, &endpoint.id, endpoint)
 				}
-				DidEndpointsCount::<Test>::insert(&did, endpoints.len().saturated_into::<u32>());
+				DidEndpointsCount::<Test>::insert(did, endpoints.len().saturated_into::<u32>());
 			}
 		});
 
