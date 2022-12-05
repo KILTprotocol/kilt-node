@@ -28,11 +28,13 @@ use frame_support::{
 use sp_std::{marker::PhantomData, vec};
 
 #[cfg(feature = "try-runtime")]
-use frame_support::codec::{Decode, Encode};
-#[cfg(feature = "try-runtime")]
-use frame_support::inherent::Vec;
-#[cfg(feature = "try-runtime")]
-use sp_runtime::SaturatedConversion;
+use {
+	frame_support::{
+		codec::{Decode, Encode},
+		inherent::Vec,
+	},
+	sp_runtime::SaturatedConversion,
+};
 
 #[storage_alias]
 type ConnectedDids<T: Config> = StorageMap<Pallet<T>, Blake2_128Concat, AccountIdOf<T>, ConnectionRecordOf<T>>;
