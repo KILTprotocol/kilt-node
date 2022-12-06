@@ -1067,6 +1067,8 @@ pub type Executive = frame_executive::Executive<
 	),
 >;
 
+// follows Substrate's non destructive way of eliminating  otherwise required
+// repetion: https://github.com/paritytech/substrate/pull/10592
 #[cfg(feature = "runtime-benchmarks")]
 #[macro_use]
 extern crate frame_benchmarking;
