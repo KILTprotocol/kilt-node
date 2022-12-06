@@ -102,7 +102,7 @@ fn generate_base_did_call_operation<T: Config>(
 	did: DidIdentifierOf<T>,
 	submitter: AccountIdOf<T>,
 ) -> DidAuthorizedCallOperation<T> {
-	let test_call = <T as Config>::Call::get_call_for_did_call_benchmark();
+	let test_call = <T as Config>::RuntimeCall::get_call_for_did_call_benchmark();
 
 	DidAuthorizedCallOperation {
 		did,

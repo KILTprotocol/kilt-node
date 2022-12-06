@@ -567,8 +567,8 @@ impl ctype::Config for Runtime {
 impl did::Config for Runtime {
 	type DidIdentifier = DidIdentifier;
 	type RuntimeEvent = RuntimeEvent;
-	type Call = RuntimeCall;
-	type Origin = RuntimeOrigin;
+	type RuntimeCall = RuntimeCall;
+	type RuntimeOrigin = RuntimeOrigin;
 	type Currency = Balances;
 	type Deposit = constants::did::DidDeposit;
 	type Fee = constants::did::DidFee;

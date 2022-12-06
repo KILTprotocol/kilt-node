@@ -380,8 +380,8 @@ parameter_types! {
 impl did::Config for Runtime {
 	type DidIdentifier = DidIdentifier;
 	type RuntimeEvent = RuntimeEvent;
-	type Call = RuntimeCall;
-	type Origin = RuntimeOrigin;
+	type RuntimeCall = RuntimeCall;
+	type RuntimeOrigin = RuntimeOrigin;
 	type Currency = Balances;
 	type Deposit = DidDeposit;
 	type Fee = DidFee;

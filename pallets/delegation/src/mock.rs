@@ -269,7 +269,7 @@ pub(crate) mod runtime {
 	}
 
 	impl mock_origin::Config for Test {
-		type Origin = RuntimeOrigin;
+		type RuntimeOrigin = RuntimeOrigin;
 		type AccountId = AccountId;
 		type SubjectId = SubjectId;
 	}

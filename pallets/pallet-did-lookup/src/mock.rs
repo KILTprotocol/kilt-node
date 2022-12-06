@@ -123,7 +123,7 @@ impl pallet_did_lookup::Config for Test {
 }
 
 impl mock_origin::Config for Test {
-	type Origin = RuntimeOrigin;
+	type RuntimeOrigin = RuntimeOrigin;
 	type AccountId = AccountId;
 	type SubjectId = SubjectId;
 }
