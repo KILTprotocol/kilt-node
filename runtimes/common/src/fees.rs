@@ -133,7 +133,10 @@ where
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use crate::{AccountId, MAXIMUM_BLOCK_WEIGHT, NORMAL_DISPATCH_RATIO};
+	use crate::{
+		AccountId, BlockExecutionWeight, ExtrinsicBaseWeight, AVERAGE_ON_INITIALIZE_RATIO, MAXIMUM_BLOCK_WEIGHT,
+		NORMAL_DISPATCH_RATIO,
+	};
 	use frame_support::{dispatch::DispatchClass, parameter_types, traits::FindAuthor};
 	use frame_system::limits;
 	use sp_core::H256;
@@ -162,21 +165,22 @@ mod tests {
 		pub const BlockHashCount: u64 = 250;
 		// One to one clone of our runtimes' blockweight
 		pub BlockWeights: limits::BlockWeights = limits::BlockWeights::builder()
-		.base_block(Weight::from_ref_time(10))
+		.base_block(BlockExecutionWeight::get())
 		.for_class(DispatchClass::all(), |weights| {
-			weights.base_extrinsic = Weight::from_ref_time(5);
+			weights.base_extrinsic = ExtrinsicBaseWeight::get();
 		})
 		.for_class(DispatchClass::Normal, |weights| {
 			weights.max_total = Some(NORMAL_DISPATCH_RATIO * MAXIMUM_BLOCK_WEIGHT);
 		})
 		.for_class(DispatchClass::Operational, |weights| {
-			weights.base_extrinsic = Weight::from_ref_time(10);
 			weights.max_total = Some(MAXIMUM_BLOCK_WEIGHT);
+			// Operational transactions have some extra reserved space, so that they
+			// are included even if block reached `MAXIMUM_BLOCK_WEIGHT`.
 			weights.reserved = Some(
 				MAXIMUM_BLOCK_WEIGHT - NORMAL_DISPATCH_RATIO * MAXIMUM_BLOCK_WEIGHT
 			);
 		})
-		.avg_block_initialization(Perbill::from_percent(0))
+		.avg_block_initialization(AVERAGE_ON_INITIALIZE_RATIO)
 		.build_or_panic();
 		pub BlockLength: limits::BlockLength = limits::BlockLength::max(2 * 1024);
 		pub const AvailableBlockRatio: Perbill = Perbill::one();
