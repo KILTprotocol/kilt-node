@@ -77,6 +77,7 @@ cumulus-primitives-core = {workspace = true, features = ["std"]}
 cumulus-primitives-parachain-inherent = {workspace = true, features = ["std"]}
 cumulus-relay-chain-inprocess-interface.workspace = true
 cumulus-relay-chain-interface.workspace = true
+cumulus-relay-chain-minimal-node.workspace = true
 cumulus-relay-chain-rpc-interface.workspace = true
 
 # Polkadot dependencies
@@ -99,12 +100,25 @@ fast-gov = [
   "runtime-common/fast-gov",
 ]
 runtime-benchmarks = [
+  "clone-runtime/runtime-benchmarks",
+  "frame-benchmarking/runtime-benchmarks",
+  "frame-benchmarking-cli/runtime-benchmarks",
+  "polkadot-cli/runtime-benchmarks",
+  "polkadot-primitives/runtime-benchmarks",
   "polkadot-service/runtime-benchmarks",
+  "runtime-common/runtime-benchmarks",
   "peregrine-runtime/runtime-benchmarks",
+  "sc-service/runtime-benchmarks",
   "spiritnet-runtime/runtime-benchmarks",
+  "sp-runtime/runtime-benchmarks",
+  "xcm/runtime-benchmarks",
 ]
 try-runtime = [
+  "clone-runtime/try-runtime",
   "peregrine-runtime/try-runtime",
+  "polkadot-cli/try-runtime",
+  "polkadot-service/try-runtime",
+  "runtime-common/try-runtime",
   "spiritnet-runtime/try-runtime",
   "try-runtime-cli",
 ]

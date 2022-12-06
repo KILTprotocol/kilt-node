@@ -49,7 +49,7 @@ impl<T: Ord + Clone, S: Get<u32>> OrderedSet<T, S> {
 		let mut v = bv.into_inner();
 		v.sort_by(|a, b| b.cmp(a));
 		v.dedup();
-		Self::from_sorted_set(v.try_into().expect("No values were added"))
+		Self::from_sorted_set(v.try_into().map_err(|_| ()).expect("No values were added"))
 	}
 
 	/// Create a set from a `BoundedVec`.
@@ -146,7 +146,7 @@ impl<T: Ord + Clone, S: Get<u32>> OrderedSet<T, S> {
 			}
 			Err(i) => {
 				// Delegator
-				self.0.try_insert(i, value)?;
+				self.0.try_insert(i, value).map_err(|_| ())?;
 				Ok(None)
 			}
 		}

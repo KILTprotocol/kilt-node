@@ -143,7 +143,7 @@ pub fn run() -> sc_cli::Result<()> {
 			let runner = cli.create_runner(cmd)?;
 
 			runner.sync_run(|config| {
-				let PartialComponents { client, backend, .. } = service::new_partial(&config)?;
+				let PartialComponents { client, .. } = service::new_partial(&config)?;
 				// This switch needs to be in the client, since the client decides
 				// which sub-commands it wants to support.
 				match cmd {
@@ -157,7 +157,13 @@ pub fn run() -> sc_cli::Result<()> {
 						cmd.run::<Block, service::ExecutorDispatch>(config)
 					}
 					BenchmarkCmd::Block(cmd) => cmd.run(client),
+					#[cfg(not(feature = "runtime-benchmarks"))]
+					BenchmarkCmd::Storage(_) => {
+						Err("Storage benchmarking can be enabled with `--features runtime-benchmarks`.".into())
+					}
+					#[cfg(feature = "runtime-benchmarks")]
 					BenchmarkCmd::Storage(cmd) => {
+						let PartialComponents { client, backend, .. } = service::new_partial(&config)?;
 						let db = backend.expose_db();
 						let storage = backend.expose_storage();
 

@@ -416,7 +416,10 @@ fn test_reclaim_deposit() {
 		.build()
 		.execute_with(|| {
 			assert_eq!(Balances::reserved_balance(ACCOUNT_00), <Test as Config>::Deposit::get());
-			assert_ok!(Attestation::reclaim_deposit(Origin::signed(ACCOUNT_00), claim_hash));
+			assert_ok!(Attestation::reclaim_deposit(
+				RuntimeOrigin::signed(ACCOUNT_00),
+				claim_hash
+			));
 			assert!(!Attestation::external_attestations(
 				other_authorized.clone(),
 				claim_hash
@@ -439,7 +442,10 @@ fn test_reclaim_deposit_authorization() {
 		.build()
 		.execute_with(|| {
 			assert_eq!(Balances::reserved_balance(ACCOUNT_00), <Test as Config>::Deposit::get());
-			assert_ok!(Attestation::reclaim_deposit(Origin::signed(ACCOUNT_00), claim_hash));
+			assert_ok!(Attestation::reclaim_deposit(
+				RuntimeOrigin::signed(ACCOUNT_00),
+				claim_hash
+			));
 			assert!(Attestation::attestations(claim_hash).is_none());
 			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
 		});
@@ -458,7 +464,7 @@ fn test_reclaim_unauthorized() {
 		.build()
 		.execute_with(|| {
 			assert_noop!(
-				Attestation::reclaim_deposit(Origin::signed(ACCOUNT_01), claim_hash),
+				Attestation::reclaim_deposit(RuntimeOrigin::signed(ACCOUNT_01), claim_hash),
 				attestation::Error::<Test>::Unauthorized,
 			);
 		});
@@ -476,7 +482,7 @@ fn test_reclaim_deposit_not_found() {
 		.build()
 		.execute_with(|| {
 			assert_noop!(
-				Attestation::reclaim_deposit(Origin::signed(ACCOUNT_01), claim_hash),
+				Attestation::reclaim_deposit(RuntimeOrigin::signed(ACCOUNT_01), claim_hash),
 				attestation::Error::<Test>::AttestationNotFound,
 			);
 		});
@@ -602,7 +608,10 @@ fn test_update_deposit() {
 				Balances::reserved_balance(ACCOUNT_00),
 				<Test as Config>::Deposit::get() * 2
 			);
-			assert_ok!(Attestation::update_deposit(Origin::signed(ACCOUNT_00), claim_hash));
+			assert_ok!(Attestation::update_deposit(
+				RuntimeOrigin::signed(ACCOUNT_00),
+				claim_hash
+			));
 			assert_eq!(
 				Attestation::attestations(claim_hash)
 					.expect("Attestation must be retained")
@@ -640,7 +649,7 @@ fn test_update_deposit_unauthorized() {
 				<Test as Config>::Deposit::get() * 2
 			);
 			assert_noop!(
-				Attestation::update_deposit(Origin::signed(ACCOUNT_01), claim_hash),
+				Attestation::update_deposit(RuntimeOrigin::signed(ACCOUNT_01), claim_hash),
 				Error::<Test>::Unauthorized
 			);
 		});

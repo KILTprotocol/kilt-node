@@ -40,6 +40,9 @@ sp-io.workspace = true
 sp-runtime.workspace = true
 sp-std.workspace = true
 
+# Cumulus dependencies
+cumulus-primitives-core.workspace = true
+
 # Polkadot dependencies
 polkadot-parachain.workspace = true
 xcm.workspace = true
@@ -52,19 +55,26 @@ fast-gov = []
 runtime-benchmarks = [
   "attestation/runtime-benchmarks",
   "frame-support/runtime-benchmarks",
+  "frame-system/runtime-benchmarks", 
   "kilt-support/runtime-benchmarks",
+  "pallet-balances/runtime-benchmarks", 
+  "pallet-membership/runtime-benchmarks", 
   "parachain-staking/runtime-benchmarks",
   "polkadot-parachain/runtime-benchmarks",
+  "public-credentials/runtime-benchmarks", 
   "sp-runtime/runtime-benchmarks",
   "xcm-builder/runtime-benchmarks",
+  "xcm-executor/runtime-benchmarks", 
 ]
 std = [
   "attestation/std",
   "codec/std",
+  "cumulus-primitives-core/std",
   "frame-support/std",
   "frame-system/std",
   "kilt-asset-dids/std",
   "kilt-support/std",
+  "log/std", 
   "pallet-authorship/std",
   "pallet-balances/std",
   "pallet-membership/std",
@@ -83,5 +93,14 @@ std = [
   "xcm/std",
 ]
 try-runtime = [
+  "attestation/try-runtime", 
   "frame-support/try-runtime",
+  "frame-system/try-runtime", 
+  "kilt-support/try-runtime", 
+  "pallet-authorship/try-runtime", 
+  "pallet-balances/try-runtime", 
+  "pallet-membership/try-runtime", 
+  "pallet-transaction-payment/try-runtime", 
+  "parachain-staking/try-runtime", 
+  "public-credentials/try-runtime", 
 ]

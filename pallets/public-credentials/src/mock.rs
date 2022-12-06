@@ -284,14 +284,14 @@ pub(crate) mod runtime {
 	);
 
 	impl mock_origin::Config for Test {
-		type Origin = Origin;
+		type RuntimeOrigin = RuntimeOrigin;
 		type AccountId = AccountId;
 		type SubjectId = SubjectId;
 	}
 
 	impl frame_system::Config for Test {
-		type Origin = Origin;
-		type Call = Call;
+		type RuntimeOrigin = RuntimeOrigin;
+		type RuntimeCall = RuntimeCall;
 		type Index = u64;
 		type BlockNumber = BlockNumber;
 		type Hash = Hash;
@@ -299,7 +299,7 @@ pub(crate) mod runtime {
 		type AccountId = AccountId;
 		type Lookup = IdentityLookup<Self::AccountId>;
 		type Header = Header;
-		type Event = ();
+		type RuntimeEvent = ();
 		type BlockHashCount = ConstU64<250>;
 		type DbWeight = RocksDbWeight;
 		type Version = ();
@@ -320,7 +320,7 @@ pub(crate) mod runtime {
 	impl pallet_balances::Config for Test {
 		type Balance = Balance;
 		type DustRemoval = ();
-		type Event = ();
+		type RuntimeEvent = ();
 		type ExistentialDeposit = ConstU128<MILLI_UNIT>;
 		type AccountStore = System;
 		type WeightInfo = ();
@@ -333,7 +333,7 @@ pub(crate) mod runtime {
 		type CtypeCreatorId = SubjectId;
 		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<AccountId, Self::CtypeCreatorId>;
 		type OriginSuccess = mock_origin::DoubleOrigin<AccountId, Self::CtypeCreatorId>;
-		type Event = ();
+		type RuntimeEvent = ();
 		type WeightInfo = ();
 
 		type Currency = Balances;
@@ -350,7 +350,7 @@ pub(crate) mod runtime {
 		type Currency = Balances;
 		type Deposit = ConstU128<{ 10 * MILLI_UNIT }>;
 		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<AccountId, Self::AttesterId>;
-		type Event = ();
+		type RuntimeEvent = ();
 		type MaxEncodedClaimsLength = ConstU32<500>;
 		type MaxSubjectIdLength = ConstU32<100>;
 		type OriginSuccess = mock_origin::DoubleOrigin<AccountId, Self::AttesterId>;

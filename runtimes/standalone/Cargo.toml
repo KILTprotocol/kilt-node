@@ -39,7 +39,6 @@ kilt-runtime-api-public-credentials.workspace = true
 pallet-transaction-payment-rpc-runtime-api.workspace = true
 
 # Substrate dependencies
-frame-benchmarking.workspace = true
 frame-executive.workspace = true
 frame-support.workspace = true
 frame-system.workspace = true
@@ -68,6 +67,7 @@ sp-transaction-pool.workspace = true
 sp-version.workspace = true
 
 # Benchmarking dependencies
+frame-benchmarking = {workspace = true, optional = true}
 frame-system-benchmarking = {workspace = true, optional = true}
 
 # Runtime tests
@@ -83,21 +83,23 @@ runtime-benchmarks = [
   "frame-benchmarking/runtime-benchmarks",
   "frame-support/runtime-benchmarks",
   "frame-system/runtime-benchmarks",
-  "frame-system-benchmarking",
+  "frame-system-benchmarking/runtime-benchmarks",
   "hex-literal",
   "runtime-common/runtime-benchmarks",
   "kilt-support/runtime-benchmarks",
   "pallet-balances/runtime-benchmarks",
   "pallet-did-lookup/runtime-benchmarks",
+  "pallet-grandpa/runtime-benchmarks",
   "pallet-indices/runtime-benchmarks",
   "pallet-timestamp/runtime-benchmarks",
   "pallet-web3-names/runtime-benchmarks",
   "pallet-proxy/runtime-benchmarks",
+  "pallet-utility/runtime-benchmarks",
   "public-credentials/runtime-benchmarks",
   "sp-runtime/runtime-benchmarks",
 ]
 std = [
-  "frame-benchmarking/std",
+  "frame-benchmarking?/std",
   "attestation/std",
   "codec/std",
   "ctype/std",
@@ -106,8 +108,9 @@ std = [
   "frame-executive/std",
   "frame-support/std",
   "frame-system/std",
+  "frame-system-benchmarking?/std",
   "frame-system-rpc-runtime-api/std",
-  "frame-try-runtime/std",
+  "frame-try-runtime?/std",
   "kilt-runtime-api-did/std",
   "kilt-runtime-api-public-credentials/std",
   "kilt-support/std",
@@ -125,6 +128,7 @@ std = [
   "pallet-timestamp/std",
   "pallet-transaction-payment/std",
   "pallet-transaction-payment-rpc-runtime-api/std",
+  "pallet-utility/std",
   "pallet-web3-names/std",
   "public-credentials/std",
   "runtime-common/std",
@@ -150,6 +154,7 @@ try-runtime = [
   "frame-support/try-runtime",
   "frame-system/try-runtime",
   "frame-try-runtime",
+  "kilt-support/try-runtime",
   "pallet-aura/try-runtime",
   "pallet-authorship/try-runtime",
   "pallet-balances/try-runtime",
@@ -165,4 +170,5 @@ try-runtime = [
   "pallet-utility/try-runtime",
   "pallet-transaction-payment/try-runtime",
   "public-credentials/try-runtime",
+  "runtime-common/try-runtime",
 ]

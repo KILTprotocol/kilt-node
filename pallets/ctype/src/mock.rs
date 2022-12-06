@@ -78,8 +78,8 @@ pub mod runtime {
 	}
 
 	impl frame_system::Config for Test {
-		type Origin = Origin;
-		type Call = Call;
+		type RuntimeOrigin = RuntimeOrigin;
+		type RuntimeCall = RuntimeCall;
 		type Index = u64;
 		type BlockNumber = u64;
 		type Hash = Hash;
@@ -87,7 +87,7 @@ pub mod runtime {
 		type AccountId = AccountId;
 		type Lookup = IdentityLookup<Self::AccountId>;
 		type Header = Header;
-		type Event = ();
+		type RuntimeEvent = ();
 		type BlockHashCount = BlockHashCount;
 		type DbWeight = RocksDbWeight;
 		type Version = ();
@@ -114,7 +114,7 @@ pub mod runtime {
 	impl pallet_balances::Config for Test {
 		type Balance = Balance;
 		type DustRemoval = ();
-		type Event = ();
+		type RuntimeEvent = ();
 		type ExistentialDeposit = ExistentialDeposit;
 		type AccountStore = System;
 		type WeightInfo = ();
@@ -124,7 +124,7 @@ pub mod runtime {
 	}
 
 	impl mock_origin::Config for Test {
-		type Origin = Origin;
+		type RuntimeOrigin = RuntimeOrigin;
 		type AccountId = AccountId;
 		type SubjectId = SubjectId;
 	}
@@ -137,7 +137,7 @@ pub mod runtime {
 		type CtypeCreatorId = SubjectId;
 		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<AccountId, SubjectId>;
 		type OriginSuccess = mock_origin::DoubleOrigin<AccountId, SubjectId>;
-		type Event = ();
+		type RuntimeEvent = ();
 		type WeightInfo = ();
 
 		type Currency = Balances;

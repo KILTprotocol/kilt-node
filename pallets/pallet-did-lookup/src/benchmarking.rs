@@ -57,7 +57,7 @@ benchmarks! {
 		where
 		T::AccountId: From<sr25519::Public> + From<ed25519::Public> + Into<LinkableAccountId> + Into<AccountId32>,
 		T::DidIdentifier: From<T::AccountId>,
-		T::EnsureOrigin: GenerateBenchmarkOrigin<T::Origin, T::AccountId, T::DidIdentifier>,
+		T::EnsureOrigin: GenerateBenchmarkOrigin<T::RuntimeOrigin, T::AccountId, T::DidIdentifier>,
 	}
 
 	associate_account_multisig_sr25519 {
@@ -86,7 +86,7 @@ benchmarks! {
 		let origin = T::EnsureOrigin::generate_origin(caller, did.clone());
 		let id_arg = linkable_id.clone();
 		let req = AssociateAccountRequest::Dotsama(connected_acc_id.into(), sig.into());
-	}: associate_account<T::Origin>(origin, req, bn)
+	}: associate_account<T::RuntimeOrigin>(origin, req, bn)
 	verify {
 		assert!(ConnectedDids::<T>::get(linkable_id.clone()).is_some());
 		assert!(ConnectedAccounts::<T>::get(&previous_did, linkable_id.clone()).is_none());
@@ -119,7 +119,7 @@ benchmarks! {
 		let origin = T::EnsureOrigin::generate_origin(caller, did.clone());
 		let id_arg = linkable_id.clone();
 		let req = AssociateAccountRequest::Dotsama(connected_acc_id.into(), sig.into());
-	}: associate_account<T::Origin>(origin, req, bn)
+	}: associate_account<T::RuntimeOrigin>(origin, req, bn)
 	verify {
 		assert!(ConnectedDids::<T>::get(linkable_id.clone()).is_some());
 		assert!(ConnectedAccounts::<T>::get(&previous_did, linkable_id.clone()).is_none());
@@ -152,7 +152,7 @@ benchmarks! {
 		let origin = T::EnsureOrigin::generate_origin(caller, did.clone());
 		let id_arg = linkable_id.clone();
 		let req = AssociateAccountRequest::Dotsama(connected_acc_id, sig.into());
-	}: associate_account<T::Origin>(origin, req, bn)
+	}: associate_account<T::RuntimeOrigin>(origin, req, bn)
 	verify {
 		assert!(ConnectedDids::<T>::get(linkable_id.clone()).is_some());
 		assert!(ConnectedAccounts::<T>::get(&previous_did, linkable_id.clone()).is_none());
@@ -186,7 +186,7 @@ benchmarks! {
 		assert!(ConnectedAccounts::<T>::get(&previous_did, LinkableAccountId::from(eth_account)).is_some());
 		let origin = T::EnsureOrigin::generate_origin(caller, did.clone());
 		let req = AssociateAccountRequest::Ethereum(eth_account, sig.into());
-	}: associate_account<T::Origin>(origin, req, expire_at)
+	}: associate_account<T::RuntimeOrigin>(origin, req, expire_at)
 	verify {
 		assert!(ConnectedDids::<T>::get(LinkableAccountId::from(eth_account)).is_some());
 		assert!(ConnectedAccounts::<T>::get(&previous_did, LinkableAccountId::from(eth_account)).is_none());
@@ -205,7 +205,7 @@ benchmarks! {
 		Pallet::<T>::add_association(caller.clone(), previous_did.clone(), caller.clone().into()).expect("should create previous association");
 		assert!(ConnectedAccounts::<T>::get(&previous_did, &linkable_id).is_some());
 		let origin = T::EnsureOrigin::generate_origin(caller, did.clone());
-	}: _<T::Origin>(origin)
+	}: _<T::RuntimeOrigin>(origin)
 	verify {
 		assert!(ConnectedDids::<T>::get(&linkable_id).is_some());
 		assert!(ConnectedAccounts::<T>::get(previous_did, &linkable_id).is_none());
@@ -237,7 +237,7 @@ benchmarks! {
 
 		let origin = T::EnsureOrigin::generate_origin(caller, did.clone());
 		let id_arg = linkable_id.clone();
-	}: _<T::Origin>(origin, id_arg)
+	}: _<T::RuntimeOrigin>(origin, id_arg)
 	verify {
 		assert!(ConnectedDids::<T>::get(&linkable_id).is_none());
 		assert!(ConnectedAccounts::<T>::get(did, linkable_id).is_none());
@@ -255,7 +255,7 @@ benchmarks! {
 
 		let origin = T::EnsureOrigin::generate_origin(deposit_owner_new.clone(), did);
 		let id_arg = linkable_id.clone();
-	}: _<T::Origin>(origin, id_arg)
+	}: _<T::RuntimeOrigin>(origin, id_arg)
 	verify {
 		assert_eq!(
 			ConnectedDids::<T>::get(&linkable_id).expect("should retain link").deposit,

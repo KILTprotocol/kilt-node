@@ -185,7 +185,7 @@ pub mod pallet {
 	#[pallet::config]
 	pub trait Config: frame_system::Config + pallet_balances::Config + pallet_session::Config {
 		/// Overarching event type
-		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 		// FIXME: Remove Currency and CurrencyBalance types. Problem: Need to restrict
 		// pallet_balances::Config::Balance with From<u64> for usage with Perquintill
 		// multiplication
@@ -685,13 +685,13 @@ pub mod pallet {
 				);
 				if let Some(delegated_val) = opt_val {
 					assert_ok!(Pallet::<T>::join_delegators(
-						T::Origin::from(Some(actor.clone()).into()),
+						T::RuntimeOrigin::from(Some(actor.clone()).into()),
 						T::Lookup::unlookup(delegated_val.clone()),
 						balance,
 					));
 				} else {
 					assert_ok!(Pallet::<T>::join_candidates(
-						T::Origin::from(Some(actor.clone()).into()),
+						T::RuntimeOrigin::from(Some(actor.clone()).into()),
 						balance
 					));
 				}
@@ -2272,7 +2272,7 @@ pub mod pallet {
 			// Kill storage
 			BlocksAuthored::<T>::remove(collator);
 			BlocksRewarded::<T>::remove(collator);
-			CandidatePool::<T>::remove(&collator);
+			CandidatePool::<T>::remove(collator);
 			Ok(())
 		}
 

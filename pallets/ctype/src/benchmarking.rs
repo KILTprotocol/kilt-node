@@ -39,7 +39,7 @@ benchmarks! {
 		where
 		<<T as Config>::Currency as Currency<AccountIdOf<T>>>::Balance: TryFrom<usize>,
 		<<<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance as TryFrom<usize>>::Error: Debug,
-		T::EnsureOrigin: GenerateBenchmarkOrigin<T::Origin, T::AccountId, T::CtypeCreatorId>,
+		T::EnsureOrigin: GenerateBenchmarkOrigin<T::RuntimeOrigin, T::AccountId, T::CtypeCreatorId>,
 	}
 
 	add {
@@ -55,7 +55,7 @@ benchmarks! {
 		<T as Config>::Currency::make_free_balance_be(&caller, initial_balance);
 		let origin = T::EnsureOrigin::generate_origin(caller, did.clone());
 
-	}: _<T::Origin>(origin, ctype)
+	}: _<T::RuntimeOrigin>(origin, ctype)
 	verify {
 		let stored_ctype_creator: T::CtypeCreatorId = Ctypes::<T>::get(ctype_hash).expect("CType hash should be present on chain.");
 
