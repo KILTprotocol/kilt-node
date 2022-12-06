@@ -114,7 +114,7 @@ pub(crate) fn check_did_migration<T: Config>(maybe_last_key: Option<Vec<u8>>) ->
 /// false.
 pub(crate) fn check_account_migration<T: Config>(maybe_last_key: Option<Vec<u8>>) -> Vec<(AccountIdOf<T>, Vec<u8>)> {
 	if let Some(last_key) = maybe_last_key {
-		log::debug!("Resuming check_did_migration from last_key: {:?}", last_key);
+		log::debug!("Resuming check_account_migration from last_key: {:?}", last_key);
 		ConnectedAccounts::<T>::iter_keys_from(last_key)
 	} else {
 		log::debug!(
