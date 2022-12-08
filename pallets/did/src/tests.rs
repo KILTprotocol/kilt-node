@@ -296,7 +296,7 @@ fn check_duplicate_did_creation() {
 					Box::new(details),
 					did::DidSignature::from(signature)
 				),
-				did::Error::<Test>::DidAlreadyPresent
+				did::Error::<Test>::AlreadyExists
 			);
 		});
 }
@@ -374,7 +374,7 @@ fn check_did_already_deleted_creation() {
 					Box::new(details),
 					did::DidSignature::from(signature)
 				),
-				did::Error::<Test>::DidAlreadyDeleted
+				did::Error::<Test>::AlreadyDeleted
 			);
 		});
 }
@@ -487,7 +487,7 @@ fn check_max_limit_key_agreement_keys_did_creation() {
 					Box::new(details),
 					did::DidSignature::from(signature)
 				),
-				did::Error::<Test>::MaxKeyAgreementKeysLimitExceeded
+				did::Error::<Test>::MaxNewKeyAgreementKeysLimitExceeded
 			);
 		});
 }
@@ -521,7 +521,7 @@ fn check_max_limit_service_endpoints_count_did_creation() {
 					Box::new(details),
 					did::DidSignature::from(signature)
 				),
-				did::Error::<Test>::MaxNumberOfServicesPerDidExceeded
+				did::Error::<Test>::MaxNumberOfServicesExceeded
 			);
 		});
 }
@@ -920,7 +920,7 @@ fn check_max_keys_authentication_key_update_error() {
 					RuntimeOrigin::signed(alice_did.clone()),
 					DidVerificationKey::from(new_auth_key.public())
 				),
-				did::Error::<Test>::MaxPublicKeysPerDidExceeded
+				did::Error::<Test>::MaxPublicKeysExceeded
 			);
 		});
 }
@@ -941,7 +941,7 @@ fn check_did_not_present_authentication_key_update_error() {
 				RuntimeOrigin::signed(alice_did.clone()),
 				DidVerificationKey::from(new_auth_key.public())
 			),
-			did::Error::<Test>::DidNotPresent
+			did::Error::<Test>::NotFound
 		);
 	});
 }
@@ -1091,7 +1091,7 @@ fn check_max_public_keys_delegation_key_addition_error() {
 					RuntimeOrigin::signed(alice_did.clone()),
 					DidVerificationKey::from(new_del_key.public())
 				),
-				did::Error::<Test>::MaxPublicKeysPerDidExceeded
+				did::Error::<Test>::MaxPublicKeysExceeded
 			);
 		});
 }
@@ -1127,7 +1127,7 @@ fn check_max_public_keys_reused_key_delegation_key_update_error() {
 					RuntimeOrigin::signed(alice_did.clone()),
 					DidVerificationKey::from(new_del_key.public())
 				),
-				did::Error::<Test>::MaxPublicKeysPerDidExceeded
+				did::Error::<Test>::MaxPublicKeysExceeded
 			);
 		});
 }
@@ -1148,7 +1148,7 @@ fn check_did_not_present_delegation_key_update_error() {
 				RuntimeOrigin::signed(alice_did.clone()),
 				DidVerificationKey::from(new_del_key.public())
 			),
-			did::Error::<Test>::DidNotPresent
+			did::Error::<Test>::NotFound
 		);
 	});
 }
@@ -1212,7 +1212,7 @@ fn check_did_not_present_delegation_key_deletion_error() {
 	ExtBuilder::default().build(None).execute_with(|| {
 		assert_noop!(
 			Did::remove_delegation_key(RuntimeOrigin::signed(alice_did.clone())),
-			did::Error::<Test>::DidNotPresent
+			did::Error::<Test>::NotFound
 		);
 	});
 }
@@ -1230,7 +1230,7 @@ fn check_key_not_present_delegation_key_deletion_error() {
 		.execute_with(|| {
 			assert_noop!(
 				Did::remove_delegation_key(RuntimeOrigin::signed(alice_did.clone())),
-				did::Error::<Test>::VerificationKeyNotPresent
+				did::Error::<Test>::VerificationKeyNotFound
 			);
 		});
 }
@@ -1378,7 +1378,7 @@ fn check_max_public_keys_attestation_key_addition_error() {
 					RuntimeOrigin::signed(alice_did.clone()),
 					DidVerificationKey::from(new_att_key.public())
 				),
-				did::Error::<Test>::MaxPublicKeysPerDidExceeded
+				did::Error::<Test>::MaxPublicKeysExceeded
 			);
 		});
 }
@@ -1414,7 +1414,7 @@ fn check_max_public_keys_reused_key_attestation_key_update_error() {
 					RuntimeOrigin::signed(alice_did.clone()),
 					DidVerificationKey::from(new_att_key.public())
 				),
-				did::Error::<Test>::MaxPublicKeysPerDidExceeded
+				did::Error::<Test>::MaxPublicKeysExceeded
 			);
 		});
 }
@@ -1435,7 +1435,7 @@ fn check_did_not_present_attestation_key_update_error() {
 				RuntimeOrigin::signed(alice_did.clone()),
 				DidVerificationKey::from(new_att_key.public())
 			),
-			did::Error::<Test>::DidNotPresent
+			did::Error::<Test>::NotFound
 		);
 	});
 }
@@ -1498,7 +1498,7 @@ fn check_did_not_present_attestation_key_deletion_error() {
 	ExtBuilder::default().build(None).execute_with(|| {
 		assert_noop!(
 			Did::remove_attestation_key(RuntimeOrigin::signed(alice_did.clone())),
-			did::Error::<Test>::DidNotPresent
+			did::Error::<Test>::NotFound
 		);
 	});
 }
@@ -1516,7 +1516,7 @@ fn check_key_not_present_attestation_key_deletion_error() {
 		.execute_with(|| {
 			assert_noop!(
 				Did::remove_attestation_key(RuntimeOrigin::signed(alice_did.clone())),
-				did::Error::<Test>::VerificationKeyNotPresent
+				did::Error::<Test>::VerificationKeyNotFound
 			);
 		});
 }
@@ -1578,7 +1578,7 @@ fn check_max_public_keys_key_agreement_key_addition_error() {
 			System::set_block_number(new_block_number);
 			assert_noop!(
 				Did::add_key_agreement_key(RuntimeOrigin::signed(alice_did.clone()), new_key_agreement_key,),
-				did::Error::<Test>::MaxPublicKeysPerDidExceeded
+				did::Error::<Test>::MaxPublicKeysExceeded
 			);
 		});
 }
@@ -1596,7 +1596,7 @@ fn check_did_not_present_key_agreement_key_addition_error() {
 		System::set_block_number(new_block_number);
 		assert_noop!(
 			Did::add_key_agreement_key(RuntimeOrigin::signed(alice_did.clone()), new_enc_key),
-			did::Error::<Test>::DidNotPresent
+			did::Error::<Test>::NotFound
 		);
 	});
 }
@@ -1640,7 +1640,7 @@ fn check_did_not_found_key_agreement_key_deletion_error() {
 				RuntimeOrigin::signed(alice_did.clone()),
 				generate_key_id(&test_enc_key.into())
 			),
-			did::Error::<Test>::DidNotPresent
+			did::Error::<Test>::NotFound
 		);
 	});
 }
@@ -1663,7 +1663,7 @@ fn check_key_not_found_key_agreement_key_deletion_error() {
 					RuntimeOrigin::signed(alice_did.clone()),
 					generate_key_id(&test_enc_key.into())
 				),
-				did::Error::<Test>::VerificationKeyNotPresent
+				did::Error::<Test>::VerificationKeyNotFound
 			);
 		});
 }
@@ -1746,7 +1746,7 @@ fn check_did_not_present_services_addition_error() {
 	ExtBuilder::default().build(None).execute_with(|| {
 		assert_noop!(
 			Did::add_service_endpoint(RuntimeOrigin::signed(alice_did.clone()), new_service_endpoint),
-			did::Error::<Test>::DidNotPresent
+			did::Error::<Test>::NotFound
 		);
 	});
 }
@@ -1766,7 +1766,7 @@ fn check_service_already_present_addition_error() {
 		.execute_with(|| {
 			assert_noop!(
 				Did::add_service_endpoint(RuntimeOrigin::signed(alice_did.clone()), service_endpoint),
-				did::Error::<Test>::ServiceAlreadyPresent
+				did::Error::<Test>::ServiceAlreadyExists
 			);
 		});
 }
@@ -1794,7 +1794,7 @@ fn check_max_services_count_addition_error() {
 		.execute_with(|| {
 			assert_noop!(
 				Did::add_service_endpoint(RuntimeOrigin::signed(alice_did.clone()), new_service_endpoint),
-				did::Error::<Test>::MaxNumberOfServicesPerDidExceeded
+				did::Error::<Test>::MaxNumberOfServicesExceeded
 			);
 		});
 }
@@ -2042,7 +2042,7 @@ fn check_service_not_present_deletion_error() {
 					RuntimeOrigin::signed(alice_did.clone()),
 					service_id.try_into().expect("Service ID to delete too long")
 				),
-				did::Error::<Test>::ServiceNotPresent
+				did::Error::<Test>::ServiceNotFound
 			);
 		});
 }
@@ -2090,7 +2090,7 @@ fn check_successful_deletion_no_endpoints() {
 					Box::new(details),
 					did::DidSignature::from(signature),
 				),
-				did::Error::<Test>::DidAlreadyDeleted
+				did::Error::<Test>::AlreadyDeleted
 			);
 		});
 }
@@ -2138,7 +2138,7 @@ fn check_successful_deletion_with_endpoints() {
 					Box::new(details),
 					did::DidSignature::from(signature),
 				),
-				did::Error::<Test>::DidAlreadyDeleted
+				did::Error::<Test>::AlreadyDeleted
 			);
 		});
 }
@@ -2157,7 +2157,7 @@ fn check_did_not_present_deletion() {
 		.execute_with(|| {
 			assert_noop!(
 				Did::delete(RuntimeOrigin::signed(alice_did), 0),
-				did::Error::<Test>::DidNotPresent
+				did::Error::<Test>::NotFound
 			);
 		});
 }
@@ -2236,7 +2236,7 @@ fn check_successful_reclaiming() {
 					Box::new(details),
 					did::DidSignature::from(signature),
 				),
-				did::Error::<Test>::DidAlreadyDeleted
+				did::Error::<Test>::AlreadyDeleted
 			);
 		});
 }
@@ -2315,7 +2315,7 @@ fn check_did_not_found_call_error() {
 				Box::new(call_operation.operation),
 				did::DidSignature::from(signature)
 			),
-			did::Error::<Test>::DidNotPresent
+			did::Error::<Test>::NotFound
 		);
 	});
 }
@@ -2544,7 +2544,7 @@ fn check_verification_key_not_present_call_error() {
 					Box::new(call_operation.operation),
 					did::DidSignature::from(signature)
 				),
-				did::Error::<Test>::VerificationKeyNotPresent
+				did::Error::<Test>::VerificationKeyNotFound
 			);
 		});
 }
@@ -2697,7 +2697,7 @@ fn check_call_attestation_key_error() {
 					Box::new(call_operation.operation),
 					did::DidSignature::from(signature)
 				),
-				ctype::Error::<Test>::CTypeAlreadyExists
+				ctype::Error::<Test>::AlreadyExists
 			);
 		});
 }
@@ -2762,7 +2762,7 @@ fn check_call_delegation_key_error() {
 					Box::new(call_operation.operation),
 					did::DidSignature::from(signature)
 				),
-				ctype::Error::<Test>::CTypeAlreadyExists
+				ctype::Error::<Test>::AlreadyExists
 			);
 		});
 }
@@ -2823,7 +2823,7 @@ fn check_call_authentication_key_error() {
 					Box::new(call_operation.operation),
 					did::DidSignature::from(signature)
 				),
-				ctype::Error::<Test>::CTypeAlreadyExists
+				ctype::Error::<Test>::AlreadyExists
 			);
 		});
 }
@@ -2953,7 +2953,7 @@ fn check_did_not_present_operation_verification() {
 				&call_operation,
 				&did::DidSignature::from(signature)
 			),
-			DidError::StorageError(StorageError::DidNotPresent)
+			DidError::StorageError(StorageError::NotFound)
 		);
 	});
 }
@@ -3094,7 +3094,7 @@ fn check_verification_key_not_present_operation_verification() {
 					&call_operation,
 					&did::DidSignature::from(signature)
 				),
-				DidError::StorageError(StorageError::DidKeyNotPresent(
+				DidError::StorageError(StorageError::DidKeyNotFound(
 					DidVerificationKeyRelationship::AssertionMethod
 				))
 			);
@@ -3227,7 +3227,7 @@ fn test_change_deposit_owner_not_found() {
 		.execute_with(|| {
 			assert_noop!(
 				Did::change_deposit_owner(RuntimeOrigin::signed(alice_did.clone())),
-				crate::Error::<Test>::DidNotPresent
+				crate::Error::<Test>::NotFound
 			);
 		});
 }
@@ -3249,7 +3249,7 @@ fn test_change_deposit_owner_not_authorized() {
 		.execute_with(|| {
 			assert_noop!(
 				Did::change_deposit_owner(RuntimeOrigin::signed(bob_did.clone())),
-				crate::Error::<Test>::DidNotPresent
+				crate::Error::<Test>::NotFound
 			);
 		});
 }

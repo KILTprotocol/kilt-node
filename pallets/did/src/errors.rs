@@ -30,7 +30,7 @@ pub enum DidError {
 	/// See [InputError].
 	InputError(InputError),
 	/// An error that is not supposed to take place, yet it happened.
-	InternalError,
+	Internal,
 }
 
 impl From<StorageError> for DidError {
@@ -49,22 +49,22 @@ impl From<InputError> for DidError {
 #[derive(Debug, Eq, PartialEq, TypeInfo)]
 pub enum StorageError {
 	/// The DID being created is already present on chain.
-	DidAlreadyPresent,
+	AlreadyExists,
 	/// The expected DID cannot be found on chain.
-	DidNotPresent,
+	NotFound,
 	/// The given DID does not contain the right key to verify the signature
 	/// of a DID operation.
-	DidKeyNotPresent(DidVerificationKeyRelationship),
+	DidKeyNotFound(DidVerificationKeyRelationship),
 	/// At least one key referenced is not stored under the given DID.
-	KeyNotPresent,
+	KeyNotFound,
 	/// The maximum number of public keys for this DID key identifier has
 	/// been reached.
-	MaxPublicKeysPerDidExceeded,
+	MaxPublicKeysExceeded,
 	/// The maximum number of key agreements has been reached for the DID
 	/// subject.
 	MaxTotalKeyAgreementKeysExceeded,
 	/// The DID has already been previously deleted.
-	DidAlreadyDeleted,
+	AlreadyDeleted,
 }
 
 /// Error generated when validating a DID operation.

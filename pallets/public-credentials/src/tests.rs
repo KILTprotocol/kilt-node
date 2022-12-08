@@ -194,7 +194,7 @@ fn add_ctype_not_existing() {
 					DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
 					Box::new(new_credential)
 				),
-				ctype::Error::<Test>::CTypeNotFound
+				ctype::Error::<Test>::NotFound
 			);
 		});
 }

@@ -121,9 +121,9 @@ pub mod pallet {
 	#[pallet::error]
 	pub enum Error<T> {
 		/// There is no CType with the given hash.
-		CTypeNotFound,
+		NotFound,
 		/// The CType already exists.
-		CTypeAlreadyExists,
+		AlreadyExists,
 		/// The paying account was unable to pay the fees for creating a ctype.
 		UnableToPayFees,
 	}
@@ -160,7 +160,7 @@ pub mod pallet {
 
 			let hash = <T as frame_system::Config>::Hashing::hash(&ctype[..]);
 
-			ensure!(!Ctypes::<T>::contains_key(hash), Error::<T>::CTypeAlreadyExists);
+			ensure!(!Ctypes::<T>::contains_key(hash), Error::<T>::AlreadyExists);
 
 			// *** No Fail except during withdraw beyond this point  ***
 

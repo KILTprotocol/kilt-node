@@ -298,7 +298,7 @@ impl<T: Config> DidDetails<T> {
 					block_number,
 				},
 			)
-			.map_err(|_| StorageError::MaxPublicKeysPerDidExceeded)?;
+			.map_err(|_| StorageError::MaxPublicKeysExceeded)?;
 		Ok(Self {
 			authentication_key: authentication_key_id,
 			key_agreement_keys: DidKeyAgreementKeySet::<T>::default(),
@@ -370,7 +370,7 @@ impl<T: Config> DidDetails<T> {
 					block_number,
 				},
 			)
-			.map_err(|_| StorageError::MaxPublicKeysPerDidExceeded)?;
+			.map_err(|_| StorageError::MaxPublicKeysExceeded)?;
 		Ok(())
 	}
 
@@ -405,7 +405,7 @@ impl<T: Config> DidDetails<T> {
 					block_number,
 				},
 			)
-			.map_err(|_| StorageError::MaxPublicKeysPerDidExceeded)?;
+			.map_err(|_| StorageError::MaxPublicKeysExceeded)?;
 		self.key_agreement_keys
 			.try_insert(new_key_agreement_id)
 			.map_err(|_| StorageError::MaxTotalKeyAgreementKeysExceeded)?;
@@ -415,7 +415,7 @@ impl<T: Config> DidDetails<T> {
 	/// Remove a key agreement key from both the set of key agreement keys and
 	/// the one of public keys.
 	pub fn remove_key_agreement_key(&mut self, key_id: KeyIdOf<T>) -> Result<(), StorageError> {
-		ensure!(self.key_agreement_keys.remove(&key_id), StorageError::KeyNotPresent);
+		ensure!(self.key_agreement_keys.remove(&key_id), StorageError::KeyNotFound);
 		self.remove_key_if_unused(key_id);
 		Ok(())
 	}
@@ -443,7 +443,7 @@ impl<T: Config> DidDetails<T> {
 					block_number,
 				},
 			)
-			.map_err(|_| StorageError::MaxPublicKeysPerDidExceeded)?;
+			.map_err(|_| StorageError::MaxPublicKeysExceeded)?;
 		Ok(())
 	}
 
@@ -453,7 +453,7 @@ impl<T: Config> DidDetails<T> {
 	/// not used in any other part of the DID. The new key is added to the
 	/// set of public keys.
 	pub fn remove_attestation_key(&mut self) -> Result<(), StorageError> {
-		let old_key_id = self.attestation_key.take().ok_or(StorageError::KeyNotPresent)?;
+		let old_key_id = self.attestation_key.take().ok_or(StorageError::KeyNotFound)?;
 		self.remove_key_if_unused(old_key_id);
 		Ok(())
 	}
@@ -481,7 +481,7 @@ impl<T: Config> DidDetails<T> {
 					block_number,
 				},
 			)
-			.map_err(|_| StorageError::MaxPublicKeysPerDidExceeded)?;
+			.map_err(|_| StorageError::MaxPublicKeysExceeded)?;
 		Ok(())
 	}
 
@@ -491,7 +491,7 @@ impl<T: Config> DidDetails<T> {
 	/// not used in any other part of the DID. The new key is added to the
 	/// set of public keys.
 	pub fn remove_delegation_key(&mut self) -> Result<(), StorageError> {
-		let old_key_id = self.delegation_key.take().ok_or(StorageError::KeyNotPresent)?;
+		let old_key_id = self.delegation_key.take().ok_or(StorageError::KeyNotFound)?;
 		self.remove_key_if_unused(old_key_id);
 		Ok(())
 	}

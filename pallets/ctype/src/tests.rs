@@ -77,7 +77,7 @@ fn check_duplicate_ctype_creation() {
 		.execute_with(|| {
 			assert_noop!(
 				Ctype::add(DoubleOrigin(deposit_owner, creator).into(), ctype),
-				ctype::Error::<Test>::CTypeAlreadyExists
+				ctype::Error::<Test>::AlreadyExists
 			);
 		});
 }

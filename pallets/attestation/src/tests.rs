@@ -136,7 +136,7 @@ fn test_attest_ctype_not_found() {
 					ctype_hash,
 					None
 				),
-				ctype::Error::<Test>::CTypeNotFound
+				ctype::Error::<Test>::NotFound
 			);
 		});
 }

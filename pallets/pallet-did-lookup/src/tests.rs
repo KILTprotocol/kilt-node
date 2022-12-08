@@ -314,7 +314,7 @@ fn test_remove_association_sender_not_found() {
 		.execute_with(|| {
 			assert_noop!(
 				DidLookup::remove_sender_association(RuntimeOrigin::signed(ACCOUNT_00)),
-				Error::<Test>::AssociationNotFound
+				Error::<Test>::NotFound
 			);
 		});
 }
@@ -356,7 +356,7 @@ fn test_remove_association_account_not_found() {
 					mock_origin::DoubleOrigin(ACCOUNT_01, DID_01).into(),
 					LinkableAccountId::from(ACCOUNT_00)
 				),
-				Error::<Test>::AssociationNotFound
+				Error::<Test>::NotFound
 			);
 		});
 }
@@ -477,7 +477,7 @@ fn test_change_deposit_owner_not_found() {
 					mock_origin::DoubleOrigin(ACCOUNT_01, DID_00).into(),
 					ACCOUNT_00.into()
 				),
-				Error::<Test>::AssociationNotFound
+				Error::<Test>::NotFound
 			);
 		})
 }

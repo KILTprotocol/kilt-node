@@ -343,12 +343,12 @@ pub mod pallet {
 		/// verification key provided.
 		InvalidSignature,
 		/// The DID with the given identifier is already present on chain.
-		DidAlreadyPresent,
+		AlreadyExists,
 		/// No DID with the given identifier is present on chain.
-		DidNotPresent,
+		NotFound,
 		/// One or more verification keys referenced are not stored in the set
 		/// of verification keys.
-		VerificationKeyNotPresent,
+		VerificationKeyNotFound,
 		/// The DID operation nonce is not equal to the current DID nonce + 1.
 		InvalidNonce,
 		/// The called extrinsic does not support DID authorisation.
@@ -358,25 +358,25 @@ pub mod pallet {
 		InvalidDidAuthorizationCall,
 		/// A number of new key agreement keys greater than the maximum allowed
 		/// has been provided.
-		MaxKeyAgreementKeysLimitExceeded,
+		MaxNewKeyAgreementKeysLimitExceeded,
 		/// The maximum number of public keys for this DID key identifier has
 		/// been reached.
-		MaxPublicKeysPerDidExceeded,
+		MaxPublicKeysExceeded,
 		/// The maximum number of key agreements has been reached for the DID
 		/// subject.
-		MaxTotalKeyAgreementKeysExceeded,
+		MaxKeyAgreementKeysExceeded,
 		/// The DID call was submitted by the wrong account
 		BadDidOrigin,
 		/// The block number provided in a DID-authorized operation is invalid.
 		TransactionExpired,
 		/// The DID has already been previously deleted.
-		DidAlreadyDeleted,
+		AlreadyDeleted,
 		/// Only the owner of the deposit can reclaim its reserved balance.
 		NotOwnerOfDeposit,
 		/// The origin is unable to reserve the deposit and pay the fee.
 		UnableToPayFees,
 		/// The maximum number of service endpoints for a DID has been exceeded.
-		MaxNumberOfServicesPerDidExceeded,
+		MaxNumberOfServicesExceeded,
 		/// The service endpoint ID exceeded the maximum allowed length.
 		MaxServiceIdLengthExceeded,
 		/// One of the service endpoint types exceeded the maximum allowed
@@ -391,16 +391,16 @@ pub mod pallet {
 		/// The maximum number of URLs for a service endpoint has been exceeded.
 		MaxNumberOfUrlsPerServiceExceeded,
 		/// A service with the provided ID is already present for the given DID.
-		ServiceAlreadyPresent,
+		ServiceAlreadyExists,
 		/// A service with the provided ID is not present under the given DID.
-		ServiceNotPresent,
+		ServiceNotFound,
 		/// One of the service endpoint details contains non-ASCII characters.
 		InvalidServiceEncoding,
 		/// The number of service endpoints stored under the DID is larger than
 		/// the number of endpoints to delete.
 		StoredEndpointsCountTooLarge,
 		/// An error that is not supposed to take place, yet it happened.
-		InternalError,
+		Internal,
 	}
 
 	impl<T> From<DidError> for Error<T> {
@@ -409,7 +409,7 @@ pub mod pallet {
 				DidError::StorageError(storage_error) => Self::from(storage_error),
 				DidError::SignatureError(operation_error) => Self::from(operation_error),
 				DidError::InputError(input_error) => Self::from(input_error),
-				DidError::InternalError => Self::InternalError,
+				DidError::Internal => Self::Internal,
 			}
 		}
 	}
@@ -417,12 +417,12 @@ pub mod pallet {
 	impl<T> From<StorageError> for Error<T> {
 		fn from(error: StorageError) -> Self {
 			match error {
-				StorageError::DidNotPresent => Self::DidNotPresent,
-				StorageError::DidAlreadyPresent => Self::DidAlreadyPresent,
-				StorageError::DidKeyNotPresent(_) | StorageError::KeyNotPresent => Self::VerificationKeyNotPresent,
-				StorageError::MaxPublicKeysPerDidExceeded => Self::MaxPublicKeysPerDidExceeded,
-				StorageError::MaxTotalKeyAgreementKeysExceeded => Self::MaxTotalKeyAgreementKeysExceeded,
-				StorageError::DidAlreadyDeleted => Self::DidAlreadyDeleted,
+				StorageError::NotFound => Self::NotFound,
+				StorageError::AlreadyExists => Self::AlreadyExists,
+				StorageError::DidKeyNotFound(_) | StorageError::KeyNotFound => Self::VerificationKeyNotFound,
+				StorageError::MaxPublicKeysExceeded => Self::MaxPublicKeysExceeded,
+				StorageError::MaxTotalKeyAgreementKeysExceeded => Self::MaxKeyAgreementKeysExceeded,
+				StorageError::AlreadyDeleted => Self::AlreadyDeleted,
 			}
 		}
 	}
@@ -441,9 +441,9 @@ pub mod pallet {
 	impl<T> From<InputError> for Error<T> {
 		fn from(error: InputError) -> Self {
 			match error {
-				InputError::MaxKeyAgreementKeysLimitExceeded => Self::MaxKeyAgreementKeysLimitExceeded,
+				InputError::MaxKeyAgreementKeysLimitExceeded => Self::MaxNewKeyAgreementKeysLimitExceeded,
 				InputError::MaxIdLengthExceeded => Self::MaxServiceIdLengthExceeded,
-				InputError::MaxServicesCountExceeded => Self::MaxNumberOfServicesPerDidExceeded,
+				InputError::MaxServicesCountExceeded => Self::MaxNumberOfServicesExceeded,
 				InputError::MaxTypeCountExceeded => Self::MaxNumberOfTypesPerServiceExceeded,
 				InputError::MaxTypeLengthExceeded => Self::MaxServiceTypeLengthExceeded,
 				InputError::MaxUrlCountExceeded => Self::MaxNumberOfUrlsPerServiceExceeded,
@@ -538,12 +538,12 @@ pub mod pallet {
 			// Make sure that DIDs cannot be created again after they have been deleted.
 			ensure!(
 				!DidBlacklist::<T>::contains_key(&did_identifier),
-				Error::<T>::DidAlreadyDeleted
+				Error::<T>::AlreadyDeleted
 			);
 
 			// There has to be no other DID with the same identifier already saved on chain,
-			// otherwise generate a DidAlreadyPresent error.
-			ensure!(!Did::<T>::contains_key(&did_identifier), Error::<T>::DidAlreadyPresent);
+			// otherwise generate a AlreadyExists error.
+			ensure!(!Did::<T>::contains_key(&did_identifier), Error::<T>::AlreadyExists);
 
 			let account_did_auth_key = did_identifier
 				.verify_and_recover_signature(&details.encode(), &signature)
@@ -604,7 +604,7 @@ pub mod pallet {
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::set_ed25519_authentication_key().max(<T as pallet::Config>::WeightInfo::set_sr25519_authentication_key()).max(<T as pallet::Config>::WeightInfo::set_ecdsa_authentication_key()))]
 		pub fn set_authentication_key(origin: OriginFor<T>, new_key: DidVerificationKey) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
-			let mut did_details = Did::<T>::get(&did_subject).ok_or(Error::<T>::DidNotPresent)?;
+			let mut did_details = Did::<T>::get(&did_subject).ok_or(Error::<T>::NotFound)?;
 
 			log::debug!(
 				"Setting new authentication key {:?} for DID {:?}",
@@ -644,7 +644,7 @@ pub mod pallet {
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::set_ed25519_delegation_key().max(<T as pallet::Config>::WeightInfo::set_sr25519_delegation_key()).max(<T as pallet::Config>::WeightInfo::set_ecdsa_delegation_key()))]
 		pub fn set_delegation_key(origin: OriginFor<T>, new_key: DidVerificationKey) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
-			let mut did_details = Did::<T>::get(&did_subject).ok_or(Error::<T>::DidNotPresent)?;
+			let mut did_details = Did::<T>::get(&did_subject).ok_or(Error::<T>::NotFound)?;
 
 			log::debug!("Setting new delegation key {:?} for DID {:?}", &new_key, &did_subject);
 			did_details
@@ -678,7 +678,7 @@ pub mod pallet {
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::remove_ed25519_delegation_key().max(<T as pallet::Config>::WeightInfo::remove_sr25519_delegation_key()).max(<T as pallet::Config>::WeightInfo::remove_ecdsa_delegation_key()))]
 		pub fn remove_delegation_key(origin: OriginFor<T>) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
-			let mut did_details = Did::<T>::get(&did_subject).ok_or(Error::<T>::DidNotPresent)?;
+			let mut did_details = Did::<T>::get(&did_subject).ok_or(Error::<T>::NotFound)?;
 
 			log::debug!("Removing delegation key for DID {:?}", &did_subject);
 			did_details.remove_delegation_key().map_err(Error::<T>::from)?;
@@ -711,7 +711,7 @@ pub mod pallet {
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::set_ed25519_attestation_key().max(<T as pallet::Config>::WeightInfo::set_sr25519_attestation_key()).max(<T as pallet::Config>::WeightInfo::set_ecdsa_attestation_key()))]
 		pub fn set_attestation_key(origin: OriginFor<T>, new_key: DidVerificationKey) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
-			let mut did_details = Did::<T>::get(&did_subject).ok_or(Error::<T>::DidNotPresent)?;
+			let mut did_details = Did::<T>::get(&did_subject).ok_or(Error::<T>::NotFound)?;
 
 			log::debug!("Setting new attestation key {:?} for DID {:?}", &new_key, &did_subject);
 			did_details
@@ -745,7 +745,7 @@ pub mod pallet {
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::remove_ed25519_attestation_key().max(<T as pallet::Config>::WeightInfo::remove_sr25519_attestation_key()).max(<T as pallet::Config>::WeightInfo::remove_ecdsa_attestation_key()))]
 		pub fn remove_attestation_key(origin: OriginFor<T>) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
-			let mut did_details = Did::<T>::get(&did_subject).ok_or(Error::<T>::DidNotPresent)?;
+			let mut did_details = Did::<T>::get(&did_subject).ok_or(Error::<T>::NotFound)?;
 
 			log::debug!("Removing attestation key for DID {:?}", &did_subject);
 			did_details.remove_attestation_key().map_err(Error::<T>::from)?;
@@ -776,7 +776,7 @@ pub mod pallet {
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::add_ed25519_key_agreement_key().max(<T as pallet::Config>::WeightInfo::add_sr25519_key_agreement_key()).max(<T as pallet::Config>::WeightInfo::add_ecdsa_key_agreement_key()))]
 		pub fn add_key_agreement_key(origin: OriginFor<T>, new_key: DidEncryptionKey) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
-			let mut did_details = Did::<T>::get(&did_subject).ok_or(Error::<T>::DidNotPresent)?;
+			let mut did_details = Did::<T>::get(&did_subject).ok_or(Error::<T>::NotFound)?;
 
 			log::debug!("Adding new key agreement key {:?} for DID {:?}", &new_key, &did_subject);
 			did_details
@@ -808,7 +808,7 @@ pub mod pallet {
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::remove_ed25519_key_agreement_key().max(<T as pallet::Config>::WeightInfo::remove_sr25519_key_agreement_key()).max(<T as pallet::Config>::WeightInfo::remove_ecdsa_key_agreement_key()))]
 		pub fn remove_key_agreement_key(origin: OriginFor<T>, key_id: KeyIdOf<T>) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
-			let mut did_details = Did::<T>::get(&did_subject).ok_or(Error::<T>::DidNotPresent)?;
+			let mut did_details = Did::<T>::get(&did_subject).ok_or(Error::<T>::NotFound)?;
 
 			log::debug!("Removing key agreement key for DID {:?}", &did_subject);
 			did_details.remove_key_agreement_key(key_id).map_err(Error::<T>::from)?;
@@ -843,14 +843,14 @@ pub mod pallet {
 				.map_err(Error::<T>::from)?;
 
 			// Verify that the DID is present.
-			ensure!(Did::<T>::get(&did_subject).is_some(), Error::<T>::DidNotPresent);
+			ensure!(Did::<T>::get(&did_subject).is_some(), Error::<T>::NotFound);
 
 			let currently_stored_endpoints_count = DidEndpointsCount::<T>::get(&did_subject);
 
 			// Verify that there are less than the maximum limit of services stored.
 			ensure!(
 				currently_stored_endpoints_count < T::MaxNumberOfServicesPerDid::get(),
-				Error::<T>::MaxNumberOfServicesPerDidExceeded
+				Error::<T>::MaxNumberOfServicesExceeded
 			);
 
 			// *** No Fail after the following storage write ***
@@ -859,7 +859,7 @@ pub mod pallet {
 				&did_subject,
 				service_endpoint.id.clone(),
 				|existing_service| -> Result<(), Error<T>> {
-					ensure!(existing_service.is_none(), Error::<T>::ServiceAlreadyPresent);
+					ensure!(existing_service.is_none(), Error::<T>::ServiceAlreadyExists);
 					*existing_service = Some(service_endpoint);
 					Ok(())
 				},
@@ -891,7 +891,7 @@ pub mod pallet {
 
 			ensure!(
 				ServiceEndpoints::<T>::take(&did_subject, &service_id).is_some(),
-				Error::<T>::ServiceNotPresent
+				Error::<T>::ServiceNotFound
 			);
 
 			// Decrease the endpoints counter or delete the entry if it reaches 0.
@@ -969,7 +969,7 @@ pub mod pallet {
 			endpoints_to_remove: u32,
 		) -> DispatchResult {
 			let source = ensure_signed(origin)?;
-			let did_entry = Did::<T>::get(&did_subject).ok_or(Error::<T>::DidNotPresent)?;
+			let did_entry = Did::<T>::get(&did_subject).ok_or(Error::<T>::NotFound)?;
 
 			ensure!(did_entry.deposit.owner == source, Error::<T>::NotOwnerOfDeposit);
 
@@ -1096,7 +1096,7 @@ pub mod pallet {
 		pub fn update_deposit(origin: OriginFor<T>, did: DidIdentifierOf<T>) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
 
-			let did_entry = Did::<T>::get(&did).ok_or(Error::<T>::DidNotPresent)?;
+			let did_entry = Did::<T>::get(&did).ok_or(Error::<T>::NotFound)?;
 			ensure!(did_entry.deposit.owner == sender, Error::<T>::BadDidOrigin);
 
 			DidDepositCollector::<T>::update_deposit(&did)?;
@@ -1123,7 +1123,7 @@ pub mod pallet {
 			Self::validate_block_number_value(operation.block_number)?;
 
 			let mut did_details =
-				Did::<T>::get(&operation.did).ok_or(DidError::StorageError(StorageError::DidNotPresent))?;
+				Did::<T>::get(&operation.did).ok_or(DidError::StorageError(StorageError::NotFound))?;
 
 			Self::validate_counter_value(operation.tx_counter, &did_details)?;
 			// Increase the tx counter as soon as it is considered valid, no matter if the
@@ -1187,7 +1187,7 @@ pub mod pallet {
 			// error if there is no key of the type required
 			let verification_key = did_details
 				.get_verification_key_for_key_type(key_type)
-				.ok_or(DidError::StorageError(StorageError::DidKeyNotPresent(key_type)))?;
+				.ok_or(DidError::StorageError(StorageError::DidKeyNotFound(key_type)))?;
 
 			// Verify that the signature matches the expected format, otherwise generate
 			// an error
@@ -1217,11 +1217,11 @@ pub mod pallet {
 				.maybe_cursor
 				.is_some()
 			{
-				return Err(Error::<T>::InternalError.into());
+				return Err(Error::<T>::Internal.into());
 			};
 
 			// `take` calls `kill` internally
-			let did_entry = Did::<T>::take(&did_subject).ok_or(Error::<T>::DidNotPresent)?;
+			let did_entry = Did::<T>::take(&did_subject).ok_or(Error::<T>::NotFound)?;
 
 			DidEndpointsCount::<T>::remove(&did_subject);
 			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&did_entry.deposit);
@@ -1244,7 +1244,7 @@ pub mod pallet {
 		fn deposit(
 			key: &DidIdentifierOf<T>,
 		) -> Result<Deposit<AccountIdOf<T>, <Self::Currency as Currency<AccountIdOf<T>>>::Balance>, DispatchError> {
-			let did_entry = Did::<T>::get(key).ok_or(Error::<T>::DidNotPresent)?;
+			let did_entry = Did::<T>::get(key).ok_or(Error::<T>::NotFound)?;
 			Ok(did_entry.deposit)
 		}
 
@@ -1256,7 +1256,7 @@ pub mod pallet {
 			key: &DidIdentifierOf<T>,
 			deposit: Deposit<AccountIdOf<T>, <Self::Currency as Currency<AccountIdOf<T>>>::Balance>,
 		) -> Result<(), DispatchError> {
-			let did_entry = Did::<T>::get(key).ok_or(Error::<T>::DidNotPresent)?;
+			let did_entry = Did::<T>::get(key).ok_or(Error::<T>::NotFound)?;
 			Did::<T>::insert(key, DidDetails { deposit, ..did_entry });
 
 			Ok(())
