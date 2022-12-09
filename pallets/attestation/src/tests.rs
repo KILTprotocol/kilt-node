@@ -272,7 +272,7 @@ fn test_revoke_not_found() {
 					claim_hash,
 					authorization_info
 				),
-				attestation::Error::<Test>::AttestationNotFound
+				attestation::Error::<Test>::NotFound
 			);
 		});
 }
@@ -393,7 +393,7 @@ fn test_remove_not_found() {
 			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
 			assert_noop!(
 				Attestation::remove(DoubleOrigin(ACCOUNT_00, attester.clone()).into(), claim_hash, None),
-				attestation::Error::<Test>::AttestationNotFound
+				attestation::Error::<Test>::NotFound
 			);
 		});
 }
@@ -483,7 +483,7 @@ fn test_reclaim_deposit_not_found() {
 		.execute_with(|| {
 			assert_noop!(
 				Attestation::reclaim_deposit(RuntimeOrigin::signed(ACCOUNT_01), claim_hash),
-				attestation::Error::<Test>::AttestationNotFound,
+				attestation::Error::<Test>::NotFound,
 			);
 		});
 }
@@ -582,7 +582,7 @@ fn test_change_deposit_owner_not_found() {
 		.execute_with(|| {
 			assert_noop!(
 				Attestation::change_deposit_owner(DoubleOrigin(ACCOUNT_00, attester).into(), claim_hash),
-				attestation::Error::<Test>::AttestationNotFound,
+				attestation::Error::<Test>::NotFound,
 			);
 		});
 }
