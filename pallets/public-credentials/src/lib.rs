@@ -338,8 +338,7 @@ pub mod pallet {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 			let caller = source.subject();
 
-			let credential_subject =
-				CredentialSubjects::<T>::get(&credential_id).ok_or(Error::<T>::NotFound)?;
+			let credential_subject = CredentialSubjects::<T>::get(&credential_id).ok_or(Error::<T>::NotFound)?;
 
 			let ac_weight_used = Self::set_credential_revocation_status(
 				&caller,
@@ -376,8 +375,7 @@ pub mod pallet {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 			let caller = source.subject();
 
-			let credential_subject =
-				CredentialSubjects::<T>::get(&credential_id).ok_or(Error::<T>::NotFound)?;
+			let credential_subject = CredentialSubjects::<T>::get(&credential_id).ok_or(Error::<T>::NotFound)?;
 
 			let ac_weight_used = Self::set_credential_revocation_status(
 				&caller,
@@ -541,8 +539,7 @@ pub mod pallet {
 			credential_id: &CredentialIdOf<T>,
 		) -> Result<(T::SubjectId, CredentialEntryOf<T>), Error<T>> {
 			// Verify that the credential exists
-			let credential_subject =
-				CredentialSubjects::<T>::get(credential_id).ok_or(Error::<T>::NotFound)?;
+			let credential_subject = CredentialSubjects::<T>::get(credential_id).ok_or(Error::<T>::NotFound)?;
 
 			// Should never happen if the line above succeeds
 			Credentials::<T>::get(&credential_subject, credential_id)
@@ -604,8 +601,7 @@ pub mod pallet {
 			credential_id: &CredentialIdOf<T>,
 			deposit: Deposit<AccountIdOf<T>, <Self::Currency as Currency<AccountIdOf<T>>>::Balance>,
 		) -> Result<(), DispatchError> {
-			let credential_subject =
-				CredentialSubjects::<T>::get(credential_id).ok_or(Error::<T>::NotFound)?;
+			let credential_subject = CredentialSubjects::<T>::get(credential_id).ok_or(Error::<T>::NotFound)?;
 			Credentials::<T>::try_mutate(&credential_subject, credential_id, |credential_entry| {
 				if let Some(credential) = credential_entry {
 					credential.deposit = deposit;
