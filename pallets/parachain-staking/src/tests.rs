@@ -3935,8 +3935,17 @@ fn rewards_force_remove_candidate() {
 			// rewarded counter storage should be killed for collator
 			assert!(StakePallet::blocks_authored(1).is_zero());
 			assert!(StakePallet::blocks_rewarded(1).is_zero());
+			// rewards should be set
+			assert!(!StakePallet::rewards(1).is_zero());
+
 			(1..=3).for_each(|id| {
+				// rewards should be non zero
 				assert!(!StakePallet::rewards(id).is_zero(), "Zero rewards for acc_id {:?}", id);
+				// rewards should equal API call
+				assert_eq!(
+					StakePallet::get_unclaimed_staking_rewards(&id),
+					StakePallet::rewards(id)
+				);
 				if id > 1 {
 					assert_eq!(
 						StakePallet::blocks_rewarded(id),
@@ -3946,6 +3955,8 @@ fn rewards_force_remove_candidate() {
 					);
 				}
 			});
+			assert_eq!(StakePallet::get_unclaimed_staking_rewards(&1), StakePallet::rewards(1));
+
 			(4..=5).for_each(|id| {
 				assert!(StakePallet::rewards(id).is_zero(), "acc_id {:?}", id);
 				assert!(StakePallet::blocks_rewarded(id).is_zero(), "acc_id {:?}", id);
@@ -4094,6 +4105,7 @@ fn rewards_delegator_leaves() {
 			assert!(StakePallet::blocks_rewarded(2).is_zero());
 			assert!(StakePallet::rewards(2).is_zero());
 			assert!(!StakePallet::rewards(3).is_zero());
+			assert_eq!(StakePallet::get_unclaimed_staking_rewards(&3), StakePallet::rewards(3));
 			// counter should be reset due to leaving
 			assert!(StakePallet::blocks_rewarded(3).is_zero());
 		});
