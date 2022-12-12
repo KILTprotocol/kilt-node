@@ -117,7 +117,8 @@ impl frame_support::traits::Contains<Call> for MigrationFilter {
 		match c {
 			// Enable DidLookup migration calls for ongoing migration
 			Call::DidLookup(
-				pallet_did_lookup::Call::verify_migration { .. } | pallet_did_lookup::Call::migrate_account_id { .. },
+				pallet_did_lookup::Call::try_finalize_migration { .. }
+				| pallet_did_lookup::Call::migrate_account_id { .. },
 			) => DidLookup::migration_ongoing(),
 			// For all other DidLookup calls, check whether migration is ongoing
 			Call::DidLookup(_) => !DidLookup::migration_ongoing(),

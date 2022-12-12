@@ -192,6 +192,10 @@ pub mod pallet {
 		/// The migration storages have different sizes implying an ongoing
 		/// migration.
 		MigrationStorageSizeMismatch,
+
+		/// Safety guard to check for ConnectedAccounts and ConnectedDids to
+		/// stay synchronized during migration NOTE: Should never be thrown
+		MigrationIssue,
 	}
 
 	#[pallet::call]
@@ -378,7 +382,7 @@ pub mod pallet {
 			// CallFilter.
 
 			let linkable_account_id: LinkableAccountId = account_id.clone().into();
-			let did_id = crate::migrations::do_migrate_account_id::<T>(account_id, linkable_account_id.clone())
+			let did_id = crate::migrations::do_migrate_account_id::<T>(account_id, linkable_account_id.clone())?
 				.ok_or(Error::<T>::AlreadyMigrated)?;
 
 			Self::deposit_event(Event::<T>::Migrated {
@@ -391,7 +395,7 @@ pub mod pallet {
 
 		// TODO: Docs, weights
 		#[pallet::weight(T::DbWeight::get().reads_writes(1, 2))]
-		pub fn verify_migration(origin: OriginFor<T>) -> DispatchResult {
+		pub fn try_finalize_migration(origin: OriginFor<T>) -> DispatchResult {
 			ensure_signed(origin)?;
 			// TODO: Do we need to ensure whether MigrationOngoing? Shouldn't due to
 			// CallFilter.

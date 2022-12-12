@@ -41,14 +41,18 @@ type ConnectedAccounts<T: Config> =
 pub(crate) fn do_migrate_account_id<T: Config>(
 	account_id: AccountIdOf<T>,
 	linkable_account: LinkableAccountId,
-) -> Option<DidIdentifierOf<T>> {
-	ConnectedDids::<T>::take(&account_id).map(|did_record| {
-		ConnectedDidsV2::<T>::insert(&linkable_account, did_record.clone());
-		if let Some(v) = ConnectedAccounts::<T>::take(&did_record.did, &account_id) {
-			ConnectedAccountsV2::<T>::insert(&did_record.did, linkable_account, v);
-		}
-		did_record.did
-	})
+) -> Result<Option<DidIdentifierOf<T>>, crate::pallet::Error<T>> {
+	ConnectedDids::<T>::take(&account_id)
+		.map(|did_record| {
+			ConnectedDidsV2::<T>::insert(&linkable_account, did_record.clone());
+			if let Some(v) = ConnectedAccounts::<T>::take(&did_record.did, &account_id) {
+				ConnectedAccountsV2::<T>::insert(&did_record.did, linkable_account, v);
+				Ok(did_record.did)
+			} else {
+				Err(crate::Error::<T>::MigrationIssue)
+			}
+		})
+		.transpose()
 }
 
 /// Sanity check that both new typed storage maps `ConnectedDids`,
@@ -250,13 +254,13 @@ mod tests {
 				assert_eq!(account_check_pre.get(0).unwrap().0, ACCOUNT_00);
 
 				assert_noop!(
-					DidLookup::verify_migration(Origin::signed(ACCOUNT_00)),
+					DidLookup::try_finalize_migration(Origin::signed(ACCOUNT_00)),
 					Error::<Test>::MigrationStorageSizeMismatch
 				);
 
 				// Migrate
 				assert_ok!(DidLookup::migrate_account_id(Origin::signed(ACCOUNT_01), ACCOUNT_00));
-				assert_ok!(DidLookup::verify_migration(Origin::signed(ACCOUNT_00)));
+				assert_ok!(DidLookup::try_finalize_migration(Origin::signed(ACCOUNT_00)));
 
 				// Check post migration status
 				assert!(check_did_migration::<Test>(None).is_empty());
@@ -313,14 +317,14 @@ mod tests {
 				assert!(ConnectedAccountsV2::<Test>::iter_keys().count().is_zero());
 				assert_eq!(check_account_migration::<Test>(None).len(), 2);
 				assert_noop!(
-					DidLookup::verify_migration(Origin::signed(ACCOUNT_00)),
+					DidLookup::try_finalize_migration(Origin::signed(ACCOUNT_00)),
 					Error::<Test>::MigrationStorageSizeMismatch
 				);
 
 				// Migrate 1/2
 				assert_ok!(DidLookup::migrate_account_id(Origin::signed(ACCOUNT_01), ACCOUNT_00));
 				assert_noop!(
-					DidLookup::verify_migration(Origin::signed(ACCOUNT_00)),
+					DidLookup::try_finalize_migration(Origin::signed(ACCOUNT_00)),
 					Error::<Test>::MigrationStorageSizeMismatch
 				);
 				assert_eq!(ConnectedDidsV2::<Test>::iter_keys().count(), 1);
@@ -330,7 +334,7 @@ mod tests {
 
 				// Migrate 2/2
 				assert_ok!(DidLookup::migrate_account_id(Origin::signed(ACCOUNT_00), ACCOUNT_01));
-				assert_ok!(DidLookup::verify_migration(Origin::signed(ACCOUNT_00)));
+				assert_ok!(DidLookup::try_finalize_migration(Origin::signed(ACCOUNT_00)));
 
 				// Check post migration status
 				assert!(check_did_migration::<Test>(None).is_empty());
