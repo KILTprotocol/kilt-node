@@ -8,5 +8,5 @@ pub struct CtypeEntry<Creator, BlockNumber> {
 	/// Identifier of the creator.
 	pub creator: Creator,
 	/// Block number in which the creation tx was dispatched.
-	pub creation_block_number: BlockNumber,
+	pub created_at: BlockNumber,
 }

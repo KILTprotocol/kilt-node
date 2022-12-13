@@ -190,7 +190,7 @@ pub mod pallet {
 				hash,
 				CtypeEntryOf::<T> {
 					creator: creator.clone(),
-					creation_block_number: frame_system::Pallet::<T>::block_number(),
+					created_at: frame_system::Pallet::<T>::block_number(),
 				},
 			);
 
@@ -211,7 +211,7 @@ pub mod pallet {
 			T::OverarchingOrigin::ensure_origin(origin)?;
 			Ctypes::<T>::try_mutate(ctype_hash, |ctype_entry| -> Result<(), Error<T>> {
 				if let Some(ctype_entry) = ctype_entry {
-					ctype_entry.creation_block_number = block_number;
+					ctype_entry.created_at = block_number;
 					Ok(())
 				} else {
 					Err(Error::<T>::CTypeNotFound)

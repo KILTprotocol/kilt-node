@@ -49,7 +49,7 @@ fn check_successful_ctype_creation() {
 				stored_ctype_creator,
 				ctype::CtypeEntryOf::<Test> {
 					creator,
-					creation_block_number: 200
+					created_at: 200
 				}
 			);
 			assert_eq!(
@@ -113,7 +113,7 @@ fn set_block_number_ok() {
 			assert_eq!(
 				ctype::Ctypes::<Test>::get(ctype_hash)
 					.expect("CType with provided hash should exist.")
-					.creation_block_number,
+					.created_at,
 				new_block_number
 			);
 		})

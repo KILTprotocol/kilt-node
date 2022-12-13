@@ -477,7 +477,7 @@ impl ExtBuilder {
 					ctype_hash,
 					ctype::CtypeEntryOf::<Test> {
 						creator: owner.to_owned(),
-						creation_block_number: System::block_number(),
+						created_at: System::block_number(),
 					},
 				);
 			}

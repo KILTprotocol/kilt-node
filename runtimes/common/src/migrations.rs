@@ -63,7 +63,7 @@ impl<T: ctype::Config> OnRuntimeUpgrade for AddCTypeBlockNumber<T> {
 			num_translations = num_translations.saturating_add(1);
 			Some(CtypeEntryOf::<T> {
 				creator: old,
-				creation_block_number: default_block_number,
+				created_at: default_block_number,
 			})
 		});
 		current.put::<ctype::Pallet<T>>();
