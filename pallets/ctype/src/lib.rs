@@ -209,7 +209,7 @@ pub mod pallet {
 			block_number: BlockNumberFor<T>,
 		) -> DispatchResult {
 			T::OverarchingOrigin::ensure_origin(origin)?;
-			Ctypes::<T>::try_mutate(ctype_hash, |ctype_entry| -> Result<(), Error<T>> {
+			Ctypes::<T>::try_mutate(ctype_hash, |ctype_entry| {
 				if let Some(ctype_entry) = ctype_entry {
 					ctype_entry.created_at = block_number;
 					Ok(())
