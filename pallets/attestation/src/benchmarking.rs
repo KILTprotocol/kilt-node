@@ -45,7 +45,7 @@ benchmarks! {
 
 		ctype::Ctypes::<T>::insert(ctype_hash, CtypeEntryOf::<T> {
 			creator: attester.clone(),
-			creation_block_number: 0u64.into()
+			created_at: 0u64.into()
 		});
 		<T as Config>::Currency::make_free_balance_be(&sender, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
 
@@ -73,7 +73,7 @@ benchmarks! {
 
 		ctype::Ctypes::<T>::insert(ctype_hash, CtypeEntryOf::<T> {
 			creator: attester.clone(),
-			creation_block_number: 0u64.into()
+			created_at: 0u64.into()
 		});
 		<T as Config>::Currency::make_free_balance_be(&sender, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
 
@@ -102,7 +102,7 @@ benchmarks! {
 
 		ctype::Ctypes::<T>::insert(ctype_hash, CtypeEntryOf::<T> {
 			creator: attester.clone(),
-			creation_block_number: 0u64.into()
+			created_at: 0u64.into()
 		});
 		<T as Config>::Currency::make_free_balance_be(&sender, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
 
@@ -122,7 +122,7 @@ benchmarks! {
 
 		ctype::Ctypes::<T>::insert(ctype_hash, CtypeEntryOf::<T> {
 			creator: attester.clone(),
-			creation_block_number: 0u64.into()
+			created_at: 0u64.into()
 		});
 		<T as Config>::Currency::make_free_balance_be(&sender, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
 
@@ -143,7 +143,7 @@ benchmarks! {
 
 		ctype::Ctypes::<T>::insert(ctype_hash, CtypeEntryOf::<T> {
 			creator: attester.clone(),
-			creation_block_number: 0u64.into()
+			created_at: 0u64.into()
 		});
 		<T as Config>::Currency::make_free_balance_be(&deposit_owner_old, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
 		<T as Config>::Currency::make_free_balance_be(&deposit_owner_new, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
@@ -173,7 +173,7 @@ benchmarks! {
 
 		ctype::Ctypes::<T>::insert(ctype_hash, CtypeEntryOf::<T> {
 			creator: attester.clone(),
-			creation_block_number: 0u64.into()
+			created_at: 0u64.into()
 		});
 		<T as Config>::Currency::make_free_balance_be(&deposit_owner, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
 

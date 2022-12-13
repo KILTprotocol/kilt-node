@@ -80,7 +80,7 @@ where
 		ctype_hash,
 		CtypeEntryOf::<T> {
 			creator: T::CtypeCreatorId::from(root_acc.clone()),
-			creation_block_number: 0u64.into(),
+			created_at: 0u64.into(),
 		},
 	);
 
@@ -246,7 +246,7 @@ benchmarks! {
 		let delegation = generate_delegation_id::<T>(0);
 		ctype::Ctypes::<T>::insert(ctype, CtypeEntryOf::<T> {
 			creator: T::CtypeCreatorId::from(creator.clone()),
-			creation_block_number: 0u64.into(),
+			created_at: 0u64.into(),
 		});
 		<T as Config>::Currency::make_free_balance_be(
 			&sender,

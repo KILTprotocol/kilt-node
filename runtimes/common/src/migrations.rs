@@ -16,34 +16,27 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::{
-	pallet_prelude::ValueQuery,
-	storage_alias,
-	traits::{GetStorageVersion, OnRuntimeUpgrade},
-};
+use frame_support::traits::{GetStorageVersion, OnRuntimeUpgrade};
 use sp_runtime::traits::{Get, Zero};
 use sp_std::marker::PhantomData;
 
 use ctype::{CtypeCreatorOf, CtypeEntryOf};
 
-#[storage_alias]
-type MigrationCounter<T: ctype::Config> = StorageValue<ctype::Pallet<T>, u32, ValueQuery>;
+#[cfg(feature = "try-runtime")]
+use sp_std::vec::Vec;
 
 pub struct AddCTypeBlockNumber<R>(PhantomData<R>);
 
 impl<T: ctype::Config> OnRuntimeUpgrade for AddCTypeBlockNumber<T> {
 	#[cfg(feature = "try-runtime")]
-	fn pre_upgrade() -> Result<(), &'static str> {
+	fn pre_upgrade() -> Result<Vec<u8>, &'static str> {
 		assert_eq!(ctype::Pallet::<T>::on_chain_storage_version(), 0,);
-		assert!(MigrationCounter::<T>::get().is_zero());
 
 		// Use iter_keys() on new storage so it won't try to decode values.
-		let ctypes_to_migrate = ctype::Ctypes::<T>::iter_keys().count();
+		let ctypes_to_migrate = ctype::Ctypes::<T>::iter_keys().count() as u64;
 
 		log::info!("🪪  CType pallet pre check: {:?} CTypes to migrate", ctypes_to_migrate);
-
-		MigrationCounter::<T>::set(ctypes_to_migrate as u32);
-		Ok(())
+		Ok(ctypes_to_migrate.to_be_bytes().into())
 	}
 
 	fn on_runtime_upgrade() -> frame_support::weights::Weight {
@@ -73,19 +66,20 @@ impl<T: ctype::Config> OnRuntimeUpgrade for AddCTypeBlockNumber<T> {
 	}
 
 	#[cfg(feature = "try-runtime")]
-	fn post_upgrade() -> Result<(), &'static str> {
+	fn post_upgrade(state: Vec<u8>) -> Result<(), &'static str> {
 		assert_eq!(ctype::Pallet::<T>::on_chain_storage_version(), 1);
 
+		let initial_ctype_count = u64::from_be_bytes(state.try_into().expect("input state should be 8 bytes"));
 		// Use iter() on new storage so it also checks that the new values can be
 		// decoded after the migration.
-		assert_eq!(MigrationCounter::<T>::get(), ctype::Ctypes::<T>::iter().count() as u32);
+		assert_eq!(initial_ctype_count, ctype::Ctypes::<T>::iter().count() as u64);
 		if let Some(ctype_entry) = ctype::Ctypes::<T>::iter_values().last() {
-			assert!(ctype_entry.creation_block_number.is_zero());
+			assert!(ctype_entry.created_at.is_zero());
 		}
 
 		log::info!(
 			"🪪  CType pallet post checks ok, all {:} CTypes have been migrated ✅",
-			MigrationCounter::<T>::get()
+			initial_ctype_count
 		);
 		Ok(())
 	}

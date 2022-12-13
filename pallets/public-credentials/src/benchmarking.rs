@@ -74,7 +74,7 @@ benchmarks! {
 
 		ctype::Ctypes::<T>::insert(ctype_hash, CtypeEntryOf::<T> {
 			creator: attester.clone(),
-			creation_block_number: 0u64.into()
+			created_at: 0u64.into()
 		});
 		reserve_balance::<T>(&sender);
 		let origin = <T as Config>::EnsureOrigin::generate_origin(sender, attester);
@@ -104,7 +104,7 @@ benchmarks! {
 
 		ctype::Ctypes::<T>::insert(ctype_hash, CtypeEntryOf::<T> {
 			creator: attester,
-			creation_block_number: 0u64.into()
+			created_at: 0u64.into()
 		});
 		Pallet::<T>::add(origin.clone(), creation_op).expect("Pallet::add should not fail");
 		let credential_id_clone = credential_id.clone();
@@ -133,7 +133,7 @@ benchmarks! {
 
 		ctype::Ctypes::<T>::insert(ctype_hash, CtypeEntryOf::<T> {
 			creator: attester,
-			creation_block_number: 0u64.into()
+			created_at: 0u64.into()
 		});
 		Pallet::<T>::add(origin.clone(), creation_op).expect("Pallet::add should not fail");
 		Pallet::<T>::revoke(origin.clone(), credential_id.clone(), None).expect("Pallet::revoke should not fail");
@@ -162,7 +162,7 @@ benchmarks! {
 
 		ctype::Ctypes::<T>::insert(ctype_hash, CtypeEntryOf::<T> {
 			creator: attester,
-			creation_block_number: 0u64.into()
+			created_at: 0u64.into()
 		});
 		Pallet::<T>::add(origin.clone(), creation_op).expect("Pallet::add should not fail");
 		let credential_id_clone = credential_id.clone();
@@ -191,7 +191,7 @@ benchmarks! {
 
 		ctype::Ctypes::<T>::insert(ctype_hash, CtypeEntryOf::<T> {
 			creator: attester,
-			creation_block_number: 0u64.into()
+			created_at: 0u64.into()
 		});
 		Pallet::<T>::add(origin, creation_op).expect("Pallet::add should not fail");
 		let origin = RawOrigin::Signed(sender);
@@ -223,7 +223,7 @@ benchmarks! {
 
 		ctype::Ctypes::<T>::insert(ctype_hash, CtypeEntryOf::<T> {
 			creator: attester.clone(),
-			creation_block_number: 0u64.into()
+			created_at: 0u64.into()
 		});
 		Pallet::<T>::add(origin, creation_op).expect("Pallet::add should not fail");
 		let credential_id_clone = credential_id.clone();
@@ -249,7 +249,7 @@ benchmarks! {
 		reserve_balance::<T>(&deposit_owner);
 		ctype::Ctypes::<T>::insert(ctype_hash, CtypeEntryOf::<T> {
 			creator: attester.clone(),
-			creation_block_number: 0u64.into()
+			created_at: 0u64.into()
 		});
 
 		let credential_entry = generate_base_credential_entry::<T>(

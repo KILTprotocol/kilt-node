@@ -78,12 +78,12 @@ benchmarks! {
 		Pallet::<T>::add(origin, ctype).expect("CType creation should not fail.");
 		let overarching_origin = T::OverarchingOrigin::successful_origin();
 
-	}: _<T::Origin>(overarching_origin, ctype_hash, new_block_number)
+	}: _<T::RuntimeOrigin>(overarching_origin, ctype_hash, new_block_number)
 	verify {
 		let stored_ctype_entry = Ctypes::<T>::get(ctype_hash).expect("CType hash should be present on chain.");
 
 		// Verify the CType has the right block number
-		assert_eq!(stored_ctype_entry.creation_block_number, new_block_number);
+		assert_eq!(stored_ctype_entry.created_at, new_block_number);
 	}
 }
 
