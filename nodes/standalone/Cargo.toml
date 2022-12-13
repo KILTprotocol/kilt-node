@@ -70,10 +70,18 @@ try-runtime-cli = {workspace = true, optional = true}
 [features]
 default = []
 runtime-benchmarks = [
+  "frame-benchmarking/runtime-benchmarks",
+  "frame-benchmarking-cli/runtime-benchmarks",
+  "frame-system/runtime-benchmarks",
   "mashnet-node-runtime/runtime-benchmarks",
   "runtime-common/runtime-benchmarks",
+  "sc-service/runtime-benchmarks",
+  "sp-runtime/runtime-benchmarks",
 ]
 try-runtime = [
+  "frame-system/try-runtime",
   "mashnet-node-runtime/try-runtime",
+  "pallet-transaction-payment/try-runtime",
+  "runtime-common/try-runtime",
   "try-runtime-cli",
 ]

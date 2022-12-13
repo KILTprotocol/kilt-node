@@ -296,9 +296,9 @@ fn test_remove_association_sender() {
 		.build()
 		.execute_with(|| {
 			// remove association
-			assert!(DidLookup::remove_sender_association(Origin::signed(ACCOUNT_00)).is_ok());
-			assert_eq!(ConnectedDids::<Test>::get(LinkableAccountId::from(ACCOUNT_00)), None);
-			assert!(ConnectedAccounts::<Test>::get(DID_01, LinkableAccountId::from(ACCOUNT_00)).is_none());
+			assert!(DidLookup::remove_sender_association(RuntimeOrigin::signed(ACCOUNT_00)).is_ok());
+			assert_eq!(ConnectedDids::<Test>::get(&LinkableAccountId::from(ACCOUNT_00)), None);
+			assert!(ConnectedAccounts::<Test>::get(DID_01, &LinkableAccountId::from(ACCOUNT_00)).is_none());
 			assert_eq!(Balances::reserved_balance(ACCOUNT_00), 0);
 		});
 }
@@ -313,7 +313,7 @@ fn test_remove_association_sender_not_found() {
 		.build()
 		.execute_with(|| {
 			assert_noop!(
-				DidLookup::remove_sender_association(Origin::signed(ACCOUNT_00)),
+				DidLookup::remove_sender_association(RuntimeOrigin::signed(ACCOUNT_00)),
 				Error::<Test>::AssociationNotFound
 			);
 		});
@@ -396,7 +396,7 @@ fn test_reclaim_deposit() {
 		.build()
 		.execute_with(|| {
 			assert_ok!(DidLookup::reclaim_deposit(
-				Origin::signed(ACCOUNT_01),
+				RuntimeOrigin::signed(ACCOUNT_01),
 				ACCOUNT_00.into()
 			));
 			assert_eq!(Balances::reserved_balance(ACCOUNT_01), 0);
@@ -414,7 +414,7 @@ fn test_reclaim_deposit_not_authorized() {
 		.build()
 		.execute_with(|| {
 			assert_noop!(
-				DidLookup::reclaim_deposit(Origin::signed(ACCOUNT_00), ACCOUNT_00.into()),
+				DidLookup::reclaim_deposit(RuntimeOrigin::signed(ACCOUNT_00), ACCOUNT_00.into()),
 				Error::<Test>::NotAuthorized
 			);
 			assert_eq!(
@@ -518,7 +518,10 @@ fn test_update_deposit() {
 				Balances::reserved_balance(ACCOUNT_00),
 				<Test as crate::Config>::Deposit::get() * 2
 			);
-			assert_ok!(DidLookup::update_deposit(Origin::signed(ACCOUNT_00), ACCOUNT_00.into()));
+			assert_ok!(DidLookup::update_deposit(
+				RuntimeOrigin::signed(ACCOUNT_00),
+				ACCOUNT_00.into()
+			));
 			assert_eq!(
 				Balances::reserved_balance(ACCOUNT_00),
 				<Test as crate::Config>::Deposit::get()
@@ -546,7 +549,7 @@ fn test_update_deposit_unauthorized() {
 				<Test as crate::Config>::Deposit::get() * 2
 			);
 			assert_noop!(
-				DidLookup::update_deposit(Origin::signed(ACCOUNT_01), ACCOUNT_00.into()),
+				DidLookup::update_deposit(RuntimeOrigin::signed(ACCOUNT_01), ACCOUNT_00.into()),
 				Error::<Test>::NotAuthorized
 			);
 		})

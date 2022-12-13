@@ -51,7 +51,7 @@ benchmarks! {
 		T: core::fmt::Debug,
 		T: Config,
 		T: ctype::Config<CtypeCreatorId = T::AttesterId>,
-		<T as Config>::EnsureOrigin: GenerateBenchmarkOrigin<T::Origin, T::AccountId, T::AttesterId>,
+		<T as Config>::EnsureOrigin: GenerateBenchmarkOrigin<T::RuntimeOrigin, T::AccountId, T::AttesterId>,
 		<T as Config>::SubjectId: GetWorstCase + Into<Vec<u8>> + sp_std::fmt::Debug,
 		<T as Config>::CredentialId: Default,
 		T::BlockNumber: From<u64>
@@ -78,7 +78,7 @@ benchmarks! {
 		});
 		reserve_balance::<T>(&sender);
 		let origin = <T as Config>::EnsureOrigin::generate_origin(sender, attester);
-	}: _<T::Origin>(origin, creation_op)
+	}: _<T::RuntimeOrigin>(origin, creation_op)
 	verify {
 		assert!(Credentials::<T>::contains_key(subject_id, &credential_id));
 		assert!(CredentialSubjects::<T>::contains_key(&credential_id));
@@ -108,7 +108,7 @@ benchmarks! {
 		});
 		Pallet::<T>::add(origin.clone(), creation_op).expect("Pallet::add should not fail");
 		let credential_id_clone = credential_id.clone();
-	}: _<T::Origin>(origin, credential_id_clone, None)
+	}: _<T::RuntimeOrigin>(origin, credential_id_clone, None)
 	verify {
 		assert!(Credentials::<T>::get(subject_id, &credential_id).expect("Credential should be present in storage").revoked);
 	}
@@ -138,7 +138,7 @@ benchmarks! {
 		Pallet::<T>::add(origin.clone(), creation_op).expect("Pallet::add should not fail");
 		Pallet::<T>::revoke(origin.clone(), credential_id.clone(), None).expect("Pallet::revoke should not fail");
 		let credential_id_clone = credential_id.clone();
-	}: _<T::Origin>(origin, credential_id_clone, None)
+	}: _<T::RuntimeOrigin>(origin, credential_id_clone, None)
 	verify {
 		assert!(!Credentials::<T>::get(subject_id, &credential_id).expect("Credential should be present in storage").revoked);
 	}
@@ -166,7 +166,7 @@ benchmarks! {
 		});
 		Pallet::<T>::add(origin.clone(), creation_op).expect("Pallet::add should not fail");
 		let credential_id_clone = credential_id.clone();
-	}: _<T::Origin>(origin, credential_id_clone, None)
+	}: _<T::RuntimeOrigin>(origin, credential_id_clone, None)
 	verify {
 		assert!(!Credentials::<T>::contains_key(subject_id, &credential_id));
 		assert!(!CredentialSubjects::<T>::contains_key(credential_id));
@@ -228,7 +228,7 @@ benchmarks! {
 		Pallet::<T>::add(origin, creation_op).expect("Pallet::add should not fail");
 		let credential_id_clone = credential_id.clone();
 		let origin = <T as Config>::EnsureOrigin::generate_origin(deposit_owner_new.clone(), attester);
-	}: _<T::Origin>(origin, credential_id_clone)
+	}: _<T::RuntimeOrigin>(origin, credential_id_clone)
 	verify {
 		assert_eq!(
 			Credentials::<T>::get(subject_id, &credential_id)

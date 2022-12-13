@@ -49,7 +49,7 @@ fn setup_collator_candidates<T: Config>(
 	for acc in collators.iter() {
 		T::Currency::make_free_balance_be(acc, amount);
 		assert_ok!(Pallet::<T>::join_candidates(
-			T::Origin::from(Some(acc.clone()).into()),
+			T::RuntimeOrigin::from(Some(acc.clone()).into()),
 			amount,
 		));
 		assert_eq!(CandidatePool::<T>::get(acc).unwrap().stake, amount);
@@ -80,7 +80,7 @@ fn fill_delegators<T: Config>(num_delegators: u32, collator: T::AccountId, colla
 	for acc in delegators.iter() {
 		T::Currency::make_free_balance_be(acc, T::MinDelegatorStake::get());
 		assert_ok!(Pallet::<T>::join_delegators(
-			T::Origin::from(Some(acc.clone()).into()),
+			T::RuntimeOrigin::from(Some(acc.clone()).into()),
 			T::Lookup::unlookup(collator.clone()),
 			T::MinDelegatorStake::get(),
 		));
@@ -526,7 +526,7 @@ benchmarks! {
 		let stake = T::MinCollatorCandidateStake::get();
 		T::Currency::make_free_balance_be(&candidate, free_balance);
 		assert_ok!(Pallet::<T>::join_candidates(
-			T::Origin::from(Some(candidate.clone()).into()),
+			T::RuntimeOrigin::from(Some(candidate.clone()).into()),
 			stake,
 		));
 		assert_eq!(pallet_balances::Pallet::<T>::usable_balance(&candidate), (free_balance - T::MinCollatorCandidateStake::get()).into());

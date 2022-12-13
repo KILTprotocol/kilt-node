@@ -94,9 +94,9 @@ pub mod pallet {
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
 		/// The origin allowed to ban names.
-		type BanOrigin: EnsureOrigin<Self::Origin>;
+		type BanOrigin: EnsureOrigin<Self::RuntimeOrigin>;
 		/// The origin allowed to perform regular operations.
-		type OwnerOrigin: EnsureOrigin<Success = Self::OriginSuccess, <Self as frame_system::Config>::Origin>;
+		type OwnerOrigin: EnsureOrigin<<Self as frame_system::Config>::RuntimeOrigin, Success = Self::OriginSuccess>;
 		/// The type of origin after a successful origin check.
 		type OriginSuccess: CallSources<AccountIdOf<Self>, Web3NameOwnerOf<Self>>;
 		/// The currency type to reserve and release deposits.
@@ -105,7 +105,7 @@ pub mod pallet {
 		#[pallet::constant]
 		type Deposit: Get<BalanceOf<Self>>;
 		/// The overarching event type.
-		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 		/// The min encoded length of a name.
 		#[pallet::constant]
 		type MinNameLength: Get<u32>;

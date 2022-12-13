@@ -141,11 +141,11 @@ pub mod pallet {
 		type DelegationEntityId: Parameter + TypeInfo + MaxEncodedLen;
 		type DelegationNodeId: Parameter + Copy + AsRef<[u8]> + Eq + PartialEq + Ord + PartialOrd + MaxEncodedLen;
 		type EnsureOrigin: EnsureOrigin<
+			<Self as frame_system::Config>::RuntimeOrigin,
 			Success = <Self as Config>::OriginSuccess,
-			<Self as frame_system::Config>::Origin,
 		>;
 		type OriginSuccess: CallSources<AccountIdOf<Self>, DelegatorIdOf<Self>>;
-		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 		type WeightInfo: WeightInfo;
 
 		/// The currency that is used to reserve funds for each delegation.

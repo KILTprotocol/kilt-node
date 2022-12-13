@@ -173,7 +173,7 @@ pub mod pallet {
 	pub type BlockNumberOf<T> = <T as frame_system::Config>::BlockNumber;
 
 	/// Type for a runtime extrinsic callable under DID-based authorisation.
-	pub type DidCallableOf<T> = <T as Config>::Call;
+	pub type DidCallableOf<T> = <T as Config>::RuntimeCall;
 
 	/// Type for origin that supports a DID sender.
 	#[pallet::origin]
@@ -187,8 +187,8 @@ pub mod pallet {
 	pub trait Config: frame_system::Config + Debug {
 		/// Type for a dispatchable call that can be proxied through the DID
 		/// pallet to support DID-based authorisation.
-		type Call: Parameter
-			+ Dispatchable<Origin = <Self as Config>::Origin, PostInfo = PostDispatchInfo>
+		type RuntimeCall: Parameter
+			+ Dispatchable<PostInfo = PostDispatchInfo, RuntimeOrigin = <Self as Config>::RuntimeOrigin>
 			+ GetDispatchInfo
 			+ DeriveDidCallAuthorizationVerificationKeyRelationship;
 
@@ -197,21 +197,21 @@ pub mod pallet {
 
 		/// Origin type expected by the proxied dispatchable calls.
 		#[cfg(not(feature = "runtime-benchmarks"))]
-		type Origin: From<DidRawOrigin<DidIdentifierOf<Self>, AccountIdOf<Self>>>;
+		type RuntimeOrigin: From<DidRawOrigin<DidIdentifierOf<Self>, AccountIdOf<Self>>>;
 		#[cfg(feature = "runtime-benchmarks")]
-		type Origin: From<RawOrigin<DidIdentifierOf<Self>>>;
+		type RuntimeOrigin: From<RawOrigin<DidIdentifierOf<Self>>>;
 
 		/// The origin check for all DID calls inside this pallet.
 		type EnsureOrigin: EnsureOrigin<
+			<Self as frame_system::Config>::RuntimeOrigin,
 			Success = <Self as Config>::OriginSuccess,
-			<Self as frame_system::Config>::Origin,
 		>;
 
 		/// The return type when the DID origin check was successful.
 		type OriginSuccess: CallSources<AccountIdOf<Self>, DidIdentifierOf<Self>>;
 
 		/// Overarching event type.
-		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
 		/// The currency that is used to reserve funds for each did.
 		type Currency: ReservableCurrency<AccountIdOf<Self>>;

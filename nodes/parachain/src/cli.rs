@@ -53,7 +53,7 @@ pub(crate) enum Subcommand {
 
 	/// Sub-commands concerned with benchmarking.
 	/// The pallet benchmarking moved to the `pallet` sub-command.
-	#[clap(subcommand)]
+	#[command(subcommand)]
 	Benchmark(frame_benchmarking_cli::BenchmarkCmd),
 
 	/// Try some command against runtime state.
@@ -69,11 +69,11 @@ pub(crate) enum Subcommand {
 /// Command for building the genesis state of the parachain
 #[derive(Debug, Parser)]
 pub(crate) struct BuildSpecCmd {
-	#[clap(flatten)]
+	#[command(flatten)]
 	pub(crate) inner_args: sc_cli::BuildSpecCmd,
 
 	/// The name of the runtime which should get executed.
-	#[clap(long, default_value = DEFAULT_RUNTIME)]
+	#[arg(long, default_value = DEFAULT_RUNTIME)]
 	pub(crate) runtime: String,
 }
 
@@ -86,16 +86,16 @@ impl Deref for BuildSpecCmd {
 }
 
 #[derive(Debug, clap::Parser)]
-#[clap(
+#[command(
 	propagate_version = true,
 	args_conflicts_with_subcommands = true,
 	subcommand_negates_reqs = true
 )]
 pub(crate) struct Cli {
-	#[clap(subcommand)]
+	#[command(subcommand)]
 	pub(crate) subcommand: Option<Subcommand>,
 
-	#[clap(flatten)]
+	#[command(flatten)]
 	pub(crate) run: cumulus_client_cli::RunCmd,
 
 	// Disable automatic hardware benchmarks.
@@ -105,16 +105,16 @@ pub(crate) struct Cli {
 	///
 	/// The results are then printed out in the logs, and also sent as part of
 	/// telemetry, if telemetry is enabled.
-	#[clap(long)]
+	#[arg(long)]
 	pub no_hardware_benchmarks: bool,
 
 	/// The name of the runtime which should get executed.
-	#[clap(long, default_value = DEFAULT_RUNTIME)]
+	#[arg(long, default_value = DEFAULT_RUNTIME)]
 	pub(crate) runtime: String,
 
 	/// Relaychain arguments
-	#[clap(raw = true)]
-	pub(crate) relaychain_args: Vec<String>,
+	#[arg(raw = true)]
+	pub(crate) relay_chain_args: Vec<String>,
 }
 
 #[derive(Debug)]

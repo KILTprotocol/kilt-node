@@ -684,7 +684,7 @@ fn reclaim_deposit_successful() {
 		.build()
 		.execute_with(|| {
 			assert_ok!(PublicCredentials::reclaim_deposit(
-				Origin::signed(ACCOUNT_00),
+				RuntimeOrigin::signed(ACCOUNT_00),
 				credential_id
 			));
 
@@ -697,12 +697,12 @@ fn reclaim_deposit_successful() {
 
 			// Reclaiming the deposit for the same credential again will fail
 			assert_noop!(
-				PublicCredentials::reclaim_deposit(Origin::signed(ACCOUNT_00), credential_id),
+				PublicCredentials::reclaim_deposit(RuntimeOrigin::signed(ACCOUNT_00), credential_id),
 				Error::<Test>::CredentialNotFound
 			);
 
 			assert_noop!(
-				PublicCredentials::reclaim_deposit(Origin::signed(ACCOUNT_00), credential_id),
+				PublicCredentials::reclaim_deposit(RuntimeOrigin::signed(ACCOUNT_00), credential_id),
 				Error::<Test>::CredentialNotFound
 			);
 		});
@@ -718,7 +718,7 @@ fn reclaim_deposit_credential_not_found() {
 		.build()
 		.execute_with(|| {
 			assert_noop!(
-				PublicCredentials::reclaim_deposit(Origin::signed(ACCOUNT_00), credential_id),
+				PublicCredentials::reclaim_deposit(RuntimeOrigin::signed(ACCOUNT_00), credential_id),
 				Error::<Test>::CredentialNotFound
 			);
 		});
@@ -738,7 +738,7 @@ fn reclaim_deposit_unauthorized() {
 		.build()
 		.execute_with(|| {
 			assert_noop!(
-				PublicCredentials::reclaim_deposit(Origin::signed(ACCOUNT_01), credential_id),
+				PublicCredentials::reclaim_deposit(RuntimeOrigin::signed(ACCOUNT_01), credential_id),
 				Error::<Test>::Unauthorized
 			);
 		});
@@ -861,7 +861,7 @@ fn test_update_deposit() {
 		.build()
 		.execute_with(|| {
 			assert_ok!(PublicCredentials::update_deposit(
-				Origin::signed(ACCOUNT_00),
+				RuntimeOrigin::signed(ACCOUNT_00),
 				credential_id
 			));
 
@@ -887,7 +887,7 @@ fn test_update_deposit_not_found() {
 		.build()
 		.execute_with(|| {
 			assert_noop!(
-				PublicCredentials::update_deposit(Origin::signed(ACCOUNT_01), credential_id),
+				PublicCredentials::update_deposit(RuntimeOrigin::signed(ACCOUNT_01), credential_id),
 				Error::<Test>::CredentialNotFound
 			);
 		});
@@ -907,7 +907,7 @@ fn test_update_deposit_unauthorized() {
 		.build()
 		.execute_with(|| {
 			assert_noop!(
-				PublicCredentials::update_deposit(Origin::signed(ACCOUNT_01), credential_id),
+				PublicCredentials::update_deposit(RuntimeOrigin::signed(ACCOUNT_01), credential_id),
 				Error::<Test>::Unauthorized
 			);
 		});

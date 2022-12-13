@@ -1564,7 +1564,7 @@ fn direct_owner_reclaim_deposit_delegation_successful() {
 		.execute_with(|| {
 			// Revoke direct child of hierarchy root
 			assert_ok!(Delegation::reclaim_deposit(
-				Origin::signed(ACCOUNT_00),
+				RuntimeOrigin::signed(ACCOUNT_00),
 				operation.delegation_id,
 				operation.max_removals
 			));
@@ -1616,7 +1616,7 @@ fn parent_owner_reclaim_deposit_error() {
 			assert_eq!(Balances::reserved_balance(ACCOUNT_01), <Test as Config>::Deposit::get());
 			assert_noop!(
 				Delegation::reclaim_deposit(
-					Origin::signed(ACCOUNT_00),
+					RuntimeOrigin::signed(ACCOUNT_00),
 					operation.delegation_id,
 					operation.max_removals
 				),
@@ -1643,7 +1643,7 @@ fn delegation_not_found_reclaim_deposit_error() {
 		.execute_with(|| {
 			assert_noop!(
 				Delegation::reclaim_deposit(
-					Origin::signed(ACCOUNT_00),
+					RuntimeOrigin::signed(ACCOUNT_00),
 					operation.delegation_id,
 					operation.max_removals
 				),
@@ -1670,7 +1670,7 @@ fn max_removals_too_large_reclaim_deposit_error() {
 		.execute_with(|| {
 			assert_noop!(
 				Delegation::reclaim_deposit(
-					Origin::signed(ACCOUNT_00),
+					RuntimeOrigin::signed(ACCOUNT_00),
 					operation.delegation_id,
 					operation.max_removals
 				),
@@ -2359,7 +2359,10 @@ fn test_update_deposit() {
 				Balances::reserved_balance(ACCOUNT_00),
 				<Test as Config>::Deposit::get() * 3
 			);
-			assert_ok!(Delegation::update_deposit(Origin::signed(ACCOUNT_00), delegation_id));
+			assert_ok!(Delegation::update_deposit(
+				RuntimeOrigin::signed(ACCOUNT_00),
+				delegation_id
+			));
 
 			// ACCOUNT_00 has still one deposit (there are two nodes)
 			assert_eq!(
@@ -2399,7 +2402,7 @@ fn test_update_deposit_unauthorized() {
 				<Test as Config>::Deposit::get() * 3
 			);
 			assert_noop!(
-				Delegation::update_deposit(Origin::signed(ACCOUNT_01), delegation_id),
+				Delegation::update_deposit(RuntimeOrigin::signed(ACCOUNT_01), delegation_id),
 				Error::<Test>::AccessDenied
 			);
 		});

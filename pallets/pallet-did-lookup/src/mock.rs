@@ -65,8 +65,8 @@ impl frame_system::Config for Test {
 	type BlockWeights = ();
 	type BlockLength = ();
 	type DbWeight = ();
-	type Origin = Origin;
-	type Call = Call;
+	type RuntimeOrigin = RuntimeOrigin;
+	type RuntimeCall = RuntimeCall;
 	type Index = Index;
 	type BlockNumber = BlockNumber;
 	type Hash = Hash;
@@ -74,7 +74,7 @@ impl frame_system::Config for Test {
 	type AccountId = AccountId;
 	type Lookup = IdentityLookup<Self::AccountId>;
 	type Header = Header;
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type BlockHashCount = BlockHashCount;
 	type Version = ();
 	type PalletInfo = PalletInfo;
@@ -96,7 +96,7 @@ parameter_types! {
 impl pallet_balances::Config for Test {
 	type Balance = Balance;
 	type DustRemoval = ();
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type ExistentialDeposit = ExistentialDeposit;
 	type AccountStore = System;
 	type MaxLocks = MaxLocks;
@@ -110,7 +110,7 @@ parameter_types! {
 }
 
 impl pallet_did_lookup::Config for Test {
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 
 	type Currency = Balances;
 	type Deposit = DidLookupDeposit;
@@ -123,7 +123,7 @@ impl pallet_did_lookup::Config for Test {
 }
 
 impl mock_origin::Config for Test {
-	type Origin = Origin;
+	type RuntimeOrigin = RuntimeOrigin;
 	type AccountId = AccountId;
 	type SubjectId = SubjectId;
 }
