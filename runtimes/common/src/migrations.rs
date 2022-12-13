@@ -70,12 +70,9 @@ impl<T: ctype::Config> OnRuntimeUpgrade for AddCTypeBlockNumber<T> {
 		assert_eq!(ctype::Pallet::<T>::on_chain_storage_version(), 1);
 
 		let initial_ctype_count = u64::from_be_bytes(state.try_into().expect("input state should be 8 bytes"));
-		// Use iter() on new storage so it also checks that the new values can be
-		// decoded after the migration.
 		assert_eq!(initial_ctype_count, ctype::Ctypes::<T>::iter().count() as u64);
-		if let Some(ctype_entry) = ctype::Ctypes::<T>::iter_values().last() {
-			assert!(ctype_entry.created_at.is_zero());
-		}
+		// Verify all migrated ctypes can be decoded under the new type.
+		ctype::Ctypes::<T>::iter_values().for_each(|v| assert!(v.created_at.is_zero()));
 
 		log::info!(
 			"🪪  CType pallet post checks ok, all {:} CTypes have been migrated ✅",
