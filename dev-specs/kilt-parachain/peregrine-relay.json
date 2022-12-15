@@ -6,7 +6,9 @@
     "/dns4/eyrie-5.kilt.io/tcp/30360/p2p/12D3KooWEeezCpJauUmWw3zfgEtYzhZTc5LgukQYtGTMaZfzgVfE",
     "/dns4/eyrie-6.kilt.io/tcp/30361/p2p/12D3KooWHq5j9tLdZEu4tnr6ii2k33zp5DCoKREQ6KzuabC9Gihu",
     "/dns4/eyrie-6.kilt.io/tcp/30362/p2p/12D3KooWQ8iTGLH98zLz9BZmq5FXDmR1NytDsJ2VToXvcjvHV16a",
-    "/dns4/eyrie-5.kilt.io/tcp/30363/p2p/12D3KooWNWNptEoH443LVUgwC5kd7DBVoNYwQtJh6dp4TQxUsAST"
+    "/dns4/eyrie-5.kilt.io/tcp/30363/p2p/12D3KooWNWNptEoH443LVUgwC5kd7DBVoNYwQtJh6dp4TQxUsAST",
+    "/dns4/eyrie-4.kilt.io/tcp/30364/p2p/12D3KooWKajuW4NMcmvnot6y5fHJeYzhNH3V1kPv4tRLLoVABcJW",
+    "/dns4/eyrie-4.kilt.io/tcp/30365/p2p/12D3KooWMAe3zdMXpGnRxZRPnp65h4EjWQ9DvQSr3UejM1vJByyn"
   ],
   "telemetryEndpoints": [
     [
