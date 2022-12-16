@@ -1073,7 +1073,7 @@ pub type Executive = frame_executive::Executive<
 	Runtime,
 	// Executes pallet hooks in the order of definition in construct_runtime
 	AllPalletsWithSystem,
-	parachain_staking::migration::StakingPayoutRefactor<Runtime>,
+	pallet_did_lookup::migrations::EthereumMigration<Runtime>,
 >;
 
 impl_runtime_apis! {
