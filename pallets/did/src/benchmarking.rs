@@ -102,7 +102,7 @@ fn generate_base_did_call_operation<T: Config>(
 	did: DidIdentifierOf<T>,
 	submitter: AccountIdOf<T>,
 ) -> DidAuthorizedCallOperation<T> {
-	let test_call = <T as Config>::Call::get_call_for_did_call_benchmark();
+	let test_call = <T as Config>::RuntimeCall::get_call_for_did_call_benchmark();
 
 	DidAuthorizedCallOperation {
 		did,
@@ -115,16 +115,16 @@ fn generate_base_did_call_operation<T: Config>(
 
 fn save_service_endpoints<T: Config>(did_subject: &DidIdentifierOf<T>, endpoints: &[DidEndpoint<T>]) {
 	for endpoint in endpoints.iter() {
-		ServiceEndpoints::<T>::insert(&did_subject, &endpoint.id, endpoint.clone());
+		ServiceEndpoints::<T>::insert(did_subject, &endpoint.id, endpoint.clone());
 	}
-	DidEndpointsCount::<T>::insert(&did_subject, endpoints.len().saturated_into::<u32>());
+	DidEndpointsCount::<T>::insert(did_subject, endpoints.len().saturated_into::<u32>());
 }
 
 benchmarks! {
 	where_clause {
 		where
 		T::DidIdentifier: From<AccountId32>,
-		<T as frame_system::Config>::Origin: From<RawOrigin<T::DidIdentifier>>,
+		<T as frame_system::Config>::RuntimeOrigin: From<RawOrigin<T::DidIdentifier>>,
 		<T as frame_system::Config>::AccountId: From<AccountId32>,
 	}
 

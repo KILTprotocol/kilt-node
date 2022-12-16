@@ -159,7 +159,7 @@ pub fn insert_attestation<T: Config>(claim_hash: ClaimHashOf<T>, details: Attest
 	)
 	.expect("Should have balance");
 
-	crate::Attestations::<T>::insert(&claim_hash, details.clone());
+	crate::Attestations::<T>::insert(claim_hash, details.clone());
 	if let Some(delegation_id) = details.authorization_id.as_ref() {
 		crate::ExternalAttestations::<T>::insert(delegation_id, claim_hash, true)
 	}
@@ -214,8 +214,8 @@ pub(crate) mod runtime {
 	}
 
 	impl frame_system::Config for Test {
-		type Origin = Origin;
-		type Call = Call;
+		type RuntimeOrigin = RuntimeOrigin;
+		type RuntimeCall = RuntimeCall;
 		type Index = u64;
 		type BlockNumber = u64;
 		type Hash = Hash;
@@ -223,7 +223,7 @@ pub(crate) mod runtime {
 		type AccountId = AccountId;
 		type Lookup = IdentityLookup<Self::AccountId>;
 		type Header = Header;
-		type Event = ();
+		type RuntimeEvent = ();
 		type BlockHashCount = BlockHashCount;
 		type DbWeight = RocksDbWeight;
 		type Version = ();
@@ -250,7 +250,7 @@ pub(crate) mod runtime {
 	impl pallet_balances::Config for Test {
 		type Balance = Balance;
 		type DustRemoval = ();
-		type Event = ();
+		type RuntimeEvent = ();
 		type ExistentialDeposit = ExistentialDeposit;
 		type AccountStore = System;
 		type WeightInfo = ();
@@ -267,7 +267,7 @@ pub(crate) mod runtime {
 		type CtypeCreatorId = SubjectId;
 		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<AccountId, Self::CtypeCreatorId>;
 		type OriginSuccess = mock_origin::DoubleOrigin<AccountId, Self::CtypeCreatorId>;
-		type Event = ();
+		type RuntimeEvent = ();
 		type WeightInfo = ();
 
 		type Currency = Balances;
@@ -276,7 +276,7 @@ pub(crate) mod runtime {
 	}
 
 	impl mock_origin::Config for Test {
-		type Origin = Origin;
+		type RuntimeOrigin = RuntimeOrigin;
 		type AccountId = AccountId;
 		type SubjectId = SubjectId;
 	}
@@ -289,7 +289,7 @@ pub(crate) mod runtime {
 	impl Config for Test {
 		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<AccountId, AttesterOf<Self>>;
 		type OriginSuccess = mock_origin::DoubleOrigin<AccountId, AttesterOf<Self>>;
-		type Event = ();
+		type RuntimeEvent = ();
 		type WeightInfo = ();
 
 		type Currency = Balances;

@@ -27,15 +27,15 @@ pub use opaque::*;
 
 pub use frame_support::weights::constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight};
 use frame_support::{
+	dispatch::DispatchClass,
 	parameter_types,
 	traits::{Contains, ContainsLengthBound, Currency, Get, SortedMembers},
-	weights::DispatchClass,
 };
 use frame_system::limits;
 use pallet_transaction_payment::{Multiplier, TargetedFeeAdjustment};
 use sp_runtime::{
 	generic,
-	traits::{IdentifyAccount, Verify},
+	traits::{Bounded, IdentifyAccount, Verify},
 	FixedPointNumber, MultiSignature, Perquintill, SaturatedConversion,
 };
 use sp_std::marker::PhantomData;
@@ -125,6 +125,8 @@ parameter_types! {
 	/// that combined with `AdjustmentVariable`, we can recover from the minimum.
 	/// See `multiplier_can_grow_from_zero`.
 	pub MinimumMultiplier: Multiplier = Multiplier::saturating_from_rational(1, 1_000_000u128);
+	/// The maximum amount of the multiplier.
+	pub MaximumMultiplier: Multiplier = Bounded::max_value();
 	/// Maximum length of block. Up to 5MB.
 	pub BlockLength: limits::BlockLength =
 		limits::BlockLength::max_with_normal_ratio(5 * 1024 * 1024, NORMAL_DISPATCH_RATIO);
@@ -139,7 +141,7 @@ parameter_types! {
 		})
 		.for_class(DispatchClass::Operational, |weights| {
 			weights.max_total = Some(MAXIMUM_BLOCK_WEIGHT);
-			// Operational transactions have an extra reserved space, so that they
+			// Operational transactions have some extra reserved space, so that they
 			// are included even if block reached `MAXIMUM_BLOCK_WEIGHT`.
 			weights.reserved = Some(
 				MAXIMUM_BLOCK_WEIGHT - NORMAL_DISPATCH_RATIO * MAXIMUM_BLOCK_WEIGHT,
@@ -159,7 +161,7 @@ pub type FeeSplit<R, B1, B2> = SplitFeesByRatio<R, FeeSplitRatio, B1, B2>;
 /// Parameterized slow adjusting fee updated based on
 /// https://w3f-research.readthedocs.io/en/latest/polkadot/Token%20Economics.html#-2.-slow-adjusting-mechanism
 pub type SlowAdjustingFeeUpdate<R> =
-	TargetedFeeAdjustment<R, TargetBlockFullness, AdjustmentVariable, MinimumMultiplier>;
+	TargetedFeeAdjustment<R, TargetBlockFullness, AdjustmentVariable, MinimumMultiplier, MaximumMultiplier>;
 
 pub struct Tippers<R, I>(PhantomData<R>, PhantomData<I>);
 impl<R, I: 'static> ContainsLengthBound for Tippers<R, I>

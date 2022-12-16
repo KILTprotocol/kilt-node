@@ -85,9 +85,9 @@ pub mod pallet {
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
-		type EnsureOrigin: EnsureOrigin<Success = Self::OriginSuccess, <Self as frame_system::Config>::Origin>;
+		type EnsureOrigin: EnsureOrigin<<Self as frame_system::Config>::RuntimeOrigin, Success = Self::OriginSuccess>;
 		type OriginSuccess: CallSources<AccountIdOf<Self>, CtypeCreatorOf<Self>>;
-		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 		type Currency: Currency<AccountIdOf<Self>>;
 		type WeightInfo: WeightInfo;
 		type CtypeCreatorId: Parameter + MaxEncodedLen;
@@ -160,7 +160,7 @@ pub mod pallet {
 
 			let hash = <T as frame_system::Config>::Hashing::hash(&ctype[..]);
 
-			ensure!(!Ctypes::<T>::contains_key(&hash), Error::<T>::CTypeAlreadyExists);
+			ensure!(!Ctypes::<T>::contains_key(hash), Error::<T>::CTypeAlreadyExists);
 
 			// *** No Fail except during withdraw beyond this point  ***
 
@@ -176,7 +176,7 @@ pub mod pallet {
 
 			T::FeeCollector::on_unbalanced(imbalance);
 			log::debug!("Creating CType with hash {:?} and creator {:?}", hash, creator);
-			Ctypes::<T>::insert(&hash, creator.clone());
+			Ctypes::<T>::insert(hash, creator.clone());
 
 			Self::deposit_event(Event::CTypeCreated(creator, hash));
 

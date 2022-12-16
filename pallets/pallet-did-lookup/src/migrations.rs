@@ -26,7 +26,7 @@ use frame_support::{
 	traits::{Get, GetStorageVersion, OnRuntimeUpgrade},
 	Blake2_128Concat,
 };
-use sp_std::{marker::PhantomData, vec::Vec};
+use sp_std::{marker::PhantomData, vec, vec::Vec};
 
 /// Keytype changed from `AccountId` to `LinkableAccountId` changed in V3
 #[storage_alias]
@@ -159,7 +159,7 @@ where
 	}
 
 	#[cfg(feature = "try-runtime")]
-	fn pre_upgrade() -> Result<(), &'static str> {
+	fn pre_upgrade() -> Result<Vec<u8>, &'static str> {
 		assert!(
 			Pallet::<T>::on_chain_storage_version() < Pallet::<T>::current_storage_version(),
 			"On-chain storage of DID lookup pallet already bumped"
@@ -168,11 +168,11 @@ where
 
 		log::info!("🔎 DidLookup: Pre migration checks successful");
 
-		Ok(())
+		Ok(vec![])
 	}
 
 	#[cfg(feature = "try-runtime")]
-	fn post_upgrade() -> Result<(), &'static str> {
+	fn post_upgrade(_pre_state: Vec<u8>) -> Result<(), &'static str> {
 		assert_eq!(
 			Pallet::<T>::on_chain_storage_version(),
 			Pallet::<T>::current_storage_version(),
@@ -254,13 +254,16 @@ mod tests {
 				assert_eq!(account_check_pre.get(0).unwrap().0, ACCOUNT_00);
 
 				assert_noop!(
-					DidLookup::try_finalize_migration(Origin::signed(ACCOUNT_00)),
+					DidLookup::try_finalize_migration(RuntimeOrigin::signed(ACCOUNT_00)),
 					Error::<Test>::MigrationStorageSizeMismatch
 				);
 
 				// Migrate
-				assert_ok!(DidLookup::migrate_account_id(Origin::signed(ACCOUNT_01), ACCOUNT_00));
-				assert_ok!(DidLookup::try_finalize_migration(Origin::signed(ACCOUNT_00)));
+				assert_ok!(DidLookup::migrate_account_id(
+					RuntimeOrigin::signed(ACCOUNT_01),
+					ACCOUNT_00
+				));
+				assert_ok!(DidLookup::try_finalize_migration(RuntimeOrigin::signed(ACCOUNT_00)));
 
 				// Check post migration status
 				assert!(check_did_migration::<Test>(None).is_empty());
@@ -317,14 +320,17 @@ mod tests {
 				assert!(ConnectedAccountsV2::<Test>::iter_keys().count().is_zero());
 				assert_eq!(check_account_migration::<Test>(None).len(), 2);
 				assert_noop!(
-					DidLookup::try_finalize_migration(Origin::signed(ACCOUNT_00)),
+					DidLookup::try_finalize_migration(RuntimeOrigin::signed(ACCOUNT_00)),
 					Error::<Test>::MigrationStorageSizeMismatch
 				);
 
 				// Migrate 1/2
-				assert_ok!(DidLookup::migrate_account_id(Origin::signed(ACCOUNT_01), ACCOUNT_00));
+				assert_ok!(DidLookup::migrate_account_id(
+					RuntimeOrigin::signed(ACCOUNT_01),
+					ACCOUNT_00
+				));
 				assert_noop!(
-					DidLookup::try_finalize_migration(Origin::signed(ACCOUNT_00)),
+					DidLookup::try_finalize_migration(RuntimeOrigin::signed(ACCOUNT_00)),
 					Error::<Test>::MigrationStorageSizeMismatch
 				);
 				assert_eq!(ConnectedDidsV2::<Test>::iter_keys().count(), 1);
@@ -333,8 +339,11 @@ mod tests {
 				assert_eq!(check_account_migration::<Test>(None).len(), 1);
 
 				// Migrate 2/2
-				assert_ok!(DidLookup::migrate_account_id(Origin::signed(ACCOUNT_00), ACCOUNT_01));
-				assert_ok!(DidLookup::try_finalize_migration(Origin::signed(ACCOUNT_00)));
+				assert_ok!(DidLookup::migrate_account_id(
+					RuntimeOrigin::signed(ACCOUNT_00),
+					ACCOUNT_01
+				));
+				assert_ok!(DidLookup::try_finalize_migration(RuntimeOrigin::signed(ACCOUNT_00)));
 
 				// Check post migration status
 				assert!(check_did_migration::<Test>(None).is_empty());

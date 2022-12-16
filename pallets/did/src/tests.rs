@@ -57,7 +57,7 @@ fn check_successful_simple_ed25519_creation() {
 		.build(None)
 		.execute_with(|| {
 			assert_ok!(Did::create(
-				Origin::signed(ACCOUNT_00),
+				RuntimeOrigin::signed(ACCOUNT_00),
 				Box::new(details),
 				did::DidSignature::from(signature),
 			));
@@ -99,7 +99,7 @@ fn check_successful_simple_sr25519_creation() {
 		.build(None)
 		.execute_with(|| {
 			assert_ok!(Did::create(
-				Origin::signed(ACCOUNT_00),
+				RuntimeOrigin::signed(ACCOUNT_00),
 				Box::new(details),
 				did::DidSignature::from(signature),
 			));
@@ -141,7 +141,7 @@ fn check_successful_simple_ecdsa_creation() {
 		.build(None)
 		.execute_with(|| {
 			assert_ok!(Did::create(
-				Origin::signed(ACCOUNT_00),
+				RuntimeOrigin::signed(ACCOUNT_00),
 				Box::new(details),
 				did::DidSignature::from(signature),
 			));
@@ -202,7 +202,7 @@ fn check_successful_complete_creation() {
 		.build(None)
 		.execute_with(|| {
 			assert_ok!(Did::create(
-				Origin::signed(ACCOUNT_00),
+				RuntimeOrigin::signed(ACCOUNT_00),
 				Box::new(details.clone()),
 				did::DidSignature::from(signature),
 			));
@@ -292,7 +292,7 @@ fn check_duplicate_did_creation() {
 		.execute_with(|| {
 			assert_noop!(
 				Did::create(
-					Origin::signed(ACCOUNT_00),
+					RuntimeOrigin::signed(ACCOUNT_00),
 					Box::new(details),
 					did::DidSignature::from(signature)
 				),
@@ -323,7 +323,7 @@ fn check_unauthorised_submitter_did_creation_error() {
 			assert_noop!(
 				// Use ACCOUNT_00 to submit the transaction
 				Did::create(
-					Origin::signed(ACCOUNT_00),
+					RuntimeOrigin::signed(ACCOUNT_00),
 					Box::new(details),
 					did::DidSignature::from(signature)
 				),
@@ -343,7 +343,7 @@ fn create_fail_insufficient_balance() {
 	ExtBuilder::default().build(None).execute_with(|| {
 		assert_noop!(
 			Did::create(
-				Origin::signed(ACCOUNT_00),
+				RuntimeOrigin::signed(ACCOUNT_00),
 				Box::new(details),
 				did::DidSignature::from(signature)
 			),
@@ -370,7 +370,7 @@ fn check_did_already_deleted_creation() {
 		.execute_with(|| {
 			assert_noop!(
 				Did::create(
-					Origin::signed(ACCOUNT_00),
+					RuntimeOrigin::signed(ACCOUNT_00),
 					Box::new(details),
 					did::DidSignature::from(signature)
 				),
@@ -399,7 +399,7 @@ fn check_invalid_signature_format_did_creation() {
 		.execute_with(|| {
 			assert_noop!(
 				Did::create(
-					Origin::signed(ACCOUNT_00),
+					RuntimeOrigin::signed(ACCOUNT_00),
 					Box::new(details),
 					did::DidSignature::from(signature)
 				),
@@ -426,7 +426,7 @@ fn check_invalid_signature_did_creation() {
 		.execute_with(|| {
 			assert_noop!(
 				Did::create(
-					Origin::signed(ACCOUNT_00),
+					RuntimeOrigin::signed(ACCOUNT_00),
 					Box::new(details),
 					did::DidSignature::from(signature)
 				),
@@ -453,7 +453,7 @@ fn check_swapped_did_subject_did_creation() {
 		.execute_with(|| {
 			assert_noop!(
 				Did::create(
-					Origin::signed(ACCOUNT_00),
+					RuntimeOrigin::signed(ACCOUNT_00),
 					Box::new(details),
 					did::DidSignature::from(signature)
 				),
@@ -483,7 +483,7 @@ fn check_max_limit_key_agreement_keys_did_creation() {
 		.execute_with(|| {
 			assert_noop!(
 				Did::create(
-					Origin::signed(ACCOUNT_00),
+					RuntimeOrigin::signed(ACCOUNT_00),
 					Box::new(details),
 					did::DidSignature::from(signature)
 				),
@@ -517,7 +517,7 @@ fn check_max_limit_service_endpoints_count_did_creation() {
 		.execute_with(|| {
 			assert_noop!(
 				Did::create(
-					Origin::signed(ACCOUNT_00),
+					RuntimeOrigin::signed(ACCOUNT_00),
 					Box::new(details),
 					did::DidSignature::from(signature)
 				),
@@ -546,7 +546,7 @@ fn check_max_limit_service_id_length_did_creation() {
 		.execute_with(|| {
 			assert_noop!(
 				Did::create(
-					Origin::signed(ACCOUNT_00),
+					RuntimeOrigin::signed(ACCOUNT_00),
 					Box::new(details),
 					did::DidSignature::from(signature)
 				),
@@ -581,7 +581,7 @@ fn check_max_limit_service_type_count_did_creation() {
 		.execute_with(|| {
 			assert_noop!(
 				Did::create(
-					Origin::signed(ACCOUNT_00),
+					RuntimeOrigin::signed(ACCOUNT_00),
 					Box::new(details),
 					did::DidSignature::from(signature)
 				),
@@ -610,7 +610,7 @@ fn check_max_limit_service_type_length_did_creation() {
 		.execute_with(|| {
 			assert_noop!(
 				Did::create(
-					Origin::signed(ACCOUNT_00),
+					RuntimeOrigin::signed(ACCOUNT_00),
 					Box::new(details),
 					did::DidSignature::from(signature)
 				),
@@ -645,7 +645,7 @@ fn check_max_limit_service_url_count_did_creation() {
 		.execute_with(|| {
 			assert_noop!(
 				Did::create(
-					Origin::signed(ACCOUNT_00),
+					RuntimeOrigin::signed(ACCOUNT_00),
 					Box::new(details),
 					did::DidSignature::from(signature)
 				),
@@ -674,7 +674,7 @@ fn check_max_limit_service_url_length_did_creation() {
 		.execute_with(|| {
 			assert_noop!(
 				Did::create(
-					Origin::signed(ACCOUNT_00),
+					RuntimeOrigin::signed(ACCOUNT_00),
 					Box::new(details),
 					did::DidSignature::from(signature)
 				),
@@ -702,7 +702,7 @@ fn check_invalid_service_id_character_did_creation() {
 		.execute_with(|| {
 			assert_noop!(
 				Did::create(
-					Origin::signed(ACCOUNT_00),
+					RuntimeOrigin::signed(ACCOUNT_00),
 					Box::new(details),
 					did::DidSignature::from(signature)
 				),
@@ -730,7 +730,7 @@ fn check_invalid_service_type_character_did_creation() {
 		.execute_with(|| {
 			assert_noop!(
 				Did::create(
-					Origin::signed(ACCOUNT_00),
+					RuntimeOrigin::signed(ACCOUNT_00),
 					Box::new(details),
 					did::DidSignature::from(signature)
 				),
@@ -758,7 +758,7 @@ fn check_invalid_service_url_character_did_creation() {
 		.execute_with(|| {
 			assert_noop!(
 				Did::create(
-					Origin::signed(ACCOUNT_00),
+					RuntimeOrigin::signed(ACCOUNT_00),
 					Box::new(details),
 					did::DidSignature::from(signature)
 				),
@@ -786,7 +786,7 @@ fn check_successful_authentication_key_update() {
 		.execute_with(|| {
 			System::set_block_number(new_block_number);
 			assert_ok!(Did::set_authentication_key(
-				Origin::signed(alice_did.clone()),
+				RuntimeOrigin::signed(alice_did.clone()),
 				DidVerificationKey::from(new_auth_key.public())
 			));
 			let new_did_details = Did::get_did(&alice_did).expect("ALICE_DID should be present on chain.");
@@ -827,7 +827,7 @@ fn check_successful_authentication_key_max_public_keys_update() {
 		.execute_with(|| {
 			System::set_block_number(new_block_number);
 			assert_ok!(Did::set_authentication_key(
-				Origin::signed(alice_did.clone()),
+				RuntimeOrigin::signed(alice_did.clone()),
 				DidVerificationKey::from(new_auth_key.public())
 			));
 
@@ -865,7 +865,7 @@ fn check_reused_key_authentication_key_update() {
 		.execute_with(|| {
 			System::set_block_number(new_block_number);
 			assert_ok!(Did::set_authentication_key(
-				Origin::signed(alice_did.clone()),
+				RuntimeOrigin::signed(alice_did.clone()),
 				DidVerificationKey::from(new_auth_key.public())
 			));
 
@@ -917,7 +917,7 @@ fn check_max_keys_authentication_key_update_error() {
 			System::set_block_number(new_block_number);
 			assert_noop!(
 				Did::set_authentication_key(
-					Origin::signed(alice_did.clone()),
+					RuntimeOrigin::signed(alice_did.clone()),
 					DidVerificationKey::from(new_auth_key.public())
 				),
 				did::Error::<Test>::MaxPublicKeysPerDidExceeded
@@ -938,7 +938,7 @@ fn check_did_not_present_authentication_key_update_error() {
 		System::set_block_number(new_block_number);
 		assert_noop!(
 			Did::set_authentication_key(
-				Origin::signed(alice_did.clone()),
+				RuntimeOrigin::signed(alice_did.clone()),
 				DidVerificationKey::from(new_auth_key.public())
 			),
 			did::Error::<Test>::DidNotPresent
@@ -965,7 +965,7 @@ fn check_successful_delegation_key_update() {
 		.execute_with(|| {
 			System::set_block_number(new_block_number);
 			assert_ok!(Did::set_delegation_key(
-				Origin::signed(alice_did.clone()),
+				RuntimeOrigin::signed(alice_did.clone()),
 				DidVerificationKey::from(new_del_key.public())
 			));
 
@@ -1008,7 +1008,7 @@ fn check_successful_delegation_key_max_public_keys_update() {
 		.execute_with(|| {
 			System::set_block_number(new_block_number);
 			assert_ok!(Did::set_delegation_key(
-				Origin::signed(alice_did.clone()),
+				RuntimeOrigin::signed(alice_did.clone()),
 				DidVerificationKey::from(new_del_key.public())
 			));
 
@@ -1044,7 +1044,7 @@ fn check_reused_key_delegation_key_update() {
 		.execute_with(|| {
 			System::set_block_number(new_block_number);
 			assert_ok!(Did::set_delegation_key(
-				Origin::signed(alice_did.clone()),
+				RuntimeOrigin::signed(alice_did.clone()),
 				DidVerificationKey::from(new_del_key.public())
 			));
 
@@ -1088,7 +1088,7 @@ fn check_max_public_keys_delegation_key_addition_error() {
 			System::set_block_number(new_block_number);
 			assert_noop!(
 				Did::set_delegation_key(
-					Origin::signed(alice_did.clone()),
+					RuntimeOrigin::signed(alice_did.clone()),
 					DidVerificationKey::from(new_del_key.public())
 				),
 				did::Error::<Test>::MaxPublicKeysPerDidExceeded
@@ -1124,7 +1124,7 @@ fn check_max_public_keys_reused_key_delegation_key_update_error() {
 			System::set_block_number(new_block_number);
 			assert_noop!(
 				Did::set_delegation_key(
-					Origin::signed(alice_did.clone()),
+					RuntimeOrigin::signed(alice_did.clone()),
 					DidVerificationKey::from(new_del_key.public())
 				),
 				did::Error::<Test>::MaxPublicKeysPerDidExceeded
@@ -1145,7 +1145,7 @@ fn check_did_not_present_delegation_key_update_error() {
 		System::set_block_number(new_block_number);
 		assert_noop!(
 			Did::set_delegation_key(
-				Origin::signed(alice_did.clone()),
+				RuntimeOrigin::signed(alice_did.clone()),
 				DidVerificationKey::from(new_del_key.public())
 			),
 			did::Error::<Test>::DidNotPresent
@@ -1166,7 +1166,7 @@ fn check_successful_delegation_key_deletion() {
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
 		.build(None)
 		.execute_with(|| {
-			assert_ok!(Did::remove_delegation_key(Origin::signed(alice_did.clone())));
+			assert_ok!(Did::remove_delegation_key(RuntimeOrigin::signed(alice_did.clone())));
 
 			let new_did_details = Did::get_did(&alice_did).expect("ALICE_DID should be present on chain.");
 			assert!(new_did_details.delegation_key.is_none());
@@ -1191,7 +1191,7 @@ fn check_successful_reused_delegation_key_deletion() {
 		.with_dids(vec![(alice_did.clone(), old_did_details.clone())])
 		.build(None)
 		.execute_with(|| {
-			assert_ok!(Did::remove_delegation_key(Origin::signed(alice_did.clone())));
+			assert_ok!(Did::remove_delegation_key(RuntimeOrigin::signed(alice_did.clone())));
 
 			let new_did_details = Did::get_did(&alice_did).expect("ALICE_DID should be present on chain.");
 			assert!(new_did_details.delegation_key.is_none());
@@ -1211,7 +1211,7 @@ fn check_did_not_present_delegation_key_deletion_error() {
 
 	ExtBuilder::default().build(None).execute_with(|| {
 		assert_noop!(
-			Did::remove_delegation_key(Origin::signed(alice_did.clone())),
+			Did::remove_delegation_key(RuntimeOrigin::signed(alice_did.clone())),
 			did::Error::<Test>::DidNotPresent
 		);
 	});
@@ -1229,7 +1229,7 @@ fn check_key_not_present_delegation_key_deletion_error() {
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
-				Did::remove_delegation_key(Origin::signed(alice_did.clone())),
+				Did::remove_delegation_key(RuntimeOrigin::signed(alice_did.clone())),
 				did::Error::<Test>::VerificationKeyNotPresent
 			);
 		});
@@ -1254,7 +1254,7 @@ fn check_successful_attestation_key_update() {
 		.execute_with(|| {
 			System::set_block_number(new_block_number);
 			assert_ok!(Did::set_attestation_key(
-				Origin::signed(alice_did.clone()),
+				RuntimeOrigin::signed(alice_did.clone()),
 				DidVerificationKey::from(new_att_key.public())
 			));
 			let new_did_details = Did::get_did(&alice_did).expect("ALICE_DID should be present on chain.");
@@ -1296,7 +1296,7 @@ fn check_successful_attestation_key_max_public_keys_update() {
 		.execute_with(|| {
 			System::set_block_number(new_block_number);
 			assert_ok!(Did::set_attestation_key(
-				Origin::signed(alice_did.clone()),
+				RuntimeOrigin::signed(alice_did.clone()),
 				DidVerificationKey::from(new_att_key.public())
 			));
 			let new_did_details = Did::get_did(&alice_did).expect("ALICE_DID should be present on chain.");
@@ -1331,7 +1331,7 @@ fn check_reused_key_attestation_key_update() {
 		.execute_with(|| {
 			System::set_block_number(new_block_number);
 			assert_ok!(Did::set_attestation_key(
-				Origin::signed(alice_did.clone()),
+				RuntimeOrigin::signed(alice_did.clone()),
 				DidVerificationKey::from(new_att_key.public())
 			));
 
@@ -1375,7 +1375,7 @@ fn check_max_public_keys_attestation_key_addition_error() {
 			System::set_block_number(new_block_number);
 			assert_noop!(
 				Did::set_attestation_key(
-					Origin::signed(alice_did.clone()),
+					RuntimeOrigin::signed(alice_did.clone()),
 					DidVerificationKey::from(new_att_key.public())
 				),
 				did::Error::<Test>::MaxPublicKeysPerDidExceeded
@@ -1411,7 +1411,7 @@ fn check_max_public_keys_reused_key_attestation_key_update_error() {
 			System::set_block_number(new_block_number);
 			assert_noop!(
 				Did::set_attestation_key(
-					Origin::signed(alice_did.clone()),
+					RuntimeOrigin::signed(alice_did.clone()),
 					DidVerificationKey::from(new_att_key.public())
 				),
 				did::Error::<Test>::MaxPublicKeysPerDidExceeded
@@ -1432,7 +1432,7 @@ fn check_did_not_present_attestation_key_update_error() {
 		System::set_block_number(new_block_number);
 		assert_noop!(
 			Did::set_delegation_key(
-				Origin::signed(alice_did.clone()),
+				RuntimeOrigin::signed(alice_did.clone()),
 				DidVerificationKey::from(new_att_key.public())
 			),
 			did::Error::<Test>::DidNotPresent
@@ -1453,7 +1453,7 @@ fn check_successful_attestation_key_deletion() {
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
 		.build(None)
 		.execute_with(|| {
-			assert_ok!(Did::remove_attestation_key(Origin::signed(alice_did.clone())));
+			assert_ok!(Did::remove_attestation_key(RuntimeOrigin::signed(alice_did.clone())));
 
 			let new_did_details = Did::get_did(&alice_did).expect("ALICE_DID should be present on chain.");
 			assert!(new_did_details.attestation_key.is_none());
@@ -1478,7 +1478,7 @@ fn check_successful_reused_attestation_key_deletion() {
 		.with_dids(vec![(alice_did.clone(), old_did_details.clone())])
 		.build(None)
 		.execute_with(|| {
-			assert_ok!(Did::remove_attestation_key(Origin::signed(alice_did.clone())));
+			assert_ok!(Did::remove_attestation_key(RuntimeOrigin::signed(alice_did.clone())));
 			let new_did_details = Did::get_did(&alice_did).expect("ALICE_DID should be present on chain.");
 			assert!(new_did_details.attestation_key.is_none());
 			let public_keys = new_did_details.public_keys;
@@ -1497,7 +1497,7 @@ fn check_did_not_present_attestation_key_deletion_error() {
 
 	ExtBuilder::default().build(None).execute_with(|| {
 		assert_noop!(
-			Did::remove_attestation_key(Origin::signed(alice_did.clone())),
+			Did::remove_attestation_key(RuntimeOrigin::signed(alice_did.clone())),
 			did::Error::<Test>::DidNotPresent
 		);
 	});
@@ -1515,7 +1515,7 @@ fn check_key_not_present_attestation_key_deletion_error() {
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
-				Did::remove_attestation_key(Origin::signed(alice_did.clone())),
+				Did::remove_attestation_key(RuntimeOrigin::signed(alice_did.clone())),
 				did::Error::<Test>::VerificationKeyNotPresent
 			);
 		});
@@ -1537,7 +1537,7 @@ fn check_successful_key_agreement_key_addition() {
 		.execute_with(|| {
 			System::set_block_number(new_block_number);
 			assert_ok!(Did::add_key_agreement_key(
-				Origin::signed(alice_did.clone()),
+				RuntimeOrigin::signed(alice_did.clone()),
 				new_key_agreement_key,
 			));
 			let new_did_details = Did::get_did(&alice_did).expect("ALICE_DID should be present on chain.");
@@ -1577,7 +1577,7 @@ fn check_max_public_keys_key_agreement_key_addition_error() {
 		.execute_with(|| {
 			System::set_block_number(new_block_number);
 			assert_noop!(
-				Did::add_key_agreement_key(Origin::signed(alice_did.clone()), new_key_agreement_key,),
+				Did::add_key_agreement_key(RuntimeOrigin::signed(alice_did.clone()), new_key_agreement_key,),
 				did::Error::<Test>::MaxPublicKeysPerDidExceeded
 			);
 		});
@@ -1595,7 +1595,7 @@ fn check_did_not_present_key_agreement_key_addition_error() {
 	ExtBuilder::default().build(None).execute_with(|| {
 		System::set_block_number(new_block_number);
 		assert_noop!(
-			Did::add_key_agreement_key(Origin::signed(alice_did.clone()), new_enc_key),
+			Did::add_key_agreement_key(RuntimeOrigin::signed(alice_did.clone()), new_enc_key),
 			did::Error::<Test>::DidNotPresent
 		);
 	});
@@ -1615,7 +1615,7 @@ fn check_successful_key_agreement_key_deletion() {
 		.build(None)
 		.execute_with(|| {
 			assert_ok!(Did::remove_key_agreement_key(
-				Origin::signed(alice_did.clone()),
+				RuntimeOrigin::signed(alice_did.clone()),
 				generate_key_id(&old_enc_key.into()),
 			));
 			let new_did_details = Did::get_did(&alice_did).expect("ALICE_DID should be present on chain.");
@@ -1636,7 +1636,10 @@ fn check_did_not_found_key_agreement_key_deletion_error() {
 
 	ExtBuilder::default().build(None).execute_with(|| {
 		assert_noop!(
-			Did::remove_key_agreement_key(Origin::signed(alice_did.clone()), generate_key_id(&test_enc_key.into())),
+			Did::remove_key_agreement_key(
+				RuntimeOrigin::signed(alice_did.clone()),
+				generate_key_id(&test_enc_key.into())
+			),
 			did::Error::<Test>::DidNotPresent
 		);
 	});
@@ -1656,7 +1659,10 @@ fn check_key_not_found_key_agreement_key_deletion_error() {
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
-				Did::remove_key_agreement_key(Origin::signed(alice_did.clone()), generate_key_id(&test_enc_key.into())),
+				Did::remove_key_agreement_key(
+					RuntimeOrigin::signed(alice_did.clone()),
+					generate_key_id(&test_enc_key.into())
+				),
 				did::Error::<Test>::VerificationKeyNotPresent
 			);
 		});
@@ -1677,7 +1683,7 @@ fn check_service_addition_no_prior_service_successful() {
 		.build(None)
 		.execute_with(|| {
 			assert_ok!(Did::add_service_endpoint(
-				Origin::signed(alice_did.clone()),
+				RuntimeOrigin::signed(alice_did.clone()),
 				new_service_endpoint.clone()
 			));
 			let stored_endpoint = did::pallet::ServiceEndpoints::<Test>::get(&alice_did, &new_service_endpoint.id)
@@ -1714,7 +1720,7 @@ fn check_service_addition_one_from_full_successful() {
 		.build(None)
 		.execute_with(|| {
 			assert_ok!(Did::add_service_endpoint(
-				Origin::signed(alice_did.clone()),
+				RuntimeOrigin::signed(alice_did.clone()),
 				new_service_endpoint.clone()
 			));
 			assert_eq!(
@@ -1739,7 +1745,7 @@ fn check_did_not_present_services_addition_error() {
 
 	ExtBuilder::default().build(None).execute_with(|| {
 		assert_noop!(
-			Did::add_service_endpoint(Origin::signed(alice_did.clone()), new_service_endpoint),
+			Did::add_service_endpoint(RuntimeOrigin::signed(alice_did.clone()), new_service_endpoint),
 			did::Error::<Test>::DidNotPresent
 		);
 	});
@@ -1759,7 +1765,7 @@ fn check_service_already_present_addition_error() {
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
-				Did::add_service_endpoint(Origin::signed(alice_did.clone()), service_endpoint),
+				Did::add_service_endpoint(RuntimeOrigin::signed(alice_did.clone()), service_endpoint),
 				did::Error::<Test>::ServiceAlreadyPresent
 			);
 		});
@@ -1787,7 +1793,7 @@ fn check_max_services_count_addition_error() {
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
-				Did::add_service_endpoint(Origin::signed(alice_did.clone()), new_service_endpoint),
+				Did::add_service_endpoint(RuntimeOrigin::signed(alice_did.clone()), new_service_endpoint),
 				did::Error::<Test>::MaxNumberOfServicesPerDidExceeded
 			);
 		});
@@ -1815,7 +1821,7 @@ fn check_max_service_id_length_addition_error() {
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
-				Did::add_service_endpoint(Origin::signed(alice_did.clone()), new_service_endpoint),
+				Did::add_service_endpoint(RuntimeOrigin::signed(alice_did.clone()), new_service_endpoint),
 				did::Error::<Test>::MaxServiceIdLengthExceeded
 			);
 		});
@@ -1843,7 +1849,7 @@ fn check_max_service_type_length_addition_error() {
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
-				Did::add_service_endpoint(Origin::signed(alice_did.clone()), new_service_endpoint),
+				Did::add_service_endpoint(RuntimeOrigin::signed(alice_did.clone()), new_service_endpoint),
 				did::Error::<Test>::MaxServiceTypeLengthExceeded
 			);
 		});
@@ -1871,7 +1877,7 @@ fn check_max_service_type_count_addition_error() {
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
-				Did::add_service_endpoint(Origin::signed(alice_did.clone()), new_service_endpoint),
+				Did::add_service_endpoint(RuntimeOrigin::signed(alice_did.clone()), new_service_endpoint),
 				did::Error::<Test>::MaxNumberOfTypesPerServiceExceeded
 			);
 		});
@@ -1899,7 +1905,7 @@ fn check_max_service_url_length_addition_error() {
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
-				Did::add_service_endpoint(Origin::signed(alice_did.clone()), new_service_endpoint),
+				Did::add_service_endpoint(RuntimeOrigin::signed(alice_did.clone()), new_service_endpoint),
 				did::Error::<Test>::MaxServiceUrlLengthExceeded
 			);
 		});
@@ -1927,7 +1933,7 @@ fn check_max_service_url_count_addition_error() {
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
-				Did::add_service_endpoint(Origin::signed(alice_did.clone()), new_service_endpoint),
+				Did::add_service_endpoint(RuntimeOrigin::signed(alice_did.clone()), new_service_endpoint),
 				did::Error::<Test>::MaxNumberOfUrlsPerServiceExceeded
 			);
 		});
@@ -1946,7 +1952,7 @@ fn check_invalid_service_id_character_addition_error() {
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
-				Did::add_service_endpoint(Origin::signed(alice_did.clone()), new_service_details),
+				Did::add_service_endpoint(RuntimeOrigin::signed(alice_did.clone()), new_service_details),
 				did::Error::<Test>::InvalidServiceEncoding
 			);
 		});
@@ -1965,7 +1971,7 @@ fn check_invalid_service_type_character_addition_error() {
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
-				Did::add_service_endpoint(Origin::signed(alice_did.clone()), new_service_details),
+				Did::add_service_endpoint(RuntimeOrigin::signed(alice_did.clone()), new_service_details),
 				did::Error::<Test>::InvalidServiceEncoding
 			);
 		});
@@ -1984,7 +1990,7 @@ fn check_invalid_service_url_character_addition_error() {
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
-				Did::add_service_endpoint(Origin::signed(alice_did.clone()), new_service_details),
+				Did::add_service_endpoint(RuntimeOrigin::signed(alice_did.clone()), new_service_details),
 				did::Error::<Test>::InvalidServiceEncoding
 			);
 		});
@@ -2007,7 +2013,7 @@ fn check_service_deletion_successful() {
 		.build(None)
 		.execute_with(|| {
 			assert_ok!(Did::remove_service_endpoint(
-				Origin::signed(alice_did.clone()),
+				RuntimeOrigin::signed(alice_did.clone()),
 				old_service_endpoint.id
 			));
 			// Counter should be deleted from the storage.
@@ -2033,7 +2039,7 @@ fn check_service_not_present_deletion_error() {
 		.execute_with(|| {
 			assert_noop!(
 				Did::remove_service_endpoint(
-					Origin::signed(alice_did.clone()),
+					RuntimeOrigin::signed(alice_did.clone()),
 					service_id.try_into().expect("Service ID to delete too long")
 				),
 				did::Error::<Test>::ServiceNotPresent
@@ -2066,7 +2072,7 @@ fn check_successful_deletion_no_endpoints() {
 				Balances::reserved_balance(ACCOUNT_00),
 				<Test as did::Config>::Deposit::get()
 			);
-			assert_ok!(Did::delete(Origin::signed(alice_did.clone()), 0));
+			assert_ok!(Did::delete(RuntimeOrigin::signed(alice_did.clone()), 0));
 			assert!(Did::get_did(alice_did.clone()).is_none());
 			assert!(Did::get_deleted_did(alice_did.clone()).is_some());
 			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
@@ -2080,7 +2086,7 @@ fn check_successful_deletion_no_endpoints() {
 
 			assert_noop!(
 				Did::create(
-					Origin::signed(ACCOUNT_00.clone()),
+					RuntimeOrigin::signed(ACCOUNT_00.clone()),
 					Box::new(details),
 					did::DidSignature::from(signature),
 				),
@@ -2114,7 +2120,7 @@ fn check_successful_deletion_with_endpoints() {
 				Balances::reserved_balance(ACCOUNT_00),
 				<Test as did::Config>::Deposit::get()
 			);
-			assert_ok!(Did::delete(Origin::signed(alice_did.clone()), 1));
+			assert_ok!(Did::delete(RuntimeOrigin::signed(alice_did.clone()), 1));
 			assert!(Did::get_did(alice_did.clone()).is_none());
 			assert!(Did::get_deleted_did(alice_did.clone()).is_some());
 			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
@@ -2128,7 +2134,7 @@ fn check_successful_deletion_with_endpoints() {
 
 			assert_noop!(
 				Did::create(
-					Origin::signed(ACCOUNT_00.clone()),
+					RuntimeOrigin::signed(ACCOUNT_00.clone()),
 					Box::new(details),
 					did::DidSignature::from(signature),
 				),
@@ -2150,7 +2156,7 @@ fn check_did_not_present_deletion() {
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
-				Did::delete(Origin::signed(alice_did), 0),
+				Did::delete(RuntimeOrigin::signed(alice_did), 0),
 				did::Error::<Test>::DidNotPresent
 			);
 		});
@@ -2177,7 +2183,7 @@ fn check_service_count_too_small_deletion_error() {
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
-				Did::delete(Origin::signed(alice_did.clone()), 0),
+				Did::delete(RuntimeOrigin::signed(alice_did.clone()), 0),
 				did::Error::<Test>::StoredEndpointsCountTooLarge
 			);
 		});
@@ -2210,7 +2216,7 @@ fn check_successful_reclaiming() {
 				<Test as did::Config>::Deposit::get()
 			);
 			assert_ok!(Did::reclaim_deposit(
-				Origin::signed(ACCOUNT_00.clone()),
+				RuntimeOrigin::signed(ACCOUNT_00.clone()),
 				alice_did.clone(),
 				1
 			));
@@ -2226,7 +2232,7 @@ fn check_successful_reclaiming() {
 
 			assert_noop!(
 				Did::create(
-					Origin::signed(ACCOUNT_00.clone()),
+					RuntimeOrigin::signed(ACCOUNT_00.clone()),
 					Box::new(details),
 					did::DidSignature::from(signature),
 				),
@@ -2257,7 +2263,7 @@ fn unauthorized_reclaiming() {
 				<Test as did::Config>::Deposit::get()
 			);
 			assert_noop!(
-				Did::reclaim_deposit(Origin::signed(ACCOUNT_01.clone()), alice_did.clone(), 0),
+				Did::reclaim_deposit(RuntimeOrigin::signed(ACCOUNT_01.clone()), alice_did.clone(), 0),
 				did::Error::<Test>::NotOwnerOfDeposit
 			);
 		});
@@ -2284,7 +2290,7 @@ fn check_service_count_too_small_reclaim_error() {
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
-				Did::reclaim_deposit(Origin::signed(ACCOUNT_00.clone()), alice_did.clone(), 0),
+				Did::reclaim_deposit(RuntimeOrigin::signed(ACCOUNT_00.clone()), alice_did.clone(), 0),
 				did::Error::<Test>::StoredEndpointsCountTooLarge
 			);
 		});
@@ -2305,7 +2311,7 @@ fn check_did_not_found_call_error() {
 	ExtBuilder::default().build(None).execute_with(|| {
 		assert_noop!(
 			Did::submit_did_call(
-				Origin::signed(caller),
+				RuntimeOrigin::signed(caller),
 				Box::new(call_operation.operation),
 				did::DidSignature::from(signature)
 			),
@@ -2337,7 +2343,7 @@ fn check_too_small_tx_counter_after_wrap_call_error() {
 		.execute_with(|| {
 			assert_noop!(
 				Did::submit_did_call(
-					Origin::signed(caller),
+					RuntimeOrigin::signed(caller),
 					Box::new(call_operation.operation),
 					did::DidSignature::from(signature)
 				),
@@ -2368,7 +2374,7 @@ fn check_too_small_tx_counter_call_error() {
 		.execute_with(|| {
 			assert_noop!(
 				Did::submit_did_call(
-					Origin::signed(caller),
+					RuntimeOrigin::signed(caller),
 					Box::new(call_operation.operation),
 					did::DidSignature::from(signature)
 				),
@@ -2398,7 +2404,7 @@ fn check_equal_tx_counter_call_error() {
 		.execute_with(|| {
 			assert_noop!(
 				Did::submit_did_call(
-					Origin::signed(caller),
+					RuntimeOrigin::signed(caller),
 					Box::new(call_operation.operation),
 					did::DidSignature::from(signature)
 				),
@@ -2428,7 +2434,7 @@ fn check_too_large_tx_counter_call_error() {
 		.execute_with(|| {
 			assert_noop!(
 				Did::submit_did_call(
-					Origin::signed(caller),
+					RuntimeOrigin::signed(caller),
 					Box::new(call_operation.operation),
 					did::DidSignature::from(signature)
 				),
@@ -2460,7 +2466,7 @@ fn check_tx_block_number_too_low_error() {
 			System::set_block_number(call_operation.operation.block_number + MaxBlocksTxValidity::get() + 1);
 			assert_noop!(
 				Did::submit_did_call(
-					Origin::signed(caller.clone()),
+					RuntimeOrigin::signed(caller.clone()),
 					Box::new(call_operation.operation.clone()),
 					did::DidSignature::from(signature.clone())
 				),
@@ -2470,7 +2476,7 @@ fn check_tx_block_number_too_low_error() {
 			// But it would work if the system would be one block earlier.
 			System::set_block_number(call_operation.operation.block_number + MaxBlocksTxValidity::get());
 			assert_ok!(Did::submit_did_call(
-				Origin::signed(caller),
+				RuntimeOrigin::signed(caller),
 				Box::new(call_operation.operation),
 				did::DidSignature::from(signature)
 			));
@@ -2503,7 +2509,7 @@ fn check_tx_block_number_too_high_error() {
 			System::set_block_number(call_operation.operation.block_number - MaxBlocksTxValidity::get() - 1);
 			assert_noop!(
 				Did::submit_did_call(
-					Origin::signed(caller.clone()),
+					RuntimeOrigin::signed(caller.clone()),
 					Box::new(call_operation.operation.clone()),
 					did::DidSignature::from(signature.clone())
 				),
@@ -2534,7 +2540,7 @@ fn check_verification_key_not_present_call_error() {
 		.execute_with(|| {
 			assert_noop!(
 				Did::submit_did_call(
-					Origin::signed(caller),
+					RuntimeOrigin::signed(caller),
 					Box::new(call_operation.operation),
 					did::DidSignature::from(signature)
 				),
@@ -2564,7 +2570,7 @@ fn check_invalid_signature_format_call_error() {
 		.execute_with(|| {
 			assert_noop!(
 				Did::submit_did_call(
-					Origin::signed(caller),
+					RuntimeOrigin::signed(caller),
 					Box::new(call_operation.operation),
 					did::DidSignature::from(signature)
 				),
@@ -2592,7 +2598,7 @@ fn check_bad_submitter_error() {
 		.execute_with(|| {
 			assert_noop!(
 				Did::submit_did_call(
-					Origin::signed(caller),
+					RuntimeOrigin::signed(caller),
 					Box::new(call_operation.operation),
 					did::DidSignature::from(signature)
 				),
@@ -2622,7 +2628,7 @@ fn check_invalid_signature_call_error() {
 		.execute_with(|| {
 			assert_noop!(
 				Did::submit_did_call(
-					Origin::signed(caller),
+					RuntimeOrigin::signed(caller),
 					Box::new(call_operation.operation),
 					did::DidSignature::from(signature)
 				),
@@ -2653,7 +2659,7 @@ fn check_call_attestation_key_successful() {
 		.build(None)
 		.execute_with(|| {
 			assert_ok!(Did::submit_did_call(
-				Origin::signed(caller),
+				RuntimeOrigin::signed(caller),
 				Box::new(call_operation.operation),
 				did::DidSignature::from(signature)
 			));
@@ -2687,7 +2693,7 @@ fn check_call_attestation_key_error() {
 		.execute_with(|| {
 			assert_err!(
 				Did::submit_did_call(
-					Origin::signed(caller),
+					RuntimeOrigin::signed(caller),
 					Box::new(call_operation.operation),
 					did::DidSignature::from(signature)
 				),
@@ -2718,7 +2724,7 @@ fn check_call_delegation_key_successful() {
 		.build(None)
 		.execute_with(|| {
 			assert_ok!(Did::submit_did_call(
-				Origin::signed(caller),
+				RuntimeOrigin::signed(caller),
 				Box::new(call_operation.operation),
 				did::DidSignature::from(signature)
 			));
@@ -2752,7 +2758,7 @@ fn check_call_delegation_key_error() {
 		.execute_with(|| {
 			assert_err!(
 				Did::submit_did_call(
-					Origin::signed(caller),
+					RuntimeOrigin::signed(caller),
 					Box::new(call_operation.operation),
 					did::DidSignature::from(signature)
 				),
@@ -2781,7 +2787,7 @@ fn check_call_authentication_key_successful() {
 		.build(None)
 		.execute_with(|| {
 			assert_ok!(Did::submit_did_call(
-				Origin::signed(caller),
+				RuntimeOrigin::signed(caller),
 				Box::new(call_operation.operation),
 				did::DidSignature::from(signature)
 			));
@@ -2813,7 +2819,7 @@ fn check_call_authentication_key_error() {
 		.execute_with(|| {
 			assert_err!(
 				Did::submit_did_call(
-					Origin::signed(caller),
+					RuntimeOrigin::signed(caller),
 					Box::new(call_operation.operation),
 					did::DidSignature::from(signature)
 				),
@@ -2840,7 +2846,7 @@ fn check_null_key_error() {
 	ExtBuilder::default().build(None).execute_with(|| {
 		assert_noop!(
 			Did::submit_did_call(
-				Origin::signed(caller),
+				RuntimeOrigin::signed(caller),
 				Box::new(call_operation.operation),
 				did::DidSignature::from(signature)
 			),
@@ -3173,7 +3179,7 @@ fn test_change_deposit_owner() {
 				Balances::reserved_balance(ACCOUNT_00),
 				<Test as did::Config>::Deposit::get()
 			);
-			assert_ok!(Did::change_deposit_owner(Origin::signed(alice_did.clone())));
+			assert_ok!(Did::change_deposit_owner(RuntimeOrigin::signed(alice_did.clone())));
 			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
 			assert_eq!(
 				Balances::reserved_balance(alice_did),
@@ -3200,7 +3206,7 @@ fn test_change_deposit_owner_insufficient_balance() {
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
-				Did::change_deposit_owner(Origin::signed(alice_did.clone())),
+				Did::change_deposit_owner(RuntimeOrigin::signed(alice_did.clone())),
 				pallet_balances::Error::<Test>::InsufficientBalance
 			);
 		});
@@ -3220,7 +3226,7 @@ fn test_change_deposit_owner_not_found() {
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
-				Did::change_deposit_owner(Origin::signed(alice_did.clone())),
+				Did::change_deposit_owner(RuntimeOrigin::signed(alice_did.clone())),
 				crate::Error::<Test>::DidNotPresent
 			);
 		});
@@ -3242,7 +3248,7 @@ fn test_change_deposit_owner_not_authorized() {
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
-				Did::change_deposit_owner(Origin::signed(bob_did.clone())),
+				Did::change_deposit_owner(RuntimeOrigin::signed(bob_did.clone())),
 				crate::Error::<Test>::DidNotPresent
 			);
 		});
@@ -3271,7 +3277,7 @@ fn test_update_deposit() {
 				<Test as did::Config>::Deposit::get() * 2
 			);
 			assert_ok!(Did::update_deposit(
-				Origin::signed(alice_did.clone()),
+				RuntimeOrigin::signed(alice_did.clone()),
 				alice_did.clone()
 			));
 			assert_eq!(
@@ -3316,7 +3322,7 @@ fn test_update_deposit_unauthorized() {
 				<Test as did::Config>::Deposit::get() * 2
 			);
 			assert_noop!(
-				Did::update_deposit(Origin::signed(bob_did.clone()), alice_did.clone()),
+				Did::update_deposit(RuntimeOrigin::signed(bob_did.clone()), alice_did.clone()),
 				Error::<Test>::BadDidOrigin
 			);
 		});

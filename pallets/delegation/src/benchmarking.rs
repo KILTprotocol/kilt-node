@@ -60,7 +60,7 @@ where
 	T::DelegationEntityId: From<sr25519::Public>,
 	T::DelegationNodeId: From<T::Hash>,
 	T::CtypeCreatorId: From<T::DelegationEntityId>,
-	<T as Config>::EnsureOrigin: GenerateBenchmarkOrigin<T::Origin, T::AccountId, T::DelegationEntityId>,
+	<T as Config>::EnsureOrigin: GenerateBenchmarkOrigin<T::RuntimeOrigin, T::AccountId, T::DelegationEntityId>,
 {
 	log::info!("create delegation root");
 	let root_public = sr25519_generate(KeyTypeId(*b"aura"), None);
@@ -74,7 +74,7 @@ where
 		<T as Config>::Currency::minimum_balance() + <T as Config>::Deposit::get() + <T as Config>::Deposit::get(),
 	);
 
-	ctype::Ctypes::<T>::insert(&ctype_hash, T::CtypeCreatorId::from(root_acc.clone()));
+	ctype::Ctypes::<T>::insert(ctype_hash, T::CtypeCreatorId::from(root_acc.clone()));
 
 	Pallet::<T>::create_hierarchy(
 		<T as Config>::EnsureOrigin::generate_origin(sender, root_acc.clone()),
@@ -111,7 +111,7 @@ where
 		T::DelegationEntityId,
 		<<T as Config>::DelegationSignatureVerification as VerifySignature>::Payload,
 	)>,
-	<T as Config>::EnsureOrigin: GenerateBenchmarkOrigin<T::Origin, T::AccountId, T::DelegationEntityId>,
+	<T as Config>::EnsureOrigin: GenerateBenchmarkOrigin<T::RuntimeOrigin, T::AccountId, T::DelegationEntityId>,
 {
 	if level == 0 {
 		return Ok((parent_acc_public, parent_acc_id, parent_id));
@@ -148,7 +148,7 @@ where
 		)?;
 
 		// only return first leaf
-		first_leaf = first_leaf.or(Some((delegation_acc_public, delegation_acc_id, delegation_id)));
+		first_leaf = first_leaf.or_else(|| Some((delegation_acc_public, delegation_acc_id, delegation_id)));
 	}
 
 	let (leaf_acc_public, leaf_acc_id, leaf_id) =
@@ -191,7 +191,7 @@ where
 		T::DelegationEntityId,
 		<<T as Config>::DelegationSignatureVerification as VerifySignature>::Payload,
 	)>,
-	<T as Config>::EnsureOrigin: GenerateBenchmarkOrigin<T::Origin, T::AccountId, T::DelegationEntityId>,
+	<T as Config>::EnsureOrigin: GenerateBenchmarkOrigin<T::RuntimeOrigin, T::AccountId, T::DelegationEntityId>,
 {
 	let (
 		DelegationTriplet::<T> {
@@ -226,7 +226,7 @@ benchmarks! {
 			T::DelegationEntityId,
 			<<T as Config>::DelegationSignatureVerification as VerifySignature>::Payload,
 		)>,
-		<T as Config>::EnsureOrigin: GenerateBenchmarkOrigin<T::Origin, T::AccountId, T::DelegationEntityId>,
+		<T as Config>::EnsureOrigin: GenerateBenchmarkOrigin<T::RuntimeOrigin, T::AccountId, T::DelegationEntityId>,
 	}
 
 	create_hierarchy {
@@ -234,14 +234,14 @@ benchmarks! {
 		let creator: T::DelegationEntityId = account("creator", 0, SEED);
 		let ctype = <T::Hash as Default>::default();
 		let delegation = generate_delegation_id::<T>(0);
-		ctype::Ctypes::<T>::insert(&ctype, <T as ctype::Config>::CtypeCreatorId::from(creator.clone()));
+		ctype::Ctypes::<T>::insert(ctype, <T as ctype::Config>::CtypeCreatorId::from(creator.clone()));
 		<T as Config>::Currency::make_free_balance_be(
 			&sender,
 			<T as Config>::Currency::minimum_balance() + <T as Config>::Deposit::get(),
 		);
 
 		let origin = <T as Config>::EnsureOrigin::generate_origin(sender, creator);
-	}: _<T::Origin>(origin, delegation, ctype)
+	}: _<T::RuntimeOrigin>(origin, delegation, ctype)
 	verify {
 		assert!(DelegationHierarchies::<T>::contains_key(delegation));
 	}
@@ -281,7 +281,7 @@ benchmarks! {
 			<T as Config>::Currency::minimum_balance() + <T as Config>::Deposit::get(),
 		);
 		let origin = <T as Config>::EnsureOrigin::generate_origin(sender, leaf_acc_id);
-	}: _<T::Origin>(origin, delegation_id, hierarchy_id, delegate_acc_id, perm, sig)
+	}: _<T::RuntimeOrigin>(origin, delegation_id, hierarchy_id, delegate_acc_id, perm, sig)
 	verify {
 		assert!(DelegationNodes::<T>::contains_key(delegation_id));
 	}
@@ -305,7 +305,7 @@ benchmarks! {
 			<T as Config>::Currency::minimum_balance() + <T as Config>::Deposit::get(),
 		);
 		let origin = <T as Config>::EnsureOrigin::generate_origin(sender, child_delegation.details.owner);
-	}: revoke_delegation<T::Origin>(origin, child_id, c, r)
+	}: revoke_delegation<T::RuntimeOrigin>(origin, child_id, c, r)
 	verify {
 		assert!(DelegationNodes::<T>::contains_key(child_id));
 		let DelegationNode::<T> { details, .. } = DelegationNodes::<T>::get(leaf_id).ok_or("Child of root should have delegation id")?;
@@ -329,7 +329,7 @@ benchmarks! {
 		let sender: T::AccountId = account("sender", 0, SEED);
 		let (root_acc, _, _, leaf_id) = setup_delegations::<T>(c, ONE_CHILD_PER_LEVEL.expect(">0"), Permissions::DELEGATE)?;
 		let origin = <T as Config>::EnsureOrigin::generate_origin(sender, root_acc.into());
-	}: revoke_delegation<T::Origin>(origin, leaf_id, c, r)
+	}: revoke_delegation<T::RuntimeOrigin>(origin, leaf_id, c, r)
 	verify {
 		assert!(DelegationNodes::<T>::contains_key(leaf_id));
 		let DelegationNode::<T> { details, .. } = DelegationNodes::<T>::get(leaf_id).ok_or("Child of root should have delegation id")?;
@@ -350,7 +350,7 @@ benchmarks! {
 		let child_delegation = DelegationNodes::<T>::get(child_id).ok_or("Child of root should have delegation id")?;
 		assert!(!<T as Config>::Currency::reserved_balance(&sender).is_zero());
 		let origin = <T as Config>::EnsureOrigin::generate_origin(sender.clone(), root_acc.into());
-	}: _<T::Origin>(origin, hierarchy_id, r)
+	}: _<T::RuntimeOrigin>(origin, hierarchy_id, r)
 	verify {
 		assert!(!DelegationNodes::<T>::contains_key(hierarchy_id));
 		assert!(!DelegationNodes::<T>::contains_key(child_id));
@@ -453,7 +453,7 @@ benchmarks! {
 
 		assert!(!<T as Config>::Currency::reserved_balance(&deposit_owner_old).is_zero());
 		let origin = <T as Config>::EnsureOrigin::generate_origin(deposit_owner_new.clone(), root_acc.into());
-	}: _<T::Origin>(origin, hierarchy_id)
+	}: _<T::RuntimeOrigin>(origin, hierarchy_id)
 	verify {
 		assert_eq!(<T as Config>::Currency::reserved_balance(&deposit_owner_new), <T as Config>::Deposit::get());
 	}

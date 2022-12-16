@@ -9,8 +9,7 @@ clippy:
   stage: test
   timeout: 1 hours
   script:
-    - rustup component add clippy --toolchain nightly
-    - cargo +nightly clippy --all-features --all-targets --locked -- -D warnings
+    - cargo clippy --all-features --all-targets --locked -- -D warnings
 
 fmt:
   # Corresponds to paritytech/ci-linux:production at the time of this PR
@@ -19,8 +18,7 @@ fmt:
   stage: test
   timeout: 1 hours
   script:
-    - rustup component add rustfmt --toolchain nightly
-    - cargo +nightly fmt -- --check
+    - cargo fmt -- --check
 
 test:
   # Corresponds to paritytech/ci-linux:production at the time of this PR

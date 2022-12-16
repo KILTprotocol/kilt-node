@@ -21,17 +21,17 @@ use sc_cli::RunCmd;
 
 #[derive(Debug, Parser)]
 pub struct Cli {
-	#[clap(subcommand)]
+	#[command(subcommand)]
 	pub subcommand: Option<Subcommand>,
 
-	#[clap(flatten)]
+	#[command(flatten)]
 	pub run: RunCmd,
 }
 
 #[derive(Debug, Parser)]
 pub enum Subcommand {
 	/// Key management cli utilities
-	#[clap(subcommand)]
+	#[command(subcommand)]
 	Key(sc_cli::KeySubcommand),
 
 	/// Build a chain specification.
@@ -56,7 +56,7 @@ pub enum Subcommand {
 	Revert(sc_cli::RevertCmd),
 
 	/// Sub-commands concerned with benchmarking.
-	#[clap(subcommand)]
+	#[command(subcommand)]
 	Benchmark(frame_benchmarking_cli::BenchmarkCmd),
 
 	/// Try some command against runtime state.

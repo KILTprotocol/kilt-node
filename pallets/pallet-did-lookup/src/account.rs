@@ -111,7 +111,7 @@ impl From<libsecp256k1::PublicKey> for EthereumSigner {
 	fn from(x: libsecp256k1::PublicKey) -> Self {
 		let mut m = [0u8; 64];
 		m.copy_from_slice(&x.serialize()[1..65]);
-		let account = H160::from(H256::from_slice(Keccak256::digest(&m).as_slice()));
+		let account = H160::from(H256::from_slice(Keccak256::digest(m).as_slice()));
 		EthereumSigner(account.into())
 	}
 }
@@ -141,7 +141,7 @@ impl sp_runtime::traits::Verify for EthereumSignature {
 			Ok(pubkey) => {
 				// TODO This conversion could use a comment. Why H256 first, then H160?
 				// TODO actually, there is probably just a better way to go from Keccak digest.
-				AccountId20(H160::from(H256::from_slice(Keccak256::digest(&pubkey).as_slice())).0) == *signer
+				AccountId20(H160::from(H256::from_slice(Keccak256::digest(pubkey).as_slice())).0) == *signer
 			}
 			Err(_) => {
 				log::trace!("Error verifying signature");

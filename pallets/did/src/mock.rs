@@ -79,8 +79,8 @@ parameter_types! {
 }
 
 impl frame_system::Config for Test {
-	type Origin = Origin;
-	type Call = Call;
+	type RuntimeOrigin = RuntimeOrigin;
+	type RuntimeCall = RuntimeCall;
 	type Index = Index;
 	type BlockNumber = BlockNumber;
 	type Hash = Hash;
@@ -88,7 +88,7 @@ impl frame_system::Config for Test {
 	type AccountId = <<Signature as Verify>::Signer as IdentifyAccount>::AccountId;
 	type Lookup = IdentityLookup<Self::AccountId>;
 	type Header = Header;
-	type Event = ();
+	type RuntimeEvent = ();
 	type BlockHashCount = BlockHashCount;
 	type DbWeight = RocksDbWeight;
 	type Version = ();
@@ -140,11 +140,11 @@ where
 
 impl Config for Test {
 	type DidIdentifier = DidIdentifier;
-	type Origin = Origin;
-	type Call = Call;
+	type RuntimeOrigin = RuntimeOrigin;
+	type RuntimeCall = RuntimeCall;
 	type EnsureOrigin = EnsureSigned<DidIdentifier>;
 	type OriginSuccess = AccountId;
-	type Event = ();
+	type RuntimeEvent = ();
 	type Currency = Balances;
 	type Deposit = Deposit;
 	type Fee = DidFee;
@@ -171,7 +171,7 @@ parameter_types! {
 impl pallet_balances::Config for Test {
 	type Balance = Balance;
 	type DustRemoval = ();
-	type Event = ();
+	type RuntimeEvent = ();
 	type ExistentialDeposit = ExistentialDeposit;
 	type AccountStore = System;
 	type WeightInfo = ();
@@ -196,7 +196,7 @@ impl ctype::Config for Test {
 	type OriginSuccess = DidRawOrigin<AccountId, DidIdentifier>;
 
 	type CtypeCreatorId = DidIdentifier;
-	type Event = ();
+	type RuntimeEvent = ();
 	type WeightInfo = ();
 	type Currency = Balances;
 	type Fee = Fee;
@@ -334,37 +334,37 @@ pub fn generate_key_id(key: &DidPublicKey) -> KeyIdOf<Test> {
 pub(crate) fn get_attestation_key_test_input() -> Vec<u8> {
 	[0u8; 32].to_vec()
 }
-pub(crate) fn get_attestation_key_call() -> Call {
-	Call::Ctype(ctype::Call::add {
+pub(crate) fn get_attestation_key_call() -> RuntimeCall {
+	RuntimeCall::Ctype(ctype::Call::add {
 		ctype: get_attestation_key_test_input(),
 	})
 }
 pub(crate) fn get_authentication_key_test_input() -> Vec<u8> {
 	[1u8; 32].to_vec()
 }
-pub(crate) fn get_authentication_key_call() -> Call {
-	Call::Ctype(ctype::Call::add {
+pub(crate) fn get_authentication_key_call() -> RuntimeCall {
+	RuntimeCall::Ctype(ctype::Call::add {
 		ctype: get_authentication_key_test_input(),
 	})
 }
 pub(crate) fn get_delegation_key_test_input() -> Vec<u8> {
 	[2u8; 32].to_vec()
 }
-pub(crate) fn get_delegation_key_call() -> Call {
-	Call::Ctype(ctype::Call::add {
+pub(crate) fn get_delegation_key_call() -> RuntimeCall {
+	RuntimeCall::Ctype(ctype::Call::add {
 		ctype: get_delegation_key_test_input(),
 	})
 }
 pub(crate) fn get_none_key_test_input() -> Vec<u8> {
 	[3u8; 32].to_vec()
 }
-pub(crate) fn get_none_key_call() -> Call {
-	Call::Ctype(ctype::Call::add {
+pub(crate) fn get_none_key_call() -> RuntimeCall {
+	RuntimeCall::Ctype(ctype::Call::add {
 		ctype: get_none_key_test_input(),
 	})
 }
 
-impl DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
+impl DeriveDidCallAuthorizationVerificationKeyRelationship for RuntimeCall {
 	fn derive_verification_key_relationship(&self) -> DeriveDidCallKeyRelationshipResult {
 		if *self == get_attestation_key_call() {
 			Ok(DidVerificationKeyRelationship::AssertionMethod)
@@ -385,7 +385,7 @@ impl DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 	// Always return a System::remark() extrinsic call
 	#[cfg(feature = "runtime-benchmarks")]
 	fn get_call_for_did_call_benchmark() -> Self {
-		Call::System(frame_system::Call::remark { remark: sp_std::vec![] })
+		RuntimeCall::System(frame_system::Call::remark { remark: sp_std::vec![] })
 	}
 }
 
@@ -481,13 +481,13 @@ impl ExtBuilder {
 					.expect("Deposit owner should have enough balance");
 			}
 			for did in self.deleted_dids.iter() {
-				DidBlacklist::<Test>::insert(&did, ());
+				DidBlacklist::<Test>::insert(did, ());
 			}
 			for (did, endpoints) in self.service_endpoints.iter() {
 				for endpoint in endpoints.iter() {
-					ServiceEndpoints::<Test>::insert(&did, &endpoint.id, endpoint)
+					ServiceEndpoints::<Test>::insert(did, &endpoint.id, endpoint)
 				}
-				DidEndpointsCount::<Test>::insert(&did, endpoints.len().saturated_into::<u32>());
+				DidEndpointsCount::<Test>::insert(did, endpoints.len().saturated_into::<u32>());
 			}
 		});
 

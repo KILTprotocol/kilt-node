@@ -109,7 +109,7 @@ fn test_add_association_account() {
 			)
 			.is_ok());
 			assert_eq!(
-				ConnectedDids::<Test>::get(&LinkableAccountId::from(account_hash_alice.clone())),
+				ConnectedDids::<Test>::get(LinkableAccountId::from(account_hash_alice.clone())),
 				Some(ConnectionRecord {
 					did: DID_00,
 					deposit: Deposit {
@@ -119,7 +119,7 @@ fn test_add_association_account() {
 				})
 			);
 			assert!(
-				ConnectedAccounts::<Test>::get(DID_00, &LinkableAccountId::from(account_hash_alice.clone())).is_some()
+				ConnectedAccounts::<Test>::get(DID_00, LinkableAccountId::from(account_hash_alice.clone())).is_some()
 			);
 			assert_eq!(
 				Balances::reserved_balance(ACCOUNT_00),
@@ -137,7 +137,7 @@ fn test_add_association_account() {
 			}
 			assert!(res.is_ok());
 			assert_eq!(
-				ConnectedDids::<Test>::get(&LinkableAccountId::from(account_hash_alice.clone())),
+				ConnectedDids::<Test>::get(LinkableAccountId::from(account_hash_alice.clone())),
 				Some(ConnectionRecord {
 					did: DID_01,
 					deposit: Deposit {
@@ -147,10 +147,10 @@ fn test_add_association_account() {
 				})
 			);
 			assert!(
-				ConnectedAccounts::<Test>::get(DID_00, &LinkableAccountId::from(account_hash_alice.clone())).is_none()
+				ConnectedAccounts::<Test>::get(DID_00, LinkableAccountId::from(account_hash_alice.clone())).is_none()
 			);
 			assert!(
-				ConnectedAccounts::<Test>::get(DID_01, &LinkableAccountId::from(account_hash_alice.clone())).is_some()
+				ConnectedAccounts::<Test>::get(DID_01, LinkableAccountId::from(account_hash_alice.clone())).is_some()
 			);
 			assert_eq!(
 				Balances::reserved_balance(ACCOUNT_00),
@@ -165,7 +165,7 @@ fn test_add_association_account() {
 			)
 			.is_ok());
 			assert_eq!(
-				ConnectedDids::<Test>::get(&LinkableAccountId::from(account_hash_alice.clone())),
+				ConnectedDids::<Test>::get(LinkableAccountId::from(account_hash_alice.clone())),
 				Some(ConnectionRecord {
 					did: DID_01,
 					deposit: Deposit {
@@ -175,9 +175,9 @@ fn test_add_association_account() {
 				})
 			);
 			assert!(
-				ConnectedAccounts::<Test>::get(DID_00, &LinkableAccountId::from(account_hash_alice.clone())).is_none()
+				ConnectedAccounts::<Test>::get(DID_00, LinkableAccountId::from(account_hash_alice.clone())).is_none()
 			);
-			assert!(ConnectedAccounts::<Test>::get(DID_01, &LinkableAccountId::from(account_hash_alice)).is_some());
+			assert!(ConnectedAccounts::<Test>::get(DID_01, LinkableAccountId::from(account_hash_alice)).is_some());
 			assert_eq!(Balances::reserved_balance(ACCOUNT_00), 0);
 			assert_eq!(
 				Balances::reserved_balance(ACCOUNT_01),
@@ -204,7 +204,7 @@ fn test_add_eth_association() {
 				crate::signature::WrapType::Ethereum,
 			);
 
-			let sig = eth_pair.sign_prehashed(&Keccak256::digest(&wrapped_payload).try_into().unwrap());
+			let sig = eth_pair.sign_prehashed(&Keccak256::digest(wrapped_payload).try_into().unwrap());
 
 			// new association. No overwrite
 			let res = DidLookup::associate_account(
@@ -214,7 +214,7 @@ fn test_add_eth_association() {
 			);
 			assert!(res.is_ok());
 			assert_eq!(
-				ConnectedDids::<Test>::get(&LinkableAccountId::from(eth_account)),
+				ConnectedDids::<Test>::get(LinkableAccountId::from(eth_account)),
 				Some(ConnectionRecord {
 					did: DID_00,
 					deposit: Deposit {
@@ -223,7 +223,7 @@ fn test_add_eth_association() {
 					}
 				})
 			);
-			assert!(ConnectedAccounts::<Test>::get(DID_00, &LinkableAccountId::from(eth_account)).is_some());
+			assert!(ConnectedAccounts::<Test>::get(DID_00, LinkableAccountId::from(eth_account)).is_some());
 			assert_eq!(
 				Balances::reserved_balance(ACCOUNT_00),
 				<Test as crate::Config>::Deposit::get()
@@ -296,7 +296,7 @@ fn test_remove_association_sender() {
 		.build()
 		.execute_with(|| {
 			// remove association
-			assert!(DidLookup::remove_sender_association(Origin::signed(ACCOUNT_00)).is_ok());
+			assert!(DidLookup::remove_sender_association(RuntimeOrigin::signed(ACCOUNT_00)).is_ok());
 			assert_eq!(ConnectedDids::<Test>::get(&LinkableAccountId::from(ACCOUNT_00)), None);
 			assert!(ConnectedAccounts::<Test>::get(DID_01, &LinkableAccountId::from(ACCOUNT_00)).is_none());
 			assert_eq!(Balances::reserved_balance(ACCOUNT_00), 0);
@@ -313,7 +313,7 @@ fn test_remove_association_sender_not_found() {
 		.build()
 		.execute_with(|| {
 			assert_noop!(
-				DidLookup::remove_sender_association(Origin::signed(ACCOUNT_00)),
+				DidLookup::remove_sender_association(RuntimeOrigin::signed(ACCOUNT_00)),
 				Error::<Test>::AssociationNotFound
 			);
 		});
@@ -334,8 +334,8 @@ fn test_remove_association_account() {
 				LinkableAccountId::from(ACCOUNT_00.clone())
 			)
 			.is_ok());
-			assert_eq!(ConnectedDids::<Test>::get(&LinkableAccountId::from(ACCOUNT_00)), None);
-			assert!(ConnectedAccounts::<Test>::get(DID_01, &LinkableAccountId::from(ACCOUNT_00)).is_none());
+			assert_eq!(ConnectedDids::<Test>::get(LinkableAccountId::from(ACCOUNT_00)), None);
+			assert!(ConnectedAccounts::<Test>::get(DID_01, LinkableAccountId::from(ACCOUNT_00)).is_none());
 			assert_eq!(Balances::reserved_balance(ACCOUNT_01), 0);
 		});
 }
@@ -349,7 +349,7 @@ fn test_remove_association_account_not_found() {
 		])
 		.build()
 		.execute_with(|| {
-			assert_eq!(ConnectedDids::<Test>::get(&LinkableAccountId::from(ACCOUNT_00)), None);
+			assert_eq!(ConnectedDids::<Test>::get(LinkableAccountId::from(ACCOUNT_00)), None);
 
 			assert_noop!(
 				DidLookup::remove_account_association(
@@ -396,7 +396,7 @@ fn test_reclaim_deposit() {
 		.build()
 		.execute_with(|| {
 			assert_ok!(DidLookup::reclaim_deposit(
-				Origin::signed(ACCOUNT_01),
+				RuntimeOrigin::signed(ACCOUNT_01),
 				ACCOUNT_00.into()
 			));
 			assert_eq!(Balances::reserved_balance(ACCOUNT_01), 0);
@@ -414,7 +414,7 @@ fn test_reclaim_deposit_not_authorized() {
 		.build()
 		.execute_with(|| {
 			assert_noop!(
-				DidLookup::reclaim_deposit(Origin::signed(ACCOUNT_00), ACCOUNT_00.into()),
+				DidLookup::reclaim_deposit(RuntimeOrigin::signed(ACCOUNT_00), ACCOUNT_00.into()),
 				Error::<Test>::NotAuthorized
 			);
 			assert_eq!(
@@ -518,7 +518,10 @@ fn test_update_deposit() {
 				Balances::reserved_balance(ACCOUNT_00),
 				<Test as crate::Config>::Deposit::get() * 2
 			);
-			assert_ok!(DidLookup::update_deposit(Origin::signed(ACCOUNT_00), ACCOUNT_00.into()));
+			assert_ok!(DidLookup::update_deposit(
+				RuntimeOrigin::signed(ACCOUNT_00),
+				ACCOUNT_00.into()
+			));
 			assert_eq!(
 				Balances::reserved_balance(ACCOUNT_00),
 				<Test as crate::Config>::Deposit::get()
@@ -546,7 +549,7 @@ fn test_update_deposit_unauthorized() {
 				<Test as crate::Config>::Deposit::get() * 2
 			);
 			assert_noop!(
-				DidLookup::update_deposit(Origin::signed(ACCOUNT_01), ACCOUNT_00.into()),
+				DidLookup::update_deposit(RuntimeOrigin::signed(ACCOUNT_01), ACCOUNT_00.into()),
 				Error::<Test>::NotAuthorized
 			);
 		})

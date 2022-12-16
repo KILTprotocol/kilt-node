@@ -99,8 +99,8 @@ pub(crate) mod runtime {
 		type BlockWeights = ();
 		type BlockLength = ();
 		type DbWeight = ();
-		type Origin = Origin;
-		type Call = Call;
+		type RuntimeOrigin = RuntimeOrigin;
+		type RuntimeCall = RuntimeCall;
 		type Index = Index;
 		type BlockNumber = BlockNumber;
 		type Hash = Hash;
@@ -108,7 +108,7 @@ pub(crate) mod runtime {
 		type AccountId = AccountId;
 		type Lookup = IdentityLookup<Self::AccountId>;
 		type Header = Header;
-		type Event = Event;
+		type RuntimeEvent = RuntimeEvent;
 		type BlockHashCount = BlockHashCount;
 		type Version = ();
 		type PalletInfo = PalletInfo;
@@ -130,7 +130,7 @@ pub(crate) mod runtime {
 	impl pallet_balances::Config for Test {
 		type Balance = Balance;
 		type DustRemoval = ();
-		type Event = Event;
+		type RuntimeEvent = RuntimeEvent;
 		type ExistentialDeposit = ExistentialDeposit;
 		type AccountStore = System;
 		type MaxLocks = MaxLocks;
@@ -159,7 +159,7 @@ pub(crate) mod runtime {
 		type OriginSuccess = TestOriginSuccess;
 		type Currency = Balances;
 		type Deposit = Web3NameDeposit;
-		type Event = Event;
+		type RuntimeEvent = RuntimeEvent;
 		type MaxNameLength = MaxNameLength;
 		type MinNameLength = MinNameLength;
 		type Web3Name = TestWeb3Name;
@@ -168,7 +168,7 @@ pub(crate) mod runtime {
 	}
 
 	impl mock_origin::Config for Test {
-		type Origin = Origin;
+		type RuntimeOrigin = RuntimeOrigin;
 		type AccountId = AccountId;
 		type SubjectId = SubjectId;
 	}

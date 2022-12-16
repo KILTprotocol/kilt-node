@@ -185,7 +185,7 @@ pub mod pallet {
 	#[pallet::config]
 	pub trait Config: frame_system::Config + pallet_balances::Config + pallet_session::Config {
 		/// Overarching event type
-		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 		// FIXME: Remove Currency and CurrencyBalance types. Problem: Need to restrict
 		// pallet_balances::Config::Balance with From<u64> for usage with Perquintill
 		// multiplication
@@ -685,13 +685,13 @@ pub mod pallet {
 				);
 				if let Some(delegated_val) = opt_val {
 					assert_ok!(Pallet::<T>::join_delegators(
-						T::Origin::from(Some(actor.clone()).into()),
+						T::RuntimeOrigin::from(Some(actor.clone()).into()),
 						T::Lookup::unlookup(delegated_val.clone()),
 						balance,
 					));
 				} else {
 					assert_ok!(Pallet::<T>::join_candidates(
-						T::Origin::from(Some(actor.clone()).into()),
+						T::RuntimeOrigin::from(Some(actor.clone()).into()),
 						balance
 					));
 				}
@@ -1980,7 +1980,7 @@ pub mod pallet {
 			// Snapshot exposure for round for weighting reward distribution
 			for account in collators.iter() {
 				let state =
-					CandidatePool::<T>::get(&account).expect("all members of TopCandidates must be candidates q.e.d");
+					CandidatePool::<T>::get(account).expect("all members of TopCandidates must be candidates q.e.d");
 				num_of_delegators = num_of_delegators.max(state.delegators.len().saturated_into::<u32>());
 
 				// sum up total stake and amount of collators, delegators
@@ -2270,9 +2270,9 @@ pub mod pallet {
 				.map(pallet_session::Pallet::<T>::disable_index);
 
 			// Kill storage
-			BlocksAuthored::<T>::remove(&collator);
-			BlocksRewarded::<T>::remove(&collator);
-			CandidatePool::<T>::remove(&collator);
+			BlocksAuthored::<T>::remove(collator);
+			BlocksRewarded::<T>::remove(collator);
+			CandidatePool::<T>::remove(collator);
 			Ok(())
 		}
 

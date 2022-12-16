@@ -40,7 +40,7 @@ pub mod mock_origin {
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
-		type Origin: From<Origin<Self>>;
+		type RuntimeOrigin: From<Origin<Self>>;
 		type AccountId: Parameter;
 		type SubjectId: Parameter;
 	}
