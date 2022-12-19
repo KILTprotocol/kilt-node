@@ -9,17 +9,11 @@ def update_spec(input: typing.Dict, base_chain="westend"):
 
     input.update({
         "bootNodes": [
-            "/dns4/eyrie-1.kilt.io/tcp/30360/p2p/12D3KooWEeezCpJauUmWw3zfgEtYzhZTc5LgukQYtGTMaZfzgVfE",
-            "/dns4/eyrie-2.kilt.io/tcp/30361/p2p/12D3KooWHq5j9tLdZEu4tnr6ii2k33zp5DCoKREQ6KzuabC9Gihu",
-            "/dns4/eyrie-2.kilt.io/tcp/30362/p2p/12D3KooWQ8iTGLH98zLz9BZmq5FXDmR1NytDsJ2VToXvcjvHV16a",
-            "/dns4/eyrie-1.kilt.io/tcp/30363/p2p/12D3KooWNWNptEoH443LVUgwC5kd7DBVoNYwQtJh6dp4TQxUsAST",
-            "/dns4/eyrie-3.kilt.io/tcp/30365/p2p/12D3KooWCYnLwW3eEWiWqBNraUDjp8qVg2uwyJxh9fKAs32PMutR",
-            "/dns4/eyrie-3.kilt.io/tcp/30366/p2p/12D3KooWCED7zzribj75pE98739qp8QNDDfXFmL2w6JMLwBWFLxL",
         ],
         "chainType": "Live",
         "name": "Peregrine Relay",
-        "protocolId": "Rkilt5",
-        "id": f"{base_chain}_peregrine5_relay",
+        "protocolId": "Rkilt6",
+        "id": f"{base_chain}_peregrine6_relay",
         "telemetryEndpoints": [
             [
                 "/dns/telemetry-backend.kilt.io/tcp/8080/x-parity-wss/%2Fsubmit",
@@ -124,7 +118,10 @@ def update_spec(input: typing.Dict, base_chain="westend"):
             "validation_upgrade_delay": 2,
             "max_pov_size": 5242880,
             "max_downward_message_size": 1048576,
-            "ump_service_total_weight": 100000000000,
+            "ump_service_total_weight": {
+                "ref_time": 100000000000,
+                "proof_size": 5242880
+            },
             "hrmp_max_parachain_outbound_channels": 4,
             "hrmp_max_parathread_outbound_channels": 4,
             "hrmp_sender_deposit": 0,
@@ -141,7 +138,7 @@ def update_spec(input: typing.Dict, base_chain="westend"):
             "chain_availability_period": 4,
             "thread_availability_period": 4,
             "scheduling_lookahead": 0,
-            "max_validators_per_core": 1,
+            "max_validators_per_core": None,
             "max_validators": None,
             "dispute_period": 6,
             "dispute_post_conclusion_acceptance_period": 100,
@@ -152,7 +149,10 @@ def update_spec(input: typing.Dict, base_chain="westend"):
             "zeroth_delay_tranche_width": 0,
             "needed_approvals": 2,
             "relay_vrf_modulo_samples": 2,
-            "ump_max_individual_weight": 20000000000,
+            "ump_max_individual_weight": {
+                "ref_time": 20000000000,
+                "proof_size": 5242880
+            },
             "pvf_checking_enabled": False,
             "pvf_voting_ttl": 2,
             "minimum_validation_upgrade_delay": 5
