@@ -6,19 +6,23 @@ def update_spec(input: typing.Dict, base_chain="westend"):
     acc_bob = "5DL9V1dmkuZnzRD9R3cwdzowim3sBZZvz1iJhNxC5QjofikK"
     acc_charlie = "5DcKRxsjojmbJW7Scxnu7Ck5zXfpg1RxtrcyVjaMRx5YFWUR"
     acc_dave = "5E4ZYy9tTPpJPoScqm6PvLtr1MjsBEjbDufJQYhcuBtk6rNa"
+    acc_eve = "5ELCvQBGu8ur9UDSMAiqB4PrYXTnLGwcaUg63gtkxWtScEYm"
+    acc_ferdie = "5G6ThxmfSbHVt2u8WmZmTH3xeKBckFFDGA69E6cSXtYPaiwT"
 
     input.update({
         "bootNodes": [
+            "/dns4/eyrie-2.kilt.io/tcp/30300/p2p/12D3KooWM8RCC8r2Bc4qkAC5oh8m9gSQispJ9TCMchx4BjtGdpSZ",
+            "/dns4/eyrie-2.kilt.io/tcp/30301/p2p/12D3KooWNeTst8AmFWKBKFtAB1RJk5YwpXsTfCenFX6azozv4Q1V",
+            "/dns4/eyrie-2.kilt.io/tcp/30302/p2p/12D3KooWPT1SzyKnYBgDEmRVrPf88LLzD44D1bvp1Fh4EJLRtadb",
+            "/dns4/eyrie-2.kilt.io/tcp/30303/p2p/12D3KooWMSAdpcHmfZQfd284ZgDeW5KuFfRM9HAKqWU8xTdNDoYV",
+            "/dns4/eyrie-2.kilt.io/tcp/30304/p2p/12D3KooWMrteVGFXZUQNhJyxCkeUL18gEmcmggA6xj87GLM27yBz",
+            "/dns4/eyrie-2.kilt.io/tcp/30305/p2p/12D3KooWCcTV8vjq9KffXjcB2FG7SWK34zUfexj7d1vdVRAwCx14",
         ],
         "chainType": "Live",
         "name": "Peregrine Relay",
         "protocolId": "Rkilt6",
         "id": f"{base_chain}_peregrine6_relay",
         "telemetryEndpoints": [
-            [
-                "/dns/telemetry-backend.kilt.io/tcp/8080/x-parity-wss/%2Fsubmit",
-                0
-            ]
         ]
 
     })
@@ -26,10 +30,12 @@ def update_spec(input: typing.Dict, base_chain="westend"):
         [acc_alice, 1000000000000000000],
         [acc_bob, 1000000000000000000],
         [acc_charlie, 1000000000000000000],
-        [acc_dave, 1000000000000000000]
+        [acc_dave, 1000000000000000000],
+        [acc_eve, 1000000000000000000],
+        [acc_ferdie, 1000000000000000000],
     ]
     input["genesis"]["runtime"]["staking"].update({
-        "validatorCount": 4,
+        "validatorCount": 6,
         "stakers": [
             [
                 acc_alice,
@@ -52,6 +58,18 @@ def update_spec(input: typing.Dict, base_chain="westend"):
             [
                 acc_dave,
                 acc_dave,
+                100000000000000,
+                "Validator"
+            ],
+            [
+                acc_eve,
+                acc_eve,
+                100000000000000,
+                "Validator"
+            ],
+            [
+                acc_ferdie,
+                acc_ferdie,
                 100000000000000,
                 "Validator"
             ]
@@ -101,6 +119,28 @@ def update_spec(input: typing.Dict, base_chain="westend"):
                 "para_validator": "5FxM6yYBFvMeX3C2QrQDXJ8LhhzG5sPjgUtX77cX1wihHhVq",
                 "para_assignment": "5FxM6yYBFvMeX3C2QrQDXJ8LhhzG5sPjgUtX77cX1wihHhVq",
                 "authority_discovery": "5FxM6yYBFvMeX3C2QrQDXJ8LhhzG5sPjgUtX77cX1wihHhVq",
+            }
+        ], [
+            acc_eve,
+            acc_eve,
+            {
+                "grandpa": "5GKaEkaA8NVdpsruRcnpeLBNGzMcFsEfwEY3Jq7Vmw9brztR",
+                "babe": "5GnPNFKvLRy9FF8N1G9YjGmjJA4cUsUC7WgEx3rDeMFnZsXk",
+                "im_online": "5GnPNFKvLRy9FF8N1G9YjGmjJA4cUsUC7WgEx3rDeMFnZsXk",
+                "para_validator": "5GnPNFKvLRy9FF8N1G9YjGmjJA4cUsUC7WgEx3rDeMFnZsXk",
+                "para_assignment": "5GnPNFKvLRy9FF8N1G9YjGmjJA4cUsUC7WgEx3rDeMFnZsXk",
+                "authority_discovery": "5GnPNFKvLRy9FF8N1G9YjGmjJA4cUsUC7WgEx3rDeMFnZsXk",
+            }
+        ], [
+            acc_ferdie,
+            acc_ferdie,
+            {
+                "grandpa": "5CSYQMyi7iGVuHLgLNDXcpPXZgvWWrP7mqd1sHdBUSeafXf5",
+                "babe": "5CPW6uFwdjoHTj14C1VWiK96Cj2sJBALbC964zHaGAni3J2S",
+                "im_online": "5CPW6uFwdjoHTj14C1VWiK96Cj2sJBALbC964zHaGAni3J2S",
+                "para_validator": "5CPW6uFwdjoHTj14C1VWiK96Cj2sJBALbC964zHaGAni3J2S",
+                "para_assignment": "5CPW6uFwdjoHTj14C1VWiK96Cj2sJBALbC964zHaGAni3J2S",
+                "authority_discovery": "5CPW6uFwdjoHTj14C1VWiK96Cj2sJBALbC964zHaGAni3J2S",
             }
         ]
     ]
