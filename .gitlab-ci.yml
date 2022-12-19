@@ -48,6 +48,7 @@ build:
       - develop
       - master
       - /^[0-9]+(?:\.[0-9]+){2}(?:-(rc)*([0-9])+)?$/
+      - /^[dev-](\w*-)*[0-9]?$/
   variables:
     DOCKER_HUB_PARACHAIN: "kiltprotocol/kilt-node"
     DOCKER_HUB_STANDALONE: "kiltprotocol/mashnet-node"
