@@ -26,7 +26,7 @@
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use codec::{Decode, Encode, MaxEncodedLen};
-use cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases;
+use cumulus_pallet_parachain_system::AnyRelayNumber;
 use frame_support::{
 	construct_runtime, parameter_types,
 	traits::{EitherOfDiverse, Everything, InstanceFilter, PrivilegeCmp},
@@ -88,7 +88,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("mashnet-node"),
 	impl_name: create_runtime_str!("mashnet-node"),
 	authoring_version: 4,
-	spec_version: 10801,
+	spec_version: 10802,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 5,
@@ -222,7 +222,7 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
 	type ReservedDmpWeight = ReservedDmpWeight;
 	type XcmpMessageHandler = XcmpQueue;
 	type ReservedXcmpWeight = ReservedXcmpWeight;
-	type CheckAssociatedRelayNumber = RelayNumberStrictlyIncreases;
+	type CheckAssociatedRelayNumber = AnyRelayNumber;
 }
 
 impl parachain_info::Config for Runtime {}
