@@ -69,7 +69,7 @@ mashnet-node-runtime = {path = "runtimes/standalone", default-features = false}
 peregrine-runtime = {path = "runtimes/peregrine", default-features = false}
 spiritnet-runtime = {path = "runtimes/spiritnet", default-features = false}
 
-# Benchmarking (with default disabled) 
+# Benchmarking (with default disabled)
 cumulus-pallet-session-benchmarking = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "polkadot-v0.9.32"}
 frame-system-benchmarking = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.32"}
 
@@ -87,6 +87,9 @@ pallet-collator-selection = {git = "https://github.com/paritytech/cumulus", defa
 parachain-info = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "polkadot-v0.9.32"}
 
 # Substrate (with default disabled)
+sp-mmr-primitives = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.32"}
+sp-trie = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.32"}
+
 frame-benchmarking = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.32"}
 frame-benchmarking-cli = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.32"}
 frame-executive = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.32"}
@@ -129,7 +132,7 @@ sp-std = {git = "https://github.com/paritytech/substrate", default-features = fa
 sp-transaction-pool = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.32"}
 sp-version = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.32"}
 try-runtime-cli = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.32"}
- 
+
 # Polkadot (with default disabled)
 pallet-xcm = {git = "https://github.com/paritytech/polkadot", default-features = false, branch = "release-v0.9.32"}
 polkadot-parachain = {git = "https://github.com/paritytech/polkadot", default-features = false, branch = "release-v0.9.32"}

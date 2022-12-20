@@ -26,6 +26,8 @@ pallet-balances = {workspace = true, features = ["std"]}
 sp-keystore = {workspace = true, features = ["std"]}
 
 [dependencies]
+sp-mmr-primitives.workspace = true
+sp-trie.workspace = true
 # External dependencies
 log.workspace = true
 

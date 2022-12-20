@@ -96,6 +96,7 @@ mod mock_utils;
 #[cfg(test)]
 mod tests;
 
+mod merkle;
 mod signature;
 mod utils;
 
@@ -135,9 +136,10 @@ pub mod pallet {
 	use crate::service_endpoints::utils as service_endpoints_utils;
 	use frame_support::{
 		pallet_prelude::*,
-		traits::{Currency, ExistenceRequirement, Imbalance, ReservableCurrency, StorageVersion},
+		traits::{Currency, ExistenceRequirement, Hooks, Imbalance, ReservableCurrency, StorageVersion},
+		weights::Weight,
 	};
-	use frame_system::pallet_prelude::*;
+	use frame_system::pallet_prelude::{BlockNumberFor, *};
 	use kilt_support::{
 		deposit::Deposit,
 		traits::{CallSources, StorageDepositCollector},
@@ -459,6 +461,25 @@ pub mod pallet {
 				RelationshipDeriveError::InvalidCallParameter => Self::InvalidDidAuthorizationCall,
 				RelationshipDeriveError::NotCallableByDid => Self::UnsupportedDidAuthorizationCall,
 			}
+		}
+	}
+
+	#[pallet::hooks]
+	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+		fn on_idle(n: BlockNumberFor<T>, remaining_weight: Weight) -> Weight {
+			use frame_support::sp_tracing::info;
+
+			info!(
+				"📕 on_idle for block {:?} with remaining weight {:?}",
+				n, remaining_weight
+			);
+			if let Some((identifier, did_details)) = Did::<T>::iter().last() {
+				info!("📗 Found a DID!");
+				// let result = merkle::test_merkle_stuff(&identifier,
+				// &did_details); info!("📘 DID merkle proof verification:
+				// {:?}", result);
+			};
+			remaining_weight
 		}
 	}
 
