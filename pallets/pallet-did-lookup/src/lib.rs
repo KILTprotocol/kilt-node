@@ -374,12 +374,16 @@ pub mod pallet {
 			LinkableAccountDepositCollector::<T>::update_deposit(&account)
 		}
 
-		// TODO: Docs, weights
+		/// Executes the keytype migration of the `ConnectedDids` and
+		/// `ConnectedAccounts` storages by converting the given `AccoundId`
+		/// into `LinkableAccountId(AccountId)`. Once all keys have been
+		/// migrated, the call `try-finalize-migration` will succeed and remove
+		/// the migration flag.
+		///
+		/// Can be called by any origin as duplicate calls won't succeed.
 		#[pallet::weight(T::DbWeight::get().reads_writes(2, 4))]
 		pub fn migrate_account_id(origin: OriginFor<T>, account_id: AccountIdOf<T>) -> DispatchResult {
 			ensure_signed(origin)?;
-			// TODO: Do we need to ensure whether MigrationOngoing? Shouldn't due to
-			// CallFilter.
 
 			let linkable_account_id: LinkableAccountId = account_id.clone().into();
 			let did_id = crate::migrations::do_migrate_account_id::<T>(account_id, linkable_account_id.clone())?
@@ -393,12 +397,20 @@ pub mod pallet {
 			Ok(())
 		}
 
-		// TODO: Docs, weights
+		/// Try to finalize the `AccountId -> LinkableAccountId` migration.
+		/// Succeeds iff all keytypes of `ConnectedDids` and `ConnectedAccounts`
+		/// have been migrated.
+		///
+		/// On success, this sets the migration flag `MigrationOngoing` to
+		/// false. This will enable all non-migration pallet extrinsics and
+		/// disable migration-only ones.
+		///
+		/// On failure, this means there are still unmigrated keytypes. Please
+		/// check indexers for `Migrated` events of this pallet to get knowledge
+		/// of migrated accounts.
 		#[pallet::weight(T::DbWeight::get().reads_writes(1, 2))]
 		pub fn try_finalize_migration(origin: OriginFor<T>) -> DispatchResult {
 			ensure_signed(origin)?;
-			// TODO: Do we need to ensure whether MigrationOngoing? Shouldn't due to
-			// CallFilter.
 
 			ensure!(
 				crate::migrations::check_storage_size::<T>(),
