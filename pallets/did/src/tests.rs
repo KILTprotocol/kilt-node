@@ -31,7 +31,7 @@ use sp_std::{
 use crate::{
 	self as did,
 	did_details::{DidEncryptionKey, DidNewKeyAgreementKeySet, DidVerificationKey, DidVerificationKeyRelationship},
-	errors::{DidError, SignatureError, StorageError},
+	errors::Storage,
 	mock::*,
 	mock_utils::*,
 	service_endpoints::DidEndpoint,
@@ -2184,7 +2184,7 @@ fn check_service_count_too_small_deletion_error() {
 		.execute_with(|| {
 			assert_noop!(
 				Did::delete(RuntimeOrigin::signed(alice_did.clone()), 0),
-				did::Error::<Test>::StoredEndpointsCountTooLarge
+				did::Error::<Test>::MaxStoredEndpointsCountExceeded
 			);
 		});
 }
@@ -2291,7 +2291,7 @@ fn check_service_count_too_small_reclaim_error() {
 		.execute_with(|| {
 			assert_noop!(
 				Did::reclaim_deposit(RuntimeOrigin::signed(ACCOUNT_00.clone()), alice_did.clone(), 0),
-				did::Error::<Test>::StoredEndpointsCountTooLarge
+				did::Error::<Test>::MaxStoredEndpointsCountExceeded
 			);
 		});
 }
@@ -2953,7 +2953,7 @@ fn check_did_not_present_operation_verification() {
 				&call_operation,
 				&did::DidSignature::from(signature)
 			),
-			DidError::StorageError(StorageError::NotFound)
+			did::errors::Error::Storage(did::errors::Storage::NotFound)
 		);
 	});
 }
@@ -3011,7 +3011,7 @@ fn check_smaller_counter_operation_verification() {
 					&call_operation,
 					&did::DidSignature::from(signature)
 				),
-				DidError::SignatureError(SignatureError::InvalidNonce)
+				did::errors::Error::Signature(did::errors::Signature::InvalidNonce)
 			);
 		});
 }
@@ -3040,7 +3040,7 @@ fn check_equal_counter_operation_verification() {
 					&call_operation,
 					&did::DidSignature::from(signature)
 				),
-				DidError::SignatureError(SignatureError::InvalidNonce)
+				did::errors::Error::Signature(did::errors::Signature::InvalidNonce)
 			);
 		});
 }
@@ -3069,7 +3069,7 @@ fn check_too_large_counter_operation_verification() {
 					&call_operation,
 					&did::DidSignature::from(signature)
 				),
-				DidError::SignatureError(SignatureError::InvalidNonce)
+				did::errors::Error::Signature(did::errors::Signature::InvalidNonce)
 			);
 		});
 }
@@ -3094,7 +3094,7 @@ fn check_verification_key_not_present_operation_verification() {
 					&call_operation,
 					&did::DidSignature::from(signature)
 				),
-				DidError::StorageError(StorageError::DidKeyNotFound(
+				did::errors::Error::Storage(did::errors::Storage::DidKeyNotFound(
 					DidVerificationKeyRelationship::AssertionMethod
 				))
 			);
@@ -3123,7 +3123,7 @@ fn check_invalid_signature_format_operation_verification() {
 					&call_operation,
 					&did::DidSignature::from(signature)
 				),
-				DidError::SignatureError(SignatureError::InvalidSignatureFormat)
+				did::errors::Error::Signature(did::errors::Signature::InvalidSignatureFormat)
 			);
 		});
 }
@@ -3150,7 +3150,7 @@ fn check_invalid_signature_operation_verification() {
 					&call_operation,
 					&did::DidSignature::from(signature)
 				),
-				DidError::SignatureError(SignatureError::InvalidSignature)
+				did::errors::Error::Signature(did::errors::Signature::InvalidSignature)
 			);
 		});
 }

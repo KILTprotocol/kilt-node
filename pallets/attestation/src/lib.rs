@@ -200,7 +200,7 @@ pub mod pallet {
 		/// delegation hierarchy root.
 		CTypeMismatch,
 		/// The call origin is not authorized to change the attestation.
-		Unauthorized,
+		NotAuthorized,
 		/// The maximum number of delegated attestations has already been
 		/// reached for the corresponding delegation id such that another one
 		/// cannot be added.
@@ -320,8 +320,8 @@ pub mod pallet {
 			ensure!(!attestation.revoked, Error::<T>::AlreadyRevoked);
 
 			if attestation.attester != who {
-				let attestation_auth_id = attestation.authorization_id.as_ref().ok_or(Error::<T>::Unauthorized)?;
-				authorization.ok_or(Error::<T>::Unauthorized)?.can_revoke(
+				let attestation_auth_id = attestation.authorization_id.as_ref().ok_or(Error::<T>::NotAuthorized)?;
+				authorization.ok_or(Error::<T>::NotAuthorized)?.can_revoke(
 					&who,
 					&attestation.ctype_hash,
 					&claim_hash,
@@ -377,8 +377,8 @@ pub mod pallet {
 			let attestation = Attestations::<T>::get(claim_hash).ok_or(Error::<T>::NotFound)?;
 
 			if attestation.attester != who {
-				let attestation_auth_id = attestation.authorization_id.as_ref().ok_or(Error::<T>::Unauthorized)?;
-				authorization.ok_or(Error::<T>::Unauthorized)?.can_remove(
+				let attestation_auth_id = attestation.authorization_id.as_ref().ok_or(Error::<T>::NotAuthorized)?;
+				authorization.ok_or(Error::<T>::NotAuthorized)?.can_remove(
 					&who,
 					&attestation.ctype_hash,
 					&claim_hash,
@@ -410,7 +410,7 @@ pub mod pallet {
 			let who = ensure_signed(origin)?;
 			let attestation = Attestations::<T>::get(claim_hash).ok_or(Error::<T>::NotFound)?;
 
-			ensure!(attestation.deposit.owner == who, Error::<T>::Unauthorized);
+			ensure!(attestation.deposit.owner == who, Error::<T>::NotAuthorized);
 
 			// *** No Fail beyond this point ***
 
@@ -436,7 +436,7 @@ pub mod pallet {
 			let sender = source.sender();
 
 			let attestation = Attestations::<T>::get(claim_hash).ok_or(Error::<T>::NotFound)?;
-			ensure!(attestation.attester == subject, Error::<T>::Unauthorized);
+			ensure!(attestation.attester == subject, Error::<T>::NotAuthorized);
 
 			AttestationStorageDepositCollector::<T>::change_deposit_owner(&claim_hash, sender)?;
 
@@ -451,7 +451,7 @@ pub mod pallet {
 			let sender = ensure_signed(origin)?;
 
 			let attestation = Attestations::<T>::get(claim_hash).ok_or(Error::<T>::NotFound)?;
-			ensure!(attestation.deposit.owner == sender, Error::<T>::Unauthorized);
+			ensure!(attestation.deposit.owner == sender, Error::<T>::NotAuthorized);
 
 			AttestationStorageDepositCollector::<T>::update_deposit(&claim_hash)?;
 
