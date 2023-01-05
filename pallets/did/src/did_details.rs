@@ -204,10 +204,8 @@ impl<I: AsRef<[u8; 32]>> DidVerifiableIdentifier for I {
 					.map(|_| sr25519_did_key)
 			}
 			DidSignature::Ecdsa(ref signature) => {
-				let ecdsa_signature: [u8; 65] = signature
-					.encode()
-					.try_into()
-					.map_err(|_| Signature::InvalidSignature)?;
+				let ecdsa_signature: [u8; 65] =
+					signature.encode().try_into().map_err(|_| Signature::InvalidSignature)?;
 				// ECDSA uses blake2-256 hashing algorithm for signatures, so we hash the given
 				// message to recover the public key.
 				let hashed_message = sp_io::hashing::blake2_256(payload);

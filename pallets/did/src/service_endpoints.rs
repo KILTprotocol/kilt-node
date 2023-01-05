@@ -86,10 +86,7 @@ impl<T: Config> DidEndpoint<T> {
 				Input::MaxTypeLengthExceeded
 			);
 			let str_type = str::from_utf8(s_type).map_err(|_| Input::InvalidEncoding)?;
-			ensure!(
-				crate_utils::is_valid_ascii_string(str_type),
-				Input::InvalidEncoding
-			);
+			ensure!(crate_utils::is_valid_ascii_string(str_type), Input::InvalidEncoding);
 			Ok(())
 		})?;
 		// Check that all URLs are the maximum allowed length AND only contain ASCII
