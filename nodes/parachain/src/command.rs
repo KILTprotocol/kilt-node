@@ -341,8 +341,7 @@ pub fn run() -> Result<()> {
 					"Compile with --features=runtime-benchmarks \
 						to enable storage benchmarks."
 						.into(),
-				)
-				.into()),
+				)),
 				#[cfg(feature = "runtime-benchmarks")]
 				(BenchmarkCmd::Storage(cmd), "spiritnet") => runner.sync_run(|config| {
 					let partials = new_partial::<spiritnet_runtime::RuntimeApi, SpiritnetRuntimeExecutor, _>(

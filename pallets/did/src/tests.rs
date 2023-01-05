@@ -31,7 +31,6 @@ use sp_std::{
 use crate::{
 	self as did,
 	did_details::{DidEncryptionKey, DidNewKeyAgreementKeySet, DidVerificationKey, DidVerificationKeyRelationship},
-	errors::Storage,
 	mock::*,
 	mock_utils::*,
 	service_endpoints::DidEndpoint,
