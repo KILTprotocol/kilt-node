@@ -341,8 +341,7 @@ pub fn run() -> Result<()> {
 					"Compile with --features=runtime-benchmarks \
 						to enable storage benchmarks."
 						.into(),
-				)
-				.into()),
+				)),
 				#[cfg(feature = "runtime-benchmarks")]
 				(BenchmarkCmd::Storage(cmd), "spiritnet") => runner.sync_run(|config| {
 					let partials = new_partial::<spiritnet_runtime::RuntimeApi, SpiritnetRuntimeExecutor, _>(
@@ -456,8 +455,8 @@ pub fn run() -> Result<()> {
 					if config.role.is_authority() { "yes" } else { "no" }
 				);
 
-				if collator_options.relay_chain_rpc_url.is_some() && !cli.relay_chain_args.len().is_zero() {
-					warn!("Detected relay chain node arguments together with --relay-chain-rpc-url. This command starts a minimal Polkadot node that only uses a network-related subset of all relay chain CLI options.");
+				if !collator_options.relay_chain_rpc_urls.len().is_zero() && !cli.relay_chain_args.len().is_zero() {
+					warn!("Detected relay chain node arguments together with --relay-chain-rpc-urls. This command starts a minimal Polkadot node that only uses a network-related subset of all relay chain CLI options.");
 				}
 
 				if config.chain_spec.is_peregrine() {

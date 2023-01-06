@@ -142,6 +142,7 @@ pub mod pallet {
 		/// - Reads: Ctypes, Balance
 		/// - Writes: Ctypes, Balance
 		/// # </weight>
+		#[pallet::call_index(0)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::add(ctype.len().saturated_into()))]
 		pub fn add(origin: OriginFor<T>, ctype: Vec<u8>) -> DispatchResult {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
