@@ -527,6 +527,7 @@ where
 	.await
 }
 
+#[allow(clippy::too_many_arguments)]
 fn build_consensus<RE, API>(
 	client: Arc<ParachainClient<API, RE>>,
 	block_import: ParachainBlockImport<API, RE>,

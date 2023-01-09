@@ -391,15 +391,22 @@ pub fn run() -> Result<()> {
 		}
 		#[cfg(feature = "try-runtime")]
 		Some(Subcommand::TryRuntime(cmd)) => {
+			use sc_executor::{sp_wasm_interface::ExtendedHostFunctions, NativeExecutionDispatch};
 			let runner = cli.create_runner(cmd)?;
 			let registry = &runner.config().prometheus_config.as_ref().map(|cfg| &cfg.registry);
 			let task_manager = TaskManager::new(runner.config().tokio_handle.clone(), *registry)
 				.map_err(|e| format!("Error: {:?}", e))?;
 
 			if runner.config().chain_spec.is_peregrine() {
-				runner.async_run(|config| Ok((cmd.run::<Block, PeregrineRuntimeExecutor>(config), task_manager)))
+				runner.async_run(|_| Ok((cmd.run::<Block, ExtendedHostFunctions<
+					sp_io::SubstrateHostFunctions,
+					<PeregrineRuntimeExecutor as NativeExecutionDispatch>::ExtendHostFunctions,
+				>>(), task_manager)))
 			} else if runner.config().chain_spec.is_spiritnet() {
-				runner.async_run(|config| Ok((cmd.run::<Block, SpiritnetRuntimeExecutor>(config), task_manager)))
+				runner.async_run(|_| Ok((cmd.run::<Block, ExtendedHostFunctions<
+					sp_io::SubstrateHostFunctions,
+					<SpiritnetRuntimeExecutor as NativeExecutionDispatch>::ExtendHostFunctions,
+				>>(), task_manager)))
 			} else {
 				Err("Chain doesn't support try-runtime".into())
 			}

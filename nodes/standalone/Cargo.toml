@@ -52,6 +52,7 @@ sp-consensus-aura = {workspace = true, features = ["std"]}
 sp-core = {workspace = true, features = ["std"]}
 sp-finality-grandpa = {workspace = true, features = ["std"]}
 sp-inherents = {workspace = true, features = ["std"]}
+sp-io = {workspace = true, features = ["std"]}
 sp-keyring.workspace = true
 sp-runtime = {workspace = true, features = ["std"]}
 sp-timestamp = {workspace = true, features = ["std"]}
