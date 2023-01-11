@@ -26,8 +26,6 @@ pallet-balances = {workspace = true, features = ["std"]}
 sp-keystore = {workspace = true, features = ["std"]}
 
 [dependencies]
-sp-mmr-primitives.workspace = true
-sp-trie.workspace = true
 # External dependencies
 log.workspace = true
 
@@ -82,6 +80,7 @@ std = [
   "sp-keystore/std",
   "sp-runtime/std",
   "sp-std/std",
+  "xcm/std",
 ]
 try-runtime = [
   "frame-support/try-runtime",

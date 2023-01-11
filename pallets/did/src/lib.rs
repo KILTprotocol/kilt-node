@@ -147,7 +147,7 @@ pub mod pallet {
 		traits::{CallSources, StorageDepositCollector},
 	};
 	use sp_runtime::traits::BadOrigin;
-	use xcm::latest::MultiLocation;
+	use xcm::v2::MultiLocation;
 
 	use crate::{
 		did_details::{

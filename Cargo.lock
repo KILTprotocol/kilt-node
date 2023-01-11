@@ -1992,10 +1992,8 @@ dependencies = [
  "sp-core",
  "sp-io",
  "sp-keystore",
- "sp-mmr-primitives",
  "sp-runtime",
  "sp-std",
- "sp-trie",
  "substrate-wasm-builder",
  "xcm",
 ]
