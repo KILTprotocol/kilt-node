@@ -194,7 +194,9 @@ pub mod pallet {
 		MigrationStorageSizeMismatch,
 
 		/// Safety guard to check for ConnectedAccounts and ConnectedDids to
-		/// stay synchronized during migration NOTE: Should never be thrown
+		/// stay synchronized during migration
+		///
+		/// NOTE: Should never be thrown
 		MigrationIssue,
 	}
 
@@ -374,7 +376,7 @@ pub mod pallet {
 			LinkableAccountDepositCollector::<T>::update_deposit(&account)
 		}
 
-		/// Executes the keytype migration of the `ConnectedDids` and
+		/// Executes the key type migration of the `ConnectedDids` and
 		/// `ConnectedAccounts` storages by converting the given `AccoundId`
 		/// into `LinkableAccountId(AccountId)`. Once all keys have been
 		/// migrated, the call `try-finalize-migration` will succeed and remove
@@ -398,14 +400,14 @@ pub mod pallet {
 		}
 
 		/// Try to finalize the `AccountId -> LinkableAccountId` migration.
-		/// Succeeds iff all keytypes of `ConnectedDids` and `ConnectedAccounts`
+		/// Succeeds iff all key types of `ConnectedDids` and `ConnectedAccounts`
 		/// have been migrated.
 		///
 		/// On success, this sets the migration flag `MigrationOngoing` to
 		/// false. This will enable all non-migration pallet extrinsics and
 		/// disable migration-only ones.
 		///
-		/// On failure, this means there are still unmigrated keytypes. Please
+		/// On failure, this means there are still unmigrated key types. Please
 		/// check indexers for `Migrated` events of this pallet to get knowledge
 		/// of migrated accounts.
 		#[pallet::weight(T::DbWeight::get().reads_writes(1, 2))]

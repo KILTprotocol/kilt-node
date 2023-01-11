@@ -37,8 +37,9 @@ use sp_runtime::{
 use kilt_support::{deposit::Deposit, traits::GenerateBenchmarkOrigin};
 
 use crate::{
-	account::AccountId20, linkable_account::LinkableAccountId, signature::get_wrapped_payload, AccountIdOf,
-	AssociateAccountRequest, Call, Config, ConnectedAccounts, ConnectedDids, CurrencyOf, Pallet,
+	account::AccountId20, linkable_account::LinkableAccountId, migrations::add_legacy_association,
+	signature::get_wrapped_payload, AccountIdOf, AssociateAccountRequest, Call, Config, ConnectedAccounts,
+	ConnectedDids, CurrencyOf, Pallet,
 };
 
 const SEED: u32 = 0;
@@ -281,6 +282,28 @@ benchmarks! {
 		let origin = RawOrigin::Signed(deposit_owner.clone());
 		let id_arg = linkable_id.clone();
 	}: _(origin, id_arg)
+	verify {
+		assert_eq!(
+			ConnectedDids::<T>::get(&linkable_id).expect("should retain link").deposit,
+			Deposit {
+				owner: deposit_owner,
+				amount: <T as Config>::Deposit::get(),
+			},
+		);
+	}
+
+	migrate_account_id {
+		let deposit_owner: T::AccountId = account("caller", 0, SEED);
+		let linkable_id: LinkableAccountId = deposit_owner.clone().into();
+		let did: T::DidIdentifier = account("did", 0, SEED);
+		make_free_for_did::<T>(&deposit_owner);
+
+		add_legacy_association::<T>(deposit_owner.clone(), did.clone(), deposit_owner.clone()).expect("should create association");
+
+		let origin = RawOrigin::Signed(deposit_owner.clone());
+		let id_arg = linkable_id.clone();
+		let account_arg = deposit_owner.clone();
+	}: _(origin, account_arg)
 	verify {
 		assert_eq!(
 			ConnectedDids::<T>::get(&linkable_id).expect("should retain link").deposit,

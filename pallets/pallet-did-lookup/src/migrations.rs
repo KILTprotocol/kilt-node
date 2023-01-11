@@ -28,6 +28,12 @@ use frame_support::{
 };
 use sp_std::{marker::PhantomData, vec, vec::Vec};
 
+#[cfg(feature = "runtime-benchmarks")]
+use {
+	crate::CurrencyOf, frame_support::traits::ReservableCurrency, kilt_support::deposit::Deposit,
+	sp_runtime::DispatchResult,
+};
+
 /// Keytype changed from `AccountId` to `LinkableAccountId` changed in V3
 #[storage_alias]
 type ConnectedDids<T: Config> = StorageMap<Pallet<T>, Blake2_128Concat, AccountIdOf<T>, ConnectionRecordOf<T>>;
@@ -184,6 +190,35 @@ where
 
 		Ok(())
 	}
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+pub(crate) fn add_legacy_association<T: Config>(
+	sender: AccountIdOf<T>,
+	did_identifier: DidIdentifierOf<T>,
+	account: AccountIdOf<T>,
+) -> DispatchResult {
+
+	let deposit = Deposit {
+		owner: sender,
+		amount: T::Deposit::get(),
+	};
+	let record = crate::ConnectionRecord {
+		deposit,
+		did: did_identifier.clone(),
+	};
+
+	CurrencyOf::<T>::reserve(&record.deposit.owner, record.deposit.amount)?;
+
+	ConnectedDids::<T>::mutate(&account, |did_entry| {
+		if let Some(old_connection) = did_entry.replace(record) {
+			ConnectedAccounts::<T>::remove(&old_connection.did, &account);
+			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&old_connection.deposit);
+		}
+	});
+	ConnectedAccounts::<T>::insert(&did_identifier, &account, ());
+
+	Ok(())
 }
 
 #[cfg(test)]
