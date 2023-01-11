@@ -1997,6 +1997,7 @@ dependencies = [
  "sp-std",
  "sp-trie",
  "substrate-wasm-builder",
+ "xcm",
 ]
 
 [[package]]
@@ -8427,6 +8428,7 @@ version = "1.9.0"
 dependencies = [
  "attestation",
  "cumulus-primitives-core",
+ "did",
  "frame-support",
  "frame-system",
  "kilt-asset-dids",
@@ -8447,6 +8449,7 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
+ "sp-trie",
  "xcm",
  "xcm-builder",
  "xcm-executor",

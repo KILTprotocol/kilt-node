@@ -27,6 +27,7 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use codec::{Decode, Encode, MaxEncodedLen};
 use cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases;
+use did::traits::NullDispatcher;
 use frame_support::{
 	construct_runtime, parameter_types,
 	traits::{ConstU32, EitherOfDiverse, Everything, InstanceFilter, PrivilegeCmp},
@@ -574,6 +575,9 @@ impl did::Config for Runtime {
 	type RuntimeOrigin = RuntimeOrigin;
 	type Currency = Balances;
 	type Deposit = constants::did::DidDeposit;
+	type DidRootDispatcher = NullDispatcher<Runtime>;
+	type DidDocumentHash = Hash;
+	type DidDocumentHasher = ();
 	type Fee = constants::did::DidFee;
 	type FeeCollector = Treasury;
 

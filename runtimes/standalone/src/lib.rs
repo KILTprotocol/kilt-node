@@ -28,6 +28,7 @@
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use codec::{Decode, Encode, MaxEncodedLen};
+use did::traits::NullDispatcher;
 use frame_support::{
 	construct_runtime, parameter_types,
 	traits::{Currency, Everything, InstanceFilter, KeyOwnerProofSystem},
@@ -384,6 +385,9 @@ impl did::Config for Runtime {
 	type RuntimeOrigin = RuntimeOrigin;
 	type Currency = Balances;
 	type Deposit = DidDeposit;
+	type DidRootDispatcher = NullDispatcher<Runtime>;
+	type DidDocumentHash = Hash;
+	type DidDocumentHasher = ();
 	type Fee = DidFee;
 	type FeeCollector = ToAuthor<Runtime>;
 

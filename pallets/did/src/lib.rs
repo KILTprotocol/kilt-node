@@ -85,6 +85,7 @@ pub mod did_details;
 pub mod errors;
 pub mod origin;
 pub mod service_endpoints;
+pub mod traits;
 
 #[cfg(feature = "runtime-benchmarks")]
 pub mod benchmarking;
@@ -96,7 +97,6 @@ mod mock_utils;
 #[cfg(test)]
 mod tests;
 
-mod merkle;
 mod signature;
 mod utils;
 
@@ -133,18 +133,21 @@ use frame_system::RawOrigin;
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
-	use crate::service_endpoints::utils as service_endpoints_utils;
+	use crate::{
+		service_endpoints::utils as service_endpoints_utils,
+		traits::{DidDocumentHasher, DidRootDispatcher, DidRootStateAction},
+	};
 	use frame_support::{
 		pallet_prelude::*,
-		traits::{Currency, ExistenceRequirement, Hooks, Imbalance, ReservableCurrency, StorageVersion},
-		weights::Weight,
+		traits::{Currency, ExistenceRequirement, Imbalance, ReservableCurrency, StorageVersion},
 	};
-	use frame_system::pallet_prelude::{BlockNumberFor, *};
+	use frame_system::pallet_prelude::*;
 	use kilt_support::{
 		deposit::Deposit,
 		traits::{CallSources, StorageDepositCollector},
 	};
 	use sp_runtime::traits::BadOrigin;
+	use xcm::latest::MultiLocation;
 
 	use crate::{
 		did_details::{
@@ -280,6 +283,10 @@ pub mod pallet {
 		#[pallet::constant]
 		type MaxNumberOfUrlsPerService: Get<u32>;
 
+		type DidDocumentHash: Clone + PartialEq + Debug;
+		type DidDocumentHasher: DidDocumentHasher<DidIdentifierOf<Self>, DidDetails<Self>, Self::DidDocumentHash>;
+		type DidRootDispatcher: DidRootDispatcher<DidIdentifierOf<Self>, Self::DidDocumentHash, MultiLocation>;
+
 		/// Weight information for extrinsics in this pallet.
 		type WeightInfo: WeightInfo;
 	}
@@ -334,6 +341,10 @@ pub mod pallet {
 		/// A DID-authorised call has been executed.
 		/// \[DID caller, dispatch result\]
 		DidCallDispatched(DidIdentifierOf<T>, DispatchResult),
+		DidRootStateActionDispatched(
+			DidRootStateAction<DidIdentifierOf<T>, T::DidDocumentHash>,
+			Box<MultiLocation>,
+		),
 	}
 
 	#[pallet::error]
@@ -461,25 +472,6 @@ pub mod pallet {
 				RelationshipDeriveError::InvalidCallParameter => Self::InvalidDidAuthorizationCall,
 				RelationshipDeriveError::NotCallableByDid => Self::UnsupportedDidAuthorizationCall,
 			}
-		}
-	}
-
-	#[pallet::hooks]
-	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
-		fn on_idle(n: BlockNumberFor<T>, remaining_weight: Weight) -> Weight {
-			use frame_support::sp_tracing::info;
-
-			info!(
-				"📕 on_idle for block {:?} with remaining weight {:?}",
-				n, remaining_weight
-			);
-			if let Some((identifier, did_details)) = Did::<T>::iter().last() {
-				info!("📗 Found a DID!");
-				// let result = merkle::test_merkle_stuff(&identifier,
-				// &did_details); info!("📘 DID merkle proof verification:
-				// {:?}", result);
-			};
-			remaining_weight
 		}
 	}
 
@@ -1121,8 +1113,35 @@ pub mod pallet {
 			ensure!(did_entry.deposit.owner == sender, Error::<T>::BadDidOrigin);
 
 			DidDepositCollector::<T>::update_deposit(&did)?;
-
 			Ok(())
+		}
+
+		#[pallet::weight(0)]
+		pub fn propagate_root(
+			origin: OriginFor<T>,
+			did: DidIdentifierOf<T>,
+			destination: Box<MultiLocation>,
+		) -> DispatchResultWithPostInfo {
+			ensure_signed(origin)?;
+
+			let (action, calculation_weight) = if let Some(did_entry) = Did::<T>::get(&did) {
+				let (merkle_root, calculation_weight) = T::DidDocumentHasher::calculate_root(&did, &did_entry)?;
+				Ok((DidRootStateAction::Updated(did, merkle_root), calculation_weight))
+			} else if DidBlacklist::<T>::get(&did).is_some() {
+				Ok((DidRootStateAction::Deleted(did), Weight::zero()))
+			} else {
+				Err(Error::<T>::DidNotPresent)
+			}?;
+
+			let dispatch_weight = T::DidRootDispatcher::dispatch(action.clone(), *destination.clone())?;
+			Self::deposit_event(Event::DidRootStateActionDispatched(action, destination));
+
+			Ok(Some(
+				<T as pallet::Config>::WeightInfo::propagate_root()
+					.saturating_add(calculation_weight)
+					.saturating_add(dispatch_weight),
+			)
+			.into())
 		}
 	}
 

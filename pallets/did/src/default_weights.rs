@@ -83,6 +83,7 @@ pub trait WeightInfo {
 	fn signature_verification_ecdsa(l: u32, ) -> Weight;
 	fn change_deposit_owner() -> Weight;
 	fn update_deposit() -> Weight;
+	fn propagate_root() -> Weight;
 }
 
 /// Weights for did using the Substrate node and recommended hardware.
@@ -362,6 +363,13 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(2 as u64))
 			.saturating_add(T::DbWeight::get().writes(2 as u64))
 	}
+	// Storage: Did Did (r:1 w:1)
+	// Storage: System Account (r:1 w:1)
+	fn propagate_root() -> Weight {
+		Weight::from_ref_time(64_313_000 as u64)
+			.saturating_add(T::DbWeight::get().reads(2 as u64))
+			.saturating_add(T::DbWeight::get().writes(2 as u64))
+	}
 }
 
 // For backwards compatibility and tests
@@ -636,6 +644,13 @@ impl WeightInfo for () {
 	// Storage: Did Did (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	fn update_deposit() -> Weight {
+		Weight::from_ref_time(64_313_000 as u64)
+			.saturating_add(RocksDbWeight::get().reads(2 as u64))
+			.saturating_add(RocksDbWeight::get().writes(2 as u64))
+	}
+	// Storage: Did Did (r:1 w:1)
+	// Storage: System Account (r:1 w:1)
+	fn propagate_root() -> Weight {
 		Weight::from_ref_time(64_313_000 as u64)
 			.saturating_add(RocksDbWeight::get().reads(2 as u64))
 			.saturating_add(RocksDbWeight::get().writes(2 as u64))

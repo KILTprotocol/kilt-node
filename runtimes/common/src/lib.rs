@@ -45,6 +45,7 @@ pub mod authorization;
 pub mod constants;
 pub mod errors;
 pub mod fees;
+pub mod merkle;
 pub mod migrations;
 pub mod pallet_id;
 pub mod xcm_config;

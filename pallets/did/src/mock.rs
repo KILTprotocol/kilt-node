@@ -40,6 +40,7 @@ use crate::{
 		RelationshipDeriveError,
 	},
 	service_endpoints::DidEndpoint,
+	traits::NullDispatcher,
 	utils as crate_utils, AccountIdOf, Config, CurrencyOf, DidBlacklist, DidEndpointsCount, KeyIdOf, ServiceEndpoints,
 };
 #[cfg(not(feature = "runtime-benchmarks"))]
@@ -160,6 +161,9 @@ impl Config for Test {
 	type MaxServiceUrlLength = MaxServiceUrlLength;
 	type MaxNumberOfTypesPerService = MaxNumberOfTypesPerService;
 	type MaxNumberOfUrlsPerService = MaxNumberOfUrlsPerService;
+	type DidDocumentHash = Hash;
+	type DidDocumentHasher = ();
+	type DidRootDispatcher = NullDispatcher<Test>;
 }
 
 parameter_types! {
