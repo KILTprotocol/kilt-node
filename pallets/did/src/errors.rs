@@ -51,12 +51,10 @@ pub enum Storage {
 	/// The DID being created is already present on chain.
 	AlreadyExists,
 	/// The expected DID cannot be found on chain.
-	NotFound,
+	NotFound(NotFoundKind),
 	/// The given DID does not contain the right key to verify the signature
 	/// of a DID operation.
 	DidKeyNotFound(DidVerificationKeyRelationship),
-	/// At least one key referenced is not stored under the given DID.
-	KeyNotFound,
 	/// The maximum number of public keys for this DID key identifier has
 	/// been reached.
 	MaxPublicKeysExceeded,
@@ -67,14 +65,23 @@ pub enum Storage {
 	AlreadyDeleted,
 }
 
+/// Error involving the pallet's storage.
+#[derive(Debug, Eq, PartialEq, TypeInfo)]
+pub enum NotFoundKind {
+	/// The expected DID cannot be found on chain.
+	Did,
+	/// At least one key referenced is not stored under the given DID.
+	Key,
+}
+
 /// Error generated when validating a DID operation.
 #[derive(Debug, Eq, PartialEq, TypeInfo)]
 pub enum Signature {
 	/// The signature is not in the format the verification key expects.
-	InvalidSignatureFormat,
+	InvalidFormat,
 	/// The signature is invalid for the payload and the verification key
 	/// provided.
-	InvalidSignature,
+	InvalidData,
 	/// The operation nonce is not equal to the current DID nonce + 1.
 	InvalidNonce,
 	/// The provided operation block number is not valid.

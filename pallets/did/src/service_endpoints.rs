@@ -77,7 +77,10 @@ impl<T: Config> DidEndpoint<T> {
 			errors::Input::MaxIdLengthExceeded
 		);
 		let str_id = str::from_utf8(&self.id).map_err(|_| errors::Input::InvalidEncoding)?;
-		ensure!(crate_utils::is_valid_ascii_string(str_id), errors::Input::InvalidEncoding);
+		ensure!(
+			crate_utils::is_valid_ascii_string(str_id),
+			errors::Input::InvalidEncoding
+		);
 		// Check that all types are the maximum allowed length and only contain ASCII
 		// characters.
 		self.service_types.iter().try_for_each(|s_type| {
@@ -86,7 +89,10 @@ impl<T: Config> DidEndpoint<T> {
 				errors::Input::MaxTypeLengthExceeded
 			);
 			let str_type = str::from_utf8(s_type).map_err(|_| errors::Input::InvalidEncoding)?;
-			ensure!(crate_utils::is_valid_ascii_string(str_type), errors::Input::InvalidEncoding);
+			ensure!(
+				crate_utils::is_valid_ascii_string(str_type),
+				errors::Input::InvalidEncoding
+			);
 			Ok(())
 		})?;
 		// Check that all URLs are the maximum allowed length AND only contain ASCII
@@ -97,7 +103,10 @@ impl<T: Config> DidEndpoint<T> {
 				errors::Input::MaxUrlLengthExceeded
 			);
 			let str_url = str::from_utf8(s_url).map_err(|_| errors::Input::InvalidEncoding)?;
-			ensure!(crate_utils::is_valid_ascii_string(str_url), errors::Input::InvalidEncoding);
+			ensure!(
+				crate_utils::is_valid_ascii_string(str_url),
+				errors::Input::InvalidEncoding
+			);
 		}
 		Ok(())
 	}
@@ -131,11 +140,11 @@ impl<T: Config> DidEndpoint<T> {
 pub mod utils {
 	use super::*;
 
-	pub(crate) fn validate_new_service_endpoints<T: Config>(endpoints: &[DidEndpoint<T>]) -> Result<(), Input> {
+	pub(crate) fn validate_new_service_endpoints<T: Config>(endpoints: &[DidEndpoint<T>]) -> Result<(), errors::Input> {
 		// Check if up the maximum number of endpoints is provided.
 		ensure!(
 			endpoints.len() <= T::MaxNumberOfServicesPerDid::get().saturated_into(),
-			Input::MaxServicesCountExceeded
+			errors::Input::MaxServicesCountExceeded
 		);
 
 		// Then validate each service.

@@ -2952,7 +2952,7 @@ fn check_did_not_present_operation_verification() {
 				&call_operation,
 				&did::DidSignature::from(signature)
 			),
-			did::errors::Error::Storage(did::errors::Storage::NotFound)
+			did::errors::Storage::NotFound(did::errors::NotFoundKind::Did)
 		);
 	});
 }
@@ -3122,7 +3122,7 @@ fn check_invalid_signature_format_operation_verification() {
 					&call_operation,
 					&did::DidSignature::from(signature)
 				),
-				did::errors::Error::Signature(did::errors::Signature::InvalidSignatureFormat)
+				did::errors::Error::Signature(did::errors::Signature::InvalidFormat)
 			);
 		});
 }
@@ -3149,7 +3149,7 @@ fn check_invalid_signature_operation_verification() {
 					&call_operation,
 					&did::DidSignature::from(signature)
 				),
-				did::errors::Error::Signature(did::errors::Signature::InvalidSignature)
+				did::errors::Error::Signature(did::errors::Signature::InvalidData)
 			);
 		});
 }

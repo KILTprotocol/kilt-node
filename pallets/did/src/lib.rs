@@ -416,9 +416,10 @@ pub mod pallet {
 	impl<T> From<errors::Storage> for Error<T> {
 		fn from(error: errors::Storage) -> Self {
 			match error {
-				errors::Storage::NotFound => Self::NotFound,
+				errors::Storage::NotFound(errors::NotFoundKind::Did) => Self::NotFound,
+				errors::Storage::NotFound(errors::NotFoundKind::Key) => Self::VerificationKeyNotFound,
 				errors::Storage::AlreadyExists => Self::AlreadyExists,
-				errors::Storage::DidKeyNotFound(_) | errors::Storage::KeyNotFound => Self::VerificationKeyNotFound,
+				errors::Storage::DidKeyNotFound(_) => Self::VerificationKeyNotFound,
 				errors::Storage::MaxPublicKeysExceeded => Self::MaxPublicKeysExceeded,
 				errors::Storage::MaxTotalKeyAgreementKeysExceeded => Self::MaxKeyAgreementKeysExceeded,
 				errors::Storage::AlreadyDeleted => Self::AlreadyDeleted,
@@ -429,8 +430,8 @@ pub mod pallet {
 	impl<T> From<errors::Signature> for Error<T> {
 		fn from(error: errors::Signature) -> Self {
 			match error {
-				errors::Signature::InvalidSignature => Self::InvalidSignature,
-				errors::Signature::InvalidSignatureFormat => Self::InvalidSignatureFormat,
+				errors::Signature::InvalidData => Self::InvalidSignature,
+				errors::Signature::InvalidFormat => Self::InvalidSignatureFormat,
 				errors::Signature::InvalidNonce => Self::InvalidNonce,
 				errors::Signature::TransactionExpired => Self::TransactionExpired,
 			}
@@ -1122,7 +1123,7 @@ pub mod pallet {
 			Self::validate_block_number_value(operation.block_number)?;
 
 			let mut did_details =
-				Did::<T>::get(&operation.did).ok_or(errors::Error::Storage(errors::Storage::NotFound))?;
+				Did::<T>::get(&operation.did).ok_or(errors::Storage::NotFound(errors::NotFoundKind::Did))?;
 
 			Self::validate_counter_value(operation.tx_counter, &did_details)?;
 			// Increase the tx counter as soon as it is considered valid, no matter if the
