@@ -204,7 +204,10 @@ impl<I: AsRef<[u8; 32]>> DidVerifiableIdentifier for I {
 					.map(|_| sr25519_did_key)
 			}
 			DidSignature::Ecdsa(ref signature) => {
-				let ecdsa_signature: [u8; 65] = signature.encode().try_into().map_err(|_| errors::Signature::InvalidData)?;
+				let ecdsa_signature: [u8; 65] = signature
+					.encode()
+					.try_into()
+					.map_err(|_| errors::Signature::InvalidData)?;
 				// ECDSA uses blake2-256 hashing algorithm for signatures, so we hash the given
 				// message to recover the public key.
 				let hashed_message = sp_io::hashing::blake2_256(payload);
@@ -412,7 +415,10 @@ impl<T: Config> DidDetails<T> {
 	/// Remove a key agreement key from both the set of key agreement keys and
 	/// the one of public keys.
 	pub fn remove_key_agreement_key(&mut self, key_id: KeyIdOf<T>) -> Result<(), errors::Storage> {
-		ensure!(self.key_agreement_keys.remove(&key_id), errors::Storage::NotFound(errors::NotFoundKind::Key));
+		ensure!(
+			self.key_agreement_keys.remove(&key_id),
+			errors::Storage::NotFound(errors::NotFoundKind::Key)
+		);
 		self.remove_key_if_unused(key_id);
 		Ok(())
 	}
@@ -450,7 +456,10 @@ impl<T: Config> DidDetails<T> {
 	/// not used in any other part of the DID. The new key is added to the
 	/// set of public keys.
 	pub fn remove_attestation_key(&mut self) -> Result<(), errors::Storage> {
-		let old_key_id = self.attestation_key.take().ok_or(errors::Storage::NotFound(errors::NotFoundKind::Key))?;
+		let old_key_id = self
+			.attestation_key
+			.take()
+			.ok_or(errors::Storage::NotFound(errors::NotFoundKind::Key))?;
 		self.remove_key_if_unused(old_key_id);
 		Ok(())
 	}
@@ -488,7 +497,10 @@ impl<T: Config> DidDetails<T> {
 	/// not used in any other part of the DID. The new key is added to the
 	/// set of public keys.
 	pub fn remove_delegation_key(&mut self) -> Result<(), errors::Storage> {
-		let old_key_id = self.delegation_key.take().ok_or(errors::Storage::NotFound(errors::NotFoundKind::Key))?;
+		let old_key_id = self
+			.delegation_key
+			.take()
+			.ok_or(errors::Storage::NotFound(errors::NotFoundKind::Key))?;
 		self.remove_key_if_unused(old_key_id);
 		Ok(())
 	}
