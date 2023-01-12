@@ -416,10 +416,7 @@ pub mod pallet {
 		pub fn try_finalize_migration(origin: OriginFor<T>) -> DispatchResult {
 			ensure_signed(origin)?;
 
-			ensure!(
-				crate::migrations::check_storage_size::<T>(),
-				Error::<T>::MigrationStorageSizeMismatch
-			);
+			// let hash = <T as frame_system::Config>::Hashing::hash(&cursor[..]);
 			// Safety check, should always succeed when upper one succeeds
 			ensure!(
 				crate::migrations::do_verify_migration::<T>(),

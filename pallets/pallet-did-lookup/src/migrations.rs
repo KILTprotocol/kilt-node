@@ -62,13 +62,6 @@ pub(crate) fn do_migrate_account_id<T: Config>(
 		.transpose()
 }
 
-/// Sanity check that both new typed storage maps `ConnectedDids`,
-/// `ConnectedAccounts` have as many keys as their old counter parts with
-/// different key types.
-pub(crate) fn check_storage_size<T: Config>() -> bool {
-	ConnectedAccounts::<T>::iter_keys().count() == ConnectedAccountsV2::<T>::iter_keys().count()
-		&& ConnectedDids::<T>::iter_keys().count() == ConnectedDidsV2::<T>::iter_keys().count()
-}
 
 /// Iterates over both old typed storage maps `ConnectedDids`,
 /// `ConnectedAccounts` and checks whether any raw storage key still exists in
