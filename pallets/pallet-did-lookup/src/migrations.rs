@@ -17,8 +17,9 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use crate::{
-	linkable_account::LinkableAccountId, AccountIdOf, Config, ConnectedAccounts as ConnectedAccountsV2,
-	ConnectedDids as ConnectedDidsV2, ConnectionRecordOf, DidIdentifierOf, MigrationOngoing, Pallet,
+	linkable_account::LinkableAccountId, migration_state::MigrationState, AccountIdOf, Config,
+	ConnectedAccounts as ConnectedAccountsV2, ConnectedDids as ConnectedDidsV2, ConnectionRecordOf, DidIdentifierOf,
+	MigrationStateStore, Pallet,
 };
 
 use frame_support::{
@@ -156,7 +157,7 @@ where
 			<T as frame_system::Config>::DbWeight::get().reads_writes(1, 0)
 		} else {
 			log::info!("🔎 DidLookup: Initiating migration");
-			MigrationOngoing::<T>::set(true);
+			MigrationStateStore::<T>::set(MigrationState::Upgrading);
 			// TODO: Do we want to migrate storage version inside verify_migration?
 			Pallet::<T>::current_storage_version().put::<Pallet<T>>();
 
@@ -170,7 +171,7 @@ where
 			Pallet::<T>::on_chain_storage_version() < Pallet::<T>::current_storage_version(),
 			"On-chain storage of DID lookup pallet already bumped"
 		);
-		assert!(!MigrationOngoing::<T>::get(), "Migration flag already set");
+		assert!(!MigrationStateStore::<T>::get(), "Migration flag already set");
 
 		log::info!("🔎 DidLookup: Pre migration checks successful");
 
@@ -184,7 +185,7 @@ where
 			Pallet::<T>::current_storage_version(),
 			"On-chain storage of DID lookup pallet was not bumped"
 		);
-		assert!(MigrationOngoing::<T>::get(), "Migration flag was not set");
+		assert!(MigrationStateStore::<T>::get(), "Migration flag was not set");
 
 		log::info!("🔎 DidLookup: Post migration checks successful");
 
@@ -198,7 +199,6 @@ pub(crate) fn add_legacy_association<T: Config>(
 	did_identifier: DidIdentifierOf<T>,
 	account: AccountIdOf<T>,
 ) -> DispatchResult {
-
 	let deposit = Deposit {
 		owner: sender,
 		amount: T::Deposit::get(),

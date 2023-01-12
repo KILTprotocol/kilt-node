@@ -119,9 +119,9 @@ impl frame_support::traits::Contains<RuntimeCall> for MigrationFilter {
 			RuntimeCall::DidLookup(
 				pallet_did_lookup::Call::try_finalize_migration { .. }
 				| pallet_did_lookup::Call::migrate_account_id { .. },
-			) => DidLookup::migration_ongoing(),
+			) => DidLookup::migration_state().is_in_progress(),
 			// For all other DidLookup calls, check whether migration is ongoing
-			RuntimeCall::DidLookup(_) => !DidLookup::migration_ongoing(),
+			RuntimeCall::DidLookup(_) => !DidLookup::migration_state().is_done(),
 			// Enable all non-DidLookup calls
 			_ => true,
 		}

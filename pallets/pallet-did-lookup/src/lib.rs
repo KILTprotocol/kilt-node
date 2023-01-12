@@ -31,6 +31,7 @@ pub mod linkable_account;
 pub mod migrations;
 
 mod connection_record;
+mod migration_state;
 mod signature;
 
 #[cfg(test)]
@@ -44,11 +45,12 @@ mod benchmarking;
 
 pub use crate::{default_weights::WeightInfo, pallet::*};
 
-use crate::associate_account_request::AssociateAccountRequest;
-
 #[frame_support::pallet]
 pub mod pallet {
-	use super::{linkable_account::LinkableAccountId, AssociateAccountRequest, WeightInfo};
+	use crate::{
+		associate_account_request::AssociateAccountRequest, default_weights::WeightInfo,
+		linkable_account::LinkableAccountId, migration_state::MigrationState,
+	};
 
 	use frame_support::{
 		ensure,
@@ -140,8 +142,8 @@ pub mod pallet {
 		StorageDoubleMap<_, Blake2_128Concat, DidIdentifierOf<T>, Blake2_128Concat, LinkableAccountId, ()>;
 
 	#[pallet::storage]
-	#[pallet::getter(fn migration_ongoing)]
-	pub type MigrationOngoing<T> = StorageValue<_, bool, ValueQuery>;
+	#[pallet::getter(fn migration_state)]
+	pub type MigrationStateStore<T> = StorageValue<_, MigrationState<<T as frame_system::Config>::Hash>, ValueQuery>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -400,8 +402,8 @@ pub mod pallet {
 		}
 
 		/// Try to finalize the `AccountId -> LinkableAccountId` migration.
-		/// Succeeds iff all key types of `ConnectedDids` and `ConnectedAccounts`
-		/// have been migrated.
+		/// Succeeds iff all key types of `ConnectedDids` and
+		/// `ConnectedAccounts` have been migrated.
 		///
 		/// On success, this sets the migration flag `MigrationOngoing` to
 		/// false. This will enable all non-migration pallet extrinsics and
@@ -424,7 +426,7 @@ pub mod pallet {
 				Error::<T>::MigrationKeysPersist
 			);
 
-			MigrationOngoing::<T>::set(false);
+			MigrationStateStore::<T>::set(MigrationState::Done);
 			Self::deposit_event(Event::<T>::MigrationCompleted);
 
 			Ok(())
