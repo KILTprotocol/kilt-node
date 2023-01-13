@@ -3093,11 +3093,9 @@ fn check_verification_key_not_present_operation_verification() {
 					&call_operation,
 					&did::DidSignature::from(signature)
 				),
-				did::errors::Error::Storage(did::errors::Storage::NotFound(
-					did::errors::NotFoundKind::Key(
-						did::errors::KeyType::AssertionMethod
-					)
-				))
+				did::errors::Error::Storage(did::errors::Storage::NotFound(did::errors::NotFoundKind::Key(
+					did::errors::KeyType::AssertionMethod
+				)))
 			);
 		});
 }
