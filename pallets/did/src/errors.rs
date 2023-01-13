@@ -52,9 +52,6 @@ pub enum Storage {
 	AlreadyExists,
 	/// The expected DID cannot be found on chain.
 	NotFound(NotFoundKind),
-	/// The given DID does not contain the right key to verify the signature
-	/// of a DID operation.
-	DidKeyNotFound(DidVerificationKeyRelationship),
 	/// The maximum number of public keys for this DID key identifier has
 	/// been reached.
 	MaxPublicKeysExceeded,
@@ -71,8 +68,40 @@ pub enum NotFoundKind {
 	/// The expected DID cannot be found on chain.
 	Did,
 	/// At least one key referenced is not stored under the given DID.
-	Key,
+	Key(KeyType),
 }
+
+/// Enum describing the different did key types.
+#[derive(Debug, Eq, PartialEq, TypeInfo)]
+pub enum KeyType {
+	/// Authentication key type.
+	/// This key is used to authenticate the DID subject.
+	Authentication,
+	/// Key agreement key type.
+	/// This key is used to encrypt messages to the DID subject.
+	/// It can be used to derive shared secrets.
+	KeyAgreement,
+	/// Assertion method key type.
+	/// This key is used to assert statements on behalf of the DID subject.
+	/// It is generally used to attest things.
+	AssertionMethod,
+	/// Delegation key type.
+	/// This key is used to delegate the DID subject's capabilities.
+	Delegation,
+}
+
+impl From<DidVerificationKeyRelationship> for KeyType {
+	fn from(key_type: DidVerificationKeyRelationship) -> Self {
+		match key_type {
+			DidVerificationKeyRelationship::Authentication => KeyType::Authentication,
+			DidVerificationKeyRelationship::AssertionMethod => KeyType::AssertionMethod,
+			DidVerificationKeyRelationship::CapabilityDelegation | DidVerificationKeyRelationship::CapabilityInvocation => {
+				KeyType::Delegation
+			},
+		}
+	}
+}
+
 
 /// Error generated when validating a DID operation.
 #[derive(Debug, Eq, PartialEq, TypeInfo)]

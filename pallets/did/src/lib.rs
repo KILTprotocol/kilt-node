@@ -417,9 +417,8 @@ pub mod pallet {
 		fn from(error: errors::Storage) -> Self {
 			match error {
 				errors::Storage::NotFound(errors::NotFoundKind::Did) => Self::NotFound,
-				errors::Storage::NotFound(errors::NotFoundKind::Key) => Self::VerificationKeyNotFound,
+				errors::Storage::NotFound(errors::NotFoundKind::Key(_)) => Self::VerificationKeyNotFound,
 				errors::Storage::AlreadyExists => Self::AlreadyExists,
-				errors::Storage::DidKeyNotFound(_) => Self::VerificationKeyNotFound,
 				errors::Storage::MaxPublicKeysExceeded => Self::MaxPublicKeysExceeded,
 				errors::Storage::MaxTotalKeyAgreementKeysExceeded => Self::MaxKeyAgreementKeysExceeded,
 				errors::Storage::AlreadyDeleted => Self::AlreadyDeleted,
@@ -1187,7 +1186,7 @@ pub mod pallet {
 			// error if there is no key of the type required
 			let verification_key = did_details
 				.get_verification_key_for_key_type(key_type)
-				.ok_or(errors::Error::Storage(errors::Storage::DidKeyNotFound(key_type)))?;
+				.ok_or(errors::Error::Storage(errors::Storage::NotFound(errors::NotFoundKind::Key(key_type.into()))))?;
 
 			// Verify that the signature matches the expected format, otherwise generate
 			// an error

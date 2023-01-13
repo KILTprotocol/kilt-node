@@ -417,7 +417,7 @@ impl<T: Config> DidDetails<T> {
 	pub fn remove_key_agreement_key(&mut self, key_id: KeyIdOf<T>) -> Result<(), errors::Storage> {
 		ensure!(
 			self.key_agreement_keys.remove(&key_id),
-			errors::Storage::NotFound(errors::NotFoundKind::Key)
+			errors::Storage::NotFound(errors::NotFoundKind::Key(errors::KeyType::KeyAgreement))
 		);
 		self.remove_key_if_unused(key_id);
 		Ok(())
@@ -459,7 +459,7 @@ impl<T: Config> DidDetails<T> {
 		let old_key_id = self
 			.attestation_key
 			.take()
-			.ok_or(errors::Storage::NotFound(errors::NotFoundKind::Key))?;
+			.ok_or(errors::Storage::NotFound(errors::NotFoundKind::Key(errors::KeyType::AssertionMethod)))?;
 		self.remove_key_if_unused(old_key_id);
 		Ok(())
 	}
@@ -500,7 +500,7 @@ impl<T: Config> DidDetails<T> {
 		let old_key_id = self
 			.delegation_key
 			.take()
-			.ok_or(errors::Storage::NotFound(errors::NotFoundKind::Key))?;
+			.ok_or(errors::Storage::NotFound(errors::NotFoundKind::Key(errors::KeyType::AssertionMethod)))?;
 		self.remove_key_if_unused(old_key_id);
 		Ok(())
 	}
