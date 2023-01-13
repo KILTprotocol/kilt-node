@@ -1131,10 +1131,11 @@ impl_runtime_apis! {
 
 		fn execute_block(block: Block, state_root_check: bool, sig_check: bool, select: frame_try_runtime::TryStateSelect) -> Weight {
 			log::info!(
-				target: "runtime::mashnet_node_standalone", "try-runtime: executing block #{} ({:?}) / root checks: {:?} / sanity-checks: {:?}",
+				target: "runtime::spiritnet", "try-runtime: executing block #{} ({:?}) / root checks: {:?} / sig check: {:?} / sanity-checks: {:?}",
 				block.header.number,
 				block.header.hash(),
 				state_root_check,
+				sig_check,
 				select,
 			);
 			Executive::try_execute_block(block, state_root_check, sig_check, select).expect("try_execute_block failed")
