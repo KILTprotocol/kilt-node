@@ -1187,7 +1187,7 @@ pub mod pallet {
 			let verification_key =
 				did_details
 					.get_verification_key_for_key_type(key_type)
-					.ok_or(errors::Error::Storage(errors::Storage::NotFound(
+					.ok_or_else(|| errors::Error::Storage(errors::Storage::NotFound(
 						errors::NotFoundKind::Key(key_type.into()),
 					)))?;
 
