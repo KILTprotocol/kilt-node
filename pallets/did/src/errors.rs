@@ -23,11 +23,11 @@ use crate::did_details::DidVerificationKeyRelationship;
 /// All the errors that can be generated when validating a DID operation.
 #[derive(Debug, Eq, PartialEq, TypeInfo)]
 pub enum Error {
-	/// See [StorageError].
+	/// See [Storage].
 	Storage(Storage),
-	/// See [SignatureError].
+	/// See [Signature].
 	Signature(Signature),
-	/// See [InputError].
+	/// See [Input].
 	Input(Input),
 	/// An error that is not supposed to take place, yet it happened.
 	Internal,
