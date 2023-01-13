@@ -1184,12 +1184,9 @@ pub mod pallet {
 		) -> Result<(), errors::Error> {
 			// Retrieve the needed verification key from the DID details, or generate an
 			// error if there is no key of the type required
-			let verification_key =
-				did_details
-					.get_verification_key_for_key_type(key_type)
-					.ok_or_else(|| errors::Error::Storage(errors::Storage::NotFound(
-						errors::NotFoundKind::Key(key_type.into()),
-					)))?;
+			let verification_key = did_details.get_verification_key_for_key_type(key_type).ok_or_else(|| {
+				errors::Error::Storage(errors::Storage::NotFound(errors::NotFoundKind::Key(key_type.into())))
+			})?;
 
 			// Verify that the signature matches the expected format, otherwise generate
 			// an error
