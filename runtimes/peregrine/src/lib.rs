@@ -35,7 +35,7 @@ use frame_support::{
 };
 use frame_system::EnsureRoot;
 use sp_api::impl_runtime_apis;
-use sp_core::OpaqueMetadata;
+use sp_core::{Get, OpaqueMetadata};
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
 	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, OpaqueKeys},
@@ -44,6 +44,7 @@ use sp_runtime::{
 };
 use sp_std::{cmp::Ordering, prelude::*};
 use sp_version::RuntimeVersion;
+use xcm::v2::prelude::*;
 use xcm_executor::XcmExecutor;
 
 use delegation::DelegationAc;
@@ -62,7 +63,7 @@ use runtime_common::{
 	FeeSplit, Hash, Header, Index, Signature, SlowAdjustingFeeUpdate,
 };
 
-use crate::xcm_config::{XcmConfig, XcmOriginToTransactDispatchOrigin};
+use crate::xcm_config::{XcmConfig, XcmOriginToTransactDispatchOrigin, XcmRouter};
 
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
@@ -1459,4 +1460,53 @@ cumulus_pallet_parachain_system::register_validate_block! {
 	Runtime = Runtime,
 	BlockExecutor = cumulus_pallet_aura_ext::BlockExecutor::<Runtime, Executive>,
 	CheckInherents = CheckInherents,
+}
+
+struct DidRootDispatcher<Runtime>(sp_std::marker::PhantomData<Runtime>);
+
+impl<Runtime: cumulus_pallet_parachain_system::Config>
+	did::traits::DidRootDispatcher<DidIdentifier, AccountId, Hash, MultiLocation> for DidRootDispatcher<Runtime>
+{
+	fn dispatch(
+		action: did::traits::DidRootStateAction<DidIdentifier, Hash>,
+		dispatcher: AccountId,
+		location: MultiLocation,
+	) -> Result<Weight, sp_runtime::DispatchError> {
+		let asset = MultiAsset {
+			id: Concrete(
+				MultiLocation::here()
+					.pushed_with_interior(AccountId32 {
+						network: Any,
+						id: dispatcher.into(),
+					})
+					.unwrap(),
+			),
+			fun: Fungibility::Fungible(1_000_000_000),
+		};
+		let calls = Xcm(vec![
+			WithdrawAsset(asset.clone().into()),
+			BuyExecution {
+				fees: asset,
+				weight_limit: Unlimited,
+			},
+			Transact {
+				origin_type: OriginKind::Xcm,
+				require_weight_at_most: 1_000_000_000,
+				// TODO: Replace with actual call on target chain
+				call: action.encode().into(),
+			},
+			DepositAsset {
+				assets: All.into(),
+				max_assets: u32::max_value(),
+				beneficiary: MultiLocation {
+					parents: 1,
+					interior: X1(Parachain(
+						<Runtime as cumulus_pallet_parachain_system::Config>::SelfParaId::get().into(),
+					)),
+				},
+			},
+		]);
+		XcmRouter::send_xcm(location, calls).map_err(|_| sp_runtime::DispatchError::Other("XCM error"))?;
+		Ok(Weight::zero())
+	}
 }

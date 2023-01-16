@@ -150,3 +150,19 @@ impl<T: did::Config> DidMerkleRootHasher<DidIdentifierOf<T>, DidDetails<T>, <T a
 		.is_ok()
 	}
 }
+
+// TODO: This will have to be moved into a separate crate for other projects to
+// import it.
+pub mod xcm {
+	pub use v1 as latest;
+
+	pub mod v1 {
+		use codec::{Decode, Encode};
+		use did::traits::DidRootStateAction;
+
+		use crate::{DidIdentifier, Hash};
+
+		#[derive(Encode, Decode)]
+		pub struct MerkleRootXcmMessage(DidRootStateAction<DidIdentifier, Hash>);
+	}
+}

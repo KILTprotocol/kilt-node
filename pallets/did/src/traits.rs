@@ -48,8 +48,6 @@ pub enum DidRootStateAction<DidIdentifier, Root> {
 }
 
 pub trait DidRootDispatcher<DidIdentifier, AccountId, Root, Location> {
-	const MAX_WEIGHT: Weight;
-
 	fn dispatch(
 		action: DidRootStateAction<DidIdentifier, Root>,
 		dispatcher: AccountId,
@@ -60,8 +58,6 @@ pub trait DidRootDispatcher<DidIdentifier, AccountId, Root, Location> {
 pub struct NullDispatcher<T>(sp_std::marker::PhantomData<T>);
 
 impl<T: Config> DidRootDispatcher<DidIdentifierOf<T>, AccountIdOf<T>, T::Hash, MultiLocation> for NullDispatcher<T> {
-	const MAX_WEIGHT: frame_support::weights::Weight = Weight::zero();
-
 	fn dispatch(
 		_action: DidRootStateAction<DidIdentifierOf<T>, T::Hash>,
 		_dispatcher: AccountIdOf<T>,
