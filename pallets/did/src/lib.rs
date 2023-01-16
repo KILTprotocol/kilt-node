@@ -285,7 +285,12 @@ pub mod pallet {
 
 		type DidDocumentHash: Clone + PartialEq + Debug;
 		type DidDocumentHasher: DidDocumentHasher<DidIdentifierOf<Self>, DidDetails<Self>, Self::DidDocumentHash>;
-		type DidRootDispatcher: DidRootDispatcher<DidIdentifierOf<Self>, Self::DidDocumentHash, MultiLocation>;
+		type DidRootDispatcher: DidRootDispatcher<
+			DidIdentifierOf<Self>,
+			Self::AccountId,
+			Self::DidDocumentHash,
+			MultiLocation,
+		>;
 
 		/// Weight information for extrinsics in this pallet.
 		type WeightInfo: WeightInfo;
@@ -1122,7 +1127,7 @@ pub mod pallet {
 			did: DidIdentifierOf<T>,
 			destination: Box<MultiLocation>,
 		) -> DispatchResultWithPostInfo {
-			ensure_signed(origin)?;
+			let dispatcher = ensure_signed(origin)?;
 
 			let (action, calculation_weight) = if let Some(did_entry) = Did::<T>::get(&did) {
 				let (merkle_root, calculation_weight) = T::DidDocumentHasher::calculate_root(&did, &did_entry)?;
@@ -1133,7 +1138,7 @@ pub mod pallet {
 				Err(Error::<T>::DidNotPresent)
 			}?;
 
-			let dispatch_weight = T::DidRootDispatcher::dispatch(action.clone(), *destination.clone())?;
+			let dispatch_weight = T::DidRootDispatcher::dispatch(action.clone(), dispatcher, *destination.clone())?;
 			Self::deposit_event(Event::DidRootStateActionDispatched(action, destination));
 
 			Ok(Some(

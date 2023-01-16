@@ -22,7 +22,7 @@ use scale_info::TypeInfo;
 use sp_runtime::DispatchError;
 use xcm::v2::MultiLocation;
 
-use crate::{did_details::DidDetails, Config, DidIdentifierOf};
+use crate::{did_details::DidDetails, AccountIdOf, Config, DidIdentifierOf};
 
 pub trait DidDocumentHasher<DidIdentifier, DidDetails, Output> {
 	const MAX_WEIGHT: Weight;
@@ -47,19 +47,24 @@ pub enum DidRootStateAction<DidIdentifier, Root> {
 	Deleted(DidIdentifier),
 }
 
-pub trait DidRootDispatcher<DidIdentifier, Root, Location> {
+pub trait DidRootDispatcher<DidIdentifier, AccountId, Root, Location> {
 	const MAX_WEIGHT: Weight;
 
-	fn dispatch(action: DidRootStateAction<DidIdentifier, Root>, location: Location) -> Result<Weight, DispatchError>;
+	fn dispatch(
+		action: DidRootStateAction<DidIdentifier, Root>,
+		dispatcher: AccountId,
+		location: Location,
+	) -> Result<Weight, DispatchError>;
 }
 
 pub struct NullDispatcher<T>(sp_std::marker::PhantomData<T>);
 
-impl<T: Config> DidRootDispatcher<DidIdentifierOf<T>, T::Hash, MultiLocation> for NullDispatcher<T> {
+impl<T: Config> DidRootDispatcher<DidIdentifierOf<T>, AccountIdOf<T>, T::Hash, MultiLocation> for NullDispatcher<T> {
 	const MAX_WEIGHT: frame_support::weights::Weight = Weight::zero();
 
 	fn dispatch(
 		_action: DidRootStateAction<DidIdentifierOf<T>, T::Hash>,
+		_dispatcher: AccountIdOf<T>,
 		_location: MultiLocation,
 	) -> Result<Weight, DispatchError> {
 		Ok(Weight::zero())
