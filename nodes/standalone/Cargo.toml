@@ -23,6 +23,7 @@ substrate-build-script-utils.workspace = true
 clap = {workspace = true, features = ["derive"]}
 jsonrpsee = {workspace = true, features = ["server"]}
 hex-literal.workspace = true
+futures = { workspace = true, features = ["thread-pool"]}
 
 # Internal dependencies
 mashnet-node-runtime = {workspace = true, features = ["std"]}
@@ -32,14 +33,14 @@ runtime-common = {workspace = true, features = ["std"]}
 frame-system = {workspace = true, features = ["std"]}
 pallet-transaction-payment = {workspace = true, features = ["std"]}
 sc-basic-authorship.workspace = true
-sc-cli = {workspace = true, features = ["wasmtime"]}
+sc-cli = {workspace = true}
 sc-client-api.workspace = true
 sc-consensus.workspace = true
 sc-consensus-aura.workspace = true
-sc-executor = {workspace = true, features = ["wasmtime"]}
+sc-executor = {workspace = true}
 sc-finality-grandpa.workspace = true
 sc-keystore.workspace = true
-sc-service = {workspace = true, features = ["wasmtime"]}
+sc-service = {workspace = true}
 sc-telemetry.workspace = true
 sc-transaction-pool.workspace = true
 sc-transaction-pool-api.workspace = true
@@ -51,6 +52,7 @@ sp-consensus-aura = {workspace = true, features = ["std"]}
 sp-core = {workspace = true, features = ["std"]}
 sp-finality-grandpa = {workspace = true, features = ["std"]}
 sp-inherents = {workspace = true, features = ["std"]}
+sp-io = {workspace = true, features = ["std"]}
 sp-keyring.workspace = true
 sp-runtime = {workspace = true, features = ["std"]}
 sp-timestamp = {workspace = true, features = ["std"]}
