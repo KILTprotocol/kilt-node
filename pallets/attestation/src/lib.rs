@@ -230,6 +230,7 @@ pub mod pallet {
 		///   DelegatedAttestations
 		/// - Writes: Attestations, (DelegatedAttestations)
 		/// # </weight>
+		#[pallet::call_index(0)]
 		#[pallet::weight(
 			<T as pallet::Config>::WeightInfo::add()
 			.saturating_add(authorization.as_ref().map(|ac| ac.can_attest_weight()).unwrap_or(Weight::zero()))
@@ -303,6 +304,7 @@ pub mod pallet {
 		/// - Reads per delegation step P: delegation::Delegations
 		/// - Writes: Attestations, DelegatedAttestations
 		/// # </weight>
+		#[pallet::call_index(1)]
 		#[pallet::weight(
 			<T as pallet::Config>::WeightInfo::revoke()
 			.saturating_add(authorization.as_ref().map(|ac| ac.can_revoke_weight()).unwrap_or(Weight::zero()))
@@ -362,6 +364,7 @@ pub mod pallet {
 		/// - Reads per delegation step P: delegation::Delegations
 		/// - Writes: Attestations, DelegatedAttestations
 		/// # </weight>
+		#[pallet::call_index(2)]
 		#[pallet::weight(
 			<T as pallet::Config>::WeightInfo::remove()
 			.saturating_add(authorization.as_ref().map(|ac| ac.can_remove_weight()).unwrap_or(Weight::zero()))
@@ -405,6 +408,7 @@ pub mod pallet {
 		/// - Reads: [Origin Account], Attestations, DelegatedAttestations
 		/// - Writes: Attestations, DelegatedAttestations
 		/// # </weight>
+		#[pallet::call_index(3)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::reclaim_deposit())]
 		pub fn reclaim_deposit(origin: OriginFor<T>, claim_hash: ClaimHashOf<T>) -> DispatchResult {
 			let who = ensure_signed(origin)?;
@@ -429,6 +433,7 @@ pub mod pallet {
 		///
 		/// The subject of the call must be the attester who issues the
 		/// attestation. The sender of the call will be the new deposit owner.
+		#[pallet::call_index(4)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::change_deposit_owner())]
 		pub fn change_deposit_owner(origin: OriginFor<T>, claim_hash: ClaimHashOf<T>) -> DispatchResult {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
@@ -446,6 +451,7 @@ pub mod pallet {
 		/// Updates the deposit amount to the current deposit rate.
 		///
 		/// The sender must be the deposit owner.
+		#[pallet::call_index(5)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::update_deposit())]
 		pub fn update_deposit(origin: OriginFor<T>, claim_hash: ClaimHashOf<T>) -> DispatchResult {
 			let sender = ensure_signed(origin)?;

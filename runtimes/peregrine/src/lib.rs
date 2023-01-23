@@ -1410,21 +1410,22 @@ impl_runtime_apis! {
 
 	#[cfg(feature = "try-runtime")]
 	impl frame_try_runtime::TryRuntime<Block> for Runtime {
-		fn on_runtime_upgrade() -> (Weight, Weight) {
+		fn on_runtime_upgrade(checks: bool) -> (Weight, Weight) {
 			log::info!("try-runtime::on_runtime_upgrade peregrine.");
-			let weight = Executive::try_runtime_upgrade().unwrap();
+			let weight = Executive::try_runtime_upgrade(checks).unwrap();
 			(weight, BlockWeights::get().max_block)
 		}
 
-		fn execute_block(block: Block, state_root_check: bool, select: frame_try_runtime::TryStateSelect) -> Weight {
+		fn execute_block(block: Block, state_root_check: bool, sig_check: bool, select: frame_try_runtime::TryStateSelect) -> Weight {
 			log::info!(
-				target: "runtime::peregrine", "try-runtime: executing block #{} ({:?}) / root checks: {:?} / sanity-checks: {:?}",
+				target: "runtime::peregrine", "try-runtime: executing block #{} ({:?}) / root checks: {:?} / sig check: {:?} / sanity-checks: {:?}",
 				block.header.number,
 				block.header.hash(),
 				state_root_check,
+				sig_check,
 				select,
 			);
-			Executive::try_execute_block(block, state_root_check, select).expect("try_execute_block failed")
+			Executive::try_execute_block(block, state_root_check, sig_check, select).expect("try_execute_block failed")
 		}
 	}
 }

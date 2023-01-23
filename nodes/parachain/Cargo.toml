@@ -37,12 +37,12 @@ spiritnet-runtime = {workspace = true, features = ["std"]}
 # Substrate dependencies
 sc-basic-authorship.workspace = true
 sc-chain-spec.workspace = true
-sc-cli = {workspace = true, features = ["wasmtime"]}
+sc-cli = {workspace = true}
 sc-client-api.workspace = true
 sc-consensus.workspace = true
-sc-executor = {workspace = true, features = ["wasmtime"]}
+sc-executor = {workspace = true}
 sc-network.workspace = true
-sc-service = {workspace = true, features = ["wasmtime"]}
+sc-service = {workspace = true}
 sc-sysinfo.workspace = true
 sc-telemetry.workspace = true
 sc-tracing.workspace = true
@@ -54,6 +54,7 @@ sp-blockchain.workspace = true
 sp-consensus.workspace = true
 sp-consensus-aura = {workspace = true, features = ["std"]}
 sp-core = {workspace = true, features = ["std"]}
+sp-io = {workspace = true, features = ["std"]}
 sp-keystore = {workspace = true, features = ["std"]}
 sp-offchain = {workspace = true, features = ["std"]}
 sp-runtime = {workspace = true, features = ["std"]}

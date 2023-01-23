@@ -40,6 +40,7 @@ use runtime_common::xcm_config::{
 parameter_types! {
 	pub RelayChainOrigin: RuntimeOrigin = cumulus_pallet_xcm::Origin::Relay.into();
 	pub Ancestry: MultiLocation = Parachain(ParachainInfo::parachain_id().into()).into();
+	// TODO: This needs to be updated once we deploy Peregrine on Rococo
 	pub const RelayNetworkId: NetworkId = NetworkId::Any;
 }
 

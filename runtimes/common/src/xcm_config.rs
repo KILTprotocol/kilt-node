@@ -35,7 +35,7 @@ parameter_types! {
 }
 
 match_types! {
-	// The legislative of our parent (i.e. Kusama majority vote).
+	// The legislative of our parent (i.e. Polkadot majority vote for Spiritnet).
 	pub type ParentLegislative: impl Contains<MultiLocation> = {
 		MultiLocation { parents: 1, interior: X1(Plurality { id: BodyId::Legislative, .. }) }
 	};

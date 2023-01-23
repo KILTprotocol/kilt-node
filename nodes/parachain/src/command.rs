@@ -341,8 +341,7 @@ pub fn run() -> Result<()> {
 					"Compile with --features=runtime-benchmarks \
 						to enable storage benchmarks."
 						.into(),
-				)
-				.into()),
+				)),
 				#[cfg(feature = "runtime-benchmarks")]
 				(BenchmarkCmd::Storage(cmd), "spiritnet") => runner.sync_run(|config| {
 					let partials = new_partial::<spiritnet_runtime::RuntimeApi, SpiritnetRuntimeExecutor, _>(
@@ -392,15 +391,32 @@ pub fn run() -> Result<()> {
 		}
 		#[cfg(feature = "try-runtime")]
 		Some(Subcommand::TryRuntime(cmd)) => {
+			use sc_executor::{sp_wasm_interface::ExtendedHostFunctions, NativeExecutionDispatch};
 			let runner = cli.create_runner(cmd)?;
 			let registry = &runner.config().prometheus_config.as_ref().map(|cfg| &cfg.registry);
 			let task_manager = TaskManager::new(runner.config().tokio_handle.clone(), *registry)
 				.map_err(|e| format!("Error: {:?}", e))?;
 
 			if runner.config().chain_spec.is_peregrine() {
-				runner.async_run(|config| Ok((cmd.run::<Block, PeregrineRuntimeExecutor>(config), task_manager)))
+				runner.async_run(|_| {
+					Ok((
+						cmd.run::<Block, ExtendedHostFunctions<
+							sp_io::SubstrateHostFunctions,
+							<PeregrineRuntimeExecutor as NativeExecutionDispatch>::ExtendHostFunctions,
+						>>(),
+						task_manager,
+					))
+				})
 			} else if runner.config().chain_spec.is_spiritnet() {
-				runner.async_run(|config| Ok((cmd.run::<Block, SpiritnetRuntimeExecutor>(config), task_manager)))
+				runner.async_run(|_| {
+					Ok((
+						cmd.run::<Block, ExtendedHostFunctions<
+							sp_io::SubstrateHostFunctions,
+							<SpiritnetRuntimeExecutor as NativeExecutionDispatch>::ExtendHostFunctions,
+						>>(),
+						task_manager,
+					))
+				})
 			} else {
 				Err("Chain doesn't support try-runtime".into())
 			}
@@ -456,8 +472,8 @@ pub fn run() -> Result<()> {
 					if config.role.is_authority() { "yes" } else { "no" }
 				);
 
-				if collator_options.relay_chain_rpc_url.is_some() && !cli.relay_chain_args.len().is_zero() {
-					warn!("Detected relay chain node arguments together with --relay-chain-rpc-url. This command starts a minimal Polkadot node that only uses a network-related subset of all relay chain CLI options.");
+				if !collator_options.relay_chain_rpc_urls.len().is_zero() && !cli.relay_chain_args.len().is_zero() {
+					warn!("Detected relay chain node arguments together with --relay-chain-rpc-urls. This command starts a minimal Polkadot node that only uses a network-related subset of all relay chain CLI options.");
 				}
 
 				if config.chain_spec.is_peregrine() {
