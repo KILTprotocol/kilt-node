@@ -35,6 +35,10 @@ use frame_support::{
 };
 pub use frame_system::Call as SystemCall;
 use frame_system::EnsureRoot;
+
+#[cfg(feature = "try-runtime")]
+use frame_try_runtime::UpgradeCheckSelect;
+
 use pallet_grandpa::{fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
 use pallet_transaction_payment::{CurrencyAdapter, FeeDetails};
 use sp_api::impl_runtime_apis;
@@ -1123,7 +1127,7 @@ impl_runtime_apis! {
 
 	#[cfg(feature = "try-runtime")]
 	impl frame_try_runtime::TryRuntime<Block> for Runtime {
-		fn on_runtime_upgrade(checks: bool) -> (Weight, Weight) {
+		fn on_runtime_upgrade(checks: UpgradeCheckSelect) -> (Weight, Weight) {
 			log::info!("try-runtime::on_runtime_upgrade mashnet-node standalone.");
 			let weight = Executive::try_runtime_upgrade(checks).unwrap();
 			(weight, runtime_common::BlockWeights::get().max_block)
