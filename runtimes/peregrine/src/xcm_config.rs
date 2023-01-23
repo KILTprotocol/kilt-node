@@ -102,7 +102,8 @@ impl xcm_executor::Config for XcmConfig {
 	type SubscriptionService = PolkadotXcm;
 }
 
-/// No local origins on this chain are allowed to dispatch XCM sends/executions.
+/// Allows only local `Signed` origins to be converted into `MultiLocation`s by
+/// the XCM executor.
 pub type LocalOriginToLocation = SignedToAccountId32<RuntimeOrigin, AccountId, RelayNetworkId>;
 
 /// The means for routing XCM messages which are not for local execution into
@@ -122,9 +123,9 @@ impl pallet_xcm::Config for Runtime {
 	// Disable dispatchable execution on the XCM pallet.
 	// NOTE: For local testing this needs to be `Everything`.
 	type XcmExecuteFilter = Nothing;
-	type XcmExecutor = XcmExecutor<XcmConfig>;
 	type XcmTeleportFilter = Everything;
 	type XcmReserveTransferFilter = Nothing;
+	type XcmExecutor = XcmExecutor<XcmConfig>;
 	type Weigher = FixedWeightBounds<UnitWeightCost, RuntimeCall, MaxInstructions>;
 	type LocationInverter = LocationInverter<Ancestry>;
 	type RuntimeOrigin = RuntimeOrigin;

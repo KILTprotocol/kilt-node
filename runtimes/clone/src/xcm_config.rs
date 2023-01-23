@@ -97,7 +97,8 @@ impl xcm_executor::Config for XcmConfig {
 	type SubscriptionService = PolkadotXcm;
 }
 
-/// No local origins on this chain are allowed to dispatch XCM sends/executions.
+/// Allows only local `Signed` origins to be converted into `MultiLocation`s by
+/// the XCM executor.
 pub type LocalOriginToLocation = SignedToAccountId32<RuntimeOrigin, AccountId, RelayNetworkId>;
 
 /// The means for routing XCM messages which are not for local execution into
