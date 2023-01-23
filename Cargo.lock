@@ -8904,6 +8904,7 @@ name = "runtime-common"
 version = "1.9.0-dev"
 dependencies = [
  "attestation",
+ "ctype",
  "cumulus-primitives-core",
  "frame-support",
  "frame-system",

@@ -175,6 +175,7 @@ pub(crate) mod runtime {
 
 	use codec::Encode;
 	use frame_support::{parameter_types, weights::constants::RocksDbWeight};
+	use frame_system::EnsureSigned;
 	use sp_core::{ed25519, sr25519, Pair};
 	use sp_runtime::{
 		testing::Header,
@@ -183,6 +184,7 @@ pub(crate) mod runtime {
 	};
 
 	use attestation::{mock::insert_attestation, AttestationDetails, ClaimHashOf};
+	use ctype::CtypeEntryOf;
 	use kilt_support::{
 		mock::{mock_origin, SubjectId},
 		signature::EqualVerify,
@@ -282,6 +284,7 @@ pub(crate) mod runtime {
 		type CtypeCreatorId = SubjectId;
 		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<AccountId, Self::CtypeCreatorId>;
 		type OriginSuccess = mock_origin::DoubleOrigin<AccountId, Self::CtypeCreatorId>;
+		type OverarchingOrigin = EnsureSigned<AccountId>;
 		type RuntimeEvent = ();
 		type WeightInfo = ();
 
@@ -491,7 +494,13 @@ pub(crate) mod runtime {
 
 			ext.execute_with(|| {
 				for (ctype_hash, owner) in self.ctypes.iter() {
-					ctype::Ctypes::<Test>::insert(ctype_hash, owner);
+					ctype::Ctypes::<Test>::insert(
+						ctype_hash,
+						CtypeEntryOf::<Test> {
+							creator: owner.clone(),
+							created_at: System::block_number(),
+						},
+					);
 				}
 
 				initialize_pallet(self.delegations, self.delegation_hierarchies);

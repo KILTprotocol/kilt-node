@@ -561,6 +561,9 @@ impl ctype::Config for Runtime {
 
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
+	// 3/5 of the technical committees can override the block number of one or more
+	// CTypes.
+	type OverarchingOrigin = EnsureRoot<AccountId>;
 
 	type RuntimeEvent = RuntimeEvent;
 	type WeightInfo = weights::ctype::WeightInfo<Runtime>;
@@ -1060,6 +1063,7 @@ pub type Executive = frame_executive::Executive<
 		pallet_preimage::migration::v1::Migration<Runtime>,
 		pallet_scheduler::migration::v3::MigrateToV4<Runtime>,
 		pallet_democracy::migrations::v1::Migration<Runtime>,
+		runtime_common::migrations::AddCTypeBlockNumber<Runtime>,
 		EthereumMigration<Runtime>,
 	),
 >;
