@@ -32,6 +32,7 @@ use sp_runtime::traits::Zero;
 use sp_std::{num::NonZeroU32, vec::Vec};
 
 use attestation::AttestationAccessControl;
+use ctype::CtypeEntryOf;
 use kilt_support::{signature::VerifySignature, traits::GenerateBenchmarkOrigin};
 
 const SEED: u32 = 0;
@@ -61,6 +62,7 @@ where
 	T::DelegationNodeId: From<T::Hash>,
 	T::CtypeCreatorId: From<T::DelegationEntityId>,
 	<T as Config>::EnsureOrigin: GenerateBenchmarkOrigin<T::RuntimeOrigin, T::AccountId, T::DelegationEntityId>,
+	T::BlockNumber: From<u64>,
 {
 	log::info!("create delegation root");
 	let root_public = sr25519_generate(KeyTypeId(*b"aura"), None);
@@ -74,7 +76,13 @@ where
 		<T as Config>::Currency::minimum_balance() + <T as Config>::Deposit::get() + <T as Config>::Deposit::get(),
 	);
 
-	ctype::Ctypes::<T>::insert(ctype_hash, T::CtypeCreatorId::from(root_acc.clone()));
+	ctype::Ctypes::<T>::insert(
+		ctype_hash,
+		CtypeEntryOf::<T> {
+			creator: T::CtypeCreatorId::from(root_acc.clone()),
+			created_at: 0u64.into(),
+		},
+	);
 
 	Pallet::<T>::create_hierarchy(
 		<T as Config>::EnsureOrigin::generate_origin(sender, root_acc.clone()),
@@ -192,6 +200,7 @@ where
 		<<T as Config>::DelegationSignatureVerification as VerifySignature>::Payload,
 	)>,
 	<T as Config>::EnsureOrigin: GenerateBenchmarkOrigin<T::RuntimeOrigin, T::AccountId, T::DelegationEntityId>,
+	T::BlockNumber: From<u64>,
 {
 	let (
 		DelegationTriplet::<T> {
@@ -227,6 +236,7 @@ benchmarks! {
 			<<T as Config>::DelegationSignatureVerification as VerifySignature>::Payload,
 		)>,
 		<T as Config>::EnsureOrigin: GenerateBenchmarkOrigin<T::RuntimeOrigin, T::AccountId, T::DelegationEntityId>,
+		T::BlockNumber: From<u64>
 	}
 
 	create_hierarchy {
@@ -234,7 +244,10 @@ benchmarks! {
 		let creator: T::DelegationEntityId = account("creator", 0, SEED);
 		let ctype = <T::Hash as Default>::default();
 		let delegation = generate_delegation_id::<T>(0);
-		ctype::Ctypes::<T>::insert(ctype, <T as ctype::Config>::CtypeCreatorId::from(creator.clone()));
+		ctype::Ctypes::<T>::insert(ctype, CtypeEntryOf::<T> {
+			creator: T::CtypeCreatorId::from(creator.clone()),
+			created_at: 0u64.into(),
+		});
 		<T as Config>::Currency::make_free_balance_be(
 			&sender,
 			<T as Config>::Currency::minimum_balance() + <T as Config>::Deposit::get(),

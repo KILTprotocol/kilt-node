@@ -36,7 +36,8 @@ where
 
 #[cfg(test)]
 pub mod runtime {
-	use frame_support::{parameter_types, weights::constants::RocksDbWeight};
+	use frame_support::{ord_parameter_types, parameter_types, weights::constants::RocksDbWeight};
+	use frame_system::EnsureSignedBy;
 	use kilt_support::mock::{mock_origin, SubjectId};
 	use sp_runtime::{
 		testing::Header,
@@ -44,7 +45,7 @@ pub mod runtime {
 		AccountId32, MultiSignature,
 	};
 
-	use crate::{BalanceOf, Ctypes};
+	use crate::{BalanceOf, CtypeEntryOf, Ctypes};
 
 	use super::*;
 
@@ -133,9 +134,14 @@ pub mod runtime {
 		pub const Fee: Balance = 500;
 	}
 
+	ord_parameter_types! {
+		pub const OverarchingOrigin: AccountId = ACCOUNT_00;
+	}
+
 	impl Config for Test {
 		type CtypeCreatorId = SubjectId;
 		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<AccountId, SubjectId>;
+		type OverarchingOrigin = EnsureSignedBy<OverarchingOrigin, AccountId>;
 		type OriginSuccess = mock_origin::DoubleOrigin<AccountId, SubjectId>;
 		type RuntimeEvent = ();
 		type WeightInfo = ();
@@ -147,6 +153,7 @@ pub mod runtime {
 
 	pub(crate) const DID_00: SubjectId = SubjectId(AccountId32::new([1u8; 32]));
 	pub(crate) const ACCOUNT_00: AccountId = AccountId::new([1u8; 32]);
+	pub(crate) const ACCOUNT_01: AccountId = AccountId::new([2u8; 32]);
 
 	#[derive(Clone, Default)]
 	pub(crate) struct ExtBuilder {
@@ -176,7 +183,13 @@ pub mod runtime {
 
 			ext.execute_with(|| {
 				for (ctype_hash, owner) in self.ctypes_stored.iter() {
-					Ctypes::<Test>::insert(ctype_hash, owner);
+					Ctypes::<Test>::insert(
+						ctype_hash,
+						CtypeEntryOf::<Test> {
+							creator: owner.clone(),
+							created_at: System::block_number(),
+						},
+					);
 				}
 			});
 

@@ -100,6 +100,7 @@ pub(crate) mod runtime {
 		traits::{ConstU128, ConstU16, ConstU32, ConstU64},
 		weights::constants::RocksDbWeight,
 	};
+	use frame_system::EnsureSigned;
 	use scale_info::TypeInfo;
 	use sp_core::{sr25519, Pair};
 	use sp_runtime::{
@@ -110,7 +111,7 @@ pub(crate) mod runtime {
 
 	use kilt_support::mock::{mock_origin, SubjectId};
 
-	use ctype::{CtypeCreatorOf, CtypeHashOf};
+	use ctype::{CtypeCreatorOf, CtypeEntryOf, CtypeHashOf};
 
 	use crate::{Config, CredentialEntryOf, Error, InputSubjectIdOf, PublicCredentialsAccessControl};
 
@@ -333,6 +334,7 @@ pub(crate) mod runtime {
 		type CtypeCreatorId = SubjectId;
 		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<AccountId, Self::CtypeCreatorId>;
 		type OriginSuccess = mock_origin::DoubleOrigin<AccountId, Self::CtypeCreatorId>;
+		type OverarchingOrigin = EnsureSigned<AccountId>;
 		type RuntimeEvent = ();
 		type WeightInfo = ();
 
@@ -424,7 +426,13 @@ pub(crate) mod runtime {
 
 			ext.execute_with(|| {
 				for ctype in self.ctypes {
-					ctype::Ctypes::<Test>::insert(ctype.0, ctype.1.clone());
+					ctype::Ctypes::<Test>::insert(
+						ctype.0,
+						CtypeEntryOf::<Test> {
+							creator: ctype.1.clone(),
+							created_at: System::block_number(),
+						},
+					);
 				}
 
 				for (subject_id, credential_id, credential_entry) in self.public_credentials {
