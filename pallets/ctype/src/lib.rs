@@ -203,6 +203,7 @@ pub mod pallet {
 		/// Set the creation block number for a given CType, if found.
 		///
 		/// Emits `CTypeUpdated`.
+		#[pallet::call_index(1)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::set_block_number())]
 		pub fn set_block_number(
 			origin: OriginFor<T>,
