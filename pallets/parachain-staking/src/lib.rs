@@ -715,6 +715,7 @@ pub mod pallet {
 		/// ShouldEndSession<_>>::should_end_session.
 		///
 		/// The dispatch origin must be Root.
+		#[pallet::call_index(0)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::force_new_round())]
 		pub fn force_new_round(origin: OriginFor<T>) -> DispatchResult {
 			ensure_root(origin)?;
@@ -742,6 +743,7 @@ pub mod pallet {
 		/// The dispatch origin must be Root.
 		///
 		/// Emits `RoundInflationSet`.
+		#[pallet::call_index(1)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::set_inflation(T::MaxTopCandidates::get(), T::MaxDelegatorsPerCollator::get()))]
 		pub fn set_inflation(
 			origin: OriginFor<T>,
@@ -775,6 +777,7 @@ pub mod pallet {
 		/// The dispatch origin must be Root.
 		///
 		/// Emits `MaxSelectedCandidatesSet`.
+		#[pallet::call_index(2)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::set_max_selected_candidates(
 			*new,
 			T::MaxDelegatorsPerCollator::get()
@@ -843,6 +846,7 @@ pub mod pallet {
 		/// The dispatch origin must be Root.
 		///
 		/// Emits `BlocksPerRoundSet`.
+		#[pallet::call_index(3)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::set_blocks_per_round())]
 		pub fn set_blocks_per_round(origin: OriginFor<T>, new: T::BlockNumber) -> DispatchResult {
 			ensure_root(origin)?;
@@ -872,6 +876,7 @@ pub mod pallet {
 		/// The dispatch origin must be Root.
 		///
 		/// Emits `MaxCandidateStakeChanged`.
+		#[pallet::call_index(4)]
 		#[pallet::weight(<T as Config>::WeightInfo::set_max_candidate_stake())]
 		pub fn set_max_candidate_stake(origin: OriginFor<T>, new: BalanceOf<T>) -> DispatchResult {
 			ensure_root(origin)?;
@@ -900,6 +905,7 @@ pub mod pallet {
 		/// Increments rewards of candidate and their delegators.
 		///
 		/// Emits `CandidateRemoved`.
+		#[pallet::call_index(5)]
 		#[pallet::weight(<T as Config>::WeightInfo::force_remove_candidate(
 			T::MaxTopCandidates::get(),
 			T::MaxDelegatorsPerCollator::get()
@@ -965,6 +971,7 @@ pub mod pallet {
 		/// candidates nor of the delegators set.
 		///
 		/// Emits `JoinedCollatorCandidates`.
+		#[pallet::call_index(6)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::join_candidates(
 			T::MaxTopCandidates::get(),
 			T::MaxDelegatorsPerCollator::get()
@@ -1038,6 +1045,7 @@ pub mod pallet {
 		/// rewards, until the end of the next session.
 		///
 		/// Emits `CollatorScheduledExit`.
+		#[pallet::call_index(7)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::init_leave_candidates(
 			T::MaxTopCandidates::get(),
 			T::MaxTopCandidates::get().saturating_mul(T::MaxDelegatorsPerCollator::get())
@@ -1100,6 +1108,7 @@ pub mod pallet {
 		/// `MaxTopCandidates`.
 		///
 		/// Emits `CollatorLeft`.
+		#[pallet::call_index(8)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::execute_leave_candidates(
 			T::MaxTopCandidates::get(),
 			T::MaxDelegatorsPerCollator::get(),
@@ -1139,6 +1148,7 @@ pub mod pallet {
 		/// `init_leave_candidates`.
 		///
 		/// Emits `CollatorCanceledExit`.
+		#[pallet::call_index(9)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::cancel_leave_candidates(
 			T::MaxTopCandidates::get(),
 			T::MaxDelegatorsPerCollator::get(),
@@ -1186,6 +1196,7 @@ pub mod pallet {
 		/// allowed range as set in the pallet's configuration.
 		///
 		/// Emits `CollatorStakedMore`.
+		#[pallet::call_index(10)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::candidate_stake_more(
 			T::MaxTopCandidates::get(),
 			T::MaxDelegatorsPerCollator::get(),
@@ -1255,6 +1266,7 @@ pub mod pallet {
 		/// allowed range as set in the pallet's configuration.
 		///
 		/// Emits `CollatorStakedLess`.
+		#[pallet::call_index(11)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::candidate_stake_less(
 			T::MaxTopCandidates::get(),
 			T::MaxDelegatorsPerCollator::get()
@@ -1329,6 +1341,7 @@ pub mod pallet {
 		/// Emits `DelegationReplaced` if the candidate has
 		/// `MaxDelegatorsPerCollator` many delegations but this delegator
 		/// staked more than one of the other delegators of this candidate.
+		#[pallet::call_index(12)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::join_delegators(
 			T::MaxTopCandidates::get(),
 			T::MaxDelegatorsPerCollator::get()
@@ -1454,6 +1467,7 @@ pub mod pallet {
 		/// the current delegation.
 		///
 		/// Emits `DelegatorLeft`.
+		#[pallet::call_index(13)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::leave_delegators(
 			T::MaxTopCandidates::get(),
 			T::MaxDelegatorsPerCollator::get()
@@ -1482,6 +1496,7 @@ pub mod pallet {
 		/// collator candidate to be added to it.
 		///
 		/// Emits `DelegatorStakedMore`.
+		#[pallet::call_index(14)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::delegator_stake_more(
 			T::MaxTopCandidates::get(),
 			T::MaxDelegatorsPerCollator::get(),
@@ -1557,6 +1572,7 @@ pub mod pallet {
 		/// allowed range as set in the pallet's configuration.
 		///
 		/// Emits `DelegatorStakedLess`.
+		#[pallet::call_index(15)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::delegator_stake_less(
 			T::MaxTopCandidates::get(),
 			T::MaxDelegatorsPerCollator::get()
@@ -1629,6 +1645,7 @@ pub mod pallet {
 		/// - Writes: Unstaking, Locks
 		/// - Kills: Unstaking & Locks if no balance is locked anymore
 		/// # </weight>
+		#[pallet::call_index(16)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::unlock_unstaked(
 			T::MaxUnstakeRequests::get().saturated_into::<u32>()
 		))]
@@ -1659,6 +1676,7 @@ pub mod pallet {
 		/// for anyone.
 		///
 		/// Emits `Rewarded`.
+		#[pallet::call_index(17)]
 		#[pallet::weight(<T as Config>::WeightInfo::claim_rewards())]
 		pub fn claim_rewards(origin: OriginFor<T>) -> DispatchResult {
 			let target = ensure_signed(origin)?;
@@ -1681,6 +1699,7 @@ pub mod pallet {
 		/// network.
 		///
 		/// The dispatch origin must be a collator.
+		#[pallet::call_index(18)]
 		#[pallet::weight(<T as Config>::WeightInfo::increment_collator_rewards())]
 		pub fn increment_collator_rewards(origin: OriginFor<T>) -> DispatchResult {
 			let collator = ensure_signed(origin)?;
@@ -1698,6 +1717,7 @@ pub mod pallet {
 		/// delegations.
 		///
 		/// The dispatch origin must be a delegator.
+		#[pallet::call_index(19)]
 		#[pallet::weight(<T as Config>::WeightInfo::increment_delegator_rewards())]
 		pub fn increment_delegator_rewards(origin: OriginFor<T>) -> DispatchResult {
 			let delegator = ensure_signed(origin)?;
@@ -1720,6 +1740,7 @@ pub mod pallet {
 		/// too early.
 		///
 		/// Emits `RoundInflationSet`.
+		#[pallet::call_index(20)]
 		#[pallet::weight(<T as Config>::WeightInfo::execute_scheduled_reward_change(T::MaxTopCandidates::get(), T::MaxDelegatorsPerCollator::get()))]
 		pub fn execute_scheduled_reward_change(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
 			ensure_signed(origin)?;

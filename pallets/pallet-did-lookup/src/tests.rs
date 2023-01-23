@@ -297,8 +297,8 @@ fn test_remove_association_sender() {
 		.execute_with(|| {
 			// remove association
 			assert!(DidLookup::remove_sender_association(RuntimeOrigin::signed(ACCOUNT_00)).is_ok());
-			assert_eq!(ConnectedDids::<Test>::get(&LinkableAccountId::from(ACCOUNT_00)), None);
-			assert!(ConnectedAccounts::<Test>::get(DID_01, &LinkableAccountId::from(ACCOUNT_00)).is_none());
+			assert_eq!(ConnectedDids::<Test>::get(LinkableAccountId::from(ACCOUNT_00)), None);
+			assert!(ConnectedAccounts::<Test>::get(DID_01, LinkableAccountId::from(ACCOUNT_00)).is_none());
 			assert_eq!(Balances::reserved_balance(ACCOUNT_00), 0);
 		});
 }
