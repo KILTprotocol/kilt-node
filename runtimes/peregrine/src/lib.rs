@@ -566,6 +566,7 @@ impl ctype::Config for Runtime {
 
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
+	type OverarchingOrigin = EnsureRoot<AccountId>;
 
 	type RuntimeEvent = RuntimeEvent;
 	type WeightInfo = weights::ctype::WeightInfo<Runtime>;
@@ -660,7 +661,6 @@ impl parachain_staking::Config for Runtime {
 	type MaxUnstakeRequests = constants::staking::MaxUnstakeRequests;
 	type NetworkRewardRate = constants::staking::NetworkRewardRate;
 	type NetworkRewardStart = constants::staking::NetworkRewardStart;
-
 	type NetworkRewardBeneficiary = Treasury;
 	type WeightInfo = weights::parachain_staking::WeightInfo<Runtime>;
 
@@ -1010,8 +1010,8 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for RuntimeCall 
 			RuntimeCall::Did(did::Call::create { .. }) => Err(did::RelationshipDeriveError::NotCallableByDid),
 			RuntimeCall::Did { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
 			RuntimeCall::Web3Names { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
-			RuntimeCall::DidLookup { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
 			RuntimeCall::PublicCredentials { .. } => Ok(did::DidVerificationKeyRelationship::AssertionMethod),
+			RuntimeCall::DidLookup { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
 			RuntimeCall::Utility(pallet_utility::Call::batch { calls }) => single_key_relationship(&calls[..]),
 			RuntimeCall::Utility(pallet_utility::Call::batch_all { calls }) => single_key_relationship(&calls[..]),
 			RuntimeCall::Utility(pallet_utility::Call::force_batch { calls }) => single_key_relationship(&calls[..]),
@@ -1067,6 +1067,7 @@ pub type Executive = frame_executive::Executive<
 		pallet_preimage::migration::v1::Migration<Runtime>,
 		pallet_scheduler::migration::v3::MigrateToV4<Runtime>,
 		pallet_democracy::migrations::v1::Migration<Runtime>,
+		runtime_common::migrations::AddCTypeBlockNumber<Runtime>,
 		EthereumMigration<Runtime>,
 	),
 >;

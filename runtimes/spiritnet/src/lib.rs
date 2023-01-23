@@ -72,11 +72,11 @@ use sp_version::NativeVersion;
 #[cfg(feature = "runtime-benchmarks")]
 use {frame_system::EnsureSigned, kilt_support::signature::AlwaysVerify, runtime_common::benchmarks::DummySignature};
 
-#[cfg(test)]
-mod tests;
-
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
+
+#[cfg(test)]
+mod tests;
 
 mod weights;
 mod xcm_config;
@@ -222,8 +222,6 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
 	type ReservedDmpWeight = ReservedDmpWeight;
 	type XcmpMessageHandler = XcmpQueue;
 	type ReservedXcmpWeight = ReservedXcmpWeight;
-	// We temporarily control this via the RelayMigration pallet which can toggle
-	// between strict and any.
 	type CheckAssociatedRelayNumber = RelayNumberStrictlyIncreases;
 }
 
@@ -563,6 +561,9 @@ impl ctype::Config for Runtime {
 
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
+	// 3/5 of the technical committees can override the block number of one or more
+	// CTypes.
+	type OverarchingOrigin = EnsureRoot<AccountId>;
 
 	type RuntimeEvent = RuntimeEvent;
 	type WeightInfo = weights::ctype::WeightInfo<Runtime>;
@@ -1062,6 +1063,7 @@ pub type Executive = frame_executive::Executive<
 		pallet_preimage::migration::v1::Migration<Runtime>,
 		pallet_scheduler::migration::v3::MigrateToV4<Runtime>,
 		pallet_democracy::migrations::v1::Migration<Runtime>,
+		runtime_common::migrations::AddCTypeBlockNumber<Runtime>,
 		EthereumMigration<Runtime>,
 	),
 >;
@@ -1084,6 +1086,7 @@ mod benches {
 		[pallet_inflation, Inflation]
 		[parachain_staking, ParachainStaking]
 		[pallet_web3_names, Web3Names]
+		[public_credentials, PublicCredentials]
 		// Substrate
 		[frame_benchmarking::baseline, Baseline::<Runtime>]
 		[frame_system, SystemBench::<Runtime>]
