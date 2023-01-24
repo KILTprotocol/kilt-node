@@ -29,7 +29,6 @@ serde = {workspace = true, features = ["derive"]}
 serde_json.workspace = true
 
 # Internal dependencies
-clone-runtime = {workspace = true, features = ["std"]}
 peregrine-runtime = {workspace = true, features = ["std"]}
 runtime-common = {workspace = true, features = ["std"]}
 spiritnet-runtime = {workspace = true, features = ["std"]}
@@ -101,7 +100,6 @@ fast-gov = [
   "runtime-common/fast-gov",
 ]
 runtime-benchmarks = [
-  "clone-runtime/runtime-benchmarks",
   "frame-benchmarking/runtime-benchmarks",
   "frame-benchmarking-cli/runtime-benchmarks",
   "polkadot-cli/runtime-benchmarks",
@@ -115,7 +113,6 @@ runtime-benchmarks = [
   "xcm/runtime-benchmarks",
 ]
 try-runtime = [
-  "clone-runtime/try-runtime",
   "peregrine-runtime/try-runtime",
   "polkadot-cli/try-runtime",
   "polkadot-service/try-runtime",

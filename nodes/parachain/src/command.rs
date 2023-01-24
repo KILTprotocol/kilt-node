@@ -19,7 +19,7 @@
 use crate::{
 	chain_spec::{self},
 	cli::{Cli, RelayChainCli, Subcommand},
-	service::{new_partial, CloneRuntimeExecutor, PeregrineRuntimeExecutor, SpiritnetRuntimeExecutor},
+	service::{new_partial, PeregrineRuntimeExecutor, SpiritnetRuntimeExecutor},
 };
 use codec::Encode;
 use cumulus_client_cli::generate_genesis_block;
@@ -41,7 +41,6 @@ use std::net::SocketAddr;
 trait IdentifyChain {
 	fn is_peregrine(&self) -> bool;
 	fn is_spiritnet(&self) -> bool;
-	fn is_clone(&self) -> bool;
 }
 
 impl IdentifyChain for dyn sc_service::ChainSpec {
@@ -54,9 +53,6 @@ impl IdentifyChain for dyn sc_service::ChainSpec {
 			|| self.id().eq("kilt_westend")
 			|| self.id().eq("kilt_rococo")
 	}
-	fn is_clone(&self) -> bool {
-		self.id().to_lowercase().contains("cln_kilt") || self.id().to_lowercase().contains("clone")
-	}
 }
 
 impl<T: sc_service::ChainSpec + 'static> IdentifyChain for T {
@@ -66,9 +62,6 @@ impl<T: sc_service::ChainSpec + 'static> IdentifyChain for T {
 	fn is_spiritnet(&self) -> bool {
 		<dyn sc_service::ChainSpec>::is_spiritnet(self)
 	}
-	fn is_clone(&self) -> bool {
-		<dyn sc_service::ChainSpec>::is_clone(self)
-	}
 }
 
 fn load_spec(id: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
@@ -77,8 +70,6 @@ fn load_spec(id: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, St
 		|| id.to_lowercase().contains("rilt")
 	{
 		"spiritnet"
-	} else if id.to_lowercase().contains("cln_kilt") || id.to_lowercase().contains("clone") {
-		"clone"
 	} else {
 		"peregrine"
 	};
@@ -89,22 +80,15 @@ fn load_spec(id: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, St
 	match (id, runtime) {
 		("dev", _) => Ok(Box::new(chain_spec::peregrine::make_dev_spec()?)),
 		("spiritnet-dev", _) => Ok(Box::new(chain_spec::spiritnet::get_chain_spec_dev()?)),
-		("clone-dev", _) => Ok(Box::new(chain_spec::clone::get_chain_spec_dev()?)),
 		("peregrine-new", _) => Ok(Box::new(chain_spec::peregrine::make_new_spec()?)),
 		("wilt-new", _) => Ok(Box::new(chain_spec::spiritnet::get_chain_spec_wilt()?)),
 		("rilt-new", _) => Ok(Box::new(chain_spec::spiritnet::get_chain_spec_rilt()?)),
-		("clone-new", _) => Ok(Box::new(chain_spec::clone::get_chain_spec_cln()?)),
 		("rilt", _) => Ok(Box::new(chain_spec::spiritnet::load_rilt_spec()?)),
 		("spiritnet", _) => Ok(Box::new(chain_spec::spiritnet::load_spiritnet_spec()?)),
-		("clone", _) => Ok(Box::new(chain_spec::clone::load_clone_spec()?)),
-		("clone2", _) => Ok(Box::new(chain_spec::clone::load_clone2_spec()?)),
-		("clone3", _) => Ok(Box::new(chain_spec::clone::load_clone3_spec()?)),
 		("", "spiritnet") => Ok(Box::new(chain_spec::spiritnet::get_chain_spec_dev()?)),
 		("", "peregrine") => Ok(Box::new(chain_spec::peregrine::make_dev_spec()?)),
-		("", "clone") => Ok(Box::new(chain_spec::clone::get_chain_spec_dev()?)),
 		(path, "spiritnet") => Ok(Box::new(chain_spec::spiritnet::ChainSpec::from_json_file(path.into())?)),
 		(path, "peregrine") => Ok(Box::new(chain_spec::peregrine::ChainSpec::from_json_file(path.into())?)),
-		(path, "clone") => Ok(Box::new(chain_spec::clone::ChainSpec::from_json_file(path.into())?)),
 		_ => Err("Unknown KILT parachain spec".to_owned()),
 	}
 }
@@ -147,8 +131,6 @@ impl SubstrateCli for Cli {
 	fn native_runtime_version(spec: &Box<dyn ChainSpec>) -> &'static RuntimeVersion {
 		if spec.is_spiritnet() {
 			&spiritnet_runtime::VERSION
-		} else if spec.is_clone() {
-			&clone_runtime::VERSION
 		} else {
 			&peregrine_runtime::VERSION
 		}
@@ -218,16 +200,6 @@ macro_rules! construct_async_run {
 						{ $( $code )* }.map(|v| (v, task_manager))
 					})
 				}
-			"clone" => {
-				runner.async_run(|$config| {
-					let $components = new_partial::<clone_runtime::RuntimeApi, CloneRuntimeExecutor, _>(
-						&$config,
-						crate::service::build_import_queue::<CloneRuntimeExecutor, clone_runtime::RuntimeApi>,
-					)?;
-					let task_manager = $components.task_manager;
-					{ $( $code )* }.map(|v| (v, task_manager))
-				})
-			}
 			_ => panic!("unknown runtime"),
 		}
 	}}
@@ -306,7 +278,6 @@ pub fn run() -> Result<()> {
 						match runtime {
 							"spiritnet" => runner.sync_run(|config| cmd.run::<Block, SpiritnetRuntimeExecutor>(config)),
 							"peregrine" => runner.sync_run(|config| cmd.run::<Block, PeregrineRuntimeExecutor>(config)),
-							"clone" => runner.sync_run(|config| cmd.run::<Block, CloneRuntimeExecutor>(config)),
 							_ => Err("Unknown parachain runtime".into()),
 						}
 					} else {
@@ -324,13 +295,6 @@ pub fn run() -> Result<()> {
 				}),
 				(BenchmarkCmd::Block(cmd), "peregrine") => runner.sync_run(|config| {
 					let partials = new_partial::<peregrine_runtime::RuntimeApi, PeregrineRuntimeExecutor, _>(
-						&config,
-						crate::service::build_import_queue,
-					)?;
-					cmd.run(partials.client)
-				}),
-				(BenchmarkCmd::Block(cmd), "clone") => runner.sync_run(|config| {
-					let partials = new_partial::<clone_runtime::RuntimeApi, CloneRuntimeExecutor, _>(
 						&config,
 						crate::service::build_import_queue,
 					)?;
@@ -366,18 +330,6 @@ pub fn run() -> Result<()> {
 
 					cmd.run(config, partials.client.clone(), db, storage)
 				}),
-				#[cfg(feature = "runtime-benchmarks")]
-				(BenchmarkCmd::Storage(cmd), "clone") => runner.sync_run(|config| {
-					let partials = new_partial::<clone_runtime::RuntimeApi, CloneRuntimeExecutor, _>(
-						&config,
-						crate::service::build_import_queue,
-					)?;
-
-					let db = partials.backend.expose_db();
-					let storage = partials.backend.expose_storage();
-
-					cmd.run(config, partials.client.clone(), db, storage)
-				}),
 				(BenchmarkCmd::Overhead(_), _) => Err("Unsupported benchmarking command".into()),
 				(BenchmarkCmd::Machine(cmd), _) => {
 					runner.sync_run(|config| cmd.run(&config, SUBSTRATE_REFERENCE_HARDWARE.clone()))
@@ -385,7 +337,7 @@ pub fn run() -> Result<()> {
 				// NOTE: this allows the Client to leniently implement
 				// new benchmark commands without requiring a companion MR.
 				#[allow(unreachable_patterns)]
-				(_, "spiritnet") | (_, "peregrine") | (_, "clone") => Err("Benchmarking sub-command unsupported".into()),
+				(_, "spiritnet") | (_, "peregrine") => Err("Benchmarking sub-command unsupported".into()),
 				(_, _) => Err("Unknown parachain runtime".into()),
 			}
 		}
@@ -489,17 +441,6 @@ pub fn run() -> Result<()> {
 					.map_err(Into::into)
 				} else if config.chain_spec.is_spiritnet() {
 					crate::service::start_node::<SpiritnetRuntimeExecutor, spiritnet_runtime::RuntimeApi>(
-						config,
-						polkadot_config,
-						collator_options,
-						id,
-						hwbench,
-					)
-					.await
-					.map(|r| r.0)
-					.map_err(Into::into)
-				} else if config.chain_spec.is_clone() {
-					crate::service::start_node::<CloneRuntimeExecutor, clone_runtime::RuntimeApi>(
 						config,
 						polkadot_config,
 						collator_options,
