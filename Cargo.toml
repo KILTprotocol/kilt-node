@@ -65,13 +65,12 @@ kilt-runtime-api-staking = {path = "runtime-api/staking", default-features = fal
 kilt-runtime-api-public-credentials = {path = "runtime-api/public-credentials", default-features = false}
 
 # Internal KILT runtimes (with default disabled)
-clone-runtime = {path = "runtimes/clone", default-features = false}
 mashnet-node-runtime = {path = "runtimes/standalone", default-features = false}
 peregrine-runtime = {path = "runtimes/peregrine", default-features = false}
 spiritnet-runtime = {path = "runtimes/spiritnet", default-features = false}
 
 
-# Benchmarking (with default disabled) 
+# Benchmarking (with default disabled)
 cumulus-pallet-session-benchmarking = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "polkadot-v0.9.37"}
 frame-system-benchmarking = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.37"}
 
@@ -131,7 +130,7 @@ sp-std = {git = "https://github.com/paritytech/substrate", default-features = fa
 sp-transaction-pool = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.37"}
 sp-version = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.37"}
 try-runtime-cli = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.37"}
- 
+
 # Polkadot (with default disabled)
 pallet-xcm = {git = "https://github.com/paritytech/polkadot", default-features = false, branch = "release-v0.9.37"}
 polkadot-parachain = {git = "https://github.com/paritytech/polkadot", default-features = false, branch = "release-v0.9.37"}
