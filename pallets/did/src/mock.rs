@@ -196,6 +196,7 @@ impl ctype::Config for Test {
 	type OriginSuccess = DidRawOrigin<AccountId, DidIdentifier>;
 
 	type CtypeCreatorId = DidIdentifier;
+	type OverarchingOrigin = EnsureSigned<AccountId>;
 	type RuntimeEvent = ();
 	type WeightInfo = ();
 	type Currency = Balances;
@@ -472,7 +473,13 @@ impl ExtBuilder {
 
 		ext.execute_with(|| {
 			for (ctype_hash, owner) in self.ctypes_stored.iter() {
-				ctype::Ctypes::<Test>::insert(ctype_hash, owner);
+				ctype::Ctypes::<Test>::insert(
+					ctype_hash,
+					ctype::CtypeEntryOf::<Test> {
+						creator: owner.to_owned(),
+						created_at: System::block_number(),
+					},
+				);
 			}
 
 			for did in self.dids_stored.iter() {
