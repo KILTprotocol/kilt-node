@@ -21,20 +21,17 @@ use super::{
 	RuntimeOrigin, Treasury, WeightToFee, XcmpQueue,
 };
 
-use frame_support::{
-	parameter_types,
-	traits::{Everything, Nothing},
-};
+use frame_support::{parameter_types, traits::Nothing};
 use pallet_xcm::XcmPassthrough;
 use xcm::latest::prelude::*;
 use xcm_builder::{
-	EnsureXcmOrigin, FixedWeightBounds, LocationInverter, NativeAsset, RelayChainAsNative, SiblingParachainAsNative,
+	EnsureXcmOrigin, FixedWeightBounds, LocationInverter, RelayChainAsNative, SiblingParachainAsNative,
 	SignedAccountId32AsNative, SignedToAccountId32, SovereignSignedViaLocation, UsingComponents,
 };
 use xcm_executor::XcmExecutor;
 
 use runtime_common::xcm_config::{
-	LocalAssetTransactor, LocationToAccountId, MaxInstructions, RelayLocation, UnitWeightCost, XcmBarrier,
+	HereLocation, LocalAssetTransactor, LocationToAccountId, MaxInstructions, UnitWeightCost, XcmBarrier,
 };
 
 parameter_types! {
@@ -75,8 +72,8 @@ impl xcm_executor::Config for XcmConfig {
 	// How to withdraw and deposit an asset.
 	type AssetTransactor = LocalAssetTransactor<Balances, RelayNetworkId>;
 	type OriginConverter = XcmOriginToTransactDispatchOrigin;
-	// We only trust our own KILT asset reserve.
-	type IsReserve = NativeAsset;
+	// Reserving is disabled.
+	type IsReserve = ();
 	// Teleporting is disabled.
 	type IsTeleporter = ();
 	// Invert a location.
@@ -92,7 +89,7 @@ impl xcm_executor::Config for XcmConfig {
 	// How weight is transformed into fees. The fees are not taken out of the
 	// Balances pallet here. Balances is only used if fees are dropped without being
 	// used. In that case they are put into the treasury.
-	type Trader = UsingComponents<WeightToFee<Runtime>, RelayLocation, AccountId, Balances, Treasury>;
+	type Trader = UsingComponents<WeightToFee<Runtime>, HereLocation, AccountId, Balances, Treasury>;
 	type ResponseHandler = PolkadotXcm;
 	// What happens with assets that are left in the register after the XCM message
 	// was processed. PolkadotXcm has an AssetTrap that stores a hash of the asset
