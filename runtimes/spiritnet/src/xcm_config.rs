@@ -1,5 +1,5 @@
 // KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2022 BOTLabs GmbH
+// Copyright (C) 2019-2023 BOTLabs GmbH
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -38,7 +38,7 @@ use runtime_common::xcm_config::{LocalAssetTransactor, MaxInstructions, RelayLoc
 parameter_types! {
 	pub RelayChainOrigin: RuntimeOrigin = cumulus_pallet_xcm::Origin::Relay.into();
 	pub Ancestry: MultiLocation = Parachain(ParachainInfo::parachain_id().into()).into();
-	pub const RelayNetworkId: NetworkId = NetworkId::Kusama;
+	pub const RelayNetworkId: NetworkId = NetworkId::Polkadot;
 }
 
 /// This is the type we use to convert an (incoming) XCM origin into a local

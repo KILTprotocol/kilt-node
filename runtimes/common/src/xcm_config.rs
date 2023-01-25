@@ -1,5 +1,5 @@
 // KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2022 BOTLabs GmbH
+// Copyright (C) 2019-2023 BOTLabs GmbH
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -35,7 +35,7 @@ parameter_types! {
 }
 
 match_types! {
-	// The legislative of our parent (i.e. Kusama majority vote).
+	// The legislative of our parent (i.e. Polkadot majority vote for Spiritnet).
 	pub type ParentLegislative: impl Contains<MultiLocation> = {
 		MultiLocation { parents: 1, interior: X1(Plurality { id: BodyId::Legislative, .. }) }
 	};
