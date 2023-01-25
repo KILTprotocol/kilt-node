@@ -311,7 +311,7 @@ mod tests {
 				assert_eq!(account_check_pre.get(0).unwrap().0, ACCOUNT_00);
 
 				assert_noop!(
-					DidLookup::try_finalize_migration(RuntimeOrigin::signed(ACCOUNT_00)),
+					DidLookup::try_finalize_migration(RuntimeOrigin::signed(ACCOUNT_00), 4),
 					Error::<Test>::MigrationStorageSizeMismatch
 				);
 
@@ -320,7 +320,7 @@ mod tests {
 					RuntimeOrigin::signed(ACCOUNT_01),
 					ACCOUNT_00
 				));
-				assert_ok!(DidLookup::try_finalize_migration(RuntimeOrigin::signed(ACCOUNT_00)));
+				assert_ok!(DidLookup::try_finalize_migration(RuntimeOrigin::signed(ACCOUNT_00), 4));
 
 				// Check post migration status
 				assert!(check_did_migration::<Test>(None).is_empty());
@@ -377,7 +377,7 @@ mod tests {
 				assert!(ConnectedAccountsV2::<Test>::iter_keys().count().is_zero());
 				assert_eq!(check_account_migration::<Test>(None).len(), 2);
 				assert_noop!(
-					DidLookup::try_finalize_migration(RuntimeOrigin::signed(ACCOUNT_00)),
+					DidLookup::try_finalize_migration(RuntimeOrigin::signed(ACCOUNT_00), 4),
 					Error::<Test>::MigrationStorageSizeMismatch
 				);
 
@@ -387,7 +387,7 @@ mod tests {
 					ACCOUNT_00
 				));
 				assert_noop!(
-					DidLookup::try_finalize_migration(RuntimeOrigin::signed(ACCOUNT_00)),
+					DidLookup::try_finalize_migration(RuntimeOrigin::signed(ACCOUNT_00), 4),
 					Error::<Test>::MigrationStorageSizeMismatch
 				);
 				assert_eq!(ConnectedDidsV2::<Test>::iter_keys().count(), 1);
@@ -400,7 +400,7 @@ mod tests {
 					RuntimeOrigin::signed(ACCOUNT_00),
 					ACCOUNT_01
 				));
-				assert_ok!(DidLookup::try_finalize_migration(RuntimeOrigin::signed(ACCOUNT_00)));
+				assert_ok!(DidLookup::try_finalize_migration(RuntimeOrigin::signed(ACCOUNT_00), 4));
 
 				// Check post migration status
 				assert!(check_did_migration::<Test>(None).is_empty());

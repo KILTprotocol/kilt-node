@@ -37,9 +37,9 @@ use sp_runtime::{
 use kilt_support::{deposit::Deposit, traits::GenerateBenchmarkOrigin};
 
 use crate::{
-	account::AccountId20, linkable_account::LinkableAccountId, migrations::add_legacy_association,
-	signature::get_wrapped_payload, AccountIdOf, Call, Config, ConnectedAccounts,
-	ConnectedDids, CurrencyOf, Pallet, associate_account_request::AssociateAccountRequest,
+	account::AccountId20, associate_account_request::AssociateAccountRequest, linkable_account::LinkableAccountId,
+	migrations::add_legacy_association, signature::get_wrapped_payload, AccountIdOf, Call, Config, ConnectedAccounts,
+	ConnectedDids, CurrencyOf, Pallet,
 };
 
 const SEED: u32 = 0;
@@ -314,7 +314,9 @@ benchmarks! {
 	}
 
 	try_finalize_migration {
-		for i in 0..50 {
+		let n in 1 .. 100;
+
+		for i in 0..n {
 			let deposit_owner: T::AccountId = account("caller", i, SEED);
 			let linkable_id: LinkableAccountId = deposit_owner.clone().into();
 
@@ -332,7 +334,7 @@ benchmarks! {
 		let sender: T::AccountId = account("caller", 0, SEED);
 		let origin = RawOrigin::Signed(sender.clone());
 
-	}: _(origin)
+	}: _(origin, n)
 	verify {
 	}
 }

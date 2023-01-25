@@ -392,7 +392,8 @@ pub mod pallet {
 		/// the migration flag.
 		///
 		/// Can be called by any origin as duplicate calls won't succeed.
-		#[pallet::weight(T::DbWeight::get().reads_writes(2, 4))]
+		#[pallet::weight(<T as Config>::WeightInfo::migrate_account_id())]
+		#[pallet::call_index(254)]
 		pub fn migrate_account_id(origin: OriginFor<T>, account_id: AccountIdOf<T>) -> DispatchResult {
 			ensure_signed(origin)?;
 
@@ -419,8 +420,9 @@ pub mod pallet {
 		/// On failure, this means there are still unmigrated key types. Please
 		/// check indexers for `Migrated` events of this pallet to get knowledge
 		/// of migrated accounts.
-		#[pallet::weight(T::DbWeight::get().reads_writes(1, 2))]
-		pub fn try_finalize_migration(origin: OriginFor<T>) -> DispatchResult {
+		#[pallet::weight(<T as Config>::WeightInfo::try_finalize_migration(*limit))]
+		#[pallet::call_index(255)]
+		pub fn try_finalize_migration(origin: OriginFor<T>, limit: u32) -> DispatchResult {
 			ensure_signed(origin)?;
 
 			// Safety check, should always succeed when upper one succeeds
