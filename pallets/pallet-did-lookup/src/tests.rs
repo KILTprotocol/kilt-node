@@ -28,10 +28,11 @@ use sp_runtime::{
 
 use crate::{
 	account::{AccountId20, EthereumSignature},
+	associate_account_request::AssociateAccountRequest,
 	linkable_account::LinkableAccountId,
 	mock::*,
 	signature::get_wrapped_payload,
-	AssociateAccountRequest, ConnectedAccounts, ConnectedDids, ConnectionRecord, Error,
+	ConnectedAccounts, ConnectedDids, ConnectionRecord, Error,
 };
 
 #[test]

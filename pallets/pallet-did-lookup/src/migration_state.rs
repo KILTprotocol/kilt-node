@@ -21,16 +21,19 @@ use scale_info::TypeInfo;
 
 #[derive(Clone, Debug, Eq, PartialEq, Encode, Decode, MaxEncodedLen, TypeInfo, Default)]
 pub enum MigrationState<Hash> {
-	/// The migration is ongoing. Not all storage entries are migrated yet.
+	/// The migration wasn't started yet.
 	#[default]
-	Upgrading,
+	NotStarted,
 
 	/// All storage entries should be migrated. It is currently checked whether
 	/// all keys where successfully migrated.
 	Verifying(Hash),
 
-	/// The migration was successful
+	/// The migration was successful.
 	Done,
+
+	/// The migration is ongoing. Not all storage entries are migrated yet.
+	Upgrading,
 }
 
 impl<H> MigrationState<H> {
@@ -44,7 +47,15 @@ impl<H> MigrationState<H> {
 	pub fn is_in_progress(self) -> bool {
 		return match self {
 			MigrationState::Done => false,
+			MigrationState::NotStarted => false,
 			_ => true,
+		};
+	}
+
+	pub fn is_not_started(self) -> bool {
+		return match self {
+			MigrationState::NotStarted => true,
+			_ => false,
 		};
 	}
 }

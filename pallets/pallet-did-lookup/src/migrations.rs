@@ -19,14 +19,15 @@
 use crate::{
 	linkable_account::LinkableAccountId, migration_state::MigrationState, AccountIdOf, Config,
 	ConnectedAccounts as ConnectedAccountsV2, ConnectedDids as ConnectedDidsV2, ConnectionRecordOf, DidIdentifierOf,
-	MigrationStateStore, Pallet,
+	Error, MigrationStateStore, Pallet,
 };
 
 use frame_support::{
-	storage_alias,
+	ensure, storage_alias,
 	traits::{Get, GetStorageVersion, OnRuntimeUpgrade},
 	Blake2_128Concat,
 };
+use sp_runtime::DispatchError;
 use sp_std::{marker::PhantomData, vec, vec::Vec};
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -62,12 +63,34 @@ pub(crate) fn do_migrate_account_id<T: Config>(
 		.transpose()
 }
 
-
 /// Iterates over both old typed storage maps `ConnectedDids`,
 /// `ConnectedAccounts` and checks whether any raw storage key still exists in
 /// the low level storage.
-pub(crate) fn do_verify_migration<T: Config>() -> bool {
-	check_did_migration::<T>(None).is_empty() && check_account_migration::<T>(None).is_empty()
+pub(crate) fn do_verify_migration<T: Config>() -> Result<(), DispatchError> {
+	check_storage_size::<T>()?;
+
+	ensure!(
+		check_did_migration::<T>(None).is_empty() && check_account_migration::<T>(None).is_empty(),
+		Error::<T>::MigrationKeysPersist
+	);
+
+	Ok(())
+}
+
+/// Sanity check that both new typed storage maps `ConnectedDids`,
+/// `ConnectedAccounts` have as many keys as their old counter parts with
+/// different key types.
+pub(crate) fn check_storage_size<T: Config>() -> Result<(), DispatchError> {
+	ensure!(
+		ConnectedAccounts::<T>::iter_keys().count() == ConnectedAccountsV2::<T>::iter_keys().count(),
+		Error::<T>::MigrationStorageSizeMismatch
+	);
+	ensure!(
+		ConnectedDids::<T>::iter_keys().count() == ConnectedDidsV2::<T>::iter_keys().count(),
+		Error::<T>::MigrationStorageSizeMismatch
+	);
+
+	Ok(())
 }
 
 /// Iterates over old connected did storage map and checks whether any raw key
@@ -164,7 +187,10 @@ where
 			Pallet::<T>::on_chain_storage_version() < Pallet::<T>::current_storage_version(),
 			"On-chain storage of DID lookup pallet already bumped"
 		);
-		assert!(!MigrationStateStore::<T>::get(), "Migration flag already set");
+		assert!(
+			!MigrationStateStore::<T>::get().is_not_started(),
+			"Migration flag already set"
+		);
 
 		log::info!("🔎 DidLookup: Pre migration checks successful");
 
@@ -178,7 +204,10 @@ where
 			Pallet::<T>::current_storage_version(),
 			"On-chain storage of DID lookup pallet was not bumped"
 		);
-		assert!(MigrationStateStore::<T>::get(), "Migration flag was not set");
+		assert!(
+			MigrationStateStore::<T>::get().is_in_progress(),
+			"Migration flag was not set"
+		);
 
 		log::info!("🔎 DidLookup: Post migration checks successful");
 
@@ -266,7 +295,7 @@ mod tests {
 					<Test as crate::Config>::Deposit::get() * 2,
 				);
 
-				// Check pre migration status
+				// Check pre migration status (one entry not migrated, zero migrated entries)
 				assert_eq!(ConnectedDids::<Test>::get(ACCOUNT_00).unwrap().did, DID_00);
 				assert_eq!(ConnectedDids::<Test>::iter_keys().count(), 1);
 				assert!(ConnectedDidsV2::<Test>::iter_keys().count().is_zero());

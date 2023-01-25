@@ -416,12 +416,8 @@ pub mod pallet {
 		pub fn try_finalize_migration(origin: OriginFor<T>) -> DispatchResult {
 			ensure_signed(origin)?;
 
-			// let hash = <T as frame_system::Config>::Hashing::hash(&cursor[..]);
 			// Safety check, should always succeed when upper one succeeds
-			ensure!(
-				crate::migrations::do_verify_migration::<T>(),
-				Error::<T>::MigrationKeysPersist
-			);
+			crate::migrations::do_verify_migration::<T>()?;
 
 			MigrationStateStore::<T>::set(MigrationState::Done);
 			Self::deposit_event(Event::<T>::MigrationCompleted);
