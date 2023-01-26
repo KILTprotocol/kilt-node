@@ -89,6 +89,7 @@ pub struct MigrateToNewStorageVersion<R>(PhantomData<R>);
 impl<R> OnRuntimeUpgrade for MigrateToNewStorageVersion<R>
 where
 	R: attestation::Config
+		+ ctype::Config
 		+ delegation::Config
 		+ did::Config
 		+ pallet_did_lookup::Config
@@ -176,14 +177,11 @@ where
 
 	fn on_runtime_upgrade() -> frame_support::weights::Weight {
 		type AttestationPallet<R> = attestation::Pallet<R>;
-		type InflationPallet<R> = pallet_inflation::Pallet<R>;
 		type Web3NamesPallet<R> = pallet_web3_names::Pallet<R>;
 		type PublicCredentialsPallet<R> = public_credentials::Pallet<R>;
 
-		log::info!("RUNNINGGGGGG");
-
 		AttestationPallet::<R>::current_storage_version().put::<AttestationPallet<R>>();
-		InflationPallet::<R>::current_storage_version().put::<InflationPallet<R>>();
+		// Not an issue with Peregrine, but it is with Spiritnet.
 		Web3NamesPallet::<R>::current_storage_version().put::<Web3NamesPallet<R>>();
 		PublicCredentialsPallet::<R>::current_storage_version().put::<PublicCredentialsPallet<R>>();
 
@@ -193,6 +191,7 @@ where
 	#[cfg(feature = "try-runtime")]
 	fn post_upgrade(_state: Vec<u8>) -> Result<(), &'static str> {
 		type AttestationPallet<R> = attestation::Pallet<R>;
+		type CTypePallet<R> = ctype::Pallet<R>;
 		type DelegationPallet<R> = delegation::Pallet<R>;
 		type DidPallet<R> = did::Pallet<R>;
 		type LookupPallet<R> = pallet_did_lookup::Pallet<R>;
@@ -201,14 +200,21 @@ where
 		type ParachainStakingPallet<R> = parachain_staking::Pallet<R>;
 		type PublicCredentialsPallet<R> = public_credentials::Pallet<R>;
 
-		log::info!("💿  Storage version post checks");
-
 		assert_eq!(
 			AttestationPallet::<R>::on_chain_storage_version(),
 			AttestationPallet::<R>::current_storage_version(),
 			"Attestation pallet on chain version {:?} != declared storage version {:?}.",
 			AttestationPallet::<R>::on_chain_storage_version(),
 			AttestationPallet::<R>::current_storage_version()
+		);
+		// Although it's part of a different migration, we check that the CType pallet
+		// storage version is also consistent.
+		assert_eq!(
+			CTypePallet::<R>::on_chain_storage_version(),
+			CTypePallet::<R>::current_storage_version(),
+			"CType pallet on chain version {:?} != declared storage version {:?}.",
+			CTypePallet::<R>::on_chain_storage_version(),
+			CTypePallet::<R>::current_storage_version()
 		);
 		assert_eq!(
 			DelegationPallet::<R>::on_chain_storage_version(),
@@ -259,6 +265,8 @@ where
 			PublicCredentialsPallet::<R>::on_chain_storage_version(),
 			PublicCredentialsPallet::<R>::current_storage_version()
 		);
+
+		log::info!("💿  Storage version post checks ok ✅");
 
 		Ok(())
 	}
