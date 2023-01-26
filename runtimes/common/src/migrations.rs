@@ -86,6 +86,25 @@ impl<T: ctype::Config> OnRuntimeUpgrade for AddCTypeBlockNumber<T> {
 
 pub struct MigrateToNewStorageVersion<R>(PhantomData<R>);
 
+impl<R> MigrateToNewStorageVersion<R>
+where
+	R: attestation::Config + pallet_web3_names::Config + public_credentials::Config,
+{
+	fn migrate() -> frame_support::weights::Weight {
+		type AttestationPallet<R> = attestation::Pallet<R>;
+		type Web3NamesPallet<R> = pallet_web3_names::Pallet<R>;
+		type PublicCredentialsPallet<R> = public_credentials::Pallet<R>;
+
+		AttestationPallet::<R>::current_storage_version().put::<AttestationPallet<R>>();
+		// Not an issue with Peregrine, but it is with Spiritnet.
+		Web3NamesPallet::<R>::current_storage_version().put::<Web3NamesPallet<R>>();
+		PublicCredentialsPallet::<R>::current_storage_version().put::<PublicCredentialsPallet<R>>();
+
+		<R as frame_system::Config>::DbWeight::get().writes(4)
+	}
+}
+
+#[cfg(feature = "try-runtime")]
 impl<R> OnRuntimeUpgrade for MigrateToNewStorageVersion<R>
 where
 	R: attestation::Config
@@ -98,7 +117,6 @@ where
 		+ parachain_staking::Config
 		+ public_credentials::Config,
 {
-	#[cfg(feature = "try-runtime")]
 	fn pre_upgrade() -> Result<Vec<u8>, &'static str> {
 		type AttestationPallet<R> = attestation::Pallet<R>;
 		type DelegationPallet<R> = delegation::Pallet<R>;
@@ -176,19 +194,9 @@ where
 	}
 
 	fn on_runtime_upgrade() -> frame_support::weights::Weight {
-		type AttestationPallet<R> = attestation::Pallet<R>;
-		type Web3NamesPallet<R> = pallet_web3_names::Pallet<R>;
-		type PublicCredentialsPallet<R> = public_credentials::Pallet<R>;
-
-		AttestationPallet::<R>::current_storage_version().put::<AttestationPallet<R>>();
-		// Not an issue with Peregrine, but it is with Spiritnet.
-		Web3NamesPallet::<R>::current_storage_version().put::<Web3NamesPallet<R>>();
-		PublicCredentialsPallet::<R>::current_storage_version().put::<PublicCredentialsPallet<R>>();
-
-		<R as frame_system::Config>::DbWeight::get().writes(4)
+		Self::migrate()
 	}
 
-	#[cfg(feature = "try-runtime")]
 	fn post_upgrade(_state: Vec<u8>) -> Result<(), &'static str> {
 		type AttestationPallet<R> = attestation::Pallet<R>;
 		type CTypePallet<R> = ctype::Pallet<R>;
@@ -269,5 +277,15 @@ where
 		log::info!("💿  Storage version post checks ok ✅");
 
 		Ok(())
+	}
+}
+
+#[cfg(not(feature = "try-runtime"))]
+impl<R> OnRuntimeUpgrade for MigrateToNewStorageVersion<R>
+where
+	R: attestation::Config + pallet_web3_names::Config + public_credentials::Config,
+{
+	fn on_runtime_upgrade() -> frame_support::weights::Weight {
+		Self::migrate()
 	}
 }
