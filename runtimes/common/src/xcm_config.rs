@@ -72,8 +72,8 @@ pub type XcmBarrier = DenyThenTry<
 		// * TakeWeightCredit
 		// * AllowTopLevelPaidExecutionFrom<Everything>
 
-		// We allow everything from the relay chain if it was send by the relay chain legislative.
-		// Since the relaychain doesn't own KILTs and missing fees shouldn't prevent calls from the relaychain
+		// We allow everything from the relay chain if it was sent by the relay chain legislative (i.e., democracy
+		// vote). Since the relaychain doesn't own KILTs and missing fees shouldn't prevent calls from the relaychain
 		// legislative, we allow unpaid execution.
 		AllowUnpaidExecutionFrom<ParentLegislative>,
 	),
@@ -146,23 +146,23 @@ parameter_types! {
 /// `AccountId`. This is used when determining ownership of accounts for asset
 /// transacting and when attempting to use XCM `Transact` in order to determine
 /// the dispatch Origin.
-pub type LocationToAccountId<RelayNetwork> = (
-	// The parent (Relay-chain) origin converts to the parent `AccountId`.
+pub type LocationToAccountId<NetworkId> = (
+	// The parent (Relay-chain) origin converts to the b"parent" `AccountId`.
 	ParentIsPreset<AccountId>,
 	// Sibling parachain origins convert to AccountId via the `ParaId::into`.
 	SiblingParachainConvertsVia<Sibling, AccountId>,
 	// Straight up local `AccountId32` origins just alias directly to `AccountId`.
-	AccountId32Aliases<RelayNetwork, AccountId>,
+	AccountId32Aliases<NetworkId, AccountId>,
 );
 
 /// Means for transacting assets on this chain.
-pub type LocalAssetTransactor<Currency, RelayNetwork> = CurrencyAdapter<
+pub type LocalAssetTransactor<Currency, NetworkId> = CurrencyAdapter<
 	// Use this currency:
 	Currency,
 	// Use this currency when it is a fungible asset matching the given location or name:
 	IsConcrete<HereLocation>,
 	// Do a simple punn to convert an AccountId32 MultiLocation into a native chain account ID:
-	LocationToAccountId<RelayNetwork>,
+	LocationToAccountId<NetworkId>,
 	// Our chain's account ID type (we can't get away without mentioning it explicitly):
 	AccountId,
 	// We don't track any teleports.
