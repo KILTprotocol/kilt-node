@@ -100,7 +100,7 @@ where
 		Web3NamesPallet::<R>::current_storage_version().put::<Web3NamesPallet<R>>();
 		PublicCredentialsPallet::<R>::current_storage_version().put::<PublicCredentialsPallet<R>>();
 
-		<R as frame_system::Config>::DbWeight::get().writes(4)
+		<R as frame_system::Config>::DbWeight::get().writes(3)
 	}
 }
 
