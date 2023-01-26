@@ -24,9 +24,14 @@ smallvec.workspace = true
 # Internal dependencies
 attestation.workspace = true
 ctype.workspace = true
+delegation.workspace = true
+did.workspace = true
+pallet-did-lookup.workspace = true
+pallet-inflation.workspace = true
 kilt-support.workspace = true
 parachain-staking.workspace = true
 public-credentials.workspace = true
+pallet-web3-names.workspace = true
 
 # Substrate dependencies
 frame-support.workspace = true
@@ -97,11 +102,16 @@ std = [
 ]
 try-runtime = [
   "attestation/try-runtime",
+  "delegation/try-runtime",
+  "did/try-runtime",
   "frame-support/try-runtime",
   "frame-system/try-runtime",
   "kilt-support/try-runtime",
   "pallet-authorship/try-runtime",
   "pallet-balances/try-runtime",
+  "pallet-did-lookup/try-runtime",
+  "pallet-inflation/try-runtime",
+  "pallet-web3-names/try-runtime",
   "pallet-membership/try-runtime",
   "pallet-transaction-payment/try-runtime",
   "parachain-staking/try-runtime",
