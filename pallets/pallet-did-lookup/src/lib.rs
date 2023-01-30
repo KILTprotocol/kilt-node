@@ -63,7 +63,6 @@ pub mod pallet {
 		traits::{CallSources, StorageDepositCollector},
 	};
 	use sp_runtime::traits::BlockNumberProvider;
-	use sp_std::vec::Vec;
 
 	pub use crate::connection_record::ConnectionRecord;
 
@@ -143,7 +142,7 @@ pub mod pallet {
 
 	#[pallet::storage]
 	#[pallet::getter(fn migration_state)]
-	pub type MigrationStateStore<T> = StorageValue<_, MigrationState<<T as frame_system::Config>::Hash>, ValueQuery>;
+	pub type MigrationStateStore<T> = StorageValue<_, MigrationState<AccountIdOf<T>, DidIdentifierOf<T>>, ValueQuery>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -165,7 +164,7 @@ pub mod pallet {
 
 		/// The migration has been validated given raw key and shall continue
 		/// with the next_key.
-		MigrationVerified { next_key: Vec<u8> },
+		MigrationPartiallyVerified,
 	}
 
 	#[pallet::error]
@@ -425,13 +424,36 @@ pub mod pallet {
 		pub fn try_finalize_migration(origin: OriginFor<T>, limit: u32) -> DispatchResult {
 			ensure_signed(origin)?;
 
-			// Safety check, should always succeed when upper one succeeds
-			crate::migrations::do_verify_migration::<T>()?;
+			let state = MigrationStateStore::<T>::get();
 
-			MigrationStateStore::<T>::set(MigrationState::Done);
-			Self::deposit_event(Event::<T>::MigrationCompleted);
-
-			Ok(())
+			match state {
+				MigrationState::Done => {
+					Self::deposit_event(Event::<T>::MigrationCompleted);
+					Ok(())
+				}
+				MigrationState::Verifying(keys) => {
+					let cursor = crate::migrations::do_verify_migration::<T>(Some(keys), limit)?;
+					if let Some(cursor) = cursor {
+						MigrationStateStore::<T>::set(MigrationState::Verifying(cursor));
+						Self::deposit_event(Event::<T>::MigrationPartiallyVerified);
+					} else {
+						MigrationStateStore::<T>::set(MigrationState::Done);
+						Self::deposit_event(Event::<T>::MigrationCompleted);
+					}
+					Ok(())
+				}
+				MigrationState::Upgrading => {
+					let cursor = crate::migrations::do_verify_migration::<T>(None, limit)?;
+					if let Some(cursor) = cursor {
+						MigrationStateStore::<T>::set(MigrationState::Verifying(cursor));
+						Self::deposit_event(Event::<T>::MigrationPartiallyVerified);
+					} else {
+						MigrationStateStore::<T>::set(MigrationState::Done);
+						Self::deposit_event(Event::<T>::MigrationCompleted);
+					}
+					Ok(())
+				}
+			}
 		}
 	}
 

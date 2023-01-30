@@ -20,23 +20,20 @@ use codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 
 #[derive(Clone, Debug, Eq, PartialEq, Encode, Decode, MaxEncodedLen, TypeInfo, Default)]
-pub enum MigrationState<Hash> {
-	/// The migration wasn't started yet.
-	#[default]
-	NotStarted,
-
+pub enum MigrationState<AccountId, DidIdentifier> {
 	/// All storage entries should be migrated. It is currently checked whether
 	/// all keys where successfully migrated.
-	Verifying(Hash),
+	Verifying((AccountId, (DidIdentifier, AccountId))),
 
 	/// The migration was successful.
 	Done,
 
 	/// The migration is ongoing. Not all storage entries are migrated yet.
+	#[default]
 	Upgrading,
 }
 
-impl<H> MigrationState<H> {
+impl<AccountId, DidIdentifier> MigrationState<AccountId, DidIdentifier> {
 	pub fn is_done(self) -> bool {
 		return match self {
 			MigrationState::Done => true,
@@ -47,15 +44,7 @@ impl<H> MigrationState<H> {
 	pub fn is_in_progress(self) -> bool {
 		return match self {
 			MigrationState::Done => false,
-			MigrationState::NotStarted => false,
 			_ => true,
-		};
-	}
-
-	pub fn is_not_started(self) -> bool {
-		return match self {
-			MigrationState::NotStarted => true,
-			_ => false,
 		};
 	}
 }

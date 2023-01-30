@@ -23,12 +23,17 @@ use crate::{
 };
 
 use frame_support::{
-	ensure, storage_alias,
+	ensure,
+	storage::KeyPrefixIterator,
+	storage_alias,
 	traits::{Get, GetStorageVersion, OnRuntimeUpgrade},
 	Blake2_128Concat,
 };
 use sp_runtime::DispatchError;
-use sp_std::{marker::PhantomData, vec, vec::Vec};
+use sp_std::marker::PhantomData;
+
+#[cfg(feature = "try-runtime")]
+use {sp_std::vec, sp_std::vec::Vec};
 
 #[cfg(feature = "runtime-benchmarks")]
 use {
@@ -49,7 +54,7 @@ type ConnectedAccounts<T: Config> =
 pub(crate) fn do_migrate_account_id<T: Config>(
 	account_id: AccountIdOf<T>,
 	linkable_account: LinkableAccountId,
-) -> Result<Option<DidIdentifierOf<T>>, crate::pallet::Error<T>> {
+) -> Result<Option<DidIdentifierOf<T>>, DispatchError> {
 	ConnectedDids::<T>::take(&account_id)
 		.map(|did_record| {
 			ConnectedDidsV2::<T>::insert(&linkable_account, did_record.clone());
@@ -57,7 +62,7 @@ pub(crate) fn do_migrate_account_id<T: Config>(
 				ConnectedAccountsV2::<T>::insert(&did_record.did, linkable_account, v);
 				Ok(did_record.did)
 			} else {
-				Err(crate::Error::<T>::MigrationIssue)
+				Err(crate::Error::<T>::MigrationIssue.into())
 			}
 		})
 		.transpose()
@@ -66,31 +71,22 @@ pub(crate) fn do_migrate_account_id<T: Config>(
 /// Iterates over both old typed storage maps `ConnectedDids`,
 /// `ConnectedAccounts` and checks whether any raw storage key still exists in
 /// the low level storage.
-pub(crate) fn do_verify_migration<T: Config>() -> Result<(), DispatchError> {
-	check_storage_size::<T>()?;
+pub(crate) fn do_verify_migration<T: Config>(
+	cursor: Option<(AccountIdOf<T>, (DidIdentifierOf<T>, AccountIdOf<T>))>,
+	limit: u32,
+) -> Result<Option<(AccountIdOf<T>, (DidIdentifierOf<T>, AccountIdOf<T>))>, DispatchError> {
 
-	ensure!(
-		check_did_migration::<T>(None).is_empty() && check_account_migration::<T>(None).is_empty(),
-		Error::<T>::MigrationKeysPersist
-	);
+	let cursor_did =
+		check_did_migration::<T>(cursor.clone().map(|c| c.0), limit).map_err(|_| Error::<T>::MigrationKeysPersist)?;
 
-	Ok(())
-}
+	let cursor_acc =
+		check_account_migration::<T>(cursor.map(|c| c.1), limit).map_err(|_| Error::<T>::MigrationKeysPersist)?;
 
-/// Sanity check that both new typed storage maps `ConnectedDids`,
-/// `ConnectedAccounts` have as many keys as their old counter parts with
-/// different key types.
-pub(crate) fn check_storage_size<T: Config>() -> Result<(), DispatchError> {
-	ensure!(
-		ConnectedAccounts::<T>::iter_keys().count() == ConnectedAccountsV2::<T>::iter_keys().count(),
-		Error::<T>::MigrationStorageSizeMismatch
-	);
-	ensure!(
-		ConnectedDids::<T>::iter_keys().count() == ConnectedDidsV2::<T>::iter_keys().count(),
-		Error::<T>::MigrationStorageSizeMismatch
-	);
-
-	Ok(())
+	match (cursor_did, cursor_acc) {
+		(Some(cursor_did), Some(cursor_acc)) => Ok(Some((cursor_did, cursor_acc))),
+		(None, None) => Ok(None),
+		_ => Err(crate::Error::<T>::MigrationStorageSizeMismatch.into()),
+	}
 }
 
 /// Iterates over old connected did storage map and checks whether any raw key
@@ -106,23 +102,33 @@ pub(crate) fn check_storage_size<T: Config>() -> Result<(), DispatchError> {
 /// However, we can check the old raw keys which should not exist in storage
 /// after migrating, e.g. `unhashed::exists(old_raw_key)` is expected to be
 /// false.
-pub(crate) fn check_did_migration<T: Config>(maybe_last_key: Option<Vec<u8>>) -> Vec<(AccountIdOf<T>, Vec<u8>)> {
-	if let Some(last_key) = maybe_last_key {
+pub(crate) fn check_did_migration<T: Config>(
+	maybe_last_key: Option<AccountIdOf<T>>,
+	limit: u32,
+) -> Result<Option<AccountIdOf<T>>, AccountIdOf<T>> {
+	// get the iterator. Either from the beginning or where we last stopped.
+	let mut connected_acc_iter = if let Some(last_key) = maybe_last_key {
 		log::debug!("Resuming check_did_migration from last_key: {:?}", last_key);
-		ConnectedDids::<T>::iter_keys_from(last_key)
+		ConnectedDids::<T>::iter_keys_from(ConnectedDids::<T>::hashed_key_for(&last_key))
 	} else {
 		log::debug!("First check of ConnectedDids: {:?}", ConnectedDids::<T>::iter().count());
 		ConnectedDids::<T>::iter_keys()
-	}
-	.filter_map(|acc_id| {
-		let key = ConnectedDids::<T>::hashed_key_for(&acc_id);
-		if frame_support::storage::unhashed::exists(key.as_ref()) {
-			Some((acc_id, key))
+	};
+
+	// Check storage until we reach the end or the limit.
+	let mut last_key = peek(&mut connected_acc_iter);
+	for _ in 0..limit {
+		let connected_acc = if let Some(acc) = connected_acc_iter.next() {
+			acc
 		} else {
-			None
-		}
-	})
-	.collect()
+			return Ok(None);
+		};
+		let key = ConnectedDids::<T>::hashed_key_for(&connected_acc);
+		ensure!(!frame_support::storage::unhashed::exists(&key[..]), connected_acc);
+		last_key = Some(connected_acc);
+	}
+
+	Ok(last_key)
 }
 
 /// Iterates over old connected account storage map and checks whether any raw
@@ -139,28 +145,47 @@ pub(crate) fn check_did_migration<T: Config>(maybe_last_key: Option<Vec<u8>>) ->
 /// However, we can check the old raw keys which should not exist in storage
 /// after migrating, e.g. `unhashed::exists(old_raw_key)` is expected to be
 /// false.
-pub(crate) fn check_account_migration<T: Config>(maybe_last_key: Option<Vec<u8>>) -> Vec<(AccountIdOf<T>, Vec<u8>)> {
-	if let Some(last_key) = maybe_last_key {
+pub(crate) fn check_account_migration<T: Config>(
+	maybe_last_key: Option<(DidIdentifierOf<T>, AccountIdOf<T>)>,
+	limit: u32,
+) -> Result<Option<(DidIdentifierOf<T>, AccountIdOf<T>)>, (DidIdentifierOf<T>, AccountIdOf<T>)> {
+	let mut connected_did_iter = if let Some(last_key) = maybe_last_key {
 		log::debug!("Resuming check_account_migration from last_key: {:?}", last_key);
-		ConnectedAccounts::<T>::iter_keys_from(last_key)
+		ConnectedAccounts::<T>::iter_keys_from(ConnectedAccounts::<T>::hashed_key_for(last_key.0, last_key.1))
 	} else {
 		log::debug!(
 			"First check of ConnectedAccounts: {:?}",
 			ConnectedAccounts::<T>::iter().count()
 		);
 		ConnectedAccounts::<T>::iter_keys()
-	}
-	.filter_map(|(did_id, acc_id)| {
-		let key = ConnectedAccounts::<T>::hashed_key_for(&did_id, &acc_id);
-		if frame_support::storage::unhashed::exists(key.as_ref()) {
-			Some((acc_id, key))
+	};
+
+	// Check storage until we reach the end or the limit.
+	let mut last_key = peek(&mut connected_did_iter);
+	for _ in 0..limit {
+		let (connected_did, connected_acc) = if let Some(did_acc) = connected_did_iter.next() {
+			did_acc
 		} else {
-			None
-		}
-	})
-	.collect()
+			return Ok(None);
+		};
+		let key = ConnectedAccounts::<T>::hashed_key_for(&connected_did, &connected_acc);
+		ensure!(
+			!frame_support::storage::unhashed::exists(&key[..]),
+			(connected_did, connected_acc)
+		);
+		last_key = Some((connected_did, connected_acc));
+	}
+
+	Ok(last_key)
 }
 
+fn peek<T>(iterator: &mut KeyPrefixIterator<T>) -> Option<T> {
+	let last = iterator.last_raw_key().to_vec();
+	let res = iterator.next();
+	iterator.set_last_raw_key(last);
+
+	res
+}
 pub struct EthereumMigration<T>(PhantomData<T>);
 
 impl<T: crate::pallet::Config> OnRuntimeUpgrade for EthereumMigration<T>
@@ -187,8 +212,9 @@ where
 			Pallet::<T>::on_chain_storage_version() < Pallet::<T>::current_storage_version(),
 			"On-chain storage of DID lookup pallet already bumped"
 		);
-		assert!(
-			!MigrationStateStore::<T>::get().is_not_started(),
+		assert_eq!(
+			MigrationStateStore::<T>::get(),
+			MigrationState::Upgrading,
 			"Migration flag already set"
 		);
 
@@ -245,7 +271,7 @@ pub(crate) fn add_legacy_association<T: Config>(
 
 #[cfg(test)]
 mod tests {
-	use kilt_support::{deposit::Deposit, mock::SubjectId};
+	use kilt_support::deposit::Deposit;
 
 	use super::*;
 	use crate::{mock::*, BalanceOf, ConnectionRecord, CurrencyOf, Error};
@@ -299,20 +325,18 @@ mod tests {
 				assert_eq!(ConnectedDids::<Test>::get(ACCOUNT_00).unwrap().did, DID_00);
 				assert_eq!(ConnectedDids::<Test>::iter_keys().count(), 1);
 				assert!(ConnectedDidsV2::<Test>::iter_keys().count().is_zero());
-				let did_check_pre = check_did_migration::<Test>(None);
-				assert_eq!(did_check_pre.len(), 1);
-				assert_eq!(did_check_pre.get(0).unwrap().0, ACCOUNT_00);
+				let did_check_pre = check_did_migration::<Test>(None, 4);
+				assert_eq!(did_check_pre, Err(ACCOUNT_00));
 
 				assert!(ConnectedAccounts::<Test>::contains_key(DID_00, ACCOUNT_00));
 				assert_eq!(ConnectedAccounts::<Test>::iter_keys().count(), 1);
 				assert!(ConnectedAccountsV2::<Test>::iter_keys().count().is_zero());
-				let account_check_pre = check_account_migration::<Test>(None);
-				assert_eq!(account_check_pre.len(), 1);
-				assert_eq!(account_check_pre.get(0).unwrap().0, ACCOUNT_00);
+				let account_check_pre = check_account_migration::<Test>(None, 4);
+				assert_eq!(account_check_pre, Err((DID_00, ACCOUNT_00)));
 
 				assert_noop!(
 					DidLookup::try_finalize_migration(RuntimeOrigin::signed(ACCOUNT_00), 4),
-					Error::<Test>::MigrationStorageSizeMismatch
+					Error::<Test>::MigrationKeysPersist
 				);
 
 				// Migrate
@@ -323,14 +347,14 @@ mod tests {
 				assert_ok!(DidLookup::try_finalize_migration(RuntimeOrigin::signed(ACCOUNT_00), 4));
 
 				// Check post migration status
-				assert!(check_did_migration::<Test>(None).is_empty());
+				assert_eq!(check_did_migration::<Test>(None, 4), Ok(None));
 				// This would fail since decoding magically works:
 				// assert!(ConnectedDids::<Test>::iter_keys().count().is_zero());
 				assert!(!ConnectedDids::<Test>::contains_key(ACCOUNT_00));
 				assert_eq!(ConnectedDidsV2::<Test>::get(LINKABLE_ACCOUNT_00).unwrap().did, DID_00);
 				assert_eq!(ConnectedDidsV2::<Test>::iter_keys().count(), 1);
 
-				assert!(check_account_migration::<Test>(None).is_empty());
+				assert_eq!(check_account_migration::<Test>(None, 4), Ok(None));
 				// This would fail since decoding magically works:
 				// assert!(ConnectedAccounts::<Test>::iter_keys().count().is_zero());
 				assert!(!ConnectedAccounts::<Test>::contains_key(DID_00, ACCOUNT_00));
@@ -364,21 +388,19 @@ mod tests {
 				// Check pre migration status
 				assert_eq!(ConnectedDids::<Test>::iter_keys().count(), 2);
 				assert!(ConnectedDidsV2::<Test>::iter_keys().count().is_zero());
-				let did_check = check_did_migration::<Test>(None);
-				assert_eq!(did_check.len(), 2);
+				let did_check = check_did_migration::<Test>(None, 4);
+				assert!(did_check.is_err());
 
 				// Check iteration from first raw_key
-				let did_check_cached =
-					check_did_migration::<Test>(did_check.get(0).map(|(_, raw_key)| raw_key.clone()));
-				assert_eq!(did_check_cached.len(), 1);
-				assert_eq!(did_check.get(1), did_check_cached.get(0));
+				let did_check_cached = check_did_migration::<Test>(Some(did_check.unwrap_err()), 4);
+				assert_eq!(did_check_cached, Err(ACCOUNT_01));
 
 				assert_eq!(ConnectedAccounts::<Test>::iter_keys().count(), 2);
 				assert!(ConnectedAccountsV2::<Test>::iter_keys().count().is_zero());
-				assert_eq!(check_account_migration::<Test>(None).len(), 2);
+				assert!(check_account_migration::<Test>(None, 4).is_err());
 				assert_noop!(
 					DidLookup::try_finalize_migration(RuntimeOrigin::signed(ACCOUNT_00), 4),
-					Error::<Test>::MigrationStorageSizeMismatch
+					Error::<Test>::MigrationKeysPersist
 				);
 
 				// Migrate 1/2
@@ -388,12 +410,12 @@ mod tests {
 				));
 				assert_noop!(
 					DidLookup::try_finalize_migration(RuntimeOrigin::signed(ACCOUNT_00), 4),
-					Error::<Test>::MigrationStorageSizeMismatch
+					Error::<Test>::MigrationKeysPersist
 				);
 				assert_eq!(ConnectedDidsV2::<Test>::iter_keys().count(), 1);
-				assert_eq!(check_did_migration::<Test>(None).len(), 1);
+				assert_eq!(check_did_migration::<Test>(None, 4), Err(ACCOUNT_01));
 				assert_eq!(ConnectedAccountsV2::<Test>::iter_keys().count(), 1);
-				assert_eq!(check_account_migration::<Test>(None).len(), 1);
+				assert_eq!(check_account_migration::<Test>(None, 4), Err((DID_01, ACCOUNT_01)));
 
 				// Migrate 2/2
 				assert_ok!(DidLookup::migrate_account_id(
@@ -403,74 +425,68 @@ mod tests {
 				assert_ok!(DidLookup::try_finalize_migration(RuntimeOrigin::signed(ACCOUNT_00), 4));
 
 				// Check post migration status
-				assert!(check_did_migration::<Test>(None).is_empty());
+				assert_eq!(check_did_migration::<Test>(None, 4), Ok(None));
 				assert_eq!(ConnectedDidsV2::<Test>::iter_keys().count(), 2);
-				assert!(check_account_migration::<Test>(None).is_empty());
+				assert_eq!(check_account_migration::<Test>(None, 4), Ok(None));
 				assert_eq!(ConnectedAccountsV2::<Test>::iter_keys().count(), 2);
 			})
 	}
 
+	/// We migrate everything and check afterwards
 	#[test]
-	fn check_did_account_migration_works() {
-		let accounts: Vec<AccountId> = (0u8..10u8).map(|i| AccountId::new([i; 32])).collect();
-		let dids: Vec<DidIdentifierOf<Test>> = accounts.clone().into_iter().map(SubjectId).collect();
-
+	fn partial_migration_check() {
 		ExtBuilder::default()
-			.with_balances(
-				accounts
-					.clone()
-					.into_iter()
-					.map(|acc| (acc, <Test as crate::Config>::Deposit::get() * 50))
-					.collect(),
-			)
+			.with_balances(vec![
+				(ACCOUNT_00, <Test as crate::Config>::Deposit::get() * 50),
+				(ACCOUNT_01, <Test as crate::Config>::Deposit::get() * 50),
+			])
 			.build()
 			.execute_with(|| {
-				for i in 0..accounts.len() {
-					insert_raw_connection::<Test>(
-						accounts[i].clone(),
-						dids[i].clone(),
-						accounts[i].clone(),
-						<Test as crate::Config>::Deposit::get() * 2,
-					);
-				}
+				insert_raw_connection::<Test>(
+					ACCOUNT_00,
+					DID_00,
+					ACCOUNT_00,
+					<Test as crate::Config>::Deposit::get() * 2,
+				);
+				insert_raw_connection::<Test>(
+					ACCOUNT_01,
+					DID_01,
+					ACCOUNT_01,
+					<Test as crate::Config>::Deposit::get() * 2,
+				);
 
-				let check_did_uncashed = check_did_migration::<Test>(None);
-				// iterate over i+j steps where i+j < checked_did_uncashed.len(), e.g. for j =
-				// 0, it checks step by step.
-				for i in 0..check_did_uncashed.len() {
-					for j in 0..check_did_uncashed.len() - i {
-						let index = i + j;
-						let last_raw_key = check_did_uncashed.get(index).map(|(_, k)| k.clone());
-						let check_did_cashed = check_did_migration::<Test>(last_raw_key);
-						assert_eq!(check_did_cashed.len(), 10 - 1 - index, "i {}, j {}", i, j);
-						assert_eq!(
-							check_did_cashed.get(0),
-							check_did_uncashed.get(index + 1),
-							"i {}, j {}",
-							i,
-							j
-						);
-					}
-				}
+				// Check pre migration status
+				assert_eq!(ConnectedDids::<Test>::iter_keys().count(), 2);
+				assert!(ConnectedDidsV2::<Test>::iter_keys().count().is_zero());
+				let did_check = check_did_migration::<Test>(None, 2);
+				assert!(did_check.is_err());
 
-				let check_acc_uncashed = check_account_migration::<Test>(None);
-				// iterate over i+j steps where i+j < checked_did_uncashed.len(), e.g. for j =
-				// 0, it checks step by step.
-				for i in 0..check_acc_uncashed.len() {
-					for j in 0..check_acc_uncashed.len() - i {
-						let index = i + j;
-						let last_raw_key = check_acc_uncashed.get(index).map(|(_, k)| k.clone());
-						let check_did_cashed = check_account_migration::<Test>(last_raw_key);
-						assert_eq!(check_did_cashed.len(), 10 - 1 - index, "i {}, j {}", i, j);
-						assert_eq!(
-							check_did_cashed.get(0),
-							check_acc_uncashed.get(index + 1),
-							"i {}, j {}",
-							i,
-							j
-						);
-					}
-				}
+				// Check iteration from first raw_key
+				let did_check_cached = check_did_migration::<Test>(Some(ACCOUNT_00), 2);
+				assert_eq!(did_check_cached, Err(ACCOUNT_01));
+				let acc_check = check_account_migration::<Test>(Some((DID_00, ACCOUNT_00)), 2);
+				assert_eq!(acc_check, Err((DID_01, ACCOUNT_01)));
+
+				assert_eq!(ConnectedAccounts::<Test>::iter_keys().count(), 2);
+				assert!(ConnectedAccountsV2::<Test>::iter_keys().count().is_zero());
+				assert_noop!(
+					DidLookup::try_finalize_migration(RuntimeOrigin::signed(ACCOUNT_00), 4),
+					Error::<Test>::MigrationKeysPersist
+				);
+
+				// Migrate 1/2
+				assert_ok!(DidLookup::migrate_account_id(
+					RuntimeOrigin::signed(ACCOUNT_01),
+					ACCOUNT_00
+				));
+				// Migrate 2/2
+				assert_ok!(DidLookup::migrate_account_id(
+					RuntimeOrigin::signed(ACCOUNT_00),
+					ACCOUNT_01
+				));
+
+				assert_ok!(DidLookup::try_finalize_migration(RuntimeOrigin::signed(ACCOUNT_00), 1));
+				assert_ok!(DidLookup::try_finalize_migration(RuntimeOrigin::signed(ACCOUNT_00), 1));
 			})
 	}
 }
