@@ -30,7 +30,9 @@ pub struct AddCTypeBlockNumber<R>(PhantomData<R>);
 impl<T: ctype::Config> OnRuntimeUpgrade for AddCTypeBlockNumber<T> {
 	#[cfg(feature = "try-runtime")]
 	fn pre_upgrade() -> Result<Vec<u8>, &'static str> {
-		assert_eq!(ctype::Pallet::<T>::on_chain_storage_version(), 0,);
+		// Missed the migration when v1 was introduced, so now Spiritnet and Peregrine
+		// are on v0 although they should be on v1.
+		assert!(ctype::Pallet::<T>::on_chain_storage_version() <= 1,);
 
 		// Use iter_keys() on new storage so it won't try to decode values.
 		let ctypes_to_migrate = ctype::Ctypes::<T>::iter_keys().count() as u64;
@@ -44,7 +46,7 @@ impl<T: ctype::Config> OnRuntimeUpgrade for AddCTypeBlockNumber<T> {
 		let onchain = ctype::Pallet::<T>::on_chain_storage_version();
 
 		log::info!(
-			"💰 Running migration with current storage version {:?} / onchain {:?}",
+			"💰 Running CType migration with current storage version {:?} / onchain {:?}",
 			current,
 			onchain
 		);
@@ -67,7 +69,7 @@ impl<T: ctype::Config> OnRuntimeUpgrade for AddCTypeBlockNumber<T> {
 
 	#[cfg(feature = "try-runtime")]
 	fn post_upgrade(state: Vec<u8>) -> Result<(), &'static str> {
-		assert_eq!(ctype::Pallet::<T>::on_chain_storage_version(), 1);
+		assert_eq!(ctype::Pallet::<T>::on_chain_storage_version(), 2);
 
 		let initial_ctype_count = u64::from_be_bytes(state.try_into().expect("input state should be 8 bytes"));
 		assert_eq!(initial_ctype_count, ctype::Ctypes::<T>::iter().count() as u64);
@@ -79,5 +81,211 @@ impl<T: ctype::Config> OnRuntimeUpgrade for AddCTypeBlockNumber<T> {
 			initial_ctype_count
 		);
 		Ok(())
+	}
+}
+
+pub struct MigrateToNewStorageVersion<R>(PhantomData<R>);
+
+impl<R> MigrateToNewStorageVersion<R>
+where
+	R: attestation::Config + pallet_web3_names::Config + public_credentials::Config,
+{
+	fn migrate() -> frame_support::weights::Weight {
+		type AttestationPallet<R> = attestation::Pallet<R>;
+		type Web3NamesPallet<R> = pallet_web3_names::Pallet<R>;
+		type PublicCredentialsPallet<R> = public_credentials::Pallet<R>;
+
+		AttestationPallet::<R>::current_storage_version().put::<AttestationPallet<R>>();
+		// Not an issue with Peregrine, but it is with Spiritnet.
+		Web3NamesPallet::<R>::current_storage_version().put::<Web3NamesPallet<R>>();
+		PublicCredentialsPallet::<R>::current_storage_version().put::<PublicCredentialsPallet<R>>();
+
+		<R as frame_system::Config>::DbWeight::get().writes(3)
+	}
+}
+
+#[cfg(feature = "try-runtime")]
+impl<R> OnRuntimeUpgrade for MigrateToNewStorageVersion<R>
+where
+	R: attestation::Config
+		+ ctype::Config
+		+ delegation::Config
+		+ did::Config
+		+ pallet_did_lookup::Config
+		+ pallet_inflation::Config
+		+ pallet_web3_names::Config
+		+ parachain_staking::Config
+		+ public_credentials::Config,
+{
+	fn pre_upgrade() -> Result<Vec<u8>, &'static str> {
+		type AttestationPallet<R> = attestation::Pallet<R>;
+		type DelegationPallet<R> = delegation::Pallet<R>;
+		type DidPallet<R> = did::Pallet<R>;
+		type LookupPallet<R> = pallet_did_lookup::Pallet<R>;
+		type InflationPallet<R> = pallet_inflation::Pallet<R>;
+		type Web3NamesPallet<R> = pallet_web3_names::Pallet<R>;
+		type ParachainStakingPallet<R> = parachain_staking::Pallet<R>;
+		type PublicCredentialsPallet<R> = public_credentials::Pallet<R>;
+
+		log::info!("💿  Storage version pre checks");
+
+		if AttestationPallet::<R>::on_chain_storage_version() != AttestationPallet::<R>::current_storage_version() {
+			log::warn!(
+				"🚨 Attestation pallet on chain version {:?} != declared storage version {:?}.",
+				AttestationPallet::<R>::on_chain_storage_version(),
+				AttestationPallet::<R>::current_storage_version()
+			)
+		}
+		if DelegationPallet::<R>::on_chain_storage_version() != DelegationPallet::<R>::current_storage_version() {
+			log::warn!(
+				"🚨 Delegation pallet on chain version {:?} != declared storage version {:?}.",
+				DelegationPallet::<R>::on_chain_storage_version(),
+				DelegationPallet::<R>::current_storage_version()
+			)
+		}
+		if DidPallet::<R>::on_chain_storage_version() != DidPallet::<R>::current_storage_version() {
+			log::warn!(
+				"🚨 Did pallet on chain version {:?} != declared storage version {:?}.",
+				DidPallet::<R>::on_chain_storage_version(),
+				DidPallet::<R>::current_storage_version()
+			)
+		}
+		if LookupPallet::<R>::on_chain_storage_version() != LookupPallet::<R>::current_storage_version() {
+			log::warn!(
+				"🚨 Lookup pallet on chain version {:?} != declared storage version {:?}.",
+				LookupPallet::<R>::on_chain_storage_version(),
+				LookupPallet::<R>::current_storage_version()
+			)
+		}
+		if InflationPallet::<R>::on_chain_storage_version() != InflationPallet::<R>::current_storage_version() {
+			log::warn!(
+				"🚨 Inflation pallet on chain version {:?} != declared storage version {:?}.",
+				InflationPallet::<R>::on_chain_storage_version(),
+				InflationPallet::<R>::current_storage_version()
+			)
+		}
+		if Web3NamesPallet::<R>::on_chain_storage_version() != Web3NamesPallet::<R>::current_storage_version() {
+			log::warn!(
+				"🚨 Web3names pallet on chain version {:?} != declared storage version {:?}.",
+				Web3NamesPallet::<R>::on_chain_storage_version(),
+				Web3NamesPallet::<R>::current_storage_version()
+			)
+		}
+		if ParachainStakingPallet::<R>::on_chain_storage_version()
+			!= ParachainStakingPallet::<R>::current_storage_version()
+		{
+			log::warn!(
+				"🚨 Parachain staking pallet on chain version {:?} != declared storage version {:?}.",
+				ParachainStakingPallet::<R>::on_chain_storage_version(),
+				ParachainStakingPallet::<R>::current_storage_version()
+			)
+		}
+		if PublicCredentialsPallet::<R>::on_chain_storage_version()
+			!= PublicCredentialsPallet::<R>::current_storage_version()
+		{
+			log::warn!(
+				"🚨 Public credentials pallet on chain version {:?} != declared storage version {:?}.",
+				PublicCredentialsPallet::<R>::on_chain_storage_version(),
+				PublicCredentialsPallet::<R>::current_storage_version()
+			)
+		}
+
+		Ok(Vec::default())
+	}
+
+	fn on_runtime_upgrade() -> frame_support::weights::Weight {
+		Self::migrate()
+	}
+
+	fn post_upgrade(_state: Vec<u8>) -> Result<(), &'static str> {
+		type AttestationPallet<R> = attestation::Pallet<R>;
+		type CTypePallet<R> = ctype::Pallet<R>;
+		type DelegationPallet<R> = delegation::Pallet<R>;
+		type DidPallet<R> = did::Pallet<R>;
+		type LookupPallet<R> = pallet_did_lookup::Pallet<R>;
+		type InflationPallet<R> = pallet_inflation::Pallet<R>;
+		type Web3NamesPallet<R> = pallet_web3_names::Pallet<R>;
+		type ParachainStakingPallet<R> = parachain_staking::Pallet<R>;
+		type PublicCredentialsPallet<R> = public_credentials::Pallet<R>;
+
+		assert_eq!(
+			AttestationPallet::<R>::on_chain_storage_version(),
+			AttestationPallet::<R>::current_storage_version(),
+			"Attestation pallet on chain version {:?} != declared storage version {:?}.",
+			AttestationPallet::<R>::on_chain_storage_version(),
+			AttestationPallet::<R>::current_storage_version()
+		);
+		// Although it's part of a different migration, we check that the CType pallet
+		// storage version is also consistent.
+		assert_eq!(
+			CTypePallet::<R>::on_chain_storage_version(),
+			CTypePallet::<R>::current_storage_version(),
+			"CType pallet on chain version {:?} != declared storage version {:?}.",
+			CTypePallet::<R>::on_chain_storage_version(),
+			CTypePallet::<R>::current_storage_version()
+		);
+		assert_eq!(
+			DelegationPallet::<R>::on_chain_storage_version(),
+			DelegationPallet::<R>::current_storage_version(),
+			"Delegation pallet on chain version {:?} != declared storage version {:?}.",
+			DelegationPallet::<R>::on_chain_storage_version(),
+			DelegationPallet::<R>::current_storage_version()
+		);
+		assert_eq!(
+			DidPallet::<R>::on_chain_storage_version(),
+			DidPallet::<R>::current_storage_version(),
+			"Did pallet on chain version {:?} != declared storage version {:?}.",
+			DidPallet::<R>::on_chain_storage_version(),
+			DidPallet::<R>::current_storage_version()
+		);
+		assert_eq!(
+			LookupPallet::<R>::on_chain_storage_version(),
+			LookupPallet::<R>::current_storage_version(),
+			"Lookup pallet on chain version {:?} != declared storage version {:?}.",
+			LookupPallet::<R>::on_chain_storage_version(),
+			LookupPallet::<R>::current_storage_version()
+		);
+		assert_eq!(
+			InflationPallet::<R>::on_chain_storage_version(),
+			InflationPallet::<R>::current_storage_version(),
+			"Inflation pallet on chain version {:?} != declared storage version {:?}.",
+			InflationPallet::<R>::on_chain_storage_version(),
+			InflationPallet::<R>::current_storage_version()
+		);
+		assert_eq!(
+			Web3NamesPallet::<R>::on_chain_storage_version(),
+			Web3NamesPallet::<R>::current_storage_version(),
+			"Web3names pallet on chain version {:?} != declared storage version {:?}.",
+			Web3NamesPallet::<R>::on_chain_storage_version(),
+			Web3NamesPallet::<R>::current_storage_version()
+		);
+		assert_eq!(
+			ParachainStakingPallet::<R>::on_chain_storage_version(),
+			ParachainStakingPallet::<R>::current_storage_version(),
+			"Parachain staking pallet on chain version {:?} != declared storage version {:?}.",
+			ParachainStakingPallet::<R>::on_chain_storage_version(),
+			ParachainStakingPallet::<R>::current_storage_version()
+		);
+		assert_eq!(
+			PublicCredentialsPallet::<R>::on_chain_storage_version(),
+			PublicCredentialsPallet::<R>::current_storage_version(),
+			"Public credentials pallet on chain version {:?} != declared storage version {:?}.",
+			PublicCredentialsPallet::<R>::on_chain_storage_version(),
+			PublicCredentialsPallet::<R>::current_storage_version()
+		);
+
+		log::info!("💿  Storage version post checks ok ✅");
+
+		Ok(())
+	}
+}
+
+#[cfg(not(feature = "try-runtime"))]
+impl<R> OnRuntimeUpgrade for MigrateToNewStorageVersion<R>
+where
+	R: attestation::Config + pallet_web3_names::Config + public_credentials::Config,
+{
+	fn on_runtime_upgrade() -> frame_support::weights::Weight {
+		Self::migrate()
 	}
 }

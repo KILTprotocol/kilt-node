@@ -51,7 +51,7 @@ use xcm_executor::XcmExecutor;
 
 use delegation::DelegationAc;
 use kilt_support::traits::ItemFilter;
-use pallet_did_lookup::{linkable_account::LinkableAccountId, migrations::EthereumMigration};
+use pallet_did_lookup::linkable_account::LinkableAccountId;
 pub use parachain_staking::InflationInfo;
 pub use public_credentials;
 
@@ -1063,8 +1063,11 @@ pub type Executive = frame_executive::Executive<
 		pallet_preimage::migration::v1::Migration<Runtime>,
 		pallet_scheduler::migration::v3::MigrateToV4<Runtime>,
 		pallet_democracy::migrations::v1::Migration<Runtime>,
+		pallet_did_lookup::migrations::EthereumMigration<Runtime>,
 		runtime_common::migrations::AddCTypeBlockNumber<Runtime>,
-		EthereumMigration<Runtime>,
+		// The migration above must be run as last since it checks that all pallets are using the new StorageVersion
+		// properly.
+		runtime_common::migrations::MigrateToNewStorageVersion<Runtime>,
 	),
 >;
 
