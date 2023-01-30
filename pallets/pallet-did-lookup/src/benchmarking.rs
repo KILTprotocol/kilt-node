@@ -316,7 +316,7 @@ benchmarks! {
 	try_finalize_migration {
 		let n in 1 .. 100;
 
-		for i in 0..n {
+		for i in 0..300 {
 			let deposit_owner: T::AccountId = account("caller", i, SEED);
 			let linkable_id: LinkableAccountId = deposit_owner.clone().into();
 
