@@ -1,5 +1,5 @@
 // KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2022 BOTLabs GmbH
+// Copyright (C) 2019-2023 BOTLabs GmbH
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -49,7 +49,7 @@ fn setup_collator_candidates<T: Config>(
 	for acc in collators.iter() {
 		T::Currency::make_free_balance_be(acc, amount);
 		assert_ok!(Pallet::<T>::join_candidates(
-			T::Origin::from(Some(acc.clone()).into()),
+			T::RuntimeOrigin::from(Some(acc.clone()).into()),
 			amount,
 		));
 		assert_eq!(CandidatePool::<T>::get(acc).unwrap().stake, amount);
@@ -80,7 +80,7 @@ fn fill_delegators<T: Config>(num_delegators: u32, collator: T::AccountId, colla
 	for acc in delegators.iter() {
 		T::Currency::make_free_balance_be(acc, T::MinDelegatorStake::get());
 		assert_ok!(Pallet::<T>::join_delegators(
-			T::Origin::from(Some(acc.clone()).into()),
+			T::RuntimeOrigin::from(Some(acc.clone()).into()),
 			T::Lookup::unlookup(collator.clone()),
 			T::MinDelegatorStake::get(),
 		));
@@ -177,7 +177,7 @@ benchmarks! {
 		let candidates = setup_collator_candidates::<T>(n, None);
 		for (i, c) in candidates.iter().enumerate() {
 			fill_delegators::<T>(m, c.clone(), i.saturated_into::<u32>());
-			Rewards::<T>::insert(&c, T::CurrencyBalance::one());
+			Rewards::<T>::insert(c, T::CurrencyBalance::one());
 		}
 
 		let inflation = InflationInfo::new(
@@ -296,7 +296,7 @@ benchmarks! {
 		let n in (T::MinCollators::get() + 1) .. T::MaxTopCandidates::get() - 1;
 		let m in 0 .. T::MaxDelegatorsPerCollator::get();
 
-		let u = T::MaxUnstakeRequests::get() as u32 - 1;
+		let u = T::MaxUnstakeRequests::get() - 1;
 		let candidates = setup_collator_candidates::<T>(n, None);
 		for (i, c) in candidates.iter().enumerate() {
 			fill_delegators::<T>(m, c.clone(), i.saturated_into::<u32>());
@@ -519,14 +519,14 @@ benchmarks! {
 	}
 
 	unlock_unstaked {
-		let u in 1 .. (T::MaxUnstakeRequests::get() as u32 - 1);
+		let u in 1 .. (T::MaxUnstakeRequests::get() - 1);
 
 		let candidate = account("collator", 0u32, COLLATOR_ACCOUNT_SEED);
 		let free_balance = T::CurrencyBalance::from(u128::MAX);
 		let stake = T::MinCollatorCandidateStake::get();
 		T::Currency::make_free_balance_be(&candidate, free_balance);
 		assert_ok!(Pallet::<T>::join_candidates(
-			T::Origin::from(Some(candidate.clone()).into()),
+			T::RuntimeOrigin::from(Some(candidate.clone()).into()),
 			stake,
 		));
 		assert_eq!(pallet_balances::Pallet::<T>::usable_balance(&candidate), (free_balance - T::MinCollatorCandidateStake::get()).into());

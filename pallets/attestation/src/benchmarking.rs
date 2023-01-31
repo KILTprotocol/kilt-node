@@ -1,5 +1,5 @@
 // KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2022 BOTLabs GmbH
+// Copyright (C) 2019-2023 BOTLabs GmbH
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@ use frame_support::traits::{Currency, Get};
 use frame_system::RawOrigin;
 use sp_runtime::traits::Hash;
 
+use ctype::CtypeEntryOf;
 use kilt_support::traits::GenerateBenchmarkOrigin;
 
 use crate::*;
@@ -31,8 +32,9 @@ benchmarks! {
 	where_clause {
 		where
 		T: core::fmt::Debug,
-		<T as Config>::EnsureOrigin: GenerateBenchmarkOrigin<T::Origin, T::AccountId, T::AttesterId>,
+		<T as Config>::EnsureOrigin: GenerateBenchmarkOrigin<T::RuntimeOrigin, T::AccountId, T::AttesterId>,
 		T: ctype::Config<CtypeCreatorId = T::AttesterId>,
+		T::BlockNumber: From<u64>
 	}
 
 	add {
@@ -41,11 +43,14 @@ benchmarks! {
 		let claim_hash: T::Hash = T::Hashing::hash(b"claim");
 		let ctype_hash: T::Hash = T::Hash::default();
 
-		ctype::Ctypes::<T>::insert(&ctype_hash, attester.clone());
+		ctype::Ctypes::<T>::insert(ctype_hash, CtypeEntryOf::<T> {
+			creator: attester.clone(),
+			created_at: 0u64.into()
+		});
 		<T as Config>::Currency::make_free_balance_be(&sender, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
 
 		let origin = <T as Config>::EnsureOrigin::generate_origin(sender.clone(), attester.clone());
-	}: _<T::Origin>(origin, claim_hash, ctype_hash, None)
+	}: _<T::RuntimeOrigin>(origin, claim_hash, ctype_hash, None)
 	verify {
 		assert!(Attestations::<T>::contains_key(claim_hash));
 		assert_eq!(Pallet::<T>::attestations(claim_hash), Some(AttestationDetails {
@@ -66,12 +71,15 @@ benchmarks! {
 		let claim_hash: T::Hash = T::Hashing::hash(b"claim");
 		let ctype_hash: T::Hash = T::Hash::default();
 
-		ctype::Ctypes::<T>::insert(&ctype_hash, attester.clone());
+		ctype::Ctypes::<T>::insert(ctype_hash, CtypeEntryOf::<T> {
+			creator: attester.clone(),
+			created_at: 0u64.into()
+		});
 		<T as Config>::Currency::make_free_balance_be(&sender, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
 
 		let origin = <T as Config>::EnsureOrigin::generate_origin(sender.clone(), attester.clone());
 		Pallet::<T>::add(origin.clone(), claim_hash, ctype_hash, None)?;
-	}: _<T::Origin>(origin, claim_hash, None)
+	}: _<T::RuntimeOrigin>(origin, claim_hash, None)
 	verify {
 		assert!(Attestations::<T>::contains_key(claim_hash));
 		assert_eq!(Attestations::<T>::get(claim_hash), Some(AttestationDetails {
@@ -92,13 +100,16 @@ benchmarks! {
 		let claim_hash: T::Hash = T::Hashing::hash(b"claim");
 		let ctype_hash: T::Hash = T::Hash::default();
 
-		ctype::Ctypes::<T>::insert(&ctype_hash, attester.clone());
+		ctype::Ctypes::<T>::insert(ctype_hash, CtypeEntryOf::<T> {
+			creator: attester.clone(),
+			created_at: 0u64.into()
+		});
 		<T as Config>::Currency::make_free_balance_be(&sender, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
 
 		let origin = <T as Config>::EnsureOrigin::generate_origin(sender.clone(), attester.clone());
 		Pallet::<T>::add(origin, claim_hash, ctype_hash, None)?;
 		let origin = <T as Config>::EnsureOrigin::generate_origin(sender, attester);
-	}: _<T::Origin>(origin, claim_hash, None)
+	}: _<T::RuntimeOrigin>(origin, claim_hash, None)
 	verify {
 		assert!(!Attestations::<T>::contains_key(claim_hash));
 	}
@@ -109,7 +120,10 @@ benchmarks! {
 		let claim_hash: T::Hash = T::Hashing::hash(b"claim");
 		let ctype_hash: T::Hash = T::Hash::default();
 
-		ctype::Ctypes::<T>::insert(&ctype_hash, attester.clone());
+		ctype::Ctypes::<T>::insert(ctype_hash, CtypeEntryOf::<T> {
+			creator: attester.clone(),
+			created_at: 0u64.into()
+		});
 		<T as Config>::Currency::make_free_balance_be(&sender, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
 
 		let origin = <T as Config>::EnsureOrigin::generate_origin(sender.clone(), attester);
@@ -127,14 +141,17 @@ benchmarks! {
 		let claim_hash: T::Hash = T::Hashing::hash(b"claim");
 		let ctype_hash: T::Hash = T::Hash::default();
 
-		ctype::Ctypes::<T>::insert(&ctype_hash, attester.clone());
+		ctype::Ctypes::<T>::insert(ctype_hash, CtypeEntryOf::<T> {
+			creator: attester.clone(),
+			created_at: 0u64.into()
+		});
 		<T as Config>::Currency::make_free_balance_be(&deposit_owner_old, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
 		<T as Config>::Currency::make_free_balance_be(&deposit_owner_new, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
 
 		let origin = <T as Config>::EnsureOrigin::generate_origin(deposit_owner_old, attester.clone());
 		Pallet::<T>::add(origin, claim_hash, ctype_hash, None)?;
 		let origin = <T as Config>::EnsureOrigin::generate_origin(deposit_owner_new.clone(), attester.clone());
-	}: _<T::Origin>(origin, claim_hash)
+	}: _<T::RuntimeOrigin>(origin, claim_hash)
 	verify {
 		assert_eq!(Attestations::<T>::get(claim_hash), Some(AttestationDetails {
 			ctype_hash,
@@ -154,7 +171,10 @@ benchmarks! {
 		let claim_hash: T::Hash = T::Hashing::hash(b"claim");
 		let ctype_hash: T::Hash = T::Hash::default();
 
-		ctype::Ctypes::<T>::insert(&ctype_hash, attester.clone());
+		ctype::Ctypes::<T>::insert(ctype_hash, CtypeEntryOf::<T> {
+			creator: attester.clone(),
+			created_at: 0u64.into()
+		});
 		<T as Config>::Currency::make_free_balance_be(&deposit_owner, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
 
 		let origin = <T as Config>::EnsureOrigin::generate_origin(deposit_owner.clone(), attester.clone());

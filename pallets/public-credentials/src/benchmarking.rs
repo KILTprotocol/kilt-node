@@ -1,5 +1,5 @@
 // KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2022 BOTLabs GmbH
+// Copyright (C) 2019-2023 BOTLabs GmbH
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@ use frame_support::{
 };
 use sp_std::{boxed::Box, vec, vec::Vec};
 
+use ctype::CtypeEntryOf;
 use kilt_support::{
 	deposit::Deposit,
 	traits::{GenerateBenchmarkOrigin, GetWorstCase},
@@ -50,9 +51,10 @@ benchmarks! {
 		T: core::fmt::Debug,
 		T: Config,
 		T: ctype::Config<CtypeCreatorId = T::AttesterId>,
-		<T as Config>::EnsureOrigin: GenerateBenchmarkOrigin<T::Origin, T::AccountId, T::AttesterId>,
+		<T as Config>::EnsureOrigin: GenerateBenchmarkOrigin<T::RuntimeOrigin, T::AccountId, T::AttesterId>,
 		<T as Config>::SubjectId: GetWorstCase + Into<Vec<u8>> + sp_std::fmt::Debug,
 		<T as Config>::CredentialId: Default,
+		T::BlockNumber: From<u64>
 	}
 
 	add {
@@ -70,10 +72,13 @@ benchmarks! {
 		));
 		let credential_id = generate_credential_id::<T>(&creation_op, &attester);
 
-		ctype::Ctypes::<T>::insert(&ctype_hash, attester.clone());
+		ctype::Ctypes::<T>::insert(ctype_hash, CtypeEntryOf::<T> {
+			creator: attester.clone(),
+			created_at: 0u64.into()
+		});
 		reserve_balance::<T>(&sender);
 		let origin = <T as Config>::EnsureOrigin::generate_origin(sender, attester);
-	}: _<T::Origin>(origin, creation_op)
+	}: _<T::RuntimeOrigin>(origin, creation_op)
 	verify {
 		assert!(Credentials::<T>::contains_key(subject_id, &credential_id));
 		assert!(CredentialSubjects::<T>::contains_key(&credential_id));
@@ -97,10 +102,13 @@ benchmarks! {
 
 		reserve_balance::<T>(&sender);
 
-		ctype::Ctypes::<T>::insert(&ctype_hash, attester);
+		ctype::Ctypes::<T>::insert(ctype_hash, CtypeEntryOf::<T> {
+			creator: attester,
+			created_at: 0u64.into()
+		});
 		Pallet::<T>::add(origin.clone(), creation_op).expect("Pallet::add should not fail");
 		let credential_id_clone = credential_id.clone();
-	}: _<T::Origin>(origin, credential_id_clone, None)
+	}: _<T::RuntimeOrigin>(origin, credential_id_clone, None)
 	verify {
 		assert!(Credentials::<T>::get(subject_id, &credential_id).expect("Credential should be present in storage").revoked);
 	}
@@ -123,11 +131,14 @@ benchmarks! {
 
 		reserve_balance::<T>(&sender);
 
-		ctype::Ctypes::<T>::insert(&ctype_hash, attester);
+		ctype::Ctypes::<T>::insert(ctype_hash, CtypeEntryOf::<T> {
+			creator: attester,
+			created_at: 0u64.into()
+		});
 		Pallet::<T>::add(origin.clone(), creation_op).expect("Pallet::add should not fail");
 		Pallet::<T>::revoke(origin.clone(), credential_id.clone(), None).expect("Pallet::revoke should not fail");
 		let credential_id_clone = credential_id.clone();
-	}: _<T::Origin>(origin, credential_id_clone, None)
+	}: _<T::RuntimeOrigin>(origin, credential_id_clone, None)
 	verify {
 		assert!(!Credentials::<T>::get(subject_id, &credential_id).expect("Credential should be present in storage").revoked);
 	}
@@ -149,10 +160,13 @@ benchmarks! {
 
 		reserve_balance::<T>(&sender);
 
-		ctype::Ctypes::<T>::insert(&ctype_hash, attester);
+		ctype::Ctypes::<T>::insert(ctype_hash, CtypeEntryOf::<T> {
+			creator: attester,
+			created_at: 0u64.into()
+		});
 		Pallet::<T>::add(origin.clone(), creation_op).expect("Pallet::add should not fail");
 		let credential_id_clone = credential_id.clone();
-	}: _<T::Origin>(origin, credential_id_clone, None)
+	}: _<T::RuntimeOrigin>(origin, credential_id_clone, None)
 	verify {
 		assert!(!Credentials::<T>::contains_key(subject_id, &credential_id));
 		assert!(!CredentialSubjects::<T>::contains_key(credential_id));
@@ -175,7 +189,10 @@ benchmarks! {
 
 		reserve_balance::<T>(&sender);
 
-		ctype::Ctypes::<T>::insert(&ctype_hash, attester);
+		ctype::Ctypes::<T>::insert(ctype_hash, CtypeEntryOf::<T> {
+			creator: attester,
+			created_at: 0u64.into()
+		});
 		Pallet::<T>::add(origin, creation_op).expect("Pallet::add should not fail");
 		let origin = RawOrigin::Signed(sender);
 		let credential_id_clone = credential_id.clone();
@@ -204,11 +221,14 @@ benchmarks! {
 		reserve_balance::<T>(&deposit_owner_old);
 		reserve_balance::<T>(&deposit_owner_new);
 
-		ctype::Ctypes::<T>::insert(&ctype_hash, attester.clone());
+		ctype::Ctypes::<T>::insert(ctype_hash, CtypeEntryOf::<T> {
+			creator: attester.clone(),
+			created_at: 0u64.into()
+		});
 		Pallet::<T>::add(origin, creation_op).expect("Pallet::add should not fail");
 		let credential_id_clone = credential_id.clone();
 		let origin = <T as Config>::EnsureOrigin::generate_origin(deposit_owner_new.clone(), attester);
-	}: _<T::Origin>(origin, credential_id_clone)
+	}: _<T::RuntimeOrigin>(origin, credential_id_clone)
 	verify {
 		assert_eq!(
 			Credentials::<T>::get(subject_id, &credential_id)
@@ -227,7 +247,10 @@ benchmarks! {
 		let origin = <T as Config>::EnsureOrigin::generate_origin(deposit_owner.clone(), attester.clone());
 
 		reserve_balance::<T>(&deposit_owner);
-		ctype::Ctypes::<T>::insert(&ctype_hash, attester.clone());
+		ctype::Ctypes::<T>::insert(ctype_hash, CtypeEntryOf::<T> {
+			creator: attester.clone(),
+			created_at: 0u64.into()
+		});
 
 		let credential_entry = generate_base_credential_entry::<T>(
 			deposit_owner.clone(),

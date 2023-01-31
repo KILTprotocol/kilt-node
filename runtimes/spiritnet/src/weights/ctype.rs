@@ -1,5 +1,5 @@
 // KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2022 BOTLabs GmbH
+// Copyright (C) 2019-2023 BOTLabs GmbH
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -56,5 +56,11 @@ impl<T: frame_system::Config> ctype::WeightInfo for WeightInfo<T> {
 			.saturating_add(Weight::from_ref_time(2_000 as u64).saturating_mul(l as u64))
 			.saturating_add(T::DbWeight::get().reads(3 as u64))
 			.saturating_add(T::DbWeight::get().writes(3 as u64))
+	}
+	// Storage: Ctype Ctypes (r:1 w:1)
+	fn set_block_number() -> Weight {
+		Weight::from_ref_time(19_549_000 as u64)
+			.saturating_add(T::DbWeight::get().reads(1 as u64))
+			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 }

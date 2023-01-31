@@ -1,5 +1,5 @@
 // KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2022 BOTLabs GmbH
+// Copyright (C) 2019-2023 BOTLabs GmbH
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -40,7 +40,7 @@ pub mod mock_origin {
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
-		type Origin: From<Origin<Self>>;
+		type RuntimeOrigin: From<Origin<Self>>;
 		type AccountId: Parameter;
 		type SubjectId: Parameter;
 	}

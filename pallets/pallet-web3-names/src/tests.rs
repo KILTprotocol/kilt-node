@@ -1,5 +1,5 @@
 // KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2022 BOTLabs GmbH
+// Copyright (C) 2019-2023 BOTLabs GmbH
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -455,7 +455,7 @@ fn test_update_deposit() {
 				<Test as Config>::Deposit::get() * 2
 			);
 			assert_ok!(Pallet::<Test>::update_deposit(
-				Origin::signed(ACCOUNT_00),
+				RuntimeOrigin::signed(ACCOUNT_00),
 				WEB3_NAME_00_INPUT.to_vec().try_into().unwrap()
 			));
 			assert_eq!(
@@ -492,7 +492,7 @@ fn test_update_deposit_unauthorized() {
 			);
 			assert_noop!(
 				Pallet::<Test>::update_deposit(
-					Origin::signed(ACCOUNT_01),
+					RuntimeOrigin::signed(ACCOUNT_01),
 					WEB3_NAME_00_INPUT.to_vec().try_into().unwrap()
 				),
 				Error::<Test>::Unauthorized

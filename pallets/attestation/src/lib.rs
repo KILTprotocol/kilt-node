@@ -1,5 +1,5 @@
 // KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2022 BOTLabs GmbH
+// Copyright (C) 2019-2023 BOTLabs GmbH
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -115,11 +115,11 @@ pub mod pallet {
 	#[pallet::config]
 	pub trait Config: frame_system::Config + ctype::Config {
 		type EnsureOrigin: EnsureOrigin<
+			<Self as frame_system::Config>::RuntimeOrigin,
 			Success = <Self as Config>::OriginSuccess,
-			<Self as frame_system::Config>::Origin,
 		>;
 		type OriginSuccess: CallSources<AccountIdOf<Self>, AttesterOf<Self>>;
-		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 		type WeightInfo: WeightInfo;
 
 		/// The currency that is used to reserve funds for each attestation.
@@ -230,6 +230,7 @@ pub mod pallet {
 		///   DelegatedAttestations
 		/// - Writes: Attestations, (DelegatedAttestations)
 		/// # </weight>
+		#[pallet::call_index(0)]
 		#[pallet::weight(
 			<T as pallet::Config>::WeightInfo::add()
 			.saturating_add(authorization.as_ref().map(|ac| ac.can_attest_weight()).unwrap_or(Weight::zero()))
@@ -246,11 +247,11 @@ pub mod pallet {
 			let deposit_amount = <T as Config>::Deposit::get();
 
 			ensure!(
-				ctype::Ctypes::<T>::contains_key(&ctype_hash),
+				ctype::Ctypes::<T>::contains_key(ctype_hash),
 				ctype::Error::<T>::CTypeNotFound
 			);
 			ensure!(
-				!Attestations::<T>::contains_key(&claim_hash),
+				!Attestations::<T>::contains_key(claim_hash),
 				Error::<T>::AlreadyAttested
 			);
 
@@ -268,7 +269,7 @@ pub mod pallet {
 			log::debug!("insert Attestation");
 
 			Attestations::<T>::insert(
-				&claim_hash,
+				claim_hash,
 				AttestationDetails {
 					ctype_hash,
 					attester: who.clone(),
@@ -303,6 +304,7 @@ pub mod pallet {
 		/// - Reads per delegation step P: delegation::Delegations
 		/// - Writes: Attestations, DelegatedAttestations
 		/// # </weight>
+		#[pallet::call_index(1)]
 		#[pallet::weight(
 			<T as pallet::Config>::WeightInfo::revoke()
 			.saturating_add(authorization.as_ref().map(|ac| ac.can_revoke_weight()).unwrap_or(Weight::zero()))
@@ -315,7 +317,7 @@ pub mod pallet {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 			let who = source.subject();
 
-			let attestation = Attestations::<T>::get(&claim_hash).ok_or(Error::<T>::AttestationNotFound)?;
+			let attestation = Attestations::<T>::get(claim_hash).ok_or(Error::<T>::AttestationNotFound)?;
 
 			ensure!(!attestation.revoked, Error::<T>::AlreadyRevoked);
 
@@ -333,7 +335,7 @@ pub mod pallet {
 
 			log::debug!("revoking Attestation");
 			Attestations::<T>::insert(
-				&claim_hash,
+				claim_hash,
 				AttestationDetails {
 					revoked: true,
 					..attestation
@@ -362,6 +364,7 @@ pub mod pallet {
 		/// - Reads per delegation step P: delegation::Delegations
 		/// - Writes: Attestations, DelegatedAttestations
 		/// # </weight>
+		#[pallet::call_index(2)]
 		#[pallet::weight(
 			<T as pallet::Config>::WeightInfo::remove()
 			.saturating_add(authorization.as_ref().map(|ac| ac.can_remove_weight()).unwrap_or(Weight::zero()))
@@ -374,7 +377,7 @@ pub mod pallet {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 			let who = source.subject();
 
-			let attestation = Attestations::<T>::get(&claim_hash).ok_or(Error::<T>::AttestationNotFound)?;
+			let attestation = Attestations::<T>::get(claim_hash).ok_or(Error::<T>::AttestationNotFound)?;
 
 			if attestation.attester != who {
 				let attestation_auth_id = attestation.authorization_id.as_ref().ok_or(Error::<T>::Unauthorized)?;
@@ -405,10 +408,11 @@ pub mod pallet {
 		/// - Reads: [Origin Account], Attestations, DelegatedAttestations
 		/// - Writes: Attestations, DelegatedAttestations
 		/// # </weight>
+		#[pallet::call_index(3)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::reclaim_deposit())]
 		pub fn reclaim_deposit(origin: OriginFor<T>, claim_hash: ClaimHashOf<T>) -> DispatchResult {
 			let who = ensure_signed(origin)?;
-			let attestation = Attestations::<T>::get(&claim_hash).ok_or(Error::<T>::AttestationNotFound)?;
+			let attestation = Attestations::<T>::get(claim_hash).ok_or(Error::<T>::AttestationNotFound)?;
 
 			ensure!(attestation.deposit.owner == who, Error::<T>::Unauthorized);
 
@@ -429,13 +433,14 @@ pub mod pallet {
 		///
 		/// The subject of the call must be the attester who issues the
 		/// attestation. The sender of the call will be the new deposit owner.
+		#[pallet::call_index(4)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::change_deposit_owner())]
 		pub fn change_deposit_owner(origin: OriginFor<T>, claim_hash: ClaimHashOf<T>) -> DispatchResult {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 			let subject = source.subject();
 			let sender = source.sender();
 
-			let attestation = Attestations::<T>::get(&claim_hash).ok_or(Error::<T>::AttestationNotFound)?;
+			let attestation = Attestations::<T>::get(claim_hash).ok_or(Error::<T>::AttestationNotFound)?;
 			ensure!(attestation.attester == subject, Error::<T>::Unauthorized);
 
 			AttestationStorageDepositCollector::<T>::change_deposit_owner(&claim_hash, sender)?;
@@ -446,11 +451,12 @@ pub mod pallet {
 		/// Updates the deposit amount to the current deposit rate.
 		///
 		/// The sender must be the deposit owner.
+		#[pallet::call_index(5)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::update_deposit())]
 		pub fn update_deposit(origin: OriginFor<T>, claim_hash: ClaimHashOf<T>) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
 
-			let attestation = Attestations::<T>::get(&claim_hash).ok_or(Error::<T>::AttestationNotFound)?;
+			let attestation = Attestations::<T>::get(claim_hash).ok_or(Error::<T>::AttestationNotFound)?;
 			ensure!(attestation.deposit.owner == sender, Error::<T>::Unauthorized);
 
 			AttestationStorageDepositCollector::<T>::update_deposit(&claim_hash)?;
@@ -462,7 +468,7 @@ pub mod pallet {
 	impl<T: Config> Pallet<T> {
 		fn remove_attestation(attestation: AttestationDetails<T>, claim_hash: ClaimHashOf<T>) {
 			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&attestation.deposit);
-			Attestations::<T>::remove(&claim_hash);
+			Attestations::<T>::remove(claim_hash);
 			if let Some(authorization_id) = &attestation.authorization_id {
 				ExternalAttestations::<T>::remove(authorization_id, claim_hash);
 			}

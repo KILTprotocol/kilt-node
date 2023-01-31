@@ -1,5 +1,5 @@
 // KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2022 BOTLabs GmbH
+// Copyright (C) 2019-2023 BOTLabs GmbH
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -119,9 +119,9 @@ pub mod pallet {
 		/// for the different operations.
 		type AuthorizationId: Parameter + MaxEncodedLen;
 		/// The origin allowed to issue/revoke/remove public credentials.
-		type EnsureOrigin: EnsureOrigin<Success = <Self as Config>::OriginSuccess, Self::Origin>;
+		type EnsureOrigin: EnsureOrigin<Self::RuntimeOrigin, Success = <Self as Config>::OriginSuccess>;
 		/// The ubiquitous event type.
-		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 		/// The hashing algorithm to derive a credential identifier from the
 		/// credential content.
 		type CredentialHash: Hash<Output = Self::CredentialId>;
@@ -238,6 +238,7 @@ pub mod pallet {
 		///
 		/// Emits `CredentialStored`.
 		#[allow(clippy::boxed_local)]
+		#[pallet::call_index(0)]
 		#[pallet::weight({
 			let xt_weight = <T as Config>::WeightInfo::add(credential.claims.len().saturated_into::<u32>());
 			let ac_weight = credential.authorization.as_ref().map(|ac| ac.can_issue_weight()).unwrap_or(Weight::zero());
@@ -259,7 +260,7 @@ pub mod pallet {
 			} = *credential.clone();
 
 			ensure!(
-				ctype::Ctypes::<T>::contains_key(&ctype_hash),
+				ctype::Ctypes::<T>::contains_key(ctype_hash),
 				ctype::Error::<T>::CTypeNotFound
 			);
 
@@ -325,6 +326,7 @@ pub mod pallet {
 		/// The dispatch origin must be authorized to revoke the credential.
 		///
 		/// Emits `CredentialRevoked`.
+		#[pallet::call_index(1)]
 		#[pallet::weight({
 			let xt_weight = <T as Config>::WeightInfo::revoke();
 			let ac_weight = authorization.as_ref().map(|ac| ac.can_revoke_weight()).unwrap_or(Weight::zero());
@@ -363,6 +365,7 @@ pub mod pallet {
 		/// credential.
 		///
 		/// Emits `CredentialUnrevoked`.
+		#[pallet::call_index(2)]
 		#[pallet::weight({
 			let xt_weight = <T as Config>::WeightInfo::unrevoke();
 			let ac_weight = authorization.as_ref().map(|ac| ac.can_unrevoke_weight()).unwrap_or(Weight::zero());
@@ -409,6 +412,7 @@ pub mod pallet {
 		/// The dispatch origin must be authorized to remove the credential.
 		///
 		/// Emits `CredentialRemoved`.
+		#[pallet::call_index(3)]
 		#[pallet::weight({
 			let xt_weight = <T as Config>::WeightInfo::remove();
 			let ac_weight = authorization.as_ref().map(|ac| ac.can_remove_weight()).unwrap_or(Weight::zero());
@@ -467,6 +471,7 @@ pub mod pallet {
 		/// credential's attester.
 		///
 		/// Emits `CredentialRemoved`.
+		#[pallet::call_index(4)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::reclaim_deposit())]
 		pub fn reclaim_deposit(origin: OriginFor<T>, credential_id: CredentialIdOf<T>) -> DispatchResult {
 			let submitter = ensure_signed(origin)?;
@@ -489,6 +494,7 @@ pub mod pallet {
 		///
 		/// The subject of the call must be the owner of the credential.
 		/// The sender of the call will be the new deposit owner.
+		#[pallet::call_index(5)]
 		#[pallet::weight(<T as Config>::WeightInfo::change_deposit_owner())]
 		pub fn change_deposit_owner(origin: OriginFor<T>, credential_id: CredentialIdOf<T>) -> DispatchResult {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
@@ -506,6 +512,7 @@ pub mod pallet {
 		/// Updates the deposit amount to the current deposit rate.
 		///
 		/// The sender must be the deposit owner.
+		#[pallet::call_index(6)]
 		#[pallet::weight(<T as Config>::WeightInfo::update_deposit())]
 		pub fn update_deposit(origin: OriginFor<T>, credential_id: CredentialIdOf<T>) -> DispatchResult {
 			let source = ensure_signed(origin)?;
@@ -542,10 +549,10 @@ pub mod pallet {
 		) -> Result<(T::SubjectId, CredentialEntryOf<T>), Error<T>> {
 			// Verify that the credential exists
 			let credential_subject =
-				CredentialSubjects::<T>::get(&credential_id).ok_or(Error::<T>::CredentialNotFound)?;
+				CredentialSubjects::<T>::get(credential_id).ok_or(Error::<T>::CredentialNotFound)?;
 
 			// Should never happen if the line above succeeds
-			Credentials::<T>::get(&credential_subject, &credential_id)
+			Credentials::<T>::get(&credential_subject, credential_id)
 				.map(|entry| (credential_subject, entry))
 				.ok_or(Error::<T>::InternalError)
 		}
@@ -560,7 +567,7 @@ pub mod pallet {
 			// Fails if the credential does not exist OR the caller is different than the
 			// original attester. If successful, saves the additional weight used for access
 			// control and returns it at the end of the function.
-			Credentials::<T>::try_mutate(&credential_subject, &credential_id, |credential_entry| {
+			Credentials::<T>::try_mutate(credential_subject, credential_id, |credential_entry| {
 				if let Some(credential) = credential_entry {
 					// Additional weight is 0 if the caller is the attester, otherwise it's the
 					// value returned by the access control check, if it does not fail.
@@ -605,8 +612,8 @@ pub mod pallet {
 			deposit: Deposit<AccountIdOf<T>, <Self::Currency as Currency<AccountIdOf<T>>>::Balance>,
 		) -> Result<(), DispatchError> {
 			let credential_subject =
-				CredentialSubjects::<T>::get(&credential_id).ok_or(Error::<T>::CredentialNotFound)?;
-			Credentials::<T>::try_mutate(&credential_subject, &credential_id, |credential_entry| {
+				CredentialSubjects::<T>::get(credential_id).ok_or(Error::<T>::CredentialNotFound)?;
+			Credentials::<T>::try_mutate(&credential_subject, credential_id, |credential_entry| {
 				if let Some(credential) = credential_entry {
 					credential.deposit = deposit;
 					Ok(())

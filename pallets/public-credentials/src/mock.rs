@@ -1,5 +1,5 @@
 // KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2022 BOTLabs GmbH
+// Copyright (C) 2019-2023 BOTLabs GmbH
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -100,6 +100,7 @@ pub(crate) mod runtime {
 		traits::{ConstU128, ConstU16, ConstU32, ConstU64},
 		weights::constants::RocksDbWeight,
 	};
+	use frame_system::EnsureSigned;
 	use scale_info::TypeInfo;
 	use sp_core::{sr25519, Pair};
 	use sp_runtime::{
@@ -110,7 +111,7 @@ pub(crate) mod runtime {
 
 	use kilt_support::mock::{mock_origin, SubjectId};
 
-	use ctype::{CtypeCreatorOf, CtypeHashOf};
+	use ctype::{CtypeCreatorOf, CtypeEntryOf, CtypeHashOf};
 
 	use crate::{Config, CredentialEntryOf, Error, InputSubjectIdOf, PublicCredentialsAccessControl};
 
@@ -284,14 +285,14 @@ pub(crate) mod runtime {
 	);
 
 	impl mock_origin::Config for Test {
-		type Origin = Origin;
+		type RuntimeOrigin = RuntimeOrigin;
 		type AccountId = AccountId;
 		type SubjectId = SubjectId;
 	}
 
 	impl frame_system::Config for Test {
-		type Origin = Origin;
-		type Call = Call;
+		type RuntimeOrigin = RuntimeOrigin;
+		type RuntimeCall = RuntimeCall;
 		type Index = u64;
 		type BlockNumber = BlockNumber;
 		type Hash = Hash;
@@ -299,7 +300,7 @@ pub(crate) mod runtime {
 		type AccountId = AccountId;
 		type Lookup = IdentityLookup<Self::AccountId>;
 		type Header = Header;
-		type Event = ();
+		type RuntimeEvent = ();
 		type BlockHashCount = ConstU64<250>;
 		type DbWeight = RocksDbWeight;
 		type Version = ();
@@ -320,7 +321,7 @@ pub(crate) mod runtime {
 	impl pallet_balances::Config for Test {
 		type Balance = Balance;
 		type DustRemoval = ();
-		type Event = ();
+		type RuntimeEvent = ();
 		type ExistentialDeposit = ConstU128<MILLI_UNIT>;
 		type AccountStore = System;
 		type WeightInfo = ();
@@ -333,7 +334,8 @@ pub(crate) mod runtime {
 		type CtypeCreatorId = SubjectId;
 		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<AccountId, Self::CtypeCreatorId>;
 		type OriginSuccess = mock_origin::DoubleOrigin<AccountId, Self::CtypeCreatorId>;
-		type Event = ();
+		type OverarchingOrigin = EnsureSigned<AccountId>;
+		type RuntimeEvent = ();
 		type WeightInfo = ();
 
 		type Currency = Balances;
@@ -350,7 +352,7 @@ pub(crate) mod runtime {
 		type Currency = Balances;
 		type Deposit = ConstU128<{ 10 * MILLI_UNIT }>;
 		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<AccountId, Self::AttesterId>;
-		type Event = ();
+		type RuntimeEvent = ();
 		type MaxEncodedClaimsLength = ConstU32<500>;
 		type MaxSubjectIdLength = ConstU32<100>;
 		type OriginSuccess = mock_origin::DoubleOrigin<AccountId, Self::AttesterId>;
@@ -424,7 +426,13 @@ pub(crate) mod runtime {
 
 			ext.execute_with(|| {
 				for ctype in self.ctypes {
-					ctype::Ctypes::<Test>::insert(ctype.0, ctype.1.clone());
+					ctype::Ctypes::<Test>::insert(
+						ctype.0,
+						CtypeEntryOf::<Test> {
+							creator: ctype.1.clone(),
+							created_at: System::block_number(),
+						},
+					);
 				}
 
 				for (subject_id, credential_id, credential_entry) in self.public_credentials {

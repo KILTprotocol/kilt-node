@@ -1,5 +1,5 @@
 // KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2022 BOTLabs GmbH
+// Copyright (C) 2019-2023 BOTLabs GmbH
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -42,6 +42,7 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
+pub mod ctype_entry;
 pub mod default_weights;
 
 #[cfg(any(feature = "mock", test))]
@@ -69,11 +70,15 @@ pub mod pallet {
 	use sp_runtime::{traits::Saturating, SaturatedConversion};
 	use sp_std::vec::Vec;
 
+	use crate::ctype_entry::CtypeEntry;
+
 	/// The current storage version.
-	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
+	const STORAGE_VERSION: StorageVersion = StorageVersion::new(2);
 
 	/// Type of a CType hash.
 	pub type CtypeHashOf<T> = <T as frame_system::Config>::Hash;
+
+	pub type CtypeEntryOf<T> = CtypeEntry<<T as Config>::CtypeCreatorId, BlockNumberFor<T>>;
 
 	/// Type of a CType creator.
 	pub type CtypeCreatorOf<T> = <T as Config>::CtypeCreatorId;
@@ -85,9 +90,10 @@ pub mod pallet {
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
-		type EnsureOrigin: EnsureOrigin<Success = Self::OriginSuccess, <Self as frame_system::Config>::Origin>;
+		type EnsureOrigin: EnsureOrigin<<Self as frame_system::Config>::RuntimeOrigin, Success = Self::OriginSuccess>;
+		type OverarchingOrigin: EnsureOrigin<<Self as frame_system::Config>::RuntimeOrigin>;
 		type OriginSuccess: CallSources<AccountIdOf<Self>, CtypeCreatorOf<Self>>;
-		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 		type Currency: Currency<AccountIdOf<Self>>;
 		type WeightInfo: WeightInfo;
 		type CtypeCreatorId: Parameter + MaxEncodedLen;
@@ -105,10 +111,11 @@ pub mod pallet {
 
 	/// CTypes stored on chain.
 	///
-	/// It maps from a CType hash to its creator.
+	/// It maps from a CType hash to its creator and block number in which it
+	/// was created.
 	#[pallet::storage]
 	#[pallet::getter(fn ctypes)]
-	pub type Ctypes<T> = StorageMap<_, Blake2_128Concat, CtypeHashOf<T>, CtypeCreatorOf<T>>;
+	pub type Ctypes<T> = StorageMap<_, Blake2_128Concat, CtypeHashOf<T>, CtypeEntryOf<T>>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -116,6 +123,9 @@ pub mod pallet {
 		/// A new CType has been created.
 		/// \[creator identifier, CType hash\]
 		CTypeCreated(CtypeCreatorOf<T>, CtypeHashOf<T>),
+		/// Information about a CType has been updated.
+		/// \[CType hash\]
+		CTypeUpdated(CtypeHashOf<T>),
 	}
 
 	#[pallet::error]
@@ -142,6 +152,7 @@ pub mod pallet {
 		/// - Reads: Ctypes, Balance
 		/// - Writes: Ctypes, Balance
 		/// # </weight>
+		#[pallet::call_index(0)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::add(ctype.len().saturated_into()))]
 		pub fn add(origin: OriginFor<T>, ctype: Vec<u8>) -> DispatchResult {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
@@ -160,7 +171,7 @@ pub mod pallet {
 
 			let hash = <T as frame_system::Config>::Hashing::hash(&ctype[..]);
 
-			ensure!(!Ctypes::<T>::contains_key(&hash), Error::<T>::CTypeAlreadyExists);
+			ensure!(!Ctypes::<T>::contains_key(hash), Error::<T>::CTypeAlreadyExists);
 
 			// *** No Fail except during withdraw beyond this point  ***
 
@@ -176,9 +187,40 @@ pub mod pallet {
 
 			T::FeeCollector::on_unbalanced(imbalance);
 			log::debug!("Creating CType with hash {:?} and creator {:?}", hash, creator);
-			Ctypes::<T>::insert(&hash, creator.clone());
+			Ctypes::<T>::insert(
+				hash,
+				CtypeEntryOf::<T> {
+					creator: creator.clone(),
+					created_at: frame_system::Pallet::<T>::block_number(),
+				},
+			);
 
 			Self::deposit_event(Event::CTypeCreated(creator, hash));
+
+			Ok(())
+		}
+
+		/// Set the creation block number for a given CType, if found.
+		///
+		/// Emits `CTypeUpdated`.
+		#[pallet::call_index(1)]
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::set_block_number())]
+		pub fn set_block_number(
+			origin: OriginFor<T>,
+			ctype_hash: CtypeHashOf<T>,
+			block_number: BlockNumberFor<T>,
+		) -> DispatchResult {
+			T::OverarchingOrigin::ensure_origin(origin)?;
+			Ctypes::<T>::try_mutate(ctype_hash, |ctype_entry| {
+				if let Some(ctype_entry) = ctype_entry {
+					ctype_entry.created_at = block_number;
+					Ok(())
+				} else {
+					Err(Error::<T>::CTypeNotFound)
+				}
+			})?;
+
+			Self::deposit_event(Event::CTypeUpdated(ctype_hash));
 
 			Ok(())
 		}

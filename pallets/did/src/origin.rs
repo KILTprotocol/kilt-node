@@ -1,5 +1,5 @@
 // KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2022 BOTLabs GmbH
+// Copyright (C) 2019-2023 BOTLabs GmbH
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -97,7 +97,7 @@ mod tests {
 		use crate::mock::Test;
 		use frame_support::{assert_ok, traits::EnsureOrigin};
 
-		let origin: <Test as frame_system::Config>::Origin = EnsureDidOrigin::successful_origin();
+		let origin: <Test as frame_system::Config>::RuntimeOrigin = EnsureDidOrigin::successful_origin();
 		assert_ok!(EnsureDidOrigin::try_origin(origin));
 	}
 }

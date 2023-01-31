@@ -1,5 +1,5 @@
 // KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2022 BOTLabs GmbH
+// Copyright (C) 2019-2023 BOTLabs GmbH
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -173,7 +173,7 @@ pub mod pallet {
 	pub type BlockNumberOf<T> = <T as frame_system::Config>::BlockNumber;
 
 	/// Type for a runtime extrinsic callable under DID-based authorisation.
-	pub type DidCallableOf<T> = <T as Config>::Call;
+	pub type DidCallableOf<T> = <T as Config>::RuntimeCall;
 
 	/// Type for origin that supports a DID sender.
 	#[pallet::origin]
@@ -187,8 +187,8 @@ pub mod pallet {
 	pub trait Config: frame_system::Config + Debug {
 		/// Type for a dispatchable call that can be proxied through the DID
 		/// pallet to support DID-based authorisation.
-		type Call: Parameter
-			+ Dispatchable<Origin = <Self as Config>::Origin, PostInfo = PostDispatchInfo>
+		type RuntimeCall: Parameter
+			+ Dispatchable<PostInfo = PostDispatchInfo, RuntimeOrigin = <Self as Config>::RuntimeOrigin>
 			+ GetDispatchInfo
 			+ DeriveDidCallAuthorizationVerificationKeyRelationship;
 
@@ -197,21 +197,21 @@ pub mod pallet {
 
 		/// Origin type expected by the proxied dispatchable calls.
 		#[cfg(not(feature = "runtime-benchmarks"))]
-		type Origin: From<DidRawOrigin<DidIdentifierOf<Self>, AccountIdOf<Self>>>;
+		type RuntimeOrigin: From<DidRawOrigin<DidIdentifierOf<Self>, AccountIdOf<Self>>>;
 		#[cfg(feature = "runtime-benchmarks")]
-		type Origin: From<RawOrigin<DidIdentifierOf<Self>>>;
+		type RuntimeOrigin: From<RawOrigin<DidIdentifierOf<Self>>>;
 
 		/// The origin check for all DID calls inside this pallet.
 		type EnsureOrigin: EnsureOrigin<
+			<Self as frame_system::Config>::RuntimeOrigin,
 			Success = <Self as Config>::OriginSuccess,
-			<Self as frame_system::Config>::Origin,
 		>;
 
 		/// The return type when the DID origin check was successful.
 		type OriginSuccess: CallSources<AccountIdOf<Self>, DidIdentifierOf<Self>>;
 
 		/// Overarching event type.
-		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
 		/// The currency that is used to reserve funds for each did.
 		type Currency: ReservableCurrency<AccountIdOf<Self>>;
@@ -495,6 +495,7 @@ pub mod pallet {
 		/// - Writes: Did (with K new key agreement keys), ServiceEndpoints
 		///   (with N new service endpoints), DidEndpointsCount
 		/// # </weight>
+		#[pallet::call_index(0)]
 		#[pallet::weight({
 			let new_key_agreement_keys = details.new_key_agreement_keys.len().saturated_into::<u32>();
 			// We only consider the number of new endpoints.
@@ -601,6 +602,7 @@ pub mod pallet {
 		/// - Reads: [Origin Account], Did
 		/// - Writes: Did
 		/// # </weight>
+		#[pallet::call_index(1)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::set_ed25519_authentication_key().max(<T as pallet::Config>::WeightInfo::set_sr25519_authentication_key()).max(<T as pallet::Config>::WeightInfo::set_ecdsa_authentication_key()))]
 		pub fn set_authentication_key(origin: OriginFor<T>, new_key: DidVerificationKey) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
@@ -641,6 +643,7 @@ pub mod pallet {
 		/// - Reads: [Origin Account], Did
 		/// - Writes: Did
 		/// # </weight>
+		#[pallet::call_index(2)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::set_ed25519_delegation_key().max(<T as pallet::Config>::WeightInfo::set_sr25519_delegation_key()).max(<T as pallet::Config>::WeightInfo::set_ecdsa_delegation_key()))]
 		pub fn set_delegation_key(origin: OriginFor<T>, new_key: DidVerificationKey) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
@@ -675,6 +678,7 @@ pub mod pallet {
 		/// - Reads: [Origin Account], Did
 		/// - Writes: Did
 		/// # </weight>
+		#[pallet::call_index(3)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::remove_ed25519_delegation_key().max(<T as pallet::Config>::WeightInfo::remove_sr25519_delegation_key()).max(<T as pallet::Config>::WeightInfo::remove_ecdsa_delegation_key()))]
 		pub fn remove_delegation_key(origin: OriginFor<T>) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
@@ -708,6 +712,7 @@ pub mod pallet {
 		/// - Reads: [Origin Account], Did
 		/// - Writes: Did
 		/// # </weight>
+		#[pallet::call_index(4)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::set_ed25519_attestation_key().max(<T as pallet::Config>::WeightInfo::set_sr25519_attestation_key()).max(<T as pallet::Config>::WeightInfo::set_ecdsa_attestation_key()))]
 		pub fn set_attestation_key(origin: OriginFor<T>, new_key: DidVerificationKey) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
@@ -742,6 +747,7 @@ pub mod pallet {
 		/// - Reads: [Origin Account], Did
 		/// - Writes: Did
 		/// # </weight>
+		#[pallet::call_index(5)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::remove_ed25519_attestation_key().max(<T as pallet::Config>::WeightInfo::remove_sr25519_attestation_key()).max(<T as pallet::Config>::WeightInfo::remove_ecdsa_attestation_key()))]
 		pub fn remove_attestation_key(origin: OriginFor<T>) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
@@ -773,6 +779,7 @@ pub mod pallet {
 		/// - Reads: [Origin Account], Did
 		/// - Writes: Did
 		/// # </weight>
+		#[pallet::call_index(6)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::add_ed25519_key_agreement_key().max(<T as pallet::Config>::WeightInfo::add_sr25519_key_agreement_key()).max(<T as pallet::Config>::WeightInfo::add_ecdsa_key_agreement_key()))]
 		pub fn add_key_agreement_key(origin: OriginFor<T>, new_key: DidEncryptionKey) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
@@ -805,6 +812,7 @@ pub mod pallet {
 		/// - Reads: [Origin Account], Did
 		/// - Writes: Did
 		/// # </weight>
+		#[pallet::call_index(7)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::remove_ed25519_key_agreement_key().max(<T as pallet::Config>::WeightInfo::remove_sr25519_key_agreement_key()).max(<T as pallet::Config>::WeightInfo::remove_ecdsa_key_agreement_key()))]
 		pub fn remove_key_agreement_key(origin: OriginFor<T>, key_id: KeyIdOf<T>) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
@@ -834,6 +842,7 @@ pub mod pallet {
 		/// - Reads: [Origin Account], Did, ServiceEndpoints, DidEndpointsCount
 		/// - Writes: Did, ServiceEndpoints, DidEndpointsCount
 		/// # </weight>
+		#[pallet::call_index(8)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::add_service_endpoint())]
 		pub fn add_service_endpoint(origin: OriginFor<T>, service_endpoint: DidEndpoint<T>) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
@@ -883,6 +892,7 @@ pub mod pallet {
 		/// - Reads: [Origin Account], ServiceEndpoints, DidEndpointsCount
 		/// - Writes: Did, ServiceEndpoints, DidEndpointsCount
 		/// # </weight>
+		#[pallet::call_index(9)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::remove_service_endpoint())]
 		pub fn remove_service_endpoint(origin: OriginFor<T>, service_id: ServiceEndpointId<T>) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
@@ -933,6 +943,7 @@ pub mod pallet {
 		/// - Reads: [Origin Account], Did
 		/// - Kills: Did entry associated to the DID identifier
 		/// # </weight>
+		#[pallet::call_index(10)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::delete(*endpoints_to_remove))]
 		pub fn delete(origin: OriginFor<T>, endpoints_to_remove: u32) -> DispatchResult {
 			let source = T::EnsureOrigin::ensure_origin(origin)?;
@@ -962,6 +973,7 @@ pub mod pallet {
 		/// - Reads: [Origin Account], Did
 		/// - Kills: Did entry associated to the DID identifier
 		/// # </weight>
+		#[pallet::call_index(11)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::reclaim_deposit(*endpoints_to_remove))]
 		pub fn reclaim_deposit(
 			origin: OriginFor<T>,
@@ -1012,6 +1024,7 @@ pub mod pallet {
 		/// - Writes: Did
 		/// # </weight>
 		#[allow(clippy::boxed_local)]
+		#[pallet::call_index(12)]
 		#[pallet::weight({
 			let di = did_call.call.get_dispatch_info();
 			let max_sig_weight = <T as pallet::Config>::WeightInfo::submit_did_call_ed25519_key()
@@ -1078,6 +1091,7 @@ pub mod pallet {
 		///
 		/// The subject of the call must be the did owner.
 		/// The sender of the call will be the new deposit owner.
+		#[pallet::call_index(13)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::change_deposit_owner())]
 		pub fn change_deposit_owner(origin: OriginFor<T>) -> DispatchResult {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
@@ -1092,6 +1106,7 @@ pub mod pallet {
 		/// Updates the deposit amount to the current deposit rate.
 		///
 		/// The sender must be the deposit owner.
+		#[pallet::call_index(14)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::update_deposit())]
 		pub fn update_deposit(origin: OriginFor<T>, did: DidIdentifierOf<T>) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
@@ -1244,7 +1259,7 @@ pub mod pallet {
 		fn deposit(
 			key: &DidIdentifierOf<T>,
 		) -> Result<Deposit<AccountIdOf<T>, <Self::Currency as Currency<AccountIdOf<T>>>::Balance>, DispatchError> {
-			let did_entry = Did::<T>::get(&key).ok_or(Error::<T>::DidNotPresent)?;
+			let did_entry = Did::<T>::get(key).ok_or(Error::<T>::DidNotPresent)?;
 			Ok(did_entry.deposit)
 		}
 
@@ -1256,8 +1271,8 @@ pub mod pallet {
 			key: &DidIdentifierOf<T>,
 			deposit: Deposit<AccountIdOf<T>, <Self::Currency as Currency<AccountIdOf<T>>>::Balance>,
 		) -> Result<(), DispatchError> {
-			let did_entry = Did::<T>::get(&key).ok_or(Error::<T>::DidNotPresent)?;
-			Did::<T>::insert(&key, DidDetails { deposit, ..did_entry });
+			let did_entry = Did::<T>::get(key).ok_or(Error::<T>::DidNotPresent)?;
+			Did::<T>::insert(key, DidDetails { deposit, ..did_entry });
 
 			Ok(())
 		}

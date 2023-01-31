@@ -1,5 +1,5 @@
 // KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2022 BOTLabs GmbH
+// Copyright (C) 2019-2023 BOTLabs GmbH
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -56,7 +56,7 @@ impl<T: Config> Pallet<T> {
 			// rewards += stake * self_count * collator_reward_rate
 			rewards.saturating_add(Self::calc_block_rewards_collator(stake, count_unclaimed.into()))
 		} else {
-			BalanceOf::<T>::zero()
+			rewards
 		}
 	}
 

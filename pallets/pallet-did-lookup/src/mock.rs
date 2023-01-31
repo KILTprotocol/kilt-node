@@ -1,5 +1,5 @@
 // KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2022 BOTLabs GmbH
+// Copyright (C) 2019-2023 BOTLabs GmbH
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -28,9 +28,10 @@ use sp_runtime::{
 };
 
 use crate::{
-	self as pallet_did_lookup, AccountIdOf, BalanceOf, Config, ConnectedAccounts, ConnectedDids, ConnectionRecord,
-	CurrencyOf, DidIdentifierOf,
+	self as pallet_did_lookup, linkable_account::LinkableAccountId, AccountIdOf, BalanceOf, Config, ConnectedAccounts,
+	ConnectedDids, ConnectionRecord, CurrencyOf, DidIdentifierOf,
 };
+
 pub(crate) type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 pub(crate) type Block = frame_system::mocking::MockBlock<Test>;
 pub(crate) type Hash = sp_core::H256;
@@ -64,8 +65,8 @@ impl frame_system::Config for Test {
 	type BlockWeights = ();
 	type BlockLength = ();
 	type DbWeight = ();
-	type Origin = Origin;
-	type Call = Call;
+	type RuntimeOrigin = RuntimeOrigin;
+	type RuntimeCall = RuntimeCall;
 	type Index = Index;
 	type BlockNumber = BlockNumber;
 	type Hash = Hash;
@@ -73,7 +74,7 @@ impl frame_system::Config for Test {
 	type AccountId = AccountId;
 	type Lookup = IdentityLookup<Self::AccountId>;
 	type Header = Header;
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type BlockHashCount = BlockHashCount;
 	type Version = ();
 	type PalletInfo = PalletInfo;
@@ -95,7 +96,7 @@ parameter_types! {
 impl pallet_balances::Config for Test {
 	type Balance = Balance;
 	type DustRemoval = ();
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type ExistentialDeposit = ExistentialDeposit;
 	type AccountStore = System;
 	type MaxLocks = MaxLocks;
@@ -109,9 +110,7 @@ parameter_types! {
 }
 
 impl pallet_did_lookup::Config for Test {
-	type Event = Event;
-	type Signature = Signature;
-	type Signer = AccountPublic;
+	type RuntimeEvent = RuntimeEvent;
 
 	type Currency = Balances;
 	type Deposit = DidLookupDeposit;
@@ -124,7 +123,7 @@ impl pallet_did_lookup::Config for Test {
 }
 
 impl mock_origin::Config for Test {
-	type Origin = Origin;
+	type RuntimeOrigin = RuntimeOrigin;
 	type AccountId = AccountId;
 	type SubjectId = SubjectId;
 }
@@ -133,11 +132,12 @@ pub(crate) const ACCOUNT_00: AccountId = AccountId::new([1u8; 32]);
 pub(crate) const ACCOUNT_01: AccountId = AccountId::new([2u8; 32]);
 pub(crate) const DID_00: SubjectId = SubjectId(ACCOUNT_00);
 pub(crate) const DID_01: SubjectId = SubjectId(ACCOUNT_01);
+pub(crate) const LINKABLE_ACCOUNT_00: LinkableAccountId = LinkableAccountId::AccountId32(ACCOUNT_00);
 
 pub(crate) fn insert_raw_connection<T: Config>(
 	sender: AccountIdOf<T>,
 	did_identifier: DidIdentifierOf<T>,
-	account: AccountIdOf<T>,
+	account: LinkableAccountId,
 	deposit: BalanceOf<T>,
 ) {
 	let deposit = Deposit {
@@ -164,7 +164,7 @@ pub(crate) fn insert_raw_connection<T: Config>(
 pub struct ExtBuilder {
 	balances: Vec<(AccountId, Balance)>,
 	/// list of connection (sender, did, connected address)
-	connections: Vec<(AccountId, SubjectId, AccountId)>,
+	connections: Vec<(AccountId, SubjectId, LinkableAccountId)>,
 }
 
 impl ExtBuilder {
@@ -176,7 +176,7 @@ impl ExtBuilder {
 
 	/// Add a connection: (sender, did, connected address)
 	#[must_use]
-	pub fn with_connections(mut self, connections: Vec<(AccountId, SubjectId, AccountId)>) -> Self {
+	pub fn with_connections(mut self, connections: Vec<(AccountId, SubjectId, LinkableAccountId)>) -> Self {
 		self.connections = connections;
 		self
 	}

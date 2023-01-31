@@ -1,5 +1,5 @@
 // KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2022 BOTLabs GmbH
+// Copyright (C) 2019-2023 BOTLabs GmbH
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,22 +20,24 @@ use codec::MaxEncodedLen;
 use frame_support::{traits::Currency, BoundedVec};
 
 use did::DeriveDidCallAuthorizationVerificationKeyRelationship;
+use pallet_did_lookup::associate_account_request::AssociateAccountRequest;
 use pallet_treasury::BalanceOf;
 use pallet_web3_names::{Web3NameOf, Web3OwnershipOf};
 use runtime_common::{
 	constants::{
 		attestation::MAX_ATTESTATION_BYTE_LENGTH, did::MAX_DID_BYTE_LENGTH, did_lookup::MAX_CONNECTION_BYTE_LENGTH,
-		web3_names::MAX_NAME_BYTE_LENGTH, MAX_INDICES_BYTE_LENGTH,
+		public_credentials::MAX_PUBLIC_CREDENTIAL_STORAGE_LENGTH, web3_names::MAX_NAME_BYTE_LENGTH,
+		MAX_INDICES_BYTE_LENGTH,
 	},
 	AccountId, BlockNumber,
 };
 
-use super::{Call, Runtime};
+use super::{Runtime, RuntimeCall};
 
 #[test]
 fn call_size() {
 	assert!(
-		core::mem::size_of::<Call>() <= 240,
+		core::mem::size_of::<RuntimeCall>() <= 240,
 		"size of Call is more than 240 bytes: some calls have too big arguments, use Box to reduce \
 		the size of Call.
 		If the limit is too strong, maybe consider increase the limit to 300.",
@@ -101,21 +103,35 @@ fn indices_storage_sizes() {
 }
 
 #[test]
+fn public_credentials_storage_sizes() {
+	// Stored in Credentials
+	let credential_entry_max_size = public_credentials::CredentialEntryOf::<Runtime>::max_encoded_len();
+	// Stored in CredentialsUnicityIndex
+	let subject_id_max_size = <Runtime as public_credentials::Config>::SubjectId::max_encoded_len();
+
+	// Each credential would have a different deposit, so no multiplier here
+	assert_eq!(
+		credential_entry_max_size + subject_id_max_size,
+		MAX_PUBLIC_CREDENTIAL_STORAGE_LENGTH as usize
+	)
+}
+
+#[test]
 fn test_derive_did_verification_relation_ctype() {
-	let c1 = Call::Ctype(ctype::Call::add {
+	let c1 = RuntimeCall::Ctype(ctype::Call::add {
 		ctype: vec![0, 1, 2, 3],
 	});
-	let c2 = Call::Ctype(ctype::Call::add {
+	let c2 = RuntimeCall::Ctype(ctype::Call::add {
 		ctype: vec![0, 1, 2, 3, 3],
 	});
-	let c3 = Call::Ctype(ctype::Call::add {
+	let c3 = RuntimeCall::Ctype(ctype::Call::add {
 		ctype: vec![0, 1, 2, 3, 3],
 	});
-	let c4 = Call::Ctype(ctype::Call::add {
+	let c4 = RuntimeCall::Ctype(ctype::Call::add {
 		ctype: vec![0, 1, 2, 100],
 	});
 
-	let cb = Call::Utility(pallet_utility::Call::batch {
+	let cb = RuntimeCall::Utility(pallet_utility::Call::batch {
 		calls: vec![c1, c2, c3, c4],
 	});
 	assert_eq!(
@@ -127,7 +143,7 @@ fn test_derive_did_verification_relation_ctype() {
 #[test]
 fn test_derive_did_key_web3name() {
 	assert_eq!(
-		Call::Web3Names(pallet_web3_names::Call::claim {
+		RuntimeCall::Web3Names(pallet_web3_names::Call::claim {
 			name: b"test-name".to_vec().try_into().unwrap()
 		})
 		.derive_verification_key_relationship(),
@@ -135,7 +151,7 @@ fn test_derive_did_key_web3name() {
 	);
 
 	assert_eq!(
-		Call::Web3Names(pallet_web3_names::Call::release_by_owner {}).derive_verification_key_relationship(),
+		RuntimeCall::Web3Names(pallet_web3_names::Call::release_by_owner {}).derive_verification_key_relationship(),
 		Ok(did::DidVerificationKeyRelationship::Authentication)
 	);
 }
@@ -143,18 +159,20 @@ fn test_derive_did_key_web3name() {
 #[test]
 fn test_derive_did_key_lookup() {
 	assert_eq!(
-		Call::DidLookup(pallet_did_lookup::Call::associate_account {
-			account: AccountId::new([1u8; 32]),
+		RuntimeCall::DidLookup(pallet_did_lookup::Call::associate_account {
+			req: AssociateAccountRequest::Dotsama(
+				AccountId::new([1u8; 32]),
+				sp_runtime::MultiSignature::from(sp_core::ed25519::Signature([0; 64]))
+			),
 			expiration: BlockNumber::default(),
-			proof: sp_runtime::MultiSignature::from(sp_core::ed25519::Signature([0; 64])),
 		})
 		.derive_verification_key_relationship(),
 		Ok(did::DidVerificationKeyRelationship::Authentication)
 	);
 
 	assert_eq!(
-		Call::DidLookup(pallet_did_lookup::Call::remove_account_association {
-			account: AccountId::new([1u8; 32]),
+		RuntimeCall::DidLookup(pallet_did_lookup::Call::remove_account_association {
+			account: AccountId::new([1u8; 32]).into(),
 		})
 		.derive_verification_key_relationship(),
 		Ok(did::DidVerificationKeyRelationship::Authentication)
@@ -163,20 +181,20 @@ fn test_derive_did_key_lookup() {
 
 #[test]
 fn test_derive_did_verification_relation_fail() {
-	let c1 = Call::Ctype(ctype::Call::add {
+	let c1 = RuntimeCall::Ctype(ctype::Call::add {
 		ctype: vec![0, 1, 2, 3],
 	});
-	let c2 = Call::Ctype(ctype::Call::add {
+	let c2 = RuntimeCall::Ctype(ctype::Call::add {
 		ctype: vec![0, 1, 2, 3, 3],
 	});
-	let c3 = Call::System(frame_system::Call::remark {
+	let c3 = RuntimeCall::System(frame_system::Call::remark {
 		remark: vec![0, 1, 2, 3, 3],
 	});
-	let c4 = Call::Ctype(ctype::Call::add {
+	let c4 = RuntimeCall::Ctype(ctype::Call::add {
 		ctype: vec![0, 1, 2, 100],
 	});
 
-	let cb = Call::Utility(pallet_utility::Call::batch {
+	let cb = RuntimeCall::Utility(pallet_utility::Call::batch {
 		calls: vec![c1, c2, c3, c4],
 	});
 
@@ -194,24 +212,24 @@ fn test_derive_did_verification_relation_fail() {
 
 #[test]
 fn test_derive_did_verification_relation_nested_fail() {
-	let c1 = Call::Ctype(ctype::Call::add {
+	let c1 = RuntimeCall::Ctype(ctype::Call::add {
 		ctype: vec![0, 1, 2, 3],
 	});
-	let c2 = Call::Ctype(ctype::Call::add {
+	let c2 = RuntimeCall::Ctype(ctype::Call::add {
 		ctype: vec![0, 1, 2, 3, 3],
 	});
-	let f3 = Call::System(frame_system::Call::remark {
+	let f3 = RuntimeCall::System(frame_system::Call::remark {
 		remark: vec![0, 1, 2, 3, 3],
 	});
-	let c4 = Call::Ctype(ctype::Call::add {
+	let c4 = RuntimeCall::Ctype(ctype::Call::add {
 		ctype: vec![0, 1, 2, 100],
 	});
 
-	let cb = Call::Utility(pallet_utility::Call::batch {
+	let cb = RuntimeCall::Utility(pallet_utility::Call::batch {
 		calls: vec![c1.clone(), c2.clone(), c4.clone()],
 	});
 
-	let cb = Call::Utility(pallet_utility::Call::batch {
+	let cb = RuntimeCall::Utility(pallet_utility::Call::batch {
 		calls: vec![c1, c2, cb, f3, c4],
 	});
 
@@ -229,21 +247,21 @@ fn test_derive_did_verification_relation_nested_fail() {
 
 #[test]
 fn test_derive_did_verification_relation_nested() {
-	let c1 = Call::Ctype(ctype::Call::add {
+	let c1 = RuntimeCall::Ctype(ctype::Call::add {
 		ctype: vec![0, 1, 2, 3],
 	});
-	let c2 = Call::Ctype(ctype::Call::add {
+	let c2 = RuntimeCall::Ctype(ctype::Call::add {
 		ctype: vec![0, 1, 2, 3, 3],
 	});
-	let c4 = Call::Ctype(ctype::Call::add {
+	let c4 = RuntimeCall::Ctype(ctype::Call::add {
 		ctype: vec![0, 1, 2, 100],
 	});
 
-	let cb = Call::Utility(pallet_utility::Call::batch {
+	let cb = RuntimeCall::Utility(pallet_utility::Call::batch {
 		calls: vec![c1.clone(), c2.clone(), c4.clone()],
 	});
 
-	let cb = Call::Utility(pallet_utility::Call::batch {
+	let cb = RuntimeCall::Utility(pallet_utility::Call::batch {
 		calls: vec![c1, c2, cb, c4],
 	});
 	assert_eq!(
@@ -254,11 +272,11 @@ fn test_derive_did_verification_relation_nested() {
 
 #[test]
 fn test_derive_did_verification_relation_single() {
-	let c1 = Call::Ctype(ctype::Call::add {
+	let c1 = RuntimeCall::Ctype(ctype::Call::add {
 		ctype: vec![0, 1, 2, 3],
 	});
 
-	let cb = Call::Utility(pallet_utility::Call::batch { calls: vec![c1] });
+	let cb = RuntimeCall::Utility(pallet_utility::Call::batch { calls: vec![c1] });
 
 	assert_eq!(
 		cb.derive_verification_key_relationship(),
@@ -268,7 +286,7 @@ fn test_derive_did_verification_relation_single() {
 
 #[test]
 fn test_derive_did_verification_relation_empty() {
-	let cb = Call::Utility(pallet_utility::Call::batch { calls: vec![] });
+	let cb = RuntimeCall::Utility(pallet_utility::Call::batch { calls: vec![] });
 
 	assert_eq!(
 		cb.derive_verification_key_relationship(),
