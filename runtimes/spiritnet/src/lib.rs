@@ -1061,6 +1061,10 @@ pub type Executive = frame_executive::Executive<
 		pallet_preimage::migration::v1::Migration<Runtime>,
 		pallet_scheduler::migration::v3::MigrateToV4<Runtime>,
 		pallet_democracy::migrations::v1::Migration<Runtime>,
+		// "Scheduler: remove empty agenda on cancel" https://github.com/paritytech/substrate/pull/12989
+		pallet_scheduler::migration::v4::CleanupAgendas<Runtime>,
+		// NOT INCLUDED: "API for registering inactive funds" https://github.com/paritytech/substrate/pull/12813
+		// pallet_balances::migration::MigrateToTrackInactive<...>
 		runtime_common::migrations::AddCTypeBlockNumber<Runtime>,
 		// The migration above must be run as last since it checks that all pallets are using the new StorageVersion
 		// properly.
