@@ -60,6 +60,7 @@ use runtime_common::{
 	constants::{self, UnvestedFundsAllowedWithdrawReasons, EXISTENTIAL_DEPOSIT, KILT},
 	errors::PublicCredentialsApiError,
 	fees::{ToAuthor, WeightToFee},
+	migrations::EmptyAccountlist,
 	pallet_id, AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights, DidIdentifier,
 	FeeSplit, Hash, Header, Index, Signature, SlowAdjustingFeeUpdate,
 };
@@ -1063,8 +1064,11 @@ pub type Executive = frame_executive::Executive<
 		pallet_democracy::migrations::v1::Migration<Runtime>,
 		// "Scheduler: remove empty agenda on cancel" https://github.com/paritytech/substrate/pull/12989
 		pallet_scheduler::migration::v4::CleanupAgendas<Runtime>,
-		// NOT INCLUDED: "API for registering inactive funds" https://github.com/paritytech/substrate/pull/12813
-		// pallet_balances::migration::MigrateToTrackInactive<...>
+		// "API for registering inactive funds" https://github.com/paritytech/substrate/pull/12813
+		// We don't consider any account beyond the treasury (done automatically by the treasury) as having funds
+		// deactivated.
+		// TODO: Consider to mark the pure proxy funds as deactivated in the next release.
+		pallet_balances::migration::MigrateManyToTrackInactive<Runtime, EmptyAccountlist>,
 		runtime_common::migrations::AddCTypeBlockNumber<Runtime>,
 		// The migration above must be run as last since it checks that all pallets are using the new StorageVersion
 		// properly.

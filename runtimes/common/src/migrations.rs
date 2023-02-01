@@ -22,8 +22,9 @@ use sp_std::marker::PhantomData;
 
 use ctype::{CtypeCreatorOf, CtypeEntryOf};
 
-#[cfg(feature = "try-runtime")]
-use sp_std::vec::Vec;
+use sp_std::{vec, vec::Vec};
+
+use crate::AccountId;
 
 pub struct AddCTypeBlockNumber<R>(PhantomData<R>);
 
@@ -287,5 +288,13 @@ where
 {
 	fn on_runtime_upgrade() -> frame_support::weights::Weight {
 		Self::migrate()
+	}
+}
+
+// Used for the balances pallet migration.
+pub struct EmptyAccountlist;
+impl Get<Vec<AccountId>> for EmptyAccountlist {
+	fn get() -> Vec<AccountId> {
+		vec![]
 	}
 }
