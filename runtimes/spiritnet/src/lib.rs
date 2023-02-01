@@ -41,7 +41,7 @@ use sp_api::impl_runtime_apis;
 use sp_core::OpaqueMetadata;
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
-	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, OpaqueKeys},
+	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, OpaqueKeys, Verify},
 	transaction_validity::{TransactionSource, TransactionValidity},
 	ApplyExtrinsicResult, Perbill, Permill, RuntimeDebug,
 };
@@ -51,7 +51,6 @@ use xcm_executor::XcmExecutor;
 
 use delegation::DelegationAc;
 use kilt_support::traits::ItemFilter;
-use pallet_did_lookup::linkable_account::LinkableAccountId;
 pub use parachain_staking::InflationInfo;
 pub use public_credentials;
 
@@ -165,7 +164,7 @@ parameter_types! {
 impl pallet_timestamp::Config for Runtime {
 	/// A timestamp: milliseconds since the unix epoch.
 	type Moment = u64;
-	type OnTimestampSet = ();
+	type OnTimestampSet = Aura;
 	type MinimumPeriod = MinimumPeriod;
 	type WeightInfo = weights::pallet_timestamp::WeightInfo<Runtime>;
 }
@@ -561,8 +560,6 @@ impl ctype::Config for Runtime {
 
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
-	// 3/5 of the technical committees can override the block number of one or more
-	// CTypes.
 	type OverarchingOrigin = EnsureRoot<AccountId>;
 
 	type RuntimeEvent = RuntimeEvent;
@@ -604,7 +601,8 @@ impl did::Config for Runtime {
 
 impl pallet_did_lookup::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
-
+	type Signature = Signature;
+	type Signer = <Signature as Verify>::Signer;
 	type DidIdentifier = DidIdentifier;
 
 	type Currency = Balances;
@@ -1063,7 +1061,6 @@ pub type Executive = frame_executive::Executive<
 		pallet_preimage::migration::v1::Migration<Runtime>,
 		pallet_scheduler::migration::v3::MigrateToV4<Runtime>,
 		pallet_democracy::migrations::v1::Migration<Runtime>,
-		pallet_did_lookup::migrations::EthereumMigration<Runtime>,
 		runtime_common::migrations::AddCTypeBlockNumber<Runtime>,
 		// The migration above must be run as last since it checks that all pallets are using the new StorageVersion
 		// properly.
@@ -1236,7 +1233,7 @@ impl_runtime_apis! {
 		Block,
 		DidIdentifier,
 		AccountId,
-		LinkableAccountId,
+		AccountId,
 		Balance,
 		Hash,
 		BlockNumber
@@ -1244,7 +1241,6 @@ impl_runtime_apis! {
 		fn query_by_web3_name(name: Vec<u8>) -> Option<kilt_runtime_api_did::RawDidLinkedInfo<
 				DidIdentifier,
 				AccountId,
-				LinkableAccountId,
 				Balance,
 				Hash,
 				BlockNumber
@@ -1271,11 +1267,10 @@ impl_runtime_apis! {
 			})
 		}
 
-		fn query_by_account(account: LinkableAccountId) -> Option<
+		fn query_by_account(account: AccountId) -> Option<
 			kilt_runtime_api_did::RawDidLinkedInfo<
 				DidIdentifier,
 				AccountId,
-				LinkableAccountId,
 				Balance,
 				Hash,
 				BlockNumber
@@ -1304,7 +1299,6 @@ impl_runtime_apis! {
 			kilt_runtime_api_did::RawDidLinkedInfo<
 				DidIdentifier,
 				AccountId,
-				LinkableAccountId,
 				Balance,
 				Hash,
 				BlockNumber
