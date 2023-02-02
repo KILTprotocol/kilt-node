@@ -1,0 +1,55 @@
+[package]
+authors.workspace = true
+documentation.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license-file.workspace = true
+readme.workspace = true
+repository.workspace = true
+version.workspace = true
+name = "dip-identity-provider"
+description = "Enables a chain to act as the Identity Provider component for the DIP protocol."
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[build-dependencies]
+substrate-wasm-builder.workspace = true
+
+[dependencies]
+
+# Internal dependencies
+did.workspace = true
+
+# External dependencies
+codec = {package = "parity-scale-codec", workspace = true, features = ["derive"]}
+scale-info = {workspace = true, features = ["derive"]}
+
+# Polkadot dependencies
+xcm.workspace = true
+
+# Substrate dependencies
+frame-benchmarking = {workspace = true, optional = true}
+frame-support.workspace = true
+frame-system.workspace = true
+
+[features]
+default = ["std"]
+
+runtime-benchmarks = [
+  "frame-benchmarking",
+  "frame-system/runtime-benchmarks",
+  "frame-support/runtime-benchmarks"
+]
+std = [
+  "codec/std",
+  "did/std",
+  "frame-support/std",
+   "frame-system/std",
+   "scale-info/std",
+   "xcm/std",
+]
+try-runtime = [
+  "frame-support/try-runtime",
+  "frame-system/try-runtime",
+]

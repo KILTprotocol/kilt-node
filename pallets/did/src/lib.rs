@@ -147,7 +147,7 @@ pub mod pallet {
 		traits::{CallSources, StorageDepositCollector},
 	};
 	use sp_runtime::traits::BadOrigin;
-	use xcm::v2::MultiLocation;
+	use xcm::v2::{MultiAsset, MultiLocation};
 
 	use crate::{
 		did_details::{
@@ -1125,6 +1125,7 @@ pub mod pallet {
 		pub fn propagate_root(
 			origin: OriginFor<T>,
 			did: DidIdentifierOf<T>,
+			assets: MultiAsset,
 			destination: Box<MultiLocation>,
 		) -> DispatchResultWithPostInfo {
 			let dispatcher = ensure_signed(origin)?;
@@ -1138,7 +1139,8 @@ pub mod pallet {
 				Err(Error::<T>::DidNotPresent)
 			}?;
 
-			let dispatch_weight = T::DidRootDispatcher::dispatch(action.clone(), dispatcher, *destination.clone())?;
+			let dispatch_weight =
+				T::DidRootDispatcher::dispatch(action.clone(), dispatcher, assets, *destination.clone())?;
 			Self::deposit_event(Event::DidRootStateActionDispatched(action, destination));
 
 			Ok(Some(

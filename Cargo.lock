@@ -2034,6 +2034,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "dip-identity-provider"
+version = "1.9.0"
+dependencies = [
+ "did",
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "scale-info",
+ "substrate-wasm-builder",
+ "xcm",
+]
+
+[[package]]
 name = "directories"
 version = "4.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"

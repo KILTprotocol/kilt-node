@@ -20,7 +20,7 @@ use codec::{Decode, Encode};
 use frame_support::{weights::Weight, RuntimeDebug};
 use scale_info::TypeInfo;
 use sp_runtime::DispatchError;
-use xcm::v2::MultiLocation;
+use xcm::v2::{MultiAsset, MultiLocation};
 
 use crate::{did_details::DidDetails, AccountIdOf, Config, DidIdentifierOf};
 
@@ -51,6 +51,7 @@ pub trait DidRootDispatcher<DidIdentifier, AccountId, Root, Location> {
 	fn dispatch(
 		action: DidRootStateAction<DidIdentifier, Root>,
 		dispatcher: AccountId,
+		asset: MultiAsset,
 		location: Location,
 	) -> Result<Weight, DispatchError>;
 }
@@ -61,6 +62,7 @@ impl<T: Config> DidRootDispatcher<DidIdentifierOf<T>, AccountIdOf<T>, T::Hash, M
 	fn dispatch(
 		_action: DidRootStateAction<DidIdentifierOf<T>, T::Hash>,
 		_dispatcher: AccountIdOf<T>,
+		_asset: MultiAsset,
 		_location: MultiLocation,
 	) -> Result<Weight, DispatchError> {
 		Ok(Weight::zero())
