@@ -61,9 +61,15 @@ build:
     - ./.maintain/docker-auth-config.sh
 
     - ./.maintain/build-image.sh build
+      # commit hash on every branch commit
     - "if [[ ! -z ${CI_COMMIT_BRANCH} ]]; then ./.maintain/push-image.sh build ${CI_COMMIT_SHORT_SHA}; fi"
+      # "latest-master" or "latest-develop", since those are the only branches that trigger this job
     - "if [[ ! -z ${CI_COMMIT_BRANCH} ]]; then ./.maintain/push-image.sh build latest-${CI_COMMIT_BRANCH}; fi"
+      # commit tag on every tag commit
     - "if [[ ! -z ${CI_COMMIT_TAG} ]]; then ./.maintain/push-image.sh build ${CI_COMMIT_TAG}; fi"
+      # "latest-rc" on every commit with tag with "-rc*"
+    - "if [[ ! -z ${CI_COMMIT_TAG} &&-z ${CI_COMMIT_TAG##*-rc*} ]]; then ./.maintain/push-image.sh build latest-rc; fi"   # latest-rc
+      # "latest" on every commit tag that does not end with "-rc*" or "-dev-*"
     - "if [[ ! -z ${CI_COMMIT_TAG} && ! -z ${CI_COMMIT_TAG##*-rc*} && ! -z ${CI_COMMIT_TAG##*dev-*} ]]; then ./.maintain/push-image.sh build latest; fi"
 
 build-wasm-peregrine:
