@@ -19,21 +19,23 @@
 use codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 
-#[derive(Clone, Debug, Eq, PartialEq, Encode, Decode, MaxEncodedLen, TypeInfo, Default)]
-pub enum MigrationState<AccountId, DidIdentifier> {
-	/// All storage entries should be migrated. It is currently checked whether
-	/// all keys where successfully migrated.
-	Verifying((AccountId, (DidIdentifier, AccountId))),
+use crate::migrations::MixedStorageKey;
 
+#[derive(Clone, Debug, Eq, PartialEq, Encode, Decode, MaxEncodedLen, TypeInfo, Default)]
+pub enum MigrationState {
 	/// The migration was successful.
 	Done,
 
-	/// The migration is ongoing. Not all storage entries are migrated yet.
+	/// The storage has still the old layout, the wasn't started yet
 	#[default]
-	Upgrading,
+	PreUpgrade,
+
+	/// The upgrade is in progress and did migrate all storage up to the
+	/// `MixedStorageKey`.
+	Upgrading(MixedStorageKey),
 }
 
-impl<AccountId, DidIdentifier> MigrationState<AccountId, DidIdentifier> {
+impl MigrationState {
 	pub fn is_done(self) -> bool {
 		return match self {
 			MigrationState::Done => true,

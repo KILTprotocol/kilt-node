@@ -28,8 +28,8 @@ use sp_runtime::{
 };
 
 use crate::{
-	self as pallet_did_lookup, linkable_account::LinkableAccountId, AccountIdOf, BalanceOf, Config, ConnectedAccounts,
-	ConnectedDids, ConnectionRecord, CurrencyOf, DidIdentifierOf,
+	self as pallet_did_lookup, account::AccountId20, linkable_account::LinkableAccountId, AccountIdOf, BalanceOf,
+	Config, ConnectedAccounts, ConnectedDids, ConnectionRecord, CurrencyOf, DidIdentifierOf,
 };
 
 pub(crate) type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
@@ -133,6 +133,33 @@ pub(crate) const ACCOUNT_01: AccountId = AccountId::new([2u8; 32]);
 pub(crate) const DID_00: SubjectId = SubjectId(ACCOUNT_00);
 pub(crate) const DID_01: SubjectId = SubjectId(ACCOUNT_01);
 pub(crate) const LINKABLE_ACCOUNT_00: LinkableAccountId = LinkableAccountId::AccountId32(ACCOUNT_00);
+
+pub(crate) fn generate_acc32(index: usize) -> AccountId {
+	let bytes = index.to_be_bytes();
+	let mut acc_bytes = [1u8; 32];
+
+	// copy bytes from usize into array
+	let min_len = acc_bytes.len().min(bytes.len());
+	acc_bytes[..min_len].copy_from_slice(&bytes[..min_len]);
+
+	AccountId::new(acc_bytes)
+}
+
+pub(crate) fn generate_acc20(index: usize) -> AccountId20 {
+	let bytes = index.to_be_bytes();
+	let mut acc_bytes = [1u8; 20];
+
+	// copy bytes from usize into array
+	let min_len = acc_bytes.len().min(bytes.len());
+	acc_bytes[..min_len].copy_from_slice(&bytes[..min_len]);
+
+	AccountId20(acc_bytes)
+}
+
+pub(crate) fn generate_did(index: usize) -> SubjectId {
+	let acc = generate_acc32(index);
+	SubjectId(acc)
+}
 
 pub(crate) fn insert_raw_connection<T: Config>(
 	sender: AccountIdOf<T>,

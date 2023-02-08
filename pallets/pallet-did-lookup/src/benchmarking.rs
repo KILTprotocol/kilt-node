@@ -56,7 +56,7 @@ fn make_free_for_did<T: Config>(account: &AccountIdOf<T>) {
 benchmarks! {
 	where_clause {
 		where
-		T::AccountId: From<sr25519::Public> + From<ed25519::Public> + Into<LinkableAccountId> + Into<AccountId32>,
+		T::AccountId: From<sr25519::Public> + From<ed25519::Public> + Into<LinkableAccountId> + Into<AccountId32> + From<sp_runtime::AccountId32>,
 		T::DidIdentifier: From<T::AccountId>,
 		T::EnsureOrigin: GenerateBenchmarkOrigin<T::RuntimeOrigin, T::AccountId, T::DidIdentifier>,
 	}
@@ -292,43 +292,17 @@ benchmarks! {
 		);
 	}
 
-	migrate_account_id {
-		let deposit_owner: T::AccountId = account("caller", 0, SEED);
-		let linkable_id: LinkableAccountId = deposit_owner.clone().into();
-		let did: T::DidIdentifier = account("did", 0, SEED);
-		make_free_for_did::<T>(&deposit_owner);
-
-		add_legacy_association::<T>(deposit_owner.clone(), did.clone(), deposit_owner.clone()).expect("should create association");
-
-		let origin = RawOrigin::Signed(deposit_owner.clone());
-		let account_arg = deposit_owner.clone();
-	}: _(origin, account_arg)
-	verify {
-		assert_eq!(
-			ConnectedDids::<T>::get(&linkable_id).expect("should retain link").deposit,
-			Deposit {
-				owner: deposit_owner,
-				amount: <T as Config>::Deposit::get(),
-			},
-		);
-	}
-
-	try_finalize_migration {
+	migrate {
 		let n in 1 .. 100;
 
-		for i in 0..300 {
+		for i in 0..500 {
 			let deposit_owner: T::AccountId = account("caller", i, SEED);
 			let linkable_id: LinkableAccountId = deposit_owner.clone().into();
 
 			let did: T::DidIdentifier = account("did", i, SEED);
 			make_free_for_did::<T>(&deposit_owner);
-			Pallet::<T>::add_association(
-				deposit_owner.clone(),
-				did,
-				linkable_id.clone()
-			).expect("should create association");
 
-			// add_legacy_association::<T>(deposit_owner.clone(), did.clone(), deposit_owner.clone()).expect("should create association");
+			add_legacy_association::<T>(deposit_owner.clone(), did.clone(), deposit_owner.clone(), <T as Config>::Deposit::get());
 		}
 
 		let sender: T::AccountId = account("caller", 0, SEED);

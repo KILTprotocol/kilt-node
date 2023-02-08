@@ -142,7 +142,7 @@ pub mod pallet {
 
 	#[pallet::storage]
 	#[pallet::getter(fn migration_state)]
-	pub type MigrationStateStore<T> = StorageValue<_, MigrationState<AccountIdOf<T>, DidIdentifierOf<T>>, ValueQuery>;
+	pub type MigrationStateStore<T> = StorageValue<_, MigrationState, ValueQuery>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -153,18 +153,11 @@ pub mod pallet {
 		/// An association between a DID and an account ID was removed.
 		AssociationRemoved(LinkableAccountId, DidIdentifierOf<T>),
 
-		/// An connected account_id was migrated to the LinkableAccountId type.
-		Migrated {
-			did_id: DidIdentifierOf<T>,
-			account_id: LinkableAccountId,
-		},
+		/// A number of accounts was migrated
+		Migrated,
 
 		/// All AccountIds have been migrated to LinkableAccountId.
 		MigrationCompleted,
-
-		/// The migration has been validated given raw key and shall continue
-		/// with the next_key.
-		MigrationPartiallyVerified,
 	}
 
 	#[pallet::error]
@@ -205,6 +198,8 @@ pub mod pallet {
 	impl<T: Config> Pallet<T>
 	where
 		T::AccountId: Into<LinkableAccountId>,
+		T::AccountId: From<sp_runtime::AccountId32>,
+		T::AccountId: Into<sp_runtime::AccountId32>,
 	{
 		/// Associate the given account to the DID that authorized this call.
 		///
@@ -391,69 +386,28 @@ pub mod pallet {
 		/// the migration flag.
 		///
 		/// Can be called by any origin as duplicate calls won't succeed.
-		#[pallet::weight(<T as Config>::WeightInfo::migrate_account_id())]
+		#[pallet::weight(<T as Config>::WeightInfo::migrate(*limit))]
 		#[pallet::call_index(254)]
-		pub fn migrate_account_id(origin: OriginFor<T>, account_id: AccountIdOf<T>) -> DispatchResult {
+		pub fn migrate(origin: OriginFor<T>, limit: u32) -> DispatchResult {
 			ensure_signed(origin)?;
 
-			let linkable_account_id: LinkableAccountId = account_id.clone().into();
-			let did_id = crate::migrations::do_migrate_account_id::<T>(account_id, linkable_account_id.clone())?
-				.ok_or(Error::<T>::AlreadyMigrated)?;
+			let migration_state = MigrationStateStore::<T>::get();
 
-			Self::deposit_event(Event::<T>::Migrated {
-				account_id: linkable_account_id,
-				did_id,
-			});
+			let new_last_key = match migration_state {
+				MigrationState::Done => None,
+				MigrationState::PreUpgrade => crate::migrations::do_migrate::<T>(limit, None)?,
+				MigrationState::Upgrading(last_key) => crate::migrations::do_migrate::<T>(limit, Some(last_key))?,
+			};
+
+			if let Some(migrated_acc) = new_last_key {
+				MigrationStateStore::<T>::set(MigrationState::Upgrading(migrated_acc));
+				Self::deposit_event(Event::<T>::Migrated);
+			} else {
+				MigrationStateStore::<T>::set(MigrationState::Done);
+				Self::deposit_event(Event::<T>::MigrationCompleted);
+			}
 
 			Ok(())
-		}
-
-		/// Try to finalize the `AccountId -> LinkableAccountId` migration.
-		/// Succeeds iff all key types of `ConnectedDids` and
-		/// `ConnectedAccounts` have been migrated.
-		///
-		/// On success, this sets the migration flag `MigrationOngoing` to
-		/// false. This will enable all non-migration pallet extrinsics and
-		/// disable migration-only ones.
-		///
-		/// On failure, this means there are still unmigrated key types. Please
-		/// check indexers for `Migrated` events of this pallet to get knowledge
-		/// of migrated accounts.
-		#[pallet::weight(<T as Config>::WeightInfo::try_finalize_migration(*limit))]
-		#[pallet::call_index(255)]
-		pub fn try_finalize_migration(origin: OriginFor<T>, limit: u32) -> DispatchResult {
-			ensure_signed(origin)?;
-
-			let state = MigrationStateStore::<T>::get();
-
-			match state {
-				MigrationState::Done => {
-					Self::deposit_event(Event::<T>::MigrationCompleted);
-					Ok(())
-				}
-				MigrationState::Verifying(keys) => {
-					let cursor = crate::migrations::do_verify_migration::<T>(Some(keys), limit)?;
-					if let Some(cursor) = cursor {
-						MigrationStateStore::<T>::set(MigrationState::Verifying(cursor));
-						Self::deposit_event(Event::<T>::MigrationPartiallyVerified);
-					} else {
-						MigrationStateStore::<T>::set(MigrationState::Done);
-						Self::deposit_event(Event::<T>::MigrationCompleted);
-					}
-					Ok(())
-				}
-				MigrationState::Upgrading => {
-					let cursor = crate::migrations::do_verify_migration::<T>(None, limit)?;
-					if let Some(cursor) = cursor {
-						MigrationStateStore::<T>::set(MigrationState::Verifying(cursor));
-						Self::deposit_event(Event::<T>::MigrationPartiallyVerified);
-					} else {
-						MigrationStateStore::<T>::set(MigrationState::Done);
-						Self::deposit_event(Event::<T>::MigrationCompleted);
-					}
-					Ok(())
-				}
-			}
 		}
 	}
 
