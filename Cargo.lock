@@ -362,7 +362,7 @@ checksum = "debc29dde2e69f9e47506b525f639ed42300fc014a3e007832592448fa8e4599"
 
 [[package]]
 name = "attestation"
-version = "1.9.0-dev"
+version = "1.10.0-dev"
 dependencies = [
  "ctype",
  "frame-benchmarking",
@@ -1330,7 +1330,7 @@ dependencies = [
 
 [[package]]
 name = "ctype"
-version = "1.9.0-dev"
+version = "1.10.0-dev"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -1974,7 +1974,7 @@ dependencies = [
 
 [[package]]
 name = "delegation"
-version = "1.9.0-dev"
+version = "1.10.0-dev"
 dependencies = [
  "attestation",
  "bitflags",
@@ -2092,7 +2092,7 @@ dependencies = [
 
 [[package]]
 name = "did"
-version = "1.9.0-dev"
+version = "1.10.0-dev"
 dependencies = [
  "ctype",
  "env_logger 0.10.0",
@@ -3818,7 +3818,7 @@ dependencies = [
 
 [[package]]
 name = "kilt-asset-dids"
-version = "1.9.0-dev"
+version = "1.10.0-dev"
 dependencies = [
  "base58",
  "frame-support",
@@ -3833,7 +3833,7 @@ dependencies = [
 
 [[package]]
 name = "kilt-parachain"
-version = "1.9.0-dev"
+version = "1.10.0-dev"
 dependencies = [
  "clap",
  "cumulus-client-cli",
@@ -3898,7 +3898,7 @@ dependencies = [
 
 [[package]]
 name = "kilt-runtime-api-did"
-version = "1.9.0-dev"
+version = "1.10.0-dev"
 dependencies = [
  "did",
  "kilt-support",
@@ -3910,7 +3910,7 @@ dependencies = [
 
 [[package]]
 name = "kilt-runtime-api-public-credentials"
-version = "1.9.0-dev"
+version = "1.10.0-dev"
 dependencies = [
  "kilt-support",
  "parity-scale-codec",
@@ -3920,7 +3920,7 @@ dependencies = [
 
 [[package]]
 name = "kilt-runtime-api-staking"
-version = "1.9.0-dev"
+version = "1.10.0-dev"
 dependencies = [
  "parity-scale-codec",
  "scale-info",
@@ -3930,7 +3930,7 @@ dependencies = [
 
 [[package]]
 name = "kilt-support"
-version = "1.9.0-dev"
+version = "1.10.0-dev"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -4719,7 +4719,7 @@ dependencies = [
 
 [[package]]
 name = "mashnet-node"
-version = "1.9.0-dev"
+version = "1.10.0-dev"
 dependencies = [
  "clap",
  "frame-benchmarking",
@@ -4764,7 +4764,7 @@ dependencies = [
 
 [[package]]
 name = "mashnet-node-runtime"
-version = "1.9.0-dev"
+version = "1.10.0-dev"
 dependencies = [
  "attestation",
  "ctype",
@@ -5698,7 +5698,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-did-lookup"
-version = "1.9.0-dev"
+version = "1.10.0-dev"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -5868,7 +5868,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-inflation"
-version = "1.9.0-dev"
+version = "1.10.0-dev"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -6406,7 +6406,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-web3-names"
-version = "1.9.0-dev"
+version = "1.10.0-dev"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -6486,7 +6486,7 @@ dependencies = [
 
 [[package]]
 name = "parachain-staking"
-version = "1.9.0-dev"
+version = "1.10.0-dev"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -6677,7 +6677,7 @@ checksum = "478c572c3d73181ff3c2539045f6eb99e5491218eae919370993b890cdbdd98e"
 
 [[package]]
 name = "peregrine-runtime"
-version = "1.9.0-dev"
+version = "1.10.0-dev"
 dependencies = [
  "attestation",
  "ctype",
@@ -8286,7 +8286,7 @@ dependencies = [
 
 [[package]]
 name = "public-credentials"
-version = "1.9.0-dev"
+version = "1.10.0-dev"
 dependencies = [
  "ctype",
  "frame-benchmarking",
@@ -8805,7 +8805,7 @@ dependencies = [
 
 [[package]]
 name = "runtime-common"
-version = "1.9.0-dev"
+version = "1.10.0-dev"
 dependencies = [
  "attestation",
  "ctype",
@@ -11191,7 +11191,7 @@ checksum = "6e63cff320ae2c57904679ba7cb63280a3dc4613885beafb148ee7bf9aa9042d"
 
 [[package]]
 name = "spiritnet-runtime"
-version = "1.9.0-dev"
+version = "1.10.0-dev"
 dependencies = [
  "attestation",
  "ctype",
