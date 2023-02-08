@@ -1062,17 +1062,7 @@ pub type Executive = frame_executive::Executive<
 	Runtime,
 	// Executes pallet hooks in the order of definition in construct_runtime
 	AllPalletsWithSystem,
-	(
-		// "Bound uses of call" <https://github.com/paritytech/polkadot/pull/5729>
-		pallet_preimage::migration::v1::Migration<Runtime>,
-		pallet_scheduler::migration::v3::MigrateToV4<Runtime>,
-		pallet_democracy::migrations::v1::Migration<Runtime>,
-		pallet_did_lookup::migrations::EthereumMigration<Runtime>,
-		runtime_common::migrations::AddCTypeBlockNumber<Runtime>,
-		// The migration above must be run as last since it checks that all pallets are using the new StorageVersion
-		// properly.
-		runtime_common::migrations::MigrateToNewStorageVersion<Runtime>,
-	),
+	(),
 >;
 
 // follows Substrate's non destructive way of eliminating  otherwise required
