@@ -306,7 +306,7 @@ benchmarks! {
 		}
 
 		let sender: T::AccountId = account("caller", 0, SEED);
-		let origin = RawOrigin::Signed(sender.clone());
+		let origin = RawOrigin::Signed(sender);
 
 	}: _(origin, n)
 	verify {

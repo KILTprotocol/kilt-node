@@ -85,6 +85,7 @@ where
 	T::AccountId: From<AccountId32>,
 	T::AccountId: Into<AccountId32>,
 {
+	// convert MixedStorageKey into an actual raw storage key
 	let raw_previous_key = previous_key.map(|mixed_key| match mixed_key {
 		MixedStorageKey::V1(key) => ConnectedDids::<T>::hashed_key_for(T::AccountId::from(key)),
 		MixedStorageKey::V2(key) => ConnectedDidsV2::<T>::hashed_key_for(key),
@@ -161,6 +162,8 @@ where
 
 	#[cfg(feature = "try-runtime")]
 	fn pre_upgrade() -> Result<Vec<u8>, &'static str> {
+		use sp_std::vec;
+
 		assert!(
 			Pallet::<T>::on_chain_storage_version() < Pallet::<T>::current_storage_version(),
 			"On-chain storage of DID lookup pallet already bumped"

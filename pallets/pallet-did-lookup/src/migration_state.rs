@@ -36,17 +36,11 @@ pub enum MigrationState {
 }
 
 impl MigrationState {
-	pub fn is_done(self) -> bool {
-		return match self {
-			MigrationState::Done => true,
-			_ => false,
-		};
+	pub fn is_done(&self) -> bool {
+		matches!(self, MigrationState::Done)
 	}
 
-	pub fn is_in_progress(self) -> bool {
-		return match self {
-			MigrationState::Done => false,
-			_ => true,
-		};
+	pub fn is_in_progress(&self) -> bool {
+		!matches!(self, MigrationState::Done)
 	}
 }
