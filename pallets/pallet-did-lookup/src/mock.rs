@@ -157,8 +157,7 @@ pub(crate) fn generate_acc20(index: usize) -> AccountId20 {
 }
 
 pub(crate) fn generate_did(index: usize) -> SubjectId {
-	let acc = generate_acc32(index);
-	SubjectId(acc)
+	SubjectId(generate_acc32(index))
 }
 
 pub(crate) fn insert_raw_connection<T: Config>(
