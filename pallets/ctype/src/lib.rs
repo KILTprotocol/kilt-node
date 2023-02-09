@@ -216,7 +216,7 @@ pub mod pallet {
 					ctype_entry.created_at = block_number;
 					Ok(())
 				} else {
-					Err(Error::<T>::CTypeNotFound)
+					Err(Error::<T>::NotFound)
 				}
 			})?;
 

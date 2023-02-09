@@ -23,7 +23,7 @@ use sp_std::{marker::PhantomData, vec::Vec};
 
 use crate::{
 	did_details::{DidSignature, DidVerificationKeyRelationship},
-	errors::Error,
+	errors::DidError,
 	Config, Did, Pallet, WeightInfo,
 };
 
@@ -49,7 +49,7 @@ impl<T: Config> VerifySignature for DidSignatureVerify<T> {
 		)
 		.map_err(|err| match err {
 			// Should never happen as a DID has always a valid authentication key and UrlErrors are never thrown here.
-			Error::Signature(_) => SignatureVerificationError::SignatureInvalid,
+			DidError::Signature(_) => SignatureVerificationError::SignatureInvalid,
 			_ => SignatureVerificationError::SignerInformationNotPresent,
 		})
 	}

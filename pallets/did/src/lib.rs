@@ -111,6 +111,8 @@ pub use crate::{
 	signature::DidSignatureVerify,
 };
 
+use errors::{DidError, StorageError, SignatureError, InputError};
+
 use codec::Encode;
 use frame_support::{
 	dispatch::{DispatchResult, Dispatchable, GetDispatchInfo, PostDispatchInfo},
@@ -402,52 +404,52 @@ pub mod pallet {
 		Internal,
 	}
 
-	impl<T> From<errors::Error> for Error<T> {
-		fn from(error: errors::Error) -> Self {
+	impl<T> From<DidError> for Error<T> {
+		fn from(error: DidError) -> Self {
 			match error {
-				errors::Error::Storage(storage_error) => Self::from(storage_error),
-				errors::Error::Signature(operation_error) => Self::from(operation_error),
-				errors::Error::Input(input_error) => Self::from(input_error),
-				errors::Error::Internal => Self::Internal,
+				DidError::Storage(storage_error) => Self::from(storage_error),
+				DidError::Signature(operation_error) => Self::from(operation_error),
+				DidError::Input(input_error) => Self::from(input_error),
+				DidError::Internal => Self::Internal,
 			}
 		}
 	}
 
-	impl<T> From<errors::Storage> for Error<T> {
-		fn from(error: errors::Storage) -> Self {
+	impl<T> From<StorageError> for Error<T> {
+		fn from(error: StorageError) -> Self {
 			match error {
-				errors::Storage::NotFound(errors::NotFoundKind::Did) => Self::NotFound,
-				errors::Storage::NotFound(errors::NotFoundKind::Key(_)) => Self::VerificationKeyNotFound,
-				errors::Storage::AlreadyExists => Self::AlreadyExists,
-				errors::Storage::MaxPublicKeysExceeded => Self::MaxPublicKeysExceeded,
-				errors::Storage::MaxTotalKeyAgreementKeysExceeded => Self::MaxKeyAgreementKeysExceeded,
-				errors::Storage::AlreadyDeleted => Self::AlreadyDeleted,
+				StorageError::NotFound(errors::NotFoundKind::Did) => Self::NotFound,
+				StorageError::NotFound(errors::NotFoundKind::Key(_)) => Self::VerificationKeyNotFound,
+				StorageError::AlreadyExists => Self::AlreadyExists,
+				StorageError::MaxPublicKeysExceeded => Self::MaxPublicKeysExceeded,
+				StorageError::MaxTotalKeyAgreementKeysExceeded => Self::MaxKeyAgreementKeysExceeded,
+				StorageError::AlreadyDeleted => Self::AlreadyDeleted,
 			}
 		}
 	}
 
-	impl<T> From<errors::Signature> for Error<T> {
-		fn from(error: errors::Signature) -> Self {
+	impl<T> From<SignatureError> for Error<T> {
+		fn from(error: SignatureError) -> Self {
 			match error {
-				errors::Signature::InvalidData => Self::InvalidSignature,
-				errors::Signature::InvalidFormat => Self::InvalidSignatureFormat,
-				errors::Signature::InvalidNonce => Self::InvalidNonce,
-				errors::Signature::TransactionExpired => Self::TransactionExpired,
+				SignatureError::InvalidData => Self::InvalidSignature,
+				SignatureError::InvalidFormat => Self::InvalidSignatureFormat,
+				SignatureError::InvalidNonce => Self::InvalidNonce,
+				SignatureError::TransactionExpired => Self::TransactionExpired,
 			}
 		}
 	}
 
-	impl<T> From<errors::Input> for Error<T> {
-		fn from(error: errors::Input) -> Self {
+	impl<T> From<InputError> for Error<T> {
+		fn from(error: InputError) -> Self {
 			match error {
-				errors::Input::MaxKeyAgreementKeysLimitExceeded => Self::MaxNewKeyAgreementKeysLimitExceeded,
-				errors::Input::MaxIdLengthExceeded => Self::MaxServiceIdLengthExceeded,
-				errors::Input::MaxServicesCountExceeded => Self::MaxNumberOfServicesExceeded,
-				errors::Input::MaxTypeCountExceeded => Self::MaxNumberOfTypesPerServiceExceeded,
-				errors::Input::MaxTypeLengthExceeded => Self::MaxServiceTypeLengthExceeded,
-				errors::Input::MaxUrlCountExceeded => Self::MaxNumberOfUrlsPerServiceExceeded,
-				errors::Input::MaxUrlLengthExceeded => Self::MaxServiceUrlLengthExceeded,
-				errors::Input::InvalidEncoding => Self::InvalidServiceEncoding,
+				InputError::MaxKeyAgreementKeysLimitExceeded => Self::MaxNewKeyAgreementKeysLimitExceeded,
+				InputError::MaxIdLengthExceeded => Self::MaxServiceIdLengthExceeded,
+				InputError::MaxServicesCountExceeded => Self::MaxNumberOfServicesExceeded,
+				InputError::MaxTypeCountExceeded => Self::MaxNumberOfTypesPerServiceExceeded,
+				InputError::MaxTypeLengthExceeded => Self::MaxServiceTypeLengthExceeded,
+				InputError::MaxUrlCountExceeded => Self::MaxNumberOfUrlsPerServiceExceeded,
+				InputError::MaxUrlLengthExceeded => Self::MaxServiceUrlLengthExceeded,
+				InputError::InvalidEncoding => Self::InvalidServiceEncoding,
 			}
 		}
 	}
@@ -1132,12 +1134,12 @@ pub mod pallet {
 		pub fn verify_did_operation_signature_and_increase_nonce(
 			operation: &DidAuthorizedCallOperationWithVerificationRelationship<T>,
 			signature: &DidSignature,
-		) -> Result<(), errors::Error> {
+		) -> Result<(), DidError> {
 			// Check that the tx has not expired.
 			Self::validate_block_number_value(operation.block_number)?;
 
 			let mut did_details =
-				Did::<T>::get(&operation.did).ok_or(errors::Storage::NotFound(errors::NotFoundKind::Did))?;
+				Did::<T>::get(&operation.did).ok_or(StorageError::NotFound(errors::NotFoundKind::Did))?;
 
 			Self::validate_counter_value(operation.tx_counter, &did_details)?;
 			// Increase the tx counter as soon as it is considered valid, no matter if the
@@ -1159,13 +1161,13 @@ pub mod pallet {
 		/// i.e., if the current blockchain block is in the inclusive range
 		/// [operation_block_number, operation_block_number +
 		/// MaxBlocksTxValidity].
-		fn validate_block_number_value(block_number: BlockNumberOf<T>) -> Result<(), errors::Error> {
+		fn validate_block_number_value(block_number: BlockNumberOf<T>) -> Result<(), DidError> {
 			let current_block_number = frame_system::Pallet::<T>::block_number();
 			let allowed_range = block_number..=block_number.saturating_add(T::MaxBlocksTxValidity::get());
 
 			ensure!(
 				allowed_range.contains(&current_block_number),
-				errors::Error::Signature(errors::Signature::TransactionExpired)
+				DidError::Signature(SignatureError::TransactionExpired)
 			);
 
 			Ok(())
@@ -1177,13 +1179,13 @@ pub mod pallet {
 		/// the counter, as that would result in the DID being unusable, since
 		/// we do not have yet any mechanism in place to wrap the counter value
 		/// around when the limit is reached.
-		fn validate_counter_value(counter: u64, did_details: &DidDetails<T>) -> Result<(), errors::Error> {
+		fn validate_counter_value(counter: u64, did_details: &DidDetails<T>) -> Result<(), DidError> {
 			// Verify that the operation counter is equal to the stored one + 1,
 			// possibly wrapping around when u64::MAX is reached.
 			let expected_nonce_value = did_details.last_tx_counter.wrapping_add(1);
 			ensure!(
 				counter == expected_nonce_value,
-				errors::Error::Signature(errors::Signature::InvalidNonce)
+				DidError::Signature(SignatureError::InvalidNonce)
 			);
 
 			Ok(())
@@ -1196,18 +1198,18 @@ pub mod pallet {
 			signature: &DidSignature,
 			did_details: &DidDetails<T>,
 			key_type: DidVerificationKeyRelationship,
-		) -> Result<(), errors::Error> {
+		) -> Result<(), DidError> {
 			// Retrieve the needed verification key from the DID details, or generate an
 			// error if there is no key of the type required
 			let verification_key = did_details.get_verification_key_for_key_type(key_type).ok_or_else(|| {
-				errors::Error::Storage(errors::Storage::NotFound(errors::NotFoundKind::Key(key_type.into())))
+				DidError::Storage(StorageError::NotFound(errors::NotFoundKind::Key(key_type.into())))
 			})?;
 
 			// Verify that the signature matches the expected format, otherwise generate
 			// an error
 			verification_key
 				.verify_signature(payload, signature)
-				.map_err(errors::Error::Signature)
+				.map_err(DidError::Signature)
 		}
 
 		/// Deletes DID details from storage, including its linked service

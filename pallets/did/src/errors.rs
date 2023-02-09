@@ -22,32 +22,32 @@ use crate::did_details::DidVerificationKeyRelationship;
 
 /// All the errors that can be generated when validating a DID operation.
 #[derive(Debug, Eq, PartialEq, TypeInfo)]
-pub enum Error {
+pub enum DidError {
 	/// See [Storage].
-	Storage(Storage),
+	Storage(StorageError),
 	/// See [Signature].
-	Signature(Signature),
+	Signature(SignatureError),
 	/// See [Input].
-	Input(Input),
+	Input(InputError),
 	/// An error that is not supposed to take place, yet it happened.
 	Internal,
 }
 
-impl From<Storage> for Error {
-	fn from(err: Storage) -> Self {
-		Error::Storage(err)
+impl From<StorageError> for DidError {
+	fn from(err: StorageError) -> Self {
+		DidError::Storage(err)
 	}
 }
 
-impl From<Input> for Error {
-	fn from(err: Input) -> Self {
-		Error::Input(err)
+impl From<InputError> for DidError {
+	fn from(err: InputError) -> Self {
+		DidError::Input(err)
 	}
 }
 
 /// Error involving the pallet's storage.
 #[derive(Debug, Eq, PartialEq, TypeInfo)]
-pub enum Storage {
+pub enum StorageError {
 	/// The DID being created is already present on chain.
 	AlreadyExists,
 	/// The expected DID cannot be found on chain.
@@ -103,7 +103,7 @@ impl From<DidVerificationKeyRelationship> for KeyType {
 
 /// Error generated when validating a DID operation.
 #[derive(Debug, Eq, PartialEq, TypeInfo)]
-pub enum Signature {
+pub enum SignatureError {
 	/// The signature is not in the format the verification key expects.
 	InvalidFormat,
 	/// The signature is invalid for the payload and the verification key
@@ -118,7 +118,7 @@ pub enum Signature {
 /// Error generated when some extrinsic input does not respect the pallet's
 /// constraints.
 #[derive(Debug, Eq, PartialEq, TypeInfo)]
-pub enum Input {
+pub enum InputError {
 	/// A number of new key agreement keys greater than the maximum allowed has
 	/// been provided.
 	MaxKeyAgreementKeysLimitExceeded,

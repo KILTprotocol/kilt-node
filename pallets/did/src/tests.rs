@@ -2952,7 +2952,7 @@ fn check_did_not_present_operation_verification() {
 				&call_operation,
 				&did::DidSignature::from(signature)
 			),
-			did::errors::Storage::NotFound(did::errors::NotFoundKind::Did)
+			did::errors::StorageError::NotFound(did::errors::NotFoundKind::Did)
 		);
 	});
 }
@@ -3010,7 +3010,7 @@ fn check_smaller_counter_operation_verification() {
 					&call_operation,
 					&did::DidSignature::from(signature)
 				),
-				did::errors::Error::Signature(did::errors::Signature::InvalidNonce)
+				did::errors::DidError::Signature(did::errors::SignatureError::InvalidNonce)
 			);
 		});
 }
@@ -3039,7 +3039,7 @@ fn check_equal_counter_operation_verification() {
 					&call_operation,
 					&did::DidSignature::from(signature)
 				),
-				did::errors::Error::Signature(did::errors::Signature::InvalidNonce)
+				did::errors::DidError::Signature(did::errors::SignatureError::InvalidNonce)
 			);
 		});
 }
@@ -3068,7 +3068,7 @@ fn check_too_large_counter_operation_verification() {
 					&call_operation,
 					&did::DidSignature::from(signature)
 				),
-				did::errors::Error::Signature(did::errors::Signature::InvalidNonce)
+				did::errors::DidError::Signature(did::errors::SignatureError::InvalidNonce)
 			);
 		});
 }
@@ -3093,7 +3093,7 @@ fn check_verification_key_not_present_operation_verification() {
 					&call_operation,
 					&did::DidSignature::from(signature)
 				),
-				did::errors::Error::Storage(did::errors::Storage::NotFound(did::errors::NotFoundKind::Key(
+				did::errors::DidError::Storage(did::errors::StorageError::NotFound(did::errors::NotFoundKind::Key(
 					did::errors::KeyType::AssertionMethod
 				)))
 			);
@@ -3122,7 +3122,7 @@ fn check_invalid_signature_format_operation_verification() {
 					&call_operation,
 					&did::DidSignature::from(signature)
 				),
-				did::errors::Error::Signature(did::errors::Signature::InvalidFormat)
+				did::errors::DidError::Signature(did::errors::SignatureError::InvalidFormat)
 			);
 		});
 }
@@ -3149,7 +3149,7 @@ fn check_invalid_signature_operation_verification() {
 					&call_operation,
 					&did::DidSignature::from(signature)
 				),
-				did::errors::Error::Signature(did::errors::Signature::InvalidData)
+				did::errors::DidError::Signature(did::errors::SignatureError::InvalidData)
 			);
 		});
 }
