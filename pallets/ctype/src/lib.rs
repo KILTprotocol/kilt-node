@@ -73,7 +73,7 @@ pub mod pallet {
 	use crate::ctype_entry::CtypeEntry;
 
 	/// The current storage version.
-	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
+	const STORAGE_VERSION: StorageVersion = StorageVersion::new(2);
 
 	/// Type of a CType hash.
 	pub type CtypeHashOf<T> = <T as frame_system::Config>::Hash;

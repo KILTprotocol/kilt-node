@@ -18,7 +18,6 @@ env_logger.workspace = true
 kilt-support = {workspace = true, features = ["mock"]}
 
 pallet-balances = {workspace = true, features = ["std"]}
-rand = "0.8"
 sp-core = {workspace = true, features = ["std"]}
 sp-io = {workspace = true, features = ["std"]}
 sp-keystore = {workspace = true, features = ["std"]}
