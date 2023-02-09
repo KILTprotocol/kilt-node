@@ -53,7 +53,9 @@ pub enum MixedStorageKey {
 ///
 /// This is only possible because old storage keys are 32 bytes long and new
 /// storage keys either 21 or 33 bytes.
-fn get_mixed_storage_iterator<T: Config>(previous_key: Option<Vec<u8>>) -> KeyPrefixIterator<MixedStorageKey> {
+pub(crate) fn get_mixed_storage_iterator<T: Config>(
+	previous_key: Option<Vec<u8>>,
+) -> KeyPrefixIterator<MixedStorageKey> {
 	let previous_key = previous_key.unwrap_or_else(|| ConnectedDids::<T>::final_prefix().to_vec());
 	KeyPrefixIterator::new(
 		ConnectedDids::<T>::final_prefix().to_vec(),
@@ -105,7 +107,9 @@ where
 			MixedStorageKey::V1(acc) => {
 				migrate_account_id::<T>(acc.into())?;
 			}
-			MixedStorageKey::V2(_) => {}
+			MixedStorageKey::V2(_) => {
+				log::debug!("Skipping already migrated account link")
+			}
 		}
 		new_previous_key = Some(mixed_key);
 	}
@@ -295,7 +299,7 @@ mod tests {
 	}
 
 	#[test]
-	fn single_account_migration_works() {
+	fn single_account_migration() {
 		let deposit_account = || generate_acc32(usize::MAX);
 
 		ExtBuilder::default()
@@ -356,6 +360,75 @@ mod tests {
 				// The version 1 storage entries should be removed
 				assert_eq!(ConnectedDids::<Test>::get(generate_acc32(0)), None);
 				assert_eq!(ConnectedAccounts::<Test>::get(generate_did(0), generate_acc32(0)), None);
+			})
+	}
+
+	#[test]
+	fn partial_migration() {
+		let deposit_account = || generate_acc32(usize::MAX);
+
+		ExtBuilder::default()
+			.with_balances(vec![(
+				deposit_account(),
+				<Test as crate::Config>::Deposit::get() * 50_000,
+			)])
+			.build()
+			.execute_with(|| {
+				for i in 0..50 {
+					add_legacy_association::<Test>(
+						deposit_account(),
+						generate_did(i),
+						generate_acc32(i),
+						<Test as Config>::Deposit::get(),
+					);
+				}
+				assert_eq!(
+					get_mixed_storage_iterator::<Test>(None).fold((0usize, 0usize, 0usize), |acc, key| match key {
+						MixedStorageKey::V1(_) => (acc.0 + 1, acc.1, acc.2),
+						MixedStorageKey::V2(LinkableAccountId::AccountId20(_)) => (acc.0, acc.1 + 1, acc.2),
+						MixedStorageKey::V2(LinkableAccountId::AccountId32(_)) => (acc.0, acc.1, acc.2 + 1),
+					}),
+					(50usize, 0usize, 0usize),
+					"We should only have V1 keys"
+				);
+
+				let previous_key = do_migrate::<Test>(10, None).expect("Migration must work");
+
+				// Since we also iterate over already migrated keys, we don't get 10 migrated
+				// accounts with a limit of 10.
+				assert_eq!(
+					get_mixed_storage_iterator::<Test>(None).fold((0usize, 0usize, 0usize), |acc, key| match key {
+						MixedStorageKey::V1(_) => (acc.0 + 1, acc.1, acc.2),
+						MixedStorageKey::V2(LinkableAccountId::AccountId20(_)) => (acc.0, acc.1 + 1, acc.2),
+						MixedStorageKey::V2(LinkableAccountId::AccountId32(_)) => (acc.0, acc.1, acc.2 + 1),
+					}),
+					(41usize, 0usize, 9usize),
+					"We should only have V2 keys"
+				);
+
+				let previous_key = do_migrate::<Test>(10, previous_key).expect("Migration must work");
+
+				assert_eq!(
+					get_mixed_storage_iterator::<Test>(None).fold((0usize, 0usize, 0usize), |acc, key| match key {
+						MixedStorageKey::V1(_) => (acc.0 + 1, acc.1, acc.2),
+						MixedStorageKey::V2(LinkableAccountId::AccountId20(_)) => (acc.0, acc.1 + 1, acc.2),
+						MixedStorageKey::V2(LinkableAccountId::AccountId32(_)) => (acc.0, acc.1, acc.2 + 1),
+					}),
+					(32usize, 0usize, 18usize),
+					"We should only have V2 keys"
+				);
+
+				assert_ok!(do_migrate::<Test>(10, previous_key));
+
+				assert_eq!(
+					get_mixed_storage_iterator::<Test>(None).fold((0usize, 0usize, 0usize), |acc, key| match key {
+						MixedStorageKey::V1(_) => (acc.0 + 1, acc.1, acc.2),
+						MixedStorageKey::V2(LinkableAccountId::AccountId20(_)) => (acc.0, acc.1 + 1, acc.2),
+						MixedStorageKey::V2(LinkableAccountId::AccountId32(_)) => (acc.0, acc.1, acc.2 + 1),
+					}),
+					(23usize, 0usize, 27usize),
+					"We should only have V2 keys"
+				);
 			})
 	}
 }
