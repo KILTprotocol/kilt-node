@@ -313,6 +313,7 @@ pub mod pallet {
 		/// - Reads: [Origin Account], Roots, CTypes
 		/// - Writes: Roots
 		/// # </weight>
+		#[pallet::call_index(0)]
 		#[pallet::weight(<T as Config>::WeightInfo::create_hierarchy())]
 		pub fn create_hierarchy(
 			origin: OriginFor<T>,
@@ -380,6 +381,7 @@ pub mod pallet {
 		/// - Reads: [Origin Account], Roots, Delegations
 		/// - Writes: Delegations
 		/// # </weight>
+		#[pallet::call_index(1)]
 		#[pallet::weight(
 			<T as Config>::WeightInfo::add_delegation()
 				.saturating_add(DelegationSignatureVerificationOf::<T>::weight(T::Hash::max_encoded_len()))
@@ -489,6 +491,7 @@ pub mod pallet {
 		/// - Reads: [Origin Account], Roots, C * Delegations, C * Children.
 		/// - Writes: Roots, C * Delegations
 		/// # </weight>
+		#[pallet::call_index(2)]
 		#[pallet::weight(
 			<T as Config>::WeightInfo::revoke_delegation_root_child(*max_revocations, *max_parent_checks)
 				.max(<T as Config>::WeightInfo::revoke_delegation_leaf(*max_revocations, *max_parent_checks)))]
@@ -565,6 +568,7 @@ pub mod pallet {
 		/// - Reads: [Origin Account], Roots, C * Delegations, C * Children.
 		/// - Writes: Roots, 2 * C * Delegations
 		/// # </weight>
+		#[pallet::call_index(3)]
 		#[pallet::weight(<T as Config>::WeightInfo::remove_delegation(*max_removals))]
 		pub fn remove_delegation(
 			origin: OriginFor<T>,
@@ -620,6 +624,7 @@ pub mod pallet {
 		/// - Reads: [Origin Account], Roots, C * Delegations, C * Children.
 		/// - Writes: Roots, 2 * C * Delegations
 		/// # </weight>
+		#[pallet::call_index(4)]
 		#[pallet::weight(<T as Config>::WeightInfo::reclaim_deposit(*max_removals))]
 		pub fn reclaim_deposit(
 			origin: OriginFor<T>,
@@ -658,6 +663,7 @@ pub mod pallet {
 		///
 		/// The subject of the call must be the owner of the delegation node.
 		/// The sender of the call will be the new deposit owner.
+		#[pallet::call_index(5)]
 		#[pallet::weight(<T as Config>::WeightInfo::change_deposit_owner())]
 		pub fn change_deposit_owner(origin: OriginFor<T>, delegation_id: DelegationNodeIdOf<T>) -> DispatchResult {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
@@ -674,6 +680,7 @@ pub mod pallet {
 		/// Updates the deposit amount to the current deposit rate.
 		///
 		/// The sender must be the deposit owner.
+		#[pallet::call_index(6)]
 		#[pallet::weight(<T as Config>::WeightInfo::update_deposit())]
 		pub fn update_deposit(origin: OriginFor<T>, delegation_id: DelegationNodeIdOf<T>) -> DispatchResult {
 			let sender = ensure_signed(origin)?;

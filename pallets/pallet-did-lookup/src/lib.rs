@@ -174,6 +174,7 @@ pub mod pallet {
 		/// - Reads: ConnectedDids + ConnectedAccounts + DID Origin Check
 		/// - Writes: ConnectedDids + ConnectedAccounts
 		/// # </weight>
+		#[pallet::call_index(0)]
 		#[pallet::weight(
 			<T as Config>::WeightInfo::associate_account_multisig_sr25519().max(
 			<T as Config>::WeightInfo::associate_account_multisig_ed25519().max(
@@ -223,6 +224,7 @@ pub mod pallet {
 		/// - Reads: ConnectedDids + ConnectedAccounts + DID Origin Check
 		/// - Writes: ConnectedDids + ConnectedAccounts
 		/// # </weight>
+		#[pallet::call_index(1)]
 		#[pallet::weight(<T as Config>::WeightInfo::associate_sender())]
 		pub fn associate_sender(origin: OriginFor<T>) -> DispatchResult {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
@@ -249,6 +251,7 @@ pub mod pallet {
 		/// - Reads: ConnectedDids + ConnectedAccounts + DID Origin Check
 		/// - Writes: ConnectedDids + ConnectedAccounts
 		/// # </weight>
+		#[pallet::call_index(2)]
 		#[pallet::weight(<T as Config>::WeightInfo::remove_sender_association())]
 		pub fn remove_sender_association(origin: OriginFor<T>) -> DispatchResult {
 			let who = ensure_signed(origin)?;
@@ -267,6 +270,7 @@ pub mod pallet {
 		/// - Reads: ConnectedDids + ConnectedAccounts + DID Origin Check
 		/// - Writes: ConnectedDids + ConnectedAccounts
 		/// # </weight>
+		#[pallet::call_index(3)]
 		#[pallet::weight(<T as Config>::WeightInfo::remove_account_association())]
 		pub fn remove_account_association(origin: OriginFor<T>, account: LinkableAccountId) -> DispatchResult {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
@@ -288,6 +292,7 @@ pub mod pallet {
 		/// - Reads: ConnectedDids
 		/// - Writes: ConnectedDids
 		/// # </weight>
+		#[pallet::call_index(4)]
 		#[pallet::weight(<T as Config>::WeightInfo::remove_sender_association())]
 		pub fn reclaim_deposit(origin: OriginFor<T>, account: LinkableAccountId) -> DispatchResult {
 			let who = ensure_signed(origin)?;
@@ -304,6 +309,7 @@ pub mod pallet {
 		///
 		/// The subject of the call must be linked to the account.
 		/// The sender of the call will be the new deposit owner.
+		#[pallet::call_index(5)]
 		#[pallet::weight(<T as Config>::WeightInfo::change_deposit_owner())]
 		pub fn change_deposit_owner(origin: OriginFor<T>, account: LinkableAccountId) -> DispatchResult {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
@@ -318,6 +324,7 @@ pub mod pallet {
 		/// Updates the deposit amount to the current deposit rate.
 		///
 		/// The sender must be the deposit owner.
+		#[pallet::call_index(6)]
 		#[pallet::weight(<T as Config>::WeightInfo::update_deposit())]
 		pub fn update_deposit(origin: OriginFor<T>, account: LinkableAccountId) -> DispatchResult {
 			let source = ensure_signed(origin)?;
