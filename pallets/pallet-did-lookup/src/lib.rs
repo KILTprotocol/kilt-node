@@ -124,19 +124,6 @@ pub mod pallet {
 	/// presence of a given tuple in the map.
 	#[pallet::storage]
 	#[pallet::getter(fn connected_accounts)]
-	/// Iterates over old connected did storage map and checks whether any raw
-	/// key still exists in the low level storage.
-	///
-	/// Since the new `ConnectedDidsV2` and old `ConnectedDids` typed storage
-	/// maps have the same pallet and storage prefixes, both result in the same
-	/// final storage map key. For some reason, keys in the new map can still be
-	/// iterated over in the old one. E.g., the new keytype can be decoded into
-	/// the old one such that both maps have the same number of keys despite
-	/// killing every old key during the migration.
-	///
-	/// However, we can check the old raw keys which should not exist in storage
-	/// after migrating, e.g. `unhashed::exists(old_raw_key)` is expected to be
-	/// false.
 	pub type ConnectedAccounts<T> =
 		StorageDoubleMap<_, Blake2_128Concat, DidIdentifierOf<T>, Blake2_128Concat, LinkableAccountId, ()>;
 
