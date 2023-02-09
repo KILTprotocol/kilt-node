@@ -253,10 +253,7 @@ mod tests {
 		let deposit_account = || generate_acc32(usize::MAX);
 
 		ExtBuilder::default()
-			.with_balances(vec![(
-				deposit_account(),
-				<Test as crate::Config>::Deposit::get() * 50_000,
-			)])
+			.with_balances(vec![(deposit_account(), <Test as Config>::Deposit::get() * 50_000)])
 			.build()
 			.execute_with(|| {
 				for i in 0..3 {
@@ -303,17 +300,14 @@ mod tests {
 		let deposit_account = || generate_acc32(usize::MAX);
 
 		ExtBuilder::default()
-			.with_balances(vec![(
-				deposit_account(),
-				<Test as crate::Config>::Deposit::get() * 50_000,
-			)])
+			.with_balances(vec![(deposit_account(), <Test as Config>::Deposit::get() * 50_000)])
 			.build()
 			.execute_with(|| {
 				add_legacy_association::<Test>(
 					deposit_account(),
 					generate_did(0),
 					generate_acc32(0),
-					<Test as crate::Config>::Deposit::get(),
+					<Test as Config>::Deposit::get(),
 				);
 
 				assert_eq!(
@@ -368,10 +362,7 @@ mod tests {
 		let deposit_account = || generate_acc32(usize::MAX);
 
 		ExtBuilder::default()
-			.with_balances(vec![(
-				deposit_account(),
-				<Test as crate::Config>::Deposit::get() * 50_000,
-			)])
+			.with_balances(vec![(deposit_account(), <Test as Config>::Deposit::get() * 50_000)])
 			.build()
 			.execute_with(|| {
 				for i in 0..50 {

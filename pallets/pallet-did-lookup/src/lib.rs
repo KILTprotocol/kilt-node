@@ -153,8 +153,8 @@ pub mod pallet {
 		/// An association between a DID and an account ID was removed.
 		AssociationRemoved(LinkableAccountId, DidIdentifierOf<T>),
 
-		/// A number of accounts was migrated
-		Migrated,
+		/// There was some progress in the migration process.
+		MigrationProgress,
 
 		/// All AccountIds have been migrated to LinkableAccountId.
 		MigrationCompleted,
@@ -176,21 +176,9 @@ pub mod pallet {
 		/// the deposit.
 		InsufficientFunds,
 
-		/// The provided AccountId was already migrated to LinkableAccountId
-		AlreadyMigrated,
-
-		/// There are still pre migration keys in the storage implying an
-		/// ongoing migration.
-		MigrationKeysPersist,
-
-		/// The migration storages have different sizes implying an ongoing
-		/// migration.
-		MigrationStorageSizeMismatch,
-
-		/// Safety guard to check for ConnectedAccounts and ConnectedDids to
-		/// stay synchronized during migration
+		/// The ConnectedAccounts and ConnectedDids storage are out of sync.
 		///
-		/// NOTE: Should never be thrown
+		/// NOTE: this will only be returned if the storage has inconsistencies.
 		MigrationIssue,
 	}
 
@@ -401,7 +389,7 @@ pub mod pallet {
 
 			if let Some(migrated_acc) = new_last_key {
 				MigrationStateStore::<T>::set(MigrationState::Upgrading(migrated_acc));
-				Self::deposit_event(Event::<T>::Migrated);
+				Self::deposit_event(Event::<T>::MigrationProgress);
 			} else {
 				MigrationStateStore::<T>::set(MigrationState::Done);
 				Self::deposit_event(Event::<T>::MigrationCompleted);
