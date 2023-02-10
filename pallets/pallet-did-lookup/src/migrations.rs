@@ -291,7 +291,7 @@ mod tests {
 						MixedStorageKey::V2(LinkableAccountId::AccountId32(_)) => (acc.0, acc.1, acc.2 + 1),
 					}),
 					(3usize, 4usize, 5usize),
-					"We should only have V1 keys"
+					"The iterator should classify the keys correctly."
 				);
 			})
 	}
