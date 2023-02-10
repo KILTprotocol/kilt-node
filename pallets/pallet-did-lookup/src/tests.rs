@@ -16,6 +16,8 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use core::panic;
+
 use codec::Encode;
 use frame_support::{assert_noop, assert_ok, crypto::ecdsa::ECDSAExt};
 use kilt_support::{deposit::Deposit, mock::mock_origin};
@@ -23,7 +25,7 @@ use sha3::{Digest, Keccak256};
 use sp_runtime::{
 	app_crypto::{ecdsa, sr25519, Pair},
 	traits::{IdentifyAccount, Zero},
-	MultiSignature, MultiSigner,
+	AccountId32, MultiSignature, MultiSigner,
 };
 
 use crate::{
@@ -632,5 +634,65 @@ fn partial_migration() {
 
 			// once everything is migrated, this should do nothing
 			assert_ok!(DidLookup::migrate(RuntimeOrigin::signed(deposit_account()), 10));
+		})
+}
+
+#[test]
+fn migrate_nothing() {
+	let deposit_account = || generate_acc32(usize::MAX);
+
+	ExtBuilder::default()
+		.with_balances(vec![(
+			deposit_account(),
+			<Test as crate::Config>::Deposit::get() * 50_000,
+		)])
+		.build()
+		.execute_with(|| {
+			for i in 0..50 {
+				add_legacy_association::<Test>(
+					deposit_account(),
+					generate_did(i),
+					generate_acc32(i),
+					<Test as crate::Config>::Deposit::get(),
+				);
+			}
+			assert_eq!(
+				get_mixed_storage_iterator::<Test>(None).fold((0usize, 0usize, 0usize), |acc, key| match key {
+					MixedStorageKey::V1(_) => (acc.0 + 1, acc.1, acc.2),
+					MixedStorageKey::V2(LinkableAccountId::AccountId20(_)) => (acc.0, acc.1 + 1, acc.2),
+					MixedStorageKey::V2(LinkableAccountId::AccountId32(_)) => (acc.0, acc.1, acc.2 + 1),
+				}),
+				(50usize, 0usize, 0usize),
+				"We should only have V1 keys"
+			);
+			assert_eq!(MigrationStateStore::<Test>::get(), MigrationState::PreUpgrade);
+
+			assert_ok!(DidLookup::migrate(RuntimeOrigin::signed(deposit_account()), 0));
+
+			let last_key = match MigrationStateStore::<Test>::get() {
+				MigrationState::Upgrading(key) => key,
+				_ => panic!("We should be in the upgrading state!"),
+			};
+
+			// convert MixedStorageKey into an actual raw storage key
+			let raw_previous_key = match last_key {
+				MixedStorageKey::V1(key) => {
+					crate::migrations::ConnectedDids::<Test>::hashed_key_for(AccountId32::from(key))
+				}
+				MixedStorageKey::V2(key) => ConnectedDids::<Test>::hashed_key_for(key),
+			};
+
+			assert_eq!(
+				get_mixed_storage_iterator::<Test>(Some(raw_previous_key)).fold(
+					(0usize, 0usize, 0usize),
+					|acc, key| match key {
+						MixedStorageKey::V1(_) => (acc.0 + 1, acc.1, acc.2),
+						MixedStorageKey::V2(LinkableAccountId::AccountId20(_)) => (acc.0, acc.1 + 1, acc.2),
+						MixedStorageKey::V2(LinkableAccountId::AccountId32(_)) => (acc.0, acc.1, acc.2 + 1),
+					}
+				),
+				(50usize, 0usize, 0usize),
+				"We should have not skipped any key"
+			);
 		})
 }

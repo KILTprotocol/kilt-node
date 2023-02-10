@@ -37,7 +37,7 @@ use sp_std::vec::Vec;
 
 /// Keytype changed from `AccountId` to `LinkableAccountId` changed in V3
 #[storage_alias]
-type ConnectedDids<T: Config> = StorageMap<Pallet<T>, Blake2_128Concat, AccountIdOf<T>, ConnectionRecordOf<T>>;
+pub(crate) type ConnectedDids<T: Config> = StorageMap<Pallet<T>, Blake2_128Concat, AccountIdOf<T>, ConnectionRecordOf<T>>;
 /// Second keytype changed from `AccountId` to `LinkableAccountId` changed in V3
 #[storage_alias]
 type ConnectedAccounts<T: Config> =
