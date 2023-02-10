@@ -63,7 +63,7 @@ pub(crate) fn get_mixed_storage_iterator<T: Config>(
 		|raw_key_without_prefix| {
 			let mut key_material = Blake2_128Concat::reverse(raw_key_without_prefix);
 			match key_material.len() {
-				// old keys are 33 bytes
+				// old keys are 32 bytes
 				32 => Ok(MixedStorageKey::V1(AccountId32::decode(&mut key_material)?)),
 
 				// new keys are 33 or 21 bytes

@@ -326,8 +326,8 @@ benchmarks! {
 		// In the worst case with the limit of `n` migrations, we actually only migrate `n/2` links.
 		// The other half of the limit was just used to query already migrated accounts.
 		assert_eq!(key_distribution.1, 0, "There should be no AccountId20 links");
-		assert!(key_distribution.0 <= 500 - n_half , "There should be no AccountId20 links");
-		assert!(key_distribution.2 >= n_half , "There should be no AccountId20 links");
+		assert!(key_distribution.0 <= 500 - n_half , "There should be no more than {} old links left", 500 - n_half);
+		assert!(key_distribution.2 >= n_half , "There should be at least {} migrated accounts", n_half);
 	}
 }
 

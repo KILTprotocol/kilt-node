@@ -26,7 +26,7 @@ pub enum MigrationState {
 	/// The migration was successful.
 	Done,
 
-	/// The storage has still the old layout, the wasn't started yet
+	/// The storage has still the old layout, the migration wasn't started yet
 	#[default]
 	PreUpgrade,
 

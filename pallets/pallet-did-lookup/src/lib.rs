@@ -355,7 +355,7 @@ pub mod pallet {
 		}
 
 		/// Executes the key type migration of the `ConnectedDids` and
-		/// `ConnectedAccounts` storages by converting the given `AccoundId`
+		/// `ConnectedAccounts` storages by converting the given `AccountId`
 		/// into `LinkableAccountId(AccountId)`. Once all keys have been
 		/// migrated, the migration is done and this call will be filtered.
 		///
