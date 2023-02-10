@@ -357,10 +357,9 @@ pub mod pallet {
 		/// Executes the key type migration of the `ConnectedDids` and
 		/// `ConnectedAccounts` storages by converting the given `AccoundId`
 		/// into `LinkableAccountId(AccountId)`. Once all keys have been
-		/// migrated, the call `try-finalize-migration` will succeed and remove
-		/// the migration flag.
+		/// migrated, the migration is done and this call will be filtered.
 		///
-		/// Can be called by any origin as duplicate calls won't succeed.
+		/// Can be called by any origin.
 		#[pallet::weight(<T as Config>::WeightInfo::migrate(*limit))]
 		#[pallet::call_index(254)]
 		pub fn migrate(origin: OriginFor<T>, limit: u32) -> DispatchResult {
@@ -369,9 +368,12 @@ pub mod pallet {
 			let migration_state = MigrationStateStore::<T>::get();
 
 			let new_last_key = match migration_state {
-				MigrationState::Done => None,
 				MigrationState::PreUpgrade => crate::migrations::do_migrate::<T>(limit, None)?,
 				MigrationState::Upgrading(last_key) => crate::migrations::do_migrate::<T>(limit, Some(last_key))?,
+
+				// This branch should never be executed since we filter this call after the migration is in the `Done`
+				// state
+				MigrationState::Done => None,
 			};
 
 			if let Some(migrated_acc) = new_last_key {
