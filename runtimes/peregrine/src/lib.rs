@@ -1078,7 +1078,7 @@ pub type Executive = frame_executive::Executive<
 	Runtime,
 	// Executes pallet hooks in the order of definition in construct_runtime
 	AllPalletsWithSystem,
-	(),
+	pallet_did_lookup::migrations::EthereumMigration<Runtime>,
 >;
 
 // follows Substrate's non destructive way of eliminating  otherwise required
