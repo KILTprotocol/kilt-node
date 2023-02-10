@@ -21,6 +21,7 @@ use kilt_support::{
 	deposit::Deposit,
 	mock::{mock_origin, SubjectId},
 };
+use sp_core::blake2_256;
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
@@ -135,23 +136,17 @@ pub(crate) const DID_01: SubjectId = SubjectId(ACCOUNT_01);
 pub(crate) const LINKABLE_ACCOUNT_00: LinkableAccountId = LinkableAccountId::AccountId32(ACCOUNT_00);
 
 pub(crate) fn generate_acc32(index: usize) -> AccountId {
-	let bytes = index.to_be_bytes();
-	let mut acc_bytes = [1u8; 32];
+	let bytes = blake2_256(&index.to_be_bytes()[..]);
 
-	// copy bytes from usize into array
-	let min_len = acc_bytes.len().min(bytes.len());
-	acc_bytes[..min_len].copy_from_slice(&bytes[..min_len]);
-
-	AccountId::new(acc_bytes)
+	AccountId::new(bytes)
 }
 
 pub(crate) fn generate_acc20(index: usize) -> AccountId20 {
-	let bytes = index.to_be_bytes();
+	let bytes = blake2_256(&index.to_be_bytes()[..]);
 	let mut acc_bytes = [1u8; 20];
 
 	// copy bytes from usize into array
-	let min_len = acc_bytes.len().min(bytes.len());
-	acc_bytes[..min_len].copy_from_slice(&bytes[..min_len]);
+	acc_bytes.copy_from_slice(&bytes[12..]);
 
 	AccountId20(acc_bytes)
 }

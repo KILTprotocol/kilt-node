@@ -394,8 +394,8 @@ mod tests {
 						MixedStorageKey::V2(LinkableAccountId::AccountId20(_)) => (acc.0, acc.1 + 1, acc.2),
 						MixedStorageKey::V2(LinkableAccountId::AccountId32(_)) => (acc.0, acc.1, acc.2 + 1),
 					}),
-					(41usize, 0usize, 9usize),
-					"We should only have V2 keys"
+					(40usize, 0usize, 10usize),
+					"There should be migration progress"
 				);
 
 				let previous_key = do_migrate::<Test>(10, previous_key).expect("Migration must work");
@@ -406,8 +406,8 @@ mod tests {
 						MixedStorageKey::V2(LinkableAccountId::AccountId20(_)) => (acc.0, acc.1 + 1, acc.2),
 						MixedStorageKey::V2(LinkableAccountId::AccountId32(_)) => (acc.0, acc.1, acc.2 + 1),
 					}),
-					(32usize, 0usize, 18usize),
-					"We should only have V2 keys"
+					(30usize, 0usize, 20usize),
+					"There should be migration progress"
 				);
 
 				assert_ok!(do_migrate::<Test>(10, previous_key));
@@ -418,8 +418,8 @@ mod tests {
 						MixedStorageKey::V2(LinkableAccountId::AccountId20(_)) => (acc.0, acc.1 + 1, acc.2),
 						MixedStorageKey::V2(LinkableAccountId::AccountId32(_)) => (acc.0, acc.1, acc.2 + 1),
 					}),
-					(23usize, 0usize, 27usize),
-					"We should only have V2 keys"
+					(22usize, 0usize, 28usize),
+					"There should be migration progress"
 				);
 			})
 	}

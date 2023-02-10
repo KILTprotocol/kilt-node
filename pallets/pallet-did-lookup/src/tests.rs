@@ -596,13 +596,13 @@ fn partial_migration() {
 			// The tuple contains the number of keys in storage
 			// (old Key, 20Bytes Account key, 32Bytes Account Key)
 			let expected_key_distributions = [
-				(41usize, 0usize, 9usize),
-				(32usize, 0usize, 18usize),
-				(23usize, 0usize, 27usize),
-				(19usize, 0usize, 31usize),
-				(11usize, 0usize, 39usize),
-				(6usize, 0usize, 44usize),
-				(1usize, 0usize, 49usize),
+				(40usize, 0usize, 10usize),
+				(30usize, 0usize, 20usize),
+				(22usize, 0usize, 28usize),
+				(16usize, 0usize, 34usize),
+				(12usize, 0usize, 38usize),
+				(9usize, 0usize, 41usize),
+				(5usize, 0usize, 45usize),
 				(0usize, 0usize, 50usize),
 			];
 
