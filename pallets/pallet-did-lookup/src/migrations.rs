@@ -26,7 +26,7 @@ use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::{
 	storage::KeyPrefixIterator,
 	storage_alias,
-	traits::{Get, GetStorageVersion, OnRuntimeUpgrade},
+	traits::{Get, GetStorageVersion, OnRuntimeUpgrade, StorageVersion},
 	Blake2_128Concat, ReversibleStorageHasher, StoragePrefixedMap,
 };
 use scale_info::TypeInfo;
@@ -37,7 +37,8 @@ use sp_std::vec::Vec;
 
 /// Keytype changed from `AccountId` to `LinkableAccountId` changed in V3
 #[storage_alias]
-pub(crate) type ConnectedDids<T: Config> = StorageMap<Pallet<T>, Blake2_128Concat, AccountIdOf<T>, ConnectionRecordOf<T>>;
+pub(crate) type ConnectedDids<T: Config> =
+	StorageMap<Pallet<T>, Blake2_128Concat, AccountIdOf<T>, ConnectionRecordOf<T>>;
 /// Second keytype changed from `AccountId` to `LinkableAccountId` changed in V3
 #[storage_alias]
 type ConnectedAccounts<T: Config> =
@@ -151,13 +152,12 @@ where
 	T::AccountId: Into<LinkableAccountId>,
 {
 	fn on_runtime_upgrade() -> frame_support::weights::Weight {
-		if Pallet::<T>::on_chain_storage_version() == Pallet::<T>::current_storage_version() {
+		if Pallet::<T>::on_chain_storage_version() == StorageVersion::new(2) {
 			// already on version 3
 			<T as frame_system::Config>::DbWeight::get().reads_writes(1, 0)
 		} else {
 			log::info!("🔎 DidLookup: Initiating migration");
 			MigrationStateStore::<T>::set(MigrationState::PreUpgrade);
-			// TODO: Do we want to migrate storage version inside verify_migration?
 			Pallet::<T>::current_storage_version().put::<Pallet<T>>();
 
 			T::DbWeight::get().reads_writes(1, 2)
@@ -168,8 +168,9 @@ where
 	fn pre_upgrade() -> Result<Vec<u8>, &'static str> {
 		use sp_std::vec;
 
-		assert!(
-			Pallet::<T>::on_chain_storage_version() < Pallet::<T>::current_storage_version(),
+		assert_eq!(
+			Pallet::<T>::on_chain_storage_version(),
+			StorageVersion::new(2),
 			"On-chain storage of DID lookup pallet already bumped"
 		);
 		assert_eq!(
@@ -187,8 +188,8 @@ where
 	fn post_upgrade(_pre_state: Vec<u8>) -> Result<(), &'static str> {
 		assert_eq!(
 			Pallet::<T>::on_chain_storage_version(),
-			Pallet::<T>::current_storage_version(),
-			"On-chain storage of DID lookup pallet was not bumped"
+			StorageVersion::new(3),
+			"On-chain storage of DID lookup pallet already bumped"
 		);
 		assert!(
 			MigrationStateStore::<T>::get().is_in_progress(),
