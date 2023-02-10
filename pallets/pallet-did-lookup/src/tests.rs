@@ -19,7 +19,7 @@
 use core::panic;
 
 use codec::Encode;
-use frame_support::{assert_noop, assert_ok, crypto::ecdsa::ECDSAExt};
+use frame_support::{assert_noop, assert_ok, assert_storage_noop, crypto::ecdsa::ECDSAExt};
 use kilt_support::{deposit::Deposit, mock::mock_origin};
 use sha3::{Digest, Keccak256};
 use sp_runtime::{
@@ -633,7 +633,9 @@ fn partial_migration() {
 			assert_eq!(MigrationStateStore::<Test>::get(), MigrationState::Done);
 
 			// once everything is migrated, this should do nothing
-			assert_ok!(DidLookup::migrate(RuntimeOrigin::signed(deposit_account()), 10));
+			assert_storage_noop!(
+				DidLookup::migrate(RuntimeOrigin::signed(deposit_account()), 10).expect("Should not fail")
+			);
 		})
 }
 
