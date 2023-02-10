@@ -155,7 +155,7 @@ impl frame_support::traits::Contains<RuntimeCall> for MigrationFilter {
 				DidLookup::migration_state().is_in_progress()
 			}
 			// For all other DidLookup calls, check whether migration is ongoing
-			RuntimeCall::DidLookup(_) => !DidLookup::migration_state().is_done(),
+			RuntimeCall::DidLookup(_) => DidLookup::migration_state().is_done(),
 			// Enable all non-DidLookup calls
 			_ => true,
 		}
