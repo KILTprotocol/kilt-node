@@ -43,7 +43,7 @@ mod mock;
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 
-pub use crate::{default_weights::WeightInfo, pallet::*};
+pub use crate::{default_weights::WeightInfo, migration_state::MigrationState, pallet::*};
 
 #[frame_support::pallet]
 pub mod pallet {
