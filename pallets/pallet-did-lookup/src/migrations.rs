@@ -65,10 +65,20 @@ pub(crate) fn get_mixed_storage_iterator<T: Config>(
 			let mut key_material = Blake2_128Concat::reverse(raw_key_without_prefix);
 			match key_material.len() {
 				// old keys are 32 bytes
-				32 => Ok(MixedStorageKey::V1(AccountId32::decode(&mut key_material)?)),
+				32 => Ok(MixedStorageKey::V1(AccountId32::decode(&mut key_material).map_err(
+					|e| {
+						log::warn!("Unable to decode V1 storage key");
+						e
+					},
+				)?)),
 
 				// new keys are 33 or 21 bytes
-				33 | 21 => Ok(MixedStorageKey::V2(LinkableAccountId::decode(&mut key_material)?)),
+				33 | 21 => Ok(MixedStorageKey::V2(
+					LinkableAccountId::decode(&mut key_material).map_err(|e| {
+						log::warn!("Unable to decode V2 storage key");
+						e
+					})?,
+				)),
 
 				// This should not happen
 				l => {
@@ -192,7 +202,7 @@ where
 			"Migration state already set"
 		);
 
-		log::info!("🔎 DidLookup: Pre migration checks successful");
+		log::info!(target: LOG_TARGET, "🔎 DidLookup: Pre migration checks successful");
 
 		Ok(vec![])
 	}
@@ -209,7 +219,7 @@ where
 			"Migration flag was not set"
 		);
 
-		log::info!("🔎 DidLookup: Post migration checks successful");
+		log::info!(target: LOG_TARGET, "🔎 DidLookup: Post migration checks successful");
 
 		Ok(())
 	}
