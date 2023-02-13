@@ -712,7 +712,7 @@ fn migrate_all_at_once() {
 					MixedStorageKey::V2(LinkableAccountId::AccountId32(_)) => (acc.0, acc.1, acc.2 + 1),
 				}),
 				(0usize, 0usize, 50usize),
-				"We should only have V1 keys"
+				"We should only have V2 AccountId32 keys"
 			);
 			assert_eq!(MigrationStateStore::<Test>::get(), MigrationState::Done);
 		})
