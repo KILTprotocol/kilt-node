@@ -27,7 +27,7 @@ use frame_support::{
 	storage::KeyPrefixIterator,
 	storage_alias,
 	traits::{Get, GetStorageVersion, OnRuntimeUpgrade, StorageVersion},
-	Blake2_128Concat, ReversibleStorageHasher, StoragePrefixedMap,
+	Blake2_128Concat, ReversibleStorageHasher, StoragePrefixedMap, LOG_TARGET,
 };
 use scale_info::TypeInfo;
 use sp_runtime::{AccountId32, DispatchError};
@@ -162,14 +162,18 @@ where
 {
 	fn on_runtime_upgrade() -> frame_support::weights::Weight {
 		if Pallet::<T>::on_chain_storage_version() == StorageVersion::new(2) {
-			// already on version 3
-			<T as frame_system::Config>::DbWeight::get().reads_writes(1, 0)
-		} else {
 			log::info!("🔎 DidLookup: Initiating migration");
 			MigrationStateStore::<T>::set(MigrationState::PreUpgrade);
 			Pallet::<T>::current_storage_version().put::<Pallet<T>>();
 
 			T::DbWeight::get().reads_writes(1, 2)
+		} else {
+			// wrong storage version
+			log::info!(
+				target: LOG_TARGET,
+				"Migration did not execute. This probably should be removed"
+			);
+			<T as frame_system::Config>::DbWeight::get().reads_writes(1, 0)
 		}
 	}
 
@@ -180,12 +184,12 @@ where
 		assert_eq!(
 			Pallet::<T>::on_chain_storage_version(),
 			StorageVersion::new(2),
-			"On-chain storage of DID lookup pallet already bumped"
+			"On-chain storage version should be 2 (last version without ethereum linking)"
 		);
 		assert_eq!(
 			MigrationStateStore::<T>::get(),
 			MigrationState::PreUpgrade,
-			"Migration flag already set"
+			"Migration state already set"
 		);
 
 		log::info!("🔎 DidLookup: Pre migration checks successful");
@@ -198,7 +202,7 @@ where
 		assert_eq!(
 			Pallet::<T>::on_chain_storage_version(),
 			StorageVersion::new(3),
-			"On-chain storage of DID lookup pallet already bumped"
+			"On-chain storage version should be updated"
 		);
 		assert!(
 			MigrationStateStore::<T>::get().is_in_progress(),
