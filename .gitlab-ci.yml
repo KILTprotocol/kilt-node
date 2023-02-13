@@ -78,6 +78,8 @@ build-wasm-peregrine:
   script:
     - export PACKAGE=peregrine-runtime
     - export RUNTIME_DIR=runtimes/peregrine
+    - export PARACHAIN_PALLET_ID=0x50
+    - export AUTHORIZE_UPGRADE_PREFIX=0x02
     - cp -r * /build
     - /srtool/build build
     - mkdir ./out
@@ -99,6 +101,8 @@ build-wasm-spiritnet:
   script:
     - export PACKAGE=spiritnet-runtime
     - export RUNTIME_DIR=runtimes/spiritnet
+    - export PARACHAIN_PALLET_ID=0x50
+    - export AUTHORIZE_UPGRADE_PREFIX=0x02
     - cp -r * /build
     - /srtool/build build
     - mkdir ./out
