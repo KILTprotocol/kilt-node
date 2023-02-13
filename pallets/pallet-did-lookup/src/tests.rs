@@ -17,7 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use codec::Encode;
-use frame_support::{assert_noop, assert_ok, crypto::ecdsa::ECDSAExt};
+use frame_support::{assert_noop, assert_ok, assert_storage_noop, crypto::ecdsa::ECDSAExt};
 use kilt_support::{deposit::Deposit, mock::mock_origin};
 use sha3::{Digest, Keccak256};
 use sp_runtime::{
@@ -28,10 +28,13 @@ use sp_runtime::{
 
 use crate::{
 	account::{AccountId20, EthereumSignature},
+	associate_account_request::AssociateAccountRequest,
 	linkable_account::LinkableAccountId,
+	migration_state::MigrationState,
+	migrations::{add_legacy_association, get_mixed_storage_iterator, MixedStorageKey},
 	mock::*,
 	signature::get_wrapped_payload,
-	AssociateAccountRequest, ConnectedAccounts, ConnectedDids, ConnectionRecord, Error,
+	ConnectedAccounts, ConnectedDids, ConnectionRecord, Error, MigrationStateStore,
 };
 
 #[test]
@@ -552,5 +555,165 @@ fn test_update_deposit_unauthorized() {
 				DidLookup::update_deposit(RuntimeOrigin::signed(ACCOUNT_01), ACCOUNT_00.into()),
 				Error::<Test>::NotAuthorized
 			);
+		})
+}
+
+// #############################################################################
+// migrate
+
+#[test]
+fn partial_migration() {
+	let deposit_account = || generate_acc32(usize::MAX);
+
+	ExtBuilder::default()
+		.with_balances(vec![(
+			deposit_account(),
+			<Test as crate::Config>::Deposit::get() * 50_000,
+		)])
+		.build()
+		.execute_with(|| {
+			for i in 0..50 {
+				add_legacy_association::<Test>(
+					deposit_account(),
+					generate_did(i),
+					generate_acc32(i),
+					<Test as crate::Config>::Deposit::get(),
+				);
+			}
+			assert_eq!(
+				get_mixed_storage_iterator::<Test>(None).fold((0usize, 0usize, 0usize), |acc, key| match key {
+					MixedStorageKey::V1(_) => (acc.0 + 1, acc.1, acc.2),
+					MixedStorageKey::V2(LinkableAccountId::AccountId20(_)) => (acc.0, acc.1 + 1, acc.2),
+					MixedStorageKey::V2(LinkableAccountId::AccountId32(_)) => (acc.0, acc.1, acc.2 + 1),
+				}),
+				(50usize, 0usize, 0usize),
+				"We should only have V1 keys"
+			);
+			assert_eq!(MigrationStateStore::<Test>::get(), MigrationState::PreUpgrade);
+
+			// The tuple contains the number of keys in storage
+			// (old Key, 20Bytes Account key, 32Bytes Account Key)
+			let expected_key_distributions = [
+				(40usize, 0usize, 10usize),
+				(30usize, 0usize, 20usize),
+				(22usize, 0usize, 28usize),
+				(16usize, 0usize, 34usize),
+				(12usize, 0usize, 38usize),
+				(9usize, 0usize, 41usize),
+				(5usize, 0usize, 45usize),
+				(0usize, 0usize, 50usize),
+			];
+
+			for distribution in expected_key_distributions {
+				assert_ok!(DidLookup::migrate(RuntimeOrigin::signed(deposit_account()), 10));
+
+				// Since we also iterate over already migrated keys, we don't get 10 migrated
+				// accounts with a limit of 10.
+				assert_eq!(
+					get_mixed_storage_iterator::<Test>(None).fold((0usize, 0usize, 0usize), |acc, key| match key {
+						MixedStorageKey::V1(_) => (acc.0 + 1, acc.1, acc.2),
+						MixedStorageKey::V2(LinkableAccountId::AccountId20(_)) => (acc.0, acc.1 + 1, acc.2),
+						MixedStorageKey::V2(LinkableAccountId::AccountId32(_)) => (acc.0, acc.1, acc.2 + 1),
+					}),
+					distribution,
+					"We should end up with the expected distribution"
+				);
+
+				// as long as there are old storage keys, we should be in the `Upgrading` state
+				if distribution.0 != 0 {
+					assert!(matches!(
+						MigrationStateStore::<Test>::get(),
+						MigrationState::Upgrading(_)
+					));
+				}
+			}
+
+			assert_eq!(MigrationStateStore::<Test>::get(), MigrationState::Done);
+
+			// once everything is migrated, this should do nothing
+			assert_storage_noop!(
+				DidLookup::migrate(RuntimeOrigin::signed(deposit_account()), 10).expect("Should not fail")
+			);
+		})
+}
+
+#[test]
+fn migrate_nothing() {
+	let deposit_account = || generate_acc32(usize::MAX);
+
+	ExtBuilder::default()
+		.with_balances(vec![(
+			deposit_account(),
+			<Test as crate::Config>::Deposit::get() * 50_000,
+		)])
+		.build()
+		.execute_with(|| {
+			for i in 0..50 {
+				add_legacy_association::<Test>(
+					deposit_account(),
+					generate_did(i),
+					generate_acc32(i),
+					<Test as crate::Config>::Deposit::get(),
+				);
+			}
+			assert_eq!(
+				get_mixed_storage_iterator::<Test>(None).fold((0usize, 0usize, 0usize), |acc, key| match key {
+					MixedStorageKey::V1(_) => (acc.0 + 1, acc.1, acc.2),
+					MixedStorageKey::V2(LinkableAccountId::AccountId20(_)) => (acc.0, acc.1 + 1, acc.2),
+					MixedStorageKey::V2(LinkableAccountId::AccountId32(_)) => (acc.0, acc.1, acc.2 + 1),
+				}),
+				(50usize, 0usize, 0usize),
+				"We should only have V1 keys"
+			);
+			assert_eq!(MigrationStateStore::<Test>::get(), MigrationState::PreUpgrade);
+
+			assert_storage_noop!(
+				DidLookup::migrate(RuntimeOrigin::signed(deposit_account()), 0).expect("Should not return an error")
+			);
+		})
+}
+
+#[test]
+fn migrate_all_at_once() {
+	let deposit_account = || generate_acc32(usize::MAX);
+
+	ExtBuilder::default()
+		.with_balances(vec![(
+			deposit_account(),
+			<Test as crate::Config>::Deposit::get() * 50_000,
+		)])
+		.build()
+		.execute_with(|| {
+			for i in 0..50 {
+				add_legacy_association::<Test>(
+					deposit_account(),
+					generate_did(i),
+					generate_acc32(i),
+					<Test as crate::Config>::Deposit::get(),
+				);
+			}
+			assert_eq!(
+				get_mixed_storage_iterator::<Test>(None).fold((0usize, 0usize, 0usize), |acc, key| match key {
+					MixedStorageKey::V1(_) => (acc.0 + 1, acc.1, acc.2),
+					MixedStorageKey::V2(LinkableAccountId::AccountId20(_)) => (acc.0, acc.1 + 1, acc.2),
+					MixedStorageKey::V2(LinkableAccountId::AccountId32(_)) => (acc.0, acc.1, acc.2 + 1),
+				}),
+				(50usize, 0usize, 0usize),
+				"We should only have V1 keys"
+			);
+			assert_eq!(MigrationStateStore::<Test>::get(), MigrationState::PreUpgrade);
+
+			assert_ok!(DidLookup::migrate(RuntimeOrigin::signed(deposit_account()), u32::MAX));
+
+			assert_eq!(
+				get_mixed_storage_iterator::<Test>(None).fold((0usize, 0usize, 0usize), |acc, key| match key {
+					MixedStorageKey::V1(_) => (acc.0 + 1, acc.1, acc.2),
+					MixedStorageKey::V2(LinkableAccountId::AccountId20(_)) => (acc.0, acc.1 + 1, acc.2),
+					MixedStorageKey::V2(LinkableAccountId::AccountId32(_)) => (acc.0, acc.1, acc.2 + 1),
+				}),
+				(0usize, 0usize, 50usize),
+				"We should only have V2 AccountId32 keys"
+			);
+			assert_eq!(MigrationStateStore::<Test>::get(), MigrationState::Done);
 		})
 }

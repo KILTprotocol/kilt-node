@@ -1,25 +1,27 @@
 [package]
 authors.workspace = true
+description = "Lookup the DID for a blockchain account."
 documentation.workspace = true
 edition.workspace = true
 homepage.workspace = true
 license-file.workspace = true
+name = "pallet-did-lookup"
 readme.workspace = true
 repository.workspace = true
 version.workspace = true
-name = "pallet-did-lookup"
-description = "Lookup the DID for a blockchain account."
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dev-dependencies]
+env_logger.workspace = true
 kilt-support = {workspace = true, features = ["mock"]}
 
 pallet-balances = {workspace = true, features = ["std"]}
 sp-core = {workspace = true, features = ["std"]}
 sp-io = {workspace = true, features = ["std"]}
 sp-keystore = {workspace = true, features = ["std"]}
+test-log = "0.2.11"
 
 [dependencies]
 # External dependencies

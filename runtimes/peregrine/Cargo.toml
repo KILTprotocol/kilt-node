@@ -13,6 +13,9 @@ description = "Parachain runtime for KILT Testnets."
 [build-dependencies]
 substrate-wasm-builder.workspace = true
 
+[dev-dependencies]
+sp-io.workspace = true
+
 [dependencies]
 # External dependencies
 codec = {package = "parity-scale-codec", workspace = true, features = ["derive"]}

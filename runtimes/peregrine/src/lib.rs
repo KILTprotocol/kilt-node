@@ -29,7 +29,7 @@ use codec::{Decode, Encode, MaxEncodedLen};
 use cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases;
 use frame_support::{
 	construct_runtime, parameter_types,
-	traits::{ConstU32, EitherOfDiverse, Everything, InstanceFilter, PrivilegeCmp},
+	traits::{ConstU32, EitherOfDiverse, InstanceFilter, PrivilegeCmp},
 	weights::{constants::RocksDbWeight, ConstantMultiplier, Weight},
 };
 use frame_system::EnsureRoot;
@@ -115,6 +115,22 @@ parameter_types! {
 	pub const SS58Prefix: u8 = 38;
 }
 
+pub struct MigrationFilter;
+impl frame_support::traits::Contains<RuntimeCall> for MigrationFilter {
+	fn contains(c: &RuntimeCall) -> bool {
+		match c {
+			// Enable DidLookup migration calls for ongoing migration
+			RuntimeCall::DidLookup(pallet_did_lookup::Call::migrate { .. }) => {
+				DidLookup::migration_state().is_in_progress()
+			}
+			// For all other DidLookup calls, check whether migration is ongoing
+			RuntimeCall::DidLookup(_) => DidLookup::migration_state().is_done(),
+			// Enable all non-DidLookup calls
+			_ => true,
+		}
+	}
+}
+
 impl frame_system::Config for Runtime {
 	/// The identifier used to distinguish between accounts.
 	type AccountId = AccountId;
@@ -148,7 +164,7 @@ impl frame_system::Config for Runtime {
 	type OnNewAccount = ();
 	type OnKilledAccount = ();
 	type DbWeight = RocksDbWeight;
-	type BaseCallFilter = Everything;
+	type BaseCallFilter = MigrationFilter;
 	type SystemWeightInfo = weights::frame_system::WeightInfo<Runtime>;
 	type BlockWeights = BlockWeights;
 	type BlockLength = BlockLength;
@@ -1062,7 +1078,7 @@ pub type Executive = frame_executive::Executive<
 	Runtime,
 	// Executes pallet hooks in the order of definition in construct_runtime
 	AllPalletsWithSystem,
-	(),
+	pallet_did_lookup::migrations::EthereumMigration<Runtime>,
 >;
 
 // follows Substrate's non destructive way of eliminating  otherwise required

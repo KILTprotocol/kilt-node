@@ -118,4 +118,16 @@ impl<T: frame_system::Config> pallet_did_lookup::WeightInfo for WeightInfo<T> {
 			.saturating_add(T::DbWeight::get().reads(2 as u64))
 			.saturating_add(T::DbWeight::get().writes(2 as u64))
 	}
+	// Storage: DidLookup MigrationStateStore (r:1 w:1)
+	// Storage: DidLookup ConnectedDids (r:2 w:2)
+	// Storage: DidLookup ConnectedAccounts (r:1 w:2)
+	fn migrate(n: u32, ) -> Weight {
+		Weight::from_ref_time(55_349_814 as u64)
+			// Standard Error: 16_836
+			.saturating_add(Weight::from_ref_time(11_516_593 as u64).saturating_mul(n as u64))
+			.saturating_add(T::DbWeight::get().reads(3 as u64))
+			.saturating_add(T::DbWeight::get().reads((2 as u64).saturating_mul(n as u64)))
+			.saturating_add(T::DbWeight::get().writes(3 as u64))
+			.saturating_add(T::DbWeight::get().writes((4 as u64).saturating_mul(n as u64)))
+	}
 }
