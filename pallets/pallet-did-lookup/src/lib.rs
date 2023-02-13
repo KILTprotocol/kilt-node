@@ -49,7 +49,7 @@ pub use crate::{default_weights::WeightInfo, pallet::*};
 pub mod pallet {
 	use crate::{
 		associate_account_request::AssociateAccountRequest, default_weights::WeightInfo,
-		linkable_account::LinkableAccountId, migration_state::MigrationState,
+		linkable_account::LinkableAccountId, migration_state::MigrationState, migrations::MigrationProgress,
 	};
 
 	use frame_support::{
@@ -62,6 +62,7 @@ pub mod pallet {
 		deposit::Deposit,
 		traits::{CallSources, StorageDepositCollector},
 	};
+
 	use sp_runtime::traits::BlockNumberProvider;
 
 	pub use crate::connection_record::ConnectionRecord;
@@ -166,7 +167,7 @@ pub mod pallet {
 		/// The ConnectedAccounts and ConnectedDids storage are out of sync.
 		///
 		/// NOTE: this will only be returned if the storage has inconsistencies.
-		MigrationIssue,
+		Migration,
 	}
 
 	#[pallet::call]
@@ -373,15 +374,19 @@ pub mod pallet {
 
 				// This branch should never be executed since we filter this call after the migration is in the `Done`
 				// state
-				MigrationState::Done => None,
+				MigrationState::Done => MigrationProgress::Finished,
 			};
 
-			if let Some(migrated_acc) = new_last_key {
-				MigrationStateStore::<T>::set(MigrationState::Upgrading(migrated_acc));
-				Self::deposit_event(Event::<T>::MigrationProgress);
-			} else {
-				MigrationStateStore::<T>::set(MigrationState::Done);
-				Self::deposit_event(Event::<T>::MigrationCompleted);
+			match new_last_key {
+				MigrationProgress::ProcessedUntil(key) => {
+					MigrationStateStore::<T>::set(MigrationState::Upgrading(key));
+					Self::deposit_event(Event::<T>::MigrationProgress);
+				}
+				MigrationProgress::Finished => {
+					MigrationStateStore::<T>::set(MigrationState::Done);
+					Self::deposit_event(Event::<T>::MigrationCompleted);
+				}
+				MigrationProgress::Noop => {}
 			}
 
 			Ok(())

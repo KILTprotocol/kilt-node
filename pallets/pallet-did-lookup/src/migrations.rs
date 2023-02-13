@@ -80,10 +80,27 @@ pub(crate) fn get_mixed_storage_iterator<T: Config>(
 	)
 }
 
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub(crate) enum MigrationProgress {
+	Noop,
+	ProcessedUntil(MixedStorageKey),
+	Finished,
+}
+
+impl MigrationProgress {
+	#[cfg(test)]
+	fn last_processed_key(self) -> Option<MixedStorageKey> {
+		match self {
+			Self::ProcessedUntil(key) => Some(key),
+			_ => None,
+		}
+	}
+}
+
 pub(crate) fn do_migrate<T: Config>(
 	limit: u32,
 	previous_key: Option<MixedStorageKey>,
-) -> Result<Option<MixedStorageKey>, DispatchError>
+) -> Result<MigrationProgress, DispatchError>
 where
 	T::AccountId: From<AccountId32>,
 	T::AccountId: Into<AccountId32>,
@@ -95,13 +112,13 @@ where
 	});
 
 	let mut key_iterator = get_mixed_storage_iterator::<T>(raw_previous_key);
-	let mut new_previous_key = peek(&mut key_iterator);
+	let mut new_previous_key = MigrationProgress::Noop;
 
 	for _ in 0..limit {
 		let mixed_key = if let Some(mixed_key) = key_iterator.next() {
 			mixed_key
 		} else {
-			return Ok(None);
+			return Ok(MigrationProgress::Finished);
 		};
 
 		match mixed_key.clone() {
@@ -112,18 +129,10 @@ where
 				log::debug!("Skipping already migrated account link")
 			}
 		}
-		new_previous_key = Some(mixed_key);
+		new_previous_key = MigrationProgress::ProcessedUntil(mixed_key);
 	}
 
 	Ok(new_previous_key)
-}
-
-fn peek<T>(iterator: &mut KeyPrefixIterator<T>) -> Option<T> {
-	let last = iterator.last_raw_key().to_vec();
-	let res = iterator.next();
-	iterator.set_last_raw_key(last);
-
-	res
 }
 
 /// Migrate the `ConnectedDids` and `ConnectedAccounts` key types for a given
@@ -135,11 +144,11 @@ where
 	let linkable_account = LinkableAccountId::AccountId32(account_id.clone().into());
 
 	// ConnectedDids -> remove v1 entry and add v2 entry
-	let connection_record = ConnectedDids::<T>::take(&account_id).ok_or(crate::Error::<T>::MigrationIssue)?;
+	let connection_record = ConnectedDids::<T>::take(&account_id).ok_or(crate::Error::<T>::Migration)?;
 	ConnectedDidsV2::<T>::insert(&linkable_account, connection_record.clone());
 
 	// ConnectedAccounts -> remove v1 entry and add v2 entry
-	ConnectedAccounts::<T>::take(&connection_record.did, &account_id).ok_or(crate::Error::<T>::MigrationIssue)?;
+	ConnectedAccounts::<T>::take(&connection_record.did, &account_id).ok_or(crate::Error::<T>::Migration)?;
 	ConnectedAccountsV2::<T>::insert(&connection_record.did, linkable_account, ());
 
 	Ok(connection_record.did)
@@ -398,7 +407,8 @@ mod tests {
 					"There should be migration progress"
 				);
 
-				let previous_key = do_migrate::<Test>(10, previous_key).expect("Migration must work");
+				let previous_key =
+					do_migrate::<Test>(10, previous_key.last_processed_key()).expect("Migration must work");
 
 				assert_eq!(
 					get_mixed_storage_iterator::<Test>(None).fold((0usize, 0usize, 0usize), |acc, key| match key {
@@ -410,7 +420,7 @@ mod tests {
 					"There should be migration progress"
 				);
 
-				assert_ok!(do_migrate::<Test>(10, previous_key));
+				assert_ok!(do_migrate::<Test>(10, previous_key.last_processed_key()));
 
 				assert_eq!(
 					get_mixed_storage_iterator::<Test>(None).fold((0usize, 0usize, 0usize), |acc, key| match key {
