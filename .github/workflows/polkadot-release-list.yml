@@ -11,6 +11,17 @@ on:
         description: Target version of the Polkadot/Cumulus dependency
         required: true
         type: string
+      asignee:
+        description: Person assigned for this upgrade
+        required: false
+        default: weichweich
+        type: choice
+        options:
+        - weichweich
+        - ntn-x2
+        - trusch
+        - Ad96el
+
 jobs:
   runs-on: ubuntu-latest
   create-ticket:
@@ -42,8 +53,8 @@ jobs:
       - name: Put issue into weekly board
         uses: peter-evans/create-or-update-project-card@v2
         with:
-          # TODO: This will break if we change the name of the project
-          project-name: "Weekly Board 📅 Test & Release public credentials Chain 1.9.0 SDK 0.31 / CType Draft V2 / Documentation Engagement"
+          # Weekly board
+          project-number: 24
           column-name: "📥  Inbox"
           issue-number: ${{ steps.new-issue.outputs.issue-number }}
 
