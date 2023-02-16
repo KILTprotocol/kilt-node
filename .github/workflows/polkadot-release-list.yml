@@ -23,8 +23,8 @@ on:
         - Ad96el
 
 jobs:
-  runs-on: ubuntu-latest
   create-ticket:
+    runs-on: ubuntu-latest
     steps:
       - name: Install cargo
         run: curl https://sh.rustup.rs -sSf | sh
