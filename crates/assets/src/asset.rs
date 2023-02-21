@@ -727,7 +727,7 @@ pub mod v1 {
 				"slip44:›",
 				"slip44:😁",
 				// Max chars + 1
-				"slip44:99999999999999999999999999999999999999999999999999999999999999999",
+				"slip44:999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999",
 			];
 			for asset in invalid_assets {
 				assert!(
@@ -899,7 +899,7 @@ pub mod v1 {
 			let valid_assets = [
 			"123:a",
 			"12345678:-abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-",
-			"12345678:-abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-:-abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ012345678901234567890123-",
+			"12345678:-.abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789%-:-.abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890123456789012%",
 			"para:411f057b9107718c9624d6aa4a3f23c1",
 			"para:kilt-spiritnet",
 			"w3n:john-doe",
@@ -928,7 +928,7 @@ pub mod v1 {
 				"valid:valid:",
 				// Too long
 				"too-loong:valid",
-				"valid:too-loooooooooooooooooooooooooooooooooooooooooooooooooooooooooong",
+				"valid:too-loooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooong",
 				"valid:valid:too-loooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooong",
 				// Wrong characters
 				"no-val!d:valid",

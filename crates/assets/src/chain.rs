@@ -806,6 +806,7 @@ mod v1 {
 			let valid_chains = [
 				// Edge cases
 				"abc:-",
+				"abc:_",
 				"-as01-aa:A",
 				"12345678:abcdefghjklmnopqrstuvwxyzABCD012",
 				// Filecoin examples -> https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-23.md
