@@ -48,7 +48,7 @@ pub mod v1 {
 	/// The minimum length of a valid asset ID reference.
 	pub const MINIMUM_REFERENCE_LENGTH: usize = 1;
 	/// The maximum length of a valid asset ID reference.
-	pub const MAXIMUM_REFERENCE_LENGTH: usize = 64;
+	pub const MAXIMUM_REFERENCE_LENGTH: usize = 128;
 	const MAXIMUM_REFERENCE_LENGTH_U32: u32 = MAXIMUM_REFERENCE_LENGTH as u32;
 	/// The minimum length of a valid asset ID identifier.
 	pub const MINIMUM_IDENTIFIER_LENGTH: usize = 1;
@@ -604,7 +604,7 @@ pub mod v1 {
 			check_reference_length_bounds(input)?;
 
 			input.iter().try_for_each(|c| {
-				if !matches!(c, b'-' | b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9') {
+				if !matches!(c, b'-' | b'.' | b'%' | b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9') {
 					log::trace!("Provided input has some invalid values as expected by a generic asset reference.");
 					Err(ReferenceError::InvalidFormat)
 				} else {
@@ -653,7 +653,7 @@ pub mod v1 {
 			check_identifier_length_bounds(input)?;
 
 			input.iter().try_for_each(|c| {
-				if !matches!(c, b'-' | b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9') {
+				if !matches!(c, b'-' | b'.' | b'%' | b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9') {
 					log::trace!("Provided input has some invalid values as expected by a generic asset identifier.");
 					Err(IdentifierError::InvalidFormat)
 				} else {
