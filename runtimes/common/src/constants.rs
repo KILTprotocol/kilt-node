@@ -299,7 +299,7 @@ pub mod governance {
 		pub const TechnicalMaxProposals: u32 = 100;
 		pub const TechnicalMaxMembers: u32 = 100;
 		// Tipper Group
-		pub const TipperMaxMembers: u32 = 7;
+		pub const TipperMaxMembers: u32 = 21;
 	}
 }
 
