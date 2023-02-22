@@ -55,10 +55,5 @@ jobs:
           token: ${{ secrets.REPO_ACCESS_TOKEN }}
           content-filepath: out.md
           labels: kiltbot,⛓ KILT node
-      - name: Put issue into weekly board
-        uses: actions/add-to-project@v0.4.0
-        with:
-          project-url: https://github.com/orgs/KILTprotocol/projects/24
-          github-token: ${{ secrets.REPO_ACCESS_TOKEN }}
-          labeled: kiltbot
+          assignees: ${{ github.event.inputs.asignee }}
 
