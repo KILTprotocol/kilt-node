@@ -1,4 +1,4 @@
-name: create-polkadot-release-ticket
+name: Create Polkadot version upgrade ticket
 
 on:
   workflow_dispatch:
@@ -11,7 +11,7 @@ on:
         description: Target version of the Polkadot/Cumulus dependency
         required: true
         type: string
-      asignee:
+      assignee:
         description: Person assigned for this upgrade
         required: false
         default: weichweich
@@ -25,16 +25,20 @@ on:
 jobs:
   create-ticket:
     runs-on: ubuntu-latest
+    container:
+      image: rust:1.67.0
     steps:
-      - name: Install cargo
-        run: curl https://sh.rustup.rs -sSf | sh
       - name: Install subalfred
         env:
-          - SUBALFRED_VERSION: 0.9.1
+          SUBALFRED_VERSION: 0.9.1
         run: cargo install --version $SUBALFRED_VERSION --git https://github.com/hack-ink/subalfred.git subalfred
       - name: Run subalfred for Substrate
+        env:
+          GITHUB_TOKEN: ${{ secrets.REPO_ACCESS_TOKEN }}
         run: subalfred track-updates paritytech/substrate --from polkadot-v${{ inputs.current-version }} --to polkadot-v${{ inputs.target-version }} > substrate-out.md
       - name: Run subalfred for Cumulus
+        env:
+          GITHUB_TOKEN: ${{ secrets.REPO_ACCESS_TOKEN }}
         run: subalfred track-updates paritytech/cumulus --from polkadot-v${{ inputs.current-version }} --to polkadot-v${{ inputs.target-version }} > cumulus-out.md
       - name: Merge outputs into single file
         run: |
@@ -45,16 +49,13 @@ jobs:
       - name: Create issue from commands output
         id: new-issue
         uses: peter-evans/create-issue-from-file@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.REPO_ACCESS_TOKEN }}
         with:
-          title: "chore: update Polkadot dependencies from ${{ inputs.current-version }} to ${{ inputs.target-version }}"
-          repository: KILTProtocol/ticket
+          title: "[AUTOMATIC] Update Polkadot dependencies from ${{ inputs.current-version }} to ${{ inputs.target-version }}"
+          repository: KILTProtocol/kilt-node
           token: ${{ secrets.REPO_ACCESS_TOKEN }}
           content-filepath: out.md
-      - name: Put issue into weekly board
-        uses: peter-evans/create-or-update-project-card@v2
-        with:
-          # Weekly board
-          project-number: 24
-          column-name: "📥  Inbox"
-          issue-number: ${{ steps.new-issue.outputs.issue-number }}
+          labels: kiltbot,⛓ KILT node
+          assignees: ${{ github.event.inputs.assignee }}
 
