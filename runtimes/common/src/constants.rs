@@ -437,7 +437,7 @@ pub mod public_credentials {
 	use super::*;
 
 	/// The size is checked in the runtime by a test.
-	pub const MAX_PUBLIC_CREDENTIAL_STORAGE_LENGTH: u32 = 355;
+	pub const MAX_PUBLIC_CREDENTIAL_STORAGE_LENGTH: u32 = 419;
 	// Each credential would have a different deposit, so no multiplier here
 	pub const PUBLIC_CREDENTIAL_DEPOSIT: Balance = deposit(1, MAX_PUBLIC_CREDENTIAL_STORAGE_LENGTH);
 
