@@ -54,6 +54,7 @@ jobs:
           repository: KILTProtocol/ticket
           token: ${{ secrets.REPO_ACCESS_TOKEN }}
           content-filepath: out.md
+          labels: ⛓ KILT node
       - name: Put issue into weekly board
         uses: actions/add-to-project@v0.4.0
         with:
