@@ -50,13 +50,12 @@ jobs:
           repository: KILTProtocol/ticket
           token: ${{ secrets.REPO_ACCESS_TOKEN }}
           content-filepath: /out/out.md
+          labels: |
+            ⛓ KILT node
       - name: Put issue into weekly board
-        uses: peter-evans/create-or-update-project-card@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.REPO_ACCESS_TOKEN }}
+        uses: actions/add-to-project@v0.4.0
         with:
-          # Weekly board
-          project-number: 24
-          column-name: "📥  Inbox"
-          issue-number: ${{ steps.new-issue.outputs.issue-number }}
+          project-url: https://github.com/orgs/KILTprotocol/projects/24
+          github-token: ${{ secrets.REPO_ACCESS_TOKEN }}
+          labeled: ⛓ KILT node
 
