@@ -40,10 +40,10 @@ jobs:
         run: subalfred track-updates paritytech/cumulus --from polkadot-v${{ inputs.current-version }} --to polkadot-v${{ inputs.target-version }} > cumulus-out.md
       - name: Merge outputs into single file
         run: |
-          echo "## Substrate changes" > /out/out.md
-          cat substrate-out.md >> /out/out.md
-          echo "## Cumulus changes" >> /out/out.md
-          cat cumulus-out.md >> /out/out.md
+          echo "## Substrate changes" > out.md
+          cat substrate-out.md >> out.md
+          echo "## Cumulus changes" >> out.md
+          cat cumulus-out.md >> out.md
       - name: Create issue from commands output
         id: new-issue
         uses: peter-evans/create-issue-from-file@v3
@@ -53,7 +53,7 @@ jobs:
           title: "chore: update Polkadot dependencies from ${{ inputs.current-version }} to ${{ inputs.target-version }}"
           repository: KILTProtocol/ticket
           token: ${{ secrets.REPO_ACCESS_TOKEN }}
-          content-filepath: /out/out.md
+          content-filepath: out.md
       - name: Put issue into weekly board
         uses: actions/add-to-project@v0.4.0
         with:
