@@ -51,14 +51,14 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.REPO_ACCESS_TOKEN }}
         with:
           title: "chore: update Polkadot dependencies from ${{ inputs.current-version }} to ${{ inputs.target-version }}"
-          repository: KILTProtocol/ticket
+          repository: KILTProtocol/kilt-node
           token: ${{ secrets.REPO_ACCESS_TOKEN }}
           content-filepath: out.md
-          labels: ⛓ KILT node
+          labels: kiltbot,⛓ KILT node
       - name: Put issue into weekly board
         uses: actions/add-to-project@v0.4.0
         with:
           project-url: https://github.com/orgs/KILTprotocol/projects/24
           github-token: ${{ secrets.REPO_ACCESS_TOKEN }}
-          labeled: ⛓ KILT node
+          labeled: kiltbot
 
