@@ -31,8 +31,12 @@ jobs:
       - name: Install subalfred
         run: cargo install --version 0.9.1 --git https://github.com/hack-ink/subalfred.git subalfred
       - name: Run subalfred for Substrate
+        env:
+          GITHUB_TOKEN: ${{ secrets.REPO_ACCESS_TOKEN }}
         run: subalfred track-updates paritytech/substrate --from polkadot-v${{ inputs.current-version }} --to polkadot-v${{ inputs.target-version }} > substrate-out.md
       - name: Run subalfred for Cumulus
+        env:
+          GITHUB_TOKEN: ${{ secrets.REPO_ACCESS_TOKEN }}
         run: subalfred track-updates paritytech/cumulus --from polkadot-v${{ inputs.current-version }} --to polkadot-v${{ inputs.target-version }} > cumulus-out.md
       - name: Merge outputs into single file
         run: |
