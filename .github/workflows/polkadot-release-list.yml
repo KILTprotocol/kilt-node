@@ -29,7 +29,9 @@ jobs:
       image: rust:1.67.0
     steps:
       - name: Install subalfred
-        run: cargo install --version 0.9.1 --git https://github.com/hack-ink/subalfred.git subalfred
+        env:
+          SUBALFRED_VERSION: 0.9.1
+        run: cargo install --version $SUBALFRED_VERSION --git https://github.com/hack-ink/subalfred.git subalfred
       - name: Run subalfred for Substrate
         env:
           GITHUB_TOKEN: ${{ secrets.REPO_ACCESS_TOKEN }}
