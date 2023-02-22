@@ -27,8 +27,6 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: rust:1.67.0
-    env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Install subalfred
         run: cargo install --version 0.9.1 --git https://github.com/hack-ink/subalfred.git subalfred
@@ -38,20 +36,24 @@ jobs:
         run: subalfred track-updates paritytech/cumulus --from polkadot-v${{ inputs.current-version }} --to polkadot-v${{ inputs.target-version }} > cumulus-out.md
       - name: Merge outputs into single file
         run: |
-          echo "## Substrate changes" > out.md
-          cat substrate-out.md >> out.md
-          echo "## Cumulus changes" >> out.md
-          cat cumulus-out.md >> out.md
+          echo "## Substrate changes" > /out/out.md
+          cat substrate-out.md >> /out/out.md
+          echo "## Cumulus changes" >> /out/out.md
+          cat cumulus-out.md >> /out/out.md
       - name: Create issue from commands output
         id: new-issue
         uses: peter-evans/create-issue-from-file@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           title: "chore: update Polkadot dependencies from ${{ inputs.current-version }} to ${{ inputs.target-version }}"
           repository: KILTProtocol/ticket
-          token: ${{ secrets.REPO_ACCESS_TOKEN }}
-          content-filepath: out.md
+          token: ${{ secrets.GITHUB_TOKEN }}
+          content-filepath: /out/out.md
       - name: Put issue into weekly board
         uses: peter-evans/create-or-update-project-card@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           # Weekly board
           project-number: 24
