@@ -37,23 +37,29 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.REPO_ACCESS_TOKEN }}
         run: |
-          echo "OUTPUT=$(subalfred track-updates paritytech/substrate --from polkadot-v${{ inputs.current-version }} --to polkadot-v${{ inputs.target-version }})" >> $GITHUB_OUTPUT
+          EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
+          echo "SUBALFRED_SUBSTRATE_OUTPUT<<$EOF" >> $GITHUB_ENV
+          subalfred track-updates paritytech/substrate --from polkadot-v${{ inputs.current-version }} --to polkadot-v${{ inputs.target-version }} >> $GITHUB_ENV
+          echo "$EOF" >> $GITHUB_ENV
       - name: Run subalfred for Cumulus
         id: subalfred-cumulus
         env:
           GITHUB_TOKEN: ${{ secrets.REPO_ACCESS_TOKEN }}
         run: |
-          echo "OUTPUT=$(subalfred track-updates paritytech/cumulus --from polkadot-v${{ inputs.current-version }} --to polkadot-v${{ inputs.target-version }})" >> $GITHUB_OUTPUT
+          EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
+          echo "SUBALFRED_CUMULUS_OUTPUT<<$EOF" >> $GITHUB_ENV
+          subalfred track-updates paritytech/cumulus --from polkadot-v${{ inputs.current-version }} --to polkadot-v${{ inputs.target-version }} >> $GITHUB_ENV
+          echo "$EOF" >> $GITHUB_ENV
       - name: Create issue from commands output
         uses: imjohnbo/issue-bot@v3
         with:
           title: "[AUTOMATIC] Update Polkadot dependencies from ${{ inputs.current-version }} to ${{ inputs.target-version }}"
           body: |
             ## Substrate changes
-            ${{ steps.subalfred-substrate.outputs.OUTPUT }}
+            ${{ env.SUBALFRED_SUBSTRATE_OUTPUT }}
 
             ## Cumulus changes
-            ${{ steps.subalfred-cumulus.outputs.OUTPUT }}
+            ${{ env.SUBALFRED_CUMULUS_OUTPUT }}
           labels: kiltbot, ⛓ KILT node
           column: 📥  Inbox
           assignees: ${{ inputs.assignee }}
