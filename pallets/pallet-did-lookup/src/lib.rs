@@ -95,7 +95,7 @@ pub mod pallet {
 		type OriginSuccess: CallSources<AccountIdOf<Self>, DidIdentifierOf<Self>>;
 
 		/// The identifier to which accounts can get associated.
-		type DidIdentifier: Parameter + MaxEncodedLen;
+		type DidIdentifier: Parameter + MaxEncodedLen + MaybeSerializeDeserialize;
 
 		/// The currency that is used to reserve funds for each did.
 		type Currency: ReservableCurrency<AccountIdOf<Self>>;
@@ -168,6 +168,34 @@ pub mod pallet {
 		///
 		/// NOTE: this will only be returned if the storage has inconsistencies.
 		Migration,
+	}
+
+	#[pallet::genesis_config]
+	pub struct GenesisConfig<T: Config> {
+		pub links: Vec<(LinkableAccountId, ConnectionRecordOf<T>)>,
+	}
+
+	#[cfg(feature = "std")]
+	impl<T: Config> Default for GenesisConfig<T> {
+		fn default() -> Self {
+			Self {
+				links: Default::default(),
+			}
+		}
+	}
+
+	#[pallet::genesis_build]
+	impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
+		fn build(&self) {
+			// populate link records
+			for (acc, connection) in &self.links {
+				ConnectedDids::<T>::insert(acc, connection);
+				ConnectedAccounts::<T>::insert(&connection.did, acc, ());
+			}
+
+			// set migration state to done
+			MigrationStateStore::<T>::set(MigrationState::Done);
+		}
 	}
 
 	#[pallet::call]
