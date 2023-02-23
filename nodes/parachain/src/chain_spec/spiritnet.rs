@@ -85,6 +85,22 @@ pub fn get_chain_spec_dev() -> Result<ChainSpec, String> {
 					(get_account_id_from_seed::<sr25519::Public>("Eve"), 10000000 * KILT),
 					(get_account_id_from_seed::<sr25519::Public>("Ferdie"), 10000000 * KILT),
 					(
+						get_account_id_from_seed::<sr25519::Public>("Alice//core"),
+						10000000 * KILT,
+					),
+					(
+						get_account_id_from_seed::<sr25519::Public>("Alice//workshop"),
+						10000000 * KILT,
+					),
+					(
+						get_account_id_from_seed::<sr25519::Public>("Alice//dapp"),
+						10000000 * KILT,
+					),
+					(
+						get_account_id_from_seed::<sr25519::Public>("Alice//staking"),
+						10000000 * KILT,
+					),
+					(
 						get_account_id_from_seed::<sr25519::Public>("Alice//stash"),
 						10000000 * KILT,
 					),
