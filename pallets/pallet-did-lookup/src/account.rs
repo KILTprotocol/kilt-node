@@ -31,6 +31,7 @@ use sp_core::{ecdsa, H160, H256};
 
 /// The AccountId20 type.
 /// It is a 20-byte Ethereum address.
+#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 #[derive(
 	Eq, PartialEq, Copy, Clone, Encode, Decode, TypeInfo, MaxEncodedLen, Default, PartialOrd, Ord, RuntimeDebug,
 )]

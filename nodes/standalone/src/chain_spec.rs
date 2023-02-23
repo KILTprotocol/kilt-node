@@ -186,6 +186,7 @@ fn devnet_genesis(
 		aura: Default::default(),
 		grandpa: Default::default(),
 		sudo: SudoConfig { key: Some(root_key) },
+		did_lookup: Default::default(),
 	}
 }
 

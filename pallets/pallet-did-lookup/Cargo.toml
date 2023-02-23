@@ -46,6 +46,9 @@ sp-std.workspace = true
 # Benchmarking dependencies
 frame-benchmarking = {workspace = true, optional = true}
 
+# std dependencies
+serde = {workspace = true, optional = true}
+
 [features]
 default = ["std"]
 runtime-benchmarks = [
@@ -61,10 +64,12 @@ std = [
   "frame-support/std",
   "frame-system/std",
   "hex/std",
+  "kilt-support/std",
   "log/std",
   "libsecp256k1/std",
   "scale-info/std",
   "sha3/std",
+  "serde",
   "sp-core/std",
   "sp-io/std",
   "sp-runtime/std",
