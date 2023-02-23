@@ -33,29 +33,29 @@ jobs:
           SUBALFRED_VERSION: 0.9.1
         run: cargo install --version $SUBALFRED_VERSION --git https://github.com/hack-ink/subalfred.git subalfred
       - name: Run subalfred for Substrate
+        id: subalfred-substrate
         env:
           GITHUB_TOKEN: ${{ secrets.REPO_ACCESS_TOKEN }}
-        run: subalfred track-updates paritytech/substrate --from polkadot-v${{ inputs.current-version }} --to polkadot-v${{ inputs.target-version }} > substrate-out.md
-      - name: Run subalfred for Cumulus
-        env:
-          GITHUB_TOKEN: ${{ secrets.REPO_ACCESS_TOKEN }}
-        run: subalfred track-updates paritytech/cumulus --from polkadot-v${{ inputs.current-version }} --to polkadot-v${{ inputs.target-version }} > cumulus-out.md
-      - name: Merge outputs into single file
         run: |
-          echo "## Substrate changes" > out.md
-          cat substrate-out.md >> out.md
-          echo "## Cumulus changes" >> out.md
-          cat cumulus-out.md >> out.md
-      - name: Create issue from commands output
-        id: new-issue
-        uses: peter-evans/create-issue-from-file@v3
+          echo "OUTPUT=$(subalfred track-updates paritytech/substrate --from polkadot-v${{ inputs.current-version }} --to polkadot-v${{ inputs.target-version }})" >> $GITHUB_OUTPUT
+      - name: Run subalfred for Cumulus
+        id: subalfred-cumulus
         env:
           GITHUB_TOKEN: ${{ secrets.REPO_ACCESS_TOKEN }}
+        run: |
+          echo "OUTPUT=$(subalfred track-updates paritytech/cumulus --from polkadot-v${{ inputs.current-version }} --to polkadot-v${{ inputs.target-version }})" >> $GITHUB_OUTPUT
+      - name: Create issue from commands output
+        uses: imjohnbo/issue-bot@v3
         with:
           title: "[AUTOMATIC] Update Polkadot dependencies from ${{ inputs.current-version }} to ${{ inputs.target-version }}"
-          repository: KILTProtocol/kilt-node
-          token: ${{ secrets.REPO_ACCESS_TOKEN }}
-          content-filepath: out.md
-          labels: kiltbot,⛓ KILT node
-          assignees: ${{ github.event.inputs.assignee }}
+          body: |
+            ## Substrate changes
+            ${{ steps.subalfred-substrate.outputs.OUTPUT }}
 
+            ## Cumulus changes
+            ${{ steps.subalfred-cumulus.outputs.OUTPUT }}
+          labels: kiltbot, ⛓ KILT node
+          column: 📥  Inbox
+          assignees: ${{ inputs.assignee }}
+          token: ${{ secrets.REPO_ACCESS_TOKEN }}
+          project-v2-path: orgs/KILTprotocol/projects/24
