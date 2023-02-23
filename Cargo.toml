@@ -1,5 +1,6 @@
 [profile.release]
 panic = "unwind"
+lto = "fat"
 
 [workspace]
 members = [

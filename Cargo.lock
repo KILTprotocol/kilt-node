@@ -5700,6 +5700,7 @@ dependencies = [
 name = "pallet-did-lookup"
 version = "1.10.0-dev"
 dependencies = [
+ "env_logger 0.10.0",
  "frame-benchmarking",
  "frame-support",
  "frame-system",
@@ -5716,6 +5717,7 @@ dependencies = [
  "sp-keystore",
  "sp-runtime",
  "sp-std",
+ "test-log",
 ]
 
 [[package]]
@@ -6740,6 +6742,7 @@ dependencies = [
  "sp-consensus-aura",
  "sp-core",
  "sp-inherents",
+ "sp-io",
  "sp-offchain",
  "sp-runtime",
  "sp-session",
@@ -11253,6 +11256,7 @@ dependencies = [
  "sp-consensus-aura",
  "sp-core",
  "sp-inherents",
+ "sp-io",
  "sp-offchain",
  "sp-runtime",
  "sp-session",
@@ -11615,6 +11619,17 @@ name = "termtree"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "95059e91184749cb66be6dc994f67f182b6d897cb3df74a5bf66b5e709295fd8"
+
+[[package]]
+name = "test-log"
+version = "0.2.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "38f0c854faeb68a048f0f2dc410c5ddae3bf83854ef0e4977d58306a5edef50e"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
 
 [[package]]
 name = "thiserror"
