@@ -190,7 +190,7 @@ pub mod pallet {
 			// populate link records
 			for (acc, connection) in &self.links {
 				ConnectedDids::<T>::insert(acc, connection);
-				ConnectedAccounts::<T>::insert(&connection.did, &acc, ());
+				ConnectedAccounts::<T>::insert(&connection.did, acc, ());
 			}
 
 			// set migration state to done
