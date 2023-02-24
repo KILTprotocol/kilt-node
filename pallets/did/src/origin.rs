@@ -97,7 +97,8 @@ mod tests {
 		use crate::mock::Test;
 		use frame_support::{assert_ok, traits::EnsureOrigin};
 
-		let origin: <Test as frame_system::Config>::RuntimeOrigin = EnsureDidOrigin::try_successful_origin().expect("Successful origin creation should not fail.");
+		let origin: <Test as frame_system::Config>::RuntimeOrigin =
+			EnsureDidOrigin::try_successful_origin().expect("Successful origin creation should not fail.");
 		assert_ok!(EnsureDidOrigin::try_origin(origin));
 	}
 }
