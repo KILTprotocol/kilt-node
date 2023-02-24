@@ -109,8 +109,7 @@ runtime-benchmarks = [
   "peregrine-runtime/runtime-benchmarks",
   "sc-service/runtime-benchmarks",
   "spiritnet-runtime/runtime-benchmarks",
-  "sp-runtime/runtime-benchmarks",
-  "xcm/runtime-benchmarks",
+  "sp-runtime/runtime-benchmarks"
 ]
 try-runtime = [
   "peregrine-runtime/try-runtime",
