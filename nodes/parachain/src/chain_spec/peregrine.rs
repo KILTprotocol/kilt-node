@@ -220,5 +220,6 @@ fn testnet_genesis(
 			safe_xcm_version: Some(SAFE_XCM_VERSION),
 		},
 		did_lookup: Default::default(),
+		transaction_payment: Default::default(),
 	}
 }

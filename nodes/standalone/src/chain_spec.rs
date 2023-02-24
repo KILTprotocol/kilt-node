@@ -183,6 +183,7 @@ fn devnet_genesis(
 		grandpa: Default::default(),
 		sudo: SudoConfig { key: Some(root_key) },
 		did_lookup: Default::default(),
+		transaction_payment: Default::default(),
 	}
 }
 
