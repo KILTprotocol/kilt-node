@@ -1,18 +1,46 @@
-# Testing
+# Setup
 
-Make sure you have a correct configured kubectl.
-In the [official documentation](https://paritytech.github.io/zombienet/) of Zombienet, more providers are shown.
+Make sure you have a correct configured kubectl and all env variable are set.
+To setup another provider, have a look on the [official documentation](https://paritytech.github.io/zombienet/).
 
 To run the network do:
+```
+zombienet spawn network-configuration.toml
+```
 
-zombienet spawn tests/network-configuration.toml
+There are two ways, to execute a test. If you do not have a spawned network, you can simply execute:
+
+```
+zombienet tests FILENAME.zndsl
+```
+
+This will create the network and perform the tests. After all tests are finished, the network is destroyed.
+
+If you already have a spawned network, you have to lookup the ´runningNetworkSpec´ which is typically in  /tmp/zombie-{HASH}/zombie.json located.
+
+An example call would be:
+
+
+```
+zombienet test {FILENAME}.zndsl  /tmp/zombie-{HASH}/zombie.json
+```
 
 ## Known Issues
 
-If you face this error:
+### Kubernetes provider
 
- Error:          Error: Command failed with exit code 1: kubectl --kubeconfig /home/{USER}/.kube/config --namespace zombie-087286c76d4301bac2d39f96a4a97698 cp temp-collator:/cfg/genesis-state /tmp/zombie-087286c76d4301bac2d39f96a4a97698_-1512996-vZpBh73wdvtR/2000/genesis-state
+1. If you face this error:
+
+```
+Error:          Error: Command failed with exit code 1: kubectl --kubeconfig /home/{USER}/.kube/config --namespace zombie-087286c76d4301bac2d39f96a4a97698 cp temp-collator:/cfg/genesis-state /tmp/zombie-087286c76d4301bac2d39f96a4a97698_-1512996-vZpBh73wdvtR/2000/genesis-state
 error: unable to upgrade connection: container not found ("temp-collator")
 Defaulted container "temp-collator" out of: temp-collator, transfer-files-container (init)
+```
 
-Restart your minikube instance.
+Make sure, you are in the tests folder.
+
+2. If prometheus is not working and you use minikube, delete your minikube instance and start the process again.
+
+### Docker
+
+Zombienet requires to have bash. Docker images without bash can not be tested.
