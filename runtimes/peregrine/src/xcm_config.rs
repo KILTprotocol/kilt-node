@@ -43,9 +43,9 @@ parameter_types! {
 	pub RelayChainOrigin: RuntimeOrigin = cumulus_pallet_xcm::Origin::Relay.into();
 	pub Ancestry: MultiLocation = Parachain(ParachainInfo::parachain_id().into()).into();
 	// TODO: This needs to be updated once we deploy Peregrine on Rococo
-	pub const RelayNetworkId: NetworkId = NetworkId::ByGenesis([0u8; 32]);
+	pub const RelayNetworkId: Option<NetworkId> = None;
 	pub UniversalLocation: InteriorMultiLocation =
-		X2(GlobalConsensus(RelayNetworkId::get()), Parachain(ParachainInfo::parachain_id().into()).into());
+		X2(GlobalConsensus(RelayNetworkId::get()), Parachain(ParachainInfo::parachain_id().into()));
 }
 
 /// This is the type we use to convert an (incoming) XCM origin into a local
