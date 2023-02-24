@@ -5,7 +5,7 @@ To setup another provider, have a look on the [official documentation](https://p
 
 To run the network do:
 ```
-zombienet spawn network-configuration.toml
+zombienet spawn network-config.toml
 ```
 
 There are two ways, to execute a test. If you do not have a spawned network, you can simply execute:
