@@ -2493,10 +2493,6 @@ pub mod pallet {
 				DispatchClass::Mandatory,
 			);
 		}
-
-		fn note_uncle(_author: T::AccountId, _age: T::BlockNumber) {
-			// we too are not caring.
-		}
 	}
 
 	impl<T: Config> pallet_session::SessionManager<T::AccountId> for Pallet<T> {
