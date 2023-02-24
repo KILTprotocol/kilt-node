@@ -1109,7 +1109,7 @@ mod benches {
 		[pallet_utility, Utility]
 		[pallet_vesting, Vesting]
 		[pallet_proxy, Proxy]
-		[pallet_xcm, Polkadot]
+		[pallet_xcm, PolkadotXcm]
 	);
 }
 

@@ -44,7 +44,7 @@ parameter_types! {
 	pub Ancestry: MultiLocation = Parachain(ParachainInfo::parachain_id().into()).into();
 	pub const RelayNetworkId: Option<NetworkId> = Some(NetworkId::Polkadot);
 	pub UniversalLocation: InteriorMultiLocation =
-		X2(GlobalConsensus(RelayNetworkId::get().unwrap()), Parachain(ParachainInfo::parachain_id().into()));
+		Parachain(ParachainInfo::parachain_id().into()).into();
 }
 
 /// This is the type we use to convert an (incoming) XCM origin into a local

@@ -45,7 +45,7 @@ parameter_types! {
 	// TODO: This needs to be updated once we deploy Peregrine on Rococo
 	pub const RelayNetworkId: Option<NetworkId> = None;
 	pub UniversalLocation: InteriorMultiLocation =
-		X2(GlobalConsensus(RelayNetworkId::get()), Parachain(ParachainInfo::parachain_id().into()));
+		Parachain(ParachainInfo::parachain_id().into()).into();
 }
 
 /// This is the type we use to convert an (incoming) XCM origin into a local
