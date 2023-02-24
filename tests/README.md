@@ -1,9 +1,9 @@
 # Setup
 
 Make sure you have a correct configured kubectl and all env variable are set.
-To setup another provider, have a look on the [official documentation](https://paritytech.github.io/zombienet/).
+To set up another provider, have a look at the [official documentation](https://paritytech.github.io/zombienet/).
 
-To run the network do:
+To run the network:
 ```
 zombienet spawn network-config.toml
 ```
@@ -16,7 +16,7 @@ zombienet tests FILENAME.zndsl
 
 This will create the network and perform the tests. After all tests are finished, the network is destroyed.
 
-If you already have a spawned network, you have to lookup the ´runningNetworkSpec´ which is typically in  /tmp/zombie-{HASH}/zombie.json located.
+If you already have a spawned network, you have to look up the ´runningNetworkSpec´ which is typically in  /tmp/zombie-{HASH}/zombie.json located.
 
 An example call would be:
 
@@ -37,7 +37,7 @@ error: unable to upgrade connection: container not found ("temp-collator")
 Defaulted container "temp-collator" out of: temp-collator, transfer-files-container (init)
 ```
 
-Make sure, you are in the tests folder.
+Make sure, you are in the tests folder - no joke.
 
 2. If prometheus is not working and you use minikube, delete your minikube instance and start the process again.
 
