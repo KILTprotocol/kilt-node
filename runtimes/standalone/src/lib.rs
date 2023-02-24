@@ -31,11 +31,15 @@ use codec::{Decode, Encode, MaxEncodedLen};
 use did::traits::NullDispatcher;
 use frame_support::{
 	construct_runtime, parameter_types,
-	traits::{Currency, Everything, InstanceFilter, KeyOwnerProofSystem},
+	traits::{Currency, InstanceFilter, KeyOwnerProofSystem},
 	weights::{constants::RocksDbWeight, ConstantMultiplier, IdentityFee},
 };
 pub use frame_system::Call as SystemCall;
 use frame_system::EnsureRoot;
+
+#[cfg(feature = "try-runtime")]
+use frame_try_runtime::UpgradeCheckSelect;
+
 use pallet_grandpa::{fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
 use pallet_transaction_payment::{CurrencyAdapter, FeeDetails};
 use sp_api::impl_runtime_apis;
@@ -120,7 +124,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("mashnet-node"),
 	impl_name: create_runtime_str!("mashnet-node"),
 	authoring_version: 4,
-	spec_version: 10900,
+	spec_version: 11000,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 4,
@@ -143,11 +147,26 @@ parameter_types! {
 	pub const SS58Prefix: u8 = 38;
 }
 
-// Configure FRAME pallets to include in runtime.
+pub struct MigrationFilter;
+impl frame_support::traits::Contains<RuntimeCall> for MigrationFilter {
+	fn contains(c: &RuntimeCall) -> bool {
+		match c {
+			// Enable DidLookup migration calls for ongoing migration
+			RuntimeCall::DidLookup(pallet_did_lookup::Call::migrate { .. }) => {
+				DidLookup::migration_state().is_in_progress()
+			}
+			// For all other DidLookup calls, check whether migration is ongoing
+			RuntimeCall::DidLookup(_) => DidLookup::migration_state().is_done(),
+			// Enable all non-DidLookup calls
+			_ => true,
+		}
+	}
+}
 
+// Configure FRAME pallets to include in runtime.
 impl frame_system::Config for Runtime {
 	/// The basic call filter to use in dispatchable.
-	type BaseCallFilter = Everything;
+	type BaseCallFilter = MigrationFilter;
 	/// Block & extrinsics weights: base values and limits.
 	type BlockWeights = runtime_common::BlockWeights;
 	/// The maximum length of a block (in bytes).
@@ -353,6 +372,7 @@ impl ctype::Config for Runtime {
 	type CtypeCreatorId = DidIdentifier;
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
+	type OverarchingOrigin = EnsureRoot<AccountId>;
 	type RuntimeEvent = RuntimeEvent;
 	type WeightInfo = ();
 }
@@ -780,8 +800,14 @@ pub type SignedPayload = generic::SignedPayload<RuntimeCall, SignedExtra>;
 /// Extrinsic type that has already been checked.
 pub type CheckedExtrinsic = generic::CheckedExtrinsic<AccountId, RuntimeCall, SignedExtra>;
 /// Executive: handles dispatch to the various Pallets.
-pub type Executive =
-	frame_executive::Executive<Runtime, Block, frame_system::ChainContext<Runtime>, Runtime, AllPalletsWithSystem, ()>;
+pub type Executive = frame_executive::Executive<
+	Runtime,
+	Block,
+	frame_system::ChainContext<Runtime>,
+	Runtime,
+	AllPalletsWithSystem,
+	pallet_did_lookup::migrations::EthereumMigration<Runtime>,
+>;
 
 // follows Substrate's non destructive way of eliminating  otherwise required
 // repetion: https://github.com/paritytech/substrate/pull/10592
@@ -1127,21 +1153,22 @@ impl_runtime_apis! {
 
 	#[cfg(feature = "try-runtime")]
 	impl frame_try_runtime::TryRuntime<Block> for Runtime {
-		fn on_runtime_upgrade() -> (Weight, Weight) {
+		fn on_runtime_upgrade(checks: UpgradeCheckSelect) -> (Weight, Weight) {
 			log::info!("try-runtime::on_runtime_upgrade mashnet-node standalone.");
-			let weight = Executive::try_runtime_upgrade().unwrap();
+			let weight = Executive::try_runtime_upgrade(checks).unwrap();
 			(weight, runtime_common::BlockWeights::get().max_block)
 		}
 
-		fn execute_block(block: Block, state_root_check: bool, select: frame_try_runtime::TryStateSelect) -> Weight {
+		fn execute_block(block: Block, state_root_check: bool, sig_check: bool, select: frame_try_runtime::TryStateSelect) -> Weight {
 			log::info!(
-				target: "runtime::mashnet_node_standalone", "try-runtime: executing block #{} ({:?}) / root checks: {:?} / sanity-checks: {:?}",
+				target: "runtime::standalone", "try-runtime: executing block #{} ({:?}) / root checks: {:?} / sig check: {:?} / sanity-checks: {:?}",
 				block.header.number,
 				block.header.hash(),
 				state_root_check,
+				sig_check,
 				select,
 			);
-			Executive::try_execute_block(block, state_root_check, select).expect("try_execute_block failed")
+			Executive::try_execute_block(block, state_root_check, sig_check, select).expect("try_execute_block failed")
 		}
 	}
 }

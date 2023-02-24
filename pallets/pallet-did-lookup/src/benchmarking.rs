@@ -37,8 +37,12 @@ use sp_runtime::{
 use kilt_support::{deposit::Deposit, traits::GenerateBenchmarkOrigin};
 
 use crate::{
-	account::AccountId20, linkable_account::LinkableAccountId, signature::get_wrapped_payload, AccountIdOf,
-	AssociateAccountRequest, Call, Config, ConnectedAccounts, ConnectedDids, CurrencyOf, Pallet,
+	account::AccountId20,
+	associate_account_request::AssociateAccountRequest,
+	linkable_account::LinkableAccountId,
+	migrations::{add_legacy_association, get_mixed_storage_iterator, MixedStorageKey},
+	signature::get_wrapped_payload,
+	AccountIdOf, Call, Config, ConnectedAccounts, ConnectedDids, CurrencyOf, Pallet,
 };
 
 const SEED: u32 = 0;
@@ -55,7 +59,7 @@ fn make_free_for_did<T: Config>(account: &AccountIdOf<T>) {
 benchmarks! {
 	where_clause {
 		where
-		T::AccountId: From<sr25519::Public> + From<ed25519::Public> + Into<LinkableAccountId> + Into<AccountId32>,
+		T::AccountId: From<sr25519::Public> + From<ed25519::Public> + Into<LinkableAccountId> + Into<AccountId32> + From<sp_runtime::AccountId32>,
 		T::DidIdentifier: From<T::AccountId>,
 		T::EnsureOrigin: GenerateBenchmarkOrigin<T::RuntimeOrigin, T::AccountId, T::DidIdentifier>,
 	}
@@ -289,6 +293,41 @@ benchmarks! {
 				amount: <T as Config>::Deposit::get(),
 			},
 		);
+	}
+
+	migrate {
+		let n in 1 .. 100;
+
+		for i in 0..500 {
+			let deposit_owner: T::AccountId = account("caller", i, SEED);
+			let linkable_id: LinkableAccountId = deposit_owner.clone().into();
+
+			let did: T::DidIdentifier = account("did", i, SEED);
+			make_free_for_did::<T>(&deposit_owner);
+
+			add_legacy_association::<T>(deposit_owner.clone(), did.clone(), deposit_owner.clone(), <T as Config>::Deposit::get());
+		}
+
+		let sender: T::AccountId = account("caller", 0, SEED);
+		let origin = RawOrigin::Signed(sender);
+
+	}: _(origin, n)
+	verify {
+
+		let key_distribution = get_mixed_storage_iterator::<T>(None).fold((0u32, 0u32, 0u32), |acc, key| match key {
+				MixedStorageKey::V1(_) => (acc.0 + 1, acc.1, acc.2),
+				MixedStorageKey::V2(LinkableAccountId::AccountId20(_)) => (acc.0, acc.1 + 1, acc.2),
+				MixedStorageKey::V2(LinkableAccountId::AccountId32(_)) => (acc.0, acc.1, acc.2 + 1),
+			});
+		let n_half = n / 2;
+
+		// we have a limit of `n` migrations. But in the migrate call we can actually iter over the same
+		// key twice. Once when the key is not migrated and a second time when the key was migrated.
+		// In the worst case with the limit of `n` migrations, we actually only migrate `n/2` links.
+		// The other half of the limit was just used to query already migrated accounts.
+		assert_eq!(key_distribution.1, 0, "There should be no AccountId20 links");
+		assert!(key_distribution.0 <= 500 - n_half , "There should be no more than {} old links left", 500 - n_half);
+		assert!(key_distribution.2 >= n_half , "There should be at least {} migrated accounts", n_half);
 	}
 }
 

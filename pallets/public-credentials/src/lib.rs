@@ -238,6 +238,7 @@ pub mod pallet {
 		///
 		/// Emits `CredentialStored`.
 		#[allow(clippy::boxed_local)]
+		#[pallet::call_index(0)]
 		#[pallet::weight({
 			let xt_weight = <T as Config>::WeightInfo::add(credential.claims.len().saturated_into::<u32>());
 			let ac_weight = credential.authorization.as_ref().map(|ac| ac.can_issue_weight()).unwrap_or(Weight::zero());
@@ -325,6 +326,7 @@ pub mod pallet {
 		/// The dispatch origin must be authorized to revoke the credential.
 		///
 		/// Emits `CredentialRevoked`.
+		#[pallet::call_index(1)]
 		#[pallet::weight({
 			let xt_weight = <T as Config>::WeightInfo::revoke();
 			let ac_weight = authorization.as_ref().map(|ac| ac.can_revoke_weight()).unwrap_or(Weight::zero());
@@ -363,6 +365,7 @@ pub mod pallet {
 		/// credential.
 		///
 		/// Emits `CredentialUnrevoked`.
+		#[pallet::call_index(2)]
 		#[pallet::weight({
 			let xt_weight = <T as Config>::WeightInfo::unrevoke();
 			let ac_weight = authorization.as_ref().map(|ac| ac.can_unrevoke_weight()).unwrap_or(Weight::zero());
@@ -409,6 +412,7 @@ pub mod pallet {
 		/// The dispatch origin must be authorized to remove the credential.
 		///
 		/// Emits `CredentialRemoved`.
+		#[pallet::call_index(3)]
 		#[pallet::weight({
 			let xt_weight = <T as Config>::WeightInfo::remove();
 			let ac_weight = authorization.as_ref().map(|ac| ac.can_remove_weight()).unwrap_or(Weight::zero());
@@ -467,6 +471,7 @@ pub mod pallet {
 		/// credential's attester.
 		///
 		/// Emits `CredentialRemoved`.
+		#[pallet::call_index(4)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::reclaim_deposit())]
 		pub fn reclaim_deposit(origin: OriginFor<T>, credential_id: CredentialIdOf<T>) -> DispatchResult {
 			let submitter = ensure_signed(origin)?;
@@ -489,6 +494,7 @@ pub mod pallet {
 		///
 		/// The subject of the call must be the owner of the credential.
 		/// The sender of the call will be the new deposit owner.
+		#[pallet::call_index(5)]
 		#[pallet::weight(<T as Config>::WeightInfo::change_deposit_owner())]
 		pub fn change_deposit_owner(origin: OriginFor<T>, credential_id: CredentialIdOf<T>) -> DispatchResult {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
@@ -506,6 +512,7 @@ pub mod pallet {
 		/// Updates the deposit amount to the current deposit rate.
 		///
 		/// The sender must be the deposit owner.
+		#[pallet::call_index(6)]
 		#[pallet::weight(<T as Config>::WeightInfo::update_deposit())]
 		pub fn update_deposit(origin: OriginFor<T>, credential_id: CredentialIdOf<T>) -> DispatchResult {
 			let source = ensure_signed(origin)?;

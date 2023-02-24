@@ -23,10 +23,15 @@ smallvec.workspace = true
 
 # Internal dependencies
 attestation.workspace = true
-did.workspace = true
+ctype.workspace = true
+delegation = {workspace = true, optional = true}
+did = {workspace = true, optional = true}
+pallet-did-lookup = {workspace = true, optional = true}
+pallet-inflation = {workspace = true, optional = true}
 kilt-support.workspace = true
 parachain-staking.workspace = true
 public-credentials.workspace = true
+pallet-web3-names.workspace = true
 
 # Substrate dependencies
 frame-support.workspace = true
@@ -57,6 +62,7 @@ fast-gov = []
 runtime-benchmarks = [
   "attestation/runtime-benchmarks",
   "did/runtime-benchmarks",
+  "ctype/runtime-benchmarks",
   "frame-support/runtime-benchmarks",
   "frame-system/runtime-benchmarks",
   "kilt-support/runtime-benchmarks",
@@ -72,6 +78,7 @@ runtime-benchmarks = [
 std = [
   "attestation/std",
   "codec/std",
+  "ctype/std",
   "cumulus-primitives-core/std",
   "did/std",
   "frame-support/std",
@@ -100,11 +107,15 @@ std = [
 try-runtime = [
   "attestation/try-runtime",
   "did/try-runtime",
+  "delegation",
+  "did",
   "frame-support/try-runtime",
   "frame-system/try-runtime",
   "kilt-support/try-runtime",
   "pallet-authorship/try-runtime",
   "pallet-balances/try-runtime",
+  "pallet-did-lookup",
+  "pallet-inflation",
   "pallet-membership/try-runtime",
   "pallet-transaction-payment/try-runtime",
   "parachain-staking/try-runtime",

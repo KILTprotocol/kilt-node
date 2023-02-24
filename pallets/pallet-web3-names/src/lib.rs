@@ -196,6 +196,7 @@ pub mod pallet {
 		///   check + origin check
 		/// - Writes: Names, Owner storage entries + currency deposit reserve
 		/// # </weight>
+		#[pallet::call_index(0)]
 		#[pallet::weight(<T as Config>::WeightInfo::claim(name.len().saturated_into()))]
 		pub fn claim(origin: OriginFor<T>, name: Web3NameInput<T>) -> DispatchResult {
 			let origin = T::OwnerOrigin::ensure_origin(origin)?;
@@ -227,6 +228,7 @@ pub mod pallet {
 		/// - Reads: Names storage entry + origin check
 		/// - Writes: Names, Owner storage entries + currency deposit release
 		/// # </weight>
+		#[pallet::call_index(1)]
 		#[pallet::weight(<T as Config>::WeightInfo::release_by_owner())]
 		pub fn release_by_owner(origin: OriginFor<T>) -> DispatchResult {
 			let origin = T::OwnerOrigin::ensure_origin(origin)?;
@@ -257,6 +259,7 @@ pub mod pallet {
 		/// - Reads: Owner storage entry + origin check
 		/// - Writes: Names, Owner storage entries + currency deposit release
 		/// # </weight>
+		#[pallet::call_index(2)]
 		#[pallet::weight(<T as Config>::WeightInfo::reclaim_deposit(name.len().saturated_into()))]
 		pub fn reclaim_deposit(origin: OriginFor<T>, name: Web3NameInput<T>) -> DispatchResult {
 			let caller = ensure_signed(origin)?;
@@ -290,6 +293,7 @@ pub mod pallet {
 		/// - Writes: Names, Owner, Banned storage entries + currency deposit
 		///   release
 		/// # </weight>
+		#[pallet::call_index(3)]
 		#[pallet::weight(<T as Config>::WeightInfo::ban(name.len().saturated_into()))]
 		pub fn ban(origin: OriginFor<T>, name: Web3NameInput<T>) -> DispatchResult {
 			T::BanOrigin::ensure_origin(origin)?;
@@ -322,6 +326,7 @@ pub mod pallet {
 		/// - Reads: Banned storage entry + origin check
 		/// - Writes: Banned storage entry deposit release
 		/// # </weight>
+		#[pallet::call_index(4)]
 		#[pallet::weight(<T as Config>::WeightInfo::unban(name.len().saturated_into()))]
 		pub fn unban(origin: OriginFor<T>, name: Web3NameInput<T>) -> DispatchResult {
 			T::BanOrigin::ensure_origin(origin)?;
@@ -343,6 +348,7 @@ pub mod pallet {
 		///
 		/// The subject of the call must be the owner of the web3name.
 		/// The sender of the call will be the new deposit owner.
+		#[pallet::call_index(5)]
 		#[pallet::weight(<T as Config>::WeightInfo::change_deposit_owner())]
 		pub fn change_deposit_owner(origin: OriginFor<T>) -> DispatchResult {
 			let source = <T as Config>::OwnerOrigin::ensure_origin(origin)?;
@@ -356,6 +362,7 @@ pub mod pallet {
 		/// Updates the deposit amount to the current deposit rate.
 		///
 		/// The sender must be the deposit owner.
+		#[pallet::call_index(6)]
 		#[pallet::weight(<T as Config>::WeightInfo::update_deposit())]
 		pub fn update_deposit(origin: OriginFor<T>, name_input: Web3NameInput<T>) -> DispatchResult {
 			let source = ensure_signed(origin)?;

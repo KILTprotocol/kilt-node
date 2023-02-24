@@ -29,7 +29,6 @@ serde = {workspace = true, features = ["derive"]}
 serde_json.workspace = true
 
 # Internal dependencies
-clone-runtime = {workspace = true, features = ["std"]}
 peregrine-runtime = {workspace = true, features = ["std"]}
 runtime-common = {workspace = true, features = ["std"]}
 spiritnet-runtime = {workspace = true, features = ["std"]}
@@ -37,12 +36,12 @@ spiritnet-runtime = {workspace = true, features = ["std"]}
 # Substrate dependencies
 sc-basic-authorship.workspace = true
 sc-chain-spec.workspace = true
-sc-cli = {workspace = true, features = ["wasmtime"]}
+sc-cli = {workspace = true}
 sc-client-api.workspace = true
 sc-consensus.workspace = true
-sc-executor = {workspace = true, features = ["wasmtime"]}
+sc-executor = {workspace = true}
 sc-network.workspace = true
-sc-service = {workspace = true, features = ["wasmtime"]}
+sc-service = {workspace = true}
 sc-sysinfo.workspace = true
 sc-telemetry.workspace = true
 sc-tracing.workspace = true
@@ -54,6 +53,7 @@ sp-blockchain.workspace = true
 sp-consensus.workspace = true
 sp-consensus-aura = {workspace = true, features = ["std"]}
 sp-core = {workspace = true, features = ["std"]}
+sp-io = {workspace = true, features = ["std"]}
 sp-keystore = {workspace = true, features = ["std"]}
 sp-offchain = {workspace = true, features = ["std"]}
 sp-runtime = {workspace = true, features = ["std"]}
@@ -100,7 +100,6 @@ fast-gov = [
   "runtime-common/fast-gov",
 ]
 runtime-benchmarks = [
-  "clone-runtime/runtime-benchmarks",
   "frame-benchmarking/runtime-benchmarks",
   "frame-benchmarking-cli/runtime-benchmarks",
   "polkadot-cli/runtime-benchmarks",
@@ -114,7 +113,6 @@ runtime-benchmarks = [
   "xcm/runtime-benchmarks",
 ]
 try-runtime = [
-  "clone-runtime/try-runtime",
   "peregrine-runtime/try-runtime",
   "polkadot-cli/try-runtime",
   "polkadot-service/try-runtime",

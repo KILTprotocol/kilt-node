@@ -31,6 +31,7 @@ pub mod linkable_account;
 pub mod migrations;
 
 mod connection_record;
+mod migration_state;
 mod signature;
 
 #[cfg(test)]
@@ -42,13 +43,14 @@ mod mock;
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 
-pub use crate::{default_weights::WeightInfo, pallet::*};
-
-use crate::associate_account_request::AssociateAccountRequest;
+pub use crate::{default_weights::WeightInfo, migration_state::MigrationState, pallet::*};
 
 #[frame_support::pallet]
 pub mod pallet {
-	use super::{linkable_account::LinkableAccountId, AssociateAccountRequest, WeightInfo};
+	use crate::{
+		associate_account_request::AssociateAccountRequest, default_weights::WeightInfo,
+		linkable_account::LinkableAccountId, migration_state::MigrationState, migrations::MigrationProgress,
+	};
 
 	use frame_support::{
 		ensure,
@@ -60,6 +62,7 @@ pub mod pallet {
 		deposit::Deposit,
 		traits::{CallSources, StorageDepositCollector},
 	};
+
 	use sp_runtime::traits::BlockNumberProvider;
 
 	pub use crate::connection_record::ConnectionRecord;
@@ -92,7 +95,7 @@ pub mod pallet {
 		type OriginSuccess: CallSources<AccountIdOf<Self>, DidIdentifierOf<Self>>;
 
 		/// The identifier to which accounts can get associated.
-		type DidIdentifier: Parameter + MaxEncodedLen;
+		type DidIdentifier: Parameter + MaxEncodedLen + MaybeSerializeDeserialize;
 
 		/// The currency that is used to reserve funds for each did.
 		type Currency: ReservableCurrency<AccountIdOf<Self>>;
@@ -125,6 +128,10 @@ pub mod pallet {
 	pub type ConnectedAccounts<T> =
 		StorageDoubleMap<_, Blake2_128Concat, DidIdentifierOf<T>, Blake2_128Concat, LinkableAccountId, ()>;
 
+	#[pallet::storage]
+	#[pallet::getter(fn migration_state)]
+	pub type MigrationStateStore<T> = StorageValue<_, MigrationState, ValueQuery>;
+
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
@@ -133,6 +140,12 @@ pub mod pallet {
 
 		/// An association between a DID and an account ID was removed.
 		AssociationRemoved(LinkableAccountId, DidIdentifierOf<T>),
+
+		/// There was some progress in the migration process.
+		MigrationProgress,
+
+		/// All AccountIds have been migrated to LinkableAccountId.
+		MigrationCompleted,
 	}
 
 	#[pallet::error]
@@ -150,12 +163,47 @@ pub mod pallet {
 		/// The account has insufficient funds and can't pay the fees or reserve
 		/// the deposit.
 		InsufficientFunds,
+
+		/// The ConnectedAccounts and ConnectedDids storage are out of sync.
+		///
+		/// NOTE: this will only be returned if the storage has inconsistencies.
+		Migration,
+	}
+
+	#[pallet::genesis_config]
+	pub struct GenesisConfig<T: Config> {
+		pub links: Vec<(LinkableAccountId, ConnectionRecordOf<T>)>,
+	}
+
+	#[cfg(feature = "std")]
+	impl<T: Config> Default for GenesisConfig<T> {
+		fn default() -> Self {
+			Self {
+				links: Default::default(),
+			}
+		}
+	}
+
+	#[pallet::genesis_build]
+	impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
+		fn build(&self) {
+			// populate link records
+			for (acc, connection) in &self.links {
+				ConnectedDids::<T>::insert(acc, connection);
+				ConnectedAccounts::<T>::insert(&connection.did, acc, ());
+			}
+
+			// set migration state to done
+			MigrationStateStore::<T>::set(MigrationState::Done);
+		}
 	}
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T>
 	where
 		T::AccountId: Into<LinkableAccountId>,
+		T::AccountId: From<sp_runtime::AccountId32>,
+		T::AccountId: Into<sp_runtime::AccountId32>,
 	{
 		/// Associate the given account to the DID that authorized this call.
 		///
@@ -174,6 +222,7 @@ pub mod pallet {
 		/// - Reads: ConnectedDids + ConnectedAccounts + DID Origin Check
 		/// - Writes: ConnectedDids + ConnectedAccounts
 		/// # </weight>
+		#[pallet::call_index(0)]
 		#[pallet::weight(
 			<T as Config>::WeightInfo::associate_account_multisig_sr25519().max(
 			<T as Config>::WeightInfo::associate_account_multisig_ed25519().max(
@@ -223,6 +272,7 @@ pub mod pallet {
 		/// - Reads: ConnectedDids + ConnectedAccounts + DID Origin Check
 		/// - Writes: ConnectedDids + ConnectedAccounts
 		/// # </weight>
+		#[pallet::call_index(1)]
 		#[pallet::weight(<T as Config>::WeightInfo::associate_sender())]
 		pub fn associate_sender(origin: OriginFor<T>) -> DispatchResult {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
@@ -249,6 +299,7 @@ pub mod pallet {
 		/// - Reads: ConnectedDids + ConnectedAccounts + DID Origin Check
 		/// - Writes: ConnectedDids + ConnectedAccounts
 		/// # </weight>
+		#[pallet::call_index(2)]
 		#[pallet::weight(<T as Config>::WeightInfo::remove_sender_association())]
 		pub fn remove_sender_association(origin: OriginFor<T>) -> DispatchResult {
 			let who = ensure_signed(origin)?;
@@ -267,6 +318,7 @@ pub mod pallet {
 		/// - Reads: ConnectedDids + ConnectedAccounts + DID Origin Check
 		/// - Writes: ConnectedDids + ConnectedAccounts
 		/// # </weight>
+		#[pallet::call_index(3)]
 		#[pallet::weight(<T as Config>::WeightInfo::remove_account_association())]
 		pub fn remove_account_association(origin: OriginFor<T>, account: LinkableAccountId) -> DispatchResult {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
@@ -288,6 +340,7 @@ pub mod pallet {
 		/// - Reads: ConnectedDids
 		/// - Writes: ConnectedDids
 		/// # </weight>
+		#[pallet::call_index(4)]
 		#[pallet::weight(<T as Config>::WeightInfo::remove_sender_association())]
 		pub fn reclaim_deposit(origin: OriginFor<T>, account: LinkableAccountId) -> DispatchResult {
 			let who = ensure_signed(origin)?;
@@ -304,6 +357,7 @@ pub mod pallet {
 		///
 		/// The subject of the call must be linked to the account.
 		/// The sender of the call will be the new deposit owner.
+		#[pallet::call_index(5)]
 		#[pallet::weight(<T as Config>::WeightInfo::change_deposit_owner())]
 		pub fn change_deposit_owner(origin: OriginFor<T>, account: LinkableAccountId) -> DispatchResult {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
@@ -318,6 +372,7 @@ pub mod pallet {
 		/// Updates the deposit amount to the current deposit rate.
 		///
 		/// The sender must be the deposit owner.
+		#[pallet::call_index(6)]
 		#[pallet::weight(<T as Config>::WeightInfo::update_deposit())]
 		pub fn update_deposit(origin: OriginFor<T>, account: LinkableAccountId) -> DispatchResult {
 			let source = ensure_signed(origin)?;
@@ -326,6 +381,43 @@ pub mod pallet {
 			ensure!(record.deposit.owner == source, Error::<T>::NotAuthorized);
 
 			LinkableAccountDepositCollector::<T>::update_deposit(&account)
+		}
+
+		/// Executes the key type migration of the `ConnectedDids` and
+		/// `ConnectedAccounts` storages by converting the given `AccountId`
+		/// into `LinkableAccountId(AccountId)`. Once all keys have been
+		/// migrated, the migration is done and this call will be filtered.
+		///
+		/// Can be called by any origin.
+		#[pallet::weight(<T as Config>::WeightInfo::migrate(*limit))]
+		#[pallet::call_index(254)]
+		pub fn migrate(origin: OriginFor<T>, limit: u32) -> DispatchResult {
+			ensure_signed(origin)?;
+
+			let migration_state = MigrationStateStore::<T>::get();
+
+			let new_last_key = match migration_state {
+				MigrationState::PreUpgrade => crate::migrations::do_migrate::<T>(limit, None)?,
+				MigrationState::Upgrading(last_key) => crate::migrations::do_migrate::<T>(limit, Some(last_key))?,
+
+				// This branch should never be executed since we filter this call after the migration is in the `Done`
+				// state
+				MigrationState::Done => MigrationProgress::Finished,
+			};
+
+			match new_last_key {
+				MigrationProgress::ProcessedUntil(key) => {
+					MigrationStateStore::<T>::set(MigrationState::Upgrading(key));
+					Self::deposit_event(Event::<T>::MigrationProgress);
+				}
+				MigrationProgress::Finished => {
+					MigrationStateStore::<T>::set(MigrationState::Done);
+					Self::deposit_event(Event::<T>::MigrationCompleted);
+				}
+				MigrationProgress::Noop => {}
+			}
+
+			Ok(())
 		}
 	}
 

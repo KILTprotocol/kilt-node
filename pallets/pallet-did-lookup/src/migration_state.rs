@@ -1,5 +1,5 @@
 // KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2023 BOTLabs GmbH
+// Copyright (C) 2019-2022 BOTLabs GmbH
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -16,8 +16,31 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-pub mod frame_system;
-pub mod pallet_balances;
-pub mod pallet_session;
-pub mod pallet_timestamp;
-pub mod pallet_utility;
+use codec::{Decode, Encode, MaxEncodedLen};
+use scale_info::TypeInfo;
+
+use crate::migrations::MixedStorageKey;
+
+#[derive(Clone, Debug, Eq, PartialEq, Encode, Decode, MaxEncodedLen, TypeInfo, Default)]
+pub enum MigrationState {
+	/// The migration was successful.
+	Done,
+
+	/// The storage has still the old layout, the migration wasn't started yet
+	#[default]
+	PreUpgrade,
+
+	/// The upgrade is in progress and did migrate all storage up to the
+	/// `MixedStorageKey`.
+	Upgrading(MixedStorageKey),
+}
+
+impl MigrationState {
+	pub fn is_done(&self) -> bool {
+		matches!(self, MigrationState::Done)
+	}
+
+	pub fn is_in_progress(&self) -> bool {
+		!matches!(self, MigrationState::Done)
+	}
+}

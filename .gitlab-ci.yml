@@ -64,11 +64,11 @@ build:
     - "if [[ ! -z ${CI_COMMIT_BRANCH} ]]; then ./.maintain/push-image.sh build ${CI_COMMIT_SHORT_SHA}; fi"
     - "if [[ ! -z ${CI_COMMIT_BRANCH} ]]; then ./.maintain/push-image.sh build latest-${CI_COMMIT_BRANCH}; fi"
     - "if [[ ! -z ${CI_COMMIT_TAG} ]]; then ./.maintain/push-image.sh build ${CI_COMMIT_TAG}; fi"
-    - "if [[ ! -z ${CI_COMMIT_TAG} && ! -z ${CI_COMMIT_TAG##*-rc*} ]]; then ./.maintain/push-image.sh build latest; fi"
+    - "if [[ ! -z ${CI_COMMIT_TAG} && ! -z ${CI_COMMIT_TAG##*-rc*} && ! -z ${CI_COMMIT_TAG##*dev-*} ]]; then ./.maintain/push-image.sh build latest; fi"
 
 build-wasm-peregrine:
   image:
-    name: paritytech/srtool:1.64.0-0.9.23
+    name: paritytech/srtool:1.66.1-0.9.25
     entrypoint: [""]
   stage: build
   only:
@@ -78,6 +78,8 @@ build-wasm-peregrine:
   script:
     - export PACKAGE=peregrine-runtime
     - export RUNTIME_DIR=runtimes/peregrine
+    - export PARACHAIN_PALLET_ID=0x50
+    - export AUTHORIZE_UPGRADE_PREFIX=0x02
     - cp -r * /build
     - /srtool/build build
     - mkdir ./out
@@ -89,7 +91,7 @@ build-wasm-peregrine:
 
 build-wasm-spiritnet:
   image:
-    name: paritytech/srtool:1.64.0-0.9.23
+    name: paritytech/srtool:1.66.1-0.9.25
     entrypoint: [""]
   stage: build
   only:
@@ -99,6 +101,8 @@ build-wasm-spiritnet:
   script:
     - export PACKAGE=spiritnet-runtime
     - export RUNTIME_DIR=runtimes/spiritnet
+    - export PARACHAIN_PALLET_ID=0x50
+    - export AUTHORIZE_UPGRADE_PREFIX=0x02
     - cp -r * /build
     - /srtool/build build
     - mkdir ./out
