@@ -801,15 +801,9 @@ pub type Executive = frame_executive::Executive<
 	pallet_did_lookup::migrations::EthereumMigration<Runtime>,
 >;
 
-// follows Substrate's non destructive way of eliminating  otherwise required
-// repetion: https://github.com/paritytech/substrate/pull/10592
-#[cfg(feature = "runtime-benchmarks")]
-#[macro_use]
-extern crate frame_benchmarking;
-
 #[cfg(feature = "runtime-benchmarks")]
 mod benches {
-	define_benchmarks!(
+	frame_benchmarking::define_benchmarks!(
 		// KILT
 		[attestation, Attestation]
 		[ctype, Ctype]
