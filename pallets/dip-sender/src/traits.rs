@@ -16,33 +16,80 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use core::borrow::Borrow;
-
+use codec::{Decode, Encode};
 use sp_runtime::DispatchError;
 use sp_std::fmt::Debug;
-use xcm::v3::MultiAsset;
+use xcm::v3::{MultiAsset, MultiLocation};
 
 pub trait IdentityProofGenerator<Identifier, Identity, Output> {
 	fn generate_proof(identifier: &Identifier, identity: &Identity) -> Result<Output, DispatchError>;
 }
 
-#[derive(Clone, Eq, PartialEq, Debug)]
+pub struct DefaultIdentityProofGenerator;
+
+impl<Identifier, Identity, Output> IdentityProofGenerator<Identifier, Identity, Output>
+	for DefaultIdentityProofGenerator
+where
+	Output: Default,
+{
+	fn generate_proof(_identifier: &Identifier, _identity: &Identity) -> Result<Output, DispatchError> {
+		Ok(Output::default())
+	}
+}
+
+#[derive(Clone, Eq, PartialEq, Debug, Encode, Decode)]
 pub enum IdentityProofAction<Identifier, Proof> {
 	Updated(Identifier, Proof),
 	Deleted(Identifier),
 }
 
-pub trait IdentityProofDispatcher<Identifier, AccountId, IdentityRoot, Location> {
+pub trait IdentityProofDispatcher<Identifier, AccountId, IdentityRoot> {
+	type Error;
+
 	fn dispatch(
 		action: IdentityProofAction<Identifier, IdentityRoot>,
 		dispatcher: AccountId,
 		asset: MultiAsset,
-		location: Location,
-	) -> Result<(), DispatchError>;
+		destination: MultiLocation,
+	) -> Result<(), Self::Error>;
+}
+
+pub struct NullIdentityProofDispatcher;
+
+impl<Identifier, AccountId, IdentityRoot> IdentityProofDispatcher<Identifier, AccountId, IdentityRoot>
+	for NullIdentityProofDispatcher
+{
+	type Error = &'static str;
+
+	fn dispatch(
+		_action: IdentityProofAction<Identifier, IdentityRoot>,
+		_dispatcher: AccountId,
+		_asset: MultiAsset,
+		_destination: MultiLocation,
+	) -> Result<(), Self::Error> {
+		Ok(())
+	}
 }
 
 pub trait IdentityProvider<Identifier, Identity> {
-	fn retrieve<I>(identifier: &Identifier) -> Result<Option<I>, DispatchError>
-	where
-		I: Borrow<Identity>;
+	fn retrieve(identifier: &Identifier) -> Result<Option<Identity>, DispatchError>;
+}
+
+pub struct DefaultIdentityProvider;
+
+impl<Identifier, Identity> IdentityProvider<Identifier, Identity> for DefaultIdentityProvider
+where
+	Identity: Default,
+{
+	fn retrieve(_identifier: &Identifier) -> Result<Option<Identity>, DispatchError> {
+		Ok(Some(Identity::default()))
+	}
+}
+
+pub struct NoneIdentityProvider;
+
+impl<Identifier, Identity> IdentityProvider<Identifier, Identity> for NoneIdentityProvider {
+	fn retrieve(_identifier: &Identifier) -> Result<Option<Identity>, DispatchError> {
+		Ok(None)
+	}
 }

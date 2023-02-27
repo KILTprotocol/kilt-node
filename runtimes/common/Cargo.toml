@@ -25,7 +25,8 @@ smallvec.workspace = true
 attestation.workspace = true
 ctype.workspace = true
 delegation = {workspace = true, optional = true}
-did = {workspace = true, optional = true}
+did.workspace = true
+dip-sender = { workspace = true, optional = true }
 pallet-did-lookup = {workspace = true, optional = true}
 pallet-inflation = {workspace = true, optional = true}
 kilt-support.workspace = true
@@ -45,12 +46,14 @@ sp-core.workspace = true
 sp-io.workspace = true
 sp-runtime.workspace = true
 sp-std.workspace = true
+sp-trie.workspace = true
 
 # Cumulus dependencies
 cumulus-primitives-core.workspace = true
 
 # Polkadot dependencies
 polkadot-parachain.workspace = true
+pallet-xcm.workspace = true
 xcm.workspace = true
 xcm-builder.workspace = true
 xcm-executor.workspace = true
@@ -78,6 +81,8 @@ std = [
   "codec/std",
   "ctype/std",
   "cumulus-primitives-core/std",
+  "did/std",
+  "dip-sender/std",
   "frame-support/std",
   "frame-system/std",
   "kilt-asset-dids/std",
@@ -87,6 +92,7 @@ std = [
   "pallet-balances/std",
   "pallet-membership/std",
   "pallet-transaction-payment/std",
+  "pallet-xcm/std",
   "parachain-staking/std",
   "polkadot-parachain/std",
   "public-credentials/std",
@@ -96,6 +102,7 @@ std = [
   "sp-io/std",
   "sp-runtime/std",
   "sp-std/std",
+  "sp-trie/std",
   "xcm-builder/std",
   "xcm-executor/std",
   "xcm/std",
@@ -103,7 +110,6 @@ std = [
 try-runtime = [
   "attestation/try-runtime",
   "delegation",
-  "did",
   "frame-support/try-runtime",
   "frame-system/try-runtime",
   "kilt-support/try-runtime",

@@ -22,6 +22,9 @@
 
 pub mod traits;
 
+#[cfg(tests)]
+mod tests;
+
 pub use crate::pallet::*;
 
 #[frame_support::pallet]
@@ -35,7 +38,7 @@ pub mod pallet {
 	use sp_std::fmt::Debug;
 	use xcm::v3::{MultiAsset, MultiLocation};
 
-	pub type IdentityProofActionOf<T: Config> = IdentityProofAction<T::Identifier, T::ProofOutput>;
+	pub type IdentityProofActionOf<T> = IdentityProofAction<<T as Config>::Identifier, <T as Config>::ProofOutput>;
 
 	/// The current storage version.
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(0); // No need to write a migration to store it.
@@ -46,12 +49,7 @@ pub mod pallet {
 		type Identity;
 		type ProofOutput: Clone + Eq + Debug;
 		type IdentityProofGenerator: IdentityProofGenerator<Self::Identifier, Self::Identity, Self::ProofOutput>;
-		type IdentityProofDispatcher: IdentityProofDispatcher<
-			Self::Identifier,
-			Self::AccountId,
-			Self::ProofOutput,
-			MultiLocation,
-		>;
+		type IdentityProofDispatcher: IdentityProofDispatcher<Self::Identifier, Self::AccountId, Self::ProofOutput>;
 		type IdentityProvider: IdentityProvider<Self::Identifier, Self::Identity>;
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 	}
@@ -70,16 +68,17 @@ pub mod pallet {
 	#[pallet::error]
 	pub enum Error<T> {
 		IdentityNotFound,
+		Dispatch,
 	}
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
 		#[pallet::call_index(0)]
 		#[pallet::weight(0)]
-		pub fn propagate_identity_info(
+		pub fn commit_identity(
 			origin: OriginFor<T>,
 			identifier: T::Identifier,
-			assets: MultiAsset,
+			asset: Box<MultiAsset>,
 			destination: Box<MultiLocation>,
 		) -> DispatchResult {
 			let dispatcher = ensure_signed(origin)?;
@@ -93,6 +92,9 @@ pub mod pallet {
 				_ => Err(Error::<T>::IdentityNotFound),
 			}?;
 
+			//TODO: Proper error handling
+			T::IdentityProofDispatcher::dispatch(action.clone(), dispatcher, *asset, *destination)
+				.map_err(|_| Error::<T>::Dispatch)?;
 			Self::deposit_event(Event::IdentityInfoDispatched(action, destination));
 
 			Ok(())
