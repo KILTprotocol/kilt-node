@@ -1,0 +1,42 @@
+[package]
+authors.workspace = true
+documentation.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license-file.workspace = true
+readme.workspace = true
+repository.workspace = true
+version.workspace = true
+name = "dip-sender"
+description = "Enables sending merkelized DID information to a specified destination."
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[build-dependencies]
+substrate-wasm-builder.workspace = true
+
+[dependencies]
+
+# Substrate dependencies
+codec = {package = "parity-scale-codec", workspace = true, features = ["derive"]}
+frame-support.workspace = true
+frame-system.workspace = true
+scale-info = {workspace = true, features = ["derive"]}
+sp-runtime.workspace = true
+sp-std.workspace = true
+
+# Polkadot dependencies
+xcm.workspace = true
+
+[features]
+default = ["std"]
+std = [
+  "codec/std",
+  "frame-support/std",
+  "frame-system/std",
+  "scale-info/std",
+  "sp-runtime/std",
+  "sp-std/std",
+  "xcm/std",
+]
