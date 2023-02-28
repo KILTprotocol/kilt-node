@@ -16,7 +16,13 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::{construct_runtime, parameter_types, traits::Everything, weights::constants::RocksDbWeight};
+use cumulus_primitives_core::ParaId;
+use cumulus_primitives_utility::ParentAsUmp;
+use frame_support::{
+	construct_runtime, parameter_types,
+	traits::Everything,
+	weights::{constants::RocksDbWeight, Weight},
+};
 use sp_core::{ConstU16, ConstU32, ConstU64};
 use sp_runtime::{
 	testing::Header,
@@ -24,6 +30,7 @@ use sp_runtime::{
 	MultiSignature,
 };
 use xcm::v2::{MultiLocation, Parent};
+use xcm_builder::{AllowUnpaidExecutionFrom, SignedAccountId32AsNative, SignedToAccountId32};
 
 type Block<Runtime> = frame_system::mocking::MockBlock<Runtime>;
 type Hash = sp_core::H256;
@@ -36,7 +43,16 @@ type Signature = MultiSignature;
 type AccountPublic = <Signature as Verify>::Signer;
 type AccountId = <AccountPublic as IdentifyAccount>::AccountId;
 
+type Barrier = AllowUnpaidExecutionFrom<Everything>;
+type LocalOriginToLocation<RuntimeOrigin, RelayNetwork> = SignedToAccountId32<RuntimeOrigin, AccountId, RelayNetwork>;
+
 pub mod sender {
+	use frame_support::traits::Nothing;
+use pallet_xcm::TestWeightInfo;
+	use xcm::v2::{InteriorMultiLocation, Junction::Parachain, NetworkId};
+	use xcm_builder::{EnsureXcmOrigin, FixedWeightBounds};
+	use xcm_executor::{XcmExecutor, };
+
 	use super::*;
 
 	construct_runtime!(
@@ -94,13 +110,16 @@ pub mod sender {
 		type WeightInfo = ();
 	}
 
+	parameter_types! {
+		pub const PolkadotLocation: MultiLocation = MultiLocation::parent();
+		pub const RelayNetworkId: NetworkId = NetworkId::Polkadot;
+		pub const UniversalLocation: InteriorMultiLocation = InteriorMultiLocation::X1(Parachain(2000));
+		pub const UnitWeightCost: Weight = Weight::from_parts(1, 1);
+	}
+
 	#[cfg(feature = "runtime-benchmarks")]
 	parameter_types! {
 		pub ReachableDest: Option<MultiLocation> = Some(Parent.into());
-	}
-
-	parameter_types! {
-		UniversalLocation<ParachainId>: InteriorMultiLocation = Parachain()
 	}
 
 	impl pallet_xcm::Config for ParachainRuntime {
@@ -109,16 +128,48 @@ pub mod sender {
 		type AdvertisedXcmVersion = pallet_xcm::CurrentXcmVersion;
 		type Currency = Balances;
 		type CurrencyMatcher = ();
-		type ExecuteXcmOrigin = ();
+		type ExecuteXcmOrigin = EnsureXcmOrigin<RuntimeOrigin, LocalOriginToLocation<RuntimeOrigin, RelayNetworkId>>;
 		type MaxLockers = ConstU32<8>;
 		type RuntimeCall = RuntimeCall;
 		type RuntimeEvent = RuntimeEvent;
 		type RuntimeOrigin = RuntimeOrigin;
-		type SendXcmOrigin = ();
+		type SendXcmOrigin = EnsureXcmOrigin<RuntimeOrigin, LocalOriginToLocation<RuntimeOrigin, RelayNetworkId>>;
 		type SovereignAccountOf = ();
 		type TrustedLockers = ();
+		type UniversalLocation = UniversalLocation;
+		type Weigher = FixedWeightBounds<UnitWeightCost, RuntimeCall, ConstU32<100>>;
+		type WeightInfo = TestWeightInfo;
+		type XcmExecuteFilter = Everything;
+		type XcmExecutor = XcmExecutor<XcmConfig>;
 
 		#[cfg(feature = "runtime-benchmarks")]
 		type ReachableDest = ReachableDest;
+	}
+
+	struct XcmConfig;
+	impl xcm_executor::Config for XcmConfig {
+		type AssetClaims = ();
+		type AssetExchanger = ();
+		type AssetLocker = ();
+		type AssetTransactor = ();
+		type AssetTrap = ();
+		type Barrier = Barrier;
+		type CallDispatcher = RuntimeCall;
+		type FeeManager = ();
+		type IsReserve = ();
+		type IsTeleporter = ();
+		type MaxAssetsIntoHolding = ConstU32<10>;
+		type MessageExporter = ();
+		type OriginConverter = SignedAccountId32AsNative<RelayNetworkId, RuntimeOrigin>;
+		type PalletInstancesInfo = ();
+		type ResponseHandler = ();
+		type RuntimeCall = RuntimeCall;
+		type SafeCallFilter = Everything;
+		type SubscriptionService = ();
+		type Trader = ();
+		type UniversalAliases = Nothing;
+		type UniversalLocation = UniversalLocation;
+		type Weigher = FixedWeightBounds<UnitWeightCost, RuntimeCall, ConstU32<100>>;;
+		type XcmSender = ParachainXcmRou;
 	}
 }

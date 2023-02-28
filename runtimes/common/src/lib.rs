@@ -54,7 +54,7 @@ pub mod xcm_config;
 pub mod benchmarks;
 
 #[cfg(test)]
-mod tests;
+mod xcm_tests;
 
 /// Opaque types. These are used by the CLI to instantiate machinery that don't
 /// need to know the specifics of the runtime. They can then be made to be
