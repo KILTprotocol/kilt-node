@@ -217,7 +217,10 @@ impl<I: AsRef<[u8; 32]>> DidVerifiableIdentifier for I {
 				let hashed_recovered_pk = sp_io::hashing::blake2_256(&recovered_pk);
 				// The hashed recovered public key must be equal to the AccountId32 value, which
 				// is the hashed key.
-				ensure!(&hashed_recovered_pk == raw_public_key, errors::SignatureError::InvalidData);
+				ensure!(
+					&hashed_recovered_pk == raw_public_key,
+					errors::SignatureError::InvalidData
+				);
 				// Safe to reconstruct the public key using the recovered value from
 				// secp256k1_ecdsa_recover_compressed
 				Ok(DidVerificationKey::from(ecdsa::Public(recovered_pk)))
@@ -456,12 +459,12 @@ impl<T: Config> DidDetails<T> {
 	/// not used in any other part of the DID. The new key is added to the
 	/// set of public keys.
 	pub fn remove_attestation_key(&mut self) -> Result<(), errors::StorageError> {
-		let old_key_id = self
-			.attestation_key
-			.take()
-			.ok_or(errors::StorageError::NotFound(errors::NotFoundKind::Key(
-				errors::KeyType::AssertionMethod,
-			)))?;
+		let old_key_id =
+			self.attestation_key
+				.take()
+				.ok_or(errors::StorageError::NotFound(errors::NotFoundKind::Key(
+					errors::KeyType::AssertionMethod,
+				)))?;
 		self.remove_key_if_unused(old_key_id);
 		Ok(())
 	}
@@ -499,12 +502,12 @@ impl<T: Config> DidDetails<T> {
 	/// not used in any other part of the DID. The new key is added to the
 	/// set of public keys.
 	pub fn remove_delegation_key(&mut self) -> Result<(), errors::StorageError> {
-		let old_key_id = self
-			.delegation_key
-			.take()
-			.ok_or(errors::StorageError::NotFound(errors::NotFoundKind::Key(
-				errors::KeyType::AssertionMethod,
-			)))?;
+		let old_key_id =
+			self.delegation_key
+				.take()
+				.ok_or(errors::StorageError::NotFound(errors::NotFoundKind::Key(
+					errors::KeyType::AssertionMethod,
+				)))?;
 		self.remove_key_if_unused(old_key_id);
 		Ok(())
 	}
