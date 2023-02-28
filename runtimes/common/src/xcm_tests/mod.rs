@@ -20,12 +20,16 @@ pub mod parachain;
 pub mod relaychain;
 
 use frame_support::sp_tracing;
+use sp_runtime::AccountId32;
 use xcm::prelude::*;
 use xcm_executor::traits::Convert;
 use xcm_simulator::{decl_test_network, decl_test_parachain, decl_test_relay_chain};
 
-pub const ALICE: sp_runtime::AccountId32 = sp_runtime::AccountId32::new([0u8; 32]);
-pub const INITIAL_BALANCE: u128 = 1_000_000_000;
+pub(crate) type Balance = u128;
+pub(crate) type AccountId = AccountId32;
+
+pub const ALICE: AccountId32 = AccountId32::new([0u8; 32]);
+pub const INITIAL_BALANCE: Balance = 1_000_000_000;
 
 decl_test_parachain! {
 	pub struct ParaA {

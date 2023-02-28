@@ -16,6 +16,10 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+mod msg_queue;
+
+use super::*;
+
 use codec::{Decode, Encode};
 use frame_support::{
 	construct_runtime, parameter_types,
@@ -26,7 +30,6 @@ use sp_core::H256;
 use sp_runtime::{
 	testing::Header,
 	traits::{Hash, IdentityLookup},
-	AccountId32,
 };
 use sp_std::prelude::*;
 
@@ -41,14 +44,7 @@ use xcm_builder::{
 };
 use xcm_executor::{traits::Convert, Config, XcmExecutor};
 
-pub type SovereignAccountOf = (
-	SiblingParachainConvertsVia<ParaId, AccountId>,
-	AccountId32Aliases<RelayNetwork, AccountId>,
-	ParentIsPreset<AccountId>,
-);
-
-pub type AccountId = AccountId32;
-pub type Balance = u128;
+pub type SovereignAccountOf = (AccountId32Aliases<RelayNetwork, AccountId>,);
 
 parameter_types! {
 	pub const BlockHashCount: u64 = 250;
