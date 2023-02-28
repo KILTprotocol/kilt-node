@@ -1,7 +1,7 @@
 [relaychain]
 default_args = ["-lparachain=debug"]
 default_command = "polkadot"
-default_image = "docker.io/paritypr/polkadot-debug:master"
+default_image = "{{RELAY_NODE_IMAGE}}"
 
 chain = "rococo-local"
 
@@ -14,11 +14,9 @@ name = "bob"
 validator = true
 
 [[parachains]]
-
 id = 2000
 
 [[parachains.collators]]
-command = "node-executable"
 command_with_args = """node-executable \
         --chain=dev \
         --dave \
@@ -37,7 +35,6 @@ image = "{{KILT_NODE_IMAGE}}"
 name = "kilt-node-dave"
 
 [[parachains.collators]]
-command = "node-executable"
 command_with_args = """node-executable \
         --chain=dev \
         --alice \
@@ -56,7 +53,6 @@ image = "{{KILT_NODE_IMAGE}}"
 name = "kilt-node-alice"
 
 [[parachains.collators]]
-command = "node-executable"
 command_with_args = """node-executable \
         --chain=dev \
         --bob \
@@ -75,7 +71,6 @@ image = "{{KILT_NODE_IMAGE}}"
 name = "kilt-node-bob"
 
 [[parachains.collators]]
-command = "node-executable"
 command_with_args = """node-executable \
         --chain=dev \
         --charlie \

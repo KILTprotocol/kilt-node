@@ -1,4 +1,4 @@
-d# Setup
+# Setup
 
 Make sure you have a correct configured kubectl and all env variable are set.
 To set up another provider, have a look at the [official documentation](https://paritytech.github.io/zombienet/).
@@ -37,7 +37,7 @@ error: unable to upgrade connection: container not found ("temp-collator")
 Defaulted container "temp-collator" out of: temp-collator, transfer-files-container (init)
 ```
 
-Make sure, you have export all env variable.
+Make sure, you have export all env variable. The env variables defines the used docker images. An example is provided in tests/.env-example.
 
 2. If prometheus is not working and you use minikube, delete your minikube instance and start the process again.
 
