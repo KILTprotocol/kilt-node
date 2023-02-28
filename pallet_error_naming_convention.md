@@ -6,6 +6,6 @@
 
 3) Avoid using the pallet name in the variant names. For example instead of "Web3NameNotFound" you should use "NotFound". 
 
-4) Try to take words from the vocabulary already defined in the code base. For example instead of introducing a new variant "NotExisting" you should use, once again, "NotFound"
+4) Try to take words from the vocabulary already defined in the code base. For example instead of introducing a new variant "NotExisting" you should use, once again, "NotFound". Common vocabulary includes: NotFound, NotAuthorized, AlreadyExists, MaxXYZExceeded.
 
 5) Use descriptive and concise names for the variants. Avoid using abbreviations or acronyms unless they are widely recognized and understood by other developers who may be working on the codebase.
