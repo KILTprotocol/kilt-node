@@ -33,7 +33,6 @@ jobs:
           SUBALFRED_VERSION: 0.9.1
         run: cargo install --version $SUBALFRED_VERSION --git https://github.com/hack-ink/subalfred.git subalfred
       - name: Run subalfred for Substrate
-        id: subalfred-substrate
         env:
           GITHUB_TOKEN: ${{ secrets.REPO_ACCESS_TOKEN }}
         run: |
@@ -41,8 +40,15 @@ jobs:
           echo "SUBALFRED_SUBSTRATE_OUTPUT<<$EOF" >> $GITHUB_ENV
           subalfred track-updates paritytech/substrate --from polkadot-v${{ inputs.current-version }} --to polkadot-v${{ inputs.target-version }} >> $GITHUB_ENV
           echo "$EOF" >> $GITHUB_ENV
+      - name: Run subalfred for Polkadot
+        env:
+          GITHUB_TOKEN: ${{ secrets.REPO_ACCESS_TOKEN }}
+        run: |
+          EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
+          echo "SUBALFRED_POLKADOT_OUTPUT<<$EOF" >> $GITHUB_ENV
+          subalfred track-updates paritytech/polkadot --from release-v${{ inputs.current-version }} --to release-v${{ inputs.target-version }} >> $GITHUB_ENV
+          echo "$EOF" >> $GITHUB_ENV
       - name: Run subalfred for Cumulus
-        id: subalfred-cumulus
         env:
           GITHUB_TOKEN: ${{ secrets.REPO_ACCESS_TOKEN }}
         run: |
@@ -57,6 +63,9 @@ jobs:
           body: |
             ## Substrate changes
             ${{ env.SUBALFRED_SUBSTRATE_OUTPUT }}
+
+            ## Polkadot changes
+            ${{ env.SUBALFRED_POLKADOT_OUTPUT }}
 
             ## Cumulus changes
             ${{ env.SUBALFRED_CUMULUS_OUTPUT }}
