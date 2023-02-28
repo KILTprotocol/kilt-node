@@ -43,4 +43,4 @@ Make sure, you are in the tests folder - no joke.
 
 ### Docker
 
-Zombienet requires to have bash. Docker images without bash can not be tested.
+Zombienet requires to have bash. Docker images without bash can not be tested or spawned.
