@@ -214,19 +214,19 @@ pub mod pallet {
 	pub enum Error<T> {
 		/// A credential with the same root hash has already issued to the
 		/// specified subject.
-		CredentialAlreadyIssued,
+		AlreadyAttested,
 		/// No credential with the specified root hash has been issued to the
 		/// specified subject.
-		CredentialNotFound,
+		NotFound,
 		/// Not enough tokens to pay for the fees or the deposit.
 		UnableToPayFees,
 		/// The credential input is invalid.
 		InvalidInput,
 		/// The caller is not authorized to performed the operation.
-		Unauthorized,
+		NotAuthorized,
 		/// Catch-all for any other errors that should not happen, yet it
 		/// happened.
-		InternalError,
+		Internal,
 	}
 
 	#[pallet::call]
@@ -261,7 +261,7 @@ pub mod pallet {
 
 			ensure!(
 				ctype::Ctypes::<T>::contains_key(ctype_hash),
-				ctype::Error::<T>::CTypeNotFound
+				ctype::Error::<T>::NotFound
 			);
 
 			// Credential ID = H(<scale_encoded_credential_input> ||
@@ -274,7 +274,7 @@ pub mod pallet {
 				.as_ref()
 				.map(|ac| ac.can_issue(&attester, &ctype_hash, &credential_id))
 				.transpose()
-				.map_err(|_| Error::<T>::Unauthorized)?;
+				.map_err(|_| Error::<T>::NotAuthorized)?;
 			let authorization_id = authorization.as_ref().map(|ac| ac.authorization_id());
 
 			// Try to decode subject ID to something structured
@@ -282,7 +282,7 @@ pub mod pallet {
 
 			ensure!(
 				!Credentials::<T>::contains_key(&subject, &credential_id),
-				Error::<T>::CredentialAlreadyIssued
+				Error::<T>::AlreadyAttested
 			);
 
 			let deposit = kilt_support::reserve_deposit::<T::AccountId, CurrencyOf<T>>(payer, deposit_amount)
@@ -340,8 +340,7 @@ pub mod pallet {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 			let caller = source.subject();
 
-			let credential_subject =
-				CredentialSubjects::<T>::get(&credential_id).ok_or(Error::<T>::CredentialNotFound)?;
+			let credential_subject = CredentialSubjects::<T>::get(&credential_id).ok_or(Error::<T>::NotFound)?;
 
 			let ac_weight_used = Self::set_credential_revocation_status(
 				&caller,
@@ -379,8 +378,7 @@ pub mod pallet {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 			let caller = source.subject();
 
-			let credential_subject =
-				CredentialSubjects::<T>::get(&credential_id).ok_or(Error::<T>::CredentialNotFound)?;
+			let credential_subject = CredentialSubjects::<T>::get(&credential_id).ok_or(Error::<T>::NotFound)?;
 
 			let ac_weight_used = Self::set_credential_revocation_status(
 				&caller,
@@ -434,16 +432,16 @@ pub mod pallet {
 				let credential_auth_id = credential_entry
 					.authorization_id
 					.as_ref()
-					.ok_or(Error::<T>::Unauthorized)?;
+					.ok_or(Error::<T>::NotAuthorized)?;
 				authorization
-					.ok_or(Error::<T>::Unauthorized)?
+					.ok_or(Error::<T>::NotAuthorized)?
 					.can_remove(
 						&caller,
 						&credential_entry.ctype_hash,
 						&credential_id,
 						credential_auth_id,
 					)
-					.map_err(|_| Error::<T>::Unauthorized)?
+					.map_err(|_| Error::<T>::NotAuthorized)?
 			};
 
 			// Removes the credential from storage and generates a `CredentialRemoved`
@@ -478,7 +476,7 @@ pub mod pallet {
 
 			let (credential_subject, credential_entry) = Self::retrieve_credential_entry(&credential_id)?;
 
-			ensure!(submitter == credential_entry.deposit.owner, Error::<T>::Unauthorized);
+			ensure!(submitter == credential_entry.deposit.owner, Error::<T>::NotAuthorized);
 
 			// Removes the credential from storage and generates a `CredentialRemoved`
 			// event.
@@ -502,7 +500,7 @@ pub mod pallet {
 
 			let (_, credential_entry) = Self::retrieve_credential_entry(&credential_id)?;
 
-			ensure!(subject == credential_entry.attester, Error::<T>::Unauthorized);
+			ensure!(subject == credential_entry.attester, Error::<T>::NotAuthorized);
 
 			PublicCredentialDepositCollector::<T>::change_deposit_owner(&credential_id, source.sender())?;
 
@@ -518,7 +516,7 @@ pub mod pallet {
 			let source = ensure_signed(origin)?;
 			let (_, credential_entry) = Self::retrieve_credential_entry(&credential_id)?;
 
-			ensure!(source == credential_entry.deposit.owner, Error::<T>::Unauthorized);
+			ensure!(source == credential_entry.deposit.owner, Error::<T>::NotAuthorized);
 
 			PublicCredentialDepositCollector::<T>::update_deposit(&credential_id)?;
 
@@ -548,13 +546,12 @@ pub mod pallet {
 			credential_id: &CredentialIdOf<T>,
 		) -> Result<(T::SubjectId, CredentialEntryOf<T>), Error<T>> {
 			// Verify that the credential exists
-			let credential_subject =
-				CredentialSubjects::<T>::get(credential_id).ok_or(Error::<T>::CredentialNotFound)?;
+			let credential_subject = CredentialSubjects::<T>::get(credential_id).ok_or(Error::<T>::NotFound)?;
 
 			// Should never happen if the line above succeeds
 			Credentials::<T>::get(&credential_subject, credential_id)
 				.map(|entry| (credential_subject, entry))
-				.ok_or(Error::<T>::InternalError)
+				.ok_or(Error::<T>::Internal)
 		}
 
 		fn set_credential_revocation_status(
@@ -575,18 +572,18 @@ pub mod pallet {
 						Weight::zero()
 					} else {
 						let credential_auth_id =
-							credential.authorization_id.as_ref().ok_or(Error::<T>::Unauthorized)?;
+							credential.authorization_id.as_ref().ok_or(Error::<T>::NotAuthorized)?;
 						authorization
-							.ok_or(Error::<T>::Unauthorized)?
+							.ok_or(Error::<T>::NotAuthorized)?
 							.can_revoke(caller, &credential.ctype_hash, credential_id, credential_auth_id)
-							.map_err(|_| Error::<T>::Unauthorized)?
+							.map_err(|_| Error::<T>::NotAuthorized)?
 					};
 					// If authorization checks are ok, update the revocation status.
 					credential.revoked = revocation;
 					Ok(additional_weight)
 				} else {
 					// No weight is computed as the error is an early return.
-					Err(Error::<T>::CredentialNotFound)
+					Err(Error::<T>::NotFound)
 				}
 			})
 		}
@@ -611,14 +608,13 @@ pub mod pallet {
 			credential_id: &CredentialIdOf<T>,
 			deposit: Deposit<AccountIdOf<T>, <Self::Currency as Currency<AccountIdOf<T>>>::Balance>,
 		) -> Result<(), DispatchError> {
-			let credential_subject =
-				CredentialSubjects::<T>::get(credential_id).ok_or(Error::<T>::CredentialNotFound)?;
+			let credential_subject = CredentialSubjects::<T>::get(credential_id).ok_or(Error::<T>::NotFound)?;
 			Credentials::<T>::try_mutate(&credential_subject, credential_id, |credential_entry| {
 				if let Some(credential) = credential_entry {
 					credential.deposit = deposit;
 					Ok(())
 				} else {
-					Err(Error::<T>::CredentialNotFound.into())
+					Err(Error::<T>::NotFound.into())
 				}
 			})
 		}
