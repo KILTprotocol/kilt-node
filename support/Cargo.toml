@@ -1,14 +1,14 @@
 [package]
 authors.workspace = true
+description = "Shared traits and structs used across the KILT pallets"
 documentation.workspace = true
 edition.workspace = true
 homepage.workspace = true
 license-file.workspace = true
+name = "kilt-support"
 readme.workspace = true
 repository.workspace = true
 version.workspace = true
-name = "kilt-support"
-description = "Shared traits and structs used across the KILT pallets"
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
@@ -25,6 +25,9 @@ sp-core.workspace = true
 sp-runtime.workspace = true
 sp-std.workspace = true
 
+# std dependencies
+serde = {workspace = true, optional = true}
+
 [features]
 default = ["std"]
 mock = []
@@ -38,6 +41,7 @@ std = [
   "frame-support/std",
   "frame-system/std",
   "scale-info/std",
+  "serde",
   "sp-core/std",
   "sp-runtime/std",
   "sp-std/std",
