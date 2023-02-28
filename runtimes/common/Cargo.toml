@@ -11,7 +11,10 @@ name = "runtime-common"
 description = "Common interfaces, types, constants and functionality for all KILT runtimes."
 
 [dev-dependencies]
-sp-io = {workspace = true, features = ["std"]}
+frame-system = {workspace = true, features = ["std"]}
+pallet-balances = {workspace = true, features = ["std"]}
+pallet-xcm = {workspace = true, features = ["std"]}
+xcm-simulator.workspace = true
 
 [dependencies]
 # External dependencies
@@ -26,7 +29,7 @@ attestation.workspace = true
 ctype.workspace = true
 delegation = {workspace = true, optional = true}
 did.workspace = true
-dip-sender = { workspace = true, optional = true }
+dip-sender.workspace = true
 pallet-did-lookup = {workspace = true, optional = true}
 pallet-inflation = {workspace = true, optional = true}
 kilt-support.workspace = true
@@ -64,11 +67,13 @@ fast-gov = []
 runtime-benchmarks = [
   "attestation/runtime-benchmarks",
   "ctype/runtime-benchmarks",
+  "did/runtime-benchmarks",
   "frame-support/runtime-benchmarks",
   "frame-system/runtime-benchmarks",
   "kilt-support/runtime-benchmarks",
   "pallet-balances/runtime-benchmarks",
   "pallet-membership/runtime-benchmarks",
+  "pallet-xcm/runtime-benchmarks",
   "parachain-staking/runtime-benchmarks",
   "polkadot-parachain/runtime-benchmarks",
   "public-credentials/runtime-benchmarks",

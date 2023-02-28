@@ -16,7 +16,8 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use codec::{Decode, Encode};
+use codec::{Decode, Encode, MaxEncodedLen};
+use scale_info::TypeInfo;
 use sp_runtime::DispatchError;
 use sp_std::fmt::Debug;
 use xcm::v3::{MultiAsset, MultiLocation};
@@ -37,7 +38,9 @@ where
 	}
 }
 
-#[derive(Clone, Eq, PartialEq, Debug, Encode, Decode)]
+// TODO: Move this to a support crate for consumption on sender and receiver
+// side.
+#[derive(Clone, Eq, PartialEq, Debug, Encode, Decode, TypeInfo, MaxEncodedLen)]
 pub enum IdentityProofAction<Identifier, Proof> {
 	Updated(Identifier, Proof),
 	Deleted(Identifier),
