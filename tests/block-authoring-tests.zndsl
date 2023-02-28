@@ -24,7 +24,7 @@ kilt-node-alice: reports peers count is at least 2
 kilt-node-charlie: reports peers count is at least 2
 kilt-node-dave: reports peers count is at least 2
 
-# check if peer connections are established in the parachain
+# check if peer connections are established in the relaychain
 
 alice: reports peers count is at least 1
 bob: reports peers count is at least 1
