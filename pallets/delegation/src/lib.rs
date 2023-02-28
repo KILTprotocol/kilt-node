@@ -280,7 +280,7 @@ pub mod pallet {
 		/// The max number of parent checks exceeds the limit for the pallet.
 		MaxParentChecksTooLarge,
 		/// An error that is not supposed to take place, yet it happened.
-		InternalError,
+		Internal,
 		/// The max number of all children has been reached for the
 		/// corresponding delegation node.
 		MaxChildrenExceeded,
@@ -331,7 +331,7 @@ pub mod pallet {
 
 			ensure!(
 				<ctype::Ctypes<T>>::contains_key(ctype_hash),
-				<ctype::Error<T>>::CTypeNotFound
+				<ctype::Error<T>>::NotFound
 			);
 
 			// *** No Fail beyond this point ***

@@ -150,30 +150,28 @@ pub mod pallet {
 		/// The tx submitter does not have enough funds to pay for the deposit.
 		InsufficientFunds,
 		/// The specified name has already been previously claimed.
-		Web3NameAlreadyClaimed,
+		AlreadyExists,
 		/// The specified name does not exist.
-		Web3NameNotFound,
+		NotFound,
 		/// The specified owner already owns a name.
 		OwnerAlreadyExists,
 		/// The specified owner does not own any names.
 		OwnerNotFound,
 		/// The specified name has been banned and cannot be interacted
 		/// with.
-		Web3NameBanned,
+		Banned,
 		/// The specified name is not currently banned.
-		Web3NameNotBanned,
+		NotBanned,
 		/// The specified name has already been previously banned.
-		Web3NameAlreadyBanned,
+		AlreadyBanned,
 		/// The actor cannot performed the specified operation.
 		NotAuthorized,
 		/// A name that is too short is being claimed.
-		Web3NameTooShort,
+		TooShort,
 		/// A name that is too long is being claimed.
-		Web3NameTooLong,
+		TooLong,
 		/// A name that contains not allowed characters is being claimed.
-		InvalidWeb3NameCharacter,
-		/// The origin was not authorized to perform that action
-		Unauthorized,
+		InvalidCharacter,
 	}
 
 	#[pallet::hooks]
@@ -353,7 +351,7 @@ pub mod pallet {
 		pub fn change_deposit_owner(origin: OriginFor<T>) -> DispatchResult {
 			let source = <T as Config>::OwnerOrigin::ensure_origin(origin)?;
 			let w3n_owner = source.subject();
-			let name = Names::<T>::get(&w3n_owner).ok_or(Error::<T>::Web3NameNotFound)?;
+			let name = Names::<T>::get(&w3n_owner).ok_or(Error::<T>::NotFound)?;
 			Web3NameStorageDepositCollector::<T>::change_deposit_owner(&name, source.sender())?;
 
 			Ok(())
@@ -367,8 +365,8 @@ pub mod pallet {
 		pub fn update_deposit(origin: OriginFor<T>, name_input: Web3NameInput<T>) -> DispatchResult {
 			let source = ensure_signed(origin)?;
 			let name = Web3NameOf::<T>::try_from(name_input.into_inner()).map_err(DispatchError::from)?;
-			let w3n_entry = Owner::<T>::get(&name).ok_or(Error::<T>::Web3NameNotFound)?;
-			ensure!(w3n_entry.deposit.owner == source, Error::<T>::Unauthorized);
+			let w3n_entry = Owner::<T>::get(&name).ok_or(Error::<T>::NotFound)?;
+			ensure!(w3n_entry.deposit.owner == source, Error::<T>::NotAuthorized);
 
 			Web3NameStorageDepositCollector::<T>::update_deposit(&name)?;
 
@@ -391,8 +389,8 @@ pub mod pallet {
 			let name = Web3NameOf::<T>::try_from(name_input.into_inner()).map_err(DispatchError::from)?;
 
 			ensure!(!Names::<T>::contains_key(owner), Error::<T>::OwnerAlreadyExists);
-			ensure!(!Owner::<T>::contains_key(&name), Error::<T>::Web3NameAlreadyClaimed);
-			ensure!(!Banned::<T>::contains_key(&name), Error::<T>::Web3NameBanned);
+			ensure!(!Owner::<T>::contains_key(&name), Error::<T>::AlreadyExists);
+			ensure!(!Banned::<T>::contains_key(&name), Error::<T>::Banned);
 
 			ensure!(
 				<T::Currency as ReservableCurrency<AccountIdOf<T>>>::can_reserve(deposit_payer, T::Deposit::get()),
@@ -445,7 +443,7 @@ pub mod pallet {
 			caller: &AccountIdOf<T>,
 		) -> Result<Web3NameOf<T>, DispatchError> {
 			let name = Web3NameOf::<T>::try_from(name_input.into_inner()).map_err(DispatchError::from)?;
-			let Web3NameOwnership { deposit, .. } = Owner::<T>::get(&name).ok_or(Error::<T>::Web3NameNotFound)?;
+			let Web3NameOwnership { deposit, .. } = Owner::<T>::get(&name).ok_or(Error::<T>::NotFound)?;
 
 			ensure!(caller == &deposit.owner, Error::<T>::NotAuthorized);
 
@@ -476,7 +474,7 @@ pub mod pallet {
 		fn check_banning_preconditions(name_input: Web3NameInput<T>) -> Result<(Web3NameOf<T>, bool), DispatchError> {
 			let name = Web3NameOf::<T>::try_from(name_input.into_inner()).map_err(DispatchError::from)?;
 
-			ensure!(!Banned::<T>::contains_key(&name), Error::<T>::Web3NameAlreadyBanned);
+			ensure!(!Banned::<T>::contains_key(&name), Error::<T>::AlreadyBanned);
 
 			let is_claimed = Owner::<T>::contains_key(&name);
 
@@ -497,7 +495,7 @@ pub mod pallet {
 		fn check_unbanning_preconditions(name_input: Web3NameInput<T>) -> Result<Web3NameOf<T>, DispatchError> {
 			let name = Web3NameOf::<T>::try_from(name_input.into_inner()).map_err(DispatchError::from)?;
 
-			ensure!(Banned::<T>::contains_key(&name), Error::<T>::Web3NameNotBanned);
+			ensure!(Banned::<T>::contains_key(&name), Error::<T>::NotBanned);
 
 			Ok(name)
 		}
@@ -517,7 +515,7 @@ pub mod pallet {
 		fn deposit(
 			key: &T::Web3Name,
 		) -> Result<Deposit<AccountIdOf<T>, <Self::Currency as Currency<AccountIdOf<T>>>::Balance>, DispatchError> {
-			let w3n_entry = Owner::<T>::get(key).ok_or(Error::<T>::Web3NameNotFound)?;
+			let w3n_entry = Owner::<T>::get(key).ok_or(Error::<T>::NotFound)?;
 
 			Ok(w3n_entry.deposit)
 		}
@@ -530,7 +528,7 @@ pub mod pallet {
 			key: &T::Web3Name,
 			deposit: Deposit<AccountIdOf<T>, <Self::Currency as Currency<AccountIdOf<T>>>::Balance>,
 		) -> Result<(), DispatchError> {
-			let w3n_entry = Owner::<T>::get(key).ok_or(Error::<T>::Web3NameNotFound)?;
+			let w3n_entry = Owner::<T>::get(key).ok_or(Error::<T>::NotFound)?;
 			Owner::<T>::insert(key, Web3OwnershipOf::<T> { deposit, ..w3n_entry });
 
 			Ok(())
