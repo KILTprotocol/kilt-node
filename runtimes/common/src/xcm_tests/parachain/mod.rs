@@ -36,7 +36,7 @@ use xcm_builder::{
 };
 use xcm_executor::XcmExecutor;
 
-mod msg_queue;
+mod mock_msg_queue;
 
 parameter_types! {
 	pub ExistentialDeposit: Balance = 1;
@@ -59,11 +59,17 @@ pub(super) type AccountId = AccountId32;
 pub(super) type Balance = u128;
 
 type Block<Runtime> = frame_system::mocking::MockBlock<Runtime>;
+type Identifier = [u8; 4];
+type IdentityProofOutput = [u8; 32];
 type UncheckedExtrinsic<Runtime> = frame_system::mocking::MockUncheckedExtrinsic<Runtime>;
 type LocationToAccountId<NetworkId> = (ParentIsPreset<AccountId>, AccountId32Aliases<NetworkId, AccountId>);
 type XcmRouter<MsgQueue> = super::ParachainXcmRouter<MsgQueue>;
 
 pub(super) mod sender {
+	use dip_sender::traits::{DefaultIdentityProofGenerator, DefaultIdentityProvider};
+
+	use crate::dip::identity_dispatch::DidXcmV3ViaXcmPalletDispatcher;
+
 	use super::*;
 
 	construct_runtime!(
@@ -74,8 +80,9 @@ pub(super) mod sender {
 		{
 			System: frame_system::{Pallet, Call, Storage, Config, Event<T>},
 			Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
-			MsgQueue: msg_queue::{Pallet, Storage, Event<T>},
+			MsgQueue: mock_msg_queue::{Pallet, Storage, Event<T>},
 			PolkadotXcm: pallet_xcm::{Pallet, Call, Event<T>, Origin},
+			DipProvider: dip_sender::{Pallet, Call, Storage, Event<T>},
 		}
 	);
 
@@ -149,7 +156,7 @@ pub(super) mod sender {
 		type Weigher = FixedWeightBounds<UnitWeightCost, RuntimeCall, ConstU32<100>>;
 	}
 
-	impl msg_queue::Config for Runtime {
+	impl mock_msg_queue::Config for Runtime {
 		type RuntimeEvent = RuntimeEvent;
 		type XcmExecutor = XcmExecutor<XcmConfig>;
 	}
@@ -181,6 +188,21 @@ pub(super) mod sender {
 
 		#[cfg(feature = "runtime-benchmarks")]
 		type ReachableDest = ReachableDest;
+	}
+
+	impl dip_sender::Config for Runtime {
+		type Identifier = Identifier;
+		type Identity = u32;
+		type IdentityProofDispatcher = DidXcmV3ViaXcmPalletDispatcher<
+			Runtime,
+			Identifier,
+			IdentityProofOutput,
+			SignedToAccountId32<RuntimeOrigin, AccountId, RelayNetworkId>,
+		>;
+		type IdentityProofGenerator = DefaultIdentityProofGenerator;
+		type IdentityProvider = DefaultIdentityProvider;
+		type ProofOutput = IdentityProofOutput;
+		type RuntimeEvent = RuntimeEvent;
 	}
 }
 
@@ -195,8 +217,9 @@ pub(super) mod receiver {
 		{
 			System: frame_system::{Pallet, Call, Storage, Config, Event<T>},
 			Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
-			MsgQueue: msg_queue::{Pallet, Storage, Event<T>},
+			MsgQueue: mock_msg_queue::{Pallet, Storage, Event<T>},
 			PolkadotXcm: pallet_xcm::{Pallet, Call, Event<T>, Origin},
+			DipReceiver: dip_receiver::{Pallet, Call, Storage, Event<T>},
 		}
 	);
 
@@ -270,7 +293,7 @@ pub(super) mod receiver {
 		type Weigher = FixedWeightBounds<UnitWeightCost, RuntimeCall, ConstU32<100>>;
 	}
 
-	impl msg_queue::Config for Runtime {
+	impl mock_msg_queue::Config for Runtime {
 		type RuntimeEvent = RuntimeEvent;
 		type XcmExecutor = XcmExecutor<XcmConfig>;
 	}
@@ -302,5 +325,12 @@ pub(super) mod receiver {
 
 		#[cfg(feature = "runtime-benchmarks")]
 		type ReachableDest = ReachableDest;
+	}
+
+	impl dip_receiver::Config for Runtime {
+		type EnsureSourceXcmOrigin = <Self as pallet_xcm::Config>::ExecuteXcmOrigin;
+		type Identifier = Identifier;
+		type Proof = IdentityProofOutput;
+		type RuntimeEvent = RuntimeEvent;
 	}
 }

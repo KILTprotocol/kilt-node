@@ -12,6 +12,8 @@ description = "Common interfaces, types, constants and functionality for all KIL
 
 [dev-dependencies]
 cumulus-primitives-utility = {workspace = true, features = ["std"]}
+dip-sender = { workspace = true, features = ["std"] }
+dip-receiver = { workspace = true, features = ["std"] }
 frame-system = {workspace = true, features = ["std"]}
 pallet-balances = {workspace = true, features = ["std"]}
 pallet-xcm = {workspace = true, features = ["std"]}

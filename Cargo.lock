@@ -8918,6 +8918,7 @@ dependencies = [
  "cumulus-primitives-utility",
  "delegation",
  "did",
+ "dip-receiver",
  "dip-sender",
  "frame-support",
  "frame-system",

@@ -29,6 +29,16 @@ const INITIAL_BALANCE: parachain::Balance = 1_000_000_000;
 const SENDER_PARA_ID: u32 = 2000;
 const RECEIVER_PARA_ID: u32 = 2001;
 
+fn relay_ext() -> TestExternalities {
+	use relaychain::Runtime;
+
+	let t = frame_system::GenesisConfig::default()
+		.build_storage::<Runtime>()
+		.unwrap();
+
+	TestExternalities::new(t)
+}
+
 fn sender_para_ext() -> TestExternalities {
 	use parachain::sender::{MsgQueue, Runtime, System};
 
@@ -67,14 +77,12 @@ fn receiver_para_ext() -> TestExternalities {
 	ext
 }
 
-fn relay_ext() -> TestExternalities {
-	use relaychain::Runtime;
-
-	let t = frame_system::GenesisConfig::default()
-		.build_storage::<Runtime>()
-		.unwrap();
-
-	TestExternalities::new(t)
+decl_test_relay_chain! {
+	pub struct RelayChain {
+		Runtime = relaychain::Runtime,
+		XcmConfig = relaychain::XcmConfig,
+		new_ext = relay_ext(),
+	}
 }
 
 decl_test_parachain! {
@@ -92,14 +100,6 @@ decl_test_parachain! {
 		XcmpMessageHandler = parachain::receiver::MsgQueue,
 		DmpMessageHandler = parachain::receiver::MsgQueue,
 		new_ext = receiver_para_ext(),
-	}
-}
-
-decl_test_relay_chain! {
-	pub struct RelayChain {
-		Runtime = relaychain::Runtime,
-		XcmConfig = relaychain::XcmConfig,
-		new_ext = relay_ext(),
 	}
 }
 

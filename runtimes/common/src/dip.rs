@@ -27,12 +27,12 @@ pub mod proof_generation {
 	};
 	use dip_sender::traits::IdentityProofGenerator;
 
-	pub struct DidMerkleRootHasher<T>(PhantomData<T>);
+	pub struct DidPalletMerkleRootHasher<T>(PhantomData<T>);
 
 	pub type DidMerkleRootHasherOutput<T> = <T as frame_system::Config>::Hash;
 
 	impl<T: did::Config> IdentityProofGenerator<DidIdentifierOf<T>, DidDetails<T>, DidMerkleRootHasherOutput<T>>
-		for DidMerkleRootHasher<T>
+		for DidPalletMerkleRootHasher<T>
 	{
 		fn generate_proof(
 			identifier: &DidIdentifierOf<T>,
@@ -43,7 +43,7 @@ pub mod proof_generation {
 		}
 	}
 
-	impl<T: did::Config> DidMerkleRootHasher<T> {
+	impl<T: did::Config> DidPalletMerkleRootHasher<T> {
 		fn calculate_root_with_db(
 			did: &DidIdentifierOf<T>,
 			details: &DidDetails<T>,
@@ -155,9 +155,9 @@ pub mod identity_retrieval {
 	use did::{did_details::DidDetails, DidIdentifierOf};
 	use dip_sender::traits::IdentityProvider;
 
-	pub struct DidProvider<T>(PhantomData<T>);
+	pub struct DidPalletProvider<T>(PhantomData<T>);
 
-	impl<T: did::Config> IdentityProvider<DidIdentifierOf<T>, DidDetails<T>> for DidProvider<T> {
+	impl<T: did::Config> IdentityProvider<DidIdentifierOf<T>, DidDetails<T>> for DidPalletProvider<T> {
 		fn retrieve(identifier: &DidIdentifierOf<T>) -> Result<Option<DidDetails<T>>, sp_runtime::DispatchError> {
 			if let Some(did_details) = did::Did::<T>::get(identifier) {
 				Ok(Some(did_details))
@@ -177,32 +177,27 @@ pub mod identity_dispatch {
 	use sp_std::marker::PhantomData;
 	use xcm::v3::prelude::*;
 
-	use did::DidIdentifierOf;
 	use dip_sender::traits::IdentityProofDispatcher;
 	use xcm_executor::traits::Convert;
-
-	use super::proof_generation::DidMerkleRootHasherOutput;
 
 	// Dispatcher wrapping the XCM pallet.
 	// It basically properly encodes the Transact operation, then delegates
 	// everything else to the pallet's `send_xcm` function, similarly to what the
 	// pallet's `send` extrinsic does.
-	pub struct DidXcmV3ViaXcmPalletDispatcher<T, C>(PhantomData<(T, C)>);
+	pub struct DidXcmV3ViaXcmPalletDispatcher<T, I, P, C>(PhantomData<(T, I, P, C)>);
 
-	impl<T, C>
-		IdentityProofDispatcher<
-			DidIdentifierOf<T>,
-			<T as frame_system::Config>::AccountId,
-			DidMerkleRootHasherOutput<T>,
-		> for DidXcmV3ViaXcmPalletDispatcher<T, C>
+	impl<T, I, P, C> IdentityProofDispatcher<I, <T as frame_system::Config>::AccountId, P>
+		for DidXcmV3ViaXcmPalletDispatcher<T, I, P, C>
 	where
-		T: did::Config + pallet_xcm::Config,
+		T: pallet_xcm::Config,
+		I: Encode,
+		P: Encode,
 		C: Convert<OriginFor<T>, MultiLocation>,
 	{
 		type Error = SendError;
 
 		fn dispatch(
-			action: dip_sender::traits::IdentityProofAction<DidIdentifierOf<T>, DidMerkleRootHasherOutput<T>>,
+			action: dip_sender::traits::IdentityProofAction<I, P>,
 			dispatcher: T::AccountId,
 			asset: MultiAsset,
 			destination: MultiLocation,
