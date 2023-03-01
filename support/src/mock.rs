@@ -94,10 +94,13 @@ pub mod mock_origin {
 		}
 
 		#[cfg(feature = "runtime-benchmarks")]
-		fn successful_origin() -> OuterOrigin {
+		fn try_successful_origin() -> Result<OuterOrigin, ()> {
 			const TEST_ACC: AccountId32 = AccountId32::new([0u8; 32]);
 
-			OuterOrigin::from(DoubleOrigin(TEST_ACC.clone().into(), TEST_ACC.into()))
+			Ok(OuterOrigin::from(DoubleOrigin(
+				TEST_ACC.clone().into(),
+				TEST_ACC.into(),
+			)))
 		}
 	}
 
