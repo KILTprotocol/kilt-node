@@ -256,7 +256,7 @@ pub(crate) fn add_legacy_association<T: Config>(
 	ConnectedAccounts::<T>::insert(&did_identifier, &account, ());
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "std"))]
 mod tests {
 	use frame_support::assert_ok;
 	use kilt_support::deposit::Deposit;

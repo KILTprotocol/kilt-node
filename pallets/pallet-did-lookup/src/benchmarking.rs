@@ -89,7 +89,7 @@ benchmarks! {
 		assert!(ConnectedAccounts::<T>::get(&previous_did, linkable_id.clone()).is_some());
 		let origin = T::EnsureOrigin::generate_origin(caller, did.clone());
 		let id_arg = linkable_id.clone();
-		let req = AssociateAccountRequest::Dotsama(connected_acc_id.into(), sig.into());
+		let req = AssociateAccountRequest::Substrate(connected_acc_id.into(), sig.into());
 	}: associate_account<T::RuntimeOrigin>(origin, req, bn)
 	verify {
 		assert!(ConnectedDids::<T>::get(linkable_id.clone()).is_some());
@@ -122,7 +122,7 @@ benchmarks! {
 		assert!(ConnectedAccounts::<T>::get(&previous_did, linkable_id.clone()).is_some());
 		let origin = T::EnsureOrigin::generate_origin(caller, did.clone());
 		let id_arg = linkable_id.clone();
-		let req = AssociateAccountRequest::Dotsama(connected_acc_id.into(), sig.into());
+		let req = AssociateAccountRequest::Substrate(connected_acc_id.into(), sig.into());
 	}: associate_account<T::RuntimeOrigin>(origin, req, bn)
 	verify {
 		assert!(ConnectedDids::<T>::get(linkable_id.clone()).is_some());
@@ -155,7 +155,7 @@ benchmarks! {
 		assert!(ConnectedAccounts::<T>::get(&previous_did, linkable_id.clone()).is_some());
 		let origin = T::EnsureOrigin::generate_origin(caller, did.clone());
 		let id_arg = linkable_id.clone();
-		let req = AssociateAccountRequest::Dotsama(connected_acc_id, sig.into());
+		let req = AssociateAccountRequest::Substrate(connected_acc_id, sig.into());
 	}: associate_account<T::RuntimeOrigin>(origin, req, bn)
 	verify {
 		assert!(ConnectedDids::<T>::get(linkable_id.clone()).is_some());
