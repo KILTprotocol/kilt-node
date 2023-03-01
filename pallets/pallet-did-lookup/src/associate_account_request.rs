@@ -65,7 +65,7 @@ impl AssociateAccountRequest {
 	}
 }
 
-/// Build the challenge that must be signed to prove the consent to of an
+/// Build the challenge that must be signed to prove the consent for an
 /// account to be linked to a DID.
 pub fn get_challenge<DidIdentifier: AsRef<[u8]>, BlockNumber: Debug>(
 	did_identifier: &DidIdentifier,
