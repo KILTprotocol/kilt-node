@@ -21,69 +21,130 @@ use frame_support::{
 	traits::{Everything, Nothing},
 	weights::Weight,
 };
-use sp_core::H256;
-use sp_runtime::{testing::Header, traits::IdentityLookup, AccountId32};
-
+use frame_system::EnsureRoot;
 use polkadot_parachain::primitives::Id as ParaId;
 use polkadot_runtime_parachains::{configuration, origin, shared, ump};
+use sp_core::{ConstU32, ConstU64, H256};
+use sp_runtime::{
+	testing::Header,
+	traits::{BlakeTwo256, IdentityLookup},
+	AccountId32,
+};
 use xcm::latest::prelude::*;
 use xcm_builder::{
 	Account32Hash, AccountId32Aliases, AllowUnpaidExecutionFrom, ChildParachainAsNative, ChildParachainConvertsVia,
-	ChildSystemParachainAsSuperuser, FixedRateOfFungible, FixedWeightBounds, IsConcrete, SignedAccountId32AsNative,
+	ChildSystemParachainAsSuperuser, EnsureXcmOrigin, FixedWeightBounds, SignedAccountId32AsNative,
 	SignedToAccountId32, SovereignSignedViaLocation,
 };
-use xcm_executor::{Config, XcmExecutor};
-
-pub type AccountId = AccountId32;
-pub type Balance = u128;
+use xcm_executor::XcmExecutor;
 
 parameter_types! {
-	pub const BlockHashCount: u64 = 250;
+	pub const BalanceExistentialDeposit: Balance = 1;
+	pub const RelayNetworkId: NetworkId = ByGenesis([0; 32]);
+	pub const UniversalLocation: InteriorMultiLocation = Here;
+	pub const UnitWeightCost: Weight = Weight::from_parts(1, 1);
 }
+#[cfg(feature = "runtime-benchmarks")]
+parameter_types! {
+	pub ReachableDest: Option<MultiLocation> = Some(Parachain(1).into());
+}
+
+type AccountId = AccountId32;
+type Balance = u128;
+type Block<Runtime> = frame_system::mocking::MockBlock<Runtime>;
+type UncheckedExtrinsic<Runtime> = frame_system::mocking::MockUncheckedExtrinsic<Runtime>;
+
+type LocationToAccountId = (
+	ChildParachainConvertsVia<ParaId, AccountId>,
+	AccountId32Aliases<RelayNetworkId, AccountId>,
+	Account32Hash<(), AccountId>,
+);
+type LocalOriginConverter = (
+	SovereignSignedViaLocation<LocationToAccountId, RuntimeOrigin>,
+	ChildParachainAsNative<origin::Origin, RuntimeOrigin>,
+	SignedAccountId32AsNative<RelayNetworkId, RuntimeOrigin>,
+	ChildSystemParachainAsSuperuser<ParaId, RuntimeOrigin>,
+);
+type XcmRouter = super::RelayChainXcmRouter;
+
+construct_runtime!(
+	pub enum Runtime where
+		Block = Block<Runtime>,
+		NodeBlock = Block<Runtime>,
+		UncheckedExtrinsic = UncheckedExtrinsic<Runtime>,
+	{
+		System: frame_system::{Pallet, Call, Storage, Config, Event<T>},
+		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
+		XcmPallet: pallet_xcm::{Pallet, Call, Storage, Event<T>, Origin},
+		ParasUmp: ump::{Pallet, Call, Storage, Event},
+		ParasOrigin: origin::{Pallet, Origin},
+	}
+);
 
 impl frame_system::Config for Runtime {
-	type RuntimeOrigin = RuntimeOrigin;
-	type RuntimeCall = RuntimeCall;
-	type Index = u64;
-	type BlockNumber = u64;
-	type Hash = H256;
-	type Hashing = ::sp_runtime::traits::BlakeTwo256;
-	type AccountId = AccountId;
-	type Lookup = IdentityLookup<Self::AccountId>;
-	type Header = Header;
-	type RuntimeEvent = RuntimeEvent;
-	type BlockHashCount = BlockHashCount;
-	type BlockWeights = ();
-	type BlockLength = ();
-	type Version = ();
-	type PalletInfo = PalletInfo;
 	type AccountData = pallet_balances::AccountData<Balance>;
-	type OnNewAccount = ();
-	type OnKilledAccount = ();
-	type DbWeight = ();
+	type AccountId = AccountId;
 	type BaseCallFilter = Everything;
-	type SystemWeightInfo = ();
-	type SS58Prefix = ();
+	type BlockHashCount = ConstU64<250>;
+	type BlockLength = ();
+	type BlockNumber = u64;
+	type BlockWeights = ();
+	type DbWeight = ();
+	type Hash = H256;
+	type Hashing = BlakeTwo256;
+	type Header = Header;
+	type Index = u64;
+	type Lookup = IdentityLookup<Self::AccountId>;
+	type MaxConsumers = ConstU32<16>;
+	type OnKilledAccount = ();
+	type OnNewAccount = ();
 	type OnSetCode = ();
-	type MaxConsumers = frame_support::traits::ConstU32<16>;
-}
-
-parameter_types! {
-	pub ExistentialDeposit: Balance = 1;
-	pub const MaxLocks: u32 = 50;
-	pub const MaxReserves: u32 = 50;
+	type PalletInfo = PalletInfo;
+	type RuntimeCall = RuntimeCall;
+	type RuntimeEvent = RuntimeEvent;
+	type RuntimeOrigin = RuntimeOrigin;
+	type SS58Prefix = ();
+	type SystemWeightInfo = ();
+	type Version = ();
 }
 
 impl pallet_balances::Config for Runtime {
-	type MaxLocks = MaxLocks;
-	type Balance = Balance;
-	type RuntimeEvent = RuntimeEvent;
-	type DustRemoval = ();
-	type ExistentialDeposit = ExistentialDeposit;
 	type AccountStore = System;
-	type WeightInfo = ();
-	type MaxReserves = MaxReserves;
+	type Balance = Balance;
+	type DustRemoval = ();
+	type ExistentialDeposit = BalanceExistentialDeposit;
+	type MaxLocks = ConstU32<50>;
+	type MaxReserves = ConstU32<50>;
 	type ReserveIdentifier = [u8; 8];
+	type RuntimeEvent = RuntimeEvent;
+	type WeightInfo = ();
+}
+
+pub struct XcmConfig;
+impl xcm_executor::Config for XcmConfig {
+	type AssetClaims = ();
+	type AssetExchanger = ();
+	type AssetLocker = ();
+	type AssetTransactor = ();
+	type AssetTrap = ();
+	type Barrier = AllowUnpaidExecutionFrom<Everything>;
+	type CallDispatcher = RuntimeCall;
+	type FeeManager = ();
+	type IsReserve = ();
+	type IsTeleporter = ();
+	type MaxAssetsIntoHolding = ConstU32<64>;
+	type MessageExporter = ();
+	type OriginConverter = LocalOriginConverter;
+	type PalletInstancesInfo = ();
+	type ResponseHandler = ();
+	type RuntimeCall = RuntimeCall;
+	type SafeCallFilter = Everything;
+	type SubscriptionService = ();
+	type Trader = ();
+	type UniversalAliases = Nothing;
+	type UniversalLocation = UniversalLocation;
+	type XcmSender = XcmRouter;
+	type Weigher = FixedWeightBounds<UnitWeightCost, RuntimeCall, ConstU32<100>>;
 }
 
 impl shared::Config for Runtime {}
@@ -92,125 +153,40 @@ impl configuration::Config for Runtime {
 	type WeightInfo = configuration::TestWeightInfo;
 }
 
-parameter_types! {
-	pub const TokenLocation: MultiLocation = Here.into_location();
-	pub RelayNetwork: NetworkId = ByGenesis([0; 32]);
-	pub const AnyNetwork: Option<NetworkId> = None;
-	pub UniversalLocation: InteriorMultiLocation = Here;
-	pub UnitWeightCost: u64 = 1_000;
-}
-
-pub type LocationToAccountId = (
-	ChildParachainConvertsVia<ParaId, AccountId>,
-	AccountId32Aliases<RelayNetwork, AccountId>,
-	Account32Hash<(), AccountId>,
-);
-
-type LocalOriginConverter = (
-	SovereignSignedViaLocation<LocationToAccountId, RuntimeOrigin>,
-	ChildParachainAsNative<origin::Origin, RuntimeOrigin>,
-	SignedAccountId32AsNative<RelayNetwork, RuntimeOrigin>,
-	ChildSystemParachainAsSuperuser<ParaId, RuntimeOrigin>,
-);
-
-parameter_types! {
-	pub const BaseXcmWeight: Weight = Weight::from_parts(1_000, 1_000);
-	pub TokensPerSecondPerByte: (AssetId, u128, u128) =
-		(Concrete(TokenLocation::get()), 1_000_000_000_000, 1024 * 1024);
-	pub const MaxInstructions: u32 = 100;
-	pub const MaxAssetsIntoHolding: u32 = 64;
-}
-
-pub type XcmRouter = super::RelayChainXcmRouter;
-pub type Barrier = AllowUnpaidExecutionFrom<Everything>;
-
-pub struct XcmConfig;
-impl Config for XcmConfig {
-	type RuntimeCall = RuntimeCall;
-	type XcmSender = XcmRouter;
-	type AssetTransactor = ();
-	type OriginConverter = LocalOriginConverter;
-	type IsReserve = ();
-	type IsTeleporter = ();
-	type UniversalLocation = UniversalLocation;
-	type Barrier = Barrier;
-	type Weigher = FixedWeightBounds<BaseXcmWeight, RuntimeCall, MaxInstructions>;
-	type Trader = FixedRateOfFungible<TokensPerSecondPerByte, ()>;
-	type ResponseHandler = ();
-	type AssetTrap = ();
-	type AssetLocker = XcmPallet;
-	type AssetExchanger = ();
-	type AssetClaims = ();
-	type SubscriptionService = ();
-	type PalletInstancesInfo = ();
-	type FeeManager = ();
-	type MaxAssetsIntoHolding = MaxAssetsIntoHolding;
-	type MessageExporter = ();
-	type UniversalAliases = Nothing;
-	type CallDispatcher = RuntimeCall;
-	type SafeCallFilter = Everything;
-}
-
-pub type LocalOriginToLocation = SignedToAccountId32<RuntimeOrigin, AccountId, RelayNetwork>;
-
-#[cfg(feature = "runtime-benchmarks")]
-parameter_types! {
-	pub ReachableDest: Option<MultiLocation> = Some(Parachain(1).into());
+impl ump::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type UmpSink = ump::XcmSink<XcmExecutor<XcmConfig>, Runtime>;
+	type FirstMessageFactorPercent = ConstU64<100>;
+	type ExecuteOverweightOrigin = EnsureRoot<AccountId>;
+	type WeightInfo = ump::TestWeightInfo;
 }
 
 impl pallet_xcm::Config for Runtime {
-	type RuntimeEvent = RuntimeEvent;
-	type SendXcmOrigin = xcm_builder::EnsureXcmOrigin<RuntimeOrigin, LocalOriginToLocation>;
-	type XcmRouter = XcmRouter;
-	// Anyone can execute XCM messages locally...
-	type ExecuteXcmOrigin = xcm_builder::EnsureXcmOrigin<RuntimeOrigin, LocalOriginToLocation>;
-	type XcmExecuteFilter = Nothing;
-	type XcmExecutor = XcmExecutor<XcmConfig>;
-	type XcmTeleportFilter = Everything;
-	type XcmReserveTransferFilter = Everything;
-	type Weigher = FixedWeightBounds<BaseXcmWeight, RuntimeCall, MaxInstructions>;
-	type UniversalLocation = UniversalLocation;
-	type RuntimeOrigin = RuntimeOrigin;
-	type RuntimeCall = RuntimeCall;
 	const VERSION_DISCOVERY_QUEUE_SIZE: u32 = 100;
+
 	type AdvertisedXcmVersion = pallet_xcm::CurrentXcmVersion;
 	type Currency = Balances;
-	type CurrencyMatcher = IsConcrete<TokenLocation>;
-	type TrustedLockers = ();
+	type CurrencyMatcher = ();
+	type ExecuteXcmOrigin =
+		EnsureXcmOrigin<RuntimeOrigin, SignedToAccountId32<RuntimeOrigin, AccountId, RelayNetworkId>>;
+	type MaxLockers = ConstU32<8>;
+	type RuntimeCall = RuntimeCall;
+	type RuntimeEvent = RuntimeEvent;
+	type RuntimeOrigin = RuntimeOrigin;
+	type SendXcmOrigin = EnsureXcmOrigin<RuntimeOrigin, SignedToAccountId32<RuntimeOrigin, AccountId, RelayNetworkId>>;
 	type SovereignAccountOf = LocationToAccountId;
-	type MaxLockers = frame_support::traits::ConstU32<8>;
+	type TrustedLockers = ();
+	type UniversalLocation = UniversalLocation;
+	type XcmExecuteFilter = Everything;
+	type XcmExecutor = XcmExecutor<XcmConfig>;
+	type XcmReserveTransferFilter = Nothing;
+	type XcmRouter = XcmRouter;
+	type XcmTeleportFilter = Nothing;
+	type Weigher = FixedWeightBounds<UnitWeightCost, RuntimeCall, ConstU32<100>>;
 	type WeightInfo = pallet_xcm::TestWeightInfo;
+
 	#[cfg(feature = "runtime-benchmarks")]
 	type ReachableDest = ReachableDest;
 }
 
-parameter_types! {
-	pub const FirstMessageFactorPercent: u64 = 100;
-}
-
-impl ump::Config for Runtime {
-	type RuntimeEvent = RuntimeEvent;
-	type UmpSink = ump::XcmSink<XcmExecutor<XcmConfig>, Runtime>;
-	type FirstMessageFactorPercent = FirstMessageFactorPercent;
-	type ExecuteOverweightOrigin = frame_system::EnsureRoot<AccountId>;
-	type WeightInfo = ump::TestWeightInfo;
-}
-
 impl origin::Config for Runtime {}
-
-type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Runtime>;
-type Block = frame_system::mocking::MockBlock<Runtime>;
-
-construct_runtime!(
-	pub enum Runtime where
-		Block = Block,
-		NodeBlock = Block,
-		UncheckedExtrinsic = UncheckedExtrinsic,
-	{
-		System: frame_system::{Pallet, Call, Storage, Config, Event<T>},
-		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
-		ParasOrigin: origin::{Pallet, Origin},
-		ParasUmp: ump::{Pallet, Call, Storage, Event},
-		XcmPallet: pallet_xcm::{Pallet, Call, Storage, Event<T>, Origin},
-	}
-);
