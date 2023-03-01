@@ -31,6 +31,7 @@ pallets=(
     pallet-utility
     pallet-vesting
 	pallet-web3-names
+	pallet-xcm
     parachain-staking
 	public-credentials
 )
