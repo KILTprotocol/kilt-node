@@ -34,7 +34,7 @@ use sp_std::{fmt::Debug, vec, vec::Vec};
 
 #[derive(Clone, Debug, Eq, PartialEq, Encode, Decode, MaxEncodedLen, TypeInfo)]
 pub enum AssociateAccountRequest {
-	Substrate(AccountId32, MultiSignature),
+	Polkadot(AccountId32, MultiSignature),
 	Ethereum(AccountId20, EthereumSignature),
 }
 
@@ -46,7 +46,7 @@ impl AssociateAccountRequest {
 	) -> bool {
 		let encoded_payload = get_challenge(did_identifier, expiration).into_bytes();
 		match self {
-			AssociateAccountRequest::Substrate(acc, proof) => proof.verify(
+			AssociateAccountRequest::Polkadot(acc, proof) => proof.verify(
 				&get_wrapped_payload(&encoded_payload[..], crate::signature::WrapType::Substrate)[..],
 				acc,
 			),
@@ -59,7 +59,7 @@ impl AssociateAccountRequest {
 
 	pub fn get_linkable_account(&self) -> LinkableAccountId {
 		match self {
-			AssociateAccountRequest::Substrate(acc, _) => LinkableAccountId::AccountId32(acc.clone()),
+			AssociateAccountRequest::Polkadot(acc, _) => LinkableAccountId::AccountId32(acc.clone()),
 			AssociateAccountRequest::Ethereum(acc, _) => LinkableAccountId::AccountId20(*acc),
 		}
 	}
