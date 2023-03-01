@@ -87,7 +87,7 @@ fn check_duplicate_ctype_creation() {
 		.execute_with(|| {
 			assert_noop!(
 				Ctype::add(DoubleOrigin(deposit_owner, creator).into(), ctype),
-				ctype::Error::<Test>::CTypeAlreadyExists
+				ctype::Error::<Test>::AlreadyExists
 			);
 		});
 }
@@ -127,7 +127,7 @@ fn set_block_number_ctype_not_found() {
 	ExtBuilder::default().build().execute_with(|| {
 		assert_noop!(
 			Ctype::set_block_number(RawOrigin::Signed(ACCOUNT_00).into(), ctype_hash, 100u64),
-			ctype::Error::<Test>::CTypeNotFound
+			ctype::Error::<Test>::NotFound
 		);
 	})
 }
