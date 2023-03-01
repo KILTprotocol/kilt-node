@@ -202,11 +202,14 @@ pub mod identity_dispatch {
 			asset: MultiAsset,
 			destination: MultiLocation,
 		) -> Result<(), Self::Error> {
+			println!("DidXcmV3ViaXcmPalletDispatcher::dispatch 1");
 			let origin_location =
 				C::convert(RawOrigin::Signed(dispatcher).into()).map_err(|_| SendError::DestinationUnsupported)?;
+			println!("DidXcmV3ViaXcmPalletDispatcher::dispatch 2");
 			let interior: Junctions = origin_location
 				.try_into()
 				.map_err(|_| SendError::DestinationUnsupported)?;
+			println!("DidXcmV3ViaXcmPalletDispatcher::dispatch 3");
 			let dest_xcm = Xcm(vec![
 				BuyExecution {
 					fees: asset,
@@ -221,7 +224,10 @@ pub mod identity_dispatch {
 				},
 				RefundSurplus,
 			]);
-			pallet_xcm::Pallet::<T>::send_xcm(interior, destination, dest_xcm).map(|_| ())
+			println!("DidXcmV3ViaXcmPalletDispatcher::dispatch 4");
+			let res = pallet_xcm::Pallet::<T>::send_xcm(interior, destination, dest_xcm).map(|_| ());
+			println!("DidXcmV3ViaXcmPalletDispatcher::dispatch 5");
+			res
 		}
 	}
 }

@@ -81,7 +81,9 @@ pub mod pallet {
 			asset: Box<MultiAsset>,
 			destination: Box<MultiLocation>,
 		) -> DispatchResult {
+			println!("dip_sender::commit_identity 1");
 			let dispatcher = ensure_signed(origin)?;
+			println!("dip_sender::commit_identity 2");
 
 			let action = match T::IdentityProvider::retrieve(&identifier) {
 				Ok(Some(identity)) => {
@@ -91,12 +93,13 @@ pub mod pallet {
 				Ok(None) => Ok(IdentityProofAction::Deleted(identifier)),
 				_ => Err(Error::<T>::IdentityNotFound),
 			}?;
+			println!("dip_sender::commit_identity 3");
 
 			//TODO: Proper error handling
 			T::IdentityProofDispatcher::dispatch(action.clone(), dispatcher, *asset, *destination)
 				.map_err(|_| Error::<T>::Dispatch)?;
 			Self::deposit_event(Event::IdentityInfoDispatched(action, destination));
-
+			println!("dip_sender::commit_identity 5");
 			Ok(())
 		}
 	}

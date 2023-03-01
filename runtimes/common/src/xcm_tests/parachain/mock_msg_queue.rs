@@ -91,10 +91,14 @@ mod internal {
 			xcm: VersionedXcm<T::RuntimeCall>,
 			max_weight: Weight,
 		) -> Result<Weight, XcmError> {
+			println!("mock_msg_queue::handle_xcmp_message 1");
 			let hash = Encode::using_encoded(&xcm, T::Hashing::hash);
+			println!("mock_msg_queue::handle_xcmp_message 2");
 			let message_hash = Encode::using_encoded(&xcm, sp_io::hashing::blake2_256);
+			println!("mock_msg_queue::handle_xcmp_message 3");
 			let (result, event) = match Xcm::<T::RuntimeCall>::try_from(xcm) {
 				Ok(xcm) => {
+					println!("mock_msg_queue::handle_xcmp_message 4");
 					let location = (Parent, Parachain(sender.into()));
 					match T::XcmExecutor::execute_xcm(location, xcm, message_hash, max_weight) {
 						Outcome::Error(e) => (Err(e), Event::Fail(Some(hash), e)),
@@ -106,7 +110,9 @@ mod internal {
 				}
 				Err(()) => (Err(XcmError::UnhandledXcmVersion), Event::BadVersion(Some(hash))),
 			};
+			println!("mock_msg_queue::handle_xcmp_message 5");
 			Self::deposit_event(event);
+			println!("{:?}", result);
 			result
 		}
 	}

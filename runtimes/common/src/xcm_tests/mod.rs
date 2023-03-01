@@ -112,3 +112,29 @@ decl_test_network! {
 		],
 	}
 }
+
+// This whole module should already be feature-gated, but we feature-gate the
+// tests for future-proofness.
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	use frame_support::assert_ok;
+	use frame_system::RawOrigin;
+	use xcm::v3::{Junction::Parachain, Junctions::Here, Parent};
+	use xcm_simulator::TestExt;
+
+	use parachain::sender::Runtime as SenderRuntime;
+
+	#[test]
+	fn first_test() {
+		SenderParachain::execute_with(|| {
+			assert_ok!(dip_sender::Pallet::<SenderRuntime>::commit_identity(
+				RawOrigin::Signed(ALICE).into(),
+				*b"id-1",
+				Box::new((Here, 1_000_000).into()),
+				Box::new((Parent, Parachain(RECEIVER_PARA_ID)).into()),
+			));
+		})
+	}
+}
