@@ -4,12 +4,12 @@ lto = "fat"
 
 [workspace]
 members = [
+  "crates/*",
   "nodes/*",
   "pallets/*",
   "runtime-api/*",
   "runtimes/*",
   "support",
-  "crates/*",
 ]
 
 [workspace.package]
@@ -49,8 +49,8 @@ attestation = {path = "pallets/attestation", default-features = false}
 ctype = {path = "pallets/ctype", default-features = false}
 delegation = {path = "pallets/delegation", default-features = false}
 did = {path = "pallets/did", default-features = false}
-dip-sender = {path = "pallets/dip-sender", default-features = false}
 dip-receiver = {path = "pallets/dip-receiver", default-features = false}
+dip-sender = {path = "pallets/dip-sender", default-features = false}
 pallet-inflation = {path = "pallets/pallet-inflation", default-features = false}
 parachain-staking = {path = "pallets/parachain-staking", default-features = false}
 pallet-did-lookup = {path = "pallets/pallet-did-lookup", default-features = false}
@@ -58,6 +58,7 @@ pallet-web3-names = {path = "pallets/pallet-web3-names", default-features = fals
 public-credentials = {path = "pallets/public-credentials", default-features = false}
 
 # Internal support (with default disabled)
+dip-support = {path = "crates/dip", default-features = false}
 kilt-asset-dids = {path = "crates/assets", default-features = false}
 kilt-support = {path = "support", default-features = false}
 runtime-common = {path = "runtimes/common", default-features = false}

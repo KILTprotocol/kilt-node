@@ -22,7 +22,7 @@
 
 pub mod traits;
 
-#[cfg(tests)]
+#[cfg(test)]
 mod tests;
 
 pub use crate::pallet::*;
@@ -31,12 +31,14 @@ pub use crate::pallet::*;
 pub mod pallet {
 	use super::*;
 
-	use crate::traits::{IdentityProofAction, IdentityProofDispatcher, IdentityProofGenerator, IdentityProvider};
-
 	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
 	use sp_std::fmt::Debug;
-	use xcm::v3::{MultiAsset, MultiLocation};
+	use xcm::latest::{MultiAsset, MultiLocation, NetworkId};
+
+	use dip_support::latest::IdentityProofAction;
+
+	use crate::traits::{IdentityProofDispatcher, IdentityProofGenerator, IdentityProvider, TxBuilder};
 
 	pub type IdentityProofActionOf<T> = IdentityProofAction<<T as Config>::Identifier, <T as Config>::ProofOutput>;
 
@@ -52,12 +54,17 @@ pub mod pallet {
 		type IdentityProofDispatcher: IdentityProofDispatcher<Self::Identifier, Self::AccountId, Self::ProofOutput>;
 		type IdentityProvider: IdentityProvider<Self::Identifier, Self::Identity>;
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
+		type TxBuilder: TxBuilder<Self::Identifier, Self::ProofOutput>;
 	}
 
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
 	#[pallet::storage_version(STORAGE_VERSION)]
 	pub struct Pallet<T>(_);
+
+	#[pallet::storage]
+	#[pallet::getter(fn destination_info)]
+	pub type DestinationInfos<T> = StorageMap<_, Blake2_128Concat, NetworkId, ()>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -96,7 +103,7 @@ pub mod pallet {
 			println!("dip_sender::commit_identity 3");
 
 			//TODO: Proper error handling
-			T::IdentityProofDispatcher::dispatch(action.clone(), dispatcher, *asset, *destination)
+			T::IdentityProofDispatcher::dispatch::<T::TxBuilder>(action.clone(), dispatcher, *asset, *destination)
 				.map_err(|_| Error::<T>::Dispatch)?;
 			Self::deposit_event(Event::IdentityInfoDispatched(action, destination));
 			println!("dip_sender::commit_identity 5");

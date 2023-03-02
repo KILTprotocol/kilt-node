@@ -16,12 +16,10 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use codec::{Decode, Encode};
+use codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
-use sp_std::fmt::Debug;
 
-// TODO: Use the one exported from the support crate
-#[derive(Clone, Eq, PartialEq, Debug, Encode, Decode, TypeInfo)]
+#[derive(Clone, Eq, PartialEq, Debug, Encode, Decode, TypeInfo, MaxEncodedLen)]
 pub enum IdentityProofAction<Identifier, Proof> {
 	Updated(Identifier, Proof),
 	Deleted(Identifier),

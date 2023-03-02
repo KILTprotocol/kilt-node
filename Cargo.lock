@@ -2175,6 +2175,7 @@ dependencies = [
 name = "dip-receiver"
 version = "1.10.0-dev"
 dependencies = [
+ "dip-support",
  "frame-support",
  "frame-system",
  "parity-scale-codec",
@@ -2187,6 +2188,7 @@ dependencies = [
 name = "dip-sender"
 version = "1.10.0-dev"
 dependencies = [
+ "dip-support",
  "frame-support",
  "frame-system",
  "parity-scale-codec",
@@ -2195,6 +2197,20 @@ dependencies = [
  "sp-std",
  "substrate-wasm-builder",
  "xcm",
+]
+
+[[package]]
+name = "dip-support"
+version = "1.10.0-dev"
+dependencies = [
+ "frame-support",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+ "xcm",
+ "xcm-executor",
 ]
 
 [[package]]
@@ -8920,6 +8936,7 @@ dependencies = [
  "did",
  "dip-receiver",
  "dip-sender",
+ "dip-support",
  "frame-support",
  "frame-system",
  "kilt-asset-dids",

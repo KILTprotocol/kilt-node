@@ -121,7 +121,7 @@ mod tests {
 
 	use frame_support::assert_ok;
 	use frame_system::RawOrigin;
-	use xcm::v3::{Junction::Parachain, Junctions::Here, Parent};
+	use xcm::latest::{Junction::Parachain, Junctions::Here, Parent};
 	use xcm_simulator::TestExt;
 
 	use parachain::sender::Runtime as SenderRuntime;

@@ -16,20 +16,9 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use codec::{Decode, Encode};
+pub mod location_conversion;
+pub mod v1;
 
-use dip_support::v1::IdentityProofAction;
-
-use super::{Identifier, IdentityProofOutput};
-
-#[derive(Encode, Decode)]
-pub(super) enum ReceiverParachainCalls {
-	#[codec(index = 5)]
-	DipReceiver(ReceiverParachainDipReceiverCalls),
-}
-
-#[derive(Encode, Decode)]
-pub(super) enum ReceiverParachainDipReceiverCalls {
-	#[codec(index = 0)]
-	ProcessIdentityAction(IdentityProofAction<Identifier, IdentityProofOutput>),
+pub mod latest {
+	pub use crate::v1::*;
 }

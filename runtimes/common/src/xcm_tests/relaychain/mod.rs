@@ -160,33 +160,4 @@ impl ump::Config for Runtime {
 	type WeightInfo = ump::TestWeightInfo;
 }
 
-// impl pallet_xcm::Config for Runtime {
-// 	const VERSION_DISCOVERY_QUEUE_SIZE: u32 = 100;
-
-// 	type AdvertisedXcmVersion = pallet_xcm::CurrentXcmVersion;
-// 	type Currency = Balances;
-// 	type CurrencyMatcher = ();
-// 	type ExecuteXcmOrigin =
-// 		EnsureXcmOrigin<RuntimeOrigin, SignedToAccountId32<RuntimeOrigin, AccountId,
-// RelayNetworkId>>; 	type MaxLockers = ConstU32<8>;
-// 	type RuntimeCall = RuntimeCall;
-// 	type RuntimeEvent = RuntimeEvent;
-// 	type RuntimeOrigin = RuntimeOrigin;
-// 	type SendXcmOrigin = EnsureXcmOrigin<RuntimeOrigin,
-// SignedToAccountId32<RuntimeOrigin, AccountId, RelayNetworkId>>;
-// 	type SovereignAccountOf = LocationToAccountId;
-// 	type TrustedLockers = ();
-// 	type UniversalLocation = UniversalLocation;
-// 	type XcmExecuteFilter = Everything;
-// 	type XcmExecutor = XcmExecutor<XcmConfig>;
-// 	type XcmReserveTransferFilter = Nothing;
-// 	type XcmRouter = XcmRouter;
-// 	type XcmTeleportFilter = Nothing;
-// 	type Weigher = FixedWeightBounds<UnitWeightCost, RuntimeCall, ConstU32<100>>;
-// 	type WeightInfo = pallet_xcm::TestWeightInfo;
-
-// 	#[cfg(feature = "runtime-benchmarks")]
-// 	type ReachableDest = ReachableDest;
-// }
-
 impl origin::Config for Runtime {}

@@ -16,11 +16,13 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use codec::{Decode, Encode, MaxEncodedLen};
-use scale_info::TypeInfo;
 use sp_runtime::DispatchError;
-use sp_std::fmt::Debug;
-use xcm::v3::{MultiAsset, MultiLocation};
+use xcm::{
+	v3::{MultiAsset, MultiLocation},
+	DoubleEncoded,
+};
+
+use dip_support::latest::IdentityProofAction;
 
 pub trait IdentityProofGenerator<Identifier, Identity, Output> {
 	fn generate_proof(identifier: &Identifier, identity: &Identity) -> Result<Output, DispatchError>;
@@ -38,18 +40,10 @@ where
 	}
 }
 
-// TODO: Move this to a support crate for consumption on sender and receiver
-// side.
-#[derive(Clone, Eq, PartialEq, Debug, Encode, Decode, TypeInfo, MaxEncodedLen)]
-pub enum IdentityProofAction<Identifier, Proof> {
-	Updated(Identifier, Proof),
-	Deleted(Identifier),
-}
-
 pub trait IdentityProofDispatcher<Identifier, AccountId, IdentityRoot> {
 	type Error;
 
-	fn dispatch(
+	fn dispatch<B: TxBuilder<Identifier, IdentityRoot>>(
 		action: IdentityProofAction<Identifier, IdentityRoot>,
 		dispatcher: AccountId,
 		asset: MultiAsset,
@@ -64,7 +58,7 @@ impl<Identifier, AccountId, IdentityRoot> IdentityProofDispatcher<Identifier, Ac
 {
 	type Error = &'static str;
 
-	fn dispatch(
+	fn dispatch<_B>(
 		_action: IdentityProofAction<Identifier, IdentityRoot>,
 		_dispatcher: AccountId,
 		_asset: MultiAsset,
@@ -95,4 +89,13 @@ impl<Identifier, Identity> IdentityProvider<Identifier, Identity> for NoneIdenti
 	fn retrieve(_identifier: &Identifier) -> Result<Option<Identity>, DispatchError> {
 		Ok(None)
 	}
+}
+
+pub trait TxBuilder<Identifier, Proof> {
+	type Error;
+
+	fn build(
+		dest: MultiLocation,
+		action: IdentityProofAction<Identifier, Proof>,
+	) -> Result<DoubleEncoded<()>, Self::Error>;
 }

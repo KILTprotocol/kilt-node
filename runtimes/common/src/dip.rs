@@ -175,9 +175,10 @@ pub mod identity_dispatch {
 	use frame_support::weights::Weight;
 	use frame_system::{pallet_prelude::OriginFor, RawOrigin};
 	use sp_std::marker::PhantomData;
-	use xcm::v3::prelude::*;
+	use xcm::latest::prelude::*;
 
-	use dip_sender::traits::IdentityProofDispatcher;
+	use dip_sender::traits::{IdentityProofDispatcher, TxBuilder};
+	use dip_support::latest::IdentityProofAction;
 	use xcm_executor::traits::Convert;
 
 	// Dispatcher wrapping the XCM pallet.
@@ -196,8 +197,8 @@ pub mod identity_dispatch {
 	{
 		type Error = SendError;
 
-		fn dispatch(
-			action: dip_sender::traits::IdentityProofAction<I, P>,
+		fn dispatch<B: TxBuilder<I, P>>(
+			action: IdentityProofAction<I, P>,
 			dispatcher: T::AccountId,
 			asset: MultiAsset,
 			destination: MultiLocation,
@@ -205,22 +206,32 @@ pub mod identity_dispatch {
 			println!("DidXcmV3ViaXcmPalletDispatcher::dispatch 1");
 			let origin_location =
 				C::convert(RawOrigin::Signed(dispatcher).into()).map_err(|_| SendError::DestinationUnsupported)?;
-			println!("DidXcmV3ViaXcmPalletDispatcher::dispatch 2");
+			println!(
+				"DidXcmV3ViaXcmPalletDispatcher::dispatch 2 with origin_location: {:?}",
+				origin_location
+			);
 			let interior: Junctions = origin_location
 				.try_into()
 				.map_err(|_| SendError::DestinationUnsupported)?;
-			println!("DidXcmV3ViaXcmPalletDispatcher::dispatch 3");
+			println!(
+				"DidXcmV3ViaXcmPalletDispatcher::dispatch 3 with interior: {:?}",
+				interior
+			);
+			// TODO: Replace with proper error handling
+			let dest_tx = B::build(destination, action)
+				.map_err(|_| ())
+				.expect("Failed to build call");
 			let dest_xcm = Xcm(vec![
 				BuyExecution {
 					fees: asset,
-					weight_limit: WeightLimit::Unlimited,
+					weight_limit: Limited(Weight::from_parts(1_000_000, 1_000_000)),
 				},
 				// TODO: Insert a `ExpectPallet` instruction
 				// TODO: Replace `action.encode().into()` with actual encoded call
 				Transact {
 					origin_kind: OriginKind::SovereignAccount,
 					require_weight_at_most: Weight::from_ref_time(100_000_000),
-					call: action.encode().into(),
+					call: dest_tx,
 				},
 				RefundSurplus,
 			]);

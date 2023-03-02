@@ -16,6 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use dip_support::location_conversion::ForeignChainAliasAccount;
 use frame_support::{
 	construct_runtime, parameter_types,
 	traits::{Everything, Nothing},
@@ -31,16 +32,17 @@ use sp_runtime::{
 use sp_std::prelude::*;
 use xcm::latest::prelude::*;
 use xcm_builder::{
-	AccountId32Aliases, AllowUnpaidExecutionFrom, EnsureXcmOrigin, FixedWeightBounds, ParentIsPreset,
-	SignedAccountId32AsNative, SignedToAccountId32, SovereignSignedViaLocation,
+	AccountId32Aliases, AllowUnpaidExecutionFrom, EnsureXcmOrigin, FixedWeightBounds, SignedAccountId32AsNative,
+	SignedToAccountId32, SovereignSignedViaLocation,
 };
 use xcm_executor::XcmExecutor;
 
+mod mock_dip;
 mod mock_msg_queue;
 
 parameter_types! {
 	pub ExistentialDeposit: Balance = 1;
-	pub const RelayNetworkId: NetworkId = NetworkId::Polkadot;
+	pub const RelayNetworkId: Option<NetworkId> = None;
 	pub const UnitWeightCost: Weight = Weight::from_parts(1, 1);
 }
 
@@ -50,7 +52,7 @@ parameter_types! {
 }
 
 pub type XcmOriginToTransactDispatchOrigin<RuntimeOrigin, NetworkId> = (
-	SovereignSignedViaLocation<LocationToAccountId<NetworkId>, RuntimeOrigin>,
+	SovereignSignedViaLocation<LocationToAccountId, RuntimeOrigin>,
 	SignedAccountId32AsNative<NetworkId, RuntimeOrigin>,
 	XcmPassthrough<RuntimeOrigin>,
 );
@@ -62,13 +64,19 @@ type Block<Runtime> = frame_system::mocking::MockBlock<Runtime>;
 type Identifier = [u8; 4];
 type IdentityProofOutput = [u8; 32];
 type UncheckedExtrinsic<Runtime> = frame_system::mocking::MockUncheckedExtrinsic<Runtime>;
-type LocationToAccountId<NetworkId> = (ParentIsPreset<AccountId>, AccountId32Aliases<NetworkId, AccountId>);
+type LocationToAccountId = ForeignChainAliasAccount<AccountId>;
 type XcmRouter<MsgQueue> = super::ParachainXcmRouter<MsgQueue>;
 
 pub(super) mod sender {
-	use dip_sender::traits::{DefaultIdentityProofGenerator, DefaultIdentityProvider};
+	use codec::Encode;
+	use dip_sender::traits::{DefaultIdentityProofGenerator, DefaultIdentityProvider, TxBuilder};
+	use dip_support::latest::IdentityProofAction;
+	use xcm::DoubleEncoded;
 
-	use crate::dip::identity_dispatch::DidXcmV3ViaXcmPalletDispatcher;
+	use crate::{
+		dip::identity_dispatch::DidXcmV3ViaXcmPalletDispatcher,
+		xcm_tests::parachain::mock_dip::{ReceiverParachainCalls, ReceiverParachainDipReceiverCalls},
+	};
 
 	use super::*;
 
@@ -78,11 +86,11 @@ pub(super) mod sender {
 			NodeBlock = Block<Runtime>,
 			UncheckedExtrinsic = UncheckedExtrinsic<Runtime>,
 		{
-			System: frame_system::{Pallet, Call, Storage, Config, Event<T>},
-			Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
-			MsgQueue: mock_msg_queue::{Pallet, Storage, Event<T>},
-			PolkadotXcm: pallet_xcm::{Pallet, Call, Event<T>, Origin},
-			DipProvider: dip_sender::{Pallet, Call, Storage, Event<T>},
+			System: frame_system::{Pallet, Call, Storage, Config, Event<T>} = 1,
+			Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>} = 2,
+			MsgQueue: mock_msg_queue::{Pallet, Storage, Event<T>} = 3,
+			PolkadotXcm: pallet_xcm::{Pallet, Call, Event<T>, Origin} = 4,
+			DipProvider: dip_sender::{Pallet, Call, Storage, Event<T>} = 5,
 		}
 	);
 
@@ -190,6 +198,31 @@ pub(super) mod sender {
 		type ReachableDest = ReachableDest;
 	}
 
+	pub struct ReceiverParachainTxBuilder;
+	impl
+		TxBuilder<
+			<receiver::Runtime as dip_receiver::Config>::Identifier,
+			<receiver::Runtime as dip_receiver::Config>::Proof,
+		> for ReceiverParachainTxBuilder
+	{
+		type Error = ();
+
+		fn build(
+			_dest: MultiLocation,
+			action: IdentityProofAction<
+				<receiver::Runtime as dip_receiver::Config>::Identifier,
+				<receiver::Runtime as dip_receiver::Config>::Proof,
+			>,
+		) -> Result<DoubleEncoded<()>, Self::Error> {
+			let double_encoded: DoubleEncoded<()> =
+				ReceiverParachainCalls::DipReceiver(ReceiverParachainDipReceiverCalls::ProcessIdentityAction(action))
+					.encode()
+					.into();
+			println!("ReceiverParachainTxBuilder::build 1");
+			Ok(double_encoded)
+		}
+	}
+
 	impl dip_sender::Config for Runtime {
 		type Identifier = Identifier;
 		type Identity = u32;
@@ -203,6 +236,7 @@ pub(super) mod sender {
 		type IdentityProvider = DefaultIdentityProvider;
 		type ProofOutput = IdentityProofOutput;
 		type RuntimeEvent = RuntimeEvent;
+		type TxBuilder = ReceiverParachainTxBuilder;
 	}
 }
 
@@ -215,11 +249,11 @@ pub(super) mod receiver {
 			NodeBlock = Block<Runtime>,
 			UncheckedExtrinsic = UncheckedExtrinsic<Runtime>,
 		{
-			System: frame_system::{Pallet, Call, Storage, Config, Event<T>},
-			Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
-			MsgQueue: mock_msg_queue::{Pallet, Storage, Event<T>},
-			PolkadotXcm: pallet_xcm::{Pallet, Call, Event<T>, Origin},
-			DipReceiver: dip_receiver::{Pallet, Call, Storage, Event<T>},
+			System: frame_system::{Pallet, Call, Storage, Config, Event<T>} = 1,
+			Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>} = 2,
+			MsgQueue: mock_msg_queue::{Pallet, Storage, Event<T>} = 3,
+			PolkadotXcm: pallet_xcm::{Pallet, Call, Event<T>, Origin} = 4,
+			DipReceiver: dip_receiver::{Pallet, Call, Storage, Event<T>} = 5,
 		}
 	);
 

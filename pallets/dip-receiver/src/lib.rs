@@ -20,8 +20,6 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-pub mod traits;
-
 #[cfg(tests)]
 mod tests;
 
@@ -31,10 +29,10 @@ pub use crate::pallet::*;
 pub mod pallet {
 	use super::*;
 
-	use crate::traits::IdentityProofAction;
-
 	use frame_support::{pallet_prelude::*, traits::EnsureOrigin, Twox64Concat};
 	use frame_system::pallet_prelude::*;
+
+	use dip_support::latest::IdentityProofAction;
 
 	/// The current storage version.
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(0);
