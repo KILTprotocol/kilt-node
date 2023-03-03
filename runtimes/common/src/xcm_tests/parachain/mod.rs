@@ -202,7 +202,7 @@ pub(super) mod sender {
 	impl
 		TxBuilder<
 			<receiver::Runtime as dip_receiver::Config>::Identifier,
-			<receiver::Runtime as dip_receiver::Config>::Proof,
+			<receiver::Runtime as dip_receiver::Config>::ProofDigest,
 		> for ReceiverParachainTxBuilder
 	{
 		type Error = ();
@@ -211,7 +211,7 @@ pub(super) mod sender {
 			_dest: MultiLocation,
 			action: IdentityProofAction<
 				<receiver::Runtime as dip_receiver::Config>::Identifier,
-				<receiver::Runtime as dip_receiver::Config>::Proof,
+				<receiver::Runtime as dip_receiver::Config>::ProofDigest,
 			>,
 		) -> Result<DoubleEncoded<()>, Self::Error> {
 			let double_encoded: DoubleEncoded<()> =
@@ -241,6 +241,7 @@ pub(super) mod sender {
 }
 
 pub(super) mod receiver {
+	use dip_receiver::traits::SuccessfulProofVerifier;
 	use frame_support::weights::WeightToFee;
 	use xcm_builder::{CurrencyAdapter, IsConcrete, UsingComponents};
 
@@ -256,7 +257,7 @@ pub(super) mod receiver {
 			Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>} = 2,
 			MsgQueue: mock_msg_queue::{Pallet, Storage, Event<T>} = 3,
 			PolkadotXcm: pallet_xcm::{Pallet, Call, Event<T>, Origin} = 4,
-			DipReceiver: dip_receiver::{Pallet, Call, Storage, Event<T>} = 5,
+			DipReceiver: dip_receiver::{Pallet, Call, Origin<T>, Storage, Event<T>} = 5,
 		}
 	);
 
@@ -380,7 +381,12 @@ pub(super) mod receiver {
 	impl dip_receiver::Config for Runtime {
 		type EnsureSourceXcmOrigin = <Self as pallet_xcm::Config>::ExecuteXcmOrigin;
 		type Identifier = Identifier;
-		type Proof = IdentityProofOutput;
+		type ProofDigest = IdentityProofOutput;
+		type ProofLeafKey = [u8; 4];
+		type ProofLeafValue = [u8; 4];
+		type ProofVerifier = SuccessfulProofVerifier<Self::ProofDigest, Self::ProofLeafKey, Self::ProofLeafValue>;
+		type RuntimeCall = RuntimeCall;
 		type RuntimeEvent = RuntimeEvent;
+		type RuntimeOrigin = RuntimeOrigin;
 	}
 }

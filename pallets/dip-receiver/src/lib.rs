@@ -20,32 +20,57 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
+mod origin;
+pub mod traits;
+
 #[cfg(tests)]
 mod tests;
 
-pub use crate::pallet::*;
+pub use crate::{origin::*, pallet::*};
 
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
 
-	use frame_support::{pallet_prelude::*, traits::EnsureOrigin, Twox64Concat};
+	use frame_support::{
+		dispatch::Dispatchable,
+		pallet_prelude::*,
+		traits::{EnsureOrigin, IsSubType},
+		Twox64Concat,
+	};
 	use frame_system::pallet_prelude::*;
 
 	use dip_support::latest::IdentityProofAction;
+
+	use crate::traits::{IdentityProofVerifier, Proof};
 
 	/// The current storage version.
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(0);
 
 	#[pallet::storage]
 	#[pallet::getter(fn identity_proofs)]
-	pub(crate) type IdentityProofs<T> = StorageMap<_, Twox64Concat, <T as Config>::Identifier, <T as Config>::Proof>;
+	pub(crate) type IdentityProofs<T> =
+		StorageMap<_, Twox64Concat, <T as Config>::Identifier, <T as Config>::ProofDigest>;
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
 		type Identifier: Parameter + MaxEncodedLen;
-		type Proof: Parameter + MaxEncodedLen;
+		type ProofLeafKey: Parameter;
+		type ProofLeafValue: Parameter;
+		type ProofDigest: Parameter + MaxEncodedLen;
+		type ProofVerifier: IdentityProofVerifier<
+			ProofDigest = Self::ProofDigest,
+			LeafKey = Self::ProofLeafKey,
+			LeafValue = Self::ProofLeafValue,
+		>;
+		type RuntimeCall: Parameter
+			+ Dispatchable<RuntimeOrigin = <Self as Config>::RuntimeOrigin>
+			+ IsSubType<<Self as frame_system::Config>::RuntimeCall>
+			+ From<frame_system::Call<Self>>
+			+ IsSubType<Call<Self>>
+			+ IsType<<Self as frame_system::Config>::RuntimeCall>;
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
+		type RuntimeOrigin: From<KiltDidOrigin<Self::Identifier, Self::AccountId>>;
 		type EnsureSourceXcmOrigin: EnsureOrigin<<Self as frame_system::Config>::RuntimeOrigin>;
 	}
 
@@ -57,12 +82,19 @@ pub mod pallet {
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
-		IdentityInfoUpdated(T::Identifier, T::Proof),
+		IdentityInfoUpdated(T::Identifier, T::ProofDigest),
 		IdentityInfoDeleted(T::Identifier),
 	}
 
 	#[pallet::error]
-	pub enum Error<T> {}
+	pub enum Error<T> {
+		IdentityNotFound,
+		InvalidProof,
+		DispatchError,
+	}
+
+	#[pallet::origin]
+	pub type Origin<T> = KiltDidOrigin<<T as Config>::Identifier, <T as frame_system::Config>::AccountId>;
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
@@ -70,7 +102,7 @@ pub mod pallet {
 		#[pallet::weight(0)]
 		pub fn process_identity_action(
 			origin: OriginFor<T>,
-			action: IdentityProofAction<T::Identifier, T::Proof>,
+			action: IdentityProofAction<T::Identifier, T::ProofDigest>,
 		) -> DispatchResult {
 			T::EnsureSourceXcmOrigin::ensure_origin(origin)?;
 
@@ -86,6 +118,27 @@ pub mod pallet {
 			};
 
 			Self::deposit_event(event);
+			Ok(())
+		}
+
+		// TODO: Add actual dispatchable
+		#[pallet::call_index(1)]
+		#[pallet::weight(0)]
+		pub fn dispatch_as(
+			origin: OriginFor<T>,
+			identifier: T::Identifier,
+			proof: Proof<T::ProofLeafKey, T::ProofLeafValue>,
+			call: <T as Config>::RuntimeCall,
+		) -> DispatchResult {
+			let submitter = ensure_signed(origin)?;
+			let proof_digest = IdentityProofs::<T>::get(&identifier).ok_or(Error::<T>::IdentityNotFound)?;
+			let _ = T::ProofVerifier::verify_proof_against_digest(proof, proof_digest)
+				.map_err(|_| Error::<T>::InvalidProof)?;
+			let origin = KiltDidOrigin {
+				did_subject: identifier,
+				account_address: submitter,
+			};
+			let _ = call.dispatch(origin.into()).map_err(|_| Error::<T>::DispatchError)?;
 			Ok(())
 		}
 	}

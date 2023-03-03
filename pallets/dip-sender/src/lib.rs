@@ -106,8 +106,40 @@ pub mod pallet {
 			T::IdentityProofDispatcher::dispatch::<T::TxBuilder>(action.clone(), dispatcher, *asset, *destination)
 				.map_err(|_| Error::<T>::Dispatch)?;
 			Self::deposit_event(Event::IdentityInfoDispatched(action, destination));
-			println!("dip_sender::commit_identity 5");
+			println!("dip_sender::commit_identity 4");
 			Ok(())
 		}
+
+		// #[pallet::call_index(1)]
+		// #[pallet::weight(0)]
+		// pub fn commit_identity_generic(
+		// 	origin: OriginFor<T>,
+		// 	identifier: T::Identifier,
+		// 	pre_dispatch: Xcm<()>,
+		// 	post_dispatch: Xcm<()>,
+		// 	destination: Box<MultiLocation>,
+		// ) -> DispatchResult {
+		// 	println!("dip_sender::commit_identity_generic 1");
+		// 	let dispatcher = ensure_signed(origin)?;
+		// 	println!("dip_sender::commit_identity_generic 2");
+
+		// 	let action = match T::IdentityProvider::retrieve(&identifier) {
+		// 		Ok(Some(identity)) => {
+		// 			let identity_proof = T::IdentityProofGenerator::generate_proof(&identifier, &identity)?;
+		// 			Ok(IdentityProofAction::Updated(identifier, identity_proof))
+		// 		}
+		// 		Ok(None) => Ok(IdentityProofAction::Deleted(identifier)),
+		// 		_ => Err(Error::<T>::IdentityNotFound),
+		// 	}?;
+		// 	println!("dip_sender::commit_identity_generic 3");
+
+
+		// 	//TODO: Proper error handling
+		// 	T::IdentityProofDispatcher::dispatch::<T::TxBuilder>(action.clone(), dispatcher, *asset, *destination)
+		// 		.map_err(|_| Error::<T>::Dispatch)?;
+		// 	Self::deposit_event(Event::IdentityInfoDispatched(action, destination));
+		// 	println!("dip_sender::commit_identity_generic 4");
+		// 	Ok(())
+		// }
 	}
 }
