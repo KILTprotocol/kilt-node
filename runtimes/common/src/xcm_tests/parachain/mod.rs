@@ -37,8 +37,8 @@ use xcm_builder::{
 };
 use xcm_executor::XcmExecutor;
 
-mod mock_dip;
-mod mock_msg_queue;
+pub(super) mod mock_dip_enabled_pallet;
+pub(super) mod mock_msg_queue_pallet;
 
 parameter_types! {
 	pub ExistentialDeposit: Balance = 1;
@@ -59,10 +59,10 @@ pub type XcmOriginToTransactDispatchOrigin<RuntimeOrigin, NetworkId> = (
 
 pub(super) type AccountId = AccountId32;
 pub(super) type Balance = u128;
+pub(super) type Identifier = [u8; 8];
 pub(super) type LocationToAccountId = ForeignChainAliasAccount<AccountId>;
 
 type Block<Runtime> = frame_system::mocking::MockBlock<Runtime>;
-type Identifier = [u8; 4];
 type IdentityProofOutput = [u8; 32];
 type UncheckedExtrinsic<Runtime> = frame_system::mocking::MockUncheckedExtrinsic<Runtime>;
 type XcmRouter<MsgQueue> = super::ParachainXcmRouter<MsgQueue>;
@@ -73,12 +73,10 @@ pub(super) mod sender {
 	use dip_support::latest::IdentityProofAction;
 	use xcm::DoubleEncoded;
 
-	use crate::{
-		dip::identity_dispatch::DidXcmV3ViaXcmPalletDispatcher,
-		xcm_tests::parachain::mock_dip::{ReceiverParachainCalls, ReceiverParachainDipReceiverCalls},
-	};
+	use crate::dip::identity_dispatch::DidXcmV3ViaXcmPalletDispatcher;
 
 	use super::*;
+	use receiver::{ReceiverParachainCalls, ReceiverParachainDipReceiverCalls};
 
 	construct_runtime!(
 		pub enum Runtime where
@@ -88,7 +86,7 @@ pub(super) mod sender {
 		{
 			System: frame_system::{Pallet, Call, Storage, Config, Event<T>} = 1,
 			Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>} = 2,
-			MsgQueue: mock_msg_queue::{Pallet, Storage, Event<T>} = 3,
+			MsgQueue: mock_msg_queue_pallet::{Pallet, Storage, Event<T>} = 3,
 			PolkadotXcm: pallet_xcm::{Pallet, Call, Event<T>, Origin} = 4,
 			DipProvider: dip_sender::{Pallet, Call, Storage, Event<T>} = 5,
 		}
@@ -164,7 +162,7 @@ pub(super) mod sender {
 		type Weigher = FixedWeightBounds<UnitWeightCost, RuntimeCall, ConstU32<100>>;
 	}
 
-	impl mock_msg_queue::Config for Runtime {
+	impl mock_msg_queue_pallet::Config for Runtime {
 		type RuntimeEvent = RuntimeEvent;
 		type XcmExecutor = XcmExecutor<XcmConfig>;
 	}
@@ -241,7 +239,9 @@ pub(super) mod sender {
 }
 
 pub(super) mod receiver {
-	use dip_receiver::traits::SuccessfulProofVerifier;
+	use codec::{Decode, Encode};
+	use dip_receiver::{traits::SuccessfulProofVerifier, EnsureKiltDidOrigin, KiltDidOrigin};
+	use dip_support::latest::IdentityProofAction;
 	use frame_support::weights::WeightToFee;
 	use xcm_builder::{CurrencyAdapter, IsConcrete, UsingComponents};
 
@@ -255,11 +255,26 @@ pub(super) mod receiver {
 		{
 			System: frame_system::{Pallet, Call, Storage, Config, Event<T>} = 1,
 			Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>} = 2,
-			MsgQueue: mock_msg_queue::{Pallet, Storage, Event<T>} = 3,
+			MsgQueue: mock_msg_queue_pallet::{Pallet, Storage, Event<T>} = 3,
 			PolkadotXcm: pallet_xcm::{Pallet, Call, Event<T>, Origin} = 4,
 			DipReceiver: dip_receiver::{Pallet, Call, Origin<T>, Storage, Event<T>} = 5,
+			DipEnabledPallet: mock_dip_enabled_pallet::{Pallet, Call, Storage, Event<T>} = 6,
 		}
 	);
+
+	// Hard-coded enum representing the dispatchable of the receiving chaing to be
+	// called via Transact instructions.
+	#[derive(Encode, Decode)]
+	pub(super) enum ReceiverParachainCalls {
+		#[codec(index = 5)]
+		DipReceiver(ReceiverParachainDipReceiverCalls),
+	}
+
+	#[derive(Encode, Decode)]
+	pub(super) enum ReceiverParachainDipReceiverCalls {
+		#[codec(index = 0)]
+		ProcessIdentityAction(IdentityProofAction<Identifier, IdentityProofOutput>),
+	}
 
 	parameter_types! {
 		pub UniversalLocation: InteriorMultiLocation = Parachain(MsgQueue::parachain_id().into()).into();
@@ -344,7 +359,7 @@ pub(super) mod receiver {
 		type Weigher = FixedWeightBounds<UnitWeightCost, RuntimeCall, ConstU32<100>>;
 	}
 
-	impl mock_msg_queue::Config for Runtime {
+	impl mock_msg_queue_pallet::Config for Runtime {
 		type RuntimeEvent = RuntimeEvent;
 		type XcmExecutor = XcmExecutor<XcmConfig>;
 	}
@@ -388,5 +403,11 @@ pub(super) mod receiver {
 		type RuntimeCall = RuntimeCall;
 		type RuntimeEvent = RuntimeEvent;
 		type RuntimeOrigin = RuntimeOrigin;
+	}
+
+	impl mock_dip_enabled_pallet::Config for Runtime {
+		type DispatchableOrigin = KiltDidOrigin<Identifier, AccountId>;
+		type EnsureOrigin = EnsureKiltDidOrigin<Identifier, AccountId>;
+		type RuntimeEvent = RuntimeEvent;
 	}
 }

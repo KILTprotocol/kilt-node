@@ -17,11 +17,25 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use codec::{Decode, Encode, MaxEncodedLen};
-use frame_support::RuntimeDebug;
+use frame_support::{traits::EnsureOrigin, RuntimeDebug};
 use scale_info::TypeInfo;
+use sp_std::marker::PhantomData;
 
 #[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct KiltDidOrigin<DidIdentifier, AccountId> {
 	pub did_subject: DidIdentifier,
 	pub account_address: AccountId,
+}
+
+pub struct EnsureKiltDidOrigin<DidIdentifier, AccountId>(PhantomData<(DidIdentifier, AccountId)>);
+
+impl<OuterOrigin, DidIdentifier, AccountId> EnsureOrigin<OuterOrigin> for EnsureKiltDidOrigin<DidIdentifier, AccountId>
+where
+	OuterOrigin: Into<Result<KiltDidOrigin<DidIdentifier, AccountId>, OuterOrigin>>,
+{
+	type Success = KiltDidOrigin<DidIdentifier, AccountId>;
+
+	fn try_origin(o: OuterOrigin) -> Result<Self::Success, OuterOrigin> {
+		o.into()
+	}
 }

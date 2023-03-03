@@ -21,7 +21,7 @@ use frame_support::RuntimeDebug;
 use scale_info::TypeInfo;
 use sp_std::marker::PhantomData;
 
-#[derive(Encode, Decode, RuntimeDebug, Clone, Eq, PartialEq, TypeInfo)]
+#[derive(Encode, Decode, RuntimeDebug, Clone, Eq, PartialEq, TypeInfo, Default)]
 pub struct Proof<LeafKey, LeafValue>(Vec<(LeafKey, LeafValue)>);
 
 pub trait IdentityProofVerifier {

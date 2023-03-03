@@ -145,17 +145,41 @@ mod tests {
 	use frame_system::RawOrigin;
 	use xcm_simulator::TestExt;
 
-	use parachain::sender::Runtime as SenderRuntime;
+	use dip_receiver::traits::Proof;
+	use parachain::{receiver::Runtime as ReceiverRuntime, sender::Runtime as SenderRuntime};
+
+	const ALICE_DID_IDENTIFIER: parachain::Identifier = *b"id/alice";
 
 	#[test]
 	fn first_test() {
 		SenderParachain::execute_with(|| {
+			// 1. Send Alice identity commitment over to receiver parachain
 			assert_ok!(dip_sender::Pallet::<SenderRuntime>::commit_identity(
 				RawOrigin::Signed(ALICE).into(),
-				*b"id-1",
+				ALICE_DID_IDENTIFIER,
 				Box::new((Here, 100_000_000).into()),
 				Box::new((Parent, Parachain(RECEIVER_PARA_ID)).into()),
 			));
-		})
+		});
+
+		ReceiverParachain::execute_with(|| {
+			// 2. Verify Alice's identity exists on parachain 2, and that her
+			// balance has been decreased accordingly on parachain 2.
+			assert_eq!(
+				dip_receiver::Pallet::<ReceiverRuntime>::identity_proofs(ALICE_DID_IDENTIFIER),
+				// Sender parachain uses the `DefaultIdentityProofGenerator` which returns the default for the type of
+				// the proof value.
+				Some(<SenderRuntime as dip_sender::Config>::ProofOutput::default())
+			);
+			// 3. Verify that Alice can use her DID on parachain B by calling
+			// the extrinsic of the test pallet.
+			assert_ok!(dip_receiver::Pallet::<ReceiverRuntime>::dispatch_as(
+				RawOrigin::Signed(ALICE).into(),
+				ALICE_DID_IDENTIFIER,
+				// Test runtime always returns true for proofs.
+				Proof::default(),
+				Box::new(parachain::mock_dip_enabled_pallet::Call::<ReceiverRuntime>::test_origin {}.into())
+			));
+		});
 	}
 }

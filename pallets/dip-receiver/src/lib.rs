@@ -98,10 +98,12 @@ pub mod pallet {
 
 			let event = match action {
 				IdentityProofAction::Updated(identifier, proof) => {
+					println!("DipReceiver::process_identity_action - Action was to update. Writing...");
 					IdentityProofs::<T>::mutate(&identifier, |entry| *entry = Some(proof.clone()));
 					Event::<T>::IdentityInfoUpdated(identifier, proof)
 				}
 				IdentityProofAction::Deleted(identifier) => {
+					println!("DipReceiver::process_identity_action - Action was to delete. Deleting...");
 					IdentityProofs::<T>::remove(&identifier);
 					Event::<T>::IdentityInfoDeleted(identifier)
 				}
