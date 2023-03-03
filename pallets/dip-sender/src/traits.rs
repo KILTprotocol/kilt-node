@@ -120,17 +120,8 @@ pub mod identity_dispatch {
 			let dest_tx = B::build(destination, action)
 				.map_err(|_| ())
 				.expect("Failed to build call");
-			let dest_xcm = Xcm(vec![
-				WithdrawAsset(asset.clone().into()),
-				BuyExecution {
-					fees: asset,
-					weight_limit: Limited(Weight::from_parts(1_000_000, 1_000_000)),
-				},
-				Transact {
-					origin_kind: OriginKind::SovereignAccount,
-					require_weight_at_most: Weight::from_ref_time(1_000_000),
-					call: dest_tx,
-				},
+			// Catch-case if anything goes wrong.
+			let refund_and_deposit = vec![
 				RefundSurplus,
 				DepositAsset {
 					assets: Wild(All),
@@ -138,7 +129,26 @@ pub mod identity_dispatch {
 						.pushed_with_interior(*origin_location.last().unwrap())
 						.unwrap(),
 				},
-			]);
+			];
+			let operation = [
+				vec![
+					WithdrawAsset(asset.clone().into()),
+					// Refund all and deposit back to owner if anything goes wrong.
+					SetErrorHandler(refund_and_deposit.clone().into()),
+					BuyExecution {
+						fees: asset,
+						weight_limit: Limited(Weight::from_parts(1_000_000, 1_000_000)),
+					},
+					Transact {
+						origin_kind: OriginKind::SovereignAccount,
+						require_weight_at_most: Weight::from_ref_time(1_000_000),
+						call: dest_tx,
+					},
+				],
+				refund_and_deposit,
+			]
+			.concat();
+			let dest_xcm = Xcm(operation);
 			println!("DidXcmV3ViaXcmPalletDispatcher::dispatch 4");
 			let res = pallet_xcm::Pallet::<T>::send_xcm(interior, destination, dest_xcm).map(|_| ());
 			println!("DidXcmV3ViaXcmPalletDispatcher::dispatch 5");
