@@ -32,12 +32,7 @@ pub use crate::{origin::*, pallet::*};
 pub mod pallet {
 	use super::*;
 
-	use frame_support::{
-		dispatch::Dispatchable,
-		pallet_prelude::*,
-		traits::{EnsureOrigin, IsSubType},
-		Twox64Concat,
-	};
+	use frame_support::{dispatch::Dispatchable, pallet_prelude::*, traits::EnsureOrigin, Twox64Concat};
 	use frame_system::pallet_prelude::*;
 
 	use dip_support::latest::IdentityProofAction;
@@ -54,6 +49,7 @@ pub mod pallet {
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
+		type EnsureSourceXcmOrigin: EnsureOrigin<<Self as frame_system::Config>::RuntimeOrigin>;
 		type Identifier: Parameter + MaxEncodedLen;
 		type ProofLeafKey: Parameter;
 		type ProofLeafValue: Parameter;
@@ -63,15 +59,9 @@ pub mod pallet {
 			LeafKey = Self::ProofLeafKey,
 			LeafValue = Self::ProofLeafValue,
 		>;
-		type RuntimeCall: Parameter
-			+ Dispatchable<RuntimeOrigin = <Self as Config>::RuntimeOrigin>
-			+ IsSubType<<Self as frame_system::Config>::RuntimeCall>
-			+ From<frame_system::Call<Self>>
-			+ IsSubType<Call<Self>>
-			+ IsType<<Self as frame_system::Config>::RuntimeCall>;
+		type RuntimeCall: Parameter + Dispatchable<RuntimeOrigin = <Self as Config>::RuntimeOrigin>;
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
-		type RuntimeOrigin: From<KiltDidOrigin<Self::Identifier, Self::AccountId>>;
-		type EnsureSourceXcmOrigin: EnsureOrigin<<Self as frame_system::Config>::RuntimeOrigin>;
+		type RuntimeOrigin: From<Origin<Self>>;
 	}
 
 	#[pallet::pallet]
@@ -128,17 +118,19 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			identifier: T::Identifier,
 			proof: Proof<T::ProofLeafKey, T::ProofLeafValue>,
-			call: <T as Config>::RuntimeCall,
+			call: Box<<T as Config>::RuntimeCall>,
 		) -> DispatchResult {
 			let submitter = ensure_signed(origin)?;
 			let proof_digest = IdentityProofs::<T>::get(&identifier).ok_or(Error::<T>::IdentityNotFound)?;
 			let _ = T::ProofVerifier::verify_proof_against_digest(proof, proof_digest)
 				.map_err(|_| Error::<T>::InvalidProof)?;
-			let origin = KiltDidOrigin {
+			let did_origin = KiltDidOrigin {
 				did_subject: identifier,
 				account_address: submitter,
 			};
-			let _ = call.dispatch(origin.into()).map_err(|_| Error::<T>::DispatchError)?;
+			let _ = call
+				.dispatch(did_origin.into())
+				.map_err(|_| Error::<T>::DispatchError)?;
 			Ok(())
 		}
 	}
