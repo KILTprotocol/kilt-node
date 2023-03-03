@@ -23,9 +23,6 @@
 mod origin;
 pub mod traits;
 
-#[cfg(tests)]
-mod tests;
-
 pub use crate::{origin::*, pallet::*};
 
 #[frame_support::pallet]
@@ -35,13 +32,14 @@ pub mod pallet {
 	use frame_support::{dispatch::Dispatchable, pallet_prelude::*, traits::EnsureOrigin, Twox64Concat};
 	use frame_system::pallet_prelude::*;
 
-	use dip_support::latest::IdentityProofAction;
+	use dip_support::{latest::IdentityProofAction, VersionedIdentityProof, VersionedIdentityProofAction};
 
-	use crate::traits::{IdentityProofVerifier, Proof};
+	use crate::traits::IdentityProofVerifier;
 
 	/// The current storage version.
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(0);
 
+	// TODO: Store also additional details received by the provider
 	#[pallet::storage]
 	#[pallet::getter(fn identity_proofs)]
 	pub(crate) type IdentityProofs<T> =
@@ -84,7 +82,7 @@ pub mod pallet {
 	}
 
 	#[pallet::origin]
-	pub type Origin<T> = KiltDidOrigin<<T as Config>::Identifier, <T as frame_system::Config>::AccountId>;
+	pub type Origin<T> = DipOrigin<<T as Config>::Identifier, <T as frame_system::Config>::AccountId>;
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
@@ -92,17 +90,17 @@ pub mod pallet {
 		#[pallet::weight(0)]
 		pub fn process_identity_action(
 			origin: OriginFor<T>,
-			action: IdentityProofAction<T::Identifier, T::ProofDigest>,
+			action: VersionedIdentityProofAction<T::Identifier, T::ProofDigest>,
 		) -> DispatchResult {
 			T::EnsureSourceXcmOrigin::ensure_origin(origin)?;
 
 			let event = match action {
-				IdentityProofAction::Updated(identifier, proof) => {
+				VersionedIdentityProofAction::V1(IdentityProofAction::Updated(identifier, proof, _)) => {
 					println!("DipReceiver::process_identity_action - Action was to update. Writing...");
 					IdentityProofs::<T>::mutate(&identifier, |entry| *entry = Some(proof.clone()));
 					Event::<T>::IdentityInfoUpdated(identifier, proof)
 				}
-				IdentityProofAction::Deleted(identifier) => {
+				VersionedIdentityProofAction::V1(IdentityProofAction::Deleted(identifier)) => {
 					println!("DipReceiver::process_identity_action - Action was to delete. Deleting...");
 					IdentityProofs::<T>::remove(&identifier);
 					Event::<T>::IdentityInfoDeleted(identifier)
@@ -119,15 +117,15 @@ pub mod pallet {
 		pub fn dispatch_as(
 			origin: OriginFor<T>,
 			identifier: T::Identifier,
-			proof: Proof<T::ProofLeafKey, T::ProofLeafValue>,
+			proof: VersionedIdentityProof<T::ProofLeafKey, T::ProofLeafValue>,
 			call: Box<<T as Config>::RuntimeCall>,
 		) -> DispatchResult {
 			let submitter = ensure_signed(origin)?;
 			let proof_digest = IdentityProofs::<T>::get(&identifier).ok_or(Error::<T>::IdentityNotFound)?;
 			let _ = T::ProofVerifier::verify_proof_against_digest(proof, proof_digest)
 				.map_err(|_| Error::<T>::InvalidProof)?;
-			let did_origin = KiltDidOrigin {
-				did_subject: identifier,
+			let did_origin = DipOrigin {
+				did_identifier: identifier,
 				account_address: submitter,
 			};
 			let _ = call

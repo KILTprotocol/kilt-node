@@ -16,13 +16,8 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use codec::{Decode, Encode};
-use frame_support::RuntimeDebug;
-use scale_info::TypeInfo;
+use dip_support::VersionedIdentityProof;
 use sp_std::marker::PhantomData;
-
-#[derive(Encode, Decode, RuntimeDebug, Clone, Eq, PartialEq, TypeInfo, Default)]
-pub struct Proof<LeafKey, LeafValue>(Vec<(LeafKey, LeafValue)>);
 
 pub trait IdentityProofVerifier {
 	type ProofDigest;
@@ -32,7 +27,7 @@ pub trait IdentityProofVerifier {
 	type Error;
 
 	fn verify_proof_against_digest(
-		proof: Proof<Self::LeafKey, Self::LeafValue>,
+		proof: VersionedIdentityProof<Self::LeafKey, Self::LeafValue>,
 		digest: Self::ProofDigest,
 	) -> Result<Self::VerificationResult, Self::Error>;
 }
@@ -48,7 +43,7 @@ impl<ProofDigest, LeafKey, LeafValue> IdentityProofVerifier
 	type VerificationResult = ();
 
 	fn verify_proof_against_digest(
-		_proof: Proof<Self::LeafKey, Self::LeafValue>,
+		_proof: VersionedIdentityProof<Self::LeafKey, Self::LeafValue>,
 		_digest: Self::ProofDigest,
 	) -> Result<Self::VerificationResult, Self::Error> {
 		Ok(())

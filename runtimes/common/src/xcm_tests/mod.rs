@@ -145,7 +145,7 @@ mod tests {
 	use frame_system::RawOrigin;
 	use xcm_simulator::TestExt;
 
-	use dip_receiver::traits::Proof;
+	use dip_support::latest::Proof;
 	use parachain::{receiver::Runtime as ReceiverRuntime, sender::Runtime as SenderRuntime};
 
 	const ALICE_DID_IDENTIFIER: parachain::Identifier = *b"id/alice";
@@ -177,7 +177,7 @@ mod tests {
 				RawOrigin::Signed(ALICE).into(),
 				ALICE_DID_IDENTIFIER,
 				// Test runtime always returns true for proofs.
-				Proof::default(),
+				Proof::default().into(),
 				Box::new(parachain::mock_dip_enabled_pallet::Call::<ReceiverRuntime>::test_origin {}.into())
 			));
 		});

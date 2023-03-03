@@ -2191,12 +2191,14 @@ dependencies = [
  "dip-support",
  "frame-support",
  "frame-system",
+ "pallet-xcm",
  "parity-scale-codec",
  "scale-info",
  "sp-runtime",
  "sp-std",
  "substrate-wasm-builder",
  "xcm",
+ "xcm-executor",
 ]
 
 [[package]]

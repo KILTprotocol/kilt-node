@@ -17,10 +17,14 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use codec::{Decode, Encode, MaxEncodedLen};
+use frame_support::RuntimeDebug;
 use scale_info::TypeInfo;
 
 #[derive(Clone, Eq, PartialEq, Debug, Encode, Decode, TypeInfo, MaxEncodedLen)]
-pub enum IdentityProofAction<Identifier, Proof> {
-	Updated(Identifier, Proof),
+pub enum IdentityProofAction<Identifier, Proof, Details = ()> {
+	Updated(Identifier, Proof, Details),
 	Deleted(Identifier),
 }
+
+#[derive(Encode, Decode, RuntimeDebug, Clone, Eq, PartialEq, TypeInfo, Default)]
+pub struct Proof<LeafKey, LeafValue>(Vec<(LeafKey, LeafValue)>);

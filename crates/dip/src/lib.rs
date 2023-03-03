@@ -16,9 +16,43 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-pub mod location_conversion;
-pub mod v1;
+// Export v1 behind a namespace and also as the latest
 
+use codec::{Decode, Encode, MaxEncodedLen};
+use frame_support::RuntimeDebug;
+use scale_info::TypeInfo;
+
+pub mod v1;
 pub mod latest {
 	pub use crate::v1::*;
+}
+
+// Export utility modules without namespacing.
+mod location_conversion;
+pub use location_conversion::*;
+
+#[derive(Clone, Eq, PartialEq, Debug, Encode, Decode, TypeInfo, MaxEncodedLen)]
+pub enum VersionedIdentityProofAction<Identifier, Proof, Details = ()> {
+	#[codec(index = 1)]
+	V1(v1::IdentityProofAction<Identifier, Proof, Details>),
+}
+
+impl<Identifier, Proof> From<v1::IdentityProofAction<Identifier, Proof>>
+	for VersionedIdentityProofAction<Identifier, Proof>
+{
+	fn from(value: v1::IdentityProofAction<Identifier, Proof>) -> Self {
+		Self::V1(value)
+	}
+}
+
+#[derive(Encode, Decode, RuntimeDebug, Clone, Eq, PartialEq, TypeInfo)]
+pub enum VersionedIdentityProof<LeafKey, LeafValue> {
+	#[codec(index = 1)]
+	V1(v1::Proof<LeafKey, LeafValue>),
+}
+
+impl<LeafKey, LeafValue> From<v1::Proof<LeafKey, LeafValue>> for VersionedIdentityProof<LeafKey, LeafValue> {
+	fn from(value: v1::Proof<LeafKey, LeafValue>) -> Self {
+		Self::V1(value)
+	}
 }

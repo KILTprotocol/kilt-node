@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use dip_support::location_conversion::ForeignChainAliasAccount;
+use dip_support::ForeignChainAliasAccount;
 use frame_support::{
 	construct_runtime, parameter_types,
 	traits::{Everything, Nothing},
@@ -69,11 +69,11 @@ type XcmRouter<MsgQueue> = super::ParachainXcmRouter<MsgQueue>;
 
 pub(super) mod sender {
 	use codec::Encode;
-	use dip_sender::traits::{DefaultIdentityProofGenerator, DefaultIdentityProvider, TxBuilder};
-	use dip_support::latest::IdentityProofAction;
+	use dip_sender::traits::{
+		DefaultIdentityProofGenerator, DefaultIdentityProvider, DidXcmV3ViaXcmPalletDispatcher, TxBuilder,
+	};
+	use dip_support::VersionedIdentityProofAction;
 	use xcm::DoubleEncoded;
-
-	use crate::dip::identity_dispatch::DidXcmV3ViaXcmPalletDispatcher;
 
 	use super::*;
 	use receiver::{ReceiverParachainCalls, ReceiverParachainDipReceiverCalls};
@@ -87,7 +87,7 @@ pub(super) mod sender {
 			System: frame_system::{Pallet, Call, Storage, Config, Event<T>} = 1,
 			Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>} = 2,
 			MsgQueue: mock_msg_queue_pallet::{Pallet, Storage, Event<T>} = 3,
-			PolkadotXcm: pallet_xcm::{Pallet, Call, Event<T>, Origin} = 4,
+			Xcm: pallet_xcm::{Pallet, Call, Event<T>, Origin} = 4,
 			DipProvider: dip_sender::{Pallet, Call, Storage, Event<T>} = 5,
 		}
 	);
@@ -207,7 +207,7 @@ pub(super) mod sender {
 
 		fn build(
 			_dest: MultiLocation,
-			action: IdentityProofAction<
+			action: VersionedIdentityProofAction<
 				<receiver::Runtime as dip_receiver::Config>::Identifier,
 				<receiver::Runtime as dip_receiver::Config>::ProofDigest,
 			>,
@@ -240,8 +240,8 @@ pub(super) mod sender {
 
 pub(super) mod receiver {
 	use codec::{Decode, Encode};
-	use dip_receiver::{traits::SuccessfulProofVerifier, EnsureKiltDidOrigin, KiltDidOrigin};
-	use dip_support::latest::IdentityProofAction;
+	use dip_receiver::{traits::SuccessfulProofVerifier, DipOrigin, EnsureDipOrigin};
+	use dip_support::VersionedIdentityProofAction;
 	use frame_support::weights::WeightToFee;
 	use xcm_builder::{CurrencyAdapter, IsConcrete, UsingComponents};
 
@@ -256,7 +256,7 @@ pub(super) mod receiver {
 			System: frame_system::{Pallet, Call, Storage, Config, Event<T>} = 1,
 			Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>} = 2,
 			MsgQueue: mock_msg_queue_pallet::{Pallet, Storage, Event<T>} = 3,
-			PolkadotXcm: pallet_xcm::{Pallet, Call, Event<T>, Origin} = 4,
+			Xcm: pallet_xcm::{Pallet, Call, Event<T>, Origin} = 4,
 			DipReceiver: dip_receiver::{Pallet, Call, Origin<T>, Storage, Event<T>} = 5,
 			DipEnabledPallet: mock_dip_enabled_pallet::{Pallet, Call, Storage, Event<T>} = 6,
 		}
@@ -273,7 +273,7 @@ pub(super) mod receiver {
 	#[derive(Encode, Decode)]
 	pub(super) enum ReceiverParachainDipReceiverCalls {
 		#[codec(index = 0)]
-		ProcessIdentityAction(IdentityProofAction<Identifier, IdentityProofOutput>),
+		ProcessIdentityAction(VersionedIdentityProofAction<Identifier, IdentityProofOutput>),
 	}
 
 	parameter_types! {
@@ -406,8 +406,8 @@ pub(super) mod receiver {
 	}
 
 	impl mock_dip_enabled_pallet::Config for Runtime {
-		type DispatchableOrigin = KiltDidOrigin<Identifier, AccountId>;
-		type EnsureOrigin = EnsureKiltDidOrigin<Identifier, AccountId>;
+		type DispatchableOrigin = DipOrigin<Identifier, AccountId>;
+		type EnsureOrigin = EnsureDipOrigin<Identifier, AccountId>;
 		type RuntimeEvent = RuntimeEvent;
 	}
 }

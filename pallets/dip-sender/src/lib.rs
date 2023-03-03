@@ -22,9 +22,6 @@
 
 pub mod traits;
 
-#[cfg(test)]
-mod tests;
-
 pub use crate::pallet::*;
 
 #[frame_support::pallet]
@@ -34,13 +31,15 @@ pub mod pallet {
 	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
 	use sp_std::fmt::Debug;
-	use xcm::latest::prelude::*;
+	use xcm::{latest::prelude::*, VersionedMultiAsset, VersionedMultiLocation};
 
-	use dip_support::latest::IdentityProofAction;
+	use dip_support::{v1::IdentityProofAction, VersionedIdentityProofAction};
 
 	use crate::traits::{IdentityProofDispatcher, IdentityProofGenerator, IdentityProvider, TxBuilder};
 
 	pub type IdentityProofActionOf<T> = IdentityProofAction<<T as Config>::Identifier, <T as Config>::ProofOutput>;
+	pub type VersionedIdentityProofActionOf<T> =
+		VersionedIdentityProofAction<<T as Config>::Identifier, <T as Config>::ProofOutput>;
 
 	/// The current storage version.
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(0); // No need to write a migration to store it.
@@ -51,10 +50,10 @@ pub mod pallet {
 		type Identity;
 		type ProofOutput: Clone + Eq + Debug;
 		type IdentityProofGenerator: IdentityProofGenerator<Self::Identifier, Self::Identity, Self::ProofOutput>;
-		type IdentityProofDispatcher: IdentityProofDispatcher<Self::Identifier, Self::AccountId, Self::ProofOutput>;
+		type IdentityProofDispatcher: IdentityProofDispatcher<Self::Identifier, Self::AccountId, Self::ProofOutput, ()>;
 		type IdentityProvider: IdentityProvider<Self::Identifier, Self::Identity>;
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
-		type TxBuilder: TxBuilder<Self::Identifier, Self::ProofOutput>;
+		type TxBuilder: TxBuilder<Self::Identifier, Self::ProofOutput, ()>;
 	}
 
 	#[pallet::pallet]
@@ -69,13 +68,14 @@ pub mod pallet {
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
-		IdentityInfoDispatched(IdentityProofActionOf<T>, Box<MultiLocation>),
+		IdentityInfoDispatched(VersionedIdentityProofActionOf<T>, Box<MultiLocation>),
 	}
 
 	#[pallet::error]
 	pub enum Error<T> {
 		IdentityNotFound,
 		Dispatch,
+		BadVersion,
 	}
 
 	#[pallet::call]
@@ -85,61 +85,39 @@ pub mod pallet {
 		pub fn commit_identity(
 			origin: OriginFor<T>,
 			identifier: T::Identifier,
-			asset: Box<MultiAsset>,
-			destination: Box<MultiLocation>,
+			asset: Box<VersionedMultiAsset>,
+			// TODO: Add correct version creation based on lookup (?)
+			destination: Box<VersionedMultiLocation>,
 		) -> DispatchResult {
 			println!("dip_sender::commit_identity 1");
 			let dispatcher = ensure_signed(origin)?;
 			println!("dip_sender::commit_identity 2");
 
-			let action = match T::IdentityProvider::retrieve(&identifier) {
+			let asset: MultiAsset = (*asset).try_into().map_err(|_| Error::<T>::BadVersion)?;
+			let destination: MultiLocation = (*destination).try_into().map_err(|_| Error::<T>::BadVersion)?;
+
+			let action: IdentityProofActionOf<T> = match T::IdentityProvider::retrieve(&identifier) {
 				Ok(Some(identity)) => {
 					let identity_proof = T::IdentityProofGenerator::generate_proof(&identifier, &identity)?;
-					Ok(IdentityProofAction::Updated(identifier, identity_proof))
+					Ok(IdentityProofAction::Updated(identifier, identity_proof, ()))
 				}
 				Ok(None) => Ok(IdentityProofAction::Deleted(identifier)),
 				_ => Err(Error::<T>::IdentityNotFound),
 			}?;
 			println!("dip_sender::commit_identity 3");
+			let versioned_action = VersionedIdentityProofAction::V1(action);
 
 			//TODO: Proper error handling
-			T::IdentityProofDispatcher::dispatch::<T::TxBuilder>(action.clone(), dispatcher, *asset, *destination)
-				.map_err(|_| Error::<T>::Dispatch)?;
-			Self::deposit_event(Event::IdentityInfoDispatched(action, destination));
+			T::IdentityProofDispatcher::dispatch::<T::TxBuilder>(
+				versioned_action.clone(),
+				dispatcher,
+				asset,
+				destination,
+			)
+			.map_err(|_| Error::<T>::Dispatch)?;
+			Self::deposit_event(Event::IdentityInfoDispatched(versioned_action, Box::new(destination)));
 			println!("dip_sender::commit_identity 4");
 			Ok(())
 		}
-
-		// #[pallet::call_index(1)]
-		// #[pallet::weight(0)]
-		// pub fn commit_identity_generic(
-		// 	origin: OriginFor<T>,
-		// 	identifier: T::Identifier,
-		// 	pre_dispatch: Xcm<()>,
-		// 	post_dispatch: Xcm<()>,
-		// 	destination: Box<MultiLocation>,
-		// ) -> DispatchResult {
-		// 	println!("dip_sender::commit_identity_generic 1");
-		// 	let dispatcher = ensure_signed(origin)?;
-		// 	println!("dip_sender::commit_identity_generic 2");
-
-		// 	let action = match T::IdentityProvider::retrieve(&identifier) {
-		// 		Ok(Some(identity)) => {
-		// 			let identity_proof = T::IdentityProofGenerator::generate_proof(&identifier, &identity)?;
-		// 			Ok(IdentityProofAction::Updated(identifier, identity_proof))
-		// 		}
-		// 		Ok(None) => Ok(IdentityProofAction::Deleted(identifier)),
-		// 		_ => Err(Error::<T>::IdentityNotFound),
-		// 	}?;
-		// 	println!("dip_sender::commit_identity_generic 3");
-
-
-		// 	//TODO: Proper error handling
-		// 	T::IdentityProofDispatcher::dispatch::<T::TxBuilder>(action.clone(), dispatcher, *asset, *destination)
-		// 		.map_err(|_| Error::<T>::Dispatch)?;
-		// 	Self::deposit_event(Event::IdentityInfoDispatched(action, destination));
-		// 	println!("dip_sender::commit_identity_generic 4");
-		// 	Ok(())
-		// }
 	}
 }

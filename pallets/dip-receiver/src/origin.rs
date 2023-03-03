@@ -22,18 +22,18 @@ use scale_info::TypeInfo;
 use sp_std::marker::PhantomData;
 
 #[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub struct KiltDidOrigin<DidIdentifier, AccountId> {
-	pub did_subject: DidIdentifier,
+pub struct DipOrigin<DidIdentifier, AccountId> {
+	pub did_identifier: DidIdentifier,
 	pub account_address: AccountId,
 }
 
-pub struct EnsureKiltDidOrigin<DidIdentifier, AccountId>(PhantomData<(DidIdentifier, AccountId)>);
+pub struct EnsureDipOrigin<DidIdentifier, AccountId>(PhantomData<(DidIdentifier, AccountId)>);
 
-impl<OuterOrigin, DidIdentifier, AccountId> EnsureOrigin<OuterOrigin> for EnsureKiltDidOrigin<DidIdentifier, AccountId>
+impl<OuterOrigin, DidIdentifier, AccountId> EnsureOrigin<OuterOrigin> for EnsureDipOrigin<DidIdentifier, AccountId>
 where
-	OuterOrigin: Into<Result<KiltDidOrigin<DidIdentifier, AccountId>, OuterOrigin>>,
+	OuterOrigin: Into<Result<DipOrigin<DidIdentifier, AccountId>, OuterOrigin>>,
 {
-	type Success = KiltDidOrigin<DidIdentifier, AccountId>;
+	type Success = DipOrigin<DidIdentifier, AccountId>;
 
 	fn try_origin(o: OuterOrigin) -> Result<Self::Success, OuterOrigin> {
 		o.into()
