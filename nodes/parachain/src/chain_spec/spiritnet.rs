@@ -37,7 +37,7 @@ use crate::chain_spec::{get_account_id_from_seed, get_from_seed, DEFAULT_PARA_ID
 
 use super::{get_properties, Extensions};
 
-const SAFE_XCM_VERSION: u32 = xcm::prelude::XCM_VERSION;
+const SAFE_XCM_VERSION: u32 = xcm::latest::prelude::XCM_VERSION;
 
 /// Specialized `ChainSpec` for the normal parachain runtime.
 pub type ChainSpec = sc_service::GenericChainSpec<GenesisConfig, Extensions>;

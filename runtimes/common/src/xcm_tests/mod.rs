@@ -18,6 +18,8 @@
 
 use frame_support::sp_tracing;
 use sp_io::TestExternalities;
+use xcm::latest::prelude::*;
+use xcm_executor::traits::Convert;
 use xcm_simulator::{decl_test_network, decl_test_parachain, decl_test_relay_chain};
 
 pub mod parachain;
@@ -37,6 +39,20 @@ fn relay_ext() -> TestExternalities {
 		.unwrap();
 
 	TestExternalities::new(t)
+}
+
+fn sender_account_on_receiver_chain(account: parachain::AccountId) -> parachain::AccountId {
+	parachain::LocationToAccountId::convert(
+		ParentThen(X2(
+			Parachain(SENDER_PARA_ID),
+			AccountId32 {
+				network: None,
+				id: account.into(),
+			},
+		))
+		.into(),
+	)
+	.expect("Conversion of account from sender parachain to receiver parachain should not fail.")
 }
 
 fn sender_para_ext() -> TestExternalities {
@@ -64,9 +80,15 @@ fn sender_para_ext() -> TestExternalities {
 fn receiver_para_ext() -> TestExternalities {
 	use parachain::receiver::{MsgQueue, Runtime, System};
 
-	let t = frame_system::GenesisConfig::default()
+	let mut t = frame_system::GenesisConfig::default()
 		.build_storage::<Runtime>()
 		.unwrap();
+
+	pallet_balances::GenesisConfig::<Runtime> {
+		balances: vec![(sender_account_on_receiver_chain(ALICE), INITIAL_BALANCE)],
+	}
+	.assimilate_storage(&mut t)
+	.unwrap();
 
 	let mut ext = TestExternalities::new(t);
 	ext.execute_with(|| {
@@ -121,7 +143,6 @@ mod tests {
 
 	use frame_support::assert_ok;
 	use frame_system::RawOrigin;
-	use xcm::latest::{Junction::Parachain, Junctions::Here, Parent};
 	use xcm_simulator::TestExt;
 
 	use parachain::sender::Runtime as SenderRuntime;
@@ -132,7 +153,7 @@ mod tests {
 			assert_ok!(dip_sender::Pallet::<SenderRuntime>::commit_identity(
 				RawOrigin::Signed(ALICE).into(),
 				*b"id-1",
-				Box::new((Here, 1_000_000).into()),
+				Box::new((Here, 100_000_000).into()),
 				Box::new((Parent, Parachain(RECEIVER_PARA_ID)).into()),
 			));
 		})

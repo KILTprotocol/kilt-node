@@ -23,11 +23,7 @@ use frame_support::traits::Get;
 use sp_io::hashing::blake2_256;
 use sp_runtime::traits::{AccountIdConversion, TrailingZeroInput};
 use sp_std::{borrow::Borrow, marker::PhantomData};
-use xcm::latest::{
-	Junction::{AccountId32, AccountKey20, Parachain},
-	Junctions::{X1, X2},
-	MultiLocation, NetworkId, Parent,
-};
+use xcm::latest::prelude::*;
 use xcm_executor::traits::Convert;
 
 /// Prefix for generating alias account for accounts coming

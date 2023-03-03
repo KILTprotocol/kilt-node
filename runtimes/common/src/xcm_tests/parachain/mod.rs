@@ -59,12 +59,12 @@ pub type XcmOriginToTransactDispatchOrigin<RuntimeOrigin, NetworkId> = (
 
 pub(super) type AccountId = AccountId32;
 pub(super) type Balance = u128;
+pub(super) type LocationToAccountId = ForeignChainAliasAccount<AccountId>;
 
 type Block<Runtime> = frame_system::mocking::MockBlock<Runtime>;
 type Identifier = [u8; 4];
 type IdentityProofOutput = [u8; 32];
 type UncheckedExtrinsic<Runtime> = frame_system::mocking::MockUncheckedExtrinsic<Runtime>;
-type LocationToAccountId = ForeignChainAliasAccount<AccountId>;
 type XcmRouter<MsgQueue> = super::ParachainXcmRouter<MsgQueue>;
 
 pub(super) mod sender {
@@ -241,6 +241,9 @@ pub(super) mod sender {
 }
 
 pub(super) mod receiver {
+	use frame_support::weights::WeightToFee;
+	use xcm_builder::{CurrencyAdapter, IsConcrete, UsingComponents};
+
 	use super::*;
 
 	construct_runtime!(
@@ -259,6 +262,7 @@ pub(super) mod receiver {
 
 	parameter_types! {
 		pub UniversalLocation: InteriorMultiLocation = Parachain(MsgQueue::parachain_id().into()).into();
+		pub const HereLocation: MultiLocation = MultiLocation::here();
 	}
 
 	impl frame_system::Config for Runtime {
@@ -300,12 +304,24 @@ pub(super) mod receiver {
 		type WeightInfo = ();
 	}
 
+	type LocalAssetTransactor<Currency> =
+		CurrencyAdapter<Currency, IsConcrete<HereLocation>, LocationToAccountId, AccountId, ()>;
+
+	pub struct OneToOneWeightToFee;
+	impl WeightToFee for OneToOneWeightToFee {
+		type Balance = Balance;
+
+		fn weight_to_fee(weight: &Weight) -> Self::Balance {
+			weight.ref_time().into()
+		}
+	}
+
 	pub struct XcmConfig;
 	impl xcm_executor::Config for XcmConfig {
 		type AssetClaims = ();
 		type AssetExchanger = ();
 		type AssetLocker = ();
-		type AssetTransactor = ();
+		type AssetTransactor = LocalAssetTransactor<Balances>;
 		type AssetTrap = ();
 		type Barrier = AllowUnpaidExecutionFrom<Everything>;
 		type CallDispatcher = RuntimeCall;
@@ -320,7 +336,7 @@ pub(super) mod receiver {
 		type RuntimeCall = RuntimeCall;
 		type SafeCallFilter = Everything;
 		type SubscriptionService = ();
-		type Trader = ();
+		type Trader = UsingComponents<OneToOneWeightToFee, HereLocation, AccountId, Balances, ()>;
 		type UniversalAliases = Nothing;
 		type UniversalLocation = UniversalLocation;
 		type XcmSender = XcmRouter<MsgQueue>;

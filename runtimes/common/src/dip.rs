@@ -203,6 +203,8 @@ pub mod identity_dispatch {
 			asset: MultiAsset,
 			destination: MultiLocation,
 		) -> Result<(), Self::Error> {
+			// Check that destination is a chain, or alternatively make sure statically it
+			// can only be a chain.
 			println!("DidXcmV3ViaXcmPalletDispatcher::dispatch 1");
 			let origin_location =
 				C::convert(RawOrigin::Signed(dispatcher).into()).map_err(|_| SendError::DestinationUnsupported)?;
@@ -222,18 +224,23 @@ pub mod identity_dispatch {
 				.map_err(|_| ())
 				.expect("Failed to build call");
 			let dest_xcm = Xcm(vec![
+				WithdrawAsset(asset.clone().into()),
 				BuyExecution {
 					fees: asset,
 					weight_limit: Limited(Weight::from_parts(1_000_000, 1_000_000)),
 				},
-				// TODO: Insert a `ExpectPallet` instruction
-				// TODO: Replace `action.encode().into()` with actual encoded call
 				Transact {
 					origin_kind: OriginKind::SovereignAccount,
-					require_weight_at_most: Weight::from_ref_time(100_000_000),
+					require_weight_at_most: Weight::from_ref_time(1_000_000),
 					call: dest_tx,
 				},
 				RefundSurplus,
+				DepositAsset {
+					assets: Wild(All),
+					beneficiary: destination
+						.pushed_with_interior(*origin_location.last().unwrap())
+						.unwrap(),
+				},
 			]);
 			println!("DidXcmV3ViaXcmPalletDispatcher::dispatch 4");
 			let res = pallet_xcm::Pallet::<T>::send_xcm(interior, destination, dest_xcm).map(|_| ());

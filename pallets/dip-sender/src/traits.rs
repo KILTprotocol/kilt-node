@@ -17,10 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use sp_runtime::DispatchError;
-use xcm::{
-	v3::{MultiAsset, MultiLocation},
-	DoubleEncoded,
-};
+use xcm::{latest::prelude::*, DoubleEncoded};
 
 use dip_support::latest::IdentityProofAction;
 
