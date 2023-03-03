@@ -157,10 +157,10 @@ pub mod identity_retrieval {
 
 	pub struct DidPalletProvider<T>(PhantomData<T>);
 
-	impl<T: did::Config> IdentityProvider<DidIdentifierOf<T>, DidDetails<T>> for DidPalletProvider<T> {
-		fn retrieve(identifier: &DidIdentifierOf<T>) -> Result<Option<DidDetails<T>>, sp_runtime::DispatchError> {
+	impl<T: did::Config> IdentityProvider<DidIdentifierOf<T>, DidDetails<T>, ()> for DidPalletProvider<T> {
+		fn retrieve(identifier: &DidIdentifierOf<T>) -> Result<Option<(DidDetails<T>, ())>, sp_runtime::DispatchError> {
 			if let Some(did_details) = did::Did::<T>::get(identifier) {
-				Ok(Some(did_details))
+				Ok(Some((did_details, ())))
 			} else if did::Pallet::<T>::get_deleted_did(identifier).is_some() {
 				Ok(None)
 			} else {

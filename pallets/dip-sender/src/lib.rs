@@ -97,7 +97,7 @@ pub mod pallet {
 			let destination: MultiLocation = (*destination).try_into().map_err(|_| Error::<T>::BadVersion)?;
 
 			let action: IdentityProofActionOf<T> = match T::IdentityProvider::retrieve(&identifier) {
-				Ok(Some(identity)) => {
+				Ok(Some((identity, _))) => {
 					let identity_proof = T::IdentityProofGenerator::generate_proof(&identifier, &identity)?;
 					Ok(IdentityProofAction::Updated(identifier, identity_proof, ()))
 				}

@@ -37,10 +37,10 @@ pub enum VersionedIdentityProofAction<Identifier, Proof, Details = ()> {
 	V1(v1::IdentityProofAction<Identifier, Proof, Details>),
 }
 
-impl<Identifier, Proof> From<v1::IdentityProofAction<Identifier, Proof>>
-	for VersionedIdentityProofAction<Identifier, Proof>
+impl<Identifier, Proof, Details> From<v1::IdentityProofAction<Identifier, Proof, Details>>
+	for VersionedIdentityProofAction<Identifier, Proof, Details>
 {
-	fn from(value: v1::IdentityProofAction<Identifier, Proof>) -> Self {
+	fn from(value: v1::IdentityProofAction<Identifier, Proof, Details>) -> Self {
 		Self::V1(value)
 	}
 }

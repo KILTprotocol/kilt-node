@@ -50,7 +50,7 @@ pub mod identity_dispatch {
 	use sp_std::marker::PhantomData;
 	use xcm_executor::traits::Convert;
 
-	pub trait IdentityProofDispatcher<Identifier, AccountId, IdentityRoot, Details> {
+	pub trait IdentityProofDispatcher<Identifier, AccountId, IdentityRoot, Details = ()> {
 		type Error;
 
 		fn dispatch<B: TxBuilder<Identifier, IdentityRoot, Details>>(
@@ -151,26 +151,26 @@ pub use identity_provision::*;
 pub mod identity_provision {
 	use sp_runtime::DispatchError;
 
-	// TODO: Add metadata to be sent over to destination.
-	pub trait IdentityProvider<Identifier, Identity> {
-		fn retrieve(identifier: &Identifier) -> Result<Option<Identity>, DispatchError>;
+	pub trait IdentityProvider<Identifier, Identity, Details = ()> {
+		fn retrieve(identifier: &Identifier) -> Result<Option<(Identity, Details)>, DispatchError>;
 	}
 
 	pub struct DefaultIdentityProvider;
 
-	impl<Identifier, Identity> IdentityProvider<Identifier, Identity> for DefaultIdentityProvider
+	impl<Identifier, Identity, Details> IdentityProvider<Identifier, Identity, Details> for DefaultIdentityProvider
 	where
 		Identity: Default,
+		Details: Default,
 	{
-		fn retrieve(_identifier: &Identifier) -> Result<Option<Identity>, DispatchError> {
-			Ok(Some(Identity::default()))
+		fn retrieve(_identifier: &Identifier) -> Result<Option<(Identity, Details)>, DispatchError> {
+			Ok(Some((Identity::default(), Details::default())))
 		}
 	}
 
 	pub struct NoneIdentityProvider;
 
-	impl<Identifier, Identity> IdentityProvider<Identifier, Identity> for NoneIdentityProvider {
-		fn retrieve(_identifier: &Identifier) -> Result<Option<Identity>, DispatchError> {
+	impl<Identifier, Identity, Details> IdentityProvider<Identifier, Identity, Details> for NoneIdentityProvider {
+		fn retrieve(_identifier: &Identifier) -> Result<Option<(Identity, Details)>, DispatchError> {
 			Ok(None)
 		}
 	}
