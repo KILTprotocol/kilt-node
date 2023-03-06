@@ -132,3 +132,9 @@ impl From<sr25519::Public> for SubjectId {
 		SubjectId(acc.into())
 	}
 }
+
+impl AsRef<[u8]> for SubjectId {
+	fn as_ref(&self) -> &[u8] {
+		self.0.as_ref()
+	}
+}

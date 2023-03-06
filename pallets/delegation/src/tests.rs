@@ -114,7 +114,7 @@ fn ctype_not_found_create_root_delegation_error() {
 				operation.id,
 				operation.ctype_hash
 			),
-			ctype::Error::<Test>::CTypeNotFound
+			ctype::Error::<Test>::NotFound
 		);
 	});
 }
