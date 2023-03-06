@@ -123,6 +123,7 @@ pub mod pallet {
 			let proof_digest = IdentityProofs::<T>::get(&identifier).ok_or(Error::<T>::IdentityNotFound)?;
 			let _ = T::ProofVerifier::verify_proof_against_digest(proof, proof_digest)
 				.map_err(|_| Error::<T>::InvalidProof)?;
+			// TODO: Proper DID signature verification (and cross-chain replay protection)
 			let did_origin = DipOrigin {
 				did_identifier: identifier,
 				account_address: submitter,

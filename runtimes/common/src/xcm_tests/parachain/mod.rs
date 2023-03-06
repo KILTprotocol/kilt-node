@@ -48,7 +48,7 @@ parameter_types! {
 
 #[cfg(feature = "runtime-benchmarks")]
 parameter_types! {
-	ReachableDest: Option<MultiLocation> = Some(Parent.into());
+	pub ReachableDest: Option<MultiLocation> = Some(Parent.into());
 }
 
 pub type XcmOriginToTransactDispatchOrigin<RuntimeOrigin, NetworkId> = (

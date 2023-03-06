@@ -31,11 +31,24 @@ pub struct EnsureDipOrigin<DidIdentifier, AccountId>(PhantomData<(DidIdentifier,
 
 impl<OuterOrigin, DidIdentifier, AccountId> EnsureOrigin<OuterOrigin> for EnsureDipOrigin<DidIdentifier, AccountId>
 where
-	OuterOrigin: Into<Result<DipOrigin<DidIdentifier, AccountId>, OuterOrigin>>,
+	OuterOrigin:
+		From<DipOrigin<DidIdentifier, AccountId>> + Into<Result<DipOrigin<DidIdentifier, AccountId>, OuterOrigin>>,
+	AccountId: From<[u8; 32]>,
+	DidIdentifier: Default,
 {
 	type Success = DipOrigin<DidIdentifier, AccountId>;
 
 	fn try_origin(o: OuterOrigin) -> Result<Self::Success, OuterOrigin> {
 		o.into()
+	}
+
+	#[cfg(feature = "runtime-benchmarks")]
+	fn try_successful_origin() -> Result<OuterOrigin, ()> {
+		let zero_account_id = AccountId::from([0u8; 32]);
+
+		Ok(OuterOrigin::from(DipOrigin {
+			did_identifier: DidIdentifier::default(),
+			account_address: zero_account_id,
+		}))
 	}
 }
