@@ -19,7 +19,6 @@
 
 //! Benchmarking
 
-use codec::Encode;
 use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
 use frame_support::{
 	crypto::ecdsa::ECDSAExt,
@@ -38,7 +37,7 @@ use kilt_support::{deposit::Deposit, traits::GenerateBenchmarkOrigin};
 
 use crate::{
 	account::AccountId20,
-	associate_account_request::AssociateAccountRequest,
+	associate_account_request::{get_challenge, AssociateAccountRequest},
 	linkable_account::LinkableAccountId,
 	migrations::{add_legacy_association, get_mixed_storage_iterator, MixedStorageKey},
 	signature::get_wrapped_payload,
@@ -71,13 +70,13 @@ benchmarks! {
 		let connected_acc = sr25519_generate(KeyTypeId(*b"aura"), None);
 		let connected_acc_id: T::AccountId = connected_acc.into();
 		let linkable_id: LinkableAccountId = connected_acc_id.clone().into();
-		let bn: <T as frame_system::Config>::BlockNumber = 500_u32.into();
+		let expire_at: <T as frame_system::Config>::BlockNumber = 500_u32.into();
 
 		let sig = sp_io::crypto::sr25519_sign(
 			KeyTypeId(*b"aura"),
 			&connected_acc,
 			&get_wrapped_payload(
-				&Encode::encode(&(&did, bn))[..],
+				get_challenge(&did, expire_at).as_bytes(),
 				crate::signature::WrapType::Substrate,
 			))
 			.ok_or("Error while building signature.")?;
@@ -89,8 +88,8 @@ benchmarks! {
 		assert!(ConnectedAccounts::<T>::get(&previous_did, linkable_id.clone()).is_some());
 		let origin = T::EnsureOrigin::generate_origin(caller, did.clone());
 		let id_arg = linkable_id.clone();
-		let req = AssociateAccountRequest::Dotsama(connected_acc_id.into(), sig.into());
-	}: associate_account<T::RuntimeOrigin>(origin, req, bn)
+		let req = AssociateAccountRequest::Polkadot(connected_acc_id.into(), sig.into());
+	}: associate_account<T::RuntimeOrigin>(origin, req, expire_at)
 	verify {
 		assert!(ConnectedDids::<T>::get(linkable_id.clone()).is_some());
 		assert!(ConnectedAccounts::<T>::get(&previous_did, linkable_id.clone()).is_none());
@@ -104,13 +103,13 @@ benchmarks! {
 		let connected_acc = ed25519_generate(KeyTypeId(*b"aura"), None);
 		let connected_acc_id: T::AccountId = connected_acc.into();
 		let linkable_id: LinkableAccountId = connected_acc_id.clone().into();
-		let bn: <T as frame_system::Config>::BlockNumber = 500_u32.into();
+		let expire_at: <T as frame_system::Config>::BlockNumber = 500_u32.into();
 
 		let sig = sp_io::crypto::ed25519_sign(
 			KeyTypeId(*b"aura"),
 			&connected_acc,
 			&get_wrapped_payload(
-				&Encode::encode(&(&did, bn))[..],
+				get_challenge(&did, expire_at).as_bytes(),
 				crate::signature::WrapType::Substrate,
 			))
 			.ok_or("Error while building signature.")?;
@@ -122,8 +121,8 @@ benchmarks! {
 		assert!(ConnectedAccounts::<T>::get(&previous_did, linkable_id.clone()).is_some());
 		let origin = T::EnsureOrigin::generate_origin(caller, did.clone());
 		let id_arg = linkable_id.clone();
-		let req = AssociateAccountRequest::Dotsama(connected_acc_id.into(), sig.into());
-	}: associate_account<T::RuntimeOrigin>(origin, req, bn)
+		let req = AssociateAccountRequest::Polkadot(connected_acc_id.into(), sig.into());
+	}: associate_account<T::RuntimeOrigin>(origin, req, expire_at)
 	verify {
 		assert!(ConnectedDids::<T>::get(linkable_id.clone()).is_some());
 		assert!(ConnectedAccounts::<T>::get(&previous_did, linkable_id.clone()).is_none());
@@ -137,13 +136,13 @@ benchmarks! {
 		let connected_acc = ecdsa_generate(KeyTypeId(*b"aura"), None);
 		let connected_acc_id = sp_runtime::MultiSigner::from(connected_acc).into_account();
 		let linkable_id: LinkableAccountId = connected_acc_id.clone().into();
-		let bn: <T as frame_system::Config>::BlockNumber = 500_u32.into();
+		let expire_at: <T as frame_system::Config>::BlockNumber = 500_u32.into();
 
 		let sig = sp_io::crypto::ecdsa_sign(
 			KeyTypeId(*b"aura"),
 			&connected_acc,
 			&get_wrapped_payload(
-				&Encode::encode(&(&did, bn))[..],
+				get_challenge(&did, expire_at).as_bytes(),
 				crate::signature::WrapType::Substrate,
 			))
 			.ok_or("Error while building signature.")?;
@@ -155,8 +154,8 @@ benchmarks! {
 		assert!(ConnectedAccounts::<T>::get(&previous_did, linkable_id.clone()).is_some());
 		let origin = T::EnsureOrigin::generate_origin(caller, did.clone());
 		let id_arg = linkable_id.clone();
-		let req = AssociateAccountRequest::Dotsama(connected_acc_id, sig.into());
-	}: associate_account<T::RuntimeOrigin>(origin, req, bn)
+		let req = AssociateAccountRequest::Polkadot(connected_acc_id, sig.into());
+	}: associate_account<T::RuntimeOrigin>(origin, req, expire_at)
 	verify {
 		assert!(ConnectedDids::<T>::get(linkable_id.clone()).is_some());
 		assert!(ConnectedAccounts::<T>::get(&previous_did, linkable_id.clone()).is_none());
@@ -173,7 +172,7 @@ benchmarks! {
 		let eth_account = AccountId20(eth_public_key.to_eth_address().unwrap());
 
 		let wrapped_payload = get_wrapped_payload(
-			&Encode::encode(&(&did, expire_at))[..],
+			get_challenge(&did, expire_at).as_bytes(),
 			crate::signature::WrapType::Ethereum,
 		);
 

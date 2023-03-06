@@ -34,10 +34,10 @@ mod connection_record;
 mod migration_state;
 mod signature;
 
-#[cfg(test)]
+#[cfg(all(test, feature = "std"))]
 mod tests;
 
-#[cfg(test)]
+#[cfg(all(test, feature = "std"))]
 mod mock;
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -95,7 +95,7 @@ pub mod pallet {
 		type OriginSuccess: CallSources<AccountIdOf<Self>, DidIdentifierOf<Self>>;
 
 		/// The identifier to which accounts can get associated.
-		type DidIdentifier: Parameter + MaxEncodedLen + MaybeSerializeDeserialize;
+		type DidIdentifier: Parameter + AsRef<[u8]> + MaxEncodedLen + MaybeSerializeDeserialize;
 
 		/// The currency that is used to reserve funds for each did.
 		type Currency: ReservableCurrency<AccountIdOf<Self>>;
@@ -252,7 +252,7 @@ pub mod pallet {
 			);
 
 			ensure!(
-				req.verify::<T>(did_identifier.clone(), expiration),
+				req.verify::<T::DidIdentifier, T::BlockNumber>(&did_identifier, expiration),
 				Error::<T>::NotAuthorized
 			);
 

@@ -28,7 +28,7 @@ use sp_runtime::{
 
 use crate::{
 	account::{AccountId20, EthereumSignature},
-	associate_account_request::AssociateAccountRequest,
+	associate_account_request::{get_challenge, AssociateAccountRequest},
 	linkable_account::LinkableAccountId,
 	migration_state::MigrationState,
 	migrations::{add_legacy_association, get_mixed_storage_iterator, MixedStorageKey},
@@ -98,16 +98,16 @@ fn test_add_association_account() {
 			let expire_at: BlockNumber = 500;
 			let account_hash_alice = MultiSigner::from(pair_alice.public()).into_account();
 			let sig_alice_0 = MultiSignature::from(
-				pair_alice.sign(&[b"<Bytes>", &Encode::encode(&(&DID_00, expire_at))[..], b"</Bytes>"].concat()[..]),
+				pair_alice.sign(&[b"<Bytes>", get_challenge(&DID_00, expire_at).as_bytes(), b"</Bytes>"].concat()[..]),
 			);
 			let sig_alice_1 = MultiSignature::from(
-				pair_alice.sign(&[b"<Bytes>", &Encode::encode(&(&DID_01, expire_at))[..], b"</Bytes>"].concat()[..]),
+				pair_alice.sign(&[b"<Bytes>", get_challenge(&DID_01, expire_at).as_bytes(), b"</Bytes>"].concat()[..]),
 			);
 
 			// new association. No overwrite
 			assert!(DidLookup::associate_account(
 				mock_origin::DoubleOrigin(ACCOUNT_00, DID_00).into(),
-				AssociateAccountRequest::Dotsama(account_hash_alice.clone(), sig_alice_0),
+				AssociateAccountRequest::Polkadot(account_hash_alice.clone(), sig_alice_0),
 				expire_at,
 			)
 			.is_ok());
@@ -132,7 +132,7 @@ fn test_add_association_account() {
 			// overwrite existing association
 			let res = DidLookup::associate_account(
 				mock_origin::DoubleOrigin(ACCOUNT_00, DID_01).into(),
-				AssociateAccountRequest::Dotsama(account_hash_alice.clone(), sig_alice_1.clone()),
+				AssociateAccountRequest::Polkadot(account_hash_alice.clone(), sig_alice_1.clone()),
 				expire_at,
 			);
 			if let Err(err) = res {
@@ -163,7 +163,7 @@ fn test_add_association_account() {
 			// overwrite existing deposit
 			assert!(DidLookup::associate_account(
 				mock_origin::DoubleOrigin(ACCOUNT_01, DID_01).into(),
-				AssociateAccountRequest::Dotsama(account_hash_alice.clone(), sig_alice_1),
+				AssociateAccountRequest::Polkadot(account_hash_alice.clone(), sig_alice_1),
 				expire_at,
 			)
 			.is_ok());
@@ -203,7 +203,7 @@ fn test_add_eth_association() {
 			let eth_account = AccountId20(eth_pair.public().to_eth_address().unwrap());
 
 			let wrapped_payload = get_wrapped_payload(
-				&Encode::encode(&(&DID_00, expire_at))[..],
+				get_challenge(&DID_00, expire_at).as_bytes(),
 				crate::signature::WrapType::Ethereum,
 			);
 
@@ -215,7 +215,7 @@ fn test_add_eth_association() {
 				AssociateAccountRequest::Ethereum(eth_account, EthereumSignature::from(sig)),
 				expire_at,
 			);
-			assert!(res.is_ok());
+			assert_ok!(res);
 			assert_eq!(
 				ConnectedDids::<Test>::get(LinkableAccountId::from(eth_account)),
 				Some(ConnectionRecord {
@@ -252,7 +252,7 @@ fn test_add_association_account_invalid_signature() {
 			assert_noop!(
 				DidLookup::associate_account(
 					mock_origin::DoubleOrigin(ACCOUNT_00, DID_01).into(),
-					AssociateAccountRequest::Dotsama(account_hash_alice, sig_alice_0),
+					AssociateAccountRequest::Polkadot(account_hash_alice, sig_alice_0),
 					expire_at,
 				),
 				Error::<Test>::NotAuthorized
@@ -280,7 +280,7 @@ fn test_add_association_account_expired() {
 			assert_noop!(
 				DidLookup::associate_account(
 					mock_origin::DoubleOrigin(ACCOUNT_00, DID_01).into(),
-					AssociateAccountRequest::Dotsama(account_hash_alice, sig_alice_0),
+					AssociateAccountRequest::Polkadot(account_hash_alice, sig_alice_0),
 					expire_at,
 				),
 				Error::<Test>::OutdatedProof

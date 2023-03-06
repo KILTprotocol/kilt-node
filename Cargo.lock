@@ -5768,6 +5768,8 @@ dependencies = [
 name = "pallet-did-lookup"
 version = "1.10.0-dev"
 dependencies = [
+ "base58",
+ "blake2",
  "env_logger 0.10.0",
  "frame-benchmarking",
  "frame-support",
