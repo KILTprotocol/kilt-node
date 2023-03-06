@@ -27,10 +27,6 @@ pub mod latest {
 	pub use crate::v1::*;
 }
 
-// Export utility modules without namespacing.
-mod location_conversion;
-pub use location_conversion::*;
-
 #[derive(Clone, Eq, PartialEq, Debug, Encode, Decode, TypeInfo, MaxEncodedLen)]
 pub enum VersionedIdentityProofAction<Identifier, Proof, Details = ()> {
 	#[codec(index = 1)]

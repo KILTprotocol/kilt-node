@@ -41,18 +41,9 @@ fn relay_ext() -> TestExternalities {
 	TestExternalities::new(t)
 }
 
-fn sender_account_on_receiver_chain(account: parachain::AccountId) -> parachain::AccountId {
-	parachain::LocationToAccountId::convert(
-		ParentThen(X2(
-			Parachain(SENDER_PARA_ID),
-			AccountId32 {
-				network: None,
-				id: account.into(),
-			},
-		))
-		.into(),
-	)
-	.expect("Conversion of account from sender parachain to receiver parachain should not fail.")
+fn sender_account_on_receiver_chain() -> parachain::AccountId {
+	parachain::LocationToAccountId::convert(ParentThen(X1(Parachain(SENDER_PARA_ID))).into())
+		.expect("Conversion of account from sender parachain to receiver parachain should not fail.")
 }
 
 fn sender_para_ext() -> TestExternalities {
@@ -85,7 +76,7 @@ fn receiver_para_ext() -> TestExternalities {
 		.unwrap();
 
 	pallet_balances::GenesisConfig::<Runtime> {
-		balances: vec![(sender_account_on_receiver_chain(ALICE), INITIAL_BALANCE)],
+		balances: vec![(sender_account_on_receiver_chain(), INITIAL_BALANCE)],
 	}
 	.assimilate_storage(&mut t)
 	.unwrap();
@@ -157,7 +148,6 @@ mod tests {
 			assert_ok!(dip_sender::Pallet::<SenderRuntime>::commit_identity(
 				RawOrigin::Signed(ALICE).into(),
 				ALICE_DID_IDENTIFIER,
-				Box::new((Here, 100_000_000).into()),
 				Box::new((Parent, Parachain(RECEIVER_PARA_ID)).into()),
 			));
 		});

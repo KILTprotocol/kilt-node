@@ -16,13 +16,13 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use dip_support::ForeignChainAliasAccount;
 use frame_support::{
 	construct_runtime, parameter_types,
 	traits::{Everything, Nothing},
 	weights::Weight,
 };
 use pallet_xcm::{TestWeightInfo, XcmPassthrough};
+use polkadot_parachain::primitives::Sibling;
 use sp_core::{ConstU32, ConstU64, H256};
 use sp_runtime::{
 	testing::Header,
@@ -32,8 +32,8 @@ use sp_runtime::{
 use sp_std::prelude::*;
 use xcm::latest::prelude::*;
 use xcm_builder::{
-	AccountId32Aliases, AllowUnpaidExecutionFrom, EnsureXcmOrigin, FixedWeightBounds, SignedAccountId32AsNative,
-	SignedToAccountId32, SovereignSignedViaLocation,
+	AccountId32Aliases, AllowUnpaidExecutionFrom, EnsureXcmOrigin, FixedWeightBounds, SiblingParachainConvertsVia,
+	SignedAccountId32AsNative, SignedToAccountId32, SovereignSignedViaLocation,
 };
 use xcm_executor::XcmExecutor;
 
@@ -60,7 +60,7 @@ pub type XcmOriginToTransactDispatchOrigin<RuntimeOrigin, NetworkId> = (
 pub(super) type AccountId = AccountId32;
 pub(super) type Balance = u128;
 pub(super) type Identifier = [u8; 8];
-pub(super) type LocationToAccountId = ForeignChainAliasAccount<AccountId>;
+pub(super) type LocationToAccountId = SiblingParachainConvertsVia<Sibling, AccountId>;
 
 type Block<Runtime> = frame_system::mocking::MockBlock<Runtime>;
 type IdentityProofOutput = [u8; 32];
@@ -224,12 +224,7 @@ pub(super) mod sender {
 	impl dip_sender::Config for Runtime {
 		type Identifier = Identifier;
 		type Identity = u32;
-		type IdentityProofDispatcher = DidXcmV3ViaXcmPalletDispatcher<
-			Runtime,
-			Identifier,
-			IdentityProofOutput,
-			SignedToAccountId32<RuntimeOrigin, AccountId, RelayNetworkId>,
-		>;
+		type IdentityProofDispatcher = DidXcmV3ViaXcmPalletDispatcher<Runtime, Identifier, IdentityProofOutput>;
 		type IdentityProofGenerator = DefaultIdentityProofGenerator;
 		type IdentityProvider = DefaultIdentityProvider;
 		type ProofOutput = IdentityProofOutput;
@@ -320,8 +315,13 @@ pub(super) mod receiver {
 		type WeightInfo = ();
 	}
 
-	type LocalAssetTransactor<Currency> =
-		CurrencyAdapter<Currency, IsConcrete<HereLocation>, LocationToAccountId, AccountId, ()>;
+	type LocalAssetTransactor<Currency> = CurrencyAdapter<
+		Currency,
+		IsConcrete<HereLocation>,
+		SiblingParachainConvertsVia<Sibling, AccountId>,
+		AccountId,
+		(),
+	>;
 
 	pub struct OneToOneWeightToFee;
 	impl WeightToFee for OneToOneWeightToFee {

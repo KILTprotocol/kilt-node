@@ -31,7 +31,7 @@ pub mod pallet {
 	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
 	use sp_std::fmt::Debug;
-	use xcm::{latest::prelude::*, VersionedMultiAsset, VersionedMultiLocation};
+	use xcm::{latest::prelude::*, VersionedMultiLocation};
 
 	use dip_support::{v1::IdentityProofAction, VersionedIdentityProofAction};
 
@@ -50,7 +50,7 @@ pub mod pallet {
 		type Identity;
 		type ProofOutput: Clone + Eq + Debug;
 		type IdentityProofGenerator: IdentityProofGenerator<Self::Identifier, Self::Identity, Self::ProofOutput>;
-		type IdentityProofDispatcher: IdentityProofDispatcher<Self::Identifier, Self::AccountId, Self::ProofOutput, ()>;
+		type IdentityProofDispatcher: IdentityProofDispatcher<Self::Identifier, Self::ProofOutput, ()>;
 		type IdentityProvider: IdentityProvider<Self::Identifier, Self::Identity>;
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 		type TxBuilder: TxBuilder<Self::Identifier, Self::ProofOutput, ()>;
@@ -85,15 +85,15 @@ pub mod pallet {
 		pub fn commit_identity(
 			origin: OriginFor<T>,
 			identifier: T::Identifier,
-			asset: Box<VersionedMultiAsset>,
 			// TODO: Add correct version creation based on lookup (?)
 			destination: Box<VersionedMultiLocation>,
 		) -> DispatchResult {
 			println!("dip_sender::commit_identity 1");
+			// TODO: Withdraw also some fees to pay for execution on the target chain.
 			let dispatcher = ensure_signed(origin)?;
 			println!("dip_sender::commit_identity 2");
 
-			let asset: MultiAsset = (*asset).try_into().map_err(|_| Error::<T>::BadVersion)?;
+			let asset: MultiAsset = (Here, 10_000_000).try_into().map_err(|_| Error::<T>::BadVersion)?;
 			let destination: MultiLocation = (*destination).try_into().map_err(|_| Error::<T>::BadVersion)?;
 
 			let action: IdentityProofActionOf<T> = match T::IdentityProvider::retrieve(&identifier) {
@@ -108,13 +108,8 @@ pub mod pallet {
 			let versioned_action = VersionedIdentityProofAction::V1(action);
 
 			//TODO: Proper error handling
-			T::IdentityProofDispatcher::dispatch::<T::TxBuilder>(
-				versioned_action.clone(),
-				dispatcher,
-				asset,
-				destination,
-			)
-			.map_err(|_| Error::<T>::Dispatch)?;
+			T::IdentityProofDispatcher::dispatch::<T::TxBuilder>(versioned_action.clone(), asset, destination)
+				.map_err(|_| Error::<T>::Dispatch)?;
 			Self::deposit_event(Event::IdentityInfoDispatched(versioned_action, Box::new(destination)));
 			println!("dip_sender::commit_identity 4");
 			Ok(())

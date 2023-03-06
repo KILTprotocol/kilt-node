@@ -46,16 +46,13 @@ pub mod identity_dispatch {
 
 	use codec::Encode;
 	use frame_support::weights::Weight;
-	use frame_system::{pallet_prelude::OriginFor, RawOrigin};
 	use sp_std::marker::PhantomData;
-	use xcm_executor::traits::Convert;
 
-	pub trait IdentityProofDispatcher<Identifier, AccountId, IdentityRoot, Details = ()> {
+	pub trait IdentityProofDispatcher<Identifier, IdentityRoot, Details = ()> {
 		type Error;
 
 		fn dispatch<B: TxBuilder<Identifier, IdentityRoot, Details>>(
 			action: VersionedIdentityProofAction<Identifier, IdentityRoot, Details>,
-			dispatcher: AccountId,
 			asset: MultiAsset,
 			destination: MultiLocation,
 		) -> Result<(), Self::Error>;
@@ -63,14 +60,13 @@ pub mod identity_dispatch {
 
 	pub struct NullIdentityProofDispatcher;
 
-	impl<Identifier, AccountId, IdentityRoot, Details>
-		IdentityProofDispatcher<Identifier, AccountId, IdentityRoot, Details> for NullIdentityProofDispatcher
+	impl<Identifier, IdentityRoot, Details> IdentityProofDispatcher<Identifier, IdentityRoot, Details>
+		for NullIdentityProofDispatcher
 	{
 		type Error = &'static str;
 
 		fn dispatch<_B>(
 			_action: VersionedIdentityProofAction<Identifier, IdentityRoot, Details>,
-			_dispatcher: AccountId,
 			_asset: MultiAsset,
 			_destination: MultiLocation,
 		) -> Result<(), Self::Error> {
@@ -82,40 +78,35 @@ pub mod identity_dispatch {
 	// It basically properly encodes the Transact operation, then delegates
 	// everything else to the pallet's `send_xcm` function, similarly to what the
 	// pallet's `send` extrinsic does.
-	pub struct DidXcmV3ViaXcmPalletDispatcher<T, I, P, C, D = ()>(PhantomData<(T, I, P, C, D)>);
+	pub struct DidXcmV3ViaXcmPalletDispatcher<T, I, P, D = ()>(PhantomData<(T, I, P, D)>);
 
-	impl<T, I, P, C, D> IdentityProofDispatcher<I, <T as frame_system::Config>::AccountId, P, D>
-		for DidXcmV3ViaXcmPalletDispatcher<T, I, P, C, D>
+	impl<T, I, P, D> IdentityProofDispatcher<I, P, D> for DidXcmV3ViaXcmPalletDispatcher<T, I, P, D>
 	where
 		T: pallet_xcm::Config,
 		I: Encode,
 		P: Encode,
-		C: Convert<OriginFor<T>, MultiLocation>,
 	{
 		type Error = SendError;
 
 		fn dispatch<B: TxBuilder<I, P, D>>(
 			action: VersionedIdentityProofAction<I, P, D>,
-			dispatcher: T::AccountId,
 			asset: MultiAsset,
 			destination: MultiLocation,
 		) -> Result<(), Self::Error> {
 			// Check that destination is a chain, or alternatively make sure statically it
 			// can only be a chain.
 			println!("DidXcmV3ViaXcmPalletDispatcher::dispatch 1");
-			let origin_location =
-				C::convert(RawOrigin::Signed(dispatcher).into()).map_err(|_| SendError::DestinationUnsupported)?;
-			println!(
-				"DidXcmV3ViaXcmPalletDispatcher::dispatch 2 with origin_location: {:?}",
-				origin_location
-			);
-			let interior: Junctions = origin_location
-				.try_into()
-				.map_err(|_| SendError::DestinationUnsupported)?;
-			println!(
-				"DidXcmV3ViaXcmPalletDispatcher::dispatch 3 with interior: {:?}",
-				interior
-			);
+			// let origin_location =
+			// 	C::convert(RawOrigin::Signed(dispatcher).into()).map_err(|_|
+			// SendError::DestinationUnsupported)?;
+			// println!(
+			// 	"DidXcmV3ViaXcmPalletDispatcher::dispatch 2 with origin_location: {:?}",
+			// 	origin_location
+			// );
+			// println!(
+			// 	"DidXcmV3ViaXcmPalletDispatcher::dispatch 3 with interior: {:?}",
+			// 	Here
+			// );
 			// TODO: Replace with proper error handling
 			let dest_tx = B::build(destination, action)
 				.map_err(|_| ())
@@ -125,9 +116,7 @@ pub mod identity_dispatch {
 				RefundSurplus,
 				DepositAsset {
 					assets: Wild(All),
-					beneficiary: destination
-						.pushed_with_interior(*origin_location.last().unwrap())
-						.unwrap(),
+					beneficiary: Here.into(),
 				},
 			];
 			let operation = [
@@ -150,7 +139,7 @@ pub mod identity_dispatch {
 			.concat();
 			let dest_xcm = Xcm(operation);
 			println!("DidXcmV3ViaXcmPalletDispatcher::dispatch 4");
-			let res = pallet_xcm::Pallet::<T>::send_xcm(interior, destination, dest_xcm).map(|_| ());
+			let res = pallet_xcm::Pallet::<T>::send_xcm(Here, destination, dest_xcm).map(|_| ());
 			println!("DidXcmV3ViaXcmPalletDispatcher::dispatch 5");
 			res
 		}
