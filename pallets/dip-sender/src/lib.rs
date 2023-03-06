@@ -89,11 +89,9 @@ pub mod pallet {
 			destination: Box<VersionedMultiLocation>,
 		) -> DispatchResult {
 			println!("dip_sender::commit_identity 1");
-			// TODO: Withdraw also some fees to pay for execution on the target chain.
-			let dispatcher = ensure_signed(origin)?;
+			ensure_signed(origin)?;
 			println!("dip_sender::commit_identity 2");
 
-			let asset: MultiAsset = (Here, 10_000_000).try_into().map_err(|_| Error::<T>::BadVersion)?;
 			let destination: MultiLocation = (*destination).try_into().map_err(|_| Error::<T>::BadVersion)?;
 
 			let action: IdentityProofActionOf<T> = match T::IdentityProvider::retrieve(&identifier) {
@@ -107,9 +105,17 @@ pub mod pallet {
 			println!("dip_sender::commit_identity 3");
 			let versioned_action = VersionedIdentityProofAction::V1(action);
 
-			//TODO: Proper error handling
-			T::IdentityProofDispatcher::dispatch::<T::TxBuilder>(versioned_action.clone(), asset, destination)
-				.map_err(|_| Error::<T>::Dispatch)?;
+			let (ticket, _) = T::IdentityProofDispatcher::pre_dispatch::<T::TxBuilder>(
+				versioned_action.clone(),
+				// TODO: This should be set per-chain
+				(Here, 10_000_000).into(),
+				destination,
+			)
+			.map_err(|_| Error::<T>::Dispatch)?;
+
+			// TODO: Use returned asset to charge the tx submitter for the fee.
+			T::IdentityProofDispatcher::dispatch(ticket).map_err(|_| Error::<T>::Dispatch)?;
+
 			Self::deposit_event(Event::IdentityInfoDispatched(versioned_action, Box::new(destination)));
 			println!("dip_sender::commit_identity 4");
 			Ok(())

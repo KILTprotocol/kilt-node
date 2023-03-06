@@ -69,9 +69,7 @@ type XcmRouter<MsgQueue> = super::ParachainXcmRouter<MsgQueue>;
 
 pub(super) mod sender {
 	use codec::Encode;
-	use dip_sender::traits::{
-		DefaultIdentityProofGenerator, DefaultIdentityProvider, DidXcmV3ViaXcmPalletDispatcher, TxBuilder,
-	};
+	use dip_sender::traits::{DefaultIdentityProofGenerator, DefaultIdentityProvider, TxBuilder, XcmRouterDispatcher};
 	use dip_support::VersionedIdentityProofAction;
 	use xcm::DoubleEncoded;
 
@@ -224,7 +222,7 @@ pub(super) mod sender {
 	impl dip_sender::Config for Runtime {
 		type Identifier = Identifier;
 		type Identity = u32;
-		type IdentityProofDispatcher = DidXcmV3ViaXcmPalletDispatcher<Runtime, Identifier, IdentityProofOutput>;
+		type IdentityProofDispatcher = XcmRouterDispatcher<XcmRouter<MsgQueue>, Identifier, IdentityProofOutput>;
 		type IdentityProofGenerator = DefaultIdentityProofGenerator;
 		type IdentityProvider = DefaultIdentityProvider;
 		type ProofOutput = IdentityProofOutput;

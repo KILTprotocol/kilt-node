@@ -47,15 +47,19 @@ pub mod identity_dispatch {
 	use codec::Encode;
 	use frame_support::weights::Weight;
 	use sp_std::marker::PhantomData;
+	use xcm::latest::opaque::Instruction;
 
 	pub trait IdentityProofDispatcher<Identifier, IdentityRoot, Details = ()> {
+		type PreDispatchOutput;
 		type Error;
 
-		fn dispatch<B: TxBuilder<Identifier, IdentityRoot, Details>>(
+		fn pre_dispatch<B: TxBuilder<Identifier, IdentityRoot, Details>>(
 			action: VersionedIdentityProofAction<Identifier, IdentityRoot, Details>,
 			asset: MultiAsset,
 			destination: MultiLocation,
-		) -> Result<(), Self::Error>;
+		) -> Result<(Self::PreDispatchOutput, MultiAssets), Self::Error>;
+
+		fn dispatch(pre_output: Self::PreDispatchOutput) -> Result<(), Self::Error>;
 	}
 
 	pub struct NullIdentityProofDispatcher;
@@ -63,67 +67,63 @@ pub mod identity_dispatch {
 	impl<Identifier, IdentityRoot, Details> IdentityProofDispatcher<Identifier, IdentityRoot, Details>
 		for NullIdentityProofDispatcher
 	{
+		type PreDispatchOutput = ();
 		type Error = &'static str;
 
-		fn dispatch<_B>(
+		fn pre_dispatch<_B>(
 			_action: VersionedIdentityProofAction<Identifier, IdentityRoot, Details>,
 			_asset: MultiAsset,
 			_destination: MultiLocation,
-		) -> Result<(), Self::Error> {
+		) -> Result<((), MultiAssets), Self::Error> {
+			Ok(((), MultiAssets::default()))
+		}
+
+		fn dispatch(_pre_output: Self::PreDispatchOutput) -> Result<(), Self::Error> {
 			Ok(())
 		}
+	}
+
+	fn catch_instructions() -> Vec<Instruction> {
+		vec![
+			RefundSurplus,
+			DepositAsset {
+				assets: Wild(All),
+				beneficiary: Here.into(),
+			},
+		]
 	}
 
 	// Dispatcher wrapping the XCM pallet.
 	// It basically properly encodes the Transact operation, then delegates
 	// everything else to the pallet's `send_xcm` function, similarly to what the
 	// pallet's `send` extrinsic does.
-	pub struct DidXcmV3ViaXcmPalletDispatcher<T, I, P, D = ()>(PhantomData<(T, I, P, D)>);
+	pub struct XcmRouterDispatcher<R, I, P, D = ()>(PhantomData<(R, I, P, D)>);
 
-	impl<T, I, P, D> IdentityProofDispatcher<I, P, D> for DidXcmV3ViaXcmPalletDispatcher<T, I, P, D>
+	impl<R, I, P, D> IdentityProofDispatcher<I, P, D> for XcmRouterDispatcher<R, I, P, D>
 	where
-		T: pallet_xcm::Config,
+		R: SendXcm,
 		I: Encode,
 		P: Encode,
 	{
+		type PreDispatchOutput = R::Ticket;
 		type Error = SendError;
 
-		fn dispatch<B: TxBuilder<I, P, D>>(
+		fn pre_dispatch<B: TxBuilder<I, P, D>>(
 			action: VersionedIdentityProofAction<I, P, D>,
 			asset: MultiAsset,
 			destination: MultiLocation,
-		) -> Result<(), Self::Error> {
-			// Check that destination is a chain, or alternatively make sure statically it
-			// can only be a chain.
+		) -> Result<(Self::PreDispatchOutput, MultiAssets), Self::Error> {
 			println!("DidXcmV3ViaXcmPalletDispatcher::dispatch 1");
-			// let origin_location =
-			// 	C::convert(RawOrigin::Signed(dispatcher).into()).map_err(|_|
-			// SendError::DestinationUnsupported)?;
-			// println!(
-			// 	"DidXcmV3ViaXcmPalletDispatcher::dispatch 2 with origin_location: {:?}",
-			// 	origin_location
-			// );
-			// println!(
-			// 	"DidXcmV3ViaXcmPalletDispatcher::dispatch 3 with interior: {:?}",
-			// 	Here
-			// );
 			// TODO: Replace with proper error handling
 			let dest_tx = B::build(destination, action)
 				.map_err(|_| ())
 				.expect("Failed to build call");
-			// Catch-case if anything goes wrong.
-			let refund_and_deposit = vec![
-				RefundSurplus,
-				DepositAsset {
-					assets: Wild(All),
-					beneficiary: Here.into(),
-				},
-			];
+
 			let operation = [
 				vec![
 					WithdrawAsset(asset.clone().into()),
 					// Refund all and deposit back to owner if anything goes wrong.
-					SetErrorHandler(refund_and_deposit.clone().into()),
+					SetErrorHandler(catch_instructions().into()),
 					BuyExecution {
 						fees: asset,
 						weight_limit: Limited(Weight::from_parts(1_000_000, 1_000_000)),
@@ -134,14 +134,16 @@ pub mod identity_dispatch {
 						call: dest_tx,
 					},
 				],
-				refund_and_deposit,
+				catch_instructions(),
 			]
 			.concat();
-			let dest_xcm = Xcm(operation);
 			println!("DidXcmV3ViaXcmPalletDispatcher::dispatch 4");
-			let res = pallet_xcm::Pallet::<T>::send_xcm(Here, destination, dest_xcm).map(|_| ());
-			println!("DidXcmV3ViaXcmPalletDispatcher::dispatch 5");
-			res
+			let op = Xcm(operation);
+			R::validate(&mut Some(destination), &mut Some(op))
+		}
+
+		fn dispatch(pre_output: Self::PreDispatchOutput) -> Result<(), Self::Error> {
+			R::deliver(pre_output).map(|_| ())
 		}
 	}
 }
