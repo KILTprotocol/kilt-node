@@ -42,7 +42,7 @@ pub mod pallet {
 		VersionedIdentityProofAction<<T as Config>::Identifier, <T as Config>::ProofOutput>;
 
 	/// The current storage version.
-	const STORAGE_VERSION: StorageVersion = StorageVersion::new(0); // No need to write a migration to store it.
+	const STORAGE_VERSION: StorageVersion = StorageVersion::new(0);
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
@@ -73,7 +73,9 @@ pub mod pallet {
 
 	#[pallet::error]
 	pub enum Error<T> {
+		IdentityProofGeneration,
 		IdentityNotFound,
+		Predispatch,
 		Dispatch,
 		BadVersion,
 	}
@@ -88,21 +90,18 @@ pub mod pallet {
 			// TODO: Add correct version creation based on lookup (?)
 			destination: Box<VersionedMultiLocation>,
 		) -> DispatchResult {
-			println!("dip_sender::commit_identity 1");
-			ensure_signed(origin)?;
-			println!("dip_sender::commit_identity 2");
+			let dispatcher = ensure_signed(origin)?;
 
 			let destination: MultiLocation = (*destination).try_into().map_err(|_| Error::<T>::BadVersion)?;
-
 			let action: IdentityProofActionOf<T> = match T::IdentityProvider::retrieve(&identifier) {
 				Ok(Some((identity, _))) => {
-					let identity_proof = T::IdentityProofGenerator::generate_proof(&identifier, &identity)?;
+					let identity_proof = T::IdentityProofGenerator::generate_proof(&identifier, &identity)
+						.map_err(|_| Error::<T>::IdentityProofGeneration)?;
 					Ok(IdentityProofAction::Updated(identifier, identity_proof, ()))
 				}
 				Ok(None) => Ok(IdentityProofAction::Deleted(identifier)),
 				_ => Err(Error::<T>::IdentityNotFound),
 			}?;
-			println!("dip_sender::commit_identity 3");
 			let versioned_action = VersionedIdentityProofAction::V1(action);
 
 			let (ticket, _) = T::IdentityProofDispatcher::pre_dispatch::<T::TxBuilder>(
@@ -111,13 +110,13 @@ pub mod pallet {
 				(Here, 10_000_000).into(),
 				destination,
 			)
-			.map_err(|_| Error::<T>::Dispatch)?;
+			.map_err(|_| Error::<T>::Predispatch)?;
 
-			// TODO: Use returned asset to charge the tx submitter for the fee.
+			// TODO: Use returned asset of `pre_dispatch` to charge the tx submitter for the
+			// fee.
 			T::IdentityProofDispatcher::dispatch(ticket).map_err(|_| Error::<T>::Dispatch)?;
 
 			Self::deposit_event(Event::IdentityInfoDispatched(versioned_action, Box::new(destination)));
-			println!("dip_sender::commit_identity 4");
 			Ok(())
 		}
 	}

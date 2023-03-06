@@ -21,10 +21,11 @@ use xcm::{latest::prelude::*, DoubleEncoded};
 
 pub use identity_generation::*;
 pub mod identity_generation {
-	use sp_runtime::DispatchError;
 
 	pub trait IdentityProofGenerator<Identifier, Identity, Output> {
-		fn generate_proof(identifier: &Identifier, identity: &Identity) -> Result<Output, DispatchError>;
+		type Error;
+
+		fn generate_proof(identifier: &Identifier, identity: &Identity) -> Result<Output, Self::Error>;
 	}
 
 	pub struct DefaultIdentityProofGenerator;
@@ -34,7 +35,9 @@ pub mod identity_generation {
 	where
 		Output: Default,
 	{
-		fn generate_proof(_identifier: &Identifier, _identity: &Identity) -> Result<Output, DispatchError> {
+		type Error = ();
+
+		fn generate_proof(_identifier: &Identifier, _identity: &Identity) -> Result<Output, Self::Error> {
 			Ok(Output::default())
 		}
 	}
@@ -68,7 +71,7 @@ pub mod identity_dispatch {
 		for NullIdentityProofDispatcher
 	{
 		type PreDispatchOutput = ();
-		type Error = &'static str;
+		type Error = ();
 
 		fn pre_dispatch<_B>(
 			_action: VersionedIdentityProofAction<Identifier, IdentityRoot, Details>,
@@ -81,16 +84,6 @@ pub mod identity_dispatch {
 		fn dispatch(_pre_output: Self::PreDispatchOutput) -> Result<(), Self::Error> {
 			Ok(())
 		}
-	}
-
-	fn catch_instructions(beneficiary: MultiLocation) -> Vec<Instruction> {
-		vec![
-			RefundSurplus,
-			DepositAsset {
-				assets: Wild(All),
-				beneficiary,
-			},
-		]
 	}
 
 	// Dispatcher wrapping the XCM pallet.
@@ -119,6 +112,16 @@ pub mod identity_dispatch {
 			let dest_tx = B::build(destination, action)
 				.map_err(|_| ())
 				.expect("Failed to build call");
+
+			fn catch_instructions(beneficiary: MultiLocation) -> Vec<Instruction> {
+				vec![
+					RefundSurplus,
+					DepositAsset {
+						assets: Wild(All),
+						beneficiary,
+					},
+				]
+			}
 
 			let operation = [
 				vec![
@@ -151,10 +154,11 @@ pub mod identity_dispatch {
 
 pub use identity_provision::*;
 pub mod identity_provision {
-	use sp_runtime::DispatchError;
 
 	pub trait IdentityProvider<Identifier, Identity, Details = ()> {
-		fn retrieve(identifier: &Identifier) -> Result<Option<(Identity, Details)>, DispatchError>;
+		type Error;
+
+		fn retrieve(identifier: &Identifier) -> Result<Option<(Identity, Details)>, Self::Error>;
 	}
 
 	pub struct DefaultIdentityProvider;
@@ -164,7 +168,9 @@ pub mod identity_provision {
 		Identity: Default,
 		Details: Default,
 	{
-		fn retrieve(_identifier: &Identifier) -> Result<Option<(Identity, Details)>, DispatchError> {
+		type Error = ();
+
+		fn retrieve(_identifier: &Identifier) -> Result<Option<(Identity, Details)>, Self::Error> {
 			Ok(Some((Identity::default(), Details::default())))
 		}
 	}
@@ -172,7 +178,9 @@ pub mod identity_provision {
 	pub struct NoneIdentityProvider;
 
 	impl<Identifier, Identity, Details> IdentityProvider<Identifier, Identity, Details> for NoneIdentityProvider {
-		fn retrieve(_identifier: &Identifier) -> Result<Option<(Identity, Details)>, DispatchError> {
+		type Error = ();
+
+		fn retrieve(_identifier: &Identifier) -> Result<Option<(Identity, Details)>, Self::Error> {
 			Ok(None)
 		}
 	}

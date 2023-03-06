@@ -111,7 +111,6 @@ pub mod pallet {
 			Ok(())
 		}
 
-		// TODO: Add actual dispatchable
 		#[pallet::call_index(1)]
 		#[pallet::weight(0)]
 		pub fn dispatch_as(
