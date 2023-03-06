@@ -37,7 +37,7 @@ use kilt_support::{deposit::Deposit, traits::GenerateBenchmarkOrigin};
 
 use crate::{
 	account::AccountId20,
-	associate_account_request::{AssociateAccountRequest, get_challenge},
+	associate_account_request::{get_challenge, AssociateAccountRequest},
 	linkable_account::LinkableAccountId,
 	migrations::{add_legacy_association, get_mixed_storage_iterator, MixedStorageKey},
 	signature::get_wrapped_payload,
