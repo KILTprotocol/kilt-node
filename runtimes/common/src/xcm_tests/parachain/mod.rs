@@ -92,6 +92,7 @@ pub(super) mod sender {
 
 	parameter_types! {
 		pub UniversalLocation: InteriorMultiLocation = Parachain(MsgQueue::parachain_id().into()).into();
+		pub HereLocation: MultiLocation = ParentThen(UniversalLocation::get()).into();
 	}
 
 	impl frame_system::Config for Runtime {
@@ -222,7 +223,8 @@ pub(super) mod sender {
 	impl dip_sender::Config for Runtime {
 		type Identifier = Identifier;
 		type Identity = u32;
-		type IdentityProofDispatcher = XcmRouterDispatcher<XcmRouter<MsgQueue>, Identifier, IdentityProofOutput>;
+		type IdentityProofDispatcher =
+			XcmRouterDispatcher<XcmRouter<MsgQueue>, Identifier, IdentityProofOutput, HereLocation>;
 		type IdentityProofGenerator = DefaultIdentityProofGenerator;
 		type IdentityProvider = DefaultIdentityProvider;
 		type ProofOutput = IdentityProofOutput;

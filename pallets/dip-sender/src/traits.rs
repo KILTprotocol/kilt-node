@@ -45,7 +45,7 @@ pub mod identity_dispatch {
 	use super::*;
 
 	use codec::Encode;
-	use frame_support::weights::Weight;
+	use frame_support::{traits::Get, weights::Weight};
 	use sp_std::marker::PhantomData;
 	use xcm::latest::opaque::Instruction;
 
@@ -83,12 +83,12 @@ pub mod identity_dispatch {
 		}
 	}
 
-	fn catch_instructions() -> Vec<Instruction> {
+	fn catch_instructions(beneficiary: MultiLocation) -> Vec<Instruction> {
 		vec![
 			RefundSurplus,
 			DepositAsset {
 				assets: Wild(All),
-				beneficiary: Here.into(),
+				beneficiary,
 			},
 		]
 	}
@@ -97,13 +97,14 @@ pub mod identity_dispatch {
 	// It basically properly encodes the Transact operation, then delegates
 	// everything else to the pallet's `send_xcm` function, similarly to what the
 	// pallet's `send` extrinsic does.
-	pub struct XcmRouterDispatcher<R, I, P, D = ()>(PhantomData<(R, I, P, D)>);
+	pub struct XcmRouterDispatcher<R, I, P, L, D = ()>(PhantomData<(R, I, P, L, D)>);
 
-	impl<R, I, P, D> IdentityProofDispatcher<I, P, D> for XcmRouterDispatcher<R, I, P, D>
+	impl<R, I, P, L, D> IdentityProofDispatcher<I, P, D> for XcmRouterDispatcher<R, I, P, L, D>
 	where
 		R: SendXcm,
 		I: Encode,
 		P: Encode,
+		L: Get<MultiLocation>,
 	{
 		type PreDispatchOutput = R::Ticket;
 		type Error = SendError;
@@ -123,7 +124,7 @@ pub mod identity_dispatch {
 				vec![
 					WithdrawAsset(asset.clone().into()),
 					// Refund all and deposit back to owner if anything goes wrong.
-					SetErrorHandler(catch_instructions().into()),
+					SetErrorHandler(catch_instructions(L::get()).into()),
 					BuyExecution {
 						fees: asset,
 						weight_limit: Limited(Weight::from_parts(1_000_000, 1_000_000)),
@@ -134,7 +135,7 @@ pub mod identity_dispatch {
 						call: dest_tx,
 					},
 				],
-				catch_instructions(),
+				catch_instructions(L::get()),
 			]
 			.concat();
 			println!("DidXcmV3ViaXcmPalletDispatcher::dispatch 4");
