@@ -26,13 +26,10 @@ codec = {package = "parity-scale-codec", workspace = true, features = ["derive"]
 frame-support.workspace = true
 frame-system.workspace = true
 scale-info = {workspace = true, features = ["derive"]}
-sp-runtime.workspace = true
 sp-std.workspace = true
 
 # Polkadot dependencies
-pallet-xcm.workspace = true
 xcm.workspace = true
-xcm-executor.workspace = true
 
 [features]
 default = ["std"]
@@ -42,9 +39,6 @@ std = [
   "frame-support/std",
   "frame-system/std",
   "scale-info/std",
-  "sp-runtime/std",
   "sp-std/std",
-  "pallet-xcm/std",
   "xcm/std",
-  "xcm-executor/std",
 ]

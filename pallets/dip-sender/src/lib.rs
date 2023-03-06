@@ -30,7 +30,7 @@ pub mod pallet {
 
 	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
-	use sp_std::fmt::Debug;
+	use sp_std::{boxed::Box, fmt::Debug};
 	use xcm::{latest::prelude::*, VersionedMultiLocation};
 
 	use dip_support::{v1::IdentityProofAction, VersionedIdentityProofAction};

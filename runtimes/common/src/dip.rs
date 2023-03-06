@@ -18,7 +18,7 @@
 
 pub mod proof_generation {
 	use codec::Encode;
-	use sp_std::marker::PhantomData;
+	use sp_std::{borrow::ToOwned, marker::PhantomData, vec::Vec};
 	use sp_trie::{generate_trie_proof, verify_trie_proof, LayoutV1, MemoryDB, TrieDBMutBuilder, TrieHash, TrieMut};
 
 	use did::{

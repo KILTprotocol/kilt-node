@@ -14,7 +14,7 @@ description = "Parachain runtime for KILT Testnets."
 substrate-wasm-builder.workspace = true
 
 [dev-dependencies]
-sp-io.workspace = true
+sp-io = { workspace = true, features = ["std"] }
 
 [dependencies]
 # External dependencies

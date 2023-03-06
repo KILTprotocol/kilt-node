@@ -19,6 +19,7 @@
 use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::RuntimeDebug;
 use scale_info::TypeInfo;
+use sp_std::vec::Vec;
 
 #[derive(Clone, Eq, PartialEq, Debug, Encode, Decode, TypeInfo, MaxEncodedLen)]
 pub enum IdentityProofAction<Identifier, Proof, Details = ()> {

@@ -49,7 +49,7 @@ pub mod identity_dispatch {
 
 	use codec::Encode;
 	use frame_support::{traits::Get, weights::Weight};
-	use sp_std::marker::PhantomData;
+	use sp_std::{marker::PhantomData, vec, vec::Vec};
 	use xcm::latest::opaque::Instruction;
 
 	pub trait IdentityProofDispatcher<Identifier, IdentityRoot, Details = ()> {
@@ -107,7 +107,6 @@ pub mod identity_dispatch {
 			asset: MultiAsset,
 			destination: MultiLocation,
 		) -> Result<(Self::PreDispatchOutput, MultiAssets), Self::Error> {
-			println!("DidXcmV3ViaXcmPalletDispatcher::dispatch 1");
 			// TODO: Replace with proper error handling
 			let dest_tx = B::build(destination, action)
 				.map_err(|_| ())
@@ -141,7 +140,6 @@ pub mod identity_dispatch {
 				catch_instructions(L::get()),
 			]
 			.concat();
-			println!("DidXcmV3ViaXcmPalletDispatcher::dispatch 4");
 			let op = Xcm(operation);
 			R::validate(&mut Some(destination), &mut Some(op))
 		}

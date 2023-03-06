@@ -14,16 +14,10 @@ description = "Support types, traits, and functions for the KILT Decentralized I
 # Parity dependencies
 codec = {package = "parity-scale-codec", workspace = true, features = ["derive"]}
 scale-info = {workspace = true, features = ["derive"]}
+sp-std.workspace = true
 
 # Substrate dependencies
 frame-support = {workspace = true, default-features = false}
-sp-io = {workspace = true, default-features = false}
-sp-runtime = {workspace = true, default-features = false}
-sp-std = {workspace = true, default-features = false}
-
-# Polkadot dependencies
-xcm = {workspace = true, default-features = false}
-xcm-executor = {workspace = true, default-features = false}
 
 [features]
 default = ["std"]
@@ -31,9 +25,5 @@ std = [
   "codec/std",
   "scale-info/std",
   "frame-support/std",
-  "sp-io/std",
-  "sp-runtime/std",
-  "sp-std/std",
-  "xcm/std",
-  "xcm-executor/std"
+  "sp-std/std"
 ]
