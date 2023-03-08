@@ -11,16 +11,18 @@ ARG FEATURES=default
 
 COPY . .
 
-RUN cargo build --locked --release --features $FEATURES
+ARG NODE_TYPE=dip-node-template
+
+RUN cargo build -p $NODE_TYPE --locked --features $FEATURES
 
 # ===== SECOND STAGE ======
 
 FROM docker.io/library/ubuntu:20.04
 LABEL description="This is the 2nd stage: a very small image where we copy the kilt-parachain binary."
 
-ARG NODE_TYPE=kilt-parachain
+ARG NODE_TYPE=dip-node-template
 
-COPY --from=builder /build/target/release/$NODE_TYPE /usr/local/bin/node-executable
+COPY --from=builder /build/target/debug/$NODE_TYPE /usr/local/bin/node-executable
 
 RUN useradd -m -u 1000 -U -s /bin/sh -d /node node && \
 	mkdir -p /node/.local/share/node && \
@@ -31,8 +33,6 @@ RUN useradd -m -u 1000 -U -s /bin/sh -d /node node && \
 USER node
 EXPOSE 30333 9933 9944
 VOLUME ["/data"]
-
-COPY ./dev-specs /node/dev-specs
 
 ENTRYPOINT ["/usr/local/bin/node-executable"]
 CMD ["--help"]

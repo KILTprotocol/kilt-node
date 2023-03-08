@@ -278,6 +278,7 @@ pub fn run() -> Result<()> {
 			You can enable it with `--features try-runtime`."
 			.into()),
 		None => {
+			let is_sender = cli.run.base.chain_id(false).unwrap() == "dev-sender";
 			let runner = cli.create_runner(&cli.run.normalize())?;
 			let collator_options = cli.run.collator_options();
 
@@ -288,9 +289,13 @@ pub fn run() -> Result<()> {
 						sc_sysinfo::gather_hwbench(Some(database_path))
 					})).flatten();
 
-				let para_id = chain_spec::sender::Extensions::try_get(&*config.chain_spec)
+				let para_id = if is_sender { chain_spec::sender::Extensions::try_get(&*config.chain_spec)
 					.map(|e| e.para_id)
-					.ok_or_else(|| "Could not find parachain ID in chain-spec.")?;
+					.ok_or_else(|| "Could not find parachain ID in chain-spec.") } else {
+						chain_spec::receiver::Extensions::try_get(&*config.chain_spec)
+					.map(|e| e.para_id)
+					.ok_or_else(|| "Could not find parachain ID in chain-spec.")
+					}?;
 
 				let polkadot_cli = RelayChainCli::new(
 					&config,

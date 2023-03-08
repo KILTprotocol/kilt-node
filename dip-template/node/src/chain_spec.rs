@@ -68,7 +68,7 @@ pub(crate) mod sender {
 	pub fn development_config() -> ChainSpec {
 		// Give your base currency a unit name and decimal places
 		let mut properties = sc_chain_spec::Properties::new();
-		properties.insert("tokenSymbol".into(), "UNIT".into());
+		properties.insert("tokenSymbol".into(), "SEILT".into());
 		properties.insert("tokenDecimals".into(), 12.into());
 		properties.insert("ss58Format".into(), 42.into());
 
@@ -76,7 +76,7 @@ pub(crate) mod sender {
 			// Name
 			"Development",
 			// ID
-			"dev",
+			"sender-dev",
 			ChainType::Development,
 			move || {
 				testnet_genesis(
@@ -105,17 +105,17 @@ pub(crate) mod sender {
 						get_account_id_from_seed::<sr25519::Public>("Eve//stash"),
 						get_account_id_from_seed::<sr25519::Public>("Ferdie//stash"),
 					],
-					1000.into(),
+					2000.into(),
 				)
 			},
 			Vec::new(),
 			None,
-			None,
+			"sender-protocol".into(),
 			None,
 			None,
 			Extensions {
 				relay_chain: "rococo-local".into(), // You MUST set this to the correct network!
-				para_id: 1000,
+				para_id: 2000,
 			},
 		)
 	}
@@ -125,6 +125,7 @@ pub(crate) mod sender {
 		endowed_accounts: Vec<AccountId>,
 		id: ParaId,
 	) -> dip_sender_runtime_template::GenesisConfig {
+		println!("{:?}", endowed_accounts.first().unwrap());
 		dip_sender_runtime_template::GenesisConfig {
 			system: dip_sender_runtime_template::SystemConfig {
 				code: dip_sender_runtime_template::WASM_BINARY
@@ -161,6 +162,9 @@ pub(crate) mod sender {
 				safe_xcm_version: Some(SAFE_XCM_VERSION),
 			},
 			transaction_payment: Default::default(),
+			sudo: dip_sender_runtime_template::SudoConfig {
+				key: Some(endowed_accounts.first().unwrap().clone()),
+			},
 		}
 	}
 }
@@ -228,7 +232,7 @@ pub(crate) mod receiver {
 	pub fn development_config() -> ChainSpec {
 		// Give your base currency a unit name and decimal places
 		let mut properties = sc_chain_spec::Properties::new();
-		properties.insert("tokenSymbol".into(), "UNIT".into());
+		properties.insert("tokenSymbol".into(), "REILT".into());
 		properties.insert("tokenDecimals".into(), 12.into());
 		properties.insert("ss58Format".into(), 42.into());
 
@@ -236,7 +240,7 @@ pub(crate) mod receiver {
 			// Name
 			"Development",
 			// ID
-			"dev",
+			"receiver-dev",
 			ChainType::Development,
 			move || {
 				testnet_genesis(
@@ -265,17 +269,17 @@ pub(crate) mod receiver {
 						get_account_id_from_seed::<sr25519::Public>("Eve//stash"),
 						get_account_id_from_seed::<sr25519::Public>("Ferdie//stash"),
 					],
-					1000.into(),
+					2001.into(),
 				)
 			},
 			Vec::new(),
 			None,
-			None,
+			"receiver-protocol".into(),
 			None,
 			None,
 			Extensions {
 				relay_chain: "rococo-local".into(), // You MUST set this to the correct network!
-				para_id: 1000,
+				para_id: 2001,
 			},
 		)
 	}
@@ -285,6 +289,7 @@ pub(crate) mod receiver {
 		endowed_accounts: Vec<AccountId>,
 		id: ParaId,
 	) -> dip_receiver_runtime_template::GenesisConfig {
+		println!("{:?}", endowed_accounts.first().unwrap());
 		dip_receiver_runtime_template::GenesisConfig {
 			system: dip_receiver_runtime_template::SystemConfig {
 				code: dip_receiver_runtime_template::WASM_BINARY
@@ -322,6 +327,9 @@ pub(crate) mod receiver {
 			},
 			transaction_payment: Default::default(),
 			did_lookup: Default::default(),
+			sudo: dip_receiver_runtime_template::SudoConfig {
+				key: Some(endowed_accounts.first().unwrap().clone()),
+			},
 		}
 	}
 }

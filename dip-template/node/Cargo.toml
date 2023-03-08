@@ -11,10 +11,6 @@ name = "dip-node-template"
 description = "Node template for the KILT Decentralized Identity Provider (DIP)."
 build = "build.rs"
 
-[[bin]]
-name = "kilt-dip-template"
-path = "src/main.rs"
-
 [dependencies]
 clap = {workspace = true, features = ["derive"]}
 log.workspace = true
