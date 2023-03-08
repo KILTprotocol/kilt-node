@@ -34,7 +34,7 @@ where
 	OuterOrigin:
 		From<DipOrigin<DidIdentifier, AccountId>> + Into<Result<DipOrigin<DidIdentifier, AccountId>, OuterOrigin>>,
 	AccountId: From<[u8; 32]>,
-	DidIdentifier: Default,
+	DidIdentifier: From<[u8; 32]>,
 {
 	type Success = DipOrigin<DidIdentifier, AccountId>;
 
@@ -44,11 +44,24 @@ where
 
 	#[cfg(feature = "runtime-benchmarks")]
 	fn try_successful_origin() -> Result<OuterOrigin, ()> {
-		let zero_account_id = AccountId::from([0u8; 32]);
-
 		Ok(OuterOrigin::from(DipOrigin {
-			did_identifier: DidIdentifier::default(),
-			account_address: zero_account_id,
+			did_identifier: DidIdentifier::from([0u8; 32]),
+			account_address: AccountId::from([0u8; 32]),
 		}))
+	}
+}
+
+impl<DidIdentifier, AccountId> kilt_support::traits::CallSources<AccountId, DidIdentifier>
+	for DipOrigin<DidIdentifier, AccountId>
+where
+	DidIdentifier: Clone,
+	AccountId: Clone,
+{
+	fn sender(&self) -> AccountId {
+		self.account_address.clone()
+	}
+
+	fn subject(&self) -> DidIdentifier {
+		self.did_identifier.clone()
 	}
 }

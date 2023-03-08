@@ -5,6 +5,8 @@ lto = "fat"
 [workspace]
 members = [
   "crates/*",
+  "dip-template/node",
+  "dip-template/runtimes/*",
   "nodes/*",
   "pallets/*",
   "runtime-api/*",
@@ -62,6 +64,10 @@ dip-support = {path = "crates/dip", default-features = false}
 kilt-asset-dids = {path = "crates/assets", default-features = false}
 kilt-support = {path = "support", default-features = false}
 runtime-common = {path = "runtimes/common", default-features = false}
+
+# Templates
+dip-receiver-runtime-template = {path = "dip-template/runtimes/dip-receiver", default-feature = false}
+dip-sender-runtime-template = {path = "dip-template/runtimes/dip-sender", default-feature = false}
 
 # Internal runtime API (with default disabled)
 kilt-runtime-api-did = {path = "runtime-api/did", default-features = false}

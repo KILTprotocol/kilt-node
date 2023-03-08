@@ -96,12 +96,10 @@ pub mod pallet {
 
 			let event = match action {
 				VersionedIdentityProofAction::V1(IdentityProofAction::Updated(identifier, proof, _)) => {
-					println!("DipReceiver::process_identity_action - Action was to update. Writing...");
 					IdentityProofs::<T>::mutate(&identifier, |entry| *entry = Some(proof.clone()));
 					Event::<T>::IdentityInfoUpdated(identifier, proof)
 				}
 				VersionedIdentityProofAction::V1(IdentityProofAction::Deleted(identifier)) => {
-					println!("DipReceiver::process_identity_action - Action was to delete. Deleting...");
 					IdentityProofs::<T>::remove(&identifier);
 					Event::<T>::IdentityInfoDeleted(identifier)
 				}
@@ -117,7 +115,7 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			identifier: T::Identifier,
 			proof: VersionedIdentityProof<T::ProofLeafKey, T::ProofLeafValue>,
-			call: Box<<T as Config>::RuntimeCall>,
+			call: sp_std::boxed::Box<<T as Config>::RuntimeCall>,
 		) -> DispatchResult {
 			let submitter = ensure_signed(origin)?;
 			let proof_digest = IdentityProofs::<T>::get(&identifier).ok_or(Error::<T>::IdentityNotFound)?;
