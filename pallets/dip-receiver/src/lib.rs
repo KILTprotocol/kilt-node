@@ -72,6 +72,12 @@ pub mod pallet {
 	pub enum Event<T: Config> {
 		IdentityInfoUpdated(T::Identifier, T::ProofDigest),
 		IdentityInfoDeleted(T::Identifier),
+		// TODO: Remove
+		Error1,
+		Error2,
+		Error3,
+		Error4,
+		Error5,
 	}
 
 	#[pallet::error]
@@ -92,18 +98,25 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			action: VersionedIdentityProofAction<T::Identifier, T::ProofDigest>,
 		) -> DispatchResult {
-			T::EnsureSourceXcmOrigin::ensure_origin(origin)?;
+			Self::deposit_event(Event::<T>::Error5);
+			T::EnsureSourceXcmOrigin::ensure_origin(origin).map_err(|e| {
+				Self::deposit_event(Event::<T>::Error1);
+				e
+			})?;
 
 			let event = match action {
 				VersionedIdentityProofAction::V1(IdentityProofAction::Updated(identifier, proof, _)) => {
+					Self::deposit_event(Event::<T>::Error2);
 					IdentityProofs::<T>::mutate(&identifier, |entry| *entry = Some(proof.clone()));
 					Event::<T>::IdentityInfoUpdated(identifier, proof)
 				}
 				VersionedIdentityProofAction::V1(IdentityProofAction::Deleted(identifier)) => {
+					Self::deposit_event(Event::<T>::Error3);
 					IdentityProofs::<T>::remove(&identifier);
 					Event::<T>::IdentityInfoDeleted(identifier)
 				}
 			};
+			Self::deposit_event(Event::<T>::Error4);
 
 			Self::deposit_event(event);
 			Ok(())

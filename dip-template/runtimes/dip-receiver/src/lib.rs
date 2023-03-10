@@ -11,6 +11,7 @@ pub mod xcm_config;
 
 use cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases;
 use dip_receiver::traits::SuccessfulProofVerifier;
+use pallet_xcm::EnsureXcm;
 use smallvec::smallvec;
 use sp_api::impl_runtime_apis;
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
@@ -30,7 +31,7 @@ use frame_support::{
 	construct_runtime,
 	dispatch::DispatchClass,
 	parameter_types,
-	traits::{ConstU32, ConstU64, ConstU8, Everything},
+	traits::{ConstU32, ConstU64, ConstU8, Contains, Everything},
 	weights::{
 		constants::WEIGHT_REF_TIME_PER_SECOND, ConstantMultiplier, Weight, WeightToFeeCoefficient,
 		WeightToFeeCoefficients, WeightToFeePolynomial,
@@ -43,7 +44,6 @@ use frame_system::{
 };
 pub use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 pub use sp_runtime::{MultiAddress, Perbill, Permill};
-use xcm_builder::{EnsureXcmOrigin, SignedToAccountId32};
 use xcm_config::{XcmConfig, XcmOriginToTransactDispatchOrigin};
 
 #[cfg(any(feature = "std", test))]
@@ -55,10 +55,8 @@ use polkadot_runtime_common::{BlockHashCount, SlowAdjustingFeeUpdate};
 use weights::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight};
 
 // XCM Imports
-use xcm::latest::prelude::BodyId;
+use xcm::latest::prelude::{BodyId, Junction::Parachain, Junctions::X1, MultiLocation};
 use xcm_executor::XcmExecutor;
-
-use crate::xcm_config::RelayNetwork;
 
 /// Alias to 512-bit hash when used in the context of a transaction signature on
 /// the chain.
@@ -458,8 +456,21 @@ impl pallet_collator_selection::Config for Runtime {
 	type WeightInfo = ();
 }
 
-type DipProviderOriginCheck =
-	EnsureXcmOrigin<RuntimeOrigin, SignedToAccountId32<RuntimeOrigin, AccountId, RelayNetwork>>;
+pub struct AllowedProviders;
+
+impl Contains<MultiLocation> for AllowedProviders {
+	fn contains(t: &MultiLocation) -> bool {
+		match t {
+			MultiLocation {
+				parents: 1,
+				interior: X1(Parachain(2000)),
+			} => true,
+			_ => false,
+		}
+	}
+}
+
+type DipProviderOriginCheck = EnsureXcm<AllowedProviders>;
 type DidIdentifier = AccountId;
 
 impl dip_receiver::Config for Runtime {
