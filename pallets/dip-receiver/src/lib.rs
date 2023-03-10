@@ -98,25 +98,25 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			action: VersionedIdentityProofAction<T::Identifier, T::ProofDigest>,
 		) -> DispatchResult {
-			Self::deposit_event(Event::<T>::Error5);
+			Self::deposit_event(Event::<T>::Error1);
 			T::EnsureSourceXcmOrigin::ensure_origin(origin).map_err(|e| {
-				Self::deposit_event(Event::<T>::Error1);
+				Self::deposit_event(Event::<T>::Error2);
 				e
 			})?;
 
 			let event = match action {
 				VersionedIdentityProofAction::V1(IdentityProofAction::Updated(identifier, proof, _)) => {
-					Self::deposit_event(Event::<T>::Error2);
+					Self::deposit_event(Event::<T>::Error3);
 					IdentityProofs::<T>::mutate(&identifier, |entry| *entry = Some(proof.clone()));
 					Event::<T>::IdentityInfoUpdated(identifier, proof)
 				}
 				VersionedIdentityProofAction::V1(IdentityProofAction::Deleted(identifier)) => {
-					Self::deposit_event(Event::<T>::Error3);
+					Self::deposit_event(Event::<T>::Error4);
 					IdentityProofs::<T>::remove(&identifier);
 					Event::<T>::IdentityInfoDeleted(identifier)
 				}
 			};
-			Self::deposit_event(Event::<T>::Error4);
+			Self::deposit_event(Event::<T>::Error5);
 
 			Self::deposit_event(event);
 			Ok(())

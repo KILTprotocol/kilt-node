@@ -459,14 +459,8 @@ impl pallet_collator_selection::Config for Runtime {
 pub struct AllowedProviders;
 
 impl Contains<MultiLocation> for AllowedProviders {
-	fn contains(t: &MultiLocation) -> bool {
-		match t {
-			MultiLocation {
-				parents: 1,
-				interior: X1(Parachain(2000)),
-			} => true,
-			_ => false,
-		}
+	fn contains(_t: &MultiLocation) -> bool {
+		true
 	}
 }
 
