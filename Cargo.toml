@@ -1,6 +1,12 @@
-[profile.release]
-panic = "unwind"
-lto = "fat"
+[workspace.package]
+authors = ["KILT <info@kilt.io>"]
+documentation = "https://docs.kilt.io"
+edition = "2021"
+homepage = "https://kilt.io/"
+license-file = "LICENSE"
+readme = "README.md"
+repository = "https://github.com/KILTprotocol/kilt-node"
+version = "1.11.0-dev"
 
 [workspace]
 members = [
@@ -12,15 +18,9 @@ members = [
   "crates/*",
 ]
 
-[workspace.package]
-authors = ["KILT <info@kilt.io>"]
-documentation = "https://docs.kilt.io"
-edition = "2021"
-homepage = "https://kilt.io/"
-license-file = "LICENSE"
-readme = "README.md"
-repository = "https://github.com/KILTprotocol/kilt-node"
-version = "1.10.0-dev"
+[profile.release]
+lto = "fat"
+panic = "unwind"
 
 [workspace.dependencies]
 # Build deps
@@ -32,9 +32,9 @@ bitflags = {version = "1.3.2", default-features = false}
 clap = "4.0.9"
 codec = {package = "parity-scale-codec", version = "3.1.5", default-features = false}
 env_logger = "0.10.0"
-futures = { version = "0.3.21", default-features = false}
-hex-literal = "0.3.4"
+futures = {version = "0.3.21", default-features = false}
 hex = {version = "0.4.0", default-features = false}
+hex-literal = "0.3.4"
 jsonrpsee = "0.16.2"
 libsecp256k1 = {version = "0.7", default-features = false}
 log = "0.4.17"
@@ -49,10 +49,10 @@ attestation = {path = "pallets/attestation", default-features = false}
 ctype = {path = "pallets/ctype", default-features = false}
 delegation = {path = "pallets/delegation", default-features = false}
 did = {path = "pallets/did", default-features = false}
-pallet-inflation = {path = "pallets/pallet-inflation", default-features = false}
-parachain-staking = {path = "pallets/parachain-staking", default-features = false}
 pallet-did-lookup = {path = "pallets/pallet-did-lookup", default-features = false}
+pallet-inflation = {path = "pallets/pallet-inflation", default-features = false}
 pallet-web3-names = {path = "pallets/pallet-web3-names", default-features = false}
+parachain-staking = {path = "pallets/parachain-staking", default-features = false}
 public-credentials = {path = "pallets/public-credentials", default-features = false}
 
 # Internal support (with default disabled)
@@ -62,14 +62,13 @@ runtime-common = {path = "runtimes/common", default-features = false}
 
 # Internal runtime API (with default disabled)
 kilt-runtime-api-did = {path = "runtime-api/did", default-features = false}
-kilt-runtime-api-staking = {path = "runtime-api/staking", default-features = false}
 kilt-runtime-api-public-credentials = {path = "runtime-api/public-credentials", default-features = false}
+kilt-runtime-api-staking = {path = "runtime-api/staking", default-features = false}
 
 # Internal KILT runtimes (with default disabled)
 mashnet-node-runtime = {path = "runtimes/standalone", default-features = false}
 peregrine-runtime = {path = "runtimes/peregrine", default-features = false}
 spiritnet-runtime = {path = "runtimes/spiritnet", default-features = false}
-
 
 # Benchmarking (with default disabled)
 cumulus-pallet-session-benchmarking = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "polkadot-v0.9.38"}
@@ -78,7 +77,6 @@ frame-system-benchmarking = {git = "https://github.com/paritytech/substrate", de
 # Cumulus (with default disabled)
 cumulus-pallet-aura-ext = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "polkadot-v0.9.38"}
 cumulus-pallet-dmp-queue = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "polkadot-v0.9.38"}
-cumulus-pallet-solo-to-para = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "polkadot-v0.9.38"}
 cumulus-pallet-parachain-system = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "polkadot-v0.9.38"}
 cumulus-pallet-xcm = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "polkadot-v0.9.38"}
 cumulus-pallet-xcmp-queue = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "polkadot-v0.9.38"}
