@@ -28,10 +28,10 @@ pub use crate::pallet::*;
 pub mod pallet {
 	use super::*;
 
-	use frame_support::pallet_prelude::*;
+	use frame_support::{pallet_prelude::*, weights::Weight};
 	use frame_system::pallet_prelude::*;
 	use sp_std::{boxed::Box, fmt::Debug};
-	use xcm::{latest::prelude::*, VersionedMultiLocation};
+	use xcm::{latest::prelude::*, VersionedMultiAsset, VersionedMultiLocation};
 
 	use dip_support::{v1::IdentityProofAction, VersionedIdentityProofAction};
 
@@ -89,6 +89,8 @@ pub mod pallet {
 			identifier: T::Identifier,
 			// TODO: Add correct version creation based on lookup (?)
 			destination: Box<VersionedMultiLocation>,
+			asset: Box<VersionedMultiAsset>,
+			weight: Weight,
 		) -> DispatchResult {
 			let dispatcher = ensure_signed(origin)?;
 
@@ -104,10 +106,12 @@ pub mod pallet {
 			}?;
 			let versioned_action = VersionedIdentityProofAction::V1(action);
 
+			let asset: MultiAsset = (*asset).try_into().map_err(|_| Error::<T>::BadVersion)?;
+
 			let (ticket, _) = T::IdentityProofDispatcher::pre_dispatch::<T::TxBuilder>(
 				versioned_action.clone(),
-				// TODO: This should be set per-chain
-				(Here, 10_000_000).into(),
+				asset,
+				weight,
 				destination,
 			)
 			.map_err(|_| Error::<T>::Predispatch)?;

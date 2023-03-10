@@ -59,6 +59,7 @@ pub mod identity_dispatch {
 		fn pre_dispatch<B: TxBuilder<Identifier, IdentityRoot, Details>>(
 			action: VersionedIdentityProofAction<Identifier, IdentityRoot, Details>,
 			asset: MultiAsset,
+			weight: Weight,
 			destination: MultiLocation,
 		) -> Result<(Self::PreDispatchOutput, MultiAssets), Self::Error>;
 
@@ -76,6 +77,7 @@ pub mod identity_dispatch {
 		fn pre_dispatch<_B>(
 			_action: VersionedIdentityProofAction<Identifier, IdentityRoot, Details>,
 			_asset: MultiAsset,
+			_weight: Weight,
 			_destination: MultiLocation,
 		) -> Result<((), MultiAssets), Self::Error> {
 			Ok(((), MultiAssets::default()))
@@ -105,6 +107,7 @@ pub mod identity_dispatch {
 		fn pre_dispatch<B: TxBuilder<I, P, D>>(
 			action: VersionedIdentityProofAction<I, P, D>,
 			asset: MultiAsset,
+			weight: Weight,
 			destination: MultiLocation,
 		) -> Result<(Self::PreDispatchOutput, MultiAssets), Self::Error> {
 			// TODO: Replace with proper error handling
@@ -129,11 +132,11 @@ pub mod identity_dispatch {
 					SetErrorHandler(catch_instructions(L::get()).into()),
 					BuyExecution {
 						fees: asset,
-						weight_limit: Limited(Weight::from_parts(1_000_000, 1_000_000)),
+						weight_limit: Unlimited,
 					},
 					Transact {
-						origin_kind: OriginKind::SovereignAccount,
-						require_weight_at_most: Weight::from_ref_time(1_000_000),
+						origin_kind: OriginKind::Native,
+						require_weight_at_most: weight,
 						call: dest_tx,
 					},
 				],
