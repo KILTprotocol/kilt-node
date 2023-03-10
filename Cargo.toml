@@ -70,7 +70,6 @@ mashnet-node-runtime = {path = "runtimes/standalone", default-features = false}
 peregrine-runtime = {path = "runtimes/peregrine", default-features = false}
 spiritnet-runtime = {path = "runtimes/spiritnet", default-features = false}
 
-
 # Benchmarking (with default disabled)
 cumulus-pallet-session-benchmarking = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "polkadot-v0.9.38"}
 frame-system-benchmarking = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.38"}
@@ -78,7 +77,6 @@ frame-system-benchmarking = {git = "https://github.com/paritytech/substrate", de
 # Cumulus (with default disabled)
 cumulus-pallet-aura-ext = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "polkadot-v0.9.38"}
 cumulus-pallet-dmp-queue = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "polkadot-v0.9.38"}
-cumulus-pallet-solo-to-para = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "polkadot-v0.9.38"}
 cumulus-pallet-parachain-system = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "polkadot-v0.9.38"}
 cumulus-pallet-xcm = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "polkadot-v0.9.38"}
 cumulus-pallet-xcmp-queue = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "polkadot-v0.9.38"}
