@@ -73,12 +73,6 @@ pub mod pallet {
 	pub enum Event<T: Config> {
 		IdentityInfoUpdated(T::Identifier, T::ProofDigest),
 		IdentityInfoDeleted(T::Identifier),
-		// TODO: Remove
-		Error1,
-		Error2,
-		Error3,
-		Error4,
-		Error5,
 	}
 
 	#[pallet::error]
@@ -99,41 +93,19 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			action: VersionedIdentityProofAction<T::Identifier, T::ProofDigest>,
 		) -> DispatchResult {
-			#[cfg(feature = "std")]
-			// println!("BBBBB 1 - origin = {:?}", origin);
-			Self::deposit_event(Event::<T>::Error1);
-			#[cfg(feature = "std")]
-			println!("BBBBB 2");
-			cumulus_pallet_xcm::ensure_sibling_para(<T as Config>::RuntimeOrigin::from(origin)).map_err(|e| {
-				#[cfg(feature = "std")]
-				println!("BBBBB 3 - {:?}", e);
-				Self::deposit_event(Event::<T>::Error2);
-				e
-			})?;
+			cumulus_pallet_xcm::ensure_sibling_para(<T as Config>::RuntimeOrigin::from(origin))?;
 
 			let event = match action {
 				VersionedIdentityProofAction::V1(IdentityProofAction::Updated(identifier, proof, _)) => {
-					#[cfg(feature = "std")]
-					println!("BBBBB 4");
-					Self::deposit_event(Event::<T>::Error3);
 					IdentityProofs::<T>::mutate(&identifier, |entry| *entry = Some(proof.clone()));
 					Event::<T>::IdentityInfoUpdated(identifier, proof)
 				}
 				VersionedIdentityProofAction::V1(IdentityProofAction::Deleted(identifier)) => {
-					#[cfg(feature = "std")]
-					println!("BBBBB 5");
-					Self::deposit_event(Event::<T>::Error4);
 					IdentityProofs::<T>::remove(&identifier);
 					Event::<T>::IdentityInfoDeleted(identifier)
 				}
 			};
-			#[cfg(feature = "std")]
-			println!("BBBBB 6");
-			Self::deposit_event(Event::<T>::Error5);
 
-			Self::deposit_event(event);
-			#[cfg(feature = "std")]
-			println!("BBBBB 7");
 			Ok(())
 		}
 
