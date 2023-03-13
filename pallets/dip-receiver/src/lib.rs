@@ -40,14 +40,13 @@ pub mod pallet {
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(0);
 
 	// TODO: Store also additional details received by the provider
+	// TODO: Make pub(crate) again
 	#[pallet::storage]
 	#[pallet::getter(fn identity_proofs)]
-	pub(crate) type IdentityProofs<T> =
-		StorageMap<_, Twox64Concat, <T as Config>::Identifier, <T as Config>::ProofDigest>;
+	pub type IdentityProofs<T> = StorageMap<_, Twox64Concat, <T as Config>::Identifier, <T as Config>::ProofDigest>;
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
-		type EnsureSourceXcmOrigin: EnsureOrigin<<Self as frame_system::Config>::RuntimeOrigin>;
 		type Identifier: Parameter + MaxEncodedLen;
 		type ProofLeafKey: Parameter;
 		type ProofLeafValue: Parameter;
@@ -59,7 +58,9 @@ pub mod pallet {
 		>;
 		type RuntimeCall: Parameter + Dispatchable<RuntimeOrigin = <Self as Config>::RuntimeOrigin>;
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
-		type RuntimeOrigin: From<Origin<Self>>;
+		type RuntimeOrigin: From<Origin<Self>>
+			+ From<<Self as frame_system::Config>::RuntimeOrigin>
+			+ Into<Result<cumulus_pallet_xcm::Origin, <Self as Config>::RuntimeOrigin>>;
 	}
 
 	#[pallet::pallet]
@@ -98,27 +99,41 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			action: VersionedIdentityProofAction<T::Identifier, T::ProofDigest>,
 		) -> DispatchResult {
+			#[cfg(feature = "std")]
+			// println!("BBBBB 1 - origin = {:?}", origin);
 			Self::deposit_event(Event::<T>::Error1);
-			T::EnsureSourceXcmOrigin::ensure_origin(origin).map_err(|e| {
+			#[cfg(feature = "std")]
+			println!("BBBBB 2");
+			cumulus_pallet_xcm::ensure_sibling_para(<T as Config>::RuntimeOrigin::from(origin)).map_err(|e| {
+				#[cfg(feature = "std")]
+				println!("BBBBB 3 - {:?}", e);
 				Self::deposit_event(Event::<T>::Error2);
 				e
 			})?;
 
 			let event = match action {
 				VersionedIdentityProofAction::V1(IdentityProofAction::Updated(identifier, proof, _)) => {
+					#[cfg(feature = "std")]
+					println!("BBBBB 4");
 					Self::deposit_event(Event::<T>::Error3);
 					IdentityProofs::<T>::mutate(&identifier, |entry| *entry = Some(proof.clone()));
 					Event::<T>::IdentityInfoUpdated(identifier, proof)
 				}
 				VersionedIdentityProofAction::V1(IdentityProofAction::Deleted(identifier)) => {
+					#[cfg(feature = "std")]
+					println!("BBBBB 5");
 					Self::deposit_event(Event::<T>::Error4);
 					IdentityProofs::<T>::remove(&identifier);
 					Event::<T>::IdentityInfoDeleted(identifier)
 				}
 			};
+			#[cfg(feature = "std")]
+			println!("BBBBB 6");
 			Self::deposit_event(Event::<T>::Error5);
 
 			Self::deposit_event(event);
+			#[cfg(feature = "std")]
+			println!("BBBBB 7");
 			Ok(())
 		}
 

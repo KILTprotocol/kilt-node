@@ -93,6 +93,8 @@ pub mod pallet {
 			weight: Weight,
 		) -> DispatchResult {
 			let dispatcher = ensure_signed(origin)?;
+			#[cfg(feature = "std")]
+			println!("AAAAA");
 
 			let destination: MultiLocation = (*destination).try_into().map_err(|_| Error::<T>::BadVersion)?;
 			let action: IdentityProofActionOf<T> = match T::IdentityProvider::retrieve(&identifier) {

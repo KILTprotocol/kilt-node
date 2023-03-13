@@ -146,6 +146,7 @@ try-runtime-cli = {git = "https://github.com/paritytech/substrate", default-feat
 pallet-xcm = {git = "https://github.com/paritytech/polkadot", default-features = false, branch = "release-v0.9.38"}
 polkadot-core-primitives = {git = "https://github.com/paritytech/polkadot", default-features = false, branch = "release-v0.9.38"}
 polkadot-parachain = {git = "https://github.com/paritytech/polkadot", default-features = false, branch = "release-v0.9.38"}
+rococo-runtime = {git = "https://github.com/paritytech/polkadot", default-features = false, branch = "release-v0.9.38"}
 polkadot-runtime-parachains = {git = "https://github.com/paritytech/polkadot", default-features = false, branch = "release-v0.9.38"}
 xcm = {git = "https://github.com/paritytech/polkadot", default-features = false, branch = "release-v0.9.38"}
 xcm-builder = {git = "https://github.com/paritytech/polkadot", default-features = false, branch = "release-v0.9.38"}

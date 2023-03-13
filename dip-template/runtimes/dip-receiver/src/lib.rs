@@ -468,7 +468,6 @@ type DipProviderOriginCheck = EnsureXcm<AllowedProviders>;
 type DidIdentifier = AccountId;
 
 impl dip_receiver::Config for Runtime {
-	type EnsureSourceXcmOrigin = DipProviderOriginCheck;
 	type Identifier = DidIdentifier;
 	type ProofDigest = [u8; 32];
 	type ProofLeafKey = [u8; 4];

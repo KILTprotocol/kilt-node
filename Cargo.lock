@@ -2249,6 +2249,7 @@ dependencies = [
 name = "dip-receiver"
 version = "1.10.0-dev"
 dependencies = [
+ "cumulus-pallet-xcm",
  "dip-support",
  "frame-support",
  "frame-system",
@@ -2397,6 +2398,30 @@ dependencies = [
  "parity-scale-codec",
  "scale-info",
  "sp-std",
+]
+
+[[package]]
+name = "dip-templates-xmc-tests"
+version = "1.10.0-dev"
+dependencies = [
+ "dip-receiver",
+ "dip-receiver-runtime-template",
+ "dip-sender-runtime-template",
+ "frame-support",
+ "frame-system",
+ "pallet-balances",
+ "parachain-info",
+ "parity-scale-codec",
+ "polkadot-parachain",
+ "polkadot-primitives",
+ "polkadot-runtime-parachains",
+ "rococo-runtime",
+ "scale-info",
+ "sp-io",
+ "sp-runtime",
+ "xcm",
+ "xcm-emulator",
+ "xcm-executor",
 ]
 
 [[package]]
@@ -13834,6 +13859,32 @@ dependencies = [
  "sp-arithmetic",
  "sp-io",
  "sp-runtime",
+ "sp-std",
+ "xcm",
+ "xcm-executor",
+]
+
+[[package]]
+name = "xcm-emulator"
+version = "0.1.0"
+source = "git+https://github.com/shaunxw/xcm-simulator?branch=master#92d371839f6d5c52dd35b7e3d61cbdefc792cc42"
+dependencies = [
+ "cumulus-pallet-dmp-queue",
+ "cumulus-pallet-parachain-system",
+ "cumulus-pallet-xcmp-queue",
+ "cumulus-primitives-core",
+ "cumulus-primitives-parachain-inherent",
+ "cumulus-test-relay-sproof-builder",
+ "frame-support",
+ "frame-system",
+ "parachain-info",
+ "parity-scale-codec",
+ "paste",
+ "polkadot-primitives",
+ "polkadot-runtime-parachains",
+ "quote",
+ "sp-arithmetic",
+ "sp-io",
  "sp-std",
  "xcm",
  "xcm-executor",
