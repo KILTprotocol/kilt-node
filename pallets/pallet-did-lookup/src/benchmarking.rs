@@ -41,7 +41,7 @@ use crate::{
 	linkable_account::LinkableAccountId,
 	migrations::{add_legacy_association, get_mixed_storage_iterator, MixedStorageKey},
 	signature::get_wrapped_payload,
-	AccountIdOf, Call, Config, ConnectedAccounts, ConnectedDids, CurrencyOf, Pallet,
+	AccountIdOf, Call, Config, ConnectedAccounts, ConnectedDids, CurrencyOf, Pallet, MigrationStateStore, MigrationState,
 };
 
 const SEED: u32 = 0;
@@ -296,6 +296,8 @@ benchmarks! {
 
 	migrate {
 		let n in 1 .. 100;
+
+		MigrationStateStore::<T>::set(MigrationState::PreUpgrade);
 
 		for i in 0..500 {
 			let deposit_owner: T::AccountId = account("caller", i, SEED);
