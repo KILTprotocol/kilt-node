@@ -41,7 +41,8 @@ use crate::{
 	linkable_account::LinkableAccountId,
 	migrations::{add_legacy_association, get_mixed_storage_iterator, MixedStorageKey},
 	signature::get_wrapped_payload,
-	AccountIdOf, Call, Config, ConnectedAccounts, ConnectedDids, CurrencyOf, Pallet, MigrationStateStore, MigrationState,
+	AccountIdOf, Call, Config, ConnectedAccounts, ConnectedDids, CurrencyOf, MigrationState, MigrationStateStore,
+	Pallet,
 };
 
 const SEED: u32 = 0;

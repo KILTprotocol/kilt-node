@@ -81,7 +81,7 @@ impl<T: frame_system::Config> pallet_collective::WeightInfo for WeightInfo<T> {
 	// Proof Skipped: TechnicalCommittee Members (max_values: Some(1), max_size: None, mode: Measured)
 	// Storage: TechnicalCommittee ProposalOf (r:1 w:0)
 	// Proof Skipped: TechnicalCommittee ProposalOf (max_values: None, max_size: None, mode: Measured)
-	fn propose_execute(b: u32, m: u32, ) -> Weight {
+	fn propose_execute(b: u32, _m: u32, ) -> Weight {
 		Weight::from_ref_time(25_565_943 as u64)
 			// Standard Error: 289
 			.saturating_add(Weight::from_ref_time(881 as u64).saturating_mul(b as u64))
@@ -144,7 +144,7 @@ impl<T: frame_system::Config> pallet_collective::WeightInfo for WeightInfo<T> {
 	// Proof Skipped: TechnicalCommittee ProposalOf (max_values: None, max_size: None, mode: Measured)
 	// Storage: TechnicalCommittee Proposals (r:1 w:1)
 	// Proof Skipped: TechnicalCommittee Proposals (max_values: Some(1), max_size: None, mode: Measured)
-	fn close_early_approved(b: u32, m: u32, p: u32, ) -> Weight {
+	fn close_early_approved(b: u32, _m: u32, p: u32, ) -> Weight {
 		Weight::from_ref_time(45_381_860 as u64)
 			// Standard Error: 139
 			.saturating_add(Weight::from_ref_time(2_394 as u64).saturating_mul(b as u64))

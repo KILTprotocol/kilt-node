@@ -102,7 +102,7 @@ impl<T: frame_system::Config> pallet_tips::WeightInfo for WeightInfo<T> {
 	// Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
 	// Storage: Tips Reasons (r:0 w:1)
 	// Proof Skipped: Tips Reasons (max_values: None, max_size: None, mode: Measured)
-	fn close_tip(t: u32, ) -> Weight {
+	fn close_tip(_t: u32, ) -> Weight {
 		Weight::from_ref_time(62_396_084 as u64)
 			.saturating_add(T::DbWeight::get().reads(4 as u64))
 			.saturating_add(T::DbWeight::get().writes(4 as u64))
