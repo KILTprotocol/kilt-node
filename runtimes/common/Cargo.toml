@@ -11,16 +11,7 @@ name = "runtime-common"
 description = "Common interfaces, types, constants and functionality for all KILT runtimes."
 
 [dev-dependencies]
-cumulus-primitives-utility = {workspace = true, features = ["std"]}
-dip-support = {workspace = true, features = ["std"]}
-pallet-dip-sender = {workspace = true, features = ["std"]}
-pallet-dip-receiver = {workspace = true, features = ["std", "runtime-benchmarks"]}
-frame-system = {workspace = true, features = ["std"]}
-pallet-balances = {workspace = true, features = ["std"]}
-pallet-xcm = {workspace = true, features = ["std"]}
-polkadot-core-primitives = {workspace = true, features = ["std"]}
-polkadot-runtime-parachains = {workspace = true, features = ["std"]}
-xcm-simulator.workspace = true
+sp-io = {workspace = true, features = ["std"]}
 
 [dependencies]
 # External dependencies
@@ -34,9 +25,7 @@ smallvec.workspace = true
 attestation.workspace = true
 ctype.workspace = true
 delegation = {workspace = true, optional = true}
-did.workspace = true
-dip-support.workspace = true
-pallet-dip-sender.workspace = true
+did = {workspace = true, optional = true}
 pallet-did-lookup = {workspace = true, optional = true}
 pallet-inflation = {workspace = true, optional = true}
 kilt-support.workspace = true
@@ -56,14 +45,12 @@ sp-core.workspace = true
 sp-io.workspace = true
 sp-runtime.workspace = true
 sp-std.workspace = true
-sp-trie.workspace = true
 
 # Cumulus dependencies
 cumulus-primitives-core.workspace = true
 
 # Polkadot dependencies
 polkadot-parachain.workspace = true
-pallet-xcm.workspace = true
 xcm.workspace = true
 xcm-builder.workspace = true
 xcm-executor.workspace = true
@@ -74,14 +61,11 @@ fast-gov = []
 runtime-benchmarks = [
   "attestation/runtime-benchmarks",
   "ctype/runtime-benchmarks",
-  "did/runtime-benchmarks",
-  "pallet-dip-receiver/runtime-benchmarks",
   "frame-support/runtime-benchmarks",
   "frame-system/runtime-benchmarks",
   "kilt-support/runtime-benchmarks",
   "pallet-balances/runtime-benchmarks",
   "pallet-membership/runtime-benchmarks",
-  "pallet-xcm/runtime-benchmarks",
   "parachain-staking/runtime-benchmarks",
   "polkadot-parachain/runtime-benchmarks",
   "public-credentials/runtime-benchmarks",
@@ -94,10 +78,6 @@ std = [
   "codec/std",
   "ctype/std",
   "cumulus-primitives-core/std",
-  "did/std",
-  "pallet-dip-receiver/std",
-  "pallet-dip-sender/std",
-  "dip-support/std",
   "frame-support/std",
   "frame-system/std",
   "kilt-asset-dids/std",
@@ -107,7 +87,6 @@ std = [
   "pallet-balances/std",
   "pallet-membership/std",
   "pallet-transaction-payment/std",
-  "pallet-xcm/std",
   "parachain-staking/std",
   "polkadot-parachain/std",
   "public-credentials/std",
@@ -117,7 +96,6 @@ std = [
   "sp-io/std",
   "sp-runtime/std",
   "sp-std/std",
-  "sp-trie/std",
   "xcm-builder/std",
   "xcm-executor/std",
   "xcm/std",
@@ -125,6 +103,7 @@ std = [
 try-runtime = [
   "attestation/try-runtime",
   "delegation",
+  "did",
   "frame-support/try-runtime",
   "frame-system/try-runtime",
   "kilt-support/try-runtime",
