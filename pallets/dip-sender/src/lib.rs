@@ -75,8 +75,8 @@ pub mod pallet {
 	pub enum Error<T> {
 		BadVersion,
 		Dispatch,
-		IdentityProofGeneration,
 		IdentityNotFound,
+		IdentityProofGeneration,
 		Predispatch,
 	}
 

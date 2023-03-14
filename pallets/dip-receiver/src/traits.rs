@@ -32,6 +32,7 @@ pub trait IdentityProofVerifier {
 	) -> Result<Self::VerificationResult, Self::Error>;
 }
 
+// Always returns success.
 pub struct SuccessfulProofVerifier<ProofDigest, LeafKey, LeafValue>(PhantomData<(ProofDigest, LeafKey, LeafValue)>);
 impl<ProofDigest, LeafKey, LeafValue> IdentityProofVerifier
 	for SuccessfulProofVerifier<ProofDigest, LeafKey, LeafValue>

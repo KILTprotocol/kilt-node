@@ -29,21 +29,24 @@ pub use crate::{origin::*, pallet::*};
 pub mod pallet {
 	use super::*;
 
-	use frame_support::{dispatch::Dispatchable, pallet_prelude::*, traits::EnsureOrigin, Twox64Concat};
+	use cumulus_pallet_xcm::ensure_sibling_para;
+	use frame_support::{dispatch::Dispatchable, pallet_prelude::*, Twox64Concat};
 	use frame_system::pallet_prelude::*;
+	use sp_std::boxed::Box;
 
 	use dip_support::{latest::IdentityProofAction, VersionedIdentityProof, VersionedIdentityProofAction};
 
 	use crate::traits::IdentityProofVerifier;
 
-	/// The current storage version.
+	pub type VersionedIdentityProofOf<T> = VersionedIdentityProof<T::ProofLeafKey, T::ProofLeafValue>;
+
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(0);
 
-	// TODO: Store also additional details received by the provider
-	// TODO: Make pub(crate) again
+	// TODO: Store also additional details received by the provider.
 	#[pallet::storage]
 	#[pallet::getter(fn identity_proofs)]
-	pub type IdentityProofs<T> = StorageMap<_, Twox64Concat, <T as Config>::Identifier, <T as Config>::ProofDigest>;
+	pub(crate) type IdentityProofs<T> =
+		StorageMap<_, Twox64Concat, <T as Config>::Identifier, <T as Config>::ProofDigest>;
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
@@ -71,20 +74,22 @@ pub mod pallet {
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
-		IdentityInfoUpdated(T::Identifier, T::ProofDigest),
 		IdentityInfoDeleted(T::Identifier),
+		IdentityInfoUpdated(T::Identifier, T::ProofDigest),
 	}
 
 	#[pallet::error]
 	pub enum Error<T> {
+		Dispatch,
 		IdentityNotFound,
 		InvalidProof,
-		DispatchError,
 	}
 
+	// The new origin other pallets can use.
 	#[pallet::origin]
 	pub type Origin<T> = DipOrigin<<T as Config>::Identifier, <T as frame_system::Config>::AccountId>;
 
+	// TODO: Benchmarking
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
 		#[pallet::call_index(0)]
@@ -93,7 +98,7 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			action: VersionedIdentityProofAction<T::Identifier, T::ProofDigest>,
 		) -> DispatchResult {
-			cumulus_pallet_xcm::ensure_sibling_para(<T as Config>::RuntimeOrigin::from(origin))?;
+			ensure_sibling_para(<T as Config>::RuntimeOrigin::from(origin))?;
 
 			let event = match action {
 				VersionedIdentityProofAction::V1(IdentityProofAction::Updated(identifier, proof, _)) => {
@@ -109,13 +114,14 @@ pub mod pallet {
 			Ok(())
 		}
 
+		// TODO: Replace with a SignedExtra.
 		#[pallet::call_index(1)]
 		#[pallet::weight(0)]
 		pub fn dispatch_as(
 			origin: OriginFor<T>,
 			identifier: T::Identifier,
-			proof: VersionedIdentityProof<T::ProofLeafKey, T::ProofLeafValue>,
-			call: sp_std::boxed::Box<<T as Config>::RuntimeCall>,
+			proof: VersionedIdentityProofOf<T>,
+			call: Box<<T as Config>::RuntimeCall>,
 		) -> DispatchResult {
 			let submitter = ensure_signed(origin)?;
 			let proof_digest = IdentityProofs::<T>::get(&identifier).ok_or(Error::<T>::IdentityNotFound)?;
@@ -123,12 +129,11 @@ pub mod pallet {
 				.map_err(|_| Error::<T>::InvalidProof)?;
 			// TODO: Proper DID signature verification (and cross-chain replay protection)
 			let did_origin = DipOrigin {
-				did_identifier: identifier,
+				identifier: identifier,
 				account_address: submitter,
 			};
-			let _ = call
-				.dispatch(did_origin.into())
-				.map_err(|_| Error::<T>::DispatchError)?;
+			// TODO: Use dispatch info for weight calculation
+			let _ = call.dispatch(did_origin.into()).map_err(|_| Error::<T>::Dispatch)?;
 			Ok(())
 		}
 	}
