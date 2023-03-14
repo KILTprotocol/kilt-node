@@ -38,7 +38,8 @@ pub mod pallet {
 
 	use crate::traits::IdentityProofVerifier;
 
-	pub type VersionedIdentityProofOf<T> = VersionedIdentityProof<T::ProofLeafKey, T::ProofLeafValue>;
+	pub type VersionedIdentityProofOf<T> =
+		VersionedIdentityProof<<T as Config>::ProofLeafKey, <T as Config>::ProofLeafValue>;
 
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(0);
 
@@ -111,6 +112,8 @@ pub mod pallet {
 				}
 			};
 
+			Self::deposit_event(event);
+
 			Ok(())
 		}
 
@@ -129,7 +132,7 @@ pub mod pallet {
 				.map_err(|_| Error::<T>::InvalidProof)?;
 			// TODO: Proper DID signature verification (and cross-chain replay protection)
 			let did_origin = DipOrigin {
-				identifier: identifier,
+				identifier,
 				account_address: submitter,
 			};
 			// TODO: Use dispatch info for weight calculation

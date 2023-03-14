@@ -1,43 +1,35 @@
 [package]
 authors.workspace = true
+description = "Pallet enabling to send some form of identity information to a specified destination."
 documentation.workspace = true
 edition.workspace = true
 homepage.workspace = true
 license-file.workspace = true
+name = "pallet-dip-sender"
 readme.workspace = true
 repository.workspace = true
 version.workspace = true
-name = "pallet-dip-receiver"
-description = "Pallet enabling receiving identity information from providers via the pallet-dip-provider pallet."
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
-# Internal dependencies
-dip-support.workspace = true
-kilt-support.workspace = true
-
-# Substrate dependencies
 codec = {package = "parity-scale-codec", workspace = true, features = ["derive"]}
-cumulus-pallet-xcm.workspace = true
+dip-support.workspace = true
 frame-support.workspace = true
 frame-system.workspace = true
 scale-info = {workspace = true, features = ["derive"]}
 sp-std.workspace = true
+xcm.workspace = true
 
 [features]
 default = ["std"]
 std = [
-  "dip-support/std",
-  "kilt-support/std",
   "codec/std",
-  "cumulus-pallet-xcm/std",
+  "dip-support/std",
   "frame-support/std",
   "frame-system/std",
   "scale-info/std",
   "sp-std/std",
-]
-runtime-benchmarks = [
-  "frame-system/runtime-benchmarks",
+  "xcm/std",
 ]

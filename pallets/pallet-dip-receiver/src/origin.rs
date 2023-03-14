@@ -34,7 +34,7 @@ impl<OuterOrigin, Identifier, AccountId> EnsureOrigin<OuterOrigin> for EnsureDip
 where
 	OuterOrigin: From<DipOrigin<Identifier, AccountId>> + Into<Result<DipOrigin<Identifier, AccountId>, OuterOrigin>>,
 {
-	type Success = DipOrigin<DidIdentifier, AccountId>;
+	type Success = DipOrigin<Identifier, AccountId>;
 
 	fn try_origin(o: OuterOrigin) -> Result<Self::Success, OuterOrigin> {
 		o.into()
@@ -49,7 +49,7 @@ where
 	AccountId: From<[u8; 32]>,
 {
 	Ok(OuterOrigin::from(DipOrigin {
-		identifier: DidIdentifier::from([0u8; 32]),
+		identifier: Identifier::from([0u8; 32]),
 		account_address: AccountId::from([0u8; 32]),
 	}))
 }
@@ -62,7 +62,7 @@ where
 	Identifier: From<[u8; 32]>,
 	AccountId: From<[u8; 32]>,
 {
-	type Success = DipOrigin<DidIdentifier, AccountId>;
+	type Success = DipOrigin<Identifier, AccountId>;
 
 	fn try_origin(o: OuterOrigin) -> Result<Self::Success, OuterOrigin> {
 		o.into()
