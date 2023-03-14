@@ -28,6 +28,8 @@ pub mod identity_generation {
 		fn generate_proof(identifier: &Identifier, identity: &Identity) -> Result<Output, Self::Error>;
 	}
 
+	// Implement the `IdentityProofGenerator` by returning the `Default` value for
+	// the `Output` type.
 	pub struct DefaultIdentityProofGenerator;
 
 	impl<Identifier, Identity, Output> IdentityProofGenerator<Identifier, Identity, Output>
@@ -50,7 +52,7 @@ pub mod identity_dispatch {
 	use codec::Encode;
 	use frame_support::{traits::Get, weights::Weight};
 	use sp_std::{marker::PhantomData, vec, vec::Vec};
-	use xcm::latest::opaque::Instruction;
+	use xcm::latest::Instruction;
 
 	pub trait IdentityProofDispatcher<Identifier, IdentityRoot, Details = ()> {
 		type PreDispatchOutput;
@@ -66,6 +68,7 @@ pub mod identity_dispatch {
 		fn dispatch(pre_output: Self::PreDispatchOutput) -> Result<(), Self::Error>;
 	}
 
+	// Returns `Ok` without doing anything.
 	pub struct NullIdentityProofDispatcher;
 
 	impl<Identifier, IdentityRoot, Details> IdentityProofDispatcher<Identifier, IdentityRoot, Details>
@@ -88,34 +91,36 @@ pub mod identity_dispatch {
 		}
 	}
 
-	// Dispatcher wrapping the XCM pallet.
-	// It basically properly encodes the Transact operation, then delegates
-	// everything else to the pallet's `send_xcm` function, similarly to what the
-	// pallet's `send` extrinsic does.
-	pub struct XcmRouterDispatcher<R, I, P, L, D = ()>(PhantomData<(R, I, P, L, D)>);
+	// Dispatcher using a type implementing the `SendXcm` trait.
+	// It properly encodes the `Transact` operation, then delegates everything else
+	// to the sender, similarly to what the XCM pallet's `send` extrinsic does.
+	pub struct XcmRouterDispatcher<Router, Identifier, ProofOutput, Location, Details = ()>(
+		PhantomData<(Router, Identifier, ProofOutput, Location, Details)>,
+	);
 
-	impl<R, I, P, L, D> IdentityProofDispatcher<I, P, D> for XcmRouterDispatcher<R, I, P, L, D>
+	impl<Router, Identifier, ProofOutput, Location, Details> IdentityProofDispatcher<Identifier, ProofOutput, Details>
+		for XcmRouterDispatcher<Router, Identifier, ProofOutput, Location, Details>
 	where
-		R: SendXcm,
-		I: Encode,
-		P: Encode,
-		L: Get<MultiLocation>,
+		Router: SendXcm,
+		Identifier: Encode,
+		ProofOutput: Encode,
+		Location: Get<MultiLocation>,
 	{
-		type PreDispatchOutput = R::Ticket;
+		type PreDispatchOutput = Router::Ticket;
 		type Error = SendError;
 
-		fn pre_dispatch<B: TxBuilder<I, P, D>>(
-			action: VersionedIdentityProofAction<I, P, D>,
+		fn pre_dispatch<Builder: TxBuilder<Identifier, ProofOutput, Details>>(
+			action: VersionedIdentityProofAction<Identifier, ProofOutput, Details>,
 			asset: MultiAsset,
 			weight: Weight,
 			destination: MultiLocation,
 		) -> Result<(Self::PreDispatchOutput, MultiAssets), Self::Error> {
 			// TODO: Replace with proper error handling
-			let dest_tx = B::build(destination, action)
+			let dest_tx = Builder::build(destination, action)
 				.map_err(|_| ())
 				.expect("Failed to build call");
 
-			fn catch_instructions(beneficiary: MultiLocation) -> Vec<Instruction> {
+			fn catch_instructions(beneficiary: MultiLocation) -> Vec<Instruction<()>> {
 				vec![
 					RefundSurplus,
 					DepositAsset {
@@ -125,11 +130,12 @@ pub mod identity_dispatch {
 				]
 			}
 
+			// Set an error handler to refund any leftover in case anything goes wrong.
 			let operation = [
 				vec![
 					WithdrawAsset(asset.clone().into()),
 					// Refund all and deposit back to owner if anything goes wrong.
-					SetErrorHandler(catch_instructions(L::get()).into()),
+					SetErrorHandler(catch_instructions(Location::get()).into()),
 					BuyExecution {
 						fees: asset,
 						weight_limit: Unlimited,
@@ -140,15 +146,15 @@ pub mod identity_dispatch {
 						call: dest_tx,
 					},
 				],
-				catch_instructions(L::get()),
+				catch_instructions(Location::get()),
 			]
 			.concat();
 			let op = Xcm(operation);
-			R::validate(&mut Some(destination), &mut Some(op))
+			Router::validate(&mut Some(destination), &mut Some(op))
 		}
 
 		fn dispatch(pre_output: Self::PreDispatchOutput) -> Result<(), Self::Error> {
-			R::deliver(pre_output).map(|_| ())
+			Router::deliver(pre_output).map(|_| ())
 		}
 	}
 }
@@ -162,6 +168,7 @@ pub mod identity_provision {
 		fn retrieve(identifier: &Identifier) -> Result<Option<(Identity, Details)>, Self::Error>;
 	}
 
+	// Return the `Default` value if `Identity` adn `Details` both implement it.
 	pub struct DefaultIdentityProvider;
 
 	impl<Identifier, Identity, Details> IdentityProvider<Identifier, Identity, Details> for DefaultIdentityProvider
@@ -176,6 +183,7 @@ pub mod identity_provision {
 		}
 	}
 
+	// Always return `None`. Might be useful for tests.
 	pub struct NoneIdentityProvider;
 
 	impl<Identifier, Identity, Details> IdentityProvider<Identifier, Identity, Details> for NoneIdentityProvider {
@@ -187,6 +195,8 @@ pub mod identity_provision {
 	}
 }
 
+// Given a destination and an identity action, creates and encodes the proper
+// `Transact` call.
 pub trait TxBuilder<Identifier, Proof, Details = ()> {
 	type Error;
 

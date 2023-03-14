@@ -41,7 +41,6 @@ pub mod pallet {
 	pub type VersionedIdentityProofActionOf<T> =
 		VersionedIdentityProofAction<<T as Config>::Identifier, <T as Config>::ProofOutput>;
 
-	/// The current storage version.
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(0);
 
 	#[pallet::config]
@@ -61,9 +60,10 @@ pub mod pallet {
 	#[pallet::storage_version(STORAGE_VERSION)]
 	pub struct Pallet<T>(_);
 
-	#[pallet::storage]
-	#[pallet::getter(fn destination_info)]
-	pub type DestinationInfos<T> = StorageMap<_, Blake2_128Concat, NetworkId, ()>;
+	// #[pallet::storage]
+	// #[pallet::getter(fn destination_info)]
+	// pub type DestinationInfos<T> = StorageMap<_, Blake2_128Concat, NetworkId,
+	// ()>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -73,28 +73,27 @@ pub mod pallet {
 
 	#[pallet::error]
 	pub enum Error<T> {
+		BadVersion,
+		Dispatch,
 		IdentityProofGeneration,
 		IdentityNotFound,
 		Predispatch,
-		Dispatch,
-		BadVersion,
 	}
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
 		#[pallet::call_index(0)]
+		// TODO: Update weight
 		#[pallet::weight(0)]
 		pub fn commit_identity(
 			origin: OriginFor<T>,
 			identifier: T::Identifier,
-			// TODO: Add correct version creation based on lookup (?)
 			destination: Box<VersionedMultiLocation>,
 			asset: Box<VersionedMultiAsset>,
 			weight: Weight,
 		) -> DispatchResult {
-			let dispatcher = ensure_signed(origin)?;
-			#[cfg(feature = "std")]
-			println!("AAAAA");
+			// TODO: Charge the dispatcher based on the destination weight configuration
+			ensure_signed(origin)?;
 
 			let destination: MultiLocation = (*destination).try_into().map_err(|_| Error::<T>::BadVersion)?;
 			let action: IdentityProofActionOf<T> = match T::IdentityProvider::retrieve(&identifier) {
@@ -104,8 +103,9 @@ pub mod pallet {
 					Ok(IdentityProofAction::Updated(identifier, identity_proof, ()))
 				}
 				Ok(None) => Ok(IdentityProofAction::Deleted(identifier)),
-				_ => Err(Error::<T>::IdentityNotFound),
+				Err(_) => Err(Error::<T>::IdentityNotFound),
 			}?;
+			// TODO: Add correct version creation based on lookup (?)
 			let versioned_action = VersionedIdentityProofAction::V1(action);
 
 			let asset: MultiAsset = (*asset).try_into().map_err(|_| Error::<T>::BadVersion)?;
@@ -119,7 +119,7 @@ pub mod pallet {
 			.map_err(|_| Error::<T>::Predispatch)?;
 
 			// TODO: Use returned asset of `pre_dispatch` to charge the tx submitter for the
-			// fee.
+			// fee, in addition to the cost on the target chain.
 			T::IdentityProofDispatcher::dispatch(ticket).map_err(|_| Error::<T>::Dispatch)?;
 
 			Self::deposit_event(Event::IdentityInfoDispatched(versioned_action, Box::new(destination)));

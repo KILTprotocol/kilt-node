@@ -34,8 +34,8 @@ xcm.workspace = true
 [features]
 default = ["std"]
 std = [
-  "codec/std",
   "dip-support/std",
+  "codec/std",
   "frame-support/std",
   "frame-system/std",
   "scale-info/std",
