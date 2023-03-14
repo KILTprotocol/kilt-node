@@ -26,26 +26,23 @@ pub mod xcm_config;
 
 mod dip;
 
-use did::{DidRawOrigin, EnsureDidOrigin};
-use pallet_balances::AccountData;
-use pallet_collator_selection::IdentityCollator;
-use pallet_session::{FindAccountFromAuthorIndex, PeriodicSessions};
-use pallet_transaction_payment::CurrencyAdapter;
 pub use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 pub use sp_runtime::{MultiAddress, Perbill, Permill};
 
-#[cfg(any(feature = "std", test))]
-pub use sp_runtime::BuildStorage;
-
-use cumulus_pallet_parachain_system::{register_validate_block, ParachainSetCode, RelayNumberStrictlyIncreases};
+use cumulus_pallet_parachain_system::{
+	register_validate_block, ParachainSetCode, RelayChainStateProof, RelayNumberStrictlyIncreases,
+};
+use cumulus_primitives_core::CollationInfo;
+use cumulus_primitives_timestamp::InherentDataProvider;
+use did::{DidRawOrigin, EnsureDidOrigin};
 use frame_support::{
 	construct_runtime,
 	dispatch::DispatchClass,
 	parameter_types,
 	traits::{ConstU32, ConstU64, ConstU8, Everything},
 	weights::{
-		constants::WEIGHT_REF_TIME_PER_SECOND, ConstantMultiplier, IdentityFee, Weight, WeightToFeeCoefficient,
-		WeightToFeeCoefficients, WeightToFeePolynomial,
+		constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_REF_TIME_PER_SECOND},
+		IdentityFee, Weight,
 	},
 	PalletId,
 };
@@ -53,44 +50,46 @@ use frame_system::{
 	limits::{BlockLength, BlockWeights},
 	ChainContext, EnsureRoot,
 };
+use pallet_balances::AccountData;
+use pallet_collator_selection::IdentityCollator;
 use pallet_dip_sender::traits::{DefaultIdentityProofGenerator, DefaultIdentityProvider, XcmRouterDispatcher};
-use polkadot_runtime_common::{BlockHashCount, SlowAdjustingFeeUpdate};
-use smallvec::smallvec;
+use pallet_session::{FindAccountFromAuthorIndex, PeriodicSessions};
+use pallet_transaction_payment::{CurrencyAdapter, FeeDetails, RuntimeDispatchInfo};
 use sp_api::impl_runtime_apis;
+use sp_consensus_aura::SlotDuration;
 use sp_core::{crypto::KeyTypeId, ConstU128, ConstU16, OpaqueMetadata};
+use sp_inherents::{CheckInherentsResult, InherentData};
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
-	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, IdentifyAccount, IdentityLookup, OpaqueKeys, Verify},
+	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, IdentifyAccount, OpaqueKeys, Verify},
 	transaction_validity::{TransactionSource, TransactionValidity},
 	ApplyExtrinsicResult, MultiSignature, OpaqueExtrinsic,
 };
-use sp_std::prelude::*;
+use sp_std::{prelude::*, time::Duration};
 use sp_version::RuntimeVersion;
-use weights::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight};
-use xcm::latest::{prelude::BodyId, MultiLocation, ParentThen};
-use xcm_config::{XcmConfig, XcmOriginToTransactDispatchOrigin};
-use xcm_executor::XcmExecutor;
-
-#[cfg(feature = "std")]
-use sp_version::NativeVersion;
+use xcm::latest::{MultiLocation, ParentThen};
 
 use crate::{
 	dip::ReceiverParachainTxBuilder,
 	xcm_config::{UniversalLocation, XcmRouter},
 };
 
+#[cfg(any(feature = "std", test))]
+pub use sp_runtime::BuildStorage;
+
+#[cfg(feature = "std")]
+use sp_version::NativeVersion;
+
 pub type AccountId = <<Signature as Verify>::Signer as IdentifyAccount>::AccountId;
 pub type Address = MultiAddress<AccountId, ()>;
 pub type Balance = u128;
 pub type Block = generic::Block<Header, UncheckedExtrinsic>;
-pub type BlockId = generic::BlockId<Block>;
 pub type BlockNumber = u32;
 pub type DidIdentifier = AccountId;
 pub type Hash = sp_core::H256;
 pub type Header = generic::Header<BlockNumber, BlakeTwo256>;
 pub type Index = u32;
 pub type Signature = MultiSignature;
-pub type SignedBlock = generic::SignedBlock<Block>;
 
 pub type SignedExtra = (
 	frame_system::CheckNonZeroSender<Runtime>,
@@ -104,34 +103,15 @@ pub type SignedExtra = (
 );
 pub type CheckedExtrinsic = generic::CheckedExtrinsic<AccountId, RuntimeCall, SignedExtra>;
 pub type Executive = frame_executive::Executive<Runtime, Block, ChainContext<Runtime>, Runtime, AllPalletsWithSystem>;
-pub type NodeBlock = generic::Block<generic::Header<BlockNumber, BlakeTwo256>, OpaqueExtrinsic>;
+pub type NodeBlock = generic::Block<Header, OpaqueExtrinsic>;
 pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<Address, RuntimeCall, Signature, SignedExtra>;
 
 pub const MILLISECS_PER_BLOCK: u64 = 12000;
-pub const SLOT_DURATION: u64 = MILLISECS_PER_BLOCK;
-
 pub const MINUTES: BlockNumber = 60_000 / (MILLISECS_PER_BLOCK as BlockNumber);
 pub const HOURS: BlockNumber = MINUTES * 60;
 
 pub const UNIT: Balance = 1_000_000_000_000;
 pub const MILLIUNIT: Balance = UNIT / 1_000;
-pub const MICROUNIT: Balance = MILLIUNIT / 1_000;
-
-pub const EXISTENTIAL_DEPOSIT: Balance = MILLIUNIT;
-
-/// We assume that ~5% of the block weight is consumed by `on_initialize`
-/// handlers. This is used to limit the maximal weight of a single extrinsic.
-const AVERAGE_ON_INITIALIZE_RATIO: Perbill = Perbill::from_percent(5);
-
-/// We allow `Normal` extrinsics to fill up the block up to 75%, the rest can be
-/// used by `Operational` extrinsics.
-const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
-
-/// We allow for 0.5 of a second of compute with a 12 second average block time.
-const MAXIMUM_BLOCK_WEIGHT: Weight = Weight::from_parts(
-	WEIGHT_REF_TIME_PER_SECOND.saturating_div(2),
-	cumulus_primitives_core::relay_chain::MAX_POV_SIZE as u64,
-);
 
 construct_runtime!(
 	pub enum Runtime where
@@ -159,13 +139,13 @@ construct_runtime!(
 
 		// XCM
 		XcmpQueue: cumulus_pallet_xcmp_queue = 30,
-		PolkadotXcm: pallet_xcm = 31,
-		CumulusXcm: cumulus_pallet_xcm = 32,
-		DmpQueue: cumulus_pallet_dmp_queue = 33,
+		DmpQueue: cumulus_pallet_dmp_queue = 31,
+
+		// DID
+		Did: did = 40,
 
 		// DIP
-		Did: did = 40,
-		DipSender: pallet_dip_sender = 41,
+		DipSender: pallet_dip_sender = 50,
 	}
 );
 
@@ -181,8 +161,6 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	state_version: 1,
 };
 
-/// The version information used to identify this runtime when compiled
-/// natively.
 #[cfg(feature = "std")]
 pub fn native_version() -> NativeVersion {
 	NativeVersion {
@@ -194,20 +172,15 @@ pub fn native_version() -> NativeVersion {
 struct CheckInherents;
 
 impl cumulus_pallet_parachain_system::CheckInherents<Block> for CheckInherents {
-	fn check_inherents(
-		block: &Block,
-		relay_state_proof: &cumulus_pallet_parachain_system::RelayChainStateProof,
-	) -> sp_inherents::CheckInherentsResult {
+	fn check_inherents(block: &Block, relay_state_proof: &RelayChainStateProof) -> CheckInherentsResult {
 		let relay_chain_slot = relay_state_proof
 			.read_slot()
 			.expect("Could not read the relay chain slot from the proof");
 
-		let inherent_data = cumulus_primitives_timestamp::InherentDataProvider::from_relay_chain_slot_and_duration(
-			relay_chain_slot,
-			sp_std::time::Duration::from_secs(6),
-		)
-		.create_inherent_data()
-		.expect("Could not create the timestamp inherent data");
+		let inherent_data =
+			InherentDataProvider::from_relay_chain_slot_and_duration(relay_chain_slot, Duration::from_secs(6))
+				.create_inherent_data()
+				.expect("Could not create the timestamp inherent data");
 
 		inherent_data.check_extrinsics(block)
 	}
@@ -215,12 +188,37 @@ impl cumulus_pallet_parachain_system::CheckInherents<Block> for CheckInherents {
 
 register_validate_block! {
 	Runtime = Runtime,
-	BlockExecutor = BlockExecutor::<Runtime, Executive>,
+	BlockExecutor = cumulus_pallet_aura_ext::BlockExecutor::<Runtime, Executive>,
 	CheckInherents = CheckInherents,
 }
 
+const AVERAGE_ON_INITIALIZE_RATIO: Perbill = Perbill::from_percent(5);
+const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
+const MAXIMUM_BLOCK_WEIGHT: Weight = Weight::from_parts(
+	WEIGHT_REF_TIME_PER_SECOND.saturating_div(2),
+	cumulus_primitives_core::relay_chain::MAX_POV_SIZE as u64,
+);
+
 parameter_types! {
 	pub const Version: RuntimeVersion = VERSION;
+	pub RuntimeBlockLength: BlockLength =
+	BlockLength::max_with_normal_ratio(5 * 1024 * 1024, NORMAL_DISPATCH_RATIO);
+	pub RuntimeBlockWeights: BlockWeights = BlockWeights::builder()
+	.base_block(BlockExecutionWeight::get())
+	.for_class(DispatchClass::all(), |weights| {
+		weights.base_extrinsic = ExtrinsicBaseWeight::get();
+	})
+	.for_class(DispatchClass::Normal, |weights| {
+		weights.max_total = Some(NORMAL_DISPATCH_RATIO * MAXIMUM_BLOCK_WEIGHT);
+	})
+	.for_class(DispatchClass::Operational, |weights| {
+		weights.max_total = Some(MAXIMUM_BLOCK_WEIGHT);
+		weights.reserved = Some(
+			MAXIMUM_BLOCK_WEIGHT - NORMAL_DISPATCH_RATIO * MAXIMUM_BLOCK_WEIGHT
+		);
+	})
+	.avg_block_initialization(AVERAGE_ON_INITIALIZE_RATIO)
+	.build_or_panic();
 }
 
 impl frame_system::Config for Runtime {
@@ -228,15 +226,15 @@ impl frame_system::Config for Runtime {
 	type AccountId = AccountId;
 	type BaseCallFilter = Everything;
 	type BlockHashCount = ConstU32<256>;
-	type BlockLength = BlockLength;
+	type BlockLength = RuntimeBlockLength;
 	type BlockNumber = BlockNumber;
-	type BlockWeights = BlockWeights;
+	type BlockWeights = RuntimeBlockWeights;
 	type DbWeight = RocksDbWeight;
 	type Hash = Hash;
 	type Hashing = BlakeTwo256;
 	type Header = generic::Header<BlockNumber, BlakeTwo256>;
 	type Index = Index;
-	type Lookup = IdentityLookup<AccountId>;
+	type Lookup = AccountIdLookup<AccountId, ()>;
 	type MaxConsumers = ConstU32<16>;
 	type OnKilledAccount = ();
 	type OnNewAccount = ();
@@ -268,7 +266,7 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
 }
 
 impl pallet_timestamp::Config for Runtime {
-	type MinimumPeriod = ConstU64<{ SLOT_DURATION / 2 }>;
+	type MinimumPeriod = ConstU64<{ MILLISECS_PER_BLOCK / 2 }>;
 	type Moment = u64;
 	type OnTimestampSet = Aura;
 	type WeightInfo = ();
@@ -314,7 +312,7 @@ parameter_types! {
 impl pallet_collator_selection::Config for Runtime {
 	type Currency = Balances;
 	type PotId = PotId;
-	type KickThreshold = Period;
+	type KickThreshold = ConstU32<{ 6 * HOURS }>;
 	type MaxCandidates = ConstU32<1_000>;
 	type MaxInvulnerables = ConstU32<100>;
 	type MinCandidates = ConstU32<5>;
@@ -409,8 +407,8 @@ impl pallet_dip_sender::Config for Runtime {
 
 impl_runtime_apis! {
 	impl sp_consensus_aura::AuraApi<Block, AuraId> for Runtime {
-		fn slot_duration() -> sp_consensus_aura::SlotDuration {
-			sp_consensus_aura::SlotDuration::from_millis(Aura::slot_duration())
+		fn slot_duration() -> SlotDuration {
+			SlotDuration::from_millis(Aura::slot_duration())
 		}
 
 		fn authorities() -> Vec<AuraId> {
@@ -447,14 +445,14 @@ impl_runtime_apis! {
 			Executive::finalize_block()
 		}
 
-		fn inherent_extrinsics(data: sp_inherents::InherentData) -> Vec<<Block as BlockT>::Extrinsic> {
+		fn inherent_extrinsics(data: InherentData) -> Vec<<Block as BlockT>::Extrinsic> {
 			data.create_extrinsics()
 		}
 
 		fn check_inherents(
 			block: Block,
-			data: sp_inherents::InherentData,
-		) -> sp_inherents::CheckInherentsResult {
+			data: InherentData,
+		) -> CheckInherentsResult {
 			data.check_extrinsics(&block)
 		}
 	}
@@ -497,13 +495,13 @@ impl_runtime_apis! {
 		fn query_info(
 			uxt: <Block as BlockT>::Extrinsic,
 			len: u32,
-		) -> pallet_transaction_payment_rpc_runtime_api::RuntimeDispatchInfo<Balance> {
+		) -> RuntimeDispatchInfo<Balance> {
 			TransactionPayment::query_info(uxt, len)
 		}
 		fn query_fee_details(
 			uxt: <Block as BlockT>::Extrinsic,
 			len: u32,
-		) -> pallet_transaction_payment::FeeDetails<Balance> {
+		) -> FeeDetails<Balance> {
 			TransactionPayment::query_fee_details(uxt, len)
 		}
 		fn query_weight_to_fee(weight: Weight) -> Balance {
@@ -520,13 +518,13 @@ impl_runtime_apis! {
 		fn query_call_info(
 			call: RuntimeCall,
 			len: u32,
-		) -> pallet_transaction_payment::RuntimeDispatchInfo<Balance> {
+		) -> RuntimeDispatchInfo<Balance> {
 			TransactionPayment::query_call_info(call, len)
 		}
 		fn query_call_fee_details(
 			call: RuntimeCall,
 			len: u32,
-		) -> pallet_transaction_payment::FeeDetails<Balance> {
+		) -> FeeDetails<Balance> {
 			TransactionPayment::query_call_fee_details(call, len)
 		}
 		fn query_weight_to_fee(weight: Weight) -> Balance {
@@ -538,68 +536,8 @@ impl_runtime_apis! {
 	}
 
 	impl cumulus_primitives_core::CollectCollationInfo<Block> for Runtime {
-		fn collect_collation_info(header: &<Block as BlockT>::Header) -> cumulus_primitives_core::CollationInfo {
+		fn collect_collation_info(header: &<Block as BlockT>::Header) -> CollationInfo {
 			ParachainSystem::collect_collation_info(header)
-		}
-	}
-
-	#[cfg(feature = "try-runtime")]
-	impl frame_try_runtime::TryRuntime<Block> for Runtime {
-		fn on_runtime_upgrade(checks: frame_try_runtime::UpgradeCheckSelect) -> (Weight, Weight) {
-			let weight = Executive::try_runtime_upgrade(checks).unwrap();
-			(weight, RuntimeBlockWeights::get().max_block)
-		}
-
-		fn execute_block(
-			block: Block,
-			state_root_check: bool,
-			signature_check: bool,
-			select: frame_try_runtime::TryStateSelect,
-		) -> Weight {
-			// NOTE: intentional unwrap: we don't want to propagate the error backwards, and want to
-			// have a backtrace here.
-			Executive::try_execute_block(block, state_root_check, signature_check, select).unwrap()
-		}
-	}
-
-	#[cfg(feature = "runtime-benchmarks")]
-	impl frame_benchmarking::Benchmark<Block> for Runtime {
-		fn benchmark_metadata(extra: bool) -> (
-			Vec<frame_benchmarking::BenchmarkList>,
-			Vec<frame_support::traits::StorageInfo>,
-		) {
-			use frame_benchmarking::{Benchmarking, BenchmarkList};
-			use frame_support::traits::StorageInfoTrait;
-			use frame_system_benchmarking::Pallet as SystemBench;
-			use cumulus_pallet_session_benchmarking::Pallet as SessionBench;
-
-			let mut list = Vec::<BenchmarkList>::new();
-			list_benchmarks!(list, extra);
-
-			let storage_info = AllPalletsWithSystem::storage_info();
-			return (list, storage_info)
-		}
-
-		fn dispatch_benchmark(
-			config: frame_benchmarking::BenchmarkConfig
-		) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, sp_runtime::RuntimeString> {
-			use frame_benchmarking::{Benchmarking, BenchmarkBatch, TrackedStorageKey};
-
-			use frame_system_benchmarking::Pallet as SystemBench;
-			impl frame_system_benchmarking::Config for Runtime {}
-
-			use cumulus_pallet_session_benchmarking::Pallet as SessionBench;
-			impl cumulus_pallet_session_benchmarking::Config for Runtime {}
-
-			use frame_support::traits::WhitelistedStorageKeys;
-			let whitelist = AllPalletsWithSystem::whitelisted_storage_keys();
-
-			let mut batches = Vec::<BenchmarkBatch>::new();
-			let params = (&config, &whitelist);
-			add_benchmarks!(params, batches);
-
-			if batches.is_empty() { return Err("Benchmark not found for this pallet.".into()) }
-			Ok(batches)
 		}
 	}
 }

@@ -16,12 +16,11 @@ substrate-wasm-builder.workspace = true
 [dependencies]
 codec = {package = "parity-scale-codec", workspace = true, features = ["derive"]}
 scale-info = {workspace = true, features = ["derive"]}
-smallvec.workspace = true
 
 # DIP
 did.workspace = true
-pallet-dip-sender.workspace = true
 dip-support.workspace = true
+pallet-dip-sender.workspace = true
 
 # Substrate
 frame-executive.workspace = true
@@ -49,9 +48,6 @@ sp-transaction-pool.workspace = true
 sp-version.workspace = true
 
 # Polkadot
-pallet-xcm.workspace = true
-polkadot-parachain.workspace = true
-polkadot-runtime-common = {git = "https://github.com/paritytech/polkadot", default-features = false, branch = "release-v0.9.38"}
 xcm.workspace = true
 xcm-builder.workspace = true
 xcm-executor.workspace = true
@@ -60,8 +56,6 @@ xcm-executor.workspace = true
 cumulus-pallet-aura-ext.workspace = true
 cumulus-pallet-dmp-queue.workspace = true
 cumulus-pallet-parachain-system.workspace = true
-cumulus-pallet-session-benchmarking.workspace = true
-cumulus-pallet-xcm.workspace = true
 cumulus-pallet-xcmp-queue.workspace = true
 cumulus-primitives-core.workspace = true
 cumulus-primitives-timestamp.workspace = true
@@ -77,33 +71,20 @@ std = [
 	"codec/std",
 	"scale-info/std",
   "did/std",
-  "pallet-dip-sender/std",
   "dip-support/std",
-	"cumulus-pallet-aura-ext/std",
-	"cumulus-pallet-dmp-queue/std",
-	"cumulus-pallet-parachain-system/std",
-	"cumulus-pallet-xcm/std",
-	"cumulus-pallet-xcmp-queue/std",
-	"cumulus-primitives-core/std",
-	"cumulus-primitives-timestamp/std",
-	"cumulus-primitives-utility/std",
+  "pallet-dip-sender/std",
 	"frame-executive/std",
 	"frame-support/std",
-	"frame-system-rpc-runtime-api/std",
 	"frame-system/std",
+	"frame-system-rpc-runtime-api/std",
 	"pallet-aura/std",
 	"pallet-authorship/std",
 	"pallet-balances/std",
-	"pallet-collator-selection/std",
 	"pallet-session/std",
 	"pallet-sudo/std",
 	"pallet-timestamp/std",
-	"pallet-transaction-payment-rpc-runtime-api/std",
 	"pallet-transaction-payment/std",
-	"pallet-xcm/std",
-	"parachain-info/std",
-	"polkadot-parachain/std",
-	"polkadot-runtime-common/std",
+	"pallet-transaction-payment-rpc-runtime-api/std",
 	"sp-api/std",
 	"sp-block-builder/std",
 	"sp-consensus-aura/std",
@@ -115,7 +96,16 @@ std = [
 	"sp-std/std",
 	"sp-transaction-pool/std",
 	"sp-version/std",
+	"xcm/std",
 	"xcm-builder/std",
 	"xcm-executor/std",
-	"xcm/std",
+  "cumulus-pallet-aura-ext/std",
+	"cumulus-pallet-dmp-queue/std",
+	"cumulus-pallet-parachain-system/std",
+	"cumulus-pallet-xcmp-queue/std",
+	"cumulus-primitives-core/std",
+	"cumulus-primitives-timestamp/std",
+	"cumulus-primitives-utility/std",
+  "pallet-collator-selection/std",
+  "parachain-info/std"
 ]
