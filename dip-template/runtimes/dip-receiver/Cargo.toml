@@ -11,7 +11,7 @@ name = "dip-receiver-runtime-template"
 description = "Parachain runtime template for the KILT Decentralized Identity Provider (DIP) receiver."
 
 [build-dependencies]
-substrate-wasm-builder = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.38" }
+substrate-wasm-builder.workspace = true
 
 [dependencies]
 codec = {package = "parity-scale-codec", workspace = true, features = ["derive"]}
