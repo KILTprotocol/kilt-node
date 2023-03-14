@@ -2246,21 +2246,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "dip-receiver"
-version = "1.10.0-dev"
-dependencies = [
- "cumulus-pallet-xcm",
- "dip-support",
- "frame-support",
- "frame-system",
- "kilt-support",
- "parity-scale-codec",
- "scale-info",
- "sp-std",
- "substrate-wasm-builder",
-]
-
-[[package]]
 name = "dip-receiver-runtime-template"
 version = "1.10.0-dev"
 dependencies = [
@@ -2273,7 +2258,6 @@ dependencies = [
  "cumulus-primitives-core",
  "cumulus-primitives-timestamp",
  "cumulus-primitives-utility",
- "dip-receiver",
  "dip-support",
  "frame-benchmarking",
  "frame-executive",
@@ -2289,6 +2273,7 @@ dependencies = [
  "pallet-balances",
  "pallet-collator-selection",
  "pallet-did-lookup",
+ "pallet-dip-receiver",
  "pallet-session",
  "pallet-sudo",
  "pallet-timestamp",
@@ -2319,20 +2304,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "dip-sender"
-version = "1.10.0-dev"
-dependencies = [
- "dip-support",
- "frame-support",
- "frame-system",
- "parity-scale-codec",
- "scale-info",
- "sp-std",
- "substrate-wasm-builder",
- "xcm",
-]
-
-[[package]]
 name = "dip-sender-runtime-template"
 version = "1.10.0-dev"
 dependencies = [
@@ -2346,7 +2317,6 @@ dependencies = [
  "cumulus-primitives-timestamp",
  "cumulus-primitives-utility",
  "did",
- "dip-sender",
  "dip-support",
  "frame-benchmarking",
  "frame-executive",
@@ -2361,6 +2331,7 @@ dependencies = [
  "pallet-authorship",
  "pallet-balances",
  "pallet-collator-selection",
+ "pallet-dip-sender",
  "pallet-session",
  "pallet-sudo",
  "pallet-timestamp",
@@ -2404,12 +2375,12 @@ dependencies = [
 name = "dip-templates-xmc-tests"
 version = "1.10.0-dev"
 dependencies = [
- "dip-receiver",
  "dip-receiver-runtime-template",
  "dip-sender-runtime-template",
  "frame-support",
  "frame-system",
  "pallet-balances",
+ "pallet-dip-receiver",
  "parachain-info",
  "parity-scale-codec",
  "polkadot-parachain",
@@ -6128,6 +6099,35 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-dip-receiver"
+version = "1.10.0-dev"
+dependencies = [
+ "cumulus-pallet-xcm",
+ "dip-support",
+ "frame-support",
+ "frame-system",
+ "kilt-support",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-std",
+ "substrate-wasm-builder",
+]
+
+[[package]]
+name = "pallet-dip-sender"
+version = "1.10.0-dev"
+dependencies = [
+ "dip-support",
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-std",
+ "substrate-wasm-builder",
+ "xcm",
+]
+
+[[package]]
 name = "pallet-election-provider-multi-phase"
 version = "4.0.0-dev"
 source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.38#18bb7c7c841b101c19a8d1881b893ae8e37de460"
@@ -9225,8 +9225,6 @@ dependencies = [
  "cumulus-primitives-utility",
  "delegation",
  "did",
- "dip-receiver",
- "dip-sender",
  "dip-support",
  "frame-support",
  "frame-system",
@@ -9236,6 +9234,8 @@ dependencies = [
  "pallet-authorship",
  "pallet-balances",
  "pallet-did-lookup",
+ "pallet-dip-receiver",
+ "pallet-dip-sender",
  "pallet-inflation",
  "pallet-membership",
  "pallet-transaction-payment",

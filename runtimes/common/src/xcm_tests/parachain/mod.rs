@@ -69,8 +69,10 @@ type XcmRouter<MsgQueue> = super::ParachainXcmRouter<MsgQueue>;
 
 pub(super) mod sender {
 	use codec::Encode;
-	use dip_sender::traits::{DefaultIdentityProofGenerator, DefaultIdentityProvider, TxBuilder, XcmRouterDispatcher};
 	use dip_support::VersionedIdentityProofAction;
+	use pallet_dip_sender::traits::{
+		DefaultIdentityProofGenerator, DefaultIdentityProvider, TxBuilder, XcmRouterDispatcher,
+	};
 	use xcm::DoubleEncoded;
 
 	use super::*;
@@ -86,7 +88,7 @@ pub(super) mod sender {
 			Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>} = 2,
 			MsgQueue: mock_msg_queue_pallet::{Pallet, Storage, Event<T>} = 3,
 			Xcm: pallet_xcm::{Pallet, Call, Event<T>, Origin} = 4,
-			DipProvider: dip_sender::{Pallet, Call, Storage, Event<T>} = 5,
+			DipProvider: pallet_dip_sender::{Pallet, Call, Storage, Event<T>} = 5,
 		}
 	);
 
@@ -198,8 +200,8 @@ pub(super) mod sender {
 	pub struct ReceiverParachainTxBuilder;
 	impl
 		TxBuilder<
-			<receiver::Runtime as dip_receiver::Config>::Identifier,
-			<receiver::Runtime as dip_receiver::Config>::ProofDigest,
+			<receiver::Runtime as pallet_dip_receiver::Config>::Identifier,
+			<receiver::Runtime as pallet_dip_receiver::Config>::ProofDigest,
 		> for ReceiverParachainTxBuilder
 	{
 		type Error = ();
@@ -207,8 +209,8 @@ pub(super) mod sender {
 		fn build(
 			_dest: MultiLocation,
 			action: VersionedIdentityProofAction<
-				<receiver::Runtime as dip_receiver::Config>::Identifier,
-				<receiver::Runtime as dip_receiver::Config>::ProofDigest,
+				<receiver::Runtime as pallet_dip_receiver::Config>::Identifier,
+				<receiver::Runtime as pallet_dip_receiver::Config>::ProofDigest,
 			>,
 		) -> Result<DoubleEncoded<()>, Self::Error> {
 			let double_encoded: DoubleEncoded<()> =
@@ -220,7 +222,7 @@ pub(super) mod sender {
 		}
 	}
 
-	impl dip_sender::Config for Runtime {
+	impl pallet_dip_sender::Config for Runtime {
 		type Identifier = Identifier;
 		type Identity = u32;
 		type IdentityProofDispatcher =
@@ -235,9 +237,9 @@ pub(super) mod sender {
 
 pub(super) mod receiver {
 	use codec::{Decode, Encode};
-	use dip_receiver::{traits::SuccessfulProofVerifier, DipOrigin, EnsureDipOrigin};
 	use dip_support::VersionedIdentityProofAction;
 	use frame_support::weights::WeightToFee;
+	use pallet_dip_receiver::{traits::SuccessfulProofVerifier, DipOrigin, EnsureDipOrigin};
 	use xcm_builder::{CurrencyAdapter, IsConcrete, UsingComponents};
 
 	use super::*;
@@ -252,7 +254,7 @@ pub(super) mod receiver {
 			Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>} = 2,
 			MsgQueue: mock_msg_queue_pallet::{Pallet, Storage, Event<T>} = 3,
 			Xcm: pallet_xcm::{Pallet, Call, Event<T>, Origin} = 4,
-			DipReceiver: dip_receiver::{Pallet, Call, Origin<T>, Storage, Event<T>} = 5,
+			DipReceiver: pallet_dip_receiver::{Pallet, Call, Origin<T>, Storage, Event<T>} = 5,
 			DipEnabledPallet: mock_dip_enabled_pallet::{Pallet, Call, Storage, Event<T>} = 6,
 		}
 	);
@@ -393,7 +395,7 @@ pub(super) mod receiver {
 		type ReachableDest = ReachableDest;
 	}
 
-	impl dip_receiver::Config for Runtime {
+	impl pallet_dip_receiver::Config for Runtime {
 		type EnsureSourceXcmOrigin = <Self as pallet_xcm::Config>::ExecuteXcmOrigin;
 		type Identifier = Identifier;
 		type ProofDigest = IdentityProofOutput;

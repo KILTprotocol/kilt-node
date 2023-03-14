@@ -13,8 +13,8 @@ description = "Common interfaces, types, constants and functionality for all KIL
 [dev-dependencies]
 cumulus-primitives-utility = {workspace = true, features = ["std"]}
 dip-support = {workspace = true, features = ["std"]}
-dip-sender = {workspace = true, features = ["std"]}
-dip-receiver = {workspace = true, features = ["std", "runtime-benchmarks"]}
+pallet-dip-sender = {workspace = true, features = ["std"]}
+pallet-dip-receiver = {workspace = true, features = ["std", "runtime-benchmarks"]}
 frame-system = {workspace = true, features = ["std"]}
 pallet-balances = {workspace = true, features = ["std"]}
 pallet-xcm = {workspace = true, features = ["std"]}
@@ -36,7 +36,7 @@ ctype.workspace = true
 delegation = {workspace = true, optional = true}
 did.workspace = true
 dip-support.workspace = true
-dip-sender.workspace = true
+pallet-dip-sender.workspace = true
 pallet-did-lookup = {workspace = true, optional = true}
 pallet-inflation = {workspace = true, optional = true}
 kilt-support.workspace = true
@@ -75,7 +75,7 @@ runtime-benchmarks = [
   "attestation/runtime-benchmarks",
   "ctype/runtime-benchmarks",
   "did/runtime-benchmarks",
-  "dip-receiver/runtime-benchmarks",
+  "pallet-dip-receiver/runtime-benchmarks",
   "frame-support/runtime-benchmarks",
   "frame-system/runtime-benchmarks",
   "kilt-support/runtime-benchmarks",
@@ -95,8 +95,8 @@ std = [
   "ctype/std",
   "cumulus-primitives-core/std",
   "did/std",
-  "dip-receiver/std",
-  "dip-sender/std",
+  "pallet-dip-receiver/std",
+  "pallet-dip-sender/std",
   "dip-support/std",
   "frame-support/std",
   "frame-system/std",

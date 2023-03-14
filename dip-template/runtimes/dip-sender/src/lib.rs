@@ -11,7 +11,7 @@ mod weights;
 pub mod xcm_config;
 
 use cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases;
-use dip_sender::traits::{DefaultIdentityProofGenerator, DefaultIdentityProvider, XcmRouterDispatcher};
+use pallet_dip_sender::traits::{DefaultIdentityProofGenerator, DefaultIdentityProvider, XcmRouterDispatcher};
 use smallvec::smallvec;
 use sp_api::impl_runtime_apis;
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
@@ -506,7 +506,7 @@ parameter_types! {
 
 type ProofDispatcher = XcmRouterDispatcher<XcmRouter, DidIdentifier, [u8; 32], HereLocation>;
 
-impl dip_sender::Config for Runtime {
+impl pallet_dip_sender::Config for Runtime {
 	type Identifier = DidIdentifier;
 	type Identity = u32;
 	type IdentityProofDispatcher = ProofDispatcher;

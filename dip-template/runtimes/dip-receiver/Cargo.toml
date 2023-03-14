@@ -21,9 +21,9 @@ scale-info = {workspace = true, features = ["derive"]}
 smallvec.workspace = true
 
 # DIP
-dip-receiver.workspace = true
 dip-support.workspace = true
 pallet-did-lookup.workspace = true
+pallet-dip-receiver.workspace = true
 
 # Substrate
 frame-benchmarking = {workspace = true, optional = true}
@@ -82,7 +82,7 @@ std = [
 	"codec/std",
 	"log/std",
 	"scale-info/std",
-  "dip-receiver/std",
+  "pallet-dip-receiver/std",
   "dip-support/std",
   "pallet-did-lookup/std",
 	"cumulus-pallet-aura-ext/std",

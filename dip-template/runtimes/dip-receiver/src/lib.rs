@@ -10,7 +10,7 @@ mod weights;
 pub mod xcm_config;
 
 use cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases;
-use dip_receiver::traits::SuccessfulProofVerifier;
+use pallet_dip_receiver::traits::SuccessfulProofVerifier;
 use pallet_xcm::EnsureXcm;
 use smallvec::smallvec;
 use sp_api::impl_runtime_apis;
@@ -467,7 +467,7 @@ impl Contains<MultiLocation> for AllowedProviders {
 type DipProviderOriginCheck = EnsureXcm<AllowedProviders>;
 type DidIdentifier = AccountId;
 
-impl dip_receiver::Config for Runtime {
+impl pallet_dip_receiver::Config for Runtime {
 	type Identifier = DidIdentifier;
 	type ProofDigest = [u8; 32];
 	type ProofLeafKey = [u8; 4];
@@ -486,8 +486,8 @@ impl pallet_did_lookup::Config for Runtime {
 	type Currency = Balances;
 	type Deposit = LinkDeposit;
 	type DidIdentifier = DidIdentifier;
-	type EnsureOrigin = dip_receiver::EnsureDipOrigin<DidIdentifier, AccountId>;
-	type OriginSuccess = dip_receiver::DipOrigin<DidIdentifier, AccountId>;
+	type EnsureOrigin = pallet_dip_receiver::EnsureDipOrigin<DidIdentifier, AccountId>;
+	type OriginSuccess = pallet_dip_receiver::DipOrigin<DidIdentifier, AccountId>;
 	type RuntimeEvent = RuntimeEvent;
 	type WeightInfo = ();
 }

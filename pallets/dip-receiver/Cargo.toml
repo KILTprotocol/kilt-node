@@ -7,8 +7,8 @@ license-file.workspace = true
 readme.workspace = true
 repository.workspace = true
 version.workspace = true
-name = "dip-receiver"
-description = "Enables receiving merkelized DID information from a provider."
+name = "pallet-dip-receiver"
+description = "Pallet enabling receiving identity information from providers via the pallet-dip-provider pallet."
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]

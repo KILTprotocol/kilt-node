@@ -51,8 +51,8 @@ attestation = {path = "pallets/attestation", default-features = false}
 ctype = {path = "pallets/ctype", default-features = false}
 delegation = {path = "pallets/delegation", default-features = false}
 did = {path = "pallets/did", default-features = false}
-dip-receiver = {path = "pallets/dip-receiver", default-features = false}
-dip-sender = {path = "pallets/dip-sender", default-features = false}
+pallet-dip-receiver = {path = "pallets/dip-receiver", default-features = false}
+pallet-dip-sender = {path = "pallets/dip-sender", default-features = false}
 pallet-inflation = {path = "pallets/pallet-inflation", default-features = false}
 parachain-staking = {path = "pallets/parachain-staking", default-features = false}
 pallet-did-lookup = {path = "pallets/pallet-did-lookup", default-features = false}

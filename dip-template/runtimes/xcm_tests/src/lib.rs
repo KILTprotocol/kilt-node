@@ -207,7 +207,7 @@ mod test {
 			));
 		});
 		ReceiverParachain::execute_with(|| {
-			let details = dip_receiver::IdentityProofs::<ReceiverRuntime>::iter();
+			let details = pallet_dip_receiver::IdentityProofs::<ReceiverRuntime>::iter();
 			println!("Details: {:?}", details.collect::<Vec<_>>());
 		})
 	}

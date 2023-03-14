@@ -7,8 +7,8 @@ license-file.workspace = true
 readme.workspace = true
 repository.workspace = true
 version.workspace = true
-name = "dip-sender"
-description = "Enables sending merkelized DID information to a specified destination."
+name = "pallet-dip-sender"
+description = "Pallet enabling to send some form of identity information to a specified destination."
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]

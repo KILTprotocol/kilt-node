@@ -1,6 +1,6 @@
 use codec::{Decode, Encode};
-use dip_sender::traits::TxBuilder;
 use dip_support::VersionedIdentityProofAction;
+use pallet_dip_sender::traits::TxBuilder;
 use xcm::{latest::MultiLocation, DoubleEncoded};
 
 use crate::DidIdentifier;

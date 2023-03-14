@@ -12,7 +12,7 @@ description = "XCM integration tests for the KILT Decentralized Identity Provide
 
 [dependencies]
 codec = {package = "parity-scale-codec", workspace = true, features = ["std", "derive"]}
-dip-receiver = { workspace = true, features = ["std"] }
+pallet-dip-receiver = { workspace = true, features = ["std"] }
 dip-receiver-runtime-template = { workspace = true, features = ["std"] }
 dip-sender-runtime-template = { workspace = true, features = ["std"] }
 frame-support = { workspace = true, features = ["std"] }

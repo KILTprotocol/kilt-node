@@ -22,7 +22,7 @@ smallvec.workspace = true
 
 # DIP
 did.workspace = true
-dip-sender.workspace = true
+pallet-dip-sender.workspace = true
 dip-support.workspace = true
 
 # Substrate
@@ -83,7 +83,7 @@ std = [
 	"log/std",
 	"scale-info/std",
   "did/std",
-  "dip-sender/std",
+  "pallet-dip-sender/std",
   "dip-support/std",
 	"cumulus-pallet-aura-ext/std",
 	"cumulus-pallet-dmp-queue/std",

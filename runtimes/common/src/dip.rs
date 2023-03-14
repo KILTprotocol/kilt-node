@@ -25,7 +25,7 @@ pub mod proof_generation {
 		did_details::{DidDetails, DidPublicKeyDetails},
 		DidIdentifierOf, KeyIdOf,
 	};
-	use dip_sender::traits::IdentityProofGenerator;
+	use pallet_dip_sender::traits::IdentityProofGenerator;
 
 	pub struct DidPalletMerkleRootHasher<T>(PhantomData<T>);
 
@@ -150,7 +150,7 @@ pub mod identity_retrieval {
 	use sp_std::marker::PhantomData;
 
 	use did::{did_details::DidDetails, DidIdentifierOf};
-	use dip_sender::traits::IdentityProvider;
+	use pallet_dip_sender::traits::IdentityProvider;
 
 	pub struct DidPalletProvider<T>(PhantomData<T>);
 
