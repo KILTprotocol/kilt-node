@@ -411,7 +411,6 @@ dependencies = [
  "sp-keystore",
  "sp-runtime",
  "sp-std",
- "substrate-wasm-builder",
 ]
 
 [[package]]
@@ -1367,7 +1366,6 @@ dependencies = [
  "sp-keystore",
  "sp-runtime",
  "sp-std",
- "substrate-wasm-builder",
 ]
 
 [[package]]
@@ -2021,7 +2019,6 @@ dependencies = [
  "sp-keystore",
  "sp-runtime",
  "sp-std",
- "substrate-wasm-builder",
 ]
 
 [[package]]
@@ -2148,7 +2145,6 @@ dependencies = [
  "sp-keystore",
  "sp-runtime",
  "sp-std",
- "substrate-wasm-builder",
 ]
 
 [[package]]
@@ -2238,7 +2234,6 @@ dependencies = [
  "sp-session",
  "sp-timestamp",
  "sp-transaction-pool",
- "substrate-build-script-utils",
  "substrate-frame-rpc-system",
  "substrate-prometheus-endpoint",
  "try-runtime-cli",
@@ -6110,7 +6105,6 @@ dependencies = [
  "parity-scale-codec",
  "scale-info",
  "sp-std",
- "substrate-wasm-builder",
 ]
 
 [[package]]
@@ -6123,7 +6117,6 @@ dependencies = [
  "parity-scale-codec",
  "scale-info",
  "sp-std",
- "substrate-wasm-builder",
  "xcm",
 ]
 
@@ -7162,7 +7155,6 @@ dependencies = [
  "sp-std",
  "sp-transaction-pool",
  "sp-version",
- "substrate-wasm-builder",
  "xcm",
  "xcm-builder",
  "xcm-executor",

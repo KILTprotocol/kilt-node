@@ -13,9 +13,6 @@ description = "Pallet enabling receiving identity information from providers via
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
 
-[build-dependencies]
-substrate-wasm-builder.workspace = true
-
 [dependencies]
 # Internal dependencies
 dip-support.workspace = true

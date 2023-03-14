@@ -1,20 +1,17 @@
 [package]
 authors.workspace = true
+description = "Pallet enabling to send some form of identity information to a specified destination."
 documentation.workspace = true
 edition.workspace = true
 homepage.workspace = true
 license-file.workspace = true
+name = "pallet-dip-sender"
 readme.workspace = true
 repository.workspace = true
 version.workspace = true
-name = "pallet-dip-sender"
-description = "Pallet enabling to send some form of identity information to a specified destination."
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
-
-[build-dependencies]
-substrate-wasm-builder.workspace = true
 
 [dependencies]
 

@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-// Export v1 behind a namespace and also as the latest
+// TODO: Crate documentation
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -24,6 +24,7 @@ use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::RuntimeDebug;
 use scale_info::TypeInfo;
 
+// Export v1 behind a namespace and also as the latest
 pub mod v1;
 pub mod latest {
 	pub use crate::v1::*;

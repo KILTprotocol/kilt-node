@@ -1,14 +1,14 @@
 [package]
 authors.workspace = true
+description = "Support types, traits, and functions for the KILT Decentralized Identity Provider (DIP) functionality."
 documentation.workspace = true
 edition.workspace = true
 homepage.workspace = true
 license-file.workspace = true
+name = "dip-support"
 readme.workspace = true
 repository.workspace = true
 version.workspace = true
-name = "dip-support"
-description = "Support types, traits, and functions for the KILT Decentralized Identity Provider (DIP) functionality."
 
 [dependencies]
 # Parity dependencies
@@ -17,13 +17,13 @@ scale-info = {workspace = true, features = ["derive"]}
 sp-std.workspace = true
 
 # Substrate dependencies
-frame-support = {workspace = true, default-features = false}
+frame-support.workspace = true
 
 [features]
 default = ["std"]
 std = [
   "codec/std",
   "scale-info/std",
-  "frame-support/std",
-  "sp-std/std"
+  "sp-std/std",
+  "frame-support/std"
 ]
