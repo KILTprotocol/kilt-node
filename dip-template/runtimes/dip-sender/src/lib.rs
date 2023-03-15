@@ -22,10 +22,6 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
-pub mod xcm_config;
-
-mod dip;
-
 pub use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 pub use sp_runtime::{MultiAddress, Perbill, Permill};
 
@@ -52,7 +48,6 @@ use frame_system::{
 };
 use pallet_balances::AccountData;
 use pallet_collator_selection::IdentityCollator;
-use pallet_dip_sender::traits::{DefaultIdentityProofGenerator, DefaultIdentityProvider, XcmRouterDispatcher};
 use pallet_session::{FindAccountFromAuthorIndex, PeriodicSessions};
 use pallet_transaction_payment::{CurrencyAdapter, FeeDetails, RuntimeDispatchInfo};
 use sp_api::impl_runtime_apis;
@@ -67,18 +62,16 @@ use sp_runtime::{
 };
 use sp_std::{prelude::*, time::Duration};
 use sp_version::RuntimeVersion;
-use xcm::latest::{MultiLocation, ParentThen};
-
-use crate::{
-	dip::ReceiverParachainTxBuilder,
-	xcm_config::{UniversalLocation, XcmRouter},
-};
 
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
 
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
+
+mod dip;
+mod xcm_config;
+pub use crate::{dip::*, xcm_config::*};
 
 pub type AccountId = <<Signature as Verify>::Signer as IdentifyAccount>::AccountId;
 pub type Address = MultiAddress<AccountId, ()>;
@@ -383,26 +376,6 @@ impl did::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeOrigin = RuntimeOrigin;
 	type WeightInfo = ();
-}
-
-parameter_types! {
-	pub HereLocation: MultiLocation = ParentThen(UniversalLocation::get()).into();
-}
-
-impl pallet_dip_sender::Config for Runtime {
-	type Identifier = DidIdentifier;
-	// TODO: Change with right one
-	type Identity = u32;
-	// TODO: Change with right one
-	type IdentityProofDispatcher = XcmRouterDispatcher<XcmRouter, DidIdentifier, [u8; 32], HereLocation>;
-	// TODO: Change with right one
-	type IdentityProofGenerator = DefaultIdentityProofGenerator;
-	// TODO: Change with right one
-	type IdentityProvider = DefaultIdentityProvider;
-	// TODO: Change with right one
-	type ProofOutput = [u8; 32];
-	type RuntimeEvent = RuntimeEvent;
-	type TxBuilder = ReceiverParachainTxBuilder;
 }
 
 impl_runtime_apis! {

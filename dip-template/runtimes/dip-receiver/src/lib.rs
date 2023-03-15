@@ -22,9 +22,6 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
-pub mod xcm_config;
-
-use pallet_dip_receiver::{traits::SuccessfulProofVerifier, DipOrigin, EnsureDipOrigin};
 pub use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 pub use sp_runtime::{MultiAddress, Perbill, Permill};
 
@@ -50,6 +47,7 @@ use frame_system::{
 };
 use pallet_balances::AccountData;
 use pallet_collator_selection::IdentityCollator;
+use pallet_dip_receiver::{DipOrigin, EnsureDipOrigin};
 use pallet_session::{FindAccountFromAuthorIndex, PeriodicSessions};
 use pallet_transaction_payment::{CurrencyAdapter, FeeDetails, RuntimeDispatchInfo};
 use sp_api::impl_runtime_apis;
@@ -64,6 +62,10 @@ use sp_runtime::{
 };
 use sp_std::{prelude::*, time::Duration};
 use sp_version::RuntimeVersion;
+
+mod dip;
+mod xcm_config;
+pub use crate::{dip::*, xcm_config::*};
 
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
@@ -354,21 +356,6 @@ impl pallet_did_lookup::Config for Runtime {
 	type OriginSuccess = DipOrigin<DidIdentifier, AccountId>;
 	type RuntimeEvent = RuntimeEvent;
 	type WeightInfo = ();
-}
-
-impl pallet_dip_receiver::Config for Runtime {
-	type Identifier = DidIdentifier;
-	// TODO: Change with right one
-	type ProofDigest = [u8; 32];
-	// TODO: Change with right one
-	type ProofLeafKey = [u8; 4];
-	// TODO: Change with right one
-	type ProofLeafValue = [u8; 4];
-	// TODO: Change with right one
-	type ProofVerifier = SuccessfulProofVerifier<Self::ProofDigest, Self::ProofLeafKey, Self::ProofLeafValue>;
-	type RuntimeCall = RuntimeCall;
-	type RuntimeEvent = RuntimeEvent;
-	type RuntimeOrigin = RuntimeOrigin;
 }
 
 impl_runtime_apis! {

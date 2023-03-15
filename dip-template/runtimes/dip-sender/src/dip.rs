@@ -1,9 +1,33 @@
+// KILT Blockchain – https://botlabs.org
+// Copyright (C) 2019-2023 BOTLabs GmbH
+
+// The KILT Blockchain is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// The KILT Blockchain is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+// If you feel like getting in touch with us, you can do so at info@botlabs.org
+
 use codec::{Decode, Encode};
 use dip_support::VersionedIdentityProofAction;
-use pallet_dip_sender::traits::TxBuilder;
-use xcm::{latest::MultiLocation, DoubleEncoded};
+use frame_support::parameter_types;
+use pallet_dip_sender::traits::{
+	DefaultIdentityProofGenerator, DefaultIdentityProvider, TxBuilder, XcmRouterDispatcher,
+};
+use xcm::{
+	latest::{MultiLocation, ParentThen},
+	DoubleEncoded,
+};
 
-use crate::DidIdentifier;
+use crate::{DidIdentifier, Runtime, RuntimeEvent, UniversalLocation, XcmRouter};
 
 #[derive(Encode, Decode)]
 enum ReceiverParachainCalls {
@@ -31,4 +55,24 @@ impl TxBuilder<DidIdentifier, [u8; 32]> for ReceiverParachainTxBuilder {
 				.into();
 		Ok(double_encoded)
 	}
+}
+
+parameter_types! {
+	pub HereLocation: MultiLocation = ParentThen(UniversalLocation::get()).into();
+}
+
+impl pallet_dip_sender::Config for Runtime {
+	type Identifier = DidIdentifier;
+	// TODO: Change with right one
+	type Identity = u32;
+	// TODO: Change with right one
+	type IdentityProofDispatcher = XcmRouterDispatcher<XcmRouter, DidIdentifier, [u8; 32], HereLocation>;
+	// TODO: Change with right one
+	type IdentityProofGenerator = DefaultIdentityProofGenerator;
+	// TODO: Change with right one
+	type IdentityProvider = DefaultIdentityProvider;
+	// TODO: Change with right one
+	type ProofOutput = [u8; 32];
+	type RuntimeEvent = RuntimeEvent;
+	type TxBuilder = ReceiverParachainTxBuilder;
 }
