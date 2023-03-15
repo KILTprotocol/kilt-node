@@ -42,12 +42,11 @@ parameter_types! {
 	pub UniversalLocation: InteriorMultiLocation = Parachain(ParachainInfo::parachain_id().into()).into();
 }
 
-pub type XcmRouter = (ParentAsUmp<ParachainSystem, (), ()>, XcmpQueue);
-
-pub type LocalAssetTransactor =
-	CurrencyAdapter<Balances, IsConcrete<HereLocation>, SiblingParachainConvertsVia<Sibling, AccountId>, AccountId, ()>;
-
 pub type Barrier = AllowTopLevelPaidExecutionFrom<Everything>;
+pub type AssetTransactorLocationConverter = SiblingParachainConvertsVia<Sibling, AccountId>;
+pub type LocalAssetTransactor =
+	CurrencyAdapter<Balances, IsConcrete<HereLocation>, AssetTransactorLocationConverter, AccountId, ()>;
+pub type XcmRouter = (ParentAsUmp<ParachainSystem, (), ()>, XcmpQueue);
 
 pub struct DipTransactSafeCalls;
 
