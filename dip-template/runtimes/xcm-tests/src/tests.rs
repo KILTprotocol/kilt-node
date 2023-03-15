@@ -58,7 +58,6 @@ fn commit_identity() {
 	ReceiverParachain::execute_with(|| {
 		use cumulus_pallet_xcmp_queue::Event as XcmpEvent;
 		use dip_receiver_runtime_template::{Balances, RuntimeEvent, System};
-		use para::receiver::sender_parachain_account;
 
 		// 2.1 Verify that there was no XCM error.
 		assert!(!System::events().iter().any(|r| matches!(
@@ -72,8 +71,5 @@ fn commit_identity() {
 		// 2.2 Verify the proof digest is the same that was sent.
 		let details = DipReceiver::identity_proofs(dip_sender_runtime_template::AccountId::from([0u8; 32]));
 		assert_eq!(details, Some([0u8; 32]));
-		// 2.3 Verify that the sender parachain paid the right fees.
-		let sender_balance = Balances::free_balance(sender_parachain_account());
-		println!("Sender balance: {:?}", sender_balance);
 	});
 }
