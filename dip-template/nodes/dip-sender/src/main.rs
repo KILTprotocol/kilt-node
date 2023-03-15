@@ -16,12 +16,17 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use substrate_wasm_builder::WasmBuilder;
+//! KILT Decentralized Identity Provider (DIP) sender CLI.
 
-fn main() {
-	WasmBuilder::new()
-		.with_current_project()
-		.export_heap_base()
-		.import_memory()
-		.build()
+#![warn(missing_docs)]
+
+mod chain_spec;
+#[macro_use]
+mod service;
+mod cli;
+mod command;
+mod rpc;
+
+fn main() -> sc_cli::Result<()> {
+	command::run()
 }

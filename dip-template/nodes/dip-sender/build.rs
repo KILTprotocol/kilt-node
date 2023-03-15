@@ -16,12 +16,10 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use substrate_wasm_builder::WasmBuilder;
+use substrate_build_script_utils::{generate_cargo_keys, rerun_if_git_head_changed};
 
 fn main() {
-	WasmBuilder::new()
-		.with_current_project()
-		.export_heap_base()
-		.import_memory()
-		.build()
+	generate_cargo_keys();
+
+	rerun_if_git_head_changed();
 }

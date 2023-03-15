@@ -11,7 +11,7 @@ version = "1.11.0-dev"
 [workspace]
 members = [
   "crates/*",
-  "dip-template/node",
+  "dip-template/nodes/*",
   "dip-template/runtimes/*",
   "nodes/*",
   "pallets/*",

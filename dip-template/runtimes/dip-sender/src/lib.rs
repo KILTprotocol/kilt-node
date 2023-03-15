@@ -185,6 +185,7 @@ register_validate_block! {
 	CheckInherents = CheckInherents,
 }
 
+pub const SS58_PREFIX: u16 = 100;
 const AVERAGE_ON_INITIALIZE_RATIO: Perbill = Perbill::from_percent(5);
 const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
 const MAXIMUM_BLOCK_WEIGHT: Weight = Weight::from_parts(
@@ -236,7 +237,7 @@ impl frame_system::Config for Runtime {
 	type RuntimeCall = RuntimeCall;
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeOrigin = RuntimeOrigin;
-	type SS58Prefix = ConstU16<100>;
+	type SS58Prefix = ConstU16<SS58_PREFIX>;
 	type SystemWeightInfo = ();
 	type Version = Version;
 }
@@ -272,11 +273,13 @@ impl pallet_sudo::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 }
 
+pub const EXISTENTIAL_DEPOSIT: Balance = MILLIUNIT;
+
 impl pallet_balances::Config for Runtime {
 	type AccountStore = System;
 	type Balance = Balance;
 	type DustRemoval = ();
-	type ExistentialDeposit = ConstU128<MILLIUNIT>;
+	type ExistentialDeposit = ConstU128<EXISTENTIAL_DEPOSIT>;
 	type MaxLocks = ConstU32<50>;
 	type MaxReserves = ConstU32<50>;
 	type ReserveIdentifier = [u8; 8];
