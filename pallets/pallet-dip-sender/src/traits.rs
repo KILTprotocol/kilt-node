@@ -50,9 +50,8 @@ pub mod identity_dispatch {
 	use super::*;
 
 	use codec::Encode;
-	use frame_support::{traits::Get, weights::Weight};
-	use sp_std::{marker::PhantomData, vec, vec::Vec};
-	use xcm::latest::Instruction;
+	use frame_support::weights::Weight;
+	use sp_std::{marker::PhantomData, vec};
 
 	pub trait IdentityProofDispatcher<Identifier, IdentityRoot, Details = ()> {
 		type PreDispatchOutput;
@@ -94,17 +93,16 @@ pub mod identity_dispatch {
 	// Dispatcher using a type implementing the `SendXcm` trait.
 	// It properly encodes the `Transact` operation, then delegates everything else
 	// to the sender, similarly to what the XCM pallet's `send` extrinsic does.
-	pub struct XcmRouterDispatcher<Router, Identifier, ProofOutput, Location, Details = ()>(
-		PhantomData<(Router, Identifier, ProofOutput, Location, Details)>,
+	pub struct XcmRouterDispatcher<Router, Identifier, ProofOutput, Details = ()>(
+		PhantomData<(Router, Identifier, ProofOutput, Details)>,
 	);
 
-	impl<Router, Identifier, ProofOutput, Location, Details> IdentityProofDispatcher<Identifier, ProofOutput, Details>
-		for XcmRouterDispatcher<Router, Identifier, ProofOutput, Location, Details>
+	impl<Router, Identifier, ProofOutput, Details> IdentityProofDispatcher<Identifier, ProofOutput, Details>
+		for XcmRouterDispatcher<Router, Identifier, ProofOutput, Details>
 	where
 		Router: SendXcm,
 		Identifier: Encode,
 		ProofOutput: Encode,
-		Location: Get<MultiLocation>,
 	{
 		type PreDispatchOutput = Router::Ticket;
 		type Error = SendError;
@@ -120,34 +118,21 @@ pub mod identity_dispatch {
 				.map_err(|_| ())
 				.expect("Failed to build call");
 
-			fn catch_instructions(beneficiary: MultiLocation) -> Vec<Instruction<()>> {
-				vec![
-					RefundSurplus,
-					DepositAsset {
-						assets: Wild(All),
-						beneficiary,
-					},
-				]
-			}
-
-			// Set an error handler to refund any leftover in case anything goes wrong.
-			let operation = [
-				vec![
-					WithdrawAsset(asset.clone().into()),
-					// Refund all and deposit back to owner if anything goes wrong.
-					SetErrorHandler(catch_instructions(Location::get()).into()),
-					BuyExecution {
-						fees: asset,
-						weight_limit: Unlimited,
-					},
-					Transact {
-						origin_kind: OriginKind::Native,
-						require_weight_at_most: weight,
-						call: dest_tx,
-					},
-				],
-				catch_instructions(Location::get()),
-			]
+			// TODO: Set an error handler and an appendix to refund any leftover funds to
+			// the sender parachain sovereign account.
+			let operation = [vec![
+				WithdrawAsset(asset.clone().into()),
+				BuyExecution {
+					fees: asset,
+					// TODO: Configurable weight limit?
+					weight_limit: Unlimited,
+				},
+				Transact {
+					origin_kind: OriginKind::Native,
+					require_weight_at_most: weight,
+					call: dest_tx,
+				},
+			]]
 			.concat();
 			let op = Xcm(operation);
 			Router::validate(&mut Some(destination), &mut Some(op))

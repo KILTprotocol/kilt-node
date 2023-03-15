@@ -18,16 +18,12 @@
 
 use codec::{Decode, Encode};
 use dip_support::VersionedIdentityProofAction;
-use frame_support::parameter_types;
 use pallet_dip_sender::traits::{
 	DefaultIdentityProofGenerator, DefaultIdentityProvider, TxBuilder, XcmRouterDispatcher,
 };
-use xcm::{
-	latest::{MultiLocation, ParentThen},
-	DoubleEncoded,
-};
+use xcm::{latest::MultiLocation, DoubleEncoded};
 
-use crate::{DidIdentifier, Runtime, RuntimeEvent, UniversalLocation, XcmRouter};
+use crate::{DidIdentifier, Runtime, RuntimeEvent, XcmRouter};
 
 #[derive(Encode, Decode)]
 enum ReceiverParachainCalls {
@@ -57,16 +53,12 @@ impl TxBuilder<DidIdentifier, [u8; 32]> for ReceiverParachainTxBuilder {
 	}
 }
 
-parameter_types! {
-	pub HereLocation: MultiLocation = ParentThen(UniversalLocation::get()).into();
-}
-
 impl pallet_dip_sender::Config for Runtime {
 	type Identifier = DidIdentifier;
 	// TODO: Change with right one
 	type Identity = u32;
 	// TODO: Change with right one
-	type IdentityProofDispatcher = XcmRouterDispatcher<XcmRouter, DidIdentifier, [u8; 32], HereLocation>;
+	type IdentityProofDispatcher = XcmRouterDispatcher<XcmRouter, DidIdentifier, [u8; 32]>;
 	// TODO: Change with right one
 	type IdentityProofGenerator = DefaultIdentityProofGenerator;
 	// TODO: Change with right one

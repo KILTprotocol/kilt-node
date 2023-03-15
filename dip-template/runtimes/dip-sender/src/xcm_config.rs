@@ -28,12 +28,13 @@ use xcm_builder::{FixedWeightBounds, UsingComponents};
 use xcm_executor::XcmExecutor;
 
 use crate::{
-	AccountId, AllPalletsWithSystem, Balance, Balances, HereLocation, ParachainInfo, ParachainSystem, Runtime,
-	RuntimeCall, RuntimeEvent, XcmpQueue,
+	AccountId, AllPalletsWithSystem, Balance, Balances, ParachainInfo, ParachainSystem, Runtime, RuntimeCall,
+	RuntimeEvent, XcmpQueue,
 };
 
 parameter_types! {
 	pub UnitWeightCost: Weight = Weight::from_ref_time(1_000);
+	pub HereLocation: MultiLocation = Junctions::Here.into();
 	pub UniversalLocation: InteriorMultiLocation = Parachain(ParachainInfo::parachain_id().into()).into();
 }
 

@@ -10,6 +10,9 @@ version.workspace = true
 name = "dip-templates-xmc-tests"
 description = "XCM integration tests for the KILT Decentralized Identity Provider (DIP) sender and receiver templates."
 
+[dev-dependencies]
+cumulus-pallet-xcmp-queue = { workspace = true, features = ["std"] }
+
 [dependencies]
 codec = {package = "parity-scale-codec", workspace = true, features = ["std", "derive"]}
 pallet-dip-receiver = { workspace = true, features = ["std"] }

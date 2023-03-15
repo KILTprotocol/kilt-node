@@ -50,19 +50,29 @@ fn commit_identity() {
 			RawOrigin::Signed(ReceiverAccountId::from([0u8; 32])).into(),
 			ReceiverDidIdentifier::from([0u8; 32]),
 			Box::new(ParentThen(X1(Parachain(para::receiver::PARA_ID))).into()),
-			Box::new((Here, 1_000_000_000_000_000_000u128).into()),
+			Box::new((Here, 1_000_000_000).into()),
 			Weight::from_ref_time(4_000),
 		));
 	});
 	// 2. Verify that the proof has made it to the DIP receiver.
 	ReceiverParachain::execute_with(|| {
-		use dip_receiver_runtime_template::Balances;
+		use cumulus_pallet_xcmp_queue::Event as XcmpEvent;
+		use dip_receiver_runtime_template::{Balances, RuntimeEvent, System};
 		use para::receiver::sender_parachain_account;
 
-		// 2.1 Verify the proof digest is the same that was sent.
+		// 2.1 Verify that there was no XCM error.
+		assert!(!System::events().iter().any(|r| matches!(
+			r.event,
+			RuntimeEvent::XcmpQueue(XcmpEvent::Fail {
+				error: _,
+				message_hash: _,
+				weight: _
+			})
+		)));
+		// 2.2 Verify the proof digest is the same that was sent.
 		let details = DipReceiver::identity_proofs(dip_sender_runtime_template::AccountId::from([0u8; 32]));
-		assert_eq!(details, Default::default());
-		// 2.2 Verify that the sender parachain paid the right fees.
+		assert_eq!(details, Some([0u8; 32]));
+		// 2.3 Verify that the sender parachain paid the right fees.
 		let sender_balance = Balances::free_balance(sender_parachain_account());
 		println!("Sender balance: {:?}", sender_balance);
 	});

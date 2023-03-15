@@ -2351,6 +2351,7 @@ dependencies = [
 name = "dip-templates-xmc-tests"
 version = "1.11.0-dev"
 dependencies = [
+ "cumulus-pallet-xcmp-queue",
  "dip-receiver-runtime-template",
  "dip-sender-runtime-template",
  "frame-support",
