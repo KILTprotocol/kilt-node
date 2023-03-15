@@ -15,7 +15,6 @@ cumulus-pallet-xcmp-queue = { workspace = true, features = ["std"] }
 
 [dependencies]
 codec = {package = "parity-scale-codec", workspace = true, features = ["std", "derive"]}
-pallet-dip-receiver = { workspace = true, features = ["std"] }
 dip-receiver-runtime-template = { workspace = true, features = ["std"] }
 dip-sender-runtime-template = { workspace = true, features = ["std"] }
 frame-support = { workspace = true, features = ["std"] }

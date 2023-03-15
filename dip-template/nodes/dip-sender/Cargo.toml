@@ -45,19 +45,14 @@ sp-blockchain.workspace = true
 sp-consensus-aura = { workspace = true, features = ["std"] }
 sp-core = { workspace = true, features = ["std"] }
 sp-keystore = { workspace = true, features = ["std"] }
-sp-offchain = { workspace = true, features = ["std"] }
-sp-io = { workspace = true, features = ["std"] }
 sp-runtime = { workspace = true, features = ["std"] }
-sp-session = { workspace = true, features = ["std"] }
 sp-timestamp = { workspace = true, features = ["std"] }
-sp-transaction-pool = { workspace = true, features = ["std"] }
 substrate-frame-rpc-system.workspace = true
 substrate-prometheus-endpoint.workspace = true
 
 # Polkadot
 polkadot-cli.workspace = true
 polkadot-primitives = { workspace = true, features = ["std"] }
-polkadot-service.workspace = true
 
 # Cumulus
 cumulus-client-cli.workspace = true
