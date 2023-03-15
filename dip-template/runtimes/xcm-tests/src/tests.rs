@@ -57,7 +57,7 @@ fn commit_identity() {
 	// 2. Verify that the proof has made it to the DIP receiver.
 	ReceiverParachain::execute_with(|| {
 		use cumulus_pallet_xcmp_queue::Event as XcmpEvent;
-		use dip_receiver_runtime_template::{Balances, RuntimeEvent, System};
+		use dip_receiver_runtime_template::{RuntimeEvent, System};
 
 		// 2.1 Verify that there was no XCM error.
 		assert!(!System::events().iter().any(|r| matches!(

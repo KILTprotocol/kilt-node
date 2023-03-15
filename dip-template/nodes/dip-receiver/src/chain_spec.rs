@@ -105,7 +105,7 @@ fn testnet_genesis(
 
 pub fn development_config() -> ChainSpec {
 	let mut properties = Properties::new();
-	properties.insert("tokenSymbol".into(), "SEILT".into());
+	properties.insert("tokenSymbol".into(), "REILT".into());
 	properties.insert("tokenDecimals".into(), 12.into());
 	properties.insert("ss58Format".into(), SS58_PREFIX.into());
 
@@ -121,10 +121,10 @@ pub fn development_config() -> ChainSpec {
 				)],
 				vec![
 					get_account_id_from_seed::<sr25519::Public>("Alice"),
-					get_account_id_from_seed::<sr25519::Public>("Bob"),
-					get_account_id_from_seed::<sr25519::Public>("Charlie"),
 					get_account_id_from_seed::<sr25519::Public>("Alice//stash"),
+					get_account_id_from_seed::<sr25519::Public>("Bob"),
 					get_account_id_from_seed::<sr25519::Public>("Bob//stash"),
+					get_account_id_from_seed::<sr25519::Public>("Charlie"),
 					get_account_id_from_seed::<sr25519::Public>("Charlie//stash"),
 				],
 				PARA_ID.into(),

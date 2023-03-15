@@ -44,7 +44,7 @@ use crate::{
 
 fn load_spec(id: &str) -> std::result::Result<Box<dyn ChainSpec>, String> {
 	match id {
-		"dev-sender" => Ok(Box::new(development_config())),
+		"dev" => Ok(Box::new(development_config())),
 		_ => Err("Unrecognized spec ID.".into()),
 	}
 }

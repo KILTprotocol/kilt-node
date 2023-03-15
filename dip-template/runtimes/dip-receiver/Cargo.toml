@@ -111,3 +111,10 @@ std = [
   "pallet-collator-selection/std",
   "parachain-info/std"
 ]
+
+runtime-benchmarks = [
+  "frame-system/runtime-benchmarks",
+  "frame-support/runtime-benchmarks",
+  "pallet-dip-receiver/runtime-benchmarks",
+  "xcm-builder/runtime-benchmarks"
+]

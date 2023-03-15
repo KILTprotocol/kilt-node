@@ -350,6 +350,13 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for RuntimeCall 
 	fn derive_verification_key_relationship(&self) -> did::DeriveDidCallKeyRelationshipResult {
 		Ok(did::DidVerificationKeyRelationship::Authentication)
 	}
+
+	#[cfg(feature = "runtime-benchmarks")]
+	fn get_call_for_did_call_benchmark() -> Self {
+		RuntimeCall::System(frame_system::Call::remark {
+			remark: b"test-remark".to_vec(),
+		})
+	}
 }
 
 parameter_types! {
