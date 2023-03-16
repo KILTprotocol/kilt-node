@@ -7,7 +7,6 @@ clippy:
   # https://hub.docker.com/layers/ci-linux/paritytech/ci-linux/production/images/sha256-4e8c072ea12bc17d99cb531adb58dea5a4c7d4880a8a86525052d24d1454e89e?context=explore
   image: paritytech/ci-linux@sha256:4e8c072ea12bc17d99cb531adb58dea5a4c7d4880a8a86525052d24d1454e89e
   stage: test
-  timeout: 1 hours
   script:
     - cargo clippy --all-features --all-targets --locked -- -D warnings
 
@@ -16,7 +15,6 @@ fmt:
   # https://hub.docker.com/layers/ci-linux/paritytech/ci-linux/production/images/sha256-4e8c072ea12bc17d99cb531adb58dea5a4c7d4880a8a86525052d24d1454e89e?context=explore
   image: paritytech/ci-linux@sha256:4e8c072ea12bc17d99cb531adb58dea5a4c7d4880a8a86525052d24d1454e89e
   stage: test
-  timeout: 1 hours
   script:
     - cargo fmt -- --check
 
@@ -25,7 +23,6 @@ test:
   # https://hub.docker.com/layers/ci-linux/paritytech/ci-linux/production/images/sha256-4e8c072ea12bc17d99cb531adb58dea5a4c7d4880a8a86525052d24d1454e89e?context=explore
   image: paritytech/ci-linux@sha256:4e8c072ea12bc17d99cb531adb58dea5a4c7d4880a8a86525052d24d1454e89e
   stage: test
-  timeout: 1 hours
   script:
     - cargo test --all --all-targets --locked
 
@@ -34,11 +31,11 @@ test-features:
   # https://hub.docker.com/layers/ci-linux/paritytech/ci-linux/production/images/sha256-4e8c072ea12bc17d99cb531adb58dea5a4c7d4880a8a86525052d24d1454e89e?context=explore
   image: paritytech/ci-linux@sha256:4e8c072ea12bc17d99cb531adb58dea5a4c7d4880a8a86525052d24d1454e89e
   stage: test
-  timeout: 1 hours
   script:
     - cargo test --all --all-features --all-targets
 
 build:
+  timeout: 2 hours
   image:
     name: kiltprotocol/kilt-ci:2.7.31
     entrypoint: [""]
