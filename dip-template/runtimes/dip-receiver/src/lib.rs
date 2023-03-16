@@ -133,7 +133,8 @@ construct_runtime!(
 		// XCM
 		XcmpQueue: cumulus_pallet_xcmp_queue = 30,
 		DmpQueue: cumulus_pallet_dmp_queue = 31,
-		CumulusXcm: cumulus_pallet_xcm = 32,
+		PolkadotXcm: pallet_xcm = 32,
+		CumulusXcm: cumulus_pallet_xcm = 33,
 
 		// DID lookup
 		DidLookup: pallet_did_lookup = 40,

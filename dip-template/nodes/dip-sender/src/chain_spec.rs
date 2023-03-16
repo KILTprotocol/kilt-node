@@ -99,6 +99,7 @@ fn testnet_genesis(
 		},
 		aura: Default::default(),
 		aura_ext: Default::default(),
+		polkadot_xcm: Default::default(),
 	}
 }
 

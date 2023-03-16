@@ -48,6 +48,7 @@ sp-transaction-pool.workspace = true
 sp-version.workspace = true
 
 # Polkadot
+pallet-xcm.workspace = true
 xcm.workspace = true
 xcm-builder.workspace = true
 xcm-executor.workspace = true
@@ -56,6 +57,7 @@ xcm-executor.workspace = true
 cumulus-pallet-aura-ext.workspace = true
 cumulus-pallet-dmp-queue.workspace = true
 cumulus-pallet-parachain-system.workspace = true
+cumulus-pallet-xcm.workspace = true
 cumulus-pallet-xcmp-queue.workspace = true
 cumulus-primitives-core.workspace = true
 cumulus-primitives-timestamp.workspace = true
@@ -96,12 +98,14 @@ std = [
 	"sp-std/std",
 	"sp-transaction-pool/std",
 	"sp-version/std",
+  "pallet-xcm/std",
 	"xcm/std",
 	"xcm-builder/std",
 	"xcm-executor/std",
   "cumulus-pallet-aura-ext/std",
 	"cumulus-pallet-dmp-queue/std",
 	"cumulus-pallet-parachain-system/std",
+	"cumulus-pallet-xcm/std",
 	"cumulus-pallet-xcmp-queue/std",
 	"cumulus-primitives-core/std",
 	"cumulus-primitives-timestamp/std",
@@ -114,5 +118,6 @@ runtime-benchmarks = [
   "frame-system/runtime-benchmarks",
   "frame-support/runtime-benchmarks",
   "pallet-dip-sender/runtime-benchmarks",
+  "pallet-xcm/runtime-benchmarks",
   "xcm-builder/runtime-benchmarks"
 ]

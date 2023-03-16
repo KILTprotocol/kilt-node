@@ -23,18 +23,19 @@ use frame_support::{
 	weights::{IdentityFee, Weight},
 };
 use frame_system::EnsureRoot;
+use pallet_xcm::TestWeightInfo;
 use xcm::latest::prelude::*;
-use xcm_builder::{FixedWeightBounds, UsingComponents};
+use xcm_builder::{EnsureXcmOrigin, FixedWeightBounds, SignedToAccountId32, UsingComponents};
 use xcm_executor::XcmExecutor;
 
 use crate::{
 	AccountId, AllPalletsWithSystem, Balance, Balances, ParachainInfo, ParachainSystem, Runtime, RuntimeCall,
-	RuntimeEvent, XcmpQueue,
+	RuntimeEvent, RuntimeOrigin, XcmpQueue,
 };
 
 parameter_types! {
-	pub UnitWeightCost: Weight = Weight::from_ref_time(1_000);
 	pub HereLocation: MultiLocation = Junctions::Here.into();
+	pub UnitWeightCost: Weight = Weight::from_ref_time(1_000);
 	pub UniversalLocation: InteriorMultiLocation = Parachain(ParachainInfo::parachain_id().into()).into();
 }
 
@@ -81,6 +82,49 @@ impl cumulus_pallet_xcmp_queue::Config for Runtime {
 
 impl cumulus_pallet_dmp_queue::Config for Runtime {
 	type ExecuteOverweightOrigin = EnsureRoot<AccountId>;
+	type RuntimeEvent = RuntimeEvent;
+	type XcmExecutor = XcmExecutor<XcmConfig>;
+}
+
+const MAX_INSTRUCTIONS: u32 = 100;
+
+parameter_types! {
+	pub RelayNetwork: Option<NetworkId> = None;
+}
+#[cfg(feature = "runtime-benchmarks")]
+parameter_types! {
+	pub ReachableDest: Option<MultiLocation> = Some(Parent.into());
+}
+
+pub type XcmPalletToRemoteLocationConverter = SignedToAccountId32<RuntimeOrigin, AccountId, RelayNetwork>;
+
+impl pallet_xcm::Config for Runtime {
+	const VERSION_DISCOVERY_QUEUE_SIZE: u32 = 100;
+
+	type AdvertisedXcmVersion = pallet_xcm::CurrentXcmVersion;
+	type Currency = Balances;
+	type CurrencyMatcher = ();
+	type ExecuteXcmOrigin = EnsureXcmOrigin<RuntimeOrigin, XcmPalletToRemoteLocationConverter>;
+	type MaxLockers = ConstU32<8>;
+	type RuntimeCall = RuntimeCall;
+	type RuntimeEvent = RuntimeEvent;
+	type RuntimeOrigin = RuntimeOrigin;
+	type SendXcmOrigin = EnsureXcmOrigin<RuntimeOrigin, XcmPalletToRemoteLocationConverter>;
+	type SovereignAccountOf = ();
+	type TrustedLockers = ();
+	type UniversalLocation = UniversalLocation;
+	type Weigher = FixedWeightBounds<UnitWeightCost, RuntimeCall, ConstU32<MAX_INSTRUCTIONS>>;
+	type WeightInfo = TestWeightInfo;
+	type XcmExecuteFilter = Nothing;
+	type XcmExecutor = XcmExecutor<XcmConfig>;
+	type XcmReserveTransferFilter = Nothing;
+	type XcmRouter = XcmRouter;
+	type XcmTeleportFilter = Nothing;
+	#[cfg(feature = "runtime-benchmarks")]
+	type ReachableDest = ReachableDest;
+}
+
+impl cumulus_pallet_xcm::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type XcmExecutor = XcmExecutor<XcmConfig>;
 }

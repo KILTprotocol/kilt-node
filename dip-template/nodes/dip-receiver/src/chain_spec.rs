@@ -27,7 +27,7 @@ use serde::{Deserialize, Serialize};
 use sp_core::{sr25519, Pair, Public};
 use sp_runtime::traits::{IdentifyAccount, Verify};
 
-const PARA_ID: u32 = 2_000;
+const PARA_ID: u32 = 2_001;
 
 pub type ChainSpec = GenericChainSpec<GenesisConfig, Extensions>;
 type AccountPublic = <Signature as Verify>::Signer;
@@ -99,6 +99,7 @@ fn testnet_genesis(
 		},
 		aura: Default::default(),
 		aura_ext: Default::default(),
+		polkadot_xcm: Default::default(),
 		did_lookup: Default::default(),
 	}
 }
