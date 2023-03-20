@@ -3,6 +3,8 @@
 Make sure you have a correct configured kubectl and all env variable, which are described in the tests/.env-example file, are set.
 To set up another provider, have a look at the [official documentation](https://paritytech.github.io/zombienet/).
 
+The provided network configuration spawns 3 parachain nodes and 2 validator nodes.
+
 To run the network:
 ```
 zombienet spawn network-config.toml
