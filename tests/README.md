@@ -1,6 +1,6 @@
 # Setup
 
-Make sure you have a correct configured kubectl and all env variable are set.
+Make sure you have a correct configured kubectl and all env variable, which are described in the tests/.env-example file, are set.
 To set up another provider, have a look at the [official documentation](https://paritytech.github.io/zombienet/).
 
 To run the network:
