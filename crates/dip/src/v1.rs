@@ -28,4 +28,7 @@ pub enum IdentityProofAction<Identifier, Proof, Details = ()> {
 }
 
 #[derive(Encode, Decode, RuntimeDebug, Clone, Eq, PartialEq, TypeInfo, Default)]
-pub struct Proof<LeafKey, LeafValue>(Vec<(LeafKey, LeafValue)>);
+pub struct Proof<BlindedValue, LeafKey, LeafValue> {
+	pub blinded: BlindedValue,
+	pub revealed: Vec<(LeafKey, LeafValue)>,
+}

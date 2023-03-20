@@ -45,13 +45,31 @@ impl<Identifier, Proof, Details> From<v1::IdentityProofAction<Identifier, Proof,
 }
 
 #[derive(Encode, Decode, RuntimeDebug, Clone, Eq, PartialEq, TypeInfo)]
-pub enum VersionedIdentityProof<LeafKey, LeafValue> {
+pub enum VersionedIdentityProof<BlindedValue, LeafKey, LeafValue> {
 	#[codec(index = 1)]
-	V1(v1::Proof<LeafKey, LeafValue>),
+	V1(v1::Proof<BlindedValue, LeafKey, LeafValue>),
 }
 
-impl<LeafKey, LeafValue> From<v1::Proof<LeafKey, LeafValue>> for VersionedIdentityProof<LeafKey, LeafValue> {
-	fn from(value: v1::Proof<LeafKey, LeafValue>) -> Self {
+impl<BlindedValue, LeafKey, LeafValue> From<v1::Proof<BlindedValue, LeafKey, LeafValue>>
+	for VersionedIdentityProof<BlindedValue, LeafKey, LeafValue>
+{
+	fn from(value: v1::Proof<BlindedValue, LeafKey, LeafValue>) -> Self {
 		Self::V1(value)
+	}
+}
+
+impl<BlindedValue, LeafKey, LeafValue> TryFrom<VersionedIdentityProof<BlindedValue, LeafKey, LeafValue>>
+	for v1::Proof<BlindedValue, LeafKey, LeafValue>
+{
+	// Proper error handling
+	type Error = ();
+
+	fn try_from(value: VersionedIdentityProof<BlindedValue, LeafKey, LeafValue>) -> Result<Self, Self::Error> {
+		#[allow(irrefutable_let_patterns)]
+		if let VersionedIdentityProof::V1(v1::Proof { blinded, revealed }) = value {
+			Ok(Self { blinded, revealed })
+		} else {
+			Err(())
+		}
 	}
 }
