@@ -34,6 +34,5 @@ VOLUME ["/data"]
 
 COPY ./dev-specs /node/dev-specs
 
-
 ENTRYPOINT ["/usr/local/bin/node-executable"]
 CMD ["--help"]
