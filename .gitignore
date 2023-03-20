@@ -8,7 +8,7 @@
 
 # IntelliJ project files
 *.iml
-**/.env
+.env
 # ignore vscode settings
 .vscode
 
