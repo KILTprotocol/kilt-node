@@ -1,5 +1,6 @@
 # Setup
 
+Download Zombienet version [1.3.34](https://github.com/paritytech/zombienet/releases/download/v1.3.34/zombienet-linux-x64) and make the binary executable. Zombienet is currently under heavy development. Other versions might not work with the current defined network configuration.
 Make sure you have a correct configured kubectl and all env variable, which are described in the tests/.env-example file, are set.
 To set up another provider, have a look at the [official documentation](https://paritytech.github.io/zombienet/).
 
@@ -18,7 +19,7 @@ zombienet tests FILENAME.zndsl
 
 This will create the network and perform the tests. After all tests are finished, the network is destroyed.
 
-If you already have a spawned network, you have to look up the ´runningNetworkSpec´ which is typically in  /tmp/zombie-{HASH}/zombie.json located.
+If you already have a spawned network, you have to look up the ´runningNetworkSpec´ which is typically in  /tmp/zombie-{HASH}/zombie.json located for the k8s provider.
 
 An example call would be:
 
