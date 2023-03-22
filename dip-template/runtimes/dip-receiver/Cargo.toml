@@ -20,6 +20,7 @@ scale-info = {workspace = true, features = ["derive"]}
 # DIP
 pallet-did-lookup.workspace = true
 pallet-dip-receiver.workspace = true
+runtime-common.workspace = true
 
 # Substrate
 frame-executive.workspace = true
@@ -74,6 +75,7 @@ std = [
 	"scale-info/std",
   "pallet-did-lookup/std",
   "pallet-dip-receiver/std",
+  "runtime-common/std",
 	"frame-executive/std",
 	"frame-support/std",
 	"frame-system/std",

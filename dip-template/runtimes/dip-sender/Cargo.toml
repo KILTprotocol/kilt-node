@@ -21,6 +21,7 @@ scale-info = {workspace = true, features = ["derive"]}
 did.workspace = true
 dip-support.workspace = true
 pallet-dip-sender.workspace = true
+runtime-common.workspace = true
 
 # Substrate
 frame-executive.workspace = true
@@ -75,6 +76,7 @@ std = [
   "did/std",
   "dip-support/std",
   "pallet-dip-sender/std",
+  "runtime-common/std",
 	"frame-executive/std",
 	"frame-support/std",
 	"frame-system/std",
