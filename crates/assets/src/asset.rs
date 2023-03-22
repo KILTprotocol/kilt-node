@@ -48,7 +48,7 @@ pub mod v1 {
 	/// The minimum length of a valid asset ID reference.
 	pub const MINIMUM_REFERENCE_LENGTH: usize = 1;
 	/// The maximum length of a valid asset ID reference.
-	pub const MAXIMUM_REFERENCE_LENGTH: usize = 64;
+	pub const MAXIMUM_REFERENCE_LENGTH: usize = 128;
 	const MAXIMUM_REFERENCE_LENGTH_U32: u32 = MAXIMUM_REFERENCE_LENGTH as u32;
 	/// The minimum length of a valid asset ID identifier.
 	pub const MINIMUM_IDENTIFIER_LENGTH: usize = 1;
@@ -604,7 +604,7 @@ pub mod v1 {
 			check_reference_length_bounds(input)?;
 
 			input.iter().try_for_each(|c| {
-				if !matches!(c, b'-' | b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9') {
+				if !matches!(c, b'-' | b'.' | b'%' | b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9') {
 					log::trace!("Provided input has some invalid values as expected by a generic asset reference.");
 					Err(ReferenceError::InvalidFormat)
 				} else {
@@ -653,7 +653,7 @@ pub mod v1 {
 			check_identifier_length_bounds(input)?;
 
 			input.iter().try_for_each(|c| {
-				if !matches!(c, b'-' | b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9') {
+				if !matches!(c, b'-' | b'.' | b'%' | b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9') {
 					log::trace!("Provided input has some invalid values as expected by a generic asset identifier.");
 					Err(IdentifierError::InvalidFormat)
 				} else {
@@ -727,7 +727,7 @@ pub mod v1 {
 				"slip44:›",
 				"slip44:😁",
 				// Max chars + 1
-				"slip44:99999999999999999999999999999999999999999999999999999999999999999",
+				"slip44:999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999",
 			];
 			for asset in invalid_assets {
 				assert!(
@@ -899,7 +899,7 @@ pub mod v1 {
 			let valid_assets = [
 			"123:a",
 			"12345678:-abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-",
-			"12345678:-abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-:-abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ012345678901234567890123-",
+			"12345678:-.abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789%-:-.abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890123456789012%",
 			"para:411f057b9107718c9624d6aa4a3f23c1",
 			"para:kilt-spiritnet",
 			"w3n:john-doe",
@@ -928,7 +928,7 @@ pub mod v1 {
 				"valid:valid:",
 				// Too long
 				"too-loong:valid",
-				"valid:too-loooooooooooooooooooooooooooooooooooooooooooooooooooooooooong",
+				"valid:too-loooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooong",
 				"valid:valid:too-loooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooong",
 				// Wrong characters
 				"no-val!d:valid",

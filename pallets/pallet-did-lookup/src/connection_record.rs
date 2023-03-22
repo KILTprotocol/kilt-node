@@ -21,6 +21,7 @@ use kilt_support::deposit::Deposit;
 use scale_info::TypeInfo;
 
 /// A record in the ConnectedDid map.
+#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Decode, Debug, Encode, TypeInfo, Eq, PartialEq, MaxEncodedLen)]
 pub struct ConnectionRecord<DidIdentifier, Account, Balance> {
 	/// The did that is connected to the key under which the record was stored.

@@ -22,6 +22,7 @@ use std::{ops::Deref, path::PathBuf};
 pub(crate) const DEFAULT_RUNTIME: &str = "peregrine";
 
 /// Sub-commands supported by the collator.
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug, Parser)]
 pub(crate) enum Subcommand {
 	/// Build a chain specification.

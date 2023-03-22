@@ -22,6 +22,7 @@ use scale_info::TypeInfo;
 use sp_runtime::{traits::Zero, DispatchError};
 
 /// An amount of balance reserved by the specified address.
+#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Debug, Encode, Decode, Eq, PartialEq, Ord, PartialOrd, TypeInfo, MaxEncodedLen)]
 pub struct Deposit<Account, Balance> {
 	pub owner: Account,

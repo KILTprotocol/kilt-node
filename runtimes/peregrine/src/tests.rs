@@ -167,7 +167,7 @@ fn test_derive_did_key_web3name() {
 fn test_derive_did_key_lookup() {
 	assert_eq!(
 		RuntimeCall::DidLookup(pallet_did_lookup::Call::associate_account {
-			req: AssociateAccountRequest::Dotsama(
+			req: AssociateAccountRequest::Polkadot(
 				AccountId::new([1u8; 32]),
 				sp_runtime::MultiSignature::from(sp_core::ed25519::Signature([0; 64]))
 			),
@@ -335,7 +335,7 @@ fn test_migration_filter_migrating() {
 		// This should not work during migration:
 		assert!(!MigrationFilter::contains(&RuntimeCall::DidLookup(
 			pallet_did_lookup::Call::associate_account {
-				req: pallet_did_lookup::associate_account_request::AssociateAccountRequest::Dotsama(
+				req: pallet_did_lookup::associate_account_request::AssociateAccountRequest::Polkadot(
 					AccountId32::from([0u8; 32]),
 					sp_runtime::MultiSignature::Ecdsa(Signature([0u8; 65]))
 				),
@@ -379,7 +379,7 @@ fn test_migration_filter_done() {
 		// This should only work after the migration:
 		assert!(MigrationFilter::contains(&RuntimeCall::DidLookup(
 			pallet_did_lookup::Call::associate_account {
-				req: pallet_did_lookup::associate_account_request::AssociateAccountRequest::Dotsama(
+				req: pallet_did_lookup::associate_account_request::AssociateAccountRequest::Polkadot(
 					AccountId32::from([0u8; 32]),
 					sp_runtime::MultiSignature::Ecdsa(Signature([0u8; 65]))
 				),

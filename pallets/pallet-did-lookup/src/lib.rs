@@ -34,10 +34,10 @@ mod connection_record;
 mod migration_state;
 mod signature;
 
-#[cfg(test)]
+#[cfg(all(test, feature = "std"))]
 mod tests;
 
-#[cfg(test)]
+#[cfg(all(test, feature = "std"))]
 mod mock;
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -95,7 +95,7 @@ pub mod pallet {
 		type OriginSuccess: CallSources<AccountIdOf<Self>, DidIdentifierOf<Self>>;
 
 		/// The identifier to which accounts can get associated.
-		type DidIdentifier: Parameter + MaxEncodedLen;
+		type DidIdentifier: Parameter + AsRef<[u8]> + MaxEncodedLen + MaybeSerializeDeserialize;
 
 		/// The currency that is used to reserve funds for each did.
 		type Currency: ReservableCurrency<AccountIdOf<Self>>;
@@ -151,7 +151,7 @@ pub mod pallet {
 	#[pallet::error]
 	pub enum Error<T> {
 		/// The association does not exist.
-		AssociationNotFound,
+		NotFound,
 
 		/// The origin was not allowed to manage the association between the DID
 		/// and the account ID.
@@ -168,6 +168,34 @@ pub mod pallet {
 		///
 		/// NOTE: this will only be returned if the storage has inconsistencies.
 		Migration,
+	}
+
+	#[pallet::genesis_config]
+	pub struct GenesisConfig<T: Config> {
+		pub links: Vec<(LinkableAccountId, ConnectionRecordOf<T>)>,
+	}
+
+	#[cfg(feature = "std")]
+	impl<T: Config> Default for GenesisConfig<T> {
+		fn default() -> Self {
+			Self {
+				links: Default::default(),
+			}
+		}
+	}
+
+	#[pallet::genesis_build]
+	impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
+		fn build(&self) {
+			// populate link records
+			for (acc, connection) in &self.links {
+				ConnectedDids::<T>::insert(acc, connection);
+				ConnectedAccounts::<T>::insert(&connection.did, acc, ());
+			}
+
+			// set migration state to done
+			MigrationStateStore::<T>::set(MigrationState::Done);
+		}
 	}
 
 	#[pallet::call]
@@ -224,7 +252,7 @@ pub mod pallet {
 			);
 
 			ensure!(
-				req.verify::<T>(did_identifier.clone(), expiration),
+				req.verify::<T::DidIdentifier, T::BlockNumber>(&did_identifier, expiration),
 				Error::<T>::NotAuthorized
 			);
 
@@ -295,7 +323,7 @@ pub mod pallet {
 		pub fn remove_account_association(origin: OriginFor<T>, account: LinkableAccountId) -> DispatchResult {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 
-			let connection_record = ConnectedDids::<T>::get(&account).ok_or(Error::<T>::AssociationNotFound)?;
+			let connection_record = ConnectedDids::<T>::get(&account).ok_or(Error::<T>::NotFound)?;
 			ensure!(connection_record.did == source.subject(), Error::<T>::NotAuthorized);
 
 			Self::remove_association(account)
@@ -317,7 +345,7 @@ pub mod pallet {
 		pub fn reclaim_deposit(origin: OriginFor<T>, account: LinkableAccountId) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
-			let record = ConnectedDids::<T>::get(&account).ok_or(Error::<T>::AssociationNotFound)?;
+			let record = ConnectedDids::<T>::get(&account).ok_or(Error::<T>::NotFound)?;
 			ensure!(record.deposit.owner == who, Error::<T>::NotAuthorized);
 			Self::remove_association(account)
 		}
@@ -335,7 +363,7 @@ pub mod pallet {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 			let subject = source.subject();
 
-			let record = ConnectedDids::<T>::get(&account).ok_or(Error::<T>::AssociationNotFound)?;
+			let record = ConnectedDids::<T>::get(&account).ok_or(Error::<T>::NotFound)?;
 			ensure!(record.did == subject, Error::<T>::NotAuthorized);
 
 			LinkableAccountDepositCollector::<T>::change_deposit_owner(&account, source.sender())
@@ -349,7 +377,7 @@ pub mod pallet {
 		pub fn update_deposit(origin: OriginFor<T>, account: LinkableAccountId) -> DispatchResult {
 			let source = ensure_signed(origin)?;
 
-			let record = ConnectedDids::<T>::get(&account).ok_or(Error::<T>::AssociationNotFound)?;
+			let record = ConnectedDids::<T>::get(&account).ok_or(Error::<T>::NotFound)?;
 			ensure!(record.deposit.owner == source, Error::<T>::NotAuthorized);
 
 			LinkableAccountDepositCollector::<T>::update_deposit(&account)
@@ -432,7 +460,7 @@ pub mod pallet {
 
 				Ok(())
 			} else {
-				Err(Error::<T>::AssociationNotFound.into())
+				Err(Error::<T>::NotFound.into())
 			}
 		}
 	}
@@ -444,7 +472,7 @@ pub mod pallet {
 		fn deposit(
 			key: &LinkableAccountId,
 		) -> Result<Deposit<AccountIdOf<T>, <Self::Currency as Currency<AccountIdOf<T>>>::Balance>, DispatchError> {
-			let record = ConnectedDids::<T>::get(key).ok_or(Error::<T>::AssociationNotFound)?;
+			let record = ConnectedDids::<T>::get(key).ok_or(Error::<T>::NotFound)?;
 			Ok(record.deposit)
 		}
 
@@ -456,7 +484,7 @@ pub mod pallet {
 			key: &LinkableAccountId,
 			deposit: Deposit<AccountIdOf<T>, <Self::Currency as Currency<AccountIdOf<T>>>::Balance>,
 		) -> Result<(), DispatchError> {
-			let record = ConnectedDids::<T>::get(key).ok_or(Error::<T>::AssociationNotFound)?;
+			let record = ConnectedDids::<T>::get(key).ok_or(Error::<T>::NotFound)?;
 			ConnectedDids::<T>::insert(key, ConnectionRecord { deposit, ..record });
 
 			Ok(())
