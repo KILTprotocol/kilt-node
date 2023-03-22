@@ -79,8 +79,9 @@ pub type Balance = u128;
 pub type Block = generic::Block<Header, UncheckedExtrinsic>;
 pub type BlockNumber = u32;
 pub type DidIdentifier = AccountId;
+pub type Hasher = BlakeTwo256;
 pub type Hash = sp_core::H256;
-pub type Header = generic::Header<BlockNumber, BlakeTwo256>;
+pub type Header = generic::Header<BlockNumber, Hasher>;
 pub type Index = u32;
 pub type Signature = MultiSignature;
 
@@ -228,8 +229,8 @@ impl frame_system::Config for Runtime {
 	type BlockWeights = RuntimeBlockWeights;
 	type DbWeight = RocksDbWeight;
 	type Hash = Hash;
-	type Hashing = BlakeTwo256;
-	type Header = generic::Header<BlockNumber, BlakeTwo256>;
+	type Hashing = Hasher;
+	type Header = generic::Header<BlockNumber, Hasher>;
 	type Index = Index;
 	type Lookup = AccountIdLookup<AccountId, ()>;
 	type MaxConsumers = ConstU32<16>;

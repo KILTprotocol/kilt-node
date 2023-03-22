@@ -16,20 +16,18 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use pallet_dip_receiver::traits::SuccessfulProofVerifier;
+use runtime_common::dip::{receiver::DidMerkleProofVerifier, LeafKey, LeafValue};
+use sp_std::vec::Vec;
 
-use crate::{DidIdentifier, Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin};
+use crate::{BlockNumber, DidIdentifier, Hash, Hasher, Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin};
 
 impl pallet_dip_receiver::Config for Runtime {
+	type BlindedValue = Vec<Vec<u8>>;
 	type Identifier = DidIdentifier;
-	// TODO: Change with right one
-	type ProofDigest = [u8; 32];
-	// TODO: Change with right one
-	type ProofLeafKey = [u8; 4];
-	// TODO: Change with right one
-	type ProofLeafValue = [u8; 4];
-	// TODO: Change with right one
-	type ProofVerifier = SuccessfulProofVerifier<Self::ProofDigest, Self::ProofLeafKey, Self::ProofLeafValue>;
+	type ProofDigest = Hash;
+	type ProofLeafKey = LeafKey<Hash>;
+	type ProofLeafValue = LeafValue<Hash, BlockNumber>;
+	type ProofVerifier = DidMerkleProofVerifier<Hash, BlockNumber, Hasher>;
 	type RuntimeCall = RuntimeCall;
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeOrigin = RuntimeOrigin;
