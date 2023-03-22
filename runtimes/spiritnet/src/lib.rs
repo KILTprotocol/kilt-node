@@ -510,7 +510,7 @@ impl pallet_membership::Config<TipsMembershipProvider> for Runtime {
 	type PrimeOrigin = MoreThanHalfCouncil;
 	type MembershipInitialized = ();
 	type MembershipChanged = ();
-	type MaxMembers = constants::governance::TechnicalMaxMembers;
+	type MaxMembers = constants::governance::TipperMaxMembers;
 	type WeightInfo = weights::pallet_membership::WeightInfo<Runtime>;
 }
 
