@@ -21,7 +21,7 @@ use did::{did_details::DidPublicKeyDetails, DidVerificationKeyRelationship};
 use scale_info::TypeInfo;
 use sp_std::{marker::PhantomData, vec::Vec};
 
-#[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo)]
+#[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, PartialOrd, Ord)]
 pub enum KeyRelationship {
 	Encryption,
 	Verification(DidVerificationKeyRelationship),
@@ -33,7 +33,7 @@ impl From<DidVerificationKeyRelationship> for KeyRelationship {
 	}
 }
 
-#[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo)]
+#[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, PartialOrd, Ord)]
 pub enum LeafKey<KeyId> {
 	KeyId(KeyId),
 	KeyRelationship(KeyRelationship),
@@ -81,11 +81,66 @@ where
 pub mod sender {
 	use super::*;
 
-	use did::did_details::DidDetails;
+	use did::{did_details::DidDetails, KeyIdOf};
+	use dip_support::latest::Proof;
 	use pallet_dip_sender::traits::{IdentityProofGenerator, IdentityProvider};
-	use sp_std::borrow::ToOwned;
+	use sp_std::{
+		borrow::ToOwned,
+		collections::{btree_map::BTreeMap, btree_set::BTreeSet},
+	};
 
 	pub struct DidMerkleRootGenerator<T>(PhantomData<T>);
+
+	pub type DidMerkleProof<T> =
+		Proof<Vec<Vec<u8>>, LeafKey<KeyIdOf<T>>, LeafValue<KeyIdOf<T>, <T as frame_system::Config>::BlockNumber>>;
+
+	impl<T> DidMerkleRootGenerator<T>
+	where
+		T: did::Config,
+	{
+		// TODO: Better error handling
+		pub fn generate_proof(details: &DidDetails<T>, key_ids: BTreeSet<KeyIdOf<T>>) -> Result<DidMerkleProof<T>, ()> {
+			use sp_trie::generate_trie_proof;
+
+			let mut leaves: BTreeMap<LeafKey<KeyIdOf<T>>, LeafValue<KeyIdOf<T>, T::BlockNumber>>;
+
+			key_ids.iter().try_for_each(|key_id| {
+				let key_details = details.public_keys.get(key_id).ok_or(())?;
+				if *key_id == details.authentication_key {
+					leaves.insert(
+						LeafKey::KeyRelationship(DidVerificationKeyRelationship::Authentication.into()),
+						LeafValue::KeyId(*key_id),
+					);
+					Ok(())
+				} else if let Some(key_id) = details.attestation_key {
+					leaves.insert(
+						LeafKey::KeyRelationship(DidVerificationKeyRelationship::AssertionMethod.into()),
+						LeafValue::KeyId(key_id),
+					);
+					Ok(())
+				} else if let Some(key_id) = details.delegation_key {
+					leaves.insert(
+						LeafKey::KeyRelationship(DidVerificationKeyRelationship::CapabilityDelegation.into()),
+						LeafValue::KeyId(key_id),
+					);
+					Ok(())
+				} else if details.key_agreement_keys.contains(key_id) {
+					leaves.insert(
+						LeafKey::KeyRelationship(KeyRelationship::Encryption),
+						LeafValue::KeyId(*key_id),
+					);
+					Ok(())
+				} else {
+					Err(())
+				}?;
+				leaves.insert(LeafKey::KeyId(*key_id), LeafValue::KeyDetails(*key_details));
+				Ok::<_, ()>(())
+			})?;
+			generate_trie_proof(db, root, keys)
+			// TODO: Call calculate_root_with_db after creating the function
+			unimplemented!()
+		}
+	}
 
 	impl<T> IdentityProofGenerator<T::DidIdentifier, DidDetails<T>> for DidMerkleRootGenerator<T>
 	where
