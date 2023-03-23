@@ -236,9 +236,9 @@ benchmarks! {
 		let stored_did = Did::<T>::get(&did_subject).expect("New DID should be stored on chain.");
 		let stored_key_agreement_keys_ids = stored_did.key_agreement_keys;
 
-		let expected_authentication_key_id = calculate_key_id::<T, DidPublicKey>(&DidVerificationKey::from(did_public_auth_key).into());
-		let expected_attestation_key_id = calculate_key_id::<T, DidPublicKey>(&DidVerificationKey::from(did_public_att_key).into());
-		let expected_delegation_key_id = calculate_key_id::<T, DidPublicKey>(&DidVerificationKey::from(did_public_del_key).into());
+		let expected_authentication_key_id = calculate_key_id::<T::Hashing, DidPublicKey>(&DidVerificationKey::from(did_public_auth_key).into());
+		let expected_attestation_key_id = calculate_key_id::<T::Hashing, DidPublicKey>(&DidVerificationKey::from(did_public_att_key).into());
+		let expected_delegation_key_id = calculate_key_id::<T::Hashing, DidPublicKey>(&DidVerificationKey::from(did_public_del_key).into());
 
 		assert_eq!(
 			stored_did.authentication_key,

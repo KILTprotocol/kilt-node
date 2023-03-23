@@ -1,11 +1,11 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use codec::Encode;
-use sp_runtime::traits::Hash;
+use sp_core::H256;
+use sp_runtime::traits::{BlakeTwo256, Hash};
 use sp_std::vec::Vec;
 
-// todo: kill out frame_system::Config.
-pub fn calculate_key_id<T: frame_system::Config, S: Encode>(key: &S) -> <T>::Hash {
+pub fn calculate_key_id<S: Encode>(key: &S) {
 	let hashed_values: Vec<u8> = key.encode();
-	T::Hashing::hash(&hashed_values)
+	BlakeTwo256::hash(&hashed_values)
 }
