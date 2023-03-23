@@ -3305,6 +3305,7 @@ version = "0.1.0"
 dependencies = [
  "console_error_panic_hook",
  "kilt-utils",
+ "sp-core",
  "sp-runtime",
  "wasm-bindgen",
  "wasm-bindgen-test",

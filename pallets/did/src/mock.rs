@@ -329,7 +329,7 @@ pub fn get_ecdsa_delegation_key(default: bool) -> ecdsa::Pair {
 }
 
 pub fn generate_key_id(key: &DidPublicKey) -> KeyIdOf<Test> {
-	calculate_key_id::<Test, DidPublicKey>(key)
+	calculate_key_id::<BlakeTwo256, DidPublicKey>(key)
 }
 
 pub(crate) fn get_attestation_key_test_input() -> Vec<u8> {

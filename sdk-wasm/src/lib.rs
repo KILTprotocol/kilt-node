@@ -1,25 +1,14 @@
 mod utils;
 
 use kilt_utils::calculate_key_id;
+use sp_runtime::traits::BlakeTwo256;
 use wasm_bindgen::prelude::*;
 
-// When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
-// allocator.
 #[cfg(feature = "wee_alloc")]
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 #[wasm_bindgen]
-extern "C" {
-	fn alert(s: &str);
+pub fn calculate_key(key: &str) -> Vec<u8> {
+	calculate_key_id::<BlakeTwo256, &str>(&key).to_fixed_bytes().to_vec()
 }
-
-#[wasm_bindgen]
-pub fn greet() {
-	alert("Hello, hello-wasm!");
-}
-
-// #[wasm_bindgen]
-// pub fn calculate_key() {
-// 	calculate_key_id< a>()
-// }
