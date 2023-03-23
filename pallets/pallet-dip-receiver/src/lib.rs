@@ -39,7 +39,7 @@ pub mod pallet {
 	use crate::traits::IdentityProofVerifier;
 
 	pub type VersionedIdentityProofOf<T> =
-		VersionedIdentityProof<<T as Config>::BlindedValue, <T as Config>::ProofLeafKey, <T as Config>::ProofLeafValue>;
+		VersionedIdentityProof<<T as Config>::BlindedValue, <T as Config>::ProofLeaf>;
 
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(0);
 
@@ -53,13 +53,11 @@ pub mod pallet {
 	pub trait Config: frame_system::Config {
 		type Identifier: Parameter + MaxEncodedLen;
 		type BlindedValue: Parameter;
-		type ProofLeafKey: Parameter;
-		type ProofLeafValue: Parameter;
+		type ProofLeaf: Parameter;
 		type ProofDigest: Parameter + MaxEncodedLen;
 		type ProofVerifier: IdentityProofVerifier<
 			BlindedValue = Self::BlindedValue,
-			LeafKey = Self::ProofLeafKey,
-			LeafValue = Self::ProofLeafValue,
+			ProofLeaf = Self::ProofLeaf,
 			ProofDigest = Self::ProofDigest,
 		>;
 		type RuntimeCall: Parameter + Dispatchable<RuntimeOrigin = <Self as Config>::RuntimeOrigin>;
