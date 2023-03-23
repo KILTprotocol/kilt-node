@@ -10,10 +10,9 @@ version.workspace = true
 name = "kilt-utils"
 description = "Utility functions, which are used in the node and in the SDK as wasm."
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
 
 [dependencies]
-
 # Parity dependencies
 codec = {package = "parity-scale-codec", workspace = true, features = ["derive"]}
 scale-info = {workspace = true, features = ["derive"]}

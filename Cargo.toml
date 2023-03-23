@@ -16,6 +16,7 @@ members = [
   "runtimes/*",
   "support",
   "crates/*",
+  "sdk-wasm"
 ]
 
 [profile.release]
