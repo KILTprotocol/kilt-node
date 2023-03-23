@@ -34,16 +34,52 @@ impl From<DidVerificationKeyRelationship> for KeyRelationship {
 	}
 }
 
-#[derive(Clone, RuntimeDebug, Encode, Decode, PartialEq, Eq, TypeInfo, PartialOrd, Ord)]
-pub enum LeafKey<KeyId> {
-	KeyReference(KeyId, KeyRelationship),
-	KeyDetails(KeyId),
+// #[derive(Clone, RuntimeDebug, Encode, Decode, PartialEq, Eq, TypeInfo,
+// PartialOrd, Ord)] pub enum LeafKey<KeyId> {
+// 	KeyReference(KeyId, KeyRelationship),
+// 	KeyDetails(KeyId),
+// }
+
+// #[derive(Clone, RuntimeDebug, Encode, Decode, PartialEq, Eq, TypeInfo)]
+// pub enum LeafValue<BlockNumber: MaxEncodedLen> {
+// 	KeyReference,
+// 	KeyDetails(DidPublicKeyDetails<BlockNumber>),
+// }
+
+#[derive(Clone, Encode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug)]
+pub struct KeyReferenceKey<KeyId>(pub KeyId, pub KeyRelationship);
+#[derive(Clone, Encode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug)]
+pub struct KeyReferenceValue;
+
+#[derive(Clone, Encode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug)]
+pub struct KeyDetailsKey<KeyId>(pub KeyId);
+#[derive(Clone, Encode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug)]
+pub struct KeyDetailsValue<BlockNumber: MaxEncodedLen>(pub DidPublicKeyDetails<BlockNumber>);
+
+#[derive(Clone, Encode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug)]
+pub enum ProofLeaf<KeyId, BlockNumber: MaxEncodedLen> {
+	KeyReference(KeyReferenceKey<KeyId>, KeyReferenceValue),
+	KeyDetails(KeyDetailsKey<KeyId>, KeyDetailsValue<BlockNumber>),
 }
 
-#[derive(Clone, RuntimeDebug, Encode, Decode, PartialEq, Eq, TypeInfo)]
-pub enum LeafValue<BlockNumber: MaxEncodedLen> {
-	KeyReference,
-	KeyDetails(DidPublicKeyDetails<BlockNumber>),
+impl<KeyId, BlockNumber> ProofLeaf<KeyId, BlockNumber>
+where
+	KeyId: Encode,
+	BlockNumber: MaxEncodedLen + Encode,
+{
+	pub(crate) fn encoded_key(&self) -> Vec<u8> {
+		match self {
+			ProofLeaf::KeyReference(key, _) => key.encode(),
+			ProofLeaf::KeyDetails(key, _) => key.encode(),
+		}
+	}
+
+	pub(crate) fn encoded_value(&self) -> Vec<u8> {
+		match self {
+			ProofLeaf::KeyReference(_, value) => value.encode(),
+			ProofLeaf::KeyDetails(_, value) => value.encode(),
+		}
+	}
 }
 
 pub mod sender {
@@ -52,16 +88,15 @@ pub mod sender {
 	use did::{did_details::DidDetails, KeyIdOf};
 	use dip_support::latest::Proof;
 	use pallet_dip_sender::traits::{IdentityProofGenerator, IdentityProvider};
-	use sp_std::{
-		borrow::ToOwned,
-		collections::{btree_map::BTreeMap, btree_set::BTreeSet},
-	};
+	use sp_std::borrow::ToOwned;
 	use sp_trie::{LayoutV1, MemoryDB};
 
-	pub struct DidMerkleRootGenerator<T>(PhantomData<T>);
+	pub type BlindedValue = Vec<u8>;
 
 	pub type DidMerkleProof<T> =
-		Proof<Vec<Vec<u8>>, LeafKey<KeyIdOf<T>>, LeafValue<<T as frame_system::Config>::BlockNumber>>;
+		Proof<Vec<BlindedValue>, ProofLeaf<KeyIdOf<T>, <T as frame_system::Config>::BlockNumber>>;
+
+	pub struct DidMerkleRootGenerator<T>(PhantomData<T>);
 
 	impl<T> DidMerkleRootGenerator<T>
 	where
@@ -74,37 +109,34 @@ pub mod sender {
 			let mut trie_builder = TrieDBMutBuilder::<LayoutV1<T::Hashing>>::new(db, &mut trie).build();
 
 			// Authentication key
+			let auth_leaf = ProofLeaf::<_, T::BlockNumber>::KeyReference(
+				KeyReferenceKey(
+					identity.authentication_key,
+					DidVerificationKeyRelationship::Authentication.into(),
+				),
+				KeyReferenceValue,
+			);
 			trie_builder
-				.insert(
-					LeafKey::KeyReference(
-						identity.authentication_key,
-						DidVerificationKeyRelationship::Authentication.into(),
-					)
-					.encode()
-					.as_slice(),
-					LeafValue::<T::BlockNumber>::KeyReference.encode().as_slice(),
-				)
+				.insert(auth_leaf.encoded_key().as_slice(), auth_leaf.encoded_value().as_slice())
 				.map_err(|_| ())?;
 			// Attestation key
 			if let Some(att_key_id) = identity.attestation_key {
+				let att_leaf = ProofLeaf::<_, T::BlockNumber>::KeyReference(
+					KeyReferenceKey(att_key_id, DidVerificationKeyRelationship::AssertionMethod.into()),
+					KeyReferenceValue,
+				);
 				trie_builder
-					.insert(
-						LeafKey::KeyReference(att_key_id, DidVerificationKeyRelationship::AssertionMethod.into())
-							.encode()
-							.as_slice(),
-						LeafValue::<T::BlockNumber>::KeyReference.encode().as_slice(),
-					)
+					.insert(att_leaf.encoded_key().as_slice(), att_leaf.encoded_value().as_slice())
 					.map_err(|_| ())?;
 			};
 			// Delegation key
 			if let Some(del_key_id) = identity.delegation_key {
+				let del_leaf = ProofLeaf::<_, T::BlockNumber>::KeyReference(
+					KeyReferenceKey(del_key_id, DidVerificationKeyRelationship::CapabilityDelegation.into()),
+					KeyReferenceValue,
+				);
 				trie_builder
-					.insert(
-						LeafKey::KeyReference(del_key_id, DidVerificationKeyRelationship::CapabilityDelegation.into())
-							.encode()
-							.as_slice(),
-						LeafValue::<T::BlockNumber>::KeyReference.encode().as_slice(),
-					)
+					.insert(del_leaf.encoded_key().as_slice(), del_leaf.encoded_value().as_slice())
 					.map_err(|_| ())?;
 			};
 			// Key agreement keys
@@ -112,13 +144,12 @@ pub mod sender {
 				.key_agreement_keys
 				.iter()
 				.try_for_each(|id| -> Result<(), ()> {
+					let enc_leaf = ProofLeaf::<_, T::BlockNumber>::KeyReference(
+						KeyReferenceKey(*id, KeyRelationship::Encryption),
+						KeyReferenceValue,
+					);
 					trie_builder
-						.insert(
-							LeafKey::KeyReference(*id, KeyRelationship::Encryption)
-								.encode()
-								.as_slice(),
-							LeafValue::<T::BlockNumber>::KeyReference.encode().as_slice(),
-						)
+						.insert(enc_leaf.encoded_key().as_slice(), enc_leaf.encoded_value().as_slice())
 						.map_err(|_| ())?;
 					Ok(())
 				})?;
@@ -127,11 +158,9 @@ pub mod sender {
 				.public_keys
 				.iter()
 				.try_for_each(|(id, key_details)| -> Result<(), ()> {
+					let key_leaf = ProofLeaf::KeyDetails(KeyDetailsKey(*id), KeyDetailsValue(key_details.clone()));
 					trie_builder
-						.insert(
-							LeafKey::KeyDetails(*id).encode().as_slice(),
-							LeafValue::KeyDetails(key_details.clone()).encode().as_slice(),
-						)
+						.insert(key_leaf.encoded_key().as_slice(), key_leaf.encoded_value().as_slice())
 						.map_err(|_| ())?;
 					Ok(())
 				})?;
@@ -141,50 +170,56 @@ pub mod sender {
 
 		// TODO: Better error handling
 		#[allow(clippy::result_unit_err)]
-		pub fn generate_proof(
+		pub fn generate_proof<'a, K>(
 			identity: &DidDetails<T>,
-			key_ids: BTreeSet<KeyIdOf<T>>,
-		) -> Result<(T::Hash, DidMerkleProof<T>), ()> {
+			mut key_ids: K,
+		) -> Result<(T::Hash, DidMerkleProof<T>), ()>
+		where
+			K: Iterator<Item = &'a KeyIdOf<T>>,
+		{
+			use sp_std::collections::btree_set::BTreeSet;
 			use sp_trie::generate_trie_proof;
 
 			let mut db = MemoryDB::default();
 			let root = Self::calculate_root_with_db(identity, &mut db)?;
 
 			#[allow(clippy::type_complexity)]
-			let mut leaves: BTreeMap<LeafKey<KeyIdOf<T>>, LeafValue<T::BlockNumber>> = BTreeMap::new();
-			key_ids.iter().try_for_each(|key_id| {
-				let key_details = identity.public_keys.get(key_id).ok_or(())?;
-				if *key_id == identity.authentication_key {
-					leaves.insert(
-						LeafKey::KeyReference(*key_id, DidVerificationKeyRelationship::Authentication.into()),
-						LeafValue::KeyReference,
-					);
-					Ok(())
-				} else if let Some(key_id) = identity.attestation_key {
-					leaves.insert(
-						LeafKey::KeyReference(key_id, DidVerificationKeyRelationship::AssertionMethod.into()),
-						LeafValue::KeyReference,
-					);
-					Ok(())
-				} else if let Some(key_id) = identity.delegation_key {
-					leaves.insert(
-						LeafKey::KeyReference(key_id, DidVerificationKeyRelationship::CapabilityDelegation.into()),
-						LeafValue::KeyReference,
-					);
-					Ok(())
-				} else if identity.key_agreement_keys.contains(key_id) {
-					leaves.insert(
-						LeafKey::KeyReference(*key_id, KeyRelationship::Encryption),
-						LeafValue::KeyReference,
-					);
-					Ok(())
-				} else {
-					Err(())
-				}?;
-				leaves.insert(LeafKey::KeyDetails(*key_id), LeafValue::KeyDetails(key_details.clone()));
-				Ok::<_, ()>(())
-			})?;
-			let encoded_keys: Vec<Vec<u8>> = leaves.keys().map(|k| k.encode()).collect();
+			let leaves: BTreeSet<ProofLeaf<KeyIdOf<T>, T::BlockNumber>> =
+				key_ids.try_fold(BTreeSet::new(), |mut set, key_id| -> Result<_, ()> {
+					println!("Key ID: {:?}", key_id);
+					println!("Public keys: {:?}", identity.public_keys);
+					let key_details = identity.public_keys.get(key_id).ok_or(())?;
+					if *key_id == identity.authentication_key {
+						set.insert(ProofLeaf::KeyReference(
+							KeyReferenceKey(*key_id, DidVerificationKeyRelationship::Authentication.into()),
+							KeyReferenceValue,
+						));
+					}
+					if let Some(key_id) = identity.attestation_key {
+						set.insert(ProofLeaf::KeyReference(
+							KeyReferenceKey(key_id, DidVerificationKeyRelationship::AssertionMethod.into()),
+							KeyReferenceValue,
+						));
+					}
+					if let Some(key_id) = identity.delegation_key {
+						set.insert(ProofLeaf::KeyReference(
+							KeyReferenceKey(key_id, DidVerificationKeyRelationship::CapabilityDelegation.into()),
+							KeyReferenceValue,
+						));
+					}
+					if identity.key_agreement_keys.contains(key_id) {
+						set.insert(ProofLeaf::KeyReference(
+							KeyReferenceKey(*key_id, KeyRelationship::Encryption),
+							KeyReferenceValue,
+						));
+					};
+					let key_leaf = ProofLeaf::KeyDetails(KeyDetailsKey(*key_id), KeyDetailsValue(key_details.clone()));
+					if !set.contains(&key_leaf) {
+						set.insert(key_leaf);
+					}
+					Ok(set)
+				})?;
+			let encoded_keys: Vec<Vec<u8>> = leaves.iter().map(|l| l.encoded_key()).collect();
 			let proof =
 				generate_trie_proof::<LayoutV1<T::Hashing>, _, _, _>(&db, root, &encoded_keys).map_err(|_| ())?;
 			Ok((
@@ -244,13 +279,14 @@ pub mod receiver {
 	use sp_std::{collections::btree_map::BTreeMap, vec::Vec};
 	use sp_trie::LayoutV1;
 
-	#[derive(RuntimeDebug)]
+	// TODO: Avoid repetition of the same key if it appears multiple times.
+	#[derive(RuntimeDebug, PartialEq, Eq)]
 	pub struct ProofEntry<BlockNumber: MaxEncodedLen> {
 		pub key: DidPublicKeyDetails<BlockNumber>,
 		pub relationship: KeyRelationship,
 	}
 
-	#[derive(RuntimeDebug)]
+	#[derive(RuntimeDebug, PartialEq, Eq)]
 	pub struct VerificationResult<BlockNumber: MaxEncodedLen>(pub Vec<ProofEntry<BlockNumber>>);
 
 	impl<BlockNumber> From<Vec<ProofEntry<BlockNumber>>> for VerificationResult<BlockNumber>
@@ -273,26 +309,25 @@ pub mod receiver {
 		type BlindedValue = Vec<Vec<u8>>;
 		// TODO: Proper error handling
 		type Error = ();
-		type LeafKey = LeafKey<KeyId>;
-		type LeafValue = LeafValue<BlockNumber>;
 		type ProofDigest = <Hasher as sp_core::Hasher>::Out;
+		type ProofLeaf = ProofLeaf<KeyId, BlockNumber>;
 		type VerificationResult = VerificationResult<BlockNumber>;
 
 		fn verify_proof_against_digest(
-			proof: VersionedIdentityProof<Self::BlindedValue, Self::LeafKey, Self::LeafValue>,
+			proof: VersionedIdentityProof<Self::BlindedValue, Self::ProofLeaf>,
 			digest: Self::ProofDigest,
 		) -> Result<Self::VerificationResult, Self::Error> {
 			use dip_support::v1;
 			use sp_trie::verify_trie_proof;
 
-			let proof: v1::Proof<_, _, _> = proof.try_into()?;
-			// TODO: more efficient by removing cloning and/or collecting. Did not find
-			// another way of mapping a Vec<(Vec<u8>, Vec<u8>)> to a Vec<(Vec<u8>,
-			// Option<Vec<u8>>)>.
+			let proof: v1::Proof<_, _> = proof.try_into()?;
+			// TODO: more efficient by removing cloning and/or collecting.
+			// Did not find another way of mapping a Vec<(Vec<u8>, Vec<u8>)> to a
+			// Vec<(Vec<u8>, Option<Vec<u8>>)>.
 			let proof_leaves = proof
 				.revealed
 				.iter()
-				.map(|(key, value)| (key.encode(), Some(value.encode())))
+				.map(|leaf| (leaf.encoded_key(), Some(leaf.encoded_value())))
 				.collect::<Vec<(Vec<u8>, Option<Vec<u8>>)>>();
 			verify_trie_proof::<LayoutV1<Hasher>, _, _, _>(&digest, &proof.blinded, &proof_leaves).map_err(|_| ())?;
 
@@ -305,8 +340,8 @@ pub mod receiver {
 				.revealed
 				.clone()
 				.into_iter()
-				.filter_map(|(key, value)| {
-					if let (LeafKey::KeyDetails(key_id), LeafValue::KeyDetails(key_details)) = (key, value) {
+				.filter_map(|leaf| {
+					if let ProofLeaf::KeyDetails(KeyDetailsKey(key_id), KeyDetailsValue(key_details)) = leaf {
 						Some((key_id, key_details))
 					} else {
 						None
@@ -317,15 +352,16 @@ pub mod receiver {
 			let keys: Vec<ProofEntry<BlockNumber>> = proof
 				.revealed
 				.into_iter()
-				.filter_map(|(key, value)| {
-					if let (LeafKey::KeyReference(key_id, key_rel), LeafValue::KeyReference) = (key, value) {
+				.filter_map(|leaf| {
+					if let ProofLeaf::KeyReference(KeyReferenceKey(key_id, key_relationship), KeyReferenceValue) = leaf
+					{
 						// TODO: Better error handling.
 						let key_details = public_keys
 							.get(&key_id)
 							.expect("Key ID should be present in the map of revealed public keys.");
 						Some(ProofEntry {
 							key: key_details.clone(),
-							relationship: key_rel,
+							relationship: key_relationship,
 						})
 					} else {
 						None
@@ -343,16 +379,20 @@ mod test {
 
 	use super::*;
 
-	use did::{did_details::DidCreationDetails, KeyIdOf};
+	use did::{
+		did_details::{DidCreationDetails, DidEncryptionKey},
+		KeyIdOf,
+	};
 	use frame_support::{
-		assert_ok, construct_runtime, parameter_types, traits::Everything, weights::constants::RocksDbWeight,
+		assert_err, assert_ok, construct_runtime, parameter_types, traits::Everything,
+		weights::constants::RocksDbWeight,
 	};
 	use frame_system::{
 		mocking::{MockBlock, MockUncheckedExtrinsic},
 		EnsureSigned, RawOrigin,
 	};
 	use pallet_dip_receiver::traits::IdentityProofVerifier;
-	use sp_core::{ed25519, ConstU16, ConstU32, ConstU64, Hasher, Pair};
+	use sp_core::{ecdsa, ed25519, sr25519, ConstU16, ConstU32, ConstU64, Hasher, Pair};
 	use sp_io::TestExternalities;
 	use sp_runtime::{
 		testing::Header,
@@ -451,7 +491,7 @@ mod test {
 		type Fee = Fee;
 		type FeeCollector = ();
 		type MaxBlocksTxValidity = MaxBlocksTxValidity;
-		type MaxNewKeyAgreementKeys = ConstU32<1>;
+		type MaxNewKeyAgreementKeys = ConstU32<2>;
 		type MaxNumberOfServicesPerDid = ConstU32<1>;
 		type MaxNumberOfTypesPerService = ConstU32<1>;
 		type MaxNumberOfUrlsPerService = ConstU32<1>;
@@ -478,7 +518,7 @@ mod test {
 	const ALICE: AccountId = AccountId::new([1u8; 32]);
 
 	#[test]
-	fn authentication_merkle_proof_works() {
+	fn minimal_did_merkle_proof() {
 		base_ext().execute_with(|| {
 			// Give Alice some balance
 			assert_ok!(Balances::set_balance(RawOrigin::Root.into(), ALICE, 1_000_000_000, 0));
@@ -493,18 +533,113 @@ mod test {
 				new_key_agreement_keys: BTreeSet::new().try_into().unwrap(),
 				new_service_details: vec![],
 			};
+			// Create Alice's DID with only authentication key
 			assert_ok!(Did::create(
 				RawOrigin::Signed(ALICE).into(),
 				Box::new(create_details.clone()),
 				did_auth_key.sign(&create_details.encode()).into()
 			));
 			let did_details = Did::get_did(&did).expect("DID should be present");
+
+			// 1. Create the DID merkle proof revealing only the authentication key
 			let (root, proof) = DidMerkleRootGenerator::<TestRuntime>::generate_proof(
 				&did_details,
-				BTreeSet::from_iter(vec![did_details.authentication_key]),
+				vec![did_details.authentication_key].iter(),
 			)
 			.expect("Merkle proof generation should not fail.");
-			println!("{:?} - {:?}", root, proof);
+			println!("{:?} - {:?} - {:?} bytes", root, proof, proof.encoded_size());
+			// Verify the generated merkle proof
+			assert_ok!(
+				DidMerkleProofVerifier::<KeyIdOf<TestRuntime>, BlockNumber, Hashing>::verify_proof_against_digest(
+					proof.clone().into(),
+					root
+				)
+			);
+
+			// 2. Fail to generate a Merkle proof for a key that does not exist
+			assert_err!(
+				DidMerkleRootGenerator::<TestRuntime>::generate_proof(
+					&did_details,
+					vec![<<Hashing as Hasher>::Out>::default()].iter()
+				),
+				()
+			);
+
+			// 3. Fail to verify a merkle proof with a compromised merkle root
+			let new_root = <<Hashing as Hasher>::Out>::default();
+			assert_err!(
+				DidMerkleProofVerifier::<KeyIdOf<TestRuntime>, BlockNumber, Hashing>::verify_proof_against_digest(
+					proof.into(),
+					new_root
+				),
+				()
+			);
+		})
+	}
+
+	#[test]
+	fn complete_did_merkle_proof() {
+		base_ext().execute_with(|| {
+			// Give Alice some balance
+			assert_ok!(Balances::set_balance(RawOrigin::Root.into(), ALICE, 1_000_000_000, 0));
+			// Generate a DID for alice
+			let did_auth_key = ed25519::Pair::from_seed(&[100u8; 32]);
+			let did_att_key = sr25519::Pair::from_seed(&[150u8; 32]);
+			let did_del_key = ecdsa::Pair::from_seed(&[200u8; 32]);
+			let enc_keys = BTreeSet::from_iter(vec![
+				DidEncryptionKey::X25519([250u8; 32]),
+				DidEncryptionKey::X25519([251u8; 32]),
+			]);
+			let did: AccountId = did_auth_key.public().into_account().into();
+			let create_details = DidCreationDetails {
+				did: did.clone(),
+				submitter: ALICE,
+				new_attestation_key: Some(did_att_key.public().into()),
+				new_delegation_key: Some(did_del_key.public().into()),
+				new_key_agreement_keys: enc_keys
+					.try_into()
+					.expect("BTreeSet to BoundedBTreeSet should not fail"),
+				new_service_details: vec![],
+			};
+			// Create Alice's DID with only authentication key
+			assert_ok!(Did::create(
+				RawOrigin::Signed(ALICE).into(),
+				Box::new(create_details.clone()),
+				did_auth_key.sign(&create_details.encode()).into()
+			));
+			let did_details = Did::get_did(&did).expect("DID should be present");
+			println!("{:?}", did_details.key_agreement_keys);
+			println!("{:?}", did_details.public_keys);
+
+			// 1. Create the DID merkle proof revealing only the authentication key
+			let (root, proof) = DidMerkleRootGenerator::<TestRuntime>::generate_proof(
+				&did_details,
+				vec![did_details.authentication_key].iter(),
+			)
+			.expect("Merkle proof generation should not fail.");
+			println!("{:?} - {:?} - {:?} bytes", root, proof, proof.encoded_size());
+			// Verify the generated merkle proof
+			assert_ok!(
+				DidMerkleProofVerifier::<KeyIdOf<TestRuntime>, BlockNumber, Hashing>::verify_proof_against_digest(
+					proof.into(),
+					root
+				)
+			);
+
+			// 2. Create the DID merkle proof revealing all the keys
+			let (root, proof) = DidMerkleRootGenerator::<TestRuntime>::generate_proof(
+				&did_details,
+				vec![
+					did_details.authentication_key,
+					did_details.attestation_key.unwrap(),
+					did_details.delegation_key.unwrap(),
+				]
+				.iter()
+				.chain(did_details.key_agreement_keys.iter()),
+			)
+			.expect("Merkle proof generation should not fail.");
+			println!("{:?} - {:?} - {:?} bytes", root, proof, proof.encoded_size());
+			// Verify the generated merkle proof
 			assert_ok!(
 				DidMerkleProofVerifier::<KeyIdOf<TestRuntime>, BlockNumber, Hashing>::verify_proof_against_digest(
 					proof.into(),

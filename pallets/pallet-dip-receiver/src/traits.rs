@@ -22,33 +22,29 @@ use sp_std::marker::PhantomData;
 pub trait IdentityProofVerifier {
 	type BlindedValue;
 	type Error;
-	type LeafKey;
-	type LeafValue;
 	type ProofDigest;
+	type ProofLeaf;
 	type VerificationResult;
 
 	fn verify_proof_against_digest(
-		proof: VersionedIdentityProof<Self::BlindedValue, Self::LeafKey, Self::LeafValue>,
+		proof: VersionedIdentityProof<Self::BlindedValue, Self::ProofLeaf>,
 		digest: Self::ProofDigest,
 	) -> Result<Self::VerificationResult, Self::Error>;
 }
 
 // Always returns success.
-pub struct SuccessfulProofVerifier<ProofDigest, LeafKey, LeafValue, BlindedValue>(
-	PhantomData<(ProofDigest, LeafKey, LeafValue, BlindedValue)>,
-);
-impl<ProofDigest, LeafKey, LeafValue, BlindedValue> IdentityProofVerifier
-	for SuccessfulProofVerifier<ProofDigest, LeafKey, LeafValue, BlindedValue>
+pub struct SuccessfulProofVerifier<ProofDigest, Leaf, BlindedValue>(PhantomData<(ProofDigest, Leaf, BlindedValue)>);
+impl<ProofDigest, Leaf, BlindedValue> IdentityProofVerifier
+	for SuccessfulProofVerifier<ProofDigest, Leaf, BlindedValue>
 {
 	type BlindedValue = BlindedValue;
 	type Error = ();
-	type LeafKey = LeafKey;
-	type LeafValue = LeafValue;
 	type ProofDigest = ProofDigest;
+	type ProofLeaf = Leaf;
 	type VerificationResult = ();
 
 	fn verify_proof_against_digest(
-		_proof: VersionedIdentityProof<Self::BlindedValue, Self::LeafKey, Self::LeafValue>,
+		_proof: VersionedIdentityProof<Self::BlindedValue, Self::ProofLeaf>,
 		_digest: Self::ProofDigest,
 	) -> Result<Self::VerificationResult, Self::Error> {
 		Ok(())
