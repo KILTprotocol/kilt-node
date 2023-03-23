@@ -29,11 +29,12 @@ use sp_runtime::{traits::Verify, MultiSignature, SaturatedConversion};
 use sp_std::{convert::TryInto, vec::Vec};
 
 use kilt_support::deposit::Deposit;
+use kilt_utils::calculate_key_id;
 
 use crate::{
 	errors::{self, DidError},
 	service_endpoints::DidEndpoint,
-	utils, AccountIdOf, BalanceOf, BlockNumberOf, Config, DidCallableOf, DidIdentifierOf, KeyIdOf, Payload,
+	AccountIdOf, BalanceOf, BlockNumberOf, Config, DidCallableOf, DidIdentifierOf, KeyIdOf, Payload,
 };
 
 /// Types of verification keys a DID can control.
@@ -292,7 +293,7 @@ impl<T: Config> DidDetails<T> {
 		deposit: Deposit<AccountIdOf<T>, BalanceOf<T>>,
 	) -> Result<Self, errors::StorageError> {
 		let mut public_keys = DidPublicKeyMap::<T>::default();
-		let authentication_key_id = utils::calculate_key_id::<T>(&authentication_key.clone().into());
+		let authentication_key_id = calculate_key_id::<T, DidPublicKey>(&authentication_key.clone().into());
 		public_keys
 			.try_insert(
 				authentication_key_id,
@@ -359,7 +360,7 @@ impl<T: Config> DidDetails<T> {
 		block_number: BlockNumberOf<T>,
 	) -> Result<(), errors::StorageError> {
 		let old_authentication_key_id = self.authentication_key;
-		let new_authentication_key_id = utils::calculate_key_id::<T>(&new_authentication_key.clone().into());
+		let new_authentication_key_id = calculate_key_id::<T, DidPublicKey>(&new_authentication_key.clone().into());
 		self.authentication_key = new_authentication_key_id;
 		// Remove old key ID from public keys, if not used anymore.
 		self.remove_key_if_unused(old_authentication_key_id);
@@ -399,7 +400,7 @@ impl<T: Config> DidDetails<T> {
 		new_key_agreement_key: DidEncryptionKey,
 		block_number: BlockNumberOf<T>,
 	) -> Result<(), errors::StorageError> {
-		let new_key_agreement_id = utils::calculate_key_id::<T>(&new_key_agreement_key.into());
+		let new_key_agreement_id = calculate_key_id::<T, DidPublicKey>(&new_key_agreement_key.into());
 		self.public_keys
 			.try_insert(
 				new_key_agreement_id,
@@ -436,7 +437,7 @@ impl<T: Config> DidDetails<T> {
 		new_attestation_key: DidVerificationKey,
 		block_number: BlockNumberOf<T>,
 	) -> Result<(), errors::StorageError> {
-		let new_attestation_key_id = utils::calculate_key_id::<T>(&new_attestation_key.clone().into());
+		let new_attestation_key_id = calculate_key_id::<T, DidPublicKey>(&new_attestation_key.clone().into());
 		if let Some(old_attestation_key_id) = self.attestation_key.take() {
 			self.remove_key_if_unused(old_attestation_key_id);
 		}
@@ -479,7 +480,7 @@ impl<T: Config> DidDetails<T> {
 		new_delegation_key: DidVerificationKey,
 		block_number: BlockNumberOf<T>,
 	) -> Result<(), errors::StorageError> {
-		let new_delegation_key_id = utils::calculate_key_id::<T>(&new_delegation_key.clone().into());
+		let new_delegation_key_id = calculate_key_id::<T, DidPublicKey>(&new_delegation_key.clone().into());
 		if let Some(old_delegation_key_id) = self.delegation_key.take() {
 			self.remove_key_if_unused(old_delegation_key_id);
 		}

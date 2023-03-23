@@ -2138,6 +2138,7 @@ dependencies = [
  "frame-support",
  "frame-system",
  "kilt-support",
+ "kilt-utils",
  "log",
  "pallet-balances",
  "parity-scale-codec",
@@ -3986,6 +3987,19 @@ dependencies = [
  "parity-scale-codec",
  "scale-info",
  "serde",
+ "sp-core",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "kilt-utils"
+version = "1.11.0-dev"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "scale-info",
  "sp-core",
  "sp-runtime",
  "sp-std",

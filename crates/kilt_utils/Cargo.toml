@@ -1,0 +1,26 @@
+[package]
+authors.workspace = true
+documentation.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license-file.workspace = true
+readme.workspace = true
+repository.workspace = true
+version.workspace = true
+name = "kilt-utils"
+description = "Utility functions, which are used in the node and in the SDK as wasm."
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+
+# Parity dependencies
+codec = {package = "parity-scale-codec", workspace = true, features = ["derive"]}
+scale-info = {workspace = true, features = ["derive"]}
+
+# Substrate dependencies
+frame-system.workspace = true
+frame-support.workspace = true
+sp-core.workspace = true
+sp-std.workspace = true
+sp-runtime.workspace = true

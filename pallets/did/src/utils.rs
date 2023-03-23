@@ -16,17 +16,6 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use codec::Encode;
-use sp_runtime::traits::Hash;
-use sp_std::vec::Vec;
-
-use crate::{did_details::DidPublicKey, Config, KeyIdOf};
-
-pub fn calculate_key_id<T: Config>(key: &DidPublicKey) -> KeyIdOf<T> {
-	let hashed_values: Vec<u8> = key.encode();
-	T::Hashing::hash(&hashed_values)
-}
-
 /// Verifies that an input string contains only traditional (non-extended) ASCII
 /// characters.
 pub(crate) fn is_valid_ascii_string(input: &str) -> bool {

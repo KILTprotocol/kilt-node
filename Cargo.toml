@@ -57,6 +57,7 @@ public-credentials = {path = "pallets/public-credentials", default-features = fa
 
 # Internal support (with default disabled)
 kilt-asset-dids = {path = "crates/assets", default-features = false}
+kilt-utils = {path = "crates/kilt_utils", default-features = false}
 kilt-support = {path = "support", default-features = false}
 runtime-common = {path = "runtimes/common", default-features = false}
 

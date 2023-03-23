@@ -16,21 +16,6 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::{
-	parameter_types,
-	traits::{Currency, OnUnbalanced, ReservableCurrency},
-	weights::constants::RocksDbWeight,
-};
-use frame_system::EnsureSigned;
-use pallet_balances::NegativeImbalance;
-use sp_core::{ecdsa, ed25519, sr25519, Pair};
-use sp_runtime::{
-	testing::{Header, H256},
-	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
-	MultiSignature, MultiSigner, SaturatedConversion,
-};
-use sp_std::vec::Vec;
-
 use crate::{
 	self as did,
 	did_details::{
@@ -40,10 +25,25 @@ use crate::{
 		RelationshipDeriveError,
 	},
 	service_endpoints::DidEndpoint,
-	utils as crate_utils, AccountIdOf, Config, CurrencyOf, DidBlacklist, DidEndpointsCount, KeyIdOf, ServiceEndpoints,
+	AccountIdOf, Config, CurrencyOf, DidBlacklist, DidEndpointsCount, KeyIdOf, ServiceEndpoints,
 };
 #[cfg(not(feature = "runtime-benchmarks"))]
 use crate::{DidRawOrigin, EnsureDidOrigin};
+use frame_support::{
+	parameter_types,
+	traits::{Currency, OnUnbalanced, ReservableCurrency},
+	weights::constants::RocksDbWeight,
+};
+use frame_system::EnsureSigned;
+use kilt_utils::calculate_key_id;
+use pallet_balances::NegativeImbalance;
+use sp_core::{ecdsa, ed25519, sr25519, Pair};
+use sp_runtime::{
+	testing::{Header, H256},
+	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
+	MultiSignature, MultiSigner, SaturatedConversion,
+};
+use sp_std::vec::Vec;
 
 pub(crate) type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 pub(crate) type Block = frame_system::mocking::MockBlock<Test>;
@@ -329,7 +329,7 @@ pub fn get_ecdsa_delegation_key(default: bool) -> ecdsa::Pair {
 }
 
 pub fn generate_key_id(key: &DidPublicKey) -> KeyIdOf<Test> {
-	crate_utils::calculate_key_id::<Test>(key)
+	calculate_key_id::<Test, DidPublicKey>(key)
 }
 
 pub(crate) fn get_attestation_key_test_input() -> Vec<u8> {
