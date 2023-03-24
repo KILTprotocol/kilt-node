@@ -46,17 +46,17 @@ impl From<DidVerificationKeyRelationship> for KeyRelationship {
 // 	KeyDetails(DidPublicKeyDetails<BlockNumber>),
 // }
 
-#[derive(Clone, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug)]
+#[derive(Clone, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo)]
 pub struct KeyReferenceKey<KeyId>(pub KeyId, pub KeyRelationship);
-#[derive(Clone, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug)]
+#[derive(Clone, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo)]
 pub struct KeyReferenceValue;
 
-#[derive(Clone, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug)]
+#[derive(Clone, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo)]
 pub struct KeyDetailsKey<KeyId>(pub KeyId);
-#[derive(Clone, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug)]
+#[derive(Clone, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo)]
 pub struct KeyDetailsValue<BlockNumber: MaxEncodedLen>(pub DidPublicKeyDetails<BlockNumber>);
 
-#[derive(Clone, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug)]
+#[derive(Clone, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo)]
 pub enum ProofLeaf<KeyId, BlockNumber: MaxEncodedLen> {
 	KeyReference(KeyReferenceKey<KeyId>, KeyReferenceValue),
 	KeyDetails(KeyDetailsKey<KeyId>, KeyDetailsValue<BlockNumber>),
@@ -96,10 +96,10 @@ pub mod sender {
 	pub type DidMerkleProof<T> =
 		Proof<Vec<BlindedValue>, ProofLeaf<KeyIdOf<T>, <T as frame_system::Config>::BlockNumber>>;
 
-	#[derive(Encode, Decode, TypeInfo)]
+	#[derive(Encode, Decode, RuntimeDebug, PartialEq, Eq, TypeInfo)]
 	pub struct CompleteMerkleProof<Root, Proof> {
-		merkle_root: Root,
-		merkle_proof: Proof,
+		pub root: Root,
+		pub proof: Proof,
 	}
 
 	pub struct DidMerkleRootGenerator<T>(PhantomData<T>);
@@ -227,8 +227,8 @@ pub mod sender {
 			let proof =
 				generate_trie_proof::<LayoutV1<T::Hashing>, _, _, _>(&db, root, &encoded_keys).map_err(|_| ())?;
 			Ok(CompleteMerkleProof {
-				merkle_root: root,
-				merkle_proof: DidMerkleProof::<T> {
+				root,
+				proof: DidMerkleProof::<T> {
 					blinded: proof,
 					revealed: leaves.into_iter().collect::<Vec<_>>(),
 				},
@@ -379,7 +379,10 @@ pub mod receiver {
 
 #[cfg(test)]
 mod test {
-	use crate::dip::{receiver::DidMerkleProofVerifier, sender::DidMerkleRootGenerator};
+	use crate::dip::{
+		receiver::DidMerkleProofVerifier,
+		sender::{CompleteMerkleProof, DidMerkleRootGenerator},
+	};
 
 	use super::*;
 
@@ -547,7 +550,7 @@ mod test {
 			let did_details = Did::get_did(&did).expect("DID should be present");
 
 			// 1. Create the DID merkle proof revealing only the authentication key
-			let (root, proof) = DidMerkleRootGenerator::<TestRuntime>::generate_proof(
+			let CompleteMerkleProof { root, proof } = DidMerkleRootGenerator::<TestRuntime>::generate_proof(
 				&did_details,
 				[did_details.authentication_key].iter(),
 			)
@@ -615,7 +618,7 @@ mod test {
 			let did_details = Did::get_did(&did).expect("DID should be present");
 
 			// 1. Create the DID merkle proof revealing only the authentication key
-			let (root, proof) = DidMerkleRootGenerator::<TestRuntime>::generate_proof(
+			let CompleteMerkleProof { root, proof } = DidMerkleRootGenerator::<TestRuntime>::generate_proof(
 				&did_details,
 				[did_details.authentication_key].iter(),
 			)
@@ -629,7 +632,7 @@ mod test {
 			);
 
 			// 2. Create the DID merkle proof revealing all the keys
-			let (root, proof) = DidMerkleRootGenerator::<TestRuntime>::generate_proof(
+			let CompleteMerkleProof { root, proof } = DidMerkleRootGenerator::<TestRuntime>::generate_proof(
 				&did_details,
 				[
 					did_details.authentication_key,
@@ -650,7 +653,7 @@ mod test {
 
 			// 2. Create the DID merkle proof revealing only the key reference and not the
 			// key ID
-			let (root, proof) = DidMerkleRootGenerator::<TestRuntime>::generate_proof(
+			let CompleteMerkleProof { root, proof } = DidMerkleRootGenerator::<TestRuntime>::generate_proof(
 				&did_details,
 				[did_details.authentication_key].iter(),
 			)

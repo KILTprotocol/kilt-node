@@ -51,8 +51,8 @@ pub mod pallet {
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
-		type Identifier: Parameter + MaxEncodedLen;
 		type BlindedValue: Parameter;
+		type Identifier: Parameter + MaxEncodedLen;
 		type ProofLeaf: Parameter;
 		type ProofDigest: Parameter + MaxEncodedLen;
 		type ProofVerifier: IdentityProofVerifier<
