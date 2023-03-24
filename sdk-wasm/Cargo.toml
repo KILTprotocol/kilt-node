@@ -1,8 +1,12 @@
 [package]
-name = "hello-wasm"
-version = "0.1.0"
-authors = ["Adel Golghalyani <ad96el@gmail.com>"]
-edition = "2018"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+documentation.workspace = true
+repository.workspace = true
+name = "sdk-wasm"
+description = "Wasm wrapper for kilt-utils."
+
 
 [lib]
 crate-type = ["cdylib", "rlib"]
@@ -14,10 +18,12 @@ default = ["console_error_panic_hook"]
 wasm-bindgen = "0.2.63"
 console_error_panic_hook = { version = "0.1.6", optional = true }
 wee_alloc = { version = "0.4.5", optional = true }
-# project dependencies
+
+# local support
 kilt-utils.workspace = true
-sp-runtime.workspace = true
-sp-core.workspace = true
+
+#parity dependencies
+sp-runtime = { workspace = true, default-features = false }
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3.13"

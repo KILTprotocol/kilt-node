@@ -1,5 +1,4 @@
 mod utils;
-
 use kilt_utils::calculate_key_id;
 use sp_runtime::traits::BlakeTwo256;
 use wasm_bindgen::prelude::*;

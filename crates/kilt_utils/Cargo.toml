@@ -10,16 +10,9 @@ version.workspace = true
 name = "kilt-utils"
 description = "Utility functions, which are used in the node and in the SDK as wasm."
 
-
-
 [dependencies]
-# Parity dependencies
-codec = {package = "parity-scale-codec", workspace = true, features = ["derive"], default-features = false }
-scale-info = {workspace = true, features = ["derive"]}
-
-# Substrate dependencies
-frame-system.workspace = true
-frame-support.workspace = true
+# parity dependencies
+codec = {package = "parity-scale-codec", workspace = true, default-features = false}
 sp-core.workspace = true
 sp-std.workspace = true
-sp-runtime.workspace = true
+
