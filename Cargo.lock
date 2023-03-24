@@ -10410,6 +10410,7 @@ version = "1.11.0-dev"
 dependencies = [
  "console_error_panic_hook",
  "kilt-utils",
+ "sp-io",
  "sp-runtime",
  "wasm-bindgen",
  "wasm-bindgen-test",

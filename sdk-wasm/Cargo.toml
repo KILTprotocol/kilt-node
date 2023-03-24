@@ -7,7 +7,6 @@ repository.workspace = true
 name = "sdk-wasm"
 description = "Wasm wrapper for kilt-utils."
 
-
 [lib]
 crate-type = ["cdylib", "rlib"]
 
@@ -20,10 +19,11 @@ console_error_panic_hook = { version = "0.1.6", optional = true }
 wee_alloc = { version = "0.4.5", optional = true }
 
 # local support
-kilt-utils = {workspace = true, features = ["std"]}
+kilt-utils = {workspace = true, default-features=false }
 
 #parity dependencies
-sp-runtime = { workspace = true, default-features=false, features=["std"] }
+sp-io = { workspace = true, features = ["disable_oom", "disable_panic_handler"]}
+sp-runtime.workspace = true
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3.13"
