@@ -186,8 +186,6 @@ pub mod sender {
 			#[allow(clippy::type_complexity)]
 			let leaves: BTreeSet<ProofLeaf<KeyIdOf<T>, T::BlockNumber>> =
 				key_ids.try_fold(BTreeSet::new(), |mut set, key_id| -> Result<_, ()> {
-					println!("Key ID: {:?}", key_id);
-					println!("Public keys: {:?}", identity.public_keys);
 					let key_details = identity.public_keys.get(key_id).ok_or(())?;
 					if *key_id == identity.authentication_key {
 						set.insert(ProofLeaf::KeyReference(
@@ -195,15 +193,15 @@ pub mod sender {
 							KeyReferenceValue,
 						));
 					}
-					if let Some(key_id) = identity.attestation_key {
+					if Some(*key_id) == identity.attestation_key {
 						set.insert(ProofLeaf::KeyReference(
-							KeyReferenceKey(key_id, DidVerificationKeyRelationship::AssertionMethod.into()),
+							KeyReferenceKey(*key_id, DidVerificationKeyRelationship::AssertionMethod.into()),
 							KeyReferenceValue,
 						));
 					}
-					if let Some(key_id) = identity.delegation_key {
+					if Some(*key_id) == identity.delegation_key {
 						set.insert(ProofLeaf::KeyReference(
-							KeyReferenceKey(key_id, DidVerificationKeyRelationship::CapabilityDelegation.into()),
+							KeyReferenceKey(*key_id, DidVerificationKeyRelationship::CapabilityDelegation.into()),
 							KeyReferenceValue,
 						));
 					}
@@ -608,8 +606,6 @@ mod test {
 				did_auth_key.sign(&create_details.encode()).into()
 			));
 			let did_details = Did::get_did(&did).expect("DID should be present");
-			println!("{:?}", did_details.key_agreement_keys);
-			println!("{:?}", did_details.public_keys);
 
 			// 1. Create the DID merkle proof revealing only the authentication key
 			let (root, proof) = DidMerkleRootGenerator::<TestRuntime>::generate_proof(
@@ -617,7 +613,6 @@ mod test {
 				vec![did_details.authentication_key].iter(),
 			)
 			.expect("Merkle proof generation should not fail.");
-			println!("{:?} - {:?} - {:?} bytes", root, proof, proof.encoded_size());
 			// Verify the generated merkle proof
 			assert_ok!(
 				DidMerkleProofVerifier::<KeyIdOf<TestRuntime>, BlockNumber, Hashing>::verify_proof_against_digest(
@@ -638,7 +633,6 @@ mod test {
 				.chain(did_details.key_agreement_keys.iter()),
 			)
 			.expect("Merkle proof generation should not fail.");
-			println!("{:?} - {:?} - {:?} bytes", root, proof, proof.encoded_size());
 			// Verify the generated merkle proof
 			assert_ok!(
 				DidMerkleProofVerifier::<KeyIdOf<TestRuntime>, BlockNumber, Hashing>::verify_proof_against_digest(
