@@ -22,39 +22,43 @@ use sp_io::TestExternalities;
 use xcm_emulator::decl_test_parachain;
 
 pub(super) mod sender {
-	use did::did_details::{DidCreationDetails, DidDetails, DidVerificationKey};
+	use did::did_details::DidDetails;
 	pub(crate) use dip_sender_runtime_template::{DidIdentifier, DmpQueue, Runtime, RuntimeOrigin, XcmpQueue};
+	use sp_core::{ed25519, Pair};
 
 	use super::*;
 
 	pub const PARA_ID: u32 = 2_000;
 
-	fn generate_did_details(auth_key: DidVerificationKey) -> DidDetails<Runtime> {
+	pub(crate) fn did_auth_key() -> ed25519::Pair {
+		ed25519::Pair::from_seed(&[200u8; 32])
+	}
+
+	fn generate_did_details() -> DidDetails<Runtime> {
 		use did::did_details::{DidEncryptionKey, DidVerificationKey};
 		use dip_sender_runtime_template::AccountId;
-		use kilt_support::Deposit;
-		use sp_core::{ecdsa, ed25519, sr25519, DeriveJunction, Pair};
-		use sp_std::collections::btree_set::BTreeSet;
+		use kilt_support::deposit::Deposit;
+		use sp_core::{ecdsa, sr25519};
 
+		let auth_key: DidVerificationKey = did_auth_key().public().into();
 		let att_key: DidVerificationKey = sr25519::Pair::from_seed(&[100u8; 32]).public().into();
 		let del_key: DidVerificationKey = ecdsa::Pair::from_seed(&[101u8; 32]).public().into();
 
-		let mut base_details = DidDetails::new(auth_key, 0u64.into(), )
-		DidDetails::from_creation_details(
-			DidCreationDetails {
-				did,
-				// Not relevant
-				submitter: AccountId::new([0u8; 32]),
-				new_key_agreement_keys: BTreeSet::from_iter([DidEncryptionKey::X25519([3u8; 32])].into_iter())
-					.try_into()
-					.unwrap(),
-				new_attestation_key: Some(att_key.public().into()),
-				new_delegation_key: Some(del_key.public().into()),
-				new_service_details: vec![],
+		let mut details = DidDetails::new(
+			auth_key,
+			0u32,
+			Deposit {
+				amount: 1u64.into(),
+				owner: AccountId::new([1u8; 32]),
 			},
-			auth_key.public().into(),
 		)
-		.unwrap()
+		.unwrap();
+		details.update_attestation_key(att_key, 0u32.into()).unwrap();
+		details.update_delegation_key(del_key, 0u32.into()).unwrap();
+		details
+			.add_key_agreement_key(DidEncryptionKey::X25519([100u8; 32]), 0u32.into())
+			.unwrap();
+		details
 	}
 
 	pub(crate) fn para_ext() -> TestExternalities {
@@ -72,7 +76,8 @@ pub(super) mod sender {
 			.unwrap();
 
 		let mut ext = TestExternalities::new(t);
-		let (did, details) = generate_did_details();
+		let did: DidIdentifier = did_auth_key().public().into();
+		let details = generate_did_details();
 		ext.execute_with(|| {
 			did::pallet::Did::<Runtime>::insert(&did, details);
 			System::set_block_number(1);

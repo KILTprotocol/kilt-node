@@ -18,13 +18,12 @@
 
 use super::*;
 
-use dip_receiver_runtime_template::{
-	AccountId as ReceiverAccountId, DidIdentifier as ReceiverDidIdentifier, DipReceiver,
-};
-use dip_sender_runtime_template::DipSender;
-
+use did::Did;
+use dip_support::latest::Proof;
 use frame_support::{assert_ok, weights::Weight};
 use frame_system::RawOrigin;
+use runtime_common::dip::sender::{CompleteMerkleProof, DidMerkleRootGenerator};
+use sp_core::Pair;
 use xcm::latest::{
 	Junction::Parachain,
 	Junctions::{Here, X1},
@@ -32,9 +31,17 @@ use xcm::latest::{
 };
 use xcm_emulator::TestExt;
 
+use dip_receiver_runtime_template::{
+	AccountId as ReceiverAccountId, DidIdentifier, DipReceiver, Runtime as ReceiverRuntime,
+	RuntimeCall as ReceiverRuntimeCall,
+};
+use dip_sender_runtime_template::{AccountId as SenderAccountId, DipSender, Runtime as SenderRuntime};
+
 #[test]
 fn commit_identity() {
 	Network::reset();
+
+	let did: DidIdentifier = para::sender::did_auth_key().public().into();
 
 	ReceiverParachain::execute_with(|| {
 		use dip_receiver_runtime_template::Balances;
@@ -47,8 +54,8 @@ fn commit_identity() {
 	// 1. Send identity proof from DIP sender to DIP receiver.
 	SenderParachain::execute_with(|| {
 		assert_ok!(DipSender::commit_identity(
-			RawOrigin::Signed(ReceiverAccountId::from([0u8; 32])).into(),
-			ReceiverDidIdentifier::from([0u8; 32]),
+			RawOrigin::Signed(SenderAccountId::from([0u8; 32])).into(),
+			did.clone(),
 			Box::new(ParentThen(X1(Parachain(para::receiver::PARA_ID))).into()),
 			Box::new((Here, 1_000_000_000).into()),
 			Weight::from_ref_time(4_000),
@@ -68,8 +75,30 @@ fn commit_identity() {
 				weight: _
 			})
 		)));
-		// 2.2 Verify the proof digest is the same that was sent.
-		let details = DipReceiver::identity_proofs(dip_sender_runtime_template::AccountId::from([0u8; 32]));
-		assert_eq!(details, Some([0u8; 32].into()));
+		// 2.2 Verify the proof digest was stored correctly.
+		assert!(DipReceiver::identity_proofs(&did).is_some());
+	});
+	// 3. Call an extrinsic on the receiver chain with a valid proof
+	let did_details =
+		SenderParachain::execute_with(|| Did::get(&did).expect("DID details should be stored on the sender chain."));
+	// 3.1 Generate a proof
+	let CompleteMerkleProof { proof, .. } =
+		DidMerkleRootGenerator::<SenderRuntime>::generate_proof(&did_details, [did_details.authentication_key].iter())
+			.expect("Proof generation should not fail");
+	// 3.2 Call the `dispatch_as` extrinsic on the receiver chain with the generated
+	// proof
+	ReceiverParachain::execute_with(|| {
+		assert_ok!(DipReceiver::dispatch_as(
+			RawOrigin::Signed(ReceiverAccountId::new([100u8; 32])).into(),
+			did.clone(),
+			Proof {
+				blinded: proof.blinded,
+				revealed: proof.revealed,
+			}
+			.into(),
+			Box::new(ReceiverRuntimeCall::DidLookup(pallet_did_lookup::Call::<
+				ReceiverRuntime,
+			>::associate_sender {})),
+		));
 	});
 }
