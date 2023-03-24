@@ -22,11 +22,40 @@ use sp_io::TestExternalities;
 use xcm_emulator::decl_test_parachain;
 
 pub(super) mod sender {
-	pub(crate) use dip_sender_runtime_template::{DmpQueue, Runtime, RuntimeOrigin, XcmpQueue};
+	use did::did_details::{DidCreationDetails, DidDetails, DidVerificationKey};
+	pub(crate) use dip_sender_runtime_template::{DidIdentifier, DmpQueue, Runtime, RuntimeOrigin, XcmpQueue};
 
 	use super::*;
 
 	pub const PARA_ID: u32 = 2_000;
+
+	fn generate_did_details(auth_key: DidVerificationKey) -> DidDetails<Runtime> {
+		use did::did_details::{DidEncryptionKey, DidVerificationKey};
+		use dip_sender_runtime_template::AccountId;
+		use kilt_support::Deposit;
+		use sp_core::{ecdsa, ed25519, sr25519, DeriveJunction, Pair};
+		use sp_std::collections::btree_set::BTreeSet;
+
+		let att_key: DidVerificationKey = sr25519::Pair::from_seed(&[100u8; 32]).public().into();
+		let del_key: DidVerificationKey = ecdsa::Pair::from_seed(&[101u8; 32]).public().into();
+
+		let mut base_details = DidDetails::new(auth_key, 0u64.into(), )
+		DidDetails::from_creation_details(
+			DidCreationDetails {
+				did,
+				// Not relevant
+				submitter: AccountId::new([0u8; 32]),
+				new_key_agreement_keys: BTreeSet::from_iter([DidEncryptionKey::X25519([3u8; 32])].into_iter())
+					.try_into()
+					.unwrap(),
+				new_attestation_key: Some(att_key.public().into()),
+				new_delegation_key: Some(del_key.public().into()),
+				new_service_details: vec![],
+			},
+			auth_key.public().into(),
+		)
+		.unwrap()
+	}
 
 	pub(crate) fn para_ext() -> TestExternalities {
 		use dip_sender_runtime_template::System;
@@ -43,7 +72,9 @@ pub(super) mod sender {
 			.unwrap();
 
 		let mut ext = TestExternalities::new(t);
+		let (did, details) = generate_did_details();
 		ext.execute_with(|| {
+			did::pallet::Did::<Runtime>::insert(&did, details);
 			System::set_block_number(1);
 		});
 		ext

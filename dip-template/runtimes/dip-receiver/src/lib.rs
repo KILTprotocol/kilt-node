@@ -56,9 +56,9 @@ use sp_core::{crypto::KeyTypeId, ConstU128, ConstU16, OpaqueMetadata};
 use sp_inherents::{CheckInherentsResult, InherentData};
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
-	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, IdentifyAccount, OpaqueKeys, Verify},
+	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, OpaqueKeys},
 	transaction_validity::{TransactionSource, TransactionValidity},
-	ApplyExtrinsicResult, MultiSignature, OpaqueExtrinsic,
+	AccountId32, ApplyExtrinsicResult, MultiSignature, OpaqueExtrinsic,
 };
 use sp_std::{prelude::*, time::Duration};
 use sp_version::RuntimeVersion;
@@ -73,7 +73,7 @@ pub use sp_runtime::BuildStorage;
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 
-pub type AccountId = <<Signature as Verify>::Signer as IdentifyAccount>::AccountId;
+pub type AccountId = AccountId32;
 pub type Address = MultiAddress<AccountId, ()>;
 pub type Balance = u128;
 pub type Block = generic::Block<Header, UncheckedExtrinsic>;
