@@ -381,6 +381,7 @@ mod test {
 		did_details::{DidCreationDetails, DidEncryptionKey},
 		KeyIdOf,
 	};
+	use dip_support::latest::Proof;
 	use frame_support::{
 		assert_err, assert_ok, construct_runtime, parameter_types, traits::Everything,
 		weights::constants::RocksDbWeight,
@@ -542,7 +543,7 @@ mod test {
 			// 1. Create the DID merkle proof revealing only the authentication key
 			let (root, proof) = DidMerkleRootGenerator::<TestRuntime>::generate_proof(
 				&did_details,
-				vec![did_details.authentication_key].iter(),
+				[did_details.authentication_key].iter(),
 			)
 			.expect("Merkle proof generation should not fail.");
 			println!("{:?} - {:?} - {:?} bytes", root, proof, proof.encoded_size());
@@ -558,7 +559,7 @@ mod test {
 			assert_err!(
 				DidMerkleRootGenerator::<TestRuntime>::generate_proof(
 					&did_details,
-					vec![<<Hashing as Hasher>::Out>::default()].iter()
+					[<<Hashing as Hasher>::Out>::default()].iter()
 				),
 				()
 			);
@@ -610,7 +611,7 @@ mod test {
 			// 1. Create the DID merkle proof revealing only the authentication key
 			let (root, proof) = DidMerkleRootGenerator::<TestRuntime>::generate_proof(
 				&did_details,
-				vec![did_details.authentication_key].iter(),
+				[did_details.authentication_key].iter(),
 			)
 			.expect("Merkle proof generation should not fail.");
 			// Verify the generated merkle proof
@@ -624,7 +625,7 @@ mod test {
 			// 2. Create the DID merkle proof revealing all the keys
 			let (root, proof) = DidMerkleRootGenerator::<TestRuntime>::generate_proof(
 				&did_details,
-				vec![
+				[
 					did_details.authentication_key,
 					did_details.attestation_key.unwrap(),
 					did_details.delegation_key.unwrap(),
@@ -639,6 +640,31 @@ mod test {
 					proof.into(),
 					root
 				)
+			);
+
+			// 2. Create the DID merkle proof revealing only the key reference and not the
+			// key ID
+			let (root, proof) = DidMerkleRootGenerator::<TestRuntime>::generate_proof(
+				&did_details,
+				[did_details.authentication_key].iter(),
+			)
+			.expect("Merkle proof generation should not fail.");
+			let reference_only_authentication_leaf: Vec<_> = proof
+				.revealed
+				.into_iter()
+				.filter(|l| !matches!(l, ProofLeaf::KeyDetails(_, _)))
+				.collect();
+			// Fail to verify the generated merkle proof
+			assert_err!(
+				DidMerkleProofVerifier::<KeyIdOf<TestRuntime>, BlockNumber, Hashing>::verify_proof_against_digest(
+					Proof {
+						blinded: proof.blinded,
+						revealed: reference_only_authentication_leaf
+					}
+					.into(),
+					root
+				),
+				()
 			);
 		})
 	}
