@@ -2355,6 +2355,7 @@ dependencies = [
  "frame-support",
  "frame-system",
  "frame-system-rpc-runtime-api",
+ "kilt-runtime-api-dip-sender",
  "pallet-aura",
  "pallet-authorship",
  "pallet-balances",
@@ -4190,6 +4191,14 @@ dependencies = [
  "scale-info",
  "sp-api",
  "sp-std",
+]
+
+[[package]]
+name = "kilt-runtime-api-dip-sender"
+version = "1.11.0-dev"
+dependencies = [
+ "parity-scale-codec",
+ "sp-api",
 ]
 
 [[package]]
