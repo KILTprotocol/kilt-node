@@ -22,6 +22,7 @@ use did::Did;
 use dip_support::latest::Proof;
 use frame_support::{assert_ok, weights::Weight};
 use frame_system::RawOrigin;
+use pallet_did_lookup::linkable_account::LinkableAccountId;
 use runtime_common::dip::sender::{CompleteMerkleProof, DidMerkleRootGenerator};
 use sp_core::Pair;
 use xcm::latest::{
@@ -32,8 +33,7 @@ use xcm::latest::{
 use xcm_emulator::TestExt;
 
 use dip_receiver_runtime_template::{
-	AccountId as ReceiverAccountId, DidIdentifier, DipReceiver, Runtime as ReceiverRuntime,
-	RuntimeCall as ReceiverRuntimeCall,
+	DidIdentifier, DidLookup, DipReceiver, Runtime as ReceiverRuntime, RuntimeCall as ReceiverRuntimeCall,
 };
 use dip_sender_runtime_template::{AccountId as SenderAccountId, DipSender, Runtime as SenderRuntime};
 
@@ -42,14 +42,6 @@ fn commit_identity() {
 	Network::reset();
 
 	let did: DidIdentifier = para::sender::did_auth_key().public().into();
-
-	ReceiverParachain::execute_with(|| {
-		use dip_receiver_runtime_template::Balances;
-		use para::receiver::sender_parachain_account;
-
-		let sender_balance = Balances::free_balance(sender_parachain_account());
-		println!("Sender balance: {:?}", sender_balance);
-	});
 
 	// 1. Send identity proof from DIP sender to DIP receiver.
 	SenderParachain::execute_with(|| {
@@ -89,7 +81,7 @@ fn commit_identity() {
 	// proof
 	ReceiverParachain::execute_with(|| {
 		assert_ok!(DipReceiver::dispatch_as(
-			RawOrigin::Signed(ReceiverAccountId::new([100u8; 32])).into(),
+			RawOrigin::Signed(para::receiver::DISPATCHER_ACCOUNT).into(),
 			did.clone(),
 			Proof {
 				blinded: proof.blinded,
@@ -100,5 +92,9 @@ fn commit_identity() {
 				ReceiverRuntime,
 			>::associate_sender {})),
 		));
+		// Verify the account -> DID link exists and contains the right information
+		let linked_did = DidLookup::connected_dids::<LinkableAccountId>(para::receiver::DISPATCHER_ACCOUNT.into())
+			.map(|link| link.did);
+		assert_eq!(linked_did, Some(did));
 	});
 }

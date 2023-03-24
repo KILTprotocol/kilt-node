@@ -98,7 +98,7 @@ pub(super) mod sender {
 
 pub(super) mod receiver {
 	pub(crate) use dip_receiver_runtime_template::{
-		AccountId, AssetTransactorLocationConverter, Balance, DmpQueue, Runtime, RuntimeOrigin, XcmpQueue,
+		AccountId, AssetTransactorLocationConverter, Balance, DmpQueue, Runtime, RuntimeOrigin, XcmpQueue, UNIT,
 	};
 
 	use xcm::latest::{Junction::Parachain, Junctions::X1, ParentThen};
@@ -107,7 +107,8 @@ pub(super) mod receiver {
 	use super::*;
 
 	pub const PARA_ID: u32 = 2_001;
-	const INITIAL_BALANCE: Balance = 1_000_000_000;
+	pub const DISPATCHER_ACCOUNT: AccountId = AccountId::new([90u8; 32]);
+	const INITIAL_BALANCE: Balance = 100_000 * UNIT;
 
 	pub(crate) fn sender_parachain_account() -> AccountId {
 		AssetTransactorLocationConverter::convert(ParentThen(X1(Parachain(sender::PARA_ID))).into())
@@ -129,7 +130,10 @@ pub(super) mod receiver {
 			.unwrap();
 
 		pallet_balances::GenesisConfig::<Runtime> {
-			balances: vec![(sender_parachain_account(), INITIAL_BALANCE)],
+			balances: vec![
+				(sender_parachain_account(), INITIAL_BALANCE),
+				(DISPATCHER_ACCOUNT, INITIAL_BALANCE),
+			],
 		}
 		.assimilate_storage(&mut t)
 		.unwrap();
