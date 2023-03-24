@@ -30,7 +30,7 @@ use cumulus_pallet_parachain_system::{
 };
 use cumulus_primitives_core::CollationInfo;
 use cumulus_primitives_timestamp::InherentDataProvider;
-use did::{DidRawOrigin, EnsureDidOrigin};
+use did::{DidRawOrigin, EnsureDidOrigin, KeyIdOf};
 use frame_support::{
 	construct_runtime,
 	dispatch::DispatchClass,
@@ -48,8 +48,10 @@ use frame_system::{
 };
 use pallet_balances::AccountData;
 use pallet_collator_selection::IdentityCollator;
+use pallet_dip_sender::traits::IdentityProvider;
 use pallet_session::{FindAccountFromAuthorIndex, PeriodicSessions};
 use pallet_transaction_payment::{CurrencyAdapter, FeeDetails, RuntimeDispatchInfo};
+use runtime_common::dip::sender::{CompleteMerkleProof, DidMerkleProof, DidMerkleRootGenerator};
 use sp_api::impl_runtime_apis;
 use sp_consensus_aura::SlotDuration;
 use sp_core::{crypto::KeyTypeId, ConstU128, ConstU16, OpaqueMetadata};
@@ -60,7 +62,7 @@ use sp_runtime::{
 	transaction_validity::{TransactionSource, TransactionValidity},
 	ApplyExtrinsicResult, MultiSignature, OpaqueExtrinsic,
 };
-use sp_std::{prelude::*, time::Duration};
+use sp_std::{collections::btree_set::BTreeSet, prelude::*, time::Duration};
 use sp_version::RuntimeVersion;
 
 #[cfg(any(feature = "std", test))]
@@ -523,6 +525,16 @@ impl_runtime_apis! {
 	impl cumulus_primitives_core::CollectCollationInfo<Block> for Runtime {
 		fn collect_collation_info(header: &<Block as BlockT>::Header) -> CollationInfo {
 			ParachainSystem::collect_collation_info(header)
+		}
+	}
+
+	impl kilt_runtime_api_dip_sender::DipSender<Block, DidIdentifier, KeyIdOf<Runtime>, BTreeSet<KeyIdOf<Runtime>>, CompleteMerkleProof<Hash, DidMerkleProof<Runtime>>, ()> for Runtime {
+		fn generate_proof(identifier: DidIdentifier, keys: BTreeSet<KeyIdOf<Runtime>>) -> Result<CompleteMerkleProof<Hash, DidMerkleProof<Runtime>>, ()> {
+			if let Ok(Some((did_details, _))) = <Runtime as pallet_dip_sender::Config>::IdentityProvider::retrieve(&identifier) {
+				DidMerkleRootGenerator::<Runtime>::generate_proof(&did_details, keys.iter())
+			} else {
+				Err(())
+			}
 		}
 	}
 }

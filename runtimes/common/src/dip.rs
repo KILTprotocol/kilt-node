@@ -46,17 +46,17 @@ impl From<DidVerificationKeyRelationship> for KeyRelationship {
 // 	KeyDetails(DidPublicKeyDetails<BlockNumber>),
 // }
 
-#[derive(Clone, Encode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug)]
+#[derive(Clone, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug)]
 pub struct KeyReferenceKey<KeyId>(pub KeyId, pub KeyRelationship);
-#[derive(Clone, Encode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug)]
+#[derive(Clone, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug)]
 pub struct KeyReferenceValue;
 
-#[derive(Clone, Encode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug)]
+#[derive(Clone, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug)]
 pub struct KeyDetailsKey<KeyId>(pub KeyId);
-#[derive(Clone, Encode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug)]
+#[derive(Clone, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug)]
 pub struct KeyDetailsValue<BlockNumber: MaxEncodedLen>(pub DidPublicKeyDetails<BlockNumber>);
 
-#[derive(Clone, Encode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug)]
+#[derive(Clone, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug)]
 pub enum ProofLeaf<KeyId, BlockNumber: MaxEncodedLen> {
 	KeyReference(KeyReferenceKey<KeyId>, KeyReferenceValue),
 	KeyDetails(KeyDetailsKey<KeyId>, KeyDetailsValue<BlockNumber>),
@@ -95,6 +95,12 @@ pub mod sender {
 
 	pub type DidMerkleProof<T> =
 		Proof<Vec<BlindedValue>, ProofLeaf<KeyIdOf<T>, <T as frame_system::Config>::BlockNumber>>;
+
+	#[derive(Encode, Decode, TypeInfo)]
+	pub struct CompleteMerkleProof<Root, Proof> {
+		merkle_root: Root,
+		merkle_proof: Proof,
+	}
 
 	pub struct DidMerkleRootGenerator<T>(PhantomData<T>);
 
@@ -173,7 +179,7 @@ pub mod sender {
 		pub fn generate_proof<'a, K>(
 			identity: &DidDetails<T>,
 			mut key_ids: K,
-		) -> Result<(T::Hash, DidMerkleProof<T>), ()>
+		) -> Result<CompleteMerkleProof<T::Hash, DidMerkleProof<T>>, ()>
 		where
 			K: Iterator<Item = &'a KeyIdOf<T>>,
 		{
@@ -220,13 +226,13 @@ pub mod sender {
 			let encoded_keys: Vec<Vec<u8>> = leaves.iter().map(|l| l.encoded_key()).collect();
 			let proof =
 				generate_trie_proof::<LayoutV1<T::Hashing>, _, _, _>(&db, root, &encoded_keys).map_err(|_| ())?;
-			Ok((
-				root,
-				DidMerkleProof::<T> {
+			Ok(CompleteMerkleProof {
+				merkle_root: root,
+				merkle_proof: DidMerkleProof::<T> {
 					blinded: proof,
 					revealed: leaves.into_iter().collect::<Vec<_>>(),
 				},
-			))
+			})
 		}
 	}
 

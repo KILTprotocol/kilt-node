@@ -71,6 +71,7 @@ dip-sender-runtime-template = {path = "dip-template/runtimes/dip-sender", defaul
 
 # Internal runtime API (with default disabled)
 kilt-runtime-api-did = {path = "runtime-api/did", default-features = false}
+kilt-runtime-api-dip-sender = {path = "runtime-api/dip-sender", default-features = false}
 kilt-runtime-api-public-credentials = {path = "runtime-api/public-credentials", default-features = false}
 kilt-runtime-api-staking = {path = "runtime-api/staking", default-features = false}
 
