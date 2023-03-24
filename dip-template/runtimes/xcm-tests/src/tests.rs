@@ -70,6 +70,6 @@ fn commit_identity() {
 		)));
 		// 2.2 Verify the proof digest is the same that was sent.
 		let details = DipReceiver::identity_proofs(dip_sender_runtime_template::AccountId::from([0u8; 32]));
-		assert_eq!(details, Some([0u8; 32]));
+		assert_eq!(details, Some([0u8; 32].into()));
 	});
 }
