@@ -22,7 +22,7 @@ wee_alloc = { version = "0.4.5", optional = true }
 kilt-utils = {workspace = true, default-features=false }
 
 #parity dependencies
-# sp-io = { workspace = true, features = ["disable_oom", "disable_panic_handler"]}
+sp-io = { workspace = true, features = ["disable_oom", "disable_panic_handler"]}
 sp-runtime.workspace = true
 
 [dev-dependencies]
