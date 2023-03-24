@@ -20,10 +20,10 @@ console_error_panic_hook = { version = "0.1.6", optional = true }
 wee_alloc = { version = "0.4.5", optional = true }
 
 # local support
-kilt-utils.workspace = true
+kilt-utils = {workspace = true, features = ["std"]}
 
 #parity dependencies
-sp-runtime = { workspace = true, default-features = false }
+sp-runtime = { workspace = true, default-features=false, features=["std"] }
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3.13"

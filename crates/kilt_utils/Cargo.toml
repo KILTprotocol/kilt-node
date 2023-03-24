@@ -12,7 +12,15 @@ description = "Utility functions, which are used in the node and in the SDK as w
 
 [dependencies]
 # parity dependencies
-codec = {package = "parity-scale-codec", workspace = true, default-features = false}
-sp-core.workspace = true
-sp-std.workspace = true
+codec = { workspace = true, default-features = false}
+sp-core = { workspace = true, default-features = false}
+sp-std = { workspace = true, default-features = false}
+
+[features]
+default = ["std"]
+std = [
+  "sp-std/std",
+  "sp-core/std",
+  "codec/std"
+]
 
