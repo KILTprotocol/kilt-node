@@ -119,9 +119,10 @@ std = [
 ]
 runtime-benchmarks = [
   "did/runtime-benchmarks",
+  "pallet-dip-sender/runtime-benchmarks",
+  "runtime-common/runtime-benchmarks",
   "frame-system/runtime-benchmarks",
   "frame-support/runtime-benchmarks",
-  "pallet-dip-sender/runtime-benchmarks",
   "pallet-xcm/runtime-benchmarks",
   "xcm-builder/runtime-benchmarks"
 ]

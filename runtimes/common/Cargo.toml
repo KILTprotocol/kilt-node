@@ -65,6 +65,8 @@ fast-gov = []
 runtime-benchmarks = [
   "attestation/runtime-benchmarks",
   "ctype/runtime-benchmarks",
+  "did/runtime-benchmarks",
+  "pallet-dip-receiver/runtime-benchmarks",
   "frame-support/runtime-benchmarks",
   "frame-system/runtime-benchmarks",
   "kilt-support/runtime-benchmarks",
@@ -112,7 +114,6 @@ std = [
 try-runtime = [
   "attestation/try-runtime",
   "delegation",
-  "did/try-runtime",
   "frame-support/try-runtime",
   "frame-system/try-runtime",
   "kilt-support/try-runtime",
