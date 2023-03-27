@@ -10408,10 +10408,12 @@ dependencies = [
 name = "sdk-wasm"
 version = "1.11.0-dev"
 dependencies = [
+ "blake2",
  "console_error_panic_hook",
  "kilt-utils",
  "sp-io",
  "sp-runtime",
+ "sp-std",
  "wasm-bindgen",
  "wasm-bindgen-test",
  "wee_alloc",

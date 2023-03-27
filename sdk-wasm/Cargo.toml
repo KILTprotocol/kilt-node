@@ -13,17 +13,22 @@ crate-type = ["cdylib", "rlib"]
 [features]
 default = ["console_error_panic_hook"]
 
+
 [dependencies]
+# wasm dependencies
 wasm-bindgen = "0.2.63"
 console_error_panic_hook = { version = "0.1.6", optional = true }
 wee_alloc = { version = "0.4.5", optional = true }
 
-# local support
+# local dependencies
 kilt-utils = {workspace = true, default-features=false }
 
+# utility
+blake2 = "0.10.6"
 #parity dependencies
 sp-io = { workspace = true, features = ["disable_oom", "disable_panic_handler"]}
 sp-runtime.workspace = true
+sp-std.workspace = true
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3.13"
