@@ -54,10 +54,10 @@ pub(super) mod sender {
 			},
 		)
 		.unwrap();
-		details.update_attestation_key(att_key, 0u32.into()).unwrap();
-		details.update_delegation_key(del_key, 0u32.into()).unwrap();
+		details.update_attestation_key(att_key, 0u32).unwrap();
+		details.update_delegation_key(del_key, 0u32).unwrap();
 		details
-			.add_key_agreement_key(DidEncryptionKey::X25519([100u8; 32]), 0u32.into())
+			.add_key_agreement_key(DidEncryptionKey::X25519([100u8; 32]), 0u32)
 			.unwrap();
 		details
 	}
