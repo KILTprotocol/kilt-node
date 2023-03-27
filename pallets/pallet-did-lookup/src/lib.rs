@@ -275,11 +275,7 @@ pub mod pallet {
 		#[pallet::call_index(1)]
 		#[pallet::weight(<T as Config>::WeightInfo::associate_sender())]
 		pub fn associate_sender(origin: OriginFor<T>) -> DispatchResult {
-			#[cfg(feature = "std")]
-			println!("AAAAA");
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
-			#[cfg(feature = "std")]
-			println!("BBBBB");
 
 			ensure!(
 				<T::Currency as ReservableCurrency<AccountIdOf<T>>>::can_reserve(
@@ -288,8 +284,6 @@ pub mod pallet {
 				),
 				Error::<T>::InsufficientFunds
 			);
-			#[cfg(feature = "std")]
-			println!("CCCCC");
 
 			Self::add_association(source.sender(), source.subject(), source.sender().into())?;
 			Ok(())

@@ -57,8 +57,8 @@ pub mod pallet {
 		type ProofDigest: Parameter + MaxEncodedLen;
 		type ProofVerifier: IdentityProofVerifier<
 			BlindedValue = Self::BlindedValue,
-			ProofLeaf = Self::ProofLeaf,
 			ProofDigest = Self::ProofDigest,
+			ProofLeaf = Self::ProofLeaf,
 		>;
 		type RuntimeCall: Parameter + Dispatchable<RuntimeOrigin = <Self as Config>::RuntimeOrigin>;
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
