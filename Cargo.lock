@@ -411,7 +411,6 @@ dependencies = [
  "sp-keystore",
  "sp-runtime",
  "sp-std",
- "substrate-wasm-builder",
 ]
 
 [[package]]
@@ -1373,7 +1372,6 @@ dependencies = [
  "sp-keystore",
  "sp-runtime",
  "sp-std",
- "substrate-wasm-builder",
 ]
 
 [[package]]
@@ -2026,7 +2024,6 @@ dependencies = [
  "sp-keystore",
  "sp-runtime",
  "sp-std",
- "substrate-wasm-builder",
 ]
 
 [[package]]
@@ -2153,7 +2150,6 @@ dependencies = [
  "sp-keystore",
  "sp-runtime",
  "sp-std",
- "substrate-wasm-builder",
 ]
 
 [[package]]
@@ -3902,7 +3898,6 @@ dependencies = [
  "cumulus-relay-chain-inprocess-interface",
  "cumulus-relay-chain-interface",
  "cumulus-relay-chain-minimal-node",
- "cumulus-relay-chain-rpc-interface",
  "frame-benchmarking",
  "frame-benchmarking-cli",
  "hex-literal",
@@ -3934,7 +3929,6 @@ dependencies = [
  "sp-api",
  "sp-block-builder",
  "sp-blockchain",
- "sp-consensus",
  "sp-consensus-aura",
  "sp-core",
  "sp-io",
@@ -4862,7 +4856,6 @@ dependencies = [
  "sp-api",
  "sp-block-builder",
  "sp-blockchain",
- "sp-consensus",
  "sp-consensus-aura",
  "sp-core",
  "sp-finality-grandpa",
