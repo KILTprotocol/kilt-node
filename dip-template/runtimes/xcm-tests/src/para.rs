@@ -22,8 +22,9 @@ use sp_io::TestExternalities;
 use xcm_emulator::decl_test_parachain;
 
 pub(super) mod sender {
-	use did::did_details::DidDetails;
 	pub(crate) use dip_sender_runtime_template::{DidIdentifier, DmpQueue, Runtime, RuntimeOrigin, XcmpQueue};
+
+	use did::did_details::DidDetails;
 	use sp_core::{ed25519, Pair};
 
 	use super::*;

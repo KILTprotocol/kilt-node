@@ -34,18 +34,6 @@ impl From<DidVerificationKeyRelationship> for KeyRelationship {
 	}
 }
 
-// #[derive(Clone, RuntimeDebug, Encode, Decode, PartialEq, Eq, TypeInfo,
-// PartialOrd, Ord)] pub enum LeafKey<KeyId> {
-// 	KeyReference(KeyId, KeyRelationship),
-// 	KeyDetails(KeyId),
-// }
-
-// #[derive(Clone, RuntimeDebug, Encode, Decode, PartialEq, Eq, TypeInfo)]
-// pub enum LeafValue<BlockNumber: MaxEncodedLen> {
-// 	KeyReference,
-// 	KeyDetails(DidPublicKeyDetails<BlockNumber>),
-// }
-
 #[derive(Clone, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo)]
 pub struct KeyReferenceKey<KeyId>(pub KeyId, pub KeyRelationship);
 #[derive(Clone, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo)]
@@ -217,9 +205,10 @@ pub mod sender {
 							KeyReferenceValue,
 						));
 					};
-					let key_leaf = ProofLeaf::KeyDetails(KeyDetailsKey(*key_id), KeyDetailsValue(key_details.clone()));
-					if !set.contains(&key_leaf) {
-						set.insert(key_leaf);
+					let key_details_leaf =
+						ProofLeaf::KeyDetails(KeyDetailsKey(*key_id), KeyDetailsValue(key_details.clone()));
+					if !set.contains(&key_details_leaf) {
+						set.insert(key_details_leaf);
 					}
 					Ok(set)
 				})?;
@@ -268,7 +257,7 @@ pub mod sender {
 				did::Pallet::<T>::get_deleted_did(identifier),
 			) {
 				(Some(details), _) => Ok(Some((details, ()))),
-				(None, Some(_)) => Ok(None),
+				(_, Some(_)) => Ok(None),
 				_ => Err(()),
 			}
 		}
@@ -283,7 +272,8 @@ pub mod receiver {
 	use sp_std::{collections::btree_map::BTreeMap, vec::Vec};
 	use sp_trie::LayoutV1;
 
-	// TODO: Avoid repetition of the same key if it appears multiple times.
+	// TODO: Avoid repetition of the same key if it appears multiple times, e.g., by
+	// having a vector of `KeyRelationship` instead.
 	#[derive(RuntimeDebug, PartialEq, Eq)]
 	pub struct ProofEntry<BlockNumber: MaxEncodedLen> {
 		pub key: DidPublicKeyDetails<BlockNumber>,
@@ -310,7 +300,7 @@ pub mod receiver {
 		BlockNumber: MaxEncodedLen + Clone + Ord,
 		Hasher: sp_core::Hasher,
 	{
-		type BlindedValue = Vec<Vec<u8>>;
+		type BlindedValue = Vec<sender::BlindedValue>;
 		// TODO: Proper error handling
 		type Error = ();
 		type ProofDigest = <Hasher as sp_core::Hasher>::Out;
@@ -352,7 +342,9 @@ pub mod receiver {
 					}
 				})
 				.collect();
-			// Create a list of the revealed keys
+			// Create a list of the revealed keys by consuming the provided key reference
+			// leaves, and looking up the full details from the just-built `public_keys`
+			// map.
 			let keys: Vec<ProofEntry<BlockNumber>> = proof
 				.revealed
 				.into_iter()
@@ -379,12 +371,12 @@ pub mod receiver {
 
 #[cfg(test)]
 mod test {
+	use super::*;
+
 	use crate::dip::{
 		receiver::DidMerkleProofVerifier,
 		sender::{CompleteMerkleProof, DidMerkleRootGenerator},
 	};
-
-	use super::*;
 
 	use did::{
 		did_details::{DidCreationDetails, DidEncryptionKey},

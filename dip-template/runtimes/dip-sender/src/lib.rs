@@ -529,6 +529,7 @@ impl_runtime_apis! {
 	}
 
 	// TODO: `keys` could and should be a BTreeSet, but it makes it more complicated for clients to build the type. So we use a Vec, since the keys are deduplicated anyway at proof creation time.
+	// TODO: Support generating different versions of the proof, based on the provided parameter
 	impl kilt_runtime_api_dip_sender::DipSender<Block, DidIdentifier, KeyIdOf<Runtime>, Vec<KeyIdOf<Runtime>>, CompleteMerkleProof<Hash, DidMerkleProof<Runtime>>, ()> for Runtime {
 		fn generate_proof(identifier: DidIdentifier, keys: Vec<KeyIdOf<Runtime>>) -> Result<CompleteMerkleProof<Hash, DidMerkleProof<Runtime>>, ()> {
 			if let Ok(Some((did_details, _))) = <Runtime as pallet_dip_sender::Config>::IdentityProvider::retrieve(&identifier) {
