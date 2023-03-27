@@ -62,7 +62,7 @@ use sp_runtime::{
 	transaction_validity::{TransactionSource, TransactionValidity},
 	AccountId32, ApplyExtrinsicResult, MultiSignature, OpaqueExtrinsic,
 };
-use sp_std::{collections::btree_set::BTreeSet, prelude::*, time::Duration};
+use sp_std::{prelude::*, time::Duration};
 use sp_version::RuntimeVersion;
 
 #[cfg(any(feature = "std", test))]
@@ -528,8 +528,9 @@ impl_runtime_apis! {
 		}
 	}
 
-	impl kilt_runtime_api_dip_sender::DipSender<Block, DidIdentifier, KeyIdOf<Runtime>, BTreeSet<KeyIdOf<Runtime>>, CompleteMerkleProof<Hash, DidMerkleProof<Runtime>>, ()> for Runtime {
-		fn generate_proof(identifier: DidIdentifier, keys: BTreeSet<KeyIdOf<Runtime>>) -> Result<CompleteMerkleProof<Hash, DidMerkleProof<Runtime>>, ()> {
+	// TODO: `keys` could and should be a BTreeSet, but it makes it more complicated for clients to build the type. So we use a Vec, since the keys are deduplicated anyway at proof creation time.
+	impl kilt_runtime_api_dip_sender::DipSender<Block, DidIdentifier, KeyIdOf<Runtime>, Vec<KeyIdOf<Runtime>>, CompleteMerkleProof<Hash, DidMerkleProof<Runtime>>, ()> for Runtime {
+		fn generate_proof(identifier: DidIdentifier, keys: Vec<KeyIdOf<Runtime>>) -> Result<CompleteMerkleProof<Hash, DidMerkleProof<Runtime>>, ()> {
 			if let Ok(Some((did_details, _))) = <Runtime as pallet_dip_sender::Config>::IdentityProvider::retrieve(&identifier) {
 				DidMerkleRootGenerator::<Runtime>::generate_proof(&did_details, keys.iter())
 			} else {
