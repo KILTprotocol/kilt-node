@@ -46,7 +46,12 @@ pub struct KeyDetailsValue<BlockNumber: MaxEncodedLen>(pub DidPublicKeyDetails<B
 
 #[derive(Clone, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo)]
 pub enum ProofLeaf<KeyId, BlockNumber: MaxEncodedLen> {
+	// The key and value for the leaves of a merkle proof that contain a reference
+	// (by ID) to the key details, provided in a separate leaf.
 	KeyReference(KeyReferenceKey<KeyId>, KeyReferenceValue),
+	// The key and value for the leaves of a merkle proof that contain the actual
+	// details of a DID public key. The key is the ID of the key, and the value is its details, including creation
+	// block number.
 	KeyDetails(KeyDetailsKey<KeyId>, KeyDetailsValue<BlockNumber>),
 }
 
@@ -96,6 +101,17 @@ pub mod sender {
 	where
 		T: did::Config,
 	{
+		// Calls the function in the `sp_trie` crate to generate the merkle root given
+		// the provided `DidDetails`.
+		// Each key in the merkle tree is added in the following way:
+		// - keys in the `public_keys` map are added by value in the merkle tree, with
+		//   the leaf key being the key ID and the value being the key details
+		// - keys everywhere else in the DidDetails are added by reference, with the
+		//   leaf key being the encoding of the tuple (keyID, key relationship) and the
+		//   value being hte empty tuple
+		// A valid proof will contain a leaf with the key details for each reference
+		// leaf, with multiple reference leaves potentially referring to the same
+		// details leaf, as we already do with out `DidDetails` type.
 		fn calculate_root_with_db(identity: &DidDetails<T>, db: &mut MemoryDB<T::Hashing>) -> Result<T::Hash, ()> {
 			use sp_trie::{TrieDBMutBuilder, TrieHash, TrieMut};
 
@@ -113,7 +129,7 @@ pub mod sender {
 			trie_builder
 				.insert(auth_leaf.encoded_key().as_slice(), auth_leaf.encoded_value().as_slice())
 				.map_err(|_| ())?;
-			// Attestation key
+			// Attestation key, if present
 			if let Some(att_key_id) = identity.attestation_key {
 				let att_leaf = ProofLeaf::<_, T::BlockNumber>::KeyReference(
 					KeyReferenceKey(att_key_id, DidVerificationKeyRelationship::AssertionMethod.into()),
@@ -123,7 +139,7 @@ pub mod sender {
 					.insert(att_leaf.encoded_key().as_slice(), att_leaf.encoded_value().as_slice())
 					.map_err(|_| ())?;
 			};
-			// Delegation key
+			// Delegation key, if present
 			if let Some(del_key_id) = identity.delegation_key {
 				let del_leaf = ProofLeaf::<_, T::BlockNumber>::KeyReference(
 					KeyReferenceKey(del_key_id, DidVerificationKeyRelationship::CapabilityDelegation.into()),
@@ -163,6 +179,10 @@ pub mod sender {
 		}
 
 		// TODO: Better error handling
+		// Only used for testing and as part of the features exposed by the runtime API
+		// of the provider. Given the provided `DidDetails` and a list of key IDs, it
+		// generates a merkle proof which only reveals the details of the provided key
+		// IDs.
 		#[allow(clippy::result_unit_err)]
 		pub fn generate_proof<'a, K>(
 			identity: &DidDetails<T>,
@@ -181,6 +201,7 @@ pub mod sender {
 			let leaves: BTreeSet<ProofLeaf<KeyIdOf<T>, T::BlockNumber>> =
 				key_ids.try_fold(BTreeSet::new(), |mut set, key_id| -> Result<_, ()> {
 					let key_details = identity.public_keys.get(key_id).ok_or(())?;
+					// Adds a key reference leaf for each relationship the key ID is part of.
 					if *key_id == identity.authentication_key {
 						set.insert(ProofLeaf::KeyReference(
 							KeyReferenceKey(*key_id, DidVerificationKeyRelationship::Authentication.into()),
@@ -205,6 +226,9 @@ pub mod sender {
 							KeyReferenceValue,
 						));
 					};
+					// Then adds the actual key details to the merkle proof.
+					// If the same key is specified twice, the old key is simply replaced with a new
+					// key of the same value.
 					let key_details_leaf =
 						ProofLeaf::KeyDetails(KeyDetailsKey(*key_id), KeyDetailsValue(key_details.clone()));
 					if !set.contains(&key_details_leaf) {
@@ -280,6 +304,8 @@ pub mod receiver {
 		pub relationship: KeyRelationship,
 	}
 
+	// Contains the list of revealed public keys after a given merkle proof has been
+	// correctly verified.
 	#[derive(RuntimeDebug, PartialEq, Eq)]
 	pub struct VerificationResult<BlockNumber: MaxEncodedLen>(pub Vec<ProofEntry<BlockNumber>>);
 
