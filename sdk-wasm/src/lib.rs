@@ -1,5 +1,5 @@
 mod utils;
-
+include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 use kilt_utils::calculate_key_id;
 use sp_runtime::traits::BlakeTwo256;
 use wasm_bindgen::prelude::*;
@@ -8,10 +8,10 @@ use wasm_bindgen::prelude::*;
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
-#[wasm_bindgen]
-pub fn init() {
-	std::panic::set_hook(Box::new(console_error_panic_hook::hook));
-}
+// #[wasm_bindgen]
+// pub fn init() {
+// 	std::panic::set_hook(Box::new(console_error_panic_hook::hook));
+// }
 
 #[wasm_bindgen]
 extern "C" {

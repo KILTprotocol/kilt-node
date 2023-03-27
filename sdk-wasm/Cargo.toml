@@ -13,6 +13,9 @@ crate-type = ["cdylib", "rlib"]
 [features]
 default = ["console_error_panic_hook"]
 
+[build-dependencies]
+substrate-wasm-builder.workspace = true
+
 
 [dependencies]
 # wasm dependencies
@@ -23,8 +26,6 @@ wee_alloc = { version = "0.4.5", optional = true }
 # local dependencies
 kilt-utils = {workspace = true, default-features=false }
 
-# utility
-blake2 = "0.10.6"
 #parity dependencies
 sp-io = { workspace = true, features = ["disable_oom", "disable_panic_handler"]}
 sp-runtime.workspace = true
