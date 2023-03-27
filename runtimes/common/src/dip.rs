@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use codec::{Decode, Encode, MaxEncodedLen};
+use codec::{Decode, Encode};
 use did::{did_details::DidPublicKeyDetails, DidVerificationKeyRelationship};
 use frame_support::RuntimeDebug;
 use scale_info::TypeInfo;
@@ -42,10 +42,10 @@ pub struct KeyReferenceValue;
 #[derive(Clone, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo)]
 pub struct KeyDetailsKey<KeyId>(pub KeyId);
 #[derive(Clone, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo)]
-pub struct KeyDetailsValue<BlockNumber: MaxEncodedLen>(pub DidPublicKeyDetails<BlockNumber>);
+pub struct KeyDetailsValue<BlockNumber>(pub DidPublicKeyDetails<BlockNumber>);
 
 #[derive(Clone, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo)]
-pub enum ProofLeaf<KeyId, BlockNumber: MaxEncodedLen> {
+pub enum ProofLeaf<KeyId, BlockNumber> {
 	// The key and value for the leaves of a merkle proof that contain a reference
 	// (by ID) to the key details, provided in a separate leaf.
 	KeyReference(KeyReferenceKey<KeyId>, KeyReferenceValue),
@@ -58,7 +58,7 @@ pub enum ProofLeaf<KeyId, BlockNumber: MaxEncodedLen> {
 impl<KeyId, BlockNumber> ProofLeaf<KeyId, BlockNumber>
 where
 	KeyId: Encode,
-	BlockNumber: MaxEncodedLen + Encode,
+	BlockNumber: Encode,
 {
 	pub(crate) fn encoded_key(&self) -> Vec<u8> {
 		match self {
@@ -299,7 +299,7 @@ pub mod receiver {
 	// TODO: Avoid repetition of the same key if it appears multiple times, e.g., by
 	// having a vector of `KeyRelationship` instead.
 	#[derive(RuntimeDebug, PartialEq, Eq)]
-	pub struct ProofEntry<BlockNumber: MaxEncodedLen> {
+	pub struct ProofEntry<BlockNumber> {
 		pub key: DidPublicKeyDetails<BlockNumber>,
 		pub relationship: KeyRelationship,
 	}
@@ -307,12 +307,9 @@ pub mod receiver {
 	// Contains the list of revealed public keys after a given merkle proof has been
 	// correctly verified.
 	#[derive(RuntimeDebug, PartialEq, Eq)]
-	pub struct VerificationResult<BlockNumber: MaxEncodedLen>(pub Vec<ProofEntry<BlockNumber>>);
+	pub struct VerificationResult<BlockNumber>(pub Vec<ProofEntry<BlockNumber>>);
 
-	impl<BlockNumber> From<Vec<ProofEntry<BlockNumber>>> for VerificationResult<BlockNumber>
-	where
-		BlockNumber: MaxEncodedLen,
-	{
+	impl<BlockNumber> From<Vec<ProofEntry<BlockNumber>>> for VerificationResult<BlockNumber> {
 		fn from(value: Vec<ProofEntry<BlockNumber>>) -> Self {
 			Self(value)
 		}
@@ -322,8 +319,8 @@ pub mod receiver {
 
 	impl<KeyId, BlockNumber, Hasher> IdentityProofVerifier for DidMerkleProofVerifier<KeyId, BlockNumber, Hasher>
 	where
-		KeyId: MaxEncodedLen + Clone + Ord,
-		BlockNumber: MaxEncodedLen + Clone + Ord,
+		KeyId: Encode + Clone + Ord,
+		BlockNumber: Encode + Clone + Ord,
 		Hasher: sp_core::Hasher,
 	{
 		type BlindedValue = Vec<sender::BlindedValue>;
