@@ -16,3 +16,8 @@
 pallets/did/src/custom_types.json
 
 **/__pycache__
+
+
+node_modules
+
+.bin

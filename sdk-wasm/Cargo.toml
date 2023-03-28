@@ -13,9 +13,8 @@ crate-type = ["cdylib", "rlib"]
 [features]
 default = ["console_error_panic_hook"]
 
-[build-dependencies]
-substrate-wasm-builder.workspace = true
 
+[build-dependencies]
 
 [dependencies]
 # wasm dependencies
@@ -27,9 +26,12 @@ wee_alloc = { version = "0.4.5", optional = true }
 kilt-utils = {workspace = true, default-features=false }
 
 #parity dependencies
-sp-io = { workspace = true, features = ["disable_oom", "disable_panic_handler"]}
+sp-io = { workspace = true, default-features=false, features = ["disable_oom", "disable_panic_handler"] }
+sp-application-crypto = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.38", features = ["full_crypto"]}
 sp-runtime.workspace = true
-sp-std.workspace = true
+sp-std = { workspace = true }
+sp-core = { workspace = true, features = ["full_crypto"] }
+
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3.13"

@@ -1,8 +1,9 @@
 mod utils;
-include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
-use kilt_utils::calculate_key_id;
-use sp_runtime::traits::BlakeTwo256;
+ 
+use sp_core::blake2_128;
 use wasm_bindgen::prelude::*;
+use sp_core::Blake2Hasher;
+use kilt_utils::calculate_key_id;
 
 #[cfg(feature = "wee_alloc")]
 #[global_allocator]
@@ -20,5 +21,7 @@ extern "C" {
 
 #[wasm_bindgen]
 pub fn calculate_key(key: &str) -> Vec<u8> {
-	calculate_key_id::<BlakeTwo256, &str>(&key).to_fixed_bytes().to_vec()
+	let a = calculate_key_id::<Blake2Hasher, &str>(&key);
+	alert(&a.0[0].to_string());
+	blake2_128(&[1,2,3,4]).to_vec()
 }
