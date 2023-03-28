@@ -81,8 +81,8 @@ pub mod sender {
 	use did::{did_details::DidDetails, KeyIdOf};
 	use dip_support::latest::Proof;
 	use pallet_dip_sender::traits::{IdentityProofGenerator, IdentityProvider};
-	use sp_std::borrow::ToOwned;
-	use sp_trie::{LayoutV1, MemoryDB};
+	use sp_std::{borrow::ToOwned, collections::btree_set::BTreeSet};
+	use sp_trie::{generate_trie_proof, LayoutV1, MemoryDB, TrieDBMutBuilder, TrieHash, TrieMut};
 
 	pub type BlindedValue = Vec<u8>;
 
@@ -113,8 +113,6 @@ pub mod sender {
 		// leaf, with multiple reference leaves potentially referring to the same
 		// details leaf, as we already do with out `DidDetails` type.
 		fn calculate_root_with_db(identity: &DidDetails<T>, db: &mut MemoryDB<T::Hashing>) -> Result<T::Hash, ()> {
-			use sp_trie::{TrieDBMutBuilder, TrieHash, TrieMut};
-
 			let mut trie = TrieHash::<LayoutV1<T::Hashing>>::default();
 			let mut trie_builder = TrieDBMutBuilder::<LayoutV1<T::Hashing>>::new(db, &mut trie).build();
 
@@ -191,9 +189,6 @@ pub mod sender {
 		where
 			K: Iterator<Item = &'a KeyIdOf<T>>,
 		{
-			use sp_std::collections::btree_set::BTreeSet;
-			use sp_trie::generate_trie_proof;
-
 			let mut db = MemoryDB::default();
 			let root = Self::calculate_root_with_db(identity, &mut db)?;
 
@@ -291,10 +286,10 @@ pub mod sender {
 pub mod receiver {
 	use super::*;
 
-	use dip_support::VersionedIdentityProof;
+	use dip_support::{v1, VersionedIdentityProof};
 	use pallet_dip_receiver::traits::IdentityProofVerifier;
 	use sp_std::{collections::btree_map::BTreeMap, vec::Vec};
-	use sp_trie::LayoutV1;
+	use sp_trie::{verify_trie_proof, LayoutV1};
 
 	// TODO: Avoid repetition of the same key if it appears multiple times, e.g., by
 	// having a vector of `KeyRelationship` instead.
@@ -334,9 +329,6 @@ pub mod receiver {
 			proof: VersionedIdentityProof<Self::BlindedValue, Self::ProofLeaf>,
 			digest: Self::ProofDigest,
 		) -> Result<Self::VerificationResult, Self::Error> {
-			use dip_support::v1;
-			use sp_trie::verify_trie_proof;
-
 			let proof: v1::Proof<_, _> = proof.try_into()?;
 			// TODO: more efficient by removing cloning and/or collecting.
 			// Did not find another way of mapping a Vec<(Vec<u8>, Vec<u8>)> to a

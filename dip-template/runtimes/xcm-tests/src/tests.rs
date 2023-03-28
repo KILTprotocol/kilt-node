@@ -32,8 +32,10 @@ use xcm::latest::{
 };
 use xcm_emulator::TestExt;
 
+use cumulus_pallet_xcmp_queue::Event as XcmpEvent;
 use dip_receiver_runtime_template::{
 	DidIdentifier, DidLookup, DipReceiver, Runtime as ReceiverRuntime, RuntimeCall as ReceiverRuntimeCall,
+	RuntimeEvent, System,
 };
 use dip_sender_runtime_template::{AccountId as SenderAccountId, DipSender, Runtime as SenderRuntime};
 
@@ -55,9 +57,6 @@ fn commit_identity() {
 	});
 	// 2. Verify that the proof has made it to the DIP receiver.
 	ReceiverParachain::execute_with(|| {
-		use cumulus_pallet_xcmp_queue::Event as XcmpEvent;
-		use dip_receiver_runtime_template::{RuntimeEvent, System};
-
 		// 2.1 Verify that there was no XCM error.
 		assert!(!System::events().iter().any(|r| matches!(
 			r.event,
