@@ -24,8 +24,10 @@ use xcm_emulator::decl_test_parachain;
 pub(super) mod sender {
 	pub(crate) use dip_sender_runtime_template::{DidIdentifier, DmpQueue, Runtime, RuntimeOrigin, XcmpQueue};
 
-	use did::did_details::DidDetails;
-	use sp_core::{ed25519, Pair};
+	use did::did_details::{DidDetails, DidEncryptionKey, DidVerificationKey};
+	use dip_sender_runtime_template::{AccountId, System};
+	use kilt_support::deposit::Deposit;
+	use sp_core::{ecdsa, ed25519, sr25519, Pair};
 
 	use super::*;
 
@@ -36,11 +38,6 @@ pub(super) mod sender {
 	}
 
 	fn generate_did_details() -> DidDetails<Runtime> {
-		use did::did_details::{DidEncryptionKey, DidVerificationKey};
-		use dip_sender_runtime_template::AccountId;
-		use kilt_support::deposit::Deposit;
-		use sp_core::{ecdsa, sr25519};
-
 		let auth_key: DidVerificationKey = did_auth_key().public().into();
 		let att_key: DidVerificationKey = sr25519::Pair::from_seed(&[100u8; 32]).public().into();
 		let del_key: DidVerificationKey = ecdsa::Pair::from_seed(&[101u8; 32]).public().into();
@@ -63,8 +60,6 @@ pub(super) mod sender {
 	}
 
 	pub(crate) fn para_ext() -> TestExternalities {
-		use dip_sender_runtime_template::System;
-
 		let mut t = frame_system::GenesisConfig::default()
 			.build_storage::<Runtime>()
 			.unwrap();
@@ -102,6 +97,7 @@ pub(super) mod receiver {
 		AccountId, AssetTransactorLocationConverter, Balance, DmpQueue, Runtime, RuntimeOrigin, XcmpQueue, UNIT,
 	};
 
+	use dip_receiver_runtime_template::System;
 	use xcm::latest::{Junction::Parachain, Junctions::X1, ParentThen};
 	use xcm_executor::traits::Convert;
 
@@ -117,8 +113,6 @@ pub(super) mod receiver {
 	}
 
 	pub(crate) fn para_ext() -> TestExternalities {
-		use dip_receiver_runtime_template::System;
-
 		let mut t = frame_system::GenesisConfig::default()
 			.build_storage::<Runtime>()
 			.unwrap();
