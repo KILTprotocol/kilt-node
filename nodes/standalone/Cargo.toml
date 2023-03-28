@@ -85,5 +85,5 @@ try-runtime = [
   "pallet-transaction-payment/try-runtime",
   "runtime-common/try-runtime",
   "try-runtime-cli",
-  "try-runtime-cli/try-runtime"
+  "try-runtime-cli/try-runtime",
 ]
