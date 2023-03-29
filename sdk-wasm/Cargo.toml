@@ -1,11 +1,11 @@
 [package]
-version.workspace = true
 authors.workspace = true
-edition.workspace = true
-documentation.workspace = true
-repository.workspace = true
-name = "sdk-wasm"
 description = "Wasm wrapper for kilt-utils."
+documentation.workspace = true
+edition.workspace = true
+name = "sdk-wasm"
+repository.workspace = true
+version.workspace = true
 
 [lib]
 crate-type = ["cdylib", "rlib"]
@@ -13,25 +13,24 @@ crate-type = ["cdylib", "rlib"]
 [features]
 default = ["console_error_panic_hook"]
 
-
 [build-dependencies]
 
 [dependencies]
 # wasm dependencies
+console_error_panic_hook = {version = "0.1.6", optional = true}
 wasm-bindgen = "0.2.63"
-console_error_panic_hook = { version = "0.1.6", optional = true }
-wee_alloc = { version = "0.4.5", optional = true }
+wee_alloc = {version = "0.4.5", optional = true}
 
 # local dependencies
-kilt-utils = {workspace = true, default-features=false }
+kilt-utils = {workspace = true, default-features = false}
 
 #parity dependencies
-sp-io = { workspace = true, default-features=false, features = ["disable_oom", "disable_panic_handler"] }
-sp-application-crypto = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.38", features = ["full_crypto"]}
-sp-runtime.workspace = true
-sp-std = { workspace = true }
-sp-core = { workspace = true, features = ["full_crypto"] }
+sp-core.workspace = true
+sp-core-hashing = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.38"}
+sp-io = {workspace = true, features = ["disable_oom", "disable_panic_handler"]}
 
+#utils 
+hash256-std-hasher = { version = "0.15.2", default-features = false }
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3.13"
