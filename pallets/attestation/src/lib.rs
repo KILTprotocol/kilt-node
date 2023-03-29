@@ -1,5 +1,5 @@
 // KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2022 BOTLabs GmbH
+// Copyright (C) 2019-2023 BOTLabs GmbH
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -51,18 +51,6 @@
 //!   attester. This could be an employe of a company which is authorized to
 //!   sign documents for their superiors.
 //!
-//! ## Interface
-//!
-//! ### Dispatchable Functions
-//! - `add` - Create a new attestation for a given claim which is based on a
-//!   CType. The attester can optionally provide a reference to an existing
-//!   delegation that will be saved along with the attestation itself in the
-//!   form of an attested delegation.
-//! - `revoke` - Revoke an existing attestation for a given claim. The revoker
-//!   must be either the creator of the attestation being revoked or an entity
-//!   that in the delegation tree is an ancestor of the attester, i.e., it was
-//!   either the delegator of the attester or an ancestor thereof.
-//!
 //! ## Assumptions
 //!
 //! - The claim which shall be attested is based on a CType and signed by the
@@ -99,10 +87,12 @@ pub mod pallet {
 		traits::{Currency, Get, ReservableCurrency, StorageVersion},
 	};
 	use frame_system::pallet_prelude::*;
-	use sp_runtime::DispatchError;
 
 	use ctype::CtypeHashOf;
-	use kilt_support::{deposit::Deposit, traits::CallSources};
+	use kilt_support::{
+		deposit::Deposit,
+		traits::{CallSources, StorageDepositCollector},
+	};
 
 	/// The current storage version.
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
@@ -125,11 +115,11 @@ pub mod pallet {
 	#[pallet::config]
 	pub trait Config: frame_system::Config + ctype::Config {
 		type EnsureOrigin: EnsureOrigin<
+			<Self as frame_system::Config>::RuntimeOrigin,
 			Success = <Self as Config>::OriginSuccess,
-			<Self as frame_system::Config>::Origin,
 		>;
 		type OriginSuccess: CallSources<AccountIdOf<Self>, AttesterOf<Self>>;
-		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 		type WeightInfo: WeightInfo;
 
 		/// The currency that is used to reserve funds for each attestation.
@@ -205,12 +195,12 @@ pub mod pallet {
 		/// The attestation has already been revoked.
 		AlreadyRevoked,
 		/// No attestation on chain matching the claim hash.
-		AttestationNotFound,
+		NotFound,
 		/// The attestation CType does not match the CType specified in the
 		/// delegation hierarchy root.
 		CTypeMismatch,
 		/// The call origin is not authorized to change the attestation.
-		Unauthorized,
+		NotAuthorized,
 		/// The maximum number of delegated attestations has already been
 		/// reached for the corresponding delegation id such that another one
 		/// cannot be added.
@@ -240,9 +230,10 @@ pub mod pallet {
 		///   DelegatedAttestations
 		/// - Writes: Attestations, (DelegatedAttestations)
 		/// # </weight>
+		#[pallet::call_index(0)]
 		#[pallet::weight(
 			<T as pallet::Config>::WeightInfo::add()
-			.saturating_add(authorization.as_ref().map(|ac| ac.can_attest_weight()).unwrap_or(0))
+			.saturating_add(authorization.as_ref().map(|ac| ac.can_attest_weight()).unwrap_or(Weight::zero()))
 		)]
 		pub fn add(
 			origin: OriginFor<T>,
@@ -256,11 +247,11 @@ pub mod pallet {
 			let deposit_amount = <T as Config>::Deposit::get();
 
 			ensure!(
-				<ctype::Ctypes<T>>::contains_key(&ctype_hash),
-				ctype::Error::<T>::CTypeNotFound
+				ctype::Ctypes::<T>::contains_key(ctype_hash),
+				ctype::Error::<T>::NotFound
 			);
 			ensure!(
-				!<Attestations<T>>::contains_key(&claim_hash),
+				!Attestations::<T>::contains_key(claim_hash),
 				Error::<T>::AlreadyAttested
 			);
 
@@ -271,14 +262,14 @@ pub mod pallet {
 				.transpose()?;
 			let authorization_id = authorization.as_ref().map(|ac| ac.authorization_id());
 
-			let deposit = Pallet::<T>::reserve_deposit(payer, deposit_amount)?;
+			let deposit = kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(payer, deposit_amount)?;
 
 			// *** No Fail beyond this point ***
 
 			log::debug!("insert Attestation");
 
 			Attestations::<T>::insert(
-				&claim_hash,
+				claim_hash,
 				AttestationDetails {
 					ctype_hash,
 					attester: who.clone(),
@@ -313,9 +304,10 @@ pub mod pallet {
 		/// - Reads per delegation step P: delegation::Delegations
 		/// - Writes: Attestations, DelegatedAttestations
 		/// # </weight>
+		#[pallet::call_index(1)]
 		#[pallet::weight(
 			<T as pallet::Config>::WeightInfo::revoke()
-			.saturating_add(authorization.as_ref().map(|ac| ac.can_revoke_weight()).unwrap_or(0))
+			.saturating_add(authorization.as_ref().map(|ac| ac.can_revoke_weight()).unwrap_or(Weight::zero()))
 		)]
 		pub fn revoke(
 			origin: OriginFor<T>,
@@ -325,13 +317,13 @@ pub mod pallet {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 			let who = source.subject();
 
-			let attestation = <Attestations<T>>::get(&claim_hash).ok_or(Error::<T>::AttestationNotFound)?;
+			let attestation = Attestations::<T>::get(claim_hash).ok_or(Error::<T>::NotFound)?;
 
 			ensure!(!attestation.revoked, Error::<T>::AlreadyRevoked);
 
 			if attestation.attester != who {
-				let attestation_auth_id = attestation.authorization_id.as_ref().ok_or(Error::<T>::Unauthorized)?;
-				authorization.ok_or(Error::<T>::Unauthorized)?.can_revoke(
+				let attestation_auth_id = attestation.authorization_id.as_ref().ok_or(Error::<T>::NotAuthorized)?;
+				authorization.ok_or(Error::<T>::NotAuthorized)?.can_revoke(
 					&who,
 					&attestation.ctype_hash,
 					&claim_hash,
@@ -343,7 +335,7 @@ pub mod pallet {
 
 			log::debug!("revoking Attestation");
 			Attestations::<T>::insert(
-				&claim_hash,
+				claim_hash,
 				AttestationDetails {
 					revoked: true,
 					..attestation
@@ -372,9 +364,10 @@ pub mod pallet {
 		/// - Reads per delegation step P: delegation::Delegations
 		/// - Writes: Attestations, DelegatedAttestations
 		/// # </weight>
+		#[pallet::call_index(2)]
 		#[pallet::weight(
 			<T as pallet::Config>::WeightInfo::remove()
-			.saturating_add(authorization.as_ref().map(|ac| ac.can_remove_weight()).unwrap_or(0))
+			.saturating_add(authorization.as_ref().map(|ac| ac.can_remove_weight()).unwrap_or(Weight::zero()))
 		)]
 		pub fn remove(
 			origin: OriginFor<T>,
@@ -384,11 +377,11 @@ pub mod pallet {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 			let who = source.subject();
 
-			let attestation = Attestations::<T>::get(&claim_hash).ok_or(Error::<T>::AttestationNotFound)?;
+			let attestation = Attestations::<T>::get(claim_hash).ok_or(Error::<T>::NotFound)?;
 
 			if attestation.attester != who {
-				let attestation_auth_id = attestation.authorization_id.as_ref().ok_or(Error::<T>::Unauthorized)?;
-				authorization.ok_or(Error::<T>::Unauthorized)?.can_remove(
+				let attestation_auth_id = attestation.authorization_id.as_ref().ok_or(Error::<T>::NotAuthorized)?;
+				authorization.ok_or(Error::<T>::NotAuthorized)?.can_remove(
 					&who,
 					&attestation.ctype_hash,
 					&claim_hash,
@@ -415,12 +408,13 @@ pub mod pallet {
 		/// - Reads: [Origin Account], Attestations, DelegatedAttestations
 		/// - Writes: Attestations, DelegatedAttestations
 		/// # </weight>
+		#[pallet::call_index(3)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::reclaim_deposit())]
 		pub fn reclaim_deposit(origin: OriginFor<T>, claim_hash: ClaimHashOf<T>) -> DispatchResult {
 			let who = ensure_signed(origin)?;
-			let attestation = Attestations::<T>::get(&claim_hash).ok_or(Error::<T>::AttestationNotFound)?;
+			let attestation = Attestations::<T>::get(claim_hash).ok_or(Error::<T>::NotFound)?;
 
-			ensure!(attestation.deposit.owner == who, Error::<T>::Unauthorized);
+			ensure!(attestation.deposit.owner == who, Error::<T>::NotAuthorized);
 
 			// *** No Fail beyond this point ***
 
@@ -431,30 +425,79 @@ pub mod pallet {
 
 			Ok(())
 		}
+
+		/// Changes the deposit owner.
+		///
+		/// The balance that is reserved by the current deposit owner will be
+		/// freed and balance of the new deposit owner will get reserved.
+		///
+		/// The subject of the call must be the attester who issues the
+		/// attestation. The sender of the call will be the new deposit owner.
+		#[pallet::call_index(4)]
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::change_deposit_owner())]
+		pub fn change_deposit_owner(origin: OriginFor<T>, claim_hash: ClaimHashOf<T>) -> DispatchResult {
+			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
+			let subject = source.subject();
+			let sender = source.sender();
+
+			let attestation = Attestations::<T>::get(claim_hash).ok_or(Error::<T>::NotFound)?;
+			ensure!(attestation.attester == subject, Error::<T>::NotAuthorized);
+
+			AttestationStorageDepositCollector::<T>::change_deposit_owner(&claim_hash, sender)?;
+
+			Ok(())
+		}
+
+		/// Updates the deposit amount to the current deposit rate.
+		///
+		/// The sender must be the deposit owner.
+		#[pallet::call_index(5)]
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::update_deposit())]
+		pub fn update_deposit(origin: OriginFor<T>, claim_hash: ClaimHashOf<T>) -> DispatchResult {
+			let sender = ensure_signed(origin)?;
+
+			let attestation = Attestations::<T>::get(claim_hash).ok_or(Error::<T>::NotFound)?;
+			ensure!(attestation.deposit.owner == sender, Error::<T>::NotAuthorized);
+
+			AttestationStorageDepositCollector::<T>::update_deposit(&claim_hash)?;
+
+			Ok(())
+		}
 	}
 
 	impl<T: Config> Pallet<T> {
-		/// Reserve the deposit and record the deposit on chain.
-		///
-		/// Fails if the `payer` has a balance less than deposit.
-		pub(crate) fn reserve_deposit(
-			payer: AccountIdOf<T>,
-			deposit: BalanceOf<T>,
-		) -> Result<Deposit<AccountIdOf<T>, BalanceOf<T>>, DispatchError> {
-			CurrencyOf::<T>::reserve(&payer, deposit)?;
-
-			Ok(Deposit::<AccountIdOf<T>, BalanceOf<T>> {
-				owner: payer,
-				amount: deposit,
-			})
-		}
-
 		fn remove_attestation(attestation: AttestationDetails<T>, claim_hash: ClaimHashOf<T>) {
 			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&attestation.deposit);
-			Attestations::<T>::remove(&claim_hash);
+			Attestations::<T>::remove(claim_hash);
 			if let Some(authorization_id) = &attestation.authorization_id {
 				ExternalAttestations::<T>::remove(authorization_id, claim_hash);
 			}
+		}
+	}
+
+	struct AttestationStorageDepositCollector<T: Config>(PhantomData<T>);
+	impl<T: Config> StorageDepositCollector<AccountIdOf<T>, ClaimHashOf<T>> for AttestationStorageDepositCollector<T> {
+		type Currency = <T as Config>::Currency;
+
+		fn deposit(
+			key: &ClaimHashOf<T>,
+		) -> Result<Deposit<AccountIdOf<T>, <Self::Currency as Currency<AccountIdOf<T>>>::Balance>, DispatchError> {
+			let attestation = Attestations::<T>::get(key).ok_or(Error::<T>::NotFound)?;
+			Ok(attestation.deposit)
+		}
+
+		fn deposit_amount(_key: &ClaimHashOf<T>) -> <Self::Currency as Currency<AccountIdOf<T>>>::Balance {
+			T::Deposit::get()
+		}
+
+		fn store_deposit(
+			key: &ClaimHashOf<T>,
+			deposit: Deposit<AccountIdOf<T>, <Self::Currency as Currency<AccountIdOf<T>>>::Balance>,
+		) -> Result<(), DispatchError> {
+			let attestation = Attestations::<T>::get(key).ok_or(Error::<T>::NotFound)?;
+			Attestations::<T>::insert(key, AttestationDetails { deposit, ..attestation });
+
+			Ok(())
 		}
 	}
 }

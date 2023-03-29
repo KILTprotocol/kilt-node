@@ -1,5 +1,5 @@
 // KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2022 BOTLabs GmbH
+// Copyright (C) 2019-2023 BOTLabs GmbH
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -38,5 +38,8 @@ pub mod pallet_treasury;
 pub mod pallet_utility;
 pub mod pallet_vesting;
 pub mod pallet_web3_names;
+pub mod pallet_xcm;
 pub mod parachain_staking;
+pub mod public_credentials;
+
 pub mod rocksdb_weights;

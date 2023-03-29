@@ -1,5 +1,5 @@
 // KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2022 BOTLabs GmbH
+// Copyright (C) 2019-2023 BOTLabs GmbH
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,9 +22,8 @@
 use super::*;
 use crate::{self as stake, types::NegativeImbalanceOf};
 use frame_support::{
-	construct_runtime, parameter_types,
+	assert_ok, construct_runtime, parameter_types,
 	traits::{Currency, GenesisBuild, OnFinalize, OnInitialize, OnUnbalanced},
-	weights::Weight,
 };
 use pallet_authorship::EventHandler;
 use sp_consensus_aura::sr25519::AuthorityId;
@@ -58,16 +57,15 @@ construct_runtime!(
 	{
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
 		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
-		Authorship: pallet_authorship::{Pallet, Call, Storage, Inherent},
-		StakePallet: stake::{Pallet, Call, Storage, Config<T>, Event<T>},
-		Session: pallet_session::{Pallet, Call, Storage, Event, Config<T>},
 		Aura: pallet_aura::{Pallet, Storage},
+		Session: pallet_session::{Pallet, Call, Storage, Event, Config<T>},
+		StakePallet: stake::{Pallet, Call, Storage, Config<T>, Event<T>},
+		Authorship: pallet_authorship::{Pallet, Storage},
 	}
 );
 
 parameter_types! {
 	pub const BlockHashCount: u64 = 250;
-	pub const MaximumBlockWeight: Weight = 1024;
 	pub const MaximumBlockLength: u32 = 2 * 1024;
 	pub const AvailableBlockRatio: Perbill = Perbill::one();
 	pub const SS58Prefix: u8 = 42;
@@ -76,16 +74,16 @@ parameter_types! {
 impl frame_system::Config for Test {
 	type BaseCallFilter = frame_support::traits::Everything;
 	type DbWeight = ();
-	type Origin = Origin;
+	type RuntimeOrigin = RuntimeOrigin;
 	type Index = u64;
 	type BlockNumber = BlockNumber;
-	type Call = Call;
+	type RuntimeCall = RuntimeCall;
 	type Hash = H256;
 	type Hashing = BlakeTwo256;
 	type AccountId = AccountId;
 	type Lookup = IdentityLookup<Self::AccountId>;
 	type Header = Header;
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type BlockHashCount = BlockHashCount;
 	type Version = ();
 	type PalletInfo = PalletInfo;
@@ -108,7 +106,7 @@ impl pallet_balances::Config for Test {
 	type MaxReserves = ();
 	type ReserveIdentifier = [u8; 8];
 	type Balance = Balance;
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type DustRemoval = ();
 	type ExistentialDeposit = ExistentialDeposit;
 	type AccountStore = System;
@@ -123,8 +121,6 @@ impl pallet_aura::Config for Test {
 
 impl pallet_authorship::Config for Test {
 	type FindAuthor = pallet_session::FindAccountFromAuthorIndex<Self, Aura>;
-	type UncleGenerations = ();
-	type FilterUncle = ();
 	type EventHandler = Pallet<Test>;
 }
 
@@ -134,15 +130,13 @@ parameter_types! {
 	pub const ExitQueueDelay: u32 = 2;
 	pub const DefaultBlocksPerRound: BlockNumber = BLOCKS_PER_ROUND;
 	pub const MinCollators: u32 = 2;
-	#[derive(Debug, PartialEq)]
+	pub const MaxDelegationsPerRound: u32 = 2;
+	#[derive(Debug, Eq, PartialEq)]
 	pub const MaxDelegatorsPerCollator: u32 = 4;
-	#[derive(Debug, PartialEq)]
-	pub const MaxCollatorsPerDelegator: u32 = 4;
 	pub const MinCollatorStake: Balance = 10;
-	#[derive(Debug, PartialEq)]
+	#[derive(Debug, Eq, PartialEq)]
 	pub const MaxCollatorCandidates: u32 = 10;
 	pub const MinDelegatorStake: Balance = 5;
-	pub const MinDelegation: Balance = 3;
 	pub const MaxUnstakeRequests: u32 = 6;
 	pub const NetworkRewardRate: Perquintill = Perquintill::from_percent(10);
 	pub const NetworkRewardStart: BlockNumber = 5 * 5 * 60 * 24 * 36525 / 100;
@@ -157,7 +151,7 @@ impl OnUnbalanced<NegativeImbalanceOf<Test>> for ToBeneficiary {
 }
 
 impl Config for Test {
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type Currency = Balances;
 	type CurrencyBalance = <Self as pallet_balances::Config>::Balance;
 	type MinBlocksPerRound = MinBlocksPerRound;
@@ -166,14 +160,12 @@ impl Config for Test {
 	type ExitQueueDelay = ExitQueueDelay;
 	type MinCollators = MinCollators;
 	type MinRequiredCollators = MinCollators;
-	type MaxDelegationsPerRound = MaxDelegatorsPerCollator;
+	type MaxDelegationsPerRound = MaxDelegationsPerRound;
 	type MaxDelegatorsPerCollator = MaxDelegatorsPerCollator;
-	type MaxCollatorsPerDelegator = MaxCollatorsPerDelegator;
 	type MinCollatorStake = MinCollatorStake;
 	type MinCollatorCandidateStake = MinCollatorStake;
 	type MaxTopCandidates = MaxCollatorCandidates;
 	type MinDelegatorStake = MinDelegatorStake;
-	type MinDelegation = MinDelegation;
 	type MaxUnstakeRequests = MaxUnstakeRequests;
 	type NetworkRewardRate = NetworkRewardRate;
 	type NetworkRewardStart = NetworkRewardStart;
@@ -193,7 +185,7 @@ parameter_types! {
 }
 
 impl pallet_session::Config for Test {
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type ValidatorId = AccountId;
 	type ValidatorIdOf = ConvertInto;
 	type ShouldEndSession = StakePallet;
@@ -343,7 +335,7 @@ impl ExtBuilder {
 
 		if self.blocks_per_round != BLOCKS_PER_ROUND {
 			ext.execute_with(|| {
-				StakePallet::set_blocks_per_round(Origin::root(), self.blocks_per_round)
+				StakePallet::set_blocks_per_round(RuntimeOrigin::root(), self.blocks_per_round)
 					.expect("Ran into issues when setting blocks_per_round");
 			});
 		}
@@ -359,19 +351,62 @@ pub(crate) fn almost_equal(left: Balance, right: Balance, precision: Perbill) ->
 	left.max(right) - left.min(right) <= err
 }
 
+/// Incrementelly traverses from the current block to the provided one and
+/// potentially sets block authors.
+///
+/// If for a block `i` the corresponding index of the authors input is set, this
+/// account is regarded to be the block author and thus gets noted.
+///
+/// NOTE: At most, this updates the RewardCount of the block author but does not
+/// increment rewards or claim them. Please use `roll_to_claim_rewards` in that
+/// case.
 pub(crate) fn roll_to(n: BlockNumber, authors: Vec<Option<AccountId>>) {
 	while System::block_number() < n {
 		if let Some(Some(author)) = authors.get((System::block_number()) as usize) {
 			StakePallet::note_author(*author);
 		}
-		<AllPalletsReversedWithSystemFirst as OnFinalize<u64>>::on_finalize(System::block_number());
+		<AllPalletsWithSystem as OnFinalize<u64>>::on_finalize(System::block_number());
 		System::set_block_number(System::block_number() + 1);
-		<AllPalletsReversedWithSystemFirst as OnInitialize<u64>>::on_initialize(System::block_number());
+		<AllPalletsWithSystem as OnInitialize<u64>>::on_initialize(System::block_number());
 	}
 }
 
-pub(crate) fn last_event() -> Event {
-	System::events().pop().expect("Event expected").event
+#[allow(unused_must_use)]
+/// Incrementelly traverses from the current block to the provided one and
+/// potentially sets block authors.
+///
+/// If existent, rewards of the block author and their delegators are
+/// incremented and claimed.
+///
+/// If for a block `i` the corresponding index of the authors input is set, this
+/// account is regarded to be the block author and thus gets noted.
+pub(crate) fn roll_to_claim_rewards(n: BlockNumber, authors: Vec<Option<AccountId>>) {
+	while System::block_number() < n {
+		if let Some(Some(author)) = authors.get((System::block_number()) as usize) {
+			StakePallet::note_author(*author);
+			// author has to increment rewards before claiming
+			assert_ok!(StakePallet::increment_collator_rewards(RuntimeOrigin::signed(*author)));
+			// author claims rewards
+			assert_ok!(StakePallet::claim_rewards(RuntimeOrigin::signed(*author)));
+
+			// claim rewards for delegators
+			let col_state = StakePallet::candidate_pool(author).expect("Block author must be candidate");
+			for delegation in col_state.delegators {
+				// delegator has to increment rewards before claiming
+				StakePallet::increment_delegator_rewards(RuntimeOrigin::signed(delegation.owner));
+				// NOTE: cannot use assert_ok! as we sometimes expect zero rewards for
+				// delegators such that the claiming would throw
+				StakePallet::claim_rewards(RuntimeOrigin::signed(delegation.owner));
+			}
+		}
+		<AllPalletsWithSystem as OnFinalize<u64>>::on_finalize(System::block_number());
+		System::set_block_number(System::block_number() + 1);
+		<AllPalletsWithSystem as OnInitialize<u64>>::on_initialize(System::block_number());
+	}
+}
+
+pub(crate) fn last_event() -> pallet::Event<Test> {
+	events().pop().expect("Event expected")
 }
 
 pub(crate) fn events() -> Vec<pallet::Event<Test>> {
@@ -379,7 +414,7 @@ pub(crate) fn events() -> Vec<pallet::Event<Test>> {
 		.into_iter()
 		.map(|r| r.event)
 		.filter_map(|e| {
-			if let Event::StakePallet(inner) = e {
+			if let RuntimeEvent::StakePallet(inner) = e {
 				Some(inner)
 			} else {
 				None

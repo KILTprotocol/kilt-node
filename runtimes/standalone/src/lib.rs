@@ -1,5 +1,5 @@
 // KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2022 BOTLabs GmbH
+// Copyright (C) 2019-2023 BOTLabs GmbH
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -31,21 +31,22 @@ use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::{
 	construct_runtime, parameter_types,
 	traits::{Currency, InstanceFilter, KeyOwnerProofSystem},
-	weights::{
-		constants::{RocksDbWeight, WEIGHT_PER_SECOND},
-		ConstantMultiplier, IdentityFee,
-	},
+	weights::{constants::RocksDbWeight, ConstantMultiplier, IdentityFee, Weight},
 };
 pub use frame_system::Call as SystemCall;
 use frame_system::EnsureRoot;
+
+#[cfg(feature = "try-runtime")]
+use frame_try_runtime::UpgradeCheckSelect;
+
 use pallet_grandpa::{fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
 use pallet_transaction_payment::{CurrencyAdapter, FeeDetails};
 use sp_api::impl_runtime_apis;
 use sp_consensus_aura::{ed25519::AuthorityId as AuraId, SlotDuration};
-use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
+use sp_core::{crypto::KeyTypeId, ConstU64, OpaqueMetadata};
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
-	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, NumberFor, OpaqueKeys, Verify},
+	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, NumberFor, OpaqueKeys},
 	transaction_validity::{TransactionSource, TransactionValidity},
 	ApplyExtrinsicResult, RuntimeDebug,
 };
@@ -53,9 +54,13 @@ use sp_std::prelude::*;
 use sp_version::RuntimeVersion;
 
 use delegation::DelegationAc;
+use kilt_support::traits::ItemFilter;
+use pallet_did_lookup::linkable_account::LinkableAccountId;
 use runtime_common::{
+	assets::{AssetDid, PublicCredentialsFilter},
 	authorization::{AuthorizationId, PalletAuthorize},
-	constants::{self, KILT, MILLI_KILT},
+	constants::{self, EXISTENTIAL_DEPOSIT, KILT},
+	errors::PublicCredentialsApiError,
 	fees::ToAuthor,
 	AccountId, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature, SlowAdjustingFeeUpdate,
 };
@@ -69,12 +74,12 @@ pub use delegation;
 pub use did;
 pub use pallet_balances::Call as BalancesCall;
 pub use pallet_web3_names;
-
-#[cfg(feature = "std")]
-use sp_version::NativeVersion;
+pub use public_credentials;
 
 #[cfg(feature = "runtime-benchmarks")]
 use frame_system::EnsureSigned;
+#[cfg(feature = "std")]
+use sp_version::NativeVersion;
 
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
@@ -116,7 +121,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("mashnet-node"),
 	impl_name: create_runtime_str!("mashnet-node"),
 	authoring_version: 4,
-	spec_version: 10700,
+	spec_version: 11100,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 4,
@@ -133,32 +138,40 @@ pub fn native_version() -> NativeVersion {
 	}
 }
 
-const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
-
 parameter_types! {
 	pub const Version: RuntimeVersion = VERSION;
 	pub const BlockHashCount: BlockNumber = 2400;
-	/// We allow for 2 seconds of compute with a 6 second average block time.
-	pub BlockWeights: frame_system::limits::BlockWeights = frame_system::limits::BlockWeights
-		::with_sensible_defaults(2 * WEIGHT_PER_SECOND, NORMAL_DISPATCH_RATIO);
-	pub BlockLength: frame_system::limits::BlockLength = frame_system::limits::BlockLength
-		::max_with_normal_ratio(5 * 1024 * 1024, NORMAL_DISPATCH_RATIO);
 	pub const SS58Prefix: u8 = 38;
 }
 
-// Configure FRAME pallets to include in runtime.
+pub struct MigrationFilter;
+impl frame_support::traits::Contains<RuntimeCall> for MigrationFilter {
+	fn contains(c: &RuntimeCall) -> bool {
+		match c {
+			// Enable DidLookup migration calls for ongoing migration
+			RuntimeCall::DidLookup(pallet_did_lookup::Call::migrate { .. }) => {
+				DidLookup::migration_state().is_in_progress()
+			}
+			// For all other DidLookup calls, check whether migration is ongoing
+			RuntimeCall::DidLookup(_) => DidLookup::migration_state().is_done(),
+			// Enable all non-DidLookup calls
+			_ => true,
+		}
+	}
+}
 
+// Configure FRAME pallets to include in runtime.
 impl frame_system::Config for Runtime {
 	/// The basic call filter to use in dispatchable.
-	type BaseCallFilter = frame_support::traits::Everything;
+	type BaseCallFilter = MigrationFilter;
 	/// Block & extrinsics weights: base values and limits.
-	type BlockWeights = BlockWeights;
+	type BlockWeights = runtime_common::BlockWeights;
 	/// The maximum length of a block (in bytes).
-	type BlockLength = BlockLength;
+	type BlockLength = runtime_common::BlockLength;
 	/// The identifier used to distinguish between accounts.
 	type AccountId = AccountId;
 	/// The aggregated dispatch type that is available for extrinsics.
-	type Call = Call;
+	type RuntimeCall = RuntimeCall;
 	/// The lookup mechanism to get account ID from whatever is passed in
 	/// dispatchers.
 	type Lookup = AccountIdLookup<AccountId, ()>;
@@ -173,9 +186,9 @@ impl frame_system::Config for Runtime {
 	/// The header type.
 	type Header = generic::Header<BlockNumber, BlakeTwo256>;
 	/// The ubiquitous event type.
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	/// The ubiquitous origin type.
-	type Origin = Origin;
+	type RuntimeOrigin = RuntimeOrigin;
 	/// Maximum number of block number to block hash mappings to keep (oldest
 	/// pruned first).
 	type BlockHashCount = BlockHashCount;
@@ -214,8 +227,7 @@ impl pallet_aura::Config for Runtime {
 }
 
 impl pallet_grandpa::Config for Runtime {
-	type Event = Event;
-	type Call = Call;
+	type RuntimeEvent = RuntimeEvent;
 
 	type KeyOwnerProofSystem = ();
 
@@ -228,10 +240,13 @@ impl pallet_grandpa::Config for Runtime {
 
 	type WeightInfo = ();
 	type MaxAuthorities = MaxAuthorities;
+	// This is a purely random value
+	type MaxSetIdSessionEntries = ConstU64<100>;
 }
 
 parameter_types! {
-	pub const MinimumPeriod: u64 = constants::SLOT_DURATION / 2;
+	// Minimum period 500ms -> block time 1s
+	pub const MinimumPeriod: u64 = 500;
 }
 
 impl pallet_timestamp::Config for Runtime {
@@ -246,12 +261,12 @@ impl pallet_indices::Config for Runtime {
 	type AccountIndex = Index;
 	type Currency = Balances;
 	type Deposit = constants::IndicesDeposit;
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type WeightInfo = ();
 }
 
 parameter_types! {
-	pub const ExistentialDeposit: Balance = 10 * MILLI_KILT;
+	pub const ExistentialDeposit: u128 = EXISTENTIAL_DEPOSIT;
 	pub const MaxLocks: u32 = 50;
 	pub const MaxReserves: u32 = 50;
 }
@@ -263,7 +278,7 @@ impl pallet_balances::Config for Runtime {
 	/// The type for recording an account's balance.
 	type Balance = Balance;
 	/// The ubiquitous event type.
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type DustRemoval = ();
 	type ExistentialDeposit = ExistentialDeposit;
 	type AccountStore = System;
@@ -277,6 +292,7 @@ parameter_types! {
 }
 
 impl pallet_transaction_payment::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
 	type OnChargeTransaction = CurrencyAdapter<Balances, runtime_common::fees::ToAuthor<Runtime>>;
 	type OperationalFeeMultiplier = constants::fee::OperationalFeeMultiplier;
 	type WeightToFee = IdentityFee<Balance>;
@@ -285,8 +301,8 @@ impl pallet_transaction_payment::Config for Runtime {
 }
 
 impl pallet_sudo::Config for Runtime {
-	type Event = Event;
-	type Call = Call;
+	type RuntimeEvent = RuntimeEvent;
+	type RuntimeCall = RuntimeCall;
 }
 
 parameter_types! {
@@ -297,7 +313,7 @@ parameter_types! {
 impl attestation::Config for Runtime {
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
 	type OriginSuccess = did::DidRawOrigin<DidIdentifier, AccountId>;
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type WeightInfo = ();
 	type Currency = Balances;
 	type Deposit = AttestationDeposit;
@@ -332,7 +348,7 @@ impl delegation::Config for Runtime {
 	type DelegationNodeId = Hash;
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type MaxSignatureByteLength = MaxSignatureByteLength;
 	type MaxParentChecks = MaxParentChecks;
 	type MaxRevocations = MaxRevocations;
@@ -355,18 +371,19 @@ impl ctype::Config for Runtime {
 	type CtypeCreatorId = DidIdentifier;
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
-	type Event = Event;
+	type OverarchingOrigin = EnsureRoot<AccountId>;
+	type RuntimeEvent = RuntimeEvent;
 	type WeightInfo = ();
 }
 
 parameter_types! {
 	pub const MaxNewKeyAgreementKeys: u32 = constants::did::MAX_KEY_AGREEMENT_KEYS;
-	#[derive(Debug, Clone, PartialEq)]
+	#[derive(Debug, Clone, Eq, PartialEq)]
 	pub const MaxUrlLength: u32 = constants::did::MAX_URL_LENGTH;
 	pub const MaxPublicKeysPerDid: u32 = constants::did::MAX_PUBLIC_KEYS_PER_DID;
-	#[derive(Debug, Clone, PartialEq)]
+	#[derive(Debug, Clone, Eq, PartialEq)]
 	pub const MaxTotalKeyAgreementKeys: u32 = constants::did::MAX_TOTAL_KEY_AGREEMENT_KEYS;
-	#[derive(Debug, Clone, PartialEq)]
+	#[derive(Debug, Clone, Eq, PartialEq)]
 	pub const MaxEndpointUrlsCount: u32 = constants::did::MAX_ENDPOINT_URLS_COUNT;
 	// Standalone block time is half the duration of a parachain block.
 	pub const MaxBlocksTxValidity: BlockNumber = constants::did::MAX_BLOCKS_TX_VALIDITY * 2;
@@ -382,9 +399,9 @@ parameter_types! {
 
 impl did::Config for Runtime {
 	type DidIdentifier = DidIdentifier;
-	type Event = Event;
-	type Call = Call;
-	type Origin = Origin;
+	type RuntimeEvent = RuntimeEvent;
+	type RuntimeCall = RuntimeCall;
+	type RuntimeOrigin = RuntimeOrigin;
 	type Currency = Balances;
 	type Deposit = DidDeposit;
 	type Fee = DidFee;
@@ -414,9 +431,8 @@ impl did::Config for Runtime {
 }
 
 impl pallet_did_lookup::Config for Runtime {
-	type Event = Event;
-	type Signature = Signature;
-	type Signer = <Signature as Verify>::Signer;
+	type RuntimeEvent = RuntimeEvent;
+
 	type DidIdentifier = DidIdentifier;
 
 	type Currency = Balances;
@@ -434,7 +450,7 @@ impl pallet_web3_names::Config for Runtime {
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
 	type Currency = Balances;
 	type Deposit = constants::web3_names::Web3NameDeposit;
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type MaxNameLength = constants::web3_names::MaxNameLength;
 	type MinNameLength = constants::web3_names::MinNameLength;
 	type Web3Name = pallet_web3_names::web3_name::AsciiWeb3Name<Runtime>;
@@ -448,7 +464,7 @@ parameter_types! {
 }
 
 impl pallet_session::Config for Runtime {
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type ValidatorId = AccountId;
 	type ValidatorIdOf = ();
 	type ShouldEndSession = pallet_session::PeriodicSessions<Period, Offset>;
@@ -465,29 +481,34 @@ parameter_types! {
 
 impl pallet_authorship::Config for Runtime {
 	type FindAuthor = pallet_session::FindAccountFromAuthorIndex<Self, Aura>;
-	type UncleGenerations = UncleGenerations;
-	type FilterUncle = ();
 	type EventHandler = ();
 }
 
-impl pallet_vesting::Config for Runtime {
-	type Event = Event;
-	type Currency = Balances;
-	type BlockNumberToBalance = ConvertInto;
-	// disable vested transfers by setting min amount to max balance
-	type MinVestedTransfer = constants::MinVestedTransfer;
-	const MAX_VESTING_SCHEDULES: u32 = constants::MAX_VESTING_SCHEDULES;
-	type WeightInfo = ();
-}
-
 impl pallet_utility::Config for Runtime {
-	type Event = Event;
-	type Call = Call;
+	type RuntimeEvent = RuntimeEvent;
+	type RuntimeCall = RuntimeCall;
 	type PalletsOrigin = OriginCaller;
 	type WeightInfo = ();
 }
 
 impl pallet_randomness_collective_flip::Config for Runtime {}
+
+impl public_credentials::Config for Runtime {
+	type AccessControl = PalletAuthorize<DelegationAc<Runtime>>;
+	type AttesterId = DidIdentifier;
+	type AuthorizationId = AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>;
+	type CredentialId = Hash;
+	type CredentialHash = BlakeTwo256;
+	type Currency = Balances;
+	type Deposit = runtime_common::constants::public_credentials::Deposit;
+	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
+	type MaxEncodedClaimsLength = runtime_common::constants::public_credentials::MaxEncodedClaimsLength;
+	type MaxSubjectIdLength = runtime_common::constants::public_credentials::MaxSubjectIdLength;
+	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
+	type RuntimeEvent = RuntimeEvent;
+	type SubjectId = runtime_common::assets::AssetDid;
+	type WeightInfo = ();
+}
 
 /// The type used to represent the kinds of proxying allowed.
 #[derive(
@@ -511,52 +532,55 @@ impl Default for ProxyType {
 	}
 }
 
-impl InstanceFilter<Call> for ProxyType {
-	fn filter(&self, c: &Call) -> bool {
+impl InstanceFilter<RuntimeCall> for ProxyType {
+	fn filter(&self, c: &RuntimeCall) -> bool {
 		match self {
 			ProxyType::Any => true,
 			ProxyType::NonTransfer => matches!(
 				c,
-				Call::Attestation(..)
-					| Call::Authorship(..)
+				RuntimeCall::Attestation(..)
 					// Excludes `Balances`
-					| Call::Ctype(..)
-					| Call::Delegation(..)
-					| Call::Did(..)
-					| Call::DidLookup(..)
-					| Call::Indices(
+					| RuntimeCall::Ctype(..)
+					| RuntimeCall::Delegation(..)
+					| RuntimeCall::Did(..)
+					| RuntimeCall::DidLookup(..)
+					| RuntimeCall::Indices(
 						// Excludes `force_transfer`, and `transfer`
 						pallet_indices::Call::claim { .. }
 							| pallet_indices::Call::free { .. }
 							| pallet_indices::Call::freeze { .. }
 					)
-					| Call::Proxy(..)
-					| Call::Session(..)
+					| RuntimeCall::Proxy(..)
+					| RuntimeCall::PublicCredentials(..)
+					| RuntimeCall::Session(..)
 					// Excludes `Sudo`
-					| Call::System(..)
-					| Call::Timestamp(..)
-					| Call::Utility(..)
-					| Call::Web3Names(..),
+					| RuntimeCall::System(..)
+					| RuntimeCall::Timestamp(..)
+					| RuntimeCall::Utility(..)
+					| RuntimeCall::Web3Names(..),
 			),
 			ProxyType::NonDepositClaiming => matches!(
 				c,
-				Call::Attestation(
+				RuntimeCall::Attestation(
 						// Excludes `reclaim_deposit`
 						attestation::Call::add { .. }
 							| attestation::Call::remove { .. }
 							| attestation::Call::revoke { .. }
+							| attestation::Call::change_deposit_owner { .. }
+							| attestation::Call::update_deposit { .. }
 					)
-					| Call::Authorship(..)
 					// Excludes `Balances`
-					| Call::Ctype(..)
-					| Call::Delegation(
+					| RuntimeCall::Ctype(..)
+					| RuntimeCall::Delegation(
 						// Excludes `reclaim_deposit`
 						delegation::Call::add_delegation { .. }
 							| delegation::Call::create_hierarchy { .. }
 							| delegation::Call::remove_delegation { .. }
 							| delegation::Call::revoke_delegation { .. }
+							| delegation::Call::update_deposit { .. }
+							| delegation::Call::change_deposit_owner { .. }
 					)
-					| Call::Did(
+					| RuntimeCall::Did(
 						// Excludes `reclaim_deposit`
 						did::Call::add_key_agreement_key { .. }
 							| did::Call::add_service_endpoint { .. }
@@ -570,31 +594,47 @@ impl InstanceFilter<Call> for ProxyType {
 							| did::Call::set_authentication_key { .. }
 							| did::Call::set_delegation_key { .. }
 							| did::Call::submit_did_call { .. }
+							| did::Call::update_deposit { .. }
+							| did::Call::change_deposit_owner { .. }
 					)
-					| Call::DidLookup(
+					| RuntimeCall::DidLookup(
 						// Excludes `reclaim_deposit`
 						pallet_did_lookup::Call::associate_account { .. }
 							| pallet_did_lookup::Call::associate_sender { .. }
 							| pallet_did_lookup::Call::remove_account_association { .. }
 							| pallet_did_lookup::Call::remove_sender_association { .. }
+							| pallet_did_lookup::Call::update_deposit { .. }
+							| pallet_did_lookup::Call::change_deposit_owner { .. }
 					)
-					| Call::Indices(..)
-					| Call::Proxy(..)
-					| Call::Session(..)
+					| RuntimeCall::Indices(..)
+					| RuntimeCall::Proxy(..)
+					| RuntimeCall::PublicCredentials(
+						// Excludes `reclaim_deposit`
+						public_credentials::Call::add { .. }
+						| public_credentials::Call::revoke { .. }
+						| public_credentials::Call::unrevoke { .. }
+						| public_credentials::Call::remove { .. }
+						| public_credentials::Call::update_deposit { .. }
+						| public_credentials::Call::change_deposit_owner { .. }
+					)
+					| RuntimeCall::Session(..)
 					// Excludes `Sudo`
-					| Call::System(..)
-					| Call::Timestamp(..)
-					| Call::Utility(..)
-					| Call::Web3Names(
+					| RuntimeCall::System(..)
+					| RuntimeCall::Timestamp(..)
+					| RuntimeCall::Utility(..)
+					| RuntimeCall::Web3Names(
 						// Excludes `ban`, and `reclaim_deposit`
 						pallet_web3_names::Call::claim { .. }
 							| pallet_web3_names::Call::release_by_owner { .. }
 							| pallet_web3_names::Call::unban { .. }
+							| pallet_web3_names::Call::update_deposit { .. }
+							| pallet_web3_names::Call::change_deposit_owner { .. }
 					),
 			),
-			ProxyType::CancelProxy => matches!(c, Call::Proxy(pallet_proxy::Call::reject_announcement { .. })),
+			ProxyType::CancelProxy => matches!(c, RuntimeCall::Proxy(pallet_proxy::Call::reject_announcement { .. })),
 		}
 	}
+
 	fn is_superset(&self, o: &Self) -> bool {
 		match (self, o) {
 			(x, y) if x == y => true,
@@ -615,8 +655,8 @@ impl InstanceFilter<Call> for ProxyType {
 }
 
 impl pallet_proxy::Config for Runtime {
-	type Event = Event;
-	type Call = Call;
+	type RuntimeEvent = RuntimeEvent;
+	type RuntimeCall = RuntimeCall;
 	type Currency = Balances;
 	type ProxyType = ProxyType;
 	type ProxyDepositBase = constants::proxy::ProxyDepositBase;
@@ -666,20 +706,20 @@ construct_runtime!(
 		// // System scheduler.
 		// Scheduler: pallet_scheduler = 32,
 
-		// Vesting. Usable initially, but removed once all vesting is finished.
-		Vesting: pallet_vesting = 33,
+		// DELETED: Vesting: pallet_vesting = 33,
 		// DELETED: KiltLaunch: kilt_launch = 34,
 		Utility: pallet_utility = 35,
 		// DELETED CrowdloanContributors: 36,
 
 		Proxy: pallet_proxy::{Pallet, Call, Storage, Event<T>} = 37,
 		Web3Names: pallet_web3_names = 38,
+		PublicCredentials: public_credentials = 39,
 	}
 );
 
-impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
+impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for RuntimeCall {
 	fn derive_verification_key_relationship(&self) -> did::DeriveDidCallKeyRelationshipResult {
-		fn single_key_relationship(calls: &[Call]) -> did::DeriveDidCallKeyRelationshipResult {
+		fn single_key_relationship(calls: &[RuntimeCall]) -> did::DeriveDidCallKeyRelationshipResult {
 			let init = calls
 				.get(0)
 				.ok_or(did::RelationshipDeriveError::InvalidCallParameter)?
@@ -687,7 +727,7 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 			calls
 				.iter()
 				.skip(1)
-				.map(Call::derive_verification_key_relationship)
+				.map(RuntimeCall::derive_verification_key_relationship)
 				.try_fold(init, |acc, next| {
 					if Ok(acc) == next {
 						Ok(acc)
@@ -697,16 +737,18 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 				})
 		}
 		match self {
-			Call::Attestation { .. } => Ok(did::DidVerificationKeyRelationship::AssertionMethod),
-			Call::Ctype { .. } => Ok(did::DidVerificationKeyRelationship::AssertionMethod),
-			Call::Delegation { .. } => Ok(did::DidVerificationKeyRelationship::CapabilityDelegation),
+			RuntimeCall::Attestation { .. } => Ok(did::DidVerificationKeyRelationship::AssertionMethod),
+			RuntimeCall::Ctype { .. } => Ok(did::DidVerificationKeyRelationship::AssertionMethod),
+			RuntimeCall::Delegation { .. } => Ok(did::DidVerificationKeyRelationship::CapabilityDelegation),
 			// DID creation is not allowed through the DID proxy.
-			Call::Did(did::Call::create { .. }) => Err(did::RelationshipDeriveError::NotCallableByDid),
-			Call::Did { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
-			Call::Web3Names { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
-			Call::DidLookup { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
-			Call::Utility(pallet_utility::Call::batch { calls }) => single_key_relationship(&calls[..]),
-			Call::Utility(pallet_utility::Call::batch_all { calls }) => single_key_relationship(&calls[..]),
+			RuntimeCall::Did(did::Call::create { .. }) => Err(did::RelationshipDeriveError::NotCallableByDid),
+			RuntimeCall::Did { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
+			RuntimeCall::Web3Names { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
+			RuntimeCall::DidLookup { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
+			RuntimeCall::PublicCredentials { .. } => Ok(did::DidVerificationKeyRelationship::AssertionMethod),
+			RuntimeCall::Utility(pallet_utility::Call::batch { calls }) => single_key_relationship(&calls[..]),
+			RuntimeCall::Utility(pallet_utility::Call::batch_all { calls }) => single_key_relationship(&calls[..]),
+			RuntimeCall::Utility(pallet_utility::Call::force_batch { calls }) => single_key_relationship(&calls[..]),
 			#[cfg(not(feature = "runtime-benchmarks"))]
 			_ => Err(did::RelationshipDeriveError::NotCallableByDid),
 			// By default, returns the authentication key
@@ -718,7 +760,7 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for Call {
 	// Always return a System::remark() extrinsic call
 	#[cfg(feature = "runtime-benchmarks")]
 	fn get_call_for_did_call_benchmark() -> Self {
-		Call::System(frame_system::Call::remark { remark: vec![] })
+		RuntimeCall::System(frame_system::Call::remark { remark: vec![] })
 	}
 }
 
@@ -744,14 +786,42 @@ pub type SignedExtra = (
 	pallet_transaction_payment::ChargeTransactionPayment<Runtime>,
 );
 /// Unchecked extrinsic type as expected by this runtime.
-pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<Address, Call, Signature, SignedExtra>;
+pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<Address, RuntimeCall, Signature, SignedExtra>;
 /// The payload being signed in transactions.
-pub type SignedPayload = generic::SignedPayload<Call, SignedExtra>;
+pub type SignedPayload = generic::SignedPayload<RuntimeCall, SignedExtra>;
 /// Extrinsic type that has already been checked.
-pub type CheckedExtrinsic = generic::CheckedExtrinsic<AccountId, Call, SignedExtra>;
+pub type CheckedExtrinsic = generic::CheckedExtrinsic<AccountId, RuntimeCall, SignedExtra>;
 /// Executive: handles dispatch to the various Pallets.
-pub type Executive =
-	frame_executive::Executive<Runtime, Block, frame_system::ChainContext<Runtime>, Runtime, AllPalletsWithSystem, ()>;
+pub type Executive = frame_executive::Executive<
+	Runtime,
+	Block,
+	frame_system::ChainContext<Runtime>,
+	Runtime,
+	AllPalletsWithSystem,
+	pallet_did_lookup::migrations::EthereumMigration<Runtime>,
+>;
+
+#[cfg(feature = "runtime-benchmarks")]
+mod benches {
+	frame_benchmarking::define_benchmarks!(
+		// KILT
+		[attestation, Attestation]
+		[ctype, Ctype]
+		[delegation, Delegation]
+		[did, Did]
+		[pallet_did_lookup, DidLookup]
+		[pallet_web3_names, Web3Names]
+		[public_credentials, PublicCredentials]
+		// Substrate
+		[frame_benchmarking::baseline, Baseline::<Runtime>]
+		[frame_system, SystemBench::<Runtime>]
+		[pallet_balances, Balances]
+		[pallet_indices, Indices]
+		[pallet_timestamp, Timestamp]
+		[pallet_utility, Utility]
+		[pallet_proxy, Proxy]
+	);
+}
 
 impl_runtime_apis! {
 	impl sp_api::Core<Block> for Runtime {
@@ -790,6 +860,36 @@ impl_runtime_apis! {
 
 		fn query_fee_details(uxt: <Block as BlockT>::Extrinsic, len: u32) -> FeeDetails<Balance> {
 			TransactionPayment::query_fee_details(uxt, len)
+		}
+
+		fn query_weight_to_fee(weight: Weight) -> Balance {
+			TransactionPayment::weight_to_fee(weight)
+		}
+		fn query_length_to_fee(length: u32) -> Balance {
+			TransactionPayment::length_to_fee(length)
+		}
+	}
+
+	impl pallet_transaction_payment_rpc_runtime_api::TransactionPaymentCallApi<Block, Balance, RuntimeCall>
+	for Runtime
+	{
+		fn query_call_info(
+			call: RuntimeCall,
+			len: u32,
+		) -> pallet_transaction_payment::RuntimeDispatchInfo<Balance> {
+			TransactionPayment::query_call_info(call, len)
+		}
+		fn query_call_fee_details(
+			call: RuntimeCall,
+			len: u32,
+		) -> pallet_transaction_payment::FeeDetails<Balance> {
+			TransactionPayment::query_call_fee_details(call, len)
+		}
+		fn query_weight_to_fee(weight: Weight) -> Balance {
+			TransactionPayment::weight_to_fee(weight)
+		}
+		fn query_length_to_fee(length: u32) -> Balance {
+			TransactionPayment::length_to_fee(length)
 		}
 	}
 
@@ -881,17 +981,19 @@ impl_runtime_apis! {
 		}
 	}
 
-	impl did_rpc_runtime_api::DidApi<
+	impl kilt_runtime_api_did::Did<
 		Block,
 		DidIdentifier,
 		AccountId,
+		LinkableAccountId,
 		Balance,
 		Hash,
 		BlockNumber
 	> for Runtime {
-		fn query_did_by_w3n(name: Vec<u8>) -> Option<did_rpc_runtime_api::RawDidLinkedInfo<
+		fn query_by_web3_name(name: Vec<u8>) -> Option<kilt_runtime_api_did::RawDidLinkedInfo<
 				DidIdentifier,
 				AccountId,
+				LinkableAccountId,
 				Balance,
 				Hash,
 				BlockNumber
@@ -903,10 +1005,12 @@ impl_runtime_apis! {
 					did::Did::<Runtime>::get(&owner_info.owner).map(|details| (owner_info, details))
 				})
 				.map(|(owner_info, details)| {
-					let accounts = pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(&owner_info.owner).collect();
+					let accounts = pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(
+						&owner_info.owner,
+					).collect();
 					let service_endpoints = did::ServiceEndpoints::<Runtime>::iter_prefix(&owner_info.owner).map(|e| From::from(e.1)).collect();
 
-					did_rpc_runtime_api::RawDidLinkedInfo {
+					kilt_runtime_api_did::RawDidLinkedInfo{
 						identifier: owner_info.owner,
 						w3n: Some(name.into()),
 						accounts,
@@ -916,10 +1020,11 @@ impl_runtime_apis! {
 			})
 		}
 
-		fn query_did_by_account_id(account: AccountId) -> Option<
-			did_rpc_runtime_api::RawDidLinkedInfo<
+		fn query_by_account(account: LinkableAccountId) -> Option<
+			kilt_runtime_api_did::RawDidLinkedInfo<
 				DidIdentifier,
 				AccountId,
+				LinkableAccountId,
 				Balance,
 				Hash,
 				BlockNumber
@@ -934,7 +1039,7 @@ impl_runtime_apis! {
 					let accounts = pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(&connection_record.did).collect();
 					let service_endpoints = did::ServiceEndpoints::<Runtime>::iter_prefix(&connection_record.did).map(|e| From::from(e.1)).collect();
 
-					did_rpc_runtime_api::RawDidLinkedInfo {
+					kilt_runtime_api_did::RawDidLinkedInfo {
 						identifier: connection_record.did,
 						w3n,
 						accounts,
@@ -944,10 +1049,11 @@ impl_runtime_apis! {
 				})
 		}
 
-		fn query_did(did: DidIdentifier) -> Option<
-			did_rpc_runtime_api::RawDidLinkedInfo<
+		fn query(did: DidIdentifier) -> Option<
+			kilt_runtime_api_did::RawDidLinkedInfo<
 				DidIdentifier,
 				AccountId,
+				LinkableAccountId,
 				Balance,
 				Hash,
 				BlockNumber
@@ -958,7 +1064,7 @@ impl_runtime_apis! {
 			let accounts = pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(&did).collect();
 			let service_endpoints = did::ServiceEndpoints::<Runtime>::iter_prefix(&did).map(|e| From::from(e.1)).collect();
 
-			Some(did_rpc_runtime_api::RawDidLinkedInfo {
+			Some(kilt_runtime_api_did::RawDidLinkedInfo {
 				identifier: did,
 				w3n,
 				accounts,
@@ -968,49 +1074,52 @@ impl_runtime_apis! {
 		}
 	}
 
+	impl kilt_runtime_api_public_credentials::PublicCredentials<Block, Vec<u8>, Hash, public_credentials::CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>>, PublicCredentialsFilter<Hash, AccountId>, PublicCredentialsApiError> for Runtime {
+		fn get_by_id(credential_id: Hash) -> Option<public_credentials::CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>>> {
+			let subject = public_credentials::CredentialSubjects::<Runtime>::get(credential_id)?;
+			public_credentials::Credentials::<Runtime>::get(subject, credential_id)
+		}
+
+		fn get_by_subject(subject: Vec<u8>, filter: Option<PublicCredentialsFilter<Hash, AccountId>>) -> Result<Vec<(Hash, public_credentials::CredentialEntry<Hash, DidIdentifier, BlockNumber, AccountId, Balance, AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>>)>, PublicCredentialsApiError> {
+			let asset_did = AssetDid::try_from(subject).map_err(|_| PublicCredentialsApiError::InvalidSubjectId)?;
+			let credentials_prefix = public_credentials::Credentials::<Runtime>::iter_prefix(asset_did);
+			if let Some(filter) = filter {
+				Ok(credentials_prefix.filter(|(_, entry)| filter.should_include(entry)).collect())
+			} else {
+				Ok(credentials_prefix.collect())
+			}
+		}
+	}
+
+
 	#[cfg(feature = "runtime-benchmarks")]
 	impl frame_benchmarking::Benchmark<Block> for Runtime {
 		fn benchmark_metadata(extra: bool) -> (
 			Vec<frame_benchmarking::BenchmarkList>,
 			Vec<frame_support::traits::StorageInfo>,
 		) {
-			use frame_benchmarking::{list_benchmark, baseline, Benchmarking, BenchmarkList};
+			use frame_benchmarking::{Benchmarking, BenchmarkList};
 			use frame_support::traits::StorageInfoTrait;
+
 			use frame_system_benchmarking::Pallet as SystemBench;
-			use baseline::Pallet as BaselineBench;
+			use frame_benchmarking::baseline::Pallet as Baseline;
 
 			let mut list = Vec::<BenchmarkList>::new();
-
-			list_benchmark!(list, extra, frame_benchmarking, BaselineBench::<Runtime>);
-			list_benchmark!(list, extra, frame_system, SystemBench::<Runtime>);
-			list_benchmark!(list, extra, pallet_balances, Balances);
-			list_benchmark!(list, extra, pallet_timestamp, Timestamp);
-
-			list_benchmark!(list, extra, frame_system, SystemBench::<Runtime>);
-			list_benchmark!(list, extra, pallet_balances, Balances);
-			list_benchmark!(list, extra, pallet_timestamp, Timestamp);
-			list_benchmark!(list, extra, pallet_vesting, Vesting);
-
-			list_benchmark!(list, extra, did, Did);
-			list_benchmark!(list, extra, ctype, Ctype);
-			list_benchmark!(list, extra, delegation, Delegation);
-			list_benchmark!(list, extra, attestation, Attestation);
+			list_benchmarks!(list, extra);
 
 			let storage_info = AllPalletsWithSystem::storage_info();
-
 			(list, storage_info)
 		}
 
 		fn dispatch_benchmark(
 			config: frame_benchmarking::BenchmarkConfig
 		) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, sp_runtime::RuntimeString> {
-			use frame_benchmarking::{baseline, Benchmarking, BenchmarkBatch, add_benchmark, TrackedStorageKey};
-
-			use baseline::Pallet as BaselineBench;
+			use frame_benchmarking::{Benchmarking, BenchmarkBatch, TrackedStorageKey};
 			use frame_system_benchmarking::Pallet as SystemBench;
+			use frame_benchmarking::baseline::Pallet as Baseline;
 
 			impl frame_system_benchmarking::Config for Runtime {}
-			impl baseline::Config for Runtime {}
+			impl frame_benchmarking::baseline::Config for Runtime {}
 
 			let whitelist: Vec<TrackedStorageKey> = vec![
 				// Block Number
@@ -1033,31 +1142,32 @@ impl_runtime_apis! {
 			let mut batches = Vec::<BenchmarkBatch>::new();
 			let params = (&config, &whitelist);
 
-			add_benchmark!(params, batches, frame_benchmarking, BaselineBench::<Runtime>);
-			add_benchmark!(params, batches, frame_system, SystemBench::<Runtime>);
-			add_benchmark!(params, batches, pallet_balances, Balances);
-			add_benchmark!(params, batches, pallet_timestamp, Timestamp);
-			add_benchmark!(params, batches, pallet_vesting, Vesting);
-
-			add_benchmark!(params, batches, did, Did);
-			add_benchmark!(params, batches, ctype, Ctype);
-			add_benchmark!(params, batches, delegation, Delegation);
-			add_benchmark!(params, batches, attestation, Attestation);
+			add_benchmarks!(params, batches);
 
 			if batches.is_empty() { return Err("Benchmark not found for this pallet.".into()) }
 			Ok(batches)
 		}
 	}
 
+
 	#[cfg(feature = "try-runtime")]
 	impl frame_try_runtime::TryRuntime<Block> for Runtime {
-		fn on_runtime_upgrade() -> (frame_support::pallet_prelude::Weight, frame_support::pallet_prelude::Weight) {
-			log::info!("try-runtime::on_runtime_upgrade standalone runtime.");
-			let weight = Executive::try_runtime_upgrade().unwrap();
-			(weight, BlockWeights::get().max_block)
+		fn on_runtime_upgrade(checks: UpgradeCheckSelect) -> (Weight, Weight) {
+			log::info!("try-runtime::on_runtime_upgrade mashnet-node standalone.");
+			let weight = Executive::try_runtime_upgrade(checks).unwrap();
+			(weight, runtime_common::BlockWeights::get().max_block)
 		}
-		fn execute_block_no_check(block: Block) -> frame_support::pallet_prelude::Weight {
-			Executive::execute_block_no_check(block)
+
+		fn execute_block(block: Block, state_root_check: bool, sig_check: bool, select: frame_try_runtime::TryStateSelect) -> Weight {
+			log::info!(
+				target: "runtime::standalone", "try-runtime: executing block #{} ({:?}) / root checks: {:?} / sig check: {:?} / sanity-checks: {:?}",
+				block.header.number,
+				block.header.hash(),
+				state_root_check,
+				sig_check,
+				select,
+			);
+			Executive::try_execute_block(block, state_root_check, sig_check, select).expect("try_execute_block failed")
 		}
 	}
 }

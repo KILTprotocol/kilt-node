@@ -1,5 +1,5 @@
 // KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2022 BOTLabs GmbH
+// Copyright (C) 2019-2023 BOTLabs GmbH
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -49,7 +49,7 @@ impl<T: Config> VerifySignature for DidSignatureVerify<T> {
 		)
 		.map_err(|err| match err {
 			// Should never happen as a DID has always a valid authentication key and UrlErrors are never thrown here.
-			DidError::SignatureError(_) => SignatureVerificationError::SignatureInvalid,
+			DidError::Signature(_) => SignatureVerificationError::SignatureInvalid,
 			_ => SignatureVerificationError::SignerInformationNotPresent,
 		})
 	}

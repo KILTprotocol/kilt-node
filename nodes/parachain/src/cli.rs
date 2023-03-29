@@ -1,5 +1,5 @@
 // KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2022 BOTLabs GmbH
+// Copyright (C) 2019-2023 BOTLabs GmbH
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -16,23 +16,15 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use crate::chain_spec;
 use clap::Parser;
 use std::{ops::Deref, path::PathBuf};
 
 pub(crate) const DEFAULT_RUNTIME: &str = "peregrine";
 
 /// Sub-commands supported by the collator.
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug, Parser)]
 pub(crate) enum Subcommand {
-	/// Export the genesis state of the parachain.
-	#[clap(name = "export-genesis-state")]
-	ExportGenesisState(ExportGenesisStateCommand),
-
-	/// Export the genesis wasm of the parachain.
-	#[clap(name = "export-genesis-wasm")]
-	ExportGenesisWasm(ExportGenesisWasmCommand),
-
 	/// Build a chain specification.
 	BuildSpec(BuildSpecCmd),
 
@@ -48,15 +40,21 @@ pub(crate) enum Subcommand {
 	/// Import blocks.
 	ImportBlocks(sc_cli::ImportBlocksCmd),
 
-	/// Remove the whole chain.
-	PurgeChain(cumulus_client_cli::PurgeChainCmd),
-
 	/// Revert the chain to a previous state.
 	Revert(sc_cli::RevertCmd),
 
+	/// Remove the whole chain.
+	PurgeChain(cumulus_client_cli::PurgeChainCmd),
+
+	/// Export the genesis state of the parachain.
+	ExportGenesisState(cumulus_client_cli::ExportGenesisStateCommand),
+
+	/// Export the genesis wasm of the parachain.
+	ExportGenesisWasm(cumulus_client_cli::ExportGenesisWasmCommand),
+
 	/// Sub-commands concerned with benchmarking.
 	/// The pallet benchmarking moved to the `pallet` sub-command.
-	#[clap(subcommand)]
+	#[command(subcommand)]
 	Benchmark(frame_benchmarking_cli::BenchmarkCmd),
 
 	/// Try some command against runtime state.
@@ -72,11 +70,11 @@ pub(crate) enum Subcommand {
 /// Command for building the genesis state of the parachain
 #[derive(Debug, Parser)]
 pub(crate) struct BuildSpecCmd {
-	#[clap(flatten)]
+	#[command(flatten)]
 	pub(crate) inner_args: sc_cli::BuildSpecCmd,
 
 	/// The name of the runtime which should get executed.
-	#[clap(long, default_value = DEFAULT_RUNTIME)]
+	#[arg(long, default_value = DEFAULT_RUNTIME)]
 	pub(crate) runtime: String,
 }
 
@@ -88,53 +86,17 @@ impl Deref for BuildSpecCmd {
 	}
 }
 
-/// Command for exporting the genesis state of the parachain
-#[derive(Debug, Parser)]
-pub(crate) struct ExportGenesisStateCommand {
-	/// Output file name or stdout if unspecified.
-	#[clap(parse(from_os_str))]
-	pub(crate) output: Option<PathBuf>,
-
-	/// Write output in binary. Default is to write in hex.
-	#[clap(short, long)]
-	pub(crate) raw: bool,
-
-	/// The name of the chain for that the genesis state should be exported.
-	#[clap(long)]
-	pub(crate) chain: Option<String>,
-
-	/// The name of the runtime which should get executed.
-	#[clap(long, default_value = DEFAULT_RUNTIME)]
-	pub(crate) runtime: String,
-}
-
-/// Command for exporting the genesis wasm file.
-#[derive(Debug, Parser)]
-pub(crate) struct ExportGenesisWasmCommand {
-	/// Output file name or stdout if unspecified.
-	#[clap(parse(from_os_str))]
-	pub(crate) output: Option<PathBuf>,
-
-	/// Write output in binary. Default is to write in hex.
-	#[clap(short, long)]
-	pub(crate) raw: bool,
-
-	/// The name of the chain for that the genesis wasm file should be exported.
-	#[clap(long)]
-	pub(crate) chain: Option<String>,
-}
-
-#[derive(Debug, Parser)]
-#[clap(
+#[derive(Debug, clap::Parser)]
+#[command(
 	propagate_version = true,
 	args_conflicts_with_subcommands = true,
 	subcommand_negates_reqs = true
 )]
 pub(crate) struct Cli {
-	#[clap(subcommand)]
+	#[command(subcommand)]
 	pub(crate) subcommand: Option<Subcommand>,
 
-	#[clap(flatten)]
+	#[command(flatten)]
 	pub(crate) run: cumulus_client_cli::RunCmd,
 
 	// Disable automatic hardware benchmarks.
@@ -144,16 +106,16 @@ pub(crate) struct Cli {
 	///
 	/// The results are then printed out in the logs, and also sent as part of
 	/// telemetry, if telemetry is enabled.
-	#[clap(long)]
+	#[arg(long)]
 	pub no_hardware_benchmarks: bool,
 
 	/// The name of the runtime which should get executed.
-	#[clap(long, default_value = DEFAULT_RUNTIME)]
+	#[arg(long, default_value = DEFAULT_RUNTIME)]
 	pub(crate) runtime: String,
 
 	/// Relaychain arguments
-	#[clap(raw = true)]
-	pub(crate) relaychain_args: Vec<String>,
+	#[arg(raw = true)]
+	pub(crate) relay_chain_args: Vec<String>,
 }
 
 #[derive(Debug)]
@@ -175,13 +137,13 @@ impl RelayChainCli {
 		para_config: &sc_service::Configuration,
 		relay_chain_args: impl Iterator<Item = &'a String>,
 	) -> Self {
-		let extension = chain_spec::Extensions::try_get(&*para_config.chain_spec);
+		let extension = crate::chain_spec::Extensions::try_get(&*para_config.chain_spec);
 		let chain_id = extension.map(|e| e.relay_chain.clone());
 		let base_path = para_config.base_path.as_ref().map(|x| x.path().join("polkadot"));
 		Self {
 			base_path,
 			chain_id,
-			base: polkadot_cli::RunCmd::parse_from(relay_chain_args),
+			base: clap::Parser::parse_from(relay_chain_args),
 		}
 	}
 }

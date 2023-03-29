@@ -1,5 +1,5 @@
 // KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2022 BOTLabs GmbH
+// Copyright (C) 2019-2023 BOTLabs GmbH
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -59,11 +59,11 @@ impl<T: Config> TryFrom<Vec<u8>> for AsciiWeb3Name<T> {
 	fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
 		ensure!(
 			value.len() >= T::MinNameLength::get().saturated_into(),
-			Self::Error::Web3NameTooShort
+			Self::Error::TooShort
 		);
 		let bounded_vec: BoundedVec<u8, T::MaxNameLength> =
-			BoundedVec::try_from(value).map_err(|_| Self::Error::Web3NameTooLong)?;
-		ensure!(is_valid_web3_name(&bounded_vec), Self::Error::InvalidWeb3NameCharacter);
+			BoundedVec::try_from(value).map_err(|_| Self::Error::TooLong)?;
+		ensure!(is_valid_web3_name(&bounded_vec), Self::Error::InvalidCharacter);
 		Ok(Self(bounded_vec, PhantomData))
 	}
 }
@@ -90,7 +90,7 @@ impl<T: Config> Clone for AsciiWeb3Name<T> {
 }
 
 /// KILT web3 name ownership details.
-#[derive(Clone, Encode, Decode, Debug, PartialEq, TypeInfo, MaxEncodedLen)]
+#[derive(Clone, Encode, Decode, Debug, Eq, PartialEq, TypeInfo, MaxEncodedLen)]
 pub struct Web3NameOwnership<Owner, Deposit: MaxEncodedLen, BlockNumber> {
 	/// The owner of the web3 name.
 	pub owner: Owner,
@@ -141,7 +141,7 @@ mod tests {
 		}
 
 		for invalid in invalid_inputs {
-			assert!(AsciiWeb3Name::<Test>::try_from(invalid).is_err(),);
+			assert!(AsciiWeb3Name::<Test>::try_from(invalid).is_err());
 		}
 	}
 }

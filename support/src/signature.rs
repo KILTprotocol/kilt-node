@@ -1,5 +1,5 @@
 // KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2022 BOTLabs GmbH
+// Copyright (C) 2019-2023 BOTLabs GmbH
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@ use frame_support::dispatch::Weight;
 use scale_info::TypeInfo;
 
 #[cfg(any(test, feature = "mock", feature = "runtime-benchmarks"))]
-use {sp_runtime::traits::Zero, sp_std::marker::PhantomData};
+use sp_std::marker::PhantomData;
 
 /// The Result of the signature verification.
 pub type SignatureVerificationResult = Result<(), SignatureVerificationError>;

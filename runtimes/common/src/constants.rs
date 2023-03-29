@@ -1,5 +1,5 @@
 // KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2022 BOTLabs GmbH
+// Copyright (C) 2019-2023 BOTLabs GmbH
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,7 +18,8 @@
 
 use frame_support::{
 	parameter_types,
-	weights::{constants::WEIGHT_PER_SECOND, Weight},
+	traits::WithdrawReasons,
+	weights::{constants::WEIGHT_REF_TIME_PER_SECOND, Weight},
 };
 use sp_runtime::{Perbill, Percent, Perquintill};
 
@@ -54,6 +55,8 @@ pub const MILLI_KILT: Balance = 10u128.pow(12);
 /// 0.000_001 KILT
 pub const MICRO_KILT: Balance = 10u128.pow(9);
 
+pub const EXISTENTIAL_DEPOSIT: Balance = 10 * MILLI_KILT;
+
 // 1 in 4 blocks (on average, not counting collisions) will be primary babe
 // blocks.
 pub const PRIMARY_PROBABILITY: (u64, u64) = (1, 4);
@@ -65,7 +68,10 @@ pub const AVERAGE_ON_INITIALIZE_RATIO: Perbill = Perbill::from_percent(10);
 /// used by  Operational  extrinsics.
 pub const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
 /// We allow for 0.5 seconds of compute with a 12 second average block time.
-pub const MAXIMUM_BLOCK_WEIGHT: Weight = WEIGHT_PER_SECOND / 2;
+pub const MAXIMUM_BLOCK_WEIGHT: Weight = Weight::from_parts(
+	WEIGHT_REF_TIME_PER_SECOND.saturating_div(2),
+	cumulus_primitives_core::relay_chain::MAX_POV_SIZE as u64,
+);
 
 pub const INFLATION_CONFIG: (Perquintill, Perquintill, Perquintill, Perquintill) = (
 	// max collator staking rate
@@ -109,6 +115,8 @@ pub const MAX_VESTING_SCHEDULES: u32 = 28;
 parameter_types! {
 	/// Vesting Pallet. Copied from Kusama & Polkadot runtime
 	pub const MinVestedTransfer: Balance = 100 * MILLI_KILT;
+	pub UnvestedFundsAllowedWithdrawReasons: WithdrawReasons =
+		WithdrawReasons::except(WithdrawReasons::TRANSFER | WithdrawReasons::RESERVE);
 	/// Deposits per byte
 	pub const ByteDeposit: Balance = deposit(0, 1);
 	/// Index Pallet. Deposit taken for an account index
@@ -201,17 +209,14 @@ pub mod staking {
 		/// We only allow one delegation per round.
 		pub const MaxDelegationsPerRound: u32 = 1;
 		/// Maximum 25 delegators per collator at launch, might be increased later
-		#[derive(Debug, PartialEq)]
+		#[derive(Debug, Eq, PartialEq)]
 		pub const MaxDelegatorsPerCollator: u32 = MAX_DELEGATORS_PER_COLLATOR;
-		/// Maximum 1 collator per delegator at launch, will be increased later
-		#[derive(Debug, PartialEq)]
-		pub const MaxCollatorsPerDelegator: u32 = 1;
 		/// Minimum stake required to be reserved to be a collator is 10_000
 		pub const MinCollatorStake: Balance = 10_000 * KILT;
 		/// Minimum stake required to be reserved to be a delegator is 1000
 		pub const MinDelegatorStake: Balance = MIN_DELEGATOR_STAKE;
 		/// Maximum number of collator candidates
-		#[derive(Debug, PartialEq)]
+		#[derive(Debug, Eq, PartialEq)]
 		pub const MaxCollatorCandidates: u32 = MAX_CANDIDATES;
 		/// Maximum number of concurrent requests to unlock unstaked balance
 		pub const MaxUnstakeRequests: u32 = 10;
@@ -293,6 +298,8 @@ pub mod governance {
 		pub const TechnicalMotionDuration: BlockNumber = TECHNICAL_MOTION_DURATION;
 		pub const TechnicalMaxProposals: u32 = 100;
 		pub const TechnicalMaxMembers: u32 = 100;
+		// Tipper Group
+		pub const TipperMaxMembers: u32 = 21;
 	}
 }
 
@@ -323,12 +330,12 @@ pub mod did {
 
 	parameter_types! {
 		pub const MaxNewKeyAgreementKeys: u32 = MAX_KEY_AGREEMENT_KEYS;
-		#[derive(Debug, Clone, PartialEq)]
+		#[derive(Debug, Clone, Eq, PartialEq)]
 		pub const MaxUrlLength: u32 = MAX_URL_LENGTH;
 		pub const MaxPublicKeysPerDid: u32 = MAX_PUBLIC_KEYS_PER_DID;
-		#[derive(Debug, Clone, PartialEq)]
+		#[derive(Debug, Clone, Eq, PartialEq)]
 		pub const MaxTotalKeyAgreementKeys: u32 = MAX_TOTAL_KEY_AGREEMENT_KEYS;
-		#[derive(Debug, Clone, PartialEq)]
+		#[derive(Debug, Clone, Eq, PartialEq)]
 		pub const MaxEndpointUrlsCount: u32 = MAX_ENDPOINT_URLS_COUNT;
 		// Standalone block time is half the duration of a parachain block.
 		pub const MaxBlocksTxValidity: BlockNumber = MAX_BLOCKS_TX_VALIDITY;
@@ -403,7 +410,6 @@ pub mod web3_names {
 pub mod preimage {
 	use super::*;
 	parameter_types! {
-		pub const PreimageMaxSize: u32 = 4096 * 1024;
 		pub const PreimageBaseDeposit: Balance = deposit(2, 64);
 	}
 }
@@ -414,7 +420,7 @@ pub mod tips {
 	parameter_types! {
 		pub const MaximumReasonLength: u32 = 16384;
 		pub const TipCountdown: BlockNumber = DAYS;
-		pub const TipFindersFee: Percent = Percent::from_percent(20);
+		pub const TipFindersFee: Percent = Percent::from_percent(0);
 		pub const TipReportDepositBase: Balance = deposit(1, 1);
 	}
 }
@@ -427,6 +433,21 @@ pub mod fee {
 		/// a "virtual tip" that's equal to the `OperationalFeeMultiplier * final_fee`.
 		pub const OperationalFeeMultiplier: u8 = 5;
 		pub const TransactionByteFee: Balance = MICRO_KILT;
+	}
+}
+
+pub mod public_credentials {
+	use super::*;
+
+	/// The size is checked in the runtime by a test.
+	pub const MAX_PUBLIC_CREDENTIAL_STORAGE_LENGTH: u32 = 419;
+	// Each credential would have a different deposit, so no multiplier here
+	pub const PUBLIC_CREDENTIAL_DEPOSIT: Balance = deposit(1, MAX_PUBLIC_CREDENTIAL_STORAGE_LENGTH);
+
+	parameter_types! {
+		pub const Deposit: Balance = PUBLIC_CREDENTIAL_DEPOSIT;
+		pub const MaxEncodedClaimsLength: u32 = 100_000;	// 100 Kb
+		pub const MaxSubjectIdLength: u32 = kilt_asset_dids::MAXIMUM_ASSET_DID_LENGTH as u32;
 	}
 }
 

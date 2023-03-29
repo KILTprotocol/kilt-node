@@ -1,5 +1,5 @@
 // KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2022 BOTLabs GmbH
+// Copyright (C) 2019-2023 BOTLabs GmbH
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,12 +20,12 @@ use ctype::mock::get_ctype_hash;
 use frame_support::{assert_noop, assert_ok};
 use sp_runtime::{traits::Zero, DispatchError};
 
-use kilt_support::mock::mock_origin::DoubleOrigin;
+use kilt_support::{deposit::Deposit, mock::mock_origin::DoubleOrigin};
 
 use crate::{
 	self as attestation,
 	mock::{runtime::Balances, *},
-	AttestationAccessControl, AttesterOf, Config,
+	AttestationAccessControl, AttesterOf, Config, Error,
 };
 
 // #############################################################################
@@ -136,7 +136,7 @@ fn test_attest_ctype_not_found() {
 					ctype_hash,
 					None
 				),
-				ctype::Error::<Test>::CTypeNotFound
+				ctype::Error::<Test>::NotFound
 			);
 		});
 }
@@ -272,7 +272,7 @@ fn test_revoke_not_found() {
 					claim_hash,
 					authorization_info
 				),
-				attestation::Error::<Test>::AttestationNotFound
+				attestation::Error::<Test>::NotFound
 			);
 		});
 }
@@ -374,7 +374,7 @@ fn test_remove_unauthorized() {
 					claim_hash,
 					authorization_info
 				),
-				attestation::Error::<Test>::Unauthorized
+				attestation::Error::<Test>::NotAuthorized
 			);
 		});
 }
@@ -393,7 +393,7 @@ fn test_remove_not_found() {
 			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
 			assert_noop!(
 				Attestation::remove(DoubleOrigin(ACCOUNT_00, attester.clone()).into(), claim_hash, None),
-				attestation::Error::<Test>::AttestationNotFound
+				attestation::Error::<Test>::NotFound
 			);
 		});
 }
@@ -416,7 +416,10 @@ fn test_reclaim_deposit() {
 		.build()
 		.execute_with(|| {
 			assert_eq!(Balances::reserved_balance(ACCOUNT_00), <Test as Config>::Deposit::get());
-			assert_ok!(Attestation::reclaim_deposit(Origin::signed(ACCOUNT_00), claim_hash));
+			assert_ok!(Attestation::reclaim_deposit(
+				RuntimeOrigin::signed(ACCOUNT_00),
+				claim_hash
+			));
 			assert!(!Attestation::external_attestations(
 				other_authorized.clone(),
 				claim_hash
@@ -439,7 +442,10 @@ fn test_reclaim_deposit_authorization() {
 		.build()
 		.execute_with(|| {
 			assert_eq!(Balances::reserved_balance(ACCOUNT_00), <Test as Config>::Deposit::get());
-			assert_ok!(Attestation::reclaim_deposit(Origin::signed(ACCOUNT_00), claim_hash));
+			assert_ok!(Attestation::reclaim_deposit(
+				RuntimeOrigin::signed(ACCOUNT_00),
+				claim_hash
+			));
 			assert!(Attestation::attestations(claim_hash).is_none());
 			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
 		});
@@ -458,8 +464,8 @@ fn test_reclaim_unauthorized() {
 		.build()
 		.execute_with(|| {
 			assert_noop!(
-				Attestation::reclaim_deposit(Origin::signed(ACCOUNT_01), claim_hash),
-				attestation::Error::<Test>::Unauthorized,
+				Attestation::reclaim_deposit(RuntimeOrigin::signed(ACCOUNT_01), claim_hash),
+				attestation::Error::<Test>::NotAuthorized,
 			);
 		});
 }
@@ -476,8 +482,175 @@ fn test_reclaim_deposit_not_found() {
 		.build()
 		.execute_with(|| {
 			assert_noop!(
-				Attestation::reclaim_deposit(Origin::signed(ACCOUNT_01), claim_hash),
-				attestation::Error::<Test>::AttestationNotFound,
+				Attestation::reclaim_deposit(RuntimeOrigin::signed(ACCOUNT_01), claim_hash),
+				attestation::Error::<Test>::NotFound,
+			);
+		});
+}
+
+// #############################################################################
+// transfer deposit
+
+#[test]
+fn test_change_deposit_owner() {
+	let attester: AttesterOf<Test> = sr25519_did_from_seed(&ALICE_SEED);
+	let other_authorized: AttesterOf<Test> = sr25519_did_from_seed(&BOB_SEED);
+	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
+	let mut attestation = generate_base_attestation::<Test>(attester.clone(), ACCOUNT_00);
+	attestation.authorization_id = Some(other_authorized);
+
+	ExtBuilder::default()
+		.with_balances(vec![
+			(ACCOUNT_00, <Test as Config>::Deposit::get() * 100),
+			(ACCOUNT_01, <Test as Config>::Deposit::get() * 100),
+		])
+		.with_ctypes(vec![(attestation.ctype_hash, attester.clone())])
+		.with_attestations(vec![(claim_hash, attestation)])
+		.build()
+		.execute_with(|| {
+			assert_eq!(Balances::reserved_balance(ACCOUNT_00), <Test as Config>::Deposit::get());
+			assert_ok!(Attestation::change_deposit_owner(
+				DoubleOrigin(ACCOUNT_01, attester).into(),
+				claim_hash
+			));
+			assert_eq!(
+				Attestation::attestations(claim_hash)
+					.expect("Attestation must be retained")
+					.deposit,
+				Deposit {
+					owner: ACCOUNT_01,
+					amount: <Test as Config>::Deposit::get()
+				}
+			);
+			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
+			assert_eq!(Balances::reserved_balance(ACCOUNT_01), <Test as Config>::Deposit::get());
+		});
+}
+
+#[test]
+fn test_change_deposit_owner_insufficient_balance() {
+	let attester: AttesterOf<Test> = sr25519_did_from_seed(&ALICE_SEED);
+	let other_authorized: AttesterOf<Test> = sr25519_did_from_seed(&BOB_SEED);
+	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
+	let mut attestation = generate_base_attestation::<Test>(attester.clone(), ACCOUNT_00);
+	attestation.authorization_id = Some(other_authorized);
+
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
+		.with_ctypes(vec![(attestation.ctype_hash, attester.clone())])
+		.with_attestations(vec![(claim_hash, attestation)])
+		.build()
+		.execute_with(|| {
+			assert_eq!(Balances::reserved_balance(ACCOUNT_00), <Test as Config>::Deposit::get());
+			assert_noop!(
+				Attestation::change_deposit_owner(DoubleOrigin(ACCOUNT_01, attester).into(), claim_hash),
+				pallet_balances::Error::<Test>::InsufficientBalance
+			);
+		});
+}
+
+#[test]
+fn test_change_deposit_owner_unauthorized() {
+	let attester: AttesterOf<Test> = sr25519_did_from_seed(&BOB_SEED);
+	let evil_actor: AttesterOf<Test> = sr25519_did_from_seed(&ALICE_SEED);
+	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
+	let attestation = generate_base_attestation::<Test>(attester.clone(), ACCOUNT_00);
+
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
+		.with_ctypes(vec![(attestation.ctype_hash, attester)])
+		.with_attestations(vec![(claim_hash, attestation)])
+		.build()
+		.execute_with(|| {
+			assert_noop!(
+				Attestation::change_deposit_owner(DoubleOrigin(ACCOUNT_00, evil_actor).into(), claim_hash),
+				attestation::Error::<Test>::NotAuthorized,
+			);
+		});
+}
+
+#[test]
+fn test_change_deposit_owner_not_found() {
+	let attester: AttesterOf<Test> = sr25519_did_from_seed(&BOB_SEED);
+	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
+	let attestation = generate_base_attestation::<Test>(attester.clone(), ACCOUNT_00);
+
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
+		.with_ctypes(vec![(attestation.ctype_hash, attester.clone())])
+		.build()
+		.execute_with(|| {
+			assert_noop!(
+				Attestation::change_deposit_owner(DoubleOrigin(ACCOUNT_00, attester).into(), claim_hash),
+				attestation::Error::<Test>::NotFound,
+			);
+		});
+}
+
+/// Update the deposit amount
+#[test]
+fn test_update_deposit() {
+	let attester: AttesterOf<Test> = sr25519_did_from_seed(&BOB_SEED);
+	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
+	let attestation = generate_base_attestation_with_deposit::<Test>(
+		attester.clone(),
+		ACCOUNT_00,
+		<Test as Config>::Deposit::get() * 2,
+	);
+
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
+		.with_ctypes(vec![(attestation.ctype_hash, attester)])
+		.with_attestations(vec![(claim_hash, attestation)])
+		.build()
+		.execute_with(|| {
+			assert_eq!(
+				Balances::reserved_balance(ACCOUNT_00),
+				<Test as Config>::Deposit::get() * 2
+			);
+			assert_ok!(Attestation::update_deposit(
+				RuntimeOrigin::signed(ACCOUNT_00),
+				claim_hash
+			));
+			assert_eq!(
+				Attestation::attestations(claim_hash)
+					.expect("Attestation must be retained")
+					.deposit,
+				Deposit {
+					owner: ACCOUNT_00,
+					amount: <Test as Config>::Deposit::get()
+				}
+			);
+			// old deposit was 2x Deposit::get(), new deposit should be the the default
+			// deposit value.
+			assert_eq!(Balances::reserved_balance(ACCOUNT_00), <Test as Config>::Deposit::get());
+		});
+}
+
+/// Update the deposit amount
+#[test]
+fn test_update_deposit_unauthorized() {
+	let attester: AttesterOf<Test> = sr25519_did_from_seed(&BOB_SEED);
+	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
+	let attestation = generate_base_attestation_with_deposit::<Test>(
+		attester.clone(),
+		ACCOUNT_00,
+		<Test as Config>::Deposit::get() * 2,
+	);
+
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
+		.with_ctypes(vec![(attestation.ctype_hash, attester)])
+		.with_attestations(vec![(claim_hash, attestation)])
+		.build()
+		.execute_with(|| {
+			assert_eq!(
+				Balances::reserved_balance(ACCOUNT_00),
+				<Test as Config>::Deposit::get() * 2
+			);
+			assert_noop!(
+				Attestation::update_deposit(RuntimeOrigin::signed(ACCOUNT_01), claim_hash),
+				Error::<Test>::NotAuthorized
 			);
 		});
 }

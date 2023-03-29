@@ -1,5 +1,5 @@
 // KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2022 BOTLabs GmbH
+// Copyright (C) 2019-2023 BOTLabs GmbH
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -16,8 +16,8 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::{traits::Get, BoundedVec, DefaultNoBound, RuntimeDebug};
-use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_runtime::{traits::Zero, SaturatedConversion};
 use sp_std::{
@@ -49,7 +49,7 @@ impl<T: Ord + Clone, S: Get<u32>> OrderedSet<T, S> {
 		let mut v = bv.into_inner();
 		v.sort_by(|a, b| b.cmp(a));
 		v.dedup();
-		Self::from_sorted_set(v.try_into().expect("No values were added"))
+		Self::from_sorted_set(v.try_into().map_err(|_| ()).expect("No values were added"))
 	}
 
 	/// Create a set from a `BoundedVec`.
@@ -146,7 +146,7 @@ impl<T: Ord + Clone, S: Get<u32>> OrderedSet<T, S> {
 			}
 			Err(i) => {
 				// Delegator
-				self.0.try_insert(i, value)?;
+				self.0.try_insert(i, value).map_err(|_| ())?;
 				Ok(None)
 			}
 		}
@@ -284,13 +284,13 @@ mod tests {
 	use super::*;
 
 	parameter_types! {
-		#[derive(PartialEq, RuntimeDebug)]
+		#[derive(Eq, PartialEq, RuntimeDebug)]
 		pub const Zero: u32 = 0;
-		#[derive(PartialEq, RuntimeDebug)]
+		#[derive(Eq, PartialEq, RuntimeDebug)]
 		pub const One: u32 = 1;
-		#[derive(PartialEq, RuntimeDebug)]
+		#[derive(Eq, PartialEq, RuntimeDebug)]
 		pub const Eight: u32 = 8;
-		#[derive(PartialEq, RuntimeDebug, Clone)]
+		#[derive(Clone, Eq, PartialEq, RuntimeDebug)]
 		pub const Five: u32 = 5;
 	}
 

@@ -1,5 +1,5 @@
 // KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2022 BOTLabs GmbH
+// Copyright (C) 2019-2023 BOTLabs GmbH
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,10 +17,10 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_support::{
+	dispatch::DispatchClass,
 	traits::{Currency, Get, Imbalance, OnUnbalanced},
 	weights::{
-		DispatchClass, WeightToFee as WeightToFeeT, WeightToFeeCoefficient, WeightToFeeCoefficients,
-		WeightToFeePolynomial,
+		Weight, WeightToFee as WeightToFeeT, WeightToFeeCoefficient, WeightToFeeCoefficients, WeightToFeePolynomial,
 	},
 };
 use pallet_balances::WeightInfo;
@@ -105,15 +105,21 @@ where
 
 		// TODO: transfer_keep_alive is 288 byte long?
 		let tx_len: u64 = 288;
-		let byte_fee: Balance = <R as pallet_transaction_payment::Config>::LengthToFee::weight_to_fee(&tx_len).into();
-		let base_weight: Balance = <R as frame_system::Config>::BlockWeights::get()
+		let byte_fee: Balance =
+			<R as pallet_transaction_payment::Config>::LengthToFee::weight_to_fee(&Weight::from_ref_time(tx_len))
+				.into();
+		let base_weight: Weight = <R as frame_system::Config>::BlockWeights::get()
 			.get(DispatchClass::Normal)
-			.base_extrinsic
-			.into();
-		let tx_weight: Balance = <R as pallet_balances::Config>::WeightInfo::transfer_keep_alive().into();
-		let unbalanced_fee: Balance = base_weight + tx_weight;
+			.base_extrinsic;
+		let base_weight_fee: Balance =
+			<R as pallet_transaction_payment::Config>::LengthToFee::weight_to_fee(&base_weight).into();
+		let tx_weight_fee: Balance = <R as pallet_transaction_payment::Config>::LengthToFee::weight_to_fee(
+			&<R as pallet_balances::Config>::WeightInfo::transfer_keep_alive(),
+		)
+		.into();
+		let unbalanced_fee: Balance = base_weight_fee.saturating_add(tx_weight_fee);
 
-		let wanted_weight_fee: Balance = wanted_fee - byte_fee;
+		let wanted_weight_fee: Balance = wanted_fee.saturating_sub(byte_fee);
 
 		smallvec![WeightToFeeCoefficient {
 			degree: 1,
@@ -127,7 +133,11 @@ where
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use frame_support::{parameter_types, traits::FindAuthor, weights::DispatchClass};
+	use crate::{
+		AccountId, BlockExecutionWeight, ExtrinsicBaseWeight, AVERAGE_ON_INITIALIZE_RATIO, MAXIMUM_BLOCK_WEIGHT,
+		NORMAL_DISPATCH_RATIO,
+	};
+	use frame_support::{dispatch::DispatchClass, parameter_types, traits::FindAuthor};
 	use frame_system::limits;
 	use sp_core::H256;
 	use sp_runtime::{
@@ -135,8 +145,6 @@ mod tests {
 		traits::{BlakeTwo256, IdentityLookup},
 		Perbill,
 	};
-
-	use crate::AccountId;
 
 	type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 	type Block = frame_system::mocking::MockBlock<Test>;
@@ -148,38 +156,48 @@ mod tests {
 			UncheckedExtrinsic = UncheckedExtrinsic,
 		{
 			System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
-			Authorship: pallet_authorship::{Pallet, Call, Storage, Inherent},
+			Authorship: pallet_authorship::{Pallet, Storage},
 			Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
 		}
 	);
 
 	parameter_types! {
 		pub const BlockHashCount: u64 = 250;
+		// One to one clone of our runtimes' blockweight
 		pub BlockWeights: limits::BlockWeights = limits::BlockWeights::builder()
-			.base_block(10)
-			.for_class(DispatchClass::all(), |weight| {
-				weight.base_extrinsic = 100;
-			})
-			.for_class(DispatchClass::non_mandatory(), |weight| {
-				weight.max_total = Some(1024);
-			})
-			.build_or_panic();
+		.base_block(BlockExecutionWeight::get())
+		.for_class(DispatchClass::all(), |weights| {
+			weights.base_extrinsic = ExtrinsicBaseWeight::get();
+		})
+		.for_class(DispatchClass::Normal, |weights| {
+			weights.max_total = Some(NORMAL_DISPATCH_RATIO * MAXIMUM_BLOCK_WEIGHT);
+		})
+		.for_class(DispatchClass::Operational, |weights| {
+			weights.max_total = Some(MAXIMUM_BLOCK_WEIGHT);
+			// Operational transactions have some extra reserved space, so that they
+			// are included even if block reached `MAXIMUM_BLOCK_WEIGHT`.
+			weights.reserved = Some(
+				MAXIMUM_BLOCK_WEIGHT - NORMAL_DISPATCH_RATIO * MAXIMUM_BLOCK_WEIGHT
+			);
+		})
+		.avg_block_initialization(AVERAGE_ON_INITIALIZE_RATIO)
+		.build_or_panic();
 		pub BlockLength: limits::BlockLength = limits::BlockLength::max(2 * 1024);
 		pub const AvailableBlockRatio: Perbill = Perbill::one();
 	}
 
 	impl frame_system::Config for Test {
 		type BaseCallFilter = frame_support::traits::Everything;
-		type Origin = Origin;
+		type RuntimeOrigin = RuntimeOrigin;
 		type Index = u64;
 		type BlockNumber = u64;
-		type Call = Call;
+		type RuntimeCall = RuntimeCall;
 		type Hash = H256;
 		type Hashing = BlakeTwo256;
 		type AccountId = AccountId;
 		type Lookup = IdentityLookup<Self::AccountId>;
 		type Header = Header;
-		type Event = Event;
+		type RuntimeEvent = RuntimeEvent;
 		type BlockHashCount = BlockHashCount;
 		type BlockLength = BlockLength;
 		type BlockWeights = BlockWeights;
@@ -197,7 +215,7 @@ mod tests {
 
 	impl pallet_balances::Config for Test {
 		type Balance = u64;
-		type Event = Event;
+		type RuntimeEvent = RuntimeEvent;
 		type DustRemoval = ();
 		type ExistentialDeposit = ();
 		type AccountStore = System;
@@ -229,8 +247,6 @@ mod tests {
 	}
 	impl pallet_authorship::Config for Test {
 		type FindAuthor = OneAuthor;
-		type UncleGenerations = ();
-		type FilterUncle = ();
 		type EventHandler = ();
 	}
 

@@ -1,5 +1,5 @@
 // KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2022 BOTLabs GmbH
+// Copyright (C) 2019-2023 BOTLabs GmbH
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -31,7 +31,7 @@ use sp_runtime::AccountId32;
 pub mod mock_origin {
 	use sp_std::marker::PhantomData;
 
-	use codec::{Decode, Encode};
+	use codec::{Decode, Encode, MaxEncodedLen};
 	use frame_support::{traits::EnsureOrigin, Parameter};
 	use scale_info::TypeInfo;
 	use sp_runtime::AccountId32;
@@ -40,7 +40,7 @@ pub mod mock_origin {
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
-		type Origin: From<Origin<Self>>;
+		type RuntimeOrigin: From<Origin<Self>>;
 		type AccountId: Parameter;
 		type SubjectId: Parameter;
 	}
@@ -62,7 +62,7 @@ pub mod mock_origin {
 	/// An origin that is split into sender and subject.
 	///
 	/// WARNING: This is only used for testing!
-	#[derive(Debug, Clone, PartialEq, Eq, TypeInfo, Encode, Decode)]
+	#[derive(Debug, Clone, PartialEq, Eq, TypeInfo, Encode, Decode, MaxEncodedLen)]
 	pub struct DoubleOrigin<AccountId, SubjectId>(pub AccountId, pub SubjectId);
 
 	impl<AccountId: Clone, SubjectId: Clone> CallSources<AccountId, SubjectId> for DoubleOrigin<AccountId, SubjectId> {
@@ -94,10 +94,13 @@ pub mod mock_origin {
 		}
 
 		#[cfg(feature = "runtime-benchmarks")]
-		fn successful_origin() -> OuterOrigin {
+		fn try_successful_origin() -> Result<OuterOrigin, ()> {
 			const TEST_ACC: AccountId32 = AccountId32::new([0u8; 32]);
 
-			OuterOrigin::from(DoubleOrigin(TEST_ACC.clone().into(), TEST_ACC.into()))
+			Ok(OuterOrigin::from(DoubleOrigin(
+				TEST_ACC.clone().into(),
+				TEST_ACC.into(),
+			)))
 		}
 	}
 
@@ -114,6 +117,7 @@ pub mod mock_origin {
 	}
 }
 
+#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeInfo, MaxEncodedLen)]
 pub struct SubjectId(pub AccountId32);
 
@@ -126,5 +130,11 @@ impl From<AccountId32> for SubjectId {
 impl From<sr25519::Public> for SubjectId {
 	fn from(acc: sr25519::Public) -> Self {
 		SubjectId(acc.into())
+	}
+}
+
+impl AsRef<[u8]> for SubjectId {
+	fn as_ref(&self) -> &[u8] {
+		self.0.as_ref()
 	}
 }
