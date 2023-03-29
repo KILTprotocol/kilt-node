@@ -63,7 +63,7 @@ pub mod constants {
 			///   99th: 898_079
 			///   95th: 281_077
 			///   75th: 50_378
-			read: 80_987 * constants::WEIGHT_PER_NANOS,
+			read: 80_987 * constants::WEIGHT_REF_TIME_PER_NANOS,
 
 			/// Time to write one storage item.
 			/// Calculated by multiplying the *Average* of all values with `1.1` and adding `0`.
@@ -78,7 +78,7 @@ pub mod constants {
 			///   99th: 966_008
 			///   95th: 325_593
 			///   75th: 112_787
-			write: 142_577 * constants::WEIGHT_PER_NANOS,
+			write: 142_577 * constants::WEIGHT_REF_TIME_PER_NANOS,
 		};
 	}
 
@@ -94,20 +94,20 @@ pub mod constants {
 		fn bound() {
 			// At least 1 µs.
 			assert!(
-				W::get().reads(1) >= constants::WEIGHT_PER_MICROS,
+				W::get().reads(1) >= constants::WEIGHT_REF_TIME_PER_NANOS,
 				"Read weight should be at least 1 µs."
 			);
 			assert!(
-				W::get().writes(1) >= constants::WEIGHT_PER_MICROS,
+				W::get().writes(1) >= constants::WEIGHT_REF_TIME_PER_NANOS,
 				"Write weight should be at least 1 µs."
 			);
 			// At most 1 ms.
 			assert!(
-				W::get().reads(1) <= constants::WEIGHT_PER_MILLIS,
+				W::get().reads(1) <= constants::WEIGHT_REF_TIME_PER_MILLIS,
 				"Read weight should be at most 1 ms."
 			);
 			assert!(
-				W::get().writes(1) <= constants::WEIGHT_PER_MILLIS,
+				W::get().writes(1) <= constants::WEIGHT_REF_TIME_PER_MILLIS,
 				"Write weight should be at most 1 ms."
 			);
 		}
