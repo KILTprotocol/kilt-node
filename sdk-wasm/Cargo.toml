@@ -27,7 +27,7 @@ kilt-utils = {workspace = true, default-features = false}
 #parity dependencies
 sp-core.workspace = true
 sp-core-hashing = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.38"}
-sp-io = {workspace = true, features = ["disable_oom", "disable_panic_handler"]}
+
 
 #utils 
 hash256-std-hasher = { version = "0.15.2", default-features = false }

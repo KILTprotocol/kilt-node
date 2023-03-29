@@ -10413,7 +10413,6 @@ dependencies = [
  "kilt-utils",
  "sp-core",
  "sp-core-hashing",
- "sp-io",
  "wasm-bindgen",
  "wasm-bindgen-test",
  "wee_alloc",
