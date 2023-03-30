@@ -1,11 +1,11 @@
 mod traits;
 mod utils;
 
+use kilt_utils::{_calculate_key_id, _is_valid_web3_name};
 use runtime_common::constants::web3_names::{MAX_LENGTH, MIN_LENGTH};
+use spiritnet_runtime::RuntimeCall;
 use traits::blake2::BlakeTwo256;
 use wasm_bindgen::prelude::*;
-
-use kilt_utils::{_calculate_key_id, _is_valid_web3_name};
 
 #[cfg(feature = "wee_alloc")]
 #[global_allocator]
