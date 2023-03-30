@@ -20,6 +20,7 @@ pallet-balances = {workspace = true, features = ["std"]}
 sp-core = {workspace = true, features = ["std"]}
 sp-io = {workspace = true, features = ["std"]}
 sp-keystore = {workspace = true, features = ["std"]}
+kilt-utils = {workspace = true, features = ["std"]}
 
 [dependencies]
 # External dependencies
@@ -28,6 +29,7 @@ scale-info = {workspace = true, features = ["derive"]}
 
 # Internal dependencies
 kilt-support.workspace = true
+kilt-utils.workspace = true
 
 # Substrate dependencies
 frame-support.workspace = true

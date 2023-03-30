@@ -35,7 +35,7 @@ use frame_support::{
 	weights::constants::RocksDbWeight,
 };
 use frame_system::EnsureSigned;
-use kilt_utils::calculate_key_id;
+use kilt_utils::_calculate_key_id as calculate_key_id;
 use pallet_balances::NegativeImbalance;
 use sp_core::{ecdsa, ed25519, sr25519, Pair};
 use sp_runtime::{

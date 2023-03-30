@@ -18,11 +18,11 @@
 
 use sp_std::{fmt::Debug, marker::PhantomData, ops::Deref, vec::Vec};
 
+use crate::{Config, Error};
 use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::{ensure, sp_runtime::SaturatedConversion, traits::Get, BoundedVec, RuntimeDebug};
+use kilt_utils::_is_valid_web3_name as is_valid_web3_name;
 use scale_info::TypeInfo;
-
-use crate::{Config, Error};
 
 /// A KILT web3 name.
 ///
@@ -66,13 +66,6 @@ impl<T: Config> TryFrom<Vec<u8>> for AsciiWeb3Name<T> {
 		ensure!(is_valid_web3_name(&bounded_vec), Self::Error::InvalidCharacter);
 		Ok(Self(bounded_vec, PhantomData))
 	}
-}
-
-/// Verify that a given slice can be used as a web3 name.
-fn is_valid_web3_name(input: &[u8]) -> bool {
-	input
-		.iter()
-		.all(|c| matches!(c, b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_'))
 }
 
 // FIXME: did not find a way to automatically implement this.

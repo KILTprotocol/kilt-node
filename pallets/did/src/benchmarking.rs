@@ -31,7 +31,7 @@ use sp_runtime::{traits::IdentifyAccount, AccountId32, MultiSigner};
 use sp_std::{convert::TryInto, vec::Vec};
 
 use kilt_support::{deposit::Deposit, signature::VerifySignature};
-use kilt_utils::calculate_key_id;
+use kilt_utils::_calculate_key_id as calculate_key_id;
 
 use crate::{
 	did_details::{

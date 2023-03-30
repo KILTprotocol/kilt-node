@@ -29,7 +29,7 @@ use sp_runtime::{traits::Verify, MultiSignature, SaturatedConversion};
 use sp_std::{convert::TryInto, vec::Vec};
 
 use kilt_support::deposit::Deposit;
-use kilt_utils::calculate_key_id;
+use kilt_utils::_calculate_key_id as calculate_key_id;
 
 use crate::{
 	errors::{self, DidError},
