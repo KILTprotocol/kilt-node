@@ -42,19 +42,6 @@ where
 }
 
 #[cfg(feature = "runtime-benchmarks")]
-fn try_successful_origin<OuterOrigin, Identifier, AccountId>() -> Result<OuterOrigin, ()>
-where
-	OuterOrigin: From<DipOrigin<Identifier, AccountId>> + Into<Result<DipOrigin<Identifier, AccountId>, OuterOrigin>>,
-	Identifier: From<[u8; 32]>,
-	AccountId: From<[u8; 32]>,
-{
-	Ok(OuterOrigin::from(DipOrigin {
-		identifier: Identifier::from([0u8; 32]),
-		account_address: AccountId::from([0u8; 32]),
-	}))
-}
-
-#[cfg(feature = "runtime-benchmarks")]
 impl<OuterOrigin, Identifier, AccountId> EnsureOrigin<OuterOrigin> for EnsureDipOrigin<Identifier, AccountId>
 where
 	OuterOrigin: From<DipOrigin<Identifier, AccountId>> + Into<Result<DipOrigin<Identifier, AccountId>, OuterOrigin>>,
@@ -69,7 +56,10 @@ where
 	}
 
 	fn try_successful_origin() -> Result<OuterOrigin, ()> {
-		try_successful_origin::<OuterOrigin, Identifier, AccountId>()
+		Ok(OuterOrigin::from(DipOrigin {
+			identifier: Identifier::from([0u8; 32]),
+			account_address: AccountId::from([0u8; 32]),
+		}))
 	}
 }
 
