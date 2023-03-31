@@ -61,8 +61,10 @@ use runtime_common::{
 	constants::{self, UnvestedFundsAllowedWithdrawReasons, EXISTENTIAL_DEPOSIT, KILT},
 	errors::PublicCredentialsApiError,
 	fees::{ToAuthor, WeightToFee},
-	pallet_id, AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights, DidIdentifier,
-	FeeSplit, Hash, Header, Index, Signature, SlowAdjustingFeeUpdate,
+	pallet_id,
+	runtime_index::RuntimeSpiritnet,
+	AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights, DidIdentifier, FeeSplit,
+	Hash, Header, Index, Signature, SlowAdjustingFeeUpdate,
 };
 
 use crate::xcm_config::{XcmConfig, XcmOriginToTransactDispatchOrigin};
@@ -908,7 +910,6 @@ impl pallet_proxy::Config for Runtime {
 	type AnnouncementDepositFactor = constants::proxy::AnnouncementDepositFactor;
 	type WeightInfo = weights::pallet_proxy::WeightInfo<Runtime>;
 }
- 
 
 construct_runtime! {
 	pub enum Runtime where
@@ -916,7 +917,7 @@ construct_runtime! {
 		NodeBlock = runtime_common::Block,
 		UncheckedExtrinsic = UncheckedExtrinsic,
 	{
-		System: frame_system = 0,
+		System: frame_system = RuntimeSpiritnet::System,
 		RandomnessCollectiveFlip: pallet_randomness_collective_flip = 1,
 
 		Timestamp: pallet_timestamp = 2,

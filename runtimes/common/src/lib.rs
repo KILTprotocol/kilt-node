@@ -47,6 +47,7 @@ pub mod errors;
 pub mod fees;
 pub mod migrations;
 pub mod pallet_id;
+pub mod runtime_index;
 pub mod xcm_config;
 
 #[cfg(feature = "runtime-benchmarks")]
