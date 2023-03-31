@@ -10,28 +10,24 @@ version.workspace = true
 [lib]
 crate-type = ["cdylib", "rlib"]
 
-[features]
-default = ["console_error_panic_hook"]
-
-[build-dependencies]
+  
 
 [dependencies]
 
 #internal kilt runtimes
-mashnet-node-runtime.workspace = true
-peregrine-runtime.workspace = true
-spiritnet-runtime.workspace = true
+mashnet-node-runtime = { workspace = true, default-features = false }
+peregrine-runtime = { workspace = true, default-features = false }
+spiritnet-runtime = { workspace = true, default-features = false }
 
 
 
 # wasm dependencies
-console_error_panic_hook = {version = "0.1.6", optional = true}
 wasm-bindgen = "0.2.63"
-wee_alloc = {version = "0.4.5", optional = true}
 
 # local dependencies
 kilt-utils = {workspace = true, default-features = false}
 runtime-common.workspace = true
+did.workspace = true
 
 #parity dependencies
 sp-core.workspace = true
@@ -42,8 +38,18 @@ sp-core-hashing = {git = "https://github.com/paritytech/substrate", default-feat
 #utils 
 hash256-std-hasher = { version = "0.15.2", default-features = false }
 
+#debugging
+console_error_panic_hook = { version = "0.1.1", optional = true }
+wee_alloc = { version = "0.4.2", optional = true }
+
+
+
 [dev-dependencies]
 wasm-bindgen-test = "0.3.13"
 
 [profile.release]
 opt-level = "s"
+
+[features]
+default = ["console_error_panic_hook", "wee_alloc"]
+

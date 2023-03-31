@@ -908,6 +908,7 @@ impl pallet_proxy::Config for Runtime {
 	type AnnouncementDepositFactor = constants::proxy::AnnouncementDepositFactor;
 	type WeightInfo = weights::pallet_proxy::WeightInfo<Runtime>;
 }
+ 
 
 construct_runtime! {
 	pub enum Runtime where

@@ -10410,12 +10410,16 @@ name = "sdk-wasm"
 version = "1.11.0-dev"
 dependencies = [
  "console_error_panic_hook",
+ "did",
  "hash256-std-hasher",
  "kilt-utils",
+ "mashnet-node-runtime",
+ "peregrine-runtime",
  "runtime-common",
  "sp-core",
  "sp-core-hashing",
  "sp-io",
+ "spiritnet-runtime",
  "wasm-bindgen",
  "wasm-bindgen-test",
  "wee_alloc",
