@@ -7,42 +7,31 @@ name = "sdk-wasm"
 repository.workspace = true
 version.workspace = true
 
-[lib]
-crate-type = ["cdylib", "rlib"]
-
-  
-
 [dependencies]
 
-#internal kilt runtimes
-mashnet-node-runtime = { workspace = true, default-features = false }
-peregrine-runtime = { workspace = true, default-features = false }
-spiritnet-runtime = { workspace = true, default-features = false }
+# Internal kilt runtimes
+spiritnet-runtime.workspace = true
 
-
-
-# wasm dependencies
+# Wasm dependencies
 wasm-bindgen = "0.2.63"
 
-# local dependencies
-kilt-utils = {workspace = true, default-features = false}
+# Local dependencies
+kilt-utils.workspace = true
 runtime-common.workspace = true
 did.workspace = true
 
-#parity dependencies
+# Parity dependencies
 sp-core.workspace = true
 sp-io = { workspace= true, features=["disable_oom" , "disable_panic_handler" , "disable_allocator"]}
 sp-core-hashing = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.38"}
+sp-std.workspace = true
 
-
-#utils 
+# Utils
 hash256-std-hasher = { version = "0.15.2", default-features = false }
 
-#debugging
+# Debugging
 console_error_panic_hook = { version = "0.1.1", optional = true }
 wee_alloc = { version = "0.4.2", optional = true }
-
-
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3.13"
@@ -51,5 +40,22 @@ wasm-bindgen-test = "0.3.13"
 opt-level = "s"
 
 [features]
-default = ["console_error_panic_hook", "wee_alloc"]
-
+default = ["std", "console_error_panic_hook", "wee_alloc"]
+console_error_panic_hook = [
+  "dep:console_error_panic_hook"
+]
+wee_alloc = [
+  "dep:wee_alloc"
+]
+std = [
+  "spiritnet-runtime/std",
+  "wasm-bindgen/std",
+  "kilt-utils/std",
+  "runtime-common/std",
+  "did/std",
+  "sp-core/std",
+  "sp-std/std",
+  "sp-io/std",
+  "sp-core-hashing/std",
+  "hash256-std-hasher/std"
+]

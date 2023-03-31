@@ -11,16 +11,17 @@ name = "kilt-utils"
 description = "Utility functions, which are used in the node and in the SDK as wasm."
 
 [dependencies]
-# parity dependencies
-codec = { workspace = true, default-features = false}
-sp-core = { workspace = true, default-features = false}
-sp-std = { workspace = true, default-features = false}
+# Parity dependencies
+codec = {package = "parity-scale-codec", workspace = true, features = ["derive"]}
+sp-core.workspace = true
+sp-std.workspace = true
 
+# Can be compiled without the std feature if compiling for the "wasm32-unknown-unknown" target.
+# cargo check -p kilt-utils --no-default-features --target wasm32-unknown-unknown
 [features]
 default = ["std"]
 std = [
-  "sp-std/std",
+  "codec/std",
   "sp-core/std",
-  "codec/std"
+  "sp-std/std",
 ]
-
