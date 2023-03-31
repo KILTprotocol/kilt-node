@@ -61,10 +61,8 @@ use runtime_common::{
 	constants::{self, UnvestedFundsAllowedWithdrawReasons, EXISTENTIAL_DEPOSIT, KILT},
 	errors::PublicCredentialsApiError,
 	fees::{ToAuthor, WeightToFee},
-	pallet_id,
-	runtime_index::RuntimeSpiritnet,
-	AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights, DidIdentifier, FeeSplit,
-	Hash, Header, Index, Signature, SlowAdjustingFeeUpdate,
+	pallet_id, AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights, DidIdentifier,
+	FeeSplit, Hash, Header, Index, Signature, SlowAdjustingFeeUpdate,
 };
 
 use crate::xcm_config::{XcmConfig, XcmOriginToTransactDispatchOrigin};
@@ -917,7 +915,7 @@ construct_runtime! {
 		NodeBlock = runtime_common::Block,
 		UncheckedExtrinsic = UncheckedExtrinsic,
 	{
-		System: frame_system = RuntimeSpiritnet::System,
+		System: frame_system = 0,
 		RandomnessCollectiveFlip: pallet_randomness_collective_flip = 1,
 
 		Timestamp: pallet_timestamp = 2,

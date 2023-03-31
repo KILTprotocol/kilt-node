@@ -37,3 +37,48 @@ pub enum RuntimeSpiritnet {
 	CumulusXcm = 84,
 	DmpQueue = 85,
 }
+
+impl From<u32> for RuntimeSpiritnet {
+	fn from(num: u32) -> Self {
+		match num {
+			0 => RuntimeSpiritnet::System,
+			1 => RuntimeSpiritnet::RandomnessCollectiveFlip,
+			2 => RuntimeSpiritnet::Timestamp,
+			5 => RuntimeSpiritnet::Indices,
+			6 => RuntimeSpiritnet::Balances,
+			7 => RuntimeSpiritnet::TransactionPayment,
+			23 => RuntimeSpiritnet::Aura,
+			22 => RuntimeSpiritnet::Session,
+			21 => RuntimeSpiritnet::ParachainStaking,
+			20 => RuntimeSpiritnet::Authorship,
+			24 => RuntimeSpiritnet::AuraExt,
+			30 => RuntimeSpiritnet::Democracy,
+			31 => RuntimeSpiritnet::Council,
+			32 => RuntimeSpiritnet::TechnicalCommittee,
+			34 => RuntimeSpiritnet::TechnicalMembership,
+			35 => RuntimeSpiritnet::Treasury,
+			40 => RuntimeSpiritnet::Utility,
+			41 => RuntimeSpiritnet::Vesting,
+			42 => RuntimeSpiritnet::Scheduler,
+			43 => RuntimeSpiritnet::Proxy,
+			44 => RuntimeSpiritnet::Preimage,
+			45 => RuntimeSpiritnet::TipsMembership,
+			46 => RuntimeSpiritnet::Tips,
+			61 => RuntimeSpiritnet::Ctype,
+			62 => RuntimeSpiritnet::Attestation,
+			63 => RuntimeSpiritnet::Delegation,
+			64 => RuntimeSpiritnet::Did,
+			66 => RuntimeSpiritnet::Inflation,
+			67 => RuntimeSpiritnet::DidLookup,
+			68 => RuntimeSpiritnet::Web3Names,
+			69 => RuntimeSpiritnet::PublicCredentials,
+			80 => RuntimeSpiritnet::ParachainSystem,
+			81 => RuntimeSpiritnet::ParachainInfo,
+			82 => RuntimeSpiritnet::XcmpQueue,
+			83 => RuntimeSpiritnet::PolkadotXcm,
+			84 => RuntimeSpiritnet::CumulusXcm,
+			85 => RuntimeSpiritnet::DmpQueue,
+			_ => panic!("Invalid enum value"),
+		}
+	}
+}

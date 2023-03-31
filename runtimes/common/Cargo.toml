@@ -20,7 +20,7 @@ log.workspace = true
 kilt-asset-dids.workspace = true
 scale-info = {workspace = true, features = ["derive"]}
 smallvec.workspace = true
-
+ 
 # Internal dependencies
 attestation.workspace = true
 ctype.workspace = true
