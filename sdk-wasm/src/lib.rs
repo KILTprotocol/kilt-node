@@ -4,11 +4,12 @@ mod utils;
 use kilt_utils::{_calculate_key_id, _is_valid_web3_name};
 use runtime_common::{
 	constants::web3_names::{MAX_LENGTH, MIN_LENGTH},
-	runtime_index::RuntimeSpiritnet,
+	runtime_index::{CallIndexDid, CallIndexUtility, RuntimeSpiritnet},
 };
-
 use traits::blake2::BlakeTwo256;
 use wasm_bindgen::prelude::*;
+
+use did::DidVerificationKeyRelationship;
 
 #[cfg(feature = "wee_alloc")]
 #[global_allocator]
@@ -36,26 +37,35 @@ pub fn is_valid_web3_name(name: &str) -> bool {
 }
 
 #[wasm_bindgen]
-pub fn derive_keys(call_id: String) -> bool {
-	if call_id.len() > 4 || call_id.len() == 0 {
-		return false;
+pub fn derive_keys(call_encoded: String) -> Result<did::DidVerificationKeyRelationship, JsValue> {
+	if call_encoded.len() < 4 {
+		return Err(JsValue::from_str(
+			"The call has to be encoded and provided as Hexstring with a length of at least 4",
+		));
 	}
-	let pallet_id = u32::from_str_radix(&call_id[..2], 16).unwrap();
+	let pallet_index =
+		u32::from_str_radix(&call_encoded[..2], 16).or(Err(JsValue::from_str("pallet index is wrong encoded")))?;
+	let call_index_encoded =
+		u32::from_str_radix(&call_encoded[2..4], 16).or(Err(JsValue::from_str("call index is wrong encoded")))?;
 
-	match pallet_id.into() {
-		RuntimeSpiritnet::Attestation => (),
-		RuntimeSpiritnet::Ctype => (),
-		RuntimeSpiritnet::Delegation => (),
-		RuntimeSpiritnet::Did => (),
-		RuntimeSpiritnet::Web3Names => (),
-		RuntimeSpiritnet::PublicCredentials => (),
-		RuntimeSpiritnet::DidLookup => (),
-		RuntimeSpiritnet::Utility => (),
-		RuntimeSpiritnet::Utility => (),
-		RuntimeSpiritnet::Utility => (),
+	match pallet_index.into() {
+		RuntimeSpiritnet::Attestation => Ok(DidVerificationKeyRelationship::AssertionMethod),
+		RuntimeSpiritnet::Ctype => Ok(DidVerificationKeyRelationship::CapabilityDelegation),
+		RuntimeSpiritnet::Delegation => Ok(did::DidVerificationKeyRelationship::CapabilityDelegation),
 
-		_ => (),
-	};
-
-	true
+		RuntimeSpiritnet::Web3Names => Ok(DidVerificationKeyRelationship::Authentication),
+		RuntimeSpiritnet::PublicCredentials => Ok(DidVerificationKeyRelationship::AssertionMethod),
+		RuntimeSpiritnet::DidLookup => Ok(DidVerificationKeyRelationship::Authentication),
+		RuntimeSpiritnet::Did => match call_index_encoded.into() {
+			CallIndexDid::Create => Err(JsValue::from_str("create can not be executed")),
+			_ => Ok(DidVerificationKeyRelationship::Authentication),
+		},
+		RuntimeSpiritnet::Utility => match call_index_encoded.into() {
+			CallIndexUtility::Batch => todo!(),
+			CallIndexUtility::BatchAll => todo!(),
+			CallIndexUtility::ForceBatch => todo!(),
+			_ => Err(JsValue::from_str("pallet index does not exists")),
+		},
+		_ => Err(JsValue::from_str("pallet index does not exists")),
+	}
 }

@@ -1,4 +1,5 @@
 pub enum RuntimeSpiritnet {
+	Error = -1,
 	System = 0,
 	RandomnessCollectiveFlip = 1,
 	Timestamp = 2,
@@ -78,7 +79,38 @@ impl From<u32> for RuntimeSpiritnet {
 			83 => RuntimeSpiritnet::PolkadotXcm,
 			84 => RuntimeSpiritnet::CumulusXcm,
 			85 => RuntimeSpiritnet::DmpQueue,
-			_ => panic!("Invalid enum value"),
+			_ => RuntimeSpiritnet::Error,
+		}
+	}
+}
+
+pub enum CallIndexDid {
+	Error = -1,
+	Create = 0,
+}
+
+impl From<u32> for CallIndexDid {
+	fn from(num: u32) -> Self {
+		match num {
+			0 => CallIndexDid::Create,
+			_ => CallIndexDid::Error,
+		}
+	}
+}
+pub enum CallIndexUtility {
+	Error = -1,
+	Batch = 0,
+	BatchAll = 2,
+	ForceBatch = 4,
+}
+
+impl From<u32> for CallIndexUtility {
+	fn from(num: u32) -> Self {
+		match num {
+			0 => CallIndexUtility::Batch,
+			2 => CallIndexUtility::BatchAll,
+			4 => CallIndexUtility::ForceBatch,
+			_ => CallIndexUtility::Error,
 		}
 	}
 }

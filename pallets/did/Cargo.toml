@@ -28,6 +28,7 @@ sp-keystore = {workspace = true, features = ["std"]}
 [dependencies]
 # External dependencies
 log.workspace = true
+wasm-bindgen = {workspace = true, features=["std"]}
 
 # Internal dependencies
 kilt-support.workspace = true
@@ -41,7 +42,7 @@ frame-support.workspace = true
 frame-system.workspace = true
 scale-info = {workspace = true, features = ["derive"]}
 sp-core.workspace = true
-sp-io.workspace = true
+sp-io={workspace = true, features = ["disable_oom", "disable_panic_handler", "disable_allocator"]}
 sp-runtime.workspace = true
 sp-std.workspace = true
 

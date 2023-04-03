@@ -2164,6 +2164,7 @@ dependencies = [
  "sp-runtime",
  "sp-std",
  "substrate-wasm-builder",
+ "wasm-bindgen",
 ]
 
 [[package]]

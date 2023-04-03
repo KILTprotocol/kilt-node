@@ -28,16 +28,17 @@ use sp_core::{ecdsa, ed25519, sr25519};
 use sp_runtime::{traits::Verify, MultiSignature, SaturatedConversion};
 use sp_std::{convert::TryInto, vec::Vec};
 
-use kilt_support::deposit::Deposit;
-use kilt_utils::_calculate_key_id as calculate_key_id;
-
 use crate::{
 	errors::{self, DidError},
 	service_endpoints::DidEndpoint,
 	AccountIdOf, BalanceOf, BlockNumberOf, Config, DidCallableOf, DidIdentifierOf, KeyIdOf, Payload,
 };
+use kilt_support::deposit::Deposit;
+use kilt_utils::_calculate_key_id as calculate_key_id;
+use wasm_bindgen::prelude::*;
 
 /// Types of verification keys a DID can control.
+
 #[derive(Clone, Decode, RuntimeDebug, Encode, Eq, Ord, PartialEq, PartialOrd, TypeInfo, MaxEncodedLen)]
 pub enum DidVerificationKey {
 	/// An Ed25519 public key.
@@ -118,6 +119,7 @@ impl From<DidEncryptionKey> for DidPublicKey {
 
 /// Verification methods a verification key can
 /// fulfil, according to the [DID specification](https://w3c.github.io/did-spec-registries/#verification-relationships).
+#[wasm_bindgen]
 #[derive(Clone, Copy, RuntimeDebug, Decode, Encode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub enum DidVerificationKeyRelationship {
 	/// Key used to authenticate all the DID operations.
