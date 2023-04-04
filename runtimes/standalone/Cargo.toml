@@ -1,14 +1,14 @@
 [package]
 authors.workspace = true
+description = "Standalone runtime for KILT development"
 documentation.workspace = true
 edition.workspace = true
 homepage.workspace = true
 license-file.workspace = true
+name = "mashnet-node-runtime"
 readme.workspace = true
 repository.workspace = true
 version.workspace = true
-name = "mashnet-node-runtime"
-description = "Standalone runtime for KILT development"
 
 [build-dependencies]
 substrate-wasm-builder.workspace = true
@@ -47,6 +47,7 @@ pallet-authorship.workspace = true
 pallet-balances.workspace = true
 pallet-grandpa.workspace = true
 pallet-indices.workspace = true
+pallet-multisig.workspace = true
 pallet-proxy.workspace = true
 pallet-randomness-collective-flip.workspace = true
 pallet-session.workspace = true
@@ -92,6 +93,7 @@ runtime-benchmarks = [
   "pallet-grandpa/runtime-benchmarks",
   "pallet-indices/runtime-benchmarks",
   "pallet-timestamp/runtime-benchmarks",
+  "pallet-multisig/runtime-benchmarks",
   "pallet-web3-names/runtime-benchmarks",
   "pallet-proxy/runtime-benchmarks",
   "pallet-utility/runtime-benchmarks",
@@ -120,6 +122,7 @@ std = [
   "pallet-balances/std",
   "pallet-did-lookup/std",
   "pallet-grandpa/std",
+  "pallet-multisig/std",
   "pallet-indices/std",
   "pallet-proxy/std",
   "pallet-randomness-collective-flip/std",
@@ -157,6 +160,7 @@ try-runtime = [
   "kilt-support/try-runtime",
   "pallet-aura/try-runtime",
   "pallet-authorship/try-runtime",
+  "pallet-multisig/try-runtime",
   "pallet-balances/try-runtime",
   "pallet-did-lookup/try-runtime",
   "pallet-grandpa/try-runtime",
