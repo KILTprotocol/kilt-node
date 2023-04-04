@@ -308,8 +308,8 @@ pub mod multisig {
 
 	parameter_types! {
 		pub const MaxSignitors: u32 = 64;
-		pub const DepositBase: Balance = 50 * MILLI_KILT;
-		pub const DepositFactor: Balance = 10 * MILLI_KILT;
+		pub const DepositBase: Balance = 56 * MILLI_KILT;
+		pub const DepositFactor: Balance = 50 * MILLI_KILT;
 	}
 }
 
