@@ -199,7 +199,7 @@ impl pallet_multisig::Config for Runtime {
 	type DepositBase = constants::multisig::DepositBase;
 	type DepositFactor = constants::multisig::DepositFactor;
 	type MaxSignatories = constants::multisig::MaxSignitors;
-	type WeightInfo = ();
+	type WeightInfo = weights::pallet_multisig::WeightInfo<Runtime>;
 }
 
 impl pallet_indices::Config for Runtime {
@@ -1123,6 +1123,7 @@ mod benches {
 		[pallet_vesting, Vesting]
 		[pallet_proxy, Proxy]
 		[pallet_xcm, PolkadotXcm]
+		[pallet_multisig, Multisig]
 	);
 }
 
