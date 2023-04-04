@@ -29,7 +29,7 @@ use codec::{Decode, Encode, MaxEncodedLen};
 use cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases;
 use frame_support::{
 	construct_runtime, parameter_types,
-	traits::{ConstU32, EitherOfDiverse, Everything, InstanceFilter, PrivilegeCmp},
+	traits::{ConstU32, EitherOfDiverse, InstanceFilter, PrivilegeCmp},
 	weights::{constants::RocksDbWeight, ConstantMultiplier, Weight},
 };
 use frame_system::EnsureRoot;
@@ -41,7 +41,7 @@ use sp_api::impl_runtime_apis;
 use sp_core::OpaqueMetadata;
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
-	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, OpaqueKeys, Verify},
+	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, OpaqueKeys},
 	transaction_validity::{TransactionSource, TransactionValidity},
 	ApplyExtrinsicResult, Perbill, Permill, RuntimeDebug,
 };
@@ -51,6 +51,7 @@ use xcm_executor::XcmExecutor;
 
 use delegation::DelegationAc;
 use kilt_support::traits::ItemFilter;
+use pallet_did_lookup::linkable_account::LinkableAccountId;
 pub use parachain_staking::InflationInfo;
 pub use public_credentials;
 
@@ -60,7 +61,6 @@ use runtime_common::{
 	constants::{self, UnvestedFundsAllowedWithdrawReasons, EXISTENTIAL_DEPOSIT, KILT},
 	errors::PublicCredentialsApiError,
 	fees::{ToAuthor, WeightToFee},
-	migrations::EmptyAccountlist,
 	pallet_id, AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights, DidIdentifier,
 	FeeSplit, Hash, Header, Index, Signature, SlowAdjustingFeeUpdate,
 };
@@ -93,10 +93,10 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("mashnet-node"),
 	impl_name: create_runtime_str!("mashnet-node"),
 	authoring_version: 4,
-	spec_version: 10890,
+	spec_version: 11000,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
-	transaction_version: 5,
+	transaction_version: 6,
 	state_version: 0,
 };
 
@@ -113,6 +113,22 @@ pub fn native_version() -> NativeVersion {
 parameter_types! {
 	pub const Version: RuntimeVersion = VERSION;
 	pub const SS58Prefix: u8 = 38;
+}
+
+pub struct MigrationFilter;
+impl frame_support::traits::Contains<RuntimeCall> for MigrationFilter {
+	fn contains(c: &RuntimeCall) -> bool {
+		match c {
+			// Enable DidLookup migration calls for ongoing migration
+			RuntimeCall::DidLookup(pallet_did_lookup::Call::migrate { .. }) => {
+				DidLookup::migration_state().is_in_progress()
+			}
+			// For all other DidLookup calls, check whether migration is ongoing
+			RuntimeCall::DidLookup(_) => DidLookup::migration_state().is_done(),
+			// Enable all non-DidLookup calls
+			_ => true,
+		}
+	}
 }
 
 impl frame_system::Config for Runtime {
@@ -148,7 +164,7 @@ impl frame_system::Config for Runtime {
 	type OnNewAccount = ();
 	type OnKilledAccount = ();
 	type DbWeight = RocksDbWeight;
-	type BaseCallFilter = Everything;
+	type BaseCallFilter = MigrationFilter;
 	type SystemWeightInfo = weights::frame_system::WeightInfo<Runtime>;
 	type BlockWeights = BlockWeights;
 	type BlockLength = BlockLength;
@@ -165,7 +181,7 @@ parameter_types! {
 impl pallet_timestamp::Config for Runtime {
 	/// A timestamp: milliseconds since the unix epoch.
 	type Moment = u64;
-	type OnTimestampSet = Aura;
+	type OnTimestampSet = ();
 	type MinimumPeriod = MinimumPeriod;
 	type WeightInfo = weights::pallet_timestamp::WeightInfo<Runtime>;
 }
@@ -243,6 +259,7 @@ impl cumulus_pallet_xcmp_queue::Config for Runtime {
 	type ControllerOrigin = EnsureRoot<AccountId>;
 	type ControllerOriginConverter = XcmOriginToTransactDispatchOrigin;
 	type WeightInfo = cumulus_pallet_xcmp_queue::weights::SubstrateWeight<Self>;
+	type PriceForSiblingDelivery = ();
 }
 
 impl cumulus_pallet_dmp_queue::Config for Runtime {
@@ -268,8 +285,6 @@ parameter_types! {
 
 impl pallet_authorship::Config for Runtime {
 	type FindAuthor = pallet_session::FindAccountFromAuthorIndex<Self, Aura>;
-	type UncleGenerations = UncleGenerations;
-	type FilterUncle = ();
 	type EventHandler = ParachainStaking;
 }
 
@@ -607,8 +622,7 @@ impl did::Config for Runtime {
 
 impl pallet_did_lookup::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
-	type Signature = Signature;
-	type Signer = <Signature as Verify>::Signer;
+
 	type DidIdentifier = DidIdentifier;
 
 	type Currency = Balances;
@@ -727,7 +741,6 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 			ProxyType::NonTransfer => matches!(
 				c,
 				RuntimeCall::Attestation(..)
-					| RuntimeCall::Authorship(..)
 					// Excludes `Balances`
 					| RuntimeCall::Council(..)
 					| RuntimeCall::Ctype(..)
@@ -772,7 +785,6 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 							| attestation::Call::change_deposit_owner { .. }
 							| attestation::Call::update_deposit { .. }
 					)
-					| RuntimeCall::Authorship(..)
 					// Excludes `Balances`
 					| RuntimeCall::Council(..)
 					| RuntimeCall::Ctype(..)
@@ -921,7 +933,7 @@ construct_runtime! {
 		Aura: pallet_aura = 23,
 		Session: pallet_session = 22,
 		ParachainStaking: parachain_staking = 21,
-		Authorship: pallet_authorship::{Pallet, Call, Storage} = 20,
+		Authorship: pallet_authorship::{Pallet, Storage} = 20,
 		AuraExt: cumulus_pallet_aura_ext = 24,
 
 		// Governance stuff
@@ -1063,34 +1075,12 @@ pub type Executive = frame_executive::Executive<
 	Runtime,
 	// Executes pallet hooks in the order of definition in construct_runtime
 	AllPalletsWithSystem,
-	(
-		// "Bound uses of call" <https://github.com/paritytech/polkadot/pull/5729>
-		pallet_preimage::migration::v1::Migration<Runtime>,
-		pallet_scheduler::migration::v3::MigrateToV4<Runtime>,
-		pallet_democracy::migrations::v1::Migration<Runtime>,
-		// "Scheduler: remove empty agenda on cancel" https://github.com/paritytech/substrate/pull/12989
-		pallet_scheduler::migration::v4::CleanupAgendas<Runtime>,
-		// "API for registering inactive funds" https://github.com/paritytech/substrate/pull/12813
-		// We don't consider any account beyond the treasury (done automatically by the treasury) as having funds
-		// deactivated.
-		// TODO: Consider to mark the pure proxy funds as deactivated in the next release.
-		pallet_balances::migration::MigrateManyToTrackInactive<Runtime, EmptyAccountlist>,
-		runtime_common::migrations::AddCTypeBlockNumber<Runtime>,
-		// The migration above must be run as last since it checks that all pallets are using the new StorageVersion
-		// properly.
-		runtime_common::migrations::MigrateToNewStorageVersion<Runtime>,
-	),
+	pallet_did_lookup::migrations::EthereumMigration<Runtime>,
 >;
-
-// follows Substrate's non destructive way of eliminating  otherwise required
-// repetion: https://github.com/paritytech/substrate/pull/10592
-#[cfg(feature = "runtime-benchmarks")]
-#[macro_use]
-extern crate frame_benchmarking;
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benches {
-	define_benchmarks!(
+	frame_benchmarking::define_benchmarks!(
 		// KILT
 		[attestation, Attestation]
 		[ctype, Ctype]
@@ -1119,6 +1109,7 @@ mod benches {
 		[pallet_utility, Utility]
 		[pallet_vesting, Vesting]
 		[pallet_proxy, Proxy]
+		[pallet_xcm, PolkadotXcm]
 	);
 }
 
@@ -1160,6 +1151,13 @@ impl_runtime_apis! {
 		fn query_fee_details(uxt: <Block as BlockT>::Extrinsic, len: u32) -> pallet_transaction_payment::FeeDetails<Balance> {
 			TransactionPayment::query_fee_details(uxt, len)
 		}
+
+		fn query_weight_to_fee(weight: Weight) -> Balance {
+			TransactionPayment::weight_to_fee(weight)
+		}
+		fn query_length_to_fee(length: u32) -> Balance {
+			TransactionPayment::length_to_fee(length)
+		}
 	}
 
 	impl pallet_transaction_payment_rpc_runtime_api::TransactionPaymentCallApi<Block, Balance, RuntimeCall>
@@ -1176,6 +1174,12 @@ impl_runtime_apis! {
 			len: u32,
 		) -> pallet_transaction_payment::FeeDetails<Balance> {
 			TransactionPayment::query_call_fee_details(call, len)
+		}
+		fn query_weight_to_fee(weight: Weight) -> Balance {
+			TransactionPayment::weight_to_fee(weight)
+		}
+		fn query_length_to_fee(length: u32) -> Balance {
+			TransactionPayment::length_to_fee(length)
 		}
 	}
 
@@ -1247,7 +1251,7 @@ impl_runtime_apis! {
 		Block,
 		DidIdentifier,
 		AccountId,
-		AccountId,
+		LinkableAccountId,
 		Balance,
 		Hash,
 		BlockNumber
@@ -1255,6 +1259,7 @@ impl_runtime_apis! {
 		fn query_by_web3_name(name: Vec<u8>) -> Option<kilt_runtime_api_did::RawDidLinkedInfo<
 				DidIdentifier,
 				AccountId,
+				LinkableAccountId,
 				Balance,
 				Hash,
 				BlockNumber
@@ -1281,10 +1286,11 @@ impl_runtime_apis! {
 			})
 		}
 
-		fn query_by_account(account: AccountId) -> Option<
+		fn query_by_account(account: LinkableAccountId) -> Option<
 			kilt_runtime_api_did::RawDidLinkedInfo<
 				DidIdentifier,
 				AccountId,
+				LinkableAccountId,
 				Balance,
 				Hash,
 				BlockNumber
@@ -1313,6 +1319,7 @@ impl_runtime_apis! {
 			kilt_runtime_api_did::RawDidLinkedInfo<
 				DidIdentifier,
 				AccountId,
+				LinkableAccountId,
 				Balance,
 				Hash,
 				BlockNumber

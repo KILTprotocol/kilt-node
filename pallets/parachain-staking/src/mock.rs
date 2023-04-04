@@ -60,7 +60,7 @@ construct_runtime!(
 		Aura: pallet_aura::{Pallet, Storage},
 		Session: pallet_session::{Pallet, Call, Storage, Event, Config<T>},
 		StakePallet: stake::{Pallet, Call, Storage, Config<T>, Event<T>},
-		Authorship: pallet_authorship::{Pallet, Call, Storage, Inherent},
+		Authorship: pallet_authorship::{Pallet, Storage},
 	}
 );
 
@@ -121,8 +121,6 @@ impl pallet_aura::Config for Test {
 
 impl pallet_authorship::Config for Test {
 	type FindAuthor = pallet_session::FindAccountFromAuthorIndex<Self, Aura>;
-	type UncleGenerations = ();
-	type FilterUncle = ();
 	type EventHandler = Pallet<Test>;
 }
 

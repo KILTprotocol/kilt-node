@@ -591,7 +591,7 @@ mod v1 {
 			check_reference_length_bounds(input)?;
 
 			input.iter().try_for_each(|c| {
-				if !matches!(c, b'-' | b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9') {
+				if !matches!(c, b'-' | b'_' | b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9') {
 					log::trace!("Provided input has some invalid values as expected by a generic chain reference.");
 					Err(ReferenceError::InvalidFormat)
 				} else {
@@ -806,6 +806,7 @@ mod v1 {
 			let valid_chains = [
 				// Edge cases
 				"abc:-",
+				"abc:_",
 				"-as01-aa:A",
 				"12345678:abcdefghjklmnopqrstuvwxyzABCD012",
 				// Filecoin examples -> https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-23.md

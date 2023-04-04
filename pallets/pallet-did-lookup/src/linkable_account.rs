@@ -17,30 +17,36 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use codec::{Decode, Encode, MaxEncodedLen};
-use frame_support::traits::ReservableCurrency;
 use scale_info::TypeInfo;
-use sp_runtime::{traits::Zero, DispatchError};
+use sp_runtime::AccountId32;
 
-/// An amount of balance reserved by the specified address.
+use crate::account::AccountId20;
+
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Clone, Debug, Encode, Decode, Eq, PartialEq, Ord, PartialOrd, TypeInfo, MaxEncodedLen)]
-pub struct Deposit<Account, Balance> {
-	pub owner: Account,
-	pub amount: Balance,
+#[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, MaxEncodedLen, TypeInfo)]
+pub enum LinkableAccountId {
+	AccountId20(AccountId20),
+	AccountId32(AccountId32),
 }
 
-pub fn reserve_deposit<Account, Currency: ReservableCurrency<Account>>(
-	account: Account,
-	deposit_amount: Currency::Balance,
-) -> Result<Deposit<Account, Currency::Balance>, DispatchError> {
-	Currency::reserve(&account, deposit_amount)?;
-	Ok(Deposit {
-		owner: account,
-		amount: deposit_amount,
-	})
+impl From<AccountId20> for LinkableAccountId {
+	fn from(account_id: AccountId20) -> Self {
+		Self::AccountId20(account_id)
+	}
 }
 
-pub fn free_deposit<Account, Currency: ReservableCurrency<Account>>(deposit: &Deposit<Account, Currency::Balance>) {
-	let err_amount = Currency::unreserve(&deposit.owner, deposit.amount);
-	debug_assert!(err_amount.is_zero());
+impl From<AccountId32> for LinkableAccountId {
+	fn from(account_id: AccountId32) -> Self {
+		Self::AccountId32(account_id)
+	}
+}
+
+#[cfg(feature = "std")]
+impl std::fmt::Display for LinkableAccountId {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		match self {
+			Self::AccountId20(account_id) => write!(f, "{}", account_id),
+			Self::AccountId32(account_id) => write!(f, "{}", account_id),
+		}
+	}
 }

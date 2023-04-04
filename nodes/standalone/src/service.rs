@@ -110,7 +110,7 @@ pub fn new_partial(config: &Configuration) -> Result<PartialComponents, ServiceE
 
 	let (grandpa_block_import, grandpa_link) = sc_finality_grandpa::block_import(
 		client.clone(),
-		&(client.clone() as Arc<_>),
+		&(Arc::clone(&client) as Arc<_>),
 		select_chain.clone(),
 		telemetry.as_ref().map(|x| x.handle()),
 	)?;

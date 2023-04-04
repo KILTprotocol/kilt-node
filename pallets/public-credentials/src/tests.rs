@@ -78,7 +78,7 @@ fn add_successful_without_authorization() {
 					DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
 					Box::new(new_credential_1.clone())
 				),
-				Error::<Test>::CredentialAlreadyIssued
+				Error::<Test>::AlreadyAttested
 			);
 
 			// Check deposit has not changed
@@ -168,7 +168,7 @@ fn add_unauthorized() {
 					DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
 					Box::new(new_credential.clone())
 				),
-				Error::<Test>::Unauthorized
+				Error::<Test>::NotAuthorized
 			);
 		});
 }
@@ -194,7 +194,7 @@ fn add_ctype_not_existing() {
 					DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
 					Box::new(new_credential)
 				),
-				ctype::Error::<Test>::CTypeNotFound
+				ctype::Error::<Test>::NotFound
 			);
 		});
 }
@@ -345,7 +345,7 @@ fn revoke_unauthorized() {
 					credential_id,
 					Some(MockAccessControl(attester))
 				),
-				Error::<Test>::Unauthorized
+				Error::<Test>::NotAuthorized
 			);
 		});
 }
@@ -371,7 +371,7 @@ fn revoke_ac_not_found() {
 					credential_id,
 					Some(MockAccessControl(wrong_submitter))
 				),
-				Error::<Test>::Unauthorized
+				Error::<Test>::NotAuthorized
 			);
 		});
 }
@@ -388,7 +388,7 @@ fn revoke_credential_not_found() {
 		.execute_with(|| {
 			assert_noop!(
 				PublicCredentials::revoke(DoubleOrigin(ACCOUNT_00, attester.clone()).into(), credential_id, None,),
-				Error::<Test>::CredentialNotFound
+				Error::<Test>::NotFound
 			);
 		});
 }
@@ -487,7 +487,7 @@ fn unrevoke_unauthorized() {
 					credential_id,
 					Some(MockAccessControl(attester))
 				),
-				Error::<Test>::Unauthorized
+				Error::<Test>::NotAuthorized
 			);
 		});
 }
@@ -514,7 +514,7 @@ fn unrevoke_ac_not_found() {
 					credential_id,
 					Some(MockAccessControl(wrong_submitter))
 				),
-				Error::<Test>::Unauthorized
+				Error::<Test>::NotAuthorized
 			);
 		});
 }
@@ -531,7 +531,7 @@ fn unrevoke_credential_not_found() {
 		.execute_with(|| {
 			assert_noop!(
 				PublicCredentials::unrevoke(DoubleOrigin(ACCOUNT_00, attester.clone()).into(), credential_id, None,),
-				Error::<Test>::CredentialNotFound
+				Error::<Test>::NotFound
 			);
 		});
 }
@@ -567,7 +567,7 @@ fn remove_successful() {
 			// Removing the same credential again will fail
 			assert_noop!(
 				PublicCredentials::remove(DoubleOrigin(ACCOUNT_00, attester.clone()).into(), credential_id, None,),
-				Error::<Test>::CredentialNotFound
+				Error::<Test>::NotFound
 			);
 		});
 }
@@ -620,7 +620,7 @@ fn remove_unauthorized() {
 					credential_id,
 					Some(MockAccessControl(attester))
 				),
-				Error::<Test>::Unauthorized
+				Error::<Test>::NotAuthorized
 			);
 		});
 }
@@ -646,7 +646,7 @@ fn remove_ac_not_found() {
 					credential_id,
 					Some(MockAccessControl(wrong_submitter))
 				),
-				Error::<Test>::Unauthorized
+				Error::<Test>::NotAuthorized
 			);
 		});
 }
@@ -663,7 +663,7 @@ fn remove_credential_not_found() {
 		.execute_with(|| {
 			assert_noop!(
 				PublicCredentials::remove(DoubleOrigin(ACCOUNT_00, attester.clone()).into(), credential_id, None,),
-				Error::<Test>::CredentialNotFound
+				Error::<Test>::NotFound
 			);
 		});
 }
@@ -698,12 +698,12 @@ fn reclaim_deposit_successful() {
 			// Reclaiming the deposit for the same credential again will fail
 			assert_noop!(
 				PublicCredentials::reclaim_deposit(RuntimeOrigin::signed(ACCOUNT_00), credential_id),
-				Error::<Test>::CredentialNotFound
+				Error::<Test>::NotFound
 			);
 
 			assert_noop!(
 				PublicCredentials::reclaim_deposit(RuntimeOrigin::signed(ACCOUNT_00), credential_id),
-				Error::<Test>::CredentialNotFound
+				Error::<Test>::NotFound
 			);
 		});
 }
@@ -719,7 +719,7 @@ fn reclaim_deposit_credential_not_found() {
 		.execute_with(|| {
 			assert_noop!(
 				PublicCredentials::reclaim_deposit(RuntimeOrigin::signed(ACCOUNT_00), credential_id),
-				Error::<Test>::CredentialNotFound
+				Error::<Test>::NotFound
 			);
 		});
 }
@@ -739,7 +739,7 @@ fn reclaim_deposit_unauthorized() {
 		.execute_with(|| {
 			assert_noop!(
 				PublicCredentials::reclaim_deposit(RuntimeOrigin::signed(ACCOUNT_01), credential_id),
-				Error::<Test>::Unauthorized
+				Error::<Test>::NotAuthorized
 			);
 		});
 }
@@ -801,7 +801,7 @@ fn test_change_deposit_owner_not_found() {
 					DoubleOrigin(ACCOUNT_01, attester.clone()).into(),
 					credential_id
 				),
-				Error::<Test>::CredentialNotFound
+				Error::<Test>::NotFound
 			);
 		});
 }
@@ -831,7 +831,7 @@ fn test_change_deposit_owner_unauthorized() {
 		.execute_with(|| {
 			assert_noop!(
 				PublicCredentials::change_deposit_owner(DoubleOrigin(ACCOUNT_01, evil.clone()).into(), credential_id),
-				Error::<Test>::Unauthorized
+				Error::<Test>::NotAuthorized
 			);
 		});
 }
@@ -888,7 +888,7 @@ fn test_update_deposit_not_found() {
 		.execute_with(|| {
 			assert_noop!(
 				PublicCredentials::update_deposit(RuntimeOrigin::signed(ACCOUNT_01), credential_id),
-				Error::<Test>::CredentialNotFound
+				Error::<Test>::NotFound
 			);
 		});
 }
@@ -908,7 +908,7 @@ fn test_update_deposit_unauthorized() {
 		.execute_with(|| {
 			assert_noop!(
 				PublicCredentials::update_deposit(RuntimeOrigin::signed(ACCOUNT_01), credential_id),
-				Error::<Test>::Unauthorized
+				Error::<Test>::NotAuthorized
 			);
 		});
 }

@@ -21,6 +21,7 @@ use kilt_support::{
 	deposit::Deposit,
 	mock::{mock_origin, SubjectId},
 };
+use sp_core::blake2_256;
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
@@ -28,9 +29,10 @@ use sp_runtime::{
 };
 
 use crate::{
-	self as pallet_did_lookup, AccountIdOf, BalanceOf, Config, ConnectedAccounts, ConnectedDids, ConnectionRecord,
-	CurrencyOf, DidIdentifierOf,
+	self as pallet_did_lookup, account::AccountId20, linkable_account::LinkableAccountId, AccountIdOf, BalanceOf,
+	Config, ConnectedAccounts, ConnectedDids, ConnectionRecord, CurrencyOf, DidIdentifierOf,
 };
+
 pub(crate) type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 pub(crate) type Block = frame_system::mocking::MockBlock<Test>;
 pub(crate) type Hash = sp_core::H256;
@@ -110,8 +112,6 @@ parameter_types! {
 
 impl pallet_did_lookup::Config for Test {
 	type RuntimeEvent = RuntimeEvent;
-	type Signature = Signature;
-	type Signer = AccountPublic;
 
 	type Currency = Balances;
 	type Deposit = DidLookupDeposit;
@@ -133,11 +133,32 @@ pub(crate) const ACCOUNT_00: AccountId = AccountId::new([1u8; 32]);
 pub(crate) const ACCOUNT_01: AccountId = AccountId::new([2u8; 32]);
 pub(crate) const DID_00: SubjectId = SubjectId(ACCOUNT_00);
 pub(crate) const DID_01: SubjectId = SubjectId(ACCOUNT_01);
+pub(crate) const LINKABLE_ACCOUNT_00: LinkableAccountId = LinkableAccountId::AccountId32(ACCOUNT_00);
+
+pub(crate) fn generate_acc32(index: usize) -> AccountId {
+	let bytes = blake2_256(&index.to_be_bytes()[..]);
+
+	AccountId::new(bytes)
+}
+
+pub(crate) fn generate_acc20(index: usize) -> AccountId20 {
+	let bytes = blake2_256(&index.to_be_bytes()[..]);
+	let mut acc_bytes = [1u8; 20];
+
+	// copy bytes from usize into array
+	acc_bytes.copy_from_slice(&bytes[12..]);
+
+	AccountId20(acc_bytes)
+}
+
+pub(crate) fn generate_did(index: usize) -> SubjectId {
+	SubjectId(generate_acc32(index))
+}
 
 pub(crate) fn insert_raw_connection<T: Config>(
 	sender: AccountIdOf<T>,
 	did_identifier: DidIdentifierOf<T>,
-	account: AccountIdOf<T>,
+	account: LinkableAccountId,
 	deposit: BalanceOf<T>,
 ) {
 	let deposit = Deposit {
@@ -164,7 +185,7 @@ pub(crate) fn insert_raw_connection<T: Config>(
 pub struct ExtBuilder {
 	balances: Vec<(AccountId, Balance)>,
 	/// list of connection (sender, did, connected address)
-	connections: Vec<(AccountId, SubjectId, AccountId)>,
+	connections: Vec<(AccountId, SubjectId, LinkableAccountId)>,
 }
 
 impl ExtBuilder {
@@ -176,7 +197,7 @@ impl ExtBuilder {
 
 	/// Add a connection: (sender, did, connected address)
 	#[must_use]
-	pub fn with_connections(mut self, connections: Vec<(AccountId, SubjectId, AccountId)>) -> Self {
+	pub fn with_connections(mut self, connections: Vec<(AccountId, SubjectId, LinkableAccountId)>) -> Self {
 		self.connections = connections;
 		self
 	}

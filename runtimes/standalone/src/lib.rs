@@ -30,8 +30,8 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::{
 	construct_runtime, parameter_types,
-	traits::{Currency, Everything, InstanceFilter, KeyOwnerProofSystem},
-	weights::{constants::RocksDbWeight, ConstantMultiplier, IdentityFee},
+	traits::{Currency, InstanceFilter, KeyOwnerProofSystem},
+	weights::{constants::RocksDbWeight, ConstantMultiplier, IdentityFee, Weight},
 };
 pub use frame_system::Call as SystemCall;
 use frame_system::EnsureRoot;
@@ -43,10 +43,10 @@ use pallet_grandpa::{fg_primitives, AuthorityId as GrandpaId, AuthorityList as G
 use pallet_transaction_payment::{CurrencyAdapter, FeeDetails};
 use sp_api::impl_runtime_apis;
 use sp_consensus_aura::{ed25519::AuthorityId as AuraId, SlotDuration};
-use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
+use sp_core::{crypto::KeyTypeId, ConstU64, OpaqueMetadata};
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
-	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, NumberFor, OpaqueKeys, Verify},
+	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, NumberFor, OpaqueKeys},
 	transaction_validity::{TransactionSource, TransactionValidity},
 	ApplyExtrinsicResult, RuntimeDebug,
 };
@@ -55,6 +55,7 @@ use sp_version::RuntimeVersion;
 
 use delegation::DelegationAc;
 use kilt_support::traits::ItemFilter;
+use pallet_did_lookup::linkable_account::LinkableAccountId;
 use runtime_common::{
 	assets::{AssetDid, PublicCredentialsFilter},
 	authorization::{AuthorizationId, PalletAuthorize},
@@ -75,8 +76,6 @@ pub use pallet_balances::Call as BalancesCall;
 pub use pallet_web3_names;
 pub use public_credentials;
 
-#[cfg(feature = "try-runtime")]
-use frame_support::pallet_prelude::Weight;
 #[cfg(feature = "runtime-benchmarks")]
 use frame_system::EnsureSigned;
 #[cfg(feature = "std")]
@@ -122,7 +121,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("mashnet-node"),
 	impl_name: create_runtime_str!("mashnet-node"),
 	authoring_version: 4,
-	spec_version: 10890,
+	spec_version: 11000,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 4,
@@ -145,11 +144,26 @@ parameter_types! {
 	pub const SS58Prefix: u8 = 38;
 }
 
-// Configure FRAME pallets to include in runtime.
+pub struct MigrationFilter;
+impl frame_support::traits::Contains<RuntimeCall> for MigrationFilter {
+	fn contains(c: &RuntimeCall) -> bool {
+		match c {
+			// Enable DidLookup migration calls for ongoing migration
+			RuntimeCall::DidLookup(pallet_did_lookup::Call::migrate { .. }) => {
+				DidLookup::migration_state().is_in_progress()
+			}
+			// For all other DidLookup calls, check whether migration is ongoing
+			RuntimeCall::DidLookup(_) => DidLookup::migration_state().is_done(),
+			// Enable all non-DidLookup calls
+			_ => true,
+		}
+	}
+}
 
+// Configure FRAME pallets to include in runtime.
 impl frame_system::Config for Runtime {
 	/// The basic call filter to use in dispatchable.
-	type BaseCallFilter = Everything;
+	type BaseCallFilter = MigrationFilter;
 	/// Block & extrinsics weights: base values and limits.
 	type BlockWeights = runtime_common::BlockWeights;
 	/// The maximum length of a block (in bytes).
@@ -226,6 +240,8 @@ impl pallet_grandpa::Config for Runtime {
 
 	type WeightInfo = ();
 	type MaxAuthorities = MaxAuthorities;
+	// This is a purely random value
+	type MaxSetIdSessionEntries = ConstU64<100>;
 }
 
 parameter_types! {
@@ -416,8 +432,7 @@ impl did::Config for Runtime {
 
 impl pallet_did_lookup::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
-	type Signature = Signature;
-	type Signer = <Signature as Verify>::Signer;
+
 	type DidIdentifier = DidIdentifier;
 
 	type Currency = Balances;
@@ -466,8 +481,6 @@ parameter_types! {
 
 impl pallet_authorship::Config for Runtime {
 	type FindAuthor = pallet_session::FindAccountFromAuthorIndex<Self, Aura>;
-	type UncleGenerations = UncleGenerations;
-	type FilterUncle = ();
 	type EventHandler = ();
 }
 
@@ -526,7 +539,6 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 			ProxyType::NonTransfer => matches!(
 				c,
 				RuntimeCall::Attestation(..)
-					| RuntimeCall::Authorship(..)
 					// Excludes `Balances`
 					| RuntimeCall::Ctype(..)
 					| RuntimeCall::Delegation(..)
@@ -557,7 +569,6 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 							| attestation::Call::change_deposit_owner { .. }
 							| attestation::Call::update_deposit { .. }
 					)
-					| RuntimeCall::Authorship(..)
 					// Excludes `Balances`
 					| RuntimeCall::Ctype(..)
 					| RuntimeCall::Delegation(
@@ -781,18 +792,18 @@ pub type SignedPayload = generic::SignedPayload<RuntimeCall, SignedExtra>;
 /// Extrinsic type that has already been checked.
 pub type CheckedExtrinsic = generic::CheckedExtrinsic<AccountId, RuntimeCall, SignedExtra>;
 /// Executive: handles dispatch to the various Pallets.
-pub type Executive =
-	frame_executive::Executive<Runtime, Block, frame_system::ChainContext<Runtime>, Runtime, AllPalletsWithSystem, ()>;
-
-// follows Substrate's non destructive way of eliminating  otherwise required
-// repetion: https://github.com/paritytech/substrate/pull/10592
-#[cfg(feature = "runtime-benchmarks")]
-#[macro_use]
-extern crate frame_benchmarking;
+pub type Executive = frame_executive::Executive<
+	Runtime,
+	Block,
+	frame_system::ChainContext<Runtime>,
+	Runtime,
+	AllPalletsWithSystem,
+	pallet_did_lookup::migrations::EthereumMigration<Runtime>,
+>;
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benches {
-	define_benchmarks!(
+	frame_benchmarking::define_benchmarks!(
 		// KILT
 		[attestation, Attestation]
 		[ctype, Ctype]
@@ -850,6 +861,13 @@ impl_runtime_apis! {
 		fn query_fee_details(uxt: <Block as BlockT>::Extrinsic, len: u32) -> FeeDetails<Balance> {
 			TransactionPayment::query_fee_details(uxt, len)
 		}
+
+		fn query_weight_to_fee(weight: Weight) -> Balance {
+			TransactionPayment::weight_to_fee(weight)
+		}
+		fn query_length_to_fee(length: u32) -> Balance {
+			TransactionPayment::length_to_fee(length)
+		}
 	}
 
 	impl pallet_transaction_payment_rpc_runtime_api::TransactionPaymentCallApi<Block, Balance, RuntimeCall>
@@ -866,6 +884,12 @@ impl_runtime_apis! {
 			len: u32,
 		) -> pallet_transaction_payment::FeeDetails<Balance> {
 			TransactionPayment::query_call_fee_details(call, len)
+		}
+		fn query_weight_to_fee(weight: Weight) -> Balance {
+			TransactionPayment::weight_to_fee(weight)
+		}
+		fn query_length_to_fee(length: u32) -> Balance {
+			TransactionPayment::length_to_fee(length)
 		}
 	}
 
@@ -961,7 +985,7 @@ impl_runtime_apis! {
 		Block,
 		DidIdentifier,
 		AccountId,
-		AccountId,
+		LinkableAccountId,
 		Balance,
 		Hash,
 		BlockNumber
@@ -969,6 +993,7 @@ impl_runtime_apis! {
 		fn query_by_web3_name(name: Vec<u8>) -> Option<kilt_runtime_api_did::RawDidLinkedInfo<
 				DidIdentifier,
 				AccountId,
+				LinkableAccountId,
 				Balance,
 				Hash,
 				BlockNumber
@@ -980,7 +1005,9 @@ impl_runtime_apis! {
 					did::Did::<Runtime>::get(&owner_info.owner).map(|details| (owner_info, details))
 				})
 				.map(|(owner_info, details)| {
-					let accounts = pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(&owner_info.owner).collect();
+					let accounts = pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(
+						&owner_info.owner,
+					).collect();
 					let service_endpoints = did::ServiceEndpoints::<Runtime>::iter_prefix(&owner_info.owner).map(|e| From::from(e.1)).collect();
 
 					kilt_runtime_api_did::RawDidLinkedInfo{
@@ -993,10 +1020,11 @@ impl_runtime_apis! {
 			})
 		}
 
-		fn query_by_account(account: AccountId) -> Option<
+		fn query_by_account(account: LinkableAccountId) -> Option<
 			kilt_runtime_api_did::RawDidLinkedInfo<
 				DidIdentifier,
 				AccountId,
+				LinkableAccountId,
 				Balance,
 				Hash,
 				BlockNumber
@@ -1025,6 +1053,7 @@ impl_runtime_apis! {
 			kilt_runtime_api_did::RawDidLinkedInfo<
 				DidIdentifier,
 				AccountId,
+				LinkableAccountId,
 				Balance,
 				Hash,
 				BlockNumber
