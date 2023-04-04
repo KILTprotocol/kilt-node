@@ -975,7 +975,6 @@ construct_runtime! {
 		TipsMembership: pallet_membership::<Instance2> = 45,
 		Tips: pallet_tips::{Pallet, Call, Storage, Event<T>} = 46,
 
-		// Enable multisig
 		Multisig: pallet_multisig = 47,
 
 		// KILT Pallets. Start indices 60 to leave room
@@ -1091,7 +1090,6 @@ pub type Executive = frame_executive::Executive<
 	pallet_did_lookup::migrations::EthereumMigration<Runtime>,
 >;
 
-#[cfg(feature = "runtime-benchmarks")]
 mod benches {
 	frame_benchmarking::define_benchmarks!(
 		// KILT

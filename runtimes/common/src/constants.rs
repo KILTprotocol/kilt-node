@@ -305,6 +305,7 @@ pub mod governance {
 
 pub mod multisig {
 	use super::*;
+
 	parameter_types! {
 		pub const MaxSignitors: u32 = 64;
 		pub const DepositBase: Balance = 50 * MILLI_KILT;
