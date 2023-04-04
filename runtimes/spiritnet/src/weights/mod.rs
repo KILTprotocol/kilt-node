@@ -41,3 +41,5 @@ pub mod pallet_web3_names;
 pub mod pallet_xcm;
 pub mod parachain_staking;
 pub mod public_credentials;
+
+pub mod rocksdb_weights;

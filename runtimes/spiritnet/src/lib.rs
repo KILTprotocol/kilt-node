@@ -30,7 +30,7 @@ use cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases;
 use frame_support::{
 	construct_runtime, parameter_types,
 	traits::{ConstU32, EitherOfDiverse, InstanceFilter, PrivilegeCmp},
-	weights::{constants::RocksDbWeight, ConstantMultiplier, Weight},
+	weights::{ConstantMultiplier, Weight},
 };
 use frame_system::EnsureRoot;
 
@@ -163,7 +163,7 @@ impl frame_system::Config for Runtime {
 	type AccountData = pallet_balances::AccountData<Balance>;
 	type OnNewAccount = ();
 	type OnKilledAccount = ();
-	type DbWeight = RocksDbWeight;
+	type DbWeight = weights::rocksdb_weights::constants::RocksDbWeight;
 	type BaseCallFilter = MigrationFilter;
 	type SystemWeightInfo = weights::frame_system::WeightInfo<Runtime>;
 	type BlockWeights = BlockWeights;
