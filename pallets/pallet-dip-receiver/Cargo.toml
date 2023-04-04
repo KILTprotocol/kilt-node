@@ -1,0 +1,41 @@
+[package]
+authors.workspace = true
+description = "Pallet enabling receiving identity information from providers via the pallet-dip-provider pallet."
+documentation.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license-file.workspace = true
+name = "pallet-dip-receiver"
+readme.workspace = true
+repository.workspace = true
+version.workspace = true
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+cumulus-pallet-xcm.workspace = true
+dip-support.workspace = true
+frame-support.workspace = true
+frame-system.workspace = true
+kilt-support.workspace = true
+parity-scale-codec = {workspace = true, features = ["derive"]}
+scale-info = {workspace = true, features = ["derive"]}
+sp-std.workspace = true
+
+[features]
+default = ["std"]
+std = [
+  "cumulus-pallet-xcm/std",
+  "dip-support/std",
+  "frame-support/std",
+  "frame-system/std",
+  "kilt-support/std",
+  "parity-scale-codec/std",
+  "scale-info/std",
+  "sp-std/std",
+]
+runtime-benchmarks = [
+  "frame-support/runtime-benchmarks",
+  "frame-system/runtime-benchmarks"
+]

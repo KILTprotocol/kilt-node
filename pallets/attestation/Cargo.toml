@@ -61,7 +61,6 @@ runtime-benchmarks = [
   "sp-runtime/runtime-benchmarks"
 ]
 std = [
-  "parity-scale-codec/std",
   "ctype/std",
   "frame-benchmarking?/std",
   "frame-support/std",
@@ -69,6 +68,7 @@ std = [
   "kilt-support/std",
   "log/std",
   "pallet-balances/std",
+  "parity-scale-codec/std",
   "scale-info/std",
   "sp-core/std",
   "sp-io/std",

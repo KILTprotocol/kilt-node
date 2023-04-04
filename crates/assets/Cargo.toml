@@ -29,9 +29,9 @@ sp-std.workspace = true
 [features]
 default = ["std"]
 std = [
-  "parity-scale-codec/std",
   "hex/std",
   "log/std",
+  "parity-scale-codec/std",
   "scale-info/std",
   "frame-support/std",
   "sp-core/std",
