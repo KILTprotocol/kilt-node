@@ -11442,6 +11442,7 @@ dependencies = [
  "pallet-indices",
  "pallet-inflation",
  "pallet-membership",
+ "pallet-multisig",
  "pallet-preimage",
  "pallet-proxy",
  "pallet-randomness-collective-flip",
