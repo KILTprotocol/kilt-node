@@ -2280,6 +2280,236 @@ dependencies = [
 ]
 
 [[package]]
+name = "dip-receiver-node-template"
+version = "1.11.0-dev"
+dependencies = [
+ "clap",
+ "cumulus-client-cli",
+ "cumulus-client-consensus-aura",
+ "cumulus-client-consensus-common",
+ "cumulus-client-service",
+ "cumulus-primitives-core",
+ "cumulus-primitives-parachain-inherent",
+ "cumulus-relay-chain-interface",
+ "dip-receiver-runtime-template",
+ "frame-benchmarking",
+ "frame-benchmarking-cli",
+ "jsonrpsee",
+ "log",
+ "pallet-transaction-payment-rpc",
+ "parity-scale-codec",
+ "polkadot-cli",
+ "polkadot-primitives",
+ "sc-basic-authorship",
+ "sc-chain-spec",
+ "sc-cli",
+ "sc-client-api",
+ "sc-consensus",
+ "sc-executor",
+ "sc-network",
+ "sc-rpc-api",
+ "sc-service",
+ "sc-sysinfo",
+ "sc-telemetry",
+ "sc-tracing",
+ "sc-transaction-pool",
+ "sc-transaction-pool-api",
+ "serde",
+ "sp-api",
+ "sp-block-builder",
+ "sp-blockchain",
+ "sp-consensus-aura",
+ "sp-core",
+ "sp-keystore",
+ "sp-runtime",
+ "sp-timestamp",
+ "substrate-build-script-utils",
+ "substrate-frame-rpc-system",
+ "substrate-prometheus-endpoint",
+]
+
+[[package]]
+name = "dip-receiver-runtime-template"
+version = "1.11.0-dev"
+dependencies = [
+ "cumulus-pallet-aura-ext",
+ "cumulus-pallet-dmp-queue",
+ "cumulus-pallet-parachain-system",
+ "cumulus-pallet-xcm",
+ "cumulus-pallet-xcmp-queue",
+ "cumulus-primitives-core",
+ "cumulus-primitives-timestamp",
+ "cumulus-primitives-utility",
+ "frame-executive",
+ "frame-support",
+ "frame-system",
+ "frame-system-rpc-runtime-api",
+ "pallet-aura",
+ "pallet-authorship",
+ "pallet-balances",
+ "pallet-collator-selection",
+ "pallet-did-lookup",
+ "pallet-dip-receiver",
+ "pallet-session",
+ "pallet-sudo",
+ "pallet-timestamp",
+ "pallet-transaction-payment",
+ "pallet-transaction-payment-rpc-runtime-api",
+ "pallet-xcm",
+ "parachain-info",
+ "parity-scale-codec",
+ "polkadot-parachain",
+ "scale-info",
+ "sp-api",
+ "sp-block-builder",
+ "sp-consensus-aura",
+ "sp-core",
+ "sp-inherents",
+ "sp-offchain",
+ "sp-runtime",
+ "sp-session",
+ "sp-std",
+ "sp-transaction-pool",
+ "sp-version",
+ "substrate-wasm-builder",
+ "xcm",
+ "xcm-builder",
+ "xcm-executor",
+]
+
+[[package]]
+name = "dip-sender-node-template"
+version = "1.11.0-dev"
+dependencies = [
+ "clap",
+ "cumulus-client-cli",
+ "cumulus-client-consensus-aura",
+ "cumulus-client-consensus-common",
+ "cumulus-client-service",
+ "cumulus-primitives-core",
+ "cumulus-primitives-parachain-inherent",
+ "cumulus-relay-chain-interface",
+ "dip-sender-runtime-template",
+ "frame-benchmarking",
+ "frame-benchmarking-cli",
+ "jsonrpsee",
+ "log",
+ "pallet-transaction-payment-rpc",
+ "parity-scale-codec",
+ "polkadot-cli",
+ "polkadot-primitives",
+ "sc-basic-authorship",
+ "sc-chain-spec",
+ "sc-cli",
+ "sc-client-api",
+ "sc-consensus",
+ "sc-executor",
+ "sc-network",
+ "sc-rpc-api",
+ "sc-service",
+ "sc-sysinfo",
+ "sc-telemetry",
+ "sc-tracing",
+ "sc-transaction-pool",
+ "sc-transaction-pool-api",
+ "serde",
+ "sp-api",
+ "sp-block-builder",
+ "sp-blockchain",
+ "sp-consensus-aura",
+ "sp-core",
+ "sp-keystore",
+ "sp-runtime",
+ "sp-timestamp",
+ "substrate-build-script-utils",
+ "substrate-frame-rpc-system",
+ "substrate-prometheus-endpoint",
+]
+
+[[package]]
+name = "dip-sender-runtime-template"
+version = "1.11.0-dev"
+dependencies = [
+ "cumulus-pallet-aura-ext",
+ "cumulus-pallet-dmp-queue",
+ "cumulus-pallet-parachain-system",
+ "cumulus-pallet-xcm",
+ "cumulus-pallet-xcmp-queue",
+ "cumulus-primitives-core",
+ "cumulus-primitives-timestamp",
+ "cumulus-primitives-utility",
+ "did",
+ "dip-support",
+ "frame-executive",
+ "frame-support",
+ "frame-system",
+ "frame-system-rpc-runtime-api",
+ "pallet-aura",
+ "pallet-authorship",
+ "pallet-balances",
+ "pallet-collator-selection",
+ "pallet-dip-sender",
+ "pallet-session",
+ "pallet-sudo",
+ "pallet-timestamp",
+ "pallet-transaction-payment",
+ "pallet-transaction-payment-rpc-runtime-api",
+ "pallet-xcm",
+ "parachain-info",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-api",
+ "sp-block-builder",
+ "sp-consensus-aura",
+ "sp-core",
+ "sp-inherents",
+ "sp-offchain",
+ "sp-runtime",
+ "sp-session",
+ "sp-std",
+ "sp-transaction-pool",
+ "sp-version",
+ "substrate-wasm-builder",
+ "xcm",
+ "xcm-builder",
+ "xcm-executor",
+]
+
+[[package]]
+name = "dip-support"
+version = "1.11.0-dev"
+dependencies = [
+ "frame-support",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-std",
+]
+
+[[package]]
+name = "dip-templates-xmc-tests"
+version = "1.11.0-dev"
+dependencies = [
+ "cumulus-pallet-xcmp-queue",
+ "dip-receiver-runtime-template",
+ "dip-sender-runtime-template",
+ "frame-support",
+ "frame-system",
+ "pallet-balances",
+ "parachain-info",
+ "parity-scale-codec",
+ "polkadot-parachain",
+ "polkadot-primitives",
+ "polkadot-runtime-parachains",
+ "rococo-runtime",
+ "scale-info",
+ "sp-io",
+ "sp-runtime",
+ "xcm",
+ "xcm-emulator",
+ "xcm-executor",
+]
+
+[[package]]
 name = "directories"
 version = "4.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3977,7 +4207,6 @@ dependencies = [
  "cumulus-client-cli",
  "cumulus-client-consensus-aura",
  "cumulus-client-consensus-common",
- "cumulus-client-network",
  "cumulus-client-service",
  "cumulus-primitives-core",
  "cumulus-primitives-parachain-inherent",
@@ -5895,6 +6124,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-collator-selection"
+version = "3.0.0"
+source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.39#d6eef144421ef5c3f339f681484d06bb729dfa82"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "log",
+ "pallet-authorship",
+ "pallet-session",
+ "parity-scale-codec",
+ "rand 0.8.5",
+ "scale-info",
+ "sp-runtime",
+ "sp-staking",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-collective"
 version = "4.0.0-dev"
 source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.39#8c4b84520cee2d7de53cc33cb67605ce4efefba8"
@@ -5971,6 +6219,33 @@ dependencies = [
  "sp-runtime",
  "sp-std",
  "test-log",
+]
+
+[[package]]
+name = "pallet-dip-receiver"
+version = "1.11.0-dev"
+dependencies = [
+ "cumulus-pallet-xcm",
+ "dip-support",
+ "frame-support",
+ "frame-system",
+ "kilt-support",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-std",
+]
+
+[[package]]
+name = "pallet-dip-sender"
+version = "1.11.0-dev"
+dependencies = [
+ "dip-support",
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-std",
+ "xcm",
 ]
 
 [[package]]
@@ -13782,6 +14057,32 @@ dependencies = [
  "sp-arithmetic",
  "sp-io",
  "sp-runtime",
+ "sp-std",
+ "xcm",
+ "xcm-executor",
+]
+
+[[package]]
+name = "xcm-emulator"
+version = "0.1.0"
+source = "git+https://github.com/shaunxw/xcm-simulator?branch=master#aa13dce47596e150806dfc3af99096dae6ffc65e"
+dependencies = [
+ "cumulus-pallet-dmp-queue",
+ "cumulus-pallet-parachain-system",
+ "cumulus-pallet-xcmp-queue",
+ "cumulus-primitives-core",
+ "cumulus-primitives-parachain-inherent",
+ "cumulus-test-relay-sproof-builder",
+ "frame-support",
+ "frame-system",
+ "parachain-info",
+ "parity-scale-codec",
+ "paste",
+ "polkadot-primitives",
+ "polkadot-runtime-parachains",
+ "quote",
+ "sp-arithmetic",
+ "sp-io",
  "sp-std",
  "xcm",
  "xcm-executor",
