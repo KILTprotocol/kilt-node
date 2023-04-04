@@ -31,7 +31,6 @@ pub mod linkable_account;
 pub mod migrations;
 
 mod connection_record;
-mod migration_state;
 mod signature;
 
 #[cfg(all(test, feature = "std"))]
@@ -43,13 +42,13 @@ mod mock;
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 
-pub use crate::{default_weights::WeightInfo, migration_state::MigrationState, pallet::*};
+pub use crate::{default_weights::WeightInfo, pallet::*};
 
 #[frame_support::pallet]
 pub mod pallet {
 	use crate::{
 		associate_account_request::AssociateAccountRequest, default_weights::WeightInfo,
-		linkable_account::LinkableAccountId, migration_state::MigrationState, migrations::MigrationProgress,
+		linkable_account::LinkableAccountId,
 	};
 
 	use frame_support::{
@@ -82,7 +81,7 @@ pub mod pallet {
 	/// The connection record type.
 	pub(crate) type ConnectionRecordOf<T> = ConnectionRecord<DidIdentifierOf<T>, AccountIdOf<T>, BalanceOf<T>>;
 
-	pub const STORAGE_VERSION: StorageVersion = StorageVersion::new(3);
+	pub const STORAGE_VERSION: StorageVersion = StorageVersion::new(4);
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
@@ -127,10 +126,6 @@ pub mod pallet {
 	#[pallet::getter(fn connected_accounts)]
 	pub type ConnectedAccounts<T> =
 		StorageDoubleMap<_, Blake2_128Concat, DidIdentifierOf<T>, Blake2_128Concat, LinkableAccountId, ()>;
-
-	#[pallet::storage]
-	#[pallet::getter(fn migration_state)]
-	pub type MigrationStateStore<T> = StorageValue<_, MigrationState, ValueQuery>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -192,9 +187,6 @@ pub mod pallet {
 				ConnectedDids::<T>::insert(acc, connection);
 				ConnectedAccounts::<T>::insert(&connection.did, acc, ());
 			}
-
-			// set migration state to done
-			MigrationStateStore::<T>::set(MigrationState::Done);
 		}
 	}
 
@@ -383,42 +375,9 @@ pub mod pallet {
 			LinkableAccountDepositCollector::<T>::update_deposit(&account)
 		}
 
-		/// Executes the key type migration of the `ConnectedDids` and
-		/// `ConnectedAccounts` storages by converting the given `AccountId`
-		/// into `LinkableAccountId(AccountId)`. Once all keys have been
-		/// migrated, the migration is done and this call will be filtered.
-		///
-		/// Can be called by any origin.
-		#[pallet::weight(<T as Config>::WeightInfo::migrate(*limit))]
-		#[pallet::call_index(254)]
-		pub fn migrate(origin: OriginFor<T>, limit: u32) -> DispatchResult {
-			ensure_signed(origin)?;
-
-			let migration_state = MigrationStateStore::<T>::get();
-
-			let new_last_key = match migration_state {
-				MigrationState::PreUpgrade => crate::migrations::do_migrate::<T>(limit, None)?,
-				MigrationState::Upgrading(last_key) => crate::migrations::do_migrate::<T>(limit, Some(last_key))?,
-
-				// This branch should never be executed since we filter this call after the migration is in the `Done`
-				// state
-				MigrationState::Done => MigrationProgress::Finished,
-			};
-
-			match new_last_key {
-				MigrationProgress::ProcessedUntil(key) => {
-					MigrationStateStore::<T>::set(MigrationState::Upgrading(key));
-					Self::deposit_event(Event::<T>::MigrationProgress);
-				}
-				MigrationProgress::Finished => {
-					MigrationStateStore::<T>::set(MigrationState::Done);
-					Self::deposit_event(Event::<T>::MigrationCompleted);
-				}
-				MigrationProgress::Noop => {}
-			}
-
-			Ok(())
-		}
+		// Old call that was used to migrate
+		// #[pallet::call_index(254)]
+		// pub fn migrate(origin: OriginFor<T>, limit: u32) -> DispatchResult
 	}
 
 	impl<T: Config> Pallet<T> {
