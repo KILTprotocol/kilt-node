@@ -27,10 +27,10 @@ test-log = "0.2.11"
 # External dependencies
 base58.workspace = true
 blake2 = {version = "0.10.6", default-features = false}
-parity-scale-codec = {workspace = true, features = ["derive"]}
 hex.workspace = true
 libsecp256k1 = {workspace = true, features = ["hmac"]}
 log.workspace = true
+parity-scale-codec = {workspace = true, features = ["derive"]}
 scale-info = {workspace = true, features = ["derive"]}
 sha3.workspace = true
 
@@ -62,7 +62,6 @@ runtime-benchmarks = [
 ]
 std = [
   "blake2/std",
-  "parity-scale-codec/std",
   "frame-benchmarking?/std",
   "frame-support/std",
   "frame-system/std",
@@ -70,6 +69,7 @@ std = [
   "kilt-support/std",
   "log/std",
   "libsecp256k1/std",
+  "parity-scale-codec/std",
   "scale-info/std",
   "sha3/std",
   "serde",
