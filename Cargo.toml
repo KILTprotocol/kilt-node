@@ -10,12 +10,14 @@ version = "1.11.0-dev"
 
 [workspace]
 members = [
+  "crates/*",
+  "dip-template/nodes/*",
+  "dip-template/runtimes/*",
   "nodes/*",
   "pallets/*",
   "runtime-api/*",
   "runtimes/*",
   "support",
-  "crates/*",
 ]
 
 [profile.release]
@@ -49,6 +51,8 @@ attestation = {path = "pallets/attestation", default-features = false}
 ctype = {path = "pallets/ctype", default-features = false}
 delegation = {path = "pallets/delegation", default-features = false}
 did = {path = "pallets/did", default-features = false}
+pallet-dip-receiver = {path = "pallets/pallet-dip-receiver", default-features = false}
+pallet-dip-sender = {path = "pallets/pallet-dip-sender", default-features = false}
 pallet-did-lookup = {path = "pallets/pallet-did-lookup", default-features = false}
 pallet-inflation = {path = "pallets/pallet-inflation", default-features = false}
 pallet-web3-names = {path = "pallets/pallet-web3-names", default-features = false}
@@ -56,9 +60,14 @@ parachain-staking = {path = "pallets/parachain-staking", default-features = fals
 public-credentials = {path = "pallets/public-credentials", default-features = false}
 
 # Internal support (with default disabled)
+dip-support = {path = "crates/dip", default-features = false}
 kilt-asset-dids = {path = "crates/assets", default-features = false}
 kilt-support = {path = "support", default-features = false}
 runtime-common = {path = "runtimes/common", default-features = false}
+
+# Templates
+dip-receiver-runtime-template = {path = "dip-template/runtimes/dip-receiver", default-features = false}
+dip-sender-runtime-template = {path = "dip-template/runtimes/dip-sender", default-features = false}
 
 # Internal runtime API (with default disabled)
 kilt-runtime-api-did = {path = "runtime-api/did", default-features = false}
@@ -134,6 +143,8 @@ try-runtime-cli = {git = "https://github.com/paritytech/substrate", default-feat
 # Polkadot (with default disabled)
 pallet-xcm = {git = "https://github.com/paritytech/polkadot", default-features = false, branch = "release-v0.9.38"}
 polkadot-parachain = {git = "https://github.com/paritytech/polkadot", default-features = false, branch = "release-v0.9.38"}
+rococo-runtime = {git = "https://github.com/paritytech/polkadot", default-features = false, branch = "release-v0.9.38"}
+polkadot-runtime-parachains = {git = "https://github.com/paritytech/polkadot", default-features = false, branch = "release-v0.9.38"}
 xcm = {git = "https://github.com/paritytech/polkadot", default-features = false, branch = "release-v0.9.38"}
 xcm-builder = {git = "https://github.com/paritytech/polkadot", default-features = false, branch = "release-v0.9.38"}
 xcm-executor = {git = "https://github.com/paritytech/polkadot", default-features = false, branch = "release-v0.9.38"}
