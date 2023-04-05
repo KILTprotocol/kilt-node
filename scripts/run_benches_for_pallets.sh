@@ -9,15 +9,15 @@ chain=$([ "$1" == "spiritnet" ] && echo "spiritnet-dev" || echo "dev")
 standard_args="--locked --features=runtime-benchmarks --bin=kilt-parachain"
 
 pallets=(
-	# attestation
+	attestation
 	ctype
-	# delegation
-	# did
-	# pallet-did-lookup
-	# pallet-inflation
-	# pallet-web3-names
-	# parachain-staking
-	# public-credentials
+	delegation
+	did
+	pallet-did-lookup
+	pallet-inflation
+	pallet-web3-names
+	parachain-staking
+	public-credentials
 )
 
 echo "[+] Running all default weight benchmarks for $runtime --chain=$chain"
