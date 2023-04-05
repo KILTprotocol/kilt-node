@@ -24,7 +24,7 @@ use sc_consensus_aura::{ImportQueueParams, SlotProportion, StartAuraParams};
 pub use sc_executor::NativeElseWasmExecutor;
 use sc_finality_grandpa::SharedVoterState;
 use sc_keystore::LocalKeystore;
-use sc_service::{error::Error as ServiceError, Configuration, TaskManager};
+use sc_service::{error::Error as ServiceError, Configuration, TaskManager, WarpSyncParams};
 use sc_telemetry::{Telemetry, TelemetryWorker};
 use sp_consensus_aura::ed25519::AuthorityPair as AuraPair;
 use std::{sync::Arc, time::Duration};
@@ -192,11 +192,11 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
 		.push(sc_finality_grandpa::grandpa_peers_set_config(
 			grandpa_protocol_name.clone(),
 		));
-	let warp_sync = sc_finality_grandpa::warp_proof::NetworkProvider::new(
+	let warp_sync = Arc::new(sc_finality_grandpa::warp_proof::NetworkProvider::new(
 		backend.clone(),
 		grandpa_link.shared_authority_set().clone(),
 		Vec::default(),
-	);
+	));
 
 	let (network, system_rpc_tx, tx_handler_controller, network_starter) =
 		sc_service::build_network(sc_service::BuildNetworkParams {
@@ -206,7 +206,7 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
 			spawn_handle: task_manager.spawn_handle(),
 			block_announce_validator_builder: None,
 			import_queue,
-			warp_sync_params: warp_sync,
+			warp_sync_params: Some(WarpSyncParams::WithProvider(warp_sync)),
 		})?;
 
 	if config.offchain_worker.enabled {

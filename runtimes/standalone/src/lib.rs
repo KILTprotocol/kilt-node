@@ -846,7 +846,7 @@ impl_runtime_apis! {
 
 	impl frame_system_rpc_runtime_api::AccountNonceApi<Block, AccountId, Index> for Runtime {
 		fn account_nonce(account: AccountId) -> Index {
-			frame_system::Pallet::<Runtime>::account_nonce(&account)
+			frame_system::Pallet::<Runtime>::account_nonce(account)
 		}
 	}
 
