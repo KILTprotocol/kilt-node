@@ -93,10 +93,7 @@ impl<T: crate::pallet::Config> OnRuntimeUpgrade for CleanupMigration<T> {
 			StorageVersion::new(3),
 			"On-chain storage version should be 3 (last version without ethereum linking)"
 		);
-		assert!(
-			MigrationStateStore::<T>::exists(),
-			"Migration state should exist"
-		);
+		assert!(MigrationStateStore::<T>::exists(), "Migration state should exist");
 
 		log::info!(target: LOG_TARGET, "🔎 DidLookup: Pre migration checks successful");
 
@@ -110,10 +107,7 @@ impl<T: crate::pallet::Config> OnRuntimeUpgrade for CleanupMigration<T> {
 			StorageVersion::new(4),
 			"On-chain storage version should be updated"
 		);
-		assert!(
-			!MigrationStateStore::<T>::exists(),
-			"Migration state should be deleted"
-		);
+		assert!(!MigrationStateStore::<T>::exists(), "Migration state should be deleted");
 
 		log::info!(target: LOG_TARGET, "🔎 DidLookup: Post migration checks successful");
 
