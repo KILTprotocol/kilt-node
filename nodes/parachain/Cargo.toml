@@ -50,7 +50,6 @@ sc-transaction-pool-api.workspace = true
 sp-api = {workspace = true, features = ["std"]}
 sp-block-builder = {workspace = true, features = ["std"]}
 sp-blockchain.workspace = true
-sp-consensus.workspace = true
 sp-consensus-aura = {workspace = true, features = ["std"]}
 sp-core = {workspace = true, features = ["std"]}
 sp-io = {workspace = true, features = ["std"]}
@@ -78,7 +77,6 @@ cumulus-primitives-parachain-inherent = {workspace = true, features = ["std"]}
 cumulus-relay-chain-inprocess-interface.workspace = true
 cumulus-relay-chain-interface.workspace = true
 cumulus-relay-chain-minimal-node.workspace = true
-cumulus-relay-chain-rpc-interface.workspace = true
 
 # Polkadot dependencies
 polkadot-cli.workspace = true

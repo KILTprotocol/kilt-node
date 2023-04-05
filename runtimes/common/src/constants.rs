@@ -298,6 +298,8 @@ pub mod governance {
 		pub const TechnicalMotionDuration: BlockNumber = TECHNICAL_MOTION_DURATION;
 		pub const TechnicalMaxProposals: u32 = 100;
 		pub const TechnicalMaxMembers: u32 = 100;
+		// Tipper Group
+		pub const TipperMaxMembers: u32 = 21;
 	}
 }
 
@@ -418,7 +420,7 @@ pub mod tips {
 	parameter_types! {
 		pub const MaximumReasonLength: u32 = 16384;
 		pub const TipCountdown: BlockNumber = DAYS;
-		pub const TipFindersFee: Percent = Percent::from_percent(20);
+		pub const TipFindersFee: Percent = Percent::from_percent(0);
 		pub const TipReportDepositBase: Balance = deposit(1, 1);
 	}
 }

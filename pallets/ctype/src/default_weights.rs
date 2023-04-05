@@ -109,7 +109,6 @@ impl WeightInfo for () {
 	/// Proof: Ctype Ctypes (max_values: None, max_size: Some(88), added: 2563, mode: MaxEncodedLen)
 	fn set_block_number() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `151`
 		//  Estimated: `2563`
 		// Minimum execution time: 230_523 nanoseconds.
 		Weight::from_parts(242_019_000, 2563)
