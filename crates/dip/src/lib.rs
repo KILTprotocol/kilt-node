@@ -31,6 +31,7 @@ pub mod latest {
 }
 
 #[derive(Clone, Eq, PartialEq, Debug, Encode, Decode, TypeInfo, MaxEncodedLen)]
+#[non_exhaustive]
 pub enum VersionedIdentityProofAction<Identifier, Proof, Details = ()> {
 	#[codec(index = 1)]
 	V1(v1::IdentityProofAction<Identifier, Proof, Details>),
@@ -45,6 +46,7 @@ impl<Identifier, Proof, Details> From<v1::IdentityProofAction<Identifier, Proof,
 }
 
 #[derive(Encode, Decode, RuntimeDebug, Clone, Eq, PartialEq, TypeInfo)]
+#[non_exhaustive]
 pub enum VersionedIdentityProof<BlindedValue, Leaf> {
 	#[codec(index = 1)]
 	V1(v1::Proof<BlindedValue, Leaf>),
