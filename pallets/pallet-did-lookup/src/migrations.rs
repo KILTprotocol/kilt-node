@@ -22,13 +22,13 @@ use crate::{
 	MigrationStateStore, Pallet,
 };
 
-use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::{
 	storage::KeyPrefixIterator,
 	storage_alias,
 	traits::{Get, GetStorageVersion, OnRuntimeUpgrade, StorageVersion},
 	Blake2_128Concat, ReversibleStorageHasher, StoragePrefixedMap, LOG_TARGET,
 };
+use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_runtime::{AccountId32, DispatchError};
 use sp_std::marker::PhantomData;
@@ -83,7 +83,7 @@ pub(crate) fn get_mixed_storage_iterator<T: Config>(
 				// This should not happen
 				l => {
 					log::error!("Unknown size {}", l);
-					Err(codec::Error::from("Unknown key size"))
+					Err(parity_scale_codec::Error::from("Unknown key size"))
 				}
 			}
 		},

@@ -25,14 +25,14 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
-use codec::{Decode, Encode, MaxEncodedLen};
 use cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases;
 use frame_support::{
 	construct_runtime, parameter_types,
 	traits::{ConstU32, EitherOfDiverse, InstanceFilter, PrivilegeCmp},
 	weights::{ConstantMultiplier, Weight},
 };
-use frame_system::EnsureRoot;
+use frame_system::{EnsureRoot, EnsureSigned};
+use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 
 #[cfg(feature = "try-runtime")]
 use frame_try_runtime::UpgradeCheckSelect;
@@ -70,7 +70,7 @@ use crate::xcm_config::{XcmConfig, XcmOriginToTransactDispatchOrigin};
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 #[cfg(feature = "runtime-benchmarks")]
-use {frame_system::EnsureSigned, kilt_support::signature::AlwaysVerify, runtime_common::benchmarks::DummySignature};
+use {kilt_support::signature::AlwaysVerify, runtime_common::benchmarks::DummySignature};
 
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
@@ -428,6 +428,7 @@ impl pallet_democracy::Config for Runtime {
 	type Preimages = Preimage;
 	type MaxDeposits = ConstU32<100>;
 	type MaxBlacklisted = ConstU32<100>;
+	type SubmitOrigin = EnsureSigned<AccountId>;
 }
 
 parameter_types! {
@@ -477,6 +478,7 @@ impl pallet_collective::Config<CouncilCollective> for Runtime {
 	type MaxMembers = constants::governance::CouncilMaxMembers;
 	type DefaultVote = pallet_collective::PrimeDefaultVote;
 	type WeightInfo = weights::pallet_collective::WeightInfo<Runtime>;
+	type SetMembersOrigin = EnsureRoot<AccountId>;
 }
 
 type TechnicalCollective = pallet_collective::Instance2;
@@ -489,6 +491,7 @@ impl pallet_collective::Config<TechnicalCollective> for Runtime {
 	type MaxMembers = constants::governance::TechnicalMaxMembers;
 	type DefaultVote = pallet_collective::PrimeDefaultVote;
 	type WeightInfo = weights::pallet_collective::WeightInfo<Runtime>;
+	type SetMembersOrigin = EnsureRoot<AccountId>;
 }
 
 type TechnicalMembershipProvider = pallet_membership::Instance1;
@@ -689,7 +692,7 @@ impl pallet_utility::Config for Runtime {
 	type WeightInfo = weights::pallet_utility::WeightInfo<Runtime>;
 }
 
-impl pallet_randomness_collective_flip::Config for Runtime {}
+impl pallet_insecure_randomness_collective_flip::Config for Runtime {}
 
 impl public_credentials::Config for Runtime {
 	type AccessControl = PalletAuthorize<DelegationAc<Runtime>>;
@@ -919,7 +922,7 @@ construct_runtime! {
 		UncheckedExtrinsic = UncheckedExtrinsic,
 	{
 		System: frame_system = 0,
-		RandomnessCollectiveFlip: pallet_randomness_collective_flip = 1,
+		RandomnessCollectiveFlip: pallet_insecure_randomness_collective_flip = 1,
 
 		Timestamp: pallet_timestamp = 2,
 		Indices: pallet_indices::{Pallet, Call, Storage, Event<T>} = 5,
@@ -1136,7 +1139,7 @@ impl_runtime_apis! {
 
 	impl frame_system_rpc_runtime_api::AccountNonceApi<Block, AccountId, Index> for Runtime {
 		fn account_nonce(account: AccountId) -> Index {
-			frame_system::Pallet::<Runtime>::account_nonce(&account)
+			frame_system::Pallet::<Runtime>::account_nonce(account)
 		}
 	}
 

@@ -16,13 +16,13 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use codec::{Decode, Encode, MaxEncodedLen, WrapperTypeEncode};
 use frame_support::{
 	ensure,
 	storage::{bounded_btree_map::BoundedBTreeMap, bounded_btree_set::BoundedBTreeSet},
 	traits::Get,
 	RuntimeDebug,
 };
+use parity_scale_codec::{Decode, Encode, MaxEncodedLen, WrapperTypeEncode};
 use scale_info::TypeInfo;
 use sp_core::{ecdsa, ed25519, sr25519};
 use sp_runtime::{traits::Verify, MultiSignature, SaturatedConversion};

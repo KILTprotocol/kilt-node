@@ -192,11 +192,11 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
 		.push(sc_finality_grandpa::grandpa_peers_set_config(
 			grandpa_protocol_name.clone(),
 		));
-	let warp_sync = Arc::new(sc_finality_grandpa::warp_proof::NetworkProvider::new(
+	let warp_sync = sc_finality_grandpa::warp_proof::NetworkProvider::new(
 		backend.clone(),
 		grandpa_link.shared_authority_set().clone(),
 		Vec::default(),
-	));
+	);
 
 	let (network, system_rpc_tx, tx_handler_controller, network_starter) =
 		sc_service::build_network(sc_service::BuildNetworkParams {
@@ -204,9 +204,9 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
 			client: client.clone(),
 			transaction_pool: transaction_pool.clone(),
 			spawn_handle: task_manager.spawn_handle(),
-			import_queue,
 			block_announce_validator_builder: None,
-			warp_sync: Some(warp_sync),
+			import_queue,
+			warp_sync_params: warp_sync,
 		})?;
 
 	if config.offchain_worker.enabled {

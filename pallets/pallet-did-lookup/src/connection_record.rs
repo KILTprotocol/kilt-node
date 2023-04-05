@@ -16,8 +16,8 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use codec::{Decode, Encode, MaxEncodedLen};
 use kilt_support::deposit::Deposit;
+use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 
 /// A record in the ConnectedDid map.

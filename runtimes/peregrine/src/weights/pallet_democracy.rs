@@ -288,4 +288,22 @@ impl<T: frame_system::Config> pallet_democracy::WeightInfo for WeightInfo<T> {
 			.saturating_add(T::DbWeight::get().reads(2 as u64))
 			.saturating_add(T::DbWeight::get().writes(2 as u64))
 	}
+	fn clear_external_metadata() -> Weight {
+		unimplemented!()
+	}
+	fn clear_proposal_metadata() -> Weight {
+		unimplemented!()
+	}
+	fn clear_referendum_metadata() -> Weight {
+		unimplemented!()
+	}
+	fn set_external_metadata() -> Weight {
+		unimplemented!()
+	}
+	fn set_proposal_metadata() -> Weight {
+		unimplemented!()
+	}
+	fn set_referendum_metadata() -> Weight {
+		unimplemented!()
+	}
 }

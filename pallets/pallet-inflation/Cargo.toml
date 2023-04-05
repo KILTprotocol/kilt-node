@@ -20,7 +20,7 @@ sp-io = {workspace = true, features = ["std"]}
 
 [dependencies]
 # External dependencies
-codec = {package = "parity-scale-codec", workspace = true, features = ["derive"]}
+parity-scale-codec = {workspace = true, features = ["derive"]}
 scale-info = {workspace = true, features = ["derive"]}
 
 # Benchmarking dependencies
@@ -41,7 +41,7 @@ runtime-benchmarks = [
   "sp-runtime/runtime-benchmarks",
 ]
 std = [
-  "codec/std",
+  "parity-scale-codec/std",
   "frame-benchmarking?/std",
   "frame-support/std",
   "frame-system/std",
