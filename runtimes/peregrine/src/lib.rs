@@ -1090,6 +1090,7 @@ pub type Executive = frame_executive::Executive<
 	pallet_did_lookup::migrations::EthereumMigration<Runtime>,
 >;
 
+#[cfg(feature = "runtime-benchmarks")]
 mod benches {
 	frame_benchmarking::define_benchmarks!(
 		// KILT
