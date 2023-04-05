@@ -164,7 +164,7 @@ mod tests {
 				.per_class
 				.get(frame_support::dispatch::DispatchClass::Normal)
 				.max_extrinsic
-				.unwrap_or(<sp_weights::Weight as sp_runtime::traits::Bounded>::max_value())
+				.unwrap_or_else(<sp_weights::Weight as sp_runtime::traits::Bounded>::max_value)
 				.proof_size()
 				> 4958
 		);
@@ -176,7 +176,7 @@ mod tests {
 				.per_class
 				.get(frame_support::dispatch::DispatchClass::Normal)
 				.max_extrinsic
-				.unwrap_or(<sp_weights::Weight as sp_runtime::traits::Bounded>::max_value())
+				.unwrap_or_else(<sp_weights::Weight as sp_runtime::traits::Bounded>::max_value)
 				.proof_size()
 				> 2981
 		);
@@ -188,7 +188,7 @@ mod tests {
 				.per_class
 				.get(frame_support::dispatch::DispatchClass::Normal)
 				.max_extrinsic
-				.unwrap_or(<sp_weights::Weight as sp_runtime::traits::Bounded>::max_value())
+				.unwrap_or_else(<sp_weights::Weight as sp_runtime::traits::Bounded>::max_value)
 				.proof_size()
 				> 6516
 		);
@@ -200,7 +200,7 @@ mod tests {
 				.per_class
 				.get(frame_support::dispatch::DispatchClass::Normal)
 				.max_extrinsic
-				.unwrap_or(<sp_weights::Weight as sp_runtime::traits::Bounded>::max_value())
+				.unwrap_or_else(<sp_weights::Weight as sp_runtime::traits::Bounded>::max_value)
 				.proof_size()
 				> 14604
 		);
@@ -212,7 +212,7 @@ mod tests {
 				.per_class
 				.get(frame_support::dispatch::DispatchClass::Normal)
 				.max_extrinsic
-				.unwrap_or(<sp_weights::Weight as sp_runtime::traits::Bounded>::max_value())
+				.unwrap_or_else(<sp_weights::Weight as sp_runtime::traits::Bounded>::max_value)
 				.proof_size()
 				> 29936
 		);
@@ -224,7 +224,7 @@ mod tests {
 				.per_class
 				.get(frame_support::dispatch::DispatchClass::Normal)
 				.max_extrinsic
-				.unwrap_or(<sp_weights::Weight as sp_runtime::traits::Bounded>::max_value())
+				.unwrap_or_else(<sp_weights::Weight as sp_runtime::traits::Bounded>::max_value)
 				.proof_size()
 				> 3077
 		);
