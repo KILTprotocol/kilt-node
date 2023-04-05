@@ -51,13 +51,13 @@ fn create_root_delegation_successful() {
 			assert_eq!(Balances::reserved_balance(ACCOUNT_00), <Test as Config>::Deposit::get());
 
 			// Get stored hierarchy
-			let stored_hierarchy_details = Delegation::delegation_hierarchies(&hierarchy_root_id)
+			let stored_hierarchy_details = Delegation::delegation_hierarchies(hierarchy_root_id)
 				.expect("Delegation hierarchy should be present on chain.");
 			assert_eq!(stored_hierarchy_details.ctype_hash, operation.ctype_hash);
 
 			// Check root delegation
 			let stored_delegation_root =
-				Delegation::delegation_nodes(&hierarchy_root_id).expect("Delegation root should be present on chain.");
+				Delegation::delegation_nodes(hierarchy_root_id).expect("Delegation root should be present on chain.");
 			assert_eq!(stored_delegation_root.hierarchy_root_id, hierarchy_root_id);
 			assert!(stored_delegation_root.parent.is_none());
 			assert!(stored_delegation_root.children.len().is_zero());
@@ -178,7 +178,7 @@ fn create_delegation_direct_root_successful() {
 
 			// Check stored delegation against operation
 			let stored_delegation =
-				Delegation::delegation_nodes(&operation.delegation_id).expect("Delegation should be present on chain.");
+				Delegation::delegation_nodes(operation.delegation_id).expect("Delegation should be present on chain.");
 			assert_eq!(stored_delegation.hierarchy_root_id, operation.hierarchy_id);
 			assert_eq!(stored_delegation.parent, Some(operation.parent_id));
 			assert!(stored_delegation.children.is_empty());
@@ -187,7 +187,7 @@ fn create_delegation_direct_root_successful() {
 			assert!(!stored_delegation.details.revoked);
 
 			// Verify that the root has the new delegation among its children
-			let stored_root = Delegation::delegation_nodes(&operation.hierarchy_id)
+			let stored_root = Delegation::delegation_nodes(operation.hierarchy_id)
 				.expect("Delegation root should be present on chain.");
 			assert!(stored_root.children.contains(&operation.delegation_id));
 		});
@@ -258,7 +258,7 @@ fn create_delegation_with_parent_successful() {
 
 			// Data in stored delegation and operation should match
 			let stored_delegation =
-				Delegation::delegation_nodes(&operation.delegation_id).expect("Delegation should be present on chain.");
+				Delegation::delegation_nodes(operation.delegation_id).expect("Delegation should be present on chain.");
 			assert_eq!(stored_delegation.hierarchy_root_id, operation.hierarchy_id);
 			assert_eq!(stored_delegation.parent, Some(operation.parent_id));
 			assert!(stored_delegation.children.is_empty());
@@ -269,7 +269,7 @@ fn create_delegation_with_parent_successful() {
 
 			// Verify that the parent has the new delegation among its children
 			let stored_parent =
-				Delegation::delegation_nodes(&operation.parent_id).expect("Delegation parent be present on chain.");
+				Delegation::delegation_nodes(operation.parent_id).expect("Delegation parent be present on chain.");
 
 			assert!(stored_parent.children.contains(&operation.delegation_id));
 		});
@@ -659,7 +659,7 @@ fn empty_revoke_root_successful() {
 			));
 
 			assert!(
-				Delegation::delegation_nodes(&operation.id)
+				Delegation::delegation_nodes(operation.id)
 					.expect("Delegation root should be present on chain.")
 					.details
 					.revoked
@@ -699,7 +699,7 @@ fn list_hierarchy_revoke_and_remove_root_successful() {
 		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
 		.build()
 		.execute_with(|| {
-			assert!(Delegation::delegation_hierarchies(&hierarchy_root_id).is_some());
+			assert!(Delegation::delegation_hierarchies(hierarchy_root_id).is_some());
 			assert_eq!(
 				Balances::reserved_balance(ACCOUNT_00),
 				2 * <Test as Config>::Deposit::get()
@@ -716,19 +716,19 @@ fn list_hierarchy_revoke_and_remove_root_successful() {
 
 			// Root and children should still be stored with revoked status
 			assert!(
-				Delegation::delegation_nodes(&operation.id)
+				Delegation::delegation_nodes(operation.id)
 					.expect("Delegation root should be present on chain.")
 					.details
 					.revoked
 			);
 			assert!(
-				Delegation::delegation_nodes(&parent_id)
+				Delegation::delegation_nodes(parent_id)
 					.expect("Parent delegation should be present on chain.")
 					.details
 					.revoked
 			);
 			assert!(
-				Delegation::delegation_nodes(&delegation_id)
+				Delegation::delegation_nodes(delegation_id)
 					.expect("Delegation should be present on chain.")
 					.details
 					.revoked
@@ -741,10 +741,10 @@ fn list_hierarchy_revoke_and_remove_root_successful() {
 				operation.max_children
 			));
 
-			assert!(Delegation::delegation_nodes(&operation.id).is_none());
-			assert!(Delegation::delegation_hierarchies(&hierarchy_root_id).is_none());
-			assert!(Delegation::delegation_nodes(&parent_id).is_none());
-			assert!(Delegation::delegation_nodes(&delegation_id).is_none());
+			assert!(Delegation::delegation_nodes(operation.id).is_none());
+			assert!(Delegation::delegation_hierarchies(hierarchy_root_id).is_none());
+			assert!(Delegation::delegation_nodes(parent_id).is_none());
+			assert!(Delegation::delegation_nodes(delegation_id).is_none());
 			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
 			assert!(Balances::reserved_balance(ACCOUNT_01).is_zero());
 		});
@@ -796,19 +796,19 @@ fn tree_hierarchy_revoke_and_remove_root_successful() {
 
 			// Root and children should still be stored with revoked status
 			assert!(
-				Delegation::delegation_nodes(&operation.id)
+				Delegation::delegation_nodes(operation.id)
 					.expect("Delegation root should be present on chain.")
 					.details
 					.revoked
 			);
 			assert!(
-				Delegation::delegation_nodes(&delegation1_id)
+				Delegation::delegation_nodes(delegation1_id)
 					.expect("Delegation 1 should be present on chain.")
 					.details
 					.revoked
 			);
 			assert!(
-				Delegation::delegation_nodes(&delegation2_id)
+				Delegation::delegation_nodes(delegation2_id)
 					.expect("Delegation 2 should be present on chain.")
 					.details
 					.revoked
@@ -827,10 +827,10 @@ fn tree_hierarchy_revoke_and_remove_root_successful() {
 				operation.max_children
 			));
 
-			assert!(Delegation::delegation_nodes(&operation.id).is_none());
-			assert!(Delegation::delegation_hierarchies(&hierarchy_root_id).is_none());
-			assert!(Delegation::delegation_nodes(&delegation1_id).is_none());
-			assert!(Delegation::delegation_nodes(&delegation2_id).is_none());
+			assert!(Delegation::delegation_nodes(operation.id).is_none());
+			assert!(Delegation::delegation_hierarchies(hierarchy_root_id).is_none());
+			assert!(Delegation::delegation_nodes(delegation1_id).is_none());
+			assert!(Delegation::delegation_nodes(delegation2_id).is_none());
 			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
 			assert!(Balances::reserved_balance(ACCOUNT_01).is_zero());
 		});
@@ -878,19 +878,19 @@ fn max_max_revocations_revoke_and_remove_successful() {
 
 			// Root and children should still be stored with revoked status
 			assert!(
-				Delegation::delegation_nodes(&operation.id)
+				Delegation::delegation_nodes(operation.id)
 					.expect("Delegation root should be present on chain.")
 					.details
 					.revoked
 			);
 			assert!(
-				Delegation::delegation_nodes(&parent_id)
+				Delegation::delegation_nodes(parent_id)
 					.expect("Parent delegation should be present on chain.")
 					.details
 					.revoked
 			);
 			assert!(
-				Delegation::delegation_nodes(&delegation_id)
+				Delegation::delegation_nodes(delegation_id)
 					.expect("Delegation should be present on chain.")
 					.details
 					.revoked
@@ -909,10 +909,10 @@ fn max_max_revocations_revoke_and_remove_successful() {
 				operation.max_children
 			));
 
-			assert!(Delegation::delegation_nodes(&operation.id).is_none());
-			assert!(Delegation::delegation_hierarchies(&hierarchy_root_id).is_none());
-			assert!(Delegation::delegation_nodes(&parent_id).is_none());
-			assert!(Delegation::delegation_nodes(&delegation_id).is_none());
+			assert!(Delegation::delegation_nodes(operation.id).is_none());
+			assert!(Delegation::delegation_hierarchies(hierarchy_root_id).is_none());
+			assert!(Delegation::delegation_nodes(parent_id).is_none());
+			assert!(Delegation::delegation_nodes(delegation_id).is_none());
 			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
 			assert!(Balances::reserved_balance(ACCOUNT_01).is_zero());
 		});
@@ -1094,25 +1094,25 @@ fn exact_children_max_revocations_revoke_and_remove_root_error() {
 
 			// No delegation should have been revoked because of transactional storage layer
 			assert!(
-				!Delegation::delegation_nodes(&operation.id)
+				!Delegation::delegation_nodes(operation.id)
 					.expect("Delegation root should be present on chain.")
 					.details
 					.revoked
 			);
 			assert!(
-				!Delegation::delegation_nodes(&delegation1_id)
+				!Delegation::delegation_nodes(delegation1_id)
 					.expect("Delegation 1 should be present on chain.")
 					.details
 					.revoked
 			);
 			assert!(
-				!Delegation::delegation_nodes(&delegation2_id)
+				!Delegation::delegation_nodes(delegation2_id)
 					.expect("Delegation 2 should be present on chain.")
 					.details
 					.revoked
 			);
 			assert!(
-				!Delegation::delegation_nodes(&delegation3_id)
+				!Delegation::delegation_nodes(delegation3_id)
 					.expect("Delegation 3 should be present on chain.")
 					.details
 					.revoked
@@ -1135,10 +1135,10 @@ fn exact_children_max_revocations_revoke_and_remove_root_error() {
 				Error::<Test>::ExceededRemovalBounds
 			);
 			// Should not remove any delegation because of transactional storage layer
-			assert!(Delegation::delegation_nodes(&operation.id).is_some());
-			assert!(Delegation::delegation_nodes(&delegation1_id).is_some());
-			assert!(Delegation::delegation_nodes(&delegation2_id).is_some());
-			assert!(Delegation::delegation_nodes(&delegation3_id).is_some());
+			assert!(Delegation::delegation_nodes(operation.id).is_some());
+			assert!(Delegation::delegation_nodes(delegation1_id).is_some());
+			assert!(Delegation::delegation_nodes(delegation2_id).is_some());
+			assert!(Delegation::delegation_nodes(delegation3_id).is_some());
 			assert_eq!(Balances::reserved_balance(ACCOUNT_00), <Test as Config>::Deposit::get());
 			assert_eq!(
 				Balances::reserved_balance(ACCOUNT_01),
@@ -1151,9 +1151,9 @@ fn exact_children_max_revocations_revoke_and_remove_root_error() {
 				operation.id,
 				operation.max_children + 1
 			));
-			assert!(Delegation::delegation_nodes(&operation.id).is_none());
-			assert!(Delegation::delegation_nodes(&delegation1_id).is_none());
-			assert!(Delegation::delegation_nodes(&delegation3_id).is_none());
+			assert!(Delegation::delegation_nodes(operation.id).is_none());
+			assert!(Delegation::delegation_nodes(delegation1_id).is_none());
+			assert!(Delegation::delegation_nodes(delegation3_id).is_none());
 			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
 			assert!(Balances::reserved_balance(ACCOUNT_01).is_zero());
 		});
@@ -1206,19 +1206,19 @@ fn direct_owner_revoke_and_remove_delegation_successful() {
 
 			// Root hierarchy and children should still be stored with revoked status
 			assert!(
-				Delegation::delegation_nodes(&operation.delegation_id)
+				Delegation::delegation_nodes(operation.delegation_id)
 					.expect("Delegation root should be present on chain.")
 					.details
 					.revoked
 			);
 			assert!(
-				Delegation::delegation_nodes(&parent_id)
+				Delegation::delegation_nodes(parent_id)
 					.expect("Parent delegation should be present on chain.")
 					.details
 					.revoked
 			);
 			assert!(
-				Delegation::delegation_nodes(&delegation_id)
+				Delegation::delegation_nodes(delegation_id)
 					.expect("Delegation should be present on chain.")
 					.details
 					.revoked
@@ -1237,10 +1237,10 @@ fn direct_owner_revoke_and_remove_delegation_successful() {
 				operation.max_revocations
 			));
 
-			assert!(Delegation::delegation_hierarchies(&hierarchy_root_id).is_some());
-			assert!(Delegation::delegation_nodes(&operation.delegation_id).is_none());
-			assert!(Delegation::delegation_nodes(&parent_id).is_none());
-			assert!(Delegation::delegation_nodes(&delegation_id).is_none());
+			assert!(Delegation::delegation_hierarchies(hierarchy_root_id).is_some());
+			assert!(Delegation::delegation_nodes(operation.delegation_id).is_none());
+			assert!(Delegation::delegation_nodes(parent_id).is_none());
+			assert!(Delegation::delegation_nodes(delegation_id).is_none());
 			assert_eq!(Balances::reserved_balance(ACCOUNT_00), <Test as Config>::Deposit::get());
 			assert!(Balances::reserved_balance(ACCOUNT_01).is_zero());
 		});
@@ -1306,13 +1306,13 @@ fn parent_owner_revoke_delegation_successful() {
 
 			// Only child should be revoked
 			assert!(
-				!Delegation::delegation_nodes(&parent_id)
+				!Delegation::delegation_nodes(parent_id)
 					.expect("Parent delegation should be present on chain.")
 					.details
 					.revoked
 			);
 			assert!(
-				Delegation::delegation_nodes(&delegation_id)
+				Delegation::delegation_nodes(delegation_id)
 					.expect("Delegation should be present on chain.")
 					.details
 					.revoked
@@ -1325,8 +1325,8 @@ fn parent_owner_revoke_delegation_successful() {
 				operation.max_revocations
 			));
 
-			assert!(Delegation::delegation_nodes(&parent_id).is_some());
-			assert!(Delegation::delegation_nodes(&delegation_id).is_none());
+			assert!(Delegation::delegation_nodes(parent_id).is_some());
+			assert!(Delegation::delegation_nodes(delegation_id).is_none());
 			assert_eq!(
 				Balances::reserved_balance(ACCOUNT_00),
 				2 * <Test as Config>::Deposit::get()
@@ -1570,9 +1570,9 @@ fn direct_owner_reclaim_deposit_delegation_successful() {
 			));
 
 			// Root hierarchy and children should not be stored anymore
-			assert!(Delegation::delegation_nodes(&operation.delegation_id).is_none());
-			assert!(Delegation::delegation_nodes(&parent_id).is_none());
-			assert!(Delegation::delegation_nodes(&delegation_id).is_none());
+			assert!(Delegation::delegation_nodes(operation.delegation_id).is_none());
+			assert!(Delegation::delegation_nodes(parent_id).is_none());
+			assert!(Delegation::delegation_nodes(delegation_id).is_none());
 
 			// We have released all the deposits by deleting the root node.
 			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
@@ -2147,12 +2147,12 @@ fn remove_children_gas_runs_out() {
 				),
 				Error::<Test>::ExceededRemovalBounds
 			);
-			assert!(Delegation::delegation_nodes(&operation.id).is_some());
-			assert!(Delegation::delegation_nodes(&delegation1_id).is_some());
+			assert!(Delegation::delegation_nodes(operation.id).is_some());
+			assert!(Delegation::delegation_nodes(delegation1_id).is_some());
 			// Should still be existing because of transactional storage
-			assert!(Delegation::delegation_nodes(&delegation2_id).is_some());
-			assert!(Delegation::delegation_nodes(&delegation3_id).is_some());
-			assert!(Delegation::delegation_nodes(&delegation4_id).is_some());
+			assert!(Delegation::delegation_nodes(delegation2_id).is_some());
+			assert!(Delegation::delegation_nodes(delegation3_id).is_some());
+			assert!(Delegation::delegation_nodes(delegation4_id).is_some());
 			assert_eq!(Balances::reserved_balance(ACCOUNT_00), <Test as Config>::Deposit::get());
 			assert_eq!(
 				Balances::reserved_balance(ACCOUNT_01),
@@ -2166,10 +2166,10 @@ fn remove_children_gas_runs_out() {
 				operation.id,
 				operation.max_children + 1
 			));
-			assert!(Delegation::delegation_nodes(&operation.id).is_none());
-			assert!(Delegation::delegation_nodes(&delegation1_id).is_none());
-			assert!(Delegation::delegation_nodes(&delegation2_id).is_none());
-			assert!(Delegation::delegation_nodes(&delegation3_id).is_none());
+			assert!(Delegation::delegation_nodes(operation.id).is_none());
+			assert!(Delegation::delegation_nodes(delegation1_id).is_none());
+			assert!(Delegation::delegation_nodes(delegation2_id).is_none());
+			assert!(Delegation::delegation_nodes(delegation3_id).is_none());
 			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
 			assert!(Balances::reserved_balance(ACCOUNT_01).is_zero());
 			assert!(Balances::reserved_balance(ACCOUNT_02).is_zero());

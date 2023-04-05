@@ -269,7 +269,7 @@ mod tests {
 					ac_info.clone()
 				));
 				let stored_attestation =
-					Attestation::attestations(&claim_hash).expect("Attestation should be present on chain.");
+					Attestation::attestations(claim_hash).expect("Attestation should be present on chain.");
 
 				assert_eq!(stored_attestation.ctype_hash, ctype_hash);
 				assert_eq!(stored_attestation.attester, delegate);
