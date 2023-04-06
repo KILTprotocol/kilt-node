@@ -804,22 +804,20 @@ pub type Executive = frame_executive::Executive<
 #[cfg(feature = "runtime-benchmarks")]
 mod benches {
 	frame_benchmarking::define_benchmarks!(
-		// KILT
-		[attestation, Attestation]
+		[frame_system, SystemBench::<Runtime>]
+		[pallet_timestamp, Timestamp]
+		[pallet_indices, Indices]
+		[pallet_balances, Balances]
 		[ctype, Ctype]
+		[attestation, Attestation]
 		[delegation, Delegation]
 		[did, Did]
 		[pallet_did_lookup, DidLookup]
-		[pallet_web3_names, Web3Names]
-		[public_credentials, PublicCredentials]
-		// Substrate
-		[frame_benchmarking::baseline, Baseline::<Runtime>]
-		[frame_system, SystemBench::<Runtime>]
-		[pallet_balances, Balances]
-		[pallet_indices, Indices]
-		[pallet_timestamp, Timestamp]
 		[pallet_utility, Utility]
 		[pallet_proxy, Proxy]
+		[pallet_web3_names, Web3Names]
+		[public_credentials, PublicCredentials]
+		[frame_benchmarking::baseline, Baseline::<Runtime>]
 	);
 }
 
