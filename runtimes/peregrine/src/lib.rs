@@ -953,8 +953,10 @@ construct_runtime! {
 		// System scheduler.
 		Scheduler: pallet_scheduler::{Pallet, Call, Storage, Event<T>} = 42,
 
+		//allowing accounts to give permission to other accounts to dispatch types of calls from their signed origin
 		Proxy: pallet_proxy::{Pallet, Call, Storage, Event<T>} = 43,
 
+		//preimage pallet allows the storage of large bytes blob
 		Preimage: pallet_preimage::{Pallet, Call, Storage, Event<T>} = 44,
 
 		// Tips module to reward contributions to the ecosystem with small amount of KILTs.

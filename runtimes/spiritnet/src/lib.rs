@@ -932,7 +932,6 @@ construct_runtime! {
 		Authorship: pallet_authorship::{Pallet, Storage} = 20,
 		AuraExt: cumulus_pallet_aura_ext = 24,
 
-		// Governance stuff
 		Democracy: pallet_democracy = 30,
 		Council: pallet_collective::<Instance1> = 31,
 		TechnicalCommittee: pallet_collective::<Instance2> = 32,
@@ -942,19 +941,15 @@ construct_runtime! {
 		// DELETED: RelayMigration: pallet_relay_migration::{Pallet, Call, Storage, Event<T>} = 36,
 		// DELETED: DynFilter: pallet_dyn_filter = 37,
 
-		// Utility module.
 		Utility: pallet_utility = 40,
 
 		// Vesting. Usable initially, but removed once all vesting is finished.
 		Vesting: pallet_vesting = 41,
 
-		// System scheduler.
 		Scheduler: pallet_scheduler::{Pallet, Call, Storage, Event<T>} = 42,
 
-		// Proxy pallet.
 		Proxy: pallet_proxy::{Pallet, Call, Storage, Event<T>} = 43,
 
-		// Preimage registrar
 		Preimage: pallet_preimage::{Pallet, Call, Storage, Event<T>} = 44,
 
 		// Tips module to reward contributions to the ecosystem with small amount of KILTs.
