@@ -31,6 +31,7 @@ pub mod latest {
 }
 
 #[derive(Clone, Eq, PartialEq, Debug, Encode, Decode, TypeInfo, MaxEncodedLen)]
+#[non_exhaustive]
 pub enum VersionedIdentityProofAction<Identifier, Proof, Details = ()> {
 	#[codec(index = 1)]
 	V1(v1::IdentityProofAction<Identifier, Proof, Details>),
@@ -45,13 +46,28 @@ impl<Identifier, Proof, Details> From<v1::IdentityProofAction<Identifier, Proof,
 }
 
 #[derive(Encode, Decode, RuntimeDebug, Clone, Eq, PartialEq, TypeInfo)]
-pub enum VersionedIdentityProof<LeafKey, LeafValue> {
+#[non_exhaustive]
+pub enum VersionedIdentityProof<BlindedValue, Leaf> {
 	#[codec(index = 1)]
-	V1(v1::Proof<LeafKey, LeafValue>),
+	V1(v1::Proof<BlindedValue, Leaf>),
 }
 
-impl<LeafKey, LeafValue> From<v1::Proof<LeafKey, LeafValue>> for VersionedIdentityProof<LeafKey, LeafValue> {
-	fn from(value: v1::Proof<LeafKey, LeafValue>) -> Self {
+impl<BlindedValue, Leaf> From<v1::Proof<BlindedValue, Leaf>> for VersionedIdentityProof<BlindedValue, Leaf> {
+	fn from(value: v1::Proof<BlindedValue, Leaf>) -> Self {
 		Self::V1(value)
+	}
+}
+
+impl<BlindedValue, Leaf> TryFrom<VersionedIdentityProof<BlindedValue, Leaf>> for v1::Proof<BlindedValue, Leaf> {
+	// Proper error handling
+	type Error = ();
+
+	fn try_from(value: VersionedIdentityProof<BlindedValue, Leaf>) -> Result<Self, Self::Error> {
+		#[allow(irrefutable_let_patterns)]
+		if let VersionedIdentityProof::V1(v1::Proof { blinded, revealed }) = value {
+			Ok(Self { blinded, revealed })
+		} else {
+			Err(())
+		}
 	}
 }

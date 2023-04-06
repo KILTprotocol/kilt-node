@@ -39,7 +39,7 @@ pub struct DidLinkedInfo<
 	Url,
 	Balance,
 	Key: Ord,
-	BlockNumber: MaxEncodedLen,
+	BlockNumber,
 > {
 	pub identifier: DidIdentifier,
 	pub accounts: Vec<LinkableAccountId>,

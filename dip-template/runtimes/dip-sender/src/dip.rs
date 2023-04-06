@@ -16,14 +16,14 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use did::did_details::DidDetails;
 use dip_support::VersionedIdentityProofAction;
-use pallet_dip_sender::traits::{
-	DefaultIdentityProofGenerator, DefaultIdentityProvider, TxBuilder, XcmRouterDispatcher,
-};
+use pallet_dip_sender::traits::{TxBuilder, XcmRouterDispatcher};
 use parity_scale_codec::{Decode, Encode};
+use runtime_common::dip::sender::{DidIdentityProvider, DidMerkleRootGenerator};
 use xcm::{latest::MultiLocation, DoubleEncoded};
 
-use crate::{DidIdentifier, Runtime, RuntimeEvent, XcmRouter};
+use crate::{DidIdentifier, Hash, Runtime, RuntimeEvent, XcmRouter};
 
 #[derive(Encode, Decode)]
 enum ReceiverParachainCalls {
@@ -34,16 +34,16 @@ enum ReceiverParachainCalls {
 #[derive(Encode, Decode)]
 enum ReceiverParachainDipReceiverCalls {
 	#[codec(index = 0)]
-	ProcessIdentityAction(VersionedIdentityProofAction<DidIdentifier, [u8; 32]>),
+	ProcessIdentityAction(VersionedIdentityProofAction<DidIdentifier, Hash>),
 }
 
 pub struct ReceiverParachainTxBuilder;
-impl TxBuilder<DidIdentifier, [u8; 32]> for ReceiverParachainTxBuilder {
+impl TxBuilder<DidIdentifier, Hash> for ReceiverParachainTxBuilder {
 	type Error = ();
 
 	fn build(
 		_dest: MultiLocation,
-		action: VersionedIdentityProofAction<DidIdentifier, [u8; 32]>,
+		action: VersionedIdentityProofAction<DidIdentifier, Hash>,
 	) -> Result<DoubleEncoded<()>, Self::Error> {
 		let double_encoded: DoubleEncoded<()> =
 			ReceiverParachainCalls::DipReceiver(ReceiverParachainDipReceiverCalls::ProcessIdentityAction(action))
@@ -55,16 +55,11 @@ impl TxBuilder<DidIdentifier, [u8; 32]> for ReceiverParachainTxBuilder {
 
 impl pallet_dip_sender::Config for Runtime {
 	type Identifier = DidIdentifier;
-	// TODO: Change with right one
-	type Identity = u32;
-	// TODO: Change with right one
-	type IdentityProofDispatcher = XcmRouterDispatcher<XcmRouter, DidIdentifier, [u8; 32]>;
-	// TODO: Change with right one
-	type IdentityProofGenerator = DefaultIdentityProofGenerator;
-	// TODO: Change with right one
-	type IdentityProvider = DefaultIdentityProvider;
-	// TODO: Change with right one
-	type ProofOutput = [u8; 32];
+	type Identity = DidDetails<Runtime>;
+	type IdentityProofDispatcher = XcmRouterDispatcher<XcmRouter, DidIdentifier, Hash>;
+	type IdentityProofGenerator = DidMerkleRootGenerator<Runtime>;
+	type IdentityProvider = DidIdentityProvider<Runtime>;
+	type ProofOutput = Hash;
 	type RuntimeEvent = RuntimeEvent;
 	type TxBuilder = ReceiverParachainTxBuilder;
 }

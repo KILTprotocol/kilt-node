@@ -16,18 +16,18 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use runtime_common::dip::{receiver::DidMerkleProofVerifier, ProofLeaf};
-use sp_std::vec::Vec;
+#![cfg_attr(not(feature = "std"), no_std)]
 
-use crate::{BlockNumber, DidIdentifier, Hash, Hasher, Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin};
+use parity_scale_codec::Codec;
 
-impl pallet_dip_receiver::Config for Runtime {
-	type BlindedValue = Vec<Vec<u8>>;
-	type Identifier = DidIdentifier;
-	type ProofLeaf = ProofLeaf<Hash, BlockNumber>;
-	type ProofDigest = Hash;
-	type ProofVerifier = DidMerkleProofVerifier<Hash, BlockNumber, Hasher>;
-	type RuntimeCall = RuntimeCall;
-	type RuntimeEvent = RuntimeEvent;
-	type RuntimeOrigin = RuntimeOrigin;
+sp_api::decl_runtime_apis! {
+	pub trait DipSender<DidIdentifier, KeyId, KeyIds, Success, Error> where
+		DidIdentifier: Codec,
+		KeyId: Codec,
+		KeyIds: Codec + IntoIterator<Item = KeyId>,
+		Success: Codec,
+		Error: Codec,
+		{
+			fn generate_proof(identifier: DidIdentifier, keys: KeyIds) -> Result<Success, Error>;
+		}
 }
