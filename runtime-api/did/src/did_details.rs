@@ -24,7 +24,7 @@ use did::{did_details::DidPublicKeyDetails, AccountIdOf, BalanceOf, BlockNumberO
 use kilt_support::deposit::Deposit;
 
 #[derive(Encode, Decode, TypeInfo, Clone, Debug, Eq, PartialEq, MaxEncodedLen)]
-pub struct DidDetails<Key: Ord, BlockNumber: MaxEncodedLen, AccountId, Balance> {
+pub struct DidDetails<Key: Ord, BlockNumber, AccountId, Balance> {
 	pub authentication_key: Key,
 	pub key_agreement_keys: BTreeSet<Key>,
 	pub delegation_key: Option<Key>,

@@ -56,9 +56,9 @@ use sp_core::{crypto::KeyTypeId, ConstU128, ConstU16, OpaqueMetadata};
 use sp_inherents::{CheckInherentsResult, InherentData};
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
-	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, IdentifyAccount, OpaqueKeys, Verify},
+	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, OpaqueKeys},
 	transaction_validity::{TransactionSource, TransactionValidity},
-	ApplyExtrinsicResult, MultiSignature, OpaqueExtrinsic,
+	AccountId32, ApplyExtrinsicResult, MultiSignature, OpaqueExtrinsic,
 };
 use sp_std::{prelude::*, time::Duration};
 use sp_version::RuntimeVersion;
@@ -73,14 +73,15 @@ pub use sp_runtime::BuildStorage;
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 
-pub type AccountId = <<Signature as Verify>::Signer as IdentifyAccount>::AccountId;
+pub type AccountId = AccountId32;
 pub type Address = MultiAddress<AccountId, ()>;
 pub type Balance = u128;
 pub type Block = generic::Block<Header, UncheckedExtrinsic>;
 pub type BlockNumber = u32;
 pub type DidIdentifier = AccountId;
+pub type Hasher = BlakeTwo256;
 pub type Hash = sp_core::H256;
-pub type Header = generic::Header<BlockNumber, BlakeTwo256>;
+pub type Header = generic::Header<BlockNumber, Hasher>;
 pub type Index = u32;
 pub type Signature = MultiSignature;
 
@@ -149,7 +150,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("dip-receiver-runtime-template"),
 	impl_name: create_runtime_str!("dip-receiver-runtime-template"),
 	authoring_version: 1,
-	spec_version: 1,
+	spec_version: 11100,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 1,
@@ -228,8 +229,8 @@ impl frame_system::Config for Runtime {
 	type BlockWeights = RuntimeBlockWeights;
 	type DbWeight = RocksDbWeight;
 	type Hash = Hash;
-	type Hashing = BlakeTwo256;
-	type Header = generic::Header<BlockNumber, BlakeTwo256>;
+	type Hashing = Hasher;
+	type Header = generic::Header<BlockNumber, Hasher>;
 	type Index = Index;
 	type Lookup = AccountIdLookup<AccountId, ()>;
 	type MaxConsumers = ConstU32<16>;

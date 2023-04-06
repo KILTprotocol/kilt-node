@@ -2268,6 +2268,7 @@ dependencies = [
  "parachain-info",
  "parity-scale-codec",
  "polkadot-parachain",
+ "runtime-common",
  "scale-info",
  "sp-api",
  "sp-block-builder",
@@ -2354,6 +2355,7 @@ dependencies = [
  "frame-support",
  "frame-system",
  "frame-system-rpc-runtime-api",
+ "kilt-runtime-api-dip-sender",
  "pallet-aura",
  "pallet-authorship",
  "pallet-balances",
@@ -2367,6 +2369,7 @@ dependencies = [
  "pallet-xcm",
  "parachain-info",
  "parity-scale-codec",
+ "runtime-common",
  "scale-info",
  "sp-api",
  "sp-block-builder",
@@ -2396,24 +2399,31 @@ dependencies = [
 ]
 
 [[package]]
-name = "dip-templates-xmc-tests"
+name = "dip-templates-xcm-tests"
 version = "1.11.0-dev"
 dependencies = [
  "cumulus-pallet-xcmp-queue",
+ "did",
  "dip-receiver-runtime-template",
  "dip-sender-runtime-template",
+ "dip-support",
  "frame-support",
  "frame-system",
+ "kilt-support",
  "pallet-balances",
+ "pallet-did-lookup",
  "parachain-info",
  "parity-scale-codec",
  "polkadot-parachain",
  "polkadot-primitives",
  "polkadot-runtime-parachains",
  "rococo-runtime",
+ "runtime-common",
  "scale-info",
+ "sp-core",
  "sp-io",
  "sp-runtime",
+ "sp-std",
  "xcm",
  "xcm-emulator",
  "xcm-executor",
@@ -4188,6 +4198,14 @@ dependencies = [
  "scale-info",
  "sp-api",
  "sp-std",
+]
+
+[[package]]
+name = "kilt-runtime-api-dip-sender"
+version = "1.11.0-dev"
+dependencies = [
+ "parity-scale-codec",
+ "sp-api",
 ]
 
 [[package]]
@@ -9268,6 +9286,7 @@ dependencies = [
  "cumulus-primitives-core",
  "delegation",
  "did",
+ "dip-support",
  "frame-support",
  "frame-system",
  "kilt-asset-dids",
@@ -9276,6 +9295,8 @@ dependencies = [
  "pallet-authorship",
  "pallet-balances",
  "pallet-did-lookup",
+ "pallet-dip-receiver",
+ "pallet-dip-sender",
  "pallet-inflation",
  "pallet-membership",
  "pallet-transaction-payment",
@@ -9291,6 +9312,7 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
+ "sp-trie",
  "xcm",
  "xcm-builder",
  "xcm-executor",
