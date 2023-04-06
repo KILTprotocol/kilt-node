@@ -689,8 +689,6 @@ impl pallet_utility::Config for Runtime {
 	type WeightInfo = weights::pallet_utility::WeightInfo<Runtime>;
 }
 
-impl pallet_insecure_randomness_collective_flip::Config for Runtime {}
-
 impl public_credentials::Config for Runtime {
 	type AccessControl = PalletAuthorize<DelegationAc<Runtime>>;
 	type AttesterId = DidIdentifier;
@@ -919,7 +917,7 @@ construct_runtime! {
 		UncheckedExtrinsic = UncheckedExtrinsic,
 	{
 		System: frame_system = 0,
-		RandomnessCollectiveFlip: pallet_insecure_randomness_collective_flip = 1,
+		// DELETED: RandomnessCollectiveFlip: pallet_insecure_randomness_collective_flip = 1,
 
 		Timestamp: pallet_timestamp = 2,
 		Indices: pallet_indices::{Pallet, Call, Storage, Event<T>} = 5,
@@ -1072,7 +1070,7 @@ pub type Executive = frame_executive::Executive<
 	Runtime,
 	// Executes pallet hooks in the order of definition in construct_runtime
 	AllPalletsWithSystem,
-	pallet_did_lookup::migrations::EthereumMigration<Runtime>,
+	runtime_common::migrations::RemoveInsecureRandomnessPallet<Runtime>,
 >;
 
 #[cfg(feature = "runtime-benchmarks")]

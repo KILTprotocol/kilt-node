@@ -9040,6 +9040,7 @@ dependencies = [
  "pallet-balances",
  "pallet-did-lookup",
  "pallet-inflation",
+ "pallet-insecure-randomness-collective-flip",
  "pallet-membership",
  "pallet-transaction-payment",
  "pallet-web3-names",

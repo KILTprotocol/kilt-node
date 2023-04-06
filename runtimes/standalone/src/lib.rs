@@ -491,8 +491,6 @@ impl pallet_utility::Config for Runtime {
 	type WeightInfo = ();
 }
 
-impl pallet_insecure_randomness_collective_flip::Config for Runtime {}
-
 impl public_credentials::Config for Runtime {
 	type AccessControl = PalletAuthorize<DelegationAc<Runtime>>;
 	type AttesterId = DidIdentifier;
@@ -676,7 +674,7 @@ construct_runtime!(
 		UncheckedExtrinsic = UncheckedExtrinsic
 	{
 		System: frame_system = 0,
-		RandomnessCollectiveFlip: pallet_insecure_randomness_collective_flip = 1,
+		// DELETED: RandomnessCollectiveFlip: pallet_insecure_randomness_collective_flip = 1,
 
 		Timestamp: pallet_timestamp = 2,
 		Aura: pallet_aura = 3,
