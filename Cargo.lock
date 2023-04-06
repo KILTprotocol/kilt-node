@@ -2503,10 +2503,18 @@ dependencies = [
  "cumulus-primitives-core 0.1.0 (git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.41)",
  "cumulus-primitives-timestamp",
  "cumulus-primitives-utility",
+<<<<<<< HEAD
  "frame-executive 4.0.0-dev (git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.41)",
  "frame-support 4.0.0-dev (git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.41)",
  "frame-system 4.0.0-dev (git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.41)",
  "frame-system-rpc-runtime-api 4.0.0-dev (git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.41)",
+=======
+ "frame-executive",
+ "frame-support",
+ "frame-system",
+ "frame-system-rpc-runtime-api",
+ "kilt-runtime-api-dip-sender",
+>>>>>>> feat: add merkleization of DID documents (#492)
  "pallet-aura",
  "pallet-authorship 4.0.0-dev (git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.41)",
  "pallet-balances 4.0.0-dev (git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.41)",
@@ -2521,7 +2529,12 @@ dependencies = [
  "pallet-xcm 0.9.41",
  "parachain-info 0.1.0 (git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.41)",
  "parity-scale-codec",
+<<<<<<< HEAD
  "polkadot-parachain 0.9.41",
+=======
+ "polkadot-parachain",
+ "runtime-common",
+>>>>>>> feat: add merkleization of DID documents (#492)
  "scale-info",
  "sp-api 4.0.0-dev (git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.41)",
  "sp-block-builder 4.0.0-dev (git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.41)",
@@ -2620,6 +2633,7 @@ dependencies = [
  "pallet-xcm 0.9.41",
  "parachain-info 0.1.0 (git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.41)",
  "parity-scale-codec",
+ "runtime-common",
  "scale-info",
  "sp-api 4.0.0-dev (git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.41)",
  "sp-block-builder 4.0.0-dev (git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.41)",
@@ -2649,9 +2663,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "dip-templates-xmc-tests"
+name = "dip-templates-xcm-tests"
 version = "1.11.0-dev"
 dependencies = [
+<<<<<<< HEAD
  "cumulus-pallet-xcmp-queue 0.1.0 (git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.41)",
  "dip-receiver-runtime-template",
  "dip-sender-runtime-template",
@@ -2663,11 +2678,37 @@ dependencies = [
  "polkadot-parachain 0.9.41",
  "polkadot-primitives 0.9.41",
  "polkadot-runtime-parachains 0.9.41",
+=======
+ "cumulus-pallet-xcmp-queue",
+ "did",
+ "dip-receiver-runtime-template",
+ "dip-sender-runtime-template",
+ "dip-support",
+ "frame-support",
+ "frame-system",
+ "kilt-support",
+ "pallet-balances",
+ "pallet-did-lookup",
+ "parachain-info",
+ "parity-scale-codec",
+ "polkadot-parachain",
+ "polkadot-primitives",
+ "polkadot-runtime-parachains",
+>>>>>>> feat: add merkleization of DID documents (#492)
  "rococo-runtime",
+ "runtime-common",
  "scale-info",
+<<<<<<< HEAD
  "sp-io 7.0.0 (git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.41)",
  "sp-runtime 7.0.0 (git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.41)",
  "xcm 0.9.41",
+=======
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+ "xcm",
+>>>>>>> feat: add merkleization of DID documents (#492)
  "xcm-emulator",
  "xcm-executor 0.9.41",
 ]
@@ -4696,6 +4737,14 @@ dependencies = [
  "scale-info",
  "sp-api 4.0.0-dev (git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.41)",
  "sp-std 5.0.0 (git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.41)",
+]
+
+[[package]]
+name = "kilt-runtime-api-dip-sender"
+version = "1.11.0-dev"
+dependencies = [
+ "parity-scale-codec",
+ "sp-api",
 ]
 
 [[package]]
@@ -11715,14 +11764,22 @@ dependencies = [
  "cumulus-primitives-core 0.1.0 (git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.41)",
  "delegation",
  "did",
+<<<<<<< HEAD
  "frame-support 4.0.0-dev (git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.41)",
  "frame-system 4.0.0-dev (git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.41)",
+=======
+ "dip-support",
+ "frame-support",
+ "frame-system",
+>>>>>>> feat: add merkleization of DID documents (#492)
  "kilt-asset-dids",
  "kilt-support",
  "log",
  "pallet-authorship 4.0.0-dev (git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.41)",
  "pallet-balances 4.0.0-dev (git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.41)",
  "pallet-did-lookup",
+ "pallet-dip-receiver",
+ "pallet-dip-sender",
  "pallet-inflation",
  "pallet-membership 4.0.0-dev (git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.41)",
  "pallet-transaction-payment 4.0.0-dev (git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.41)",
@@ -11734,6 +11791,7 @@ dependencies = [
  "scale-info",
  "smallvec",
  "sp-consensus-aura",
+<<<<<<< HEAD
  "sp-core 7.0.0 (git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.41)",
  "sp-io 7.0.0 (git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.41)",
  "sp-runtime 7.0.0 (git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.41)",
@@ -11741,6 +11799,16 @@ dependencies = [
  "xcm 0.9.41",
  "xcm-builder 0.9.41",
  "xcm-executor 0.9.41",
+=======
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+ "sp-trie",
+ "xcm",
+ "xcm-builder",
+ "xcm-executor",
+>>>>>>> feat: add merkleization of DID documents (#492)
 ]
 
 [[package]]

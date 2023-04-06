@@ -20,7 +20,9 @@ scale-info = {workspace = true, features = ["derive"]}
 # DIP
 did.workspace = true
 dip-support.workspace = true
+kilt-runtime-api-dip-sender.workspace = true
 pallet-dip-sender.workspace = true
+runtime-common.workspace = true
 
 # Substrate
 frame-executive.workspace = true
@@ -74,7 +76,9 @@ std = [
 	"scale-info/std",
   "did/std",
   "dip-support/std",
+  "kilt-runtime-api-dip-sender/std",
   "pallet-dip-sender/std",
+  "runtime-common/std",
 	"frame-executive/std",
 	"frame-support/std",
 	"frame-system/std",
@@ -115,9 +119,10 @@ std = [
 ]
 runtime-benchmarks = [
   "did/runtime-benchmarks",
+  "pallet-dip-sender/runtime-benchmarks",
+  "runtime-common/runtime-benchmarks",
   "frame-system/runtime-benchmarks",
   "frame-support/runtime-benchmarks",
-  "pallet-dip-sender/runtime-benchmarks",
   "pallet-xcm/runtime-benchmarks",
   "xcm-builder/runtime-benchmarks"
 ]

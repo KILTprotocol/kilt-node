@@ -39,7 +39,7 @@ pub mod pallet {
 	use crate::traits::IdentityProofVerifier;
 
 	pub type VersionedIdentityProofOf<T> =
-		VersionedIdentityProof<<T as Config>::ProofLeafKey, <T as Config>::ProofLeafValue>;
+		VersionedIdentityProof<<T as Config>::BlindedValue, <T as Config>::ProofLeaf>;
 
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(0);
 
@@ -51,14 +51,14 @@ pub mod pallet {
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
+		type BlindedValue: Parameter;
 		type Identifier: Parameter + MaxEncodedLen;
-		type ProofLeafKey: Parameter;
-		type ProofLeafValue: Parameter;
+		type ProofLeaf: Parameter;
 		type ProofDigest: Parameter + MaxEncodedLen;
 		type ProofVerifier: IdentityProofVerifier<
+			BlindedValue = Self::BlindedValue,
 			ProofDigest = Self::ProofDigest,
-			LeafKey = Self::ProofLeafKey,
-			LeafValue = Self::ProofLeafValue,
+			ProofLeaf = Self::ProofLeaf,
 		>;
 		type RuntimeCall: Parameter + Dispatchable<RuntimeOrigin = <Self as Config>::RuntimeOrigin>;
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
@@ -84,6 +84,7 @@ pub mod pallet {
 		Dispatch,
 		IdentityNotFound,
 		InvalidProof,
+		UnsupportedVersion,
 	}
 
 	// The new origin other pallets can use.
@@ -104,13 +105,14 @@ pub mod pallet {
 			let event = match action {
 				VersionedIdentityProofAction::V1(IdentityProofAction::Updated(identifier, proof, _)) => {
 					IdentityProofs::<T>::mutate(&identifier, |entry| *entry = Some(proof.clone()));
-					Event::<T>::IdentityInfoUpdated(identifier, proof)
+					Ok::<_, Error<T>>(Event::<T>::IdentityInfoUpdated(identifier, proof))
 				}
 				VersionedIdentityProofAction::V1(IdentityProofAction::Deleted(identifier)) => {
 					IdentityProofs::<T>::remove(&identifier);
-					Event::<T>::IdentityInfoDeleted(identifier)
+					Ok::<_, Error<T>>(Event::<T>::IdentityInfoDeleted(identifier))
 				}
-			};
+				_ => Err(Error::<T>::UnsupportedVersion),
+			}?;
 
 			Self::deposit_event(event);
 
