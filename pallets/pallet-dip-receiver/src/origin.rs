@@ -22,19 +22,22 @@ use scale_info::TypeInfo;
 use sp_std::marker::PhantomData;
 
 #[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub struct DipOrigin<Identifier, AccountId> {
+pub struct DipOrigin<Identifier, AccountId, Proof> {
 	pub identifier: Identifier,
 	pub account_address: AccountId,
+	pub proof: Proof,
 }
 
-pub struct EnsureDipOrigin<Identifier, AccountId>(PhantomData<(Identifier, AccountId)>);
+pub struct EnsureDipOrigin<Identifier, AccountId, Proof>(PhantomData<(Identifier, AccountId, Proof)>);
 
 #[cfg(not(feature = "runtime-benchmarks"))]
-impl<OuterOrigin, Identifier, AccountId> EnsureOrigin<OuterOrigin> for EnsureDipOrigin<Identifier, AccountId>
+impl<OuterOrigin, Identifier, AccountId, Proof> EnsureOrigin<OuterOrigin>
+	for EnsureDipOrigin<Identifier, AccountId, Proof>
 where
-	OuterOrigin: From<DipOrigin<Identifier, AccountId>> + Into<Result<DipOrigin<Identifier, AccountId>, OuterOrigin>>,
+	OuterOrigin: From<DipOrigin<Identifier, AccountId, Proof>>
+		+ Into<Result<DipOrigin<Identifier, AccountId, Proof>, OuterOrigin>>,
 {
-	type Success = DipOrigin<Identifier, AccountId>;
+	type Success = DipOrigin<Identifier, AccountId, Proof>;
 
 	fn try_origin(o: OuterOrigin) -> Result<Self::Success, OuterOrigin> {
 		o.into()
@@ -42,12 +45,15 @@ where
 }
 
 #[cfg(feature = "runtime-benchmarks")]
-impl<OuterOrigin, Identifier, AccountId> EnsureOrigin<OuterOrigin> for EnsureDipOrigin<Identifier, AccountId>
+impl<OuterOrigin, Identifier, AccountId, Proof> EnsureOrigin<OuterOrigin>
+	for EnsureDipOrigin<Identifier, AccountId, Proof>
 where
-	OuterOrigin: From<DipOrigin<Identifier, AccountId>> + Into<Result<DipOrigin<Identifier, AccountId>, OuterOrigin>>,
+	OuterOrigin: From<DipOrigin<Identifier, AccountId, Proof>>
+		+ Into<Result<DipOrigin<Identifier, AccountId, Proof>, OuterOrigin>>,
 	// Additional trait bounds only valid when benchmarking
 	Identifier: From<[u8; 32]>,
 	AccountId: From<[u8; 32]>,
+	Proof: Default,
 {
 	type Success = DipOrigin<Identifier, AccountId>;
 
@@ -59,12 +65,13 @@ where
 		Ok(OuterOrigin::from(DipOrigin {
 			identifier: Identifier::from([0u8; 32]),
 			account_address: AccountId::from([0u8; 32]),
+			proof: Default::default(),
 		}))
 	}
 }
 
-impl<Identifier, AccountId> kilt_support::traits::CallSources<AccountId, Identifier>
-	for DipOrigin<Identifier, AccountId>
+impl<Identifier, AccountId, Proof> kilt_support::traits::CallSources<AccountId, Identifier>
+	for DipOrigin<Identifier, AccountId, Proof>
 where
 	Identifier: Clone,
 	AccountId: Clone,

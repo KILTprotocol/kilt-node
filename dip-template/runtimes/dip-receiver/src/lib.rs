@@ -358,8 +358,8 @@ impl pallet_did_lookup::Config for Runtime {
 	type Currency = Balances;
 	type Deposit = ConstU128<UNIT>;
 	type DidIdentifier = DidIdentifier;
-	type EnsureOrigin = EnsureDipOrigin<DidIdentifier, AccountId>;
-	type OriginSuccess = DipOrigin<DidIdentifier, AccountId>;
+	type EnsureOrigin = EnsureDipOrigin<DidIdentifier, AccountId, ()>;
+	type OriginSuccess = DipOrigin<DidIdentifier, AccountId, ()>;
 	type RuntimeEvent = RuntimeEvent;
 	type WeightInfo = ();
 }

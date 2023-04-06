@@ -16,18 +16,48 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use runtime_common::dip::{receiver::DidMerkleProofVerifier, ProofLeaf};
+use pallet_dip_receiver::traits::DipCallOriginFilter;
+use runtime_common::dip::{
+	receiver::{DidMerkleProofVerifier, VerificationResult},
+	ProofLeaf, KeyRelationship,
+};
 use sp_std::vec::Vec;
 
 use crate::{BlockNumber, DidIdentifier, Hash, Hasher, Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin};
 
 impl pallet_dip_receiver::Config for Runtime {
 	type BlindedValue = Vec<Vec<u8>>;
+	type DipCallOriginFilter = DipCallFilter;
 	type Identifier = DidIdentifier;
 	type ProofLeaf = ProofLeaf<Hash, BlockNumber>;
 	type ProofDigest = Hash;
+	type ProofVerificationResult = ();
 	type ProofVerifier = DidMerkleProofVerifier<Hash, BlockNumber, Hasher>;
 	type RuntimeCall = RuntimeCall;
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeOrigin = RuntimeOrigin;
+}
+
+pub struct DipCallFilter;
+
+impl DipCallOriginFilter for DipCallFilter {
+	type Call = RuntimeCall;
+	type Error = ();
+	type Proof = VerificationResult<BlockNumber>;
+	type Success = ();
+
+	fn check_proof(call: Self::Call, proof: Self::Proof) -> Result<Self::Success, Self::Error> {
+		if matches!(call, Self::Call::DidLookup { .. }) {
+			if proof
+				.0
+				.contains(|l| matches!(l.relationship, KeyRelationship::))
+			{
+				Ok(())
+			} else {
+				Err(())
+			}
+		} else {
+			Err(())
+		}
+	}
 }
