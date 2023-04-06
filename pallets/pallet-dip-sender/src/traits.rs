@@ -21,25 +21,28 @@ use xcm::{latest::prelude::*, DoubleEncoded};
 
 pub use identity_generation::*;
 pub mod identity_generation {
+	use sp_std::marker::PhantomData;
 
-	pub trait IdentityProofGenerator<Identifier, Identity, Output> {
+	pub trait IdentityProofGenerator<Identifier, Identity> {
 		type Error;
+		type Output;
 
-		fn generate_proof(identifier: &Identifier, identity: &Identity) -> Result<Output, Self::Error>;
+		fn generate_commitment(identifier: &Identifier, identity: &Identity) -> Result<Self::Output, Self::Error>;
 	}
 
 	// Implement the `IdentityProofGenerator` by returning the `Default` value for
 	// the `Output` type.
-	pub struct DefaultIdentityProofGenerator;
+	pub struct DefaultIdentityProofGenerator<Output>(PhantomData<Output>);
 
-	impl<Identifier, Identity, Output> IdentityProofGenerator<Identifier, Identity, Output>
-		for DefaultIdentityProofGenerator
+	impl<Identifier, Identity, Output> IdentityProofGenerator<Identifier, Identity>
+		for DefaultIdentityProofGenerator<Output>
 	where
 		Output: Default,
 	{
 		type Error = ();
+		type Output = Output;
 
-		fn generate_proof(_identifier: &Identifier, _identity: &Identity) -> Result<Output, Self::Error> {
+		fn generate_commitment(_identifier: &Identifier, _identity: &Identity) -> Result<Self::Output, Self::Error> {
 			Ok(Output::default())
 		}
 	}

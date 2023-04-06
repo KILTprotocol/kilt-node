@@ -48,7 +48,11 @@ pub mod pallet {
 		type Identifier: Parameter;
 		type Identity;
 		type ProofOutput: Clone + Eq + Debug;
-		type IdentityProofGenerator: IdentityProofGenerator<Self::Identifier, Self::Identity, Self::ProofOutput>;
+		type IdentityProofGenerator: IdentityProofGenerator<
+			Self::Identifier,
+			Self::Identity,
+			Output = Self::ProofOutput,
+		>;
 		type IdentityProofDispatcher: IdentityProofDispatcher<Self::Identifier, Self::ProofOutput, ()>;
 		type IdentityProvider: IdentityProvider<Self::Identifier, Self::Identity>;
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
@@ -98,7 +102,7 @@ pub mod pallet {
 			let destination: MultiLocation = (*destination).try_into().map_err(|_| Error::<T>::BadVersion)?;
 			let action: IdentityProofActionOf<T> = match T::IdentityProvider::retrieve(&identifier) {
 				Ok(Some((identity, _))) => {
-					let identity_proof = T::IdentityProofGenerator::generate_proof(&identifier, &identity)
+					let identity_proof = T::IdentityProofGenerator::generate_commitment(&identifier, &identity)
 						.map_err(|_| Error::<T>::IdentityProofGeneration)?;
 					Ok(IdentityProofAction::Updated(identifier, identity_proof, ()))
 				}

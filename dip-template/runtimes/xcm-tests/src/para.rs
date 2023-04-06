@@ -22,15 +22,44 @@ use sp_io::TestExternalities;
 use xcm_emulator::decl_test_parachain;
 
 pub(super) mod sender {
-	pub(crate) use dip_sender_runtime_template::{DmpQueue, Runtime, RuntimeOrigin, XcmpQueue};
+	pub(crate) use dip_sender_runtime_template::{DidIdentifier, DmpQueue, Runtime, RuntimeOrigin, XcmpQueue};
+
+	use did::did_details::{DidDetails, DidEncryptionKey, DidVerificationKey};
+	use dip_sender_runtime_template::{AccountId, System};
+	use kilt_support::deposit::Deposit;
+	use sp_core::{ecdsa, ed25519, sr25519, Pair};
 
 	use super::*;
 
 	pub const PARA_ID: u32 = 2_000;
 
-	pub(crate) fn para_ext() -> TestExternalities {
-		use dip_sender_runtime_template::System;
+	pub(crate) fn did_auth_key() -> ed25519::Pair {
+		ed25519::Pair::from_seed(&[200u8; 32])
+	}
 
+	fn generate_did_details() -> DidDetails<Runtime> {
+		let auth_key: DidVerificationKey = did_auth_key().public().into();
+		let att_key: DidVerificationKey = sr25519::Pair::from_seed(&[100u8; 32]).public().into();
+		let del_key: DidVerificationKey = ecdsa::Pair::from_seed(&[101u8; 32]).public().into();
+
+		let mut details = DidDetails::new(
+			auth_key,
+			0u32,
+			Deposit {
+				amount: 1u64.into(),
+				owner: AccountId::new([1u8; 32]),
+			},
+		)
+		.unwrap();
+		details.update_attestation_key(att_key, 0u32).unwrap();
+		details.update_delegation_key(del_key, 0u32).unwrap();
+		details
+			.add_key_agreement_key(DidEncryptionKey::X25519([100u8; 32]), 0u32)
+			.unwrap();
+		details
+	}
+
+	pub(crate) fn para_ext() -> TestExternalities {
 		let mut t = frame_system::GenesisConfig::default()
 			.build_storage::<Runtime>()
 			.unwrap();
@@ -43,7 +72,10 @@ pub(super) mod sender {
 			.unwrap();
 
 		let mut ext = TestExternalities::new(t);
+		let did: DidIdentifier = did_auth_key().public().into();
+		let details = generate_did_details();
 		ext.execute_with(|| {
+			did::pallet::Did::<Runtime>::insert(&did, details);
 			System::set_block_number(1);
 		});
 		ext
@@ -62,16 +94,18 @@ pub(super) mod sender {
 
 pub(super) mod receiver {
 	pub(crate) use dip_receiver_runtime_template::{
-		AccountId, AssetTransactorLocationConverter, Balance, DmpQueue, Runtime, RuntimeOrigin, XcmpQueue,
+		AccountId, AssetTransactorLocationConverter, Balance, DmpQueue, Runtime, RuntimeOrigin, XcmpQueue, UNIT,
 	};
 
+	use dip_receiver_runtime_template::System;
 	use xcm::latest::{Junction::Parachain, Junctions::X1, ParentThen};
 	use xcm_executor::traits::Convert;
 
 	use super::*;
 
 	pub const PARA_ID: u32 = 2_001;
-	const INITIAL_BALANCE: Balance = 1_000_000_000;
+	pub const DISPATCHER_ACCOUNT: AccountId = AccountId::new([90u8; 32]);
+	const INITIAL_BALANCE: Balance = 100_000 * UNIT;
 
 	pub(crate) fn sender_parachain_account() -> AccountId {
 		AssetTransactorLocationConverter::convert(ParentThen(X1(Parachain(sender::PARA_ID))).into())
@@ -79,8 +113,6 @@ pub(super) mod receiver {
 	}
 
 	pub(crate) fn para_ext() -> TestExternalities {
-		use dip_receiver_runtime_template::System;
-
 		let mut t = frame_system::GenesisConfig::default()
 			.build_storage::<Runtime>()
 			.unwrap();
@@ -93,7 +125,10 @@ pub(super) mod receiver {
 			.unwrap();
 
 		pallet_balances::GenesisConfig::<Runtime> {
-			balances: vec![(sender_parachain_account(), INITIAL_BALANCE)],
+			balances: vec![
+				(sender_parachain_account(), INITIAL_BALANCE),
+				(DISPATCHER_ACCOUNT, INITIAL_BALANCE),
+			],
 		}
 		.assimilate_storage(&mut t)
 		.unwrap();

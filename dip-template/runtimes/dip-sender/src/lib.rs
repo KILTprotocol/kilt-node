@@ -30,7 +30,7 @@ use cumulus_pallet_parachain_system::{
 };
 use cumulus_primitives_core::CollationInfo;
 use cumulus_primitives_timestamp::InherentDataProvider;
-use did::{DidRawOrigin, EnsureDidOrigin};
+use did::{DidRawOrigin, EnsureDidOrigin, KeyIdOf};
 use frame_support::{
 	construct_runtime,
 	dispatch::DispatchClass,
@@ -48,17 +48,19 @@ use frame_system::{
 };
 use pallet_balances::AccountData;
 use pallet_collator_selection::IdentityCollator;
+use pallet_dip_sender::traits::IdentityProvider;
 use pallet_session::{FindAccountFromAuthorIndex, PeriodicSessions};
 use pallet_transaction_payment::{CurrencyAdapter, FeeDetails, RuntimeDispatchInfo};
+use runtime_common::dip::sender::{CompleteMerkleProof, DidMerkleProof, DidMerkleRootGenerator};
 use sp_api::impl_runtime_apis;
 use sp_consensus_aura::SlotDuration;
 use sp_core::{crypto::KeyTypeId, ConstU128, ConstU16, OpaqueMetadata};
 use sp_inherents::{CheckInherentsResult, InherentData};
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
-	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, IdentifyAccount, OpaqueKeys, Verify},
+	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, OpaqueKeys},
 	transaction_validity::{TransactionSource, TransactionValidity},
-	ApplyExtrinsicResult, MultiSignature, OpaqueExtrinsic,
+	AccountId32, ApplyExtrinsicResult, MultiSignature, OpaqueExtrinsic,
 };
 use sp_std::{prelude::*, time::Duration};
 use sp_version::RuntimeVersion;
@@ -73,7 +75,7 @@ mod dip;
 mod xcm_config;
 pub use crate::{dip::*, xcm_config::*};
 
-pub type AccountId = <<Signature as Verify>::Signer as IdentifyAccount>::AccountId;
+pub type AccountId = AccountId32;
 pub type Address = MultiAddress<AccountId, ()>;
 pub type Balance = u128;
 pub type Block = generic::Block<Header, UncheckedExtrinsic>;
@@ -149,7 +151,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("dip-sender-runtime-template"),
 	impl_name: create_runtime_str!("dip-sender-runtime-template"),
 	authoring_version: 1,
-	spec_version: 1,
+	spec_version: 11100,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 1,
@@ -523,6 +525,18 @@ impl_runtime_apis! {
 	impl cumulus_primitives_core::CollectCollationInfo<Block> for Runtime {
 		fn collect_collation_info(header: &<Block as BlockT>::Header) -> CollationInfo {
 			ParachainSystem::collect_collation_info(header)
+		}
+	}
+
+	// TODO: `keys` could and should be a BTreeSet, but it makes it more complicated for clients to build the type. So we use a Vec, since the keys are deduplicated anyway at proof creation time.
+	// TODO: Support generating different versions of the proof, based on the provided parameter
+	impl kilt_runtime_api_dip_sender::DipSender<Block, DidIdentifier, KeyIdOf<Runtime>, Vec<KeyIdOf<Runtime>>, CompleteMerkleProof<Hash, DidMerkleProof<Runtime>>, ()> for Runtime {
+		fn generate_proof(identifier: DidIdentifier, keys: Vec<KeyIdOf<Runtime>>) -> Result<CompleteMerkleProof<Hash, DidMerkleProof<Runtime>>, ()> {
+			if let Ok(Some((did_details, _))) = <Runtime as pallet_dip_sender::Config>::IdentityProvider::retrieve(&identifier) {
+				DidMerkleRootGenerator::<Runtime>::generate_proof(&did_details, keys.iter())
+			} else {
+				Err(())
+			}
 		}
 	}
 }

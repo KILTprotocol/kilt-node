@@ -71,6 +71,7 @@ dip-sender-runtime-template = {path = "dip-template/runtimes/dip-sender", defaul
 
 # Internal runtime API (with default disabled)
 kilt-runtime-api-did = {path = "runtime-api/did", default-features = false}
+kilt-runtime-api-dip-sender = {path = "runtime-api/dip-sender", default-features = false}
 kilt-runtime-api-public-credentials = {path = "runtime-api/public-credentials", default-features = false}
 kilt-runtime-api-staking = {path = "runtime-api/staking", default-features = false}
 
@@ -136,6 +137,7 @@ sp-session = {git = "https://github.com/paritytech/substrate", default-features 
 sp-staking = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.39"}
 sp-std = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.39"}
 sp-transaction-pool = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.39"}
+sp-trie = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.39"}
 sp-version = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.39"}
 sp-weights = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.39"}
 try-runtime-cli = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.39"}
