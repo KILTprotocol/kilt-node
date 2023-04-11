@@ -70,7 +70,6 @@ pallet-indices.workspace = true
 pallet-membership.workspace = true
 pallet-preimage.workspace = true
 pallet-proxy.workspace = true
-pallet-insecure-randomness-collective-flip.workspace = true
 pallet-scheduler.workspace = true
 pallet-session.workspace = true
 pallet-timestamp.workspace = true
@@ -184,7 +183,6 @@ std = [
   "pallet-membership/std",
   "pallet-preimage/std",
   "pallet-proxy/std",
-  "pallet-insecure-randomness-collective-flip/std",
   "pallet-scheduler/std",
   "pallet-session/std",
   "pallet-timestamp/std",
@@ -243,7 +241,6 @@ try-runtime = [
   "pallet-membership/try-runtime",
   "pallet-preimage/try-runtime",
   "pallet-proxy/try-runtime",
-  "pallet-insecure-randomness-collective-flip/try-runtime",
   "pallet-scheduler/try-runtime",
   "pallet-session/try-runtime",
   "pallet-timestamp/try-runtime",
