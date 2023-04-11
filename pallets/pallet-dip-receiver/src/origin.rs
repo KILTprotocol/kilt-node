@@ -22,22 +22,22 @@ use scale_info::TypeInfo;
 use sp_std::marker::PhantomData;
 
 #[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub struct DipOrigin<Identifier, AccountId, Proof> {
+pub struct DipOrigin<Identifier, AccountId, Details> {
 	pub identifier: Identifier,
 	pub account_address: AccountId,
-	pub proof: Proof,
+	pub details: Details,
 }
 
-pub struct EnsureDipOrigin<Identifier, AccountId, Proof>(PhantomData<(Identifier, AccountId, Proof)>);
+pub struct EnsureDipOrigin<Identifier, AccountId, Details>(PhantomData<(Identifier, AccountId, Details)>);
 
 #[cfg(not(feature = "runtime-benchmarks"))]
-impl<OuterOrigin, Identifier, AccountId, Proof> EnsureOrigin<OuterOrigin>
-	for EnsureDipOrigin<Identifier, AccountId, Proof>
+impl<OuterOrigin, Identifier, AccountId, Details> EnsureOrigin<OuterOrigin>
+	for EnsureDipOrigin<Identifier, AccountId, Details>
 where
-	OuterOrigin: From<DipOrigin<Identifier, AccountId, Proof>>
-		+ Into<Result<DipOrigin<Identifier, AccountId, Proof>, OuterOrigin>>,
+	OuterOrigin: From<DipOrigin<Identifier, AccountId, Details>>
+		+ Into<Result<DipOrigin<Identifier, AccountId, Details>, OuterOrigin>>,
 {
-	type Success = DipOrigin<Identifier, AccountId, Proof>;
+	type Success = DipOrigin<Identifier, AccountId, Details>;
 
 	fn try_origin(o: OuterOrigin) -> Result<Self::Success, OuterOrigin> {
 		o.into()
@@ -45,17 +45,17 @@ where
 }
 
 #[cfg(feature = "runtime-benchmarks")]
-impl<OuterOrigin, Identifier, AccountId, Proof> EnsureOrigin<OuterOrigin>
-	for EnsureDipOrigin<Identifier, AccountId, Proof>
+impl<OuterOrigin, Identifier, AccountId, Details> EnsureOrigin<OuterOrigin>
+	for EnsureDipOrigin<Identifier, AccountId, Details>
 where
-	OuterOrigin: From<DipOrigin<Identifier, AccountId, Proof>>
-		+ Into<Result<DipOrigin<Identifier, AccountId, Proof>, OuterOrigin>>,
+	OuterOrigin: From<DipOrigin<Identifier, AccountId, Details>>
+		+ Into<Result<DipOrigin<Identifier, AccountId, Details>, OuterOrigin>>,
 	// Additional trait bounds only valid when benchmarking
 	Identifier: From<[u8; 32]>,
 	AccountId: From<[u8; 32]>,
-	Proof: Default,
+	Details: Default,
 {
-	type Success = DipOrigin<Identifier, AccountId, Proof>;
+	type Success = DipOrigin<Identifier, AccountId, Details>;
 
 	fn try_origin(o: OuterOrigin) -> Result<Self::Success, OuterOrigin> {
 		o.into()
@@ -65,13 +65,13 @@ where
 		Ok(OuterOrigin::from(DipOrigin {
 			identifier: Identifier::from([0u8; 32]),
 			account_address: AccountId::from([0u8; 32]),
-			proof: Default::default(),
+			details: Default::default(),
 		}))
 	}
 }
 
-impl<Identifier, AccountId, Proof> kilt_support::traits::CallSources<AccountId, Identifier>
-	for DipOrigin<Identifier, AccountId, Proof>
+impl<Identifier, AccountId, Details> kilt_support::traits::CallSources<AccountId, Identifier>
+	for DipOrigin<Identifier, AccountId, Details>
 where
 	Identifier: Clone,
 	AccountId: Clone,

@@ -152,7 +152,7 @@ pub mod pallet {
 			let did_origin = DipOrigin {
 				identifier,
 				account_address: submitter,
-				proof: proof_result,
+				details: proof_result,
 			};
 			// TODO: Use dispatch info for weight calculation
 			let _ = call.dispatch(did_origin.into()).map_err(|_| Error::<T>::Dispatch)?;
