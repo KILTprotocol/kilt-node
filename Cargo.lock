@@ -2249,6 +2249,7 @@ dependencies = [
  "cumulus-primitives-core",
  "cumulus-primitives-timestamp",
  "cumulus-primitives-utility",
+ "did",
  "frame-executive",
  "frame-support",
  "frame-system",

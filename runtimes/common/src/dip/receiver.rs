@@ -45,6 +45,12 @@ impl<BlockNumber> From<Vec<ProofEntry<BlockNumber>>> for VerificationResult<Bloc
 	}
 }
 
+impl<BlockNumber> VerificationResult<BlockNumber> {
+	pub fn into_inner(self) -> Vec<ProofEntry<BlockNumber>> {
+		self.0
+	}
+}
+
 pub struct DidMerkleProofVerifier<KeyId, BlockNumber, Hasher>(PhantomData<(KeyId, BlockNumber, Hasher)>);
 
 impl<KeyId, BlockNumber, Hasher> IdentityProofVerifier for DidMerkleProofVerifier<KeyId, BlockNumber, Hasher>

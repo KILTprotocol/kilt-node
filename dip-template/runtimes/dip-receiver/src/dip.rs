@@ -16,10 +16,11 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use did::DidVerificationKeyRelationship;
 use pallet_dip_receiver::traits::DipCallOriginFilter;
 use runtime_common::dip::{
 	receiver::{DidMerkleProofVerifier, VerificationResult},
-	ProofLeaf, KeyRelationship,
+	ProofLeaf,
 };
 use sp_std::vec::Vec;
 
@@ -50,7 +51,8 @@ impl DipCallOriginFilter for DipCallFilter {
 		if matches!(call, Self::Call::DidLookup { .. }) {
 			if proof
 				.0
-				.contains(|l| matches!(l.relationship, KeyRelationship::))
+				.iter()
+				.any(|l| l.relationship == DidVerificationKeyRelationship::Authentication.into())
 			{
 				Ok(())
 			} else {

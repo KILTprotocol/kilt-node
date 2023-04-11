@@ -55,7 +55,7 @@ where
 	AccountId: From<[u8; 32]>,
 	Proof: Default,
 {
-	type Success = DipOrigin<Identifier, AccountId>;
+	type Success = DipOrigin<Identifier, AccountId, Proof>;
 
 	fn try_origin(o: OuterOrigin) -> Result<Self::Success, OuterOrigin> {
 		o.into()
