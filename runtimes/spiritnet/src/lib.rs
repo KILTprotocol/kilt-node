@@ -935,12 +935,13 @@ construct_runtime! {
 		Democracy: pallet_democracy = 30,
 		Council: pallet_collective::<Instance1> = 31,
 		TechnicalCommittee: pallet_collective::<Instance2> = 32,
-		// placeholder: parachain council election = 33,
+		// Placeholder: parachain council election = 33,
 		TechnicalMembership: pallet_membership::<Instance1> = 34,
 		Treasury: pallet_treasury = 35,
 		// DELETED: RelayMigration: pallet_relay_migration::{Pallet, Call, Storage, Event<T>} = 36,
 		// DELETED: DynFilter: pallet_dyn_filter = 37,
 
+		// A stateless module with helpers, to allow transmitting batch of calls
 		Utility: pallet_utility = 40,
 
 		// Vesting. Usable initially, but removed once all vesting is finished.
@@ -948,8 +949,10 @@ construct_runtime! {
 
 		Scheduler: pallet_scheduler::{Pallet, Call, Storage, Event<T>} = 42,
 
+		// Allowing accounts to give permission to other accounts to dispatch types of calls from their signed origin
 		Proxy: pallet_proxy::{Pallet, Call, Storage, Event<T>} = 43,
 
+		// Preimage pallet allows the storage of large bytes blob
 		Preimage: pallet_preimage::{Pallet, Call, Storage, Event<T>} = 44,
 
 		// Tips module to reward contributions to the ecosystem with small amount of KILTs.
