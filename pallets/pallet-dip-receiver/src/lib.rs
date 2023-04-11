@@ -40,6 +40,7 @@ pub mod pallet {
 
 	pub type VersionedIdentityProofOf<T> =
 		VersionedIdentityProof<<T as Config>::BlindedValue, <T as Config>::ProofLeaf>;
+	pub type VerificationResultOf<T> = <<T as Config>::ProofVerifier as IdentityProofVerifier>::VerificationResult;
 
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(0);
 
@@ -55,12 +56,10 @@ pub mod pallet {
 		type DipCallOriginFilter: DipCallOriginFilter<
 			Call = <Self as Config>::RuntimeCall,
 			Proof = <Self::ProofVerifier as IdentityProofVerifier>::VerificationResult,
-			Success = Self::ProofVerificationResult,
 		>;
 		type Identifier: Parameter + MaxEncodedLen;
 		type ProofLeaf: Parameter;
 		type ProofDigest: Parameter + MaxEncodedLen;
-		type ProofVerificationResult;
 		type ProofVerifier: IdentityProofVerifier<
 			BlindedValue = Self::BlindedValue,
 			ProofDigest = Self::ProofDigest,
@@ -100,7 +99,7 @@ pub mod pallet {
 	pub type Origin<T> = DipOrigin<
 		<T as Config>::Identifier,
 		<T as frame_system::Config>::AccountId,
-		<T as Config>::ProofVerificationResult,
+		<<T as Config>::DipCallOriginFilter as DipCallOriginFilter>::Success,
 	>;
 
 	// TODO: Benchmarking

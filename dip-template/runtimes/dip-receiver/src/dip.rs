@@ -32,7 +32,6 @@ impl pallet_dip_receiver::Config for Runtime {
 	type Identifier = DidIdentifier;
 	type ProofLeaf = ProofLeaf<Hash, BlockNumber>;
 	type ProofDigest = Hash;
-	type ProofVerificationResult = ();
 	type ProofVerifier = DidMerkleProofVerifier<Hash, BlockNumber, Hasher>;
 	type RuntimeCall = RuntimeCall;
 	type RuntimeEvent = RuntimeEvent;
