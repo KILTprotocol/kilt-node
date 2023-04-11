@@ -950,7 +950,6 @@ construct_runtime! {
 		// Vesting. Usable initially, but removed once all vesting is finished.
 		Vesting: pallet_vesting = 41,
 
-		// System scheduler.
 		Scheduler: pallet_scheduler::{Pallet, Call, Storage, Event<T>} = 42,
 
 		//allowing accounts to give permission to other accounts to dispatch types of calls from their signed origin

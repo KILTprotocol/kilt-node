@@ -695,7 +695,6 @@ construct_runtime!(
 		Session: pallet_session = 15,
 		Authorship: pallet_authorship = 16,
 
-		// // Governance stuff; uncallable initially.
 		// Democracy: pallet_democracy = 25,
 		// Council: pallet_collective = 26,
 		// TechnicalCommittee: pallet_collective = 27,
@@ -703,7 +702,6 @@ construct_runtime!(
 		// TechnicalMembership: pallet_membership = 29,
 		// Treasury: pallet_treasury = 30,
 
-		// // System scheduler.
 		// Scheduler: pallet_scheduler = 32,
 
 		// DELETED: Vesting: pallet_vesting = 33,
