@@ -37,9 +37,7 @@ use runtime_common::{
 use sp_core::ecdsa::Signature;
 use sp_runtime::AccountId32;
 
-use crate::MigrationFilter;
-
-use super::{Runtime, RuntimeCall};
+use crate::{MigrationFilter, Runtime, RuntimeCall};
 
 #[test]
 fn call_size() {
