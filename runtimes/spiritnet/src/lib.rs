@@ -935,13 +935,13 @@ construct_runtime! {
 		Democracy: pallet_democracy = 30,
 		Council: pallet_collective::<Instance1> = 31,
 		TechnicalCommittee: pallet_collective::<Instance2> = 32,
-		// Placeholder: parachain council election = 33,
+		// reserved: parachain council election = 33,
 		TechnicalMembership: pallet_membership::<Instance1> = 34,
 		Treasury: pallet_treasury = 35,
 		// DELETED: RelayMigration: pallet_relay_migration::{Pallet, Call, Storage, Event<T>} = 36,
 		// DELETED: DynFilter: pallet_dyn_filter = 37,
 
-		// A stateless module with helpers, to allow transmitting batch of calls
+		//  A stateless pallet with helper extrinsics (batch extrinsics, send from different origins, ...)
 		Utility: pallet_utility = 40,
 
 		// Vesting. Usable initially, but removed once all vesting is finished.
