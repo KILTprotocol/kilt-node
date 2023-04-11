@@ -47,7 +47,10 @@ impl DipCallOriginFilter for DipCallFilter {
 	type Proof = VerificationResult<BlockNumber>;
 	type Success = ();
 
+	// Accepts only a DipOrigin for the DidLookup pallet calls.
 	fn check_proof(call: Self::Call, proof: Self::Proof) -> Result<Self::Success, Self::Error> {
+		// All calls in the pallet require a DID authentication key.
+		// TODO: Add support for nested calls.
 		if matches!(call, Self::Call::DidLookup { .. }) {
 			if proof
 				.0
