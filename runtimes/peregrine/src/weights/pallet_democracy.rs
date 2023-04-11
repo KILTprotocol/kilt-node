@@ -390,6 +390,24 @@ impl<T: frame_system::Config> pallet_democracy::WeightInfo for WeightInfo<T> {
 			.saturating_add(T::DbWeight::get().reads(2))
 			.saturating_add(T::DbWeight::get().writes(2))
 	}
+	fn clear_external_metadata() -> Weight {
+		unimplemented!()
+	}
+	fn clear_proposal_metadata() -> Weight {
+		unimplemented!()
+	}
+	fn clear_referendum_metadata() -> Weight {
+		unimplemented!()
+	}
+	fn set_external_metadata() -> Weight {
+		unimplemented!()
+	}
+	fn set_proposal_metadata() -> Weight {
+		unimplemented!()
+	}
+	fn set_referendum_metadata() -> Weight {
+		unimplemented!()
+	}
 }
 
 #[cfg(test)]
@@ -609,23 +627,5 @@ mod tests {
 				.proof_size()
 				> 8958
 		);
-	}
-	fn clear_external_metadata() -> Weight {
-		unimplemented!()
-	}
-	fn clear_proposal_metadata() -> Weight {
-		unimplemented!()
-	}
-	fn clear_referendum_metadata() -> Weight {
-		unimplemented!()
-	}
-	fn set_external_metadata() -> Weight {
-		unimplemented!()
-	}
-	fn set_proposal_metadata() -> Weight {
-		unimplemented!()
-	}
-	fn set_referendum_metadata() -> Weight {
-		unimplemented!()
 	}
 }
