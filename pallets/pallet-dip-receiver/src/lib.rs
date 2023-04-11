@@ -38,9 +38,9 @@ pub mod pallet {
 
 	use crate::traits::{DipCallOriginFilter, IdentityProofVerifier};
 
+	pub type VerificationResultOf<T> = <<T as Config>::ProofVerifier as IdentityProofVerifier>::VerificationResult;
 	pub type VersionedIdentityProofOf<T> =
 		VersionedIdentityProof<<T as Config>::BlindedValue, <T as Config>::ProofLeaf>;
-	pub type VerificationResultOf<T> = <<T as Config>::ProofVerifier as IdentityProofVerifier>::VerificationResult;
 
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(0);
 
@@ -55,7 +55,7 @@ pub mod pallet {
 		type BlindedValue: Parameter;
 		type DipCallOriginFilter: DipCallOriginFilter<
 			Call = <Self as Config>::RuntimeCall,
-			Proof = <Self::ProofVerifier as IdentityProofVerifier>::VerificationResult,
+			Proof = VerificationResultOf<Self>,
 		>;
 		type Identifier: Parameter + MaxEncodedLen;
 		type ProofLeaf: Parameter;
@@ -85,7 +85,6 @@ pub mod pallet {
 	}
 
 	#[pallet::error]
-
 	pub enum Error<T> {
 		BadOrigin,
 		Dispatch,
