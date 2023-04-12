@@ -192,6 +192,16 @@ parameter_types! {
 	pub const MaxReserves: u32 = 50;
 }
 
+impl pallet_multisig::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type RuntimeCall = RuntimeCall;
+	type Currency = Balances;
+	type DepositBase = constants::multisig::DepositBase;
+	type DepositFactor = constants::multisig::DepositFactor;
+	type MaxSignatories = constants::multisig::MaxSignitors;
+	type WeightInfo = weights::pallet_multisig::WeightInfo<Runtime>;
+}
+
 impl pallet_indices::Config for Runtime {
 	type AccountIndex = Index;
 	type Currency = pallet_balances::Pallet<Runtime>;
@@ -961,6 +971,8 @@ construct_runtime! {
 		TipsMembership: pallet_membership::<Instance2> = 45,
 		Tips: pallet_tips::{Pallet, Call, Storage, Event<T>} = 46,
 
+		Multisig: pallet_multisig = 47,
+
 		// KILT Pallets. Start indices 60 to leave room
 		// DELETED: KiltLaunch: kilt_launch = 60,
 		Ctype: ctype = 61,
@@ -1104,6 +1116,7 @@ mod benches {
 		[pallet_vesting, Vesting]
 		[pallet_proxy, Proxy]
 		[pallet_xcm, PolkadotXcm]
+		[pallet_multisig, Multisig]
 	);
 }
 

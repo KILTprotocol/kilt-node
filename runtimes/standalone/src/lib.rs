@@ -669,6 +669,16 @@ impl pallet_proxy::Config for Runtime {
 	type WeightInfo = ();
 }
 
+impl pallet_multisig::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type RuntimeCall = RuntimeCall;
+	type Currency = Balances;
+	type DepositBase = constants::multisig::DepositBase;
+	type DepositFactor = constants::multisig::DepositFactor;
+	type MaxSignatories = constants::multisig::MaxSignitors;
+	type WeightInfo = ();
+}
+
 construct_runtime!(
 	pub enum Runtime where
 		Block = Block,
@@ -712,8 +722,11 @@ construct_runtime!(
 		// DELETED CrowdloanContributors: 36,
 
 		Proxy: pallet_proxy::{Pallet, Call, Storage, Event<T>} = 37,
+
 		Web3Names: pallet_web3_names = 38,
 		PublicCredentials: public_credentials = 39,
+
+		Multisig: pallet_multisig = 47,
 	}
 );
 
@@ -820,6 +833,7 @@ mod benches {
 		[pallet_timestamp, Timestamp]
 		[pallet_utility, Utility]
 		[pallet_proxy, Proxy]
+		[pallet_multisig, Multisig]
 	);
 }
 

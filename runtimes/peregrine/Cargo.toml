@@ -1,14 +1,14 @@
 [package]
 authors.workspace = true
+description = "Parachain runtime for KILT Testnets."
 documentation.workspace = true
 edition.workspace = true
 homepage.workspace = true
 license-file.workspace = true
+name = "peregrine-runtime"
 readme.workspace = true
 repository.workspace = true
 version.workspace = true
-name = "peregrine-runtime"
-description = "Parachain runtime for KILT Testnets."
 
 [build-dependencies]
 substrate-wasm-builder.workspace = true
@@ -68,6 +68,7 @@ pallet-collective.workspace = true
 pallet-democracy.workspace = true
 pallet-indices.workspace = true
 pallet-membership.workspace = true
+pallet-multisig.workspace = true
 pallet-preimage.workspace = true
 pallet-proxy.workspace = true
 pallet-randomness-collective-flip.workspace = true
@@ -130,6 +131,7 @@ runtime-benchmarks = [
   "pallet-indices/runtime-benchmarks",
   "pallet-inflation/runtime-benchmarks",
   "pallet-membership/runtime-benchmarks",
+  "pallet-multisig/runtime-benchmarks",
   "pallet-preimage/runtime-benchmarks",
   "pallet-proxy/runtime-benchmarks",
   "pallet-scheduler/runtime-benchmarks",
@@ -184,6 +186,7 @@ std = [
   "pallet-indices/std",
   "pallet-inflation/std",
   "pallet-membership/std",
+  "pallet-multisig/std",
   "pallet-preimage/std",
   "pallet-proxy/std",
   "pallet-randomness-collective-flip/std",
@@ -244,6 +247,7 @@ try-runtime = [
   "pallet-indices/try-runtime",
   "pallet-inflation/try-runtime",
   "pallet-membership/try-runtime",
+  "pallet-multisig/try-runtime",
   "pallet-preimage/try-runtime",
   "pallet-proxy/try-runtime",
   "pallet-randomness-collective-flip/try-runtime",
