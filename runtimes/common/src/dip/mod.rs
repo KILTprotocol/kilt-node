@@ -22,8 +22,8 @@ use frame_support::RuntimeDebug;
 use scale_info::TypeInfo;
 use sp_std::vec::Vec;
 
-pub mod receiver;
-pub mod sender;
+pub mod consumer;
+pub mod provider;
 
 #[cfg(test)]
 mod tests;

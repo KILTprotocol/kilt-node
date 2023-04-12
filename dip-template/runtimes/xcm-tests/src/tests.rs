@@ -23,7 +23,7 @@ use dip_support::latest::Proof;
 use frame_support::{assert_ok, weights::Weight};
 use frame_system::RawOrigin;
 use pallet_did_lookup::linkable_account::LinkableAccountId;
-use runtime_common::dip::sender::{CompleteMerkleProof, DidMerkleRootGenerator};
+use runtime_common::dip::provider::{CompleteMerkleProof, DidMerkleRootGenerator};
 use sp_core::Pair;
 use xcm::latest::{
 	Junction::Parachain,
@@ -33,30 +33,30 @@ use xcm::latest::{
 use xcm_emulator::TestExt;
 
 use cumulus_pallet_xcmp_queue::Event as XcmpEvent;
-use dip_receiver_runtime_template::{
-	DidIdentifier, DidLookup, DipReceiver, Runtime as ReceiverRuntime, RuntimeCall as ReceiverRuntimeCall,
+use dip_consumer_runtime_template::{
+	DidIdentifier, DidLookup, DipConsumer, Runtime as ConsumerRuntime, RuntimeCall as ConsumerRuntimeCall,
 	RuntimeEvent, System,
 };
-use dip_sender_runtime_template::{AccountId as SenderAccountId, DipSender, Runtime as SenderRuntime};
+use dip_provider_runtime_template::{AccountId as ProviderAccountId, DipProvider, Runtime as ProviderRuntime};
 
 #[test]
 fn commit_identity() {
 	Network::reset();
 
-	let did: DidIdentifier = para::sender::did_auth_key().public().into();
+	let did: DidIdentifier = para::provider::did_auth_key().public().into();
 
-	// 1. Send identity proof from DIP sender to DIP receiver.
-	SenderParachain::execute_with(|| {
-		assert_ok!(DipSender::commit_identity(
-			RawOrigin::Signed(SenderAccountId::from([0u8; 32])).into(),
+	// 1. Send identity proof from DIP provider to DIP consumer.
+	ProviderParachain::execute_with(|| {
+		assert_ok!(DipProvider::commit_identity(
+			RawOrigin::Signed(ProviderAccountId::from([0u8; 32])).into(),
 			did.clone(),
-			Box::new(ParentThen(X1(Parachain(para::receiver::PARA_ID))).into()),
+			Box::new(ParentThen(X1(Parachain(para::consumer::PARA_ID))).into()),
 			Box::new((Here, 1_000_000_000).into()),
 			Weight::from_ref_time(4_000),
 		));
 	});
-	// 2. Verify that the proof has made it to the DIP receiver.
-	ReceiverParachain::execute_with(|| {
+	// 2. Verify that the proof has made it to the DIP consumer.
+	ConsumerParachain::execute_with(|| {
 		// 2.1 Verify that there was no XCM error.
 		assert!(!System::events().iter().any(|r| matches!(
 			r.event,
@@ -67,32 +67,35 @@ fn commit_identity() {
 			})
 		)));
 		// 2.2 Verify the proof digest was stored correctly.
-		assert!(DipReceiver::identity_proofs(&did).is_some());
+		assert!(DipConsumer::identity_proofs(&did).is_some());
 	});
-	// 3. Call an extrinsic on the receiver chain with a valid proof
-	let did_details =
-		SenderParachain::execute_with(|| Did::get(&did).expect("DID details should be stored on the sender chain."));
+	// 3. Call an extrinsic on the consumer chain with a valid proof
+	let did_details = ProviderParachain::execute_with(|| {
+		Did::get(&did).expect("DID details should be stored on the provider chain.")
+	});
 	// 3.1 Generate a proof
-	let CompleteMerkleProof { proof, .. } =
-		DidMerkleRootGenerator::<SenderRuntime>::generate_proof(&did_details, [did_details.authentication_key].iter())
-			.expect("Proof generation should not fail");
-	// 3.2 Call the `dispatch_as` extrinsic on the receiver chain with the generated
+	let CompleteMerkleProof { proof, .. } = DidMerkleRootGenerator::<ProviderRuntime>::generate_proof(
+		&did_details,
+		[did_details.authentication_key].iter(),
+	)
+	.expect("Proof generation should not fail");
+	// 3.2 Call the `dispatch_as` extrinsic on the consumer chain with the generated
 	// proof
-	ReceiverParachain::execute_with(|| {
-		assert_ok!(DipReceiver::dispatch_as(
-			RawOrigin::Signed(para::receiver::DISPATCHER_ACCOUNT).into(),
+	ConsumerParachain::execute_with(|| {
+		assert_ok!(DipConsumer::dispatch_as(
+			RawOrigin::Signed(para::consumer::DISPATCHER_ACCOUNT).into(),
 			did.clone(),
 			Proof {
 				blinded: proof.blinded,
 				revealed: proof.revealed,
 			}
 			.into(),
-			Box::new(ReceiverRuntimeCall::DidLookup(pallet_did_lookup::Call::<
-				ReceiverRuntime,
+			Box::new(ConsumerRuntimeCall::DidLookup(pallet_did_lookup::Call::<
+				ConsumerRuntime,
 			>::associate_sender {})),
 		));
 		// Verify the account -> DID link exists and contains the right information
-		let linked_did = DidLookup::connected_dids::<LinkableAccountId>(para::receiver::DISPATCHER_ACCOUNT.into())
+		let linked_did = DidLookup::connected_dids::<LinkableAccountId>(para::consumer::DISPATCHER_ACCOUNT.into())
 			.map(|link| link.did);
 		assert_eq!(linked_did, Some(did));
 	});
