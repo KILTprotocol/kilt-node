@@ -36,6 +36,7 @@ pallet-sudo.workspace = true
 pallet-timestamp.workspace = true
 pallet-transaction-payment.workspace = true
 pallet-transaction-payment-rpc-runtime-api.workspace = true
+pallet-utility.workspace = true
 polkadot-parachain.workspace = true
 sp-api.workspace = true
 sp-block-builder.workspace = true
@@ -90,6 +91,7 @@ std = [
 	"pallet-timestamp/std",
 	"pallet-transaction-payment/std",
 	"pallet-transaction-payment-rpc-runtime-api/std",
+  "pallet-utility/std",
   "polkadot-parachain/std",
 	"sp-api/std",
 	"sp-block-builder/std",

@@ -119,6 +119,7 @@ construct_runtime!(
 		Timestamp: pallet_timestamp = 2,
 		ParachainInfo: parachain_info = 3,
 		Sudo: pallet_sudo = 4,
+		Utility: pallet_utility = 5,
 
 		// Money
 		Balances: pallet_balances = 10,
@@ -275,6 +276,13 @@ impl parachain_info::Config for Runtime {}
 impl pallet_sudo::Config for Runtime {
 	type RuntimeCall = RuntimeCall;
 	type RuntimeEvent = RuntimeEvent;
+}
+
+impl pallet_utility::Config for Runtime {
+	type PalletsOrigin = OriginCaller;
+	type RuntimeCall = RuntimeCall;
+	type RuntimeEvent = RuntimeEvent;
+	type WeightInfo = ();
 }
 
 pub const EXISTENTIAL_DEPOSIT: Balance = MILLIUNIT;
