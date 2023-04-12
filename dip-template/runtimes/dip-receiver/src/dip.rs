@@ -40,17 +40,16 @@ impl pallet_dip_receiver::Config for Runtime {
 
 pub struct DipCallFilter;
 
-impl DipCallOriginFilter for DipCallFilter {
-	type Call = RuntimeCall;
+impl DipCallOriginFilter<RuntimeCall> for DipCallFilter {
 	type Error = ();
 	type Proof = VerificationResult<BlockNumber>;
 	type Success = ();
 
 	// Accepts only a DipOrigin for the DidLookup pallet calls.
-	fn check_proof(call: Self::Call, proof: Self::Proof) -> Result<Self::Success, Self::Error> {
+	fn check_proof(call: RuntimeCall, proof: Self::Proof) -> Result<Self::Success, Self::Error> {
 		// All calls in the pallet require a DID authentication key.
 		// TODO: Add support for nested calls.
-		if matches!(call, Self::Call::DidLookup { .. }) {
+		if matches!(call, RuntimeCall::DidLookup { .. }) {
 			if proof
 				.0
 				.iter()

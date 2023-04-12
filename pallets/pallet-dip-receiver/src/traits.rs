@@ -51,11 +51,10 @@ impl<ProofDigest, Leaf, BlindedValue> IdentityProofVerifier
 	}
 }
 
-pub trait DipCallOriginFilter {
-	type Call;
+pub trait DipCallOriginFilter<Call> {
 	type Error;
 	type Proof;
 	type Success;
 
-	fn check_proof(call: Self::Call, proof: Self::Proof) -> Result<Self::Success, Self::Error>;
+	fn check_proof(call: Call, proof: Self::Proof) -> Result<Self::Success, Self::Error>;
 }

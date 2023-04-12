@@ -53,10 +53,7 @@ pub mod pallet {
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
 		type BlindedValue: Parameter;
-		type DipCallOriginFilter: DipCallOriginFilter<
-			Call = <Self as Config>::RuntimeCall,
-			Proof = VerificationResultOf<Self>,
-		>;
+		type DipCallOriginFilter: DipCallOriginFilter<<Self as Config>::RuntimeCall, Proof = VerificationResultOf<Self>>;
 		type Identifier: Parameter + MaxEncodedLen;
 		type ProofLeaf: Parameter;
 		type ProofDigest: Parameter + MaxEncodedLen;
@@ -98,7 +95,7 @@ pub mod pallet {
 	pub type Origin<T> = DipOrigin<
 		<T as Config>::Identifier,
 		<T as frame_system::Config>::AccountId,
-		<<T as Config>::DipCallOriginFilter as DipCallOriginFilter>::Success,
+		<<T as Config>::DipCallOriginFilter as DipCallOriginFilter<<T as Config>::RuntimeCall>>::Success,
 	>;
 
 	// TODO: Benchmarking
