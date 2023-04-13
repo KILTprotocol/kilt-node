@@ -2280,7 +2280,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "dip-receiver-node-template"
+name = "dip-consumer-node-template"
 version = "1.11.0-dev"
 dependencies = [
  "clap",
@@ -2291,7 +2291,7 @@ dependencies = [
  "cumulus-primitives-core",
  "cumulus-primitives-parachain-inherent",
  "cumulus-relay-chain-interface",
- "dip-receiver-runtime-template",
+ "dip-consumer-runtime-template",
  "frame-benchmarking",
  "frame-benchmarking-cli",
  "jsonrpsee",
@@ -2329,7 +2329,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "dip-receiver-runtime-template"
+name = "dip-consumer-runtime-template"
 version = "1.11.0-dev"
 dependencies = [
  "cumulus-pallet-aura-ext",
@@ -2345,13 +2345,12 @@ dependencies = [
  "frame-support",
  "frame-system",
  "frame-system-rpc-runtime-api",
- "kilt-runtime-api-dip-sender",
  "pallet-aura",
  "pallet-authorship",
  "pallet-balances",
  "pallet-collator-selection",
  "pallet-did-lookup",
- "pallet-dip-receiver",
+ "pallet-dip-consumer",
  "pallet-session",
  "pallet-sudo",
  "pallet-timestamp",
@@ -2382,7 +2381,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "dip-sender-node-template"
+name = "dip-provider-node-template"
 version = "1.11.0-dev"
 dependencies = [
  "clap",
@@ -2393,7 +2392,7 @@ dependencies = [
  "cumulus-primitives-core",
  "cumulus-primitives-parachain-inherent",
  "cumulus-relay-chain-interface",
- "dip-sender-runtime-template",
+ "dip-provider-runtime-template",
  "frame-benchmarking",
  "frame-benchmarking-cli",
  "jsonrpsee",
@@ -2431,7 +2430,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "dip-sender-runtime-template"
+name = "dip-provider-runtime-template"
 version = "1.11.0-dev"
 dependencies = [
  "cumulus-pallet-aura-ext",
@@ -2448,11 +2447,12 @@ dependencies = [
  "frame-support",
  "frame-system",
  "frame-system-rpc-runtime-api",
+ "kilt-runtime-api-dip-provider",
  "pallet-aura",
  "pallet-authorship",
  "pallet-balances",
  "pallet-collator-selection",
- "pallet-dip-sender",
+ "pallet-dip-provider",
  "pallet-session",
  "pallet-sudo",
  "pallet-timestamp",
@@ -2496,8 +2496,8 @@ version = "1.11.0-dev"
 dependencies = [
  "cumulus-pallet-xcmp-queue",
  "did",
- "dip-receiver-runtime-template",
- "dip-sender-runtime-template",
+ "dip-consumer-runtime-template",
+ "dip-provider-runtime-template",
  "dip-support",
  "frame-support",
  "frame-system",
@@ -4286,7 +4286,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "kilt-runtime-api-dip-sender"
+name = "kilt-runtime-api-dip-provider"
 version = "1.11.0-dev"
 dependencies = [
  "parity-scale-codec",
@@ -6242,7 +6242,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "pallet-dip-receiver"
+name = "pallet-dip-consumer"
 version = "1.11.0-dev"
 dependencies = [
  "cumulus-pallet-xcm",
@@ -6256,7 +6256,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "pallet-dip-sender"
+name = "pallet-dip-provider"
 version = "1.11.0-dev"
 dependencies = [
  "dip-support",
@@ -9409,8 +9409,8 @@ dependencies = [
  "pallet-authorship",
  "pallet-balances",
  "pallet-did-lookup",
- "pallet-dip-receiver",
- "pallet-dip-sender",
+ "pallet-dip-consumer",
+ "pallet-dip-provider",
  "pallet-inflation",
  "pallet-membership",
  "pallet-transaction-payment",

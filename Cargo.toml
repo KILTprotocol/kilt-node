@@ -51,8 +51,8 @@ attestation = {path = "pallets/attestation", default-features = false}
 ctype = {path = "pallets/ctype", default-features = false}
 delegation = {path = "pallets/delegation", default-features = false}
 did = {path = "pallets/did", default-features = false}
-pallet-dip-receiver = {path = "pallets/pallet-dip-receiver", default-features = false}
-pallet-dip-sender = {path = "pallets/pallet-dip-sender", default-features = false}
+pallet-dip-consumer = {path = "pallets/pallet-dip-consumer", default-features = false}
+pallet-dip-provider = {path = "pallets/pallet-dip-provider", default-features = false}
 pallet-did-lookup = {path = "pallets/pallet-did-lookup", default-features = false}
 pallet-inflation = {path = "pallets/pallet-inflation", default-features = false}
 pallet-web3-names = {path = "pallets/pallet-web3-names", default-features = false}
@@ -66,12 +66,12 @@ kilt-support = {path = "support", default-features = false}
 runtime-common = {path = "runtimes/common", default-features = false}
 
 # Templates
-dip-receiver-runtime-template = {path = "dip-template/runtimes/dip-receiver", default-features = false}
-dip-sender-runtime-template = {path = "dip-template/runtimes/dip-sender", default-features = false}
+dip-consumer-runtime-template = {path = "dip-template/runtimes/dip-consumer", default-features = false}
+dip-provider-runtime-template = {path = "dip-template/runtimes/dip-provider", default-features = false}
 
 # Internal runtime API (with default disabled)
 kilt-runtime-api-did = {path = "runtime-api/did", default-features = false}
-kilt-runtime-api-dip-sender = {path = "runtime-api/dip-sender", default-features = false}
+kilt-runtime-api-dip-provider = {path = "runtime-api/dip-provider", default-features = false}
 kilt-runtime-api-public-credentials = {path = "runtime-api/public-credentials", default-features = false}
 kilt-runtime-api-staking = {path = "runtime-api/staking", default-features = false}
 

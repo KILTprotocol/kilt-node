@@ -28,8 +28,8 @@ delegation = {workspace = true, optional = true}
 did.workspace = true
 dip-support.workspace = true
 pallet-did-lookup = {workspace = true, optional = true}
-pallet-dip-receiver.workspace = true
-pallet-dip-sender.workspace = true
+pallet-dip-consumer.workspace = true
+pallet-dip-provider.workspace = true
 pallet-inflation = {workspace = true, optional = true}
 kilt-support.workspace = true
 parachain-staking.workspace = true
@@ -66,7 +66,7 @@ runtime-benchmarks = [
   "attestation/runtime-benchmarks",
   "ctype/runtime-benchmarks",
   "did/runtime-benchmarks",
-  "pallet-dip-receiver/runtime-benchmarks",
+  "pallet-dip-consumer/runtime-benchmarks",
   "frame-support/runtime-benchmarks",
   "frame-system/runtime-benchmarks",
   "kilt-support/runtime-benchmarks",
@@ -92,8 +92,8 @@ std = [
   "log/std",
   "pallet-authorship/std",
   "pallet-balances/std",
-  "pallet-dip-receiver/std",
-  "pallet-dip-sender/std",
+  "pallet-dip-consumer/std",
+  "pallet-dip-provider/std",
   "pallet-membership/std",
   "pallet-transaction-payment/std",
   "parachain-staking/std",
