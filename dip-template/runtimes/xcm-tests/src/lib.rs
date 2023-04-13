@@ -27,22 +27,22 @@ mod relay;
 mod tests;
 
 decl_test_parachain! {
-	pub struct SenderParachain {
-		Runtime = para::sender::Runtime,
-		RuntimeOrigin = para::sender::RuntimeOrigin,
-		XcmpMessageHandler = para::sender::XcmpQueue,
-		DmpMessageHandler = para::sender::DmpQueue,
-		new_ext = para::sender::para_ext(),
+	pub struct ProviderParachain {
+		Runtime = para::provider::Runtime,
+		RuntimeOrigin = para::provider::RuntimeOrigin,
+		XcmpMessageHandler = para::provider::XcmpQueue,
+		DmpMessageHandler = para::provider::DmpQueue,
+		new_ext = para::provider::para_ext(),
 	}
 }
 
 decl_test_parachain! {
-	pub struct ReceiverParachain {
-		Runtime = para::receiver::Runtime,
-		RuntimeOrigin = para::receiver::RuntimeOrigin,
-		XcmpMessageHandler = para::receiver::XcmpQueue,
-		DmpMessageHandler = para::receiver::DmpQueue,
-		new_ext = para::receiver::para_ext(),
+	pub struct ConsumerParachain {
+		Runtime = para::consumer::Runtime,
+		RuntimeOrigin = para::consumer::RuntimeOrigin,
+		XcmpMessageHandler = para::consumer::XcmpQueue,
+		DmpMessageHandler = para::consumer::DmpQueue,
+		new_ext = para::consumer::para_ext(),
 	}
 }
 
@@ -52,8 +52,8 @@ decl_test_network! {
 		parachains = vec![
 			// TODO: Change when and if the macro will allow arbitrary expressions.
 			// Until then, these have to match the PARA_ID consts in the para submodules.
-			(2_000, SenderParachain),
-			(2_001, ReceiverParachain),
+			(2_000, ProviderParachain),
+			(2_001, ConsumerParachain),
 		],
 	}
 }

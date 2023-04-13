@@ -1,0 +1,27 @@
+[package]
+authors.workspace = true
+documentation.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license-file.workspace = true
+readme.workspace = true
+repository.workspace = true
+version.workspace = true
+name = "kilt-runtime-api-dip-provider"
+description = "Runtime APIs for integrating the DIP provider component."
+
+[dependencies]
+# External dependencies
+parity-scale-codec.workspace = true
+
+# Internal dependencies
+
+# Substrate dependencies
+sp-api.workspace = true
+
+[features]
+default = ["std"]
+std = [
+  "parity-scale-codec/std",
+  "sp-api/std"
+]

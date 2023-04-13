@@ -28,7 +28,7 @@ use frame_system::{
 	mocking::{MockBlock, MockUncheckedExtrinsic},
 	EnsureSigned, RawOrigin,
 };
-use pallet_dip_receiver::traits::IdentityProofVerifier;
+use pallet_dip_consumer::traits::IdentityProofVerifier;
 use parity_scale_codec::Encode;
 use sp_core::{ecdsa, ed25519, sr25519, ConstU16, ConstU32, ConstU64, Hasher, Pair};
 use sp_io::TestExternalities;
@@ -40,8 +40,8 @@ use sp_runtime::{
 use sp_std::collections::btree_set::BTreeSet;
 
 use crate::dip::{
-	receiver::DidMerkleProofVerifier,
-	sender::{CompleteMerkleProof, DidMerkleRootGenerator},
+	consumer::DidMerkleProofVerifier,
+	provider::{CompleteMerkleProof, DidMerkleRootGenerator},
 	ProofLeaf,
 };
 

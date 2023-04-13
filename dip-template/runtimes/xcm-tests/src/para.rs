@@ -21,11 +21,11 @@ use frame_support::traits::GenesisBuild;
 use sp_io::TestExternalities;
 use xcm_emulator::decl_test_parachain;
 
-pub(super) mod sender {
-	pub(crate) use dip_sender_runtime_template::{DidIdentifier, DmpQueue, Runtime, RuntimeOrigin, XcmpQueue};
+pub(super) mod provider {
+	pub(crate) use dip_provider_runtime_template::{DidIdentifier, DmpQueue, Runtime, RuntimeOrigin, XcmpQueue};
 
 	use did::did_details::{DidDetails, DidEncryptionKey, DidVerificationKey};
-	use dip_sender_runtime_template::{AccountId, System};
+	use dip_provider_runtime_template::{AccountId, System};
 	use kilt_support::deposit::Deposit;
 	use sp_core::{ecdsa, ed25519, sr25519, Pair};
 
@@ -82,7 +82,7 @@ pub(super) mod sender {
 	}
 
 	decl_test_parachain! {
-		pub struct SenderParachain {
+		pub struct ProviderParachain {
 			Runtime = Runtime,
 			RuntimeOrigin = RuntimeOrigin,
 			XcmpMessageHandler = XcmpQueue,
@@ -92,12 +92,12 @@ pub(super) mod sender {
 	}
 }
 
-pub(super) mod receiver {
-	pub(crate) use dip_receiver_runtime_template::{
+pub(super) mod consumer {
+	pub(crate) use dip_consumer_runtime_template::{
 		AccountId, AssetTransactorLocationConverter, Balance, DmpQueue, Runtime, RuntimeOrigin, XcmpQueue, UNIT,
 	};
 
-	use dip_receiver_runtime_template::System;
+	use dip_consumer_runtime_template::System;
 	use xcm::latest::{Junction::Parachain, Junctions::X1, ParentThen};
 	use xcm_executor::traits::Convert;
 
@@ -107,9 +107,9 @@ pub(super) mod receiver {
 	pub const DISPATCHER_ACCOUNT: AccountId = AccountId::new([90u8; 32]);
 	const INITIAL_BALANCE: Balance = 100_000 * UNIT;
 
-	pub(crate) fn sender_parachain_account() -> AccountId {
-		AssetTransactorLocationConverter::convert(ParentThen(X1(Parachain(sender::PARA_ID))).into())
-			.expect("Conversion of account from sender parachain to receiver parachain should not fail.")
+	pub(crate) fn provider_parachain_account() -> AccountId {
+		AssetTransactorLocationConverter::convert(ParentThen(X1(Parachain(provider::PARA_ID))).into())
+			.expect("Conversion of account from provider parachain to consumer parachain should not fail.")
 	}
 
 	pub(crate) fn para_ext() -> TestExternalities {
@@ -126,7 +126,7 @@ pub(super) mod receiver {
 
 		pallet_balances::GenesisConfig::<Runtime> {
 			balances: vec![
-				(sender_parachain_account(), INITIAL_BALANCE),
+				(provider_parachain_account(), INITIAL_BALANCE),
 				(DISPATCHER_ACCOUNT, INITIAL_BALANCE),
 			],
 		}
