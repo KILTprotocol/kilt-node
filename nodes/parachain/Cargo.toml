@@ -21,7 +21,7 @@ substrate-build-script-utils.workspace = true
 [dependencies]
 # External dependencies
 clap = {workspace = true, features = ["derive"]}
-codec.workspace = true
+parity-scale-codec = {workspace = true, features = ["derive"]}
 hex-literal.workspace = true
 jsonrpsee = {workspace = true, features = ["server"]}
 log.workspace = true

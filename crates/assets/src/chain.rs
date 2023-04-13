@@ -28,7 +28,7 @@ mod v1 {
 
 	use core::str;
 
-	use codec::{Decode, Encode, MaxEncodedLen};
+	use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 	use scale_info::TypeInfo;
 
 	use frame_support::{sp_runtime::RuntimeDebug, traits::ConstU32, BoundedVec};
@@ -36,24 +36,24 @@ mod v1 {
 
 	/// The minimum length, including separator symbols, a chain ID can have
 	/// according to the minimum values defined by the CAIP-2 definition.
-	pub const MINIMUM_CHAIN_ID_LENGTH: usize = MINIMUM_NAMESPACE_LENGTH + 1 + MINIMUM_REFERENCE_LENGTH;
+	pub const MINIMUM_CHAIN_ID_LENGTH: usize = MINIMUM_CHAIN_NAMESPACE_LENGTH + 1 + MINIMUM_CHAIN_REFERENCE_LENGTH;
 	/// The maximum length, including separator symbols, a chain ID can have
 	/// according to the minimum values defined by the CAIP-2 definition.
-	pub const MAXIMUM_CHAIN_ID_LENGTH: usize = MAXIMUM_NAMESPACE_LENGTH + 1 + MAXIMUM_REFERENCE_LENGTH;
+	pub const MAXIMUM_CHAIN_ID_LENGTH: usize = MAXIMUM_CHAIN_NAMESPACE_LENGTH + 1 + MAXIMUM_CHAIN_REFERENCE_LENGTH;
 
 	/// The minimum length of a valid chain ID namespace.
-	pub const MINIMUM_NAMESPACE_LENGTH: usize = 3;
+	pub const MINIMUM_CHAIN_NAMESPACE_LENGTH: usize = 3;
 	/// The maximum length of a valid chain ID namespace.
-	pub const MAXIMUM_NAMESPACE_LENGTH: usize = 8;
-	const MAXIMUM_NAMESPACE_LENGTH_U32: u32 = MAXIMUM_NAMESPACE_LENGTH as u32;
+	pub const MAXIMUM_CHAIN_NAMESPACE_LENGTH: usize = 8;
+	const MAXIMUM_CHAIN_NAMESPACE_LENGTH_U32: u32 = MAXIMUM_CHAIN_NAMESPACE_LENGTH as u32;
 	/// The minimum length of a valid chain ID reference.
-	pub const MINIMUM_REFERENCE_LENGTH: usize = 1;
+	pub const MINIMUM_CHAIN_REFERENCE_LENGTH: usize = 1;
 	/// The maximum length of a valid chain ID reference.
-	pub const MAXIMUM_REFERENCE_LENGTH: usize = 32;
-	const MAXIMUM_REFERENCE_LENGTH_U32: u32 = MAXIMUM_REFERENCE_LENGTH as u32;
+	pub const MAXIMUM_CHAIN_REFERENCE_LENGTH: usize = 32;
+	const MAXIMUM_CHAIN_REFERENCE_LENGTH_U32: u32 = MAXIMUM_CHAIN_REFERENCE_LENGTH as u32;
 
 	/// Separator between chain namespace and chain reference.
-	const NAMESPACE_REFERENCE_SEPARATOR: u8 = b':';
+	const CHAIN_NAMESPACE_REFERENCE_SEPARATOR: u8 = b':';
 	/// Namespace for Eip155 chains.
 	pub const EIP155_NAMESPACE: &[u8] = b"eip155";
 	/// Namespace for Bip122 chains.
@@ -201,7 +201,7 @@ mod v1 {
 						str::from_utf8(BIP122_NAMESPACE)
 							.expect("Conversion of Bip122 namespace to string should never fail.")
 					)?;
-					write!(f, "{}", char::from(NAMESPACE_REFERENCE_SEPARATOR))?;
+					write!(f, "{}", char::from(CHAIN_NAMESPACE_REFERENCE_SEPARATOR))?;
 					reference.fmt(f)?;
 				}
 				Self::Eip155(reference) => {
@@ -211,7 +211,7 @@ mod v1 {
 						str::from_utf8(EIP155_NAMESPACE)
 							.expect("Conversion of Eip155 namespace to string should never fail.")
 					)?;
-					write!(f, "{}", char::from(NAMESPACE_REFERENCE_SEPARATOR))?;
+					write!(f, "{}", char::from(CHAIN_NAMESPACE_REFERENCE_SEPARATOR))?;
 					reference.fmt(f)?;
 				}
 				Self::Dotsama(reference) => {
@@ -221,7 +221,7 @@ mod v1 {
 						str::from_utf8(DOTSAMA_NAMESPACE)
 							.expect("Conversion of Dotsama namespace to string should never fail.")
 					)?;
-					write!(f, "{}", char::from(NAMESPACE_REFERENCE_SEPARATOR))?;
+					write!(f, "{}", char::from(CHAIN_NAMESPACE_REFERENCE_SEPARATOR))?;
 					reference.fmt(f)?;
 				}
 				Self::Solana(reference) => {
@@ -231,12 +231,12 @@ mod v1 {
 						str::from_utf8(SOLANA_NAMESPACE)
 							.expect("Conversion of Solana namespace to string should never fail.")
 					)?;
-					write!(f, "{}", char::from(NAMESPACE_REFERENCE_SEPARATOR))?;
+					write!(f, "{}", char::from(CHAIN_NAMESPACE_REFERENCE_SEPARATOR))?;
 					reference.fmt(f)?;
 				}
 				Self::Generic(GenericChainId { namespace, reference }) => {
 					namespace.fmt(f)?;
-					write!(f, "{}", char::from(NAMESPACE_REFERENCE_SEPARATOR))?;
+					write!(f, "{}", char::from(CHAIN_NAMESPACE_REFERENCE_SEPARATOR))?;
 					reference.fmt(f)?;
 				}
 			}
@@ -246,9 +246,9 @@ mod v1 {
 
 	const fn check_namespace_length_bounds(namespace: &[u8]) -> Result<(), NamespaceError> {
 		let namespace_length = namespace.len();
-		if namespace_length < MINIMUM_NAMESPACE_LENGTH {
+		if namespace_length < MINIMUM_CHAIN_NAMESPACE_LENGTH {
 			Err(NamespaceError::TooShort)
-		} else if namespace_length > MAXIMUM_NAMESPACE_LENGTH {
+		} else if namespace_length > MAXIMUM_CHAIN_NAMESPACE_LENGTH {
 			Err(NamespaceError::TooLong)
 		} else {
 			Ok(())
@@ -257,9 +257,9 @@ mod v1 {
 
 	const fn check_reference_length_bounds(reference: &[u8]) -> Result<(), ReferenceError> {
 		let reference_length = reference.len();
-		if reference_length < MINIMUM_REFERENCE_LENGTH {
+		if reference_length < MINIMUM_CHAIN_REFERENCE_LENGTH {
 			Err(ReferenceError::TooShort)
-		} else if reference_length > MAXIMUM_REFERENCE_LENGTH {
+		} else if reference_length > MAXIMUM_CHAIN_REFERENCE_LENGTH {
 			Err(ReferenceError::TooLong)
 		} else {
 			Ok(())
@@ -269,7 +269,7 @@ mod v1 {
 	/// Split the given input into its components, i.e., namespace, and
 	/// reference, if the proper separator is found.
 	fn split_components(input: &[u8]) -> ChainComponents {
-		let mut split = input.as_ref().splitn(2, |c| *c == NAMESPACE_REFERENCE_SEPARATOR);
+		let mut split = input.as_ref().splitn(2, |c| *c == CHAIN_NAMESPACE_REFERENCE_SEPARATOR);
 		ChainComponents {
 			namespace: split.next(),
 			reference: split.next(),
@@ -529,7 +529,7 @@ mod v1 {
 	/// It stores the provided UTF8-encoded namespace without trying to apply
 	/// any parsing/decoding logic.
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
-	pub struct GenericChainNamespace(pub(crate) BoundedVec<u8, ConstU32<MAXIMUM_NAMESPACE_LENGTH_U32>>);
+	pub struct GenericChainNamespace(pub(crate) BoundedVec<u8, ConstU32<MAXIMUM_CHAIN_NAMESPACE_LENGTH_U32>>);
 
 	impl GenericChainNamespace {
 		/// Parse a generic UTF8-encoded chain namespace, failing if the input
@@ -578,7 +578,7 @@ mod v1 {
 
 	/// A generic chain reference as defined in the [CAIP-2 spec](https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-2.md).
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
-	pub struct GenericChainReference(pub(crate) BoundedVec<u8, ConstU32<MAXIMUM_REFERENCE_LENGTH_U32>>);
+	pub struct GenericChainReference(pub(crate) BoundedVec<u8, ConstU32<MAXIMUM_CHAIN_REFERENCE_LENGTH_U32>>);
 
 	impl GenericChainReference {
 		/// Parse a generic UTF8-encoded chain reference, failing if the input

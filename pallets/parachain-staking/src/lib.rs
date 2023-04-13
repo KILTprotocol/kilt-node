@@ -200,7 +200,7 @@ pub mod pallet {
 		/// constrain it to `From<u64>`.
 		/// Note: Definition taken from pallet_gilt
 		type CurrencyBalance: sp_runtime::traits::AtLeast32BitUnsigned
-			+ codec::FullCodec
+			+ parity_scale_codec::FullCodec
 			+ Copy
 			+ MaybeSerializeDeserialize
 			+ sp_std::fmt::Debug

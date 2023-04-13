@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use codec::alloc::string::ToString;
+use parity_scale_codec::alloc::string::ToString;
 use sp_std::vec::Vec;
 
 // According to https://github.com/polkadot-js/common/blob/5d5c7e4c0ace06e3301ccadfd3c3351955f1e251/packages/util/src/u8a/wrap.ts#L13

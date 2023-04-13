@@ -18,7 +18,7 @@ hex-literal.workspace = true
 log.workspace = true
 
 # Parity dependencies
-codec = {package = "parity-scale-codec", workspace = true, features = ["derive"]}
+parity-scale-codec = {workspace = true, features = ["derive"]}
 scale-info = {workspace = true, features = ["derive"]}
 
 # Substrate dependencies
@@ -29,7 +29,7 @@ sp-std.workspace = true
 [features]
 default = ["std"]
 std = [
-  "codec/std",
+  "parity-scale-codec/std",
   "hex/std",
   "log/std",
   "scale-info/std",
