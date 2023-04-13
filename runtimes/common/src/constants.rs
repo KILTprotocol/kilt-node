@@ -322,7 +322,7 @@ pub mod did {
 	use super::*;
 
 	/// The size is checked in the runtime by a test.
-	pub const MAX_DID_BYTE_LENGTH: u32 = 14968;
+	pub const MAX_DID_BYTE_LENGTH: u32 = 9918;
 
 	pub const DID_DEPOSIT: Balance = deposit(2 + MAX_NUMBER_OF_SERVICES_PER_DID, MAX_DID_BYTE_LENGTH);
 	pub const DID_FEE: Balance = 50 * MILLI_KILT;
@@ -339,7 +339,7 @@ pub mod did {
 	pub const MAX_SERVICE_TYPE_LENGTH: u32 = 50;
 	pub const MAX_NUMBER_OF_TYPES_PER_SERVICE: u32 = 1;
 	pub const MAX_SERVICE_URL_LENGTH: u32 = 200;
-	pub const MAX_NUMBER_OF_URLS_PER_SERVICE: u32 = 2;
+	pub const MAX_NUMBER_OF_URLS_PER_SERVICE: u32 = 1;
 
 	parameter_types! {
 		pub const MaxNewKeyAgreementKeys: u32 = MAX_KEY_AGREEMENT_KEYS;
