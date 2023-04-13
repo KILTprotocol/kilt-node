@@ -119,6 +119,7 @@ construct_runtime!(
 		Timestamp: pallet_timestamp = 2,
 		ParachainInfo: parachain_info = 3,
 		Sudo: pallet_sudo = 4,
+		Utility: pallet_utility = 5,
 
 		// Money
 		Balances: pallet_balances = 10,
@@ -277,6 +278,13 @@ impl pallet_sudo::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 }
 
+impl pallet_utility::Config for Runtime {
+	type PalletsOrigin = OriginCaller;
+	type RuntimeCall = RuntimeCall;
+	type RuntimeEvent = RuntimeEvent;
+	type WeightInfo = ();
+}
+
 pub const EXISTENTIAL_DEPOSIT: Balance = MILLIUNIT;
 
 impl pallet_balances::Config for Runtime {
@@ -358,8 +366,8 @@ impl pallet_did_lookup::Config for Runtime {
 	type Currency = Balances;
 	type Deposit = ConstU128<UNIT>;
 	type DidIdentifier = DidIdentifier;
-	type EnsureOrigin = EnsureDipOrigin<DidIdentifier, AccountId>;
-	type OriginSuccess = DipOrigin<DidIdentifier, AccountId>;
+	type EnsureOrigin = EnsureDipOrigin<DidIdentifier, AccountId, ()>;
+	type OriginSuccess = DipOrigin<DidIdentifier, AccountId, ()>;
 	type RuntimeEvent = RuntimeEvent;
 	type WeightInfo = ();
 }
