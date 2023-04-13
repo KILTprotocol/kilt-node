@@ -18,10 +18,10 @@
 
 use crate::{AccountIdOf, BalanceOf, Config, DelegationNodeIdOf, DelegatorIdOf, Error};
 use bitflags::bitflags;
-use codec::{Decode, Encode, MaxEncodedLen};
 use ctype::CtypeHashOf;
 use frame_support::{dispatch::DispatchResult, storage::bounded_btree_set::BoundedBTreeSet};
 use kilt_support::deposit::Deposit;
+use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 
 bitflags! {

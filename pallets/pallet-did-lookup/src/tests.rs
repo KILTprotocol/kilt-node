@@ -16,9 +16,9 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use codec::Encode;
 use frame_support::{assert_noop, assert_ok, assert_storage_noop, crypto::ecdsa::ECDSAExt};
 use kilt_support::{deposit::Deposit, mock::mock_origin};
+use parity_scale_codec::Encode;
 use sha3::{Digest, Keccak256};
 use sp_runtime::{
 	app_crypto::{ecdsa, sr25519, Pair},

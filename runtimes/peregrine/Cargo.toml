@@ -18,7 +18,7 @@ sp-io.workspace = true
 
 [dependencies]
 # External dependencies
-codec = {package = "parity-scale-codec", workspace = true, features = ["derive"]}
+parity-scale-codec = {workspace = true, features = ["derive"]}
 log.workspace = true
 scale-info = {workspace = true, features = ["derive"]}
 
@@ -71,7 +71,6 @@ pallet-membership.workspace = true
 pallet-multisig.workspace = true
 pallet-preimage.workspace = true
 pallet-proxy.workspace = true
-pallet-randomness-collective-flip.workspace = true
 pallet-scheduler.workspace = true
 pallet-session.workspace = true
 pallet-sudo.workspace = true
@@ -151,7 +150,7 @@ runtime-benchmarks = [
 ]
 std = [
   "attestation/std",
-  "codec/std",
+  "parity-scale-codec/std",
   "ctype/std",
   "cumulus-pallet-aura-ext/std",
   "cumulus-pallet-dmp-queue/std",
@@ -189,7 +188,6 @@ std = [
   "pallet-multisig/std",
   "pallet-preimage/std",
   "pallet-proxy/std",
-  "pallet-randomness-collective-flip/std",
   "pallet-scheduler/std",
   "pallet-session/std",
   "pallet-sudo/std",
@@ -250,7 +248,6 @@ try-runtime = [
   "pallet-multisig/try-runtime",
   "pallet-preimage/try-runtime",
   "pallet-proxy/try-runtime",
-  "pallet-randomness-collective-flip/try-runtime",
   "pallet-scheduler/try-runtime",
   "pallet-session/try-runtime",
   "pallet-sudo/try-runtime",

@@ -38,7 +38,6 @@ pub use crate::{default_weights::WeightInfo, pallet::*};
 
 #[frame_support::pallet]
 pub mod pallet {
-	use codec::FullCodec;
 	use frame_support::{
 		pallet_prelude::*,
 		sp_runtime::SaturatedConversion,
@@ -46,6 +45,7 @@ pub mod pallet {
 		Blake2_128Concat,
 	};
 	use frame_system::pallet_prelude::*;
+	use parity_scale_codec::FullCodec;
 	use sp_std::{fmt::Debug, vec::Vec};
 
 	use kilt_support::{

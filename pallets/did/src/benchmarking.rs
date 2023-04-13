@@ -18,13 +18,13 @@
 
 use super::*;
 
-use codec::Encode;
 use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite, Zero};
 use frame_support::{
 	assert_ok,
 	traits::{Currency, ReservableCurrency},
 };
 use frame_system::RawOrigin;
+use parity_scale_codec::Encode;
 use sp_core::{crypto::KeyTypeId, ecdsa, ed25519, sr25519};
 use sp_io::crypto::{ecdsa_generate, ecdsa_sign, ed25519_generate, ed25519_sign, sr25519_generate, sr25519_sign};
 use sp_runtime::{traits::IdentifyAccount, AccountId32, MultiSigner};

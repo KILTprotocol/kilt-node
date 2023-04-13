@@ -78,7 +78,6 @@ mod tests;
 
 pub use crate::{access_control::DelegationAc, default_weights::WeightInfo, delegation_hierarchy::*, pallet::*};
 
-use codec::Encode;
 use frame_support::{
 	dispatch::DispatchResult,
 	ensure,
@@ -86,6 +85,7 @@ use frame_support::{
 	traits::{Get, ReservableCurrency},
 };
 use kilt_support::traits::StorageDepositCollector;
+use parity_scale_codec::Encode;
 use sp_runtime::{traits::Hash, DispatchError};
 use sp_std::{marker::PhantomData, vec::Vec};
 
