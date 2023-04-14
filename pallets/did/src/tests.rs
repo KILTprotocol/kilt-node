@@ -16,8 +16,8 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use codec::Encode;
 use frame_support::{assert_err, assert_noop, assert_ok, traits::Currency};
+use parity_scale_codec::Encode;
 use sp_core::{ed25519, Pair};
 use sp_runtime::{
 	traits::{BadOrigin, Hash, Zero},

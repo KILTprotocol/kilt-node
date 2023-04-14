@@ -57,6 +57,11 @@ pub const MICRO_KILT: Balance = 10u128.pow(9);
 
 pub const EXISTENTIAL_DEPOSIT: Balance = 10 * MILLI_KILT;
 
+/// Deposit that must be provided for each occupied storage item.
+pub const DEPOSIT_STORAGE_ITEM: Balance = 56 * MILLI_KILT;
+
+/// Deposit that must be provided for each occupied storage byte.
+pub const DEPOSIT_STORAGE_BYTE: Balance = 50 * MILLI_KILT;
 // 1 in 4 blocks (on average, not counting collisions) will be primary babe
 // blocks.
 pub const PRIMARY_PROBABILITY: (u64, u64) = (1, 4);
@@ -102,7 +107,7 @@ pub fn kilt_inflation_config() -> InflationInfo {
 /// Calculate the storage deposit based on the number of storage items and the
 /// combined byte size of those items.
 pub const fn deposit(items: u32, bytes: u32) -> Balance {
-	items as Balance * 56 * MILLI_KILT + (bytes as Balance) * 50 * MICRO_KILT
+	items as Balance * DEPOSIT_STORAGE_ITEM + (bytes as Balance) * DEPOSIT_STORAGE_BYTE
 }
 
 /// The size of an index in the index pallet.
@@ -300,6 +305,16 @@ pub mod governance {
 		pub const TechnicalMaxMembers: u32 = 100;
 		// Tipper Group
 		pub const TipperMaxMembers: u32 = 21;
+	}
+}
+
+pub mod multisig {
+	use super::*;
+
+	parameter_types! {
+		pub const MaxSignitors: u32 = 64;
+		pub const DepositBase: Balance = DEPOSIT_STORAGE_ITEM;
+		pub const DepositFactor: Balance = DEPOSIT_STORAGE_BYTE;
 	}
 }
 

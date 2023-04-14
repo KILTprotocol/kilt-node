@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use codec::{Decode, Encode, MaxEncodedLen};
+use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_runtime::RuntimeDebug;
 use sp_std::vec::Vec;
@@ -91,7 +91,7 @@ impl ItemFilter<CredentialEntry<Hash, AccountId, BlockNumber, AccountId, Balance
 mod benchmarks {
 	use super::*;
 
-	use codec::alloc::string::ToString;
+	use parity_scale_codec::alloc::string::ToString;
 	use sp_std::vec::Vec;
 
 	use kilt_asset_dids::{asset, chain};
@@ -112,17 +112,17 @@ mod benchmarks {
 				[
 					b"did:asset:",
 					// Chain part
-					&[b'0'; chain::MAXIMUM_NAMESPACE_LENGTH][..],
+					&[b'0'; chain::MAXIMUM_CHAIN_NAMESPACE_LENGTH][..],
 					b":",
-					&[b'1'; chain::MAXIMUM_REFERENCE_LENGTH][..],
+					&[b'1'; chain::MAXIMUM_CHAIN_REFERENCE_LENGTH][..],
 					// "." separator
 					b".",
 					// Asset part
 					&[b'2'; asset::MAXIMUM_NAMESPACE_LENGTH][..],
 					b":",
-					&[b'3'; asset::MAXIMUM_REFERENCE_LENGTH][..],
+					&[b'3'; asset::MAXIMUM_ASSET_REFERENCE_LENGTH][..],
 					b":",
-					&[b'4'; asset::MAXIMUM_IDENTIFIER_LENGTH][..],
+					&[b'4'; asset::MAXIMUM_ASSET_IDENTIFIER_LENGTH][..],
 				]
 				.concat(),
 			)

@@ -50,7 +50,7 @@ fn test_attest_without_authorization() {
 				authorization_info.clone()
 			));
 			let stored_attestation =
-				Attestation::attestations(&claim_hash).expect("Attestation should be present on chain.");
+				Attestation::attestations(claim_hash).expect("Attestation should be present on chain.");
 
 			assert_eq!(stored_attestation.ctype_hash, ctype_hash);
 			assert_eq!(stored_attestation.attester, attester);
@@ -81,7 +81,7 @@ fn test_attest_authorized() {
 				authorization_info.clone()
 			));
 			let stored_attestation =
-				Attestation::attestations(&claim_hash).expect("Attestation should be present on chain.");
+				Attestation::attestations(claim_hash).expect("Attestation should be present on chain.");
 			assert!(Attestation::external_attestations(attester.clone(), claim_hash));
 
 			assert_eq!(stored_attestation.ctype_hash, ctype);

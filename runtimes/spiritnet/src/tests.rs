@@ -16,11 +16,11 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use codec::MaxEncodedLen;
 use frame_support::{
 	traits::{Contains, Currency},
 	BoundedVec,
 };
+use parity_scale_codec::MaxEncodedLen;
 
 use did::DeriveDidCallAuthorizationVerificationKeyRelationship;
 use pallet_did_lookup::{associate_account_request::AssociateAccountRequest, MigrationState};
@@ -37,9 +37,7 @@ use runtime_common::{
 use sp_core::ecdsa::Signature;
 use sp_runtime::AccountId32;
 
-use crate::MigrationFilter;
-
-use super::{Runtime, RuntimeCall};
+use crate::{MigrationFilter, Runtime, RuntimeCall};
 
 #[test]
 fn call_size() {

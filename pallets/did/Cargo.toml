@@ -32,7 +32,7 @@ kilt-support.workspace = true
 ctype = {workspace = true, optional = true}
 
 # Substrate dependencies
-codec = {package = "parity-scale-codec", workspace = true, features = ["derive"]}
+parity-scale-codec = {workspace = true, features = ["derive"]}
 frame-support.workspace = true
 frame-system.workspace = true
 scale-info = {workspace = true, features = ["derive"]}
@@ -63,7 +63,7 @@ runtime-benchmarks = [
   "sp-runtime/runtime-benchmarks",
 ]
 std = [
-  "codec/std",
+  "parity-scale-codec/std",
   "ctype/std",
   "frame-support/std",
   "frame-system/std",
