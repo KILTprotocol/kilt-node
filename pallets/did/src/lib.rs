@@ -223,6 +223,23 @@ pub mod pallet {
 		#[pallet::constant]
 		type Deposit: Get<BalanceOf<Self>>;
 
+		/// The base amount of balance that will be taken for creating DID as a
+		/// deposit to incentivise fair use of the on chain storage. The deposit
+		/// can be reclaimed when the DID is deleted.
+		#[pallet::constant]
+		type DeposiBase: Get<BalanceOf<Self>>;
+		// TODO: Check comments.
+		/// The amount of balance that will be taken for each service endpoint
+		/// as a deposit to incentivise fair use of the on chain storage. The
+		/// deposit can be reclaimed when the service endpoint is removed.
+		#[pallet::constant]
+		type DepositServiceEndpoint: Get<BalanceOf<Self>>;
+
+		/// The amount of balance that will be taken for each added key as a
+		/// deposit to incentivise fair use of the on chain storage.
+		#[pallet::constant]
+		type DepositKey: Get<BalanceOf<Self>>;
+
 		/// The amount of balance that will be taken for each DID as a fee to
 		/// incentivise fair use of the on chain storage. The fee will not get
 		/// refunded when the DID is deleted.
@@ -606,7 +623,7 @@ pub mod pallet {
 		#[pallet::call_index(1)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::set_ed25519_authentication_key().max(<T as pallet::Config>::WeightInfo::set_sr25519_authentication_key()).max(<T as pallet::Config>::WeightInfo::set_ecdsa_authentication_key()))]
 		pub fn set_authentication_key(origin: OriginFor<T>, new_key: DidVerificationKey) -> DispatchResult {
-			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
+			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject(); //Todo: what is subject? ensure_origin?
 			let mut did_details = Did::<T>::get(&did_subject).ok_or(Error::<T>::NotFound)?;
 
 			log::debug!(

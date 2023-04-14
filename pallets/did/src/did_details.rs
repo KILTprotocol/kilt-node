@@ -327,9 +327,12 @@ impl<T: Config> DidDetails<T> {
 
 		let current_block_number = frame_system::Pallet::<T>::block_number();
 
+		let deposit_amount: BalanceOf<T> = // details.new_service_details.len() * TODO. Maybe keys?
+			 T::DepositServiceEndpoint::get() + T::DeposiBase::get();
+
 		let deposit = Deposit {
 			owner: details.submitter,
-			amount: T::Deposit::get(),
+			amount: deposit_amount,
 		};
 
 		// Creates a new DID with the given authentication key.

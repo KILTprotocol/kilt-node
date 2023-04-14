@@ -322,7 +322,7 @@ pub mod did {
 	use super::*;
 
 	/// The size is checked in the runtime by a test.
-	pub const MAX_DID_BYTE_LENGTH: u32 = 9918;
+	pub const MAX_DID_BYTE_LENGTH: u32 = 9918; // TODO: magic number - how?
 
 	pub const DID_DEPOSIT: Balance = deposit(2 + MAX_NUMBER_OF_SERVICES_PER_DID, MAX_DID_BYTE_LENGTH);
 	pub const DID_FEE: Balance = 50 * MILLI_KILT;

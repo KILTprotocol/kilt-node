@@ -604,6 +604,9 @@ impl did::Config for Runtime {
 	type DidIdentifier = DidIdentifier;
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeCall = RuntimeCall;
+	type DeposiBase = constants::did::DidDeposit;
+	type DepositKey = constants::did::DidDeposit;
+	type DepositServiceEndpoint = constants::did::DidDeposit;
 	type RuntimeOrigin = RuntimeOrigin;
 	type Currency = Balances;
 	type Deposit = constants::did::DidDeposit;
