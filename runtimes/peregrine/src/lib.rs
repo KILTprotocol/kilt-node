@@ -1096,6 +1096,7 @@ mod benches {
 		[pallet_proxy, Proxy]
 		[pallet_preimage, Preimage]
 		[pallet_tips, Tips]
+
 		[ctype, Ctype]
 		[attestation, Attestation]
 		[delegation, Delegation]
