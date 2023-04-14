@@ -703,7 +703,6 @@ construct_runtime!(
 		Session: pallet_session = 15,
 		Authorship: pallet_authorship = 16,
 
-		// // Governance stuff; uncallable initially.
 		// Democracy: pallet_democracy = 25,
 		// Council: pallet_collective = 26,
 		// TechnicalCommittee: pallet_collective = 27,
@@ -711,7 +710,6 @@ construct_runtime!(
 		// TechnicalMembership: pallet_membership = 29,
 		// Treasury: pallet_treasury = 30,
 
-		// // System scheduler.
 		// Scheduler: pallet_scheduler = 32,
 
 		// DELETED: Vesting: pallet_vesting = 33,
@@ -815,15 +813,19 @@ pub type Executive = frame_executive::Executive<
 #[cfg(feature = "runtime-benchmarks")]
 mod benches {
 	frame_benchmarking::define_benchmarks!(
-		// KILT
-		[attestation, Attestation]
+		[frame_system, SystemBench::<Runtime>]
+		[pallet_timestamp, Timestamp]
+		[pallet_indices, Indices]
+		[pallet_balances, Balances]
 		[ctype, Ctype]
+		[attestation, Attestation]
 		[delegation, Delegation]
 		[did, Did]
 		[pallet_did_lookup, DidLookup]
+		[pallet_utility, Utility]
+		[pallet_proxy, Proxy]
 		[pallet_web3_names, Web3Names]
 		[public_credentials, PublicCredentials]
-		// Substrate
 		[frame_benchmarking::baseline, Baseline::<Runtime>]
 		[frame_system, SystemBench::<Runtime>]
 		[pallet_balances, Balances]
