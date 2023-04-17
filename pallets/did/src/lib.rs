@@ -80,14 +80,13 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::unused_unit)]
 
+#[cfg(feature = "runtime-benchmarks")]
+pub mod benchmarking;
 pub mod default_weights;
 pub mod did_details;
 pub mod errors;
 pub mod origin;
 pub mod service_endpoints;
-
-#[cfg(feature = "runtime-benchmarks")]
-pub mod benchmarking;
 
 #[cfg(test)]
 mod mock;
@@ -542,9 +541,9 @@ pub mod pallet {
 			let sender = ensure_signed(origin)?;
 
 			ensure!(sender == details.submitter, BadOrigin);
-
 			let did_identifier = details.did.clone();
 
+			let deposit_amount = utils::calculate_deposit::<T>(&details);
 			// Check the free balance before we do any heavy work.
 			ensure!(
 				<T::Currency as ReservableCurrency<AccountIdOf<T>>>::can_reserve(

@@ -239,9 +239,9 @@ impl<I: AsRef<[u8; 32]>> DidVerifiableIdentifier for I {
 #[codec(mel_bound())]
 pub struct DidPublicKeyDetails<BlockNumber: MaxEncodedLen> {
 	/// A public key the DID controls.
-	pub key: DidPublicKey,
+	pub key: DidPublicKey, // 64 bytes
 	/// The block number in which the verification key was added to the DID.
-	pub block_number: BlockNumber,
+	pub block_number: BlockNumber, //  16 bytes
 }
 
 /// The details associated to a DID identity.
@@ -249,19 +249,21 @@ pub struct DidPublicKeyDetails<BlockNumber: MaxEncodedLen> {
 #[scale_info(skip_type_params(T))]
 #[codec(mel_bound())]
 
+// max bytes: 2968
 pub struct DidDetails<T: Config> {
+	// 120 bytes + 112 bytes * x where 0 =< x =< 20
 	/// The ID of the authentication key, used to authenticate DID-related
 	/// operations.
-	pub authentication_key: KeyIdOf<T>,
+	pub authentication_key: KeyIdOf<T>, // 32 bytes
 	/// The set of the key agreement key IDs, which can be used to encrypt
 	/// data addressed to the DID subject.
-	pub key_agreement_keys: DidKeyAgreementKeySet<T>,
+	pub key_agreement_keys: DidKeyAgreementKeySet<T>, // each entry has 32 bytes max 608
 	/// \[OPTIONAL\] The ID of the delegation key, used to verify the
 	/// signatures of the delegations created by the DID subject.
-	pub delegation_key: Option<KeyIdOf<T>>,
+	pub delegation_key: Option<KeyIdOf<T>>, // 32 bytes
 	/// \[OPTIONAL\] The ID of the attestation key, used to verify the
 	/// signatures of the attestations created by the DID subject.
-	pub attestation_key: Option<KeyIdOf<T>>,
+	pub attestation_key: Option<KeyIdOf<T>>, // 32 bytes
 	/// The map of public keys, with the key label as
 	/// the key map and the tuple (key, addition_block_number) as the map
 	/// value.
@@ -271,14 +273,14 @@ pub struct DidDetails<T: Config> {
 	/// the old attestation keys that have been rotated, i.e., they cannot
 	/// be used to create new attestations but can still be used to verify
 	/// previously issued attestations.
-	pub public_keys: DidPublicKeyMap<T>,
+	pub public_keys: DidPublicKeyMap<T>, // each entry has ~112 bytes max 2240
 	/// The counter used to avoid replay attacks, which is checked and
 	/// updated upon each DID operation involving with the subject as the
 	/// creator.
-	pub last_tx_counter: u64,
+	pub last_tx_counter: u64, // 8 bytes
 	/// The deposit that was taken to incentivise fair use of the on chain
 	/// storage.
-	pub deposit: Deposit<AccountIdOf<T>, BalanceOf<T>>,
+	pub deposit: Deposit<AccountIdOf<T>, BalanceOf<T>>, // 16 bytes
 }
 
 impl<T: Config> DidDetails<T> {
@@ -327,7 +329,7 @@ impl<T: Config> DidDetails<T> {
 
 		let current_block_number = frame_system::Pallet::<T>::block_number();
 
-		let deposit_amount: BalanceOf<T> = // details.new_service_details.len() * TODO. Maybe keys?
+		let deposit_amount: BalanceOf<T> = // details.new_service_details.len() * TODO. Maybe keys? replace!
 			 T::DepositServiceEndpoint::get() + T::DeposiBase::get();
 
 		let deposit = Deposit {
@@ -567,17 +569,17 @@ pub(crate) type DidPublicKeyMap<T> =
 
 pub struct DidCreationDetails<T: Config> {
 	/// The DID identifier. It has to be unique.
-	pub did: DidIdentifierOf<T>,
+	pub did: DidIdentifierOf<T>, // 32 bytes
 	/// The authorised submitter of the creation operation.
-	pub submitter: AccountIdOf<T>,
+	pub submitter: AccountIdOf<T>, // 32 bytes ?
 	/// The new key agreement keys.
-	pub new_key_agreement_keys: DidNewKeyAgreementKeySet<T>,
+	pub new_key_agreement_keys: DidNewKeyAgreementKeySet<T>, // each 32 bytes max 608
 	/// \[OPTIONAL\] The new attestation key.
-	pub new_attestation_key: Option<DidVerificationKey>,
+	pub new_attestation_key: Option<DidVerificationKey>, // 32 bytes
 	/// \[OPTIONAL\] The new delegation key.
-	pub new_delegation_key: Option<DidVerificationKey>,
+	pub new_delegation_key: Option<DidVerificationKey>, // 32 bytes
 	/// The service endpoints details.
-	pub new_service_details: Vec<DidEndpoint<T>>,
+	pub new_service_details: Vec<DidEndpoint<T>>, // each ~250 bytes max 6250
 }
 
 /// Errors that might occur while deriving the authorization verification key
