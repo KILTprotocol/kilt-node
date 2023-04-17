@@ -327,13 +327,11 @@ pub mod did {
 	pub const DID_DEPOSIT: Balance = deposit(2 + MAX_NUMBER_OF_SERVICES_PER_DID, MAX_DID_BYTE_LENGTH);
 	pub const DID_FEE: Balance = 50 * MILLI_KILT;
 	pub const MAX_KEY_AGREEMENT_KEYS: u32 = 10;
-	pub const MAX_URL_LENGTH: u32 = 200;
 	// This has been reduced from the previous 100, but it might still need
 	// fine-tuning depending on our needs.
 	pub const MAX_PUBLIC_KEYS_PER_DID: u32 = 20;
 	// At most the max number of keys - 1 for authentication
 	pub const MAX_TOTAL_KEY_AGREEMENT_KEYS: u32 = MAX_PUBLIC_KEYS_PER_DID - 1;
-	pub const MAX_ENDPOINT_URLS_COUNT: u32 = 3;
 	pub const MAX_BLOCKS_TX_VALIDITY: BlockNumber = HOURS;
 
 	pub const MAX_NUMBER_OF_SERVICES_PER_DID: u32 = 25;
@@ -345,13 +343,9 @@ pub mod did {
 
 	parameter_types! {
 		pub const MaxNewKeyAgreementKeys: u32 = MAX_KEY_AGREEMENT_KEYS;
-		#[derive(Debug, Clone, Eq, PartialEq)]
-		pub const MaxUrlLength: u32 = MAX_URL_LENGTH;
 		pub const MaxPublicKeysPerDid: u32 = MAX_PUBLIC_KEYS_PER_DID;
 		#[derive(Debug, Clone, Eq, PartialEq)]
 		pub const MaxTotalKeyAgreementKeys: u32 = MAX_TOTAL_KEY_AGREEMENT_KEYS;
-		#[derive(Debug, Clone, Eq, PartialEq)]
-		pub const MaxEndpointUrlsCount: u32 = MAX_ENDPOINT_URLS_COUNT;
 		// Standalone block time is half the duration of a parachain block.
 		pub const MaxBlocksTxValidity: BlockNumber = MAX_BLOCKS_TX_VALIDITY;
 		pub const DidDeposit: Balance = DID_DEPOSIT;
