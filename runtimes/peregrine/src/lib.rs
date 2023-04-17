@@ -947,29 +947,27 @@ construct_runtime! {
 		Authorship: pallet_authorship::{Pallet, Storage} = 20,
 		AuraExt: cumulus_pallet_aura_ext = 24,
 
-		// Governance stuff
 		Democracy: pallet_democracy = 30,
 		Council: pallet_collective::<Instance1> = 31,
 		TechnicalCommittee: pallet_collective::<Instance2> = 32,
-		// placeholder: parachain council election = 33,
+		// reserved: parachain council election = 33,
 		TechnicalMembership: pallet_membership::<Instance1> = 34,
 		Treasury: pallet_treasury = 35,
 		// DELETED: RelayMigration: pallet_relay_migration::{Pallet, Call, Storage, Event<T>} = 36,
 		// DELETED: DynFilter: pallet_dyn_filter = 37,
 
-		// Utility module.
+		//  A stateless pallet with helper extrinsics (batch extrinsics, send from different origins, ...)
 		Utility: pallet_utility = 40,
 
 		// Vesting. Usable initially, but removed once all vesting is finished.
 		Vesting: pallet_vesting = 41,
 
-		// System scheduler.
 		Scheduler: pallet_scheduler::{Pallet, Call, Storage, Event<T>} = 42,
 
-		// Proxy pallet.
+		// Allowing accounts to give permission to other accounts to dispatch types of calls from their signed origin
 		Proxy: pallet_proxy::{Pallet, Call, Storage, Event<T>} = 43,
 
-		// Preimage registrar
+		// Preimage pallet allows the storage of large bytes blob
 		Preimage: pallet_preimage::{Pallet, Call, Storage, Event<T>} = 44,
 
 		// Tips module to reward contributions to the ecosystem with small amount of KILTs.
@@ -1094,36 +1092,35 @@ pub type Executive = frame_executive::Executive<
 #[cfg(feature = "runtime-benchmarks")]
 mod benches {
 	frame_benchmarking::define_benchmarks!(
-		// KILT
-		[attestation, Attestation]
-		[ctype, Ctype]
-		[delegation, Delegation]
-		[did, Did]
-		[pallet_did_lookup, DidLookup]
-		[pallet_inflation, Inflation]
-		[parachain_staking, ParachainStaking]
-		[pallet_web3_names, Web3Names]
-		[public_credentials, PublicCredentials]
-		// Substrate
-		[frame_benchmarking::baseline, Baseline::<Runtime>]
 		[frame_system, SystemBench::<Runtime>]
-		[pallet_session, SessionBench::<Runtime>]
+		[pallet_timestamp, Timestamp]
+		[pallet_indices, Indices]
 		[pallet_balances, Balances]
+		[pallet_session, SessionBench::<Runtime>]
+		[parachain_staking, ParachainStaking]
+		[pallet_democracy, Democracy]
 		[pallet_collective, Council]
 		[pallet_collective, TechnicalCommittee]
-		[pallet_democracy, Democracy]
-		[pallet_indices, Indices]
 		[pallet_membership, TechnicalMembership]
-		[pallet_preimage, Preimage]
-		[pallet_scheduler, Scheduler]
-		[pallet_timestamp, Timestamp]
-		[pallet_tips, Tips]
 		[pallet_treasury, Treasury]
 		[pallet_utility, Utility]
 		[pallet_vesting, Vesting]
+		[pallet_scheduler, Scheduler]
 		[pallet_proxy, Proxy]
-		[pallet_xcm, PolkadotXcm]
+		[pallet_preimage, Preimage]
+		[pallet_tips, Tips]
 		[pallet_multisig, Multisig]
+		[ctype, Ctype]
+		[attestation, Attestation]
+		[delegation, Delegation]
+		[did, Did]
+		[pallet_inflation, Inflation]
+		[pallet_did_lookup, DidLookup]
+		[pallet_web3_names, Web3Names]
+		[public_credentials, PublicCredentials]
+		[pallet_xcm, PolkadotXcm]
+		[frame_benchmarking::baseline, Baseline::<Runtime>]
+
 	);
 }
 
