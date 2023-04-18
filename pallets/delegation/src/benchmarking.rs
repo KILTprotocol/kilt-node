@@ -18,7 +18,6 @@
 
 use super::*;
 
-use codec::Encode;
 use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
 use frame_support::{
 	dispatch::DispatchErrorWithPostInfo,
@@ -26,6 +25,7 @@ use frame_support::{
 	traits::{Currency, Get},
 };
 use frame_system::RawOrigin;
+use parity_scale_codec::Encode;
 use sp_core::{offchain::KeyTypeId, sr25519};
 use sp_io::crypto::sr25519_generate;
 use sp_runtime::traits::Zero;

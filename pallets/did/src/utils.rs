@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use codec::Encode;
+use parity_scale_codec::Encode;
 use sp_runtime::traits::Hash;
 use sp_std::vec::Vec;
 

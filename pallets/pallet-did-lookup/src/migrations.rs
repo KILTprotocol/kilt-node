@@ -16,12 +16,12 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::{
 	pallet_prelude::ValueQuery,
 	storage_alias,
 	traits::{Get, GetStorageVersion, OnRuntimeUpgrade, StorageVersion},
 };
+use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_runtime::AccountId32;
 use sp_std::marker::PhantomData;

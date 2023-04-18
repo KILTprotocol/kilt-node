@@ -32,7 +32,7 @@ public-credentials.workspace = true
 
 # External dependencies
 bitflags.workspace = true
-codec = {package = "parity-scale-codec", workspace = true, features = ["derive"]}
+parity-scale-codec = {workspace = true, features = ["derive"]}
 log.workspace = true
 scale-info = {workspace = true, features = ["derive"]}
 
@@ -68,7 +68,7 @@ runtime-benchmarks = [
 ]
 std = [
   "attestation/std",
-  "codec/std",
+  "parity-scale-codec/std",
   "ctype/std",
   "frame-benchmarking?/std",
   "frame-support/std",

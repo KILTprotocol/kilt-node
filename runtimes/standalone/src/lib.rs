@@ -27,7 +27,6 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
-use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::{
 	construct_runtime, parameter_types,
 	traits::{Currency, Everything, InstanceFilter, KeyOwnerProofSystem},
@@ -35,6 +34,7 @@ use frame_support::{
 };
 pub use frame_system::Call as SystemCall;
 use frame_system::EnsureRoot;
+use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 
 #[cfg(feature = "try-runtime")]
 use frame_try_runtime::UpgradeCheckSelect;
@@ -362,13 +362,9 @@ impl ctype::Config for Runtime {
 
 parameter_types! {
 	pub const MaxNewKeyAgreementKeys: u32 = constants::did::MAX_KEY_AGREEMENT_KEYS;
-	#[derive(Debug, Clone, Eq, PartialEq)]
-	pub const MaxUrlLength: u32 = constants::did::MAX_URL_LENGTH;
 	pub const MaxPublicKeysPerDid: u32 = constants::did::MAX_PUBLIC_KEYS_PER_DID;
 	#[derive(Debug, Clone, Eq, PartialEq)]
 	pub const MaxTotalKeyAgreementKeys: u32 = constants::did::MAX_TOTAL_KEY_AGREEMENT_KEYS;
-	#[derive(Debug, Clone, Eq, PartialEq)]
-	pub const MaxEndpointUrlsCount: u32 = constants::did::MAX_ENDPOINT_URLS_COUNT;
 	// Standalone block time is half the duration of a parachain block.
 	pub const MaxBlocksTxValidity: BlockNumber = constants::did::MAX_BLOCKS_TX_VALIDITY * 2;
 	pub const DidDeposit: Balance = constants::did::DID_DEPOSIT;
@@ -474,8 +470,6 @@ impl pallet_utility::Config for Runtime {
 	type PalletsOrigin = OriginCaller;
 	type WeightInfo = ();
 }
-
-impl pallet_randomness_collective_flip::Config for Runtime {}
 
 impl public_credentials::Config for Runtime {
 	type AccessControl = PalletAuthorize<DelegationAc<Runtime>>;
@@ -653,6 +647,16 @@ impl pallet_proxy::Config for Runtime {
 	type WeightInfo = ();
 }
 
+impl pallet_multisig::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type RuntimeCall = RuntimeCall;
+	type Currency = Balances;
+	type DepositBase = constants::multisig::DepositBase;
+	type DepositFactor = constants::multisig::DepositFactor;
+	type MaxSignatories = constants::multisig::MaxSignitors;
+	type WeightInfo = ();
+}
+
 construct_runtime!(
 	pub enum Runtime where
 		Block = Block,
@@ -660,7 +664,7 @@ construct_runtime!(
 		UncheckedExtrinsic = UncheckedExtrinsic
 	{
 		System: frame_system = 0,
-		RandomnessCollectiveFlip: pallet_randomness_collective_flip = 1,
+		// DELETED: RandomnessCollectiveFlip: pallet_insecure_randomness_collective_flip = 1,
 
 		Timestamp: pallet_timestamp = 2,
 		Aura: pallet_aura = 3,
@@ -679,7 +683,6 @@ construct_runtime!(
 		Session: pallet_session = 15,
 		Authorship: pallet_authorship = 16,
 
-		// // Governance stuff; uncallable initially.
 		// Democracy: pallet_democracy = 25,
 		// Council: pallet_collective = 26,
 		// TechnicalCommittee: pallet_collective = 27,
@@ -687,7 +690,6 @@ construct_runtime!(
 		// TechnicalMembership: pallet_membership = 29,
 		// Treasury: pallet_treasury = 30,
 
-		// // System scheduler.
 		// Scheduler: pallet_scheduler = 32,
 
 		// DELETED: Vesting: pallet_vesting = 33,
@@ -696,8 +698,11 @@ construct_runtime!(
 		// DELETED CrowdloanContributors: 36,
 
 		Proxy: pallet_proxy::{Pallet, Call, Storage, Event<T>} = 37,
+
 		Web3Names: pallet_web3_names = 38,
 		PublicCredentials: public_credentials = 39,
+
+		Multisig: pallet_multisig = 47,
 	}
 );
 
@@ -788,15 +793,19 @@ pub type Executive = frame_executive::Executive<
 #[cfg(feature = "runtime-benchmarks")]
 mod benches {
 	frame_benchmarking::define_benchmarks!(
-		// KILT
-		[attestation, Attestation]
+		[frame_system, SystemBench::<Runtime>]
+		[pallet_timestamp, Timestamp]
+		[pallet_indices, Indices]
+		[pallet_balances, Balances]
 		[ctype, Ctype]
+		[attestation, Attestation]
 		[delegation, Delegation]
 		[did, Did]
 		[pallet_did_lookup, DidLookup]
+		[pallet_utility, Utility]
+		[pallet_proxy, Proxy]
 		[pallet_web3_names, Web3Names]
 		[public_credentials, PublicCredentials]
-		// Substrate
 		[frame_benchmarking::baseline, Baseline::<Runtime>]
 		[frame_system, SystemBench::<Runtime>]
 		[pallet_balances, Balances]
@@ -804,6 +813,7 @@ mod benches {
 		[pallet_timestamp, Timestamp]
 		[pallet_utility, Utility]
 		[pallet_proxy, Proxy]
+		[pallet_multisig, Multisig]
 	);
 }
 
@@ -830,7 +840,7 @@ impl_runtime_apis! {
 
 	impl frame_system_rpc_runtime_api::AccountNonceApi<Block, AccountId, Index> for Runtime {
 		fn account_nonce(account: AccountId) -> Index {
-			frame_system::Pallet::<Runtime>::account_nonce(&account)
+			frame_system::Pallet::<Runtime>::account_nonce(account)
 		}
 	}
 

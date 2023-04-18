@@ -16,8 +16,8 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use codec::MaxEncodedLen;
 use frame_support::{traits::Currency, BoundedVec};
+use parity_scale_codec::MaxEncodedLen;
 
 use did::DeriveDidCallAuthorizationVerificationKeyRelationship;
 use pallet_did_lookup::associate_account_request::AssociateAccountRequest;
