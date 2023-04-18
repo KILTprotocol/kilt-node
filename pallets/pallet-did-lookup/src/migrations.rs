@@ -91,7 +91,7 @@ impl<T: crate::pallet::Config> OnRuntimeUpgrade for CleanupMigration<T> {
 		assert_eq!(
 			Pallet::<T>::on_chain_storage_version(),
 			StorageVersion::new(3),
-			"On-chain storage version should be 3 (last version without ethereum linking)"
+			"On-chain storage version should be 3 before the migration"
 		);
 		assert!(MigrationStateStore::<T>::exists(), "Migration state should exist");
 
