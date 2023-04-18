@@ -1067,7 +1067,7 @@ pub type Executive = frame_executive::Executive<
 	(
 		pallet_did_lookup::migrations::CleanupMigration<Runtime>,
 		runtime_common::migrations::RemoveInsecureRandomnessPallet<Runtime>,
-	)
+	),
 >;
 
 #[cfg(feature = "runtime-benchmarks")]
