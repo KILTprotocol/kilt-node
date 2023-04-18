@@ -399,14 +399,13 @@ parameter_types! {
 
 impl did::Config for Runtime {
 	type DidIdentifier = DidIdentifier;
-	type DeposiBase = constants::did::DidDeposit;
-	type DepositKey = constants::did::DidDeposit;
-	type DepositServiceEndpoint = constants::did::DidDeposit;
+	type DepositKey = constants::did::KeyDeposit;
+	type DepositServiceEndpoint = constants::did::ServiceEndpointDeposit;
+	type BaseDeposit = constants::did::DidBaseDeposit;
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeCall = RuntimeCall;
 	type RuntimeOrigin = RuntimeOrigin;
 	type Currency = Balances;
-	type Deposit = DidDeposit;
 	type Fee = DidFee;
 	type FeeCollector = ToAuthor<Runtime>;
 

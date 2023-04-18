@@ -220,13 +220,8 @@ pub mod pallet {
 		/// to incentivise fair use of the on chain storage. The deposit can be
 		/// reclaimed when the DID is deleted.
 		#[pallet::constant]
-		type Deposit: Get<BalanceOf<Self>>;
+		type BaseDeposit: Get<BalanceOf<Self>>;
 
-		/// The base amount of balance that will be taken for creating DID as a
-		/// deposit to incentivise fair use of the on chain storage. The deposit
-		/// can be reclaimed when the DID is deleted.
-		#[pallet::constant]
-		type DeposiBase: Get<BalanceOf<Self>>;
 		// TODO: Check comments.
 		/// The amount of balance that will be taken for each service endpoint
 		/// as a deposit to incentivise fair use of the on chain storage. The

@@ -31,7 +31,6 @@ use sp_std::{convert::TryInto, vec::Vec};
 
 use crate::{
 	errors::{self, DidError},
-	mock::AccountId,
 	service_endpoints::DidEndpoint,
 	utils, AccountIdOf, BalanceOf, BlockNumberOf, Config, CurrencyOf, DidCallableOf, DidIdentifierOf, KeyIdOf, Payload,
 };
@@ -384,7 +383,7 @@ impl<T: Config> DidDetails<T> {
 
 	pub fn decrease_deposit_by_service_endpoint(&mut self) {
 		let deposit = Deposit {
-			owner: self.deposit.owner,
+			owner: self.deposit.owner.clone(),
 			amount: T::DepositServiceEndpoint::get(),
 		};
 		kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&deposit);

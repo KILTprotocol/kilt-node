@@ -281,7 +281,7 @@ fn check_duplicate_did_creation() {
 
 	let signature = auth_key.sign(details.encode().as_ref());
 
-	let balance = <Test as did::Config>::Deposit::get()
+	let balance = <Test as did::Config>::Deposit::get() * 20
 		+ <Test as did::Config>::Fee::get()
 		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
@@ -681,6 +681,20 @@ fn check_max_limit_service_url_length_did_creation() {
 			);
 		});
 }
+
+// #[test]
+// fn check_deposit_for_did_creation_updates() {
+// 	let auth_key = get_sr25519_authentication_key(true);
+// 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
+// 	let details = generate_base_did_creation_details::<Test>(alice_did,
+// ACCOUNT_00); 	let signature = auth_key.sign(details.encode().as_ref());
+// 	let q = Did::create(
+// 		RuntimeOrigin::signed(ACCOUNT_00),
+// 		Box::new(details),
+// 		did::DidSignature::from(signature),
+// 	);
+// 	println!("{:?}", q);
+// }
 
 #[test]
 fn check_invalid_service_id_character_did_creation() {

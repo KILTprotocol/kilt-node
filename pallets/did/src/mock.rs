@@ -23,6 +23,7 @@ use frame_support::{
 };
 use frame_system::EnsureSigned;
 use pallet_balances::NegativeImbalance;
+
 use sp_core::{ecdsa, ed25519, sr25519, Pair};
 use sp_runtime::{
 	testing::{Header, H256},
@@ -124,6 +125,7 @@ parameter_types! {
 	pub const MaxServiceUrlLength: u32 = 100u32;
 	pub const MaxNumberOfTypesPerService: u32 = 1u32;
 	pub const MaxNumberOfUrlsPerService: u32 = 1u32;
+	pub const DepositKey :Balance = 32 * MICRO_KILT;
 }
 
 pub struct ToAccount<R>(sp_std::marker::PhantomData<R>);
@@ -143,6 +145,8 @@ impl Config for Test {
 	type RuntimeOrigin = RuntimeOrigin;
 	type RuntimeCall = RuntimeCall;
 	type EnsureOrigin = EnsureSigned<DidIdentifier>;
+	type DepositKey = DepositKey;
+	type DepositServiceEndpoint = DepositKey;
 	type OriginSuccess = AccountId;
 	type RuntimeEvent = ();
 	type Currency = Balances;
