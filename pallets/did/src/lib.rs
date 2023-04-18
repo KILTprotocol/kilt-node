@@ -548,7 +548,7 @@ pub mod pallet {
 			ensure!(
 				<T::Currency as ReservableCurrency<AccountIdOf<T>>>::can_reserve(
 					&sender,
-					<T as Config>::Deposit::get() + <T as Config>::Fee::get()
+					deposit_amount + <T as Config>::Fee::get()
 				),
 				Error::<T>::UnableToPayFees
 			);
@@ -572,8 +572,8 @@ pub mod pallet {
 			service_endpoints_utils::validate_new_service_endpoints(&input_service_endpoints)
 				.map_err(Error::<T>::from)?;
 
-			let did_entry =
-				DidDetails::from_creation_details(*details, account_did_auth_key).map_err(Error::<T>::from)?;
+			let did_entry = DidDetails::from_creation_details(*details, account_did_auth_key, deposit_amount)
+				.map_err(Error::<T>::from)?;
 
 			// *** No Fail beyond this call ***
 
@@ -593,6 +593,7 @@ pub mod pallet {
 			T::FeeCollector::on_unbalanced(imbalance);
 
 			Did::<T>::insert(&did_identifier, did_entry);
+
 			input_service_endpoints.iter().for_each(|service| {
 				ServiceEndpoints::<T>::insert(&did_identifier, &service.id, service.clone());
 			});
@@ -862,14 +863,24 @@ pub mod pallet {
 		#[pallet::call_index(8)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::add_service_endpoint())]
 		pub fn add_service_endpoint(origin: OriginFor<T>, service_endpoint: DidEndpoint<T>) -> DispatchResult {
+			let sender = ensure_signed(origin.clone())?;
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
+
+			// Check the free balance before we do any work
+			ensure!(
+				<T::Currency as ReservableCurrency<AccountIdOf<T>>>::can_reserve(
+					&sender,
+					<T as Config>::DepositServiceEndpoint::get()
+				),
+				Error::<T>::UnableToPayFees
+			);
 
 			service_endpoint
 				.validate_against_constraints()
 				.map_err(Error::<T>::from)?;
 
 			// Verify that the DID is present.
-			ensure!(Did::<T>::get(&did_subject).is_some(), Error::<T>::NotFound);
+			let mut did = Did::<T>::get(&did_subject).ok_or(Error::<T>::NotFound)?;
 
 			let currently_stored_endpoints_count = DidEndpointsCount::<T>::get(&did_subject);
 
@@ -891,6 +902,7 @@ pub mod pallet {
 				},
 			)?;
 			DidEndpointsCount::<T>::insert(&did_subject, currently_stored_endpoints_count.saturating_add(1));
+			did.increase_deposit_by_service_endpoint()?;
 
 			Self::deposit_event(Event::DidUpdated(did_subject));
 
@@ -914,6 +926,7 @@ pub mod pallet {
 		pub fn remove_service_endpoint(origin: OriginFor<T>, service_id: ServiceEndpointId<T>) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
 
+			let mut did_details = Did::<T>::get(&did_subject).ok_or(Error::<T>::NotFound)?;
 			// *** No Fail after the next call succeeds ***
 
 			ensure!(
@@ -931,6 +944,8 @@ pub mod pallet {
 				}
 			});
 
+			did_details.decrease_deposit_by_service_endpoint();
+			// decrease deposit by one.
 			Self::deposit_event(Event::DidUpdated(did_subject));
 
 			Ok(())

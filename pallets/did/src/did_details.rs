@@ -22,18 +22,18 @@ use frame_support::{
 	traits::Get,
 	RuntimeDebug,
 };
+use kilt_support::deposit::Deposit;
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen, WrapperTypeEncode};
 use scale_info::TypeInfo;
 use sp_core::{ecdsa, ed25519, sr25519};
-use sp_runtime::{traits::Verify, MultiSignature, SaturatedConversion};
+use sp_runtime::{traits::Verify, DispatchError, MultiSignature, SaturatedConversion};
 use sp_std::{convert::TryInto, vec::Vec};
-
-use kilt_support::deposit::Deposit;
 
 use crate::{
 	errors::{self, DidError},
+	mock::AccountId,
 	service_endpoints::DidEndpoint,
-	utils, AccountIdOf, BalanceOf, BlockNumberOf, Config, DidCallableOf, DidIdentifierOf, KeyIdOf, Payload,
+	utils, AccountIdOf, BalanceOf, BlockNumberOf, Config, CurrencyOf, DidCallableOf, DidIdentifierOf, KeyIdOf, Payload,
 };
 
 /// Types of verification keys a DID can control.
@@ -97,6 +97,7 @@ pub enum DidEncryptionKey {
 /// A general public key under the control of the DID.
 #[derive(Clone, Decode, RuntimeDebug, Encode, Eq, Ord, PartialEq, PartialOrd, TypeInfo, MaxEncodedLen)]
 pub enum DidPublicKey {
+	// enum itself 1 byte
 	/// A verification key, used to generate and verify signatures.
 	PublicVerificationKey(DidVerificationKey),
 	/// An encryption key, used to encrypt and decrypt payloads.
@@ -228,6 +229,7 @@ impl<I: AsRef<[u8; 32]>> DidVerifiableIdentifier for I {
 		}
 	}
 }
+// TODO: what to do if the fees change
 
 /// Details of a public key, which includes the key value and the
 /// block number at which it was set.
@@ -315,11 +317,86 @@ impl<T: Config> DidDetails<T> {
 		})
 	}
 
+	fn calculate_deposit(&mut self) -> BalanceOf<T>
+	where
+		BalanceOf<T>: From<u32>,
+	{
+		let mut deposit: BalanceOf<T> = T::DepositKey::get();
+
+		let count_key_agreements: BalanceOf<T> = (self.key_agreement_keys.len() as u32).into();
+		deposit += count_key_agreements * T::DepositKey::get();
+
+		deposit += match self.attestation_key {
+			Some(_) => T::DepositKey::get(),
+			_ => 0.into(),
+		};
+
+		deposit += match self.delegation_key {
+			Some(_) => T::DepositKey::get(),
+			_ => 0.into(),
+		};
+
+		deposit
+	}
+
+	pub fn update_deposit(&mut self) -> Result<(), errors::StorageError>
+	where
+		BalanceOf<T>: From<u32>,
+	{
+		let new_required_deposit = self.calculate_deposit();
+
+		if new_required_deposit > self.deposit.amount {
+			// TODO: Super ugly. How to convert the error better?
+			let deposit_to_reserve = new_required_deposit - self.deposit.amount;
+			let additional_reserved_deposit = kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
+				self.deposit.owner.clone(),
+				deposit_to_reserve,
+			);
+
+			match additional_reserved_deposit {
+				Err(_) => Err(errors::StorageError::AlreadyDeleted),
+				Ok(_) => Ok(()),
+			}?;
+
+			self.deposit.amount += deposit_to_reserve;
+		} else {
+			let to_release_amount = self.deposit.amount - new_required_deposit; // TODO: I think this can break.
+			let to_release_deposit = Deposit {
+				amount: to_release_amount,
+				owner: self.deposit.owner.clone(),
+			};
+			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&to_release_deposit);
+
+			self.deposit.amount -= to_release_amount;
+		}
+
+		Ok(())
+	}
+
+	pub fn increase_deposit_by_service_endpoint(&mut self) -> Result<(), DispatchError> {
+		kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
+			self.deposit.owner.clone(),
+			T::DepositServiceEndpoint::get(),
+		)?;
+		self.deposit.amount += T::DepositServiceEndpoint::get();
+		Ok(())
+	}
+
+	pub fn decrease_deposit_by_service_endpoint(&mut self) {
+		let deposit = Deposit {
+			owner: self.deposit.owner,
+			amount: T::DepositServiceEndpoint::get(),
+		};
+		kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&deposit);
+		self.deposit.amount -= T::DepositServiceEndpoint::get();
+	}
+
 	// Creates a new DID entry from some [DidCreationDetails] and a given
 	// authentication key.
 	pub fn from_creation_details(
 		details: DidCreationDetails<T>,
 		new_auth_key: DidVerificationKey,
+		deposit_amount: BalanceOf<T>,
 	) -> Result<Self, DidError> {
 		ensure!(
 			details.new_key_agreement_keys.len()
@@ -328,9 +405,6 @@ impl<T: Config> DidDetails<T> {
 		);
 
 		let current_block_number = frame_system::Pallet::<T>::block_number();
-
-		let deposit_amount: BalanceOf<T> = // details.new_service_details.len() * TODO. Maybe keys? replace!
-			 T::DepositServiceEndpoint::get() + T::DeposiBase::get();
 
 		let deposit = Deposit {
 			owner: details.submitter,
@@ -379,6 +453,8 @@ impl<T: Config> DidDetails<T> {
 				},
 			)
 			.map_err(|_| errors::StorageError::MaxPublicKeysExceeded)?;
+
+		self.update_deposit()?;
 		Ok(())
 	}
 
@@ -393,6 +469,8 @@ impl<T: Config> DidDetails<T> {
 		for new_key_agreement_key in new_key_agreement_keys {
 			self.add_key_agreement_key(new_key_agreement_key, block_number)?;
 		}
+
+		self.update_deposit()?;
 		Ok(())
 	}
 
@@ -417,6 +495,8 @@ impl<T: Config> DidDetails<T> {
 		self.key_agreement_keys
 			.try_insert(new_key_agreement_id)
 			.map_err(|_| errors::StorageError::MaxTotalKeyAgreementKeysExceeded)?;
+
+		self.update_deposit()?;
 		Ok(())
 	}
 
@@ -428,6 +508,8 @@ impl<T: Config> DidDetails<T> {
 			errors::StorageError::NotFound(errors::NotFoundKind::Key(errors::KeyType::KeyAgreement))
 		);
 		self.remove_key_if_unused(key_id);
+
+		self.update_deposit()?;
 		Ok(())
 	}
 
@@ -455,6 +537,8 @@ impl<T: Config> DidDetails<T> {
 				},
 			)
 			.map_err(|_| errors::StorageError::MaxPublicKeysExceeded)?;
+
+		self.update_deposit()?;
 		Ok(())
 	}
 
@@ -471,6 +555,8 @@ impl<T: Config> DidDetails<T> {
 					errors::KeyType::AssertionMethod,
 				)))?;
 		self.remove_key_if_unused(old_key_id);
+
+		self.update_deposit()?;
 		Ok(())
 	}
 
@@ -498,6 +584,8 @@ impl<T: Config> DidDetails<T> {
 				},
 			)
 			.map_err(|_| errors::StorageError::MaxPublicKeysExceeded)?;
+
+		self.update_deposit()?;
 		Ok(())
 	}
 
@@ -514,6 +602,8 @@ impl<T: Config> DidDetails<T> {
 					errors::KeyType::AssertionMethod,
 				)))?;
 		self.remove_key_if_unused(old_key_id);
+
+		self.update_deposit()?;
 		Ok(())
 	}
 
