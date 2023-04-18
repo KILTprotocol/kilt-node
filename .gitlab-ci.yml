@@ -32,7 +32,7 @@ test-features:
   image: paritytech/ci-linux@sha256:4e8c072ea12bc17d99cb531adb58dea5a4c7d4880a8a86525052d24d1454e89e
   stage: test
   script:
-    - cargo test --all --all-features --all-targets
+    - cargo test --all --all-features --all-targets --locked
 
 build:
   timeout: 2 hours
