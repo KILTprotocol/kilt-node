@@ -24,6 +24,7 @@ use sp_io::MultiRemovalResults;
 use sp_std::marker::PhantomData;
 
 const PALLET_RUNTIME_NAME: &[u8] = b"RandomnessCollectiveFlip";
+#[cfg(feature = "try-runtime")]
 const PALLET_STORAGE_NAME: &[u8] = b"RandomMaterial";
 
 pub struct RemoveInsecureRandomnessPallet<T>(PhantomData<T>);
