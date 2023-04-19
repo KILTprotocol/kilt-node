@@ -567,13 +567,12 @@ pub mod pallet {
 			service_endpoints_utils::validate_new_service_endpoints(&input_service_endpoints)
 				.map_err(Error::<T>::from)?;
 
-			let did_entry = DidDetails::from_creation_details(*details, account_did_auth_key, deposit_amount)
+			let mut did_entry = DidDetails::from_creation_details(*details, account_did_auth_key, deposit_amount)
 				.map_err(Error::<T>::from)?;
 
 			// *** No Fail beyond this call ***
 
-			CurrencyOf::<T>::reserve(&did_entry.deposit.owner, did_entry.deposit.amount)?;
-
+			did_entry.update_deposit(&did_identifier)?;
 			// Withdraw the fee. We made sure that enough balance is available. But if this
 			// fails, we don't withdraw anything.
 			let imbalance = <T::Currency as Currency<AccountIdOf<T>>>::withdraw(
@@ -633,6 +632,7 @@ pub mod pallet {
 
 			// *** No Fail beyond this call ***
 
+			did_details.update_deposit(&did_subject)?;
 			Did::<T>::insert(&did_subject, did_details);
 			log::debug!("Authentication key set");
 
@@ -669,6 +669,7 @@ pub mod pallet {
 
 			// *** No Fail beyond this call ***
 
+			did_details.update_deposit(&did_subject)?;
 			Did::<T>::insert(&did_subject, did_details);
 			log::debug!("Delegation key set");
 
@@ -702,6 +703,7 @@ pub mod pallet {
 
 			// *** No Fail beyond this call ***
 
+			did_details.update_deposit(&did_subject)?;
 			Did::<T>::insert(&did_subject, did_details);
 			log::debug!("Delegation key removed");
 
@@ -738,6 +740,7 @@ pub mod pallet {
 
 			// *** No Fail beyond this call ***
 
+			did_details.update_deposit(&did_subject)?;
 			Did::<T>::insert(&did_subject, did_details);
 			log::debug!("Attestation key set");
 
@@ -771,6 +774,7 @@ pub mod pallet {
 
 			// *** No Fail beyond this call ***
 
+			did_details.update_deposit(&did_subject)?;
 			Did::<T>::insert(&did_subject, did_details);
 			log::debug!("Attestation key removed");
 
@@ -805,6 +809,7 @@ pub mod pallet {
 
 			// *** No Fail beyond this call ***
 
+			did_details.update_deposit(&did_subject)?;
 			Did::<T>::insert(&did_subject, did_details);
 			log::debug!("Key agreement key set");
 
@@ -836,6 +841,7 @@ pub mod pallet {
 
 			// *** No Fail beyond this call ***
 
+			did_details.update_deposit(&did_subject)?;
 			Did::<T>::insert(&did_subject, did_details);
 			log::debug!("Key agreement key removed");
 
@@ -897,7 +903,7 @@ pub mod pallet {
 				},
 			)?;
 			DidEndpointsCount::<T>::insert(&did_subject, currently_stored_endpoints_count.saturating_add(1));
-			did.increase_deposit_by_service_endpoint()?;
+			did.update_deposit(&did_subject)?;
 
 			Self::deposit_event(Event::DidUpdated(did_subject));
 
@@ -939,7 +945,7 @@ pub mod pallet {
 				}
 			});
 
-			did_details.decrease_deposit_by_service_endpoint();
+			did_details.update_deposit(&did_subject)?;
 			// decrease deposit by one.
 			Self::deposit_event(Event::DidUpdated(did_subject));
 
@@ -1136,12 +1142,12 @@ pub mod pallet {
 		#[pallet::call_index(14)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::update_deposit())]
 		pub fn update_deposit(origin: OriginFor<T>, did: DidIdentifierOf<T>) -> DispatchResult {
-			let sender = ensure_signed(origin)?;
+			let sender = ensure_signed(origin.clone())?;
+			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
 
-			let did_entry = Did::<T>::get(&did).ok_or(Error::<T>::NotFound)?;
+			let mut did_entry = Did::<T>::get(&did).ok_or(Error::<T>::NotFound)?;
 			ensure!(did_entry.deposit.owner == sender, Error::<T>::BadDidOrigin);
-
-			DidDepositCollector::<T>::update_deposit(&did)?;
+			did_entry.update_deposit(&did_subject)?;
 
 			Ok(())
 		}

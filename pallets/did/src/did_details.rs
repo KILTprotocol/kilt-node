@@ -32,7 +32,8 @@ use sp_std::{convert::TryInto, vec::Vec};
 use crate::{
 	errors::{self, DidError},
 	service_endpoints::DidEndpoint,
-	utils, AccountIdOf, BalanceOf, BlockNumberOf, Config, CurrencyOf, DidCallableOf, DidIdentifierOf, KeyIdOf, Payload,
+	utils, AccountIdOf, BalanceOf, BlockNumberOf, Config, CurrencyOf, DidCallableOf, DidEndpointsCount,
+	DidIdentifierOf, KeyIdOf, Payload,
 };
 
 /// Types of verification keys a DID can control.
@@ -316,11 +317,14 @@ impl<T: Config> DidDetails<T> {
 		})
 	}
 
-	fn calculate_deposit(&mut self) -> BalanceOf<T>
+	fn calculate_deposit(&mut self, did_subject: &DidIdentifierOf<T>) -> BalanceOf<T>
 	where
 		BalanceOf<T>: From<u32>,
 	{
 		let mut deposit: BalanceOf<T> = T::BaseDeposit::get();
+
+		let count_endpoints: BalanceOf<T> = DidEndpointsCount::<T>::get(did_subject).into();
+		deposit += count_endpoints * T::DepositServiceEndpoint::get();
 
 		let count_key_agreements: BalanceOf<T> = (self.key_agreement_keys.len() as u32).into();
 		deposit += count_key_agreements * T::DepositKey::get();
@@ -338,25 +342,18 @@ impl<T: Config> DidDetails<T> {
 		deposit
 	}
 
-	pub fn update_deposit(&mut self) -> Result<(), errors::StorageError>
+	pub fn update_deposit(&mut self, did_subject: &DidIdentifierOf<T>) -> Result<(), DispatchError>
 	where
 		BalanceOf<T>: From<u32>,
 	{
-		let new_required_deposit = self.calculate_deposit();
+		let new_required_deposit = self.calculate_deposit(did_subject);
 
 		if new_required_deposit > self.deposit.amount {
-			// TODO: Super ugly. How to convert the error better?
 			let deposit_to_reserve = new_required_deposit - self.deposit.amount;
-			let additional_reserved_deposit = kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
+			kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
 				self.deposit.owner.clone(),
 				deposit_to_reserve,
-			);
-
-			match additional_reserved_deposit {
-				Err(_) => Err(errors::StorageError::AlreadyDeleted),
-				Ok(_) => Ok(()),
-			}?;
-
+			)?;
 			self.deposit.amount += deposit_to_reserve;
 		} else {
 			let to_release_amount = self.deposit.amount - new_required_deposit; // TODO: I think this can break.
@@ -370,24 +367,6 @@ impl<T: Config> DidDetails<T> {
 		}
 
 		Ok(())
-	}
-
-	pub fn increase_deposit_by_service_endpoint(&mut self) -> Result<(), DispatchError> {
-		kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
-			self.deposit.owner.clone(),
-			T::DepositServiceEndpoint::get(),
-		)?;
-		self.deposit.amount += T::DepositServiceEndpoint::get();
-		Ok(())
-	}
-
-	pub fn decrease_deposit_by_service_endpoint(&mut self) {
-		let deposit = Deposit {
-			owner: self.deposit.owner.clone(),
-			amount: T::DepositServiceEndpoint::get(),
-		};
-		kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&deposit);
-		self.deposit.amount -= T::DepositServiceEndpoint::get();
 	}
 
 	// Creates a new DID entry from some [DidCreationDetails] and a given
@@ -453,7 +432,6 @@ impl<T: Config> DidDetails<T> {
 			)
 			.map_err(|_| errors::StorageError::MaxPublicKeysExceeded)?;
 
-		self.update_deposit()?;
 		Ok(())
 	}
 
@@ -469,7 +447,6 @@ impl<T: Config> DidDetails<T> {
 			self.add_key_agreement_key(new_key_agreement_key, block_number)?;
 		}
 
-		self.update_deposit()?;
 		Ok(())
 	}
 
@@ -495,7 +472,6 @@ impl<T: Config> DidDetails<T> {
 			.try_insert(new_key_agreement_id)
 			.map_err(|_| errors::StorageError::MaxTotalKeyAgreementKeysExceeded)?;
 
-		self.update_deposit()?;
 		Ok(())
 	}
 
@@ -508,7 +484,6 @@ impl<T: Config> DidDetails<T> {
 		);
 		self.remove_key_if_unused(key_id);
 
-		self.update_deposit()?;
 		Ok(())
 	}
 
@@ -537,7 +512,6 @@ impl<T: Config> DidDetails<T> {
 			)
 			.map_err(|_| errors::StorageError::MaxPublicKeysExceeded)?;
 
-		self.update_deposit()?;
 		Ok(())
 	}
 
@@ -555,7 +529,6 @@ impl<T: Config> DidDetails<T> {
 				)))?;
 		self.remove_key_if_unused(old_key_id);
 
-		self.update_deposit()?;
 		Ok(())
 	}
 
@@ -584,7 +557,6 @@ impl<T: Config> DidDetails<T> {
 			)
 			.map_err(|_| errors::StorageError::MaxPublicKeysExceeded)?;
 
-		self.update_deposit()?;
 		Ok(())
 	}
 
@@ -602,7 +574,6 @@ impl<T: Config> DidDetails<T> {
 				)))?;
 		self.remove_key_if_unused(old_key_id);
 
-		self.update_deposit()?;
 		Ok(())
 	}
 
