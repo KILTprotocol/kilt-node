@@ -22,11 +22,8 @@ use crate::{
 };
 use parity_scale_codec::Encode;
 use sp_core::Get;
-use sp_runtime::traits::Hash;
+use sp_runtime::traits::{Hash, Zero};
 use sp_std::{boxed::Box, vec::Vec};
-
-// In case no key is provided, nothing has to be charged.
-const NO_DEPOSIT: u32 = 0;
 
 pub fn calculate_key_id<T: Config>(key: &DidPublicKey) -> KeyIdOf<T> {
 	let hashed_values: Vec<u8> = key.encode();
@@ -47,12 +44,12 @@ where
 
 	deposit += match details.new_attestation_key {
 		Some(_) => T::DepositKey::get(),
-		_ => NO_DEPOSIT.into(),
+		_ => Zero::zero(),
 	};
 
 	deposit += match details.new_delegation_key {
 		Some(_) => T::DepositKey::get(),
-		_ => NO_DEPOSIT.into(),
+		_ => Zero::zero(),
 	};
 
 	deposit
