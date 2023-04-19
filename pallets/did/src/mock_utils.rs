@@ -93,7 +93,10 @@ pub fn generate_base_did_creation_details<T: Config>(
 	}
 }
 
-pub fn generate_base_did_details<T>(authentication_key: DidVerificationKey) -> DidDetails<T>
+pub fn generate_base_did_details<T>(
+	authentication_key: DidVerificationKey,
+	deposit_owner: Option<AccountIdOf<T>>,
+) -> DidDetails<T>
 where
 	T: Config,
 	<T as frame_system::Config>::AccountId: From<AccountId32>,
@@ -102,7 +105,7 @@ where
 		authentication_key,
 		BlockNumberOf::<T>::default(),
 		Deposit {
-			owner: AccountId32::new([0u8; 32]).into(),
+			owner: deposit_owner.unwrap_or(AccountId32::new([0u8; 32]).into()),
 			amount: Zero::zero(),
 		},
 	)

@@ -60,7 +60,8 @@ pub(crate) type DidIdentifier = AccountId;
 pub(crate) type CtypeHash = Hash;
 
 const MICRO_KILT: Balance = 10u128.pow(9);
-const MILLI_KILT: Balance = 10u128.pow(6);
+const MILLI_KILT: Balance = 10u128.pow(12);
+const KILT: Balance = 10u128.pow(15);
 
 frame_support::construct_runtime!(
 	pub enum Test where
@@ -207,6 +208,8 @@ impl ctype::Config for Test {
 	type Fee = Fee;
 	type FeeCollector = ();
 }
+/// 10 KILT
+pub(crate) const DEFAULT_BALANCE: Balance = 10 * KILT;
 
 pub(crate) const ACCOUNT_00: AccountId = AccountId::new([1u8; 32]);
 pub(crate) const ACCOUNT_01: AccountId = AccountId::new([2u8; 32]);

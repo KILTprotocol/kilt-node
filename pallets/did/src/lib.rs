@@ -567,12 +567,13 @@ pub mod pallet {
 			service_endpoints_utils::validate_new_service_endpoints(&input_service_endpoints)
 				.map_err(Error::<T>::from)?;
 
-			let mut did_entry = DidDetails::from_creation_details(*details, account_did_auth_key, deposit_amount)
-				.map_err(Error::<T>::from)?;
+			let mut did_entry =
+				DidDetails::from_creation_details(*details, account_did_auth_key).map_err(Error::<T>::from)?;
 
 			// *** No Fail beyond this call ***
 
 			did_entry.update_deposit(&did_identifier)?;
+
 			// Withdraw the fee. We made sure that enough balance is available. But if this
 			// fails, we don't withdraw anything.
 			let imbalance = <T::Currency as Currency<AccountIdOf<T>>>::withdraw(
@@ -1148,6 +1149,7 @@ pub mod pallet {
 			let mut did_entry = Did::<T>::get(&did).ok_or(Error::<T>::NotFound)?;
 			ensure!(did_entry.deposit.owner == sender, Error::<T>::BadDidOrigin);
 			did_entry.update_deposit(&did_subject)?;
+			Did::<T>::insert(&did_subject, did_entry);
 
 			Ok(())
 		}
@@ -1297,9 +1299,9 @@ pub mod pallet {
 		}
 
 		fn deposit_amount(key: &DidIdentifierOf<T>) -> <Self::Currency as Currency<AccountIdOf<T>>>::Balance {
-			let did_entry = Did::<T>::get(key);
+			let did_entry = Did::<T>::get(&key);
 			match did_entry {
-				Some(entry) => entry.deposit.amount,
+				Some(entry) => entry.calculate_deposit(&key),
 				_ => <T as Config>::BaseDeposit::get(),
 			}
 		}

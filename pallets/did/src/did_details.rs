@@ -26,7 +26,10 @@ use kilt_support::deposit::Deposit;
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen, WrapperTypeEncode};
 use scale_info::TypeInfo;
 use sp_core::{ecdsa, ed25519, sr25519};
-use sp_runtime::{traits::Verify, DispatchError, MultiSignature, SaturatedConversion};
+use sp_runtime::{
+	traits::{Verify, Zero},
+	DispatchError, MultiSignature, SaturatedConversion,
+};
 use sp_std::{convert::TryInto, vec::Vec};
 
 use crate::{
@@ -317,7 +320,7 @@ impl<T: Config> DidDetails<T> {
 		})
 	}
 
-	fn calculate_deposit(&mut self, did_subject: &DidIdentifierOf<T>) -> BalanceOf<T>
+	pub fn calculate_deposit(&self, did_subject: &DidIdentifierOf<T>) -> BalanceOf<T>
 	where
 		BalanceOf<T>: From<u32>,
 	{
@@ -342,6 +345,19 @@ impl<T: Config> DidDetails<T> {
 		deposit
 	}
 
+	fn reserve_deposit(&self, deposit_to_reserve: BalanceOf<T>) -> Result<(), DispatchError> {
+		kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(self.deposit.owner.clone(), deposit_to_reserve)?;
+		Ok(())
+	}
+
+	fn release_deposit(&self, deposit_to_release: BalanceOf<T>) {
+		let to_release_deposit = Deposit {
+			amount: deposit_to_release,
+			owner: self.deposit.owner.clone(),
+		};
+		kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&to_release_deposit);
+	}
+
 	pub fn update_deposit(&mut self, did_subject: &DidIdentifierOf<T>) -> Result<(), DispatchError>
 	where
 		BalanceOf<T>: From<u32>,
@@ -350,20 +366,12 @@ impl<T: Config> DidDetails<T> {
 
 		if new_required_deposit > self.deposit.amount {
 			let deposit_to_reserve = new_required_deposit - self.deposit.amount;
-			kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
-				self.deposit.owner.clone(),
-				deposit_to_reserve,
-			)?;
+			self.reserve_deposit(deposit_to_reserve)?;
 			self.deposit.amount += deposit_to_reserve;
-		} else {
-			let to_release_amount = self.deposit.amount - new_required_deposit; // TODO: I think this can break.
-			let to_release_deposit = Deposit {
-				amount: to_release_amount,
-				owner: self.deposit.owner.clone(),
-			};
-			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&to_release_deposit);
-
-			self.deposit.amount -= to_release_amount;
+		} else if new_required_deposit < self.deposit.amount {
+			let deposit_to_release = self.deposit.amount - new_required_deposit; // TODO: I think this can break.
+			self.release_deposit(deposit_to_release);
+			self.deposit.amount -= deposit_to_release;
 		}
 
 		Ok(())
@@ -374,7 +382,6 @@ impl<T: Config> DidDetails<T> {
 	pub fn from_creation_details(
 		details: DidCreationDetails<T>,
 		new_auth_key: DidVerificationKey,
-		deposit_amount: BalanceOf<T>,
 	) -> Result<Self, DidError> {
 		ensure!(
 			details.new_key_agreement_keys.len()
@@ -386,7 +393,7 @@ impl<T: Config> DidDetails<T> {
 
 		let deposit = Deposit {
 			owner: details.submitter,
-			amount: deposit_amount,
+			amount: Zero::zero(),
 		};
 
 		// Creates a new DID with the given authentication key.

@@ -37,13 +37,13 @@ pub fn calculate_deposit<T: Config>(details: &Box<DidCreationDetails<T>>) -> Bal
 where
 	BalanceOf<T>: From<u32>,
 {
-	let mut deposit: BalanceOf<T> = T::DepositKey::get();
+	let mut deposit: BalanceOf<T> = T::BaseDeposit::get();
 
 	let count_service_endpoint: BalanceOf<T> = (details.new_service_details.len() as u32).into();
 	deposit += count_service_endpoint * T::DepositServiceEndpoint::get();
 
 	let count_key_agreements: BalanceOf<T> = (details.new_key_agreement_keys.len() as u32).into();
-	deposit += count_key_agreements * T::DepositServiceEndpoint::get();
+	deposit += count_key_agreements * T::DepositKey::get();
 
 	deposit += match details.new_attestation_key {
 		Some(_) => T::DepositKey::get(),
