@@ -34,13 +34,14 @@ pub mod pallet {
 	use frame_system::pallet_prelude::*;
 	use sp_std::boxed::Box;
 
-	use dip_support::{latest::IdentityProofAction, VersionedIdentityProof, VersionedIdentityProofAction};
+	use dip_support::{latest::IdentityProofAction, VersionedIdentityProofAction};
 
 	use crate::traits::{DipCallOriginFilter, IdentityProofVerifier};
 
-	pub type VerificationResultOf<T> = <<T as Config>::ProofVerifier as IdentityProofVerifier>::VerificationResult;
-	pub type VersionedIdentityProofOf<T> =
-		VersionedIdentityProof<<T as Config>::BlindedValue, <T as Config>::ProofLeaf>;
+	pub type VerificationResultOf<T> = <<T as Config>::ProofVerifier as IdentityProofVerifier<
+		<T as Config>::RuntimeCall,
+		<T as Config>::Identifier,
+	>>::VerificationResult;
 
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(0);
 
@@ -52,15 +53,16 @@ pub mod pallet {
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
-		type BlindedValue: Parameter;
 		type DipCallOriginFilter: DipCallOriginFilter<<Self as Config>::RuntimeCall, Proof = VerificationResultOf<Self>>;
 		type Identifier: Parameter + MaxEncodedLen;
-		type ProofLeaf: Parameter;
+		type Proof: Parameter;
 		type ProofDigest: Parameter + MaxEncodedLen;
 		type ProofVerifier: IdentityProofVerifier<
-			BlindedValue = Self::BlindedValue,
-			ProofDigest = Self::ProofDigest,
-			ProofLeaf = Self::ProofLeaf,
+			<Self as Config>::RuntimeCall,
+			Self::Identifier,
+			Proof = Self::Proof,
+			ProofEntry = Self::ProofDigest,
+			Submitter = <Self as frame_system::Config>::AccountId,
 		>;
 		type RuntimeCall: Parameter + Dispatchable<RuntimeOrigin = <Self as Config>::RuntimeOrigin>;
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
@@ -132,13 +134,19 @@ pub mod pallet {
 		pub fn dispatch_as(
 			origin: OriginFor<T>,
 			identifier: T::Identifier,
-			proof: VersionedIdentityProofOf<T>,
+			proof: T::Proof,
 			call: Box<<T as Config>::RuntimeCall>,
 		) -> DispatchResult {
 			let submitter = ensure_signed(origin)?;
 			let proof_digest = IdentityProofs::<T>::get(&identifier).ok_or(Error::<T>::IdentityNotFound)?;
-			let proof_verification_result = T::ProofVerifier::verify_proof_against_digest(proof, proof_digest)
-				.map_err(|_| Error::<T>::InvalidProof)?;
+			let proof_verification_result = T::ProofVerifier::verify_proof_for_call_against_entry(
+				&*call,
+				&identifier,
+				&submitter,
+				&proof_digest,
+				proof,
+			)
+			.map_err(|_| Error::<T>::InvalidProof)?;
 			// TODO: Better error handling
 			// TODO: Avoid cloning `call`
 			let proof_result = T::DipCallOriginFilter::check_proof(*call.clone(), proof_verification_result)
