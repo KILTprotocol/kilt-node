@@ -16,45 +16,40 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use dip_support::VersionedIdentityProof;
 use sp_std::marker::PhantomData;
 
-pub trait IdentityProofVerifier {
-	type BlindedValue;
+pub trait DipCallProofVerifier<Call> {
 	type Error;
-	type ProofDigest;
-	type ProofLeaf;
-	type VerificationResult;
+	type Proof;
+	type ProofEntry;
+	type Submitter;
+	type Success;
 
-	fn verify_proof_against_digest(
-		proof: VersionedIdentityProof<Self::BlindedValue, Self::ProofLeaf>,
-		digest: Self::ProofDigest,
-	) -> Result<Self::VerificationResult, Self::Error>;
+	fn verify_pre_dispatch(
+		call: &Call,
+		submitter: &Self::Submitter,
+		proof: &Self::Proof,
+		proof_entry: &Self::ProofEntry,
+	) -> Result<Self::Success, Self::Error>;
 }
 
 // Always returns success.
-pub struct SuccessfulProofVerifier<ProofDigest, Leaf, BlindedValue>(PhantomData<(ProofDigest, Leaf, BlindedValue)>);
-impl<ProofDigest, Leaf, BlindedValue> IdentityProofVerifier
-	for SuccessfulProofVerifier<ProofDigest, Leaf, BlindedValue>
+pub struct SuccessfulProofVerifier<Proof, ProofEntry, Submitter>(PhantomData<(Proof, ProofEntry, Submitter)>);
+impl<Proof, ProofEntry, Submitter, Call> DipCallProofVerifier<Call>
+	for SuccessfulProofVerifier<Proof, ProofEntry, Submitter>
 {
-	type BlindedValue = BlindedValue;
 	type Error = ();
-	type ProofDigest = ProofDigest;
-	type ProofLeaf = Leaf;
-	type VerificationResult = ();
+	type Proof = Proof;
+	type ProofEntry = ProofEntry;
+	type Submitter = Submitter;
+	type Success = ();
 
-	fn verify_proof_against_digest(
-		_proof: VersionedIdentityProof<Self::BlindedValue, Self::ProofLeaf>,
-		_digest: Self::ProofDigest,
-	) -> Result<Self::VerificationResult, Self::Error> {
+	fn verify_pre_dispatch(
+		_call: &Call,
+		_submitter: &Self::Submitter,
+		_proof: &Self::Proof,
+		_proof_entry: &Self::ProofEntry,
+	) -> Result<Self::Success, Self::Error> {
 		Ok(())
 	}
-}
-
-pub trait DipCallOriginFilter<Call> {
-	type Error;
-	type Proof;
-	type Success;
-
-	fn check_proof(call: Call, proof: Self::Proof) -> Result<Self::Success, Self::Error>;
 }
