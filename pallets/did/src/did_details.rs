@@ -231,7 +231,6 @@ impl<I: AsRef<[u8; 32]>> DidVerifiableIdentifier for I {
 		}
 	}
 }
-// TODO: what to do if the fees change
 
 /// Details of a public key, which includes the key value and the
 /// block number at which it was set.
@@ -331,12 +330,12 @@ impl<T: Config> DidDetails<T> {
 
 		deposit += match self.attestation_key {
 			Some(_) => T::DepositKey::get(),
-			_ => 0.into(),
+			_ => Zero::zero(),
 		};
 
 		deposit += match self.delegation_key {
 			Some(_) => T::DepositKey::get(),
-			_ => 0.into(),
+			_ => Zero::zero(),
 		};
 
 		deposit

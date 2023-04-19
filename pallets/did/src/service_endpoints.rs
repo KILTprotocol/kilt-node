@@ -31,7 +31,7 @@ use crate::utils as crate_utils;
 pub type ServiceEndpointId<T> = BoundedVec<u8, <T as Config>::MaxServiceIdLength>;
 
 /// A bounded vectors of bytes for a service endpoint type.
-pub(crate) type ServiceEndpointType<T> = BoundedVec<u8, <T as Config>::MaxServiceTypeLength>; // TODO: what are serviceEndpointTypes?
+pub(crate) type ServiceEndpointType<T> = BoundedVec<u8, <T as Config>::MaxServiceTypeLength>;
 /// A bounded vector of [ServiceEndpointType]s.
 pub(crate) type ServiceEndpointTypeEntries<T> =
 	BoundedVec<ServiceEndpointType<T>, <T as Config>::MaxNumberOfTypesPerService>;

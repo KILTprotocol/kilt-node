@@ -80,14 +80,14 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::unused_unit)]
 
-#[cfg(feature = "runtime-benchmarks")]
-pub mod benchmarking;
 pub mod default_weights;
 pub mod did_details;
 pub mod errors;
 pub mod origin;
 pub mod service_endpoints;
 
+#[cfg(feature = "runtime-benchmarks")]
+pub mod benchmarking;
 #[cfg(test)]
 mod mock;
 #[cfg(any(feature = "runtime-benchmarks", test))]
@@ -568,7 +568,6 @@ pub mod pallet {
 			service_endpoints_utils::validate_new_service_endpoints(&input_service_endpoints)
 				.map_err(Error::<T>::from)?;
 
-			log::debug!("Creating DID {:?}", &did_identifier);
 			let mut did_entry =
 				DidDetails::from_creation_details(*details, account_did_auth_key).map_err(Error::<T>::from)?;
 
@@ -581,6 +580,7 @@ pub mod pallet {
 
 			did_entry.update_deposit(&did_identifier)?;
 
+			log::debug!("Creating DID {:?}", &did_identifier);
 			// Withdraw the fee. We made sure that enough balance is available. But if this
 			// fails, we don't withdraw anything.
 			let imbalance = <T::Currency as Currency<AccountIdOf<T>>>::withdraw(
