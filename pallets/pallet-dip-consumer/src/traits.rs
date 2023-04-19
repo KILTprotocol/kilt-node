@@ -28,8 +28,8 @@ pub trait DipCallProofVerifier<Call> {
 	fn verify_pre_dispatch(
 		call: &Call,
 		submitter: &Self::Submitter,
-		proof: &Self::Proof,
 		proof_entry: &Self::ProofEntry,
+		proof: Self::Proof,
 	) -> Result<Self::Success, Self::Error>;
 }
 
@@ -47,8 +47,8 @@ impl<Proof, ProofEntry, Submitter, Call> DipCallProofVerifier<Call>
 	fn verify_pre_dispatch(
 		_call: &Call,
 		_submitter: &Self::Submitter,
-		_proof: &Self::Proof,
 		_proof_entry: &Self::ProofEntry,
+		_proof: Self::Proof,
 	) -> Result<Self::Success, Self::Error> {
 		Ok(())
 	}

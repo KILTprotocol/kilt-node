@@ -139,7 +139,7 @@ pub mod pallet {
 			let submitter = ensure_signed(origin)?;
 			let proof_entry = IdentityProofs::<T>::get(&identifier).ok_or(Error::<T>::IdentityNotFound)?;
 			let proof_verification_result =
-				T::CallProofVerifier::verify_pre_dispatch(&*call, &submitter, &proof, &proof_entry)
+				T::CallProofVerifier::verify_pre_dispatch(&*call, &submitter, &proof_entry, proof)
 					.map_err(|_| Error::<T>::BadOrigin)?;
 			// TODO: Proper DID signature verification (and cross-chain replay protection)
 			let did_origin = DipOrigin {

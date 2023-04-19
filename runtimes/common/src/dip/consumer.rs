@@ -16,15 +16,17 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use crate::{
+	dip::{provider, KeyDetailsKey, KeyDetailsValue, KeyReferenceKey, KeyRelationship, ProofLeaf},
+	AccountId,
+};
 use did::did_details::DidPublicKeyDetails;
 use dip_support::{v1, VersionedIdentityProof};
 use frame_support::RuntimeDebug;
-use pallet_dip_consumer::traits::IdentityProofVerifier;
+use pallet_dip_consumer::traits::DipCallProofVerifier;
 use parity_scale_codec::Encode;
 use sp_std::{collections::btree_map::BTreeMap, marker::PhantomData, vec::Vec};
 use sp_trie::{verify_trie_proof, LayoutV1};
-
-use crate::dip::{provider, KeyDetailsKey, KeyDetailsValue, KeyReferenceKey, KeyRelationship, ProofLeaf};
 
 // TODO: Avoid repetition of the same key if it appears multiple times, e.g., by
 // having a vector of `KeyRelationship` instead.
@@ -45,25 +47,27 @@ impl<BlockNumber> From<Vec<ProofEntry<BlockNumber>>> for VerificationResult<Bloc
 	}
 }
 
-pub struct DidMerkleProofVerifier<KeyId, BlockNumber, Hasher>(PhantomData<(KeyId, BlockNumber, Hasher)>);
+pub struct DidMerkleProofVerifier<KeyId, BlockNumber, Hasher, Call>(PhantomData<(KeyId, BlockNumber, Hasher, Call)>);
 
-impl<KeyId, BlockNumber, Hasher> IdentityProofVerifier for DidMerkleProofVerifier<KeyId, BlockNumber, Hasher>
+impl<KeyId, BlockNumber, Hasher, Call> DipCallProofVerifier<Call>
+	for DidMerkleProofVerifier<KeyId, BlockNumber, Hasher, Call>
 where
 	KeyId: Encode + Clone + Ord,
 	BlockNumber: Encode + Clone + Ord,
 	Hasher: sp_core::Hasher,
 {
-	type BlindedValue = Vec<provider::BlindedValue>;
-	// TODO: Proper error handling
 	type Error = ();
-	type ProofDigest = <Hasher as sp_core::Hasher>::Out;
-	type ProofLeaf = ProofLeaf<KeyId, BlockNumber>;
-	type VerificationResult = VerificationResult<BlockNumber>;
+	type Proof = VersionedIdentityProof<Vec<provider::BlindedValue>, ProofLeaf<KeyId, BlockNumber>>;
+	type ProofEntry = pallet_dip_consumer::proof::ProofEntry<<Hasher as sp_core::Hasher>::Out, u64>;
+	type Submitter = AccountId;
+	type Success = VerificationResult<BlockNumber>;
 
-	fn verify_proof_against_digest(
-		proof: VersionedIdentityProof<Self::BlindedValue, Self::ProofLeaf>,
-		digest: Self::ProofDigest,
-	) -> Result<Self::VerificationResult, Self::Error> {
+	fn verify_pre_dispatch(
+		_call: &Call,
+		_submitter: &Self::Submitter,
+		proof_entry: &Self::ProofEntry,
+		proof: Self::Proof,
+	) -> Result<Self::Success, Self::Error> {
 		let proof: v1::Proof<_, _> = proof.try_into()?;
 		// TODO: more efficient by removing cloning and/or collecting.
 		// Did not find another way of mapping a Vec<(Vec<u8>, Vec<u8>)> to a
@@ -73,7 +77,8 @@ where
 			.iter()
 			.map(|leaf| (leaf.encoded_key(), Some(leaf.encoded_value())))
 			.collect::<Vec<(Vec<u8>, Option<Vec<u8>>)>>();
-		verify_trie_proof::<LayoutV1<Hasher>, _, _, _>(&digest, &proof.blinded, &proof_leaves).map_err(|_| ())?;
+		verify_trie_proof::<LayoutV1<Hasher>, _, _, _>(&proof_entry.digest, &proof.blinded, &proof_leaves)
+			.map_err(|_| ())?;
 
 		// At this point, we know the proof is valid. We just need to map the revealed
 		// leaves to something the consumer can easily operate on.

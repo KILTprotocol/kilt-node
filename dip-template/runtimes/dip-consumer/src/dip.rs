@@ -17,7 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use did::DidVerificationKeyRelationship;
-use pallet_dip_consumer::traits::DipCallOriginFilter;
+use pallet_dip_consumer::{proof::ProofEntry, traits::DipCallProofVerifier};
 use runtime_common::dip::{
 	consumer::{DidMerkleProofVerifier, VerificationResult},
 	ProofLeaf,
@@ -26,13 +26,36 @@ use sp_std::vec::Vec;
 
 use crate::{BlockNumber, DidIdentifier, Hash, Hasher, Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin};
 
+pub struct DipCallFilter<ProofEntry, Submitter>(sp_std::marker::PhantomData<(ProofEntry, Submitter)>);
+
+impl<ProofEntry, Submitter> DipCallProofVerifier<RuntimeCall> for DipCallFilter<ProofEntry, Submitter> {
+	type Error = ();
+	type Proof = VerificationResult<BlockNumber>;
+	type ProofEntry = ProofEntry;
+	type Submitter = Submitter;
+	type Success = ();
+
+	fn verify_pre_dispatch(
+		call: &RuntimeCall,
+		_submitter: &Self::Submitter,
+		_proof_entry: &Self::ProofEntry,
+		proof: Self::Proof,
+	) -> Result<Self::Success, Self::Error> {
+		let key_relationship = single_key_relationship(&[call])?;
+		if proof.0.iter().any(|l| l.relationship == key_relationship.into()) {
+			Ok(())
+		} else {
+			Err(())
+		}
+	}
+}
+
 impl pallet_dip_consumer::Config for Runtime {
-	type BlindedValue = Vec<Vec<u8>>;
-	type DipCallOriginFilter = DipCallFilter;
+	type CallProof = VersionedIdentityProof<Vec<Vec<Vec<u8>>>, ProofLeaf<Hash, BlockNumber>>;
+	type CallProofVerifier = DidMerkleProofVerifier<Hash, BlockNumber, Hasher, RuntimeCall>;
 	type Identifier = DidIdentifier;
-	type ProofLeaf = ProofLeaf<Hash, BlockNumber>;
+	type IdentityDetails = ();
 	type ProofDigest = Hash;
-	type ProofVerifier = DidMerkleProofVerifier<Hash, BlockNumber, Hasher>;
 	type RuntimeCall = RuntimeCall;
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeOrigin = RuntimeOrigin;
@@ -64,24 +87,6 @@ fn single_key_relationship(calls: &[RuntimeCall]) -> Result<DidVerificationKeyRe
 				Err(())
 			}
 		})
-}
-
-pub struct DipCallFilter;
-
-impl DipCallOriginFilter<RuntimeCall> for DipCallFilter {
-	type Error = ();
-	type Proof = VerificationResult<BlockNumber>;
-	type Success = ();
-
-	// Accepts only a DipOrigin for the DidLookup pallet calls.
-	fn check_proof(call: RuntimeCall, proof: Self::Proof) -> Result<Self::Success, Self::Error> {
-		let key_relationship = single_key_relationship(&[call])?;
-		if proof.0.iter().any(|l| l.relationship == key_relationship.into()) {
-			Ok(())
-		} else {
-			Err(())
-		}
-	}
 }
 
 #[cfg(test)]
