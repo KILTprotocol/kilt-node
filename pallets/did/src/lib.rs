@@ -567,10 +567,16 @@ pub mod pallet {
 			service_endpoints_utils::validate_new_service_endpoints(&input_service_endpoints)
 				.map_err(Error::<T>::from)?;
 
+			log::debug!("Creating DID {:?}", &did_identifier);
 			let mut did_entry =
 				DidDetails::from_creation_details(*details, account_did_auth_key).map_err(Error::<T>::from)?;
 
-			// *** No Fail beyond this call ***
+			Did::<T>::insert(&did_identifier, did_entry.clone());
+
+			input_service_endpoints.iter().for_each(|service| {
+				ServiceEndpoints::<T>::insert(&did_identifier, &service.id, service.clone());
+			});
+			DidEndpointsCount::<T>::insert(&did_identifier, input_service_endpoints.len().saturated_into::<u32>());
 
 			did_entry.update_deposit(&did_identifier)?;
 
@@ -583,17 +589,7 @@ pub mod pallet {
 				ExistenceRequirement::AllowDeath,
 			)
 			.unwrap_or_else(|_| NegativeImbalanceOf::<T>::zero());
-
-			log::debug!("Creating DID {:?}", &did_identifier);
 			T::FeeCollector::on_unbalanced(imbalance);
-
-			Did::<T>::insert(&did_identifier, did_entry);
-
-			input_service_endpoints.iter().for_each(|service| {
-				ServiceEndpoints::<T>::insert(&did_identifier, &service.id, service.clone());
-			});
-			DidEndpointsCount::<T>::insert(&did_identifier, input_service_endpoints.len().saturated_into::<u32>());
-
 			Self::deposit_event(Event::DidCreated(sender, did_identifier));
 
 			Ok(())

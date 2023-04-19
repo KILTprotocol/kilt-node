@@ -274,9 +274,6 @@ fn check_successful_complete_creation() {
 				details.new_service_details.len()
 			);
 
-			let a = Balances::reserved_balance(ACCOUNT_00);
-			let b = Balances::free_balance(ACCOUNT_00);
-			// TODO!
 			assert_eq!(
 				Balances::reserved_balance(ACCOUNT_00),
 				<Test as did::Config>::BaseDeposit::get()
@@ -284,8 +281,7 @@ fn check_successful_complete_creation() {
 					+ required_balance_for_key_agreement
 					+ required_balance_for_keys
 			);
-			// assert_eq!(Balances::free_balance(ACCOUNT_FEE), <Test as
-			// did::Config>::Fee::get());
+			assert_eq!(Balances::free_balance(ACCOUNT_FEE), <Test as did::Config>::Fee::get());
 		});
 }
 
