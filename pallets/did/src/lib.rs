@@ -1290,8 +1290,12 @@ pub mod pallet {
 			Ok(did_entry.deposit)
 		}
 
-		fn deposit_amount(_key: &DidIdentifierOf<T>) -> <Self::Currency as Currency<AccountIdOf<T>>>::Balance {
-			T::Deposit::get()
+		fn deposit_amount(key: &DidIdentifierOf<T>) -> <Self::Currency as Currency<AccountIdOf<T>>>::Balance {
+			let did_entry = Did::<T>::get(key);
+			match did_entry {
+				Some(entry) => entry.deposit.amount,
+				_ => <T as Config>::BaseDeposit::get(),
+			}
 		}
 
 		fn store_deposit(

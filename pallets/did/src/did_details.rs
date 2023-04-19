@@ -320,7 +320,7 @@ impl<T: Config> DidDetails<T> {
 	where
 		BalanceOf<T>: From<u32>,
 	{
-		let mut deposit: BalanceOf<T> = T::DepositKey::get();
+		let mut deposit: BalanceOf<T> = T::BaseDeposit::get();
 
 		let count_key_agreements: BalanceOf<T> = (self.key_agreement_keys.len() as u32).into();
 		deposit += count_key_agreements * T::DepositKey::get();

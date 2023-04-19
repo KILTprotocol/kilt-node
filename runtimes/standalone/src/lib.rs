@@ -387,7 +387,6 @@ parameter_types! {
 	pub const MaxEndpointUrlsCount: u32 = constants::did::MAX_ENDPOINT_URLS_COUNT;
 	// Standalone block time is half the duration of a parachain block.
 	pub const MaxBlocksTxValidity: BlockNumber = constants::did::MAX_BLOCKS_TX_VALIDITY * 2;
-	pub const DidDeposit: Balance = constants::did::DID_DEPOSIT;
 	pub const DidFee: Balance = constants::did::DID_FEE;
 	pub const MaxNumberOfServicesPerDid: u32 = constants::did::MAX_NUMBER_OF_SERVICES_PER_DID;
 	pub const MaxServiceIdLength: u32 = constants::did::MAX_SERVICE_ID_LENGTH;
