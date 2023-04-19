@@ -327,7 +327,8 @@ pub mod did {
 	/// The length of all used Keys.
 	pub const KEY_DID_BYTE_LENGTH: u32 = 32;
 
-	pub const MAX_SERVICE_ENDPOINT_BYTE_LENGTH: u32 = MAX_URL_LENGTH + MAX_SERVICE_ID_LENGTH + MAX_SERVICE_TYPE_LENGTH;
+	pub const MAX_SERVICE_ENDPOINT_BYTE_LENGTH: u32 =
+		MAX_SERVICE_URL_LENGTH + MAX_SERVICE_ID_LENGTH + MAX_SERVICE_TYPE_LENGTH;
 
 	pub const DID_BASE_DEPOSIT: Balance = deposit(1, MIN_DID_BYTE_LENGTH);
 	pub const KEY_DEPOSIT: Balance = deposit(0, 32);

@@ -48,7 +48,7 @@ fn check_successful_simple_ed25519_creation() {
 
 	let signature = auth_key.sign(details.encode().as_ref());
 
-	let balance = <Test as did::Config>::Deposit::get()
+	let balance = <Test as did::Config>::BaseDeposit::get()
 		+ <Test as did::Config>::Fee::get()
 		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
@@ -75,7 +75,7 @@ fn check_successful_simple_ed25519_creation() {
 			assert_eq!(stored_did.last_tx_counter, 0u64);
 			assert_eq!(
 				Balances::reserved_balance(ACCOUNT_00),
-				<Test as did::Config>::Deposit::get()
+				<Test as did::Config>::BaseDeposit::get()
 			);
 			assert_eq!(Balances::free_balance(ACCOUNT_FEE), <Test as did::Config>::Fee::get());
 		});
@@ -90,7 +90,7 @@ fn check_successful_simple_sr25519_creation() {
 
 	let signature = auth_key.sign(details.encode().as_ref());
 
-	let balance = <Test as did::Config>::Deposit::get()
+	let balance = <Test as did::Config>::BaseDeposit::get()
 		+ <Test as did::Config>::Fee::get()
 		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
@@ -117,7 +117,7 @@ fn check_successful_simple_sr25519_creation() {
 			assert_eq!(stored_did.last_tx_counter, 0u64);
 			assert_eq!(
 				Balances::reserved_balance(ACCOUNT_00),
-				<Test as did::Config>::Deposit::get()
+				<Test as did::Config>::BaseDeposit::get()
 			);
 			assert_eq!(Balances::free_balance(ACCOUNT_FEE), <Test as did::Config>::Fee::get());
 		});
@@ -132,7 +132,7 @@ fn check_successful_simple_ecdsa_creation() {
 
 	let signature = auth_key.sign(details.encode().as_ref());
 
-	let balance = <Test as did::Config>::Deposit::get()
+	let balance = <Test as did::Config>::BaseDeposit::get()
 		+ <Test as did::Config>::Fee::get()
 		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
@@ -159,7 +159,7 @@ fn check_successful_simple_ecdsa_creation() {
 			assert_eq!(stored_did.last_tx_counter, 0u64);
 			assert_eq!(
 				Balances::reserved_balance(ACCOUNT_00),
-				<Test as did::Config>::Deposit::get()
+				<Test as did::Config>::BaseDeposit::get()
 			);
 			assert_eq!(Balances::free_balance(ACCOUNT_FEE), <Test as did::Config>::Fee::get());
 		});
@@ -193,7 +193,7 @@ fn check_successful_complete_creation() {
 	);
 	let signature = auth_key.sign(details.encode().as_ref());
 
-	let balance = <Test as did::Config>::Deposit::get()
+	let balance = <Test as did::Config>::BaseDeposit::get()
 		+ <Test as did::Config>::Fee::get()
 		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
@@ -265,7 +265,7 @@ fn check_successful_complete_creation() {
 
 			assert_eq!(
 				Balances::reserved_balance(ACCOUNT_00),
-				<Test as did::Config>::Deposit::get()
+				<Test as did::Config>::BaseDeposit::get()
 			);
 			assert_eq!(Balances::free_balance(ACCOUNT_FEE), <Test as did::Config>::Fee::get());
 		});
@@ -281,7 +281,7 @@ fn check_duplicate_did_creation() {
 
 	let signature = auth_key.sign(details.encode().as_ref());
 
-	let balance = <Test as did::Config>::Deposit::get() * 20
+	let balance = <Test as did::Config>::BaseDeposit::get() * 20
 		+ <Test as did::Config>::Fee::get()
 		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
@@ -311,7 +311,7 @@ fn check_unauthorised_submitter_did_creation_error() {
 
 	let signature = auth_key.sign(details.encode().as_ref());
 
-	let balance = <Test as did::Config>::Deposit::get()
+	let balance = <Test as did::Config>::BaseDeposit::get()
 		+ <Test as did::Config>::Fee::get()
 		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
@@ -359,7 +359,7 @@ fn check_did_already_deleted_creation() {
 
 	let signature = auth_key.sign(details.encode().as_ref());
 
-	let balance = <Test as did::Config>::Deposit::get()
+	let balance = <Test as did::Config>::BaseDeposit::get()
 		+ <Test as did::Config>::Fee::get()
 		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
@@ -389,7 +389,7 @@ fn check_invalid_signature_format_did_creation() {
 
 	let signature = invalid_key.sign(details.encode().as_ref());
 
-	let balance = <Test as did::Config>::Deposit::get()
+	let balance = <Test as did::Config>::BaseDeposit::get()
 		+ <Test as did::Config>::Fee::get()
 		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
@@ -416,7 +416,7 @@ fn check_invalid_signature_did_creation() {
 
 	let signature = alternative_key.sign(details.encode().as_ref());
 
-	let balance = <Test as did::Config>::Deposit::get()
+	let balance = <Test as did::Config>::BaseDeposit::get()
 		+ <Test as did::Config>::Fee::get()
 		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
@@ -443,7 +443,7 @@ fn check_swapped_did_subject_did_creation() {
 
 	let signature = auth_key.sign(details.encode().as_ref());
 
-	let balance = <Test as did::Config>::Deposit::get()
+	let balance = <Test as did::Config>::BaseDeposit::get()
 		+ <Test as did::Config>::Fee::get()
 		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
@@ -473,7 +473,7 @@ fn check_max_limit_key_agreement_keys_did_creation() {
 
 	let signature = auth_key.sign(details.encode().as_ref());
 
-	let balance = <Test as did::Config>::Deposit::get()
+	let balance = <Test as did::Config>::BaseDeposit::get()
 		+ <Test as did::Config>::Fee::get()
 		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
@@ -507,7 +507,7 @@ fn check_max_limit_service_endpoints_count_did_creation() {
 
 	let signature = auth_key.sign(details.encode().as_ref());
 
-	let balance = <Test as did::Config>::Deposit::get()
+	let balance = <Test as did::Config>::BaseDeposit::get()
 		+ <Test as did::Config>::Fee::get()
 		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
@@ -536,7 +536,7 @@ fn check_max_limit_service_id_length_did_creation() {
 
 	let signature = auth_key.sign(details.encode().as_ref());
 
-	let balance = <Test as did::Config>::Deposit::get()
+	let balance = <Test as did::Config>::BaseDeposit::get()
 		+ <Test as did::Config>::Fee::get()
 		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
@@ -571,7 +571,7 @@ fn check_max_limit_service_type_count_did_creation() {
 
 	let signature = auth_key.sign(details.encode().as_ref());
 
-	let balance = <Test as did::Config>::Deposit::get()
+	let balance = <Test as did::Config>::BaseDeposit::get()
 		+ <Test as did::Config>::Fee::get()
 		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
@@ -600,7 +600,7 @@ fn check_max_limit_service_type_length_did_creation() {
 
 	let signature = auth_key.sign(details.encode().as_ref());
 
-	let balance = <Test as did::Config>::Deposit::get()
+	let balance = <Test as did::Config>::BaseDeposit::get()
 		+ <Test as did::Config>::Fee::get()
 		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
@@ -635,7 +635,7 @@ fn check_max_limit_service_url_count_did_creation() {
 
 	let signature = auth_key.sign(details.encode().as_ref());
 
-	let balance = <Test as did::Config>::Deposit::get()
+	let balance = <Test as did::Config>::BaseDeposit::get()
 		+ <Test as did::Config>::Fee::get()
 		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
@@ -664,7 +664,7 @@ fn check_max_limit_service_url_length_did_creation() {
 
 	let signature = auth_key.sign(details.encode().as_ref());
 
-	let balance = <Test as did::Config>::Deposit::get()
+	let balance = <Test as did::Config>::BaseDeposit::get()
 		+ <Test as did::Config>::Fee::get()
 		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
@@ -706,7 +706,7 @@ fn check_invalid_service_id_character_did_creation() {
 
 	let signature = auth_key.sign(details.encode().as_ref());
 
-	let balance = <Test as did::Config>::Deposit::get()
+	let balance = <Test as did::Config>::BaseDeposit::get()
 		+ <Test as did::Config>::Fee::get()
 		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
@@ -734,7 +734,7 @@ fn check_invalid_service_type_character_did_creation() {
 
 	let signature = auth_key.sign(details.encode().as_ref());
 
-	let balance = <Test as did::Config>::Deposit::get()
+	let balance = <Test as did::Config>::BaseDeposit::get()
 		+ <Test as did::Config>::Fee::get()
 		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
@@ -762,7 +762,7 @@ fn check_invalid_service_url_character_did_creation() {
 
 	let signature = auth_key.sign(details.encode().as_ref());
 
-	let balance = <Test as did::Config>::Deposit::get()
+	let balance = <Test as did::Config>::BaseDeposit::get()
 		+ <Test as did::Config>::Fee::get()
 		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
@@ -2069,9 +2069,9 @@ fn check_successful_deletion_no_endpoints() {
 
 	let mut did_details = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()));
 	did_details.deposit.owner = ACCOUNT_00;
-	did_details.deposit.amount = <Test as did::Config>::Deposit::get();
+	did_details.deposit.amount = <Test as did::Config>::BaseDeposit::get();
 
-	let balance = <Test as did::Config>::Deposit::get() * 2
+	let balance = <Test as did::Config>::BaseDeposit::get() * 2
 		+ <Test as did::Config>::Fee::get() * 2
 		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
 
@@ -2083,7 +2083,7 @@ fn check_successful_deletion_no_endpoints() {
 			assert_eq!(did::pallet::DidEndpointsCount::<Test>::get(&alice_did), 0);
 			assert_eq!(
 				Balances::reserved_balance(ACCOUNT_00),
-				<Test as did::Config>::Deposit::get()
+				<Test as did::Config>::BaseDeposit::get()
 			);
 			assert_ok!(Did::delete(RuntimeOrigin::signed(alice_did.clone()), 0));
 			assert!(Did::get_did(alice_did.clone()).is_none());
@@ -2116,9 +2116,9 @@ fn check_successful_deletion_with_endpoints() {
 
 	let mut did_details = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()));
 	did_details.deposit.owner = ACCOUNT_00;
-	did_details.deposit.amount = <Test as did::Config>::Deposit::get();
+	did_details.deposit.amount = <Test as did::Config>::BaseDeposit::get();
 
-	let balance = <Test as did::Config>::Deposit::get() * 2
+	let balance = <Test as did::Config>::BaseDeposit::get() * 2
 		+ <Test as did::Config>::Fee::get() * 2
 		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
 
@@ -2131,7 +2131,7 @@ fn check_successful_deletion_with_endpoints() {
 			assert_eq!(did::pallet::DidEndpointsCount::<Test>::get(&alice_did), 1);
 			assert_eq!(
 				Balances::reserved_balance(ACCOUNT_00),
-				<Test as did::Config>::Deposit::get()
+				<Test as did::Config>::BaseDeposit::get()
 			);
 			assert_ok!(Did::delete(RuntimeOrigin::signed(alice_did.clone()), 1));
 			assert!(Did::get_did(alice_did.clone()).is_none());
@@ -2161,7 +2161,7 @@ fn check_did_not_present_deletion() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 
-	let balance = <Test as did::Config>::Deposit::get()
+	let balance = <Test as did::Config>::BaseDeposit::get()
 		+ <Test as did::Config>::Fee::get()
 		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
@@ -2183,9 +2183,9 @@ fn check_service_count_too_small_deletion_error() {
 
 	let mut did_details = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()));
 	did_details.deposit.owner = ACCOUNT_00;
-	did_details.deposit.amount = <Test as did::Config>::Deposit::get();
+	did_details.deposit.amount = <Test as did::Config>::BaseDeposit::get();
 
-	let balance = <Test as did::Config>::Deposit::get() * 2
+	let balance = <Test as did::Config>::BaseDeposit::get() * 2
 		+ <Test as did::Config>::Fee::get() * 2
 		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
 
@@ -2211,9 +2211,9 @@ fn check_successful_reclaiming() {
 	let old_service_endpoint = DidEndpoint::new(b"id".to_vec(), vec![b"type".to_vec()], vec![b"url".to_vec()]);
 	let mut did_details = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()));
 	did_details.deposit.owner = ACCOUNT_00;
-	did_details.deposit.amount = <Test as did::Config>::Deposit::get();
+	did_details.deposit.amount = <Test as did::Config>::BaseDeposit::get();
 
-	let balance = <Test as did::Config>::Deposit::get() * 2
+	let balance = <Test as did::Config>::BaseDeposit::get() * 2
 		+ <Test as did::Config>::Fee::get() * 2
 		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
 
@@ -2226,7 +2226,7 @@ fn check_successful_reclaiming() {
 			assert_eq!(did::pallet::DidEndpointsCount::<Test>::get(&alice_did), 1);
 			assert_eq!(
 				Balances::reserved_balance(ACCOUNT_00),
-				<Test as did::Config>::Deposit::get()
+				<Test as did::Config>::BaseDeposit::get()
 			);
 			assert_ok!(Did::reclaim_deposit(
 				RuntimeOrigin::signed(ACCOUNT_00.clone()),
@@ -2260,9 +2260,9 @@ fn unauthorized_reclaiming() {
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let mut did_details = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()));
 	did_details.deposit.owner = ACCOUNT_00;
-	did_details.deposit.amount = <Test as did::Config>::Deposit::get();
+	did_details.deposit.amount = <Test as did::Config>::BaseDeposit::get();
 
-	let balance = <Test as did::Config>::Deposit::get()
+	let balance = <Test as did::Config>::BaseDeposit::get()
 		+ <Test as did::Config>::Fee::get()
 		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
 
@@ -2273,7 +2273,7 @@ fn unauthorized_reclaiming() {
 		.execute_with(|| {
 			assert_eq!(
 				Balances::reserved_balance(ACCOUNT_00),
-				<Test as did::Config>::Deposit::get()
+				<Test as did::Config>::BaseDeposit::get()
 			);
 			assert_noop!(
 				Did::reclaim_deposit(RuntimeOrigin::signed(ACCOUNT_01.clone()), alice_did.clone(), 0),
@@ -2290,9 +2290,9 @@ fn check_service_count_too_small_reclaim_error() {
 
 	let mut did_details = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()));
 	did_details.deposit.owner = ACCOUNT_00;
-	did_details.deposit.amount = <Test as did::Config>::Deposit::get();
+	did_details.deposit.amount = <Test as did::Config>::BaseDeposit::get();
 
-	let balance = <Test as did::Config>::Deposit::get() * 2
+	let balance = <Test as did::Config>::BaseDeposit::get() * 2
 		+ <Test as did::Config>::Fee::get() * 2
 		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
 
@@ -3177,9 +3177,9 @@ fn test_change_deposit_owner() {
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let mut did_details = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()));
 	did_details.deposit.owner = ACCOUNT_00;
-	did_details.deposit.amount = <Test as did::Config>::Deposit::get();
+	did_details.deposit.amount = <Test as did::Config>::BaseDeposit::get();
 
-	let balance = <Test as did::Config>::Deposit::get() * 2
+	let balance = <Test as did::Config>::BaseDeposit::get() * 2
 		+ <Test as did::Config>::Fee::get() * 2
 		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
 
@@ -3190,13 +3190,13 @@ fn test_change_deposit_owner() {
 		.execute_with(|| {
 			assert_eq!(
 				Balances::reserved_balance(ACCOUNT_00),
-				<Test as did::Config>::Deposit::get()
+				<Test as did::Config>::BaseDeposit::get()
 			);
 			assert_ok!(Did::change_deposit_owner(RuntimeOrigin::signed(alice_did.clone())));
 			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
 			assert_eq!(
 				Balances::reserved_balance(alice_did),
-				<Test as did::Config>::Deposit::get()
+				<Test as did::Config>::BaseDeposit::get()
 			);
 		});
 }
@@ -3207,9 +3207,9 @@ fn test_change_deposit_owner_insufficient_balance() {
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let mut did_details = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()));
 	did_details.deposit.owner = ACCOUNT_00;
-	did_details.deposit.amount = <Test as did::Config>::Deposit::get();
+	did_details.deposit.amount = <Test as did::Config>::BaseDeposit::get();
 
-	let balance = <Test as did::Config>::Deposit::get() * 2
+	let balance = <Test as did::Config>::BaseDeposit::get() * 2
 		+ <Test as did::Config>::Fee::get() * 2
 		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
 
@@ -3230,7 +3230,7 @@ fn test_change_deposit_owner_not_found() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 
-	let balance = <Test as did::Config>::Deposit::get() * 2
+	let balance = <Test as did::Config>::BaseDeposit::get() * 2
 		+ <Test as did::Config>::Fee::get() * 2
 		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
 
@@ -3252,7 +3252,7 @@ fn test_change_deposit_owner_not_authorized() {
 	let alice_did = get_did_identifier_from_ed25519_key(alice_auth_key.public());
 	let bob_did = get_did_identifier_from_ed25519_key(bob_auth_key.public());
 
-	let balance = <Test as did::Config>::Deposit::get() * 2
+	let balance = <Test as did::Config>::BaseDeposit::get() * 2
 		+ <Test as did::Config>::Fee::get() * 2
 		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
 
@@ -3274,9 +3274,9 @@ fn test_update_deposit() {
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let mut did_details = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()));
 	did_details.deposit.owner = alice_did.clone();
-	did_details.deposit.amount = <Test as did::Config>::Deposit::get() * 2;
+	did_details.deposit.amount = <Test as did::Config>::BaseDeposit::get();
 
-	let balance = <Test as did::Config>::Deposit::get() * 2
+	let balance = <Test as did::Config>::BaseDeposit::get() * 2
 		+ <Test as did::Config>::Fee::get() * 2
 		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
 
@@ -3287,15 +3287,16 @@ fn test_update_deposit() {
 		.execute_with(|| {
 			assert_eq!(
 				Balances::reserved_balance(alice_did.clone()),
-				<Test as did::Config>::Deposit::get() * 2
+				<Test as did::Config>::BaseDeposit::get() * 2
 			);
 			assert_ok!(Did::update_deposit(
 				RuntimeOrigin::signed(alice_did.clone()),
 				alice_did.clone()
 			));
+
 			assert_eq!(
 				Balances::reserved_balance(alice_did.clone()),
-				<Test as did::Config>::Deposit::get()
+				<Test as did::Config>::BaseDeposit::get()
 			);
 			assert_eq!(
 				Did::get_did(&alice_did)
@@ -3303,7 +3304,7 @@ fn test_update_deposit() {
 					.deposit,
 				kilt_support::deposit::Deposit {
 					owner: alice_did,
-					amount: <Test as did::Config>::Deposit::get(),
+					amount: <Test as did::Config>::BaseDeposit::get(),
 				}
 			);
 		});
@@ -3319,9 +3320,9 @@ fn test_update_deposit_unauthorized() {
 
 	let mut did_details = generate_base_did_details::<Test>(DidVerificationKey::from(alice_auth_key.public()));
 	did_details.deposit.owner = alice_did.clone();
-	did_details.deposit.amount = <Test as did::Config>::Deposit::get() * 2;
+	did_details.deposit.amount = <Test as did::Config>::BaseDeposit::get() * 2;
 
-	let balance = <Test as did::Config>::Deposit::get() * 2
+	let balance = <Test as did::Config>::BaseDeposit::get() * 2
 		+ <Test as did::Config>::Fee::get() * 2
 		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
 
@@ -3332,7 +3333,7 @@ fn test_update_deposit_unauthorized() {
 		.execute_with(|| {
 			assert_eq!(
 				Balances::reserved_balance(alice_did.clone()),
-				<Test as did::Config>::Deposit::get() * 2
+				<Test as did::Config>::BaseDeposit::get() * 2
 			);
 			assert_noop!(
 				Did::update_deposit(RuntimeOrigin::signed(bob_did.clone()), alice_did.clone()),
