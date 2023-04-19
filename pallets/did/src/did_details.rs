@@ -369,7 +369,6 @@ impl<T: Config> DidDetails<T> {
 			self.release_deposit(deposit_to_release);
 			self.deposit.amount -= deposit_to_release;
 		}
-
 		Ok(())
 	}
 
@@ -404,7 +403,6 @@ impl<T: Config> DidDetails<T> {
 		if let Some(delegation_key) = details.new_delegation_key {
 			new_did_details.update_delegation_key(delegation_key, current_block_number)?;
 		}
-
 		Ok(new_did_details)
 	}
 
@@ -434,7 +432,6 @@ impl<T: Config> DidDetails<T> {
 				},
 			)
 			.map_err(|_| errors::StorageError::MaxPublicKeysExceeded)?;
-
 		Ok(())
 	}
 
@@ -449,7 +446,6 @@ impl<T: Config> DidDetails<T> {
 		for new_key_agreement_key in new_key_agreement_keys {
 			self.add_key_agreement_key(new_key_agreement_key, block_number)?;
 		}
-
 		Ok(())
 	}
 
@@ -474,7 +470,6 @@ impl<T: Config> DidDetails<T> {
 		self.key_agreement_keys
 			.try_insert(new_key_agreement_id)
 			.map_err(|_| errors::StorageError::MaxTotalKeyAgreementKeysExceeded)?;
-
 		Ok(())
 	}
 
@@ -486,7 +481,6 @@ impl<T: Config> DidDetails<T> {
 			errors::StorageError::NotFound(errors::NotFoundKind::Key(errors::KeyType::KeyAgreement))
 		);
 		self.remove_key_if_unused(key_id);
-
 		Ok(())
 	}
 
@@ -514,7 +508,6 @@ impl<T: Config> DidDetails<T> {
 				},
 			)
 			.map_err(|_| errors::StorageError::MaxPublicKeysExceeded)?;
-
 		Ok(())
 	}
 
@@ -531,7 +524,6 @@ impl<T: Config> DidDetails<T> {
 					errors::KeyType::AssertionMethod,
 				)))?;
 		self.remove_key_if_unused(old_key_id);
-
 		Ok(())
 	}
 
@@ -559,7 +551,6 @@ impl<T: Config> DidDetails<T> {
 				},
 			)
 			.map_err(|_| errors::StorageError::MaxPublicKeysExceeded)?;
-
 		Ok(())
 	}
 
@@ -576,7 +567,6 @@ impl<T: Config> DidDetails<T> {
 					errors::KeyType::AssertionMethod,
 				)))?;
 		self.remove_key_if_unused(old_key_id);
-
 		Ok(())
 	}
 
