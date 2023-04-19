@@ -100,7 +100,6 @@ pub enum DidEncryptionKey {
 /// A general public key under the control of the DID.
 #[derive(Clone, Decode, RuntimeDebug, Encode, Eq, Ord, PartialEq, PartialOrd, TypeInfo, MaxEncodedLen)]
 pub enum DidPublicKey {
-	// enum itself 1 byte
 	/// A verification key, used to generate and verify signatures.
 	PublicVerificationKey(DidVerificationKey),
 	/// An encryption key, used to encrypt and decrypt payloads.
@@ -244,9 +243,9 @@ impl<I: AsRef<[u8; 32]>> DidVerifiableIdentifier for I {
 #[codec(mel_bound())]
 pub struct DidPublicKeyDetails<BlockNumber: MaxEncodedLen> {
 	/// A public key the DID controls.
-	pub key: DidPublicKey, // 64 bytes
+	pub key: DidPublicKey,
 	/// The block number in which the verification key was added to the DID.
-	pub block_number: BlockNumber, //  16 bytes
+	pub block_number: BlockNumber,
 }
 
 /// The details associated to a DID identity.
@@ -254,21 +253,19 @@ pub struct DidPublicKeyDetails<BlockNumber: MaxEncodedLen> {
 #[scale_info(skip_type_params(T))]
 #[codec(mel_bound())]
 
-// max bytes: 2968
 pub struct DidDetails<T: Config> {
-	// 120 bytes + 112 bytes * x where 0 =< x =< 20
 	/// The ID of the authentication key, used to authenticate DID-related
 	/// operations.
-	pub authentication_key: KeyIdOf<T>, // 32 bytes
+	pub authentication_key: KeyIdOf<T>,
 	/// The set of the key agreement key IDs, which can be used to encrypt
 	/// data addressed to the DID subject.
-	pub key_agreement_keys: DidKeyAgreementKeySet<T>, // each entry has 32 bytes max 608
+	pub key_agreement_keys: DidKeyAgreementKeySet<T>,
 	/// \[OPTIONAL\] The ID of the delegation key, used to verify the
 	/// signatures of the delegations created by the DID subject.
-	pub delegation_key: Option<KeyIdOf<T>>, // 32 bytes
+	pub delegation_key: Option<KeyIdOf<T>>,
 	/// \[OPTIONAL\] The ID of the attestation key, used to verify the
 	/// signatures of the attestations created by the DID subject.
-	pub attestation_key: Option<KeyIdOf<T>>, // 32 bytes
+	pub attestation_key: Option<KeyIdOf<T>>,
 	/// The map of public keys, with the key label as
 	/// the key map and the tuple (key, addition_block_number) as the map
 	/// value.
@@ -278,14 +275,14 @@ pub struct DidDetails<T: Config> {
 	/// the old attestation keys that have been rotated, i.e., they cannot
 	/// be used to create new attestations but can still be used to verify
 	/// previously issued attestations.
-	pub public_keys: DidPublicKeyMap<T>, // each entry has ~112 bytes max 2240
+	pub public_keys: DidPublicKeyMap<T>,
 	/// The counter used to avoid replay attacks, which is checked and
 	/// updated upon each DID operation involving with the subject as the
 	/// creator.
-	pub last_tx_counter: u64, // 8 bytes
+	pub last_tx_counter: u64,
 	/// The deposit that was taken to incentivise fair use of the on chain
 	/// storage.
-	pub deposit: Deposit<AccountIdOf<T>, BalanceOf<T>>, // 16 bytes
+	pub deposit: Deposit<AccountIdOf<T>, BalanceOf<T>>,
 }
 
 impl<T: Config> DidDetails<T> {
@@ -636,17 +633,17 @@ pub(crate) type DidPublicKeyMap<T> =
 
 pub struct DidCreationDetails<T: Config> {
 	/// The DID identifier. It has to be unique.
-	pub did: DidIdentifierOf<T>, // 32 bytes
+	pub did: DidIdentifierOf<T>,
 	/// The authorised submitter of the creation operation.
-	pub submitter: AccountIdOf<T>, // 32 bytes ?
+	pub submitter: AccountIdOf<T>,
 	/// The new key agreement keys.
-	pub new_key_agreement_keys: DidNewKeyAgreementKeySet<T>, // each 32 bytes max 608
+	pub new_key_agreement_keys: DidNewKeyAgreementKeySet<T>,
 	/// \[OPTIONAL\] The new attestation key.
-	pub new_attestation_key: Option<DidVerificationKey>, // 32 bytes
+	pub new_attestation_key: Option<DidVerificationKey>,
 	/// \[OPTIONAL\] The new delegation key.
-	pub new_delegation_key: Option<DidVerificationKey>, // 32 bytes
+	pub new_delegation_key: Option<DidVerificationKey>,
 	/// The service endpoints details.
-	pub new_service_details: Vec<DidEndpoint<T>>, // each ~250 bytes max 6250
+	pub new_service_details: Vec<DidEndpoint<T>>,
 }
 
 /// Errors that might occur while deriving the authorization verification key

@@ -47,14 +47,13 @@ pub(crate) type ServiceEndpointUrlEntries<T> =
 #[scale_info(skip_type_params(T))]
 #[codec(mel_bound())]
 pub struct DidEndpoint<T: Config> {
-	// ~ 250 bytes
 	/// The ID of the service endpoint. Allows the endpoint to be queried and
 	/// resolved directly.
-	pub id: ServiceEndpointId<T>, // 50 bytes
+	pub id: ServiceEndpointId<T>,
 	/// A vector of types description for the service.
 	pub service_types: ServiceEndpointTypeEntries<T>,
 	/// A vector of URLs the service points to.
-	pub urls: ServiceEndpointUrlEntries<T>, // 200 bytes
+	pub urls: ServiceEndpointUrlEntries<T>,
 }
 
 impl<T: Config> DidEndpoint<T> {
