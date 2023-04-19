@@ -217,15 +217,16 @@ pub mod pallet {
 		type Currency: ReservableCurrency<AccountIdOf<Self>>;
 
 		/// The amount of balance that will be taken for each DID as a deposit
-		/// to incentivise fair use of the on chain storage. The deposit can be
-		/// reclaimed when the DID is deleted.
+		/// to incentivise fair use of the on chain storage. The deposits
+		/// increase by the amount of used keys and service endpoints. The
+		/// deposit can be reclaimed when the DID is deleted.
 		#[pallet::constant]
 		type BaseDeposit: Get<BalanceOf<Self>>;
 
-		// TODO: Check comments.
 		/// The amount of balance that will be taken for each service endpoint
 		/// as a deposit to incentivise fair use of the on chain storage. The
-		/// deposit can be reclaimed when the service endpoint is removed.
+		/// deposit can be reclaimed when the service endpoint is removed or the
+		/// DID deleted.
 		#[pallet::constant]
 		type DepositServiceEndpoint: Get<BalanceOf<Self>>;
 
@@ -614,7 +615,7 @@ pub mod pallet {
 		#[pallet::call_index(1)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::set_ed25519_authentication_key().max(<T as pallet::Config>::WeightInfo::set_sr25519_authentication_key()).max(<T as pallet::Config>::WeightInfo::set_ecdsa_authentication_key()))]
 		pub fn set_authentication_key(origin: OriginFor<T>, new_key: DidVerificationKey) -> DispatchResult {
-			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject(); //Todo: what is subject? ensure_origin?
+			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
 			let mut did_details = Did::<T>::get(&did_subject).ok_or(Error::<T>::NotFound)?;
 
 			log::debug!(
