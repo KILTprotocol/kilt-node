@@ -90,9 +90,9 @@ fn get_ecdsa_public_delegation_key() -> ecdsa::Public {
 
 fn make_free_for_did<T: Config>(account: &AccountIdOf<T>) {
 	let balance = <CurrencyOf<T> as Currency<AccountIdOf<T>>>::minimum_balance()
-		+ <T as Config>::Deposit::get()
-		+ <T as Config>::Deposit::get()
-		+ <T as Config>::Deposit::get()
+		+ <T as Config>::BaseDeposit::get()
+		+ <T as Config>::BaseDeposit::get()
+		+ <T as Config>::BaseDeposit::get()
 		+ <T as Config>::Fee::get();
 	<CurrencyOf<T> as Currency<AccountIdOf<T>>>::make_free_balance_be(account, balance);
 }
@@ -1093,7 +1093,7 @@ benchmarks! {
 		let did_account: AccountIdOf<T> = MultiSigner::from(did_public_auth_key).into_account().into();
 
 		let mut did_details = generate_base_did_details::<T>(DidVerificationKey::from(did_public_auth_key));
-		did_details.deposit.amount = <T as Config>::Deposit::get();
+		did_details.deposit.amount = <T as Config>::BaseDeposit::get();
 		did_details.deposit.owner = did_account.clone();
 
 		make_free_for_did::<T>(&did_account);
@@ -1107,7 +1107,7 @@ benchmarks! {
 			Did::<T>::get(&did_subject).expect("DID entry should be retained").deposit,
 			Deposit {
 				owner: did_account,
-				amount: <T as Config>::Deposit::get()
+				amount: <T as Config>::BaseDeposit::get()
 			},
 		)
 	}
@@ -1118,7 +1118,7 @@ benchmarks! {
 		let did_account: AccountIdOf<T> = MultiSigner::from(did_public_auth_key).into_account().into();
 
 		let mut did_details = generate_base_did_details::<T>(DidVerificationKey::from(did_public_auth_key));
-		did_details.deposit.amount = <T as Config>::Deposit::get() + <T as Config>::Deposit::get();
+		did_details.deposit.amount = <T as Config>::BaseDeposit::get() + <T as Config>::BaseDeposit::get();
 		did_details.deposit.owner = did_account.clone();
 
 		Did::<T>::insert(&did_subject, did_details.clone());
@@ -1133,7 +1133,7 @@ benchmarks! {
 			Did::<T>::get(&did_subject).expect("DID entry should be retained").deposit,
 			Deposit {
 				owner: did_account,
-				amount: <T as Config>::Deposit::get()
+				amount: <T as Config>::BaseDeposit::get()
 			},
 		)
 	}

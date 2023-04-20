@@ -16,6 +16,8 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use core::cmp::Ordering;
+
 use frame_support::{
 	ensure,
 	storage::{bounded_btree_map::BoundedBTreeMap, bounded_btree_set::BoundedBTreeSet},
@@ -360,15 +362,19 @@ impl<T: Config> DidDetails<T> {
 	{
 		let new_required_deposit = self.calculate_deposit(did_subject);
 
-		if new_required_deposit > self.deposit.amount {
-			let deposit_to_reserve = new_required_deposit - self.deposit.amount;
-			self.reserve_deposit(deposit_to_reserve)?;
-			self.deposit.amount += deposit_to_reserve;
-		} else if new_required_deposit < self.deposit.amount {
-			let deposit_to_release = self.deposit.amount - new_required_deposit; // TODO: I think this can break.
-			self.release_deposit(deposit_to_release);
-			self.deposit.amount -= deposit_to_release;
-		}
+		match new_required_deposit.cmp(&self.deposit.amount) {
+			Ordering::Greater => {
+				let deposit_to_reserve = new_required_deposit - self.deposit.amount;
+				self.reserve_deposit(deposit_to_reserve)?;
+				self.deposit.amount += deposit_to_reserve;
+			}
+			Ordering::Less => {
+				let deposit_to_release = self.deposit.amount - new_required_deposit; // I think this can break
+				self.release_deposit(deposit_to_release);
+				self.deposit.amount -= deposit_to_release;
+			}
+			_ => (),
+		};
 		Ok(())
 	}
 

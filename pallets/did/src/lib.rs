@@ -539,7 +539,7 @@ pub mod pallet {
 			ensure!(sender == details.submitter, BadOrigin);
 			let did_identifier = details.did.clone();
 
-			let deposit_amount = utils::calculate_deposit::<T>(&details);
+			let deposit_amount = utils::calculate_deposit::<T>(details.as_ref());
 			// Check the free balance before we do any heavy work.
 			ensure!(
 				<T::Currency as ReservableCurrency<AccountIdOf<T>>>::can_reserve(
@@ -1296,9 +1296,9 @@ pub mod pallet {
 		}
 
 		fn deposit_amount(key: &DidIdentifierOf<T>) -> <Self::Currency as Currency<AccountIdOf<T>>>::Balance {
-			let did_entry = Did::<T>::get(&key);
+			let did_entry = Did::<T>::get(key);
 			match did_entry {
-				Some(entry) => entry.calculate_deposit(&key),
+				Some(entry) => entry.calculate_deposit(key),
 				_ => <T as Config>::BaseDeposit::get(),
 			}
 		}

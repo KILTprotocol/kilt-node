@@ -23,14 +23,14 @@ use crate::{
 use parity_scale_codec::Encode;
 use sp_core::Get;
 use sp_runtime::traits::{Hash, Zero};
-use sp_std::{boxed::Box, vec::Vec};
+use sp_std::vec::Vec;
 
 pub fn calculate_key_id<T: Config>(key: &DidPublicKey) -> KeyIdOf<T> {
 	let hashed_values: Vec<u8> = key.encode();
 	T::Hashing::hash(&hashed_values)
 }
 
-pub fn calculate_deposit<T: Config>(details: &Box<DidCreationDetails<T>>) -> BalanceOf<T>
+pub fn calculate_deposit<T: Config>(details: &DidCreationDetails<T>) -> BalanceOf<T>
 where
 	BalanceOf<T>: From<u32>,
 {
