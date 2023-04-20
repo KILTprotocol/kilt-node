@@ -21,6 +21,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 mod origin;
+pub mod proof;
 pub mod traits;
 
 pub use crate::{origin::*, pallet::*};
@@ -32,11 +33,15 @@ pub mod pallet {
 	use cumulus_pallet_xcm::ensure_sibling_para;
 	use frame_support::{dispatch::Dispatchable, pallet_prelude::*, Twox64Concat};
 	use frame_system::pallet_prelude::*;
+	use parity_scale_codec::MaxEncodedLen;
 	use sp_std::boxed::Box;
 
 	use dip_support::{latest::IdentityProofAction, VersionedIdentityProofAction};
 
-	use crate::traits::{DipCallOriginFilter, IdentityProofVerifier};
+	use crate::{
+		proof::ProofEntry,
+		traits::{DipCallOriginFilter, IdentityProofVerifier},
+	};
 
 	pub type VerificationResultOf<T> = <<T as Config>::ProofVerifier as IdentityProofVerifier<
 		<T as Config>::RuntimeCall,
@@ -48,20 +53,25 @@ pub mod pallet {
 	// TODO: Store also additional details received by the provider.
 	#[pallet::storage]
 	#[pallet::getter(fn identity_proofs)]
-	pub(crate) type IdentityProofs<T> =
-		StorageMap<_, Twox64Concat, <T as Config>::Identifier, <T as Config>::ProofDigest>;
+	pub(crate) type IdentityProofs<T> = StorageMap<
+		_,
+		Twox64Concat,
+		<T as Config>::Identifier,
+		ProofEntry<<T as Config>::ProofDigest, <T as Config>::IdentityDetails>,
+	>;
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
 		type DipCallOriginFilter: DipCallOriginFilter<<Self as Config>::RuntimeCall, Proof = VerificationResultOf<Self>>;
 		type Identifier: Parameter + MaxEncodedLen;
+		type IdentityDetails: Parameter + MaxEncodedLen + Default;
 		type Proof: Parameter;
 		type ProofDigest: Parameter + MaxEncodedLen;
 		type ProofVerifier: IdentityProofVerifier<
 			<Self as Config>::RuntimeCall,
 			Self::Identifier,
 			Proof = Self::Proof,
-			ProofEntry = Self::ProofDigest,
+			ProofEntry = ProofEntry<Self::ProofDigest, Self::IdentityDetails>,
 			Submitter = <Self as frame_system::Config>::AccountId,
 		>;
 		type RuntimeCall: Parameter + Dispatchable<RuntimeOrigin = <Self as Config>::RuntimeOrigin>;
@@ -113,7 +123,9 @@ pub mod pallet {
 
 			let event = match action {
 				VersionedIdentityProofAction::V1(IdentityProofAction::Updated(identifier, proof, _)) => {
-					IdentityProofs::<T>::mutate(&identifier, |entry| *entry = Some(proof.clone()));
+					IdentityProofs::<T>::mutate(&identifier, |entry| {
+						*entry = Some(ProofEntry::from_digest(proof.clone()))
+					});
 					Ok::<_, Error<T>>(Event::<T>::IdentityInfoUpdated(identifier, proof))
 				}
 				VersionedIdentityProofAction::V1(IdentityProofAction::Deleted(identifier)) => {
@@ -138,12 +150,12 @@ pub mod pallet {
 			call: Box<<T as Config>::RuntimeCall>,
 		) -> DispatchResult {
 			let submitter = ensure_signed(origin)?;
-			let proof_digest = IdentityProofs::<T>::get(&identifier).ok_or(Error::<T>::IdentityNotFound)?;
+			let proof_entry = IdentityProofs::<T>::get(&identifier).ok_or(Error::<T>::IdentityNotFound)?;
 			let proof_verification_result = T::ProofVerifier::verify_proof_for_call_against_entry(
 				&*call,
 				&identifier,
 				&submitter,
-				&proof_digest,
+				&proof_entry,
 				proof,
 			)
 			.map_err(|_| Error::<T>::InvalidProof)?;
@@ -151,7 +163,6 @@ pub mod pallet {
 			// TODO: Avoid cloning `call`
 			let proof_result = T::DipCallOriginFilter::check_proof(*call.clone(), proof_verification_result)
 				.map_err(|_| Error::<T>::BadOrigin)?;
-			// TODO: Proper DID signature verification (and cross-chain replay protection)
 			let did_origin = DipOrigin {
 				identifier,
 				account_address: submitter,
