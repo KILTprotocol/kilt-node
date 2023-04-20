@@ -16,14 +16,11 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::{
-	traits::{Contains, Currency},
-	BoundedVec,
-};
+use frame_support::{traits::Currency, BoundedVec};
 use parity_scale_codec::MaxEncodedLen;
 
 use did::DeriveDidCallAuthorizationVerificationKeyRelationship;
-use pallet_did_lookup::{associate_account_request::AssociateAccountRequest, MigrationState};
+use pallet_did_lookup::associate_account_request::AssociateAccountRequest;
 use pallet_treasury::BalanceOf;
 use pallet_web3_names::{Web3NameOf, Web3OwnershipOf};
 use runtime_common::{
@@ -34,10 +31,6 @@ use runtime_common::{
 	},
 	AccountId, BlockNumber,
 };
-use sp_core::ecdsa::Signature;
-use sp_runtime::AccountId32;
-
-use crate::MigrationFilter;
 
 use super::{Runtime, RuntimeCall};
 
@@ -299,102 +292,4 @@ fn test_derive_did_verification_relation_empty() {
 		cb.derive_verification_key_relationship(),
 		Err(did::RelationshipDeriveError::InvalidCallParameter)
 	);
-}
-
-#[test]
-fn test_migration_filter_migrating() {
-	build_test_ext().execute_with(|| {
-		assert_eq!(
-			pallet_did_lookup::MigrationStateStore::<Runtime>::get(),
-			pallet_did_lookup::MigrationState::PreUpgrade
-		);
-
-		// some samples that should always work:
-		assert!(MigrationFilter::contains(&RuntimeCall::Council(
-			pallet_collective::Call::close {
-				proposal_hash: Default::default(),
-				index: Default::default(),
-				proposal_weight_bound: Default::default(),
-				length_bound: Default::default()
-			}
-		)));
-		assert!(MigrationFilter::contains(&RuntimeCall::Balances(
-			pallet_balances::Call::transfer {
-				dest: AccountId32::from([0u8; 32]).into(),
-				value: Default::default()
-			}
-		)));
-
-		// this should only work during the migration
-		assert!(MigrationFilter::contains(&RuntimeCall::DidLookup(
-			pallet_did_lookup::Call::migrate {
-				limit: Default::default()
-			}
-		)));
-
-		// This should not work during migration:
-		assert!(!MigrationFilter::contains(&RuntimeCall::DidLookup(
-			pallet_did_lookup::Call::associate_account {
-				req: pallet_did_lookup::associate_account_request::AssociateAccountRequest::Polkadot(
-					AccountId32::from([0u8; 32]),
-					sp_runtime::MultiSignature::Ecdsa(Signature([0u8; 65]))
-				),
-				expiration: Default::default()
-			}
-		)));
-		assert!(!MigrationFilter::contains(&RuntimeCall::DidLookup(
-			pallet_did_lookup::Call::associate_sender {}
-		)));
-	});
-}
-
-#[test]
-fn test_migration_filter_done() {
-	build_test_ext().execute_with(|| {
-		pallet_did_lookup::MigrationStateStore::<Runtime>::set(MigrationState::Done);
-
-		// some samples that should always work:
-		assert!(MigrationFilter::contains(&RuntimeCall::Council(
-			pallet_collective::Call::close {
-				proposal_hash: Default::default(),
-				index: Default::default(),
-				proposal_weight_bound: Default::default(),
-				length_bound: Default::default()
-			}
-		)));
-		assert!(MigrationFilter::contains(&RuntimeCall::Balances(
-			pallet_balances::Call::transfer {
-				dest: AccountId32::from([0u8; 32]).into(),
-				value: Default::default()
-			}
-		)));
-
-		// this should only work during the migration
-		assert!(!MigrationFilter::contains(&RuntimeCall::DidLookup(
-			pallet_did_lookup::Call::migrate {
-				limit: Default::default()
-			}
-		)));
-
-		// This should only work after the migration:
-		assert!(MigrationFilter::contains(&RuntimeCall::DidLookup(
-			pallet_did_lookup::Call::associate_account {
-				req: pallet_did_lookup::associate_account_request::AssociateAccountRequest::Polkadot(
-					AccountId32::from([0u8; 32]),
-					sp_runtime::MultiSignature::Ecdsa(Signature([0u8; 65]))
-				),
-				expiration: Default::default()
-			}
-		)));
-		assert!(MigrationFilter::contains(&RuntimeCall::DidLookup(
-			pallet_did_lookup::Call::associate_sender {}
-		)));
-	});
-}
-
-fn build_test_ext() -> sp_io::TestExternalities {
-	let storage = frame_system::GenesisConfig::default()
-		.build_storage::<Runtime>()
-		.unwrap();
-	sp_io::TestExternalities::new(storage)
 }
