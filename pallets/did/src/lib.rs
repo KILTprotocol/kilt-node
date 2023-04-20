@@ -935,7 +935,7 @@ pub mod pallet {
 			});
 
 			did_details.update_deposit(&did_subject)?;
-			// decrease deposit by one.
+
 			Self::deposit_event(Event::DidUpdated(did_subject));
 
 			Ok(())
