@@ -369,7 +369,7 @@ impl<T: Config> DidDetails<T> {
 				self.deposit.amount += deposit_to_reserve;
 			}
 			Ordering::Less => {
-				let deposit_to_release = self.deposit.amount - new_required_deposit; // I think this can break
+				let deposit_to_release = self.deposit.amount - new_required_deposit;
 				self.release_deposit(deposit_to_release);
 				self.deposit.amount -= deposit_to_release;
 			}
