@@ -338,7 +338,7 @@ benchmarks! {
 		let did_public_auth_key = get_ed25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(did_public_auth_key).into_account().into();
 
-		let did_details = generate_base_did_details::<T>(DidVerificationKey::from(did_public_auth_key));
+		let did_details = generate_base_did_details::<T>(DidVerificationKey::from(did_public_auth_key), None);
 		let service_endpoints = get_service_endpoints::<T>(
 			c,
 			T::MaxServiceIdLength::get(),

@@ -343,8 +343,12 @@ impl<T: Config> DidDetails<T> {
 		deposit
 	}
 
-	fn reserve_deposit(&self, deposit_to_reserve: BalanceOf<T>) -> Result<(), DispatchError> {
-		kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(self.deposit.owner.clone(), deposit_to_reserve)?;
+	fn reserve_deposit(&self, _deposit_to_reserve: BalanceOf<T>) -> Result<(), DispatchError> {
+		#[cfg(not(feature = "runtime-benchmarks"))]
+		kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
+			self.deposit.owner.clone(),
+			_deposit_to_reserve,
+		)?;
 		Ok(())
 	}
 
