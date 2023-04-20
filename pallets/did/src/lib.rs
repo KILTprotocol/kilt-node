@@ -862,17 +862,7 @@ pub mod pallet {
 		#[pallet::call_index(8)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::add_service_endpoint())]
 		pub fn add_service_endpoint(origin: OriginFor<T>, service_endpoint: DidEndpoint<T>) -> DispatchResult {
-			let sender = ensure_signed(origin.clone())?;
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
-
-			// Check the free balance before we do any work
-			ensure!(
-				<T::Currency as ReservableCurrency<AccountIdOf<T>>>::can_reserve(
-					&sender,
-					<T as Config>::DepositServiceEndpoint::get()
-				),
-				Error::<T>::UnableToPayFees
-			);
 
 			service_endpoint
 				.validate_against_constraints()
