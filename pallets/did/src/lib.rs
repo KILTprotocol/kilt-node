@@ -1293,10 +1293,7 @@ pub mod pallet {
 			Ok(did_entry.deposit)
 		}
 
-		fn deposit_amount(key: &DidIdentifierOf<T>) -> <Self::Currency as Currency<AccountIdOf<T>>>::Balance
-		where
-			BalanceOf<T>: From<u32>,
-		{
+		fn deposit_amount(key: &DidIdentifierOf<T>) -> <Self::Currency as Currency<AccountIdOf<T>>>::Balance {
 			let did_entry = Did::<T>::get(key);
 			match did_entry {
 				Some(entry) => entry.calculate_deposit(key),
