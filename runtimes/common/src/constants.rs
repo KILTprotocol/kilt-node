@@ -333,6 +333,8 @@ pub mod did {
 	pub const DID_BASE_DEPOSIT: Balance = 2 * KILT;
 	pub const KEY_DEPOSIT: Balance = deposit(0, KEY_DID_BYTE_LENGTH);
 	pub const SERVICE_ENDPOINT_DEPOSIT: Balance = deposit(1, MAX_SERVICE_ENDPOINT_BYTE_LENGTH);
+	pub const MAX_DEPOSIT_DID: Balance =
+		deposit(2 + MAX_NUMBER_OF_SERVICES_PER_DID, MAX_DID_BYTE_LENGTH) + DID_BASE_DEPOSIT;
 
 	pub const DID_FEE: Balance = 50 * MILLI_KILT;
 	pub const MAX_KEY_AGREEMENT_KEYS: u32 = 10;
@@ -360,6 +362,7 @@ pub mod did {
 		pub const DidBaseDeposit: Balance = DID_BASE_DEPOSIT;
 		pub const KeyDeposit: Balance = KEY_DEPOSIT;
 		pub const ServiceEndpointDeposit: Balance = SERVICE_ENDPOINT_DEPOSIT;
+		pub const MaxDepositDid : Balance = MAX_DEPOSIT_DID;
 		pub const DidFee: Balance = DID_FEE;
 		pub const MaxNumberOfServicesPerDid: u32 = MAX_NUMBER_OF_SERVICES_PER_DID;
 		pub const MaxServiceIdLength: u32 = MAX_SERVICE_ID_LENGTH;

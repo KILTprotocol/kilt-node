@@ -360,10 +360,7 @@ impl<T: Config> DidDetails<T> {
 		kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&to_release_deposit);
 	}
 
-	pub fn update_deposit(&mut self, did_subject: &DidIdentifierOf<T>) -> Result<(), DispatchError>
-	where
-		BalanceOf<T>: From<u32>,
-	{
+	pub fn update_deposit(&mut self, did_subject: &DidIdentifierOf<T>) -> Result<(), DispatchError> {
 		let new_required_deposit = self.calculate_deposit(did_subject);
 
 		match new_required_deposit.cmp(&self.deposit.amount) {

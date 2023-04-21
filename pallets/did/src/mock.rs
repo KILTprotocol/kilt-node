@@ -127,6 +127,7 @@ parameter_types! {
 	pub const DepositKey :Balance = 32 * MICRO_KILT;
 	pub const DepositServiceEndpoint :Balance = 50 * MICRO_KILT;
 	pub const BaseDeposit: Balance = 100 * MILLI_KILT;
+	pub const MaxDepositDid: Balance = 500 * MILLI_KILT;
 }
 
 pub struct ToAccount<R>(sp_std::marker::PhantomData<R>);
@@ -148,6 +149,7 @@ impl Config for Test {
 	type EnsureOrigin = EnsureSigned<DidIdentifier>;
 	type DepositKey = DepositKey;
 	type DepositServiceEndpoint = DepositKey;
+	type MaxDepositDid = MaxDepositDid;
 	type OriginSuccess = AccountId;
 	type RuntimeEvent = ();
 	type Currency = Balances;

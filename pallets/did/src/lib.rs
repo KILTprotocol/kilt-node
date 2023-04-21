@@ -235,6 +235,10 @@ pub mod pallet {
 		#[pallet::constant]
 		type DepositKey: Get<BalanceOf<Self>>;
 
+		/// The maximum amount of deposit for one DID.
+		#[pallet::constant]
+		type MaxDepositDid: Get<BalanceOf<Self>>;
+
 		/// The amount of balance that will be taken for each DID as a fee to
 		/// incentivise fair use of the on chain storage. The fee will not get
 		/// refunded when the DID is deleted.
@@ -1289,11 +1293,15 @@ pub mod pallet {
 			Ok(did_entry.deposit)
 		}
 
-		fn deposit_amount(key: &DidIdentifierOf<T>) -> <Self::Currency as Currency<AccountIdOf<T>>>::Balance {
+		fn deposit_amount(key: &DidIdentifierOf<T>) -> <Self::Currency as Currency<AccountIdOf<T>>>::Balance
+		where
+			BalanceOf<T>: From<u32>,
+		{
 			let did_entry = Did::<T>::get(key);
 			match did_entry {
 				Some(entry) => entry.calculate_deposit(key),
-				_ => <T as Config>::BaseDeposit::get(),
+				// If there is no entry the worst case is assumed.
+				_ => <T as Config>::MaxDepositDid::get(),
 			}
 		}
 

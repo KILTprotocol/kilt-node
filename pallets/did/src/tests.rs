@@ -294,6 +294,7 @@ fn check_successful_complete_creation() {
 		});
 }
 
+#[cfg(not(feature = "runtime-benchmarks"))]
 #[test]
 fn check_deposit_change_by_adding_service_endpoint() {
 	let auth_key = get_ed25519_authentication_key(true);

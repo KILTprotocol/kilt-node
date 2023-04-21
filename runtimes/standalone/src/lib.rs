@@ -381,6 +381,7 @@ impl did::Config for Runtime {
 	type DepositKey = constants::did::KeyDeposit;
 	type DepositServiceEndpoint = constants::did::ServiceEndpointDeposit;
 	type BaseDeposit = constants::did::DidBaseDeposit;
+	type MaxDepositDid = constants::did::MaxDepositDid;
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeCall = RuntimeCall;
 	type RuntimeOrigin = RuntimeOrigin;

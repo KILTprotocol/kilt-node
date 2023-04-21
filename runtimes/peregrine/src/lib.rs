@@ -591,6 +591,7 @@ impl did::Config for Runtime {
 	type DepositKey = constants::did::KeyDeposit;
 	type DepositServiceEndpoint = constants::did::ServiceEndpointDeposit;
 	type BaseDeposit = constants::did::DidBaseDeposit;
+	type MaxDepositDid = constants::did::MaxDepositDid;
 	type RuntimeOrigin = RuntimeOrigin;
 	type Currency = Balances;
 	type Fee = constants::did::DidFee;
