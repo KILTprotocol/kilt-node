@@ -578,9 +578,9 @@ pub mod pallet {
 			let mut did_entry =
 				DidDetails::from_creation_details(*details, account_did_auth_key).map_err(Error::<T>::from)?;
 
-			Did::<T>::insert(&did_identifier, did_entry.clone());
-
 			did_entry.update_deposit(&did_identifier)?;
+
+			Did::<T>::insert(&did_identifier, did_entry.clone());
 
 			// Withdraw the fee. We made sure that enough balance is available. But if this
 			// fails, we don't withdraw anything.
@@ -894,6 +894,8 @@ pub mod pallet {
 			DidEndpointsCount::<T>::insert(&did_subject, currently_stored_endpoints_count.saturating_add(1));
 			did.update_deposit(&did_subject)?;
 
+			Did::<T>::insert(&did_subject, did);
+
 			Self::deposit_event(Event::DidUpdated(did_subject));
 
 			Ok(())
@@ -935,6 +937,7 @@ pub mod pallet {
 			});
 
 			did_details.update_deposit(&did_subject)?;
+			Did::<T>::insert(&did_subject, did_details);
 
 			Self::deposit_event(Event::DidUpdated(did_subject));
 

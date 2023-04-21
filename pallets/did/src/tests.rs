@@ -295,6 +295,48 @@ fn check_successful_complete_creation() {
 }
 
 #[test]
+fn check_deposit_change_by_adding_service_endpoint() {
+	let auth_key = get_ed25519_authentication_key(true);
+	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
+	let mut did_details =
+		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(alice_did.clone()));
+	did_details.deposit.amount = <Test as did::Config>::BaseDeposit::get();
+
+	let new_service_endpoint = DidEndpoint::new(b"id".to_vec(), vec![b"type".to_vec()], vec![b"url".to_vec()]);
+	let new_service_endpoint2: DidEndpoint<Test> =
+		DidEndpoint::new(b"id2".to_vec(), vec![b"type2".to_vec()], vec![b"url2".to_vec()]);
+
+	let balance = <Test as did::Config>::BaseDeposit::get() + <Test as did::Config>::DepositServiceEndpoint::get();
+
+	ExtBuilder::default()
+		.with_balances(vec![(alice_did.clone(), balance)])
+		.with_dids(vec![(alice_did.clone(), did_details)])
+		.build(None)
+		.execute_with(|| {
+			assert_ok!(Did::add_service_endpoint(
+				RuntimeOrigin::signed(alice_did.clone()),
+				new_service_endpoint.clone()
+			));
+
+			assert_eq!(
+				Balances::reserved_balance(alice_did.clone()),
+				<Test as did::Config>::DepositServiceEndpoint::get() + <Test as did::Config>::BaseDeposit::get()
+			);
+
+			assert_eq!(Balances::free_balance(alice_did.clone()), Zero::zero());
+
+			assert_noop!(
+				Did::add_service_endpoint(RuntimeOrigin::signed(alice_did.clone()), new_service_endpoint2.clone()),
+				pallet_balances::Error::<Test>::InsufficientBalance
+			);
+
+			assert!(did::ServiceEndpoints::<Test>::get(alice_did.clone(), new_service_endpoint.id).is_some());
+
+			assert!(did::ServiceEndpoints::<Test>::get(alice_did, new_service_endpoint2.id).is_none());
+		});
+}
+
+#[test]
 fn check_duplicate_did_creation() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
