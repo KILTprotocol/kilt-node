@@ -362,7 +362,6 @@ pub mod did {
 		pub const DidBaseDeposit: Balance = DID_BASE_DEPOSIT;
 		pub const KeyDeposit: Balance = KEY_DEPOSIT;
 		pub const ServiceEndpointDeposit: Balance = SERVICE_ENDPOINT_DEPOSIT;
-		pub const MaxDepositDid : Balance = MAX_DEPOSIT_DID;
 		pub const DidFee: Balance = DID_FEE;
 		pub const MaxNumberOfServicesPerDid: u32 = MAX_NUMBER_OF_SERVICES_PER_DID;
 		pub const MaxServiceIdLength: u32 = MAX_SERVICE_ID_LENGTH;
