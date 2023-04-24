@@ -201,12 +201,12 @@ fn check_successful_complete_creation() {
 	);
 	let signature = auth_key.sign(details.encode().as_ref());
 
-	let required_balance_for_endpoint = <Test as did::Config>::DepositServiceEndpoint::get()
+	let required_balance_for_endpoint = <Test as did::Config>::ServiceEndpointDeposit::get()
 		* <Test as did::Config>::MaxNumberOfServicesPerDid::get() as u128;
 
-	let required_balance_for_keys = <Test as did::Config>::DepositKey::get() * 2;
+	let required_balance_for_keys = <Test as did::Config>::KeyDeposit::get() * 2;
 
-	let required_balance_for_key_agreement = <Test as did::Config>::DepositKey::get() * enc_keys.len() as u128;
+	let required_balance_for_key_agreement = <Test as did::Config>::KeyDeposit::get() * enc_keys.len() as u128;
 
 	let balance = required_balance_for_endpoint
 		+ required_balance_for_keys
@@ -307,7 +307,7 @@ fn check_deposit_change_by_adding_service_endpoint() {
 	let new_service_endpoint2: DidEndpoint<Test> =
 		DidEndpoint::new(b"id2".to_vec(), vec![b"type2".to_vec()], vec![b"url2".to_vec()]);
 
-	let balance = <Test as did::Config>::BaseDeposit::get() + <Test as did::Config>::DepositServiceEndpoint::get();
+	let balance = <Test as did::Config>::BaseDeposit::get() + <Test as did::Config>::ServiceEndpointDeposit::get();
 
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), balance)])
@@ -321,7 +321,7 @@ fn check_deposit_change_by_adding_service_endpoint() {
 
 			assert_eq!(
 				Balances::reserved_balance(alice_did.clone()),
-				<Test as did::Config>::DepositServiceEndpoint::get() + <Test as did::Config>::BaseDeposit::get()
+				<Test as did::Config>::ServiceEndpointDeposit::get() + <Test as did::Config>::BaseDeposit::get()
 			);
 
 			assert_eq!(Balances::free_balance(alice_did.clone()), Zero::zero());
@@ -572,7 +572,7 @@ fn check_max_limit_service_endpoints_count_did_creation() {
 	);
 
 	let signature = auth_key.sign(details.encode().as_ref());
-	let required_balance_for_service_endpoints = <Test as did::Config>::DepositServiceEndpoint::get()
+	let required_balance_for_service_endpoints = <Test as did::Config>::ServiceEndpointDeposit::get()
 		* (<Test as did::Config>::MaxNumberOfServicesPerDid::get() as u128 + 1);
 	let balance = required_balance_for_service_endpoints
 		+ <Test as did::Config>::BaseDeposit::get()
@@ -762,7 +762,7 @@ fn check_invalid_service_id_character_did_creation() {
 
 	let balance = <Test as did::Config>::BaseDeposit::get()
 		+ <Test as did::Config>::Fee::get()
-		+ <Test as did::Config>::DepositServiceEndpoint::get()
+		+ <Test as did::Config>::ServiceEndpointDeposit::get()
 		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
@@ -791,7 +791,7 @@ fn check_invalid_service_type_character_did_creation() {
 
 	let balance = <Test as did::Config>::BaseDeposit::get()
 		+ <Test as did::Config>::Fee::get()
-		+ <Test as did::Config>::DepositServiceEndpoint::get()
+		+ <Test as did::Config>::ServiceEndpointDeposit::get()
 		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
@@ -819,7 +819,7 @@ fn check_invalid_service_url_character_did_creation() {
 	let signature = auth_key.sign(details.encode().as_ref());
 
 	let balance = <Test as did::Config>::BaseDeposit::get()
-		+ <Test as did::Config>::DepositServiceEndpoint::get()
+		+ <Test as did::Config>::ServiceEndpointDeposit::get()
 		+ <Test as did::Config>::Fee::get()
 		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()

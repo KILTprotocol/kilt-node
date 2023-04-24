@@ -378,8 +378,8 @@ parameter_types! {
 
 impl did::Config for Runtime {
 	type DidIdentifier = DidIdentifier;
-	type DepositKey = constants::did::KeyDeposit;
-	type DepositServiceEndpoint = constants::did::ServiceEndpointDeposit;
+	type KeyDeposit = constants::did::KeyDeposit;
+	type ServiceEndpointDeposit = constants::did::ServiceEndpointDeposit;
 	type BaseDeposit = constants::did::DidBaseDeposit;
 	type MaxDepositDid = constants::did::MaxDepositDid;
 	type RuntimeEvent = RuntimeEvent;

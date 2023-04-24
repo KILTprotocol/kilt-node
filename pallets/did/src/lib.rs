@@ -113,7 +113,7 @@ pub use crate::{
 use errors::{DidError, InputError, SignatureError, StorageError};
 
 use frame_support::{
-	dispatch::{DispatchResult, Dispatchable, GetDispatchInfo, PostDispatchInfo},
+	dispatch::{DispatchError, DispatchResult, Dispatchable, GetDispatchInfo, PostDispatchInfo},
 	ensure,
 	storage::types::StorageMap,
 	traits::{Get, OnUnbalanced, WithdrawReasons},
@@ -228,12 +228,12 @@ pub mod pallet {
 		/// deposit can be reclaimed when the service endpoint is removed or the
 		/// DID deleted.
 		#[pallet::constant]
-		type DepositServiceEndpoint: Get<BalanceOf<Self>>;
+		type ServiceEndpointDeposit: Get<BalanceOf<Self>>;
 
 		/// The amount of balance that will be taken for each added key as a
 		/// deposit to incentivise fair use of the on chain storage.
 		#[pallet::constant]
-		type DepositKey: Get<BalanceOf<Self>>;
+		type KeyDeposit: Get<BalanceOf<Self>>;
 
 		/// The maximum amount of deposit for one DID.
 		#[pallet::constant]
@@ -427,6 +427,7 @@ pub mod pallet {
 				DidError::Signature(operation_error) => Self::from(operation_error),
 				DidError::Input(input_error) => Self::from(input_error),
 				DidError::Internal => Self::Internal,
+				DidError::DepositError(_) => Self::UnableToPayFees,
 			}
 		}
 	}
@@ -543,12 +544,11 @@ pub mod pallet {
 			ensure!(sender == details.submitter, BadOrigin);
 			let did_identifier = details.did.clone();
 
-			let deposit_amount = utils::calculate_deposit::<T>(details.as_ref());
 			// Check the free balance before we do any heavy work.
 			ensure!(
 				<T::Currency as ReservableCurrency<AccountIdOf<T>>>::can_reserve(
 					&sender,
-					deposit_amount + <T as Config>::Fee::get()
+					details.calculate_deposit().saturating_add(<T as Config>::Fee::get())
 				),
 				Error::<T>::UnableToPayFees
 			);

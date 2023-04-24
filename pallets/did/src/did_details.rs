@@ -30,7 +30,7 @@ use scale_info::TypeInfo;
 use sp_core::{ecdsa, ed25519, sr25519};
 use sp_runtime::{
 	traits::{Verify, Zero},
-	DispatchError, MultiSignature, SaturatedConversion,
+	DispatchError, MultiSignature, SaturatedConversion, Saturating,
 };
 use sp_std::{convert::TryInto, vec::Vec};
 
@@ -318,44 +318,38 @@ impl<T: Config> DidDetails<T> {
 		})
 	}
 
-	pub fn calculate_deposit(&self, did_subject: &DidIdentifierOf<T>) -> BalanceOf<T>
-	where
-		BalanceOf<T>: From<u32>,
-	{
+	pub fn calculate_deposit(&self, did_subject: &DidIdentifierOf<T>) -> BalanceOf<T> {
 		let mut deposit: BalanceOf<T> = T::BaseDeposit::get();
 
 		let count_endpoints: BalanceOf<T> = DidEndpointsCount::<T>::get(did_subject).into();
-		deposit += count_endpoints * T::DepositServiceEndpoint::get();
+		deposit = deposit.saturating_add(count_endpoints.saturating_mul(T::ServiceEndpointDeposit::get()));
 
-		let count_key_agreements: BalanceOf<T> = (self.key_agreement_keys.len() as u32).into();
-		deposit += count_key_agreements * T::DepositKey::get();
+		let key_agreement_counts: BalanceOf<T> = self.key_agreement_keys.len().saturated_into();
+		deposit = deposit.saturating_add(key_agreement_counts.saturating_mul(T::KeyDeposit::get()));
 
-		deposit += match self.attestation_key {
-			Some(_) => T::DepositKey::get(),
+		deposit = deposit.saturating_add(match self.attestation_key {
+			Some(_) => T::KeyDeposit::get(),
 			_ => Zero::zero(),
-		};
+		});
 
-		deposit += match self.delegation_key {
-			Some(_) => T::DepositKey::get(),
+		deposit = deposit.saturating_add(match self.delegation_key {
+			Some(_) => T::KeyDeposit::get(),
 			_ => Zero::zero(),
-		};
+		});
 
 		deposit
 	}
 
-	fn reserve_deposit(&self, _deposit_to_reserve: BalanceOf<T>) -> Result<(), DispatchError> {
+	fn reserve_deposit(_deposit_to_reserve: BalanceOf<T>, who: AccountIdOf<T>) -> Result<(), DispatchError> {
 		#[cfg(not(feature = "runtime-benchmarks"))]
-		kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
-			self.deposit.owner.clone(),
-			_deposit_to_reserve,
-		)?;
+		kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(who, _deposit_to_reserve)?;
 		Ok(())
 	}
 
-	fn release_deposit(&self, deposit_to_release: BalanceOf<T>) {
+	fn release_deposit(deposit_to_release: BalanceOf<T>, who: AccountIdOf<T>) {
 		let to_release_deposit = Deposit {
 			amount: deposit_to_release,
-			owner: self.deposit.owner.clone(),
+			owner: who,
 		};
 		kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&to_release_deposit);
 	}
@@ -365,14 +359,14 @@ impl<T: Config> DidDetails<T> {
 
 		match new_required_deposit.cmp(&self.deposit.amount) {
 			Ordering::Greater => {
-				let deposit_to_reserve = new_required_deposit - self.deposit.amount;
-				self.reserve_deposit(deposit_to_reserve)?;
-				self.deposit.amount += deposit_to_reserve;
+				let deposit_to_reserve = new_required_deposit.saturating_sub(self.deposit.amount);
+				DidDetails::<T>::reserve_deposit(deposit_to_reserve, self.deposit.owner.clone())?;
+				self.deposit.amount = self.deposit.amount.saturating_add(deposit_to_reserve);
 			}
 			Ordering::Less => {
-				let deposit_to_release = self.deposit.amount - new_required_deposit;
-				self.release_deposit(deposit_to_release);
-				self.deposit.amount -= deposit_to_release;
+				let deposit_to_release = self.deposit.amount.saturating_sub(new_required_deposit);
+				DidDetails::<T>::release_deposit(deposit_to_release, self.deposit.owner.clone());
+				self.deposit.amount = self.deposit.amount.saturating_sub(deposit_to_release);
 			}
 			_ => (),
 		};
@@ -394,22 +388,25 @@ impl<T: Config> DidDetails<T> {
 		let current_block_number = frame_system::Pallet::<T>::block_number();
 
 		let deposit = Deposit {
-			owner: details.submitter,
+			owner: details.clone().submitter,
 			amount: Zero::zero(),
 		};
 
 		// Creates a new DID with the given authentication key.
 		let mut new_did_details = DidDetails::new(new_auth_key, current_block_number, deposit)?;
 
-		new_did_details.add_key_agreement_keys(details.new_key_agreement_keys, current_block_number)?;
+		new_did_details.add_key_agreement_keys(details.clone().new_key_agreement_keys, current_block_number)?;
 
-		if let Some(attesation_key) = details.new_attestation_key {
+		if let Some(attesation_key) = details.clone().new_attestation_key {
 			new_did_details.update_attestation_key(attesation_key, current_block_number)?;
 		}
 
-		if let Some(delegation_key) = details.new_delegation_key {
+		if let Some(delegation_key) = details.clone().new_delegation_key {
 			new_did_details.update_delegation_key(delegation_key, current_block_number)?;
 		}
+
+		DidDetails::<T>::reserve_deposit(details.calculate_deposit(), details.submitter.clone())?;
+
 		Ok(new_did_details)
 	}
 
@@ -640,6 +637,30 @@ pub struct DidCreationDetails<T: Config> {
 	pub new_delegation_key: Option<DidVerificationKey>,
 	/// The service endpoints details.
 	pub new_service_details: Vec<DidEndpoint<T>>,
+}
+
+impl<T: Config> DidCreationDetails<T> {
+	pub fn calculate_deposit(&self) -> BalanceOf<T> {
+		let mut deposit: BalanceOf<T> = T::BaseDeposit::get();
+
+		let service_endpoint_count: BalanceOf<T> = self.new_service_details.len().saturated_into();
+		deposit = deposit.saturating_add(service_endpoint_count.saturating_mul(T::ServiceEndpointDeposit::get()));
+
+		let key_agreement_counts: BalanceOf<T> = self.new_key_agreement_keys.len().saturated_into();
+		deposit = deposit.saturating_add(key_agreement_counts.saturating_mul(T::KeyDeposit::get()));
+
+		deposit = deposit.saturating_add(match self.new_attestation_key {
+			Some(_) => T::KeyDeposit::get(),
+			_ => Zero::zero(),
+		});
+
+		deposit = deposit.saturating_add(match self.new_delegation_key {
+			Some(_) => T::KeyDeposit::get(),
+			_ => Zero::zero(),
+		});
+
+		deposit
+	}
 }
 
 /// Errors that might occur while deriving the authorization verification key

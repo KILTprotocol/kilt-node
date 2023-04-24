@@ -124,8 +124,8 @@ parameter_types! {
 	pub const MaxServiceUrlLength: u32 = 100u32;
 	pub const MaxNumberOfTypesPerService: u32 = 1u32;
 	pub const MaxNumberOfUrlsPerService: u32 = 1u32;
-	pub const DepositKey :Balance = 32 * MICRO_KILT;
-	pub const DepositServiceEndpoint :Balance = 50 * MICRO_KILT;
+	pub const KeyDeposit :Balance = 32 * MICRO_KILT;
+	pub const ServiceEndpointDeposit :Balance = 50 * MICRO_KILT;
 	pub const BaseDeposit: Balance = 100 * MILLI_KILT;
 	pub const MaxDepositDid: Balance = 500 * MILLI_KILT;
 }
@@ -147,8 +147,8 @@ impl Config for Test {
 	type RuntimeOrigin = RuntimeOrigin;
 	type RuntimeCall = RuntimeCall;
 	type EnsureOrigin = EnsureSigned<DidIdentifier>;
-	type DepositKey = DepositKey;
-	type DepositServiceEndpoint = DepositKey;
+	type KeyDeposit = KeyDeposit;
+	type ServiceEndpointDeposit = KeyDeposit;
 	type MaxDepositDid = MaxDepositDid;
 	type OriginSuccess = AccountId;
 	type RuntimeEvent = ();
