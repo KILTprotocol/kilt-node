@@ -46,15 +46,15 @@ use sp_consensus_aura::{ed25519::AuthorityId as AuraId, SlotDuration};
 use sp_core::{crypto::KeyTypeId, ConstU64, OpaqueMetadata};
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
-	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, NumberFor, OpaqueKeys},
+	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, NumberFor, OpaqueKeys, Zero},
 	transaction_validity::{TransactionSource, TransactionValidity},
 	ApplyExtrinsicResult, RuntimeDebug,
 };
-use sp_std::prelude::*;
+use sp_std::{cmp::Ordering, prelude::*};
 use sp_version::RuntimeVersion;
 
 use delegation::DelegationAc;
-use kilt_support::traits::ItemFilter;
+use kilt_support::traits::{ItemFilter, StorageDepositCollector};
 use pallet_did_lookup::linkable_account::LinkableAccountId;
 use runtime_common::{
 	assets::{AssetDid, PublicCredentialsFilter},
@@ -985,6 +985,30 @@ impl_runtime_apis! {
 		Hash,
 		BlockNumber
 	> for Runtime {
+
+		fn calculate_deposit(did_subject: DidIdentifier) -> Option<Balance> {
+			let did = did::Did::<Runtime>::get(&did_subject)?;
+			let current_deposit = did.deposit.amount;
+			let new_calculated_deposit = did::DidDepositCollector::<Runtime>::deposit_amount(&did_subject);
+			let worst_case_deposit_increase = constants::did::KeyDeposit::get().max(constants::did::ServiceEndpointDeposit::get());
+
+			Some(match current_deposit.cmp(&new_calculated_deposit) {
+				// if the current deposit is less: Get the difference from the new calculated difference and add the worst case on it.
+				Ordering::Less => new_calculated_deposit.saturating_sub(new_calculated_deposit).saturating_add(worst_case_deposit_increase),
+				// if the current deposit is greater: we have potentially release some KILT.
+				Ordering::Greater => {
+					let deposit_to_release = new_calculated_deposit.saturating_sub(new_calculated_deposit);
+					match deposit_to_release.cmp(&worst_case_deposit_increase) {
+						// If the deposit required for release is greater than the worst-case scenario, the user will receive a partial refund. Therefore, we return 0.
+						Ordering::Greater => Zero::zero(),
+						_ => worst_case_deposit_increase.saturating_sub(deposit_to_release)
+					}
+
+				},
+				_ => Zero::zero()
+			})
+		}
+
 		fn query_by_web3_name(name: Vec<u8>) -> Option<kilt_runtime_api_did::RawDidLinkedInfo<
 				DidIdentifier,
 				AccountId,

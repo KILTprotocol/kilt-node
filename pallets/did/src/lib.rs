@@ -1276,7 +1276,7 @@ pub mod pallet {
 		}
 	}
 
-	struct DidDepositCollector<T: Config>(PhantomData<T>);
+	pub struct DidDepositCollector<T: Config>(PhantomData<T>);
 	impl<T: Config> StorageDepositCollector<AccountIdOf<T>, DidIdentifierOf<T>> for DidDepositCollector<T> {
 		type Currency = T::Currency;
 

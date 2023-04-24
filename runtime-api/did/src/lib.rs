@@ -75,6 +75,8 @@ sp_api::decl_runtime_apis! {
 		Key: Codec,
 		Balance: Codec,
 	{
+		/// Given the DID this returns the worst case of possible additional deposit.
+		fn calculate_deposit(did: DidIdentifier) -> Option<Balance>;
 		/// Given a web3name this returns:
 		/// * the DID
 		/// * public keys stored for the did
