@@ -339,9 +339,9 @@ impl<T: Config> DidDetails<T> {
 		deposit
 	}
 
-	fn reserve_deposit(_deposit_to_reserve: BalanceOf<T>, who: AccountIdOf<T>) -> Result<(), DispatchError> {
+	fn reserve_deposit(_deposit_to_reserve: BalanceOf<T>, _who: AccountIdOf<T>) -> Result<(), DispatchError> {
 		#[cfg(not(feature = "runtime-benchmarks"))]
-		kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(who, _deposit_to_reserve)?;
+		kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(_who, _deposit_to_reserve)?;
 		Ok(())
 	}
 
@@ -386,9 +386,10 @@ impl<T: Config> DidDetails<T> {
 
 		let current_block_number = frame_system::Pallet::<T>::block_number();
 
+		let deposit_amount = details.calculate_deposit();
 		let deposit = Deposit {
 			owner: details.clone().submitter,
-			amount: Zero::zero(),
+			amount: deposit_amount,
 		};
 
 		// Creates a new DID with the given authentication key.
@@ -404,7 +405,7 @@ impl<T: Config> DidDetails<T> {
 			new_did_details.update_delegation_key(delegation_key, current_block_number)?;
 		}
 
-		DidDetails::<T>::reserve_deposit(details.calculate_deposit(), details.submitter.clone())?;
+		DidDetails::<T>::reserve_deposit(deposit_amount, details.submitter)?;
 
 		Ok(new_did_details)
 	}

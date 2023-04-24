@@ -578,8 +578,6 @@ pub mod pallet {
 			let mut did_entry =
 				DidDetails::from_creation_details(*details, account_did_auth_key).map_err(Error::<T>::from)?;
 
-			did_entry.update_deposit(&did_identifier)?;
-
 			Did::<T>::insert(&did_identifier, did_entry.clone());
 
 			// Withdraw the fee. We made sure that enough balance is available. But if this
