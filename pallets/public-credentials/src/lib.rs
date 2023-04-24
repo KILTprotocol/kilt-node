@@ -288,8 +288,6 @@ pub mod pallet {
 			let deposit = kilt_support::reserve_deposit::<T::AccountId, CurrencyOf<T>>(payer, deposit_amount)
 				.map_err(|_| Error::<T>::UnableToPayFees)?;
 
-			// *** No Fail beyond this point ***
-
 			let block_number = frame_system::Pallet::<T>::block_number();
 
 			Credentials::<T>::insert(

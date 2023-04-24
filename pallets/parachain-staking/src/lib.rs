@@ -788,8 +788,6 @@ pub mod pallet {
 			ensure!(new <= T::MaxTopCandidates::get(), Error::<T>::CannotSetAboveMax);
 			let old = MaxSelectedCandidates::<T>::get();
 
-			// *** No Fail beyond this point ***
-
 			MaxSelectedCandidates::<T>::put(new);
 
 			// Update total amount at stake for new top collators and their delegators
@@ -854,8 +852,6 @@ pub mod pallet {
 
 			let old_round = Round::<T>::get();
 
-			// *** No Fail beyond this point ***
-
 			Round::<T>::put(RoundInfo {
 				length: new,
 				..old_round
@@ -884,8 +880,6 @@ pub mod pallet {
 				new >= T::MinCollatorCandidateStake::get(),
 				Error::<T>::CannotSetBelowMin
 			);
-
-			// *** No Fail beyond this point ***
 
 			MaxCollatorCandidateStake::<T>::put(new);
 
@@ -924,8 +918,6 @@ pub mod pallet {
 				candidates.len().saturated_into::<u32>() > T::MinRequiredCollators::get(),
 				Error::<T>::TooFewCollatorCandidates
 			);
-
-			// *** No Fail except during remove_candidate beyond this point ***
 
 			// remove candidate storage and increment rewards
 			Self::remove_candidate(&collator, &state)?;
@@ -996,8 +988,6 @@ pub mod pallet {
 				Error::<T>::CannotJoinBeforeUnlocking
 			);
 
-			// *** No Fail except during increase_lock beyond this point ***
-
 			Self::increase_lock(&sender, stake, BalanceOf::<T>::zero())?;
 
 			let candidate = Candidate::new(sender.clone(), stake);
@@ -1064,8 +1054,6 @@ pub mod pallet {
 			let when = now.saturating_add(T::ExitQueueDelay::get());
 			state.leave_candidates(when);
 
-			// *** No Fail beyond this point ***
-
 			let (num_collators, num_delegators) = if candidates
 				.remove(&Stake {
 					owner: collator.clone(),
@@ -1126,8 +1114,6 @@ pub mod pallet {
 			let num_delegators = state.delegators.len().saturated_into::<u32>();
 			let total_amount = state.total;
 
-			// *** No Fail except during remove_candidate beyond this point ***
-
 			// remove candidate storage and increment rewards
 			Self::remove_candidate(&collator, &state)?;
 
@@ -1160,8 +1146,6 @@ pub mod pallet {
 
 			// revert leaving state
 			state.revert_leaving();
-
-			// *** No Fail beyond this point ***
 
 			let n = Self::update_top_candidates(
 				candidate.clone(),
@@ -1220,8 +1204,6 @@ pub mod pallet {
 				state.stake <= MaxCollatorCandidateStake::<T>::get(),
 				Error::<T>::ValStakeAboveMax
 			);
-
-			// *** No Fail except during increase_lock beyond this point ***
 
 			let unstaking_len = Self::increase_lock(&collator, state.stake, more)?;
 
@@ -1288,8 +1270,6 @@ pub mod pallet {
 				after >= T::MinCollatorCandidateStake::get(),
 				Error::<T>::ValStakeBelowMin
 			);
-
-			// *** No Fail except during prep_unstake beyond this point ***
 
 			// we don't unlock immediately
 			Self::prep_unstake(&collator, less, false)?;
@@ -1415,8 +1395,6 @@ pub mod pallet {
 			};
 			let new_total = state.total;
 
-			// *** No Fail except during increase_lock beyond this point ***
-
 			// lock stake
 			Self::increase_lock(&acc, amount, BalanceOf::<T>::zero())?;
 
@@ -1478,8 +1456,6 @@ pub mod pallet {
 			let collator = delegator.owner;
 			Self::delegator_leaves_collator(acc.clone(), collator)?;
 
-			// *** No Fail beyond this point ***
-
 			DelegatorState::<T>::remove(&acc);
 
 			Self::deposit_event(Event::DelegatorLeft(acc, delegator.amount));
@@ -1513,8 +1489,6 @@ pub mod pallet {
 			let stake_after = delegation
 				.try_increment(candidate.clone(), more)
 				.map_err(|_| Error::<T>::DelegationNotFound)?;
-
-			// *** No Fail except during increase_lock beyond this point ***
 
 			// update lock
 			let unstaking_len = Self::increase_lock(&delegator, stake_after, more)?;
@@ -1594,8 +1568,6 @@ pub mod pallet {
 				stake_after >= T::MinDelegatorStake::get(),
 				Error::<T>::DelegationBelowMin
 			);
-
-			// *** No Fail except during prep_unstake beyond this point ***
 
 			Self::prep_unstake(&delegator, less, false)?;
 
@@ -2172,8 +2144,6 @@ pub mod pallet {
 
 			let mut unstaking_len = 0u32;
 
-			// *** No Fail except during Unstaking mutation beyond this point ***
-
 			// update Unstaking by consuming up to {amount | more}
 			Unstaking::<T>::try_mutate(who, |unstaking| -> DispatchResult {
 				// reduce {amount | more} by unstaking until either {amount | more} is zero or
@@ -2269,8 +2239,6 @@ pub mod pallet {
 			}
 			// prepare unstaking of collator candidate
 			Self::prep_unstake(&state.id, state.stake, true)?;
-
-			// *** No Fail beyond this point ***
 
 			// increment rewards of collator
 			Self::do_inc_collator_reward(collator, state.stake);

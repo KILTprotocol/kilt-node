@@ -203,8 +203,6 @@ pub mod pallet {
 
 			let decoded_name = Self::check_claiming_preconditions(name, &owner, &payer)?;
 
-			// No failure beyond this point
-
 			Self::register_name(decoded_name.clone(), owner.clone(), payer);
 			Self::deposit_event(Event::<T>::Web3NameClaimed {
 				owner,
@@ -234,8 +232,6 @@ pub mod pallet {
 
 			let owned_name = Self::check_releasing_preconditions(&owner)?;
 
-			// No failure beyond this point
-
 			Self::unregister_name(&owned_name);
 			Self::deposit_event(Event::<T>::Web3NameReleased {
 				owner,
@@ -263,8 +259,6 @@ pub mod pallet {
 			let caller = ensure_signed(origin)?;
 
 			let decoded_name = Self::check_reclaim_deposit_preconditions(name, &caller)?;
-
-			// No failure beyond this point
 
 			let Web3OwnershipOf::<T> { owner, .. } = Self::unregister_name(&decoded_name);
 			Self::deposit_event(Event::<T>::Web3NameReleased {
@@ -298,8 +292,6 @@ pub mod pallet {
 
 			let (decoded_name, is_claimed) = Self::check_banning_preconditions(name)?;
 
-			// No failure beyond this point
-
 			if is_claimed {
 				Self::unregister_name(&decoded_name);
 			}
@@ -330,8 +322,6 @@ pub mod pallet {
 			T::BanOrigin::ensure_origin(origin)?;
 
 			let decoded_name = Self::check_unbanning_preconditions(name)?;
-
-			// No failure beyond this point
 
 			Self::unban_name(&decoded_name);
 			Self::deposit_event(Event::<T>::Web3NameUnbanned { name: decoded_name });

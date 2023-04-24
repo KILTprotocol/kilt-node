@@ -559,8 +559,6 @@ pub mod pallet {
 			let did_entry =
 				DidDetails::from_creation_details(*details, account_did_auth_key).map_err(Error::<T>::from)?;
 
-			// *** No Fail beyond this call ***
-
 			CurrencyOf::<T>::reserve(&did_entry.deposit.owner, did_entry.deposit.amount)?;
 
 			// Withdraw the fee. We made sure that enough balance is available. But if this
@@ -619,8 +617,6 @@ pub mod pallet {
 				.update_authentication_key(new_key, frame_system::Pallet::<T>::block_number())
 				.map_err(Error::<T>::from)?;
 
-			// *** No Fail beyond this call ***
-
 			Did::<T>::insert(&did_subject, did_details);
 			log::debug!("Authentication key set");
 
@@ -655,8 +651,6 @@ pub mod pallet {
 				.update_delegation_key(new_key, frame_system::Pallet::<T>::block_number())
 				.map_err(Error::<T>::from)?;
 
-			// *** No Fail beyond this call ***
-
 			Did::<T>::insert(&did_subject, did_details);
 			log::debug!("Delegation key set");
 
@@ -687,8 +681,6 @@ pub mod pallet {
 
 			log::debug!("Removing delegation key for DID {:?}", &did_subject);
 			did_details.remove_delegation_key().map_err(Error::<T>::from)?;
-
-			// *** No Fail beyond this call ***
 
 			Did::<T>::insert(&did_subject, did_details);
 			log::debug!("Delegation key removed");
@@ -724,8 +716,6 @@ pub mod pallet {
 				.update_attestation_key(new_key, frame_system::Pallet::<T>::block_number())
 				.map_err(Error::<T>::from)?;
 
-			// *** No Fail beyond this call ***
-
 			Did::<T>::insert(&did_subject, did_details);
 			log::debug!("Attestation key set");
 
@@ -756,8 +746,6 @@ pub mod pallet {
 
 			log::debug!("Removing attestation key for DID {:?}", &did_subject);
 			did_details.remove_attestation_key().map_err(Error::<T>::from)?;
-
-			// *** No Fail beyond this call ***
 
 			Did::<T>::insert(&did_subject, did_details);
 			log::debug!("Attestation key removed");
@@ -791,8 +779,6 @@ pub mod pallet {
 				.add_key_agreement_key(new_key, frame_system::Pallet::<T>::block_number())
 				.map_err(Error::<T>::from)?;
 
-			// *** No Fail beyond this call ***
-
 			Did::<T>::insert(&did_subject, did_details);
 			log::debug!("Key agreement key set");
 
@@ -821,8 +807,6 @@ pub mod pallet {
 
 			log::debug!("Removing key agreement key for DID {:?}", &did_subject);
 			did_details.remove_key_agreement_key(key_id).map_err(Error::<T>::from)?;
-
-			// *** No Fail beyond this call ***
 
 			Did::<T>::insert(&did_subject, did_details);
 			log::debug!("Key agreement key removed");
@@ -863,8 +847,6 @@ pub mod pallet {
 				Error::<T>::MaxNumberOfServicesExceeded
 			);
 
-			// *** No Fail after the following storage write ***
-
 			ServiceEndpoints::<T>::try_mutate(
 				&did_subject,
 				service_endpoint.id.clone(),
@@ -897,8 +879,6 @@ pub mod pallet {
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::remove_service_endpoint())]
 		pub fn remove_service_endpoint(origin: OriginFor<T>, service_id: ServiceEndpointId<T>) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
-
-			// *** No Fail after the next call succeeds ***
 
 			ensure!(
 				ServiceEndpoints::<T>::take(&did_subject, &service_id).is_some(),
@@ -1065,8 +1045,6 @@ pub mod pallet {
 			// Dispatch the referenced [Call] instance and return its result
 			let DidAuthorizedCallOperation { did, call, .. } = wrapped_operation.operation;
 
-			// *** No Fail beyond this point ***
-
 			#[cfg(not(feature = "runtime-benchmarks"))]
 			let result = call.dispatch(
 				DidRawOrigin {
@@ -1221,8 +1199,6 @@ pub mod pallet {
 				current_endpoints_count <= endpoints_to_remove,
 				Error::<T>::MaxStoredEndpointsCountExceeded
 			);
-
-			// *** No Fail beyond this point ***
 
 			// This one can fail, albeit this should **never** be the case as we check for
 			// the preconditions above.
