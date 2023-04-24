@@ -575,7 +575,7 @@ pub mod pallet {
 			});
 			DidEndpointsCount::<T>::insert(&did_identifier, input_service_endpoints.len().saturated_into::<u32>());
 
-			let mut did_entry =
+			let did_entry =
 				DidDetails::from_creation_details(*details, account_did_auth_key).map_err(Error::<T>::from)?;
 
 			Did::<T>::insert(&did_identifier, did_entry.clone());
