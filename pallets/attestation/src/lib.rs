@@ -264,8 +264,6 @@ pub mod pallet {
 
 			let deposit = kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(payer, deposit_amount)?;
 
-			// *** No Fail beyond this point ***
-
 			log::debug!("insert Attestation");
 
 			Attestations::<T>::insert(
@@ -331,8 +329,6 @@ pub mod pallet {
 				)?;
 			}
 
-			// *** No Fail beyond this point ***
-
 			log::debug!("revoking Attestation");
 			Attestations::<T>::insert(
 				claim_hash,
@@ -389,8 +385,6 @@ pub mod pallet {
 				)?;
 			}
 
-			// *** No Fail beyond this point ***
-
 			log::debug!("removing Attestation");
 
 			Self::remove_attestation(attestation, claim_hash);
@@ -415,8 +409,6 @@ pub mod pallet {
 			let attestation = Attestations::<T>::get(claim_hash).ok_or(Error::<T>::NotFound)?;
 
 			ensure!(attestation.deposit.owner == who, Error::<T>::NotAuthorized);
-
-			// *** No Fail beyond this point ***
 
 			log::debug!("removing Attestation");
 

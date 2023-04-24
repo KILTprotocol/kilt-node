@@ -395,7 +395,6 @@ pub mod pallet {
 				did: did_identifier.clone(),
 			};
 
-			// *** NO FAILURE beyond the reserve call ***
 			CurrencyOf::<T>::reserve(&record.deposit.owner, record.deposit.amount)?;
 
 			ConnectedDids::<T>::mutate(&account, |did_entry| {
