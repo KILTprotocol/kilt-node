@@ -21,12 +21,6 @@ use sp_runtime::DispatchError;
 
 use crate::did_details::DidVerificationKeyRelationship;
 
-/// All the errors that can be generated when updating the Deposit
-#[derive(Debug, Eq, PartialEq, TypeInfo)]
-pub enum UpdateError {
-	DidError(DidError),
-	DispatchError(DispatchError),
-}
 /// All the errors that can be generated when validating a DID operation.
 #[derive(Debug, Eq, PartialEq, TypeInfo)]
 pub enum DidError {
