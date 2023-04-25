@@ -423,7 +423,7 @@ pub mod pallet {
 				DidError::Signature(operation_error) => Self::from(operation_error),
 				DidError::Input(input_error) => Self::from(input_error),
 				DidError::Internal => Self::Internal,
-				DidError::DepositError(_) => Self::UnableToPayFees,
+				DidError::Deposit(_) => Self::UnableToPayFees,
 			}
 		}
 	}

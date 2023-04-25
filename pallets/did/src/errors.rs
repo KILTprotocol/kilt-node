@@ -39,12 +39,12 @@ pub enum DidError {
 	/// An error that is not supposed to take place, yet it happened.
 	Internal,
 	/// An error that is related to updating the deposit
-	DepositError(DispatchError),
+	Deposit(DispatchError),
 }
 
 impl From<DispatchError> for DidError {
 	fn from(err: DispatchError) -> Self {
-		DidError::DepositError(err)
+		DidError::Deposit(err)
 	}
 }
 
