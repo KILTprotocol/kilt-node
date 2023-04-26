@@ -1775,7 +1775,8 @@ fn check_max_service_id_length_addition_error() {
 
 	ExtBuilder::default()
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build(None)
+		.execute_with(|| {
 			assert_noop!(
 				Did::add_service_endpoint(RuntimeOrigin::signed(alice_did.clone()), new_service_endpoint),
 				did::Error::<Test>::MaxServiceIdLengthExceeded
