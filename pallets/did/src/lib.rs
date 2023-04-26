@@ -463,6 +463,15 @@ pub mod pallet {
 		}
 	}
 
+	#[pallet::hooks]
+	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+		#[cfg(feature = "try-runtime")]
+		fn try_state(_n: BlockNumberFor<T>) -> Result<(), &'static str> {
+			do_try_state()?;
+			Ok(())
+		}
+	}
+
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
 		/// Store a new DID on chain, after verifying that the creation
@@ -1224,6 +1233,52 @@ pub mod pallet {
 			log::debug!("Deleting DID {:?}", did_subject);
 
 			Self::deposit_event(Event::DidDeleted(did_subject));
+
+			Ok(())
+		}
+
+		#[cfg(any(feature = "try-runtime", test))]
+		pub fn do_try_state() -> DispatchResult {
+			Did::<T>::iter().try_for_each(
+				|(did_subject, did_details): (DidIdentifierOf<T>, DidDetails<T>)| -> DispatchResult {
+					let service_endpoints_count: usize = ServiceEndpoints::<T>::iter_prefix(&did_subject).count();
+
+					ensure!(
+						service_endpoints_count == DidEndpointsCount::<T>::get(&did_subject).saturated_into::<usize>(),
+						DispatchError::Other("Storage Error: amount of endpoints are not matching!")
+					);
+
+					ensure!(
+						did_details.key_agreement_keys.len()
+							> <T as Config>::MaxTotalKeyAgreementKeys::get().saturated_into::<usize>(),
+						DispatchError::Other("Storage Error: amount of endpoints are not matching!")
+					);
+
+					ensure!(
+						service_endpoints_count
+							< <T as Config>::MaxNumberOfServicesPerDid::get().saturated_into::<usize>(),
+						DispatchError::Other("Stoarge Error: amount of endpoints is to high!")
+					);
+
+					ensure!(
+						!DidBlacklist::<T>::contains_key(did_subject),
+						DispatchError::Other("Deleted DID is still in storage!")
+					);
+
+					Ok(())
+				},
+			)?;
+
+			DidBlacklist::<T>::iter_keys().try_for_each(|deleted_did_subject| -> DispatchResult {
+				let service_endpoints_count = ServiceEndpoints::<T>::iter_prefix(&deleted_did_subject).count();
+
+				ensure!(
+					service_endpoints_count == 0,
+					DispatchError::Other("Deleted service enpoints are still in storage!")
+				);
+
+				Ok(())
+			})?;
 
 			Ok(())
 		}

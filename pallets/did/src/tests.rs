@@ -697,8 +697,7 @@ fn check_invalid_service_id_character_did_creation() {
 		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
-		.build(None)
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(None, || {
 			assert_noop!(
 				Did::create(
 					RuntimeOrigin::signed(ACCOUNT_00),
