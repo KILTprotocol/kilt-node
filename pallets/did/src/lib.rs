@@ -1245,24 +1245,24 @@ pub mod pallet {
 
 					ensure!(
 						service_endpoints_count == DidEndpointsCount::<T>::get(&did_subject).saturated_into::<usize>(),
-						DispatchError::Other("Storage Error: amount of endpoints are not matching!")
+						DispatchError::Other("Test")
 					);
 
 					ensure!(
 						did_details.key_agreement_keys.len()
-							> <T as Config>::MaxTotalKeyAgreementKeys::get().saturated_into::<usize>(),
-						DispatchError::Other("Storage Error: amount of endpoints are not matching!")
+							<= <T as Config>::MaxTotalKeyAgreementKeys::get().saturated_into::<usize>(),
+						DispatchError::Other("Test")
 					);
 
 					ensure!(
 						service_endpoints_count
-							< <T as Config>::MaxNumberOfServicesPerDid::get().saturated_into::<usize>(),
-						DispatchError::Other("Stoarge Error: amount of endpoints is to high!")
+							<= <T as Config>::MaxNumberOfServicesPerDid::get().saturated_into::<usize>(),
+						DispatchError::Other("Test")
 					);
 
 					ensure!(
 						!DidBlacklist::<T>::contains_key(did_subject),
-						DispatchError::Other("Deleted DID is still in storage!")
+						DispatchError::Other("Test")
 					);
 
 					Ok(())
@@ -1272,10 +1272,7 @@ pub mod pallet {
 			DidBlacklist::<T>::iter_keys().try_for_each(|deleted_did_subject| -> DispatchResult {
 				let service_endpoints_count = ServiceEndpoints::<T>::iter_prefix(&deleted_did_subject).count();
 
-				ensure!(
-					service_endpoints_count == 0,
-					DispatchError::Other("Deleted service enpoints are still in storage!")
-				);
+				ensure!(service_endpoints_count == 0, DispatchError::Other("Test"));
 
 				Ok(())
 			})?;
