@@ -190,6 +190,15 @@ pub mod pallet {
 		}
 	}
 
+	#[pallet::hooks]
+	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+		#[cfg(feature = "try-runtime")]
+		fn try_state(_n: BlockNumberFor<T>) -> Result<(), &'static str> {
+			do_try_state()?;
+			Ok(())
+		}
+	}
+
 	#[pallet::call]
 	impl<T: Config> Pallet<T>
 	where
@@ -224,7 +233,7 @@ pub mod pallet {
 		pub fn associate_account(
 			origin: OriginFor<T>,
 			req: AssociateAccountRequest,
-			expiration: <T as frame_system::Config>::BlockNumber,
+			expiration: <T as frame_system::Config>::BlockNumber, // !TODO! why expiration
 		) -> DispatchResult {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 			let did_identifier = source.subject();
@@ -267,6 +276,8 @@ pub mod pallet {
 		#[pallet::call_index(1)]
 		#[pallet::weight(<T as Config>::WeightInfo::associate_sender())]
 		pub fn associate_sender(origin: OriginFor<T>) -> DispatchResult {
+			// !TODO! difference between associate_sender und associate_account. difference
+			// between assert! und ensure!
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 
 			ensure!(
@@ -420,6 +431,19 @@ pub mod pallet {
 			} else {
 				Err(Error::<T>::NotFound.into())
 			}
+		}
+
+		#[cfg(any(feature = "try-runtime", test))]
+		pub fn do_try_state() -> DispatchResult {
+			ConnectedDids::<T>::iter().try_for_each(|(account, record)| -> DispatchResult {
+				let is_in_connected_accounts = ConnectedAccounts::<T>::contains_key(record.did, account);
+
+				ensure!(is_in_connected_accounts, DispatchError::Other("Test"));
+
+				Ok(())
+			})?;
+
+			Ok(())
 		}
 	}
 

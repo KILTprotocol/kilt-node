@@ -29,7 +29,7 @@ use sp_runtime::{
 
 use crate::{
 	self as pallet_did_lookup, linkable_account::LinkableAccountId, AccountIdOf, BalanceOf, Config, ConnectedAccounts,
-	ConnectedDids, ConnectionRecord, CurrencyOf, DidIdentifierOf,
+	ConnectedDids, ConnectionRecord, CurrencyOf, DidIdentifierOf, Pallet,
 };
 
 pub(crate) type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
@@ -197,6 +197,13 @@ impl ExtBuilder {
 			}
 		});
 		ext
+	}
+
+	pub fn build_and_execute_with_sanity_tests(self, test: impl FnOnce() -> ()) {
+		self.build().execute_with(|| {
+			test();
+			Pallet::<Test>::do_try_state().unwrap();
+		})
 	}
 
 	#[cfg(feature = "runtime-benchmarks")]
