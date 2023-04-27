@@ -34,7 +34,7 @@ use kilt_support::deposit::Deposit;
 
 use crate::{
 	pallet::AuthorizationIdOf, AccountIdOf, AttestationAccessControl, AttestationDetails, AttesterOf, BalanceOf,
-	ClaimHashOf, Config, CurrencyOf,
+	ClaimHashOf, Config, CurrencyOf, Pallet,
 };
 
 #[cfg(test)]
@@ -383,6 +383,13 @@ pub(crate) mod runtime {
 			});
 
 			ext
+		}
+
+		pub fn build_and_execute_with_sanity_tests(self, test: impl FnOnce() -> ()) {
+			self.build().execute_with(|| {
+				test();
+				Pallet::<Test>::do_try_state().unwrap();
+			})
 		}
 
 		#[cfg(feature = "runtime-benchmarks")]

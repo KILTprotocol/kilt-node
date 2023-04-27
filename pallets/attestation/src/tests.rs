@@ -41,8 +41,7 @@ fn test_attest_without_authorization() {
 	ExtBuilder::default()
 		.with_ctypes(vec![(ctype_hash, attester.clone())])
 		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_ok!(Attestation::add(
 				DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
 				claim_hash,
@@ -72,8 +71,7 @@ fn test_attest_authorized() {
 	ExtBuilder::default()
 		.with_ctypes(vec![(ctype, attester.clone())])
 		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_ok!(Attestation::add(
 				DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
 				claim_hash,
@@ -105,8 +103,7 @@ fn test_attest_unauthorized() {
 	ExtBuilder::default()
 		.with_ctypes(vec![(ctype, attester.clone())])
 		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_eq!(
 				Attestation::add(
 					DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
@@ -127,8 +124,7 @@ fn test_attest_ctype_not_found() {
 
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				Attestation::add(
 					DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
@@ -151,8 +147,7 @@ fn test_attest_already_exists() {
 		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
 		.with_ctypes(vec![(attestation.ctype_hash, attester.clone())])
 		.with_attestations(vec![(claim_hash, attestation.clone())])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				Attestation::add(
 					DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
@@ -178,8 +173,7 @@ fn test_revoke_remove() {
 		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
 		.with_ctypes(vec![(attestation.ctype_hash, revoker.clone())])
 		.with_attestations(vec![(claim_hash, attestation)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_ok!(Attestation::revoke(
 				DoubleOrigin(ACCOUNT_00, revoker.clone()).into(),
 				claim_hash,
@@ -214,8 +208,7 @@ fn test_authorized_revoke() {
 		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
 		.with_ctypes(vec![(attestation.ctype_hash, attester)])
 		.with_attestations(vec![(claim_hash, attestation)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_ok!(Attestation::revoke(
 				DoubleOrigin(ACCOUNT_00, revoker.clone()).into(),
 				claim_hash,
@@ -245,8 +238,7 @@ fn test_unauthorized_revoke() {
 		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
 		.with_ctypes(vec![(attestation.ctype_hash, attester)])
 		.with_attestations(vec![(claim_hash, attestation)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				Attestation::revoke(DoubleOrigin(ACCOUNT_00, evil).into(), claim_hash, authorization_info),
 				DispatchError::Other("Unauthorized")
@@ -264,8 +256,7 @@ fn test_revoke_not_found() {
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
 		.with_ctypes(vec![(attestation.ctype_hash, revoker.clone())])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				Attestation::revoke(
 					DoubleOrigin(ACCOUNT_00, revoker.clone()).into(),
@@ -291,8 +282,7 @@ fn test_already_revoked() {
 		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
 		.with_ctypes(vec![(attestation.ctype_hash, revoker.clone())])
 		.with_attestations(vec![(claim_hash, attestation)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				Attestation::revoke(
 					DoubleOrigin(ACCOUNT_00, revoker.clone()).into(),
@@ -318,8 +308,7 @@ fn test_remove() {
 		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
 		.with_ctypes(vec![(attestation.ctype_hash, attester.clone())])
 		.with_attestations(vec![(claim_hash, attestation)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_ok!(Attestation::remove(
 				DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
 				claim_hash,
@@ -342,8 +331,7 @@ fn test_remove_authorized() {
 		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
 		.with_ctypes(vec![(attestation.ctype_hash, revoker.clone())])
 		.with_attestations(vec![(claim_hash, attestation)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_ok!(Attestation::remove(
 				DoubleOrigin(ACCOUNT_00, revoker.clone()).into(),
 				claim_hash,
@@ -366,8 +354,7 @@ fn test_remove_unauthorized() {
 		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
 		.with_ctypes(vec![(attestation.ctype_hash, attester)])
 		.with_attestations(vec![(claim_hash, attestation)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				Attestation::remove(
 					DoubleOrigin(ACCOUNT_00, evil.clone()).into(),
@@ -388,8 +375,7 @@ fn test_remove_not_found() {
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
 		.with_ctypes(vec![(attestation.ctype_hash, attester.clone())])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
 			assert_noop!(
 				Attestation::remove(DoubleOrigin(ACCOUNT_00, attester.clone()).into(), claim_hash, None),
@@ -413,8 +399,7 @@ fn test_reclaim_deposit() {
 		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
 		.with_ctypes(vec![(attestation.ctype_hash, attester)])
 		.with_attestations(vec![(claim_hash, attestation)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_eq!(Balances::reserved_balance(ACCOUNT_00), <Test as Config>::Deposit::get());
 			assert_ok!(Attestation::reclaim_deposit(
 				RuntimeOrigin::signed(ACCOUNT_00),
@@ -439,8 +424,7 @@ fn test_reclaim_deposit_authorization() {
 		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
 		.with_ctypes(vec![(attestation.ctype_hash, attester)])
 		.with_attestations(vec![(claim_hash, attestation)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_eq!(Balances::reserved_balance(ACCOUNT_00), <Test as Config>::Deposit::get());
 			assert_ok!(Attestation::reclaim_deposit(
 				RuntimeOrigin::signed(ACCOUNT_00),
@@ -461,8 +445,7 @@ fn test_reclaim_unauthorized() {
 		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
 		.with_ctypes(vec![(attestation.ctype_hash, attester)])
 		.with_attestations(vec![(claim_hash, attestation)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				Attestation::reclaim_deposit(RuntimeOrigin::signed(ACCOUNT_01), claim_hash),
 				attestation::Error::<Test>::NotAuthorized,
@@ -479,8 +462,7 @@ fn test_reclaim_deposit_not_found() {
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
 		.with_ctypes(vec![(attestation.ctype_hash, attester)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				Attestation::reclaim_deposit(RuntimeOrigin::signed(ACCOUNT_01), claim_hash),
 				attestation::Error::<Test>::NotFound,
@@ -506,8 +488,7 @@ fn test_change_deposit_owner() {
 		])
 		.with_ctypes(vec![(attestation.ctype_hash, attester.clone())])
 		.with_attestations(vec![(claim_hash, attestation)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_eq!(Balances::reserved_balance(ACCOUNT_00), <Test as Config>::Deposit::get());
 			assert_ok!(Attestation::change_deposit_owner(
 				DoubleOrigin(ACCOUNT_01, attester).into(),
@@ -539,8 +520,7 @@ fn test_change_deposit_owner_insufficient_balance() {
 		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
 		.with_ctypes(vec![(attestation.ctype_hash, attester.clone())])
 		.with_attestations(vec![(claim_hash, attestation)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_eq!(Balances::reserved_balance(ACCOUNT_00), <Test as Config>::Deposit::get());
 			assert_noop!(
 				Attestation::change_deposit_owner(DoubleOrigin(ACCOUNT_01, attester).into(), claim_hash),
@@ -560,8 +540,7 @@ fn test_change_deposit_owner_unauthorized() {
 		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
 		.with_ctypes(vec![(attestation.ctype_hash, attester)])
 		.with_attestations(vec![(claim_hash, attestation)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				Attestation::change_deposit_owner(DoubleOrigin(ACCOUNT_00, evil_actor).into(), claim_hash),
 				attestation::Error::<Test>::NotAuthorized,
@@ -578,8 +557,7 @@ fn test_change_deposit_owner_not_found() {
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
 		.with_ctypes(vec![(attestation.ctype_hash, attester.clone())])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				Attestation::change_deposit_owner(DoubleOrigin(ACCOUNT_00, attester).into(), claim_hash),
 				attestation::Error::<Test>::NotFound,
@@ -602,8 +580,7 @@ fn test_update_deposit() {
 		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
 		.with_ctypes(vec![(attestation.ctype_hash, attester)])
 		.with_attestations(vec![(claim_hash, attestation)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_eq!(
 				Balances::reserved_balance(ACCOUNT_00),
 				<Test as Config>::Deposit::get() * 2
@@ -642,8 +619,7 @@ fn test_update_deposit_unauthorized() {
 		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
 		.with_ctypes(vec![(attestation.ctype_hash, attester)])
 		.with_attestations(vec![(claim_hash, attestation)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_eq!(
 				Balances::reserved_balance(ACCOUNT_00),
 				<Test as Config>::Deposit::get() * 2

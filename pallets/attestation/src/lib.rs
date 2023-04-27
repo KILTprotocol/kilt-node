@@ -148,7 +148,13 @@ pub mod pallet {
 	pub struct Pallet<T>(_);
 
 	#[pallet::hooks]
-	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {}
+	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+		#[cfg(feature = "try-runtime")]
+		fn try_state(_n: BlockNumberFor<T>) -> Result<(), &'static str> {
+			do_try_state()?;
+			Ok(())
+		}
+	}
 
 	/// Attestations stored on chain.
 	///
@@ -256,7 +262,7 @@ pub mod pallet {
 			);
 
 			// Check for validity of the delegation node if specified.
-			authorization
+			authorization // !TODO!
 				.as_ref()
 				.map(|ac| ac.can_attest(&who, &ctype_hash, &claim_hash))
 				.transpose()?;
@@ -464,6 +470,21 @@ pub mod pallet {
 			if let Some(authorization_id) = &attestation.authorization_id {
 				ExternalAttestations::<T>::remove(authorization_id, claim_hash);
 			}
+		}
+		#[cfg(any(feature = "try-runtime", test))]
+		pub fn do_try_state() -> DispatchResult {
+			Attestations::<T>::iter().try_for_each(|(claim_hash, attestation_details)| -> DispatchResult {
+				if let Some(authorization_id) = attestation_details.authorization_id {
+					ensure!(
+						ExternalAttestations::<T>::contains_key(authorization_id, claim_hash),
+						DispatchError::Other("Test")
+					);
+				} else {
+					return Ok(());
+				}
+				Ok(())
+			})?;
+			Ok(())
 		}
 	}
 
