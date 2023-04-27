@@ -323,5 +323,6 @@ fn testnet_genesis(
 		polkadot_xcm: PolkadotXcmConfig {
 			safe_xcm_version: Some(SAFE_XCM_VERSION),
 		},
+		did_lookup: Default::default(),
 	}
 }

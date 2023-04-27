@@ -18,8 +18,8 @@
 
 use sp_std::{fmt::Debug, marker::PhantomData, ops::Deref, vec::Vec};
 
-use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::{ensure, sp_runtime::SaturatedConversion, traits::Get, BoundedVec, RuntimeDebug};
+use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 
 use crate::{Config, Error};
@@ -59,11 +59,11 @@ impl<T: Config> TryFrom<Vec<u8>> for AsciiWeb3Name<T> {
 	fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
 		ensure!(
 			value.len() >= T::MinNameLength::get().saturated_into(),
-			Self::Error::Web3NameTooShort
+			Self::Error::TooShort
 		);
 		let bounded_vec: BoundedVec<u8, T::MaxNameLength> =
-			BoundedVec::try_from(value).map_err(|_| Self::Error::Web3NameTooLong)?;
-		ensure!(is_valid_web3_name(&bounded_vec), Self::Error::InvalidWeb3NameCharacter);
+			BoundedVec::try_from(value).map_err(|_| Self::Error::TooLong)?;
+		ensure!(is_valid_web3_name(&bounded_vec), Self::Error::InvalidCharacter);
 		Ok(Self(bounded_vec, PhantomData))
 	}
 }

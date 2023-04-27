@@ -16,8 +16,8 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use codec::MaxEncodedLen;
 use frame_support::{traits::Currency, BoundedVec};
+use parity_scale_codec::MaxEncodedLen;
 
 use did::DeriveDidCallAuthorizationVerificationKeyRelationship;
 use pallet_did_lookup::associate_account_request::AssociateAccountRequest;
@@ -32,7 +32,7 @@ use runtime_common::{
 	AccountId, BlockNumber,
 };
 
-use super::{Runtime, RuntimeCall};
+use crate::{Runtime, RuntimeCall};
 
 #[test]
 fn call_size() {
@@ -160,7 +160,7 @@ fn test_derive_did_key_web3name() {
 fn test_derive_did_key_lookup() {
 	assert_eq!(
 		RuntimeCall::DidLookup(pallet_did_lookup::Call::associate_account {
-			req: AssociateAccountRequest::Dotsama(
+			req: AssociateAccountRequest::Polkadot(
 				AccountId::new([1u8; 32]),
 				sp_runtime::MultiSignature::from(sp_core::ed25519::Signature([0; 64]))
 			),

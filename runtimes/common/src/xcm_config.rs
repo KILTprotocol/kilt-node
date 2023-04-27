@@ -17,21 +17,19 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use core::marker::PhantomData;
-use frame_support::{log, match_types, parameter_types};
+use frame_support::{log, match_types, parameter_types, weights::Weight};
 use polkadot_parachain::primitives::Sibling;
 use xcm::latest::prelude::*;
-use xcm_builder::{
-	AccountId32Aliases, AllowUnpaidExecutionFrom, CurrencyAdapter, IsConcrete, ParentIsPreset,
-	SiblingParachainConvertsVia,
-};
+use xcm_builder::{AccountId32Aliases, CurrencyAdapter, IsConcrete, ParentIsPreset, SiblingParachainConvertsVia};
 use xcm_executor::traits::ShouldExecute;
 
 use crate::AccountId;
 
 parameter_types! {
 	// One XCM operation is 1_000_000_000 weight, almost certainly a conservative estimate.
-	pub UnitWeightCost: u64 = 1_000_000_000;
+	pub UnitWeightCost: Weight = Weight::from_parts(1_000_000_000, 64 * 1024);
 	pub const MaxInstructions: u32 = 100;
+	pub const MaxAssetsIntoHolding: u32 = 64;
 }
 
 match_types! {
@@ -54,41 +52,25 @@ where
 {
 	fn should_execute<Call>(
 		origin: &MultiLocation,
-		message: &mut Xcm<Call>,
-		max_weight: u64,
-		weight_credit: &mut u64,
+		instructions: &mut [Instruction<Call>],
+		max_weight: Weight,
+		weight_credit: &mut Weight,
 	) -> Result<(), ()> {
-		Deny::should_execute(origin, message, max_weight, weight_credit)?;
-		Allow::should_execute(origin, message, max_weight, weight_credit)
+		Deny::should_execute(origin, instructions, max_weight, weight_credit)?;
+		Allow::should_execute(origin, instructions, max_weight, weight_credit)
 	}
 }
-
-/// Explicitly deny ReserveTransfer to the relay chain. Allow calls from the
-/// relay chain governance.
-pub type XcmBarrier = DenyThenTry<
-	DenyReserveTransferToRelayChain,
-	(
-		// We don't allow anything from any sibling chain, therefore the following is not included here:
-		// * TakeWeightCredit
-		// * AllowTopLevelPaidExecutionFrom<Everything>
-
-		// We allow everything from the relay chain if it was sent by the relay chain legislative (i.e., democracy
-		// vote). Since the relaychain doesn't own KILTs and missing fees shouldn't prevent calls from the relaychain
-		// legislative, we allow unpaid execution.
-		AllowUnpaidExecutionFrom<ParentLegislative>,
-	),
->;
 
 /// Reserved funds to the relay chain can't return. See https://github.com/paritytech/polkadot/issues/5233
 pub struct DenyReserveTransferToRelayChain;
 impl ShouldExecute for DenyReserveTransferToRelayChain {
 	fn should_execute<Call>(
 		origin: &MultiLocation,
-		message: &mut Xcm<Call>,
-		_max_weight: u64,
-		_weight_credit: &mut u64,
+		instructions: &mut [Instruction<Call>],
+		_max_weight: Weight,
+		_weight_credit: &mut Weight,
 	) -> Result<(), ()> {
-		if message.0.iter().any(|inst| {
+		if instructions.iter().any(|inst| {
 			matches!(
 				inst,
 				InitiateReserveWithdraw {
@@ -122,8 +104,7 @@ impl ShouldExecute for DenyReserveTransferToRelayChain {
 				parents: 1,
 				interior: Here
 			}
-		) && message
-			.0
+		) && instructions
 			.iter()
 			.any(|inst| matches!(inst, ReserveAssetDeposited { .. }))
 		{

@@ -16,8 +16,8 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::traits::{Currency, Get};
+use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_runtime::{
 	traits::{AtLeast32BitUnsigned, CheckedSub, Saturating, Zero},
@@ -87,18 +87,13 @@ impl<AccountId: Ord, Balance: PartialEq + Ord> Ord for Stake<AccountId, Balance>
 }
 
 /// The activity status of the collator.
-#[derive(Copy, Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[derive(Copy, Clone, Default, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub enum CandidateStatus {
 	/// Committed to be online and producing valid blocks (not equivocating)
+	#[default]
 	Active,
 	/// Staked until the inner round
 	Leaving(SessionIndex),
-}
-
-impl Default for CandidateStatus {
-	fn default() -> CandidateStatus {
-		CandidateStatus::Active
-	}
 }
 
 #[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq, TypeInfo, MaxEncodedLen)]

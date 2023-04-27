@@ -47,7 +47,6 @@ sc-transaction-pool-api.workspace = true
 sp-api = {workspace = true, features = ["std"]}
 sp-block-builder = {workspace = true, features = ["std"]}
 sp-blockchain.workspace = true
-sp-consensus.workspace = true
 sp-consensus-aura = {workspace = true, features = ["std"]}
 sp-core = {workspace = true, features = ["std"]}
 sp-finality-grandpa = {workspace = true, features = ["std"]}
@@ -86,4 +85,5 @@ try-runtime = [
   "pallet-transaction-payment/try-runtime",
   "runtime-common/try-runtime",
   "try-runtime-cli",
+  "try-runtime-cli/try-runtime",
 ]

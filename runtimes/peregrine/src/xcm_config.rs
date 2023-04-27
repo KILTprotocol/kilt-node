@@ -17,28 +17,35 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use super::{
-	AccountId, Balances, ParachainInfo, ParachainSystem, PolkadotXcm, Runtime, RuntimeCall, RuntimeEvent,
-	RuntimeOrigin, Treasury, WeightToFee, XcmpQueue,
+	AccountId, AllPalletsWithSystem, Balances, ParachainInfo, ParachainSystem, PolkadotXcm, Runtime, RuntimeCall,
+	RuntimeEvent, RuntimeOrigin, Treasury, WeightToFee, XcmpQueue,
 };
 
-use frame_support::{parameter_types, traits::Nothing};
+use frame_support::{
+	parameter_types,
+	traits::{Contains, Nothing},
+};
 use pallet_xcm::XcmPassthrough;
+use sp_core::ConstU32;
 use xcm::latest::prelude::*;
 use xcm_builder::{
-	EnsureXcmOrigin, FixedWeightBounds, LocationInverter, RelayChainAsNative, SiblingParachainAsNative,
-	SignedAccountId32AsNative, SignedToAccountId32, SovereignSignedViaLocation, UsingComponents,
+	AllowTopLevelPaidExecutionFrom, EnsureXcmOrigin, FixedWeightBounds, RelayChainAsNative, SiblingParachainAsNative,
+	SignedAccountId32AsNative, SignedToAccountId32, SovereignSignedViaLocation, UsingComponents, WithComputedOrigin,
 };
-use xcm_executor::XcmExecutor;
+use xcm_executor::{traits::WithOriginFilter, XcmExecutor};
 
 use runtime_common::xcm_config::{
-	HereLocation, LocalAssetTransactor, LocationToAccountId, MaxInstructions, UnitWeightCost, XcmBarrier,
+	DenyReserveTransferToRelayChain, DenyThenTry, HereLocation, LocalAssetTransactor, LocationToAccountId,
+	MaxAssetsIntoHolding, MaxInstructions, ParentLegislative, UnitWeightCost,
 };
 
 parameter_types! {
 	pub RelayChainOrigin: RuntimeOrigin = cumulus_pallet_xcm::Origin::Relay.into();
 	pub Ancestry: MultiLocation = Parachain(ParachainInfo::parachain_id().into()).into();
 	// TODO: This needs to be updated once we deploy Peregrine on Rococo
-	pub const RelayNetworkId: NetworkId = NetworkId::Any;
+	pub const RelayNetworkId: Option<NetworkId> = None;
+	pub UniversalLocation: InteriorMultiLocation =
+		Parachain(ParachainInfo::parachain_id().into()).into();
 }
 
 /// This is the type we use to convert an (incoming) XCM origin into a local
@@ -64,6 +71,37 @@ pub type XcmOriginToTransactDispatchOrigin = (
 	XcmPassthrough<RuntimeOrigin>,
 );
 
+/// Explicitly deny ReserveTransfer to the relay chain. Allow calls from the
+/// relay chain governance.
+pub type XcmBarrier = DenyThenTry<
+	DenyReserveTransferToRelayChain,
+	WithComputedOrigin<
+		(
+			// We allow everything from the relay chain if it was sent by the relay chain legislative (i.e., democracy
+			// vote). Since the relaychain doesn't own KILTs and missing fees shouldn't prevent calls from the
+			// relaychain legislative, we allow unpaid execution.
+			AllowTopLevelPaidExecutionFrom<ParentLegislative>,
+		),
+		UniversalLocation,
+		ConstU32<8>,
+	>,
+>;
+
+/// A call filter for the XCM Transact instruction. This is a temporary measure
+/// until we properly account for proof size weights.
+///
+/// Calls that are allowed through this filter must:
+/// 1. Have a fixed weight;
+/// 2. Cannot lead to another call being made;
+/// 3. Have a defined proof size weight, e.g. no unbounded vecs in call
+/// parameters.
+pub struct SafeCallFilter;
+impl Contains<RuntimeCall> for SafeCallFilter {
+	fn contains(_call: &RuntimeCall) -> bool {
+		false
+	}
+}
+
 pub struct XcmConfig;
 impl xcm_executor::Config for XcmConfig {
 	type RuntimeCall = RuntimeCall;
@@ -76,11 +114,7 @@ impl xcm_executor::Config for XcmConfig {
 	type IsReserve = ();
 	// Teleporting is disabled.
 	type IsTeleporter = ();
-	// Invert a location.
-	// E.g., the relay chain is described as parent (MultiLocation(1, Here)))
-	// chain. When we invert that location it would be MultiLocation(0,
-	// X1(Parachain(2086))) since we are a child chain with ParaId 2086.
-	type LocationInverter = LocationInverter<Ancestry>;
+	type UniversalLocation = UniversalLocation;
 	// Which XCM instructions are allowed and which are not on our chain.
 	type Barrier = XcmBarrier;
 	// How XCM messages are weighted. Each transaction has a weight of
@@ -97,6 +131,15 @@ impl xcm_executor::Config for XcmConfig {
 	type AssetTrap = PolkadotXcm;
 	type AssetClaims = PolkadotXcm;
 	type SubscriptionService = PolkadotXcm;
+	type PalletInstancesInfo = AllPalletsWithSystem;
+	type MaxAssetsIntoHolding = MaxAssetsIntoHolding;
+	type AssetLocker = ();
+	type AssetExchanger = ();
+	type FeeManager = ();
+	type MessageExporter = ();
+	type UniversalAliases = Nothing;
+	type CallDispatcher = WithOriginFilter<SafeCallFilter>;
+	type SafeCallFilter = SafeCallFilter;
 }
 
 /// Allows only local `Signed` origins to be converted into `MultiLocation`s by
@@ -107,10 +150,15 @@ pub type LocalOriginToLocation = SignedToAccountId32<RuntimeOrigin, AccountId, R
 /// the right message queues.
 pub type XcmRouter = (
 	// Two routers. Use UMP to communicate with the relay chain:
-	cumulus_primitives_utility::ParentAsUmp<ParachainSystem, ()>,
+	cumulus_primitives_utility::ParentAsUmp<ParachainSystem, PolkadotXcm, ()>,
 	// .. and XCMP to communicate with the sibling chains.
 	XcmpQueue,
 );
+
+#[cfg(feature = "runtime-benchmarks")]
+parameter_types! {
+	pub ReachableDest: Option<MultiLocation> = Some(Parent.into());
+}
 
 impl pallet_xcm::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
@@ -124,13 +172,21 @@ impl pallet_xcm::Config for Runtime {
 	type XcmReserveTransferFilter = Nothing;
 	type XcmExecutor = XcmExecutor<XcmConfig>;
 	type Weigher = FixedWeightBounds<UnitWeightCost, RuntimeCall, MaxInstructions>;
-	type LocationInverter = LocationInverter<Ancestry>;
 	type RuntimeOrigin = RuntimeOrigin;
 	type RuntimeCall = RuntimeCall;
 
 	const VERSION_DISCOVERY_QUEUE_SIZE: u32 = 100;
 	// Our latest supported XCM version.
 	type AdvertisedXcmVersion = pallet_xcm::CurrentXcmVersion;
+	type UniversalLocation = UniversalLocation;
+	type Currency = Balances;
+	type CurrencyMatcher = ();
+	type TrustedLockers = ();
+	type SovereignAccountOf = LocationToAccountId<RelayNetworkId>;
+	type MaxLockers = ConstU32<8>;
+	type WeightInfo = crate::weights::pallet_xcm::WeightInfo<Runtime>;
+	#[cfg(feature = "runtime-benchmarks")]
+	type ReachableDest = ReachableDest;
 }
 
 impl cumulus_pallet_xcm::Config for Runtime {

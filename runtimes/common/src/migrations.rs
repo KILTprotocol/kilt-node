@@ -16,68 +16,54 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::traits::{GetStorageVersion, OnRuntimeUpgrade};
-use sp_runtime::traits::{Get, Zero};
+use frame_support::{
+	storage::unhashed::clear_prefix, traits::OnRuntimeUpgrade, weights::Weight, StorageHasher, Twox128,
+};
+use sp_core::Get;
+use sp_io::MultiRemovalResults;
 use sp_std::marker::PhantomData;
 
-use ctype::{CtypeCreatorOf, CtypeEntryOf};
-
+const PALLET_RUNTIME_NAME: &[u8] = b"RandomnessCollectiveFlip";
 #[cfg(feature = "try-runtime")]
-use sp_std::vec::Vec;
+const PALLET_STORAGE_NAME: &[u8] = b"RandomMaterial";
 
-pub struct AddCTypeBlockNumber<R>(PhantomData<R>);
+pub struct RemoveInsecureRandomnessPallet<T>(PhantomData<T>);
 
-impl<T: ctype::Config> OnRuntimeUpgrade for AddCTypeBlockNumber<T> {
+impl<T> OnRuntimeUpgrade for RemoveInsecureRandomnessPallet<T>
+where
+	T: frame_system::Config,
+{
 	#[cfg(feature = "try-runtime")]
-	fn pre_upgrade() -> Result<Vec<u8>, &'static str> {
-		assert_eq!(ctype::Pallet::<T>::on_chain_storage_version(), 0,);
-
-		// Use iter_keys() on new storage so it won't try to decode values.
-		let ctypes_to_migrate = ctype::Ctypes::<T>::iter_keys().count() as u64;
-
-		log::info!("🪪  CType pallet pre check: {:?} CTypes to migrate", ctypes_to_migrate);
-		Ok(ctypes_to_migrate.to_be_bytes().into())
+	fn pre_upgrade() -> Result<sp_std::vec::Vec<u8>, &'static str> {
+		log::info!("RemoveInsecureRandomnessPallet::pre_upgrade() checks 🔎");
+		if frame_support::migration::have_storage_value(PALLET_RUNTIME_NAME, PALLET_STORAGE_NAME, b"") {
+			Ok(sp_std::vec::Vec::default())
+		} else {
+			Err("Storage in pallet_insecure_randomness_collective_flip is already empty before migration.")
+		}
 	}
 
-	fn on_runtime_upgrade() -> frame_support::weights::Weight {
-		let current = ctype::Pallet::<T>::current_storage_version();
-		let onchain = ctype::Pallet::<T>::on_chain_storage_version();
-
-		log::info!(
-			"💰 Running migration with current storage version {:?} / onchain {:?}",
-			current,
-			onchain
+	fn on_runtime_upgrade() -> Weight {
+		let MultiRemovalResults { unique, .. } = clear_prefix(
+			&Twox128::hash(PALLET_RUNTIME_NAME),
+			// Storage version and `RandomMaterial` vector.
+			Some(2),
+			None,
 		);
-
-		let mut num_translations = 0u64;
-		let default_block_number = <T as frame_system::Config>::BlockNumber::zero();
-
-		ctype::Ctypes::<T>::translate_values(|old: CtypeCreatorOf<T>| {
-			num_translations = num_translations.saturating_add(1);
-			Some(CtypeEntryOf::<T> {
-				creator: old,
-				created_at: default_block_number,
-			})
-		});
-		current.put::<ctype::Pallet<T>>();
-
-		// Num translations + old version read and new version write
-		T::DbWeight::get().reads_writes(num_translations.saturating_add(1), num_translations.saturating_add(1))
+		log::info!(
+			"Deleted {} elements from the pallet_insecure_randomness_collective_flip pallet storage.",
+			unique
+		);
+		T::DbWeight::get().writes(unique.into())
 	}
 
 	#[cfg(feature = "try-runtime")]
-	fn post_upgrade(state: Vec<u8>) -> Result<(), &'static str> {
-		assert_eq!(ctype::Pallet::<T>::on_chain_storage_version(), 1);
-
-		let initial_ctype_count = u64::from_be_bytes(state.try_into().expect("input state should be 8 bytes"));
-		assert_eq!(initial_ctype_count, ctype::Ctypes::<T>::iter().count() as u64);
-		// Verify all migrated ctypes can be decoded under the new type.
-		ctype::Ctypes::<T>::iter_values().for_each(|v| assert!(v.created_at.is_zero()));
-
-		log::info!(
-			"🪪  CType pallet post checks ok, all {:} CTypes have been migrated ✅",
-			initial_ctype_count
-		);
-		Ok(())
+	fn post_upgrade(_state: sp_std::vec::Vec<u8>) -> Result<(), &'static str> {
+		log::info!("RemoveInsecureRandomnessPallet::post_upgrade() checks 🔍");
+		if frame_support::migration::have_storage_value(PALLET_RUNTIME_NAME, PALLET_STORAGE_NAME, b"") {
+			Err("Storage in pallet_insecure_randomness_collective_flip is not empty after migration.")
+		} else {
+			Ok(())
+		}
 	}
 }

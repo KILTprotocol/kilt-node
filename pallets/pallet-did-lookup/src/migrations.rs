@@ -16,133 +16,100 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use crate::{linkable_account::LinkableAccountId, AccountIdOf, Config, ConnectionRecordOf, DidIdentifierOf, Pallet};
-
-use crate::{ConnectedAccounts as ConnectedAccountsV2, ConnectedDids as ConnectedDidsV2};
-
 use frame_support::{
+	pallet_prelude::ValueQuery,
 	storage_alias,
-	traits::{Get, GetStorageVersion, OnRuntimeUpgrade},
-	Blake2_128Concat,
+	traits::{Get, GetStorageVersion, OnRuntimeUpgrade, StorageVersion},
 };
-use sp_std::{marker::PhantomData, vec};
+use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
+use scale_info::TypeInfo;
+use sp_runtime::AccountId32;
+use sp_std::marker::PhantomData;
 
-#[cfg(feature = "try-runtime")]
-use {
-	frame_support::{
-		codec::{Decode, Encode},
-		inherent::Vec,
-	},
-	sp_runtime::SaturatedConversion,
-};
+use crate::{linkable_account::LinkableAccountId, Config, Pallet};
+
+/// A unified log target for did-lookup-migration operations.
+pub const LOG_TARGET: &str = "runtime::pallet-did-lookup::migrations";
+
+#[derive(Clone, Debug, Eq, PartialEq, Encode, Decode, MaxEncodedLen, TypeInfo)]
+pub enum MixedStorageKey {
+	V1(AccountId32),
+	V2(LinkableAccountId),
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Encode, Decode, MaxEncodedLen, TypeInfo, Default)]
+pub enum MigrationState {
+	/// The migration was successful.
+	Done,
+
+	/// The storage has still the old layout, the migration wasn't started yet
+	#[default]
+	PreUpgrade,
+
+	/// The upgrade is in progress and did migrate all storage up to the
+	/// `MixedStorageKey`.
+	Upgrading(MixedStorageKey),
+}
+
+impl MigrationState {
+	pub fn is_done(&self) -> bool {
+		matches!(self, MigrationState::Done)
+	}
+
+	pub fn is_in_progress(&self) -> bool {
+		!matches!(self, MigrationState::Done)
+	}
+}
 
 #[storage_alias]
-type ConnectedDids<T: Config> = StorageMap<Pallet<T>, Blake2_128Concat, AccountIdOf<T>, ConnectionRecordOf<T>>;
-#[storage_alias]
-type ConnectedAccounts<T: Config> =
-	StorageDoubleMap<Pallet<T>, Blake2_128Concat, DidIdentifierOf<T>, Blake2_128Concat, AccountIdOf<T>, ()>;
+type MigrationStateStore<T: Config> = StorageValue<Pallet<T>, MigrationState, ValueQuery>;
 
-pub struct EthereumMigration<T>(PhantomData<T>);
+pub struct CleanupMigration<T>(PhantomData<T>);
 
-impl<T: crate::pallet::Config> OnRuntimeUpgrade for EthereumMigration<T>
-where
-	T::AccountId: Into<LinkableAccountId>,
-{
+impl<T: crate::pallet::Config> OnRuntimeUpgrade for CleanupMigration<T> {
 	fn on_runtime_upgrade() -> frame_support::weights::Weight {
-		if Pallet::<T>::on_chain_storage_version() == Pallet::<T>::current_storage_version() {
-			// already on version 3
-			<T as frame_system::Config>::DbWeight::get().reads_writes(1, 0)
-		} else {
+		if Pallet::<T>::on_chain_storage_version() == StorageVersion::new(3) {
 			log::info!("🔎 DidLookup: Initiating migration");
-			let mut connected_dids = 0u64;
-			let mut connected_accounts = 0u64;
-
-			// Migrate connected DIDs
-			// We should not write to the same storage item during drain because it can lead
-			// to undefined results. Thus, we write to a temporary storage and move that at
-			// the end. Else we iterate over every key more or less twice.
-			let mut connected_dids_buffer = vec![];
-			for (acc_id32, value) in ConnectedDids::<T>::drain() {
-				let acc_id: LinkableAccountId = acc_id32.into();
-				connected_dids_buffer.push((acc_id, value));
-				connected_dids = connected_dids.saturating_add(1);
-			}
-			for (acc_id, value) in &connected_dids_buffer {
-				ConnectedDidsV2::<T>::insert(acc_id, value);
-			}
-			log::info!("🔎 DidLookup: Migrated all ConnectedDids");
-
-			// Migrate accounts
-			let mut connected_accounts_buffer = vec![];
-			for (did_id, acc_id32, val) in ConnectedAccounts::<T>::drain() {
-				let acc_id: LinkableAccountId = acc_id32.into();
-				connected_accounts_buffer.push((did_id, acc_id, val));
-				connected_accounts = connected_accounts.saturating_add(1);
-			}
-			for (did_id, acc_id, val) in &connected_accounts_buffer {
-				ConnectedAccountsV2::<T>::insert(did_id, acc_id, val);
-			}
-			log::info!("🔎 DidLookup: Migrated all ConnectedAccounts");
-
+			MigrationStateStore::<T>::kill();
 			Pallet::<T>::current_storage_version().put::<Pallet<T>>();
 
-			<T as frame_system::Config>::DbWeight::get().reads_writes(
-				// read every entry in ConnectedDids and ConnectedAccounts
-				connected_dids
-					.saturating_add(connected_accounts)
-					// read the storage version
-					.saturating_add(1),
-				// for every storage entry remove the old + put the new entries
-				(connected_dids.saturating_add(connected_accounts))
-					.saturating_mul(2)
-					// +1 for updating the storage version
-					.saturating_add(1),
-			)
+			T::DbWeight::get().reads_writes(1, 2)
+		} else {
+			// wrong storage version
+			log::info!(
+				target: LOG_TARGET,
+				"Migration did not execute. This probably should be removed"
+			);
+			<T as frame_system::Config>::DbWeight::get().reads_writes(1, 0)
 		}
 	}
 
 	#[cfg(feature = "try-runtime")]
-	fn pre_upgrade() -> Result<Vec<u8>, &'static str> {
-		assert!(Pallet::<T>::on_chain_storage_version() < Pallet::<T>::current_storage_version());
+	fn pre_upgrade() -> Result<sp_std::vec::Vec<u8>, &'static str> {
+		use sp_std::vec;
 
-		// Store number of connected DIDs in temp storage
-		let connected_did_count: u64 = ConnectedDids::<T>::iter_keys().count().saturated_into();
-		log::info!(
-			"🔎 DidLookup pre migration: Number of connected DIDs {:?}",
-			connected_did_count
+		assert_eq!(
+			Pallet::<T>::on_chain_storage_version(),
+			StorageVersion::new(3),
+			"On-chain storage version should be 3 before the migration"
 		);
+		assert!(MigrationStateStore::<T>::exists(), "Migration state should exist");
 
-		// Store number of connected accounts in temp storage
-		let connected_account_count: u64 = ConnectedAccounts::<T>::iter_keys().count().saturated_into();
-		log::info!(
-			"🔎 DidLookup pre migration: Number of connected accounts {:?}",
-			connected_account_count
-		);
-		Ok((connected_did_count, connected_account_count).encode())
+		log::info!(target: LOG_TARGET, "🔎 DidLookup: Pre migration checks successful");
+
+		Ok(vec![])
 	}
 
 	#[cfg(feature = "try-runtime")]
-	fn post_upgrade(pre_state: Vec<u8>) -> Result<(), &'static str> {
+	fn post_upgrade(_pre_state: sp_std::vec::Vec<u8>) -> Result<(), &'static str> {
 		assert_eq!(
 			Pallet::<T>::on_chain_storage_version(),
-			Pallet::<T>::current_storage_version()
+			StorageVersion::new(4),
+			"On-chain storage version should be updated"
 		);
+		assert!(!MigrationStateStore::<T>::exists(), "Migration state should be deleted");
 
-		// Check number of connected DIDs and accounts against pre-check result
-		let (pre_connected_did_count, pre_connected_account_count): (u64, u64) =
-			Decode::decode(&mut pre_state.as_slice())
-				.expect("the state parameter should be something that was generated by pre_upgrade");
-		assert_eq!(
-			ConnectedDidsV2::<T>::iter().count().saturated_into::<u64>(),
-			pre_connected_did_count,
-			"Number of connected DIDs does not match"
-		);
-		assert_eq!(
-			ConnectedAccountsV2::<T>::iter_keys().count().saturated_into::<u64>(),
-			pre_connected_account_count,
-			"Number of connected accounts does not match"
-		);
-		log::info!("🔎 DidLookup: Post migration checks successful");
+		log::info!(target: LOG_TARGET, "🔎 DidLookup: Post migration checks successful");
 
 		Ok(())
 	}

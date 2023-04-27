@@ -23,14 +23,15 @@
 //!
 //! It includes the Verify and IdentifyAccount traits for the AccountId20
 
-use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::{crypto::ecdsa::ECDSAExt, RuntimeDebug};
+use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sha3::{Digest, Keccak256};
 use sp_core::{ecdsa, H160, H256};
 
 /// The AccountId20 type.
 /// It is a 20-byte Ethereum address.
+#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 #[derive(
 	Eq, PartialEq, Copy, Clone, Encode, Decode, TypeInfo, MaxEncodedLen, Default, PartialOrd, Ord, RuntimeDebug,
 )]

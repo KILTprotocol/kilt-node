@@ -25,14 +25,14 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
-use codec::{Decode, Encode, MaxEncodedLen};
 use cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases;
 use frame_support::{
 	construct_runtime, parameter_types,
 	traits::{ConstU32, EitherOfDiverse, Everything, InstanceFilter, PrivilegeCmp},
-	weights::{constants::RocksDbWeight, ConstantMultiplier, Weight},
+	weights::{ConstantMultiplier, Weight},
 };
-use frame_system::EnsureRoot;
+use frame_system::{EnsureRoot, EnsureSigned};
+use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 
 #[cfg(feature = "try-runtime")]
 use frame_try_runtime::UpgradeCheckSelect;
@@ -51,7 +51,7 @@ use xcm_executor::XcmExecutor;
 
 use delegation::DelegationAc;
 use kilt_support::traits::ItemFilter;
-use pallet_did_lookup::{linkable_account::LinkableAccountId, migrations::EthereumMigration};
+use pallet_did_lookup::linkable_account::LinkableAccountId;
 pub use parachain_staking::InflationInfo;
 pub use public_credentials;
 
@@ -70,7 +70,7 @@ use crate::xcm_config::{XcmConfig, XcmOriginToTransactDispatchOrigin};
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 #[cfg(feature = "runtime-benchmarks")]
-use {frame_system::EnsureSigned, kilt_support::signature::AlwaysVerify, runtime_common::benchmarks::DummySignature};
+use {kilt_support::signature::AlwaysVerify, runtime_common::benchmarks::DummySignature};
 
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
@@ -93,10 +93,10 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("kilt-spiritnet"),
 	impl_name: create_runtime_str!("kilt-spiritnet"),
 	authoring_version: 1,
-	spec_version: 10900,
+	spec_version: 11100,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
-	transaction_version: 4,
+	transaction_version: 6,
 	state_version: 0,
 };
 
@@ -147,7 +147,7 @@ impl frame_system::Config for Runtime {
 	type AccountData = pallet_balances::AccountData<Balance>;
 	type OnNewAccount = ();
 	type OnKilledAccount = ();
-	type DbWeight = RocksDbWeight;
+	type DbWeight = weights::rocksdb_weights::constants::RocksDbWeight;
 	type BaseCallFilter = Everything;
 	type SystemWeightInfo = weights::frame_system::WeightInfo<Runtime>;
 	type BlockWeights = BlockWeights;
@@ -174,6 +174,16 @@ parameter_types! {
 	pub const ExistentialDeposit: u128 = EXISTENTIAL_DEPOSIT;
 	pub const MaxLocks: u32 = 50;
 	pub const MaxReserves: u32 = 50;
+}
+
+impl pallet_multisig::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type RuntimeCall = RuntimeCall;
+	type Currency = Balances;
+	type DepositBase = constants::multisig::DepositBase;
+	type DepositFactor = constants::multisig::DepositFactor;
+	type MaxSignatories = constants::multisig::MaxSignitors;
+	type WeightInfo = weights::pallet_multisig::WeightInfo<Runtime>;
 }
 
 impl pallet_indices::Config for Runtime {
@@ -238,6 +248,7 @@ impl cumulus_pallet_xcmp_queue::Config for Runtime {
 	type ControllerOrigin = EnsureRoot<AccountId>;
 	type ControllerOriginConverter = XcmOriginToTransactDispatchOrigin;
 	type WeightInfo = cumulus_pallet_xcmp_queue::weights::SubstrateWeight<Self>;
+	type PriceForSiblingDelivery = ();
 }
 
 impl cumulus_pallet_dmp_queue::Config for Runtime {
@@ -263,8 +274,6 @@ parameter_types! {
 
 impl pallet_authorship::Config for Runtime {
 	type FindAuthor = pallet_session::FindAccountFromAuthorIndex<Self, Aura>;
-	type UncleGenerations = UncleGenerations;
-	type FilterUncle = ();
 	type EventHandler = ParachainStaking;
 }
 
@@ -408,6 +417,7 @@ impl pallet_democracy::Config for Runtime {
 	type Preimages = Preimage;
 	type MaxDeposits = ConstU32<100>;
 	type MaxBlacklisted = ConstU32<100>;
+	type SubmitOrigin = EnsureSigned<AccountId>;
 }
 
 parameter_types! {
@@ -457,6 +467,7 @@ impl pallet_collective::Config<CouncilCollective> for Runtime {
 	type MaxMembers = constants::governance::CouncilMaxMembers;
 	type DefaultVote = pallet_collective::PrimeDefaultVote;
 	type WeightInfo = weights::pallet_collective::WeightInfo<Runtime>;
+	type SetMembersOrigin = EnsureRoot<AccountId>;
 }
 
 type TechnicalCollective = pallet_collective::Instance2;
@@ -469,6 +480,7 @@ impl pallet_collective::Config<TechnicalCollective> for Runtime {
 	type MaxMembers = constants::governance::TechnicalMaxMembers;
 	type DefaultVote = pallet_collective::PrimeDefaultVote;
 	type WeightInfo = weights::pallet_collective::WeightInfo<Runtime>;
+	type SetMembersOrigin = EnsureRoot<AccountId>;
 }
 
 type TechnicalMembershipProvider = pallet_membership::Instance1;
@@ -495,7 +507,7 @@ impl pallet_membership::Config<TipsMembershipProvider> for Runtime {
 	type PrimeOrigin = MoreThanHalfCouncil;
 	type MembershipInitialized = ();
 	type MembershipChanged = ();
-	type MaxMembers = constants::governance::TechnicalMaxMembers;
+	type MaxMembers = constants::governance::TipperMaxMembers;
 	type WeightInfo = weights::pallet_membership::WeightInfo<Runtime>;
 }
 
@@ -671,8 +683,6 @@ impl pallet_utility::Config for Runtime {
 	type WeightInfo = weights::pallet_utility::WeightInfo<Runtime>;
 }
 
-impl pallet_randomness_collective_flip::Config for Runtime {}
-
 impl public_credentials::Config for Runtime {
 	type AccessControl = PalletAuthorize<DelegationAc<Runtime>>;
 	type AttesterId = DidIdentifier;
@@ -723,7 +733,6 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 			ProxyType::NonTransfer => matches!(
 				c,
 				RuntimeCall::Attestation(..)
-					| RuntimeCall::Authorship(..)
 					// Excludes `Balances`
 					| RuntimeCall::Council(..)
 					| RuntimeCall::Ctype(..)
@@ -768,7 +777,6 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 							| attestation::Call::change_deposit_owner { .. }
 							| attestation::Call::update_deposit { .. }
 					)
-					| RuntimeCall::Authorship(..)
 					// Excludes `Balances`
 					| RuntimeCall::Council(..)
 					| RuntimeCall::Ctype(..)
@@ -903,7 +911,7 @@ construct_runtime! {
 		UncheckedExtrinsic = UncheckedExtrinsic,
 	{
 		System: frame_system = 0,
-		RandomnessCollectiveFlip: pallet_randomness_collective_flip = 1,
+		// DELETED: RandomnessCollectiveFlip: pallet_insecure_randomness_collective_flip = 1,
 
 		Timestamp: pallet_timestamp = 2,
 		Indices: pallet_indices::{Pallet, Call, Storage, Event<T>} = 5,
@@ -916,37 +924,37 @@ construct_runtime! {
 		Aura: pallet_aura = 23,
 		Session: pallet_session = 22,
 		ParachainStaking: parachain_staking = 21,
-		Authorship: pallet_authorship::{Pallet, Call, Storage} = 20,
+		Authorship: pallet_authorship::{Pallet, Storage} = 20,
 		AuraExt: cumulus_pallet_aura_ext = 24,
 
-		// Governance stuff
 		Democracy: pallet_democracy = 30,
 		Council: pallet_collective::<Instance1> = 31,
 		TechnicalCommittee: pallet_collective::<Instance2> = 32,
-		// placeholder: parachain council election = 33,
+		// reserved: parachain council election = 33,
 		TechnicalMembership: pallet_membership::<Instance1> = 34,
 		Treasury: pallet_treasury = 35,
 		// DELETED: RelayMigration: pallet_relay_migration::{Pallet, Call, Storage, Event<T>} = 36,
 		// DELETED: DynFilter: pallet_dyn_filter = 37,
 
-		// Utility module.
+		//  A stateless pallet with helper extrinsics (batch extrinsics, send from different origins, ...)
 		Utility: pallet_utility = 40,
 
 		// Vesting. Usable initially, but removed once all vesting is finished.
 		Vesting: pallet_vesting = 41,
 
-		// System scheduler.
 		Scheduler: pallet_scheduler::{Pallet, Call, Storage, Event<T>} = 42,
 
-		// Proxy pallet.
+		// Allowing accounts to give permission to other accounts to dispatch types of calls from their signed origin
 		Proxy: pallet_proxy::{Pallet, Call, Storage, Event<T>} = 43,
 
-		// Preimage registrar
+		// Preimage pallet allows the storage of large bytes blob
 		Preimage: pallet_preimage::{Pallet, Call, Storage, Event<T>} = 44,
 
 		// Tips module to reward contributions to the ecosystem with small amount of KILTs.
 		TipsMembership: pallet_membership::<Instance2> = 45,
 		Tips: pallet_tips::{Pallet, Call, Storage, Event<T>} = 46,
+
+		Multisig: pallet_multisig = 47,
 
 		// KILT Pallets. Start indices 60 to leave room
 		// DELETED: KiltLaunch: kilt_launch = 60,
@@ -975,7 +983,6 @@ construct_runtime! {
 		DmpQueue: cumulus_pallet_dmp_queue::{Pallet, Call, Storage, Event<T>} = 85,
 	}
 }
-
 impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for RuntimeCall {
 	fn derive_verification_key_relationship(&self) -> did::DeriveDidCallKeyRelationshipResult {
 		/// ensure that all calls have the same VerificationKeyRelationship
@@ -1025,7 +1032,6 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for RuntimeCall 
 		RuntimeCall::System(frame_system::Call::remark { remark: vec![] })
 	}
 }
-
 /// The address format for describing accounts.
 pub type Address = sp_runtime::MultiAddress<AccountId, ()>;
 /// Block header type as expected by this runtime.
@@ -1059,52 +1065,42 @@ pub type Executive = frame_executive::Executive<
 	// Executes pallet hooks in the order of definition in construct_runtime
 	AllPalletsWithSystem,
 	(
-		// "Bound uses of call" <https://github.com/paritytech/polkadot/pull/5729>
-		pallet_preimage::migration::v1::Migration<Runtime>,
-		pallet_scheduler::migration::v3::MigrateToV4<Runtime>,
-		pallet_democracy::migrations::v1::Migration<Runtime>,
-		runtime_common::migrations::AddCTypeBlockNumber<Runtime>,
-		EthereumMigration<Runtime>,
+		pallet_did_lookup::migrations::CleanupMigration<Runtime>,
+		runtime_common::migrations::RemoveInsecureRandomnessPallet<Runtime>,
 	),
 >;
 
-// follows Substrate's non destructive way of eliminating  otherwise required
-// repetion: https://github.com/paritytech/substrate/pull/10592
-#[cfg(feature = "runtime-benchmarks")]
-#[macro_use]
-extern crate frame_benchmarking;
-
 #[cfg(feature = "runtime-benchmarks")]
 mod benches {
-	define_benchmarks!(
-		// KILT
-		[attestation, Attestation]
-		[ctype, Ctype]
-		[delegation, Delegation]
-		[did, Did]
-		[pallet_did_lookup, DidLookup]
-		[pallet_inflation, Inflation]
-		[parachain_staking, ParachainStaking]
-		[pallet_web3_names, Web3Names]
-		[public_credentials, PublicCredentials]
-		// Substrate
-		[frame_benchmarking::baseline, Baseline::<Runtime>]
+	frame_benchmarking::define_benchmarks!(
 		[frame_system, SystemBench::<Runtime>]
-		[pallet_session, SessionBench::<Runtime>]
+		[pallet_timestamp, Timestamp]
+		[pallet_indices, Indices]
 		[pallet_balances, Balances]
+		[pallet_session, SessionBench::<Runtime>]
+		[parachain_staking, ParachainStaking]
+		[pallet_democracy, Democracy]
 		[pallet_collective, Council]
 		[pallet_collective, TechnicalCommittee]
-		[pallet_democracy, Democracy]
-		[pallet_indices, Indices]
 		[pallet_membership, TechnicalMembership]
-		[pallet_preimage, Preimage]
-		[pallet_scheduler, Scheduler]
-		[pallet_timestamp, Timestamp]
-		[pallet_tips, Tips]
 		[pallet_treasury, Treasury]
 		[pallet_utility, Utility]
 		[pallet_vesting, Vesting]
+		[pallet_scheduler, Scheduler]
 		[pallet_proxy, Proxy]
+		[pallet_preimage, Preimage]
+		[pallet_tips, Tips]
+		[pallet_multisig, Multisig]
+		[ctype, Ctype]
+		[attestation, Attestation]
+		[delegation, Delegation]
+		[did, Did]
+		[pallet_inflation, Inflation]
+		[pallet_did_lookup, DidLookup]
+		[pallet_web3_names, Web3Names]
+		[public_credentials, PublicCredentials]
+		[pallet_xcm, PolkadotXcm]
+		[frame_benchmarking::baseline, Baseline::<Runtime>]
 	);
 }
 
@@ -1131,7 +1127,7 @@ impl_runtime_apis! {
 
 	impl frame_system_rpc_runtime_api::AccountNonceApi<Block, AccountId, Index> for Runtime {
 		fn account_nonce(account: AccountId) -> Index {
-			frame_system::Pallet::<Runtime>::account_nonce(&account)
+			frame_system::Pallet::<Runtime>::account_nonce(account)
 		}
 	}
 
@@ -1145,6 +1141,13 @@ impl_runtime_apis! {
 
 		fn query_fee_details(uxt: <Block as BlockT>::Extrinsic, len: u32) -> pallet_transaction_payment::FeeDetails<Balance> {
 			TransactionPayment::query_fee_details(uxt, len)
+		}
+
+		fn query_weight_to_fee(weight: Weight) -> Balance {
+			TransactionPayment::weight_to_fee(weight)
+		}
+		fn query_length_to_fee(length: u32) -> Balance {
+			TransactionPayment::length_to_fee(length)
 		}
 	}
 
@@ -1162,6 +1165,12 @@ impl_runtime_apis! {
 			len: u32,
 		) -> pallet_transaction_payment::FeeDetails<Balance> {
 			TransactionPayment::query_call_fee_details(call, len)
+		}
+		fn query_weight_to_fee(weight: Weight) -> Balance {
+			TransactionPayment::weight_to_fee(weight)
+		}
+		fn query_length_to_fee(length: u32) -> Balance {
+			TransactionPayment::length_to_fee(length)
 		}
 	}
 

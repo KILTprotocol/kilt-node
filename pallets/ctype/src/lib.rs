@@ -73,7 +73,7 @@ pub mod pallet {
 	use crate::ctype_entry::CtypeEntry;
 
 	/// The current storage version.
-	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
+	const STORAGE_VERSION: StorageVersion = StorageVersion::new(2);
 
 	/// Type of a CType hash.
 	pub type CtypeHashOf<T> = <T as frame_system::Config>::Hash;
@@ -131,9 +131,9 @@ pub mod pallet {
 	#[pallet::error]
 	pub enum Error<T> {
 		/// There is no CType with the given hash.
-		CTypeNotFound,
+		NotFound,
 		/// The CType already exists.
-		CTypeAlreadyExists,
+		AlreadyExists,
 		/// The paying account was unable to pay the fees for creating a ctype.
 		UnableToPayFees,
 	}
@@ -171,9 +171,7 @@ pub mod pallet {
 
 			let hash = <T as frame_system::Config>::Hashing::hash(&ctype[..]);
 
-			ensure!(!Ctypes::<T>::contains_key(hash), Error::<T>::CTypeAlreadyExists);
-
-			// *** No Fail except during withdraw beyond this point  ***
+			ensure!(!Ctypes::<T>::contains_key(hash), Error::<T>::AlreadyExists);
 
 			// Collect the fees. This should not fail since we checked the free balance in
 			// the beginning.
@@ -216,7 +214,7 @@ pub mod pallet {
 					ctype_entry.created_at = block_number;
 					Ok(())
 				} else {
-					Err(Error::<T>::CTypeNotFound)
+					Err(Error::<T>::NotFound)
 				}
 			})?;
 

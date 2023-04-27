@@ -28,6 +28,7 @@ pub mod pallet_did_lookup;
 pub mod pallet_indices;
 pub mod pallet_inflation;
 pub mod pallet_membership;
+pub mod pallet_multisig;
 pub mod pallet_preimage;
 pub mod pallet_proxy;
 pub mod pallet_scheduler;
@@ -38,5 +39,8 @@ pub mod pallet_treasury;
 pub mod pallet_utility;
 pub mod pallet_vesting;
 pub mod pallet_web3_names;
+pub mod pallet_xcm;
 pub mod parachain_staking;
 pub mod public_credentials;
+
+pub mod rocksdb_weights;

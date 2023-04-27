@@ -25,8 +25,8 @@ COPY --from=builder /build/target/release/$NODE_TYPE /usr/local/bin/node-executa
 RUN useradd -m -u 1000 -U -s /bin/sh -d /node node && \
 	mkdir -p /node/.local/share/node && \
 	chown -R node:node /node/.local && \
-	ln -s /node/.local/share/node /data && \
-	rm -rf /usr/bin /usr/sbin
+	ln -s /node/.local/share/node /data
+
 
 USER node
 EXPOSE 30333 9933 9944

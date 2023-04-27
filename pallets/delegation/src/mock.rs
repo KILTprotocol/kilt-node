@@ -173,9 +173,9 @@ pub(crate) mod runtime {
 
 	use super::*;
 
-	use codec::Encode;
 	use frame_support::{parameter_types, weights::constants::RocksDbWeight};
 	use frame_system::EnsureSigned;
+	use parity_scale_codec::Encode;
 	use sp_core::{ed25519, sr25519, Pair};
 	use sp_runtime::{
 		testing::Header,

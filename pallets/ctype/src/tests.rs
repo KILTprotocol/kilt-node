@@ -42,7 +42,7 @@ fn check_successful_ctype_creation() {
 				DoubleOrigin(deposit_owner.clone(), creator.clone()).into(),
 				ctype
 			));
-			let stored_ctype_creator = Ctype::ctypes(&ctype_hash).expect("CType hash should be present on chain.");
+			let stored_ctype_creator = Ctype::ctypes(ctype_hash).expect("CType hash should be present on chain.");
 
 			// Verify the CType has the right owner and block number
 			assert_eq!(
@@ -87,7 +87,7 @@ fn check_duplicate_ctype_creation() {
 		.execute_with(|| {
 			assert_noop!(
 				Ctype::add(DoubleOrigin(deposit_owner, creator).into(), ctype),
-				ctype::Error::<Test>::CTypeAlreadyExists
+				ctype::Error::<Test>::AlreadyExists
 			);
 		});
 }
@@ -127,7 +127,7 @@ fn set_block_number_ctype_not_found() {
 	ExtBuilder::default().build().execute_with(|| {
 		assert_noop!(
 			Ctype::set_block_number(RawOrigin::Signed(ACCOUNT_00).into(), ctype_hash, 100u64),
-			ctype::Error::<Test>::CTypeNotFound
+			ctype::Error::<Test>::NotFound
 		);
 	})
 }

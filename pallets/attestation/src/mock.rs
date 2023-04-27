@@ -23,8 +23,8 @@
 //! other tests. Internal functions/structs can only be used in attestation
 //! tests.
 
-use codec::{Decode, Encode};
 use frame_support::{dispatch::Weight, traits::Get};
+use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
 use sp_core::H256;
 use sp_runtime::DispatchError;

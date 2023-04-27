@@ -28,6 +28,7 @@ pub struct Cli {
 	pub run: RunCmd,
 }
 
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug, Parser)]
 pub enum Subcommand {
 	/// Key management cli utilities

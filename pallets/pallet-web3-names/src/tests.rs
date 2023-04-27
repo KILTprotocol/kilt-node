@@ -73,7 +73,7 @@ fn claiming_successful() {
 					mock_origin::DoubleOrigin(ACCOUNT_01, DID_01).into(),
 					web3_name_00.clone().0,
 				),
-				Error::<Test>::Web3NameAlreadyClaimed
+				Error::<Test>::AlreadyExists
 			);
 
 			// Test that the same owner cannot claim a new name.
@@ -116,13 +116,13 @@ fn claiming_invalid() {
 						mock_origin::DoubleOrigin(ACCOUNT_00, DID_00).into(),
 						too_short_input.clone(),
 					),
-					Error::<Test>::Web3NameTooShort,
+					Error::<Test>::TooShort,
 				);
 			}
 			for input in invalid_web3_names.iter() {
 				assert_noop!(
 					Pallet::<Test>::claim(mock_origin::DoubleOrigin(ACCOUNT_00, DID_00).into(), input.clone()),
-					Error::<Test>::InvalidWeb3NameCharacter,
+					Error::<Test>::InvalidCharacter,
 				);
 			}
 		})
@@ -138,7 +138,7 @@ fn claiming_banned() {
 		.execute_with(|| {
 			assert_noop!(
 				Pallet::<Test>::claim(mock_origin::DoubleOrigin(ACCOUNT_00, DID_00).into(), web3_name_00.0),
-				Error::<Test>::Web3NameBanned
+				Error::<Test>::Banned
 			);
 		})
 }
@@ -217,7 +217,7 @@ fn releasing_not_found() {
 		// Fail to claim by payer
 		assert_noop!(
 			Pallet::<Test>::reclaim_deposit(RawOrigin::Signed(ACCOUNT_00).into(), web3_name_00.0),
-			Error::<Test>::Web3NameNotFound
+			Error::<Test>::NotFound
 		);
 	})
 }
@@ -294,7 +294,7 @@ fn banning_already_banned() {
 		.execute_with(|| {
 			assert_noop!(
 				Pallet::<Test>::ban(RawOrigin::Root.into(), web3_name_00.clone().0),
-				Error::<Test>::Web3NameAlreadyBanned
+				Error::<Test>::AlreadyBanned
 			);
 		})
 }
@@ -346,7 +346,7 @@ fn unbanning_not_banned() {
 	ExtBuilder::default().build().execute_with(|| {
 		assert_noop!(
 			Pallet::<Test>::unban(RawOrigin::Root.into(), web3_name_00.clone().0),
-			Error::<Test>::Web3NameNotBanned
+			Error::<Test>::NotBanned
 		);
 	})
 }
@@ -430,7 +430,7 @@ fn test_change_deposit_owner_not_found() {
 		.execute_with(|| {
 			assert_noop!(
 				Pallet::<Test>::change_deposit_owner(mock_origin::DoubleOrigin(ACCOUNT_00, DID_01).into()),
-				Error::<Test>::Web3NameNotFound
+				Error::<Test>::NotFound
 			);
 		})
 }
@@ -495,7 +495,7 @@ fn test_update_deposit_unauthorized() {
 					RuntimeOrigin::signed(ACCOUNT_01),
 					WEB3_NAME_00_INPUT.to_vec().try_into().unwrap()
 				),
-				Error::<Test>::Unauthorized
+				Error::<Test>::NotAuthorized
 			);
 		})
 }
