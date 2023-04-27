@@ -175,7 +175,13 @@ pub mod pallet {
 	}
 
 	#[pallet::hooks]
-	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {}
+	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+		#[cfg(feature = "try-runtime")]
+		fn try_state(_n: BlockNumberFor<T>) -> Result<(), &'static str> {
+			do_try_state()?;
+			Ok(())
+		}
+	}
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
@@ -495,6 +501,32 @@ pub mod pallet {
 		/// preconditions again.
 		fn unban_name(name: &Web3NameOf<T>) {
 			Banned::<T>::remove(name);
+		}
+
+		#[cfg(any(feature = "try-runtime", test))]
+		pub fn do_try_state() -> DispatchResult {
+			// check if for each owner there is a name stored.
+			Owner::<T>::iter().try_for_each(
+				|(w3n, ownership): (Web3NameOf<T>, Web3OwnershipOf<T>)| -> DispatchResult {
+					ensure!(
+						Names::<T>::contains_key(ownership.owner.clone()),
+						DispatchError::Other("Test")
+					);
+
+					ensure!(
+						Names::<T>::get(ownership.owner).unwrap() == w3n,
+						DispatchError::Other("Test")
+					);
+					Ok(())
+				},
+			)?;
+			// a banned name should have no owner.
+			Banned::<T>::iter_keys().try_for_each(|banned_w3n| -> DispatchResult {
+				ensure!(!Owner::<T>::contains_key(banned_w3n), DispatchError::Other("Test"));
+				Ok(())
+			})?;
+
+			Ok(())
 		}
 	}
 

@@ -62,7 +62,7 @@ pub(crate) mod runtime {
 		MultiSignature,
 	};
 
-	use crate::{self as pallet_web3_names, web3_name::AsciiWeb3Name};
+	use crate::{self as pallet_web3_names, web3_name::AsciiWeb3Name, Pallet};
 
 	type Index = u64;
 	type BlockNumber = u64;
@@ -233,6 +233,13 @@ pub(crate) mod runtime {
 				}
 			});
 			ext
+		}
+
+		pub fn build_and_execute_with_sanity_tests(self, test: impl FnOnce() -> ()) {
+			self.build().execute_with(|| {
+				test();
+				Pallet::<Test>::do_try_state().unwrap();
+			})
 		}
 
 		#[cfg(feature = "runtime-benchmarks")]
