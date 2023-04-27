@@ -79,7 +79,7 @@ build-wasm-peregrine:
     - export AUTHORIZE_UPGRADE_PREFIX=0x02
     - cp -r * /build
     - /srtool/build build
-    - subwasm --json meta /out/peregrine_runtime.compact.wasm > /out/peregrine-metadata.json
+    - subwasm meta --format=json+scale /out/peregrine_runtime.compact.wasm > /out/peregrine-metadata.json
     - mkdir ./out
     - mv /out/* ./out/
   artifacts:
@@ -103,7 +103,7 @@ build-wasm-spiritnet:
     - export AUTHORIZE_UPGRADE_PREFIX=0x02
     - cp -r * /build
     - /srtool/build build
-    - subwasm --json meta /out/spiritnet_runtime.wasm > /out/spiritnet-metadata.json
+    - subwasm meta --format=json+scale /out/spiritnet_runtime.wasm > /out/spiritnet-metadata.json
     - mkdir ./out
     - mv /out/* ./out/
   artifacts:
