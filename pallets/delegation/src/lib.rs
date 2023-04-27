@@ -87,7 +87,7 @@ use frame_support::{
 use kilt_support::traits::StorageDepositCollector;
 use parity_scale_codec::Encode;
 use sp_runtime::{traits::Hash, DispatchError};
-use sp_std::{marker::PhantomData, vec::Vec};
+use sp_std::{marker::PhantomData, vec::Vec, vec};
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -286,6 +286,15 @@ pub mod pallet {
 		MaxChildrenExceeded,
 	}
 
+	#[pallet::hooks]
+	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+		#[cfg(feature = "try-runtime")]
+		fn try_state(_n: BlockNumberFor<T>) -> Result<(), &'static str> {
+			do_try_state()?;
+			Ok(())
+		}
+	}
+
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
 		/// Create a new delegation root associated with a given CType hash.
@@ -409,7 +418,7 @@ pub mod pallet {
 				Self::calculate_delegation_creation_hash(&delegation_id, &hierarchy_root_id, &parent_id, &permissions);
 
 			// Verify that the hash root signature is correct.
-			DelegationSignatureVerificationOf::<T>::verify(&delegate, &hash_root.encode(), &delegate_signature)
+			DelegationSignatureVerificationOf::<T>::verify(&delegate, &hash_root.encode(), &delegate_signature) // !TODO!
 				.map_err(|err| match err {
 					SignatureVerificationError::SignerInformationNotPresent => Error::<T>::DelegateNotFound,
 					SignatureVerificationError::SignatureInvalid => Error::<T>::InvalidDelegateSignature,
@@ -965,6 +974,62 @@ pub mod pallet {
 			removals = removals.saturating_add(1);
 			Ok((removals, consumed_weight))
 		}
+
+		#[cfg(any(feature = "try-runtime", test))]
+		pub fn do_try_state() -> DispatchResult {
+
+			fn get_merged_subtree<T : Config>(node: DelegationNode<T>) -> Vec<DelegationNode<T>> {
+				let mut nodes_to_explore = vec![node];
+				let mut children: Vec<DelegationNode<T>> = Vec::new();
+				while nodes_to_explore.is_empty() {
+					let current_node = nodes_to_explore.pop().unwrap();
+					let child_nodes : Vec<DelegationNode<T>> = current_node
+						.children
+						.iter()
+						.filter_map(|child_id| DelegationNodes::<T>::get(child_id))
+						.collect();
+					nodes_to_explore.extend(child_nodes.clone());
+					children.extend(child_nodes);
+				}
+			
+				children
+			}
+
+
+			DelegationNodes::<T>::iter().try_for_each(
+				|(delegation_node_id, delegation_details): (DelegationNodeIdOf<T>, DelegationNode<T>)| -> DispatchResult {
+					let hierachy_id = delegation_details.hierarchy_root_id;
+
+					// check if node is in part of a delegation hierachy.
+					ensure!(
+						DelegationHierarchies::<T>::contains_key(hierachy_id),
+						DispatchError::Other("Test")
+					);
+
+					let children_count = DelegationNodes::<T>::iter_values()
+						.filter(|delegation_node : &DelegationNode<T> | delegation_node.children.contains(&delegation_node_id))
+						.count();
+
+					match delegation_details.parent {
+						// If node is a leaf or intermediate node, check if the node occures only once. Otherwise we have cylces.
+						Some(_) => 	ensure!(children_count <= 1 , DispatchError::Other("Test")),
+						// if parent is None, check that the root is not the children
+						// from another node.
+						_ => ensure!(children_count == 0 , DispatchError::Other("Test"))
+					};
+
+					// if a node is revoked, his subtree should be revoked as well.
+					if delegation_details.details.revoked {
+						let is_subtree_revoked = get_merged_subtree::<T>(delegation_details).iter().map(|child : &DelegationNode<T>| {child.details.revoked }).fold(true, |acc, x| acc && x);
+						ensure!(is_subtree_revoked, DispatchError::Other("Test") );
+					}
+			
+					Ok(())
+				},
+			)?;
+			Ok(())
+		}
+
 	}
 
 	struct DelegationDepositCollector<T: Config>(PhantomData<T>);
