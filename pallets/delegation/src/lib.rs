@@ -1009,7 +1009,7 @@ pub mod pallet {
 						.count();
 
 					match delegation_details.parent {
-						// If node is a leaf or intermediate node, check if the node occures only once. Otherwise we have cylces.
+						// If node is a leaf or intermediate, check if it occures only once. Otherwise we have cylces.
 						Some(_) => 	ensure!(children_count <= 1 , DispatchError::Other("Test")),
 						// if parent is None, check that the root is not the children
 						// from another node.
@@ -1019,7 +1019,7 @@ pub mod pallet {
 					// if a node is revoked, his subtree should be revoked as well.
 					if delegation_details.details.revoked {
 						let is_subtree_revoked = get_merged_subtree::<T>(delegation_details).iter().map(|child : &DelegationNode<T>| {child.details.revoked }).fold(true, |acc, x| acc && x);
-						ensure!(is_subtree_revoked, DispatchError::Other("Test") );
+						ensure!(is_subtree_revoked, DispatchError::Other("Test"));
 					}
 					Ok(())
 				},
