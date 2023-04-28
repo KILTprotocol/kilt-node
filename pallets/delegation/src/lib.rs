@@ -980,7 +980,7 @@ pub mod pallet {
 			fn get_merged_subtree<T: Config>(node: DelegationNode<T>) -> Vec<DelegationNode<T>> {
 				let mut nodes_to_explore = vec![node];
 				let mut children: Vec<DelegationNode<T>> = Vec::new();
-				while nodes_to_explore.is_empty() {
+				while !nodes_to_explore.is_empty() {
 					let current_node = nodes_to_explore.pop().unwrap();
 					let child_nodes: Vec<DelegationNode<T>> = current_node
 						.children
