@@ -49,8 +49,7 @@ fn add_successful_without_authorization() {
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, (deposit) * 2)])
 		.with_ctypes(vec![(ctype_hash_1, attester.clone()), (ctype_hash_2, attester.clone())])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			// Check for 0 reserved deposit
 			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
 
@@ -125,8 +124,7 @@ fn add_successful_with_authorization() {
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, deposit)])
 		.with_ctypes(vec![(ctype_hash, attester.clone())])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_ok!(PublicCredentials::add(
 				DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
 				Box::new(new_credential.clone())
@@ -161,8 +159,7 @@ fn add_unauthorized() {
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, deposit)])
 		.with_ctypes(vec![(ctype_hash, attester.clone())])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				PublicCredentials::add(
 					DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
@@ -187,8 +184,7 @@ fn add_ctype_not_existing() {
 
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, deposit)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				PublicCredentials::add(
 					DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
@@ -214,8 +210,7 @@ fn add_invalid_subject() {
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, deposit)])
 		.with_ctypes(vec![(ctype_hash, attester.clone())])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				PublicCredentials::add(
 					DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
@@ -242,8 +237,7 @@ fn add_not_enough_balance() {
 		// One less than the minimum required
 		.with_balances(vec![(ACCOUNT_00, deposit - 1)])
 		.with_ctypes(vec![(ctype_hash, attester.clone())])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				PublicCredentials::add(
 					DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
@@ -267,8 +261,7 @@ fn revoke_successful() {
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, deposit)])
 		.with_public_credentials(vec![(subject_id, credential_id, new_credential)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_ok!(PublicCredentials::revoke(
 				DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
 				credential_id,
@@ -308,8 +301,7 @@ fn revoke_same_attester_wrong_ac() {
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, deposit)])
 		.with_public_credentials(vec![(subject_id, credential_id, new_credential)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_ok!(PublicCredentials::revoke(
 				DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
 				credential_id,
@@ -337,8 +329,7 @@ fn revoke_unauthorized() {
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, deposit)])
 		.with_public_credentials(vec![(subject_id, credential_id, new_credential)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				PublicCredentials::revoke(
 					DoubleOrigin(ACCOUNT_00, wrong_submitter).into(),
@@ -363,8 +354,7 @@ fn revoke_ac_not_found() {
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, deposit)])
 		.with_public_credentials(vec![(subject_id, credential_id, new_credential)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				PublicCredentials::revoke(
 					DoubleOrigin(ACCOUNT_00, wrong_submitter.clone()).into(),
@@ -384,8 +374,7 @@ fn revoke_credential_not_found() {
 
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, deposit)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				PublicCredentials::revoke(DoubleOrigin(ACCOUNT_00, attester.clone()).into(), credential_id, None,),
 				Error::<Test>::NotFound
@@ -407,8 +396,7 @@ fn unrevoke_successful() {
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, deposit)])
 		.with_public_credentials(vec![(subject_id, credential_id, new_credential)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_ok!(PublicCredentials::unrevoke(
 				DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
 				credential_id,
@@ -449,8 +437,7 @@ fn unrevoke_same_attester_wrong_ac() {
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, deposit)])
 		.with_public_credentials(vec![(subject_id, credential_id, new_credential)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_ok!(PublicCredentials::unrevoke(
 				DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
 				credential_id,
@@ -479,8 +466,7 @@ fn unrevoke_unauthorized() {
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, deposit)])
 		.with_public_credentials(vec![(subject_id, credential_id, new_credential)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				PublicCredentials::unrevoke(
 					DoubleOrigin(ACCOUNT_00, wrong_submitter).into(),
@@ -506,8 +492,7 @@ fn unrevoke_ac_not_found() {
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, deposit)])
 		.with_public_credentials(vec![(subject_id, credential_id, new_credential)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				PublicCredentials::unrevoke(
 					DoubleOrigin(ACCOUNT_00, wrong_submitter.clone()).into(),
@@ -527,8 +512,7 @@ fn unrevoke_credential_not_found() {
 
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, deposit)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				PublicCredentials::unrevoke(DoubleOrigin(ACCOUNT_00, attester.clone()).into(), credential_id, None,),
 				Error::<Test>::NotFound
@@ -549,8 +533,7 @@ fn remove_successful() {
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, deposit)])
 		.with_public_credentials(vec![(subject_id, credential_id, new_credential)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_ok!(PublicCredentials::remove(
 				DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
 				credential_id,
@@ -585,8 +568,7 @@ fn remove_same_attester_wrong_ac() {
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, deposit)])
 		.with_public_credentials(vec![(subject_id, credential_id, new_credential)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_ok!(PublicCredentials::remove(
 				DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
 				credential_id,
@@ -612,8 +594,7 @@ fn remove_unauthorized() {
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, deposit)])
 		.with_public_credentials(vec![(subject_id, credential_id, new_credential)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				PublicCredentials::remove(
 					DoubleOrigin(ACCOUNT_00, wrong_submitter).into(),
@@ -638,8 +619,7 @@ fn remove_ac_not_found() {
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, deposit)])
 		.with_public_credentials(vec![(subject_id, credential_id, new_credential)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				PublicCredentials::remove(
 					DoubleOrigin(ACCOUNT_00, wrong_submitter.clone()).into(),
@@ -659,8 +639,7 @@ fn remove_credential_not_found() {
 
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, deposit)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				PublicCredentials::remove(DoubleOrigin(ACCOUNT_00, attester.clone()).into(), credential_id, None,),
 				Error::<Test>::NotFound
@@ -681,8 +660,7 @@ fn reclaim_deposit_successful() {
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, deposit)])
 		.with_public_credentials(vec![(subject_id, credential_id, new_credential)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_ok!(PublicCredentials::reclaim_deposit(
 				RuntimeOrigin::signed(ACCOUNT_00),
 				credential_id
@@ -715,8 +693,7 @@ fn reclaim_deposit_credential_not_found() {
 
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, deposit)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				PublicCredentials::reclaim_deposit(RuntimeOrigin::signed(ACCOUNT_00), credential_id),
 				Error::<Test>::NotFound
@@ -735,8 +712,7 @@ fn reclaim_deposit_unauthorized() {
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, deposit)])
 		.with_public_credentials(vec![(subject_id, credential_id, new_credential)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				PublicCredentials::reclaim_deposit(RuntimeOrigin::signed(ACCOUNT_01), credential_id),
 				Error::<Test>::NotAuthorized
@@ -766,8 +742,7 @@ fn test_change_deposit_owner() {
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, deposit), (ACCOUNT_01, deposit)])
 		.with_public_credentials(vec![(subject_id, credential_id, new_credential)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_ok!(PublicCredentials::change_deposit_owner(
 				DoubleOrigin(ACCOUNT_01, attester.clone()).into(),
 				credential_id
@@ -794,8 +769,7 @@ fn test_change_deposit_owner_not_found() {
 
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, deposit), (ACCOUNT_01, deposit)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				PublicCredentials::change_deposit_owner(
 					DoubleOrigin(ACCOUNT_01, attester.clone()).into(),
@@ -827,8 +801,7 @@ fn test_change_deposit_owner_unauthorized() {
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, deposit), (ACCOUNT_01, deposit)])
 		.with_public_credentials(vec![(subject_id, credential_id, new_credential)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				PublicCredentials::change_deposit_owner(DoubleOrigin(ACCOUNT_01, evil.clone()).into(), credential_id),
 				Error::<Test>::NotAuthorized
@@ -858,8 +831,7 @@ fn test_update_deposit() {
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, deposit_old)])
 		.with_public_credentials(vec![(subject_id, credential_id, new_credential)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_ok!(PublicCredentials::update_deposit(
 				RuntimeOrigin::signed(ACCOUNT_00),
 				credential_id
@@ -884,8 +856,7 @@ fn test_update_deposit_not_found() {
 
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, deposit)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				PublicCredentials::update_deposit(RuntimeOrigin::signed(ACCOUNT_01), credential_id),
 				Error::<Test>::NotFound
@@ -904,8 +875,7 @@ fn test_update_deposit_unauthorized() {
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, deposit)])
 		.with_public_credentials(vec![(subject_id, credential_id, new_credential)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				PublicCredentials::update_deposit(RuntimeOrigin::signed(ACCOUNT_01), credential_id),
 				Error::<Test>::NotAuthorized

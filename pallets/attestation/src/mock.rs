@@ -34,7 +34,7 @@ use kilt_support::deposit::Deposit;
 
 use crate::{
 	pallet::AuthorizationIdOf, AccountIdOf, AttestationAccessControl, AttestationDetails, AttesterOf, BalanceOf,
-	ClaimHashOf, Config, CurrencyOf, Pallet,
+	ClaimHashOf, Config, CurrencyOf,
 };
 
 #[cfg(test)]
@@ -179,6 +179,8 @@ pub(crate) mod runtime {
 
 	use ctype::{CtypeCreatorOf, CtypeEntryOf};
 	use kilt_support::mock::{mock_origin, SubjectId};
+
+	use crate::Pallet;
 
 	use super::*;
 

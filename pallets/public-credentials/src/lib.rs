@@ -229,6 +229,15 @@ pub mod pallet {
 		Internal,
 	}
 
+	#[pallet::hooks]
+	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+		#[cfg(feature = "try-runtime")]
+		fn try_state(_n: BlockNumberFor<T>) -> Result<(), &'static str> {
+			do_try_state()?;
+			Ok(())
+		}
+	}
+
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
 		/// Register a new public credential on chain.
@@ -584,6 +593,31 @@ pub mod pallet {
 					Err(Error::<T>::NotFound)
 				}
 			})
+		}
+
+		#[cfg(any(feature = "try-runtime", test))]
+		pub fn do_try_state() -> DispatchResult {
+			// check if for each owner there is a name stored.
+			Credentials::<T>::iter().try_for_each(|(subject_id, credential_id, entry)| -> DispatchResult {
+				ensure!(
+					CredentialSubjects::<T>::contains_key(&credential_id),
+					DispatchError::Other("Test")
+				);
+
+				ensure!(
+					CredentialSubjects::<T>::get(&credential_id).unwrap() == subject_id,
+					DispatchError::Other("Test")
+				);
+
+				ensure!(
+					ctype::Ctypes::<T>::contains_key(entry.ctype_hash),
+					DispatchError::Other("Test")
+				);
+
+				Ok(())
+			})?;
+
+			Ok(())
 		}
 	}
 

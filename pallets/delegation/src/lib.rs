@@ -87,7 +87,7 @@ use frame_support::{
 use kilt_support::traits::StorageDepositCollector;
 use parity_scale_codec::Encode;
 use sp_runtime::{traits::Hash, DispatchError};
-use sp_std::{marker::PhantomData, vec::Vec, vec};
+use sp_std::{marker::PhantomData, vec, vec::Vec};
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -977,13 +977,12 @@ pub mod pallet {
 
 		#[cfg(any(feature = "try-runtime", test))]
 		pub fn do_try_state() -> DispatchResult {
-
-			fn get_merged_subtree<T : Config>(node: DelegationNode<T>) -> Vec<DelegationNode<T>> {
+			fn get_merged_subtree<T: Config>(node: DelegationNode<T>) -> Vec<DelegationNode<T>> {
 				let mut nodes_to_explore = vec![node];
 				let mut children: Vec<DelegationNode<T>> = Vec::new();
 				while nodes_to_explore.is_empty() {
 					let current_node = nodes_to_explore.pop().unwrap();
-					let child_nodes : Vec<DelegationNode<T>> = current_node
+					let child_nodes: Vec<DelegationNode<T>> = current_node
 						.children
 						.iter()
 						.filter_map(|child_id| DelegationNodes::<T>::get(child_id))
@@ -991,10 +990,9 @@ pub mod pallet {
 					nodes_to_explore.extend(child_nodes.clone());
 					children.extend(child_nodes);
 				}
-			
+
 				children
 			}
-
 
 			DelegationNodes::<T>::iter().try_for_each(
 				|(delegation_node_id, delegation_details): (DelegationNodeIdOf<T>, DelegationNode<T>)| -> DispatchResult {
@@ -1023,13 +1021,11 @@ pub mod pallet {
 						let is_subtree_revoked = get_merged_subtree::<T>(delegation_details).iter().map(|child : &DelegationNode<T>| {child.details.revoked }).fold(true, |acc, x| acc && x);
 						ensure!(is_subtree_revoked, DispatchError::Other("Test") );
 					}
-			
 					Ok(())
 				},
 			)?;
 			Ok(())
 		}
-
 	}
 
 	struct DelegationDepositCollector<T: Config>(PhantomData<T>);
