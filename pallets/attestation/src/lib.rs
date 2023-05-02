@@ -471,6 +471,7 @@ pub mod pallet {
 				ExternalAttestations::<T>::remove(authorization_id, claim_hash);
 			}
 		}
+
 		#[cfg(any(feature = "try-runtime", test))]
 		pub fn do_try_state() -> DispatchResult {
 			Attestations::<T>::iter().try_for_each(|(claim_hash, attestation_details)| -> DispatchResult {
