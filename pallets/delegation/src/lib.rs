@@ -979,13 +979,13 @@ pub mod pallet {
 		pub fn do_try_state() -> DispatchResult {
 			fn get_merged_subtree<T: Config>(node: DelegationNode<T>) -> Vec<DelegationNode<T>> {
 				let mut nodes_to_explore = vec![node];
-				let mut children: Vec<DelegationNode<T>> = Vec::new();
+				let mut children: Vec<DelegationNode<T>> = vec![];
 				while !nodes_to_explore.is_empty() {
 					let current_node = nodes_to_explore.pop().unwrap();
 					let child_nodes: Vec<DelegationNode<T>> = current_node
 						.children
 						.iter()
-						.filter_map(|child_id| DelegationNodes::<T>::get(child_id))
+						.filter_map(DelegationNodes::<T>::get)
 						.collect();
 					nodes_to_explore.extend(child_nodes.clone());
 					children.extend(child_nodes);
@@ -1018,7 +1018,7 @@ pub mod pallet {
 
 					// if a node is revoked, his subtree should be revoked as well.
 					if delegation_details.details.revoked {
-						let is_subtree_revoked = get_merged_subtree::<T>(delegation_details).iter().map(|child : &DelegationNode<T>| {child.details.revoked }).fold(true, |acc, x| acc && x);
+						let is_subtree_revoked = get_merged_subtree::<T>(delegation_details).iter().map(|child : &DelegationNode<T>| {child.details.revoked }).all(|x| !x);
 						ensure!(is_subtree_revoked, DispatchError::Other("Test"));
 					}
 					Ok(())
