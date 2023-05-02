@@ -511,6 +511,12 @@ pub mod pallet {
 			}
 			post_weight
 		}
+
+		#[cfg(feature = "try-runtime")]
+		fn try_state(_n: BlockNumberFor<T>) -> Result<(), &'static str> {
+			Self::do_try_state()?;
+			Ok(())
+		}
 	}
 
 	/// The maximum number of collator candidates selected at each round.
@@ -1272,7 +1278,7 @@ pub mod pallet {
 			);
 
 			// we don't unlock immediately
-			Self::prep_unstake(&collator, less, false)?;
+			Self::prep_unstake(&collator, less, false)?; // if we prepare unstake
 
 			let n = if state.is_active() {
 				Self::update_top_candidates(
@@ -1652,6 +1658,7 @@ pub mod pallet {
 		#[pallet::weight(<T as Config>::WeightInfo::claim_rewards())]
 		pub fn claim_rewards(origin: OriginFor<T>) -> DispatchResult {
 			let target = ensure_signed(origin)?;
+			// !TODO! not update before?
 
 			// reset rewards
 			let rewards = Rewards::<T>::take(&target);
@@ -1738,6 +1745,7 @@ pub mod pallet {
 
 			// delegator reward rate should be 6% in 2nd year and 0% afterwards
 			let d_reward_rate = if year == T::BlockNumber::one() {
+				// !TODO! set delegation to zero?
 				Perquintill::from_percent(6)
 			} else {
 				Perquintill::zero()
@@ -1757,6 +1765,33 @@ pub mod pallet {
 	}
 
 	impl<T: Config> Pallet<T> {
+		// #[cfg(any(feature = "try-runtime", test))]
+		pub fn do_try_state() -> DispatchResult {
+			CandidatePool::<T>::iter().try_for_each(
+				|(key, candidate): (
+					T::AccountId,
+					Candidate<T::AccountId, BalanceOf<T>, T::MaxDelegatorsPerCollator>,
+				)|
+				 -> DispatchResult {
+					let sum_delegations: BalanceOf<T> = candidate
+						.delegators
+						.into_iter()
+						.fold(Zero::zero(), |acc, stake| acc + stake.amount); // maybe sum?
+
+					// total stake should be the sum of delegators stake + colator stake.
+					ensure!(
+						sum_delegations.saturating_add(candidate.stake) == candidate.total,
+						DispatchError::Other("Tests")
+					);
+
+					// delegators should be in delegator pool.
+
+					Ok(())
+				},
+			)?;
+			Ok(())
+		}
+
 		/// Check whether an account is currently delegating.
 		pub fn is_delegator(acc: &T::AccountId) -> bool {
 			DelegatorState::<T>::get(acc).is_some()
@@ -2374,7 +2409,7 @@ pub mod pallet {
 				collators: total_collators,
 				..
 			} = TotalCollatorStake::<T>::get();
-			let staking_rate = Perquintill::from_rational(total_collators, total_issuance);
+			let staking_rate = Perquintill::from_rational(total_collators, total_issuance); // why staking rate?
 
 			InflationConfig::<T>::get()
 				.collator
