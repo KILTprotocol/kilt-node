@@ -340,7 +340,6 @@ impl<T: Config> DidDetails<T> {
 	}
 
 	fn reserve_deposit(_deposit_to_reserve: BalanceOf<T>, _who: AccountIdOf<T>) -> Result<(), DispatchError> {
-		#[cfg(not(feature = "runtime-benchmarks"))]
 		kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(_who, _deposit_to_reserve)?;
 		Ok(())
 	}

@@ -2165,6 +2165,7 @@ pub mod pallet {
 		/// Consumes unstaked balance which can be unlocked in the future up to
 		/// amount and updates `Unstaking` storage accordingly.
 		fn increase_lock(who: &T::AccountId, amount: BalanceOf<T>, more: BalanceOf<T>) -> Result<u32, DispatchError> {
+			// !TODO!
 			ensure!(
 				pallet_balances::Pallet::<T>::free_balance(who) >= amount.into(),
 				pallet_balances::Error::<T>::InsufficientBalance

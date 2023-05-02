@@ -74,13 +74,11 @@ fn check_successful_simple_ed25519_creation() {
 				.contains_key(&generate_key_id(&auth_did_key.into())));
 			assert_eq!(stored_did.last_tx_counter, 0u64);
 
-			#[cfg(not(feature = "runtime-benchmarks"))]
 			assert_eq!(
 				Balances::reserved_balance(ACCOUNT_00),
 				<Test as did::Config>::BaseDeposit::get()
 			);
 
-			#[cfg(not(feature = "runtime-benchmarks"))]
 			assert_eq!(Balances::free_balance(ACCOUNT_FEE), <Test as did::Config>::Fee::get());
 		});
 }
@@ -120,7 +118,6 @@ fn check_successful_simple_sr25519_creation() {
 				.contains_key(&generate_key_id(&auth_did_key.into())));
 			assert_eq!(stored_did.last_tx_counter, 0u64);
 
-			#[cfg(not(feature = "runtime-benchmarks"))]
 			assert_eq!(
 				Balances::reserved_balance(ACCOUNT_00),
 				<Test as did::Config>::BaseDeposit::get()
@@ -164,7 +161,6 @@ fn check_successful_simple_ecdsa_creation() {
 				.contains_key(&generate_key_id(&auth_did_key.into())));
 			assert_eq!(stored_did.last_tx_counter, 0u64);
 
-			#[cfg(not(feature = "runtime-benchmarks"))]
 			assert_eq!(
 				Balances::reserved_balance(ACCOUNT_00),
 				<Test as did::Config>::BaseDeposit::get()
@@ -282,7 +278,6 @@ fn check_successful_complete_creation() {
 				details.new_service_details.len()
 			);
 
-			#[cfg(not(feature = "runtime-benchmarks"))]
 			assert_eq!(
 				Balances::reserved_balance(ACCOUNT_00),
 				<Test as did::Config>::BaseDeposit::get()
@@ -294,7 +289,6 @@ fn check_successful_complete_creation() {
 		});
 }
 
-#[cfg(not(feature = "runtime-benchmarks"))]
 #[test]
 fn check_deposit_change_by_adding_service_endpoint() {
 	let auth_key = get_ed25519_authentication_key(true);
