@@ -500,7 +500,7 @@ impl ExtBuilder {
 		ext
 	}
 
-	pub fn build_and_execute_with_sanity_tests(self, ext: Option<sp_io::TestExternalities>, test: impl FnOnce() -> ()) {
+	pub fn build_and_execute_with_sanity_tests(self, ext: Option<sp_io::TestExternalities>, test: impl FnOnce()) {
 		self.build(ext).execute_with(|| {
 			test();
 			Pallet::<Test>::do_try_state().unwrap();
