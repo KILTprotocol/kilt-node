@@ -85,6 +85,7 @@ build-wasm-peregrine:
   artifacts:
     paths:
       - out/*.wasm
+      - out/*.json
     expire_in: 12 week
 
 build-wasm-spiritnet:
@@ -109,4 +110,5 @@ build-wasm-spiritnet:
   artifacts:
     paths:
       - out/*.wasm
+      - out/*.json
     expire_in: 12 week
