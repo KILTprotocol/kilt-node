@@ -320,11 +320,11 @@ impl<T: Config> DidDetails<T> {
 	pub fn calculate_deposit(&self, did_subject: &DidIdentifierOf<T>) -> BalanceOf<T> {
 		let mut deposit: BalanceOf<T> = T::BaseDeposit::get();
 
-		let count_endpoints: BalanceOf<T> = DidEndpointsCount::<T>::get(did_subject).into();
-		deposit = deposit.saturating_add(count_endpoints.saturating_mul(T::ServiceEndpointDeposit::get()));
+		let endpoint_count: BalanceOf<T> = DidEndpointsCount::<T>::get(did_subject).into();
+		deposit = deposit.saturating_add(endpoint_count.saturating_mul(T::ServiceEndpointDeposit::get()));
 
-		let key_agreement_counts: BalanceOf<T> = self.key_agreement_keys.len().saturated_into();
-		deposit = deposit.saturating_add(key_agreement_counts.saturating_mul(T::KeyDeposit::get()));
+		let key_agreement_count: BalanceOf<T> = self.key_agreement_keys.len().saturated_into();
+		deposit = deposit.saturating_add(key_agreement_count.saturating_mul(T::KeyDeposit::get()));
 
 		deposit = deposit.saturating_add(match self.attestation_key {
 			Some(_) => T::KeyDeposit::get(),
