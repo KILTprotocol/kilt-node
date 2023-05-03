@@ -388,6 +388,7 @@ impl<T: Config> DidDetails<T> {
 
 		let deposit = Deposit {
 			owner: details.clone().submitter,
+			// set deposit for the moment to zero. We will update it later on
 			amount: Zero::zero(),
 		};
 
