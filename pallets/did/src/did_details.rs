@@ -339,8 +339,8 @@ impl<T: Config> DidDetails<T> {
 		deposit
 	}
 
-	fn reserve_deposit(_deposit_to_reserve: BalanceOf<T>, _who: AccountIdOf<T>) -> Result<(), DispatchError> {
-		kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(_who, _deposit_to_reserve)?;
+	fn reserve_deposit(deposit_to_reserve: BalanceOf<T>, who: AccountIdOf<T>) -> Result<(), DispatchError> {
+		kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(who, deposit_to_reserve)?;
 		Ok(())
 	}
 
