@@ -173,8 +173,6 @@ pub mod pallet {
 
 			ensure!(!Ctypes::<T>::contains_key(hash), Error::<T>::AlreadyExists);
 
-			// *** No Fail except during withdraw beyond this point  ***
-
 			// Collect the fees. This should not fail since we checked the free balance in
 			// the beginning.
 			let imbalance = <T::Currency as Currency<AccountIdOf<T>>>::withdraw(
