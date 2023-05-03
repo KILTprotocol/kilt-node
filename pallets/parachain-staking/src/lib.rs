@@ -1765,18 +1765,14 @@ pub mod pallet {
 	}
 
 	impl<T: Config> Pallet<T> {
-		// #[cfg(any(feature = "try-runtime", test))]
+		#[cfg(any(feature = "try-runtime", test))]
 		pub fn do_try_state() -> DispatchResult {
-			CandidatePool::<T>::iter().try_for_each(
-				|(key, candidate): (
-					T::AccountId,
-					Candidate<T::AccountId, BalanceOf<T>, T::MaxDelegatorsPerCollator>,
-				)|
-				 -> DispatchResult {
+			CandidatePool::<T>::iter_values().try_for_each(
+				|candidate: Candidate<T::AccountId, BalanceOf<T>, _>| -> DispatchResult {
 					let sum_delegations: BalanceOf<T> = candidate
 						.delegators
-						.into_iter()
-						.fold(Zero::zero(), |acc, stake| acc + stake.amount); // maybe sum?
+						.iter()
+						.fold(Zero::zero(), |acc, stake| acc.saturating_add(stake.amount));
 
 					// total stake should be the sum of delegators stake + colator stake.
 					ensure!(
@@ -1784,16 +1780,136 @@ pub mod pallet {
 						DispatchError::Other("Tests")
 					);
 
-					candidate
-						.delegators
-						.into_iter()
-						.filter_map(|delegator_stake| delegator_stake.owner);
+					// Min required stake should be set
+					ensure!(
+						candidate.stake >= T::MinCollatorCandidateStake::get(),
+						DispatchError::Other("Tests")
+					);
 
 					// delegators should be in delegator pool.
+					let are_delegator_present = candidate
+						.delegators
+						.iter()
+						.map(|delegator_stake| DelegatorState::<T>::get(&delegator_stake.owner).is_some())
+						.all(|x| x);
+					ensure!(are_delegator_present, DispatchError::Other("Tests"));
+
+					// each delegator should not exceed the [MaxDelegationsPerRound]
+					candidate
+						.delegators
+						.iter()
+						.try_for_each(|delegator_stake| -> DispatchResult {
+							Self::get_delegation_counter(&delegator_stake.owner)?;
+							Ok(())
+						})?;
+
+					// check min and max stake for each candidate
+					ensure!(
+						candidate.stake <= MaxCollatorCandidateStake::<T>::get(),
+						DispatchError::Other("Tests")
+					);
+
+					ensure!(
+						candidate.stake >= T::MinCollatorStake::get(),
+						DispatchError::Other("Tests")
+					);
+
+					// delegators should have the min required stake.
+					candidate
+						.delegators
+						.iter()
+						.try_for_each(|delegator_stake| -> DispatchResult {
+							ensure!(
+								delegator_stake.amount >= T::MinDelegatorStake::get(),
+								DispatchError::Other("Tests")
+							);
+							Ok(())
+						})?;
 
 					Ok(())
 				},
 			)?;
+
+			// check if enough collators are set.
+			ensure!(
+				CandidatePool::<T>::count() >= T::MinCollators::get(),
+				DispatchError::Other("Tests")
+			);
+
+			let top_candidates = TopCandidates::<T>::get();
+
+			// check if enough top candidates are set.
+			ensure!(
+				top_candidates.len() >= T::MinRequiredCollators::get().saturated_into(),
+				DispatchError::Other("Tests")
+			);
+
+			top_candidates.iter().try_for_each(|stake| -> DispatchResult {
+				// top candidates should be part of the candidate pool.
+				ensure!(
+					CandidatePool::<T>::contains_key(stake.clone().owner),
+					DispatchError::Other("Tests")
+				);
+
+				// an account can not be candidate and delegator.
+				ensure!(
+					DelegatorState::<T>::get(&stake.owner).is_none(),
+					DispatchError::Other("Tests")
+				);
+
+				// a top candidate should be active.
+				ensure!(
+					Self::is_active_candidate(&stake.owner).unwrap(),
+					DispatchError::Other("Tests")
+				);
+
+				Ok(())
+			})?;
+
+			// each locked fund should have a collator or delegator.
+			Unstaking::<T>::iter_keys().try_for_each(|who| -> DispatchResult {
+				let is_candidate = CandidatePool::<T>::contains_key(&who);
+				let is_delegator = DelegatorState::<T>::contains_key(&who);
+				ensure!(is_candidate || is_delegator, DispatchError::Other("Tests"));
+				Ok(())
+			})?;
+
+			// the total fund has to be the sum over the first [MaxSelectedCandidates] of
+			// [TopCandidates].
+
+			let top_n = MaxSelectedCandidates::<T>::get().saturated_into::<usize>();
+
+			let total_collator_delegator_stake = TotalCollatorStake::<T>::get();
+
+			let total_fund_from_collators = top_candidates
+				.iter()
+				.take(top_n)
+				.filter(|x| x.amount >= T::MinCollatorStake::get())
+				.fold(Zero::zero(), |acc: BalanceOf<T>, stake| {
+					acc.saturating_add(stake.amount)
+				});
+
+			let total_fund = top_candidates
+				.iter()
+				.take(top_n)
+				.filter(|x| x.amount >= T::MinCollatorStake::get())
+				.filter_map(|stake| CandidatePool::<T>::get(&stake.owner))
+				.fold(Zero::zero(), |acc: BalanceOf<T>, candidate| {
+					acc.saturating_add(candidate.total)
+				});
+
+			let delegator_fund = total_fund.saturating_sub(total_fund_from_collators);
+
+			ensure!(
+				total_collator_delegator_stake.collators == total_fund_from_collators,
+				DispatchError::Other("Tests")
+			);
+
+			ensure!(
+				total_collator_delegator_stake.delegators == delegator_fund,
+				DispatchError::Other("Tests")
+			);
+
 			Ok(())
 		}
 
