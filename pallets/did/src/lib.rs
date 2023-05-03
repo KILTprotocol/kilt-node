@@ -540,15 +540,6 @@ pub mod pallet {
 			ensure!(sender == details.submitter, BadOrigin);
 			let did_identifier = details.did.clone();
 
-			// Check the free balance before we do any heavy work.
-			ensure!(
-				<T::Currency as ReservableCurrency<AccountIdOf<T>>>::can_reserve(
-					&sender,
-					details.calculate_deposit().saturating_add(<T as Config>::Fee::get())
-				),
-				Error::<T>::UnableToPayFees
-			);
-
 			// Make sure that DIDs cannot be created again after they have been deleted.
 			ensure!(
 				!DidBlacklist::<T>::contains_key(&did_identifier),
@@ -575,11 +566,10 @@ pub mod pallet {
 			});
 			DidEndpointsCount::<T>::insert(&did_identifier, input_service_endpoints.len().saturated_into::<u32>());
 
-			let did_entry =
-				DidDetails::from_creation_details(*details, account_did_auth_key).map_err(Error::<T>::from)?;
+			let did_entry = DidDetails::from_creation_details(*details, account_did_auth_key, &did_identifier)
+				.map_err(Error::<T>::from)?;
 
 			Did::<T>::insert(&did_identifier, did_entry.clone());
-			CurrencyOf::<T>::reserve(&did_entry.deposit.owner, did_entry.deposit.amount)?;
 
 			// Withdraw the fee. We made sure that enough balance is available. But if this
 			// fails, we don't withdraw anything.

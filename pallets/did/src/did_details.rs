@@ -376,6 +376,7 @@ impl<T: Config> DidDetails<T> {
 	pub fn from_creation_details(
 		details: DidCreationDetails<T>,
 		new_auth_key: DidVerificationKey,
+		did_subject: &DidIdentifierOf<T>,
 	) -> Result<Self, DidError> {
 		ensure!(
 			details.new_key_agreement_keys.len()
@@ -385,10 +386,9 @@ impl<T: Config> DidDetails<T> {
 
 		let current_block_number = frame_system::Pallet::<T>::block_number();
 
-		let deposit_amount = details.calculate_deposit();
 		let deposit = Deposit {
 			owner: details.clone().submitter,
-			amount: deposit_amount,
+			amount: Zero::zero(),
 		};
 
 		// Creates a new DID with the given authentication key.
@@ -403,6 +403,9 @@ impl<T: Config> DidDetails<T> {
 		if let Some(delegation_key) = details.clone().new_delegation_key {
 			new_did_details.update_delegation_key(delegation_key, current_block_number)?;
 		}
+
+		let deposit_amount = new_did_details.calculate_deposit(did_subject);
+		new_did_details.deposit.amount = deposit_amount;
 
 		DidDetails::<T>::reserve_deposit(deposit_amount, details.submitter)?;
 
@@ -636,30 +639,6 @@ pub struct DidCreationDetails<T: Config> {
 	pub new_delegation_key: Option<DidVerificationKey>,
 	/// The service endpoints details.
 	pub new_service_details: Vec<DidEndpoint<T>>,
-}
-
-impl<T: Config> DidCreationDetails<T> {
-	pub fn calculate_deposit(&self) -> BalanceOf<T> {
-		let mut deposit: BalanceOf<T> = T::BaseDeposit::get();
-
-		let endpoint_count: BalanceOf<T> = self.new_service_details.len().saturated_into();
-		deposit = deposit.saturating_add(endpoint_count.saturating_mul(T::ServiceEndpointDeposit::get()));
-
-		let key_agreement_count: BalanceOf<T> = self.new_key_agreement_keys.len().saturated_into();
-		deposit = deposit.saturating_add(key_agreement_count.saturating_mul(T::KeyDeposit::get()));
-
-		deposit = deposit.saturating_add(match self.new_attestation_key {
-			Some(_) => T::KeyDeposit::get(),
-			_ => Zero::zero(),
-		});
-
-		deposit = deposit.saturating_add(match self.new_delegation_key {
-			Some(_) => T::KeyDeposit::get(),
-			_ => Zero::zero(),
-		});
-
-		deposit
-	}
 }
 
 /// Errors that might occur while deriving the authorization verification key
