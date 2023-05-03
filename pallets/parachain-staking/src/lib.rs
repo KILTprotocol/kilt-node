@@ -1784,6 +1784,11 @@ pub mod pallet {
 						DispatchError::Other("Tests")
 					);
 
+					candidate
+						.delegators
+						.into_iter()
+						.filter_map(|delegator_stake| delegator_stake.owner);
+
 					// delegators should be in delegator pool.
 
 					Ok(())
