@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use did::{DidSignature, DidVerificationKeyRelationship};
+use did::DidVerificationKeyRelationship;
 use dip_support::VersionedIdentityProof;
 use pallet_dip_consumer::traits::DipCallOriginFilter;
 use runtime_common::dip::{
@@ -27,16 +27,11 @@ use sp_std::vec::Vec;
 
 use crate::{BlockNumber, DidIdentifier, Hash, Hasher, Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin};
 
-pub struct MerkleProofAndDidSignature {
-	pub proof: VersionedIdentityProof<Vec<Vec<u8>, ProofLeaf<Hash, BlockNumber>>>,
-	pub signature: DidSignature,
-}
-
 impl pallet_dip_consumer::Config for Runtime {
 	type DipCallOriginFilter = DipCallFilter;
 	type Identifier = DidIdentifier;
 	type IdentityDetails = u128;
-	type Proof = MerkleProofAndDidSignature;
+	type Proof = VersionedIdentityProof<Vec<Vec<u8>>, ProofLeaf<Hash, BlockNumber>>;
 	type ProofDigest = Hash;
 	type ProofVerifier = DidMerkleProofVerifier<Hash, BlockNumber, Hasher, u128>;
 	type RuntimeCall = RuntimeCall;

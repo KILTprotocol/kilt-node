@@ -48,37 +48,6 @@ impl<BlockNumber> From<Vec<ProofEntry<BlockNumber>>> for VerificationResult<Bloc
 	}
 }
 
-pub trait MerkleProof {
-	type BlindedValue;
-	type Iterator: Iterator<Item = Self::Leaf>;
-	type Leaf;
-
-	fn blinded(&self) -> Self::BlindedValue;
-	fn leaves(&self) -> Self::Iterator;
-}
-
-impl<Blinded, Leaf> MerkleProof for VersionedIdentityProof<Blinded, Leaf> {
-	type BlindedValue = Blinded;
-	type Iterator = Vec<Self::Leaf>;
-	type Leaf = Leaf;
-
-	fn blinded(&self) -> Self::BlindedValue {
-		match *self {
-			Self::V1(v1::Proof { blinded, .. }) => blinded,
-			// FIXME
-			_ => panic!("Should not reach here"),
-		}
-	}
-
-	fn leaves(&self) -> impl Iterator<Item = Self::Leaf> {
-		match *self {
-			Self::V1(v1::Proof { revealed, .. }) => revealed,
-			// FIXME
-			_ => panic!("Should not reach here"),
-		}
-	}
-}
-
 pub struct DidMerkleProofVerifier<KeyId, BlockNumber, Hasher, Details>(
 	PhantomData<(KeyId, BlockNumber, Hasher, Details)>,
 );
@@ -156,10 +125,4 @@ where
 			.collect();
 		Ok(keys.into())
 	}
-}
-
-pub struct DidSignatureVerifier;
-
-impl<Call, Subject> IdentityProofVerifier<Call, Subject> for DidSignatureVerifier {
-	type Error = ();
 }
