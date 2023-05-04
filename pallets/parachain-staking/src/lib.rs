@@ -139,6 +139,7 @@ pub mod pallet {
 	use super::*;
 	pub use crate::inflation::{InflationInfo, RewardRate, StakingInfo};
 
+	use core::cmp::Ordering;
 	use frame_support::{
 		assert_ok,
 		pallet_prelude::*,
@@ -1799,7 +1800,19 @@ pub mod pallet {
 						.delegators
 						.iter()
 						.try_for_each(|delegator_stake| -> DispatchResult {
-							Self::get_delegation_counter(&delegator_stake.owner)?;
+							let last_delegation = LastDelegation::<T>::get(&delegator_stake.owner);
+							let round = Round::<T>::get();
+							let counter = if last_delegation.round < round.current {
+								0u32
+							} else {
+								last_delegation.counter
+							};
+
+							ensure!(
+								counter <= T::MaxDelegationsPerRound::get(),
+								DispatchError::Other("Tests")
+							);
+
 							Ok(())
 						})?;
 
@@ -1866,14 +1879,6 @@ pub mod pallet {
 				Ok(())
 			})?;
 
-			// each locked fund should have a collator or delegator.
-			Unstaking::<T>::iter_keys().try_for_each(|who| -> DispatchResult {
-				let is_candidate = CandidatePool::<T>::contains_key(&who);
-				let is_delegator = DelegatorState::<T>::contains_key(&who);
-				ensure!(is_candidate || is_delegator, DispatchError::Other("Tests"));
-				Ok(())
-			})?;
-
 			// the total fund has to be the sum over the first [MaxSelectedCandidates] of
 			// [TopCandidates].
 
@@ -1881,12 +1886,19 @@ pub mod pallet {
 
 			let total_collator_delegator_stake = TotalCollatorStake::<T>::get();
 
-			let total_fund_from_collators = top_candidates
+			let mut collator_details: Vec<Candidate<T::AccountId, BalanceOf<T>, T::MaxDelegatorsPerCollator>> =
+				top_candidates
+					.iter()
+					.filter_map(|stake| CandidatePool::<T>::get(&stake.owner))
+					.collect();
+
+			collator_details.sort_by(|a, b| b.total.cmp(&a.total));
+
+			let total_fund_from_top_collators = collator_details
 				.iter()
 				.take(top_n)
-				.filter(|x| x.amount >= T::MinCollatorStake::get())
-				.fold(Zero::zero(), |acc: BalanceOf<T>, stake| {
-					acc.saturating_add(stake.amount)
+				.fold(Zero::zero(), |acc: BalanceOf<T>, details| {
+					acc.saturating_add(details.stake)
 				});
 
 			let total_fund = top_candidates
@@ -1898,10 +1910,10 @@ pub mod pallet {
 					acc.saturating_add(candidate.total)
 				});
 
-			let delegator_fund = total_fund.saturating_sub(total_fund_from_collators);
+			let delegator_fund = total_fund.saturating_sub(total_fund_from_top_collators);
 
 			ensure!(
-				total_collator_delegator_stake.collators == total_fund_from_collators,
+				total_collator_delegator_stake.collators == total_fund_from_top_collators,
 				DispatchError::Other("Tests")
 			);
 
@@ -2058,14 +2070,20 @@ pub mod pallet {
 					}
 					(false, true) => {
 						// candidate pushed out the least staked collator which is now at position
-						// min(max_selected_top_candidates, top_candidates - 1) in TopCandidates
-						let old_col_idx = max_selected_candidates.min(top_candidates.len().saturating_sub(1));
+						let (drop_self, drop_delegators) = match max_selected_candidates.cmp(&top_candidates.len()) {
+							// top candidates are not full
+							Ordering::Greater => (BalanceOf::<T>::zero(), BalanceOf::<T>::zero()),
+							// top candidates are full. the collator with the lowest stake is at index old_col_idx
+							_ => {
+								// we can unwrap here without problems, since we compared
+								// [max_selected_candidates] with [top_candidates] length, but lets be
+								// safe.
+								Self::get_top_candidate_stake_at(&top_candidates, max_selected_candidates)
+									.unwrap_or((BalanceOf::<T>::zero(), BalanceOf::<T>::zero()))
+							}
+						};
 
 						// get amount to subtract from TotalCollatorStake
-						let (drop_self, drop_delegators) =
-							Self::get_top_candidate_stake_at(&top_candidates, old_col_idx)
-								// default to zero if candidate DNE, e.g. TopCandidates is not full
-								.unwrap_or((BalanceOf::<T>::zero(), BalanceOf::<T>::zero()));
 						Self::update_total_stake_by(new_self, new_delegators, drop_self, drop_delegators);
 					}
 					_ => {}

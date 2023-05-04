@@ -1294,8 +1294,8 @@ fn delegators_bond() {
 #[test]
 fn should_leave_delegators() {
 	ExtBuilder::default()
-		.with_balances(vec![(1, 100), (2, 100)])
-		.with_collators(vec![(1, 100)])
+		.with_balances(vec![(1, 100), (2, 100), (3, 100)])
+		.with_collators(vec![(1, 100), (3, 10)])
 		.with_delegators(vec![(2, 1, 100)])
 		.build_and_execute_with_sanity_tests(|| {
 			assert_ok!(StakePallet::leave_delegators(RuntimeOrigin::signed(2)));
@@ -1332,8 +1332,16 @@ fn round_transitions() {
 	// round_immediately_jumps_if_current_duration_exceeds_new_blocks_per_round
 	// change from 5 bpr to 3 in block 5 -> 8 should be new round
 	ExtBuilder::default()
-		.with_balances(vec![(1, 100), (2, 100), (3, 100), (4, 100), (5, 100), (6, 100)])
-		.with_collators(vec![(1, 20)])
+		.with_balances(vec![
+			(1, 100),
+			(2, 100),
+			(3, 100),
+			(4, 100),
+			(5, 100),
+			(6, 100),
+			(7, 100),
+		])
+		.with_collators(vec![(1, 20), (7, 10)])
 		.with_delegators(vec![(2, 1, 10), (3, 1, 10)])
 		.with_inflation(col_max, col_rewards, d_max, d_rewards, 5)
 		.build_and_execute_with_sanity_tests(|| {
@@ -1361,8 +1369,16 @@ fn round_transitions() {
 	// passes
 	// change from 5 bpr to 3 in block 6 -> 8 should be new round
 	ExtBuilder::default()
-		.with_balances(vec![(1, 100), (2, 100), (3, 100), (4, 100), (5, 100), (6, 100)])
-		.with_collators(vec![(1, 20)])
+		.with_balances(vec![
+			(1, 100),
+			(2, 100),
+			(3, 100),
+			(4, 100),
+			(5, 100),
+			(6, 100),
+			(7, 100),
+		])
+		.with_collators(vec![(1, 20), (7, 10)])
 		.with_delegators(vec![(2, 1, 10), (3, 1, 10)])
 		.with_inflation(col_max, col_rewards, d_max, d_rewards, 5)
 		.build_and_execute_with_sanity_tests(|| {
@@ -1390,8 +1406,16 @@ fn round_transitions() {
 	// round_immediately_jumps_if_current_duration_exceeds_new_blocks_per_round
 	// change from 5 bpr (blocks_per_round) to 3 in block 7 -> 8 should be new round
 	ExtBuilder::default()
-		.with_balances(vec![(1, 100), (2, 100), (3, 100), (4, 100), (5, 100), (6, 100)])
-		.with_collators(vec![(1, 20)])
+		.with_balances(vec![
+			(1, 100),
+			(2, 100),
+			(3, 100),
+			(4, 100),
+			(5, 100),
+			(6, 100),
+			(7, 100),
+		])
+		.with_collators(vec![(1, 20), (7, 10)])
 		.with_delegators(vec![(2, 1, 10), (3, 1, 10)])
 		.with_inflation(col_max, col_rewards, d_max, d_rewards, 5)
 		.build_and_execute_with_sanity_tests(|| {
@@ -1523,8 +1547,8 @@ fn coinbase_rewards_few_blocks_detailed_check() {
 fn delegator_should_not_receive_rewards_after_revoking() {
 	// test edge case of 1 delegator
 	ExtBuilder::default()
-		.with_balances(vec![(1, 10_000_000 * DECIMALS), (2, 10_000_000 * DECIMALS)])
-		.with_collators(vec![(1, 10_000_000 * DECIMALS)])
+		.with_balances(vec![(1, 10_000_000 * DECIMALS), (2, 10_000_000 * DECIMALS), (3, 100)])
+		.with_collators(vec![(1, 10_000_000 * DECIMALS), (3, 10)])
 		.with_delegators(vec![(2, 1, 10_000_000 * DECIMALS)])
 		.with_inflation(10, 15, 40, 15, 5)
 		.build_and_execute_with_sanity_tests(|| {
@@ -1543,8 +1567,9 @@ fn delegator_should_not_receive_rewards_after_revoking() {
 			(1, 10_000_000 * DECIMALS),
 			(2, 10_000_000 * DECIMALS),
 			(3, 10_000_000 * DECIMALS),
+			(4, 100),
 		])
-		.with_collators(vec![(1, 10_000_000 * DECIMALS)])
+		.with_collators(vec![(1, 10_000_000 * DECIMALS), (4, 10)])
 		.with_delegators(vec![(2, 1, 10_000_000 * DECIMALS), (3, 1, 10_000_000 * DECIMALS)])
 		.with_inflation(10, 15, 40, 15, 5)
 		.build_and_execute_with_sanity_tests(|| {
@@ -1671,7 +1696,8 @@ fn should_not_reward_delegators_below_min_stake() {
 		.with_collators(vec![(1, 10 * DECIMALS), (2, 10 * DECIMALS)])
 		.with_delegators(vec![(3, 2, 10 * DECIMALS)])
 		.with_inflation(10, 15, 40, 15, 5)
-		.build_and_execute_with_sanity_tests(|| {
+		.build()
+		.execute_with(|| {
 			// impossible but lets assume it happened
 			let mut state = StakePallet::candidate_pool(1).expect("CollatorState cannot be missing");
 			let delegator_stake_below_min = <Test as Config>::MinDelegatorStake::get() - 1;
@@ -1929,8 +1955,8 @@ fn should_end_session_when_appropriate() {
 #[test]
 fn set_max_selected_candidates_safe_guards() {
 	ExtBuilder::default()
-		.with_balances(vec![(1, 10)])
-		.with_collators(vec![(1, 10)])
+		.with_balances(vec![(1, 10), (2, 100)])
+		.with_collators(vec![(1, 10), (2, 10)])
 		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				StakePallet::set_max_selected_candidates(
@@ -2028,8 +2054,8 @@ fn set_max_selected_candidates_total_stake() {
 #[test]
 fn update_inflation() {
 	ExtBuilder::default()
-		.with_balances(vec![(1, 10)])
-		.with_collators(vec![(1, 10)])
+		.with_balances(vec![(1, 10), (2, 100)])
+		.with_collators(vec![(1, 10), (2, 10)])
 		.build_and_execute_with_sanity_tests(|| {
 			let mut invalid_inflation = InflationInfo {
 				collator: StakingInfo {
@@ -2090,8 +2116,8 @@ fn unlock_unstaked() {
 	// should remove first entry in unstaking BoundedBTreeMap when staking in block
 	// 2 should still have 100 locked until unlocking
 	ExtBuilder::default()
-		.with_balances(vec![(1, 10), (2, 100)])
-		.with_collators(vec![(1, 10)])
+		.with_balances(vec![(1, 10), (2, 100), (3, 100)])
+		.with_collators(vec![(1, 10), (3, 10)])
 		.with_delegators(vec![(2, 1, 100)])
 		.build_and_execute_with_sanity_tests(|| {
 			assert_ok!(StakePallet::leave_delegators(RuntimeOrigin::signed(2)));
@@ -2147,8 +2173,8 @@ fn unlock_unstaked() {
 	// should remove first entry in unstaking BoundedBTreeMap when staking in block
 	// 2 should still have 90 locked until unlocking in block 4
 	ExtBuilder::default()
-		.with_balances(vec![(1, 10), (2, 100)])
-		.with_collators(vec![(1, 10)])
+		.with_balances(vec![(1, 10), (2, 100), (10, 100)])
+		.with_collators(vec![(1, 10), (10, 10)])
 		.with_delegators(vec![(2, 1, 10)])
 		.build_and_execute_with_sanity_tests(|| {
 			assert_ok!(StakePallet::leave_delegators(RuntimeOrigin::signed(2)));
@@ -2206,8 +2232,8 @@ fn unlock_unstaked() {
 	// should have 100 locked until unlocking in block 3, then 10
 	// should have 10 locked until further unlocking in block 4
 	ExtBuilder::default()
-		.with_balances(vec![(1, 10), (2, 100)])
-		.with_collators(vec![(1, 10)])
+		.with_balances(vec![(1, 10), (2, 100), (3, 199)])
+		.with_collators(vec![(1, 10), (3, 10)])
 		.with_delegators(vec![(2, 1, 100)])
 		.build_and_execute_with_sanity_tests(|| {
 			assert_ok!(StakePallet::leave_delegators(RuntimeOrigin::signed(2)));
@@ -2267,8 +2293,8 @@ fn unlock_unstaked() {
 	// should have 100 locked until unlocking in block 3, then 10
 	// should have 10 locked until further unlocking in block 4
 	ExtBuilder::default()
-		.with_balances(vec![(1, 200), (2, 200)])
-		.with_collators(vec![(1, 200)])
+		.with_balances(vec![(1, 200), (2, 200), (3, 100)])
+		.with_collators(vec![(1, 200), (3, 10)])
 		.with_delegators(vec![(2, 1, 200)])
 		.build_and_execute_with_sanity_tests(|| {
 			// should be able to decrease more often than MaxUnstakeRequests because it's
@@ -2432,8 +2458,16 @@ fn kick_candidate_with_full_unstaking() {
 #[test]
 fn kick_delegator_with_full_unstaking() {
 	ExtBuilder::default()
-		.with_balances(vec![(1, 200), (2, 200), (3, 200), (4, 200), (5, 420), (6, 200)])
-		.with_collators(vec![(1, 200)])
+		.with_balances(vec![
+			(1, 200),
+			(2, 200),
+			(3, 200),
+			(4, 200),
+			(5, 420),
+			(6, 200),
+			(7, 100),
+		])
+		.with_collators(vec![(1, 200), (7, 10)])
 		.with_delegators(vec![(2, 1, 200), (3, 1, 200), (4, 1, 200), (5, 1, 200)])
 		.build_and_execute_with_sanity_tests(|| {
 			let max_unstake_reqs: usize = <Test as Config>::MaxUnstakeRequests::get()
@@ -2627,8 +2661,8 @@ fn candidate_leaves() {
 #[test]
 fn adjust_reward_rates() {
 	ExtBuilder::default()
-		.with_balances(vec![(1, 10_000_000 * DECIMALS), (2, 90_000_000 * DECIMALS)])
-		.with_collators(vec![(1, 10_000_000 * DECIMALS)])
+		.with_balances(vec![(1, 10_000_000 * DECIMALS), (2, 90_000_000 * DECIMALS), (3, 100)])
+		.with_collators(vec![(1, 10_000_000 * DECIMALS), (3, 10)])
 		.with_delegators(vec![(2, 1, 40_000_000 * DECIMALS)])
 		.with_inflation(10, 10, 40, 8, 5)
 		.build_and_execute_with_sanity_tests(|| {
@@ -2710,8 +2744,8 @@ fn adjust_reward_rates() {
 fn increase_max_candidate_stake() {
 	let max_stake = 160_000_000 * DECIMALS;
 	ExtBuilder::default()
-		.with_balances(vec![(1, 200_000_000 * DECIMALS)])
-		.with_collators(vec![(1, max_stake)])
+		.with_balances(vec![(1, 200_000_000 * DECIMALS), (3, 100)])
+		.with_collators(vec![(1, max_stake), (3, 10)])
 		.build_and_execute_with_sanity_tests(|| {
 			assert_eq!(StakePallet::max_candidate_stake(), max_stake);
 			assert_noop!(
@@ -2754,9 +2788,9 @@ fn decrease_max_candidate_stake() {
 				)
 			);
 
-			assert_ok!(StakePallet::set_max_candidate_stake(RuntimeOrigin::root(), 50));
-			assert_eq!(StakePallet::max_candidate_stake(), 50);
-			assert_eq!(last_event(), StakeEvent::MaxCandidateStakeChanged(50));
+			assert_ok!(StakePallet::set_max_candidate_stake(RuntimeOrigin::root(), 100));
+			assert_eq!(StakePallet::max_candidate_stake(), 100);
+			assert_eq!(last_event(), StakeEvent::MaxCandidateStakeChanged(100));
 
 			// check collator states, nothing changed
 			assert_eq!(
@@ -2795,8 +2829,8 @@ fn decrease_max_candidate_stake() {
 #[test]
 fn exceed_delegations_per_round() {
 	ExtBuilder::default()
-		.with_balances(vec![(1, 100), (2, 100)])
-		.with_collators(vec![(1, 100)])
+		.with_balances(vec![(1, 100), (2, 100), (3, 100)])
+		.with_collators(vec![(1, 100), (3, 10)])
 		.with_delegators(vec![(2, 1, 100)])
 		.build_and_execute_with_sanity_tests(|| {
 			// leave and re-join to set counter to 2 (= MaxDelegationsPerRound)
@@ -3320,8 +3354,16 @@ fn force_new_round() {
 #[test]
 fn replace_lowest_delegator() {
 	ExtBuilder::default()
-		.with_balances(vec![(1, 100), (2, 100), (3, 100), (4, 100), (5, 100), (6, 100)])
-		.with_collators(vec![(1, 100)])
+		.with_balances(vec![
+			(1, 100),
+			(2, 100),
+			(3, 100),
+			(4, 100),
+			(5, 100),
+			(6, 100),
+			(7, 100),
+		])
+		.with_collators(vec![(1, 100), (7, 10)])
 		.with_delegators(vec![(2, 1, 51), (3, 1, 51), (4, 1, 51), (5, 1, 50)])
 		.build_and_execute_with_sanity_tests(|| {
 			assert_eq!(
@@ -3581,18 +3623,18 @@ fn update_total_stake_displace_collators() {
 			);
 
 			// 4 is pushed out by staking less
-			assert_ok!(StakePallet::candidate_stake_less(RuntimeOrigin::signed(4), 30));
+			assert_ok!(StakePallet::candidate_stake_less(RuntimeOrigin::signed(4), 30)); // vec![(1, 10), (2, 20), (3, 30), (4, 10)]
 			assert_eq!(
-				StakePallet::total_collator_stake(),
+				StakePallet::total_collator_stake(), // collators: 50, delegators 105
 				TotalStake {
 					collators: 50,
 					delegators: 105
 				}
 			);
-			assert_ok!(StakePallet::delegator_stake_less(RuntimeOrigin::signed(8), 45));
+			assert_ok!(StakePallet::delegator_stake_less(RuntimeOrigin::signed(8), 45)); // vec![(5, 1, 50), (6, 2, 50), (7, 3, 55), (8, 4, 10)]
 
 			// 3 is pushed out by delegator staking less
-			assert_ok!(StakePallet::delegator_stake_less(RuntimeOrigin::signed(7), 45));
+			assert_ok!(StakePallet::delegator_stake_less(RuntimeOrigin::signed(7), 45)); // vec![(5, 1, 50), (6, 2, 50), (7, 3, 10), (8, 4, 10)]
 			assert_eq!(
 				StakePallet::total_collator_stake(),
 				TotalStake {
@@ -3716,13 +3758,13 @@ fn update_total_stake_no_collator_changes() {
 #[test]
 fn rewards_candidate_stake_more() {
 	ExtBuilder::default()
-		.with_balances(vec![(1, 2 * DECIMALS), (2, DECIMALS), (3, DECIMALS)])
-		.with_collators(vec![(1, DECIMALS)])
+		.with_balances(vec![(1, 2 * DECIMALS), (2, DECIMALS), (3, DECIMALS), (4, 100)])
+		.with_collators(vec![(1, DECIMALS), (4, 10)])
 		.with_delegators(vec![(2, 1, DECIMALS), (3, 1, DECIMALS)])
 		.build_and_execute_with_sanity_tests(|| {
 			// note once to set counter to 1
 			StakePallet::note_author(1);
-			assert_eq!(StakePallet::blocks_authored(1), 1);
+			assert_eq!(StakePallet::blocks_authored(1), 2);
 			assert!(StakePallet::blocks_authored(2).is_zero());
 			assert!(StakePallet::blocks_authored(3).is_zero());
 			(1..=3).for_each(|id| {
@@ -3753,13 +3795,13 @@ fn rewards_candidate_stake_more() {
 #[test]
 fn rewards_candidate_stake_less() {
 	ExtBuilder::default()
-		.with_balances(vec![(1, 2 * DECIMALS), (2, DECIMALS), (3, DECIMALS)])
-		.with_collators(vec![(1, 2 * DECIMALS)])
+		.with_balances(vec![(1, 2 * DECIMALS), (2, DECIMALS), (3, DECIMALS), (4, 100)])
+		.with_collators(vec![(1, 2 * DECIMALS), (4, 10)])
 		.with_delegators(vec![(2, 1, DECIMALS), (3, 1, DECIMALS)])
 		.build_and_execute_with_sanity_tests(|| {
 			// note once to set counter to 1
 			StakePallet::note_author(1);
-			assert_eq!(StakePallet::blocks_authored(1), 1);
+			assert_eq!(StakePallet::blocks_authored(1), 2);
 			assert!(StakePallet::blocks_authored(2).is_zero());
 			assert!(StakePallet::blocks_authored(3).is_zero());
 			(1..=3).for_each(|id| {
@@ -3908,12 +3950,12 @@ fn rewards_force_remove_candidate() {
 #[test]
 fn blocks_rewarded_join_delegators() {
 	ExtBuilder::default()
-		.with_balances(vec![(1, 100), (2, 100)])
-		.with_collators(vec![(1, 100)])
+		.with_balances(vec![(1, 1000), (2, 100), (3, 100)])
+		.with_collators(vec![(1, 1000), (3, 10)])
 		.build_and_execute_with_sanity_tests(|| {
 			// note once to set counter to 1
 			StakePallet::note_author(1);
-			assert_eq!(StakePallet::blocks_authored(1), 1);
+			assert_eq!(StakePallet::blocks_authored(1), 2);
 			assert!(StakePallet::blocks_rewarded(1).is_zero());
 			assert_ok!(StakePallet::join_delegators(RuntimeOrigin::signed(2), 1, 100));
 			// delegator's rewarded counter should equal of collator's authored counter upon
@@ -3925,13 +3967,13 @@ fn blocks_rewarded_join_delegators() {
 #[test]
 fn rewards_delegator_stake_more() {
 	ExtBuilder::default()
-		.with_balances(vec![(1, DECIMALS), (2, DECIMALS), (3, 2 * DECIMALS)])
-		.with_collators(vec![(1, DECIMALS)])
+		.with_balances(vec![(1, DECIMALS), (2, DECIMALS), (3, 2 * DECIMALS), (4, 100)])
+		.with_collators(vec![(1, DECIMALS), (4, 10)])
 		.with_delegators(vec![(2, 1, DECIMALS), (3, 1, DECIMALS)])
 		.build_and_execute_with_sanity_tests(|| {
 			// note once to set counter to 1
 			StakePallet::note_author(1);
-			assert_eq!(StakePallet::blocks_authored(1), 1);
+			assert_eq!(StakePallet::blocks_authored(1), 2);
 			assert!(StakePallet::blocks_rewarded(2).is_zero());
 			assert!(StakePallet::blocks_rewarded(3).is_zero());
 			(1..=3).for_each(|id| {
@@ -3941,14 +3983,14 @@ fn rewards_delegator_stake_more() {
 			// stake less to trigger reward incrementing just for 3
 			assert_ok!(StakePallet::delegator_stake_more(RuntimeOrigin::signed(3), DECIMALS));
 			// 1 should still have counter 1 but no rewards
-			assert_eq!(StakePallet::blocks_authored(1), 1);
+			assert_eq!(StakePallet::blocks_authored(1), 2);
 			assert!(StakePallet::blocks_rewarded(1).is_zero());
 			assert!(StakePallet::rewards(1).is_zero());
 			// 2 should still have neither rewards nor counter
 			assert!(StakePallet::blocks_rewarded(2).is_zero());
 			assert!(StakePallet::rewards(2).is_zero());
 			// 3 should have rewards and the same counter as 1
-			assert_eq!(StakePallet::blocks_rewarded(3), 1);
+			assert_eq!(StakePallet::blocks_rewarded(3), 2);
 			assert!(!StakePallet::rewards(3).is_zero());
 		});
 }
@@ -3956,13 +3998,13 @@ fn rewards_delegator_stake_more() {
 #[test]
 fn rewards_delegator_stake_less() {
 	ExtBuilder::default()
-		.with_balances(vec![(1, DECIMALS), (2, DECIMALS), (3, 2 * DECIMALS)])
-		.with_collators(vec![(1, DECIMALS)])
+		.with_balances(vec![(1, DECIMALS), (2, DECIMALS), (3, 2 * DECIMALS), (7, 100)])
+		.with_collators(vec![(1, DECIMALS), (7, 10)])
 		.with_delegators(vec![(2, 1, DECIMALS), (3, 1, 2 * DECIMALS)])
 		.build_and_execute_with_sanity_tests(|| {
 			// note once to set counter to 1
 			StakePallet::note_author(1);
-			assert_eq!(StakePallet::blocks_authored(1), 1);
+			assert_eq!(StakePallet::blocks_authored(1), 2);
 			assert!(StakePallet::blocks_rewarded(2).is_zero());
 			assert!(StakePallet::blocks_rewarded(3).is_zero());
 			(1..=3).for_each(|id| {
@@ -3972,14 +4014,14 @@ fn rewards_delegator_stake_less() {
 			// stake less to trigger reward incrementing just for 3
 			assert_ok!(StakePallet::delegator_stake_less(RuntimeOrigin::signed(3), DECIMALS));
 			// 1 should still have counter 1 but no rewards
-			assert_eq!(StakePallet::blocks_authored(1), 1);
+			assert_eq!(StakePallet::blocks_authored(1), 2);
 			assert!(StakePallet::blocks_rewarded(1).is_zero());
 			assert!(StakePallet::rewards(1).is_zero());
 			// 2 should still have neither rewards nor counter
 			assert!(StakePallet::blocks_rewarded(2).is_zero());
 			assert!(StakePallet::rewards(2).is_zero());
 			// 3 should have rewards and the same counter as 1
-			assert_eq!(StakePallet::blocks_rewarded(3), 1);
+			assert_eq!(StakePallet::blocks_rewarded(3), 2);
 			assert!(!StakePallet::rewards(3).is_zero());
 		});
 }
@@ -3994,8 +4036,9 @@ fn rewards_delegator_replaced() {
 			(4, 2 * DECIMALS),
 			(5, 2 * DECIMALS),
 			(6, 2 * DECIMALS),
+			(7, 100),
 		])
-		.with_collators(vec![(1, 2 * DECIMALS)])
+		.with_collators(vec![(1, 2 * DECIMALS), (7, 10)])
 		.with_delegators(vec![
 			(2, 1, 2 * DECIMALS),
 			(3, 1, 2 * DECIMALS),
@@ -4005,29 +4048,29 @@ fn rewards_delegator_replaced() {
 		.build_and_execute_with_sanity_tests(|| {
 			// note once to set counter to 1
 			StakePallet::note_author(1);
-			assert_eq!(StakePallet::blocks_authored(1), 1);
+			assert_eq!(StakePallet::blocks_authored(1), 2);
 
 			// 6 kicks 5
 			assert_ok!(StakePallet::join_delegators(RuntimeOrigin::signed(6), 1, 2 * DECIMALS));
 			// 5 should have rewards and counter updated
 			assert!(!StakePallet::rewards(5).is_zero());
-			assert_eq!(StakePallet::blocks_rewarded(5), 1);
+			assert_eq!(StakePallet::blocks_rewarded(5), 2);
 			// 6 should not have rewards but same counter as former collator
 			assert!(StakePallet::rewards(6).is_zero());
-			assert_eq!(StakePallet::blocks_rewarded(6), 1);
+			assert_eq!(StakePallet::blocks_rewarded(6), 2);
 		});
 }
 
 #[test]
 fn rewards_delegator_leaves() {
 	ExtBuilder::default()
-		.with_balances(vec![(1, DECIMALS), (2, DECIMALS), (3, DECIMALS)])
-		.with_collators(vec![(1, DECIMALS)])
+		.with_balances(vec![(1, DECIMALS), (2, DECIMALS), (3, DECIMALS), (4, 100)])
+		.with_collators(vec![(1, DECIMALS), (4, 10)])
 		.with_delegators(vec![(2, 1, DECIMALS), (3, 1, DECIMALS)])
 		.build_and_execute_with_sanity_tests(|| {
 			// note collator once to set their counter to 1
 			StakePallet::note_author(1);
-			assert_eq!(StakePallet::blocks_authored(1), 1);
+			assert_eq!(StakePallet::blocks_authored(1), 2);
 			assert!(StakePallet::blocks_rewarded(2).is_zero());
 			assert!(StakePallet::blocks_rewarded(3).is_zero());
 			(1..=3).for_each(|id| {
@@ -4124,12 +4167,12 @@ fn rewards_yearly_inflation_adjustment() {
 #[test]
 fn rewards_incrementing_and_claiming() {
 	ExtBuilder::default()
-		.with_balances(vec![(1, DECIMALS), (2, DECIMALS), (3, DECIMALS)])
-		.with_collators(vec![(1, DECIMALS)])
+		.with_balances(vec![(1, DECIMALS), (2, DECIMALS), (3, DECIMALS), (4, 100)])
+		.with_collators(vec![(1, DECIMALS), (4, 10)])
 		.with_delegators(vec![(2, 1, DECIMALS), (3, 1, DECIMALS)])
 		.build_and_execute_with_sanity_tests(|| {
 			// claiming should not be possible with zero counters
-			(1..=3).for_each(|id| {
+			(1..=4).for_each(|id| {
 				assert_noop!(
 					StakePallet::claim_rewards(RuntimeOrigin::signed(id)),
 					Error::<Test>::RewardsNotFound,
@@ -4138,11 +4181,11 @@ fn rewards_incrementing_and_claiming() {
 
 			// note once to set counter to 1
 			StakePallet::note_author(1);
-			assert_eq!(StakePallet::blocks_authored(1), 1);
+			assert_eq!(StakePallet::blocks_authored(1), 2);
 			assert!(StakePallet::blocks_rewarded(2).is_zero());
 
 			// claiming should not be possible before incrementing rewards
-			(1..=3).for_each(|id| {
+			(1..=4).for_each(|id| {
 				assert_noop!(
 					StakePallet::claim_rewards(RuntimeOrigin::signed(id)),
 					Error::<Test>::RewardsNotFound
@@ -4151,7 +4194,7 @@ fn rewards_incrementing_and_claiming() {
 
 			// increment rewards for 2 and match counter to collator
 			assert_ok!(StakePallet::increment_delegator_rewards(RuntimeOrigin::signed(2)));
-			assert_eq!(StakePallet::blocks_rewarded(2), 1);
+			assert_eq!(StakePallet::blocks_rewarded(2), 2);
 			let rewards_2 = StakePallet::rewards(2);
 			assert!(!rewards_2.is_zero());
 			assert!(StakePallet::blocks_rewarded(3).is_zero());
@@ -4177,7 +4220,7 @@ fn rewards_incrementing_and_claiming() {
 			// incrementing again should not change anything because collator has not
 			// authored blocks since last inc
 			assert_ok!(StakePallet::increment_delegator_rewards(RuntimeOrigin::signed(2)));
-			assert_eq!(StakePallet::blocks_rewarded(2), 1);
+			assert_eq!(StakePallet::blocks_rewarded(2), 2);
 			// claim for 2 to move rewards into balance
 			assert_ok!(StakePallet::claim_rewards(RuntimeOrigin::signed(2)));
 			assert!(Balances::free_balance(2) > DECIMALS);
