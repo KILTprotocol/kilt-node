@@ -134,8 +134,6 @@ impl InflationInfo {
 	/// Check whether the annual reward rate is approx. the per_block reward
 	/// rate multiplied with the number of blocks per year
 	pub fn is_valid(&self, blocks_per_year: u64) -> bool {
-		// !TODO! why only bigger? -> blocks_per_year has to get bigger -> more blocks
-		// in less seconds.
 		self.collator.reward_rate.annual
 			>= Perquintill::from_parts(
 				self.collator

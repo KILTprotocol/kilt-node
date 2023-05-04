@@ -1659,7 +1659,6 @@ pub mod pallet {
 		#[pallet::weight(<T as Config>::WeightInfo::claim_rewards())]
 		pub fn claim_rewards(origin: OriginFor<T>) -> DispatchResult {
 			let target = ensure_signed(origin)?;
-			// !TODO! not update before?
 
 			// reset rewards
 			let rewards = Rewards::<T>::take(&target);
@@ -1746,7 +1745,6 @@ pub mod pallet {
 
 			// delegator reward rate should be 6% in 2nd year and 0% afterwards
 			let d_reward_rate = if year == T::BlockNumber::one() {
-				// !TODO! set delegation to zero?
 				Perquintill::from_percent(6)
 			} else {
 				Perquintill::zero()

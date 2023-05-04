@@ -234,7 +234,7 @@ pub mod pallet {
 		pub fn associate_account(
 			origin: OriginFor<T>,
 			req: AssociateAccountRequest,
-			expiration: <T as frame_system::Config>::BlockNumber, // !TODO! why expiration
+			expiration: <T as frame_system::Config>::BlockNumber,
 		) -> DispatchResult {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 			let did_identifier = source.subject();
@@ -277,8 +277,6 @@ pub mod pallet {
 		#[pallet::call_index(1)]
 		#[pallet::weight(<T as Config>::WeightInfo::associate_sender())]
 		pub fn associate_sender(origin: OriginFor<T>) -> DispatchResult {
-			// !TODO! difference between associate_sender und associate_account. difference
-			// between assert! und ensure!
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 
 			ensure!(

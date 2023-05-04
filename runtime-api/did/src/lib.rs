@@ -30,7 +30,6 @@ pub use service_endpoint::*;
 
 #[derive(Encode, Decode, TypeInfo, Eq, PartialEq)]
 pub struct DidLinkedInfo<
-	// !TODO! sicherstellen. Json für DID document.
 	DidIdentifier,
 	AccountId,
 	LinkableAccountId,
