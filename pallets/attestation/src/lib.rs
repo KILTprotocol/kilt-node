@@ -262,7 +262,7 @@ pub mod pallet {
 			);
 
 			// Check for validity of the delegation node if specified.
-			authorization // !TODO!
+			authorization
 				.as_ref()
 				.map(|ac| ac.can_attest(&who, &ctype_hash, &claim_hash))
 				.transpose()?;
