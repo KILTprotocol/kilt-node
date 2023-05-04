@@ -339,11 +339,6 @@ impl<T: Config> DidDetails<T> {
 		deposit
 	}
 
-	fn reserve_deposit(deposit_to_reserve: BalanceOf<T>, who: AccountIdOf<T>) -> Result<(), DispatchError> {
-		kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(who, deposit_to_reserve)?;
-		Ok(())
-	}
-
 	fn release_deposit(deposit_to_release: BalanceOf<T>, who: AccountIdOf<T>) {
 		let to_release_deposit = Deposit {
 			amount: deposit_to_release,
@@ -358,7 +353,10 @@ impl<T: Config> DidDetails<T> {
 		match new_required_deposit.cmp(&self.deposit.amount) {
 			Ordering::Greater => {
 				let deposit_to_reserve = new_required_deposit.saturating_sub(self.deposit.amount);
-				DidDetails::<T>::reserve_deposit(deposit_to_reserve, self.deposit.owner.clone())?;
+				kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
+					self.deposit.owner.clone(),
+					deposit_to_reserve,
+				)?;
 				self.deposit.amount = self.deposit.amount.saturating_add(deposit_to_reserve);
 			}
 			Ordering::Less => {
@@ -388,7 +386,7 @@ impl<T: Config> DidDetails<T> {
 
 		let deposit = Deposit {
 			owner: details.clone().submitter,
-			// set deposit for the moment to zero. We will update it later on
+			// set deposit for the moment to zero. We will update it, when all keys are set.
 			amount: Zero::zero(),
 		};
 
@@ -408,7 +406,7 @@ impl<T: Config> DidDetails<T> {
 		let deposit_amount = new_did_details.calculate_deposit(did_subject);
 		new_did_details.deposit.amount = deposit_amount;
 
-		DidDetails::<T>::reserve_deposit(deposit_amount, details.submitter)?;
+		kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(details.submitter, deposit_amount)?;
 
 		Ok(new_did_details)
 	}
