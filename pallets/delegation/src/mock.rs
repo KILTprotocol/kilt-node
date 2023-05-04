@@ -27,7 +27,7 @@ use kilt_support::deposit::Deposit;
 
 use crate::{
 	self as delegation, AccountIdOf, Config, CurrencyOf, DelegationDetails, DelegationHierarchyDetails, DelegationNode,
-	DelegatorIdOf, Pallet, Permissions,
+	DelegatorIdOf, Permissions,
 };
 
 #[cfg(test)]
@@ -169,7 +169,7 @@ where
 
 #[cfg(test)]
 pub(crate) mod runtime {
-	use crate::{BalanceOf, DelegateSignatureTypeOf, DelegationAc, DelegationNodeIdOf};
+	use crate::{BalanceOf, DelegateSignatureTypeOf, DelegationAc, DelegationNodeIdOf, Pallet};
 
 	use super::*;
 
