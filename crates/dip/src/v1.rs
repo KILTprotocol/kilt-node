@@ -28,7 +28,7 @@ pub enum IdentityProofAction<Identifier, Proof, Details = ()> {
 }
 
 #[derive(Encode, Decode, RuntimeDebug, Clone, Eq, PartialEq, TypeInfo, Default)]
-pub struct Proof<BlindedValue, Leaf> {
+pub struct MerkleProof<BlindedValue, Leaf> {
 	pub blinded: BlindedValue,
 	// TODO: Probably replace with a different data structure for better lookup capabilities
 	pub revealed: Vec<Leaf>,

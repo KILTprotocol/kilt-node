@@ -20,7 +20,7 @@ use did::{
 	did_details::{DidCreationDetails, DidEncryptionKey},
 	DidVerificationKeyRelationship, KeyIdOf,
 };
-use dip_support::latest::Proof;
+use dip_support::latest::MerkleProof;
 use frame_support::{
 	assert_err, assert_ok, construct_runtime, parameter_types, traits::Everything, weights::constants::RocksDbWeight,
 };
@@ -302,7 +302,7 @@ fn complete_did_merkle_proof() {
 		// Fail to verify the generated merkle proof
 		assert_err!(
 			DidMerkleProofVerifier::<KeyIdOf<TestRuntime>, BlockNumber, Hashing>::verify_proof_against_digest(
-				Proof {
+				MerkleProof {
 					blinded: proof.blinded,
 					revealed: reference_only_authentication_leaf
 				}

@@ -26,6 +26,15 @@ pub struct ProofEntry<Digest, Details> {
 	pub details: Details,
 }
 
+impl<Digest, Details> ProofEntry<Digest, Details> {
+	pub fn digest(&self) -> &Digest {
+		&self.digest
+	}
+	pub fn details(&self) -> &Details {
+		&self.details
+	}
+}
+
 impl<Digest, Details> ProofEntry<Digest, Details>
 where
 	Details: Default,

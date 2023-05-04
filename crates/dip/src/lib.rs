@@ -49,22 +49,22 @@ impl<Identifier, Proof, Details> From<v1::IdentityProofAction<Identifier, Proof,
 #[non_exhaustive]
 pub enum VersionedIdentityProof<BlindedValue, Leaf> {
 	#[codec(index = 1)]
-	V1(v1::Proof<BlindedValue, Leaf>),
+	V1(v1::MerkleProof<BlindedValue, Leaf>),
 }
 
-impl<BlindedValue, Leaf> From<v1::Proof<BlindedValue, Leaf>> for VersionedIdentityProof<BlindedValue, Leaf> {
-	fn from(value: v1::Proof<BlindedValue, Leaf>) -> Self {
+impl<BlindedValue, Leaf> From<v1::MerkleProof<BlindedValue, Leaf>> for VersionedIdentityProof<BlindedValue, Leaf> {
+	fn from(value: v1::MerkleProof<BlindedValue, Leaf>) -> Self {
 		Self::V1(value)
 	}
 }
 
-impl<BlindedValue, Leaf> TryFrom<VersionedIdentityProof<BlindedValue, Leaf>> for v1::Proof<BlindedValue, Leaf> {
+impl<BlindedValue, Leaf> TryFrom<VersionedIdentityProof<BlindedValue, Leaf>> for v1::MerkleProof<BlindedValue, Leaf> {
 	// Proper error handling
 	type Error = ();
 
 	fn try_from(value: VersionedIdentityProof<BlindedValue, Leaf>) -> Result<Self, Self::Error> {
 		#[allow(irrefutable_let_patterns)]
-		if let VersionedIdentityProof::V1(v1::Proof { blinded, revealed }) = value {
+		if let VersionedIdentityProof::V1(v1::MerkleProof { blinded, revealed }) = value {
 			Ok(Self { blinded, revealed })
 		} else {
 			Err(())

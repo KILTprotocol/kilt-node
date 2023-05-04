@@ -17,7 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use did::{did_details::DidDetails, DidVerificationKeyRelationship, KeyIdOf};
-use dip_support::latest::Proof;
+use dip_support::latest::MerkleProof;
 use frame_support::RuntimeDebug;
 use pallet_dip_provider::traits::{IdentityProofGenerator, IdentityProvider};
 use parity_scale_codec::{Decode, Encode};
@@ -29,7 +29,8 @@ use crate::dip::{KeyDetailsKey, KeyDetailsValue, KeyReferenceKey, KeyReferenceVa
 
 pub type BlindedValue = Vec<u8>;
 
-pub type DidMerkleProof<T> = Proof<Vec<BlindedValue>, ProofLeaf<KeyIdOf<T>, <T as frame_system::Config>::BlockNumber>>;
+pub type DidMerkleProof<T> =
+	MerkleProof<Vec<BlindedValue>, ProofLeaf<KeyIdOf<T>, <T as frame_system::Config>::BlockNumber>>;
 
 #[derive(Encode, Decode, RuntimeDebug, PartialEq, Eq, TypeInfo)]
 pub struct CompleteMerkleProof<Root, Proof> {

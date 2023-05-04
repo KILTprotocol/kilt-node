@@ -25,7 +25,7 @@ use runtime_common::dip::{
 };
 use sp_std::vec::Vec;
 
-use crate::{BlockNumber, DidIdentifier, Hash, Hasher, Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin};
+use crate::{AccountId, BlockNumber, DidIdentifier, Hash, Hasher, Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin};
 
 impl pallet_dip_consumer::Config for Runtime {
 	type DipCallOriginFilter = DipCallFilter;
@@ -33,7 +33,7 @@ impl pallet_dip_consumer::Config for Runtime {
 	type IdentityDetails = u128;
 	type Proof = VersionedIdentityProof<Vec<Vec<u8>>, ProofLeaf<Hash, BlockNumber>>;
 	type ProofDigest = Hash;
-	type ProofVerifier = DidMerkleProofVerifier<Hash, BlockNumber, Hasher, u128>;
+	type ProofVerifier = DidMerkleProofVerifier<Hash, BlockNumber, Hasher, u128, AccountId>;
 	type RuntimeCall = RuntimeCall;
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeOrigin = RuntimeOrigin;
