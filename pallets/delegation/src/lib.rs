@@ -1018,7 +1018,7 @@ pub mod pallet {
 
 					// if a node is revoked, his subtree should be revoked as well.
 					if delegation_details.details.revoked {
-						let is_subtree_revoked = get_merged_subtree::<T>(delegation_details).iter().map(|child : &DelegationNode<T>| {child.details.revoked }).all(|x| !x);
+						let is_subtree_revoked = get_merged_subtree::<T>(delegation_details).iter().map(|child : &DelegationNode<T>| {child.details.revoked }).all(|x| x);
 						ensure!(is_subtree_revoked, DispatchError::Other("Test"));
 					}
 					Ok(())
