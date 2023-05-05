@@ -1882,43 +1882,28 @@ pub mod pallet {
 
 			let top_n = MaxSelectedCandidates::<T>::get().saturated_into::<usize>();
 
-			let total_collator_delegator_stake = TotalCollatorStake::<T>::get();
+			let total_stake = TotalCollatorStake::<T>::get();
 
-			let mut collator_details: Vec<Candidate<T::AccountId, BalanceOf<T>, T::MaxDelegatorsPerCollator>> =
-				top_candidates
-					.iter()
-					.filter_map(|stake| CandidatePool::<T>::get(&stake.owner))
-					.collect();
-
-			collator_details.sort_by(|a, b| b.total.cmp(&a.total));
-
-			let total_fund_from_top_collators = collator_details
+			let collator_delegator_stake = top_candidates
 				.iter()
 				.take(top_n)
 				.fold(Zero::zero(), |acc: BalanceOf<T>, details| {
-					acc.saturating_add(details.stake)
+					acc.saturating_add(details.amount)
 				});
 
-			let total_fund = top_candidates
+			let collator_stake = top_candidates
 				.iter()
 				.take(top_n)
-				.filter(|x| x.amount >= T::MinCollatorStake::get())
 				.filter_map(|stake| CandidatePool::<T>::get(&stake.owner))
 				.fold(Zero::zero(), |acc: BalanceOf<T>, candidate| {
-					acc.saturating_add(candidate.total)
+					acc.saturating_add(candidate.stake)
 				});
 
-			let delegator_fund = total_fund.saturating_sub(total_fund_from_top_collators);
+			let delegator_state = collator_delegator_stake.saturating_sub(collator_stake);
 
-			ensure!(
-				total_collator_delegator_stake.collators == total_fund_from_top_collators,
-				DispatchError::Other("Tests")
-			);
+			ensure!(total_stake.collators == collator_stake, DispatchError::Other("Tests"));
 
-			ensure!(
-				total_collator_delegator_stake.delegators == delegator_fund,
-				DispatchError::Other("Tests")
-			);
+			ensure!(total_stake.delegators == delegator_state, DispatchError::Other("Tests"));
 
 			Ok(())
 		}
