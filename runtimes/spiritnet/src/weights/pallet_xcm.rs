@@ -59,35 +59,35 @@ impl<T: frame_system::Config> pallet_xcm::WeightInfo for WeightInfo<T> {
 	// Storage: ParachainSystem PendingUpwardMessages (r:1 w:1)
 	// Proof Skipped: ParachainSystem PendingUpwardMessages (max_values: Some(1), max_size: None, mode: Measured)
 	fn send() -> Weight {
-		Weight::from_ref_time(47_819_000 as u64)
+		Weight::from_parts(47_819_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(5 as u64))
 			.saturating_add(T::DbWeight::get().writes(2 as u64))
 	}
 	// Storage: Benchmark Override (r:0 w:0)
 	// Proof Skipped: Benchmark Override (max_values: None, max_size: None, mode: Measured)
 	fn teleport_assets() -> Weight {
-		Weight::from_ref_time(18_446_744_073_709_551_000 as u64)
+		Weight::from_parts(18_446_744_073_709_551_000 as u64, 0)
 	}
 	// Storage: Benchmark Override (r:0 w:0)
 	// Proof Skipped: Benchmark Override (max_values: None, max_size: None, mode: Measured)
 	fn reserve_transfer_assets() -> Weight {
-		Weight::from_ref_time(18_446_744_073_709_551_000 as u64)
+		Weight::from_parts(18_446_744_073_709_551_000 as u64, 0)
 	}
 	// Storage: Benchmark Override (r:0 w:0)
 	// Proof Skipped: Benchmark Override (max_values: None, max_size: None, mode: Measured)
 	fn execute() -> Weight {
-		Weight::from_ref_time(18_446_744_073_709_551_000 as u64)
+		Weight::from_parts(18_446_744_073_709_551_000 as u64, 0)
 	}
 	// Storage: PolkadotXcm SupportedVersion (r:0 w:1)
 	// Proof Skipped: PolkadotXcm SupportedVersion (max_values: None, max_size: None, mode: Measured)
 	fn force_xcm_version() -> Weight {
-		Weight::from_ref_time(11_906_000 as u64)
+		Weight::from_parts(11_906_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	// Storage: PolkadotXcm SafeXcmVersion (r:0 w:1)
 	// Proof Skipped: PolkadotXcm SafeXcmVersion (max_values: Some(1), max_size: None, mode: Measured)
 	fn force_default_xcm_version() -> Weight {
-		Weight::from_ref_time(3_726_000 as u64)
+		Weight::from_parts(3_726_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	// Storage: PolkadotXcm VersionNotifiers (r:1 w:1)
@@ -107,7 +107,7 @@ impl<T: frame_system::Config> pallet_xcm::WeightInfo for WeightInfo<T> {
 	// Storage: PolkadotXcm Queries (r:0 w:1)
 	// Proof Skipped: PolkadotXcm Queries (max_values: None, max_size: None, mode: Measured)
 	fn force_subscribe_version_notify() -> Weight {
-		Weight::from_ref_time(39_357_000 as u64)
+		Weight::from_parts(39_357_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(7 as u64))
 			.saturating_add(T::DbWeight::get().writes(5 as u64))
 	}
@@ -126,28 +126,28 @@ impl<T: frame_system::Config> pallet_xcm::WeightInfo for WeightInfo<T> {
 	// Storage: PolkadotXcm Queries (r:0 w:1)
 	// Proof Skipped: PolkadotXcm Queries (max_values: None, max_size: None, mode: Measured)
 	fn force_unsubscribe_version_notify() -> Weight {
-		Weight::from_ref_time(57_944_000 as u64)
+		Weight::from_parts(57_944_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(6 as u64))
 			.saturating_add(T::DbWeight::get().writes(4 as u64))
 	}
 	// Storage: PolkadotXcm SupportedVersion (r:4 w:2)
 	// Proof Skipped: PolkadotXcm SupportedVersion (max_values: None, max_size: None, mode: Measured)
 	fn migrate_supported_version() -> Weight {
-		Weight::from_ref_time(33_805_000 as u64)
+		Weight::from_parts(33_805_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(4 as u64))
 			.saturating_add(T::DbWeight::get().writes(2 as u64))
 	}
 	// Storage: PolkadotXcm VersionNotifiers (r:4 w:2)
 	// Proof Skipped: PolkadotXcm VersionNotifiers (max_values: None, max_size: None, mode: Measured)
 	fn migrate_version_notifiers() -> Weight {
-		Weight::from_ref_time(35_045_000 as u64)
+		Weight::from_parts(35_045_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(4 as u64))
 			.saturating_add(T::DbWeight::get().writes(2 as u64))
 	}
 	// Storage: PolkadotXcm VersionNotifyTargets (r:5 w:0)
 	// Proof Skipped: PolkadotXcm VersionNotifyTargets (max_values: None, max_size: None, mode: Measured)
 	fn already_notified_target() -> Weight {
-		Weight::from_ref_time(39_994_000 as u64)
+		Weight::from_parts(39_994_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(5 as u64))
 	}
 	// Storage: PolkadotXcm VersionNotifyTargets (r:2 w:1)
@@ -163,20 +163,20 @@ impl<T: frame_system::Config> pallet_xcm::WeightInfo for WeightInfo<T> {
 	// Storage: ParachainSystem PendingUpwardMessages (r:1 w:1)
 	// Proof Skipped: ParachainSystem PendingUpwardMessages (max_values: Some(1), max_size: None, mode: Measured)
 	fn notify_current_targets() -> Weight {
-		Weight::from_ref_time(35_628_000 as u64)
+		Weight::from_parts(35_628_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(7 as u64))
 			.saturating_add(T::DbWeight::get().writes(3 as u64))
 	}
 	// Storage: PolkadotXcm VersionNotifyTargets (r:3 w:0)
 	// Proof Skipped: PolkadotXcm VersionNotifyTargets (max_values: None, max_size: None, mode: Measured)
 	fn notify_target_migration_fail() -> Weight {
-		Weight::from_ref_time(9_994_000 as u64)
+		Weight::from_parts(9_994_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(3 as u64))
 	}
 	// Storage: PolkadotXcm VersionNotifyTargets (r:4 w:2)
 	// Proof Skipped: PolkadotXcm VersionNotifyTargets (max_values: None, max_size: None, mode: Measured)
 	fn migrate_version_notify_targets() -> Weight {
-		Weight::from_ref_time(20_693_000 as u64)
+		Weight::from_parts(20_693_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(4 as u64))
 			.saturating_add(T::DbWeight::get().writes(2 as u64))
 	}
@@ -193,7 +193,7 @@ impl<T: frame_system::Config> pallet_xcm::WeightInfo for WeightInfo<T> {
 	// Storage: ParachainSystem PendingUpwardMessages (r:1 w:1)
 	// Proof Skipped: ParachainSystem PendingUpwardMessages (max_values: Some(1), max_size: None, mode: Measured)
 	fn migrate_and_notify_old_targets() -> Weight {
-		Weight::from_ref_time(44_084_000 as u64)
+		Weight::from_parts(44_084_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(9 as u64))
 			.saturating_add(T::DbWeight::get().writes(4 as u64))
 	}

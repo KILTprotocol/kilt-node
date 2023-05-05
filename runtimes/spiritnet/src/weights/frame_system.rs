@@ -49,46 +49,46 @@ use sp_std::marker::PhantomData;
 pub struct WeightInfo<T>(PhantomData<T>);
 impl<T: frame_system::Config> frame_system::WeightInfo for WeightInfo<T> {
 	fn remark(b: u32, ) -> Weight {
-		Weight::from_ref_time(9_320_004 as u64)
+		Weight::from_parts(9_320_004 as u64, 0)
 			// Standard Error: 0
-			.saturating_add(Weight::from_ref_time(541 as u64).saturating_mul(b as u64))
+			.saturating_add(Weight::from_parts(541 as u64, 0).saturating_mul(b as u64))
 	}
 	fn remark_with_event(b: u32, ) -> Weight {
-		Weight::from_ref_time(8_660_000 as u64)
+		Weight::from_parts(8_660_000 as u64, 0)
 			// Standard Error: 0
-			.saturating_add(Weight::from_ref_time(2_041 as u64).saturating_mul(b as u64))
+			.saturating_add(Weight::from_parts(2_041 as u64, 0).saturating_mul(b as u64))
 	}
 	// Storage: System Digest (r:1 w:1)
 	// Proof Skipped: System Digest (max_values: Some(1), max_size: None, mode: Measured)
 	// Storage: unknown `0x3a686561707061676573` (r:0 w:1)
 	// Proof Skipped: unknown `0x3a686561707061676573` (r:0 w:1)
 	fn set_heap_pages() -> Weight {
-		Weight::from_ref_time(4_806_000 as u64)
+		Weight::from_parts(4_806_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().writes(2 as u64))
 	}
 	// Storage: Skipped Metadata (r:0 w:0)
 	// Proof Skipped: Skipped Metadata (max_values: None, max_size: None, mode: Measured)
 	fn set_storage(i: u32, ) -> Weight {
-		Weight::from_ref_time(3_953_000 as u64)
+		Weight::from_parts(3_953_000 as u64, 0)
 			// Standard Error: 2_457
-			.saturating_add(Weight::from_ref_time(642_798 as u64).saturating_mul(i as u64))
+			.saturating_add(Weight::from_parts(642_798 as u64, 0).saturating_mul(i as u64))
 			.saturating_add(T::DbWeight::get().writes((1 as u64).saturating_mul(i as u64)))
 	}
 	// Storage: Skipped Metadata (r:0 w:0)
 	// Proof Skipped: Skipped Metadata (max_values: None, max_size: None, mode: Measured)
 	fn kill_storage(i: u32, ) -> Weight {
-		Weight::from_ref_time(2_542_000 as u64)
+		Weight::from_parts(2_542_000 as u64, 0)
 			// Standard Error: 890
-			.saturating_add(Weight::from_ref_time(478_434 as u64).saturating_mul(i as u64))
+			.saturating_add(Weight::from_parts(478_434 as u64, 0).saturating_mul(i as u64))
 			.saturating_add(T::DbWeight::get().writes((1 as u64).saturating_mul(i as u64)))
 	}
 	// Storage: Skipped Metadata (r:0 w:0)
 	// Proof Skipped: Skipped Metadata (max_values: None, max_size: None, mode: Measured)
 	fn kill_prefix(p: u32, ) -> Weight {
-		Weight::from_ref_time(7_173_000 as u64)
+		Weight::from_parts(7_173_000 as u64, 0)
 			// Standard Error: 1_138
-			.saturating_add(Weight::from_ref_time(1_035_139 as u64).saturating_mul(p as u64))
+			.saturating_add(Weight::from_parts(1_035_139 as u64, 0).saturating_mul(p as u64))
 			.saturating_add(T::DbWeight::get().writes((1 as u64).saturating_mul(p as u64)))
 	}
 }

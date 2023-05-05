@@ -111,13 +111,13 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		// Minimum execution time: 390_746 nanoseconds.
 		Weight::from_parts(235_841_750, 2555)
 			// Standard Error: 1_801_116
-			.saturating_add(Weight::from_ref_time(151_796_125).saturating_mul(r.into()))
+			.saturating_add(Weight::from_parts(151_796_125,0).saturating_mul(r.into()))
 			// Standard Error: 1_801_116
-			.saturating_add(Weight::from_ref_time(621_625).saturating_mul(c.into()))
+			.saturating_add(Weight::from_parts(621_625,0).saturating_mul(c.into()))
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(r.into())))
 			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(r.into())))
-			.saturating_add(Weight::from_proof_size(34675).saturating_mul(r.into()))
+			.saturating_add(Weight::from_parts(0,34675).saturating_mul(r.into()))
 	}
 	/// Storage: Delegation DelegationNodes (r:6 w:1)
 	/// Proof: Delegation DelegationNodes (max_values: None, max_size: Some(32200), added: 34675, mode: MaxEncodedLen)
@@ -132,11 +132,11 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		// Minimum execution time: 448_052 nanoseconds.
 		Weight::from_parts(466_867_250, 37230)
 			// Standard Error: 4_082_010
-			.saturating_add(Weight::from_ref_time(46_061_000).saturating_mul(c.into()))
+			.saturating_add(Weight::from_parts(46_061_000,0).saturating_mul(c.into()))
 			.saturating_add(T::DbWeight::get().reads(2_u64))
 			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(c.into())))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
-			.saturating_add(Weight::from_proof_size(34675).saturating_mul(c.into()))
+			.saturating_add(Weight::from_parts(0,34675).saturating_mul(c.into()))
 	}
 	/// Storage: Delegation DelegationNodes (r:6 w:6)
 	/// Proof: Delegation DelegationNodes (max_values: None, max_size: Some(32200), added: 34675, mode: MaxEncodedLen)
@@ -277,13 +277,13 @@ impl WeightInfo for () {
 		// Minimum execution time: 390_746 nanoseconds.
 		Weight::from_parts(235_841_750, 2555)
 			// Standard Error: 1_801_116
-			.saturating_add(Weight::from_ref_time(151_796_125).saturating_mul(r.into()))
+			.saturating_add(Weight::from_parts(151_796_125, 0).saturating_mul(r.into()))
 			// Standard Error: 1_801_116
-			.saturating_add(Weight::from_ref_time(621_625).saturating_mul(c.into()))
+			.saturating_add(Weight::from_parts(621_625, 0).saturating_mul(c.into()))
 			.saturating_add(RocksDbWeight::get().reads(1_u64))
 			.saturating_add(RocksDbWeight::get().reads((1_u64).saturating_mul(r.into())))
 			.saturating_add(RocksDbWeight::get().writes((1_u64).saturating_mul(r.into())))
-			.saturating_add(Weight::from_proof_size(34675).saturating_mul(r.into()))
+			.saturating_add(Weight::from_parts(34675, 0).saturating_mul(r.into()))
 	}
 	/// Storage: Delegation DelegationNodes (r:6 w:1)
 	/// Proof: Delegation DelegationNodes (max_values: None, max_size: Some(32200), added: 34675, mode: MaxEncodedLen)
@@ -298,11 +298,11 @@ impl WeightInfo for () {
 		// Minimum execution time: 448_052 nanoseconds.
 		Weight::from_parts(466_867_250, 37230)
 			// Standard Error: 4_082_010
-			.saturating_add(Weight::from_ref_time(46_061_000).saturating_mul(c.into()))
+			.saturating_add(Weight::from_parts(46_061_000, 0).saturating_mul(c.into()))
 			.saturating_add(RocksDbWeight::get().reads(2_u64))
 			.saturating_add(RocksDbWeight::get().reads((1_u64).saturating_mul(c.into())))
 			.saturating_add(RocksDbWeight::get().writes(1_u64))
-			.saturating_add(Weight::from_proof_size(34675).saturating_mul(c.into()))
+			.saturating_add(Weight::from_parts(0, 34675).saturating_mul(c.into()))
 	}
 	/// Storage: Delegation DelegationNodes (r:6 w:6)
 	/// Proof: Delegation DelegationNodes (max_values: None, max_size: Some(32200), added: 34675, mode: MaxEncodedLen)
