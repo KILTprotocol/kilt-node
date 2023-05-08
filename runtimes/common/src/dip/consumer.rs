@@ -16,22 +16,30 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use core::fmt::Debug;
+
 use did::{
-	did_details::{DidPublicKey, DidPublicKeyDetails},
-	DidSignature,
+	did_details::{DidPublicKey, DidPublicKeyDetails, DidVerificationKey},
+	DidSignature, DidVerificationKeyRelationship,
 };
 use dip_support::{v1, VersionedIdentityProof};
-use frame_support::RuntimeDebug;
+use frame_support::{BoundedVec, RuntimeDebug};
 use pallet_dip_consumer::traits::IdentityProofVerifier;
-use parity_scale_codec::Encode;
+use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
+use scale_info::TypeInfo;
+use sp_core::ConstU32;
+use sp_runtime::traits::{CheckedAdd, One, Zero};
 use sp_std::{collections::btree_map::BTreeMap, marker::PhantomData, vec::Vec};
 use sp_trie::{verify_trie_proof, LayoutV1};
 
-use crate::dip::{provider, KeyDetailsKey, KeyDetailsValue, KeyReferenceKey, KeyRelationship, ProofLeaf};
+use crate::{
+	dip::{provider, KeyDetailsKey, KeyDetailsValue, KeyReferenceKey, KeyRelationship, ProofLeaf},
+	AccountId, Hash,
+};
 
 // TODO: Avoid repetition of the same key if it appears multiple times, e.g., by
 // having a vector of `KeyRelationship` instead.
-#[derive(Clone, RuntimeDebug, PartialEq, Eq)]
+#[derive(Clone, RuntimeDebug, PartialEq, Eq, TypeInfo, MaxEncodedLen, Encode, Decode)]
 pub struct ProofEntry<BlockNumber> {
 	pub key: DidPublicKeyDetails<BlockNumber>,
 	pub relationship: KeyRelationship,
@@ -39,30 +47,31 @@ pub struct ProofEntry<BlockNumber> {
 
 // Contains the list of revealed public keys after a given merkle proof has been
 // correctly verified.
-#[derive(Clone, RuntimeDebug, PartialEq, Eq)]
-pub struct VerificationResult<BlockNumber>(pub Vec<ProofEntry<BlockNumber>>);
+#[derive(Clone, RuntimeDebug, PartialEq, Eq, TypeInfo, MaxEncodedLen, Encode, Decode)]
+pub struct VerificationResult<BlockNumber>(pub BoundedVec<ProofEntry<BlockNumber>, ConstU32<10>>);
 
-impl<BlockNumber> From<Vec<ProofEntry<BlockNumber>>> for VerificationResult<BlockNumber> {
+impl<BlockNumber> From<Vec<ProofEntry<BlockNumber>>> for VerificationResult<BlockNumber>
+where
+	BlockNumber: Debug,
+{
 	fn from(value: Vec<ProofEntry<BlockNumber>>) -> Self {
-		Self(value)
+		Self(value.try_into().expect("Failed to put Vec into BoundedVec"))
 	}
 }
 
-pub struct DidMerkleProofVerifier<KeyId, BlockNumber, Hasher, Details, AccountId>(
-	PhantomData<(KeyId, BlockNumber, Hasher, Details, AccountId)>,
-);
+pub struct DidMerkleProofVerifier<Hasher, BlockNumber, Details>(PhantomData<(Hasher, BlockNumber, Details)>);
 
-impl<Call, Subject, KeyId, BlockNumber, Hasher, Details, AccountId> IdentityProofVerifier<Call, Subject>
-	for DidMerkleProofVerifier<KeyId, BlockNumber, Hasher, Details, AccountId>
+impl<Call, Subject, Hasher, BlockNumber, Details> IdentityProofVerifier<Call, Subject>
+	for DidMerkleProofVerifier<Hasher, BlockNumber, Details>
 where
-	KeyId: Encode + Clone + Ord,
-	BlockNumber: Encode + Clone + Ord,
+	BlockNumber: Encode + Clone + Debug,
 	Hasher: sp_core::Hasher,
+	Hasher::Out: From<Hash>,
 {
 	// TODO: Proper error handling
 	type Error = ();
-	type Proof = VersionedIdentityProof<Vec<provider::BlindedValue>, ProofLeaf<KeyId, BlockNumber>>;
-	type ProofEntry = pallet_dip_consumer::proof::ProofEntry<<Hasher as sp_core::Hasher>::Out, Details>;
+	type Proof = VersionedIdentityProof<Vec<provider::BlindedValue>, ProofLeaf<Hash, BlockNumber>>;
+	type ProofEntry = pallet_dip_consumer::proof::ProofEntry<Hash, Details>;
 	type Submitter = AccountId;
 	type VerificationResult = VerificationResult<BlockNumber>;
 
@@ -70,10 +79,10 @@ where
 		_call: &Call,
 		_subject: &Subject,
 		_submitter: &Self::Submitter,
-		proof_entry: &Self::ProofEntry,
-		proof: Self::Proof,
+		proof_entry: &mut Self::ProofEntry,
+		proof: &Self::Proof,
 	) -> Result<Self::VerificationResult, Self::Error> {
-		let proof: v1::MerkleProof<_, _> = proof.try_into()?;
+		let proof: v1::MerkleProof<_, _> = proof.clone().try_into()?;
 		// TODO: more efficient by removing cloning and/or collecting.
 		// Did not find another way of mapping a Vec<(Vec<u8>, Vec<u8>)> to a
 		// Vec<(Vec<u8>, Option<Vec<u8>>)>.
@@ -82,7 +91,7 @@ where
 			.iter()
 			.map(|leaf| (leaf.encoded_key(), Some(leaf.encoded_value())))
 			.collect::<Vec<(Vec<u8>, Option<Vec<u8>>)>>();
-		verify_trie_proof::<LayoutV1<Hasher>, _, _, _>(&proof_entry.digest, &proof.blinded, &proof_leaves)
+		verify_trie_proof::<LayoutV1<Hasher>, _, _, _>(&proof_entry.digest.into(), &proof.blinded, &proof_leaves)
 			.map_err(|_| ())?;
 
 		// At this point, we know the proof is valid. We just need to map the revealed
@@ -90,7 +99,7 @@ where
 
 		// Create a map of the revealed public keys
 		//TODO: Avoid cloning, and use a map of references for the lookup
-		let public_keys: BTreeMap<KeyId, DidPublicKeyDetails<BlockNumber>> = proof
+		let public_keys: BTreeMap<Hash, DidPublicKeyDetails<BlockNumber>> = proof
 			.revealed
 			.clone()
 			.into_iter()
@@ -127,115 +136,166 @@ where
 	}
 }
 
-// #[derive(Encode, Decode, RuntimeDebug, Clone, Eq, PartialEq, TypeInfo)]
-// pub struct DidProof<Payload> {
-// 	pub payload: Payload,
-// 	pub signature: DidSignature,
-// }
+pub trait Bump {
+	fn bump(&mut self);
+}
 
-// pub type DidSignaturePayload()
-
-pub struct DidSignatureVerifier<Hasher, Details, AccountId, BlockNumber>(
-	PhantomData<(Hasher, Details, AccountId, BlockNumber)>,
-);
-
-impl<Call, Subject, Hasher, Details, AccountId, BlockNumber> IdentityProofVerifier<Call, Subject>
-	for DidSignatureVerifier<Hasher, Details, AccountId, BlockNumber>
+impl<T> Bump for T
 where
-	Hasher: sp_core::Hasher,
+	T: CheckedAdd + Zero + One,
+{
+	// FIXME: Better implementation?
+	fn bump(&mut self) {
+		if let Some(new) = self.checked_add(&Self::one()) {
+			*self = new;
+		} else {
+			*self = Self::zero();
+		}
+	}
+}
+
+// Verifies a DID signature over the call details, which is the encoded tuple of
+// (call, proof_entry.details(), submitter address).
+pub struct DidSignatureVerifier<BlockNumber, Details>(PhantomData<(BlockNumber, Details)>);
+
+impl<Call, Subject, BlockNumber, Details> IdentityProofVerifier<Call, Subject>
+	for DidSignatureVerifier<BlockNumber, Details>
+where
+	BlockNumber: Encode,
 	Call: Encode,
-	Details: Encode,
-	AccountId: Encode,
+	Details: Bump + Encode,
 {
 	// TODO: Error handling
 	type Error = ();
 	type Proof = (Vec<ProofEntry<BlockNumber>>, DidSignature);
-	type ProofEntry = pallet_dip_consumer::proof::ProofEntry<<Hasher as sp_core::Hasher>::Out, Details>;
+	type ProofEntry = pallet_dip_consumer::proof::ProofEntry<Hash, Details>;
 	type Submitter = AccountId;
-	type VerificationResult = ();
+	type VerificationResult = (DidVerificationKey, DidVerificationKeyRelationship);
 
 	fn verify_proof_for_call_against_entry(
 		call: &Call,
 		_subject: &Subject,
 		submitter: &Self::Submitter,
-		proof_entry: &Self::ProofEntry,
-		proof: Self::Proof,
+		proof_entry: &mut Self::ProofEntry,
+		proof: &Self::Proof,
 	) -> Result<Self::VerificationResult, Self::Error> {
 		let encoded_payload = (call, proof_entry.details(), submitter).encode();
 		let mut proof_verification_keys = proof.0.iter().filter_map(
 			|ProofEntry {
 			     key: DidPublicKeyDetails { key, .. },
-			     ..
+			     relationship,
 			 }| {
 				if let DidPublicKey::PublicVerificationKey(k) = key {
-					Some(k)
+					Some((
+						k,
+						DidVerificationKeyRelationship::try_from(*relationship).expect("Should never fail."),
+					))
 				} else {
 					None
 				}
 			},
 		);
-		let is_signature_valid_for_revealed_keys = proof_verification_keys
-			.any(|verification_key| verification_key.verify_signature(&encoded_payload, &proof.1).is_ok());
-		if is_signature_valid_for_revealed_keys {
-			Ok(())
+		let valid_signing_key = proof_verification_keys
+			.find(|(verification_key, _)| verification_key.verify_signature(&encoded_payload, &proof.1).is_ok());
+		if let Some((key, relationship)) = valid_signing_key {
+			proof_entry.details.bump();
+			Ok((key.clone(), relationship))
 		} else {
 			Err(())
 		}
 	}
 }
 
-pub struct KiltDipProof<KeyId, BlockNumber> {
-	identity_proof: VersionedIdentityProof<Vec<provider::BlindedValue>, ProofLeaf<KeyId, BlockNumber>>,
-	did_signature: DidSignature,
+pub trait DidDipOriginFilter<Call> {
+	type Error;
+	type OriginInfo;
+	type Success;
+
+	fn check_call_origin_info(call: &Call, info: &Self::OriginInfo) -> Result<Self::Success, Self::Error>;
 }
 
-pub struct KiltDipProofVerifier<KeyId, BlockNumber, Hasher, Details, AccountId>(
-	PhantomData<(KeyId, BlockNumber, Hasher, Details, AccountId)>,
+// Verifies a DID signature over the call details AND verifies whether the call
+// could be dispatched with the provided signature.
+pub struct DidSignatureAndCallVerifier<BlockNumber, Details, CallVerifier>(
+	PhantomData<(BlockNumber, Details, CallVerifier)>,
 );
 
-impl<Call, Subject, KeyId, BlockNumber, Hasher, Details, AccountId> IdentityProofVerifier<Call, Subject>
-	for KiltDipProofVerifier<KeyId, BlockNumber, Hasher, Details, AccountId>
+impl<Call, Subject, BlockNumber, Details, CallVerifier> IdentityProofVerifier<Call, Subject>
+	for DidSignatureAndCallVerifier<BlockNumber, Details, CallVerifier>
 where
-	Hasher: sp_core::Hasher,
+	BlockNumber: Encode,
 	Call: Encode,
-	Details: Encode,
-	AccountId: Encode,
-	KeyId: Encode + Clone + Ord,
-	BlockNumber: Encode + Clone + Ord,
+	CallVerifier: DidDipOriginFilter<
+		Call,
+		OriginInfo = <DidSignatureVerifier<BlockNumber, Details> as IdentityProofVerifier<Call, Subject>>::VerificationResult,
+	>,
+	Details: Bump + Encode,
 {
-	// TODO: Error handling
+	// FIXME: Better error handling
 	type Error = ();
-	type Proof = KiltDipProof<KeyId, BlockNumber>;
-	type ProofEntry = pallet_dip_consumer::proof::ProofEntry<<Hasher as sp_core::Hasher>::Out, Details>;
-	type Submitter = AccountId;
+	type Proof = <DidSignatureVerifier<BlockNumber, Details> as IdentityProofVerifier<Call, Subject>>::Proof;
+	type ProofEntry = <DidSignatureVerifier<BlockNumber, Details> as IdentityProofVerifier<Call, Subject>>::ProofEntry;
+	type Submitter = <DidSignatureVerifier<BlockNumber, Details> as IdentityProofVerifier<Call, Subject>>::Submitter;
 	type VerificationResult =
-		<DidMerkleProofVerifier<KeyId, BlockNumber, Hasher, Details, AccountId> as IdentityProofVerifier<
-			Call,
-			Subject,
-		>>::VerificationResult;
+		<DidSignatureVerifier<BlockNumber, Details> as IdentityProofVerifier<Call, Subject>>::VerificationResult;
 
 	fn verify_proof_for_call_against_entry(
 		call: &Call,
 		subject: &Subject,
 		submitter: &Self::Submitter,
-		proof_entry: &Self::ProofEntry,
-		proof: Self::Proof,
+		proof_entry: &mut Self::ProofEntry,
+		proof: &Self::Proof,
+	) -> Result<Self::VerificationResult, Self::Error> {
+		let did_signing_key =
+			DidSignatureVerifier::verify_proof_for_call_against_entry(call, subject, submitter, proof_entry, proof)
+				.map_err(|_| ())?;
+		CallVerifier::check_call_origin_info(call, &did_signing_key).map_err(|_| ())?;
+		Ok(did_signing_key)
+	}
+}
+
+pub struct MerkleProofAndDidSignatureVerifier<MerkleProofVerifier, DidSignatureVerifier>(
+	PhantomData<(MerkleProofVerifier, DidSignatureVerifier)>,
+);
+
+impl<Call, Subject, MerkleProofVerifier, DidSignatureVerifier> IdentityProofVerifier<Call, Subject>
+	for MerkleProofAndDidSignatureVerifier<MerkleProofVerifier, DidSignatureVerifier>
+where
+	MerkleProofVerifier: IdentityProofVerifier<Call, Subject>
+		+ pallet_dip_consumer::traits::IdentityProofVerifier<Call, sp_runtime::AccountId32>,
+	DidSignatureVerifier: IdentityProofVerifier<
+		Call,
+		Subject,
+		Proof = <MerkleProofVerifier as IdentityProofVerifier<Call, Subject>>::VerificationResult,
+		ProofEntry = <MerkleProofVerifier as IdentityProofVerifier<Call, Subject>>::ProofEntry,
+		Submitter = <MerkleProofVerifier as IdentityProofVerifier<Call, Subject>>::Submitter,
+	>,
+{
+	// FIXME: Better error handling
+	type Error = ();
+	type Proof = <MerkleProofVerifier as IdentityProofVerifier<Call, Subject>>::Proof;
+	type ProofEntry = <DidSignatureVerifier as IdentityProofVerifier<Call, Subject>>::ProofEntry;
+	type Submitter = <MerkleProofVerifier as IdentityProofVerifier<Call, Subject>>::Submitter;
+	type VerificationResult = <MerkleProofVerifier as IdentityProofVerifier<Call, Subject>>::VerificationResult;
+
+	fn verify_proof_for_call_against_entry(
+		call: &Call,
+		subject: &Subject,
+		submitter: &Self::Submitter,
+		proof_entry: &mut Self::ProofEntry,
+		proof: &Self::Proof,
 	) -> Result<Self::VerificationResult, Self::Error> {
 		let merkle_proof_verification =
-			DidMerkleProofVerifier::<KeyId, BlockNumber, Hasher, Details, AccountId>::verify_proof_for_call_against_entry(
-				call,
-				subject,
-				submitter,
-				proof_entry,
-				proof.identity_proof,
-			)?;
-		DidSignatureVerifier::<Hasher, Details, AccountId, BlockNumber>::verify_proof_for_call_against_entry(
+			MerkleProofVerifier::verify_proof_for_call_against_entry(call, subject, submitter, proof_entry, proof)
+				.map_err(|_| ())?;
+		DidSignatureVerifier::verify_proof_for_call_against_entry(
 			call,
 			subject,
 			submitter,
 			proof_entry,
-			(merkle_proof_verification.0.clone(), proof.did_signature),
-		)?;
+			&merkle_proof_verification,
+		)
+		.map_err(|_| ())?;
 		Ok(merkle_proof_verification)
 	}
 }

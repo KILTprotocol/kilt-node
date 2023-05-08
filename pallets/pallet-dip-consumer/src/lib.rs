@@ -157,7 +157,7 @@ pub mod pallet {
 				&identifier,
 				&submitter,
 				&mut proof_entry,
-				proof,
+				&proof,
 			)
 			.map_err(|_| Error::<T>::InvalidProof)?;
 			// Update the identity info after it has optionally been updated by the

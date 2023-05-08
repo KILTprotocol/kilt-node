@@ -18,7 +18,7 @@
 
 use did::{did_details::DidPublicKeyDetails, DidVerificationKeyRelationship};
 use frame_support::RuntimeDebug;
-use parity_scale_codec::{Decode, Encode};
+use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_std::vec::Vec;
 
@@ -28,7 +28,7 @@ pub mod provider;
 #[cfg(test)]
 mod tests;
 
-#[derive(Clone, RuntimeDebug, Encode, Decode, PartialEq, Eq, TypeInfo, PartialOrd, Ord)]
+#[derive(Clone, Copy, RuntimeDebug, Encode, Decode, PartialEq, Eq, TypeInfo, PartialOrd, Ord, MaxEncodedLen)]
 pub enum KeyRelationship {
 	Encryption,
 	Verification(DidVerificationKeyRelationship),
@@ -37,6 +37,19 @@ pub enum KeyRelationship {
 impl From<DidVerificationKeyRelationship> for KeyRelationship {
 	fn from(value: DidVerificationKeyRelationship) -> Self {
 		Self::Verification(value)
+	}
+}
+
+impl TryFrom<KeyRelationship> for DidVerificationKeyRelationship {
+	// TODO: Error handling
+	type Error = ();
+
+	fn try_from(value: KeyRelationship) -> Result<Self, Self::Error> {
+		if let KeyRelationship::Verification(rel) = value {
+			Ok(rel)
+		} else {
+			Err(())
+		}
 	}
 }
 

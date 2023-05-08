@@ -16,35 +16,50 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use did::DidVerificationKeyRelationship;
+use did::{did_details::DidVerificationKey, DidVerificationKeyRelationship};
 use dip_support::VersionedIdentityProof;
-use pallet_dip_consumer::traits::DipCallOriginFilter;
+use frame_support::traits::Contains;
 use runtime_common::dip::{
-	consumer::{DidMerkleProofVerifier, VerificationResult},
+	consumer::{DidDipOriginFilter, DidMerkleProofVerifier},
 	ProofLeaf,
 };
 use sp_std::vec::Vec;
 
-use crate::{AccountId, BlockNumber, DidIdentifier, Hash, Hasher, Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin};
+use crate::{BlockNumber, DidIdentifier, Hash, Hasher, Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin};
 
 impl pallet_dip_consumer::Config for Runtime {
-	type DipCallOriginFilter = DipCallFilter;
+	type DipCallOriginFilter = PreliminaryDipOriginFilter;
 	type Identifier = DidIdentifier;
-	type IdentityDetails = u128;
+	type IdentityDetails = ();
+	// FIXME: Change with a proper type once everything else works.
 	type Proof = VersionedIdentityProof<Vec<Vec<u8>>, ProofLeaf<Hash, BlockNumber>>;
 	type ProofDigest = Hash;
-	type ProofVerifier = DidMerkleProofVerifier<Hash, BlockNumber, Hasher, u128, AccountId>;
+	type ProofVerifier = DidMerkleProofVerifier<Hasher, BlockNumber, ()>;
 	type RuntimeCall = RuntimeCall;
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeOrigin = RuntimeOrigin;
 }
 
+pub struct PreliminaryDipOriginFilter;
+
+impl Contains<RuntimeCall> for PreliminaryDipOriginFilter {
+	fn contains(t: &RuntimeCall) -> bool {
+		matches!(
+			t,
+			RuntimeCall::DidLookup { .. }
+				| RuntimeCall::Utility(pallet_utility::Call::batch { .. })
+				| RuntimeCall::Utility(pallet_utility::Call::batch_all { .. })
+				| RuntimeCall::Utility(pallet_utility::Call::force_batch { .. })
+		)
+	}
+}
+
 fn derive_verification_key_relationship(call: &RuntimeCall) -> Option<DidVerificationKeyRelationship> {
 	match call {
 		RuntimeCall::DidLookup { .. } => Some(DidVerificationKeyRelationship::Authentication),
-		RuntimeCall::Utility(pallet_utility::Call::batch { calls }) => single_key_relationship(calls).ok(),
-		RuntimeCall::Utility(pallet_utility::Call::batch_all { calls }) => single_key_relationship(calls).ok(),
-		RuntimeCall::Utility(pallet_utility::Call::force_batch { calls }) => single_key_relationship(calls).ok(),
+		RuntimeCall::Utility(pallet_utility::Call::batch { calls }) => single_key_relationship(calls.iter()).ok(),
+		RuntimeCall::Utility(pallet_utility::Call::batch_all { calls }) => single_key_relationship(calls.iter()).ok(),
+		RuntimeCall::Utility(pallet_utility::Call::force_batch { calls }) => single_key_relationship(calls.iter()).ok(),
 		_ => None,
 	}
 }
@@ -52,11 +67,15 @@ fn derive_verification_key_relationship(call: &RuntimeCall) -> Option<DidVerific
 // Taken and adapted from `impl
 // did::DeriveDidCallAuthorizationVerificationKeyRelationship for RuntimeCall`
 // in Spiritnet/Peregrine runtime.
-fn single_key_relationship(calls: &[RuntimeCall]) -> Result<DidVerificationKeyRelationship, ()> {
-	let first_call_relationship = calls.get(0).and_then(derive_verification_key_relationship).ok_or(())?;
+fn single_key_relationship<'a>(
+	calls: impl Iterator<Item = &'a RuntimeCall>,
+) -> Result<DidVerificationKeyRelationship, ()> {
+	let mut calls = calls.peekable();
+	let first_call_relationship = calls
+		.peek()
+		.and_then(|k| derive_verification_key_relationship(k))
+		.ok_or(())?;
 	calls
-		.iter()
-		.skip(1)
 		.map(derive_verification_key_relationship)
 		.try_fold(first_call_relationship, |acc, next| {
 			if next == Some(acc) {
@@ -69,15 +88,15 @@ fn single_key_relationship(calls: &[RuntimeCall]) -> Result<DidVerificationKeyRe
 
 pub struct DipCallFilter;
 
-impl DipCallOriginFilter<RuntimeCall> for DipCallFilter {
+impl DidDipOriginFilter<RuntimeCall> for DipCallFilter {
 	type Error = ();
-	type Proof = VerificationResult<BlockNumber>;
+	type OriginInfo = (DidVerificationKey, DidVerificationKeyRelationship);
 	type Success = ();
 
 	// Accepts only a DipOrigin for the DidLookup pallet calls.
-	fn check_proof(call: RuntimeCall, proof: Self::Proof) -> Result<Self::Success, Self::Error> {
-		let key_relationship = single_key_relationship(&[call])?;
-		if proof.0.iter().any(|l| l.relationship == key_relationship.into()) {
+	fn check_call_origin_info(call: &RuntimeCall, info: &Self::OriginInfo) -> Result<Self::Success, Self::Error> {
+		let key_relationship = single_key_relationship([call].into_iter())?;
+		if info.1 == key_relationship {
 			Ok(())
 		} else {
 			Err(())
@@ -96,21 +115,21 @@ mod dip_call_origin_filter_tests {
 		// Can call DidLookup functions with an authentication key
 		let did_lookup_call = RuntimeCall::DidLookup(pallet_did_lookup::Call::associate_sender {});
 		assert_eq!(
-			single_key_relationship(&[did_lookup_call]),
+			single_key_relationship(&[&did_lookup_call]),
 			Ok(DidVerificationKeyRelationship::Authentication)
 		);
 		// Can't call System functions with a DID key (hence a DIP origin)
 		let system_call = RuntimeCall::System(frame_system::Call::remark { remark: vec![] });
-		assert_err!(single_key_relationship(&[system_call]), ());
+		assert_err!(single_key_relationship(&[&system_call]), ());
 		// Can't call empty batch with a DID key
 		let empty_batch_call = RuntimeCall::Utility(pallet_utility::Call::batch_all { calls: vec![] });
-		assert_err!(single_key_relationship(&[empty_batch_call]), ());
+		assert_err!(single_key_relationship(&[&empty_batch_call]), ());
 		// Can call batch with a DipLookup with an authentication key
 		let did_lookup_batch_call = RuntimeCall::Utility(pallet_utility::Call::batch_all {
 			calls: vec![pallet_did_lookup::Call::associate_sender {}.into()],
 		});
 		assert_eq!(
-			single_key_relationship(&[did_lookup_batch_call]),
+			single_key_relationship(&[&did_lookup_batch_call]),
 			Ok(DidVerificationKeyRelationship::Authentication)
 		);
 		// Can't call a batch with different required keys
@@ -122,6 +141,6 @@ mod dip_call_origin_filter_tests {
 				frame_system::Call::remark { remark: vec![] }.into(),
 			],
 		});
-		assert_err!(single_key_relationship(&[did_lookup_batch_call]), ());
+		assert_err!(single_key_relationship(&[&did_lookup_batch_call]), ());
 	}
 }
