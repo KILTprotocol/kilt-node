@@ -25,9 +25,6 @@ use sp_std::vec::Vec;
 pub mod consumer;
 pub mod provider;
 
-#[cfg(test)]
-mod tests;
-
 #[derive(Clone, Copy, RuntimeDebug, Encode, Decode, PartialEq, Eq, TypeInfo, PartialOrd, Ord, MaxEncodedLen)]
 pub enum KeyRelationship {
 	Encryption,

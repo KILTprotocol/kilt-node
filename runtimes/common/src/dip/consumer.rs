@@ -19,7 +19,7 @@
 use core::fmt::Debug;
 
 use did::{
-	did_details::{DidPublicKey, DidPublicKeyDetails, DidVerificationKey},
+	did_details::{DidEncryptionKey, DidPublicKey, DidPublicKeyDetails, DidVerificationKey},
 	DidSignature, DidVerificationKeyRelationship,
 };
 use dip_support::{v1, VersionedIdentityProof};
@@ -45,9 +45,26 @@ pub struct ProofEntry<BlockNumber> {
 	pub relationship: KeyRelationship,
 }
 
+#[cfg(feature = "runtime-benchmarks")]
+impl<BlockNumber> Default for ProofEntry<BlockNumber>
+where
+	BlockNumber: Default,
+{
+	fn default() -> Self {
+		Self {
+			key: DidPublicKeyDetails {
+				key: DidPublicKey::PublicEncryptionKey(DidEncryptionKey::X25519([0u8; 32])),
+				block_number: BlockNumber::default(),
+			},
+			relationship: DidVerificationKeyRelationship::Authentication.into(),
+		}
+	}
+}
+
 // Contains the list of revealed public keys after a given merkle proof has been
 // correctly verified.
 #[derive(Clone, RuntimeDebug, PartialEq, Eq, TypeInfo, MaxEncodedLen, Encode, Decode)]
+#[cfg_attr(feature = "runtime-benchmarks", derive(Default))]
 pub struct VerificationResult<BlockNumber>(pub BoundedVec<ProofEntry<BlockNumber>, ConstU32<10>>);
 
 impl<BlockNumber> From<Vec<ProofEntry<BlockNumber>>> for VerificationResult<BlockNumber>
@@ -167,7 +184,7 @@ where
 {
 	// TODO: Error handling
 	type Error = ();
-	type Proof = (Vec<ProofEntry<BlockNumber>>, DidSignature);
+	type Proof = (VerificationResult<BlockNumber>, DidSignature);
 	type ProofEntry = pallet_dip_consumer::proof::ProofEntry<Hash, Details>;
 	type Submitter = AccountId;
 	type VerificationResult = (DidVerificationKey, DidVerificationKeyRelationship);
@@ -180,7 +197,7 @@ where
 		proof: &Self::Proof,
 	) -> Result<Self::VerificationResult, Self::Error> {
 		let encoded_payload = (call, proof_entry.details(), submitter).encode();
-		let mut proof_verification_keys = proof.0.iter().filter_map(
+		let mut proof_verification_keys = proof.0 .0.iter().filter_map(
 			|ProofEntry {
 			     key: DidPublicKeyDetails { key, .. },
 			     relationship,
@@ -261,19 +278,26 @@ pub struct MerkleProofAndDidSignatureVerifier<MerkleProofVerifier, DidSignatureV
 impl<Call, Subject, MerkleProofVerifier, DidSignatureVerifier> IdentityProofVerifier<Call, Subject>
 	for MerkleProofAndDidSignatureVerifier<MerkleProofVerifier, DidSignatureVerifier>
 where
-	MerkleProofVerifier: IdentityProofVerifier<Call, Subject>
-		+ pallet_dip_consumer::traits::IdentityProofVerifier<Call, sp_runtime::AccountId32>,
+	MerkleProofVerifier: IdentityProofVerifier<Call, Subject>,
+	MerkleProofVerifier::VerificationResult: Clone,
 	DidSignatureVerifier: IdentityProofVerifier<
 		Call,
 		Subject,
-		Proof = <MerkleProofVerifier as IdentityProofVerifier<Call, Subject>>::VerificationResult,
+		Proof = (
+			<MerkleProofVerifier as IdentityProofVerifier<Call, Subject>>::VerificationResult,
+			DidSignature,
+		),
 		ProofEntry = <MerkleProofVerifier as IdentityProofVerifier<Call, Subject>>::ProofEntry,
 		Submitter = <MerkleProofVerifier as IdentityProofVerifier<Call, Subject>>::Submitter,
 	>,
 {
 	// FIXME: Better error handling
 	type Error = ();
-	type Proof = <MerkleProofVerifier as IdentityProofVerifier<Call, Subject>>::Proof;
+	// FIXME: Better type declaration
+	type Proof = (
+		<MerkleProofVerifier as IdentityProofVerifier<Call, Subject>>::Proof,
+		DidSignature,
+	);
 	type ProofEntry = <DidSignatureVerifier as IdentityProofVerifier<Call, Subject>>::ProofEntry;
 	type Submitter = <MerkleProofVerifier as IdentityProofVerifier<Call, Subject>>::Submitter;
 	type VerificationResult = <MerkleProofVerifier as IdentityProofVerifier<Call, Subject>>::VerificationResult;
@@ -286,14 +310,15 @@ where
 		proof: &Self::Proof,
 	) -> Result<Self::VerificationResult, Self::Error> {
 		let merkle_proof_verification =
-			MerkleProofVerifier::verify_proof_for_call_against_entry(call, subject, submitter, proof_entry, proof)
+			MerkleProofVerifier::verify_proof_for_call_against_entry(call, subject, submitter, proof_entry, &proof.0)
 				.map_err(|_| ())?;
 		DidSignatureVerifier::verify_proof_for_call_against_entry(
 			call,
 			subject,
 			submitter,
 			proof_entry,
-			&merkle_proof_verification,
+			// FIXME: Remove `clone()` requirement
+			&(merkle_proof_verification.clone(), proof.1.clone()),
 		)
 		.map_err(|_| ())?;
 		Ok(merkle_proof_verification)

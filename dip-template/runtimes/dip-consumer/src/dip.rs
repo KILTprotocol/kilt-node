@@ -16,11 +16,13 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use did::{did_details::DidVerificationKey, DidVerificationKeyRelationship};
+use did::{did_details::DidVerificationKey, DidSignature, DidVerificationKeyRelationship};
 use dip_support::VersionedIdentityProof;
 use frame_support::traits::Contains;
 use runtime_common::dip::{
-	consumer::{DidDipOriginFilter, DidMerkleProofVerifier},
+	consumer::{
+		DidDipOriginFilter, DidMerkleProofVerifier, DidSignatureAndCallVerifier, MerkleProofAndDidSignatureVerifier,
+	},
 	ProofLeaf,
 };
 use sp_std::vec::Vec;
@@ -30,11 +32,16 @@ use crate::{BlockNumber, DidIdentifier, Hash, Hasher, Runtime, RuntimeCall, Runt
 impl pallet_dip_consumer::Config for Runtime {
 	type DipCallOriginFilter = PreliminaryDipOriginFilter;
 	type Identifier = DidIdentifier;
-	type IdentityDetails = ();
-	// FIXME: Change with a proper type once everything else works.
-	type Proof = VersionedIdentityProof<Vec<Vec<u8>>, ProofLeaf<Hash, BlockNumber>>;
+	type IdentityDetails = u128;
+	type Proof = (
+		VersionedIdentityProof<Vec<Vec<u8>>, ProofLeaf<Hash, BlockNumber>>,
+		DidSignature,
+	);
 	type ProofDigest = Hash;
-	type ProofVerifier = DidMerkleProofVerifier<Hasher, BlockNumber, ()>;
+	type ProofVerifier = MerkleProofAndDidSignatureVerifier<
+		DidMerkleProofVerifier<Hasher, BlockNumber, u128>,
+		DidSignatureAndCallVerifier<BlockNumber, u128, DipCallFilter>,
+	>;
 	type RuntimeCall = RuntimeCall;
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeOrigin = RuntimeOrigin;
@@ -115,21 +122,21 @@ mod dip_call_origin_filter_tests {
 		// Can call DidLookup functions with an authentication key
 		let did_lookup_call = RuntimeCall::DidLookup(pallet_did_lookup::Call::associate_sender {});
 		assert_eq!(
-			single_key_relationship(&[&did_lookup_call]),
+			single_key_relationship(vec![did_lookup_call].into_iter()),
 			Ok(DidVerificationKeyRelationship::Authentication)
 		);
 		// Can't call System functions with a DID key (hence a DIP origin)
 		let system_call = RuntimeCall::System(frame_system::Call::remark { remark: vec![] });
-		assert_err!(single_key_relationship(&[&system_call]), ());
+		assert_err!(single_key_relationship(vec![system_call].into_iter()), ());
 		// Can't call empty batch with a DID key
 		let empty_batch_call = RuntimeCall::Utility(pallet_utility::Call::batch_all { calls: vec![] });
-		assert_err!(single_key_relationship(&[&empty_batch_call]), ());
+		assert_err!(single_key_relationship(vec![empty_batch_call].into_iter()), ());
 		// Can call batch with a DipLookup with an authentication key
 		let did_lookup_batch_call = RuntimeCall::Utility(pallet_utility::Call::batch_all {
 			calls: vec![pallet_did_lookup::Call::associate_sender {}.into()],
 		});
 		assert_eq!(
-			single_key_relationship(&[&did_lookup_batch_call]),
+			single_key_relationship(vec![did_lookup_batch_call].into_iter()),
 			Ok(DidVerificationKeyRelationship::Authentication)
 		);
 		// Can't call a batch with different required keys
