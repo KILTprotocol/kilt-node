@@ -1843,7 +1843,8 @@ fn is_delegating_max_parent_revoked() {
 
 	parent_node.details.revoked = true;
 	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
-	let delegation_node = generate_base_delegation_node(hierarchy_root_id, user_3, Some(parent_id), ACCOUNT_01);
+	let mut delegation_node = generate_base_delegation_node(hierarchy_root_id, user_3, Some(parent_id), ACCOUNT_01);
+	delegation_node.details.revoked = true;
 
 	let max_parent_checks = 2u32;
 

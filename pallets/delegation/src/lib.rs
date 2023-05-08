@@ -1001,7 +1001,7 @@ pub mod pallet {
 					// check if node is in part of a delegation hierachy.
 					ensure!(
 						DelegationHierarchies::<T>::contains_key(hierachy_id),
-						DispatchError::Other("Test")
+						DispatchError::Other("Test1")
 					);
 
 					let children_count = DelegationNodes::<T>::iter_values()
@@ -1010,16 +1010,16 @@ pub mod pallet {
 
 					match delegation_details.parent {
 						// If node is a leaf or intermediate, check if it occures only once. Otherwise we have cylces.
-						Some(_) => 	ensure!(children_count <= 1 , DispatchError::Other("Test")),
+						Some(_) => 	ensure!(children_count <= 1 , DispatchError::Other("Test2")),
 						// if parent is None, check that the root is not the children
 						// from another node.
-						_ => ensure!(children_count == 0 , DispatchError::Other("Test"))
+						_ => ensure!(children_count == 0 , DispatchError::Other("Test3"))
 					};
 
 					// if a node is revoked, his subtree should be revoked as well.
 					if delegation_details.details.revoked {
 						let is_subtree_revoked = get_merged_subtree::<T>(delegation_details).iter().map(|child : &DelegationNode<T>| {child.details.revoked }).all(|x| x);
-						ensure!(is_subtree_revoked, DispatchError::Other("Test"));
+						ensure!(is_subtree_revoked, DispatchError::Other("Test4"));
 					}
 					Ok(())
 				},
