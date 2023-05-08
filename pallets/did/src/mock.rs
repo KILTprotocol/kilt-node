@@ -242,12 +242,6 @@ pub(crate) fn fill_public_keys(mut did_details: DidDetails<Test>) -> DidDetails<
 	did_details
 }
 
-#[cfg(feature = "runtime-benchmarks")]
-pub fn get_default_did() -> DidIdentifier {
-	let auth_key = get_ed25519_authentication_key(true);
-	get_did_identifier_from_ed25519_key(auth_key.public())
-}
-
 pub fn get_did_identifier_from_ed25519_key(public_key: ed25519::Public) -> DidIdentifier {
 	MultiSigner::from(public_key).into_account()
 }

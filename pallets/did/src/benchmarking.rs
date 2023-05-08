@@ -1188,16 +1188,6 @@ benchmarks! {
 
 impl_benchmark_test_suite! {
 	Pallet,
-	crate::mock::ExtBuilder::default()
-		.with_balances(
-			vec!
-				[
-					(
-						crate::mock::get_default_did(),
-						crate::mock::DEFAULT_BALANCE
-					)
-				]
-			)
-		.build_with_keystore(),
+	crate::mock::ExtBuilder::default().build_with_keystore(),
 	crate::mock::Test
 }
