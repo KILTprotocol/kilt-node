@@ -92,7 +92,6 @@ pub mod pallet {
 
 	#[pallet::error]
 	pub enum Error<T> {
-		BadOrigin,
 		Dispatch,
 		IdentityNotFound,
 		InvalidProof,
@@ -161,6 +160,9 @@ pub mod pallet {
 				proof,
 			)
 			.map_err(|_| Error::<T>::InvalidProof)?;
+			// Update the identity info after it has optionally been updated by the
+			// `ProofVerifier`.
+			IdentityProofs::<T>::mutate(&identifier, |entry| *entry = Some(proof_entry));
 			let did_origin = DipOrigin {
 				identifier,
 				account_address: submitter,
