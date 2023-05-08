@@ -339,14 +339,6 @@ impl<T: Config> DidDetails<T> {
 		deposit
 	}
 
-	fn release_deposit(deposit_to_release: BalanceOf<T>, who: AccountIdOf<T>) {
-		let to_release_deposit = Deposit {
-			amount: deposit_to_release,
-			owner: who,
-		};
-		kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&to_release_deposit);
-	}
-
 	pub fn update_deposit(&mut self, did_subject: &DidIdentifierOf<T>) -> Result<(), DispatchError> {
 		let new_required_deposit = self.calculate_deposit(did_subject);
 
@@ -361,7 +353,11 @@ impl<T: Config> DidDetails<T> {
 			}
 			Ordering::Less => {
 				let deposit_to_release = self.deposit.amount.saturating_sub(new_required_deposit);
-				DidDetails::<T>::release_deposit(deposit_to_release, self.deposit.owner.clone());
+				let deposit = Deposit {
+					owner: self.deposit.owner.clone(),
+					amount: deposit_to_release,
+				};
+				kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&deposit);
 				self.deposit.amount = self.deposit.amount.saturating_sub(deposit_to_release);
 			}
 			_ => (),
