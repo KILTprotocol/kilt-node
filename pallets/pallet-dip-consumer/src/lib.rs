@@ -31,17 +31,14 @@ pub mod pallet {
 	use super::*;
 
 	use cumulus_pallet_xcm::ensure_sibling_para;
-	use frame_support::{dispatch::Dispatchable, pallet_prelude::*, Twox64Concat};
+	use frame_support::{dispatch::Dispatchable, pallet_prelude::*, traits::Contains, Twox64Concat};
 	use frame_system::pallet_prelude::*;
 	use parity_scale_codec::MaxEncodedLen;
 	use sp_std::boxed::Box;
 
 	use dip_support::{latest::IdentityProofAction, VersionedIdentityProofAction};
 
-	use crate::{
-		proof::ProofEntry,
-		traits::{DipCallOriginFilter, IdentityProofVerifier},
-	};
+	use crate::{proof::ProofEntry, traits::IdentityProofVerifier};
 
 	pub type VerificationResultOf<T> = <<T as Config>::ProofVerifier as IdentityProofVerifier<
 		<T as Config>::RuntimeCall,
@@ -62,7 +59,7 @@ pub mod pallet {
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
-		type DipCallOriginFilter: DipCallOriginFilter<<Self as Config>::RuntimeCall, Proof = VerificationResultOf<Self>>;
+		type DipCallOriginFilter: Contains<<Self as Config>::RuntimeCall>;
 		type Identifier: Parameter + MaxEncodedLen;
 		type IdentityDetails: Parameter + MaxEncodedLen + Default;
 		type Proof: Parameter;
@@ -107,7 +104,10 @@ pub mod pallet {
 	pub type Origin<T> = DipOrigin<
 		<T as Config>::Identifier,
 		<T as frame_system::Config>::AccountId,
-		<<T as Config>::DipCallOriginFilter as DipCallOriginFilter<<T as Config>::RuntimeCall>>::Success,
+		<<T as Config>::ProofVerifier as IdentityProofVerifier<
+			<T as Config>::RuntimeCall,
+			<T as Config>::Identifier,
+		>>::VerificationResult,
 	>;
 
 	// TODO: Benchmarking
@@ -150,23 +150,21 @@ pub mod pallet {
 			call: Box<<T as Config>::RuntimeCall>,
 		) -> DispatchResult {
 			let submitter = ensure_signed(origin)?;
-			let proof_entry = IdentityProofs::<T>::get(&identifier).ok_or(Error::<T>::IdentityNotFound)?;
+			// TODO: Proper error handling
+			ensure!(T::DipCallOriginFilter::contains(&*call), Error::<T>::Dispatch);
+			let mut proof_entry = IdentityProofs::<T>::get(&identifier).ok_or(Error::<T>::IdentityNotFound)?;
 			let proof_verification_result = T::ProofVerifier::verify_proof_for_call_against_entry(
 				&*call,
 				&identifier,
 				&submitter,
-				&proof_entry,
+				&mut proof_entry,
 				proof,
 			)
 			.map_err(|_| Error::<T>::InvalidProof)?;
-			// TODO: Better error handling
-			// TODO: Avoid cloning `call`
-			let proof_result = T::DipCallOriginFilter::check_proof(*call.clone(), proof_verification_result)
-				.map_err(|_| Error::<T>::BadOrigin)?;
 			let did_origin = DipOrigin {
 				identifier,
 				account_address: submitter,
-				details: proof_result,
+				details: proof_verification_result,
 			};
 			// TODO: Use dispatch info for weight calculation
 			let _ = call.dispatch(did_origin.into()).map_err(|_| Error::<T>::Dispatch)?;
