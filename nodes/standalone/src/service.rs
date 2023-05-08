@@ -27,6 +27,7 @@ use sc_keystore::LocalKeystore;
 use sc_service::{error::Error as ServiceError, Configuration, TaskManager, WarpSyncParams};
 use sc_telemetry::{Telemetry, TelemetryWorker};
 use sp_consensus_aura::ed25519::AuthorityPair as AuraPair;
+
 use std::{sync::Arc, time::Duration};
 
 use mashnet_node_runtime::{self, opaque::Block, RuntimeApi};
@@ -260,7 +261,7 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
 
 		let slot_duration = sc_consensus_aura::slot_duration(&*client)?;
 
-		let aura = sc_consensus_aura::start_aura::<AuraPair, _, _, _, _, _, (), _, _, _, _>(StartAuraParams {
+		let aura = sc_consensus_aura::start_aura::<AuraPair, _, _, _, _, _, _, _, _, _, _>(StartAuraParams {
 			slot_duration,
 			client,
 			select_chain,
@@ -279,8 +280,8 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
 			force_authoring,
 			backoff_authoring_blocks,
 			keystore: keystore_container.sync_keystore(),
-			sync_oracle: network.clone(),
-			justification_sync_link: network.clone(),
+			sync_oracle: sync.clone(),
+			justification_sync_link: sync.clone(),
 			block_proposal_slot_portion: SlotProportion::new(2f32 / 3f32),
 			max_block_proposal_slot_portion: None,
 			telemetry: telemetry.as_ref().map(|x| x.handle()),
