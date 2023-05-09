@@ -132,21 +132,21 @@ mod dip_call_origin_filter_tests {
 		// Can call DidLookup functions with an authentication key
 		let did_lookup_call = RuntimeCall::DidLookup(pallet_did_lookup::Call::associate_sender {});
 		assert_eq!(
-			single_key_relationship(vec![did_lookup_call].into_iter()),
+			single_key_relationship(vec![did_lookup_call].iter()),
 			Ok(DidVerificationKeyRelationship::Authentication)
 		);
 		// Can't call System functions with a DID key (hence a DIP origin)
 		let system_call = RuntimeCall::System(frame_system::Call::remark { remark: vec![] });
-		assert_err!(single_key_relationship(vec![system_call].into_iter()), ());
+		assert_err!(single_key_relationship(vec![system_call].iter()), ());
 		// Can't call empty batch with a DID key
 		let empty_batch_call = RuntimeCall::Utility(pallet_utility::Call::batch_all { calls: vec![] });
-		assert_err!(single_key_relationship(vec![empty_batch_call].into_iter()), ());
+		assert_err!(single_key_relationship(vec![empty_batch_call].iter()), ());
 		// Can call batch with a DipLookup with an authentication key
 		let did_lookup_batch_call = RuntimeCall::Utility(pallet_utility::Call::batch_all {
 			calls: vec![pallet_did_lookup::Call::associate_sender {}.into()],
 		});
 		assert_eq!(
-			single_key_relationship(vec![did_lookup_batch_call].into_iter()),
+			single_key_relationship(vec![did_lookup_batch_call].iter()),
 			Ok(DidVerificationKeyRelationship::Authentication)
 		);
 		// Can't call a batch with different required keys
@@ -158,6 +158,6 @@ mod dip_call_origin_filter_tests {
 				frame_system::Call::remark { remark: vec![] }.into(),
 			],
 		});
-		assert_err!(single_key_relationship(&[&did_lookup_batch_call]), ());
+		assert_err!(single_key_relationship(vec![did_lookup_batch_call].iter()), ());
 	}
 }

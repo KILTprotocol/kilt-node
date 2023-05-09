@@ -85,11 +85,14 @@ fn commit_identity() {
 		assert_ok!(DipConsumer::dispatch_as(
 			RawOrigin::Signed(para::consumer::DISPATCHER_ACCOUNT).into(),
 			did.clone(),
-			MerkleProof {
-				blinded: proof.blinded,
-				revealed: proof.revealed,
-			}
-			.into(),
+			(
+				MerkleProof {
+					blinded: proof.blinded,
+					revealed: proof.revealed,
+				}
+				.into(),
+				para::provider::did_auth_key().sign(&[0u8]).into()
+			),
 			Box::new(ConsumerRuntimeCall::DidLookup(pallet_did_lookup::Call::<
 				ConsumerRuntime,
 			>::associate_sender {})),
