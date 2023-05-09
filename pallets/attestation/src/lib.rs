@@ -473,19 +473,16 @@ pub mod pallet {
 		}
 
 		#[cfg(any(feature = "try-runtime", test))]
-		pub fn do_try_state() -> DispatchResult {
-			Attestations::<T>::iter().try_for_each(|(claim_hash, attestation_details)| -> DispatchResult {
+		pub fn do_try_state() -> Result<(), &'static str> {
+			Attestations::<T>::iter().try_for_each(|(claim_hash, attestation_details)| -> Result<(), &'static str> {
 				if let Some(authorization_id) = attestation_details.authorization_id {
 					ensure!(
-						ExternalAttestations::<T>::contains_key(authorization_id, claim_hash),
+						ExternalAttestations::<T>::get(authorization_id, claim_hash),
 						DispatchError::Other("Test")
-					);
-				} else {
-					return Ok(());
+					)
 				}
 				Ok(())
-			})?;
-			Ok(())
+			})
 		}
 	}
 

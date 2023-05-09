@@ -87,7 +87,7 @@ use frame_support::{
 use kilt_support::traits::StorageDepositCollector;
 use parity_scale_codec::Encode;
 use sp_runtime::{traits::Hash, DispatchError};
-use sp_std::{marker::PhantomData, vec, vec::Vec};
+use sp_std::{marker::PhantomData, vec::Vec};
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -976,32 +976,29 @@ pub mod pallet {
 		}
 
 		#[cfg(any(feature = "try-runtime", test))]
-		pub fn do_try_state() -> DispatchResult {
-			fn get_merged_subtree<T: Config>(node: DelegationNode<T>) -> Vec<DelegationNode<T>> {
-				let mut nodes_to_explore = vec![node];
-				let mut children: Vec<DelegationNode<T>> = vec![];
-				while !nodes_to_explore.is_empty() {
-					let current_node = nodes_to_explore.pop().unwrap();
-					let child_nodes: Vec<DelegationNode<T>> = current_node
-						.children
-						.iter()
-						.filter_map(DelegationNodes::<T>::get)
-						.collect();
+		pub fn do_try_state() -> Result<(), &'static str> {
+
+
+			fn get_merged_subtree<T: Config>(node: DelegationNode<T>) -> sp_std::vec::Vec<DelegationNode<T>> {
+				let mut nodes_to_explore = sp_std::vec::Vec::from([node]);
+				let mut children = sp_std::vec::Vec::new();
+				while let Some(current_node) = nodes_to_explore.pop() {
+					let child_nodes = current_node.children.iter().filter_map(DelegationNodes::<T>::get);
 					nodes_to_explore.extend(child_nodes.clone());
 					children.extend(child_nodes);
 				}
-
 				children
 			}
 
 			DelegationNodes::<T>::iter().try_for_each(
-				|(delegation_node_id, delegation_details): (DelegationNodeIdOf<T>, DelegationNode<T>)| -> DispatchResult {
-					let hierachy_id = delegation_details.hierarchy_root_id;
+				|(delegation_node_id, delegation_details): (DelegationNodeIdOf<T>, DelegationNode<T>)| -> Result<(), &'static str> {
+					let hierarchy_id = delegation_details.hierarchy_root_id;
+					
 
-					// check if node is in part of a delegation hierachy.
+					// check if node is in part of a delegation hierarchy.
 					ensure!(
-						DelegationHierarchies::<T>::contains_key(hierachy_id),
-						DispatchError::Other("Test1")
+						DelegationHierarchies::<T>::contains_key(hierarchy_id),
+						DispatchError::Other("Test")
 					);
 
 					let children_count = DelegationNodes::<T>::iter_values()
@@ -1009,22 +1006,21 @@ pub mod pallet {
 						.count();
 
 					match delegation_details.parent {
-						// If node is a leaf or intermediate, check if it occures only once. Otherwise we have cylces.
-						Some(_) => 	ensure!(children_count <= 1 , DispatchError::Other("Test2")),
+						// If node is a leaf or intermediate, check if it occurs only once. Otherwise we have cycles.
+						Some(_) => 	ensure!(children_count <= 1 , DispatchError::Other("Test")),
 						// if parent is None, check that the root is not the children
 						// from another node.
-						_ => ensure!(children_count == 0 , DispatchError::Other("Test3"))
+						_ => ensure!(children_count == 0 , DispatchError::Other("Test"))
 					};
 
 					// if a node is revoked, his subtree should be revoked as well.
 					if delegation_details.details.revoked {
-						let is_subtree_revoked = get_merged_subtree::<T>(delegation_details).iter().map(|child : &DelegationNode<T>| {child.details.revoked }).all(|x| x);
-						ensure!(is_subtree_revoked, DispatchError::Other("Test4"));
+						let is_subtree_revoked = get_merged_subtree::<T>(delegation_details).iter().map(|child : &DelegationNode<T>| child.details.revoked).all(|x| x);
+						ensure!(is_subtree_revoked, DispatchError::Other("Test"));
 					}
 					Ok(())
 				},
-			)?;
-			Ok(())
+			)
 		}
 	}
 

@@ -1279,7 +1279,7 @@ pub mod pallet {
 			);
 
 			// we don't unlock immediately
-			Self::prep_unstake(&collator, less, false)?; // if we prepare unstake
+			Self::prep_unstake(&collator, less, false)?;
 
 			let n = if state.is_active() {
 				Self::update_top_candidates(
@@ -1765,9 +1765,9 @@ pub mod pallet {
 
 	impl<T: Config> Pallet<T> {
 		#[cfg(any(feature = "try-runtime", test))]
-		pub fn do_try_state() -> DispatchResult {
+		pub fn do_try_state() -> Result<(), &'static str> {
 			CandidatePool::<T>::iter_values().try_for_each(
-				|candidate: Candidate<T::AccountId, BalanceOf<T>, _>| -> DispatchResult {
+				|candidate: Candidate<T::AccountId, BalanceOf<T>, _>| -> Result<(), &'static str> {
 					let sum_delegations: BalanceOf<T> = candidate
 						.delegators
 						.iter()
@@ -1797,7 +1797,7 @@ pub mod pallet {
 					candidate
 						.delegators
 						.iter()
-						.try_for_each(|delegator_stake| -> DispatchResult {
+						.try_for_each(|delegator_stake| -> Result<(), &'static str> {
 							let last_delegation = LastDelegation::<T>::get(&delegator_stake.owner);
 							let round = Round::<T>::get();
 							let counter = if last_delegation.round < round.current {
@@ -1829,7 +1829,7 @@ pub mod pallet {
 					candidate
 						.delegators
 						.iter()
-						.try_for_each(|delegator_stake| -> DispatchResult {
+						.try_for_each(|delegator_stake| -> Result<(), &'static str> {
 							ensure!(
 								delegator_stake.amount >= T::MinDelegatorStake::get(),
 								DispatchError::Other("Tests")
@@ -1855,27 +1855,29 @@ pub mod pallet {
 				DispatchError::Other("Tests")
 			);
 
-			top_candidates.iter().try_for_each(|stake| -> DispatchResult {
-				// top candidates should be part of the candidate pool.
-				ensure!(
-					CandidatePool::<T>::contains_key(stake.clone().owner),
-					DispatchError::Other("Tests")
-				);
+			top_candidates
+				.iter()
+				.try_for_each(|stake| -> Result<(), &'static str> {
+					// top candidates should be part of the candidate pool.
+					ensure!(
+						CandidatePool::<T>::contains_key(&stake.owner),
+						DispatchError::Other("Tests")
+					);
 
-				// an account can not be candidate and delegator.
-				ensure!(
-					DelegatorState::<T>::get(&stake.owner).is_none(),
-					DispatchError::Other("Tests")
-				);
+					// an account can not be candidate and delegator.
+					ensure!(
+						DelegatorState::<T>::get(&stake.owner).is_none(),
+						DispatchError::Other("Tests")
+					);
 
-				// a top candidate should be active.
-				ensure!(
-					Self::is_active_candidate(&stake.owner).unwrap(),
-					DispatchError::Other("Tests")
-				);
+					// a top candidate should be active.
+					ensure!(
+						Self::is_active_candidate(&stake.owner).unwrap(),
+						DispatchError::Other("Tests")
+					);
 
-				Ok(())
-			})?;
+					Ok(())
+				})?;
 
 			// the total fund has to be the sum over the first [MaxSelectedCandidates] of
 			// [TopCandidates].
@@ -2531,7 +2533,7 @@ pub mod pallet {
 				collators: total_collators,
 				..
 			} = TotalCollatorStake::<T>::get();
-			let staking_rate = Perquintill::from_rational(total_collators, total_issuance); // why staking rate?
+			let staking_rate = Perquintill::from_rational(total_collators, total_issuance);
 
 			InflationConfig::<T>::get()
 				.collator

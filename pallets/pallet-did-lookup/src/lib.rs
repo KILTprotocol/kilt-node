@@ -194,7 +194,6 @@ pub mod pallet {
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
 		#[cfg(feature = "try-runtime")]
 		fn try_state(_n: BlockNumberFor<T>) -> Result<(), &'static str> {
-			#[cfg(feature = "try-runtime")]
 			Self::do_try_state()?;
 			Ok(())
 		}
@@ -433,16 +432,14 @@ pub mod pallet {
 		}
 
 		#[cfg(any(feature = "try-runtime", test))]
-		pub fn do_try_state() -> DispatchResult {
-			ConnectedDids::<T>::iter().try_for_each(|(account, record)| -> DispatchResult {
-				let is_in_connected_accounts = ConnectedAccounts::<T>::contains_key(record.did, account);
-
-				ensure!(is_in_connected_accounts, DispatchError::Other("Test"));
-
+		pub fn do_try_state() -> Result<(), &'static str> {
+			ConnectedDids::<T>::iter().try_for_each(|(account, record)| -> Result<(), &'static str> {
+				ensure!(
+					ConnectedAccounts::<T>::contains_key(record.did, account),
+					DispatchError::Other("Test")
+				);
 				Ok(())
-			})?;
-
-			Ok(())
+			})
 		}
 	}
 

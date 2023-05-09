@@ -596,16 +596,16 @@ pub mod pallet {
 		}
 
 		#[cfg(any(feature = "try-runtime", test))]
-		pub fn do_try_state() -> DispatchResult {
+		pub fn do_try_state() -> Result<(), &'static str> {
 			// check if for each owner there is a name stored.
-			Credentials::<T>::iter().try_for_each(|(subject_id, credential_id, entry)| -> DispatchResult {
+			Credentials::<T>::iter().try_for_each(|(subject_id, credential_id, entry)| -> Result<(), &'static str> {
 				ensure!(
 					CredentialSubjects::<T>::contains_key(&credential_id),
 					DispatchError::Other("Test")
 				);
 
 				ensure!(
-					CredentialSubjects::<T>::get(&credential_id).unwrap() == subject_id,
+					CredentialSubjects::<T>::get(&credential_id) == Some(subject_id),
 					DispatchError::Other("Test")
 				);
 
@@ -615,9 +615,7 @@ pub mod pallet {
 				);
 
 				Ok(())
-			})?;
-
-			Ok(())
+			})
 		}
 	}
 

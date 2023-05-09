@@ -1238,10 +1238,10 @@ pub mod pallet {
 		}
 
 		#[cfg(any(feature = "try-runtime", test))]
-		pub fn do_try_state() -> DispatchResult {
+		pub fn do_try_state() -> Result<(), &'static str> {
 			Did::<T>::iter().try_for_each(
-				|(did_subject, did_details): (DidIdentifierOf<T>, DidDetails<T>)| -> DispatchResult {
-					let service_endpoints_count: usize = ServiceEndpoints::<T>::iter_prefix(&did_subject).count();
+				|(did_subject, did_details): (DidIdentifierOf<T>, DidDetails<T>)| -> Result<(), &'static str> {
+					let service_endpoints_count = ServiceEndpoints::<T>::iter_prefix(&did_subject).count();
 
 					ensure!(
 						service_endpoints_count == DidEndpointsCount::<T>::get(&did_subject).saturated_into::<usize>(),
@@ -1269,15 +1269,13 @@ pub mod pallet {
 				},
 			)?;
 
-			DidBlacklist::<T>::iter_keys().try_for_each(|deleted_did_subject| -> DispatchResult {
+			DidBlacklist::<T>::iter_keys().try_for_each(|deleted_did_subject| -> Result<(), &'static str> {
 				let service_endpoints_count = ServiceEndpoints::<T>::iter_prefix(&deleted_did_subject).count();
 
 				ensure!(service_endpoints_count == 0, DispatchError::Other("Test"));
 
 				Ok(())
-			})?;
-
-			Ok(())
+			})
 		}
 	}
 

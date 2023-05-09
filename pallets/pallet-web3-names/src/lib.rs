@@ -504,10 +504,10 @@ pub mod pallet {
 		}
 
 		#[cfg(any(feature = "try-runtime", test))]
-		pub fn do_try_state() -> DispatchResult {
+		pub fn do_try_state() -> Result<(), &'static str> {
 			// check if for each owner there is a name stored.
 			Owner::<T>::iter().try_for_each(
-				|(w3n, ownership): (Web3NameOf<T>, Web3OwnershipOf<T>)| -> DispatchResult {
+				|(w3n, ownership): (Web3NameOf<T>, Web3OwnershipOf<T>)| -> Result<(), &'static str> {
 					ensure!(
 						Names::<T>::contains_key(ownership.owner.clone()),
 						DispatchError::Other("Test")
@@ -521,12 +521,10 @@ pub mod pallet {
 				},
 			)?;
 			// a banned name should have no owner.
-			Banned::<T>::iter_keys().try_for_each(|banned_w3n| -> DispatchResult {
+			Banned::<T>::iter_keys().try_for_each(|banned_w3n| -> Result<(), &'static str> {
 				ensure!(!Owner::<T>::contains_key(banned_w3n), DispatchError::Other("Test"));
 				Ok(())
-			})?;
-
-			Ok(())
+			})
 		}
 	}
 
