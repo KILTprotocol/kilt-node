@@ -19,11 +19,11 @@
 use core::fmt::Debug;
 
 use did::{
-	did_details::{DidEncryptionKey, DidPublicKey, DidPublicKeyDetails, DidVerificationKey},
+	did_details::{DidPublicKey, DidPublicKeyDetails, DidVerificationKey},
 	DidSignature, DidVerificationKeyRelationship,
 };
 use dip_support::{v1, VersionedIdentityProof};
-use frame_support::{BoundedVec, RuntimeDebug};
+use frame_support::{traits::Get, BoundedVec, RuntimeDebug};
 use pallet_dip_consumer::traits::IdentityProofVerifier;
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
@@ -173,14 +173,17 @@ where
 
 // Verifies a DID signature over the call details, which is the encoded tuple of
 // (call, proof_entry.details(), submitter address).
-pub struct DidSignatureVerifier<BlockNumber, Details>(PhantomData<(BlockNumber, Details)>);
+pub struct DidSignatureVerifier<BlockNumber, Details, GenesisProvider>(
+	PhantomData<(BlockNumber, Details, GenesisProvider)>,
+);
 
-impl<Call, Subject, BlockNumber, Details> IdentityProofVerifier<Call, Subject>
-	for DidSignatureVerifier<BlockNumber, Details>
+impl<Call, Subject, BlockNumber, Details, GenesisProvider> IdentityProofVerifier<Call, Subject>
+	for DidSignatureVerifier<BlockNumber, Details, GenesisProvider>
 where
 	BlockNumber: Encode,
 	Call: Encode,
 	Details: Bump + Encode,
+	GenesisProvider: Get<Hash>,
 {
 	// TODO: Error handling
 	type Error = ();
@@ -196,7 +199,7 @@ where
 		proof_entry: &mut Self::ProofEntry,
 		proof: &Self::Proof,
 	) -> Result<Self::VerificationResult, Self::Error> {
-		let encoded_payload = (call, proof_entry.details(), submitter).encode();
+		let encoded_payload = (call, proof_entry.details(), submitter, GenesisProvider::get()).encode();
 		let mut proof_verification_keys = proof.0 .0.iter().filter_map(
 			|ProofEntry {
 			     key: DidPublicKeyDetails { key, .. },
@@ -233,28 +236,25 @@ pub trait DidDipOriginFilter<Call> {
 
 // Verifies a DID signature over the call details AND verifies whether the call
 // could be dispatched with the provided signature.
-pub struct DidSignatureAndCallVerifier<BlockNumber, Details, CallVerifier>(
-	PhantomData<(BlockNumber, Details, CallVerifier)>,
+pub struct DidSignatureAndCallVerifier<DidSignatureVerifier, CallVerifier>(
+	PhantomData<(DidSignatureVerifier, CallVerifier)>,
 );
 
-impl<Call, Subject, BlockNumber, Details, CallVerifier> IdentityProofVerifier<Call, Subject>
-	for DidSignatureAndCallVerifier<BlockNumber, Details, CallVerifier>
+impl<Call, Subject, DidSignatureVerifier, CallVerifier> IdentityProofVerifier<Call, Subject>
+	for DidSignatureAndCallVerifier<DidSignatureVerifier, CallVerifier>
 where
-	BlockNumber: Encode,
-	Call: Encode,
+	DidSignatureVerifier: IdentityProofVerifier<Call, Subject>,
 	CallVerifier: DidDipOriginFilter<
 		Call,
-		OriginInfo = <DidSignatureVerifier<BlockNumber, Details> as IdentityProofVerifier<Call, Subject>>::VerificationResult,
+		OriginInfo = <DidSignatureVerifier as IdentityProofVerifier<Call, Subject>>::VerificationResult,
 	>,
-	Details: Bump + Encode,
 {
 	// FIXME: Better error handling
 	type Error = ();
-	type Proof = <DidSignatureVerifier<BlockNumber, Details> as IdentityProofVerifier<Call, Subject>>::Proof;
-	type ProofEntry = <DidSignatureVerifier<BlockNumber, Details> as IdentityProofVerifier<Call, Subject>>::ProofEntry;
-	type Submitter = <DidSignatureVerifier<BlockNumber, Details> as IdentityProofVerifier<Call, Subject>>::Submitter;
-	type VerificationResult =
-		<DidSignatureVerifier<BlockNumber, Details> as IdentityProofVerifier<Call, Subject>>::VerificationResult;
+	type Proof = <DidSignatureVerifier as IdentityProofVerifier<Call, Subject>>::Proof;
+	type ProofEntry = <DidSignatureVerifier as IdentityProofVerifier<Call, Subject>>::ProofEntry;
+	type Submitter = <DidSignatureVerifier as IdentityProofVerifier<Call, Subject>>::Submitter;
+	type VerificationResult = <DidSignatureVerifier as IdentityProofVerifier<Call, Subject>>::VerificationResult;
 
 	fn verify_proof_for_call_against_entry(
 		call: &Call,

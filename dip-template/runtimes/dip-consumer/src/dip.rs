@@ -18,16 +18,26 @@
 
 use did::{did_details::DidVerificationKey, DidSignature, DidVerificationKeyRelationship};
 use dip_support::VersionedIdentityProof;
-use frame_support::traits::Contains;
+use frame_support::traits::{Contains, Get};
 use runtime_common::dip::{
 	consumer::{
-		DidDipOriginFilter, DidMerkleProofVerifier, DidSignatureAndCallVerifier, MerkleProofAndDidSignatureVerifier,
+		DidDipOriginFilter, DidMerkleProofVerifier, DidSignatureAndCallVerifier, DidSignatureVerifier,
+		MerkleProofAndDidSignatureVerifier,
 	},
 	ProofLeaf,
 };
+use sp_runtime::traits::Zero;
 use sp_std::vec::Vec;
 
 use crate::{BlockNumber, DidIdentifier, Hash, Hasher, Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin};
+
+pub struct GenesisProvider;
+
+impl Get<Hash> for GenesisProvider {
+	fn get() -> Hash {
+		frame_system::Pallet::<Runtime>::block_hash(BlockNumber::zero())
+	}
+}
 
 impl pallet_dip_consumer::Config for Runtime {
 	type DipCallOriginFilter = PreliminaryDipOriginFilter;
@@ -40,7 +50,7 @@ impl pallet_dip_consumer::Config for Runtime {
 	type ProofDigest = Hash;
 	type ProofVerifier = MerkleProofAndDidSignatureVerifier<
 		DidMerkleProofVerifier<Hasher, BlockNumber, u128>,
-		DidSignatureAndCallVerifier<BlockNumber, u128, DipCallFilter>,
+		DidSignatureAndCallVerifier<DidSignatureVerifier<BlockNumber, u128, GenesisProvider>, DipCallFilter>,
 	>;
 	type RuntimeCall = RuntimeCall;
 	type RuntimeEvent = RuntimeEvent;
