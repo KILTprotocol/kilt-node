@@ -18,13 +18,15 @@
 
 use super::*;
 
-use did::Did;
+use did::{Did, DidSignature};
 use dip_support::latest::MerkleProof;
 use frame_support::{assert_ok, weights::Weight};
 use frame_system::RawOrigin;
 use pallet_did_lookup::linkable_account::LinkableAccountId;
+use parity_scale_codec::Encode;
 use runtime_common::dip::provider::{CompleteMerkleProof, DidMerkleRootGenerator};
 use sp_core::Pair;
+use sp_runtime::traits::Zero;
 use xcm::latest::{
 	Junction::Parachain,
 	Junctions::{Here, X1},
@@ -34,7 +36,7 @@ use xcm_emulator::TestExt;
 
 use cumulus_pallet_xcmp_queue::Event as XcmpEvent;
 use dip_consumer_runtime_template::{
-	DidIdentifier, DidLookup, DipConsumer, Runtime as ConsumerRuntime, RuntimeCall as ConsumerRuntimeCall,
+	BlockNumber, DidIdentifier, DidLookup, DipConsumer, Runtime as ConsumerRuntime, RuntimeCall as ConsumerRuntimeCall,
 	RuntimeEvent, System,
 };
 use dip_provider_runtime_template::{AccountId as ProviderAccountId, DipProvider, Runtime as ProviderRuntime};
@@ -69,17 +71,26 @@ fn commit_identity() {
 		// 2.2 Verify the proof digest was stored correctly.
 		assert!(DipConsumer::identity_proofs(&did).is_some());
 	});
-	// 3. Call an extrinsic on the consumer chain with a valid proof
+	// 3. Call an extrinsic on the consumer chain with a valid proof and signature
 	let did_details = ProviderParachain::execute_with(|| {
 		Did::get(&did).expect("DID details should be stored on the provider chain.")
 	});
+	let call = ConsumerRuntimeCall::DidLookup(pallet_did_lookup::Call::<ConsumerRuntime>::associate_sender {});
 	// 3.1 Generate a proof
 	let CompleteMerkleProof { proof, .. } = DidMerkleRootGenerator::<ProviderRuntime>::generate_proof(
 		&did_details,
 		[did_details.authentication_key].iter(),
 	)
 	.expect("Proof generation should not fail");
-	// 3.2 Call the `dispatch_as` extrinsic on the consumer chain with the generated
+	// 3.2 Generate a DID signature
+	let payload = (
+		call.clone(),
+		0u128,
+		para::consumer::DISPATCHER_ACCOUNT,
+		ConsumerParachain::execute_with(|| frame_system::Pallet::<ConsumerRuntime>::block_hash(BlockNumber::zero())),
+	);
+	let signature: DidSignature = para::provider::did_auth_key().sign(&payload.encode()).into();
+	// 3.3 Call the `dispatch_as` extrinsic on the consumer chain with the generated
 	// proof
 	ConsumerParachain::execute_with(|| {
 		assert_ok!(DipConsumer::dispatch_as(
@@ -91,15 +102,16 @@ fn commit_identity() {
 					revealed: proof.revealed,
 				}
 				.into(),
-				para::provider::did_auth_key().sign(&[0u8]).into()
+				signature
 			),
-			Box::new(ConsumerRuntimeCall::DidLookup(pallet_did_lookup::Call::<
-				ConsumerRuntime,
-			>::associate_sender {})),
+			Box::new(call),
 		));
 		// Verify the account -> DID link exists and contains the right information
 		let linked_did = DidLookup::connected_dids::<LinkableAccountId>(para::consumer::DISPATCHER_ACCOUNT.into())
 			.map(|link| link.did);
-		assert_eq!(linked_did, Some(did));
+		assert_eq!(linked_did, Some(did.clone()));
+		// Verify that the details of the DID subject have been bumped
+		let details = DipConsumer::identity_proofs(&did).map(|entry| entry.details);
+		assert_eq!(details, Some(1u128));
 	});
 }
