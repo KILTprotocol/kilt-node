@@ -25,6 +25,7 @@ use frame_support::{
 	parameter_types,
 	traits::{Contains, Nothing},
 };
+use frame_system::EnsureRoot;
 use pallet_xcm::XcmPassthrough;
 use sp_core::ConstU32;
 use xcm::latest::prelude::*;
@@ -170,6 +171,7 @@ impl pallet_xcm::Config for Runtime {
 	type XcmExecuteFilter = Nothing;
 	type XcmTeleportFilter = Nothing;
 	type XcmReserveTransferFilter = Nothing;
+	type AdminOrigin = EnsureRoot<AccountId>;
 	type XcmExecutor = XcmExecutor<XcmConfig>;
 	type Weigher = FixedWeightBounds<UnitWeightCost, RuntimeCall, MaxInstructions>;
 	type RuntimeOrigin = RuntimeOrigin;

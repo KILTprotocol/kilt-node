@@ -17,7 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use core::marker::PhantomData;
-use frame_support::{log, match_types, parameter_types, weights::Weight};
+use frame_support::{log, match_types, parameter_types, traits::ProcessMessageError, weights::Weight};
 use polkadot_parachain::primitives::Sibling;
 use xcm::latest::prelude::*;
 use xcm_builder::{AccountId32Aliases, CurrencyAdapter, IsConcrete, ParentIsPreset, SiblingParachainConvertsVia};
@@ -55,7 +55,7 @@ where
 		instructions: &mut [Instruction<Call>],
 		max_weight: Weight,
 		weight_credit: &mut Weight,
-	) -> Result<(), ()> {
+	) -> Result<(), ProcessMessageError> {
 		Deny::should_execute(origin, instructions, max_weight, weight_credit)?;
 		Allow::should_execute(origin, instructions, max_weight, weight_credit)
 	}
@@ -69,7 +69,7 @@ impl ShouldExecute for DenyReserveTransferToRelayChain {
 		instructions: &mut [Instruction<Call>],
 		_max_weight: Weight,
 		_weight_credit: &mut Weight,
-	) -> Result<(), ()> {
+	) -> Result<(), ProcessMessageError> {
 		if instructions.iter().any(|inst| {
 			matches!(
 				inst,
@@ -94,7 +94,7 @@ impl ShouldExecute for DenyReserveTransferToRelayChain {
 				}
 			)
 		}) {
-			return Err(()); // Deny
+			return Err(ProcessMessageError::Corrupt); // Deny
 		}
 
 		// Allow reserve transfers to arrive from relay chain

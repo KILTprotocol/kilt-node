@@ -245,9 +245,15 @@ parameter_types! {
 	pub const ExistentialDeposit: u128 = EXISTENTIAL_DEPOSIT;
 	pub const MaxLocks: u32 = 50;
 	pub const MaxReserves: u32 = 50;
+	pub const MaxFreezes: u32 = 50;
+	pub const MaxHolds: u32 = 50;
 }
 
 impl pallet_balances::Config for Runtime {
+	type FreezeIdentifier = AccountId;
+	type HoldIdentifier = AccountId;
+	type MaxFreezes = MaxFreezes;
+	type MaxHolds = MaxHolds;
 	type MaxLocks = MaxLocks;
 	type MaxReserves = MaxReserves;
 	type ReserveIdentifier = [u8; 8];
@@ -827,6 +833,10 @@ impl_runtime_apis! {
 		fn metadata() -> OpaqueMetadata {
 			OpaqueMetadata::new(Runtime::metadata().into())
 		}
+
+		fn metadata_at_version(_: u32) -> Option<hidden_include::OpaqueMetadata> { todo!() }
+
+		fn metadata_versions() -> sp_std::prelude::Vec<u32> { todo!() }
 	}
 
 	impl frame_system_rpc_runtime_api::AccountNonceApi<Block, AccountId, Index> for Runtime {
