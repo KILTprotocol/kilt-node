@@ -234,10 +234,10 @@ impl<I: AsRef<[u8; 32]>> DidVerifiableIdentifier for I {
 ///
 /// It is currently used to keep track of all the past and current
 /// attestation keys a DID might control.
-#[derive(Clone, RuntimeDebug, Decode, Encode, PartialEq, Ord, PartialOrd, Eq, TypeInfo, MaxEncodedLen)]
+#[derive(Clone, RuntimeDebug, Decode, Encode, PartialEq, Ord, PartialOrd, Eq, TypeInfo)]
 #[scale_info(skip_type_params(T))]
 #[codec(mel_bound())]
-pub struct DidPublicKeyDetails<BlockNumber: MaxEncodedLen> {
+pub struct DidPublicKeyDetails<BlockNumber> {
 	/// A public key the DID controls.
 	pub key: DidPublicKey,
 	/// The block number in which the verification key was added to the DID.
