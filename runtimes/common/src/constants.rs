@@ -324,7 +324,7 @@ pub mod did {
 	/// The size is checked in the runtime by a test.
 	pub const MAX_DID_BYTE_LENGTH: u32 = 9918;
 
-	/// The length of all used Keys.
+	///  Max length of a key
 	pub const KEY_DID_BYTE_LENGTH: u32 = 32;
 
 	pub const MAX_SERVICE_ENDPOINT_BYTE_LENGTH: u32 =

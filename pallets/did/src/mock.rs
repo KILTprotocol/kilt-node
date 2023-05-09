@@ -207,7 +207,7 @@ impl ctype::Config for Test {
 	type Fee = Fee;
 	type FeeCollector = ();
 }
-/// 10 KILT
+
 pub(crate) const DEFAULT_BALANCE: Balance = 10 * KILT;
 
 pub(crate) const ACCOUNT_00: AccountId = AccountId::new([1u8; 32]);
