@@ -20,6 +20,7 @@ scale-info = {workspace = true, features = ["derive"]}
 # DIP
 dip-support.workspace = true
 did.workspace = true
+kilt-dip-support.workspace = true
 pallet-did-lookup.workspace = true
 pallet-dip-consumer.workspace = true
 runtime-common.workspace = true
@@ -78,6 +79,7 @@ std = [
 	"scale-info/std",
   "dip-support/std",
   "did/std",
+  "kilt-dip-support/std",
   "pallet-did-lookup/std",
   "pallet-dip-consumer/std",
   "runtime-common/std",

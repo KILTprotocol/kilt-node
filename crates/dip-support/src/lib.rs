@@ -20,54 +20,8 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use frame_support::RuntimeDebug;
-use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
-use scale_info::TypeInfo;
-
 // Export v1 behind a namespace and also as the latest
 pub mod v1;
 pub mod latest {
 	pub use crate::v1::*;
-}
-
-#[derive(Clone, Eq, PartialEq, Debug, Encode, Decode, TypeInfo, MaxEncodedLen)]
-#[non_exhaustive]
-pub enum VersionedIdentityProofAction<Identifier, Proof, Details = ()> {
-	#[codec(index = 1)]
-	V1(v1::IdentityProofAction<Identifier, Proof, Details>),
-}
-
-impl<Identifier, Proof, Details> From<v1::IdentityProofAction<Identifier, Proof, Details>>
-	for VersionedIdentityProofAction<Identifier, Proof, Details>
-{
-	fn from(value: v1::IdentityProofAction<Identifier, Proof, Details>) -> Self {
-		Self::V1(value)
-	}
-}
-
-#[derive(Encode, Decode, RuntimeDebug, Clone, Eq, PartialEq, TypeInfo)]
-#[non_exhaustive]
-pub enum VersionedIdentityProof<BlindedValue, Leaf> {
-	#[codec(index = 1)]
-	V1(v1::MerkleProof<BlindedValue, Leaf>),
-}
-
-impl<BlindedValue, Leaf> From<v1::MerkleProof<BlindedValue, Leaf>> for VersionedIdentityProof<BlindedValue, Leaf> {
-	fn from(value: v1::MerkleProof<BlindedValue, Leaf>) -> Self {
-		Self::V1(value)
-	}
-}
-
-impl<BlindedValue, Leaf> TryFrom<VersionedIdentityProof<BlindedValue, Leaf>> for v1::MerkleProof<BlindedValue, Leaf> {
-	// Proper error handling
-	type Error = ();
-
-	fn try_from(value: VersionedIdentityProof<BlindedValue, Leaf>) -> Result<Self, Self::Error> {
-		#[allow(irrefutable_let_patterns)]
-		if let VersionedIdentityProof::V1(v1::MerkleProof { blinded, revealed }) = value {
-			Ok(Self { blinded, revealed })
-		} else {
-			Err(())
-		}
-	}
 }

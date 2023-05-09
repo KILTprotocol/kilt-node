@@ -17,19 +17,20 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use did::{did_details::DidDetails, DidVerificationKeyRelationship, KeyIdOf};
-use dip_support::latest::MerkleProof;
 use frame_support::RuntimeDebug;
-use pallet_dip_provider::traits::{IdentityProofGenerator, IdentityProvider};
+use kilt_dip_support::merkle::MerkleProof;
+use pallet_dip_provider::traits::IdentityProofGenerator;
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
 use sp_std::{borrow::ToOwned, collections::btree_set::BTreeSet, marker::PhantomData, vec::Vec};
 use sp_trie::{generate_trie_proof, LayoutV1, MemoryDB, TrieDBMutBuilder, TrieHash, TrieMut};
 
-use crate::dip::{KeyDetailsKey, KeyDetailsValue, KeyReferenceKey, KeyReferenceValue, KeyRelationship, ProofLeaf};
+use kilt_dip_support::merkle::{
+	DidKeyRelationship, KeyDetailsKey, KeyDetailsValue, KeyReferenceKey, KeyReferenceValue, ProofLeaf,
+};
 
 pub type BlindedValue = Vec<u8>;
-
-pub type DidMerkleProof<T> =
+pub type DidMerkleProofOf<T> =
 	MerkleProof<Vec<BlindedValue>, ProofLeaf<KeyIdOf<T>, <T as frame_system::Config>::BlockNumber>>;
 
 #[derive(Encode, Decode, RuntimeDebug, PartialEq, Eq, TypeInfo)]
@@ -96,7 +97,7 @@ where
 			.iter()
 			.try_for_each(|id| -> Result<(), ()> {
 				let enc_leaf = ProofLeaf::<_, T::BlockNumber>::KeyReference(
-					KeyReferenceKey(*id, KeyRelationship::Encryption),
+					KeyReferenceKey(*id, DidKeyRelationship::Encryption),
 					KeyReferenceValue,
 				);
 				trie_builder
@@ -128,7 +129,7 @@ where
 	pub fn generate_proof<'a, K>(
 		identity: &DidDetails<T>,
 		mut key_ids: K,
-	) -> Result<CompleteMerkleProof<T::Hash, DidMerkleProof<T>>, ()>
+	) -> Result<CompleteMerkleProof<T::Hash, DidMerkleProofOf<T>>, ()>
 	where
 		K: Iterator<Item = &'a KeyIdOf<T>>,
 	{
@@ -160,7 +161,7 @@ where
 				}
 				if identity.key_agreement_keys.contains(key_id) {
 					set.insert(ProofLeaf::KeyReference(
-						KeyReferenceKey(*key_id, KeyRelationship::Encryption),
+						KeyReferenceKey(*key_id, DidKeyRelationship::Encryption),
 						KeyReferenceValue,
 					));
 				};
@@ -178,7 +179,7 @@ where
 		let proof = generate_trie_proof::<LayoutV1<T::Hashing>, _, _, _>(&db, root, &encoded_keys).map_err(|_| ())?;
 		Ok(CompleteMerkleProof {
 			root,
-			proof: DidMerkleProof::<T> {
+			proof: DidMerkleProofOf::<T> {
 				blinded: proof,
 				revealed: leaves.into_iter().collect::<Vec<_>>(),
 			},
@@ -197,26 +198,5 @@ where
 	fn generate_commitment(_identifier: &T::DidIdentifier, identity: &DidDetails<T>) -> Result<T::Hash, Self::Error> {
 		let mut db = MemoryDB::default();
 		Self::calculate_root_with_db(identity, &mut db)
-	}
-}
-
-pub struct DidIdentityProvider<T>(PhantomData<T>);
-
-impl<T> IdentityProvider<T::DidIdentifier, DidDetails<T>, ()> for DidIdentityProvider<T>
-where
-	T: did::Config,
-{
-	// TODO: Proper error handling
-	type Error = ();
-
-	fn retrieve(identifier: &T::DidIdentifier) -> Result<Option<(DidDetails<T>, ())>, Self::Error> {
-		match (
-			did::Pallet::<T>::get_did(identifier),
-			did::Pallet::<T>::get_deleted_did(identifier),
-		) {
-			(Some(details), _) => Ok(Some((details, ()))),
-			(_, Some(_)) => Ok(None),
-			_ => Err(()),
-		}
 	}
 }

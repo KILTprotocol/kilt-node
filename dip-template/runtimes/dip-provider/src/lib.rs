@@ -51,7 +51,7 @@ use pallet_collator_selection::IdentityCollator;
 use pallet_dip_provider::traits::IdentityProvider;
 use pallet_session::{FindAccountFromAuthorIndex, PeriodicSessions};
 use pallet_transaction_payment::{CurrencyAdapter, FeeDetails, RuntimeDispatchInfo};
-use runtime_common::dip::provider::{CompleteMerkleProof, DidMerkleProof, DidMerkleRootGenerator};
+use runtime_common::dip::merkle::{CompleteMerkleProof, DidMerkleProofOf, DidMerkleRootGenerator};
 use sp_api::impl_runtime_apis;
 use sp_consensus_aura::SlotDuration;
 use sp_core::{crypto::KeyTypeId, ConstU128, ConstU16, OpaqueMetadata};
@@ -530,8 +530,8 @@ impl_runtime_apis! {
 
 	// TODO: `keys` could and should be a BTreeSet, but it makes it more complicated for clients to build the type. So we use a Vec, since the keys are deduplicated anyway at proof creation time.
 	// TODO: Support generating different versions of the proof, based on the provided parameter
-	impl kilt_runtime_api_dip_provider::DipProvider<Block, DidIdentifier, KeyIdOf<Runtime>, Vec<KeyIdOf<Runtime>>, CompleteMerkleProof<Hash, DidMerkleProof<Runtime>>, ()> for Runtime {
-		fn generate_proof(identifier: DidIdentifier, keys: Vec<KeyIdOf<Runtime>>) -> Result<CompleteMerkleProof<Hash, DidMerkleProof<Runtime>>, ()> {
+	impl kilt_runtime_api_dip_provider::DipProvider<Block, DidIdentifier, KeyIdOf<Runtime>, Vec<KeyIdOf<Runtime>>, CompleteMerkleProof<Hash, DidMerkleProofOf<Runtime>>, ()> for Runtime {
+		fn generate_proof(identifier: DidIdentifier, keys: Vec<KeyIdOf<Runtime>>) -> Result<CompleteMerkleProof<Hash, DidMerkleProofOf<Runtime>>, ()> {
 			if let Ok(Some((did_details, _))) = <Runtime as pallet_dip_provider::Config>::IdentityProvider::retrieve(&identifier) {
 				DidMerkleRootGenerator::<Runtime>::generate_proof(&did_details, keys.iter())
 			} else {

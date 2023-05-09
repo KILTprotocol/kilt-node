@@ -16,12 +16,30 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::RuntimeDebug;
-use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
-use scale_info::TypeInfo;
+use sp_runtime::traits::{CheckedAdd, One, Zero};
 
-#[derive(Clone, Eq, PartialEq, Encode, Decode, TypeInfo, MaxEncodedLen, RuntimeDebug)]
-pub enum IdentityProofAction<Identifier, Proof, Details = ()> {
-	Updated(Identifier, Proof, Details),
-	Deleted(Identifier),
+pub trait Bump {
+	fn bump(&mut self);
+}
+
+impl<T> Bump for T
+where
+	T: CheckedAdd + Zero + One,
+{
+	// FIXME: Better implementation?
+	fn bump(&mut self) {
+		if let Some(new) = self.checked_add(&Self::one()) {
+			*self = new;
+		} else {
+			*self = Self::zero();
+		}
+	}
+}
+
+pub trait DidDipOriginFilter<Call> {
+	type Error;
+	type OriginInfo;
+	type Success;
+
+	fn check_call_origin_info(call: &Call, info: &Self::OriginInfo) -> Result<Self::Success, Self::Error>;
 }

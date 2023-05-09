@@ -36,7 +36,7 @@ pub mod pallet {
 	use parity_scale_codec::MaxEncodedLen;
 	use sp_std::boxed::Box;
 
-	use dip_support::{latest::IdentityProofAction, VersionedIdentityProofAction};
+	use dip_support::latest::IdentityProofAction;
 
 	use crate::{proof::ProofEntry, traits::IdentityProofVerifier};
 
@@ -116,22 +116,21 @@ pub mod pallet {
 		#[pallet::weight(0)]
 		pub fn process_identity_action(
 			origin: OriginFor<T>,
-			action: VersionedIdentityProofAction<T::Identifier, T::ProofDigest>,
+			action: IdentityProofAction<T::Identifier, T::ProofDigest>,
 		) -> DispatchResult {
 			ensure_sibling_para(<T as Config>::RuntimeOrigin::from(origin))?;
 
 			let event = match action {
-				VersionedIdentityProofAction::V1(IdentityProofAction::Updated(identifier, proof, _)) => {
+				IdentityProofAction::Updated(identifier, proof, _) => {
 					IdentityProofs::<T>::mutate(&identifier, |entry| {
 						*entry = Some(ProofEntry::from_digest(proof.clone()))
 					});
 					Ok::<_, Error<T>>(Event::<T>::IdentityInfoUpdated(identifier, proof))
 				}
-				VersionedIdentityProofAction::V1(IdentityProofAction::Deleted(identifier)) => {
+				IdentityProofAction::Deleted(identifier) => {
 					IdentityProofs::<T>::remove(&identifier);
 					Ok::<_, Error<T>>(Event::<T>::IdentityInfoDeleted(identifier))
 				}
-				_ => Err(Error::<T>::UnsupportedVersion),
 			}?;
 
 			Self::deposit_event(event);

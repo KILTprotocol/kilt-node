@@ -16,20 +16,18 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use did::{did_details::DidVerificationKey, DidSignature, DidVerificationKeyRelationship};
-use dip_support::VersionedIdentityProof;
+use did::{did_details::DidVerificationKey, DidSignature, DidVerificationKeyRelationship, KeyIdOf};
 use frame_support::traits::{Contains, Get};
-use runtime_common::dip::{
-	consumer::{
-		DidDipOriginFilter, DidMerkleProofVerifier, DidSignatureAndCallVerifier, DidSignatureVerifier,
-		MerkleProofAndDidSignatureVerifier,
-	},
-	ProofLeaf,
+use kilt_dip_support::{
+	did::{DidSignatureAndCallVerifier, DidSignatureVerifier, MerkleProofAndDidSignatureVerifier},
+	merkle::{DidMerkleProofVerifier, MerkleProof, ProofLeaf},
+	traits::DidDipOriginFilter,
 };
+use sp_core::ConstU32;
 use sp_runtime::traits::Zero;
 use sp_std::vec::Vec;
 
-use crate::{BlockNumber, DidIdentifier, Hash, Hasher, Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin};
+use crate::{AccountId, BlockNumber, DidIdentifier, Hash, Hasher, Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin};
 
 pub struct GenesisProvider;
 
@@ -43,14 +41,14 @@ impl pallet_dip_consumer::Config for Runtime {
 	type DipCallOriginFilter = PreliminaryDipOriginFilter;
 	type Identifier = DidIdentifier;
 	type IdentityDetails = u128;
-	type Proof = (
-		VersionedIdentityProof<Vec<Vec<u8>>, ProofLeaf<Hash, BlockNumber>>,
-		DidSignature,
-	);
+	type Proof = (MerkleProof<Vec<Vec<u8>>, ProofLeaf<Hash, BlockNumber>>, DidSignature);
 	type ProofDigest = Hash;
 	type ProofVerifier = MerkleProofAndDidSignatureVerifier<
-		DidMerkleProofVerifier<Hasher, BlockNumber, u128>,
-		DidSignatureAndCallVerifier<DidSignatureVerifier<BlockNumber, u128, GenesisProvider>, DipCallFilter>,
+		DidMerkleProofVerifier<Hasher, AccountId, KeyIdOf<Runtime>, BlockNumber, u128, 10>,
+		DidSignatureAndCallVerifier<
+			DidSignatureVerifier<BlockNumber, Hash, u128, AccountId, GenesisProvider, Hash, ConstU32<10>>,
+			DipCallFilter,
+		>,
 	>;
 	type RuntimeCall = RuntimeCall;
 	type RuntimeEvent = RuntimeEvent;

@@ -17,10 +17,10 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use did::did_details::DidDetails;
-use dip_support::VersionedIdentityProofAction;
+use dip_support::latest::IdentityProofAction;
 use pallet_dip_provider::traits::{TxBuilder, XcmRouterDispatcher};
 use parity_scale_codec::{Decode, Encode};
-use runtime_common::dip::provider::{DidIdentityProvider, DidMerkleRootGenerator};
+use runtime_common::dip::{did::DidIdentityProvider, merkle::DidMerkleRootGenerator};
 use xcm::{latest::MultiLocation, DoubleEncoded};
 
 use crate::{DidIdentifier, Hash, Runtime, RuntimeEvent, XcmRouter};
@@ -34,7 +34,7 @@ enum ConsumerParachainCalls {
 #[derive(Encode, Decode)]
 enum ConsumerParachainDipConsumerCalls {
 	#[codec(index = 0)]
-	ProcessIdentityAction(VersionedIdentityProofAction<DidIdentifier, Hash>),
+	ProcessIdentityAction(IdentityProofAction<DidIdentifier, Hash>),
 }
 
 pub struct ConsumerParachainTxBuilder;
@@ -43,7 +43,7 @@ impl TxBuilder<DidIdentifier, Hash> for ConsumerParachainTxBuilder {
 
 	fn build(
 		_dest: MultiLocation,
-		action: VersionedIdentityProofAction<DidIdentifier, Hash>,
+		action: IdentityProofAction<DidIdentifier, Hash>,
 	) -> Result<DoubleEncoded<()>, Self::Error> {
 		let double_encoded: DoubleEncoded<()> =
 			ConsumerParachainCalls::DipConsumer(ConsumerParachainDipConsumerCalls::ProcessIdentityAction(action))
