@@ -16,10 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use did::{
-	did_details::{DidEncryptionKey, DidPublicKey, DidPublicKeyDetails},
-	DidVerificationKeyRelationship,
-};
+use did::{did_details::DidPublicKeyDetails, DidVerificationKeyRelationship};
 use frame_support::{traits::ConstU32, RuntimeDebug};
 use pallet_dip_consumer::{identity::IdentityDetails, traits::IdentityProofVerifier};
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
@@ -85,7 +82,6 @@ pub enum ProofLeaf<KeyId, BlockNumber> {
 impl<KeyId, BlockNumber> ProofLeaf<KeyId, BlockNumber>
 where
 	KeyId: Encode,
-	BlockNumber: Encode,
 {
 	pub fn encoded_key(&self) -> Vec<u8> {
 		match self {
@@ -93,7 +89,12 @@ where
 			ProofLeaf::KeyDetails(key, _) => key.encode(),
 		}
 	}
+}
 
+impl<KeyId, BlockNumber> ProofLeaf<KeyId, BlockNumber>
+where
+	BlockNumber: Encode,
+{
 	pub fn encoded_value(&self) -> Vec<u8> {
 		match self {
 			ProofLeaf::KeyReference(_, value) => value.encode(),
@@ -126,7 +127,7 @@ where
 	}
 }
 
-// Contains the list of revealed public keys after a given merkle proof has been
+// Contains the list of revealed public keys after a given Merkle proof has been
 // correctly verified.
 #[derive(Clone, Debug, PartialEq, Eq, TypeInfo, MaxEncodedLen, Encode, Decode, Default)]
 pub struct VerificationResult<BlockNumber, const MAX_REVEALED_LEAVES_COUNT: u32>(
@@ -155,6 +156,7 @@ impl<BlockNumber, const MAX_REVEALED_LEAVES_COUNT: u32> AsRef<[ProofEntry<BlockN
 
 /// A type that verifies a Merkle proof that reveals some leaves representing
 /// keys in a DID Document.
+/// Can also be used on its own, without any DID signature verification.
 pub struct DidMerkleProofVerifier<Hasher, AccountId, KeyId, BlockNumber, Details, MaxRevealedLeavesCount>(
 	PhantomData<(Hasher, AccountId, KeyId, BlockNumber, Details, MaxRevealedLeavesCount)>,
 );

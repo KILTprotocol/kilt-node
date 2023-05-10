@@ -79,7 +79,7 @@ impl<Call, Subject, BlockNumber, Digest, Details, AccountId, SignedExtraProvider
 	// TODO: Error handling
 	type Error = ();
 	/// The proof must be a list of Merkle leaves that have been previously
-	/// verified by a different verifier.
+	/// verified by the Merkle proof verifier, and the additional DID signature.
 	type Proof = (MerkleProofEntries, DidSignature);
 	/// The `Details` that are part of the identity details must implement the
 	/// `Bump` trait.
@@ -98,7 +98,7 @@ impl<Call, Subject, BlockNumber, Digest, Details, AccountId, SignedExtraProvider
 		proof: &Self::Proof,
 	) -> Result<Self::VerificationResult, Self::Error> {
 		let encoded_payload = (call, proof_entry.details(), submitter, SignedExtraProvider::get()).encode();
-		// Only consider verification keys from the set of revealed merkle leaves.
+		// Only consider verification keys from the set of revealed Merkle leaves.
 		let mut proof_verification_keys = proof.0.as_ref().iter().filter_map(
 			|ProofEntry {
 			     key: DidPublicKeyDetails { key, .. },
@@ -172,67 +172,5 @@ where
 				.map_err(|_| ())?;
 		CallVerifier::check_call_origin_info(call, &did_signing_key).map_err(|_| ())?;
 		Ok(did_signing_key)
-	}
-}
-
-/// A type that chains a Merkle proof verification with a DID signature
-/// verification. The required input of this type is a tuple (A, B) where A is
-/// the type of input required by the `MerkleProofVerifier` and B is a
-/// `DidSignature.
-/// The successful output of this type is the output type of the
-/// `MerkleProofVerifier`, meaning that DID signature verification happens
-/// internally and does not transform the result in any way.
-pub struct MerkleProofAndDidSignatureVerifier<MerkleProofVerifier, DidSignatureVerifier>(
-	PhantomData<(MerkleProofVerifier, DidSignatureVerifier)>,
-);
-
-impl<Call, Subject, MerkleProofVerifier, DidSignatureVerifier> IdentityProofVerifier<Call, Subject>
-	for MerkleProofAndDidSignatureVerifier<MerkleProofVerifier, DidSignatureVerifier>
-where
-	MerkleProofVerifier: IdentityProofVerifier<Call, Subject>,
-	// TODO: get rid of this if possible
-	MerkleProofVerifier::VerificationResult: Clone,
-	DidSignatureVerifier: IdentityProofVerifier<
-		Call,
-		Subject,
-		Proof = (
-			<MerkleProofVerifier as IdentityProofVerifier<Call, Subject>>::VerificationResult,
-			DidSignature,
-		),
-		IdentityDetails = <MerkleProofVerifier as IdentityProofVerifier<Call, Subject>>::IdentityDetails,
-		Submitter = <MerkleProofVerifier as IdentityProofVerifier<Call, Subject>>::Submitter,
-	>,
-{
-	// FIXME: Better error handling
-	type Error = ();
-	// FIXME: Better type declaration
-	type Proof = (
-		<MerkleProofVerifier as IdentityProofVerifier<Call, Subject>>::Proof,
-		DidSignature,
-	);
-	type IdentityDetails = <DidSignatureVerifier as IdentityProofVerifier<Call, Subject>>::IdentityDetails;
-	type Submitter = <MerkleProofVerifier as IdentityProofVerifier<Call, Subject>>::Submitter;
-	type VerificationResult = <MerkleProofVerifier as IdentityProofVerifier<Call, Subject>>::VerificationResult;
-
-	fn verify_proof_for_call_against_entry(
-		call: &Call,
-		subject: &Subject,
-		submitter: &Self::Submitter,
-		proof_entry: &mut Self::IdentityDetails,
-		proof: &Self::Proof,
-	) -> Result<Self::VerificationResult, Self::Error> {
-		let merkle_proof_verification =
-			MerkleProofVerifier::verify_proof_for_call_against_entry(call, subject, submitter, proof_entry, &proof.0)
-				.map_err(|_| ())?;
-		DidSignatureVerifier::verify_proof_for_call_against_entry(
-			call,
-			subject,
-			submitter,
-			proof_entry,
-			// FIXME: Remove `clone()` requirement
-			&(merkle_proof_verification.clone(), proof.1.clone()),
-		)
-		.map_err(|_| ())?;
-		Ok(merkle_proof_verification)
 	}
 }
