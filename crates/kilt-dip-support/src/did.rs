@@ -36,18 +36,21 @@ use crate::{
 /// previously-verified Merkle proof. It requires the `Details` type to
 /// implement the `Bump` trait to avoid replay attacks. The basic verification
 /// logic verifies that the signature has been generated over the encoded tuple
-/// (call, identity details). Additional details can be added to the end of the
-/// tuple by providing a `SignedExtraProvider`.
+/// (call, identity details, submitter_address, submission_block_number,
+/// genesis_hash). Additional details can be added to the end of the tuple by
+/// providing a `SignedExtraProvider`.
 pub struct MerkleRevealedDidSignatureVerifier<
 	BlockNumber,
 	Digest,
 	Details,
 	AccountId,
-	SignedExtraProvider,
-	SignedExtra,
 	MerkleProofEntries,
 	BlockNumberProvider,
 	const SIGNATURE_VALIDITY: u64,
+	GenesisHashProvider,
+	Hash,
+	SignedExtraProvider = (),
+	SignedExtra = (),
 >(
 	#[allow(clippy::type_complexity)]
 	PhantomData<(
@@ -55,11 +58,13 @@ pub struct MerkleRevealedDidSignatureVerifier<
 		Digest,
 		Details,
 		AccountId,
-		SignedExtraProvider,
-		SignedExtra,
 		MerkleProofEntries,
 		BlockNumberProvider,
 		ConstU64<SIGNATURE_VALIDITY>,
+		GenesisHashProvider,
+		Hash,
+		SignedExtraProvider,
+		SignedExtra,
 	)>,
 );
 
@@ -70,32 +75,38 @@ impl<
 		Digest,
 		Details,
 		AccountId,
-		SignedExtraProvider,
-		SignedExtra,
 		MerkleProofEntries,
 		BlockNumberProvider,
 		const SIGNATURE_VALIDITY: u64,
+		GenesisHashProvider,
+		Hash,
+		SignedExtraProvider,
+		SignedExtra,
 	> IdentityProofVerifier<Call, Subject>
 	for MerkleRevealedDidSignatureVerifier<
 		BlockNumber,
 		Digest,
 		Details,
 		AccountId,
-		SignedExtraProvider,
-		SignedExtra,
 		MerkleProofEntries,
 		BlockNumberProvider,
 		SIGNATURE_VALIDITY,
+		GenesisHashProvider,
+		Hash,
+		SignedExtraProvider,
+		SignedExtra,
 	> where
 	AccountId: Encode,
 	BlockNumber: Encode + CheckedSub + Into<u64> + PartialOrd + sp_std::fmt::Debug,
 	Call: Encode,
 	Digest: Encode,
 	Details: Bump + Encode,
-	SignedExtraProvider: Get<SignedExtra>,
-	SignedExtra: Encode,
 	MerkleProofEntries: AsRef<[ProofEntry<BlockNumber>]>,
 	BlockNumberProvider: Get<BlockNumber>,
+	GenesisHashProvider: Get<Hash>,
+	Hash: Encode,
+	SignedExtraProvider: Get<SignedExtra>,
+	SignedExtra: Encode,
 {
 	// TODO: Error handling
 	type Error = ();
@@ -132,6 +143,7 @@ impl<
 			proof_entry.details(),
 			submitter,
 			block_number,
+			GenesisHashProvider::get(),
 			SignedExtraProvider::get(),
 		)
 			.encode();

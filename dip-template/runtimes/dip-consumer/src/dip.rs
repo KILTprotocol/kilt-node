@@ -37,12 +37,12 @@ pub type MerkleDidSignatureVerifierOf<Call, Subject> = MerkleRevealedDidSignatur
 	Hash,
 	u128,
 	AccountId,
-	GenesisProvider<Runtime>,
-	Hash,
 	MerkleProofVerifierOutputOf<Call, Subject>,
 	BlockNumberProvider<Runtime>,
 	// Signatures are valid for 50 blocks
 	50,
+	GenesisProvider<Runtime>,
+	Hash,
 >;
 
 impl pallet_dip_consumer::Config for Runtime {
