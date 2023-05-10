@@ -1245,25 +1245,22 @@ pub mod pallet {
 
 					ensure!(
 						service_endpoints_count == DidEndpointsCount::<T>::get(&did_subject).saturated_into::<usize>(),
-						DispatchError::Other("Test")
+						"Unequal service endpoint"
 					);
 
 					ensure!(
 						did_details.key_agreement_keys.len()
 							<= <T as Config>::MaxTotalKeyAgreementKeys::get().saturated_into::<usize>(),
-						DispatchError::Other("Test")
+						"Exceeded key agreements"
 					);
 
 					ensure!(
 						service_endpoints_count
 							<= <T as Config>::MaxNumberOfServicesPerDid::get().saturated_into::<usize>(),
-						DispatchError::Other("Test")
+						"Exceeded service endpoints"
 					);
 
-					ensure!(
-						!DidBlacklist::<T>::contains_key(did_subject),
-						DispatchError::Other("Test")
-					);
+					ensure!(!DidBlacklist::<T>::contains_key(did_subject), "Blacklisted did");
 
 					Ok(())
 				},
@@ -1271,9 +1268,7 @@ pub mod pallet {
 
 			DidBlacklist::<T>::iter_keys().try_for_each(|deleted_did_subject| -> Result<(), &'static str> {
 				let service_endpoints_count = ServiceEndpoints::<T>::iter_prefix(&deleted_did_subject).count();
-
-				ensure!(service_endpoints_count == 0, DispatchError::Other("Test"));
-
+				ensure!(service_endpoints_count == 0, "Blacklisted did contains services");
 				Ok(())
 			})
 		}

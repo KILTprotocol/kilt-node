@@ -436,7 +436,7 @@ pub mod pallet {
 			ConnectedDids::<T>::iter().try_for_each(|(account, record)| -> Result<(), &'static str> {
 				ensure!(
 					ConnectedAccounts::<T>::contains_key(record.did, account),
-					DispatchError::Other("Test")
+					"Did lookup: Connected accounts is not matching with connected did."
 				);
 				Ok(())
 			})

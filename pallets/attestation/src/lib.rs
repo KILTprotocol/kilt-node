@@ -478,7 +478,7 @@ pub mod pallet {
 				if let Some(authorization_id) = attestation_details.authorization_id {
 					ensure!(
 						ExternalAttestations::<T>::get(authorization_id, claim_hash),
-						DispatchError::Other("Test")
+						"Unknown external attestation"
 					)
 				}
 				Ok(())

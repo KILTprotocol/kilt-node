@@ -597,23 +597,29 @@ pub mod pallet {
 
 		#[cfg(any(feature = "try-runtime", test))]
 		pub fn do_try_state() -> Result<(), &'static str> {
-			// check if for each owner there is a name stored.
-			Credentials::<T>::iter().try_for_each(|(subject_id, credential_id, entry)| -> Result<(), &'static str> {
-				ensure!(
-					CredentialSubjects::<T>::contains_key(&credential_id),
-					DispatchError::Other("Test")
-				);
+			Credentials::<T>::iter().try_for_each(
+				|(subject_id, credential_id, entry)| -> Result<(), &'static str> {
+					ensure!(
+						CredentialSubjects::<T>::contains_key(&credential_id),
+						"Unknown credential subject"
+					);
 
-				ensure!(
-					CredentialSubjects::<T>::get(&credential_id) == Some(subject_id),
-					DispatchError::Other("Test")
-				);
+					ensure!(
+						CredentialSubjects::<T>::get(&credential_id) == Some(subject_id),
+						"Unequal credential subject"
+					);
 
-				ensure!(
-					ctype::Ctypes::<T>::contains_key(entry.ctype_hash),
-					DispatchError::Other("Test")
-				);
+					ensure!(ctype::Ctypes::<T>::contains_key(entry.ctype_hash), "Unknown ctype");
 
+					Ok(())
+				},
+			)?;
+
+			CredentialSubjects::<T>::iter().try_for_each(|(credential_id, subject_id)| -> Result<(), &'static str> {
+				ensure!(
+					Credentials::<T>::contains_key(subject_id, credential_id),
+					"Unknown credential"
+				);
 				Ok(())
 			})
 		}
