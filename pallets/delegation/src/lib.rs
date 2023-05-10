@@ -977,8 +977,6 @@ pub mod pallet {
 
 		#[cfg(any(feature = "try-runtime", test))]
 		pub fn do_try_state() -> Result<(), &'static str> {
-
-
 			fn get_merged_subtree<T: Config>(node: DelegationNode<T>) -> sp_std::vec::Vec<DelegationNode<T>> {
 				let mut nodes_to_explore = sp_std::vec::Vec::from([node]);
 				let mut children = sp_std::vec::Vec::new();
@@ -991,9 +989,8 @@ pub mod pallet {
 			}
 
 			DelegationNodes::<T>::iter().try_for_each(
-				|(delegation_node_id, delegation_details): (DelegationNodeIdOf<T>, DelegationNode<T>)| -> Result<(), &'static str> {
+				|(delegation_node_id, delegation_details)| -> Result<(), &'static str> {
 					let hierarchy_id = delegation_details.hierarchy_root_id;
-					
 
 					// check if node is in part of a delegation hierarchy.
 					ensure!(
@@ -1001,21 +998,37 @@ pub mod pallet {
 						"Unknown hierarchy"
 					);
 
-					let children_count = DelegationNodes::<T>::iter_values()
-						.filter(|delegation_node : &DelegationNode<T> | delegation_node.children.contains(&delegation_node_id))
+					delegation_details
+						.children
+						.iter()
+						.try_for_each(|child_node| -> Result<(), &'static str> {
+							ensure!(
+								DelegationNodes::<T>::contains_key(child_node),
+								"Unknown delegation node"
+							);
+							Ok(())
+						})?;
+
+					let parent_count = DelegationNodes::<T>::iter_values()
+						.filter(|delegation_node: &DelegationNode<T>| {
+							delegation_node.children.contains(&delegation_node_id)
+						})
 						.count();
 
 					match delegation_details.parent {
 						// If node is a leaf or intermediate, check if it occurs only once. Otherwise we have cycles.
-						Some(_) => 	ensure!(children_count <= 1 , "Cycles detected"),
+						Some(_) => ensure!(parent_count <= 1, "Cycles detected"),
 						// if parent is None, check that the root is not the children
 						// from another node.
-						_ => ensure!(children_count == 0 , "Root node is intermediate")
+						_ => ensure!(parent_count == 0, "Root node is intermediate"),
 					};
 
 					// if a node is revoked, his subtree should be revoked as well.
 					if delegation_details.details.revoked {
-						let is_subtree_revoked = get_merged_subtree::<T>(delegation_details).iter().map(|child : &DelegationNode<T>| child.details.revoked).all(|x| x);
+						let is_subtree_revoked = get_merged_subtree::<T>(delegation_details)
+							.iter()
+							.map(|child: &DelegationNode<T>| child.details.revoked)
+							.all(|x| x);
 						ensure!(is_subtree_revoked, "Subtree not revoked");
 					}
 					Ok(())

@@ -436,10 +436,19 @@ pub mod pallet {
 			ConnectedDids::<T>::iter().try_for_each(|(account, record)| -> Result<(), &'static str> {
 				ensure!(
 					ConnectedAccounts::<T>::contains_key(record.did, account),
-					"Did lookup: Connected accounts is not matching with connected did."
+					"Unknown account"
 				);
 				Ok(())
-			})
+			})?;
+
+			ConnectedAccounts::<T>::iter().try_for_each(
+				|(did_identifier, linked_account_id, _)| -> Result<(), &'static str> {
+					let connected_did = ConnectedDids::<T>::get(linked_account_id);
+					ensure!(connected_did.is_some(), "Unknown did");
+					ensure!(connected_did.unwrap().did == did_identifier, "Unequal did");
+					Ok(())
+				},
+			)
 		}
 	}
 
