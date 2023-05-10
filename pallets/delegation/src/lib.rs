@@ -998,17 +998,6 @@ pub mod pallet {
 						"Unknown hierarchy"
 					);
 
-					delegation_details
-						.children
-						.iter()
-						.try_for_each(|child_node| -> Result<(), &'static str> {
-							ensure!(
-								DelegationNodes::<T>::contains_key(child_node),
-								"Unknown delegation node"
-							);
-							Ok(())
-						})?;
-
 					let parent_count = DelegationNodes::<T>::iter_values()
 						.filter(|delegation_node: &DelegationNode<T>| {
 							delegation_node.children.contains(&delegation_node_id)
