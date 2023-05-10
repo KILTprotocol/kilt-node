@@ -18,7 +18,7 @@
 
 use did::{did_details::DidPublicKeyDetails, DidVerificationKeyRelationship};
 use frame_support::{traits::ConstU32, RuntimeDebug};
-use pallet_dip_consumer::traits::IdentityProofVerifier;
+use pallet_dip_consumer::{identity::IdentityDetails, traits::IdentityProofVerifier};
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_runtime::BoundedVec;
@@ -125,27 +125,38 @@ where
 
 // Contains the list of revealed public keys after a given merkle proof has been
 // correctly verified.
-#[derive(Clone, Debug, PartialEq, Eq, TypeInfo, MaxEncodedLen, Encode, Decode)]
-#[cfg_attr(feature = "runtime-benchmarks", derive(Default))]
-pub struct VerificationResult<BlockNumber, const L: u32>(pub BoundedVec<ProofEntry<BlockNumber>, ConstU32<L>>);
+#[derive(Clone, Debug, PartialEq, Eq, TypeInfo, MaxEncodedLen, Encode, Decode, Default)]
+pub struct VerificationResult<BlockNumber, const MAX_REVEALED_LEAVES_COUNT: u32>(
+	pub BoundedVec<ProofEntry<BlockNumber>, ConstU32<MAX_REVEALED_LEAVES_COUNT>>,
+);
 
-impl<BlockNumber, const L: u32> From<Vec<ProofEntry<BlockNumber>>> for VerificationResult<BlockNumber, L>
-where
-	// TODO: Remove
-	// this bound
-	BlockNumber: Debug,
+impl<BlockNumber, const MAX_REVEALED_LEAVES_COUNT: u32> TryFrom<Vec<ProofEntry<BlockNumber>>>
+	for VerificationResult<BlockNumber, MAX_REVEALED_LEAVES_COUNT>
 {
-	fn from(value: Vec<ProofEntry<BlockNumber>>) -> Self {
-		Self(value.try_into().expect("Failed to put Vec into BoundedVec"))
+	// TODO: Better error handling
+	type Error = ();
+
+	fn try_from(value: Vec<ProofEntry<BlockNumber>>) -> Result<Self, Self::Error> {
+		let bounded_inner = value.try_into().map_err(|_| ())?;
+		Ok(Self(bounded_inner))
 	}
 }
 
-pub struct DidMerkleProofVerifier<Hasher, AccountId, KeyId, BlockNumber, Details, const L: u32>(
-	PhantomData<(Hasher, AccountId, KeyId, BlockNumber, Details, ConstU32<L>)>,
+impl<BlockNumber, const MAX_REVEALED_LEAVES_COUNT: u32> AsRef<[ProofEntry<BlockNumber>]>
+	for VerificationResult<BlockNumber, MAX_REVEALED_LEAVES_COUNT>
+{
+	fn as_ref(&self) -> &[ProofEntry<BlockNumber>] {
+		self.0.as_ref()
+	}
+}
+
+pub struct DidMerkleProofVerifier<Hasher, AccountId, KeyId, BlockNumber, Details, MaxRevealedLeavesCount>(
+	PhantomData<(Hasher, AccountId, KeyId, BlockNumber, Details, MaxRevealedLeavesCount)>,
 );
 
-impl<Call, Subject, Hasher, AccountId, KeyId, BlockNumber, Details, const L: u32> IdentityProofVerifier<Call, Subject>
-	for DidMerkleProofVerifier<Hasher, AccountId, KeyId, BlockNumber, Details, L>
+impl<Call, Subject, Hasher, AccountId, KeyId, BlockNumber, Details, const MAX_REVEALED_LEAVES_COUNT: u32>
+	IdentityProofVerifier<Call, Subject>
+	for DidMerkleProofVerifier<Hasher, AccountId, KeyId, BlockNumber, Details, ConstU32<MAX_REVEALED_LEAVES_COUNT>>
 where
 	// TODO: Remove `Debug` bound
 	BlockNumber: Encode + Clone + Debug,
@@ -155,15 +166,15 @@ where
 	// TODO: Proper error handling
 	type Error = ();
 	type Proof = MerkleProof<Vec<Vec<u8>>, ProofLeaf<KeyId, BlockNumber>>;
-	type ProofEntry = pallet_dip_consumer::proof::ProofEntry<KeyId, Details>;
+	type IdentityDetails = IdentityDetails<KeyId, Details>;
 	type Submitter = AccountId;
-	type VerificationResult = VerificationResult<BlockNumber, L>;
+	type VerificationResult = VerificationResult<BlockNumber, MAX_REVEALED_LEAVES_COUNT>;
 
 	fn verify_proof_for_call_against_entry(
 		_call: &Call,
 		_subject: &Subject,
 		_submitter: &Self::Submitter,
-		proof_entry: &mut Self::ProofEntry,
+		proof_entry: &mut Self::IdentityDetails,
 		proof: &Self::Proof,
 	) -> Result<Self::VerificationResult, Self::Error> {
 		// TODO: more efficient by removing cloning and/or collecting.
@@ -219,6 +230,6 @@ where
 				}
 			})
 			.collect();
-		Ok(keys.into())
+		keys.try_into()
 	}
 }

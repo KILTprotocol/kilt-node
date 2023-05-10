@@ -21,12 +21,12 @@ use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 
 #[derive(Encode, Decode, MaxEncodedLen, Default, TypeInfo, RuntimeDebug)]
-pub struct ProofEntry<Digest, Details> {
+pub struct IdentityDetails<Digest, Details> {
 	pub digest: Digest,
 	pub details: Details,
 }
 
-impl<Digest, Details> ProofEntry<Digest, Details> {
+impl<Digest, Details> IdentityDetails<Digest, Details> {
 	pub fn digest(&self) -> &Digest {
 		&self.digest
 	}
@@ -35,7 +35,7 @@ impl<Digest, Details> ProofEntry<Digest, Details> {
 	}
 }
 
-impl<Digest, Details> ProofEntry<Digest, Details>
+impl<Digest, Details> IdentityDetails<Digest, Details>
 where
 	Details: Default,
 {

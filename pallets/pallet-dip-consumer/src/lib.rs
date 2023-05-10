@@ -20,8 +20,8 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
+pub mod identity;
 mod origin;
-pub mod proof;
 pub mod traits;
 
 pub use crate::{origin::*, pallet::*};
@@ -38,7 +38,7 @@ pub mod pallet {
 
 	use dip_support::latest::IdentityProofAction;
 
-	use crate::{proof::ProofEntry, traits::IdentityProofVerifier};
+	use crate::{identity::IdentityDetails, traits::IdentityProofVerifier};
 
 	pub type VerificationResultOf<T> = <<T as Config>::ProofVerifier as IdentityProofVerifier<
 		<T as Config>::RuntimeCall,
@@ -54,7 +54,7 @@ pub mod pallet {
 		_,
 		Twox64Concat,
 		<T as Config>::Identifier,
-		ProofEntry<<T as Config>::ProofDigest, <T as Config>::IdentityDetails>,
+		IdentityDetails<<T as Config>::ProofDigest, <T as Config>::IdentityDetails>,
 	>;
 
 	#[pallet::config]
@@ -68,7 +68,7 @@ pub mod pallet {
 			<Self as Config>::RuntimeCall,
 			Self::Identifier,
 			Proof = Self::Proof,
-			ProofEntry = ProofEntry<Self::ProofDigest, Self::IdentityDetails>,
+			IdentityDetails = IdentityDetails<Self::ProofDigest, Self::IdentityDetails>,
 			Submitter = <Self as frame_system::Config>::AccountId,
 		>;
 		type RuntimeCall: Parameter + Dispatchable<RuntimeOrigin = <Self as Config>::RuntimeOrigin>;
@@ -123,7 +123,7 @@ pub mod pallet {
 			let event = match action {
 				IdentityProofAction::Updated(identifier, proof, _) => {
 					IdentityProofs::<T>::mutate(&identifier, |entry| {
-						*entry = Some(ProofEntry::from_digest(proof.clone()))
+						*entry = Some(IdentityDetails::from_digest(proof.clone()))
 					});
 					Ok::<_, Error<T>>(Event::<T>::IdentityInfoUpdated(identifier, proof))
 				}

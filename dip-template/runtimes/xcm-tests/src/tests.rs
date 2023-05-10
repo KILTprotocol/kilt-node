@@ -19,12 +19,12 @@
 use super::*;
 
 use did::{Did, DidSignature};
-use dip_support::latest::MerkleProof;
 use frame_support::{assert_ok, weights::Weight};
 use frame_system::RawOrigin;
+use kilt_dip_support::merkle::MerkleProof;
 use pallet_did_lookup::linkable_account::LinkableAccountId;
 use parity_scale_codec::Encode;
-use runtime_common::dip::provider::{CompleteMerkleProof, DidMerkleRootGenerator};
+use runtime_common::dip::merkle::{CompleteMerkleProof, DidMerkleRootGenerator};
 use sp_core::Pair;
 use sp_runtime::traits::Zero;
 use xcm::latest::{
@@ -100,8 +100,7 @@ fn commit_identity() {
 				MerkleProof {
 					blinded: proof.blinded,
 					revealed: proof.revealed,
-				}
-				.into(),
+				},
 				signature
 			),
 			Box::new(call),

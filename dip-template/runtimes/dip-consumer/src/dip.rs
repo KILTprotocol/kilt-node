@@ -19,10 +19,11 @@
 use did::{did_details::DidVerificationKey, DidSignature, DidVerificationKeyRelationship, KeyIdOf};
 use frame_support::traits::{Contains, Get};
 use kilt_dip_support::{
-	did::{DidSignatureAndCallVerifier, DidSignatureVerifier, MerkleProofAndDidSignatureVerifier},
+	did::{DidFromMerkleLeavesSignatureVerifier, DidSignatureAndCallVerifier, MerkleProofAndDidSignatureVerifier},
 	merkle::{DidMerkleProofVerifier, MerkleProof, ProofLeaf},
 	traits::DidDipOriginFilter,
 };
+use pallet_dip_consumer::traits::IdentityProofVerifier;
 use sp_core::ConstU32;
 use sp_runtime::traits::Zero;
 use sp_std::vec::Vec;
@@ -37,6 +38,20 @@ impl Get<Hash> for GenesisProvider {
 	}
 }
 
+pub type MerkleProofVerifier =
+	DidMerkleProofVerifier<Hasher, AccountId, KeyIdOf<Runtime>, BlockNumber, u128, ConstU32<10>>;
+pub type MerkleProofVerifierOutputOf<Call, Subject> =
+	<MerkleProofVerifier as IdentityProofVerifier<Call, Subject>>::VerificationResult;
+pub type MerkleDidSignatureVerifierOf<Call, Subject> = DidFromMerkleLeavesSignatureVerifier<
+	BlockNumber,
+	Hash,
+	u128,
+	AccountId,
+	GenesisProvider,
+	Hash,
+	MerkleProofVerifierOutputOf<Call, Subject>,
+>;
+
 impl pallet_dip_consumer::Config for Runtime {
 	type DipCallOriginFilter = PreliminaryDipOriginFilter;
 	type Identifier = DidIdentifier;
@@ -44,11 +59,8 @@ impl pallet_dip_consumer::Config for Runtime {
 	type Proof = (MerkleProof<Vec<Vec<u8>>, ProofLeaf<Hash, BlockNumber>>, DidSignature);
 	type ProofDigest = Hash;
 	type ProofVerifier = MerkleProofAndDidSignatureVerifier<
-		DidMerkleProofVerifier<Hasher, AccountId, KeyIdOf<Runtime>, BlockNumber, u128, 10>,
-		DidSignatureAndCallVerifier<
-			DidSignatureVerifier<BlockNumber, Hash, u128, AccountId, GenesisProvider, Hash, ConstU32<10>>,
-			DipCallFilter,
-		>,
+		MerkleProofVerifier,
+		DidSignatureAndCallVerifier<MerkleDidSignatureVerifierOf<RuntimeCall, DidIdentifier>, DipCallFilter>,
 	>;
 	type RuntimeCall = RuntimeCall;
 	type RuntimeEvent = RuntimeEvent;

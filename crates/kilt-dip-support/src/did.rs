@@ -20,36 +20,60 @@ use did::{
 	did_details::{DidPublicKey, DidPublicKeyDetails, DidVerificationKey},
 	DidSignature, DidVerificationKeyRelationship,
 };
-use pallet_dip_consumer::traits::IdentityProofVerifier;
+use pallet_dip_consumer::{identity::IdentityDetails, traits::IdentityProofVerifier};
 use parity_scale_codec::Encode;
-use sp_core::{ConstU32, Get};
+use sp_core::Get;
 use sp_std::marker::PhantomData;
 
 use crate::{
-	merkle::{ProofEntry, VerificationResult},
+	merkle::ProofEntry,
 	traits::{Bump, DidDipOriginFilter},
 };
 
-pub struct DidSignatureVerifier<BlockNumber, Digest, Details, AccountId, SignedExtraProvider, S, L>(
-	PhantomData<(BlockNumber, Digest, Details, AccountId, SignedExtraProvider, S, L)>,
+pub struct DidFromMerkleLeavesSignatureVerifier<
+	BlockNumber,
+	Digest,
+	Details,
+	AccountId,
+	SignedExtraProvider,
+	SignedExtra,
+	ProofEntries,
+>(
+	PhantomData<(
+		BlockNumber,
+		Digest,
+		Details,
+		AccountId,
+		SignedExtraProvider,
+		SignedExtra,
+		ProofEntries,
+	)>,
 );
 
-impl<Call, Subject, BlockNumber, Digest, Details, AccountId, SignedExtraProvider, S, const L: u32>
+impl<Call, Subject, BlockNumber, Digest, Details, AccountId, SignedExtraProvider, SignedExtra, ProofEntries>
 	IdentityProofVerifier<Call, Subject>
-	for DidSignatureVerifier<BlockNumber, Digest, Details, AccountId, SignedExtraProvider, S, ConstU32<L>>
-where
+	for DidFromMerkleLeavesSignatureVerifier<
+		BlockNumber,
+		Digest,
+		Details,
+		AccountId,
+		SignedExtraProvider,
+		SignedExtra,
+		ProofEntries,
+	> where
 	AccountId: Encode,
 	BlockNumber: Encode,
 	Call: Encode,
 	Digest: Encode,
 	Details: Bump + Encode,
-	SignedExtraProvider: Get<S>,
-	S: Encode,
+	SignedExtraProvider: Get<SignedExtra>,
+	SignedExtra: Encode,
+	ProofEntries: AsRef<[ProofEntry<BlockNumber>]>,
 {
 	// TODO: Error handling
 	type Error = ();
-	type Proof = (VerificationResult<BlockNumber, L>, DidSignature);
-	type ProofEntry = pallet_dip_consumer::proof::ProofEntry<Digest, Details>;
+	type Proof = (ProofEntries, DidSignature);
+	type IdentityDetails = IdentityDetails<Digest, Details>;
 	type Submitter = AccountId;
 	type VerificationResult = (DidVerificationKey, DidVerificationKeyRelationship);
 
@@ -57,11 +81,11 @@ where
 		call: &Call,
 		_subject: &Subject,
 		submitter: &Self::Submitter,
-		proof_entry: &mut Self::ProofEntry,
+		proof_entry: &mut Self::IdentityDetails,
 		proof: &Self::Proof,
 	) -> Result<Self::VerificationResult, Self::Error> {
 		let encoded_payload = (call, proof_entry.details(), submitter, SignedExtraProvider::get()).encode();
-		let mut proof_verification_keys = proof.0 .0.iter().filter_map(
+		let mut proof_verification_keys = proof.0.as_ref().iter().filter_map(
 			|ProofEntry {
 			     key: DidPublicKeyDetails { key, .. },
 			     relationship,
@@ -105,7 +129,7 @@ where
 	// FIXME: Better error handling
 	type Error = ();
 	type Proof = <DidSignatureVerifier as IdentityProofVerifier<Call, Subject>>::Proof;
-	type ProofEntry = <DidSignatureVerifier as IdentityProofVerifier<Call, Subject>>::ProofEntry;
+	type IdentityDetails = <DidSignatureVerifier as IdentityProofVerifier<Call, Subject>>::IdentityDetails;
 	type Submitter = <DidSignatureVerifier as IdentityProofVerifier<Call, Subject>>::Submitter;
 	type VerificationResult = <DidSignatureVerifier as IdentityProofVerifier<Call, Subject>>::VerificationResult;
 
@@ -113,7 +137,7 @@ where
 		call: &Call,
 		subject: &Subject,
 		submitter: &Self::Submitter,
-		proof_entry: &mut Self::ProofEntry,
+		proof_entry: &mut Self::IdentityDetails,
 		proof: &Self::Proof,
 	) -> Result<Self::VerificationResult, Self::Error> {
 		let did_signing_key =
@@ -141,7 +165,7 @@ where
 			<MerkleProofVerifier as IdentityProofVerifier<Call, Subject>>::VerificationResult,
 			DidSignature,
 		),
-		ProofEntry = <MerkleProofVerifier as IdentityProofVerifier<Call, Subject>>::ProofEntry,
+		IdentityDetails = <MerkleProofVerifier as IdentityProofVerifier<Call, Subject>>::IdentityDetails,
 		Submitter = <MerkleProofVerifier as IdentityProofVerifier<Call, Subject>>::Submitter,
 	>,
 {
@@ -152,7 +176,7 @@ where
 		<MerkleProofVerifier as IdentityProofVerifier<Call, Subject>>::Proof,
 		DidSignature,
 	);
-	type ProofEntry = <DidSignatureVerifier as IdentityProofVerifier<Call, Subject>>::ProofEntry;
+	type IdentityDetails = <DidSignatureVerifier as IdentityProofVerifier<Call, Subject>>::IdentityDetails;
 	type Submitter = <MerkleProofVerifier as IdentityProofVerifier<Call, Subject>>::Submitter;
 	type VerificationResult = <MerkleProofVerifier as IdentityProofVerifier<Call, Subject>>::VerificationResult;
 
@@ -160,7 +184,7 @@ where
 		call: &Call,
 		subject: &Subject,
 		submitter: &Self::Submitter,
-		proof_entry: &mut Self::ProofEntry,
+		proof_entry: &mut Self::IdentityDetails,
 		proof: &Self::Proof,
 	) -> Result<Self::VerificationResult, Self::Error> {
 		let merkle_proof_verification =

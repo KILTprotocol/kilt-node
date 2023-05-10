@@ -21,7 +21,7 @@ use sp_std::marker::PhantomData;
 pub trait IdentityProofVerifier<Call, Subject> {
 	type Error;
 	type Proof;
-	type ProofEntry;
+	type IdentityDetails;
 	type Submitter;
 	type VerificationResult;
 
@@ -29,7 +29,7 @@ pub trait IdentityProofVerifier<Call, Subject> {
 		call: &Call,
 		subject: &Subject,
 		submitter: &Self::Submitter,
-		proof_entry: &mut Self::ProofEntry,
+		proof_entry: &mut Self::IdentityDetails,
 		proof: &Self::Proof,
 	) -> Result<Self::VerificationResult, Self::Error>;
 }
@@ -41,7 +41,7 @@ impl<Call, Subject, Proof, ProofEntry, Submitter> IdentityProofVerifier<Call, Su
 {
 	type Error = ();
 	type Proof = Proof;
-	type ProofEntry = ProofEntry;
+	type IdentityDetails = ProofEntry;
 	type Submitter = Submitter;
 	type VerificationResult = ();
 
@@ -49,7 +49,7 @@ impl<Call, Subject, Proof, ProofEntry, Submitter> IdentityProofVerifier<Call, Su
 		_call: &Call,
 		_subject: &Subject,
 		_submitter: &Self::Submitter,
-		_proof_entry: &mut Self::ProofEntry,
+		_proof_entry: &mut Self::IdentityDetails,
 		_proof: &Self::Proof,
 	) -> Result<Self::VerificationResult, Self::Error> {
 		Ok(())
