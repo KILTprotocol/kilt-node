@@ -19,12 +19,12 @@
 use did::{did_details::DidVerificationKey, DidSignature, DidVerificationKeyRelationship, KeyIdOf};
 use frame_support::traits::{Contains, Get};
 use kilt_dip_support::{
-	did::{DidSignatureAndCallVerifier, MerkleProofAndDidSignatureVerifier, MerkleRevealedDidSignatureVerifier},
+	did::{DidSignatureAndCallVerifier, MerkleRevealedDidSignatureVerifier},
 	merkle::{DidMerkleProofVerifier, MerkleProof, ProofLeaf},
 	traits::DidDipOriginFilter,
+	MerkleProofAndDidSignatureVerifier,
 };
 use pallet_dip_consumer::traits::IdentityProofVerifier;
-use sp_core::ConstU32;
 use sp_runtime::traits::Zero;
 use sp_std::vec::Vec;
 
@@ -38,8 +38,15 @@ impl Get<Hash> for GenesisProvider {
 	}
 }
 
-pub type MerkleProofVerifier =
-	DidMerkleProofVerifier<Hasher, AccountId, KeyIdOf<Runtime>, BlockNumber, u128, ConstU32<10>>;
+pub struct BlockNumberProvider;
+
+impl Get<BlockNumber> for BlockNumberProvider {
+	fn get() -> BlockNumber {
+		frame_system::Pallet::<Runtime>::block_number()
+	}
+}
+
+pub type MerkleProofVerifier = DidMerkleProofVerifier<Hasher, AccountId, KeyIdOf<Runtime>, BlockNumber, u128, 10>;
 pub type MerkleProofVerifierOutputOf<Call, Subject> =
 	<MerkleProofVerifier as IdentityProofVerifier<Call, Subject>>::VerificationResult;
 pub type MerkleDidSignatureVerifierOf<Call, Subject> = MerkleRevealedDidSignatureVerifier<
@@ -50,15 +57,22 @@ pub type MerkleDidSignatureVerifierOf<Call, Subject> = MerkleRevealedDidSignatur
 	GenesisProvider,
 	Hash,
 	MerkleProofVerifierOutputOf<Call, Subject>,
+	BlockNumberProvider,
+	// Signatures are valid for 50 blocks
+	50,
 >;
 
 impl pallet_dip_consumer::Config for Runtime {
 	type DipCallOriginFilter = PreliminaryDipOriginFilter;
 	type Identifier = DidIdentifier;
 	type IdentityDetails = u128;
-	type Proof = (MerkleProof<Vec<Vec<u8>>, ProofLeaf<Hash, BlockNumber>>, DidSignature);
+	type Proof = (
+		MerkleProof<Vec<Vec<u8>>, ProofLeaf<Hash, BlockNumber>>,
+		(DidSignature, BlockNumber),
+	);
 	type ProofDigest = Hash;
 	type ProofVerifier = MerkleProofAndDidSignatureVerifier<
+		BlockNumber,
 		MerkleProofVerifier,
 		DidSignatureAndCallVerifier<MerkleDidSignatureVerifierOf<RuntimeCall, DidIdentifier>, DipCallFilter>,
 	>;

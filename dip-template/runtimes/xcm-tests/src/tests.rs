@@ -83,11 +83,15 @@ fn commit_identity() {
 	)
 	.expect("Proof generation should not fail");
 	// 3.2 Generate a DID signature
+	let genesis_hash =
+		ConsumerParachain::execute_with(|| frame_system::Pallet::<ConsumerRuntime>::block_hash(BlockNumber::zero()));
+	let system_block = ConsumerParachain::execute_with(|| frame_system::Pallet::<ConsumerRuntime>::block_number());
 	let payload = (
 		call.clone(),
 		0u128,
 		para::consumer::DISPATCHER_ACCOUNT,
-		ConsumerParachain::execute_with(|| frame_system::Pallet::<ConsumerRuntime>::block_hash(BlockNumber::zero())),
+		system_block,
+		genesis_hash,
 	);
 	let signature: DidSignature = para::provider::did_auth_key().sign(&payload.encode()).into();
 	// 3.3 Call the `dispatch_as` extrinsic on the consumer chain with the generated
@@ -101,7 +105,7 @@ fn commit_identity() {
 					blinded: proof.blinded,
 					revealed: proof.revealed,
 				},
-				signature
+				(signature, system_block)
 			),
 			Box::new(call),
 		));

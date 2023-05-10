@@ -20,9 +20,11 @@ use did::{
 	did_details::{DidPublicKey, DidPublicKeyDetails, DidVerificationKey},
 	DidSignature, DidVerificationKeyRelationship,
 };
+use frame_support::ensure;
 use pallet_dip_consumer::{identity::IdentityDetails, traits::IdentityProofVerifier};
 use parity_scale_codec::Encode;
-use sp_core::Get;
+use sp_core::{ConstU64, Get};
+use sp_runtime::traits::CheckedSub;
 use sp_std::marker::PhantomData;
 
 use crate::{
@@ -44,7 +46,10 @@ pub struct MerkleRevealedDidSignatureVerifier<
 	SignedExtraProvider,
 	SignedExtra,
 	MerkleProofEntries,
+	BlockNumberProvider,
+	const SIGNATURE_VALIDITY: u64,
 >(
+	#[allow(clippy::type_complexity)]
 	PhantomData<(
 		BlockNumber,
 		Digest,
@@ -53,11 +58,24 @@ pub struct MerkleRevealedDidSignatureVerifier<
 		SignedExtraProvider,
 		SignedExtra,
 		MerkleProofEntries,
+		BlockNumberProvider,
+		ConstU64<SIGNATURE_VALIDITY>,
 	)>,
 );
 
-impl<Call, Subject, BlockNumber, Digest, Details, AccountId, SignedExtraProvider, SignedExtra, MerkleProofEntries>
-	IdentityProofVerifier<Call, Subject>
+impl<
+		Call,
+		Subject,
+		BlockNumber,
+		Digest,
+		Details,
+		AccountId,
+		SignedExtraProvider,
+		SignedExtra,
+		MerkleProofEntries,
+		BlockNumberProvider,
+		const SIGNATURE_VALIDITY: u64,
+	> IdentityProofVerifier<Call, Subject>
 	for MerkleRevealedDidSignatureVerifier<
 		BlockNumber,
 		Digest,
@@ -66,21 +84,24 @@ impl<Call, Subject, BlockNumber, Digest, Details, AccountId, SignedExtraProvider
 		SignedExtraProvider,
 		SignedExtra,
 		MerkleProofEntries,
+		BlockNumberProvider,
+		SIGNATURE_VALIDITY,
 	> where
 	AccountId: Encode,
-	BlockNumber: Encode,
+	BlockNumber: Encode + CheckedSub + Into<u64> + PartialOrd + sp_std::fmt::Debug,
 	Call: Encode,
 	Digest: Encode,
 	Details: Bump + Encode,
 	SignedExtraProvider: Get<SignedExtra>,
 	SignedExtra: Encode,
 	MerkleProofEntries: AsRef<[ProofEntry<BlockNumber>]>,
+	BlockNumberProvider: Get<BlockNumber>,
 {
 	// TODO: Error handling
 	type Error = ();
 	/// The proof must be a list of Merkle leaves that have been previously
 	/// verified by the Merkle proof verifier, and the additional DID signature.
-	type Proof = (MerkleProofEntries, DidSignature);
+	type Proof = (MerkleProofEntries, (DidSignature, BlockNumber));
 	/// The `Details` that are part of the identity details must implement the
 	/// `Bump` trait.
 	type IdentityDetails = IdentityDetails<Digest, Details>;
@@ -97,7 +118,23 @@ impl<Call, Subject, BlockNumber, Digest, Details, AccountId, SignedExtraProvider
 		proof_entry: &mut Self::IdentityDetails,
 		proof: &Self::Proof,
 	) -> Result<Self::VerificationResult, Self::Error> {
-		let encoded_payload = (call, proof_entry.details(), submitter, SignedExtraProvider::get()).encode();
+		let block_number = BlockNumberProvider::get();
+		let is_signature_fresh = if let Some(blocks_ago_from_now) = block_number.checked_sub(&proof.1 .1) {
+			// False if the signature is too old.
+			blocks_ago_from_now.into() <= SIGNATURE_VALIDITY
+		} else {
+			// Signature generated at a future time, not possible to verify.
+			false
+		};
+		ensure!(is_signature_fresh, ());
+		let encoded_payload = (
+			call,
+			proof_entry.details(),
+			submitter,
+			block_number,
+			SignedExtraProvider::get(),
+		)
+			.encode();
 		// Only consider verification keys from the set of revealed Merkle leaves.
 		let mut proof_verification_keys = proof.0.as_ref().iter().filter_map(
 			|ProofEntry {
@@ -115,7 +152,7 @@ impl<Call, Subject, BlockNumber, Digest, Details, AccountId, SignedExtraProvider
 			},
 		);
 		let valid_signing_key = proof_verification_keys
-			.find(|(verification_key, _)| verification_key.verify_signature(&encoded_payload, &proof.1).is_ok());
+			.find(|(verification_key, _)| verification_key.verify_signature(&encoded_payload, &proof.1 .0).is_ok());
 		if let Some((key, relationship)) = valid_signing_key {
 			proof_entry.details.bump();
 			Ok((key.clone(), relationship))

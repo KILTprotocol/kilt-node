@@ -119,7 +119,9 @@ where
 	fn default() -> Self {
 		Self {
 			key: DidPublicKeyDetails {
-				key: DidPublicKey::PublicEncryptionKey(DidEncryptionKey::X25519([0u8; 32])),
+				key: did::did_details::DidPublicKey::PublicEncryptionKey(did::did_details::DidEncryptionKey::X25519(
+					[0u8; 32],
+				)),
 				block_number: BlockNumber::default(),
 			},
 			relationship: DidVerificationKeyRelationship::Authentication.into(),
@@ -157,13 +159,20 @@ impl<BlockNumber, const MAX_REVEALED_LEAVES_COUNT: u32> AsRef<[ProofEntry<BlockN
 /// A type that verifies a Merkle proof that reveals some leaves representing
 /// keys in a DID Document.
 /// Can also be used on its own, without any DID signature verification.
-pub struct DidMerkleProofVerifier<Hasher, AccountId, KeyId, BlockNumber, Details, MaxRevealedLeavesCount>(
-	PhantomData<(Hasher, AccountId, KeyId, BlockNumber, Details, MaxRevealedLeavesCount)>,
+pub struct DidMerkleProofVerifier<Hasher, AccountId, KeyId, BlockNumber, Details, const MAX_REVEALED_LEAVES_COUNT: u32>(
+	PhantomData<(
+		Hasher,
+		AccountId,
+		KeyId,
+		BlockNumber,
+		Details,
+		ConstU32<MAX_REVEALED_LEAVES_COUNT>,
+	)>,
 );
 
 impl<Call, Subject, Hasher, AccountId, KeyId, BlockNumber, Details, const MAX_REVEALED_LEAVES_COUNT: u32>
 	IdentityProofVerifier<Call, Subject>
-	for DidMerkleProofVerifier<Hasher, AccountId, KeyId, BlockNumber, Details, ConstU32<MAX_REVEALED_LEAVES_COUNT>>
+	for DidMerkleProofVerifier<Hasher, AccountId, KeyId, BlockNumber, Details, MAX_REVEALED_LEAVES_COUNT>
 where
 	// TODO: Remove `Debug` bound
 	BlockNumber: Encode + Clone + Debug,

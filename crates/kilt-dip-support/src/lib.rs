@@ -35,13 +35,14 @@ pub mod traits;
 /// The successful output of this type is the output type of the
 /// `MerkleProofVerifier`, meaning that DID signature verification happens
 /// internally and does not transform the result in any way.
-pub struct MerkleProofAndDidSignatureVerifier<MerkleProofVerifier, DidSignatureVerifier>(
-	PhantomData<(MerkleProofVerifier, DidSignatureVerifier)>,
+pub struct MerkleProofAndDidSignatureVerifier<BlockNumber, MerkleProofVerifier, DidSignatureVerifier>(
+	PhantomData<(BlockNumber, MerkleProofVerifier, DidSignatureVerifier)>,
 );
 
-impl<Call, Subject, MerkleProofVerifier, DidSignatureVerifier> IdentityProofVerifier<Call, Subject>
-	for MerkleProofAndDidSignatureVerifier<MerkleProofVerifier, DidSignatureVerifier>
+impl<Call, Subject, BlockNumber, MerkleProofVerifier, DidSignatureVerifier> IdentityProofVerifier<Call, Subject>
+	for MerkleProofAndDidSignatureVerifier<BlockNumber, MerkleProofVerifier, DidSignatureVerifier>
 where
+	BlockNumber: Clone,
 	MerkleProofVerifier: IdentityProofVerifier<Call, Subject>,
 	// TODO: get rid of this if possible
 	MerkleProofVerifier::VerificationResult: Clone,
@@ -50,7 +51,7 @@ where
 		Subject,
 		Proof = (
 			<MerkleProofVerifier as IdentityProofVerifier<Call, Subject>>::VerificationResult,
-			DidSignature,
+			(DidSignature, BlockNumber),
 		),
 		IdentityDetails = <MerkleProofVerifier as IdentityProofVerifier<Call, Subject>>::IdentityDetails,
 		Submitter = <MerkleProofVerifier as IdentityProofVerifier<Call, Subject>>::Submitter,
@@ -61,7 +62,7 @@ where
 	// FIXME: Better type declaration
 	type Proof = (
 		<MerkleProofVerifier as IdentityProofVerifier<Call, Subject>>::Proof,
-		DidSignature,
+		(DidSignature, BlockNumber),
 	);
 	type IdentityDetails = <DidSignatureVerifier as IdentityProofVerifier<Call, Subject>>::IdentityDetails;
 	type Submitter = <MerkleProofVerifier as IdentityProofVerifier<Call, Subject>>::Submitter;
