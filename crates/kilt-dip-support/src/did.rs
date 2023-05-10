@@ -30,14 +30,20 @@ use crate::{
 	traits::{Bump, DidDipOriginFilter},
 };
 
-pub struct DidFromMerkleLeavesSignatureVerifier<
+/// A type that verifies a DID signature over some DID keys revealed by a
+/// previously-verified Merkle proof. It requires the `Details` type to
+/// implement the `Bump` trait to avoid replay attacks. The basic verification
+/// logic verifies that the signature has been generated over the encoded tuple
+/// (call, identity details). Additional details can be added to the end of the
+/// tuple by providing a `SignedExtraProvider`.
+pub struct MerkleRevealedDidSignatureVerifier<
 	BlockNumber,
 	Digest,
 	Details,
 	AccountId,
 	SignedExtraProvider,
 	SignedExtra,
-	ProofEntries,
+	MerkleProofEntries,
 >(
 	PhantomData<(
 		BlockNumber,
@@ -46,20 +52,20 @@ pub struct DidFromMerkleLeavesSignatureVerifier<
 		AccountId,
 		SignedExtraProvider,
 		SignedExtra,
-		ProofEntries,
+		MerkleProofEntries,
 	)>,
 );
 
-impl<Call, Subject, BlockNumber, Digest, Details, AccountId, SignedExtraProvider, SignedExtra, ProofEntries>
+impl<Call, Subject, BlockNumber, Digest, Details, AccountId, SignedExtraProvider, SignedExtra, MerkleProofEntries>
 	IdentityProofVerifier<Call, Subject>
-	for DidFromMerkleLeavesSignatureVerifier<
+	for MerkleRevealedDidSignatureVerifier<
 		BlockNumber,
 		Digest,
 		Details,
 		AccountId,
 		SignedExtraProvider,
 		SignedExtra,
-		ProofEntries,
+		MerkleProofEntries,
 	> where
 	AccountId: Encode,
 	BlockNumber: Encode,
@@ -68,13 +74,20 @@ impl<Call, Subject, BlockNumber, Digest, Details, AccountId, SignedExtraProvider
 	Details: Bump + Encode,
 	SignedExtraProvider: Get<SignedExtra>,
 	SignedExtra: Encode,
-	ProofEntries: AsRef<[ProofEntry<BlockNumber>]>,
+	MerkleProofEntries: AsRef<[ProofEntry<BlockNumber>]>,
 {
 	// TODO: Error handling
 	type Error = ();
-	type Proof = (ProofEntries, DidSignature);
+	/// The proof must be a list of Merkle leaves that have been previously
+	/// verified by a different verifier.
+	type Proof = (MerkleProofEntries, DidSignature);
+	/// The `Details` that are part of the identity details must implement the
+	/// `Bump` trait.
 	type IdentityDetails = IdentityDetails<Digest, Details>;
+	/// The type of the submitter's accounts.
 	type Submitter = AccountId;
+	/// Successful verifications return the verification key used to validate
+	/// the provided signature and its relationship to the DID subject.
 	type VerificationResult = (DidVerificationKey, DidVerificationKeyRelationship);
 
 	fn verify_proof_for_call_against_entry(
@@ -85,6 +98,7 @@ impl<Call, Subject, BlockNumber, Digest, Details, AccountId, SignedExtraProvider
 		proof: &Self::Proof,
 	) -> Result<Self::VerificationResult, Self::Error> {
 		let encoded_payload = (call, proof_entry.details(), submitter, SignedExtraProvider::get()).encode();
+		// Only consider verification keys from the set of revealed merkle leaves.
 		let mut proof_verification_keys = proof.0.as_ref().iter().filter_map(
 			|ProofEntry {
 			     key: DidPublicKeyDetails { key, .. },
@@ -111,8 +125,14 @@ impl<Call, Subject, BlockNumber, Digest, Details, AccountId, SignedExtraProvider
 	}
 }
 
-// Verifies a DID signature over the call details AND verifies whether the call
-// could be dispatched with the provided signature.
+/// A type that chains a DID signature verification, as provided by
+/// `MerkleRevealedDidSignatureVerifier`, and a call filtering logic based on
+/// the type of key used in the signature.
+/// Verification bails out early in case of invalid DID signatures. Otherwise,
+/// the retrived key and its relationship is passed to the call verifier to do
+/// some additional lookups on the call.
+/// The `CallVerifier` only performs internal checks, while all input and output
+/// types are taken from the provided `DidSignatureVerifier` type.
 pub struct DidSignatureAndCallVerifier<DidSignatureVerifier, CallVerifier>(
 	PhantomData<(DidSignatureVerifier, CallVerifier)>,
 );
@@ -128,9 +148,16 @@ where
 {
 	// FIXME: Better error handling
 	type Error = ();
+	/// The input proof is the same accepted by the `DidSignatureVerifier`.
 	type Proof = <DidSignatureVerifier as IdentityProofVerifier<Call, Subject>>::Proof;
+	/// The identity details are the same accepted by the
+	/// `DidSignatureVerifier`.
 	type IdentityDetails = <DidSignatureVerifier as IdentityProofVerifier<Call, Subject>>::IdentityDetails;
+	/// The submitter address is the same accepted by the
+	/// `DidSignatureVerifier`.
 	type Submitter = <DidSignatureVerifier as IdentityProofVerifier<Call, Subject>>::Submitter;
+	/// The verification result is the same accepted by the
+	/// `DidSignatureVerifier`.
 	type VerificationResult = <DidSignatureVerifier as IdentityProofVerifier<Call, Subject>>::VerificationResult;
 
 	fn verify_proof_for_call_against_entry(
@@ -148,6 +175,13 @@ where
 	}
 }
 
+/// A type that chains a Merkle proof verification with a DID signature
+/// verification. The required input of this type is a tuple (A, B) where A is
+/// the type of input required by the `MerkleProofVerifier` and B is a
+/// `DidSignature.
+/// The successful output of this type is the output type of the
+/// `MerkleProofVerifier`, meaning that DID signature verification happens
+/// internally and does not transform the result in any way.
 pub struct MerkleProofAndDidSignatureVerifier<MerkleProofVerifier, DidSignatureVerifier>(
 	PhantomData<(MerkleProofVerifier, DidSignatureVerifier)>,
 );

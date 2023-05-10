@@ -19,7 +19,7 @@
 use did::{did_details::DidVerificationKey, DidSignature, DidVerificationKeyRelationship, KeyIdOf};
 use frame_support::traits::{Contains, Get};
 use kilt_dip_support::{
-	did::{DidFromMerkleLeavesSignatureVerifier, DidSignatureAndCallVerifier, MerkleProofAndDidSignatureVerifier},
+	did::{DidSignatureAndCallVerifier, MerkleProofAndDidSignatureVerifier, MerkleRevealedDidSignatureVerifier},
 	merkle::{DidMerkleProofVerifier, MerkleProof, ProofLeaf},
 	traits::DidDipOriginFilter,
 };
@@ -42,7 +42,7 @@ pub type MerkleProofVerifier =
 	DidMerkleProofVerifier<Hasher, AccountId, KeyIdOf<Runtime>, BlockNumber, u128, ConstU32<10>>;
 pub type MerkleProofVerifierOutputOf<Call, Subject> =
 	<MerkleProofVerifier as IdentityProofVerifier<Call, Subject>>::VerificationResult;
-pub type MerkleDidSignatureVerifierOf<Call, Subject> = DidFromMerkleLeavesSignatureVerifier<
+pub type MerkleDidSignatureVerifierOf<Call, Subject> = MerkleRevealedDidSignatureVerifier<
 	BlockNumber,
 	Hash,
 	u128,

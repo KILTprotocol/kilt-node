@@ -59,11 +59,24 @@ pub mod pallet {
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
+		/// Preliminary filter to filter out calls before doing any heavier
+		/// computations.
 		type DipCallOriginFilter: Contains<<Self as Config>::RuntimeCall>;
+		/// The identifier of a subject, e.g., a DID.
 		type Identifier: Parameter + MaxEncodedLen;
+		/// The details stored in this pallet associated with any given subject.
 		type IdentityDetails: Parameter + MaxEncodedLen + Default;
+		/// The proof users must provide to operate with their higher-level
+		/// identity. Depending on the use cases, this proof can contain
+		/// heterogeneous bits of information that the proof verifier will
+		/// utilize. For instance, a proof could contain both a Merkle proof and
+		/// a DID signature.
 		type Proof: Parameter;
+		/// The type of the committed proof digest used as the basis for
+		/// verifying identity proofs.
 		type ProofDigest: Parameter + MaxEncodedLen;
+		/// The logic of the proof verifier, called upon each execution of the
+		/// `dispatch_as` extrinsic.
 		type ProofVerifier: IdentityProofVerifier<
 			<Self as Config>::RuntimeCall,
 			Self::Identifier,
@@ -71,8 +84,11 @@ pub mod pallet {
 			IdentityDetails = IdentityDetails<Self::ProofDigest, Self::IdentityDetails>,
 			Submitter = <Self as frame_system::Config>::AccountId,
 		>;
+		/// The overarching runtime call type.
 		type RuntimeCall: Parameter + Dispatchable<RuntimeOrigin = <Self as Config>::RuntimeOrigin>;
+		/// The overarching event type.
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
+		/// The overarching runtime origin type.
 		type RuntimeOrigin: From<Origin<Self>>
 			+ From<<Self as frame_system::Config>::RuntimeOrigin>
 			+ Into<Result<cumulus_pallet_xcm::Origin, <Self as Config>::RuntimeOrigin>>;
@@ -86,19 +102,26 @@ pub mod pallet {
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
+		/// The identity information related to a given subject has been
+		/// deleted.
 		IdentityInfoDeleted(T::Identifier),
+		/// The identity information related to a given subject has been updated
+		/// to a new digest.
 		IdentityInfoUpdated(T::Identifier, T::ProofDigest),
 	}
 
 	#[pallet::error]
 	pub enum Error<T> {
-		Dispatch,
+		/// An identity with the provided identifier could not be found.
 		IdentityNotFound,
+		/// The identity proof provided could not be successfully verified.
 		InvalidProof,
-		UnsupportedVersion,
+		/// The specified call could not be dispatched.
+		Dispatch,
 	}
 
-	// The new origin other pallets can use.
+	/// The origin this pallet creates after a user has provided a valid
+	/// identity proof to dispatch other calls.
 	#[pallet::origin]
 	pub type Origin<T> = DipOrigin<
 		<T as Config>::Identifier,
@@ -122,9 +145,12 @@ pub mod pallet {
 
 			let event = match action {
 				IdentityProofAction::Updated(identifier, proof, _) => {
-					IdentityProofs::<T>::mutate(&identifier, |entry| {
-						*entry = Some(IdentityDetails::from_digest(proof.clone()))
-					});
+					IdentityProofs::<T>::mutate(
+						&identifier,
+						|entry: &mut Option<
+							IdentityDetails<<T as Config>::ProofDigest, <T as Config>::IdentityDetails>,
+						>| { *entry = Some(IdentityDetails::from_digest(proof.clone())) },
+					);
 					Ok::<_, Error<T>>(Event::<T>::IdentityInfoUpdated(identifier, proof))
 				}
 				IdentityProofAction::Deleted(identifier) => {
@@ -159,8 +185,8 @@ pub mod pallet {
 				&proof,
 			)
 			.map_err(|_| Error::<T>::InvalidProof)?;
-			// Update the identity info after it has optionally been updated by the
-			// `ProofVerifier`.
+			// Write the identity info to storage after it has optionally been updated by
+			// the `ProofVerifier`.
 			IdentityProofs::<T>::mutate(&identifier, |entry| *entry = Some(proof_entry));
 			let did_origin = DipOrigin {
 				identifier,

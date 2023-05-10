@@ -16,7 +16,10 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use did::{did_details::DidPublicKeyDetails, DidVerificationKeyRelationship};
+use did::{
+	did_details::{DidEncryptionKey, DidPublicKey, DidPublicKeyDetails},
+	DidVerificationKeyRelationship,
+};
 use frame_support::{traits::ConstU32, RuntimeDebug};
 use pallet_dip_consumer::{identity::IdentityDetails, traits::IdentityProofVerifier};
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
@@ -150,6 +153,8 @@ impl<BlockNumber, const MAX_REVEALED_LEAVES_COUNT: u32> AsRef<[ProofEntry<BlockN
 	}
 }
 
+/// A type that verifies a Merkle proof that reveals some leaves representing
+/// keys in a DID Document.
 pub struct DidMerkleProofVerifier<Hasher, AccountId, KeyId, BlockNumber, Details, MaxRevealedLeavesCount>(
 	PhantomData<(Hasher, AccountId, KeyId, BlockNumber, Details, MaxRevealedLeavesCount)>,
 );

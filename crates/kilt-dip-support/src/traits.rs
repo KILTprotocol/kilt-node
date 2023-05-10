@@ -18,7 +18,11 @@
 
 use sp_runtime::traits::{CheckedAdd, One, Zero};
 
+/// A trait for "bumpable" types, i.e., types that have some notion of order of
+/// its members.
 pub trait Bump {
+	/// Bump the type instance to its next value. Overflows are assumed to be
+	/// taken care of by the type internal logic.
 	fn bump(&mut self);
 }
 
@@ -36,9 +40,15 @@ where
 	}
 }
 
+/// A trait for types that implement some sort of access control logic on the
+/// provided input `Call` type.
 pub trait DidDipOriginFilter<Call> {
+	/// The error type for cases where the checks fail.
 	type Error;
+	/// The type of additional information required by the type to perform the
+	/// checks on the `Call` input.
 	type OriginInfo;
+	/// The success type for cases where the checks succeed.
 	type Success;
 
 	fn check_call_origin_info(call: &Call, info: &Self::OriginInfo) -> Result<Self::Success, Self::Error>;
