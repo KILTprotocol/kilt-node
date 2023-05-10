@@ -4155,6 +4155,7 @@ version = "1.11.0-dev"
 dependencies = [
  "did",
  "frame-support",
+ "frame-system",
  "pallet-dip-consumer",
  "parity-scale-codec",
  "scale-info",

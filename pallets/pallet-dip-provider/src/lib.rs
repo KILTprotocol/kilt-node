@@ -33,7 +33,7 @@ pub mod pallet {
 	use sp_std::{boxed::Box, fmt::Debug};
 	use xcm::{latest::prelude::*, VersionedMultiAsset, VersionedMultiLocation};
 
-	use dip_support::latest::IdentityProofAction;
+	use dip_support::IdentityProofAction;
 
 	use crate::traits::{IdentityProofDispatcher, IdentityProofGenerator, IdentityProvider, TxBuilder};
 

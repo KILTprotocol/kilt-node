@@ -21,8 +21,9 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 pub mod identity;
-mod origin;
 pub mod traits;
+
+mod origin;
 
 pub use crate::{origin::*, pallet::*};
 
@@ -36,7 +37,7 @@ pub mod pallet {
 	use parity_scale_codec::MaxEncodedLen;
 	use sp_std::boxed::Box;
 
-	use dip_support::latest::IdentityProofAction;
+	use dip_support::IdentityProofAction;
 
 	use crate::{identity::IdentityDetails, traits::IdentityProofVerifier};
 
@@ -123,14 +124,8 @@ pub mod pallet {
 	/// The origin this pallet creates after a user has provided a valid
 	/// identity proof to dispatch other calls.
 	#[pallet::origin]
-	pub type Origin<T> = DipOrigin<
-		<T as Config>::Identifier,
-		<T as frame_system::Config>::AccountId,
-		<<T as Config>::ProofVerifier as IdentityProofVerifier<
-			<T as Config>::RuntimeCall,
-			<T as Config>::Identifier,
-		>>::VerificationResult,
-	>;
+	pub type Origin<T> =
+		DipOrigin<<T as Config>::Identifier, <T as frame_system::Config>::AccountId, VerificationResultOf<T>>;
 
 	// TODO: Benchmarking
 	#[pallet::call]

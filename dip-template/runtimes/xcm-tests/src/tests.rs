@@ -85,7 +85,7 @@ fn commit_identity() {
 	// 3.2 Generate a DID signature
 	let genesis_hash =
 		ConsumerParachain::execute_with(|| frame_system::Pallet::<ConsumerRuntime>::block_hash(BlockNumber::zero()));
-	let system_block = ConsumerParachain::execute_with(|| frame_system::Pallet::<ConsumerRuntime>::block_number());
+	let system_block = ConsumerParachain::execute_with(frame_system::Pallet::<ConsumerRuntime>::block_number);
 	let payload = (
 		call.clone(),
 		0u128,

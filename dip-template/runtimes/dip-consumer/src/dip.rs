@@ -17,34 +17,17 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use did::{did_details::DidVerificationKey, DidSignature, DidVerificationKeyRelationship, KeyIdOf};
-use frame_support::traits::{Contains, Get};
+use frame_support::traits::Contains;
 use kilt_dip_support::{
 	did::{DidSignatureAndCallVerifier, MerkleRevealedDidSignatureVerifier},
 	merkle::{DidMerkleProofVerifier, MerkleProof, ProofLeaf},
-	traits::DidDipOriginFilter,
+	traits::{BlockNumberProvider, DidDipOriginFilter, GenesisProvider},
 	MerkleProofAndDidSignatureVerifier,
 };
 use pallet_dip_consumer::traits::IdentityProofVerifier;
-use sp_runtime::traits::Zero;
 use sp_std::vec::Vec;
 
 use crate::{AccountId, BlockNumber, DidIdentifier, Hash, Hasher, Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin};
-
-pub struct GenesisProvider;
-
-impl Get<Hash> for GenesisProvider {
-	fn get() -> Hash {
-		frame_system::Pallet::<Runtime>::block_hash(BlockNumber::zero())
-	}
-}
-
-pub struct BlockNumberProvider;
-
-impl Get<BlockNumber> for BlockNumberProvider {
-	fn get() -> BlockNumber {
-		frame_system::Pallet::<Runtime>::block_number()
-	}
-}
 
 pub type MerkleProofVerifier = DidMerkleProofVerifier<Hasher, AccountId, KeyIdOf<Runtime>, BlockNumber, u128, 10>;
 pub type MerkleProofVerifierOutputOf<Call, Subject> =
@@ -54,10 +37,10 @@ pub type MerkleDidSignatureVerifierOf<Call, Subject> = MerkleRevealedDidSignatur
 	Hash,
 	u128,
 	AccountId,
-	GenesisProvider,
+	GenesisProvider<Runtime>,
 	Hash,
 	MerkleProofVerifierOutputOf<Call, Subject>,
-	BlockNumberProvider,
+	BlockNumberProvider<Runtime>,
 	// Signatures are valid for 50 blocks
 	50,
 >;

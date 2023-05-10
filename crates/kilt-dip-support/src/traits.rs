@@ -16,7 +16,9 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use sp_core::Get;
 use sp_runtime::traits::{CheckedAdd, One, Zero};
+use sp_std::marker::PhantomData;
 
 /// A trait for "bumpable" types, i.e., types that have some notion of order of
 /// its members.
@@ -52,4 +54,27 @@ pub trait DidDipOriginFilter<Call> {
 	type Success;
 
 	fn check_call_origin_info(call: &Call, info: &Self::OriginInfo) -> Result<Self::Success, Self::Error>;
+}
+
+pub struct GenesisProvider<T>(PhantomData<T>);
+
+impl<T> Get<T::Hash> for GenesisProvider<T>
+where
+	T: frame_system::Config,
+	T::BlockNumber: Zero,
+{
+	fn get() -> T::Hash {
+		frame_system::Pallet::<T>::block_hash(T::BlockNumber::zero())
+	}
+}
+
+pub struct BlockNumberProvider<T>(PhantomData<T>);
+
+impl<T> Get<T::BlockNumber> for BlockNumberProvider<T>
+where
+	T: frame_system::Config,
+{
+	fn get() -> T::BlockNumber {
+		frame_system::Pallet::<T>::block_number()
+	}
 }

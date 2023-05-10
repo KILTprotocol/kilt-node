@@ -17,7 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use did::did_details::DidDetails;
-use dip_support::latest::IdentityProofAction;
+use dip_support::IdentityProofAction;
 use pallet_dip_provider::traits::{TxBuilder, XcmRouterDispatcher};
 use parity_scale_codec::{Decode, Encode};
 use runtime_common::dip::{did::DidIdentityProvider, merkle::DidMerkleRootGenerator};

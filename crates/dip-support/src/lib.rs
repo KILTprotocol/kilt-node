@@ -20,8 +20,12 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-// Export v1 behind a namespace and also as the latest
-pub mod v1;
-pub mod latest {
-	pub use crate::v1::*;
+use frame_support::RuntimeDebug;
+use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
+use scale_info::TypeInfo;
+
+#[derive(Clone, Eq, PartialEq, Encode, Decode, TypeInfo, MaxEncodedLen, RuntimeDebug)]
+pub enum IdentityProofAction<Identifier, Proof, Details = ()> {
+	Updated(Identifier, Proof, Details),
+	Deleted(Identifier),
 }

@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use dip_support::latest::IdentityProofAction;
+use dip_support::IdentityProofAction;
 use xcm::{latest::prelude::*, DoubleEncoded};
 
 pub use identity_generation::*;

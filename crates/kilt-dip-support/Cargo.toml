@@ -20,6 +20,7 @@ parity-scale-codec = {workspace = true, features = ["derive"]}
 scale-info = {workspace = true, features = ["derive"]}
 
 # Substrate dependencies
+frame-system.workspace = true
 frame-support.workspace = true
 sp-runtime.workspace = true
 sp-core.workspace = true
@@ -33,6 +34,7 @@ std = [
   "pallet-dip-consumer/std",
   "parity-scale-codec/std",
   "scale-info/std",
+  "frame-system/std",
   "frame-support/std",
   "sp-runtime/std",
   "sp-core/std",
