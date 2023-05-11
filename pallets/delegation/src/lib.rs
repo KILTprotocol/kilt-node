@@ -1012,7 +1012,7 @@ pub mod pallet {
 						_ => ensure!(parent_count == 0, "Root node is intermediate"),
 					};
 
-					// if a node is revoked, his subtree should be revoked as well.
+					// if a node is revoked, the subtree should be revoked as well.
 					if delegation_details.details.revoked {
 						let is_subtree_revoked = get_merged_subtree::<T>(delegation_details)
 							.iter()
