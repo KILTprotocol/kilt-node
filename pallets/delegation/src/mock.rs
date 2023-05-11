@@ -169,7 +169,7 @@ where
 
 #[cfg(test)]
 pub(crate) mod runtime {
-	use crate::{BalanceOf, DelegateSignatureTypeOf, DelegationAc, DelegationNodeIdOf, Pallet};
+	use crate::{BalanceOf, DelegateSignatureTypeOf, DelegationAc, DelegationNodeIdOf};
 
 	use super::*;
 
@@ -516,7 +516,7 @@ pub(crate) mod runtime {
 		pub fn build_and_execute_with_sanity_tests(self, test: impl FnOnce()) {
 			self.build().execute_with(|| {
 				test();
-				Pallet::<Test>::do_try_state().unwrap();
+				crate::try_state::do_try_state::<Test>().expect("TODO");
 			})
 		}
 

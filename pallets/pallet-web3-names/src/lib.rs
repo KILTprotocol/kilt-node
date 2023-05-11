@@ -28,6 +28,9 @@ mod default_weights;
 #[cfg(any(test, feature = "runtime-benchmarks"))]
 mod mock;
 
+#[cfg(any(test, feature = "try-runtime"))]
+mod try_state;
+
 #[cfg(test)]
 mod tests;
 
@@ -178,8 +181,7 @@ pub mod pallet {
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
 		#[cfg(feature = "try-runtime")]
 		fn try_state(_n: BlockNumberFor<T>) -> Result<(), &'static str> {
-			Self::do_try_state()?;
-			Ok(())
+			crate::try_state::do_try_state::<T>()
 		}
 	}
 
@@ -501,32 +503,6 @@ pub mod pallet {
 		/// preconditions again.
 		fn unban_name(name: &Web3NameOf<T>) {
 			Banned::<T>::remove(name);
-		}
-
-		#[cfg(any(feature = "try-runtime", test))]
-		pub fn do_try_state() -> Result<(), &'static str> {
-			// check if for each owner there is a name stored.
-			Owner::<T>::iter().try_for_each(
-				|(w3n, ownership): (Web3NameOf<T>, Web3OwnershipOf<T>)| -> Result<(), &'static str> {
-					ensure!(Names::<T>::contains_key(ownership.owner.clone()), "W3n unknown");
-					ensure!(Names::<T>::get(ownership.owner) == Some(w3n), "Unequal w3n");
-					Ok(())
-				},
-			)?;
-
-			// check for each name there is an owner.
-			Names::<T>::iter().try_for_each(
-				|(w3n_owner, w3n): (Web3NameOwnerOf<T>, Web3NameOf<T>)| -> Result<(), &'static str> {
-					ensure!(Owner::<T>::contains_key(&w3n), "Owner unknown");
-					ensure!(Owner::<T>::get(w3n).unwrap().owner == w3n_owner, "Unequal owner");
-					Ok(())
-				},
-			)?;
-			// a banned name should have no owner.
-			Banned::<T>::iter_keys().try_for_each(|banned_w3n| -> Result<(), &'static str> {
-				ensure!(!Owner::<T>::contains_key(banned_w3n), "W3n: Banned name is owned.");
-				Ok(())
-			})
 		}
 	}
 

@@ -62,7 +62,7 @@ pub(crate) mod runtime {
 		MultiSignature,
 	};
 
-	use crate::{self as pallet_web3_names, web3_name::AsciiWeb3Name, Pallet};
+	use crate::{self as pallet_web3_names, web3_name::AsciiWeb3Name};
 
 	type Index = u64;
 	type BlockNumber = u64;
@@ -238,7 +238,7 @@ pub(crate) mod runtime {
 		pub fn build_and_execute_with_sanity_tests(self, test: impl FnOnce()) {
 			self.build().execute_with(|| {
 				test();
-				Pallet::<Test>::do_try_state().unwrap();
+				crate::try_state::do_try_state::<Test>().expect("TODO");
 			})
 		}
 

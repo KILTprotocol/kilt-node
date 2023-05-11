@@ -1,0 +1,65 @@
+// KILT Blockchain – https://botlabs.org
+// Copyright (C) 2019-2023 BOTLabs GmbH
+
+// The KILT Blockchain is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// The KILT Blockchain is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+// If you feel like getting in touch with us, you can do so at info@botlabs.org
+
+use crate::{Config, DelegationHierarchies, DelegationNode, DelegationNodes};
+use frame_support::ensure;
+
+pub(crate) fn do_try_state<T: Config>() -> Result<(), &'static str> {
+	DelegationNodes::<T>::iter().try_for_each(|(delegation_node_id, delegation_details)| -> Result<(), &'static str> {
+		let hierarchy_id = delegation_details.hierarchy_root_id;
+
+		// check if node is in part of a delegation hierarchy.
+		ensure!(
+			DelegationHierarchies::<T>::contains_key(hierarchy_id),
+			"Unknown hierarchy"
+		);
+
+		let parent_count = DelegationNodes::<T>::iter_values()
+			.filter(|delegation_node: &DelegationNode<T>| delegation_node.children.contains(&delegation_node_id))
+			.count();
+
+		match delegation_details.parent {
+			// If node is a leaf or intermediate, check if it occurs only once. Otherwise we have cycles.
+			Some(_) => ensure!(parent_count <= 1, "Cycles detected"),
+			// if parent is None, check that the root is not the children
+			// from another node.
+			_ => ensure!(parent_count == 0, "Root node is intermediate"),
+		};
+
+		// if a node is revoked, the subtree should be revoked as well.
+		if delegation_details.details.revoked {
+			let is_subtree_revoked = get_merged_subtree::<T>(delegation_details)
+				.iter()
+				.map(|child: &DelegationNode<T>| child.details.revoked)
+				.all(|x| x);
+			ensure!(is_subtree_revoked, "Subtree not revoked");
+		}
+		Ok(())
+	})
+}
+
+fn get_merged_subtree<T: Config>(node: DelegationNode<T>) -> sp_std::vec::Vec<DelegationNode<T>> {
+	let mut nodes_to_explore = sp_std::vec::Vec::from([node]);
+	let mut children = sp_std::vec::Vec::new();
+	while let Some(current_node) = nodes_to_explore.pop() {
+		let child_nodes = current_node.children.iter().filter_map(DelegationNodes::<T>::get);
+		nodes_to_explore.extend(child_nodes.clone());
+		children.extend(child_nodes);
+	}
+	children
+}

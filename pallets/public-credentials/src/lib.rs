@@ -39,8 +39,11 @@ mod benchmarking;
 
 #[cfg(any(test, feature = "runtime-benchmarks"))]
 mod mock;
+
 #[cfg(test)]
 mod tests;
+#[cfg(any(test, feature = "try-runtime"))]
+mod try_state;
 
 pub use crate::{
 	access_control::AccessControl as PublicCredentialsAccessControl, credentials::*, default_weights::WeightInfo,
@@ -233,8 +236,7 @@ pub mod pallet {
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
 		#[cfg(feature = "try-runtime")]
 		fn try_state(_n: BlockNumberFor<T>) -> Result<(), &'static str> {
-			Self::do_try_state()?;
-			Ok(())
+			crate::try_state::do_try_state::<T>()
 		}
 	}
 
@@ -592,35 +594,6 @@ pub mod pallet {
 					// No weight is computed as the error is an early return.
 					Err(Error::<T>::NotFound)
 				}
-			})
-		}
-
-		#[cfg(any(feature = "try-runtime", test))]
-		pub fn do_try_state() -> Result<(), &'static str> {
-			Credentials::<T>::iter().try_for_each(
-				|(subject_id, credential_id, entry)| -> Result<(), &'static str> {
-					ensure!(
-						CredentialSubjects::<T>::contains_key(&credential_id),
-						"Unknown credential subject"
-					);
-
-					ensure!(
-						CredentialSubjects::<T>::get(&credential_id) == Some(subject_id),
-						"Unequal credential subject"
-					);
-
-					ensure!(ctype::Ctypes::<T>::contains_key(entry.ctype_hash), "Unknown ctype");
-
-					Ok(())
-				},
-			)?;
-
-			CredentialSubjects::<T>::iter().try_for_each(|(credential_id, subject_id)| -> Result<(), &'static str> {
-				ensure!(
-					Credentials::<T>::contains_key(subject_id, credential_id),
-					"Unknown credential"
-				);
-				Ok(())
 			})
 		}
 	}

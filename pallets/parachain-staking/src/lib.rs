@@ -518,8 +518,7 @@ pub mod pallet {
 
 		#[cfg(feature = "try-runtime")]
 		fn try_state(_n: BlockNumberFor<T>) -> Result<(), &'static str> {
-			Self::do_try_state()?;
-			Ok(())
+			crate::try_state::do_try_state::<T>()
 		}
 	}
 
@@ -1767,13 +1766,6 @@ pub mod pallet {
 	}
 
 	impl<T: Config> Pallet<T> {
-		#[cfg(any(feature = "try-runtime", test))]
-		pub fn do_try_state() -> Result<(), &'static str> {
-			crate::try_state::validate_candiate_pool::<T>()?;
-			crate::try_state::validate_top_candidates::<T>()?;
-			crate::try_state::validate_stake::<T>()
-		}
-
 		/// Check whether an account is currently delegating.
 		pub fn is_delegator(acc: &T::AccountId) -> bool {
 			DelegatorState::<T>::get(acc).is_some()

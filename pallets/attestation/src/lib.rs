@@ -70,6 +70,9 @@ pub mod mock;
 #[cfg(feature = "runtime-benchmarks")]
 pub mod benchmarking;
 
+#[cfg(any(feature = "try-runtime", test))]
+mod try_state;
+
 mod access_control;
 #[cfg(test)]
 mod tests;
@@ -151,8 +154,7 @@ pub mod pallet {
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
 		#[cfg(feature = "try-runtime")]
 		fn try_state(_n: BlockNumberFor<T>) -> Result<(), &'static str> {
-			Self::do_try_state()?;
-			Ok(())
+			crate::try_state::do_try_state::<T>()
 		}
 	}
 
@@ -470,19 +472,6 @@ pub mod pallet {
 			if let Some(authorization_id) = &attestation.authorization_id {
 				ExternalAttestations::<T>::remove(authorization_id, claim_hash);
 			}
-		}
-
-		#[cfg(any(feature = "try-runtime", test))]
-		pub fn do_try_state() -> Result<(), &'static str> {
-			Attestations::<T>::iter().try_for_each(|(claim_hash, attestation_details)| -> Result<(), &'static str> {
-				if let Some(authorization_id) = attestation_details.authorization_id {
-					ensure!(
-						ExternalAttestations::<T>::get(authorization_id, claim_hash),
-						"Unknown external attestation"
-					)
-				}
-				Ok(())
-			})
 		}
 	}
 

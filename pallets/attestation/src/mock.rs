@@ -180,8 +180,6 @@ pub(crate) mod runtime {
 	use ctype::{CtypeCreatorOf, CtypeEntryOf};
 	use kilt_support::mock::{mock_origin, SubjectId};
 
-	use crate::Pallet;
-
 	use super::*;
 
 	type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
@@ -390,7 +388,7 @@ pub(crate) mod runtime {
 		pub fn build_and_execute_with_sanity_tests(self, test: impl FnOnce()) {
 			self.build().execute_with(|| {
 				test();
-				Pallet::<Test>::do_try_state().unwrap();
+				crate::try_state::do_try_state::<Test>().expect("TODO");
 			})
 		}
 

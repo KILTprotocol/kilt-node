@@ -113,7 +113,7 @@ pub(crate) mod runtime {
 
 	use ctype::{CtypeCreatorOf, CtypeEntryOf, CtypeHashOf};
 
-	use crate::{Config, CredentialEntryOf, Error, InputSubjectIdOf, Pallet, PublicCredentialsAccessControl};
+	use crate::{Config, CredentialEntryOf, Error, InputSubjectIdOf, PublicCredentialsAccessControl};
 
 	pub(crate) type BlockNumber = u64;
 	pub(crate) type Balance = u128;
@@ -446,7 +446,7 @@ pub(crate) mod runtime {
 		pub fn build_and_execute_with_sanity_tests(self, test: impl FnOnce()) {
 			self.build().execute_with(|| {
 				test();
-				Pallet::<Test>::do_try_state().unwrap();
+				crate::try_state::do_try_state::<Test>().expect("TODO");
 			})
 		}
 

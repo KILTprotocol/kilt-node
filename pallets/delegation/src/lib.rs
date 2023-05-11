@@ -76,6 +76,9 @@ pub mod benchmarking;
 #[cfg(test)]
 mod tests;
 
+#[cfg(any(feature = "try-runtime", test))]
+mod try_state;
+
 pub use crate::{access_control::DelegationAc, default_weights::WeightInfo, delegation_hierarchy::*, pallet::*};
 
 use frame_support::{
@@ -290,8 +293,7 @@ pub mod pallet {
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
 		#[cfg(feature = "try-runtime")]
 		fn try_state(_n: BlockNumberFor<T>) -> Result<(), &'static str> {
-			Self::do_try_state()?;
-			Ok(())
+			crate::try_state::do_try_state::<T>()
 		}
 	}
 
@@ -977,52 +979,7 @@ pub mod pallet {
 
 		#[cfg(any(feature = "try-runtime", test))]
 		pub fn do_try_state() -> Result<(), &'static str> {
-			fn get_merged_subtree<T: Config>(node: DelegationNode<T>) -> sp_std::vec::Vec<DelegationNode<T>> {
-				let mut nodes_to_explore = sp_std::vec::Vec::from([node]);
-				let mut children = sp_std::vec::Vec::new();
-				while let Some(current_node) = nodes_to_explore.pop() {
-					let child_nodes = current_node.children.iter().filter_map(DelegationNodes::<T>::get);
-					nodes_to_explore.extend(child_nodes.clone());
-					children.extend(child_nodes);
-				}
-				children
-			}
-
-			DelegationNodes::<T>::iter().try_for_each(
-				|(delegation_node_id, delegation_details)| -> Result<(), &'static str> {
-					let hierarchy_id = delegation_details.hierarchy_root_id;
-
-					// check if node is in part of a delegation hierarchy.
-					ensure!(
-						DelegationHierarchies::<T>::contains_key(hierarchy_id),
-						"Unknown hierarchy"
-					);
-
-					let parent_count = DelegationNodes::<T>::iter_values()
-						.filter(|delegation_node: &DelegationNode<T>| {
-							delegation_node.children.contains(&delegation_node_id)
-						})
-						.count();
-
-					match delegation_details.parent {
-						// If node is a leaf or intermediate, check if it occurs only once. Otherwise we have cycles.
-						Some(_) => ensure!(parent_count <= 1, "Cycles detected"),
-						// if parent is None, check that the root is not the children
-						// from another node.
-						_ => ensure!(parent_count == 0, "Root node is intermediate"),
-					};
-
-					// if a node is revoked, the subtree should be revoked as well.
-					if delegation_details.details.revoked {
-						let is_subtree_revoked = get_merged_subtree::<T>(delegation_details)
-							.iter()
-							.map(|child: &DelegationNode<T>| child.details.revoked)
-							.all(|x| x);
-						ensure!(is_subtree_revoked, "Subtree not revoked");
-					}
-					Ok(())
-				},
-			)
+			crate::try_state::do_try_state::<T>()
 		}
 	}
 

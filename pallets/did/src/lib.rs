@@ -96,6 +96,9 @@ mod mock_utils;
 #[cfg(test)]
 mod tests;
 
+#[cfg(any(feature = "try-runtime", test))]
+mod try_state;
+
 mod signature;
 mod utils;
 
@@ -467,8 +470,7 @@ pub mod pallet {
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
 		#[cfg(feature = "try-runtime")]
 		fn try_state(_n: BlockNumberFor<T>) -> Result<(), &'static str> {
-			Self::do_try_state()?;
-			Ok(())
+			crate::try_state::do_try_state::<T>()
 		}
 	}
 
@@ -1235,42 +1237,6 @@ pub mod pallet {
 			Self::deposit_event(Event::DidDeleted(did_subject));
 
 			Ok(())
-		}
-
-		#[cfg(any(feature = "try-runtime", test))]
-		pub fn do_try_state() -> Result<(), &'static str> {
-			Did::<T>::iter().try_for_each(
-				|(did_subject, did_details): (DidIdentifierOf<T>, DidDetails<T>)| -> Result<(), &'static str> {
-					let service_endpoints_count = ServiceEndpoints::<T>::iter_prefix(&did_subject).count();
-
-					ensure!(
-						service_endpoints_count == DidEndpointsCount::<T>::get(&did_subject).saturated_into::<usize>(),
-						"Unequal service endpoint"
-					);
-
-					ensure!(
-						did_details.key_agreement_keys.len()
-							<= <T as Config>::MaxTotalKeyAgreementKeys::get().saturated_into::<usize>(),
-						"Exceeded key agreements"
-					);
-
-					ensure!(
-						service_endpoints_count
-							<= <T as Config>::MaxNumberOfServicesPerDid::get().saturated_into::<usize>(),
-						"Exceeded service endpoints"
-					);
-
-					ensure!(!DidBlacklist::<T>::contains_key(did_subject), "Blacklisted did");
-
-					Ok(())
-				},
-			)?;
-
-			DidBlacklist::<T>::iter_keys().try_for_each(|deleted_did_subject| -> Result<(), &'static str> {
-				let service_endpoints_count = ServiceEndpoints::<T>::iter_prefix(&deleted_did_subject).count();
-				ensure!(service_endpoints_count == 0, "Blacklisted did contains services");
-				Ok(())
-			})
 		}
 	}
 

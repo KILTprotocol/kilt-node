@@ -39,6 +39,9 @@ mod tests;
 #[cfg(all(test, feature = "std"))]
 mod mock;
 
+#[cfg(any(feature = "try-runtime", test))]
+mod try_state;
+
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 
@@ -194,8 +197,7 @@ pub mod pallet {
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
 		#[cfg(feature = "try-runtime")]
 		fn try_state(_n: BlockNumberFor<T>) -> Result<(), &'static str> {
-			Self::do_try_state()?;
-			Ok(())
+			crate::try_state::do_try_state::<T>()
 		}
 	}
 
@@ -429,26 +431,6 @@ pub mod pallet {
 			} else {
 				Err(Error::<T>::NotFound.into())
 			}
-		}
-
-		#[cfg(any(feature = "try-runtime", test))]
-		pub fn do_try_state() -> Result<(), &'static str> {
-			ConnectedDids::<T>::iter().try_for_each(|(account, record)| -> Result<(), &'static str> {
-				ensure!(
-					ConnectedAccounts::<T>::contains_key(record.did, account),
-					"Unknown account"
-				);
-				Ok(())
-			})?;
-
-			ConnectedAccounts::<T>::iter().try_for_each(
-				|(did_identifier, linked_account_id, _)| -> Result<(), &'static str> {
-					let connected_did = ConnectedDids::<T>::get(linked_account_id);
-					ensure!(connected_did.is_some(), "Unknown did");
-					ensure!(connected_did.unwrap().did == did_identifier, "Unequal did");
-					Ok(())
-				},
-			)
 		}
 	}
 

@@ -40,8 +40,7 @@ use crate::{
 		RelationshipDeriveError,
 	},
 	service_endpoints::DidEndpoint,
-	utils as crate_utils, AccountIdOf, Config, CurrencyOf, DidBlacklist, DidEndpointsCount, KeyIdOf, Pallet,
-	ServiceEndpoints,
+	utils as crate_utils, AccountIdOf, Config, CurrencyOf, DidBlacklist, DidEndpointsCount, KeyIdOf, ServiceEndpoints,
 };
 #[cfg(not(feature = "runtime-benchmarks"))]
 use crate::{DidRawOrigin, EnsureDidOrigin};
@@ -503,7 +502,7 @@ impl ExtBuilder {
 	pub fn build_and_execute_with_sanity_tests(self, ext: Option<sp_io::TestExternalities>, test: impl FnOnce()) {
 		self.build(ext).execute_with(|| {
 			test();
-			Pallet::<Test>::do_try_state().unwrap();
+			crate::try_state::do_try_state::<Test>().expect("TODO");
 		})
 	}
 
