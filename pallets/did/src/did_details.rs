@@ -16,24 +16,28 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use core::cmp::Ordering;
 use frame_support::{
 	ensure,
 	storage::{bounded_btree_map::BoundedBTreeMap, bounded_btree_set::BoundedBTreeSet},
 	traits::Get,
 	RuntimeDebug,
 };
+use kilt_support::deposit::Deposit;
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen, WrapperTypeEncode};
 use scale_info::TypeInfo;
 use sp_core::{ecdsa, ed25519, sr25519};
-use sp_runtime::{traits::Verify, MultiSignature, SaturatedConversion};
+use sp_runtime::{
+	traits::{Verify, Zero},
+	DispatchError, MultiSignature, SaturatedConversion, Saturating,
+};
 use sp_std::{convert::TryInto, vec::Vec};
-
-use kilt_support::deposit::Deposit;
 
 use crate::{
 	errors::{self, DidError},
 	service_endpoints::DidEndpoint,
-	utils, AccountIdOf, BalanceOf, BlockNumberOf, Config, DidCallableOf, DidIdentifierOf, KeyIdOf, Payload,
+	utils, AccountIdOf, BalanceOf, BlockNumberOf, Config, CurrencyOf, DidCallableOf, DidEndpointsCount,
+	DidIdentifierOf, KeyIdOf, Payload,
 };
 
 /// Types of verification keys a DID can control.
@@ -313,11 +317,60 @@ impl<T: Config> DidDetails<T> {
 		})
 	}
 
+	pub fn calculate_deposit(&self, did_subject: &DidIdentifierOf<T>) -> BalanceOf<T> {
+		let mut deposit: BalanceOf<T> = T::BaseDeposit::get();
+
+		let endpoint_count: BalanceOf<T> = DidEndpointsCount::<T>::get(did_subject).into();
+		deposit = deposit.saturating_add(endpoint_count.saturating_mul(T::ServiceEndpointDeposit::get()));
+
+		let key_agreement_count: BalanceOf<T> = self.key_agreement_keys.len().saturated_into();
+		deposit = deposit.saturating_add(key_agreement_count.saturating_mul(T::KeyDeposit::get()));
+
+		deposit = deposit.saturating_add(match self.attestation_key {
+			Some(_) => T::KeyDeposit::get(),
+			_ => Zero::zero(),
+		});
+
+		deposit = deposit.saturating_add(match self.delegation_key {
+			Some(_) => T::KeyDeposit::get(),
+			_ => Zero::zero(),
+		});
+
+		deposit
+	}
+
+	pub fn update_deposit(&mut self, did_subject: &DidIdentifierOf<T>) -> Result<(), DispatchError> {
+		let new_required_deposit = self.calculate_deposit(did_subject);
+
+		match new_required_deposit.cmp(&self.deposit.amount) {
+			Ordering::Greater => {
+				let deposit_to_reserve = new_required_deposit.saturating_sub(self.deposit.amount);
+				kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
+					self.deposit.owner.clone(),
+					deposit_to_reserve,
+				)?;
+				self.deposit.amount = self.deposit.amount.saturating_add(deposit_to_reserve);
+			}
+			Ordering::Less => {
+				let deposit_to_release = self.deposit.amount.saturating_sub(new_required_deposit);
+				let deposit = Deposit {
+					owner: self.deposit.owner.clone(),
+					amount: deposit_to_release,
+				};
+				kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&deposit);
+				self.deposit.amount = self.deposit.amount.saturating_sub(deposit_to_release);
+			}
+			_ => (),
+		};
+		Ok(())
+	}
+
 	// Creates a new DID entry from some [DidCreationDetails] and a given
 	// authentication key.
 	pub fn from_creation_details(
 		details: DidCreationDetails<T>,
 		new_auth_key: DidVerificationKey,
+		did_subject: &DidIdentifierOf<T>,
 	) -> Result<Self, DidError> {
 		ensure!(
 			details.new_key_agreement_keys.len()
@@ -328,22 +381,28 @@ impl<T: Config> DidDetails<T> {
 		let current_block_number = frame_system::Pallet::<T>::block_number();
 
 		let deposit = Deposit {
-			owner: details.submitter,
-			amount: T::Deposit::get(),
+			owner: details.clone().submitter,
+			// set deposit for the moment to zero. We will update it, when all keys are set.
+			amount: Zero::zero(),
 		};
 
 		// Creates a new DID with the given authentication key.
 		let mut new_did_details = DidDetails::new(new_auth_key, current_block_number, deposit)?;
 
-		new_did_details.add_key_agreement_keys(details.new_key_agreement_keys, current_block_number)?;
+		new_did_details.add_key_agreement_keys(details.clone().new_key_agreement_keys, current_block_number)?;
 
-		if let Some(attesation_key) = details.new_attestation_key {
+		if let Some(attesation_key) = details.clone().new_attestation_key {
 			new_did_details.update_attestation_key(attesation_key, current_block_number)?;
 		}
 
-		if let Some(delegation_key) = details.new_delegation_key {
+		if let Some(delegation_key) = details.clone().new_delegation_key {
 			new_did_details.update_delegation_key(delegation_key, current_block_number)?;
 		}
+
+		let deposit_amount = new_did_details.calculate_deposit(did_subject);
+		new_did_details.deposit.amount = deposit_amount;
+
+		kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(details.submitter, deposit_amount)?;
 
 		Ok(new_did_details)
 	}

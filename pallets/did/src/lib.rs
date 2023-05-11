@@ -88,7 +88,6 @@ pub mod service_endpoints;
 
 #[cfg(feature = "runtime-benchmarks")]
 pub mod benchmarking;
-
 #[cfg(test)]
 mod mock;
 #[cfg(any(feature = "runtime-benchmarks", test))]
@@ -114,7 +113,7 @@ pub use crate::{
 use errors::{DidError, InputError, SignatureError, StorageError};
 
 use frame_support::{
-	dispatch::{DispatchResult, Dispatchable, GetDispatchInfo, PostDispatchInfo},
+	dispatch::{DispatchError, DispatchResult, Dispatchable, GetDispatchInfo, PostDispatchInfo},
 	ensure,
 	storage::types::StorageMap,
 	traits::{Get, OnUnbalanced, WithdrawReasons},
@@ -218,10 +217,23 @@ pub mod pallet {
 		type Currency: ReservableCurrency<AccountIdOf<Self>>;
 
 		/// The amount of balance that will be taken for each DID as a deposit
-		/// to incentivise fair use of the on chain storage. The deposit can be
-		/// reclaimed when the DID is deleted.
+		/// to incentivise fair use of the on chain storage. The deposits
+		/// increase by the amount of used keys and service endpoints. The
+		/// deposit can be reclaimed when the DID is deleted.
 		#[pallet::constant]
-		type Deposit: Get<BalanceOf<Self>>;
+		type BaseDeposit: Get<BalanceOf<Self>>;
+
+		/// The amount of balance that will be taken for each service endpoint
+		/// as a deposit to incentivise fair use of the on chain storage. The
+		/// deposit can be reclaimed when the service endpoint is removed or the
+		/// DID deleted.
+		#[pallet::constant]
+		type ServiceEndpointDeposit: Get<BalanceOf<Self>>;
+
+		/// The amount of balance that will be taken for each added key as a
+		/// deposit to incentivise fair use of the on chain storage.
+		#[pallet::constant]
+		type KeyDeposit: Get<BalanceOf<Self>>;
 
 		/// The amount of balance that will be taken for each DID as a fee to
 		/// incentivise fair use of the on chain storage. The fee will not get
@@ -411,6 +423,7 @@ pub mod pallet {
 				DidError::Signature(operation_error) => Self::from(operation_error),
 				DidError::Input(input_error) => Self::from(input_error),
 				DidError::Internal => Self::Internal,
+				DidError::Deposit(_) => Self::UnableToPayFees,
 			}
 		}
 	}
@@ -525,17 +538,7 @@ pub mod pallet {
 			let sender = ensure_signed(origin)?;
 
 			ensure!(sender == details.submitter, BadOrigin);
-
 			let did_identifier = details.did.clone();
-
-			// Check the free balance before we do any heavy work.
-			ensure!(
-				<T::Currency as ReservableCurrency<AccountIdOf<T>>>::can_reserve(
-					&sender,
-					<T as Config>::Deposit::get() + <T as Config>::Fee::get()
-				),
-				Error::<T>::UnableToPayFees
-			);
 
 			// Make sure that DIDs cannot be created again after they have been deleted.
 			ensure!(
@@ -547,6 +550,8 @@ pub mod pallet {
 			// otherwise generate a AlreadyExists error.
 			ensure!(!Did::<T>::contains_key(&did_identifier), Error::<T>::AlreadyExists);
 
+			log::debug!("Creating DID {:?}", &did_identifier);
+
 			let account_did_auth_key = did_identifier
 				.verify_and_recover_signature(&details.encode(), &signature)
 				.map_err(Error::<T>::from)?;
@@ -556,10 +561,15 @@ pub mod pallet {
 			service_endpoints_utils::validate_new_service_endpoints(&input_service_endpoints)
 				.map_err(Error::<T>::from)?;
 
-			let did_entry =
-				DidDetails::from_creation_details(*details, account_did_auth_key).map_err(Error::<T>::from)?;
+			input_service_endpoints.iter().for_each(|service| {
+				ServiceEndpoints::<T>::insert(&did_identifier, &service.id, service.clone());
+			});
+			DidEndpointsCount::<T>::insert(&did_identifier, input_service_endpoints.len().saturated_into::<u32>());
 
-			CurrencyOf::<T>::reserve(&did_entry.deposit.owner, did_entry.deposit.amount)?;
+			let did_entry = DidDetails::from_creation_details(*details, account_did_auth_key, &did_identifier)
+				.map_err(Error::<T>::from)?;
+
+			Did::<T>::insert(&did_identifier, did_entry.clone());
 
 			// Withdraw the fee. We made sure that enough balance is available. But if this
 			// fails, we don't withdraw anything.
@@ -570,16 +580,7 @@ pub mod pallet {
 				ExistenceRequirement::AllowDeath,
 			)
 			.unwrap_or_else(|_| NegativeImbalanceOf::<T>::zero());
-
-			log::debug!("Creating DID {:?}", &did_identifier);
 			T::FeeCollector::on_unbalanced(imbalance);
-
-			Did::<T>::insert(&did_identifier, did_entry);
-			input_service_endpoints.iter().for_each(|service| {
-				ServiceEndpoints::<T>::insert(&did_identifier, &service.id, service.clone());
-			});
-			DidEndpointsCount::<T>::insert(&did_identifier, input_service_endpoints.len().saturated_into::<u32>());
-
 			Self::deposit_event(Event::DidCreated(sender, did_identifier));
 
 			Ok(())
@@ -617,6 +618,7 @@ pub mod pallet {
 				.update_authentication_key(new_key, frame_system::Pallet::<T>::block_number())
 				.map_err(Error::<T>::from)?;
 
+			did_details.update_deposit(&did_subject)?;
 			Did::<T>::insert(&did_subject, did_details);
 			log::debug!("Authentication key set");
 
@@ -651,6 +653,7 @@ pub mod pallet {
 				.update_delegation_key(new_key, frame_system::Pallet::<T>::block_number())
 				.map_err(Error::<T>::from)?;
 
+			did_details.update_deposit(&did_subject)?;
 			Did::<T>::insert(&did_subject, did_details);
 			log::debug!("Delegation key set");
 
@@ -682,6 +685,7 @@ pub mod pallet {
 			log::debug!("Removing delegation key for DID {:?}", &did_subject);
 			did_details.remove_delegation_key().map_err(Error::<T>::from)?;
 
+			did_details.update_deposit(&did_subject)?;
 			Did::<T>::insert(&did_subject, did_details);
 			log::debug!("Delegation key removed");
 
@@ -716,6 +720,7 @@ pub mod pallet {
 				.update_attestation_key(new_key, frame_system::Pallet::<T>::block_number())
 				.map_err(Error::<T>::from)?;
 
+			did_details.update_deposit(&did_subject)?;
 			Did::<T>::insert(&did_subject, did_details);
 			log::debug!("Attestation key set");
 
@@ -747,6 +752,7 @@ pub mod pallet {
 			log::debug!("Removing attestation key for DID {:?}", &did_subject);
 			did_details.remove_attestation_key().map_err(Error::<T>::from)?;
 
+			did_details.update_deposit(&did_subject)?;
 			Did::<T>::insert(&did_subject, did_details);
 			log::debug!("Attestation key removed");
 
@@ -779,6 +785,7 @@ pub mod pallet {
 				.add_key_agreement_key(new_key, frame_system::Pallet::<T>::block_number())
 				.map_err(Error::<T>::from)?;
 
+			did_details.update_deposit(&did_subject)?;
 			Did::<T>::insert(&did_subject, did_details);
 			log::debug!("Key agreement key set");
 
@@ -808,6 +815,7 @@ pub mod pallet {
 			log::debug!("Removing key agreement key for DID {:?}", &did_subject);
 			did_details.remove_key_agreement_key(key_id).map_err(Error::<T>::from)?;
 
+			did_details.update_deposit(&did_subject)?;
 			Did::<T>::insert(&did_subject, did_details);
 			log::debug!("Key agreement key removed");
 
@@ -837,7 +845,7 @@ pub mod pallet {
 				.map_err(Error::<T>::from)?;
 
 			// Verify that the DID is present.
-			ensure!(Did::<T>::get(&did_subject).is_some(), Error::<T>::NotFound);
+			let mut did = Did::<T>::get(&did_subject).ok_or(Error::<T>::NotFound)?;
 
 			let currently_stored_endpoints_count = DidEndpointsCount::<T>::get(&did_subject);
 
@@ -857,6 +865,9 @@ pub mod pallet {
 				},
 			)?;
 			DidEndpointsCount::<T>::insert(&did_subject, currently_stored_endpoints_count.saturating_add(1));
+			did.update_deposit(&did_subject)?;
+
+			Did::<T>::insert(&did_subject, did);
 
 			Self::deposit_event(Event::DidUpdated(did_subject));
 
@@ -880,6 +891,8 @@ pub mod pallet {
 		pub fn remove_service_endpoint(origin: OriginFor<T>, service_id: ServiceEndpointId<T>) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
 
+			let mut did_details = Did::<T>::get(&did_subject).ok_or(Error::<T>::NotFound)?;
+
 			ensure!(
 				ServiceEndpoints::<T>::take(&did_subject, &service_id).is_some(),
 				Error::<T>::ServiceNotFound
@@ -894,6 +907,9 @@ pub mod pallet {
 					*existing_endpoint_count = Some(new_value);
 				}
 			});
+
+			did_details.update_deposit(&did_subject)?;
+			Did::<T>::insert(&did_subject, did_details);
 
 			Self::deposit_event(Event::DidUpdated(did_subject));
 
@@ -1088,12 +1104,13 @@ pub mod pallet {
 		#[pallet::call_index(14)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::update_deposit())]
 		pub fn update_deposit(origin: OriginFor<T>, did: DidIdentifierOf<T>) -> DispatchResult {
-			let sender = ensure_signed(origin)?;
+			let sender = ensure_signed(origin.clone())?;
+			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
 
-			let did_entry = Did::<T>::get(&did).ok_or(Error::<T>::NotFound)?;
+			let mut did_entry = Did::<T>::get(&did).ok_or(Error::<T>::NotFound)?;
 			ensure!(did_entry.deposit.owner == sender, Error::<T>::BadDidOrigin);
-
-			DidDepositCollector::<T>::update_deposit(&did)?;
+			did_entry.update_deposit(&did_subject)?;
+			Did::<T>::insert(&did_subject, did_entry);
 
 			Ok(())
 		}
@@ -1240,8 +1257,13 @@ pub mod pallet {
 			Ok(did_entry.deposit)
 		}
 
-		fn deposit_amount(_key: &DidIdentifierOf<T>) -> <Self::Currency as Currency<AccountIdOf<T>>>::Balance {
-			T::Deposit::get()
+		fn deposit_amount(key: &DidIdentifierOf<T>) -> <Self::Currency as Currency<AccountIdOf<T>>>::Balance {
+			let did_entry = Did::<T>::get(key);
+			match did_entry {
+				Some(entry) => entry.calculate_deposit(key),
+				// If there is no entry return 0
+				_ => Zero::zero(),
+			}
 		}
 
 		fn store_deposit(

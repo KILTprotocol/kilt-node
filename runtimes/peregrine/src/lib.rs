@@ -588,9 +588,11 @@ impl did::Config for Runtime {
 	type DidIdentifier = DidIdentifier;
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeCall = RuntimeCall;
+	type KeyDeposit = constants::did::KeyDeposit;
+	type ServiceEndpointDeposit = constants::did::ServiceEndpointDeposit;
+	type BaseDeposit = constants::did::DidBaseDeposit;
 	type RuntimeOrigin = RuntimeOrigin;
 	type Currency = Balances;
-	type Deposit = constants::did::DidDeposit;
 	type Fee = constants::did::DidFee;
 	type FeeCollector = Treasury;
 

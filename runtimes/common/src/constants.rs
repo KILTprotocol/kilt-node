@@ -324,7 +324,18 @@ pub mod did {
 	/// The size is checked in the runtime by a test.
 	pub const MAX_DID_BYTE_LENGTH: u32 = 9918;
 
-	pub const DID_DEPOSIT: Balance = deposit(2 + MAX_NUMBER_OF_SERVICES_PER_DID, MAX_DID_BYTE_LENGTH);
+	///  Max length of a key
+	pub const MAX_KEY_LENGTH: u32 = 32;
+
+	pub const MAX_SERVICE_ENDPOINT_BYTE_LENGTH: u32 =
+		MAX_SERVICE_URL_LENGTH + MAX_SERVICE_ID_LENGTH + MAX_SERVICE_TYPE_LENGTH;
+
+	pub const DID_BASE_DEPOSIT: Balance = 2 * KILT;
+	pub const KEY_DEPOSIT: Balance = deposit(0, MAX_KEY_LENGTH);
+	pub const SERVICE_ENDPOINT_DEPOSIT: Balance = deposit(1, MAX_SERVICE_ENDPOINT_BYTE_LENGTH);
+	pub const MAX_DEPOSIT_DID: Balance =
+		deposit(2 + MAX_NUMBER_OF_SERVICES_PER_DID, MAX_DID_BYTE_LENGTH) + DID_BASE_DEPOSIT;
+
 	pub const DID_FEE: Balance = 50 * MILLI_KILT;
 	pub const MAX_KEY_AGREEMENT_KEYS: u32 = 10;
 	// This has been reduced from the previous 100, but it might still need
@@ -348,7 +359,9 @@ pub mod did {
 		pub const MaxTotalKeyAgreementKeys: u32 = MAX_TOTAL_KEY_AGREEMENT_KEYS;
 		// Standalone block time is half the duration of a parachain block.
 		pub const MaxBlocksTxValidity: BlockNumber = MAX_BLOCKS_TX_VALIDITY;
-		pub const DidDeposit: Balance = DID_DEPOSIT;
+		pub const DidBaseDeposit: Balance = DID_BASE_DEPOSIT;
+		pub const KeyDeposit: Balance = KEY_DEPOSIT;
+		pub const ServiceEndpointDeposit: Balance = SERVICE_ENDPOINT_DEPOSIT;
 		pub const DidFee: Balance = DID_FEE;
 		pub const MaxNumberOfServicesPerDid: u32 = MAX_NUMBER_OF_SERVICES_PER_DID;
 		pub const MaxServiceIdLength: u32 = MAX_SERVICE_ID_LENGTH;
