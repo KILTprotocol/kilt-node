@@ -976,11 +976,6 @@ pub mod pallet {
 			removals = removals.saturating_add(1);
 			Ok((removals, consumed_weight))
 		}
-
-		#[cfg(any(feature = "try-runtime", test))]
-		pub fn do_try_state() -> Result<(), &'static str> {
-			crate::try_state::do_try_state::<T>()
-		}
 	}
 
 	struct DelegationDepositCollector<T: Config>(PhantomData<T>);

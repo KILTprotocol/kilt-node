@@ -154,11 +154,7 @@ pub mod pallet {
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
 		#[cfg(feature = "try-runtime")]
 		fn try_state(_n: BlockNumberFor<T>) -> Result<(), &'static str> {
-			let p = scale_info::prelude::format!("asdf");
-			let q = p.as_str();
-			Err(q)
-
-			//crate::try_state::do_try_state::<T>()
+			crate::try_state::do_try_state::<T>()
 		}
 	}
 
