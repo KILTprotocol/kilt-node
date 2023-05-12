@@ -367,7 +367,6 @@ parameter_types! {
 	pub const MaxTotalKeyAgreementKeys: u32 = constants::did::MAX_TOTAL_KEY_AGREEMENT_KEYS;
 	// Standalone block time is half the duration of a parachain block.
 	pub const MaxBlocksTxValidity: BlockNumber = constants::did::MAX_BLOCKS_TX_VALIDITY * 2;
-	pub const DidDeposit: Balance = constants::did::DID_DEPOSIT;
 	pub const DidFee: Balance = constants::did::DID_FEE;
 	pub const MaxNumberOfServicesPerDid: u32 = constants::did::MAX_NUMBER_OF_SERVICES_PER_DID;
 	pub const MaxServiceIdLength: u32 = constants::did::MAX_SERVICE_ID_LENGTH;
@@ -379,11 +378,13 @@ parameter_types! {
 
 impl did::Config for Runtime {
 	type DidIdentifier = DidIdentifier;
+	type KeyDeposit = constants::did::KeyDeposit;
+	type ServiceEndpointDeposit = constants::did::ServiceEndpointDeposit;
+	type BaseDeposit = constants::did::DidBaseDeposit;
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeCall = RuntimeCall;
 	type RuntimeOrigin = RuntimeOrigin;
 	type Currency = Balances;
-	type Deposit = DidDeposit;
 	type Fee = DidFee;
 	type FeeCollector = ToAuthor<Runtime>;
 

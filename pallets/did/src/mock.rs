@@ -59,6 +59,8 @@ pub(crate) type DidIdentifier = AccountId;
 pub(crate) type CtypeHash = Hash;
 
 const MICRO_KILT: Balance = 10u128.pow(9);
+const MILLI_KILT: Balance = 10u128.pow(12);
+const KILT: Balance = 10u128.pow(15);
 
 frame_support::construct_runtime!(
 	pub enum Test where
@@ -114,7 +116,6 @@ parameter_types! {
 	#[derive(Debug, Clone)]
 	pub const MaxPublicKeysPerDid: u32 = 13u32;
 	pub const MaxBlocksTxValidity: u64 = 300u64;
-	pub const Deposit: Balance = 10 * MICRO_KILT;
 	pub const DidFee: Balance = MICRO_KILT;
 	pub const MaxNumberOfServicesPerDid: u32 = 25u32;
 	pub const MaxServiceIdLength: u32 = 50u32;
@@ -122,6 +123,9 @@ parameter_types! {
 	pub const MaxServiceUrlLength: u32 = 100u32;
 	pub const MaxNumberOfTypesPerService: u32 = 1u32;
 	pub const MaxNumberOfUrlsPerService: u32 = 1u32;
+	pub const KeyDeposit :Balance = 32 * MICRO_KILT;
+	pub const ServiceEndpointDeposit :Balance = 50 * MICRO_KILT;
+	pub const BaseDeposit: Balance = 100 * MILLI_KILT;
 }
 
 pub struct ToAccount<R>(sp_std::marker::PhantomData<R>);
@@ -141,10 +145,12 @@ impl Config for Test {
 	type RuntimeOrigin = RuntimeOrigin;
 	type RuntimeCall = RuntimeCall;
 	type EnsureOrigin = EnsureSigned<DidIdentifier>;
+	type KeyDeposit = KeyDeposit;
+	type ServiceEndpointDeposit = KeyDeposit;
 	type OriginSuccess = AccountId;
 	type RuntimeEvent = ();
 	type Currency = Balances;
-	type Deposit = Deposit;
+	type BaseDeposit = BaseDeposit;
 	type Fee = DidFee;
 	type FeeCollector = ToAccount<Test>;
 	type MaxNewKeyAgreementKeys = MaxNewKeyAgreementKeys;
@@ -201,6 +207,8 @@ impl ctype::Config for Test {
 	type Fee = Fee;
 	type FeeCollector = ();
 }
+
+pub(crate) const DEFAULT_BALANCE: Balance = 10 * KILT;
 
 pub(crate) const ACCOUNT_00: AccountId = AccountId::new([1u8; 32]);
 pub(crate) const ACCOUNT_01: AccountId = AccountId::new([2u8; 32]);
