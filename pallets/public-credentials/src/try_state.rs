@@ -23,11 +23,6 @@ use crate::{Config, CredentialSubjects, Credentials};
 pub(crate) fn do_try_state<T: Config>() -> Result<(), &'static str> {
 	Credentials::<T>::iter().try_for_each(|(subject_id, credential_id, entry)| -> Result<(), &'static str> {
 		ensure!(
-			CredentialSubjects::<T>::contains_key(&credential_id),
-			"Unknown credential subject"
-		);
-
-		ensure!(
 			CredentialSubjects::<T>::get(&credential_id) == Some(subject_id),
 			"Unequal credential subject"
 		);

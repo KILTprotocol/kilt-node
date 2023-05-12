@@ -388,7 +388,7 @@ pub(crate) mod runtime {
 		pub fn build_and_execute_with_sanity_tests(self, test: impl FnOnce()) {
 			self.build().execute_with(|| {
 				test();
-				crate::try_state::do_try_state::<Test>().expect("TODO");
+				crate::try_state::do_try_state::<Test>().expect("Sanity test for attestation failed.");
 			})
 		}
 

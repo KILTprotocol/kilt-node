@@ -502,7 +502,7 @@ impl ExtBuilder {
 	pub fn build_and_execute_with_sanity_tests(self, ext: Option<sp_io::TestExternalities>, test: impl FnOnce()) {
 		self.build(ext).execute_with(|| {
 			test();
-			crate::try_state::do_try_state::<Test>().expect("TODO");
+			crate::try_state::do_try_state::<Test>().expect("Sanity test for did failed.");
 		})
 	}
 

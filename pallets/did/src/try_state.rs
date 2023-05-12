@@ -22,14 +22,14 @@ use sp_runtime::SaturatedConversion;
 
 use crate::{did_details::DidDetails, Config, Did, DidBlacklist, DidEndpointsCount, DidIdentifierOf, ServiceEndpoints};
 
-pub fn do_try_state<T: Config>() -> Result<(), &'static str> {
+pub(crate) fn do_try_state<T: Config>() -> Result<(), &'static str> {
 	Did::<T>::iter().try_for_each(
 		|(did_subject, did_details): (DidIdentifierOf<T>, DidDetails<T>)| -> Result<(), &'static str> {
 			let service_endpoints_count = ServiceEndpoints::<T>::iter_prefix(&did_subject).count();
 
 			ensure!(
 				service_endpoints_count == DidEndpointsCount::<T>::get(&did_subject).saturated_into::<usize>(),
-				"Unequal service endpoint"
+				"Unequal service endpoint count"
 			);
 
 			ensure!(

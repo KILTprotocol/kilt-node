@@ -33,13 +33,15 @@ pub(crate) fn do_try_state<T: Config>() -> Result<(), &'static str> {
 			.filter(|delegation_node: &DelegationNode<T>| delegation_node.children.contains(&delegation_node_id))
 			.count();
 
-		match delegation_details.parent {
-			// If node is a leaf or intermediate, check if it occurs only once. Otherwise we have cycles.
-			Some(_) => ensure!(parent_count <= 1, "Cycles detected"),
+		if delegation_details.parent.is_some() {
+			// If node is a leaf or intermediate, check if it occurs only once. Otherwise we
+			// have cycles.
+			ensure!(parent_count <= 1, "Cycles detected");
+		} else {
 			// if parent is None, check that the root is not the children
 			// from another node.
-			_ => ensure!(parent_count == 0, "Root node is intermediate"),
-		};
+			ensure!(parent_count == 0, "Root node is intermediate");
+		}
 
 		// if a node is revoked, the subtree should be revoked as well.
 		if delegation_details.details.revoked {

@@ -24,7 +24,6 @@ pub fn do_try_state<T: Config>() -> Result<(), &'static str> {
 	// check if for each owner there is a name stored.
 	Owner::<T>::iter().try_for_each(
 		|(w3n, ownership): (Web3NameOf<T>, Web3OwnershipOf<T>)| -> Result<(), &'static str> {
-			ensure!(Names::<T>::contains_key(ownership.owner.clone()), "W3n unknown");
 			ensure!(Names::<T>::get(ownership.owner) == Some(w3n), "Unequal w3n");
 			Ok(())
 		},
@@ -33,14 +32,14 @@ pub fn do_try_state<T: Config>() -> Result<(), &'static str> {
 	// check for each name there is an owner.
 	Names::<T>::iter().try_for_each(
 		|(w3n_owner, w3n): (Web3NameOwnerOf<T>, Web3NameOf<T>)| -> Result<(), &'static str> {
-			ensure!(Owner::<T>::contains_key(&w3n), "Owner unknown");
+			ensure!(Owner::<T>::contains_key(&w3n), "Unknown Owner");
 			ensure!(Owner::<T>::get(w3n).unwrap().owner == w3n_owner, "Unequal owner");
 			Ok(())
 		},
 	)?;
 	// a banned name should have no owner.
 	Banned::<T>::iter_keys().try_for_each(|banned_w3n| -> Result<(), &'static str> {
-		ensure!(!Owner::<T>::contains_key(banned_w3n), "W3n: Banned name is owned.");
+		ensure!(!Owner::<T>::contains_key(banned_w3n), "Banned name is owned");
 		Ok(())
 	})
 }

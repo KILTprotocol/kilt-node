@@ -35,7 +35,7 @@ fn validate_candiate_pool<T: Config>() -> Result<(), &'static str> {
 	// check if enough collators are set.
 	ensure!(
 		CandidatePool::<T>::count() >= T::MinCollators::get(),
-		"Staking: Not enough collators are present."
+		"Insufficient collators"
 	);
 
 	CandidatePool::<T>::iter_values().try_for_each(
@@ -48,13 +48,13 @@ fn validate_candiate_pool<T: Config>() -> Result<(), &'static str> {
 			// total stake should be the sum of delegators stake + colator stake.
 			ensure!(
 				sum_delegations.saturating_add(candidate.stake) == candidate.total,
-				"Staking: Total stake of a collator can not be reconstructed."
+				"Corrupted collator stake"
 			);
 
 			// Min required stake should be set
 			ensure!(
 				candidate.stake >= T::MinCollatorCandidateStake::get(),
-				"Staking: Insufficient stake from a collator."
+				"Insufficient collator stake"
 			);
 
 			// delegators should be in delegator pool.
@@ -63,7 +63,7 @@ fn validate_candiate_pool<T: Config>() -> Result<(), &'static str> {
 				.iter()
 				.map(|delegator_stake| DelegatorState::<T>::get(&delegator_stake.owner).is_some())
 				.all(|x| x);
-			ensure!(are_delegator_present, "Staking: Delegator is not present");
+			ensure!(are_delegator_present, "Unknown delegator");
 
 			// each delegator should not exceed the [MaxDelegationsPerRound]
 			candidate
@@ -80,7 +80,7 @@ fn validate_candiate_pool<T: Config>() -> Result<(), &'static str> {
 
 					ensure!(
 						counter <= T::MaxDelegationsPerRound::get(),
-						"Staking: Exceeded delegations per round by a collator."
+						"Exceeded delegations per round"
 					);
 
 					Ok(())
@@ -89,12 +89,12 @@ fn validate_candiate_pool<T: Config>() -> Result<(), &'static str> {
 			// check min and max stake for each candidate
 			ensure!(
 				candidate.stake <= MaxCollatorCandidateStake::<T>::get(),
-				"Staking: Exceeded stake by a collator."
+				"Exceeded collator stake"
 			);
 
 			ensure!(
 				candidate.stake >= T::MinCollatorStake::get(),
-				"Staking: Lag behind stake by a collator."
+				"Insufficient collator stake"
 			);
 
 			// delegators should have the min required stake.
@@ -104,7 +104,7 @@ fn validate_candiate_pool<T: Config>() -> Result<(), &'static str> {
 				.try_for_each(|delegator_stake| -> Result<(), &'static str> {
 					ensure!(
 						delegator_stake.amount >= T::MinDelegatorStake::get(),
-						"Staking: Lag behind stake of a delegator"
+						"Insufficient delegator stake"
 					);
 					Ok(())
 				})?;
@@ -171,12 +171,12 @@ fn validate_stake<T: Config>() -> Result<(), &'static str> {
 
 	ensure!(
 		total_stake.collators == collator_stake,
-		"Total collator stake not matching."
+		"Corrupted total collator stake"
 	);
 
 	ensure!(
 		total_stake.delegators == delegator_state,
-		"Total delegator stake is not matching."
+		"Corrupted total delegator stake"
 	);
 
 	Ok(())
