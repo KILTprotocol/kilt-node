@@ -17,6 +17,8 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_support::ensure;
+use kilt_support::test::convert_error_message;
+use scale_info::prelude::format;
 
 use crate::{Attestations, Config, ExternalAttestations};
 
@@ -24,8 +26,11 @@ pub(crate) fn do_try_state<T: Config>() -> Result<(), &'static str> {
 	Attestations::<T>::iter().try_for_each(|(claim_hash, attestation_details)| -> Result<(), &'static str> {
 		if let Some(authorization_id) = attestation_details.authorization_id {
 			ensure!(
-				ExternalAttestations::<T>::get(authorization_id, claim_hash),
-				"Unknown external attestation"
+				ExternalAttestations::<T>::get(&authorization_id, claim_hash),
+				convert_error_message(format!(
+					"External attestation with authorization_id: {:?} and claim_hash {:?} does not exist",
+					authorization_id, claim_hash
+				))
 			)
 		}
 		Ok(())

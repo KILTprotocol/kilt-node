@@ -16,8 +16,11 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use crate::{Config, DelegationHierarchies, DelegationNode, DelegationNodes};
 use frame_support::ensure;
+use kilt_support::test::convert_error_message;
+use scale_info::prelude::format;
+
+use crate::{Config, DelegationHierarchies, DelegationNode, DelegationNodes};
 
 pub(crate) fn do_try_state<T: Config>() -> Result<(), &'static str> {
 	DelegationNodes::<T>::iter().try_for_each(|(delegation_node_id, delegation_details)| -> Result<(), &'static str> {
@@ -26,7 +29,7 @@ pub(crate) fn do_try_state<T: Config>() -> Result<(), &'static str> {
 		// check if node is in part of a delegation hierarchy.
 		ensure!(
 			DelegationHierarchies::<T>::contains_key(hierarchy_id),
-			"Unknown hierarchy"
+			convert_error_message(format!("Delegation hierarchy {:?} not found", hierarchy_id))
 		);
 
 		let parent_count = DelegationNodes::<T>::iter_values()
@@ -36,11 +39,23 @@ pub(crate) fn do_try_state<T: Config>() -> Result<(), &'static str> {
 		if delegation_details.parent.is_some() {
 			// If node is a leaf or intermediate, check if it occurs only once. Otherwise we
 			// have cycles.
-			ensure!(parent_count <= 1, "Cycles detected");
+			ensure!(
+				parent_count <= 1,
+				convert_error_message(format!(
+					"Delegation with cycles detected. Node {:?} in hierarchy {:?} has two or more parents.",
+					delegation_node_id, hierarchy_id
+				))
+			);
 		} else {
 			// if parent is None, check that the root is not the children
 			// from another node.
-			ensure!(parent_count == 0, "Root node is intermediate");
+			ensure!(
+				parent_count == 0,
+				convert_error_message(format!(
+					"Root node {:?} is child from other delegation nodes",
+					delegation_node_id
+				))
+			);
 		}
 
 		// if a node is revoked, the subtree should be revoked as well.
@@ -49,7 +64,13 @@ pub(crate) fn do_try_state<T: Config>() -> Result<(), &'static str> {
 				.iter()
 				.map(|child: &DelegationNode<T>| child.details.revoked)
 				.all(|x| x);
-			ensure!(is_subtree_revoked, "Subtree not revoked");
+			ensure!(
+				is_subtree_revoked,
+				convert_error_message(format!(
+					"Revoked delegation node {:?} has an unrevoked subtree.",
+					delegation_node_id
+				))
+			);
 		}
 		Ok(())
 	})

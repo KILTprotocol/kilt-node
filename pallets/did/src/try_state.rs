@@ -17,6 +17,8 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_support::ensure;
+use kilt_support::test::convert_error_message;
+use scale_info::prelude::format;
 use sp_core::Get;
 use sp_runtime::SaturatedConversion;
 
@@ -29,21 +31,24 @@ pub(crate) fn do_try_state<T: Config>() -> Result<(), &'static str> {
 
 			ensure!(
 				service_endpoints_count == DidEndpointsCount::<T>::get(&did_subject).saturated_into::<usize>(),
-				"Unequal service endpoint count"
+				convert_error_message(format!("DID {:?} has not matching service endpoints.", did_subject))
 			);
 
 			ensure!(
 				did_details.key_agreement_keys.len()
 					<= (<T as Config>::MaxTotalKeyAgreementKeys::get()).saturated_into::<usize>(),
-				"Exceeded key agreements"
+				convert_error_message(format!("DID {:?} has to many key agreement keys.", did_subject,))
 			);
 
 			ensure!(
 				service_endpoints_count <= <T as Config>::MaxNumberOfServicesPerDid::get().saturated_into::<usize>(),
-				"Exceeded service endpoints"
+				convert_error_message(format!("DID {:?} has to many service endpoints.", did_subject))
 			);
 
-			ensure!(!DidBlacklist::<T>::contains_key(did_subject), "Blacklisted did");
+			ensure!(
+				!DidBlacklist::<T>::contains_key(did_subject),
+				convert_error_message(format!("DID {:?} is blacklisted.", did_subject))
+			);
 
 			Ok(())
 		},
@@ -51,7 +56,13 @@ pub(crate) fn do_try_state<T: Config>() -> Result<(), &'static str> {
 
 	DidBlacklist::<T>::iter_keys().try_for_each(|deleted_did_subject| -> Result<(), &'static str> {
 		let service_endpoints_count = ServiceEndpoints::<T>::iter_prefix(&deleted_did_subject).count();
-		ensure!(service_endpoints_count == 0, "Blacklisted did contains services");
+		ensure!(
+			service_endpoints_count == 0,
+			convert_error_message(format!(
+				"Blacklisted DID {:?} has service endpoints.",
+				deleted_did_subject,
+			))
+		);
 		Ok(())
 	})
 }
