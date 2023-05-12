@@ -250,10 +250,10 @@ parameter_types! {
 }
 
 impl pallet_balances::Config for Runtime {
-	type FreezeIdentifier = AccountId;
-	type HoldIdentifier = AccountId;
-	type MaxFreezes = MaxFreezes;
-	type MaxHolds = MaxHolds;
+	type FreezeIdentifier = ();
+	type HoldIdentifier = ();
+	type MaxFreezes = ();
+	type MaxHolds = ();
 	type MaxLocks = MaxLocks;
 	type MaxReserves = MaxReserves;
 	type ReserveIdentifier = [u8; 8];
@@ -834,7 +834,7 @@ impl_runtime_apis! {
 			OpaqueMetadata::new(Runtime::metadata().into())
 		}
 
-		fn metadata_at_version(_: u32) -> Option<hidden_include::OpaqueMetadata> { todo!() }
+		fn metadata_at_version(_: u32) -> Option<OpaqueMetadata> { todo!() }
 
 		fn metadata_versions() -> sp_std::prelude::Vec<u32> { todo!() }
 	}

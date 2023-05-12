@@ -63,6 +63,8 @@ impl<T: frame_system::Config> pallet_xcm::WeightInfo for WeightInfo<T> {
 			.saturating_add(T::DbWeight::get().reads(5 as u64))
 			.saturating_add(T::DbWeight::get().writes(2 as u64))
 	}
+
+	fn force_suspension() -> sp_weights::Weight { todo!() }
 	// Storage: Benchmark Override (r:0 w:0)
 	// Proof Skipped: Benchmark Override (max_values: None, max_size: None, mode: Measured)
 	fn teleport_assets() -> Weight {

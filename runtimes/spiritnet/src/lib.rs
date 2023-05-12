@@ -195,11 +195,15 @@ impl pallet_indices::Config for Runtime {
 }
 
 impl pallet_balances::Config for Runtime {
+	type FreezeIdentifier = ();
+	type HoldIdentifier = ();
+	type MaxFreezes = ();
+	type MaxHolds = ();
 	/// The type for recording an account's balance.
 	type Balance = Balance;
 	/// The ubiquitous event type.
 	type RuntimeEvent = RuntimeEvent;
-	type DustRemoval = Treasury;
+	type DustRemoval = ();
 	type ExistentialDeposit = ExistentialDeposit;
 	type AccountStore = System;
 	type WeightInfo = weights::pallet_balances::WeightInfo<Runtime>;
@@ -462,6 +466,7 @@ impl pallet_collective::Config<CouncilCollective> for Runtime {
 	type RuntimeOrigin = RuntimeOrigin;
 	type Proposal = RuntimeCall;
 	type RuntimeEvent = RuntimeEvent;
+	type MaxProposalWeight = ();
 	type MotionDuration = constants::governance::CouncilMotionDuration;
 	type MaxProposals = constants::governance::CouncilMaxProposals;
 	type MaxMembers = constants::governance::CouncilMaxMembers;
@@ -473,6 +478,7 @@ impl pallet_collective::Config<CouncilCollective> for Runtime {
 type TechnicalCollective = pallet_collective::Instance2;
 impl pallet_collective::Config<TechnicalCollective> for Runtime {
 	type RuntimeOrigin = RuntimeOrigin;
+	type MaxProposalWeight = ();
 	type Proposal = RuntimeCall;
 	type RuntimeEvent = RuntimeEvent;
 	type MotionDuration = constants::governance::TechnicalMotionDuration;
@@ -1123,6 +1129,9 @@ impl_runtime_apis! {
 		fn metadata() -> OpaqueMetadata {
 			OpaqueMetadata::new(Runtime::metadata().into())
 		}
+
+		fn metadata_at_version(_: u32) -> Option<OpaqueMetadata> { todo!() }
+		fn metadata_versions() -> sp_std::prelude::Vec<u32> { todo!() }
 	}
 
 	impl frame_system_rpc_runtime_api::AccountNonceApi<Block, AccountId, Index> for Runtime {
