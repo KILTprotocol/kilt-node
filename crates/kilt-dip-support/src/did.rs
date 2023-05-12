@@ -142,7 +142,7 @@ impl<
 			call,
 			proof_entry.details(),
 			submitter,
-			block_number,
+			&proof.1 .1,
 			GenesisHashProvider::get(),
 			SignedExtraProvider::get(),
 		)
