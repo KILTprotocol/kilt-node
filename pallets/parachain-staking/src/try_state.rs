@@ -22,7 +22,8 @@ use scale_info::prelude::format;
 use sp_runtime::{traits::Zero, SaturatedConversion, Saturating};
 
 use crate::{
-	types::{BalanceOf, Candidate},
+	set::OrderedSet,
+	types::{BalanceOf, Candidate, Stake},
 	CandidatePool, Config, DelegatorState, LastDelegation, MaxCollatorCandidateStake, MaxSelectedCandidates, Pallet,
 	Round, TopCandidates, TotalCollatorStake,
 };
@@ -64,38 +65,7 @@ fn validate_candiate_pool<T: Config>() -> Result<(), &'static str> {
 				convert_error_message(format!("Stake of collator {:?} insufficient", candidate.id))
 			);
 
-			candidate
-				.delegators
-				.iter()
-				.try_for_each(|delegator_stake| -> Result<(), &'static str> {
-					let last_delegation = LastDelegation::<T>::get(&delegator_stake.owner);
-					let round = Round::<T>::get();
-					let counter = if last_delegation.round < round.current {
-						0u32
-					} else {
-						last_delegation.counter
-					};
-					// each delegator should not exceed the [MaxDelegationsPerRound]
-					ensure!(
-						counter <= T::MaxDelegationsPerRound::get(),
-						convert_error_message(format!(
-							"Exceeded delegations per round. Delegator: {:?}",
-							delegator_stake.owner
-						))
-					);
-
-					ensure!(
-						delegator_stake.amount >= T::MinDelegatorStake::get(),
-						convert_error_message(format!("Delegator {:?} insufficient stake", delegator_stake.owner))
-					);
-
-					ensure!(
-						DelegatorState::<T>::get(&delegator_stake.owner).is_some(),
-						convert_error_message(format!("Unknown delegator {:?}", delegator_stake.owner))
-					);
-
-					Ok(())
-				})?;
+			validate_delegators::<T>(candidate.delegators)?;
 
 			// check min and max stake for each candidate
 			ensure!(
@@ -149,10 +119,47 @@ fn validate_top_candidates<T: Config>() -> Result<(), &'static str> {
 	})
 }
 
+fn validate_delegators<T: Config>(
+	delegators: OrderedSet<Stake<T::AccountId, BalanceOf<T>>, T::MaxDelegatorsPerCollator>,
+) -> Result<(), &'static str> {
+	delegators
+		.iter()
+		.try_for_each(|delegator_stake| -> Result<(), &'static str> {
+			let last_delegation = LastDelegation::<T>::get(&delegator_stake.owner);
+			let round = Round::<T>::get();
+			let counter = if last_delegation.round < round.current {
+				0u32
+			} else {
+				last_delegation.counter
+			};
+
+			// each delegator should not exceed the [MaxDelegationsPerRound]
+			ensure!(
+				counter <= T::MaxDelegationsPerRound::get(),
+				convert_error_message(format!(
+					"Exceeded delegations per round. Delegator: {:?}",
+					delegator_stake.owner
+				))
+			);
+
+			// each delegator should have the min required stake
+			ensure!(
+				delegator_stake.amount >= T::MinDelegatorStake::get(),
+				convert_error_message(format!("Delegator {:?} insufficient stake", delegator_stake.owner))
+			);
+
+			ensure!(
+				DelegatorState::<T>::get(&delegator_stake.owner).is_some(),
+				convert_error_message(format!("Unknown delegator {:?}", delegator_stake.owner))
+			);
+
+			Ok(())
+		})
+}
+
 fn validate_stake<T: Config>() -> Result<(), &'static str> {
 	// the total fund has to be the sum over the first [MaxSelectedCandidates] of
 	// [TopCandidates].
-
 	let top_candidates = TopCandidates::<T>::get();
 	let top_n = MaxSelectedCandidates::<T>::get().saturated_into::<usize>();
 
