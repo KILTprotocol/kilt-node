@@ -6748,6 +6748,7 @@ dependencies = [
  "frame-support",
  "frame-system",
  "kilt-runtime-api-staking",
+ "kilt-support",
  "log",
  "pallet-aura",
  "pallet-authorship",

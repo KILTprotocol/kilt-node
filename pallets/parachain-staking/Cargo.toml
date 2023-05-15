@@ -26,6 +26,7 @@ serde = {workspace = true, optional = true}
 
 # Internal dependencies
 kilt-runtime-api-staking.workspace = true
+kilt-support.workspace = true
 
 # Substrate dependencies
 frame-support.workspace = true
@@ -72,4 +73,5 @@ try-runtime = [
   "pallet-authorship/try-runtime",
   "pallet-balances/try-runtime",
   "pallet-session/try-runtime",
+  "kilt-support/try-runtime"
 ]
