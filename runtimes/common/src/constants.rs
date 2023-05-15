@@ -321,8 +321,8 @@ pub mod multisig {
 pub mod did {
 	use super::*;
 
-	///  Max length of a key
-	pub const MAX_KEY_LENGTH: u32 = 32;
+	///  Max length of a key (including its enum discriminants).
+	pub const MAX_KEY_LENGTH: u32 = 35;
 
 	///  Max length of a single service entry.
 	/// It is the sum of:
@@ -331,9 +331,13 @@ pub mod did {
 	///   for a single service
 	/// - the maximum service URL length * the maximum number of URLs for a
 	///   single service
+	/// - Additional padding bytes to make up for the different encoding size of
+	///   the different const values (each BoundedVec has additional bytes
+	///   encoded in compact form indicating the max length of the vec)
 	pub const MAX_SERVICE_ENDPOINT_BYTE_LENGTH: u32 = MAX_SERVICE_ID_LENGTH
 		+ MAX_NUMBER_OF_TYPES_PER_SERVICE * MAX_SERVICE_TYPE_LENGTH
-		+ MAX_NUMBER_OF_URLS_PER_SERVICE * MAX_SERVICE_URL_LENGTH;
+		+ MAX_NUMBER_OF_URLS_PER_SERVICE * MAX_SERVICE_URL_LENGTH
+		+ 8;
 
 	pub const DID_BASE_DEPOSIT: Balance = 2 * KILT;
 	pub const KEY_DEPOSIT: Balance = deposit(0, MAX_KEY_LENGTH);
