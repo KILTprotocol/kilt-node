@@ -1736,8 +1736,8 @@ pub mod pallet {
 			// collator reward rate decreases by 2% p.a. of the previous one
 			let c_reward_rate = inflation.collator.reward_rate.annual * Perquintill::from_percent(98);
 
-			// delegator reward rate should be 6% in 2nd year and 0% afterwards
-			let d_reward_rate = if year == T::BlockNumber::one() {
+			// delegator reward rate should be 6% in 2nd and 3rd year and 0% afterwards
+			let d_reward_rate = if year <= 2u32.into() {
 				Perquintill::from_percent(6)
 			} else {
 				Perquintill::zero()
