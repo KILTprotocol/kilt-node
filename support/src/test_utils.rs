@@ -18,7 +18,7 @@
 
 use scale_info::prelude::string::String;
 
-/// logges the error message and returns "Sanity test error"
+/// Logs the error message and returns "Sanity test error"
 pub fn log_and_return_error_message(error_message: String) -> &'static str {
 	log::error!("{}", error_message);
 	"Sanity test error"
