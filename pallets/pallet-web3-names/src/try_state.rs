@@ -17,7 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_support::ensure;
-use kilt_support::test::convert_error_message;
+use kilt_support::test_utils::log_and_return_error_message;
 use scale_info::prelude::format;
 
 use crate::{Banned, Config, Names, Owner, Web3NameOf, Web3NameOwnerOf, Web3OwnershipOf};
@@ -28,7 +28,7 @@ pub fn do_try_state<T: Config>() -> Result<(), &'static str> {
 		|(w3n, ownership): (Web3NameOf<T>, Web3OwnershipOf<T>)| -> Result<(), &'static str> {
 			ensure!(
 				Names::<T>::get(&ownership.owner) == Some(w3n.clone()),
-				convert_error_message(format!(
+				log_and_return_error_message(format!(
 					"Owned w3n from owner {:?} does not match with saved w3n {:?}",
 					ownership.owner, w3n
 				))
@@ -42,7 +42,7 @@ pub fn do_try_state<T: Config>() -> Result<(), &'static str> {
 		|(w3n_owner, w3n): (Web3NameOwnerOf<T>, Web3NameOf<T>)| -> Result<(), &'static str> {
 			ensure!(
 				Owner::<T>::get(&w3n).expect("Unknown w3n").owner == w3n_owner,
-				convert_error_message(format!("Owner {:?} with w3n {:?} not found", w3n_owner, w3n))
+				log_and_return_error_message(format!("Owner {:?} with w3n {:?} not found", w3n_owner, w3n))
 			);
 			Ok(())
 		},
@@ -51,7 +51,7 @@ pub fn do_try_state<T: Config>() -> Result<(), &'static str> {
 	Banned::<T>::iter_keys().try_for_each(|banned_w3n| -> Result<(), &'static str> {
 		ensure!(
 			!Owner::<T>::contains_key(&banned_w3n),
-			convert_error_message(format!("Owner contains banned name {:?}", banned_w3n))
+			log_and_return_error_message(format!("Owner contains banned name {:?}", banned_w3n))
 		);
 		Ok(())
 	})

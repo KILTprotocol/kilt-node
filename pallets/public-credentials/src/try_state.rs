@@ -18,22 +18,22 @@
 
 use crate::{Config, CredentialSubjects, Credentials};
 use frame_support::ensure;
-use kilt_support::test::convert_error_message;
+use kilt_support::test_utils::log_and_return_error_message;
 use scale_info::prelude::format;
 
 pub(crate) fn do_try_state<T: Config>() -> Result<(), &'static str> {
 	Credentials::<T>::iter().try_for_each(|(subject_id, credential_id, entry)| -> Result<(), &'static str> {
 		ensure!(
 			CredentialSubjects::<T>::get(&credential_id) == Some(subject_id.clone()),
-			convert_error_message(format!(
+			log_and_return_error_message(format!(
 				"Credential subject does not match. Credential id: {:?}. Subject id: {:?}",
 				credential_id, subject_id
 			))
 		);
 
 		ensure!(
-			ctype::Ctypes::<T>::contains_key(&entry.ctype_hash),
-			convert_error_message(format!("Unknown Ctype: {:?}", entry.ctype_hash))
+			ctype::Ctypes::<T>::contains_key(entry.ctype_hash),
+			log_and_return_error_message(format!("Unknown Ctype: {:?}", entry.ctype_hash))
 		);
 
 		Ok(())
@@ -42,7 +42,7 @@ pub(crate) fn do_try_state<T: Config>() -> Result<(), &'static str> {
 	CredentialSubjects::<T>::iter().try_for_each(|(credential_id, subject_id)| -> Result<(), &'static str> {
 		ensure!(
 			Credentials::<T>::contains_key(subject_id, &credential_id),
-			convert_error_message(format!("Unknown credential {:?}", credential_id))
+			log_and_return_error_message(format!("Unknown credential {:?}", credential_id))
 		);
 		Ok(())
 	})

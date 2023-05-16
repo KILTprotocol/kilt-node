@@ -17,7 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_support::ensure;
-use kilt_support::test::convert_error_message;
+use kilt_support::test_utils::log_and_return_error_message;
 use scale_info::prelude::format;
 
 use crate::{Config, DelegationHierarchies, DelegationNode, DelegationNodes};
@@ -29,7 +29,7 @@ pub(crate) fn do_try_state<T: Config>() -> Result<(), &'static str> {
 		// check if node is in part of a delegation hierarchy.
 		ensure!(
 			DelegationHierarchies::<T>::contains_key(hierarchy_id),
-			convert_error_message(format!("Delegation hierarchy {:?} not found", hierarchy_id))
+			log_and_return_error_message(format!("Delegation hierarchy {:?} not found", hierarchy_id))
 		);
 
 		let parent_count = DelegationNodes::<T>::iter_values()
@@ -40,8 +40,8 @@ pub(crate) fn do_try_state<T: Config>() -> Result<(), &'static str> {
 			// If node is a leaf or intermediate, check if it occurs only once. Otherwise we
 			// have cycles.
 			ensure!(
-				parent_count <= 1,
-				convert_error_message(format!(
+				parent_count == 1,
+				log_and_return_error_message(format!(
 					"Delegation with cycles detected. Node {:?} in hierarchy {:?} has two or more parents.",
 					delegation_node_id, hierarchy_id
 				))
@@ -51,7 +51,7 @@ pub(crate) fn do_try_state<T: Config>() -> Result<(), &'static str> {
 			// from another node.
 			ensure!(
 				parent_count == 0,
-				convert_error_message(format!(
+				log_and_return_error_message(format!(
 					"Root node {:?} is child from other delegation nodes",
 					delegation_node_id
 				))
@@ -66,7 +66,7 @@ pub(crate) fn do_try_state<T: Config>() -> Result<(), &'static str> {
 				.all(|x| x);
 			ensure!(
 				is_subtree_revoked,
-				convert_error_message(format!(
+				log_and_return_error_message(format!(
 					"Revoked delegation node {:?} has an unrevoked subtree.",
 					delegation_node_id
 				))

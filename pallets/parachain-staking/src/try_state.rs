@@ -17,9 +17,12 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_support::{ensure, traits::Get};
-use kilt_support::test::convert_error_message;
+use kilt_support::test_utils::log_and_return_error_message;
 use scale_info::prelude::format;
-use sp_runtime::{traits::Zero, SaturatedConversion, Saturating};
+use sp_runtime::{
+	traits::{CheckedAdd, Zero},
+	SaturatedConversion, Saturating,
+};
 
 use crate::{
 	set::OrderedSet,
@@ -30,6 +33,7 @@ use crate::{
 
 pub(crate) fn do_try_state<T: Config>() -> Result<(), &'static str> {
 	validate_candiate_pool::<T>()?;
+	validate_delegators::<T>()?;
 	validate_top_candidates::<T>()?;
 	validate_stake::<T>()
 }
@@ -38,7 +42,7 @@ fn validate_candiate_pool<T: Config>() -> Result<(), &'static str> {
 	// check if enough collators are set.
 	ensure!(
 		CandidatePool::<T>::count() >= T::MinCollators::get(),
-		convert_error_message(format!(
+		log_and_return_error_message(format!(
 			"Insufficient collators. Collators count: {:?}. Min required collators: {:?}",
 			CandidatePool::<T>::count(),
 			T::MinCollators::get()
@@ -53,29 +57,37 @@ fn validate_candiate_pool<T: Config>() -> Result<(), &'static str> {
 				.fold(Zero::zero(), |acc, stake| acc.saturating_add(stake.amount));
 
 			// total stake should be the sum of delegators stake + colator stake.
-			let stake_total = sum_delegations.saturating_add(candidate.stake);
+			let stake_total = sum_delegations.checked_add(&candidate.stake);
 			ensure!(
-				stake_total == candidate.total,
-				convert_error_message(format!("Total stake of collator {:?} does not match", candidate.id))
+				stake_total == Some(candidate.total),
+				log_and_return_error_message(format!(
+					"Total stake of collator {:?} does not match. Saved stake: {:?}. Calculated stake: {:?}",
+					candidate.id, candidate.stake, stake_total
+				))
 			);
 
 			// Min required stake should be set
 			ensure!(
 				candidate.stake >= T::MinCollatorCandidateStake::get(),
-				convert_error_message(format!("Stake of collator {:?} insufficient", candidate.id))
+				log_and_return_error_message(format!(
+					"Stake of collator {:?} insufficient. Required stake: {:?}. Owned Stake: {:?} ",
+					candidate.id,
+					T::MinCollatorCandidateStake::get(),
+					candidate.stake
+				))
 			);
 
-			validate_delegators::<T>(candidate.delegators)?;
+			validate_delegators_from_collator::<T>(candidate.delegators)?;
 
 			// check min and max stake for each candidate
 			ensure!(
 				candidate.stake <= MaxCollatorCandidateStake::<T>::get(),
-				convert_error_message(format!("Candidate {:?} exceeded stake", candidate.id))
-			);
-
-			ensure!(
-				candidate.stake >= T::MinCollatorStake::get(),
-				convert_error_message(format!("Candidate {:?} insufficient stake", candidate.id))
+				log_and_return_error_message(format!(
+					"Candidate {:?} exceeded stake. Allowed stake: {:?}. Owned Stake: {:?}",
+					candidate.id,
+					MaxCollatorCandidateStake::<T>::get(),
+					candidate.stake
+				))
 			);
 
 			Ok(())
@@ -89,7 +101,7 @@ fn validate_top_candidates<T: Config>() -> Result<(), &'static str> {
 	// check if enough top candidates are set.
 	ensure!(
 		top_candidates.len() >= T::MinRequiredCollators::get().saturated_into(),
-		convert_error_message(format!(
+		log_and_return_error_message(format!(
 			"Not enough candidates are set. Candidate count: {:?}. Required: {:?}",
 			top_candidates.len(),
 			T::MinRequiredCollators::get()
@@ -100,26 +112,26 @@ fn validate_top_candidates<T: Config>() -> Result<(), &'static str> {
 		// top candidates should be part of the candidate pool.
 		ensure!(
 			CandidatePool::<T>::contains_key(&stake.owner),
-			convert_error_message(format!("Unknown candidate {:?} in top candidates.", stake.owner))
+			log_and_return_error_message(format!("Unknown candidate {:?} in top candidates.", stake.owner))
 		);
 
 		// an account can not be candidate and delegator.
 		ensure!(
 			DelegatorState::<T>::get(&stake.owner).is_none(),
-			convert_error_message(format!("Account {:?} is delegator and candidate.", stake.owner))
+			log_and_return_error_message(format!("Account {:?} is delegator and candidate.", stake.owner))
 		);
 
 		// a top candidate should be active.
 		ensure!(
 			Pallet::<T>::is_active_candidate(&stake.owner).unwrap(),
-			convert_error_message(format!("Top candidate {:?} is inactive", stake.owner))
+			log_and_return_error_message(format!("Top candidate {:?} is inactive", stake.owner))
 		);
 
 		Ok(())
 	})
 }
 
-fn validate_delegators<T: Config>(
+fn validate_delegators_from_collator<T: Config>(
 	delegators: OrderedSet<Stake<T::AccountId, BalanceOf<T>>, T::MaxDelegatorsPerCollator>,
 ) -> Result<(), &'static str> {
 	delegators
@@ -136,21 +148,26 @@ fn validate_delegators<T: Config>(
 			// each delegator should not exceed the [MaxDelegationsPerRound]
 			ensure!(
 				counter <= T::MaxDelegationsPerRound::get(),
-				convert_error_message(format!(
-					"Exceeded delegations per round. Delegator: {:?}",
-					delegator_stake.owner
+				log_and_return_error_message(format!(
+					"Delegator {:?} exceeded delegations per round. Allowed delegations {:?}. Confirmed delegations {:?}",
+					delegator_stake.owner, T::MaxDelegationsPerRound::get(), counter
 				))
 			);
 
 			// each delegator should have the min required stake
 			ensure!(
 				delegator_stake.amount >= T::MinDelegatorStake::get(),
-				convert_error_message(format!("Delegator {:?} insufficient stake", delegator_stake.owner))
+				log_and_return_error_message(format!(
+					"Delegator {:?} insufficient stake. Required stake: {:?}. Owned stake: {:?}",
+					delegator_stake.owner,
+					T::MinDelegatorStake::get(),
+					delegator_stake.amount
+				))
 			);
 
 			ensure!(
 				DelegatorState::<T>::get(&delegator_stake.owner).is_some(),
-				convert_error_message(format!("Unknown delegator {:?}", delegator_stake.owner))
+				log_and_return_error_message(format!("Unknown delegator {:?}", delegator_stake.owner))
 			);
 
 			Ok(())
@@ -184,7 +201,7 @@ fn validate_stake<T: Config>() -> Result<(), &'static str> {
 
 	ensure!(
 		total_stake.collators == collator_stake,
-		convert_error_message(format!(
+		log_and_return_error_message(format!(
 			"Corrupted total collator stake. Saved total stake: {:?}. Calculated stake: {:?}",
 			total_stake.collators, collator_stake
 		))
@@ -192,11 +209,21 @@ fn validate_stake<T: Config>() -> Result<(), &'static str> {
 
 	ensure!(
 		total_stake.delegators == delegator_state,
-		convert_error_message(format!(
+		log_and_return_error_message(format!(
 			"Corrupted total delegator stake. Saved total stake: {:?}. Calculated stake: {:?}",
 			total_stake.delegators, delegator_state
 		))
 	);
 
 	Ok(())
+}
+
+fn validate_delegators<T: Config>() -> Result<(), &'static str> {
+	DelegatorState::<T>::iter_values().try_for_each(|delegator_details| -> Result<(), &'static str> {
+		ensure!(
+			CandidatePool::<T>::contains_key(&delegator_details.owner),
+			log_and_return_error_message(format!("Collator {:?} not found", delegator_details.owner))
+		);
+		Ok(())
+	})
 }

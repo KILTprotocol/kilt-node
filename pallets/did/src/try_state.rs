@@ -17,7 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_support::ensure;
-use kilt_support::test::convert_error_message;
+use kilt_support::test_utils::log_and_return_error_message;
 use scale_info::prelude::format;
 use sp_core::Get;
 use sp_runtime::SaturatedConversion;
@@ -31,23 +31,38 @@ pub(crate) fn do_try_state<T: Config>() -> Result<(), &'static str> {
 
 			ensure!(
 				service_endpoints_count == DidEndpointsCount::<T>::get(&did_subject).saturated_into::<usize>(),
-				convert_error_message(format!("Did {:?} has not matching service endpoints.", did_subject))
+				log_and_return_error_message(format!(
+					"Did {:?} has not matching service endpoints. In [ServiceEndpoints]: {:?} in [DidEndpointsCount]: {:?}",
+					did_subject,
+					service_endpoints_count,
+					DidEndpointsCount::<T>::get(&did_subject)
+				))
 			);
 
 			ensure!(
 				did_details.key_agreement_keys.len()
 					<= (<T as Config>::MaxTotalKeyAgreementKeys::get()).saturated_into::<usize>(),
-				convert_error_message(format!("Did {:?} has to many key agreement keys.", did_subject,))
+				log_and_return_error_message(format!(
+					"Did {:?} has to many key agreement keys. Allowed: {:?} found: {:?}",
+					did_subject,
+					<T as Config>::MaxTotalKeyAgreementKeys::get(),
+					did_details.key_agreement_keys.len()
+				))
 			);
 
 			ensure!(
 				service_endpoints_count <= <T as Config>::MaxNumberOfServicesPerDid::get().saturated_into::<usize>(),
-				convert_error_message(format!("Did {:?} has to many service endpoints.", did_subject))
+				log_and_return_error_message(format!(
+					"Did {:?} has to many service endpoints. Allowed: {:?} found: {:?}",
+					did_subject,
+					<T as Config>::MaxNumberOfServicesPerDid::get(),
+					service_endpoints_count
+				))
 			);
 
 			ensure!(
 				!DidBlacklist::<T>::contains_key(&did_subject),
-				convert_error_message(format!("Did {:?} is blacklisted.", did_subject))
+				log_and_return_error_message(format!("Did {:?} is blacklisted.", did_subject))
 			);
 
 			Ok(())
@@ -58,7 +73,7 @@ pub(crate) fn do_try_state<T: Config>() -> Result<(), &'static str> {
 		let service_endpoints_count = ServiceEndpoints::<T>::iter_prefix(&deleted_did_subject).count();
 		ensure!(
 			service_endpoints_count == 0,
-			convert_error_message(format!(
+			log_and_return_error_message(format!(
 				"Blacklisted did {:?} has service endpoints.",
 				deleted_did_subject,
 			))

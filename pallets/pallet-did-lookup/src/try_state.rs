@@ -17,7 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_support::ensure;
-use kilt_support::test::convert_error_message;
+use kilt_support::test_utils::log_and_return_error_message;
 use scale_info::prelude::format;
 
 use crate::{Config, ConnectedAccounts, ConnectedDids};
@@ -26,7 +26,7 @@ pub(crate) fn do_try_state<T: Config>() -> Result<(), &'static str> {
 	ConnectedDids::<T>::iter().try_for_each(|(account, record)| -> Result<(), &'static str> {
 		ensure!(
 			ConnectedAccounts::<T>::contains_key(&record.did, &account),
-			convert_error_message(format!("Account {:?} with did {:?} not found", record.did, account))
+			log_and_return_error_message(format!("Account {:?} with did {:?} not found", record.did, account))
 		);
 		Ok(())
 	})?;
@@ -34,7 +34,7 @@ pub(crate) fn do_try_state<T: Config>() -> Result<(), &'static str> {
 	ConnectedAccounts::<T>::iter().try_for_each(|(did_identifier, linked_account_id, _)| -> Result<(), &'static str> {
 		ensure!(
 			ConnectedDids::<T>::get(&linked_account_id).expect("Unknown did").did == did_identifier,
-			convert_error_message(format!(
+			log_and_return_error_message(format!(
 				"Linked Account {:?} for did {:?} not match",
 				linked_account_id, did_identifier
 			))

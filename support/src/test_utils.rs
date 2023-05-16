@@ -16,8 +16,10 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use scale_info::prelude::{boxed::Box, string::String};
+use scale_info::prelude::string::String;
 
-pub fn convert_error_message(error_message: String) -> &'static str {
-	Box::leak(error_message.into_boxed_str())
+/// logges the error message
+pub fn log_and_return_error_message(error_message: String) -> &'static str {
+	log::error!("{}", error_message);
+	"Sanity test error"
 }
