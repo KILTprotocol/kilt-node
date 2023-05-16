@@ -25,8 +25,11 @@ use pallet_treasury::BalanceOf;
 use pallet_web3_names::{Web3NameOf, Web3OwnershipOf};
 use runtime_common::{
 	constants::{
-		attestation::MAX_ATTESTATION_BYTE_LENGTH, did::MAX_DID_BYTE_LENGTH, did_lookup::MAX_CONNECTION_BYTE_LENGTH,
-		public_credentials::MAX_PUBLIC_CREDENTIAL_STORAGE_LENGTH, web3_names::MAX_NAME_BYTE_LENGTH,
+		attestation::MAX_ATTESTATION_BYTE_LENGTH,
+		did::{MAX_KEY_LENGTH, MAX_SERVICE_ENDPOINT_BYTE_LENGTH},
+		did_lookup::MAX_CONNECTION_BYTE_LENGTH,
+		public_credentials::MAX_PUBLIC_CREDENTIAL_STORAGE_LENGTH,
+		web3_names::MAX_NAME_BYTE_LENGTH,
 		MAX_INDICES_BYTE_LENGTH,
 	},
 	AccountId, BlockNumber,
@@ -60,14 +63,13 @@ fn attestation_storage_sizes() {
 
 #[test]
 fn did_storage_sizes() {
-	let did_size = did::did_details::DidDetails::<Runtime>::max_encoded_len();
+	// Service endpoint
+	let max_did_endpoint_size = did::service_endpoints::DidEndpoint::<Runtime>::max_encoded_len();
+	assert_eq!(max_did_endpoint_size, MAX_SERVICE_ENDPOINT_BYTE_LENGTH as usize);
 
-	// service endpoints and counter
-	let did_endpoint_size = did::service_endpoints::DidEndpoint::<Runtime>::max_encoded_len()
-		* (<Runtime as did::Config>::MaxNumberOfServicesPerDid::get() as usize)
-		+ u32::max_encoded_len();
-
-	assert_eq!(did_size + did_endpoint_size, MAX_DID_BYTE_LENGTH as usize)
+	// DID key
+	let max_did_key_size = did::did_details::DidPublicKey::max_encoded_len();
+	assert_eq!(max_did_key_size, MAX_KEY_LENGTH as usize);
 }
 
 #[test]
