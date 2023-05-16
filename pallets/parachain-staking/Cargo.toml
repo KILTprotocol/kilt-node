@@ -11,6 +11,7 @@ name = "parachain-staking"
 description = "Parachain parachain-staking pallet for collator delegation and selection as well as reward distribution"
 
 [dev-dependencies]
+kilt-support = {workspace = true, features = ["mock", "try-runtime"]}
 pallet-aura = {workspace = true, features = ["std"]}
 pallet-timestamp = {workspace = true, features = ["std"]}
 sp-consensus-aura = {workspace = true, features = ["std"]}

@@ -12,7 +12,7 @@ description = "Enables adding and revoking public credentials."
 
 [dev-dependencies]
 ctype = {workspace = true, features = ["mock"]}
-kilt-support = {workspace = true, features = ["mock"]}
+kilt-support = {workspace = true, features = ["mock", "try-runtime"]}
 
 pallet-balances = {workspace = true, features = ["std"]}
 sp-io = {workspace = true, features = ["std"]}
@@ -62,4 +62,5 @@ std = [
 try-runtime = [
   "frame-support/try-runtime",
   "frame-system/try-runtime",
+  "kilt-support/try-runtime"
 ]

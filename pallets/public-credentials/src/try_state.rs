@@ -16,11 +16,10 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use crate::{Config, CredentialSubjects, Credentials};
 use frame_support::ensure;
 use kilt_support::test::convert_error_message;
 use scale_info::prelude::format;
-
-use crate::{Config, CredentialSubjects, Credentials};
 
 pub(crate) fn do_try_state<T: Config>() -> Result<(), &'static str> {
 	Credentials::<T>::iter().try_for_each(|(subject_id, credential_id, entry)| -> Result<(), &'static str> {
