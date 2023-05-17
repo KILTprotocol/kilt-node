@@ -366,6 +366,8 @@ pub(crate) mod runtime {
 
 	pub(crate) const ACCOUNT_00: AccountId = AccountId::new([1u8; 32]);
 	pub(crate) const ACCOUNT_01: AccountId = AccountId::new([2u8; 32]);
+	// Min Balance has to be >= [ExistentialDeposit]
+	pub(crate) const MIN_BALANCE: Balance = MILLI_UNIT;
 
 	pub(crate) const ALICE_SEED: [u8; 32] = [0u8; 32];
 	pub(crate) const BOB_SEED: [u8; 32] = [1u8; 32];

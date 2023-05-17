@@ -37,7 +37,11 @@ fn create_root_delegation_successful() {
 
 	ExtBuilder::default()
 		.with_ctypes(vec![(operation.ctype_hash, creator.clone())])
-		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get())])
+		.with_balances(vec![(
+			ACCOUNT_00,
+			<Test as Config>::Deposit::get()
+				+ <<Test as Config>::Currency as Currency<delegation::AccountIdOf<Test>>>::minimum_balance(),
+		)])
 		.build()
 		.execute_with(|| {
 			// Create root hierarchy
@@ -222,8 +226,16 @@ fn create_delegation_with_parent_successful() {
 		)])
 		.with_delegations(vec![(parent_id, parent_node)])
 		.with_balances(vec![
-			(ACCOUNT_00, <Test as Config>::Deposit::get()),
-			(ACCOUNT_01, <Test as Config>::Deposit::get()),
+			(
+				ACCOUNT_00,
+				<Test as Config>::Deposit::get()
+					+ <<Test as Config>::Currency as Currency<delegation::AccountIdOf<Test>>>::minimum_balance(),
+			),
+			(
+				ACCOUNT_01,
+				<Test as Config>::Deposit::get()
+					+ <<Test as Config>::Currency as Currency<delegation::AccountIdOf<Test>>>::minimum_balance(),
+			),
 		])
 		.build()
 		.execute_with(|| {
@@ -2212,7 +2224,11 @@ fn test_change_deposit_owner() {
 	ExtBuilder::default()
 		.with_balances(vec![
 			(ACCOUNT_00, <Test as Config>::Deposit::get() * 2),
-			(ACCOUNT_01, <Test as Config>::Deposit::get()),
+			(
+				ACCOUNT_01,
+				<Test as Config>::Deposit::get()
+					+ <<Test as Config>::Currency as Currency<delegation::AccountIdOf<Test>>>::minimum_balance(),
+			),
 		])
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, root_owner.clone())])
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, root_owner, ACCOUNT_00)])
