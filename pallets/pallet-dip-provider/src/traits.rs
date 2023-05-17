@@ -149,35 +149,38 @@ pub mod identity_dispatch {
 
 pub use identity_provision::*;
 pub mod identity_provision {
+	use sp_std::marker::PhantomData;
 
-	pub trait IdentityProvider<Identifier, Identity, Details = ()> {
+	pub trait IdentityProvider<Identifier> {
 		type Error;
+		type Success;
 
-		fn retrieve(identifier: &Identifier) -> Result<Option<(Identity, Details)>, Self::Error>;
+		fn retrieve(identifier: &Identifier) -> Result<Option<Self::Success>, Self::Error>;
 	}
 
 	// Return the `Default` value if `Identity` adn `Details` both implement it.
-	pub struct DefaultIdentityProvider;
+	pub struct DefaultIdentityProvider<Identity>(PhantomData<Identity>);
 
-	impl<Identifier, Identity, Details> IdentityProvider<Identifier, Identity, Details> for DefaultIdentityProvider
+	impl<Identifier, Identity> IdentityProvider<Identifier> for DefaultIdentityProvider<Identity>
 	where
 		Identity: Default,
-		Details: Default,
 	{
 		type Error = ();
+		type Success = Identity;
 
-		fn retrieve(_identifier: &Identifier) -> Result<Option<(Identity, Details)>, Self::Error> {
-			Ok(Some((Identity::default(), Details::default())))
+		fn retrieve(_identifier: &Identifier) -> Result<Option<Self::Success>, Self::Error> {
+			Ok(Some(Identity::default()))
 		}
 	}
 
 	// Always return `None`. Might be useful for tests.
 	pub struct NoneIdentityProvider;
 
-	impl<Identifier, Identity, Details> IdentityProvider<Identifier, Identity, Details> for NoneIdentityProvider {
+	impl<Identifier> IdentityProvider<Identifier> for NoneIdentityProvider {
 		type Error = ();
+		type Success = ();
 
-		fn retrieve(_identifier: &Identifier) -> Result<Option<(Identity, Details)>, Self::Error> {
+		fn retrieve(_identifier: &Identifier) -> Result<Option<Self::Success>, Self::Error> {
 			Ok(None)
 		}
 	}

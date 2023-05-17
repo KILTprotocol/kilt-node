@@ -52,7 +52,7 @@ pub mod pallet {
 			Output = Self::ProofOutput,
 		>;
 		type IdentityProofDispatcher: IdentityProofDispatcher<Self::Identifier, Self::ProofOutput, ()>;
-		type IdentityProvider: IdentityProvider<Self::Identifier, Self::Identity>;
+		type IdentityProvider: IdentityProvider<Self::Identifier, Success = Self::Identity>;
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 		type TxBuilder: TxBuilder<Self::Identifier, Self::ProofOutput, ()>;
 	}
@@ -99,7 +99,7 @@ pub mod pallet {
 
 			let destination: MultiLocation = (*destination).try_into().map_err(|_| Error::<T>::BadVersion)?;
 			let action: IdentityProofActionOf<T> = match T::IdentityProvider::retrieve(&identifier) {
-				Ok(Some((identity, _))) => {
+				Ok(Some(identity)) => {
 					let identity_proof = T::IdentityProofGenerator::generate_commitment(&identifier, &identity)
 						.map_err(|_| Error::<T>::IdentityProofGeneration)?;
 					Ok(IdentityProofAction::Updated(identifier, identity_proof, ()))

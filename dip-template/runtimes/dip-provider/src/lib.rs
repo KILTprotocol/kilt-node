@@ -534,7 +534,7 @@ impl_runtime_apis! {
 	// TODO: Support generating different versions of the proof, based on the provided parameter
 	impl kilt_runtime_api_dip_provider::DipProvider<Block, DidIdentifier, KeyIdOf<Runtime>, Vec<KeyIdOf<Runtime>>, CompleteMerkleProof<Hash, DidMerkleProofOf<Runtime>>, ()> for Runtime {
 		fn generate_proof(identifier: DidIdentifier, keys: Vec<KeyIdOf<Runtime>>) -> Result<CompleteMerkleProof<Hash, DidMerkleProofOf<Runtime>>, ()> {
-			if let Ok(Some((did_details, _))) = <Runtime as pallet_dip_provider::Config>::IdentityProvider::retrieve(&identifier) {
+			if let Ok(Some(did_details)) = <Runtime as pallet_dip_provider::Config>::IdentityProvider::retrieve(&identifier) {
 				DidMerkleRootGenerator::<Runtime>::generate_proof(&did_details, keys.iter())
 			} else {
 				Err(())
