@@ -102,6 +102,10 @@ parameter_types! {
 }
 
 impl pallet_balances::Config for Test {
+	type FreezeIdentifier = ();
+	type HoldIdentifier = ();
+	type MaxFreezes = ();
+	type MaxHolds = ();
 	type MaxLocks = ();
 	type MaxReserves = ();
 	type ReserveIdentifier = [u8; 8];

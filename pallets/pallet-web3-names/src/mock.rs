@@ -128,6 +128,10 @@ pub(crate) mod runtime {
 	}
 
 	impl pallet_balances::Config for Test {
+		type FreezeIdentifier = ();
+		type HoldIdentifier = ();
+		type MaxFreezes = ();
+		type MaxHolds = ();
 		type Balance = Balance;
 		type DustRemoval = ();
 		type RuntimeEvent = RuntimeEvent;

@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::{assert_err, assert_noop, assert_ok};
+use frame_support::{assert_err, assert_noop, assert_ok, traits::Currency};
 use kilt_support::mock::mock_origin::DoubleOrigin;
 
 use crate::{
@@ -138,8 +138,16 @@ fn create_delegation_direct_root_successful() {
 			ACCOUNT_00,
 		)])
 		.with_balances(vec![
-			(ACCOUNT_00, <Test as Config>::Deposit::get()),
-			(ACCOUNT_01, <Test as Config>::Deposit::get()),
+			(
+				ACCOUNT_00,
+				<Test as Config>::Deposit::get()
+					+ <<Test as Config>::Currency as Currency<delegation::AccountIdOf<Test>>>::minimum_balance(),
+			),
+			(
+				ACCOUNT_01,
+				<Test as Config>::Deposit::get()
+					+ <<Test as Config>::Currency as Currency<delegation::AccountIdOf<Test>>>::minimum_balance(),
+			),
 		])
 		.build()
 		.execute_with(|| {
@@ -1990,6 +1998,10 @@ fn is_delegating_delegation_not_found() {
 
 	// Root -> Delegation 1
 	let mut ext = ExtBuilder::default()
+		.with_balances(vec![(
+			ACCOUNT_00,
+			<<Test as Config>::Currency as Currency<delegation::AccountIdOf<Test>>>::minimum_balance(),
+		)])
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, user_1.clone(), ACCOUNT_00)])
 		.build();
 

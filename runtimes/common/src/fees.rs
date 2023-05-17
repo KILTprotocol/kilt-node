@@ -214,6 +214,10 @@ mod tests {
 	}
 
 	impl pallet_balances::Config for Test {
+		type FreezeIdentifier = ();
+		type HoldIdentifier = ();
+		type MaxFreezes = ();
+		type MaxHolds = ();
 		type Balance = u64;
 		type RuntimeEvent = RuntimeEvent;
 		type DustRemoval = ();
