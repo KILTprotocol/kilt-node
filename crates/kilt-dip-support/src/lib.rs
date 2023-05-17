@@ -20,9 +20,10 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use ::did::DidSignature;
 use pallet_dip_consumer::traits::IdentityProofVerifier;
 use sp_std::marker::PhantomData;
+
+use crate::did::MerkleLeavesAndDidSignature;
 
 pub mod did;
 pub mod merkle;
@@ -49,24 +50,18 @@ where
 	DidSignatureVerifier: IdentityProofVerifier<
 		Call,
 		Subject,
-		Proof = (
-			<MerkleProofVerifier as IdentityProofVerifier<Call, Subject>>::VerificationResult,
-			(DidSignature, BlockNumber),
-		),
-		IdentityDetails = <MerkleProofVerifier as IdentityProofVerifier<Call, Subject>>::IdentityDetails,
-		Submitter = <MerkleProofVerifier as IdentityProofVerifier<Call, Subject>>::Submitter,
+		Proof = MerkleLeavesAndDidSignature<MerkleProofVerifier::VerificationResult, BlockNumber>,
+		IdentityDetails = MerkleProofVerifier::IdentityDetails,
+		Submitter = MerkleProofVerifier::Submitter,
 	>,
 {
 	// FIXME: Better error handling
 	type Error = ();
 	// FIXME: Better type declaration
-	type Proof = (
-		<MerkleProofVerifier as IdentityProofVerifier<Call, Subject>>::Proof,
-		(DidSignature, BlockNumber),
-	);
-	type IdentityDetails = <DidSignatureVerifier as IdentityProofVerifier<Call, Subject>>::IdentityDetails;
-	type Submitter = <MerkleProofVerifier as IdentityProofVerifier<Call, Subject>>::Submitter;
-	type VerificationResult = <MerkleProofVerifier as IdentityProofVerifier<Call, Subject>>::VerificationResult;
+	type Proof = MerkleLeavesAndDidSignature<MerkleProofVerifier::Proof, BlockNumber>;
+	type IdentityDetails = DidSignatureVerifier::IdentityDetails;
+	type Submitter = MerkleProofVerifier::Submitter;
+	type VerificationResult = MerkleProofVerifier::VerificationResult;
 
 	fn verify_proof_for_call_against_entry(
 		call: &Call,
@@ -75,16 +70,24 @@ where
 		proof_entry: &mut Self::IdentityDetails,
 		proof: &Self::Proof,
 	) -> Result<Self::VerificationResult, Self::Error> {
-		let merkle_proof_verification =
-			MerkleProofVerifier::verify_proof_for_call_against_entry(call, subject, submitter, proof_entry, &proof.0)
-				.map_err(|_| ())?;
+		let merkle_proof_verification = MerkleProofVerifier::verify_proof_for_call_against_entry(
+			call,
+			subject,
+			submitter,
+			proof_entry,
+			&proof.merkle_entries,
+		)
+		.map_err(|_| ())?;
 		DidSignatureVerifier::verify_proof_for_call_against_entry(
 			call,
 			subject,
 			submitter,
 			proof_entry,
 			// FIXME: Remove `clone()` requirement
-			&(merkle_proof_verification.clone(), proof.1.clone()),
+			&MerkleLeavesAndDidSignature {
+				merkle_entries: merkle_proof_verification.clone(),
+				did_signature: proof.did_signature.clone(),
+			},
 		)
 		.map_err(|_| ())?;
 		Ok(merkle_proof_verification)

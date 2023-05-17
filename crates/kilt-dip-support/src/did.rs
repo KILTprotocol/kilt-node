@@ -22,8 +22,9 @@ use did::{
 };
 use frame_support::ensure;
 use pallet_dip_consumer::{identity::IdentityDetails, traits::IdentityProofVerifier};
-use parity_scale_codec::Encode;
-use sp_core::{ConstU64, Get};
+use parity_scale_codec::{Decode, Encode};
+use scale_info::TypeInfo;
+use sp_core::{ConstU64, Get, RuntimeDebug};
 use sp_runtime::traits::CheckedSub;
 use sp_std::marker::PhantomData;
 
@@ -32,11 +33,13 @@ use crate::{
 	traits::{Bump, DidDipOriginFilter},
 };
 
+#[derive(Encode, Decode, RuntimeDebug, Clone, Eq, PartialEq, TypeInfo)]
 pub struct TimeBoundDidSignature<BlockNumber> {
 	pub signature: DidSignature,
 	pub block_number: BlockNumber,
 }
 
+#[derive(Encode, Decode, RuntimeDebug, Clone, Eq, PartialEq, TypeInfo)]
 pub struct MerkleLeavesAndDidSignature<MerkleEntries, BlockNumber> {
 	pub merkle_entries: MerkleEntries,
 	pub did_signature: TimeBoundDidSignature<BlockNumber>,
@@ -151,7 +154,7 @@ impl<
 		ensure!(is_signature_fresh, ());
 		let encoded_payload = (
 			call,
-			proof_entry.details(),
+			&proof_entry.details,
 			submitter,
 			&proof.did_signature.block_number,
 			GenesisHashProvider::get(),
@@ -204,24 +207,21 @@ impl<Call, Subject, DidSignatureVerifier, CallVerifier> IdentityProofVerifier<Ca
 	for DidSignatureAndCallVerifier<DidSignatureVerifier, CallVerifier>
 where
 	DidSignatureVerifier: IdentityProofVerifier<Call, Subject>,
-	CallVerifier: DidDipOriginFilter<
-		Call,
-		OriginInfo = <DidSignatureVerifier as IdentityProofVerifier<Call, Subject>>::VerificationResult,
-	>,
+	CallVerifier: DidDipOriginFilter<Call, OriginInfo = DidSignatureVerifier::VerificationResult>,
 {
 	// FIXME: Better error handling
 	type Error = ();
 	/// The input proof is the same accepted by the `DidSignatureVerifier`.
-	type Proof = <DidSignatureVerifier as IdentityProofVerifier<Call, Subject>>::Proof;
+	type Proof = DidSignatureVerifier::Proof;
 	/// The identity details are the same accepted by the
 	/// `DidSignatureVerifier`.
-	type IdentityDetails = <DidSignatureVerifier as IdentityProofVerifier<Call, Subject>>::IdentityDetails;
+	type IdentityDetails = DidSignatureVerifier::IdentityDetails;
 	/// The submitter address is the same accepted by the
 	/// `DidSignatureVerifier`.
-	type Submitter = <DidSignatureVerifier as IdentityProofVerifier<Call, Subject>>::Submitter;
+	type Submitter = DidSignatureVerifier::Submitter;
 	/// The verification result is the same accepted by the
 	/// `DidSignatureVerifier`.
-	type VerificationResult = <DidSignatureVerifier as IdentityProofVerifier<Call, Subject>>::VerificationResult;
+	type VerificationResult = DidSignatureVerifier::VerificationResult;
 
 	fn verify_proof_for_call_against_entry(
 		call: &Call,

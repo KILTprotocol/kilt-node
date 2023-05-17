@@ -21,7 +21,10 @@ use super::*;
 use did::{Did, DidSignature};
 use frame_support::{assert_ok, weights::Weight};
 use frame_system::RawOrigin;
-use kilt_dip_support::merkle::MerkleProof;
+use kilt_dip_support::{
+	did::{MerkleLeavesAndDidSignature, TimeBoundDidSignature},
+	merkle::MerkleProof,
+};
 use pallet_did_lookup::linkable_account::LinkableAccountId;
 use parity_scale_codec::Encode;
 use runtime_common::dip::merkle::{CompleteMerkleProof, DidMerkleRootGenerator};
@@ -100,13 +103,16 @@ fn commit_identity() {
 		assert_ok!(DipConsumer::dispatch_as(
 			RawOrigin::Signed(para::consumer::DISPATCHER_ACCOUNT).into(),
 			did.clone(),
-			(
-				MerkleProof {
+			MerkleLeavesAndDidSignature {
+				merkle_entries: MerkleProof {
 					blinded: proof.blinded,
 					revealed: proof.revealed,
 				},
-				(signature, system_block)
-			),
+				did_signature: TimeBoundDidSignature {
+					signature,
+					block_number: system_block
+				}
+			},
 			Box::new(call),
 		));
 		// Verify the account -> DID link exists and contains the right information

@@ -30,15 +30,6 @@ pub struct IdentityDetails<Digest, Details> {
 	pub details: Details,
 }
 
-impl<Digest, Details> IdentityDetails<Digest, Details> {
-	pub fn digest(&self) -> &Digest {
-		&self.digest
-	}
-	pub fn details(&self) -> &Details {
-		&self.details
-	}
-}
-
 impl<Digest, Details> IdentityDetails<Digest, Details>
 where
 	Details: Default,
