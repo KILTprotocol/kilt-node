@@ -32,6 +32,16 @@ use crate::{
 	traits::{Bump, DidDipOriginFilter},
 };
 
+pub struct TimeBoundDidSignature<BlockNumber> {
+	pub signature: DidSignature,
+	pub block_number: BlockNumber,
+}
+
+pub struct MerkleLeavesAndDidSignature<MerkleEntries, BlockNumber> {
+	pub merkle_entries: MerkleEntries,
+	pub did_signature: TimeBoundDidSignature<BlockNumber>,
+}
+
 /// A type that verifies a DID signature over some DID keys revealed by a
 /// previously-verified Merkle proof. It requires the `Details` type to
 /// implement the `Bump` trait to avoid replay attacks. The basic verification
@@ -112,7 +122,7 @@ impl<
 	type Error = ();
 	/// The proof must be a list of Merkle leaves that have been previously
 	/// verified by the Merkle proof verifier, and the additional DID signature.
-	type Proof = (MerkleProofEntries, (DidSignature, BlockNumber));
+	type Proof = MerkleLeavesAndDidSignature<MerkleProofEntries, BlockNumber>;
 	/// The `Details` that are part of the identity details must implement the
 	/// `Bump` trait.
 	type IdentityDetails = IdentityDetails<Digest, Details>;
@@ -130,25 +140,26 @@ impl<
 		proof: &Self::Proof,
 	) -> Result<Self::VerificationResult, Self::Error> {
 		let block_number = BlockNumberProvider::get();
-		let is_signature_fresh = if let Some(blocks_ago_from_now) = block_number.checked_sub(&proof.1 .1) {
-			// False if the signature is too old.
-			blocks_ago_from_now.into() <= SIGNATURE_VALIDITY
-		} else {
-			// Signature generated at a future time, not possible to verify.
-			false
-		};
+		let is_signature_fresh =
+			if let Some(blocks_ago_from_now) = block_number.checked_sub(&proof.did_signature.block_number) {
+				// False if the signature is too old.
+				blocks_ago_from_now.into() <= SIGNATURE_VALIDITY
+			} else {
+				// Signature generated at a future time, not possible to verify.
+				false
+			};
 		ensure!(is_signature_fresh, ());
 		let encoded_payload = (
 			call,
 			proof_entry.details(),
 			submitter,
-			&proof.1 .1,
+			&proof.did_signature.block_number,
 			GenesisHashProvider::get(),
 			SignedExtraProvider::get(),
 		)
 			.encode();
 		// Only consider verification keys from the set of revealed Merkle leaves.
-		let mut proof_verification_keys = proof.0.as_ref().iter().filter_map(
+		let mut proof_verification_keys = proof.merkle_entries.as_ref().iter().filter_map(
 			|ProofEntry {
 			     key: DidPublicKeyDetails { key, .. },
 			     relationship,
@@ -156,15 +167,18 @@ impl<
 				if let DidPublicKey::PublicVerificationKey(k) = key {
 					Some((
 						k,
-						DidVerificationKeyRelationship::try_from(*relationship).expect("Should never fail."),
+						DidVerificationKeyRelationship::try_from(*relationship).expect("Should never fail to build a VerificationRelationship from the given DidKeyRelationship because we have already made sure the conditions hold."),
 					))
 				} else {
 					None
 				}
 			},
 		);
-		let valid_signing_key = proof_verification_keys
-			.find(|(verification_key, _)| verification_key.verify_signature(&encoded_payload, &proof.1 .0).is_ok());
+		let valid_signing_key = proof_verification_keys.find(|(verification_key, _)| {
+			verification_key
+				.verify_signature(&encoded_payload, &proof.did_signature.signature)
+				.is_ok()
+		});
 		if let Some((key, relationship)) = valid_signing_key {
 			proof_entry.details.bump();
 			Ok((key.clone(), relationship))
