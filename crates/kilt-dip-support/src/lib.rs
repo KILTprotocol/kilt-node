@@ -31,7 +31,7 @@ pub mod traits;
 /// A type that chains a Merkle proof verification with a DID signature
 /// verification. The required input of this type is a tuple (A, B) where A is
 /// the type of input required by the `MerkleProofVerifier` and B is a
-/// `DidSignature.
+/// `DidSignature`.
 /// The successful output of this type is the output type of the
 /// `MerkleProofVerifier`, meaning that DID signature verification happens
 /// internally and does not transform the result in any way.

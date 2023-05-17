@@ -20,6 +20,8 @@ use sp_core::Get;
 use sp_runtime::traits::{CheckedAdd, One, Zero};
 use sp_std::marker::PhantomData;
 
+// TODO: Switch to the `Incrementable` trait once it's added to the root of
+// `frame_support`.
 /// A trait for "bumpable" types, i.e., types that have some notion of order of
 /// its members.
 pub trait Bump {
@@ -34,11 +36,7 @@ where
 {
 	// FIXME: Better implementation?
 	fn bump(&mut self) {
-		if let Some(new) = self.checked_add(&Self::one()) {
-			*self = new;
-		} else {
-			*self = Self::zero();
-		}
+		*self = self.checked_add(&Self::one()).unwrap_or_else(Self::zero);
 	}
 }
 
