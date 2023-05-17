@@ -192,7 +192,7 @@ impl<
 /// `MerkleRevealedDidSignatureVerifier`, and a call filtering logic based on
 /// the type of key used in the signature.
 /// Verification bails out early in case of invalid DID signatures. Otherwise,
-/// the retrived key and its relationship is passed to the call verifier to do
+/// the retrieved key and its relationship is passed to the call verifier to do
 /// some additional lookups on the call.
 /// The `CallVerifier` only performs internal checks, while all input and output
 /// types are taken from the provided `DidSignatureVerifier` type.
