@@ -15,15 +15,24 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
-#![cfg_attr(not(feature = "std"), no_std)]
 
-pub mod deposit;
-pub use deposit::{free_deposit, reserve_deposit};
+use frame_support::ensure;
+use kilt_support::test_utils::log_and_return_error_message;
+use scale_info::prelude::format;
 
-#[cfg(any(feature = "try-runtime", test))]
-pub mod test_utils;
+use crate::{Attestations, Config, ExternalAttestations};
 
-#[cfg(any(feature = "runtime-benchmarks", feature = "mock"))]
-pub mod mock;
-pub mod signature;
-pub mod traits;
+pub(crate) fn do_try_state<T: Config>() -> Result<(), &'static str> {
+	Attestations::<T>::iter().try_for_each(|(claim_hash, attestation_details)| -> Result<(), &'static str> {
+		if let Some(authorization_id) = attestation_details.authorization_id {
+			ensure!(
+				ExternalAttestations::<T>::get(&authorization_id, claim_hash),
+				log_and_return_error_message(format!(
+					"External attestation with authorization_id: {:?} and claim_hash {:?} does not exist",
+					authorization_id, claim_hash
+				))
+			)
+		}
+		Ok(())
+	})
+}

@@ -343,6 +343,13 @@ impl ExtBuilder {
 		ext.execute_with(|| System::set_block_number(1));
 		ext
 	}
+
+	pub fn build_and_execute_with_sanity_tests(self, test: impl FnOnce()) {
+		self.build().execute_with(|| {
+			test();
+			crate::try_state::do_try_state::<Test>().expect("Sanity test for parachain staking failed.");
+		})
+	}
 }
 
 /// Compare whether the difference of both sides is at most `precision * left`.
