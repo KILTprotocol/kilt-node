@@ -39,8 +39,11 @@ mod benchmarking;
 
 #[cfg(any(test, feature = "runtime-benchmarks"))]
 mod mock;
+
 #[cfg(test)]
 mod tests;
+#[cfg(any(test, feature = "try-runtime"))]
+mod try_state;
 
 pub use crate::{
 	access_control::AccessControl as PublicCredentialsAccessControl, credentials::*, default_weights::WeightInfo,
@@ -227,6 +230,14 @@ pub mod pallet {
 		/// Catch-all for any other errors that should not happen, yet it
 		/// happened.
 		Internal,
+	}
+
+	#[pallet::hooks]
+	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+		#[cfg(feature = "try-runtime")]
+		fn try_state(_n: BlockNumberFor<T>) -> Result<(), &'static str> {
+			crate::try_state::do_try_state::<T>()
+		}
 	}
 
 	#[pallet::call]

@@ -125,6 +125,9 @@ pub(crate) mod mock;
 #[cfg(test)]
 pub(crate) mod tests;
 
+#[cfg(any(feature = "try-runtime", test))]
+mod try_state;
+
 pub mod api;
 mod inflation;
 mod set;
@@ -139,6 +142,7 @@ pub mod pallet {
 	use super::*;
 	pub use crate::inflation::{InflationInfo, RewardRate, StakingInfo};
 
+	use core::cmp::Ordering;
 	use frame_support::{
 		assert_ok,
 		pallet_prelude::*,
@@ -510,6 +514,11 @@ pub mod pallet {
 				post_weight = post_weight.saturating_add(<T as Config>::WeightInfo::on_initialize_network_rewards());
 			}
 			post_weight
+		}
+
+		#[cfg(feature = "try-runtime")]
+		fn try_state(_n: BlockNumberFor<T>) -> Result<(), &'static str> {
+			crate::try_state::do_try_state::<T>()
 		}
 	}
 
@@ -1902,14 +1911,20 @@ pub mod pallet {
 					}
 					(false, true) => {
 						// candidate pushed out the least staked collator which is now at position
-						// min(max_selected_top_candidates, top_candidates - 1) in TopCandidates
-						let old_col_idx = max_selected_candidates.min(top_candidates.len().saturating_sub(1));
+						let (drop_self, drop_delegators) = match max_selected_candidates.cmp(&top_candidates.len()) {
+							// top candidates are not full
+							Ordering::Greater => (BalanceOf::<T>::zero(), BalanceOf::<T>::zero()),
+							// top candidates are full. the collator with the lowest stake is at index old_col_idx
+							_ => {
+								// we can unwrap here without problems, since we compared
+								// [max_selected_candidates] with [top_candidates] length, but lets be
+								// safe.
+								Self::get_top_candidate_stake_at(&top_candidates, max_selected_candidates)
+									.unwrap_or((BalanceOf::<T>::zero(), BalanceOf::<T>::zero()))
+							}
+						};
 
 						// get amount to subtract from TotalCollatorStake
-						let (drop_self, drop_delegators) =
-							Self::get_top_candidate_stake_at(&top_candidates, old_col_idx)
-								// default to zero if candidate DNE, e.g. TopCandidates is not full
-								.unwrap_or((BalanceOf::<T>::zero(), BalanceOf::<T>::zero()));
 						Self::update_total_stake_by(new_self, new_delegators, drop_self, drop_delegators);
 					}
 					_ => {}

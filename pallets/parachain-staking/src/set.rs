@@ -41,6 +41,10 @@ impl<T: Ord + Clone, S: Get<u32>> OrderedSet<T, S> {
 		Self(BoundedVec::default())
 	}
 
+	pub fn iter(&self) -> sp_std::slice::Iter<'_, T> {
+		self.0.iter()
+	}
+
 	/// Creates an ordered set from a `BoundedVec`.
 	///
 	/// The vector will be sorted reversily (from greatest to lowest) and

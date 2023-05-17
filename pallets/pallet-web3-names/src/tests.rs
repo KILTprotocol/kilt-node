@@ -33,8 +33,7 @@ fn claiming_successful() {
 	let initial_balance: Balance = 100;
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, initial_balance)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert!(Names::<Test>::get(&DID_00).is_none());
 			assert!(Owner::<Test>::get(&web3_name_00).is_none());
 			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
@@ -108,8 +107,7 @@ fn claiming_invalid() {
 	];
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, 100)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			for too_short_input in too_short_web3_names.iter() {
 				assert_noop!(
 					Pallet::<Test>::claim(
@@ -134,8 +132,7 @@ fn claiming_banned() {
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, 100)])
 		.with_banned_web3_names(vec![web3_name_00.clone()])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				Pallet::<Test>::claim(mock_origin::DoubleOrigin(ACCOUNT_00, DID_00).into(), web3_name_00.0),
 				Error::<Test>::Banned
@@ -148,8 +145,7 @@ fn claiming_not_enough_funds() {
 	let web3_name_00 = get_web3_name(WEB3_NAME_00_INPUT);
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, Web3NameDeposit::get() - 1)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				Pallet::<Test>::claim(mock_origin::DoubleOrigin(ACCOUNT_00, DID_00).into(), web3_name_00.0),
 				Error::<Test>::InsufficientFunds
@@ -167,8 +163,7 @@ fn releasing_by_owner_successful() {
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, initial_balance)])
 		.with_web3_names(vec![(DID_00, web3_name_00.clone(), ACCOUNT_00)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_ok!(Pallet::<Test>::release_by_owner(
 				// Submitter != deposit payer, owner == name owner
 				mock_origin::DoubleOrigin(ACCOUNT_01, DID_00).into(),
@@ -189,8 +184,7 @@ fn releasing_by_payer_successful() {
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, initial_balance)])
 		.with_web3_names(vec![(DID_00, web3_name_00.clone(), ACCOUNT_00)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_ok!(Pallet::<Test>::reclaim_deposit(
 				// Submitter == deposit payer
 				RawOrigin::Signed(ACCOUNT_00).into(),
@@ -228,8 +222,7 @@ fn releasing_not_authorized() {
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, 100)])
 		.with_web3_names(vec![(DID_00, web3_name_00.clone(), ACCOUNT_00)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			// Fail to claim by different payer
 			assert_noop!(
 				Pallet::<Test>::reclaim_deposit(RawOrigin::Signed(ACCOUNT_01).into(), web3_name_00.clone().0),
@@ -243,8 +236,7 @@ fn releasing_banned() {
 	let web3_name_00 = get_web3_name(WEB3_NAME_00_INPUT);
 	ExtBuilder::default()
 		.with_banned_web3_names(vec![(web3_name_00)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				Pallet::<Test>::release_by_owner(mock_origin::DoubleOrigin(ACCOUNT_00, DID_00).into()),
 				// A banned name will be removed from the map of used names, so it will be considered not
@@ -265,8 +257,7 @@ fn banning_successful() {
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, initial_balance)])
 		.with_web3_names(vec![(DID_00, web3_name_00.clone(), ACCOUNT_00)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			// Ban a claimed name
 			assert_ok!(Pallet::<Test>::ban(RawOrigin::Root.into(), web3_name_00.clone().0));
 
@@ -290,8 +281,7 @@ fn banning_already_banned() {
 	let web3_name_00 = get_web3_name(WEB3_NAME_00_INPUT);
 	ExtBuilder::default()
 		.with_banned_web3_names(vec![web3_name_00.clone()])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				Pallet::<Test>::ban(RawOrigin::Root.into(), web3_name_00.clone().0),
 				Error::<Test>::AlreadyBanned
@@ -328,8 +318,7 @@ fn unbanning_successful() {
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, 100)])
 		.with_banned_web3_names(vec![web3_name_00.clone()])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_ok!(Pallet::<Test>::unban(RawOrigin::Root.into(), web3_name_00.clone().0));
 
 			// Test that claiming is possible again
@@ -356,8 +345,7 @@ fn unbanning_unauthorized_origin() {
 	let web3_name_00 = get_web3_name(WEB3_NAME_00_INPUT);
 	ExtBuilder::default()
 		.with_banned_web3_names(vec![web3_name_00.clone()])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			// Signer origin
 			assert_noop!(
 				Pallet::<Test>::unban(RawOrigin::Signed(ACCOUNT_00).into(), web3_name_00.clone().0),
@@ -384,8 +372,7 @@ fn test_change_deposit_owner() {
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, initial_balance), (ACCOUNT_01, initial_balance)])
 		.with_web3_names(vec![(DID_00, web3_name_00.clone(), ACCOUNT_00)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_ok!(Pallet::<Test>::change_deposit_owner(
 				mock_origin::DoubleOrigin(ACCOUNT_01, DID_00).into(),
 			));
@@ -410,8 +397,7 @@ fn test_change_deposit_owner_insufficient_balance() {
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, initial_balance)])
 		.with_web3_names(vec![(DID_00, web3_name_00, ACCOUNT_00)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				Pallet::<Test>::change_deposit_owner(mock_origin::DoubleOrigin(ACCOUNT_01, DID_00).into()),
 				pallet_balances::Error::<Test>::InsufficientBalance
@@ -426,8 +412,7 @@ fn test_change_deposit_owner_not_found() {
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, initial_balance)])
 		.with_web3_names(vec![(DID_00, web3_name_00, ACCOUNT_00)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				Pallet::<Test>::change_deposit_owner(mock_origin::DoubleOrigin(ACCOUNT_00, DID_01).into()),
 				Error::<Test>::NotFound
@@ -441,8 +426,7 @@ fn test_update_deposit() {
 	let initial_balance: Balance = <Test as Config>::Deposit::get() * 100;
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, initial_balance)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			insert_raw_w3n::<Test>(
 				ACCOUNT_00,
 				DID_00,
@@ -477,8 +461,7 @@ fn test_update_deposit_unauthorized() {
 	let initial_balance: Balance = <Test as Config>::Deposit::get() * 100;
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, initial_balance)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			insert_raw_w3n::<Test>(
 				ACCOUNT_00,
 				DID_00,

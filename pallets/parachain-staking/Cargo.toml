@@ -11,6 +11,7 @@ name = "parachain-staking"
 description = "Parachain parachain-staking pallet for collator delegation and selection as well as reward distribution"
 
 [dev-dependencies]
+kilt-support = {workspace = true, features = ["mock", "try-runtime"]}
 pallet-aura = {workspace = true, features = ["std"]}
 pallet-timestamp = {workspace = true, features = ["std"]}
 sp-consensus-aura = {workspace = true, features = ["std"]}
@@ -26,6 +27,7 @@ serde = {workspace = true, optional = true}
 
 # Internal dependencies
 kilt-runtime-api-staking.workspace = true
+kilt-support.workspace = true
 
 # Substrate dependencies
 frame-support.workspace = true
@@ -72,4 +74,5 @@ try-runtime = [
   "pallet-authorship/try-runtime",
   "pallet-balances/try-runtime",
   "pallet-session/try-runtime",
+  "kilt-support/try-runtime"
 ]

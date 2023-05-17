@@ -76,6 +76,9 @@ pub mod benchmarking;
 #[cfg(test)]
 mod tests;
 
+#[cfg(any(feature = "try-runtime", test))]
+mod try_state;
+
 pub use crate::{access_control::DelegationAc, default_weights::WeightInfo, delegation_hierarchy::*, pallet::*};
 
 use frame_support::{
@@ -284,6 +287,14 @@ pub mod pallet {
 		/// The max number of all children has been reached for the
 		/// corresponding delegation node.
 		MaxChildrenExceeded,
+	}
+
+	#[pallet::hooks]
+	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+		#[cfg(feature = "try-runtime")]
+		fn try_state(_n: BlockNumberFor<T>) -> Result<(), &'static str> {
+			crate::try_state::do_try_state::<T>()
+		}
 	}
 
 	#[pallet::call]

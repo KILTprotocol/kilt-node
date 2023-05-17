@@ -39,6 +39,9 @@ mod tests;
 #[cfg(all(test, feature = "std"))]
 mod mock;
 
+#[cfg(any(feature = "try-runtime", test))]
+mod try_state;
+
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 
@@ -187,6 +190,14 @@ pub mod pallet {
 				ConnectedDids::<T>::insert(acc, connection);
 				ConnectedAccounts::<T>::insert(&connection.did, acc, ());
 			}
+		}
+	}
+
+	#[pallet::hooks]
+	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+		#[cfg(feature = "try-runtime")]
+		fn try_state(_n: BlockNumberFor<T>) -> Result<(), &'static str> {
+			crate::try_state::do_try_state::<T>()
 		}
 	}
 
