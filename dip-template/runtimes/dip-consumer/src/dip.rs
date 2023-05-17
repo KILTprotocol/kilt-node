@@ -19,7 +19,7 @@
 use did::{did_details::DidVerificationKey, DidVerificationKeyRelationship, KeyIdOf};
 use frame_support::traits::Contains;
 use kilt_dip_support::{
-	did::{DidSignatureAndCallVerifier, MerkleLeavesAndDidSignature, MerkleRevealedDidSignatureVerifier},
+	did::{DidSignatureAndCallVerifier, MerkleEntriesAndDidSignature, MerkleRevealedDidSignatureVerifier},
 	merkle::{DidMerkleProofVerifier, MerkleProof, ProofLeaf},
 	traits::{BlockNumberProvider, DidDipOriginFilter, GenesisProvider},
 	MerkleProofAndDidSignatureVerifier,
@@ -49,7 +49,7 @@ impl pallet_dip_consumer::Config for Runtime {
 	type DipCallOriginFilter = PreliminaryDipOriginFilter;
 	type Identifier = DidIdentifier;
 	type IdentityDetails = u128;
-	type Proof = MerkleLeavesAndDidSignature<MerkleProof<Vec<Vec<u8>>, ProofLeaf<Hash, BlockNumber>>, BlockNumber>;
+	type Proof = MerkleEntriesAndDidSignature<MerkleProof<Vec<Vec<u8>>, ProofLeaf<Hash, BlockNumber>>, BlockNumber>;
 	type ProofDigest = Hash;
 	type ProofVerifier = MerkleProofAndDidSignatureVerifier<
 		BlockNumber,

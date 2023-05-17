@@ -23,7 +23,7 @@
 use pallet_dip_consumer::traits::IdentityProofVerifier;
 use sp_std::marker::PhantomData;
 
-use crate::did::MerkleLeavesAndDidSignature;
+use crate::did::MerkleEntriesAndDidSignature;
 
 pub mod did;
 pub mod merkle;
@@ -50,7 +50,7 @@ where
 	DidSignatureVerifier: IdentityProofVerifier<
 		Call,
 		Subject,
-		Proof = MerkleLeavesAndDidSignature<MerkleProofVerifier::VerificationResult, BlockNumber>,
+		Proof = MerkleEntriesAndDidSignature<MerkleProofVerifier::VerificationResult, BlockNumber>,
 		IdentityDetails = MerkleProofVerifier::IdentityDetails,
 		Submitter = MerkleProofVerifier::Submitter,
 	>,
@@ -58,7 +58,7 @@ where
 	// FIXME: Better error handling
 	type Error = ();
 	// FIXME: Better type declaration
-	type Proof = MerkleLeavesAndDidSignature<MerkleProofVerifier::Proof, BlockNumber>;
+	type Proof = MerkleEntriesAndDidSignature<MerkleProofVerifier::Proof, BlockNumber>;
 	type IdentityDetails = DidSignatureVerifier::IdentityDetails;
 	type Submitter = MerkleProofVerifier::Submitter;
 	type VerificationResult = MerkleProofVerifier::VerificationResult;
@@ -84,7 +84,7 @@ where
 			submitter,
 			proof_entry,
 			// FIXME: Remove `clone()` requirement
-			&MerkleLeavesAndDidSignature {
+			&MerkleEntriesAndDidSignature {
 				merkle_entries: merkle_proof_verification.clone(),
 				did_signature: proof.did_signature.clone(),
 			},

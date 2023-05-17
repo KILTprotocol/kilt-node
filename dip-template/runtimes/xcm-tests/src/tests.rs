@@ -22,7 +22,7 @@ use did::{Did, DidSignature};
 use frame_support::{assert_ok, weights::Weight};
 use frame_system::RawOrigin;
 use kilt_dip_support::{
-	did::{MerkleLeavesAndDidSignature, TimeBoundDidSignature},
+	did::{MerkleEntriesAndDidSignature, TimeBoundDidSignature},
 	merkle::MerkleProof,
 };
 use pallet_did_lookup::linkable_account::LinkableAccountId;
@@ -103,7 +103,7 @@ fn commit_identity() {
 		assert_ok!(DipConsumer::dispatch_as(
 			RawOrigin::Signed(para::consumer::DISPATCHER_ACCOUNT).into(),
 			did.clone(),
-			MerkleLeavesAndDidSignature {
+			MerkleEntriesAndDidSignature {
 				merkle_entries: MerkleProof {
 					blinded: proof.blinded,
 					revealed: proof.revealed,

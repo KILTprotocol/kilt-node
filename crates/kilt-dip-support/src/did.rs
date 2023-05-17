@@ -40,7 +40,7 @@ pub struct TimeBoundDidSignature<BlockNumber> {
 }
 
 #[derive(Encode, Decode, RuntimeDebug, Clone, Eq, PartialEq, TypeInfo)]
-pub struct MerkleLeavesAndDidSignature<MerkleEntries, BlockNumber> {
+pub struct MerkleEntriesAndDidSignature<MerkleEntries, BlockNumber> {
 	pub merkle_entries: MerkleEntries,
 	pub did_signature: TimeBoundDidSignature<BlockNumber>,
 }
@@ -125,7 +125,7 @@ impl<
 	type Error = ();
 	/// The proof must be a list of Merkle leaves that have been previously
 	/// verified by the Merkle proof verifier, and the additional DID signature.
-	type Proof = MerkleLeavesAndDidSignature<MerkleProofEntries, BlockNumber>;
+	type Proof = MerkleEntriesAndDidSignature<MerkleProofEntries, BlockNumber>;
 	/// The `Details` that are part of the identity details must implement the
 	/// `Bump` trait.
 	type IdentityDetails = IdentityDetails<Digest, Details>;
