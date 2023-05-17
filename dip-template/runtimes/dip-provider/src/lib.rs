@@ -22,6 +22,7 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
+use pallet_web3_names::web3_name::AsciiWeb3Name;
 pub use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 pub use sp_runtime::{MultiAddress, Perbill, Permill};
 
@@ -140,6 +141,8 @@ construct_runtime!(
 
 		// DID
 		Did: did = 40,
+		DidLookup: pallet_did_lookup = 41,
+		Web3Names: pallet_web3_names = 42,
 
 		// DIP
 		DipProvider: pallet_dip_provider = 50,
@@ -391,6 +394,30 @@ impl did::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeOrigin = RuntimeOrigin;
 	type ServiceEndpointDeposit = ConstU128<UNIT>;
+	type WeightInfo = ();
+}
+
+impl pallet_did_lookup::Config for Runtime {
+	type Currency = Balances;
+	type Deposit = ConstU128<UNIT>;
+	type DidIdentifier = DidIdentifier;
+	type EnsureOrigin = EnsureDidOrigin<DidIdentifier, AccountId>;
+	type OriginSuccess = DidRawOrigin<AccountId, DidIdentifier>;
+	type RuntimeEvent = RuntimeEvent;
+	type WeightInfo = ();
+}
+
+impl pallet_web3_names::Config for Runtime {
+	type BanOrigin = EnsureRoot<AccountId>;
+	type Currency = Balances;
+	type Deposit = ConstU128<UNIT>;
+	type MaxNameLength = ConstU32<32>;
+	type MinNameLength = ConstU32<3>;
+	type OriginSuccess = DidRawOrigin<AccountId, DidIdentifier>;
+	type OwnerOrigin = EnsureDidOrigin<DidIdentifier, AccountId>;
+	type RuntimeEvent = RuntimeEvent;
+	type Web3Name = AsciiWeb3Name<Runtime>;
+	type Web3NameOwner = DidIdentifier;
 	type WeightInfo = ();
 }
 

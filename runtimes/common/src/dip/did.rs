@@ -17,8 +17,11 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use did::did_details::DidDetails;
+use kilt_dip_support::did::{CombineIdentityFrom, CombinedIdentityResult};
+use pallet_did_lookup::linkable_account::LinkableAccountId;
 use pallet_dip_provider::traits::IdentityProvider;
-use sp_std::marker::PhantomData;
+use pallet_web3_names::Web3NameOf;
+use sp_std::{marker::PhantomData, vec::Vec};
 
 pub struct DidIdentityProvider<T>(PhantomData<T>);
 
@@ -41,3 +44,44 @@ where
 		}
 	}
 }
+
+pub struct DidWeb3NameProvider<T>(PhantomData<T>);
+
+impl<T> IdentityProvider<T::Web3NameOwner> for DidWeb3NameProvider<T>
+where
+	T: pallet_web3_names::Config,
+{
+	// TODO: Proper error handling
+	type Error = ();
+	type Success = T::Web3Name;
+
+	fn retrieve(identifier: &T::Web3NameOwner) -> Result<Option<Self::Success>, Self::Error> {
+		if let Some(web3_name) = pallet_web3_names::Pallet::<T>::names(identifier) {
+			Ok(Some(web3_name))
+		} else {
+			Ok(None)
+		}
+	}
+}
+
+pub struct DidLinkedAccountsProvider<T>(PhantomData<T>);
+
+impl<T> IdentityProvider<T::DidIdentifier> for DidLinkedAccountsProvider<T>
+where
+	T: pallet_did_lookup::Config,
+{
+	// TODO: Proper error handling
+	type Error = ();
+	type Success = Vec<LinkableAccountId>;
+
+	fn retrieve(identifier: &T::DidIdentifier) -> Result<Option<Self::Success>, Self::Error> {
+		Ok(Some(
+			pallet_did_lookup::ConnectedAccounts::<T>::iter_key_prefix(identifier).collect(),
+		))
+	}
+}
+
+pub type LinkedDidInfoProviderOf<T> =
+	CombineIdentityFrom<DidIdentityProvider<T>, DidWeb3NameProvider<T>, DidLinkedAccountsProvider<T>>;
+pub type LinkedDidInfoOf<T> =
+	CombinedIdentityResult<Option<DidDetails<T>>, Option<Web3NameOf<T>>, Option<Vec<LinkableAccountId>>>;

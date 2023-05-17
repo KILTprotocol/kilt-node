@@ -22,6 +22,7 @@ use did::{
 };
 use frame_support::ensure;
 use pallet_dip_consumer::{identity::IdentityDetails, traits::IdentityProofVerifier};
+use pallet_dip_provider::traits::IdentityProvider;
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
 use sp_core::{ConstU64, Get, RuntimeDebug};
@@ -235,5 +236,43 @@ where
 				.map_err(|_| ())?;
 		CallVerifier::check_call_origin_info(call, &did_signing_key).map_err(|_| ())?;
 		Ok(did_signing_key)
+	}
+}
+
+pub struct CombinedIdentityResult<OutputA, OutputB, OutputC> {
+	pub a: OutputA,
+	pub b: OutputB,
+	pub c: OutputC,
+}
+
+pub struct CombineIdentityFrom<A, B, C>(PhantomData<(A, B, C)>);
+
+impl<Identifier, A, B, C> IdentityProvider<Identifier> for CombineIdentityFrom<A, B, C>
+where
+	A: IdentityProvider<Identifier>,
+	B: IdentityProvider<Identifier>,
+	C: IdentityProvider<Identifier>,
+{
+	// TODO: Proper error handling
+	type Error = ();
+	type Success = CombinedIdentityResult<Option<A::Success>, Option<B::Success>, Option<C::Success>>;
+
+	fn retrieve(identifier: &Identifier) -> Result<Option<Self::Success>, Self::Error> {
+		match (
+			A::retrieve(identifier),
+			B::retrieve(identifier),
+			C::retrieve(identifier),
+		) {
+			// If no details is returned, return None for the whole result
+			(Ok(None), Ok(None), Ok(None)) => Ok(None),
+			// Otherwise, return `Some` or `None` depending on each result
+			(Ok(ok_a), Ok(ok_b), Ok(ok_c)) => Ok(Some(CombinedIdentityResult {
+				a: ok_a,
+				b: ok_b,
+				c: ok_c,
+			})),
+			// If any of them returns an `Err`, return an `Err`
+			_ => Err(()),
+		}
 	}
 }

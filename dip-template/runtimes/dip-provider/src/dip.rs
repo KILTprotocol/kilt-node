@@ -18,9 +18,13 @@
 
 use did::did_details::DidDetails;
 use dip_support::IdentityProofAction;
+use kilt_dip_support::did::CombinedIdentityResult;
+use pallet_did_lookup::linkable_account::LinkableAccountId;
 use pallet_dip_provider::traits::{TxBuilder, XcmRouterDispatcher};
+use pallet_web3_names::Web3NameOf;
 use parity_scale_codec::{Decode, Encode};
-use runtime_common::dip::{did::DidIdentityProvider, merkle::DidMerkleRootGenerator};
+use runtime_common::dip::{did::LinkedDidInfoProviderOf, merkle::DidMerkleRootGenerator};
+use sp_std::vec::Vec;
 use xcm::{latest::MultiLocation, DoubleEncoded};
 
 use crate::{DidIdentifier, Hash, Runtime, RuntimeEvent, XcmRouter};
@@ -55,10 +59,14 @@ impl TxBuilder<DidIdentifier, Hash> for ConsumerParachainTxBuilder {
 
 impl pallet_dip_provider::Config for Runtime {
 	type Identifier = DidIdentifier;
-	type Identity = DidDetails<Runtime>;
+	type Identity = CombinedIdentityResult<
+		Option<DidDetails<Runtime>>,
+		Option<Web3NameOf<Runtime>>,
+		Option<Vec<LinkableAccountId>>,
+	>;
 	type IdentityProofDispatcher = XcmRouterDispatcher<XcmRouter, DidIdentifier, Hash>;
 	type IdentityProofGenerator = DidMerkleRootGenerator<Runtime>;
-	type IdentityProvider = DidIdentityProvider<Runtime>;
+	type IdentityProvider = LinkedDidInfoProviderOf<Runtime>;
 	type ProofOutput = Hash;
 	type RuntimeEvent = RuntimeEvent;
 	type TxBuilder = ConsumerParachainTxBuilder;

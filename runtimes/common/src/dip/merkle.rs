@@ -29,6 +29,8 @@ use kilt_dip_support::merkle::{
 	DidKeyRelationship, KeyDetailsKey, KeyDetailsValue, KeyReferenceKey, KeyReferenceValue, ProofLeaf,
 };
 
+use crate::{dip::did::LinkedDidInfoOf, DidIdentifier};
+
 pub type BlindedValue = Vec<u8>;
 pub type DidMerkleProofOf<T> =
 	MerkleProof<Vec<BlindedValue>, ProofLeaf<KeyIdOf<T>, <T as frame_system::Config>::BlockNumber>>;
@@ -43,7 +45,7 @@ pub struct DidMerkleRootGenerator<T>(PhantomData<T>);
 
 impl<T> DidMerkleRootGenerator<T>
 where
-	T: did::Config,
+	T: did::Config + pallet_did_lookup::Config + pallet_web3_names::Config,
 {
 	// Calls the function in the `sp_trie` crate to generate the merkle root given
 	// the provided `DidDetails`.
@@ -56,14 +58,16 @@ where
 	// A valid proof will contain a leaf with the key details for each reference
 	// leaf, with multiple reference leaves potentially referring to the same
 	// details leaf, as we already do with out `DidDetails` type.
-	fn calculate_root_with_db(identity: &DidDetails<T>, db: &mut MemoryDB<T::Hashing>) -> Result<T::Hash, ()> {
+	fn calculate_root_with_db(identity: &LinkedDidInfoOf<T>, db: &mut MemoryDB<T::Hashing>) -> Result<T::Hash, ()> {
+		// Fails if the DID details do not exist.
+		let (Some(did_details), web3_name, linked_accounts) = (&identity.a, &identity.b, &identity.c) else { return Err(()) };
 		let mut trie = TrieHash::<LayoutV1<T::Hashing>>::default();
 		let mut trie_builder = TrieDBMutBuilder::<LayoutV1<T::Hashing>>::new(db, &mut trie).build();
 
 		// Authentication key
 		let auth_leaf = ProofLeaf::<_, T::BlockNumber>::KeyReference(
 			KeyReferenceKey(
-				identity.authentication_key,
+				did_details.authentication_key,
 				DidVerificationKeyRelationship::Authentication.into(),
 			),
 			KeyReferenceValue,
@@ -72,7 +76,7 @@ where
 			.insert(auth_leaf.encoded_key().as_slice(), auth_leaf.encoded_value().as_slice())
 			.map_err(|_| ())?;
 		// Attestation key, if present
-		if let Some(att_key_id) = identity.attestation_key {
+		if let Some(att_key_id) = did_details.attestation_key {
 			let att_leaf = ProofLeaf::<_, T::BlockNumber>::KeyReference(
 				KeyReferenceKey(att_key_id, DidVerificationKeyRelationship::AssertionMethod.into()),
 				KeyReferenceValue,
@@ -82,7 +86,7 @@ where
 				.map_err(|_| ())?;
 		};
 		// Delegation key, if present
-		if let Some(del_key_id) = identity.delegation_key {
+		if let Some(del_key_id) = did_details.delegation_key {
 			let del_leaf = ProofLeaf::<_, T::BlockNumber>::KeyReference(
 				KeyReferenceKey(del_key_id, DidVerificationKeyRelationship::CapabilityDelegation.into()),
 				KeyReferenceValue,
@@ -92,7 +96,7 @@ where
 				.map_err(|_| ())?;
 		};
 		// Key agreement keys
-		identity
+		did_details
 			.key_agreement_keys
 			.iter()
 			.try_for_each(|id| -> Result<(), ()> {
@@ -106,7 +110,7 @@ where
 				Ok(())
 			})?;
 		// Public keys
-		identity
+		did_details
 			.public_keys
 			.iter()
 			.try_for_each(|(id, key_details)| -> Result<(), ()> {
@@ -127,39 +131,41 @@ where
 	// IDs.
 	#[allow(clippy::result_unit_err)]
 	pub fn generate_proof<'a, K>(
-		identity: &DidDetails<T>,
+		identity: &LinkedDidInfoOf<T>,
 		mut key_ids: K,
 	) -> Result<CompleteMerkleProof<T::Hash, DidMerkleProofOf<T>>, ()>
 	where
 		K: Iterator<Item = &'a KeyIdOf<T>>,
 	{
+		let (Some(did_details), web3_name, linked_accounts) = (&identity.a, &identity.b, &identity.c) else { return Err(()) };
+
 		let mut db = MemoryDB::default();
 		let root = Self::calculate_root_with_db(identity, &mut db)?;
 
 		#[allow(clippy::type_complexity)]
 		let leaves: BTreeSet<ProofLeaf<KeyIdOf<T>, T::BlockNumber>> =
 			key_ids.try_fold(BTreeSet::new(), |mut set, key_id| -> Result<_, ()> {
-				let key_details = identity.public_keys.get(key_id).ok_or(())?;
+				let key_details = did_details.public_keys.get(key_id).ok_or(())?;
 				// Adds a key reference leaf for each relationship the key ID is part of.
-				if *key_id == identity.authentication_key {
+				if *key_id == did_details.authentication_key {
 					set.insert(ProofLeaf::KeyReference(
 						KeyReferenceKey(*key_id, DidVerificationKeyRelationship::Authentication.into()),
 						KeyReferenceValue,
 					));
 				}
-				if Some(*key_id) == identity.attestation_key {
+				if Some(*key_id) == did_details.attestation_key {
 					set.insert(ProofLeaf::KeyReference(
 						KeyReferenceKey(*key_id, DidVerificationKeyRelationship::AssertionMethod.into()),
 						KeyReferenceValue,
 					));
 				}
-				if Some(*key_id) == identity.delegation_key {
+				if Some(*key_id) == did_details.delegation_key {
 					set.insert(ProofLeaf::KeyReference(
 						KeyReferenceKey(*key_id, DidVerificationKeyRelationship::CapabilityDelegation.into()),
 						KeyReferenceValue,
 					));
 				}
-				if identity.key_agreement_keys.contains(key_id) {
+				if did_details.key_agreement_keys.contains(key_id) {
 					set.insert(ProofLeaf::KeyReference(
 						KeyReferenceKey(*key_id, DidKeyRelationship::Encryption),
 						KeyReferenceValue,
@@ -187,15 +193,15 @@ where
 	}
 }
 
-impl<T> IdentityProofGenerator<T::DidIdentifier, DidDetails<T>> for DidMerkleRootGenerator<T>
+impl<T> IdentityProofGenerator<DidIdentifier, LinkedDidInfoOf<T>> for DidMerkleRootGenerator<T>
 where
-	T: did::Config,
+	T: did::Config + pallet_did_lookup::Config + pallet_web3_names::Config,
 {
 	// TODO: Proper error handling
 	type Error = ();
 	type Output = T::Hash;
 
-	fn generate_commitment(_identifier: &T::DidIdentifier, identity: &DidDetails<T>) -> Result<T::Hash, Self::Error> {
+	fn generate_commitment(_identifier: &DidIdentifier, identity: &LinkedDidInfoOf<T>) -> Result<T::Hash, Self::Error> {
 		let mut db = MemoryDB::default();
 		Self::calculate_root_with_db(identity, &mut db)
 	}
