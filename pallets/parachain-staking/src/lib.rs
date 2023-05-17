@@ -140,7 +140,6 @@ pub mod pallet {
 	pub use crate::inflation::{InflationInfo, RewardRate, StakingInfo};
 
 	use frame_support::{
-		assert_ok,
 		pallet_prelude::*,
 		storage::bounded_btree_map::BoundedBTreeMap,
 		traits::{
@@ -669,6 +668,8 @@ pub mod pallet {
 	#[pallet::genesis_build]
 	impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
 		fn build(&self) {
+			use frame_support::assert_ok;
+
 			assert!(
 				self.inflation_config.is_valid(T::BLOCKS_PER_YEAR.saturated_into()),
 				"Invalid inflation configuration"
