@@ -245,6 +245,48 @@ pub struct CombinedIdentityResult<OutputA, OutputB, OutputC> {
 	pub c: OutputC,
 }
 
+impl<OutputA, OutputB, OutputC> CombinedIdentityResult<OutputA, OutputB, OutputC>
+where
+	OutputB: Default,
+	OutputC: Default,
+{
+	pub fn from_a(a: OutputA) -> Self {
+		Self {
+			a,
+			b: OutputB::default(),
+			c: OutputC::default(),
+		}
+	}
+}
+
+impl<OutputA, OutputB, OutputC> CombinedIdentityResult<OutputA, OutputB, OutputC>
+where
+	OutputA: Default,
+	OutputC: Default,
+{
+	pub fn from_b(b: OutputB) -> Self {
+		Self {
+			a: OutputA::default(),
+			b,
+			c: OutputC::default(),
+		}
+	}
+}
+
+impl<OutputA, OutputB, OutputC> CombinedIdentityResult<OutputA, OutputB, OutputC>
+where
+	OutputA: Default,
+	OutputB: Default,
+{
+	pub fn from_c(c: OutputC) -> Self {
+		Self {
+			a: OutputA::default(),
+			b: OutputB::default(),
+			c,
+		}
+	}
+}
+
 pub struct CombineIdentityFrom<A, B, C>(PhantomData<(A, B, C)>);
 
 impl<Identifier, A, B, C> IdentityProvider<Identifier> for CombineIdentityFrom<A, B, C>

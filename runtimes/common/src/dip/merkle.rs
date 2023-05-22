@@ -58,7 +58,7 @@ where
 	// details leaf, as we already do with out `DidDetails` type.
 	fn calculate_root_with_db(identity: &LinkedDidInfoOf<T>, db: &mut MemoryDB<T::Hashing>) -> Result<T::Hash, ()> {
 		// Fails if the DID details do not exist.
-		let (Some(did_details), web3_name, linked_accounts) = (&identity.a, &identity.b, &identity.c) else { return Err(()) };
+		let (Some(did_details), _web3_name, _linked_accounts) = (&identity.a, &identity.b, &identity.c) else { return Err(()) };
 		let mut trie = TrieHash::<LayoutV1<T::Hashing>>::default();
 		let mut trie_builder = TrieDBMutBuilder::<LayoutV1<T::Hashing>>::new(db, &mut trie).build();
 
@@ -141,7 +141,7 @@ where
 	where
 		K: Iterator<Item = &'a KeyIdOf<T>>,
 	{
-		let (Some(did_details), web3_name, linked_accounts) = (&identity.a, &identity.b, &identity.c) else { return Err(()) };
+		let (Some(did_details), _web3_name, _linked_accounts) = (&identity.a, &identity.b, &identity.c) else { return Err(()) };
 
 		let mut db = MemoryDB::default();
 		let root = Self::calculate_root_with_db(identity, &mut db)?;
