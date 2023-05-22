@@ -26,7 +26,7 @@ attestation.workspace = true
 ctype.workspace = true
 delegation = {workspace = true, optional = true}
 did.workspace = true
-dip-support.workspace = true
+kilt-dip-support.workspace = true
 pallet-did-lookup = {workspace = true, optional = true}
 pallet-dip-consumer.workspace = true
 pallet-dip-provider.workspace = true
@@ -84,10 +84,10 @@ std = [
   "ctype/std",
   "cumulus-primitives-core/std",
   "did/std",
-  "dip-support/std",
   "frame-support/std",
   "frame-system/std",
   "kilt-asset-dids/std",
+  "kilt-dip-support/std",
   "kilt-support/std",
   "log/std",
   "pallet-authorship/std",

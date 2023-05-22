@@ -2440,10 +2440,12 @@ dependencies = [
  "cumulus-primitives-timestamp",
  "cumulus-primitives-utility",
  "did",
+ "dip-support",
  "frame-executive",
  "frame-support 4.0.0-dev (git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.41)",
  "frame-system 4.0.0-dev (git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.41)",
  "frame-system-rpc-runtime-api",
+ "kilt-dip-support",
  "pallet-aura",
  "pallet-authorship 4.0.0-dev (git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.41)",
  "pallet-balances 4.0.0-dev (git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.41)",
@@ -2586,7 +2588,6 @@ dependencies = [
  "frame-support 4.0.0-dev (git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.41)",
  "parity-scale-codec",
  "scale-info",
- "sp-std 5.0.0 (git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.41)",
 ]
 
 [[package]]
@@ -2597,9 +2598,9 @@ dependencies = [
  "did",
  "dip-consumer-runtime-template",
  "dip-provider-runtime-template",
- "dip-support",
  "frame-support 4.0.0-dev (git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.41)",
  "frame-system 4.0.0-dev (git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.41)",
+ "kilt-dip-support",
  "kilt-support",
  "pallet-balances 4.0.0-dev (git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.41)",
  "pallet-did-lookup",
@@ -4480,6 +4481,22 @@ dependencies = [
  "scale-info",
  "sp-core 7.0.0 (git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.41)",
  "sp-std 5.0.0 (git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.41)",
+]
+
+[[package]]
+name = "kilt-dip-support"
+version = "1.11.0-dev"
+dependencies = [
+ "did",
+ "frame-support 4.0.0-dev (git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.41)",
+ "frame-system 4.0.0-dev (git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.41)",
+ "pallet-dip-consumer",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core 7.0.0 (git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.41)",
+ "sp-runtime 7.0.0 (git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.41)",
+ "sp-std 5.0.0 (git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.41)",
+ "sp-trie 7.0.0 (git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.41)",
 ]
 
 [[package]]
@@ -10259,10 +10276,10 @@ dependencies = [
  "cumulus-primitives-core 0.1.0 (git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.41)",
  "delegation",
  "did",
- "dip-support",
  "frame-support 4.0.0-dev (git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.41)",
  "frame-system 4.0.0-dev (git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.41)",
  "kilt-asset-dids",
+ "kilt-dip-support",
  "kilt-support",
  "log",
  "pallet-authorship 4.0.0-dev (git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.41)",

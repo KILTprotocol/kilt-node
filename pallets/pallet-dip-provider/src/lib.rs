@@ -33,13 +33,11 @@ pub mod pallet {
 	use sp_std::{boxed::Box, fmt::Debug};
 	use xcm::{latest::prelude::*, VersionedMultiAsset, VersionedMultiLocation};
 
-	use dip_support::{v1::IdentityProofAction, VersionedIdentityProofAction};
+	use dip_support::IdentityProofAction;
 
 	use crate::traits::{IdentityProofDispatcher, IdentityProofGenerator, IdentityProvider, TxBuilder};
 
 	pub type IdentityProofActionOf<T> = IdentityProofAction<<T as Config>::Identifier, <T as Config>::ProofOutput>;
-	pub type VersionedIdentityProofActionOf<T> =
-		VersionedIdentityProofAction<<T as Config>::Identifier, <T as Config>::ProofOutput>;
 
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(0);
 
@@ -71,7 +69,7 @@ pub mod pallet {
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
-		IdentityInfoDispatched(VersionedIdentityProofActionOf<T>, Box<MultiLocation>),
+		IdentityInfoDispatched(IdentityProofActionOf<T>, Box<MultiLocation>),
 	}
 
 	#[pallet::error]
@@ -109,23 +107,18 @@ pub mod pallet {
 				Err(_) => Err(Error::<T>::IdentityNotFound),
 			}?;
 			// TODO: Add correct version creation based on lookup (?)
-			let versioned_action = VersionedIdentityProofAction::V1(action);
 
 			let asset: MultiAsset = (*asset).try_into().map_err(|_| Error::<T>::BadVersion)?;
 
-			let (ticket, _) = T::IdentityProofDispatcher::pre_dispatch::<T::TxBuilder>(
-				versioned_action.clone(),
-				asset,
-				weight,
-				destination,
-			)
-			.map_err(|_| Error::<T>::Predispatch)?;
+			let (ticket, _) =
+				T::IdentityProofDispatcher::pre_dispatch::<T::TxBuilder>(action.clone(), asset, weight, destination)
+					.map_err(|_| Error::<T>::Predispatch)?;
 
 			// TODO: Use returned asset of `pre_dispatch` to charge the tx submitter for the
 			// fee, in addition to the cost on the target chain.
 			T::IdentityProofDispatcher::dispatch(ticket).map_err(|_| Error::<T>::Dispatch)?;
 
-			Self::deposit_event(Event::IdentityInfoDispatched(versioned_action, Box::new(destination)));
+			Self::deposit_event(Event::IdentityInfoDispatched(action, Box::new(destination)));
 			Ok(())
 		}
 	}

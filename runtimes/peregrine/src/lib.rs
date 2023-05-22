@@ -61,7 +61,7 @@ use runtime_common::{
 	errors::PublicCredentialsApiError,
 	fees::{ToAuthor, WeightToFee},
 	pallet_id, AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights, DidIdentifier,
-	FeeSplit, Hash, Header, Index, Signature, SlowAdjustingFeeUpdate,
+	FeeSplit, Hash, Hasher, Header, Index, Signature, SlowAdjustingFeeUpdate,
 };
 
 use crate::xcm_config::{XcmConfig, XcmOriginToTransactDispatchOrigin};
@@ -129,7 +129,7 @@ impl frame_system::Config for Runtime {
 	/// The type for hashing blocks and tries.
 	type Hash = Hash;
 	/// The hashing algorithm used.
-	type Hashing = BlakeTwo256;
+	type Hashing = Hasher;
 	/// The header type.
 	type Header = runtime_common::Header;
 	/// The ubiquitous event type.

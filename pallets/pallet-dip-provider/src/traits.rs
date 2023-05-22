@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use dip_support::VersionedIdentityProofAction;
+use dip_support::IdentityProofAction;
 use xcm::{latest::prelude::*, DoubleEncoded};
 
 pub use identity_generation::*;
@@ -61,7 +61,7 @@ pub mod identity_dispatch {
 		type Error;
 
 		fn pre_dispatch<B: TxBuilder<Identifier, IdentityRoot, Details>>(
-			action: VersionedIdentityProofAction<Identifier, IdentityRoot, Details>,
+			action: IdentityProofAction<Identifier, IdentityRoot, Details>,
 			asset: MultiAsset,
 			weight: Weight,
 			destination: MultiLocation,
@@ -80,7 +80,7 @@ pub mod identity_dispatch {
 		type Error = ();
 
 		fn pre_dispatch<_B>(
-			_action: VersionedIdentityProofAction<Identifier, IdentityRoot, Details>,
+			_action: IdentityProofAction<Identifier, IdentityRoot, Details>,
 			_asset: MultiAsset,
 			_weight: Weight,
 			_destination: MultiLocation,
@@ -111,7 +111,7 @@ pub mod identity_dispatch {
 		type Error = SendError;
 
 		fn pre_dispatch<Builder: TxBuilder<Identifier, ProofOutput, Details>>(
-			action: VersionedIdentityProofAction<Identifier, ProofOutput, Details>,
+			action: IdentityProofAction<Identifier, ProofOutput, Details>,
 			asset: MultiAsset,
 			weight: Weight,
 			destination: MultiLocation,
@@ -190,6 +190,6 @@ pub trait TxBuilder<Identifier, Proof, Details = ()> {
 
 	fn build(
 		dest: MultiLocation,
-		action: VersionedIdentityProofAction<Identifier, Proof, Details>,
+		action: IdentityProofAction<Identifier, Proof, Details>,
 	) -> Result<DoubleEncoded<()>, Self::Error>;
 }

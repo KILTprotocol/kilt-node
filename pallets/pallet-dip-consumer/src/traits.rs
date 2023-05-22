@@ -16,45 +16,42 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use dip_support::VersionedIdentityProof;
 use sp_std::marker::PhantomData;
 
-pub trait IdentityProofVerifier {
-	type BlindedValue;
+pub trait IdentityProofVerifier<Call, Subject> {
 	type Error;
-	type ProofDigest;
-	type ProofLeaf;
+	type Proof;
+	type IdentityDetails;
+	type Submitter;
 	type VerificationResult;
 
-	fn verify_proof_against_digest(
-		proof: VersionedIdentityProof<Self::BlindedValue, Self::ProofLeaf>,
-		digest: Self::ProofDigest,
+	fn verify_proof_for_call_against_entry(
+		call: &Call,
+		subject: &Subject,
+		submitter: &Self::Submitter,
+		proof_entry: &mut Self::IdentityDetails,
+		proof: &Self::Proof,
 	) -> Result<Self::VerificationResult, Self::Error>;
 }
 
 // Always returns success.
-pub struct SuccessfulProofVerifier<ProofDigest, Leaf, BlindedValue>(PhantomData<(ProofDigest, Leaf, BlindedValue)>);
-impl<ProofDigest, Leaf, BlindedValue> IdentityProofVerifier
-	for SuccessfulProofVerifier<ProofDigest, Leaf, BlindedValue>
+pub struct SuccessfulProofVerifier<Proof, ProofEntry, Submitter>(PhantomData<(Proof, ProofEntry, Submitter)>);
+impl<Call, Subject, Proof, ProofEntry, Submitter> IdentityProofVerifier<Call, Subject>
+	for SuccessfulProofVerifier<Proof, ProofEntry, Submitter>
 {
-	type BlindedValue = BlindedValue;
 	type Error = ();
-	type ProofDigest = ProofDigest;
-	type ProofLeaf = Leaf;
+	type Proof = Proof;
+	type IdentityDetails = ProofEntry;
+	type Submitter = Submitter;
 	type VerificationResult = ();
 
-	fn verify_proof_against_digest(
-		_proof: VersionedIdentityProof<Self::BlindedValue, Self::ProofLeaf>,
-		_digest: Self::ProofDigest,
+	fn verify_proof_for_call_against_entry(
+		_call: &Call,
+		_subject: &Subject,
+		_submitter: &Self::Submitter,
+		_proof_entry: &mut Self::IdentityDetails,
+		_proof: &Self::Proof,
 	) -> Result<Self::VerificationResult, Self::Error> {
 		Ok(())
 	}
-}
-
-pub trait DipCallOriginFilter<Call> {
-	type Error;
-	type Proof;
-	type Success;
-
-	fn check_proof(call: Call, proof: Self::Proof) -> Result<Self::Success, Self::Error>;
 }
