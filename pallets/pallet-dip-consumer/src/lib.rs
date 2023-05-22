@@ -144,7 +144,7 @@ pub mod pallet {
 						&identifier,
 						|entry: &mut Option<
 							IdentityDetails<<T as Config>::ProofDigest, <T as Config>::IdentityDetails>,
-						>| { *entry = Some(IdentityDetails::from_digest(proof.clone())) },
+						>| { *entry = Some(proof.clone().into()) },
 					);
 					Ok::<_, Error<T>>(Event::<T>::IdentityInfoUpdated(identifier, proof))
 				}

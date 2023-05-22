@@ -30,13 +30,13 @@ pub struct IdentityDetails<Digest, Details> {
 	pub details: Details,
 }
 
-impl<Digest, Details> IdentityDetails<Digest, Details>
+impl<Digest, Details> From<Digest> for IdentityDetails<Digest, Details>
 where
 	Details: Default,
 {
-	pub fn from_digest(digest: Digest) -> Self {
+	fn from(value: Digest) -> Self {
 		Self {
-			digest,
+			digest: value,
 			details: Details::default(),
 		}
 	}
