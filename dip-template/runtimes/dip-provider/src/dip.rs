@@ -19,10 +19,7 @@
 use dip_support::IdentityProofAction;
 use pallet_dip_provider::traits::{TxBuilder, XcmRouterDispatcher};
 use parity_scale_codec::{Decode, Encode};
-use runtime_common::dip::{
-	did::{LinkedDidInfoOf, LinkedDidInfoProviderOf},
-	merkle::DidMerkleRootGenerator,
-};
+use runtime_common::dip::{did::LinkedDidInfoProviderOf, merkle::DidMerkleRootGenerator};
 use xcm::{latest::MultiLocation, DoubleEncoded};
 
 use crate::{DidIdentifier, Hash, Runtime, RuntimeEvent, XcmRouter};
@@ -57,7 +54,6 @@ impl TxBuilder<DidIdentifier, Hash> for ConsumerParachainTxBuilder {
 
 impl pallet_dip_provider::Config for Runtime {
 	type Identifier = DidIdentifier;
-	type Identity = LinkedDidInfoOf<Runtime>;
 	type IdentityProofDispatcher = XcmRouterDispatcher<XcmRouter, DidIdentifier, Hash>;
 	type IdentityProofGenerator = DidMerkleRootGenerator<Runtime>;
 	type IdentityProvider = LinkedDidInfoProviderOf<Runtime>;

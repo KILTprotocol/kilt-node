@@ -37,6 +37,7 @@ pub mod pallet {
 
 	use crate::traits::{IdentityProofDispatcher, IdentityProofGenerator, IdentityProvider, TxBuilder};
 
+	pub type IdentityOf<T> = <<T as Config>::IdentityProvider as IdentityProvider<<T as Config>::Identifier>>::Success;
 	pub type IdentityProofActionOf<T> = IdentityProofAction<<T as Config>::Identifier, <T as Config>::ProofOutput>;
 
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(0);
@@ -44,15 +45,14 @@ pub mod pallet {
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
 		type Identifier: Parameter;
-		type Identity;
-		type ProofOutput: Clone + Eq + Debug;
 		type IdentityProofGenerator: IdentityProofGenerator<
 			Self::Identifier,
-			Self::Identity,
+			IdentityOf<Self>,
 			Output = Self::ProofOutput,
 		>;
 		type IdentityProofDispatcher: IdentityProofDispatcher<Self::Identifier, Self::ProofOutput, ()>;
-		type IdentityProvider: IdentityProvider<Self::Identifier, Success = Self::Identity>;
+		type IdentityProvider: IdentityProvider<Self::Identifier>;
+		type ProofOutput: Clone + Eq + Debug;
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 		type TxBuilder: TxBuilder<Self::Identifier, Self::ProofOutput, ()>;
 	}
