@@ -60,8 +60,9 @@ parachain-staking = {path = "pallets/parachain-staking", default-features = fals
 public-credentials = {path = "pallets/public-credentials", default-features = false}
 
 # Internal support (with default disabled)
-dip-support = {path = "crates/dip", default-features = false}
+dip-support = {path = "crates/dip-support", default-features = false}
 kilt-asset-dids = {path = "crates/assets", default-features = false}
+kilt-dip-support = {path = "crates/kilt-dip-support", default-features = false}
 kilt-support = {path = "support", default-features = false}
 runtime-common = {path = "runtimes/common", default-features = false}
 

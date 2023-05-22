@@ -2341,10 +2341,12 @@ dependencies = [
  "cumulus-primitives-timestamp",
  "cumulus-primitives-utility",
  "did",
+ "dip-support",
  "frame-executive",
  "frame-support",
  "frame-system",
  "frame-system-rpc-runtime-api",
+ "kilt-dip-support",
  "pallet-aura",
  "pallet-authorship",
  "pallet-balances",
@@ -2487,7 +2489,6 @@ dependencies = [
  "frame-support",
  "parity-scale-codec",
  "scale-info",
- "sp-std",
 ]
 
 [[package]]
@@ -2498,9 +2499,9 @@ dependencies = [
  "did",
  "dip-consumer-runtime-template",
  "dip-provider-runtime-template",
- "dip-support",
  "frame-support",
  "frame-system",
+ "kilt-dip-support",
  "kilt-support",
  "pallet-balances",
  "pallet-did-lookup",
@@ -4209,6 +4210,22 @@ dependencies = [
  "scale-info",
  "sp-core",
  "sp-std",
+]
+
+[[package]]
+name = "kilt-dip-support"
+version = "1.11.0-dev"
+dependencies = [
+ "did",
+ "frame-support",
+ "frame-system",
+ "pallet-dip-consumer",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-runtime",
+ "sp-std",
+ "sp-trie",
 ]
 
 [[package]]
@@ -9400,10 +9417,10 @@ dependencies = [
  "cumulus-primitives-core",
  "delegation",
  "did",
- "dip-support",
  "frame-support",
  "frame-system",
  "kilt-asset-dids",
+ "kilt-dip-support",
  "kilt-support",
  "log",
  "pallet-authorship",

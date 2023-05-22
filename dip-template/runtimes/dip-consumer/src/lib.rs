@@ -22,6 +22,7 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
+use kilt_dip_support::merkle::VerificationResult;
 pub use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 pub use sp_runtime::{MultiAddress, Perbill, Permill};
 
@@ -366,8 +367,8 @@ impl pallet_did_lookup::Config for Runtime {
 	type Currency = Balances;
 	type Deposit = ConstU128<UNIT>;
 	type DidIdentifier = DidIdentifier;
-	type EnsureOrigin = EnsureDipOrigin<DidIdentifier, AccountId, ()>;
-	type OriginSuccess = DipOrigin<DidIdentifier, AccountId, ()>;
+	type EnsureOrigin = EnsureDipOrigin<DidIdentifier, AccountId, VerificationResult<BlockNumber, 10>>;
+	type OriginSuccess = DipOrigin<DidIdentifier, AccountId, VerificationResult<BlockNumber, 10>>;
 	type RuntimeEvent = RuntimeEvent;
 	type WeightInfo = ();
 }

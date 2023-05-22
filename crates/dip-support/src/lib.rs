@@ -16,20 +16,16 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+// TODO: Crate documentation
+
+#![cfg_attr(not(feature = "std"), no_std)]
+
 use frame_support::RuntimeDebug;
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
-use sp_std::vec::Vec;
 
-#[derive(Clone, Eq, PartialEq, Debug, Encode, Decode, TypeInfo, MaxEncodedLen)]
+#[derive(Clone, Eq, PartialEq, Encode, Decode, TypeInfo, MaxEncodedLen, RuntimeDebug)]
 pub enum IdentityProofAction<Identifier, Proof, Details = ()> {
 	Updated(Identifier, Proof, Details),
 	Deleted(Identifier),
-}
-
-#[derive(Encode, Decode, RuntimeDebug, Clone, Eq, PartialEq, TypeInfo, Default)]
-pub struct Proof<BlindedValue, Leaf> {
-	pub blinded: BlindedValue,
-	// TODO: Probably replace with a different data structure for better lookup capabilities
-	pub revealed: Vec<Leaf>,
 }

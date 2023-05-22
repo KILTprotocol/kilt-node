@@ -35,7 +35,7 @@ use frame_system::limits;
 use pallet_transaction_payment::{Multiplier, TargetedFeeAdjustment};
 use sp_runtime::{
 	generic,
-	traits::{Bounded, IdentifyAccount, Verify},
+	traits::{BlakeTwo256, Bounded, IdentifyAccount, Verify},
 	FixedPointNumber, MultiSignature, Perquintill, SaturatedConversion,
 };
 use sp_std::marker::PhantomData;
@@ -101,8 +101,10 @@ pub type Amount = i128;
 /// Index of a transaction in the chain.
 pub type Index = u64;
 
+/// Hasher for chain data.
+pub type Hasher = BlakeTwo256;
 /// A hash of some data used by the chain.
-pub type Hash = sp_core::H256;
+pub type Hash = <BlakeTwo256 as sp_core::Hasher>::Out;
 
 /// Digest item type.
 pub type DigestItem = generic::DigestItem;
