@@ -22,7 +22,7 @@ use pallet_dip_consumer::{identity::IdentityDetails, traits::IdentityProofVerifi
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_runtime::BoundedVec;
-use sp_std::{collections::btree_map::BTreeMap, fmt::Debug, marker::PhantomData, vec::Vec};
+use sp_std::{fmt::Debug, marker::PhantomData, vec::Vec};
 use sp_trie::{verify_trie_proof, LayoutV1};
 
 pub type BlindedValue = Vec<u8>;
@@ -60,23 +60,16 @@ impl TryFrom<DidKeyRelationship> for DidVerificationKeyRelationship {
 }
 
 #[derive(Clone, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo)]
-pub struct KeyReferenceKey<KeyId>(pub KeyId, pub DidKeyRelationship);
+pub struct DidKeyMerkleKey<KeyId>(pub KeyId, pub DidKeyRelationship);
+
 #[derive(Clone, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo)]
-pub struct KeyReferenceValue;
-#[derive(Clone, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo)]
-pub struct KeyDetailsKey<KeyId>(pub KeyId);
-#[derive(Clone, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo)]
-pub struct KeyDetailsValue<BlockNumber>(pub DidPublicKeyDetails<BlockNumber>);
+pub struct DidKeyMerkleValue<BlockNumber>(pub DidPublicKeyDetails<BlockNumber>);
 
 #[derive(Clone, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo)]
 pub enum ProofLeaf<KeyId, BlockNumber> {
 	// The key and value for the leaves of a merkle proof that contain a reference
 	// (by ID) to the key details, provided in a separate leaf.
-	KeyReference(KeyReferenceKey<KeyId>, KeyReferenceValue),
-	// The key and value for the leaves of a merkle proof that contain the actual
-	// details of a DID public key. The key is the ID of the key, and the value is its details, including creation
-	// block number.
-	KeyDetails(KeyDetailsKey<KeyId>, KeyDetailsValue<BlockNumber>),
+	DidKey(DidKeyMerkleKey<KeyId>, DidKeyMerkleValue<BlockNumber>),
 }
 
 impl<KeyId, BlockNumber> ProofLeaf<KeyId, BlockNumber>
@@ -85,8 +78,7 @@ where
 {
 	pub fn encoded_key(&self) -> Vec<u8> {
 		match self {
-			ProofLeaf::KeyReference(key, _) => key.encode(),
-			ProofLeaf::KeyDetails(key, _) => key.encode(),
+			ProofLeaf::DidKey(key, _) => key.encode(),
 		}
 	}
 }
@@ -97,8 +89,7 @@ where
 {
 	pub fn encoded_value(&self) -> Vec<u8> {
 		match self {
-			ProofLeaf::KeyReference(_, value) => value.encode(),
-			ProofLeaf::KeyDetails(_, value) => value.encode(),
+			ProofLeaf::DidKey(_, value) => value.encode(),
 		}
 	}
 }
@@ -211,38 +202,17 @@ where
 		// At this point, we know the proof is valid. We just need to map the revealed
 		// leaves to something the consumer can easily operate on.
 
-		// Create a map of the revealed public keys
-		//TODO: Avoid cloning, and use a map of references for the lookup
-		let public_keys: BTreeMap<KeyId, DidPublicKeyDetails<BlockNumber>> = proof
-			.revealed
-			.clone()
-			.into_iter()
-			.filter_map(|leaf| {
-				if let ProofLeaf::KeyDetails(KeyDetailsKey(key_id), KeyDetailsValue(key_details)) = leaf {
-					Some((key_id, key_details))
-				} else {
-					None
-				}
-			})
-			.collect();
 		// Create a list of the revealed keys by consuming the provided key reference
 		// leaves, and looking up the full details from the just-built `public_keys`
 		// map.
 		let keys: Vec<ProofEntry<BlockNumber>> = proof
 			.revealed
 			.iter()
-			.filter_map(|leaf| {
-				if let ProofLeaf::KeyReference(KeyReferenceKey(key_id, key_relationship), _) = leaf {
-					// TODO: Better error handling.
-					let key_details = public_keys
-						.get(key_id)
-						.expect("Key ID should be present in the map of revealed public keys.");
-					Some(ProofEntry {
-						key: key_details.clone(),
-						relationship: *key_relationship,
-					})
-				} else {
-					None
+			.map(|leaf| {
+				let ProofLeaf::DidKey(key_id, key_value) = leaf;
+				ProofEntry {
+					key: key_value.0.clone(),
+					relationship: key_id.1,
 				}
 			})
 			.collect();

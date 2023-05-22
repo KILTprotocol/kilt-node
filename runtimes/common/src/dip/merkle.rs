@@ -16,18 +16,16 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use did::{did_details::DidDetails, DidVerificationKeyRelationship, KeyIdOf};
+use did::{DidVerificationKeyRelationship, KeyIdOf};
 use frame_support::RuntimeDebug;
-use kilt_dip_support::merkle::MerkleProof;
+use kilt_dip_support::merkle::{DidKeyMerkleKey, DidKeyMerkleValue, MerkleProof};
 use pallet_dip_provider::traits::IdentityProofGenerator;
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
 use sp_std::{borrow::ToOwned, collections::btree_set::BTreeSet, marker::PhantomData, vec::Vec};
 use sp_trie::{generate_trie_proof, LayoutV1, MemoryDB, TrieDBMutBuilder, TrieHash, TrieMut};
 
-use kilt_dip_support::merkle::{
-	DidKeyRelationship, KeyDetailsKey, KeyDetailsValue, KeyReferenceKey, KeyReferenceValue, ProofLeaf,
-};
+use kilt_dip_support::merkle::{DidKeyRelationship, ProofLeaf};
 
 use crate::{dip::did::LinkedDidInfoOf, DidIdentifier};
 
@@ -65,21 +63,30 @@ where
 		let mut trie_builder = TrieDBMutBuilder::<LayoutV1<T::Hashing>>::new(db, &mut trie).build();
 
 		// Authentication key
-		let auth_leaf = ProofLeaf::<_, T::BlockNumber>::KeyReference(
-			KeyReferenceKey(
+		// TODO: No panic
+		let auth_key_details = did_details
+			.public_keys
+			.get(&did_details.authentication_key)
+			.expect("Authentication key should be part of the public keys.");
+		let auth_leaf = ProofLeaf::<_, T::BlockNumber>::DidKey(
+			DidKeyMerkleKey(
 				did_details.authentication_key,
 				DidVerificationKeyRelationship::Authentication.into(),
 			),
-			KeyReferenceValue,
+			DidKeyMerkleValue(auth_key_details.clone()),
 		);
 		trie_builder
 			.insert(auth_leaf.encoded_key().as_slice(), auth_leaf.encoded_value().as_slice())
 			.map_err(|_| ())?;
 		// Attestation key, if present
 		if let Some(att_key_id) = did_details.attestation_key {
-			let att_leaf = ProofLeaf::<_, T::BlockNumber>::KeyReference(
-				KeyReferenceKey(att_key_id, DidVerificationKeyRelationship::AssertionMethod.into()),
-				KeyReferenceValue,
+			let att_key_details = did_details
+				.public_keys
+				.get(&att_key_id)
+				.expect("Attestation key should be part of the public keys.");
+			let att_leaf = ProofLeaf::<_, T::BlockNumber>::DidKey(
+				DidKeyMerkleKey(att_key_id, DidVerificationKeyRelationship::AssertionMethod.into()),
+				DidKeyMerkleValue(att_key_details.clone()),
 			);
 			trie_builder
 				.insert(att_leaf.encoded_key().as_slice(), att_leaf.encoded_value().as_slice())
@@ -87,9 +94,13 @@ where
 		};
 		// Delegation key, if present
 		if let Some(del_key_id) = did_details.delegation_key {
-			let del_leaf = ProofLeaf::<_, T::BlockNumber>::KeyReference(
-				KeyReferenceKey(del_key_id, DidVerificationKeyRelationship::CapabilityDelegation.into()),
-				KeyReferenceValue,
+			let del_key_details = did_details
+				.public_keys
+				.get(&del_key_id)
+				.expect("Delegation key should be part of the public keys.");
+			let del_leaf = ProofLeaf::<_, T::BlockNumber>::DidKey(
+				DidKeyMerkleKey(del_key_id, DidVerificationKeyRelationship::CapabilityDelegation.into()),
+				DidKeyMerkleValue(del_key_details.clone()),
 			);
 			trie_builder
 				.insert(del_leaf.encoded_key().as_slice(), del_leaf.encoded_value().as_slice())
@@ -100,23 +111,16 @@ where
 			.key_agreement_keys
 			.iter()
 			.try_for_each(|id| -> Result<(), ()> {
-				let enc_leaf = ProofLeaf::<_, T::BlockNumber>::KeyReference(
-					KeyReferenceKey(*id, DidKeyRelationship::Encryption),
-					KeyReferenceValue,
+				let key_agreement_details = did_details
+					.public_keys
+					.get(id)
+					.expect("Key agreement key should be part of the public keys.");
+				let enc_leaf = ProofLeaf::<_, T::BlockNumber>::DidKey(
+					DidKeyMerkleKey(*id, DidKeyRelationship::Encryption),
+					DidKeyMerkleValue(key_agreement_details.clone()),
 				);
 				trie_builder
 					.insert(enc_leaf.encoded_key().as_slice(), enc_leaf.encoded_value().as_slice())
-					.map_err(|_| ())?;
-				Ok(())
-			})?;
-		// Public keys
-		did_details
-			.public_keys
-			.iter()
-			.try_for_each(|(id, key_details)| -> Result<(), ()> {
-				let key_leaf = ProofLeaf::KeyDetails(KeyDetailsKey(*id), KeyDetailsValue(key_details.clone()));
-				trie_builder
-					.insert(key_leaf.encoded_key().as_slice(), key_leaf.encoded_value().as_slice())
 					.map_err(|_| ())?;
 				Ok(())
 			})?;
@@ -146,38 +150,33 @@ where
 		let leaves: BTreeSet<ProofLeaf<KeyIdOf<T>, T::BlockNumber>> =
 			key_ids.try_fold(BTreeSet::new(), |mut set, key_id| -> Result<_, ()> {
 				let key_details = did_details.public_keys.get(key_id).ok_or(())?;
-				// Adds a key reference leaf for each relationship the key ID is part of.
-				if *key_id == did_details.authentication_key {
-					set.insert(ProofLeaf::KeyReference(
-						KeyReferenceKey(*key_id, DidVerificationKeyRelationship::Authentication.into()),
-						KeyReferenceValue,
-					));
-				}
-				if Some(*key_id) == did_details.attestation_key {
-					set.insert(ProofLeaf::KeyReference(
-						KeyReferenceKey(*key_id, DidVerificationKeyRelationship::AssertionMethod.into()),
-						KeyReferenceValue,
-					));
-				}
-				if Some(*key_id) == did_details.delegation_key {
-					set.insert(ProofLeaf::KeyReference(
-						KeyReferenceKey(*key_id, DidVerificationKeyRelationship::CapabilityDelegation.into()),
-						KeyReferenceValue,
-					));
-				}
-				if did_details.key_agreement_keys.contains(key_id) {
-					set.insert(ProofLeaf::KeyReference(
-						KeyReferenceKey(*key_id, DidKeyRelationship::Encryption),
-						KeyReferenceValue,
-					));
-				};
-				// Then adds the actual key details to the merkle proof.
-				// If the same key is specified twice, the old key is simply replaced with a new
-				// key of the same value.
-				let key_details_leaf =
-					ProofLeaf::KeyDetails(KeyDetailsKey(*key_id), KeyDetailsValue(key_details.clone()));
-				if !set.contains(&key_details_leaf) {
-					set.insert(key_details_leaf);
+				// Create the merkle leaf key depending on the relationship of the key to the
+				// DID document.
+				let did_key_merkle_key = if *key_id == did_details.authentication_key {
+					Ok(DidKeyMerkleKey(
+						*key_id,
+						DidVerificationKeyRelationship::Authentication.into(),
+					))
+				} else if Some(*key_id) == did_details.attestation_key {
+					Ok(DidKeyMerkleKey(
+						*key_id,
+						DidVerificationKeyRelationship::AssertionMethod.into(),
+					))
+				} else if Some(*key_id) == did_details.delegation_key {
+					Ok(DidKeyMerkleKey(
+						*key_id,
+						DidVerificationKeyRelationship::CapabilityDelegation.into(),
+					))
+				} else if did_details.key_agreement_keys.contains(key_id) {
+					Ok(DidKeyMerkleKey(*key_id, DidKeyRelationship::Encryption))
+				} else {
+					Err(())
+				}?;
+				// Then adds the actual key details to the merkle leaf.
+				let did_key_merkle_value = DidKeyMerkleValue(key_details.clone());
+				let did_merkle_merkle_leaf = ProofLeaf::DidKey(did_key_merkle_key, did_key_merkle_value);
+				if !set.contains(&did_merkle_merkle_leaf) {
+					set.insert(did_merkle_merkle_leaf);
 				}
 				Ok(set)
 			})?;
