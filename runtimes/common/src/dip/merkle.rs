@@ -30,8 +30,10 @@ use kilt_dip_support::merkle::{DidKeyRelationship, ProofLeaf};
 use crate::{dip::did::LinkedDidInfoOf, DidIdentifier};
 
 pub type BlindedValue = Vec<u8>;
-pub type DidMerkleProofOf<T> =
-	MerkleProof<Vec<BlindedValue>, ProofLeaf<KeyIdOf<T>, <T as frame_system::Config>::BlockNumber>>;
+pub type DidMerkleProofOf<T> = MerkleProof<
+	Vec<BlindedValue>,
+	ProofLeaf<KeyIdOf<T>, <T as frame_system::Config>::BlockNumber, <T as pallet_web3_names::Config>::Web3Name>,
+>;
 
 #[derive(Encode, Decode, RuntimeDebug, PartialEq, Eq, TypeInfo)]
 pub struct CompleteMerkleProof<Root, Proof> {
@@ -68,7 +70,7 @@ where
 			.public_keys
 			.get(&did_details.authentication_key)
 			.expect("Authentication key should be part of the public keys.");
-		let auth_leaf = ProofLeaf::<_, T::BlockNumber>::DidKey(
+		let auth_leaf = ProofLeaf::<_, _, T::Web3Name>::DidKey(
 			DidKeyMerkleKey(
 				did_details.authentication_key,
 				DidVerificationKeyRelationship::Authentication.into(),
@@ -84,7 +86,7 @@ where
 				.public_keys
 				.get(&att_key_id)
 				.expect("Attestation key should be part of the public keys.");
-			let att_leaf = ProofLeaf::<_, T::BlockNumber>::DidKey(
+			let att_leaf = ProofLeaf::<_, _, T::Web3Name>::DidKey(
 				DidKeyMerkleKey(att_key_id, DidVerificationKeyRelationship::AssertionMethod.into()),
 				DidKeyMerkleValue(att_key_details.clone()),
 			);
@@ -98,7 +100,7 @@ where
 				.public_keys
 				.get(&del_key_id)
 				.expect("Delegation key should be part of the public keys.");
-			let del_leaf = ProofLeaf::<_, T::BlockNumber>::DidKey(
+			let del_leaf = ProofLeaf::<_, _, T::Web3Name>::DidKey(
 				DidKeyMerkleKey(del_key_id, DidVerificationKeyRelationship::CapabilityDelegation.into()),
 				DidKeyMerkleValue(del_key_details.clone()),
 			);
@@ -115,7 +117,7 @@ where
 					.public_keys
 					.get(id)
 					.expect("Key agreement key should be part of the public keys.");
-				let enc_leaf = ProofLeaf::<_, T::BlockNumber>::DidKey(
+				let enc_leaf = ProofLeaf::<_, _, T::Web3Name>::DidKey(
 					DidKeyMerkleKey(*id, DidKeyRelationship::Encryption),
 					DidKeyMerkleValue(key_agreement_details.clone()),
 				);
@@ -147,7 +149,7 @@ where
 		let root = Self::calculate_root_with_db(identity, &mut db)?;
 
 		#[allow(clippy::type_complexity)]
-		let leaves: BTreeSet<ProofLeaf<KeyIdOf<T>, T::BlockNumber>> =
+		let leaves: BTreeSet<ProofLeaf<KeyIdOf<T>, T::BlockNumber, T::Web3Name>> =
 			key_ids.try_fold(BTreeSet::new(), |mut set, key_id| -> Result<_, ()> {
 				let key_details = did_details.public_keys.get(key_id).ok_or(())?;
 				// Create the merkle leaf key depending on the relationship of the key to the

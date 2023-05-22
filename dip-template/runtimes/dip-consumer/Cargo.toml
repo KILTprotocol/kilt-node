@@ -18,6 +18,7 @@ parity-scale-codec = {workspace = true, features = ["derive"]}
 scale-info = {workspace = true, features = ["derive"]}
 
 # DIP
+dip-provider-runtime-template.workspace = true
 dip-support.workspace = true
 did.workspace = true
 kilt-dip-support.workspace = true
@@ -77,6 +78,7 @@ default = [
 std = [
 	"parity-scale-codec/std",
 	"scale-info/std",
+  "dip-provider-runtime-template/std",
   "dip-support/std",
   "did/std",
   "kilt-dip-support/std",
@@ -125,6 +127,7 @@ std = [
 ]
 
 runtime-benchmarks = [
+  "dip-provider-runtime-template/runtime-benchmarks",
   "pallet-dip-consumer/runtime-benchmarks",
   "runtime-common/runtime-benchmarks",
   "frame-support/runtime-benchmarks",

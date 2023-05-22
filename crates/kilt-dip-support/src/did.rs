@@ -60,6 +60,7 @@ pub struct MerkleRevealedDidSignatureVerifier<
 	AccountId,
 	MerkleProofEntries,
 	BlockNumberProvider,
+	Web3Name,
 	const SIGNATURE_VALIDITY: u64,
 	GenesisHashProvider,
 	Hash,
@@ -74,6 +75,7 @@ pub struct MerkleRevealedDidSignatureVerifier<
 		AccountId,
 		MerkleProofEntries,
 		BlockNumberProvider,
+		Web3Name,
 		ConstU64<SIGNATURE_VALIDITY>,
 		GenesisHashProvider,
 		Hash,
@@ -91,6 +93,7 @@ impl<
 		AccountId,
 		MerkleProofEntries,
 		BlockNumberProvider,
+		Web3Name,
 		const SIGNATURE_VALIDITY: u64,
 		GenesisHashProvider,
 		Hash,
@@ -104,6 +107,7 @@ impl<
 		AccountId,
 		MerkleProofEntries,
 		BlockNumberProvider,
+		Web3Name,
 		SIGNATURE_VALIDITY,
 		GenesisHashProvider,
 		Hash,
@@ -115,7 +119,7 @@ impl<
 	Call: Encode,
 	Digest: Encode,
 	Details: Bump + Encode,
-	MerkleProofEntries: AsRef<[ProofEntry<BlockNumber>]>,
+	MerkleProofEntries: AsRef<[ProofEntry<BlockNumber, Web3Name>]>,
 	BlockNumberProvider: Get<BlockNumber>,
 	GenesisHashProvider: Get<Hash>,
 	Hash: Encode,
@@ -163,21 +167,14 @@ impl<
 		)
 			.encode();
 		// Only consider verification keys from the set of revealed Merkle leaves.
-		let mut proof_verification_keys = proof.merkle_entries.as_ref().iter().filter_map(
-			|ProofEntry {
-			     key: DidPublicKeyDetails { key, .. },
-			     relationship,
-			 }| {
-				if let DidPublicKey::PublicVerificationKey(k) = key {
-					Some((
-						k,
-						DidVerificationKeyRelationship::try_from(*relationship).expect("Should never fail to build a VerificationRelationship from the given DidKeyRelationship because we have already made sure the conditions hold."),
-					))
-				} else {
-					None
-				}
-			},
-		);
+		let mut proof_verification_keys = proof.merkle_entries.as_ref().iter().filter_map(|proof_entry| {
+			let ProofEntry::DidKey(relationship, DidPublicKeyDetails { key, .. }) = proof_entry else { return None };
+			let DidPublicKey::PublicVerificationKey(k) = key else { return None };
+			Some((
+				k,
+				DidVerificationKeyRelationship::try_from(*relationship).expect("Should never fail to build a VerificationRelationship from the given DidKeyRelationship because we have already made sure the conditions hold."),
+			))
+		});
 		let valid_signing_key = proof_verification_keys.find(|(verification_key, _)| {
 			verification_key
 				.verify_signature(&encoded_payload, &proof.did_signature.signature)

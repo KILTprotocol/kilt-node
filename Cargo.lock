@@ -2341,6 +2341,7 @@ dependencies = [
  "cumulus-primitives-timestamp",
  "cumulus-primitives-utility",
  "did",
+ "dip-provider-runtime-template",
  "dip-support",
  "frame-executive",
  "frame-support",

@@ -407,6 +407,8 @@ impl pallet_did_lookup::Config for Runtime {
 	type WeightInfo = ();
 }
 
+pub type Web3Name = AsciiWeb3Name<Runtime>;
+
 impl pallet_web3_names::Config for Runtime {
 	type BanOrigin = EnsureRoot<AccountId>;
 	type Currency = Balances;
@@ -416,7 +418,7 @@ impl pallet_web3_names::Config for Runtime {
 	type OriginSuccess = DidRawOrigin<AccountId, DidIdentifier>;
 	type OwnerOrigin = EnsureDidOrigin<DidIdentifier, AccountId>;
 	type RuntimeEvent = RuntimeEvent;
-	type Web3Name = AsciiWeb3Name<Runtime>;
+	type Web3Name = Web3Name;
 	type Web3NameOwner = DidIdentifier;
 	type WeightInfo = ();
 }
