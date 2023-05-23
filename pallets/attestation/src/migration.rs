@@ -17,14 +17,15 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_support::pallet_prelude::DispatchResult;
-use kilt_support::migration::switch_reserved_to_holds;
 
-
-use crate::{AttestationDetails, Attestations, Config};
+use crate::{AttestationDetails, Attestations, BalanceOf, Config};
 
 pub(crate) fn do_migration<T: Config>() {
-	Attestations::<T>::iter_values().map(|attestations_detail: AttestationDetails<T>| -> DispatchResult { 
-        
-        attestations_detail.deposit
-        Ok(()) });
+	Attestations::<T>::iter_values().map(|attestations_detail: AttestationDetails<T>| -> DispatchResult {
+		let deposit = attestations_detail.deposit;
+		switch_reserved_to_hold::<T>(deposit.owner, deposit.amount);
+		Ok(())
+	});
 }
+
+fn switch_reserved_to_hold<T: Config>(owner: T::AccountId, amount: BalanceOf<T>) {}

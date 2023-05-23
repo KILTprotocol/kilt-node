@@ -147,13 +147,13 @@ pub mod pallet {
 	#[pallet::storage_version(STORAGE_VERSION)]
 	pub struct Pallet<T>(_);
 
-	#[pallet::hooks]
-	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
-		fn on_runtime_upgrade() -> Weight {
-			migration::do_migration();
-			()
-		}
-	}
+	// #[pallet::hooks]
+	// impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+	// 	fn on_runtime_upgrade() -> Weight {
+	// 		migration::do_migration();
+	// 		()
+	// 	}
+	// }
 
 	/// Attestations stored on chain.
 	///
