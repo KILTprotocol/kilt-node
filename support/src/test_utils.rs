@@ -15,15 +15,11 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
-#![cfg_attr(not(feature = "std"), no_std)]
 
-pub mod deposit;
-pub use deposit::{free_deposit, reserve_deposit};
+use scale_info::prelude::string::String;
 
-#[cfg(any(feature = "try-runtime", test))]
-pub mod test_utils;
-
-#[cfg(any(feature = "runtime-benchmarks", feature = "mock"))]
-pub mod mock;
-pub mod signature;
-pub mod traits;
+/// Logs the error message and returns "Sanity test error"
+pub fn log_and_return_error_message(error_message: String) -> &'static str {
+	log::error!("{}", error_message);
+	"Sanity test error"
+}

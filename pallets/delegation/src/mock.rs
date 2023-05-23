@@ -513,6 +513,13 @@ pub(crate) mod runtime {
 			ext
 		}
 
+		pub fn build_and_execute_with_sanity_tests(self, test: impl FnOnce()) {
+			self.build().execute_with(|| {
+				test();
+				crate::try_state::do_try_state::<Test>().expect("Sanity test for delegation failed.");
+			})
+		}
+
 		#[cfg(feature = "runtime-benchmarks")]
 		pub fn build_with_keystore(self) -> sp_io::TestExternalities {
 			let mut ext = self.build();
