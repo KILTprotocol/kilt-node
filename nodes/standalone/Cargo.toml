@@ -38,7 +38,7 @@ sc-client-api.workspace = true
 sc-consensus.workspace = true
 sc-consensus-aura.workspace = true
 sc-executor = {workspace = true}
-sc-finality-grandpa.workspace = true
+sc-consensus-grandpa.workspace = true
 sc-keystore.workspace = true
 sc-service = {workspace = true}
 sc-telemetry.workspace = true
@@ -49,7 +49,7 @@ sp-block-builder = {workspace = true, features = ["std"]}
 sp-blockchain.workspace = true
 sp-consensus-aura = {workspace = true, features = ["std"]}
 sp-core = {workspace = true, features = ["std"]}
-sp-finality-grandpa = {workspace = true, features = ["std"]}
+sp-consensus-grandpa = {workspace = true, features = ["std"]}
 sp-inherents = {workspace = true, features = ["std"]}
 sp-io = {workspace = true, features = ["std"]}
 sp-keyring.workspace = true

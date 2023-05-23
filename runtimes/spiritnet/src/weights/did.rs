@@ -59,11 +59,11 @@ impl<T: frame_system::Config> did::WeightInfo for WeightInfo<T> {
 	// Storage: Did ServiceEndpoints (r:0 w:25)
 	// Proof: Did ServiceEndpoints (max_values: None, max_size: Some(413), added: 2888, mode: MaxEncodedLen)
 	fn create_ed25519_keys(n: u32, c: u32, ) -> Weight {
-		Weight::from_ref_time(122_341_881 as u64)
+		Weight::from_parts(122_341_881 as u64, 0)
 			// Standard Error: 12_163
-			.saturating_add(Weight::from_ref_time(1_141_879 as u64).saturating_mul(n as u64))
+			.saturating_add(Weight::from_parts(1_141_879 as u64, 0).saturating_mul(n as u64))
 			// Standard Error: 4_702
-			.saturating_add(Weight::from_ref_time(4_600_187 as u64).saturating_mul(c as u64))
+			.saturating_add(Weight::from_parts(4_600_187 as u64, 0).saturating_mul(c as u64))
 			.saturating_add(T::DbWeight::get().reads(4 as u64))
 			.saturating_add(T::DbWeight::get().writes(4 as u64))
 			.saturating_add(T::DbWeight::get().writes((1 as u64).saturating_mul(c as u64)))
@@ -79,11 +79,11 @@ impl<T: frame_system::Config> did::WeightInfo for WeightInfo<T> {
 	// Storage: Did ServiceEndpoints (r:0 w:25)
 	// Proof: Did ServiceEndpoints (max_values: None, max_size: Some(413), added: 2888, mode: MaxEncodedLen)
 	fn create_sr25519_keys(n: u32, c: u32, ) -> Weight {
-		Weight::from_ref_time(123_784_601 as u64)
+		Weight::from_parts(123_784_601 as u64, 0)
 			// Standard Error: 10_456
-			.saturating_add(Weight::from_ref_time(1_166_310 as u64).saturating_mul(n as u64))
+			.saturating_add(Weight::from_parts(1_166_310 as u64, 0).saturating_mul(n as u64))
 			// Standard Error: 4_042
-			.saturating_add(Weight::from_ref_time(5_098_244 as u64).saturating_mul(c as u64))
+			.saturating_add(Weight::from_parts(5_098_244 as u64, 0).saturating_mul(c as u64))
 			.saturating_add(T::DbWeight::get().reads(4 as u64))
 			.saturating_add(T::DbWeight::get().writes(4 as u64))
 			.saturating_add(T::DbWeight::get().writes((1 as u64).saturating_mul(c as u64)))
@@ -99,11 +99,11 @@ impl<T: frame_system::Config> did::WeightInfo for WeightInfo<T> {
 	// Storage: Did ServiceEndpoints (r:0 w:25)
 	// Proof: Did ServiceEndpoints (max_values: None, max_size: Some(413), added: 2888, mode: MaxEncodedLen)
 	fn create_ecdsa_keys(n: u32, c: u32, ) -> Weight {
-		Weight::from_ref_time(110_543_016 as u64)
+		Weight::from_parts(110_543_016 as u64, 0)
 			// Standard Error: 16_633
-			.saturating_add(Weight::from_ref_time(1_104_243 as u64).saturating_mul(n as u64))
+			.saturating_add(Weight::from_parts(1_104_243 as u64, 0).saturating_mul(n as u64))
 			// Standard Error: 6_431
-			.saturating_add(Weight::from_ref_time(4_305_897 as u64).saturating_mul(c as u64))
+			.saturating_add(Weight::from_parts(4_305_897 as u64, 0).saturating_mul(c as u64))
 			.saturating_add(T::DbWeight::get().reads(4 as u64))
 			.saturating_add(T::DbWeight::get().writes(4 as u64))
 			.saturating_add(T::DbWeight::get().writes((1 as u64).saturating_mul(c as u64)))
@@ -117,9 +117,9 @@ impl<T: frame_system::Config> did::WeightInfo for WeightInfo<T> {
 	// Storage: Did ServiceEndpoints (r:0 w:25)
 	// Proof: Did ServiceEndpoints (max_values: None, max_size: Some(413), added: 2888, mode: MaxEncodedLen)
 	fn delete(c: u32, ) -> Weight {
-		Weight::from_ref_time(29_146_140 as u64)
+		Weight::from_parts(29_146_140 as u64, 0)
 			// Standard Error: 4_204
-			.saturating_add(Weight::from_ref_time(1_246_809 as u64).saturating_mul(c as u64))
+			.saturating_add(Weight::from_parts(1_246_809 as u64, 0).saturating_mul(c as u64))
 			.saturating_add(T::DbWeight::get().reads(2 as u64))
 			.saturating_add(T::DbWeight::get().writes(3 as u64))
 			.saturating_add(T::DbWeight::get().writes((1 as u64).saturating_mul(c as u64)))
@@ -133,9 +133,9 @@ impl<T: frame_system::Config> did::WeightInfo for WeightInfo<T> {
 	// Storage: Did ServiceEndpoints (r:0 w:25)
 	// Proof: Did ServiceEndpoints (max_values: None, max_size: Some(413), added: 2888, mode: MaxEncodedLen)
 	fn reclaim_deposit(c: u32, ) -> Weight {
-		Weight::from_ref_time(31_450_983 as u64)
+		Weight::from_parts(31_450_983 as u64, 0)
 			// Standard Error: 19_237
-			.saturating_add(Weight::from_ref_time(1_260_697 as u64).saturating_mul(c as u64))
+			.saturating_add(Weight::from_parts(1_260_697 as u64, 0).saturating_mul(c as u64))
 			.saturating_add(T::DbWeight::get().reads(2 as u64))
 			.saturating_add(T::DbWeight::get().writes(3 as u64))
 			.saturating_add(T::DbWeight::get().writes((1 as u64).saturating_mul(c as u64)))
@@ -143,168 +143,168 @@ impl<T: frame_system::Config> did::WeightInfo for WeightInfo<T> {
 	// Storage: Did Did (r:1 w:1)
 	// Proof: Did Did (max_values: None, max_size: Some(2312), added: 4787, mode: MaxEncodedLen)
 	fn submit_did_call_ed25519_key() -> Weight {
-		Weight::from_ref_time(75_775_000 as u64)
+		Weight::from_parts(75_775_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	// Proof: Did Did (max_values: None, max_size: Some(2312), added: 4787, mode: MaxEncodedLen)
 	fn submit_did_call_sr25519_key() -> Weight {
-		Weight::from_ref_time(76_971_000 as u64)
+		Weight::from_parts(76_971_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	// Proof: Did Did (max_values: None, max_size: Some(2312), added: 4787, mode: MaxEncodedLen)
 	fn submit_did_call_ecdsa_key() -> Weight {
-		Weight::from_ref_time(64_296_000 as u64)
+		Weight::from_parts(64_296_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	// Proof: Did Did (max_values: None, max_size: Some(2312), added: 4787, mode: MaxEncodedLen)
 	fn set_ed25519_authentication_key() -> Weight {
-		Weight::from_ref_time(27_747_000 as u64)
+		Weight::from_parts(27_747_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	// Proof: Did Did (max_values: None, max_size: Some(2312), added: 4787, mode: MaxEncodedLen)
 	fn set_sr25519_authentication_key() -> Weight {
-		Weight::from_ref_time(27_463_000 as u64)
+		Weight::from_parts(27_463_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	// Proof: Did Did (max_values: None, max_size: Some(2312), added: 4787, mode: MaxEncodedLen)
 	fn set_ecdsa_authentication_key() -> Weight {
-		Weight::from_ref_time(27_322_000 as u64)
+		Weight::from_parts(27_322_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	// Proof: Did Did (max_values: None, max_size: Some(2312), added: 4787, mode: MaxEncodedLen)
 	fn set_ed25519_delegation_key() -> Weight {
-		Weight::from_ref_time(27_125_000 as u64)
+		Weight::from_parts(27_125_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	// Proof: Did Did (max_values: None, max_size: Some(2312), added: 4787, mode: MaxEncodedLen)
 	fn set_sr25519_delegation_key() -> Weight {
-		Weight::from_ref_time(27_196_000 as u64)
+		Weight::from_parts(27_196_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	// Proof: Did Did (max_values: None, max_size: Some(2312), added: 4787, mode: MaxEncodedLen)
 	fn set_ecdsa_delegation_key() -> Weight {
-		Weight::from_ref_time(27_047_000 as u64)
+		Weight::from_parts(27_047_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	// Proof: Did Did (max_values: None, max_size: Some(2312), added: 4787, mode: MaxEncodedLen)
 	fn remove_ed25519_delegation_key() -> Weight {
-		Weight::from_ref_time(25_278_000 as u64)
+		Weight::from_parts(25_278_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	// Proof: Did Did (max_values: None, max_size: Some(2312), added: 4787, mode: MaxEncodedLen)
 	fn remove_sr25519_delegation_key() -> Weight {
-		Weight::from_ref_time(25_292_000 as u64)
+		Weight::from_parts(25_292_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	// Proof: Did Did (max_values: None, max_size: Some(2312), added: 4787, mode: MaxEncodedLen)
 	fn remove_ecdsa_delegation_key() -> Weight {
-		Weight::from_ref_time(25_214_000 as u64)
+		Weight::from_parts(25_214_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	// Proof: Did Did (max_values: None, max_size: Some(2312), added: 4787, mode: MaxEncodedLen)
 	fn set_ed25519_attestation_key() -> Weight {
-		Weight::from_ref_time(27_400_000 as u64)
+		Weight::from_parts(27_400_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	// Proof: Did Did (max_values: None, max_size: Some(2312), added: 4787, mode: MaxEncodedLen)
 	fn set_sr25519_attestation_key() -> Weight {
-		Weight::from_ref_time(27_629_000 as u64)
+		Weight::from_parts(27_629_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	// Proof: Did Did (max_values: None, max_size: Some(2312), added: 4787, mode: MaxEncodedLen)
 	fn set_ecdsa_attestation_key() -> Weight {
-		Weight::from_ref_time(27_339_000 as u64)
+		Weight::from_parts(27_339_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	// Proof: Did Did (max_values: None, max_size: Some(2312), added: 4787, mode: MaxEncodedLen)
 	fn remove_ed25519_attestation_key() -> Weight {
-		Weight::from_ref_time(25_627_000 as u64)
+		Weight::from_parts(25_627_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	// Proof: Did Did (max_values: None, max_size: Some(2312), added: 4787, mode: MaxEncodedLen)
 	fn remove_sr25519_attestation_key() -> Weight {
-		Weight::from_ref_time(25_484_000 as u64)
+		Weight::from_parts(25_484_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	// Proof: Did Did (max_values: None, max_size: Some(2312), added: 4787, mode: MaxEncodedLen)
 	fn remove_ecdsa_attestation_key() -> Weight {
-		Weight::from_ref_time(25_440_000 as u64)
+		Weight::from_parts(25_440_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	// Proof: Did Did (max_values: None, max_size: Some(2312), added: 4787, mode: MaxEncodedLen)
 	fn add_ed25519_key_agreement_key() -> Weight {
-		Weight::from_ref_time(26_678_000 as u64)
+		Weight::from_parts(26_678_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	// Proof: Did Did (max_values: None, max_size: Some(2312), added: 4787, mode: MaxEncodedLen)
 	fn add_sr25519_key_agreement_key() -> Weight {
-		Weight::from_ref_time(26_586_000 as u64)
+		Weight::from_parts(26_586_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	// Proof: Did Did (max_values: None, max_size: Some(2312), added: 4787, mode: MaxEncodedLen)
 	fn add_ecdsa_key_agreement_key() -> Weight {
-		Weight::from_ref_time(26_209_000 as u64)
+		Weight::from_parts(26_209_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	// Proof: Did Did (max_values: None, max_size: Some(2312), added: 4787, mode: MaxEncodedLen)
 	fn remove_ed25519_key_agreement_key() -> Weight {
-		Weight::from_ref_time(25_586_000 as u64)
+		Weight::from_parts(25_586_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	// Proof: Did Did (max_values: None, max_size: Some(2312), added: 4787, mode: MaxEncodedLen)
 	fn remove_sr25519_key_agreement_key() -> Weight {
-		Weight::from_ref_time(25_620_000 as u64)
+		Weight::from_parts(25_620_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
 	// Proof: Did Did (max_values: None, max_size: Some(2312), added: 4787, mode: MaxEncodedLen)
 	fn remove_ecdsa_key_agreement_key() -> Weight {
-		Weight::from_ref_time(25_458_000 as u64)
+		Weight::from_parts(25_458_000 as u64 ,0)
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
@@ -315,7 +315,7 @@ impl<T: frame_system::Config> did::WeightInfo for WeightInfo<T> {
 	// Storage: Did ServiceEndpoints (r:1 w:1)
 	// Proof: Did ServiceEndpoints (max_values: None, max_size: Some(413), added: 2888, mode: MaxEncodedLen)
 	fn add_service_endpoint() -> Weight {
-		Weight::from_ref_time(32_420_000 as u64)
+		Weight::from_parts(32_420_000 as u64 ,0)
 			.saturating_add(T::DbWeight::get().reads(3 as u64))
 			.saturating_add(T::DbWeight::get().writes(2 as u64))
 	}
@@ -324,32 +324,32 @@ impl<T: frame_system::Config> did::WeightInfo for WeightInfo<T> {
 	// Storage: Did DidEndpointsCount (r:1 w:1)
 	// Proof: Did DidEndpointsCount (max_values: None, max_size: Some(52), added: 2527, mode: MaxEncodedLen)
 	fn remove_service_endpoint() -> Weight {
-		Weight::from_ref_time(26_769_000 as u64)
+		Weight::from_parts(26_769_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(2 as u64))
 			.saturating_add(T::DbWeight::get().writes(2 as u64))
 	}
 	// Storage: Did Did (r:1 w:0)
 	// Proof: Did Did (max_values: None, max_size: Some(2312), added: 4787, mode: MaxEncodedLen)
 	fn signature_verification_sr25519(l: u32, ) -> Weight {
-		Weight::from_ref_time(33_371_487 as u64)
+		Weight::from_parts(33_371_487 as u64, 0)
 			// Standard Error: 0
-			.saturating_add(Weight::from_ref_time(4_142 as u64).saturating_mul(l as u64))
+			.saturating_add(Weight::from_parts(4_142 as u64, 0).saturating_mul(l as u64))
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:0)
 	// Proof: Did Did (max_values: None, max_size: Some(2312), added: 4787, mode: MaxEncodedLen)
 	fn signature_verification_ed25519(l: u32, ) -> Weight {
-		Weight::from_ref_time(41_427_263 as u64)
+		Weight::from_parts(41_427_263 as u64, 0)
 			// Standard Error: 0
-			.saturating_add(Weight::from_ref_time(2_465 as u64).saturating_mul(l as u64))
+			.saturating_add(Weight::from_parts(2_465 as u64, 0).saturating_mul(l as u64))
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:0)
 	// Proof: Did Did (max_values: None, max_size: Some(2312), added: 4787, mode: MaxEncodedLen)
 	fn signature_verification_ecdsa(l: u32, ) -> Weight {
-		Weight::from_ref_time(27_585_880 as u64)
+		Weight::from_parts(27_585_880 as u64, 0)
 			// Standard Error: 0
-			.saturating_add(Weight::from_ref_time(1_493 as u64).saturating_mul(l as u64))
+			.saturating_add(Weight::from_parts(1_493 as u64, 0).saturating_mul(l as u64))
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 	}
 	// Storage: Did Did (r:1 w:1)
@@ -357,7 +357,7 @@ impl<T: frame_system::Config> did::WeightInfo for WeightInfo<T> {
 	// Storage: System Account (r:1 w:1)
 	// Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
 	fn change_deposit_owner() -> Weight {
-		Weight::from_ref_time(38_598_000 as u64)
+		Weight::from_parts(38_598_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(2 as u64))
 			.saturating_add(T::DbWeight::get().writes(2 as u64))
 	}
@@ -366,7 +366,7 @@ impl<T: frame_system::Config> did::WeightInfo for WeightInfo<T> {
 	// Storage: System Account (r:1 w:1)
 	// Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
 	fn update_deposit() -> Weight {
-		Weight::from_ref_time(40_121_000 as u64)
+		Weight::from_parts(40_121_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(2 as u64))
 			.saturating_add(T::DbWeight::get().writes(2 as u64))
 	}

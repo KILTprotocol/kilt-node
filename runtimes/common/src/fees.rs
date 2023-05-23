@@ -106,7 +106,7 @@ where
 		// TODO: transfer_keep_alive is 288 byte long?
 		let tx_len: u64 = 288;
 		let byte_fee: Balance =
-			<R as pallet_transaction_payment::Config>::LengthToFee::weight_to_fee(&Weight::from_ref_time(tx_len))
+			<R as pallet_transaction_payment::Config>::LengthToFee::weight_to_fee(&Weight::from_parts(tx_len, 0))
 				.into();
 		let base_weight: Weight = <R as frame_system::Config>::BlockWeights::get()
 			.get(DispatchClass::Normal)

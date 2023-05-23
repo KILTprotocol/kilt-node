@@ -57,9 +57,9 @@ impl<T: frame_system::Config> pallet_membership::WeightInfo for WeightInfo<T> {
 	// Storage: TechnicalCommittee Prime (r:0 w:1)
 	// Proof Skipped: TechnicalCommittee Prime (max_values: Some(1), max_size: None, mode: Measured)
 	fn add_member(m: u32, ) -> Weight {
-		Weight::from_ref_time(24_167_195 as u64)
+		Weight::from_parts(24_167_195 as u64, 0)
 			// Standard Error: 7_543
-			.saturating_add(Weight::from_ref_time(37_703 as u64).saturating_mul(m as u64))
+			.saturating_add(Weight::from_parts(37_703 as u64, 0).saturating_mul(m as u64))
 			.saturating_add(T::DbWeight::get().reads(2 as u64))
 			.saturating_add(T::DbWeight::get().writes(3 as u64))
 	}
@@ -74,9 +74,9 @@ impl<T: frame_system::Config> pallet_membership::WeightInfo for WeightInfo<T> {
 	// Storage: TechnicalCommittee Prime (r:0 w:1)
 	// Proof Skipped: TechnicalCommittee Prime (max_values: Some(1), max_size: None, mode: Measured)
 	fn remove_member(m: u32, ) -> Weight {
-		Weight::from_ref_time(24_816_490 as u64)
+		Weight::from_parts(24_816_490 as u64, 0)
 			// Standard Error: 7_634
-			.saturating_add(Weight::from_ref_time(55_649 as u64).saturating_mul(m as u64))
+			.saturating_add(Weight::from_parts(55_649 as u64, 0).saturating_mul(m as u64))
 			.saturating_add(T::DbWeight::get().reads(3 as u64))
 			.saturating_add(T::DbWeight::get().writes(3 as u64))
 	}
@@ -91,9 +91,9 @@ impl<T: frame_system::Config> pallet_membership::WeightInfo for WeightInfo<T> {
 	// Storage: TechnicalCommittee Prime (r:0 w:1)
 	// Proof Skipped: TechnicalCommittee Prime (max_values: Some(1), max_size: None, mode: Measured)
 	fn swap_member(m: u32, ) -> Weight {
-		Weight::from_ref_time(26_022_922 as u64)
+		Weight::from_parts(26_022_922 as u64, 0)
 			// Standard Error: 8_446
-			.saturating_add(Weight::from_ref_time(67_445 as u64).saturating_mul(m as u64))
+			.saturating_add(Weight::from_parts(67_445 as u64, 0).saturating_mul(m as u64))
 			.saturating_add(T::DbWeight::get().reads(3 as u64))
 			.saturating_add(T::DbWeight::get().writes(3 as u64))
 	}
@@ -108,9 +108,9 @@ impl<T: frame_system::Config> pallet_membership::WeightInfo for WeightInfo<T> {
 	// Storage: TechnicalCommittee Prime (r:0 w:1)
 	// Proof Skipped: TechnicalCommittee Prime (max_values: Some(1), max_size: None, mode: Measured)
 	fn reset_member(m: u32, ) -> Weight {
-		Weight::from_ref_time(27_154_127 as u64)
+		Weight::from_parts(27_154_127 as u64, 0)
 			// Standard Error: 9_682
-			.saturating_add(Weight::from_ref_time(167_406 as u64).saturating_mul(m as u64))
+			.saturating_add(Weight::from_parts(167_406 as u64, 0).saturating_mul(m as u64))
 			.saturating_add(T::DbWeight::get().reads(3 as u64))
 			.saturating_add(T::DbWeight::get().writes(3 as u64))
 	}
@@ -125,9 +125,9 @@ impl<T: frame_system::Config> pallet_membership::WeightInfo for WeightInfo<T> {
 	// Storage: TechnicalCommittee Prime (r:0 w:1)
 	// Proof Skipped: TechnicalCommittee Prime (max_values: Some(1), max_size: None, mode: Measured)
 	fn change_key(m: u32, ) -> Weight {
-		Weight::from_ref_time(25_355_298 as u64)
+		Weight::from_parts(25_355_298 as u64, 0)
 			// Standard Error: 8_498
-			.saturating_add(Weight::from_ref_time(85_642 as u64).saturating_mul(m as u64))
+			.saturating_add(Weight::from_parts(85_642 as u64, 0).saturating_mul(m as u64))
 			.saturating_add(T::DbWeight::get().reads(3 as u64))
 			.saturating_add(T::DbWeight::get().writes(4 as u64))
 	}
@@ -138,9 +138,9 @@ impl<T: frame_system::Config> pallet_membership::WeightInfo for WeightInfo<T> {
 	// Storage: TechnicalCommittee Prime (r:0 w:1)
 	// Proof Skipped: TechnicalCommittee Prime (max_values: Some(1), max_size: None, mode: Measured)
 	fn set_prime(m: u32, ) -> Weight {
-		Weight::from_ref_time(10_196_403 as u64)
+		Weight::from_parts(10_196_403 as u64, 0)
 			// Standard Error: 2_878
-			.saturating_add(Weight::from_ref_time(19_764 as u64).saturating_mul(m as u64))
+			.saturating_add(Weight::from_parts(19_764 as u64, 0).saturating_mul(m as u64))
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().writes(2 as u64))
 	}
@@ -149,9 +149,9 @@ impl<T: frame_system::Config> pallet_membership::WeightInfo for WeightInfo<T> {
 	// Storage: TechnicalCommittee Prime (r:0 w:1)
 	// Proof Skipped: TechnicalCommittee Prime (max_values: Some(1), max_size: None, mode: Measured)
 	fn clear_prime(m: u32, ) -> Weight {
-		Weight::from_ref_time(4_737_401 as u64)
+		Weight::from_parts(4_737_401 as u64, 0)
 			// Standard Error: 1_575
-			.saturating_add(Weight::from_ref_time(4_713 as u64).saturating_mul(m as u64))
+			.saturating_add(Weight::from_parts(4_713 as u64, 0).saturating_mul(m as u64))
 			.saturating_add(T::DbWeight::get().writes(2 as u64))
 	}
 }

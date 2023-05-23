@@ -53,9 +53,9 @@ impl<T: frame_system::Config> pallet_tips::WeightInfo for WeightInfo<T> {
 	// Storage: Tips Tips (r:1 w:1)
 	// Proof Skipped: Tips Tips (max_values: None, max_size: None, mode: Measured)
 	fn report_awesome(r: u32, ) -> Weight {
-		Weight::from_ref_time(34_678_995 as u64)
+		Weight::from_parts(34_678_995 as u64, 0)
 			// Standard Error: 63
-			.saturating_add(Weight::from_ref_time(1_929 as u64).saturating_mul(r as u64))
+			.saturating_add(Weight::from_parts(1_929 as u64, 0).saturating_mul(r as u64))
 			.saturating_add(T::DbWeight::get().reads(2 as u64))
 			.saturating_add(T::DbWeight::get().writes(2 as u64))
 	}
@@ -64,7 +64,7 @@ impl<T: frame_system::Config> pallet_tips::WeightInfo for WeightInfo<T> {
 	// Storage: Tips Reasons (r:0 w:1)
 	// Proof Skipped: Tips Reasons (max_values: None, max_size: None, mode: Measured)
 	fn retract_tip() -> Weight {
-		Weight::from_ref_time(26_984_000 as u64)
+		Weight::from_parts(26_984_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().writes(2 as u64))
 	}
@@ -75,11 +75,11 @@ impl<T: frame_system::Config> pallet_tips::WeightInfo for WeightInfo<T> {
 	// Storage: Tips Tips (r:0 w:1)
 	// Proof Skipped: Tips Tips (max_values: None, max_size: None, mode: Measured)
 	fn tip_new(r: u32, t: u32, ) -> Weight {
-		Weight::from_ref_time(23_331_637 as u64)
+		Weight::from_parts(23_331_637 as u64, 0)
 			// Standard Error: 29
-			.saturating_add(Weight::from_ref_time(2_083 as u64).saturating_mul(r as u64))
+			.saturating_add(Weight::from_parts(2_083 as u64, 0).saturating_mul(r as u64))
 			// Standard Error: 4_929
-			.saturating_add(Weight::from_ref_time(38_831 as u64).saturating_mul(t as u64))
+			.saturating_add(Weight::from_parts(38_831 as u64, 0).saturating_mul(t as u64))
 			.saturating_add(T::DbWeight::get().reads(2 as u64))
 			.saturating_add(T::DbWeight::get().writes(2 as u64))
 	}
@@ -88,9 +88,9 @@ impl<T: frame_system::Config> pallet_tips::WeightInfo for WeightInfo<T> {
 	// Storage: Tips Tips (r:1 w:1)
 	// Proof Skipped: Tips Tips (max_values: None, max_size: None, mode: Measured)
 	fn tip(t: u32, ) -> Weight {
-		Weight::from_ref_time(21_024_385 as u64)
+		Weight::from_parts(21_024_385 as u64, 0)
 			// Standard Error: 4_827
-			.saturating_add(Weight::from_ref_time(80_931 as u64).saturating_mul(t as u64))
+			.saturating_add(Weight::from_parts(80_931 as u64, 0).saturating_mul(t as u64))
 			.saturating_add(T::DbWeight::get().reads(2 as u64))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
@@ -103,9 +103,9 @@ impl<T: frame_system::Config> pallet_tips::WeightInfo for WeightInfo<T> {
 	// Storage: Tips Reasons (r:0 w:1)
 	// Proof Skipped: Tips Reasons (max_values: None, max_size: None, mode: Measured)
 	fn close_tip(t: u32, ) -> Weight {
-		Weight::from_ref_time(60_474_036 as u64)
+		Weight::from_parts(60_474_036 as u64, 0)
 			// Standard Error: 9_536
-			.saturating_add(Weight::from_ref_time(2_238 as u64).saturating_mul(t as u64))
+			.saturating_add(Weight::from_parts(2_238 as u64, 0).saturating_mul(t as u64))
 			.saturating_add(T::DbWeight::get().reads(4 as u64))
 			.saturating_add(T::DbWeight::get().writes(4 as u64))
 	}
@@ -114,7 +114,7 @@ impl<T: frame_system::Config> pallet_tips::WeightInfo for WeightInfo<T> {
 	// Storage: Tips Reasons (r:0 w:1)
 	// Proof Skipped: Tips Reasons (max_values: None, max_size: None, mode: Measured)
 	fn slash_tip(_t: u32, ) -> Weight {
-		Weight::from_ref_time(20_257_747 as u64)
+		Weight::from_parts(20_257_747 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().writes(2 as u64))
 	}

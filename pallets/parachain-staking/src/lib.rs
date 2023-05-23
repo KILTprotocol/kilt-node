@@ -180,7 +180,6 @@ pub mod pallet {
 
 	/// Pallet for parachain staking.
 	#[pallet::pallet]
-	#[pallet::generate_store(pub(super) trait Store)]
 	#[pallet::storage_version(STORAGE_VERSION)]
 	pub struct Pallet<T>(PhantomData<T>);
 

@@ -55,7 +55,7 @@ impl<T: frame_system::Config> pallet_did_lookup::WeightInfo for WeightInfo<T> {
 	// Storage: DidLookup ConnectedAccounts (r:0 w:2)
 	// Proof: DidLookup ConnectedAccounts (max_values: None, max_size: Some(97), added: 2572, mode: MaxEncodedLen)
 	fn associate_account_multisig_sr25519() -> Weight {
-		Weight::from_ref_time(104_704_000 as u64)
+		Weight::from_parts(104_704_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(2 as u64))
 			.saturating_add(T::DbWeight::get().writes(4 as u64))
 	}
@@ -66,7 +66,7 @@ impl<T: frame_system::Config> pallet_did_lookup::WeightInfo for WeightInfo<T> {
 	// Storage: DidLookup ConnectedAccounts (r:0 w:2)
 	// Proof: DidLookup ConnectedAccounts (max_values: None, max_size: Some(97), added: 2572, mode: MaxEncodedLen)
 	fn associate_account_multisig_ed25519() -> Weight {
-		Weight::from_ref_time(103_900_000 as u64)
+		Weight::from_parts(103_900_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(2 as u64))
 			.saturating_add(T::DbWeight::get().writes(4 as u64))
 	}
@@ -77,7 +77,7 @@ impl<T: frame_system::Config> pallet_did_lookup::WeightInfo for WeightInfo<T> {
 	// Storage: DidLookup ConnectedAccounts (r:0 w:2)
 	// Proof: DidLookup ConnectedAccounts (max_values: None, max_size: Some(97), added: 2572, mode: MaxEncodedLen)
 	fn associate_account_multisig_ecdsa() -> Weight {
-		Weight::from_ref_time(91_681_000 as u64)
+		Weight::from_parts(91_681_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(2 as u64))
 			.saturating_add(T::DbWeight::get().writes(4 as u64))
 	}
@@ -88,7 +88,7 @@ impl<T: frame_system::Config> pallet_did_lookup::WeightInfo for WeightInfo<T> {
 	// Storage: DidLookup ConnectedAccounts (r:0 w:2)
 	// Proof: DidLookup ConnectedAccounts (max_values: None, max_size: Some(97), added: 2572, mode: MaxEncodedLen)
 	fn associate_eth_account() -> Weight {
-		Weight::from_ref_time(93_205_000 as u64)
+		Weight::from_parts(93_205_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(2 as u64))
 			.saturating_add(T::DbWeight::get().writes(4 as u64))
 	}
@@ -99,7 +99,7 @@ impl<T: frame_system::Config> pallet_did_lookup::WeightInfo for WeightInfo<T> {
 	// Storage: DidLookup ConnectedAccounts (r:0 w:2)
 	// Proof: DidLookup ConnectedAccounts (max_values: None, max_size: Some(97), added: 2572, mode: MaxEncodedLen)
 	fn associate_sender() -> Weight {
-		Weight::from_ref_time(44_691_000 as u64)
+		Weight::from_parts(44_691_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(2 as u64))
 			.saturating_add(T::DbWeight::get().writes(4 as u64))
 	}
@@ -110,7 +110,7 @@ impl<T: frame_system::Config> pallet_did_lookup::WeightInfo for WeightInfo<T> {
 	// Storage: DidLookup ConnectedAccounts (r:0 w:1)
 	// Proof: DidLookup ConnectedAccounts (max_values: None, max_size: Some(97), added: 2572, mode: MaxEncodedLen)
 	fn remove_sender_association() -> Weight {
-		Weight::from_ref_time(28_757_000 as u64)
+		Weight::from_parts(28_757_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(2 as u64))
 			.saturating_add(T::DbWeight::get().writes(3 as u64))
 	}
@@ -121,7 +121,7 @@ impl<T: frame_system::Config> pallet_did_lookup::WeightInfo for WeightInfo<T> {
 	// Storage: DidLookup ConnectedAccounts (r:0 w:1)
 	// Proof: DidLookup ConnectedAccounts (max_values: None, max_size: Some(97), added: 2572, mode: MaxEncodedLen)
 	fn remove_account_association() -> Weight {
-		Weight::from_ref_time(30_440_000 as u64)
+		Weight::from_parts(30_440_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(2 as u64))
 			.saturating_add(T::DbWeight::get().writes(3 as u64))
 	}
@@ -130,7 +130,7 @@ impl<T: frame_system::Config> pallet_did_lookup::WeightInfo for WeightInfo<T> {
 	// Storage: System Account (r:2 w:2)
 	// Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
 	fn change_deposit_owner() -> Weight {
-		Weight::from_ref_time(40_342_000 as u64)
+		Weight::from_parts(40_342_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(3 as u64))
 			.saturating_add(T::DbWeight::get().writes(3 as u64))
 	}
@@ -139,7 +139,7 @@ impl<T: frame_system::Config> pallet_did_lookup::WeightInfo for WeightInfo<T> {
 	// Storage: System Account (r:1 w:1)
 	// Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
 	fn update_deposit() -> Weight {
-		Weight::from_ref_time(57_126_000 as u64)
+		Weight::from_parts(57_126_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(2 as u64))
 			.saturating_add(T::DbWeight::get().writes(2 as u64))
 	}
