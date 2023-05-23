@@ -34,7 +34,6 @@ impl<T> Bump for T
 where
 	T: CheckedAdd + Zero + One,
 {
-	// FIXME: Better implementation?
 	fn bump(&mut self) {
 		*self = self.checked_add(&Self::one()).unwrap_or_else(Self::zero);
 	}

@@ -22,6 +22,7 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
+use did::KeyIdOf;
 use dip_provider_runtime_template::Web3Name;
 use kilt_dip_support::merkle::VerificationResult;
 pub use sp_consensus_aura::sr25519::AuthorityId as AuraId;
@@ -368,8 +369,10 @@ impl pallet_did_lookup::Config for Runtime {
 	type Currency = Balances;
 	type Deposit = ConstU128<UNIT>;
 	type DidIdentifier = DidIdentifier;
-	type EnsureOrigin = EnsureDipOrigin<DidIdentifier, AccountId, VerificationResult<BlockNumber, Web3Name, 10>>;
-	type OriginSuccess = DipOrigin<DidIdentifier, AccountId, VerificationResult<BlockNumber, Web3Name, 10>>;
+	type EnsureOrigin =
+		EnsureDipOrigin<DidIdentifier, AccountId, VerificationResult<KeyIdOf<Runtime>, BlockNumber, Web3Name, 10>>;
+	type OriginSuccess =
+		DipOrigin<DidIdentifier, AccountId, VerificationResult<KeyIdOf<Runtime>, BlockNumber, Web3Name, 10>>;
 	type RuntimeEvent = RuntimeEvent;
 	type WeightInfo = ();
 }

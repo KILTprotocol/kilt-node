@@ -20,7 +20,7 @@ use did::{did_details::DidVerificationKey, DidVerificationKeyRelationship, KeyId
 use dip_provider_runtime_template::Web3Name;
 use frame_support::traits::Contains;
 use kilt_dip_support::{
-	did::{DidSignatureAndCallVerifier, MerkleEntriesAndDidSignature, MerkleRevealedDidSignatureVerifier},
+	did::{DidSignatureAndCallVerifier, MerkleLeavesAndDidSignature, MerkleRevealedDidSignatureVerifier},
 	merkle::{DidMerkleProofVerifier, MerkleProof, ProofLeaf},
 	traits::{BlockNumberProvider, DidDipOriginFilter, GenesisProvider},
 	MerkleProofAndDidSignatureVerifier,
@@ -35,13 +35,13 @@ pub type MerkleProofVerifier =
 pub type MerkleProofVerifierOutputOf<Call, Subject> =
 	<MerkleProofVerifier as IdentityProofVerifier<Call, Subject>>::VerificationResult;
 pub type MerkleDidSignatureVerifierOf<Call, Subject> = MerkleRevealedDidSignatureVerifier<
+	KeyIdOf<Runtime>,
 	BlockNumber,
 	Hash,
 	u128,
 	AccountId,
 	MerkleProofVerifierOutputOf<Call, Subject>,
 	BlockNumberProvider<Runtime>,
-	Web3Name,
 	// Signatures are valid for 50 blocks
 	50,
 	GenesisProvider<Runtime>,
@@ -53,7 +53,7 @@ impl pallet_dip_consumer::Config for Runtime {
 	type Identifier = DidIdentifier;
 	type IdentityDetails = u128;
 	type Proof =
-		MerkleEntriesAndDidSignature<MerkleProof<Vec<Vec<u8>>, ProofLeaf<Hash, BlockNumber, Web3Name>>, BlockNumber>;
+		MerkleLeavesAndDidSignature<MerkleProof<Vec<Vec<u8>>, ProofLeaf<Hash, BlockNumber, Web3Name>>, BlockNumber>;
 	type ProofDigest = Hash;
 	type ProofVerifier = MerkleProofAndDidSignatureVerifier<
 		BlockNumber,
