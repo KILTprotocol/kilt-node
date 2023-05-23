@@ -63,6 +63,7 @@
 
 pub mod attestations;
 pub mod default_weights;
+pub mod migration;
 
 #[cfg(any(feature = "mock", test))]
 pub mod mock;
@@ -147,7 +148,12 @@ pub mod pallet {
 	pub struct Pallet<T>(_);
 
 	#[pallet::hooks]
-	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {}
+	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+		fn on_runtime_upgrade() -> Weight {
+			migration::do_migration();
+			()
+		}
+	}
 
 	/// Attestations stored on chain.
 	///

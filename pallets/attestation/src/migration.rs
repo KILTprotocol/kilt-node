@@ -15,13 +15,16 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
-#![cfg_attr(not(feature = "std"), no_std)]
 
-pub mod deposit;
-pub use deposit::{free_deposit, reserve_deposit};
+use frame_support::pallet_prelude::DispatchResult;
+use kilt_support::migration::switch_reserved_to_holds;
 
-pub mod migration;
-#[cfg(any(feature = "runtime-benchmarks", feature = "mock"))]
-pub mod mock;
-pub mod signature;
-pub mod traits;
+
+use crate::{AttestationDetails, Attestations, Config};
+
+pub(crate) fn do_migration<T: Config>() {
+	Attestations::<T>::iter_values().map(|attestations_detail: AttestationDetails<T>| -> DispatchResult { 
+        
+        attestations_detail.deposit
+        Ok(()) });
+}
