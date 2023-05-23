@@ -369,12 +369,13 @@ parameter_types! {
 }
 
 impl did::Config for Runtime {
+	type BaseDeposit = ConstU128<UNIT>;
 	type Currency = Balances;
-	type Deposit = ConstU128<UNIT>;
 	type DidIdentifier = DidIdentifier;
 	type EnsureOrigin = EnsureDidOrigin<DidIdentifier, AccountId>;
 	type Fee = ConstU128<MILLIUNIT>;
 	type FeeCollector = ();
+	type KeyDeposit = ConstU128<UNIT>;
 	type MaxBlocksTxValidity = ConstU32<HOURS>;
 	type MaxNewKeyAgreementKeys = ConstU32<1>;
 	type MaxNumberOfServicesPerDid = ConstU32<1>;
@@ -389,6 +390,7 @@ impl did::Config for Runtime {
 	type RuntimeCall = RuntimeCall;
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeOrigin = RuntimeOrigin;
+	type ServiceEndpointDeposit = ConstU128<UNIT>;
 	type WeightInfo = ();
 }
 
