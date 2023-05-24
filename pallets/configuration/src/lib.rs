@@ -36,8 +36,8 @@ pub mod mock;
 #[cfg(feature = "runtime-benchmarks")]
 pub mod benchmarking;
 
-/// Test module for CTypes
 #[cfg(test)]
+/// Tests for the configuration pallet
 mod tests;
 
 pub use crate::{configuration::Configuration, default_weights::WeightInfo, pallet::*};
@@ -63,40 +63,29 @@ pub mod pallet {
 	}
 
 	#[pallet::pallet]
-	#[pallet::generate_store(pub(super) trait Store)]
 	#[pallet::storage_version(STORAGE_VERSION)]
 	pub struct Pallet<T>(_);
 
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {}
 
-	/// CTypes stored on chain.
-	///
-	/// It maps from a CType hash to its creator and block number in which it
-	/// was created.
+	/// Stores for the dynamic configuration of the runtime
 	#[pallet::storage]
 	pub type ConfigurationStore<T> = StorageValue<_, Configuration, ValueQuery>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
-		/// A new CType has been created.
-		/// \[creator identifier, CType hash\]
+		/// The configuration was updated.
 		ConfigurationUpdate(Configuration),
 	}
 
 	#[pallet::error]
-	pub enum Error<T> {
-		/// There is no CType with the given hash.
-		Invalid,
-	}
+	pub enum Error<T> {}
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
-		/// Create a new CType from the given unique CType hash and associates
-		/// it with its creator.
-		///
-		/// A CType with the same hash must not be stored on chain.
+		/// Set the current configuration.
 		#[pallet::call_index(0)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::set_configuration())]
 		pub fn set_configuration(origin: OriginFor<T>, configuration: Configuration) -> DispatchResult {

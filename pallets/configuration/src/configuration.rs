@@ -20,8 +20,11 @@ use frame_support::RuntimeDebug;
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 
+/// Configuration for the runtime.
 #[derive(Clone, Encode, Decode, RuntimeDebug, MaxEncodedLen, Eq, PartialEq, TypeInfo)]
 pub struct Configuration {
+	/// Enables the check that the blocknumber of the relay chain strictly
+	/// increases.
 	pub relay_block_strictly_increasing: bool,
 }
 
