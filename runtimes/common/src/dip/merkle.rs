@@ -140,17 +140,6 @@ where
 				Ok(())
 			})?;
 
-		// Web3name, if present
-		if let Some(linked_web3_name) = web3_name {
-			let web3_name_leaf = ProofLeafOf::<T>::Web3Name(linked_web3_name.clone().into(), ().into());
-			trie_builder
-				.insert(
-					web3_name_leaf.encoded_key().as_slice(),
-					web3_name_leaf.encoded_value().as_slice(),
-				)
-				.map_err(|_| ())?;
-		}
-
 		// Linked accounts
 		if let Some(linked_accounts) = linked_accounts {
 			linked_accounts
@@ -166,6 +155,18 @@ where
 					Ok(())
 				})?;
 		}
+
+		// Web3name, if present
+		if let Some(linked_web3_name) = web3_name {
+			let web3_name_leaf = ProofLeafOf::<T>::Web3Name(linked_web3_name.clone().into(), ().into());
+			trie_builder
+				.insert(
+					web3_name_leaf.encoded_key().as_slice(),
+					web3_name_leaf.encoded_value().as_slice(),
+				)
+				.map_err(|_| ())?;
+		}
+
 		trie_builder.commit();
 		Ok(trie_builder.root().to_owned())
 	}
@@ -187,7 +188,7 @@ where
 		A: Iterator<Item = &'a LinkableAccountId>,
 	{
 		// Fails if the DID details do not exist.
-		let (Some(did_details), _web3_name, _linked_accounts) = (&identity.a, &identity.b, &identity.c) else { return Err(()) };
+		let (Some(did_details), linked_web3_name, linked_accounts) = (&identity.a, &identity.b, &identity.c) else { return Err(()) };
 
 		let mut db = MemoryDB::default();
 		let root = Self::calculate_root_with_db(identity, &mut db)?;
@@ -211,7 +212,7 @@ where
 				Ok(ProofLeaf::DidKey(did_key_merkle_key, key_details.clone().into()))
 			})
 			.chain(account_ids.map(|account_id| -> Result<ProofLeafOf<T>, ()> {
-				let Some(linked_accounts) = &identity.c else { return Err(()) };
+				let Some(linked_accounts) = linked_accounts else { return Err(()) };
 				if linked_accounts.contains(account_id) {
 					Ok(ProofLeaf::LinkedAccount(account_id.clone().into(), ().into()))
 				} else {
@@ -220,7 +221,7 @@ where
 			}))
 			.collect::<Result<Vec<_>, _>>()?;
 
-		match (should_include_web3_name, &identity.b) {
+		match (should_include_web3_name, linked_web3_name) {
 			// If web3name should be included and it exists...
 			(true, Some(web3_name)) => {
 				leaves.push(ProofLeaf::Web3Name(web3_name.clone().into(), ().into()));

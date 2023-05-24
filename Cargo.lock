@@ -2508,6 +2508,7 @@ dependencies = [
  "kilt-support",
  "pallet-balances",
  "pallet-did-lookup",
+ "pallet-web3-names",
  "parachain-info",
  "parity-scale-codec",
  "polkadot-parachain",

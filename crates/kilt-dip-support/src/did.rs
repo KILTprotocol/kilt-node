@@ -241,6 +241,18 @@ pub struct CombinedIdentityResult<OutputA, OutputB, OutputC> {
 	pub c: OutputC,
 }
 
+impl<OutputA, OutputB, OutputC> From<(OutputA, OutputB, OutputC)>
+	for CombinedIdentityResult<OutputA, OutputB, OutputC>
+{
+	fn from(value: (OutputA, OutputB, OutputC)) -> Self {
+		Self {
+			a: value.0,
+			b: value.1,
+			c: value.2,
+		}
+	}
+}
+
 impl<OutputA, OutputB, OutputC> CombinedIdentityResult<OutputA, OutputB, OutputC>
 where
 	OutputB: Default,

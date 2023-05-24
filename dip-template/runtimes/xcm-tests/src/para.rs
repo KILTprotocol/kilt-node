@@ -25,9 +25,15 @@ pub(super) mod provider {
 	pub(crate) use dip_provider_runtime_template::{DidIdentifier, DmpQueue, Runtime, RuntimeOrigin, XcmpQueue};
 
 	use did::did_details::{DidDetails, DidEncryptionKey, DidVerificationKey};
-	use dip_provider_runtime_template::{AccountId, System};
+	use dip_provider_runtime_template::{AccountId, Balance, BlockNumber, System, Web3Name};
 	use kilt_support::deposit::Deposit;
+	use pallet_did_lookup::{linkable_account::LinkableAccountId, ConnectionRecord};
+	use pallet_web3_names::web3_name::Web3NameOwnership;
 	use sp_core::{ecdsa, ed25519, sr25519, Pair};
+	use sp_runtime::{
+		traits::{One, Zero},
+		AccountId32, SaturatedConversion,
+	};
 
 	use super::*;
 
@@ -53,9 +59,13 @@ pub(super) mod provider {
 		.unwrap();
 		details.update_attestation_key(att_key, 0u32).unwrap();
 		details.update_delegation_key(del_key, 0u32).unwrap();
-		details
-			.add_key_agreement_key(DidEncryptionKey::X25519([100u8; 32]), 0u32)
-			.unwrap();
+		let max_key_agreement_key_count: u8 =
+			<Runtime as did::Config>::MaxTotalKeyAgreementKeys::get().saturated_into();
+		(1u8..max_key_agreement_key_count).for_each(|s| {
+			details
+				.add_key_agreement_key(DidEncryptionKey::X25519([s; 32]), 0u32)
+				.unwrap();
+		});
 		details
 	}
 
@@ -74,8 +84,37 @@ pub(super) mod provider {
 		let mut ext = TestExternalities::new(t);
 		let did: DidIdentifier = did_auth_key().public().into();
 		let details = generate_did_details();
+		let acc: AccountId32 = did_auth_key().public().into();
+		let web3_name: Web3Name = b"test".to_vec().try_into().unwrap();
 		ext.execute_with(|| {
 			did::pallet::Did::<Runtime>::insert(&did, details);
+			pallet_did_lookup::pallet::ConnectedDids::<Runtime>::insert(
+				LinkableAccountId::from(acc.clone()),
+				ConnectionRecord {
+					did: did.clone(),
+					deposit: Deposit {
+						amount: Balance::one(),
+						owner: acc.clone(),
+					},
+				},
+			);
+			pallet_did_lookup::pallet::ConnectedAccounts::<Runtime>::insert(
+				&did,
+				LinkableAccountId::from(acc.clone()),
+				(),
+			);
+			pallet_web3_names::pallet::Owner::<Runtime>::insert(
+				&web3_name,
+				Web3NameOwnership {
+					claimed_at: BlockNumber::zero(),
+					owner: did.clone(),
+					deposit: Deposit {
+						amount: Balance::one(),
+						owner: acc.clone(),
+					},
+				},
+			);
+			pallet_web3_names::pallet::Names::<Runtime>::insert(did, web3_name);
 			System::set_block_number(1);
 		});
 		ext

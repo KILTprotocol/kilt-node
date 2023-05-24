@@ -370,7 +370,7 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for RuntimeCall 
 
 parameter_types! {
 	#[derive(Debug, Clone, Eq, PartialEq)]
-	pub const MaxTotalKeyAgreementKeys: u32 = 1;
+	pub const MaxTotalKeyAgreementKeys: u32 = 50;
 }
 
 impl did::Config for Runtime {
@@ -382,11 +382,11 @@ impl did::Config for Runtime {
 	type FeeCollector = ();
 	type KeyDeposit = ConstU128<UNIT>;
 	type MaxBlocksTxValidity = ConstU32<HOURS>;
-	type MaxNewKeyAgreementKeys = ConstU32<1>;
+	type MaxNewKeyAgreementKeys = ConstU32<50>;
 	type MaxNumberOfServicesPerDid = ConstU32<1>;
 	type MaxNumberOfTypesPerService = ConstU32<1>;
 	type MaxNumberOfUrlsPerService = ConstU32<1>;
-	type MaxPublicKeysPerDid = ConstU32<4>;
+	type MaxPublicKeysPerDid = ConstU32<53>;
 	type MaxServiceIdLength = ConstU32<100>;
 	type MaxServiceTypeLength = ConstU32<100>;
 	type MaxServiceUrlLength = ConstU32<100>;
