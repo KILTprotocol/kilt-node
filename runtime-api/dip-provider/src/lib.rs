@@ -21,13 +21,11 @@
 use parity_scale_codec::Codec;
 
 sp_api::decl_runtime_apis! {
-	pub trait DipProvider<DidIdentifier, KeyId, KeyIds, Success, Error> where
-		DidIdentifier: Codec,
-		KeyId: Codec,
-		KeyIds: Codec + IntoIterator<Item = KeyId>,
+	pub trait DipProvider<ProofRequest, Success, Error> where
+		ProofRequest: Codec,
 		Success: Codec,
 		Error: Codec,
 		{
-			fn generate_proof(identifier: DidIdentifier, keys: KeyIds) -> Result<Success, Error>;
+			fn generate_proof(request: ProofRequest) -> Result<Success, Error>;
 		}
 }

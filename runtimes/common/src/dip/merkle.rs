@@ -23,7 +23,7 @@ use pallet_did_lookup::linkable_account::LinkableAccountId;
 use pallet_dip_provider::traits::IdentityProofGenerator;
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
-use sp_std::{borrow::ToOwned, collections::btree_set::BTreeSet, marker::PhantomData, vec::Vec};
+use sp_std::{borrow::ToOwned, marker::PhantomData, vec::Vec};
 use sp_trie::{generate_trie_proof, LayoutV1, MemoryDB, TrieDBMutBuilder, TrieHash, TrieMut};
 
 use kilt_dip_support::merkle::{DidKeyRelationship, ProofLeaf};
@@ -176,12 +176,15 @@ where
 	// generates a merkle proof which only reveals the details of the provided key
 	// IDs.
 	#[allow(clippy::result_unit_err)]
-	pub fn generate_proof<'a, K>(
+	pub fn generate_proof<'a, K, A>(
 		identity: &LinkedDidInfoOf<T>,
-		mut key_ids: K,
+		key_ids: K,
+		should_include_web3_name: bool,
+		account_ids: A,
 	) -> Result<CompleteMerkleProof<T::Hash, DidMerkleProofOf<T>>, ()>
 	where
 		K: Iterator<Item = &'a KeyIdOf<T>>,
+		A: Iterator<Item = &'a LinkableAccountId>,
 	{
 		// Fails if the DID details do not exist.
 		let (Some(did_details), _web3_name, _linked_accounts) = (&identity.a, &identity.b, &identity.c) else { return Err(()) };
@@ -189,47 +192,53 @@ where
 		let mut db = MemoryDB::default();
 		let root = Self::calculate_root_with_db(identity, &mut db)?;
 
-		#[allow(clippy::type_complexity)]
-		let leaves: BTreeSet<ProofLeaf<KeyIdOf<T>, T::BlockNumber, T::Web3Name, LinkableAccountId>> =
-			key_ids.try_fold(BTreeSet::new(), |mut set, key_id| -> Result<_, ()> {
+		let mut leaves = key_ids
+			.map(|key_id| -> Result<ProofLeafOf<T>, ()> {
 				let key_details = did_details.public_keys.get(key_id).ok_or(())?;
 				// Create the merkle leaf key depending on the relationship of the key to the
 				// DID document.
-				let did_key_merkle_key = if *key_id == did_details.authentication_key {
-					Ok(DidKeyMerkleKey(
-						*key_id,
-						DidVerificationKeyRelationship::Authentication.into(),
-					))
+				let did_key_merkle_key: DidKeyMerkleKey<KeyIdOf<T>> = if *key_id == did_details.authentication_key {
+					Ok((*key_id, DidVerificationKeyRelationship::Authentication.into()).into())
 				} else if Some(*key_id) == did_details.attestation_key {
-					Ok(DidKeyMerkleKey(
-						*key_id,
-						DidVerificationKeyRelationship::AssertionMethod.into(),
-					))
+					Ok((*key_id, DidVerificationKeyRelationship::AssertionMethod.into()).into())
 				} else if Some(*key_id) == did_details.delegation_key {
-					Ok(DidKeyMerkleKey(
-						*key_id,
-						DidVerificationKeyRelationship::CapabilityDelegation.into(),
-					))
+					Ok((*key_id, DidVerificationKeyRelationship::CapabilityDelegation.into()).into())
 				} else if did_details.key_agreement_keys.contains(key_id) {
-					Ok(DidKeyMerkleKey(*key_id, DidKeyRelationship::Encryption))
+					Ok((*key_id, DidKeyRelationship::Encryption).into())
 				} else {
 					Err(())
 				}?;
-				// Then adds the actual key details to the merkle leaf.
-				let did_key_merkle_value = DidKeyMerkleValue(key_details.clone());
-				let did_merkle_merkle_leaf = ProofLeaf::DidKey(did_key_merkle_key, did_key_merkle_value);
-				if !set.contains(&did_merkle_merkle_leaf) {
-					set.insert(did_merkle_merkle_leaf);
+				Ok(ProofLeaf::DidKey(did_key_merkle_key, key_details.clone().into()))
+			})
+			.chain(account_ids.map(|account_id| -> Result<ProofLeafOf<T>, ()> {
+				let Some(linked_accounts) = &identity.c else { return Err(()) };
+				if linked_accounts.contains(account_id) {
+					Ok(ProofLeaf::LinkedAccount(account_id.clone().into(), ().into()))
+				} else {
+					Err(())
 				}
-				Ok(set)
-			})?;
+			}))
+			.collect::<Result<Vec<_>, _>>()?;
+
+		match (should_include_web3_name, &identity.b) {
+			// If web3name should be included and it exists...
+			(true, Some(web3_name)) => {
+				leaves.push(ProofLeaf::Web3Name(web3_name.clone().into(), ().into()));
+				Ok(())
+			}
+			// ...else if web3name should be included and it DOES NOT exist...
+			(true, None) => Err(()),
+			// ...else if web3name should NOT be included.
+			(false, _) => Ok(()),
+		}?;
+
 		let encoded_keys: Vec<Vec<u8>> = leaves.iter().map(|l| l.encoded_key()).collect();
 		let proof = generate_trie_proof::<LayoutV1<T::Hashing>, _, _, _>(&db, root, &encoded_keys).map_err(|_| ())?;
 		Ok(CompleteMerkleProof {
 			root,
 			proof: DidMerkleProofOf::<T> {
 				blinded: proof,
-				revealed: leaves.into_iter().collect::<Vec<_>>(),
+				revealed: leaves.into_iter().collect(),
 			},
 		})
 	}

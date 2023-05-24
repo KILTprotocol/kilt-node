@@ -86,6 +86,8 @@ fn commit_identity() {
 	let CompleteMerkleProof { proof, .. } = DidMerkleRootGenerator::<ProviderRuntime>::generate_proof(
 		&LinkedDidInfoOf::from_a(Some(did_details.clone())),
 		[did_details.authentication_key].iter(),
+		false,
+		[].iter(),
 	)
 	.expect("Proof generation should not fail");
 	// 3.2 Generate a DID signature
