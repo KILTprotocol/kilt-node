@@ -46,6 +46,7 @@ pub struct DidMerkleRootGenerator<T>(PhantomData<T>);
 impl<T> DidMerkleRootGenerator<T>
 where
 	T: did::Config + pallet_did_lookup::Config + pallet_web3_names::Config,
+	<T as pallet_web3_names::Config>::Web3Name: Ord,
 {
 	// Calls the function in the `sp_trie` crate to generate the merkle root given
 	// the provided `DidDetails`.
@@ -197,6 +198,7 @@ where
 impl<T> IdentityProofGenerator<DidIdentifier, LinkedDidInfoOf<T>> for DidMerkleRootGenerator<T>
 where
 	T: did::Config + pallet_did_lookup::Config + pallet_web3_names::Config,
+	<T as pallet_web3_names::Config>::Web3Name: Ord,
 {
 	// TODO: Proper error handling
 	type Error = ();

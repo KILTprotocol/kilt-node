@@ -122,8 +122,7 @@ pub mod pallet {
 			+ Clone
 			+ TypeInfo
 			+ TryFrom<Vec<u8>, Error = Error<Self>>
-			+ MaxEncodedLen
-			+ Ord;
+			+ MaxEncodedLen;
 		/// The type of a name owner.
 		type Web3NameOwner: Parameter + MaxEncodedLen;
 		/// Weight information for extrinsics in this pallet.

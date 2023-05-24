@@ -2450,7 +2450,6 @@ dependencies = [
  "frame-support",
  "frame-system",
  "frame-system-rpc-runtime-api",
- "kilt-dip-support",
  "kilt-runtime-api-dip-provider",
  "pallet-aura",
  "pallet-authorship",
