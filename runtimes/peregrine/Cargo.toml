@@ -18,8 +18,8 @@ sp-io.workspace = true
 
 [dependencies]
 # External dependencies
-parity-scale-codec = {workspace = true, features = ["derive"]}
 log.workspace = true
+parity-scale-codec = {workspace = true, features = ["derive"]}
 scale-info = {workspace = true, features = ["derive"]}
 
 hex-literal = {workspace = true, optional = true}
@@ -37,6 +37,7 @@ ctype.workspace = true
 delegation.workspace = true
 did.workspace = true
 kilt-support.workspace = true
+pallet-configuration.workspace = true
 pallet-did-lookup.workspace = true
 pallet-inflation.workspace = true
 pallet-web3-names.workspace = true
@@ -94,9 +95,9 @@ parachain-info.workspace = true
 
 # Polkadot dependencies
 pallet-xcm.workspace = true
-xcm.workspace = true
 xcm-builder.workspace = true
 xcm-executor.workspace = true
+xcm.workspace = true
 
 # Benchmarking dependencies
 cumulus-pallet-session-benchmarking = {workspace = true, optional = true}
@@ -125,6 +126,7 @@ runtime-benchmarks = [
   "kilt-support/runtime-benchmarks",
   "pallet-balances/runtime-benchmarks",
   "pallet-collective/runtime-benchmarks",
+  "pallet-configuration/runtime-benchmarks",
   "pallet-democracy/runtime-benchmarks",
   "pallet-did-lookup/runtime-benchmarks",
   "pallet-indices/runtime-benchmarks",
@@ -180,6 +182,7 @@ std = [
   "pallet-authorship/std",
   "pallet-balances/std",
   "pallet-collective/std",
+  "pallet-configuration/std",
   "pallet-democracy/std",
   "pallet-did-lookup/std",
   "pallet-indices/std",
@@ -240,6 +243,7 @@ try-runtime = [
   "pallet-authorship/try-runtime",
   "pallet-balances/try-runtime",
   "pallet-collective/try-runtime",
+  "pallet-configuration/try-runtime",
   "pallet-democracy/try-runtime",
   "pallet-did-lookup/try-runtime",
   "pallet-indices/try-runtime",

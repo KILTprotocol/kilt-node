@@ -7,7 +7,7 @@ license-file.workspace = true
 readme.workspace = true
 repository.workspace = true
 version.workspace = true
-name = "configuration"
+name = "pallet-configuration"
 description = "Stores configuration values for the parachain"
 
 [package.metadata.docs.rs]
