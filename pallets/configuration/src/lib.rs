@@ -46,6 +46,7 @@ pub use crate::{configuration::Configuration, default_weights::WeightInfo, palle
 pub mod pallet {
 	use super::*;
 
+	use cumulus_pallet_parachain_system::{CheckAssociatedRelayNumber, RelayNumberStrictlyIncreases};
 	use frame_support::{
 		pallet_prelude::*,
 		traits::{EnsureOrigin, StorageVersion},
@@ -95,6 +96,14 @@ pub mod pallet {
 			Self::deposit_event(Event::<T>::ConfigurationUpdate(configuration));
 
 			Ok(())
+		}
+	}
+
+	impl<T: Config> CheckAssociatedRelayNumber for Pallet<T> {
+		fn check_associated_relay_number(a: u32, b: u32) {
+			if ConfigurationStore::<T>::get().relay_block_strictly_increasing {
+				RelayNumberStrictlyIncreases::check_associated_relay_number(a, b);
+			}
 		}
 	}
 }
