@@ -19,6 +19,7 @@
 use did::{DidVerificationKeyRelationship, KeyIdOf};
 use frame_support::RuntimeDebug;
 use kilt_dip_support::merkle::{DidKeyMerkleKey, DidKeyMerkleValue, MerkleProof};
+use pallet_did_lookup::linkable_account::LinkableAccountId;
 use pallet_dip_provider::traits::IdentityProofGenerator;
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
@@ -32,7 +33,12 @@ use crate::{dip::did::LinkedDidInfoOf, DidIdentifier};
 pub type BlindedValue = Vec<u8>;
 pub type DidMerkleProofOf<T> = MerkleProof<
 	Vec<BlindedValue>,
-	ProofLeaf<KeyIdOf<T>, <T as frame_system::Config>::BlockNumber, <T as pallet_web3_names::Config>::Web3Name>,
+	ProofLeaf<
+		KeyIdOf<T>,
+		<T as frame_system::Config>::BlockNumber,
+		<T as pallet_web3_names::Config>::Web3Name,
+		LinkableAccountId,
+	>,
 >;
 
 #[derive(Encode, Decode, RuntimeDebug, PartialEq, Eq, TypeInfo)]
@@ -43,10 +49,16 @@ pub struct CompleteMerkleProof<Root, Proof> {
 
 pub struct DidMerkleRootGenerator<T>(PhantomData<T>);
 
+type ProofLeafOf<T> = ProofLeaf<
+	KeyIdOf<T>,
+	<T as frame_system::Config>::BlockNumber,
+	<T as pallet_web3_names::Config>::Web3Name,
+	LinkableAccountId,
+>;
+
 impl<T> DidMerkleRootGenerator<T>
 where
 	T: did::Config + pallet_did_lookup::Config + pallet_web3_names::Config,
-	<T as pallet_web3_names::Config>::Web3Name: Ord,
 {
 	// Calls the function in the `sp_trie` crate to generate the merkle root given
 	// the provided `DidDetails`.
@@ -61,7 +73,7 @@ where
 	// details leaf, as we already do with out `DidDetails` type.
 	fn calculate_root_with_db(identity: &LinkedDidInfoOf<T>, db: &mut MemoryDB<T::Hashing>) -> Result<T::Hash, ()> {
 		// Fails if the DID details do not exist.
-		let (Some(did_details), _web3_name, _linked_accounts) = (&identity.a, &identity.b, &identity.c) else { return Err(()) };
+		let (Some(did_details), web3_name, linked_accounts) = (&identity.a, &identity.b, &identity.c) else { return Err(()) };
 		let mut trie = TrieHash::<LayoutV1<T::Hashing>>::default();
 		let mut trie_builder = TrieDBMutBuilder::<LayoutV1<T::Hashing>>::new(db, &mut trie).build();
 
@@ -71,7 +83,7 @@ where
 			.public_keys
 			.get(&did_details.authentication_key)
 			.expect("Authentication key should be part of the public keys.");
-		let auth_leaf = ProofLeaf::<_, _, T::Web3Name>::DidKey(
+		let auth_leaf = ProofLeafOf::<T>::DidKey(
 			DidKeyMerkleKey(
 				did_details.authentication_key,
 				DidVerificationKeyRelationship::Authentication.into(),
@@ -87,9 +99,9 @@ where
 				.public_keys
 				.get(&att_key_id)
 				.expect("Attestation key should be part of the public keys.");
-			let att_leaf = ProofLeaf::<_, _, T::Web3Name>::DidKey(
-				DidKeyMerkleKey(att_key_id, DidVerificationKeyRelationship::AssertionMethod.into()),
-				DidKeyMerkleValue(att_key_details.clone()),
+			let att_leaf = ProofLeafOf::<T>::DidKey(
+				(att_key_id, DidVerificationKeyRelationship::AssertionMethod.into()).into(),
+				att_key_details.clone().into(),
 			);
 			trie_builder
 				.insert(att_leaf.encoded_key().as_slice(), att_leaf.encoded_value().as_slice())
@@ -101,9 +113,9 @@ where
 				.public_keys
 				.get(&del_key_id)
 				.expect("Delegation key should be part of the public keys.");
-			let del_leaf = ProofLeaf::<_, _, T::Web3Name>::DidKey(
-				DidKeyMerkleKey(del_key_id, DidVerificationKeyRelationship::CapabilityDelegation.into()),
-				DidKeyMerkleValue(del_key_details.clone()),
+			let del_leaf = ProofLeafOf::<T>::DidKey(
+				(del_key_id, DidVerificationKeyRelationship::CapabilityDelegation.into()).into(),
+				del_key_details.clone().into(),
 			);
 			trie_builder
 				.insert(del_leaf.encoded_key().as_slice(), del_leaf.encoded_value().as_slice())
@@ -118,15 +130,42 @@ where
 					.public_keys
 					.get(id)
 					.expect("Key agreement key should be part of the public keys.");
-				let enc_leaf = ProofLeaf::<_, _, T::Web3Name>::DidKey(
-					DidKeyMerkleKey(*id, DidKeyRelationship::Encryption),
-					DidKeyMerkleValue(key_agreement_details.clone()),
+				let enc_leaf = ProofLeafOf::<T>::DidKey(
+					(*id, DidKeyRelationship::Encryption).into(),
+					key_agreement_details.clone().into(),
 				);
 				trie_builder
 					.insert(enc_leaf.encoded_key().as_slice(), enc_leaf.encoded_value().as_slice())
 					.map_err(|_| ())?;
 				Ok(())
 			})?;
+
+		// Web3name, if present
+		if let Some(linked_web3_name) = web3_name {
+			let web3_name_leaf = ProofLeafOf::<T>::Web3Name(linked_web3_name.clone().into(), ().into());
+			trie_builder
+				.insert(
+					web3_name_leaf.encoded_key().as_slice(),
+					web3_name_leaf.encoded_value().as_slice(),
+				)
+				.map_err(|_| ())?;
+		}
+
+		// Linked accounts
+		if let Some(linked_accounts) = linked_accounts {
+			linked_accounts
+				.iter()
+				.try_for_each(|linked_account| -> Result<(), ()> {
+					let linked_account_leaf = ProofLeafOf::<T>::LinkedAccount(linked_account.clone().into(), ().into());
+					trie_builder
+						.insert(
+							linked_account_leaf.encoded_key().as_slice(),
+							linked_account_leaf.encoded_value().as_slice(),
+						)
+						.map_err(|_| ())?;
+					Ok(())
+				})?;
+		}
 		trie_builder.commit();
 		Ok(trie_builder.root().to_owned())
 	}
@@ -144,13 +183,14 @@ where
 	where
 		K: Iterator<Item = &'a KeyIdOf<T>>,
 	{
+		// Fails if the DID details do not exist.
 		let (Some(did_details), _web3_name, _linked_accounts) = (&identity.a, &identity.b, &identity.c) else { return Err(()) };
 
 		let mut db = MemoryDB::default();
 		let root = Self::calculate_root_with_db(identity, &mut db)?;
 
 		#[allow(clippy::type_complexity)]
-		let leaves: BTreeSet<ProofLeaf<KeyIdOf<T>, T::BlockNumber, T::Web3Name>> =
+		let leaves: BTreeSet<ProofLeaf<KeyIdOf<T>, T::BlockNumber, T::Web3Name, LinkableAccountId>> =
 			key_ids.try_fold(BTreeSet::new(), |mut set, key_id| -> Result<_, ()> {
 				let key_details = did_details.public_keys.get(key_id).ok_or(())?;
 				// Create the merkle leaf key depending on the relationship of the key to the
@@ -198,7 +238,6 @@ where
 impl<T> IdentityProofGenerator<DidIdentifier, LinkedDidInfoOf<T>> for DidMerkleRootGenerator<T>
 where
 	T: did::Config + pallet_did_lookup::Config + pallet_web3_names::Config,
-	<T as pallet_web3_names::Config>::Web3Name: Ord,
 {
 	// TODO: Proper error handling
 	type Error = ();

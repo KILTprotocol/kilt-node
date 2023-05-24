@@ -95,27 +95,48 @@ impl From<()> for Web3NameMerkleValue {
 }
 
 #[derive(Clone, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo)]
-pub enum ProofLeaf<KeyId, BlockNumber, Web3Name> {
+pub struct LinkedAccountMerkleKey<AccountId>(pub AccountId);
+
+impl<AccountId> From<AccountId> for LinkedAccountMerkleKey<AccountId> {
+	fn from(value: AccountId) -> Self {
+		Self(value)
+	}
+}
+
+#[derive(Clone, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo)]
+pub struct LinkedAccountMerkleValue;
+
+impl From<()> for LinkedAccountMerkleValue {
+	fn from(_value: ()) -> Self {
+		Self
+	}
+}
+
+#[derive(Clone, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo)]
+pub enum ProofLeaf<KeyId, BlockNumber, Web3Name, LinkedAccountId> {
 	// The key and value for the leaves of a merkle proof that contain a reference
 	// (by ID) to the key details, provided in a separate leaf.
 	DidKey(DidKeyMerkleKey<KeyId>, DidKeyMerkleValue<BlockNumber>),
 	Web3Name(Web3NameMerkleKey<Web3Name>, Web3NameMerkleValue),
+	LinkedAccount(LinkedAccountMerkleKey<LinkedAccountId>, LinkedAccountMerkleValue),
 }
 
-impl<KeyId, BlockNumber, Web3Name> ProofLeaf<KeyId, BlockNumber, Web3Name>
+impl<KeyId, BlockNumber, Web3Name, LinkedAccountId> ProofLeaf<KeyId, BlockNumber, Web3Name, LinkedAccountId>
 where
 	KeyId: Encode,
 	Web3Name: Encode,
+	LinkedAccountId: Encode,
 {
 	pub fn encoded_key(&self) -> Vec<u8> {
 		match self {
 			ProofLeaf::DidKey(key, _) => key.encode(),
 			ProofLeaf::Web3Name(key, _) => key.encode(),
+			ProofLeaf::LinkedAccount(key, _) => key.encode(),
 		}
 	}
 }
 
-impl<KeyId, BlockNumber, Web3Name> ProofLeaf<KeyId, BlockNumber, Web3Name>
+impl<KeyId, BlockNumber, Web3Name, LinkedAccountId> ProofLeaf<KeyId, BlockNumber, Web3Name, LinkedAccountId>
 where
 	BlockNumber: Encode,
 {
@@ -123,6 +144,7 @@ where
 		match self {
 			ProofLeaf::DidKey(_, value) => value.encode(),
 			ProofLeaf::Web3Name(_, value) => value.encode(),
+			ProofLeaf::LinkedAccount(_, value) => value.encode(),
 		}
 	}
 }
@@ -135,13 +157,35 @@ pub struct RevealedDidKey<KeyId, BlockNumber> {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, TypeInfo, MaxEncodedLen, Encode, Decode, Default)]
-pub struct VerificationResult<KeyId, BlockNumber, Web3Name, const MAX_REVEALED_KEYS_COUNT: u32> {
+pub struct VerificationResult<
+	KeyId,
+	BlockNumber,
+	Web3Name,
+	LinkedAccountId,
+	const MAX_REVEALED_KEYS_COUNT: u32,
+	const MAX_REVEALED_ACCOUNTS_COUNT: u32,
+> {
 	pub did_keys: BoundedVec<RevealedDidKey<KeyId, BlockNumber>, ConstU32<MAX_REVEALED_KEYS_COUNT>>,
 	pub web3_name: Option<Web3Name>,
+	pub linked_accounts: BoundedVec<LinkedAccountId, ConstU32<MAX_REVEALED_ACCOUNTS_COUNT>>,
 }
 
-impl<KeyId, BlockNumber, Web3Name, const MAX_REVEALED_KEYS_COUNT: u32> AsRef<[RevealedDidKey<KeyId, BlockNumber>]>
-	for VerificationResult<KeyId, BlockNumber, Web3Name, MAX_REVEALED_KEYS_COUNT>
+impl<
+		KeyId,
+		BlockNumber,
+		Web3Name,
+		LinkedAccountId,
+		const MAX_REVEALED_KEYS_COUNT: u32,
+		const MAX_REVEALED_ACCOUNTS_COUNT: u32,
+	> AsRef<[RevealedDidKey<KeyId, BlockNumber>]>
+	for VerificationResult<
+		KeyId,
+		BlockNumber,
+		Web3Name,
+		LinkedAccountId,
+		MAX_REVEALED_KEYS_COUNT,
+		MAX_REVEALED_ACCOUNTS_COUNT,
+	>
 {
 	fn as_ref(&self) -> &[RevealedDidKey<KeyId, BlockNumber>] {
 		self.did_keys.as_ref()
@@ -158,8 +202,11 @@ pub struct DidMerkleProofVerifier<
 	BlockNumber,
 	Details,
 	Web3Name,
+	LinkedAccountId,
 	const MAX_REVEALED_KEYS_COUNT: u32,
+	const MAX_REVEALED_ACCOUNTS_COUNT: u32,
 >(
+	#[allow(clippy::type_complexity)]
 	PhantomData<(
 		Hasher,
 		AccountId,
@@ -167,26 +214,56 @@ pub struct DidMerkleProofVerifier<
 		BlockNumber,
 		Details,
 		Web3Name,
+		LinkedAccountId,
 		ConstU32<MAX_REVEALED_KEYS_COUNT>,
+		ConstU32<MAX_REVEALED_ACCOUNTS_COUNT>,
 	)>,
 );
 
-impl<Call, Subject, Hasher, AccountId, KeyId, BlockNumber, Details, Web3Name, const MAX_REVEALED_KEYS_COUNT: u32>
-	IdentityProofVerifier<Call, Subject>
-	for DidMerkleProofVerifier<Hasher, AccountId, KeyId, BlockNumber, Details, Web3Name, MAX_REVEALED_KEYS_COUNT>
-where
+impl<
+		Call,
+		Subject,
+		Hasher,
+		AccountId,
+		KeyId,
+		BlockNumber,
+		Details,
+		Web3Name,
+		LinkedAccountId,
+		const MAX_REVEALED_KEYS_COUNT: u32,
+		const MAX_REVEALED_ACCOUNTS_COUNT: u32,
+	> IdentityProofVerifier<Call, Subject>
+	for DidMerkleProofVerifier<
+		Hasher,
+		AccountId,
+		KeyId,
+		BlockNumber,
+		Details,
+		Web3Name,
+		LinkedAccountId,
+		MAX_REVEALED_KEYS_COUNT,
+		MAX_REVEALED_ACCOUNTS_COUNT,
+	> where
 	// TODO: Remove `Debug` bound
 	BlockNumber: Encode + Clone + Debug,
 	Hasher: sp_core::Hasher,
 	KeyId: Encode + Clone + Ord + Into<Hasher::Out>,
+	LinkedAccountId: Encode + Clone,
 	Web3Name: Encode + Clone,
 {
 	// TODO: Proper error handling
 	type Error = ();
-	type Proof = MerkleProof<Vec<Vec<u8>>, ProofLeaf<KeyId, BlockNumber, Web3Name>>;
+	type Proof = MerkleProof<Vec<Vec<u8>>, ProofLeaf<KeyId, BlockNumber, Web3Name, LinkedAccountId>>;
 	type IdentityDetails = IdentityDetails<KeyId, Details>;
 	type Submitter = AccountId;
-	type VerificationResult = VerificationResult<KeyId, BlockNumber, Web3Name, MAX_REVEALED_KEYS_COUNT>;
+	type VerificationResult = VerificationResult<
+		KeyId,
+		BlockNumber,
+		Web3Name,
+		LinkedAccountId,
+		MAX_REVEALED_KEYS_COUNT,
+		MAX_REVEALED_ACCOUNTS_COUNT,
+	>;
 
 	fn verify_proof_for_call_against_details(
 		_call: &Call,
@@ -212,16 +289,18 @@ where
 
 		// At this point, we know the proof is valid. We just need to map the revealed
 		// leaves to something the consumer can easily operate on.
-
-		let (did_keys, web3_name): (
+		#[allow(clippy::type_complexity)]
+		let (did_keys, web3_name, linked_accounts): (
 			BoundedVec<RevealedDidKey<KeyId, BlockNumber>, ConstU32<MAX_REVEALED_KEYS_COUNT>>,
 			Option<Web3Name>,
+			BoundedVec<LinkedAccountId, ConstU32<MAX_REVEALED_ACCOUNTS_COUNT>>,
 		) = proof.revealed.iter().try_fold(
 			(
 				BoundedVec::with_bounded_capacity(MAX_REVEALED_KEYS_COUNT.saturated_into()),
 				None,
+				BoundedVec::with_bounded_capacity(MAX_REVEALED_ACCOUNTS_COUNT.saturated_into()),
 			),
-			|(mut keys, web3_name), leaf| match leaf {
+			|(mut keys, web3_name, mut linked_accounts), leaf| match leaf {
 				ProofLeaf::DidKey(key_id, key_value) => {
 					keys.try_push(RevealedDidKey {
 						// TODO: Avoid cloning if possible
@@ -230,13 +309,23 @@ where
 						details: key_value.0.clone(),
 					})
 					.map_err(|_| ())?;
-					Ok::<_, ()>((keys, web3_name))
+					Ok::<_, ()>((keys, web3_name, linked_accounts))
 				}
 				// TODO: Avoid cloning if possible
-				ProofLeaf::Web3Name(revealed_web3_name, _) => Ok((keys, Some(revealed_web3_name.0.clone()))),
+				ProofLeaf::Web3Name(revealed_web3_name, _) => {
+					Ok((keys, Some(revealed_web3_name.0.clone()), linked_accounts))
+				}
+				ProofLeaf::LinkedAccount(account_id, _) => {
+					linked_accounts.try_push(account_id.0.clone()).map_err(|_| ())?;
+					Ok::<_, ()>((keys, web3_name, linked_accounts))
+				}
 			},
 		)?;
 
-		Ok(VerificationResult { did_keys, web3_name })
+		Ok(VerificationResult {
+			did_keys,
+			web3_name,
+			linked_accounts,
+		})
 	}
 }
