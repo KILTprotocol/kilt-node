@@ -28,7 +28,7 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 use cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases;
 use frame_support::{
 	construct_runtime, parameter_types,
-	traits::{ConstU32, EitherOfDiverse, Everything, InstanceFilter, PrivilegeCmp},
+	traits::{ConstU32, EitherOfDiverse, Everything, InstanceFilter, PrivilegeCmp, AsEnsureOriginWithArg},
 	weights::{ConstantMultiplier, Weight},
 };
 use frame_system::{EnsureRoot, EnsureSigned};
@@ -530,7 +530,7 @@ impl pallet_tips::Config for Runtime {
 impl pallet_configuration::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type WeightInfo = ();
-	type EnsureOrigin = EnsureRoot<AccountId>;
+	type EnsureOrigin = AsEnsureOriginWithArg<EnsureRoot<AccountId>>;
 }
 
 impl attestation::Config for Runtime {

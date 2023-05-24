@@ -17,16 +17,17 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_benchmarking::{benchmarks, impl_benchmark_test_suite};
-use frame_support::traits::EnsureOrigin;
+use frame_support::traits::EnsureOriginWithArg;
 
 use crate::*;
 
 benchmarks! {
 
 	set_configuration {
-		let origin = T::EnsureOrigin::try_successful_origin().expect("Should build successful origin");
+		let new_config = Configuration { relay_block_strictly_increasing: true };
+		let origin = T::EnsureOrigin::try_successful_origin(&new_config).expect("Should build successful origin");
 
-	}: _<T::RuntimeOrigin>(origin, Configuration { relay_block_strictly_increasing: true })
+	}: _<T::RuntimeOrigin>(origin, new_config)
 	verify {
 		assert_eq!(ConfigurationStore::<T>::get(), Configuration { relay_block_strictly_increasing: true });
 	}

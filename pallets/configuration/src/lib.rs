@@ -49,7 +49,7 @@ pub mod pallet {
 	use cumulus_pallet_parachain_system::{CheckAssociatedRelayNumber, RelayNumberStrictlyIncreases};
 	use frame_support::{
 		pallet_prelude::*,
-		traits::{EnsureOrigin, StorageVersion},
+		traits::{EnsureOriginWithArg, StorageVersion},
 	};
 	use frame_system::pallet_prelude::*;
 
@@ -60,7 +60,9 @@ pub mod pallet {
 	pub trait Config: frame_system::Config {
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 		type WeightInfo: WeightInfo;
-		type EnsureOrigin: EnsureOrigin<<Self as frame_system::Config>::RuntimeOrigin>;
+
+		/// The origin that is allowed to change the configuration
+		type EnsureOrigin: EnsureOriginWithArg<<Self as frame_system::Config>::RuntimeOrigin, Configuration>;
 	}
 
 	#[pallet::pallet]
@@ -90,7 +92,7 @@ pub mod pallet {
 		#[pallet::call_index(0)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::set_configuration())]
 		pub fn set_configuration(origin: OriginFor<T>, configuration: Configuration) -> DispatchResult {
-			<T as pallet::Config>::EnsureOrigin::ensure_origin(origin)?;
+			<T as pallet::Config>::EnsureOrigin::ensure_origin(origin, &configuration)?;
 
 			ConfigurationStore::<T>::set(configuration.clone());
 			Self::deposit_event(Event::<T>::ConfigurationUpdate(configuration));

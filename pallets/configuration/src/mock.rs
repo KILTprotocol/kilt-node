@@ -18,7 +18,9 @@
 
 #[cfg(test)]
 pub mod runtime {
-	use frame_support::{ord_parameter_types, parameter_types, weights::constants::RocksDbWeight};
+	use frame_support::{
+		ord_parameter_types, parameter_types, traits::AsEnsureOriginWithArg, weights::constants::RocksDbWeight,
+	};
 	use frame_system::EnsureSignedBy;
 	use sp_runtime::{
 		testing::Header,
@@ -111,7 +113,7 @@ pub mod runtime {
 	}
 
 	impl Config for Test {
-		type EnsureOrigin = EnsureSignedBy<PrivilegedAccount, AccountId>;
+		type EnsureOrigin = AsEnsureOriginWithArg<EnsureSignedBy<PrivilegedAccount, AccountId>>;
 		type RuntimeEvent = ();
 		type WeightInfo = ();
 	}
