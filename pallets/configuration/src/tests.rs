@@ -22,8 +22,6 @@ use sp_runtime::traits::BadOrigin;
 
 use crate::{mock::runtime::*, Configuration, ConfigurationStore, Pallet};
 
-// submit_ctype_creation_operation
-
 #[test]
 #[should_panic(expected = "Relay chain block number needs to strictly increase between Parachain blocks!")]
 fn test_set_strict_blocknumber_check() {
