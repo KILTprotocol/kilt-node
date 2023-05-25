@@ -157,8 +157,11 @@ where
 		}
 
 		// Web3name, if present
-		if let Some(linked_web3_name) = web3_name {
-			let web3_name_leaf = ProofLeafOf::<T>::Web3Name(linked_web3_name.clone().into(), ().into());
+		if let Some(web3name_details) = web3_name {
+			let web3_name_leaf = ProofLeafOf::<T>::Web3Name(
+				web3name_details.web3_name.clone().into(),
+				web3name_details.claimed_at.into(),
+			);
 			trie_builder
 				.insert(
 					web3_name_leaf.encoded_key().as_slice(),
@@ -223,8 +226,11 @@ where
 
 		match (should_include_web3_name, linked_web3_name) {
 			// If web3name should be included and it exists...
-			(true, Some(web3_name)) => {
-				leaves.push(ProofLeaf::Web3Name(web3_name.clone().into(), ().into()));
+			(true, Some(web3name_details)) => {
+				leaves.push(ProofLeaf::Web3Name(
+					web3name_details.web3_name.clone().into(),
+					web3name_details.claimed_at.into(),
+				));
 				Ok(())
 			}
 			// ...else if web3name should be included and it DOES NOT exist...

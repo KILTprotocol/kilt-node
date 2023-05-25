@@ -26,9 +26,12 @@ use kilt_dip_support::{
 	merkle::MerkleProof,
 };
 use pallet_did_lookup::{linkable_account::LinkableAccountId, ConnectedAccounts};
-use pallet_web3_names::Names;
+use pallet_web3_names::{Names, Owner};
 use parity_scale_codec::Encode;
-use runtime_common::dip::merkle::{CompleteMerkleProof, DidMerkleRootGenerator};
+use runtime_common::dip::{
+	did::Web3OwnershipOf,
+	merkle::{CompleteMerkleProof, DidMerkleRootGenerator},
+};
 use sp_core::Pair;
 use sp_runtime::traits::Zero;
 use xcm::latest::{
@@ -79,8 +82,12 @@ fn commit_identity() {
 	let did_details = ProviderParachain::execute_with(|| {
 		Did::get(&did).expect("DID details should be stored on the provider chain.")
 	});
-	let web3_name = ProviderParachain::execute_with(|| {
-		Names::<ProviderRuntime>::get(&did).expect("Web3name should be linked to the DID on the provider chain.")
+	let (web3_name, ownership_details) = ProviderParachain::execute_with(|| {
+		let web3_name =
+			Names::<ProviderRuntime>::get(&did).expect("Web3name should be linked to the DID on the provider chain.");
+		let ownership_details = Owner::<ProviderRuntime>::get(&web3_name)
+			.expect("Web3name details should be present for the retrieved web3name.");
+		(web3_name, ownership_details)
 	});
 	let linked_accounts = ProviderParachain::execute_with(|| {
 		ConnectedAccounts::<ProviderRuntime>::iter_key_prefix(&did).collect::<Vec<_>>()
@@ -90,7 +97,10 @@ fn commit_identity() {
 	let CompleteMerkleProof { proof, .. } = DidMerkleRootGenerator::<ProviderRuntime>::generate_proof(
 		&(
 			Some(did_details.clone()),
-			Some(web3_name),
+			Some(Web3OwnershipOf::<ProviderRuntime> {
+				web3_name,
+				claimed_at: ownership_details.claimed_at,
+			}),
 			Some(linked_accounts.clone()),
 		)
 			.into(),

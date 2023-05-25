@@ -86,11 +86,11 @@ impl<Web3Name> From<Web3Name> for Web3NameMerkleKey<Web3Name> {
 	}
 }
 #[derive(Clone, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo)]
-pub struct Web3NameMerkleValue;
+pub struct Web3NameMerkleValue<BlockNumber>(BlockNumber);
 
-impl From<()> for Web3NameMerkleValue {
-	fn from(_value: ()) -> Self {
-		Self
+impl<BlockNumber> From<BlockNumber> for Web3NameMerkleValue<BlockNumber> {
+	fn from(value: BlockNumber) -> Self {
+		Self(value)
 	}
 }
 
@@ -117,7 +117,7 @@ pub enum ProofLeaf<KeyId, BlockNumber, Web3Name, LinkedAccountId> {
 	// The key and value for the leaves of a merkle proof that contain a reference
 	// (by ID) to the key details, provided in a separate leaf.
 	DidKey(DidKeyMerkleKey<KeyId>, DidKeyMerkleValue<BlockNumber>),
-	Web3Name(Web3NameMerkleKey<Web3Name>, Web3NameMerkleValue),
+	Web3Name(Web3NameMerkleKey<Web3Name>, Web3NameMerkleValue<BlockNumber>),
 	LinkedAccount(LinkedAccountMerkleKey<LinkedAccountId>, LinkedAccountMerkleValue),
 }
 
@@ -156,6 +156,12 @@ pub struct RevealedDidKey<KeyId, BlockNumber> {
 	pub details: DidPublicKeyDetails<BlockNumber>,
 }
 
+#[derive(Clone, Encode, Decode, PartialEq, MaxEncodedLen, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo)]
+pub struct RevealedWeb3Name<Web3Name, BlockNumber> {
+	pub web3_name: Web3Name,
+	pub claimed_at: BlockNumber,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, TypeInfo, MaxEncodedLen, Encode, Decode, Default)]
 pub struct VerificationResult<
 	KeyId,
@@ -166,7 +172,7 @@ pub struct VerificationResult<
 	const MAX_REVEALED_ACCOUNTS_COUNT: u32,
 > {
 	pub did_keys: BoundedVec<RevealedDidKey<KeyId, BlockNumber>, ConstU32<MAX_REVEALED_KEYS_COUNT>>,
-	pub web3_name: Option<Web3Name>,
+	pub web3_name: Option<RevealedWeb3Name<Web3Name, BlockNumber>>,
 	pub linked_accounts: BoundedVec<LinkedAccountId, ConstU32<MAX_REVEALED_ACCOUNTS_COUNT>>,
 }
 
@@ -292,7 +298,7 @@ impl<
 		#[allow(clippy::type_complexity)]
 		let (did_keys, web3_name, linked_accounts): (
 			BoundedVec<RevealedDidKey<KeyId, BlockNumber>, ConstU32<MAX_REVEALED_KEYS_COUNT>>,
-			Option<Web3Name>,
+			Option<RevealedWeb3Name<Web3Name, BlockNumber>>,
 			BoundedVec<LinkedAccountId, ConstU32<MAX_REVEALED_ACCOUNTS_COUNT>>,
 		) = proof.revealed.iter().try_fold(
 			(
@@ -312,9 +318,14 @@ impl<
 					Ok::<_, ()>((keys, web3_name, linked_accounts))
 				}
 				// TODO: Avoid cloning if possible
-				ProofLeaf::Web3Name(revealed_web3_name, _) => {
-					Ok((keys, Some(revealed_web3_name.0.clone()), linked_accounts))
-				}
+				ProofLeaf::Web3Name(revealed_web3_name, details) => Ok((
+					keys,
+					Some(RevealedWeb3Name {
+						web3_name: revealed_web3_name.0.clone(),
+						claimed_at: details.0.clone(),
+					}),
+					linked_accounts,
+				)),
 				ProofLeaf::LinkedAccount(account_id, _) => {
 					linked_accounts.try_push(account_id.0.clone()).map_err(|_| ())?;
 					Ok::<_, ()>((keys, web3_name, linked_accounts))
