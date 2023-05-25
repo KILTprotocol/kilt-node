@@ -21,7 +21,9 @@ scale-info = {workspace = true, features = ["derive"]}
 did.workspace = true
 dip-support.workspace = true
 kilt-runtime-api-dip-provider.workspace = true
+pallet-did-lookup.workspace = true
 pallet-dip-provider.workspace = true
+pallet-web3-names.workspace = true
 runtime-common.workspace = true
 
 # Substrate
@@ -77,7 +79,9 @@ std = [
   "did/std",
   "dip-support/std",
   "kilt-runtime-api-dip-provider/std",
+  "pallet-did-lookup/std",
   "pallet-dip-provider/std",
+  "pallet-web3-names/std",
   "runtime-common/std",
 	"frame-executive/std",
 	"frame-support/std",
@@ -119,7 +123,9 @@ std = [
 ]
 runtime-benchmarks = [
   "did/runtime-benchmarks",
+  "pallet-did-lookup/runtime-benchmarks",
   "pallet-dip-provider/runtime-benchmarks",
+  "pallet-web3-names/runtime-benchmarks",
   "runtime-common/runtime-benchmarks",
   "frame-system/runtime-benchmarks",
   "frame-support/runtime-benchmarks",

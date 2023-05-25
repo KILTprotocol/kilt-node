@@ -37,7 +37,7 @@ pub mod pallet {
 	use parity_scale_codec::MaxEncodedLen;
 	use sp_std::boxed::Box;
 
-	use dip_support::IdentityProofAction;
+	use dip_support::IdentityDetailsAction;
 
 	use crate::{identity::IdentityDetails, traits::IdentityProofVerifier};
 
@@ -51,7 +51,7 @@ pub mod pallet {
 	// TODO: Store also additional details received by the provider.
 	#[pallet::storage]
 	#[pallet::getter(fn identity_proofs)]
-	pub(crate) type IdentityProofs<T> = StorageMap<
+	pub(crate) type IdentityEntries<T> = StorageMap<
 		_,
 		Twox64Concat,
 		<T as Config>::Identifier,
@@ -134,13 +134,13 @@ pub mod pallet {
 		#[pallet::weight(0)]
 		pub fn process_identity_action(
 			origin: OriginFor<T>,
-			action: IdentityProofAction<T::Identifier, T::ProofDigest>,
+			action: IdentityDetailsAction<T::Identifier, T::ProofDigest>,
 		) -> DispatchResult {
 			ensure_sibling_para(<T as Config>::RuntimeOrigin::from(origin))?;
 
 			let event = match action {
-				IdentityProofAction::Updated(identifier, proof, _) => {
-					IdentityProofs::<T>::mutate(
+				IdentityDetailsAction::Updated(identifier, proof, _) => {
+					IdentityEntries::<T>::mutate(
 						&identifier,
 						|entry: &mut Option<
 							IdentityDetails<<T as Config>::ProofDigest, <T as Config>::IdentityDetails>,
@@ -148,8 +148,8 @@ pub mod pallet {
 					);
 					Ok::<_, Error<T>>(Event::<T>::IdentityInfoUpdated(identifier, proof))
 				}
-				IdentityProofAction::Deleted(identifier) => {
-					IdentityProofs::<T>::remove(&identifier);
+				IdentityDetailsAction::Deleted(identifier) => {
+					IdentityEntries::<T>::remove(&identifier);
 					Ok::<_, Error<T>>(Event::<T>::IdentityInfoDeleted(identifier))
 				}
 			}?;
@@ -171,18 +171,18 @@ pub mod pallet {
 			let submitter = ensure_signed(origin)?;
 			// TODO: Proper error handling
 			ensure!(T::DipCallOriginFilter::contains(&*call), Error::<T>::Dispatch);
-			let mut proof_entry = IdentityProofs::<T>::get(&identifier).ok_or(Error::<T>::IdentityNotFound)?;
-			let proof_verification_result = T::ProofVerifier::verify_proof_for_call_against_entry(
+			let mut identity_entry = IdentityEntries::<T>::get(&identifier).ok_or(Error::<T>::IdentityNotFound)?;
+			let proof_verification_result = T::ProofVerifier::verify_proof_for_call_against_details(
 				&*call,
 				&identifier,
 				&submitter,
-				&mut proof_entry,
+				&mut identity_entry,
 				&proof,
 			)
 			.map_err(|_| Error::<T>::InvalidProof)?;
 			// Write the identity info to storage after it has optionally been updated by
 			// the `ProofVerifier`.
-			IdentityProofs::<T>::mutate(&identifier, |entry| *entry = Some(proof_entry));
+			IdentityEntries::<T>::mutate(&identifier, |entry| *entry = Some(identity_entry));
 			let did_origin = DipOrigin {
 				identifier,
 				account_address: submitter,

@@ -83,9 +83,37 @@ impl<T: Config> PartialEq for AsciiWeb3Name<T> {
 }
 
 // FIXME: did not find a way to automatically implement this.
+impl<T: Config> Eq for AsciiWeb3Name<T> {
+	fn assert_receiver_is_total_eq(&self) {
+		self.0.assert_receiver_is_total_eq()
+	}
+}
+
+// FIXME: did not find a way to automatically implement this.
+impl<T: Config> PartialOrd for AsciiWeb3Name<T> {
+	fn partial_cmp(&self, other: &Self) -> Option<sp_std::cmp::Ordering> {
+		self.0.as_slice().partial_cmp(other.as_slice())
+	}
+}
+
+// FIXME: did not find a way to automatically implement this.
+impl<T: Config> Ord for AsciiWeb3Name<T> {
+	fn cmp(&self, other: &Self) -> sp_std::cmp::Ordering {
+		self.0.cmp(&other.0)
+	}
+}
+
+// FIXME: did not find a way to automatically implement this.
 impl<T: Config> Clone for AsciiWeb3Name<T> {
 	fn clone(&self) -> Self {
 		Self(self.0.clone(), self.1)
+	}
+}
+
+// FIXME: did not find a way to automatically implement this.
+impl<T: Config> Default for AsciiWeb3Name<T> {
+	fn default() -> Self {
+		Self(BoundedVec::default(), PhantomData)
 	}
 }
 

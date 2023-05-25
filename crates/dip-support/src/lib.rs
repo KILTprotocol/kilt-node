@@ -25,7 +25,7 @@ use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 
 #[derive(Clone, Eq, PartialEq, Encode, Decode, TypeInfo, MaxEncodedLen, RuntimeDebug)]
-pub enum IdentityProofAction<Identifier, Proof, Details = ()> {
+pub enum IdentityDetailsAction<Identifier, Proof, Details = ()> {
 	Updated(Identifier, Proof, Details),
 	Deleted(Identifier),
 }

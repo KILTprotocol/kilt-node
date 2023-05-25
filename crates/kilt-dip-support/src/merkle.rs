@@ -21,8 +21,8 @@ use frame_support::{traits::ConstU32, RuntimeDebug};
 use pallet_dip_consumer::{identity::IdentityDetails, traits::IdentityProofVerifier};
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
-use sp_runtime::BoundedVec;
-use sp_std::{collections::btree_map::BTreeMap, fmt::Debug, marker::PhantomData, vec::Vec};
+use sp_runtime::{BoundedVec, SaturatedConversion};
+use sp_std::{fmt::Debug, marker::PhantomData, vec::Vec};
 use sp_trie::{verify_trie_proof, LayoutV1};
 
 pub type BlindedValue = Vec<u8>;
@@ -60,137 +60,222 @@ impl TryFrom<DidKeyRelationship> for DidVerificationKeyRelationship {
 }
 
 #[derive(Clone, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo)]
-pub struct KeyReferenceKey<KeyId>(pub KeyId, pub DidKeyRelationship);
-#[derive(Clone, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo)]
-pub struct KeyReferenceValue;
-#[derive(Clone, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo)]
-pub struct KeyDetailsKey<KeyId>(pub KeyId);
-#[derive(Clone, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo)]
-pub struct KeyDetailsValue<BlockNumber>(pub DidPublicKeyDetails<BlockNumber>);
+pub struct DidKeyMerkleKey<KeyId>(pub KeyId, pub DidKeyRelationship);
 
-#[derive(Clone, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo)]
-pub enum ProofLeaf<KeyId, BlockNumber> {
-	// The key and value for the leaves of a merkle proof that contain a reference
-	// (by ID) to the key details, provided in a separate leaf.
-	KeyReference(KeyReferenceKey<KeyId>, KeyReferenceValue),
-	// The key and value for the leaves of a merkle proof that contain the actual
-	// details of a DID public key. The key is the ID of the key, and the value is its details, including creation
-	// block number.
-	KeyDetails(KeyDetailsKey<KeyId>, KeyDetailsValue<BlockNumber>),
+impl<KeyId> From<(KeyId, DidKeyRelationship)> for DidKeyMerkleKey<KeyId> {
+	fn from(value: (KeyId, DidKeyRelationship)) -> Self {
+		Self(value.0, value.1)
+	}
 }
 
-impl<KeyId, BlockNumber> ProofLeaf<KeyId, BlockNumber>
+#[derive(Clone, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo)]
+pub struct DidKeyMerkleValue<BlockNumber>(pub DidPublicKeyDetails<BlockNumber>);
+
+impl<BlockNumber> From<DidPublicKeyDetails<BlockNumber>> for DidKeyMerkleValue<BlockNumber> {
+	fn from(value: DidPublicKeyDetails<BlockNumber>) -> Self {
+		Self(value)
+	}
+}
+
+#[derive(Clone, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo)]
+pub struct Web3NameMerkleKey<Web3Name>(pub Web3Name);
+
+impl<Web3Name> From<Web3Name> for Web3NameMerkleKey<Web3Name> {
+	fn from(value: Web3Name) -> Self {
+		Self(value)
+	}
+}
+#[derive(Clone, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo)]
+pub struct Web3NameMerkleValue<BlockNumber>(BlockNumber);
+
+impl<BlockNumber> From<BlockNumber> for Web3NameMerkleValue<BlockNumber> {
+	fn from(value: BlockNumber) -> Self {
+		Self(value)
+	}
+}
+
+#[derive(Clone, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo)]
+pub struct LinkedAccountMerkleKey<AccountId>(pub AccountId);
+
+impl<AccountId> From<AccountId> for LinkedAccountMerkleKey<AccountId> {
+	fn from(value: AccountId) -> Self {
+		Self(value)
+	}
+}
+
+#[derive(Clone, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo)]
+pub struct LinkedAccountMerkleValue;
+
+impl From<()> for LinkedAccountMerkleValue {
+	fn from(_value: ()) -> Self {
+		Self
+	}
+}
+
+#[derive(Clone, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo)]
+pub enum ProofLeaf<KeyId, BlockNumber, Web3Name, LinkedAccountId> {
+	// The key and value for the leaves of a merkle proof that contain a reference
+	// (by ID) to the key details, provided in a separate leaf.
+	DidKey(DidKeyMerkleKey<KeyId>, DidKeyMerkleValue<BlockNumber>),
+	Web3Name(Web3NameMerkleKey<Web3Name>, Web3NameMerkleValue<BlockNumber>),
+	LinkedAccount(LinkedAccountMerkleKey<LinkedAccountId>, LinkedAccountMerkleValue),
+}
+
+impl<KeyId, BlockNumber, Web3Name, LinkedAccountId> ProofLeaf<KeyId, BlockNumber, Web3Name, LinkedAccountId>
 where
 	KeyId: Encode,
+	Web3Name: Encode,
+	LinkedAccountId: Encode,
 {
 	pub fn encoded_key(&self) -> Vec<u8> {
 		match self {
-			ProofLeaf::KeyReference(key, _) => key.encode(),
-			ProofLeaf::KeyDetails(key, _) => key.encode(),
+			ProofLeaf::DidKey(key, _) => key.encode(),
+			ProofLeaf::Web3Name(key, _) => key.encode(),
+			ProofLeaf::LinkedAccount(key, _) => key.encode(),
 		}
 	}
 }
 
-impl<KeyId, BlockNumber> ProofLeaf<KeyId, BlockNumber>
+impl<KeyId, BlockNumber, Web3Name, LinkedAccountId> ProofLeaf<KeyId, BlockNumber, Web3Name, LinkedAccountId>
 where
 	BlockNumber: Encode,
 {
 	pub fn encoded_value(&self) -> Vec<u8> {
 		match self {
-			ProofLeaf::KeyReference(_, value) => value.encode(),
-			ProofLeaf::KeyDetails(_, value) => value.encode(),
+			ProofLeaf::DidKey(_, value) => value.encode(),
+			ProofLeaf::Web3Name(_, value) => value.encode(),
+			ProofLeaf::LinkedAccount(_, value) => value.encode(),
 		}
 	}
 }
 
-// TODO: Avoid repetition of the same key if it appears multiple times, e.g., by
-// having a vector of `DidKeyRelationship` instead.
-#[derive(Clone, RuntimeDebug, PartialEq, Eq, TypeInfo, MaxEncodedLen, Encode, Decode)]
-pub struct ProofEntry<BlockNumber> {
-	pub key: DidPublicKeyDetails<BlockNumber>,
+#[derive(Clone, Encode, Decode, PartialEq, MaxEncodedLen, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo)]
+pub struct RevealedDidKey<KeyId, BlockNumber> {
+	pub id: KeyId,
 	pub relationship: DidKeyRelationship,
+	pub details: DidPublicKeyDetails<BlockNumber>,
 }
 
-#[cfg(feature = "runtime-benchmarks")]
-impl<BlockNumber> Default for ProofEntry<BlockNumber>
-where
-	BlockNumber: Default,
-{
-	fn default() -> Self {
-		Self {
-			key: DidPublicKeyDetails {
-				key: did::did_details::DidPublicKey::PublicEncryptionKey(did::did_details::DidEncryptionKey::X25519(
-					[0u8; 32],
-				)),
-				block_number: BlockNumber::default(),
-			},
-			relationship: DidVerificationKeyRelationship::Authentication.into(),
-		}
-	}
+#[derive(Clone, Encode, Decode, PartialEq, MaxEncodedLen, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo)]
+pub struct RevealedWeb3Name<Web3Name, BlockNumber> {
+	pub web3_name: Web3Name,
+	pub claimed_at: BlockNumber,
 }
 
-// Contains the list of revealed public keys after a given Merkle proof has been
-// correctly verified.
 #[derive(Clone, Debug, PartialEq, Eq, TypeInfo, MaxEncodedLen, Encode, Decode, Default)]
-pub struct VerificationResult<BlockNumber, const MAX_REVEALED_LEAVES_COUNT: u32>(
-	pub BoundedVec<ProofEntry<BlockNumber>, ConstU32<MAX_REVEALED_LEAVES_COUNT>>,
-);
-
-impl<BlockNumber, const MAX_REVEALED_LEAVES_COUNT: u32> TryFrom<Vec<ProofEntry<BlockNumber>>>
-	for VerificationResult<BlockNumber, MAX_REVEALED_LEAVES_COUNT>
-{
-	// TODO: Better error handling
-	type Error = ();
-
-	fn try_from(value: Vec<ProofEntry<BlockNumber>>) -> Result<Self, Self::Error> {
-		let bounded_inner = value.try_into().map_err(|_| ())?;
-		Ok(Self(bounded_inner))
-	}
+pub struct VerificationResult<
+	KeyId,
+	BlockNumber,
+	Web3Name,
+	LinkedAccountId,
+	const MAX_REVEALED_KEYS_COUNT: u32,
+	const MAX_REVEALED_ACCOUNTS_COUNT: u32,
+> {
+	pub did_keys: BoundedVec<RevealedDidKey<KeyId, BlockNumber>, ConstU32<MAX_REVEALED_KEYS_COUNT>>,
+	pub web3_name: Option<RevealedWeb3Name<Web3Name, BlockNumber>>,
+	pub linked_accounts: BoundedVec<LinkedAccountId, ConstU32<MAX_REVEALED_ACCOUNTS_COUNT>>,
 }
 
-impl<BlockNumber, const MAX_REVEALED_LEAVES_COUNT: u32> AsRef<[ProofEntry<BlockNumber>]>
-	for VerificationResult<BlockNumber, MAX_REVEALED_LEAVES_COUNT>
+impl<
+		KeyId,
+		BlockNumber,
+		Web3Name,
+		LinkedAccountId,
+		const MAX_REVEALED_KEYS_COUNT: u32,
+		const MAX_REVEALED_ACCOUNTS_COUNT: u32,
+	> AsRef<[RevealedDidKey<KeyId, BlockNumber>]>
+	for VerificationResult<
+		KeyId,
+		BlockNumber,
+		Web3Name,
+		LinkedAccountId,
+		MAX_REVEALED_KEYS_COUNT,
+		MAX_REVEALED_ACCOUNTS_COUNT,
+	>
 {
-	fn as_ref(&self) -> &[ProofEntry<BlockNumber>] {
-		self.0.as_ref()
+	fn as_ref(&self) -> &[RevealedDidKey<KeyId, BlockNumber>] {
+		self.did_keys.as_ref()
 	}
 }
 
 /// A type that verifies a Merkle proof that reveals some leaves representing
 /// keys in a DID Document.
 /// Can also be used on its own, without any DID signature verification.
-pub struct DidMerkleProofVerifier<Hasher, AccountId, KeyId, BlockNumber, Details, const MAX_REVEALED_LEAVES_COUNT: u32>(
+pub struct DidMerkleProofVerifier<
+	Hasher,
+	AccountId,
+	KeyId,
+	BlockNumber,
+	Details,
+	Web3Name,
+	LinkedAccountId,
+	const MAX_REVEALED_KEYS_COUNT: u32,
+	const MAX_REVEALED_ACCOUNTS_COUNT: u32,
+>(
+	#[allow(clippy::type_complexity)]
 	PhantomData<(
 		Hasher,
 		AccountId,
 		KeyId,
 		BlockNumber,
 		Details,
-		ConstU32<MAX_REVEALED_LEAVES_COUNT>,
+		Web3Name,
+		LinkedAccountId,
+		ConstU32<MAX_REVEALED_KEYS_COUNT>,
+		ConstU32<MAX_REVEALED_ACCOUNTS_COUNT>,
 	)>,
 );
 
-impl<Call, Subject, Hasher, AccountId, KeyId, BlockNumber, Details, const MAX_REVEALED_LEAVES_COUNT: u32>
-	IdentityProofVerifier<Call, Subject>
-	for DidMerkleProofVerifier<Hasher, AccountId, KeyId, BlockNumber, Details, MAX_REVEALED_LEAVES_COUNT>
-where
+impl<
+		Call,
+		Subject,
+		Hasher,
+		AccountId,
+		KeyId,
+		BlockNumber,
+		Details,
+		Web3Name,
+		LinkedAccountId,
+		const MAX_REVEALED_KEYS_COUNT: u32,
+		const MAX_REVEALED_ACCOUNTS_COUNT: u32,
+	> IdentityProofVerifier<Call, Subject>
+	for DidMerkleProofVerifier<
+		Hasher,
+		AccountId,
+		KeyId,
+		BlockNumber,
+		Details,
+		Web3Name,
+		LinkedAccountId,
+		MAX_REVEALED_KEYS_COUNT,
+		MAX_REVEALED_ACCOUNTS_COUNT,
+	> where
 	// TODO: Remove `Debug` bound
 	BlockNumber: Encode + Clone + Debug,
 	Hasher: sp_core::Hasher,
 	KeyId: Encode + Clone + Ord + Into<Hasher::Out>,
+	LinkedAccountId: Encode + Clone,
+	Web3Name: Encode + Clone,
 {
 	// TODO: Proper error handling
 	type Error = ();
-	type Proof = MerkleProof<Vec<Vec<u8>>, ProofLeaf<KeyId, BlockNumber>>;
+	type Proof = MerkleProof<Vec<Vec<u8>>, ProofLeaf<KeyId, BlockNumber, Web3Name, LinkedAccountId>>;
 	type IdentityDetails = IdentityDetails<KeyId, Details>;
 	type Submitter = AccountId;
-	type VerificationResult = VerificationResult<BlockNumber, MAX_REVEALED_LEAVES_COUNT>;
+	type VerificationResult = VerificationResult<
+		KeyId,
+		BlockNumber,
+		Web3Name,
+		LinkedAccountId,
+		MAX_REVEALED_KEYS_COUNT,
+		MAX_REVEALED_ACCOUNTS_COUNT,
+	>;
 
-	fn verify_proof_for_call_against_entry(
+	fn verify_proof_for_call_against_details(
 		_call: &Call,
 		_subject: &Subject,
 		_submitter: &Self::Submitter,
-		proof_entry: &mut Self::IdentityDetails,
+		identity_details: &mut Self::IdentityDetails,
 		proof: &Self::Proof,
 	) -> Result<Self::VerificationResult, Self::Error> {
 		// TODO: more efficient by removing cloning and/or collecting.
@@ -202,7 +287,7 @@ where
 			.map(|leaf| (leaf.encoded_key(), Some(leaf.encoded_value())))
 			.collect::<Vec<(Vec<u8>, Option<Vec<u8>>)>>();
 		verify_trie_proof::<LayoutV1<Hasher>, _, _, _>(
-			&proof_entry.digest.clone().into(),
+			&identity_details.digest.clone().into(),
 			&proof.blinded,
 			&proof_leaves,
 		)
@@ -210,42 +295,48 @@ where
 
 		// At this point, we know the proof is valid. We just need to map the revealed
 		// leaves to something the consumer can easily operate on.
-
-		// Create a map of the revealed public keys
-		//TODO: Avoid cloning, and use a map of references for the lookup
-		let public_keys: BTreeMap<KeyId, DidPublicKeyDetails<BlockNumber>> = proof
-			.revealed
-			.clone()
-			.into_iter()
-			.filter_map(|leaf| {
-				if let ProofLeaf::KeyDetails(KeyDetailsKey(key_id), KeyDetailsValue(key_details)) = leaf {
-					Some((key_id, key_details))
-				} else {
-					None
-				}
-			})
-			.collect();
-		// Create a list of the revealed keys by consuming the provided key reference
-		// leaves, and looking up the full details from the just-built `public_keys`
-		// map.
-		let keys: Vec<ProofEntry<BlockNumber>> = proof
-			.revealed
-			.iter()
-			.filter_map(|leaf| {
-				if let ProofLeaf::KeyReference(KeyReferenceKey(key_id, key_relationship), _) = leaf {
-					// TODO: Better error handling.
-					let key_details = public_keys
-						.get(key_id)
-						.expect("Key ID should be present in the map of revealed public keys.");
-					Some(ProofEntry {
-						key: key_details.clone(),
-						relationship: *key_relationship,
+		#[allow(clippy::type_complexity)]
+		let (did_keys, web3_name, linked_accounts): (
+			BoundedVec<RevealedDidKey<KeyId, BlockNumber>, ConstU32<MAX_REVEALED_KEYS_COUNT>>,
+			Option<RevealedWeb3Name<Web3Name, BlockNumber>>,
+			BoundedVec<LinkedAccountId, ConstU32<MAX_REVEALED_ACCOUNTS_COUNT>>,
+		) = proof.revealed.iter().try_fold(
+			(
+				BoundedVec::with_bounded_capacity(MAX_REVEALED_KEYS_COUNT.saturated_into()),
+				None,
+				BoundedVec::with_bounded_capacity(MAX_REVEALED_ACCOUNTS_COUNT.saturated_into()),
+			),
+			|(mut keys, web3_name, mut linked_accounts), leaf| match leaf {
+				ProofLeaf::DidKey(key_id, key_value) => {
+					keys.try_push(RevealedDidKey {
+						// TODO: Avoid cloning if possible
+						id: key_id.0.clone(),
+						relationship: key_id.1,
+						details: key_value.0.clone(),
 					})
-				} else {
-					None
+					.map_err(|_| ())?;
+					Ok::<_, ()>((keys, web3_name, linked_accounts))
 				}
-			})
-			.collect();
-		keys.try_into()
+				// TODO: Avoid cloning if possible
+				ProofLeaf::Web3Name(revealed_web3_name, details) => Ok((
+					keys,
+					Some(RevealedWeb3Name {
+						web3_name: revealed_web3_name.0.clone(),
+						claimed_at: details.0.clone(),
+					}),
+					linked_accounts,
+				)),
+				ProofLeaf::LinkedAccount(account_id, _) => {
+					linked_accounts.try_push(account_id.0.clone()).map_err(|_| ())?;
+					Ok::<_, ()>((keys, web3_name, linked_accounts))
+				}
+			},
+		)?;
+
+		Ok(VerificationResult {
+			did_keys,
+			web3_name,
+			linked_accounts,
+		})
 	}
 }

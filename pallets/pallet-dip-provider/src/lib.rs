@@ -33,26 +33,26 @@ pub mod pallet {
 	use sp_std::{boxed::Box, fmt::Debug};
 	use xcm::{latest::prelude::*, VersionedMultiAsset, VersionedMultiLocation};
 
-	use dip_support::IdentityProofAction;
+	use dip_support::IdentityDetailsAction;
 
 	use crate::traits::{IdentityProofDispatcher, IdentityProofGenerator, IdentityProvider, TxBuilder};
 
-	pub type IdentityProofActionOf<T> = IdentityProofAction<<T as Config>::Identifier, <T as Config>::ProofOutput>;
+	pub type IdentityOf<T> = <<T as Config>::IdentityProvider as IdentityProvider<<T as Config>::Identifier>>::Success;
+	pub type IdentityProofActionOf<T> = IdentityDetailsAction<<T as Config>::Identifier, <T as Config>::ProofOutput>;
 
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(0);
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
 		type Identifier: Parameter;
-		type Identity;
-		type ProofOutput: Clone + Eq + Debug;
 		type IdentityProofGenerator: IdentityProofGenerator<
 			Self::Identifier,
-			Self::Identity,
+			IdentityOf<Self>,
 			Output = Self::ProofOutput,
 		>;
 		type IdentityProofDispatcher: IdentityProofDispatcher<Self::Identifier, Self::ProofOutput, ()>;
-		type IdentityProvider: IdentityProvider<Self::Identifier, Self::Identity>;
+		type IdentityProvider: IdentityProvider<Self::Identifier>;
+		type ProofOutput: Clone + Eq + Debug;
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 		type TxBuilder: TxBuilder<Self::Identifier, Self::ProofOutput, ()>;
 	}
@@ -61,11 +61,6 @@ pub mod pallet {
 	#[pallet::generate_store(pub(super) trait Store)]
 	#[pallet::storage_version(STORAGE_VERSION)]
 	pub struct Pallet<T>(_);
-
-	// #[pallet::storage]
-	// #[pallet::getter(fn destination_info)]
-	// pub type DestinationInfos<T> = StorageMap<_, Blake2_128Concat, NetworkId,
-	// ()>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -99,12 +94,12 @@ pub mod pallet {
 
 			let destination: MultiLocation = (*destination).try_into().map_err(|_| Error::<T>::BadVersion)?;
 			let action: IdentityProofActionOf<T> = match T::IdentityProvider::retrieve(&identifier) {
-				Ok(Some((identity, _))) => {
+				Ok(Some(identity)) => {
 					let identity_proof = T::IdentityProofGenerator::generate_commitment(&identifier, &identity)
 						.map_err(|_| Error::<T>::IdentityProofGeneration)?;
-					Ok(IdentityProofAction::Updated(identifier, identity_proof, ()))
+					Ok(IdentityDetailsAction::Updated(identifier, identity_proof, ()))
 				}
-				Ok(None) => Ok(IdentityProofAction::Deleted(identifier)),
+				Ok(None) => Ok(IdentityDetailsAction::Deleted(identifier)),
 				Err(_) => Err(Error::<T>::IdentityNotFound),
 			}?;
 			// TODO: Add correct version creation based on lookup (?)

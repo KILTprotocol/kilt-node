@@ -23,7 +23,7 @@
 use pallet_dip_consumer::traits::IdentityProofVerifier;
 use sp_std::marker::PhantomData;
 
-use crate::did::MerkleEntriesAndDidSignature;
+use crate::did::MerkleLeavesAndDidSignature;
 
 pub mod did;
 pub mod merkle;
@@ -50,7 +50,7 @@ where
 	DidSignatureVerifier: IdentityProofVerifier<
 		Call,
 		Subject,
-		Proof = MerkleEntriesAndDidSignature<MerkleProofVerifier::VerificationResult, BlockNumber>,
+		Proof = MerkleLeavesAndDidSignature<MerkleProofVerifier::VerificationResult, BlockNumber>,
 		IdentityDetails = MerkleProofVerifier::IdentityDetails,
 		Submitter = MerkleProofVerifier::Submitter,
 	>,
@@ -58,34 +58,34 @@ where
 	// FIXME: Better error handling
 	type Error = ();
 	// FIXME: Better type declaration
-	type Proof = MerkleEntriesAndDidSignature<MerkleProofVerifier::Proof, BlockNumber>;
+	type Proof = MerkleLeavesAndDidSignature<MerkleProofVerifier::Proof, BlockNumber>;
 	type IdentityDetails = DidSignatureVerifier::IdentityDetails;
 	type Submitter = MerkleProofVerifier::Submitter;
 	type VerificationResult = MerkleProofVerifier::VerificationResult;
 
-	fn verify_proof_for_call_against_entry(
+	fn verify_proof_for_call_against_details(
 		call: &Call,
 		subject: &Subject,
 		submitter: &Self::Submitter,
-		proof_entry: &mut Self::IdentityDetails,
+		identity_details: &mut Self::IdentityDetails,
 		proof: &Self::Proof,
 	) -> Result<Self::VerificationResult, Self::Error> {
-		let merkle_proof_verification = MerkleProofVerifier::verify_proof_for_call_against_entry(
+		let merkle_proof_verification = MerkleProofVerifier::verify_proof_for_call_against_details(
 			call,
 			subject,
 			submitter,
-			proof_entry,
-			&proof.merkle_entries,
+			identity_details,
+			&proof.merkle_leaves,
 		)
 		.map_err(|_| ())?;
-		DidSignatureVerifier::verify_proof_for_call_against_entry(
+		DidSignatureVerifier::verify_proof_for_call_against_details(
 			call,
 			subject,
 			submitter,
-			proof_entry,
+			identity_details,
 			// FIXME: Remove `clone()` requirement
-			&MerkleEntriesAndDidSignature {
-				merkle_entries: merkle_proof_verification.clone(),
+			&MerkleLeavesAndDidSignature {
+				merkle_leaves: merkle_proof_verification.clone(),
 				did_signature: proof.did_signature.clone(),
 			},
 		)

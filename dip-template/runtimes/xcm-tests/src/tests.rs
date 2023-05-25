@@ -22,12 +22,16 @@ use did::{Did, DidSignature};
 use frame_support::{assert_ok, weights::Weight};
 use frame_system::RawOrigin;
 use kilt_dip_support::{
-	did::{MerkleEntriesAndDidSignature, TimeBoundDidSignature},
+	did::{MerkleLeavesAndDidSignature, TimeBoundDidSignature},
 	merkle::MerkleProof,
 };
-use pallet_did_lookup::linkable_account::LinkableAccountId;
+use pallet_did_lookup::{linkable_account::LinkableAccountId, ConnectedAccounts};
+use pallet_web3_names::{Names, Owner};
 use parity_scale_codec::Encode;
-use runtime_common::dip::merkle::{CompleteMerkleProof, DidMerkleRootGenerator};
+use runtime_common::dip::{
+	did::Web3OwnershipOf,
+	merkle::{CompleteMerkleProof, DidMerkleRootGenerator},
+};
 use sp_core::Pair;
 use sp_runtime::traits::Zero;
 use xcm::latest::{
@@ -50,7 +54,7 @@ fn commit_identity() {
 
 	let did: DidIdentifier = para::provider::did_auth_key().public().into();
 
-	// 1. Send identity proof from DIP provider to DIP consumer.
+	// 1. Send identity commitment from DIP provider to DIP consumer.
 	ProviderParachain::execute_with(|| {
 		assert_ok!(DipProvider::commit_identity(
 			RawOrigin::Signed(ProviderAccountId::from([0u8; 32])).into(),
@@ -60,7 +64,7 @@ fn commit_identity() {
 			Weight::from_ref_time(4_000),
 		));
 	});
-	// 2. Verify that the proof has made it to the DIP consumer.
+	// 2. Verify that the commitment has made it to the DIP consumer.
 	ConsumerParachain::execute_with(|| {
 		// 2.1 Verify that there was no XCM error.
 		assert!(!System::events().iter().any(|r| matches!(
@@ -78,13 +82,54 @@ fn commit_identity() {
 	let did_details = ProviderParachain::execute_with(|| {
 		Did::get(&did).expect("DID details should be stored on the provider chain.")
 	});
+	println!(
+		"Complete DID details encoded size: {:?} bytes",
+		did_details.encoded_size()
+	);
+	let (web3_name, ownership_details) = ProviderParachain::execute_with(|| {
+		let web3_name =
+			Names::<ProviderRuntime>::get(&did).expect("Web3name should be linked to the DID on the provider chain.");
+		let ownership_details = Owner::<ProviderRuntime>::get(&web3_name)
+			.expect("Web3name details should be present for the retrieved web3name.");
+		(web3_name, ownership_details)
+	});
+	println!(
+		"Web3name and ownership size: ({:?}, {:?}) bytes",
+		web3_name.encoded_size(),
+		ownership_details.encoded_size(),
+	);
+	let linked_accounts = ProviderParachain::execute_with(|| {
+		ConnectedAccounts::<ProviderRuntime>::iter_key_prefix(&did).collect::<Vec<_>>()
+	});
+	println!("Linked accounts size: {:?} bytes", linked_accounts.encoded_size());
 	let call = ConsumerRuntimeCall::DidLookup(pallet_did_lookup::Call::<ConsumerRuntime>::associate_sender {});
 	// 3.1 Generate a proof
 	let CompleteMerkleProof { proof, .. } = DidMerkleRootGenerator::<ProviderRuntime>::generate_proof(
-		&did_details,
-		[did_details.authentication_key].iter(),
+		&(
+			Some(did_details.clone()),
+			Some(Web3OwnershipOf::<ProviderRuntime> {
+				web3_name,
+				claimed_at: ownership_details.claimed_at,
+			}),
+			Some(linked_accounts.clone()),
+		)
+			.into(),
+		[
+			did_details.authentication_key,
+			did_details.attestation_key.unwrap(),
+			did_details.delegation_key.unwrap(),
+		]
+		.iter(),
+		true,
+		linked_accounts.iter(),
 	)
 	.expect("Proof generation should not fail");
+	println!(
+		"Complete merkle proof size: {:?} bytes. Blinded part: {:?} bytes. Revealed part: {:?} bytes.",
+		proof.encoded_size(),
+		proof.blinded.encoded_size(),
+		proof.revealed.encoded_size()
+	);
 	// 3.2 Generate a DID signature
 	let genesis_hash =
 		ConsumerParachain::execute_with(|| frame_system::Pallet::<ConsumerRuntime>::block_hash(BlockNumber::zero()));
@@ -103,8 +148,8 @@ fn commit_identity() {
 		assert_ok!(DipConsumer::dispatch_as(
 			RawOrigin::Signed(para::consumer::DISPATCHER_ACCOUNT).into(),
 			did.clone(),
-			MerkleEntriesAndDidSignature {
-				merkle_entries: MerkleProof {
+			MerkleLeavesAndDidSignature {
+				merkle_leaves: MerkleProof {
 					blinded: proof.blinded,
 					revealed: proof.revealed,
 				},

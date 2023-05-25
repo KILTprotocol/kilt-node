@@ -17,22 +17,26 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use did::{did_details::DidVerificationKey, DidVerificationKeyRelationship, KeyIdOf};
+use dip_provider_runtime_template::Web3Name;
 use frame_support::traits::Contains;
 use kilt_dip_support::{
-	did::{DidSignatureAndCallVerifier, MerkleEntriesAndDidSignature, MerkleRevealedDidSignatureVerifier},
+	did::{DidSignatureAndCallVerifier, MerkleLeavesAndDidSignature, MerkleRevealedDidSignatureVerifier},
 	merkle::{DidMerkleProofVerifier, MerkleProof, ProofLeaf},
 	traits::{BlockNumberProvider, DidDipOriginFilter, GenesisProvider},
 	MerkleProofAndDidSignatureVerifier,
 };
+use pallet_did_lookup::linkable_account::LinkableAccountId;
 use pallet_dip_consumer::traits::IdentityProofVerifier;
 use sp_std::vec::Vec;
 
 use crate::{AccountId, BlockNumber, DidIdentifier, Hash, Hasher, Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin};
 
-pub type MerkleProofVerifier = DidMerkleProofVerifier<Hasher, AccountId, KeyIdOf<Runtime>, BlockNumber, u128, 10>;
+pub type MerkleProofVerifier =
+	DidMerkleProofVerifier<Hasher, AccountId, KeyIdOf<Runtime>, BlockNumber, u128, Web3Name, LinkableAccountId, 10, 10>;
 pub type MerkleProofVerifierOutputOf<Call, Subject> =
 	<MerkleProofVerifier as IdentityProofVerifier<Call, Subject>>::VerificationResult;
 pub type MerkleDidSignatureVerifierOf<Call, Subject> = MerkleRevealedDidSignatureVerifier<
+	KeyIdOf<Runtime>,
 	BlockNumber,
 	Hash,
 	u128,
@@ -49,7 +53,10 @@ impl pallet_dip_consumer::Config for Runtime {
 	type DipCallOriginFilter = PreliminaryDipOriginFilter;
 	type Identifier = DidIdentifier;
 	type IdentityDetails = u128;
-	type Proof = MerkleEntriesAndDidSignature<MerkleProof<Vec<Vec<u8>>, ProofLeaf<Hash, BlockNumber>>, BlockNumber>;
+	type Proof = MerkleLeavesAndDidSignature<
+		MerkleProof<Vec<Vec<u8>>, ProofLeaf<Hash, BlockNumber, Web3Name, LinkableAccountId>>,
+		BlockNumber,
+	>;
 	type ProofDigest = Hash;
 	type ProofVerifier = MerkleProofAndDidSignatureVerifier<
 		BlockNumber,

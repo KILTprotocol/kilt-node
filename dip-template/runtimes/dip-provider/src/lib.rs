@@ -22,6 +22,9 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
+use pallet_did_lookup::linkable_account::LinkableAccountId;
+use pallet_web3_names::web3_name::AsciiWeb3Name;
+use parity_scale_codec::{Decode, Encode};
 pub use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 pub use sp_runtime::{MultiAddress, Perbill, Permill};
 
@@ -140,6 +143,8 @@ construct_runtime!(
 
 		// DID
 		Did: did = 40,
+		DidLookup: pallet_did_lookup = 41,
+		Web3Names: pallet_web3_names = 42,
 
 		// DIP
 		DipProvider: pallet_dip_provider = 50,
@@ -365,7 +370,7 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for RuntimeCall 
 
 parameter_types! {
 	#[derive(Debug, Clone, Eq, PartialEq)]
-	pub const MaxTotalKeyAgreementKeys: u32 = 1;
+	pub const MaxTotalKeyAgreementKeys: u32 = 50;
 }
 
 impl did::Config for Runtime {
@@ -377,11 +382,11 @@ impl did::Config for Runtime {
 	type FeeCollector = ();
 	type KeyDeposit = ConstU128<UNIT>;
 	type MaxBlocksTxValidity = ConstU32<HOURS>;
-	type MaxNewKeyAgreementKeys = ConstU32<1>;
+	type MaxNewKeyAgreementKeys = ConstU32<50>;
 	type MaxNumberOfServicesPerDid = ConstU32<1>;
 	type MaxNumberOfTypesPerService = ConstU32<1>;
 	type MaxNumberOfUrlsPerService = ConstU32<1>;
-	type MaxPublicKeysPerDid = ConstU32<4>;
+	type MaxPublicKeysPerDid = ConstU32<53>;
 	type MaxServiceIdLength = ConstU32<100>;
 	type MaxServiceTypeLength = ConstU32<100>;
 	type MaxServiceUrlLength = ConstU32<100>;
@@ -392,6 +397,40 @@ impl did::Config for Runtime {
 	type RuntimeOrigin = RuntimeOrigin;
 	type ServiceEndpointDeposit = ConstU128<UNIT>;
 	type WeightInfo = ();
+}
+
+impl pallet_did_lookup::Config for Runtime {
+	type Currency = Balances;
+	type Deposit = ConstU128<UNIT>;
+	type DidIdentifier = DidIdentifier;
+	type EnsureOrigin = EnsureDidOrigin<DidIdentifier, AccountId>;
+	type OriginSuccess = DidRawOrigin<AccountId, DidIdentifier>;
+	type RuntimeEvent = RuntimeEvent;
+	type WeightInfo = ();
+}
+
+pub type Web3Name = AsciiWeb3Name<Runtime>;
+
+impl pallet_web3_names::Config for Runtime {
+	type BanOrigin = EnsureRoot<AccountId>;
+	type Currency = Balances;
+	type Deposit = ConstU128<UNIT>;
+	type MaxNameLength = ConstU32<32>;
+	type MinNameLength = ConstU32<3>;
+	type OriginSuccess = DidRawOrigin<AccountId, DidIdentifier>;
+	type OwnerOrigin = EnsureDidOrigin<DidIdentifier, AccountId>;
+	type RuntimeEvent = RuntimeEvent;
+	type Web3Name = Web3Name;
+	type Web3NameOwner = DidIdentifier;
+	type WeightInfo = ();
+}
+
+#[derive(Encode, Decode)]
+pub struct DipProofRequest {
+	identifier: DidIdentifier,
+	keys: Vec<KeyIdOf<Runtime>>,
+	accounts: Vec<LinkableAccountId>,
+	should_include_web3_name: bool,
 }
 
 impl_runtime_apis! {
@@ -530,15 +569,14 @@ impl_runtime_apis! {
 		}
 	}
 
-	// TODO: `keys` could and should be a BTreeSet, but it makes it more complicated for clients to build the type. So we use a Vec, since the keys are deduplicated anyway at proof creation time.
 	// TODO: Support generating different versions of the proof, based on the provided parameter
-	impl kilt_runtime_api_dip_provider::DipProvider<Block, DidIdentifier, KeyIdOf<Runtime>, Vec<KeyIdOf<Runtime>>, CompleteMerkleProof<Hash, DidMerkleProofOf<Runtime>>, ()> for Runtime {
-		fn generate_proof(identifier: DidIdentifier, keys: Vec<KeyIdOf<Runtime>>) -> Result<CompleteMerkleProof<Hash, DidMerkleProofOf<Runtime>>, ()> {
-			if let Ok(Some((did_details, _))) = <Runtime as pallet_dip_provider::Config>::IdentityProvider::retrieve(&identifier) {
-				DidMerkleRootGenerator::<Runtime>::generate_proof(&did_details, keys.iter())
-			} else {
-				Err(())
+	impl kilt_runtime_api_dip_provider::DipProvider<Block, DipProofRequest, CompleteMerkleProof<Hash, DidMerkleProofOf<Runtime>>, ()> for Runtime {
+		fn generate_proof(request: DipProofRequest) -> Result<CompleteMerkleProof<Hash, DidMerkleProofOf<Runtime>>, ()> {
+			let Some(linked_did_info) = <Runtime as pallet_dip_provider::Config>::IdentityProvider::retrieve(&request.identifier)? else { return Err(()) };
+			if linked_did_info.a.is_none() {
+				return Err(());
 			}
+			DidMerkleRootGenerator::<Runtime>::generate_proof(&linked_did_info, request.keys.iter(), request.should_include_web3_name, request.accounts.iter())
 		}
 	}
 }

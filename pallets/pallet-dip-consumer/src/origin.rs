@@ -17,6 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_support::{traits::EnsureOrigin, RuntimeDebug};
+use kilt_support::traits::CallSources;
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_std::marker::PhantomData;
@@ -70,8 +71,7 @@ where
 	}
 }
 
-impl<Identifier, AccountId, Details> kilt_support::traits::CallSources<AccountId, Identifier>
-	for DipOrigin<Identifier, AccountId, Details>
+impl<Identifier, AccountId, Details> CallSources<AccountId, Identifier> for DipOrigin<Identifier, AccountId, Details>
 where
 	Identifier: Clone,
 	AccountId: Clone,

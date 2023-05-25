@@ -27,7 +27,7 @@ ctype.workspace = true
 delegation = {workspace = true, optional = true}
 did.workspace = true
 kilt-dip-support.workspace = true
-pallet-did-lookup = {workspace = true, optional = true}
+pallet-did-lookup.workspace = true
 pallet-dip-consumer.workspace = true
 pallet-dip-provider.workspace = true
 pallet-inflation = {workspace = true, optional = true}
@@ -66,6 +66,7 @@ runtime-benchmarks = [
   "attestation/runtime-benchmarks",
   "ctype/runtime-benchmarks",
   "did/runtime-benchmarks",
+  "pallet-did-lookup/runtime-benchmarks",
   "pallet-dip-consumer/runtime-benchmarks",
   "frame-support/runtime-benchmarks",
   "frame-system/runtime-benchmarks",
@@ -92,6 +93,7 @@ std = [
   "log/std",
   "pallet-authorship/std",
   "pallet-balances/std",
+  "pallet-did-lookup/std",
   "pallet-dip-consumer/std",
   "pallet-dip-provider/std",
   "pallet-membership/std",
@@ -119,7 +121,7 @@ try-runtime = [
   "kilt-support/try-runtime",
   "pallet-authorship/try-runtime",
   "pallet-balances/try-runtime",
-  "pallet-did-lookup",
+  "pallet-did-lookup/try-runtime",
   "pallet-inflation",
   "pallet-membership/try-runtime",
   "pallet-transaction-payment/try-runtime",

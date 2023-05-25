@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use dip_support::IdentityProofAction;
+use dip_support::IdentityDetailsAction;
 use xcm::{latest::prelude::*, DoubleEncoded};
 
 pub use identity_generation::*;
@@ -61,7 +61,7 @@ pub mod identity_dispatch {
 		type Error;
 
 		fn pre_dispatch<B: TxBuilder<Identifier, IdentityRoot, Details>>(
-			action: IdentityProofAction<Identifier, IdentityRoot, Details>,
+			action: IdentityDetailsAction<Identifier, IdentityRoot, Details>,
 			asset: MultiAsset,
 			weight: Weight,
 			destination: MultiLocation,
@@ -80,7 +80,7 @@ pub mod identity_dispatch {
 		type Error = ();
 
 		fn pre_dispatch<_B>(
-			_action: IdentityProofAction<Identifier, IdentityRoot, Details>,
+			_action: IdentityDetailsAction<Identifier, IdentityRoot, Details>,
 			_asset: MultiAsset,
 			_weight: Weight,
 			_destination: MultiLocation,
@@ -111,7 +111,7 @@ pub mod identity_dispatch {
 		type Error = SendError;
 
 		fn pre_dispatch<Builder: TxBuilder<Identifier, ProofOutput, Details>>(
-			action: IdentityProofAction<Identifier, ProofOutput, Details>,
+			action: IdentityDetailsAction<Identifier, ProofOutput, Details>,
 			asset: MultiAsset,
 			weight: Weight,
 			destination: MultiLocation,
@@ -149,35 +149,38 @@ pub mod identity_dispatch {
 
 pub use identity_provision::*;
 pub mod identity_provision {
+	use sp_std::marker::PhantomData;
 
-	pub trait IdentityProvider<Identifier, Identity, Details = ()> {
+	pub trait IdentityProvider<Identifier> {
 		type Error;
+		type Success;
 
-		fn retrieve(identifier: &Identifier) -> Result<Option<(Identity, Details)>, Self::Error>;
+		fn retrieve(identifier: &Identifier) -> Result<Option<Self::Success>, Self::Error>;
 	}
 
 	// Return the `Default` value if `Identity` adn `Details` both implement it.
-	pub struct DefaultIdentityProvider;
+	pub struct DefaultIdentityProvider<Identity>(PhantomData<Identity>);
 
-	impl<Identifier, Identity, Details> IdentityProvider<Identifier, Identity, Details> for DefaultIdentityProvider
+	impl<Identifier, Identity> IdentityProvider<Identifier> for DefaultIdentityProvider<Identity>
 	where
 		Identity: Default,
-		Details: Default,
 	{
 		type Error = ();
+		type Success = Identity;
 
-		fn retrieve(_identifier: &Identifier) -> Result<Option<(Identity, Details)>, Self::Error> {
-			Ok(Some((Identity::default(), Details::default())))
+		fn retrieve(_identifier: &Identifier) -> Result<Option<Self::Success>, Self::Error> {
+			Ok(Some(Identity::default()))
 		}
 	}
 
 	// Always return `None`. Might be useful for tests.
 	pub struct NoneIdentityProvider;
 
-	impl<Identifier, Identity, Details> IdentityProvider<Identifier, Identity, Details> for NoneIdentityProvider {
+	impl<Identifier> IdentityProvider<Identifier> for NoneIdentityProvider {
 		type Error = ();
+		type Success = ();
 
-		fn retrieve(_identifier: &Identifier) -> Result<Option<(Identity, Details)>, Self::Error> {
+		fn retrieve(_identifier: &Identifier) -> Result<Option<Self::Success>, Self::Error> {
 			Ok(None)
 		}
 	}
@@ -190,6 +193,6 @@ pub trait TxBuilder<Identifier, Proof, Details = ()> {
 
 	fn build(
 		dest: MultiLocation,
-		action: IdentityProofAction<Identifier, Proof, Details>,
+		action: IdentityDetailsAction<Identifier, Proof, Details>,
 	) -> Result<DoubleEncoded<()>, Self::Error>;
 }
