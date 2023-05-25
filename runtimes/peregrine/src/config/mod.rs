@@ -1,4 +1,5 @@
-pub mod proxy;
 pub mod governance;
-pub mod system;
 pub mod kilt;
+pub mod proxy;
+pub mod system;
+pub mod utility;
