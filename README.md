@@ -24,6 +24,7 @@ The nodes use Parity Substrate as the underlying blockchain technology stack, ex
 This repository is structured into multiple parts:
 
 * `/crates/`: Rust crates that are not specific to the KILT runtime and can be used in different environments as well.
+* `/dev-specs/`: Chain specs for development and test blockchains.
 * `/nodes/parachain`: The rust code for the parachain blockchain node. This will produce an executable that spins up a KILT parachain node.
 * `/nodes/parachain`: The rust code for the standalone blockchain node. This will produce an executable that spins up a KILT blockchain node that can run without the need for a relay chain.
 * `/pallets/`: contains all pallets that are developed for the KILT blockchain. Pallets MUST NOT depend on runtimes.
