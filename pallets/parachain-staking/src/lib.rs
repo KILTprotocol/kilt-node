@@ -144,6 +144,7 @@ pub mod pallet {
 
 	use core::cmp::Ordering;
 	use frame_support::{
+		assert_ok,
 		pallet_prelude::*,
 		storage::bounded_btree_map::BoundedBTreeMap,
 		traits::{
@@ -676,8 +677,6 @@ pub mod pallet {
 	#[pallet::genesis_build]
 	impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
 		fn build(&self) {
-			use frame_support::assert_ok;
-
 			assert!(
 				self.inflation_config.is_valid(T::BLOCKS_PER_YEAR.saturated_into()),
 				"Invalid inflation configuration"
@@ -1745,8 +1744,8 @@ pub mod pallet {
 			// collator reward rate decreases by 2% p.a. of the previous one
 			let c_reward_rate = inflation.collator.reward_rate.annual * Perquintill::from_percent(98);
 
-			// delegator reward rate should be 6% in 2nd and 3rd year and 0% afterwards
-			let d_reward_rate = if year <= 2u32.into() {
+			// delegator reward rate should be 6% in 2nd year and 0% afterwards
+			let d_reward_rate = if year == T::BlockNumber::one() {
 				Perquintill::from_percent(6)
 			} else {
 				Perquintill::zero()
