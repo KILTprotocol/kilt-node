@@ -26,9 +26,9 @@ pub use crate::api::api::*;
 /// This runtime version.
 #[sp_version::runtime_version]
 pub const VERSION: RuntimeVersion = RuntimeVersion {
-	spec_name: create_runtime_str!("mashnet-node"),
-	impl_name: create_runtime_str!("mashnet-node"),
-	authoring_version: 4,
+	spec_name: create_runtime_str!("kilt-spiritnet"),
+	impl_name: create_runtime_str!("kilt-spiritnet"),
+	authoring_version: 1,
 	spec_version: 11100,
 	impl_version: 0,
 	apis: crate::api::RUNTIME_API_VERSIONS,
@@ -387,14 +387,14 @@ impl_runtime_apis! {
 	#[cfg(feature = "try-runtime")]
 	impl frame_try_runtime::TryRuntime<Block> for Runtime {
 		fn on_runtime_upgrade(checks: UpgradeCheckSelect) -> (Weight, Weight) {
-			log::info!("try-runtime::on_runtime_upgrade peregrine.");
+			log::info!("try-runtime::on_runtime_upgrade spiritnet.");
 			let weight = Executive::try_runtime_upgrade(checks).unwrap();
 			(weight, BlockWeights::get().max_block)
 		}
 
 		fn execute_block(block: Block, state_root_check: bool, sig_check: bool, select: frame_try_runtime::TryStateSelect) -> Weight {
 			log::info!(
-				target: "runtime::peregrine", "try-runtime: executing block #{} ({:?}) / root checks: {:?} / sig check: {:?} / sanity-checks: {:?}",
+				target: "runtime::spiritnet", "try-runtime: executing block #{} ({:?}) / root checks: {:?} / sig check: {:?} / sanity-checks: {:?}",
 				block.header.number,
 				block.header.hash(),
 				state_root_check,

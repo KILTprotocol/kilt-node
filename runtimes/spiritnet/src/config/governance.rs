@@ -18,11 +18,6 @@
 
 use crate::*;
 
-impl pallet_sudo::Config for Runtime {
-	type RuntimeCall = RuntimeCall;
-	type RuntimeEvent = RuntimeEvent;
-}
-
 parameter_types! {
 	pub const MaxClaims: u32 = 50;
 	pub const UsableBalance: Balance = KILT;
@@ -230,7 +225,7 @@ impl pallet_membership::Config<TipsMembershipProvider> for Runtime {
 	type PrimeOrigin = MoreThanHalfCouncil;
 	type MembershipInitialized = ();
 	type MembershipChanged = ();
-	type MaxMembers = constants::governance::TechnicalMaxMembers;
+	type MaxMembers = constants::governance::TipperMaxMembers;
 	type WeightInfo = weights::pallet_membership::WeightInfo<Runtime>;
 }
 
