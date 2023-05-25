@@ -25,10 +25,9 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
-use cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases;
 use frame_support::{
 	construct_runtime, parameter_types,
-	traits::{ConstU32, EitherOfDiverse, Everything, InstanceFilter, PrivilegeCmp},
+	traits::{AsEnsureOriginWithArg, ConstU32, EitherOfDiverse, Everything, InstanceFilter, PrivilegeCmp},
 	weights::{ConstantMultiplier, Weight},
 };
 use frame_system::{EnsureRoot, EnsureSigned};
@@ -237,7 +236,7 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
 	type ReservedDmpWeight = ReservedDmpWeight;
 	type XcmpMessageHandler = XcmpQueue;
 	type ReservedXcmpWeight = ReservedXcmpWeight;
-	type CheckAssociatedRelayNumber = RelayNumberStrictlyIncreases;
+	type CheckAssociatedRelayNumber = Configuration;
 }
 
 impl parachain_info::Config for Runtime {}
@@ -525,6 +524,12 @@ impl pallet_tips::Config for Runtime {
 	type TipReportDepositBase = constants::tips::TipReportDepositBase;
 	type RuntimeEvent = RuntimeEvent;
 	type WeightInfo = weights::pallet_tips::WeightInfo<Runtime>;
+}
+
+impl pallet_configuration::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type WeightInfo = weights::pallet_configuration::WeightInfo<Runtime>;
+	type EnsureOrigin = AsEnsureOriginWithArg<EnsureRoot<AccountId>>;
 }
 
 impl attestation::Config for Runtime {
@@ -923,6 +928,7 @@ construct_runtime! {
 		Balances: pallet_balances = 6,
 		TransactionPayment: pallet_transaction_payment::{Pallet, Storage, Event<T>} = 7,
 		Sudo: pallet_sudo = 8,
+		Configuration: pallet_configuration = 9,
 
 		// Consensus support.
 		// The following order MUST NOT be changed: Aura -> Session -> Staking -> Authorship -> AuraExt
@@ -942,7 +948,7 @@ construct_runtime! {
 		// DELETED: RelayMigration: pallet_relay_migration::{Pallet, Call, Storage, Event<T>} = 36,
 		// DELETED: DynFilter: pallet_dyn_filter = 37,
 
-		//  A stateless pallet with helper extrinsics (batch extrinsics, send from different origins, ...)
+		// A stateless pallet with helper extrinsics (batch extrinsics, send from different origins, ...)
 		Utility: pallet_utility = 40,
 
 		// Vesting. Usable initially, but removed once all vesting is finished.
@@ -1088,6 +1094,7 @@ mod benches {
 		[pallet_session, SessionBench::<Runtime>]
 		[parachain_staking, ParachainStaking]
 		[pallet_democracy, Democracy]
+		[pallet_configuration, Configuration]
 		[pallet_collective, Council]
 		[pallet_collective, TechnicalCommittee]
 		[pallet_membership, TechnicalMembership]

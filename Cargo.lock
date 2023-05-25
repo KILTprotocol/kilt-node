@@ -5864,6 +5864,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-configuration"
+version = "1.11.0-dev"
+dependencies = [
+ "cumulus-pallet-parachain-system",
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "pallet-balances",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "sp-core",
+ "sp-io",
+ "sp-keystore",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-conviction-voting"
 version = "4.0.0-dev"
 source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.41#3bd809d59c31c7205a0f36c6ddcba603e43051fc"
@@ -6920,6 +6939,7 @@ dependencies = [
  "pallet-authorship",
  "pallet-balances",
  "pallet-collective",
+ "pallet-configuration",
  "pallet-democracy",
  "pallet-did-lookup",
  "pallet-indices",
