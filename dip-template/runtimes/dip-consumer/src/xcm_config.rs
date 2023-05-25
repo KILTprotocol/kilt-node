@@ -39,7 +39,7 @@ use crate::{
 
 parameter_types! {
 	pub HereLocation: MultiLocation = MultiLocation::here();
-	pub UnitWeightCost: Weight = Weight::from_ref_time(1_000);
+	pub UnitWeightCost: Weight = Weight::from_parts(1_000, 0);
 	pub UniversalLocation: InteriorMultiLocation = Parachain(ParachainInfo::parachain_id().into()).into();
 }
 

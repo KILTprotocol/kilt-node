@@ -30,13 +30,14 @@ use cumulus_client_service::{
 use cumulus_primitives_core::ParaId;
 use cumulus_primitives_parachain_inherent::ParachainInherentData;
 use cumulus_relay_chain_interface::RelayChainInterface;
-use dip_provider_runtime_template::{api, native_version, Hash, NodeBlock as Block, RuntimeApi};
+use dip_provider_runtime_template::{api, native_version, NodeBlock as Block, RuntimeApi};
 use frame_benchmarking::benchmarking::HostFunctions;
 use frame_benchmarking_cli::SUBSTRATE_REFERENCE_HARDWARE;
 use sc_basic_authorship::ProposerFactory;
 use sc_consensus::{DefaultImportQueue, ImportQueue};
 use sc_executor::NativeElseWasmExecutor;
-use sc_network::{NetworkBlock, NetworkService};
+use sc_network::NetworkBlock;
+use sc_network_sync::SyncingService;
 use sc_service::{
 	build_offchain_workers, new_full_parts, spawn_tasks, Configuration, PartialComponents, SpawnTasksParams,
 	TFullBackend, TFullClient, TaskManager,
@@ -178,16 +179,17 @@ async fn start_node_impl(
 	let transaction_pool = params.transaction_pool.clone();
 	let import_queue_service = params.import_queue.service();
 
-	let (network, system_rpc_tx, tx_handler_controller, start_network) = build_network(BuildNetworkParams {
-		parachain_config: &parachain_config,
-		client: client.clone(),
-		transaction_pool: transaction_pool.clone(),
-		para_id,
-		spawn_handle: task_manager.spawn_handle(),
-		relay_chain_interface: relay_chain_interface.clone(),
-		import_queue: params.import_queue,
-	})
-	.await?;
+	let (network, system_rpc_tx, tx_handler_controller, start_network, sync_service) =
+		build_network(BuildNetworkParams {
+			parachain_config: &parachain_config,
+			client: client.clone(),
+			transaction_pool: transaction_pool.clone(),
+			para_id,
+			spawn_handle: task_manager.spawn_handle(),
+			relay_chain_interface: relay_chain_interface.clone(),
+			import_queue: params.import_queue,
+		})
+		.await?;
 
 	if parachain_config.offchain_worker.enabled {
 		build_offchain_workers(
@@ -215,6 +217,7 @@ async fn start_node_impl(
 
 	spawn_tasks(SpawnTasksParams {
 		rpc_builder,
+		sync_service: sync_service.clone(),
 		client: client.clone(),
 		transaction_pool: transaction_pool.clone(),
 		task_manager: &mut task_manager,
@@ -244,8 +247,8 @@ async fn start_node_impl(
 	}
 
 	let announce_block = {
-		let network = network.clone();
-		Arc::new(move |hash, data| network.announce_block(hash, data))
+		let sync = sync_service.clone();
+		Arc::new(move |hash, data| sync.announce_block(hash, data))
 	};
 
 	let relay_chain_slot_duration = Duration::from_secs(6);
@@ -262,7 +265,7 @@ async fn start_node_impl(
 			&task_manager,
 			relay_chain_interface.clone(),
 			transaction_pool,
-			network,
+			sync_service,
 			params.keystore_container.sync_keystore(),
 			force_authoring,
 			para_id,
@@ -343,7 +346,7 @@ fn build_consensus(
 	task_manager: &TaskManager,
 	relay_chain_interface: Arc<dyn RelayChainInterface>,
 	transaction_pool: Arc<FullPool<Block, ParachainClient>>,
-	sync_oracle: Arc<NetworkService<Block, Hash>>,
+	sync_oracle: Arc<SyncingService<Block>>,
 	keystore: SyncCryptoStorePtr,
 	force_authoring: bool,
 	para_id: ParaId,

@@ -16,6 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use polkadot_parachain::primitives::{DmpMessageHandler, XcmpMessageHandler};
 use xcm_emulator::{decl_test_network, decl_test_parachain};
 
 use crate::relay::RococoChain;
