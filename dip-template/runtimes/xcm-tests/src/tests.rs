@@ -119,8 +119,7 @@ fn commit_identity() {
 			did_details.attestation_key.unwrap(),
 			did_details.delegation_key.unwrap(),
 		]
-		.iter()
-		.chain(did_details.key_agreement_keys.iter()),
+		.iter(),
 		true,
 		linked_accounts.iter(),
 	)
