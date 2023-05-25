@@ -82,6 +82,10 @@ fn commit_identity() {
 	let did_details = ProviderParachain::execute_with(|| {
 		Did::get(&did).expect("DID details should be stored on the provider chain.")
 	});
+	println!(
+		"Complete DID details encoded size: {:?} bytes",
+		did_details.encoded_size()
+	);
 	let (web3_name, ownership_details) = ProviderParachain::execute_with(|| {
 		let web3_name =
 			Names::<ProviderRuntime>::get(&did).expect("Web3name should be linked to the DID on the provider chain.");
@@ -89,9 +93,15 @@ fn commit_identity() {
 			.expect("Web3name details should be present for the retrieved web3name.");
 		(web3_name, ownership_details)
 	});
+	println!(
+		"Web3name and ownership size: ({:?}, {:?}) bytes",
+		web3_name.encoded_size(),
+		ownership_details.encoded_size(),
+	);
 	let linked_accounts = ProviderParachain::execute_with(|| {
 		ConnectedAccounts::<ProviderRuntime>::iter_key_prefix(&did).collect::<Vec<_>>()
 	});
+	println!("Linked accounts size: {:?} bytes", linked_accounts.encoded_size());
 	let call = ConsumerRuntimeCall::DidLookup(pallet_did_lookup::Call::<ConsumerRuntime>::associate_sender {});
 	// 3.1 Generate a proof
 	let CompleteMerkleProof { proof, .. } = DidMerkleRootGenerator::<ProviderRuntime>::generate_proof(
@@ -104,15 +114,22 @@ fn commit_identity() {
 			Some(linked_accounts.clone()),
 		)
 			.into(),
-		[did_details.authentication_key].iter(),
+		[
+			did_details.authentication_key,
+			did_details.attestation_key.unwrap(),
+			did_details.delegation_key.unwrap(),
+		]
+		.iter()
+		.chain(did_details.key_agreement_keys.iter()),
 		true,
 		linked_accounts.iter(),
 	)
 	.expect("Proof generation should not fail");
 	println!(
-		"Complete merkle proof: {:?}. Size: {:?} bytes",
-		proof,
-		proof.encoded_size()
+		"Complete merkle proof size: {:?} bytes. Blinded part: {:?} bytes. Revealed part: {:?} bytes.",
+		proof.encoded_size(),
+		proof.blinded.encoded_size(),
+		proof.revealed.encoded_size()
 	);
 	// 3.2 Generate a DID signature
 	let genesis_hash =
