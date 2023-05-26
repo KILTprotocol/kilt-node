@@ -192,23 +192,6 @@ impl<T: frame_system::Config> pallet_did_lookup::WeightInfo for WeightInfo<T> {
 			.saturating_add(T::DbWeight::get().reads(2))
 			.saturating_add(T::DbWeight::get().writes(2))
 	}
-	/// Storage: DidLookup MigrationStateStore (r:1 w:1)
-	/// Proof: DidLookup MigrationStateStore (max_values: Some(1), max_size: Some(35), added: 530, mode: MaxEncodedLen)
-	/// Storage: DidLookup ConnectedDids (r:101 w:184)
-	/// Proof: DidLookup ConnectedDids (max_values: None, max_size: Some(129), added: 2604, mode: MaxEncodedLen)
-	/// Storage: DidLookup ConnectedAccounts (r:92 w:184)
-	/// Proof: DidLookup ConnectedAccounts (max_values: None, max_size: Some(97), added: 2572, mode: MaxEncodedLen)
-	/// The range of component `n` is `[1, 100]`.
-	fn migrate(_n: u32, ) -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `2127 + n * (324 ±0)`
-		//  Estimated: `500158`
-		// Minimum execution time: 62_088_000 picoseconds.
-		Weight::from_parts(1_119_084_000, 0)
-			.saturating_add(Weight::from_parts(0, 500158))
-			.saturating_add(T::DbWeight::get().reads(194))
-			.saturating_add(T::DbWeight::get().writes(369))
-	}
 }
 
 #[cfg(test)]

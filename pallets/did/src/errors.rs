@@ -17,6 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use scale_info::TypeInfo;
+use sp_runtime::DispatchError;
 
 use crate::did_details::DidVerificationKeyRelationship;
 
@@ -31,6 +32,14 @@ pub enum DidError {
 	Input(InputError),
 	/// An error that is not supposed to take place, yet it happened.
 	Internal,
+	/// An error that is related to updating the deposit
+	Deposit(DispatchError),
+}
+
+impl From<DispatchError> for DidError {
+	fn from(err: DispatchError) -> Self {
+		DidError::Deposit(err)
+	}
 }
 
 impl From<StorageError> for DidError {

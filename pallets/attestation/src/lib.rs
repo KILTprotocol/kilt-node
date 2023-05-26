@@ -71,6 +71,9 @@ pub mod mock;
 #[cfg(feature = "runtime-benchmarks")]
 pub mod benchmarking;
 
+#[cfg(any(feature = "try-runtime", test))]
+mod try_state;
+
 mod access_control;
 #[cfg(test)]
 mod tests;
@@ -147,6 +150,17 @@ pub mod pallet {
 	#[pallet::storage_version(STORAGE_VERSION)]
 	pub struct Pallet<T>(_);
 
+<<<<<<< HEAD
+=======
+	#[pallet::hooks]
+	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+		#[cfg(feature = "try-runtime")]
+		fn try_state(_n: BlockNumberFor<T>) -> Result<(), &'static str> {
+			crate::try_state::do_try_state::<T>()
+		}
+	}
+
+>>>>>>> chore/polkadot-0.9.41
 	/// Attestations stored on chain.
 	///
 	/// It maps from a claim hash to the full attestation.

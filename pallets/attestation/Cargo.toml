@@ -15,7 +15,7 @@ targets = ["x86_64-unknown-linux-gnu"]
 
 [dev-dependencies]
 ctype = {workspace = true, features = ["mock"]}
-kilt-support = {workspace = true, features = ["mock"]}
+kilt-support = {workspace = true, features = ["mock", "try-runtime"]}
 
 pallet-balances = {workspace = true, features = ["std"]}
 serde.workspace = true
@@ -78,4 +78,5 @@ std = [
 try-runtime = [
   "frame-support/try-runtime",
   "frame-system/try-runtime",
+  "kilt-support/try-runtime"
 ]
