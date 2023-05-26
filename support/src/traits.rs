@@ -16,10 +16,16 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::traits::{Currency, ReservableCurrency};
+use frame_support::traits::{
+	fungible::hold::{Inspect as InspectHold, Mutate},
+	tokens::fungible::Inspect,
+};
 use sp_runtime::DispatchError;
 
-use crate::{deposit::Deposit, free_deposit};
+use crate::{
+	deposit::{Deposit, HFIdentifier},
+	free_deposit,
+};
 
 /// The sources of a call struct.
 ///
@@ -87,24 +93,23 @@ pub trait ItemFilter<Item> {
 }
 
 pub trait StorageDepositCollector<AccountId, Key> {
-	type Currency: ReservableCurrency<AccountId>;
+	type Currency: Mutate<AccountId> + InspectHold<AccountId, Reason = HFIdentifier>;
 
 	/// Returns the deposit of the storage entry that is stored behind the key.
-	fn deposit(
-		key: &Key,
-	) -> Result<Deposit<AccountId, <Self::Currency as Currency<AccountId>>::Balance>, DispatchError>;
+	fn deposit(key: &Key)
+		-> Result<Deposit<AccountId, <Self::Currency as Inspect<AccountId>>::Balance>, DispatchError>;
 
 	/// Returns the deposit amount that should be reserved for the storage entry
 	/// behind the key.
 	///
 	/// This value can differ from the actual deposit that is reserved at the
 	/// time, since the deposit can be changed.
-	fn deposit_amount(key: &Key) -> <Self::Currency as Currency<AccountId>>::Balance;
+	fn deposit_amount(key: &Key) -> <Self::Currency as Inspect<AccountId>>::Balance;
 
 	/// Store the new deposit information in the storage entry behind the key.
 	fn store_deposit(
 		key: &Key,
-		deposit: Deposit<AccountId, <Self::Currency as Currency<AccountId>>::Balance>,
+		deposit: Deposit<AccountId, <Self::Currency as Inspect<AccountId>>::Balance>,
 	) -> Result<(), DispatchError>;
 
 	/// Change the deposit owner.
@@ -115,13 +120,13 @@ pub trait StorageDepositCollector<AccountId, Key> {
 	fn change_deposit_owner(key: &Key, new_owner: AccountId) -> Result<(), DispatchError> {
 		let deposit = Self::deposit(key)?;
 
-		free_deposit::<AccountId, Self::Currency>(&deposit);
+		free_deposit::<AccountId, Self::Currency>(&deposit)?;
 
 		let deposit = Deposit {
 			owner: new_owner,
 			..deposit
 		};
-		Self::Currency::reserve(&deposit.owner, deposit.amount)?;
+		Self::Currency::hold(&HFIdentifier::Deposit, &deposit.owner, deposit.amount)?;
 
 		Self::store_deposit(key, deposit)?;
 
@@ -137,13 +142,13 @@ pub trait StorageDepositCollector<AccountId, Key> {
 	fn update_deposit(key: &Key) -> Result<(), DispatchError> {
 		let deposit = Self::deposit(key)?;
 
-		free_deposit::<AccountId, Self::Currency>(&deposit);
+		free_deposit::<AccountId, Self::Currency>(&deposit)?;
 
 		let deposit = Deposit {
 			amount: Self::deposit_amount(key),
 			..deposit
 		};
-		Self::Currency::reserve(&deposit.owner, deposit.amount)?;
+		Self::Currency::hold(&HFIdentifier::Deposit, &deposit.owner, deposit.amount)?;
 
 		Self::store_deposit(key, deposit)?;
 

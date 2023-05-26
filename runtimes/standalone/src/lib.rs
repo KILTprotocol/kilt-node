@@ -54,7 +54,7 @@ use sp_std::prelude::*;
 use sp_version::RuntimeVersion;
 
 use delegation::DelegationAc;
-use kilt_support::traits::ItemFilter;
+use kilt_support::{deposit::HFIdentifier, traits::ItemFilter};
 use pallet_did_lookup::linkable_account::LinkableAccountId;
 use runtime_common::{
 	assets::{AssetDid, PublicCredentialsFilter},
@@ -250,8 +250,8 @@ parameter_types! {
 }
 
 impl pallet_balances::Config for Runtime {
-	type FreezeIdentifier = ();
-	type HoldIdentifier = ();
+	type FreezeIdentifier = HFIdentifier;
+	type HoldIdentifier = HFIdentifier;
 	type MaxFreezes = ();
 	type MaxHolds = ();
 	type MaxLocks = MaxLocks;

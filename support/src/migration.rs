@@ -15,3 +15,48 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
+
+use frame_support::{
+	pallet_prelude::DispatchResult,
+	traits::{
+		fungible::{
+			freeze::{Inspect as InspectFreeze, Mutate as MutateFreeze},
+			hold::{Inspect as InspectHold, Mutate as MutateHold},
+		},
+		ReservableCurrency,
+	},
+};
+use sp_runtime::SaturatedConversion;
+
+use crate::deposit::HFIdentifier;
+
+pub fn has_user_holds_and_no_reserves<
+	AccountId,
+	Currency: ReservableCurrency<AccountId> + MutateHold<AccountId> + InspectHold<AccountId, Reason = HFIdentifier>,
+>(
+	owner: &AccountId,
+) -> bool {
+	Currency::balance_on_hold(&HFIdentifier::Deposit, owner).saturated_into::<usize>() > 0
+		&& Currency::reserved_balance(owner).saturated_into::<usize>() == 0
+}
+
+pub fn has_user_freezes<
+	AccountId,
+	Currency: ReservableCurrency<AccountId> + MutateFreeze<AccountId> + InspectFreeze<AccountId, Id = HFIdentifier>,
+>(
+	owner: &AccountId,
+	reason: &HFIdentifier,
+) -> bool {
+	Currency::balance_frozen(reason, owner).saturated_into::<usize>() > 0
+}
+
+pub fn switch_reserved_to_hold<
+	AccountId,
+	Currency: ReservableCurrency<AccountId> + MutateHold<AccountId> + InspectHold<AccountId, Reason = HFIdentifier>,
+>(
+	owner: AccountId,
+	amount: u128,
+) -> DispatchResult {
+	Currency::unreserve(&owner, amount.saturated_into());
+	Currency::hold(&HFIdentifier::Deposit, &owner, amount.saturated_into())
+}

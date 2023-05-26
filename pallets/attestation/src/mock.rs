@@ -178,7 +178,10 @@ pub(crate) mod runtime {
 	};
 
 	use ctype::{CtypeCreatorOf, CtypeEntryOf};
-	use kilt_support::mock::{mock_origin, SubjectId};
+	use kilt_support::{
+		deposit::HFIdentifier,
+		mock::{mock_origin, SubjectId},
+	};
 
 	use super::*;
 
@@ -249,8 +252,8 @@ pub(crate) mod runtime {
 	}
 
 	impl pallet_balances::Config for Test {
-		type FreezeIdentifier = ();
-		type HoldIdentifier = ();
+		type FreezeIdentifier = HFIdentifier;
+		type HoldIdentifier = HFIdentifier;
 		type MaxFreezes = ();
 		type MaxHolds = ();
 		type Balance = Balance;

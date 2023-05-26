@@ -16,16 +16,91 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::pallet_prelude::DispatchResult;
+use frame_support::{
+	traits::{Get, OnRuntimeUpgrade},
+	weights::Weight,
+};
+use kilt_support::migration::{has_user_holds_and_no_reserves, switch_reserved_to_hold};
+use log;
+use sp_runtime::SaturatedConversion;
+use sp_std::marker::PhantomData;
 
-use crate::{AttestationDetails, Attestations, BalanceOf, Config};
+use crate::{AccountIdOf, AttestationDetails, Attestations, Config, CurrencyOf};
 
-pub(crate) fn do_migration<T: Config>() {
-	Attestations::<T>::iter_values().map(|attestations_detail: AttestationDetails<T>| -> DispatchResult {
-		let deposit = attestations_detail.deposit;
-		switch_reserved_to_hold::<T>(deposit.owner, deposit.amount);
-		Ok(())
-	});
+pub struct BalanceMigration<T>(PhantomData<T>);
+
+impl<T: crate::pallet::Config> OnRuntimeUpgrade for BalanceMigration<T> {
+	fn on_runtime_upgrade() -> frame_support::weights::Weight {
+		log::info!("Attestation: Initiating migration");
+		if ensure_upgraded::<T>() {
+			return do_migration::<T>();
+		} else {
+			log::info!("Attestation: No migration needed. This file should be deleted.");
+		}
+		<T as frame_system::Config>::DbWeight::get().reads_writes(0, 0)
+	}
+
+	#[cfg(feature = "try-runtime")]
+	fn pre_upgrade() -> Result<sp_std::vec::Vec<u8>, &'static str> {
+		use frame_support::ensure;
+		use sp_std::vec;
+
+		let has_one_user_holds = Attestations::<T>::iter_values()
+			.map(|details: AttestationDetails<T>| {
+				has_user_holds_and_no_reserves::<AccountIdOf<T>, CurrencyOf<T>>(&details.deposit.owner)
+			})
+			.all(|user| !user);
+
+		// before the upgrade, there should be no account with holds
+		ensure!(has_one_user_holds, "Pre upgrade: there are users with holds.");
+
+		Ok(vec![])
+	}
+
+	#[cfg(feature = "try-runtime")]
+	fn post_upgrade(_pre_state: sp_std::vec::Vec<u8>) -> Result<(), &'static str> {
+		let has_all_user_holds = Attestations::<T>::iter_values()
+			.map(|details: AttestationDetails<T>| {
+				has_user_holds_and_no_reserves::<AccountIdOf<T>, CurrencyOf<T>>(&details.deposit.owner)
+			})
+			.all(|user| user);
+
+		// before the upgrade, there should be no account with holds
+		ensure!(has_all_user_holds, "Post upgrade: there are user with reserves.");
+
+		Ok(vec![])
+	}
 }
 
-fn switch_reserved_to_hold<T: Config>(owner: T::AccountId, amount: BalanceOf<T>) {}
+/// Checks if there is an user, who has still reserved balance and no holds. If
+/// yes, the migration is not executed yet.
+fn ensure_upgraded<T: Config>() -> bool {
+	Attestations::<T>::iter_values()
+		.map(|details: AttestationDetails<T>| {
+			has_user_holds_and_no_reserves::<AccountIdOf<T>, CurrencyOf<T>>(&details.deposit.owner)
+		})
+		.any(|user| !user)
+}
+
+fn do_migration<T: Config>() -> Weight {
+	Attestations::<T>::iter()
+		.map(|(key, attestations_detail)| -> Weight {
+			let deposit = attestations_detail.deposit;
+			let error = switch_reserved_to_hold::<AccountIdOf<T>, CurrencyOf<T>>(
+				deposit.owner,
+				deposit.amount.saturated_into(),
+			);
+
+			if error.is_ok() {
+				return <T as frame_system::Config>::DbWeight::get().reads_writes(1, 1);
+			}
+
+			log::error!(
+				" Attestation: Could not convert reserves to hold from attestation: {:?} ",
+				key
+			);
+
+			<T as frame_system::Config>::DbWeight::get().reads_writes(0, 0)
+		})
+		.fold(Weight::zero(), |acc, next| acc.saturating_add(next))
+}

@@ -22,6 +22,7 @@ use frame_support::{
 	weights::constants::RocksDbWeight,
 };
 use frame_system::EnsureSigned;
+use kilt_support::deposit::HFIdentifier;
 use pallet_balances::NegativeImbalance;
 use sp_core::{ecdsa, ed25519, sr25519, Pair};
 use sp_runtime::{
@@ -167,8 +168,8 @@ parameter_types! {
 }
 
 impl pallet_balances::Config for Test {
-	type FreezeIdentifier = ();
-	type HoldIdentifier = ();
+	type FreezeIdentifier = HFIdentifier;
+	type HoldIdentifier = HFIdentifier;
 	type MaxFreezes = ();
 	type MaxHolds = ();
 	type Balance = Balance;

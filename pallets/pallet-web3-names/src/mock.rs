@@ -15,10 +15,8 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
-
-use frame_support::traits::ReservableCurrency;
-
-use kilt_support::deposit::Deposit;
+use frame_support::traits::fungible::MutateHold;
+use kilt_support::deposit::{Deposit, HFIdentifier};
 
 use crate::{AccountIdOf, BalanceOf, Config, CurrencyOf, Names, Owner, Web3NameOf, Web3NameOwnerOf, Web3OwnershipOf};
 
@@ -31,7 +29,7 @@ pub(crate) fn insert_raw_w3n<T: Config>(
 	block_number: BlockNumberOf<T>,
 	deposit: BalanceOf<T>,
 ) {
-	CurrencyOf::<T>::reserve(&payer, deposit).expect("Payer should have enough funds for deposit");
+	CurrencyOf::<T>::hold(&HFIdentifier::Deposit, &payer, deposit).expect("Payer should have enough funds for deposit");
 
 	Names::<T>::insert(&owner, name.clone());
 	Owner::<T>::insert(
@@ -55,7 +53,10 @@ pub use crate::mock::runtime::*;
 pub(crate) mod runtime {
 	use frame_support::parameter_types;
 	use frame_system::EnsureRoot;
-	use kilt_support::mock::{mock_origin, SubjectId};
+	use kilt_support::{
+		deposit::HFIdentifier,
+		mock::{mock_origin, SubjectId},
+	};
 	use sp_runtime::{
 		testing::Header,
 		traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
@@ -128,8 +129,8 @@ pub(crate) mod runtime {
 	}
 
 	impl pallet_balances::Config for Test {
-		type FreezeIdentifier = ();
-		type HoldIdentifier = ();
+		type FreezeIdentifier = HFIdentifier;
+		type HoldIdentifier = HFIdentifier;
 		type MaxFreezes = ();
 		type MaxHolds = ();
 		type Balance = Balance;
@@ -228,7 +229,8 @@ pub(crate) mod runtime {
 
 			ext.execute_with(|| {
 				for (owner, web3_name, payer) in self.claimed_web3_names {
-					pallet_web3_names::Pallet::<Test>::register_name(web3_name, owner, payer);
+					pallet_web3_names::Pallet::<Test>::register_name(web3_name, owner, payer)
+						.expect("Could not register name");
 				}
 
 				for web3_name in self.banned_web3_names {

@@ -16,10 +16,19 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::traits::ReservableCurrency;
+use frame_support::{pallet_prelude::DispatchResult, traits::fungible::hold::Mutate};
+
+use frame_support::traits::tokens::Precision;
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_runtime::{traits::Zero, DispatchError};
+
+#[derive(Clone, Debug, Encode, Decode, Eq, PartialEq, Ord, PartialOrd, TypeInfo, MaxEncodedLen, Copy)]
+pub enum HFIdentifier {
+	Deposit,
+	Staking,
+	Misc,
+}
 
 /// An amount of balance reserved by the specified address.
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
@@ -29,18 +38,21 @@ pub struct Deposit<Account, Balance> {
 	pub amount: Balance,
 }
 
-pub fn reserve_deposit<Account, Currency: ReservableCurrency<Account>>(
+pub fn reserve_deposit<Account, Currency: Mutate<Account, Reason = HFIdentifier>>(
 	account: Account,
 	deposit_amount: Currency::Balance,
 ) -> Result<Deposit<Account, Currency::Balance>, DispatchError> {
-	Currency::reserve(&account, deposit_amount)?;
+	Currency::hold(&HFIdentifier::Deposit, &account, deposit_amount)?;
 	Ok(Deposit {
 		owner: account,
 		amount: deposit_amount,
 	})
 }
 
-pub fn free_deposit<Account, Currency: ReservableCurrency<Account>>(deposit: &Deposit<Account, Currency::Balance>) {
-	let err_amount = Currency::unreserve(&deposit.owner, deposit.amount);
+pub fn free_deposit<Account, Currency: Mutate<Account, Reason = HFIdentifier>>(
+	deposit: &Deposit<Account, Currency::Balance>,
+) -> DispatchResult {
+	let err_amount = Currency::release(&HFIdentifier::Deposit, &deposit.owner, deposit.amount, Precision::Exact)?;
 	debug_assert!(err_amount.is_zero());
+	Ok(())
 }

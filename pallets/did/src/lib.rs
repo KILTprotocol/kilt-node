@@ -117,7 +117,10 @@ use frame_support::{
 	dispatch::{DispatchResult, Dispatchable, GetDispatchInfo, PostDispatchInfo},
 	ensure,
 	storage::types::StorageMap,
-	traits::{Get, OnUnbalanced, WithdrawReasons},
+	traits::{
+		fungible::{Inspect, InspectHold, MutateHold},
+		Get, OnUnbalanced, WithdrawReasons,
+	},
 	Parameter,
 };
 use frame_system::ensure_signed;
@@ -141,7 +144,7 @@ pub mod pallet {
 	};
 	use frame_system::pallet_prelude::*;
 	use kilt_support::{
-		deposit::Deposit,
+		deposit::{Deposit, HFIdentifier},
 		traits::{CallSources, StorageDepositCollector},
 	};
 	use sp_runtime::traits::BadOrigin;
@@ -180,7 +183,7 @@ pub mod pallet {
 	#[pallet::origin]
 	pub type Origin<T> = DidRawOrigin<DidIdentifierOf<T>, AccountIdOf<T>>;
 
-	pub type BalanceOf<T> = <CurrencyOf<T> as Currency<AccountIdOf<T>>>::Balance;
+	pub type BalanceOf<T> = <CurrencyOf<T> as Inspect<AccountIdOf<T>>>::Balance;
 	pub(crate) type CurrencyOf<T> = <T as Config>::Currency;
 	pub(crate) type NegativeImbalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::NegativeImbalance;
 
@@ -215,7 +218,7 @@ pub mod pallet {
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
 		/// The currency that is used to reserve funds for each did.
-		type Currency: ReservableCurrency<AccountIdOf<Self>>;
+		type Currency: ReservableCurrency<AccountIdOf<Self>> + MutateHold<AccountIdOf<Self>, Reason = HFIdentifier>;
 
 		/// The amount of balance that will be taken for each DID as a deposit
 		/// to incentivise fair use of the on chain storage. The deposit can be
@@ -529,9 +532,10 @@ pub mod pallet {
 
 			// Check the free balance before we do any heavy work.
 			ensure!(
-				<T::Currency as ReservableCurrency<AccountIdOf<T>>>::can_reserve(
+				<T::Currency as InspectHold<AccountIdOf<T>>>::can_hold(
+					&HFIdentifier::Deposit,
 					&sender,
-					<T as Config>::Deposit::get() + <T as Config>::Fee::get()
+					<T as Config>::Deposit::get()
 				),
 				Error::<T>::UnableToPayFees
 			);
@@ -558,11 +562,15 @@ pub mod pallet {
 			let did_entry =
 				DidDetails::from_creation_details(*details, account_did_auth_key).map_err(Error::<T>::from)?;
 
-			CurrencyOf::<T>::reserve(&did_entry.deposit.owner, did_entry.deposit.amount)?;
+			kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
+				did_entry.deposit.owner.clone(),
+				did_entry.deposit.amount,
+			)?;
 
 			// Withdraw the fee. We made sure that enough balance is available. But if this
 			// fails, we don't withdraw anything.
 			let imbalance = <T::Currency as Currency<AccountIdOf<T>>>::withdraw(
+				/// !TODO!
 				&did_entry.deposit.owner,
 				T::Fee::get(),
 				WithdrawReasons::FEE,
@@ -1234,18 +1242,18 @@ pub mod pallet {
 
 		fn deposit(
 			key: &DidIdentifierOf<T>,
-		) -> Result<Deposit<AccountIdOf<T>, <Self::Currency as Currency<AccountIdOf<T>>>::Balance>, DispatchError> {
+		) -> Result<Deposit<AccountIdOf<T>, <Self::Currency as Inspect<AccountIdOf<T>>>::Balance>, DispatchError> {
 			let did_entry = Did::<T>::get(key).ok_or(Error::<T>::NotFound)?;
 			Ok(did_entry.deposit)
 		}
 
-		fn deposit_amount(_key: &DidIdentifierOf<T>) -> <Self::Currency as Currency<AccountIdOf<T>>>::Balance {
+		fn deposit_amount(_key: &DidIdentifierOf<T>) -> <Self::Currency as Inspect<AccountIdOf<T>>>::Balance {
 			T::Deposit::get()
 		}
 
 		fn store_deposit(
 			key: &DidIdentifierOf<T>,
-			deposit: Deposit<AccountIdOf<T>, <Self::Currency as Currency<AccountIdOf<T>>>::Balance>,
+			deposit: Deposit<AccountIdOf<T>, <Self::Currency as Inspect<AccountIdOf<T>>>::Balance>,
 		) -> Result<(), DispatchError> {
 			let did_entry = Did::<T>::get(key).ok_or(Error::<T>::NotFound)?;
 			Did::<T>::insert(key, DidDetails { deposit, ..did_entry });

@@ -85,13 +85,13 @@ pub mod pallet {
 	use frame_support::{
 		dispatch::{DispatchResult, DispatchResultWithPostInfo},
 		pallet_prelude::*,
-		traits::{Currency, Get, ReservableCurrency, StorageVersion},
+		traits::{fungible::MutateHold, tokens::fungible::Inspect, Get, ReservableCurrency, StorageVersion},
 	};
 	use frame_system::pallet_prelude::*;
 
 	use ctype::CtypeHashOf;
 	use kilt_support::{
-		deposit::Deposit,
+		deposit::{Deposit, HFIdentifier},
 		traits::{CallSources, StorageDepositCollector},
 	};
 
@@ -109,7 +109,7 @@ pub mod pallet {
 
 	pub(crate) type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 
-	pub(crate) type BalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::Balance;
+	pub(crate) type BalanceOf<T> = <<T as Config>::Currency as Inspect<AccountIdOf<T>>>::Balance;
 
 	pub(crate) type CurrencyOf<T> = <T as Config>::Currency;
 
@@ -123,8 +123,8 @@ pub mod pallet {
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 		type WeightInfo: WeightInfo;
 
-		/// The currency that is used to reserve funds for each attestation.
-		type Currency: ReservableCurrency<AccountIdOf<Self>>;
+		/// The currency that is used to hold funds for each attestation.
+		type Currency: ReservableCurrency<AccountIdOf<Self>> + MutateHold<AccountIdOf<Self>, Reason = HFIdentifier>;
 
 		/// The deposit that is required for storing an attestation.
 		#[pallet::constant]
@@ -146,14 +146,6 @@ pub mod pallet {
 	#[pallet::pallet]
 	#[pallet::storage_version(STORAGE_VERSION)]
 	pub struct Pallet<T>(_);
-
-	// #[pallet::hooks]
-	// impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
-	// 	fn on_runtime_upgrade() -> Weight {
-	// 		migration::do_migration();
-	// 		()
-	// 	}
-	// }
 
 	/// Attestations stored on chain.
 	///
@@ -392,7 +384,7 @@ pub mod pallet {
 
 			log::debug!("removing Attestation");
 
-			Self::remove_attestation(attestation, claim_hash);
+			Self::remove_attestation(attestation, claim_hash)?;
 			Self::deposit_event(Event::AttestationRemoved(who, claim_hash));
 
 			Ok(Some(<T as pallet::Config>::WeightInfo::remove()).into())
@@ -417,7 +409,7 @@ pub mod pallet {
 
 			log::debug!("removing Attestation");
 
-			Self::remove_attestation(attestation, claim_hash);
+			Self::remove_attestation(attestation, claim_hash)?;
 			Self::deposit_event(Event::DepositReclaimed(who, claim_hash));
 
 			Ok(())
@@ -463,12 +455,13 @@ pub mod pallet {
 	}
 
 	impl<T: Config> Pallet<T> {
-		fn remove_attestation(attestation: AttestationDetails<T>, claim_hash: ClaimHashOf<T>) {
-			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&attestation.deposit);
+		fn remove_attestation(attestation: AttestationDetails<T>, claim_hash: ClaimHashOf<T>) -> DispatchResult {
+			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&attestation.deposit)?;
 			Attestations::<T>::remove(claim_hash);
 			if let Some(authorization_id) = &attestation.authorization_id {
 				ExternalAttestations::<T>::remove(authorization_id, claim_hash);
 			}
+			Ok(())
 		}
 	}
 
@@ -478,18 +471,18 @@ pub mod pallet {
 
 		fn deposit(
 			key: &ClaimHashOf<T>,
-		) -> Result<Deposit<AccountIdOf<T>, <Self::Currency as Currency<AccountIdOf<T>>>::Balance>, DispatchError> {
+		) -> Result<Deposit<AccountIdOf<T>, <Self::Currency as Inspect<AccountIdOf<T>>>::Balance>, DispatchError> {
 			let attestation = Attestations::<T>::get(key).ok_or(Error::<T>::NotFound)?;
 			Ok(attestation.deposit)
 		}
 
-		fn deposit_amount(_key: &ClaimHashOf<T>) -> <Self::Currency as Currency<AccountIdOf<T>>>::Balance {
+		fn deposit_amount(_key: &ClaimHashOf<T>) -> <Self::Currency as Inspect<AccountIdOf<T>>>::Balance {
 			T::Deposit::get()
 		}
 
 		fn store_deposit(
 			key: &ClaimHashOf<T>,
-			deposit: Deposit<AccountIdOf<T>, <Self::Currency as Currency<AccountIdOf<T>>>::Balance>,
+			deposit: Deposit<AccountIdOf<T>, <Self::Currency as Inspect<AccountIdOf<T>>>::Balance>,
 		) -> Result<(), DispatchError> {
 			let attestation = Attestations::<T>::get(key).ok_or(Error::<T>::NotFound)?;
 			Attestations::<T>::insert(key, AttestationDetails { deposit, ..attestation });

@@ -54,11 +54,15 @@ pub mod pallet {
 	use frame_support::{
 		ensure,
 		pallet_prelude::*,
-		traits::{Currency, ReservableCurrency, StorageVersion},
+		traits::{
+			fungible::{InspectHold, MutateHold},
+			tokens::fungible::Inspect,
+			Currency, ReservableCurrency, StorageVersion,
+		},
 	};
 	use frame_system::pallet_prelude::*;
 	use kilt_support::{
-		deposit::Deposit,
+		deposit::{Deposit, HFIdentifier},
 		traits::{CallSources, StorageDepositCollector},
 	};
 
@@ -73,7 +77,7 @@ pub mod pallet {
 	pub(crate) type DidIdentifierOf<T> = <T as Config>::DidIdentifier;
 
 	/// The type used to describe a balance.
-	pub(crate) type BalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::Balance;
+	pub(crate) type BalanceOf<T> = <<T as Config>::Currency as Inspect<AccountIdOf<T>>>::Balance;
 
 	/// The currency module that keeps track of balances.
 	pub(crate) type CurrencyOf<T> = <T as Config>::Currency;
@@ -97,7 +101,7 @@ pub mod pallet {
 		type DidIdentifier: Parameter + AsRef<[u8]> + MaxEncodedLen + MaybeSerializeDeserialize;
 
 		/// The currency that is used to reserve funds for each did.
-		type Currency: ReservableCurrency<AccountIdOf<Self>>;
+		type Currency: ReservableCurrency<AccountIdOf<Self>> + MutateHold<AccountIdOf<Self>, Reason = HFIdentifier>;
 
 		/// The amount of balance that will be taken for each DID as a deposit
 		/// to incentivise fair use of the on chain storage. The deposit can be
@@ -235,7 +239,8 @@ pub mod pallet {
 			);
 
 			ensure!(
-				<T::Currency as ReservableCurrency<AccountIdOf<T>>>::can_reserve(
+				<T::Currency as InspectHold<AccountIdOf<T>>>::can_hold(
+					&HFIdentifier::Deposit,
 					&sender,
 					<T as Config>::Deposit::get()
 				),
@@ -269,7 +274,8 @@ pub mod pallet {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 
 			ensure!(
-				<T::Currency as ReservableCurrency<AccountIdOf<T>>>::can_reserve(
+				<T::Currency as InspectHold<AccountIdOf<T>>>::can_hold(
+					&HFIdentifier::Deposit,
 					&source.sender(),
 					<T as Config>::Deposit::get()
 				),
@@ -394,15 +400,19 @@ pub mod pallet {
 				did: did_identifier.clone(),
 			};
 
-			CurrencyOf::<T>::reserve(&record.deposit.owner, record.deposit.amount)?;
+			kilt_support::deposit::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
+				record.deposit.owner.clone(),
+				record.deposit.amount,
+			)?;
 
-			ConnectedDids::<T>::mutate(&account, |did_entry| {
+			ConnectedDids::<T>::mutate(&account, |did_entry| -> DispatchResult {
 				if let Some(old_connection) = did_entry.replace(record) {
 					ConnectedAccounts::<T>::remove(&old_connection.did, &account);
 					Self::deposit_event(Event::<T>::AssociationRemoved(account.clone(), old_connection.did));
-					kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&old_connection.deposit);
+					kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&old_connection.deposit)?;
 				}
-			});
+				Ok(())
+			})?;
 			ConnectedAccounts::<T>::insert(&did_identifier, &account, ());
 			Self::deposit_event(Event::AssociationEstablished(account, did_identifier));
 
@@ -412,7 +422,7 @@ pub mod pallet {
 		pub(crate) fn remove_association(account: LinkableAccountId) -> DispatchResult {
 			if let Some(connection) = ConnectedDids::<T>::take(&account) {
 				ConnectedAccounts::<T>::remove(&connection.did, &account);
-				kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&connection.deposit);
+				kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&connection.deposit)?;
 				Self::deposit_event(Event::AssociationRemoved(account, connection.did));
 
 				Ok(())
@@ -428,18 +438,18 @@ pub mod pallet {
 
 		fn deposit(
 			key: &LinkableAccountId,
-		) -> Result<Deposit<AccountIdOf<T>, <Self::Currency as Currency<AccountIdOf<T>>>::Balance>, DispatchError> {
+		) -> Result<Deposit<AccountIdOf<T>, <Self::Currency as Inspect<AccountIdOf<T>>>::Balance>, DispatchError> {
 			let record = ConnectedDids::<T>::get(key).ok_or(Error::<T>::NotFound)?;
 			Ok(record.deposit)
 		}
 
-		fn deposit_amount(_key: &LinkableAccountId) -> <Self::Currency as Currency<AccountIdOf<T>>>::Balance {
+		fn deposit_amount(_key: &LinkableAccountId) -> <Self::Currency as Inspect<AccountIdOf<T>>>::Balance {
 			T::Deposit::get()
 		}
 
 		fn store_deposit(
 			key: &LinkableAccountId,
-			deposit: Deposit<AccountIdOf<T>, <Self::Currency as Currency<AccountIdOf<T>>>::Balance>,
+			deposit: Deposit<AccountIdOf<T>, <Self::Currency as Inspect<AccountIdOf<T>>>::Balance>,
 		) -> Result<(), DispatchError> {
 			let record = ConnectedDids::<T>::get(key).ok_or(Error::<T>::NotFound)?;
 			ConnectedDids::<T>::insert(key, ConnectionRecord { deposit, ..record });

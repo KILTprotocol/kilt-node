@@ -23,8 +23,8 @@ use sp_runtime::traits::Hash;
 use kilt_support::deposit::Deposit;
 
 use crate::{
-	AttesterOf, BalanceOf, Config, CredentialEntryOf, CredentialIdOf, CredentialSubjects, Credentials, CtypeHashOf,
-	CurrencyOf, InputClaimsContentOf, InputCredentialOf, InputSubjectIdOf,
+	AccountIdOf, AttesterOf, BalanceOf, Config, CredentialEntryOf, CredentialIdOf, CredentialSubjects, Credentials,
+	CtypeHashOf, CurrencyOf, InputClaimsContentOf, InputCredentialOf, InputSubjectIdOf,
 };
 
 // Generate a public credential using a many Default::default() as possible.
@@ -76,7 +76,7 @@ pub(crate) fn insert_public_credentials<T: Config>(
 	credential_id: CredentialIdOf<T>,
 	credential_entry: CredentialEntryOf<T>,
 ) {
-	kilt_support::reserve_deposit::<T::AccountId, CurrencyOf<T>>(
+	kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
 		credential_entry.deposit.owner.clone(),
 		credential_entry.deposit.amount,
 	)
@@ -109,7 +109,10 @@ pub(crate) mod runtime {
 		DispatchError, MultiSignature, MultiSigner,
 	};
 
-	use kilt_support::mock::{mock_origin, SubjectId};
+	use kilt_support::{
+		deposit::HFIdentifier,
+		mock::{mock_origin, SubjectId},
+	};
 
 	use ctype::{CtypeCreatorOf, CtypeEntryOf, CtypeHashOf};
 
@@ -319,8 +322,8 @@ pub(crate) mod runtime {
 	}
 
 	impl pallet_balances::Config for Test {
-		type FreezeIdentifier = ();
-		type HoldIdentifier = ();
+		type FreezeIdentifier = HFIdentifier;
+		type HoldIdentifier = HFIdentifier;
 		type MaxFreezes = ();
 		type MaxHolds = ();
 		type Balance = Balance;

@@ -18,7 +18,10 @@
 
 use frame_support::{
 	storage::bounded_btree_set::BoundedBTreeSet,
-	traits::{Currency, Get},
+	traits::{
+		fungible::{Inspect, Mutate},
+		Get,
+	},
 };
 use sp_core::H256;
 
@@ -76,8 +79,9 @@ pub fn initialize_pallet<T>(
 {
 	for (root_id, details, hierarchy_owner, deposit_owner) in delegation_hierarchies {
 		// manually mint to enable deposit reserving
-		let balance = CurrencyOf::<T>::free_balance(&deposit_owner);
-		CurrencyOf::<T>::make_free_balance_be(&deposit_owner, balance + <T as Config>::Deposit::get());
+
+		let balance = CurrencyOf::<T>::balance(&deposit_owner);
+		CurrencyOf::<T>::set_balance(&deposit_owner, balance + <T as Config>::Deposit::get());
 
 		// reserve deposit and store
 		delegation::Pallet::<T>::create_and_store_new_hierarchy(
@@ -98,8 +102,8 @@ pub fn initialize_pallet<T>(
 
 		// manually mint to enable deposit reserving
 		let deposit_owner = del.1.deposit.owner.clone();
-		let balance = CurrencyOf::<T>::free_balance(&deposit_owner.clone());
-		CurrencyOf::<T>::make_free_balance_be(&deposit_owner.clone(), balance + <T as Config>::Deposit::get());
+		let balance = CurrencyOf::<T>::balance(&deposit_owner);
+		CurrencyOf::<T>::set_balance(&deposit_owner, balance + <T as Config>::Deposit::get());
 
 		// reserve deposit and store
 		delegation::Pallet::<T>::store_delegation_under_parent(
@@ -186,6 +190,7 @@ pub(crate) mod runtime {
 	use attestation::{mock::insert_attestation, AttestationDetails, ClaimHashOf};
 	use ctype::CtypeEntryOf;
 	use kilt_support::{
+		deposit::HFIdentifier,
 		mock::{mock_origin, SubjectId},
 		signature::EqualVerify,
 	};
@@ -259,8 +264,8 @@ pub(crate) mod runtime {
 	}
 
 	impl pallet_balances::Config for Test {
-		type FreezeIdentifier = ();
-		type HoldIdentifier = ();
+		type FreezeIdentifier = HFIdentifier;
+		type HoldIdentifier = HFIdentifier;
 		type MaxFreezes = ();
 		type MaxHolds = ();
 		type Balance = Balance;

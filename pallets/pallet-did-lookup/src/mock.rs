@@ -16,9 +16,9 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::{parameter_types, traits::ReservableCurrency};
+use frame_support::{parameter_types, traits::fungible::MutateHold};
 use kilt_support::{
-	deposit::Deposit,
+	deposit::{Deposit, HFIdentifier},
 	mock::{mock_origin, SubjectId},
 };
 use sp_runtime::{
@@ -94,8 +94,8 @@ parameter_types! {
 }
 
 impl pallet_balances::Config for Test {
-	type FreezeIdentifier = ();
-	type HoldIdentifier = ();
+	type FreezeIdentifier = HFIdentifier;
+	type HoldIdentifier = HFIdentifier;
 	type MaxFreezes = ();
 	type MaxHolds = ();
 	type Balance = Balance;
@@ -153,7 +153,8 @@ pub(crate) fn insert_raw_connection<T: Config>(
 		did: did_identifier.clone(),
 	};
 
-	CurrencyOf::<T>::reserve(&record.deposit.owner, record.deposit.amount).expect("Account should have enough balance");
+	CurrencyOf::<T>::hold(&HFIdentifier::Deposit, &record.deposit.owner, record.deposit.amount)
+		.expect("Account should have enough balance");
 
 	ConnectedDids::<T>::mutate(&account, |did_entry| {
 		if let Some(old_connection) = did_entry.replace(record) {

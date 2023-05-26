@@ -53,7 +53,10 @@ pub mod pallet {
 
 	use frame_support::{
 		pallet_prelude::*,
-		traits::{Currency, IsType, ReservableCurrency, StorageVersion},
+		traits::{
+			fungible::{Inspect, MutateHold},
+			IsType, ReservableCurrency, StorageVersion,
+		},
 		Parameter,
 	};
 	use frame_system::pallet_prelude::*;
@@ -62,7 +65,7 @@ pub mod pallet {
 
 	pub use ctype::CtypeHashOf;
 	use kilt_support::{
-		deposit::Deposit,
+		deposit::{Deposit, HFIdentifier},
 		traits::{CallSources, StorageDepositCollector},
 	};
 
@@ -95,7 +98,7 @@ pub mod pallet {
 	/// Type of an attester identifier.
 	pub type AttesterOf<T> = <T as Config>::AttesterId;
 	/// The type of account's balances.
-	pub type BalanceOf<T> = <CurrencyOf<T> as Currency<AccountIdOf<T>>>::Balance;
+	pub type BalanceOf<T> = <CurrencyOf<T> as Inspect<AccountIdOf<T>>>::Balance;
 	pub(crate) type AuthorizationIdOf<T> = <T as Config>::AuthorizationId;
 	pub type CredentialIdOf<T> = <<T as Config>::CredentialHash as sp_runtime::traits::Hash>::Output;
 
@@ -128,7 +131,7 @@ pub mod pallet {
 		/// The type of a credential identifier.
 		type CredentialId: Parameter + MaxEncodedLen;
 		/// The currency that is used to reserve funds for each credential.
-		type Currency: ReservableCurrency<AccountIdOf<Self>>;
+		type Currency: ReservableCurrency<AccountIdOf<Self>> + MutateHold<AccountIdOf<Self>, Reason = HFIdentifier>;
 		/// The type of the origin when successfully converted from the outer
 		/// origin.
 		type OriginSuccess: CallSources<Self::AccountId, AttesterOf<Self>>;
@@ -284,7 +287,7 @@ pub mod pallet {
 				Error::<T>::AlreadyAttested
 			);
 
-			let deposit = kilt_support::reserve_deposit::<T::AccountId, CurrencyOf<T>>(payer, deposit_amount)
+			let deposit = kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(payer, deposit_amount)
 				.map_err(|_| Error::<T>::UnableToPayFees)?;
 
 			let block_number = frame_system::Pallet::<T>::block_number();
@@ -443,7 +446,7 @@ pub mod pallet {
 
 			// Removes the credential from storage and generates a `CredentialRemoved`
 			// event.
-			Self::remove_credential_entry(credential_subject, credential_id, credential_entry);
+			Self::remove_credential_entry(credential_subject, credential_id, credential_entry)?;
 
 			Ok(Some(<T as Config>::WeightInfo::remove().saturating_add(ac_weight_used)).into())
 		}
@@ -477,7 +480,7 @@ pub mod pallet {
 
 			// Removes the credential from storage and generates a `CredentialRemoved`
 			// event.
-			Self::remove_credential_entry(credential_subject, credential_id, credential_entry);
+			Self::remove_credential_entry(credential_subject, credential_id, credential_entry)?;
 
 			Ok(())
 		}
@@ -528,8 +531,8 @@ pub mod pallet {
 			credential_subject: T::SubjectId,
 			credential_id: CredentialIdOf<T>,
 			credential: CredentialEntryOf<T>,
-		) {
-			kilt_support::free_deposit::<T::AccountId, CurrencyOf<T>>(&credential.deposit);
+		) -> DispatchResult {
+			kilt_support::free_deposit::<T::AccountId, CurrencyOf<T>>(&credential.deposit)?;
 			Credentials::<T>::remove(&credential_subject, &credential_id);
 			CredentialSubjects::<T>::remove(&credential_id);
 
@@ -537,6 +540,7 @@ pub mod pallet {
 				subject_id: credential_subject,
 				credential_id,
 			});
+			Ok(())
 		}
 
 		fn retrieve_credential_entry(
@@ -592,18 +596,18 @@ pub mod pallet {
 
 		fn deposit(
 			credential_id: &CredentialIdOf<T>,
-		) -> Result<Deposit<AccountIdOf<T>, <Self::Currency as Currency<AccountIdOf<T>>>::Balance>, DispatchError> {
+		) -> Result<Deposit<AccountIdOf<T>, <Self::Currency as Inspect<AccountIdOf<T>>>::Balance>, DispatchError> {
 			let (_, credential_entry) = Pallet::<T>::retrieve_credential_entry(credential_id)?;
 			Ok(credential_entry.deposit)
 		}
 
-		fn deposit_amount(_credential_id: &CredentialIdOf<T>) -> <Self::Currency as Currency<AccountIdOf<T>>>::Balance {
+		fn deposit_amount(_credential_id: &CredentialIdOf<T>) -> <Self::Currency as Inspect<AccountIdOf<T>>>::Balance {
 			T::Deposit::get()
 		}
 
 		fn store_deposit(
 			credential_id: &CredentialIdOf<T>,
-			deposit: Deposit<AccountIdOf<T>, <Self::Currency as Currency<AccountIdOf<T>>>::Balance>,
+			deposit: Deposit<AccountIdOf<T>, <Self::Currency as Inspect<AccountIdOf<T>>>::Balance>,
 		) -> Result<(), DispatchError> {
 			let credential_subject = CredentialSubjects::<T>::get(credential_id).ok_or(Error::<T>::NotFound)?;
 			Credentials::<T>::try_mutate(&credential_subject, credential_id, |credential_entry| {

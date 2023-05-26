@@ -95,11 +95,14 @@ pub mod pallet {
 	use super::*;
 	use frame_support::{
 		pallet_prelude::*,
-		traits::{Currency, StorageVersion},
+		traits::{
+			fungible::{Inspect, Mutate, MutateHold},
+			StorageVersion,
+		},
 	};
 	use frame_system::pallet_prelude::*;
 	use kilt_support::{
-		deposit::Deposit,
+		deposit::{Deposit, HFIdentifier},
 		signature::{SignatureVerificationError, VerifySignature},
 		traits::CallSources,
 	};
@@ -126,7 +129,7 @@ pub mod pallet {
 
 	pub(crate) type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 
-	pub(crate) type BalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::Balance;
+	pub(crate) type BalanceOf<T> = <<T as Config>::Currency as Inspect<AccountIdOf<T>>>::Balance;
 
 	pub(crate) type CurrencyOf<T> = <T as Config>::Currency;
 
@@ -149,7 +152,9 @@ pub mod pallet {
 		type WeightInfo: WeightInfo;
 
 		/// The currency that is used to reserve funds for each delegation.
-		type Currency: ReservableCurrency<AccountIdOf<Self>>;
+		type Currency: ReservableCurrency<AccountIdOf<Self>>
+			+ Mutate<AccountIdOf<Self>>
+			+ MutateHold<AccountIdOf<Self>, Reason = HFIdentifier>;
 
 		/// The deposit that is required for storing a delegation.
 		#[pallet::constant]
@@ -717,7 +722,10 @@ pub mod pallet {
 			hierarchy_owner: DelegatorIdOf<T>,
 			deposit_owner: AccountIdOf<T>,
 		) -> DispatchResult {
-			CurrencyOf::<T>::reserve(&deposit_owner, <T as Config>::Deposit::get())?;
+			kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
+				deposit_owner.clone(),
+				<T as Config>::Deposit::get(),
+			)?;
 
 			let root_node = DelegationNode::new_root_node(
 				root_id,
@@ -744,7 +752,10 @@ pub mod pallet {
 			mut parent_node: DelegationNode<T>,
 			deposit_owner: AccountIdOf<T>,
 		) -> DispatchResult {
-			CurrencyOf::<T>::reserve(&deposit_owner, <T as Config>::Deposit::get())?;
+			kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
+				deposit_owner,
+				<T as Config>::Deposit::get(),
+			)?;
 
 			// Add the new node as a child of that node
 			parent_node.try_add_child(delegation_id)?;
@@ -955,7 +966,7 @@ pub mod pallet {
 			// We can clear storage now that all children have been removed
 			DelegationNodes::<T>::remove(*delegation);
 
-			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&delegation_node.deposit);
+			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&delegation_node.deposit)?;
 
 			consumed_weight = consumed_weight.saturating_add(T::DbWeight::get().reads_writes(1, 2));
 
@@ -972,18 +983,18 @@ pub mod pallet {
 
 		fn deposit(
 			key: &DelegationNodeIdOf<T>,
-		) -> Result<Deposit<AccountIdOf<T>, <Self::Currency as Currency<AccountIdOf<T>>>::Balance>, DispatchError> {
+		) -> Result<Deposit<AccountIdOf<T>, <Self::Currency as Inspect<AccountIdOf<T>>>::Balance>, DispatchError> {
 			let delegation_node = DelegationNodes::<T>::get(key).ok_or(Error::<T>::DelegationNotFound)?;
 			Ok(delegation_node.deposit)
 		}
 
-		fn deposit_amount(_key: &DelegationNodeIdOf<T>) -> <Self::Currency as Currency<AccountIdOf<T>>>::Balance {
+		fn deposit_amount(_key: &DelegationNodeIdOf<T>) -> <Self::Currency as Inspect<AccountIdOf<T>>>::Balance {
 			<T as Config>::Deposit::get()
 		}
 
 		fn store_deposit(
 			key: &DelegationNodeIdOf<T>,
-			deposit: Deposit<AccountIdOf<T>, <Self::Currency as Currency<AccountIdOf<T>>>::Balance>,
+			deposit: Deposit<AccountIdOf<T>, <Self::Currency as Inspect<AccountIdOf<T>>>::Balance>,
 		) -> Result<(), DispatchError> {
 			let delegation_node = DelegationNodes::<T>::get(key).ok_or(Error::<T>::DelegationNotFound)?;
 			DelegationNodes::<T>::insert(

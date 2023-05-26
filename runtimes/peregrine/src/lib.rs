@@ -50,7 +50,7 @@ use sp_version::RuntimeVersion;
 use xcm_executor::XcmExecutor;
 
 use delegation::DelegationAc;
-use kilt_support::traits::ItemFilter;
+use kilt_support::{deposit::HFIdentifier, traits::ItemFilter};
 use pallet_did_lookup::linkable_account::LinkableAccountId;
 pub use parachain_staking::InflationInfo;
 pub use public_credentials;
@@ -197,8 +197,8 @@ impl pallet_indices::Config for Runtime {
 impl pallet_balances::Config for Runtime {
 	/// The type for recording an account's balance.
 	type Balance = Balance;
-	type FreezeIdentifier = ();
-	type HoldIdentifier = ();
+	type FreezeIdentifier = HFIdentifier;
+	type HoldIdentifier = HFIdentifier;
 	type MaxFreezes = ();
 	type MaxHolds = ();
 
