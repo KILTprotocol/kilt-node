@@ -357,7 +357,7 @@ impl<T: Config> DidDetails<T> {
 					owner: self.deposit.owner.clone(),
 					amount: deposit_to_release,
 				};
-				kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&deposit);
+				kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&deposit)?;
 				self.deposit.amount = self.deposit.amount.saturating_sub(deposit_to_release);
 			}
 			_ => (),

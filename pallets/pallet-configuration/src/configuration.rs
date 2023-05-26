@@ -16,32 +16,22 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-pub mod attestation;
-pub mod ctype;
-pub mod delegation;
-pub mod did;
-pub mod frame_system;
-pub mod pallet_balances;
-pub mod pallet_collective;
-pub mod pallet_configuration;
-pub mod pallet_democracy;
-pub mod pallet_did_lookup;
-pub mod pallet_indices;
-pub mod pallet_inflation;
-pub mod pallet_membership;
-pub mod pallet_multisig;
-pub mod pallet_preimage;
-pub mod pallet_proxy;
-pub mod pallet_scheduler;
-pub mod pallet_session;
-pub mod pallet_timestamp;
-pub mod pallet_tips;
-pub mod pallet_treasury;
-pub mod pallet_utility;
-pub mod pallet_vesting;
-pub mod pallet_web3_names;
-pub mod pallet_xcm;
-pub mod parachain_staking;
-pub mod public_credentials;
+use frame_support::RuntimeDebug;
+use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
+use scale_info::TypeInfo;
 
-pub mod rocksdb_weights;
+/// Configuration for the runtime.
+#[derive(Clone, Encode, Decode, RuntimeDebug, MaxEncodedLen, Eq, PartialEq, TypeInfo)]
+pub struct Configuration {
+	/// Enables the check that the blocknumber of the relay chain strictly
+	/// increases.
+	pub relay_block_strictly_increasing: bool,
+}
+
+impl Default for Configuration {
+	fn default() -> Self {
+		Self {
+			relay_block_strictly_increasing: true,
+		}
+	}
+}

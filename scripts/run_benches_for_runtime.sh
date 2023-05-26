@@ -36,6 +36,10 @@ pallets=(
 	public-credentials
 )
 
+if [ "$runtime" = "peregrine" ]; then
+  pallets+="pallet-configuration"
+fi
+
 echo "[+] Running all runtime benchmarks for $runtime --chain=$chain"
 
 cargo build $standard_args

@@ -553,19 +553,6 @@ pub mod pallet {
 			ensure!(sender == details.submitter, BadOrigin);
 			let did_identifier = details.did.clone();
 
-<<<<<<< HEAD
-			// Check the free balance before we do any heavy work.
-			ensure!(
-				<T::Currency as InspectHold<AccountIdOf<T>>>::can_hold(
-					&HFIdentifier::Deposit,
-					&sender,
-					<T as Config>::Deposit::get()
-				),
-				Error::<T>::UnableToPayFees
-			);
-
-=======
->>>>>>> chore/polkadot-0.9.41
 			// Make sure that DIDs cannot be created again after they have been deleted.
 			ensure!(
 				!DidBlacklist::<T>::contains_key(&did_identifier),
@@ -595,26 +582,20 @@ pub mod pallet {
 			let did_entry = DidDetails::from_creation_details(*details, account_did_auth_key, &did_identifier)
 				.map_err(Error::<T>::from)?;
 
-<<<<<<< HEAD
-			kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
-				did_entry.deposit.owner.clone(),
-				did_entry.deposit.amount,
-			)?;
-=======
 			Did::<T>::insert(&did_identifier, did_entry.clone());
->>>>>>> chore/polkadot-0.9.41
 
 			// Withdraw the fee. We made sure that enough balance is available. But if this
 			// fails, we don't withdraw anything.
-			let imbalance = <T::Currency as Currency<AccountIdOf<T>>>::withdraw(
-				/// !TODO!
-				&did_entry.deposit.owner,
-				T::Fee::get(),
-				WithdrawReasons::FEE,
-				ExistenceRequirement::AllowDeath,
-			)
-			.unwrap_or_else(|_| NegativeImbalanceOf::<T>::zero());
-			T::FeeCollector::on_unbalanced(imbalance);
+			// let imbalance = <T::Currency as Currency<AccountIdOf<T>>>::withdraw(
+			// 	/// !TODO!
+			// 	&did_entry.deposit.owner,
+			// 	T::Fee::get(),
+			// 	WithdrawReasons::FEE,
+			// 	ExistenceRequirement::AllowDeath,
+			// )
+			// .unwrap_or_else(|_| NegativeImbalanceOf::<T>::zero());
+			// T::FeeCollector::on_unbalanced(imbalance);
+
 			Self::deposit_event(Event::DidCreated(sender, did_identifier));
 
 			Ok(())
@@ -1267,7 +1248,7 @@ pub mod pallet {
 			let did_entry = Did::<T>::take(&did_subject).ok_or(Error::<T>::NotFound)?;
 
 			DidEndpointsCount::<T>::remove(&did_subject);
-			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&did_entry.deposit);
+			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&did_entry.deposit)?;
 			// Mark as deleted to prevent potential replay-attacks of re-adding a previously
 			// deleted DID.
 			DidBlacklist::<T>::insert(&did_subject, ());
@@ -1291,18 +1272,13 @@ pub mod pallet {
 			Ok(did_entry.deposit)
 		}
 
-<<<<<<< HEAD
-		fn deposit_amount(_key: &DidIdentifierOf<T>) -> <Self::Currency as Inspect<AccountIdOf<T>>>::Balance {
-			T::Deposit::get()
-=======
-		fn deposit_amount(key: &DidIdentifierOf<T>) -> <Self::Currency as Currency<AccountIdOf<T>>>::Balance {
+		fn deposit_amount(key: &DidIdentifierOf<T>) -> <Self::Currency as Inspect<AccountIdOf<T>>>::Balance {
 			let did_entry = Did::<T>::get(key);
 			match did_entry {
 				Some(entry) => entry.calculate_deposit(key),
 				// If there is no entry return 0
 				_ => Zero::zero(),
 			}
->>>>>>> chore/polkadot-0.9.41
 		}
 
 		fn store_deposit(

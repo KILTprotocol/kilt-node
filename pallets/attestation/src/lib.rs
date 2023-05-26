@@ -150,8 +150,6 @@ pub mod pallet {
 	#[pallet::storage_version(STORAGE_VERSION)]
 	pub struct Pallet<T>(_);
 
-<<<<<<< HEAD
-=======
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
 		#[cfg(feature = "try-runtime")]
@@ -160,7 +158,6 @@ pub mod pallet {
 		}
 	}
 
->>>>>>> chore/polkadot-0.9.41
 	/// Attestations stored on chain.
 	///
 	/// It maps from a claim hash to the full attestation.
