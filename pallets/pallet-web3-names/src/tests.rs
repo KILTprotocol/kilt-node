@@ -20,7 +20,7 @@ use frame_support::{assert_noop, assert_ok, BoundedVec};
 
 use frame_system::RawOrigin;
 use kilt_support::{deposit::Deposit, mock::mock_origin};
-use sp_runtime::{traits::Zero, DispatchError};
+use sp_runtime::{traits::Zero, DispatchError, TokenError};
 
 use crate::{mock::*, Banned, Config, Error, Names, Owner, Pallet, Web3OwnershipOf};
 
@@ -400,7 +400,7 @@ fn test_change_deposit_owner_insufficient_balance() {
 		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				Pallet::<Test>::change_deposit_owner(mock_origin::DoubleOrigin(ACCOUNT_01, DID_00).into()),
-				pallet_balances::Error::<Test>::InsufficientBalance
+				TokenError::CannotCreateHold
 			);
 		})
 }

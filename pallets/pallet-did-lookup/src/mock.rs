@@ -24,11 +24,11 @@ use kilt_support::{
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
-	MultiSignature,
+	MultiSignature, SaturatedConversion,
 };
 
 use crate::{
-	self as pallet_did_lookup, linkable_account::LinkableAccountId, AccountIdOf, BalanceOf, Config, ConnectedAccounts,
+	self as pallet_did_lookup, linkable_account::LinkableAccountId, AccountIdOf, Config, ConnectedAccounts,
 	ConnectedDids, ConnectionRecord, CurrencyOf, DidIdentifierOf,
 };
 
@@ -91,13 +91,15 @@ parameter_types! {
 	pub const ExistentialDeposit: Balance = 10;
 	pub const MaxLocks: u32 = 50;
 	pub const MaxReserves: u32 = 50;
+	pub const MaxHolds: u32 = 50;
+	pub const MaxFreezes: u32 = 50;
 }
 
 impl pallet_balances::Config for Test {
 	type FreezeIdentifier = HFIdentifier;
 	type HoldIdentifier = HFIdentifier;
-	type MaxFreezes = ();
-	type MaxHolds = ();
+	type MaxFreezes = MaxFreezes;
+	type MaxHolds = MaxHolds;
 	type Balance = Balance;
 	type DustRemoval = ();
 	type RuntimeEvent = RuntimeEvent;
@@ -142,7 +144,7 @@ pub(crate) fn insert_raw_connection<T: Config>(
 	sender: AccountIdOf<T>,
 	did_identifier: DidIdentifierOf<T>,
 	account: LinkableAccountId,
-	deposit: BalanceOf<T>,
+	deposit: Balance,
 ) {
 	let deposit = Deposit {
 		owner: sender,
@@ -153,13 +155,21 @@ pub(crate) fn insert_raw_connection<T: Config>(
 		did: did_identifier.clone(),
 	};
 
-	CurrencyOf::<T>::hold(&HFIdentifier::Deposit, &record.deposit.owner, record.deposit.amount)
-		.expect("Account should have enough balance");
+	CurrencyOf::<T>::hold(
+		&HFIdentifier::Deposit,
+		&record.deposit.owner,
+		record.deposit.amount.saturated_into(),
+	)
+	.expect("Account should have enough balance");
 
 	ConnectedDids::<T>::mutate(&account, |did_entry| {
 		if let Some(old_connection) = did_entry.replace(record) {
 			ConnectedAccounts::<T>::remove(&old_connection.did, &account);
-			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&old_connection.deposit);
+			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&Deposit {
+				owner: old_connection.deposit.owner,
+				amount: old_connection.deposit.amount.saturated_into(),
+			})
+			.expect("Could not release deposit of account");
 		}
 	});
 	ConnectedAccounts::<T>::insert(&did_identifier, &account, ());

@@ -52,6 +52,7 @@ impl<T: frame_system::Config> pallet_balances::WeightInfo for WeightInfo<T> {
 	fn transfer_allow_death() -> sp_weights::Weight { todo!() }
 	fn force_set_balance_creating() -> sp_weights::Weight { todo!() }
 	fn force_set_balance_killing() -> sp_weights::Weight { todo!() }
+	fn force_transfer() -> sp_weights::Weight { todo!() }
 	fn upgrade_accounts(_: u32) -> sp_weights::Weight { todo!() }
 	// Storage: System Account (r:2 w:2)
 	// Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
@@ -69,11 +70,7 @@ impl<T: frame_system::Config> pallet_balances::WeightInfo for WeightInfo<T> {
 	// Storage: System Account (r:1 w:1)
 	// Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
  
-
-	fn set_balance_creating() -> Weight {
-		Weight::from_parts(49_562_000 as u64, 0)
-			.saturating_add(T::DbWeight::get().writes(1 as u64))
-	}
+ 
 	// Storage: System Account (r:1 w:1)
 	// Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
 	// Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)

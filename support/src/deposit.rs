@@ -21,7 +21,7 @@ use frame_support::{pallet_prelude::DispatchResult, traits::fungible::hold::Muta
 use frame_support::traits::tokens::Precision;
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
-use sp_runtime::{traits::Zero, DispatchError};
+use sp_runtime::DispatchError;
 
 #[derive(Clone, Debug, Encode, Decode, Eq, PartialEq, Ord, PartialOrd, TypeInfo, MaxEncodedLen, Copy)]
 pub enum HFIdentifier {
@@ -42,7 +42,8 @@ pub fn reserve_deposit<Account, Currency: Mutate<Account, Reason = HFIdentifier>
 	account: Account,
 	deposit_amount: Currency::Balance,
 ) -> Result<Deposit<Account, Currency::Balance>, DispatchError> {
-	Currency::hold(&HFIdentifier::Deposit, &account, deposit_amount)?;
+	let q = Currency::hold(&HFIdentifier::Deposit, &account, deposit_amount);
+	q?;
 	Ok(Deposit {
 		owner: account,
 		amount: deposit_amount,
@@ -52,7 +53,6 @@ pub fn reserve_deposit<Account, Currency: Mutate<Account, Reason = HFIdentifier>
 pub fn free_deposit<Account, Currency: Mutate<Account, Reason = HFIdentifier>>(
 	deposit: &Deposit<Account, Currency::Balance>,
 ) -> DispatchResult {
-	let err_amount = Currency::release(&HFIdentifier::Deposit, &deposit.owner, deposit.amount, Precision::Exact)?;
-	debug_assert!(err_amount.is_zero());
+	Currency::release(&HFIdentifier::Deposit, &deposit.owner, deposit.amount, Precision::Exact)?;
 	Ok(())
 }

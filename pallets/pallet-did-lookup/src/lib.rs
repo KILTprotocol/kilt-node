@@ -60,7 +60,7 @@ pub mod pallet {
 		traits::{
 			fungible::{InspectHold, MutateHold},
 			tokens::fungible::Inspect,
-			Currency, ReservableCurrency, StorageVersion,
+			ReservableCurrency, StorageVersion,
 		},
 	};
 	use frame_system::pallet_prelude::*;
@@ -68,8 +68,10 @@ pub mod pallet {
 		deposit::{Deposit, HFIdentifier},
 		traits::{CallSources, StorageDepositCollector},
 	};
+	use runtime_common::Balance;
+	use sp_runtime::SaturatedConversion;
 
-	use sp_runtime::traits::BlockNumberProvider;
+	use sp_runtime::traits::{BlockNumberProvider, MaybeSerializeDeserialize};
 
 	pub use crate::connection_record::ConnectionRecord;
 
@@ -79,14 +81,11 @@ pub mod pallet {
 	/// The identifier to which the accounts can be associated.
 	pub(crate) type DidIdentifierOf<T> = <T as Config>::DidIdentifier;
 
-	/// The type used to describe a balance.
-	pub(crate) type BalanceOf<T> = <<T as Config>::Currency as Inspect<AccountIdOf<T>>>::Balance;
-
 	/// The currency module that keeps track of balances.
 	pub(crate) type CurrencyOf<T> = <T as Config>::Currency;
 
 	/// The connection record type.
-	pub(crate) type ConnectionRecordOf<T> = ConnectionRecord<DidIdentifierOf<T>, AccountIdOf<T>, BalanceOf<T>>;
+	pub(crate) type ConnectionRecordOf<T> = ConnectionRecord<DidIdentifierOf<T>, AccountIdOf<T>, Balance>;
 
 	pub const STORAGE_VERSION: StorageVersion = StorageVersion::new(4);
 
@@ -110,7 +109,7 @@ pub mod pallet {
 		/// to incentivise fair use of the on chain storage. The deposit can be
 		/// reclaimed when the DID is deleted.
 		#[pallet::constant]
-		type Deposit: Get<BalanceOf<Self>>;
+		type Deposit: Get<Balance>;
 
 		/// Weight information for extrinsics in this pallet.
 		type WeightInfo: WeightInfo;
@@ -253,7 +252,7 @@ pub mod pallet {
 				<T::Currency as InspectHold<AccountIdOf<T>>>::can_hold(
 					&HFIdentifier::Deposit,
 					&sender,
-					<T as Config>::Deposit::get()
+					<T as Config>::Deposit::get().saturated_into()
 				),
 				Error::<T>::InsufficientFunds
 			);
@@ -288,7 +287,7 @@ pub mod pallet {
 				<T::Currency as InspectHold<AccountIdOf<T>>>::can_hold(
 					&HFIdentifier::Deposit,
 					&source.sender(),
-					<T as Config>::Deposit::get()
+					<T as Config>::Deposit::get().saturated_into()
 				),
 				Error::<T>::InsufficientFunds
 			);
@@ -413,14 +412,17 @@ pub mod pallet {
 
 			kilt_support::deposit::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
 				record.deposit.owner.clone(),
-				record.deposit.amount,
+				record.deposit.amount.saturated_into(),
 			)?;
 
 			ConnectedDids::<T>::mutate(&account, |did_entry| -> DispatchResult {
 				if let Some(old_connection) = did_entry.replace(record) {
 					ConnectedAccounts::<T>::remove(&old_connection.did, &account);
 					Self::deposit_event(Event::<T>::AssociationRemoved(account.clone(), old_connection.did));
-					kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&old_connection.deposit)?;
+					kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&Deposit {
+						owner: old_connection.deposit.owner,
+						amount: old_connection.deposit.amount.saturated_into(),
+					})?;
 				}
 				Ok(())
 			})?;
@@ -433,7 +435,10 @@ pub mod pallet {
 		pub(crate) fn remove_association(account: LinkableAccountId) -> DispatchResult {
 			if let Some(connection) = ConnectedDids::<T>::take(&account) {
 				ConnectedAccounts::<T>::remove(&connection.did, &account);
-				kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&connection.deposit)?;
+				kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&Deposit {
+					owner: connection.deposit.owner,
+					amount: connection.deposit.amount.saturated_into(),
+				})?;
 				Self::deposit_event(Event::AssociationRemoved(account, connection.did));
 
 				Ok(())
@@ -451,11 +456,14 @@ pub mod pallet {
 			key: &LinkableAccountId,
 		) -> Result<Deposit<AccountIdOf<T>, <Self::Currency as Inspect<AccountIdOf<T>>>::Balance>, DispatchError> {
 			let record = ConnectedDids::<T>::get(key).ok_or(Error::<T>::NotFound)?;
-			Ok(record.deposit)
+			Ok(Deposit {
+				owner: record.deposit.owner,
+				amount: record.deposit.amount.saturated_into(),
+			})
 		}
 
 		fn deposit_amount(_key: &LinkableAccountId) -> <Self::Currency as Inspect<AccountIdOf<T>>>::Balance {
-			T::Deposit::get()
+			T::Deposit::get().saturated_into()
 		}
 
 		fn store_deposit(
@@ -463,7 +471,16 @@ pub mod pallet {
 			deposit: Deposit<AccountIdOf<T>, <Self::Currency as Inspect<AccountIdOf<T>>>::Balance>,
 		) -> Result<(), DispatchError> {
 			let record = ConnectedDids::<T>::get(key).ok_or(Error::<T>::NotFound)?;
-			ConnectedDids::<T>::insert(key, ConnectionRecord { deposit, ..record });
+			ConnectedDids::<T>::insert(
+				key,
+				ConnectionRecord {
+					deposit: Deposit {
+						owner: deposit.owner,
+						amount: deposit.amount.saturated_into(),
+					},
+					..record
+				},
+			);
 
 			Ok(())
 		}

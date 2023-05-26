@@ -119,10 +119,7 @@ use frame_support::{
 	dispatch::{DispatchError, DispatchResult, Dispatchable, GetDispatchInfo, PostDispatchInfo},
 	ensure,
 	storage::types::StorageMap,
-	traits::{
-		fungible::{Inspect, InspectHold, MutateHold},
-		Get, OnUnbalanced, WithdrawReasons,
-	},
+	traits::{Get, OnUnbalanced, WithdrawReasons},
 	Parameter,
 };
 use frame_system::ensure_signed;
@@ -142,7 +139,10 @@ pub mod pallet {
 	use crate::service_endpoints::utils as service_endpoints_utils;
 	use frame_support::{
 		pallet_prelude::*,
-		traits::{Currency, ExistenceRequirement, Imbalance, ReservableCurrency, StorageVersion},
+		traits::{
+			fungible::{Inspect, InspectHold, MutateHold},
+			Currency, ExistenceRequirement, Imbalance, ReservableCurrency, StorageVersion,
+		},
 	};
 	use frame_system::pallet_prelude::*;
 	use kilt_support::{

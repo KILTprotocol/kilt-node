@@ -22,6 +22,7 @@ pub mod runtime {
 		ord_parameter_types, parameter_types, traits::AsEnsureOriginWithArg, weights::constants::RocksDbWeight,
 	};
 	use frame_system::EnsureSignedBy;
+	use kilt_support::deposit::HFIdentifier;
 	use sp_runtime::{
 		testing::Header,
 		traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
@@ -90,9 +91,15 @@ pub mod runtime {
 		pub const ExistentialDeposit: Balance = 500;
 		pub const MaxLocks: u32 = 50;
 		pub const MaxReserves: u32 = 50;
+		pub const MaxHolds: u32 = 50;
+		pub const MaxFreezes: u32 = 50;
 	}
 
 	impl pallet_balances::Config for Test {
+		type FreezeIdentifier = HFIdentifier;
+		type HoldIdentifier = HFIdentifier;
+		type MaxFreezes = MaxFreezes;
+		type MaxHolds = MaxHolds;
 		type Balance = Balance;
 		type DustRemoval = ();
 		type RuntimeEvent = ();

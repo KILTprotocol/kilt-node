@@ -22,6 +22,9 @@ pallet-balances = {workspace = true}
 
 [dependencies]
 
+# Internal dependencies 
+kilt-support.workspace = true
+
 # Substrate dependencies
 parity-scale-codec = {workspace = true, features = ["derive"]}
 scale-info = {workspace = true, features = ["derive"]}

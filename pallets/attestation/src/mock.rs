@@ -249,13 +249,15 @@ pub(crate) mod runtime {
 		pub const ExistentialDeposit: Balance = MILLI_UNIT;
 		pub const MaxLocks: u32 = 50;
 		pub const MaxReserves: u32 = 50;
+		pub const MaxFreezes: u32 = 50;
+		pub const MaxHolds : u32 = 50;
 	}
 
 	impl pallet_balances::Config for Test {
 		type FreezeIdentifier = HFIdentifier;
 		type HoldIdentifier = HFIdentifier;
-		type MaxFreezes = ();
-		type MaxHolds = ();
+		type MaxFreezes = MaxFreezes;
+		type MaxHolds = MaxHolds;
 		type Balance = Balance;
 		type DustRemoval = ();
 		type RuntimeEvent = ();

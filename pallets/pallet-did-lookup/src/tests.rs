@@ -23,7 +23,7 @@ use sha3::{Digest, Keccak256};
 use sp_runtime::{
 	app_crypto::{ecdsa, sr25519, Pair},
 	traits::{IdentifyAccount, Zero},
-	MultiSignature, MultiSigner,
+	MultiSignature, MultiSigner, TokenError,
 };
 
 use crate::{
@@ -448,7 +448,7 @@ fn test_change_deposit_owner_insufficient_balance() {
 					mock_origin::DoubleOrigin(ACCOUNT_01, DID_00).into(),
 					ACCOUNT_00.into()
 				),
-				pallet_balances::Error::<Test>::InsufficientBalance
+				TokenError::CannotCreateHold
 			);
 		})
 }

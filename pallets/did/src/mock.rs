@@ -18,7 +18,7 @@
 
 use frame_support::{
 	parameter_types,
-	traits::{Currency, OnUnbalanced, ReservableCurrency},
+	traits::{fungible::MutateHold, Currency, OnUnbalanced},
 	weights::constants::RocksDbWeight,
 };
 use frame_system::EnsureSigned;
@@ -171,13 +171,15 @@ parameter_types! {
 	pub const ExistentialDeposit: Balance = 500;
 	pub const MaxLocks: u32 = 50;
 	pub const MaxReserves: u32 = 50;
+	pub const MaxHolds: u32 = 50;
+	pub const MaxFreezes: u32 = 50;
 }
 
 impl pallet_balances::Config for Test {
 	type FreezeIdentifier = HFIdentifier;
 	type HoldIdentifier = HFIdentifier;
-	type MaxFreezes = ();
-	type MaxHolds = ();
+	type MaxFreezes = MaxFreezes;
+	type MaxHolds = MaxHolds;
 	type Balance = Balance;
 	type DustRemoval = ();
 	type RuntimeEvent = ();
@@ -495,7 +497,7 @@ impl ExtBuilder {
 
 			for did in self.dids_stored.iter() {
 				did::Did::<Test>::insert(&did.0, did.1.clone());
-				CurrencyOf::<Test>::reserve(&did.1.deposit.owner, did.1.deposit.amount)
+				CurrencyOf::<Test>::hold(&HFIdentifier::Deposit, &did.1.deposit.owner, did.1.deposit.amount)
 					.expect("Deposit owner should have enough balance");
 			}
 			for did in self.deleted_dids.iter() {
