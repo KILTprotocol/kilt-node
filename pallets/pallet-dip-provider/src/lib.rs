@@ -28,7 +28,7 @@ pub use crate::pallet::*;
 pub mod pallet {
 	use super::*;
 
-	use frame_support::{pallet_prelude::*, weights::Weight};
+	use frame_support::{pallet_prelude::*, traits::EnsureOrigin, weights::Weight};
 	use frame_system::pallet_prelude::*;
 	use sp_std::{boxed::Box, fmt::Debug};
 	use xcm::{latest::prelude::*, VersionedMultiAsset, VersionedMultiLocation};
@@ -44,6 +44,7 @@ pub mod pallet {
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
+		type CommitOrigin: EnsureOrigin<Self::RuntimeOrigin>;
 		type Identifier: Parameter;
 		type IdentityProofGenerator: IdentityProofGenerator<
 			Self::Identifier,
@@ -90,7 +91,7 @@ pub mod pallet {
 			weight: Weight,
 		) -> DispatchResult {
 			// TODO: Charge the dispatcher based on the destination weight configuration
-			ensure_signed(origin)?;
+			T::CommitOrigin::ensure_origin(origin)?;
 
 			let destination: MultiLocation = (*destination).try_into().map_err(|_| Error::<T>::BadVersion)?;
 			let action: IdentityProofActionOf<T> = match T::IdentityProvider::retrieve(&identifier) {
