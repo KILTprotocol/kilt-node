@@ -46,7 +46,7 @@ use dip_consumer_runtime_template::{
 	BlockNumber, DidIdentifier, DidLookup, DipConsumer, Runtime as ConsumerRuntime, RuntimeCall as ConsumerRuntimeCall,
 	RuntimeEvent, System,
 };
-use dip_provider_runtime_template::{AccountId as ProviderAccountId, DipProvider, Runtime as ProviderRuntime};
+use dip_provider_runtime_template::{DipProvider, Runtime as ProviderRuntime};
 
 #[test]
 fn commit_identity() {
@@ -57,7 +57,7 @@ fn commit_identity() {
 	// 1. Send identity commitment from DIP provider to DIP consumer.
 	ProviderParachain::execute_with(|| {
 		assert_ok!(DipProvider::commit_identity(
-			RawOrigin::Signed(ProviderAccountId::from([0u8; 32])).into(),
+			RawOrigin::Root.into(),
 			did.clone(),
 			Box::new(ParentThen(X1(Parachain(para::consumer::PARA_ID))).into()),
 			Box::new((Here, 1_000_000_000).into()),
