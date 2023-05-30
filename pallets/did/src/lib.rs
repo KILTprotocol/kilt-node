@@ -140,7 +140,7 @@ pub mod pallet {
 	use frame_support::{
 		pallet_prelude::*,
 		traits::{
-			fungible::{Inspect, InspectHold, MutateHold},
+			fungible::{Inspect, MutateHold},
 			Currency, ExistenceRequirement, Imbalance, ReservableCurrency, StorageVersion,
 		},
 	};
@@ -586,15 +586,15 @@ pub mod pallet {
 
 			// Withdraw the fee. We made sure that enough balance is available. But if this
 			// fails, we don't withdraw anything.
-			// let imbalance = <T::Currency as Currency<AccountIdOf<T>>>::withdraw(
-			// 	/// !TODO!
-			// 	&did_entry.deposit.owner,
-			// 	T::Fee::get(),
-			// 	WithdrawReasons::FEE,
-			// 	ExistenceRequirement::AllowDeath,
-			// )
-			// .unwrap_or_else(|_| NegativeImbalanceOf::<T>::zero());
-			// T::FeeCollector::on_unbalanced(imbalance);
+
+			let imbalance = <T::Currency as Currency<AccountIdOf<T>>>::withdraw(
+				&did_entry.deposit.owner,
+				T::Fee::get().saturated_into::<u128>().saturated_into(),
+				WithdrawReasons::FEE,
+				ExistenceRequirement::AllowDeath,
+			)
+			.unwrap_or_else(|_| NegativeImbalanceOf::<T>::zero());
+			T::FeeCollector::on_unbalanced(imbalance);
 
 			Self::deposit_event(Event::DidCreated(sender, did_identifier));
 

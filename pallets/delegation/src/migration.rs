@@ -25,18 +25,18 @@ use log;
 use sp_runtime::SaturatedConversion;
 use sp_std::marker::PhantomData;
 
-use crate::{AccountIdOf, AttestationDetails, Attestations, Config, CurrencyOf};
+use crate::{AccountIdOf, Config, CurrencyOf, DelegationNode, DelegationNodes};
 
 pub struct BalanceMigration<T>(PhantomData<T>);
 
 impl<T: crate::pallet::Config> OnRuntimeUpgrade for BalanceMigration<T> {
 	fn on_runtime_upgrade() -> frame_support::weights::Weight {
-		log::info!("Attestation: Initiating migration");
+		log::info!("Delegation: Initiating migration");
 		if ensure_upgraded::<T>() {
 			return do_migration::<T>();
 		}
 
-		log::info!("Attestation: No migration needed. This file should be deleted.");
+		log::info!("Delegation: No migration needed. This file should be deleted.");
 		<T as frame_system::Config>::DbWeight::get().reads_writes(0, 0)
 	}
 
@@ -45,8 +45,8 @@ impl<T: crate::pallet::Config> OnRuntimeUpgrade for BalanceMigration<T> {
 		use frame_support::ensure;
 		use sp_std::vec;
 
-		let has_one_user_holds = Attestations::<T>::iter_values()
-			.map(|details: AttestationDetails<T>| {
+		let has_one_user_holds = DelegationNodes::<T>::iter_values()
+			.map(|details: DelegationNode<T>| {
 				has_user_holds_and_no_reserves::<AccountIdOf<T>, CurrencyOf<T>>(&details.deposit.owner)
 			})
 			.all(|user| !user);
@@ -61,8 +61,8 @@ impl<T: crate::pallet::Config> OnRuntimeUpgrade for BalanceMigration<T> {
 	fn post_upgrade(_pre_state: sp_std::vec::Vec<u8>) -> Result<(), &'static str> {
 		use frame_support::ensure;
 
-		let has_all_user_holds = Attestations::<T>::iter_values()
-			.map(|details: AttestationDetails<T>| {
+		let has_all_user_holds = DelegationNodes::<T>::iter_values()
+			.map(|details: DelegationNode<T>| {
 				has_user_holds_and_no_reserves::<AccountIdOf<T>, CurrencyOf<T>>(&details.deposit.owner)
 			})
 			.all(|user| user);
@@ -77,17 +77,17 @@ impl<T: crate::pallet::Config> OnRuntimeUpgrade for BalanceMigration<T> {
 /// Checks if there is an user, who has still reserved balance and no holds. If
 /// yes, the migration is not executed yet.
 fn ensure_upgraded<T: Config>() -> bool {
-	Attestations::<T>::iter_values()
-		.map(|details: AttestationDetails<T>| {
+	DelegationNodes::<T>::iter_values()
+		.map(|details: DelegationNode<T>| {
 			has_user_holds_and_no_reserves::<AccountIdOf<T>, CurrencyOf<T>>(&details.deposit.owner)
 		})
 		.any(|user| !user)
 }
 
 fn do_migration<T: Config>() -> Weight {
-	Attestations::<T>::iter()
-		.map(|(key, attestations_detail)| -> Weight {
-			let deposit = attestations_detail.deposit;
+	DelegationNodes::<T>::iter()
+		.map(|(key, delegation_detail)| -> Weight {
+			let deposit = delegation_detail.deposit;
 			let error = switch_reserved_to_hold::<AccountIdOf<T>, CurrencyOf<T>>(
 				deposit.owner,
 				deposit.amount.saturated_into(),
@@ -98,7 +98,7 @@ fn do_migration<T: Config>() -> Weight {
 			}
 
 			log::error!(
-				" Attestation: Could not convert reserves to hold from attestation: {:?} ",
+				" Delegation: Could not convert reserves to hold from delegation: {:?} ",
 				key
 			);
 

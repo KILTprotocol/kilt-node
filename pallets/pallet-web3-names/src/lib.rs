@@ -28,6 +28,7 @@ mod default_weights;
 #[cfg(any(test, feature = "runtime-benchmarks"))]
 mod mock;
 
+mod migration;
 #[cfg(any(test, feature = "try-runtime"))]
 mod try_state;
 
