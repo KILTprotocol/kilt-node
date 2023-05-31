@@ -68,7 +68,6 @@ pub mod pallet {
 		traits::{CallSources, StorageDepositCollector},
 	};
 	use runtime_common::Balance;
-	use sp_runtime::SaturatedConversion;
 
 	use sp_runtime::traits::BlockNumberProvider;
 
@@ -289,7 +288,7 @@ pub mod pallet {
 				<T::Currency as InspectHold<AccountIdOf<T>>>::can_hold(
 					&HFIdentifier::Deposit,
 					&source.sender(),
-					<T as Config>::Deposit::get().saturated_into()
+					<T as Config>::Deposit::get()
 				),
 				Error::<T>::InsufficientFunds
 			);
@@ -414,7 +413,7 @@ pub mod pallet {
 
 			kilt_support::deposit::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
 				record.deposit.owner.clone(),
-				record.deposit.amount.saturated_into(),
+				record.deposit.amount,
 			)?;
 
 			ConnectedDids::<T>::mutate(&account, |did_entry| -> DispatchResult {
