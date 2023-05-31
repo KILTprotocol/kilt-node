@@ -81,12 +81,7 @@ mod try_state;
 
 pub use crate::{access_control::DelegationAc, default_weights::WeightInfo, delegation_hierarchy::*, pallet::*};
 
-use frame_support::{
-	dispatch::DispatchResult,
-	ensure,
-	pallet_prelude::Weight,
-	traits::{Get, ReservableCurrency},
-};
+use frame_support::{dispatch::DispatchResult, ensure, pallet_prelude::Weight, traits::Get};
 use kilt_support::traits::StorageDepositCollector;
 use parity_scale_codec::Encode;
 use sp_runtime::{traits::Hash, DispatchError};
@@ -99,7 +94,7 @@ pub mod pallet {
 	use frame_support::{
 		pallet_prelude::*,
 		traits::{
-			fungible::{Inspect, Mutate, MutateHold},
+			fungible::{Inspect, MutateHold},
 			StorageVersion,
 		},
 	};
@@ -155,9 +150,7 @@ pub mod pallet {
 		type WeightInfo: WeightInfo;
 
 		/// The currency that is used to reserve funds for each delegation.
-		type Currency: ReservableCurrency<AccountIdOf<Self>>
-			+ Mutate<AccountIdOf<Self>>
-			+ MutateHold<AccountIdOf<Self>, Reason = HFIdentifier>;
+		type Currency: MutateHold<AccountIdOf<Self>, Reason = HFIdentifier>;
 
 		/// The deposit that is required for storing a delegation.
 		#[pallet::constant]

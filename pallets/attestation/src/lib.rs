@@ -88,11 +88,7 @@ pub mod pallet {
 	use frame_support::{
 		dispatch::{DispatchResult, DispatchResultWithPostInfo},
 		pallet_prelude::*,
-		traits::{
-			fungible::{Mutate, MutateHold},
-			tokens::fungible::Inspect,
-			Get, ReservableCurrency, StorageVersion,
-		},
+		traits::{fungible::MutateHold, tokens::fungible::Inspect, Get, StorageVersion},
 	};
 	use frame_system::pallet_prelude::*;
 
@@ -131,9 +127,7 @@ pub mod pallet {
 		type WeightInfo: WeightInfo;
 
 		/// The currency that is used to hold funds for each attestation.
-		type Currency: ReservableCurrency<AccountIdOf<Self>>
-			+ MutateHold<AccountIdOf<Self>, Reason = HFIdentifier>
-			+ Mutate<AccountIdOf<Self>>;
+		type Currency: MutateHold<AccountIdOf<Self>, Reason = HFIdentifier>;
 
 		/// The deposit that is required for storing an attestation.
 		#[pallet::constant]

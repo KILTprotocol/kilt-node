@@ -50,7 +50,10 @@ const SEED: u32 = 0;
 
 // Free 2x deposit amount + existential deposit so that we can use this function
 // to link an account two times to two different DIDs.
-fn make_free_for_did<T: Config>(account: &AccountIdOf<T>) {
+fn make_free_for_did<T: Config>(account: &AccountIdOf<T>)
+where
+	<T as Config>::Currency: Mutate<T::AccountId>,
+{
 	let balance = <CurrencyOf<T> as Inspect<AccountIdOf<T>>>::minimum_balance()
 		+ <T as Config>::Deposit::get()
 		+ <T as Config>::Deposit::get();
@@ -63,6 +66,7 @@ benchmarks! {
 		T::AccountId: From<sr25519::Public> + From<ed25519::Public> + Into<LinkableAccountId> + Into<AccountId32> + From<sp_runtime::AccountId32>,
 		T::DidIdentifier: From<T::AccountId>,
 		T::EnsureOrigin: GenerateBenchmarkOrigin<T::RuntimeOrigin, T::AccountId, T::DidIdentifier>,
+		<T as Config>::Currency: Mutate<T::AccountId>,
 	}
 
 	associate_account_multisig_sr25519 {

@@ -140,7 +140,7 @@ pub mod pallet {
 	use frame_support::{
 		pallet_prelude::*,
 		traits::{
-			fungible::{Inspect, Mutate, MutateHold},
+			fungible::{Inspect, MutateHold},
 			Currency, ExistenceRequirement, Imbalance, ReservableCurrency, StorageVersion,
 		},
 	};
@@ -220,9 +220,7 @@ pub mod pallet {
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
 		/// The currency that is used to reserve funds for each did.
-		type Currency: ReservableCurrency<AccountIdOf<Self>>
-			+ MutateHold<AccountIdOf<Self>, Reason = HFIdentifier>
-			+ Mutate<AccountIdOf<Self>>;
+		type Currency: ReservableCurrency<AccountIdOf<Self>> + MutateHold<AccountIdOf<Self>, Reason = HFIdentifier>;
 
 		/// The amount of balance that will be taken for each DID as a deposit
 		/// to incentivise fair use of the on chain storage. The deposits

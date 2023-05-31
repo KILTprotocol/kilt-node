@@ -17,7 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_support::{
-	traits::{Get, OnRuntimeUpgrade},
+	traits::{Get, OnRuntimeUpgrade, ReservableCurrency},
 	weights::Weight,
 };
 use kilt_support::migration::{has_user_holds_and_no_reserves, switch_reserved_to_hold};
@@ -29,7 +29,10 @@ use crate::{AccountIdOf, AttestationDetails, Attestations, Config, CurrencyOf};
 
 pub struct BalanceMigration<T>(PhantomData<T>);
 
-impl<T: crate::pallet::Config> OnRuntimeUpgrade for BalanceMigration<T> {
+impl<T: crate::pallet::Config> OnRuntimeUpgrade for BalanceMigration<T>
+where
+	<T as Config>::Currency: ReservableCurrency<T::AccountId>,
+{
 	fn on_runtime_upgrade() -> frame_support::weights::Weight {
 		log::info!("Attestation: Initiating migration");
 		if ensure_upgraded::<T>() {
@@ -76,7 +79,10 @@ impl<T: crate::pallet::Config> OnRuntimeUpgrade for BalanceMigration<T> {
 
 /// Checks if there is an user, who has still reserved balance and no holds. If
 /// yes, the migration is not executed yet.
-fn ensure_upgraded<T: Config>() -> bool {
+fn ensure_upgraded<T: Config>() -> bool
+where
+	<T as Config>::Currency: ReservableCurrency<T::AccountId>,
+{
 	Attestations::<T>::iter_values()
 		.map(|details: AttestationDetails<T>| {
 			has_user_holds_and_no_reserves::<AccountIdOf<T>, CurrencyOf<T>>(&details.deposit.owner)
@@ -84,7 +90,10 @@ fn ensure_upgraded<T: Config>() -> bool {
 		.any(|user| !user)
 }
 
-fn do_migration<T: Config>() -> Weight {
+fn do_migration<T: Config>() -> Weight
+where
+	<T as Config>::Currency: ReservableCurrency<T::AccountId>,
+{
 	Attestations::<T>::iter()
 		.map(|(key, attestations_detail)| -> Weight {
 			let deposit = attestations_detail.deposit;

@@ -40,7 +40,10 @@ use crate::{
 const CALLER_SEED: u32 = 0;
 const OWNER_SEED: u32 = 1;
 
-fn make_free_for_did<T: Config>(account: &AccountIdOf<T>) {
+fn make_free_for_did<T: Config>(account: &AccountIdOf<T>)
+where
+	<T as Config>::Currency: Mutate<T::AccountId>,
+{
 	let balance = <CurrencyOf<T> as Inspect<AccountIdOf<T>>>::minimum_balance()
 		+ <T as Config>::Deposit::get()
 		+ <T as Config>::Deposit::get();
@@ -58,6 +61,7 @@ benchmarks! {
 		T::Web3NameOwner: From<T::AccountId>,
 		T::OwnerOrigin: GenerateBenchmarkOrigin<T::RuntimeOrigin, T::AccountId, T::Web3NameOwner>,
 		T::BanOrigin: EnsureOrigin<T::RuntimeOrigin>,
+		<T as Config>::Currency: Mutate<T::AccountId>,
 	}
 
 	claim {

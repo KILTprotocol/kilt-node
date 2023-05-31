@@ -66,6 +66,7 @@ where
 	T::CtypeCreatorId: From<T::DelegationEntityId>,
 	<T as Config>::EnsureOrigin: GenerateBenchmarkOrigin<T::RuntimeOrigin, T::AccountId, T::DelegationEntityId>,
 	T::BlockNumber: From<u64>,
+	<T as Config>::Currency: Mutate<T::AccountId>,
 {
 	log::info!("create delegation root");
 	let root_public = sr25519_generate(KeyTypeId(*b"aura"), None);
@@ -123,6 +124,7 @@ where
 		<<T as Config>::DelegationSignatureVerification as VerifySignature>::Payload,
 	)>,
 	<T as Config>::EnsureOrigin: GenerateBenchmarkOrigin<T::RuntimeOrigin, T::AccountId, T::DelegationEntityId>,
+	<T as Config>::Currency: Mutate<T::AccountId>,
 {
 	if level == 0 {
 		return Ok((parent_acc_public, parent_acc_id, parent_id));
@@ -204,6 +206,7 @@ where
 	)>,
 	<T as Config>::EnsureOrigin: GenerateBenchmarkOrigin<T::RuntimeOrigin, T::AccountId, T::DelegationEntityId>,
 	T::BlockNumber: From<u64>,
+	<T as Config>::Currency: Mutate<T::AccountId>,
 {
 	let (
 		DelegationTriplet::<T> {
@@ -239,7 +242,8 @@ benchmarks! {
 			<<T as Config>::DelegationSignatureVerification as VerifySignature>::Payload,
 		)>,
 		<T as Config>::EnsureOrigin: GenerateBenchmarkOrigin<T::RuntimeOrigin, T::AccountId, T::DelegationEntityId>,
-		T::BlockNumber: From<u64>
+		T::BlockNumber: From<u64>,
+		<T as Config>::Currency: Mutate<T::AccountId>
 	}
 
 	create_hierarchy {

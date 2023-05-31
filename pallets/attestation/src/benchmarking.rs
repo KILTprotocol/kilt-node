@@ -34,7 +34,8 @@ benchmarks! {
 		T: core::fmt::Debug,
 		<T as Config>::EnsureOrigin: GenerateBenchmarkOrigin<T::RuntimeOrigin, T::AccountId, T::AttesterId>,
 		T: ctype::Config<CtypeCreatorId = T::AttesterId>,
-		T::BlockNumber: From<u64>
+		T::BlockNumber: From<u64>,
+		<T as Config>::Currency: Mutate<T::AccountId>
 	}
 
 	add {

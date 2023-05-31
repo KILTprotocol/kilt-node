@@ -58,8 +58,8 @@ pub mod pallet {
 		ensure,
 		pallet_prelude::*,
 		traits::{
-			fungible::{Inspect, InspectHold, Mutate, MutateHold},
-			ReservableCurrency, StorageVersion,
+			fungible::{Inspect, InspectHold, MutateHold},
+			StorageVersion,
 		},
 	};
 	use frame_system::pallet_prelude::*;
@@ -102,9 +102,7 @@ pub mod pallet {
 		type DidIdentifier: Parameter + AsRef<[u8]> + MaxEncodedLen + MaybeSerializeDeserialize;
 
 		/// The currency that is used to reserve funds for each did.
-		type Currency: ReservableCurrency<AccountIdOf<Self>>
-			+ MutateHold<AccountIdOf<Self>, Reason = HFIdentifier, Balance = Balance>
-			+ Mutate<AccountIdOf<Self>>;
+		type Currency: MutateHold<AccountIdOf<Self>, Reason = HFIdentifier, Balance = Balance>;
 
 		/// The amount of balance that will be taken for each DID as a deposit
 		/// to incentivise fair use of the on chain storage. The deposit can be
@@ -411,7 +409,7 @@ pub mod pallet {
 				did: did_identifier.clone(),
 			};
 
-			kilt_support::deposit::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
+			kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
 				record.deposit.owner.clone(),
 				record.deposit.amount,
 			)?;

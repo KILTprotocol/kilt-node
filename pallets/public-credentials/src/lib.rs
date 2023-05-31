@@ -58,8 +58,8 @@ pub mod pallet {
 	use frame_support::{
 		pallet_prelude::*,
 		traits::{
-			fungible::{Inspect, Mutate, MutateHold},
-			IsType, ReservableCurrency, StorageVersion,
+			fungible::{Inspect, MutateHold},
+			IsType, StorageVersion,
 		},
 		Parameter,
 	};
@@ -135,9 +135,7 @@ pub mod pallet {
 		/// The type of a credential identifier.
 		type CredentialId: Parameter + MaxEncodedLen;
 		/// The currency that is used to reserve funds for each credential.
-		type Currency: ReservableCurrency<AccountIdOf<Self>>
-			+ MutateHold<AccountIdOf<Self>, Reason = HFIdentifier>
-			+ Mutate<AccountIdOf<Self>>;
+		type Currency: MutateHold<AccountIdOf<Self>, Reason = HFIdentifier>;
 		/// The type of the origin when successfully converted from the outer
 		/// origin.
 		type OriginSuccess: CallSources<Self::AccountId, AttesterOf<Self>>;

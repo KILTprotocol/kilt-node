@@ -76,6 +76,7 @@ pub fn initialize_pallet<T>(
 	delegation_hierarchies: DelegationHierarchyInitialization<T>,
 ) where
 	T: Config,
+	<T as Config>::Currency: Mutate<AccountIdOf<T>>,
 {
 	for (root_id, details, hierarchy_owner, deposit_owner) in delegation_hierarchies {
 		// manually mint to enable deposit reserving

@@ -90,7 +90,10 @@ fn get_ecdsa_public_delegation_key() -> ecdsa::Public {
 	ecdsa_generate(DELEGATION_KEY_ID, None)
 }
 
-fn make_free_for_did<T: Config>(account: &AccountIdOf<T>) {
+fn make_free_for_did<T: Config>(account: &AccountIdOf<T>)
+where
+	<T as Config>::Currency: Mutate<T::AccountId>,
+{
 	let balance = <CurrencyOf<T> as Inspect<AccountIdOf<T>>>::minimum_balance()
 		+ <T as Config>::BaseDeposit::get()
 		+ <T as Config>::BaseDeposit::get()
@@ -128,6 +131,7 @@ benchmarks! {
 		T::DidIdentifier: From<AccountId32>,
 		<T as frame_system::Config>::RuntimeOrigin: From<RawOrigin<T::DidIdentifier>>,
 		<T as frame_system::Config>::AccountId: From<AccountId32>,
+		<T as Config>::Currency: Mutate<T::AccountId>
 	}
 
 	/* create extrinsic */
