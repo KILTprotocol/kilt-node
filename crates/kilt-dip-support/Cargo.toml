@@ -28,6 +28,13 @@ sp-core.workspace = true
 sp-trie.workspace = true
 sp-std.workspace = true
 
+# Polkadot dependencies
+xcm.workspace = true
+xcm-executor.workspace = true
+
+# Cumulus dependencies
+cumulus-primitives-core.workspace = true
+
 [features]
 default = ["std"]
 std = [
@@ -41,6 +48,9 @@ std = [
   "sp-runtime/std",
   "sp-core/std",
   "sp-trie/std",
-  "sp-std/std"
+  "sp-std/std",
+  "xcm-executor/std",
+  "xcm/std",
+  "cumulus-primitives-core/std"
 ]
 runtime-benchmarks = []
