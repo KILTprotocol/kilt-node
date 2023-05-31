@@ -119,7 +119,6 @@
 pub mod benchmarking;
 pub mod default_weights;
 
-pub mod migration;
 #[cfg(test)]
 pub(crate) mod mock;
 #[cfg(test)]

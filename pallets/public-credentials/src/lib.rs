@@ -33,7 +33,7 @@
 mod access_control;
 pub mod credentials;
 pub mod default_weights;
-pub mod migration;
+pub mod migrations;
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;

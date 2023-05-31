@@ -63,7 +63,7 @@
 
 pub mod attestations;
 pub mod default_weights;
-pub mod migration;
+pub mod migrations;
 
 #[cfg(any(feature = "mock", test))]
 pub mod mock;
