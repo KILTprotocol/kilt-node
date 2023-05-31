@@ -17,11 +17,10 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use super::*;
-
 use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite, Zero};
 use frame_support::{
 	assert_ok,
-	traits::{Currency, ReservableCurrency},
+	traits::fungible::{Inspect, Mutate, MutateHold},
 };
 use frame_system::RawOrigin;
 use parity_scale_codec::Encode;
@@ -30,7 +29,10 @@ use sp_io::crypto::{ecdsa_generate, ecdsa_sign, ed25519_generate, ed25519_sign, 
 use sp_runtime::{traits::IdentifyAccount, AccountId32, MultiSigner};
 use sp_std::{convert::TryInto, vec::Vec};
 
-use kilt_support::{deposit::Deposit, signature::VerifySignature};
+use kilt_support::{
+	deposit::{Deposit, HFIdentifier},
+	signature::VerifySignature,
+};
 
 use crate::{
 	did_details::{
@@ -89,12 +91,12 @@ fn get_ecdsa_public_delegation_key() -> ecdsa::Public {
 }
 
 fn make_free_for_did<T: Config>(account: &AccountIdOf<T>) {
-	let balance = <CurrencyOf<T> as Currency<AccountIdOf<T>>>::minimum_balance()
+	let balance = <CurrencyOf<T> as Inspect<AccountIdOf<T>>>::minimum_balance()
 		+ <T as Config>::BaseDeposit::get()
 		+ <T as Config>::BaseDeposit::get()
 		+ <T as Config>::BaseDeposit::get()
 		+ <T as Config>::Fee::get();
-	<CurrencyOf<T> as Currency<AccountIdOf<T>>>::make_free_balance_be(account, balance);
+	<CurrencyOf<T> as Mutate<AccountIdOf<T>>>::set_balance(account, balance);
 }
 
 // Must always be dispatched with the DID authentication key
@@ -1144,7 +1146,7 @@ benchmarks! {
 		did_details.deposit.owner = did_account.clone();
 
 		make_free_for_did::<T>(&did_account);
-		CurrencyOf::<T>::reserve(&did_account, did_details.deposit.amount).expect("should reserve currency");
+		CurrencyOf::<T>::hold(&HFIdentifier::Deposit ,&did_account, did_details.deposit.amount).expect("should reserve currency");
 		Did::<T>::insert(&did_subject, did_details);
 
 		let origin = RawOrigin::Signed(did_subject.clone());
@@ -1170,7 +1172,7 @@ benchmarks! {
 
 		Did::<T>::insert(&did_subject, did_details.clone());
 		make_free_for_did::<T>(&did_account);
-		CurrencyOf::<T>::reserve(&did_account, did_details.deposit.amount).expect("should reserve currency");
+		CurrencyOf::<T>::hold(&HFIdentifier::Deposit, &did_account, did_details.deposit.amount).expect("should reserve currency");
 
 		let origin = RawOrigin::Signed(did_subject.clone());
 		let did_to_update = did_subject.clone();

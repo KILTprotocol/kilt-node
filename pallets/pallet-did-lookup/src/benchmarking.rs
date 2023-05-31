@@ -22,7 +22,7 @@
 use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
 use frame_support::{
 	crypto::ecdsa::ECDSAExt,
-	traits::{Currency, Get},
+	traits::{fungible::Mutate, Get},
 };
 use frame_system::RawOrigin;
 use sha3::{Digest, Keccak256};
@@ -30,7 +30,7 @@ use sp_io::crypto::{ecdsa_generate, ed25519_generate, sr25519_generate};
 use sp_runtime::{
 	app_crypto::{ed25519, sr25519},
 	traits::IdentifyAccount,
-	AccountId32, KeyTypeId,
+	AccountId32, KeyTypeId, SaturatedConversion,
 };
 
 use kilt_support::{deposit::Deposit, traits::GenerateBenchmarkOrigin};
@@ -48,10 +48,8 @@ const SEED: u32 = 0;
 // Free 2x deposit amount + existential deposit so that we can use this function
 // to link an account two times to two different DIDs.
 fn make_free_for_did<T: Config>(account: &AccountIdOf<T>) {
-	let balance = <CurrencyOf<T> as Currency<AccountIdOf<T>>>::minimum_balance()
-		+ <T as Config>::Deposit::get()
-		+ <T as Config>::Deposit::get();
-	<CurrencyOf<T> as Currency<AccountIdOf<T>>>::make_free_balance_be(account, balance);
+	let balance = <T as Config>::Deposit::get() + <T as Config>::Deposit::get() + <T as Config>::Deposit::get();
+	CurrencyOf::<T>::set_balance(account, balance.saturated_into());
 }
 
 benchmarks! {

@@ -58,7 +58,7 @@ pub mod pallet {
 		ensure,
 		pallet_prelude::*,
 		traits::{
-			fungible::{InspectHold, MutateHold},
+			fungible::{InspectHold, Mutate, MutateHold},
 			tokens::fungible::Inspect,
 			ReservableCurrency, StorageVersion,
 		},
@@ -103,7 +103,9 @@ pub mod pallet {
 		type DidIdentifier: Parameter + AsRef<[u8]> + MaxEncodedLen + MaybeSerializeDeserialize;
 
 		/// The currency that is used to reserve funds for each did.
-		type Currency: ReservableCurrency<AccountIdOf<Self>> + MutateHold<AccountIdOf<Self>, Reason = HFIdentifier>;
+		type Currency: ReservableCurrency<AccountIdOf<Self>>
+			+ MutateHold<AccountIdOf<Self>, Reason = HFIdentifier>
+			+ Mutate<AccountIdOf<Self>>;
 
 		/// The amount of balance that will be taken for each DID as a deposit
 		/// to incentivise fair use of the on chain storage. The deposit can be

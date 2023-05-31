@@ -1088,6 +1088,9 @@ pub type Executive = frame_executive::Executive<
 	(
 		pallet_did_lookup::migrations::CleanupMigration<Runtime>,
 		runtime_common::migrations::RemoveInsecureRandomnessPallet<Runtime>,
+		did::migration::BalanceMigration<Runtime>,
+		delegation::migration::BalanceMigration<Runtime>,
+		attestation::migration::BalanceMigration<Runtime>,
 	),
 >;
 

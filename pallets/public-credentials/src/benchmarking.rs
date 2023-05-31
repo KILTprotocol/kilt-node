@@ -19,7 +19,7 @@
 use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite, Zero};
 use frame_support::{
 	dispatch::RawOrigin,
-	traits::{Currency, Get},
+	traits::{fungible::Mutate, Get},
 	BoundedVec,
 };
 use sp_std::{boxed::Box, vec, vec::Vec};
@@ -41,8 +41,11 @@ use crate::{
 const SEED: u32 = 0;
 
 fn reserve_balance<T: Config>(acc: &T::AccountId) {
-	// Has to be more than the deposit, we do 2x just to be safe
-	CurrencyOf::<T>::make_free_balance_be(acc, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
+	// Has to be more than the deposit, we do 3x just to be safe
+	CurrencyOf::<T>::set_balance(
+		acc,
+		<T as Config>::Deposit::get() + <T as Config>::Deposit::get() + <T as Config>::Deposit::get(),
+	);
 }
 
 benchmarks! {

@@ -46,7 +46,7 @@ pub mod pallet {
 		pallet_prelude::*,
 		sp_runtime::SaturatedConversion,
 		traits::{
-			fungible::{Inspect, InspectHold, MutateHold},
+			fungible::{Inspect, InspectHold, Mutate, MutateHold},
 			ReservableCurrency, StorageVersion,
 		},
 		Blake2_128Concat,
@@ -107,7 +107,9 @@ pub mod pallet {
 		/// The type of origin after a successful origin check.
 		type OriginSuccess: CallSources<AccountIdOf<Self>, Web3NameOwnerOf<Self>>;
 		/// The currency type to reserve and release deposits.
-		type Currency: ReservableCurrency<AccountIdOf<Self>> + MutateHold<AccountIdOf<Self>, Reason = HFIdentifier>;
+		type Currency: ReservableCurrency<AccountIdOf<Self>>
+			+ MutateHold<AccountIdOf<Self>, Reason = HFIdentifier>
+			+ Mutate<AccountIdOf<Self>>;
 		/// The amount of KILT to deposit to claim a name.
 		#[pallet::constant]
 		type Deposit: Get<BalanceOf<Self>>;

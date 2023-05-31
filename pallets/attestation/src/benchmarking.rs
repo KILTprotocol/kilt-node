@@ -17,7 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
-use frame_support::traits::{Currency, Get};
+use frame_support::traits::{fungible::Mutate, Get};
 use frame_system::RawOrigin;
 use sp_runtime::traits::Hash;
 
@@ -47,7 +47,7 @@ benchmarks! {
 			creator: attester.clone(),
 			created_at: 0u64.into()
 		});
-		<T as Config>::Currency::make_free_balance_be(&sender, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
+		<T as Config>::Currency::set_balance(&sender, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
 
 		let origin = <T as Config>::EnsureOrigin::generate_origin(sender.clone(), attester.clone());
 	}: _<T::RuntimeOrigin>(origin, claim_hash, ctype_hash, None)
@@ -75,7 +75,7 @@ benchmarks! {
 			creator: attester.clone(),
 			created_at: 0u64.into()
 		});
-		<T as Config>::Currency::make_free_balance_be(&sender, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
+		<T as Config>::Currency::set_balance(&sender, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
 
 		let origin = <T as Config>::EnsureOrigin::generate_origin(sender.clone(), attester.clone());
 		Pallet::<T>::add(origin.clone(), claim_hash, ctype_hash, None)?;
@@ -104,7 +104,7 @@ benchmarks! {
 			creator: attester.clone(),
 			created_at: 0u64.into()
 		});
-		<T as Config>::Currency::make_free_balance_be(&sender, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
+		<T as Config>::Currency::set_balance(&sender, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
 
 		let origin = <T as Config>::EnsureOrigin::generate_origin(sender.clone(), attester.clone());
 		Pallet::<T>::add(origin, claim_hash, ctype_hash, None)?;
@@ -124,7 +124,7 @@ benchmarks! {
 			creator: attester.clone(),
 			created_at: 0u64.into()
 		});
-		<T as Config>::Currency::make_free_balance_be(&sender, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
+		<T as Config>::Currency::set_balance(&sender, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
 
 		let origin = <T as Config>::EnsureOrigin::generate_origin(sender.clone(), attester);
 		Pallet::<T>::add(origin, claim_hash, ctype_hash, None)?;
@@ -145,8 +145,8 @@ benchmarks! {
 			creator: attester.clone(),
 			created_at: 0u64.into()
 		});
-		<T as Config>::Currency::make_free_balance_be(&deposit_owner_old, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
-		<T as Config>::Currency::make_free_balance_be(&deposit_owner_new, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
+		<T as Config>::Currency::set_balance(&deposit_owner_old, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
+		<T as Config>::Currency::set_balance(&deposit_owner_new, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
 
 		let origin = <T as Config>::EnsureOrigin::generate_origin(deposit_owner_old, attester.clone());
 		Pallet::<T>::add(origin, claim_hash, ctype_hash, None)?;
@@ -175,7 +175,7 @@ benchmarks! {
 			creator: attester.clone(),
 			created_at: 0u64.into()
 		});
-		<T as Config>::Currency::make_free_balance_be(&deposit_owner, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
+		<T as Config>::Currency::set_balance(&deposit_owner, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
 
 		let origin = <T as Config>::EnsureOrigin::generate_origin(deposit_owner.clone(), attester.clone());
 		Pallet::<T>::add(origin, claim_hash, ctype_hash, None).expect("claim should be added");
