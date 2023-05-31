@@ -88,7 +88,10 @@ pub mod pallet {
 	use frame_support::{
 		dispatch::{DispatchResult, DispatchResultWithPostInfo},
 		pallet_prelude::*,
-		traits::{fungible::MutateHold, tokens::fungible::Inspect, Get, StorageVersion},
+		traits::{
+			fungible::{Inspect, MutateHold},
+			Get, StorageVersion,
+		},
 	};
 	use frame_system::pallet_prelude::*;
 
