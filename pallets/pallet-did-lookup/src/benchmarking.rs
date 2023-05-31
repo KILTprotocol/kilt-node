@@ -22,7 +22,10 @@
 use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
 use frame_support::{
 	crypto::ecdsa::ECDSAExt,
-	traits::{fungible::Mutate, Get},
+	traits::{
+		fungible::{Inspect, Mutate},
+		Get,
+	},
 };
 use frame_system::RawOrigin;
 use sha3::{Digest, Keccak256};
@@ -48,7 +51,7 @@ const SEED: u32 = 0;
 // Free 2x deposit amount + existential deposit so that we can use this function
 // to link an account two times to two different DIDs.
 fn make_free_for_did<T: Config>(account: &AccountIdOf<T>) {
-	let balance = <CurrencyOf<T> as Currency<AccountIdOf<T>>>::minimum_balance()
+	let balance = <CurrencyOf<T> as Inspect<AccountIdOf<T>>>::minimum_balance()
 		+ <T as Config>::Deposit::get()
 		+ <T as Config>::Deposit::get();
 	CurrencyOf::<T>::set_balance(account, balance);

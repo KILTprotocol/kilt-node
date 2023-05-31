@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::{parameter_types, traits::fungible::MutateHold};
+use frame_support::parameter_types;
 use kilt_support::{
 	deposit::{Deposit, HFIdentifier},
 	mock::{mock_origin, SubjectId},
