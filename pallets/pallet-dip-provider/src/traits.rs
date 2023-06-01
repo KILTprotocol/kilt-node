@@ -52,16 +52,17 @@ pub use identity_dispatch::*;
 pub mod identity_dispatch {
 	use super::*;
 
-	use frame_support::weights::Weight;
+	use frame_support::{pallet_prelude::Get, weights::Weight};
 	use parity_scale_codec::Encode;
-	use sp_std::{marker::PhantomData, vec};
+	use sp_std::marker::PhantomData;
 
-	pub trait IdentityProofDispatcher<Identifier, IdentityRoot, Details = ()> {
+	pub trait IdentityProofDispatcher<Identifier, IdentityRoot, AccountId, Details = ()> {
 		type PreDispatchOutput;
 		type Error;
 
 		fn pre_dispatch<B: TxBuilder<Identifier, IdentityRoot, Details>>(
 			action: IdentityDetailsAction<Identifier, IdentityRoot, Details>,
+			source: AccountId,
 			asset: MultiAsset,
 			weight: Weight,
 			destination: MultiLocation,
@@ -73,14 +74,15 @@ pub mod identity_dispatch {
 	// Returns `Ok` without doing anything.
 	pub struct NullIdentityProofDispatcher;
 
-	impl<Identifier, IdentityRoot, Details> IdentityProofDispatcher<Identifier, IdentityRoot, Details>
-		for NullIdentityProofDispatcher
+	impl<Identifier, IdentityRoot, AccountId, Details>
+		IdentityProofDispatcher<Identifier, IdentityRoot, AccountId, Details> for NullIdentityProofDispatcher
 	{
 		type PreDispatchOutput = ();
 		type Error = ();
 
 		fn pre_dispatch<_B>(
 			_action: IdentityDetailsAction<Identifier, IdentityRoot, Details>,
+			_source: AccountId,
 			_asset: MultiAsset,
 			_weight: Weight,
 			_destination: MultiLocation,
@@ -96,22 +98,24 @@ pub mod identity_dispatch {
 	// Dispatcher using a type implementing the `SendXcm` trait.
 	// It properly encodes the `Transact` operation, then delegates everything else
 	// to the sender, similarly to what the XCM pallet's `send` extrinsic does.
-	pub struct XcmRouterDispatcher<Router, Identifier, ProofOutput, Details = ()>(
-		PhantomData<(Router, Identifier, ProofOutput, Details)>,
-	);
+	pub struct XcmRouterDispatcher<Router, UniversalLocationProvider>(PhantomData<(Router, UniversalLocationProvider)>);
 
-	impl<Router, Identifier, ProofOutput, Details> IdentityProofDispatcher<Identifier, ProofOutput, Details>
-		for XcmRouterDispatcher<Router, Identifier, ProofOutput, Details>
+	impl<Router, UniversalLocationProvider, Identifier, ProofOutput, AccountId, Details>
+		IdentityProofDispatcher<Identifier, ProofOutput, AccountId, Details>
+		for XcmRouterDispatcher<Router, UniversalLocationProvider>
 	where
 		Router: SendXcm,
+		UniversalLocationProvider: Get<InteriorMultiLocation>,
 		Identifier: Encode,
 		ProofOutput: Encode,
+		AccountId: Into<[u8; 32]> + Clone,
 	{
 		type PreDispatchOutput = Router::Ticket;
 		type Error = SendError;
 
 		fn pre_dispatch<Builder: TxBuilder<Identifier, ProofOutput, Details>>(
 			action: IdentityDetailsAction<Identifier, ProofOutput, Details>,
+			source: AccountId,
 			asset: MultiAsset,
 			weight: Weight,
 			destination: MultiLocation,
@@ -123,17 +127,38 @@ pub mod identity_dispatch {
 
 			// TODO: Set an error handler and an appendix to refund any leftover funds to
 			// the provider parachain sovereign account.
-			let operation = [vec![
+			let operation = [[
+				DescendOrigin(X1(AccountId32 {
+					network: None,
+					id: source.clone().into(),
+				})),
 				WithdrawAsset(asset.clone().into()),
 				BuyExecution {
 					fees: asset,
-					// TODO: Configurable weight limit?
-					weight_limit: Unlimited,
+					weight_limit: Limited(weight),
 				},
 				Transact {
 					origin_kind: OriginKind::Native,
 					require_weight_at_most: weight,
 					call: dest_tx,
+				},
+				RefundSurplus,
+				DepositAsset {
+					assets: Wild(All),
+					beneficiary: MultiLocation {
+						parents: 1,
+						// TODO: Error handling
+						interior: Here
+							.into_location()
+							.reanchored(&destination, UniversalLocationProvider::get())
+							.unwrap()
+							.pushed_with_interior(AccountId32 {
+								network: None,
+								id: source.into(),
+							})
+							.unwrap()
+							.interior,
+					},
 				},
 			]]
 			.concat();

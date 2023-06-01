@@ -35,6 +35,7 @@ sp-io = { workspace = true, features = ["std"] }
 sp-runtime = { workspace = true, features = ["std"] }
 sp-std = { workspace = true, features = ["std"] }
 xcm = { workspace = true, features = ["std"] }
+xcm-builder = { workspace = true, features = ["std"] }
 xcm-emulator = { git = "https://github.com/shaunxw/xcm-simulator", branch = "master" }
 xcm-executor = { workspace = true, features = ["std"] }
 

@@ -16,16 +16,16 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use cumulus_primitives_core::{Junction::AccountKey20, OriginKind, ParaId};
+use cumulus_primitives_core::{Junction::AccountKey20, OriginKind};
 use frame_support::ensure;
 use sp_core::Get;
 use sp_std::marker::PhantomData;
 use xcm::latest::{
 	Instruction,
-	Instruction::{BuyExecution, DescendOrigin, Transact, WithdrawAsset},
+	Instruction::{BuyExecution, DepositAsset, DescendOrigin, RefundSurplus, Transact, WithdrawAsset},
 	Junction::{AccountId32, Parachain},
 	Junctions::{X1, X2},
-	MultiLocation, Weight,
+	MultiLocation, ParentThen, Weight,
 };
 use xcm_executor::traits::{ConvertOrigin, ShouldExecute};
 
@@ -36,7 +36,7 @@ pub struct AllowParachainProviderAsSubaccount<ProviderParaId>(PhantomData<Provid
 
 impl<ProviderParaId> ShouldExecute for AllowParachainProviderAsSubaccount<ProviderParaId>
 where
-	ProviderParaId: Get<ParaId>,
+	ProviderParaId: Get<u32>,
 {
 	fn should_execute<RuntimeCall>(
 		origin: &MultiLocation,
@@ -45,19 +45,34 @@ where
 		_weight_credit: &mut Weight,
 	) -> Result<(), ()> {
 		// Ensure that the origin is a parachain allowed to act as identity provider.
-		ensure!(*origin == Parachain(ProviderParaId::get().into()).into(), ());
+		ensure!(
+			*origin == ParentThen(Parachain(ProviderParaId::get()).into()).into(),
+			()
+		);
+		#[cfg(feature = "std")]
+		println!("{:?}", instructions);
 		let mut iter = instructions.iter();
 		// This must match the implementation of the `IdentityProofDispatcher` trait.
 		// TODO: Refactor so that they depend on each other and we avoid duplication
-		match (iter.next(), iter.next(), iter.next(), iter.next(), iter.next()) {
+		match (
+			iter.next(),
+			iter.next(),
+			iter.next(),
+			iter.next(),
+			iter.next(),
+			iter.next(),
+			iter.next(),
+		) {
 			(
-				Some(DescendOrigin(X1(AccountId32 { .. } | AccountKey20 { .. }))),
+				Some(DescendOrigin(X1(AccountId32 { .. }))),
 				Some(WithdrawAsset { .. }),
 				Some(BuyExecution { .. }),
 				Some(Transact {
 					origin_kind: OriginKind::Native,
 					..
 				}),
+				Some(RefundSurplus),
+				Some(DepositAsset { .. }),
 				None,
 			) => Ok(()),
 			_ => Err(()),
@@ -72,7 +87,7 @@ pub struct OrElseCheckForParachainProvider<Barrier, ProviderParaId>(PhantomData<
 impl<Barrier, ProviderParaId> ShouldExecute for OrElseCheckForParachainProvider<Barrier, ProviderParaId>
 where
 	Barrier: ShouldExecute,
-	ProviderParaId: Get<ParaId>,
+	ProviderParaId: Get<u32>,
 {
 	fn should_execute<RuntimeCall>(
 		origin: &MultiLocation,
@@ -80,30 +95,34 @@ where
 		max_weight: Weight,
 		weight_credit: &mut Weight,
 	) -> Result<(), ()> {
-		Barrier::should_execute(origin, instructions, max_weight, weight_credit)?;
-		AllowParachainProviderAsSubaccount::<ProviderParaId>::should_execute(
-			origin,
-			instructions,
-			max_weight,
-			weight_credit,
-		)
+		// TODO: This might not be correct, if the barrier wants to explicitely fail.
+		// Maybe this struct should be split into two, one where it fails if the barrier
+		// fails, and another one which tries the new barrier if the old one fails.
+		Barrier::should_execute(origin, instructions, max_weight, weight_credit).or_else(|_| {
+			AllowParachainProviderAsSubaccount::<ProviderParaId>::should_execute(
+				origin,
+				instructions,
+				max_weight,
+				weight_credit,
+			)
+		})
 	}
 }
 
-pub struct AccountIdJunctionToParachainOriginConverter<ProviderParaId, ParachainOrigin, RuntimeOrigin>(
+pub struct AccountIdJunctionAsParachain<ProviderParaId, ParachainOrigin, RuntimeOrigin>(
 	PhantomData<(ProviderParaId, ParachainOrigin, RuntimeOrigin)>,
 );
 
 impl<ProviderParaId, ParachainOrigin, RuntimeOrigin> ConvertOrigin<RuntimeOrigin>
-	for AccountIdJunctionToParachainOriginConverter<ProviderParaId, ParachainOrigin, RuntimeOrigin>
+	for AccountIdJunctionAsParachain<ProviderParaId, ParachainOrigin, RuntimeOrigin>
 where
-	ProviderParaId: Get<ParaId>,
-	ParachainOrigin: From<ParaId>,
+	ProviderParaId: Get<u32>,
+	ParachainOrigin: From<u32>,
 	RuntimeOrigin: From<ParachainOrigin>,
 {
 	fn convert_origin(origin: impl Into<MultiLocation>, kind: OriginKind) -> Result<RuntimeOrigin, MultiLocation> {
 		let origin = origin.into();
-		let provider_para_id: u32 = ProviderParaId::get().into();
+		let provider_para_id = ProviderParaId::get();
 		match (kind, origin) {
 			(
 				OriginKind::Native,
@@ -111,7 +130,7 @@ where
 					parents: 1,
 					interior: X2(Parachain(para_id), AccountId32 { .. } | AccountKey20 { .. }),
 				},
-			) if para_id == provider_para_id => Ok(ParachainOrigin::from(ProviderParaId::get()).into()),
+			) if para_id == provider_para_id => Ok(ParachainOrigin::from(provider_para_id).into()),
 			_ => Err(origin),
 		}
 	}

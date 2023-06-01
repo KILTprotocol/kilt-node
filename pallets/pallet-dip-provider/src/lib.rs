@@ -44,14 +44,15 @@ pub mod pallet {
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
-		type CommitOrigin: EnsureOrigin<Self::RuntimeOrigin>;
+		type CommitOriginCheck: EnsureOrigin<Self::RuntimeOrigin, Success = Self::CommitOrigin>;
+		type CommitOrigin: Into<Self::AccountId>;
 		type Identifier: Parameter;
 		type IdentityProofGenerator: IdentityProofGenerator<
 			Self::Identifier,
 			IdentityOf<Self>,
 			Output = Self::ProofOutput,
 		>;
-		type IdentityProofDispatcher: IdentityProofDispatcher<Self::Identifier, Self::ProofOutput, ()>;
+		type IdentityProofDispatcher: IdentityProofDispatcher<Self::Identifier, Self::ProofOutput, Self::AccountId, ()>;
 		type IdentityProvider: IdentityProvider<Self::Identifier>;
 		type ProofOutput: Clone + Eq + Debug;
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
@@ -91,7 +92,7 @@ pub mod pallet {
 			weight: Weight,
 		) -> DispatchResult {
 			// TODO: Charge the dispatcher based on the destination weight configuration
-			T::CommitOrigin::ensure_origin(origin)?;
+			let dispatcher = T::CommitOriginCheck::ensure_origin(origin).map(|e| e.into())?;
 
 			let destination: MultiLocation = (*destination).try_into().map_err(|_| Error::<T>::BadVersion)?;
 			let action: IdentityProofActionOf<T> = match T::IdentityProvider::retrieve(&identifier) {
@@ -107,9 +108,14 @@ pub mod pallet {
 
 			let asset: MultiAsset = (*asset).try_into().map_err(|_| Error::<T>::BadVersion)?;
 
-			let (ticket, _) =
-				T::IdentityProofDispatcher::pre_dispatch::<T::TxBuilder>(action.clone(), asset, weight, destination)
-					.map_err(|_| Error::<T>::Predispatch)?;
+			let (ticket, _) = T::IdentityProofDispatcher::pre_dispatch::<T::TxBuilder>(
+				action.clone(),
+				dispatcher,
+				asset,
+				weight,
+				destination,
+			)
+			.map_err(|_| Error::<T>::Predispatch)?;
 
 			// TODO: Use returned asset of `pre_dispatch` to charge the tx submitter for the
 			// fee, in addition to the cost on the target chain.

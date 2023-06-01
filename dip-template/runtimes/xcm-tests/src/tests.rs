@@ -16,6 +16,8 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use crate::para::consumer::{provider_dispatcher_account_on_consumer, provider_parachain_account_on_consumer};
+
 use super::*;
 
 use did::{Did, DidSignature};
@@ -43,8 +45,8 @@ use xcm_emulator::TestExt;
 
 use cumulus_pallet_xcmp_queue::Event as XcmpEvent;
 use dip_consumer_runtime_template::{
-	BlockNumber, DidIdentifier, DidLookup, DipConsumer, Runtime as ConsumerRuntime, RuntimeCall as ConsumerRuntimeCall,
-	RuntimeEvent, System,
+	Balances, BlockNumber, DidIdentifier, DidLookup, DipConsumer, Runtime as ConsumerRuntime,
+	RuntimeCall as ConsumerRuntimeCall, RuntimeEvent, System,
 };
 use dip_provider_runtime_template::{DipProvider, Runtime as ProviderRuntime};
 
@@ -53,11 +55,15 @@ fn commit_identity() {
 	Network::reset();
 
 	let did: DidIdentifier = para::provider::did_auth_key().public().into();
+	let provider_parachain_on_consumer_parachain_balance_before =
+		ConsumerParachain::execute_with(|| Balances::free_balance(provider_parachain_account_on_consumer()));
+	let dispatcher_on_consumer_parachain_balance_before =
+		ConsumerParachain::execute_with(|| Balances::free_balance(provider_dispatcher_account_on_consumer()));
 
 	// 1. Send identity commitment from DIP provider to DIP consumer.
 	ProviderParachain::execute_with(|| {
 		assert_ok!(DipProvider::commit_identity(
-			RawOrigin::Root.into(),
+			RawOrigin::Signed(para::provider::DISPATCHER_ACCOUNT).into(),
 			did.clone(),
 			Box::new(ParentThen(X1(Parachain(para::consumer::PARA_ID))).into()),
 			Box::new((Here, 1_000_000_000).into()),
@@ -77,15 +83,24 @@ fn commit_identity() {
 		)));
 		// 2.2 Verify the proof digest was stored correctly.
 		assert!(DipConsumer::identity_proofs(&did).is_some());
+		// 2.3 Verify that the provider parachain sovereign account balance has not
+		// changed.
+		let provider_parachain_on_consumer_parachain_balance_after =
+			Balances::free_balance(provider_parachain_account_on_consumer());
+		assert_eq!(
+			provider_parachain_on_consumer_parachain_balance_before,
+			provider_parachain_on_consumer_parachain_balance_after
+		);
+		// 2.4 Verify that the dispatcher's account balance on the consumer parachain
+		// has decreased.
+		let dispatcher_on_consumer_parachain_balance_after =
+			Balances::free_balance(provider_dispatcher_account_on_consumer());
+		assert!(dispatcher_on_consumer_parachain_balance_after < dispatcher_on_consumer_parachain_balance_before);
 	});
 	// 3. Call an extrinsic on the consumer chain with a valid proof and signature
 	let did_details = ProviderParachain::execute_with(|| {
 		Did::get(&did).expect("DID details should be stored on the provider chain.")
 	});
-	println!(
-		"Complete DID details encoded size: {:?} bytes",
-		did_details.encoded_size()
-	);
 	let (web3_name, ownership_details) = ProviderParachain::execute_with(|| {
 		let web3_name =
 			Names::<ProviderRuntime>::get(&did).expect("Web3name should be linked to the DID on the provider chain.");
