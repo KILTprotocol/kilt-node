@@ -518,7 +518,7 @@ benchmarks! {
 		assert_eq!(Unstaking::<T>::get(&delegator).len(), 2);
 	}
 
-	unlock_unstaked {
+	unfreeze_unstaked {
 		let u in 1 .. (T::MaxUnstakeRequests::get() - 1);
 
 		let candidate = account("collator", 0u32, COLLATOR_ACCOUNT_SEED);

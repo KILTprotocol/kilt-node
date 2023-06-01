@@ -18,7 +18,7 @@
 
 use frame_support::parameter_types;
 use kilt_support::{
-	deposit::{Deposit, HFIdentifier},
+	deposit::{Deposit, HFIdentifier, Pallets},
 	mock::{mock_origin, SubjectId},
 };
 use sp_runtime::{
@@ -155,14 +155,21 @@ pub(crate) fn insert_raw_connection<T: Config>(
 		did: did_identifier.clone(),
 	};
 
-	kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(record.deposit.owner.clone(), record.deposit.amount)
-		.expect("Account should have enough balance");
+	kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
+		record.deposit.owner.clone(),
+		record.deposit.amount,
+		&HFIdentifier::Deposit(Pallets::DidLookup),
+	)
+	.expect("Account should have enough balance");
 
 	ConnectedDids::<T>::mutate(&account, |did_entry| {
 		if let Some(old_connection) = did_entry.replace(record) {
 			ConnectedAccounts::<T>::remove(&old_connection.did, &account);
-			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&old_connection.deposit)
-				.expect("Could not release deposit of account");
+			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
+				&old_connection.deposit,
+				&HFIdentifier::Deposit(Pallets::DidLookup),
+			)
+			.expect("Could not release deposit of account");
 		}
 	});
 	ConnectedAccounts::<T>::insert(&did_identifier, &account, ());

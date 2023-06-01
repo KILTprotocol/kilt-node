@@ -673,6 +673,7 @@ impl parachain_staking::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type Currency = Balances;
 	type CurrencyBalance = Balance;
+	type Identifier = HFIdentifier;
 
 	type MinBlocksPerRound = constants::staking::MinBlocksPerRound;
 	type DefaultBlocksPerRound = constants::staking::DefaultBlocksPerRound;

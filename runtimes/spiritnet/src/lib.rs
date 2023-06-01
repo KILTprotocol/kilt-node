@@ -661,6 +661,7 @@ impl pallet_inflation::Config for Runtime {
 }
 
 impl parachain_staking::Config for Runtime {
+	type Identifier = HFIdentifier;
 	type RuntimeEvent = RuntimeEvent;
 	type Currency = Balances;
 	type CurrencyBalance = Balance;

@@ -372,7 +372,11 @@ pub mod pallet {
 			let record = ConnectedDids::<T>::get(&account).ok_or(Error::<T>::NotFound)?;
 			ensure!(record.did == subject, Error::<T>::NotAuthorized);
 
-			LinkableAccountDepositCollector::<T>::change_deposit_owner(&account, source.sender())
+			LinkableAccountDepositCollector::<T>::change_deposit_owner(
+				&account,
+				source.sender(),
+				&HFIdentifier::Deposit(Pallets::DidLookup),
+			)
 		}
 
 		/// Updates the deposit amount to the current deposit rate.
@@ -386,7 +390,7 @@ pub mod pallet {
 			let record = ConnectedDids::<T>::get(&account).ok_or(Error::<T>::NotFound)?;
 			ensure!(record.deposit.owner == source, Error::<T>::NotAuthorized);
 
-			LinkableAccountDepositCollector::<T>::update_deposit(&account)
+			LinkableAccountDepositCollector::<T>::update_deposit(&account, &HFIdentifier::Deposit(Pallets::DidLookup))
 		}
 
 		// Old call that was used to migrate
@@ -412,13 +416,17 @@ pub mod pallet {
 			kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
 				record.deposit.owner.clone(),
 				record.deposit.amount,
+				&HFIdentifier::Deposit(Pallets::DidLookup),
 			)?;
 
 			ConnectedDids::<T>::mutate(&account, |did_entry| -> DispatchResult {
 				if let Some(old_connection) = did_entry.replace(record) {
 					ConnectedAccounts::<T>::remove(&old_connection.did, &account);
 					Self::deposit_event(Event::<T>::AssociationRemoved(account.clone(), old_connection.did));
-					kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&old_connection.deposit)?;
+					kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
+						&old_connection.deposit,
+						&HFIdentifier::Deposit(Pallets::DidLookup),
+					)?;
 				}
 				Ok(())
 			})?;
@@ -431,7 +439,10 @@ pub mod pallet {
 		pub(crate) fn remove_association(account: LinkableAccountId) -> DispatchResult {
 			if let Some(connection) = ConnectedDids::<T>::take(&account) {
 				ConnectedAccounts::<T>::remove(&connection.did, &account);
-				kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&connection.deposit)?;
+				kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
+					&connection.deposit,
+					&HFIdentifier::Deposit(Pallets::DidLookup),
+				)?;
 				Self::deposit_event(Event::AssociationRemoved(account, connection.did));
 
 				Ok(())

@@ -46,7 +46,7 @@ where
 		<T as frame_system::Config>::DbWeight::get().reads_writes(0, 0)
 	}
 
-	#[cfg(feature = "try-runtime")]
+	// 	#[cfg(feature = "try-runtime")]
 	fn pre_upgrade() -> Result<sp_std::vec::Vec<u8>, &'static str> {
 		use frame_support::ensure;
 		use sp_std::vec;

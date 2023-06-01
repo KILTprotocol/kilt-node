@@ -147,8 +147,8 @@ pub mod pallet {
 		pallet_prelude::*,
 		storage::bounded_btree_map::BoundedBTreeMap,
 		traits::{
-			tokens::fungible::MutateFreeze, Currency, EstimateNextSessionRotation, Get, Imbalance, LockIdentifier,
-			OnUnbalanced, StorageVersion,
+			tokens::fungible::MutateFreeze, Currency, EstimateNextSessionRotation, Get, Imbalance, OnUnbalanced,
+			StorageVersion,
 		},
 		BoundedVec,
 	};
@@ -173,9 +173,6 @@ pub mod pallet {
 	};
 	use sp_std::{convert::TryInto, fmt::Debug};
 
-	/// Kilt-specific lock for staking rewards.
-	pub(crate) const STAKING_ID: LockIdentifier = *b"kiltpstk";
-
 	/// The current storage version.
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(8);
 
@@ -197,6 +194,8 @@ pub mod pallet {
 		type Currency: Currency<Self::AccountId, Balance = Self::CurrencyBalance>
 			+ MutateFreeze<Self::AccountId, Balance = Self::CurrencyBalance, Id = HFIdentifier>
 			+ Eq;
+
+		type Identifier: AsRef<<Self as pallet_balances::Config>::FreezeIdentifier> + From<HFIdentifier>;
 
 		/// Just the `Currency::Balance` type; we have this item to allow us to
 		/// constrain it to `From<u64>`.
@@ -225,7 +224,7 @@ pub mod pallet {
 		type DefaultBlocksPerRound: Get<Self::BlockNumber>;
 		/// Number of blocks for which unstaked balance will still be locked
 		/// before it can be unlocked by actively calling the extrinsic
-		/// `unlock_unstaked`.
+		/// `unfreeze_unstaked`.
 		#[pallet::constant]
 		type StakeDuration: Get<Self::BlockNumber>;
 		/// Number of rounds a collator has to stay active after submitting a
@@ -899,7 +898,7 @@ pub mod pallet {
 		/// delegators.
 		///
 		/// Prepares unstaking of the candidates and their delegators stake
-		/// which can be unlocked via `unlock_unstaked` after waiting at
+		/// which can be unfreezed via `unfreeze_unstaked` after waiting at
 		/// least `StakeDuration` many blocks. Also increments rewards for the
 		/// collator and their delegators.
 		///
@@ -1088,8 +1087,8 @@ pub mod pallet {
 
 		/// Execute the network exit of a candidate who requested to leave at
 		/// least `ExitQueueDelay` rounds ago. Prepares unstaking of the
-		/// candidates and their delegators stake which can be unlocked via
-		/// `unlock_unstaked` after waiting at least `StakeDuration` many
+		/// candidates and their delegators stake which can be unfreezed via
+		/// `unfreeze_unstaked` after waiting at least `StakeDuration` many
 		/// blocks.
 		///
 		/// Requires the candidate to previously have called
@@ -1625,10 +1624,10 @@ pub mod pallet {
 		/// - Kills: Unstaking & Freezess if no balance is locked anymore
 		/// # </weight>
 		#[pallet::call_index(16)]
-		#[pallet::weight(<T as pallet::Config>::WeightInfo::unlock_unstaked(
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::unfreeze_unstaked(
 			T::MaxUnstakeRequests::get().saturated_into::<u32>()
 		))]
-		pub fn unlock_unstaked(
+		pub fn unfreeze_unstaked(
 			origin: OriginFor<T>,
 			target: <T::Lookup as StaticLookup>::Source,
 		) -> DispatchResultWithPostInfo {
@@ -1637,7 +1636,7 @@ pub mod pallet {
 
 			let unstaking_len = Self::do_unlock(&target)?;
 
-			Ok(Some(<T as pallet::Config>::WeightInfo::unlock_unstaked(unstaking_len)).into())
+			Ok(Some(<T as pallet::Config>::WeightInfo::unfreeze_unstaked(unstaking_len)).into())
 		}
 
 		/// Claim block authoring rewards for the target address.
@@ -2187,13 +2186,13 @@ pub mod pallet {
 
 			// Either set a new lock or potentially extend the existing one if amount
 			// exceeds the currently locked amount
-			T::Currency::extend_freeze(&HFIdentifier::Staking, who, amount);
+			T::Currency::extend_freeze(&HFIdentifier::Staking, who, amount)?;
 
 			Ok(unstaking_len)
 		}
 
 		/// Set the unlocking block for the account and corresponding amount
-		/// which can be unlocked via `unlock_unstaked` after waiting at
+		/// which can be unfreezed via `unfreeze_unstaked` after waiting at
 		/// least for `StakeDuration` many blocks.
 		///
 		/// Throws if the amount is zero (unlikely) or if active unlocking
@@ -2280,10 +2279,7 @@ pub mod pallet {
 
 		/// Withdraw all staked currency which was unstaked at least
 		/// `StakeDuration` blocks ago.
-		fn do_unlock(who: &T::AccountId) -> Result<u32, DispatchError>
-		where
-			<T as pallet_balances::Config>::FreezeIdentifier: From<HFIdentifier>,
-		{
+		fn do_unlock(who: &T::AccountId) -> Result<u32, DispatchError> {
 			let now = frame_system::Pallet::<T>::block_number();
 			let mut unstaking = Unstaking::<T>::get(who);
 			let unstaking_len = unstaking.len().saturated_into::<u32>();
@@ -2308,20 +2304,22 @@ pub mod pallet {
 
 			// iterate balance freezes to retrieve amount of freezed balance
 			let freezes = Freezes::<T>::get(who);
-			total_freezed =
-				if let Some(IdAmount { amount, .. }) = freezes.iter().find(|l| l.id == HFIdentifier::Staking.into()) {
-					amount.saturating_sub(total_freezed.into()).into()
-				} else {
-					// should never fail to find the lock since we checked whether unstaking is not
-					// empty but let's be safe
-					Zero::zero()
-				};
+			total_freezed = if let Some(IdAmount { amount, .. }) = freezes
+				.iter()
+				.find(|l| &l.id == T::Identifier::from(HFIdentifier::Staking).as_ref())
+			{
+				amount.saturating_sub(total_freezed.into()).into()
+			} else {
+				// should never fail to find the lock since we checked whether unstaking is not
+				// empty but let's be safe
+				Zero::zero()
+			};
 
 			if total_freezed.is_zero() {
-				T::Currency::thaw(&HFIdentifier::Staking, who);
+				T::Currency::thaw(&HFIdentifier::Staking, who)?;
 				Unstaking::<T>::remove(who);
 			} else {
-				T::Currency::set_freeze(&HFIdentifier::Staking, who, total_freezed);
+				T::Currency::set_freeze(&HFIdentifier::Staking, who, total_freezed)?;
 				Unstaking::<T>::insert(who, unstaking);
 			}
 

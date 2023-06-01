@@ -100,13 +100,15 @@ impl frame_system::Config for Test {
 }
 parameter_types! {
 	pub const ExistentialDeposit: Balance = 1;
+	pub const MaxFreezes : u32 = 50;
+	pub const MaxHolds : u32 = 50;
 }
 
 impl pallet_balances::Config for Test {
 	type FreezeIdentifier = HFIdentifier;
 	type HoldIdentifier = HFIdentifier;
-	type MaxFreezes = ();
-	type MaxHolds = ();
+	type MaxFreezes = MaxFreezes;
+	type MaxHolds = MaxHolds;
 	type MaxLocks = ();
 	type MaxReserves = ();
 	type ReserveIdentifier = [u8; 8];
@@ -176,6 +178,7 @@ impl Config for Test {
 	type NetworkRewardStart = NetworkRewardStart;
 	type NetworkRewardBeneficiary = ToBeneficiary;
 	type WeightInfo = ();
+	type Identifier = HFIdentifier;
 	const BLOCKS_PER_YEAR: Self::BlockNumber = 5 * 60 * 24 * 36525 / 100;
 }
 
