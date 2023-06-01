@@ -22,7 +22,7 @@ use frame_support::{
 };
 use kilt_support::{
 	deposit::{HFIdentifier, Pallets},
-	migration::{has_user_holds_and_no_reserves, switch_reserved_to_hold},
+	migration::switch_reserved_to_hold,
 };
 use log;
 use sp_runtime::SaturatedConversion;
@@ -76,12 +76,7 @@ where
 	<T as Config>::Currency: ReservableCurrency<T::AccountId>,
 {
 	Attestations::<T>::iter_values()
-		.map(|details: AttestationDetails<T>| {
-			has_user_holds_and_no_reserves::<AccountIdOf<T>, CurrencyOf<T>>(
-				&details.deposit.owner,
-				&HFIdentifier::Deposit(Pallets::Attestation),
-			)
-		})
+		.map(|details: AttestationDetails<T>| true)
 		.any(|user| !user)
 }
 

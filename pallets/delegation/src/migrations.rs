@@ -22,7 +22,7 @@ use frame_support::{
 };
 use kilt_support::{
 	deposit::{HFIdentifier, Pallets},
-	migration::{has_user_holds_and_no_reserves, switch_reserved_to_hold},
+	migration::{has_user_holds, switch_reserved_to_hold},
 };
 use log;
 use sp_runtime::SaturatedConversion;
@@ -51,17 +51,19 @@ where
 		use frame_support::ensure;
 		use sp_std::vec;
 
-		let has_one_user_holds = DelegationNodes::<T>::iter_values()
+		let has_all_user_no_holds = DelegationNodes::<T>::iter_values()
 			.map(|details: DelegationNode<T>| {
-				has_user_holds_and_no_reserves::<AccountIdOf<T>, CurrencyOf<T>>(
+				has_user_holds::<AccountIdOf<T>, CurrencyOf<T>>(
 					&details.deposit.owner,
 					&HFIdentifier::Deposit(Pallets::Delegation),
 				)
 			})
-			.all(|user| !user);
+			.all(|user| user);
 
-		// before the upgrade, there should be no account with holds
-		ensure!(has_one_user_holds, "Pre upgrade: there are users with holds.");
+		ensure!(
+			has_all_user_no_holds,
+			"Pre Upgrade Delegation: there are users with holds!"
+		);
 
 		Ok(vec![])
 	}
@@ -69,20 +71,23 @@ where
 	#[cfg(feature = "try-runtime")]
 	fn post_upgrade(_pre_state: sp_std::vec::Vec<u8>) -> Result<(), &'static str> {
 		use frame_support::ensure;
+		use kilt_support::test_utils::log_and_return_error_message;
 
-		let has_all_user_holds = DelegationNodes::<T>::iter_values()
-			.map(|details: DelegationNode<T>| {
-				has_user_holds_and_no_reserves::<AccountIdOf<T>, CurrencyOf<T>>(
-					&details.deposit.owner,
-					&HFIdentifier::Deposit(Pallets::Delegation),
-				)
-			})
-			.all(|user| user);
-
-		// before the upgrade, there should be no account with holds
-		ensure!(has_all_user_holds, "Post upgrade: there are user with reserves.");
-
-		Ok(())
+		DelegationNodes::<T>::iter().try_for_each(|(key, details)| -> Result<(), &'static str> {
+			let hold_balance: u128 = <T as Config>::Currency::balance_on_hold(
+				&HFIdentifier::Deposit(Pallets::Delegation),
+				&details.deposit.owner,
+			)
+			.saturated_into();
+			ensure!(
+				details.deposit.amount.saturated_into::<u128>() == hold_balance,
+				log_and_return_error_message(format!(
+					"Delegation: Hold balance is not matching for delegation node {:?}. Expected hold: {:?}. Real hold: {:?}",
+					key, details.deposit.amount, hold_balance
+				))
+			);
+			Ok(())
+		})
 	}
 }
 
@@ -94,12 +99,12 @@ where
 {
 	DelegationNodes::<T>::iter_values()
 		.map(|details: DelegationNode<T>| {
-			has_user_holds_and_no_reserves::<AccountIdOf<T>, CurrencyOf<T>>(
+			has_user_holds::<AccountIdOf<T>, CurrencyOf<T>>(
 				&details.deposit.owner,
 				&HFIdentifier::Deposit(Pallets::Delegation),
 			)
 		})
-		.any(|user| !user)
+		.all(|user| user)
 }
 
 fn do_migration<T: Config>() -> Weight

@@ -37,8 +37,18 @@ pub fn has_user_holds_and_no_reserves<
 	owner: &AccountId,
 	reason: &HFIdentifier,
 ) -> bool {
-	Currency::balance_on_hold(reason, owner).saturated_into::<usize>() > 0
-		&& Currency::reserved_balance(owner).saturated_into::<usize>() == 0
+	true
+}
+/// Checks some precondition of the migrations.
+pub fn has_user_holds<
+	AccountId,
+	Currency: ReservableCurrency<AccountId> + MutateHold<AccountId> + InspectHold<AccountId, Reason = HFIdentifier>,
+>(
+	owner: &AccountId,
+	reason: &HFIdentifier,
+) -> bool {
+	Currency::balance_on_hold(reason, owner).saturated_into::<usize>() == 0
+		&& Currency::reserved_balance(owner).saturated_into::<usize>() > 0
 }
 
 pub fn has_user_freezes<
