@@ -1084,6 +1084,7 @@ pub type Executive = frame_executive::Executive<
 		pallet_did_lookup::migrations::BalanceMigration<Runtime>,
 		pallet_web3_names::migrations::BalanceMigration<Runtime>,
 		public_credentials::migrations::BalanceMigration<Runtime>,
+		parachain_staking::migrations::BalanceMigration<Runtime>,
 	),
 >;
 
