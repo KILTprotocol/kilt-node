@@ -38,7 +38,7 @@ where
 {
 	fn on_runtime_upgrade() -> frame_support::weights::Weight {
 		log::info!("Delegation: Initiating migration");
-		if ensure_upgraded::<T>() {
+		if is_upgraded::<T>() {
 			return do_migration::<T>();
 		}
 
@@ -65,12 +65,14 @@ where
 			"Pre Upgrade Delegation: there are users with holds!"
 		);
 
+		log::info!("Delegation: There are no users with holds!");
+
 		Ok(vec![])
 	}
 
 	#[cfg(feature = "try-runtime")]
 	fn post_upgrade(_pre_state: sp_std::vec::Vec<u8>) -> Result<(), &'static str> {
-		use frame_support::ensure;
+		use frame_support::{ensure, traits::fungible::InspectHold};
 		use kilt_support::test_utils::log_and_return_error_message;
 
 		DelegationNodes::<T>::iter().try_for_each(|(key, details)| -> Result<(), &'static str> {
@@ -81,7 +83,7 @@ where
 			.saturated_into();
 			ensure!(
 				details.deposit.amount.saturated_into::<u128>() == hold_balance,
-				log_and_return_error_message(format!(
+				log_and_return_error_message(scale_info::prelude::format!(
 					"Delegation: Hold balance is not matching for delegation node {:?}. Expected hold: {:?}. Real hold: {:?}",
 					key, details.deposit.amount, hold_balance
 				))
@@ -93,7 +95,7 @@ where
 
 /// Checks if there is an user, who has still reserved balance and no holds. If
 /// yes, the migration is not executed yet.
-fn ensure_upgraded<T: Config>() -> bool
+fn is_upgraded<T: Config>() -> bool
 where
 	<T as Config>::Currency: ReservableCurrency<T::AccountId>,
 {

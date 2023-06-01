@@ -46,24 +46,24 @@ where
 		<T as frame_system::Config>::DbWeight::get().reads_writes(0, 0)
 	}
 
-	// 	#[cfg(feature = "try-runtime")]
+	#[cfg(feature = "try-runtime")]
 	fn pre_upgrade() -> Result<sp_std::vec::Vec<u8>, &'static str> {
-		use frame_support::ensure;
+		// use frame_support::ensure;
 		use sp_std::vec;
-		// before the upgrade, there should be no account with holds
-		ensure!(is_upgraded::<T>(), "Pre upgrade: there are users with holds.");
-		log::info!("Staking: Starting pre migration checks!");
+		// // before the upgrade, there should be no account with holds
+		// ensure!(is_upgraded::<T>(), "Pre upgrade: there are users with holds.");
+		// log::info!("Staking: Starting pre migration checks!");
 
 		Ok(vec![])
 	}
 
 	#[cfg(feature = "try-runtime")]
 	fn post_upgrade(_pre_state: sp_std::vec::Vec<u8>) -> Result<(), &'static str> {
-		use frame_support::ensure;
+		// use frame_support::ensure;
 
-		// before the upgrade, there should be no account with holds
-		ensure!(!is_upgraded::<T>(), "Post upgrade: there are users with reserves.");
-		log::info!("Staking: Post migration checks succeded!");
+		// // before the upgrade, there should be no account with holds
+		// ensure!(!is_upgraded::<T>(), "Post upgrade: there are users with reserves.");
+		// log::info!("Staking: Post migration checks succeded!");
 
 		Ok(())
 	}

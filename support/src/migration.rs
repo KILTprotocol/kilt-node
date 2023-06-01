@@ -30,15 +30,6 @@ use sp_runtime::SaturatedConversion;
 
 use crate::deposit::HFIdentifier;
 
-pub fn has_user_holds_and_no_reserves<
-	AccountId,
-	Currency: ReservableCurrency<AccountId> + MutateHold<AccountId> + InspectHold<AccountId, Reason = HFIdentifier>,
->(
-	owner: &AccountId,
-	reason: &HFIdentifier,
-) -> bool {
-	true
-}
 /// Checks some precondition of the migrations.
 pub fn has_user_holds<
 	AccountId,

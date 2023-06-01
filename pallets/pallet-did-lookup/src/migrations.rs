@@ -24,7 +24,7 @@ use frame_support::{
 };
 use kilt_support::{
 	deposit::{HFIdentifier, Pallets},
-	migration::{has_user_holds_and_no_reserves, switch_reserved_to_hold},
+	migration::{has_user_holds, switch_reserved_to_hold},
 };
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
@@ -130,7 +130,7 @@ where
 {
 	fn on_runtime_upgrade() -> frame_support::weights::Weight {
 		log::info!("Did lookup: Initiating migration");
-		if ensure_upgraded::<T>() {
+		if is_upgraded::<T>() {
 			return do_migration::<T>();
 		}
 		log::info!("Did lookup: No migration needed. This file should be deleted.");
@@ -142,50 +142,58 @@ where
 		use frame_support::ensure;
 		use sp_std::vec;
 
-		let has_one_user_holds = ConnectedDids::<T>::iter_values()
-			.map(|details: ConnectionRecordOf<T>| {
-				has_user_holds_and_no_reserves::<AccountIdOf<T>, CurrencyOf<T>>(
-					&details.deposit.owner,
-					&HFIdentifier::Deposit(Pallets::DidLookup),
-				)
-			})
-			.all(|user| !user);
-
-		// before the upgrade, there should be no account with holds
-		ensure!(has_one_user_holds, "Pre upgrade: there are users with holds.");
-
-		Ok(vec![])
-	}
-
-	#[cfg(feature = "try-runtime")]
-	fn post_upgrade(_pre_state: sp_std::vec::Vec<u8>) -> Result<(), &'static str> {
-		use frame_support::ensure;
-
-		let has_all_user_holds = ConnectedDids::<T>::iter_values()
-			.map(|details: ConnectionRecordOf<T>| {
-				has_user_holds_and_no_reserves::<AccountIdOf<T>, CurrencyOf<T>>(
+		let has_all_user_no_holds = ConnectedDids::<T>::iter_values()
+			.map(|details| {
+				has_user_holds::<AccountIdOf<T>, CurrencyOf<T>>(
 					&details.deposit.owner,
 					&HFIdentifier::Deposit(Pallets::DidLookup),
 				)
 			})
 			.all(|user| user);
 
-		// before the upgrade, there should be no account with holds
-		ensure!(has_all_user_holds, "Post upgrade: there are user with reserves.");
+		ensure!(
+			has_all_user_no_holds,
+			"Pre Upgrade Did lookup: there are users with holds!"
+		);
 
-		Ok(())
+		log::info!("Did lookup: There are no users with holds!");
+
+		Ok(vec![])
+	}
+
+	#[cfg(feature = "try-runtime")]
+	fn post_upgrade(_pre_state: sp_std::vec::Vec<u8>) -> Result<(), &'static str> {
+		use frame_support::{ensure, traits::fungible::InspectHold};
+		use kilt_support::test_utils::log_and_return_error_message;
+		use sp_runtime::SaturatedConversion;
+
+		ConnectedDids::<T>::iter().try_for_each(|(key, details)| -> Result<(), &'static str> {
+			let hold_balance: u128 = <T as Config>::Currency::balance_on_hold(
+				&HFIdentifier::Deposit(Pallets::DidLookup),
+				&details.deposit.owner,
+			)
+			.saturated_into();
+			ensure!(
+				details.deposit.amount.saturated_into::<u128>() == hold_balance,
+				log_and_return_error_message(scale_info::prelude::format!(
+					"Did lookup: Hold balance is not matching for connected did {:?}. Expected hold: {:?}. Real hold: {:?}",
+					key, details.deposit.amount, hold_balance
+				))
+			);
+			Ok(())
+		})
 	}
 }
 
 /// Checks if there is an user, who has still reserved balance and no holds. If
 /// yes, the migration is not executed yet.
-fn ensure_upgraded<T: Config>() -> bool
+fn is_upgraded<T: Config>() -> bool
 where
 	<T as Config>::Currency: ReservableCurrency<T::AccountId>,
 {
 	ConnectedDids::<T>::iter_values()
 		.map(|details: ConnectionRecordOf<T>| {
-			has_user_holds_and_no_reserves::<AccountIdOf<T>, CurrencyOf<T>>(
+			has_user_holds::<AccountIdOf<T>, CurrencyOf<T>>(
 				&details.deposit.owner,
 				&HFIdentifier::Deposit(Pallets::DidLookup),
 			)

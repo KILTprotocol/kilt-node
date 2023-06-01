@@ -22,7 +22,7 @@ use frame_support::{
 };
 use kilt_support::{
 	deposit::{HFIdentifier, Pallets},
-	migration::switch_reserved_to_hold,
+	migration::{has_user_holds, switch_reserved_to_hold},
 };
 use log;
 use sp_runtime::SaturatedConversion;
@@ -37,7 +37,7 @@ where
 	<T as Config>::Currency: ReservableCurrency<T::AccountId>,
 {
 	fn on_runtime_upgrade() -> frame_support::weights::Weight {
-		log::info!("Attestation: Initiating migration");
+		log::info!("bla bla Attestation: Initiating migration {:?}", is_upgraded::<T>());
 		if is_upgraded::<T>() {
 			return do_migration::<T>();
 		}
@@ -46,26 +46,53 @@ where
 		<T as frame_system::Config>::DbWeight::get().reads_writes(0, 0)
 	}
 
-	// 	#[cfg(feature = "try-runtime")]
+	#[cfg(feature = "try-runtime")]
 	fn pre_upgrade() -> Result<sp_std::vec::Vec<u8>, &'static str> {
 		use frame_support::ensure;
 		use sp_std::vec;
-		// before the upgrade, there should be no account with holds
-		ensure!(is_upgraded::<T>(), "Pre upgrade: there are users with holds.");
-		log::info!("Attestation: There are no users with holds!");
+
+		let has_all_user_no_holds = Attestations::<T>::iter_values()
+			.map(|details: AttestationDetails<T>| {
+				has_user_holds::<AccountIdOf<T>, CurrencyOf<T>>(
+					&details.deposit.owner,
+					&HFIdentifier::Deposit(Pallets::Attestation),
+				)
+			})
+			.all(|user| user);
+
+		ensure!(
+			has_all_user_no_holds,
+			"Pre Upgrade Attestation: there are users with holds!"
+		);
+
+		log::info!(
+			"Attestation Pre upgrade: There are no users with holds! {:?}",
+			has_all_user_no_holds
+		);
 
 		Ok(vec![])
 	}
 
 	#[cfg(feature = "try-runtime")]
 	fn post_upgrade(_pre_state: sp_std::vec::Vec<u8>) -> Result<(), &'static str> {
-		use frame_support::ensure;
+		use frame_support::{ensure, traits::fungible::InspectHold};
+		use kilt_support::test_utils::log_and_return_error_message;
 
-		// before the upgrade, there should be no account with holds
-		ensure!(!is_upgraded::<T>(), "Post upgrade: there are users with reserves.");
-		log::info!("Attestation: Post migration checks");
-
-		Ok(())
+		Attestations::<T>::iter().try_for_each(|(key, details)| -> Result<(), &'static str> {
+			let hold_balance: u128 = <T as Config>::Currency::balance_on_hold(
+				&HFIdentifier::Deposit(Pallets::Attestation),
+				&details.deposit.owner,
+			)
+			.saturated_into();
+			ensure!(
+				details.deposit.amount.saturated_into::<u128>() == hold_balance,
+				log_and_return_error_message(scale_info::prelude::format!(
+					"Attestation: Hold balance is not matching for attestation {:?}. Expected hold: {:?}. Real hold: {:?}",
+					key, details.deposit.amount, hold_balance
+				))
+			);
+			Ok(())
+		})
 	}
 }
 
@@ -76,8 +103,13 @@ where
 	<T as Config>::Currency: ReservableCurrency<T::AccountId>,
 {
 	Attestations::<T>::iter_values()
-		.map(|details: AttestationDetails<T>| true)
-		.any(|user| !user)
+		.map(|details: AttestationDetails<T>| {
+			has_user_holds::<AccountIdOf<T>, CurrencyOf<T>>(
+				&details.deposit.owner,
+				&HFIdentifier::Deposit(Pallets::Attestation),
+			)
+		})
+		.all(|user| user)
 }
 
 fn do_migration<T: Config>() -> Weight

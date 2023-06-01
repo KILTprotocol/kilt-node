@@ -22,7 +22,7 @@ use frame_support::{
 };
 use kilt_support::{
 	deposit::{HFIdentifier, Pallets},
-	migration::{has_user_holds_and_no_reserves, switch_reserved_to_hold},
+	migration::{has_user_holds, switch_reserved_to_hold},
 };
 use sp_runtime::SaturatedConversion;
 use sp_std::marker::PhantomData;
@@ -37,7 +37,7 @@ where
 {
 	fn on_runtime_upgrade() -> frame_support::weights::Weight {
 		log::info!("Public Credentials: Initiating migration");
-		if ensure_upgraded::<T>() {
+		if is_upgraded::<T>() {
 			return do_migration::<T>();
 		}
 		log::info!("Public Credentials: No migration needed. This file should be deleted.");
@@ -49,50 +49,57 @@ where
 		use frame_support::ensure;
 		use sp_std::vec;
 
-		let has_one_user_holds = Credentials::<T>::iter_values()
+		let has_all_user_no_holds = Credentials::<T>::iter_values()
 			.map(|details: CredentialEntryOf<T>| {
-				has_user_holds_and_no_reserves::<AccountIdOf<T>, CurrencyOf<T>>(
-					&details.deposit.owner,
-					&HFIdentifier::Deposit(Pallets::PublicCredentials),
-				)
-			})
-			.all(|user| !user);
-
-		// before the upgrade, there should be no account with holds
-		ensure!(has_one_user_holds, "Pre upgrade: there are users with holds.");
-
-		Ok(vec![])
-	}
-
-	#[cfg(feature = "try-runtime")]
-	fn post_upgrade(_pre_state: sp_std::vec::Vec<u8>) -> Result<(), &'static str> {
-		use frame_support::ensure;
-
-		let has_all_user_holds = Credentials::<T>::iter_values()
-			.map(|details: CredentialEntryOf<T>| {
-				has_user_holds_and_no_reserves::<AccountIdOf<T>, CurrencyOf<T>>(
+				has_user_holds::<AccountIdOf<T>, CurrencyOf<T>>(
 					&details.deposit.owner,
 					&HFIdentifier::Deposit(Pallets::PublicCredentials),
 				)
 			})
 			.all(|user| user);
 
-		// before the upgrade, there should be no account with holds
-		ensure!(has_all_user_holds, "Post upgrade: there are user with reserves.");
+		ensure!(
+			has_all_user_no_holds,
+			"Pre Upgrade Public Credentials: there are users with holds!"
+		);
 
-		Ok(())
+		log::info!("Public Credentials: There are no users with holds!");
+
+		Ok(vec![])
+	}
+
+	#[cfg(feature = "try-runtime")]
+	fn post_upgrade(_pre_state: sp_std::vec::Vec<u8>) -> Result<(), &'static str> {
+		use frame_support::{ensure, traits::fungible::InspectHold};
+		use kilt_support::test_utils::log_and_return_error_message;
+
+		Credentials::<T>::iter().try_for_each(|(key, key2, details)| -> Result<(), &'static str> {
+			let hold_balance: u128 = <T as Config>::Currency::balance_on_hold(
+				&HFIdentifier::Deposit(Pallets::PublicCredentials),
+				&details.deposit.owner,
+			)
+			.saturated_into();
+			ensure!(
+				details.deposit.amount.saturated_into::<u128>() == hold_balance,
+				log_and_return_error_message(scale_info::prelude::format!(
+					"Public Credentails: Hold balance is not matching for credential {:?} {:?}. Expected hold: {:?}. Real hold: {:?}",
+					key, key2, details.deposit.amount, hold_balance
+				))
+			);
+			Ok(())
+		})
 	}
 }
 
 /// Checks if there is an user, who has still reserved balance and no holds. If
 /// yes, the migration is not executed yet.
-fn ensure_upgraded<T: Config>() -> bool
+fn is_upgraded<T: Config>() -> bool
 where
 	<T as Config>::Currency: ReservableCurrency<T::AccountId>,
 {
 	Credentials::<T>::iter_values()
 		.map(|details: CredentialEntryOf<T>| {
-			has_user_holds_and_no_reserves::<AccountIdOf<T>, CurrencyOf<T>>(
+			has_user_holds::<AccountIdOf<T>, CurrencyOf<T>>(
 				&details.deposit.owner,
 				&HFIdentifier::Deposit(Pallets::PublicCredentials),
 			)
