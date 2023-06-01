@@ -2308,7 +2308,7 @@ pub mod pallet {
 				.iter()
 				.find(|l| &l.id == T::Identifier::from(HFIdentifier::Staking).as_ref())
 			{
-				amount.saturating_sub(total_freezed.into()).into()
+				amount.saturating_sub(total_unfreezed.into()).into()
 			} else {
 				// should never fail to find the lock since we checked whether unstaking is not
 				// empty but let's be safe
