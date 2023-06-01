@@ -176,6 +176,7 @@ impl Config for Test {
 	type NetworkRewardStart = NetworkRewardStart;
 	type NetworkRewardBeneficiary = ToBeneficiary;
 	type WeightInfo = ();
+	type Identifier = HFIdentifier;
 	const BLOCKS_PER_YEAR: Self::BlockNumber = 5 * 60 * 24 * 36525 / 100;
 }
 

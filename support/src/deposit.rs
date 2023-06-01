@@ -30,6 +30,12 @@ pub enum HFIdentifier {
 	Misc,
 }
 
+impl AsRef<HFIdentifier> for HFIdentifier {
+	fn as_ref(&self) -> &HFIdentifier {
+		self
+	}
+}
+
 /// An amount of balance reserved by the specified address.
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Debug, Encode, Decode, Eq, PartialEq, Ord, PartialOrd, TypeInfo, MaxEncodedLen)]

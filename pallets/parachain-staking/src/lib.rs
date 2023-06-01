@@ -198,6 +198,8 @@ pub mod pallet {
 			+ MutateFreeze<Self::AccountId, Balance = Self::CurrencyBalance, Id = HFIdentifier>
 			+ Eq;
 
+		type Identifier: AsRef<<Self as pallet_balances::Config>::FreezeIdentifier> + From<HFIdentifier>;
+
 		/// Just the `Currency::Balance` type; we have this item to allow us to
 		/// constrain it to `From<u64>`.
 		/// Note: Definition taken from pallet_gilt
@@ -2305,7 +2307,9 @@ pub mod pallet {
 
 			// iterate balance locks to retrieve amount of locked balance
 			let freezes = Freezes::<T>::get(who);
-			total_locked = if let Some(IdAmount { amount, .. }) = freezes.iter().find(|l| l.id == HFIdentifier::Staking)
+			total_locked = if let Some(IdAmount { amount, .. }) = freezes
+				.iter()
+				.find(|l| &l.id == T::Identifier::from(HFIdentifier::Staking).as_ref())
 			{
 				amount.saturating_sub(total_unlocked.into()).into()
 			} else {
