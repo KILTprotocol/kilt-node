@@ -147,13 +147,14 @@ pub mod pallet {
 		pallet_prelude::*,
 		storage::bounded_btree_map::BoundedBTreeMap,
 		traits::{
-			Currency, EstimateNextSessionRotation, Get, Imbalance, LockIdentifier, LockableCurrency, OnUnbalanced,
-			ReservableCurrency, StorageVersion, WithdrawReasons,
+			tokens::fungible::MutateFreeze, Currency, EstimateNextSessionRotation, Get, Imbalance, LockIdentifier,
+			OnUnbalanced, StorageVersion,
 		},
 		BoundedVec,
 	};
 	use frame_system::pallet_prelude::*;
-	use pallet_balances::{BalanceLock, Locks};
+	use kilt_support::deposit::HFIdentifier;
+	use pallet_balances::{Freezes, IdAmount};
 	use pallet_session::ShouldEndSession;
 	use scale_info::TypeInfo;
 	use sp_runtime::{
@@ -194,8 +195,7 @@ pub mod pallet {
 		/// The currency type
 		/// Note: Declaration of Balance taken from pallet_gilt
 		type Currency: Currency<Self::AccountId, Balance = Self::CurrencyBalance>
-			+ ReservableCurrency<Self::AccountId, Balance = Self::CurrencyBalance>
-			+ LockableCurrency<Self::AccountId, Balance = Self::CurrencyBalance>
+			+ MutateFreeze<Self::AccountId, Balance = Self::CurrencyBalance, Id = HFIdentifier>
 			+ Eq;
 
 		/// Just the `Currency::Balance` type; we have this item to allow us to
@@ -2187,7 +2187,7 @@ pub mod pallet {
 
 			// Either set a new lock or potentially extend the existing one if amount
 			// exceeds the currently locked amount
-			T::Currency::extend_lock(STAKING_ID, who, amount, WithdrawReasons::all());
+			T::Currency::extend_freeze(&HFIdentifier::Staking, who, amount);
 
 			Ok(unstaking_len)
 		}
@@ -2304,8 +2304,9 @@ pub mod pallet {
 			}
 
 			// iterate balance locks to retrieve amount of locked balance
-			let locks = Locks::<T>::get(who);
-			total_locked = if let Some(BalanceLock { amount, .. }) = locks.iter().find(|l| l.id == STAKING_ID) {
+			let freezes = Freezes::<T>::get(who);
+			total_locked = if let Some(IdAmount { amount, .. }) = freezes.iter().find(|l| l.id == HFIdentifier::Staking)
+			{
 				amount.saturating_sub(total_unlocked.into()).into()
 			} else {
 				// should never fail to find the lock since we checked whether unstaking is not
@@ -2314,10 +2315,10 @@ pub mod pallet {
 			};
 
 			if total_locked.is_zero() {
-				T::Currency::remove_lock(STAKING_ID, who);
+				T::Currency::thaw(&HFIdentifier::Staking, who);
 				Unstaking::<T>::remove(who);
 			} else {
-				T::Currency::set_lock(STAKING_ID, who, total_locked, WithdrawReasons::all());
+				T::Currency::set_freeze(&HFIdentifier::Staking, who, total_locked);
 				Unstaking::<T>::insert(who, unstaking);
 			}
 

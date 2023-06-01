@@ -25,6 +25,7 @@ use frame_support::{
 	assert_ok, construct_runtime, parameter_types,
 	traits::{Currency, GenesisBuild, OnFinalize, OnInitialize, OnUnbalanced},
 };
+use kilt_support::deposit::HFIdentifier;
 use pallet_authorship::EventHandler;
 use sp_consensus_aura::sr25519::AuthorityId;
 use sp_core::H256;
@@ -102,8 +103,8 @@ parameter_types! {
 }
 
 impl pallet_balances::Config for Test {
-	type FreezeIdentifier = ();
-	type HoldIdentifier = ();
+	type FreezeIdentifier = HFIdentifier;
+	type HoldIdentifier = HFIdentifier;
 	type MaxFreezes = ();
 	type MaxHolds = ();
 	type MaxLocks = ();
