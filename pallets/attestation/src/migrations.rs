@@ -35,7 +35,7 @@ where
 {
 	fn on_runtime_upgrade() -> frame_support::weights::Weight {
 		log::info!("Attestation: Initiating migration");
-		if ensure_upgraded::<T>() {
+		if is_upgraded::<T>() {
 			return do_migration::<T>();
 		}
 
@@ -47,15 +47,9 @@ where
 	fn pre_upgrade() -> Result<sp_std::vec::Vec<u8>, &'static str> {
 		use frame_support::ensure;
 		use sp_std::vec;
-
-		let has_one_user_holds = Attestations::<T>::iter_values()
-			.map(|details: AttestationDetails<T>| {
-				has_user_holds_and_no_reserves::<AccountIdOf<T>, CurrencyOf<T>>(&details.deposit.owner)
-			})
-			.all(|user| !user);
-
 		// before the upgrade, there should be no account with holds
-		ensure!(has_one_user_holds, "Pre upgrade: there are users with holds.");
+		ensure!(is_upgraded::<T>(), "Pre upgrade: there are users with holds.");
+		log::info!("Attestation: There are no users with holds!");
 
 		Ok(vec![])
 	}
@@ -64,14 +58,9 @@ where
 	fn post_upgrade(_pre_state: sp_std::vec::Vec<u8>) -> Result<(), &'static str> {
 		use frame_support::ensure;
 
-		let has_all_user_holds = Attestations::<T>::iter_values()
-			.map(|details: AttestationDetails<T>| {
-				has_user_holds_and_no_reserves::<AccountIdOf<T>, CurrencyOf<T>>(&details.deposit.owner)
-			})
-			.all(|user| user);
-
 		// before the upgrade, there should be no account with holds
-		ensure!(has_all_user_holds, "Post upgrade: there are user with reserves.");
+		ensure!(!is_upgraded::<T>(), "Post upgrade: there are users with reserves.");
+		log::info!("Attestation: Post migration checks");
 
 		Ok(())
 	}
@@ -79,7 +68,7 @@ where
 
 /// Checks if there is an user, who has still reserved balance and no holds. If
 /// yes, the migration is not executed yet.
-fn ensure_upgraded<T: Config>() -> bool
+fn is_upgraded<T: Config>() -> bool
 where
 	<T as Config>::Currency: ReservableCurrency<T::AccountId>,
 {
@@ -105,6 +94,8 @@ where
 			if error.is_ok() {
 				return <T as frame_system::Config>::DbWeight::get().reads_writes(1, 1);
 			}
+
+			log::error!("{:?}", error);
 
 			log::error!(
 				" Attestation: Could not convert reserves to hold from attestation: {:?} ",

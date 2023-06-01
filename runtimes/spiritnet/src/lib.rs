@@ -174,6 +174,8 @@ parameter_types! {
 	pub const ExistentialDeposit: u128 = EXISTENTIAL_DEPOSIT;
 	pub const MaxLocks: u32 = 50;
 	pub const MaxReserves: u32 = 50;
+	pub const MaxHolds: u32 = 50;
+	pub const MaxFreezes: u32 = 50;
 }
 
 impl pallet_multisig::Config for Runtime {
@@ -197,8 +199,8 @@ impl pallet_indices::Config for Runtime {
 impl pallet_balances::Config for Runtime {
 	type FreezeIdentifier = HFIdentifier;
 	type HoldIdentifier = HFIdentifier;
-	type MaxFreezes = ();
-	type MaxHolds = ();
+	type MaxFreezes = MaxFreezes;
+	type MaxHolds = MaxHolds;
 	/// The type for recording an account's balance.
 	type Balance = Balance;
 	/// The ubiquitous event type.

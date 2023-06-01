@@ -252,8 +252,8 @@ parameter_types! {
 impl pallet_balances::Config for Runtime {
 	type FreezeIdentifier = HFIdentifier;
 	type HoldIdentifier = HFIdentifier;
-	type MaxFreezes = ();
-	type MaxHolds = ();
+	type MaxFreezes = MaxFreezes;
+	type MaxHolds = MaxHolds;
 	type MaxLocks = MaxLocks;
 	type MaxReserves = MaxReserves;
 	type ReserveIdentifier = [u8; 8];
