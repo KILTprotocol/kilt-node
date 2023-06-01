@@ -91,7 +91,6 @@ pub mod pallet {
 			asset: Box<VersionedMultiAsset>,
 			weight: Weight,
 		) -> DispatchResult {
-			// TODO: Charge the dispatcher based on the destination weight configuration
 			let dispatcher = T::CommitOriginCheck::ensure_origin(origin).map(|e| e.into())?;
 
 			let destination: MultiLocation = (*destination).try_into().map_err(|_| Error::<T>::BadVersion)?;
@@ -118,7 +117,7 @@ pub mod pallet {
 			.map_err(|_| Error::<T>::Predispatch)?;
 
 			// TODO: Use returned asset of `pre_dispatch` to charge the tx submitter for the
-			// fee, in addition to the cost on the target chain.
+			// fee.
 			T::IdentityProofDispatcher::dispatch(ticket).map_err(|_| Error::<T>::Dispatch)?;
 
 			Self::deposit_event(Event::IdentityInfoDispatched(action, Box::new(destination)));

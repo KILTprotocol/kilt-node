@@ -147,6 +147,7 @@ pub mod identity_dispatch {
 					assets: Wild(All),
 					beneficiary: MultiLocation {
 						parents: 1,
+						// Re-anchor the same account junction as seen from the destination.
 						// TODO: Error handling
 						interior: Here
 							.into_location()

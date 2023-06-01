@@ -101,6 +101,10 @@ fn commit_identity() {
 	let did_details = ProviderParachain::execute_with(|| {
 		Did::get(&did).expect("DID details should be stored on the provider chain.")
 	});
+	println!(
+		"Complete DID details encoded size: {:?} bytes",
+		did_details.encoded_size()
+	);
 	let (web3_name, ownership_details) = ProviderParachain::execute_with(|| {
 		let web3_name =
 			Names::<ProviderRuntime>::get(&did).expect("Web3name should be linked to the DID on the provider chain.");
