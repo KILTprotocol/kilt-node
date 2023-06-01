@@ -20,7 +20,10 @@ use frame_support::{
 	traits::{Get, OnRuntimeUpgrade, ReservableCurrency},
 	weights::Weight,
 };
-use kilt_support::migration::{has_user_holds_and_no_reserves, switch_reserved_to_hold};
+use kilt_support::{
+	deposit::{HFIdentifier, Pallets},
+	migration::{has_user_holds_and_no_reserves, switch_reserved_to_hold},
+};
 use log;
 use sp_runtime::SaturatedConversion;
 use sp_std::marker::PhantomData;
@@ -50,7 +53,10 @@ where
 
 		let has_one_user_holds = DelegationNodes::<T>::iter_values()
 			.map(|details: DelegationNode<T>| {
-				has_user_holds_and_no_reserves::<AccountIdOf<T>, CurrencyOf<T>>(&details.deposit.owner)
+				has_user_holds_and_no_reserves::<AccountIdOf<T>, CurrencyOf<T>>(
+					&details.deposit.owner,
+					&HFIdentifier::Deposit(Pallets::Delegation),
+				)
 			})
 			.all(|user| !user);
 
@@ -66,7 +72,10 @@ where
 
 		let has_all_user_holds = DelegationNodes::<T>::iter_values()
 			.map(|details: DelegationNode<T>| {
-				has_user_holds_and_no_reserves::<AccountIdOf<T>, CurrencyOf<T>>(&details.deposit.owner)
+				has_user_holds_and_no_reserves::<AccountIdOf<T>, CurrencyOf<T>>(
+					&details.deposit.owner,
+					&HFIdentifier::Deposit(Pallets::Delegation),
+				)
 			})
 			.all(|user| user);
 
@@ -85,7 +94,10 @@ where
 {
 	DelegationNodes::<T>::iter_values()
 		.map(|details: DelegationNode<T>| {
-			has_user_holds_and_no_reserves::<AccountIdOf<T>, CurrencyOf<T>>(&details.deposit.owner)
+			has_user_holds_and_no_reserves::<AccountIdOf<T>, CurrencyOf<T>>(
+				&details.deposit.owner,
+				&HFIdentifier::Deposit(Pallets::Delegation),
+			)
 		})
 		.any(|user| !user)
 }
@@ -99,6 +111,7 @@ where
 			let deposit = delegation_detail.deposit;
 			let error = switch_reserved_to_hold::<AccountIdOf<T>, CurrencyOf<T>>(
 				deposit.owner,
+				&HFIdentifier::Deposit(Pallets::Delegation),
 				deposit.amount.saturated_into(),
 			);
 

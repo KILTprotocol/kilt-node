@@ -30,7 +30,7 @@ use sp_runtime::{traits::IdentifyAccount, AccountId32, MultiSigner};
 use sp_std::{convert::TryInto, vec::Vec};
 
 use kilt_support::{
-	deposit::{Deposit, HFIdentifier},
+	deposit::{Deposit, HFIdentifier, Pallets},
 	signature::VerifySignature,
 };
 
@@ -1150,7 +1150,7 @@ benchmarks! {
 		did_details.deposit.owner = did_account.clone();
 
 		make_free_for_did::<T>(&did_account);
-		CurrencyOf::<T>::hold(&HFIdentifier::Deposit ,&did_account, did_details.deposit.amount).expect("should reserve currency");
+		CurrencyOf::<T>::hold(&HFIdentifier::Deposit(Pallets::Did), &did_account, did_details.deposit.amount).expect("should reserve currency");
 		Did::<T>::insert(&did_subject, did_details);
 
 		let origin = RawOrigin::Signed(did_subject.clone());
@@ -1176,7 +1176,7 @@ benchmarks! {
 
 		Did::<T>::insert(&did_subject, did_details.clone());
 		make_free_for_did::<T>(&did_account);
-		CurrencyOf::<T>::hold(&HFIdentifier::Deposit, &did_account, did_details.deposit.amount).expect("should reserve currency");
+		CurrencyOf::<T>::hold(&HFIdentifier::Deposit(Pallets::Did), &did_account, did_details.deposit.amount).expect("should reserve currency");
 
 		let origin = RawOrigin::Signed(did_subject.clone());
 		let did_to_update = did_subject.clone();

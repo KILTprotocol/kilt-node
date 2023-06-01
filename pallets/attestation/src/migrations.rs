@@ -20,7 +20,10 @@ use frame_support::{
 	traits::{Get, OnRuntimeUpgrade, ReservableCurrency},
 	weights::Weight,
 };
-use kilt_support::migration::{has_user_holds_and_no_reserves, switch_reserved_to_hold};
+use kilt_support::{
+	deposit::{HFIdentifier, Pallets},
+	migration::{has_user_holds_and_no_reserves, switch_reserved_to_hold},
+};
 use log;
 use sp_runtime::SaturatedConversion;
 use sp_std::marker::PhantomData;
@@ -74,7 +77,10 @@ where
 {
 	Attestations::<T>::iter_values()
 		.map(|details: AttestationDetails<T>| {
-			has_user_holds_and_no_reserves::<AccountIdOf<T>, CurrencyOf<T>>(&details.deposit.owner)
+			has_user_holds_and_no_reserves::<AccountIdOf<T>, CurrencyOf<T>>(
+				&details.deposit.owner,
+				&HFIdentifier::Deposit(Pallets::Attestation),
+			)
 		})
 		.any(|user| !user)
 }
@@ -88,6 +94,7 @@ where
 			let deposit = attestations_detail.deposit;
 			let error = switch_reserved_to_hold::<AccountIdOf<T>, CurrencyOf<T>>(
 				deposit.owner,
+				&HFIdentifier::Deposit(Pallets::Attestation),
 				deposit.amount.saturated_into(),
 			);
 

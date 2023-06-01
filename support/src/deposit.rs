@@ -25,9 +25,21 @@ use sp_runtime::DispatchError;
 
 #[derive(Clone, Debug, Encode, Decode, Eq, PartialEq, Ord, PartialOrd, TypeInfo, MaxEncodedLen, Copy)]
 pub enum HFIdentifier {
-	Deposit,
+	Deposit(Pallets),
 	Staking,
 	Misc,
+}
+
+#[derive(Clone, Debug, Encode, Decode, Eq, PartialEq, Ord, PartialOrd, TypeInfo, MaxEncodedLen, Copy)]
+pub enum Pallets {
+	Attestation,
+	Ctype,
+	Delegation,
+	Did,
+	DidLookup,
+	W3n,
+	Staking,
+	PublicCredentials,
 }
 
 /// An amount of balance reserved by the specified address.
@@ -41,8 +53,9 @@ pub struct Deposit<Account, Balance> {
 pub fn reserve_deposit<Account, Currency: Mutate<Account, Reason = HFIdentifier>>(
 	account: Account,
 	deposit_amount: Currency::Balance,
+	reason: &HFIdentifier,
 ) -> Result<Deposit<Account, Currency::Balance>, DispatchError> {
-	let q = Currency::hold(&HFIdentifier::Deposit, &account, deposit_amount);
+	let q = Currency::hold(reason, &account, deposit_amount);
 	q?;
 	Ok(Deposit {
 		owner: account,
@@ -52,7 +65,8 @@ pub fn reserve_deposit<Account, Currency: Mutate<Account, Reason = HFIdentifier>
 
 pub fn free_deposit<Account, Currency: Mutate<Account, Reason = HFIdentifier>>(
 	deposit: &Deposit<Account, Currency::Balance>,
+	reason: &HFIdentifier,
 ) -> DispatchResult {
-	Currency::release(&HFIdentifier::Deposit, &deposit.owner, deposit.amount, Precision::Exact)?;
+	Currency::release(reason, &deposit.owner, deposit.amount, Precision::Exact)?;
 	Ok(())
 }

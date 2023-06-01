@@ -22,7 +22,10 @@ use frame_support::{
 	traits::{Get, GetStorageVersion, OnRuntimeUpgrade, ReservableCurrency, StorageVersion},
 	weights::Weight,
 };
-use kilt_support::migration::{has_user_holds_and_no_reserves, switch_reserved_to_hold};
+use kilt_support::{
+	deposit::{HFIdentifier, Pallets},
+	migration::{has_user_holds_and_no_reserves, switch_reserved_to_hold},
+};
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_runtime::AccountId32;
@@ -141,7 +144,10 @@ where
 
 		let has_one_user_holds = ConnectedDids::<T>::iter_values()
 			.map(|details: ConnectionRecordOf<T>| {
-				has_user_holds_and_no_reserves::<AccountIdOf<T>, CurrencyOf<T>>(&details.deposit.owner)
+				has_user_holds_and_no_reserves::<AccountIdOf<T>, CurrencyOf<T>>(
+					&details.deposit.owner,
+					&HFIdentifier::Deposit(Pallets::DidLookup),
+				)
 			})
 			.all(|user| !user);
 
@@ -157,7 +163,10 @@ where
 
 		let has_all_user_holds = ConnectedDids::<T>::iter_values()
 			.map(|details: ConnectionRecordOf<T>| {
-				has_user_holds_and_no_reserves::<AccountIdOf<T>, CurrencyOf<T>>(&details.deposit.owner)
+				has_user_holds_and_no_reserves::<AccountIdOf<T>, CurrencyOf<T>>(
+					&details.deposit.owner,
+					&HFIdentifier::Deposit(Pallets::DidLookup),
+				)
 			})
 			.all(|user| user);
 
@@ -176,7 +185,10 @@ where
 {
 	ConnectedDids::<T>::iter_values()
 		.map(|details: ConnectionRecordOf<T>| {
-			has_user_holds_and_no_reserves::<AccountIdOf<T>, CurrencyOf<T>>(&details.deposit.owner)
+			has_user_holds_and_no_reserves::<AccountIdOf<T>, CurrencyOf<T>>(
+				&details.deposit.owner,
+				&HFIdentifier::Deposit(Pallets::DidLookup),
+			)
 		})
 		.any(|user| !user)
 }
@@ -188,7 +200,11 @@ where
 	ConnectedDids::<T>::iter()
 		.map(|(key, did_details)| -> Weight {
 			let deposit = did_details.deposit;
-			let error = switch_reserved_to_hold::<AccountIdOf<T>, CurrencyOf<T>>(deposit.owner, deposit.amount);
+			let error = switch_reserved_to_hold::<AccountIdOf<T>, CurrencyOf<T>>(
+				deposit.owner,
+				&HFIdentifier::Deposit(Pallets::DidLookup),
+				deposit.amount,
+			);
 
 			if error.is_ok() {
 				return <T as frame_system::Config>::DbWeight::get().reads_writes(1, 1);

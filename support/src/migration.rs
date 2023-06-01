@@ -35,8 +35,9 @@ pub fn has_user_holds_and_no_reserves<
 	Currency: ReservableCurrency<AccountId> + MutateHold<AccountId> + InspectHold<AccountId, Reason = HFIdentifier>,
 >(
 	owner: &AccountId,
+	reason: &HFIdentifier,
 ) -> bool {
-	Currency::balance_on_hold(&HFIdentifier::Deposit, owner).saturated_into::<usize>() > 0
+	Currency::balance_on_hold(reason, owner).saturated_into::<usize>() > 0
 		&& Currency::reserved_balance(owner).saturated_into::<usize>() == 0
 }
 
@@ -55,8 +56,9 @@ pub fn switch_reserved_to_hold<
 	Currency: ReservableCurrency<AccountId> + MutateHold<AccountId> + InspectHold<AccountId, Reason = HFIdentifier>,
 >(
 	owner: AccountId,
+	reason: &HFIdentifier,
 	amount: u128,
 ) -> DispatchResult {
 	Currency::unreserve(&owner, amount.saturated_into());
-	Currency::hold(&HFIdentifier::Deposit, &owner, amount.saturated_into())
+	Currency::hold(reason, &owner, amount.saturated_into())
 }

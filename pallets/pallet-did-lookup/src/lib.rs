@@ -64,7 +64,7 @@ pub mod pallet {
 	};
 	use frame_system::pallet_prelude::*;
 	use kilt_support::{
-		deposit::{Deposit, HFIdentifier},
+		deposit::{Deposit, HFIdentifier, Pallets},
 		traits::{CallSources, StorageDepositCollector},
 	};
 	use runtime_common::Balance;
@@ -249,7 +249,7 @@ pub mod pallet {
 
 			ensure!(
 				<T::Currency as InspectHold<AccountIdOf<T>>>::can_hold(
-					&HFIdentifier::Deposit,
+					&HFIdentifier::Deposit(Pallets::DidLookup),
 					&sender,
 					<T as Config>::Deposit::get()
 				),
@@ -284,7 +284,7 @@ pub mod pallet {
 
 			ensure!(
 				<T::Currency as InspectHold<AccountIdOf<T>>>::can_hold(
-					&HFIdentifier::Deposit,
+					&HFIdentifier::Deposit(Pallets::DidLookup),
 					&source.sender(),
 					<T as Config>::Deposit::get()
 				),

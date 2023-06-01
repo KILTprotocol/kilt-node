@@ -22,7 +22,7 @@ use frame_support::{
 	weights::constants::RocksDbWeight,
 };
 use frame_system::EnsureSigned;
-use kilt_support::deposit::HFIdentifier;
+use kilt_support::deposit::{HFIdentifier, Pallets};
 use pallet_balances::NegativeImbalance;
 use sp_core::{ecdsa, ed25519, sr25519, Pair};
 use sp_runtime::{
@@ -497,8 +497,12 @@ impl ExtBuilder {
 
 			for did in self.dids_stored.iter() {
 				did::Did::<Test>::insert(&did.0, did.1.clone());
-				CurrencyOf::<Test>::hold(&HFIdentifier::Deposit, &did.1.deposit.owner, did.1.deposit.amount)
-					.expect("Deposit owner should have enough balance");
+				CurrencyOf::<Test>::hold(
+					&HFIdentifier::Deposit(Pallets::Did),
+					&did.1.deposit.owner,
+					did.1.deposit.amount,
+				)
+				.expect("Deposit owner should have enough balance");
 			}
 			for did in self.deleted_dids.iter() {
 				DidBlacklist::<Test>::insert(did, ());

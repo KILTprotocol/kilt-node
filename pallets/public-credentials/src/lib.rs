@@ -69,7 +69,7 @@ pub mod pallet {
 
 	pub use ctype::CtypeHashOf;
 	use kilt_support::{
-		deposit::{Deposit, HFIdentifier},
+		deposit::{Deposit, HFIdentifier, Pallets},
 		traits::{CallSources, StorageDepositCollector},
 	};
 
@@ -299,8 +299,12 @@ pub mod pallet {
 				Error::<T>::AlreadyAttested
 			);
 
-			let deposit = kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(payer, deposit_amount)
-				.map_err(|_| Error::<T>::UnableToPayFees)?;
+			let deposit = kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
+				payer,
+				deposit_amount,
+				&HFIdentifier::Deposit(Pallets::PublicCredentials),
+			)
+			.map_err(|_| Error::<T>::UnableToPayFees)?;
 
 			let block_number = frame_system::Pallet::<T>::block_number();
 
@@ -514,7 +518,11 @@ pub mod pallet {
 
 			ensure!(subject == credential_entry.attester, Error::<T>::NotAuthorized);
 
-			PublicCredentialDepositCollector::<T>::change_deposit_owner(&credential_id, source.sender())?;
+			PublicCredentialDepositCollector::<T>::change_deposit_owner(
+				&credential_id,
+				source.sender(),
+				&HFIdentifier::Deposit(Pallets::PublicCredentials),
+			)?;
 
 			Ok(())
 		}
@@ -530,7 +538,10 @@ pub mod pallet {
 
 			ensure!(source == credential_entry.deposit.owner, Error::<T>::NotAuthorized);
 
-			PublicCredentialDepositCollector::<T>::update_deposit(&credential_id)?;
+			PublicCredentialDepositCollector::<T>::update_deposit(
+				&credential_id,
+				&HFIdentifier::Deposit(Pallets::PublicCredentials),
+			)?;
 
 			Ok(())
 		}
@@ -544,7 +555,10 @@ pub mod pallet {
 			credential_id: CredentialIdOf<T>,
 			credential: CredentialEntryOf<T>,
 		) -> DispatchResult {
-			kilt_support::free_deposit::<T::AccountId, CurrencyOf<T>>(&credential.deposit)?;
+			kilt_support::free_deposit::<T::AccountId, CurrencyOf<T>>(
+				&credential.deposit,
+				&HFIdentifier::Deposit(Pallets::PublicCredentials),
+			)?;
 			Credentials::<T>::remove(&credential_subject, &credential_id);
 			CredentialSubjects::<T>::remove(&credential_id);
 

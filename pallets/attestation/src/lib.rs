@@ -97,7 +97,7 @@ pub mod pallet {
 
 	use ctype::CtypeHashOf;
 	use kilt_support::{
-		deposit::{Deposit, HFIdentifier},
+		deposit::{Deposit, HFIdentifier, Pallets},
 		traits::{CallSources, StorageDepositCollector},
 	};
 
@@ -273,7 +273,11 @@ pub mod pallet {
 				.transpose()?;
 			let authorization_id = authorization.as_ref().map(|ac| ac.authorization_id());
 
-			let deposit = kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(payer, deposit_amount)?;
+			let deposit = kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
+				payer,
+				deposit_amount,
+				&HFIdentifier::Deposit(Pallets::Attestation),
+			)?;
 
 			log::debug!("insert Attestation");
 
@@ -446,7 +450,11 @@ pub mod pallet {
 			let attestation = Attestations::<T>::get(claim_hash).ok_or(Error::<T>::NotFound)?;
 			ensure!(attestation.attester == subject, Error::<T>::NotAuthorized);
 
-			AttestationStorageDepositCollector::<T>::change_deposit_owner(&claim_hash, sender)?;
+			AttestationStorageDepositCollector::<T>::change_deposit_owner(
+				&claim_hash,
+				sender,
+				&HFIdentifier::Deposit(Pallets::Attestation),
+			)?;
 
 			Ok(())
 		}
@@ -462,7 +470,10 @@ pub mod pallet {
 			let attestation = Attestations::<T>::get(claim_hash).ok_or(Error::<T>::NotFound)?;
 			ensure!(attestation.deposit.owner == sender, Error::<T>::NotAuthorized);
 
-			AttestationStorageDepositCollector::<T>::update_deposit(&claim_hash)?;
+			AttestationStorageDepositCollector::<T>::update_deposit(
+				&claim_hash,
+				&HFIdentifier::Deposit(Pallets::Attestation),
+			)?;
 
 			Ok(())
 		}
@@ -470,7 +481,10 @@ pub mod pallet {
 
 	impl<T: Config> Pallet<T> {
 		fn remove_attestation(attestation: AttestationDetails<T>, claim_hash: ClaimHashOf<T>) -> DispatchResult {
-			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&attestation.deposit)?;
+			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
+				&attestation.deposit,
+				&HFIdentifier::Deposit(Pallets::Attestation),
+			)?;
 			Attestations::<T>::remove(claim_hash);
 			if let Some(authorization_id) = &attestation.authorization_id {
 				ExternalAttestations::<T>::remove(authorization_id, claim_hash);

@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 use frame_support::traits::fungible::MutateHold;
-use kilt_support::deposit::{Deposit, HFIdentifier};
+use kilt_support::deposit::{Deposit, HFIdentifier, Pallets};
 
 use crate::{AccountIdOf, BalanceOf, Config, CurrencyOf, Names, Owner, Web3NameOf, Web3NameOwnerOf, Web3OwnershipOf};
 
@@ -29,7 +29,8 @@ pub(crate) fn insert_raw_w3n<T: Config>(
 	block_number: BlockNumberOf<T>,
 	deposit: BalanceOf<T>,
 ) {
-	CurrencyOf::<T>::hold(&HFIdentifier::Deposit, &payer, deposit).expect("Payer should have enough funds for deposit");
+	CurrencyOf::<T>::hold(&HFIdentifier::Deposit(Pallets::W3n), &payer, deposit)
+		.expect("Payer should have enough funds for deposit");
 
 	Names::<T>::insert(&owner, name.clone());
 	Owner::<T>::insert(

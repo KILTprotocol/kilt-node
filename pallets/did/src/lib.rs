@@ -146,7 +146,7 @@ pub mod pallet {
 	};
 	use frame_system::pallet_prelude::*;
 	use kilt_support::{
-		deposit::{Deposit, HFIdentifier},
+		deposit::{Deposit, HFIdentifier, Pallets},
 		traits::{CallSources, StorageDepositCollector},
 	};
 	use sp_runtime::traits::BadOrigin;
@@ -1108,7 +1108,7 @@ pub mod pallet {
 			let subject = source.subject();
 			let sender = source.sender();
 
-			DidDepositCollector::<T>::change_deposit_owner(&subject, sender)?;
+			DidDepositCollector::<T>::change_deposit_owner(&subject, sender, &HFIdentifier::Deposit(Pallets::Did))?;
 
 			Ok(())
 		}
@@ -1248,7 +1248,10 @@ pub mod pallet {
 			let did_entry = Did::<T>::take(&did_subject).ok_or(Error::<T>::NotFound)?;
 
 			DidEndpointsCount::<T>::remove(&did_subject);
-			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&did_entry.deposit)?;
+			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
+				&did_entry.deposit,
+				&HFIdentifier::Deposit(Pallets::Did),
+			)?;
 			// Mark as deleted to prevent potential replay-attacks of re-adding a previously
 			// deleted DID.
 			DidBlacklist::<T>::insert(&did_subject, ());

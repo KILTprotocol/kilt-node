@@ -117,16 +117,16 @@ pub trait StorageDepositCollector<AccountId, Key> {
 	/// The deposit balance of the current owner will be freed, while the
 	/// deposit balance of the new owner will get reserved. The deposit amount
 	/// will not change even if the required byte and item fees were updated.
-	fn change_deposit_owner(key: &Key, new_owner: AccountId) -> Result<(), DispatchError> {
+	fn change_deposit_owner(key: &Key, new_owner: AccountId, reason: &HFIdentifier) -> Result<(), DispatchError> {
 		let deposit = Self::deposit(key)?;
 
-		free_deposit::<AccountId, Self::Currency>(&deposit)?;
+		free_deposit::<AccountId, Self::Currency>(&deposit, reason)?;
 
 		let deposit = Deposit {
 			owner: new_owner,
 			..deposit
 		};
-		Self::Currency::hold(&HFIdentifier::Deposit, &deposit.owner, deposit.amount)?;
+		Self::Currency::hold(reason, &deposit.owner, deposit.amount)?;
 
 		Self::store_deposit(key, deposit)?;
 
@@ -139,16 +139,16 @@ pub trait StorageDepositCollector<AccountId, Key> {
 	/// updates the deposit amount. It either frees parts of the reserved
 	/// balance in case the deposit was lowered or reserves more balance when
 	/// the deposit was raised.
-	fn update_deposit(key: &Key) -> Result<(), DispatchError> {
+	fn update_deposit(key: &Key, reason: &HFIdentifier) -> Result<(), DispatchError> {
 		let deposit = Self::deposit(key)?;
 
-		free_deposit::<AccountId, Self::Currency>(&deposit)?;
+		free_deposit::<AccountId, Self::Currency>(&deposit, reason)?;
 
 		let deposit = Deposit {
 			amount: Self::deposit_amount(key),
 			..deposit
 		};
-		Self::Currency::hold(&HFIdentifier::Deposit, &deposit.owner, deposit.amount)?;
+		Self::Currency::hold(reason, &deposit.owner, deposit.amount)?;
 
 		Self::store_deposit(key, deposit)?;
 

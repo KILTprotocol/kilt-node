@@ -20,7 +20,10 @@ use frame_support::{
 	traits::{Get, OnRuntimeUpgrade, ReservableCurrency},
 	weights::Weight,
 };
-use kilt_support::migration::{has_user_holds_and_no_reserves, switch_reserved_to_hold};
+use kilt_support::{
+	deposit::{HFIdentifier, Pallets},
+	migration::{has_user_holds_and_no_reserves, switch_reserved_to_hold},
+};
 use sp_runtime::SaturatedConversion;
 use sp_std::marker::PhantomData;
 
@@ -48,7 +51,10 @@ where
 
 		let has_one_user_holds = Owner::<T>::iter_values()
 			.map(|details: Web3OwnershipOf<T>| {
-				has_user_holds_and_no_reserves::<AccountIdOf<T>, CurrencyOf<T>>(&details.deposit.owner)
+				has_user_holds_and_no_reserves::<AccountIdOf<T>, CurrencyOf<T>>(
+					&details.deposit.owner,
+					&HFIdentifier::Deposit(Pallets::W3n),
+				)
 			})
 			.all(|user| !user);
 
@@ -64,7 +70,10 @@ where
 
 		let has_all_user_holds = Owner::<T>::iter_values()
 			.map(|details: Web3OwnershipOf<T>| {
-				has_user_holds_and_no_reserves::<AccountIdOf<T>, CurrencyOf<T>>(&details.deposit.owner)
+				has_user_holds_and_no_reserves::<AccountIdOf<T>, CurrencyOf<T>>(
+					&details.deposit.owner,
+					&HFIdentifier::Deposit(Pallets::W3n),
+				)
 			})
 			.all(|user| user);
 
@@ -83,7 +92,10 @@ where
 {
 	Owner::<T>::iter_values()
 		.map(|details: Web3OwnershipOf<T>| {
-			has_user_holds_and_no_reserves::<AccountIdOf<T>, CurrencyOf<T>>(&details.deposit.owner)
+			has_user_holds_and_no_reserves::<AccountIdOf<T>, CurrencyOf<T>>(
+				&details.deposit.owner,
+				&HFIdentifier::Deposit(Pallets::W3n),
+			)
 		})
 		.any(|user| !user)
 }
@@ -97,6 +109,7 @@ where
 			let deposit = w3n_details.deposit;
 			let error = switch_reserved_to_hold::<AccountIdOf<T>, CurrencyOf<T>>(
 				deposit.owner,
+				&HFIdentifier::Deposit(Pallets::W3n),
 				deposit.amount.saturated_into(),
 			);
 

@@ -71,14 +71,14 @@
 //!
 //! ### Terminology
 //!
-//! - **Candidate:** A user which locks up tokens to be included into the set of
-//!   authorities which author blocks and receive rewards for doing so.
+//! - **Candidate:** A user which freezes up tokens to be included into the set
+//!   of authorities which author blocks and receive rewards for doing so.
 //!
 //! - **Collator:** A candidate that was chosen to collate this round.
 //!
-//! - **Delegator:** A user which locks up tokens for collators they trust. When
-//!   their collator authors a block, the corresponding delegators also receive
-//!   rewards.
+//! - **Delegator:** A user which freezes up tokens for collators they trust.
+//!   When their collator authors a block, the corresponding delegators also
+//!   receive rewards.
 //!
 //! - **Total Stake:** A collator’s own stake + the sum of delegated stake to
 //!   this collator.
@@ -98,8 +98,8 @@
 //!   a staking round, thus both words are interchangeable in the context of
 //!   this pallet.
 //!
-//! - **Lock:** A freeze on a specified amount of an account's free balance
-//!   until a specified block number. Multiple locks always operate over the
+//! - **Freeze:** A freeze on a specified amount of an account's free balance
+//!   until a specified block number. Multiple freezes always operate over the
 //!   same funds, so they "overlay" rather than "stack"
 //!
 //! ## Genesis config
@@ -1620,9 +1620,9 @@ pub mod pallet {
 		///
 		/// Weight: O(U) where U is the number of locked unstaking requests
 		/// bounded by `MaxUnstakeRequests`.
-		/// - Reads: [Origin Account], Unstaking, Locks
-		/// - Writes: Unstaking, Locks
-		/// - Kills: Unstaking & Locks if no balance is locked anymore
+		/// - Reads: [Origin Account], Unstaking, Freezes
+		/// - Writes: Unstaking, Freezes
+		/// - Kills: Unstaking & Freezess if no balance is locked anymore
 		/// # </weight>
 		#[pallet::call_index(16)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::unlock_unstaked(
@@ -2280,45 +2280,48 @@ pub mod pallet {
 
 		/// Withdraw all staked currency which was unstaked at least
 		/// `StakeDuration` blocks ago.
-		fn do_unlock(who: &T::AccountId) -> Result<u32, DispatchError> {
+		fn do_unlock(who: &T::AccountId) -> Result<u32, DispatchError>
+		where
+			<T as pallet_balances::Config>::FreezeIdentifier: From<HFIdentifier>,
+		{
 			let now = frame_system::Pallet::<T>::block_number();
 			let mut unstaking = Unstaking::<T>::get(who);
 			let unstaking_len = unstaking.len().saturated_into::<u32>();
 			ensure!(!unstaking.is_empty(), Error::<T>::UnstakingIsEmpty);
 
-			let mut total_unlocked: BalanceOf<T> = Zero::zero();
-			let mut total_locked: BalanceOf<T> = Zero::zero();
+			let mut total_unfreezed: BalanceOf<T> = Zero::zero();
+			let mut total_freezed: BalanceOf<T> = Zero::zero();
 			let mut expired = Vec::new();
 
-			// check potential unlocks
-			for (block_number, locked_balance) in unstaking.clone().into_iter() {
+			// check potential unfreezed
+			for (block_number, freezed_balance) in unstaking.clone().into_iter() {
 				if block_number <= now {
 					expired.push(block_number);
-					total_unlocked = total_unlocked.saturating_add(locked_balance);
+					total_unfreezed = total_unfreezed.saturating_add(freezed_balance);
 				} else {
-					total_locked = total_locked.saturating_add(locked_balance);
+					total_freezed = total_freezed.saturating_add(freezed_balance);
 				}
 			}
 			for block_number in expired {
 				unstaking.remove(&block_number);
 			}
 
-			// iterate balance locks to retrieve amount of locked balance
+			// iterate balance freezes to retrieve amount of freezed balance
 			let freezes = Freezes::<T>::get(who);
-			total_locked = if let Some(IdAmount { amount, .. }) = freezes.iter().find(|l| l.id == HFIdentifier::Staking)
-			{
-				amount.saturating_sub(total_unlocked.into()).into()
-			} else {
-				// should never fail to find the lock since we checked whether unstaking is not
-				// empty but let's be safe
-				Zero::zero()
-			};
+			total_freezed =
+				if let Some(IdAmount { amount, .. }) = freezes.iter().find(|l| l.id == HFIdentifier::Staking.into()) {
+					amount.saturating_sub(total_freezed.into()).into()
+				} else {
+					// should never fail to find the lock since we checked whether unstaking is not
+					// empty but let's be safe
+					Zero::zero()
+				};
 
-			if total_locked.is_zero() {
+			if total_freezed.is_zero() {
 				T::Currency::thaw(&HFIdentifier::Staking, who);
 				Unstaking::<T>::remove(who);
 			} else {
-				T::Currency::set_freeze(&HFIdentifier::Staking, who, total_locked);
+				T::Currency::set_freeze(&HFIdentifier::Staking, who, total_freezed);
 				Unstaking::<T>::insert(who, unstaking);
 			}
 

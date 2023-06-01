@@ -20,7 +20,7 @@ use frame_support::traits::Get;
 use parity_scale_codec::Encode;
 use sp_runtime::traits::Hash;
 
-use kilt_support::deposit::Deposit;
+use kilt_support::deposit::{Deposit, HFIdentifier, Pallets};
 
 use crate::{
 	AccountIdOf, AttesterOf, BalanceOf, Config, CredentialEntryOf, CredentialIdOf, CredentialSubjects, Credentials,
@@ -79,6 +79,7 @@ pub(crate) fn insert_public_credentials<T: Config>(
 	kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
 		credential_entry.deposit.owner.clone(),
 		credential_entry.deposit.amount,
+		&HFIdentifier::Deposit(Pallets::PublicCredentials),
 	)
 	.expect("Attester should have enough balance");
 

@@ -57,7 +57,7 @@ pub mod pallet {
 	use sp_std::{fmt::Debug, vec::Vec};
 
 	use kilt_support::{
-		deposit::{Deposit, HFIdentifier},
+		deposit::{Deposit, HFIdentifier, Pallets},
 		traits::{CallSources, StorageDepositCollector},
 	};
 
@@ -354,7 +354,11 @@ pub mod pallet {
 			let source = <T as Config>::OwnerOrigin::ensure_origin(origin)?;
 			let w3n_owner = source.subject();
 			let name = Names::<T>::get(&w3n_owner).ok_or(Error::<T>::NotFound)?;
-			Web3NameStorageDepositCollector::<T>::change_deposit_owner(&name, source.sender())?;
+			Web3NameStorageDepositCollector::<T>::change_deposit_owner(
+				&name,
+				source.sender(),
+				&HFIdentifier::Deposit(Pallets::W3n),
+			)?;
 
 			Ok(())
 		}
@@ -370,7 +374,7 @@ pub mod pallet {
 			let w3n_entry = Owner::<T>::get(&name).ok_or(Error::<T>::NotFound)?;
 			ensure!(w3n_entry.deposit.owner == source, Error::<T>::NotAuthorized);
 
-			Web3NameStorageDepositCollector::<T>::update_deposit(&name)?;
+			Web3NameStorageDepositCollector::<T>::update_deposit(&name, &HFIdentifier::Deposit(Pallets::W3n))?;
 
 			Ok(())
 		}
@@ -396,7 +400,7 @@ pub mod pallet {
 
 			ensure!(
 				<T::Currency as InspectHold<AccountIdOf<T>>>::can_hold(
-					&HFIdentifier::Deposit,
+					&HFIdentifier::Deposit(Pallets::W3n),
 					deposit_payer,
 					T::Deposit::get()
 				),
@@ -422,7 +426,11 @@ pub mod pallet {
 			let block_number = frame_system::Pallet::<T>::block_number();
 
 			// Should never fail since we checked in the preconditions
-			kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(deposit.owner.clone(), deposit.amount)?;
+			kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
+				deposit.owner.clone(),
+				deposit.amount,
+				&HFIdentifier::Deposit(Pallets::W3n),
+			)?;
 
 			Names::<T>::insert(&owner, name.clone());
 			Owner::<T>::insert(
@@ -471,7 +479,10 @@ pub mod pallet {
 			Names::<T>::remove(&name_ownership.owner);
 
 			// Should never fail since we checked in the preconditions
-			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&name_ownership.deposit)?;
+			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
+				&name_ownership.deposit,
+				&HFIdentifier::Deposit(Pallets::W3n),
+			)?;
 
 			Ok(name_ownership)
 		}

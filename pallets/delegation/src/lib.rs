@@ -100,7 +100,7 @@ pub mod pallet {
 	};
 	use frame_system::pallet_prelude::*;
 	use kilt_support::{
-		deposit::{Deposit, HFIdentifier},
+		deposit::{Deposit, HFIdentifier, Pallets},
 		signature::{SignatureVerificationError, VerifySignature},
 		traits::CallSources,
 	};
@@ -672,7 +672,11 @@ pub mod pallet {
 			// parent or another ancestor.
 			ensure!(delegation.details.owner == source.subject(), Error::<T>::AccessDenied);
 
-			DelegationDepositCollector::<T>::change_deposit_owner(&delegation_id, source.sender())
+			DelegationDepositCollector::<T>::change_deposit_owner(
+				&delegation_id,
+				source.sender(),
+				&HFIdentifier::Deposit(Pallets::Delegation),
+			)
 		}
 
 		/// Updates the deposit amount to the current deposit rate.
@@ -689,7 +693,10 @@ pub mod pallet {
 			// parent or another ancestor.
 			ensure!(delegation.deposit.owner == sender, Error::<T>::AccessDenied);
 
-			DelegationDepositCollector::<T>::update_deposit(&delegation_id)?;
+			DelegationDepositCollector::<T>::update_deposit(
+				&delegation_id,
+				&HFIdentifier::Deposit(Pallets::Delegation),
+			)?;
 
 			Ok(())
 		}
@@ -729,6 +736,7 @@ pub mod pallet {
 			kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
 				deposit_owner.clone(),
 				<T as Config>::Deposit::get(),
+				&HFIdentifier::Deposit(Pallets::Delegation),
 			)?;
 
 			let root_node = DelegationNode::new_root_node(
@@ -759,6 +767,7 @@ pub mod pallet {
 			kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
 				deposit_owner,
 				<T as Config>::Deposit::get(),
+				&HFIdentifier::Deposit(Pallets::Delegation),
 			)?;
 
 			// Add the new node as a child of that node
@@ -970,7 +979,10 @@ pub mod pallet {
 			// We can clear storage now that all children have been removed
 			DelegationNodes::<T>::remove(*delegation);
 
-			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&delegation_node.deposit)?;
+			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
+				&delegation_node.deposit,
+				&HFIdentifier::Deposit(Pallets::Delegation),
+			)?;
 
 			consumed_weight = consumed_weight.saturating_add(T::DbWeight::get().reads_writes(1, 2));
 
