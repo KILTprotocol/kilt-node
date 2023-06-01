@@ -23,7 +23,7 @@ use frame_support::{
 			freeze::{Inspect as InspectFreeze, Mutate as MutateFreeze},
 			hold::{Inspect as InspectHold, Mutate as MutateHold},
 		},
-		ReservableCurrency,
+		LockIdentifier, LockableCurrency, ReservableCurrency,
 	},
 };
 use sp_runtime::SaturatedConversion;
@@ -61,4 +61,17 @@ pub fn switch_reserved_to_hold<
 ) -> DispatchResult {
 	Currency::unreserve(&owner, amount.saturated_into());
 	Currency::hold(reason, &owner, amount.saturated_into())
+}
+
+pub fn switch_locks_to_freeze<
+	AccountId,
+	Currency: LockableCurrency<AccountId> + MutateFreeze<AccountId, Id = HFIdentifier>,
+>(
+	who: AccountId,
+	id_lock: LockIdentifier,
+	id_freeze: &HFIdentifier,
+	amount: u128,
+) -> DispatchResult {
+	Currency::remove_lock(id_lock, &who);
+	Currency::set_freeze(id_freeze, &who, amount.saturated_into())
 }

@@ -129,6 +129,7 @@ mod try_state;
 
 pub mod api;
 mod inflation;
+mod migrations;
 mod set;
 mod types;
 
@@ -147,8 +148,8 @@ pub mod pallet {
 		pallet_prelude::*,
 		storage::bounded_btree_map::BoundedBTreeMap,
 		traits::{
-			tokens::fungible::MutateFreeze, Currency, EstimateNextSessionRotation, Get, Imbalance, OnUnbalanced,
-			StorageVersion,
+			tokens::fungible::MutateFreeze, Currency, EstimateNextSessionRotation, Get, Imbalance, LockIdentifier,
+			LockableCurrency, OnUnbalanced, StorageVersion,
 		},
 		BoundedVec,
 	};
@@ -173,6 +174,7 @@ pub mod pallet {
 	};
 	use sp_std::{convert::TryInto, fmt::Debug};
 
+	pub(crate) const STAKING_ID: LockIdentifier = *b"kiltpstk";
 	/// The current storage version.
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(8);
 
@@ -193,6 +195,7 @@ pub mod pallet {
 		/// Note: Declaration of Balance taken from pallet_gilt
 		type Currency: Currency<Self::AccountId, Balance = Self::CurrencyBalance>
 			+ MutateFreeze<Self::AccountId, Balance = Self::CurrencyBalance, Id = HFIdentifier>
+			+ LockableCurrency<Self::AccountId, Balance = Self::CurrencyBalance>
 			+ Eq;
 
 		type Identifier: AsRef<<Self as pallet_balances::Config>::FreezeIdentifier> + From<HFIdentifier>;
