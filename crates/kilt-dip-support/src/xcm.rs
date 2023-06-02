@@ -49,8 +49,6 @@ where
 			*origin == ParentThen(Parachain(ProviderParaId::get()).into()).into(),
 			()
 		);
-		#[cfg(feature = "std")]
-		println!("{:?}", instructions);
 		let mut iter = instructions.iter();
 		// This must match the implementation of the `IdentityProofDispatcher` trait.
 		// TODO: Refactor so that they depend on each other and we avoid duplication
@@ -80,11 +78,11 @@ where
 	}
 }
 
-// Decorate an existing Barrier to add one more check to allow a sibling
-// parachain as the DIP provider.
-pub struct OrElseCheckForParachainProvider<Barrier, ProviderParaId>(PhantomData<(Barrier, ProviderParaId)>);
+// Decorate an existing barrier to add one more check in case all the previous
+// barriers fail.
+pub struct OkOrElseCheckForParachainProvider<Barrier, ProviderParaId>(PhantomData<(Barrier, ProviderParaId)>);
 
-impl<Barrier, ProviderParaId> ShouldExecute for OrElseCheckForParachainProvider<Barrier, ProviderParaId>
+impl<Barrier, ProviderParaId> ShouldExecute for OkOrElseCheckForParachainProvider<Barrier, ProviderParaId>
 where
 	Barrier: ShouldExecute,
 	ProviderParaId: Get<u32>,
@@ -95,9 +93,6 @@ where
 		max_weight: Weight,
 		weight_credit: &mut Weight,
 	) -> Result<(), ()> {
-		// TODO: This might not be correct, if the barrier wants to explicitely fail.
-		// Maybe this struct should be split into two, one where it fails if the barrier
-		// fails, and another one which tries the new barrier if the old one fails.
 		Barrier::should_execute(origin, instructions, max_weight, weight_credit).or_else(|_| {
 			AllowParachainProviderAsSubaccount::<ProviderParaId>::should_execute(
 				origin,
@@ -106,6 +101,31 @@ where
 				weight_credit,
 			)
 		})
+	}
+}
+
+// Decorate an existing barrier to check for the provider parachain origin only
+// in case none of the previous barriers fail.
+pub struct OkAndThenCheckForParachainProvider<Barrier, ProviderParaId>(PhantomData<(Barrier, ProviderParaId)>);
+
+impl<Barrier, ProviderParaId> ShouldExecute for OkAndThenCheckForParachainProvider<Barrier, ProviderParaId>
+where
+	Barrier: ShouldExecute,
+	ProviderParaId: Get<u32>,
+{
+	fn should_execute<RuntimeCall>(
+		origin: &MultiLocation,
+		instructions: &mut [Instruction<RuntimeCall>],
+		max_weight: Weight,
+		weight_credit: &mut Weight,
+	) -> Result<(), ()> {
+		Barrier::should_execute(origin, instructions, max_weight, weight_credit)?;
+		AllowParachainProviderAsSubaccount::<ProviderParaId>::should_execute(
+			origin,
+			instructions,
+			max_weight,
+			weight_credit,
+		)
 	}
 }
 
@@ -135,28 +155,3 @@ where
 		}
 	}
 }
-
-// // Decorate an existing OriginConverter to add the conversion of a sibling
-// // parachain as the DIP provider.
-// pub struct OrElseSiblingParachainProviderConverter<OriginConverter,
-// ProviderParaId, ParachainOrigin, RuntimeOrigin>(
-// 	PhantomData<(OriginConverter, ProviderParaId, ParachainOrigin,
-// RuntimeOrigin)>, );
-
-// impl<OriginConverter, ProviderParaId, ParachainOrigin, RuntimeOrigin>
-// ConvertOrigin<RuntimeOrigin>
-// 	for OrElseSiblingParachainProviderConverter<OriginConverter, ProviderParaId,
-// ParachainOrigin, RuntimeOrigin> where
-// 	OriginConverter: ConvertOrigin<RuntimeOrigin>,
-// 	ProviderParaId: Get<ParaId>,
-// 	ParachainOrigin: From<ParaId>,
-// 	RuntimeOrigin: From<ParachainOrigin>,
-// {
-// 	fn convert_origin(origin: impl Into<MultiLocation>, kind: OriginKind) ->
-// Result<RuntimeOrigin, MultiLocation> {
-// 		OriginConverter::convert_origin(origin, kind)?;
-// 		AccountIdJunctionToParachainOriginConverter::<ProviderParaId,
-// ParachainOrigin, RuntimeOrigin>::convert_origin( 			origin, kind,
-// 		)
-// 	}
-// }

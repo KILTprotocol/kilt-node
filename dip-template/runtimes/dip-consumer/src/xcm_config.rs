@@ -23,7 +23,7 @@ use frame_support::{
 	weights::{IdentityFee, Weight},
 };
 use frame_system::EnsureRoot;
-use kilt_dip_support::xcm::{AccountIdJunctionAsParachain, OrElseCheckForParachainProvider};
+use kilt_dip_support::xcm::{AccountIdJunctionAsParachain, OkOrElseCheckForParachainProvider};
 use pallet_xcm::TestWeightInfo;
 use xcm::latest::prelude::*;
 use xcm_builder::{
@@ -44,7 +44,7 @@ parameter_types! {
 	pub UniversalLocation: InteriorMultiLocation = Parachain(ParachainInfo::parachain_id().into()).into();
 }
 
-pub type Barrier = OrElseCheckForParachainProvider<AllowTopLevelPaidExecutionFrom<Nothing>, ConstU32<2_000>>;
+pub type Barrier = OkOrElseCheckForParachainProvider<AllowTopLevelPaidExecutionFrom<Nothing>, ConstU32<2_000>>;
 pub type AssetTransactorLocationConverter = Account32Hash<NoneNetworkId, AccountId>;
 pub type LocalAssetTransactor =
 	CurrencyAdapter<Balances, IsConcrete<HereLocation>, AssetTransactorLocationConverter, AccountId, ()>;
