@@ -16,22 +16,31 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use cumulus_primitives_core::{Junction::AccountKey20, OriginKind};
+use dip_support::IdentityDetailsAction;
 use frame_support::ensure;
+use pallet_dip_provider::traits::{IdentityProofDispatcher, TxBuilder};
+use parity_scale_codec::Encode;
 use sp_core::Get;
 use sp_std::marker::PhantomData;
-use xcm::latest::{
+use xcm::v3::{
 	Instruction,
 	Instruction::{BuyExecution, DepositAsset, DescendOrigin, RefundSurplus, Transact, WithdrawAsset},
-	Junction::{AccountId32, Parachain},
-	Junctions::{X1, X2},
-	MultiLocation, ParentThen, Weight,
+	InteriorMultiLocation,
+	Junction::{AccountId32, AccountKey20, Parachain},
+	Junctions::{Here, X1, X2},
+	MultiAsset,
+	MultiAssetFilter::Wild,
+	MultiAssets, MultiLocation, OriginKind, ParentThen, SendError, SendXcm, Weight,
+	WeightLimit::Limited,
+	WildMultiAsset::All,
+	Xcm,
 };
 use xcm_executor::traits::{ConvertOrigin, ShouldExecute};
 
-// Allows a parachain to descend to an `X1(AccountId32)` or `X1(AccountId20)`
-// junction, withdraw fees from their balance, and then carry on with a
-// `Transact`.
+// Allows a parachain to descend to an `X1(AccountId32)` junction, withdraw fees
+// from their balance, and then carry on with a `Transact`.
+// Must be used **ONLY** in conjunction with the `AccountIdJunctionAsParachain`
+// origin converter.
 pub struct AllowParachainProviderAsSubaccount<ProviderParaId>(PhantomData<ProviderParaId>);
 
 impl<ProviderParaId> ShouldExecute for AllowParachainProviderAsSubaccount<ProviderParaId>
@@ -153,5 +162,82 @@ where
 			) if para_id == provider_para_id => Ok(ParachainOrigin::from(provider_para_id).into()),
 			_ => Err(origin),
 		}
+	}
+}
+
+// Dispatcher using a type implementing the `SendXcm` trait.
+// It properly encodes the `Transact` operation, then delegates everything else
+// to the sender, similarly to what the XCM pallet's `send` extrinsic does.
+pub struct XcmRouterDispatcher<Router, UniversalLocationProvider>(PhantomData<(Router, UniversalLocationProvider)>);
+
+impl<Router, UniversalLocationProvider, Identifier, ProofOutput, AccountId, Details>
+	IdentityProofDispatcher<Identifier, ProofOutput, AccountId, Details>
+	for XcmRouterDispatcher<Router, UniversalLocationProvider>
+where
+	Router: SendXcm,
+	UniversalLocationProvider: Get<InteriorMultiLocation>,
+	Identifier: Encode,
+	ProofOutput: Encode,
+	AccountId: Into<[u8; 32]> + Clone,
+{
+	type PreDispatchOutput = Router::Ticket;
+	type Error = SendError;
+
+	fn pre_dispatch<Builder: TxBuilder<Identifier, ProofOutput, Details>>(
+		action: IdentityDetailsAction<Identifier, ProofOutput, Details>,
+		source: AccountId,
+		asset: MultiAsset,
+		weight: Weight,
+		destination: MultiLocation,
+	) -> Result<(Self::PreDispatchOutput, MultiAssets), Self::Error> {
+		// TODO: Replace with proper error handling
+		let dest_tx = Builder::build(destination, action)
+			.map_err(|_| ())
+			.expect("Failed to build call");
+
+		// TODO: Set an error handler and an appendix to refund any leftover funds to
+		// the provider parachain sovereign account.
+		let operation = [[
+			DescendOrigin(X1(AccountId32 {
+				network: None,
+				id: source.clone().into(),
+			})),
+			WithdrawAsset(asset.clone().into()),
+			BuyExecution {
+				fees: asset,
+				weight_limit: Limited(weight),
+			},
+			Transact {
+				origin_kind: OriginKind::Native,
+				require_weight_at_most: weight,
+				call: dest_tx,
+			},
+			RefundSurplus,
+			DepositAsset {
+				assets: Wild(All),
+				beneficiary: MultiLocation {
+					parents: 1,
+					// Re-anchor the same account junction as seen from the destination.
+					// TODO: Error handling
+					interior: Here
+						.into_location()
+						.reanchored(&destination, UniversalLocationProvider::get())
+						.unwrap()
+						.pushed_with_interior(AccountId32 {
+							network: None,
+							id: source.into(),
+						})
+						.unwrap()
+						.interior,
+				},
+			},
+		]]
+		.concat();
+		let op = Xcm(operation);
+		Router::validate(&mut Some(destination), &mut Some(op))
+	}
+
+	fn dispatch(pre_output: Self::PreDispatchOutput) -> Result<(), Self::Error> {
+		Router::deliver(pre_output).map(|_| ())
 	}
 }

@@ -25,7 +25,7 @@ use frame_support::{
 use frame_system::EnsureRoot;
 use kilt_dip_support::xcm::{AccountIdJunctionAsParachain, OkOrElseCheckForParachainProvider};
 use pallet_xcm::TestWeightInfo;
-use xcm::latest::prelude::*;
+use xcm::v3::prelude::*;
 use xcm_builder::{
 	Account32Hash, AllowTopLevelPaidExecutionFrom, CurrencyAdapter, EnsureXcmOrigin, FixedWeightBounds, IsConcrete,
 	SignedToAccountId32, UsingComponents,

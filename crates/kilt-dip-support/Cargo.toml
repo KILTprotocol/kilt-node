@@ -13,6 +13,7 @@ version.workspace = true
 [dependencies]
 # Internal dependencies
 did.workspace = true
+dip-support.workspace = true
 pallet-dip-consumer.workspace = true
 pallet-dip-provider.workspace = true
 
@@ -32,13 +33,11 @@ sp-std.workspace = true
 xcm.workspace = true
 xcm-executor.workspace = true
 
-# Cumulus dependencies
-cumulus-primitives-core.workspace = true
-
 [features]
 default = ["std"]
 std = [
   "did/std",
+  "dip-support/std",
   "pallet-dip-consumer/std",
   "pallet-dip-provider/std",
   "parity-scale-codec/std",
@@ -50,7 +49,6 @@ std = [
   "sp-trie/std",
   "sp-std/std",
   "xcm-executor/std",
-  "xcm/std",
-  "cumulus-primitives-core/std"
+  "xcm/std"
 ]
 runtime-benchmarks = []

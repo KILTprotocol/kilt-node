@@ -145,7 +145,7 @@ pub(super) mod consumer {
 	};
 
 	use dip_consumer_runtime_template::System;
-	use xcm::latest::{
+	use xcm::v3::{
 		Junction::{AccountId32, Parachain},
 		Junctions::X2,
 		ParentThen,
@@ -208,7 +208,7 @@ pub(super) mod consumer {
 		use super::*;
 
 		use polkadot_parachain::primitives::Sibling;
-		use xcm::latest::Junctions::X1;
+		use xcm::v3::Junctions::X1;
 		use xcm_builder::SiblingParachainConvertsVia;
 
 		pub(crate) fn provider_parachain_account_on_consumer() -> AccountId {

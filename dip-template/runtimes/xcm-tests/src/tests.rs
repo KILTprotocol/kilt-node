@@ -36,7 +36,7 @@ use runtime_common::dip::{
 };
 use sp_core::Pair;
 use sp_runtime::traits::Zero;
-use xcm::latest::{
+use xcm::v3::{
 	Junction::Parachain,
 	Junctions::{Here, X1},
 	ParentThen,

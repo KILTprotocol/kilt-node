@@ -18,7 +18,8 @@
 
 use did::{DidRawOrigin, EnsureDidOrigin};
 use dip_support::IdentityDetailsAction;
-use pallet_dip_provider::traits::{TxBuilder, XcmRouterDispatcher};
+use kilt_dip_support::xcm::XcmRouterDispatcher;
+use pallet_dip_provider::traits::TxBuilder;
 use parity_scale_codec::{Decode, Encode};
 use runtime_common::dip::{did::LinkedDidInfoProviderOf, merkle::DidMerkleRootGenerator};
 use xcm::{latest::MultiLocation, DoubleEncoded};
