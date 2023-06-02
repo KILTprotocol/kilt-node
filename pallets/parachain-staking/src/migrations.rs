@@ -17,7 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_support::{
-	traits::{fungible::freeze::Mutate as MutateFreeze, Get, OnRuntimeUpgrade, ReservableCurrency},
+	traits::{fungible::freeze::Mutate as MutateFreeze, Get, LockableCurrency, OnRuntimeUpgrade, ReservableCurrency},
 	weights::Weight,
 };
 use kilt_support::deposit::HFIdentifier;
@@ -63,9 +63,8 @@ where
 		use frame_support::ensure;
 
 		let count_freezes = pallet_balances::Freezes::<T>::iter().count();
-		let count_locks = pallet_balances::Locks::<T>::iter().count();
+
 		ensure!(count_freezes > 0, "Staking: There are still no freezes.");
-		ensure!(count_locks == 0 , "Staking: There are still locks.");
 
 		log::info!("Staking: Post migration checks successful");
 
@@ -94,28 +93,11 @@ where
 				.iter()
 				.map(|lock: &BalanceLock<_>| -> Weight {
 					if lock.id == STAKING_ID {
-						update_or_create_freeze::<T>(user_id.clone(), lock)
-					} else {
-						log::info!("Staking: Found unexpected lock with undefined lock id {:?}. for user: {:?}. Create new freeze with freeze_id Misc.", lock.id, user_id);
-						let result = <CurrencyOf<T> as MutateFreeze<AccountIdOf<T>>>::set_freeze(
-							&HFIdentifier::Misc,
-							&user_id,
-							lock.amount.saturated_into(),
-						);
-
-						if result.is_err() {
-							log::info!("Staking: While creating a new freeze for id: {:?}, amount: {:?} for lock:{:?} an error occured.",
-							 HFIdentifier::Misc,
-							  lock.amount,
-							   user_id);
-							return <T as frame_system::Config>::DbWeight::get().reads_writes(0, 0);
-						}
-						<T as frame_system::Config>::DbWeight::get().reads_writes(1, 1)
+						return update_or_create_freeze::<T>(user_id.clone(), lock);
 					}
-					
+					<T as frame_system::Config>::DbWeight::get().reads_writes(0, 0)
 				})
 				.fold(Weight::zero(), |acc, next| acc.saturating_add(next));
-			Locks::<T>::remove(user_id);
 			weight
 		})
 		.fold(Weight::zero(), |acc, next| acc.saturating_add(next))
@@ -148,6 +130,8 @@ fn update_or_create_freeze<T: Config>(
 			lock.amount.saturated_into(),
 		)
 	};
+
+	<CurrencyOf<T> as LockableCurrency<AccountIdOf<T>>>::remove_lock(STAKING_ID, &user_id);
 
 	if result.is_err() {
 		return <T as frame_system::Config>::DbWeight::get().reads_writes(0, 0);
