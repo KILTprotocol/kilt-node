@@ -23,7 +23,7 @@ use frame_support::{
 	weights::{IdentityFee, Weight},
 };
 use frame_system::EnsureRoot;
-use kilt_dip_support::xcm::{AccountIdJunctionAsParachain, OkOrElseCheckForParachainProvider};
+use kilt_dip_support::xcm::{barriers::OkOrElseCheckForParachainProvider, origins::AccountIdJunctionAsParachain};
 use pallet_xcm::TestWeightInfo;
 use xcm::v3::prelude::*;
 use xcm_builder::{

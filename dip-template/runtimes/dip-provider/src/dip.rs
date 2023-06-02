@@ -18,7 +18,7 @@
 
 use did::{DidRawOrigin, EnsureDidOrigin};
 use dip_support::IdentityDetailsAction;
-use kilt_dip_support::xcm::XcmRouterDispatcher;
+use kilt_dip_support::xcm::XcmRouterIdentityDispatcher;
 use pallet_dip_provider::traits::TxBuilder;
 use parity_scale_codec::{Decode, Encode};
 use runtime_common::dip::{did::LinkedDidInfoProviderOf, merkle::DidMerkleRootGenerator};
@@ -58,7 +58,7 @@ impl pallet_dip_provider::Config for Runtime {
 	type CommitOriginCheck = EnsureDidOrigin<DidIdentifier, AccountId>;
 	type CommitOrigin = DidRawOrigin<DidIdentifier, AccountId>;
 	type Identifier = DidIdentifier;
-	type IdentityProofDispatcher = XcmRouterDispatcher<XcmRouter, UniversalLocation>;
+	type IdentityProofDispatcher = XcmRouterIdentityDispatcher<XcmRouter, UniversalLocation>;
 	type IdentityProofGenerator = DidMerkleRootGenerator<Runtime>;
 	type IdentityProvider = LinkedDidInfoProviderOf<Runtime>;
 	type ProofOutput = Hash;
