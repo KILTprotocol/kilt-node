@@ -17,11 +17,11 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_support::{
-	traits::{Get, OnRuntimeUpgrade, ReservableCurrency},
+	traits::{fungible::freeze::Mutate as MutateFreeze, Get, OnRuntimeUpgrade, ReservableCurrency},
 	weights::Weight,
 };
-use kilt_support::{deposit::HFIdentifier, migration::switch_locks_to_freeze};
-use pallet_balances::{BalanceLock, Locks};
+use kilt_support::deposit::HFIdentifier;
+use pallet_balances::{BalanceLock, Freezes, IdAmount, Locks};
 use sp_runtime::SaturatedConversion;
 use sp_std::marker::PhantomData;
 
@@ -63,7 +63,9 @@ where
 		use frame_support::ensure;
 
 		let count_freezes = pallet_balances::Freezes::<T>::iter().count();
-		ensure!(count_freezes > 0, "Staking Post: There are still no freezes.");
+		let count_locks = pallet_balances::Locks::<T>::iter().count();
+		ensure!(count_freezes > 0, "Staking: There are still no freezes.");
+		ensure!(count_locks == 0 , "Staking: There are still locks.");
 
 		log::info!("Staking: Post migration checks successful");
 
@@ -88,23 +90,67 @@ where
 {
 	Locks::<T>::iter()
 		.map(|(user_id, locks)| {
-			locks
+			let weight = locks
 				.iter()
 				.map(|lock: &BalanceLock<_>| -> Weight {
 					if lock.id == STAKING_ID {
-						let error = switch_locks_to_freeze::<AccountIdOf<T>, CurrencyOf<T>>(
+						update_or_create_freeze::<T>(user_id.clone(), lock)
+					} else {
+						log::info!("Staking: Found unexpected lock with undefined lock id {:?}. for user: {:?}. Create new freeze with freeze_id Misc.", lock.id, user_id);
+						let result = <CurrencyOf<T> as MutateFreeze<AccountIdOf<T>>>::set_freeze(
+							&HFIdentifier::Misc,
 							&user_id,
-							STAKING_ID,
-							&HFIdentifier::Staking,
 							lock.amount.saturated_into(),
 						);
-						if error.is_ok() {
-							return <T as frame_system::Config>::DbWeight::get().reads_writes(1, 1);
+
+						if result.is_err() {
+							log::info!("Staking: While creating a new freeze for id: {:?}, amount: {:?} for lock:{:?} an error occured.",
+							 HFIdentifier::Misc,
+							  lock.amount,
+							   user_id);
+							return <T as frame_system::Config>::DbWeight::get().reads_writes(0, 0);
 						}
+						<T as frame_system::Config>::DbWeight::get().reads_writes(1, 1)
 					}
-					<T as frame_system::Config>::DbWeight::get().reads_writes(0, 0)
+					
 				})
-				.fold(Weight::zero(), |acc, next| acc.saturating_add(next))
+				.fold(Weight::zero(), |acc, next| acc.saturating_add(next));
+			Locks::<T>::remove(user_id);
+			weight
 		})
 		.fold(Weight::zero(), |acc, next| acc.saturating_add(next))
+}
+
+fn update_or_create_freeze<T: Config>(
+	user_id: T::AccountId,
+	lock: &BalanceLock<<T as pallet_balances::Config>::Balance>,
+) -> Weight {
+	let freezes = Freezes::<T>::get(&user_id);
+
+	let result = if let Some(IdAmount { amount, .. }) = freezes
+		.iter()
+		.find(|freeze| &freeze.id == <T as crate::Config>::Identifier::from(HFIdentifier::Staking).as_ref())
+	{
+		let total_lock = lock
+			.amount
+			.saturated_into::<u128>()
+			.saturating_add((*amount).saturated_into());
+
+		<CurrencyOf<T> as MutateFreeze<AccountIdOf<T>>>::extend_freeze(
+			&HFIdentifier::Staking,
+			&user_id,
+			total_lock.saturated_into(),
+		)
+	} else {
+		<CurrencyOf<T> as MutateFreeze<AccountIdOf<T>>>::set_freeze(
+			&HFIdentifier::Staking,
+			&user_id,
+			lock.amount.saturated_into(),
+		)
+	};
+
+	if result.is_err() {
+		return <T as frame_system::Config>::DbWeight::get().reads_writes(0, 0);
+	}
+	<T as frame_system::Config>::DbWeight::get().reads_writes(1, 1)
 }
