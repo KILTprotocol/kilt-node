@@ -48,22 +48,24 @@ where
 
 	#[cfg(feature = "try-runtime")]
 	fn pre_upgrade() -> Result<sp_std::vec::Vec<u8>, &'static str> {
-		// use frame_support::ensure;
+		use frame_support::ensure;
 		use sp_std::vec;
-		// // before the upgrade, there should be no account with holds
-		// ensure!(is_upgraded::<T>(), "Pre upgrade: there are users with holds.");
-		// log::info!("Staking: Starting pre migration checks!");
+		let count_freezes = pallet_balances::Freezes::<T>::iter().count();
+		ensure!(count_freezes == 0, "Staking Pre: There are already freezes.");
+
+		log::info!("Staking: Pre migration checks successful");
 
 		Ok(vec![])
 	}
 
 	#[cfg(feature = "try-runtime")]
 	fn post_upgrade(_pre_state: sp_std::vec::Vec<u8>) -> Result<(), &'static str> {
-		// use frame_support::ensure;
+		use frame_support::ensure;
 
-		// // before the upgrade, there should be no account with holds
-		// ensure!(!is_upgraded::<T>(), "Post upgrade: there are users with reserves.");
-		// log::info!("Staking: Post migration checks succeded!");
+		let count_freezes = pallet_balances::Freezes::<T>::iter().count();
+		ensure!(count_freezes > 0, "Staking Post: There are still no freezes.");
+
+		log::info!("Staking: Post migration checks successful");
 
 		Ok(())
 	}
@@ -77,7 +79,7 @@ where
 	Locks::<T>::iter_values()
 		.flatten()
 		.map(|lock: BalanceLock<_>| lock.id == STAKING_ID)
-		.any(|is_staking| !is_staking)
+		.any(|is_staking| is_staking)
 }
 
 fn do_migration<T: Config>() -> Weight
@@ -91,12 +93,11 @@ where
 				.map(|lock: &BalanceLock<_>| -> Weight {
 					if lock.id == STAKING_ID {
 						let error = switch_locks_to_freeze::<AccountIdOf<T>, CurrencyOf<T>>(
-							user_id.clone(),
+							&user_id,
 							STAKING_ID,
 							&HFIdentifier::Staking,
 							lock.amount.saturated_into(),
 						);
-
 						if error.is_ok() {
 							return <T as frame_system::Config>::DbWeight::get().reads_writes(1, 1);
 						}

@@ -58,7 +58,7 @@ impl<T: crate::pallet::Config> OnRuntimeUpgrade for BalanceMigration<T> {
 			.all(|user| user);
 
 		ensure!(has_all_user_no_holds, "Pre Upgrade Did: there are users with holds!");
-		log::info!("Did: There are no users with holds!");
+		log::info!("Did: Pre migration checks successful");
 
 		Ok(vec![])
 	}
@@ -73,7 +73,7 @@ impl<T: crate::pallet::Config> OnRuntimeUpgrade for BalanceMigration<T> {
 				<T as Config>::Currency::balance_on_hold(&HFIdentifier::Deposit(Pallets::Did), &details.deposit.owner)
 					.saturated_into();
 			ensure!(
-				details.deposit.amount.saturated_into::<u128>() == hold_balance,
+				details.deposit.amount.saturated_into::<u128>() <= hold_balance,
 				log_and_return_error_message(scale_info::prelude::format!(
 					"Did: Hold balance is not matching for Did {:?}. Expected hold: {:?}. Real hold: {:?}",
 					key,
@@ -81,8 +81,13 @@ impl<T: crate::pallet::Config> OnRuntimeUpgrade for BalanceMigration<T> {
 					hold_balance
 				))
 			);
+			ensure!(!is_upgraded::<T>(), "Did: Users have still no holds");
+
 			Ok(())
-		})
+		})?;
+
+		log::info!("Did: Post migration checks successful");
+		Ok(())
 	}
 }
 
@@ -96,7 +101,7 @@ fn is_upgraded<T: Config>() -> bool {
 				&HFIdentifier::Deposit(Pallets::Did),
 			)
 		})
-		.any(|user| !user)
+		.all(|user| user)
 }
 
 fn do_migration<T: Config>() -> Weight {

@@ -156,7 +156,7 @@ where
 			"Pre Upgrade Did lookup: there are users with holds!"
 		);
 
-		log::info!("Did lookup: There are no users with holds!");
+		log::info!("Did: Pre migration checks successful");
 
 		Ok(vec![])
 	}
@@ -174,14 +174,19 @@ where
 			)
 			.saturated_into();
 			ensure!(
-				details.deposit.amount.saturated_into::<u128>() == hold_balance,
+				details.deposit.amount.saturated_into::<u128>() <= hold_balance,
 				log_and_return_error_message(scale_info::prelude::format!(
 					"Did lookup: Hold balance is not matching for connected did {:?}. Expected hold: {:?}. Real hold: {:?}",
 					key, details.deposit.amount, hold_balance
 				))
 			);
+
+			ensure!(!is_upgraded::<T>(), "Did lookup: Users have still no holds");
+
 			Ok(())
-		})
+		})?;
+		log::info!("Did lookup: Post migration checks successful");
+		Ok(())
 	}
 }
 
@@ -198,7 +203,7 @@ where
 				&HFIdentifier::Deposit(Pallets::DidLookup),
 			)
 		})
-		.any(|user| !user)
+		.all(|user| user)
 }
 
 fn do_migration<T: Config>() -> Weight

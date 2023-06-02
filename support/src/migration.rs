@@ -68,11 +68,11 @@ pub fn switch_locks_to_freeze<
 	AccountId,
 	Currency: LockableCurrency<AccountId> + MutateFreeze<AccountId, Id = HFIdentifier>,
 >(
-	who: AccountId,
+	who: &AccountId,
 	id_lock: LockIdentifier,
 	id_freeze: &HFIdentifier,
 	amount: u128,
 ) -> DispatchResult {
-	Currency::remove_lock(id_lock, &who);
-	Currency::set_freeze(id_freeze, &who, amount.saturated_into())
+	Currency::remove_lock(id_lock, who);
+	Currency::set_freeze(id_freeze, who, amount.saturated_into())
 }

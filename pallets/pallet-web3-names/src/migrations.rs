@@ -60,7 +60,7 @@ where
 
 		ensure!(has_all_user_no_holds, "Pre Upgrade W3n: there are users with holds!");
 
-		log::info!("W3n: There are no users with holds!");
+		log::info!("W3n: Pre migration checks successful");
 
 		Ok(vec![])
 	}
@@ -75,7 +75,7 @@ where
 				<T as Config>::Currency::balance_on_hold(&HFIdentifier::Deposit(Pallets::W3n), &details.deposit.owner)
 					.saturated_into();
 			ensure!(
-				details.deposit.amount.saturated_into::<u128>() == hold_balance,
+				details.deposit.amount.saturated_into::<u128>() <= hold_balance,
 				log_and_return_error_message(scale_info::prelude::format!(
 					"W3n: Hold balance is not matching for w3n {:?}. Expected hold: {:?}. Real hold: {:?}",
 					key,
@@ -83,8 +83,14 @@ where
 					hold_balance
 				))
 			);
+
+			ensure!(!is_upgraded::<T>(), "Users have still no holds");
+
 			Ok(())
-		})
+		})?;
+
+		log::info!("W3n: Post migration checks successful");
+		Ok(())
 	}
 }
 
@@ -101,7 +107,7 @@ where
 				&HFIdentifier::Deposit(Pallets::W3n),
 			)
 		})
-		.any(|user| !user)
+		.all(|user| user)
 }
 
 fn do_migration<T: Config>() -> Weight

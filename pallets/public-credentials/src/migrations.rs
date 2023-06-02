@@ -63,7 +63,7 @@ where
 			"Pre Upgrade Public Credentials: there are users with holds!"
 		);
 
-		log::info!("Public Credentials: There are no users with holds!");
+		log::info!("Public Credentials: Pre migration checks successful");
 
 		Ok(vec![])
 	}
@@ -80,14 +80,20 @@ where
 			)
 			.saturated_into();
 			ensure!(
-				details.deposit.amount.saturated_into::<u128>() == hold_balance,
+				details.deposit.amount.saturated_into::<u128>() <= hold_balance,
 				log_and_return_error_message(scale_info::prelude::format!(
 					"Public Credentails: Hold balance is not matching for credential {:?} {:?}. Expected hold: {:?}. Real hold: {:?}",
 					key, key2, details.deposit.amount, hold_balance
 				))
 			);
+
+			ensure!(!is_upgraded::<T>(), "Users have still no holds");
+
 			Ok(())
-		})
+		})?;
+
+		log::info!("Public Credentials: Post migration checks successful");
+		Ok(())
 	}
 }
 
@@ -104,7 +110,7 @@ where
 				&HFIdentifier::Deposit(Pallets::PublicCredentials),
 			)
 		})
-		.any(|user| !user)
+		.all(|user| user)
 }
 
 fn do_migration<T: Config>() -> Weight

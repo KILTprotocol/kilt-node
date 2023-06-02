@@ -37,7 +37,7 @@ where
 	<T as Config>::Currency: ReservableCurrency<T::AccountId>,
 {
 	fn on_runtime_upgrade() -> frame_support::weights::Weight {
-		log::info!("bla bla Attestation: Initiating migration {:?}", is_upgraded::<T>());
+		log::info!("Attestation: Initiating migration");
 		if is_upgraded::<T>() {
 			return do_migration::<T>();
 		}
@@ -65,10 +65,7 @@ where
 			"Pre Upgrade Attestation: there are users with holds!"
 		);
 
-		log::info!(
-			"Attestation Pre upgrade: There are no users with holds! {:?}",
-			has_all_user_no_holds
-		);
+		log::info!("Attestation: Pre migration checks successful");
 
 		Ok(vec![])
 	}
@@ -85,14 +82,20 @@ where
 			)
 			.saturated_into();
 			ensure!(
-				details.deposit.amount.saturated_into::<u128>() == hold_balance,
+				details.deposit.amount.saturated_into::<u128>() <= hold_balance,
 				log_and_return_error_message(scale_info::prelude::format!(
 					"Attestation: Hold balance is not matching for attestation {:?}. Expected hold: {:?}. Real hold: {:?}",
 					key, details.deposit.amount, hold_balance
 				))
 			);
+
+			ensure!(!is_upgraded::<T>(), "Attestation Post: Users have still no holds");
+
 			Ok(())
-		})
+		})?;
+
+		log::info!("Attestation: Post migration checks successful");
+		Ok(())
 	}
 }
 

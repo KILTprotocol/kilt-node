@@ -65,7 +65,7 @@ where
 			"Pre Upgrade Delegation: there are users with holds!"
 		);
 
-		log::info!("Delegation: There are no users with holds!");
+		log::info!("Delegation: Pre migration checks successful");
 
 		Ok(vec![])
 	}
@@ -82,14 +82,19 @@ where
 			)
 			.saturated_into();
 			ensure!(
-				details.deposit.amount.saturated_into::<u128>() == hold_balance,
+				details.deposit.amount.saturated_into::<u128>() <= hold_balance,
 				log_and_return_error_message(scale_info::prelude::format!(
 					"Delegation: Hold balance is not matching for delegation node {:?}. Expected hold: {:?}. Real hold: {:?}",
 					key, details.deposit.amount, hold_balance
 				))
 			);
+
+			ensure!(!is_upgraded::<T>(), "Delegation: Users have still no holds");
+
 			Ok(())
-		})
+		})?;
+		log::info!("Delegation: Post migration checks successful");
+		Ok(())
 	}
 }
 
