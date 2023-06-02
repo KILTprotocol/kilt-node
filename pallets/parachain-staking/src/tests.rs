@@ -2112,7 +2112,7 @@ fn update_inflation() {
 }
 
 #[test]
-fn unfreeze_unstaked() {
+fn unlock_unstaked() {
 	// same_unstaked_as_restaked
 	// block 1: stake & unstake for 100
 	// block 2: stake & unstake for 100

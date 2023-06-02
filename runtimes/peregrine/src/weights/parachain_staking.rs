@@ -595,7 +595,7 @@ impl<T: frame_system::Config> parachain_staking::WeightInfo for WeightInfo<T> {
 	/// Storage: System Account (r:1 w:1)
 	/// Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
 	/// The range of component `u` is `[1, 9]`.
-	fn unfreeze_unstaked(_u: u32, ) -> Weight {
+	fn unlock_unstaked(_u: u32, ) -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `1449 + u * (28 ±0)`
 		//  Estimated: `9137`

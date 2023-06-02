@@ -1627,10 +1627,10 @@ pub mod pallet {
 		/// - Kills: Unstaking & Freezess if no balance is locked anymore
 		/// # </weight>
 		#[pallet::call_index(16)]
-		#[pallet::weight(<T as pallet::Config>::WeightInfo::unfreeze_unstaked(
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::unlock_unstaked(
 			T::MaxUnstakeRequests::get().saturated_into::<u32>()
 		))]
-		pub fn unfreeze_unstaked(
+		pub fn unlock_unstaked(
 			origin: OriginFor<T>,
 			target: <T::Lookup as StaticLookup>::Source,
 		) -> DispatchResultWithPostInfo {
@@ -1639,7 +1639,7 @@ pub mod pallet {
 
 			let unstaking_len = Self::do_unlock(&target)?;
 
-			Ok(Some(<T as pallet::Config>::WeightInfo::unfreeze_unstaked(unstaking_len)).into())
+			Ok(Some(<T as pallet::Config>::WeightInfo::unlock_unstaked(unstaking_len)).into())
 		}
 
 		/// Claim block authoring rewards for the target address.

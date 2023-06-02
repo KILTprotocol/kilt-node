@@ -1256,7 +1256,7 @@ impl WeightInfo for () {
 	/// Storage: System Account (r:1 w:1)
 	/// Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
 	/// The range of component `u` is `[1, 9]`.
-	fn unfreeze_unstaked(u: u32, ) -> Weight {
+	fn unlock_unstaked(u: u32, ) -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `1488 + u * (24 ±0)`
 		//  Estimated: `9137`
