@@ -16,8 +16,6 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use crate::para::consumer::{provider_dispatcher_account_on_consumer, provider_parachain_account_on_consumer};
-
 use super::*;
 
 use did::{Did, DidRawOrigin, DidSignature};
@@ -55,10 +53,12 @@ fn commit_identity() {
 	Network::reset();
 
 	let did: DidIdentifier = para::provider::did_auth_key().public().into();
-	let provider_parachain_on_consumer_parachain_balance_before =
-		ConsumerParachain::execute_with(|| Balances::free_balance(provider_parachain_account_on_consumer()));
-	let dispatcher_on_consumer_parachain_balance_before =
-		ConsumerParachain::execute_with(|| Balances::free_balance(provider_dispatcher_account_on_consumer()));
+	let provider_parachain_on_consumer_parachain_balance_before = ConsumerParachain::execute_with(|| {
+		Balances::free_balance(para::consumer::provider_parachain_account_on_consumer())
+	});
+	let dispatcher_on_consumer_parachain_balance_before = ConsumerParachain::execute_with(|| {
+		Balances::free_balance(para::consumer::provider_dispatcher_account_on_consumer())
+	});
 
 	// 1. Send identity commitment from DIP provider to DIP consumer.
 	ProviderParachain::execute_with(|| {
@@ -90,7 +90,7 @@ fn commit_identity() {
 		// 2.3 Verify that the provider parachain sovereign account balance has not
 		// changed.
 		let provider_parachain_on_consumer_parachain_balance_after =
-			Balances::free_balance(provider_parachain_account_on_consumer());
+			Balances::free_balance(para::consumer::provider_parachain_account_on_consumer());
 		assert_eq!(
 			provider_parachain_on_consumer_parachain_balance_before,
 			provider_parachain_on_consumer_parachain_balance_after
@@ -98,7 +98,7 @@ fn commit_identity() {
 		// 2.4 Verify that the dispatcher's account balance on the consumer parachain
 		// has decreased.
 		let dispatcher_on_consumer_parachain_balance_after =
-			Balances::free_balance(provider_dispatcher_account_on_consumer());
+			Balances::free_balance(para::consumer::provider_dispatcher_account_on_consumer());
 		assert!(dispatcher_on_consumer_parachain_balance_after < dispatcher_on_consumer_parachain_balance_before);
 	});
 	// 3. Call an extrinsic on the consumer chain with a valid proof and signature
