@@ -16,6 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use did::DidRawOrigin;
 use dip_support::IdentityDetailsAction;
 use xcm::{latest::prelude::*, DoubleEncoded};
 
@@ -221,4 +222,29 @@ pub trait TxBuilder<Identifier, Proof, Details = ()> {
 		dest: MultiLocation,
 		action: IdentityDetailsAction<Identifier, Proof, Details>,
 	) -> Result<DoubleEncoded<()>, Self::Error>;
+}
+
+pub trait SubmitterInfo {
+	type Submitter;
+
+	fn submitter(&self) -> Self::Submitter;
+}
+
+impl SubmitterInfo for frame_support::sp_runtime::AccountId32 {
+	type Submitter = Self;
+
+	fn submitter(&self) -> Self::Submitter {
+		self.clone()
+	}
+}
+
+impl<DidIdentifier, AccountId> SubmitterInfo for DidRawOrigin<DidIdentifier, AccountId>
+where
+	AccountId: Clone,
+{
+	type Submitter = AccountId;
+
+	fn submitter(&self) -> Self::Submitter {
+		self.submitter.clone()
+	}
 }

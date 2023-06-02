@@ -35,7 +35,7 @@ pub mod pallet {
 
 	use dip_support::IdentityDetailsAction;
 
-	use crate::traits::{IdentityProofDispatcher, IdentityProofGenerator, IdentityProvider, TxBuilder};
+	use crate::traits::{IdentityProofDispatcher, IdentityProofGenerator, IdentityProvider, SubmitterInfo, TxBuilder};
 
 	pub type IdentityOf<T> = <<T as Config>::IdentityProvider as IdentityProvider<<T as Config>::Identifier>>::Success;
 	pub type IdentityProofActionOf<T> = IdentityDetailsAction<<T as Config>::Identifier, <T as Config>::ProofOutput>;
@@ -45,7 +45,7 @@ pub mod pallet {
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
 		type CommitOriginCheck: EnsureOrigin<Self::RuntimeOrigin, Success = Self::CommitOrigin>;
-		type CommitOrigin: Into<Self::AccountId>;
+		type CommitOrigin: SubmitterInfo<Submitter = Self::AccountId>;
 		type Identifier: Parameter;
 		type IdentityProofGenerator: IdentityProofGenerator<
 			Self::Identifier,
@@ -91,7 +91,7 @@ pub mod pallet {
 			asset: Box<VersionedMultiAsset>,
 			weight: Weight,
 		) -> DispatchResult {
-			let dispatcher = T::CommitOriginCheck::ensure_origin(origin).map(|e| e.into())?;
+			let dispatcher = T::CommitOriginCheck::ensure_origin(origin).map(|e| e.submitter())?;
 
 			let destination: MultiLocation = (*destination).try_into().map_err(|_| Error::<T>::BadVersion)?;
 			let action: IdentityProofActionOf<T> = match T::IdentityProvider::retrieve(&identifier) {
