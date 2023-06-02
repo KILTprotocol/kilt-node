@@ -104,6 +104,9 @@ where
 			},
 		]]
 		.concat();
+		// TODO: Restructure the trait to be able to inject the [Instruction] provider,
+		// and unit test that.
+		debug_assert!(barriers::instruction_matcher(&operation).is_ok());
 		let op = Xcm(operation);
 		Router::validate(&mut Some(destination), &mut Some(op))
 	}
@@ -119,6 +122,33 @@ pub mod barriers {
 	use frame_support::ensure;
 	use xcm::v3::{Instruction, Junction::Parachain, ParentThen};
 	use xcm_executor::traits::ShouldExecute;
+
+	pub(crate) fn instruction_matcher<RuntimeCall>(instructions: &[Instruction<RuntimeCall>]) -> Result<(), ()> {
+		let mut iter = instructions.iter();
+		match (
+			iter.next(),
+			iter.next(),
+			iter.next(),
+			iter.next(),
+			iter.next(),
+			iter.next(),
+			iter.next(),
+		) {
+			(
+				Some(DescendOrigin(X1(AccountId32 { .. }))),
+				Some(WithdrawAsset { .. }),
+				Some(BuyExecution { .. }),
+				Some(Transact {
+					origin_kind: OriginKind::Native,
+					..
+				}),
+				Some(RefundSurplus),
+				Some(DepositAsset { .. }),
+				None,
+			) => Ok(()),
+			_ => Err(()),
+		}
+	}
 
 	// Allows a parachain to descend to an `X1(AccountId32)` junction, withdraw fees
 	// from their balance, and then carry on with a `Transact`.
@@ -141,32 +171,7 @@ pub mod barriers {
 				*origin == ParentThen(Parachain(ProviderParaId::get()).into()).into(),
 				()
 			);
-			let mut iter = instructions.iter();
-			// This must match the implementation of the `IdentityProofDispatcher` trait.
-			// TODO: Refactor so that they depend on each other and we avoid duplication
-			match (
-				iter.next(),
-				iter.next(),
-				iter.next(),
-				iter.next(),
-				iter.next(),
-				iter.next(),
-				iter.next(),
-			) {
-				(
-					Some(DescendOrigin(X1(AccountId32 { .. }))),
-					Some(WithdrawAsset { .. }),
-					Some(BuyExecution { .. }),
-					Some(Transact {
-						origin_kind: OriginKind::Native,
-						..
-					}),
-					Some(RefundSurplus),
-					Some(DepositAsset { .. }),
-					None,
-				) => Ok(()),
-				_ => Err(()),
-			}
+			instruction_matcher(instructions)
 		}
 	}
 
