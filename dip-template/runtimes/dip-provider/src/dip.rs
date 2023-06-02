@@ -16,8 +16,8 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use did::{DidRawOrigin, EnsureDidOrigin};
 use dip_support::IdentityDetailsAction;
-use frame_system::EnsureSigned;
 use pallet_dip_provider::traits::{TxBuilder, XcmRouterDispatcher};
 use parity_scale_codec::{Decode, Encode};
 use runtime_common::dip::{did::LinkedDidInfoProviderOf, merkle::DidMerkleRootGenerator};
@@ -54,8 +54,8 @@ impl TxBuilder<DidIdentifier, Hash> for ConsumerParachainTxBuilder {
 }
 
 impl pallet_dip_provider::Config for Runtime {
-	type CommitOriginCheck = EnsureSigned<AccountId>;
-	type CommitOrigin = AccountId;
+	type CommitOriginCheck = EnsureDidOrigin<DidIdentifier, AccountId>;
+	type CommitOrigin = DidRawOrigin<DidIdentifier, AccountId>;
 	type Identifier = DidIdentifier;
 	type IdentityProofDispatcher = XcmRouterDispatcher<XcmRouter, UniversalLocation>;
 	type IdentityProofGenerator = DidMerkleRootGenerator<Runtime>;

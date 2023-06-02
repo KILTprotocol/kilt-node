@@ -20,7 +20,7 @@ use crate::para::consumer::{provider_dispatcher_account_on_consumer, provider_pa
 
 use super::*;
 
-use did::{Did, DidSignature};
+use did::{Did, DidRawOrigin, DidSignature};
 use frame_support::{assert_ok, weights::Weight};
 use frame_system::RawOrigin;
 use kilt_dip_support::{
@@ -63,7 +63,11 @@ fn commit_identity() {
 	// 1. Send identity commitment from DIP provider to DIP consumer.
 	ProviderParachain::execute_with(|| {
 		assert_ok!(DipProvider::commit_identity(
-			RawOrigin::Signed(para::provider::DISPATCHER_ACCOUNT).into(),
+			DidRawOrigin {
+				id: did.clone(),
+				submitter: para::provider::DISPATCHER_ACCOUNT
+			}
+			.into(),
 			did.clone(),
 			Box::new(ParentThen(X1(Parachain(para::consumer::PARA_ID))).into()),
 			Box::new((Here, 1_000_000_000).into()),
