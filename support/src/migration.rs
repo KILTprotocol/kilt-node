@@ -18,10 +18,7 @@
 
 use frame_support::{
 	pallet_prelude::DispatchResult,
-	traits::{
-		fungible::hold::{Inspect as InspectHold, Mutate as MutateHold},
-		ReservableCurrency,
-	},
+	traits::{fungible::hold::Mutate as MutateHold, ReservableCurrency},
 };
 use sp_runtime::SaturatedConversion;
 
@@ -30,7 +27,7 @@ use crate::deposit::HFIdentifier;
 /// Checks some precondition of the migrations.
 pub fn has_user_holds<
 	AccountId,
-	Currency: ReservableCurrency<AccountId> + MutateHold<AccountId> + InspectHold<AccountId, Reason = HFIdentifier>,
+	Currency: ReservableCurrency<AccountId> + MutateHold<AccountId, Reason = HFIdentifier>,
 >(
 	owner: &AccountId,
 	reason: &HFIdentifier,
@@ -41,7 +38,7 @@ pub fn has_user_holds<
 
 pub fn switch_reserved_to_hold<
 	AccountId,
-	Currency: ReservableCurrency<AccountId> + MutateHold<AccountId> + InspectHold<AccountId, Reason = HFIdentifier>,
+	Currency: ReservableCurrency<AccountId> + MutateHold<AccountId, Reason = HFIdentifier>,
 >(
 	owner: AccountId,
 	reason: &HFIdentifier,
