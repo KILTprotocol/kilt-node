@@ -921,7 +921,7 @@ mod tests {
 		);
 	}
 	#[test]
-	fn test_unfreeze_unstaked() {
+	fn test_unlock_unstaked() {
 		assert!(
 			<crate::Runtime as frame_system::Config>::BlockWeights::get()
 				.per_class

@@ -148,8 +148,11 @@ pub mod pallet {
 		pallet_prelude::*,
 		storage::bounded_btree_map::BoundedBTreeMap,
 		traits::{
-			tokens::fungible::MutateFreeze, Currency, EstimateNextSessionRotation, Get, Imbalance, LockIdentifier,
-			LockableCurrency, OnUnbalanced, StorageVersion,
+			tokens::{
+				fungible::{Inspect, MutateFreeze, Unbalanced},
+				Fortitude, Precision, Preservation,
+			},
+			Currency, EstimateNextSessionRotation, Get, LockIdentifier, LockableCurrency, OnUnbalanced, StorageVersion,
 		},
 		BoundedVec,
 	};
@@ -164,6 +167,7 @@ pub mod pallet {
 	};
 	use sp_staking::SessionIndex;
 	use sp_std::prelude::*;
+	use types::AccountIdOf;
 
 	use crate::{
 		set::OrderedSet,
@@ -193,7 +197,8 @@ pub mod pallet {
 		// multiplication
 		/// The currency type
 		/// Note: Declaration of Balance taken from pallet_gilt
-		type Currency: Currency<Self::AccountId, Balance = Self::CurrencyBalance>
+		type Currency: Inspect<Self::AccountId, Balance = Self::CurrencyBalance>
+			+ Unbalanced<Self::AccountId, Balance = Self::CurrencyBalance>
 			+ MutateFreeze<Self::AccountId, Balance = Self::CurrencyBalance, Id = HFIdentifier>
 			+ LockableCurrency<Self::AccountId, Balance = Self::CurrencyBalance>
 			+ Eq;
@@ -227,7 +232,7 @@ pub mod pallet {
 		type DefaultBlocksPerRound: Get<Self::BlockNumber>;
 		/// Number of blocks for which unstaked balance will still be locked
 		/// before it can be unlocked by actively calling the extrinsic
-		/// `unfreeze_unstaked`.
+		/// `unlock_unstacked`.
 		#[pallet::constant]
 		type StakeDuration: Get<Self::BlockNumber>;
 		/// Number of rounds a collator has to stay active after submitting a
@@ -689,7 +694,7 @@ pub mod pallet {
 			// Setup delegate & collators
 			for &(ref actor, ref opt_val, balance) in &self.stakers {
 				assert!(
-					T::Currency::free_balance(actor) >= balance,
+					T::Currency::reducible_balance(actor, Preservation::Expendable, Fortitude::Polite) >= balance,
 					"Account does not have enough balance to stake."
 				);
 				if let Some(delegated_val) = opt_val {
@@ -901,7 +906,7 @@ pub mod pallet {
 		/// delegators.
 		///
 		/// Prepares unstaking of the candidates and their delegators stake
-		/// which can be unfreezed via `unfreeze_unstaked` after waiting at
+		/// which can be unfreezed via `unlock_unstacked` after waiting at
 		/// least `StakeDuration` many blocks. Also increments rewards for the
 		/// collator and their delegators.
 		///
@@ -1091,7 +1096,7 @@ pub mod pallet {
 		/// Execute the network exit of a candidate who requested to leave at
 		/// least `ExitQueueDelay` rounds ago. Prepares unstaking of the
 		/// candidates and their delegators stake which can be unfreezed via
-		/// `unfreeze_unstaked` after waiting at least `StakeDuration` many
+		/// `unlock_unstacked` after waiting at least `StakeDuration` many
 		/// blocks.
 		///
 		/// Requires the candidate to previously have called
@@ -1345,7 +1350,7 @@ pub mod pallet {
 
 			// check balance
 			ensure!(
-				pallet_balances::Pallet::<T>::free_balance(acc.clone()) >= amount.into(),
+				pallet_balances::Pallet::<T>::balance(&acc) >= amount.into(),
 				pallet_balances::Error::<T>::InsufficientBalance
 			);
 
@@ -1667,9 +1672,10 @@ pub mod pallet {
 			ensure!(!rewards.is_zero(), Error::<T>::RewardsNotFound);
 
 			// mint into target
-			let rewards = T::Currency::deposit_into_existing(&target, rewards)?;
+			let rewards =
+				<T::Currency as Unbalanced<AccountIdOf<T>>>::increase_balance(&target, rewards, Precision::Exact)?;
 
-			Self::deposit_event(Event::Rewarded(target, rewards.peek()));
+			Self::deposit_event(Event::Rewarded(target, rewards));
 
 			Ok(())
 		}
@@ -2153,7 +2159,13 @@ pub mod pallet {
 		/// amount and updates `Unstaking` storage accordingly.
 		fn increase_lock(who: &T::AccountId, amount: BalanceOf<T>, more: BalanceOf<T>) -> Result<u32, DispatchError> {
 			ensure!(
-				pallet_balances::Pallet::<T>::free_balance(who) >= amount.into(),
+				pallet_balances::Pallet::<T>::reducible_balance(who, Preservation::Preserve, Fortitude::Polite)
+					>= more.into(),
+				pallet_balances::Error::<T>::InsufficientBalance
+			);
+
+			ensure!(
+				<T::Currency as Inspect<AccountIdOf<T>>>::total_balance(who) >= amount,
 				pallet_balances::Error::<T>::InsufficientBalance
 			);
 
@@ -2195,7 +2207,7 @@ pub mod pallet {
 		}
 
 		/// Set the unlocking block for the account and corresponding amount
-		/// which can be unfreezed via `unfreeze_unstaked` after waiting at
+		/// which can be unfreezed via `unlock_unstacked` after waiting at
 		/// least for `StakeDuration` many blocks.
 		///
 		/// Throws if the amount is zero (unlikely) or if active unlocking
@@ -2387,7 +2399,7 @@ pub mod pallet {
 		/// Depends on the current total issuance and staking reward
 		/// configuration for collators.
 		pub(crate) fn calc_block_rewards_collator(stake: BalanceOf<T>, multiplier: BalanceOf<T>) -> BalanceOf<T> {
-			let total_issuance = T::Currency::total_issuance();
+			let total_issuance = <T::Currency as Inspect<AccountIdOf<T>>>::total_issuance();
 			let TotalStake {
 				collators: total_collators,
 				..
@@ -2405,7 +2417,7 @@ pub mod pallet {
 		/// Depends on the current total issuance and staking reward
 		/// configuration for delegators.
 		pub(crate) fn calc_block_rewards_delegator(stake: BalanceOf<T>, multiplier: BalanceOf<T>) -> BalanceOf<T> {
-			let total_issuance = T::Currency::total_issuance();
+			let total_issuance = <T::Currency as Inspect<AccountIdOf<T>>>::total_issuance();
 			let TotalStake {
 				delegators: total_delegators,
 				..
