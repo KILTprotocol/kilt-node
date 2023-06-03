@@ -19,11 +19,8 @@
 use frame_support::{
 	pallet_prelude::DispatchResult,
 	traits::{
-		fungible::{
-			freeze::{Inspect as InspectFreeze, Mutate as MutateFreeze},
-			hold::{Inspect as InspectHold, Mutate as MutateHold},
-		},
-		LockIdentifier, LockableCurrency, ReservableCurrency,
+		fungible::hold::{Inspect as InspectHold, Mutate as MutateHold},
+		ReservableCurrency,
 	},
 };
 use sp_runtime::SaturatedConversion;
@@ -42,16 +39,6 @@ pub fn has_user_holds<
 		&& Currency::reserved_balance(owner).saturated_into::<usize>() > 0
 }
 
-pub fn has_user_freezes<
-	AccountId,
-	Currency: ReservableCurrency<AccountId> + MutateFreeze<AccountId> + InspectFreeze<AccountId, Id = HFIdentifier>,
->(
-	owner: &AccountId,
-	reason: &HFIdentifier,
-) -> bool {
-	Currency::balance_frozen(reason, owner).saturated_into::<usize>() > 0
-}
-
 pub fn switch_reserved_to_hold<
 	AccountId,
 	Currency: ReservableCurrency<AccountId> + MutateHold<AccountId> + InspectHold<AccountId, Reason = HFIdentifier>,
@@ -62,17 +49,4 @@ pub fn switch_reserved_to_hold<
 ) -> DispatchResult {
 	Currency::unreserve(&owner, amount.saturated_into());
 	Currency::hold(reason, &owner, amount.saturated_into())
-}
-
-pub fn switch_locks_to_freeze<
-	AccountId,
-	Currency: LockableCurrency<AccountId> + MutateFreeze<AccountId, Id = HFIdentifier>,
->(
-	who: &AccountId,
-	id_lock: LockIdentifier,
-	id_freeze: &HFIdentifier,
-	amount: u128,
-) -> DispatchResult {
-	Currency::remove_lock(id_lock, who);
-	Currency::set_freeze(id_freeze, who, amount.saturated_into())
 }
