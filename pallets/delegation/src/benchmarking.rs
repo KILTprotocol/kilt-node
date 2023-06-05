@@ -174,9 +174,14 @@ where
 	)
 }
 
-// setup delegations for an arbitrary depth and children per level
-// 1. create ctype and root delegation
-// 2. create and append children delegations to prior child for each level
+/// setup delegations for an arbitrary depth and children per level
+/// 1. create ctype and root delegation
+/// 2. create and append children delegations to prior child for each level
+///
+/// # Errors
+///
+/// Returns an error when there was an internal problem during the setup.
+/// * e.g. not enough funds where minted during the setup
 pub fn setup_delegations<T>(
 	levels: u32,
 	children_per_level: NonZeroU32,

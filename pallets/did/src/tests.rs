@@ -15,6 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
+#![allow(clippy::indexing_slicing)]
 
 use frame_support::{assert_err, assert_noop, assert_ok, traits::Currency};
 use parity_scale_codec::Encode;
