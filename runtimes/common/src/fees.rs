@@ -101,7 +101,7 @@ where
 	type Balance = Balance;
 	fn polynomial() -> WeightToFeeCoefficients<Self::Balance> {
 		// The should be fee
-		let wanted_fee: Balance = 10 * MILLI_KILT;
+		let wanted_fee: Balance = 10u128.saturating_mul(MILLI_KILT);
 
 		// TODO: transfer_keep_alive is 288 byte long?
 		let tx_len: u64 = 288;
@@ -182,7 +182,7 @@ mod tests {
 		})
 		.avg_block_initialization(AVERAGE_ON_INITIALIZE_RATIO)
 		.build_or_panic();
-		pub BlockLength: limits::BlockLength = limits::BlockLength::max(2 * 1024);
+		pub BlockLength: limits::BlockLength = limits::BlockLength::max(2u32.saturating_mul(1024));
 		pub const AvailableBlockRatio: Perbill = Perbill::one();
 	}
 

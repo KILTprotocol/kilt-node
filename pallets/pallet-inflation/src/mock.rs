@@ -41,11 +41,17 @@ type BlockNumber = u64;
 
 pub(crate) const TREASURY_ACC: AccountId = AccountId::new([1u8; 32]);
 
-pub const BLOCKS_PER_YEAR: BlockNumber = 60_000 / 12_000 * 60 * 24 * 36525 / 100;
+pub const BLOCKS_PER_YEAR: BlockNumber = 60_000u64
+	.saturating_div(12_000)
+	.saturating_mul(60)
+	.saturating_mul(24)
+	.saturating_mul(36525)
+	.saturating_div(100);
 pub const KILT: Balance = 10u128.pow(15);
 pub const INITIAL_PERIOD_LENGTH: BlockNumber = BLOCKS_PER_YEAR.saturating_mul(5);
 const YEARLY_REWARD: Balance = 2_000_000u128 * KILT;
-pub const INITIAL_PERIOD_REWARD_PER_BLOCK: Balance = YEARLY_REWARD / (BLOCKS_PER_YEAR as Balance);
+#[allow(clippy::as_conversions)]
+pub const INITIAL_PERIOD_REWARD_PER_BLOCK: Balance = YEARLY_REWARD.saturating_div(BLOCKS_PER_YEAR as Balance);
 
 frame_support::construct_runtime!(
 	pub enum Test where
@@ -133,7 +139,7 @@ impl pallet_inflation::Config for Test {
 pub(crate) fn roll_to(n: BlockNumber) {
 	while System::block_number() < n {
 		<AllPalletsWithSystem as OnFinalize<u64>>::on_finalize(System::block_number());
-		System::set_block_number(System::block_number() + 1);
+		System::set_block_number(System::block_number().saturating_add(1));
 		<AllPalletsWithSystem as OnInitialize<u64>>::on_initialize(System::block_number());
 	}
 }

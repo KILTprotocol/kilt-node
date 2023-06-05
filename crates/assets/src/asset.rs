@@ -102,6 +102,9 @@ pub mod v1 {
 	impl AssetId {
 		/// Try to parse an `AssetId` instance from the provided UTF8-encoded
 		/// input.
+		/// # Errors
+		/// Failure can occur if the input format is incorrect. The input length
+		/// must be between MINIMUM_ASSET_ID_LENGTH and MAXIMUM_ASSET_ID_LENGTH
 		pub fn from_utf8_encoded<I>(input: I) -> Result<Self, Error>
 		where
 			I: AsRef<[u8]> + Into<Vec<u8>>,

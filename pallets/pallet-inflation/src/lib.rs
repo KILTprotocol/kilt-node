@@ -38,6 +38,7 @@
 #![deny(clippy::indexing_slicing)]
 #![warn(clippy::float_arithmetic)]
 #![warn(clippy::cast_possible_wrap)]
+#![feature(const_trait_impl)]
 
 pub mod default_weights;
 

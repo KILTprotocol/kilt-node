@@ -45,6 +45,10 @@ pub trait VerifySignature {
 
 	/// Verifies that the signature matches the payload and has been generated
 	/// by the signer.
+	///
+	/// # Errors
+	/// Failure can occur if (delegate, payload) == (&signature.0,
+	/// &signature.1) are not matching
 	fn verify(
 		signer: &Self::SignerId,
 		payload: &Self::Payload,

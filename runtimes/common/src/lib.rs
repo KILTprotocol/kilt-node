@@ -27,6 +27,7 @@
 #![deny(clippy::indexing_slicing)]
 #![warn(clippy::float_arithmetic)]
 #![warn(clippy::cast_possible_wrap)]
+#![feature(const_trait_impl)]
 
 use constants::{AVERAGE_ON_INITIALIZE_RATIO, MAXIMUM_BLOCK_WEIGHT, NORMAL_DISPATCH_RATIO};
 use fees::SplitFeesByRatio;
@@ -46,7 +47,7 @@ use pallet_transaction_payment::{Multiplier, TargetedFeeAdjustment};
 use sp_runtime::{
 	generic,
 	traits::{Bounded, IdentifyAccount, Verify},
-	FixedPointNumber, MultiSignature, Perquintill, SaturatedConversion,
+	FixedPointNumber, MultiSignature, Perquintill, SaturatedConversion, Saturating,
 };
 use sp_std::marker::PhantomData;
 
@@ -139,7 +140,7 @@ parameter_types! {
 	pub MaximumMultiplier: Multiplier = Bounded::max_value();
 	/// Maximum length of block. Up to 5MB.
 	pub BlockLength: limits::BlockLength =
-		limits::BlockLength::max_with_normal_ratio(5 * 1024 * 1024, NORMAL_DISPATCH_RATIO);
+		limits::BlockLength::max_with_normal_ratio(5.saturating_mul(1024).saturating_mul(1024), NORMAL_DISPATCH_RATIO);
 	/// Block weights base values and limits.
 	pub BlockWeights: limits::BlockWeights = limits::BlockWeights::builder()
 		.base_block(BlockExecutionWeight::get())
@@ -154,7 +155,7 @@ parameter_types! {
 			// Operational transactions have some extra reserved space, so that they
 			// are included even if block reached `MAXIMUM_BLOCK_WEIGHT`.
 			weights.reserved = Some(
-				MAXIMUM_BLOCK_WEIGHT - NORMAL_DISPATCH_RATIO * MAXIMUM_BLOCK_WEIGHT,
+				MAXIMUM_BLOCK_WEIGHT.saturating_sub((NORMAL_DISPATCH_RATIO * MAXIMUM_BLOCK_WEIGHT).saturated_into()),
 			);
 		})
 		.avg_block_initialization(AVERAGE_ON_INITIALIZE_RATIO)

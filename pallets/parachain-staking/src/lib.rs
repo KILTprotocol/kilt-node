@@ -113,17 +113,6 @@
 //!   allow collators to leave at least until the start of session s(i+2).
 
 #![cfg_attr(not(feature = "std"), no_std)]
-#![warn(clippy::integer_arithmetic)]
-#![warn(clippy::integer_division)]
-#![warn(clippy::as_conversions)]
-#![warn(clippy::missing_panics_doc)]
-#![warn(clippy::missing_errors_doc)]
-#![warn(clippy::arithmetic_side_effects)]
-#![deny(clippy::index_refutable_slice)]
-#![deny(clippy::indexing_slicing)]
-#![warn(clippy::float_arithmetic)]
-#![warn(clippy::cast_possible_wrap)]
-
 #[cfg(feature = "runtime-benchmarks")]
 pub mod benchmarking;
 pub mod default_weights;
@@ -1751,7 +1740,11 @@ pub mod pallet {
 			let inflation = InflationConfig::<T>::get();
 
 			// collator reward rate decreases by 2% p.a. of the previous one
-			let c_reward_rate = inflation.collator.reward_rate.annual * Perquintill::from_percent(98);
+			let c_reward_rate = inflation
+				.collator
+				.reward_rate
+				.annual
+				.saturating_mul(Perquintill::from_percent(98));
 
 			// delegator reward rate should be 6% in 2nd year and 0% afterwards
 			let d_reward_rate = if year == T::BlockNumber::one() {

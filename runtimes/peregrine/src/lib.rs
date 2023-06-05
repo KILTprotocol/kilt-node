@@ -28,7 +28,6 @@
 #![deny(clippy::indexing_slicing)]
 #![warn(clippy::float_arithmetic)]
 #![warn(clippy::cast_possible_wrap)]
-
 // `construct_runtime!` does a lot of recursion and requires us to increase the limit to 256.
 #![recursion_limit = "256"]
 
@@ -169,7 +168,7 @@ impl frame_system::Config for Runtime {
 }
 
 parameter_types! {
-	pub const MinimumPeriod: u64 = constants::SLOT_DURATION / 2;
+	pub const MinimumPeriod: u64 = constants::SLOT_DURATION.saturating_div(2);
 }
 
 impl pallet_timestamp::Config for Runtime {

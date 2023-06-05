@@ -28,7 +28,6 @@
 #![deny(clippy::indexing_slicing)]
 #![warn(clippy::float_arithmetic)]
 #![warn(clippy::cast_possible_wrap)]
-
 // `construct_runtime!` does a lot of recursion and requires us to increase the limit to 256.
 #![recursion_limit = "256"]
 
@@ -367,7 +366,7 @@ parameter_types! {
 	#[derive(Debug, Clone, Eq, PartialEq)]
 	pub const MaxTotalKeyAgreementKeys: u32 = constants::did::MAX_TOTAL_KEY_AGREEMENT_KEYS;
 	// Standalone block time is half the duration of a parachain block.
-	pub const MaxBlocksTxValidity: BlockNumber = constants::did::MAX_BLOCKS_TX_VALIDITY * 2;
+	pub const MaxBlocksTxValidity: BlockNumber = constants::did::MAX_BLOCKS_TX_VALIDITY.saturating_mul(2);
 	pub const DidFee: Balance = constants::did::DID_FEE;
 	pub const MaxNumberOfServicesPerDid: u32 = constants::did::MAX_NUMBER_OF_SERVICES_PER_DID;
 	pub const MaxServiceIdLength: u32 = constants::did::MAX_SERVICE_ID_LENGTH;

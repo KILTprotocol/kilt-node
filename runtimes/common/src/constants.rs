@@ -16,6 +16,8 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+#![allow(clippy::as_conversions)]
+
 use frame_support::{
 	parameter_types,
 	traits::WithdrawReasons,
@@ -38,11 +40,11 @@ pub const MILLISECS_PER_BLOCK: u64 = 12_000;
 pub const SLOT_DURATION: u64 = MILLISECS_PER_BLOCK;
 
 // Time is measured by number of blocks.
-pub const MINUTES: BlockNumber = 60_000 / (MILLISECS_PER_BLOCK as BlockNumber);
+pub const MINUTES: BlockNumber = 60_000u64.saturating_div(MILLISECS_PER_BLOCK as BlockNumber);
 pub const HOURS: BlockNumber = MINUTES * 60;
 pub const DAYS: BlockNumber = HOURS * 24;
 // Julian year as Substrate handles it
-pub const BLOCKS_PER_YEAR: BlockNumber = DAYS * 36525 / 100;
+pub const BLOCKS_PER_YEAR: BlockNumber = DAYS.saturating_mul(36525).saturating_div(100);
 
 pub const MAX_COLLATOR_STAKE: Balance = 200_000 * KILT;
 
@@ -107,7 +109,9 @@ pub fn kilt_inflation_config() -> InflationInfo {
 /// Calculate the storage deposit based on the number of storage items and the
 /// combined byte size of those items.
 pub const fn deposit(items: u32, bytes: u32) -> Balance {
-	items as Balance * DEPOSIT_STORAGE_ITEM + (bytes as Balance) * DEPOSIT_STORAGE_BYTE
+	(items as u128)
+		.saturating_mul(DEPOSIT_STORAGE_ITEM)
+		.saturating_add((bytes as Balance).saturating_mul(DEPOSIT_STORAGE_BYTE))
 }
 
 /// The size of an index in the index pallet.
@@ -119,7 +123,7 @@ pub const MAX_VESTING_SCHEDULES: u32 = 28;
 
 parameter_types! {
 	/// Vesting Pallet. Copied from Kusama & Polkadot runtime
-	pub const MinVestedTransfer: Balance = 100 * MILLI_KILT;
+	pub const MinVestedTransfer: Balance = 100u128.saturating_mul(MILLI_KILT);
 	pub UnvestedFundsAllowedWithdrawReasons: WithdrawReasons =
 		WithdrawReasons::except(WithdrawReasons::TRANSFER | WithdrawReasons::RESERVE);
 	/// Deposits per byte
@@ -217,7 +221,7 @@ pub mod staking {
 		#[derive(Debug, Eq, PartialEq)]
 		pub const MaxDelegatorsPerCollator: u32 = MAX_DELEGATORS_PER_COLLATOR;
 		/// Minimum stake required to be reserved to be a collator is 10_000
-		pub const MinCollatorStake: Balance = 10_000 * KILT;
+		pub const MinCollatorStake: Balance = 10_000u128.saturating_mul(KILT);
 		/// Minimum stake required to be reserved to be a delegator is 1000
 		pub const MinDelegatorStake: Balance = MIN_DELEGATOR_STAKE;
 		/// Maximum number of collator candidates
@@ -392,11 +396,12 @@ pub mod did_lookup {
 }
 
 pub mod treasury {
+
 	use super::*;
 
 	pub const INITIAL_PERIOD_LENGTH: BlockNumber = BLOCKS_PER_YEAR.saturating_mul(5);
 	const YEARLY_REWARD: Balance = 2_000_000u128 * KILT;
-	pub const INITIAL_PERIOD_REWARD_PER_BLOCK: Balance = YEARLY_REWARD / (BLOCKS_PER_YEAR as Balance);
+	pub const INITIAL_PERIOD_REWARD_PER_BLOCK: Balance = YEARLY_REWARD.saturating_div(BLOCKS_PER_YEAR as u128);
 
 	parameter_types! {
 		pub const InitialPeriodLength: BlockNumber = INITIAL_PERIOD_LENGTH;

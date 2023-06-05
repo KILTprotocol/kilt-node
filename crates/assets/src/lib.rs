@@ -25,7 +25,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![warn(clippy::integer_arithmetic)]
 #![warn(clippy::integer_division)]
-#![warn(clippy::as_conversions)]
 #![warn(clippy::missing_panics_doc)]
 #![warn(clippy::missing_errors_doc)]
 #![warn(clippy::arithmetic_side_effects)]
