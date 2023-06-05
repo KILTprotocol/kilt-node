@@ -196,11 +196,12 @@ fn check_successful_complete_creation() {
 	let signature = auth_key.sign(details.encode().as_ref());
 
 	let required_balance_for_endpoint = <Test as did::Config>::ServiceEndpointDeposit::get()
-		* <Test as did::Config>::MaxNumberOfServicesPerDid::get() as u128;
+		.saturating_mul(<Test as did::Config>::MaxNumberOfServicesPerDid::get().saturated_into());
 
 	let required_balance_for_keys = <Test as did::Config>::KeyDeposit::get() * 2;
 
-	let required_balance_for_key_agreement = <Test as did::Config>::KeyDeposit::get() * enc_keys.len() as u128;
+	let required_balance_for_key_agreement =
+		<Test as did::Config>::KeyDeposit::get() * enc_keys.len().saturated_into::<u128>();
 
 	let balance = required_balance_for_endpoint
 		+ required_balance_for_keys
@@ -558,7 +559,7 @@ fn check_max_limit_service_endpoints_count_did_creation() {
 
 	let signature = auth_key.sign(details.encode().as_ref());
 	let required_balance_for_service_endpoints = <Test as did::Config>::ServiceEndpointDeposit::get()
-		* (<Test as did::Config>::MaxNumberOfServicesPerDid::get() as u128 + 1);
+		* (<Test as did::Config>::MaxNumberOfServicesPerDid::get().saturated_into::<u128>() + 1);
 	let balance = required_balance_for_service_endpoints
 		+ <Test as did::Config>::BaseDeposit::get()
 		+ <Test as did::Config>::Fee::get()

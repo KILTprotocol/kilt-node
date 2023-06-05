@@ -817,13 +817,13 @@ pub mod pallet {
 				.into_iter()
 				.skip(start.saturated_into())
 				// SAFETY: we ensured that end > start further above.
-				.take((end - start).saturated_into())
+				.take((end.saturating_sub(start)).saturated_into())
 				.filter_map(|candidate| CandidatePool::<T>::get(&candidate.owner))
 				.map(|state| {
 					(
 						state.stake,
 						// SAFETY: the total is always more than the stake
-						state.total - state.stake,
+						state.total.saturating_sub(state.stake),
 						state.delegators.len().saturated_into::<u32>(),
 					)
 				})
@@ -844,7 +844,7 @@ pub mod pallet {
 
 			Ok(Some(<T as pallet::Config>::WeightInfo::set_max_selected_candidates(
 				// SAFETY: we ensured that end > start further above.
-				end - start,
+				end.saturating_sub(start),
 				num_delegators,
 			))
 			.into())
@@ -1168,9 +1168,9 @@ pub mod pallet {
 				candidate.clone(),
 				state.stake,
 				// safe because total >= stake
-				state.total - state.stake,
+				state.total.saturating_sub(state.stake),
 				state.stake,
-				state.total - state.stake,
+				state.total.saturating_sub(state.stake),
 			);
 
 			// update candidates for next round
@@ -1229,9 +1229,9 @@ pub mod pallet {
 					collator.clone(),
 					before_stake,
 					// safe because total >= stake
-					before_total - before_stake,
+					before_total.saturating_sub(before_stake),
 					state.stake,
-					state.total - state.stake,
+					state.total.saturating_sub(state.stake),
 				)
 			} else {
 				0u32
@@ -1296,9 +1296,9 @@ pub mod pallet {
 					collator.clone(),
 					before_stake,
 					// safe because total >= stake
-					before_total - before_stake,
+					before_total.saturating_sub(before_stake),
 					state.stake,
-					state.total - state.stake,
+					state.total.saturating_sub(state.stake),
 				)
 			} else {
 				0u32
@@ -1421,9 +1421,9 @@ pub mod pallet {
 					collator.clone(),
 					old_stake,
 					// safe because total >= stake
-					old_total - old_stake,
+					old_total.saturating_sub(old_stake),
 					state.stake,
-					state.total - state.stake,
+					state.total.saturating_sub(state.stake),
 				)
 			} else {
 				0u32
@@ -1524,9 +1524,9 @@ pub mod pallet {
 					candidate.clone(),
 					before_stake,
 					// safe because total >= stake
-					before_total - before_stake,
+					before_total.saturating_sub(before_stake),
 					collator.stake,
-					collator.total - collator.stake,
+					collator.total.saturating_sub(collator.stake),
 				)
 			} else {
 				0u32
@@ -1602,9 +1602,9 @@ pub mod pallet {
 					candidate.clone(),
 					before_stake,
 					// safe because total >= stake
-					before_total - before_stake,
+					before_total.saturating_sub(before_stake),
 					collator.stake,
-					collator.total - collator.stake,
+					collator.total.saturating_sub(collator.stake),
 				)
 			} else {
 				0u32
@@ -1734,8 +1734,8 @@ pub mod pallet {
 		pub fn execute_scheduled_reward_change(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
 			ensure_signed(origin)?;
 
-			let now = frame_system::Pallet::<T>::block_number();
-			let year = now / T::BLOCKS_PER_YEAR;
+			let now: u128 = frame_system::Pallet::<T>::block_number().saturated_into();
+			let year: T::BlockNumber = now.saturating_div(T::BLOCKS_PER_YEAR.saturated_into()).saturated_into();
 
 			// We can already mutate thanks to extrinsics being transactional
 			let last_update = LastRewardReduction::<T>::mutate(|last_year| {
@@ -1955,7 +1955,7 @@ pub mod pallet {
 				.get(index)
 				.and_then(|stake| CandidatePool::<T>::get(&stake.owner))
 				// SAFETY: the total is always more than the stake
-				.map(|state| (state.stake, state.total - state.stake))
+				.map(|state| (state.stake, state.total.saturating_sub(state.stake)))
 		}
 
 		/// Mutate the [TotalCollatorStake] by both incrementing and decreasing
@@ -2003,7 +2003,7 @@ pub mod pallet {
 				let amount_collator = state.stake;
 				collator_stake = collator_stake.saturating_add(state.stake);
 				// safe to subtract because total >= stake
-				let amount_delegators = state.total - amount_collator;
+				let amount_delegators = state.total.saturating_sub(amount_collator);
 				delegator_stake = delegator_stake.saturating_add(amount_delegators);
 			}
 
@@ -2056,9 +2056,9 @@ pub mod pallet {
 					collator.clone(),
 					old_stake,
 					// safe because total >= stake
-					old_total - old_stake,
+					old_total.saturating_sub(old_stake),
 					state.stake,
-					state.total - state.stake,
+					state.total.saturating_sub(state.stake),
 				);
 			}
 			CandidatePool::<T>::insert(&collator, state);
@@ -2573,7 +2573,7 @@ pub mod pallet {
 			let round = Round::<T>::get();
 
 			(
-				Some(round.first + round.length),
+				Some(round.first.saturating_add(round.length)),
 				// One read for the round info, blocknumber is read free
 				T::DbWeight::get().reads(1),
 			)

@@ -29,7 +29,7 @@ use scale_info::{
 	prelude::{format, string::String},
 	TypeInfo,
 };
-use sp_runtime::{traits::Verify, AccountId32, MultiSignature};
+use sp_runtime::{traits::Verify, AccountId32, MultiSignature, SaturatedConversion};
 use sp_std::{fmt::Debug, vec, vec::Vec};
 
 #[derive(Clone, Debug, Eq, PartialEq, Encode, Decode, MaxEncodedLen, TypeInfo)]
@@ -86,20 +86,22 @@ fn to_ss58(public_key: &[u8], prefix: u16) -> String {
 	// supports 14-bits
 	let ident: u16 = prefix & 0b0011_1111_1111_1111;
 	let mut v = match ident {
-		0..=63 => vec![ident as u8],
+		0..=63 => vec![ident.saturated_into::<u8>()],
 		64..=16_383 => {
 			// upper six bits of the lower byte(!)
-			let first = ((ident & 0b0000_0000_1111_1100) as u8) >> 2;
+			let first = ((ident & 0b0000_0000_1111_1100).saturated_into::<u8>()).saturating_div(4);
 			// lower two bits of the lower byte in the high pos,
 			// lower bits of the upper byte in the low pos
-			let second = ((ident >> 8) as u8) | ((ident & 0b0000_0000_0000_0011) as u8) << 6;
+			let second = ((ident.saturating_div(256)).saturated_into::<u8>())
+				| ((ident & 0b0000_0000_0000_0011).saturated_into::<u8>()).saturating_mul(64);
 			vec![first | 0b01000000, second]
 		}
 		_ => unreachable!("masked out the upper two bits; qed"),
 	};
 	v.extend(public_key);
-	let r = ss58hash(&v);
-	v.extend(&r[0..2]);
+	let binding = ss58hash(&v);
+	let r = binding.get(0..2).unwrap_or(&[]);
+	v.extend(r);
 	v.to_base58()
 }
 

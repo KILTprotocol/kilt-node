@@ -32,7 +32,7 @@ use sp_runtime::{
 	impl_opaque_keys,
 	testing::{Header, UintAuthorityId},
 	traits::{BlakeTwo256, ConvertInto, IdentityLookup, OpaqueKeys},
-	Perbill, Perquintill,
+	Perbill, Perquintill, SaturatedConversion,
 };
 use sp_std::fmt::Debug;
 
@@ -66,7 +66,7 @@ construct_runtime!(
 
 parameter_types! {
 	pub const BlockHashCount: u64 = 250;
-	pub const MaximumBlockLength: u32 = 2 * 1024;
+	pub const MaximumBlockLength: u32 = 2u32.saturating_mul(1024);
 	pub const AvailableBlockRatio: Perbill = Perbill::one();
 	pub const SS58Prefix: u8 = 42;
 }
@@ -139,7 +139,7 @@ parameter_types! {
 	pub const MinDelegatorStake: Balance = 5;
 	pub const MaxUnstakeRequests: u32 = 6;
 	pub const NetworkRewardRate: Perquintill = Perquintill::from_percent(10);
-	pub const NetworkRewardStart: BlockNumber = 5 * 5 * 60 * 24 * 36525 / 100;
+	pub const NetworkRewardStart: BlockNumber = 5u64.saturating_mul(5).saturating_mul(60).saturating_mul(24).saturating_mul(36525).saturating_div(100);
 }
 
 pub struct ToBeneficiary();
@@ -171,7 +171,11 @@ impl Config for Test {
 	type NetworkRewardStart = NetworkRewardStart;
 	type NetworkRewardBeneficiary = ToBeneficiary;
 	type WeightInfo = ();
-	const BLOCKS_PER_YEAR: Self::BlockNumber = 5 * 60 * 24 * 36525 / 100;
+	const BLOCKS_PER_YEAR: Self::BlockNumber = 5u64
+		.saturating_mul(60)
+		.saturating_mul(24)
+		.saturating_mul(36525)
+		.saturating_div(100);
 }
 
 impl_opaque_keys! {
@@ -305,7 +309,7 @@ impl ExtBuilder {
 		stake::GenesisConfig::<Test> {
 			stakers,
 			inflation_config: self.inflation_config.clone(),
-			max_candidate_stake: 160_000_000 * DECIMALS,
+			max_candidate_stake: 160_000_000.saturated_into::<Balance>().saturating_mul(DECIMALS),
 		}
 		.assimilate_storage(&mut t)
 		.expect("Parachain Staking's storage can be assimilated");
@@ -353,6 +357,7 @@ impl ExtBuilder {
 }
 
 /// Compare whether the difference of both sides is at most `precision * left`.
+#[allow(clippy::arithmetic_side_effects, clippy::integer_arithmetic)]
 pub(crate) fn almost_equal(left: Balance, right: Balance, precision: Perbill) -> bool {
 	let err = precision * left;
 	left.max(right) - left.min(right) <= err
@@ -369,11 +374,11 @@ pub(crate) fn almost_equal(left: Balance, right: Balance, precision: Perbill) ->
 /// case.
 pub(crate) fn roll_to(n: BlockNumber, authors: Vec<Option<AccountId>>) {
 	while System::block_number() < n {
-		if let Some(Some(author)) = authors.get((System::block_number()) as usize) {
+		if let Some(Some(author)) = authors.get((System::block_number()).saturated_into::<usize>()) {
 			StakePallet::note_author(*author);
 		}
 		<AllPalletsWithSystem as OnFinalize<u64>>::on_finalize(System::block_number());
-		System::set_block_number(System::block_number() + 1);
+		System::set_block_number(System::block_number().saturating_add(1));
 		<AllPalletsWithSystem as OnInitialize<u64>>::on_initialize(System::block_number());
 	}
 }
@@ -389,7 +394,7 @@ pub(crate) fn roll_to(n: BlockNumber, authors: Vec<Option<AccountId>>) {
 /// account is regarded to be the block author and thus gets noted.
 pub(crate) fn roll_to_claim_rewards(n: BlockNumber, authors: Vec<Option<AccountId>>) {
 	while System::block_number() < n {
-		if let Some(Some(author)) = authors.get((System::block_number()) as usize) {
+		if let Some(Some(author)) = authors.get((System::block_number()).saturated_into::<usize>()) {
 			StakePallet::note_author(*author);
 			// author has to increment rewards before claiming
 			assert_ok!(StakePallet::increment_collator_rewards(RuntimeOrigin::signed(*author)));
@@ -407,7 +412,7 @@ pub(crate) fn roll_to_claim_rewards(n: BlockNumber, authors: Vec<Option<AccountI
 			}
 		}
 		<AllPalletsWithSystem as OnFinalize<u64>>::on_finalize(System::block_number());
-		System::set_block_number(System::block_number() + 1);
+		System::set_block_number(System::block_number().saturating_add(1));
 		<AllPalletsWithSystem as OnInitialize<u64>>::on_initialize(System::block_number());
 	}
 }

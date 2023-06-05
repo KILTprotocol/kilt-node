@@ -23,11 +23,19 @@ use sp_runtime::DispatchError;
 pub trait AttestationAccessControl<AttesterId, AuthorizationId, Ctype, ClaimHash> {
 	/// Decides whether the account is allowed to attest with the given
 	/// information provided by the sender (&self).
+	///
+	/// # Errors
+	/// Can fail if who is not the owner of the given delegation node or any
+	/// node up the hierarchy, and if the delegation has been revoked.
 	fn can_attest(&self, who: &AttesterId, ctype: &Ctype, claim: &ClaimHash) -> Result<Weight, DispatchError>;
 
 	/// Decides whether the account is allowed to revoke the attestation with
 	/// the `authorization_id` and the access information provided by the sender
 	/// (&self).
+	///
+	/// # Errors
+	/// Can fail if who is not the owner of the given delegation node or any
+	/// node up the hierarchy, and if the delegation has been revoked.
 	fn can_revoke(
 		&self,
 		who: &AttesterId,
@@ -39,6 +47,13 @@ pub trait AttestationAccessControl<AttesterId, AuthorizationId, Ctype, ClaimHash
 	/// Decides whether the account is allowed to remove the attestation with
 	/// the `authorization_id` and the access information provided by the sender
 	/// (&self).
+	///
+	/// # Errors
+	/// can fail if:  
+	/// - delegation node has not the permissions to attests
+	/// - delegation node is revoked
+	/// - delegation node is not owned by who
+	/// - the provided ctype does not match
 	fn can_remove(
 		&self,
 		who: &AttesterId,

@@ -154,7 +154,7 @@ impl InflationInfo {
 
 #[cfg(test)]
 mod tests {
-	use sp_runtime::Perbill;
+	use sp_runtime::{Perbill, SaturatedConversion};
 
 	use super::*;
 	use crate::mock::{almost_equal, ExtBuilder, Test, DECIMALS, MAX_COLLATOR_STAKE};
@@ -217,7 +217,7 @@ mod tests {
 					Perquintill::from_percent(40),
 					Perquintill::from_percent(10),
 				);
-				let years_u128: BalanceOf<Test> = <Test as Config>::BLOCKS_PER_YEAR as u128;
+				let years_u128: BalanceOf<Test> = <Test as Config>::BLOCKS_PER_YEAR.saturated_into();
 
 				// Dummy checks for correct instantiation
 				assert!(inflation.is_valid(<Test as Config>::BLOCKS_PER_YEAR));
@@ -226,24 +226,24 @@ mod tests {
 				assert!(
 					almost_equal(
 						inflation.collator.reward_rate.per_block * DECIMALS * 10_000,
-						Perquintill::from_percent(15) * 10_000 * DECIMALS / years_u128,
+						(Perquintill::from_percent(15) * 10_000 * DECIMALS).saturating_div(years_u128),
 						precision
 					),
 					"left = {:?}, right = {:?}",
 					inflation.collator.reward_rate.per_block * 10_000 * DECIMALS,
-					Perquintill::from_percent(15) * 10_000 * DECIMALS / years_u128,
+					(Perquintill::from_percent(15) * 10_000 * DECIMALS).saturating_div(years_u128),
 				);
 				assert_eq!(inflation.delegator.max_rate, Perquintill::from_percent(40));
 				assert_eq!(inflation.delegator.reward_rate.annual, Perquintill::from_percent(10));
 				assert!(
 					almost_equal(
 						inflation.delegator.reward_rate.per_block * DECIMALS * 10_000,
-						Perquintill::from_percent(10) * 10_000 * DECIMALS / years_u128,
+						(Perquintill::from_percent(10) * 10_000 * DECIMALS).saturating_div(years_u128),
 						precision
 					),
 					"left = {:?}, right = {:?}",
 					inflation.delegator.reward_rate.per_block * DECIMALS * 10_000,
-					Perquintill::from_percent(10) * 10_000 * DECIMALS / years_u128,
+					(Perquintill::from_percent(10) * 10_000 * DECIMALS).saturating_div(years_u128),
 				);
 
 				// Check collator reward computation
