@@ -15,12 +15,14 @@ cumulus-pallet-xcmp-queue = { workspace = true, features = ["std"] }
 did = { workspace = true, features = ["std"] }
 dip-consumer-runtime-template = { workspace = true, features = ["std"] }
 dip-provider-runtime-template = { workspace = true, features = ["std"] }
+dip-support = { workspace = true, features = ["std"] }
 frame-support = { workspace = true, features = ["std"] }
 frame-system = { workspace = true, features = ["std"] }
 kilt-dip-support = { workspace = true, features = ["std"] }
 kilt-support = { workspace = true, features = ["std"] }
 pallet-balances = { workspace = true, features = ["std"] }
 pallet-did-lookup = { workspace = true, features = ["std"] }
+pallet-dip-provider = { workspace = true, features = ["std"] }
 pallet-web3-names = { workspace = true, features = ["std"] }
 parachain-info = { workspace = true, features = ["std"] }
 parity-scale-codec = {workspace = true, features = ["std", "derive"]}

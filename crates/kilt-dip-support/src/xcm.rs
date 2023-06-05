@@ -166,6 +166,11 @@ pub mod barriers {
 			_max_weight: Weight,
 			_weight_credit: &mut Weight,
 		) -> Result<(), ()> {
+			#[cfg(feature = "std")]
+			println!(
+				"AllowParachainProviderAsSubaccount::should_execute(origin = {:?}, instructions = {:?}",
+				origin, instructions
+			);
 			// Ensure that the origin is a parachain allowed to act as identity provider.
 			ensure!(
 				*origin == ParentThen(Parachain(ProviderParaId::get()).into()).into(),
