@@ -150,7 +150,7 @@ pub(crate) mod runtime {
 		pub const MaxNameLength: u32 = 32;
 		pub const MinNameLength: u32 = 3;
 		// Easier to setup insufficient funds for deposit but still above existential deposit
-		pub const Web3NameDeposit: Balance = 2.saturating_mul(ExistentialDeposit::get());
+		pub const Web3NameDeposit: Balance = 2u128.saturating_mul(ExistentialDeposit::get());
 	}
 
 	impl pallet_web3_names::Config for Test {
