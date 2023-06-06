@@ -123,9 +123,9 @@ parameter_types! {
 	pub const MaxServiceUrlLength: u32 = 100u32;
 	pub const MaxNumberOfTypesPerService: u32 = 1u32;
 	pub const MaxNumberOfUrlsPerService: u32 = 1u32;
-	pub const KeyDeposit :Balance = 32 * MICRO_KILT;
-	pub const ServiceEndpointDeposit :Balance = 50 * MICRO_KILT;
-	pub const BaseDeposit: Balance = 100 * MILLI_KILT;
+	pub const KeyDeposit :Balance = 32u128.saturating_mul(MICRO_KILT);
+	pub const ServiceEndpointDeposit :Balance = 50u128.saturating_mul(MICRO_KILT);
+	pub const BaseDeposit: Balance = 100u128.saturating_mul(MILLI_KILT);
 }
 
 pub struct ToAccount<R>(sp_std::marker::PhantomData<R>);
@@ -227,7 +227,7 @@ const ALTERNATIVE_DEL_SEED: [u8; 32] = [70u8; 32];
 /// throws. Thus, it does not matter whether the correct key types get added
 /// such that we can use the ed25519 for all key types per default.
 pub(crate) fn fill_public_keys(mut did_details: DidDetails<Test>) -> DidDetails<Test> {
-	while (did_details.public_keys.len() as u32) < <Test as Config>::MaxPublicKeysPerDid::get() {
+	while (did_details.public_keys.len().saturated_into::<u32>()) < <Test as Config>::MaxPublicKeysPerDid::get() {
 		did_details
 			.public_keys
 			.try_insert(

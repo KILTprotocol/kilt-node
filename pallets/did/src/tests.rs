@@ -195,11 +195,12 @@ fn check_successful_complete_creation() {
 	let signature = auth_key.sign(details.encode().as_ref());
 
 	let required_balance_for_endpoint = <Test as did::Config>::ServiceEndpointDeposit::get()
-		* <Test as did::Config>::MaxNumberOfServicesPerDid::get() as u128;
+		* <Test as did::Config>::MaxNumberOfServicesPerDid::get().saturated_into::<u128>();
 
 	let required_balance_for_keys = <Test as did::Config>::KeyDeposit::get() * 2;
 
-	let required_balance_for_key_agreement = <Test as did::Config>::KeyDeposit::get() * enc_keys.len() as u128;
+	let required_balance_for_key_agreement =
+		<Test as did::Config>::KeyDeposit::get() * enc_keys.len().saturated_into::<u128>();
 
 	let balance = required_balance_for_endpoint
 		+ required_balance_for_keys
@@ -556,8 +557,11 @@ fn check_max_limit_service_endpoints_count_did_creation() {
 	);
 
 	let signature = auth_key.sign(details.encode().as_ref());
-	let required_balance_for_service_endpoints = <Test as did::Config>::ServiceEndpointDeposit::get()
-		* (<Test as did::Config>::MaxNumberOfServicesPerDid::get() as u128 + 1);
+	let required_balance_for_service_endpoints = <Test as did::Config>::ServiceEndpointDeposit::get().saturating_mul(
+		<Test as did::Config>::MaxNumberOfServicesPerDid::get()
+			.saturated_into::<u128>()
+			.saturating_add(1),
+	);
 	let balance = required_balance_for_service_endpoints
 		+ <Test as did::Config>::BaseDeposit::get()
 		+ <Test as did::Config>::Fee::get()
@@ -1868,15 +1872,16 @@ fn check_max_services_count_addition_error() {
 fn check_max_service_id_length_addition_error() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
-	let new_service_endpoint = get_service_endpoints(
+	let services = get_service_endpoints(
 		1,
 		<Test as did::Config>::MaxServiceIdLength::get() + 1,
 		<Test as did::Config>::MaxNumberOfTypesPerService::get(),
 		<Test as did::Config>::MaxServiceTypeLength::get(),
 		<Test as did::Config>::MaxNumberOfUrlsPerService::get(),
 		<Test as did::Config>::MaxServiceUrlLength::get(),
-	)[0]
-	.clone();
+	);
+
+	let new_service_endpoint = services.get(0).expect("Service endpoint does not exist").clone();
 
 	let old_did_details = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), None);
 
@@ -1896,15 +1901,16 @@ fn check_max_service_id_length_addition_error() {
 fn check_max_service_type_length_addition_error() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
-	let new_service_endpoint = get_service_endpoints(
+	let services = get_service_endpoints(
 		1,
 		<Test as did::Config>::MaxServiceIdLength::get(),
 		<Test as did::Config>::MaxNumberOfTypesPerService::get(),
 		<Test as did::Config>::MaxServiceTypeLength::get() + 1,
 		<Test as did::Config>::MaxNumberOfUrlsPerService::get(),
 		<Test as did::Config>::MaxServiceUrlLength::get(),
-	)[0]
-	.clone();
+	);
+
+	let new_service_endpoint = services.get(0).expect("Service endpoint does not exist").clone();
 
 	let old_did_details = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), None);
 
@@ -1924,15 +1930,16 @@ fn check_max_service_type_length_addition_error() {
 fn check_max_service_type_count_addition_error() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
-	let new_service_endpoint = get_service_endpoints(
+	let services = get_service_endpoints(
 		1,
 		<Test as did::Config>::MaxServiceIdLength::get(),
 		<Test as did::Config>::MaxNumberOfTypesPerService::get() + 1,
 		<Test as did::Config>::MaxServiceTypeLength::get(),
 		<Test as did::Config>::MaxNumberOfUrlsPerService::get(),
 		<Test as did::Config>::MaxServiceUrlLength::get(),
-	)[0]
-	.clone();
+	);
+
+	let new_service_endpoint = services.get(0).expect("Service endpoint does not exist").clone();
 
 	let old_did_details = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), None);
 
@@ -1952,15 +1959,16 @@ fn check_max_service_type_count_addition_error() {
 fn check_max_service_url_length_addition_error() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
-	let new_service_endpoint = get_service_endpoints(
+	let services = get_service_endpoints(
 		1,
 		<Test as did::Config>::MaxServiceIdLength::get(),
 		<Test as did::Config>::MaxNumberOfTypesPerService::get(),
 		<Test as did::Config>::MaxServiceTypeLength::get(),
 		<Test as did::Config>::MaxNumberOfUrlsPerService::get(),
 		<Test as did::Config>::MaxServiceUrlLength::get() + 1,
-	)[0]
-	.clone();
+	);
+
+	let new_service_endpoint = services.get(0).expect("Service endpoint does not exist").clone();
 
 	let old_did_details = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), None);
 
@@ -1980,15 +1988,16 @@ fn check_max_service_url_length_addition_error() {
 fn check_max_service_url_count_addition_error() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
-	let new_service_endpoint = get_service_endpoints(
+	let services = get_service_endpoints(
 		1,
 		<Test as did::Config>::MaxServiceIdLength::get(),
 		<Test as did::Config>::MaxNumberOfTypesPerService::get(),
 		<Test as did::Config>::MaxServiceTypeLength::get(),
 		<Test as did::Config>::MaxNumberOfUrlsPerService::get() + 1,
 		<Test as did::Config>::MaxServiceUrlLength::get(),
-	)[0]
-	.clone();
+	);
+
+	let new_service_endpoint = services.get(0).expect("Service endpoint does not exist").clone();
 
 	let old_did_details = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), None);
 

@@ -27,7 +27,7 @@ use crate::AccountId;
 
 parameter_types! {
 	// One XCM operation is 1_000_000_000 weight, almost certainly a conservative estimate.
-	pub UnitWeightCost: Weight = Weight::from_parts(1_000_000_000, 64 * 1024);
+	pub UnitWeightCost: Weight = Weight::from_parts(1_000_000_000, 64u64.saturating_mul(1024));
 	pub const MaxInstructions: u32 = 100;
 	pub const MaxAssetsIntoHolding: u32 = 64;
 }

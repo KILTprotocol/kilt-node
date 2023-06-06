@@ -29,6 +29,7 @@ attestation.workspace = true
 ctype.workspace = true
 kilt-support.workspace = true
 public-credentials.workspace = true
+num-traits = {version = "0.2", default-features = false}
 
 # External dependencies
 bitflags.workspace = true

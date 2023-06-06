@@ -356,6 +356,9 @@ pub(crate) mod runtime {
 			self
 		}
 
+		/// # Panics
+		/// Can panic by trying to assimilate the storage which should be never
+		/// the case.
 		pub fn build(self) -> sp_io::TestExternalities {
 			let mut storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
 			pallet_balances::GenesisConfig::<Test> {

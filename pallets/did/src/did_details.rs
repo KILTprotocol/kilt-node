@@ -53,6 +53,9 @@ pub enum DidVerificationKey {
 
 impl DidVerificationKey {
 	/// Verify a DID signature using one of the DID keys.
+	///
+	/// # Errors
+	/// Failure can occur if the payload verification fails.
 	pub fn verify_signature(&self, payload: &Payload, signature: &DidSignature) -> Result<(), errors::SignatureError> {
 		match (self, signature) {
 			(DidVerificationKey::Ed25519(public_key), DidSignature::Ed25519(sig)) => {
@@ -176,6 +179,9 @@ pub trait DidVerifiableIdentifier {
 	/// Allows a verifiable identifier to verify a signature it produces and
 	/// return the public key
 	/// associated with the identifier.
+	///
+	/// # Errors
+	/// Failure can occur if the signature cannot be verified
 	fn verify_and_recover_signature(
 		&self,
 		payload: &Payload,
@@ -290,6 +296,9 @@ impl<T: Config> DidDetails<T> {
 	/// i.e., an authentication key and the block creation time.
 	///
 	/// The tx counter is automatically set to 0.
+	///
+	/// # Errors
+	/// Failure can occur if the maximum number of public keys is exceeded
 	pub fn new(
 		authentication_key: DidVerificationKey,
 		block_number: BlockNumberOf<T>,
@@ -339,6 +348,9 @@ impl<T: Config> DidDetails<T> {
 		deposit
 	}
 
+	/// # Errors
+	/// Failure can occur, if the user has not enough balance to update the
+	/// deposit.
 	pub fn update_deposit(&mut self, did_subject: &DidIdentifierOf<T>) -> Result<(), DispatchError> {
 		let new_required_deposit = self.calculate_deposit(did_subject);
 
@@ -367,6 +379,10 @@ impl<T: Config> DidDetails<T> {
 
 	// Creates a new DID entry from some [DidCreationDetails] and a given
 	// authentication key.
+	/// # Errors
+	///  Failure can occur if:
+	/// - the maximum number of public keys is exceeded
+	/// - the user has not enough balance
 	pub fn from_creation_details(
 		details: DidCreationDetails<T>,
 		new_auth_key: DidVerificationKey,
@@ -412,6 +428,8 @@ impl<T: Config> DidDetails<T> {
 	/// The old key is deleted from the set of public keys if it is
 	/// not used in any other part of the DID. The new key is added to the
 	/// set of public keys.
+	///  # Errors
+	/// Failure can occur if the maximum number of public keys is exceeded.
 	pub fn update_authentication_key(
 		&mut self,
 		new_authentication_key: DidVerificationKey,
@@ -439,6 +457,9 @@ impl<T: Config> DidDetails<T> {
 	/// Add new key agreement keys to the DID.
 	///
 	/// The new keys are added to the set of public keys.
+	///
+	/// # Errors
+	/// Failure can occur if the maximum number of public keys is exceeded.
 	pub fn add_key_agreement_keys(
 		&mut self,
 		new_key_agreement_keys: DidNewKeyAgreementKeySet<T>,
@@ -453,6 +474,8 @@ impl<T: Config> DidDetails<T> {
 	/// Add a single new key agreement key to the DID.
 	///
 	/// The new key is added to the set of public keys.
+	/// # Errors
+	/// Failure can occur if the maximum number of public keys is exceeded.
 	pub fn add_key_agreement_key(
 		&mut self,
 		new_key_agreement_key: DidEncryptionKey,
@@ -476,6 +499,9 @@ impl<T: Config> DidDetails<T> {
 
 	/// Remove a key agreement key from both the set of key agreement keys and
 	/// the one of public keys.
+	///
+	/// # Errors
+	/// Failure can occur if no agreement key exists.
 	pub fn remove_key_agreement_key(&mut self, key_id: KeyIdOf<T>) -> Result<(), errors::StorageError> {
 		ensure!(
 			self.key_agreement_keys.remove(&key_id),
@@ -490,6 +516,9 @@ impl<T: Config> DidDetails<T> {
 	/// The old key is deleted from the set of public keys if it is
 	/// not used in any other part of the DID. The new key is added to the
 	/// set of public keys.
+	///
+	/// # Errors
+	/// Failure can occur if the maximum number of public keys is exceeded.
 	pub fn update_attestation_key(
 		&mut self,
 		new_attestation_key: DidVerificationKey,
@@ -517,6 +546,9 @@ impl<T: Config> DidDetails<T> {
 	/// The old key is deleted from the set of public keys if it is
 	/// not used in any other part of the DID. The new key is added to the
 	/// set of public keys.
+	///
+	/// # Errors
+	/// Failure can occur if no attestation key exists.
 	pub fn remove_attestation_key(&mut self) -> Result<(), errors::StorageError> {
 		let old_key_id =
 			self.attestation_key
@@ -533,6 +565,9 @@ impl<T: Config> DidDetails<T> {
 	/// The old key is deleted from the set of public keys if it is
 	/// not used in any other part of the DID. The new key is added to the
 	/// set of public keys.
+	///
+	/// # Errors
+	/// Failure can occur if the maximum number of public keys is exceeded.
 	pub fn update_delegation_key(
 		&mut self,
 		new_delegation_key: DidVerificationKey,
@@ -560,6 +595,9 @@ impl<T: Config> DidDetails<T> {
 	/// The old key is deleted from the set of public keys if it is
 	/// not used in any other part of the DID. The new key is added to the
 	/// set of public keys.
+	/// # Errors
+	///
+	/// Failure can occur if there is no delegation key
 	pub fn remove_delegation_key(&mut self) -> Result<(), errors::StorageError> {
 		let old_key_id =
 			self.delegation_key
@@ -659,6 +697,9 @@ pub type DeriveDidCallKeyRelationshipResult = Result<DidVerificationKeyRelations
 pub trait DeriveDidCallAuthorizationVerificationKeyRelationship {
 	/// The type of the verification key to be used to validate the
 	/// wrapped extrinsic.
+	///
+	/// # Errors
+	/// Failure can occur if the extrinsic cannot be called by DID.
 	fn derive_verification_key_relationship(&self) -> DeriveDidCallKeyRelationshipResult;
 
 	// Return a call to dispatch in order to test the pallet proxy feature.

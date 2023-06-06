@@ -175,6 +175,7 @@ where
 		}
 	}
 
+	#[allow(clippy::indexing_slicing)]
 	pub fn inc_delegator(&mut self, delegator: A, more: B) {
 		if let Ok(i) = self.delegators.linear_search(&Stake::<A, B> {
 			owner: delegator,
@@ -187,6 +188,7 @@ where
 		}
 	}
 
+	#[allow(clippy::indexing_slicing)]
 	pub fn dec_delegator(&mut self, delegator: A, less: B) {
 		if let Ok(i) = self.delegators.linear_search(&Stake::<A, B> {
 			owner: delegator,

@@ -111,6 +111,10 @@ impl AssetDid {
 impl AssetDid {
 	/// Try to parse an `AssetDID` instance from the provided UTF8-encoded
 	/// input.
+	///
+	///  # Errors
+	/// Failure can occur if the input format is incorrect. The input length
+	/// must be between MINIMUM_ASSET_DID_LENGTH and MAXIMUM_ASSET_DID_LENGTH
 	pub fn from_utf8_encoded<I>(input: I) -> Result<Self, AssetDidError>
 	where
 		I: AsRef<[u8]> + Into<Vec<u8>>,

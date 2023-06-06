@@ -150,6 +150,10 @@ mod v1 {
 	impl ChainId {
 		/// Try to parse a `ChainId` instance from the provided UTF8-encoded
 		/// input, according to the AssetDID method rules.
+		///
+		///  # Errors
+		/// Failure can occur if the input format is incorrect. The input length
+		/// must be between MINIMUM_CHAIN_ID_LENGTH and MAXIMUM_CHAIN_ID_LENGTH
 		pub fn from_utf8_encoded<I>(input: I) -> Result<Self, Error>
 		where
 			I: AsRef<[u8]> + Into<Vec<u8>>,

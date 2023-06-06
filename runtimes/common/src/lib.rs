@@ -17,6 +17,14 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 #![cfg_attr(not(feature = "std"), no_std)]
+#![warn(clippy::integer_arithmetic)]
+#![warn(clippy::integer_division)]
+#![warn(clippy::missing_panics_doc)]
+#![warn(clippy::missing_errors_doc)]
+#![deny(clippy::index_refutable_slice)]
+#![deny(clippy::indexing_slicing)]
+#![warn(clippy::float_arithmetic)]
+#![warn(clippy::cast_possible_wrap)]
 
 use constants::{AVERAGE_ON_INITIALIZE_RATIO, MAXIMUM_BLOCK_WEIGHT, NORMAL_DISPATCH_RATIO};
 use fees::SplitFeesByRatio;
@@ -129,7 +137,7 @@ parameter_types! {
 	pub MaximumMultiplier: Multiplier = Bounded::max_value();
 	/// Maximum length of block. Up to 5MB.
 	pub BlockLength: limits::BlockLength =
-		limits::BlockLength::max_with_normal_ratio(5 * 1024 * 1024, NORMAL_DISPATCH_RATIO);
+		limits::BlockLength::max_with_normal_ratio(5u32.saturating_mul(1024).saturating_mul(1024), NORMAL_DISPATCH_RATIO);
 	/// Block weights base values and limits.
 	pub BlockWeights: limits::BlockWeights = limits::BlockWeights::builder()
 		.base_block(BlockExecutionWeight::get())

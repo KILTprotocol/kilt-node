@@ -24,6 +24,7 @@ use sp_core::H256;
 
 use ctype::{mock as ctype_mock, CtypeHashOf};
 use kilt_support::deposit::Deposit;
+use sp_runtime::Saturating;
 
 use crate::{
 	self as delegation, AccountIdOf, Config, CurrencyOf, DelegationDetails, DelegationHierarchyDetails, DelegationNode,
@@ -68,6 +69,11 @@ pub type DelegationHierarchyInitialization<T> = Vec<(
 	AccountIdOf<T>,
 )>;
 
+/// # Panics
+/// Failure can occure, if:
+/// - an address does not have enough balance
+/// - delegation node that is not a root must have a parent ID specified
+/// - the delegation exceeds the maximum number of children
 pub fn initialize_pallet<T>(
 	delegations: Vec<(T::DelegationNodeId, DelegationNode<T>)>,
 	delegation_hierarchies: DelegationHierarchyInitialization<T>,
@@ -77,7 +83,7 @@ pub fn initialize_pallet<T>(
 	for (root_id, details, hierarchy_owner, deposit_owner) in delegation_hierarchies {
 		// manually mint to enable deposit reserving
 		let balance = CurrencyOf::<T>::free_balance(&deposit_owner);
-		CurrencyOf::<T>::make_free_balance_be(&deposit_owner, balance + <T as Config>::Deposit::get());
+		CurrencyOf::<T>::make_free_balance_be(&deposit_owner, balance.saturating_add(<T as Config>::Deposit::get()));
 
 		// reserve deposit and store
 		delegation::Pallet::<T>::create_and_store_new_hierarchy(
@@ -99,7 +105,10 @@ pub fn initialize_pallet<T>(
 		// manually mint to enable deposit reserving
 		let deposit_owner = del.1.deposit.owner.clone();
 		let balance = CurrencyOf::<T>::free_balance(&deposit_owner.clone());
-		CurrencyOf::<T>::make_free_balance_be(&deposit_owner.clone(), balance + <T as Config>::Deposit::get());
+		CurrencyOf::<T>::make_free_balance_be(
+			&deposit_owner.clone(),
+			balance.saturating_add(<T as Config>::Deposit::get()),
+		);
 
 		// reserve deposit and store
 		delegation::Pallet::<T>::store_delegation_under_parent(

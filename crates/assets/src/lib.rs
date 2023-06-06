@@ -23,6 +23,15 @@
 //! blockchain runtimes.
 
 #![cfg_attr(not(feature = "std"), no_std)]
+#![warn(clippy::integer_arithmetic)]
+#![warn(clippy::integer_division)]
+#![warn(clippy::missing_panics_doc)]
+#![warn(clippy::missing_errors_doc)]
+#![warn(clippy::arithmetic_side_effects)]
+#![deny(clippy::index_refutable_slice)]
+#![deny(clippy::indexing_slicing)]
+#![warn(clippy::float_arithmetic)]
+#![warn(clippy::cast_possible_wrap)]
 
 pub mod asset;
 pub mod chain;

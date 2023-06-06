@@ -23,6 +23,7 @@ use frame_support::{dispatch::DispatchResult, storage::bounded_btree_set::Bounde
 use kilt_support::deposit::Deposit;
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
+use sp_runtime::SaturatedConversion;
 
 bitflags! {
 	/// Bitflags for permissions.
@@ -41,10 +42,10 @@ impl Permissions {
 	/// Encode permission bitflags into u8 array.
 	pub fn as_u8(self) -> [u8; 4] {
 		let x: u32 = self.bits;
-		let b1: u8 = ((x >> 24) & 0xff) as u8;
-		let b2: u8 = ((x >> 16) & 0xff) as u8;
-		let b3: u8 = ((x >> 8) & 0xff) as u8;
-		let b4: u8 = (x & 0xff) as u8;
+		let b1: u8 = ((x.wrapping_shr(24)) & 0xff).saturated_into();
+		let b2: u8 = ((x.wrapping_shr(16)) & 0xff).saturated_into();
+		let b3: u8 = ((x.wrapping_shr(8)) & 0xff).saturated_into();
+		let b4: u8 = (x & 0xff).saturated_into();
 		[b4, b3, b2, b1]
 	}
 }
@@ -120,6 +121,9 @@ impl<T: Config> DelegationNode<T> {
 	}
 
 	/// Adds a node by its ID to the current node's children.
+	///
+	/// # Errors
+	/// Failure can occur if the maximum number of children is exceeded.
 	pub fn try_add_child(&mut self, child_id: DelegationNodeIdOf<T>) -> DispatchResult {
 		self.children
 			.try_insert(child_id)
