@@ -38,7 +38,7 @@ use sp_core::Pair;
 use sp_runtime::traits::Zero;
 use xcm::{
 	v3::{
-		Instruction::{BuyExecution, DepositAsset, RefundSurplus, Transact, WithdrawAsset},
+		Instruction::{BuyExecution, DepositAsset, ExpectOrigin, RefundSurplus, Transact, WithdrawAsset},
 		Junction::{AccountId32, Parachain},
 		Junctions::{Here, X1},
 		MultiAsset,
@@ -218,10 +218,15 @@ fn user_generated_commit_identity() {
 	let consumer_location: MultiLocation = ParentThen(X1(Parachain(para::consumer::PARA_ID))).into();
 	let asset: MultiAsset = (Here, 1_000_000_000).into();
 	let weight = Weight::from_ref_time(4_000);
-	let dest_tx = ConsumerParachainTxBuilder::build(consumer_location, IdentityDetailsAction::Deleted(did))
+	let dest_tx = ConsumerParachainTxBuilder::build(consumer_location, IdentityDetailsAction::Deleted(did.clone()))
 		.expect("Provider Tx builder should not fail to create the encoded `Transact` call.");
 	let message = ProviderParachain::execute_with(|| {
 		Xcm::<()>(vec![
+			ExpectOrigin(Some(
+				Here.into_location()
+					.reanchored(&consumer_location, UniversalLocation::get())
+					.unwrap(),
+			)),
 			WithdrawAsset(asset.clone().into()),
 			BuyExecution {
 				fees: asset,
@@ -274,5 +279,7 @@ fn user_generated_commit_identity() {
 				weight: _
 			})
 		)));
+		// 2.2 Verify there is no storage entry in the consumer pallet.
+		assert!(DipConsumer::identity_proofs(&did).is_none());
 	});
 }

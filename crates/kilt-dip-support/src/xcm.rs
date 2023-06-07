@@ -22,7 +22,7 @@ use parity_scale_codec::Encode;
 use sp_core::Get;
 use sp_std::marker::PhantomData;
 use xcm::v3::{
-	Instruction::{BuyExecution, DepositAsset, DescendOrigin, RefundSurplus, Transact, WithdrawAsset},
+	Instruction::{BuyExecution, DepositAsset, DescendOrigin, ExpectOrigin, RefundSurplus, Transact, WithdrawAsset},
 	InteriorMultiLocation,
 	Junction::AccountId32,
 	Junctions::{Here, X1},
@@ -69,6 +69,11 @@ where
 		// TODO: Set an error handler and an appendix to refund any leftover funds to
 		// the provider parachain sovereign account.
 		let operation = [[
+			ExpectOrigin(Some(
+				Here.into_location()
+					.reanchored(&destination, UniversalLocationProvider::get())
+					.unwrap(),
+			)),
 			DescendOrigin(X1(AccountId32 {
 				network: None,
 				id: source.clone().into(),
@@ -133,8 +138,10 @@ pub mod barriers {
 			iter.next(),
 			iter.next(),
 			iter.next(),
+			iter.next(),
 		) {
 			(
+				Some(ExpectOrigin(..)),
 				Some(DescendOrigin(X1(AccountId32 { .. }))),
 				Some(WithdrawAsset { .. }),
 				Some(BuyExecution { .. }),
