@@ -26,7 +26,7 @@ use kilt_dip_support::{
 	did::{MerkleLeavesAndDidSignature, TimeBoundDidSignature},
 	merkle::MerkleProof,
 };
-use pallet_did_lookup::{linkable_account::LinkableAccountId, ConnectedAccounts};
+use pallet_did_lookup::ConnectedAccounts;
 use pallet_dip_provider::traits::TxBuilder;
 use pallet_web3_names::{Names, Owner};
 use parity_scale_codec::Encode;
@@ -54,8 +54,8 @@ use xcm_emulator::TestExt;
 
 use cumulus_pallet_xcmp_queue::Event as XcmpEvent;
 use dip_consumer_runtime_template::{
-	Balances, BlockNumber, DidIdentifier, DidLookup, DipConsumer, Runtime as ConsumerRuntime,
-	RuntimeCall as ConsumerRuntimeCall, RuntimeEvent, System,
+	Balances, BlockNumber, DidIdentifier, DipConsumer, Runtime as ConsumerRuntime, RuntimeCall as ConsumerRuntimeCall,
+	RuntimeEvent, System,
 };
 use dip_provider_runtime_template::{
 	ConsumerParachainTxBuilder, DipProvider, PolkadotXcm as ProviderXcmPallet, Runtime as ProviderRuntime,
@@ -142,13 +142,15 @@ fn commit_identity() {
 		ConnectedAccounts::<ProviderRuntime>::iter_key_prefix(&did).collect::<Vec<_>>()
 	});
 	println!("Linked accounts size: {:?} bytes", linked_accounts.encoded_size());
-	let call = ConsumerRuntimeCall::DidLookup(pallet_did_lookup::Call::<ConsumerRuntime>::associate_sender {});
+	let call = ConsumerRuntimeCall::PostIt(pallet_postit::Call::<ConsumerRuntime>::post {
+		text: b"Hello!".to_vec().try_into().unwrap(),
+	});
 	// 3.1 Generate a proof
 	let CompleteMerkleProof { proof, .. } = DidMerkleRootGenerator::<ProviderRuntime>::generate_proof(
 		&(
 			Some(did_details.clone()),
 			Some(Web3OwnershipOf::<ProviderRuntime> {
-				web3_name,
+				web3_name: web3_name.clone(),
 				claimed_at: ownership_details.claimed_at,
 			}),
 			Some(linked_accounts.clone()),
@@ -200,10 +202,14 @@ fn commit_identity() {
 			},
 			Box::new(call),
 		));
-		// Verify the account -> DID link exists and contains the right information
-		let linked_did = DidLookup::connected_dids::<LinkableAccountId>(para::consumer::DISPATCHER_ACCOUNT.into())
-			.map(|link| link.did);
-		assert_eq!(linked_did, Some(did.clone()));
+		// Verify the post has been written and has the web3name as the author
+		assert_eq!(pallet_postit::Posts::<ConsumerRuntime>::iter().count(), 1);
+		assert_eq!(
+			pallet_postit::Posts::<ConsumerRuntime>::iter()
+				.next()
+				.map(|post| post.1.author),
+			Some(web3_name)
+		);
 		// Verify that the details of the DID subject have been bumped
 		let details = DipConsumer::identity_proofs(&did).map(|entry| entry.details);
 		assert_eq!(details, Some(1u128));

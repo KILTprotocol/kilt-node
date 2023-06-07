@@ -21,6 +21,8 @@
 pub mod post;
 pub mod traits;
 
+pub use pallet::*;
+
 #[frame_support::pallet]
 pub mod pallet {
 
@@ -48,9 +50,9 @@ pub mod pallet {
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
+		type MaxTextLength: Get<u32>;
 		type OriginCheck: EnsureOrigin<<Self as frame_system::Config>::RuntimeOrigin, Success = Self::OriginSuccess>;
 		type OriginSuccess: Usernamable<Username = Self::Username>;
-		type MaxTextLength: Get<u32>;
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 		type Username: Encode + Decode + TypeInfo + MaxEncodedLen + Clone + PartialEq + Debug + Default;
 	}

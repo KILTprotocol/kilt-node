@@ -22,10 +22,7 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
-use did::KeyIdOf;
 use dip_provider_runtime_template::Web3Name;
-use kilt_dip_support::merkle::VerificationResult;
-use pallet_did_lookup::linkable_account::LinkableAccountId;
 pub use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 pub use sp_runtime::{MultiAddress, Perbill, Permill};
 
@@ -51,7 +48,6 @@ use frame_system::{
 };
 use pallet_balances::AccountData;
 use pallet_collator_selection::IdentityCollator;
-use pallet_dip_consumer::{DipOrigin, EnsureDipOrigin};
 use pallet_session::{FindAccountFromAuthorIndex, PeriodicSessions};
 use pallet_transaction_payment::{CurrencyAdapter, FeeDetails, RuntimeDispatchInfo};
 use sp_api::impl_runtime_apis;
@@ -68,8 +64,9 @@ use sp_std::{prelude::*, time::Duration};
 use sp_version::RuntimeVersion;
 
 mod dip;
+mod origin_adapter;
 mod xcm_config;
-pub use crate::{dip::*, xcm_config::*};
+pub use crate::{dip::*, origin_adapter::*, xcm_config::*};
 
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
@@ -142,8 +139,8 @@ construct_runtime!(
 		PolkadotXcm: pallet_xcm = 32,
 		CumulusXcm: cumulus_pallet_xcm = 33,
 
-		// DID lookup
-		DidLookup: pallet_did_lookup = 40,
+		// Features
+		PostIt: pallet_postit = 40,
 
 		// DIP
 		DipConsumer: pallet_dip_consumer = 50,
@@ -362,26 +359,12 @@ impl pallet_aura::Config for Runtime {
 
 impl cumulus_pallet_aura_ext::Config for Runtime {}
 
-parameter_types! {
-	pub const LinkDeposit: Balance = UNIT;
-}
-
-impl pallet_did_lookup::Config for Runtime {
-	type Currency = Balances;
-	type Deposit = ConstU128<UNIT>;
-	type DidIdentifier = DidIdentifier;
-	type EnsureOrigin = EnsureDipOrigin<
-		DidIdentifier,
-		AccountId,
-		VerificationResult<KeyIdOf<Runtime>, BlockNumber, Web3Name, LinkableAccountId, 10, 10>,
-	>;
-	type OriginSuccess = DipOrigin<
-		DidIdentifier,
-		AccountId,
-		VerificationResult<KeyIdOf<Runtime>, BlockNumber, Web3Name, LinkableAccountId, 10, 10>,
-	>;
+impl pallet_postit::Config for Runtime {
+	type MaxTextLength = ConstU32<160>;
+	type OriginCheck = EnsureDipOriginAdapter;
+	type OriginSuccess = DipOriginAdapter;
 	type RuntimeEvent = RuntimeEvent;
-	type WeightInfo = ();
+	type Username = Web3Name;
 }
 
 impl_runtime_apis! {

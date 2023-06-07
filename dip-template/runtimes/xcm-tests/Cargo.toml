@@ -23,6 +23,7 @@ kilt-support = { workspace = true, features = ["std"] }
 pallet-balances = { workspace = true, features = ["std"] }
 pallet-did-lookup = { workspace = true, features = ["std"] }
 pallet-dip-provider = { workspace = true, features = ["std"] }
+pallet-postit = { workspace = true, features = ["std"] }
 pallet-web3-names = { workspace = true, features = ["std"] }
 parachain-info = { workspace = true, features = ["std"] }
 parity-scale-codec = {workspace = true, features = ["std", "derive"]}
