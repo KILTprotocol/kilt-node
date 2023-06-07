@@ -12,6 +12,7 @@ version = "1.12.0-dev"
 members = [
   "crates/*",
   "dip-template/nodes/*",
+  "dip-template/pallets/*",
   "dip-template/runtimes/*",
   "nodes/*",
   "pallets/*",
@@ -72,6 +73,7 @@ runtime-common = {path = "runtimes/common", default-features = false}
 # Templates
 dip-consumer-runtime-template = {path = "dip-template/runtimes/dip-consumer", default-features = false}
 dip-provider-runtime-template = {path = "dip-template/runtimes/dip-provider", default-features = false}
+pallet-postit = {path = "dip-template/pallets/pallet-postit", default-features = false}
 
 # Internal runtime API (with default disabled)
 kilt-runtime-api-did = {path = "runtime-api/did", default-features = false}
