@@ -222,7 +222,7 @@ parameter_types! {
 	.build_or_panic();
 }
 
-pub const SS58_PREFIX: u16 = 101;
+pub const SS58_PREFIX: u16 = 38;
 
 impl frame_system::Config for Runtime {
 	type AccountData = AccountData<Balance>;
