@@ -111,7 +111,7 @@ where
 		.concat();
 		// TODO: Restructure the trait to be able to inject the [Instruction] provider,
 		// and unit test that.
-		debug_assert!(barriers::instruction_matcher(&operation).is_ok());
+		debug_assert!(barriers::check_expected_dip_instruction_order(&operation).is_ok());
 		let op = Xcm(operation);
 		Router::validate(&mut Some(destination), &mut Some(op))
 	}
@@ -128,7 +128,11 @@ pub mod barriers {
 	use xcm::v3::{Instruction, Junction::Parachain, ParentThen};
 	use xcm_executor::traits::ShouldExecute;
 
-	pub(crate) fn instruction_matcher<RuntimeCall>(instructions: &[Instruction<RuntimeCall>]) -> Result<(), ()> {
+	// Must match the order of instructions as produced by the provider's
+	// implementation of the `IdentityProofDispatcher` trait.
+	pub(crate) fn check_expected_dip_instruction_order<RuntimeCall>(
+		instructions: &[Instruction<RuntimeCall>],
+	) -> Result<(), ()> {
 		let mut iter = instructions.iter();
 		match (
 			iter.next(),
@@ -141,16 +145,27 @@ pub mod barriers {
 			iter.next(),
 		) {
 			(
+				// A first instruction different than `DescendOrigin` is needed to distinguish between user-triggered
+				// and parachain-triggered XCM messages, since also the XCM pallet always preprends user-created XCM
+				// messages with a `DescendOrigin` instruction.
 				Some(ExpectOrigin(..)),
+				// Go down to user level to charge them for the XCM fees.
 				Some(DescendOrigin(X1(AccountId32 { .. }))),
+				// Expect the user to first withdraw an asset to pay for the fees.
 				Some(WithdrawAsset { .. }),
+				// Buy execution time.
 				Some(BuyExecution { .. }),
+				// Although this is irrelevant since `origin_kind` can also be specified by a user, we use
+				// `OriginKind::Native` here to make clear this is a parachain-dispatched XCM message.
 				Some(Transact {
 					origin_kind: OriginKind::Native,
 					..
 				}),
+				// Any unused weight is refunded.
 				Some(RefundSurplus),
+				// Any unused assets are refunded back into the user's account.
 				Some(DepositAsset { .. }),
+				// No more instructions are allowed.
 				None,
 			) => Ok(()),
 			_ => Err(()),
@@ -183,7 +198,7 @@ pub mod barriers {
 				*origin == ParentThen(Parachain(ProviderParaId::get()).into()).into(),
 				()
 			);
-			instruction_matcher(instructions)
+			check_expected_dip_instruction_order(instructions)
 		}
 	}
 
