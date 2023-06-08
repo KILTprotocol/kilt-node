@@ -15,6 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
+#![allow(clippy::as_conversions)]
 
 use frame_support::{traits::Currency, BoundedVec};
 use parity_scale_codec::MaxEncodedLen;
@@ -54,7 +55,7 @@ fn attestation_storage_sizes() {
 
 	let attestation_record = attestation::AttestationDetails::<Runtime>::max_encoded_len();
 	let delegation_record = DelegationRecord::max_encoded_len()
-		/ (<Runtime as attestation::Config>::MaxDelegatedAttestations::get() as usize);
+		.saturating_div(<Runtime as attestation::Config>::MaxDelegatedAttestations::get() as usize);
 	assert_eq!(
 		attestation_record + delegation_record,
 		MAX_ATTESTATION_BYTE_LENGTH as usize

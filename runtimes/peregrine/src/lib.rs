@@ -20,9 +20,20 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 // `construct_runtime!` does a lot of recursion and requires us to increase the limit to 256.
 #![recursion_limit = "256"]
+#![warn(
+	clippy::integer_arithmetic,
+	clippy::integer_division,
+	clippy::as_conversions,
+	clippy::missing_panics_doc,
+	clippy::missing_errors_doc,
+	clippy::float_arithmetic,
+	clippy::cast_possible_wrap
+)]
+#![deny(clippy::index_refutable_slice, clippy::indexing_slicing)]
 
 // Make the WASM binary available.
 #[cfg(feature = "std")]
+
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use frame_support::{
@@ -158,7 +169,7 @@ impl frame_system::Config for Runtime {
 }
 
 parameter_types! {
-	pub const MinimumPeriod: u64 = constants::SLOT_DURATION / 2;
+	pub const MinimumPeriod: u64 = constants::SLOT_DURATION.saturating_div(2);
 }
 
 impl pallet_timestamp::Config for Runtime {
@@ -346,7 +357,7 @@ impl PrivilegeCmp<OriginCaller> for OriginPrivilegeCmp {
 			(
 				OriginCaller::Council(pallet_collective::RawOrigin::Members(l_yes_votes, l_count)),
 				OriginCaller::Council(pallet_collective::RawOrigin::Members(r_yes_votes, r_count)),
-			) => Some((l_yes_votes * r_count).cmp(&(r_yes_votes * l_count))),
+			) => Some((l_yes_votes.saturating_mul(*r_count)).cmp(&(r_yes_votes.saturating_mul(*l_count)))),
 			// For every other origin we don't care, as they are not used for `ScheduleOrigin`.
 			_ => None,
 		}
@@ -426,7 +437,7 @@ impl pallet_democracy::Config for Runtime {
 
 parameter_types! {
 	pub const ProposalBond: Permill = Permill::from_percent(5);
-	pub const ProposalBondMinimum: Balance = 20 * KILT;
+	pub const ProposalBondMinimum: Balance = 20u128.saturating_mul(KILT);
 	pub const SpendPeriod: BlockNumber = constants::governance::SPEND_PERIOD;
 	pub const Burn: Permill = Permill::zero();
 	pub const MaxApprovals: u32 = 100;
