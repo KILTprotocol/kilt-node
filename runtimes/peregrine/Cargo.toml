@@ -44,6 +44,12 @@ parachain-staking.workspace = true
 public-credentials.workspace = true
 runtime-common.workspace = true
 
+# DIP pallets & primitives
+dip-support.workspace = true
+kilt-dip-support.workspace = true
+pallet-dip-provider.workspace = true
+kilt-runtime-api-dip-provider.workspace = true
+
 # Substrate dependencies
 sp-api.workspace = true
 sp-block-builder.workspace = true
@@ -149,6 +155,12 @@ runtime-benchmarks = [
   "xcm-executor/runtime-benchmarks",
 ]
 std = [
+  # DIP
+  "dip-support/std",
+  "kilt-dip-support/std",
+  "kilt-runtime-api-dip-provider/std",
+  "pallet-dip-provider/std",
+  # Rest
   "attestation/std",
   "ctype/std",
   "cumulus-pallet-aura-ext/std",

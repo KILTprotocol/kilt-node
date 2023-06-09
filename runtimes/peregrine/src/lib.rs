@@ -26,12 +26,14 @@
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases;
+use did::KeyIdOf;
 use frame_support::{
 	construct_runtime, parameter_types,
 	traits::{ConstU32, EitherOfDiverse, Everything, InstanceFilter, PrivilegeCmp},
 	weights::{ConstantMultiplier, Weight},
 };
 use frame_system::{EnsureRoot, EnsureSigned};
+use pallet_dip_provider::traits::IdentityProvider;
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 
 #[cfg(feature = "try-runtime")]
@@ -59,6 +61,7 @@ use runtime_common::{
 	assets::{AssetDid, PublicCredentialsFilter},
 	authorization::{AuthorizationId, PalletAuthorize},
 	constants::{self, UnvestedFundsAllowedWithdrawReasons, EXISTENTIAL_DEPOSIT, KILT},
+	dip::merkle::{CompleteMerkleProof, DidMerkleProofOf, DidMerkleRootGenerator},
 	errors::PublicCredentialsApiError,
 	fees::{ToAuthor, WeightToFee},
 	pallet_id, AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights, DidIdentifier,
@@ -78,6 +81,7 @@ pub use sp_runtime::BuildStorage;
 #[cfg(test)]
 mod tests;
 
+mod dip;
 mod weights;
 mod xcm_config;
 
@@ -974,6 +978,9 @@ construct_runtime! {
 		Web3Names: pallet_web3_names = 68,
 		PublicCredentials: public_credentials = 69,
 
+		// DIP Pallets
+		DipProvider: pallet_dip_provider = 70,
+
 		// Parachains pallets. Start indices at 80 to leave room.
 
 		// Among others: Send and receive DMP and XCMP messages.
@@ -1111,6 +1118,14 @@ mod benches {
 		[frame_benchmarking::baseline, Baseline::<Runtime>]
 
 	);
+}
+
+#[derive(Encode, Decode)]
+pub struct DipProofRequest {
+	identifier: DidIdentifier,
+	keys: Vec<KeyIdOf<Runtime>>,
+	accounts: Vec<LinkableAccountId>,
+	should_include_web3_name: bool,
 }
 
 impl_runtime_apis! {
@@ -1364,6 +1379,16 @@ impl_runtime_apis! {
 
 		fn get_staking_rates() -> kilt_runtime_api_staking::StakingRates {
 			ParachainStaking::get_staking_rates()
+		}
+	}
+
+	impl kilt_runtime_api_dip_provider::DipProvider<Block, DipProofRequest, CompleteMerkleProof<Hash, DidMerkleProofOf<Runtime>>, ()> for Runtime {
+		fn generate_proof(request: DipProofRequest) -> Result<CompleteMerkleProof<Hash, DidMerkleProofOf<Runtime>>, ()> {
+			let Some(linked_did_info) = <Runtime as pallet_dip_provider::Config>::IdentityProvider::retrieve(&request.identifier)? else { return Err(()) };
+			if linked_did_info.a.is_none() {
+				return Err(());
+			}
+			DidMerkleRootGenerator::<Runtime>::generate_proof(&linked_did_info, request.keys.iter(), request.should_include_web3_name, request.accounts.iter())
 		}
 	}
 
