@@ -78,9 +78,13 @@ pub mod pallet {
 			author: T::Username,
 		},
 		NewComment {
-			post_id: T::Hash,
+			resource_id: T::Hash,
 			comment_id: T::Hash,
 			author: T::Username,
+		},
+		NewLike {
+			resource_id: T::Hash,
+			liker: T::Username,
 		},
 	}
 
@@ -137,8 +141,13 @@ pub mod pallet {
 				})
 			})
 			.map_err(|_| DispatchError::Other("No post or comment with provided ID found."))?;
-			let comment = CommentOf::<T>::from_post_id_text_and_author(resource_id, text, author);
+			let comment = CommentOf::<T>::from_post_id_text_and_author(resource_id, text, author.clone());
 			Comments::<T>::insert(comment_id, comment);
+			Self::deposit_event(Event::NewComment {
+				resource_id,
+				comment_id,
+				author,
+			});
 			Ok(())
 		}
 
@@ -161,7 +170,7 @@ pub mod pallet {
 						comment
 							.details
 							.likes
-							.try_push(liker)
+							.try_push(liker.clone())
 							.expect("Failed to add like to comment.");
 						Ok(())
 					} else {
@@ -170,6 +179,7 @@ pub mod pallet {
 				})
 			})
 			.map_err(|_| DispatchError::Other("No post or comment with provided ID found."))?;
+			Self::deposit_event(Event::NewLike { resource_id, liker });
 			Ok(())
 		}
 	}
