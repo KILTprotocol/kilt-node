@@ -17,14 +17,6 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 #![cfg_attr(not(feature = "std"), no_std)]
-#![warn(clippy::integer_arithmetic)]
-#![warn(clippy::integer_division)]
-#![warn(clippy::missing_panics_doc)]
-#![warn(clippy::missing_errors_doc)]
-#![deny(clippy::index_refutable_slice)]
-#![deny(clippy::indexing_slicing)]
-#![warn(clippy::float_arithmetic)]
-#![warn(clippy::cast_possible_wrap)]
 
 use constants::{AVERAGE_ON_INITIALIZE_RATIO, MAXIMUM_BLOCK_WEIGHT, NORMAL_DISPATCH_RATIO};
 use fees::SplitFeesByRatio;

@@ -122,12 +122,10 @@ where
 
 		let wanted_weight_fee: Balance = wanted_fee.saturating_sub(byte_fee);
 
-		let frac = wanted_weight_fee.checked_rem(unbalanced_fee).unwrap_or(0);
-
 		smallvec![WeightToFeeCoefficient {
 			degree: 1,
 			negative: false,
-			coeff_frac: Perbill::from_rational(frac, unbalanced_fee),
+			coeff_frac: Perbill::from_rational(wanted_weight_fee % unbalanced_fee, unbalanced_fee),
 			coeff_integer: wanted_weight_fee.saturating_div(unbalanced_fee),
 		}]
 	}
