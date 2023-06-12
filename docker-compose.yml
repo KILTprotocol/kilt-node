@@ -1,17 +1,131 @@
 version: "3"
 
+networks:
+  network:
+
+
 services:
-  dev-node:
-    build: .
-    image: local/mashnet-node
-    command: ./target/release/mashnet-node --dev --ws-port 9944 --ws-external
+  relay-alice:
+    networks:
+      - network
+    container_name: decoded-demo-relay-alice
+    image: parity/polkadot:v0.9.42
+    command: |
+      --alice --validator
+      --base-path /tmp/relay/alice --chain /res/rococo-local-0.9.38.raw.json
+      --port 40001 --execution wasm
     ports:
-      - 9944:9944
-  sdk:
-    build:
-      context: https://github.com/KILTprotocol/sdk-js.git#develop
-    command: yarn test:integration
-    environment:
-      WS_HOST: ws://dev-node:9944
-    links:
-      - dev-node
+      - 40001
+    volumes:
+      - ./docker-compose/dip-template/res/relay/alice:/tmp/relay/alice
+      - ./dip-template/res/rococo-local-0.9.38.raw.json:/res/rococo-local-0.9.38.raw.json:ro
+  relay-bob:
+    networks:
+      - network
+    container_name: decoded-demo-relay-bob
+    image: parity/polkadot:v0.9.42
+    command: |
+      --bob --validator
+      --base-path /tmp/relay/bob --chain /res/rococo-local-0.9.38.raw.json
+      --port 40002 --execution wasm
+    ports:
+      - 40002
+    volumes:
+      - ./docker-compose/dip-template/res/relay/bob:/tmp/relay/bob
+      - ./dip-template/res/rococo-local-0.9.38.raw.json:/res/rococo-local-0.9.38.raw.json:ro
+  relay-charlie:
+    networks:
+      - network
+    container_name: decoded-demo-relay-charlie
+    image: parity/polkadot:v0.9.42
+    command: |
+      --charlie --validator
+      --base-path /tmp/relay/charlie --chain /res/rococo-local-0.9.38.raw.json
+      --port 40003 --execution wasm
+    ports:
+      - 40003
+    volumes:
+      - ./docker-compose/dip-template/res/relay/charlie:/tmp/relay/charlie
+      - ./dip-template/res/rococo-local-0.9.38.raw.json:/res/rococo-local-0.9.38.raw.json:ro
+  relay-fullnode:
+    networks:
+      - network
+    container_name: decoded-demo-relay-fullnode
+    image: parity/polkadot:v0.9.42
+    command: |
+      --base-path /tmp/relay/fullnode --chain /res/rococo-local-0.9.38.raw.json
+      --port 40004 --ws-port 60001 --ws-external --rpc-external --execution wasm
+    ports:
+      - 40004
+      - 60001:60001
+    volumes:
+      - ./docker-compose/dip-template/res/relay/fullnode:/tmp/relay/fullnode
+      - ./dip-template/res/rococo-local-0.9.38.raw.json:/res/rococo-local-0.9.38.raw.json:ro
+  provider-alice:
+    networks:
+      - network
+    container_name: decoded-demo-provider-alice
+    image: peregrine-provider:latest
+    command: |
+      --alice --collator
+      --base-path /tmp/para/provider/alice --force-authoring --chain dev
+      --execution wasm --port 40005
+      --
+      --chain /res/rococo-local-0.9.38.raw.json --execution wasm --port 40006
+    volumes:
+      - ./docker-compose/dip-template/res/para/provider/alice:/tmp/para/provider/alice
+      - ./dip-template/res/rococo-local-0.9.38.raw.json:/res/rococo-local-0.9.38.raw.json:ro
+    ports:
+      - 40005
+      - 40006
+  provider-full-node:
+    networks:
+      - network
+    container_name: decoded-demo-provider-fullnode
+    image: peregrine-provider:latest
+    command: |
+      --base-path /tmp/para/provider/fullnode --chain dev
+      --execution wasm --ws-port 60010 --ws-external --rpc-external --port 40007
+      --
+      --chain /res/rococo-local-0.9.38.raw.json --execution wasm --port 40008
+    ports:
+      - 60010:60010
+      - 40007
+      - 40008
+    volumes:
+      - ./docker-compose/dip-template/res/para/provider/fullnode:/tmp/para/provider/fullnode
+      - ./dip-template/res/rococo-local-0.9.38.raw.json:/res/rococo-local-0.9.38.raw.json:ro
+  consumer-alice:
+    networks:
+      - network
+    container_name: decoded-demo-consumer-alice
+    image: consumer-node-template:latest
+    command: |
+      --alice --collator
+      --base-path /tmp/para/consumer/alice --force-authoring --chain dev
+      --execution wasm --port 40009
+      --
+      --chain /res/rococo-local-0.9.38.raw.json --execution wasm --port 40010
+    ports:
+      - 40009
+      - 40010
+    volumes:
+      - ./docker-compose/dip-template/res/para/consumer/alice:/tmp/para/consumer/alice
+      - ./dip-template/res/rococo-local-0.9.38.raw.json:/res/rococo-local-0.9.38.raw.json:ro
+  consumer-full-node:
+    networks:
+      - network
+    container_name: decoded-demo-consumer-fullnode
+    image: consumer-node-template:latest
+    command: |
+      --base-path /tmp/para/consumer/fullnode --chain dev
+      --execution wasm --ws-port 60060 --ws-external --rpc-external --port 40011
+      --
+      --chain /res/rococo-local-0.9.38.raw.json --execution wasm --port 40012
+    ports:
+      - 40011
+      - 40012
+      - 60060:60060
+    volumes:
+      - ./docker-compose/dip-template/res/para/consumer/fullnode:/tmp/para/consumer/fullnode
+      - ./dip-template/res/rococo-local-0.9.38.raw.json:/res/rococo-local-0.9.38.raw.json:ro

@@ -11,7 +11,7 @@ ARG FEATURES=default
 
 COPY . .
 
-RUN cargo build --locked --release --features $FEATURES
+RUN cargo build --locked --features $FEATURES
 
 # ===== SECOND STAGE ======
 
@@ -20,7 +20,7 @@ LABEL description="This is the 2nd stage: a very small image where we copy the k
 
 ARG NODE_TYPE=kilt-parachain
 
-COPY --from=builder /build/target/release/$NODE_TYPE /usr/local/bin/node-executable
+COPY --from=builder /build/target/debug/$NODE_TYPE /usr/local/bin/node-executable
 
 RUN useradd -m -u 1000 -U -s /bin/sh -d /node node && \
 	mkdir -p /node/.local/share/node && \
