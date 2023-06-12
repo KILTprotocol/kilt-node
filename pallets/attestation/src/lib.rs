@@ -85,6 +85,7 @@ pub use crate::{
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
+
 	use frame_support::{
 		dispatch::{DispatchResult, DispatchResultWithPostInfo},
 		pallet_prelude::*,
@@ -119,6 +120,13 @@ pub mod pallet {
 
 	pub(crate) type CurrencyOf<T> = <T as Config>::Currency;
 
+	pub(crate) type HoldReasonOf<T> = <T as Config>::RuntimeHoldReason;
+
+	#[pallet::composite_enum]
+	pub enum HoldReason {
+		Deposit,
+	}
+
 	#[pallet::config]
 	pub trait Config: frame_system::Config + ctype::Config {
 		type EnsureOrigin: EnsureOrigin<
@@ -129,8 +137,10 @@ pub mod pallet {
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 		type WeightInfo: WeightInfo;
 
+		type RuntimeHoldReason: From<HoldReason>;
+
 		/// The currency that is used to hold funds for each attestation.
-		type Currency: MutateHold<AccountIdOf<Self>, Reason = HFIdentifier>;
+		type Currency: MutateHold<AccountIdOf<Self>, Reason = HoldReasonOf<Self>>;
 
 		/// The deposit that is required for storing an attestation.
 		#[pallet::constant]
@@ -273,10 +283,12 @@ pub mod pallet {
 				.transpose()?;
 			let authorization_id = authorization.as_ref().map(|ac| ac.authorization_id());
 
-			let deposit = kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
+			<T as Config>::Currency::hold(&T::RuntimeHoldReason::from(HoldReason::Deposit), &payer, deposit_amount);
+
+			let deposit = kilt_support::reserve_deposit2::<AccountIdOf<T>, HoldReasonOf<T>, CurrencyOf<T>>(
 				payer,
 				deposit_amount,
-				&HFIdentifier::Deposit(Pallets::Attestation),
+				&T::RuntimeHoldReason::from(HoldReason::Deposit),
 			)?;
 
 			log::debug!("insert Attestation");
@@ -453,7 +465,7 @@ pub mod pallet {
 			AttestationStorageDepositCollector::<T>::change_deposit_owner(
 				&claim_hash,
 				sender,
-				&HFIdentifier::Deposit(Pallets::Attestation),
+				&T::RuntimeHoldReason::from(HoldReason::Deposit),
 			)?;
 
 			Ok(())
@@ -472,7 +484,7 @@ pub mod pallet {
 
 			AttestationStorageDepositCollector::<T>::update_deposit(
 				&claim_hash,
-				&HFIdentifier::Deposit(Pallets::Attestation),
+				&T::RuntimeHoldReason::from(HoldReason::Deposit),
 			)?;
 
 			Ok(())
@@ -481,9 +493,9 @@ pub mod pallet {
 
 	impl<T: Config> Pallet<T> {
 		fn remove_attestation(attestation: AttestationDetails<T>, claim_hash: ClaimHashOf<T>) -> DispatchResult {
-			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
+			kilt_support::free_deposit2::<AccountIdOf<T>, HoldReasonOf<T>, CurrencyOf<T>>(
 				&attestation.deposit,
-				&HFIdentifier::Deposit(Pallets::Attestation),
+				&T::RuntimeHoldReason::from(HoldReason::Deposit),
 			)?;
 			Attestations::<T>::remove(claim_hash);
 			if let Some(authorization_id) = &attestation.authorization_id {
@@ -495,6 +507,7 @@ pub mod pallet {
 
 	struct AttestationStorageDepositCollector<T: Config>(PhantomData<T>);
 	impl<T: Config> StorageDepositCollector<AccountIdOf<T>, ClaimHashOf<T>> for AttestationStorageDepositCollector<T> {
+		type Reason = HoldReasonOf<T>;
 		type Currency = <T as Config>::Currency;
 
 		fn deposit(

@@ -18,7 +18,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 pub mod deposit;
-pub use deposit::{free_deposit, reserve_deposit};
+pub use deposit::{free_deposit, free_deposit2, reserve_deposit, reserve_deposit2};
 
 pub mod migration;
 #[cfg(any(feature = "runtime-benchmarks", feature = "mock"))]

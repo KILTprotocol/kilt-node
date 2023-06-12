@@ -255,8 +255,8 @@ pub(crate) mod runtime {
 	}
 
 	impl pallet_balances::Config for Test {
-		type FreezeIdentifier = HFIdentifier;
-		type HoldIdentifier = HFIdentifier;
+		type FreezeIdentifier = RuntimeFreezeReason;
+		type HoldIdentifier = RuntimeHoldReason;
 		type MaxFreezes = MaxFreezes;
 		type MaxHolds = MaxHolds;
 		type Balance = Balance;
@@ -303,7 +303,7 @@ pub(crate) mod runtime {
 		type OriginSuccess = mock_origin::DoubleOrigin<AccountId, AttesterOf<Self>>;
 		type RuntimeEvent = ();
 		type WeightInfo = ();
-
+		type RuntimeHoldReason = RuntimeHoldReason;
 		type Currency = Balances;
 		type Deposit = Deposit;
 		type MaxDelegatedAttestations = MaxDelegatedAttestations;

@@ -48,6 +48,21 @@ impl AsRef<HFIdentifier> for HFIdentifier {
 	}
 }
 
+impl From<Pallets> for HFIdentifier {
+	fn from(value: Pallets) -> Self {
+		match value {
+			Pallets::Attestation => HFIdentifier::Deposit(Pallets::Attestation),
+			Pallets::Ctype => HFIdentifier::Deposit(Pallets::Ctype),
+			Pallets::Delegation => HFIdentifier::Deposit(Pallets::Delegation),
+			Pallets::Did => HFIdentifier::Deposit(Pallets::Did),
+			Pallets::DidLookup => HFIdentifier::Deposit(Pallets::DidLookup),
+			Pallets::W3n => HFIdentifier::Deposit(Pallets::W3n),
+			Pallets::Staking => HFIdentifier::Deposit(Pallets::Staking),
+			Pallets::PublicCredentials => HFIdentifier::Deposit(Pallets::PublicCredentials),
+		}
+	}
+}
+
 /// An amount of balance reserved by the specified address.
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Debug, Encode, Decode, Eq, PartialEq, Ord, PartialOrd, TypeInfo, MaxEncodedLen)]
@@ -69,9 +84,30 @@ pub fn reserve_deposit<Account, Currency: Mutate<Account, Reason = HFIdentifier>
 	})
 }
 
+pub fn reserve_deposit2<Account, Reason, Currency: Mutate<Account, Reason = Reason>>(
+	account: Account,
+	deposit_amount: Currency::Balance,
+	reason: &Reason,
+) -> Result<Deposit<Account, Currency::Balance>, DispatchError> {
+	let q = Currency::hold(reason, &account, deposit_amount);
+	q?;
+	Ok(Deposit {
+		owner: account,
+		amount: deposit_amount,
+	})
+}
+
 pub fn free_deposit<Account, Currency: Mutate<Account, Reason = HFIdentifier>>(
 	deposit: &Deposit<Account, Currency::Balance>,
 	reason: &HFIdentifier,
+) -> DispatchResult {
+	Currency::release(reason, &deposit.owner, deposit.amount, Precision::Exact)?;
+	Ok(())
+}
+
+pub fn free_deposit2<Account, Reason, Currency: Mutate<Account, Reason = Reason>>(
+	deposit: &Deposit<Account, Currency::Balance>,
+	reason: &Reason,
 ) -> DispatchResult {
 	Currency::release(reason, &deposit.owner, deposit.amount, Precision::Exact)?;
 	Ok(())
