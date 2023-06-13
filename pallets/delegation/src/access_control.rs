@@ -232,7 +232,7 @@ mod tests {
 		let delegate = sr25519_did_from_seed(&BOB_SEED);
 
 		let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
-		let hierarchy_details = generate_base_delegation_hierarchy_details();
+		let hierarchy_details = generate_base_delegation_hierarchy_details::<Test>();
 		let ctype_hash = hierarchy_details.ctype_hash;
 		let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
 		let parent_node = DelegationNode {
@@ -287,7 +287,7 @@ mod tests {
 		let delegate = sr25519_did_from_seed(&BOB_SEED);
 
 		let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
-		let hierarchy_details = generate_base_delegation_hierarchy_details();
+		let hierarchy_details = generate_base_delegation_hierarchy_details::<Test>();
 		let ctype_hash = hierarchy_details.ctype_hash;
 		let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
 		let parent_node = DelegationNode {
@@ -335,7 +335,7 @@ mod tests {
 		let delegate = sr25519_did_from_seed(&BOB_SEED);
 
 		let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
-		let hierarchy_details = generate_base_delegation_hierarchy_details();
+		let hierarchy_details = generate_base_delegation_hierarchy_details::<Test>();
 		let ctype_hash = hierarchy_details.ctype_hash;
 		let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
 		let parent_node = DelegationNode {
@@ -383,7 +383,7 @@ mod tests {
 		let delegate = sr25519_did_from_seed(&BOB_SEED);
 
 		let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
-		let hierarchy_details = generate_base_delegation_hierarchy_details();
+		let hierarchy_details = generate_base_delegation_hierarchy_details::<Test>();
 		let ctype_hash = hierarchy_details.ctype_hash;
 		let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
 		let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
@@ -416,7 +416,7 @@ mod tests {
 		let delegate = sr25519_did_from_seed(&BOB_SEED);
 
 		let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
-		let hierarchy_details = generate_base_delegation_hierarchy_details();
+		let hierarchy_details = generate_base_delegation_hierarchy_details::<Test>();
 		let ctype_hash = get_ctype_hash::<Test>(false);
 		let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
 		let parent_node = DelegationNode {
@@ -464,7 +464,7 @@ mod tests {
 		let delegate = sr25519_did_from_seed(&BOB_SEED);
 
 		let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
-		let hierarchy_details = generate_base_delegation_hierarchy_details();
+		let hierarchy_details = generate_base_delegation_hierarchy_details::<Test>();
 		let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
 		let parent_node = DelegationNode {
 			details: DelegationDetails {
@@ -511,7 +511,7 @@ mod tests {
 		let delegate = sr25519_did_from_seed(&BOB_SEED);
 
 		let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
-		let hierarchy_details = generate_base_delegation_hierarchy_details();
+		let hierarchy_details = generate_base_delegation_hierarchy_details::<Test>();
 		let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
 		let parent_node = DelegationNode {
 			details: DelegationDetails {
@@ -563,7 +563,7 @@ mod tests {
 		let delegate = sr25519_did_from_seed(&BOB_SEED);
 
 		let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
-		let hierarchy_details = generate_base_delegation_hierarchy_details();
+		let hierarchy_details = generate_base_delegation_hierarchy_details::<Test>();
 		let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
 		let parent_node = DelegationNode {
 			details: DelegationDetails {

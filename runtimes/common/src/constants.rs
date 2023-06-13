@@ -144,6 +144,8 @@ pub mod attestation {
 }
 
 pub mod delegation {
+	use scale_info::TypeInfo;
+
 	use super::*;
 
 	pub const DELEGATION_DEPOSIT: Balance = KILT;
@@ -158,7 +160,7 @@ pub mod delegation {
 		pub const MaxParentChecks: u32 = MAX_PARENT_CHECKS;
 		pub const MaxRevocations: u32 = MAX_REVOCATIONS;
 		pub const MaxRemovals: u32 = MAX_REMOVALS;
-		#[derive(Clone)]
+		#[derive(Clone, TypeInfo)]
 		pub const MaxChildren: u32 = MAX_CHILDREN;
 		pub const DelegationDeposit: Balance = DELEGATION_DEPOSIT;
 	}
