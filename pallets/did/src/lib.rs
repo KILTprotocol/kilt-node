@@ -190,6 +190,9 @@ pub mod pallet {
 	pub(crate) type DidCreationDetailsOf<T> =
 		DidCreationDetails<DidIdentifierOf<T>, AccountIdOf<T>, <T as Config>::MaxNewKeyAgreementKeys, DidEndpoint<T>>;
 
+	pub(crate) type DidAuthorizedCallOperationOf<T> =
+		DidAuthorizedCallOperation<DidIdentifierOf<T>, DidCallableOf<T>, BlockNumberOf<T>, AccountIdOf<T>>;
+
 	#[pallet::config]
 	pub trait Config: frame_system::Config + Debug {
 		/// Type for a dispatchable call that can be proxied through the DID
@@ -1046,7 +1049,7 @@ pub mod pallet {
 		})]
 		pub fn submit_did_call(
 			origin: OriginFor<T>,
-			did_call: Box<DidAuthorizedCallOperation<T>>,
+			did_call: Box<DidAuthorizedCallOperationOf<T>>,
 			signature: DidSignature,
 		) -> DispatchResultWithPostInfo {
 			let who = ensure_signed(origin)?;
@@ -1141,7 +1144,7 @@ pub mod pallet {
 		/// - Writes: Did
 		/// # </weight>
 		pub fn verify_did_operation_signature_and_increase_nonce(
-			operation: &DidAuthorizedCallOperationWithVerificationRelationship<T>,
+			operation: &DidAuthorizedCallOperationWithVerificationRelationship<DidAuthorizedCallOperationOf<T>>,
 			signature: &DidSignature,
 		) -> Result<(), DidError> {
 			// Check that the tx has not expired.

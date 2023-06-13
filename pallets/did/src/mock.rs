@@ -41,7 +41,8 @@ use crate::{
 		RelationshipDeriveError,
 	},
 	service_endpoints::DidEndpoint,
-	utils as crate_utils, AccountIdOf, Config, CurrencyOf, DidBlacklist, DidEndpointsCount, KeyIdOf, ServiceEndpoints,
+	utils as crate_utils, AccountIdOf, Config, CurrencyOf, DidAuthorizedCallOperationOf, DidBlacklist,
+	DidEndpointsCount, KeyIdOf, ServiceEndpoints,
 };
 #[cfg(not(feature = "runtime-benchmarks"))]
 use crate::{DidRawOrigin, EnsureDidOrigin};
@@ -402,7 +403,7 @@ pub fn generate_test_did_call(
 	verification_key_required: DidVerificationKeyRelationship,
 	caller: DidIdentifier,
 	submitter: AccountId,
-) -> DidAuthorizedCallOperationWithVerificationRelationship<Test> {
+) -> DidAuthorizedCallOperationWithVerificationRelationship<DidAuthorizedCallOperationOf<Test>> {
 	let call = match verification_key_required {
 		DidVerificationKeyRelationship::AssertionMethod => get_attestation_key_call(),
 		DidVerificationKeyRelationship::Authentication => get_authentication_key_call(),
