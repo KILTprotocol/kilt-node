@@ -23,6 +23,7 @@ use frame_support::{
 };
 use frame_system::EnsureSigned;
 use pallet_balances::NegativeImbalance;
+use scale_info::TypeInfo;
 use sp_core::{ecdsa, ed25519, sr25519, Pair};
 use sp_runtime::{
 	testing::{Header, H256},
@@ -109,6 +110,7 @@ impl frame_system::Config for Test {
 }
 
 parameter_types! {
+	#[derive(Clone, TypeInfo, Debug, PartialEq, Eq)]
 	pub const MaxNewKeyAgreementKeys: u32 = 10u32;
 	#[derive(Debug, Clone, Eq, PartialEq)]
 	pub const MaxTotalKeyAgreementKeys: u32 = 10u32;

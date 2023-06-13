@@ -28,10 +28,10 @@ use sp_std::{
 use crate::{
 	did_details::{DidCreationDetails, DidDetails, DidEncryptionKey, DidNewKeyAgreementKeySet, DidVerificationKey},
 	service_endpoints::DidEndpoint,
-	AccountIdOf, BlockNumberOf, Config, DidIdentifierOf,
+	AccountIdOf, BlockNumberOf, Config, DidCreationDetailsOf, DidIdentifierOf,
 };
 
-pub fn get_key_agreement_keys<T: Config>(n_keys: u32) -> DidNewKeyAgreementKeySet<T> {
+pub fn get_key_agreement_keys<T: Config>(n_keys: u32) -> DidNewKeyAgreementKeySet<T::MaxNewKeyAgreementKeys> {
 	BoundedBTreeSet::try_from(
 		(1..=n_keys)
 			.map(|i| {
@@ -82,7 +82,7 @@ pub fn get_service_endpoints<T: Config>(
 pub fn generate_base_did_creation_details<T: Config>(
 	did: DidIdentifierOf<T>,
 	submitter: AccountIdOf<T>,
-) -> DidCreationDetails<T> {
+) -> DidCreationDetailsOf<T> {
 	DidCreationDetails {
 		did,
 		submitter,

@@ -35,9 +35,8 @@ use sp_std::{convert::TryInto, vec::Vec};
 
 use crate::{
 	errors::{self, DidError},
-	service_endpoints::DidEndpoint,
-	utils, AccountIdOf, BalanceOf, BlockNumberOf, Config, CurrencyOf, DidCallableOf, DidEndpointsCount,
-	DidIdentifierOf, KeyIdOf, Payload,
+	utils, AccountIdOf, BalanceOf, BlockNumberOf, Config, CurrencyOf, DidCallableOf, DidCreationDetailsOf,
+	DidEndpointsCount, DidIdentifierOf, KeyIdOf, Payload,
 };
 
 /// Types of verification keys a DID can control.
@@ -306,6 +305,7 @@ impl<T: Config> DidDetails<T> {
 				},
 			)
 			.map_err(|_| errors::StorageError::MaxPublicKeysExceeded)?;
+
 		Ok(Self {
 			authentication_key: authentication_key_id,
 			key_agreement_keys: DidKeyAgreementKeySet::<T>::default(),
@@ -368,7 +368,7 @@ impl<T: Config> DidDetails<T> {
 	// Creates a new DID entry from some [DidCreationDetails] and a given
 	// authentication key.
 	pub fn from_creation_details(
-		details: DidCreationDetails<T>,
+		details: DidCreationDetailsOf<T>,
 		new_auth_key: DidVerificationKey,
 		did_subject: &DidIdentifierOf<T>,
 	) -> Result<Self, DidError> {
@@ -387,7 +387,7 @@ impl<T: Config> DidDetails<T> {
 		};
 
 		// Creates a new DID with the given authentication key.
-		let mut new_did_details = DidDetails::new(new_auth_key, current_block_number, deposit)?;
+		let mut new_did_details: DidDetails<T> = DidDetails::new(new_auth_key, current_block_number, deposit)?;
 
 		new_did_details.add_key_agreement_keys(details.clone().new_key_agreement_keys, current_block_number)?;
 
@@ -441,7 +441,7 @@ impl<T: Config> DidDetails<T> {
 	/// The new keys are added to the set of public keys.
 	pub fn add_key_agreement_keys(
 		&mut self,
-		new_key_agreement_keys: DidNewKeyAgreementKeySet<T>,
+		new_key_agreement_keys: DidNewKeyAgreementKeySet<T::MaxNewKeyAgreementKeys>,
 		block_number: BlockNumberOf<T>,
 	) -> Result<(), errors::StorageError> {
 		for new_key_agreement_key in new_key_agreement_keys {
@@ -612,28 +612,30 @@ impl<T: Config> DidDetails<T> {
 	}
 }
 
-pub(crate) type DidNewKeyAgreementKeySet<T> = BoundedBTreeSet<DidEncryptionKey, <T as Config>::MaxNewKeyAgreementKeys>;
+pub(crate) type DidNewKeyAgreementKeySet<MaxNewKeyAgreementKeys> =
+	BoundedBTreeSet<DidEncryptionKey, MaxNewKeyAgreementKeys>;
 pub(crate) type DidKeyAgreementKeySet<T> = BoundedBTreeSet<KeyIdOf<T>, <T as Config>::MaxTotalKeyAgreementKeys>;
 pub(crate) type DidPublicKeyMap<T> =
 	BoundedBTreeMap<KeyIdOf<T>, DidPublicKeyDetails<BlockNumberOf<T>>, <T as Config>::MaxPublicKeysPerDid>;
 
 /// The details of a new DID to create.
 #[derive(Clone, RuntimeDebug, Decode, Encode, PartialEq, TypeInfo)]
-#[scale_info(skip_type_params(T))]
-
-pub struct DidCreationDetails<T: Config> {
+pub struct DidCreationDetails<DidIdentifier, AccountId, MaxNewKeyAgreementKeys, DidEndpoint>
+where
+	MaxNewKeyAgreementKeys: Get<u32> + Clone,
+{
 	/// The DID identifier. It has to be unique.
-	pub did: DidIdentifierOf<T>,
+	pub did: DidIdentifier,
 	/// The authorised submitter of the creation operation.
-	pub submitter: AccountIdOf<T>,
+	pub submitter: AccountId,
 	/// The new key agreement keys.
-	pub new_key_agreement_keys: DidNewKeyAgreementKeySet<T>,
+	pub new_key_agreement_keys: DidNewKeyAgreementKeySet<MaxNewKeyAgreementKeys>,
 	/// \[OPTIONAL\] The new attestation key.
 	pub new_attestation_key: Option<DidVerificationKey>,
 	/// \[OPTIONAL\] The new delegation key.
 	pub new_delegation_key: Option<DidVerificationKey>,
 	/// The service endpoints details.
-	pub new_service_details: Vec<DidEndpoint<T>>,
+	pub new_service_details: Vec<DidEndpoint>,
 }
 
 /// Errors that might occur while deriving the authorization verification key
