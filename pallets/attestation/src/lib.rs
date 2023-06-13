@@ -115,7 +115,7 @@ pub mod pallet {
 
 	pub(crate) type CurrencyOf<T> = <T as Config>::Currency;
 
-	pub(crate) type AttestationDetailsOf<T> =
+	pub type AttestationDetailsOf<T> =
 		AttestationDetails<CtypeHashOf<T>, AttesterOf<T>, AuthorizationIdOf<T>, AccountIdOf<T>, BalanceOf<T>>;
 
 	#[pallet::config]

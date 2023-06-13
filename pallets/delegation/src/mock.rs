@@ -183,7 +183,7 @@ pub(crate) mod runtime {
 		MultiSignature, MultiSigner,
 	};
 
-	use attestation::{mock::insert_attestation, AttestationDetails, ClaimHashOf};
+	use attestation::{mock::insert_attestation, AttestationDetailsOf, ClaimHashOf};
 	use ctype::CtypeEntryOf;
 	use kilt_support::{
 		mock::{mock_origin, SubjectId},
@@ -445,7 +445,7 @@ pub(crate) mod runtime {
 		ctypes: Vec<(CtypeHashOf<Test>, SubjectId)>,
 		delegation_hierarchies: DelegationHierarchyInitialization<Test>,
 		delegations: Vec<(DelegationNodeIdOf<Test>, DelegationNode<Test>)>,
-		attestations: Vec<(ClaimHashOf<Test>, AttestationDetails<Test>)>,
+		attestations: Vec<(ClaimHashOf<Test>, AttestationDetailsOf<Test>)>,
 	}
 
 	impl ExtBuilder {
@@ -477,7 +477,7 @@ pub(crate) mod runtime {
 		}
 
 		#[must_use]
-		pub fn with_attestations(mut self, attestations: Vec<(ClaimHashOf<Test>, AttestationDetails<Test>)>) -> Self {
+		pub fn with_attestations(mut self, attestations: Vec<(ClaimHashOf<Test>, AttestationDetailsOf<Test>)>) -> Self {
 			self.attestations = attestations;
 			self
 		}
@@ -506,7 +506,7 @@ pub(crate) mod runtime {
 				initialize_pallet(self.delegations, self.delegation_hierarchies);
 
 				for (claim_hash, details) in self.attestations {
-					insert_attestation(claim_hash, details)
+					insert_attestation::<Test>(claim_hash, details)
 				}
 			});
 
