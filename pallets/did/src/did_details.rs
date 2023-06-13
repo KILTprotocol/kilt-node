@@ -691,7 +691,6 @@ pub struct DidAuthorizedCallOperation<DidIdentifier, DidCallable, BlockNumber, A
 /// It contains additional information about the type of DID key to used for
 /// authorization.
 #[derive(Clone, RuntimeDebug, PartialEq, TypeInfo)]
-#[scale_info(skip_type_params(T))]
 
 pub struct DidAuthorizedCallOperationWithVerificationRelationship<DidAuthorizedCallOperation> {
 	/// The wrapped [DidAuthorizedCallOperation].
@@ -713,4 +712,7 @@ impl<DidAuthorizedCallOperation> core::ops::Deref
 // Opaque implementation.
 // [DidAuthorizedCallOperationWithVerificationRelationship] encodes to
 // [DidAuthorizedCallOperation].
-impl<T: Config> WrapperTypeEncode for DidAuthorizedCallOperationWithVerificationRelationship<T> {}
+impl<DidAuthorizedCallOperation> WrapperTypeEncode
+	for DidAuthorizedCallOperationWithVerificationRelationship<DidAuthorizedCallOperation>
+{
+}
