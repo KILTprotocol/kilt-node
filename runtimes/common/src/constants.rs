@@ -78,6 +78,10 @@ pub const MAXIMUM_BLOCK_WEIGHT: Weight = Weight::from_parts(
 	cumulus_primitives_core::relay_chain::MAX_POV_SIZE as u64,
 );
 
+pub const MINIMUM_PERIOD: u64 = SLOT_DURATION / 2;
+
+pub const PROPOSAL_BOND_MINIMUM: Balance = 20 * KILT;
+
 pub const INFLATION_CONFIG: (Perquintill, Perquintill, Perquintill, Perquintill) = (
 	// max collator staking rate
 	Perquintill::from_percent(40),

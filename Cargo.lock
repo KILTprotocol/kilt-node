@@ -2059,7 +2059,6 @@ dependencies = [
  "frame-system",
  "kilt-support",
  "log",
- "num-traits",
  "pallet-balances",
  "parity-scale-codec",
  "public-credentials",

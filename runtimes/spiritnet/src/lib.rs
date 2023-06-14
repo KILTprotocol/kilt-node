@@ -25,9 +25,10 @@
 	clippy::missing_panics_doc,
 	clippy::missing_errors_doc,
 	clippy::float_arithmetic,
-	clippy::cast_possible_wrap
+	clippy::cast_possible_wrap,
+	clippy::indexing_slicing,
+	clippy::index_refutable_slice
 )]
-#![deny(clippy::index_refutable_slice, clippy::indexing_slicing)]
 // `construct_runtime!` does a lot of recursion and requires us to increase the limit to 256.
 #![recursion_limit = "256"]
 
@@ -169,7 +170,7 @@ impl frame_system::Config for Runtime {
 }
 
 parameter_types! {
-	pub const MinimumPeriod: u64 = constants::SLOT_DURATION.saturating_div(2);
+	pub const MinimumPeriod: u64 = constants::MINIMUM_PERIOD;
 }
 
 impl pallet_timestamp::Config for Runtime {
@@ -432,7 +433,7 @@ impl pallet_democracy::Config for Runtime {
 
 parameter_types! {
 	pub const ProposalBond: Permill = Permill::from_percent(5);
-	pub const ProposalBondMinimum: Balance = 20u128.saturating_mul(KILT);
+	pub const ProposalBondMinimum: Balance = constants::PROPOSAL_BOND_MINIMUM;
 	pub const SpendPeriod: BlockNumber = constants::governance::SPEND_PERIOD;
 	pub const Burn: Permill = Permill::zero();
 	pub const MaxApprovals: u32 = 100;

@@ -357,7 +357,6 @@ impl ExtBuilder {
 }
 
 /// Compare whether the difference of both sides is at most `precision * left`.
-#[allow(clippy::arithmetic_side_effects)]
 pub(crate) fn almost_equal(left: Balance, right: Balance, precision: Perbill) -> bool {
 	let err = precision * left;
 	left.max(right).saturating_div(left.min(right)) <= err

@@ -81,7 +81,6 @@ pub fn get_challenge<DidIdentifier: AsRef<[u8]>, BlockNumber: Debug>(
 // Copied from https://github.com/paritytech/substrate/blob/ad5399644aebc54e32a107ac37ae08e6cd1f0cfb/primitives/core/src/crypto.rs#L324
 // Copyright (C) Parity Technologies (UK) Ltd.
 // SPDX-License-Identifier: Apache-2.0
-/// ! TODO !
 fn to_ss58(public_key: &[u8], prefix: u16) -> String {
 	// We mask out the upper two bits of the ident - SS58 Prefix currently only
 	// supports 14-bits
