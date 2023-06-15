@@ -25,7 +25,7 @@ pub(super) mod provider {
 	pub(crate) use dip_provider_runtime_template::{DidIdentifier, DmpQueue, Runtime, RuntimeOrigin, XcmpQueue};
 
 	use did::did_details::{DidDetails, DidEncryptionKey, DidVerificationKey};
-	use dip_provider_runtime_template::{AccountId, Balance, BlockNumber, System, Web3Name};
+	use dip_provider_runtime_template::{AccountId, Balance, BlockNumber, System, Web3Name, UNIT};
 	use kilt_support::deposit::Deposit;
 	use pallet_did_lookup::{linkable_account::LinkableAccountId, ConnectionRecord};
 	use pallet_web3_names::web3_name::Web3NameOwnership;
@@ -38,6 +38,8 @@ pub(super) mod provider {
 	use super::*;
 
 	pub const PARA_ID: u32 = 2_000;
+	pub const DISPATCHER_ACCOUNT: AccountId = AccountId::new([190u8; 32]);
+	const INITIAL_BALANCE: Balance = 100_000 * UNIT;
 
 	pub(crate) fn did_auth_key() -> ed25519::Pair {
 		ed25519::Pair::from_seed(&[200u8; 32])
@@ -80,6 +82,12 @@ pub(super) mod provider {
 
 		<parachain_info::GenesisConfig as GenesisBuild<Runtime, _>>::assimilate_storage(&parachain_info_config, &mut t)
 			.unwrap();
+
+		pallet_balances::GenesisConfig::<Runtime> {
+			balances: vec![(DISPATCHER_ACCOUNT, INITIAL_BALANCE)],
+		}
+		.assimilate_storage(&mut t)
+		.unwrap();
 
 		let mut ext = TestExternalities::new(t);
 		let did: DidIdentifier = did_auth_key().public().into();
@@ -137,7 +145,11 @@ pub(super) mod consumer {
 	};
 
 	use dip_consumer_runtime_template::System;
-	use xcm::latest::{Junction::Parachain, Junctions::X1, ParentThen};
+	use xcm::v3::{
+		Junction::{AccountId32, Parachain},
+		Junctions::X2,
+		ParentThen,
+	};
 	use xcm_executor::traits::Convert;
 
 	use super::*;
@@ -146,9 +158,18 @@ pub(super) mod consumer {
 	pub const DISPATCHER_ACCOUNT: AccountId = AccountId::new([90u8; 32]);
 	const INITIAL_BALANCE: Balance = 100_000 * UNIT;
 
-	pub(crate) fn provider_parachain_account() -> AccountId {
-		AssetTransactorLocationConverter::convert(ParentThen(X1(Parachain(provider::PARA_ID))).into())
-			.expect("Conversion of account from provider parachain to consumer parachain should not fail.")
+	pub(crate) fn provider_dispatcher_account_on_consumer() -> AccountId {
+		AssetTransactorLocationConverter::convert(
+			ParentThen(X2(
+				Parachain(provider::PARA_ID),
+				AccountId32 {
+					network: None,
+					id: provider::DISPATCHER_ACCOUNT.into(),
+				},
+			))
+			.into(),
+		)
+		.expect("Conversion of account from provider parachain to consumer parachain should not fail.")
 	}
 
 	pub(crate) fn para_ext() -> TestExternalities {
@@ -165,7 +186,7 @@ pub(super) mod consumer {
 
 		pallet_balances::GenesisConfig::<Runtime> {
 			balances: vec![
-				(provider_parachain_account(), INITIAL_BALANCE),
+				(provider_dispatcher_account_on_consumer(), INITIAL_BALANCE),
 				(DISPATCHER_ACCOUNT, INITIAL_BALANCE),
 			],
 		}
@@ -177,5 +198,24 @@ pub(super) mod consumer {
 			System::set_block_number(1);
 		});
 		ext
+	}
+
+	#[cfg(test)]
+	pub(crate) use test_utils::*;
+
+	#[cfg(test)]
+	mod test_utils {
+		use super::*;
+
+		use polkadot_parachain::primitives::Sibling;
+		use xcm::v3::Junctions::X1;
+		use xcm_builder::SiblingParachainConvertsVia;
+
+		pub(crate) fn provider_parachain_account_on_consumer() -> AccountId {
+			SiblingParachainConvertsVia::<Sibling, AccountId>::convert(
+				ParentThen(X1(Parachain(provider::PARA_ID))).into(),
+			)
+			.expect("Conversion of account from provider parachain to consumer parachain should not fail.")
+		}
 	}
 }

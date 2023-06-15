@@ -16,16 +16,15 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use did::EnsureDidOrigin;
+use did::{DidRawOrigin, EnsureDidOrigin};
 use dip_support::IdentityDetailsAction;
-use frame_support::traits::EitherOfDiverse;
-use frame_system::EnsureRoot;
-use pallet_dip_provider::traits::{TxBuilder, XcmRouterDispatcher};
+use kilt_dip_support::xcm::XcmRouterIdentityDispatcher;
+use pallet_dip_provider::traits::TxBuilder;
 use parity_scale_codec::{Decode, Encode};
 use runtime_common::dip::{did::LinkedDidInfoProviderOf, merkle::DidMerkleRootGenerator};
 use xcm::{latest::MultiLocation, DoubleEncoded};
 
-use crate::{AccountId, DidIdentifier, Hash, Runtime, RuntimeEvent, XcmRouter};
+use crate::{AccountId, DidIdentifier, Hash, Runtime, RuntimeEvent, UniversalLocation, XcmRouter};
 
 #[derive(Encode, Decode)]
 enum ConsumerParachainCalls {
@@ -56,9 +55,10 @@ impl TxBuilder<DidIdentifier, Hash> for ConsumerParachainTxBuilder {
 }
 
 impl pallet_dip_provider::Config for Runtime {
-	type CommitOrigin = EitherOfDiverse<EnsureRoot<AccountId>, EnsureDidOrigin<DidIdentifier, AccountId>>;
+	type CommitOriginCheck = EnsureDidOrigin<DidIdentifier, AccountId>;
+	type CommitOrigin = DidRawOrigin<DidIdentifier, AccountId>;
 	type Identifier = DidIdentifier;
-	type IdentityProofDispatcher = XcmRouterDispatcher<XcmRouter, DidIdentifier, Hash>;
+	type IdentityProofDispatcher = XcmRouterIdentityDispatcher<XcmRouter, UniversalLocation>;
 	type IdentityProofGenerator = DidMerkleRootGenerator<Runtime>;
 	type IdentityProvider = LinkedDidInfoProviderOf<Runtime>;
 	type ProofOutput = Hash;

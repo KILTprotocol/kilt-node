@@ -28,6 +28,7 @@ use crate::did::MerkleLeavesAndDidSignature;
 pub mod did;
 pub mod merkle;
 pub mod traits;
+pub mod xcm;
 
 /// A type that chains a Merkle proof verification with a DID signature
 /// verification. The required input of this type is a tuple (A, B) where A is

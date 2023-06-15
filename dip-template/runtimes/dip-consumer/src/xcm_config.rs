@@ -19,16 +19,16 @@
 use cumulus_primitives_utility::ParentAsUmp;
 use frame_support::{
 	parameter_types,
-	traits::{ConstU32, Contains, Everything, Nothing},
+	traits::{ConstU32, Contains, Nothing},
 	weights::{IdentityFee, Weight},
 };
 use frame_system::EnsureRoot;
+use kilt_dip_support::xcm::{barriers::OkOrElseCheckForParachainProvider, origins::AccountIdJunctionAsParachain};
 use pallet_xcm::TestWeightInfo;
-use polkadot_parachain::primitives::Sibling;
-use xcm::latest::prelude::*;
+use xcm::v3::prelude::*;
 use xcm_builder::{
-	AllowTopLevelPaidExecutionFrom, CurrencyAdapter, EnsureXcmOrigin, FixedWeightBounds, IsConcrete,
-	SiblingParachainAsNative, SiblingParachainConvertsVia, SignedToAccountId32, UsingComponents,
+	Account32Hash, AllowTopLevelPaidExecutionFrom, CurrencyAdapter, EnsureXcmOrigin, FixedWeightBounds, IsConcrete,
+	SignedToAccountId32, UsingComponents,
 };
 use xcm_executor::XcmExecutor;
 
@@ -39,12 +39,13 @@ use crate::{
 
 parameter_types! {
 	pub HereLocation: MultiLocation = MultiLocation::here();
+	pub NoneNetworkId: Option<NetworkId> = None;
 	pub UnitWeightCost: Weight = Weight::from_ref_time(1_000);
 	pub UniversalLocation: InteriorMultiLocation = Parachain(ParachainInfo::parachain_id().into()).into();
 }
 
-pub type Barrier = AllowTopLevelPaidExecutionFrom<Everything>;
-pub type AssetTransactorLocationConverter = SiblingParachainConvertsVia<Sibling, AccountId>;
+pub type Barrier = OkOrElseCheckForParachainProvider<AllowTopLevelPaidExecutionFrom<Nothing>, ConstU32<2_000>>;
+pub type AssetTransactorLocationConverter = Account32Hash<NoneNetworkId, AccountId>;
 pub type LocalAssetTransactor =
 	CurrencyAdapter<Balances, IsConcrete<HereLocation>, AssetTransactorLocationConverter, AccountId, ()>;
 pub type XcmRouter = (ParentAsUmp<ParachainSystem, (), ()>, XcmpQueue);
@@ -74,7 +75,7 @@ impl xcm_executor::Config for XcmConfig {
 	type IsTeleporter = ();
 	type MaxAssetsIntoHolding = ConstU32<64>;
 	type MessageExporter = ();
-	type OriginConverter = SiblingParachainAsNative<cumulus_pallet_xcm::Origin, RuntimeOrigin>;
+	type OriginConverter = AccountIdJunctionAsParachain<ConstU32<2_000>, cumulus_pallet_xcm::Origin, RuntimeOrigin>;
 	type PalletInstancesInfo = AllPalletsWithSystem;
 	type ResponseHandler = ();
 	type RuntimeCall = RuntimeCall;

@@ -24,7 +24,7 @@ use frame_support::{
 };
 use frame_system::EnsureRoot;
 use pallet_xcm::TestWeightInfo;
-use xcm::latest::prelude::*;
+use xcm::v3::prelude::*;
 use xcm_builder::{EnsureXcmOrigin, FixedWeightBounds, SignedToAccountId32, UsingComponents};
 use xcm_executor::XcmExecutor;
 

@@ -16,6 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use did::DidRawOrigin;
 use dip_support::IdentityDetailsAction;
 use xcm::{latest::prelude::*, DoubleEncoded};
 
@@ -53,15 +54,14 @@ pub mod identity_dispatch {
 	use super::*;
 
 	use frame_support::weights::Weight;
-	use parity_scale_codec::Encode;
-	use sp_std::{marker::PhantomData, vec};
 
-	pub trait IdentityProofDispatcher<Identifier, IdentityRoot, Details = ()> {
+	pub trait IdentityProofDispatcher<Identifier, IdentityRoot, AccountId, Details = ()> {
 		type PreDispatchOutput;
 		type Error;
 
 		fn pre_dispatch<B: TxBuilder<Identifier, IdentityRoot, Details>>(
 			action: IdentityDetailsAction<Identifier, IdentityRoot, Details>,
+			source: AccountId,
 			asset: MultiAsset,
 			weight: Weight,
 			destination: MultiLocation,
@@ -73,14 +73,15 @@ pub mod identity_dispatch {
 	// Returns `Ok` without doing anything.
 	pub struct NullIdentityProofDispatcher;
 
-	impl<Identifier, IdentityRoot, Details> IdentityProofDispatcher<Identifier, IdentityRoot, Details>
-		for NullIdentityProofDispatcher
+	impl<Identifier, IdentityRoot, AccountId, Details>
+		IdentityProofDispatcher<Identifier, IdentityRoot, AccountId, Details> for NullIdentityProofDispatcher
 	{
 		type PreDispatchOutput = ();
 		type Error = ();
 
 		fn pre_dispatch<_B>(
 			_action: IdentityDetailsAction<Identifier, IdentityRoot, Details>,
+			_source: AccountId,
 			_asset: MultiAsset,
 			_weight: Weight,
 			_destination: MultiLocation,
@@ -90,59 +91,6 @@ pub mod identity_dispatch {
 
 		fn dispatch(_pre_output: Self::PreDispatchOutput) -> Result<(), Self::Error> {
 			Ok(())
-		}
-	}
-
-	// Dispatcher using a type implementing the `SendXcm` trait.
-	// It properly encodes the `Transact` operation, then delegates everything else
-	// to the sender, similarly to what the XCM pallet's `send` extrinsic does.
-	pub struct XcmRouterDispatcher<Router, Identifier, ProofOutput, Details = ()>(
-		PhantomData<(Router, Identifier, ProofOutput, Details)>,
-	);
-
-	impl<Router, Identifier, ProofOutput, Details> IdentityProofDispatcher<Identifier, ProofOutput, Details>
-		for XcmRouterDispatcher<Router, Identifier, ProofOutput, Details>
-	where
-		Router: SendXcm,
-		Identifier: Encode,
-		ProofOutput: Encode,
-	{
-		type PreDispatchOutput = Router::Ticket;
-		type Error = SendError;
-
-		fn pre_dispatch<Builder: TxBuilder<Identifier, ProofOutput, Details>>(
-			action: IdentityDetailsAction<Identifier, ProofOutput, Details>,
-			asset: MultiAsset,
-			weight: Weight,
-			destination: MultiLocation,
-		) -> Result<(Self::PreDispatchOutput, MultiAssets), Self::Error> {
-			// TODO: Replace with proper error handling
-			let dest_tx = Builder::build(destination, action)
-				.map_err(|_| ())
-				.expect("Failed to build call");
-
-			// TODO: Set an error handler and an appendix to refund any leftover funds to
-			// the provider parachain sovereign account.
-			let operation = [vec![
-				WithdrawAsset(asset.clone().into()),
-				BuyExecution {
-					fees: asset,
-					// TODO: Configurable weight limit?
-					weight_limit: Unlimited,
-				},
-				Transact {
-					origin_kind: OriginKind::Native,
-					require_weight_at_most: weight,
-					call: dest_tx,
-				},
-			]]
-			.concat();
-			let op = Xcm(operation);
-			Router::validate(&mut Some(destination), &mut Some(op))
-		}
-
-		fn dispatch(pre_output: Self::PreDispatchOutput) -> Result<(), Self::Error> {
-			Router::deliver(pre_output).map(|_| ())
 		}
 	}
 }
@@ -195,4 +143,29 @@ pub trait TxBuilder<Identifier, Proof, Details = ()> {
 		dest: MultiLocation,
 		action: IdentityDetailsAction<Identifier, Proof, Details>,
 	) -> Result<DoubleEncoded<()>, Self::Error>;
+}
+
+pub trait SubmitterInfo {
+	type Submitter;
+
+	fn submitter(&self) -> Self::Submitter;
+}
+
+impl SubmitterInfo for frame_support::sp_runtime::AccountId32 {
+	type Submitter = Self;
+
+	fn submitter(&self) -> Self::Submitter {
+		self.clone()
+	}
+}
+
+impl<DidIdentifier, AccountId> SubmitterInfo for DidRawOrigin<DidIdentifier, AccountId>
+where
+	AccountId: Clone,
+{
+	type Submitter = AccountId;
+
+	fn submitter(&self) -> Self::Submitter {
+		self.submitter.clone()
+	}
 }

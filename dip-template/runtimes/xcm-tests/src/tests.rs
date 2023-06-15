@@ -18,7 +18,8 @@
 
 use super::*;
 
-use did::{Did, DidSignature};
+use did::{Did, DidRawOrigin, DidSignature};
+use dip_support::IdentityDetailsAction;
 use frame_support::{assert_ok, weights::Weight};
 use frame_system::RawOrigin;
 use kilt_dip_support::{
@@ -26,6 +27,7 @@ use kilt_dip_support::{
 	merkle::MerkleProof,
 };
 use pallet_did_lookup::{linkable_account::LinkableAccountId, ConnectedAccounts};
+use pallet_dip_provider::traits::TxBuilder;
 use pallet_web3_names::{Names, Owner};
 use parity_scale_codec::Encode;
 use runtime_common::dip::{
@@ -34,34 +36,59 @@ use runtime_common::dip::{
 };
 use sp_core::Pair;
 use sp_runtime::traits::Zero;
-use xcm::latest::{
-	Junction::Parachain,
-	Junctions::{Here, X1},
-	ParentThen,
+use xcm::{
+	v3::{
+		Instruction::{BuyExecution, DepositAsset, ExpectOrigin, RefundSurplus, Transact, WithdrawAsset},
+		Junction::{AccountId32, Parachain},
+		Junctions::{Here, X1},
+		MultiAsset,
+		MultiAssetFilter::Wild,
+		MultiLocation, OriginKind, ParentThen,
+		WeightLimit::Limited,
+		WildMultiAsset::All,
+		Xcm,
+	},
+	VersionedXcm,
 };
 use xcm_emulator::TestExt;
 
 use cumulus_pallet_xcmp_queue::Event as XcmpEvent;
 use dip_consumer_runtime_template::{
-	BlockNumber, DidIdentifier, DidLookup, DipConsumer, Runtime as ConsumerRuntime, RuntimeCall as ConsumerRuntimeCall,
-	RuntimeEvent, System,
+	Balances, BlockNumber, DidIdentifier, DidLookup, DipConsumer, Runtime as ConsumerRuntime,
+	RuntimeCall as ConsumerRuntimeCall, RuntimeEvent, System,
 };
-use dip_provider_runtime_template::{DipProvider, Runtime as ProviderRuntime};
+use dip_provider_runtime_template::{
+	ConsumerParachainTxBuilder, DipProvider, PolkadotXcm as ProviderXcmPallet, Runtime as ProviderRuntime,
+	UniversalLocation,
+};
 
 #[test]
 fn commit_identity() {
 	Network::reset();
 
 	let did: DidIdentifier = para::provider::did_auth_key().public().into();
+	let consumer_location: MultiLocation = ParentThen(X1(Parachain(para::consumer::PARA_ID))).into();
+	let asset: MultiAsset = (Here, 1_000_000_000).into();
+	let weight = Weight::from_ref_time(4_000);
+	let provider_parachain_on_consumer_parachain_balance_before = ConsumerParachain::execute_with(|| {
+		Balances::free_balance(para::consumer::provider_parachain_account_on_consumer())
+	});
+	let dispatcher_on_consumer_parachain_balance_before = ConsumerParachain::execute_with(|| {
+		Balances::free_balance(para::consumer::provider_dispatcher_account_on_consumer())
+	});
 
 	// 1. Send identity commitment from DIP provider to DIP consumer.
 	ProviderParachain::execute_with(|| {
 		assert_ok!(DipProvider::commit_identity(
-			RawOrigin::Root.into(),
+			DidRawOrigin {
+				id: did.clone(),
+				submitter: para::provider::DISPATCHER_ACCOUNT
+			}
+			.into(),
 			did.clone(),
-			Box::new(ParentThen(X1(Parachain(para::consumer::PARA_ID))).into()),
-			Box::new((Here, 1_000_000_000).into()),
-			Weight::from_ref_time(4_000),
+			Box::new(consumer_location.into_versioned()),
+			Box::new(asset.into()),
+			weight,
 		));
 	});
 	// 2. Verify that the commitment has made it to the DIP consumer.
@@ -77,6 +104,19 @@ fn commit_identity() {
 		)));
 		// 2.2 Verify the proof digest was stored correctly.
 		assert!(DipConsumer::identity_proofs(&did).is_some());
+		// 2.3 Verify that the provider parachain sovereign account balance has not
+		// changed.
+		let provider_parachain_on_consumer_parachain_balance_after =
+			Balances::free_balance(para::consumer::provider_parachain_account_on_consumer());
+		assert_eq!(
+			provider_parachain_on_consumer_parachain_balance_before,
+			provider_parachain_on_consumer_parachain_balance_after
+		);
+		// 2.4 Verify that the dispatcher's account balance on the consumer parachain
+		// has decreased.
+		let dispatcher_on_consumer_parachain_balance_after =
+			Balances::free_balance(para::consumer::provider_dispatcher_account_on_consumer());
+		assert!(dispatcher_on_consumer_parachain_balance_after < dispatcher_on_consumer_parachain_balance_before);
 	});
 	// 3. Call an extrinsic on the consumer chain with a valid proof and signature
 	let did_details = ProviderParachain::execute_with(|| {
@@ -167,5 +207,79 @@ fn commit_identity() {
 		// Verify that the details of the DID subject have been bumped
 		let details = DipConsumer::identity_proofs(&did).map(|entry| entry.details);
 		assert_eq!(details, Some(1u128));
+	});
+}
+
+#[test]
+fn user_generated_commit_identity() {
+	Network::reset();
+
+	let did: DidIdentifier = para::provider::did_auth_key().public().into();
+	let consumer_location: MultiLocation = ParentThen(X1(Parachain(para::consumer::PARA_ID))).into();
+	let asset: MultiAsset = (Here, 1_000_000_000).into();
+	let weight = Weight::from_ref_time(4_000);
+	let dest_tx = ConsumerParachainTxBuilder::build(consumer_location, IdentityDetailsAction::Deleted(did.clone()))
+		.expect("Provider Tx builder should not fail to create the encoded `Transact` call.");
+	let message = ProviderParachain::execute_with(|| {
+		Xcm::<()>(vec![
+			ExpectOrigin(Some(
+				Here.into_location()
+					.reanchored(&consumer_location, UniversalLocation::get())
+					.unwrap(),
+			)),
+			WithdrawAsset(asset.clone().into()),
+			BuyExecution {
+				fees: asset,
+				weight_limit: Limited(weight),
+			},
+			Transact {
+				origin_kind: OriginKind::Native,
+				require_weight_at_most: weight,
+				call: dest_tx,
+			},
+			RefundSurplus,
+			DepositAsset {
+				assets: Wild(All),
+				beneficiary: MultiLocation {
+					parents: 1,
+					interior: Here
+						.into_location()
+						.reanchored(&consumer_location, UniversalLocation::get())
+						.unwrap()
+						.pushed_with_interior(AccountId32 {
+							network: None,
+							id: para::provider::DISPATCHER_ACCOUNT.into(),
+						})
+						.unwrap()
+						.interior,
+				},
+			},
+		])
+	});
+	// 1. Send identity commitment from DIP provider to DIP consumer via a
+	// user-dispatched XCM call using the XCM pallet (no parachain origin).
+	ProviderParachain::execute_with(|| {
+		assert_ok!(ProviderXcmPallet::send(
+			RawOrigin::Signed(para::provider::DISPATCHER_ACCOUNT).into(),
+			Box::new(consumer_location.into()),
+			Box::new(VersionedXcm::from(message))
+		));
+	});
+	// 2. Verify that the commitment has NOT made it to the DIP consumer and must
+	// have failed, since this was a user-generated XCM message on the provider
+	// chain using the XCM pallet.
+	ConsumerParachain::execute_with(|| {
+		// 2.1 Verify that there was an XCM error.
+		println!("{:?}", System::events());
+		assert!(System::events().iter().any(|r| matches!(
+			r.event,
+			RuntimeEvent::XcmpQueue(XcmpEvent::Fail {
+				error: _,
+				message_hash: _,
+				weight: _
+			})
+		)));
+		// 2.2 Verify there is no storage entry in the consumer pallet.
+		assert!(DipConsumer::identity_proofs(&did).is_none());
 	});
 }
