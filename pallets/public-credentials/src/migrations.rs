@@ -50,7 +50,7 @@ where
 			.map(|details: CredentialEntryOf<T>| {
 				has_user_holds::<AccountIdOf<T>, CurrencyOf<T>>(
 					&details.deposit.owner,
-					&&T::RuntimeHoldReason::from(HoldReason::Deposit),
+					&T::RuntimeHoldReason::from(HoldReason::Deposit),
 				)
 			})
 			.all(|user| user);
@@ -72,7 +72,7 @@ where
 
 		Credentials::<T>::iter().try_for_each(|(key, key2, details)| -> Result<(), &'static str> {
 			let hold_balance: u128 = <T as Config>::Currency::balance_on_hold(
-				&&T::RuntimeHoldReason::from(HoldReason::Deposit),
+				&T::RuntimeHoldReason::from(HoldReason::Deposit),
 				&details.deposit.owner,
 			)
 			.saturated_into();
