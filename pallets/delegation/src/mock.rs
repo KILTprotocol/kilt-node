@@ -191,7 +191,6 @@ pub(crate) mod runtime {
 	use attestation::{mock::insert_attestation, AttestationDetails, ClaimHashOf};
 	use ctype::CtypeEntryOf;
 	use kilt_support::{
-		deposit::HFIdentifier,
 		mock::{mock_origin, SubjectId},
 		signature::EqualVerify,
 	};
@@ -267,8 +266,8 @@ pub(crate) mod runtime {
 	}
 
 	impl pallet_balances::Config for Test {
-		type FreezeIdentifier = HFIdentifier;
-		type HoldIdentifier = HFIdentifier;
+		type FreezeIdentifier = RuntimeFreezeReason;
+		type HoldIdentifier = RuntimeHoldReason;
 		type MaxFreezes = MaxFreezes;
 		type MaxHolds = MaxHolds;
 		type Balance = Balance;
@@ -313,6 +312,7 @@ pub(crate) mod runtime {
 	impl attestation::Config for Test {
 		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<AccountId, DelegatorIdOf<Self>>;
 		type OriginSuccess = mock_origin::DoubleOrigin<AccountId, DelegatorIdOf<Self>>;
+		type RuntimeHoldReason = RuntimeHoldReason;
 		type RuntimeEvent = ();
 		type WeightInfo = ();
 
@@ -336,6 +336,7 @@ pub(crate) mod runtime {
 
 	impl Config for Test {
 		type Signature = (SubjectId, Vec<u8>);
+		type RuntimeHoldReason = RuntimeHoldReason;
 		type DelegationSignatureVerification = EqualVerify<Self::DelegationEntityId, Vec<u8>>;
 		type DelegationEntityId = SubjectId;
 		type DelegationNodeId = Hash;

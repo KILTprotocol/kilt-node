@@ -146,7 +146,7 @@ pub mod pallet {
 	};
 	use frame_system::pallet_prelude::*;
 	use kilt_support::{
-		deposit::{Deposit, HFIdentifier, Pallets},
+		deposit::Deposit,
 		traits::{CallSources, StorageDepositCollector},
 	};
 	use sp_runtime::traits::BadOrigin;
@@ -189,6 +189,11 @@ pub mod pallet {
 	pub(crate) type CurrencyOf<T> = <T as Config>::Currency;
 	pub(crate) type NegativeImbalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::NegativeImbalance;
 
+	#[pallet::composite_enum]
+	pub enum HoldReason {
+		Deposit,
+	}
+
 	#[pallet::config]
 	pub trait Config: frame_system::Config + Debug {
 		/// Type for a dispatchable call that can be proxied through the DID
@@ -219,8 +224,11 @@ pub mod pallet {
 		/// Overarching event type.
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
+		type RuntimeHoldReason: From<HoldReason>;
+
 		/// The currency that is used to reserve funds for each did.
-		type Currency: ReservableCurrency<AccountIdOf<Self>> + MutateHold<AccountIdOf<Self>, Reason = HFIdentifier>;
+		type Currency: ReservableCurrency<AccountIdOf<Self>>
+			+ MutateHold<AccountIdOf<Self>, Reason = Self::RuntimeHoldReason>;
 
 		/// The amount of balance that will be taken for each DID as a deposit
 		/// to incentivise fair use of the on chain storage. The deposits
@@ -1108,7 +1116,11 @@ pub mod pallet {
 			let subject = source.subject();
 			let sender = source.sender();
 
-			DidDepositCollector::<T>::change_deposit_owner(&subject, sender, &HFIdentifier::Deposit(Pallets::Did))?;
+			DidDepositCollector::<T>::change_deposit_owner(
+				&subject,
+				sender,
+				&T::RuntimeHoldReason::from(HoldReason::Deposit),
+			)?;
 
 			Ok(())
 		}
@@ -1250,7 +1262,7 @@ pub mod pallet {
 			DidEndpointsCount::<T>::remove(&did_subject);
 			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
 				&did_entry.deposit,
-				&HFIdentifier::Deposit(Pallets::Did),
+				&T::RuntimeHoldReason::from(HoldReason::Deposit),
 			)?;
 			// Mark as deleted to prevent potential replay-attacks of re-adding a previously
 			// deleted DID.

@@ -157,7 +157,6 @@ pub mod pallet {
 		BoundedVec,
 	};
 	use frame_system::pallet_prelude::*;
-	use kilt_support::deposit::HFIdentifier;
 	use pallet_balances::{Freezes, IdAmount};
 	use pallet_session::ShouldEndSession;
 	use scale_info::TypeInfo;
@@ -187,6 +186,11 @@ pub mod pallet {
 	#[pallet::storage_version(STORAGE_VERSION)]
 	pub struct Pallet<T>(PhantomData<T>);
 
+	#[pallet::composite_enum]
+	pub enum FreezeReason {
+		Staking,
+	}
+
 	/// Configuration trait of this pallet.
 	#[pallet::config]
 	pub trait Config: frame_system::Config + pallet_balances::Config + pallet_session::Config {
@@ -199,11 +203,14 @@ pub mod pallet {
 		/// Note: Declaration of Balance taken from pallet_gilt
 		type Currency: Inspect<Self::AccountId, Balance = Self::CurrencyBalance>
 			+ Unbalanced<Self::AccountId, Balance = Self::CurrencyBalance>
-			+ MutateFreeze<Self::AccountId, Balance = Self::CurrencyBalance, Id = HFIdentifier>
-			+ LockableCurrency<Self::AccountId, Balance = Self::CurrencyBalance>
+			+ MutateFreeze<
+				Self::AccountId,
+				Balance = Self::CurrencyBalance,
+				Id = <Self as pallet::Config>::FreezeIdentifier,
+			> + LockableCurrency<Self::AccountId, Balance = Self::CurrencyBalance>
 			+ Eq;
 
-		type Identifier: AsRef<<Self as pallet_balances::Config>::FreezeIdentifier> + From<HFIdentifier>;
+		type FreezeIdentifier: From<FreezeReason> + PartialEq;
 
 		/// Just the `Currency::Balance` type; we have this item to allow us to
 		/// constrain it to `From<u64>`.
@@ -2201,7 +2208,11 @@ pub mod pallet {
 
 			// Either set a new lock or potentially extend the existing one if amount
 			// exceeds the currently locked amount
-			T::Currency::extend_freeze(&HFIdentifier::Staking, who, amount)?;
+			T::Currency::extend_freeze(
+				&<T as pallet::Config>::FreezeIdentifier::from(FreezeReason::Staking),
+				who,
+				amount,
+			)?;
 
 			Ok(unstaking_len)
 		}
@@ -2319,10 +2330,12 @@ pub mod pallet {
 
 			// iterate balance freezes to retrieve amount of freezed balance
 			let freezes = Freezes::<T>::get(who);
-			total_freezed = if let Some(IdAmount { amount, .. }) = freezes
-				.iter()
-				.find(|l| &l.id == T::Identifier::from(HFIdentifier::Staking).as_ref())
-			{
+			total_freezed = if let Some(IdAmount { amount, .. }) =
+				freezes
+					.iter()
+					.find(|l: IdAmount<<T as pallet::Config>::FreezeIdentifier, _>| {
+						l.id == <T as pallet::Config>::FreezeIdentifier::from(FreezeReason::Staking)
+					}) {
 				amount.saturating_sub(total_unfreezed.into()).into()
 			} else {
 				// should never fail to find the lock since we checked whether unstaking is not
@@ -2331,10 +2344,17 @@ pub mod pallet {
 			};
 
 			if total_freezed.is_zero() {
-				T::Currency::thaw(&HFIdentifier::Staking, who)?;
+				T::Currency::thaw(
+					&<T as pallet::Config>::FreezeIdentifier::from(FreezeReason::Staking),
+					who,
+				)?;
 				Unstaking::<T>::remove(who);
 			} else {
-				T::Currency::set_freeze(&HFIdentifier::Staking, who, total_freezed)?;
+				T::Currency::set_freeze(
+					&<T as pallet::Config>::FreezeIdentifier::from(FreezeReason::Staking),
+					who,
+					total_freezed,
+				)?;
 				Unstaking::<T>::insert(who, unstaking);
 			}
 

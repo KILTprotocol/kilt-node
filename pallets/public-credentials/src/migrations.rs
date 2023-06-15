@@ -20,14 +20,11 @@ use frame_support::{
 	traits::{Get, OnRuntimeUpgrade, ReservableCurrency},
 	weights::Weight,
 };
-use kilt_support::{
-	deposit::{HFIdentifier, Pallets},
-	migration::{has_user_holds, switch_reserved_to_hold},
-};
+use kilt_support::migration::{has_user_holds, switch_reserved_to_hold};
 use sp_runtime::SaturatedConversion;
 use sp_std::marker::PhantomData;
 
-use crate::{AccountIdOf, Config, CredentialEntryOf, Credentials, CurrencyOf};
+use crate::{AccountIdOf, Config, CredentialEntryOf, Credentials, CurrencyOf, HoldReason};
 
 pub struct BalanceMigration<T>(PhantomData<T>);
 
@@ -53,7 +50,7 @@ where
 			.map(|details: CredentialEntryOf<T>| {
 				has_user_holds::<AccountIdOf<T>, CurrencyOf<T>>(
 					&details.deposit.owner,
-					&HFIdentifier::Deposit(Pallets::PublicCredentials),
+					&&T::RuntimeHoldReason::from(HoldReason::Deposit),
 				)
 			})
 			.all(|user| user);
@@ -75,7 +72,7 @@ where
 
 		Credentials::<T>::iter().try_for_each(|(key, key2, details)| -> Result<(), &'static str> {
 			let hold_balance: u128 = <T as Config>::Currency::balance_on_hold(
-				&HFIdentifier::Deposit(Pallets::PublicCredentials),
+				&&T::RuntimeHoldReason::from(HoldReason::Deposit),
 				&details.deposit.owner,
 			)
 			.saturated_into();
@@ -107,7 +104,7 @@ where
 		.map(|details: CredentialEntryOf<T>| {
 			has_user_holds::<AccountIdOf<T>, CurrencyOf<T>>(
 				&details.deposit.owner,
-				&HFIdentifier::Deposit(Pallets::PublicCredentials),
+				&T::RuntimeHoldReason::from(HoldReason::Deposit),
 			)
 		})
 		.all(|user| user)
@@ -122,7 +119,7 @@ where
 			let deposit = pc_details.deposit;
 			let error = switch_reserved_to_hold::<AccountIdOf<T>, CurrencyOf<T>>(
 				deposit.owner,
-				&HFIdentifier::Deposit(Pallets::PublicCredentials),
+				&T::RuntimeHoldReason::from(HoldReason::Deposit),
 				deposit.amount.saturated_into(),
 			);
 

@@ -22,7 +22,6 @@ use frame_support::{
 	weights::constants::RocksDbWeight,
 };
 use frame_system::EnsureSigned;
-use kilt_support::deposit::{HFIdentifier, Pallets};
 use pallet_balances::NegativeImbalance;
 use sp_core::{ecdsa, ed25519, sr25519, Pair};
 use sp_runtime::{
@@ -41,7 +40,8 @@ use crate::{
 		RelationshipDeriveError,
 	},
 	service_endpoints::DidEndpoint,
-	utils as crate_utils, AccountIdOf, Config, CurrencyOf, DidBlacklist, DidEndpointsCount, KeyIdOf, ServiceEndpoints,
+	utils as crate_utils, AccountIdOf, Config, CurrencyOf, DidBlacklist, DidEndpointsCount, HoldReason, KeyIdOf,
+	ServiceEndpoints,
 };
 #[cfg(not(feature = "runtime-benchmarks"))]
 use crate::{DidRawOrigin, EnsureDidOrigin};
@@ -69,7 +69,7 @@ frame_support::construct_runtime!(
 		NodeBlock = Block,
 		UncheckedExtrinsic = UncheckedExtrinsic,
 	{
-		Did: did::{Pallet, Call, Storage, Event<T>, Origin<T>},
+		Did: did::{Pallet, Call, Storage, HoldReason, Event<T>, Origin<T>},
 		Ctype: ctype::{Pallet, Call, Storage, Event<T>},
 		Balances: pallet_balances::{Pallet, Call, Storage, Event<T>},
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
@@ -147,6 +147,7 @@ impl Config for Test {
 	type RuntimeCall = RuntimeCall;
 	type EnsureOrigin = EnsureSigned<DidIdentifier>;
 	type KeyDeposit = KeyDeposit;
+	type RuntimeHoldReason = RuntimeHoldReason;
 	type ServiceEndpointDeposit = KeyDeposit;
 	type OriginSuccess = AccountId;
 	type RuntimeEvent = ();
@@ -176,8 +177,8 @@ parameter_types! {
 }
 
 impl pallet_balances::Config for Test {
-	type FreezeIdentifier = HFIdentifier;
-	type HoldIdentifier = HFIdentifier;
+	type FreezeIdentifier = RuntimeFreezeReason;
+	type HoldIdentifier = RuntimeHoldReason;
 	type MaxFreezes = MaxFreezes;
 	type MaxHolds = MaxHolds;
 	type Balance = Balance;
@@ -498,7 +499,7 @@ impl ExtBuilder {
 			for did in self.dids_stored.iter() {
 				did::Did::<Test>::insert(&did.0, did.1.clone());
 				CurrencyOf::<Test>::hold(
-					&HFIdentifier::Deposit(Pallets::Did),
+					&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
 					&did.1.deposit.owner,
 					did.1.deposit.amount,
 				)

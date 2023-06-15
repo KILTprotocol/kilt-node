@@ -25,7 +25,6 @@ use frame_support::{
 	assert_ok, construct_runtime, parameter_types,
 	traits::{Currency, GenesisBuild, OnFinalize, OnInitialize, OnUnbalanced},
 };
-use kilt_support::deposit::HFIdentifier;
 use pallet_authorship::EventHandler;
 use sp_consensus_aura::sr25519::AuthorityId;
 use sp_core::H256;
@@ -60,7 +59,7 @@ construct_runtime!(
 		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
 		Aura: pallet_aura::{Pallet, Storage},
 		Session: pallet_session::{Pallet, Call, Storage, Event, Config<T>},
-		StakePallet: stake::{Pallet, Call, Storage, Config<T>, Event<T>},
+		StakePallet: stake::{Pallet, Call, Storage, Config<T>, Event<T>, FreezeReason},
 		Authorship: pallet_authorship::{Pallet, Storage},
 	}
 );
@@ -105,8 +104,8 @@ parameter_types! {
 }
 
 impl pallet_balances::Config for Test {
-	type FreezeIdentifier = HFIdentifier;
-	type HoldIdentifier = HFIdentifier;
+	type FreezeIdentifier = RuntimeFreezeReason;
+	type HoldIdentifier = RuntimeHoldReason;
 	type MaxFreezes = MaxFreezes;
 	type MaxHolds = MaxHolds;
 	type MaxLocks = ();
@@ -178,7 +177,7 @@ impl Config for Test {
 	type NetworkRewardStart = NetworkRewardStart;
 	type NetworkRewardBeneficiary = ToBeneficiary;
 	type WeightInfo = ();
-	type Identifier = HFIdentifier;
+	type FreezeIdentifier = RuntimeFreezeReason;
 	const BLOCKS_PER_YEAR: Self::BlockNumber = 5 * 60 * 24 * 36525 / 100;
 }
 

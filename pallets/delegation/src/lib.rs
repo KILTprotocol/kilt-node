@@ -100,7 +100,7 @@ pub mod pallet {
 	};
 	use frame_system::pallet_prelude::*;
 	use kilt_support::{
-		deposit::{Deposit, HFIdentifier, Pallets},
+		deposit::Deposit,
 		signature::{SignatureVerificationError, VerifySignature},
 		traits::CallSources,
 	};
@@ -131,6 +131,11 @@ pub mod pallet {
 
 	pub(crate) type CurrencyOf<T> = <T as Config>::Currency;
 
+	#[pallet::composite_enum]
+	pub enum HoldReason {
+		Deposit,
+	}
+
 	#[pallet::config]
 	pub trait Config: frame_system::Config + ctype::Config {
 		type Signature: Parameter;
@@ -148,9 +153,10 @@ pub mod pallet {
 		type OriginSuccess: CallSources<AccountIdOf<Self>, DelegatorIdOf<Self>>;
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 		type WeightInfo: WeightInfo;
+		type RuntimeHoldReason: From<HoldReason>;
 
 		/// The currency that is used to reserve funds for each delegation.
-		type Currency: MutateHold<AccountIdOf<Self>, Reason = HFIdentifier>;
+		type Currency: MutateHold<AccountIdOf<Self>, Reason = Self::RuntimeHoldReason>;
 
 		/// The deposit that is required for storing a delegation.
 		#[pallet::constant]
@@ -675,7 +681,7 @@ pub mod pallet {
 			DelegationDepositCollector::<T>::change_deposit_owner(
 				&delegation_id,
 				source.sender(),
-				&HFIdentifier::Deposit(Pallets::Delegation),
+				&T::RuntimeHoldReason::from(HoldReason::Deposit),
 			)
 		}
 
@@ -695,7 +701,7 @@ pub mod pallet {
 
 			DelegationDepositCollector::<T>::update_deposit(
 				&delegation_id,
-				&HFIdentifier::Deposit(Pallets::Delegation),
+				&T::RuntimeHoldReason::from(HoldReason::Deposit),
 			)?;
 
 			Ok(())
@@ -736,7 +742,7 @@ pub mod pallet {
 			kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
 				deposit_owner.clone(),
 				<T as Config>::Deposit::get(),
-				&HFIdentifier::Deposit(Pallets::Delegation),
+				&T::RuntimeHoldReason::from(HoldReason::Deposit),
 			)?;
 
 			let root_node = DelegationNode::new_root_node(
@@ -767,7 +773,7 @@ pub mod pallet {
 			kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
 				deposit_owner,
 				<T as Config>::Deposit::get(),
-				&HFIdentifier::Deposit(Pallets::Delegation),
+				&T::RuntimeHoldReason::from(HoldReason::Deposit),
 			)?;
 
 			// Add the new node as a child of that node
@@ -981,7 +987,7 @@ pub mod pallet {
 
 			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
 				&delegation_node.deposit,
-				&HFIdentifier::Deposit(Pallets::Delegation),
+				&T::RuntimeHoldReason::from(HoldReason::Deposit),
 			)?;
 
 			consumed_weight = consumed_weight.saturating_add(T::DbWeight::get().reads_writes(1, 2));

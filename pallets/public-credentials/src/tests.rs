@@ -23,12 +23,11 @@ use frame_support::{
 use sp_runtime::traits::Zero;
 
 use ctype::mock::get_ctype_hash;
-use kilt_support::{
-	deposit::{Deposit, HFIdentifier, Pallets},
-	mock::mock_origin::DoubleOrigin,
-};
+use kilt_support::{deposit::Deposit, mock::mock_origin::DoubleOrigin};
 
-use crate::{mock::*, Config, CredentialIdOf, CredentialSubjects, Credentials, Error, InputClaimsContentOf};
+use crate::{
+	mock::*, Config, CredentialIdOf, CredentialSubjects, Credentials, Error, HoldReason, InputClaimsContentOf,
+};
 
 // add
 
@@ -57,9 +56,11 @@ fn add_successful_without_authorization() {
 		.with_ctypes(vec![(ctype_hash_1, attester.clone()), (ctype_hash_2, attester.clone())])
 		.build_and_execute_with_sanity_tests(|| {
 			// Check for 0 reserved deposit
-			assert!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::PublicCredentials), &ACCOUNT_00).is_zero()
-			);
+			assert!(Balances::balance_on_hold(
+				&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+				&ACCOUNT_00
+			)
+			.is_zero());
 
 			assert_ok!(PublicCredentials::add(
 				DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
@@ -78,7 +79,10 @@ fn add_successful_without_authorization() {
 
 			// Check deposit reservation logic
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::PublicCredentials), &ACCOUNT_00),
+				Balances::balance_on_hold(
+					&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_00
+				),
 				deposit
 			);
 
@@ -93,7 +97,10 @@ fn add_successful_without_authorization() {
 
 			// Check deposit has not changed
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::PublicCredentials), &ACCOUNT_00),
+				Balances::balance_on_hold(
+					&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_00
+				),
 				deposit
 			);
 
@@ -118,7 +125,10 @@ fn add_successful_without_authorization() {
 
 			// Deposit is 2x now
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::PublicCredentials), &ACCOUNT_00),
+				Balances::balance_on_hold(
+					&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_00
+				),
 				2 * deposit
 			);
 		});
@@ -586,9 +596,11 @@ fn remove_successful() {
 			assert!(CredentialSubjects::<Test>::get(credential_id).is_none());
 
 			// Check deposit release logic
-			assert!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::PublicCredentials), &ACCOUNT_00).is_zero()
-			);
+			assert!(Balances::balance_on_hold(
+				&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+				&ACCOUNT_00
+			)
+			.is_zero());
 
 			// Removing the same credential again will fail
 			assert_noop!(
@@ -720,9 +732,11 @@ fn reclaim_deposit_successful() {
 			assert!(CredentialSubjects::<Test>::get(credential_id).is_none());
 
 			// Check deposit release logic
-			assert!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::PublicCredentials), &ACCOUNT_00).is_zero()
-			);
+			assert!(Balances::balance_on_hold(
+				&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+				&ACCOUNT_00
+			)
+			.is_zero());
 
 			// Reclaiming the deposit for the same credential again will fail
 			assert_noop!(
@@ -816,12 +830,17 @@ fn test_change_deposit_owner() {
 				ACCOUNT_01
 			);
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::PublicCredentials), &ACCOUNT_01),
+				Balances::balance_on_hold(
+					&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_01
+				),
 				<Test as Config>::Deposit::get()
 			);
-			assert!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::PublicCredentials), &ACCOUNT_00).is_zero()
-			);
+			assert!(Balances::balance_on_hold(
+				&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+				&ACCOUNT_00
+			)
+			.is_zero());
 		});
 }
 
@@ -917,7 +936,10 @@ fn test_update_deposit() {
 				<Test as Config>::Deposit::get()
 			);
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::PublicCredentials), &ACCOUNT_00),
+				Balances::balance_on_hold(
+					&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_00
+				),
 				<Test as Config>::Deposit::get()
 			);
 		});

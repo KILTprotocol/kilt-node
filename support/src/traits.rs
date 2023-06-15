@@ -18,14 +18,11 @@
 
 use frame_support::traits::{
 	fungible::hold::{Inspect as InspectHold, Mutate},
-	tokens::fungible::Inspect,
+	tokens::fungible::{Inspect, MutateHold},
 };
 use sp_runtime::DispatchError;
 
-use crate::{
-	deposit::{Deposit, HFIdentifier},
-	free_deposit, free_deposit2,
-};
+use crate::deposit::{free_deposit, Deposit};
 
 /// The sources of a call struct.
 ///
@@ -93,8 +90,7 @@ pub trait ItemFilter<Item> {
 }
 
 pub trait StorageDepositCollector<AccountId, Key> {
-	type Reason;
-	type Currency: Mutate<AccountId> + InspectHold<AccountId, Reason = Self::Reason>;
+	type Currency: MutateHold<AccountId>;
 
 	/// Returns the deposit of the storage entry that is stored behind the key.
 	fn deposit(key: &Key)
@@ -118,10 +114,14 @@ pub trait StorageDepositCollector<AccountId, Key> {
 	/// The deposit balance of the current owner will be freed, while the
 	/// deposit balance of the new owner will get reserved. The deposit amount
 	/// will not change even if the required byte and item fees were updated.
-	fn change_deposit_owner(key: &Key, new_owner: AccountId, reason: &Self::Reason) -> Result<(), DispatchError> {
+	fn change_deposit_owner(
+		key: &Key,
+		new_owner: AccountId,
+		reason: &<Self::Currency as InspectHold<AccountId>>::Reason,
+	) -> Result<(), DispatchError> {
 		let deposit = Self::deposit(key)?;
 
-		free_deposit2::<AccountId, Self::Reason, Self::Currency>(&deposit, reason)?;
+		free_deposit::<AccountId, Self::Currency>(&deposit, reason)?;
 
 		let deposit = Deposit {
 			owner: new_owner,
@@ -140,10 +140,13 @@ pub trait StorageDepositCollector<AccountId, Key> {
 	/// updates the deposit amount. It either frees parts of the reserved
 	/// balance in case the deposit was lowered or reserves more balance when
 	/// the deposit was raised.
-	fn update_deposit(key: &Key, reason: &Self::Reason) -> Result<(), DispatchError> {
+	fn update_deposit(
+		key: &Key,
+		reason: &<Self::Currency as InspectHold<AccountId>>::Reason,
+	) -> Result<(), DispatchError> {
 		let deposit = Self::deposit(key)?;
 
-		free_deposit2::<AccountId, Self::Reason, Self::Currency>(&deposit, reason)?;
+		free_deposit::<AccountId, Self::Currency>(&deposit, reason)?;
 
 		let deposit = Deposit {
 			amount: Self::deposit_amount(key),

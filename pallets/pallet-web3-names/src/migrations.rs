@@ -20,14 +20,11 @@ use frame_support::{
 	traits::{Get, OnRuntimeUpgrade, ReservableCurrency},
 	weights::Weight,
 };
-use kilt_support::{
-	deposit::{HFIdentifier, Pallets},
-	migration::{has_user_holds, switch_reserved_to_hold},
-};
+use kilt_support::migration::{has_user_holds, switch_reserved_to_hold};
 use sp_runtime::SaturatedConversion;
 use sp_std::marker::PhantomData;
 
-use crate::{AccountIdOf, Config, CurrencyOf, Owner, Web3OwnershipOf};
+use crate::{AccountIdOf, Config, CurrencyOf, HoldReason, Owner, Web3OwnershipOf};
 
 pub struct BalanceMigration<T>(PhantomData<T>);
 
@@ -53,7 +50,7 @@ where
 			.map(|details: Web3OwnershipOf<T>| {
 				has_user_holds::<AccountIdOf<T>, CurrencyOf<T>>(
 					&details.deposit.owner,
-					&HFIdentifier::Deposit(Pallets::W3n),
+					&T::RuntimeHoldReason::from(HoldReason::Deposit),
 				)
 			})
 			.all(|user| user);
@@ -71,9 +68,11 @@ where
 		use kilt_support::test_utils::log_and_return_error_message;
 
 		Owner::<T>::iter().try_for_each(|(key, details)| -> Result<(), &'static str> {
-			let hold_balance: u128 =
-				<T as Config>::Currency::balance_on_hold(&HFIdentifier::Deposit(Pallets::W3n), &details.deposit.owner)
-					.saturated_into();
+			let hold_balance: u128 = <T as Config>::Currency::balance_on_hold(
+				&T::RuntimeHoldReason::from(HoldReason::Deposit),
+				&details.deposit.owner,
+			)
+			.saturated_into();
 			ensure!(
 				details.deposit.amount.saturated_into::<u128>() <= hold_balance,
 				log_and_return_error_message(scale_info::prelude::format!(
@@ -104,7 +103,7 @@ where
 		.map(|details: Web3OwnershipOf<T>| {
 			has_user_holds::<AccountIdOf<T>, CurrencyOf<T>>(
 				&details.deposit.owner,
-				&HFIdentifier::Deposit(Pallets::W3n),
+				&T::RuntimeHoldReason::from(HoldReason::Deposit),
 			)
 		})
 		.all(|user| user)
@@ -119,7 +118,7 @@ where
 			let deposit = w3n_details.deposit;
 			let error = switch_reserved_to_hold::<AccountIdOf<T>, CurrencyOf<T>>(
 				deposit.owner,
-				&HFIdentifier::Deposit(Pallets::W3n),
+				&T::RuntimeHoldReason::from(HoldReason::Deposit),
 				deposit.amount.saturated_into(),
 			);
 

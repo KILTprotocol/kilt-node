@@ -20,15 +20,12 @@ use frame_support::{
 	traits::{Get, OnRuntimeUpgrade, ReservableCurrency},
 	weights::Weight,
 };
-use kilt_support::{
-	deposit::{HFIdentifier, Pallets},
-	migration::{has_user_holds, switch_reserved_to_hold},
-};
+use kilt_support::migration::{has_user_holds, switch_reserved_to_hold};
 use log;
 use sp_runtime::SaturatedConversion;
 use sp_std::marker::PhantomData;
 
-use crate::{AccountIdOf, Config, CurrencyOf, DelegationNode, DelegationNodes};
+use crate::{AccountIdOf, Config, CurrencyOf, DelegationNode, DelegationNodes, HoldReason};
 
 pub struct BalanceMigration<T>(PhantomData<T>);
 
@@ -55,7 +52,7 @@ where
 			.map(|details: DelegationNode<T>| {
 				has_user_holds::<AccountIdOf<T>, CurrencyOf<T>>(
 					&details.deposit.owner,
-					&HFIdentifier::Deposit(Pallets::Delegation),
+					&T::RuntimeHoldReason::from(HoldReason::Deposit),
 				)
 			})
 			.all(|user| user);
@@ -77,7 +74,7 @@ where
 
 		DelegationNodes::<T>::iter().try_for_each(|(key, details)| -> Result<(), &'static str> {
 			let hold_balance: u128 = <T as Config>::Currency::balance_on_hold(
-				&HFIdentifier::Deposit(Pallets::Delegation),
+				&T::RuntimeHoldReason::from(HoldReason::Deposit),
 				&details.deposit.owner,
 			)
 			.saturated_into();
@@ -108,7 +105,7 @@ where
 		.map(|details: DelegationNode<T>| {
 			has_user_holds::<AccountIdOf<T>, CurrencyOf<T>>(
 				&details.deposit.owner,
-				&HFIdentifier::Deposit(Pallets::Delegation),
+				&T::RuntimeHoldReason::from(HoldReason::Deposit),
 			)
 		})
 		.all(|user| user)
@@ -123,7 +120,7 @@ where
 			let deposit = delegation_detail.deposit;
 			let error = switch_reserved_to_hold::<AccountIdOf<T>, CurrencyOf<T>>(
 				deposit.owner,
-				&HFIdentifier::Deposit(Pallets::Delegation),
+				&T::RuntimeHoldReason::from(HoldReason::Deposit),
 				deposit.amount.saturated_into(),
 			);
 

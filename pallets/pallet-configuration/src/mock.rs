@@ -22,7 +22,6 @@ pub mod runtime {
 		ord_parameter_types, parameter_types, traits::AsEnsureOriginWithArg, weights::constants::RocksDbWeight,
 	};
 	use frame_system::EnsureSignedBy;
-	use kilt_support::deposit::HFIdentifier;
 	use sp_runtime::{
 		testing::Header,
 		traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
@@ -96,8 +95,8 @@ pub mod runtime {
 	}
 
 	impl pallet_balances::Config for Test {
-		type FreezeIdentifier = HFIdentifier;
-		type HoldIdentifier = HFIdentifier;
+		type FreezeIdentifier = ();
+		type HoldIdentifier = ();
 		type MaxFreezes = MaxFreezes;
 		type MaxHolds = MaxHolds;
 		type Balance = Balance;

@@ -20,15 +20,12 @@ use frame_support::{
 	assert_err, assert_noop, assert_ok,
 	traits::fungible::{Inspect, InspectHold},
 };
-use kilt_support::{
-	deposit::{HFIdentifier, Pallets},
-	mock::mock_origin::DoubleOrigin,
-};
+use kilt_support::mock::mock_origin::DoubleOrigin;
 
 use crate::{
 	self as delegation,
 	mock::{runtime::*, *},
-	Config, Error,
+	Config, Error, HoldReason,
 };
 use sp_runtime::{traits::Zero, TokenError};
 
@@ -58,7 +55,10 @@ fn create_root_delegation_successful() {
 
 			// Check reserved balance
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Delegation), &ACCOUNT_00),
+				Balances::balance_on_hold(
+					&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_00
+				),
 				<Test as Config>::Deposit::get()
 			);
 
@@ -177,7 +177,10 @@ fn create_delegation_direct_root_successful() {
 
 			// 1 Deposit should be reserved for hierarchy
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Delegation), &ACCOUNT_00),
+				Balances::balance_on_hold(
+					&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_00
+				),
 				<Test as Config>::Deposit::get()
 			);
 
@@ -193,7 +196,10 @@ fn create_delegation_direct_root_successful() {
 
 			// 2 Deposits should be reserved for hierarchy and delegation to root
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Delegation), &ACCOUNT_00),
+				Balances::balance_on_hold(
+					&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_00
+				),
 				2 * <Test as Config>::Deposit::get()
 			);
 
@@ -263,7 +269,10 @@ fn create_delegation_with_parent_successful() {
 
 			// Should have deposited for hierarchy and parent delegation
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Delegation), &ACCOUNT_00),
+				Balances::balance_on_hold(
+					&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_00
+				),
 				2 * <Test as Config>::Deposit::get()
 			);
 
@@ -279,10 +288,17 @@ fn create_delegation_with_parent_successful() {
 
 			// Should have deposited for hierarchy, parent delegation and sub-delegation
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Delegation), &ACCOUNT_00),
+				Balances::balance_on_hold(
+					&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_00
+				),
 				3 * <Test as Config>::Deposit::get()
 			);
-			assert!(Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Delegation), &ACCOUNT_01).is_zero());
+			assert!(Balances::balance_on_hold(
+				&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+				&ACCOUNT_01
+			)
+			.is_zero());
 
 			// Data in stored delegation and operation should match
 			let stored_delegation =
@@ -720,11 +736,17 @@ fn list_hierarchy_revoke_and_remove_root_successful() {
 		.build_and_execute_with_sanity_tests(|| {
 			assert!(Delegation::delegation_hierarchies(hierarchy_root_id).is_some());
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Delegation), &ACCOUNT_00),
+				Balances::balance_on_hold(
+					&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_00
+				),
 				2 * <Test as Config>::Deposit::get()
 			);
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Delegation), &ACCOUNT_01),
+				Balances::balance_on_hold(
+					&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_01
+				),
 				<Test as Config>::Deposit::get()
 			);
 
@@ -767,8 +789,16 @@ fn list_hierarchy_revoke_and_remove_root_successful() {
 			assert!(Delegation::delegation_hierarchies(hierarchy_root_id).is_none());
 			assert!(Delegation::delegation_nodes(parent_id).is_none());
 			assert!(Delegation::delegation_nodes(delegation_id).is_none());
-			assert!(Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Delegation), &ACCOUNT_00).is_zero());
-			assert!(Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Delegation), &ACCOUNT_01).is_zero());
+			assert!(Balances::balance_on_hold(
+				&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+				&ACCOUNT_00
+			)
+			.is_zero());
+			assert!(Balances::balance_on_hold(
+				&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+				&ACCOUNT_01
+			)
+			.is_zero());
 		});
 }
 
@@ -836,11 +866,17 @@ fn tree_hierarchy_revoke_and_remove_root_successful() {
 			);
 
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Delegation), &ACCOUNT_00),
+				Balances::balance_on_hold(
+					&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_00
+				),
 				2 * <Test as Config>::Deposit::get()
 			);
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Delegation), &ACCOUNT_01),
+				Balances::balance_on_hold(
+					&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_01
+				),
 				<Test as Config>::Deposit::get()
 			);
 
@@ -855,8 +891,16 @@ fn tree_hierarchy_revoke_and_remove_root_successful() {
 			assert!(Delegation::delegation_hierarchies(hierarchy_root_id).is_none());
 			assert!(Delegation::delegation_nodes(delegation1_id).is_none());
 			assert!(Delegation::delegation_nodes(delegation2_id).is_none());
-			assert!(Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Delegation), &ACCOUNT_00).is_zero());
-			assert!(Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Delegation), &ACCOUNT_01).is_zero());
+			assert!(Balances::balance_on_hold(
+				&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+				&ACCOUNT_00
+			)
+			.is_zero());
+			assert!(Balances::balance_on_hold(
+				&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+				&ACCOUNT_01
+			)
+			.is_zero());
 		});
 }
 
@@ -920,11 +964,17 @@ fn max_max_revocations_revoke_and_remove_successful() {
 			);
 
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Delegation), &ACCOUNT_00),
+				Balances::balance_on_hold(
+					&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_00
+				),
 				2 * <Test as Config>::Deposit::get()
 			);
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Delegation), &ACCOUNT_01),
+				Balances::balance_on_hold(
+					&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_01
+				),
 				<Test as Config>::Deposit::get()
 			);
 
@@ -939,8 +989,16 @@ fn max_max_revocations_revoke_and_remove_successful() {
 			assert!(Delegation::delegation_hierarchies(hierarchy_root_id).is_none());
 			assert!(Delegation::delegation_nodes(parent_id).is_none());
 			assert!(Delegation::delegation_nodes(delegation_id).is_none());
-			assert!(Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Delegation), &ACCOUNT_00).is_zero());
-			assert!(Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Delegation), &ACCOUNT_01).is_zero());
+			assert!(Balances::balance_on_hold(
+				&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+				&ACCOUNT_00
+			)
+			.is_zero());
+			assert!(Balances::balance_on_hold(
+				&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+				&ACCOUNT_01
+			)
+			.is_zero());
 		});
 }
 
@@ -1101,7 +1159,10 @@ fn exact_children_max_revocations_revoke_and_remove_root_error() {
 		])
 		.build_and_execute_with_sanity_tests(|| {
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Delegation), &ACCOUNT_00),
+				Balances::balance_on_hold(
+					&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_00
+				),
 				<Test as Config>::Deposit::get()
 			);
 
@@ -1146,11 +1207,17 @@ fn exact_children_max_revocations_revoke_and_remove_root_error() {
 
 			// Should not remove root because tree traversal steps are insufficient
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Delegation), &ACCOUNT_00),
+				Balances::balance_on_hold(
+					&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_00
+				),
 				<Test as Config>::Deposit::get()
 			);
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Delegation), &ACCOUNT_01),
+				Balances::balance_on_hold(
+					&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_01
+				),
 				3 * <Test as Config>::Deposit::get()
 			);
 			// assert_err and not assert_noop because the storage is indeed changed, but
@@ -1169,11 +1236,17 @@ fn exact_children_max_revocations_revoke_and_remove_root_error() {
 			assert!(Delegation::delegation_nodes(delegation2_id).is_some());
 			assert!(Delegation::delegation_nodes(delegation3_id).is_some());
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Delegation), &ACCOUNT_00),
+				Balances::balance_on_hold(
+					&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_00
+				),
 				<Test as Config>::Deposit::get()
 			);
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Delegation), &ACCOUNT_01),
+				Balances::balance_on_hold(
+					&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_01
+				),
 				3 * <Test as Config>::Deposit::get()
 			);
 
@@ -1186,8 +1259,16 @@ fn exact_children_max_revocations_revoke_and_remove_root_error() {
 			assert!(Delegation::delegation_nodes(operation.id).is_none());
 			assert!(Delegation::delegation_nodes(delegation1_id).is_none());
 			assert!(Delegation::delegation_nodes(delegation3_id).is_none());
-			assert!(Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Delegation), &ACCOUNT_00).is_zero());
-			assert!(Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Delegation), &ACCOUNT_01).is_zero());
+			assert!(Balances::balance_on_hold(
+				&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+				&ACCOUNT_00
+			)
+			.is_zero());
+			assert!(Balances::balance_on_hold(
+				&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+				&ACCOUNT_01
+			)
+			.is_zero());
 		});
 }
 
@@ -1256,11 +1337,17 @@ fn direct_owner_revoke_and_remove_delegation_successful() {
 			);
 
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Delegation), &ACCOUNT_00),
+				Balances::balance_on_hold(
+					&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_00
+				),
 				2 * <Test as Config>::Deposit::get()
 			);
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Delegation), &ACCOUNT_01),
+				Balances::balance_on_hold(
+					&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_01
+				),
 				<Test as Config>::Deposit::get()
 			);
 
@@ -1276,10 +1363,17 @@ fn direct_owner_revoke_and_remove_delegation_successful() {
 			assert!(Delegation::delegation_nodes(parent_id).is_none());
 			assert!(Delegation::delegation_nodes(delegation_id).is_none());
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Delegation), &ACCOUNT_00),
+				Balances::balance_on_hold(
+					&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_00
+				),
 				<Test as Config>::Deposit::get()
 			);
-			assert!(Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Delegation), &ACCOUNT_01).is_zero());
+			assert!(Balances::balance_on_hold(
+				&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+				&ACCOUNT_01
+			)
+			.is_zero());
 		});
 }
 
@@ -1319,11 +1413,17 @@ fn parent_owner_revoke_delegation_successful() {
 		.build_and_execute_with_sanity_tests(|| {
 			// Parent should not be able to remove the child delegation directly
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Delegation), &ACCOUNT_00),
+				Balances::balance_on_hold(
+					&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_00
+				),
 				2 * <Test as Config>::Deposit::get()
 			);
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Delegation), &ACCOUNT_01),
+				Balances::balance_on_hold(
+					&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_01
+				),
 				<Test as Config>::Deposit::get()
 			);
 			assert_noop!(
@@ -1367,10 +1467,17 @@ fn parent_owner_revoke_delegation_successful() {
 			assert!(Delegation::delegation_nodes(parent_id).is_some());
 			assert!(Delegation::delegation_nodes(delegation_id).is_none());
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Delegation), &ACCOUNT_00),
+				Balances::balance_on_hold(
+					&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_00
+				),
 				2 * <Test as Config>::Deposit::get()
 			);
-			assert!(Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Delegation), &ACCOUNT_01).is_zero());
+			assert!(Balances::balance_on_hold(
+				&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+				&ACCOUNT_01
+			)
+			.is_zero());
 		});
 }
 
@@ -1501,15 +1608,24 @@ fn parent_too_far_revoke_and_remove_delegation_error() {
 
 			// removal
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Delegation), &ACCOUNT_00),
+				Balances::balance_on_hold(
+					&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_00
+				),
 				<Test as Config>::Deposit::get()
 			);
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Delegation), &ACCOUNT_02),
+				Balances::balance_on_hold(
+					&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_02
+				),
 				<Test as Config>::Deposit::get()
 			);
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Delegation), &ACCOUNT_01),
+				Balances::balance_on_hold(
+					&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_01
+				),
 				<Test as Config>::Deposit::get()
 			);
 
@@ -1618,8 +1734,16 @@ fn direct_owner_reclaim_deposit_delegation_successful() {
 			assert!(Delegation::delegation_nodes(delegation_id).is_none());
 
 			// We have released all the deposits by deleting the root node.
-			assert!(Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Delegation), &ACCOUNT_00).is_zero());
-			assert!(Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Delegation), &ACCOUNT_01).is_zero());
+			assert!(Balances::balance_on_hold(
+				&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+				&ACCOUNT_00
+			)
+			.is_zero());
+			assert!(Balances::balance_on_hold(
+				&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+				&ACCOUNT_01
+			)
+			.is_zero());
 		});
 }
 
@@ -1652,11 +1776,17 @@ fn parent_owner_reclaim_deposit_error() {
 			// Parent should not be able to claim the deposit for the child delegation
 			// directly
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Delegation), &ACCOUNT_00),
+				Balances::balance_on_hold(
+					&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_00
+				),
 				2 * <Test as Config>::Deposit::get()
 			);
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Delegation), &ACCOUNT_01),
+				Balances::balance_on_hold(
+					&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_01
+				),
 				<Test as Config>::Deposit::get()
 			);
 			assert_noop!(
@@ -2098,7 +2228,10 @@ fn remove_single_hierarchy() {
 			assert!(Delegation::delegation_hierarchies(hierarchy_root_id).is_some());
 			assert!(Delegation::delegation_nodes(hierarchy_root_id).is_some());
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Delegation), &ACCOUNT_00),
+				Balances::balance_on_hold(
+					&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_00
+				),
 				<Test as Config>::Deposit::get()
 			);
 
@@ -2118,7 +2251,11 @@ fn remove_single_hierarchy() {
 			));
 			assert!(Delegation::delegation_hierarchies(hierarchy_root_id).is_none());
 			assert!(Delegation::delegation_nodes(hierarchy_root_id).is_none());
-			assert!(Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Delegation), &ACCOUNT_00).is_zero());
+			assert!(Balances::balance_on_hold(
+				&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+				&ACCOUNT_00
+			)
+			.is_zero());
 		});
 }
 
@@ -2169,15 +2306,24 @@ fn remove_children_gas_runs_out() {
 		])
 		.build_and_execute_with_sanity_tests(|| {
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Delegation), &ACCOUNT_00),
+				Balances::balance_on_hold(
+					&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_00
+				),
 				<Test as Config>::Deposit::get()
 			);
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Delegation), &ACCOUNT_01),
+				Balances::balance_on_hold(
+					&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_01
+				),
 				3 * <Test as Config>::Deposit::get()
 			);
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Delegation), &ACCOUNT_02),
+				Balances::balance_on_hold(
+					&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_02
+				),
 				<Test as Config>::Deposit::get()
 			);
 
@@ -2200,15 +2346,24 @@ fn remove_children_gas_runs_out() {
 			assert!(Delegation::delegation_nodes(delegation3_id).is_some());
 			assert!(Delegation::delegation_nodes(delegation4_id).is_some());
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Delegation), &ACCOUNT_00),
+				Balances::balance_on_hold(
+					&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_00
+				),
 				<Test as Config>::Deposit::get()
 			);
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Delegation), &ACCOUNT_01),
+				Balances::balance_on_hold(
+					&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_01
+				),
 				3 * <Test as Config>::Deposit::get()
 			);
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Delegation), &ACCOUNT_02),
+				Balances::balance_on_hold(
+					&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_02
+				),
 				<Test as Config>::Deposit::get()
 			);
 
@@ -2222,9 +2377,21 @@ fn remove_children_gas_runs_out() {
 			assert!(Delegation::delegation_nodes(delegation1_id).is_none());
 			assert!(Delegation::delegation_nodes(delegation2_id).is_none());
 			assert!(Delegation::delegation_nodes(delegation3_id).is_none());
-			assert!(Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Delegation), &ACCOUNT_00).is_zero());
-			assert!(Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Delegation), &ACCOUNT_01).is_zero());
-			assert!(Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Delegation), &ACCOUNT_02).is_zero());
+			assert!(Balances::balance_on_hold(
+				&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+				&ACCOUNT_00
+			)
+			.is_zero());
+			assert!(Balances::balance_on_hold(
+				&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+				&ACCOUNT_01
+			)
+			.is_zero());
+			assert!(Balances::balance_on_hold(
+				&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+				&ACCOUNT_02
+			)
+			.is_zero());
 		});
 }
 
@@ -2263,10 +2430,17 @@ fn test_change_deposit_owner() {
 		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
 		.build_and_execute_with_sanity_tests(|| {
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Delegation), &ACCOUNT_00),
+				Balances::balance_on_hold(
+					&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_00
+				),
 				<Test as Config>::Deposit::get() * 3
 			);
-			assert!(Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Delegation), &ACCOUNT_01).is_zero());
+			assert!(Balances::balance_on_hold(
+				&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+				&ACCOUNT_01
+			)
+			.is_zero());
 			assert_ok!(Delegation::change_deposit_owner(
 				DoubleOrigin(ACCOUNT_01, delegate).into(),
 				delegation_id
@@ -2274,11 +2448,17 @@ fn test_change_deposit_owner() {
 
 			// ACCOUNT_00 has still one deposit (there are two nodes)
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Delegation), &ACCOUNT_00),
+				Balances::balance_on_hold(
+					&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_00
+				),
 				<Test as Config>::Deposit::get() * 2
 			);
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Delegation), &ACCOUNT_01),
+				Balances::balance_on_hold(
+					&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_01
+				),
 				<Test as Config>::Deposit::get()
 			);
 		});
@@ -2309,10 +2489,17 @@ fn test_change_deposit_owner_insufficient_balance() {
 		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
 		.build_and_execute_with_sanity_tests(|| {
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Delegation), &ACCOUNT_00),
+				Balances::balance_on_hold(
+					&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_00
+				),
 				<Test as Config>::Deposit::get() * 3
 			);
-			assert!(Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Delegation), &ACCOUNT_01).is_zero());
+			assert!(Balances::balance_on_hold(
+				&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+				&ACCOUNT_01
+			)
+			.is_zero());
 			assert_noop!(
 				Delegation::change_deposit_owner(DoubleOrigin(ACCOUNT_01, delegate).into(), delegation_id),
 				TokenError::CannotCreateHold
@@ -2410,7 +2597,10 @@ fn test_update_deposit() {
 		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
 		.build_and_execute_with_sanity_tests(|| {
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Delegation), &ACCOUNT_00),
+				Balances::balance_on_hold(
+					&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_00
+				),
 				<Test as Config>::Deposit::get() * 3
 			);
 			assert_ok!(Delegation::update_deposit(
@@ -2420,7 +2610,10 @@ fn test_update_deposit() {
 
 			// ACCOUNT_00 has still one deposit (there are two nodes)
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Delegation), &ACCOUNT_00),
+				Balances::balance_on_hold(
+					&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_00
+				),
 				<Test as Config>::Deposit::get() * 2
 			);
 		});
@@ -2451,7 +2644,10 @@ fn test_update_deposit_unauthorized() {
 		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
 		.build_and_execute_with_sanity_tests(|| {
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Delegation), &ACCOUNT_00),
+				Balances::balance_on_hold(
+					&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_00
+				),
 				<Test as Config>::Deposit::get() * 3
 			);
 			assert_noop!(

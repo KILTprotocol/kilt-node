@@ -57,7 +57,7 @@ pub mod pallet {
 	use sp_std::{fmt::Debug, vec::Vec};
 
 	use kilt_support::{
-		deposit::{Deposit, HFIdentifier, Pallets},
+		deposit::Deposit,
 		traits::{CallSources, StorageDepositCollector},
 	};
 
@@ -98,6 +98,11 @@ pub mod pallet {
 	#[pallet::getter(fn is_banned)]
 	pub type Banned<T> = StorageMap<_, Blake2_128Concat, Web3NameOf<T>, ()>;
 
+	#[pallet::composite_enum]
+	pub enum HoldReason {
+		Deposit,
+	}
+
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
 		/// The origin allowed to ban names.
@@ -106,8 +111,10 @@ pub mod pallet {
 		type OwnerOrigin: EnsureOrigin<<Self as frame_system::Config>::RuntimeOrigin, Success = Self::OriginSuccess>;
 		/// The type of origin after a successful origin check.
 		type OriginSuccess: CallSources<AccountIdOf<Self>, Web3NameOwnerOf<Self>>;
+		/// Aggregated hold reason.
+		type RuntimeHoldReason: From<HoldReason>;
 		/// The currency type to reserve and release deposits.
-		type Currency: MutateHold<AccountIdOf<Self>, Reason = HFIdentifier>;
+		type Currency: MutateHold<AccountIdOf<Self>, Reason = Self::RuntimeHoldReason>;
 		/// The amount of KILT to deposit to claim a name.
 		#[pallet::constant]
 		type Deposit: Get<BalanceOf<Self>>;
@@ -357,7 +364,7 @@ pub mod pallet {
 			Web3NameStorageDepositCollector::<T>::change_deposit_owner(
 				&name,
 				source.sender(),
-				&HFIdentifier::Deposit(Pallets::W3n),
+				&T::RuntimeHoldReason::from(HoldReason::Deposit),
 			)?;
 
 			Ok(())
@@ -374,7 +381,10 @@ pub mod pallet {
 			let w3n_entry = Owner::<T>::get(&name).ok_or(Error::<T>::NotFound)?;
 			ensure!(w3n_entry.deposit.owner == source, Error::<T>::NotAuthorized);
 
-			Web3NameStorageDepositCollector::<T>::update_deposit(&name, &HFIdentifier::Deposit(Pallets::W3n))?;
+			Web3NameStorageDepositCollector::<T>::update_deposit(
+				&name,
+				&T::RuntimeHoldReason::from(HoldReason::Deposit),
+			)?;
 
 			Ok(())
 		}
@@ -400,7 +410,7 @@ pub mod pallet {
 
 			ensure!(
 				<T::Currency as InspectHold<AccountIdOf<T>>>::can_hold(
-					&HFIdentifier::Deposit(Pallets::W3n),
+					&T::RuntimeHoldReason::from(HoldReason::Deposit),
 					deposit_payer,
 					T::Deposit::get()
 				),
@@ -429,7 +439,7 @@ pub mod pallet {
 			kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
 				deposit.owner.clone(),
 				deposit.amount,
-				&HFIdentifier::Deposit(Pallets::W3n),
+				&T::RuntimeHoldReason::from(HoldReason::Deposit),
 			)?;
 
 			Names::<T>::insert(&owner, name.clone());
@@ -481,7 +491,7 @@ pub mod pallet {
 			// Should never fail since we checked in the preconditions
 			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
 				&name_ownership.deposit,
-				&HFIdentifier::Deposit(Pallets::W3n),
+				&T::RuntimeHoldReason::from(HoldReason::Deposit),
 			)?;
 
 			Ok(name_ownership)

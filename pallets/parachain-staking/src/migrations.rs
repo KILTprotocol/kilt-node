@@ -20,14 +20,13 @@ use frame_support::{
 	traits::{fungible::freeze::Mutate as MutateFreeze, Get, LockableCurrency, OnRuntimeUpgrade, ReservableCurrency},
 	weights::Weight,
 };
-use kilt_support::deposit::HFIdentifier;
 use pallet_balances::{BalanceLock, Freezes, IdAmount, Locks};
 use sp_runtime::SaturatedConversion;
 use sp_std::marker::PhantomData;
 
 use crate::{
 	types::{AccountIdOf, CurrencyOf},
-	Config, STAKING_ID,
+	Config, FreezeReason, STAKING_ID,
 };
 
 pub struct BalanceMigration<T>(PhantomData<T>);
@@ -111,7 +110,7 @@ fn update_or_create_freeze<T: Config>(
 
 	let result = if let Some(IdAmount { amount, .. }) = freezes
 		.iter()
-		.find(|freeze| &freeze.id == <T as crate::Config>::Identifier::from(HFIdentifier::Staking).as_ref())
+		.find(|freeze| freeze.id == <T as crate::Config>::FreezeIdentifier::from(FreezeReason::Staking))
 	{
 		let total_lock = lock
 			.amount
@@ -119,13 +118,13 @@ fn update_or_create_freeze<T: Config>(
 			.saturating_add((*amount).saturated_into());
 
 		<CurrencyOf<T> as MutateFreeze<AccountIdOf<T>>>::extend_freeze(
-			&HFIdentifier::Staking,
+			&<T as crate::Config>::FreezeIdentifier::from(FreezeReason::Staking),
 			&user_id,
 			total_lock.saturated_into(),
 		)
 	} else {
 		<CurrencyOf<T> as MutateFreeze<AccountIdOf<T>>>::set_freeze(
-			&HFIdentifier::Staking,
+			&<T as crate::Config>::FreezeIdentifier::from(FreezeReason::Staking),
 			&user_id,
 			lock.amount.saturated_into(),
 		)

@@ -69,7 +69,7 @@ pub mod pallet {
 
 	pub use ctype::CtypeHashOf;
 	use kilt_support::{
-		deposit::{Deposit, HFIdentifier, Pallets},
+		deposit::Deposit,
 		traits::{CallSources, StorageDepositCollector},
 	};
 
@@ -110,6 +110,11 @@ pub mod pallet {
 	pub type InputCredentialOf<T> =
 		Credential<CtypeHashOf<T>, InputSubjectIdOf<T>, InputClaimsContentOf<T>, <T as Config>::AccessControl>;
 
+	#[pallet::composite_enum]
+	pub enum HoldReason {
+		Deposit,
+	}
+
 	#[pallet::config]
 	pub trait Config: frame_system::Config + ctype::Config {
 		/// The access control logic.
@@ -120,6 +125,8 @@ pub mod pallet {
 				CtypeHashOf<Self>,
 				CredentialIdOf<Self>,
 			>;
+
+		type RuntimeHoldReason: From<HoldReason>;
 		/// The identifier of the credential attester.
 		type AttesterId: Parameter + MaxEncodedLen;
 		/// The identifier of the authorization info to perform access control
@@ -135,7 +142,7 @@ pub mod pallet {
 		/// The type of a credential identifier.
 		type CredentialId: Parameter + MaxEncodedLen;
 		/// The currency that is used to reserve funds for each credential.
-		type Currency: MutateHold<AccountIdOf<Self>, Reason = HFIdentifier>;
+		type Currency: MutateHold<AccountIdOf<Self>, Reason = Self::RuntimeHoldReason>;
 		/// The type of the origin when successfully converted from the outer
 		/// origin.
 		type OriginSuccess: CallSources<Self::AccountId, AttesterOf<Self>>;
@@ -302,7 +309,7 @@ pub mod pallet {
 			let deposit = kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
 				payer,
 				deposit_amount,
-				&HFIdentifier::Deposit(Pallets::PublicCredentials),
+				&T::RuntimeHoldReason::from(HoldReason::Deposit),
 			)
 			.map_err(|_| Error::<T>::UnableToPayFees)?;
 
@@ -521,7 +528,7 @@ pub mod pallet {
 			PublicCredentialDepositCollector::<T>::change_deposit_owner(
 				&credential_id,
 				source.sender(),
-				&HFIdentifier::Deposit(Pallets::PublicCredentials),
+				&T::RuntimeHoldReason::from(HoldReason::Deposit),
 			)?;
 
 			Ok(())
@@ -540,7 +547,7 @@ pub mod pallet {
 
 			PublicCredentialDepositCollector::<T>::update_deposit(
 				&credential_id,
-				&HFIdentifier::Deposit(Pallets::PublicCredentials),
+				&T::RuntimeHoldReason::from(HoldReason::Deposit),
 			)?;
 
 			Ok(())
@@ -557,7 +564,7 @@ pub mod pallet {
 		) -> DispatchResult {
 			kilt_support::free_deposit::<T::AccountId, CurrencyOf<T>>(
 				&credential.deposit,
-				&HFIdentifier::Deposit(Pallets::PublicCredentials),
+				&T::RuntimeHoldReason::from(HoldReason::Deposit),
 			)?;
 			Credentials::<T>::remove(&credential_subject, &credential_id);
 			CredentialSubjects::<T>::remove(&credential_id);

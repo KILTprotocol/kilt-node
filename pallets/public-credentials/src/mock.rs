@@ -20,11 +20,11 @@ use frame_support::traits::Get;
 use parity_scale_codec::Encode;
 use sp_runtime::traits::Hash;
 
-use kilt_support::deposit::{Deposit, HFIdentifier, Pallets};
+use kilt_support::deposit::Deposit;
 
 use crate::{
 	AccountIdOf, AttesterOf, BalanceOf, Config, CredentialEntryOf, CredentialIdOf, CredentialSubjects, Credentials,
-	CtypeHashOf, CurrencyOf, InputClaimsContentOf, InputCredentialOf, InputSubjectIdOf,
+	CtypeHashOf, CurrencyOf, HoldReason, InputClaimsContentOf, InputCredentialOf, InputSubjectIdOf,
 };
 
 // Generate a public credential using a many Default::default() as possible.
@@ -79,7 +79,7 @@ pub(crate) fn insert_public_credentials<T: Config>(
 	kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
 		credential_entry.deposit.owner.clone(),
 		credential_entry.deposit.amount,
-		&HFIdentifier::Deposit(Pallets::PublicCredentials),
+		&T::RuntimeHoldReason::from(HoldReason::Deposit),
 	)
 	.expect("Attester should have enough balance");
 
@@ -110,10 +110,7 @@ pub(crate) mod runtime {
 		DispatchError, MultiSignature, MultiSigner,
 	};
 
-	use kilt_support::{
-		deposit::HFIdentifier,
-		mock::{mock_origin, SubjectId},
-	};
+	use kilt_support::mock::{mock_origin, SubjectId};
 
 	use ctype::{CtypeCreatorOf, CtypeEntryOf, CtypeHashOf};
 
@@ -284,7 +281,7 @@ pub(crate) mod runtime {
 			Ctype: ctype::{Pallet, Call, Storage, Event<T>},
 			Balances: pallet_balances::{Pallet, Call, Storage, Event<T>},
 			MockOrigin: mock_origin::{Pallet, Origin<T>},
-			PublicCredentials: crate::{Pallet, Call, Storage, Event<T>},
+			PublicCredentials: crate::{Pallet, Call, Storage,HoldReason, Event<T>},
 		}
 	);
 
@@ -323,8 +320,8 @@ pub(crate) mod runtime {
 	}
 
 	impl pallet_balances::Config for Test {
-		type FreezeIdentifier = HFIdentifier;
-		type HoldIdentifier = HFIdentifier;
+		type FreezeIdentifier = RuntimeFreezeReason;
+		type HoldIdentifier = RuntimeHoldReason;
 		type MaxFreezes = ConstU32<10>;
 		type MaxHolds = ConstU32<10>;
 		type Balance = Balance;
@@ -356,6 +353,7 @@ pub(crate) mod runtime {
 		type AttesterId = SubjectId;
 		type AuthorizationId = SubjectId;
 		type CredentialId = Hash;
+		type RuntimeHoldReason = RuntimeHoldReason;
 		type CredentialHash = BlakeTwo256;
 		type Currency = Balances;
 		type Deposit = ConstU128<{ 10 * MILLI_UNIT }>;

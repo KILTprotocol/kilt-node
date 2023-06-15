@@ -23,7 +23,7 @@ use frame_support::{
 	traits::Get,
 	RuntimeDebug,
 };
-use kilt_support::deposit::{Deposit, HFIdentifier, Pallets};
+use kilt_support::deposit::Deposit;
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen, WrapperTypeEncode};
 use scale_info::TypeInfo;
 use sp_core::{ecdsa, ed25519, sr25519};
@@ -37,7 +37,7 @@ use crate::{
 	errors::{self, DidError},
 	service_endpoints::DidEndpoint,
 	utils, AccountIdOf, BalanceOf, BlockNumberOf, Config, CurrencyOf, DidCallableOf, DidEndpointsCount,
-	DidIdentifierOf, KeyIdOf, Payload,
+	DidIdentifierOf, HoldReason, KeyIdOf, Payload,
 };
 
 /// Types of verification keys a DID can control.
@@ -348,7 +348,7 @@ impl<T: Config> DidDetails<T> {
 				kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
 					self.deposit.owner.clone(),
 					deposit_to_reserve,
-					&HFIdentifier::Deposit(Pallets::Did),
+					&T::RuntimeHoldReason::from(HoldReason::Deposit),
 				)?;
 				self.deposit.amount = self.deposit.amount.saturating_add(deposit_to_reserve);
 			}
@@ -360,7 +360,7 @@ impl<T: Config> DidDetails<T> {
 				};
 				kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
 					&deposit,
-					&HFIdentifier::Deposit(Pallets::Did),
+					&T::RuntimeHoldReason::from(HoldReason::Deposit),
 				)?;
 				self.deposit.amount = self.deposit.amount.saturating_sub(deposit_to_release);
 			}
@@ -409,7 +409,7 @@ impl<T: Config> DidDetails<T> {
 		kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
 			details.submitter,
 			deposit_amount,
-			&HFIdentifier::Deposit(Pallets::Did),
+			&T::RuntimeHoldReason::from(HoldReason::Deposit),
 		)?;
 
 		Ok(new_did_details)

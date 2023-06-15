@@ -27,7 +27,6 @@ use frame_support::{
 	BoundedVec,
 };
 use kilt_runtime_api_staking::StakingRates;
-use kilt_support::deposit::HFIdentifier;
 use pallet_authorship::EventHandler;
 use pallet_balances::{Error as BalancesError, Freezes, IdAmount};
 use pallet_session::{SessionManager, ShouldEndSession};
@@ -42,7 +41,7 @@ use crate::{
 	types::{
 		BalanceOf, Candidate, CandidateStatus, DelegationCounter, Delegator, RoundInfo, Stake, StakeOf, TotalStake,
 	},
-	CandidatePool, Config, Error, Event, Event as StakeEvent, InflationInfo, RewardRate, StakingInfo,
+	CandidatePool, Config, Error, Event, Event as StakeEvent, FreezeReason, InflationInfo, RewardRate, StakingInfo,
 };
 
 #[test]
@@ -2128,7 +2127,7 @@ fn unlock_unstaked() {
 				BoundedBTreeMap::new();
 			assert_ok!(unstaking.try_insert(3, 100));
 			let freeze = IdAmount {
-				id: HFIdentifier::Staking,
+				id: <Test as Config>::FreezeIdentifier::from(FreezeReason::Staking),
 				amount: 100,
 			};
 
@@ -2185,7 +2184,7 @@ fn unlock_unstaked() {
 				BoundedBTreeMap::new();
 			assert_ok!(unstaking.try_insert(3, 10));
 			let mut lock = IdAmount {
-				id: HFIdentifier::Staking,
+				id: <Test as Config>::FreezeIdentifier::from(FreezeReason::Staking),
 				amount: 10,
 			};
 			assert_eq!(StakePallet::unstaking(2), unstaking);
@@ -2243,7 +2242,7 @@ fn unlock_unstaked() {
 				BoundedBTreeMap::new();
 			assert_ok!(unstaking.try_insert(3, 100));
 			let mut lock = IdAmount {
-				id: HFIdentifier::Staking,
+				id: <Test as Config>::FreezeIdentifier::from(FreezeReason::Staking),
 				amount: 100,
 			};
 			assert_eq!(StakePallet::unstaking(2), unstaking);
@@ -2317,7 +2316,7 @@ fn unlock_unstaked() {
 				BoundedBTreeMap::new();
 			assert_ok!(unstaking.try_insert(3, 60));
 			let mut lock = IdAmount {
-				id: HFIdentifier::Staking,
+				id: <Test as Config>::FreezeIdentifier::from(FreezeReason::Staking),
 				amount: 200,
 			};
 			assert_eq!(Freezes::<Test>::get(1), vec![lock.clone()]);

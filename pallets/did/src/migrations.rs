@@ -20,15 +20,12 @@ use frame_support::{
 	traits::{Get, OnRuntimeUpgrade},
 	weights::Weight,
 };
-use kilt_support::{
-	deposit::{HFIdentifier, Pallets},
-	migration::{has_user_holds, switch_reserved_to_hold},
-};
+use kilt_support::migration::{has_user_holds, switch_reserved_to_hold};
 use log;
 use sp_runtime::SaturatedConversion;
 use sp_std::marker::PhantomData;
 
-use crate::{did_details::DidDetails, AccountIdOf, Config, CurrencyOf, Did};
+use crate::{did_details::DidDetails, AccountIdOf, Config, CurrencyOf, Did, HoldReason};
 
 pub struct BalanceMigration<T>(PhantomData<T>);
 
@@ -52,7 +49,7 @@ impl<T: crate::pallet::Config> OnRuntimeUpgrade for BalanceMigration<T> {
 			.map(|details: DidDetails<T>| {
 				has_user_holds::<AccountIdOf<T>, CurrencyOf<T>>(
 					&details.deposit.owner,
-					&HFIdentifier::Deposit(Pallets::Did),
+					&T::RuntimeHoldReason::from(HoldReason::Deposit),
 				)
 			})
 			.all(|user| user);
@@ -69,9 +66,11 @@ impl<T: crate::pallet::Config> OnRuntimeUpgrade for BalanceMigration<T> {
 		use kilt_support::test_utils::log_and_return_error_message;
 
 		Did::<T>::iter().try_for_each(|(key, details)| -> Result<(), &'static str> {
-			let hold_balance: u128 =
-				<T as Config>::Currency::balance_on_hold(&HFIdentifier::Deposit(Pallets::Did), &details.deposit.owner)
-					.saturated_into();
+			let hold_balance: u128 = <T as Config>::Currency::balance_on_hold(
+				&T::RuntimeHoldReason::from(HoldReason::Deposit),
+				&details.deposit.owner,
+			)
+			.saturated_into();
 			ensure!(
 				details.deposit.amount.saturated_into::<u128>() <= hold_balance,
 				log_and_return_error_message(scale_info::prelude::format!(
@@ -98,7 +97,7 @@ fn is_upgraded<T: Config>() -> bool {
 		.map(|details: DidDetails<T>| {
 			has_user_holds::<AccountIdOf<T>, CurrencyOf<T>>(
 				&details.deposit.owner,
-				&HFIdentifier::Deposit(Pallets::Did),
+				&T::RuntimeHoldReason::from(HoldReason::Deposit),
 			)
 		})
 		.all(|user| user)
@@ -110,7 +109,7 @@ fn do_migration<T: Config>() -> Weight {
 			let deposit = did_details.deposit;
 			let error = switch_reserved_to_hold::<AccountIdOf<T>, CurrencyOf<T>>(
 				deposit.owner,
-				&HFIdentifier::Deposit(Pallets::Did),
+				&T::RuntimeHoldReason::from(HoldReason::Deposit),
 				deposit.amount.saturated_into(),
 			);
 

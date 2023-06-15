@@ -20,15 +20,12 @@ use ctype::mock::get_ctype_hash;
 use frame_support::{assert_noop, assert_ok, traits::fungible::InspectHold};
 use sp_runtime::{traits::Zero, DispatchError, TokenError};
 
-use kilt_support::{
-	deposit::{Deposit, HFIdentifier, Pallets},
-	mock::mock_origin::DoubleOrigin,
-};
+use kilt_support::{deposit::Deposit, mock::mock_origin::DoubleOrigin};
 
 use crate::{
 	self as attestation,
 	mock::{runtime::Balances, *},
-	AttestationAccessControl, AttesterOf, Config, Error,
+	AttestationAccessControl, AttesterOf, Config, Error, HoldReason,
 };
 
 // #############################################################################
@@ -187,7 +184,10 @@ fn test_revoke_remove() {
 
 			assert!(stored_attestation.revoked);
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Attestation), &ACCOUNT_00),
+				Balances::balance_on_hold(
+					&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_00
+				),
 				<Test as Config>::Deposit::get()
 			);
 
@@ -197,7 +197,11 @@ fn test_revoke_remove() {
 				None
 			));
 			assert!(Attestation::attestations(claim_hash).is_none());
-			assert!(Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Attestation), &ACCOUNT_00).is_zero());
+			assert!(Balances::balance_on_hold(
+				&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+				&ACCOUNT_00
+			)
+			.is_zero());
 		});
 }
 
@@ -226,7 +230,10 @@ fn test_authorized_revoke() {
 
 			assert!(stored_attestation.revoked);
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Attestation), &ACCOUNT_00),
+				Balances::balance_on_hold(
+					&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_00
+				),
 				<Test as Config>::Deposit::get()
 			);
 		});
@@ -385,7 +392,11 @@ fn test_remove_not_found() {
 		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
 		.with_ctypes(vec![(attestation.ctype_hash, attester.clone())])
 		.build_and_execute_with_sanity_tests(|| {
-			assert!(Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Attestation), &ACCOUNT_00).is_zero());
+			assert!(Balances::balance_on_hold(
+				&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+				&ACCOUNT_00
+			)
+			.is_zero());
 			assert_noop!(
 				Attestation::remove(DoubleOrigin(ACCOUNT_00, attester.clone()).into(), claim_hash, None),
 				attestation::Error::<Test>::NotFound
@@ -410,7 +421,10 @@ fn test_reclaim_deposit() {
 		.with_attestations(vec![(claim_hash, attestation)])
 		.build_and_execute_with_sanity_tests(|| {
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Attestation), &ACCOUNT_00),
+				Balances::balance_on_hold(
+					&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_00
+				),
 				<Test as Config>::Deposit::get()
 			);
 			assert_ok!(Attestation::reclaim_deposit(
@@ -422,7 +436,11 @@ fn test_reclaim_deposit() {
 				claim_hash
 			));
 			assert!(Attestation::attestations(claim_hash).is_none());
-			assert!(Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Attestation), &ACCOUNT_00).is_zero());
+			assert!(Balances::balance_on_hold(
+				&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+				&ACCOUNT_00
+			)
+			.is_zero());
 		});
 }
 
@@ -438,7 +456,10 @@ fn test_reclaim_deposit_authorization() {
 		.with_attestations(vec![(claim_hash, attestation)])
 		.build_and_execute_with_sanity_tests(|| {
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Attestation), &ACCOUNT_00),
+				Balances::balance_on_hold(
+					&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_00
+				),
 				<Test as Config>::Deposit::get()
 			);
 			assert_ok!(Attestation::reclaim_deposit(
@@ -446,7 +467,11 @@ fn test_reclaim_deposit_authorization() {
 				claim_hash
 			));
 			assert!(Attestation::attestations(claim_hash).is_none());
-			assert!(Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Attestation), &ACCOUNT_00).is_zero());
+			assert!(Balances::balance_on_hold(
+				&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+				&ACCOUNT_00
+			)
+			.is_zero());
 		});
 }
 
@@ -505,7 +530,10 @@ fn test_change_deposit_owner() {
 		.with_attestations(vec![(claim_hash, attestation)])
 		.build_and_execute_with_sanity_tests(|| {
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Attestation), &ACCOUNT_00),
+				Balances::balance_on_hold(
+					&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_00
+				),
 				<Test as Config>::Deposit::get()
 			);
 			assert_ok!(Attestation::change_deposit_owner(
@@ -521,9 +549,16 @@ fn test_change_deposit_owner() {
 					amount: <Test as Config>::Deposit::get()
 				}
 			);
-			assert!(Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Attestation), &ACCOUNT_00).is_zero());
+			assert!(Balances::balance_on_hold(
+				&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+				&ACCOUNT_00
+			)
+			.is_zero());
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Attestation), &ACCOUNT_01),
+				Balances::balance_on_hold(
+					&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_01
+				),
 				<Test as Config>::Deposit::get()
 			);
 		});
@@ -543,7 +578,10 @@ fn test_change_deposit_owner_insufficient_balance() {
 		.with_attestations(vec![(claim_hash, attestation)])
 		.build_and_execute_with_sanity_tests(|| {
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Attestation), &ACCOUNT_00),
+				Balances::balance_on_hold(
+					&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_00
+				),
 				<Test as Config>::Deposit::get()
 			);
 			assert_noop!(
@@ -606,7 +644,10 @@ fn test_update_deposit() {
 		.with_attestations(vec![(claim_hash, attestation)])
 		.build_and_execute_with_sanity_tests(|| {
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Attestation), &ACCOUNT_00),
+				Balances::balance_on_hold(
+					&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_00
+				),
 				<Test as Config>::Deposit::get() * 2
 			);
 			assert_ok!(Attestation::update_deposit(
@@ -625,7 +666,10 @@ fn test_update_deposit() {
 			// old deposit was 2x Deposit::get(), new deposit should be the the default
 			// deposit value.
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Attestation), &ACCOUNT_00),
+				Balances::balance_on_hold(
+					&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_00
+				),
 				<Test as Config>::Deposit::get()
 			);
 		});
@@ -648,7 +692,10 @@ fn test_update_deposit_unauthorized() {
 		.with_attestations(vec![(claim_hash, attestation)])
 		.build_and_execute_with_sanity_tests(|| {
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::Attestation), &ACCOUNT_00),
+				Balances::balance_on_hold(
+					&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_00
+				),
 				<Test as Config>::Deposit::get() * 2
 			);
 			assert_noop!(
