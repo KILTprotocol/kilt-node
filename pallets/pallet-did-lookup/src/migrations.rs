@@ -22,17 +22,15 @@ use frame_support::{
 	traits::{Get, GetStorageVersion, OnRuntimeUpgrade, ReservableCurrency, StorageVersion},
 	weights::Weight,
 };
-use kilt_support::{
-	deposit::{HFIdentifier, Pallets},
-	migration::{has_user_holds, switch_reserved_to_hold},
-};
+use kilt_support::migration::{has_user_holds, switch_reserved_to_hold};
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_runtime::AccountId32;
 use sp_std::marker::PhantomData;
 
 use crate::{
-	linkable_account::LinkableAccountId, AccountIdOf, Config, ConnectedDids, ConnectionRecordOf, CurrencyOf, Pallet,
+	linkable_account::LinkableAccountId, AccountIdOf, Config, ConnectedDids, ConnectionRecordOf, CurrencyOf,
+	HoldReason, Pallet,
 };
 
 /// A unified log target for did-lookup-migration operations.
@@ -146,7 +144,7 @@ where
 			.map(|details| {
 				has_user_holds::<AccountIdOf<T>, CurrencyOf<T>>(
 					&details.deposit.owner,
-					&HFIdentifier::Deposit(Pallets::DidLookup),
+					&T::RuntimeHoldReason::from(HoldReason::Deposit),
 				)
 			})
 			.all(|user| user);
@@ -169,7 +167,7 @@ where
 
 		ConnectedDids::<T>::iter().try_for_each(|(key, details)| -> Result<(), &'static str> {
 			let hold_balance: u128 = <T as Config>::Currency::balance_on_hold(
-				&HFIdentifier::Deposit(Pallets::DidLookup),
+				&T::RuntimeHoldReason::from(HoldReason::Deposit),
 				&details.deposit.owner,
 			)
 			.saturated_into();
@@ -200,7 +198,7 @@ where
 		.map(|details: ConnectionRecordOf<T>| {
 			has_user_holds::<AccountIdOf<T>, CurrencyOf<T>>(
 				&details.deposit.owner,
-				&HFIdentifier::Deposit(Pallets::DidLookup),
+				&T::RuntimeHoldReason::from(HoldReason::Deposit),
 			)
 		})
 		.all(|user| user)
@@ -215,7 +213,7 @@ where
 			let deposit = did_details.deposit;
 			let error = switch_reserved_to_hold::<AccountIdOf<T>, CurrencyOf<T>>(
 				deposit.owner,
-				&HFIdentifier::Deposit(Pallets::DidLookup),
+				&T::RuntimeHoldReason::from(HoldReason::Deposit),
 				deposit.amount,
 			);
 

@@ -210,7 +210,10 @@ pub mod pallet {
 			> + LockableCurrency<Self::AccountId, Balance = Self::CurrencyBalance>
 			+ Eq;
 
-		type FreezeIdentifier: From<FreezeReason> + PartialEq;
+		type FreezeIdentifier: From<FreezeReason>
+			+ PartialEq
+			+ Eq
+			+ Into<<Self as pallet_balances::Config>::FreezeIdentifier>;
 
 		/// Just the `Currency::Balance` type; we have this item to allow us to
 		/// constrain it to `From<u64>`.
@@ -2330,12 +2333,11 @@ pub mod pallet {
 
 			// iterate balance freezes to retrieve amount of freezed balance
 			let freezes = Freezes::<T>::get(who);
-			total_freezed = if let Some(IdAmount { amount, .. }) =
-				freezes
-					.iter()
-					.find(|l: IdAmount<<T as pallet::Config>::FreezeIdentifier, _>| {
-						l.id == <T as pallet::Config>::FreezeIdentifier::from(FreezeReason::Staking)
-					}) {
+
+			total_freezed = if let Some(IdAmount { amount, .. }) = freezes
+				.iter()
+				.find(|l| l.id == <T as pallet::Config>::FreezeIdentifier::from(FreezeReason::Staking).into())
+			{
 				amount.saturating_sub(total_unfreezed.into()).into()
 			} else {
 				// should never fail to find the lock since we checked whether unstaking is not

@@ -50,7 +50,7 @@ use sp_version::RuntimeVersion;
 use xcm_executor::XcmExecutor;
 
 use delegation::DelegationAc;
-use kilt_support::{deposit::HFIdentifier, traits::ItemFilter};
+use kilt_support::traits::ItemFilter;
 use pallet_did_lookup::linkable_account::LinkableAccountId;
 pub use parachain_staking::InflationInfo;
 pub use public_credentials;
@@ -197,14 +197,15 @@ impl pallet_indices::Config for Runtime {
 }
 
 impl pallet_balances::Config for Runtime {
-	type FreezeIdentifier = HFIdentifier;
-	type HoldIdentifier = HFIdentifier;
+	type FreezeIdentifier = RuntimeFreezeReason;
+	type HoldIdentifier = RuntimeHoldReason;
 	type MaxFreezes = MaxFreezes;
 	type MaxHolds = MaxHolds;
 	/// The type for recording an account's balance.
 	type Balance = Balance;
 	/// The ubiquitous event type.
 	type RuntimeEvent = RuntimeEvent;
+	// type DustRemoval = Treasury;
 	type DustRemoval = ();
 	type ExistentialDeposit = ExistentialDeposit;
 	type AccountStore = System;
@@ -432,6 +433,7 @@ parameter_types! {
 	pub const SpendPeriod: BlockNumber = constants::governance::SPEND_PERIOD;
 	pub const Burn: Permill = Permill::zero();
 	pub const MaxApprovals: u32 = 100;
+	pub MaxProposalWeight: Weight = Perbill::from_percent(50) * BlockWeights::get().max_block;
 }
 
 type ApproveOrigin = EitherOfDiverse<
@@ -468,7 +470,7 @@ impl pallet_collective::Config<CouncilCollective> for Runtime {
 	type RuntimeOrigin = RuntimeOrigin;
 	type Proposal = RuntimeCall;
 	type RuntimeEvent = RuntimeEvent;
-	type MaxProposalWeight = ();
+	type MaxProposalWeight = MaxProposalWeight;
 	type MotionDuration = constants::governance::CouncilMotionDuration;
 	type MaxProposals = constants::governance::CouncilMaxProposals;
 	type MaxMembers = constants::governance::CouncilMaxMembers;
@@ -480,7 +482,7 @@ impl pallet_collective::Config<CouncilCollective> for Runtime {
 type TechnicalCollective = pallet_collective::Instance2;
 impl pallet_collective::Config<TechnicalCollective> for Runtime {
 	type RuntimeOrigin = RuntimeOrigin;
-	type MaxProposalWeight = ();
+	type MaxProposalWeight = MaxProposalWeight;
 	type Proposal = RuntimeCall;
 	type RuntimeEvent = RuntimeEvent;
 	type MotionDuration = constants::governance::TechnicalMotionDuration;
@@ -531,6 +533,7 @@ impl pallet_tips::Config for Runtime {
 }
 
 impl attestation::Config for Runtime {
+	type RuntimeHoldReason = RuntimeHoldReason;
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
 
@@ -547,6 +550,7 @@ impl attestation::Config for Runtime {
 
 impl delegation::Config for Runtime {
 	type DelegationEntityId = DidIdentifier;
+	type RuntimeHoldReason = RuntimeHoldReason;
 	type DelegationNodeId = Hash;
 
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
@@ -592,6 +596,7 @@ impl ctype::Config for Runtime {
 impl did::Config for Runtime {
 	type DidIdentifier = DidIdentifier;
 	type RuntimeEvent = RuntimeEvent;
+	type RuntimeHoldReason = RuntimeHoldReason;
 	type RuntimeCall = RuntimeCall;
 	type RuntimeOrigin = RuntimeOrigin;
 	type Currency = Balances;
@@ -625,6 +630,7 @@ impl did::Config for Runtime {
 }
 
 impl pallet_did_lookup::Config for Runtime {
+	type RuntimeHoldReason = RuntimeHoldReason;
 	type RuntimeEvent = RuntimeEvent;
 
 	type DidIdentifier = DidIdentifier;
@@ -639,6 +645,7 @@ impl pallet_did_lookup::Config for Runtime {
 }
 
 impl pallet_web3_names::Config for Runtime {
+	type RuntimeHoldReason = RuntimeHoldReason;
 	type BanOrigin = EnsureRoot<AccountId>;
 	type OwnerOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
@@ -661,7 +668,7 @@ impl pallet_inflation::Config for Runtime {
 }
 
 impl parachain_staking::Config for Runtime {
-	type Identifier = HFIdentifier;
+	type FreezeIdentifier = RuntimeFreezeReason;
 	type RuntimeEvent = RuntimeEvent;
 	type Currency = Balances;
 	type CurrencyBalance = Balance;
@@ -696,6 +703,7 @@ impl pallet_utility::Config for Runtime {
 
 impl public_credentials::Config for Runtime {
 	type AccessControl = PalletAuthorize<DelegationAc<Runtime>>;
+	type RuntimeHoldReason = RuntimeHoldReason;
 	type AttesterId = DidIdentifier;
 	type AuthorizationId = AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>;
 	type CredentialId = Hash;
@@ -1083,8 +1091,8 @@ pub type Executive = frame_executive::Executive<
 		did::migrations::BalanceMigration<Runtime>,
 		pallet_did_lookup::migrations::BalanceMigration<Runtime>,
 		pallet_web3_names::migrations::BalanceMigration<Runtime>,
-		public_credentials::migrations::BalanceMigration<Runtime>,
 		parachain_staking::migrations::BalanceMigration<Runtime>,
+		public_credentials::migrations::BalanceMigration<Runtime>,
 	),
 >;
 

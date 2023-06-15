@@ -20,15 +20,14 @@ use frame_support::{
 	pallet_prelude::DispatchResult,
 	traits::{fungible::hold::Mutate as MutateHold, ReservableCurrency},
 };
-use sp_runtime::SaturatedConversion;
+use sp_runtime::{traits::Zero, SaturatedConversion};
 
 /// Checks some precondition of the migrations.
 pub fn has_user_holds<AccountId, Currency: ReservableCurrency<AccountId> + MutateHold<AccountId>>(
 	owner: &AccountId,
 	reason: &Currency::Reason,
 ) -> bool {
-	Currency::balance_on_hold(reason, owner).saturated_into::<usize>() == 0
-		&& Currency::reserved_balance(owner).saturated_into::<usize>() > 0
+	Currency::balance_on_hold(reason, owner) == Zero::zero() && Currency::reserved_balance(owner) > Zero::zero()
 }
 
 pub fn switch_reserved_to_hold<AccountId, Currency: ReservableCurrency<AccountId> + MutateHold<AccountId>>(

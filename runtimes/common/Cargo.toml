@@ -1,33 +1,27 @@
 [package]
 authors.workspace = true
+description = "Common interfaces, types, constants and functionality for all KILT runtimes."
 documentation.workspace = true
 edition.workspace = true
 homepage.workspace = true
 license-file.workspace = true
+name = "runtime-common"
 readme.workspace = true
 repository.workspace = true
 version.workspace = true
-name = "runtime-common"
-description = "Common interfaces, types, constants and functionality for all KILT runtimes."
 
 [dev-dependencies]
 sp-io = {workspace = true, features = ["std"]}
 
 [dependencies]
 # External dependencies
-parity-scale-codec = {workspace = true, features = ["derive"]}
-log.workspace = true
 kilt-asset-dids.workspace = true
+log.workspace = true
+parity-scale-codec = {workspace = true, features = ["derive"]}
 scale-info = {workspace = true, features = ["derive"]}
 smallvec.workspace = true
 
-# # Internal dependencies
- attestation.workspace = true
-# ctype.workspace = true
-# delegation = {workspace = true, optional = true}
-# did = {workspace = true, optional = true}
-# pallet-did-lookup = {workspace = true, optional = true}
-# pallet-inflation = {workspace = true, optional = true}
+attestation.workspace = true
 kilt-support.workspace = true
 parachain-staking.workspace = true
 public-credentials.workspace = true
@@ -51,22 +45,20 @@ cumulus-primitives-core.workspace = true
 
 # Polkadot dependencies
 polkadot-parachain.workspace = true
-xcm.workspace = true
 xcm-builder.workspace = true
 xcm-executor.workspace = true
+xcm.workspace = true
 
 [features]
 default = ["std"]
 fast-gov = []
 runtime-benchmarks = [
-  "attestation/runtime-benchmarks",
-  # "ctype/runtime-benchmarks",
+  "attestation/runtime-benchmarks", 
   "frame-support/runtime-benchmarks",
   "frame-system/runtime-benchmarks",
   "kilt-support/runtime-benchmarks",
   "pallet-balances/runtime-benchmarks",
-  "pallet-membership/runtime-benchmarks",
-  # "parachain-staking/runtime-benchmarks",
+  "pallet-membership/runtime-benchmarks", 
   "polkadot-parachain/runtime-benchmarks",
   "public-credentials/runtime-benchmarks",
   "sp-runtime/runtime-benchmarks",
@@ -75,8 +67,7 @@ runtime-benchmarks = [
 ]
 std = [
   "attestation/std",
-  "parity-scale-codec/std",
-  # "ctype/std",
+  "parity-scale-codec/std", # "ctype/std",
   "cumulus-primitives-core/std",
   "frame-support/std",
   "frame-system/std",
@@ -102,15 +93,11 @@ std = [
 ]
 try-runtime = [
   "attestation/try-runtime",
-  # "delegation",
-  # "did",
   "frame-support/try-runtime",
   "frame-system/try-runtime",
   "kilt-support/try-runtime",
   "pallet-authorship/try-runtime",
   "pallet-balances/try-runtime",
-  # "pallet-did-lookup",
-  # "pallet-inflation",
   "pallet-membership/try-runtime",
   "pallet-transaction-payment/try-runtime",
   "parachain-staking/try-runtime",

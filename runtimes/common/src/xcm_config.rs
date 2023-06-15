@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use core::marker::PhantomData;
+use core::{marker::PhantomData, ops::ControlFlow};
 use frame_support::{log, match_types, parameter_types, traits::ProcessMessageError, weights::Weight};
 use polkadot_parachain::primitives::Sibling;
 use xcm::latest::prelude::*;
@@ -64,55 +64,62 @@ where
 /// Reserved funds to the relay chain can't return. See https://github.com/paritytech/polkadot/issues/5233
 pub struct DenyReserveTransferToRelayChain;
 impl ShouldExecute for DenyReserveTransferToRelayChain {
-	fn should_execute<Call>(
+	fn should_execute<RuntimeCall>(
 		origin: &MultiLocation,
-		instructions: &mut [Instruction<Call>],
+		message: &mut [Instruction<RuntimeCall>],
 		_max_weight: Weight,
 		_weight_credit: &mut Weight,
 	) -> Result<(), ProcessMessageError> {
-		if instructions.iter().any(|inst| {
-			matches!(
-				inst,
+		xcm_builder::MatchXcm::match_next_inst_while(
+			xcm_builder::CreateMatcher::matcher(message),
+			|_| true,
+			|inst| match inst {
 				InitiateReserveWithdraw {
 					reserve: MultiLocation {
 						parents: 1,
-						interior: Here
-					},
-					..
-				} | DepositReserveAsset {
-					dest: MultiLocation {
-						parents: 1,
-						interior: Here
-					},
-					..
-				} | TransferReserveAsset {
-					dest: MultiLocation {
-						parents: 1,
-						interior: Here
+						interior: Here,
 					},
 					..
 				}
-			)
-		}) {
-			return Err(ProcessMessageError::Corrupt); // Deny
-		}
+				| DepositReserveAsset {
+					dest: MultiLocation {
+						parents: 1,
+						interior: Here,
+					},
+					..
+				}
+				| TransferReserveAsset {
+					dest: MultiLocation {
+						parents: 1,
+						interior: Here,
+					},
+					..
+				} => {
+					Err(ProcessMessageError::Unsupported) // Deny
+				}
 
-		// Allow reserve transfers to arrive from relay chain
-		if matches!(
-			origin,
-			MultiLocation {
-				parents: 1,
-				interior: Here
-			}
-		) && instructions
-			.iter()
-			.any(|inst| matches!(inst, ReserveAssetDeposited { .. }))
-		{
-			log::warn!(
-				target: "xcm::barriers",
-				"Unexpected ReserveAssetDeposited from the relay chain",
-			);
-		}
+				// An unexpected reserve transfer has arrived from the Relay Chain. Generally,
+				// `IsReserve` should not allow this, but we just log it here.
+				ReserveAssetDeposited { .. }
+					if matches!(
+						origin,
+						MultiLocation {
+							parents: 1,
+							interior: Here
+						}
+					) =>
+				{
+					log::warn!(
+						target: "xcm::barrier",
+						"Unexpected ReserveAssetDeposited from the Relay Chain",
+					);
+					Ok(ControlFlow::Continue(()))
+				}
+
+				_ => Ok(ControlFlow::Continue(())),
+			},
+		)?;
+
 		// Permit everything else
 		Ok(())
 	}

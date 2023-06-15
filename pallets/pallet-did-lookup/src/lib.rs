@@ -64,7 +64,7 @@ pub mod pallet {
 	};
 	use frame_system::pallet_prelude::*;
 	use kilt_support::{
-		deposit::{Deposit, HFIdentifier, Pallets},
+		deposit::Deposit,
 		traits::{CallSources, StorageDepositCollector},
 	};
 	use runtime_common::Balance;
@@ -88,6 +88,10 @@ pub mod pallet {
 
 	pub const STORAGE_VERSION: StorageVersion = StorageVersion::new(4);
 
+	#[pallet::composite_enum]
+	pub enum HoldReason {
+		Deposit,
+	}
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
@@ -101,8 +105,10 @@ pub mod pallet {
 		/// The identifier to which accounts can get associated.
 		type DidIdentifier: Parameter + AsRef<[u8]> + MaxEncodedLen + MaybeSerializeDeserialize;
 
+		type RuntimeHoldReason: From<HoldReason>;
+
 		/// The currency that is used to reserve funds for each did.
-		type Currency: MutateHold<AccountIdOf<Self>, Reason = HFIdentifier, Balance = Balance>;
+		type Currency: MutateHold<AccountIdOf<Self>, Reason = Self::RuntimeHoldReason, Balance = Balance>;
 
 		/// The amount of balance that will be taken for each DID as a deposit
 		/// to incentivise fair use of the on chain storage. The deposit can be
@@ -249,7 +255,7 @@ pub mod pallet {
 
 			ensure!(
 				<T::Currency as InspectHold<AccountIdOf<T>>>::can_hold(
-					&HFIdentifier::Deposit(Pallets::DidLookup),
+					&T::RuntimeHoldReason::from(HoldReason::Deposit),
 					&sender,
 					<T as Config>::Deposit::get()
 				),
@@ -284,7 +290,7 @@ pub mod pallet {
 
 			ensure!(
 				<T::Currency as InspectHold<AccountIdOf<T>>>::can_hold(
-					&HFIdentifier::Deposit(Pallets::DidLookup),
+					&T::RuntimeHoldReason::from(HoldReason::Deposit),
 					&source.sender(),
 					<T as Config>::Deposit::get()
 				),
@@ -375,7 +381,7 @@ pub mod pallet {
 			LinkableAccountDepositCollector::<T>::change_deposit_owner(
 				&account,
 				source.sender(),
-				&HFIdentifier::Deposit(Pallets::DidLookup),
+				&T::RuntimeHoldReason::from(HoldReason::Deposit),
 			)
 		}
 
@@ -390,7 +396,10 @@ pub mod pallet {
 			let record = ConnectedDids::<T>::get(&account).ok_or(Error::<T>::NotFound)?;
 			ensure!(record.deposit.owner == source, Error::<T>::NotAuthorized);
 
-			LinkableAccountDepositCollector::<T>::update_deposit(&account, &HFIdentifier::Deposit(Pallets::DidLookup))
+			LinkableAccountDepositCollector::<T>::update_deposit(
+				&account,
+				&T::RuntimeHoldReason::from(HoldReason::Deposit),
+			)
 		}
 
 		// Old call that was used to migrate
@@ -416,7 +425,7 @@ pub mod pallet {
 			kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
 				record.deposit.owner.clone(),
 				record.deposit.amount,
-				&HFIdentifier::Deposit(Pallets::DidLookup),
+				&T::RuntimeHoldReason::from(HoldReason::Deposit),
 			)?;
 
 			ConnectedDids::<T>::mutate(&account, |did_entry| -> DispatchResult {
@@ -425,7 +434,7 @@ pub mod pallet {
 					Self::deposit_event(Event::<T>::AssociationRemoved(account.clone(), old_connection.did));
 					kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
 						&old_connection.deposit,
-						&HFIdentifier::Deposit(Pallets::DidLookup),
+						&T::RuntimeHoldReason::from(HoldReason::Deposit),
 					)?;
 				}
 				Ok(())
@@ -441,7 +450,7 @@ pub mod pallet {
 				ConnectedAccounts::<T>::remove(&connection.did, &account);
 				kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
 					&connection.deposit,
-					&HFIdentifier::Deposit(Pallets::DidLookup),
+					&T::RuntimeHoldReason::from(HoldReason::Deposit),
 				)?;
 				Self::deposit_event(Event::AssociationRemoved(account, connection.did));
 

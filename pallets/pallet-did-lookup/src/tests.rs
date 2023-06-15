@@ -17,10 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_support::{assert_noop, assert_ok, crypto::ecdsa::ECDSAExt, traits::fungible::InspectHold};
-use kilt_support::{
-	deposit::{Deposit, HFIdentifier, Pallets},
-	mock::mock_origin,
-};
+use kilt_support::{deposit::Deposit, mock::mock_origin};
 use parity_scale_codec::Encode;
 use sha3::{Digest, Keccak256};
 use sp_runtime::{
@@ -35,7 +32,7 @@ use crate::{
 	linkable_account::LinkableAccountId,
 	mock::*,
 	signature::get_wrapped_payload,
-	ConnectedAccounts, ConnectedDids, ConnectionRecord, Error,
+	ConnectedAccounts, ConnectedDids, ConnectionRecord, Error, HoldReason,
 };
 
 #[test]
@@ -60,7 +57,10 @@ fn test_add_association_sender() {
 			);
 			assert!(ConnectedAccounts::<Test>::get(DID_00, LINKABLE_ACCOUNT_00).is_some());
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::DidLookup), &ACCOUNT_00),
+				Balances::balance_on_hold(
+					&<Test as crate::Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_00
+				),
 				<Test as crate::Config>::Deposit::get()
 			);
 
@@ -79,7 +79,10 @@ fn test_add_association_sender() {
 			assert!(ConnectedAccounts::<Test>::get(DID_00, LINKABLE_ACCOUNT_00).is_none());
 			assert!(ConnectedAccounts::<Test>::get(DID_01, LINKABLE_ACCOUNT_00).is_some());
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::DidLookup), &ACCOUNT_00),
+				Balances::balance_on_hold(
+					&<Test as crate::Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_00
+				),
 				<Test as crate::Config>::Deposit::get()
 			);
 		});
@@ -124,7 +127,10 @@ fn test_add_association_account() {
 				ConnectedAccounts::<Test>::get(DID_00, LinkableAccountId::from(account_hash_alice.clone())).is_some()
 			);
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::DidLookup), &ACCOUNT_00),
+				Balances::balance_on_hold(
+					&<Test as crate::Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_00
+				),
 				<Test as crate::Config>::Deposit::get()
 			);
 
@@ -155,7 +161,10 @@ fn test_add_association_account() {
 				ConnectedAccounts::<Test>::get(DID_01, LinkableAccountId::from(account_hash_alice.clone())).is_some()
 			);
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::DidLookup), &ACCOUNT_00),
+				Balances::balance_on_hold(
+					&<Test as crate::Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_00
+				),
 				<Test as crate::Config>::Deposit::get()
 			);
 
@@ -181,11 +190,17 @@ fn test_add_association_account() {
 			);
 			assert!(ConnectedAccounts::<Test>::get(DID_01, LinkableAccountId::from(account_hash_alice)).is_some());
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::DidLookup), &ACCOUNT_00),
+				Balances::balance_on_hold(
+					&<Test as crate::Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_00
+				),
 				0
 			);
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::DidLookup), &ACCOUNT_01),
+				Balances::balance_on_hold(
+					&<Test as crate::Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_01
+				),
 				<Test as crate::Config>::Deposit::get()
 			);
 		});
@@ -229,7 +244,10 @@ fn test_add_eth_association() {
 			);
 			assert!(ConnectedAccounts::<Test>::get(DID_00, LinkableAccountId::from(eth_account)).is_some());
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::DidLookup), &ACCOUNT_00),
+				Balances::balance_on_hold(
+					&<Test as crate::Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_00
+				),
 				<Test as crate::Config>::Deposit::get()
 			);
 		});
@@ -301,7 +319,10 @@ fn test_remove_association_sender() {
 			assert_eq!(ConnectedDids::<Test>::get(LinkableAccountId::from(ACCOUNT_00)), None);
 			assert!(ConnectedAccounts::<Test>::get(DID_01, LinkableAccountId::from(ACCOUNT_00)).is_none());
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::DidLookup), &ACCOUNT_00),
+				Balances::balance_on_hold(
+					&<Test as crate::Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_00
+				),
 				0
 			);
 		});
@@ -339,7 +360,10 @@ fn test_remove_association_account() {
 			assert_eq!(ConnectedDids::<Test>::get(LinkableAccountId::from(ACCOUNT_00)), None);
 			assert!(ConnectedAccounts::<Test>::get(DID_01, LinkableAccountId::from(ACCOUNT_00)).is_none());
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::DidLookup), &ACCOUNT_01),
+				Balances::balance_on_hold(
+					&<Test as crate::Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_01
+				),
 				0
 			);
 		});
@@ -382,7 +406,10 @@ fn test_remove_association_account_not_authorized() {
 				Error::<Test>::NotAuthorized
 			);
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::DidLookup), &ACCOUNT_01),
+				Balances::balance_on_hold(
+					&<Test as crate::Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_01
+				),
 				<Test as crate::Config>::Deposit::get()
 			);
 		});
@@ -402,7 +429,10 @@ fn test_reclaim_deposit() {
 				ACCOUNT_00.into()
 			));
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::DidLookup), &ACCOUNT_01),
+				Balances::balance_on_hold(
+					&<Test as crate::Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_01
+				),
 				0
 			);
 		});
@@ -422,7 +452,10 @@ fn test_reclaim_deposit_not_authorized() {
 				Error::<Test>::NotAuthorized
 			);
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::DidLookup), &ACCOUNT_01),
+				Balances::balance_on_hold(
+					&<Test as crate::Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_01
+				),
 				<Test as crate::Config>::Deposit::get()
 			);
 		});
@@ -444,9 +477,16 @@ fn test_change_deposit_owner() {
 				mock_origin::DoubleOrigin(ACCOUNT_01, DID_00).into(),
 				ACCOUNT_00.into()
 			));
-			assert!(Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::DidLookup), &ACCOUNT_00).is_zero());
+			assert!(Balances::balance_on_hold(
+				&<Test as crate::Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+				&ACCOUNT_00
+			)
+			.is_zero());
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::DidLookup), &ACCOUNT_01),
+				Balances::balance_on_hold(
+					&<Test as crate::Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_01
+				),
 				<Test as crate::Config>::Deposit::get()
 			);
 		})
@@ -514,7 +554,10 @@ fn test_update_deposit() {
 				<Test as crate::Config>::Deposit::get() * 2,
 			);
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::DidLookup), &ACCOUNT_00),
+				Balances::balance_on_hold(
+					&<Test as crate::Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_00
+				),
 				<Test as crate::Config>::Deposit::get() * 2
 			);
 			assert_ok!(DidLookup::update_deposit(
@@ -522,7 +565,10 @@ fn test_update_deposit() {
 				ACCOUNT_00.into()
 			));
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::DidLookup), &ACCOUNT_00),
+				Balances::balance_on_hold(
+					&<Test as crate::Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_00
+				),
 				<Test as crate::Config>::Deposit::get()
 			);
 		})
@@ -543,7 +589,10 @@ fn test_update_deposit_unauthorized() {
 				<Test as crate::Config>::Deposit::get() * 2,
 			);
 			assert_eq!(
-				Balances::balance_on_hold(&HFIdentifier::Deposit(Pallets::DidLookup), &ACCOUNT_00),
+				Balances::balance_on_hold(
+					&<Test as crate::Config>::RuntimeHoldReason::from(HoldReason::Deposit),
+					&ACCOUNT_00
+				),
 				<Test as crate::Config>::Deposit::get() * 2
 			);
 			assert_noop!(

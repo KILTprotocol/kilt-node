@@ -110,7 +110,7 @@ fn update_or_create_freeze<T: Config>(
 
 	let result = if let Some(IdAmount { amount, .. }) = freezes
 		.iter()
-		.find(|freeze| freeze.id == <T as crate::Config>::FreezeIdentifier::from(FreezeReason::Staking))
+		.find(|freeze| freeze.id == <T as Config>::FreezeIdentifier::from(FreezeReason::Staking).into())
 	{
 		let total_lock = lock
 			.amount

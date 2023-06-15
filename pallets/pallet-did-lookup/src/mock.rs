@@ -18,7 +18,7 @@
 
 use frame_support::parameter_types;
 use kilt_support::{
-	deposit::{Deposit, HFIdentifier, Pallets},
+	deposit::Deposit,
 	mock::{mock_origin, SubjectId},
 };
 use sp_runtime::{
@@ -29,7 +29,7 @@ use sp_runtime::{
 
 use crate::{
 	self as pallet_did_lookup, linkable_account::LinkableAccountId, AccountIdOf, BalanceOf, Config, ConnectedAccounts,
-	ConnectedDids, ConnectionRecord, CurrencyOf, DidIdentifierOf,
+	ConnectedDids, ConnectionRecord, CurrencyOf, DidIdentifierOf, HoldReason,
 };
 
 pub(crate) type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
@@ -50,7 +50,7 @@ frame_support::construct_runtime!(
 	{
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
 		Balances: pallet_balances::{Pallet, Call, Storage, Event<T>},
-		DidLookup: pallet_did_lookup::{Pallet, Storage, Call, Event<T>},
+		DidLookup: pallet_did_lookup::{Pallet, Storage, Call, Event<T>, HoldReason},
 		MockOrigin: mock_origin::{Pallet, Origin<T>},
 	}
 );
@@ -96,8 +96,8 @@ parameter_types! {
 }
 
 impl pallet_balances::Config for Test {
-	type FreezeIdentifier = HFIdentifier;
-	type HoldIdentifier = HFIdentifier;
+	type FreezeIdentifier = RuntimeFreezeReason;
+	type HoldIdentifier = RuntimeHoldReason;
 	type MaxFreezes = MaxFreezes;
 	type MaxHolds = MaxHolds;
 	type Balance = Balance;
@@ -117,14 +117,12 @@ parameter_types! {
 
 impl pallet_did_lookup::Config for Test {
 	type RuntimeEvent = RuntimeEvent;
-
+	type RuntimeHoldReason = RuntimeHoldReason;
 	type Currency = Balances;
 	type Deposit = DidLookupDeposit;
-
 	type EnsureOrigin = mock_origin::EnsureDoubleOrigin<AccountId, SubjectId>;
 	type OriginSuccess = mock_origin::DoubleOrigin<AccountId, SubjectId>;
 	type DidIdentifier = SubjectId;
-
 	type WeightInfo = ();
 }
 
@@ -158,7 +156,7 @@ pub(crate) fn insert_raw_connection<T: Config>(
 	kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
 		record.deposit.owner.clone(),
 		record.deposit.amount,
-		&HFIdentifier::Deposit(Pallets::DidLookup),
+		&T::RuntimeHoldReason::from(HoldReason::Deposit),
 	)
 	.expect("Account should have enough balance");
 
@@ -167,7 +165,7 @@ pub(crate) fn insert_raw_connection<T: Config>(
 			ConnectedAccounts::<T>::remove(&old_connection.did, &account);
 			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
 				&old_connection.deposit,
-				&HFIdentifier::Deposit(Pallets::DidLookup),
+				&T::RuntimeHoldReason::from(HoldReason::Deposit),
 			)
 			.expect("Could not release deposit of account");
 		}

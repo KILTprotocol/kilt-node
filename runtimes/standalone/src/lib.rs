@@ -54,7 +54,7 @@ use sp_std::prelude::*;
 use sp_version::RuntimeVersion;
 
 use delegation::DelegationAc;
-use kilt_support::{deposit::HFIdentifier, traits::ItemFilter};
+use kilt_support::traits::ItemFilter;
 use pallet_did_lookup::linkable_account::LinkableAccountId;
 use runtime_common::{
 	assets::{AssetDid, PublicCredentialsFilter},
@@ -250,8 +250,8 @@ parameter_types! {
 }
 
 impl pallet_balances::Config for Runtime {
-	type FreezeIdentifier = HFIdentifier;
-	type HoldIdentifier = HFIdentifier;
+	type FreezeIdentifier = RuntimeFreezeReason;
+	type HoldIdentifier = RuntimeHoldReason;
 	type MaxFreezes = MaxFreezes;
 	type MaxHolds = MaxHolds;
 	type MaxLocks = MaxLocks;
@@ -293,6 +293,7 @@ parameter_types! {
 }
 
 impl attestation::Config for Runtime {
+	type RuntimeHoldReason = RuntimeHoldReason;
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
 	type OriginSuccess = did::DidRawOrigin<DidIdentifier, AccountId>;
 	type RuntimeEvent = RuntimeEvent;
@@ -316,6 +317,7 @@ parameter_types! {
 }
 
 impl delegation::Config for Runtime {
+	type RuntimeHoldReason = RuntimeHoldReason;
 	#[cfg(not(feature = "runtime-benchmarks"))]
 	type Signature = did::DidSignature;
 	#[cfg(not(feature = "runtime-benchmarks"))]
@@ -375,6 +377,7 @@ parameter_types! {
 }
 
 impl did::Config for Runtime {
+	type RuntimeHoldReason = RuntimeHoldReason;
 	type DidIdentifier = DidIdentifier;
 	type KeyDeposit = constants::did::KeyDeposit;
 	type ServiceEndpointDeposit = constants::did::ServiceEndpointDeposit;
@@ -410,6 +413,7 @@ impl did::Config for Runtime {
 }
 
 impl pallet_did_lookup::Config for Runtime {
+	type RuntimeHoldReason = RuntimeHoldReason;
 	type RuntimeEvent = RuntimeEvent;
 
 	type DidIdentifier = DidIdentifier;
@@ -424,6 +428,7 @@ impl pallet_did_lookup::Config for Runtime {
 }
 
 impl pallet_web3_names::Config for Runtime {
+	type RuntimeHoldReason = RuntimeHoldReason;
 	type BanOrigin = EnsureRoot<AccountId>;
 	type OwnerOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
@@ -471,6 +476,7 @@ impl pallet_utility::Config for Runtime {
 }
 
 impl public_credentials::Config for Runtime {
+	type RuntimeHoldReason = RuntimeHoldReason;
 	type AccessControl = PalletAuthorize<DelegationAc<Runtime>>;
 	type AttesterId = DidIdentifier;
 	type AuthorizationId = AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>;
