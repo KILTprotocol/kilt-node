@@ -98,7 +98,7 @@ pub mod pallet {
 
 	use ctype::CtypeHashOf;
 	use kilt_support::{
-		deposit::{Deposit, HFIdentifier, Pallets},
+		deposit::Deposit,
 		traits::{CallSources, StorageDepositCollector},
 	};
 

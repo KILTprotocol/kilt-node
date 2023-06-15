@@ -22,15 +22,14 @@ use frame_support::{
 };
 use sp_runtime::SaturatedConversion;
 
-use crate::deposit::HFIdentifier;
-
 /// Checks some precondition of the migrations.
 pub fn has_user_holds<
 	AccountId,
-	Currency: ReservableCurrency<AccountId> + MutateHold<AccountId, Reason = HFIdentifier>,
+	Identifier,
+	Currency: ReservableCurrency<AccountId> + MutateHold<AccountId, Reason = Identifier>,
 >(
 	owner: &AccountId,
-	reason: &HFIdentifier,
+	reason: &Identifier,
 ) -> bool {
 	Currency::balance_on_hold(reason, owner).saturated_into::<usize>() == 0
 		&& Currency::reserved_balance(owner).saturated_into::<usize>() > 0
@@ -38,10 +37,11 @@ pub fn has_user_holds<
 
 pub fn switch_reserved_to_hold<
 	AccountId,
-	Currency: ReservableCurrency<AccountId> + MutateHold<AccountId, Reason = HFIdentifier>,
+	Identifier,
+	Currency: ReservableCurrency<AccountId> + MutateHold<AccountId, Reason = Identifier>,
 >(
 	owner: AccountId,
-	reason: &HFIdentifier,
+	reason: &Identifier,
 	amount: u128,
 ) -> DispatchResult {
 	Currency::unreserve(&owner, amount.saturated_into());

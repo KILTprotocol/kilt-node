@@ -22,10 +22,7 @@ use frame_support::traits::{
 };
 use sp_runtime::DispatchError;
 
-use crate::{
-	deposit::{Deposit, HFIdentifier},
-	free_deposit, free_deposit2,
-};
+use crate::{deposit::Deposit, free_deposit2};
 
 /// The sources of a call struct.
 ///

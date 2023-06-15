@@ -71,10 +71,10 @@ pub struct Deposit<Account, Balance> {
 	pub amount: Balance,
 }
 
-pub fn reserve_deposit<Account, Currency: Mutate<Account, Reason = HFIdentifier>>(
+pub fn reserve_deposit<Account, Identifier, Currency: Mutate<Account, Reason = Identifier>>(
 	account: Account,
 	deposit_amount: Currency::Balance,
-	reason: &HFIdentifier,
+	reason: &Identifier,
 ) -> Result<Deposit<Account, Currency::Balance>, DispatchError> {
 	let q = Currency::hold(reason, &account, deposit_amount);
 	q?;
