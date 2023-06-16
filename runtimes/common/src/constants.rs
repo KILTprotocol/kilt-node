@@ -321,6 +321,8 @@ pub mod multisig {
 }
 
 pub mod did {
+	use scale_info::TypeInfo;
+
 	use super::*;
 
 	///  Max length of a key (including its enum discriminants).
@@ -362,6 +364,7 @@ pub mod did {
 	pub const MAX_NUMBER_OF_URLS_PER_SERVICE: u32 = 2;
 
 	parameter_types! {
+		#[derive(Debug, Clone, Eq, PartialEq, TypeInfo)]
 		pub const MaxNewKeyAgreementKeys: u32 = MAX_KEY_AGREEMENT_KEYS;
 		pub const MaxPublicKeysPerDid: u32 = MAX_PUBLIC_KEYS_PER_DID;
 		#[derive(Debug, Clone, Eq, PartialEq)]
