@@ -34,8 +34,8 @@ use kilt_support::{deposit::Deposit, signature::VerifySignature};
 
 use crate::{
 	did_details::{
-		DeriveDidCallAuthorizationVerificationKeyRelationship, DidAuthorizedCallOperation, DidPublicKey, DidSignature,
-		DidVerificationKey,
+		AccountIdOf, BlockNumberOf, DeriveDidCallAuthorizationVerificationKeyRelationship, DidAuthorizedCallOperation,
+		DidCallableOf, DidIdentifierOf, DidPublicKey, DidSignature, DidVerificationKey,
 	},
 	mock_utils::{
 		generate_base_did_creation_details, generate_base_did_details, get_key_agreement_keys, get_service_endpoints,
@@ -101,7 +101,7 @@ fn make_free_for_did<T: Config>(account: &AccountIdOf<T>) {
 fn generate_base_did_call_operation<T: Config>(
 	did: DidIdentifierOf<T>,
 	submitter: AccountIdOf<T>,
-) -> DidAuthorizedCallOperation<T> {
+) -> DidAuthorizedCallOperation<DidIdentifierOf<T>, DidCallableOf<T>, BlockNumberOf<T>, AccountId<T>> {
 	let test_call = <T as Config>::RuntimeCall::get_call_for_did_call_benchmark();
 
 	DidAuthorizedCallOperation {
