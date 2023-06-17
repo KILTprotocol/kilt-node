@@ -385,7 +385,7 @@ impl<T: Config> DidDetails<T> {
 		};
 
 		// Creates a new DID with the given authentication key.
-		let mut new_did_details: DidDetails<T> = DidDetails::new(new_auth_key, current_block_number, deposit)?;
+		let mut new_did_details = DidDetails::new(new_auth_key, current_block_number, deposit)?;
 
 		new_did_details.add_key_agreement_keys(details.clone().new_key_agreement_keys, current_block_number)?;
 
