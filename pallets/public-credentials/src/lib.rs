@@ -29,7 +29,6 @@
 //! - **Subject:**: The subject of a credential, i.e., the entity which the
 //!   claims in the credential refer to.
 #![cfg_attr(not(feature = "std"), no_std)]
-#![allow(clippy::as_conversions)]
 
 mod access_control;
 pub mod credentials;
