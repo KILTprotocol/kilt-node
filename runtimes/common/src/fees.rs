@@ -18,7 +18,7 @@
 
 use frame_support::{
 	dispatch::DispatchClass,
-	traits::{Currency, Get, Imbalance, OnUnbalanced},
+	traits::{fungible::Balanced, Get, Imbalance, OnUnbalanced},
 	weights::{
 		Weight, WeightToFee as WeightToFeeT, WeightToFeeCoefficient, WeightToFeeCoefficients, WeightToFeePolynomial,
 	},
@@ -28,7 +28,7 @@ use pallet_transaction_payment::OnChargeTransaction;
 use smallvec::smallvec;
 use sp_runtime::Perbill;
 
-use crate::{constants::MILLI_KILT, AccountId, Balance, NegativeImbalanceOf};
+use crate::{constants::MILLI_KILT, AccountId, Balance, CreditOf};
 
 /// Split two Imbalances between two unbalanced handlers.
 /// The first Imbalance will be split according to the given ratio. The second
@@ -39,15 +39,15 @@ use crate::{constants::MILLI_KILT, AccountId, Balance, NegativeImbalanceOf};
 pub struct SplitFeesByRatio<R, Ratio, Beneficiary1, Beneficiary2>(
 	sp_std::marker::PhantomData<(R, Ratio, Beneficiary1, Beneficiary2)>,
 );
-impl<R, Ratio, Beneficiary1, Beneficiary2> OnUnbalanced<NegativeImbalanceOf<R>>
+impl<R, Ratio, Beneficiary1, Beneficiary2> OnUnbalanced<CreditOf<R>>
 	for SplitFeesByRatio<R, Ratio, Beneficiary1, Beneficiary2>
 where
 	R: pallet_balances::Config,
-	Beneficiary1: OnUnbalanced<NegativeImbalanceOf<R>>,
-	Beneficiary2: OnUnbalanced<NegativeImbalanceOf<R>>,
+	Beneficiary1: OnUnbalanced<CreditOf<R>>,
+	Beneficiary2: OnUnbalanced<CreditOf<R>>,
 	Ratio: Get<(u32, u32)>,
 {
-	fn on_unbalanceds<B>(mut fees_then_tips: impl Iterator<Item = NegativeImbalanceOf<R>>) {
+	fn on_unbalanceds<B>(mut fees_then_tips: impl Iterator<Item = CreditOf<R>>) {
 		let ratio = Ratio::get();
 		if let Some(fees) = fees_then_tips.next() {
 			let mut split = fees.ration(ratio.0, ratio.1);
@@ -64,16 +64,16 @@ where
 /// Logic for the author to get a portion of fees.
 pub struct ToAuthor<R>(sp_std::marker::PhantomData<R>);
 
-impl<R> OnUnbalanced<NegativeImbalanceOf<R>> for ToAuthor<R>
+impl<R> OnUnbalanced<CreditOf<R>> for ToAuthor<R>
 where
 	R: pallet_balances::Config + pallet_authorship::Config,
 	<R as frame_system::Config>::AccountId: From<AccountId>,
 	<R as frame_system::Config>::AccountId: Into<AccountId>,
 	<R as pallet_balances::Config>::Balance: Into<u128>,
 {
-	fn on_nonzero_unbalanced(amount: NegativeImbalanceOf<R>) {
+	fn on_nonzero_unbalanced(amount: CreditOf<R>) {
 		if let Some(author) = <pallet_authorship::Pallet<R>>::author() {
-			<pallet_balances::Pallet<R>>::resolve_creating(&author, amount);
+			let _ = <pallet_balances::Pallet<R>>::resolve(&author, amount);
 		}
 	}
 }
@@ -233,10 +233,10 @@ mod tests {
 	const AUTHOR_ACC: AccountId = AccountId::new([2; 32]);
 
 	pub struct ToBeneficiary();
-	impl OnUnbalanced<NegativeImbalanceOf<Test>> for ToBeneficiary {
-		fn on_nonzero_unbalanced(amount: NegativeImbalanceOf<Test>) {
+	impl OnUnbalanced<CreditOf<Test>> for ToBeneficiary {
+		fn on_nonzero_unbalanced(amount: CreditOf<Test>) {
 			// Must resolve into existing but better to be safe.
-			<pallet_balances::Pallet<Test>>::resolve_creating(&TREASURY_ACC, amount);
+			let _ = <pallet_balances::Pallet<Test>>::resolve(&TREASURY_ACC, amount);
 		}
 	}
 

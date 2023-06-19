@@ -205,8 +205,7 @@ impl pallet_balances::Config for Runtime {
 	type Balance = Balance;
 	/// The ubiquitous event type.
 	type RuntimeEvent = RuntimeEvent;
-	// type DustRemoval = Treasury;
-	type DustRemoval = ();
+	type DustRemoval = runtime_common::DustAndFeeHandler<Runtime>;
 	type ExistentialDeposit = ExistentialDeposit;
 	type AccountStore = System;
 	type WeightInfo = weights::pallet_balances::WeightInfo<Runtime>;
@@ -581,7 +580,7 @@ impl ctype::Config for Runtime {
 	type CtypeCreatorId = AccountId;
 	type Currency = Balances;
 	type Fee = constants::CtypeFee;
-	type FeeCollector = Treasury;
+	type FeeCollector = runtime_common::DustAndFeeHandler<Runtime>;
 
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
@@ -604,7 +603,7 @@ impl did::Config for Runtime {
 	type ServiceEndpointDeposit = constants::did::ServiceEndpointDeposit;
 	type BaseDeposit = constants::did::DidBaseDeposit;
 	type Fee = constants::did::DidFee;
-	type FeeCollector = Treasury;
+	type FeeCollector = runtime_common::DustAndFeeHandler<Runtime>;
 
 	#[cfg(not(feature = "runtime-benchmarks"))]
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;

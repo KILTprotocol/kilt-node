@@ -77,7 +77,7 @@ pub mod opaque {
 /// An index to a block.
 pub type BlockNumber = u64;
 
-type CreditOf<T> = Credit<<T as frame_system::Config>::AccountId, PalletBalance<T, ()>>;
+pub(crate) type CreditOf<T> = Credit<<T as frame_system::Config>::AccountId, PalletBalance<T, ()>>;
 
 /// Alias to 512-bit hash when used in the context of a transaction signature on
 /// the chain.
