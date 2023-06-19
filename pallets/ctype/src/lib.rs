@@ -63,11 +63,15 @@ pub mod pallet {
 	use frame_support::{
 		pallet_prelude::*,
 		sp_runtime::traits::Hash,
-		traits::{Currency, ExistenceRequirement, OnUnbalanced, StorageVersion, WithdrawReasons},
+		traits::{
+			fungible::{Balanced, Credit, Inspect},
+			tokens::{Fortitude, Precision, Preservation},
+			OnUnbalanced, StorageVersion,
+		},
 	};
 	use frame_system::pallet_prelude::*;
 	use kilt_support::traits::CallSources;
-	use sp_runtime::{traits::Saturating, SaturatedConversion};
+	use sp_runtime::SaturatedConversion;
 	use sp_std::vec::Vec;
 
 	use crate::ctype_entry::CtypeEntry;
@@ -85,8 +89,8 @@ pub mod pallet {
 
 	pub(crate) type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 
-	pub(crate) type BalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::Balance;
-	type NegativeImbalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::NegativeImbalance;
+	pub(crate) type BalanceOf<T> = <<T as Config>::Currency as Inspect<AccountIdOf<T>>>::Balance;
+	type CreditOf<T> = Credit<<T as frame_system::Config>::AccountId, <T as Config>::Currency>;
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
@@ -94,11 +98,11 @@ pub mod pallet {
 		type OverarchingOrigin: EnsureOrigin<<Self as frame_system::Config>::RuntimeOrigin>;
 		type OriginSuccess: CallSources<AccountIdOf<Self>, CtypeCreatorOf<Self>>;
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
-		type Currency: Currency<AccountIdOf<Self>>;
+		type Currency: Balanced<AccountIdOf<Self>>;
 		type WeightInfo: WeightInfo;
 		type CtypeCreatorId: Parameter + MaxEncodedLen;
 		type Fee: Get<BalanceOf<Self>>;
-		type FeeCollector: OnUnbalanced<NegativeImbalanceOf<Self>>;
+		type FeeCollector: OnUnbalanced<CreditOf<Self>>;
 	}
 
 	#[pallet::pallet]
@@ -160,13 +164,13 @@ pub mod pallet {
 
 			// Check the free balance before we do any heavy work (e.g. calculate the ctype
 			// hash)
-			let balance = <T::Currency as Currency<AccountIdOf<T>>>::free_balance(&payer);
-			<T::Currency as Currency<AccountIdOf<T>>>::ensure_can_withdraw(
+			let balance = <T::Currency as Inspect<AccountIdOf<T>>>::reducible_balance(
 				&payer,
-				T::Fee::get(),
-				WithdrawReasons::FEE,
-				balance.saturating_sub(T::Fee::get()),
-			)?;
+				Preservation::Preserve,
+				Fortitude::Polite,
+			);
+
+			ensure!(balance >= T::Fee::get(), Error::<T>::UnableToPayFees);
 
 			let hash = <T as frame_system::Config>::Hashing::hash(&ctype[..]);
 
@@ -174,11 +178,12 @@ pub mod pallet {
 
 			// Collect the fees. This should not fail since we checked the free balance in
 			// the beginning.
-			let imbalance = <T::Currency as Currency<AccountIdOf<T>>>::withdraw(
+			let imbalance = <T::Currency as Balanced<AccountIdOf<T>>>::withdraw(
 				&payer,
 				T::Fee::get(),
-				WithdrawReasons::FEE,
-				ExistenceRequirement::AllowDeath,
+				Precision::Exact,
+				Preservation::Protect,
+				Fortitude::Polite,
 			)
 			.map_err(|_| Error::<T>::UnableToPayFees)?;
 

@@ -53,7 +53,7 @@ benchmarks! {
 		let ctype_hash = <T as frame_system::Config>::Hashing::hash(&ctype[..]);
 
 		let initial_balance = <T as Config>::Fee::get() * ctype.len().try_into().unwrap() + <T as Config>::Currency::minimum_balance();
-		<T as Config>::Currency::make_free_balance_be(&caller, initial_balance);
+		<T as Config>::Currency::set_balance(&caller, initial_balance);
 		let origin = T::EnsureOrigin::generate_origin(caller, did.clone());
 
 	}: _<T::RuntimeOrigin>(origin, ctype)
@@ -73,7 +73,7 @@ benchmarks! {
 		let new_block_number = 500u64.into();
 
 		let initial_balance = <T as Config>::Fee::get() * ctype.len().try_into().unwrap() + <T as Config>::Currency::minimum_balance();
-		<T as Config>::Currency::make_free_balance_be(&caller, initial_balance);
+		<T as Config>::Currency::set_balance(&caller, initial_balance);
 		let origin = T::EnsureOrigin::generate_origin(caller, did);
 		Pallet::<T>::add(origin, ctype).expect("CType creation should not fail.");
 		let overarching_origin = T::OverarchingOrigin::try_successful_origin().expect("Successful origin creation should not fail.");

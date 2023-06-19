@@ -9284,6 +9284,7 @@ dependencies = [
  "pallet-balances",
  "pallet-membership",
  "pallet-transaction-payment",
+ "pallet-treasury",
  "parachain-staking",
  "parity-scale-codec",
  "polkadot-parachain",

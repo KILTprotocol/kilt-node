@@ -29,9 +29,10 @@ pub use frame_support::weights::constants::{BlockExecutionWeight, ExtrinsicBaseW
 use frame_support::{
 	dispatch::DispatchClass,
 	parameter_types,
-	traits::{Contains, ContainsLengthBound, Currency, Get, SortedMembers},
+	traits::{fungible::Credit, Contains, ContainsLengthBound, Currency, Get, Imbalance, OnUnbalanced, SortedMembers},
 };
 use frame_system::limits;
+use pallet_balances::Pallet as PalletBalance;
 use pallet_transaction_payment::{Multiplier, TargetedFeeAdjustment};
 use sp_runtime::{
 	generic,
@@ -72,6 +73,8 @@ pub mod opaque {
 
 /// An index to a block.
 pub type BlockNumber = u64;
+
+type CreditOf<T> = Credit<<T as frame_system::Config>::AccountId, PalletBalance<T, ()>>;
 
 /// Alias to 512-bit hash when used in the context of a transaction signature on
 /// the chain.
@@ -194,5 +197,14 @@ where
 				.try_insert(pos, who.clone())
 				.expect("Should not fail to add members"),
 		})
+	}
+}
+
+pub struct DustAndFeeHandler<T>(sp_std::marker::PhantomData<T>);
+
+impl<T: pallet_balances::Config + pallet_treasury::Config> OnUnbalanced<CreditOf<T>> for DustAndFeeHandler<T> {
+	fn on_nonzero_unbalanced(amount: CreditOf<T>) {
+		let treasury_account_id = pallet_treasury::Pallet::<T>::account_id();
+		let _ = pallet_balances::Pallet::<T>::deposit_creating(&treasury_account_id, amount.peek());
 	}
 }
