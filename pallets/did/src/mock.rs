@@ -33,8 +33,8 @@ use crate::{DidRawOrigin, EnsureDidOrigin};
 use frame_support::{
 	parameter_types,
 	traits::{
-		fungible::{Credit, MutateHold},
-		Currency, Imbalance, OnUnbalanced,
+		fungible::{Balanced, Credit, MutateHold},
+		OnUnbalanced,
 	},
 	weights::constants::RocksDbWeight,
 };
@@ -139,7 +139,7 @@ where
 	<R as frame_system::Config>::AccountId: From<AccountId>,
 {
 	fn on_nonzero_unbalanced(amount: CreditOf<R>) {
-		let _ = pallet_balances::Pallet::<R>::deposit_creating(&ACCOUNT_FEE.into(), amount.peek());
+		let _ = pallet_balances::Pallet::<R>::resolve(&ACCOUNT_FEE.into(), amount);
 	}
 }
 

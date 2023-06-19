@@ -29,7 +29,10 @@ pub use frame_support::weights::constants::{BlockExecutionWeight, ExtrinsicBaseW
 use frame_support::{
 	dispatch::DispatchClass,
 	parameter_types,
-	traits::{fungible::Credit, Contains, ContainsLengthBound, Currency, Get, Imbalance, OnUnbalanced, SortedMembers},
+	traits::{
+		fungible::{Balanced, Credit},
+		Contains, ContainsLengthBound, Currency, Get, OnUnbalanced, SortedMembers,
+	},
 };
 use frame_system::limits;
 use pallet_balances::Pallet as PalletBalance;
@@ -202,9 +205,13 @@ where
 
 pub struct DustAndFeeHandler<T>(sp_std::marker::PhantomData<T>);
 
-impl<T: pallet_balances::Config + pallet_treasury::Config> OnUnbalanced<CreditOf<T>> for DustAndFeeHandler<T> {
+impl<T> OnUnbalanced<CreditOf<T>> for DustAndFeeHandler<T>
+where
+	T: pallet_balances::Config,
+	T: pallet_treasury::Config,
+{
 	fn on_nonzero_unbalanced(amount: CreditOf<T>) {
 		let treasury_account_id = pallet_treasury::Pallet::<T>::account_id();
-		let _ = pallet_balances::Pallet::<T>::deposit_creating(&treasury_account_id, amount.peek());
+		let _ = pallet_balances::Pallet::<T>::resolve(&treasury_account_id, amount);
 	}
 }
