@@ -16,21 +16,6 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::{
-	parameter_types,
-	traits::{fungible::MutateHold, Currency, OnUnbalanced},
-	weights::constants::RocksDbWeight,
-};
-use frame_system::EnsureSigned;
-use pallet_balances::NegativeImbalance;
-use sp_core::{ecdsa, ed25519, sr25519, Pair};
-use sp_runtime::{
-	testing::{Header, H256},
-	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
-	MultiSignature, MultiSigner, SaturatedConversion,
-};
-use sp_std::vec::Vec;
-
 use crate::{
 	self as did,
 	did_details::{
@@ -45,6 +30,23 @@ use crate::{
 };
 #[cfg(not(feature = "runtime-benchmarks"))]
 use crate::{DidRawOrigin, EnsureDidOrigin};
+use frame_support::{
+	parameter_types,
+	traits::{
+		fungible::{Credit, MutateHold},
+		Currency, Imbalance, OnUnbalanced,
+	},
+	weights::constants::RocksDbWeight,
+};
+use frame_system::EnsureSigned;
+use pallet_balances::Pallet as PalletBalance;
+use sp_core::{ecdsa, ed25519, sr25519, Pair};
+use sp_runtime::{
+	testing::{Header, H256},
+	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
+	MultiSignature, MultiSigner, SaturatedConversion,
+};
+use sp_std::vec::Vec;
 
 pub(crate) type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 pub(crate) type Block = frame_system::mocking::MockBlock<Test>;
@@ -55,7 +57,7 @@ pub(crate) type AccountPublic = <Signature as Verify>::Signer;
 pub(crate) type AccountId = <AccountPublic as IdentifyAccount>::AccountId;
 pub(crate) type Index = u64;
 pub(crate) type BlockNumber = u64;
-
+type CreditOf<T> = Credit<<T as frame_system::Config>::AccountId, PalletBalance<T, ()>>;
 pub(crate) type DidIdentifier = AccountId;
 pub(crate) type CtypeHash = Hash;
 
@@ -131,13 +133,13 @@ parameter_types! {
 
 pub struct ToAccount<R>(sp_std::marker::PhantomData<R>);
 
-impl<R> OnUnbalanced<NegativeImbalance<R>> for ToAccount<R>
+impl<R> OnUnbalanced<CreditOf<R>> for ToAccount<R>
 where
 	R: pallet_balances::Config,
 	<R as frame_system::Config>::AccountId: From<AccountId>,
 {
-	fn on_nonzero_unbalanced(amount: NegativeImbalance<R>) {
-		pallet_balances::Pallet::<R>::resolve_creating(&ACCOUNT_FEE.into(), amount);
+	fn on_nonzero_unbalanced(amount: CreditOf<R>) {
+		let _ = pallet_balances::Pallet::<R>::deposit_creating(&ACCOUNT_FEE.into(), amount.peek());
 	}
 }
 

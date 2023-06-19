@@ -17,7 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_support::{
-	traits::{Get, OnRuntimeUpgrade},
+	traits::{Get, OnRuntimeUpgrade, ReservableCurrency},
 	weights::Weight,
 };
 use kilt_support::migration::{has_user_holds, switch_reserved_to_hold};
@@ -29,7 +29,10 @@ use crate::{did_details::DidDetails, AccountIdOf, Config, CurrencyOf, Did, HoldR
 
 pub struct BalanceMigration<T>(PhantomData<T>);
 
-impl<T: crate::pallet::Config> OnRuntimeUpgrade for BalanceMigration<T> {
+impl<T: crate::pallet::Config> OnRuntimeUpgrade for BalanceMigration<T>
+where
+	<T as Config>::Currency: ReservableCurrency<T::AccountId>,
+{
 	fn on_runtime_upgrade() -> frame_support::weights::Weight {
 		log::info!("Did: Initiating migration");
 		if is_upgraded::<T>() {
@@ -92,7 +95,10 @@ impl<T: crate::pallet::Config> OnRuntimeUpgrade for BalanceMigration<T> {
 
 /// Checks if there is an user, who has still reserved balance and no holds. If
 /// yes, the migration is not executed yet.
-fn is_upgraded<T: Config>() -> bool {
+fn is_upgraded<T: Config>() -> bool
+where
+	<T as Config>::Currency: ReservableCurrency<T::AccountId>,
+{
 	Did::<T>::iter_values()
 		.map(|details: DidDetails<T>| {
 			has_user_holds::<AccountIdOf<T>, CurrencyOf<T>>(
@@ -103,7 +109,10 @@ fn is_upgraded<T: Config>() -> bool {
 		.all(|user| user)
 }
 
-fn do_migration<T: Config>() -> Weight {
+fn do_migration<T: Config>() -> Weight
+where
+	<T as Config>::Currency: ReservableCurrency<T::AccountId>,
+{
 	Did::<T>::iter()
 		.map(|(key, did_details)| -> Weight {
 			let deposit = did_details.deposit;

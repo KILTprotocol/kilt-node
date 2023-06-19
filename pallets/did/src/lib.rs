@@ -119,7 +119,7 @@ use frame_support::{
 	dispatch::{DispatchError, DispatchResult, Dispatchable, GetDispatchInfo, PostDispatchInfo},
 	ensure,
 	storage::types::StorageMap,
-	traits::{Get, OnUnbalanced, WithdrawReasons},
+	traits::{Get, OnUnbalanced},
 	Parameter,
 };
 use frame_system::ensure_signed;
@@ -140,8 +140,9 @@ pub mod pallet {
 	use frame_support::{
 		pallet_prelude::*,
 		traits::{
-			fungible::{Inspect, MutateHold},
-			Currency, ExistenceRequirement, Imbalance, ReservableCurrency, StorageVersion,
+			fungible::{Balanced, Credit, Inspect, MutateHold},
+			tokens::{Fortitude, Precision, Preservation},
+			StorageVersion,
 		},
 	};
 	use frame_system::pallet_prelude::*;
@@ -187,7 +188,7 @@ pub mod pallet {
 
 	pub type BalanceOf<T> = <CurrencyOf<T> as Inspect<AccountIdOf<T>>>::Balance;
 	pub(crate) type CurrencyOf<T> = <T as Config>::Currency;
-	pub(crate) type NegativeImbalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::NegativeImbalance;
+	pub(crate) type CreditOf<T> = Credit<<T as frame_system::Config>::AccountId, <T as Config>::Currency>;
 
 	#[pallet::composite_enum]
 	pub enum HoldReason {
@@ -227,8 +228,7 @@ pub mod pallet {
 		type RuntimeHoldReason: From<HoldReason>;
 
 		/// The currency that is used to reserve funds for each did.
-		type Currency: ReservableCurrency<AccountIdOf<Self>>
-			+ MutateHold<AccountIdOf<Self>, Reason = Self::RuntimeHoldReason>;
+		type Currency: Balanced<AccountIdOf<Self>> + MutateHold<AccountIdOf<Self>, Reason = Self::RuntimeHoldReason>;
 
 		/// The amount of balance that will be taken for each DID as a deposit
 		/// to incentivise fair use of the on chain storage. The deposits
@@ -256,7 +256,7 @@ pub mod pallet {
 		type Fee: Get<BalanceOf<Self>>;
 
 		/// The logic for handling the fee.
-		type FeeCollector: OnUnbalanced<NegativeImbalanceOf<Self>>;
+		type FeeCollector: OnUnbalanced<CreditOf<Self>>;
 
 		/// Maximum number of total public keys which can be stored per DID key
 		/// identifier. This includes the ones currently used for
@@ -593,15 +593,16 @@ pub mod pallet {
 			Did::<T>::insert(&did_identifier, did_entry.clone());
 
 			// Withdraw the fee. We made sure that enough balance is available. But if this
-			// fails, we don't withdraw anything.
-
-			let imbalance = <T::Currency as Currency<AccountIdOf<T>>>::withdraw(
+			// fails, we don't withdraw anything. Since we do the best effort we can unwrap
+			// the result.
+			let imbalance: CreditOf<T> = <T::Currency as Balanced<AccountIdOf<T>>>::withdraw(
 				&did_entry.deposit.owner,
-				T::Fee::get().saturated_into::<u128>().saturated_into(),
-				WithdrawReasons::FEE,
-				ExistenceRequirement::AllowDeath,
+				T::Fee::get(),
+				Precision::BestEffort,
+				Preservation::Protect,
+				Fortitude::Polite,
 			)
-			.unwrap_or_else(|_| NegativeImbalanceOf::<T>::zero());
+			.unwrap();
 			T::FeeCollector::on_unbalanced(imbalance);
 
 			Self::deposit_event(Event::DidCreated(sender, did_identifier));
