@@ -20,18 +20,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 // `construct_runtime!` does a lot of recursion and requires us to increase the limit to 256.
 #![recursion_limit = "256"]
-#![warn(
-	clippy::integer_arithmetic,
-	clippy::integer_division,
-	clippy::as_conversions,
-	clippy::missing_panics_doc,
-	clippy::missing_errors_doc,
-	clippy::float_arithmetic,
-	clippy::cast_possible_wrap,
-	clippy::index_refutable_slice,
-	clippy::indexing_slicing
-)]
-
 // Make the WASM binary available.
 #[cfg(feature = "std")]
 

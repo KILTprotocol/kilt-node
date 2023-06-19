@@ -45,6 +45,9 @@ pub trait VerifySignature {
 
 	/// Verifies that the signature matches the payload and has been generated
 	/// by the signer.
+	/// # Errors
+	/// Can fail if signature is invalid. In case of a DID this should be never
+	/// happen.
 	fn verify(
 		signer: &Self::SignerId,
 		payload: &Self::Payload,

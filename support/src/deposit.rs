@@ -29,6 +29,8 @@ pub struct Deposit<Account, Balance> {
 	pub amount: Balance,
 }
 
+/// # Errors
+/// Can fail if the user has not enough balance to reserve.
 pub fn reserve_deposit<Account, Currency: ReservableCurrency<Account>>(
 	account: Account,
 	deposit_amount: Currency::Balance,

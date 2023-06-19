@@ -17,6 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 #![cfg_attr(not(feature = "std"), no_std)]
+#![allow(clippy::as_conversions, clippy::integer_division, clippy::integer_arithmetic)]
 
 use constants::{AVERAGE_ON_INITIALIZE_RATIO, MAXIMUM_BLOCK_WEIGHT, NORMAL_DISPATCH_RATIO};
 use fees::SplitFeesByRatio;

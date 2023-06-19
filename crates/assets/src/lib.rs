@@ -23,6 +23,7 @@
 //! blockchain runtimes.
 
 #![cfg_attr(not(feature = "std"), no_std)]
+#![allow(clippy::as_conversions)]
 
 pub mod asset;
 pub mod chain;

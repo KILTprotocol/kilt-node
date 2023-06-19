@@ -21,7 +21,7 @@
 // `construct_runtime!` does a lot of recursion and requires us to increase the limit to 256.
 #![recursion_limit = "256"]
 // The `from_over_into` warning originates from `construct_runtime` macro.
-#![allow(clippy::from_over_into)]
+#![allow(clippy::from_over_into, clippy::as_conversions, clippy::integer_arithmetic)]
 
 // Make the WASM binary available
 #[cfg(feature = "std")]

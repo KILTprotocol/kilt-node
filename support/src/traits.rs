@@ -59,6 +59,7 @@ impl<S: Clone, P: Clone> CallSources<S, P> for (S, P) {
 ///
 /// In this way, the migrator can access the pallet's storage and the pallet's
 /// types directly.
+#[allow(clippy::missing_errors_doc)]
 pub trait VersionMigratorTrait<T>: Sized {
 	#[cfg(feature = "try-runtime")]
 	fn pre_migrate(&self) -> Result<(), &'static str>;
@@ -90,6 +91,8 @@ pub trait StorageDepositCollector<AccountId, Key> {
 	type Currency: ReservableCurrency<AccountId>;
 
 	/// Returns the deposit of the storage entry that is stored behind the key.
+	/// # Errors
+	/// Can fail if the key does not exist
 	fn deposit(
 		key: &Key,
 	) -> Result<Deposit<AccountId, <Self::Currency as Currency<AccountId>>::Balance>, DispatchError>;
@@ -102,6 +105,8 @@ pub trait StorageDepositCollector<AccountId, Key> {
 	fn deposit_amount(key: &Key) -> <Self::Currency as Currency<AccountId>>::Balance;
 
 	/// Store the new deposit information in the storage entry behind the key.
+	/// # Errors
+	/// Can fail if the key does not exist
 	fn store_deposit(
 		key: &Key,
 		deposit: Deposit<AccountId, <Self::Currency as Currency<AccountId>>::Balance>,
@@ -112,6 +117,8 @@ pub trait StorageDepositCollector<AccountId, Key> {
 	/// The deposit balance of the current owner will be freed, while the
 	/// deposit balance of the new owner will get reserved. The deposit amount
 	/// will not change even if the required byte and item fees were updated.
+	/// # Errors
+	/// Can fail if the key does not exist
 	fn change_deposit_owner(key: &Key, new_owner: AccountId) -> Result<(), DispatchError> {
 		let deposit = Self::deposit(key)?;
 
@@ -134,6 +141,8 @@ pub trait StorageDepositCollector<AccountId, Key> {
 	/// updates the deposit amount. It either frees parts of the reserved
 	/// balance in case the deposit was lowered or reserves more balance when
 	/// the deposit was raised.
+	/// # Errors
+	/// Can fail if the key does not exist
 	fn update_deposit(key: &Key) -> Result<(), DispatchError> {
 		let deposit = Self::deposit(key)?;
 

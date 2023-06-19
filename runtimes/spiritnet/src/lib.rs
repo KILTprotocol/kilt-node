@@ -18,17 +18,6 @@
 
 //! The KILT runtime. This can be compiled with `#[no_std]`, ready for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
-#![warn(
-	clippy::integer_arithmetic,
-	clippy::integer_division,
-	clippy::as_conversions,
-	clippy::missing_panics_doc,
-	clippy::missing_errors_doc,
-	clippy::float_arithmetic,
-	clippy::cast_possible_wrap,
-	clippy::indexing_slicing,
-	clippy::index_refutable_slice
-)]
 // `construct_runtime!` does a lot of recursion and requires us to increase the limit to 256.
 #![recursion_limit = "256"]
 

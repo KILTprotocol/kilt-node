@@ -19,6 +19,7 @@
 //! KILT node CLI.
 
 #![warn(missing_docs)]
+#![allow(clippy::integer_arithmetic, clippy::as_conversions, clippy::float_arithmetic)]
 
 mod chain_spec;
 #[macro_use]
