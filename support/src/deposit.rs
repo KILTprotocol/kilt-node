@@ -16,9 +16,10 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::{pallet_prelude::DispatchResult, traits::fungible::hold::Mutate};
-
-use frame_support::traits::tokens::Precision;
+use frame_support::{
+	pallet_prelude::DispatchResult,
+	traits::{fungible::hold::Mutate, tokens::Precision},
+};
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_runtime::DispatchError;
@@ -47,6 +48,13 @@ pub fn free_deposit<Account, Currency: Mutate<Account>>(
 	deposit: &Deposit<Account, Currency::Balance>,
 	reason: &Currency::Reason,
 ) -> DispatchResult {
-	Currency::release(reason, &deposit.owner, deposit.amount, Precision::Exact)?;
+	let result = Currency::release(reason, &deposit.owner, deposit.amount, Precision::Exact);
+	debug_assert!(
+		result.is_err(),
+		"Released deposit amount does not match with expected amount. Expected: {:?}, Error: {:?}",
+		deposit.amount,
+		result.err(),
+	);
+	result?;
 	Ok(())
 }
