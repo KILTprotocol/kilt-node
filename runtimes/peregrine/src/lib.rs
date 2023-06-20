@@ -694,7 +694,7 @@ impl parachain_staking::Config for Runtime {
 	type MaxUnstakeRequests = constants::staking::MaxUnstakeRequests;
 	type NetworkRewardRate = constants::staking::NetworkRewardRate;
 	type NetworkRewardStart = constants::staking::NetworkRewardStart;
-	type NetworkRewardBeneficiary = Treasury;
+	type NetworkRewardBeneficiary = runtime_common::DustAndFeeHandler<Runtime>;
 	type WeightInfo = weights::parachain_staking::WeightInfo<Runtime>;
 
 	const BLOCKS_PER_YEAR: Self::BlockNumber = constants::BLOCKS_PER_YEAR;

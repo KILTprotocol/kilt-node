@@ -34,6 +34,7 @@ pub struct BalanceMigration<T>(PhantomData<T>);
 impl<T: crate::pallet::Config> OnRuntimeUpgrade for BalanceMigration<T>
 where
 	<T as Config>::Currency: ReservableCurrency<T::AccountId>,
+	<T as Config>::Currency: LockableCurrency<T::AccountId>,
 {
 	fn on_runtime_upgrade() -> frame_support::weights::Weight {
 		log::info!("Staking: Initiating migration");
@@ -85,6 +86,7 @@ where
 fn do_migration<T: Config>() -> Weight
 where
 	<T as Config>::Currency: ReservableCurrency<T::AccountId>,
+	<T as Config>::Currency: LockableCurrency<T::AccountId>,
 {
 	Locks::<T>::iter()
 		.map(|(user_id, locks)| {
@@ -105,7 +107,10 @@ where
 fn update_or_create_freeze<T: Config>(
 	user_id: T::AccountId,
 	lock: &BalanceLock<<T as pallet_balances::Config>::Balance>,
-) -> Weight {
+) -> Weight
+where
+	CurrencyOf<T>: LockableCurrency<AccountIdOf<T>>,
+{
 	let freezes = Freezes::<T>::get(&user_id);
 
 	let result = if let Some(IdAmount { amount, .. }) = freezes

@@ -148,11 +148,12 @@ pub mod pallet {
 		pallet_prelude::*,
 		storage::bounded_btree_map::BoundedBTreeMap,
 		traits::{
+			fungible::Balanced,
 			tokens::{
 				fungible::{Inspect, MutateFreeze, Unbalanced},
 				Fortitude, Precision, Preservation,
 			},
-			Currency, EstimateNextSessionRotation, Get, LockIdentifier, LockableCurrency, OnUnbalanced, StorageVersion,
+			EstimateNextSessionRotation, Get, LockIdentifier, OnUnbalanced, StorageVersion,
 		},
 		BoundedVec,
 	};
@@ -171,8 +172,8 @@ pub mod pallet {
 	use crate::{
 		set::OrderedSet,
 		types::{
-			BalanceOf, Candidate, CandidateOf, CandidateStatus, DelegationCounter, Delegator, NegativeImbalanceOf,
-			RoundInfo, Stake, StakeOf, TotalStake,
+			BalanceOf, Candidate, CandidateOf, CandidateStatus, CreditOf, DelegationCounter, Delegator, RoundInfo,
+			Stake, StakeOf, TotalStake,
 		},
 	};
 	use sp_std::{convert::TryInto, fmt::Debug};
@@ -201,14 +202,12 @@ pub mod pallet {
 		// multiplication
 		/// The currency type
 		/// Note: Declaration of Balance taken from pallet_gilt
-		type Currency: Inspect<Self::AccountId, Balance = Self::CurrencyBalance>
-			+ Unbalanced<Self::AccountId, Balance = Self::CurrencyBalance>
+		type Currency: Balanced<Self::AccountId>
 			+ MutateFreeze<
 				Self::AccountId,
 				Balance = Self::CurrencyBalance,
 				Id = <Self as pallet::Config>::FreezeIdentifier,
-			> + LockableCurrency<Self::AccountId, Balance = Self::CurrencyBalance>
-			+ Eq;
+			> + Eq;
 
 		type FreezeIdentifier: From<FreezeReason>
 			+ PartialEq
@@ -316,7 +315,7 @@ pub mod pallet {
 		type NetworkRewardRate: Get<Perquintill>;
 
 		/// The beneficiary to receive the network rewards.
-		type NetworkRewardBeneficiary: OnUnbalanced<NegativeImbalanceOf<Self>>;
+		type NetworkRewardBeneficiary: OnUnbalanced<CreditOf<Self>>;
 
 		/// Weight information for extrinsics in this pallet.
 		type WeightInfo: WeightInfo;
@@ -2405,7 +2404,7 @@ pub mod pallet {
 		///
 		/// `col_reward_rate_per_block * col_max_stake * max_num_of_collators *
 		/// NetworkRewardRate`
-		fn issue_network_reward() -> NegativeImbalanceOf<T> {
+		fn issue_network_reward() -> CreditOf<T> {
 			// Multiplication with Perquintill cannot overflow
 			let max_col_rewards = InflationConfig::<T>::get().collator.reward_rate.per_block
 				* MaxCollatorCandidateStake::<T>::get()

@@ -20,10 +20,10 @@
 #![allow(clippy::from_over_into)]
 
 use super::*;
-use crate::{self as stake, types::NegativeImbalanceOf};
+use crate::{self as stake, types::CreditOf};
 use frame_support::{
 	assert_ok, construct_runtime, parameter_types,
-	traits::{Currency, GenesisBuild, OnFinalize, OnInitialize, OnUnbalanced},
+	traits::{fungible::Balanced, GenesisBuild, OnFinalize, OnInitialize, OnUnbalanced},
 };
 use pallet_authorship::EventHandler;
 use sp_consensus_aura::sr25519::AuthorityId;
@@ -149,10 +149,10 @@ parameter_types! {
 }
 
 pub struct ToBeneficiary();
-impl OnUnbalanced<NegativeImbalanceOf<Test>> for ToBeneficiary {
-	fn on_nonzero_unbalanced(amount: NegativeImbalanceOf<Test>) {
+impl OnUnbalanced<CreditOf<Test>> for ToBeneficiary {
+	fn on_nonzero_unbalanced(amount: CreditOf<Test>) {
 		// Must resolve into existing but better to be safe.
-		<Test as Config>::Currency::resolve_creating(&TREASURY_ACC, amount);
+		let _ = <Test as Config>::Currency::resolve(&TREASURY_ACC, amount);
 	}
 }
 
