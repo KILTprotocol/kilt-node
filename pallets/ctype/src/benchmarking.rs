@@ -19,7 +19,10 @@
 use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
 use frame_support::{
 	sp_runtime::traits::Hash,
-	traits::{Currency, EnsureOrigin, Get},
+	traits::{
+		fungible::{Inspect, Mutate},
+		EnsureOrigin, Get,
+	},
 };
 use sp_std::{
 	convert::{TryFrom, TryInto},
@@ -37,8 +40,9 @@ const MAX_CTYPE_SIZE: u32 = 5 * 1024 * 1024;
 benchmarks! {
 	where_clause {
 		where
-		<<T as Config>::Currency as Currency<AccountIdOf<T>>>::Balance: TryFrom<usize>,
-		<<<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance as TryFrom<usize>>::Error: Debug,
+		<<T as Config>::Currency as Inspect<AccountIdOf<T>>>::Balance: TryFrom<usize>,
+		<T as Config>::Currency: Mutate<T::AccountId>,
+		<<<T as Config>::Currency as Inspect<<T as frame_system::Config>::AccountId>>::Balance as TryFrom<usize>>::Error: Debug,
 		T::EnsureOrigin: GenerateBenchmarkOrigin<T::RuntimeOrigin, T::AccountId, T::CtypeCreatorId>,
 		T::BlockNumber: From<u64>,
 	}

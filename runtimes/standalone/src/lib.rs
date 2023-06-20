@@ -29,7 +29,7 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use frame_support::{
 	construct_runtime, parameter_types,
-	traits::{Currency, Everything, InstanceFilter},
+	traits::{Everything, InstanceFilter},
 	weights::{constants::RocksDbWeight, ConstantMultiplier, IdentityFee, Weight},
 };
 pub use frame_system::Call as SystemCall;
@@ -61,7 +61,6 @@ use runtime_common::{
 	authorization::{AuthorizationId, PalletAuthorize},
 	constants::{self, EXISTENTIAL_DEPOSIT, KILT},
 	errors::PublicCredentialsApiError,
-	fees::ToAuthor,
 	AccountId, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature, SlowAdjustingFeeUpdate,
 };
 
@@ -86,9 +85,6 @@ pub use sp_runtime::BuildStorage;
 
 /// Digest item type.
 pub type DigestItem = generic::DigestItem;
-
-pub type NegativeImbalance<T> =
-	<pallet_balances::Pallet<T> as Currency<<T as frame_system::Config>::AccountId>>::NegativeImbalance;
 
 /// Opaque types. These are used by the CLI to instantiate machinery that don't
 /// need to know the specifics of the runtime. They can then be made to be
@@ -350,7 +346,7 @@ parameter_types! {
 impl ctype::Config for Runtime {
 	type Currency = Balances;
 	type Fee = Fee;
-	type FeeCollector = runtime_common::fees::ToAuthor<Runtime>;
+	type FeeCollector = runtime_common::fees::ToAuthorCredit<Runtime>;
 
 	type CtypeCreatorId = DidIdentifier;
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
@@ -387,7 +383,7 @@ impl did::Config for Runtime {
 	type RuntimeOrigin = RuntimeOrigin;
 	type Currency = Balances;
 	type Fee = DidFee;
-	type FeeCollector = ToAuthor<Runtime>;
+	type FeeCollector = runtime_common::fees::ToAuthorCredit<Runtime>;
 
 	#[cfg(not(feature = "runtime-benchmarks"))]
 	type EnsureOrigin = did::EnsureDidOrigin<Self::DidIdentifier, AccountId>;

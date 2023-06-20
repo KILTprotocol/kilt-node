@@ -662,7 +662,7 @@ impl pallet_inflation::Config for Runtime {
 	type Currency = Balances;
 	type InitialPeriodLength = constants::treasury::InitialPeriodLength;
 	type InitialPeriodReward = constants::treasury::InitialPeriodReward;
-	type Beneficiary = Treasury;
+	type Beneficiary = runtime_common::DustAndFeeHandler<Runtime>;
 	type WeightInfo = weights::pallet_inflation::WeightInfo<Runtime>;
 }
 
