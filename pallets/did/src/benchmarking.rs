@@ -42,7 +42,7 @@ use crate::{
 	},
 	service_endpoints::DidEndpoint,
 	signature::DidSignatureVerify,
-	AccountIdOf, BlockNumberOf, DidAuthorizedCallOperationOf, DidCallableOf, DidIdentifierOf,
+	AccountIdOf, DidAuthorizedCallOperationOf, DidIdentifierOf,
 };
 
 const DEFAULT_ACCOUNT_ID: &str = "tx_submitter";

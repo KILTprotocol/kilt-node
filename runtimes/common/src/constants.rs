@@ -366,6 +366,7 @@ pub mod did {
 	parameter_types! {
 		#[derive(Debug, Clone, Eq, PartialEq, TypeInfo)]
 		pub const MaxNewKeyAgreementKeys: u32 = MAX_KEY_AGREEMENT_KEYS;
+		#[derive(Clone)]
 		pub const MaxPublicKeysPerDid: u32 = MAX_PUBLIC_KEYS_PER_DID;
 		#[derive(Debug, Clone, Eq, PartialEq)]
 		pub const MaxTotalKeyAgreementKeys: u32 = MAX_TOTAL_KEY_AGREEMENT_KEYS;
