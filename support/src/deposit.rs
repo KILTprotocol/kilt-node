@@ -55,6 +55,5 @@ pub fn free_deposit<Account, Currency: Mutate<Account>>(
 		deposit.amount,
 		result.err(),
 	);
-	result?;
 	Ok(())
 }
