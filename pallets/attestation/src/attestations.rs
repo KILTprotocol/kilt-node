@@ -43,6 +43,8 @@ mod tests {
 	use super::*;
 	use crate::{mock::*, AccountIdOf, AttestationDetailsOf, AttesterOf, BalanceOf};
 
+	type OldAttestationDetailsOf<Test> =
+		OldAttestationDetails<CtypeHashOf<Test>, AttesterOf<Test>, AccountIdOf<Test>, BalanceOf<Test>>;
 	/// Old Attestation
 	#[derive(Clone, Debug, Encode, Decode, Eq, PartialEq, TypeInfo, MaxEncodedLen)]
 
@@ -63,7 +65,7 @@ mod tests {
 
 	#[test]
 	fn test_no_need_to_migrate_if_none() {
-		let old = OldAttestationDetails::<CtypeHashOf<Test>, AttesterOf<Test>, AccountIdOf<Test>, BalanceOf<Test>> {
+		let old = OldAttestationDetailsOf::<Test> {
 			ctype_hash: claim_hash_from_seed(CLAIM_HASH_SEED_01),
 			attester: sr25519_did_from_seed(&ALICE_SEED),
 			delegation_id: None,

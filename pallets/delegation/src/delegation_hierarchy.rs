@@ -59,7 +59,7 @@ impl Default for Permissions {
 /// link to the hierarchy root node. Furthermore, all nodes have a parent except
 /// the root nodes, which point to themselves for the hierarchy root node link.
 #[derive(Clone, Debug, Encode, Decode, Eq, PartialEq, MaxEncodedLen, TypeInfo)]
-pub struct DelegationNode<DelegationNodeId: Eq + Ord, MaxChildren: Get<u32>, DelegationDetails, AccountId, Balance> {
+pub struct DelegationNode<DelegationNodeId, MaxChildren: Get<u32>, DelegationDetails, AccountId, Balance> {
 	/// The ID of the delegation hierarchy the node is part of.
 	pub hierarchy_root_id: DelegationNodeId,
 	/// The ID of the parent. For all but root nodes this is not None.
@@ -73,7 +73,7 @@ pub struct DelegationNode<DelegationNodeId: Eq + Ord, MaxChildren: Get<u32>, Del
 	pub deposit: Deposit<AccountId, Balance>,
 }
 
-impl<DelegationNodeId: Eq + Ord + PartialOrd, MaxChildren: Get<u32>, DelegationDetails, AccountId, Balance>
+impl<DelegationNodeId: Ord, MaxChildren: Get<u32>, DelegationDetails, AccountId, Balance>
 	DelegationNode<DelegationNodeId, MaxChildren, DelegationDetails, AccountId, Balance>
 {
 	/// Creates a new delegation root node with the given ID and delegation

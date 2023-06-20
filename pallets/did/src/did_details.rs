@@ -35,8 +35,8 @@ use sp_std::{convert::TryInto, vec::Vec};
 
 use crate::{
 	errors::{self, DidError},
-	utils, AccountIdOf, BalanceOf, BlockNumberOf, Config, CurrencyOf, DidCreationDetailsOf, DidEndpointsCount,
-	DidIdentifierOf, KeyIdOf, Payload,
+	utils, AccountIdOf, BalanceOf, BlockNumberOf, Config, CurrencyOf, DidAuthorizedCallOperationOf,
+	DidCreationDetailsOf, DidEndpointsCount, DidIdentifierOf, KeyIdOf, Payload,
 };
 
 /// Types of verification keys a DID can control.
@@ -671,11 +671,11 @@ pub trait DeriveDidCallAuthorizationVerificationKeyRelationship {
 /// their invocation.
 #[derive(Clone, RuntimeDebug, Decode, Encode, PartialEq, TypeInfo)]
 
-pub struct DidAuthorizedCallOperation<DidIdentifier, DidCallable, BlockNumber, AccountId> {
+pub struct DidAuthorizedCallOperation<DidIdentifier, DidCallable, BlockNumber, AccountId, TxCounter> {
 	/// The DID identifier.
 	pub did: DidIdentifier,
 	/// The DID tx counter.
-	pub tx_counter: u64,
+	pub tx_counter: TxCounter,
 	/// The extrinsic call to authorize with the DID.
 	pub call: DidCallable,
 	/// The block number at which the operation was created.
@@ -690,17 +690,15 @@ pub struct DidAuthorizedCallOperation<DidIdentifier, DidCallable, BlockNumber, A
 /// authorization.
 #[derive(Clone, RuntimeDebug, PartialEq, TypeInfo)]
 
-pub struct DidAuthorizedCallOperationWithVerificationRelationship<DidAuthorizedCallOperation> {
+pub struct DidAuthorizedCallOperationWithVerificationRelationship<T: Config> {
 	/// The wrapped [DidAuthorizedCallOperation].
-	pub operation: DidAuthorizedCallOperation,
+	pub operation: DidAuthorizedCallOperationOf<T>,
 	/// The type of DID key to use for authorization.
 	pub verification_key_relationship: DidVerificationKeyRelationship,
 }
 
-impl<DidAuthorizedCallOperation> core::ops::Deref
-	for DidAuthorizedCallOperationWithVerificationRelationship<DidAuthorizedCallOperation>
-{
-	type Target = DidAuthorizedCallOperation;
+impl<T: Config> core::ops::Deref for DidAuthorizedCallOperationWithVerificationRelationship<T> {
+	type Target = DidAuthorizedCallOperationOf<T>;
 
 	fn deref(&self) -> &Self::Target {
 		&self.operation
@@ -710,7 +708,4 @@ impl<DidAuthorizedCallOperation> core::ops::Deref
 // Opaque implementation.
 // [DidAuthorizedCallOperationWithVerificationRelationship] encodes to
 // [DidAuthorizedCallOperation].
-impl<DidAuthorizedCallOperation> WrapperTypeEncode
-	for DidAuthorizedCallOperationWithVerificationRelationship<DidAuthorizedCallOperation>
-{
-}
+impl<T: Config> WrapperTypeEncode for DidAuthorizedCallOperationWithVerificationRelationship<T> {}

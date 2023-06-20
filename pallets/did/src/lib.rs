@@ -191,7 +191,7 @@ pub mod pallet {
 		DidCreationDetails<DidIdentifierOf<T>, AccountIdOf<T>, <T as Config>::MaxNewKeyAgreementKeys, DidEndpoint<T>>;
 
 	pub(crate) type DidAuthorizedCallOperationOf<T> =
-		DidAuthorizedCallOperation<DidIdentifierOf<T>, DidCallableOf<T>, BlockNumberOf<T>, AccountIdOf<T>>;
+		DidAuthorizedCallOperation<DidIdentifierOf<T>, DidCallableOf<T>, BlockNumberOf<T>, AccountIdOf<T>, u64>;
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config + Debug {
@@ -1144,7 +1144,7 @@ pub mod pallet {
 		/// - Writes: Did
 		/// # </weight>
 		pub fn verify_did_operation_signature_and_increase_nonce(
-			operation: &DidAuthorizedCallOperationWithVerificationRelationship<DidAuthorizedCallOperationOf<T>>,
+			operation: &DidAuthorizedCallOperationWithVerificationRelationship<T>,
 			signature: &DidSignature,
 		) -> Result<(), DidError> {
 			// Check that the tx has not expired.
