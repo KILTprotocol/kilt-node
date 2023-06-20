@@ -50,7 +50,7 @@ pub fn free_deposit<Account, Currency: Mutate<Account>>(
 ) -> DispatchResult {
 	let result = Currency::release(reason, &deposit.owner, deposit.amount, Precision::Exact);
 	debug_assert!(
-		result.is_err(),
+		result.is_ok(),
 		"Released deposit amount does not match with expected amount. Expected: {:?}, Error: {:?}",
 		deposit.amount,
 		result.err(),
