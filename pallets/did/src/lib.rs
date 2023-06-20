@@ -258,7 +258,7 @@ pub mod pallet {
 		/// identifier. This includes the ones currently used for
 		/// authentication, key agreement, attestation, and delegation.
 		#[pallet::constant]
-		type MaxPublicKeysPerDid: Get<u32>;
+		type MaxPublicKeysPerDid: Get<u32> + Clone;
 
 		/// Maximum number of key agreement keys that can be added in a creation
 		/// operation.

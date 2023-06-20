@@ -256,7 +256,7 @@ pub struct DidDetails<T: Config> {
 	pub authentication_key: KeyIdOf<T>,
 	/// The set of the key agreement key IDs, which can be used to encrypt
 	/// data addressed to the DID subject.
-	pub key_agreement_keys: DidKeyAgreementKeySet<T>,
+	pub key_agreement_keys: DidKeyAgreementKeySetOf<T>,
 	/// \[OPTIONAL\] The ID of the delegation key, used to verify the
 	/// signatures of the delegations created by the DID subject.
 	pub delegation_key: Option<KeyIdOf<T>>,
@@ -272,7 +272,7 @@ pub struct DidDetails<T: Config> {
 	/// the old attestation keys that have been rotated, i.e., they cannot
 	/// be used to create new attestations but can still be used to verify
 	/// previously issued attestations.
-	pub public_keys: DidPublicKeyMap<T>,
+	pub public_keys: DidPublicKeyMapOf<T>,
 	/// The counter used to avoid replay attacks, which is checked and
 	/// updated upon each DID operation involving with the subject as the
 	/// creator.
@@ -292,7 +292,7 @@ impl<T: Config> DidDetails<T> {
 		block_number: BlockNumberOf<T>,
 		deposit: Deposit<AccountIdOf<T>, BalanceOf<T>>,
 	) -> Result<Self, errors::StorageError> {
-		let mut public_keys = DidPublicKeyMap::<T>::default();
+		let mut public_keys = DidPublicKeyMapOf::<T>::default();
 		let authentication_key_id = utils::calculate_key_id::<T>(&authentication_key.clone().into());
 		public_keys
 			.try_insert(
@@ -306,7 +306,7 @@ impl<T: Config> DidDetails<T> {
 
 		Ok(Self {
 			authentication_key: authentication_key_id,
-			key_agreement_keys: DidKeyAgreementKeySet::<T>::default(),
+			key_agreement_keys: DidKeyAgreementKeySetOf::<T>::default(),
 			attestation_key: None,
 			delegation_key: None,
 			public_keys,
@@ -612,9 +612,15 @@ impl<T: Config> DidDetails<T> {
 
 pub(crate) type DidNewKeyAgreementKeySet<MaxNewKeyAgreementKeys> =
 	BoundedBTreeSet<DidEncryptionKey, MaxNewKeyAgreementKeys>;
-pub(crate) type DidKeyAgreementKeySet<T> = BoundedBTreeSet<KeyIdOf<T>, <T as Config>::MaxTotalKeyAgreementKeys>;
-pub(crate) type DidPublicKeyMap<T> =
-	BoundedBTreeMap<KeyIdOf<T>, DidPublicKeyDetails<BlockNumberOf<T>>, <T as Config>::MaxPublicKeysPerDid>;
+
+pub type DidKeyAgreementKeySet<KeyId, MaxTotalKeyAgreementKeys> = BoundedBTreeSet<KeyId, MaxTotalKeyAgreementKeys>;
+pub(crate) type DidKeyAgreementKeySetOf<T> = DidKeyAgreementKeySet<KeyIdOf<T>, <T as Config>::MaxTotalKeyAgreementKeys>;
+
+pub(crate) type DidPublicKeyMap<KeyId, BlockNumber, MaxPublicKeysPerDid> =
+	BoundedBTreeMap<KeyId, DidPublicKeyDetails<BlockNumber>, MaxPublicKeysPerDid>;
+
+pub(crate) type DidPublicKeyMapOf<T> =
+	DidPublicKeyMap<KeyIdOf<T>, BlockNumberOf<T>, <T as Config>::MaxPublicKeysPerDid>;
 
 /// The details of a new DID to create.
 #[derive(Clone, RuntimeDebug, Decode, Encode, PartialEq, TypeInfo)]
