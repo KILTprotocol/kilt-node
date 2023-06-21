@@ -27,7 +27,7 @@ pub fn has_user_holds<AccountId, Currency: ReservableCurrency<AccountId> + Mutat
 	owner: &AccountId,
 	reason: &Currency::Reason,
 ) -> bool {
-	Currency::balance_on_hold(reason, owner) == Zero::zero() && Currency::reserved_balance(owner) > Zero::zero()
+	Currency::balance_on_hold(reason, owner).is_zero() && Currency::reserved_balance(owner) > Zero::zero()
 }
 
 pub fn switch_reserved_to_hold<AccountId, Currency: ReservableCurrency<AccountId> + MutateHold<AccountId>>(
@@ -35,6 +35,10 @@ pub fn switch_reserved_to_hold<AccountId, Currency: ReservableCurrency<AccountId
 	reason: &Currency::Reason,
 	amount: u128,
 ) -> DispatchResult {
-	Currency::unreserve(&owner, amount.saturated_into());
-	Currency::hold(reason, &owner, amount.saturated_into())
+	let unreserved_balance = Currency::unreserve(&owner, amount.saturated_into());
+	Currency::hold(
+		reason,
+		&owner,
+		unreserved_balance.saturated_into::<u128>().saturated_into(),
+	)
 }
