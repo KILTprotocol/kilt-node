@@ -86,7 +86,6 @@ where
 				details.deposit.amount.saturated_into::<u128>() <= hold_balance,
 				"Public Credentails: Hold balance is not matching for credential {:?} {:?}. Expected hold: {:?}. Real hold: {:?}",
 				key, key2, details.deposit.amount, hold_balance
-				
 			);
 
 			Ok(())
