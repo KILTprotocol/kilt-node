@@ -610,14 +610,13 @@ impl<T: Config> DidDetails<T> {
 	}
 }
 
-pub(crate) type DidNewKeyAgreementKeySet<MaxNewKeyAgreementKeys> =
-	BoundedBTreeSet<DidEncryptionKey, MaxNewKeyAgreementKeys>;
+type DidNewKeyAgreementKeySet<MaxNewKeyAgreementKeys> = BoundedBTreeSet<DidEncryptionKey, MaxNewKeyAgreementKeys>;
 pub type DidNewKeyAgreementKeySetOf<T> = DidNewKeyAgreementKeySet<<T as Config>::MaxNewKeyAgreementKeys>;
 
-pub type DidKeyAgreementKeySet<KeyId, MaxTotalKeyAgreementKeys> = BoundedBTreeSet<KeyId, MaxTotalKeyAgreementKeys>;
+type DidKeyAgreementKeySet<KeyId, MaxTotalKeyAgreementKeys> = BoundedBTreeSet<KeyId, MaxTotalKeyAgreementKeys>;
 pub(crate) type DidKeyAgreementKeySetOf<T> = DidKeyAgreementKeySet<KeyIdOf<T>, <T as Config>::MaxTotalKeyAgreementKeys>;
 
-pub(crate) type DidPublicKeyMap<KeyId, BlockNumber, MaxPublicKeysPerDid> =
+type DidPublicKeyMap<KeyId, BlockNumber, MaxPublicKeysPerDid> =
 	BoundedBTreeMap<KeyId, DidPublicKeyDetails<BlockNumber>, MaxPublicKeysPerDid>;
 
 pub(crate) type DidPublicKeyMapOf<T> =
