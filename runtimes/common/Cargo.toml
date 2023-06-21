@@ -25,7 +25,7 @@ attestation.workspace = true
 kilt-support.workspace = true
 parachain-staking.workspace = true
 public-credentials.workspace = true
-# pallet-web3-names.workspace = true
+
 
 # Substrate dependencies
 frame-support.workspace = true
@@ -68,7 +68,7 @@ runtime-benchmarks = [
 ]
 std = [
   "attestation/std",
-  "parity-scale-codec/std", # "ctype/std",
+  "parity-scale-codec/std", 
   "cumulus-primitives-core/std",
   "frame-support/std",
   "frame-system/std",
