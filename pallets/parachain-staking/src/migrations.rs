@@ -17,7 +17,10 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_support::{
-	traits::{fungible::freeze::Mutate as MutateFreeze, Get, LockableCurrency, OnRuntimeUpgrade, ReservableCurrency},
+	traits::{
+		fungible::freeze::Mutate as MutateFreeze, Get, GetStorageVersion, LockableCurrency, OnRuntimeUpgrade,
+		ReservableCurrency, StorageVersion,
+	},
 	weights::Weight,
 };
 use pallet_balances::{BalanceLock, Freezes, IdAmount, Locks};
@@ -26,7 +29,7 @@ use sp_std::marker::PhantomData;
 
 use crate::{
 	types::{AccountIdOf, CurrencyOf},
-	Config, FreezeReason, STAKING_ID,
+	Config, FreezeReason, Pallet, STAKING_ID,
 };
 
 pub struct BalanceMigration<T>(PhantomData<T>);
@@ -38,7 +41,11 @@ where
 {
 	fn on_runtime_upgrade() -> frame_support::weights::Weight {
 		log::info!("Staking: Initiating migration");
-		if is_upgraded::<T>() {
+
+		let onchain_storage_version = Pallet::<T>::on_chain_storage_version();
+		if onchain_storage_version.eq(&StorageVersion::new(8)) {
+			onchain_storage_version.put::<Pallet<T>>();
+			StorageVersion::new(9).put::<Pallet<T>>();
 			return do_migration::<T>();
 		}
 
@@ -49,9 +56,13 @@ where
 	#[cfg(feature = "try-runtime")]
 	fn pre_upgrade() -> Result<sp_std::vec::Vec<u8>, &'static str> {
 		use frame_support::ensure;
+		use sp_runtime::traits::Zero;
 		use sp_std::vec;
+
 		let count_freezes = pallet_balances::Freezes::<T>::iter().count();
-		ensure!(count_freezes == 0, "Staking Pre: There are already freezes.");
+		ensure!(count_freezes.is_zero(), "Staking Pre: There are already freezes.");
+
+		assert_eq!(crate::Pallet::<T>::on_chain_storage_version(), StorageVersion::new(8));
 
 		log::info!("Staking: Pre migration checks successful");
 
@@ -61,26 +72,18 @@ where
 	#[cfg(feature = "try-runtime")]
 	fn post_upgrade(_pre_state: sp_std::vec::Vec<u8>) -> Result<(), &'static str> {
 		use frame_support::ensure;
+		use sp_runtime::traits::Zero;
 
 		let count_freezes = pallet_balances::Freezes::<T>::iter().count();
 
-		ensure!(count_freezes > 0, "Staking: There are still no freezes.");
+		ensure!(!count_freezes.is_zero(), "Staking: There are still no freezes.");
+
+		assert_eq!(crate::Pallet::<T>::on_chain_storage_version(), StorageVersion::new(9));
 
 		log::info!("Staking: Post migration checks successful");
 
 		Ok(())
 	}
-}
-
-/// If there exists one user with locks -> the migration has to be executed.
-fn is_upgraded<T: Config>() -> bool
-where
-	<T as Config>::Currency: ReservableCurrency<T::AccountId>,
-{
-	Locks::<T>::iter_values()
-		.flatten()
-		.map(|lock: BalanceLock<_>| lock.id == STAKING_ID)
-		.any(|is_staking| is_staking)
 }
 
 fn do_migration<T: Config>() -> Weight

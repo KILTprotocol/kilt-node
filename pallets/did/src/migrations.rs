@@ -17,15 +17,15 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_support::{
-	traits::{Get, OnRuntimeUpgrade, ReservableCurrency},
+	traits::{Get, GetStorageVersion, OnRuntimeUpgrade, ReservableCurrency, StorageVersion},
 	weights::Weight,
 };
-use kilt_support::migration::{has_user_holds, switch_reserved_to_hold};
+use kilt_support::migration::switch_reserved_to_hold;
 use log;
 use sp_runtime::SaturatedConversion;
 use sp_std::marker::PhantomData;
 
-use crate::{did_details::DidDetails, AccountIdOf, Config, CurrencyOf, Did, HoldReason};
+use crate::{AccountIdOf, Config, CurrencyOf, Did, HoldReason, Pallet};
 
 pub struct BalanceMigration<T>(PhantomData<T>);
 
@@ -35,7 +35,11 @@ where
 {
 	fn on_runtime_upgrade() -> frame_support::weights::Weight {
 		log::info!("Did: Initiating migration");
-		if is_upgraded::<T>() {
+
+		let onchain_storage_version = Pallet::<T>::on_chain_storage_version();
+		if onchain_storage_version.eq(&StorageVersion::new(4)) {
+			onchain_storage_version.put::<Pallet<T>>();
+			StorageVersion::new(5).put::<Pallet<T>>();
 			return do_migration::<T>();
 		}
 
@@ -49,8 +53,8 @@ where
 		use sp_std::vec;
 
 		let has_all_user_no_holds = Did::<T>::iter_values()
-			.map(|details: DidDetails<T>| {
-				has_user_holds::<AccountIdOf<T>, CurrencyOf<T>>(
+			.map(|details: crate::did_details::DidDetails<T>| {
+				kilt_support::migration::has_user_holds::<AccountIdOf<T>, CurrencyOf<T>>(
 					&details.deposit.owner,
 					&T::RuntimeHoldReason::from(HoldReason::Deposit),
 				)
@@ -58,6 +62,9 @@ where
 			.all(|user| user);
 
 		ensure!(has_all_user_no_holds, "Pre Upgrade Did: there are users with holds!");
+
+		assert_eq!(crate::Pallet::<T>::on_chain_storage_version(), StorageVersion::new(4));
+
 		log::info!("Did: Pre migration checks successful");
 
 		Ok(vec![])
@@ -65,8 +72,7 @@ where
 
 	#[cfg(feature = "try-runtime")]
 	fn post_upgrade(_pre_state: sp_std::vec::Vec<u8>) -> Result<(), &'static str> {
-		use frame_support::{ensure, traits::fungible::InspectHold};
-		use kilt_support::test_utils::log_and_return_error_message;
+		use frame_support::traits::fungible::InspectHold;
 
 		Did::<T>::iter().try_for_each(|(key, details)| -> Result<(), &'static str> {
 			let hold_balance: u128 = <T as Config>::Currency::balance_on_hold(
@@ -74,39 +80,22 @@ where
 				&details.deposit.owner,
 			)
 			.saturated_into();
-			ensure!(
+			assert!(
 				details.deposit.amount.saturated_into::<u128>() <= hold_balance,
-				log_and_return_error_message(scale_info::prelude::format!(
-					"Did: Hold balance is not matching for Did {:?}. Expected hold: {:?}. Real hold: {:?}",
-					key,
-					details.deposit.amount,
-					hold_balance
-				))
+				"Did: Hold balance is not matching for Did {:?}. Expected hold: {:?}. Real hold: {:?}",
+				key,
+				details.deposit.amount,
+				hold_balance
 			);
-			ensure!(!is_upgraded::<T>(), "Did: Users have still no holds");
 
 			Ok(())
 		})?;
 
+		assert_eq!(crate::Pallet::<T>::on_chain_storage_version(), StorageVersion::new(5));
+
 		log::info!("Did: Post migration checks successful");
 		Ok(())
 	}
-}
-
-/// Checks if there is an user, who has still reserved balance and no holds. If
-/// yes, the migration is not executed yet.
-fn is_upgraded<T: Config>() -> bool
-where
-	<T as Config>::Currency: ReservableCurrency<T::AccountId>,
-{
-	Did::<T>::iter_values()
-		.map(|details: DidDetails<T>| {
-			has_user_holds::<AccountIdOf<T>, CurrencyOf<T>>(
-				&details.deposit.owner,
-				&T::RuntimeHoldReason::from(HoldReason::Deposit),
-			)
-		})
-		.all(|user| user)
 }
 
 fn do_migration<T: Config>() -> Weight

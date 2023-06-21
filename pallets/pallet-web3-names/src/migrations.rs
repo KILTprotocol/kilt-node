@@ -17,14 +17,14 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_support::{
-	traits::{Get, OnRuntimeUpgrade, ReservableCurrency},
+	traits::{Get, GetStorageVersion, OnRuntimeUpgrade, ReservableCurrency, StorageVersion},
 	weights::Weight,
 };
-use kilt_support::migration::{has_user_holds, switch_reserved_to_hold};
+use kilt_support::migration::switch_reserved_to_hold;
 use sp_runtime::SaturatedConversion;
 use sp_std::marker::PhantomData;
 
-use crate::{AccountIdOf, Config, CurrencyOf, HoldReason, Owner, Web3OwnershipOf};
+use crate::{AccountIdOf, Config, CurrencyOf, HoldReason, Owner, Pallet};
 
 pub struct BalanceMigration<T>(PhantomData<T>);
 
@@ -34,28 +34,34 @@ where
 {
 	fn on_runtime_upgrade() -> frame_support::weights::Weight {
 		log::info!("W3n: Initiating migration");
-		if is_upgraded::<T>() {
+
+		let onchain_storage_version = Pallet::<T>::on_chain_storage_version();
+		if onchain_storage_version.eq(&StorageVersion::new(1)) {
+			onchain_storage_version.put::<Pallet<T>>();
+			StorageVersion::new(2).put::<Pallet<T>>();
 			return do_migration::<T>();
 		}
+
 		log::info!("W3n: No migration needed. This file should be deleted.");
 		<T as frame_system::Config>::DbWeight::get().reads_writes(0, 0)
 	}
 
 	#[cfg(feature = "try-runtime")]
 	fn pre_upgrade() -> Result<sp_std::vec::Vec<u8>, &'static str> {
-		use frame_support::ensure;
 		use sp_std::vec;
 
 		let has_all_user_no_holds = Owner::<T>::iter_values()
-			.map(|details: Web3OwnershipOf<T>| {
-				has_user_holds::<AccountIdOf<T>, CurrencyOf<T>>(
+			.map(|details: crate::Web3OwnershipOf<T>| {
+				kilt_support::migration::has_user_holds::<AccountIdOf<T>, CurrencyOf<T>>(
 					&details.deposit.owner,
 					&T::RuntimeHoldReason::from(HoldReason::Deposit),
 				)
 			})
 			.all(|user| user);
 
-		ensure!(has_all_user_no_holds, "Pre Upgrade W3n: there are users with holds!");
+		assert!(has_all_user_no_holds, "Pre Upgrade W3n: there are users with holds!");
+
+		assert_eq!(crate::Pallet::<T>::on_chain_storage_version(), StorageVersion::new(1));
 
 		log::info!("W3n: Pre migration checks successful");
 
@@ -64,8 +70,7 @@ where
 
 	#[cfg(feature = "try-runtime")]
 	fn post_upgrade(_pre_state: sp_std::vec::Vec<u8>) -> Result<(), &'static str> {
-		use frame_support::{ensure, traits::fungible::InspectHold};
-		use kilt_support::test_utils::log_and_return_error_message;
+		use frame_support::traits::fungible::InspectHold;
 
 		Owner::<T>::iter().try_for_each(|(key, details)| -> Result<(), &'static str> {
 			let hold_balance: u128 = <T as Config>::Currency::balance_on_hold(
@@ -73,40 +78,21 @@ where
 				&details.deposit.owner,
 			)
 			.saturated_into();
-			ensure!(
+			assert!(
 				details.deposit.amount.saturated_into::<u128>() <= hold_balance,
-				log_and_return_error_message(scale_info::prelude::format!(
-					"W3n: Hold balance is not matching for w3n {:?}. Expected hold: {:?}. Real hold: {:?}",
-					key,
-					details.deposit.amount,
-					hold_balance
-				))
+				"W3n: Hold balance is not matching for w3n {:?}. Expected hold: {:?}. Real hold: {:?}",
+				key,
+				details.deposit.amount,
+				hold_balance
 			);
-
-			ensure!(!is_upgraded::<T>(), "Users have still no holds");
 
 			Ok(())
 		})?;
+		assert_eq!(crate::Pallet::<T>::on_chain_storage_version(), StorageVersion::new(2));
 
 		log::info!("W3n: Post migration checks successful");
 		Ok(())
 	}
-}
-
-/// Checks if there is an user, who has still reserved balance and no holds. If
-/// yes, the migration is not executed yet.
-fn is_upgraded<T: Config>() -> bool
-where
-	<T as Config>::Currency: ReservableCurrency<T::AccountId>,
-{
-	Owner::<T>::iter_values()
-		.map(|details: Web3OwnershipOf<T>| {
-			has_user_holds::<AccountIdOf<T>, CurrencyOf<T>>(
-				&details.deposit.owner,
-				&T::RuntimeHoldReason::from(HoldReason::Deposit),
-			)
-		})
-		.all(|user| user)
 }
 
 fn do_migration<T: Config>() -> Weight
