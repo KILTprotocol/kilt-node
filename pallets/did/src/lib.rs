@@ -1117,11 +1117,7 @@ pub mod pallet {
 			let subject = source.subject();
 			let sender = source.sender();
 
-			DidDepositCollector::<T>::change_deposit_owner(
-				&subject,
-				sender,
-				&T::RuntimeHoldReason::from(HoldReason::Deposit),
-			)?;
+			DidDepositCollector::<T>::change_deposit_owner(&subject, sender)?;
 
 			Ok(())
 		}
@@ -1278,8 +1274,15 @@ pub mod pallet {
 	}
 
 	struct DidDepositCollector<T: Config>(PhantomData<T>);
-	impl<T: Config> StorageDepositCollector<AccountIdOf<T>, DidIdentifierOf<T>> for DidDepositCollector<T> {
-		type Currency = T::Currency;
+	impl<T: Config> StorageDepositCollector<AccountIdOf<T>, DidIdentifierOf<T>, T::RuntimeHoldReason>
+		for DidDepositCollector<T>
+	{
+		type Currency = <T as Config>::Currency;
+		type Reason = HoldReason;
+
+		fn reason() -> Self::Reason {
+			HoldReason::Deposit
+		}
 
 		fn deposit(
 			key: &DidIdentifierOf<T>,

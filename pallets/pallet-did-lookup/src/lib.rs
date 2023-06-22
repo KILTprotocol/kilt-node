@@ -378,11 +378,7 @@ pub mod pallet {
 			let record = ConnectedDids::<T>::get(&account).ok_or(Error::<T>::NotFound)?;
 			ensure!(record.did == subject, Error::<T>::NotAuthorized);
 
-			LinkableAccountDepositCollector::<T>::change_deposit_owner(
-				&account,
-				source.sender(),
-				&T::RuntimeHoldReason::from(HoldReason::Deposit),
-			)
+			LinkableAccountDepositCollector::<T>::change_deposit_owner(&account, source.sender())
 		}
 
 		/// Updates the deposit amount to the current deposit rate.
@@ -396,10 +392,7 @@ pub mod pallet {
 			let record = ConnectedDids::<T>::get(&account).ok_or(Error::<T>::NotFound)?;
 			ensure!(record.deposit.owner == source, Error::<T>::NotAuthorized);
 
-			LinkableAccountDepositCollector::<T>::update_deposit(
-				&account,
-				&T::RuntimeHoldReason::from(HoldReason::Deposit),
-			)
+			LinkableAccountDepositCollector::<T>::update_deposit(&account)
 		}
 
 		// Old call that was used to migrate
@@ -462,8 +455,15 @@ pub mod pallet {
 	}
 
 	struct LinkableAccountDepositCollector<T: Config>(PhantomData<T>);
-	impl<T: Config> StorageDepositCollector<AccountIdOf<T>, LinkableAccountId> for LinkableAccountDepositCollector<T> {
+	impl<T: Config> StorageDepositCollector<AccountIdOf<T>, LinkableAccountId, T::RuntimeHoldReason>
+		for LinkableAccountDepositCollector<T>
+	{
 		type Currency = T::Currency;
+		type Reason = HoldReason;
+
+		fn reason() -> Self::Reason {
+			HoldReason::Deposit
+		}
 
 		fn deposit(
 			key: &LinkableAccountId,

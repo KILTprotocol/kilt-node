@@ -678,11 +678,7 @@ pub mod pallet {
 			// parent or another ancestor.
 			ensure!(delegation.details.owner == source.subject(), Error::<T>::AccessDenied);
 
-			DelegationDepositCollector::<T>::change_deposit_owner(
-				&delegation_id,
-				source.sender(),
-				&T::RuntimeHoldReason::from(HoldReason::Deposit),
-			)
+			DelegationDepositCollector::<T>::change_deposit_owner(&delegation_id, source.sender())
 		}
 
 		/// Updates the deposit amount to the current deposit rate.
@@ -699,10 +695,7 @@ pub mod pallet {
 			// parent or another ancestor.
 			ensure!(delegation.deposit.owner == sender, Error::<T>::AccessDenied);
 
-			DelegationDepositCollector::<T>::update_deposit(
-				&delegation_id,
-				&T::RuntimeHoldReason::from(HoldReason::Deposit),
-			)?;
+			DelegationDepositCollector::<T>::update_deposit(&delegation_id)?;
 
 			Ok(())
 		}
@@ -1000,8 +993,15 @@ pub mod pallet {
 	}
 
 	struct DelegationDepositCollector<T: Config>(PhantomData<T>);
-	impl<T: Config> StorageDepositCollector<AccountIdOf<T>, DelegationNodeIdOf<T>> for DelegationDepositCollector<T> {
+	impl<T: Config> StorageDepositCollector<AccountIdOf<T>, DelegationNodeIdOf<T>, T::RuntimeHoldReason>
+		for DelegationDepositCollector<T>
+	{
 		type Currency = <T as Config>::Currency;
+		type Reason = HoldReason;
+
+		fn reason() -> Self::Reason {
+			HoldReason::Deposit
+		}
 
 		fn deposit(
 			key: &DelegationNodeIdOf<T>,

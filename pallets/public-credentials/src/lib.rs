@@ -525,11 +525,7 @@ pub mod pallet {
 
 			ensure!(subject == credential_entry.attester, Error::<T>::NotAuthorized);
 
-			PublicCredentialDepositCollector::<T>::change_deposit_owner(
-				&credential_id,
-				source.sender(),
-				&T::RuntimeHoldReason::from(HoldReason::Deposit),
-			)?;
+			PublicCredentialDepositCollector::<T>::change_deposit_owner(&credential_id, source.sender())?;
 
 			Ok(())
 		}
@@ -545,10 +541,7 @@ pub mod pallet {
 
 			ensure!(source == credential_entry.deposit.owner, Error::<T>::NotAuthorized);
 
-			PublicCredentialDepositCollector::<T>::update_deposit(
-				&credential_id,
-				&T::RuntimeHoldReason::from(HoldReason::Deposit),
-			)?;
+			PublicCredentialDepositCollector::<T>::update_deposit(&credential_id)?;
 
 			Ok(())
 		}
@@ -624,8 +617,15 @@ pub mod pallet {
 	}
 
 	struct PublicCredentialDepositCollector<T: Config>(PhantomData<T>);
-	impl<T: Config> StorageDepositCollector<AccountIdOf<T>, CredentialIdOf<T>> for PublicCredentialDepositCollector<T> {
+	impl<T: Config> StorageDepositCollector<AccountIdOf<T>, CredentialIdOf<T>, T::RuntimeHoldReason>
+		for PublicCredentialDepositCollector<T>
+	{
 		type Currency = <T as Config>::Currency;
+		type Reason = HoldReason;
+
+		fn reason() -> Self::Reason {
+			HoldReason::Deposit
+		}
 
 		fn deposit(
 			credential_id: &CredentialIdOf<T>,

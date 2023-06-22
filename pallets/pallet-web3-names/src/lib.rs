@@ -361,11 +361,7 @@ pub mod pallet {
 			let source = <T as Config>::OwnerOrigin::ensure_origin(origin)?;
 			let w3n_owner = source.subject();
 			let name = Names::<T>::get(&w3n_owner).ok_or(Error::<T>::NotFound)?;
-			Web3NameStorageDepositCollector::<T>::change_deposit_owner(
-				&name,
-				source.sender(),
-				&T::RuntimeHoldReason::from(HoldReason::Deposit),
-			)?;
+			Web3NameStorageDepositCollector::<T>::change_deposit_owner(&name, source.sender())?;
 
 			Ok(())
 		}
@@ -381,10 +377,7 @@ pub mod pallet {
 			let w3n_entry = Owner::<T>::get(&name).ok_or(Error::<T>::NotFound)?;
 			ensure!(w3n_entry.deposit.owner == source, Error::<T>::NotAuthorized);
 
-			Web3NameStorageDepositCollector::<T>::update_deposit(
-				&name,
-				&T::RuntimeHoldReason::from(HoldReason::Deposit),
-			)?;
+			Web3NameStorageDepositCollector::<T>::update_deposit(&name)?;
 
 			Ok(())
 		}
@@ -543,9 +536,15 @@ pub mod pallet {
 	}
 
 	struct Web3NameStorageDepositCollector<T: Config>(PhantomData<T>);
-	impl<T: Config> StorageDepositCollector<AccountIdOf<T>, T::Web3Name> for Web3NameStorageDepositCollector<T> {
+	impl<T: Config> StorageDepositCollector<AccountIdOf<T>, T::Web3Name, T::RuntimeHoldReason>
+		for Web3NameStorageDepositCollector<T>
+	{
 		type Currency = T::Currency;
+		type Reason = HoldReason;
 
+		fn reason() -> Self::Reason {
+			HoldReason::Deposit
+		}
 		fn deposit(
 			key: &T::Web3Name,
 		) -> Result<Deposit<AccountIdOf<T>, <Self::Currency as Inspect<AccountIdOf<T>>>::Balance>, DispatchError> {
