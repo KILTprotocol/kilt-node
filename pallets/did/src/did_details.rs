@@ -614,14 +614,10 @@ type DidNewKeyAgreementKeySet<MaxNewKeyAgreementKeys> = BoundedBTreeSet<DidEncry
 #[cfg(any(feature = "runtime-benchmarks", test))]
 pub(crate) type DidNewKeyAgreementKeySetOf<T> = DidNewKeyAgreementKeySet<<T as Config>::MaxNewKeyAgreementKeys>;
 
-type DidKeyAgreementKeySet<KeyId, MaxTotalKeyAgreementKeys> = BoundedBTreeSet<KeyId, MaxTotalKeyAgreementKeys>;
-pub(crate) type DidKeyAgreementKeySetOf<T> = DidKeyAgreementKeySet<KeyIdOf<T>, <T as Config>::MaxTotalKeyAgreementKeys>;
-
-type DidPublicKeyMap<KeyId, BlockNumber, MaxPublicKeysPerDid> =
-	BoundedBTreeMap<KeyId, DidPublicKeyDetails<BlockNumber>, MaxPublicKeysPerDid>;
+pub(crate) type DidKeyAgreementKeySetOf<T> = BoundedBTreeSet<KeyIdOf<T>, <T as Config>::MaxTotalKeyAgreementKeys>;
 
 pub(crate) type DidPublicKeyMapOf<T> =
-	DidPublicKeyMap<KeyIdOf<T>, BlockNumberOf<T>, <T as Config>::MaxPublicKeysPerDid>;
+	BoundedBTreeMap<KeyIdOf<T>, DidPublicKeyDetails<BlockNumberOf<T>>, <T as Config>::MaxPublicKeysPerDid>;
 
 /// The details of a new DID to create.
 #[derive(Clone, RuntimeDebug, Decode, Encode, PartialEq, TypeInfo)]
