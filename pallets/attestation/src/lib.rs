@@ -460,11 +460,7 @@ pub mod pallet {
 			let attestation = Attestations::<T>::get(claim_hash).ok_or(Error::<T>::NotFound)?;
 			ensure!(attestation.attester == subject, Error::<T>::NotAuthorized);
 
-			AttestationStorageDepositCollector::<T>::change_deposit_owner(
-				&claim_hash,
-				sender,
-				&T::RuntimeHoldReason::from(HoldReason::Deposit),
-			)?;
+			AttestationStorageDepositCollector::<T>::change_deposit_owner(&claim_hash, sender)?;
 
 			Ok(())
 		}
@@ -480,10 +476,7 @@ pub mod pallet {
 			let attestation = Attestations::<T>::get(claim_hash).ok_or(Error::<T>::NotFound)?;
 			ensure!(attestation.deposit.owner == sender, Error::<T>::NotAuthorized);
 
-			AttestationStorageDepositCollector::<T>::update_deposit(
-				&claim_hash,
-				&T::RuntimeHoldReason::from(HoldReason::Deposit),
-			)?;
+			AttestationStorageDepositCollector::<T>::update_deposit(&claim_hash)?;
 
 			Ok(())
 		}
@@ -504,8 +497,15 @@ pub mod pallet {
 	}
 
 	struct AttestationStorageDepositCollector<T: Config>(PhantomData<T>);
-	impl<T: Config> StorageDepositCollector<AccountIdOf<T>, ClaimHashOf<T>> for AttestationStorageDepositCollector<T> {
+	impl<T: Config> StorageDepositCollector<AccountIdOf<T>, ClaimHashOf<T>, T::RuntimeHoldReason>
+		for AttestationStorageDepositCollector<T>
+	{
 		type Currency = <T as Config>::Currency;
+		type Reason = HoldReason;
+
+		fn reason() -> Self::Reason {
+			HoldReason::Deposit
+		}
 
 		fn deposit(
 			key: &ClaimHashOf<T>,

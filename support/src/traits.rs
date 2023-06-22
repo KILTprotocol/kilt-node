@@ -17,7 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_support::traits::{
-	fungible::hold::{Inspect as InspectHold, Mutate},
+	fungible::hold::Mutate,
 	tokens::fungible::{Inspect, MutateHold},
 };
 use sp_runtime::DispatchError;
@@ -89,8 +89,15 @@ pub trait ItemFilter<Item> {
 	fn should_include(&self, credential: &Item) -> bool;
 }
 
-pub trait StorageDepositCollector<AccountId, Key> {
-	type Currency: MutateHold<AccountId>;
+pub trait StorageDepositCollector<AccountId, Key, RuntimeHoldReason> {
+	type Currency: MutateHold<AccountId, Reason = RuntimeHoldReason>;
+	// TODO: This could also be replaced with a `Borrow<RuntimeHoldReason>` or an
+	// `AsRef<RuntimeHoldReason>`, but not sure what trait the runtime composite
+	// enum implements.
+	type Reason: Into<RuntimeHoldReason> + Clone;
+
+	/// Returns the hold reason for deposits taken by the deposit collector;
+	fn reason() -> Self::Reason;
 
 	/// Returns the deposit of the storage entry that is stored behind the key.
 	fn deposit(key: &Key)
@@ -114,20 +121,17 @@ pub trait StorageDepositCollector<AccountId, Key> {
 	/// The deposit balance of the current owner will be freed, while the
 	/// deposit balance of the new owner will get reserved. The deposit amount
 	/// will not change even if the required byte and item fees were updated.
-	fn change_deposit_owner(
-		key: &Key,
-		new_owner: AccountId,
-		reason: &<Self::Currency as InspectHold<AccountId>>::Reason,
-	) -> Result<(), DispatchError> {
+	fn change_deposit_owner(key: &Key, new_owner: AccountId) -> Result<(), DispatchError> {
 		let deposit = Self::deposit(key)?;
+		let reason = Self::reason();
 
-		free_deposit::<AccountId, Self::Currency>(&deposit, reason)?;
+		free_deposit::<AccountId, Self::Currency>(&deposit, &reason.clone().into())?;
 
 		let deposit = Deposit {
 			owner: new_owner,
 			..deposit
 		};
-		Self::Currency::hold(reason, &deposit.owner, deposit.amount)?;
+		Self::Currency::hold(&reason.into(), &deposit.owner, deposit.amount)?;
 
 		Self::store_deposit(key, deposit)?;
 
@@ -140,19 +144,17 @@ pub trait StorageDepositCollector<AccountId, Key> {
 	/// updates the deposit amount. It either frees parts of the reserved
 	/// balance in case the deposit was lowered or reserves more balance when
 	/// the deposit was raised.
-	fn update_deposit(
-		key: &Key,
-		reason: &<Self::Currency as InspectHold<AccountId>>::Reason,
-	) -> Result<(), DispatchError> {
+	fn update_deposit(key: &Key) -> Result<(), DispatchError> {
 		let deposit = Self::deposit(key)?;
+		let reason = Self::reason();
 
-		free_deposit::<AccountId, Self::Currency>(&deposit, reason)?;
+		free_deposit::<AccountId, Self::Currency>(&deposit, &reason.clone().into())?;
 
 		let deposit = Deposit {
 			amount: Self::deposit_amount(key),
 			..deposit
 		};
-		Self::Currency::hold(reason, &deposit.owner, deposit.amount)?;
+		Self::Currency::hold(&reason.into(), &deposit.owner, deposit.amount)?;
 
 		Self::store_deposit(key, deposit)?;
 
