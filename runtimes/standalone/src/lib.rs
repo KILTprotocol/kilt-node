@@ -354,7 +354,7 @@ impl ctype::Config for Runtime {
 }
 
 parameter_types! {
-	#[derive(Debug, Clone, Eq, PartialEq, TypeInfo)]
+	#[derive(Debug, Clone, Eq, PartialEq, TypeInfo, Decode, Encode)]
 	pub const MaxNewKeyAgreementKeys: u32 = constants::did::MAX_KEY_AGREEMENT_KEYS;
 	#[derive(Clone)]
 	pub const MaxPublicKeysPerDid: u32 = constants::did::MAX_PUBLIC_KEYS_PER_DID;

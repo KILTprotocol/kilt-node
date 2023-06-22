@@ -263,7 +263,7 @@ pub mod pallet {
 		/// Maximum number of key agreement keys that can be added in a creation
 		/// operation.
 		#[pallet::constant]
-		type MaxNewKeyAgreementKeys: Get<u32> + Clone + Debug + TypeInfo + Eq;
+		type MaxNewKeyAgreementKeys: Get<u32> + Parameter;
 
 		/// Maximum number of total key agreement keys that can be stored for a
 		/// DID subject.
