@@ -40,8 +40,11 @@ where
 			StorageVersion::new(2).put::<Pallet<T>>();
 			return do_migration::<T>();
 		}
-
-		log::info!("W3n: No migration needed. This file should be deleted.");
+		log::info!(
+			"W3N: No migration needed. This file should be deleted. Current storage version: {:?}, Required Version for update: {:?}", 
+			onchain_storage_version,
+			StorageVersion::new(1)
+		);
 		<T as frame_system::Config>::DbWeight::get().reads_writes(0, 0)
 	}
 

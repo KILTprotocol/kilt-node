@@ -42,7 +42,12 @@ where
 			return do_migration::<T>();
 		}
 
-		log::info!("Delegation: No migration needed. This file should be deleted.");
+		log::info!(
+			"Delegation: No migration needed. This file should be deleted. Current storage version: {:?}, Required Version for update: {:?}", 
+			onchain_storage_version,
+			StorageVersion::new(3)
+		);
+
 		<T as frame_system::Config>::DbWeight::get().reads_writes(0, 0)
 	}
 
