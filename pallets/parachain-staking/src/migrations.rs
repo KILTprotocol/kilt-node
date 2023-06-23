@@ -18,8 +18,8 @@
 
 use frame_support::{
 	traits::{
-		fungible::freeze::Mutate as MutateFreeze, Get, GetStorageVersion, LockableCurrency, OnRuntimeUpgrade,
-		ReservableCurrency, StorageVersion,
+		fungible::freeze::Mutate as MutateFreeze, Get, GetStorageVersion, LockIdentifier, LockableCurrency,
+		OnRuntimeUpgrade, ReservableCurrency, StorageVersion,
 	},
 	weights::Weight,
 };
@@ -29,8 +29,10 @@ use sp_std::marker::PhantomData;
 
 use crate::{
 	types::{AccountIdOf, CurrencyOf},
-	Config, FreezeReason, Pallet, STAKING_ID,
+	Config, FreezeReason, Pallet,
 };
+
+const STAKING_ID: LockIdentifier = *b"kiltpstk";
 
 pub struct BalanceMigration<T>(PhantomData<T>);
 

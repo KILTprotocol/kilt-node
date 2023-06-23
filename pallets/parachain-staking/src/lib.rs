@@ -153,7 +153,7 @@ pub mod pallet {
 				fungible::{Inspect, MutateFreeze, Unbalanced},
 				Fortitude, Precision, Preservation,
 			},
-			EstimateNextSessionRotation, Get, LockIdentifier, OnUnbalanced, StorageVersion,
+			EstimateNextSessionRotation, Get, OnUnbalanced, StorageVersion,
 		},
 		BoundedVec,
 	};
@@ -178,7 +178,6 @@ pub mod pallet {
 	};
 	use sp_std::{convert::TryInto, fmt::Debug};
 
-	pub(crate) const STAKING_ID: LockIdentifier = *b"kiltpstk";
 	/// The current storage version.
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(9);
 
