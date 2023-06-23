@@ -23,7 +23,7 @@ use frame_support::{
 use sp_runtime::{traits::Zero, SaturatedConversion};
 
 /// Checks some precondition of the migrations.
-pub fn has_user_holds<AccountId, Currency: ReservableCurrency<AccountId> + MutateHold<AccountId>>(
+pub fn has_user_reserved_balance<AccountId, Currency: ReservableCurrency<AccountId> + MutateHold<AccountId>>(
 	owner: &AccountId,
 	reason: &Currency::Reason,
 ) -> bool {

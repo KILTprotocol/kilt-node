@@ -57,7 +57,7 @@ where
 
 		let has_all_user_no_holds = DelegationNodes::<T>::iter_values()
 			.map(|details: crate::DelegationNode<T>| {
-				kilt_support::migration::has_user_holds::<AccountIdOf<T>, CurrencyOf<T>>(
+				kilt_support::migration::has_user_reserved_balance::<AccountIdOf<T>, CurrencyOf<T>>(
 					&details.deposit.owner,
 					&T::RuntimeHoldReason::from(HoldReason::Deposit),
 				)
