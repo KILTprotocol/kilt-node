@@ -38,7 +38,6 @@ where
 
 		let onchain_storage_version = Pallet::<T>::on_chain_storage_version();
 		if onchain_storage_version.eq(&StorageVersion::new(1)) {
-			onchain_storage_version.put::<Pallet<T>>();
 			StorageVersion::new(2).put::<Pallet<T>>();
 			return do_migration::<T>();
 		}
