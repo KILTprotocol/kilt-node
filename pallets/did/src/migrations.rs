@@ -66,7 +66,7 @@ where
 
 		ensure!(has_all_user_no_holds, "Pre Upgrade Did: there are users with holds!");
 
-		assert_eq!(crate::Pallet::<T>::on_chain_storage_version(), StorageVersion::new(4));
+		assert_eq!(Pallet::<T>::on_chain_storage_version(), StorageVersion::new(4));
 
 		log::info!("Did: Pre migration checks successful");
 
@@ -94,7 +94,7 @@ where
 			Ok(())
 		})?;
 
-		assert_eq!(crate::Pallet::<T>::on_chain_storage_version(), StorageVersion::new(5));
+		assert_eq!(Pallet::<T>::on_chain_storage_version(), StorageVersion::new(5));
 
 		log::info!("Did: Post migration checks successful");
 		Ok(())

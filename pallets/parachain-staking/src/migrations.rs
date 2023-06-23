@@ -65,7 +65,7 @@ where
 		let count_freezes = pallet_balances::Freezes::<T>::iter().count();
 		ensure!(count_freezes.is_zero(), "Staking Pre: There are already freezes.");
 
-		assert_eq!(crate::Pallet::<T>::on_chain_storage_version(), StorageVersion::new(8));
+		assert_eq!(Pallet::<T>::on_chain_storage_version(), StorageVersion::new(8));
 
 		log::info!("Staking: Pre migration checks successful");
 
@@ -81,7 +81,7 @@ where
 
 		ensure!(!count_freezes.is_zero(), "Staking: There are still no freezes.");
 
-		assert_eq!(crate::Pallet::<T>::on_chain_storage_version(), StorageVersion::new(9));
+		assert_eq!(Pallet::<T>::on_chain_storage_version(), StorageVersion::new(9));
 
 		log::info!("Staking: Post migration checks successful");
 

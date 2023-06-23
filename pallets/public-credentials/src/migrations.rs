@@ -68,7 +68,7 @@ where
 			"Pre Upgrade Public Credentials: there are users with holds!"
 		);
 
-		assert_eq!(crate::Pallet::<T>::on_chain_storage_version(), StorageVersion::new(1));
+		assert_eq!(Pallet::<T>::on_chain_storage_version(), StorageVersion::new(1));
 
 		log::info!("Public Credentials: Pre migration checks successful");
 
@@ -94,7 +94,7 @@ where
 			Ok(())
 		})?;
 
-		assert_eq!(crate::Pallet::<T>::on_chain_storage_version(), StorageVersion::new(2));
+		assert_eq!(Pallet::<T>::on_chain_storage_version(), StorageVersion::new(2));
 
 		log::info!("Public Credentials: Post migration checks successful");
 		Ok(())

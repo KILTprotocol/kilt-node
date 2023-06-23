@@ -69,7 +69,7 @@ where
 			"Pre Upgrade Delegation: there are users with holds!"
 		);
 
-		assert_eq!(crate::Pallet::<T>::on_chain_storage_version(), StorageVersion::new(3));
+		assert_eq!(Pallet::<T>::on_chain_storage_version(), StorageVersion::new(3));
 		log::info!("Delegation: Pre migration checks successful");
 
 		Ok(vec![])
@@ -94,7 +94,7 @@ where
 			Ok(())
 		})?;
 
-		assert_eq!(crate::Pallet::<T>::on_chain_storage_version(), StorageVersion::new(4));
+		assert_eq!(Pallet::<T>::on_chain_storage_version(), StorageVersion::new(4));
 
 		log::info!("Delegation: Post migration checks successful");
 		Ok(())
