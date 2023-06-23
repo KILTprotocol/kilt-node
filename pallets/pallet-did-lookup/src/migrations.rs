@@ -22,16 +22,13 @@ use frame_support::{
 	traits::{Get, GetStorageVersion, OnRuntimeUpgrade, ReservableCurrency, StorageVersion},
 	weights::Weight,
 };
-use kilt_support::migration::{has_user_holds, switch_reserved_to_hold};
+use kilt_support::migration::switch_reserved_to_hold;
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
-use sp_runtime::AccountId32;
+use sp_runtime::{AccountId32, SaturatedConversion};
 use sp_std::marker::PhantomData;
 
-use crate::{
-	linkable_account::LinkableAccountId, AccountIdOf, Config, ConnectedDids, ConnectionRecordOf, CurrencyOf,
-	HoldReason, Pallet,
-};
+use crate::{linkable_account::LinkableAccountId, AccountIdOf, Config, ConnectedDids, CurrencyOf, HoldReason, Pallet};
 
 /// A unified log target for did-lookup-migration operations.
 pub const LOG_TARGET: &str = "runtime::pallet-did-lookup::migrations";
@@ -76,7 +73,7 @@ impl<T: crate::pallet::Config> OnRuntimeUpgrade for CleanupMigration<T> {
 		if Pallet::<T>::on_chain_storage_version() == StorageVersion::new(3) {
 			log::info!("🔎 DidLookup: Initiating migration");
 			MigrationStateStore::<T>::kill();
-			Pallet::<T>::current_storage_version().put::<Pallet<T>>();
+			StorageVersion::new(4).put::<Pallet<T>>();
 
 			T::DbWeight::get().reads_writes(1, 2)
 		} else {
@@ -128,31 +125,40 @@ where
 {
 	fn on_runtime_upgrade() -> frame_support::weights::Weight {
 		log::info!("Did lookup: Initiating migration");
-		if is_upgraded::<T>() {
+
+		let onchain_storage_version = Pallet::<T>::on_chain_storage_version();
+		if onchain_storage_version.eq(&StorageVersion::new(4)) {
+			StorageVersion::new(5).put::<Pallet<T>>();
 			return do_migration::<T>();
 		}
-		log::info!("Did lookup: No migration needed. This file should be deleted.");
+		log::info!(
+			"Did lookup: No migration needed. This file should be deleted. Current storage version: {:?}, Required Version for update: {:?}", 
+			onchain_storage_version,
+			StorageVersion::new(3)
+		);
+
 		<T as frame_system::Config>::DbWeight::get().reads_writes(0, 0)
 	}
 
 	#[cfg(feature = "try-runtime")]
 	fn pre_upgrade() -> Result<sp_std::vec::Vec<u8>, &'static str> {
-		use frame_support::ensure;
 		use sp_std::vec;
 
 		let has_all_user_no_holds = ConnectedDids::<T>::iter_values()
 			.map(|details| {
-				has_user_holds::<AccountIdOf<T>, CurrencyOf<T>>(
+				kilt_support::migration::has_user_holds::<AccountIdOf<T>, CurrencyOf<T>>(
 					&details.deposit.owner,
 					&T::RuntimeHoldReason::from(HoldReason::Deposit),
 				)
 			})
 			.all(|user| user);
 
-		ensure!(
+		assert!(
 			has_all_user_no_holds,
 			"Pre Upgrade Did lookup: there are users with holds!"
 		);
+
+		assert_eq!(Pallet::<T>::on_chain_storage_version(), StorageVersion::new(4));
 
 		log::info!("Did: Pre migration checks successful");
 
@@ -161,9 +167,7 @@ where
 
 	#[cfg(feature = "try-runtime")]
 	fn post_upgrade(_pre_state: sp_std::vec::Vec<u8>) -> Result<(), &'static str> {
-		use frame_support::{ensure, traits::fungible::InspectHold};
-		use kilt_support::test_utils::log_and_return_error_message;
-		use sp_runtime::SaturatedConversion;
+		use frame_support::traits::fungible::InspectHold;
 
 		ConnectedDids::<T>::iter().try_for_each(|(key, details)| -> Result<(), &'static str> {
 			let hold_balance: u128 = <T as Config>::Currency::balance_on_hold(
@@ -171,37 +175,22 @@ where
 				&details.deposit.owner,
 			)
 			.saturated_into();
-			ensure!(
+			assert!(
 				details.deposit.amount.saturated_into::<u128>() <= hold_balance,
-				log_and_return_error_message(scale_info::prelude::format!(
-					"Did lookup: Hold balance is not matching for connected did {:?}. Expected hold: {:?}. Real hold: {:?}",
-					key, details.deposit.amount, hold_balance
-				))
+				"Did lookup: Hold balance is not matching for connected did {:?}. Expected hold: {:?}. Real hold: {:?}",
+				key,
+				details.deposit.amount,
+				hold_balance
 			);
-
-			ensure!(!is_upgraded::<T>(), "Did lookup: Users have still no holds");
 
 			Ok(())
 		})?;
+
+		assert_eq!(Pallet::<T>::on_chain_storage_version(), StorageVersion::new(5));
+
 		log::info!("Did lookup: Post migration checks successful");
 		Ok(())
 	}
-}
-
-/// Checks if there is an user, who has still reserved balance and no holds. If
-/// yes, the migration is not executed yet.
-fn is_upgraded<T: Config>() -> bool
-where
-	<T as Config>::Currency: ReservableCurrency<T::AccountId>,
-{
-	ConnectedDids::<T>::iter_values()
-		.map(|details: ConnectionRecordOf<T>| {
-			has_user_holds::<AccountIdOf<T>, CurrencyOf<T>>(
-				&details.deposit.owner,
-				&T::RuntimeHoldReason::from(HoldReason::Deposit),
-			)
-		})
-		.all(|user| user)
 }
 
 fn do_migration<T: Config>() -> Weight
@@ -214,7 +203,7 @@ where
 			let error = switch_reserved_to_hold::<AccountIdOf<T>, CurrencyOf<T>>(
 				deposit.owner,
 				&T::RuntimeHoldReason::from(HoldReason::Deposit),
-				deposit.amount,
+				deposit.amount.saturated_into(),
 			);
 
 			if error.is_ok() {
