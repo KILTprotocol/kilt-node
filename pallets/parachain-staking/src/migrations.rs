@@ -75,12 +75,11 @@ where
 
 	#[cfg(feature = "try-runtime")]
 	fn post_upgrade(_pre_state: sp_std::vec::Vec<u8>) -> Result<(), &'static str> {
-		use frame_support::ensure;
 		use sp_runtime::traits::Zero;
 
 		let count_freezes = pallet_balances::Freezes::<T>::iter().count();
 
-		ensure!(!count_freezes.is_zero(), "Staking: There are still no freezes.");
+		assert!(!count_freezes.is_zero(), "Staking: There are still no freezes.");
 
 		assert_eq!(Pallet::<T>::on_chain_storage_version(), StorageVersion::new(9));
 
