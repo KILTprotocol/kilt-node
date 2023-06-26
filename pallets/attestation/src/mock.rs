@@ -30,11 +30,11 @@ use sp_core::H256;
 use sp_runtime::DispatchError;
 
 use ctype::CtypeHashOf;
-use kilt_support::deposit::Deposit;
+use kilt_support::{traits::StorageDepositCollector, Deposit};
 
 use crate::{
 	pallet::AuthorizationIdOf, AccountIdOf, AttestationAccessControl, AttestationDetails, AttesterOf, BalanceOf,
-	ClaimHashOf, Config, CurrencyOf, HoldReason,
+	ClaimHashOf, Config,
 };
 
 #[cfg(test)]
@@ -153,10 +153,9 @@ where
 }
 
 pub fn insert_attestation<T: Config>(claim_hash: ClaimHashOf<T>, details: AttestationDetails<T>) {
-	kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
+	crate::AttestationStorageDepositCollector::<T>::create_deposit(
 		details.deposit.owner.clone(),
 		details.deposit.amount,
-		&T::RuntimeHoldReason::from(HoldReason::Deposit),
 	)
 	.expect("Should have balance");
 

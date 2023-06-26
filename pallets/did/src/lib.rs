@@ -147,8 +147,8 @@ pub mod pallet {
 	};
 	use frame_system::pallet_prelude::*;
 	use kilt_support::{
-		deposit::Deposit,
 		traits::{CallSources, StorageDepositCollector},
+		Deposit,
 	};
 	use sp_runtime::traits::BadOrigin;
 
@@ -1257,10 +1257,7 @@ pub mod pallet {
 			let did_entry = Did::<T>::take(&did_subject).ok_or(Error::<T>::NotFound)?;
 
 			DidEndpointsCount::<T>::remove(&did_subject);
-			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
-				&did_entry.deposit,
-				&T::RuntimeHoldReason::from(HoldReason::Deposit),
-			)?;
+			DidDepositCollector::<T>::free_deposit(did_entry.deposit)?;
 			// Mark as deleted to prevent potential replay-attacks of re-adding a previously
 			// deleted DID.
 			DidBlacklist::<T>::insert(&did_subject, ());
@@ -1273,7 +1270,7 @@ pub mod pallet {
 		}
 	}
 
-	struct DidDepositCollector<T: Config>(PhantomData<T>);
+	pub(crate) struct DidDepositCollector<T: Config>(PhantomData<T>);
 	impl<T: Config> StorageDepositCollector<AccountIdOf<T>, DidIdentifierOf<T>, T::RuntimeHoldReason>
 		for DidDepositCollector<T>
 	{

@@ -26,8 +26,8 @@ use sp_std::{boxed::Box, vec, vec::Vec};
 
 use ctype::CtypeEntryOf;
 use kilt_support::{
-	deposit::Deposit,
 	traits::{GenerateBenchmarkOrigin, GetWorstCase},
+	Deposit,
 };
 
 use crate::{

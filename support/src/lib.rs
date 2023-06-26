@@ -17,8 +17,8 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 #![cfg_attr(not(feature = "std"), no_std)]
 
-pub mod deposit;
-pub use deposit::{free_deposit, reserve_deposit};
+mod deposit;
+pub use deposit::Deposit;
 
 pub mod migration;
 #[cfg(any(feature = "runtime-benchmarks", feature = "mock"))]

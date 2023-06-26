@@ -30,7 +30,7 @@ use frame_support::{
 use frame_system::RawOrigin;
 use sp_runtime::app_crypto::sr25519;
 
-use kilt_support::{deposit::Deposit, traits::GenerateBenchmarkOrigin};
+use kilt_support::{traits::GenerateBenchmarkOrigin, Deposit};
 
 use crate::{
 	mock::insert_raw_w3n, AccountIdOf, Banned, Call, Config, CurrencyOf, Names, Owner, Pallet, Web3NameOf,

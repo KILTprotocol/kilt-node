@@ -17,7 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_support::{assert_noop, assert_ok, crypto::ecdsa::ECDSAExt, traits::fungible::InspectHold};
-use kilt_support::{deposit::Deposit, mock::mock_origin};
+use kilt_support::{mock::mock_origin, Deposit};
 use parity_scale_codec::Encode;
 use sha3::{Digest, Keccak256};
 use sp_runtime::{

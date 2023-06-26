@@ -20,7 +20,7 @@ use crate::{AccountIdOf, BalanceOf, Config, DelegationNodeIdOf, DelegatorIdOf, E
 use bitflags::bitflags;
 use ctype::CtypeHashOf;
 use frame_support::{dispatch::DispatchResult, storage::bounded_btree_set::BoundedBTreeSet};
-use kilt_support::deposit::Deposit;
+use kilt_support::Deposit;
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 

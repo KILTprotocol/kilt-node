@@ -64,8 +64,8 @@ pub mod pallet {
 	};
 	use frame_system::pallet_prelude::*;
 	use kilt_support::{
-		deposit::Deposit,
 		traits::{CallSources, StorageDepositCollector},
+		Deposit,
 	};
 	use runtime_common::Balance;
 
@@ -415,20 +415,13 @@ pub mod pallet {
 				did: did_identifier.clone(),
 			};
 
-			kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
-				record.deposit.owner.clone(),
-				record.deposit.amount,
-				&T::RuntimeHoldReason::from(HoldReason::Deposit),
-			)?;
+			LinkableAccountDepositCollector::<T>::create_deposit(record.clone().deposit.owner, record.deposit.amount)?;
 
 			ConnectedDids::<T>::mutate(&account, |did_entry| -> DispatchResult {
 				if let Some(old_connection) = did_entry.replace(record) {
 					ConnectedAccounts::<T>::remove(&old_connection.did, &account);
 					Self::deposit_event(Event::<T>::AssociationRemoved(account.clone(), old_connection.did));
-					kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
-						&old_connection.deposit,
-						&T::RuntimeHoldReason::from(HoldReason::Deposit),
-					)?;
+					LinkableAccountDepositCollector::<T>::free_deposit(old_connection.deposit)?;
 				}
 				Ok(())
 			})?;
@@ -440,13 +433,9 @@ pub mod pallet {
 
 		pub(crate) fn remove_association(account: LinkableAccountId) -> DispatchResult {
 			if let Some(connection) = ConnectedDids::<T>::take(&account) {
+				LinkableAccountDepositCollector::<T>::free_deposit(connection.deposit)?;
 				ConnectedAccounts::<T>::remove(&connection.did, &account);
-				kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
-					&connection.deposit,
-					&T::RuntimeHoldReason::from(HoldReason::Deposit),
-				)?;
 				Self::deposit_event(Event::AssociationRemoved(account, connection.did));
-
 				Ok(())
 			} else {
 				Err(Error::<T>::NotFound.into())
@@ -454,7 +443,7 @@ pub mod pallet {
 		}
 	}
 
-	struct LinkableAccountDepositCollector<T: Config>(PhantomData<T>);
+	pub(crate) struct LinkableAccountDepositCollector<T: Config>(PhantomData<T>);
 	impl<T: Config> StorageDepositCollector<AccountIdOf<T>, LinkableAccountId, T::RuntimeHoldReason>
 		for LinkableAccountDepositCollector<T>
 	{
@@ -482,7 +471,6 @@ pub mod pallet {
 		) -> Result<(), DispatchError> {
 			let record = ConnectedDids::<T>::get(key).ok_or(Error::<T>::NotFound)?;
 			ConnectedDids::<T>::insert(key, ConnectionRecord { deposit, ..record });
-
 			Ok(())
 		}
 	}

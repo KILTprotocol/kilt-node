@@ -36,7 +36,7 @@ use sp_runtime::{
 	AccountId32, KeyTypeId,
 };
 
-use kilt_support::{deposit::Deposit, traits::GenerateBenchmarkOrigin};
+use kilt_support::{traits::GenerateBenchmarkOrigin, Deposit};
 
 use crate::{
 	account::AccountId20,

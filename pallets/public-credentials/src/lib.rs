@@ -69,8 +69,8 @@ pub mod pallet {
 
 	pub use ctype::CtypeHashOf;
 	use kilt_support::{
-		deposit::Deposit,
 		traits::{CallSources, StorageDepositCollector},
+		Deposit,
 	};
 
 	/// The current storage version.
@@ -306,12 +306,8 @@ pub mod pallet {
 				Error::<T>::AlreadyAttested
 			);
 
-			let deposit = kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
-				payer,
-				deposit_amount,
-				&T::RuntimeHoldReason::from(HoldReason::Deposit),
-			)
-			.map_err(|_| Error::<T>::UnableToPayFees)?;
+			let deposit = PublicCredentialDepositCollector::<T>::create_deposit(payer, deposit_amount)
+				.map_err(|_| Error::<T>::UnableToPayFees)?;
 
 			let block_number = frame_system::Pallet::<T>::block_number();
 
@@ -555,10 +551,7 @@ pub mod pallet {
 			credential_id: CredentialIdOf<T>,
 			credential: CredentialEntryOf<T>,
 		) -> DispatchResult {
-			kilt_support::free_deposit::<T::AccountId, CurrencyOf<T>>(
-				&credential.deposit,
-				&T::RuntimeHoldReason::from(HoldReason::Deposit),
-			)?;
+			PublicCredentialDepositCollector::<T>::free_deposit(credential.deposit)?;
 			Credentials::<T>::remove(&credential_subject, &credential_id);
 			CredentialSubjects::<T>::remove(&credential_id);
 
@@ -616,7 +609,7 @@ pub mod pallet {
 		}
 	}
 
-	struct PublicCredentialDepositCollector<T: Config>(PhantomData<T>);
+	pub(crate) struct PublicCredentialDepositCollector<T: Config>(PhantomData<T>);
 	impl<T: Config> StorageDepositCollector<AccountIdOf<T>, CredentialIdOf<T>, T::RuntimeHoldReason>
 		for PublicCredentialDepositCollector<T>
 	{

@@ -20,7 +20,7 @@ use ctype::mock::get_ctype_hash;
 use frame_support::{assert_noop, assert_ok, traits::fungible::InspectHold};
 use sp_runtime::{traits::Zero, DispatchError, TokenError};
 
-use kilt_support::{deposit::Deposit, mock::mock_origin::DoubleOrigin};
+use kilt_support::{mock::mock_origin::DoubleOrigin, Deposit};
 
 use crate::{
 	self as attestation,

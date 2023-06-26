@@ -98,8 +98,8 @@ pub mod pallet {
 
 	use ctype::CtypeHashOf;
 	use kilt_support::{
-		deposit::Deposit,
 		traits::{CallSources, StorageDepositCollector},
+		Deposit,
 	};
 
 	/// The current storage version.
@@ -283,11 +283,7 @@ pub mod pallet {
 				.transpose()?;
 			let authorization_id = authorization.as_ref().map(|ac| ac.authorization_id());
 
-			let deposit = kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
-				payer,
-				deposit_amount,
-				&T::RuntimeHoldReason::from(HoldReason::Deposit),
-			)?;
+			let deposit = AttestationStorageDepositCollector::<T>::create_deposit(payer, deposit_amount)?;
 
 			log::debug!("insert Attestation");
 
@@ -484,11 +480,8 @@ pub mod pallet {
 
 	impl<T: Config> Pallet<T> {
 		fn remove_attestation(attestation: AttestationDetails<T>, claim_hash: ClaimHashOf<T>) -> DispatchResult {
-			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
-				&attestation.deposit,
-				&T::RuntimeHoldReason::from(HoldReason::Deposit),
-			)?;
 			Attestations::<T>::remove(claim_hash);
+			AttestationStorageDepositCollector::<T>::free_deposit(attestation.deposit)?;
 			if let Some(authorization_id) = &attestation.authorization_id {
 				ExternalAttestations::<T>::remove(authorization_id, claim_hash);
 			}
@@ -496,7 +489,7 @@ pub mod pallet {
 		}
 	}
 
-	struct AttestationStorageDepositCollector<T: Config>(PhantomData<T>);
+	pub(crate) struct AttestationStorageDepositCollector<T: Config>(PhantomData<T>);
 	impl<T: Config> StorageDepositCollector<AccountIdOf<T>, ClaimHashOf<T>, T::RuntimeHoldReason>
 		for AttestationStorageDepositCollector<T>
 	{

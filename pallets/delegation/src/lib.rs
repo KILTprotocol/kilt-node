@@ -100,9 +100,9 @@ pub mod pallet {
 	};
 	use frame_system::pallet_prelude::*;
 	use kilt_support::{
-		deposit::Deposit,
 		signature::{SignatureVerificationError, VerifySignature},
 		traits::CallSources,
+		Deposit,
 	};
 	use scale_info::TypeInfo;
 
@@ -732,11 +732,7 @@ pub mod pallet {
 			hierarchy_owner: DelegatorIdOf<T>,
 			deposit_owner: AccountIdOf<T>,
 		) -> DispatchResult {
-			kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
-				deposit_owner.clone(),
-				<T as Config>::Deposit::get(),
-				&T::RuntimeHoldReason::from(HoldReason::Deposit),
-			)?;
+			DelegationDepositCollector::<T>::create_deposit(deposit_owner.clone(), <T as Config>::Deposit::get())?;
 
 			let root_node = DelegationNode::new_root_node(
 				root_id,
@@ -763,11 +759,7 @@ pub mod pallet {
 			mut parent_node: DelegationNode<T>,
 			deposit_owner: AccountIdOf<T>,
 		) -> DispatchResult {
-			kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
-				deposit_owner,
-				<T as Config>::Deposit::get(),
-				&T::RuntimeHoldReason::from(HoldReason::Deposit),
-			)?;
+			DelegationDepositCollector::<T>::create_deposit(deposit_owner, <T as Config>::Deposit::get())?;
 
 			// Add the new node as a child of that node
 			parent_node.try_add_child(delegation_id)?;
@@ -978,11 +970,7 @@ pub mod pallet {
 			// We can clear storage now that all children have been removed
 			DelegationNodes::<T>::remove(*delegation);
 
-			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
-				&delegation_node.deposit,
-				&T::RuntimeHoldReason::from(HoldReason::Deposit),
-			)?;
-
+			DelegationDepositCollector::<T>::free_deposit(delegation_node.clone().deposit)?;
 			consumed_weight = consumed_weight.saturating_add(T::DbWeight::get().reads_writes(1, 2));
 
 			// Deposit event that the delegation has been removed

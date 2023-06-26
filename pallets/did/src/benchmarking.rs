@@ -29,7 +29,7 @@ use sp_io::crypto::{ecdsa_generate, ecdsa_sign, ed25519_generate, ed25519_sign, 
 use sp_runtime::{traits::IdentifyAccount, AccountId32, MultiSigner};
 use sp_std::{convert::TryInto, vec::Vec};
 
-use kilt_support::{deposit::Deposit, signature::VerifySignature};
+use kilt_support::{signature::VerifySignature, Deposit};
 
 use crate::{
 	did_details::{

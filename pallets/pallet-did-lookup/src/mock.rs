@@ -18,8 +18,8 @@
 
 use frame_support::parameter_types;
 use kilt_support::{
-	deposit::Deposit,
 	mock::{mock_origin, SubjectId},
+	traits::StorageDepositCollector,
 };
 use sp_runtime::{
 	testing::Header,
@@ -29,7 +29,7 @@ use sp_runtime::{
 
 use crate::{
 	self as pallet_did_lookup, linkable_account::LinkableAccountId, AccountIdOf, BalanceOf, Config, ConnectedAccounts,
-	ConnectedDids, ConnectionRecord, CurrencyOf, DidIdentifierOf, HoldReason,
+	ConnectedDids, ConnectionRecord, DidIdentifierOf, LinkableAccountDepositCollector,
 };
 
 pub(crate) type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
@@ -144,30 +144,19 @@ pub(crate) fn insert_raw_connection<T: Config>(
 	account: LinkableAccountId,
 	deposit: BalanceOf<T>,
 ) {
-	let deposit = Deposit {
-		owner: sender,
-		amount: deposit,
-	};
+	let deposit = LinkableAccountDepositCollector::<T>::create_deposit(sender, deposit)
+		.expect("Account should have enough balance");
+
 	let record = ConnectionRecord {
 		deposit,
 		did: did_identifier.clone(),
 	};
 
-	kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
-		record.deposit.owner.clone(),
-		record.deposit.amount,
-		&T::RuntimeHoldReason::from(HoldReason::Deposit),
-	)
-	.expect("Account should have enough balance");
-
 	ConnectedDids::<T>::mutate(&account, |did_entry| {
 		if let Some(old_connection) = did_entry.replace(record) {
 			ConnectedAccounts::<T>::remove(&old_connection.did, &account);
-			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
-				&old_connection.deposit,
-				&T::RuntimeHoldReason::from(HoldReason::Deposit),
-			)
-			.expect("Could not release deposit of account");
+			LinkableAccountDepositCollector::<T>::free_deposit(old_connection.deposit)
+				.expect("Could not release deposit of account");
 		}
 	});
 	ConnectedAccounts::<T>::insert(&did_identifier, &account, ());

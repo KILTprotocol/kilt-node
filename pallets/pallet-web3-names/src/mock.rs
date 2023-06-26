@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 use frame_support::traits::fungible::MutateHold;
-use kilt_support::deposit::Deposit;
+use kilt_support::Deposit;
 
 use crate::{
 	AccountIdOf, BalanceOf, Config, CurrencyOf, HoldReason, Names, Owner, Web3NameOf, Web3NameOwnerOf, Web3OwnershipOf,

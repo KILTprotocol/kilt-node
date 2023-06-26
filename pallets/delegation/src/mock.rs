@@ -26,7 +26,7 @@ use frame_support::{
 use sp_core::H256;
 
 use ctype::{mock as ctype_mock, CtypeHashOf};
-use kilt_support::deposit::Deposit;
+use kilt_support::Deposit;
 
 use crate::{
 	self as delegation, AccountIdOf, Config, CurrencyOf, DelegationDetails, DelegationHierarchyDetails, DelegationNode,

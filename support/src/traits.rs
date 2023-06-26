@@ -22,7 +22,7 @@ use frame_support::traits::{
 };
 use sp_runtime::DispatchError;
 
-use crate::deposit::{free_deposit, Deposit};
+use crate::deposit::{free_deposit, reserve_deposit, Deposit};
 
 /// The sources of a call struct.
 ///
@@ -115,6 +115,25 @@ pub trait StorageDepositCollector<AccountId, Key, RuntimeHoldReason> {
 		key: &Key,
 		deposit: Deposit<AccountId, <Self::Currency as Inspect<AccountId>>::Balance>,
 	) -> Result<(), DispatchError>;
+
+	/// Release the deposit.
+	fn free_deposit(
+		deposit: Deposit<AccountId, <Self::Currency as Inspect<AccountId>>::Balance>,
+	) -> Result<(), DispatchError> {
+		free_deposit::<AccountId, Self::Currency>(&deposit, &Self::reason().into())
+	}
+
+	/// Creates a new deposit for user.
+	///
+	/// # Errors
+	/// Can fail if the user has not enough balance.
+	fn create_deposit(
+		who: AccountId,
+		amount: <Self::Currency as Inspect<AccountId>>::Balance,
+	) -> Result<Deposit<AccountId, <Self::Currency as Inspect<AccountId>>::Balance>, DispatchError> {
+		let reason = Self::reason();
+		reserve_deposit::<AccountId, Self::Currency>(who, amount, &reason.into())
+	}
 
 	/// Change the deposit owner.
 	///

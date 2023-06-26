@@ -32,7 +32,7 @@ pub struct Deposit<Account, Balance> {
 	pub amount: Balance,
 }
 
-pub fn reserve_deposit<Account, Currency: Mutate<Account>>(
+pub(crate) fn reserve_deposit<Account, Currency: Mutate<Account>>(
 	account: Account,
 	deposit_amount: Currency::Balance,
 	reason: &Currency::Reason,
@@ -44,13 +44,13 @@ pub fn reserve_deposit<Account, Currency: Mutate<Account>>(
 	})
 }
 
-pub fn free_deposit<Account, Currency: Mutate<Account>>(
+pub(crate) fn free_deposit<Account, Currency: Mutate<Account>>(
 	deposit: &Deposit<Account, Currency::Balance>,
 	reason: &Currency::Reason,
 ) -> DispatchResult {
 	let result = Currency::release(reason, &deposit.owner, deposit.amount, Precision::BestEffort);
 	debug_assert!(
-		result.is_ok() && result == Ok(deposit.amount),
+		result == Ok(deposit.amount),
 		"Released deposit amount does not match with expected amount. Expected: {:?}, Released amount: {:?}  Error: {:?}",
 		deposit.amount,
 		result.unwrap(),

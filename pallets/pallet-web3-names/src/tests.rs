@@ -23,7 +23,7 @@ use frame_support::{
 };
 
 use frame_system::RawOrigin;
-use kilt_support::{deposit::Deposit, mock::mock_origin};
+use kilt_support::{mock::mock_origin, Deposit};
 use sp_runtime::{traits::Zero, DispatchError, TokenError};
 
 use crate::{mock::*, Banned, Config, Error, HoldReason, Names, Owner, Pallet, Web3OwnershipOf};

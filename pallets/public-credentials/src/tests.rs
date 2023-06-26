@@ -23,7 +23,7 @@ use frame_support::{
 use sp_runtime::traits::Zero;
 
 use ctype::mock::get_ctype_hash;
-use kilt_support::{deposit::Deposit, mock::mock_origin::DoubleOrigin};
+use kilt_support::{mock::mock_origin::DoubleOrigin, Deposit};
 
 use crate::{
 	mock::*, Config, CredentialIdOf, CredentialSubjects, Credentials, Error, HoldReason, InputClaimsContentOf,

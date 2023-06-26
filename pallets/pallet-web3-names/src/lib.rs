@@ -57,8 +57,8 @@ pub mod pallet {
 	use sp_std::{fmt::Debug, vec::Vec};
 
 	use kilt_support::{
-		deposit::Deposit,
 		traits::{CallSources, StorageDepositCollector},
+		Deposit,
 	};
 
 	use super::WeightInfo;
@@ -422,18 +422,8 @@ pub mod pallet {
 			owner: Web3NameOwnerOf<T>,
 			deposit_payer: AccountIdOf<T>,
 		) -> DispatchResult {
-			let deposit = Deposit {
-				owner: deposit_payer,
-				amount: T::Deposit::get(),
-			};
 			let block_number = frame_system::Pallet::<T>::block_number();
-
-			// Should never fail since we checked in the preconditions
-			kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
-				deposit.owner.clone(),
-				deposit.amount,
-				&T::RuntimeHoldReason::from(HoldReason::Deposit),
-			)?;
+			let deposit = Web3NameStorageDepositCollector::<T>::create_deposit(deposit_payer, T::Deposit::get())?;
 
 			Names::<T>::insert(&owner, name.clone());
 			Owner::<T>::insert(
@@ -482,10 +472,7 @@ pub mod pallet {
 			Names::<T>::remove(&name_ownership.owner);
 
 			// Should never fail since we checked in the preconditions
-			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
-				&name_ownership.deposit,
-				&T::RuntimeHoldReason::from(HoldReason::Deposit),
-			)?;
+			Web3NameStorageDepositCollector::<T>::free_deposit(name_ownership.clone().deposit)?;
 
 			Ok(name_ownership)
 		}
@@ -535,7 +522,7 @@ pub mod pallet {
 		}
 	}
 
-	struct Web3NameStorageDepositCollector<T: Config>(PhantomData<T>);
+	pub(crate) struct Web3NameStorageDepositCollector<T: Config>(PhantomData<T>);
 	impl<T: Config> StorageDepositCollector<AccountIdOf<T>, T::Web3Name, T::RuntimeHoldReason>
 		for Web3NameStorageDepositCollector<T>
 	{

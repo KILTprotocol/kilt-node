@@ -20,11 +20,11 @@ use frame_support::traits::Get;
 use parity_scale_codec::Encode;
 use sp_runtime::traits::Hash;
 
-use kilt_support::deposit::Deposit;
+use kilt_support::{traits::StorageDepositCollector, Deposit};
 
 use crate::{
-	AccountIdOf, AttesterOf, BalanceOf, Config, CredentialEntryOf, CredentialIdOf, CredentialSubjects, Credentials,
-	CtypeHashOf, CurrencyOf, HoldReason, InputClaimsContentOf, InputCredentialOf, InputSubjectIdOf,
+	AttesterOf, BalanceOf, Config, CredentialEntryOf, CredentialIdOf, CredentialSubjects, Credentials, CtypeHashOf,
+	InputClaimsContentOf, InputCredentialOf, InputSubjectIdOf, PublicCredentialDepositCollector,
 };
 
 // Generate a public credential using a many Default::default() as possible.
@@ -76,10 +76,9 @@ pub(crate) fn insert_public_credentials<T: Config>(
 	credential_id: CredentialIdOf<T>,
 	credential_entry: CredentialEntryOf<T>,
 ) {
-	kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
+	PublicCredentialDepositCollector::<T>::create_deposit(
 		credential_entry.deposit.owner.clone(),
 		credential_entry.deposit.amount,
-		&T::RuntimeHoldReason::from(HoldReason::Deposit),
 	)
 	.expect("Attester should have enough balance");
 

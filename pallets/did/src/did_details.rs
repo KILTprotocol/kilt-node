@@ -23,7 +23,7 @@ use frame_support::{
 	traits::Get,
 	RuntimeDebug,
 };
-use kilt_support::deposit::Deposit;
+use kilt_support::{traits::StorageDepositCollector, Deposit};
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen, WrapperTypeEncode};
 use scale_info::TypeInfo;
 use sp_core::{ecdsa, ed25519, sr25519};
@@ -36,8 +36,8 @@ use sp_std::{convert::TryInto, vec::Vec};
 use crate::{
 	errors::{self, DidError},
 	service_endpoints::DidEndpoint,
-	utils, AccountIdOf, BalanceOf, BlockNumberOf, Config, CurrencyOf, DidCallableOf, DidEndpointsCount,
-	DidIdentifierOf, HoldReason, KeyIdOf, Payload,
+	utils, AccountIdOf, BalanceOf, BlockNumberOf, Config, DidCallableOf, DidDepositCollector, DidEndpointsCount,
+	DidIdentifierOf, KeyIdOf, Payload,
 };
 
 /// Types of verification keys a DID can control.
@@ -345,23 +345,16 @@ impl<T: Config> DidDetails<T> {
 		match new_required_deposit.cmp(&self.deposit.amount) {
 			Ordering::Greater => {
 				let deposit_to_reserve = new_required_deposit.saturating_sub(self.deposit.amount);
-				kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
-					self.deposit.owner.clone(),
-					deposit_to_reserve,
-					&T::RuntimeHoldReason::from(HoldReason::Deposit),
-				)?;
+				DidDepositCollector::<T>::create_deposit(self.deposit.clone().owner, deposit_to_reserve)?;
 				self.deposit.amount = self.deposit.amount.saturating_add(deposit_to_reserve);
 			}
 			Ordering::Less => {
 				let deposit_to_release = self.deposit.amount.saturating_sub(new_required_deposit);
-				let deposit = Deposit {
+
+				DidDepositCollector::<T>::free_deposit(Deposit {
 					owner: self.deposit.owner.clone(),
 					amount: deposit_to_release,
-				};
-				kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
-					&deposit,
-					&T::RuntimeHoldReason::from(HoldReason::Deposit),
-				)?;
+				})?;
 				self.deposit.amount = self.deposit.amount.saturating_sub(deposit_to_release);
 			}
 			_ => (),
@@ -406,11 +399,7 @@ impl<T: Config> DidDetails<T> {
 		let deposit_amount = new_did_details.calculate_deposit(did_subject);
 		new_did_details.deposit.amount = deposit_amount;
 
-		kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
-			details.submitter,
-			deposit_amount,
-			&T::RuntimeHoldReason::from(HoldReason::Deposit),
-		)?;
+		DidDepositCollector::<T>::create_deposit(details.submitter, deposit_amount)?;
 
 		Ok(new_did_details)
 	}
