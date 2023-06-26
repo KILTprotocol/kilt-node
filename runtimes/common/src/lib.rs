@@ -203,9 +203,9 @@ where
 	}
 }
 
-pub struct DustAndFeeHandler<T>(sp_std::marker::PhantomData<T>);
+pub struct SendDustAndFeesToTreasury<T>(sp_std::marker::PhantomData<T>);
 
-impl<T> OnUnbalanced<CreditOf<T>> for DustAndFeeHandler<T>
+impl<T> OnUnbalanced<CreditOf<T>> for SendDustAndFeesToTreasury<T>
 where
 	T: pallet_balances::Config,
 	T: pallet_treasury::Config,

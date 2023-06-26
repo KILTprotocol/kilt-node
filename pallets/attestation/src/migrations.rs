@@ -85,7 +85,7 @@ where
 				<T as Config>::Currency::balance_on_hold(&HoldReason::Deposit.into(), &details.deposit.owner)
 					.saturated_into();
 			assert!(
-				details.deposit.amount.saturated_into::<u128>() <= hold_balance,
+				details.deposit.amount.saturated_into::<u128>() = hold_balance,
 				"Attestation: Hold balance is not matching for attestation {:?}. Expected hold: {:?}. Real hold: {:?}",
 				key,
 				details.deposit.amount,

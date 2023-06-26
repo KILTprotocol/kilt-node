@@ -205,7 +205,7 @@ impl pallet_balances::Config for Runtime {
 
 	/// The ubiquitous event type.
 	type RuntimeEvent = RuntimeEvent;
-	type DustRemoval = runtime_common::DustAndFeeHandler<Runtime>;
+	type DustRemoval = runtime_common::SendDustAndFeesToTreasury<Runtime>;
 	type ExistentialDeposit = ExistentialDeposit;
 	type AccountStore = System;
 	type WeightInfo = weights::pallet_balances::WeightInfo<Runtime>;
@@ -590,7 +590,7 @@ impl ctype::Config for Runtime {
 	type CtypeCreatorId = AccountId;
 	type Currency = Balances;
 	type Fee = constants::CtypeFee;
-	type FeeCollector = runtime_common::DustAndFeeHandler<Runtime>;
+	type FeeCollector = runtime_common::SendDustAndFeesToTreasury<Runtime>;
 
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
@@ -611,7 +611,7 @@ impl did::Config for Runtime {
 	type RuntimeOrigin = RuntimeOrigin;
 	type Currency = Balances;
 	type Fee = constants::did::DidFee;
-	type FeeCollector = runtime_common::DustAndFeeHandler<Runtime>;
+	type FeeCollector = runtime_common::SendDustAndFeesToTreasury<Runtime>;
 
 	#[cfg(not(feature = "runtime-benchmarks"))]
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
@@ -670,7 +670,7 @@ impl pallet_inflation::Config for Runtime {
 	type Currency = Balances;
 	type InitialPeriodLength = constants::treasury::InitialPeriodLength;
 	type InitialPeriodReward = constants::treasury::InitialPeriodReward;
-	type Beneficiary = runtime_common::DustAndFeeHandler<Runtime>;
+	type Beneficiary = runtime_common::SendDustAndFeesToTreasury<Runtime>;
 	type WeightInfo = weights::pallet_inflation::WeightInfo<Runtime>;
 }
 
@@ -694,7 +694,7 @@ impl parachain_staking::Config for Runtime {
 	type MaxUnstakeRequests = constants::staking::MaxUnstakeRequests;
 	type NetworkRewardRate = constants::staking::NetworkRewardRate;
 	type NetworkRewardStart = constants::staking::NetworkRewardStart;
-	type NetworkRewardBeneficiary = runtime_common::DustAndFeeHandler<Runtime>;
+	type NetworkRewardBeneficiary = runtime_common::SendDustAndFeesToTreasury<Runtime>;
 	type WeightInfo = weights::parachain_staking::WeightInfo<Runtime>;
 
 	const BLOCKS_PER_YEAR: Self::BlockNumber = constants::BLOCKS_PER_YEAR;
