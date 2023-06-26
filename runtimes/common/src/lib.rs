@@ -212,6 +212,7 @@ where
 {
 	fn on_nonzero_unbalanced(amount: CreditOf<T>) {
 		let treasury_account_id = pallet_treasury::Pallet::<T>::account_id();
-		let _ = pallet_balances::Pallet::<T>::resolve(&treasury_account_id, amount);
+		let result = pallet_balances::Pallet::<T>::resolve(&treasury_account_id, amount);
+		debug_assert!(result.is_ok(), "The whole credit cannot be countered");
 	}
 }

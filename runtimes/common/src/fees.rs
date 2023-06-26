@@ -88,7 +88,8 @@ where
 {
 	fn on_nonzero_unbalanced(amount: CreditOf<R>) {
 		if let Some(author) = <pallet_authorship::Pallet<R>>::author() {
-			let _ = <pallet_balances::Pallet<R>>::resolve(&author, amount);
+			let result = pallet_balances::Pallet::<R>::resolve(&author, amount);
+			debug_assert!(result.is_ok(), "The whole credit cannot be countered");
 		}
 	}
 }
