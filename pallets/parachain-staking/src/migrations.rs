@@ -39,7 +39,7 @@ const TARGET_STORAGE_VERSION: StorageVersion = StorageVersion::new(9);
 
 pub struct BalanceMigration<T>(PhantomData<T>);
 
-impl<T: crate::pallet::Config> OnRuntimeUpgrade for BalanceMigration<T>
+impl<T: Config> OnRuntimeUpgrade for BalanceMigration<T>
 where
 	<T as Config>::Currency: ReservableCurrency<T::AccountId>,
 	<T as Config>::Currency: LockableCurrency<T::AccountId>,
@@ -50,15 +50,17 @@ where
 		let onchain_storage_version = Pallet::<T>::on_chain_storage_version();
 		if onchain_storage_version.eq(&CURRENT_STORAGE_VERSION) {
 			TARGET_STORAGE_VERSION.put::<Pallet<T>>();
-			return do_migration::<T>();
+			<T as frame_system::Config>::DbWeight::get()
+				.reads_writes(1, 1)
+				.saturating_add(do_migration::<T>())
+		} else {
+			log::info!(
+				"Staking: No migration needed. This file should be deleted. Current storage version: {:?}, Required Version for update: {:?}", 
+				onchain_storage_version,
+				CURRENT_STORAGE_VERSION
+			);
+			<T as frame_system::Config>::DbWeight::get().reads_writes(1, 0)
 		}
-
-		log::info!(
-			"Staking: No migration needed. This file should be deleted. Current storage version: {:?}, Required Version for update: {:?}", 
-			onchain_storage_version,
-			CURRENT_STORAGE_VERSION
-		);
-		<T as frame_system::Config>::DbWeight::get().reads_writes(0, 0)
 	}
 
 	#[cfg(feature = "try-runtime")]
@@ -147,7 +149,11 @@ where
 	<CurrencyOf<T> as LockableCurrency<AccountIdOf<T>>>::remove_lock(STAKING_ID, &user_id);
 
 	if result.is_err() {
-		return <T as frame_system::Config>::DbWeight::get().reads_writes(0, 0);
+		return <T as frame_system::Config>::DbWeight::get().reads_writes(1, 0);
 	}
-	<T as frame_system::Config>::DbWeight::get().reads_writes(1, 1)
+
+	// Currency::reserve and Currency::hold each read and write to the DB once.
+	// Since we are uncertain about which operation may fail, in the event of an
+	// error, we assume the worst-case scenario here.
+	<T as frame_system::Config>::DbWeight::get().reads_writes(2, 2)
 }
