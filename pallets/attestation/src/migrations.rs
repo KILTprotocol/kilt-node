@@ -32,7 +32,7 @@ const TARGET_STORAGE_VERSION: StorageVersion = StorageVersion::new(2);
 
 pub struct BalanceMigration<T>(PhantomData<T>);
 
-impl<T: crate::pallet::Config> OnRuntimeUpgrade for BalanceMigration<T>
+impl<T: Config> OnRuntimeUpgrade for BalanceMigration<T>
 where
 	<T as Config>::Currency: ReservableCurrency<T::AccountId>,
 {
