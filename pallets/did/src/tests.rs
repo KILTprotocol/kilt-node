@@ -77,10 +77,7 @@ fn check_successful_simple_ed25519_creation() {
 			assert_eq!(stored_did.last_tx_counter, 0u64);
 
 			assert_eq!(
-				Balances::balance_on_hold(
-					&<Test as did::Config>::RuntimeHoldReason::from(HoldReason::Deposit),
-					&ACCOUNT_00
-				),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
 				<Test as did::Config>::BaseDeposit::get()
 			);
 
@@ -123,10 +120,7 @@ fn check_successful_simple_sr25519_creation() {
 			assert_eq!(stored_did.last_tx_counter, 0u64);
 
 			assert_eq!(
-				Balances::balance_on_hold(
-					&<Test as did::Config>::RuntimeHoldReason::from(HoldReason::Deposit),
-					&ACCOUNT_00
-				),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
 				<Test as did::Config>::BaseDeposit::get()
 			);
 			assert_eq!(Balances::balance(&ACCOUNT_FEE), <Test as did::Config>::Fee::get());
@@ -168,10 +162,7 @@ fn check_successful_simple_ecdsa_creation() {
 			assert_eq!(stored_did.last_tx_counter, 0u64);
 
 			assert_eq!(
-				Balances::balance_on_hold(
-					&<Test as did::Config>::RuntimeHoldReason::from(HoldReason::Deposit),
-					&ACCOUNT_00
-				),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
 				<Test as did::Config>::BaseDeposit::get()
 			);
 			assert_eq!(Balances::balance(&ACCOUNT_FEE), <Test as did::Config>::Fee::get());
@@ -287,10 +278,7 @@ fn check_successful_complete_creation() {
 			);
 
 			assert_eq!(
-				Balances::balance_on_hold(
-					&<Test as did::Config>::RuntimeHoldReason::from(HoldReason::Deposit),
-					&ACCOUNT_00
-				),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
 				<Test as did::Config>::BaseDeposit::get()
 					+ required_balance_for_endpoint
 					+ required_balance_for_key_agreement
@@ -327,10 +315,7 @@ fn check_deposit_change_by_adding_service_endpoint() {
 			));
 
 			assert_eq!(
-				Balances::balance_on_hold(
-					&<Test as did::Config>::RuntimeHoldReason::from(HoldReason::Deposit),
-					&alice_did
-				),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &alice_did),
 				<Test as did::Config>::ServiceEndpointDeposit::get() + <Test as did::Config>::BaseDeposit::get()
 			);
 
@@ -2178,20 +2163,13 @@ fn check_successful_deletion_no_endpoints() {
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_eq!(did::pallet::DidEndpointsCount::<Test>::get(&alice_did), 0);
 			assert_eq!(
-				Balances::balance_on_hold(
-					&<Test as did::Config>::RuntimeHoldReason::from(HoldReason::Deposit),
-					&ACCOUNT_00
-				),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
 				<Test as did::Config>::BaseDeposit::get()
 			);
 			assert_ok!(Did::delete(RuntimeOrigin::signed(alice_did.clone()), 0));
 			assert!(Did::get_did(alice_did.clone()).is_none());
 			assert!(Did::get_deleted_did(alice_did.clone()).is_some());
-			assert!(Balances::balance_on_hold(
-				&<Test as did::Config>::RuntimeHoldReason::from(HoldReason::Deposit),
-				&ACCOUNT_00
-			)
-			.is_zero());
+			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00).is_zero());
 
 			assert_eq!(did::pallet::DidEndpointsCount::<Test>::get(&alice_did), 0);
 
@@ -2232,20 +2210,13 @@ fn check_successful_deletion_with_endpoints() {
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_eq!(did::pallet::DidEndpointsCount::<Test>::get(&alice_did), 1);
 			assert_eq!(
-				Balances::balance_on_hold(
-					&<Test as did::Config>::RuntimeHoldReason::from(HoldReason::Deposit),
-					&ACCOUNT_00
-				),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
 				<Test as did::Config>::BaseDeposit::get()
 			);
 			assert_ok!(Did::delete(RuntimeOrigin::signed(alice_did.clone()), 1));
 			assert!(Did::get_did(alice_did.clone()).is_none());
 			assert!(Did::get_deleted_did(alice_did.clone()).is_some());
-			assert!(Balances::balance_on_hold(
-				&<Test as did::Config>::RuntimeHoldReason::from(HoldReason::Deposit),
-				&ACCOUNT_00
-			)
-			.is_zero());
+			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00).is_zero());
 
 			assert_eq!(did::pallet::DidEndpointsCount::<Test>::get(&alice_did), 0);
 
@@ -2331,10 +2302,7 @@ fn check_successful_reclaiming() {
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_eq!(did::pallet::DidEndpointsCount::<Test>::get(&alice_did), 1);
 			assert_eq!(
-				Balances::balance_on_hold(
-					&<Test as did::Config>::RuntimeHoldReason::from(HoldReason::Deposit),
-					&ACCOUNT_00
-				),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
 				<Test as did::Config>::BaseDeposit::get()
 			);
 			assert_ok!(Did::reclaim_deposit(
@@ -2344,11 +2312,7 @@ fn check_successful_reclaiming() {
 			));
 			assert!(Did::get_did(alice_did.clone()).is_none());
 			assert!(Did::get_deleted_did(alice_did.clone()).is_some());
-			assert!(Balances::balance_on_hold(
-				&<Test as did::Config>::RuntimeHoldReason::from(HoldReason::Deposit),
-				&ACCOUNT_00
-			)
-			.is_zero());
+			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00).is_zero());
 			assert_eq!(did::pallet::DidEndpointsCount::<Test>::get(&alice_did), 0);
 
 			// Re-adding the same DID identifier should fail.
@@ -2384,10 +2348,7 @@ fn unauthorized_reclaiming() {
 		.with_dids(vec![(alice_did.clone(), did_details)])
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_eq!(
-				Balances::balance_on_hold(
-					&<Test as did::Config>::RuntimeHoldReason::from(HoldReason::Deposit),
-					&ACCOUNT_00
-				),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
 				<Test as did::Config>::BaseDeposit::get()
 			);
 			assert_noop!(
@@ -3313,23 +3274,13 @@ fn test_change_deposit_owner() {
 		.with_dids(vec![(alice_did.clone(), did_details)])
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_eq!(
-				Balances::balance_on_hold(
-					&<Test as did::Config>::RuntimeHoldReason::from(HoldReason::Deposit),
-					&ACCOUNT_00
-				),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
 				<Test as did::Config>::BaseDeposit::get()
 			);
 			assert_ok!(Did::change_deposit_owner(RuntimeOrigin::signed(alice_did.clone())));
-			assert!(Balances::balance_on_hold(
-				&<Test as did::Config>::RuntimeHoldReason::from(HoldReason::Deposit),
-				&ACCOUNT_00
-			)
-			.is_zero());
+			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00).is_zero());
 			assert_eq!(
-				Balances::balance_on_hold(
-					&<Test as did::Config>::RuntimeHoldReason::from(HoldReason::Deposit),
-					&alice_did
-				),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &alice_did),
 				<Test as did::Config>::BaseDeposit::get()
 			);
 		});
@@ -3417,10 +3368,7 @@ fn test_update_deposit() {
 		.with_dids(vec![(alice_did.clone(), did_details)])
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_eq!(
-				Balances::balance_on_hold(
-					&<Test as did::Config>::RuntimeHoldReason::from(HoldReason::Deposit),
-					&alice_did
-				),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &alice_did),
 				<Test as did::Config>::BaseDeposit::get() * 2
 			);
 
@@ -3430,10 +3378,7 @@ fn test_update_deposit() {
 			));
 
 			assert_eq!(
-				Balances::balance_on_hold(
-					&<Test as did::Config>::RuntimeHoldReason::from(HoldReason::Deposit),
-					&alice_did
-				),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &alice_did),
 				<Test as did::Config>::BaseDeposit::get()
 			);
 
@@ -3470,10 +3415,7 @@ fn test_update_deposit_unauthorized() {
 		.with_dids(vec![(alice_did.clone(), did_details)])
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_eq!(
-				Balances::balance_on_hold(
-					&<Test as did::Config>::RuntimeHoldReason::from(HoldReason::Deposit),
-					&alice_did
-				),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &alice_did),
 				<Test as did::Config>::BaseDeposit::get() * 2
 			);
 			assert_noop!(

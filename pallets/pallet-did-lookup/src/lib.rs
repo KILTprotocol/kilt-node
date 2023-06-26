@@ -255,7 +255,7 @@ pub mod pallet {
 
 			ensure!(
 				<T::Currency as InspectHold<AccountIdOf<T>>>::can_hold(
-					&T::RuntimeHoldReason::from(HoldReason::Deposit),
+					&HoldReason::Deposit.into(),
 					&sender,
 					<T as Config>::Deposit::get()
 				),
@@ -290,7 +290,7 @@ pub mod pallet {
 
 			ensure!(
 				<T::Currency as InspectHold<AccountIdOf<T>>>::can_hold(
-					&T::RuntimeHoldReason::from(HoldReason::Deposit),
+					&HoldReason::Deposit.into(),
 					&source.sender(),
 					<T as Config>::Deposit::get()
 				),

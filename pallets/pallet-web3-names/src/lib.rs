@@ -403,7 +403,7 @@ pub mod pallet {
 
 			ensure!(
 				<T::Currency as InspectHold<AccountIdOf<T>>>::can_hold(
-					&T::RuntimeHoldReason::from(HoldReason::Deposit),
+					&HoldReason::Deposit.into(),
 					deposit_payer,
 					T::Deposit::get()
 				),

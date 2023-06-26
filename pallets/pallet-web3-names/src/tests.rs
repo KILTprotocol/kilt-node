@@ -40,11 +40,7 @@ fn claiming_successful() {
 		.build_and_execute_with_sanity_tests(|| {
 			assert!(Names::<Test>::get(&DID_00).is_none());
 			assert!(Owner::<Test>::get(&web3_name_00).is_none());
-			assert!(Balances::balance_on_hold(
-				&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
-				&ACCOUNT_00
-			)
-			.is_zero());
+			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00).is_zero());
 
 			assert_ok!(Pallet::<Test>::claim(
 				mock_origin::DoubleOrigin(ACCOUNT_00, DID_00).into(),
@@ -69,10 +65,7 @@ fn claiming_successful() {
 			);
 			// Test that the deposit was reserved correctly.
 			assert_eq!(
-				Balances::balance_on_hold(
-					&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
-					&ACCOUNT_00
-				),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
 				Web3NameDeposit::get()
 			);
 			assert_eq!(Balances::balance(&ACCOUNT_00), initial_balance - Web3NameDeposit::get(),);
@@ -183,11 +176,7 @@ fn releasing_by_owner_successful() {
 			assert!(Owner::<Test>::get(&web3_name_00).is_none());
 
 			// Test that the deposit was returned to the payer correctly.
-			assert!(Balances::balance_on_hold(
-				&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
-				&ACCOUNT_00
-			)
-			.is_zero());
+			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00).is_zero());
 			assert_eq!(Balances::balance(&ACCOUNT_00), initial_balance);
 		})
 }
@@ -208,11 +197,7 @@ fn releasing_by_payer_successful() {
 			assert!(Names::<Test>::get(&DID_00).is_none());
 			assert!(Owner::<Test>::get(&web3_name_00).is_none());
 			// Test that the deposit was returned to the payer correctly.
-			assert!(Balances::balance_on_hold(
-				&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
-				&ACCOUNT_00
-			)
-			.is_zero());
+			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00).is_zero());
 			assert_eq!(Balances::balance(&ACCOUNT_00), initial_balance);
 		})
 }
@@ -283,11 +268,7 @@ fn banning_successful() {
 			assert!(Owner::<Test>::get(&web3_name_00).is_none());
 			assert!(Banned::<Test>::get(&web3_name_00).is_some());
 
-			assert!(Balances::balance_on_hold(
-				&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
-				&ACCOUNT_00
-			)
-			.is_zero());
+			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00).is_zero());
 			assert_eq!(Balances::balance(&ACCOUNT_00), initial_balance);
 
 			// Ban an unclaimed name
@@ -407,16 +388,9 @@ fn test_change_deposit_owner() {
 					amount: <Test as Config>::Deposit::get()
 				}
 			);
-			assert!(Balances::balance_on_hold(
-				&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
-				&ACCOUNT_00
-			)
-			.is_zero());
+			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00).is_zero());
 			assert_eq!(
-				Balances::balance_on_hold(
-					&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
-					&ACCOUNT_01
-				),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_01),
 				<Test as Config>::Deposit::get()
 			);
 		})
@@ -467,10 +441,7 @@ fn test_update_deposit() {
 				<Test as Config>::Deposit::get() * 2,
 			);
 			assert_eq!(
-				Balances::balance_on_hold(
-					&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
-					&ACCOUNT_00
-				),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
 				<Test as Config>::Deposit::get() * 2
 			);
 			assert_ok!(Pallet::<Test>::update_deposit(
@@ -487,10 +458,7 @@ fn test_update_deposit() {
 				}
 			);
 			assert_eq!(
-				Balances::balance_on_hold(
-					&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
-					&ACCOUNT_00
-				),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
 				<Test as Config>::Deposit::get()
 			);
 		})
@@ -511,10 +479,7 @@ fn test_update_deposit_unauthorized() {
 				<Test as Config>::Deposit::get() * 2,
 			);
 			assert_eq!(
-				Balances::balance_on_hold(
-					&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
-					&ACCOUNT_00
-				),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
 				<Test as Config>::Deposit::get() * 2
 			);
 			assert_noop!(

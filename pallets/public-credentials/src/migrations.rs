@@ -58,7 +58,7 @@ where
 			.map(|details: crate::CredentialEntryOf<T>| {
 				kilt_support::migration::has_user_reserved_balance::<AccountIdOf<T>, CurrencyOf<T>>(
 					&details.deposit.owner,
-					&T::RuntimeHoldReason::from(HoldReason::Deposit),
+					&HoldReason::Deposit.into(),
 				)
 			})
 			.all(|user| user);
@@ -80,11 +80,9 @@ where
 		use frame_support::traits::fungible::InspectHold;
 
 		Credentials::<T>::iter().try_for_each(|(key, key2, details)| -> Result<(), &'static str> {
-			let hold_balance: u128 = <T as Config>::Currency::balance_on_hold(
-				&T::RuntimeHoldReason::from(HoldReason::Deposit),
-				&details.deposit.owner,
-			)
-			.saturated_into();
+			let hold_balance: u128 =
+				<T as Config>::Currency::balance_on_hold(&HoldReason::Deposit.into(), &details.deposit.owner)
+					.saturated_into();
 			assert!(
 				details.deposit.amount.saturated_into::<u128>() <= hold_balance,
 				"Public Credentails: Hold balance is not matching for credential {:?} {:?}. Expected hold: {:?}. Real hold: {:?}",
@@ -110,7 +108,7 @@ where
 			let deposit = pc_details.deposit;
 			let error = switch_reserved_to_hold::<AccountIdOf<T>, CurrencyOf<T>>(
 				deposit.owner,
-				&T::RuntimeHoldReason::from(HoldReason::Deposit),
+				&HoldReason::Deposit.into(),
 				deposit.amount.saturated_into(),
 			);
 

@@ -31,7 +31,7 @@ pub(crate) fn insert_raw_w3n<T: Config>(
 	block_number: BlockNumberOf<T>,
 	deposit: BalanceOf<T>,
 ) {
-	CurrencyOf::<T>::hold(&T::RuntimeHoldReason::from(HoldReason::Deposit), &payer, deposit)
+	CurrencyOf::<T>::hold(&HoldReason::Deposit.into(), &payer, deposit)
 		.expect("Payer should have enough funds for deposit");
 
 	Names::<T>::insert(&owner, name.clone());

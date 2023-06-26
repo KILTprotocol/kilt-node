@@ -500,12 +500,8 @@ impl ExtBuilder {
 
 			for did in self.dids_stored.iter() {
 				did::Did::<Test>::insert(&did.0, did.1.clone());
-				CurrencyOf::<Test>::hold(
-					&<Test as Config>::RuntimeHoldReason::from(HoldReason::Deposit),
-					&did.1.deposit.owner,
-					did.1.deposit.amount,
-				)
-				.expect("Deposit owner should have enough balance");
+				CurrencyOf::<Test>::hold(&HoldReason::Deposit.into(), &did.1.deposit.owner, did.1.deposit.amount)
+					.expect("Deposit owner should have enough balance");
 			}
 			for did in self.deleted_dids.iter() {
 				DidBlacklist::<Test>::insert(did, ());
