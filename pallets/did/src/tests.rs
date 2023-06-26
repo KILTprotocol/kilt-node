@@ -30,7 +30,7 @@ use sp_std::{
 
 use crate::{
 	self as did,
-	did_details::{DidEncryptionKey, DidNewKeyAgreementKeySetOf, DidVerificationKey, DidVerificationKeyRelationship},
+	did_details::{DidEncryptionKey, DidVerificationKey, DidVerificationKeyRelationship},
 	mock::*,
 	mock_utils::*,
 	service_endpoints::DidEndpoint,

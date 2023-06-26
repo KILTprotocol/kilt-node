@@ -610,9 +610,8 @@ impl<T: Config> DidDetails<T> {
 	}
 }
 
-type DidNewKeyAgreementKeySet<MaxNewKeyAgreementKeys> = BoundedBTreeSet<DidEncryptionKey, MaxNewKeyAgreementKeys>;
-#[cfg(any(feature = "runtime-benchmarks", test))]
-pub(crate) type DidNewKeyAgreementKeySetOf<T> = DidNewKeyAgreementKeySet<<T as Config>::MaxNewKeyAgreementKeys>;
+pub(crate) type DidNewKeyAgreementKeySet<MaxNewKeyAgreementKeys> =
+	BoundedBTreeSet<DidEncryptionKey, MaxNewKeyAgreementKeys>;
 
 pub(crate) type DidKeyAgreementKeySetOf<T> = BoundedBTreeSet<KeyIdOf<T>, <T as Config>::MaxTotalKeyAgreementKeys>;
 

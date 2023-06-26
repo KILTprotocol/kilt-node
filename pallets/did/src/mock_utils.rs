@@ -26,10 +26,12 @@ use sp_std::{
 };
 
 use crate::{
-	did_details::{DidCreationDetails, DidDetails, DidEncryptionKey, DidNewKeyAgreementKeySetOf, DidVerificationKey},
+	did_details::{DidCreationDetails, DidDetails, DidEncryptionKey, DidNewKeyAgreementKeySet, DidVerificationKey},
 	service_endpoints::DidEndpoint,
 	AccountIdOf, BlockNumberOf, Config, DidCreationDetailsOf, DidIdentifierOf,
 };
+
+pub(crate) type DidNewKeyAgreementKeySetOf<T> = DidNewKeyAgreementKeySet<<T as Config>::MaxNewKeyAgreementKeys>;
 
 pub fn get_key_agreement_keys<T: Config>(n_keys: u32) -> DidNewKeyAgreementKeySetOf<T> {
 	BoundedBTreeSet::try_from(
