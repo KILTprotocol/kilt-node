@@ -60,6 +60,7 @@ runtime-benchmarks = [
   "kilt-support/runtime-benchmarks",
   "pallet-balances/runtime-benchmarks",
   "pallet-membership/runtime-benchmarks",
+  "pallet-treasury/runtime-benchmarks",
   "polkadot-parachain/runtime-benchmarks",
   "public-credentials/runtime-benchmarks",
   "sp-runtime/runtime-benchmarks",
