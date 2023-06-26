@@ -34,6 +34,9 @@ use crate::{
 
 const STAKING_ID: LockIdentifier = *b"kiltpstk";
 
+const CURRENT_STORAGE_VERSION: StorageVersion = StorageVersion::new(8);
+const TARGET_STORAGE_VERSION: StorageVersion = StorageVersion::new(9);
+
 pub struct BalanceMigration<T>(PhantomData<T>);
 
 impl<T: crate::pallet::Config> OnRuntimeUpgrade for BalanceMigration<T>
@@ -45,15 +48,15 @@ where
 		log::info!("Staking: Initiating migration");
 
 		let onchain_storage_version = Pallet::<T>::on_chain_storage_version();
-		if onchain_storage_version.eq(&StorageVersion::new(8)) {
-			StorageVersion::new(9).put::<Pallet<T>>();
+		if onchain_storage_version.eq(&CURRENT_STORAGE_VERSION) {
+			TARGET_STORAGE_VERSION.put::<Pallet<T>>();
 			return do_migration::<T>();
 		}
 
 		log::info!(
 			"Staking: No migration needed. This file should be deleted. Current storage version: {:?}, Required Version for update: {:?}", 
 			onchain_storage_version,
-			StorageVersion::new(8)
+			CURRENT_STORAGE_VERSION
 		);
 		<T as frame_system::Config>::DbWeight::get().reads_writes(0, 0)
 	}
@@ -66,7 +69,7 @@ where
 		let count_freezes = pallet_balances::Freezes::<T>::iter().count();
 		assert!(count_freezes.is_zero(), "Staking Pre: There are already freezes.");
 
-		assert_eq!(Pallet::<T>::on_chain_storage_version(), StorageVersion::new(8));
+		assert_eq!(Pallet::<T>::on_chain_storage_version(), CURRENT_STORAGE_VERSION);
 
 		log::info!("Staking: Pre migration checks successful");
 
@@ -81,7 +84,7 @@ where
 
 		assert!(!count_freezes.is_zero(), "Staking: There are still no freezes.");
 
-		assert_eq!(Pallet::<T>::on_chain_storage_version(), StorageVersion::new(9));
+		assert_eq!(Pallet::<T>::on_chain_storage_version(), TARGET_STORAGE_VERSION);
 
 		log::info!("Staking: Post migration checks successful");
 

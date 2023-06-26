@@ -27,6 +27,9 @@ use sp_std::marker::PhantomData;
 
 use crate::{AccountIdOf, Config, CurrencyOf, Did, HoldReason, Pallet};
 
+const CURRENT_STORAGE_VERSION: StorageVersion = StorageVersion::new(4);
+const TARGET_STORAGE_VERSION: StorageVersion = StorageVersion::new(5);
+
 pub struct BalanceMigration<T>(PhantomData<T>);
 
 impl<T: crate::pallet::Config> OnRuntimeUpgrade for BalanceMigration<T>
@@ -37,17 +40,19 @@ where
 		log::info!("Did: Initiating migration");
 
 		let onchain_storage_version = Pallet::<T>::on_chain_storage_version();
-		if onchain_storage_version.eq(&StorageVersion::new(4)) {
-			StorageVersion::new(5).put::<Pallet<T>>();
-			return do_migration::<T>();
+		if onchain_storage_version.eq(&CURRENT_STORAGE_VERSION) {
+			TARGET_STORAGE_VERSION.put::<Pallet<T>>();
+			<T as frame_system::Config>::DbWeight::get()
+				.reads_writes(1, 1)
+				.saturating_add(do_migration::<T>())
+		} else {
+			log::info!(
+				"Did: No migration needed. This file should be deleted. Current storage version: {:?}, Required Version for update: {:?}", 
+				onchain_storage_version,
+				CURRENT_STORAGE_VERSION
+			);
+			<T as frame_system::Config>::DbWeight::get().reads_writes(1, 0)
 		}
-
-		log::info!(
-			"Did: No migration needed. This file should be deleted. Current storage version: {:?}, Required Version for update: {:?}", 
-			onchain_storage_version,
-			StorageVersion::new(4)
-		);
-		<T as frame_system::Config>::DbWeight::get().reads_writes(0, 0)
 	}
 
 	#[cfg(feature = "try-runtime")]
@@ -66,7 +71,7 @@ where
 
 		ensure!(has_all_user_no_holds, "Pre Upgrade Did: there are users with holds!");
 
-		assert_eq!(Pallet::<T>::on_chain_storage_version(), StorageVersion::new(4));
+		assert_eq!(Pallet::<T>::on_chain_storage_version(), CURRENT_STORAGE_VERSION);
 
 		log::info!("Did: Pre migration checks successful");
 
@@ -92,7 +97,7 @@ where
 			Ok(())
 		})?;
 
-		assert_eq!(Pallet::<T>::on_chain_storage_version(), StorageVersion::new(5));
+		assert_eq!(Pallet::<T>::on_chain_storage_version(), TARGET_STORAGE_VERSION);
 
 		log::info!("Did: Post migration checks successful");
 		Ok(())
@@ -106,19 +111,24 @@ where
 	Did::<T>::iter()
 		.map(|(key, did_details)| -> Weight {
 			let deposit = did_details.deposit;
-			let error = switch_reserved_to_hold::<AccountIdOf<T>, CurrencyOf<T>>(
+			let result = switch_reserved_to_hold::<AccountIdOf<T>, CurrencyOf<T>>(
 				deposit.owner,
 				&HoldReason::Deposit.into(),
 				deposit.amount.saturated_into(),
 			);
 
-			if error.is_ok() {
-				return <T as frame_system::Config>::DbWeight::get().reads_writes(1, 1);
+			if result.is_err() {
+				log::error!(
+					" Did: Could not convert reserves to hold from did: {:?} error: {:?}",
+					key,
+					result
+				);
 			}
 
-			log::error!(" Did: Could not convert reserves to hold from did: {:?} ", key);
-
-			<T as frame_system::Config>::DbWeight::get().reads_writes(0, 0)
+			// Currency::reserve and Currency::hold each read and write to the DB once.
+			// Since we are uncertain about which operation may fail, in the event of an
+			// error, we assume the worst-case scenario here.
+			<T as frame_system::Config>::DbWeight::get().reads_writes(2, 2)
 		})
 		.fold(Weight::zero(), |acc, next| acc.saturating_add(next))
 }

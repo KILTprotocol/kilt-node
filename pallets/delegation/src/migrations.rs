@@ -27,6 +27,9 @@ use sp_std::marker::PhantomData;
 
 use crate::{AccountIdOf, Config, CurrencyOf, DelegationNodes, HoldReason, Pallet};
 
+const CURRENT_STORAGE_VERSION: StorageVersion = StorageVersion::new(3);
+const TARGET_STORAGE_VERSION: StorageVersion = StorageVersion::new(4);
+
 pub struct BalanceMigration<T>(PhantomData<T>);
 
 impl<T: crate::pallet::Config> OnRuntimeUpgrade for BalanceMigration<T>
@@ -37,18 +40,20 @@ where
 		log::info!("Delegation: Initiating migration");
 
 		let onchain_storage_version = Pallet::<T>::on_chain_storage_version();
-		if onchain_storage_version.eq(&StorageVersion::new(3)) {
-			StorageVersion::new(4).put::<Pallet<T>>();
-			return do_migration::<T>();
-		}
-
-		log::info!(
+		if onchain_storage_version.eq(&CURRENT_STORAGE_VERSION) {
+			TARGET_STORAGE_VERSION.put::<Pallet<T>>();
+			<T as frame_system::Config>::DbWeight::get()
+				.reads_writes(1, 1)
+				.saturating_add(do_migration::<T>())
+		} else {
+			log::info!(
 			"Delegation: No migration needed. This file should be deleted. Current storage version: {:?}, Required Version for update: {:?}", 
 			onchain_storage_version,
-			StorageVersion::new(3)
+			CURRENT_STORAGE_VERSION
 		);
 
-		<T as frame_system::Config>::DbWeight::get().reads_writes(0, 0)
+			<T as frame_system::Config>::DbWeight::get().reads_writes(1, 0)
+		}
 	}
 
 	#[cfg(feature = "try-runtime")]
@@ -69,7 +74,7 @@ where
 			"Pre Upgrade Delegation: there are users with holds!"
 		);
 
-		assert_eq!(Pallet::<T>::on_chain_storage_version(), StorageVersion::new(3));
+		assert_eq!(Pallet::<T>::on_chain_storage_version(), CURRENT_STORAGE_VERSION);
 		log::info!("Delegation: Pre migration checks successful");
 
 		Ok(vec![])
@@ -92,7 +97,7 @@ where
 			Ok(())
 		})?;
 
-		assert_eq!(Pallet::<T>::on_chain_storage_version(), StorageVersion::new(4));
+		assert_eq!(Pallet::<T>::on_chain_storage_version(), TARGET_STORAGE_VERSION);
 
 		log::info!("Delegation: Post migration checks successful");
 		Ok(())
@@ -112,17 +117,18 @@ where
 				deposit.amount.saturated_into(),
 			);
 
-			if error.is_ok() {
-				return <T as frame_system::Config>::DbWeight::get().reads_writes(1, 1);
+			if error.is_err() {
+				log::error!(
+					" Delegation: Could not convert reserves to hold from delegation: {:?}, error: {:?}",
+					key,
+					error
+				);
 			}
 
-			log::error!(
-				" Delegation: Could not convert reserves to hold from delegation: {:?}, error: {:?}",
-				key,
-				error
-			);
-
-			<T as frame_system::Config>::DbWeight::get().reads_writes(0, 0)
+			// Currency::reserve and Currency::hold each read and write to the DB once.
+			// Since we are uncertain about which operation may fail, in the event of an
+			// error, we assume the worst-case scenario here.
+			<T as frame_system::Config>::DbWeight::get().reads_writes(2, 2)
 		})
 		.fold(Weight::zero(), |acc, next| acc.saturating_add(next))
 }

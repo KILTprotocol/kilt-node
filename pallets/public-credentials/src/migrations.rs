@@ -26,6 +26,9 @@ use sp_std::marker::PhantomData;
 
 use crate::{AccountIdOf, Config, Credentials, CurrencyOf, HoldReason, Pallet};
 
+const CURRENT_STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
+const TARGET_STORAGE_VERSION: StorageVersion = StorageVersion::new(2);
+
 pub struct BalanceMigration<T>(PhantomData<T>);
 
 impl<T: crate::pallet::Config> OnRuntimeUpgrade for BalanceMigration<T>
@@ -37,17 +40,20 @@ where
 
 		let onchain_storage_version = Pallet::<T>::on_chain_storage_version();
 
-		if onchain_storage_version.eq(&StorageVersion::new(1)) {
-			StorageVersion::new(2).put::<Pallet<T>>();
-			return do_migration::<T>();
-		}
+		if onchain_storage_version.eq(&CURRENT_STORAGE_VERSION) {
+			TARGET_STORAGE_VERSION.put::<Pallet<T>>();
 
-		log::info!(
-			"Public Credential: No migration needed. This file should be deleted. Current storage version: {:?}, Required Version for update: {:?}", 
-			onchain_storage_version,
-			StorageVersion::new(1)
-		);
-		<T as frame_system::Config>::DbWeight::get().reads_writes(0, 0)
+			<T as frame_system::Config>::DbWeight::get()
+				.reads_writes(0, 0)
+				.saturating_add(do_migration::<T>())
+		} else {
+			log::info!(
+				"Public Credential: No migration needed. This file should be deleted. Current storage version: {:?}, Required Version for update: {:?}", 
+				onchain_storage_version,
+				CURRENT_STORAGE_VERSION
+			);
+			<T as frame_system::Config>::DbWeight::get().reads_writes(0, 0)
+		}
 	}
 
 	#[cfg(feature = "try-runtime")]
@@ -68,7 +74,7 @@ where
 			"Pre Upgrade Public Credentials: there are users with holds!"
 		);
 
-		assert_eq!(Pallet::<T>::on_chain_storage_version(), StorageVersion::new(1));
+		assert_eq!(Pallet::<T>::on_chain_storage_version(), CURRENT_STORAGE_VERSION);
 
 		log::info!("Public Credentials: Pre migration checks successful");
 
@@ -92,7 +98,7 @@ where
 			Ok(())
 		})?;
 
-		assert_eq!(Pallet::<T>::on_chain_storage_version(), StorageVersion::new(2));
+		assert_eq!(Pallet::<T>::on_chain_storage_version(), TARGET_STORAGE_VERSION);
 
 		log::info!("Public Credentials: Post migration checks successful");
 		Ok(())
@@ -112,18 +118,19 @@ where
 				deposit.amount.saturated_into(),
 			);
 
-			if error.is_ok() {
-				return <T as frame_system::Config>::DbWeight::get().reads_writes(1, 1);
+			if error.is_err() {
+				log::error!(
+					" Public Credential: Could not convert reserves to hold from credential: {:?} {:?}, error: {:?}",
+					key,
+					key2,
+					error
+				);
 			}
 
-			log::error!(
-				" Public Credential: Could not convert reserves to hold from credential: {:?} {:?}, error: {:?}",
-				key,
-				key2,
-				error
-			);
-
-			<T as frame_system::Config>::DbWeight::get().reads_writes(0, 0)
+			// Currency::reserve and Currency::hold each read and write to the DB once.
+			// Since we are uncertain about which operation may fail, in the event of an
+			// error, we assume the worst-case scenario here.
+			<T as frame_system::Config>::DbWeight::get().reads_writes(2, 2)
 		})
 		.fold(Weight::zero(), |acc, next| acc.saturating_add(next))
 }

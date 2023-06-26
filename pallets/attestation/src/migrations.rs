@@ -27,6 +27,9 @@ use sp_std::marker::PhantomData;
 
 use crate::{AccountIdOf, Attestations, Config, CurrencyOf, HoldReason, Pallet};
 
+const CURRENT_STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
+const TARGET_STORAGE_VERSION: StorageVersion = StorageVersion::new(2);
+
 pub struct BalanceMigration<T>(PhantomData<T>);
 
 impl<T: crate::pallet::Config> OnRuntimeUpgrade for BalanceMigration<T>
@@ -37,18 +40,22 @@ where
 		log::info!("Attestation: Initiating migration");
 
 		let onchain_storage_version = Pallet::<T>::on_chain_storage_version();
-		if onchain_storage_version.eq(&StorageVersion::new(1)) {
-			StorageVersion::new(2).put::<Pallet<T>>();
-			return do_migration::<T>();
-		}
 
-		log::info!(
+		if onchain_storage_version.eq(&CURRENT_STORAGE_VERSION) {
+			TARGET_STORAGE_VERSION.put::<Pallet<T>>();
+
+			<T as frame_system::Config>::DbWeight::get()
+				.reads_writes(1, 1)
+				.saturating_add(do_migration::<T>())
+		} else {
+			log::info!(
 			"Attestation: No migration needed. This file should be deleted. Current storage version: {:?}, Required Version for update: {:?}", 
 			onchain_storage_version,
-			StorageVersion::new(1)
+			CURRENT_STORAGE_VERSION
 		);
 
-		<T as frame_system::Config>::DbWeight::get().reads_writes(0, 0)
+			<T as frame_system::Config>::DbWeight::get().reads_writes(1, 0)
+		}
 	}
 
 	#[cfg(feature = "try-runtime")]
@@ -69,7 +76,7 @@ where
 			"Pre Upgrade Attestation: there are users with holds!"
 		);
 
-		assert_eq!(Pallet::<T>::on_chain_storage_version(), StorageVersion::new(1));
+		assert_eq!(Pallet::<T>::on_chain_storage_version(), CURRENT_STORAGE_VERSION);
 
 		log::info!("Attestation: Pre migration checks successful");
 
@@ -95,7 +102,7 @@ where
 			Ok(())
 		})?;
 
-		assert_eq!(Pallet::<T>::on_chain_storage_version(), StorageVersion::new(2));
+		assert_eq!(Pallet::<T>::on_chain_storage_version(), TARGET_STORAGE_VERSION);
 
 		log::info!("Attestation: Post migration checks successful");
 		Ok(())
@@ -109,23 +116,24 @@ where
 	Attestations::<T>::iter()
 		.map(|(key, attestations_detail)| -> Weight {
 			let deposit = attestations_detail.deposit;
-			let error = switch_reserved_to_hold::<AccountIdOf<T>, CurrencyOf<T>>(
+			let result = switch_reserved_to_hold::<AccountIdOf<T>, CurrencyOf<T>>(
 				deposit.owner,
 				&HoldReason::Deposit.into(),
 				deposit.amount.saturated_into(),
 			);
 
-			if error.is_ok() {
-				return <T as frame_system::Config>::DbWeight::get().reads_writes(1, 1);
+			if result.is_err() {
+				log::error!(
+					" Attestation: Could not convert reserves to hold from attestation: {:?} error: {:?}",
+					key,
+					result
+				);
 			}
 
-			log::error!(
-				" Attestation: Could not convert reserves to hold from attestation: {:?} error: {:?}",
-				key,
-				error
-			);
-
-			<T as frame_system::Config>::DbWeight::get().reads_writes(0, 0)
+			// Currency::reserve and Currency::hold each read and write to the DB once.
+			// Since we are uncertain about which operation may fail, in the event of an
+			// error, we assume the worst-case scenario here.
+			<T as frame_system::Config>::DbWeight::get().reads_writes(2, 2)
 		})
 		.fold(Weight::zero(), |acc, next| acc.saturating_add(next))
 }
