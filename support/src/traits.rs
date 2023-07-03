@@ -119,7 +119,7 @@ pub trait StorageDepositCollector<AccountId, Key, RuntimeHoldReason> {
 	/// Release the deposit.
 	fn free_deposit(
 		deposit: Deposit<AccountId, <Self::Currency as Inspect<AccountId>>::Balance>,
-	) -> Result<(), DispatchError> {
+	) -> Result<<Self::Currency as Inspect<AccountId>>::Balance, DispatchError> {
 		free_deposit::<AccountId, Self::Currency>(&deposit, &Self::reason().into())
 	}
 

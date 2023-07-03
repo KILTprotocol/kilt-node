@@ -16,9 +16,9 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::{
-	pallet_prelude::DispatchResult,
-	traits::{fungible::hold::Mutate, tokens::Precision},
+use frame_support::traits::{
+	fungible::{hold::Mutate, Inspect},
+	tokens::Precision,
 };
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
@@ -47,14 +47,14 @@ pub(crate) fn reserve_deposit<Account, Currency: Mutate<Account>>(
 pub(crate) fn free_deposit<Account, Currency: Mutate<Account>>(
 	deposit: &Deposit<Account, Currency::Balance>,
 	reason: &Currency::Reason,
-) -> DispatchResult {
+) -> Result<<Currency as Inspect<Account>>::Balance, DispatchError> {
 	let result = Currency::release(reason, &deposit.owner, deposit.amount, Precision::BestEffort);
 	debug_assert!(
 		result == Ok(deposit.amount),
 		"Released deposit amount does not match with expected amount. Expected: {:?}, Released amount: {:?}  Error: {:?}",
 		deposit.amount,
-		result.unwrap(),
+		result.ok(),
 		result.err(),
 	);
-	Ok(())
+	result
 }
