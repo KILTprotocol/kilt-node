@@ -480,8 +480,8 @@ pub mod pallet {
 
 	impl<T: Config> Pallet<T> {
 		fn remove_attestation(attestation: AttestationDetails<T>, claim_hash: ClaimHashOf<T>) -> DispatchResult {
-			Attestations::<T>::remove(claim_hash);
 			AttestationStorageDepositCollector::<T>::free_deposit(attestation.deposit)?;
+			Attestations::<T>::remove(claim_hash);
 			if let Some(authorization_id) = &attestation.authorization_id {
 				ExternalAttestations::<T>::remove(authorization_id, claim_hash);
 			}
