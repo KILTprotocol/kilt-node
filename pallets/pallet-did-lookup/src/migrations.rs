@@ -158,14 +158,11 @@ where
 			})
 			.all(|user| user);
 
-		assert!(
-			has_all_user_no_holds,
-			"Pre Upgrade Did lookup: there are users with holds!"
-		);
+		assert!(has_all_user_no_holds, "Did lookup: there are users with holds!");
 
 		assert_eq!(Pallet::<T>::on_chain_storage_version(), CURRENT_STORAGE_VERSION);
 
-		log::info!("Did: Pre migration checks successful");
+		log::info!("Did lookup: Pre migration checks successful");
 
 		Ok(vec![])
 	}
@@ -173,21 +170,34 @@ where
 	#[cfg(feature = "try-runtime")]
 	fn post_upgrade(_pre_state: sp_std::vec::Vec<u8>) -> Result<(), &'static str> {
 		use frame_support::traits::fungible::InspectHold;
+		use sp_std::collections::btree_map::BTreeMap;
 
-		ConnectedDids::<T>::iter().try_for_each(|(key, details)| -> Result<(), &'static str> {
-			let hold_balance: u128 =
-				<T as Config>::Currency::balance_on_hold(&HoldReason::Deposit.into(), &details.deposit.owner)
-					.saturated_into();
-			assert!(
-				details.deposit.amount.saturated_into::<u128>() <= hold_balance,
-				"Did lookup: Hold balance is not matching for connected did {:?}. Expected hold: {:?}. Real hold: {:?}",
-				key,
-				details.deposit.amount,
-				hold_balance
-			);
+		use crate::BalanceOf;
 
-			Ok(())
-		})?;
+		let mut map_user_deposit: BTreeMap<AccountIdOf<T>, BalanceOf<T>> = BTreeMap::new();
+
+		ConnectedDids::<T>::iter_values().for_each(|details| {
+			map_user_deposit
+				.entry(details.deposit.owner)
+				.and_modify(|balance| *balance = balance.saturating_add(details.deposit.amount))
+				.or_insert(details.deposit.amount);
+		});
+
+		map_user_deposit
+			.iter()
+			.try_for_each(|(who, amount)| -> Result<(), &'static str> {
+				let hold_balance: BalanceOf<T> =
+					<T as Config>::Currency::balance_on_hold(&HoldReason::Deposit.into(), who).saturated_into();
+
+				assert!(
+					amount.eq(&hold_balance),
+					"Did lookup: Hold balance is not matching for attestation {:?}. Expected hold: {:?}. Real hold: {:?}",
+					who,
+					amount,
+					hold_balance
+				);
+				Ok(())
+			})?;
 
 		assert_eq!(Pallet::<T>::on_chain_storage_version(), TARGET_STORAGE_VERSION);
 

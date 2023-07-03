@@ -84,19 +84,35 @@ where
 	#[cfg(feature = "try-runtime")]
 	fn post_upgrade(_pre_state: sp_std::vec::Vec<u8>) -> Result<(), &'static str> {
 		use frame_support::traits::fungible::InspectHold;
+		use sp_runtime::Saturating;
+		use sp_std::collections::btree_map::BTreeMap;
 
-		Credentials::<T>::iter().try_for_each(|(key, key2, details)| -> Result<(), &'static str> {
-			let hold_balance: u128 =
-				<T as Config>::Currency::balance_on_hold(&HoldReason::Deposit.into(), &details.deposit.owner)
-					.saturated_into();
-			assert!(
-				details.deposit.amount.saturated_into::<u128>() <= hold_balance,
-				"Public Credentails: Hold balance is not matching for credential {:?} {:?}. Expected hold: {:?}. Real hold: {:?}",
-				key, key2, details.deposit.amount, hold_balance
-			);
+		use crate::BalanceOf;
 
-			Ok(())
-		})?;
+		let mut map_user_deposit: BTreeMap<AccountIdOf<T>, BalanceOf<T>> = BTreeMap::new();
+
+		Credentials::<T>::iter_values().for_each(|details| {
+			map_user_deposit
+				.entry(details.deposit.owner)
+				.and_modify(|balance| *balance = balance.saturating_add(details.deposit.amount))
+				.or_insert(details.deposit.amount);
+		});
+
+		map_user_deposit
+			.iter()
+			.try_for_each(|(who, amount)| -> Result<(), &'static str> {
+				let hold_balance: BalanceOf<T> =
+					<T as Config>::Currency::balance_on_hold(&HoldReason::Deposit.into(), who).saturated_into();
+
+				assert!(
+					amount.eq(&hold_balance),
+					"Public Credentials: Hold balance is not matching for attestation {:?}. Expected hold: {:?}. Real hold: {:?}",
+					who,
+					amount,
+					hold_balance
+				);
+				Ok(())
+			})?;
 
 		assert_eq!(Pallet::<T>::on_chain_storage_version(), TARGET_STORAGE_VERSION);
 
@@ -120,7 +136,7 @@ where
 
 			if error.is_err() {
 				log::error!(
-					" Public Credential: Could not convert reserves to hold from credential: {:?} {:?}, error: {:?}",
+					"Public Credential: Could not convert reserves to hold from credential: {:?} {:?}, error: {:?}",
 					key,
 					key2,
 					error
