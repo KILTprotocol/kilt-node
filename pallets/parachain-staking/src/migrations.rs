@@ -86,11 +86,6 @@ where
 
 		assert!(!count_freezes.is_zero(), "Staking: There are still no freezes.");
 
-		pallet_balances::Freezes::<T>::iter().try_for_each(|(key, details)| {
-			key.into();
-			Ok(())
-		})?;
-
 		assert_eq!(Pallet::<T>::on_chain_storage_version(), TARGET_STORAGE_VERSION);
 
 		log::info!("Staking: Post migration checks successful");
