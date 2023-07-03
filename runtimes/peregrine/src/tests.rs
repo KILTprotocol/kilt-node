@@ -52,7 +52,7 @@ fn attestation_storage_sizes() {
 	type DelegationRecord =
 		BoundedVec<<Runtime as frame_system::Config>::Hash, <Runtime as attestation::Config>::MaxDelegatedAttestations>;
 
-	let attestation_record = attestation::AttestationDetails::<Runtime>::max_encoded_len();
+	let attestation_record = attestation::AttestationDetailsOf::<Runtime>::max_encoded_len();
 	let delegation_record = DelegationRecord::max_encoded_len()
 		/ (<Runtime as attestation::Config>::MaxDelegatedAttestations::get() as usize);
 	assert_eq!(

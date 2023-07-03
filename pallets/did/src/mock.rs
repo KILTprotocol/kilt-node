@@ -16,6 +16,29 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+#[cfg(not(feature = "runtime-benchmarks"))]
+use crate::{DidRawOrigin, EnsureDidOrigin};
+
+use frame_support::{
+	parameter_types,
+	traits::{
+		fungible::{Balanced, Credit, MutateHold},
+		OnUnbalanced,
+	},
+	weights::constants::RocksDbWeight,
+};
+use frame_system::EnsureSigned;
+use pallet_balances::Pallet as PalletBalance;
+use parity_scale_codec::{Decode, Encode};
+use scale_info::TypeInfo;
+use sp_core::{ecdsa, ed25519, sr25519, Pair};
+use sp_runtime::{
+	testing::{Header, H256},
+	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
+	MultiSignature, MultiSigner, SaturatedConversion,
+};
+use sp_std::vec::Vec;
+
 use crate::{
 	self as did,
 	did_details::{
@@ -28,25 +51,6 @@ use crate::{
 	utils as crate_utils, AccountIdOf, Config, CurrencyOf, DidBlacklist, DidEndpointsCount, HoldReason, KeyIdOf,
 	ServiceEndpoints,
 };
-#[cfg(not(feature = "runtime-benchmarks"))]
-use crate::{DidRawOrigin, EnsureDidOrigin};
-use frame_support::{
-	parameter_types,
-	traits::{
-		fungible::{Balanced, Credit, MutateHold},
-		OnUnbalanced,
-	},
-	weights::constants::RocksDbWeight,
-};
-use frame_system::EnsureSigned;
-use pallet_balances::Pallet as PalletBalance;
-use sp_core::{ecdsa, ed25519, sr25519, Pair};
-use sp_runtime::{
-	testing::{Header, H256},
-	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
-	MultiSignature, MultiSigner, SaturatedConversion,
-};
-use sp_std::vec::Vec;
 
 pub(crate) type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 pub(crate) type Block = frame_system::mocking::MockBlock<Test>;
@@ -112,6 +116,7 @@ impl frame_system::Config for Test {
 }
 
 parameter_types! {
+	#[derive(Clone, TypeInfo, Debug, PartialEq, Eq, Encode, Decode)]
 	pub const MaxNewKeyAgreementKeys: u32 = 10u32;
 	#[derive(Debug, Clone, Eq, PartialEq)]
 	pub const MaxTotalKeyAgreementKeys: u32 = 10u32;

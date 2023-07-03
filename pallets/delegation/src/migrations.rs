@@ -61,7 +61,7 @@ where
 		use sp_std::vec;
 
 		let has_all_user_no_holds = DelegationNodes::<T>::iter_values()
-			.map(|details: crate::DelegationNode<T>| {
+			.map(|details: crate::DelegationNodeOf<T>| {
 				kilt_support::migration::has_user_reserved_balance::<AccountIdOf<T>, CurrencyOf<T>>(
 					&details.deposit.owner,
 					&HoldReason::Deposit.into(),

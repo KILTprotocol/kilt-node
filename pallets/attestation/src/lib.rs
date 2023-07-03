@@ -122,6 +122,9 @@ pub mod pallet {
 
 	pub(crate) type HoldReasonOf<T> = <T as Config>::RuntimeHoldReason;
 
+	pub type AttestationDetailsOf<T> =
+		AttestationDetails<CtypeHashOf<T>, AttesterOf<T>, AuthorizationIdOf<T>, AccountIdOf<T>, BalanceOf<T>>;
+
 	#[pallet::composite_enum]
 	pub enum HoldReason {
 		Deposit,
@@ -176,7 +179,7 @@ pub mod pallet {
 	/// It maps from a claim hash to the full attestation.
 	#[pallet::storage]
 	#[pallet::getter(fn attestations)]
-	pub type Attestations<T> = StorageMap<_, Blake2_128Concat, ClaimHashOf<T>, AttestationDetails<T>>;
+	pub type Attestations<T> = StorageMap<_, Blake2_128Concat, ClaimHashOf<T>, AttestationDetailsOf<T>>;
 
 	/// Delegated attestations stored on chain.
 	///
@@ -479,7 +482,7 @@ pub mod pallet {
 	}
 
 	impl<T: Config> Pallet<T> {
-		fn remove_attestation(attestation: AttestationDetails<T>, claim_hash: ClaimHashOf<T>) -> DispatchResult {
+		fn remove_attestation(attestation: AttestationDetailsOf<T>, claim_hash: ClaimHashOf<T>) -> DispatchResult {
 			AttestationStorageDepositCollector::<T>::free_deposit(attestation.deposit)?;
 			Attestations::<T>::remove(claim_hash);
 			if let Some(authorization_id) = &attestation.authorization_id {

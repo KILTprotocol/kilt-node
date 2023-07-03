@@ -41,7 +41,7 @@ use crate::{
 	},
 	service_endpoints::DidEndpoint,
 	signature::DidSignatureVerify,
-	HoldReason,
+	AccountIdOf, DidAuthorizedCallOperationOf, DidIdentifierOf, HoldReason,
 };
 
 const DEFAULT_ACCOUNT_ID: &str = "tx_submitter";
@@ -104,7 +104,7 @@ where
 fn generate_base_did_call_operation<T: Config>(
 	did: DidIdentifierOf<T>,
 	submitter: AccountIdOf<T>,
-) -> DidAuthorizedCallOperation<T> {
+) -> DidAuthorizedCallOperationOf<T> {
 	let test_call = <T as Config>::RuntimeCall::get_call_for_did_call_benchmark();
 
 	DidAuthorizedCallOperation {
