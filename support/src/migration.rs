@@ -36,6 +36,12 @@ pub fn switch_reserved_to_hold<AccountId, Currency: ReservableCurrency<AccountId
 	amount: u128,
 ) -> DispatchResult {
 	let remaining_balance = Currency::unreserve(&owner, amount.saturated_into());
+	debug_assert!(
+		remaining_balance.is_zero(),
+		"Could not unreserve balance. Remaining: {:?}. To unreserve: {:?}",
+		remaining_balance,
+		amount
+	);
 	let to_hold_balance = amount.saturating_sub(remaining_balance.saturated_into());
 	Currency::hold(reason, &owner, to_hold_balance.saturated_into())
 }
