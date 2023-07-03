@@ -321,7 +321,7 @@ benchmarks! {
 	}: revoke_delegation<T::RuntimeOrigin>(origin, child_id, c, r)
 	verify {
 		assert!(DelegationNodes::<T>::contains_key(child_id));
-		let DelegationNode::<T> { details, .. } = DelegationNodes::<T>::get(leaf_id).ok_or("Child of root should have delegation id")?;
+		let DelegationNodeOf::<T> { details, .. } = DelegationNodes::<T>::get(leaf_id).ok_or("Child of root should have delegation id")?;
 		assert!(details.revoked);
 
 		assert!(DelegationNodes::<T>::contains_key(leaf_id));
@@ -345,7 +345,7 @@ benchmarks! {
 	}: revoke_delegation<T::RuntimeOrigin>(origin, leaf_id, c, r)
 	verify {
 		assert!(DelegationNodes::<T>::contains_key(leaf_id));
-		let DelegationNode::<T> { details, .. } = DelegationNodes::<T>::get(leaf_id).ok_or("Child of root should have delegation id")?;
+		let DelegationNodeOf::<T> { details, .. } = DelegationNodes::<T>::get(leaf_id).ok_or("Child of root should have delegation id")?;
 		assert!(details.revoked);
 	}
 	// TODO: Might want to add variant iterating over children instead of depth at some later point

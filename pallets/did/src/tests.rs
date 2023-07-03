@@ -30,7 +30,7 @@ use sp_std::{
 
 use crate::{
 	self as did,
-	did_details::{DidEncryptionKey, DidNewKeyAgreementKeySet, DidVerificationKey, DidVerificationKeyRelationship},
+	did_details::{DidEncryptionKey, DidVerificationKey, DidVerificationKeyRelationship},
 	mock::*,
 	mock_utils::*,
 	service_endpoints::DidEndpoint,
@@ -171,7 +171,7 @@ fn check_successful_complete_creation() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let auth_did_key = DidVerificationKey::from(auth_key.public());
-	let enc_keys = DidNewKeyAgreementKeySet::<Test>::try_from(
+	let enc_keys = DidNewKeyAgreementKeySetOf::<Test>::try_from(
 		vec![get_x25519_encryption_key(true), get_x25519_encryption_key(false)]
 			.iter()
 			.copied()

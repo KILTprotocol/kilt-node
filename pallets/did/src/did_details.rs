@@ -35,9 +35,8 @@ use sp_std::{convert::TryInto, vec::Vec};
 
 use crate::{
 	errors::{self, DidError},
-	service_endpoints::DidEndpoint,
-	utils, AccountIdOf, BalanceOf, BlockNumberOf, Config, CurrencyOf, DidCallableOf, DidEndpointsCount,
-	DidIdentifierOf, KeyIdOf, Payload,
+	utils, AccountIdOf, BalanceOf, BlockNumberOf, Config, CurrencyOf, DidAuthorizedCallOperationOf,
+	DidCreationDetailsOf, DidEndpointsCount, DidIdentifierOf, KeyIdOf, Payload,
 };
 
 /// Types of verification keys a DID can control.
@@ -239,9 +238,7 @@ impl<I: AsRef<[u8; 32]>> DidVerifiableIdentifier for I {
 /// It is currently used to keep track of all the past and current
 /// attestation keys a DID might control.
 #[derive(Clone, RuntimeDebug, Decode, Encode, PartialEq, Ord, PartialOrd, Eq, TypeInfo, MaxEncodedLen)]
-#[scale_info(skip_type_params(T))]
-#[codec(mel_bound())]
-pub struct DidPublicKeyDetails<BlockNumber: MaxEncodedLen> {
+pub struct DidPublicKeyDetails<BlockNumber> {
 	/// A public key the DID controls.
 	pub key: DidPublicKey,
 	/// The block number in which the verification key was added to the DID.
@@ -259,7 +256,7 @@ pub struct DidDetails<T: Config> {
 	pub authentication_key: KeyIdOf<T>,
 	/// The set of the key agreement key IDs, which can be used to encrypt
 	/// data addressed to the DID subject.
-	pub key_agreement_keys: DidKeyAgreementKeySet<T>,
+	pub key_agreement_keys: DidKeyAgreementKeySetOf<T>,
 	/// \[OPTIONAL\] The ID of the delegation key, used to verify the
 	/// signatures of the delegations created by the DID subject.
 	pub delegation_key: Option<KeyIdOf<T>>,
@@ -275,7 +272,7 @@ pub struct DidDetails<T: Config> {
 	/// the old attestation keys that have been rotated, i.e., they cannot
 	/// be used to create new attestations but can still be used to verify
 	/// previously issued attestations.
-	pub public_keys: DidPublicKeyMap<T>,
+	pub public_keys: DidPublicKeyMapOf<T>,
 	/// The counter used to avoid replay attacks, which is checked and
 	/// updated upon each DID operation involving with the subject as the
 	/// creator.
@@ -295,7 +292,7 @@ impl<T: Config> DidDetails<T> {
 		block_number: BlockNumberOf<T>,
 		deposit: Deposit<AccountIdOf<T>, BalanceOf<T>>,
 	) -> Result<Self, errors::StorageError> {
-		let mut public_keys = DidPublicKeyMap::<T>::default();
+		let mut public_keys = DidPublicKeyMapOf::<T>::default();
 		let authentication_key_id = utils::calculate_key_id::<T>(&authentication_key.clone().into());
 		public_keys
 			.try_insert(
@@ -306,9 +303,10 @@ impl<T: Config> DidDetails<T> {
 				},
 			)
 			.map_err(|_| errors::StorageError::MaxPublicKeysExceeded)?;
+
 		Ok(Self {
 			authentication_key: authentication_key_id,
-			key_agreement_keys: DidKeyAgreementKeySet::<T>::default(),
+			key_agreement_keys: DidKeyAgreementKeySetOf::<T>::default(),
 			attestation_key: None,
 			delegation_key: None,
 			public_keys,
@@ -368,7 +366,7 @@ impl<T: Config> DidDetails<T> {
 	// Creates a new DID entry from some [DidCreationDetails] and a given
 	// authentication key.
 	pub fn from_creation_details(
-		details: DidCreationDetails<T>,
+		details: DidCreationDetailsOf<T>,
 		new_auth_key: DidVerificationKey,
 		did_subject: &DidIdentifierOf<T>,
 	) -> Result<Self, DidError> {
@@ -441,7 +439,7 @@ impl<T: Config> DidDetails<T> {
 	/// The new keys are added to the set of public keys.
 	pub fn add_key_agreement_keys(
 		&mut self,
-		new_key_agreement_keys: DidNewKeyAgreementKeySet<T>,
+		new_key_agreement_keys: DidNewKeyAgreementKeySet<T::MaxNewKeyAgreementKeys>,
 		block_number: BlockNumberOf<T>,
 	) -> Result<(), errors::StorageError> {
 		for new_key_agreement_key in new_key_agreement_keys {
@@ -612,28 +610,32 @@ impl<T: Config> DidDetails<T> {
 	}
 }
 
-pub(crate) type DidNewKeyAgreementKeySet<T> = BoundedBTreeSet<DidEncryptionKey, <T as Config>::MaxNewKeyAgreementKeys>;
-pub(crate) type DidKeyAgreementKeySet<T> = BoundedBTreeSet<KeyIdOf<T>, <T as Config>::MaxTotalKeyAgreementKeys>;
-pub(crate) type DidPublicKeyMap<T> =
+pub(crate) type DidNewKeyAgreementKeySet<MaxNewKeyAgreementKeys> =
+	BoundedBTreeSet<DidEncryptionKey, MaxNewKeyAgreementKeys>;
+
+pub(crate) type DidKeyAgreementKeySetOf<T> = BoundedBTreeSet<KeyIdOf<T>, <T as Config>::MaxTotalKeyAgreementKeys>;
+
+pub(crate) type DidPublicKeyMapOf<T> =
 	BoundedBTreeMap<KeyIdOf<T>, DidPublicKeyDetails<BlockNumberOf<T>>, <T as Config>::MaxPublicKeysPerDid>;
 
 /// The details of a new DID to create.
 #[derive(Clone, RuntimeDebug, Decode, Encode, PartialEq, TypeInfo)]
-#[scale_info(skip_type_params(T))]
-
-pub struct DidCreationDetails<T: Config> {
+pub struct DidCreationDetails<DidIdentifier, AccountId, MaxNewKeyAgreementKeys, DidEndpoint>
+where
+	MaxNewKeyAgreementKeys: Get<u32> + Clone,
+{
 	/// The DID identifier. It has to be unique.
-	pub did: DidIdentifierOf<T>,
+	pub did: DidIdentifier,
 	/// The authorised submitter of the creation operation.
-	pub submitter: AccountIdOf<T>,
+	pub submitter: AccountId,
 	/// The new key agreement keys.
-	pub new_key_agreement_keys: DidNewKeyAgreementKeySet<T>,
+	pub new_key_agreement_keys: DidNewKeyAgreementKeySet<MaxNewKeyAgreementKeys>,
 	/// \[OPTIONAL\] The new attestation key.
 	pub new_attestation_key: Option<DidVerificationKey>,
 	/// \[OPTIONAL\] The new delegation key.
 	pub new_delegation_key: Option<DidVerificationKey>,
 	/// The service endpoints details.
-	pub new_service_details: Vec<DidEndpoint<T>>,
+	pub new_service_details: Vec<DidEndpoint>,
 }
 
 /// Errors that might occur while deriving the authorization verification key
@@ -670,19 +672,18 @@ pub trait DeriveDidCallAuthorizationVerificationKeyRelationship {
 /// extrinsic to have a DID origin and perform DID-based authorization upon
 /// their invocation.
 #[derive(Clone, RuntimeDebug, Decode, Encode, PartialEq, TypeInfo)]
-#[scale_info(skip_type_params(T))]
 
-pub struct DidAuthorizedCallOperation<T: Config> {
+pub struct DidAuthorizedCallOperation<DidIdentifier, DidCallable, BlockNumber, AccountId, TxCounter> {
 	/// The DID identifier.
-	pub did: DidIdentifierOf<T>,
+	pub did: DidIdentifier,
 	/// The DID tx counter.
-	pub tx_counter: u64,
+	pub tx_counter: TxCounter,
 	/// The extrinsic call to authorize with the DID.
-	pub call: DidCallableOf<T>,
+	pub call: DidCallable,
 	/// The block number at which the operation was created.
-	pub block_number: BlockNumberOf<T>,
+	pub block_number: BlockNumber,
 	/// The account which is authorized to submit the did call.
-	pub submitter: AccountIdOf<T>,
+	pub submitter: AccountId,
 }
 
 /// Wrapper around a [DidAuthorizedCallOperation].
@@ -690,17 +691,16 @@ pub struct DidAuthorizedCallOperation<T: Config> {
 /// It contains additional information about the type of DID key to used for
 /// authorization.
 #[derive(Clone, RuntimeDebug, PartialEq, TypeInfo)]
-#[scale_info(skip_type_params(T))]
 
 pub struct DidAuthorizedCallOperationWithVerificationRelationship<T: Config> {
 	/// The wrapped [DidAuthorizedCallOperation].
-	pub operation: DidAuthorizedCallOperation<T>,
+	pub operation: DidAuthorizedCallOperationOf<T>,
 	/// The type of DID key to use for authorization.
 	pub verification_key_relationship: DidVerificationKeyRelationship,
 }
 
 impl<T: Config> core::ops::Deref for DidAuthorizedCallOperationWithVerificationRelationship<T> {
-	type Target = DidAuthorizedCallOperation<T>;
+	type Target = DidAuthorizedCallOperationOf<T>;
 
 	fn deref(&self) -> &Self::Target {
 		&self.operation

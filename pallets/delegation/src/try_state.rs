@@ -20,7 +20,7 @@ use frame_support::ensure;
 use kilt_support::test_utils::log_and_return_error_message;
 use scale_info::prelude::format;
 
-use crate::{Config, DelegationHierarchies, DelegationNode, DelegationNodes};
+use crate::{Config, DelegationHierarchies, DelegationNodeOf, DelegationNodes};
 
 pub(crate) fn do_try_state<T: Config>() -> Result<(), &'static str> {
 	DelegationNodes::<T>::iter().try_for_each(|(delegation_node_id, delegation_details)| -> Result<(), &'static str> {
@@ -33,7 +33,7 @@ pub(crate) fn do_try_state<T: Config>() -> Result<(), &'static str> {
 		);
 
 		let parent_count = DelegationNodes::<T>::iter_values()
-			.filter(|delegation_node: &DelegationNode<T>| delegation_node.children.contains(&delegation_node_id))
+			.filter(|delegation_node: &DelegationNodeOf<T>| delegation_node.children.contains(&delegation_node_id))
 			.count();
 
 		if delegation_details.parent.is_some() {
@@ -62,7 +62,7 @@ pub(crate) fn do_try_state<T: Config>() -> Result<(), &'static str> {
 		if delegation_details.details.revoked {
 			let is_subtree_revoked = get_merged_subtree::<T>(delegation_details)
 				.iter()
-				.map(|child: &DelegationNode<T>| child.details.revoked)
+				.map(|child: &DelegationNodeOf<T>| child.details.revoked)
 				.all(|x| x);
 			ensure!(
 				is_subtree_revoked,
@@ -76,7 +76,7 @@ pub(crate) fn do_try_state<T: Config>() -> Result<(), &'static str> {
 	})
 }
 
-fn get_merged_subtree<T: Config>(node: DelegationNode<T>) -> sp_std::vec::Vec<DelegationNode<T>> {
+fn get_merged_subtree<T: Config>(node: DelegationNodeOf<T>) -> sp_std::vec::Vec<DelegationNodeOf<T>> {
 	let mut nodes_to_explore = sp_std::vec::Vec::from([node]);
 	let mut children = sp_std::vec::Vec::new();
 	while let Some(current_node) = nodes_to_explore.pop() {

@@ -41,6 +41,7 @@ use frame_try_runtime::UpgradeCheckSelect;
 
 use pallet_grandpa::{fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
 use pallet_transaction_payment::{CurrencyAdapter, FeeDetails};
+use scale_info::TypeInfo;
 use sp_api::impl_runtime_apis;
 use sp_consensus_aura::{ed25519::AuthorityId as AuraId, SlotDuration};
 use sp_core::{ConstU64, OpaqueMetadata};
@@ -304,7 +305,7 @@ parameter_types! {
 	pub const MaxParentChecks: u32 = constants::delegation::MAX_PARENT_CHECKS;
 	pub const MaxRevocations: u32 = constants::delegation::MAX_REVOCATIONS;
 	pub const MaxRemovals: u32 = constants::delegation::MAX_REMOVALS;
-	#[derive(Clone)]
+	#[derive(Clone, TypeInfo)]
 	pub const MaxChildren: u32 = constants::delegation::MAX_CHILDREN;
 	pub const DelegationDeposit: Balance = constants::delegation::DELEGATION_DEPOSIT;
 }
@@ -353,7 +354,9 @@ impl ctype::Config for Runtime {
 }
 
 parameter_types! {
+	#[derive(Debug, Clone, Eq, PartialEq, TypeInfo, Decode, Encode)]
 	pub const MaxNewKeyAgreementKeys: u32 = constants::did::MAX_KEY_AGREEMENT_KEYS;
+	#[derive(Clone)]
 	pub const MaxPublicKeysPerDid: u32 = constants::did::MAX_PUBLIC_KEYS_PER_DID;
 	#[derive(Debug, Clone, Eq, PartialEq)]
 	pub const MaxTotalKeyAgreementKeys: u32 = constants::did::MAX_TOTAL_KEY_AGREEMENT_KEYS;

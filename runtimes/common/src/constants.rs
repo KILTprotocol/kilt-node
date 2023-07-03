@@ -144,6 +144,8 @@ pub mod attestation {
 }
 
 pub mod delegation {
+	use scale_info::TypeInfo;
+
 	use super::*;
 
 	pub const DELEGATION_DEPOSIT: Balance = KILT;
@@ -158,7 +160,7 @@ pub mod delegation {
 		pub const MaxParentChecks: u32 = MAX_PARENT_CHECKS;
 		pub const MaxRevocations: u32 = MAX_REVOCATIONS;
 		pub const MaxRemovals: u32 = MAX_REMOVALS;
-		#[derive(Clone)]
+		#[derive(Clone, TypeInfo)]
 		pub const MaxChildren: u32 = MAX_CHILDREN;
 		pub const DelegationDeposit: Balance = DELEGATION_DEPOSIT;
 	}
@@ -319,6 +321,9 @@ pub mod multisig {
 }
 
 pub mod did {
+	use parity_scale_codec::{Decode, Encode};
+	use scale_info::TypeInfo;
+
 	use super::*;
 
 	///  Max length of a key (including its enum discriminants).
@@ -360,7 +365,9 @@ pub mod did {
 	pub const MAX_NUMBER_OF_URLS_PER_SERVICE: u32 = 2;
 
 	parameter_types! {
+		#[derive(Debug, Clone, Eq, PartialEq, TypeInfo, Decode, Encode)]
 		pub const MaxNewKeyAgreementKeys: u32 = MAX_KEY_AGREEMENT_KEYS;
+		#[derive(Clone)]
 		pub const MaxPublicKeysPerDid: u32 = MAX_PUBLIC_KEYS_PER_DID;
 		#[derive(Debug, Clone, Eq, PartialEq)]
 		pub const MaxTotalKeyAgreementKeys: u32 = MAX_TOTAL_KEY_AGREEMENT_KEYS;

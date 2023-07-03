@@ -15,47 +15,44 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
-
-use ctype::CtypeHashOf;
 use kilt_support::deposit::Deposit;
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 
-use crate::{AccountIdOf, AttesterOf, AuthorizationIdOf, BalanceOf, Config};
-
 /// An on-chain attestation written by an attester.
 #[derive(Clone, Debug, Encode, Decode, Eq, PartialEq, TypeInfo, MaxEncodedLen)]
-#[scale_info(skip_type_params(T))]
-#[codec(mel_bound())]
-pub struct AttestationDetails<T: Config> {
+pub struct AttestationDetails<CtypeHash, AttesterId, AuthorizationId, AccountId, Balance> {
 	/// The hash of the CType used for this attestation.
-	pub ctype_hash: CtypeHashOf<T>,
+	pub ctype_hash: CtypeHash,
 	/// The ID of the attester.
-	pub attester: AttesterOf<T>,
+	pub attester: AttesterId,
 	/// \[OPTIONAL\] The ID of the delegation node used to authorize the
 	/// attester.
-	pub authorization_id: Option<AuthorizationIdOf<T>>,
+	pub authorization_id: Option<AuthorizationId>,
 	/// The flag indicating whether the attestation has been revoked or not.
 	pub revoked: bool,
 	/// The deposit that was taken to incentivise fair use of the on chain
 	/// storage.
-	pub deposit: Deposit<AccountIdOf<T>, BalanceOf<T>>,
+	pub deposit: Deposit<AccountId, Balance>,
 }
 
 #[cfg(test)]
 mod tests {
-	use super::*;
-	use crate::mock::*;
+	use ctype::CtypeHashOf;
 
+	use super::*;
+	use crate::{mock::*, AccountIdOf, AttestationDetailsOf, AttesterOf, BalanceOf};
+
+	type OldAttestationDetailsOf<Test> =
+		OldAttestationDetails<CtypeHashOf<Test>, AttesterOf<Test>, AccountIdOf<Test>, BalanceOf<Test>>;
 	/// Old Attestation
 	#[derive(Clone, Debug, Encode, Decode, Eq, PartialEq, TypeInfo, MaxEncodedLen)]
-	#[scale_info(skip_type_params(T))]
-	#[codec(mel_bound())]
-	pub struct OldAttestationDetails<T: Config> {
+
+	pub struct OldAttestationDetails<CtypeHash, Attester, AccountId, Balance> {
 		/// The hash of the CType used for this attestation.
-		pub ctype_hash: CtypeHashOf<T>,
+		pub ctype_hash: CtypeHash,
 		/// The ID of the attester.
-		pub attester: AttesterOf<T>,
+		pub attester: Attester,
 		/// \[OPTIONAL\] The ID of the delegation node used to authorize the
 		/// attester.
 		pub delegation_id: Option<[u8; 32]>,
@@ -63,12 +60,12 @@ mod tests {
 		pub revoked: bool,
 		/// The deposit that was taken to incentivise fair use of the on chain
 		/// storage.
-		pub deposit: Deposit<AccountIdOf<T>, BalanceOf<T>>,
+		pub deposit: Deposit<AccountId, Balance>,
 	}
 
 	#[test]
 	fn test_no_need_to_migrate_if_none() {
-		let old = OldAttestationDetails::<Test> {
+		let old = OldAttestationDetailsOf::<Test> {
 			ctype_hash: claim_hash_from_seed(CLAIM_HASH_SEED_01),
 			attester: sr25519_did_from_seed(&ALICE_SEED),
 			delegation_id: None,
@@ -80,10 +77,10 @@ mod tests {
 		};
 		let encoded = old.encode();
 
-		let new = AttestationDetails::<Test>::decode(&mut &encoded[..]);
+		let new = AttestationDetailsOf::<Test>::decode(&mut &encoded[..]);
 		assert_eq!(
 			new,
-			Ok(AttestationDetails::<Test> {
+			Ok(AttestationDetailsOf::<Test> {
 				ctype_hash: claim_hash_from_seed(CLAIM_HASH_SEED_01),
 				attester: sr25519_did_from_seed(&ALICE_SEED),
 				authorization_id: None,

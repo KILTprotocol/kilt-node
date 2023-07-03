@@ -133,6 +133,16 @@ pub mod pallet {
 
 	pub(crate) type CurrencyOf<T> = <T as Config>::Currency;
 
+	pub(crate) type DelegationDetailsOf<T> = DelegationDetails<DelegatorIdOf<T>>;
+
+	pub(crate) type DelegationNodeOf<T> = DelegationNode<
+		DelegationNodeIdOf<T>,
+		<T as Config>::MaxChildren,
+		DelegationDetailsOf<T>,
+		AccountIdOf<T>,
+		BalanceOf<T>,
+	>;
+
 	#[pallet::config]
 	pub trait Config: frame_system::Config + ctype::Config {
 		type Signature: Parameter;
@@ -178,7 +188,7 @@ pub mod pallet {
 		/// tree, this should be twice the maximum depth of the tree, i.e.
 		/// `2 ^ MaxParentChecks`.
 		#[pallet::constant]
-		type MaxChildren: Get<u32> + Clone;
+		type MaxChildren: Get<u32> + Clone + TypeInfo;
 	}
 
 	#[pallet::pallet]
@@ -190,7 +200,7 @@ pub mod pallet {
 	/// It maps from a node ID to the node details.
 	#[pallet::storage]
 	#[pallet::getter(fn delegation_nodes)]
-	pub type DelegationNodes<T> = StorageMap<_, Blake2_128Concat, DelegationNodeIdOf<T>, DelegationNode<T>>;
+	pub type DelegationNodes<T> = StorageMap<_, Blake2_128Concat, DelegationNodeIdOf<T>, DelegationNodeOf<T>>;
 
 	/// Delegation hierarchies stored on chain.
 	///
@@ -198,7 +208,7 @@ pub mod pallet {
 	#[pallet::storage]
 	#[pallet::getter(fn delegation_hierarchies)]
 	pub type DelegationHierarchies<T> =
-		StorageMap<_, Blake2_128Concat, DelegationNodeIdOf<T>, DelegationHierarchyDetails<T>>;
+		StorageMap<_, Blake2_128Concat, DelegationNodeIdOf<T>, DelegationHierarchyDetails<CtypeHashOf<T>>>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -347,7 +357,7 @@ pub mod pallet {
 			log::debug!("trying to insert Delegation Root");
 			Self::create_and_store_new_hierarchy(
 				root_node_id,
-				DelegationHierarchyDetails::<T> { ctype_hash },
+				DelegationHierarchyDetails { ctype_hash },
 				creator.clone(),
 				payer,
 			)?;
@@ -724,7 +734,7 @@ pub mod pallet {
 		/// nodes storage.
 		pub(crate) fn create_and_store_new_hierarchy(
 			root_id: DelegationNodeIdOf<T>,
-			hierarchy_details: DelegationHierarchyDetails<T>,
+			hierarchy_details: DelegationHierarchyDetails<CtypeHashOf<T>>,
 			hierarchy_owner: DelegatorIdOf<T>,
 			deposit_owner: AccountIdOf<T>,
 		) -> DispatchResult {
@@ -750,15 +760,17 @@ pub mod pallet {
 		// not, the behaviour of the system is undefined.
 		pub(crate) fn store_delegation_under_parent(
 			delegation_id: DelegationNodeIdOf<T>,
-			delegation_node: DelegationNode<T>,
+			delegation_node: DelegationNodeOf<T>,
 			parent_id: DelegationNodeIdOf<T>,
-			mut parent_node: DelegationNode<T>,
+			mut parent_node: DelegationNodeOf<T>,
 			deposit_owner: AccountIdOf<T>,
 		) -> DispatchResult {
 			CurrencyOf::<T>::reserve(&deposit_owner, <T as Config>::Deposit::get())?;
 
 			// Add the new node as a child of that node
-			parent_node.try_add_child(delegation_id)?;
+			parent_node
+				.try_add_child(delegation_id)
+				.map_err(|_| Error::<T>::MaxChildrenExceeded)?;
 
 			<DelegationNodes<T>>::insert(delegation_id, delegation_node);
 			<DelegationNodes<T>>::insert(parent_id, parent_node);

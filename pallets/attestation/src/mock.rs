@@ -33,8 +33,8 @@ use ctype::CtypeHashOf;
 use kilt_support::deposit::Deposit;
 
 use crate::{
-	pallet::AuthorizationIdOf, AccountIdOf, AttestationAccessControl, AttestationDetails, AttesterOf, BalanceOf,
-	ClaimHashOf, Config, CurrencyOf,
+	pallet::AuthorizationIdOf, AccountIdOf, AttestationAccessControl, AttestationDetails, AttestationDetailsOf,
+	AttesterOf, BalanceOf, ClaimHashOf, Config, CurrencyOf,
 };
 
 #[cfg(test)]
@@ -48,7 +48,7 @@ pub struct AttestationCreationDetails<T: Config> {
 
 pub fn generate_base_attestation_creation_details<T: Config>(
 	claim_hash: ClaimHashOf<T>,
-	attestation: AttestationDetails<T>,
+	attestation: AttestationDetailsOf<T>,
 ) -> AttestationCreationDetails<T> {
 	AttestationCreationDetails {
 		claim_hash,
@@ -57,19 +57,19 @@ pub fn generate_base_attestation_creation_details<T: Config>(
 	}
 }
 
-pub fn generate_base_attestation<T>(attester: AttesterOf<T>, payer: AccountIdOf<T>) -> AttestationDetails<T>
+pub fn generate_base_attestation<T>(attester: AttesterOf<T>, payer: AccountIdOf<T>) -> AttestationDetailsOf<T>
 where
 	T: Config,
 	T::Hash: From<H256>,
 {
-	generate_base_attestation_with_deposit(attester, payer, <T as Config>::Deposit::get())
+	generate_base_attestation_with_deposit::<T>(attester, payer, <T as Config>::Deposit::get())
 }
 
 pub fn generate_base_attestation_with_deposit<T>(
 	attester: AttesterOf<T>,
 	payer: AccountIdOf<T>,
 	deposit: BalanceOf<T>,
-) -> AttestationDetails<T>
+) -> AttestationDetailsOf<T>
 where
 	T: Config,
 	T::Hash: From<H256>,
@@ -152,7 +152,7 @@ where
 	}
 }
 
-pub fn insert_attestation<T: Config>(claim_hash: ClaimHashOf<T>, details: AttestationDetails<T>) {
+pub fn insert_attestation<T: Config>(claim_hash: ClaimHashOf<T>, details: AttestationDetailsOf<T>) {
 	kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
 		details.deposit.owner.clone(),
 		details.deposit.amount,
@@ -334,7 +334,7 @@ pub(crate) mod runtime {
 		ctypes: Vec<(CtypeHashOf<Test>, CtypeCreatorOf<Test>)>,
 		/// endowed accounts with balances
 		balances: Vec<(AccountIdOf<Test>, BalanceOf<Test>)>,
-		attestations: Vec<(ClaimHashOf<Test>, AttestationDetails<Test>)>,
+		attestations: Vec<(ClaimHashOf<Test>, AttestationDetailsOf<Test>)>,
 	}
 
 	impl ExtBuilder {
@@ -351,7 +351,7 @@ pub(crate) mod runtime {
 		}
 
 		#[must_use]
-		pub fn with_attestations(mut self, attestations: Vec<(ClaimHashOf<Test>, AttestationDetails<Test>)>) -> Self {
+		pub fn with_attestations(mut self, attestations: Vec<(ClaimHashOf<Test>, AttestationDetailsOf<Test>)>) -> Self {
 			self.attestations = attestations;
 			self
 		}
@@ -378,7 +378,7 @@ pub(crate) mod runtime {
 				}
 
 				for (claim_hash, details) in self.attestations {
-					insert_attestation(claim_hash, details);
+					insert_attestation::<Test>(claim_hash, details);
 				}
 			});
 

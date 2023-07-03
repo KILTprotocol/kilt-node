@@ -137,6 +137,7 @@ use frame_system::RawOrigin;
 pub mod pallet {
 	use super::*;
 	use crate::service_endpoints::utils as service_endpoints_utils;
+	use did_details::DidCreationDetails;
 	use frame_support::{
 		pallet_prelude::*,
 		traits::{Currency, ExistenceRequirement, Imbalance, ReservableCurrency, StorageVersion},
@@ -146,15 +147,15 @@ pub mod pallet {
 		deposit::Deposit,
 		traits::{CallSources, StorageDepositCollector},
 	};
+	use service_endpoints::DidEndpoint;
 	use sp_runtime::traits::BadOrigin;
 
 	use crate::{
 		did_details::{
-			DeriveDidCallAuthorizationVerificationKeyRelationship, DidAuthorizedCallOperation, DidCreationDetails,
-			DidDetails, DidEncryptionKey, DidSignature, DidVerifiableIdentifier, DidVerificationKey,
-			RelationshipDeriveError,
+			DeriveDidCallAuthorizationVerificationKeyRelationship, DidAuthorizedCallOperation, DidDetails,
+			DidEncryptionKey, DidSignature, DidVerifiableIdentifier, DidVerificationKey, RelationshipDeriveError,
 		},
-		service_endpoints::{DidEndpoint, ServiceEndpointId},
+		service_endpoints::ServiceEndpointId,
 	};
 
 	/// The current storage version.
@@ -185,6 +186,12 @@ pub mod pallet {
 	pub type BalanceOf<T> = <CurrencyOf<T> as Currency<AccountIdOf<T>>>::Balance;
 	pub(crate) type CurrencyOf<T> = <T as Config>::Currency;
 	pub(crate) type NegativeImbalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::NegativeImbalance;
+
+	pub(crate) type DidCreationDetailsOf<T> =
+		DidCreationDetails<DidIdentifierOf<T>, AccountIdOf<T>, <T as Config>::MaxNewKeyAgreementKeys, DidEndpoint<T>>;
+
+	pub(crate) type DidAuthorizedCallOperationOf<T> =
+		DidAuthorizedCallOperation<DidIdentifierOf<T>, DidCallableOf<T>, BlockNumberOf<T>, AccountIdOf<T>, u64>;
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config + Debug {
@@ -251,12 +258,12 @@ pub mod pallet {
 		/// identifier. This includes the ones currently used for
 		/// authentication, key agreement, attestation, and delegation.
 		#[pallet::constant]
-		type MaxPublicKeysPerDid: Get<u32>;
+		type MaxPublicKeysPerDid: Get<u32> + Clone;
 
 		/// Maximum number of key agreement keys that can be added in a creation
 		/// operation.
 		#[pallet::constant]
-		type MaxNewKeyAgreementKeys: Get<u32>;
+		type MaxNewKeyAgreementKeys: Get<u32> + Parameter;
 
 		/// Maximum number of total key agreement keys that can be stored for a
 		/// DID subject.
@@ -542,7 +549,7 @@ pub mod pallet {
 		})]
 		pub fn create(
 			origin: OriginFor<T>,
-			details: Box<DidCreationDetails<T>>,
+			details: Box<DidCreationDetailsOf<T>>,
 			signature: DidSignature,
 		) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
@@ -1042,7 +1049,7 @@ pub mod pallet {
 		})]
 		pub fn submit_did_call(
 			origin: OriginFor<T>,
-			did_call: Box<DidAuthorizedCallOperation<T>>,
+			did_call: Box<DidAuthorizedCallOperationOf<T>>,
 			signature: DidSignature,
 		) -> DispatchResultWithPostInfo {
 			let who = ensure_signed(origin)?;

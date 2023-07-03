@@ -16,10 +16,8 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use crate::{AccountIdOf, BalanceOf, Config, DelegationNodeIdOf, DelegatorIdOf, Error};
 use bitflags::bitflags;
-use ctype::CtypeHashOf;
-use frame_support::{dispatch::DispatchResult, storage::bounded_btree_set::BoundedBTreeSet};
+use frame_support::{storage::bounded_btree_set::BoundedBTreeSet, traits::Get};
 use kilt_support::deposit::Deposit;
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
@@ -60,38 +58,38 @@ impl Default for Permissions {
 /// For quicker lookups of the hierarchy details, all nodes maintain a direct
 /// link to the hierarchy root node. Furthermore, all nodes have a parent except
 /// the root nodes, which point to themselves for the hierarchy root node link.
-#[derive(Clone, Encode, Decode, PartialEq, TypeInfo, MaxEncodedLen)]
-#[scale_info(skip_type_params(T))]
-#[codec(mel_bound())]
-pub struct DelegationNode<T: Config> {
+#[derive(Clone, Debug, Encode, Decode, Eq, PartialEq, MaxEncodedLen, TypeInfo)]
+pub struct DelegationNode<DelegationNodeId, MaxChildren: Get<u32>, DelegationDetails, AccountId, Balance> {
 	/// The ID of the delegation hierarchy the node is part of.
-	pub hierarchy_root_id: DelegationNodeIdOf<T>,
+	pub hierarchy_root_id: DelegationNodeId,
 	/// The ID of the parent. For all but root nodes this is not None.
-	pub parent: Option<DelegationNodeIdOf<T>>,
+	pub parent: Option<DelegationNodeId>,
 	/// The set of IDs of all the children nodes.
-	pub children: BoundedBTreeSet<DelegationNodeIdOf<T>, T::MaxChildren>,
+	pub children: BoundedBTreeSet<DelegationNodeId, MaxChildren>,
 	/// The additional information attached to the delegation node.
-	pub details: DelegationDetails<T>,
+	pub details: DelegationDetails,
 	/// The deposit that was taken to incentivise fair use of the on chain
 	/// storage.
-	pub deposit: Deposit<AccountIdOf<T>, BalanceOf<T>>,
+	pub deposit: Deposit<AccountId, Balance>,
 }
 
-impl<T: Config> DelegationNode<T> {
+impl<DelegationNodeId: Ord, MaxChildren: Get<u32>, DelegationDetails, AccountId, Balance>
+	DelegationNode<DelegationNodeId, MaxChildren, DelegationDetails, AccountId, Balance>
+{
 	/// Creates a new delegation root node with the given ID and delegation
 	/// details.
 	pub fn new_root_node(
-		id: DelegationNodeIdOf<T>,
-		details: DelegationDetails<T>,
-		deposit_owner: AccountIdOf<T>,
-		deposit_amount: BalanceOf<T>,
+		id: DelegationNodeId,
+		details: DelegationDetails,
+		deposit_owner: AccountId,
+		deposit_amount: Balance,
 	) -> Self {
 		Self {
 			hierarchy_root_id: id,
 			parent: None,
-			children: BoundedBTreeSet::<DelegationNodeIdOf<T>, T::MaxChildren>::new(),
+			children: BoundedBTreeSet::<DelegationNodeId, MaxChildren>::new(),
 			details,
-			deposit: Deposit::<AccountIdOf<T>, BalanceOf<T>> {
+			deposit: Deposit::<AccountId, Balance> {
 				owner: deposit_owner,
 				amount: deposit_amount,
 			},
@@ -101,18 +99,18 @@ impl<T: Config> DelegationNode<T> {
 	/// Creates a new delegation node under the given hierarchy ID, with the
 	/// given parent and delegation details.
 	pub fn new_node(
-		hierarchy_root_id: DelegationNodeIdOf<T>,
-		parent: DelegationNodeIdOf<T>,
-		details: DelegationDetails<T>,
-		deposit_owner: AccountIdOf<T>,
-		deposit_amount: BalanceOf<T>,
+		hierarchy_root_id: DelegationNodeId,
+		parent: DelegationNodeId,
+		details: DelegationDetails,
+		deposit_owner: AccountId,
+		deposit_amount: Balance,
 	) -> Self {
 		Self {
 			hierarchy_root_id,
 			parent: Some(parent),
-			children: BoundedBTreeSet::<DelegationNodeIdOf<T>, T::MaxChildren>::new(),
+			children: BoundedBTreeSet::<DelegationNodeId, MaxChildren>::new(),
 			details,
-			deposit: Deposit::<AccountIdOf<T>, BalanceOf<T>> {
+			deposit: Deposit::<AccountId, Balance> {
 				owner: deposit_owner,
 				amount: deposit_amount,
 			},
@@ -120,21 +118,17 @@ impl<T: Config> DelegationNode<T> {
 	}
 
 	/// Adds a node by its ID to the current node's children.
-	pub fn try_add_child(&mut self, child_id: DelegationNodeIdOf<T>) -> DispatchResult {
-		self.children
-			.try_insert(child_id)
-			.map_err(|_| Error::<T>::MaxChildrenExceeded)?;
+	pub fn try_add_child(&mut self, child_id: DelegationNodeId) -> Result<(), DelegationNodeId> {
+		self.children.try_insert(child_id)?;
 		Ok(())
 	}
 }
 
 /// Delegation information attached to delegation nodes.
 #[derive(Clone, Debug, Encode, Decode, Eq, PartialEq, TypeInfo, MaxEncodedLen)]
-#[scale_info(skip_type_params(T))]
-#[codec(mel_bound())]
-pub struct DelegationDetails<T: Config> {
+pub struct DelegationDetails<DelegatorId> {
 	/// The owner of the delegation (and its node).
-	pub owner: DelegatorIdOf<T>,
+	pub owner: DelegatorId,
 	/// Status indicating whether the delegation has been revoked (true) or not
 	/// (false).
 	pub revoked: bool,
@@ -142,12 +136,12 @@ pub struct DelegationDetails<T: Config> {
 	pub permissions: Permissions,
 }
 
-impl<T: Config> DelegationDetails<T> {
+impl<DelegatorId> DelegationDetails<DelegatorId> {
 	/// Creates new delegation details including the given owner.
 	///
 	/// The default revocation status is false and all permissions are granted
 	/// by default.
-	pub fn default_with_owner(owner: DelegatorIdOf<T>) -> Self {
+	pub fn default_with_owner(owner: DelegatorId) -> Self {
 		Self {
 			owner,
 			permissions: Permissions::all(),
@@ -158,11 +152,8 @@ impl<T: Config> DelegationDetails<T> {
 
 /// The details associated with a delegation hierarchy.
 #[derive(Clone, Debug, Encode, Decode, Eq, PartialEq, Ord, PartialOrd, TypeInfo, MaxEncodedLen)]
-#[scale_info(skip_type_params(T))]
-#[codec(mel_bound())]
-
-pub struct DelegationHierarchyDetails<T: Config> {
+pub struct DelegationHierarchyDetails<CtypeHash> {
 	/// The authorised CTYPE hash that attesters can attest using this
 	/// delegation hierarchy.
-	pub ctype_hash: CtypeHashOf<T>,
+	pub ctype_hash: CtypeHash,
 }
