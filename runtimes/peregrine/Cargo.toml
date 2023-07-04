@@ -268,3 +268,7 @@ try-runtime = [
   "public-credentials/try-runtime",
   "runtime-common/try-runtime",
 ]
+with-tracing = [
+  "frame-executive/with-tracing",
+  "sp-io/with-tracing"
+]
