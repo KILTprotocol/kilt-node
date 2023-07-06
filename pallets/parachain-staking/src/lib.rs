@@ -179,6 +179,9 @@ pub mod pallet {
 	/// The current storage version.
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(8);
 
+	/// The 5.1% inflation rate of the third year
+	const INFLATION_3RD_YEAR: u64 = 51_000_000_000_000_000;
+
 	/// Pallet for parachain staking.
 	#[pallet::pallet]
 	#[pallet::storage_version(STORAGE_VERSION)]
@@ -1747,9 +1750,9 @@ pub mod pallet {
 			// delegator reward rate should be 6% in 2nd year, 5.1% in 3rd year and 0
 			// afterwards
 			let d_reward_rate = if year == T::BlockNumber::one() {
-				Perquintill::from_float(0.06)
-			} else if year == 2u32.into() {
-				Perquintill::from_float(0.051)
+				Perquintill::from_percent(6)
+			} else if year == 2u32.saturated_into() {
+				Perquintill::from_parts(INFLATION_3RD_YEAR)
 			} else {
 				Perquintill::zero()
 			};
