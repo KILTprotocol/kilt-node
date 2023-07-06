@@ -2761,10 +2761,9 @@ fn adjust_reward_rates() {
 				.saturating_sub(c_rewards_0)
 				.saturating_sub(c_rewards_1)
 				.saturating_sub(c_rewards_2);
-			// collator should not receive any rewards at all
+			// collator and delegator should not receive any rewards at all
 			assert!(c_rewards_3.is_zero());
 
-			// should be zero because we set reward rate to zero
 			let d_rewards_3 = Balances::free_balance(2)
 				.saturating_sub(90_000_000 * DECIMALS)
 				.saturating_sub(d_rewards_0)
