@@ -2209,11 +2209,7 @@ pub mod pallet {
 
 			// Either set a new lock or potentially extend the existing one if amount
 			// exceeds the currently locked amount
-			T::Currency::extend_freeze(
-				&<T as pallet::Config>::FreezeIdentifier::from(FreezeReason::Staking),
-				who,
-				amount,
-			)?;
+			T::Currency::extend_freeze(&FreezeReason::Staking.into(), who, amount)?;
 
 			Ok(unstaking_len)
 		}
