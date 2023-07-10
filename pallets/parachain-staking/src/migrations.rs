@@ -58,7 +58,7 @@ where
 				onchain_storage_version,
 				CURRENT_STORAGE_VERSION
 			);
-			<T as frame_system::Config>::DbWeight::get().reads_writes(1, 0)
+			<T as frame_system::Config>::DbWeight::get().reads(1)
 		}
 	}
 
@@ -148,7 +148,7 @@ where
 	<CurrencyOf<T> as LockableCurrency<AccountIdOf<T>>>::remove_lock(STAKING_ID, &user_id);
 
 	if result.is_err() {
-		return <T as frame_system::Config>::DbWeight::get().reads_writes(1, 0);
+		return <T as frame_system::Config>::DbWeight::get().reads(1);
 	}
 
 	// Currency::reserve and Currency::hold each read and write to the DB once.

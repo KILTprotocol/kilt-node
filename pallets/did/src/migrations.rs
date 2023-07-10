@@ -50,7 +50,7 @@ where
 				onchain_storage_version,
 				CURRENT_STORAGE_VERSION
 			);
-			<T as frame_system::Config>::DbWeight::get().reads_writes(1, 0)
+			<T as frame_system::Config>::DbWeight::get().reads(1)
 		}
 	}
 

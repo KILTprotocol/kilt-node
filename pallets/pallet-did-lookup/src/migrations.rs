@@ -85,7 +85,7 @@ impl<T: crate::pallet::Config> OnRuntimeUpgrade for CleanupMigration<T> {
 				target: LOG_TARGET,
 				"Migration did not execute. This probably should be removed"
 			);
-			<T as frame_system::Config>::DbWeight::get().reads_writes(1, 0)
+			<T as frame_system::Config>::DbWeight::get().reads(1)
 		}
 	}
 
@@ -144,7 +144,7 @@ where
 			CURRENT_STORAGE_VERSION
 		);
 
-		<T as frame_system::Config>::DbWeight::get().reads_writes(1, 0)
+		<T as frame_system::Config>::DbWeight::get().reads(1)
 	}
 
 	#[cfg(feature = "try-runtime")]
