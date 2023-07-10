@@ -240,7 +240,7 @@ pub mod pallet {
 		type DefaultBlocksPerRound: Get<Self::BlockNumber>;
 		/// Number of blocks for which unstaked balance will still be locked
 		/// before it can be unlocked by actively calling the extrinsic
-		/// `unlock_unstacked`.
+		/// `unlock_unstaked`.
 		#[pallet::constant]
 		type StakeDuration: Get<Self::BlockNumber>;
 		/// Number of rounds a collator has to stay active after submitting a
@@ -914,7 +914,7 @@ pub mod pallet {
 		/// delegators.
 		///
 		/// Prepares unstaking of the candidates and their delegators stake
-		/// which can be unfreezed via `unlock_unstacked` after waiting at
+		/// which can be unfreezed via `unlock_unstaked` after waiting at
 		/// least `StakeDuration` many blocks. Also increments rewards for the
 		/// collator and their delegators.
 		///
@@ -1104,7 +1104,7 @@ pub mod pallet {
 		/// Execute the network exit of a candidate who requested to leave at
 		/// least `ExitQueueDelay` rounds ago. Prepares unstaking of the
 		/// candidates and their delegators stake which can be unfreezed via
-		/// `unlock_unstacked` after waiting at least `StakeDuration` many
+		/// `unlock_unstaked` after waiting at least `StakeDuration` many
 		/// blocks.
 		///
 		/// Requires the candidate to previously have called
@@ -1637,7 +1637,7 @@ pub mod pallet {
 		/// bounded by `MaxUnstakeRequests`.
 		/// - Reads: [Origin Account], Unstaking, Freezes
 		/// - Writes: Unstaking, Freezes
-		/// - Kills: Unstaking & Freezess if no balance is locked anymore
+		/// - Kills: Unstaking & Freezes if no balance is locked anymore
 		/// # </weight>
 		#[pallet::call_index(16)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::unlock_unstaked(
@@ -2219,7 +2219,7 @@ pub mod pallet {
 		}
 
 		/// Set the unlocking block for the account and corresponding amount
-		/// which can be unfreezed via `unlock_unstacked` after waiting at
+		/// which can be unfreezed via `unlock_unstaked` after waiting at
 		/// least for `StakeDuration` many blocks.
 		///
 		/// Throws if the amount is zero (unlikely) or if active unlocking
