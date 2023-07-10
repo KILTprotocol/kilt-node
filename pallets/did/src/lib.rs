@@ -608,8 +608,7 @@ pub mod pallet {
 				Precision::BestEffort,
 				Preservation::Protect,
 				Fortitude::Polite,
-			)
-			.unwrap();
+			)?;
 			T::FeeCollector::on_unbalanced(imbalance);
 
 			Self::deposit_event(Event::DidCreated(sender, did_identifier));
