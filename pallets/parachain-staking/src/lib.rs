@@ -2172,6 +2172,11 @@ pub mod pallet {
 				pallet_balances::Error::<T>::InsufficientBalance
 			);
 
+			ensure!(
+				<T::Currency as Inspect<AccountIdOf<T>>>::total_balance(who) >= amount,
+				pallet_balances::Error::<T>::InsufficientBalance
+			);
+
 			let mut unstaking_len = 0u32;
 
 			// update Unstaking by consuming up to {amount | more}
