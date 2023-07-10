@@ -33,6 +33,45 @@ pub(crate) fn is_valid_ascii_string(input: &str) -> bool {
 	input.chars().all(|c| c.is_ascii())
 }
 
+/// Verifies that an input string contains only a subset of characters allowed
+/// for a URI fragment according to W3C RFC3986. The subset is composed of all
+/// the elements that can form a "fragment" component, minus the 'pct-encoded'
+/// sequences that make the 'pchar' component.
+pub(crate) fn is_valid_uri_fragment(input: &str) -> bool {
+	input.chars().all(|c| {
+		matches!(
+			c,
+			// ALPHA
+			'a'..='z' |
+			'A'..='Z' |
+
+			// DIGIT
+			'0'..='9'|
+
+			'-' |
+			'.' |
+			'_' |
+			'~' |
+
+			// sub-delims
+			'!' |
+			'$' |
+			'&' |
+			'\'' |
+			'(' |
+			')' |
+			'*' |
+			'+' |
+			',' |
+			';' |
+			'=' |
+
+			':' |
+			'@'
+		)
+	})
+}
+
 #[test]
 fn check_is_valid_ascii_string() {
 	let test_cases = [
@@ -52,6 +91,35 @@ fn check_is_valid_ascii_string() {
 	test_cases.iter().for_each(|(input, expected_result)| {
 		assert_eq!(
 			is_valid_ascii_string(input),
+			*expected_result,
+			"Test case for \"{}\" returned wrong result.",
+			input
+		);
+	});
+}
+
+#[test]
+fn check_is_valid_uri_fragment_string() {
+	let test_cases = [
+		("kilt.io", true),
+		(
+			"super.long.domain.com:12345/path/to/directory#fragment?arg=value",
+			false,
+		),
+		("super.long.domain.com:12345/path/to/directory/file.txt", false),
+		("domain.with.only.valid.characters.:/?#[]@!$&'()*+,;=-._~", false),
+		("invalid.châracter.domain.org", false),
+		("âinvalid.character.domain.org", false),
+		("invalid.character.domain.orgâ", false),
+		("", true),
+		("例子.領域.cn", false),
+		("kilt.io/%3Ctag%3E/encoded_upper_case_ascii.com", false),
+		("kilt.io/%3ctag%3e/encoded_lower_case_ascii.com", false),
+	];
+
+	test_cases.iter().for_each(|(input, expected_result)| {
+		assert_eq!(
+			is_valid_uri_fragment(input),
 			*expected_result,
 			"Test case for \"{}\" returned wrong result.",
 			input
