@@ -180,7 +180,7 @@ pub mod pallet {
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(8);
 
 	/// The 5.1% inflation rate of the third year
-	const INFLATION_3RD_YEAR: u64 = 51_000_000_000_000_000;
+	const INFLATION_3RD_YEAR: u64 = Perquintill::from_parts(51_000_000_000_000_000);;
 
 	/// Pallet for parachain staking.
 	#[pallet::pallet]
@@ -1752,7 +1752,7 @@ pub mod pallet {
 			let d_reward_rate = if year == T::BlockNumber::one() {
 				Perquintill::from_percent(6)
 			} else if year == 2u32.saturated_into() {
-				Perquintill::from_parts(INFLATION_3RD_YEAR)
+				INFLATION_3RD_YEAR
 			} else {
 				Perquintill::zero()
 			};
