@@ -74,7 +74,7 @@ pub mod pallet {
 	};
 
 	/// The current storage version.
-	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
+	pub(crate) const STORAGE_VERSION: StorageVersion = StorageVersion::new(2);
 
 	// No easy way to check whether the two currencies are the same and check for
 	// `can_withdraw` conditions. Maybe with #[transactional] we could stop caring

@@ -28,7 +28,10 @@ use scale_info::TypeInfo;
 use sp_runtime::{AccountId32, SaturatedConversion};
 use sp_std::marker::PhantomData;
 
-use crate::{linkable_account::LinkableAccountId, AccountIdOf, Config, ConnectedDids, CurrencyOf, HoldReason, Pallet};
+use crate::{
+	linkable_account::LinkableAccountId, AccountIdOf, Config, ConnectedDids, CurrencyOf, HoldReason, Pallet,
+	STORAGE_VERSION as TARGET_STORAGE_VERSION,
+};
 
 /// A unified log target for did-lookup-migration operations.
 pub const LOG_TARGET: &str = "runtime::pallet-did-lookup::migrations";
@@ -118,7 +121,6 @@ impl<T: crate::pallet::Config> OnRuntimeUpgrade for CleanupMigration<T> {
 }
 
 const CURRENT_STORAGE_VERSION: StorageVersion = StorageVersion::new(4);
-const TARGET_STORAGE_VERSION: StorageVersion = StorageVersion::new(5);
 
 pub struct BalanceMigration<T>(PhantomData<T>);
 

@@ -25,10 +25,11 @@ use log;
 use sp_runtime::SaturatedConversion;
 use sp_std::marker::PhantomData;
 
-use crate::{AccountIdOf, Config, CurrencyOf, DelegationNodes, HoldReason, Pallet};
+use crate::{
+	AccountIdOf, Config, CurrencyOf, DelegationNodes, HoldReason, Pallet, STORAGE_VERSION as TARGET_STORAGE_VERSION,
+};
 
 const CURRENT_STORAGE_VERSION: StorageVersion = StorageVersion::new(3);
-const TARGET_STORAGE_VERSION: StorageVersion = StorageVersion::new(4);
 
 pub struct BalanceMigration<T>(PhantomData<T>);
 

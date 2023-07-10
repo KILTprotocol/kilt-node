@@ -24,10 +24,11 @@ use kilt_support::migration::switch_reserved_to_hold;
 use sp_runtime::SaturatedConversion;
 use sp_std::marker::PhantomData;
 
-use crate::{AccountIdOf, Config, Credentials, CurrencyOf, HoldReason, Pallet};
+use crate::{
+	AccountIdOf, Config, Credentials, CurrencyOf, HoldReason, Pallet, STORAGE_VERSION as TARGET_STORAGE_VERSION,
+};
 
 const CURRENT_STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
-const TARGET_STORAGE_VERSION: StorageVersion = StorageVersion::new(2);
 
 pub struct BalanceMigration<T>(PhantomData<T>);
 

@@ -179,7 +179,7 @@ pub mod pallet {
 	use sp_std::{convert::TryInto, fmt::Debug};
 
 	/// The current storage version.
-	const STORAGE_VERSION: StorageVersion = StorageVersion::new(9);
+	pub(crate) const STORAGE_VERSION: StorageVersion = StorageVersion::new(9);
 
 	/// Pallet for parachain staking.
 	#[pallet::pallet]

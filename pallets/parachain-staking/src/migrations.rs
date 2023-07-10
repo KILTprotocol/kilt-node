@@ -29,13 +29,12 @@ use sp_std::marker::PhantomData;
 
 use crate::{
 	types::{AccountIdOf, CurrencyOf},
-	Config, FreezeReason, Pallet,
+	Config, FreezeReason, Pallet, STORAGE_VERSION as TARGET_STORAGE_VERSION,
 };
 
 const STAKING_ID: LockIdentifier = *b"kiltpstk";
 
 const CURRENT_STORAGE_VERSION: StorageVersion = StorageVersion::new(8);
-const TARGET_STORAGE_VERSION: StorageVersion = StorageVersion::new(9);
 
 pub struct BalanceMigration<T>(PhantomData<T>);
 
