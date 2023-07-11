@@ -47,7 +47,7 @@ where
 		log::info!("Staking: Initiating migration");
 
 		let onchain_storage_version = Pallet::<T>::on_chain_storage_version();
-		if onchain_storage_version.eq(&CURRENT_STORAGE_VERSION) {
+		if onchain_storage_version == CURRENT_STORAGE_VERSION {
 			TARGET_STORAGE_VERSION.put::<Pallet<T>>();
 			<T as frame_system::Config>::DbWeight::get()
 				.reads_writes(1, 1)

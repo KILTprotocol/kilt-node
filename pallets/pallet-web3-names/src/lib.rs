@@ -21,14 +21,14 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-pub mod web3_name;
-
 mod default_weights;
+
+pub mod migrations;
+pub mod web3_name;
 
 #[cfg(any(test, feature = "runtime-benchmarks"))]
 mod mock;
 
-pub mod migrations;
 #[cfg(any(test, feature = "try-runtime"))]
 mod try_state;
 
