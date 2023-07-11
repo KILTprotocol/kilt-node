@@ -599,16 +599,14 @@ pub mod pallet {
 
 			Did::<T>::insert(&did_identifier, did_entry.clone());
 
-			// Withdraw the fee. We made sure that enough balance is available. But if this
-			// fails, we don't withdraw anything. Since we do the best effort we can unwrap
-			// the result.
 			let imbalance: CreditOf<T> = <T::Currency as Balanced<AccountIdOf<T>>>::withdraw(
 				&did_entry.deposit.owner,
 				T::Fee::get(),
-				Precision::BestEffort,
-				Preservation::Protect,
+				Precision::Exact,
+				Preservation::Preserve,
 				Fortitude::Polite,
 			)?;
+
 			T::FeeCollector::on_unbalanced(imbalance);
 
 			Self::deposit_event(Event::DidCreated(sender, did_identifier));
