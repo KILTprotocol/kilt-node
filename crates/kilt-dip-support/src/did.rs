@@ -21,7 +21,7 @@ use did::{
 	DidSignature, DidVerificationKeyRelationship,
 };
 use frame_support::ensure;
-use pallet_dip_consumer::{identity::IdentityDetails, traits::IdentityProofVerifier};
+use pallet_dip_consumer::traits::IdentityProofVerifier;
 use pallet_dip_provider::traits::IdentityProvider;
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
@@ -133,7 +133,7 @@ impl<
 	type Proof = MerkleLeavesAndDidSignature<MerkleProofEntries, BlockNumber>;
 	/// The `Details` that are part of the identity details must implement the
 	/// `Bump` trait.
-	type IdentityDetails = IdentityDetails<Digest, Details>;
+	type IdentityDetails = Details;
 	/// The type of the submitter's accounts.
 	type Submitter = AccountId;
 	/// Successful verifications return the verification key used to validate
@@ -144,7 +144,7 @@ impl<
 		call: &Call,
 		_subject: &Subject,
 		submitter: &Self::Submitter,
-		identity_details: &mut Self::IdentityDetails,
+		identity_details: &mut Option<Self::IdentityDetails>,
 		proof: &Self::Proof,
 	) -> Result<Self::VerificationResult, Self::Error> {
 		let block_number = BlockNumberProvider::get();
@@ -160,7 +160,7 @@ impl<
 		ensure!(is_signature_fresh, ());
 		let encoded_payload = (
 			call,
-			&identity_details.details,
+			&identity_details,
 			submitter,
 			&proof.did_signature.block_number,
 			GenesisHashProvider::get(),
@@ -168,17 +168,18 @@ impl<
 		)
 			.encode();
 		// Only consider verification keys from the set of revealed keys.
-		let mut proof_verification_keys = proof.merkle_leaves.as_ref().iter().filter_map(|RevealedDidKey { relationship, details: DidPublicKeyDetails { key, .. }, .. } | {
-			let DidPublicKey::PublicVerificationKey(key) = key else { return None };
-			Some((key, DidVerificationKeyRelationship::try_from(*relationship).expect("Should never fail to build a VerificationRelationship from the given DidKeyRelationship because we have already made sure the conditions hold.")))
-		});
+		let mut proof_verification_keys = proof.merkle_leaves.as_ref().iter().filter_map(|RevealedDidKey {
+				relationship, details: DidPublicKeyDetails { key, .. }, .. } | {
+					let DidPublicKey::PublicVerificationKey(key) = key else { return None };
+						Some((key, DidVerificationKeyRelationship::try_from(*relationship).expect("Should never fail to build a VerificationRelationship from the given DidKeyRelationship because we have already made sure the conditions hold."))) 		});
 		let valid_signing_key = proof_verification_keys.find(|(verification_key, _)| {
 			verification_key
 				.verify_signature(&encoded_payload, &proof.did_signature.signature)
 				.is_ok()
 		});
 		let Some((key, relationship)) = valid_signing_key else { return Err(()) };
-		identity_details.details.bump();
+		// TODO: bump details.
+		// identity_details.bump();
 		Ok((key.clone(), relationship))
 	}
 }
@@ -188,9 +189,9 @@ impl<
 /// the type of key used in the signature.
 /// Verification bails out early in case of invalid DID signatures. Otherwise,
 /// the retrieved key and its relationship is passed to the call verifier to do
-/// some additional lookups on the call.
-/// The `CallVerifier` only performs internal checks, while all input and output
-/// types are taken from the provided `DidSignatureVerifier` type.
+/// some additional lookups on the call. The `CallVerifier` only performs
+/// internal checks, while all input and output types are taken from the
+/// provided `DidSignatureVerifier` type.
 pub struct DidSignatureAndCallVerifier<DidSignatureVerifier, CallVerifier>(
 	PhantomData<(DidSignatureVerifier, CallVerifier)>,
 );
@@ -219,7 +220,7 @@ where
 		call: &Call,
 		subject: &Subject,
 		submitter: &Self::Submitter,
-		identity_details: &mut Self::IdentityDetails,
+		identity_details: &mut Option<Self::IdentityDetails>,
 		proof: &Self::Proof,
 	) -> Result<Self::VerificationResult, Self::Error> {
 		let did_signing_key = DidSignatureVerifier::verify_proof_for_call_against_details(

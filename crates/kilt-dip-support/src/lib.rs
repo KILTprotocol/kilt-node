@@ -28,11 +28,10 @@ use crate::did::MerkleLeavesAndDidSignature;
 pub mod did;
 pub mod merkle;
 pub mod traits;
-pub mod xcm;
 
 /// A type that chains a Merkle proof verification with a DID signature
 /// verification. The required input of this type is a tuple (A, B) where A is
-/// the type of input required by the `MerkleProofVerifier` and B is a
+/// /// the type of input required by the `MerkleProofVerifier` and B is a
 /// `DidSignature`.
 /// The successful output of this type is the output type of the
 /// `MerkleProofVerifier`, meaning that DID signature verification happens
@@ -68,7 +67,7 @@ where
 		call: &Call,
 		subject: &Subject,
 		submitter: &Self::Submitter,
-		identity_details: &mut Self::IdentityDetails,
+		identity_details: &mut Option<Self::IdentityDetails>,
 		proof: &Self::Proof,
 	) -> Result<Self::VerificationResult, Self::Error> {
 		let merkle_proof_verification = MerkleProofVerifier::verify_proof_for_call_against_details(

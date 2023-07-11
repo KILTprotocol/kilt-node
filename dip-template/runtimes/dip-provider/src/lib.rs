@@ -75,8 +75,7 @@ pub use sp_runtime::BuildStorage;
 use sp_version::NativeVersion;
 
 mod dip;
-mod xcm_config;
-pub use crate::{dip::*, xcm_config::*};
+pub use crate::dip::*;
 
 pub type AccountId = AccountId32;
 pub type Address = MultiAddress<AccountId, ()>;
@@ -135,16 +134,10 @@ construct_runtime!(
 		Aura: pallet_aura = 23,
 		AuraExt: cumulus_pallet_aura_ext = 24,
 
-		// XCM
-		XcmpQueue: cumulus_pallet_xcmp_queue = 30,
-		DmpQueue: cumulus_pallet_dmp_queue = 31,
-		PolkadotXcm: pallet_xcm = 32,
-		CumulusXcm: cumulus_pallet_xcm = 33,
-
 		// DID
-		Did: did = 40,
-		DidLookup: pallet_did_lookup = 41,
-		Web3Names: pallet_web3_names = 42,
+		Did: did = 30,
+		DidLookup: pallet_did_lookup = 31,
+		Web3Names: pallet_web3_names = 32,
 
 		// DIP
 		DipProvider: pallet_dip_provider = 50,
@@ -265,7 +258,7 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
 	type ReservedXcmpWeight = ReservedXcmpWeight;
 	type RuntimeEvent = RuntimeEvent;
 	type SelfParaId = ParachainInfo;
-	type XcmpMessageHandler = XcmpQueue;
+	type XcmpMessageHandler = ();
 }
 
 impl pallet_timestamp::Config for Runtime {
