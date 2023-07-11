@@ -2496,41 +2496,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "dip-templates-xcm-tests"
-version = "1.11.0-dev"
-dependencies = [
- "cumulus-pallet-xcmp-queue",
- "did",
- "dip-consumer-runtime-template",
- "dip-provider-runtime-template",
- "dip-support",
- "frame-support",
- "frame-system",
- "kilt-dip-support",
- "kilt-support",
- "pallet-balances",
- "pallet-did-lookup",
- "pallet-dip-provider",
- "pallet-web3-names",
- "parachain-info",
- "parity-scale-codec",
- "polkadot-parachain",
- "polkadot-primitives",
- "polkadot-runtime-parachains",
- "rococo-runtime",
- "runtime-common",
- "scale-info",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-std",
- "xcm",
- "xcm-builder",
- "xcm-emulator",
- "xcm-executor",
-]
-
-[[package]]
 name = "directories"
 version = "4.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -14107,32 +14072,6 @@ dependencies = [
  "sp-arithmetic",
  "sp-io",
  "sp-runtime",
- "sp-std",
- "xcm",
- "xcm-executor",
-]
-
-[[package]]
-name = "xcm-emulator"
-version = "0.1.0"
-source = "git+https://github.com/shaunxw/xcm-simulator?branch=master#aa13dce47596e150806dfc3af99096dae6ffc65e"
-dependencies = [
- "cumulus-pallet-dmp-queue",
- "cumulus-pallet-parachain-system",
- "cumulus-pallet-xcmp-queue",
- "cumulus-primitives-core",
- "cumulus-primitives-parachain-inherent",
- "cumulus-test-relay-sproof-builder",
- "frame-support",
- "frame-system",
- "parachain-info",
- "parity-scale-codec",
- "paste",
- "polkadot-primitives",
- "polkadot-runtime-parachains",
- "quote",
- "sp-arithmetic",
- "sp-io",
  "sp-std",
  "xcm",
  "xcm-executor",

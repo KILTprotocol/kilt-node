@@ -29,7 +29,7 @@ use pallet_did_lookup::linkable_account::LinkableAccountId;
 use pallet_dip_consumer::traits::IdentityProofVerifier;
 use sp_std::vec::Vec;
 
-use crate::{AccountId, BlockNumber, DidIdentifier, Hash, Hasher, Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin};
+use crate::{AccountId, BlockNumber, DidIdentifier, Hash, Hasher, Runtime, RuntimeCall, RuntimeOrigin};
 
 pub type MerkleProofVerifier =
 	DidMerkleProofVerifier<Hasher, AccountId, KeyIdOf<Runtime>, BlockNumber, u128, Web3Name, LinkableAccountId, 10, 10>;
@@ -52,19 +52,17 @@ pub type MerkleDidSignatureVerifierOf<Call, Subject> = MerkleRevealedDidSignatur
 impl pallet_dip_consumer::Config for Runtime {
 	type DipCallOriginFilter = PreliminaryDipOriginFilter;
 	type Identifier = DidIdentifier;
-	type LocalIdentityInfo = u128;
 	type IdentityProof = MerkleLeavesAndDidSignature<
 		MerkleProof<Vec<Vec<u8>>, ProofLeaf<Hash, BlockNumber, Web3Name, LinkableAccountId>>,
 		BlockNumber,
 	>;
-	type IdentityCommitment = Hash;
+	type LocalIdentityInfo = u128;
 	type ProofVerifier = MerkleProofAndDidSignatureVerifier<
 		BlockNumber,
 		MerkleProofVerifier,
 		DidSignatureAndCallVerifier<MerkleDidSignatureVerifierOf<RuntimeCall, DidIdentifier>, DipCallFilter>,
 	>;
 	type RuntimeCall = RuntimeCall;
-	type RuntimeEvent = RuntimeEvent;
 	type RuntimeOrigin = RuntimeOrigin;
 }
 

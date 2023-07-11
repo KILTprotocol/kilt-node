@@ -17,51 +17,16 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use did::{DidRawOrigin, EnsureDidOrigin};
-use dip_support::IdentityDetailsAction;
-use kilt_dip_support::xcm::XcmRouterIdentityDispatcher;
-use pallet_dip_provider::traits::TxBuilder;
-use parity_scale_codec::{Decode, Encode};
 use runtime_common::dip::{did::LinkedDidInfoProviderOf, merkle::DidMerkleRootGenerator};
-use xcm::{latest::MultiLocation, DoubleEncoded};
 
-use crate::{AccountId, DidIdentifier, Hash, Runtime, RuntimeEvent, UniversalLocation, XcmRouter};
-
-#[derive(Encode, Decode)]
-enum ConsumerParachainCalls {
-	#[codec(index = 50)]
-	DipConsumer(ConsumerParachainDipConsumerCalls),
-}
-
-#[derive(Encode, Decode)]
-enum ConsumerParachainDipConsumerCalls {
-	#[codec(index = 0)]
-	ProcessIdentityAction(IdentityDetailsAction<DidIdentifier, Hash>),
-}
-
-pub struct ConsumerParachainTxBuilder;
-impl TxBuilder<DidIdentifier, Hash> for ConsumerParachainTxBuilder {
-	type Error = ();
-
-	fn build(
-		_dest: MultiLocation,
-		action: IdentityDetailsAction<DidIdentifier, Hash>,
-	) -> Result<DoubleEncoded<()>, Self::Error> {
-		let double_encoded: DoubleEncoded<()> =
-			ConsumerParachainCalls::DipConsumer(ConsumerParachainDipConsumerCalls::ProcessIdentityAction(action))
-				.encode()
-				.into();
-		Ok(double_encoded)
-	}
-}
+use crate::{AccountId, DidIdentifier, Hash, Runtime, RuntimeEvent};
 
 impl pallet_dip_provider::Config for Runtime {
 	type CommitOriginCheck = EnsureDidOrigin<DidIdentifier, AccountId>;
 	type CommitOrigin = DidRawOrigin<DidIdentifier, AccountId>;
 	type Identifier = DidIdentifier;
-	type IdentityProofDispatcher = XcmRouterIdentityDispatcher<XcmRouter, UniversalLocation>;
-	type IdentityProofGenerator = DidMerkleRootGenerator<Runtime>;
+	type IdentityCommitment = Hash;
+	type IdentityCommitmentGenerator = DidMerkleRootGenerator<Runtime>;
 	type IdentityProvider = LinkedDidInfoProviderOf<Runtime>;
-	type ProofOutput = Hash;
 	type RuntimeEvent = RuntimeEvent;
-	type TxBuilder = ConsumerParachainTxBuilder;
 }

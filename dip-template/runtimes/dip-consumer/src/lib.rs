@@ -68,8 +68,7 @@ use sp_std::{prelude::*, time::Duration};
 use sp_version::RuntimeVersion;
 
 mod dip;
-mod xcm_config;
-pub use crate::{dip::*, xcm_config::*};
+pub use crate::dip::*;
 
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
@@ -136,17 +135,11 @@ construct_runtime!(
 		Aura: pallet_aura = 23,
 		AuraExt: cumulus_pallet_aura_ext = 24,
 
-		// XCM
-		XcmpQueue: cumulus_pallet_xcmp_queue = 30,
-		DmpQueue: cumulus_pallet_dmp_queue = 31,
-		PolkadotXcm: pallet_xcm = 32,
-		CumulusXcm: cumulus_pallet_xcm = 33,
-
 		// DID lookup
-		DidLookup: pallet_did_lookup = 40,
+		DidLookup: pallet_did_lookup = 30,
 
 		// DIP
-		DipConsumer: pallet_dip_consumer = 50,
+		DipConsumer: pallet_dip_consumer = 40,
 	}
 );
 
@@ -251,21 +244,16 @@ impl frame_system::Config for Runtime {
 	type Version = Version;
 }
 
-parameter_types! {
-	pub const ReservedDmpWeight: Weight = MAXIMUM_BLOCK_WEIGHT.saturating_div(4);
-	pub const ReservedXcmpWeight: Weight = MAXIMUM_BLOCK_WEIGHT.saturating_div(4);
-}
-
 impl cumulus_pallet_parachain_system::Config for Runtime {
 	type CheckAssociatedRelayNumber = RelayNumberStrictlyIncreases;
-	type DmpMessageHandler = DmpQueue;
+	type DmpMessageHandler = ();
 	type OnSystemEvent = ();
-	type OutboundXcmpMessageSource = XcmpQueue;
-	type ReservedDmpWeight = ReservedDmpWeight;
-	type ReservedXcmpWeight = ReservedXcmpWeight;
+	type OutboundXcmpMessageSource = ();
+	type ReservedDmpWeight = ();
+	type ReservedXcmpWeight = ();
 	type RuntimeEvent = RuntimeEvent;
 	type SelfParaId = ParachainInfo;
-	type XcmpMessageHandler = XcmpQueue;
+	type XcmpMessageHandler = ();
 }
 
 impl pallet_timestamp::Config for Runtime {

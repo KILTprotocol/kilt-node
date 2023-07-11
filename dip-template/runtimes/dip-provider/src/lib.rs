@@ -244,18 +244,13 @@ impl frame_system::Config for Runtime {
 	type Version = Version;
 }
 
-parameter_types! {
-	pub const ReservedDmpWeight: Weight = MAXIMUM_BLOCK_WEIGHT.saturating_div(4);
-	pub const ReservedXcmpWeight: Weight = MAXIMUM_BLOCK_WEIGHT.saturating_div(4);
-}
-
 impl cumulus_pallet_parachain_system::Config for Runtime {
 	type CheckAssociatedRelayNumber = RelayNumberStrictlyIncreases;
-	type DmpMessageHandler = DmpQueue;
+	type DmpMessageHandler = ();
 	type OnSystemEvent = ();
-	type OutboundXcmpMessageSource = XcmpQueue;
-	type ReservedDmpWeight = ReservedDmpWeight;
-	type ReservedXcmpWeight = ReservedXcmpWeight;
+	type OutboundXcmpMessageSource = ();
+	type ReservedDmpWeight = ();
+	type ReservedXcmpWeight = ();
 	type RuntimeEvent = RuntimeEvent;
 	type SelfParaId = ParachainInfo;
 	type XcmpMessageHandler = ();

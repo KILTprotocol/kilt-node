@@ -20,7 +20,7 @@ use did::{DidVerificationKeyRelationship, KeyIdOf};
 use frame_support::RuntimeDebug;
 use kilt_dip_support::merkle::{DidKeyMerkleKey, DidKeyMerkleValue, MerkleProof};
 use pallet_did_lookup::linkable_account::LinkableAccountId;
-use pallet_dip_provider::traits::IdentityProofGenerator;
+use pallet_dip_provider::traits::IdentityCommitmentGenerator;
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
 use sp_std::{borrow::ToOwned, marker::PhantomData, vec::Vec};
@@ -251,7 +251,7 @@ where
 	}
 }
 
-impl<T> IdentityProofGenerator<DidIdentifier, LinkedDidInfoOf<T>> for DidMerkleRootGenerator<T>
+impl<T> IdentityCommitmentGenerator<DidIdentifier, LinkedDidInfoOf<T>> for DidMerkleRootGenerator<T>
 where
 	T: did::Config + pallet_did_lookup::Config + pallet_web3_names::Config,
 {
