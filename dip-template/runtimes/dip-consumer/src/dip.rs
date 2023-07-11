@@ -52,12 +52,12 @@ pub type MerkleDidSignatureVerifierOf<Call, Subject> = MerkleRevealedDidSignatur
 impl pallet_dip_consumer::Config for Runtime {
 	type DipCallOriginFilter = PreliminaryDipOriginFilter;
 	type Identifier = DidIdentifier;
-	type IdentityDetails = u128;
-	type Proof = MerkleLeavesAndDidSignature<
+	type LocalIdentityInfo = u128;
+	type IdentityProof = MerkleLeavesAndDidSignature<
 		MerkleProof<Vec<Vec<u8>>, ProofLeaf<Hash, BlockNumber, Web3Name, LinkableAccountId>>,
 		BlockNumber,
 	>;
-	type ProofDigest = Hash;
+	type IdentityCommitment = Hash;
 	type ProofVerifier = MerkleProofAndDidSignatureVerifier<
 		BlockNumber,
 		MerkleProofVerifier,
