@@ -2721,22 +2721,55 @@ fn adjust_reward_rates() {
 				inflation_0.collator.max_rate,
 				Perquintill::from_parts(96040000000000000),
 				inflation_0.delegator.max_rate,
-				Perquintill::zero(),
+				Perquintill::from_float(0.051),
 			);
 			assert_eq!(StakePallet::inflation_config(), inflation_2);
-			// reward once in 3rd year
-			roll_to_claim_rewards(2 * <Test as Config>::BLOCKS_PER_YEAR + 2, authors);
+			// reward once in 3rd year. Rewards should 5.1%.
+			roll_to_claim_rewards(2 * <Test as Config>::BLOCKS_PER_YEAR + 2, authors.clone());
 			let c_rewards_2 = Balances::free_balance(1)
 				.saturating_sub(10_000_000 * DECIMALS)
 				.saturating_sub(c_rewards_0)
 				.saturating_sub(c_rewards_1);
 			assert!(c_rewards_1 > c_rewards_2);
-			// should be zero because we set reward rate to zero
+			// should be less as previous (2nd) year
 			let d_rewards_2 = Balances::free_balance(2)
 				.saturating_sub(90_000_000 * DECIMALS)
 				.saturating_sub(d_rewards_0)
 				.saturating_sub(d_rewards_1);
-			assert!(d_rewards_2.is_zero());
+			assert!(!d_rewards_2.is_zero());
+			assert!(d_rewards_2 < d_rewards_1);
+
+			// finish 3rd year
+			System::set_block_number(3 * <Test as Config>::BLOCKS_PER_YEAR);
+			roll_to_claim_rewards(3 * <Test as Config>::BLOCKS_PER_YEAR + 1, vec![]);
+			// reward reduction should not happen automatically anymore
+			assert_eq!(StakePallet::last_reward_reduction(), 2u64);
+			assert_ok!(StakePallet::execute_scheduled_reward_change(RuntimeOrigin::signed(1)));
+			assert_eq!(StakePallet::last_reward_reduction(), 3u64);
+			let inflation_3 = InflationInfo::new(
+				<Test as Config>::BLOCKS_PER_YEAR,
+				inflation_0.collator.max_rate,
+				Perquintill::from_parts(94119200000000000),
+				inflation_0.delegator.max_rate,
+				Perquintill::zero(),
+			);
+			assert_eq!(StakePallet::inflation_config(), inflation_3);
+			// reward once in 4th year
+			roll_to_claim_rewards(3 * <Test as Config>::BLOCKS_PER_YEAR + 2, authors);
+			let c_rewards_3 = Balances::free_balance(1)
+				.saturating_sub(10_000_000 * DECIMALS)
+				.saturating_sub(c_rewards_0)
+				.saturating_sub(c_rewards_1)
+				.saturating_sub(c_rewards_2);
+			// collator and delegator should not receive any rewards at all
+			assert!(c_rewards_3.is_zero());
+
+			let d_rewards_3 = Balances::free_balance(2)
+				.saturating_sub(90_000_000 * DECIMALS)
+				.saturating_sub(d_rewards_0)
+				.saturating_sub(d_rewards_1)
+				.saturating_sub(d_rewards_2);
+			assert!(d_rewards_3.is_zero());
 		});
 }
 
