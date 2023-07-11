@@ -70,7 +70,7 @@ impl<T: Config> DidEndpoint<T> {
 			self.urls.len() <= T::MaxNumberOfUrlsPerService::get().saturated_into(),
 			errors::InputError::MaxUrlCountExceeded
 		);
-		// Check that the ID is the maximum allowed length and only contain ASCII
+		// Check that the ID is the maximum allowed length and only contain URI fragment
 		// characters.
 		ensure!(
 			self.id.len() <= T::MaxServiceIdLength::get().saturated_into(),
@@ -78,7 +78,7 @@ impl<T: Config> DidEndpoint<T> {
 		);
 		let str_id = str::from_utf8(&self.id).map_err(|_| errors::InputError::InvalidEncoding)?;
 		ensure!(
-			crate_utils::is_valid_ascii_string(str_id),
+			crate_utils::is_valid_uri_fragment(str_id),
 			errors::InputError::InvalidEncoding
 		);
 		// Check that all types are the maximum allowed length and only contain ASCII
@@ -95,8 +95,8 @@ impl<T: Config> DidEndpoint<T> {
 			);
 			Ok(())
 		})?;
-		// Check that all URLs are the maximum allowed length AND only contain ASCII
-		// characters.
+		// Check that all URLs are the maximum allowed length AND only contain URI
+		// fragment characters.
 		for s_url in self.urls.iter() {
 			ensure!(
 				s_url.len() <= T::MaxServiceUrlLength::get().saturated_into(),
@@ -104,7 +104,7 @@ impl<T: Config> DidEndpoint<T> {
 			);
 			let str_url = str::from_utf8(s_url).map_err(|_| errors::InputError::InvalidEncoding)?;
 			ensure!(
-				crate_utils::is_valid_ascii_string(str_url),
+				crate_utils::is_valid_uri_fragment(str_url),
 				errors::InputError::InvalidEncoding
 			);
 		}
