@@ -28,17 +28,14 @@ pub use crate::pallet::*;
 pub mod pallet {
 	use super::*;
 
-	use frame_support::{pallet_prelude::*, traits::EnsureOrigin, weights::Weight};
+	use frame_support::{pallet_prelude::*, traits::EnsureOrigin};
 	use frame_system::pallet_prelude::*;
-	use sp_std::{boxed::Box, fmt::Debug};
-	use xcm::{latest::prelude::*, VersionedMultiAsset, VersionedMultiLocation};
+	use parity_scale_codec::FullCodec;
+	use sp_std::fmt::Debug;
 
-	use dip_support::IdentityDetailsAction;
-
-	use crate::traits::{IdentityProofDispatcher, IdentityProofGenerator, IdentityProvider, SubmitterInfo, TxBuilder};
+	use crate::traits::{IdentityCommitmentGenerator, IdentityProvider, SubmitterInfo};
 
 	pub type IdentityOf<T> = <<T as Config>::IdentityProvider as IdentityProvider<<T as Config>::Identifier>>::Success;
-	pub type IdentityProofActionOf<T> = IdentityDetailsAction<<T as Config>::Identifier, <T as Config>::ProofOutput>;
 
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(0);
 
@@ -46,18 +43,21 @@ pub mod pallet {
 	pub trait Config: frame_system::Config {
 		type CommitOriginCheck: EnsureOrigin<Self::RuntimeOrigin, Success = Self::CommitOrigin>;
 		type CommitOrigin: SubmitterInfo<Submitter = Self::AccountId>;
-		type Identifier: Parameter;
-		type IdentityProofGenerator: IdentityProofGenerator<
+		type Identifier: Parameter + MaxEncodedLen;
+		type IdentityCommitment: Clone + Eq + Debug + TypeInfo + FullCodec + MaxEncodedLen;
+		type IdentityCommitmentGenerator: IdentityCommitmentGenerator<
 			Self::Identifier,
 			IdentityOf<Self>,
-			Output = Self::ProofOutput,
+			Output = Self::IdentityCommitment,
 		>;
-		type IdentityProofDispatcher: IdentityProofDispatcher<Self::Identifier, Self::ProofOutput, Self::AccountId, ()>;
 		type IdentityProvider: IdentityProvider<Self::Identifier>;
-		type ProofOutput: Clone + Eq + Debug;
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
-		type TxBuilder: TxBuilder<Self::Identifier, Self::ProofOutput, ()>;
 	}
+
+	#[pallet::storage]
+	#[pallet::getter(fn identity_commitments)]
+	pub(crate) type IdentityCommitments<T> =
+		StorageMap<_, Twox64Concat, <T as Config>::Identifier, <T as Config>::IdentityCommitment>;
 
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
@@ -67,16 +67,19 @@ pub mod pallet {
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
-		IdentityInfoDispatched(IdentityProofActionOf<T>, Box<MultiLocation>),
+		IdentityCommitted {
+			identifier: T::Identifier,
+			commitment: T::IdentityCommitment,
+		},
+		IdentityDeleted {
+			identifier: T::Identifier,
+		},
 	}
 
 	#[pallet::error]
 	pub enum Error<T> {
-		BadVersion,
-		Dispatch,
 		IdentityNotFound,
-		IdentityProofGeneration,
-		Predispatch,
+		IdentityCommitmentGeneration,
 	}
 
 	#[pallet::call]
@@ -84,43 +87,29 @@ pub mod pallet {
 		#[pallet::call_index(0)]
 		// TODO: Update weight
 		#[pallet::weight(0)]
-		pub fn commit_identity(
-			origin: OriginFor<T>,
-			identifier: T::Identifier,
-			destination: Box<VersionedMultiLocation>,
-			asset: Box<VersionedMultiAsset>,
-			weight: Weight,
-		) -> DispatchResult {
-			let dispatcher = T::CommitOriginCheck::ensure_origin(origin).map(|e| e.submitter())?;
+		pub fn commit_identity(origin: OriginFor<T>, identifier: T::Identifier) -> DispatchResult {
+			// TODO: use dispatcher to get deposit
+			let _dispatcher =
+				T::CommitOriginCheck::ensure_origin(origin).map(|e: <T as Config>::CommitOrigin| e.submitter())?;
 
-			let destination: MultiLocation = (*destination).try_into().map_err(|_| Error::<T>::BadVersion)?;
-			let action: IdentityProofActionOf<T> = match T::IdentityProvider::retrieve(&identifier) {
-				Ok(Some(identity)) => {
-					let identity_proof = T::IdentityProofGenerator::generate_commitment(&identifier, &identity)
-						.map_err(|_| Error::<T>::IdentityProofGeneration)?;
-					Ok(IdentityDetailsAction::Updated(identifier, identity_proof, ()))
-				}
-				Ok(None) => Ok(IdentityDetailsAction::Deleted(identifier)),
+			let identity_commitment: Option<T::IdentityCommitment> = match T::IdentityProvider::retrieve(&identifier) {
+				Ok(Some(identity)) => T::IdentityCommitmentGenerator::generate_commitment(&identifier, &identity)
+					.map(Some)
+					.map_err(|_| Error::<T>::IdentityCommitmentGeneration),
+				Ok(None) => Ok(None),
 				Err(_) => Err(Error::<T>::IdentityNotFound),
 			}?;
-			// TODO: Add correct version creation based on lookup (?)
 
-			let asset: MultiAsset = (*asset).try_into().map_err(|_| Error::<T>::BadVersion)?;
+			if let Some(commitment) = identity_commitment {
+				// TODO: Take deposit (once 0.9.42 PR is merged into develop)
+				IdentityCommitments::<T>::insert(&identifier, commitment.clone());
+				Self::deposit_event(Event::<T>::IdentityCommitted { identifier, commitment });
+			} else {
+				// TODO: Release deposit (once 0.9.42 PR is merged into develop)
+				IdentityCommitments::<T>::remove(&identifier);
+				Self::deposit_event(Event::<T>::IdentityDeleted { identifier });
+			}
 
-			let (ticket, _) = T::IdentityProofDispatcher::pre_dispatch::<T::TxBuilder>(
-				action.clone(),
-				dispatcher,
-				asset,
-				weight,
-				destination,
-			)
-			.map_err(|_| Error::<T>::Predispatch)?;
-
-			// TODO: Use returned asset of `pre_dispatch` to charge the tx submitter for the
-			// fee.
-			T::IdentityProofDispatcher::dispatch(ticket).map_err(|_| Error::<T>::Dispatch)?;
-
-			Self::deposit_event(Event::IdentityInfoDispatched(action, Box::new(destination)));
 			Ok(())
 		}
 	}

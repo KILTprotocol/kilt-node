@@ -17,26 +17,24 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use did::DidRawOrigin;
-use dip_support::IdentityDetailsAction;
-use xcm::{latest::prelude::*, DoubleEncoded};
 
 pub use identity_generation::*;
 pub mod identity_generation {
 	use sp_std::marker::PhantomData;
 
-	pub trait IdentityProofGenerator<Identifier, Identity> {
+	pub trait IdentityCommitmentGenerator<Identifier, Identity> {
 		type Error;
 		type Output;
 
 		fn generate_commitment(identifier: &Identifier, identity: &Identity) -> Result<Self::Output, Self::Error>;
 	}
 
-	// Implement the `IdentityProofGenerator` by returning the `Default` value for
-	// the `Output` type.
-	pub struct DefaultIdentityProofGenerator<Output>(PhantomData<Output>);
+	// Implement the `IdentityCommitmentGenerator` by returning the `Default` value
+	// for the `Output` type.
+	pub struct DefaultIdentityCommitmentGenerator<Output>(PhantomData<Output>);
 
-	impl<Identifier, Identity, Output> IdentityProofGenerator<Identifier, Identity>
-		for DefaultIdentityProofGenerator<Output>
+	impl<Identifier, Identity, Output> IdentityCommitmentGenerator<Identifier, Identity>
+		for DefaultIdentityCommitmentGenerator<Output>
 	where
 		Output: Default,
 	{
@@ -45,52 +43,6 @@ pub mod identity_generation {
 
 		fn generate_commitment(_identifier: &Identifier, _identity: &Identity) -> Result<Self::Output, Self::Error> {
 			Ok(Output::default())
-		}
-	}
-}
-
-pub use identity_dispatch::*;
-pub mod identity_dispatch {
-	use super::*;
-
-	use frame_support::weights::Weight;
-
-	pub trait IdentityProofDispatcher<Identifier, IdentityRoot, AccountId, Details = ()> {
-		type PreDispatchOutput;
-		type Error;
-
-		fn pre_dispatch<B: TxBuilder<Identifier, IdentityRoot, Details>>(
-			action: IdentityDetailsAction<Identifier, IdentityRoot, Details>,
-			source: AccountId,
-			asset: MultiAsset,
-			weight: Weight,
-			destination: MultiLocation,
-		) -> Result<(Self::PreDispatchOutput, MultiAssets), Self::Error>;
-
-		fn dispatch(pre_output: Self::PreDispatchOutput) -> Result<(), Self::Error>;
-	}
-
-	// Returns `Ok` without doing anything.
-	pub struct NullIdentityProofDispatcher;
-
-	impl<Identifier, IdentityRoot, AccountId, Details>
-		IdentityProofDispatcher<Identifier, IdentityRoot, AccountId, Details> for NullIdentityProofDispatcher
-	{
-		type PreDispatchOutput = ();
-		type Error = ();
-
-		fn pre_dispatch<_B>(
-			_action: IdentityDetailsAction<Identifier, IdentityRoot, Details>,
-			_source: AccountId,
-			_asset: MultiAsset,
-			_weight: Weight,
-			_destination: MultiLocation,
-		) -> Result<((), MultiAssets), Self::Error> {
-			Ok(((), MultiAssets::default()))
-		}
-
-		fn dispatch(_pre_output: Self::PreDispatchOutput) -> Result<(), Self::Error> {
-			Ok(())
 		}
 	}
 }
@@ -132,17 +84,6 @@ pub mod identity_provision {
 			Ok(None)
 		}
 	}
-}
-
-// Given a destination and an identity action, creates and encodes the proper
-// `Transact` call.
-pub trait TxBuilder<Identifier, Proof, Details = ()> {
-	type Error;
-
-	fn build(
-		dest: MultiLocation,
-		action: IdentityDetailsAction<Identifier, Proof, Details>,
-	) -> Result<DoubleEncoded<()>, Self::Error>;
 }
 
 pub trait SubmitterInfo {
