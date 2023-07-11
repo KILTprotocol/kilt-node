@@ -15,25 +15,21 @@ targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
 did.workspace = true
-dip-support.workspace = true
 frame-support.workspace = true
 frame-system.workspace = true
 parity-scale-codec = {workspace = true, features = ["derive"]}
 scale-info = {workspace = true, features = ["derive"]}
 sp-std.workspace = true
-xcm.workspace = true
 
 [features]
 default = ["std"]
 std = [
   "did/std",
-  "dip-support/std",
   "frame-support/std",
   "frame-system/std",
   "parity-scale-codec/std",
   "scale-info/std",
   "sp-std/std",
-  "xcm/std",
 ]
 runtime-benchmarks = [
   "did/runtime-benchmarks",

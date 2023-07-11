@@ -6289,13 +6289,11 @@ name = "pallet-dip-provider"
 version = "1.11.0-dev"
 dependencies = [
  "did",
- "dip-support",
  "frame-support",
  "frame-system",
  "parity-scale-codec",
  "scale-info",
  "sp-std",
- "xcm",
 ]
 
 [[package]]
