@@ -27,6 +27,7 @@ use crate::did::MerkleLeavesAndDidSignature;
 
 pub mod did;
 pub mod merkle;
+pub mod new_stuff;
 pub mod traits;
 
 /// A type that chains a Merkle proof verification with a DID signature
