@@ -18,11 +18,12 @@
 
 use did::{did_details::DidPublicKeyDetails, DidVerificationKeyRelationship};
 use frame_support::{traits::ConstU32, RuntimeDebug};
-use pallet_dip_consumer::traits::IdentityProofVerifier;
+use pallet_dip_consumer::{identity::IdentityDetails, traits::IdentityProofVerifier};
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
-use sp_runtime::BoundedVec;
+use sp_runtime::{BoundedVec, SaturatedConversion};
 use sp_std::{fmt::Debug, marker::PhantomData, vec::Vec};
+use sp_trie::{verify_trie_proof, LayoutV1};
 
 pub type BlindedValue = Vec<u8>;
 
@@ -259,7 +260,7 @@ impl<
 	// TODO: Proper error handling
 	type Error = ();
 	type Proof = MerkleProof<Vec<Vec<u8>>, ProofLeaf<KeyId, BlockNumber, Web3Name, LinkedAccountId>>;
-	type IdentityDetails = Details;
+	type IdentityDetails = IdentityDetails<Hasher::Out, Details>;
 	type Submitter = AccountId;
 	type VerificationResult = VerificationResult<
 		KeyId,
@@ -274,69 +275,69 @@ impl<
 		_call: &Call,
 		_subject: &Subject,
 		_submitter: &Self::Submitter,
-		_identity_details: &mut Option<Self::IdentityDetails>,
-		_proof: &Self::Proof,
+		identity_details: &mut Option<Self::IdentityDetails>,
+		proof: &Self::Proof,
 	) -> Result<Self::VerificationResult, Self::Error> {
-		Err(())
-		// // TODO: more efficient by removing cloning and/or collecting.
-		// // Did not find another way of mapping a Vec<(Vec<u8>, Vec<u8>)> to a
-		// // Vec<(Vec<u8>, Option<Vec<u8>>)>.
-		// let proof_leaves = proof
-		// 	.revealed
-		// 	.iter()
-		// 	.map(|leaf| (leaf.encoded_key(), Some(leaf.encoded_value())))
-		// 	.collect::<Vec<(Vec<u8>, Option<Vec<u8>>)>>();
-		// verify_trie_proof::<LayoutV1<Hasher>, _, _, _>(
-		// 	&identity_details.digest.clone().into(),
-		// 	&proof.blinded,
-		// 	&proof_leaves,
-		// )
-		// .map_err(|_| ())?;
+		// TODO: more efficient by removing cloning and/or collecting.
+		// Did not find another way of mapping a Vec<(Vec<u8>, Vec<u8>)> to a
+		// Vec<(Vec<u8>, Option<Vec<u8>>)>.
+		let proof_leaves = proof
+			.revealed
+			.iter()
+			.map(|leaf| (leaf.encoded_key(), Some(leaf.encoded_value())))
+			.collect::<Vec<(Vec<u8>, Option<Vec<u8>>)>>();
+		let Some(identity_details) = identity_details else { return Err(()) };
+		verify_trie_proof::<LayoutV1<Hasher>, _, _, _>(
+			&identity_details.digest.clone().into(),
+			&proof.blinded,
+			&proof_leaves,
+		)
+		.map_err(|_| ())?;
 
-		// // At this point, we know the proof is valid. We just need to map the
-		// revealed // leaves to something the consumer can easily operate on.
-		// #[allow(clippy::type_complexity)]
-		// let (did_keys, web3_name, linked_accounts): (
-		// 	BoundedVec<RevealedDidKey<KeyId, BlockNumber>,
-		// ConstU32<MAX_REVEALED_KEYS_COUNT>>, 	Option<RevealedWeb3Name<Web3Name,
-		// BlockNumber>>, 	BoundedVec<LinkedAccountId,
-		// ConstU32<MAX_REVEALED_ACCOUNTS_COUNT>>, ) = proof.revealed.iter().
-		// try_fold( 	(
-		// 		BoundedVec::with_bounded_capacity(MAX_REVEALED_KEYS_COUNT.
-		// saturated_into()), 		None,
-		// 		BoundedVec::with_bounded_capacity(MAX_REVEALED_ACCOUNTS_COUNT.
-		// saturated_into()), 	),
-		// 	|(mut keys, web3_name, mut linked_accounts), leaf| match leaf {
-		// 		ProofLeaf::DidKey(key_id, key_value) => {
-		// 			keys.try_push(RevealedDidKey {
-		// 				// TODO: Avoid cloning if possible
-		// 				id: key_id.0.clone(),
-		// 				relationship: key_id.1,
-		// 				details: key_value.0.clone(),
-		// 			})
-		// 			.map_err(|_| ())?;
-		// 			Ok::<_, ()>((keys, web3_name, linked_accounts))
-		// 		}
-		// 		// TODO: Avoid cloning if possible
-		// 		ProofLeaf::Web3Name(revealed_web3_name, details) => Ok((
-		// 			keys,
-		// 			Some(RevealedWeb3Name {
-		// 				web3_name: revealed_web3_name.0.clone(),
-		// 				claimed_at: details.0.clone(),
-		// 			}),
-		// 			linked_accounts,
-		// 		)),
-		// 		ProofLeaf::LinkedAccount(account_id, _) => {
-		// 			linked_accounts.try_push(account_id.0.clone()).map_err(|_| ())?;
-		// 			Ok::<_, ()>((keys, web3_name, linked_accounts))
-		// 		}
-		// 	},
-		// )?;
+		// At this point, we know the proof is valid. We just need to map the revealed
+		// leaves to something the consumer can easily operate on.
+		#[allow(clippy::type_complexity)]
+		let (did_keys, web3_name, linked_accounts): (
+			BoundedVec<RevealedDidKey<KeyId, BlockNumber>, ConstU32<MAX_REVEALED_KEYS_COUNT>>,
+			Option<RevealedWeb3Name<Web3Name, BlockNumber>>,
+			BoundedVec<LinkedAccountId, ConstU32<MAX_REVEALED_ACCOUNTS_COUNT>>,
+		) = proof.revealed.iter().try_fold(
+			(
+				BoundedVec::with_bounded_capacity(MAX_REVEALED_KEYS_COUNT.saturated_into()),
+				None,
+				BoundedVec::with_bounded_capacity(MAX_REVEALED_ACCOUNTS_COUNT.saturated_into()),
+			),
+			|(mut keys, web3_name, mut linked_accounts), leaf| match leaf {
+				ProofLeaf::DidKey(key_id, key_value) => {
+					keys.try_push(RevealedDidKey {
+						// TODO: Avoid cloning if possible
+						id: key_id.0.clone(),
+						relationship: key_id.1,
+						details: key_value.0.clone(),
+					})
+					.map_err(|_| ())?;
+					Ok::<_, ()>((keys, web3_name, linked_accounts))
+				}
+				// TODO: Avoid cloning if possible
+				ProofLeaf::Web3Name(revealed_web3_name, details) => Ok((
+					keys,
+					Some(RevealedWeb3Name {
+						web3_name: revealed_web3_name.0.clone(),
+						claimed_at: details.0.clone(),
+					}),
+					linked_accounts,
+				)),
+				ProofLeaf::LinkedAccount(account_id, _) => {
+					linked_accounts.try_push(account_id.0.clone()).map_err(|_| ())?;
+					Ok::<_, ()>((keys, web3_name, linked_accounts))
+				}
+			},
+		)?;
 
-		// Ok(VerificationResult {
-		// 	did_keys,
-		// 	web3_name,
-		// 	linked_accounts,
-		// })
+		Ok(VerificationResult {
+			did_keys,
+			web3_name,
+			linked_accounts,
+		})
 	}
 }

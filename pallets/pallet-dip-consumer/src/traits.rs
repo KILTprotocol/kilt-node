@@ -20,8 +20,8 @@ use sp_std::marker::PhantomData;
 
 pub trait IdentityProofVerifier<Call, Subject> {
 	type Error;
-	type Proof;
 	type IdentityDetails;
+	type Proof;
 	type Submitter;
 	type VerificationResult;
 
@@ -35,13 +35,13 @@ pub trait IdentityProofVerifier<Call, Subject> {
 }
 
 // Always returns success.
-pub struct SuccessfulProofVerifier<Proof, ProofEntry, Submitter>(PhantomData<(Proof, ProofEntry, Submitter)>);
-impl<Call, Subject, Proof, ProofEntry, Submitter> IdentityProofVerifier<Call, Subject>
-	for SuccessfulProofVerifier<Proof, ProofEntry, Submitter>
+pub struct SuccessfulProofVerifier<IdentityDetails, Proof, Submitter>(PhantomData<(IdentityDetails, Proof, Submitter)>);
+impl<Call, Subject, IdentityDetails, Proof, Submitter> IdentityProofVerifier<Call, Subject>
+	for SuccessfulProofVerifier<IdentityDetails, Proof, Submitter>
 {
 	type Error = ();
+	type IdentityDetails = IdentityDetails;
 	type Proof = Proof;
-	type IdentityDetails = ProofEntry;
 	type Submitter = Submitter;
 	type VerificationResult = ();
 

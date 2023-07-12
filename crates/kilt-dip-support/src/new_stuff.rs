@@ -1,19 +1,79 @@
-use parity_scale_codec::Decode;
-use sp_runtime::traits::Hash;
+use pallet_dip_consumer::{identity::IdentityDetails, traits::IdentityProofVerifier};
+use parity_scale_codec::{Decode, HasCompact};
+use sp_core::{Get, U256};
+use sp_runtime::{generic::Header, traits::Hash};
 use sp_state_machine::read_proof_check;
 use sp_std::marker::PhantomData;
 use sp_trie::StorageProof;
+
+pub struct DipProof<InnerProof> {
+	para_root_proof: Vec<Vec<u8>>,
+	dip_commitment_proof: Vec<Vec<u8>>,
+	dip_proof: InnerProof,
+}
+
+pub struct StateProofDipVerifier<ProviderParaId, RelayInfoProvider, ProviderParaInfoProvider, DipVerifier>(
+	PhantomData<(ProviderParaId, RelayInfoProvider, ProviderParaInfoProvider, DipVerifier)>,
+);
+
+impl<Call, Subject, ProviderParaId, RelayInfoProvider, ProviderParaInfoProvider, DipVerifier>
+	IdentityProofVerifier<Call, Subject>
+	for StateProofDipVerifier<ProviderParaId, RelayInfoProvider, ProviderParaInfoProvider, DipVerifier>
+where
+	ProviderParaId: Get<RelayInfoProvider::ParaId>,
+
+	RelayInfoProvider: relay_chain::RelayChainStateInfoProvider,
+	RelayInfoProvider::Hasher: 'static,
+	<RelayInfoProvider::Hasher as Hash>::Output: Ord,
+	RelayInfoProvider::BlockNumber: Copy + Into<U256> + TryFrom<U256> + HasCompact,
+	RelayInfoProvider::Key: AsRef<[u8]>,
+
+	ProviderParaInfoProvider: parachain::ParachainStateInfoProvider<Identifier = Subject>,
+	ProviderParaInfoProvider::Hasher: 'static,
+	<ProviderParaInfoProvider::Hasher as Hash>::Output: Ord,
+	ProviderParaInfoProvider::Commitment: Decode,
+	ProviderParaInfoProvider::Key: AsRef<[u8]>,
+
+	DipVerifier: IdentityProofVerifier<Call, Subject>,
+{
+	type Error = ();
+	type IdentityDetails = IdentityDetails<DipVerifier>;
+	type Proof = DipProof<DipVerifier::Proof>;
+	type Submitter = DipVerifier::Submitter;
+	type VerificationResult = DipVerifier::VerificationResult;
+
+	fn verify_proof_for_call_against_details(
+		call: &Call,
+		subject: &Subject,
+		submitter: &Self::Submitter,
+		identity_details: &mut Option<Self::IdentityDetails>,
+		proof: &Self::Proof,
+	) -> Result<Self::VerificationResult, Self::Error> {
+		let provider_parachain_header =
+			relay_chain::ParachainHeadProofVerifier::<RelayInfoProvider>::verify_proof_for_parachain(
+				&ProviderParaId::get(),
+				proof.para_root_proof,
+			)?;
+		let provider_parachain_root_state = provider_parachain_header.state_root;
+		let subject_identity_commitment =
+			parachain::DipCommitmentValueProofVerifier::<ProviderParaInfoProvider>::verify_proof_for_identifier(
+				subject,
+				proof.dip_commitment_proof,
+			)?;
+		// TODO: Call the third and last step for the DIP merkle verification.
+	}
+}
 
 pub mod relay_chain {
 	use super::*;
 
 	pub trait RelayChainStateInfoProvider {
+		type BlockNumber;
 		type Key;
 		type Hasher: Hash;
-		type Header;
 		type ParaId;
 
-		fn parachain_head_storage_key(para_id: Self::ParaId) -> Self::Key;
+		fn parachain_head_storage_key(para_id: &Self::ParaId) -> Self::Key;
 		fn state_root() -> <Self::Hasher as Hash>::Output;
 	}
 
@@ -24,13 +84,13 @@ pub mod relay_chain {
 		RelayInfoProvider: RelayChainStateInfoProvider,
 		RelayInfoProvider::Hasher: 'static,
 		<RelayInfoProvider::Hasher as Hash>::Output: Ord,
-		RelayInfoProvider::Header: Decode,
+		RelayInfoProvider::BlockNumber: Copy + Into<U256> + TryFrom<U256> + HasCompact,
 		RelayInfoProvider::Key: AsRef<[u8]>,
 	{
 		pub fn verify_proof_for_parachain(
-			para_id: RelayInfoProvider::ParaId,
+			para_id: &RelayInfoProvider::ParaId,
 			proof: impl IntoIterator<Item = Vec<u8>>,
-		) -> Result<RelayInfoProvider::Header, ()> {
+		) -> Result<Header<RelayInfoProvider::BlockNumber, RelayInfoProvider::Hasher>, ()> {
 			let relay_state_root = RelayInfoProvider::state_root();
 			let parachain_storage_key = RelayInfoProvider::parachain_head_storage_key(para_id);
 			let storage_proof = StorageProof::new(proof);
@@ -46,7 +106,7 @@ pub mod relay_chain {
 			let Some(Some(encoded_head)) = revealed_leaves.get(parachain_storage_key.as_ref()) else { return Err(()) };
 			// TODO: Figure out why RPC call returns 2 bytes in front which we don't need
 			let mut unwrapped_head = &encoded_head[2..];
-			RelayInfoProvider::Header::decode(&mut unwrapped_head).map_err(|_| ())
+			Header::decode(&mut unwrapped_head).map_err(|_| ())
 		}
 	}
 
@@ -58,15 +118,14 @@ pub mod relay_chain {
 		use parity_scale_codec::Encode;
 		use polkadot_primitives::BlakeTwo256;
 		use sp_core::{storage::StorageKey, H256};
-		use sp_runtime::generic::Header;
 
 		// Polkadot block n: 16_363_919,
 		// hash 0x18e90e9aa8e3b063f60386ba1b0415111798e72d01de58b1438d620d42f58e39
 		struct StaticPolkadotInfoProvider;
 
 		impl RelayChainStateInfoProvider for StaticPolkadotInfoProvider {
+			type BlockNumber = u32;
 			type Hasher = BlakeTwo256;
-			type Header = Header<u32, Self::Hasher>;
 			type Key = StorageKey;
 			type ParaId = u32;
 
@@ -124,7 +183,7 @@ pub mod parachain {
 		type Hasher: Hash;
 		type Identifier;
 
-		fn dip_subject_storage_key(identifier: Self::Identifier) -> Self::Key;
+		fn dip_subject_storage_key(identifier: &Self::Identifier) -> Self::Key;
 		fn state_root() -> <Self::Hasher as Hash>::Output;
 	}
 
@@ -139,7 +198,7 @@ pub mod parachain {
 		ParaInfoProvider::Key: AsRef<[u8]>,
 	{
 		pub fn verify_proof_for_identifier(
-			identifier: ParaInfoProvider::Identifier,
+			identifier: &ParaInfoProvider::Identifier,
 			proof: impl IntoIterator<Item = Vec<u8>>,
 		) -> Result<ParaInfoProvider::Commitment, ()> {
 			let parachain_state_root = ParaInfoProvider::state_root();
