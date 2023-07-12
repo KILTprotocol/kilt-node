@@ -16,109 +16,40 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::{
-	traits::{
-		fungible::freeze::Mutate as MutateFreeze, Get, GetStorageVersion, LockIdentifier, LockableCurrency,
-		OnRuntimeUpgrade, ReservableCurrency, StorageVersion,
-	},
-	weights::Weight,
+use frame_support::traits::{
+	fungible::freeze::Mutate as MutateFreeze, LockIdentifier, LockableCurrency, ReservableCurrency,
 };
 use pallet_balances::{BalanceLock, Freezes, IdAmount, Locks};
 use sp_runtime::SaturatedConversion;
-use sp_std::marker::PhantomData;
 
 use crate::{
 	types::{AccountIdOf, CurrencyOf},
-	Config, FreezeReason, Pallet, STORAGE_VERSION as TARGET_STORAGE_VERSION,
+	Config, FreezeReason,
 };
 
 const STAKING_ID: LockIdentifier = *b"kiltpstk";
 
-const CURRENT_STORAGE_VERSION: StorageVersion = StorageVersion::new(8);
-
-pub struct BalanceMigration<T>(PhantomData<T>);
-
-impl<T: Config> OnRuntimeUpgrade for BalanceMigration<T>
-where
-	<T as Config>::Currency: ReservableCurrency<T::AccountId>,
-	<T as Config>::Currency: LockableCurrency<T::AccountId>,
-{
-	fn on_runtime_upgrade() -> frame_support::weights::Weight {
-		log::info!("Staking: Initiating migration");
-
-		let onchain_storage_version = Pallet::<T>::on_chain_storage_version();
-		if onchain_storage_version == CURRENT_STORAGE_VERSION {
-			TARGET_STORAGE_VERSION.put::<Pallet<T>>();
-			<T as frame_system::Config>::DbWeight::get()
-				.reads_writes(1, 1)
-				.saturating_add(do_migration::<T>())
-		} else {
-			log::info!(
-				"Staking: No migration needed. This file should be deleted. Current storage version: {:?}, Required Version for update: {:?}", 
-				onchain_storage_version,
-				CURRENT_STORAGE_VERSION
-			);
-			<T as frame_system::Config>::DbWeight::get().reads(1)
-		}
-	}
-
-	#[cfg(feature = "try-runtime")]
-	fn pre_upgrade() -> Result<sp_std::vec::Vec<u8>, &'static str> {
-		use sp_runtime::traits::Zero;
-		use sp_std::vec;
-
-		let count_freezes = pallet_balances::Freezes::<T>::iter().count();
-		assert!(count_freezes.is_zero(), "Staking Pre: There are already freezes.");
-
-		assert_eq!(Pallet::<T>::on_chain_storage_version(), CURRENT_STORAGE_VERSION);
-
-		log::info!("Staking: Pre migration checks successful");
-
-		Ok(vec![])
-	}
-
-	#[cfg(feature = "try-runtime")]
-	fn post_upgrade(_pre_state: sp_std::vec::Vec<u8>) -> Result<(), &'static str> {
-		use sp_runtime::traits::Zero;
-
-		let count_freezes = pallet_balances::Freezes::<T>::iter().count();
-
-		assert!(!count_freezes.is_zero(), "Staking: There are still no freezes.");
-
-		assert_eq!(Pallet::<T>::on_chain_storage_version(), TARGET_STORAGE_VERSION);
-
-		log::info!("Staking: Post migration checks successful");
-
-		Ok(())
-	}
-}
-
-fn do_migration<T: Config>() -> Weight
+pub fn do_migration<T: Config>(who: T::AccountId)
 where
 	<T as Config>::Currency: ReservableCurrency<T::AccountId>,
 	<T as Config>::Currency: LockableCurrency<T::AccountId>,
 {
 	Locks::<T>::iter()
-		.map(|(user_id, locks)| {
-			let weight = locks
+		.filter(|(user_id, _)| user_id == &who)
+		.for_each(|(user_id, locks)| {
+			locks
 				.iter()
-				.map(|lock: &BalanceLock<_>| -> Weight {
-					if lock.id == STAKING_ID {
-						return update_or_create_freeze::<T>(user_id.clone(), lock);
-					}
-					<T as frame_system::Config>::DbWeight::get().reads_writes(0, 0)
-				})
-				.fold(Weight::zero(), |acc, next| acc.saturating_add(next));
-			weight
-		})
-		.fold(Weight::zero(), |acc, next| acc.saturating_add(next))
+				.filter(|lock| lock.id == STAKING_ID)
+				.for_each(|lock: &BalanceLock<_>| {
+					update_or_create_freeze::<T>(user_id.clone(), lock);
+				});
+		});
 }
 
 fn update_or_create_freeze<T: Config>(
 	user_id: T::AccountId,
 	lock: &BalanceLock<<T as pallet_balances::Config>::Balance>,
-) -> Weight
-where
+) where
 	CurrencyOf<T>: LockableCurrency<AccountIdOf<T>>,
 {
 	let freezes = Freezes::<T>::get(&user_id);
@@ -145,14 +76,12 @@ where
 		)
 	};
 
+	debug_assert!(
+		result.is_ok(),
+		"Staking: Could not convert locks to freezes from user: {:?} error: {:?}",
+		user_id,
+		result
+	);
+
 	<CurrencyOf<T> as LockableCurrency<AccountIdOf<T>>>::remove_lock(STAKING_ID, &user_id);
-
-	if result.is_err() {
-		return <T as frame_system::Config>::DbWeight::get().reads(1);
-	}
-
-	// Currency::reserve and Currency::hold each read and write to the DB once.
-	// Since we are uncertain about which operation may fail, in the event of an
-	// error, we assume the worst-case scenario here.
-	<T as frame_system::Config>::DbWeight::get().reads_writes(2, 2)
 }

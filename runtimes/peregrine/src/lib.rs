@@ -187,6 +187,10 @@ impl pallet_multisig::Config for Runtime {
 	type WeightInfo = weights::pallet_multisig::WeightInfo<Runtime>;
 }
 
+impl pallet_migration::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+}
+
 impl pallet_indices::Config for Runtime {
 	type AccountIndex = Index;
 	type Currency = pallet_balances::Pallet<Runtime>;
@@ -1096,13 +1100,6 @@ pub type Executive = frame_executive::Executive<
 	(
 		pallet_did_lookup::migrations::CleanupMigration<Runtime>,
 		runtime_common::migrations::RemoveInsecureRandomnessPallet<Runtime>,
-		attestation::migrations::BalanceMigration<Runtime>,
-		delegation::migrations::BalanceMigration<Runtime>,
-		did::migrations::BalanceMigration<Runtime>,
-		pallet_did_lookup::migrations::BalanceMigration<Runtime>,
-		pallet_web3_names::migrations::BalanceMigration<Runtime>,
-		parachain_staking::migrations::BalanceMigration<Runtime>,
-		public_credentials::migrations::BalanceMigration<Runtime>,
 	),
 >;
 

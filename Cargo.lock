@@ -6269,6 +6269,33 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-migration"
+version = "1.11.0-dev"
+dependencies = [
+ "attestation",
+ "ctype",
+ "delegation",
+ "did",
+ "env_logger 0.10.0",
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "log",
+ "pallet-balances",
+ "pallet-did-lookup",
+ "pallet-web3-names",
+ "parachain-staking",
+ "parity-scale-codec",
+ "public-credentials",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-keystore",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-mmr"
 version = "4.0.0-dev"
 source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.42#3bb3882ce094ac211dea93fabfdcd4f902f5a7fd"
@@ -7089,6 +7116,7 @@ dependencies = [
  "pallet-indices",
  "pallet-inflation",
  "pallet-membership",
+ "pallet-migration",
  "pallet-multisig",
  "pallet-preimage",
  "pallet-proxy",
@@ -11813,6 +11841,7 @@ dependencies = [
  "pallet-indices",
  "pallet-inflation",
  "pallet-membership",
+ "pallet-migration",
  "pallet-multisig",
  "pallet-preimage",
  "pallet-proxy",
