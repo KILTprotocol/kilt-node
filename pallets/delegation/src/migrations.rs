@@ -22,7 +22,7 @@ use sp_runtime::SaturatedConversion;
 
 use crate::{AccountIdOf, Config, CurrencyOf, DelegationNode, DelegationNodes, HoldReason};
 
-pub fn do_migration<T: Config>(who: T::AccountId)
+pub fn do_migration<T: Config>(who: <T as frame_system::Config>::AccountId)
 where
 	<T as Config>::Currency: ReservableCurrency<T::AccountId>,
 {

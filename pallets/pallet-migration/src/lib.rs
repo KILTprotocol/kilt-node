@@ -20,13 +20,7 @@
 
 pub use pallet::*;
 
-// #[cfg(test)]
-// mod mock;
-
-// #[cfg(test)]
-// mod tests;
-
-// #[cfg(feature = "runtime-benchmarks")]
+// #[cfg(feature = "runtime-benchmarks")] TODO
 // mod benchmarking;
 
 #[frame_support::pallet]
@@ -41,7 +35,7 @@ pub mod pallet {
 
 	type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 
-	#[derive(Encode, Decode, TypeInfo, PalletError)]
+	#[derive(Encode, Decode, TypeInfo, PalletError, Debug, Clone, PartialEq)]
 	pub enum PalletToMigrate {
 		Attestation,
 		Delegation,
@@ -97,21 +91,22 @@ pub mod pallet {
 	{
 		#[pallet::call_index(0)]
 		#[pallet::weight(Weight::from_parts(10_000, 0))]
-		pub fn update_user(origin: OriginFor<T>, users: Vec<T::AccountId>) -> DispatchResultWithPostInfo {
+		pub fn update_users(
+			origin: OriginFor<T>,
+			user: T::AccountId,
+			pallet_to_migrate: PalletToMigrate,
+		) -> DispatchResultWithPostInfo {
 			ensure_signed(origin)?;
-			if users.is_empty() {
-				return Ok(Pays::Yes.into());
-			}
 
-			users.iter().for_each(|user| {
-				attestation::migrations::do_migration::<T>(user.clone());
-				delegation::migrations::do_migration::<T>(user.clone());
-				did::migrations::do_migration::<T>(user.clone());
-				pallet_did_lookup::migrations::do_migration::<T>(user.clone());
-				pallet_web3_names::migrations::do_migration::<T>(user.clone());
-				parachain_staking::migrations::do_migration::<T>(user.clone());
-				public_credentials::migrations::do_migration::<T>(user.clone());
-			});
+			match pallet_to_migrate {
+				PalletToMigrate::Attestation => attestation::migrations::do_migration::<T>(user),
+				PalletToMigrate::Delegation => delegation::migrations::do_migration::<T>(user),
+				PalletToMigrate::Did => did::migrations::do_migration::<T>(user),
+				PalletToMigrate::Lookup => pallet_did_lookup::migrations::do_migration::<T>(user),
+				PalletToMigrate::W3n => pallet_web3_names::migrations::do_migration::<T>(user),
+				PalletToMigrate::Staking => parachain_staking::migrations::do_migration::<T>(user),
+				PalletToMigrate::Credentials => public_credentials::migrations::do_migration::<T>(user),
+			}
 
 			Ok(().into())
 		}

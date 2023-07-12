@@ -89,7 +89,7 @@ impl<DelegationNodeId: Ord, MaxChildren: Get<u32>, DelegationDetails, AccountId,
 			parent: None,
 			children: BoundedBTreeSet::<DelegationNodeId, MaxChildren>::new(),
 			details,
-			deposit: Deposit::<AccountId, Balance> {
+			deposit: Deposit {
 				owner: deposit_owner,
 				amount: deposit_amount,
 				version: Some(1),

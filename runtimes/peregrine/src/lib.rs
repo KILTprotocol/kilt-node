@@ -998,6 +998,7 @@ construct_runtime! {
 		DidLookup: pallet_did_lookup = 67,
 		Web3Names: pallet_web3_names = 68,
 		PublicCredentials: public_credentials = 69,
+		Migration: pallet_migration = 70,
 
 		// Parachains pallets. Start indices at 80 to leave room.
 
