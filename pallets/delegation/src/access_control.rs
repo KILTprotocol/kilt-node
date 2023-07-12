@@ -245,6 +245,7 @@ mod tests {
 			hierarchy_root_id,
 			parent: Some(hierarchy_root_id),
 			deposit: Deposit {
+				version: Some(1),
 				owner: ACCOUNT_00,
 				amount: <Test as Config>::Deposit::get(),
 			},
@@ -300,6 +301,7 @@ mod tests {
 			hierarchy_root_id,
 			parent: Some(hierarchy_root_id),
 			deposit: Deposit {
+				version: Some(1),
 				owner: ACCOUNT_00,
 				amount: <Test as Config>::Deposit::get(),
 			},
@@ -348,6 +350,7 @@ mod tests {
 			hierarchy_root_id,
 			parent: Some(hierarchy_root_id),
 			deposit: Deposit {
+				version: Some(1),
 				owner: ACCOUNT_00,
 				amount: <Test as Config>::Deposit::get(),
 			},
@@ -429,6 +432,7 @@ mod tests {
 			hierarchy_root_id,
 			parent: Some(hierarchy_root_id),
 			deposit: Deposit {
+				version: Some(1),
 				owner: ACCOUNT_00,
 				amount: <Test as Config>::Deposit::get(),
 			},
@@ -476,6 +480,7 @@ mod tests {
 			hierarchy_root_id,
 			parent: Some(hierarchy_root_id),
 			deposit: Deposit {
+				version: Some(1),
 				owner: ACCOUNT_00,
 				amount: <Test as Config>::Deposit::get(),
 			},
@@ -523,6 +528,7 @@ mod tests {
 			hierarchy_root_id,
 			parent: Some(hierarchy_root_id),
 			deposit: Deposit {
+				version: Some(1),
 				owner: ACCOUNT_00,
 				amount: <Test as Config>::Deposit::get(),
 			},
@@ -575,6 +581,7 @@ mod tests {
 			hierarchy_root_id,
 			parent: Some(hierarchy_root_id),
 			deposit: Deposit {
+				version: Some(1),
 				owner: ACCOUNT_00,
 				amount: <Test as Config>::Deposit::get(),
 			},

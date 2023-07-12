@@ -109,6 +109,7 @@ where
 		authentication_key,
 		BlockNumberOf::<T>::default(),
 		Deposit {
+			version: Some(1),
 			owner: deposit_owner.unwrap_or(AccountId32::new([0u8; 32]).into()),
 			amount: Zero::zero(),
 		},

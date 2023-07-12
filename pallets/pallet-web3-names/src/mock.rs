@@ -41,6 +41,7 @@ pub(crate) fn insert_raw_w3n<T: Config>(
 			owner,
 			claimed_at: block_number,
 			deposit: Deposit {
+				version: Some(1),
 				owner: payer,
 				amount: deposit,
 			},

@@ -92,6 +92,7 @@ impl<DelegationNodeId: Ord, MaxChildren: Get<u32>, DelegationDetails, AccountId,
 			deposit: Deposit::<AccountId, Balance> {
 				owner: deposit_owner,
 				amount: deposit_amount,
+				version: Some(1),
 			},
 		}
 	}
@@ -113,6 +114,7 @@ impl<DelegationNodeId: Ord, MaxChildren: Get<u32>, DelegationDetails, AccountId,
 			deposit: Deposit::<AccountId, Balance> {
 				owner: deposit_owner,
 				amount: deposit_amount,
+				version: Some(1),
 			},
 		}
 	}

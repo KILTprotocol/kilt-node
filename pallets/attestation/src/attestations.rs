@@ -72,6 +72,7 @@ mod tests {
 			delegation_id: None,
 			revoked: true,
 			deposit: Deposit {
+				version: Some(1),
 				owner: ACCOUNT_00,
 				amount: ATTESTATION_DEPOSIT,
 			},
@@ -87,6 +88,7 @@ mod tests {
 				authorization_id: None,
 				revoked: true,
 				deposit: Deposit {
+					version: Some(1),
 					owner: ACCOUNT_00,
 					amount: ATTESTATION_DEPOSIT,
 				},

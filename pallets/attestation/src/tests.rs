@@ -514,8 +514,9 @@ fn test_change_deposit_owner() {
 					.expect("Attestation must be retained")
 					.deposit,
 				Deposit {
+					version: Some(1),
 					owner: ACCOUNT_01,
-					amount: <Test as Config>::Deposit::get()
+					amount: <Test as Config>::Deposit::get(),
 				}
 			);
 			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00).is_zero());
@@ -615,8 +616,9 @@ fn test_update_deposit() {
 					.expect("Attestation must be retained")
 					.deposit,
 				Deposit {
+					version: Some(1),
 					owner: ACCOUNT_00,
-					amount: <Test as Config>::Deposit::get()
+					amount: <Test as Config>::Deposit::get(),
 				}
 			);
 			// old deposit was 2x Deposit::get(), new deposit should be the the default

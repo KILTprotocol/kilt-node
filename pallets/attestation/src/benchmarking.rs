@@ -60,6 +60,7 @@ benchmarks! {
 			authorization_id: None,
 			revoked: false,
 			deposit: kilt_support::Deposit {
+				version: Some(1),
 				owner: sender,
 				amount: <T as Config>::Deposit::get(),
 			}
@@ -89,6 +90,7 @@ benchmarks! {
 			authorization_id: None,
 			revoked: true,
 			deposit: kilt_support::Deposit {
+				version: Some(1),
 				owner: sender,
 				amount: <T as Config>::Deposit::get(),
 			}
@@ -160,6 +162,7 @@ benchmarks! {
 			authorization_id: None,
 			revoked: false,
 			deposit: kilt_support::Deposit {
+				version: Some(1),
 				owner: deposit_owner_new,
 				amount: <T as Config>::Deposit::get(),
 			}
@@ -190,6 +193,7 @@ benchmarks! {
 			authorization_id: None,
 			revoked: false,
 			deposit: kilt_support::Deposit {
+				version: Some(1),
 				owner: deposit_owner,
 				amount: <T as Config>::Deposit::get(),
 			}

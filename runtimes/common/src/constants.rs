@@ -134,7 +134,7 @@ pub mod attestation {
 	use super::*;
 
 	/// The size is checked in the runtime by a test.
-	pub const MAX_ATTESTATION_BYTE_LENGTH: u32 = 179;
+	pub const MAX_ATTESTATION_BYTE_LENGTH: u32 = 181;
 	pub const ATTESTATION_DEPOSIT: Balance = deposit(2, MAX_ATTESTATION_BYTE_LENGTH);
 
 	parameter_types! {
@@ -390,7 +390,7 @@ pub mod did_lookup {
 	use super::*;
 
 	/// The size is checked in the runtime by a test.
-	pub const MAX_CONNECTION_BYTE_LENGTH: u32 = 80;
+	pub const MAX_CONNECTION_BYTE_LENGTH: u32 = 82;
 	pub const DID_CONNECTION_DEPOSIT: Balance = deposit(1, MAX_CONNECTION_BYTE_LENGTH);
 
 	parameter_types! {
@@ -433,7 +433,7 @@ pub mod web3_names {
 	pub const MAX_LENGTH: u32 = 32;
 
 	/// The size is checked in the runtime by a test.
-	pub const MAX_NAME_BYTE_LENGTH: u32 = 121;
+	pub const MAX_NAME_BYTE_LENGTH: u32 = 123;
 	pub const DEPOSIT: Balance = deposit(2, MAX_NAME_BYTE_LENGTH);
 
 	parameter_types! {
@@ -476,7 +476,7 @@ pub mod public_credentials {
 	use super::*;
 
 	/// The size is checked in the runtime by a test.
-	pub const MAX_PUBLIC_CREDENTIAL_STORAGE_LENGTH: u32 = 419;
+	pub const MAX_PUBLIC_CREDENTIAL_STORAGE_LENGTH: u32 = 421;
 	// Each credential would have a different deposit, so no multiplier here
 	pub const PUBLIC_CREDENTIAL_DEPOSIT: Balance = deposit(1, MAX_PUBLIC_CREDENTIAL_STORAGE_LENGTH);
 

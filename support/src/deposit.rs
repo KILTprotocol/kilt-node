@@ -30,6 +30,7 @@ use sp_runtime::DispatchError;
 pub struct Deposit<Account, Balance> {
 	pub owner: Account,
 	pub amount: Balance,
+	pub version: Option<u8>,
 }
 
 pub(crate) fn reserve_deposit<Account, Currency: Mutate<Account>>(
@@ -39,6 +40,7 @@ pub(crate) fn reserve_deposit<Account, Currency: Mutate<Account>>(
 ) -> Result<Deposit<Account, Currency::Balance>, DispatchError> {
 	Currency::hold(reason, &account, deposit_amount)?;
 	Ok(Deposit {
+		version: Some(1),
 		owner: account,
 		amount: deposit_amount,
 	})

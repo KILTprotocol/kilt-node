@@ -82,6 +82,7 @@ where
 		deposit: Deposit::<AccountIdOf<T>, BalanceOf<T>> {
 			owner: payer,
 			amount: deposit,
+			version: Some(1),
 		},
 	}
 }

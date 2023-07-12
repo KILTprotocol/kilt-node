@@ -3387,6 +3387,7 @@ fn test_update_deposit() {
 					.expect("DID should be present on chain.")
 					.deposit,
 				kilt_support::Deposit {
+					version: Some(1),
 					owner: alice_did,
 					amount: <Test as did::Config>::BaseDeposit::get(),
 				}

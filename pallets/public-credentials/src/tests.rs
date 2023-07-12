@@ -781,6 +781,7 @@ fn test_change_deposit_owner() {
 		attester.clone(),
 		Some(ctype_hash_1),
 		Some(Deposit {
+			version: Some(1),
 			owner: ACCOUNT_00,
 			amount: deposit,
 		}),
@@ -848,6 +849,7 @@ fn test_change_deposit_owner_unauthorized() {
 		attester.clone(),
 		Some(ctype_hash_1),
 		Some(Deposit {
+			version: Some(1),
 			owner: ACCOUNT_00,
 			amount: deposit,
 		}),
@@ -883,6 +885,7 @@ fn test_update_deposit() {
 		attester.clone(),
 		Some(ctype_hash_1),
 		Some(Deposit {
+			version: Some(1),
 			owner: ACCOUNT_00,
 			amount: deposit_old,
 		}),

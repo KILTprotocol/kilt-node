@@ -58,6 +58,7 @@ fn claiming_successful() {
 					owner: DID_00,
 					claimed_at: 0,
 					deposit: Deposit {
+						version: Some(1),
 						owner: ACCOUNT_00,
 						amount: Web3NameDeposit::get(),
 					},
@@ -384,6 +385,7 @@ fn test_change_deposit_owner() {
 					.expect("w3n should be retained")
 					.deposit,
 				Deposit {
+					version: Some(1),
 					owner: ACCOUNT_01,
 					amount: <Test as Config>::Deposit::get()
 				}
@@ -453,6 +455,7 @@ fn test_update_deposit() {
 					.expect("w3n should be retained")
 					.deposit,
 				Deposit {
+					version: Some(1),
 					owner: ACCOUNT_00,
 					amount: <Test as Config>::Deposit::get()
 				}

@@ -66,6 +66,7 @@ pub(crate) fn generate_base_credential_entry<T: Config>(
 		deposit: deposit.unwrap_or(Deposit::<T::AccountId, BalanceOf<T>> {
 			owner: payer,
 			amount: <T as Config>::Deposit::get(),
+			version: Some(1),
 		}),
 		authorization_id: None,
 	}

@@ -169,12 +169,13 @@ benchmarks! {
 	verify {
 		let web3_name = Web3NameOf::<T>::try_from(web3_name_input.to_vec()).unwrap();
 		assert_eq!(Owner::<T>::get(&web3_name).expect("w3n should exists").deposit, Deposit {
+			version: Some(1),
 			owner: deposit_owner_new,
 			amount: <T as Config>::Deposit::get(),
 		});
 	}
 
-	update_deposit {
+update_deposit {
 		let deposit_owner: AccountIdOf<T> = account("caller", 0, CALLER_SEED);
 		let owner: Web3NameOwnerOf<T> = account("owner", 0, OWNER_SEED);
 		let web3_name_input: BoundedVec<u8, T::MaxNameLength> = BoundedVec::try_from(
@@ -195,6 +196,7 @@ benchmarks! {
 	}: _(origin, web3_name_input)
 	verify {
 		assert_eq!(Owner::<T>::get(&web3_name).expect("w3n should exists").deposit, Deposit {
+			version: Some(1),
 			owner: deposit_owner,
 			amount: <T as Config>::Deposit::get(),
 		});

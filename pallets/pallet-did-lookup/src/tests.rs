@@ -50,6 +50,7 @@ fn test_add_association_sender() {
 				Some(ConnectionRecord {
 					did: DID_00,
 					deposit: Deposit {
+						version: Some(1),
 						owner: ACCOUNT_00,
 						amount: 10,
 					}
@@ -68,6 +69,7 @@ fn test_add_association_sender() {
 				Some(ConnectionRecord {
 					did: DID_01,
 					deposit: Deposit {
+						version: Some(1),
 						owner: ACCOUNT_00,
 						amount: 10,
 					}
@@ -112,6 +114,7 @@ fn test_add_association_account() {
 				Some(ConnectionRecord {
 					did: DID_00,
 					deposit: Deposit {
+						version: Some(1),
 						owner: ACCOUNT_00,
 						amount: 10,
 					}
@@ -140,6 +143,7 @@ fn test_add_association_account() {
 				Some(ConnectionRecord {
 					did: DID_01,
 					deposit: Deposit {
+						version: Some(1),
 						owner: ACCOUNT_00,
 						amount: 10,
 					}
@@ -168,6 +172,7 @@ fn test_add_association_account() {
 				Some(ConnectionRecord {
 					did: DID_01,
 					deposit: Deposit {
+						version: Some(1),
 						owner: ACCOUNT_01,
 						amount: 10,
 					}
@@ -216,6 +221,7 @@ fn test_add_eth_association() {
 				Some(ConnectionRecord {
 					did: DID_00,
 					deposit: Deposit {
+						version: Some(1),
 						owner: ACCOUNT_00,
 						amount: 10,
 					}

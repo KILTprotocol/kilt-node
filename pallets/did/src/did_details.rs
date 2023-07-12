@@ -350,6 +350,7 @@ impl<T: Config> DidDetails<T> {
 				let deposit_to_release = self.deposit.amount.saturating_sub(new_required_deposit);
 
 				DidDepositCollector::<T>::free_deposit(Deposit {
+					version: Some(1),
 					owner: self.deposit.owner.clone(),
 					amount: deposit_to_release,
 				})?;
@@ -376,6 +377,7 @@ impl<T: Config> DidDetails<T> {
 		let current_block_number = frame_system::Pallet::<T>::block_number();
 
 		let deposit = Deposit {
+			version: Some(1),
 			owner: details.clone().submitter,
 			// set deposit for the moment to zero. We will update it, when all keys are set.
 			amount: Zero::zero(),

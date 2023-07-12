@@ -1157,13 +1157,14 @@ benchmarks! {
 		assert_eq!(
 			Did::<T>::get(&did_subject).expect("DID entry should be retained").deposit,
 			Deposit {
+				version: Some(1),
 				owner: did_account,
 				amount: <T as Config>::BaseDeposit::get()
 			},
 		)
 	}
 
-	update_deposit {
+update_deposit {
 		let did_public_auth_key = get_ed25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(did_public_auth_key).into_account().into();
 		let did_account: AccountIdOf<T> = MultiSigner::from(did_public_auth_key).into_account().into();
@@ -1183,6 +1184,7 @@ benchmarks! {
 		assert_eq!(
 			Did::<T>::get(&did_subject).expect("DID entry should be retained").deposit,
 			Deposit {
+				version: Some(1),
 				owner: did_account,
 				amount: <T as Config>::BaseDeposit::get()
 			},
