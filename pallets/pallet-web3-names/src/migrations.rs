@@ -59,3 +59,64 @@ where
 			);
 		});
 }
+
+#[cfg(test)]
+pub mod test {
+	use frame_support::traits::{fungible::InspectHold, ReservableCurrency};
+	use sp_runtime::traits::Zero;
+
+	use crate::{migrations::do_migration, mock::*, AccountIdOf, Config, HoldReason, Owner};
+
+	#[test]
+	fn test_balance_migration_w3n() {
+		let web3_name_00 = get_web3_name(WEB3_NAME_00_INPUT);
+		ExtBuilder::default()
+			.with_balances(vec![(ACCOUNT_00, Web3NameDeposit::get() * 2)])
+			.with_web3_names(vec![(DID_00, web3_name_00.clone(), ACCOUNT_00)])
+			.build_and_execute_with_sanity_tests(true, || {
+				let delegation_pre_migration = Owner::<Test>::get(web3_name_00.clone());
+
+				let balance_on_reserve_pre_migration = <<Test as Config>::Currency as ReservableCurrency<
+					AccountIdOf<Test>,
+				>>::reserved_balance(&ACCOUNT_00);
+
+				//Delegation should be in storage
+				assert!(delegation_pre_migration.is_some());
+
+				//before the migration the version should be none.
+				assert!(delegation_pre_migration.clone().unwrap().deposit.version.is_none());
+
+				// before the migration the deposit should be reserved.
+				assert_eq!(
+					balance_on_reserve_pre_migration,
+					delegation_pre_migration.unwrap().deposit.amount
+				);
+
+				do_migration::<Test>(ACCOUNT_00);
+
+				let delegation_post_migration = Owner::<Test>::get(web3_name_00);
+
+				let balance_on_reserve_post_migration = <<Test as Config>::Currency as ReservableCurrency<
+					AccountIdOf<Test>,
+				>>::reserved_balance(&ACCOUNT_00);
+
+				let balance_on_hold = <<Test as Config>::Currency as InspectHold<AccountIdOf<Test>>>::balance_on_hold(
+					&HoldReason::Deposit.into(),
+					&ACCOUNT_00,
+				);
+
+				//Delegation should be still in the storage
+				assert!(delegation_post_migration.is_some());
+
+				// Since reserved balance count to hold balance, it should not be zero
+				assert!(!balance_on_reserve_post_migration.is_zero());
+
+				// ... and be as much as the hold balance
+				assert_eq!(balance_on_reserve_post_migration, balance_on_hold);
+
+				//... and the version should be 1.
+				assert!(delegation_post_migration.clone().unwrap().deposit.version.is_some());
+				assert!(delegation_post_migration.unwrap().deposit.version.unwrap() == 1);
+			})
+	}
+}
