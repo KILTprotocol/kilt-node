@@ -72,7 +72,7 @@ pub mod test {
 	use crate::{migrations::do_migration, mock::*, AccountIdOf, Config, CredentialIdOf, Credentials, HoldReason};
 
 	#[test]
-	fn test_balance_migration_w3n() {
+	fn test_balance_migration_public_credential() {
 		let attester = sr25519_did_from_seed(&ALICE_SEED);
 
 		let ctype_hash_1 = get_ctype_hash::<Test>(true);
