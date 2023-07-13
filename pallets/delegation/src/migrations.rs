@@ -59,3 +59,81 @@ where
 			);
 		});
 }
+
+#[cfg(test)]
+pub mod test {
+	use frame_support::traits::{fungible::InspectHold, ReservableCurrency};
+	use sp_runtime::traits::Zero;
+
+	use crate::{migrations::do_migration, mock::*, AccountIdOf, Config, DelegationNodes, HoldReason};
+
+	#[test]
+	fn test_balance_migration_delegation() {
+		let user_1 = ed25519_did_from_seed(&ALICE_SEED);
+		let user_2 = ed25519_did_from_seed(&BOB_SEED);
+
+		let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
+		let hierarchy_details = generate_base_delegation_hierarchy_details::<Test>();
+
+		let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
+		let mut delegation_details =
+			generate_base_delegation_node::<Test>(hierarchy_root_id, user_2, Some(hierarchy_root_id), ACCOUNT_01);
+		delegation_details.deposit.version = None;
+
+		// Root -> Parent -> Delegation
+		ExtBuilder::default()
+			.with_ctypes(vec![(hierarchy_details.ctype_hash, user_1.clone())])
+			.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, user_1, ACCOUNT_00)])
+			.with_delegations(vec![(delegation_id, delegation_details)])
+			.with_balances(vec![
+				(ACCOUNT_00, <Test as Config>::Deposit::get()),
+				(ACCOUNT_01, <Test as Config>::Deposit::get()),
+				(ACCOUNT_02, <Test as Config>::Deposit::get()),
+			])
+			.build_and_execute_with_sanity_tests(true, || {
+				let delegation_pre_migration = DelegationNodes::<Test>::get(delegation_id);
+
+				let balance_on_reserve_pre_migration = <<Test as Config>::Currency as ReservableCurrency<
+					AccountIdOf<Test>,
+				>>::reserved_balance(&ACCOUNT_01);
+
+				//Delegation should be in storage
+				assert!(delegation_pre_migration.is_some());
+
+				//before the migration the version should be none.
+				assert!(delegation_pre_migration.clone().unwrap().deposit.version.is_none());
+
+				// before the migration the deposit should be reserved.
+				assert_eq!(
+					balance_on_reserve_pre_migration,
+					delegation_pre_migration.unwrap().deposit.amount
+				);
+
+				do_migration::<Test>(ACCOUNT_01);
+
+				let delegation_post_migration = DelegationNodes::<Test>::get(delegation_id);
+
+				let balance_on_reserve_post_migration = <<Test as Config>::Currency as ReservableCurrency<
+					AccountIdOf<Test>,
+				>>::reserved_balance(&ACCOUNT_01);
+
+				let balance_on_hold = <<Test as Config>::Currency as InspectHold<AccountIdOf<Test>>>::balance_on_hold(
+					&HoldReason::Deposit.into(),
+					&ACCOUNT_01,
+				);
+
+				//Delegation should be still in the storage
+				assert!(delegation_post_migration.is_some());
+
+				// Since reserved balance count to hold balance, it should not be zero
+				assert!(!balance_on_reserve_post_migration.is_zero());
+
+				// ... and be as much as the hold balance
+				assert_eq!(balance_on_reserve_post_migration, balance_on_hold);
+
+				//... and the version should be 1.
+				assert!(delegation_post_migration.clone().unwrap().deposit.version.is_some());
+				assert!(delegation_post_migration.unwrap().deposit.version.unwrap() == 1);
+			});
+	}
+}

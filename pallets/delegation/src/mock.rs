@@ -16,21 +16,21 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use ctype::{mock as ctype_mock, CtypeHashOf};
 use frame_support::{
 	storage::bounded_btree_set::BoundedBTreeSet,
 	traits::{
 		fungible::{Inspect, Mutate},
-		Get,
+		Get, ReservableCurrency,
 	},
 };
-use sp_core::H256;
-
-use ctype::{mock as ctype_mock, CtypeHashOf};
 use kilt_support::Deposit;
+use sp_core::H256;
+use sp_runtime::{DispatchResult, SaturatedConversion};
 
 use crate::{
 	self as delegation, AccountIdOf, Config, CurrencyOf, DelegationDetails, DelegationHierarchyDetails, DelegationNode,
-	DelegationNodeOf, DelegatorIdOf, Permissions,
+	DelegationNodeIdOf, DelegationNodeOf, DelegationNodes, DelegatorIdOf, Permissions,
 };
 
 #[cfg(test)]
@@ -71,12 +71,89 @@ pub type DelegationHierarchyInitialization<T> = Vec<(
 	AccountIdOf<T>,
 )>;
 
+fn create_and_store_new_hierarchy<T>(
+	root_id: DelegationNodeIdOf<T>,
+	hierarchy_details: DelegationHierarchyDetails<CtypeHashOf<T>>,
+	hierarchy_owner: DelegatorIdOf<T>,
+	deposit_owner: AccountIdOf<T>,
+	reserve_balance: bool,
+) -> DispatchResult
+where
+	T: Config,
+	<T as Config>::Currency: ReservableCurrency<AccountIdOf<T>>,
+{
+	if !reserve_balance {
+		delegation::Pallet::<T>::create_and_store_new_hierarchy(
+			root_id,
+			hierarchy_details,
+			hierarchy_owner,
+			deposit_owner,
+		)
+	} else {
+		let root_node = DelegationNode::new_root_node(
+			root_id,
+			DelegationDetails::default_with_owner(hierarchy_owner),
+			deposit_owner.clone(),
+			<T as Config>::Deposit::get(),
+		);
+
+		crate::DelegationNodes::<T>::insert(root_id, root_node);
+		crate::DelegationHierarchies::<T>::insert(root_id, hierarchy_details);
+
+		<<T as Config>::Currency as ReservableCurrency<AccountIdOf<T>>>::reserve(
+			&deposit_owner,
+			<T as Config>::Deposit::get()
+				.saturated_into::<Balance>()
+				.saturated_into(),
+		)
+	}
+}
+
+fn create_and_store_new_delegation<T>(
+	delegation_id: DelegationNodeIdOf<T>,
+	delegation_node: DelegationNodeOf<T>,
+	parent_id: DelegationNodeIdOf<T>,
+	mut parent_node: DelegationNodeOf<T>,
+	deposit_owner: AccountIdOf<T>,
+	reserve_balance: bool,
+) -> DispatchResult
+where
+	T: Config,
+	<T as Config>::Currency: ReservableCurrency<AccountIdOf<T>>,
+{
+	if !reserve_balance {
+		delegation::Pallet::<T>::store_delegation_under_parent(
+			delegation_id,
+			delegation_node,
+			parent_id,
+			parent_node,
+			deposit_owner,
+		)
+	} else {
+		parent_node
+			.try_add_child(delegation_id)
+			.map_err(|_| crate::Error::<T>::MaxChildrenExceeded)?;
+
+		DelegationNodes::<T>::insert(delegation_id, delegation_node);
+		DelegationNodes::<T>::insert(parent_id, parent_node);
+
+		<<T as Config>::Currency as ReservableCurrency<AccountIdOf<T>>>::reserve(
+			&deposit_owner,
+			<T as Config>::Deposit::get()
+				.saturated_into::<Balance>()
+				.saturated_into(),
+		)
+	}
+}
+
 pub fn initialize_pallet<T>(
 	delegations: Vec<(T::DelegationNodeId, DelegationNodeOf<T>)>,
 	delegation_hierarchies: DelegationHierarchyInitialization<T>,
+	reserve_balance: bool,
 ) where
 	T: Config,
 	<T as Config>::Currency: Mutate<AccountIdOf<T>>,
+	<T as Config>::Currency: ReservableCurrency<AccountIdOf<T>>,
 {
 	for (root_id, details, hierarchy_owner, deposit_owner) in delegation_hierarchies {
 		// manually mint to enable deposit reserving
@@ -85,13 +162,8 @@ pub fn initialize_pallet<T>(
 		CurrencyOf::<T>::set_balance(&deposit_owner, balance + <T as Config>::Deposit::get());
 
 		// reserve deposit and store
-		delegation::Pallet::<T>::create_and_store_new_hierarchy(
-			root_id,
-			details,
-			hierarchy_owner,
-			deposit_owner.clone(),
-		)
-		.expect("Each deposit owner should have sufficient balance to create a hierarchy");
+		create_and_store_new_hierarchy::<T>(root_id, details, hierarchy_owner, deposit_owner, reserve_balance)
+			.expect("Should not exceed max children");
 	}
 
 	for del in delegations {
@@ -107,12 +179,13 @@ pub fn initialize_pallet<T>(
 		CurrencyOf::<T>::set_balance(&deposit_owner, balance + <T as Config>::Deposit::get());
 
 		// reserve deposit and store
-		delegation::Pallet::<T>::store_delegation_under_parent(
+		create_and_store_new_delegation::<T>(
 			del.0,
 			del.1.clone(),
 			parent_node_id,
 			parent_node.clone(),
-			deposit_owner,
+			deposit_owner.clone(),
+			reserve_balance,
 		)
 		.expect("Should not exceed max children");
 	}
@@ -523,7 +596,7 @@ pub(crate) mod runtime {
 					);
 				}
 
-				initialize_pallet::<Test>(self.delegations, self.delegation_hierarchies);
+				initialize_pallet::<Test>(self.delegations, self.delegation_hierarchies, reserve_balance);
 
 				for (claim_hash, details) in self.attestations {
 					insert_attestation::<Test>(claim_hash, details, reserve_balance)
@@ -533,8 +606,8 @@ pub(crate) mod runtime {
 			ext
 		}
 
-		pub fn build_and_execute_with_sanity_tests(self, test: impl FnOnce()) {
-			self.build(true).execute_with(|| {
+		pub fn build_and_execute_with_sanity_tests(self, reserve_balance: bool, test: impl FnOnce()) {
+			self.build(reserve_balance).execute_with(|| {
 				test();
 				crate::try_state::do_try_state::<Test>().expect("Sanity test for delegation failed.");
 			})
