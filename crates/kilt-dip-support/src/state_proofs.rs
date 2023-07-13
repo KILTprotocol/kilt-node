@@ -1,142 +1,85 @@
-use pallet_dip_consumer::{identity::IdentityDetails, traits::IdentityProofVerifier};
-use parity_scale_codec::{Codec, Decode, HasCompact};
-use sp_core::{Get, Hasher, U256};
+// KILT Blockchain – https://botlabs.org
+// Copyright (C) 2019-2023 BOTLabs GmbH
+
+// The KILT Blockchain is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// The KILT Blockchain is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+// If you feel like getting in touch with us, you can do so at info@botlabs.org
+
+use parity_scale_codec::{Decode, HasCompact};
+use sp_core::U256;
 use sp_runtime::{generic::Header, traits::Hash};
-use sp_state_machine::{Backend, TrieBackend, TrieBackendBuilder};
-use sp_std::{collections::btree_map::BTreeMap, marker::PhantomData, vec::Vec};
-use sp_trie::{HashDBT, MemoryDB, StorageProof};
+use sp_std::{marker::PhantomData, vec::Vec};
+use sp_trie::StorageProof;
+
+use substrate_no_std_port::read_proof_check;
 
 // Ported from https://github.com/paritytech/substrate/blob/b27c470eaff379f512d1dec052aff5d551ed3b03/primitives/state-machine/src/lib.rs#L1076
-fn read_proof_check<H, I>(root: H::Out, proof: StorageProof, keys: I) -> Result<BTreeMap<Vec<u8>, Option<Vec<u8>>>, ()>
-where
-	H: Hasher + 'static,
-	H::Out: Ord + Codec,
-	I: IntoIterator,
-	I::Item: AsRef<[u8]>,
-{
-	let proving_backend = create_proof_check_backend::<H>(root, proof)?;
-	let mut result = BTreeMap::new();
-	for key in keys.into_iter() {
-		let value = read_proof_check_on_proving_backend(&proving_backend, key.as_ref())?;
-		result.insert(key.as_ref().to_vec(), value);
+// Needs to be replaced with its runtime-friendly version when available, or be
+// kept up-to-date with upstream.
+mod substrate_no_std_port {
+	use super::*;
+
+	use hash_db::EMPTY_PREFIX;
+	use parity_scale_codec::Codec;
+	use sp_core::Hasher;
+	use sp_state_machine::{Backend, TrieBackend, TrieBackendBuilder};
+	use sp_std::collections::btree_map::BTreeMap;
+	use sp_trie::{HashDBT, MemoryDB};
+
+	pub(super) fn read_proof_check<H, I>(
+		root: H::Out,
+		proof: StorageProof,
+		keys: I,
+	) -> Result<BTreeMap<Vec<u8>, Option<Vec<u8>>>, ()>
+	where
+		H: Hasher + 'static,
+		H::Out: Ord + Codec,
+		I: IntoIterator,
+		I::Item: AsRef<[u8]>,
+	{
+		let proving_backend = create_proof_check_backend::<H>(root, proof)?;
+		let mut result = BTreeMap::new();
+		for key in keys.into_iter() {
+			let value = read_proof_check_on_proving_backend(&proving_backend, key.as_ref())?;
+			result.insert(key.as_ref().to_vec(), value);
+		}
+		Ok(result)
 	}
-	Ok(result)
-}
 
-fn read_proof_check_on_proving_backend<H>(
-	proving_backend: &TrieBackend<MemoryDB<H>, H>,
-	key: &[u8],
-) -> Result<Option<Vec<u8>>, ()>
-where
-	H: Hasher,
-	H::Out: Ord + Codec,
-{
-	proving_backend.storage(key).map_err(|_| ())
-}
-
-fn create_proof_check_backend<H>(root: H::Out, proof: StorageProof) -> Result<TrieBackend<MemoryDB<H>, H>, ()>
-where
-	H: Hasher,
-	H::Out: Codec,
-{
-	let db = proof.into_memory_db();
-
-	if db.contains(&root, (&[], None)) {
-		Ok(TrieBackendBuilder::new(db, root).build())
-	} else {
-		Err(())
+	fn read_proof_check_on_proving_backend<H>(
+		proving_backend: &TrieBackend<MemoryDB<H>, H>,
+		key: &[u8],
+	) -> Result<Option<Vec<u8>>, ()>
+	where
+		H: Hasher,
+		H::Out: Ord + Codec,
+	{
+		proving_backend.storage(key).map_err(|_| ())
 	}
-}
 
-#[derive(Clone)]
-pub struct DipProof<InnerProof> {
-	para_root_proof: Vec<Vec<u8>>,
-	dip_commitment_proof: Vec<Vec<u8>>,
-	dip_proof: InnerProof,
-}
+	fn create_proof_check_backend<H>(root: H::Out, proof: StorageProof) -> Result<TrieBackend<MemoryDB<H>, H>, ()>
+	where
+		H: Hasher,
+		H::Out: Codec,
+	{
+		let db = proof.into_memory_db();
 
-pub struct StateProofDipVerifier<
-	ProviderParaId,
-	RelayInfoProvider,
-	ProviderParaInfoProvider,
-	DipVerifier,
-	LocalIdentityInfo,
->(
-	PhantomData<(
-		ProviderParaId,
-		RelayInfoProvider,
-		ProviderParaInfoProvider,
-		DipVerifier,
-		LocalIdentityInfo,
-	)>,
-);
-
-impl<Call, Subject, ProviderParaId, RelayInfoProvider, ProviderParaInfoProvider, DipVerifier, LocalIdentityInfo>
-	IdentityProofVerifier<Call, Subject>
-	for StateProofDipVerifier<ProviderParaId, RelayInfoProvider, ProviderParaInfoProvider, DipVerifier, LocalIdentityInfo>
-where
-	ProviderParaId: Get<RelayInfoProvider::ParaId>,
-
-	RelayInfoProvider: relay_chain::RelayChainStateInfoProvider,
-	RelayInfoProvider::Hasher: 'static,
-	<RelayInfoProvider::Hasher as Hash>::Output: Ord,
-	RelayInfoProvider::BlockNumber: Copy + Into<U256> + TryFrom<U256> + HasCompact,
-	RelayInfoProvider::Key: AsRef<[u8]>,
-
-	ProviderParaInfoProvider: parachain::ParachainStateInfoProvider<Identifier = Subject>,
-	ProviderParaInfoProvider::Hasher: 'static,
-	<ProviderParaInfoProvider::Hasher as Hash>::Output: Ord + PartialEq<<RelayInfoProvider::Hasher as Hash>::Output>,
-	ProviderParaInfoProvider::Commitment: Decode,
-	ProviderParaInfoProvider::Key: AsRef<[u8]>,
-
-	DipVerifier: IdentityProofVerifier<
-		Call,
-		Subject,
-		IdentityDetails = IdentityDetails<ProviderParaInfoProvider::Commitment, Option<LocalIdentityInfo>>,
-	>,
-
-	LocalIdentityInfo: Clone,
-{
-	type Error = ();
-	type IdentityDetails = LocalIdentityInfo;
-	type Proof = DipProof<DipVerifier::Proof>;
-	type Submitter = DipVerifier::Submitter;
-	type VerificationResult = DipVerifier::VerificationResult;
-
-	fn verify_proof_for_call_against_details(
-		call: &Call,
-		subject: &Subject,
-		submitter: &Self::Submitter,
-		identity_details: &mut Option<Self::IdentityDetails>,
-		proof: &Self::Proof,
-	) -> Result<Self::VerificationResult, Self::Error> {
-		let provider_parachain_header =
-			relay_chain::ParachainHeadProofVerifier::<RelayInfoProvider>::verify_proof_for_parachain(
-				&ProviderParaId::get(),
-				proof.para_root_proof.clone(),
-			)?;
-		let provider_parachain_root_state = provider_parachain_header.state_root;
-		debug_assert!(
-			ProviderParaInfoProvider::state_root() == provider_parachain_root_state,
-			"Provided parachain state root and calculated parachain state root do not match."
-		);
-		let subject_identity_commitment =
-			parachain::DipCommitmentValueProofVerifier::<ProviderParaInfoProvider>::verify_proof_for_identifier(
-				subject,
-				proof.dip_commitment_proof.clone(),
-			)?;
-		let mapped_identity_details = IdentityDetails {
-			digest: subject_identity_commitment,
-			details: identity_details.clone(),
-		};
-		DipVerifier::verify_proof_for_call_against_details(
-			call,
-			subject,
-			submitter,
-			&mut Some(mapped_identity_details),
-			&proof.dip_proof,
-		)
-		.map_err(|_| ())
+		if db.contains(&root, EMPTY_PREFIX) {
+			Ok(TrieBackendBuilder::new(db, root).build())
+		} else {
+			Err(())
+		}
 	}
 }
 
@@ -163,6 +106,7 @@ pub mod relay_chain {
 		RelayInfoProvider::BlockNumber: Copy + Into<U256> + TryFrom<U256> + HasCompact,
 		RelayInfoProvider::Key: AsRef<[u8]>,
 	{
+		#[allow(clippy::result_unit_err)]
 		pub fn verify_proof_for_parachain(
 			para_id: &RelayInfoProvider::ParaId,
 			proof: impl IntoIterator<Item = Vec<u8>>,
@@ -273,6 +217,7 @@ pub mod parachain {
 		ParaInfoProvider::Commitment: Decode,
 		ParaInfoProvider::Key: AsRef<[u8]>,
 	{
+		#[allow(clippy::result_unit_err)]
 		pub fn verify_proof_for_identifier(
 			identifier: &ParaInfoProvider::Identifier,
 			proof: impl IntoIterator<Item = Vec<u8>>,

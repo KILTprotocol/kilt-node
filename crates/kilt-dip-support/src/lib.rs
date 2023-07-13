@@ -20,15 +20,109 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use pallet_dip_consumer::traits::IdentityProofVerifier;
+use parity_scale_codec::{Decode, HasCompact};
+use sp_core::{Get, U256};
+use sp_runtime::traits::Hash;
 use sp_std::marker::PhantomData;
+
+use pallet_dip_consumer::{identity::IdentityDetails, traits::IdentityProofVerifier};
 
 use crate::did::MerkleLeavesAndDidSignature;
 
 pub mod did;
 pub mod merkle;
-pub mod new_stuff;
+pub mod state_proofs;
 pub mod traits;
+
+#[derive(Clone)]
+pub struct DipSiblingParachainStateProof<InnerProof> {
+	para_root_proof: Vec<Vec<u8>>,
+	dip_commitment_proof: Vec<Vec<u8>>,
+	dip_proof: InnerProof,
+}
+
+pub struct StateProofDipVerifier<
+	ProviderParaId,
+	RelayInfoProvider,
+	ProviderParaInfoProvider,
+	DipVerifier,
+	LocalIdentityInfo,
+>(
+	PhantomData<(
+		ProviderParaId,
+		RelayInfoProvider,
+		ProviderParaInfoProvider,
+		DipVerifier,
+		LocalIdentityInfo,
+	)>,
+);
+
+impl<Call, Subject, ProviderParaId, RelayInfoProvider, ProviderParaInfoProvider, DipVerifier, LocalIdentityInfo>
+	IdentityProofVerifier<Call, Subject>
+	for StateProofDipVerifier<ProviderParaId, RelayInfoProvider, ProviderParaInfoProvider, DipVerifier, LocalIdentityInfo>
+where
+	ProviderParaId: Get<RelayInfoProvider::ParaId>,
+
+	RelayInfoProvider: state_proofs::relay_chain::RelayChainStateInfoProvider,
+	RelayInfoProvider::Hasher: 'static,
+	<RelayInfoProvider::Hasher as Hash>::Output: Ord,
+	RelayInfoProvider::BlockNumber: Copy + Into<U256> + TryFrom<U256> + HasCompact,
+	RelayInfoProvider::Key: AsRef<[u8]>,
+
+	ProviderParaInfoProvider: state_proofs::parachain::ParachainStateInfoProvider<Identifier = Subject>,
+	ProviderParaInfoProvider::Hasher: 'static,
+	<ProviderParaInfoProvider::Hasher as Hash>::Output: Ord + PartialEq<<RelayInfoProvider::Hasher as Hash>::Output>,
+	ProviderParaInfoProvider::Commitment: Decode,
+	ProviderParaInfoProvider::Key: AsRef<[u8]>,
+
+	DipVerifier: IdentityProofVerifier<
+		Call,
+		Subject,
+		IdentityDetails = IdentityDetails<ProviderParaInfoProvider::Commitment, Option<LocalIdentityInfo>>,
+	>,
+
+	LocalIdentityInfo: Clone,
+{
+	type Error = ();
+	type IdentityDetails = LocalIdentityInfo;
+	type Proof = DipSiblingParachainStateProof<DipVerifier::Proof>;
+	type Submitter = DipVerifier::Submitter;
+	type VerificationResult = DipVerifier::VerificationResult;
+
+	fn verify_proof_for_call_against_details(
+		call: &Call,
+		subject: &Subject,
+		submitter: &Self::Submitter,
+		identity_details: &mut Option<Self::IdentityDetails>,
+		proof: &Self::Proof,
+	) -> Result<Self::VerificationResult, Self::Error> {
+		let provider_parachain_header =
+			state_proofs::relay_chain::ParachainHeadProofVerifier::<RelayInfoProvider>::verify_proof_for_parachain(
+				&ProviderParaId::get(),
+				proof.para_root_proof.clone(),
+			)?;
+		let provider_parachain_root_state = provider_parachain_header.state_root;
+		debug_assert!(
+			ProviderParaInfoProvider::state_root() == provider_parachain_root_state,
+			"Provided parachain state root and calculated parachain state root do not match."
+		);
+		let subject_identity_commitment = state_proofs::parachain::DipCommitmentValueProofVerifier::<
+			ProviderParaInfoProvider,
+		>::verify_proof_for_identifier(subject, proof.dip_commitment_proof.clone())?;
+		let mapped_identity_details = IdentityDetails {
+			digest: subject_identity_commitment,
+			details: identity_details.clone(),
+		};
+		DipVerifier::verify_proof_for_call_against_details(
+			call,
+			subject,
+			submitter,
+			&mut Some(mapped_identity_details),
+			&proof.dip_proof,
+		)
+		.map_err(|_| ())
+	}
+}
 
 /// A type that chains a Merkle proof verification with a DID signature
 /// verification. The required input of this type is a tuple (A, B) where A is
