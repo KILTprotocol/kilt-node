@@ -502,7 +502,7 @@ pub(crate) mod runtime {
 			self
 		}
 
-		pub fn build(self) -> sp_io::TestExternalities {
+		pub fn build(self, reserve_balance: bool) -> sp_io::TestExternalities {
 			let mut storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
 			pallet_balances::GenesisConfig::<Test> {
 				balances: self.balances.clone(),
@@ -526,7 +526,7 @@ pub(crate) mod runtime {
 				initialize_pallet::<Test>(self.delegations, self.delegation_hierarchies);
 
 				for (claim_hash, details) in self.attestations {
-					insert_attestation::<Test>(claim_hash, details)
+					insert_attestation::<Test>(claim_hash, details, reserve_balance)
 				}
 			});
 
@@ -534,7 +534,7 @@ pub(crate) mod runtime {
 		}
 
 		pub fn build_and_execute_with_sanity_tests(self, test: impl FnOnce()) {
-			self.build().execute_with(|| {
+			self.build(true).execute_with(|| {
 				test();
 				crate::try_state::do_try_state::<Test>().expect("Sanity test for delegation failed.");
 			})

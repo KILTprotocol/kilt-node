@@ -59,3 +59,71 @@ where
 			);
 		});
 }
+
+#[cfg(test)]
+pub mod test {
+	use ctype::mock::get_ctype_hash;
+	use frame_support::traits::{fungible::InspectHold, ReservableCurrency};
+	use sp_runtime::traits::Zero;
+
+	use crate::{migrations::do_migration, mock::*, AccountIdOf, Attestations, AttesterOf, Config, HoldReason};
+
+	#[test]
+	fn test_balance_migration_attestation() {
+		let attester: AttesterOf<Test> = sr25519_did_from_seed(&ALICE_SEED);
+		let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
+		let ctype_hash = get_ctype_hash::<Test>(true);
+		let mut attestations = generate_base_attestation::<Test>(attester.clone(), ACCOUNT_00);
+		attestations.deposit.version = None;
+
+		ExtBuilder::default()
+			.with_ctypes(vec![(ctype_hash, attester)])
+			.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
+			.with_attestations(vec![(claim_hash, attestations)])
+			.build_and_execute_with_sanity_tests(true, || {
+				let attestation_pre_migration = Attestations::<Test>::get(claim_hash);
+
+				let balance_on_reserve_pre_migration = <<Test as Config>::Currency as ReservableCurrency<
+					AccountIdOf<Test>,
+				>>::reserved_balance(&ACCOUNT_00);
+
+				//attestations should be in storage
+				assert!(attestation_pre_migration.is_some());
+
+				//before the migration the version should be none.
+				assert!(attestation_pre_migration.clone().unwrap().deposit.version.is_none());
+
+				// before the migration the deposit should be reserved.
+				assert_eq!(
+					balance_on_reserve_pre_migration,
+					attestation_pre_migration.unwrap().deposit.amount
+				);
+
+				do_migration::<Test>(ACCOUNT_00);
+
+				let attestation_post_migration = Attestations::<Test>::get(claim_hash);
+
+				let balance_on_reserve_post_migration = <<Test as Config>::Currency as ReservableCurrency<
+					AccountIdOf<Test>,
+				>>::reserved_balance(&ACCOUNT_00);
+
+				let balance_on_hold = <<Test as Config>::Currency as InspectHold<AccountIdOf<Test>>>::balance_on_hold(
+					&HoldReason::Deposit.into(),
+					&ACCOUNT_00,
+				);
+
+				//attestations should be still in the storage
+				assert!(attestation_post_migration.is_some());
+
+				// Since reserved balance count to hold balance, it should not be zero
+				assert!(!balance_on_reserve_post_migration.is_zero());
+
+				// ... and be as much as the hold balance
+				assert_eq!(balance_on_reserve_post_migration, balance_on_hold);
+
+				//... and the version should be 1.
+				assert!(attestation_post_migration.clone().unwrap().deposit.version.is_some());
+				assert!(attestation_post_migration.unwrap().deposit.version.unwrap() == 1);
+			});
+	}
+}

@@ -27,7 +27,7 @@ use frame_support::{dispatch::Weight, traits::Get};
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
 use sp_core::H256;
-use sp_runtime::DispatchError;
+use sp_runtime::{DispatchError, SaturatedConversion};
 
 use ctype::CtypeHashOf;
 use kilt_support::{traits::StorageDepositCollector, Deposit};
@@ -153,12 +153,26 @@ where
 	}
 }
 
-pub fn insert_attestation<T: Config>(claim_hash: ClaimHashOf<T>, details: AttestationDetailsOf<T>) {
-	crate::AttestationStorageDepositCollector::<T>::create_deposit(
-		details.deposit.owner.clone(),
-		details.deposit.amount,
-	)
-	.expect("Should have balance");
+pub fn insert_attestation<T: Config>(
+	claim_hash: ClaimHashOf<T>,
+	details: AttestationDetailsOf<T>,
+	reserve_balance: bool,
+) where
+	<T as Config>::Currency: frame_support::traits::ReservableCurrency<AccountIdOf<T>>,
+{
+	if reserve_balance {
+		<<T as Config>::Currency as frame_support::traits::ReservableCurrency<AccountIdOf<T>>>::reserve(
+			&details.deposit.owner,
+			details.deposit.amount.saturated_into::<u128>().saturated_into(),
+		)
+		.expect("Should have balance");
+	} else {
+		crate::AttestationStorageDepositCollector::<T>::create_deposit(
+			details.deposit.owner.clone(),
+			details.deposit.amount,
+		)
+		.expect("Should have balance");
+	}
 
 	crate::Attestations::<T>::insert(claim_hash, details.clone());
 	if let Some(delegation_id) = details.authorization_id.as_ref() {
@@ -363,7 +377,9 @@ pub(crate) mod runtime {
 			self
 		}
 
-		pub fn build(self) -> sp_io::TestExternalities {
+		/// if reserve_balance is true, the deposit will be reserved. Otherwise
+		/// the deposit will be hold with the a reason.
+		pub fn build(self, reserve_balance: bool) -> sp_io::TestExternalities {
 			let mut storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
 			pallet_balances::GenesisConfig::<Test> {
 				balances: self.balances.clone(),
@@ -385,15 +401,15 @@ pub(crate) mod runtime {
 				}
 
 				for (claim_hash, details) in self.attestations {
-					insert_attestation::<Test>(claim_hash, details);
+					insert_attestation::<Test>(claim_hash, details, reserve_balance);
 				}
 			});
 
 			ext
 		}
 
-		pub fn build_and_execute_with_sanity_tests(self, test: impl FnOnce()) {
-			self.build().execute_with(|| {
+		pub fn build_and_execute_with_sanity_tests(self, reserve_balance: bool, test: impl FnOnce()) {
+			self.build(reserve_balance).execute_with(|| {
 				test();
 				crate::try_state::do_try_state::<Test>().expect("Sanity test for attestation failed.");
 			})

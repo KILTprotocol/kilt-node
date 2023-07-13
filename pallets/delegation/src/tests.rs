@@ -115,7 +115,7 @@ fn ctype_not_found_create_root_delegation_error() {
 	let operation = generate_base_delegation_hierarchy_creation_operation::<Test>(hierarchy_root_id);
 
 	// No CType stored
-	ExtBuilder::default().build().execute_with(|| {
+	ExtBuilder::default().build(false).execute_with(|| {
 		assert_noop!(
 			Delegation::create_hierarchy(
 				DoubleOrigin(ACCOUNT_00, creator.clone()).into(),
@@ -955,7 +955,7 @@ fn root_not_found_revoke_and_remove_root_error() {
 
 	let operation = generate_base_delegation_hierarchy_revocation_operation(hierarchy_root_id);
 
-	ExtBuilder::default().build().execute_with(|| {
+	ExtBuilder::default().build(false).execute_with(|| {
 		assert_noop!(
 			Delegation::revoke_delegation(
 				DoubleOrigin(ACCOUNT_00, revoker.clone()).into(),
@@ -2048,7 +2048,7 @@ fn is_delegating_delegation_not_found() {
 			<<Test as Config>::Currency as Inspect<delegation::AccountIdOf<Test>>>::minimum_balance(),
 		)])
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, user_1.clone(), ACCOUNT_00)])
-		.build();
+		.build(false);
 
 	ext.execute_with(|| {
 		assert_noop!(
