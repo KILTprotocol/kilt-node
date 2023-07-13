@@ -31,16 +31,12 @@ sp-std.workspace = true
 sp-trie.workspace = true
 
 # Polkadot dependencies
-polkadot-primitives.workspace = true
 xcm.workspace = true
 xcm-executor.workspace = true
 
-# Cumulus dependencies
-cumulus-pallet-parachain-system.workspace = true
-
 [dev-dependencies]
 hex-literal.workspace = true
-sp-io.workspace = true
+sp-io = { workspace = true, features = ["std"] }
 
 [features]
 default = ["std"]
@@ -57,10 +53,8 @@ std = [
   "sp-core/std",
   "sp-state-machine/std",
   "sp-trie/std",
-  "polkadot-primitives/std",
   "sp-std/std",
   "xcm-executor/std",
-  "xcm/std",
-  "cumulus-pallet-parachain-system/std",
+  "xcm/std"
 ]
 runtime-benchmarks = []

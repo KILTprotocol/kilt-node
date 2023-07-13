@@ -3,22 +3,35 @@ use parity_scale_codec::{Decode, HasCompact};
 use sp_core::{Get, U256};
 use sp_runtime::{generic::Header, traits::Hash};
 use sp_state_machine::read_proof_check;
-use sp_std::marker::PhantomData;
+use sp_std::{marker::PhantomData, vec::Vec};
 use sp_trie::StorageProof;
 
+#[derive(Clone)]
 pub struct DipProof<InnerProof> {
 	para_root_proof: Vec<Vec<u8>>,
 	dip_commitment_proof: Vec<Vec<u8>>,
 	dip_proof: InnerProof,
 }
 
-pub struct StateProofDipVerifier<ProviderParaId, RelayInfoProvider, ProviderParaInfoProvider, DipVerifier>(
-	PhantomData<(ProviderParaId, RelayInfoProvider, ProviderParaInfoProvider, DipVerifier)>,
+pub struct StateProofDipVerifier<
+	ProviderParaId,
+	RelayInfoProvider,
+	ProviderParaInfoProvider,
+	DipVerifier,
+	LocalIdentityInfo,
+>(
+	PhantomData<(
+		ProviderParaId,
+		RelayInfoProvider,
+		ProviderParaInfoProvider,
+		DipVerifier,
+		LocalIdentityInfo,
+	)>,
 );
 
-impl<Call, Subject, ProviderParaId, RelayInfoProvider, ProviderParaInfoProvider, DipVerifier>
+impl<Call, Subject, ProviderParaId, RelayInfoProvider, ProviderParaInfoProvider, DipVerifier, LocalIdentityInfo>
 	IdentityProofVerifier<Call, Subject>
-	for StateProofDipVerifier<ProviderParaId, RelayInfoProvider, ProviderParaInfoProvider, DipVerifier>
+	for StateProofDipVerifier<ProviderParaId, RelayInfoProvider, ProviderParaInfoProvider, DipVerifier, LocalIdentityInfo>
 where
 	ProviderParaId: Get<RelayInfoProvider::ParaId>,
 
@@ -30,14 +43,20 @@ where
 
 	ProviderParaInfoProvider: parachain::ParachainStateInfoProvider<Identifier = Subject>,
 	ProviderParaInfoProvider::Hasher: 'static,
-	<ProviderParaInfoProvider::Hasher as Hash>::Output: Ord,
+	<ProviderParaInfoProvider::Hasher as Hash>::Output: Ord + PartialEq<<RelayInfoProvider::Hasher as Hash>::Output>,
 	ProviderParaInfoProvider::Commitment: Decode,
 	ProviderParaInfoProvider::Key: AsRef<[u8]>,
 
-	DipVerifier: IdentityProofVerifier<Call, Subject>,
+	DipVerifier: IdentityProofVerifier<
+		Call,
+		Subject,
+		IdentityDetails = IdentityDetails<ProviderParaInfoProvider::Commitment, Option<LocalIdentityInfo>>,
+	>,
+
+	LocalIdentityInfo: Clone,
 {
 	type Error = ();
-	type IdentityDetails = IdentityDetails<DipVerifier>;
+	type IdentityDetails = LocalIdentityInfo;
 	type Proof = DipProof<DipVerifier::Proof>;
 	type Submitter = DipVerifier::Submitter;
 	type VerificationResult = DipVerifier::VerificationResult;
@@ -52,15 +71,30 @@ where
 		let provider_parachain_header =
 			relay_chain::ParachainHeadProofVerifier::<RelayInfoProvider>::verify_proof_for_parachain(
 				&ProviderParaId::get(),
-				proof.para_root_proof,
+				proof.para_root_proof.clone(),
 			)?;
 		let provider_parachain_root_state = provider_parachain_header.state_root;
+		debug_assert!(
+			ProviderParaInfoProvider::state_root() == provider_parachain_root_state,
+			"Provided parachain state root and calculated parachain state root do not match."
+		);
 		let subject_identity_commitment =
 			parachain::DipCommitmentValueProofVerifier::<ProviderParaInfoProvider>::verify_proof_for_identifier(
 				subject,
-				proof.dip_commitment_proof,
+				proof.dip_commitment_proof.clone(),
 			)?;
-		// TODO: Call the third and last step for the DIP merkle verification.
+		let mapped_identity_details = IdentityDetails {
+			digest: subject_identity_commitment,
+			details: identity_details.clone(),
+		};
+		DipVerifier::verify_proof_for_call_against_details(
+			call,
+			subject,
+			submitter,
+			&mut Some(mapped_identity_details),
+			&proof.dip_proof,
+		)
+		.map_err(|_| ())
 	}
 }
 
@@ -101,7 +135,7 @@ pub mod relay_chain {
 			)
 			.map_err(|_| ())?;
 			// TODO: Remove at some point
-			debug_assert!(revealed_leaves.len() == 1);
+			debug_assert!(revealed_leaves.len() == 1usize);
 			debug_assert!(revealed_leaves.contains_key(parachain_storage_key.as_ref()));
 			let Some(Some(encoded_head)) = revealed_leaves.get(parachain_storage_key.as_ref()) else { return Err(()) };
 			// TODO: Figure out why RPC call returns 2 bytes in front which we don't need
@@ -116,8 +150,8 @@ pub mod relay_chain {
 
 		use hex_literal::hex;
 		use parity_scale_codec::Encode;
-		use polkadot_primitives::BlakeTwo256;
 		use sp_core::{storage::StorageKey, H256};
+		use sp_runtime::traits::BlakeTwo256;
 
 		// Polkadot block n: 16_363_919,
 		// hash 0x18e90e9aa8e3b063f60386ba1b0415111798e72d01de58b1438d620d42f58e39
@@ -129,7 +163,7 @@ pub mod relay_chain {
 			type Key = StorageKey;
 			type ParaId = u32;
 
-			fn parachain_head_storage_key(para_id: Self::ParaId) -> Self::Key {
+			fn parachain_head_storage_key(para_id: &Self::ParaId) -> Self::Key {
 				// Adapted from https://github.com/polytope-labs/substrate-ismp/blob/7fb09da6c7b818a98c25c962fee0ddde8e737306/parachain/src/consensus.rs#L369
 				// Used for testing. In production this would be generated from the relay
 				// runtime definition of the `paras` storage map.
@@ -165,7 +199,7 @@ pub mod relay_chain {
 			//
 			let expected_spiritnet_head_at_block = hex!("65541097fb02782e14f43074f0b00e44ae8e9fe426982323ef1d329739740d37f252ff006d1156941db1bccd58ce3a1cac4f40cad91f692d94e98f501dd70081a129b69a3e2ef7e1ff84ba3d86dab4e95f2c87f6b1055ebd48519c185360eae58f05d1ea08066175726120dcdc6308000000000561757261010170ccfaf3756d1a8dd8ae5c89094199d6d32e5dd9f0920f6fe30f986815b5e701974ea0e0e0a901401f2c72e3dd8dbdf4aa55d59bf3e7021856cdb8038419eb8c").to_vec();
 			let returned_head = ParachainHeadProofVerifier::<StaticPolkadotInfoProvider>::verify_proof_for_parachain(
-				2_086,
+				&2_086,
 				spiritnet_head_proof_at_block,
 			)
 			.expect("Parachain head proof verification should not fail.");
@@ -211,10 +245,9 @@ pub mod parachain {
 			)
 			.map_err(|_| ())?;
 			// TODO: Remove at some point
-			debug_assert!(revealed_leaves.len() == 1);
+			debug_assert!(revealed_leaves.len() == 1usize);
 			debug_assert!(revealed_leaves.contains_key(dip_commitment_storage_key.as_ref()));
 			let Some(Some(encoded_commitment)) = revealed_leaves.get(dip_commitment_storage_key.as_ref()) else { return Err(()) };
-			println!("D");
 			ParaInfoProvider::Commitment::decode(&mut &encoded_commitment[..]).map_err(|_| ())
 		}
 	}
@@ -224,8 +257,8 @@ pub mod parachain {
 		use super::*;
 
 		use hex_literal::hex;
-		use polkadot_primitives::BlakeTwo256;
 		use sp_core::storage::StorageKey;
+		use sp_runtime::traits::BlakeTwo256;
 
 		// Spiritnet block n: 4_184_668,
 		// hash 0x2c0746e7e9ccc6e4d27bcb4118cb6821ae53ae9bf372f4f49ac28d8598f9bed5
@@ -240,7 +273,7 @@ pub mod parachain {
 			type Identifier = ();
 			type Key = StorageKey;
 
-			fn dip_subject_storage_key(_identifier: Self::Identifier) -> Self::Key {
+			fn dip_subject_storage_key(_identifier: &Self::Identifier) -> Self::Key {
 				// system::eventCount() raw storage key
 				let storage_key = hex!("26aa394eea5630e07c48ae0c9558cef70a98fdbe9ce6c55837576c60c7af3850").to_vec();
 				StorageKey(storage_key)
@@ -269,7 +302,7 @@ pub mod parachain {
 			let expected_event_count_at_block = 5;
 			let returned_event_count =
 				DipCommitmentValueProofVerifier::<StaticSpiritnetInfoProvider>::verify_proof_for_identifier(
-					(),
+					&(),
 					spiritnet_event_count_proof_at_block,
 				)
 				.unwrap();

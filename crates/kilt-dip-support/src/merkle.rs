@@ -287,12 +287,8 @@ impl<
 			.map(|leaf| (leaf.encoded_key(), Some(leaf.encoded_value())))
 			.collect::<Vec<(Vec<u8>, Option<Vec<u8>>)>>();
 		let Some(identity_details) = identity_details else { return Err(()) };
-		verify_trie_proof::<LayoutV1<Hasher>, _, _, _>(
-			&identity_details.digest.clone().into(),
-			&proof.blinded,
-			&proof_leaves,
-		)
-		.map_err(|_| ())?;
+		verify_trie_proof::<LayoutV1<Hasher>, _, _, _>(&identity_details.digest, &proof.blinded, &proof_leaves)
+			.map_err(|_| ())?;
 
 		// At this point, we know the proof is valid. We just need to map the revealed
 		// leaves to something the consumer can easily operate on.

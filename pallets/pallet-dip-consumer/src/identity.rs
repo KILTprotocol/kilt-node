@@ -21,7 +21,7 @@ use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 
 /// The identity entry for any given user that uses the DIP protocol.
-#[derive(Encode, Decode, MaxEncodedLen, Default, TypeInfo, RuntimeDebug)]
+#[derive(Encode, Decode, MaxEncodedLen, Default, TypeInfo, RuntimeDebug, Clone)]
 pub struct IdentityDetails<Digest, Details> {
 	/// The identity digest information, typically used to verify identity
 	/// proofs.

@@ -118,7 +118,7 @@ impl<
 	BlockNumber: Encode + CheckedSub + Into<u64> + PartialOrd + sp_std::fmt::Debug,
 	Call: Encode,
 	Digest: Encode,
-	Details: Bump + Encode,
+	Details: Bump + Default + Encode,
 	MerkleProofEntries: AsRef<[RevealedDidKey<KeyId, BlockNumber>]>,
 	BlockNumberProvider: Get<BlockNumber>,
 	GenesisHashProvider: Get<Hash>,
@@ -179,7 +179,11 @@ impl<
 		});
 		let Some((key, relationship)) = valid_signing_key else { return Err(()) };
 		// TODO: bump details.
-		// identity_details.bump();
+		if let Some(details) = identity_details {
+			details.bump();
+		} else {
+			*identity_details = Some(Details::default());
+		}
 		Ok((key.clone(), relationship))
 	}
 }
