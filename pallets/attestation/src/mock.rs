@@ -417,7 +417,7 @@ pub(crate) mod runtime {
 
 		#[cfg(feature = "runtime-benchmarks")]
 		pub fn build_with_keystore(self) -> sp_io::TestExternalities {
-			let mut ext = self.build();
+			let mut ext = self.build(false);
 
 			let keystore = sp_keystore::testing::MemoryKeystore::new();
 			ext.register_extension(sp_keystore::KeystoreExt(std::sync::Arc::new(keystore)));

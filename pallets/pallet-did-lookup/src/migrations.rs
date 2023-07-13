@@ -156,3 +156,66 @@ where
 			);
 		});
 }
+
+#[cfg(test)]
+pub mod test {
+	use frame_support::traits::{fungible::InspectHold, ReservableCurrency};
+	use sp_runtime::traits::Zero;
+
+	use crate::{migrations::do_migration, mock::*, AccountIdOf, Config, ConnectedDids, HoldReason};
+
+	#[test]
+	fn test_balance_migration_did_lookup() {
+		ExtBuilder::default()
+			.with_balances(vec![
+				(ACCOUNT_00, <Test as crate::Config>::Deposit::get() * 50),
+				(ACCOUNT_01, <Test as crate::Config>::Deposit::get() * 50),
+			])
+			.with_connections(vec![(ACCOUNT_00, DID_00, LINKABLE_ACCOUNT_00)])
+			.build_and_execute_with_sanity_tests(true, || {
+				let connected_did_pre_migration = ConnectedDids::<Test>::get(LINKABLE_ACCOUNT_00);
+
+				let balance_on_reserve_pre_migration = <<Test as Config>::Currency as ReservableCurrency<
+					AccountIdOf<Test>,
+				>>::reserved_balance(&ACCOUNT_00);
+
+				//Delegation should be in storage
+				assert!(connected_did_pre_migration.is_some());
+
+				//before the migration the version should be none.
+				assert!(connected_did_pre_migration.clone().unwrap().deposit.version.is_none());
+
+				// before the migration the deposit should be reserved.
+				assert_eq!(
+					balance_on_reserve_pre_migration,
+					connected_did_pre_migration.unwrap().deposit.amount
+				);
+
+				do_migration::<Test>(ACCOUNT_00);
+
+				let connected_did_post_migration = ConnectedDids::<Test>::get(LINKABLE_ACCOUNT_00);
+
+				let balance_on_reserve_post_migration = <<Test as Config>::Currency as ReservableCurrency<
+					AccountIdOf<Test>,
+				>>::reserved_balance(&ACCOUNT_00);
+
+				let balance_on_hold = <<Test as Config>::Currency as InspectHold<AccountIdOf<Test>>>::balance_on_hold(
+					&HoldReason::Deposit.into(),
+					&ACCOUNT_00,
+				);
+
+				//Delegation should be still in the storage
+				assert!(connected_did_post_migration.is_some());
+
+				// Since reserved balance count to hold balance, it should not be zero
+				assert!(!balance_on_reserve_post_migration.is_zero());
+
+				// ... and be as much as the hold balance
+				assert_eq!(balance_on_reserve_post_migration, balance_on_hold);
+
+				//... and the version should be 1.
+				assert!(connected_did_post_migration.clone().unwrap().deposit.version.is_some());
+				assert!(connected_did_post_migration.unwrap().deposit.version.unwrap() == 1);
+			})
+	}
+}

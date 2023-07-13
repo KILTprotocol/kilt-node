@@ -16,15 +16,17 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::parameter_types;
+use frame_support::{parameter_types, traits::ReservableCurrency};
 use kilt_support::{
 	mock::{mock_origin, SubjectId},
 	traits::StorageDepositCollector,
+	Deposit,
 };
+use sp_core::Get;
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
-	MultiSignature,
+	DispatchResult, MultiSignature, SaturatedConversion,
 };
 
 use crate::{
@@ -183,7 +185,42 @@ impl ExtBuilder {
 		self
 	}
 
-	pub fn build(self) -> sp_io::TestExternalities {
+	fn add_association<T: Config>(
+		sender: AccountIdOf<T>,
+		did_identifier: DidIdentifierOf<T>,
+		account: LinkableAccountId,
+		reserve_balance: bool,
+	) -> DispatchResult
+	where
+		T::Currency: ReservableCurrency<AccountIdOf<T>>,
+	{
+		if !reserve_balance {
+			pallet_did_lookup::Pallet::<T>::add_association(sender, did_identifier, account)
+		} else {
+			let deposit = Deposit {
+				version: None,
+				owner: sender.clone(),
+				amount: <T as Config>::Deposit::get(),
+			};
+			let record = ConnectionRecord {
+				deposit,
+				did: did_identifier.clone(),
+			};
+
+			ConnectedDids::<T>::mutate(&account, |did_entry| -> DispatchResult {
+				if let Some(old_connection) = did_entry.replace(record) {
+					ConnectedAccounts::<T>::remove(&old_connection.did, &account);
+
+					LinkableAccountDepositCollector::<T>::free_deposit(old_connection.deposit)?;
+				}
+				Ok(())
+			})?;
+			ConnectedAccounts::<T>::insert(&did_identifier, &account, ());
+			<T::Currency as ReservableCurrency<AccountIdOf<T>>>::reserve(&sender, T::Deposit::get().saturated_into())
+		}
+	}
+
+	pub fn build(self, reserve_balance: bool) -> sp_io::TestExternalities {
 		let mut storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
 		pallet_balances::GenesisConfig::<Test> {
 			balances: self.balances.clone(),
@@ -194,15 +231,14 @@ impl ExtBuilder {
 
 		ext.execute_with(|| {
 			for (sender, did, account) in self.connections {
-				pallet_did_lookup::Pallet::<Test>::add_association(sender, did, account)
-					.expect("Should create connection");
+				Self::add_association::<Test>(sender, did, account, reserve_balance).expect("Should create connection");
 			}
 		});
 		ext
 	}
 
-	pub fn build_and_execute_with_sanity_tests(self, test: impl FnOnce()) {
-		self.build().execute_with(|| {
+	pub fn build_and_execute_with_sanity_tests(self, reserve_balance: bool, test: impl FnOnce()) {
+		self.build(reserve_balance).execute_with(|| {
 			test();
 			crate::try_state::do_try_state::<Test>().expect("Sanity test for did lookup failed.");
 		})
