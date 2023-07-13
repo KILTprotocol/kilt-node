@@ -16,15 +16,15 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::traits::Get;
+use frame_support::traits::{Get, ReservableCurrency};
 use parity_scale_codec::Encode;
-use sp_runtime::traits::Hash;
+use sp_runtime::{traits::Hash, SaturatedConversion};
 
 use kilt_support::{traits::StorageDepositCollector, Deposit};
 
 use crate::{
-	AttesterOf, BalanceOf, Config, CredentialEntryOf, CredentialIdOf, CredentialSubjects, Credentials, CtypeHashOf,
-	InputClaimsContentOf, InputCredentialOf, InputSubjectIdOf, PublicCredentialDepositCollector,
+	AccountIdOf, AttesterOf, BalanceOf, Config, CredentialEntryOf, CredentialIdOf, CredentialSubjects, Credentials,
+	CtypeHashOf, InputClaimsContentOf, InputCredentialOf, InputSubjectIdOf, PublicCredentialDepositCollector,
 };
 
 // Generate a public credential using a many Default::default() as possible.
@@ -76,12 +76,27 @@ pub(crate) fn insert_public_credentials<T: Config>(
 	subject_id: T::SubjectId,
 	credential_id: CredentialIdOf<T>,
 	credential_entry: CredentialEntryOf<T>,
-) {
-	PublicCredentialDepositCollector::<T>::create_deposit(
-		credential_entry.deposit.owner.clone(),
-		credential_entry.deposit.amount,
-	)
-	.expect("Attester should have enough balance");
+	reserve_balance: bool,
+) where
+	<T as Config>::Currency: ReservableCurrency<AccountIdOf<T>>,
+{
+	if reserve_balance {
+		<<T as Config>::Currency as ReservableCurrency<AccountIdOf<T>>>::reserve(
+			&credential_entry.deposit.owner,
+			credential_entry
+				.deposit
+				.amount
+				.saturated_into::<Balance>()
+				.saturated_into(),
+		)
+		.expect("Attester should have enough balance");
+	} else {
+		PublicCredentialDepositCollector::<T>::create_deposit(
+			credential_entry.deposit.owner.clone(),
+			credential_entry.deposit.amount,
+		)
+		.expect("Attester should have enough balance");
+	}
 
 	Credentials::<T>::insert(&subject_id, &credential_id, credential_entry);
 	CredentialSubjects::<T>::insert(credential_id, subject_id);
@@ -422,7 +437,7 @@ pub(crate) mod runtime {
 			self
 		}
 
-		pub(crate) fn build(self) -> sp_io::TestExternalities {
+		pub(crate) fn build(self, reserve_deposit: bool) -> sp_io::TestExternalities {
 			let mut storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
 			pallet_balances::GenesisConfig::<Test> {
 				balances: self.balances.clone(),
@@ -444,15 +459,15 @@ pub(crate) mod runtime {
 				}
 
 				for (subject_id, credential_id, credential_entry) in self.public_credentials {
-					insert_public_credentials::<Test>(subject_id, credential_id, credential_entry);
+					insert_public_credentials::<Test>(subject_id, credential_id, credential_entry, reserve_deposit);
 				}
 			});
 
 			ext
 		}
 
-		pub fn build_and_execute_with_sanity_tests(self, test: impl FnOnce()) {
-			self.build().execute_with(|| {
+		pub fn build_and_execute_with_sanity_tests(self, reserve_deposit: bool, test: impl FnOnce()) {
+			self.build(reserve_deposit).execute_with(|| {
 				test();
 				crate::try_state::do_try_state::<Test>().expect("Sanity test for public credential failed.");
 			})
