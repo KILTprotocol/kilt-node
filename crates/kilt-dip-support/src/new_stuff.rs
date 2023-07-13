@@ -1,10 +1,52 @@
 use pallet_dip_consumer::{identity::IdentityDetails, traits::IdentityProofVerifier};
-use parity_scale_codec::{Decode, HasCompact};
-use sp_core::{Get, U256};
+use parity_scale_codec::{Codec, Decode, HasCompact};
+use sp_core::{Get, Hasher, U256};
 use sp_runtime::{generic::Header, traits::Hash};
-use sp_state_machine::read_proof_check;
-use sp_std::{marker::PhantomData, vec::Vec};
-use sp_trie::StorageProof;
+use sp_state_machine::{Backend, TrieBackend, TrieBackendBuilder};
+use sp_std::{collections::btree_map::BTreeMap, marker::PhantomData, vec::Vec};
+use sp_trie::{HashDBT, MemoryDB, StorageProof};
+
+// Ported from https://github.com/paritytech/substrate/blob/b27c470eaff379f512d1dec052aff5d551ed3b03/primitives/state-machine/src/lib.rs#L1076
+fn read_proof_check<H, I>(root: H::Out, proof: StorageProof, keys: I) -> Result<BTreeMap<Vec<u8>, Option<Vec<u8>>>, ()>
+where
+	H: Hasher + 'static,
+	H::Out: Ord + Codec,
+	I: IntoIterator,
+	I::Item: AsRef<[u8]>,
+{
+	let proving_backend = create_proof_check_backend::<H>(root, proof)?;
+	let mut result = BTreeMap::new();
+	for key in keys.into_iter() {
+		let value = read_proof_check_on_proving_backend(&proving_backend, key.as_ref())?;
+		result.insert(key.as_ref().to_vec(), value);
+	}
+	Ok(result)
+}
+
+fn read_proof_check_on_proving_backend<H>(
+	proving_backend: &TrieBackend<MemoryDB<H>, H>,
+	key: &[u8],
+) -> Result<Option<Vec<u8>>, ()>
+where
+	H: Hasher,
+	H::Out: Ord + Codec,
+{
+	proving_backend.storage(key).map_err(|_| ())
+}
+
+fn create_proof_check_backend<H>(root: H::Out, proof: StorageProof) -> Result<TrieBackend<MemoryDB<H>, H>, ()>
+where
+	H: Hasher,
+	H::Out: Codec,
+{
+	let db = proof.into_memory_db();
+
+	if db.contains(&root, (&[], None)) {
+		Ok(TrieBackendBuilder::new(db, root).build())
+	} else {
+		Err(())
+	}
+}
 
 #[derive(Clone)]
 pub struct DipProof<InnerProof> {
