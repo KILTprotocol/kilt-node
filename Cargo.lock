@@ -4195,6 +4195,7 @@ dependencies = [
 name = "kilt-dip-support"
 version = "1.11.0-dev"
 dependencies = [
+ "cumulus-pallet-parachain-system",
  "did",
  "dip-support",
  "frame-support",
@@ -4204,6 +4205,7 @@ dependencies = [
  "pallet-dip-consumer",
  "pallet-dip-provider",
  "parity-scale-codec",
+ "rococo-runtime",
  "scale-info",
  "sp-core",
  "sp-io",

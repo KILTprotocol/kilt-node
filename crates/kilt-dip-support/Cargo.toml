@@ -29,13 +29,18 @@ frame-system.workspace = true
 frame-support.workspace = true
 sp-runtime.workspace = true
 sp-core.workspace = true
+sp-io.workspace = true
 sp-state-machine.workspace = true
 sp-std.workspace = true
 sp-trie.workspace = true
 
 # Polkadot dependencies
+rococo-runtime.workspace = true
 xcm.workspace = true
 xcm-executor.workspace = true
+
+# Cumulus dependencies
+cumulus-pallet-parachain-system.workspace = true
 
 [dev-dependencies]
 hex-literal.workspace = true
@@ -55,10 +60,13 @@ std = [
   "frame-support/std",
   "sp-runtime/std",
   "sp-core/std",
+  "sp-io/std",
   "sp-state-machine/std",
-  "sp-trie/std",
   "sp-std/std",
+  "sp-trie/std",
+  "rococo-runtime/std",
+  "xcm/std",
   "xcm-executor/std",
-  "xcm/std"
+  "cumulus-pallet-parachain-system/std",
 ]
 runtime-benchmarks = []

@@ -17,51 +17,55 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use did::{did_details::DidVerificationKey, DidVerificationKeyRelationship, KeyIdOf};
-use dip_provider_runtime_template::Web3Name;
+use dip_provider_runtime_template::{BlockNumber as ProviderBlockNumber, Web3Name};
 use frame_support::traits::Contains;
 use kilt_dip_support::{
-	did::{DidSignatureAndCallVerifier, MerkleLeavesAndDidSignature, MerkleRevealedDidSignatureVerifier},
-	merkle::{DidMerkleProofVerifier, MerkleProof, ProofLeaf},
-	traits::{BlockNumberProvider, DidDipOriginFilter, GenesisProvider},
-	MerkleProofAndDidSignatureVerifier,
+	did::MerkleLeavesAndDidSignature,
+	merkle::{MerkleProof, ProofLeaf},
+	traits::{
+		BlockNumberProvider, DidDipOriginFilter, DipProviderParachainRuntime, GenesisProvider, RococoParachainRuntime,
+	},
+	DipSiblingParachainStateProof, StateProofDipVerifier,
 };
 use pallet_did_lookup::linkable_account::LinkableAccountId;
-use pallet_dip_consumer::traits::IdentityProofVerifier;
+use sp_core::ConstU32;
+use sp_runtime::traits::BlakeTwo256;
 use sp_std::vec::Vec;
 
-use crate::{AccountId, BlockNumber, DidIdentifier, Hash, Hasher, Runtime, RuntimeCall, RuntimeOrigin};
+use crate::{AccountId, BlockNumber, DidIdentifier, Hash, Runtime, RuntimeCall, RuntimeOrigin};
 
-pub type MerkleProofVerifier =
-	DidMerkleProofVerifier<Hasher, AccountId, KeyIdOf<Runtime>, BlockNumber, u128, Web3Name, LinkableAccountId, 10, 10>;
-pub type MerkleProofVerifierOutputOf<Call, Subject> =
-	<MerkleProofVerifier as IdentityProofVerifier<Call, Subject>>::VerificationResult;
-pub type MerkleDidSignatureVerifierOf<Call, Subject> = MerkleRevealedDidSignatureVerifier<
+pub type ProofVerifier = StateProofDipVerifier<
+	RococoParachainRuntime<Runtime>,
+	DipProviderParachainRuntime<dip_provider_runtime_template::Runtime>,
 	KeyIdOf<Runtime>,
-	BlockNumber,
-	Hash,
+	ConstU32<2_000>,
+	ProviderBlockNumber,
 	u128,
+	Web3Name,
+	BlakeTwo256,
+	LinkableAccountId,
 	AccountId,
-	MerkleProofVerifierOutputOf<Call, Subject>,
+	BlockNumber,
 	BlockNumberProvider<Runtime>,
+	GenesisProvider<Runtime>,
+	DipCallFilter,
+	10,
+	10,
 	// Signatures are valid for 50 blocks
 	50,
-	GenesisProvider<Runtime>,
-	Hash,
 >;
 
 impl pallet_dip_consumer::Config for Runtime {
 	type DipCallOriginFilter = PreliminaryDipOriginFilter;
 	type Identifier = DidIdentifier;
-	type IdentityProof = MerkleLeavesAndDidSignature<
-		MerkleProof<Vec<Vec<u8>>, ProofLeaf<Hash, BlockNumber, Web3Name, LinkableAccountId>>,
-		BlockNumber,
+	type IdentityProof = DipSiblingParachainStateProof<
+		MerkleLeavesAndDidSignature<
+			MerkleProof<Vec<Vec<u8>>, ProofLeaf<Hash, BlockNumber, Web3Name, LinkableAccountId>>,
+			BlockNumber,
+		>,
 	>;
 	type LocalIdentityInfo = u128;
-	type ProofVerifier = MerkleProofAndDidSignatureVerifier<
-		BlockNumber,
-		MerkleProofVerifier,
-		DidSignatureAndCallVerifier<MerkleDidSignatureVerifierOf<RuntimeCall, DidIdentifier>, DipCallFilter>,
-	>;
+	type ProofVerifier = ProofVerifier;
 	type RuntimeCall = RuntimeCall;
 	type RuntimeOrigin = RuntimeOrigin;
 }

@@ -56,7 +56,7 @@ pub mod pallet {
 
 	#[pallet::storage]
 	#[pallet::getter(fn identity_commitments)]
-	pub(crate) type IdentityCommitments<T> =
+	pub type IdentityCommitments<T> =
 		StorageMap<_, Twox64Concat, <T as Config>::Identifier, <T as Config>::IdentityCommitment>;
 
 	#[pallet::pallet]

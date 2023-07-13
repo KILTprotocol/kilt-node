@@ -22,12 +22,13 @@
 
 use frame_support::ensure;
 use parity_scale_codec::{Decode, Encode, HasCompact};
-use sp_core::{ConstU32, ConstU64, Get, Hasher, U256};
+use scale_info::TypeInfo;
+use sp_core::{ConstU32, ConstU64, Get, Hasher, RuntimeDebug, U256};
 use sp_runtime::{
 	traits::{CheckedSub, Hash},
 	BoundedVec, SaturatedConversion,
 };
-use sp_std::marker::PhantomData;
+use sp_std::{marker::PhantomData, vec::Vec};
 use sp_trie::{verify_trie_proof, LayoutV1};
 
 use ::did::{
@@ -39,8 +40,7 @@ use pallet_dip_consumer::traits::IdentityProofVerifier;
 use crate::{
 	did::MerkleLeavesAndDidSignature,
 	merkle::{MerkleProof, ProofLeaf, RevealedDidKey, RevealedWeb3Name, VerificationResult},
-	state_proofs::{parachain::ParachainStateInfoProvider, relay_chain::RelayChainStateInfoProvider},
-	traits::{Bump, DidDipOriginFilter},
+	traits::{Bump, DidDipOriginFilter, ParachainStateInfoProvider, RelayChainStateInfoProvider},
 };
 
 pub mod did;
@@ -48,7 +48,7 @@ pub mod merkle;
 pub mod state_proofs;
 pub mod traits;
 
-#[derive(Clone)]
+#[derive(Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo, Clone)]
 pub struct DipSiblingParachainStateProof<InnerProof> {
 	para_root_proof: Vec<Vec<u8>>,
 	dip_commitment_proof: Vec<Vec<u8>>,
@@ -69,19 +69,20 @@ pub struct StateProofDipVerifier<
 	ConsumerBlockNumber,
 	ConsumerBlockNumberProvider,
 	ConsumerGenesisHashProvider,
-	SignedExtra,
-	SignedExtraProvider,
 	CallVerifier,
 	const MAX_REVEALED_KEYS_COUNT: u32,
 	const MAX_REVEALED_ACCOUNTS_COUNT: u32,
 	const SIGNATURE_VALIDITY: u64,
+	SignedExtra = (),
+	SignedExtraProvider = (),
 >(
+	#[allow(clippy::type_complexity)]
 	PhantomData<(
 		RelayInfoProvider,
 		ParaInfoProvider,
 		ProviderKeyId,
-		ProviderBlockNumber,
 		ProviderParaIdProvider,
+		ProviderBlockNumber,
 		ProviderAccountIdentityDetails,
 		ProviderWeb3Name,
 		ProviderHasher,
@@ -90,12 +91,12 @@ pub struct StateProofDipVerifier<
 		ConsumerBlockNumber,
 		ConsumerBlockNumberProvider,
 		ConsumerGenesisHashProvider,
-		SignedExtra,
-		SignedExtraProvider,
 		CallVerifier,
 		ConstU32<MAX_REVEALED_KEYS_COUNT>,
 		ConstU32<MAX_REVEALED_ACCOUNTS_COUNT>,
 		ConstU64<SIGNATURE_VALIDITY>,
+		SignedExtra,
+		SignedExtraProvider,
 	)>,
 );
 
@@ -105,8 +106,8 @@ impl<
 		RelayInfoProvider,
 		ParaInfoProvider,
 		ProviderKeyId,
-		ProviderBlockNumber,
 		ProviderParaIdProvider,
+		ProviderBlockNumber,
 		ProviderAccountIdentityDetails,
 		ProviderWeb3Name,
 		ProviderHasher,
@@ -115,19 +116,19 @@ impl<
 		ConsumerBlockNumber,
 		ConsumerBlockNumberProvider,
 		ConsumerGenesisHashProvider,
-		SignedExtra,
-		SignedExtraProvider,
 		CallVerifier,
 		const MAX_REVEALED_KEYS_COUNT: u32,
 		const MAX_REVEALED_ACCOUNTS_COUNT: u32,
 		const SIGNATURE_VALIDITY: u64,
+		SignedExtra,
+		SignedExtraProvider,
 	> IdentityProofVerifier<Call, Subject>
 	for StateProofDipVerifier<
 		RelayInfoProvider,
 		ParaInfoProvider,
 		ProviderKeyId,
-		ProviderBlockNumber,
 		ProviderParaIdProvider,
+		ProviderBlockNumber,
 		ProviderAccountIdentityDetails,
 		ProviderWeb3Name,
 		ProviderHasher,
@@ -136,12 +137,12 @@ impl<
 		ConsumerBlockNumber,
 		ConsumerBlockNumberProvider,
 		ConsumerGenesisHashProvider,
-		SignedExtra,
-		SignedExtraProvider,
 		CallVerifier,
 		MAX_REVEALED_KEYS_COUNT,
 		MAX_REVEALED_ACCOUNTS_COUNT,
 		SIGNATURE_VALIDITY,
+		SignedExtra,
+		SignedExtraProvider,
 	> where
 	RelayInfoProvider: RelayChainStateInfoProvider,
 	RelayInfoProvider::Hasher: 'static,
@@ -150,7 +151,10 @@ impl<
 	RelayInfoProvider::Key: AsRef<[u8]>,
 	ParaInfoProvider: ParachainStateInfoProvider<Identifier = Subject, Commitment = ProviderHasher::Out>,
 	ParaInfoProvider::Hasher: 'static,
-	<ParaInfoProvider::Hasher as Hash>::Output: Ord + Encode + PartialEq<<RelayInfoProvider::Hasher as Hash>::Output>,
+	<ParaInfoProvider::Hasher as Hash>::Output: Ord
+		+ Encode
+		+ PartialEq<<RelayInfoProvider::Hasher as Hash>::Output>
+		+ From<<RelayInfoProvider::Hasher as Hash>::Output>,
 	ParaInfoProvider::Commitment: Decode,
 	ParaInfoProvider::Key: AsRef<[u8]>,
 	ProviderKeyId: Encode + Clone,
@@ -182,7 +186,14 @@ impl<
 		>,
 	>;
 	type Submitter = ConsumerAccountId;
-	type VerificationResult = (DidVerificationKey, DidVerificationKeyRelationship);
+	type VerificationResult = VerificationResult<
+		ProviderKeyId,
+		ProviderBlockNumber,
+		ProviderWeb3Name,
+		ProviderLinkedAccountId,
+		MAX_REVEALED_KEYS_COUNT,
+		MAX_REVEALED_ACCOUNTS_COUNT,
+	>;
 
 	fn verify_proof_for_call_against_details(
 		call: &Call,
@@ -203,13 +214,10 @@ impl<
 				para_root_proof,
 			)?;
 		// 2. Verify parachain state proof.
-		debug_assert!(
-			ParaInfoProvider::state_root() == provider_parachain_header.state_root,
-			"Provided parachain state root and calculated parachain state root do not match."
-		);
 		let subject_identity_commitment =
 			state_proofs::parachain::DipCommitmentValueProofVerifier::<ParaInfoProvider>::verify_proof_for_identifier(
 				subject,
+				provider_parachain_header.state_root.into(),
 				dip_commitment_proof,
 			)?;
 
@@ -226,6 +234,7 @@ impl<
 			&proof_leaves,
 		)
 		.map_err(|_| ())?;
+		#[allow(clippy::type_complexity)]
 		let (did_keys, web3_name, linked_accounts): (
 			BoundedVec<RevealedDidKey<ProviderKeyId, ProviderBlockNumber>, ConstU32<MAX_REVEALED_KEYS_COUNT>>,
 			Option<RevealedWeb3Name<ProviderWeb3Name, ProviderBlockNumber>>,
@@ -303,6 +312,6 @@ impl<
 		}
 		// 4.1 Verify call required relationship
 		CallVerifier::check_call_origin_info(call, &(key.clone(), relationship)).map_err(|_| ())?;
-		Ok((key.clone(), relationship))
+		Ok(verification_result)
 	}
 }

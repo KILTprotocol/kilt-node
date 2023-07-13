@@ -86,15 +86,7 @@ mod substrate_no_std_port {
 pub mod relay_chain {
 	use super::*;
 
-	pub trait RelayChainStateInfoProvider {
-		type BlockNumber;
-		type Key;
-		type Hasher: Hash;
-		type ParaId;
-
-		fn parachain_head_storage_key(para_id: &Self::ParaId) -> Self::Key;
-		fn state_root() -> <Self::Hasher as Hash>::Output;
-	}
+	use crate::traits::RelayChainStateInfoProvider;
 
 	pub struct ParachainHeadProofVerifier<RelayInfoProvider>(PhantomData<RelayInfoProvider>);
 
@@ -197,15 +189,7 @@ pub mod relay_chain {
 pub mod parachain {
 	use super::*;
 
-	pub trait ParachainStateInfoProvider {
-		type Commitment;
-		type Key;
-		type Hasher: Hash;
-		type Identifier;
-
-		fn dip_subject_storage_key(identifier: &Self::Identifier) -> Self::Key;
-		fn state_root() -> <Self::Hasher as Hash>::Output;
-	}
+	use crate::traits::ParachainStateInfoProvider;
 
 	pub struct DipCommitmentValueProofVerifier<ParaInfoProvider>(PhantomData<ParaInfoProvider>);
 
@@ -220,13 +204,13 @@ pub mod parachain {
 		#[allow(clippy::result_unit_err)]
 		pub fn verify_proof_for_identifier(
 			identifier: &ParaInfoProvider::Identifier,
+			state_root: <ParaInfoProvider::Hasher as Hash>::Output,
 			proof: impl IntoIterator<Item = Vec<u8>>,
 		) -> Result<ParaInfoProvider::Commitment, ()> {
-			let parachain_state_root = ParaInfoProvider::state_root();
 			let dip_commitment_storage_key = ParaInfoProvider::dip_subject_storage_key(identifier);
 			let storage_proof = StorageProof::new(proof);
 			let revealed_leaves = read_proof_check::<ParaInfoProvider::Hasher, _>(
-				parachain_state_root,
+				state_root,
 				storage_proof,
 				[&dip_commitment_storage_key].iter(),
 			)
@@ -244,7 +228,7 @@ pub mod parachain {
 		use super::*;
 
 		use hex_literal::hex;
-		use sp_core::storage::StorageKey;
+		use sp_core::{storage::StorageKey, H256};
 		use sp_runtime::traits::BlakeTwo256;
 
 		// Spiritnet block n: 4_184_668,
@@ -265,10 +249,6 @@ pub mod parachain {
 				let storage_key = hex!("26aa394eea5630e07c48ae0c9558cef70a98fdbe9ce6c55837576c60c7af3850").to_vec();
 				StorageKey(storage_key)
 			}
-
-			fn state_root() -> <Self::Hasher as Hash>::Output {
-				hex!("94c23fda279cea4a4370e90f1544c8938923dfd4ac201a420c7a26fb0d3caf8c").into()
-			}
 		}
 
 		#[test]
@@ -282,6 +262,8 @@ pub mod parachain {
 				hex!("80ffff8010623b5a3a9dbc752963d827be0bb855bf3e24258ae09341d5f762e96a836ac180c34b753605e821528756b55b4ddafb742df6e54fbc03ef401d4ebfd6dd4f3e44806f83646e0bf3ca0ac9f2092dea5b0e3caf210cc6b54c3b44a51855a133367a6580b02cde7b1fd3f8d13f698ef6e9daa29b32258d4d97a8947051070a4540aecacd80903d521961849d07ceee132617b8dde96c3ff472f5a9a089d4055ffe7ffd1e988016c29c943c106713bb8f16b776eb7daed005540165696da286cddf6b25d085448019a464010cb746b0589891f72b0eed603d4712b04af46f7bcae724564194801480a305ffe069db7eb21841f75b5939943f62c4abb3a051d530839c5dd935ccbc8a8035d8938b0c856878de1e3fe45a559588b2da52ccf195ab1e3d0aca6ac7bb079d8064019a474a283c19f46ff4652a5e1f636efd4013d3b8a91c49573045c6ff01c0801a191dcb736faddb84889a13c7aa717d260e9b635b30a9eb3907f925a2253d6880f8bc389fc62ca951609bae208b7506bae497623e647424062d1c56cb1f2d2e1c80211a9fb5f8b794f9fbfbdcd4519aa475ecaf9737b4ee513dde275d5fbbe64da080c267d0ead99634e9b9cfbf61a583877e0241ac518e62e909fbb017469de275f780b3059a7226d4b320c25e9b2f8ffe19cf93467e3b306885962c5f34b5671d15fe8092dfba9e30e1bbefab13c792755d06927e6141f7220b7485e5aa40de92401a66").to_vec(),
 				hex!("9eaa394eea5630e07c48ae0c9558cef7398f8069ef420a0deb5a428c9a08563b28a78874bba09124eecc8d28bf30b0e2ddd310745f04abf5cb34d6244378cddbf18e849d962c000000000736d8e8140100505f0e7b9012096b41c4eb3aaf947f6ea4290800004c5f0684a022a34dd8bfa2baaf44f172b710040180dd3270a03a1a13fc20bcdf24d1aa4ddccc6183db2e2e153b8a68ba8540699a8a80b413dad63538a591f7f2575d287520ee44d7143aa5ec2411969861e1f55a2989804c3f0f541a13980689894db7c60c785dd29e066f213bb29b17aa740682ad7efd8026d3a50544f5c89500745aca2be36cfe076f599c5115192fb9deae227e2710c980bd04b00bf6b42756a06a4fbf05a5231c2094e48182eca95d2cff73ab907592aa").to_vec(),
 			].to_vec();
+			let spiritnet_state_root: H256 =
+				hex!("94c23fda279cea4a4370e90f1544c8938923dfd4ac201a420c7a26fb0d3caf8c").into();
 			// As of query system::eventCount() at block
 			// "0x2c0746e7e9ccc6e4d27bcb4118cb6821ae53ae9bf372f4f49ac28d8598f9bed5" which
 			// results in the key
@@ -290,6 +272,7 @@ pub mod parachain {
 			let returned_event_count =
 				DipCommitmentValueProofVerifier::<StaticSpiritnetInfoProvider>::verify_proof_for_identifier(
 					&(),
+					spiritnet_state_root,
 					spiritnet_event_count_proof_at_block,
 				)
 				.unwrap();

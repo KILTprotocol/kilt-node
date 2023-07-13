@@ -16,8 +16,9 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use sp_core::Get;
-use sp_runtime::traits::{CheckedAdd, One, Zero};
+use parity_scale_codec::Encode;
+use sp_core::{storage::StorageKey, Get};
+use sp_runtime::traits::{BlakeTwo256, CheckedAdd, One, Zero};
 use sp_std::marker::PhantomData;
 
 // TODO: Switch to the `Incrementable` trait once it's added to the root of
@@ -73,5 +74,78 @@ where
 {
 	fn get() -> T::BlockNumber {
 		frame_system::Pallet::<T>::block_number()
+	}
+}
+
+pub trait RelayChainStateInfoProvider {
+	type BlockNumber;
+	type Key;
+	type Hasher: sp_runtime::traits::Hash;
+	type ParaId;
+
+	fn parachain_head_storage_key(para_id: &Self::ParaId) -> Self::Key;
+	fn state_root() -> <Self::Hasher as sp_runtime::traits::Hash>::Output;
+}
+
+pub struct RococoParachainRuntime<Runtime>(PhantomData<Runtime>);
+
+impl<Runtime> RelayChainStateInfoProvider for RococoParachainRuntime<Runtime>
+where
+	Runtime: cumulus_pallet_parachain_system::Config,
+{
+	type BlockNumber = u64;
+	// TODO: This is not exported
+	type Hasher = BlakeTwo256;
+	type Key = StorageKey;
+	type ParaId = u32;
+
+	fn state_root() -> <Self::Hasher as sp_runtime::traits::Hash>::Output {
+		let Some(validation_data) = cumulus_pallet_parachain_system::Pallet::<Runtime>::validation_data() else { panic!("Parent validation data should always be set."); };
+		validation_data.relay_parent_storage_root
+	}
+
+	fn parachain_head_storage_key(para_id: &Self::ParaId) -> Self::Key {
+		// TODO: It's not possible to access the runtime definition from here.
+		let encoded_para_id = para_id.encode();
+		let storage_key = [
+			frame_support::storage::storage_prefix(b"Paras", b"Heads").as_slice(),
+			sp_io::hashing::twox_64(&encoded_para_id).as_slice(),
+			encoded_para_id.as_slice(),
+		]
+		.concat();
+		StorageKey(storage_key)
+	}
+}
+
+pub trait ParachainStateInfoProvider {
+	type Commitment;
+	type Key;
+	type Hasher: sp_runtime::traits::Hash;
+	type Identifier;
+
+	fn dip_subject_storage_key(identifier: &Self::Identifier) -> Self::Key;
+}
+
+pub struct DipProviderParachainRuntime<Runtime>(PhantomData<Runtime>);
+
+impl<Runtime> ParachainStateInfoProvider for DipProviderParachainRuntime<Runtime>
+where
+	Runtime: pallet_dip_provider::Config,
+{
+	type Commitment = <Runtime as pallet_dip_provider::Config>::IdentityCommitment;
+	type Hasher = <Runtime as frame_system::Config>::Hashing;
+	type Identifier = <Runtime as pallet_dip_provider::Config>::Identifier;
+	type Key = StorageKey;
+
+	fn dip_subject_storage_key(identifier: &Self::Identifier) -> Self::Key {
+		// TODO: Replace with actual runtime definition
+		let encoded_identifier = identifier.encode();
+		let storage_key = [
+			frame_support::storage::storage_prefix(b"DipProvider", b"IdentityCommitments").as_slice(),
+			sp_io::hashing::twox_64(&encoded_identifier).as_slice(),
+			encoded_identifier.as_slice(),
+		]
+		.concat();
+		StorageKey(storage_key)
 	}
 }
