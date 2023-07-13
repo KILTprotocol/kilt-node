@@ -125,7 +125,7 @@ pub mod pallet {
 				&identifier,
 				&submitter,
 				&mut identity_entry,
-				&proof,
+				proof,
 			);
 			// Write the identity info to storage after it has optionally been updated by
 			// the `ProofVerifier`, regardless of whether the proof has been verified or

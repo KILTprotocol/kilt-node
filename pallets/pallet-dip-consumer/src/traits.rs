@@ -30,7 +30,7 @@ pub trait IdentityProofVerifier<Call, Subject> {
 		subject: &Subject,
 		submitter: &Self::Submitter,
 		identity_details: &mut Option<Self::IdentityDetails>,
-		proof: &Self::Proof,
+		proof: Self::Proof,
 	) -> Result<Self::VerificationResult, Self::Error>;
 }
 
@@ -50,7 +50,7 @@ impl<Call, Subject, IdentityDetails, Proof, Submitter> IdentityProofVerifier<Cal
 		_subject: &Subject,
 		_submitter: &Self::Submitter,
 		_identity_details: &mut Option<Self::IdentityDetails>,
-		_proof: &Self::Proof,
+		_proof: Self::Proof,
 	) -> Result<Self::VerificationResult, Self::Error> {
 		Ok(())
 	}

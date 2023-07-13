@@ -86,7 +86,7 @@ impl<Web3Name> From<Web3Name> for Web3NameMerkleKey<Web3Name> {
 	}
 }
 #[derive(Clone, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo)]
-pub struct Web3NameMerkleValue<BlockNumber>(BlockNumber);
+pub struct Web3NameMerkleValue<BlockNumber>(pub BlockNumber);
 
 impl<BlockNumber> From<BlockNumber> for Web3NameMerkleValue<BlockNumber> {
 	fn from(value: BlockNumber) -> Self {
@@ -276,7 +276,7 @@ impl<
 		_subject: &Subject,
 		_submitter: &Self::Submitter,
 		identity_details: &mut Option<Self::IdentityDetails>,
-		proof: &Self::Proof,
+		proof: Self::Proof,
 	) -> Result<Self::VerificationResult, Self::Error> {
 		// TODO: more efficient by removing cloning and/or collecting.
 		// Did not find another way of mapping a Vec<(Vec<u8>, Vec<u8>)> to a

@@ -145,7 +145,7 @@ impl<
 		_subject: &Subject,
 		submitter: &Self::Submitter,
 		identity_details: &mut Option<Self::IdentityDetails>,
-		proof: &Self::Proof,
+		proof: Self::Proof,
 	) -> Result<Self::VerificationResult, Self::Error> {
 		let block_number = BlockNumberProvider::get();
 		let is_signature_fresh =
@@ -225,7 +225,7 @@ where
 		subject: &Subject,
 		submitter: &Self::Submitter,
 		identity_details: &mut Option<Self::IdentityDetails>,
-		proof: &Self::Proof,
+		proof: Self::Proof,
 	) -> Result<Self::VerificationResult, Self::Error> {
 		let did_signing_key = DidSignatureVerifier::verify_proof_for_call_against_details(
 			call,
