@@ -56,7 +56,7 @@ fn check_successful_simple_ed25519_creation() {
 		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			assert_ok!(Did::create(
 				RuntimeOrigin::signed(ACCOUNT_00),
 				Box::new(details),
@@ -99,7 +99,7 @@ fn check_successful_simple_sr25519_creation() {
 		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			assert_ok!(Did::create(
 				RuntimeOrigin::signed(ACCOUNT_00),
 				Box::new(details),
@@ -141,7 +141,7 @@ fn check_successful_simple_ecdsa_creation() {
 		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			assert_ok!(Did::create(
 				RuntimeOrigin::signed(ACCOUNT_00),
 				Box::new(details),
@@ -213,7 +213,7 @@ fn check_successful_complete_creation() {
 
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			assert_ok!(Did::create(
 				RuntimeOrigin::signed(ACCOUNT_00),
 				Box::new(details.clone()),
@@ -307,7 +307,7 @@ fn check_deposit_change_by_adding_service_endpoint() {
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), balance)])
 		.with_dids(vec![(alice_did.clone(), did_details)])
-		.build(None)
+		.build(None, false)
 		.execute_with(|| {
 			assert_ok!(Did::add_service_endpoint(
 				RuntimeOrigin::signed(alice_did.clone()),
@@ -351,7 +351,7 @@ fn check_duplicate_did_creation() {
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.with_dids(vec![(alice_did, mock_did)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			assert_noop!(
 				Did::create(
 					RuntimeOrigin::signed(ACCOUNT_00),
@@ -380,7 +380,7 @@ fn check_unauthorised_submitter_did_creation_error() {
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.with_dids(vec![(alice_did, mock_did)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			assert_noop!(
 				// Use ACCOUNT_00 to submit the transaction
 				Did::create(
@@ -401,7 +401,7 @@ fn create_fail_insufficient_balance() {
 
 	let signature = auth_key.sign(details.encode().as_ref());
 
-	ExtBuilder::default().build(None).execute_with(|| {
+	ExtBuilder::default().build(None, false).execute_with(|| {
 		assert_noop!(
 			Did::create(
 				RuntimeOrigin::signed(ACCOUNT_00),
@@ -427,7 +427,7 @@ fn check_did_already_deleted_creation() {
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.with_deleted_dids(vec![alice_did])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			assert_noop!(
 				Did::create(
 					RuntimeOrigin::signed(ACCOUNT_00),
@@ -455,7 +455,7 @@ fn check_invalid_signature_format_did_creation() {
 		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			assert_noop!(
 				Did::create(
 					RuntimeOrigin::signed(ACCOUNT_00),
@@ -481,7 +481,7 @@ fn check_invalid_signature_did_creation() {
 		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			assert_noop!(
 				Did::create(
 					RuntimeOrigin::signed(ACCOUNT_00),
@@ -507,7 +507,7 @@ fn check_swapped_did_subject_did_creation() {
 		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			assert_noop!(
 				Did::create(
 					RuntimeOrigin::signed(ACCOUNT_00),
@@ -536,7 +536,7 @@ fn check_max_limit_key_agreement_keys_did_creation() {
 		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
-		.build(None)
+		.build(None, false)
 		.execute_with(|| {
 			assert_noop!(
 				Did::create(
@@ -572,7 +572,7 @@ fn check_max_limit_service_endpoints_count_did_creation() {
 		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			assert_noop!(
 				Did::create(
 					RuntimeOrigin::signed(ACCOUNT_00),
@@ -600,7 +600,7 @@ fn check_max_limit_service_id_length_did_creation() {
 		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
-		.build(None)
+		.build(None, false)
 		.execute_with(|| {
 			assert_noop!(
 				Did::create(
@@ -635,7 +635,7 @@ fn check_max_limit_service_type_count_did_creation() {
 		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
-		.build(None)
+		.build(None, false)
 		.execute_with(|| {
 			assert_noop!(
 				Did::create(
@@ -664,7 +664,7 @@ fn check_max_limit_service_type_length_did_creation() {
 		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
-		.build(None)
+		.build(None, false)
 		.execute_with(|| {
 			assert_noop!(
 				Did::create(
@@ -699,7 +699,7 @@ fn check_max_limit_service_url_count_did_creation() {
 		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
-		.build(None)
+		.build(None, false)
 		.execute_with(|| {
 			assert_noop!(
 				Did::create(
@@ -728,7 +728,7 @@ fn check_max_limit_service_url_length_did_creation() {
 		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
-		.build(None)
+		.build(None, false)
 		.execute_with(|| {
 			assert_noop!(
 				Did::create(
@@ -757,7 +757,7 @@ fn check_invalid_service_id_character_did_creation() {
 		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			assert_noop!(
 				Did::create(
 					RuntimeOrigin::signed(ACCOUNT_00),
@@ -785,7 +785,7 @@ fn check_invalid_service_type_character_did_creation() {
 		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			assert_noop!(
 				Did::create(
 					RuntimeOrigin::signed(ACCOUNT_00),
@@ -813,7 +813,7 @@ fn check_invalid_service_url_character_did_creation() {
 		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			assert_noop!(
 				Did::create(
 					RuntimeOrigin::signed(ACCOUNT_00),
@@ -842,7 +842,7 @@ fn check_successful_authentication_key_update() {
 	ExtBuilder::default()
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			System::set_block_number(new_block_number);
 			assert_ok!(Did::set_authentication_key(
 				RuntimeOrigin::signed(alice_did.clone()),
@@ -884,7 +884,7 @@ fn check_successful_authentication_key_max_public_keys_update() {
 	ExtBuilder::default()
 		.with_dids(vec![(alice_did.clone(), did_details)])
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			System::set_block_number(new_block_number);
 			assert_ok!(Did::set_authentication_key(
 				RuntimeOrigin::signed(alice_did.clone()),
@@ -923,7 +923,7 @@ fn check_reused_key_authentication_key_update() {
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			System::set_block_number(new_block_number);
 			assert_ok!(Did::set_authentication_key(
 				RuntimeOrigin::signed(alice_did.clone()),
@@ -975,7 +975,7 @@ fn check_max_keys_authentication_key_update_error() {
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(alice_did.clone(), did_details)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			System::set_block_number(new_block_number);
 			assert_noop!(
 				Did::set_authentication_key(
@@ -996,7 +996,7 @@ fn check_did_not_present_authentication_key_update_error() {
 	let new_block_number: BlockNumber = 1;
 
 	// Update authentication key. The old one should be removed.
-	ExtBuilder::default().build(None).execute_with(|| {
+	ExtBuilder::default().build(None, false).execute_with(|| {
 		System::set_block_number(new_block_number);
 		assert_noop!(
 			Did::set_authentication_key(
@@ -1025,7 +1025,7 @@ fn check_successful_delegation_key_update() {
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			System::set_block_number(new_block_number);
 			assert_ok!(Did::set_delegation_key(
 				RuntimeOrigin::signed(alice_did.clone()),
@@ -1069,7 +1069,7 @@ fn check_successful_delegation_key_max_public_keys_update() {
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(alice_did.clone(), did_details)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			System::set_block_number(new_block_number);
 			assert_ok!(Did::set_delegation_key(
 				RuntimeOrigin::signed(alice_did.clone()),
@@ -1106,7 +1106,7 @@ fn check_reused_key_delegation_key_update() {
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			System::set_block_number(new_block_number);
 			assert_ok!(Did::set_delegation_key(
 				RuntimeOrigin::signed(alice_did.clone()),
@@ -1150,7 +1150,7 @@ fn check_max_public_keys_delegation_key_addition_error() {
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(alice_did.clone(), did_details)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			System::set_block_number(new_block_number);
 			assert_noop!(
 				Did::set_delegation_key(
@@ -1187,7 +1187,7 @@ fn check_max_public_keys_reused_key_delegation_key_update_error() {
 	ExtBuilder::default()
 		.with_dids(vec![(alice_did.clone(), did_details)])
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			System::set_block_number(new_block_number);
 			assert_noop!(
 				Did::set_delegation_key(
@@ -1208,7 +1208,7 @@ fn check_did_not_present_delegation_key_update_error() {
 	let new_block_number: BlockNumber = 1;
 
 	// Update delegation key. The old one should be removed.
-	ExtBuilder::default().build(None).execute_with(|| {
+	ExtBuilder::default().build(None, false).execute_with(|| {
 		System::set_block_number(new_block_number);
 		assert_noop!(
 			Did::set_delegation_key(
@@ -1233,7 +1233,7 @@ fn check_successful_delegation_key_deletion() {
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			assert_ok!(Did::remove_delegation_key(RuntimeOrigin::signed(alice_did.clone())));
 
 			let new_did_details = Did::get_did(&alice_did).expect("ALICE_DID should be present on chain.");
@@ -1259,7 +1259,7 @@ fn check_successful_reused_delegation_key_deletion() {
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(alice_did.clone(), old_did_details.clone())])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			assert_ok!(Did::remove_delegation_key(RuntimeOrigin::signed(alice_did.clone())));
 
 			let new_did_details = Did::get_did(&alice_did).expect("ALICE_DID should be present on chain.");
@@ -1278,7 +1278,7 @@ fn check_did_not_present_delegation_key_deletion_error() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 
-	ExtBuilder::default().build(None).execute_with(|| {
+	ExtBuilder::default().build(None, false).execute_with(|| {
 		assert_noop!(
 			Did::remove_delegation_key(RuntimeOrigin::signed(alice_did.clone())),
 			did::Error::<Test>::NotFound
@@ -1297,7 +1297,7 @@ fn check_key_not_present_delegation_key_deletion_error() {
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			assert_noop!(
 				Did::remove_delegation_key(RuntimeOrigin::signed(alice_did.clone())),
 				did::Error::<Test>::VerificationKeyNotFound
@@ -1322,7 +1322,7 @@ fn check_successful_attestation_key_update() {
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			System::set_block_number(new_block_number);
 			assert_ok!(Did::set_attestation_key(
 				RuntimeOrigin::signed(alice_did.clone()),
@@ -1365,7 +1365,7 @@ fn check_successful_attestation_key_max_public_keys_update() {
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(alice_did.clone(), did_details)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			System::set_block_number(new_block_number);
 			assert_ok!(Did::set_attestation_key(
 				RuntimeOrigin::signed(alice_did.clone()),
@@ -1401,7 +1401,7 @@ fn check_reused_key_attestation_key_update() {
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			System::set_block_number(new_block_number);
 			assert_ok!(Did::set_attestation_key(
 				RuntimeOrigin::signed(alice_did.clone()),
@@ -1445,7 +1445,7 @@ fn check_max_public_keys_attestation_key_addition_error() {
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(alice_did.clone(), did_details)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			System::set_block_number(new_block_number);
 			assert_noop!(
 				Did::set_attestation_key(
@@ -1482,7 +1482,7 @@ fn check_max_public_keys_reused_key_attestation_key_update_error() {
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(alice_did.clone(), did_details)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			System::set_block_number(new_block_number);
 			assert_noop!(
 				Did::set_attestation_key(
@@ -1503,7 +1503,7 @@ fn check_did_not_present_attestation_key_update_error() {
 	let new_block_number: BlockNumber = 1;
 
 	// Update delegation key. The old one should be removed.
-	ExtBuilder::default().build(None).execute_with(|| {
+	ExtBuilder::default().build(None, false).execute_with(|| {
 		System::set_block_number(new_block_number);
 		assert_noop!(
 			Did::set_delegation_key(
@@ -1528,7 +1528,7 @@ fn check_successful_attestation_key_deletion() {
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			assert_ok!(Did::remove_attestation_key(RuntimeOrigin::signed(alice_did.clone())));
 
 			let new_did_details = Did::get_did(&alice_did).expect("ALICE_DID should be present on chain.");
@@ -1554,7 +1554,7 @@ fn check_successful_reused_attestation_key_deletion() {
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(alice_did.clone(), old_did_details.clone())])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			assert_ok!(Did::remove_attestation_key(RuntimeOrigin::signed(alice_did.clone())));
 			let new_did_details = Did::get_did(&alice_did).expect("ALICE_DID should be present on chain.");
 			assert!(new_did_details.attestation_key.is_none());
@@ -1572,7 +1572,7 @@ fn check_did_not_present_attestation_key_deletion_error() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 
-	ExtBuilder::default().build(None).execute_with(|| {
+	ExtBuilder::default().build(None, false).execute_with(|| {
 		assert_noop!(
 			Did::remove_attestation_key(RuntimeOrigin::signed(alice_did.clone())),
 			did::Error::<Test>::NotFound
@@ -1591,7 +1591,7 @@ fn check_key_not_present_attestation_key_deletion_error() {
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			assert_noop!(
 				Did::remove_attestation_key(RuntimeOrigin::signed(alice_did.clone())),
 				did::Error::<Test>::VerificationKeyNotFound
@@ -1613,7 +1613,7 @@ fn check_successful_key_agreement_key_addition() {
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			System::set_block_number(new_block_number);
 			assert_ok!(Did::add_key_agreement_key(
 				RuntimeOrigin::signed(alice_did.clone()),
@@ -1654,7 +1654,7 @@ fn check_max_public_keys_key_agreement_key_addition_error() {
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(alice_did.clone(), did_details)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			System::set_block_number(new_block_number);
 			assert_noop!(
 				Did::add_key_agreement_key(RuntimeOrigin::signed(alice_did.clone()), new_key_agreement_key,),
@@ -1672,7 +1672,7 @@ fn check_did_not_present_key_agreement_key_addition_error() {
 	let new_block_number: BlockNumber = 1;
 
 	// Update delegation key. The old one should be removed.
-	ExtBuilder::default().build(None).execute_with(|| {
+	ExtBuilder::default().build(None, false).execute_with(|| {
 		System::set_block_number(new_block_number);
 		assert_noop!(
 			Did::add_key_agreement_key(RuntimeOrigin::signed(alice_did.clone()), new_enc_key),
@@ -1694,7 +1694,7 @@ fn check_successful_key_agreement_key_deletion() {
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			assert_ok!(Did::remove_key_agreement_key(
 				RuntimeOrigin::signed(alice_did.clone()),
 				generate_key_id(&old_enc_key.into()),
@@ -1715,7 +1715,7 @@ fn check_did_not_found_key_agreement_key_deletion_error() {
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let test_enc_key = get_x25519_encryption_key(true);
 
-	ExtBuilder::default().build(None).execute_with(|| {
+	ExtBuilder::default().build(None, false).execute_with(|| {
 		assert_noop!(
 			Did::remove_key_agreement_key(
 				RuntimeOrigin::signed(alice_did.clone()),
@@ -1739,7 +1739,7 @@ fn check_key_not_found_key_agreement_key_deletion_error() {
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			assert_noop!(
 				Did::remove_key_agreement_key(
 					RuntimeOrigin::signed(alice_did.clone()),
@@ -1764,7 +1764,7 @@ fn check_service_addition_no_prior_service_successful() {
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			assert_ok!(Did::add_service_endpoint(
 				RuntimeOrigin::signed(alice_did.clone()),
 				new_service_endpoint.clone()
@@ -1802,7 +1802,7 @@ fn check_service_addition_one_from_full_successful() {
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
 		.with_endpoints(vec![(alice_did.clone(), old_service_endpoints)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			assert_ok!(Did::add_service_endpoint(
 				RuntimeOrigin::signed(alice_did.clone()),
 				new_service_endpoint.clone()
@@ -1829,7 +1829,7 @@ fn check_did_not_present_services_addition_error() {
 
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
-		.build(None)
+		.build(None, false)
 		.execute_with(|| {
 			assert_noop!(
 				Did::add_service_endpoint(RuntimeOrigin::signed(alice_did.clone()), new_service_endpoint),
@@ -1851,7 +1851,7 @@ fn check_service_already_present_addition_error() {
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_endpoints(vec![(alice_did.clone(), vec![service_endpoint.clone()])])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			assert_noop!(
 				Did::add_service_endpoint(RuntimeOrigin::signed(alice_did.clone()), service_endpoint),
 				did::Error::<Test>::ServiceAlreadyExists
@@ -1880,7 +1880,7 @@ fn check_max_services_count_addition_error() {
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
 		.with_endpoints(vec![(alice_did.clone(), old_service_endpoints)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			assert_noop!(
 				Did::add_service_endpoint(RuntimeOrigin::signed(alice_did.clone()), new_service_endpoint),
 				did::Error::<Test>::MaxNumberOfServicesExceeded
@@ -1907,7 +1907,7 @@ fn check_max_service_id_length_addition_error() {
 
 	ExtBuilder::default()
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
-		.build(None)
+		.build(None, false)
 		.execute_with(|| {
 			assert_noop!(
 				Did::add_service_endpoint(RuntimeOrigin::signed(alice_did.clone()), new_service_endpoint),
@@ -1935,7 +1935,7 @@ fn check_max_service_type_length_addition_error() {
 
 	ExtBuilder::default()
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
-		.build(None)
+		.build(None, false)
 		.execute_with(|| {
 			assert_noop!(
 				Did::add_service_endpoint(RuntimeOrigin::signed(alice_did.clone()), new_service_endpoint),
@@ -1963,7 +1963,7 @@ fn check_max_service_type_count_addition_error() {
 
 	ExtBuilder::default()
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
-		.build(None)
+		.build(None, false)
 		.execute_with(|| {
 			assert_noop!(
 				Did::add_service_endpoint(RuntimeOrigin::signed(alice_did.clone()), new_service_endpoint),
@@ -1991,7 +1991,7 @@ fn check_max_service_url_length_addition_error() {
 
 	ExtBuilder::default()
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
-		.build(None)
+		.build(None, false)
 		.execute_with(|| {
 			assert_noop!(
 				Did::add_service_endpoint(RuntimeOrigin::signed(alice_did.clone()), new_service_endpoint),
@@ -2019,7 +2019,7 @@ fn check_max_service_url_count_addition_error() {
 
 	ExtBuilder::default()
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
-		.build(None)
+		.build(None, false)
 		.execute_with(|| {
 			assert_noop!(
 				Did::add_service_endpoint(RuntimeOrigin::signed(alice_did.clone()), new_service_endpoint),
@@ -2040,7 +2040,7 @@ fn character_addition_error() {
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			assert_noop!(
 				Did::add_service_endpoint(RuntimeOrigin::signed(alice_did.clone()), new_service_details),
 				did::Error::<Test>::InvalidServiceEncoding
@@ -2060,7 +2060,7 @@ fn check_invalid_service_type_character_addition_error() {
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			assert_noop!(
 				Did::add_service_endpoint(RuntimeOrigin::signed(alice_did.clone()), new_service_details),
 				did::Error::<Test>::InvalidServiceEncoding
@@ -2081,7 +2081,7 @@ fn check_invalid_service_url_character_addition_error() {
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			assert_noop!(
 				Did::add_service_endpoint(RuntimeOrigin::signed(alice_did.clone()), new_service_details),
 				did::Error::<Test>::InvalidServiceEncoding
@@ -2105,7 +2105,7 @@ fn check_service_deletion_successful() {
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_endpoints(vec![(alice_did.clone(), vec![old_service_endpoint.clone()])])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			assert_ok!(Did::remove_service_endpoint(
 				RuntimeOrigin::signed(alice_did.clone()),
 				old_service_endpoint.id
@@ -2131,7 +2131,7 @@ fn check_service_not_present_deletion_error() {
 	ExtBuilder::default()
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			assert_noop!(
 				Did::remove_service_endpoint(
 					RuntimeOrigin::signed(alice_did.clone()),
@@ -2160,7 +2160,7 @@ fn check_successful_deletion_no_endpoints() {
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.with_dids(vec![(alice_did.clone(), did_details)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			assert_eq!(did::pallet::DidEndpointsCount::<Test>::get(&alice_did), 0);
 			assert_eq!(
 				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
@@ -2207,7 +2207,7 @@ fn check_successful_deletion_with_endpoints() {
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.with_dids(vec![(alice_did.clone(), did_details)])
 		.with_endpoints(vec![(alice_did.clone(), vec![service_endpoint])])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			assert_eq!(did::pallet::DidEndpointsCount::<Test>::get(&alice_did), 1);
 			assert_eq!(
 				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
@@ -2246,7 +2246,7 @@ fn check_did_not_present_deletion() {
 		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			assert_noop!(
 				Did::delete(RuntimeOrigin::signed(alice_did), 0),
 				did::Error::<Test>::NotFound
@@ -2272,7 +2272,7 @@ fn check_service_count_too_small_deletion_error() {
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.with_dids(vec![(alice_did.clone(), did_details)])
 		.with_endpoints(vec![(alice_did.clone(), vec![service_endpoint])])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			assert_noop!(
 				Did::delete(RuntimeOrigin::signed(alice_did.clone()), 0),
 				did::Error::<Test>::MaxStoredEndpointsCountExceeded
@@ -2299,7 +2299,7 @@ fn check_successful_reclaiming() {
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.with_dids(vec![(alice_did.clone(), did_details)])
 		.with_endpoints(vec![(alice_did.clone(), vec![old_service_endpoint])])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			assert_eq!(did::pallet::DidEndpointsCount::<Test>::get(&alice_did), 1);
 			assert_eq!(
 				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
@@ -2346,7 +2346,7 @@ fn unauthorized_reclaiming() {
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.with_dids(vec![(alice_did.clone(), did_details)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			assert_eq!(
 				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
 				<Test as did::Config>::BaseDeposit::get()
@@ -2376,7 +2376,7 @@ fn check_service_count_too_small_reclaim_error() {
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.with_dids(vec![(alice_did.clone(), did_details)])
 		.with_endpoints(vec![(alice_did.clone(), vec![service_endpoint])])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			assert_noop!(
 				Did::reclaim_deposit(RuntimeOrigin::signed(ACCOUNT_00.clone()), alice_did.clone(), 0),
 				did::Error::<Test>::MaxStoredEndpointsCountExceeded
@@ -2396,7 +2396,7 @@ fn check_did_not_found_call_error() {
 	let signature = auth_key.sign(call_operation.encode().as_ref());
 
 	// No DID added
-	ExtBuilder::default().build(None).execute_with(|| {
+	ExtBuilder::default().build(None, false).execute_with(|| {
 		assert_noop!(
 			Did::submit_did_call(
 				RuntimeOrigin::signed(caller),
@@ -2429,7 +2429,7 @@ fn check_too_small_tx_counter_after_wrap_call_error() {
 	ExtBuilder::default()
 		.with_balances(vec![(did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(did, mock_did)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			assert_noop!(
 				Did::submit_did_call(
 					RuntimeOrigin::signed(caller),
@@ -2461,7 +2461,7 @@ fn check_too_small_tx_counter_call_error() {
 	ExtBuilder::default()
 		.with_balances(vec![(did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(did, mock_did)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			assert_noop!(
 				Did::submit_did_call(
 					RuntimeOrigin::signed(caller),
@@ -2491,7 +2491,7 @@ fn check_equal_tx_counter_call_error() {
 	ExtBuilder::default()
 		.with_balances(vec![(did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(did, mock_did)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			assert_noop!(
 				Did::submit_did_call(
 					RuntimeOrigin::signed(caller),
@@ -2521,7 +2521,7 @@ fn check_too_large_tx_counter_call_error() {
 	ExtBuilder::default()
 		.with_balances(vec![(did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(did, mock_did)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			assert_noop!(
 				Did::submit_did_call(
 					RuntimeOrigin::signed(caller),
@@ -2551,7 +2551,7 @@ fn check_tx_block_number_too_low_error() {
 	ExtBuilder::default()
 		.with_balances(vec![(did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(did, mock_did)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			// System block number 1 past the max block the operation was allowed for.
 			System::set_block_number(call_operation.operation.block_number + MaxBlocksTxValidity::get() + 1);
 			assert_noop!(
@@ -2593,7 +2593,7 @@ fn check_tx_block_number_too_high_error() {
 	ExtBuilder::default()
 		.with_balances(vec![(did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(did, mock_did)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			// System block number is still too low, meaning that the block number used in
 			// the operation was too high.
 			System::set_block_number(call_operation.operation.block_number - MaxBlocksTxValidity::get() - 1);
@@ -2627,7 +2627,7 @@ fn check_verification_key_not_present_call_error() {
 	ExtBuilder::default()
 		.with_dids(vec![(did.clone(), mock_did)])
 		.with_balances(vec![(did, DEFAULT_BALANCE)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			assert_noop!(
 				Did::submit_did_call(
 					RuntimeOrigin::signed(caller),
@@ -2657,7 +2657,7 @@ fn check_invalid_signature_format_call_error() {
 	ExtBuilder::default()
 		.with_balances(vec![(did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(did, mock_did)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			assert_noop!(
 				Did::submit_did_call(
 					RuntimeOrigin::signed(caller),
@@ -2685,7 +2685,7 @@ fn check_bad_submitter_error() {
 	ExtBuilder::default()
 		.with_dids(vec![(did.clone(), mock_did)])
 		.with_balances(vec![(did, DEFAULT_BALANCE)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			assert_noop!(
 				Did::submit_did_call(
 					RuntimeOrigin::signed(caller),
@@ -2715,7 +2715,7 @@ fn check_invalid_signature_call_error() {
 	ExtBuilder::default()
 		.with_balances(vec![(did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(did, mock_did)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			assert_noop!(
 				Did::submit_did_call(
 					RuntimeOrigin::signed(caller),
@@ -2748,7 +2748,7 @@ fn check_call_attestation_key_successful() {
 	ExtBuilder::default()
 		.with_balances(vec![(did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(did, mock_did)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			assert_ok!(Did::submit_did_call(
 				RuntimeOrigin::signed(caller),
 				Box::new(call_operation.operation),
@@ -2782,7 +2782,7 @@ fn check_call_attestation_key_error() {
 			<Test as frame_system::Config>::Hashing::hash(&get_attestation_key_test_input()[..]),
 			did,
 		)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			assert_err!(
 				Did::submit_did_call(
 					RuntimeOrigin::signed(caller),
@@ -2815,7 +2815,7 @@ fn check_call_delegation_key_successful() {
 	ExtBuilder::default()
 		.with_dids(vec![(did, mock_did)])
 		.with_balances(vec![(caller.clone(), DEFAULT_BALANCE)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			assert_ok!(Did::submit_did_call(
 				RuntimeOrigin::signed(caller),
 				Box::new(call_operation.operation),
@@ -2849,7 +2849,7 @@ fn check_call_delegation_key_error() {
 			<Test as frame_system::Config>::Hashing::hash(&get_delegation_key_test_input()[..]),
 			did,
 		)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			assert_err!(
 				Did::submit_did_call(
 					RuntimeOrigin::signed(caller),
@@ -2879,7 +2879,7 @@ fn check_call_authentication_key_successful() {
 	ExtBuilder::default()
 		.with_balances(vec![(did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(did, mock_did)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			assert_ok!(Did::submit_did_call(
 				RuntimeOrigin::signed(caller),
 				Box::new(call_operation.operation),
@@ -2910,7 +2910,7 @@ fn check_call_authentication_key_error() {
 			<Test as frame_system::Config>::Hashing::hash(&get_authentication_key_test_input()[..]),
 			did,
 		)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			assert_err!(
 				Did::submit_did_call(
 					RuntimeOrigin::signed(caller),
@@ -2937,7 +2937,7 @@ fn check_null_key_error() {
 	);
 	let signature = ed25519::Signature::from_raw([0u8; 64]);
 
-	ExtBuilder::default().build(None).execute_with(|| {
+	ExtBuilder::default().build(None, false).execute_with(|| {
 		assert_noop!(
 			Did::submit_did_call(
 				RuntimeOrigin::signed(caller),
@@ -2965,7 +2965,7 @@ fn check_authentication_successful_operation_verification() {
 	ExtBuilder::default()
 		.with_dids(vec![(did.clone(), mock_did.clone())])
 		.with_balances(vec![(did, DEFAULT_BALANCE)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			assert_ok!(Did::verify_did_operation_signature_and_increase_nonce(
 				&call_operation,
 				&did::DidSignature::from(signature)
@@ -2993,7 +2993,7 @@ fn check_attestation_successful_operation_verification() {
 	ExtBuilder::default()
 		.with_dids(vec![(did.clone(), mock_did.clone())])
 		.with_balances(vec![(did, DEFAULT_BALANCE)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			assert_ok!(Did::verify_did_operation_signature_and_increase_nonce(
 				&call_operation,
 				&did::DidSignature::from(signature)
@@ -3024,7 +3024,7 @@ fn check_delegation_successful_operation_verification() {
 	ExtBuilder::default()
 		.with_balances(vec![(did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(did, mock_did.clone())])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			assert_ok!(Did::verify_did_operation_signature_and_increase_nonce(
 				&call_operation,
 				&did::DidSignature::from(signature)
@@ -3043,7 +3043,7 @@ fn check_did_not_present_operation_verification() {
 	let call_operation = generate_test_did_call(DidVerificationKeyRelationship::CapabilityDelegation, did, ACCOUNT_00);
 	let signature = auth_key.sign(call_operation.encode().as_ref());
 
-	ExtBuilder::default().build(None).execute_with(|| {
+	ExtBuilder::default().build(None, false).execute_with(|| {
 		assert_noop!(
 			Did::verify_did_operation_signature_and_increase_nonce(
 				&call_operation,
@@ -3072,7 +3072,7 @@ fn check_tx_counter_wrap_operation_verification() {
 	ExtBuilder::default()
 		.with_dids(vec![(did.clone(), mock_did)])
 		.with_balances(vec![(did, DEFAULT_BALANCE)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			assert_ok!(Did::verify_did_operation_signature_and_increase_nonce(
 				&call_operation,
 				&did::DidSignature::from(signature)
@@ -3103,7 +3103,7 @@ fn check_smaller_counter_operation_verification() {
 	ExtBuilder::default()
 		.with_dids(vec![(did.clone(), mock_did)])
 		.with_balances(vec![(did, DEFAULT_BALANCE)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			assert_noop!(
 				Did::verify_did_operation_signature_and_increase_nonce(
 					&call_operation,
@@ -3132,7 +3132,7 @@ fn check_equal_counter_operation_verification() {
 	ExtBuilder::default()
 		.with_balances(vec![(did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(did, mock_did)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			assert_noop!(
 				Did::verify_did_operation_signature_and_increase_nonce(
 					&call_operation,
@@ -3161,7 +3161,7 @@ fn check_too_large_counter_operation_verification() {
 	ExtBuilder::default()
 		.with_dids(vec![(did.clone(), mock_did)])
 		.with_balances(vec![(did, DEFAULT_BALANCE)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			assert_noop!(
 				Did::verify_did_operation_signature_and_increase_nonce(
 					&call_operation,
@@ -3186,7 +3186,7 @@ fn check_verification_key_not_present_operation_verification() {
 	ExtBuilder::default()
 		.with_balances(vec![(did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(did, mock_did)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			assert_noop!(
 				Did::verify_did_operation_signature_and_increase_nonce(
 					&call_operation,
@@ -3215,7 +3215,7 @@ fn check_invalid_signature_format_operation_verification() {
 	ExtBuilder::default()
 		.with_balances(vec![(did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(did, mock_did)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			assert_noop!(
 				Did::verify_did_operation_signature_and_increase_nonce(
 					&call_operation,
@@ -3242,7 +3242,7 @@ fn check_invalid_signature_operation_verification() {
 	ExtBuilder::default()
 		.with_balances(vec![(did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(did, mock_did)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			assert_noop!(
 				Did::verify_did_operation_signature_and_increase_nonce(
 					&call_operation,
@@ -3272,7 +3272,7 @@ fn test_change_deposit_owner() {
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance), (alice_did.clone(), balance)])
 		.with_dids(vec![(alice_did.clone(), did_details)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			assert_eq!(
 				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
 				<Test as did::Config>::BaseDeposit::get()
@@ -3302,7 +3302,7 @@ fn test_change_deposit_owner_insufficient_balance() {
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.with_dids(vec![(alice_did.clone(), did_details)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			assert_noop!(
 				Did::change_deposit_owner(RuntimeOrigin::signed(alice_did.clone())),
 				TokenError::CannotCreateHold
@@ -3321,7 +3321,7 @@ fn test_change_deposit_owner_not_found() {
 
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), balance)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			assert_noop!(
 				Did::change_deposit_owner(RuntimeOrigin::signed(alice_did.clone())),
 				crate::Error::<Test>::NotFound
@@ -3342,7 +3342,7 @@ fn test_change_deposit_owner_not_authorized() {
 
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did, balance), (bob_did.clone(), balance)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			assert_noop!(
 				Did::change_deposit_owner(RuntimeOrigin::signed(bob_did.clone())),
 				crate::Error::<Test>::NotFound
@@ -3366,7 +3366,7 @@ fn test_update_deposit() {
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), balance)])
 		.with_dids(vec![(alice_did.clone(), did_details)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			assert_eq!(
 				Balances::balance_on_hold(&HoldReason::Deposit.into(), &alice_did),
 				<Test as did::Config>::BaseDeposit::get() * 2
@@ -3414,7 +3414,7 @@ fn test_update_deposit_unauthorized() {
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), balance)])
 		.with_dids(vec![(alice_did.clone(), did_details)])
-		.build_and_execute_with_sanity_tests(None, || {
+		.build_and_execute_with_sanity_tests(None, false, || {
 			assert_eq!(
 				Balances::balance_on_hold(&HoldReason::Deposit.into(), &alice_did),
 				<Test as did::Config>::BaseDeposit::get() * 2

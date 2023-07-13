@@ -23,7 +23,7 @@ use frame_support::{
 	parameter_types,
 	traits::{
 		fungible::{Balanced, Credit, MutateHold},
-		OnUnbalanced,
+		OnUnbalanced, ReservableCurrency,
 	},
 	weights::constants::RocksDbWeight,
 };
@@ -479,7 +479,7 @@ impl ExtBuilder {
 		self
 	}
 
-	pub fn build(self, ext: Option<sp_io::TestExternalities>) -> sp_io::TestExternalities {
+	pub fn build(self, ext: Option<sp_io::TestExternalities>, reserve_balance: bool) -> sp_io::TestExternalities {
 		let mut ext = if let Some(ext) = ext {
 			ext
 		} else {
@@ -505,8 +505,16 @@ impl ExtBuilder {
 
 			for did in self.dids_stored.iter() {
 				did::Did::<Test>::insert(&did.0, did.1.clone());
-				CurrencyOf::<Test>::hold(&HoldReason::Deposit.into(), &did.1.deposit.owner, did.1.deposit.amount)
+				if reserve_balance {
+					<<Test as Config>::Currency as ReservableCurrency<AccountIdOf<Test>>>::reserve(
+						&did.1.deposit.owner,
+						did.1.deposit.amount,
+					)
 					.expect("Deposit owner should have enough balance");
+				} else {
+					CurrencyOf::<Test>::hold(&HoldReason::Deposit.into(), &did.1.deposit.owner, did.1.deposit.amount)
+						.expect("Deposit owner should have enough balance");
+				}
 			}
 			for did in self.deleted_dids.iter() {
 				DidBlacklist::<Test>::insert(did, ());
@@ -522,8 +530,13 @@ impl ExtBuilder {
 		ext
 	}
 
-	pub fn build_and_execute_with_sanity_tests(self, ext: Option<sp_io::TestExternalities>, test: impl FnOnce()) {
-		self.build(ext).execute_with(|| {
+	pub fn build_and_execute_with_sanity_tests(
+		self,
+		ext: Option<sp_io::TestExternalities>,
+		reserve_balance: bool,
+		test: impl FnOnce(),
+	) {
+		self.build(ext, reserve_balance).execute_with(|| {
 			test();
 			crate::try_state::do_try_state::<Test>().expect("Sanity test for did failed.");
 		})
