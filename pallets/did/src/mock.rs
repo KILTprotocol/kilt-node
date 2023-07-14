@@ -23,12 +23,13 @@ use frame_support::{
 	parameter_types,
 	traits::{
 		fungible::{Balanced, Credit, MutateHold},
+		tokens::Precision,
 		OnUnbalanced, ReservableCurrency,
 	},
 	weights::constants::RocksDbWeight,
 };
 use frame_system::EnsureSigned;
-use pallet_balances::Pallet as PalletBalance;
+use pallet_balances::{Holds, Pallet as PalletBalance};
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
 use sp_core::{ecdsa, ed25519, sr25519, Pair};
@@ -479,7 +480,7 @@ impl ExtBuilder {
 		self
 	}
 
-	pub fn build(self, ext: Option<sp_io::TestExternalities>, reserve_balance: bool) -> sp_io::TestExternalities {
+	pub fn build(self, ext: Option<sp_io::TestExternalities>) -> sp_io::TestExternalities {
 		let mut ext = if let Some(ext) = ext {
 			ext
 		} else {
@@ -505,16 +506,8 @@ impl ExtBuilder {
 
 			for did in self.dids_stored.iter() {
 				did::Did::<Test>::insert(&did.0, did.1.clone());
-				if reserve_balance {
-					<<Test as Config>::Currency as ReservableCurrency<AccountIdOf<Test>>>::reserve(
-						&did.1.deposit.owner,
-						did.1.deposit.amount,
-					)
+				CurrencyOf::<Test>::hold(&HoldReason::Deposit.into(), &did.1.deposit.owner, did.1.deposit.amount)
 					.expect("Deposit owner should have enough balance");
-				} else {
-					CurrencyOf::<Test>::hold(&HoldReason::Deposit.into(), &did.1.deposit.owner, did.1.deposit.amount)
-						.expect("Deposit owner should have enough balance");
-				}
 			}
 			for did in self.deleted_dids.iter() {
 				DidBlacklist::<Test>::insert(did, ());
@@ -530,13 +523,8 @@ impl ExtBuilder {
 		ext
 	}
 
-	pub fn build_and_execute_with_sanity_tests(
-		self,
-		ext: Option<sp_io::TestExternalities>,
-		reserve_balance: bool,
-		test: impl FnOnce(),
-	) {
-		self.build(ext, reserve_balance).execute_with(|| {
+	pub fn build_and_execute_with_sanity_tests(self, ext: Option<sp_io::TestExternalities>, test: impl FnOnce()) {
+		self.build(ext).execute_with(|| {
 			test();
 			crate::try_state::do_try_state::<Test>().expect("Sanity test for did failed.");
 		})
@@ -551,4 +539,24 @@ impl ExtBuilder {
 
 		ext
 	}
+}
+
+pub(crate) fn translate_holds_to_reserve() {
+	Holds::<Test>::iter().for_each(|(user, holds)| {
+		holds
+			.iter()
+			.filter(|hold| hold.id == HoldReason::Deposit.into())
+			.for_each(|hold| {
+				<<Test as Config>::Currency as MutateHold<AccountIdOf<Test>>>::release(
+					&HoldReason::Deposit.into(),
+					&user,
+					hold.amount,
+					Precision::Exact,
+				)
+				.expect("Translation to reserves should not fail");
+
+				<<Test as Config>::Currency as ReservableCurrency<AccountIdOf<Test>>>::reserve(&user, hold.amount)
+					.expect("Reserving Balance should not fail.");
+			})
+	});
 }

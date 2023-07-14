@@ -167,6 +167,35 @@ pub mod test {
 	use crate::{migrations::do_migration, mock::*, AccountIdOf, Config, ConnectedDids, HoldReason};
 
 	#[test]
+	fn test_setup() {
+		ExtBuilder::default()
+			.with_balances(vec![
+				(ACCOUNT_00, <Test as crate::Config>::Deposit::get() * 50),
+				(ACCOUNT_01, <Test as crate::Config>::Deposit::get() * 50),
+			])
+			.with_connections(vec![(ACCOUNT_00, DID_00, LINKABLE_ACCOUNT_00)])
+			.build_and_execute_with_sanity_tests(|| {
+				translate_holds_to_reserve();
+
+				// before the migration the balance should be reseved and not on
+				// hold.
+				let hold_balance_setup =
+					<<Test as Config>::Currency as InspectHold<AccountIdOf<Test>>>::balance_on_hold(
+						&HoldReason::Deposit.into(),
+						&ACCOUNT_00,
+					);
+
+				let reserved_balacne_setup =
+					<<Test as Config>::Currency as ReservableCurrency<AccountIdOf<Test>>>::reserved_balance(
+						&ACCOUNT_00,
+					);
+
+				assert_eq!(hold_balance_setup, 0);
+				assert_eq!(reserved_balacne_setup, <Test as Config>::Deposit::get());
+			})
+	}
+
+	#[test]
 	fn test_balance_migration_did_lookup() {
 		ExtBuilder::default()
 			.with_balances(vec![
@@ -174,7 +203,26 @@ pub mod test {
 				(ACCOUNT_01, <Test as crate::Config>::Deposit::get() * 50),
 			])
 			.with_connections(vec![(ACCOUNT_00, DID_00, LINKABLE_ACCOUNT_00)])
-			.build_and_execute_with_sanity_tests(true, || {
+			.build_and_execute_with_sanity_tests(|| {
+				translate_holds_to_reserve();
+				set_deposit_version_to_none();
+
+				// before the migration the balance should be reseved and not on
+				// hold.
+				let hold_balance_setup =
+					<<Test as Config>::Currency as InspectHold<AccountIdOf<Test>>>::balance_on_hold(
+						&HoldReason::Deposit.into(),
+						&ACCOUNT_00,
+					);
+
+				let reserved_balacne_setup =
+					<<Test as Config>::Currency as ReservableCurrency<AccountIdOf<Test>>>::reserved_balance(
+						&ACCOUNT_00,
+					);
+
+				assert_eq!(hold_balance_setup, 0);
+				assert_eq!(reserved_balacne_setup, <Test as Config>::Deposit::get());
+
 				let connected_did_pre_migration = ConnectedDids::<Test>::get(LINKABLE_ACCOUNT_00);
 
 				let balance_on_reserve_pre_migration = <<Test as Config>::Currency as ReservableCurrency<

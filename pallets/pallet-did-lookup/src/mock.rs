@@ -16,22 +16,24 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::{parameter_types, traits::ReservableCurrency};
+use frame_support::{
+	parameter_types,
+	traits::{fungible::MutateHold, tokens::Precision, ReservableCurrency},
+};
 use kilt_support::{
 	mock::{mock_origin, SubjectId},
 	traits::StorageDepositCollector,
-	Deposit,
 };
-use sp_core::Get;
+use pallet_balances::Holds;
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
-	DispatchResult, MultiSignature, SaturatedConversion,
+	MultiSignature,
 };
 
 use crate::{
 	self as pallet_did_lookup, linkable_account::LinkableAccountId, AccountIdOf, BalanceOf, Config, ConnectedAccounts,
-	ConnectedDids, ConnectionRecord, DidIdentifierOf, LinkableAccountDepositCollector,
+	ConnectedDids, ConnectionRecord, DidIdentifierOf, HoldReason, LinkableAccountDepositCollector,
 };
 
 pub(crate) type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
@@ -185,42 +187,7 @@ impl ExtBuilder {
 		self
 	}
 
-	fn add_association<T: Config>(
-		sender: AccountIdOf<T>,
-		did_identifier: DidIdentifierOf<T>,
-		account: LinkableAccountId,
-		reserve_balance: bool,
-	) -> DispatchResult
-	where
-		T::Currency: ReservableCurrency<AccountIdOf<T>>,
-	{
-		if !reserve_balance {
-			pallet_did_lookup::Pallet::<T>::add_association(sender, did_identifier, account)
-		} else {
-			let deposit = Deposit {
-				version: None,
-				owner: sender.clone(),
-				amount: <T as Config>::Deposit::get(),
-			};
-			let record = ConnectionRecord {
-				deposit,
-				did: did_identifier.clone(),
-			};
-
-			ConnectedDids::<T>::mutate(&account, |did_entry| -> DispatchResult {
-				if let Some(old_connection) = did_entry.replace(record) {
-					ConnectedAccounts::<T>::remove(&old_connection.did, &account);
-
-					LinkableAccountDepositCollector::<T>::free_deposit(old_connection.deposit)?;
-				}
-				Ok(())
-			})?;
-			ConnectedAccounts::<T>::insert(&did_identifier, &account, ());
-			<T::Currency as ReservableCurrency<AccountIdOf<T>>>::reserve(&sender, T::Deposit::get().saturated_into())
-		}
-	}
-
-	pub fn build(self, reserve_balance: bool) -> sp_io::TestExternalities {
+	pub fn build(self) -> sp_io::TestExternalities {
 		let mut storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
 		pallet_balances::GenesisConfig::<Test> {
 			balances: self.balances.clone(),
@@ -231,14 +198,15 @@ impl ExtBuilder {
 
 		ext.execute_with(|| {
 			for (sender, did, account) in self.connections {
-				Self::add_association::<Test>(sender, did, account, reserve_balance).expect("Should create connection");
+				pallet_did_lookup::Pallet::<Test>::add_association(sender, did, account)
+					.expect("Should create connection");
 			}
 		});
 		ext
 	}
 
-	pub fn build_and_execute_with_sanity_tests(self, reserve_balance: bool, test: impl FnOnce()) {
-		self.build(reserve_balance).execute_with(|| {
+	pub fn build_and_execute_with_sanity_tests(self, test: impl FnOnce()) {
+		self.build().execute_with(|| {
 			test();
 			crate::try_state::do_try_state::<Test>().expect("Sanity test for did lookup failed.");
 		})
@@ -253,4 +221,38 @@ impl ExtBuilder {
 
 		ext
 	}
+}
+
+pub(crate) fn translate_holds_to_reserve() {
+	Holds::<Test>::iter().for_each(|(user, holds)| {
+		holds
+			.iter()
+			.filter(|hold| hold.id == HoldReason::Deposit.into())
+			.for_each(|hold| {
+				<<Test as Config>::Currency as MutateHold<AccountIdOf<Test>>>::release(
+					&HoldReason::Deposit.into(),
+					&user,
+					hold.amount,
+					Precision::Exact,
+				)
+				.expect("Translation to reserves should not fail");
+
+				<<Test as Config>::Currency as ReservableCurrency<AccountIdOf<Test>>>::reserve(&user, hold.amount)
+					.expect("Reserving Balance should not fail.");
+			})
+	});
+}
+
+pub(crate) fn set_deposit_version_to_none() {
+	ConnectedDids::<Test>::iter().for_each(|(key, details)| {
+		let mut deposit_with_version_none = details.deposit;
+		deposit_with_version_none.version = None;
+		ConnectedDids::<Test>::set(
+			key,
+			Some(ConnectionRecord {
+				deposit: deposit_with_version_none,
+				..details
+			}),
+		)
+	})
 }

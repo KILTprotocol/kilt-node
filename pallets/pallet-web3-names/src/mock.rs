@@ -15,11 +15,13 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
-use frame_support::traits::fungible::MutateHold;
+use frame_support::traits::{fungible::MutateHold, tokens::Precision, ReservableCurrency};
 use kilt_support::Deposit;
+use pallet_balances::Holds;
 
 use crate::{
-	AccountIdOf, BalanceOf, Config, CurrencyOf, HoldReason, Names, Owner, Web3NameOf, Web3NameOwnerOf, Web3OwnershipOf,
+	web3_name::Web3NameOwnership, AccountIdOf, BalanceOf, Config, CurrencyOf, HoldReason, Names, Owner, Web3NameOf,
+	Web3NameOwnerOf, Web3OwnershipOf,
 };
 
 pub(crate) type BlockNumberOf<T> = <T as frame_system::Config>::BlockNumber;
@@ -55,23 +57,16 @@ pub use crate::mock::runtime::*;
 // Mocks that are only used internally
 #[cfg(test)]
 pub(crate) mod runtime {
-	use frame_support::{pallet_prelude::DispatchResult, parameter_types, traits::ReservableCurrency};
+	use frame_support::parameter_types;
 	use frame_system::EnsureRoot;
-	use kilt_support::{
-		mock::{mock_origin, SubjectId},
-		Deposit,
-	};
-	use sp_core::Get;
+	use kilt_support::mock::{mock_origin, SubjectId};
 	use sp_runtime::{
 		testing::Header,
 		traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
-		MultiSignature, SaturatedConversion,
+		MultiSignature,
 	};
 
-	use crate::{
-		self as pallet_web3_names, web3_name::AsciiWeb3Name, AccountIdOf, Config, Names, Owner, Web3NameOf,
-		Web3NameOwnerOf, Web3OwnershipOf,
-	};
+	use crate::{self as pallet_web3_names, web3_name::AsciiWeb3Name};
 
 	type Index = u64;
 	type BlockNumber = u64;
@@ -229,42 +224,7 @@ pub(crate) mod runtime {
 			self
 		}
 
-		fn register_name<T: Config>(
-			web3_name: Web3NameOf<T>,
-			owner: Web3NameOwnerOf<T>,
-			payer: AccountIdOf<T>,
-			reserve_balance: bool,
-		) -> DispatchResult
-		where
-			T::Currency: ReservableCurrency<AccountIdOf<T>>,
-		{
-			if reserve_balance {
-				let block_number = frame_system::Pallet::<T>::block_number();
-				let deposit = Deposit {
-					owner: payer.clone(),
-					amount: T::Deposit::get().saturated_into(),
-					version: None,
-				};
-
-				Names::<T>::insert(&owner, web3_name.clone());
-				Owner::<T>::insert(
-					&web3_name,
-					Web3OwnershipOf::<T> {
-						owner,
-						claimed_at: block_number,
-						deposit,
-					},
-				);
-				<T::Currency as ReservableCurrency<AccountIdOf<T>>>::reserve(
-					&payer,
-					T::Deposit::get().saturated_into::<Balance>().saturated_into(),
-				)
-			} else {
-				pallet_web3_names::Pallet::<T>::register_name(web3_name, owner, payer)
-			}
-		}
-
-		pub fn build(self, reserve_balance: bool) -> sp_io::TestExternalities {
+		pub fn build(self) -> sp_io::TestExternalities {
 			let mut storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
 			pallet_balances::GenesisConfig::<Test> {
 				balances: self.balances.clone(),
@@ -275,7 +235,7 @@ pub(crate) mod runtime {
 
 			ext.execute_with(|| {
 				for (owner, web3_name, payer) in self.claimed_web3_names {
-					Self::register_name::<Test>(web3_name, owner, payer, reserve_balance)
+					pallet_web3_names::Pallet::<Test>::register_name(web3_name, owner, payer)
 						.expect("Could not register name");
 				}
 
@@ -287,8 +247,8 @@ pub(crate) mod runtime {
 			ext
 		}
 
-		pub fn build_and_execute_with_sanity_tests(self, reserve_balance: bool, test: impl FnOnce()) {
-			self.build(reserve_balance).execute_with(|| {
+		pub fn build_and_execute_with_sanity_tests(self, test: impl FnOnce()) {
+			self.build().execute_with(|| {
 				test();
 				crate::try_state::do_try_state::<Test>().expect("Sanity test for w3n failed.");
 			})
@@ -304,4 +264,38 @@ pub(crate) mod runtime {
 			ext
 		}
 	}
+}
+
+pub(crate) fn translate_holds_to_reserve() {
+	Holds::<Test>::iter().for_each(|(user, holds)| {
+		holds
+			.iter()
+			.filter(|hold| hold.id == HoldReason::Deposit.into())
+			.for_each(|hold| {
+				<<Test as Config>::Currency as MutateHold<AccountIdOf<Test>>>::release(
+					&HoldReason::Deposit.into(),
+					&user,
+					hold.amount,
+					Precision::Exact,
+				)
+				.expect("Translation to reserves should not fail");
+
+				<<Test as Config>::Currency as ReservableCurrency<AccountIdOf<Test>>>::reserve(&user, hold.amount)
+					.expect("Reserving Balance should not fail.");
+			})
+	});
+}
+
+pub(crate) fn set_deposit_version_to_none() {
+	Owner::<Test>::iter().for_each(|(key, details)| {
+		let mut deposit_with_version_none = details.deposit;
+		deposit_with_version_none.version = None;
+		Owner::<Test>::set(
+			key,
+			Some(Web3NameOwnership {
+				deposit: deposit_with_version_none,
+				..details
+			}),
+		)
+	})
 }

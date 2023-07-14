@@ -74,6 +74,45 @@ pub mod test {
 	use crate::{migrations::do_migration, mock::*, AccountIdOf, Config, CredentialIdOf, Credentials, HoldReason};
 
 	#[test]
+	fn test_setup() {
+		let attester = sr25519_did_from_seed(&ALICE_SEED);
+
+		let ctype_hash_1 = get_ctype_hash::<Test>(true);
+		let subject_id: <Test as Config>::SubjectId = SUBJECT_ID_00;
+		let mut new_credential =
+			generate_base_credential_entry::<Test>(ACCOUNT_00, 0, attester.clone(), Some(ctype_hash_1), None);
+		new_credential.authorization_id = Some(attester.clone());
+		new_credential.deposit.version = None;
+
+		let credential_id: CredentialIdOf<Test> = CredentialIdOf::<Test>::default();
+		let deposit: Balance = <Test as Config>::Deposit::get();
+
+		ExtBuilder::default()
+			.with_balances(vec![(ACCOUNT_00, deposit + MIN_BALANCE)])
+			.with_public_credentials(vec![(subject_id, credential_id, new_credential)])
+			.with_ctypes(vec![(ctype_hash_1, attester)])
+			.build_and_execute_with_sanity_tests(|| {
+				translate_holds_to_reserve();
+
+				// before the migration the balance should be reseved and not on
+				// hold.
+				let hold_balance_setup =
+					<<Test as Config>::Currency as InspectHold<AccountIdOf<Test>>>::balance_on_hold(
+						&HoldReason::Deposit.into(),
+						&ACCOUNT_00,
+					);
+
+				let reserved_balacne_setup =
+					<<Test as Config>::Currency as ReservableCurrency<AccountIdOf<Test>>>::reserved_balance(
+						&ACCOUNT_00,
+					);
+
+				assert_eq!(hold_balance_setup, 0);
+				assert_eq!(reserved_balacne_setup, <Test as Config>::Deposit::get());
+			})
+	}
+
+	#[test]
 	fn test_balance_migration_public_credential() {
 		let attester = sr25519_did_from_seed(&ALICE_SEED);
 
@@ -91,7 +130,8 @@ pub mod test {
 			.with_balances(vec![(ACCOUNT_00, deposit + MIN_BALANCE)])
 			.with_public_credentials(vec![(subject_id, credential_id, new_credential)])
 			.with_ctypes(vec![(ctype_hash_1, attester)])
-			.build_and_execute_with_sanity_tests(true, || {
+			.build_and_execute_with_sanity_tests(|| {
+				translate_holds_to_reserve();
 				let delegation_pre_migration = Credentials::<Test>::get(subject_id, credential_id);
 
 				let balance_on_reserve_pre_migration = <<Test as Config>::Currency as ReservableCurrency<

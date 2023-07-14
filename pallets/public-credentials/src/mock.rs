@@ -18,7 +18,7 @@
 
 use frame_support::traits::{Get, ReservableCurrency};
 use parity_scale_codec::Encode;
-use sp_runtime::{traits::Hash, SaturatedConversion};
+use sp_runtime::traits::Hash;
 
 use kilt_support::{traits::StorageDepositCollector, Deposit};
 
@@ -76,27 +76,14 @@ pub(crate) fn insert_public_credentials<T: Config>(
 	subject_id: T::SubjectId,
 	credential_id: CredentialIdOf<T>,
 	credential_entry: CredentialEntryOf<T>,
-	reserve_balance: bool,
 ) where
 	<T as Config>::Currency: ReservableCurrency<AccountIdOf<T>>,
 {
-	if reserve_balance {
-		<<T as Config>::Currency as ReservableCurrency<AccountIdOf<T>>>::reserve(
-			&credential_entry.deposit.owner,
-			credential_entry
-				.deposit
-				.amount
-				.saturated_into::<Balance>()
-				.saturated_into(),
-		)
-		.expect("Attester should have enough balance");
-	} else {
-		PublicCredentialDepositCollector::<T>::create_deposit(
-			credential_entry.deposit.owner.clone(),
-			credential_entry.deposit.amount,
-		)
-		.expect("Attester should have enough balance");
-	}
+	PublicCredentialDepositCollector::<T>::create_deposit(
+		credential_entry.deposit.owner.clone(),
+		credential_entry.deposit.amount,
+	)
+	.expect("Attester should have enough balance");
 
 	Credentials::<T>::insert(&subject_id, &credential_id, credential_entry);
 	CredentialSubjects::<T>::insert(credential_id, subject_id);
@@ -112,10 +99,11 @@ pub(crate) mod runtime {
 
 	use frame_support::{
 		dispatch::Weight,
-		traits::{ConstU128, ConstU16, ConstU32, ConstU64},
+		traits::{fungible::MutateHold, tokens::Precision, ConstU128, ConstU16, ConstU32, ConstU64},
 		weights::constants::RocksDbWeight,
 	};
 	use frame_system::EnsureSigned;
+	use pallet_balances::Holds;
 	use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 	use scale_info::TypeInfo;
 	use sp_core::{sr25519, Pair};
@@ -129,7 +117,7 @@ pub(crate) mod runtime {
 
 	use ctype::{CtypeCreatorOf, CtypeEntryOf, CtypeHashOf};
 
-	use crate::{Config, CredentialEntryOf, Error, InputSubjectIdOf, PublicCredentialsAccessControl};
+	use crate::{Config, CredentialEntryOf, Error, HoldReason, InputSubjectIdOf, PublicCredentialsAccessControl};
 
 	pub(crate) type BlockNumber = u64;
 	pub(crate) type Balance = u128;
@@ -437,7 +425,7 @@ pub(crate) mod runtime {
 			self
 		}
 
-		pub(crate) fn build(self, reserve_deposit: bool) -> sp_io::TestExternalities {
+		pub(crate) fn build(self) -> sp_io::TestExternalities {
 			let mut storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
 			pallet_balances::GenesisConfig::<Test> {
 				balances: self.balances.clone(),
@@ -459,15 +447,15 @@ pub(crate) mod runtime {
 				}
 
 				for (subject_id, credential_id, credential_entry) in self.public_credentials {
-					insert_public_credentials::<Test>(subject_id, credential_id, credential_entry, reserve_deposit);
+					insert_public_credentials::<Test>(subject_id, credential_id, credential_entry);
 				}
 			});
 
 			ext
 		}
 
-		pub fn build_and_execute_with_sanity_tests(self, reserve_deposit: bool, test: impl FnOnce()) {
-			self.build(reserve_deposit).execute_with(|| {
+		pub fn build_and_execute_with_sanity_tests(self, test: impl FnOnce()) {
+			self.build().execute_with(|| {
 				test();
 				crate::try_state::do_try_state::<Test>().expect("Sanity test for public credential failed.");
 			})
@@ -482,5 +470,24 @@ pub(crate) mod runtime {
 
 			ext
 		}
+	}
+	pub(crate) fn translate_holds_to_reserve() {
+		Holds::<Test>::iter().for_each(|(user, holds)| {
+			holds
+				.iter()
+				.filter(|hold| hold.id == HoldReason::Deposit.into())
+				.for_each(|hold| {
+					<<Test as Config>::Currency as MutateHold<AccountIdOf<Test>>>::release(
+						&HoldReason::Deposit.into(),
+						&user,
+						hold.amount,
+						Precision::Exact,
+					)
+					.expect("Translation to reserves should not fail");
+
+					<<Test as Config>::Currency as ReservableCurrency<AccountIdOf<Test>>>::reserve(&user, hold.amount)
+						.expect("Reserving Balance should not fail.");
+				})
+		});
 	}
 }

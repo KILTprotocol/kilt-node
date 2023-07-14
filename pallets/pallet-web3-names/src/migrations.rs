@@ -70,12 +70,43 @@ pub mod test {
 	use crate::{migrations::do_migration, mock::*, AccountIdOf, Config, HoldReason, Owner};
 
 	#[test]
+	fn test_setup() {
+		let web3_name_00 = get_web3_name(WEB3_NAME_00_INPUT);
+		ExtBuilder::default()
+			.with_balances(vec![(ACCOUNT_00, Web3NameDeposit::get() * 2)])
+			.with_web3_names(vec![(DID_00, web3_name_00, ACCOUNT_00)])
+			.build_and_execute_with_sanity_tests(|| {
+				translate_holds_to_reserve();
+				set_deposit_version_to_none();
+
+				// before the migration the balance should be reseved and not on
+				// hold.
+				let hold_balance_setup =
+					<<Test as Config>::Currency as InspectHold<AccountIdOf<Test>>>::balance_on_hold(
+						&HoldReason::Deposit.into(),
+						&ACCOUNT_00,
+					);
+
+				let reserved_balacne_setup =
+					<<Test as Config>::Currency as ReservableCurrency<AccountIdOf<Test>>>::reserved_balance(
+						&ACCOUNT_00,
+					);
+
+				assert_eq!(hold_balance_setup, 0);
+				assert_eq!(reserved_balacne_setup, Web3NameDeposit::get());
+			})
+	}
+
+	#[test]
 	fn test_balance_migration_w3n() {
 		let web3_name_00 = get_web3_name(WEB3_NAME_00_INPUT);
 		ExtBuilder::default()
 			.with_balances(vec![(ACCOUNT_00, Web3NameDeposit::get() * 2)])
 			.with_web3_names(vec![(DID_00, web3_name_00.clone(), ACCOUNT_00)])
-			.build_and_execute_with_sanity_tests(true, || {
+			.build_and_execute_with_sanity_tests(|| {
+				translate_holds_to_reserve();
+				set_deposit_version_to_none();
+
 				let delegation_pre_migration = Owner::<Test>::get(web3_name_00.clone());
 
 				let balance_on_reserve_pre_migration = <<Test as Config>::Currency as ReservableCurrency<

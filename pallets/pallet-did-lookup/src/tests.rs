@@ -42,7 +42,7 @@ fn test_add_association_sender() {
 			(ACCOUNT_00, <Test as crate::Config>::Deposit::get() * 50),
 			(ACCOUNT_01, <Test as crate::Config>::Deposit::get() * 50),
 		])
-		.build_and_execute_with_sanity_tests(false, || {
+		.build_and_execute_with_sanity_tests(|| {
 			// new association. No overwrite
 			assert!(DidLookup::associate_sender(mock_origin::DoubleOrigin(ACCOUNT_00, DID_00).into()).is_ok());
 			assert_eq!(
@@ -91,7 +91,7 @@ fn test_add_association_account() {
 			(ACCOUNT_00, <Test as crate::Config>::Deposit::get() * 50),
 			(ACCOUNT_01, <Test as crate::Config>::Deposit::get() * 50),
 		])
-		.build_and_execute_with_sanity_tests(false, || {
+		.build_and_execute_with_sanity_tests(|| {
 			let pair_alice = sr25519::Pair::from_seed(b"Alice                           ");
 			let expire_at: BlockNumber = 500;
 			let account_hash_alice = MultiSigner::from(pair_alice.public()).into_account();
@@ -197,7 +197,7 @@ fn test_add_eth_association() {
 			(ACCOUNT_00, <Test as crate::Config>::Deposit::get() * 50),
 			(ACCOUNT_01, <Test as crate::Config>::Deposit::get() * 50),
 		])
-		.build_and_execute_with_sanity_tests(false, || {
+		.build_and_execute_with_sanity_tests(|| {
 			let expire_at: BlockNumber = 500;
 			let eth_pair = ecdsa::Pair::generate().0;
 			let eth_account = AccountId20(eth_pair.public().to_eth_address().unwrap());
@@ -242,7 +242,7 @@ fn test_add_association_account_invalid_signature() {
 			(ACCOUNT_00, <Test as crate::Config>::Deposit::get() * 50),
 			(ACCOUNT_01, <Test as crate::Config>::Deposit::get() * 50),
 		])
-		.build_and_execute_with_sanity_tests(false, || {
+		.build_and_execute_with_sanity_tests(|| {
 			let pair_alice = sr25519::Pair::from_seed(b"Alice                           ");
 			let account_hash_alice = MultiSigner::from(pair_alice.public()).into_account();
 			let expire_at: BlockNumber = 500;
@@ -267,7 +267,7 @@ fn test_add_association_account_expired() {
 			(ACCOUNT_00, <Test as crate::Config>::Deposit::get() * 50),
 			(ACCOUNT_01, <Test as crate::Config>::Deposit::get() * 50),
 		])
-		.build_and_execute_with_sanity_tests(false, || {
+		.build_and_execute_with_sanity_tests(|| {
 			let pair_alice = sr25519::Pair::from_seed(b"Alice                           ");
 			let account_hash_alice = MultiSigner::from(pair_alice.public()).into_account();
 			let expire_at: BlockNumber = 2;
@@ -295,7 +295,7 @@ fn test_remove_association_sender() {
 			(ACCOUNT_01, <Test as crate::Config>::Deposit::get() * 50),
 		])
 		.with_connections(vec![(ACCOUNT_00, DID_01, LINKABLE_ACCOUNT_00)])
-		.build_and_execute_with_sanity_tests(false, || {
+		.build_and_execute_with_sanity_tests(|| {
 			// remove association
 			assert!(DidLookup::remove_sender_association(RuntimeOrigin::signed(ACCOUNT_00)).is_ok());
 			assert_eq!(ConnectedDids::<Test>::get(LinkableAccountId::from(ACCOUNT_00)), None);
@@ -311,7 +311,7 @@ fn test_remove_association_sender_not_found() {
 			(ACCOUNT_00, <Test as crate::Config>::Deposit::get() * 50),
 			(ACCOUNT_01, <Test as crate::Config>::Deposit::get() * 50),
 		])
-		.build_and_execute_with_sanity_tests(false, || {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				DidLookup::remove_sender_association(RuntimeOrigin::signed(ACCOUNT_00)),
 				Error::<Test>::NotFound
@@ -327,7 +327,7 @@ fn test_remove_association_account() {
 			(ACCOUNT_01, <Test as crate::Config>::Deposit::get() * 50),
 		])
 		.with_connections(vec![(ACCOUNT_01, DID_01, LINKABLE_ACCOUNT_00)])
-		.build_and_execute_with_sanity_tests(false, || {
+		.build_and_execute_with_sanity_tests(|| {
 			assert!(DidLookup::remove_account_association(
 				mock_origin::DoubleOrigin(ACCOUNT_00, DID_01).into(),
 				LinkableAccountId::from(ACCOUNT_00.clone())
@@ -346,7 +346,7 @@ fn test_remove_association_account_not_found() {
 			(ACCOUNT_00, <Test as crate::Config>::Deposit::get() * 50),
 			(ACCOUNT_01, <Test as crate::Config>::Deposit::get() * 50),
 		])
-		.build_and_execute_with_sanity_tests(false, || {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_eq!(ConnectedDids::<Test>::get(LinkableAccountId::from(ACCOUNT_00)), None);
 
 			assert_noop!(
@@ -367,7 +367,7 @@ fn test_remove_association_account_not_authorized() {
 			(ACCOUNT_01, <Test as crate::Config>::Deposit::get() * 50),
 		])
 		.with_connections(vec![(ACCOUNT_01, DID_01, LINKABLE_ACCOUNT_00)])
-		.build_and_execute_with_sanity_tests(false, || {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				DidLookup::remove_account_association(
 					mock_origin::DoubleOrigin(ACCOUNT_01, DID_00).into(),
@@ -390,7 +390,7 @@ fn test_reclaim_deposit() {
 			(ACCOUNT_01, <Test as crate::Config>::Deposit::get() * 50),
 		])
 		.with_connections(vec![(ACCOUNT_01, DID_01, LINKABLE_ACCOUNT_00)])
-		.build_and_execute_with_sanity_tests(false, || {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_ok!(DidLookup::reclaim_deposit(
 				RuntimeOrigin::signed(ACCOUNT_01),
 				ACCOUNT_00.into()
@@ -407,7 +407,7 @@ fn test_reclaim_deposit_not_authorized() {
 			(ACCOUNT_01, <Test as crate::Config>::Deposit::get() * 50),
 		])
 		.with_connections(vec![(ACCOUNT_01, DID_01, LINKABLE_ACCOUNT_00)])
-		.build_and_execute_with_sanity_tests(false, || {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				DidLookup::reclaim_deposit(RuntimeOrigin::signed(ACCOUNT_00), ACCOUNT_00.into()),
 				Error::<Test>::NotAuthorized
@@ -430,7 +430,7 @@ fn test_change_deposit_owner() {
 			(ACCOUNT_01, <Test as crate::Config>::Deposit::get() * 50),
 		])
 		.with_connections(vec![(ACCOUNT_00, DID_00, LINKABLE_ACCOUNT_00)])
-		.build_and_execute_with_sanity_tests(false, || {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_ok!(DidLookup::change_deposit_owner(
 				mock_origin::DoubleOrigin(ACCOUNT_01, DID_00).into(),
 				ACCOUNT_00.into()
@@ -448,7 +448,7 @@ fn test_change_deposit_owner_insufficient_balance() {
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, <Test as crate::Config>::Deposit::get() * 50)])
 		.with_connections(vec![(ACCOUNT_00, DID_00, LINKABLE_ACCOUNT_00)])
-		.build_and_execute_with_sanity_tests(false, || {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				DidLookup::change_deposit_owner(
 					mock_origin::DoubleOrigin(ACCOUNT_01, DID_00).into(),
@@ -463,7 +463,7 @@ fn test_change_deposit_owner_insufficient_balance() {
 fn test_change_deposit_owner_not_found() {
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, <Test as crate::Config>::Deposit::get() * 50)])
-		.build_and_execute_with_sanity_tests(false, || {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				DidLookup::change_deposit_owner(
 					mock_origin::DoubleOrigin(ACCOUNT_01, DID_00).into(),
@@ -479,7 +479,7 @@ fn test_change_deposit_owner_not_authorized() {
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, <Test as crate::Config>::Deposit::get() * 50)])
 		.with_connections(vec![(ACCOUNT_00, DID_00, LINKABLE_ACCOUNT_00)])
-		.build_and_execute_with_sanity_tests(false, || {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				DidLookup::change_deposit_owner(
 					mock_origin::DoubleOrigin(ACCOUNT_01, DID_01).into(),
@@ -497,7 +497,7 @@ fn test_update_deposit() {
 			(ACCOUNT_00, <Test as crate::Config>::Deposit::get() * 50),
 			(ACCOUNT_01, <Test as crate::Config>::Deposit::get() * 50),
 		])
-		.build_and_execute_with_sanity_tests(false, || {
+		.build_and_execute_with_sanity_tests(|| {
 			insert_raw_connection::<Test>(
 				ACCOUNT_00,
 				DID_00,
@@ -526,7 +526,7 @@ fn test_update_deposit_unauthorized() {
 			(ACCOUNT_00, <Test as crate::Config>::Deposit::get() * 50),
 			(ACCOUNT_01, <Test as crate::Config>::Deposit::get() * 50),
 		])
-		.build_and_execute_with_sanity_tests(false, || {
+		.build_and_execute_with_sanity_tests(|| {
 			insert_raw_connection::<Test>(
 				ACCOUNT_00,
 				DID_00,

@@ -77,6 +77,41 @@ pub mod test {
 	};
 
 	#[test]
+	fn test_setup() {
+		let auth_key = get_ed25519_authentication_key(true);
+		let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
+
+		let mut did_details =
+			generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(alice_did.clone()));
+		did_details.deposit.version = None;
+		did_details.deposit.amount = <Test as did::Config>::BaseDeposit::get();
+
+		let balance = <Test as did::Config>::BaseDeposit::get()
+			+ <Test as did::Config>::Fee::get()
+			+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
+		ExtBuilder::default()
+			.with_balances(vec![(alice_did.clone(), balance)])
+			.with_dids(vec![(alice_did.clone(), did_details)])
+			.build_and_execute_with_sanity_tests(None, || {
+				translate_holds_to_reserve();
+
+				// before the migration the balance should be reseved and not on
+				// hold.
+				let hold_balance_setup =
+					<<Test as Config>::Currency as InspectHold<AccountIdOf<Test>>>::balance_on_hold(
+						&HoldReason::Deposit.into(),
+						&alice_did,
+					);
+
+				let reserved_balacne_setup =
+					<<Test as Config>::Currency as ReservableCurrency<AccountIdOf<Test>>>::reserved_balance(&alice_did);
+
+				assert_eq!(hold_balance_setup, 0);
+				assert_eq!(reserved_balacne_setup, <Test as Config>::BaseDeposit::get());
+			})
+	}
+
+	#[test]
 	fn test_balance_migration_did() {
 		let auth_key = get_ed25519_authentication_key(true);
 		let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
@@ -92,7 +127,9 @@ pub mod test {
 		ExtBuilder::default()
 			.with_balances(vec![(alice_did.clone(), balance)])
 			.with_dids(vec![(alice_did.clone(), did_details)])
-			.build_and_execute_with_sanity_tests(None, true, || {
+			.build_and_execute_with_sanity_tests(None, || {
+				translate_holds_to_reserve();
+
 				let did_pre_migration = Did::<Test>::get(alice_did.clone());
 
 				let balance_on_reserve_pre_migration = <<Test as Config>::Currency as ReservableCurrency<

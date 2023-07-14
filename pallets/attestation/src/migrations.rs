@@ -71,7 +71,7 @@ pub mod test {
 	use crate::{migrations::do_migration, mock::*, AccountIdOf, Attestations, AttesterOf, Config, HoldReason};
 
 	#[test]
-	fn test_balance_migration_attestation() {
+	fn test_setup() {
 		let attester: AttesterOf<Test> = sr25519_did_from_seed(&ALICE_SEED);
 		let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 		let ctype_hash = get_ctype_hash::<Test>(true);
@@ -99,7 +99,25 @@ pub mod test {
 					);
 
 				assert_eq!(hold_balance_setup, 0);
-				assert_eq!(reserved_balacne_setup, 1);
+				assert_eq!(reserved_balacne_setup, <Test as Config>::Deposit::get());
+			})
+	}
+
+	#[test]
+	fn test_balance_migration_attestation() {
+		let attester: AttesterOf<Test> = sr25519_did_from_seed(&ALICE_SEED);
+		let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
+		let ctype_hash = get_ctype_hash::<Test>(true);
+		let mut attestations = generate_base_attestation::<Test>(attester.clone(), ACCOUNT_00);
+		attestations.deposit.version = None;
+
+		ExtBuilder::default()
+			.with_ctypes(vec![(ctype_hash, attester)])
+			.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
+			.with_attestations(vec![(claim_hash, attestations)])
+			.build_and_execute_with_sanity_tests(|| {
+				translate_holds_to_reserve();
+
 				let attestation_pre_migration = Attestations::<Test>::get(claim_hash);
 
 				let balance_on_reserve_pre_migration = <<Test as Config>::Currency as ReservableCurrency<
