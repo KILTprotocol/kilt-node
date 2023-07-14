@@ -26,11 +26,10 @@ use frame_support::{
 };
 use kilt_support::Deposit;
 use sp_core::H256;
-use sp_runtime::{DispatchResult, SaturatedConversion};
 
 use crate::{
 	self as delegation, AccountIdOf, Config, CurrencyOf, DelegationDetails, DelegationHierarchyDetails, DelegationNode,
-	DelegationNodeIdOf, DelegationNodeOf, DelegationNodes, DelegatorIdOf, Permissions,
+	DelegationNodeOf, DelegatorIdOf, Permissions,
 };
 
 #[cfg(test)]
@@ -71,85 +70,9 @@ pub type DelegationHierarchyInitialization<T> = Vec<(
 	AccountIdOf<T>,
 )>;
 
-fn create_and_store_new_hierarchy<T>(
-	root_id: DelegationNodeIdOf<T>,
-	hierarchy_details: DelegationHierarchyDetails<CtypeHashOf<T>>,
-	hierarchy_owner: DelegatorIdOf<T>,
-	deposit_owner: AccountIdOf<T>,
-	reserve_balance: bool,
-) -> DispatchResult
-where
-	T: Config,
-	<T as Config>::Currency: ReservableCurrency<AccountIdOf<T>>,
-{
-	if !reserve_balance {
-		delegation::Pallet::<T>::create_and_store_new_hierarchy(
-			root_id,
-			hierarchy_details,
-			hierarchy_owner,
-			deposit_owner,
-		)
-	} else {
-		let root_node = DelegationNode::new_root_node(
-			root_id,
-			DelegationDetails::default_with_owner(hierarchy_owner),
-			deposit_owner.clone(),
-			<T as Config>::Deposit::get(),
-		);
-
-		crate::DelegationNodes::<T>::insert(root_id, root_node);
-		crate::DelegationHierarchies::<T>::insert(root_id, hierarchy_details);
-
-		<<T as Config>::Currency as ReservableCurrency<AccountIdOf<T>>>::reserve(
-			&deposit_owner,
-			<T as Config>::Deposit::get()
-				.saturated_into::<Balance>()
-				.saturated_into(),
-		)
-	}
-}
-
-fn create_and_store_new_delegation<T>(
-	delegation_id: DelegationNodeIdOf<T>,
-	delegation_node: DelegationNodeOf<T>,
-	parent_id: DelegationNodeIdOf<T>,
-	mut parent_node: DelegationNodeOf<T>,
-	deposit_owner: AccountIdOf<T>,
-	reserve_balance: bool,
-) -> DispatchResult
-where
-	T: Config,
-	<T as Config>::Currency: ReservableCurrency<AccountIdOf<T>>,
-{
-	if !reserve_balance {
-		delegation::Pallet::<T>::store_delegation_under_parent(
-			delegation_id,
-			delegation_node,
-			parent_id,
-			parent_node,
-			deposit_owner,
-		)
-	} else {
-		parent_node
-			.try_add_child(delegation_id)
-			.map_err(|_| crate::Error::<T>::MaxChildrenExceeded)?;
-
-		DelegationNodes::<T>::insert(delegation_id, delegation_node);
-		DelegationNodes::<T>::insert(parent_id, parent_node);
-
-		<<T as Config>::Currency as ReservableCurrency<AccountIdOf<T>>>::reserve(
-			&deposit_owner,
-			<T as Config>::Deposit::get()
-				.saturated_into::<Balance>()
-				.saturated_into(),
-		)
-	}
-}
-
 pub fn initialize_pallet<T>(
 	delegations: Vec<(T::DelegationNodeId, DelegationNodeOf<T>)>,
 	delegation_hierarchies: DelegationHierarchyInitialization<T>,
-	reserve_balance: bool,
 ) where
 	T: Config,
 	<T as Config>::Currency: Mutate<AccountIdOf<T>>,
@@ -162,7 +85,7 @@ pub fn initialize_pallet<T>(
 		CurrencyOf::<T>::set_balance(&deposit_owner, balance + <T as Config>::Deposit::get());
 
 		// reserve deposit and store
-		create_and_store_new_hierarchy::<T>(root_id, details, hierarchy_owner, deposit_owner, reserve_balance)
+		delegation::Pallet::<T>::create_and_store_new_hierarchy(root_id, details, hierarchy_owner, deposit_owner)
 			.expect("Should not exceed max children");
 	}
 
@@ -179,13 +102,13 @@ pub fn initialize_pallet<T>(
 		CurrencyOf::<T>::set_balance(&deposit_owner, balance + <T as Config>::Deposit::get());
 
 		// reserve deposit and store
-		create_and_store_new_delegation::<T>(
+
+		delegation::Pallet::<T>::store_delegation_under_parent(
 			del.0,
 			del.1.clone(),
 			parent_node_id,
 			parent_node.clone(),
 			deposit_owner.clone(),
-			reserve_balance,
 		)
 		.expect("Should not exceed max children");
 	}
@@ -250,12 +173,17 @@ where
 
 #[cfg(test)]
 pub(crate) mod runtime {
-	use crate::{BalanceOf, DelegateSignatureTypeOf, DelegationAc, DelegationNodeIdOf, DelegationNodeOf};
+	use crate::{BalanceOf, DelegateSignatureTypeOf, DelegationAc, DelegationNodeIdOf, DelegationNodeOf, HoldReason};
 
 	use super::*;
 
-	use frame_support::{parameter_types, weights::constants::RocksDbWeight};
+	use frame_support::{
+		parameter_types,
+		traits::{fungible::MutateHold, tokens::Precision},
+		weights::constants::RocksDbWeight,
+	};
 	use frame_system::EnsureSigned;
+	use pallet_balances::Holds;
 	use parity_scale_codec::Encode;
 	use scale_info::TypeInfo;
 	use sp_core::{ed25519, sr25519, Pair};
@@ -575,7 +503,7 @@ pub(crate) mod runtime {
 			self
 		}
 
-		pub fn build(self, reserve_balance: bool) -> sp_io::TestExternalities {
+		pub fn build(self) -> sp_io::TestExternalities {
 			let mut storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
 			pallet_balances::GenesisConfig::<Test> {
 				balances: self.balances.clone(),
@@ -596,18 +524,18 @@ pub(crate) mod runtime {
 					);
 				}
 
-				initialize_pallet::<Test>(self.delegations, self.delegation_hierarchies, reserve_balance);
+				initialize_pallet::<Test>(self.delegations, self.delegation_hierarchies);
 
 				for (claim_hash, details) in self.attestations {
-					insert_attestation::<Test>(claim_hash, details, reserve_balance)
+					insert_attestation::<Test>(claim_hash, details)
 				}
 			});
 
 			ext
 		}
 
-		pub fn build_and_execute_with_sanity_tests(self, reserve_balance: bool, test: impl FnOnce()) {
-			self.build(reserve_balance).execute_with(|| {
+		pub fn build_and_execute_with_sanity_tests(self, test: impl FnOnce()) {
+			self.build().execute_with(|| {
 				test();
 				crate::try_state::do_try_state::<Test>().expect("Sanity test for delegation failed.");
 			})
@@ -622,5 +550,25 @@ pub(crate) mod runtime {
 
 			ext
 		}
+	}
+
+	pub(crate) fn translate_holds_to_reserve() {
+		Holds::<Test>::iter().for_each(|(user, holds)| {
+			holds
+				.iter()
+				.filter(|hold| hold.id == HoldReason::Deposit.into())
+				.for_each(|hold| {
+					<<Test as Config>::Currency as MutateHold<AccountIdOf<Test>>>::release(
+						&HoldReason::Deposit.into(),
+						&user,
+						hold.amount,
+						Precision::Exact,
+					)
+					.expect("Translation to reserves should not fail");
+
+					<<Test as Config>::Currency as ReservableCurrency<AccountIdOf<Test>>>::reserve(&user, hold.amount)
+						.expect("Reserving Balance should not fail.");
+				})
+		});
 	}
 }

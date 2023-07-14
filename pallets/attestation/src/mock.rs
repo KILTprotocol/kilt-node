@@ -27,7 +27,7 @@ use frame_support::{dispatch::Weight, traits::Get};
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
 use sp_core::H256;
-use sp_runtime::{DispatchError, SaturatedConversion};
+use sp_runtime::DispatchError;
 
 use ctype::CtypeHashOf;
 use kilt_support::{traits::StorageDepositCollector, Deposit};
@@ -153,26 +153,15 @@ where
 	}
 }
 
-pub fn insert_attestation<T: Config>(
-	claim_hash: ClaimHashOf<T>,
-	details: AttestationDetailsOf<T>,
-	reserve_balance: bool,
-) where
+pub fn insert_attestation<T: Config>(claim_hash: ClaimHashOf<T>, details: AttestationDetailsOf<T>)
+where
 	<T as Config>::Currency: frame_support::traits::ReservableCurrency<AccountIdOf<T>>,
 {
-	if reserve_balance {
-		<<T as Config>::Currency as frame_support::traits::ReservableCurrency<AccountIdOf<T>>>::reserve(
-			&details.deposit.owner,
-			details.deposit.amount.saturated_into::<u128>().saturated_into(),
-		)
-		.expect("Should have balance");
-	} else {
-		crate::AttestationStorageDepositCollector::<T>::create_deposit(
-			details.deposit.owner.clone(),
-			details.deposit.amount,
-		)
-		.expect("Should have balance");
-	}
+	crate::AttestationStorageDepositCollector::<T>::create_deposit(
+		details.deposit.owner.clone(),
+		details.deposit.amount,
+	)
+	.expect("Should have balance");
 
 	crate::Attestations::<T>::insert(claim_hash, details.clone());
 	if let Some(delegation_id) = details.authorization_id.as_ref() {
@@ -183,8 +172,13 @@ pub fn insert_attestation<T: Config>(
 /// Mocks that are only used internally
 #[cfg(test)]
 pub(crate) mod runtime {
-	use frame_support::{parameter_types, weights::constants::RocksDbWeight};
+	use frame_support::{
+		parameter_types,
+		traits::{fungible::MutateHold, tokens::Precision, ReservableCurrency},
+		weights::constants::RocksDbWeight,
+	};
 	use frame_system::EnsureSigned;
+	use pallet_balances::Holds;
 	use sp_core::{ed25519, sr25519, Pair};
 	use sp_runtime::{
 		testing::Header,
@@ -194,6 +188,8 @@ pub(crate) mod runtime {
 
 	use ctype::{CtypeCreatorOf, CtypeEntryOf};
 	use kilt_support::mock::{mock_origin, SubjectId};
+
+	use crate::HoldReason;
 
 	use super::*;
 
@@ -377,9 +373,7 @@ pub(crate) mod runtime {
 			self
 		}
 
-		/// if reserve_balance is true, the deposit will be reserved. Otherwise
-		/// the deposit will be hold with the a reason.
-		pub fn build(self, reserve_balance: bool) -> sp_io::TestExternalities {
+		pub fn build(self) -> sp_io::TestExternalities {
 			let mut storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
 			pallet_balances::GenesisConfig::<Test> {
 				balances: self.balances.clone(),
@@ -401,15 +395,15 @@ pub(crate) mod runtime {
 				}
 
 				for (claim_hash, details) in self.attestations {
-					insert_attestation::<Test>(claim_hash, details, reserve_balance);
+					insert_attestation::<Test>(claim_hash, details);
 				}
 			});
 
 			ext
 		}
 
-		pub fn build_and_execute_with_sanity_tests(self, reserve_balance: bool, test: impl FnOnce()) {
-			self.build(reserve_balance).execute_with(|| {
+		pub fn build_and_execute_with_sanity_tests(self, test: impl FnOnce()) {
+			self.build().execute_with(|| {
 				test();
 				crate::try_state::do_try_state::<Test>().expect("Sanity test for attestation failed.");
 			})
@@ -424,5 +418,25 @@ pub(crate) mod runtime {
 
 			ext
 		}
+	}
+
+	pub(crate) fn translate_holds_to_reserve() {
+		Holds::<Test>::iter().for_each(|(user, holds)| {
+			holds
+				.iter()
+				.filter(|hold| hold.id == HoldReason::Deposit.into())
+				.for_each(|hold| {
+					<<Test as Config>::Currency as MutateHold<AccountIdOf<Test>>>::release(
+						&HoldReason::Deposit.into(),
+						&user,
+						hold.amount,
+						Precision::Exact,
+					)
+					.expect("Translation to reserves should not fail");
+
+					<<Test as Config>::Currency as ReservableCurrency<AccountIdOf<Test>>>::reserve(&user, hold.amount)
+						.expect("Reserving Balance should not fail.");
+				})
+		});
 	}
 }

@@ -82,7 +82,6 @@ pub mod test {
 			generate_base_delegation_node::<Test>(hierarchy_root_id, user_2, Some(hierarchy_root_id), ACCOUNT_01);
 		delegation_details.deposit.version = None;
 
-		// Root -> Parent -> Delegation
 		ExtBuilder::default()
 			.with_ctypes(vec![(hierarchy_details.ctype_hash, user_1.clone())])
 			.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, user_1, ACCOUNT_00)])
@@ -92,7 +91,25 @@ pub mod test {
 				(ACCOUNT_01, <Test as Config>::Deposit::get()),
 				(ACCOUNT_02, <Test as Config>::Deposit::get()),
 			])
-			.build_and_execute_with_sanity_tests(true, || {
+			.build_and_execute_with_sanity_tests(|| {
+				translate_holds_to_reserve();
+
+				// before the migration the balance should be reseved and not on
+				// hold.
+				let hold_balance_setup =
+					<<Test as Config>::Currency as InspectHold<AccountIdOf<Test>>>::balance_on_hold(
+						&HoldReason::Deposit.into(),
+						&ACCOUNT_01,
+					);
+
+				let reserved_balacne_setup =
+					<<Test as Config>::Currency as ReservableCurrency<AccountIdOf<Test>>>::reserved_balance(
+						&ACCOUNT_01,
+					);
+
+				assert_eq!(hold_balance_setup, 0);
+				assert_eq!(reserved_balacne_setup, <Test as Config>::Deposit::get());
+
 				let delegation_pre_migration = DelegationNodes::<Test>::get(delegation_id);
 
 				let balance_on_reserve_pre_migration = <<Test as Config>::Currency as ReservableCurrency<

@@ -261,7 +261,7 @@ mod tests {
 			.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, root_owner, ACCOUNT_00)])
 			.with_delegations(vec![(parent_id, parent_node)])
 			.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
-			.build(false)
+			.build()
 			.execute_with(|| {
 				assert_ok!(Attestation::add(
 					DoubleOrigin(ACCOUNT_00, delegate.clone()).into(),
@@ -317,7 +317,7 @@ mod tests {
 			.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, root_owner, ACCOUNT_00)])
 			.with_delegations(vec![(parent_id, parent_node)])
 			.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
-			.build(false)
+			.build()
 			.execute_with(|| {
 				assert_noop!(
 					Attestation::add(
@@ -366,7 +366,7 @@ mod tests {
 			.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, root_owner, ACCOUNT_00)])
 			.with_delegations(vec![(parent_id, parent_node)])
 			.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
-			.build(false)
+			.build()
 			.execute_with(|| {
 				assert_noop!(
 					Attestation::add(
@@ -399,7 +399,7 @@ mod tests {
 			.with_ctypes(vec![(ctype_hash, root_owner.clone())])
 			.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, root_owner, ACCOUNT_00)])
 			.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
-			.build(false)
+			.build()
 			.execute_with(|| {
 				assert_noop!(
 					Attestation::add(
@@ -448,7 +448,7 @@ mod tests {
 			.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, root_owner, ACCOUNT_00)])
 			.with_delegations(vec![(parent_id, parent_node)])
 			.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
-			.build(false)
+			.build()
 			.execute_with(|| {
 				assert_noop!(
 					Attestation::add(
@@ -500,7 +500,7 @@ mod tests {
 			.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, root_owner, ACCOUNT_00)])
 			.with_delegations(vec![(parent_id, parent_node)])
 			.with_attestations(vec![(claim_hash, attestation)])
-			.build(false)
+			.build()
 			.execute_with(|| {
 				assert_ok!(Attestation::revoke(
 					DoubleOrigin(ACCOUNT_00, delegate.clone()).into(),
@@ -553,7 +553,7 @@ mod tests {
 			)])
 			.with_delegations(vec![(parent_id, parent_node)])
 			.with_attestations(vec![(claim_hash, attestation)])
-			.build(false)
+			.build()
 			.execute_with(|| {
 				assert_ok!(Attestation::revoke(
 					DoubleOrigin(ACCOUNT_00, root_owner.clone()).into(),
@@ -601,7 +601,7 @@ mod tests {
 			.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, root_owner, ACCOUNT_00)])
 			.with_delegations(vec![(parent_id, parent_node)])
 			.with_attestations(vec![(claim_hash, attestation)])
-			.build(false)
+			.build()
 			.execute_with(|| {
 				assert_ok!(Attestation::revoke(
 					DoubleOrigin(ACCOUNT_00, delegate.clone()).into(),

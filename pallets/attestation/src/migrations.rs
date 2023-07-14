@@ -82,7 +82,24 @@ pub mod test {
 			.with_ctypes(vec![(ctype_hash, attester)])
 			.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
 			.with_attestations(vec![(claim_hash, attestations)])
-			.build_and_execute_with_sanity_tests(true, || {
+			.build_and_execute_with_sanity_tests(|| {
+				translate_holds_to_reserve();
+
+				// before the migration the balance should be reseved and not on
+				// hold.
+				let hold_balance_setup =
+					<<Test as Config>::Currency as InspectHold<AccountIdOf<Test>>>::balance_on_hold(
+						&HoldReason::Deposit.into(),
+						&ACCOUNT_00,
+					);
+
+				let reserved_balacne_setup =
+					<<Test as Config>::Currency as ReservableCurrency<AccountIdOf<Test>>>::reserved_balance(
+						&ACCOUNT_00,
+					);
+
+				assert_eq!(hold_balance_setup, 0);
+				assert_eq!(reserved_balacne_setup, 1);
 				let attestation_pre_migration = Attestations::<Test>::get(claim_hash);
 
 				let balance_on_reserve_pre_migration = <<Test as Config>::Currency as ReservableCurrency<
