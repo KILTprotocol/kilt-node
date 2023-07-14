@@ -85,3 +85,67 @@ fn update_or_create_freeze<T: Config>(
 
 	<CurrencyOf<T> as LockableCurrency<AccountIdOf<T>>>::remove_lock(STAKING_ID, &user_id);
 }
+
+#[cfg(test)]
+pub mod test {
+	use frame_support::traits::{
+		fungible::{Inspect, InspectFreeze},
+		tokens::{Fortitude, Preservation},
+	};
+	use pallet_balances::{Freezes, Locks};
+	use sp_runtime::traits::Zero;
+
+	use crate::{migrations::do_migration, mock::*, Config, FreezeReason};
+
+	#[test]
+	fn test_balance_migration_staking() {
+		ExtBuilder::default()
+			.with_balances(vec![(1, 10), (2, 100), (3, 100)])
+			.with_collators(vec![(1, 10), (3, 10)])
+			.with_delegators(vec![(2, 1, 100)])
+			.build_and_execute_with_sanity_tests(|| {
+				translate_freezes_to_locks();
+
+				// after the translation, there should be no freezes but locks
+				let count_freezes_pre_migration = Freezes::<Test>::iter().count();
+				let count_locks_pre_migration = Locks::<Test>::iter().count();
+
+				assert!(count_freezes_pre_migration.is_zero());
+				assert_eq!(count_locks_pre_migration, 3);
+
+				let reducible_balance_user_1 =
+					pallet_balances::Pallet::<Test>::reducible_balance(&1, Preservation::Preserve, Fortitude::Polite);
+				let reducible_balance_user_2 =
+					pallet_balances::Pallet::<Test>::reducible_balance(&2, Preservation::Preserve, Fortitude::Polite);
+				let reducible_balance_user_3 =
+					pallet_balances::Pallet::<Test>::reducible_balance(&3, Preservation::Preserve, Fortitude::Polite);
+
+				assert_eq!(reducible_balance_user_1, 0);
+				assert_eq!(reducible_balance_user_2, 0);
+				assert_eq!(reducible_balance_user_3, 90);
+
+				do_migration::<Test>(1);
+				do_migration::<Test>(2);
+				do_migration::<Test>(3);
+
+				let froozen_balance_1 = pallet_balances::Pallet::<Test>::balance_frozen(
+					&<Test as Config>::FreezeIdentifier::from(FreezeReason::Staking),
+					&1,
+				);
+
+				let froozen_balance_2 = pallet_balances::Pallet::<Test>::balance_frozen(
+					&<Test as Config>::FreezeIdentifier::from(FreezeReason::Staking),
+					&2,
+				);
+
+				let froozen_balance_3 = pallet_balances::Pallet::<Test>::balance_frozen(
+					&<Test as Config>::FreezeIdentifier::from(FreezeReason::Staking),
+					&3,
+				);
+
+				assert_eq!(froozen_balance_1, 10);
+				assert_eq!(froozen_balance_2, 100);
+				assert_eq!(froozen_balance_3, 10);
+			})
+	}
+}
