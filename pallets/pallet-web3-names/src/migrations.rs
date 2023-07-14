@@ -22,13 +22,14 @@ use sp_runtime::SaturatedConversion;
 
 use crate::{web3_name::Web3NameOwnership, AccountIdOf, Config, CurrencyOf, HoldReason, Owner};
 
-pub fn do_migration<T: Config>(who: T::AccountId)
+pub fn do_migration<T: Config>(who: T::AccountId, max_migrations: usize) -> usize
 where
 	<T as Config>::Currency: ReservableCurrency<T::AccountId>,
 {
 	Owner::<T>::iter()
 		.filter(|(_, details)| details.deposit.owner == who && details.deposit.version.is_none())
-		.for_each(|(key, w3n_details)| {
+		.take(max_migrations)
+		.map(|(key, w3n_details)| {
 			// switch reserves to hold.
 			let deposit = w3n_details.deposit;
 			let result = switch_reserved_to_hold::<AccountIdOf<T>, CurrencyOf<T>>(
@@ -57,7 +58,8 @@ where
 				key,
 				result
 			);
-		});
+		})
+		.count()
 }
 
 #[cfg(test)]
@@ -92,7 +94,7 @@ pub mod test {
 					delegation_pre_migration.unwrap().deposit.amount
 				);
 
-				do_migration::<Test>(ACCOUNT_00);
+				do_migration::<Test>(ACCOUNT_00, 1);
 
 				let delegation_post_migration = Owner::<Test>::get(web3_name_00);
 

@@ -29,21 +29,26 @@ use crate::{
 
 const STAKING_ID: LockIdentifier = *b"kiltpstk";
 
-pub fn do_migration<T: Config>(who: T::AccountId)
+pub fn do_migration<T: Config>(who: T::AccountId, max_migrations: usize) -> usize
 where
 	<T as Config>::Currency: ReservableCurrency<T::AccountId>,
 	<T as Config>::Currency: LockableCurrency<T::AccountId>,
 {
+	let mut remaining_migrations = max_migrations;
 	Locks::<T>::iter()
 		.filter(|(user_id, _)| user_id == &who)
 		.for_each(|(user_id, locks)| {
-			locks
+			let executed_migrations = locks
 				.iter()
 				.filter(|lock| lock.id == STAKING_ID)
-				.for_each(|lock: &BalanceLock<_>| {
+				.take(remaining_migrations)
+				.map(|lock: &BalanceLock<_>| {
 					update_or_create_freeze::<T>(user_id.clone(), lock);
-				});
+				})
+				.count();
+			remaining_migrations = remaining_migrations.saturating_sub(executed_migrations);
 		});
+	remaining_migrations
 }
 
 fn update_or_create_freeze<T: Config>(
@@ -124,9 +129,9 @@ pub mod test {
 				assert_eq!(reducible_balance_user_2, 0);
 				assert_eq!(reducible_balance_user_3, 90);
 
-				do_migration::<Test>(1);
-				do_migration::<Test>(2);
-				do_migration::<Test>(3);
+				do_migration::<Test>(1, 1);
+				do_migration::<Test>(2, 1);
+				do_migration::<Test>(3, 1);
 
 				let froozen_balance_1 = pallet_balances::Pallet::<Test>::balance_frozen(
 					&<Test as Config>::FreezeIdentifier::from(FreezeReason::Staking),

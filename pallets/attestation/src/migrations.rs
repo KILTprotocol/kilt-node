@@ -22,13 +22,14 @@ use sp_runtime::SaturatedConversion;
 
 use crate::{AccountIdOf, AttestationDetails, Attestations, Config, CurrencyOf, HoldReason};
 
-pub fn do_migration<T: Config>(who: T::AccountId)
+pub fn do_migration<T: Config>(who: T::AccountId, max_migrations: usize) -> usize
 where
 	<T as Config>::Currency: ReservableCurrency<T::AccountId>,
 {
 	Attestations::<T>::iter()
 		.filter(|(_, details)| details.deposit.owner == who && details.deposit.version.is_none())
-		.for_each(|(key, attestations_detail)| {
+		.take(max_migrations)
+		.map(|(key, attestations_detail)| {
 			// switch reserves to hold.
 			let deposit = attestations_detail.deposit;
 			let result = switch_reserved_to_hold::<AccountIdOf<T>, CurrencyOf<T>>(
@@ -57,7 +58,8 @@ where
 				key,
 				result
 			);
-		});
+		})
+		.count()
 }
 
 #[cfg(test)]
@@ -99,7 +101,7 @@ pub mod test {
 					attestation_pre_migration.unwrap().deposit.amount
 				);
 
-				do_migration::<Test>(ACCOUNT_00);
+				do_migration::<Test>(ACCOUNT_00, 1);
 
 				let attestation_post_migration = Attestations::<Test>::get(claim_hash);
 

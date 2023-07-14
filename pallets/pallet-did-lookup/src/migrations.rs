@@ -119,13 +119,14 @@ impl<T: crate::pallet::Config> OnRuntimeUpgrade for CleanupMigration<T> {
 	}
 }
 
-pub fn do_migration<T: Config>(who: T::AccountId)
+pub fn do_migration<T: Config>(who: T::AccountId, max_migrations: usize) -> usize
 where
 	<T as Config>::Currency: ReservableCurrency<T::AccountId>,
 {
 	ConnectedDids::<T>::iter()
 		.filter(|(_, details)| details.deposit.owner == who && details.deposit.version.is_none())
-		.for_each(|(key, did_details)| {
+		.take(max_migrations)
+		.map(|(key, did_details)| {
 			// switch reserves to hold.
 			let deposit = did_details.deposit;
 			let result = switch_reserved_to_hold::<AccountIdOf<T>, CurrencyOf<T>>(
@@ -154,7 +155,8 @@ where
 				key,
 				result
 			);
-		});
+		})
+		.count()
 }
 
 #[cfg(test)]
@@ -191,7 +193,7 @@ pub mod test {
 					connected_did_pre_migration.unwrap().deposit.amount
 				);
 
-				do_migration::<Test>(ACCOUNT_00);
+				do_migration::<Test>(ACCOUNT_00, 1);
 
 				let connected_did_post_migration = ConnectedDids::<Test>::get(LINKABLE_ACCOUNT_00);
 

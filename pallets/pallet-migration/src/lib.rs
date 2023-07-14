@@ -67,13 +67,11 @@ pub mod pallet {
 	pub enum Event<T: Config> {
 		UserUpdated(T::AccountId),
 	}
-
 	#[pallet::error]
 	pub enum Error<T> {
 		/// Error if a migraion failes.
 		Migration(PalletToMigrate),
 	}
-
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {}
 
@@ -94,19 +92,18 @@ pub mod pallet {
 		pub fn update_users(
 			origin: OriginFor<T>,
 			user: T::AccountId,
-			pallet_to_migrate: PalletToMigrate,
+			max_migrations: u8,
 		) -> DispatchResultWithPostInfo {
 			ensure_signed(origin)?;
+			let mut remaining_migrations =
+				attestation::migrations::do_migration::<T>(user.clone(), max_migrations.into());
+			remaining_migrations = delegation::migrations::do_migration::<T>(user.clone(), remaining_migrations);
+			remaining_migrations = did::migrations::do_migration::<T>(user.clone(), remaining_migrations);
+			remaining_migrations = pallet_did_lookup::migrations::do_migration::<T>(user.clone(), remaining_migrations);
+			remaining_migrations = pallet_web3_names::migrations::do_migration::<T>(user.clone(), remaining_migrations);
+			remaining_migrations = parachain_staking::migrations::do_migration::<T>(user.clone(), remaining_migrations);
 
-			match pallet_to_migrate {
-				PalletToMigrate::Attestation => attestation::migrations::do_migration::<T>(user),
-				PalletToMigrate::Delegation => delegation::migrations::do_migration::<T>(user),
-				PalletToMigrate::Did => did::migrations::do_migration::<T>(user),
-				PalletToMigrate::Lookup => pallet_did_lookup::migrations::do_migration::<T>(user),
-				PalletToMigrate::W3n => pallet_web3_names::migrations::do_migration::<T>(user),
-				PalletToMigrate::Staking => parachain_staking::migrations::do_migration::<T>(user),
-				PalletToMigrate::Credentials => public_credentials::migrations::do_migration::<T>(user),
-			}
+			public_credentials::migrations::do_migration::<T>(user.clone(), remaining_migrations);
 
 			Ok(().into())
 		}
