@@ -123,7 +123,7 @@ pub fn do_migration<T: Config>(who: T::AccountId, max_migrations: usize) -> usiz
 where
 	<T as Config>::Currency: ReservableCurrency<T::AccountId>,
 {
-	ConnectedDids::<T>::iter()
+	let executed_migrations = ConnectedDids::<T>::iter()
 		.filter(|(_, details)| details.deposit.owner == who && details.deposit.version.is_none())
 		.take(max_migrations)
 		.map(|(key, did_details)| {
@@ -156,7 +156,9 @@ where
 				result
 			);
 		})
-		.count()
+		.count();
+
+	max_migrations.saturating_sub(executed_migrations)
 }
 
 #[cfg(test)]
@@ -241,7 +243,9 @@ pub mod test {
 					connected_did_pre_migration.unwrap().deposit.amount
 				);
 
-				do_migration::<Test>(ACCOUNT_00, 1);
+				let remaining_migrations = do_migration::<Test>(ACCOUNT_00.clone(), 1);
+
+				assert_eq!(remaining_migrations, 0);
 
 				let connected_did_post_migration = ConnectedDids::<Test>::get(LINKABLE_ACCOUNT_00);
 
@@ -266,6 +270,11 @@ pub mod test {
 				//... and the version should be 1.
 				assert!(connected_did_post_migration.clone().unwrap().deposit.version.is_some());
 				assert!(connected_did_post_migration.unwrap().deposit.version.unwrap() == 1);
+
+				// Nothing should happen
+				let remaining_migrations = do_migration::<Test>(ACCOUNT_00.clone(), 1);
+
+				assert_eq!(remaining_migrations, 1);
 			})
 	}
 }

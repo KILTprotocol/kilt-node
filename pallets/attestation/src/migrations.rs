@@ -26,7 +26,7 @@ pub fn do_migration<T: Config>(who: T::AccountId, max_migrations: usize) -> usiz
 where
 	<T as Config>::Currency: ReservableCurrency<T::AccountId>,
 {
-	Attestations::<T>::iter()
+	let executed_migrations = Attestations::<T>::iter()
 		.filter(|(_, details)| details.deposit.owner == who && details.deposit.version.is_none())
 		.take(max_migrations)
 		.map(|(key, attestations_detail)| {
@@ -54,12 +54,13 @@ where
 
 			debug_assert!(
 				result.is_ok(),
-				" Attestation: Could not convert reserves to hold from attestation: {:?} error: {:?}",
+				"Attestation: Could not convert reserves to hold from attestation: {:?} error: {:?}",
 				key,
 				result
 			);
 		})
-		.count()
+		.count();
+	max_migrations.saturating_sub(executed_migrations)
 }
 
 #[cfg(test)]
@@ -136,7 +137,9 @@ pub mod test {
 					attestation_pre_migration.unwrap().deposit.amount
 				);
 
-				do_migration::<Test>(ACCOUNT_00, 1);
+				let remaining_migration = do_migration::<Test>(ACCOUNT_00, 1);
+
+				assert_eq!(remaining_migration, 0);
 
 				let attestation_post_migration = Attestations::<Test>::get(claim_hash);
 
@@ -144,10 +147,8 @@ pub mod test {
 					AccountIdOf<Test>,
 				>>::reserved_balance(&ACCOUNT_00);
 
-				let balance_on_hold = <<Test as Config>::Currency as InspectHold<AccountIdOf<Test>>>::balance_on_hold(
-					&HoldReason::Deposit.into(),
-					&ACCOUNT_00,
-				);
+				let balance_on_hold =
+					<<Test as Config>::Currency as InspectHold<AccountIdOf<Test>>>::total_balance_on_hold(&ACCOUNT_00);
 
 				//attestations should be still in the storage
 				assert!(attestation_post_migration.is_some());
@@ -161,6 +162,11 @@ pub mod test {
 				//... and the version should be 1.
 				assert!(attestation_post_migration.clone().unwrap().deposit.version.is_some());
 				assert!(attestation_post_migration.unwrap().deposit.version.unwrap() == 1);
+
+				//Nothing should happen
+				let remaining_migration = do_migration::<Test>(ACCOUNT_00, 1);
+
+				assert_eq!(remaining_migration, 1);
 			});
 	}
 }

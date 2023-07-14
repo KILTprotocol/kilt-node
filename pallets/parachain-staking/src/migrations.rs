@@ -151,6 +151,10 @@ pub mod test {
 				assert_eq!(froozen_balance_1, 10);
 				assert_eq!(froozen_balance_2, 100);
 				assert_eq!(froozen_balance_3, 10);
+
+				//Nothing should happen
+				let remaining_migrations = do_migration::<Test>(1, 1);
+				assert_eq!(remaining_migrations, 1);
 			})
 	}
 }
