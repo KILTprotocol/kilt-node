@@ -35,6 +35,7 @@ pub mod pallet {
 	use frame_system::pallet_prelude::*;
 	use parity_scale_codec::{FullCodec, MaxEncodedLen};
 	use scale_info::TypeInfo;
+	use sp_core::H256;
 	use sp_std::boxed::Box;
 
 	use crate::traits::IdentityProofVerifier;
@@ -50,6 +51,10 @@ pub mod pallet {
 	#[pallet::getter(fn identity_proofs)]
 	pub(crate) type IdentityEntries<T> =
 		StorageMap<_, Twox64Concat, <T as Config>::Identifier, <T as Config>::LocalIdentityInfo>;
+
+	#[pallet::storage]
+	#[pallet::getter(fn latest_relay_roots)]
+	pub(crate) type LatestRelayStateRoots<T: Config> = StorageValue<_, (H256, H256, bool), OptionQuery>;
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
@@ -94,6 +99,30 @@ pub mod pallet {
 		InvalidProof,
 		/// The specified call could not be dispatched.
 		Dispatch,
+	}
+
+	#[pallet::hooks]
+	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T>
+	where
+		T: cumulus_pallet_parachain_system::Config,
+	{
+		fn on_initialize(_n: BlockNumberFor<T>) -> Weight {
+			// Reserve weight to update the last relay state root
+			<T as frame_system::Config>::DbWeight::get().writes(1)
+		}
+		fn on_finalize(_n: BlockNumberFor<T>) {
+			// Called before the validation data is cleaned in the
+			// parachain_system::on_finalize hook
+			if let Some(new_validation_data) = cumulus_pallet_parachain_system::Pallet::<T>::validation_data() {
+				// TODO: Add test cases
+				let new_entry = match LatestRelayStateRoots::<T>::get() {
+					Some((first, _, true)) => (first, new_validation_data.relay_parent_storage_root, false),
+					Some((_, second, false)) => (new_validation_data.relay_parent_storage_root, second, true),
+					None => (new_validation_data.relay_parent_storage_root, H256::default(), true),
+				};
+				LatestRelayStateRoots::<T>::set(Some(new_entry));
+			}
+		}
 	}
 
 	/// The origin this pallet creates after a user has provided a valid

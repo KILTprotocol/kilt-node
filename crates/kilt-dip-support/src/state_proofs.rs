@@ -103,15 +103,23 @@ pub mod relay_chain {
 			para_id: &RelayInfoProvider::ParaId,
 			proof: impl IntoIterator<Item = Vec<u8>>,
 		) -> Result<Header<RelayInfoProvider::BlockNumber, RelayInfoProvider::Hasher>, ()> {
-			let relay_state_root = RelayInfoProvider::state_root();
+			let relay_state_roots =
+				RelayInfoProvider::valid_state_roots::<Vec<<RelayInfoProvider::Hasher as Hash>::Output>>();
 			let parachain_storage_key = RelayInfoProvider::parachain_head_storage_key(para_id);
 			let storage_proof = StorageProof::new(proof);
-			let revealed_leaves = read_proof_check::<RelayInfoProvider::Hasher, _>(
-				relay_state_root,
-				storage_proof,
-				[&parachain_storage_key].iter(),
-			)
-			.map_err(|_| ())?;
+			let revealed_leaves = relay_state_roots
+				.into_iter()
+				.find_map(
+					|root: <<RelayInfoProvider as RelayChainStateInfoProvider>::Hasher as Hash>::Output| {
+						let Ok(revealed_leaves) = read_proof_check::<RelayInfoProvider::Hasher, _>(
+						root,
+						storage_proof.clone(),
+						[&parachain_storage_key].iter(),
+					) else { return None };
+						Some(revealed_leaves)
+					},
+				)
+				.ok_or(())?;
 			// TODO: Remove at some point
 			debug_assert!(revealed_leaves.len() == 1usize);
 			debug_assert!(revealed_leaves.contains_key(parachain_storage_key.as_ref()));

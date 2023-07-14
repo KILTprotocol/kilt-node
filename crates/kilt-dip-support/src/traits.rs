@@ -84,14 +84,14 @@ pub trait RelayChainStateInfoProvider {
 	type ParaId;
 
 	fn parachain_head_storage_key(para_id: &Self::ParaId) -> Self::Key;
-	fn state_root() -> <Self::Hasher as sp_runtime::traits::Hash>::Output;
+	fn valid_state_roots<I: FromIterator<<Self::Hasher as sp_runtime::traits::Hash>::Output>>() -> I;
 }
 
 pub struct RococoParachainRuntime<Runtime>(PhantomData<Runtime>);
 
 impl<Runtime> RelayChainStateInfoProvider for RococoParachainRuntime<Runtime>
 where
-	Runtime: cumulus_pallet_parachain_system::Config,
+	Runtime: pallet_dip_consumer::Config,
 {
 	type BlockNumber = u64;
 	// TODO: This is not exported
@@ -99,9 +99,9 @@ where
 	type Key = StorageKey;
 	type ParaId = u32;
 
-	fn state_root() -> <Self::Hasher as sp_runtime::traits::Hash>::Output {
-		let Some(validation_data) = cumulus_pallet_parachain_system::Pallet::<Runtime>::validation_data() else { panic!("Parent validation data should always be set."); };
-		validation_data.relay_parent_storage_root
+	fn valid_state_roots<I: FromIterator<<Self::Hasher as sp_runtime::traits::Hash>::Output>>() -> I {
+		let Some((previous, last, _)) = pallet_dip_consumer::Pallet::<Runtime>::latest_relay_roots() else { return I::from_iter([].into_iter()) };
+		I::from_iter([previous, last].into_iter())
 	}
 
 	fn parachain_head_storage_key(para_id: &Self::ParaId) -> Self::Key {
