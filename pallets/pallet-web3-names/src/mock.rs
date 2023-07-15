@@ -15,13 +15,11 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
-use frame_support::traits::{fungible::MutateHold, tokens::Precision, ReservableCurrency};
+use frame_support::traits::fungible::MutateHold;
 use kilt_support::Deposit;
-use pallet_balances::Holds;
 
 use crate::{
-	web3_name::Web3NameOwnership, AccountIdOf, BalanceOf, Config, CurrencyOf, HoldReason, Names, Owner, Web3NameOf,
-	Web3NameOwnerOf, Web3OwnershipOf,
+	AccountIdOf, BalanceOf, Config, CurrencyOf, HoldReason, Names, Owner, Web3NameOf, Web3NameOwnerOf, Web3OwnershipOf,
 };
 
 pub(crate) type BlockNumberOf<T> = <T as frame_system::Config>::BlockNumber;
@@ -57,16 +55,24 @@ pub use crate::mock::runtime::*;
 // Mocks that are only used internally
 #[cfg(test)]
 pub(crate) mod runtime {
-	use frame_support::parameter_types;
+	use frame_support::{
+		parameter_types,
+		traits::{fungible::MutateHold, tokens::Precision, ReservableCurrency},
+	};
 	use frame_system::EnsureRoot;
 	use kilt_support::mock::{mock_origin, SubjectId};
+	use pallet_balances::Holds;
 	use sp_runtime::{
 		testing::Header,
 		traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
 		MultiSignature,
 	};
 
-	use crate::{self as pallet_web3_names, web3_name::AsciiWeb3Name};
+	use crate::{
+		self as pallet_web3_names,
+		web3_name::{AsciiWeb3Name, Web3NameOwnership},
+		AccountIdOf, Config, HoldReason, Owner,
+	};
 
 	type Index = u64;
 	type BlockNumber = u64;
@@ -264,38 +270,38 @@ pub(crate) mod runtime {
 			ext
 		}
 	}
-}
 
-pub(crate) fn translate_holds_to_reserve() {
-	Holds::<Test>::iter().for_each(|(user, holds)| {
-		holds
-			.iter()
-			.filter(|hold| hold.id == HoldReason::Deposit.into())
-			.for_each(|hold| {
-				<<Test as Config>::Currency as MutateHold<AccountIdOf<Test>>>::release(
-					&HoldReason::Deposit.into(),
-					&user,
-					hold.amount,
-					Precision::Exact,
-				)
-				.expect("Translation to reserves should not fail");
+	pub(crate) fn translate_holds_to_reserve() {
+		Holds::<Test>::iter().for_each(|(user, holds)| {
+			holds
+				.iter()
+				.filter(|hold| hold.id == HoldReason::Deposit.into())
+				.for_each(|hold| {
+					<<Test as Config>::Currency as MutateHold<AccountIdOf<Test>>>::release(
+						&HoldReason::Deposit.into(),
+						&user,
+						hold.amount,
+						Precision::Exact,
+					)
+					.expect("Translation to reserves should not fail");
 
-				<<Test as Config>::Currency as ReservableCurrency<AccountIdOf<Test>>>::reserve(&user, hold.amount)
-					.expect("Reserving Balance should not fail.");
-			})
-	});
-}
+					<<Test as Config>::Currency as ReservableCurrency<AccountIdOf<Test>>>::reserve(&user, hold.amount)
+						.expect("Reserving Balance should not fail.");
+				})
+		});
+	}
 
-pub(crate) fn set_deposit_version_to_none() {
-	Owner::<Test>::iter().for_each(|(key, details)| {
-		let mut deposit_with_version_none = details.deposit;
-		deposit_with_version_none.version = None;
-		Owner::<Test>::set(
-			key,
-			Some(Web3NameOwnership {
-				deposit: deposit_with_version_none,
-				..details
-			}),
-		)
-	})
+	pub(crate) fn set_deposit_version_to_none() {
+		Owner::<Test>::iter().for_each(|(key, details)| {
+			let mut deposit_with_version_none = details.deposit;
+			deposit_with_version_none.version = None;
+			Owner::<Test>::set(
+				key,
+				Some(Web3NameOwnership {
+					deposit: deposit_with_version_none,
+					..details
+				}),
+			)
+		})
+	}
 }

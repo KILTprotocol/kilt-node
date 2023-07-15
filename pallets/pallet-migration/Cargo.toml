@@ -58,6 +58,13 @@ runtime-benchmarks = [
   "frame-benchmarking",
   "frame-support/runtime-benchmarks",
   "frame-system/runtime-benchmarks",
+  "did/runtime-benchmarks",
+  "attestation/runtime-benchmarks",
+  "delegation/runtime-benchmarks",
+  "pallet-did-lookup/runtime-benchmarks",
+  "pallet-web3-names/runtime-benchmarks",
+  "parachain-staking/runtime-benchmarks",
+  "public-credentials/runtime-benchmarks",
   
 ]
 std = [
@@ -69,8 +76,22 @@ std = [
   "sp-io/std",
   "sp-runtime/std",
   "sp-std/std",
+  "did/std",
+  "attestation/std",
+  "delegation/std",
+  "pallet-did-lookup/std",
+  "pallet-web3-names/std",
+  "parachain-staking/std",
+  "public-credentials/std",
 ]
 try-runtime = [
   "frame-support/try-runtime",
   "frame-system/try-runtime",
+  "did/try-runtime",
+  "attestation/try-runtime",
+  "delegation/try-runtime",
+  "pallet-did-lookup/try-runtime",
+  "pallet-web3-names/try-runtime",
+  "parachain-staking/try-runtime",
+  "public-credentials/try-runtime",
 ]
