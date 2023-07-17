@@ -101,25 +101,19 @@ pub mod relay_chain {
 		#[allow(clippy::result_unit_err)]
 		pub fn verify_proof_for_parachain(
 			para_id: &RelayInfoProvider::ParaId,
+			relay_hash: &<RelayInfoProvider::Hasher as Hash>::Output,
 			proof: impl IntoIterator<Item = Vec<u8>>,
 		) -> Result<Header<RelayInfoProvider::BlockNumber, RelayInfoProvider::Hasher>, ()> {
-			let relay_state_roots =
-				RelayInfoProvider::valid_state_roots::<Vec<<RelayInfoProvider::Hasher as Hash>::Output>>();
+			let relay_state_root: <<RelayInfoProvider as RelayChainStateInfoProvider>::Hasher as Hash>::Output =
+				RelayInfoProvider::state_root_for_block(relay_hash).ok_or(())?;
 			let parachain_storage_key = RelayInfoProvider::parachain_head_storage_key(para_id);
 			let storage_proof = StorageProof::new(proof);
-			let revealed_leaves = relay_state_roots
-				.into_iter()
-				.find_map(
-					|root: <<RelayInfoProvider as RelayChainStateInfoProvider>::Hasher as Hash>::Output| {
-						let Ok(revealed_leaves) = read_proof_check::<RelayInfoProvider::Hasher, _>(
-						root,
-						storage_proof.clone(),
-						[&parachain_storage_key].iter(),
-					) else { return None };
-						Some(revealed_leaves)
-					},
-				)
-				.ok_or(())?;
+			let revealed_leaves = read_proof_check::<RelayInfoProvider::Hasher, _>(
+				relay_state_root,
+				storage_proof,
+				[&parachain_storage_key].iter(),
+			)
+			.map_err(|_| ())?;
 			// TODO: Remove at some point
 			debug_assert!(revealed_leaves.len() == 1usize);
 			debug_assert!(revealed_leaves.contains_key(parachain_storage_key.as_ref()));
@@ -136,7 +130,7 @@ pub mod relay_chain {
 
 		use hex_literal::hex;
 		use parity_scale_codec::Encode;
-		use sp_core::{storage::StorageKey, H256};
+		use sp_core::storage::StorageKey;
 		use sp_runtime::traits::BlakeTwo256;
 
 		// Polkadot block n: 16_363_919,
@@ -163,8 +157,10 @@ pub mod relay_chain {
 				StorageKey(storage_key)
 			}
 
-			fn state_root() -> H256 {
-				hex!("81b75d95075d16005ee0a987a3f061d3011ada919b261e9b02961b9b3725f3fd").into()
+			fn state_root_for_block(
+				_block_hash: &<Self::Hasher as sp_runtime::traits::Hash>::Output,
+			) -> Option<<Self::Hasher as sp_runtime::traits::Hash>::Output> {
+				Some(hex!("81b75d95075d16005ee0a987a3f061d3011ada919b261e9b02961b9b3725f3fd").into())
 			}
 		}
 
@@ -186,6 +182,7 @@ pub mod relay_chain {
 			let expected_spiritnet_head_at_block = hex!("65541097fb02782e14f43074f0b00e44ae8e9fe426982323ef1d329739740d37f252ff006d1156941db1bccd58ce3a1cac4f40cad91f692d94e98f501dd70081a129b69a3e2ef7e1ff84ba3d86dab4e95f2c87f6b1055ebd48519c185360eae58f05d1ea08066175726120dcdc6308000000000561757261010170ccfaf3756d1a8dd8ae5c89094199d6d32e5dd9f0920f6fe30f986815b5e701974ea0e0e0a901401f2c72e3dd8dbdf4aa55d59bf3e7021856cdb8038419eb8c").to_vec();
 			let returned_head = ParachainHeadProofVerifier::<StaticPolkadotInfoProvider>::verify_proof_for_parachain(
 				&2_086,
+				&hex!("18e90e9aa8e3b063f60386ba1b0415111798e72d01de58b1438d620d42f58e39").into(),
 				spiritnet_head_proof_at_block,
 			)
 			.expect("Parachain head proof verification should not fail.");

@@ -140,6 +140,7 @@ construct_runtime!(
 
 		// DIP
 		DipConsumer: pallet_dip_consumer = 40,
+		RelayStore: pallet_relay_store = 41,
 	}
 );
 

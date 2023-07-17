@@ -2354,6 +2354,7 @@ dependencies = [
  "pallet-collator-selection",
  "pallet-did-lookup",
  "pallet-dip-consumer",
+ "pallet-relay-store",
  "pallet-session",
  "pallet-sudo",
  "pallet-timestamp",
@@ -4204,6 +4205,7 @@ dependencies = [
  "hex-literal",
  "pallet-dip-consumer",
  "pallet-dip-provider",
+ "pallet-relay-store",
  "parity-scale-codec",
  "rococo-runtime",
  "scale-info",
@@ -6251,7 +6253,6 @@ dependencies = [
 name = "pallet-dip-consumer"
 version = "1.11.0-dev"
 dependencies = [
- "cumulus-pallet-parachain-system",
  "frame-support",
  "frame-system",
  "kilt-support",
@@ -6672,6 +6673,21 @@ dependencies = [
  "serde",
  "sp-arithmetic",
  "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "pallet-relay-store"
+version = "1.11.0-dev"
+dependencies = [
+ "cumulus-pallet-parachain-system",
+ "frame-support",
+ "frame-system",
+ "log",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
  "sp-runtime",
  "sp-std",
 ]

@@ -19,6 +19,7 @@ did.workspace = true
 dip-support.workspace = true
 pallet-dip-consumer.workspace = true
 pallet-dip-provider.workspace = true
+pallet-relay-store.workspace = true
 
 # Parity dependencies
 parity-scale-codec = {workspace = true, features = ["derive"]}
@@ -54,6 +55,7 @@ std = [
   "dip-support/std",
   "pallet-dip-consumer/std",
   "pallet-dip-provider/std",
+  "pallet-relay-store/std",
   "parity-scale-codec/std",
   "scale-info/std",
   "frame-system/std",
