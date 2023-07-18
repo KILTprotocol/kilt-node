@@ -49,14 +49,14 @@ pub mod state_proofs;
 pub mod traits;
 
 #[derive(Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo, Clone)]
-pub struct ParaRootProof<RelayBlockHash> {
-	relay_block_hash: RelayBlockHash,
+pub struct ParaRootProof<RelayBlockHeight> {
+	relay_block_height: RelayBlockHeight,
 	proof: Vec<Vec<u8>>,
 }
 
 #[derive(Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo, Clone)]
-pub struct DipSiblingParachainStateProof<RelayBlockHash, InnerProof> {
-	para_root_proof: ParaRootProof<RelayBlockHash>,
+pub struct DipSiblingParachainStateProof<RelayBlockHeight, InnerProof> {
+	para_root_proof: ParaRootProof<RelayBlockHeight>,
 	dip_commitment_proof: Vec<Vec<u8>>,
 	dip_proof: InnerProof,
 }
@@ -183,7 +183,7 @@ impl<
 	type Error = ();
 	type IdentityDetails = ProviderAccountIdentityDetails;
 	type Proof = DipSiblingParachainStateProof<
-		<RelayInfoProvider::Hasher as Hash>::Output,
+		RelayInfoProvider::BlockNumber,
 		MerkleLeavesAndDidSignature<
 			MerkleProof<
 				Vec<Vec<u8>>,
@@ -218,7 +218,7 @@ impl<
 		let provider_parachain_header =
 			state_proofs::relay_chain::ParachainHeadProofVerifier::<RelayInfoProvider>::verify_proof_for_parachain(
 				&ProviderParaIdProvider::get(),
-				&para_root_proof.relay_block_hash,
+				&para_root_proof.relay_block_height,
 				para_root_proof.proof,
 			)?;
 		// 2. Verify parachain state proof.

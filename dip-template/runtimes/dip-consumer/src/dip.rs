@@ -28,7 +28,7 @@ use kilt_dip_support::{
 	DipSiblingParachainStateProof, StateProofDipVerifier,
 };
 use pallet_did_lookup::linkable_account::LinkableAccountId;
-use sp_core::{ConstU32, H256};
+use sp_core::ConstU32;
 use sp_runtime::traits::BlakeTwo256;
 use sp_std::vec::Vec;
 
@@ -59,7 +59,7 @@ impl pallet_dip_consumer::Config for Runtime {
 	type DipCallOriginFilter = PreliminaryDipOriginFilter;
 	type Identifier = DidIdentifier;
 	type IdentityProof = DipSiblingParachainStateProof<
-		H256,
+		u32,
 		MerkleLeavesAndDidSignature<
 			MerkleProof<Vec<Vec<u8>>, ProofLeaf<Hash, BlockNumber, Web3Name, LinkableAccountId>>,
 			BlockNumber,

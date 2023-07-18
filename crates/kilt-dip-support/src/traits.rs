@@ -84,7 +84,7 @@ pub trait RelayChainStateInfoProvider {
 	type ParaId;
 
 	fn state_root_for_block(
-		block_hash: &<Self::Hasher as sp_runtime::traits::Hash>::Output,
+		block_height: &Self::BlockNumber,
 	) -> Option<<Self::Hasher as sp_runtime::traits::Hash>::Output>;
 	fn parachain_head_storage_key(para_id: &Self::ParaId) -> Self::Key;
 }
@@ -95,16 +95,16 @@ impl<Runtime> RelayChainStateInfoProvider for RococoParachainRuntime<Runtime>
 where
 	Runtime: pallet_relay_store::Config,
 {
-	type BlockNumber = u64;
+	type BlockNumber = u32;
 	// TODO: This is not exported
 	type Hasher = BlakeTwo256;
 	type Key = StorageKey;
 	type ParaId = u32;
 
 	fn state_root_for_block(
-		block_hash: &<Self::Hasher as sp_runtime::traits::Hash>::Output,
+		block_height: &Self::BlockNumber,
 	) -> Option<<Self::Hasher as sp_runtime::traits::Hash>::Output> {
-		pallet_relay_store::Pallet::<Runtime>::latest_relay_head_for_block(block_hash)
+		pallet_relay_store::Pallet::<Runtime>::latest_relay_head_for_block(block_height)
 			.map(|relay_header| relay_header.relay_parent_storage_root)
 	}
 

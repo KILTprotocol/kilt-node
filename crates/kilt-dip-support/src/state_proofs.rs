@@ -101,11 +101,11 @@ pub mod relay_chain {
 		#[allow(clippy::result_unit_err)]
 		pub fn verify_proof_for_parachain(
 			para_id: &RelayInfoProvider::ParaId,
-			relay_hash: &<RelayInfoProvider::Hasher as Hash>::Output,
+			relay_height: &RelayInfoProvider::BlockNumber,
 			proof: impl IntoIterator<Item = Vec<u8>>,
 		) -> Result<Header<RelayInfoProvider::BlockNumber, RelayInfoProvider::Hasher>, ()> {
 			let relay_state_root: <<RelayInfoProvider as RelayChainStateInfoProvider>::Hasher as Hash>::Output =
-				RelayInfoProvider::state_root_for_block(relay_hash).ok_or(())?;
+				RelayInfoProvider::state_root_for_block(relay_height).ok_or(())?;
 			let parachain_storage_key = RelayInfoProvider::parachain_head_storage_key(para_id);
 			let storage_proof = StorageProof::new(proof);
 			let revealed_leaves = read_proof_check::<RelayInfoProvider::Hasher, _>(
@@ -158,7 +158,7 @@ pub mod relay_chain {
 			}
 
 			fn state_root_for_block(
-				_block_hash: &<Self::Hasher as sp_runtime::traits::Hash>::Output,
+				_block_height: &Self::BlockNumber,
 			) -> Option<<Self::Hasher as sp_runtime::traits::Hash>::Output> {
 				Some(hex!("81b75d95075d16005ee0a987a3f061d3011ada919b261e9b02961b9b3725f3fd").into())
 			}
@@ -175,14 +175,14 @@ pub mod relay_chain {
 				hex!("9f0b3c252fcb29d88eff4f3de5de4476c3ffbf8013c601cc93de3437f9d415bd52c48d794b341f218b9d0020a4b646746c24d0ca80348b8e2c39c479a146933297f62b7051df82e92e1bca761432c3e6f64c74033f80220131e7cd7a08b97f8aa06225f7aefbbca8118fb436c07689c552ed3f577145806d974dd9e4db5e407e29f84c4121ccc58f9c6adc3933afc1bcaef52defe77de5801e9e1a21db053de56365fdee57998488ddae7d664c0430da90469dde17936c1f80c5c11751bbfc99a1ad805c58a65b9704e0bad58e694023e9cc57ce6ef84cdb0b8038f6c242700eaea04ffad5c25ca9a9b1cc2af7303655a32eb59e84b6bb927cd3802575469e76e104b0db8b18dbc762b997a78aa666432a44c4b955ced044a4691f80a81408b856272feeec08845af515e27d033efd3ff8b46de6bc706c38e600086a809ee78332c2a38a3918070942421e651e0b9a43e4b8b2c92e87a2552cede73e8380c9d79f411f742cad0c6f2b070aa08703a04cb7db840c3821a6762837dd8d00e9807dcfbc7f2fcc9415e2cb40eef7f718758d76193f325b3f8b7180e3e5e7d6b81e8036252cae6d24a531a151ce1ee223a07bf71cf82a7fdf49090e4ca345d27d68ca80e3f08ef11671f8f1defa66fa2af71e1a871430e9352df9b3f1d427b5a5dabfb280b51d28c9b99030d050fc1578cd23b5506e769b86c8f4ccc6aded4b8d7c1a73b7").to_vec(),
 			].to_vec();
 			// As of query paras::heads(2_086) at block
-			// "0x18e90e9aa8e3b063f60386ba1b0415111798e72d01de58b1438d620d42f58e39" which
-			// results in the key
+			// "0x18e90e9aa8e3b063f60386ba1b0415111798e72d01de58b1438d620d42f58e39"
+			// (16_363_919) which results in the key
 			// "0xcd710b30bd2eab0352ddcc26417aa1941b3c252fcb29d88eff4f3de5de4476c32c0cfd6c23b92a7826080000"
 			//
 			let expected_spiritnet_head_at_block = hex!("65541097fb02782e14f43074f0b00e44ae8e9fe426982323ef1d329739740d37f252ff006d1156941db1bccd58ce3a1cac4f40cad91f692d94e98f501dd70081a129b69a3e2ef7e1ff84ba3d86dab4e95f2c87f6b1055ebd48519c185360eae58f05d1ea08066175726120dcdc6308000000000561757261010170ccfaf3756d1a8dd8ae5c89094199d6d32e5dd9f0920f6fe30f986815b5e701974ea0e0e0a901401f2c72e3dd8dbdf4aa55d59bf3e7021856cdb8038419eb8c").to_vec();
 			let returned_head = ParachainHeadProofVerifier::<StaticPolkadotInfoProvider>::verify_proof_for_parachain(
 				&2_086,
-				&hex!("18e90e9aa8e3b063f60386ba1b0415111798e72d01de58b1438d620d42f58e39").into(),
+				&16_363_919,
 				spiritnet_head_proof_at_block,
 			)
 			.expect("Parachain head proof verification should not fail.");

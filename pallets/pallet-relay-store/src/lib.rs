@@ -41,11 +41,11 @@ pub mod pallet {
 
 	#[pallet::storage]
 	#[pallet::getter(fn latest_relay_head_for_block)]
-	pub(crate) type LatestRelayHeads<T: Config> = StorageMap<_, Twox64Concat, H256, RelayParentInfo<u32, H256>>;
+	pub(crate) type LatestRelayHeads<T: Config> = StorageMap<_, Twox64Concat, u32, RelayParentInfo<H256>>;
 
 	// TODO: Use a better data structure for lookups
 	#[pallet::storage]
-	pub(crate) type LatestBlockHashes<T: Config> = StorageValue<_, BoundedVec<H256, T::MaxBlocks>, ValueQuery>;
+	pub(crate) type LatestBlockHeights<T: Config> = StorageValue<_, BoundedVec<u32, T::MaxBlocks>, ValueQuery>;
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
@@ -67,39 +67,39 @@ pub mod pallet {
 			// Reserve weight to update the last relay state root
 			<T as frame_system::Config>::DbWeight::get().writes(2)
 		}
+
 		fn on_finalize(_n: BlockNumberFor<T>) {
 			// Called before the validation data is cleaned in the
 			// parachain_system::on_finalize hook
 			let Some(new_validation_data) = cumulus_pallet_parachain_system::Pallet::<T>::validation_data() else { return; };
 			// Remove old relay block from both storage entries.
-			let mut latest_block_hashes = LatestBlockHashes::<T>::get();
-			if latest_block_hashes.is_full() {
-				let oldest_block_hash = latest_block_hashes.remove(0);
-				LatestRelayHeads::<T>::remove(oldest_block_hash);
+			let mut latest_block_heights = LatestBlockHeights::<T>::get();
+			if latest_block_heights.is_full() {
+				let oldest_block_height = latest_block_heights.remove(0);
+				LatestRelayHeads::<T>::remove(oldest_block_height);
 				log::trace!(
-					"Relay block queue full. Removing oldest block with hash {:#02x?}",
-					oldest_block_hash
+					"Relay block queue full. Removing oldest block at height {:?}",
+					oldest_block_height
 				);
 			}
 			// Set the new relay block in storage.
-			let relay_block_hash = new_validation_data.parent_head.hash();
+			let relay_block_height = new_validation_data.relay_parent_number;
+			// TODO: Replace hardcoded generics with proper definitions.
 			log::trace!(
-				"Adding new relay block hash {:#02x?} with state root {:#02x?} and number {:#02x?}",
-				relay_block_hash,
+				"Adding new relay block with state root {:#02x?} and number {:?}",
 				new_validation_data.relay_parent_storage_root,
 				new_validation_data.relay_parent_number,
 			);
 			LatestRelayHeads::<T>::insert(
-				relay_block_hash,
+				relay_block_height,
 				RelayParentInfo {
-					relay_parent_number: new_validation_data.relay_parent_number,
 					relay_parent_storage_root: new_validation_data.relay_parent_storage_root,
 				},
 			);
-			latest_block_hashes
-				.try_push(relay_block_hash)
-				.expect("Should never fail to push a new object on the BoundedVec of relay block hashes.");
-			LatestBlockHashes::<T>::set(latest_block_hashes);
+			latest_block_heights
+				.try_push(relay_block_height)
+				.expect("Should never fail to push a new object on the BoundedVec of relay block heights.");
+			LatestBlockHeights::<T>::set(latest_block_heights);
 		}
 	}
 }

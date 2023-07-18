@@ -21,7 +21,6 @@ use scale_info::TypeInfo;
 use sp_core::RuntimeDebug;
 
 #[derive(PartialEq, Eq, Clone, Encode, Decode, TypeInfo, RuntimeDebug, MaxEncodedLen)]
-pub struct RelayParentInfo<BlockNumber, Hash> {
-	pub relay_parent_number: BlockNumber,
+pub struct RelayParentInfo<Hash> {
 	pub relay_parent_storage_root: Hash,
 }
