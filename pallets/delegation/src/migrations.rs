@@ -16,51 +16,38 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::traits::ReservableCurrency;
+use frame_support::{ensure, pallet_prelude::DispatchResult, traits::ReservableCurrency};
 use kilt_support::{migration::switch_reserved_to_hold, Deposit};
 use sp_runtime::SaturatedConversion;
 
-use crate::{AccountIdOf, Config, CurrencyOf, DelegationNode, DelegationNodes, HoldReason};
+use crate::{AccountIdOf, Config, CurrencyOf, DelegationNode, DelegationNodeIdOf, DelegationNodes, Error, HoldReason};
 
-pub fn do_migration<T: Config>(who: <T as frame_system::Config>::AccountId, max_migrations: usize) -> usize
+pub fn update_balance_for_entry<T: Config>(key: &DelegationNodeIdOf<T>) -> DispatchResult
 where
 	<T as Config>::Currency: ReservableCurrency<T::AccountId>,
 {
-	let executed_migrations = DelegationNodes::<T>::iter()
-		.filter(|(_, details)| details.deposit.owner == who && details.deposit.version.is_none())
-		.take(max_migrations)
-		.map(|(key, delegation_details)| {
-			// switch reserves to hold.
-			let deposit = delegation_details.deposit;
-			let result = switch_reserved_to_hold::<AccountIdOf<T>, CurrencyOf<T>>(
-				deposit.owner,
+	DelegationNodes::<T>::try_mutate(key, |details| {
+		if let Some(d) = details {
+			ensure!(d.deposit.version.is_none(), Error::<T>::Migration);
+
+			*d = DelegationNode {
+				deposit: Deposit {
+					version: Some(1),
+					owner: d.deposit.owner.clone(),
+					amount: d.deposit.amount,
+				},
+				..d.clone()
+			};
+
+			switch_reserved_to_hold::<AccountIdOf<T>, CurrencyOf<T>>(
+				d.clone().deposit.owner,
 				&HoldReason::Deposit.into(),
-				deposit.amount.saturated_into(),
-			);
-
-			// update the deposit
-			DelegationNodes::<T>::mutate(key, |details| {
-				if let Some(d) = details {
-					*d = DelegationNode {
-						deposit: Deposit {
-							version: Some(1),
-							owner: d.deposit.owner.clone(),
-							amount: d.deposit.amount,
-						},
-						..delegation_details
-					}
-				}
-			});
-
-			debug_assert!(
-				result.is_ok(),
-				"Delegation: Could not convert reserves to hold from Delegation: {:?} error: {:?}",
-				key,
-				result
-			);
-		})
-		.count();
-	max_migrations.saturating_sub(executed_migrations)
+				d.deposit.amount.saturated_into(),
+			)
+		} else {
+			Err(Error::<T>::DelegateNotFound.into())
+		}
+	})
 }
 
 #[cfg(test)]
@@ -68,7 +55,7 @@ pub mod test {
 	use frame_support::traits::{fungible::InspectHold, ReservableCurrency};
 	use sp_runtime::traits::Zero;
 
-	use crate::{migrations::do_migration, mock::*, AccountIdOf, Config, DelegationNodes, HoldReason};
+	use crate::{migrations::update_balance_for_entry, mock::*, AccountIdOf, Config, DelegationNodes, HoldReason};
 
 	#[test]
 	fn test_setup() {
@@ -156,9 +143,7 @@ pub mod test {
 					delegation_pre_migration.unwrap().deposit.amount
 				);
 
-				let remaining_migration = do_migration::<Test>(ACCOUNT_01, 1);
-
-				assert_eq!(remaining_migration, 0);
+				assert!(update_balance_for_entry::<Test>(&delegation_id).is_ok());
 
 				let delegation_post_migration = DelegationNodes::<Test>::get(delegation_id);
 
@@ -185,9 +170,7 @@ pub mod test {
 				assert!(delegation_post_migration.unwrap().deposit.version.unwrap() == 1);
 
 				//Nothing should happen now
-				let remaining_migration = do_migration::<Test>(ACCOUNT_01, 1);
-
-				assert_eq!(remaining_migration, 1);
+				assert!(update_balance_for_entry::<Test>(&delegation_id).is_err());
 			});
 	}
 }

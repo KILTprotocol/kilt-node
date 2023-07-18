@@ -16,52 +16,38 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::traits::ReservableCurrency;
+use frame_support::{ensure, pallet_prelude::DispatchResult, traits::ReservableCurrency};
 use kilt_support::{migration::switch_reserved_to_hold, Deposit};
 use sp_runtime::SaturatedConversion;
 
-use crate::{did_details::DidDetails, AccountIdOf, Config, CurrencyOf, Did, HoldReason};
+use crate::{did_details::DidDetails, AccountIdOf, Config, CurrencyOf, Did, DidIdentifierOf, Error, HoldReason};
 
-pub fn do_migration<T: Config>(who: T::AccountId, max_migrations: usize) -> usize
+pub fn update_balance_for_entry<T: Config>(key: &DidIdentifierOf<T>) -> DispatchResult
 where
 	<T as Config>::Currency: ReservableCurrency<T::AccountId>,
 {
-	let executed_migrations = Did::<T>::iter()
-		.filter(|(_, details)| details.deposit.owner == who && details.deposit.version.is_none())
-		.take(max_migrations)
-		.map(|(key, did_details)| {
-			// switch reserves to hold.
-			let deposit = did_details.deposit;
-			let result = switch_reserved_to_hold::<AccountIdOf<T>, CurrencyOf<T>>(
-				deposit.owner,
+	Did::<T>::try_mutate(key, |details| {
+		if let Some(d) = details {
+			ensure!(d.deposit.version.is_none(), Error::<T>::Migration);
+
+			*d = DidDetails {
+				deposit: Deposit {
+					version: Some(1),
+					owner: d.deposit.owner.clone(),
+					amount: d.deposit.amount,
+				},
+				..d.clone()
+			};
+
+			switch_reserved_to_hold::<AccountIdOf<T>, CurrencyOf<T>>(
+				d.clone().deposit.owner,
 				&HoldReason::Deposit.into(),
-				deposit.amount.saturated_into(),
-			);
-
-			// update the deposit
-			Did::<T>::mutate(key.clone(), |details| {
-				if let Some(d) = details {
-					*d = DidDetails {
-						deposit: Deposit {
-							version: Some(1),
-							owner: d.deposit.owner.clone(),
-							amount: d.deposit.amount,
-						},
-						..did_details
-					}
-				}
-			});
-
-			debug_assert!(
-				result.is_ok(),
-				"Did: Could not convert reserves to hold from Did: {:?} error: {:?}",
-				key,
-				result
-			);
-		})
-		.count();
-
-	max_migrations.saturating_sub(executed_migrations)
+				d.deposit.amount.saturated_into(),
+			)
+		} else {
+			Err(Error::<T>::NotFound.into())
+		}
+	})
 }
 
 #[cfg(test)]
@@ -74,8 +60,8 @@ pub mod test {
 	use sp_runtime::traits::Zero;
 
 	use crate::{
-		self as did, did_details::DidVerificationKey, migrations::do_migration, mock::*, mock_utils::*, AccountIdOf,
-		Config, Did, HoldReason,
+		self as did, did_details::DidVerificationKey, migrations::update_balance_for_entry, mock::*, mock_utils::*,
+		AccountIdOf, Config, Did, HoldReason,
 	};
 
 	#[test]
@@ -150,9 +136,7 @@ pub mod test {
 					did_pre_migration.unwrap().deposit.amount
 				);
 
-				let remaining_migrations = do_migration::<Test>(alice_did.clone(), 1);
-
-				assert_eq!(remaining_migrations, 0);
+				assert!(update_balance_for_entry::<Test>(&alice_did.clone()).is_ok());
 
 				let did_post_migration = Did::<Test>::get(alice_did.clone());
 
@@ -178,9 +162,7 @@ pub mod test {
 				assert!(did_post_migration.unwrap().deposit.version.unwrap() == 1);
 
 				// Nothing should happen
-				let remaining_migrations = do_migration::<Test>(alice_did.clone(), 1);
-
-				assert_eq!(remaining_migrations, 1);
+				assert!(update_balance_for_entry::<Test>(&alice_did.clone()).is_err());
 			});
 	}
 }

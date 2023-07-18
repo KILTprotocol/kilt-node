@@ -16,53 +16,40 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::traits::ReservableCurrency;
+use frame_support::{ensure, traits::ReservableCurrency};
 use kilt_support::{migration::switch_reserved_to_hold, Deposit};
-use sp_runtime::SaturatedConversion;
+use sp_runtime::{DispatchResult, SaturatedConversion};
 
-use crate::{AccountIdOf, Config, CredentialEntry, Credentials, CurrencyOf, HoldReason};
+use crate::{
+	AccountIdOf, Config, CredentialEntry, CredentialIdOf, Credentials, CurrencyOf, Error, HoldReason, SubjectIdOf,
+};
 
-pub fn do_migration<T: Config>(who: T::AccountId, max_migrations: usize) -> usize
+pub fn update_balance_for_entry<T: Config>(key: &SubjectIdOf<T>, key2: &CredentialIdOf<T>) -> DispatchResult
 where
 	<T as Config>::Currency: ReservableCurrency<T::AccountId>,
 {
-	let executed_migrations = Credentials::<T>::iter()
-		.filter(|(_, _, details)| details.deposit.owner == who && details.deposit.version.is_none())
-		.take(max_migrations)
-		.map(|(key1, key2, delegation_details)| {
-			// switch reserves to hold.
-			let deposit = delegation_details.deposit;
-			let result = switch_reserved_to_hold::<AccountIdOf<T>, CurrencyOf<T>>(
-				deposit.owner,
+	Credentials::<T>::try_mutate(key, key2, |details| {
+		if let Some(d) = details {
+			ensure!(d.deposit.version.is_none(), Error::<T>::Migration);
+
+			*d = CredentialEntry {
+				deposit: Deposit {
+					version: Some(1),
+					owner: d.deposit.owner.clone(),
+					amount: d.deposit.amount,
+				},
+				..d.clone()
+			};
+
+			switch_reserved_to_hold::<AccountIdOf<T>, CurrencyOf<T>>(
+				d.clone().deposit.owner,
 				&HoldReason::Deposit.into(),
-				deposit.amount.saturated_into(),
-			);
-
-			// update the deposit
-			Credentials::<T>::mutate(key1.clone(), key2.clone(), |details| {
-				if let Some(d) = details {
-					*d = CredentialEntry {
-						deposit: Deposit {
-							version: Some(1),
-							owner: d.deposit.owner.clone(),
-							amount: d.deposit.amount,
-						},
-						..delegation_details
-					}
-				}
-			});
-
-			debug_assert!(
-				result.is_ok(),
-				"Delegation: Could not convert reserves to hold from Delegation: {:?}, {:?} error: {:?}",
-				key1,
-				key2,
-				result
-			);
-		})
-		.count();
-
-	max_migrations.saturating_sub(executed_migrations)
+				d.deposit.amount.saturated_into(),
+			)
+		} else {
+			Err(Error::<T>::NotFound.into())
+		}
+	})
 }
 
 #[cfg(test)]
@@ -73,7 +60,9 @@ pub mod test {
 	use sp_core::Get;
 	use sp_runtime::traits::Zero;
 
-	use crate::{migrations::do_migration, mock::*, AccountIdOf, Config, CredentialIdOf, Credentials, HoldReason};
+	use crate::{
+		migrations::update_balance_for_entry, mock::*, AccountIdOf, Config, CredentialIdOf, Credentials, HoldReason,
+	};
 
 	#[test]
 	fn test_setup() {
@@ -152,8 +141,7 @@ pub mod test {
 					delegation_pre_migration.unwrap().deposit.amount
 				);
 
-				let remaining_migrations = do_migration::<Test>(ACCOUNT_00, 1);
-				assert_eq!(remaining_migrations, 0);
+				assert!(update_balance_for_entry::<Test>(&subject_id, &credential_id).is_ok());
 
 				let delegation_post_migration = Credentials::<Test>::get(subject_id, credential_id);
 
@@ -180,8 +168,7 @@ pub mod test {
 				assert!(delegation_post_migration.unwrap().deposit.version.unwrap() == 1);
 
 				//Nothing should happen
-				let remaining_migrations = do_migration::<Test>(ACCOUNT_00, 1);
-				assert_eq!(remaining_migrations, 1);
+				assert!(update_balance_for_entry::<Test>(&subject_id, &credential_id).is_err());
 			})
 	}
 }

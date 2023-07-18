@@ -16,11 +16,12 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::traits::{
-	fungible::freeze::Mutate as MutateFreeze, LockIdentifier, LockableCurrency, ReservableCurrency,
+use frame_support::{
+	pallet_prelude::DispatchResult,
+	traits::{fungible::freeze::Mutate as MutateFreeze, LockIdentifier, LockableCurrency},
 };
-use pallet_balances::{BalanceLock, Freezes, IdAmount, Locks};
-use sp_runtime::SaturatedConversion;
+use pallet_balances::{BalanceLock, Freezes, Locks};
+use sp_runtime::{SaturatedConversion, WeakBoundedVec};
 
 use crate::{
 	types::{AccountIdOf, CurrencyOf},
@@ -29,66 +30,41 @@ use crate::{
 
 const STAKING_ID: LockIdentifier = *b"kiltpstk";
 
-pub fn do_migration<T: Config>(who: T::AccountId, max_migrations: usize) -> usize
+pub fn update_or_create_freeze<T: Config>(user_id: &T::AccountId) -> DispatchResult
 where
-	<T as Config>::Currency: ReservableCurrency<T::AccountId>,
-	<T as Config>::Currency: LockableCurrency<T::AccountId>,
-{
-	let mut remaining_migrations = max_migrations;
-	Locks::<T>::iter()
-		.filter(|(user_id, _)| user_id == &who)
-		.for_each(|(user_id, locks)| {
-			let executed_migrations = locks
-				.iter()
-				.filter(|lock| lock.id == STAKING_ID)
-				.take(remaining_migrations)
-				.map(|lock: &BalanceLock<_>| {
-					update_or_create_freeze::<T>(user_id.clone(), lock);
-				})
-				.count();
-			remaining_migrations = remaining_migrations.saturating_sub(executed_migrations);
-		});
-	remaining_migrations
-}
-
-fn update_or_create_freeze<T: Config>(
-	user_id: T::AccountId,
-	lock: &BalanceLock<<T as pallet_balances::Config>::Balance>,
-) where
 	CurrencyOf<T>: LockableCurrency<AccountIdOf<T>>,
 {
-	let freezes = Freezes::<T>::get(&user_id);
+	let locks: WeakBoundedVec<
+		BalanceLock<<T as pallet_balances::Config>::Balance>,
+		<T as pallet_balances::Config>::MaxLocks,
+	> = Locks::<T>::get(&user_id);
 
-	let result = if let Some(IdAmount { amount, .. }) = freezes
+	debug_assert!(!locks.is_empty(), "No locks");
+
+	locks
 		.iter()
-		.find(|freeze| freeze.id == <T as Config>::FreezeIdentifier::from(FreezeReason::Staking).into())
-	{
-		let total_lock = lock
-			.amount
-			.saturated_into::<u128>()
-			.saturating_add((*amount).saturated_into());
+		.filter(|lock| lock.id == STAKING_ID)
+		.try_for_each(|lock| -> DispatchResult {
+			<CurrencyOf<T> as LockableCurrency<AccountIdOf<T>>>::remove_lock(STAKING_ID, &user_id);
 
-		<CurrencyOf<T> as MutateFreeze<AccountIdOf<T>>>::extend_freeze(
-			&<T as crate::Config>::FreezeIdentifier::from(FreezeReason::Staking),
-			&user_id,
-			total_lock.saturated_into(),
-		)
-	} else {
-		<CurrencyOf<T> as MutateFreeze<AccountIdOf<T>>>::set_freeze(
-			&<T as crate::Config>::FreezeIdentifier::from(FreezeReason::Staking),
-			&user_id,
-			lock.amount.saturated_into(),
-		)
-	};
+			let are_freezes_stored = Freezes::<T>::get(&user_id)
+				.iter()
+				.any(|freeze| freeze.id == <T as Config>::FreezeIdentifier::from(FreezeReason::Staking).into());
 
-	debug_assert!(
-		result.is_ok(),
-		"Staking: Could not convert locks to freezes from user: {:?} error: {:?}",
-		user_id,
-		result
-	);
-
-	<CurrencyOf<T> as LockableCurrency<AccountIdOf<T>>>::remove_lock(STAKING_ID, &user_id);
+			if are_freezes_stored {
+				<CurrencyOf<T> as MutateFreeze<AccountIdOf<T>>>::extend_freeze(
+					&<T as crate::Config>::FreezeIdentifier::from(FreezeReason::Staking),
+					&user_id,
+					lock.amount.saturated_into(),
+				)
+			} else {
+				<CurrencyOf<T> as MutateFreeze<AccountIdOf<T>>>::set_freeze(
+					&<T as crate::Config>::FreezeIdentifier::from(FreezeReason::Staking),
+					&user_id,
+					lock.amount.saturated_into(),
+				)
+			}
+		})
 }
 
 #[cfg(test)]
@@ -100,9 +76,10 @@ pub mod test {
 	use pallet_balances::{Freezes, Locks};
 	use sp_runtime::traits::Zero;
 
-	use crate::{migrations::do_migration, mock::*, Config, FreezeReason};
+	use crate::{migrations::update_or_create_freeze, mock::*, Config, FreezeReason};
 
 	#[test]
+	#[should_panic(expected = "No locks")]
 	fn test_balance_migration_staking() {
 		ExtBuilder::default()
 			.with_balances(vec![(1, 10), (2, 100), (3, 100)])
@@ -129,9 +106,9 @@ pub mod test {
 				assert_eq!(reducible_balance_user_2, 0);
 				assert_eq!(reducible_balance_user_3, 90);
 
-				do_migration::<Test>(1, 1);
-				do_migration::<Test>(2, 1);
-				do_migration::<Test>(3, 1);
+				assert!(update_or_create_freeze::<Test>(&1).is_ok());
+				assert!(update_or_create_freeze::<Test>(&2).is_ok());
+				assert!(update_or_create_freeze::<Test>(&3).is_ok());
 
 				let froozen_balance_1 = pallet_balances::Pallet::<Test>::balance_frozen(
 					&<Test as Config>::FreezeIdentifier::from(FreezeReason::Staking),
@@ -153,8 +130,7 @@ pub mod test {
 				assert_eq!(froozen_balance_3, 10);
 
 				//Nothing should happen
-				let remaining_migrations = do_migration::<Test>(1, 1);
-				assert_eq!(remaining_migrations, 1);
+				assert!(update_or_create_freeze::<Test>(&1).is_err());
 			})
 	}
 }

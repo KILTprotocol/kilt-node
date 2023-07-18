@@ -16,52 +16,38 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::traits::ReservableCurrency;
+use frame_support::{ensure, pallet_prelude::DispatchResult, traits::ReservableCurrency};
 use kilt_support::{migration::switch_reserved_to_hold, Deposit};
 use sp_runtime::SaturatedConversion;
 
-use crate::{web3_name::Web3NameOwnership, AccountIdOf, Config, CurrencyOf, HoldReason, Owner};
+use crate::{web3_name::Web3NameOwnership, AccountIdOf, Config, CurrencyOf, Error, HoldReason, Owner, Web3NameOf};
 
-pub fn do_migration<T: Config>(who: T::AccountId, max_migrations: usize) -> usize
+pub fn update_balance_for_entry<T: Config>(key: &Web3NameOf<T>) -> DispatchResult
 where
 	<T as Config>::Currency: ReservableCurrency<T::AccountId>,
 {
-	let executed_migrations = Owner::<T>::iter()
-		.filter(|(_, details)| details.deposit.owner == who && details.deposit.version.is_none())
-		.take(max_migrations)
-		.map(|(key, w3n_details)| {
-			// switch reserves to hold.
-			let deposit = w3n_details.deposit;
-			let result = switch_reserved_to_hold::<AccountIdOf<T>, CurrencyOf<T>>(
-				deposit.owner,
+	Owner::<T>::try_mutate(key, |details| {
+		if let Some(d) = details {
+			ensure!(d.deposit.version.is_none(), Error::<T>::Migration);
+
+			*d = Web3NameOwnership {
+				deposit: Deposit {
+					version: Some(1),
+					owner: d.deposit.owner.clone(),
+					amount: d.deposit.amount,
+				},
+				..d.clone()
+			};
+
+			switch_reserved_to_hold::<AccountIdOf<T>, CurrencyOf<T>>(
+				d.clone().deposit.owner,
 				&HoldReason::Deposit.into(),
-				deposit.amount.saturated_into(),
-			);
-
-			// update the deposit
-			Owner::<T>::mutate(key.clone(), |details| {
-				if let Some(d) = details {
-					*d = Web3NameOwnership {
-						deposit: Deposit {
-							version: Some(1),
-							owner: d.deposit.owner.clone(),
-							amount: d.deposit.amount,
-						},
-						..w3n_details
-					}
-				}
-			});
-
-			debug_assert!(
-				result.is_ok(),
-				"W3n: Could not convert reserves to hold from W3n: {:?} error: {:?}",
-				key,
-				result
-			);
-		})
-		.count();
-
-	max_migrations.saturating_sub(executed_migrations)
+				d.deposit.amount.saturated_into(),
+			)
+		} else {
+			Err(Error::<T>::NotFound.into())
+		}
+	})
 }
 
 #[cfg(test)]
@@ -69,7 +55,7 @@ pub mod test {
 	use frame_support::traits::{fungible::InspectHold, ReservableCurrency};
 	use sp_runtime::traits::Zero;
 
-	use crate::{migrations::do_migration, mock::*, AccountIdOf, Config, HoldReason, Owner};
+	use crate::{migrations::update_balance_for_entry, mock::*, AccountIdOf, Config, HoldReason, Owner};
 
 	#[test]
 	fn test_setup() {
@@ -127,10 +113,9 @@ pub mod test {
 					delegation_pre_migration.unwrap().deposit.amount
 				);
 
-				let remaining_migrations = do_migration::<Test>(ACCOUNT_00.clone(), 1);
-				assert_eq!(remaining_migrations, 0);
+				assert!(update_balance_for_entry::<Test>(&web3_name_00.clone()).is_ok());
 
-				let delegation_post_migration = Owner::<Test>::get(web3_name_00);
+				let delegation_post_migration = Owner::<Test>::get(web3_name_00.clone());
 
 				let balance_on_reserve_post_migration = <<Test as Config>::Currency as ReservableCurrency<
 					AccountIdOf<Test>,
@@ -154,8 +139,7 @@ pub mod test {
 				assert!(delegation_post_migration.clone().unwrap().deposit.version.is_some());
 				assert!(delegation_post_migration.unwrap().deposit.version.unwrap() == 1);
 
-				let remaining_migrations = do_migration::<Test>(ACCOUNT_00.clone(), 1);
-				assert_eq!(remaining_migrations, 1);
+				assert!(update_balance_for_entry::<Test>(&web3_name_00).is_err());
 			})
 	}
 }

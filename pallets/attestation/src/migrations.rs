@@ -16,51 +16,38 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::traits::ReservableCurrency;
+use frame_support::{ensure, pallet_prelude::DispatchResult, traits::ReservableCurrency};
 use kilt_support::{migration::switch_reserved_to_hold, Deposit};
 use sp_runtime::SaturatedConversion;
 
-use crate::{AccountIdOf, AttestationDetails, Attestations, Config, CurrencyOf, HoldReason};
+use crate::{AccountIdOf, AttestationDetails, Attestations, ClaimHashOf, Config, CurrencyOf, Error, HoldReason};
 
-pub fn do_migration<T: Config>(who: T::AccountId, max_migrations: usize) -> usize
+pub fn update_balance_for_entry<T: Config>(key: &ClaimHashOf<T>) -> DispatchResult
 where
 	<T as Config>::Currency: ReservableCurrency<T::AccountId>,
 {
-	let executed_migrations = Attestations::<T>::iter()
-		.filter(|(_, details)| details.deposit.owner == who && details.deposit.version.is_none())
-		.take(max_migrations)
-		.map(|(key, attestations_detail)| {
-			// switch reserves to hold.
-			let deposit = attestations_detail.deposit;
-			let result = switch_reserved_to_hold::<AccountIdOf<T>, CurrencyOf<T>>(
-				deposit.owner,
+	Attestations::<T>::try_mutate(key, |details| {
+		if let Some(d) = details {
+			ensure!(d.deposit.version.is_none(), Error::<T>::Migration);
+
+			*d = AttestationDetails {
+				deposit: Deposit {
+					version: Some(1),
+					owner: d.deposit.owner.clone(),
+					amount: d.deposit.amount,
+				},
+				..d.clone()
+			};
+
+			switch_reserved_to_hold::<AccountIdOf<T>, CurrencyOf<T>>(
+				d.clone().deposit.owner,
 				&HoldReason::Deposit.into(),
-				deposit.amount.saturated_into(),
-			);
-
-			// update the deposit
-			Attestations::<T>::mutate(key, |details| {
-				if let Some(d) = details {
-					*d = AttestationDetails {
-						deposit: Deposit {
-							version: Some(1),
-							owner: d.deposit.owner.clone(),
-							amount: d.deposit.amount,
-						},
-						..attestations_detail
-					};
-				}
-			});
-
-			debug_assert!(
-				result.is_ok(),
-				"Attestation: Could not convert reserves to hold from attestation: {:?} error: {:?}",
-				key,
-				result
-			);
-		})
-		.count();
-	max_migrations.saturating_sub(executed_migrations)
+				d.deposit.amount.saturated_into(),
+			)
+		} else {
+			Err(Error::<T>::NotFound.into())
+		}
+	})
 }
 
 #[cfg(test)]
@@ -69,7 +56,9 @@ pub mod test {
 	use frame_support::traits::{fungible::InspectHold, ReservableCurrency};
 	use sp_runtime::traits::Zero;
 
-	use crate::{migrations::do_migration, mock::*, AccountIdOf, Attestations, AttesterOf, Config, HoldReason};
+	use crate::{
+		migrations::update_balance_for_entry, mock::*, AccountIdOf, Attestations, AttesterOf, Config, HoldReason,
+	};
 
 	#[test]
 	fn test_setup() {
@@ -137,9 +126,7 @@ pub mod test {
 					attestation_pre_migration.unwrap().deposit.amount
 				);
 
-				let remaining_migration = do_migration::<Test>(ACCOUNT_00, 1);
-
-				assert_eq!(remaining_migration, 0);
+				assert!(update_balance_for_entry::<Test>(&claim_hash).is_ok());
 
 				let attestation_post_migration = Attestations::<Test>::get(claim_hash);
 
@@ -163,10 +150,7 @@ pub mod test {
 				assert!(attestation_post_migration.clone().unwrap().deposit.version.is_some());
 				assert!(attestation_post_migration.unwrap().deposit.version.unwrap() == 1);
 
-				//Nothing should happen
-				let remaining_migration = do_migration::<Test>(ACCOUNT_00, 1);
-
-				assert_eq!(remaining_migration, 1);
+				assert!(update_balance_for_entry::<Test>(&claim_hash).is_err());
 			});
 	}
 }

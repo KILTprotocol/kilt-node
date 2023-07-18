@@ -187,10 +187,14 @@ impl pallet_multisig::Config for Runtime {
 	type WeightInfo = weights::pallet_multisig::WeightInfo<Runtime>;
 }
 
-impl pallet_migration::Config for Runtime {
-	type RuntimeEvent = RuntimeEvent;
+parameter_types! {
+	pub const MaxMigrations: u32 = 10;
 }
 
+impl pallet_migration::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type MaxMigrations = MaxMigrations;
+}
 impl pallet_indices::Config for Runtime {
 	type AccountIndex = Index;
 	type Currency = pallet_balances::Pallet<Runtime>;

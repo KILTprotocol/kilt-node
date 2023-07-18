@@ -17,7 +17,8 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_support::{
-	pallet_prelude::ValueQuery,
+	ensure,
+	pallet_prelude::{DispatchResult, ValueQuery},
 	storage_alias,
 	traits::{Get, GetStorageVersion, OnRuntimeUpgrade, ReservableCurrency, StorageVersion},
 };
@@ -28,8 +29,8 @@ use sp_runtime::{AccountId32, SaturatedConversion};
 use sp_std::marker::PhantomData;
 
 use crate::{
-	linkable_account::LinkableAccountId, AccountIdOf, Config, ConnectedDids, ConnectionRecord, CurrencyOf, HoldReason,
-	Pallet,
+	linkable_account::LinkableAccountId, AccountIdOf, Config, ConnectedDids, ConnectionRecord, CurrencyOf, Error,
+	HoldReason, Pallet,
 };
 
 /// A unified log target for did-lookup-migration operations.
@@ -119,46 +120,32 @@ impl<T: crate::pallet::Config> OnRuntimeUpgrade for CleanupMigration<T> {
 	}
 }
 
-pub fn do_migration<T: Config>(who: T::AccountId, max_migrations: usize) -> usize
+pub fn update_balance_for_entry<T: Config>(key: &LinkableAccountId) -> DispatchResult
 where
 	<T as Config>::Currency: ReservableCurrency<T::AccountId>,
 {
-	let executed_migrations = ConnectedDids::<T>::iter()
-		.filter(|(_, details)| details.deposit.owner == who && details.deposit.version.is_none())
-		.take(max_migrations)
-		.map(|(key, did_details)| {
-			// switch reserves to hold.
-			let deposit = did_details.deposit;
-			let result = switch_reserved_to_hold::<AccountIdOf<T>, CurrencyOf<T>>(
-				deposit.owner,
+	ConnectedDids::<T>::try_mutate(key, |details| {
+		if let Some(d) = details {
+			ensure!(d.deposit.version.is_none(), Error::<T>::Migration);
+
+			*d = ConnectionRecord {
+				deposit: Deposit {
+					version: Some(1),
+					owner: d.deposit.owner.clone(),
+					amount: d.deposit.amount,
+				},
+				..d.clone()
+			};
+
+			switch_reserved_to_hold::<AccountIdOf<T>, CurrencyOf<T>>(
+				d.clone().deposit.owner,
 				&HoldReason::Deposit.into(),
-				deposit.amount.saturated_into(),
-			);
-
-			// update the deposit
-			ConnectedDids::<T>::mutate(key.clone(), |details| {
-				if let Some(d) = details {
-					*d = ConnectionRecord {
-						deposit: Deposit {
-							version: Some(1),
-							owner: d.deposit.owner.clone(),
-							amount: d.deposit.amount,
-						},
-						..did_details
-					}
-				}
-			});
-
-			debug_assert!(
-				result.is_ok(),
-				"Lookup: Could not convert reserves to hold from Lookup: {:?} error: {:?}",
-				key,
-				result
-			);
-		})
-		.count();
-
-	max_migrations.saturating_sub(executed_migrations)
+				d.deposit.amount.saturated_into(),
+			)
+		} else {
+			Err(Error::<T>::NotFound.into())
+		}
+	})
 }
 
 #[cfg(test)]
@@ -166,7 +153,7 @@ pub mod test {
 	use frame_support::traits::{fungible::InspectHold, ReservableCurrency};
 	use sp_runtime::traits::Zero;
 
-	use crate::{migrations::do_migration, mock::*, AccountIdOf, Config, ConnectedDids, HoldReason};
+	use crate::{migrations::update_balance_for_entry, mock::*, AccountIdOf, Config, ConnectedDids, HoldReason};
 
 	#[test]
 	fn test_setup() {
@@ -243,9 +230,7 @@ pub mod test {
 					connected_did_pre_migration.unwrap().deposit.amount
 				);
 
-				let remaining_migrations = do_migration::<Test>(ACCOUNT_00.clone(), 1);
-
-				assert_eq!(remaining_migrations, 0);
+				assert!(update_balance_for_entry::<Test>(&LINKABLE_ACCOUNT_00).is_ok());
 
 				let connected_did_post_migration = ConnectedDids::<Test>::get(LINKABLE_ACCOUNT_00);
 
@@ -272,9 +257,7 @@ pub mod test {
 				assert!(connected_did_post_migration.unwrap().deposit.version.unwrap() == 1);
 
 				// Nothing should happen
-				let remaining_migrations = do_migration::<Test>(ACCOUNT_00.clone(), 1);
-
-				assert_eq!(remaining_migrations, 1);
+				assert!(update_balance_for_entry::<Test>(&LINKABLE_ACCOUNT_00).is_err());
 			})
 	}
 }

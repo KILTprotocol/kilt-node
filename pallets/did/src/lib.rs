@@ -435,6 +435,8 @@ pub mod pallet {
 		MaxStoredEndpointsCountExceeded,
 		/// An error that is not supposed to take place, yet it happened.
 		Internal,
+		/// The balance is already migrated
+		Migration,
 	}
 
 	impl<T> From<DidError> for Error<T> {
