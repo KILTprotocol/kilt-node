@@ -150,6 +150,7 @@ pub mod test {
 				assert!(attestation_post_migration.clone().unwrap().deposit.version.is_some());
 				assert!(attestation_post_migration.unwrap().deposit.version.unwrap() == 1);
 
+				// Nothing should happen
 				assert!(update_balance_for_entry::<Test>(&claim_hash).is_err());
 			});
 	}
