@@ -164,7 +164,7 @@ pub mod pallet {
 	};
 
 	/// The current storage version.
-	pub(crate) const STORAGE_VERSION: StorageVersion = StorageVersion::new(5);
+	const STORAGE_VERSION: StorageVersion = StorageVersion::new(4);
 
 	/// Reference to a payload of data of variable size.
 	pub type Payload = [u8];
