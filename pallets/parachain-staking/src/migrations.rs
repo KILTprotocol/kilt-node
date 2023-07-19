@@ -28,7 +28,7 @@ use crate::{
 	Config, FreezeReason,
 };
 
-const STAKING_ID: LockIdentifier = *b"kiltpstk";
+pub const STAKING_ID: LockIdentifier = *b"kiltpstk";
 
 pub fn update_or_create_freeze<T: Config>(user_id: &T::AccountId) -> DispatchResult
 where
@@ -37,7 +37,7 @@ where
 	let locks: WeakBoundedVec<
 		BalanceLock<<T as pallet_balances::Config>::Balance>,
 		<T as pallet_balances::Config>::MaxLocks,
-	> = Locks::<T>::get(&user_id);
+	> = Locks::<T>::get(user_id);
 
 	debug_assert!(!locks.is_empty(), "No locks");
 
@@ -45,22 +45,22 @@ where
 		.iter()
 		.filter(|lock| lock.id == STAKING_ID)
 		.try_for_each(|lock| -> DispatchResult {
-			<CurrencyOf<T> as LockableCurrency<AccountIdOf<T>>>::remove_lock(STAKING_ID, &user_id);
+			<CurrencyOf<T> as LockableCurrency<AccountIdOf<T>>>::remove_lock(STAKING_ID, user_id);
 
-			let are_freezes_stored = Freezes::<T>::get(&user_id)
+			let are_freezes_stored = Freezes::<T>::get(user_id)
 				.iter()
 				.any(|freeze| freeze.id == <T as Config>::FreezeIdentifier::from(FreezeReason::Staking).into());
 
 			if are_freezes_stored {
 				<CurrencyOf<T> as MutateFreeze<AccountIdOf<T>>>::extend_freeze(
 					&<T as crate::Config>::FreezeIdentifier::from(FreezeReason::Staking),
-					&user_id,
+					user_id,
 					lock.amount.saturated_into(),
 				)
 			} else {
 				<CurrencyOf<T> as MutateFreeze<AccountIdOf<T>>>::set_freeze(
 					&<T as crate::Config>::FreezeIdentifier::from(FreezeReason::Staking),
-					&user_id,
+					user_id,
 					lock.amount.saturated_into(),
 				)
 			}
