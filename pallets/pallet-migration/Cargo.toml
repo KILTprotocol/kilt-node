@@ -19,7 +19,6 @@ env_logger.workspace = true
 frame-benchmarking = {workspace = true, features = ["std"]}
 
 [dependencies]
-
 # Internal dependencies
 attestation.workspace = true
 delegation.workspace = true
@@ -48,7 +47,6 @@ frame-benchmarking = {workspace = true, optional = true}
 sp-keystore = {workspace = true, optional = true}
 
 [features]
-
 default = ["std"]
 runtime-benchmarks = [
   "frame-benchmarking",
