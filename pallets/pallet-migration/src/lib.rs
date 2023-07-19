@@ -18,30 +18,34 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
+pub use crate::default_weights::WeightInfo;
 pub use pallet::*;
 
-// #[cfg(feature = "runtime-benchmarks")] TODO
-// mod benchmarking;
+#[cfg(any(feature = "runtime-benchmarks", test))]
+mod benchmarking;
+pub mod default_weights;
 
 #[frame_support::pallet]
 pub mod pallet {
+	use attestation::ClaimHashOf;
+	use delegation::DelegationNodeIdOf;
+	use did::DidIdentifierOf;
 	use frame_support::{
 		pallet_prelude::{DispatchResult, *},
 		traits::{LockableCurrency, ReservableCurrency},
 	};
 	use frame_system::pallet_prelude::*;
-
-	use attestation::ClaimHashOf;
-	use delegation::DelegationNodeIdOf;
-	use did::DidIdentifierOf;
 	use pallet_did_lookup::linkable_account::LinkableAccountId;
 	use pallet_web3_names::Web3NameOf;
 	use public_credentials::{CredentialIdOf, SubjectIdOf};
+	use sp_runtime::SaturatedConversion;
+
+	use crate::default_weights::WeightInfo;
 
 	type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 
 	#[derive(Encode, Decode, TypeInfo, Debug, Clone, PartialEq)]
-	pub struct PalletToMigrate<T>
+	pub struct EntriesToMigrate<T>
 	where
 		T: did::Config,
 		T: delegation::Config,
@@ -50,13 +54,13 @@ pub mod pallet {
 		T: public_credentials::Config,
 		T: Config,
 	{
-		attestation: BoundedVec<ClaimHashOf<T>, <T as Config>::MaxMigrations>,
-		delegation: BoundedVec<DelegationNodeIdOf<T>, <T as Config>::MaxMigrations>,
-		did: BoundedVec<DidIdentifierOf<T>, <T as Config>::MaxMigrations>,
-		lookup: BoundedVec<LinkableAccountId, <T as Config>::MaxMigrations>,
-		w3n: BoundedVec<Web3NameOf<T>, <T as Config>::MaxMigrations>,
-		staking: BoundedVec<AccountIdOf<T>, <T as Config>::MaxMigrations>,
-		public_credentials: BoundedVec<(SubjectIdOf<T>, CredentialIdOf<T>), <T as Config>::MaxMigrations>,
+		pub attestation: BoundedVec<ClaimHashOf<T>, <T as Config>::MaxMigrations>,
+		pub delegation: BoundedVec<DelegationNodeIdOf<T>, <T as Config>::MaxMigrations>,
+		pub did: BoundedVec<DidIdentifierOf<T>, <T as Config>::MaxMigrations>,
+		pub lookup: BoundedVec<LinkableAccountId, <T as Config>::MaxMigrations>,
+		pub w3n: BoundedVec<Web3NameOf<T>, <T as Config>::MaxMigrations>,
+		pub staking: BoundedVec<AccountIdOf<T>, <T as Config>::MaxMigrations>,
+		pub public_credentials: BoundedVec<(SubjectIdOf<T>, CredentialIdOf<T>), <T as Config>::MaxMigrations>,
 	}
 
 	#[pallet::config]
@@ -72,15 +76,21 @@ pub mod pallet {
 		+ TypeInfo
 	{
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
+
+		/// The max amount on migrations for each pallet
 		type MaxMigrations: Get<u32>;
+
+		/// Weight information for extrinsics in this pallet.
+		type WeightInfo: WeightInfo;
 	}
 
 	#[pallet::pallet]
 	pub struct Pallet<T>(_);
 
 	#[pallet::event]
+	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
-		UserUpdated(<T as frame_system::Config>::AccountId),
+		EntriesUpdated(EntriesToMigrate<T>),
 	}
 
 	#[pallet::hooks]
@@ -99,8 +109,21 @@ pub mod pallet {
 		<T as public_credentials::Config>::Currency: ReservableCurrency<AccountIdOf<T>>,
 	{
 		#[pallet::call_index(0)]
-		#[pallet::weight(Weight::from_parts(10_000, 0))]
-		pub fn update_single_entry(origin: OriginFor<T>, requested_migrations: PalletToMigrate<T>) -> DispatchResult {
+		#[pallet::weight({
+			let mut count_general_migration = requested_migrations.attestation.len();
+			count_general_migration = count_general_migration.saturating_add(requested_migrations.delegation.len());
+			count_general_migration = count_general_migration.saturating_add(requested_migrations.did.len());
+			count_general_migration = count_general_migration.saturating_add(requested_migrations.lookup.len());
+			count_general_migration = count_general_migration.saturating_add(requested_migrations.w3n.len());
+			count_general_migration = count_general_migration.saturating_add( requested_migrations.public_credentials.len());
+			let count_staking_migration = requested_migrations.staking.len();
+
+			let general_weight = <T as crate::Config>::WeightInfo::general_weight().saturating_mul(count_general_migration.saturated_into());
+			let staking_weight = <T as crate::Config>::WeightInfo::staking_weight().saturating_mul(count_staking_migration.saturated_into());
+
+			general_weight.saturating_add(staking_weight)
+		})]
+		pub fn update_balance(origin: OriginFor<T>, requested_migrations: EntriesToMigrate<T>) -> DispatchResult {
 			ensure_signed(origin)?;
 
 			requested_migrations
@@ -138,7 +161,11 @@ pub mod pallet {
 				.iter()
 				.try_for_each(|(subject_id, credential_id)| {
 					public_credentials::migrations::update_balance_for_entry::<T>(subject_id, credential_id)
-				})
+				})?;
+
+			Self::deposit_event(Event::EntriesUpdated(requested_migrations));
+
+			Ok(())
 		}
 	}
 }
