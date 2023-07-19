@@ -194,7 +194,9 @@ parameter_types! {
 impl pallet_migration::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type MaxMigrations = MaxMigrations;
+	type WeightInfo = weights::pallet_migration::WeightInfo<Runtime>;
 }
+
 impl pallet_indices::Config for Runtime {
 	type AccountIndex = Index;
 	type Currency = pallet_balances::Pallet<Runtime>;
@@ -1139,6 +1141,7 @@ mod benches {
 		[pallet_web3_names, Web3Names]
 		[public_credentials, PublicCredentials]
 		[pallet_xcm, PolkadotXcm]
+		[pallet_migration, Migration]
 		[frame_benchmarking::baseline, Baseline::<Runtime>]
 
 	);
