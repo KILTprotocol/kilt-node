@@ -187,7 +187,7 @@ pub mod pallet {
 		/// A name that contains not allowed characters is being claimed.
 		InvalidCharacter,
 		/// The balance is already migrated
-		Migration,
+		BalanceMigration,
 	}
 
 	#[pallet::hooks]

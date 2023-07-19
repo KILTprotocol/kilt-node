@@ -436,7 +436,7 @@ pub mod pallet {
 		/// An error that is not supposed to take place, yet it happened.
 		Internal,
 		/// The balance is already migrated
-		Migration,
+		BalanceMigration,
 	}
 
 	impl<T> From<DidError> for Error<T> {

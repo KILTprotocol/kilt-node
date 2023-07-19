@@ -230,7 +230,7 @@ pub mod pallet {
 		/// cannot be added.
 		MaxDelegatedAttestationsExceeded,
 		/// The balance is already migrated
-		Migration,
+		BalanceMigration,
 	}
 
 	#[pallet::call]

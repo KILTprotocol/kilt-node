@@ -237,7 +237,7 @@ pub mod pallet {
 		/// happened.
 		Internal,
 		/// The balance is already migrated
-		Migration,
+		BalanceMigration,
 	}
 
 	#[pallet::hooks]

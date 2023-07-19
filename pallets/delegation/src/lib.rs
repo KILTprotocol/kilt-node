@@ -302,7 +302,7 @@ pub mod pallet {
 		/// corresponding delegation node.
 		MaxChildrenExceeded,
 		/// The balance is already migrated
-		Migration,
+		BalanceMigration,
 	}
 
 	#[pallet::hooks]

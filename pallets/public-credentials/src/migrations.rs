@@ -87,19 +87,18 @@ pub mod test {
 
 				// before the migration the balance should be reseved and not on
 				// hold.
-				let hold_balance_setup =
-					<<Test as Config>::Currency as InspectHold<AccountIdOf<Test>>>::balance_on_hold(
-						&HoldReason::Deposit.into(),
-						&ACCOUNT_00,
-					);
+				let hold_balance = <<Test as Config>::Currency as InspectHold<AccountIdOf<Test>>>::balance_on_hold(
+					&HoldReason::Deposit.into(),
+					&ACCOUNT_00,
+				);
 
-				let reserved_balacne_setup =
+				let reserved_balance =
 					<<Test as Config>::Currency as ReservableCurrency<AccountIdOf<Test>>>::reserved_balance(
 						&ACCOUNT_00,
 					);
 
-				assert_eq!(hold_balance_setup, 0);
-				assert_eq!(reserved_balacne_setup, <Test as Config>::Deposit::get());
+				assert_eq!(hold_balance, 0);
+				assert_eq!(reserved_balance, <Test as Config>::Deposit::get());
 			})
 	}
 

@@ -69,19 +69,18 @@ pub mod test {
 
 				// before the migration the balance should be reseved and not on
 				// hold.
-				let hold_balance_setup =
-					<<Test as Config>::Currency as InspectHold<AccountIdOf<Test>>>::balance_on_hold(
-						&HoldReason::Deposit.into(),
-						&ACCOUNT_00,
-					);
+				let hold_balance = <<Test as Config>::Currency as InspectHold<AccountIdOf<Test>>>::balance_on_hold(
+					&HoldReason::Deposit.into(),
+					&ACCOUNT_00,
+				);
 
-				let reserved_balacne_setup =
+				let reserved_balance =
 					<<Test as Config>::Currency as ReservableCurrency<AccountIdOf<Test>>>::reserved_balance(
 						&ACCOUNT_00,
 					);
 
-				assert_eq!(hold_balance_setup, 0);
-				assert_eq!(reserved_balacne_setup, Web3NameDeposit::get());
+				assert_eq!(hold_balance, 0);
+				assert_eq!(reserved_balance, Web3NameDeposit::get());
 			})
 	}
 
@@ -139,6 +138,7 @@ pub mod test {
 				assert!(delegation_post_migration.clone().unwrap().deposit.version.is_some());
 				assert!(delegation_post_migration.unwrap().deposit.version.unwrap() == 1);
 
+				// Nothing should happen
 				assert!(update_balance_for_entry::<Test>(&web3_name_00).is_err());
 			})
 	}
