@@ -82,6 +82,7 @@ where
 		deposit: Deposit::<AccountIdOf<T>, BalanceOf<T>> {
 			owner: payer,
 			amount: deposit,
+			version: Some(1),
 		},
 	}
 }
@@ -168,8 +169,13 @@ pub fn insert_attestation<T: Config>(claim_hash: ClaimHashOf<T>, details: Attest
 /// Mocks that are only used internally
 #[cfg(test)]
 pub(crate) mod runtime {
-	use frame_support::{parameter_types, weights::constants::RocksDbWeight};
+	use frame_support::{
+		parameter_types,
+		traits::{fungible::MutateHold, tokens::Precision, ReservableCurrency},
+		weights::constants::RocksDbWeight,
+	};
 	use frame_system::EnsureSigned;
+	use pallet_balances::Holds;
 	use sp_core::{ed25519, sr25519, Pair};
 	use sp_runtime::{
 		testing::Header,
@@ -179,6 +185,8 @@ pub(crate) mod runtime {
 
 	use ctype::{CtypeCreatorOf, CtypeEntryOf};
 	use kilt_support::mock::{mock_origin, SubjectId};
+
+	use crate::HoldReason;
 
 	use super::*;
 
@@ -407,5 +415,25 @@ pub(crate) mod runtime {
 
 			ext
 		}
+	}
+
+	pub(crate) fn translate_holds_to_reserve() {
+		Holds::<Test>::iter().for_each(|(user, holds)| {
+			holds
+				.iter()
+				.filter(|hold| hold.id == HoldReason::Deposit.into())
+				.for_each(|hold| {
+					<<Test as Config>::Currency as MutateHold<AccountIdOf<Test>>>::release(
+						&HoldReason::Deposit.into(),
+						&user,
+						hold.amount,
+						Precision::Exact,
+					)
+					.expect("Translation to reserves should not fail");
+
+					<<Test as Config>::Currency as ReservableCurrency<AccountIdOf<Test>>>::reserve(&user, hold.amount)
+						.expect("Reserving Balance should not fail.");
+				})
+		});
 	}
 }

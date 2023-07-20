@@ -20,12 +20,19 @@
 #![allow(clippy::from_over_into)]
 
 use super::*;
-use crate::{self as stake, types::CreditOf};
+use crate::{
+	self as stake,
+	types::{AccountIdOf, CreditOf},
+};
 use frame_support::{
 	assert_ok, construct_runtime, parameter_types,
-	traits::{fungible::Balanced, GenesisBuild, OnFinalize, OnInitialize, OnUnbalanced},
+	traits::{
+		fungible::{Balanced, MutateFreeze},
+		GenesisBuild, LockIdentifier, LockableCurrency, OnFinalize, OnInitialize, OnUnbalanced, WithdrawReasons,
+	},
 };
 use pallet_authorship::EventHandler;
+use pallet_balances::Freezes;
 use sp_consensus_aura::sr25519::AuthorityId;
 use sp_core::H256;
 use sp_runtime::{
@@ -47,6 +54,7 @@ pub(crate) const MAX_COLLATOR_STAKE: Balance = 200_000 * 1000 * MILLI_KILT;
 pub(crate) const BLOCKS_PER_ROUND: BlockNumber = 5;
 pub(crate) const DECIMALS: Balance = 1000 * MILLI_KILT;
 pub(crate) const TREASURY_ACC: AccountId = u64::MAX;
+const STAKING_ID: LockIdentifier = *b"kiltpstk";
 
 // Configure a mock runtime to test the pallet.
 construct_runtime!(
@@ -357,6 +365,28 @@ impl ExtBuilder {
 			crate::try_state::do_try_state::<Test>().expect("Sanity test for parachain staking failed.");
 		})
 	}
+}
+
+pub(crate) fn translate_freezes_to_locks() {
+	Freezes::<Test>::iter().for_each(|(key, freezes)| {
+		freezes
+			.iter()
+			.filter(|freeze| freeze.id == FreezeReason::Staking.into())
+			.for_each(|freeze| {
+				<<Test as Config>::Currency as LockableCurrency<AccountIdOf<Test>>>::set_lock(
+					STAKING_ID,
+					&key,
+					freeze.amount,
+					WithdrawReasons::all(),
+				);
+
+				<<Test as Config>::Currency as MutateFreeze<AccountIdOf<Test>>>::thaw(
+					&<Test as pallet::Config>::FreezeIdentifier::from(FreezeReason::Staking),
+					&key,
+				)
+				.expect("Translation to locks should not fail");
+			})
+	});
 }
 
 /// Compare whether the difference of both sides is at most `precision * left`.

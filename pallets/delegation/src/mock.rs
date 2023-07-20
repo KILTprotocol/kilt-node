@@ -16,17 +16,16 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use ctype::{mock as ctype_mock, CtypeHashOf};
 use frame_support::{
 	storage::bounded_btree_set::BoundedBTreeSet,
 	traits::{
 		fungible::{Inspect, Mutate},
-		Get,
+		Get, ReservableCurrency,
 	},
 };
-use sp_core::H256;
-
-use ctype::{mock as ctype_mock, CtypeHashOf};
 use kilt_support::Deposit;
+use sp_core::H256;
 
 use crate::{
 	self as delegation, AccountIdOf, Config, CurrencyOf, DelegationDetails, DelegationHierarchyDetails, DelegationNode,
@@ -77,6 +76,7 @@ pub fn initialize_pallet<T>(
 ) where
 	T: Config,
 	<T as Config>::Currency: Mutate<AccountIdOf<T>>,
+	<T as Config>::Currency: ReservableCurrency<AccountIdOf<T>>,
 {
 	for (root_id, details, hierarchy_owner, deposit_owner) in delegation_hierarchies {
 		// manually mint to enable deposit reserving
@@ -85,13 +85,8 @@ pub fn initialize_pallet<T>(
 		CurrencyOf::<T>::set_balance(&deposit_owner, balance + <T as Config>::Deposit::get());
 
 		// reserve deposit and store
-		delegation::Pallet::<T>::create_and_store_new_hierarchy(
-			root_id,
-			details,
-			hierarchy_owner,
-			deposit_owner.clone(),
-		)
-		.expect("Each deposit owner should have sufficient balance to create a hierarchy");
+		delegation::Pallet::<T>::create_and_store_new_hierarchy(root_id, details, hierarchy_owner, deposit_owner)
+			.expect("Should not exceed max children");
 	}
 
 	for del in delegations {
@@ -107,12 +102,13 @@ pub fn initialize_pallet<T>(
 		CurrencyOf::<T>::set_balance(&deposit_owner, balance + <T as Config>::Deposit::get());
 
 		// reserve deposit and store
+
 		delegation::Pallet::<T>::store_delegation_under_parent(
 			del.0,
 			del.1.clone(),
 			parent_node_id,
 			parent_node.clone(),
-			deposit_owner,
+			deposit_owner.clone(),
 		)
 		.expect("Should not exceed max children");
 	}
@@ -140,6 +136,7 @@ pub fn generate_base_delegation_node<T: Config>(
 		hierarchy_root_id: hierarchy_id,
 		parent,
 		deposit: Deposit {
+			version: Some(1),
 			owner: deposit_owner,
 			amount: <T as Config>::Deposit::get(),
 		},
@@ -176,12 +173,17 @@ where
 
 #[cfg(test)]
 pub(crate) mod runtime {
-	use crate::{BalanceOf, DelegateSignatureTypeOf, DelegationAc, DelegationNodeIdOf, DelegationNodeOf};
+	use crate::{BalanceOf, DelegateSignatureTypeOf, DelegationAc, DelegationNodeIdOf, DelegationNodeOf, HoldReason};
 
 	use super::*;
 
-	use frame_support::{parameter_types, weights::constants::RocksDbWeight};
+	use frame_support::{
+		parameter_types,
+		traits::{fungible::MutateHold, tokens::Precision},
+		weights::constants::RocksDbWeight,
+	};
 	use frame_system::EnsureSigned;
+	use pallet_balances::Holds;
 	use parity_scale_codec::Encode;
 	use scale_info::TypeInfo;
 	use sp_core::{ed25519, sr25519, Pair};
@@ -548,5 +550,25 @@ pub(crate) mod runtime {
 
 			ext
 		}
+	}
+
+	pub(crate) fn translate_holds_to_reserve() {
+		Holds::<Test>::iter().for_each(|(user, holds)| {
+			holds
+				.iter()
+				.filter(|hold| hold.id == HoldReason::Deposit.into())
+				.for_each(|hold| {
+					<<Test as Config>::Currency as MutateHold<AccountIdOf<Test>>>::release(
+						&HoldReason::Deposit.into(),
+						&user,
+						hold.amount,
+						Precision::Exact,
+					)
+					.expect("Translation to reserves should not fail");
+
+					<<Test as Config>::Currency as ReservableCurrency<AccountIdOf<Test>>>::reserve(&user, hold.amount)
+						.expect("Reserving Balance should not fail.");
+				})
+		});
 	}
 }

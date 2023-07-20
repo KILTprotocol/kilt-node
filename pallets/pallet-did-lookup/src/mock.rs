@@ -16,11 +16,15 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::parameter_types;
+use frame_support::{
+	parameter_types,
+	traits::{fungible::MutateHold, tokens::Precision, ReservableCurrency},
+};
 use kilt_support::{
 	mock::{mock_origin, SubjectId},
 	traits::StorageDepositCollector,
 };
+use pallet_balances::Holds;
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
@@ -29,7 +33,7 @@ use sp_runtime::{
 
 use crate::{
 	self as pallet_did_lookup, linkable_account::LinkableAccountId, AccountIdOf, BalanceOf, Config, ConnectedAccounts,
-	ConnectedDids, ConnectionRecord, DidIdentifierOf, LinkableAccountDepositCollector,
+	ConnectedDids, ConnectionRecord, DidIdentifierOf, HoldReason, LinkableAccountDepositCollector,
 };
 
 pub(crate) type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
@@ -217,4 +221,38 @@ impl ExtBuilder {
 
 		ext
 	}
+}
+
+pub(crate) fn translate_holds_to_reserve() {
+	Holds::<Test>::iter().for_each(|(user, holds)| {
+		holds
+			.iter()
+			.filter(|hold| hold.id == HoldReason::Deposit.into())
+			.for_each(|hold| {
+				<<Test as Config>::Currency as MutateHold<AccountIdOf<Test>>>::release(
+					&HoldReason::Deposit.into(),
+					&user,
+					hold.amount,
+					Precision::Exact,
+				)
+				.expect("Translation to reserves should not fail");
+
+				<<Test as Config>::Currency as ReservableCurrency<AccountIdOf<Test>>>::reserve(&user, hold.amount)
+					.expect("Reserving Balance should not fail.");
+			})
+	});
+}
+
+pub(crate) fn set_deposit_version_to_none() {
+	ConnectedDids::<Test>::iter().for_each(|(key, details)| {
+		let mut deposit_with_version_none = details.deposit;
+		deposit_with_version_none.version = None;
+		ConnectedDids::<Test>::set(
+			key,
+			Some(ConnectionRecord {
+				deposit: deposit_with_version_none,
+				..details
+			}),
+		)
+	})
 }
