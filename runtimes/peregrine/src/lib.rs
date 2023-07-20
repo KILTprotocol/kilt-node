@@ -187,6 +187,16 @@ impl pallet_multisig::Config for Runtime {
 	type WeightInfo = weights::pallet_multisig::WeightInfo<Runtime>;
 }
 
+parameter_types! {
+	pub const MaxMigrations: u32 = 10;
+}
+
+impl pallet_migration::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type MaxMigrations = MaxMigrations;
+	type WeightInfo = weights::pallet_migration::WeightInfo<Runtime>;
+}
+
 impl pallet_indices::Config for Runtime {
 	type AccountIndex = Index;
 	type Currency = pallet_balances::Pallet<Runtime>;
@@ -994,6 +1004,7 @@ construct_runtime! {
 		DidLookup: pallet_did_lookup = 67,
 		Web3Names: pallet_web3_names = 68,
 		PublicCredentials: public_credentials = 69,
+		Migration: pallet_migration = 70,
 
 		// Parachains pallets. Start indices at 80 to leave room.
 
@@ -1096,13 +1107,6 @@ pub type Executive = frame_executive::Executive<
 	(
 		pallet_did_lookup::migrations::CleanupMigration<Runtime>,
 		runtime_common::migrations::RemoveInsecureRandomnessPallet<Runtime>,
-		attestation::migrations::BalanceMigration<Runtime>,
-		delegation::migrations::BalanceMigration<Runtime>,
-		did::migrations::BalanceMigration<Runtime>,
-		pallet_did_lookup::migrations::BalanceMigration<Runtime>,
-		pallet_web3_names::migrations::BalanceMigration<Runtime>,
-		parachain_staking::migrations::BalanceMigration<Runtime>,
-		public_credentials::migrations::BalanceMigration<Runtime>,
 	),
 >;
 
@@ -1137,6 +1141,7 @@ mod benches {
 		[pallet_web3_names, Web3Names]
 		[public_credentials, PublicCredentials]
 		[pallet_xcm, PolkadotXcm]
+		[pallet_migration, Migration]
 		[frame_benchmarking::baseline, Baseline::<Runtime>]
 
 	);
