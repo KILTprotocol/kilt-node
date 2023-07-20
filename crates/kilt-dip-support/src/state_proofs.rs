@@ -89,97 +89,12 @@ mod substrate_no_std_port {
 	}
 }
 
-#[derive(Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo, Clone)]
-pub struct DipSiblingParachainStateProof<RelayBlockHeight, InnerProof> {
-	para_root_proof: ParaRootProof<RelayBlockHeight>,
-	dip_commitment_proof: Vec<Vec<u8>>,
-	inner: InnerProof,
-}
-
-pub struct DipCommitmentStateProofVerifier<
-	RelayInfoProvider,
-	IdentityDetails,
-	Submitter,
-	ProviderParaIdProvider,
-	ParaInfoProvider,
-	ProviderAccountId,
-	ProviderKeyId,
-	ProviderWeb3Name,
-	ProviderLinkedAccountId,
-	const MAX_REVEALED_KEYS_COUNT: u32,
-	const MAX_REVEALED_ACCOUNTS_COUNT: u32,
->(
-	PhantomData<(
-		RelayInfoProvider,
-		IdentityDetails,
-		Submitter,
-		ProviderParaIdProvider,
-		ParaInfoProvider,
-		ProviderAccountId,
-		ProviderKeyId,
-		ProviderWeb3Name,
-		ProviderLinkedAccountId,
-		ConstU32<MAX_REVEALED_KEYS_COUNT>,
-		ConstU32<MAX_REVEALED_ACCOUNTS_COUNT>,
-	)>,
-);
-
-impl<Call, Subject, IdentityDetails, Submitter, RelayInfoProvider, ProviderParaIdProvider>
-	IdentityProofVerifier<Call, Subject>
-	for DipCommitmentStateProofVerifier<
-		IdentityDetails,
-		Submitter,
-		RelayInfoProvider,
-		ProviderParaIdProvider,
-		ParaInfoProvider,
-	> where
-	RelayInfoProvider: RelayChainStateInfoProvider,
-	RelayInfoProvider::Hasher: 'static,
-	OutputOf<RelayInfoProvider::Hasher>: Ord,
-	RelayInfoProvider::BlockNumber: Copy + Into<U256> + TryFrom<U256> + HasCompact,
-	RelayInfoProvider::Key: AsRef<[u8]>,
-	ProviderParaIdProvider: Get<RelayInfoProvider::ParaId>,
-	ParaInfoProvider: ParachainStateInfoProvider,
-	ParaInfoProvider::Hasher: 'static,
-	OutputOf<ParaInfoProvider::Hasher>: Ord,
-	ParaInfoProvider::Commitment: Decode,
-	ParaInfoProvider::Key: AsRef<[u8]>,
-{
-	type Error = ();
-	type IdentityDetails = IdentityDetails;
-	type Proof = DipSiblingParachainStateProof<RelayInfoProvider::BlockNumber, MerkleProof>;
-	type Submitter = Submitter;
-	type VerificationResult = ParaInfoProvider::Commitment;
-
-	fn verify_proof_for_call_against_details(
-		call: &Call,
-		subject: &Subject,
-		submitter: &Self::Submitter,
-		identity_details: &mut Option<Self::IdentityDetails>,
-		proof: Self::Proof,
-	) -> Result<Self::VerificationResult, Self::Error> {
-		let parachain_header = ParachainHeadProofVerifier::<
-			RelayInfoProvider,
-			IdentityDetails,
-			Submitter,
-			ProviderParaIdProvider,
-		>::verify_proof_for_parachain(
-			&ProviderParaIdProvider::get(),
-			&proof.relay_block_height,
-			proof.para_root_proof,
-		)?;
-		DipCommitmentValueProofVerifier::<ParaInfoProvider>::verify_proof_for_identifier(
-			subject,
-			parachain_header.state_root.into(),
-			proof.dip_commitment_proof,
-		)
-	}
-}
-
 mod relay_chain {
 	use super::*;
 
-	use sp_core::Get;
+	use parity_scale_codec::Encode;
+	use sp_core::{storage::StorageKey, Get};
+	use sp_runtime::traits::BlakeTwo256;
 
 	use pallet_dip_consumer::traits::IdentityProofVerifier;
 
@@ -188,12 +103,9 @@ mod relay_chain {
 		ParaRootProof,
 	};
 
-	pub(super) struct ParachainHeadProofVerifier<RelayInfoProvider, IdentityDetails, Submitter, ProviderParaIdProvider>(
-		PhantomData<(RelayInfoProvider, IdentityDetails, Submitter, ProviderParaIdProvider)>,
-	);
+	pub struct ParachainHeadProofVerifier<RelayInfoProvider>(PhantomData<RelayInfoProvider>);
 
-	impl<RelayInfoProvider, IdentityDetails, Submitter, ProviderParaIdProvider>
-		ParachainHeadProofVerifier<RelayInfoProvider, IdentityDetails, Submitter, ProviderParaIdProvider>
+	impl<RelayInfoProvider> ParachainHeadProofVerifier<RelayInfoProvider>
 	where
 		RelayInfoProvider: RelayChainStateInfoProvider,
 		RelayInfoProvider::Hasher: 'static,
@@ -311,26 +223,27 @@ mod relay_chain {
 			// "0xcd710b30bd2eab0352ddcc26417aa1941b3c252fcb29d88eff4f3de5de4476c32c0cfd6c23b92a7826080000"
 			//
 			let expected_spiritnet_head_at_block = hex!("65541097fb02782e14f43074f0b00e44ae8e9fe426982323ef1d329739740d37f252ff006d1156941db1bccd58ce3a1cac4f40cad91f692d94e98f501dd70081a129b69a3e2ef7e1ff84ba3d86dab4e95f2c87f6b1055ebd48519c185360eae58f05d1ea08066175726120dcdc6308000000000561757261010170ccfaf3756d1a8dd8ae5c89094199d6d32e5dd9f0920f6fe30f986815b5e701974ea0e0e0a901401f2c72e3dd8dbdf4aa55d59bf3e7021856cdb8038419eb8c").to_vec();
-			let returned_head =
-				ParachainHeadProofVerifier::<StaticPolkadotInfoProvider, (), (), ()>::verify_proof_for_parachain(
-					&2_086,
-					&16_363_919,
-					spiritnet_head_proof_at_block,
-				)
-				.expect("Parachain head proof verification should not fail.");
+			let returned_head = ParachainHeadProofVerifier::<StaticPolkadotInfoProvider>::verify_proof_for_parachain(
+				&2_086,
+				&16_363_919,
+				spiritnet_head_proof_at_block,
+			)
+			.expect("Parachain head proof verification should not fail.");
 			assert!(returned_head.encode() == expected_spiritnet_head_at_block, "Parachain head returned from the state proof verification should not be different than the pre-computed one.");
 		}
 	}
 }
 
 mod parachain {
-	use pallet_dip_consumer::traits::IdentityProofVerifier;
-
 	use super::*;
+
+	use pallet_dip_consumer::traits::IdentityProofVerifier;
+	use parity_scale_codec::Encode;
+	use sp_core::storage::StorageKey;
 
 	use crate::traits::{OutputOf, ParachainStateInfoProvider};
 
-	pub(super) struct DipCommitmentValueProofVerifier<ParaInfoProvider>(PhantomData<ParaInfoProvider>);
+	pub struct DipCommitmentValueProofVerifier<ParaInfoProvider>(PhantomData<ParaInfoProvider>);
 
 	impl<ParaInfoProvider> DipCommitmentValueProofVerifier<ParaInfoProvider>
 	where

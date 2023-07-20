@@ -21,6 +21,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use frame_support::ensure;
+use pallet_dip_provider::traits::IdentityProvider;
 use parity_scale_codec::{Decode, Encode, HasCompact};
 use scale_info::TypeInfo;
 use sp_core::{ConstU32, ConstU64, Get, Hasher, RuntimeDebug, U256};
@@ -37,17 +38,242 @@ use ::did::{
 };
 use pallet_dip_consumer::traits::IdentityProofVerifier;
 
-use crate::merkle::{MerkleProof, ProofLeaf, RevealedDidKey, RevealedWeb3Name, VerificationResult};
+use crate::{
+	merkle::{MerkleProof, ProofLeaf, RevealedDidKey, RevealedWeb3Name, VerificationResult},
+	traits::{
+		Bump, DidDipOriginFilter, DidSignatureVerifierContextProvider, OutputOf, ParachainStateInfoProvider,
+		RelayChainStateInfoProvider,
+	},
+};
 
 pub mod did;
 pub mod merkle;
-// pub mod state_proofs;
+pub mod state_proofs;
 pub mod traits;
+
+pub struct CombinedIdentityResult<OutputA, OutputB, OutputC> {
+	pub a: OutputA,
+	pub b: OutputB,
+	pub c: OutputC,
+}
+
+impl<OutputA, OutputB, OutputC> From<(OutputA, OutputB, OutputC)>
+	for CombinedIdentityResult<OutputA, OutputB, OutputC>
+{
+	fn from(value: (OutputA, OutputB, OutputC)) -> Self {
+		Self {
+			a: value.0,
+			b: value.1,
+			c: value.2,
+		}
+	}
+}
+
+impl<OutputA, OutputB, OutputC> CombinedIdentityResult<OutputA, OutputB, OutputC>
+where
+	OutputB: Default,
+	OutputC: Default,
+{
+	pub fn from_a(a: OutputA) -> Self {
+		Self {
+			a,
+			b: OutputB::default(),
+			c: OutputC::default(),
+		}
+	}
+}
+
+impl<OutputA, OutputB, OutputC> CombinedIdentityResult<OutputA, OutputB, OutputC>
+where
+	OutputA: Default,
+	OutputC: Default,
+{
+	pub fn from_b(b: OutputB) -> Self {
+		Self {
+			a: OutputA::default(),
+			b,
+			c: OutputC::default(),
+		}
+	}
+}
+
+impl<OutputA, OutputB, OutputC> CombinedIdentityResult<OutputA, OutputB, OutputC>
+where
+	OutputA: Default,
+	OutputB: Default,
+{
+	pub fn from_c(c: OutputC) -> Self {
+		Self {
+			a: OutputA::default(),
+			b: OutputB::default(),
+			c,
+		}
+	}
+}
+
+pub struct CombineIdentityFrom<A, B, C>(PhantomData<(A, B, C)>);
+
+impl<Identifier, A, B, C> IdentityProvider<Identifier> for CombineIdentityFrom<A, B, C>
+where
+	A: IdentityProvider<Identifier>,
+	B: IdentityProvider<Identifier>,
+	C: IdentityProvider<Identifier>,
+{
+	// TODO: Proper error handling
+	type Error = ();
+	type Success = CombinedIdentityResult<Option<A::Success>, Option<B::Success>, Option<C::Success>>;
+
+	fn retrieve(identifier: &Identifier) -> Result<Option<Self::Success>, Self::Error> {
+		match (
+			A::retrieve(identifier),
+			B::retrieve(identifier),
+			C::retrieve(identifier),
+		) {
+			// If no details is returned, return None for the whole result
+			(Ok(None), Ok(None), Ok(None)) => Ok(None),
+			// Otherwise, return `Some` or `None` depending on each result
+			(Ok(ok_a), Ok(ok_b), Ok(ok_c)) => Ok(Some(CombinedIdentityResult {
+				a: ok_a,
+				b: ok_b,
+				c: ok_c,
+			})),
+			// If any of them returns an `Err`, return an `Err`
+			_ => Err(()),
+		}
+	}
+}
+
+#[derive(Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo, Clone)]
+pub struct DipStateProof<RelayBlockHeight, DipProof> {
+	para_root_proof: ParaRootProof<RelayBlockHeight>,
+	dip_commitment_proof: Vec<Vec<u8>>,
+	dip_proof: DipProof,
+}
 
 #[derive(Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo, Clone)]
 pub struct ParaRootProof<RelayBlockHeight> {
 	relay_block_height: RelayBlockHeight,
 	proof: Vec<Vec<u8>>,
+}
+
+pub struct StateProofDipIdentifier<
+	RelayInfoProvider,
+	ParaInfoProvider,
+	TxSubmitter,
+	ProviderDipMerkleHasher,
+	ProviderDidKeyId,
+	ProviderBlockNumber,
+	ProviderWeb3Name,
+	ProviderLinkedAccountId,
+	const MAX_REVEALED_KEYS_COUNT: u32,
+	const MAX_REVEALED_ACCOUNTS_COUNT: u32,
+	DidLocalDetails,
+	LocalContextProvider,
+	LocalDidCallVerifier,
+>(
+	PhantomData<(
+		RelayInfoProvider,
+		ParaInfoProvider,
+		TxSubmitter,
+		ProviderDipMerkleHasher,
+		ProviderDidKeyId,
+		ProviderBlockNumber,
+		ProviderWeb3Name,
+		ProviderLinkedAccountId,
+		DidLocalDetails,
+		LocalContextProvider,
+		LocalDidCallVerifier,
+	)>,
+);
+
+impl<
+		Call,
+		Subject,
+		RelayInfoProvider,
+		ParaInfoProvider,
+		TxSubmitter,
+		ProviderDipMerkleHasher,
+		ProviderDidKeyId,
+		ProviderBlockNumber,
+		ProviderWeb3Name,
+		ProviderLinkedAccountId,
+		const MAX_REVEALED_KEYS_COUNT: u32,
+		const MAX_REVEALED_ACCOUNTS_COUNT: u32,
+		DidLocalDetails,
+		LocalContextProvider,
+		LocalDidCallVerifier,
+	> IdentityProofVerifier<Call, Subject>
+	for StateProofDipIdentifier<
+		RelayInfoProvider,
+		ParaInfoProvider,
+		TxSubmitter,
+		ProviderDipMerkleHasher,
+		ProviderDidKeyId,
+		ProviderBlockNumber,
+		ProviderWeb3Name,
+		ProviderLinkedAccountId,
+		MAX_REVEALED_KEYS_COUNT,
+		MAX_REVEALED_ACCOUNTS_COUNT,
+		DidLocalDetails,
+		LocalContextProvider,
+		LocalDidCallVerifier,
+	> where
+	Call: Encode,
+	TxSubmitter: Encode,
+
+	RelayInfoProvider: RelayChainStateInfoProvider,
+	RelayInfoProvider::Hasher: 'static,
+	OutputOf<RelayInfoProvider::Hasher>: Ord,
+	RelayInfoProvider::BlockNumber: Copy + Into<U256> + TryFrom<U256> + HasCompact,
+	RelayInfoProvider::Key: AsRef<[u8]>,
+
+	ParaInfoProvider: ParachainStateInfoProvider,
+	ParaInfoProvider::Hasher: 'static,
+	OutputOf<ParaInfoProvider::Hasher>: Ord,
+	ParaInfoProvider::Commitment: Decode,
+	ParaInfoProvider::Key: AsRef<[u8]>,
+
+	LocalContextProvider: DidSignatureVerifierContextProvider,
+	LocalContextProvider::BlockNumber: Encode + CheckedSub + PartialOrd<u16>,
+	LocalContextProvider::Hash: Encode,
+	LocalContextProvider::SignedExtra: Encode,
+	DidLocalDetails: Bump + Default + Encode,
+	LocalDidCallVerifier: DidDipOriginFilter<Call, OriginInfo = (DidVerificationKey, DidVerificationKeyRelationship)>,
+
+	ProviderBlockNumber: Encode + Clone,
+	ProviderDipMerkleHasher: sp_core::Hasher,
+	ProviderDidKeyId: Encode + Clone + Ord + Into<ProviderDipMerkleHasher::Out>,
+	ProviderLinkedAccountId: Encode + Clone,
+	ProviderWeb3Name: Encode + Clone,
+{
+	type Error = ();
+	type IdentityDetails = DidLocalDetails;
+	type Proof = DipStateProof<
+		RelayInfoProvider::BlockNumber,
+		MerkleProof<
+			Vec<u8>,
+			ProofLeaf<ProviderDidKeyId, ProviderBlockNumber, ProviderWeb3Name, ProviderLinkedAccountId>,
+		>,
+	>;
+	type Submitter = TxSubmitter;
+	type VerificationResult = VerificationResult<
+		ProviderDidKeyId,
+		ProviderBlockNumber,
+		ProviderWeb3Name,
+		ProviderLinkedAccountId,
+		MAX_REVEALED_KEYS_COUNT,
+		MAX_REVEALED_ACCOUNTS_COUNT,
+	>;
+
+	fn verify_proof_for_call_against_details(
+		call: &Call,
+		subject: &Subject,
+		submitter: &Self::Submitter,
+		identity_details: &mut Option<Self::IdentityDetails>,
+		proof: Self::Proof,
+	) -> Result<Self::VerificationResult, Self::Error> {
+		Err(())
+	}
 }
 
 // pub struct StateProofDipVerifier<
