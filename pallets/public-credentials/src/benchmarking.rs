@@ -247,7 +247,7 @@ benchmarks! {
 		);
 	}
 
-update_deposit {
+	update_deposit {
 		let deposit_owner: AccountIdOf<T> = account("caller", 0, SEED);
 		let attester: T::AttesterId = account("attester", 0, SEED);
 		let ctype_hash: T::Hash = T::Hash::default();

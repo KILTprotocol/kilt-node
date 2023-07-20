@@ -21,7 +21,7 @@ use frame_support::{
 	storage::bounded_btree_set::BoundedBTreeSet,
 	traits::{
 		fungible::{Inspect, Mutate},
-		Get, ReservableCurrency,
+		Get,
 	},
 };
 use kilt_support::Deposit;
@@ -76,7 +76,6 @@ pub fn initialize_pallet<T>(
 ) where
 	T: Config,
 	<T as Config>::Currency: Mutate<AccountIdOf<T>>,
-	<T as Config>::Currency: ReservableCurrency<AccountIdOf<T>>,
 {
 	for (root_id, details, hierarchy_owner, deposit_owner) in delegation_hierarchies {
 		// manually mint to enable deposit reserving
@@ -189,7 +188,7 @@ pub(crate) mod runtime {
 	use sp_core::{ed25519, sr25519, Pair};
 	use sp_runtime::{
 		testing::Header,
-		traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
+		traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify, ReservableCurrency},
 		MultiSignature, MultiSigner,
 	};
 
