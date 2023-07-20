@@ -21,7 +21,7 @@
 pub use crate::default_weights::WeightInfo;
 pub use pallet::*;
 
-#[cfg(any(feature = "runtime-benchmarks", test))]
+#[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 pub mod default_weights;
 
