@@ -177,5 +177,5 @@ mod dip_call_origin_filter_tests {
 }
 
 impl pallet_relay_store::Config for Runtime {
-	type MaxBlocks = ConstU32<100>;
+	type MaxRelayBlocksStored = ConstU32<100>;
 }

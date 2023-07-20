@@ -16,7 +16,6 @@ hash-db.workspace = true
 
 # Internal dependencies
 did.workspace = true
-dip-support.workspace = true
 pallet-dip-consumer.workspace = true
 pallet-dip-provider.workspace = true
 pallet-relay-store.workspace = true
@@ -52,7 +51,6 @@ default = ["std"]
 std = [
   "hash-db/std",
   "did/std",
-  "dip-support/std",
   "pallet-dip-consumer/std",
   "pallet-dip-provider/std",
   "pallet-relay-store/std",

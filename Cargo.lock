@@ -2342,7 +2342,6 @@ dependencies = [
  "cumulus-primitives-utility",
  "did",
  "dip-provider-runtime-template",
- "dip-support",
  "frame-executive",
  "frame-support",
  "frame-system",
@@ -2446,7 +2445,6 @@ dependencies = [
  "cumulus-primitives-timestamp",
  "cumulus-primitives-utility",
  "did",
- "dip-support",
  "frame-executive",
  "frame-support",
  "frame-system",
@@ -2485,15 +2483,6 @@ dependencies = [
  "xcm",
  "xcm-builder",
  "xcm-executor",
-]
-
-[[package]]
-name = "dip-support"
-version = "1.11.0-dev"
-dependencies = [
- "frame-support",
- "parity-scale-codec",
- "scale-info",
 ]
 
 [[package]]
@@ -4198,7 +4187,6 @@ version = "1.11.0-dev"
 dependencies = [
  "cumulus-pallet-parachain-system",
  "did",
- "dip-support",
  "frame-support",
  "frame-system",
  "hash-db 0.16.0",
