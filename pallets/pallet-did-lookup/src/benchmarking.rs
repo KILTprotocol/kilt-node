@@ -276,7 +276,7 @@ benchmarks! {
 		);
 	}
 
-update_deposit {
+	update_deposit {
 		let deposit_owner: T::AccountId = account("caller", 0, SEED);
 		let linkable_id: LinkableAccountId = deposit_owner.clone().into();
 		let did: T::DidIdentifier = account("did", 0, SEED);
@@ -294,7 +294,8 @@ update_deposit {
 	verify {
 		assert_eq!(
 			ConnectedDids::<T>::get(&linkable_id).expect("should retain link").deposit,
-			Deposit { version: Some(1),
+			Deposit {
+				version: Some(1),
 				owner: deposit_owner,
 				amount: <T as Config>::Deposit::get(),
 			},

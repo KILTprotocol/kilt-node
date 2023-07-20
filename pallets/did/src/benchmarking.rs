@@ -1164,7 +1164,7 @@ benchmarks! {
 		)
 	}
 
-update_deposit {
+	update_deposit {
 		let did_public_auth_key = get_ed25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(did_public_auth_key).into_account().into();
 		let did_account: AccountIdOf<T> = MultiSigner::from(did_public_auth_key).into_account().into();
