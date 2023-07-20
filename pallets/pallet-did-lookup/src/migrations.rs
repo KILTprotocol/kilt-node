@@ -126,7 +126,7 @@ where
 {
 	ConnectedDids::<T>::try_mutate(key, |details| {
 		if let Some(d) = details {
-			ensure!(d.deposit.version.is_none(), Error::<T>::BalanceMigration);
+			ensure!(d.deposit.version.is_none(), Error::<T>::Migration);
 
 			*d = ConnectionRecord {
 				deposit: Deposit {
