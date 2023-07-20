@@ -54,28 +54,7 @@ pub trait DidDipOriginFilter<Call> {
 	fn check_call_origin_info(call: &Call, info: &Self::OriginInfo) -> Result<Self::Success, Self::Error>;
 }
 
-pub struct GenesisProvider<T>(PhantomData<T>);
-
-impl<T> Get<T::Hash> for GenesisProvider<T>
-where
-	T: frame_system::Config,
-	T::BlockNumber: Zero,
-{
-	fn get() -> T::Hash {
-		frame_system::Pallet::<T>::block_hash(T::BlockNumber::zero())
-	}
-}
-
-pub struct BlockNumberProvider<T>(PhantomData<T>);
-
-impl<T> Get<T::BlockNumber> for BlockNumberProvider<T>
-where
-	T: frame_system::Config,
-{
-	fn get() -> T::BlockNumber {
-		frame_system::Pallet::<T>::block_number()
-	}
-}
+pub type OutputOf<Hasher> = <Hasher as sp_runtime::traits::Hash>::Output;
 
 pub trait RelayChainStateInfoProvider {
 	type BlockNumber;
@@ -83,42 +62,8 @@ pub trait RelayChainStateInfoProvider {
 	type Hasher: sp_runtime::traits::Hash;
 	type ParaId;
 
-	fn state_root_for_block(
-		block_height: &Self::BlockNumber,
-	) -> Option<<Self::Hasher as sp_runtime::traits::Hash>::Output>;
+	fn state_root_for_block(block_height: &Self::BlockNumber) -> Option<OutputOf<Self::Hasher>>;
 	fn parachain_head_storage_key(para_id: &Self::ParaId) -> Self::Key;
-}
-
-pub struct RococoParachainRuntime<Runtime>(PhantomData<Runtime>);
-
-impl<Runtime> RelayChainStateInfoProvider for RococoParachainRuntime<Runtime>
-where
-	Runtime: pallet_relay_store::Config,
-{
-	type BlockNumber = u32;
-	// TODO: This is not exported
-	type Hasher = BlakeTwo256;
-	type Key = StorageKey;
-	type ParaId = u32;
-
-	fn state_root_for_block(
-		block_height: &Self::BlockNumber,
-	) -> Option<<Self::Hasher as sp_runtime::traits::Hash>::Output> {
-		pallet_relay_store::Pallet::<Runtime>::latest_relay_head_for_block(block_height)
-			.map(|relay_header| relay_header.relay_parent_storage_root)
-	}
-
-	fn parachain_head_storage_key(para_id: &Self::ParaId) -> Self::Key {
-		// TODO: It's not possible to access the runtime definition from here.
-		let encoded_para_id = para_id.encode();
-		let storage_key = [
-			frame_support::storage::storage_prefix(b"Paras", b"Heads").as_slice(),
-			sp_io::hashing::twox_64(&encoded_para_id).as_slice(),
-			encoded_para_id.as_slice(),
-		]
-		.concat();
-		StorageKey(storage_key)
-	}
 }
 
 pub trait ParachainStateInfoProvider {
@@ -130,26 +75,41 @@ pub trait ParachainStateInfoProvider {
 	fn dip_subject_storage_key(identifier: &Self::Identifier) -> Self::Key;
 }
 
-pub struct DipProviderParachainRuntime<Runtime>(PhantomData<Runtime>);
+pub trait DidSignatureVerifierContextProvider {
+	const SIGNATURE_VALIDITY: Self::BlockNumber;
 
-impl<Runtime> ParachainStateInfoProvider for DipProviderParachainRuntime<Runtime>
+	type BlockNumber;
+	type Hash;
+	type SignedExtra;
+
+	fn block_number() -> Self::BlockNumber;
+	fn genesis_hash() -> Self::Hash;
+	fn signed_extra() -> Option<Self::SignedExtra>;
+}
+
+pub struct FrameSystemProvider<T, const SIGNATURE_VALIDITY: u32>(PhantomData<T>);
+
+impl<T, const SIGNATURE_VALIDITY: u32> DidSignatureVerifierContextProvider
+	for FrameSystemProvider<T, SIGNATURE_VALIDITY>
 where
-	Runtime: pallet_dip_provider::Config,
+	T: frame_system::Config,
+	T::BlockNumber: From<u32>,
 {
-	type Commitment = <Runtime as pallet_dip_provider::Config>::IdentityCommitment;
-	type Hasher = <Runtime as frame_system::Config>::Hashing;
-	type Identifier = <Runtime as pallet_dip_provider::Config>::Identifier;
-	type Key = StorageKey;
+	const SIGNATURE_VALIDITY: Self::BlockNumber = Self::BlockNumber::from(SIGNATURE_VALIDITY);
 
-	fn dip_subject_storage_key(identifier: &Self::Identifier) -> Self::Key {
-		// TODO: Replace with actual runtime definition
-		let encoded_identifier = identifier.encode();
-		let storage_key = [
-			frame_support::storage::storage_prefix(b"DipProvider", b"IdentityCommitments").as_slice(),
-			sp_io::hashing::twox_64(&encoded_identifier).as_slice(),
-			encoded_identifier.as_slice(),
-		]
-		.concat();
-		StorageKey(storage_key)
+	type BlockNumber = T::BlockNumber;
+	type Hash = T::Hash;
+	type SignedExtra = ();
+
+	fn block_number() -> Self::BlockNumber {
+		frame_system::Pallet::<T>::block_number()
+	}
+
+	fn genesis_hash() -> Self::Hash {
+		frame_system::Pallet::<T>::block_hash(T::BlockNumber::zero())
+	}
+
+	fn signed_extra() -> Option<Self::SignedExtra> {
+		None
 	}
 }

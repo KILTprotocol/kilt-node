@@ -203,10 +203,8 @@ impl<
 /// Can also be used on its own, without any DID signature verification.
 pub struct DidMerkleProofVerifier<
 	Hasher,
-	AccountId,
 	KeyId,
 	BlockNumber,
-	Details,
 	Web3Name,
 	LinkedAccountId,
 	const MAX_REVEALED_KEYS_COUNT: u32,
@@ -215,10 +213,8 @@ pub struct DidMerkleProofVerifier<
 	#[allow(clippy::type_complexity)]
 	PhantomData<(
 		Hasher,
-		AccountId,
 		KeyId,
 		BlockNumber,
-		Details,
 		Web3Name,
 		LinkedAccountId,
 		ConstU32<MAX_REVEALED_KEYS_COUNT>,
@@ -227,57 +223,43 @@ pub struct DidMerkleProofVerifier<
 );
 
 impl<
-		Call,
-		Subject,
 		Hasher,
-		AccountId,
 		KeyId,
 		BlockNumber,
-		Details,
 		Web3Name,
 		LinkedAccountId,
 		const MAX_REVEALED_KEYS_COUNT: u32,
 		const MAX_REVEALED_ACCOUNTS_COUNT: u32,
-	> IdentityProofVerifier<Call, Subject>
-	for DidMerkleProofVerifier<
+	>
+	DidMerkleProofVerifier<
 		Hasher,
-		AccountId,
 		KeyId,
 		BlockNumber,
-		Details,
 		Web3Name,
 		LinkedAccountId,
 		MAX_REVEALED_KEYS_COUNT,
 		MAX_REVEALED_ACCOUNTS_COUNT,
 	> where
-	// TODO: Remove `Debug` bound
 	BlockNumber: Encode + Clone + Debug,
 	Hasher: sp_core::Hasher,
 	KeyId: Encode + Clone + Ord + Into<Hasher::Out>,
 	LinkedAccountId: Encode + Clone,
 	Web3Name: Encode + Clone,
 {
-	// TODO: Proper error handling
-	type Error = ();
-	type Proof = MerkleProof<Vec<Vec<u8>>, ProofLeaf<KeyId, BlockNumber, Web3Name, LinkedAccountId>>;
-	type IdentityDetails = IdentityDetails<Hasher::Out, Details>;
-	type Submitter = AccountId;
-	type VerificationResult = VerificationResult<
-		KeyId,
-		BlockNumber,
-		Web3Name,
-		LinkedAccountId,
-		MAX_REVEALED_KEYS_COUNT,
-		MAX_REVEALED_ACCOUNTS_COUNT,
-	>;
-
-	fn verify_proof_for_call_against_details(
-		_call: &Call,
-		_subject: &Subject,
-		_submitter: &Self::Submitter,
-		identity_details: &mut Option<Self::IdentityDetails>,
-		proof: Self::Proof,
-	) -> Result<Self::VerificationResult, Self::Error> {
+	pub fn verify_dip_merkle_proof(
+		identity_commitment: &Hasher::Out,
+		proof: MerkleProof<Vec<Vec<u8>>, ProofLeaf<KeyId, BlockNumber, Web3Name, LinkedAccountId>>,
+	) -> Result<
+		VerificationResult<
+			KeyId,
+			BlockNumber,
+			Web3Name,
+			LinkedAccountId,
+			MAX_REVEALED_KEYS_COUNT,
+			MAX_REVEALED_ACCOUNTS_COUNT,
+		>,
+		(),
+	> {
 		// TODO: more efficient by removing cloning and/or collecting.
 		// Did not find another way of mapping a Vec<(Vec<u8>, Vec<u8>)> to a
 		// Vec<(Vec<u8>, Option<Vec<u8>>)>.
@@ -286,8 +268,7 @@ impl<
 			.iter()
 			.map(|leaf| (leaf.encoded_key(), Some(leaf.encoded_value())))
 			.collect::<Vec<(Vec<u8>, Option<Vec<u8>>)>>();
-		let Some(identity_details) = identity_details else { return Err(()) };
-		verify_trie_proof::<LayoutV1<Hasher>, _, _, _>(&identity_details.digest, &proof.blinded, &proof_leaves)
+		verify_trie_proof::<LayoutV1<Hasher>, _, _, _>(identity_commitment, &proof.blinded, &proof_leaves)
 			.map_err(|_| ())?;
 
 		// At this point, we know the proof is valid. We just need to map the revealed
