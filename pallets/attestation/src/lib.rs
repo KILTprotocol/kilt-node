@@ -103,7 +103,7 @@ pub mod pallet {
 	};
 
 	/// The current storage version.
-	pub(crate) const STORAGE_VERSION: StorageVersion = StorageVersion::new(2);
+	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
 
 	/// Type of a claim hash.
 	pub type ClaimHashOf<T> = <T as frame_system::Config>::Hash;
@@ -229,6 +229,8 @@ pub mod pallet {
 		/// reached for the corresponding delegation id such that another one
 		/// cannot be added.
 		MaxDelegatedAttestationsExceeded,
+		/// The balance is already migrated
+		BalanceMigration,
 	}
 
 	#[pallet::call]

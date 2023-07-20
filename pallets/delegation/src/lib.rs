@@ -108,7 +108,7 @@ pub mod pallet {
 	use scale_info::TypeInfo;
 
 	/// The current storage version.
-	pub(crate) const STORAGE_VERSION: StorageVersion = StorageVersion::new(4);
+	const STORAGE_VERSION: StorageVersion = StorageVersion::new(3);
 
 	/// Type of a delegation node identifier.
 	pub type DelegationNodeIdOf<T> = <T as Config>::DelegationNodeId;
@@ -301,6 +301,8 @@ pub mod pallet {
 		/// The max number of all children has been reached for the
 		/// corresponding delegation node.
 		MaxChildrenExceeded,
+		/// The balance is already migrated
+		BalanceMigration,
 	}
 
 	#[pallet::hooks]

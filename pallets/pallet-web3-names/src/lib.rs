@@ -64,7 +64,7 @@ pub mod pallet {
 	use super::WeightInfo;
 	use crate::web3_name::Web3NameOwnership;
 
-	pub(crate) const STORAGE_VERSION: StorageVersion = StorageVersion::new(2);
+	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
 
 	pub type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 	pub type BlockNumberFor<T> = <T as frame_system::Config>::BlockNumber;
@@ -186,6 +186,8 @@ pub mod pallet {
 		TooLong,
 		/// A name that contains not allowed characters is being claimed.
 		InvalidCharacter,
+		/// The balance is already migrated
+		BalanceMigration,
 	}
 
 	#[pallet::hooks]

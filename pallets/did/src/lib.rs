@@ -92,7 +92,7 @@ pub mod service_endpoints;
 #[cfg(test)]
 mod mock;
 #[cfg(any(feature = "runtime-benchmarks", test))]
-mod mock_utils;
+pub mod mock_utils;
 #[cfg(test)]
 mod tests;
 
@@ -164,7 +164,7 @@ pub mod pallet {
 	};
 
 	/// The current storage version.
-	pub(crate) const STORAGE_VERSION: StorageVersion = StorageVersion::new(5);
+	const STORAGE_VERSION: StorageVersion = StorageVersion::new(4);
 
 	/// Reference to a payload of data of variable size.
 	pub type Payload = [u8];
@@ -435,6 +435,8 @@ pub mod pallet {
 		MaxStoredEndpointsCountExceeded,
 		/// An error that is not supposed to take place, yet it happened.
 		Internal,
+		/// The balance is already migrated
+		BalanceMigration,
 	}
 
 	impl<T> From<DidError> for Error<T> {

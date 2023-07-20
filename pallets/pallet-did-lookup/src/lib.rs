@@ -86,7 +86,7 @@ pub mod pallet {
 	/// The connection record type.
 	pub(crate) type ConnectionRecordOf<T> = ConnectionRecord<DidIdentifierOf<T>, AccountIdOf<T>, BalanceOf<T>>;
 
-	pub(crate) const STORAGE_VERSION: StorageVersion = StorageVersion::new(5);
+	const STORAGE_VERSION: StorageVersion = StorageVersion::new(4);
 
 	#[pallet::composite_enum]
 	pub enum HoldReason {
@@ -169,7 +169,8 @@ pub mod pallet {
 		/// the deposit.
 		InsufficientFunds,
 
-		/// The ConnectedAccounts and ConnectedDids storage are out of sync.
+		/// The ConnectedAccounts and ConnectedDids storage are out of sync or
+		/// the balanced is already migrated.
 		///
 		/// NOTE: this will only be returned if the storage has inconsistencies.
 		Migration,
@@ -407,6 +408,7 @@ pub mod pallet {
 			account: LinkableAccountId,
 		) -> DispatchResult {
 			let deposit = Deposit {
+				version: Some(1),
 				owner: sender,
 				amount: T::Deposit::get(),
 			};
