@@ -76,7 +76,7 @@ pub trait ParachainStateInfoProvider {
 }
 
 pub trait DidSignatureVerifierContextProvider {
-	const SIGNATURE_VALIDITY: Self::BlockNumber;
+	const SIGNATURE_VALIDITY: u16;
 
 	type BlockNumber;
 	type Hash;
@@ -87,15 +87,14 @@ pub trait DidSignatureVerifierContextProvider {
 	fn signed_extra() -> Option<Self::SignedExtra>;
 }
 
-pub struct FrameSystemProvider<T, const SIGNATURE_VALIDITY: u32>(PhantomData<T>);
+pub struct FrameSystemProvider<T, const SIGNATURE_VALIDITY: u16>(PhantomData<T>);
 
-impl<T, const SIGNATURE_VALIDITY: u32> DidSignatureVerifierContextProvider
+impl<T, const SIGNATURE_VALIDITY: u16> DidSignatureVerifierContextProvider
 	for FrameSystemProvider<T, SIGNATURE_VALIDITY>
 where
 	T: frame_system::Config,
-	T::BlockNumber: From<u32>,
 {
-	const SIGNATURE_VALIDITY: Self::BlockNumber = Self::BlockNumber::from(SIGNATURE_VALIDITY);
+	const SIGNATURE_VALIDITY: u16 = SIGNATURE_VALIDITY;
 
 	type BlockNumber = T::BlockNumber;
 	type Hash = T::Hash;
