@@ -57,13 +57,17 @@ pub mod pallet {
 	use frame_support::{
 		ensure,
 		pallet_prelude::*,
-		traits::{Currency, ReservableCurrency, StorageVersion},
+		traits::{
+			fungible::{Inspect, InspectHold, MutateHold},
+			StorageVersion,
+		},
 	};
 	use frame_system::pallet_prelude::*;
 	use kilt_support::{
-		deposit::Deposit,
 		traits::{CallSources, StorageDepositCollector},
+		Deposit,
 	};
+	use runtime_common::Balance;
 
 	use sp_runtime::traits::BlockNumberProvider;
 
@@ -75,17 +79,19 @@ pub mod pallet {
 	/// The identifier to which the accounts can be associated.
 	pub(crate) type DidIdentifierOf<T> = <T as Config>::DidIdentifier;
 
-	/// The type used to describe a balance.
-	pub(crate) type BalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::Balance;
-
 	/// The currency module that keeps track of balances.
 	pub(crate) type CurrencyOf<T> = <T as Config>::Currency;
 
+	pub type BalanceOf<T> = <CurrencyOf<T> as Inspect<AccountIdOf<T>>>::Balance;
 	/// The connection record type.
 	pub(crate) type ConnectionRecordOf<T> = ConnectionRecord<DidIdentifierOf<T>, AccountIdOf<T>, BalanceOf<T>>;
 
-	pub const STORAGE_VERSION: StorageVersion = StorageVersion::new(4);
+	pub(crate) const STORAGE_VERSION: StorageVersion = StorageVersion::new(5);
 
+	#[pallet::composite_enum]
+	pub enum HoldReason {
+		Deposit,
+	}
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
@@ -99,8 +105,10 @@ pub mod pallet {
 		/// The identifier to which accounts can get associated.
 		type DidIdentifier: Parameter + AsRef<[u8]> + MaxEncodedLen + MaybeSerializeDeserialize;
 
+		type RuntimeHoldReason: From<HoldReason>;
+
 		/// The currency that is used to reserve funds for each did.
-		type Currency: ReservableCurrency<AccountIdOf<Self>>;
+		type Currency: MutateHold<AccountIdOf<Self>, Reason = Self::RuntimeHoldReason, Balance = Balance>;
 
 		/// The amount of balance that will be taken for each DID as a deposit
 		/// to incentivise fair use of the on chain storage. The deposit can be
@@ -246,7 +254,8 @@ pub mod pallet {
 			);
 
 			ensure!(
-				<T::Currency as ReservableCurrency<AccountIdOf<T>>>::can_reserve(
+				<T::Currency as InspectHold<AccountIdOf<T>>>::can_hold(
+					&HoldReason::Deposit.into(),
 					&sender,
 					<T as Config>::Deposit::get()
 				),
@@ -280,7 +289,8 @@ pub mod pallet {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 
 			ensure!(
-				<T::Currency as ReservableCurrency<AccountIdOf<T>>>::can_reserve(
+				<T::Currency as InspectHold<AccountIdOf<T>>>::can_hold(
+					&HoldReason::Deposit.into(),
 					&source.sender(),
 					<T as Config>::Deposit::get()
 				),
@@ -405,15 +415,16 @@ pub mod pallet {
 				did: did_identifier.clone(),
 			};
 
-			CurrencyOf::<T>::reserve(&record.deposit.owner, record.deposit.amount)?;
+			LinkableAccountDepositCollector::<T>::create_deposit(record.clone().deposit.owner, record.deposit.amount)?;
 
-			ConnectedDids::<T>::mutate(&account, |did_entry| {
+			ConnectedDids::<T>::mutate(&account, |did_entry| -> DispatchResult {
 				if let Some(old_connection) = did_entry.replace(record) {
 					ConnectedAccounts::<T>::remove(&old_connection.did, &account);
 					Self::deposit_event(Event::<T>::AssociationRemoved(account.clone(), old_connection.did));
-					kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&old_connection.deposit);
+					LinkableAccountDepositCollector::<T>::free_deposit(old_connection.deposit)?;
 				}
-			});
+				Ok(())
+			})?;
 			ConnectedAccounts::<T>::insert(&did_identifier, &account, ());
 			Self::deposit_event(Event::AssociationEstablished(account, did_identifier));
 
@@ -422,10 +433,9 @@ pub mod pallet {
 
 		pub(crate) fn remove_association(account: LinkableAccountId) -> DispatchResult {
 			if let Some(connection) = ConnectedDids::<T>::take(&account) {
+				LinkableAccountDepositCollector::<T>::free_deposit(connection.deposit)?;
 				ConnectedAccounts::<T>::remove(&connection.did, &account);
-				kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&connection.deposit);
 				Self::deposit_event(Event::AssociationRemoved(account, connection.did));
-
 				Ok(())
 			} else {
 				Err(Error::<T>::NotFound.into())
@@ -433,28 +443,34 @@ pub mod pallet {
 		}
 	}
 
-	struct LinkableAccountDepositCollector<T: Config>(PhantomData<T>);
-	impl<T: Config> StorageDepositCollector<AccountIdOf<T>, LinkableAccountId> for LinkableAccountDepositCollector<T> {
+	pub(crate) struct LinkableAccountDepositCollector<T: Config>(PhantomData<T>);
+	impl<T: Config> StorageDepositCollector<AccountIdOf<T>, LinkableAccountId, T::RuntimeHoldReason>
+		for LinkableAccountDepositCollector<T>
+	{
 		type Currency = T::Currency;
+		type Reason = HoldReason;
+
+		fn reason() -> Self::Reason {
+			HoldReason::Deposit
+		}
 
 		fn deposit(
 			key: &LinkableAccountId,
-		) -> Result<Deposit<AccountIdOf<T>, <Self::Currency as Currency<AccountIdOf<T>>>::Balance>, DispatchError> {
+		) -> Result<Deposit<AccountIdOf<T>, <Self::Currency as Inspect<AccountIdOf<T>>>::Balance>, DispatchError> {
 			let record = ConnectedDids::<T>::get(key).ok_or(Error::<T>::NotFound)?;
 			Ok(record.deposit)
 		}
 
-		fn deposit_amount(_key: &LinkableAccountId) -> <Self::Currency as Currency<AccountIdOf<T>>>::Balance {
+		fn deposit_amount(_key: &LinkableAccountId) -> <Self::Currency as Inspect<AccountIdOf<T>>>::Balance {
 			T::Deposit::get()
 		}
 
 		fn store_deposit(
 			key: &LinkableAccountId,
-			deposit: Deposit<AccountIdOf<T>, <Self::Currency as Currency<AccountIdOf<T>>>::Balance>,
+			deposit: Deposit<AccountIdOf<T>, <Self::Currency as Inspect<AccountIdOf<T>>>::Balance>,
 		) -> Result<(), DispatchError> {
 			let record = ConnectedDids::<T>::get(key).ok_or(Error::<T>::NotFound)?;
 			ConnectedDids::<T>::insert(key, ConnectionRecord { deposit, ..record });
-
 			Ok(())
 		}
 	}

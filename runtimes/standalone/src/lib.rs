@@ -29,7 +29,7 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use frame_support::{
 	construct_runtime, parameter_types,
-	traits::{Currency, Everything, InstanceFilter},
+	traits::{Everything, InstanceFilter},
 	weights::{constants::RocksDbWeight, ConstantMultiplier, IdentityFee, Weight},
 };
 pub use frame_system::Call as SystemCall;
@@ -62,7 +62,6 @@ use runtime_common::{
 	authorization::{AuthorizationId, PalletAuthorize},
 	constants::{self, EXISTENTIAL_DEPOSIT, KILT},
 	errors::PublicCredentialsApiError,
-	fees::ToAuthor,
 	AccountId, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature, SlowAdjustingFeeUpdate,
 };
 
@@ -87,9 +86,6 @@ pub use sp_runtime::BuildStorage;
 
 /// Digest item type.
 pub type DigestItem = generic::DigestItem;
-
-pub type NegativeImbalance<T> =
-	<pallet_balances::Pallet<T> as Currency<<T as frame_system::Config>::AccountId>>::NegativeImbalance;
 
 /// Opaque types. These are used by the CLI to instantiate machinery that don't
 /// need to know the specifics of the runtime. They can then be made to be
@@ -246,9 +242,15 @@ parameter_types! {
 	pub const ExistentialDeposit: u128 = EXISTENTIAL_DEPOSIT;
 	pub const MaxLocks: u32 = 50;
 	pub const MaxReserves: u32 = 50;
+	pub const MaxFreezes: u32 = 50;
+	pub const MaxHolds: u32 = 50;
 }
 
 impl pallet_balances::Config for Runtime {
+	type FreezeIdentifier = RuntimeFreezeReason;
+	type HoldIdentifier = RuntimeHoldReason;
+	type MaxFreezes = MaxFreezes;
+	type MaxHolds = MaxHolds;
 	type MaxLocks = MaxLocks;
 	type MaxReserves = MaxReserves;
 	type ReserveIdentifier = [u8; 8];
@@ -288,6 +290,7 @@ parameter_types! {
 }
 
 impl attestation::Config for Runtime {
+	type RuntimeHoldReason = RuntimeHoldReason;
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
 	type OriginSuccess = did::DidRawOrigin<DidIdentifier, AccountId>;
 	type RuntimeEvent = RuntimeEvent;
@@ -311,6 +314,7 @@ parameter_types! {
 }
 
 impl delegation::Config for Runtime {
+	type RuntimeHoldReason = RuntimeHoldReason;
 	#[cfg(not(feature = "runtime-benchmarks"))]
 	type Signature = did::DidSignature;
 	#[cfg(not(feature = "runtime-benchmarks"))]
@@ -343,7 +347,7 @@ parameter_types! {
 impl ctype::Config for Runtime {
 	type Currency = Balances;
 	type Fee = Fee;
-	type FeeCollector = runtime_common::fees::ToAuthor<Runtime>;
+	type FeeCollector = runtime_common::fees::ToAuthorCredit<Runtime>;
 
 	type CtypeCreatorId = DidIdentifier;
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
@@ -372,6 +376,7 @@ parameter_types! {
 }
 
 impl did::Config for Runtime {
+	type RuntimeHoldReason = RuntimeHoldReason;
 	type DidIdentifier = DidIdentifier;
 	type KeyDeposit = constants::did::KeyDeposit;
 	type ServiceEndpointDeposit = constants::did::ServiceEndpointDeposit;
@@ -381,7 +386,7 @@ impl did::Config for Runtime {
 	type RuntimeOrigin = RuntimeOrigin;
 	type Currency = Balances;
 	type Fee = DidFee;
-	type FeeCollector = ToAuthor<Runtime>;
+	type FeeCollector = runtime_common::fees::ToAuthorCredit<Runtime>;
 
 	#[cfg(not(feature = "runtime-benchmarks"))]
 	type EnsureOrigin = did::EnsureDidOrigin<Self::DidIdentifier, AccountId>;
@@ -407,6 +412,7 @@ impl did::Config for Runtime {
 }
 
 impl pallet_did_lookup::Config for Runtime {
+	type RuntimeHoldReason = RuntimeHoldReason;
 	type RuntimeEvent = RuntimeEvent;
 
 	type DidIdentifier = DidIdentifier;
@@ -421,6 +427,7 @@ impl pallet_did_lookup::Config for Runtime {
 }
 
 impl pallet_web3_names::Config for Runtime {
+	type RuntimeHoldReason = RuntimeHoldReason;
 	type BanOrigin = EnsureRoot<AccountId>;
 	type OwnerOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
@@ -468,6 +475,7 @@ impl pallet_utility::Config for Runtime {
 }
 
 impl public_credentials::Config for Runtime {
+	type RuntimeHoldReason = RuntimeHoldReason;
 	type AccessControl = PalletAuthorize<DelegationAc<Runtime>>;
 	type AttesterId = DidIdentifier;
 	type AuthorizationId = AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>;
@@ -830,6 +838,14 @@ impl_runtime_apis! {
 	impl sp_api::Metadata<Block> for Runtime {
 		fn metadata() -> OpaqueMetadata {
 			OpaqueMetadata::new(Runtime::metadata().into())
+		}
+
+		fn metadata_at_version(version: u32) -> Option<OpaqueMetadata> {
+			Runtime::metadata_at_version(version)
+		}
+
+		fn metadata_versions() -> sp_std::vec::Vec<u32> {
+			Runtime::metadata_versions()
 		}
 	}
 

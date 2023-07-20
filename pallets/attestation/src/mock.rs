@@ -30,11 +30,11 @@ use sp_core::H256;
 use sp_runtime::DispatchError;
 
 use ctype::CtypeHashOf;
-use kilt_support::deposit::Deposit;
+use kilt_support::{traits::StorageDepositCollector, Deposit};
 
 use crate::{
 	pallet::AuthorizationIdOf, AccountIdOf, AttestationAccessControl, AttestationDetails, AttestationDetailsOf,
-	AttesterOf, BalanceOf, ClaimHashOf, Config, CurrencyOf,
+	AttesterOf, BalanceOf, ClaimHashOf, Config,
 };
 
 #[cfg(test)]
@@ -153,7 +153,7 @@ where
 }
 
 pub fn insert_attestation<T: Config>(claim_hash: ClaimHashOf<T>, details: AttestationDetailsOf<T>) {
-	kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(
+	crate::AttestationStorageDepositCollector::<T>::create_deposit(
 		details.deposit.owner.clone(),
 		details.deposit.amount,
 	)
@@ -202,7 +202,7 @@ pub(crate) mod runtime {
 			UncheckedExtrinsic = UncheckedExtrinsic,
 		{
 			System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
-			Attestation: crate::{Pallet, Call, Storage, Event<T>},
+			Attestation: crate::{Pallet, Call, Storage, Event<T>, HoldReason},
 			Ctype: ctype::{Pallet, Call, Storage, Event<T>},
 			Balances: pallet_balances::{Pallet, Call, Storage, Event<T>},
 			MockOrigin: mock_origin::{Pallet, Origin<T>},
@@ -246,9 +246,15 @@ pub(crate) mod runtime {
 		pub const ExistentialDeposit: Balance = MILLI_UNIT;
 		pub const MaxLocks: u32 = 50;
 		pub const MaxReserves: u32 = 50;
+		pub const MaxFreezes: u32 = 50;
+		pub const MaxHolds : u32 = 50;
 	}
 
 	impl pallet_balances::Config for Test {
+		type FreezeIdentifier = RuntimeFreezeReason;
+		type HoldIdentifier = RuntimeHoldReason;
+		type MaxFreezes = MaxFreezes;
+		type MaxHolds = MaxHolds;
 		type Balance = Balance;
 		type DustRemoval = ();
 		type RuntimeEvent = ();
@@ -293,7 +299,7 @@ pub(crate) mod runtime {
 		type OriginSuccess = mock_origin::DoubleOrigin<AccountId, AttesterOf<Self>>;
 		type RuntimeEvent = ();
 		type WeightInfo = ();
-
+		type RuntimeHoldReason = RuntimeHoldReason;
 		type Currency = Balances;
 		type Deposit = Deposit;
 		type MaxDelegatedAttestations = MaxDelegatedAttestations;
@@ -396,7 +402,7 @@ pub(crate) mod runtime {
 		pub fn build_with_keystore(self) -> sp_io::TestExternalities {
 			let mut ext = self.build();
 
-			let keystore = sp_keystore::testing::KeyStore::new();
+			let keystore = sp_keystore::testing::MemoryKeystore::new();
 			ext.register_extension(sp_keystore::KeystoreExt(std::sync::Arc::new(keystore)));
 
 			ext

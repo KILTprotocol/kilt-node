@@ -71,14 +71,14 @@
 //!
 //! ### Terminology
 //!
-//! - **Candidate:** A user which locks up tokens to be included into the set of
-//!   authorities which author blocks and receive rewards for doing so.
+//! - **Candidate:** A user which freezes up tokens to be included into the set
+//!   of authorities which author blocks and receive rewards for doing so.
 //!
 //! - **Collator:** A candidate that was chosen to collate this round.
 //!
-//! - **Delegator:** A user which locks up tokens for collators they trust. When
-//!   their collator authors a block, the corresponding delegators also receive
-//!   rewards.
+//! - **Delegator:** A user which freezes up tokens for collators they trust.
+//!   When their collator authors a block, the corresponding delegators also
+//!   receive rewards.
 //!
 //! - **Total Stake:** A collator’s own stake + the sum of delegated stake to
 //!   this collator.
@@ -98,8 +98,8 @@
 //!   a staking round, thus both words are interchangeable in the context of
 //!   this pallet.
 //!
-//! - **Lock:** A freeze on a specified amount of an account's free balance
-//!   until a specified block number. Multiple locks always operate over the
+//! - **Freeze:** A freeze on a specified amount of an account's free balance
+//!   until a specified block number. Multiple freezes always operate over the
 //!   same funds, so they "overlay" rather than "stack"
 //!
 //! ## Genesis config
@@ -119,7 +119,6 @@
 pub mod benchmarking;
 pub mod default_weights;
 
-pub mod migration;
 #[cfg(test)]
 pub(crate) mod mock;
 #[cfg(test)]
@@ -130,6 +129,7 @@ mod try_state;
 
 pub mod api;
 mod inflation;
+pub mod migrations;
 mod set;
 mod types;
 
@@ -148,13 +148,17 @@ pub mod pallet {
 		pallet_prelude::*,
 		storage::bounded_btree_map::BoundedBTreeMap,
 		traits::{
-			Currency, EstimateNextSessionRotation, Get, Imbalance, LockIdentifier, LockableCurrency, OnUnbalanced,
-			ReservableCurrency, StorageVersion, WithdrawReasons,
+			fungible::Balanced,
+			tokens::{
+				fungible::{Inspect, MutateFreeze, Unbalanced},
+				Fortitude, Precision, Preservation,
+			},
+			EstimateNextSessionRotation, Get, OnUnbalanced, StorageVersion,
 		},
 		BoundedVec,
 	};
 	use frame_system::pallet_prelude::*;
-	use pallet_balances::{BalanceLock, Locks};
+	use pallet_balances::{Freezes, IdAmount};
 	use pallet_session::ShouldEndSession;
 	use scale_info::TypeInfo;
 	use sp_runtime::{
@@ -163,21 +167,19 @@ pub mod pallet {
 	};
 	use sp_staking::SessionIndex;
 	use sp_std::prelude::*;
+	use types::AccountIdOf;
 
 	use crate::{
 		set::OrderedSet,
 		types::{
-			BalanceOf, Candidate, CandidateOf, CandidateStatus, DelegationCounter, Delegator, NegativeImbalanceOf,
-			RoundInfo, Stake, StakeOf, TotalStake,
+			BalanceOf, Candidate, CandidateOf, CandidateStatus, CreditOf, DelegationCounter, Delegator, RoundInfo,
+			Stake, StakeOf, TotalStake,
 		},
 	};
 	use sp_std::{convert::TryInto, fmt::Debug};
 
-	/// Kilt-specific lock for staking rewards.
-	pub(crate) const STAKING_ID: LockIdentifier = *b"kiltpstk";
-
 	/// The current storage version.
-	const STORAGE_VERSION: StorageVersion = StorageVersion::new(8);
+	pub(crate) const STORAGE_VERSION: StorageVersion = StorageVersion::new(9);
 
 	/// The 5.1% inflation rate of the third year
 	const INFLATION_3RD_YEAR: Perquintill = Perquintill::from_parts(51_000_000_000_000_000);
@@ -186,6 +188,11 @@ pub mod pallet {
 	#[pallet::pallet]
 	#[pallet::storage_version(STORAGE_VERSION)]
 	pub struct Pallet<T>(PhantomData<T>);
+
+	#[pallet::composite_enum]
+	pub enum FreezeReason {
+		Staking,
+	}
 
 	/// Configuration trait of this pallet.
 	#[pallet::config]
@@ -197,10 +204,17 @@ pub mod pallet {
 		// multiplication
 		/// The currency type
 		/// Note: Declaration of Balance taken from pallet_gilt
-		type Currency: Currency<Self::AccountId, Balance = Self::CurrencyBalance>
-			+ ReservableCurrency<Self::AccountId, Balance = Self::CurrencyBalance>
-			+ LockableCurrency<Self::AccountId, Balance = Self::CurrencyBalance>
-			+ Eq;
+		type Currency: Balanced<Self::AccountId>
+			+ MutateFreeze<
+				Self::AccountId,
+				Balance = Self::CurrencyBalance,
+				Id = <Self as pallet::Config>::FreezeIdentifier,
+			> + Eq;
+
+		type FreezeIdentifier: From<FreezeReason>
+			+ PartialEq
+			+ Eq
+			+ Into<<Self as pallet_balances::Config>::FreezeIdentifier>;
 
 		/// Just the `Currency::Balance` type; we have this item to allow us to
 		/// constrain it to `From<u64>`.
@@ -303,7 +317,7 @@ pub mod pallet {
 		type NetworkRewardRate: Get<Perquintill>;
 
 		/// The beneficiary to receive the network rewards.
-		type NetworkRewardBeneficiary: OnUnbalanced<NegativeImbalanceOf<Self>>;
+		type NetworkRewardBeneficiary: OnUnbalanced<CreditOf<Self>>;
 
 		/// Weight information for extrinsics in this pallet.
 		type WeightInfo: WeightInfo;
@@ -691,7 +705,7 @@ pub mod pallet {
 			// Setup delegate & collators
 			for &(ref actor, ref opt_val, balance) in &self.stakers {
 				assert!(
-					T::Currency::free_balance(actor) >= balance,
+					T::Currency::reducible_balance(actor, Preservation::Expendable, Fortitude::Polite) >= balance,
 					"Account does not have enough balance to stake."
 				);
 				if let Some(delegated_val) = opt_val {
@@ -903,7 +917,7 @@ pub mod pallet {
 		/// delegators.
 		///
 		/// Prepares unstaking of the candidates and their delegators stake
-		/// which can be unlocked via `unlock_unstaked` after waiting at
+		/// which can be unfreezed via `unlock_unstaked` after waiting at
 		/// least `StakeDuration` many blocks. Also increments rewards for the
 		/// collator and their delegators.
 		///
@@ -1092,7 +1106,7 @@ pub mod pallet {
 
 		/// Execute the network exit of a candidate who requested to leave at
 		/// least `ExitQueueDelay` rounds ago. Prepares unstaking of the
-		/// candidates and their delegators stake which can be unlocked via
+		/// candidates and their delegators stake which can be unfreezed via
 		/// `unlock_unstaked` after waiting at least `StakeDuration` many
 		/// blocks.
 		///
@@ -1347,7 +1361,7 @@ pub mod pallet {
 
 			// check balance
 			ensure!(
-				pallet_balances::Pallet::<T>::free_balance(acc.clone()) >= amount.into(),
+				pallet_balances::Pallet::<T>::balance(&acc) >= amount.into(),
 				pallet_balances::Error::<T>::InsufficientBalance
 			);
 
@@ -1624,9 +1638,9 @@ pub mod pallet {
 		///
 		/// Weight: O(U) where U is the number of locked unstaking requests
 		/// bounded by `MaxUnstakeRequests`.
-		/// - Reads: [Origin Account], Unstaking, Locks
-		/// - Writes: Unstaking, Locks
-		/// - Kills: Unstaking & Locks if no balance is locked anymore
+		/// - Reads: [Origin Account], Unstaking, Freezes
+		/// - Writes: Unstaking, Freezes
+		/// - Kills: Unstaking & Freezes if no balance is locked anymore
 		/// # </weight>
 		#[pallet::call_index(16)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::unlock_unstaked(
@@ -1669,9 +1683,10 @@ pub mod pallet {
 			ensure!(!rewards.is_zero(), Error::<T>::RewardsNotFound);
 
 			// mint into target
-			let rewards = T::Currency::deposit_into_existing(&target, rewards)?;
+			let rewards =
+				<T::Currency as Unbalanced<AccountIdOf<T>>>::increase_balance(&target, rewards, Precision::Exact)?;
 
-			Self::deposit_event(Event::Rewarded(target, rewards.peek()));
+			Self::deposit_event(Event::Rewarded(target, rewards));
 
 			Ok(())
 		}
@@ -2158,7 +2173,13 @@ pub mod pallet {
 		/// amount and updates `Unstaking` storage accordingly.
 		fn increase_lock(who: &T::AccountId, amount: BalanceOf<T>, more: BalanceOf<T>) -> Result<u32, DispatchError> {
 			ensure!(
-				pallet_balances::Pallet::<T>::free_balance(who) >= amount.into(),
+				pallet_balances::Pallet::<T>::reducible_balance(who, Preservation::Preserve, Fortitude::Polite)
+					>= more.into(),
+				pallet_balances::Error::<T>::InsufficientBalance
+			);
+
+			ensure!(
+				<T::Currency as Inspect<AccountIdOf<T>>>::total_balance(who) >= amount,
 				pallet_balances::Error::<T>::InsufficientBalance
 			);
 
@@ -2194,13 +2215,13 @@ pub mod pallet {
 
 			// Either set a new lock or potentially extend the existing one if amount
 			// exceeds the currently locked amount
-			T::Currency::extend_lock(STAKING_ID, who, amount, WithdrawReasons::all());
+			T::Currency::extend_freeze(&FreezeReason::Staking.into(), who, amount)?;
 
 			Ok(unstaking_len)
 		}
 
 		/// Set the unlocking block for the account and corresponding amount
-		/// which can be unlocked via `unlock_unstaked` after waiting at
+		/// which can be unfreezed via `unlock_unstaked` after waiting at
 		/// least for `StakeDuration` many blocks.
 		///
 		/// Throws if the amount is zero (unlikely) or if active unlocking
@@ -2293,38 +2314,49 @@ pub mod pallet {
 			let unstaking_len = unstaking.len().saturated_into::<u32>();
 			ensure!(!unstaking.is_empty(), Error::<T>::UnstakingIsEmpty);
 
-			let mut total_unlocked: BalanceOf<T> = Zero::zero();
-			let mut total_locked: BalanceOf<T> = Zero::zero();
+			let mut total_unfreezed: BalanceOf<T> = Zero::zero();
+			let mut total_freezed: BalanceOf<T> = Zero::zero();
 			let mut expired = Vec::new();
 
-			// check potential unlocks
-			for (block_number, locked_balance) in unstaking.clone().into_iter() {
+			// check potential unfreezed
+			for (block_number, freezed_balance) in unstaking.clone().into_iter() {
 				if block_number <= now {
 					expired.push(block_number);
-					total_unlocked = total_unlocked.saturating_add(locked_balance);
+					total_unfreezed = total_unfreezed.saturating_add(freezed_balance);
 				} else {
-					total_locked = total_locked.saturating_add(locked_balance);
+					total_freezed = total_freezed.saturating_add(freezed_balance);
 				}
 			}
 			for block_number in expired {
 				unstaking.remove(&block_number);
 			}
 
-			// iterate balance locks to retrieve amount of locked balance
-			let locks = Locks::<T>::get(who);
-			total_locked = if let Some(BalanceLock { amount, .. }) = locks.iter().find(|l| l.id == STAKING_ID) {
-				amount.saturating_sub(total_unlocked.into()).into()
+			// iterate balance freezes to retrieve amount of freezed balance
+			let freezes = Freezes::<T>::get(who);
+
+			total_freezed = if let Some(IdAmount { amount, .. }) = freezes
+				.iter()
+				.find(|l| l.id == <T as pallet::Config>::FreezeIdentifier::from(FreezeReason::Staking).into())
+			{
+				amount.saturating_sub(total_unfreezed.into()).into()
 			} else {
 				// should never fail to find the lock since we checked whether unstaking is not
 				// empty but let's be safe
 				Zero::zero()
 			};
 
-			if total_locked.is_zero() {
-				T::Currency::remove_lock(STAKING_ID, who);
+			if total_freezed.is_zero() {
+				T::Currency::thaw(
+					&<T as pallet::Config>::FreezeIdentifier::from(FreezeReason::Staking),
+					who,
+				)?;
 				Unstaking::<T>::remove(who);
 			} else {
-				T::Currency::set_lock(STAKING_ID, who, total_locked, WithdrawReasons::all());
+				T::Currency::set_freeze(
+					&<T as pallet::Config>::FreezeIdentifier::from(FreezeReason::Staking),
+					who,
+					total_freezed,
+				)?;
 				Unstaking::<T>::insert(who, unstaking);
 			}
 
@@ -2373,7 +2405,7 @@ pub mod pallet {
 		///
 		/// `col_reward_rate_per_block * col_max_stake * max_num_of_collators *
 		/// NetworkRewardRate`
-		fn issue_network_reward() -> NegativeImbalanceOf<T> {
+		fn issue_network_reward() -> CreditOf<T> {
 			// Multiplication with Perquintill cannot overflow
 			let max_col_rewards = InflationConfig::<T>::get().collator.reward_rate.per_block
 				* MaxCollatorCandidateStake::<T>::get()
@@ -2389,7 +2421,7 @@ pub mod pallet {
 		/// Depends on the current total issuance and staking reward
 		/// configuration for collators.
 		pub(crate) fn calc_block_rewards_collator(stake: BalanceOf<T>, multiplier: BalanceOf<T>) -> BalanceOf<T> {
-			let total_issuance = T::Currency::total_issuance();
+			let total_issuance = <T::Currency as Inspect<AccountIdOf<T>>>::total_issuance();
 			let TotalStake {
 				collators: total_collators,
 				..
@@ -2407,7 +2439,7 @@ pub mod pallet {
 		/// Depends on the current total issuance and staking reward
 		/// configuration for delegators.
 		pub(crate) fn calc_block_rewards_delegator(stake: BalanceOf<T>, multiplier: BalanceOf<T>) -> BalanceOf<T> {
-			let total_issuance = T::Currency::total_issuance();
+			let total_issuance = <T::Currency as Inspect<AccountIdOf<T>>>::total_issuance();
 			let TotalStake {
 				delegators: total_delegators,
 				..

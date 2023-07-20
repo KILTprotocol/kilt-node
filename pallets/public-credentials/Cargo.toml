@@ -22,6 +22,7 @@ sp-keystore = {workspace = true, features = ["std"]}
 # External dependencies
 parity-scale-codec = {workspace = true, features = ["derive"]}
 scale-info = {workspace = true, features = ["derive"]}
+log.workspace = true
 
 # Internal dependencies
 ctype.workspace = true
@@ -58,6 +59,7 @@ std = [
   "sp-io/std",
   "sp-runtime/std",
   "sp-std/std",
+  "log/std"
 ]
 try-runtime = [
   "frame-support/try-runtime",

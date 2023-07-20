@@ -16,15 +16,18 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::{assert_err, assert_noop, assert_ok};
+use frame_support::{
+	assert_err, assert_noop, assert_ok,
+	traits::fungible::{Inspect, InspectHold},
+};
 use kilt_support::mock::mock_origin::DoubleOrigin;
 
 use crate::{
 	self as delegation,
 	mock::{runtime::*, *},
-	Config, Error,
+	Config, Error, HoldReason,
 };
-use sp_runtime::traits::Zero;
+use sp_runtime::{traits::Zero, TokenError};
 
 // submit_delegation_root_creation_operation()
 
@@ -37,7 +40,11 @@ fn create_root_delegation_successful() {
 
 	ExtBuilder::default()
 		.with_ctypes(vec![(operation.ctype_hash, creator.clone())])
-		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get())])
+		.with_balances(vec![(
+			ACCOUNT_00,
+			<Test as Config>::Deposit::get()
+				+ <<Test as Config>::Currency as Inspect<delegation::AccountIdOf<Test>>>::minimum_balance(),
+		)])
 		.build_and_execute_with_sanity_tests(|| {
 			// Create root hierarchy
 			assert_ok!(Delegation::create_hierarchy(
@@ -47,7 +54,10 @@ fn create_root_delegation_successful() {
 			));
 
 			// Check reserved balance
-			assert_eq!(Balances::reserved_balance(ACCOUNT_00), <Test as Config>::Deposit::get());
+			assert_eq!(
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
+				<Test as Config>::Deposit::get()
+			);
 
 			// Get stored hierarchy
 			let stored_hierarchy_details = Delegation::delegation_hierarchies(hierarchy_root_id)
@@ -136,8 +146,16 @@ fn create_delegation_direct_root_successful() {
 			ACCOUNT_00,
 		)])
 		.with_balances(vec![
-			(ACCOUNT_00, <Test as Config>::Deposit::get()),
-			(ACCOUNT_01, <Test as Config>::Deposit::get()),
+			(
+				ACCOUNT_00,
+				<Test as Config>::Deposit::get()
+					+ <<Test as Config>::Currency as Inspect<delegation::AccountIdOf<Test>>>::minimum_balance(),
+			),
+			(
+				ACCOUNT_01,
+				<Test as Config>::Deposit::get()
+					+ <<Test as Config>::Currency as Inspect<delegation::AccountIdOf<Test>>>::minimum_balance(),
+			),
 		])
 		.build_and_execute_with_sanity_tests(|| {
 			// Create delegation to root
@@ -159,7 +177,10 @@ fn create_delegation_direct_root_successful() {
 				generate_base_delegation_creation_operation(delegation_id, delegate_signature, delegation_node);
 
 			// 1 Deposit should be reserved for hierarchy
-			assert_eq!(Balances::reserved_balance(ACCOUNT_00), <Test as Config>::Deposit::get());
+			assert_eq!(
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
+				<Test as Config>::Deposit::get()
+			);
 
 			// Add delegation to root
 			assert_ok!(Delegation::add_delegation(
@@ -173,7 +194,7 @@ fn create_delegation_direct_root_successful() {
 
 			// 2 Deposits should be reserved for hierarchy and delegation to root
 			assert_eq!(
-				Balances::reserved_balance(ACCOUNT_00),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
 				2 * <Test as Config>::Deposit::get()
 			);
 
@@ -215,8 +236,16 @@ fn create_delegation_with_parent_successful() {
 		)])
 		.with_delegations(vec![(parent_id, parent_node)])
 		.with_balances(vec![
-			(ACCOUNT_00, <Test as Config>::Deposit::get()),
-			(ACCOUNT_01, <Test as Config>::Deposit::get()),
+			(
+				ACCOUNT_00,
+				<Test as Config>::Deposit::get()
+					+ <<Test as Config>::Currency as Inspect<delegation::AccountIdOf<Test>>>::minimum_balance(),
+			),
+			(
+				ACCOUNT_01,
+				<Test as Config>::Deposit::get()
+					+ <<Test as Config>::Currency as Inspect<delegation::AccountIdOf<Test>>>::minimum_balance(),
+			),
 		])
 		.build_and_execute_with_sanity_tests(|| {
 			// Create sub-delegation
@@ -235,7 +264,7 @@ fn create_delegation_with_parent_successful() {
 
 			// Should have deposited for hierarchy and parent delegation
 			assert_eq!(
-				Balances::reserved_balance(ACCOUNT_00),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
 				2 * <Test as Config>::Deposit::get()
 			);
 
@@ -251,10 +280,10 @@ fn create_delegation_with_parent_successful() {
 
 			// Should have deposited for hierarchy, parent delegation and sub-delegation
 			assert_eq!(
-				Balances::reserved_balance(ACCOUNT_00),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
 				3 * <Test as Config>::Deposit::get()
 			);
-			assert!(Balances::reserved_balance(ACCOUNT_01).is_zero());
+			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_01).is_zero());
 
 			// Data in stored delegation and operation should match
 			let stored_delegation =
@@ -693,10 +722,13 @@ fn list_hierarchy_revoke_and_remove_root_successful() {
 		.build_and_execute_with_sanity_tests(|| {
 			assert!(Delegation::delegation_hierarchies(hierarchy_root_id).is_some());
 			assert_eq!(
-				Balances::reserved_balance(ACCOUNT_00),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
 				2 * <Test as Config>::Deposit::get()
 			);
-			assert_eq!(Balances::reserved_balance(ACCOUNT_01), <Test as Config>::Deposit::get());
+			assert_eq!(
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_01),
+				<Test as Config>::Deposit::get()
+			);
 
 			// Revoke root
 			assert_ok!(Delegation::revoke_delegation(
@@ -737,8 +769,8 @@ fn list_hierarchy_revoke_and_remove_root_successful() {
 			assert!(Delegation::delegation_hierarchies(hierarchy_root_id).is_none());
 			assert!(Delegation::delegation_nodes(parent_id).is_none());
 			assert!(Delegation::delegation_nodes(delegation_id).is_none());
-			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
-			assert!(Balances::reserved_balance(ACCOUNT_01).is_zero());
+			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00).is_zero());
+			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_01).is_zero());
 		});
 }
 
@@ -806,10 +838,13 @@ fn tree_hierarchy_revoke_and_remove_root_successful() {
 			);
 
 			assert_eq!(
-				Balances::reserved_balance(ACCOUNT_00),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
 				2 * <Test as Config>::Deposit::get()
 			);
-			assert_eq!(Balances::reserved_balance(ACCOUNT_01), <Test as Config>::Deposit::get());
+			assert_eq!(
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_01),
+				<Test as Config>::Deposit::get()
+			);
 
 			// Removing root should also remove children and hierarchy
 			assert_ok!(Delegation::remove_delegation(
@@ -822,8 +857,8 @@ fn tree_hierarchy_revoke_and_remove_root_successful() {
 			assert!(Delegation::delegation_hierarchies(hierarchy_root_id).is_none());
 			assert!(Delegation::delegation_nodes(delegation1_id).is_none());
 			assert!(Delegation::delegation_nodes(delegation2_id).is_none());
-			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
-			assert!(Balances::reserved_balance(ACCOUNT_01).is_zero());
+			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00).is_zero());
+			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_01).is_zero());
 		});
 }
 
@@ -888,10 +923,13 @@ fn max_max_revocations_revoke_and_remove_successful() {
 			);
 
 			assert_eq!(
-				Balances::reserved_balance(ACCOUNT_00),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
 				2 * <Test as Config>::Deposit::get()
 			);
-			assert_eq!(Balances::reserved_balance(ACCOUNT_01), <Test as Config>::Deposit::get());
+			assert_eq!(
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_01),
+				<Test as Config>::Deposit::get()
+			);
 
 			// Removing root should also remove children and hierarchy
 			assert_ok!(Delegation::remove_delegation(
@@ -904,8 +942,8 @@ fn max_max_revocations_revoke_and_remove_successful() {
 			assert!(Delegation::delegation_hierarchies(hierarchy_root_id).is_none());
 			assert!(Delegation::delegation_nodes(parent_id).is_none());
 			assert!(Delegation::delegation_nodes(delegation_id).is_none());
-			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
-			assert!(Balances::reserved_balance(ACCOUNT_01).is_zero());
+			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00).is_zero());
+			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_01).is_zero());
 		});
 }
 
@@ -1066,7 +1104,10 @@ fn exact_children_max_revocations_revoke_and_remove_root_error() {
 			(delegation3_id, delegation3_node),
 		])
 		.build_and_execute_with_sanity_tests(|| {
-			assert_eq!(Balances::reserved_balance(ACCOUNT_00), <Test as Config>::Deposit::get());
+			assert_eq!(
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
+				<Test as Config>::Deposit::get()
+			);
 
 			// Should not revoke root because tree traversal steps are insufficient
 			// assert_err and not assert_noop because the storage is indeed changed, but
@@ -1108,9 +1149,12 @@ fn exact_children_max_revocations_revoke_and_remove_root_error() {
 			);
 
 			// Should not remove root because tree traversal steps are insufficient
-			assert_eq!(Balances::reserved_balance(ACCOUNT_00), <Test as Config>::Deposit::get());
 			assert_eq!(
-				Balances::reserved_balance(ACCOUNT_01),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
+				<Test as Config>::Deposit::get()
+			);
+			assert_eq!(
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_01),
 				3 * <Test as Config>::Deposit::get()
 			);
 			// assert_err and not assert_noop because the storage is indeed changed, but
@@ -1128,9 +1172,12 @@ fn exact_children_max_revocations_revoke_and_remove_root_error() {
 			assert!(Delegation::delegation_nodes(delegation1_id).is_some());
 			assert!(Delegation::delegation_nodes(delegation2_id).is_some());
 			assert!(Delegation::delegation_nodes(delegation3_id).is_some());
-			assert_eq!(Balances::reserved_balance(ACCOUNT_00), <Test as Config>::Deposit::get());
 			assert_eq!(
-				Balances::reserved_balance(ACCOUNT_01),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
+				<Test as Config>::Deposit::get()
+			);
+			assert_eq!(
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_01),
 				3 * <Test as Config>::Deposit::get()
 			);
 
@@ -1143,8 +1190,8 @@ fn exact_children_max_revocations_revoke_and_remove_root_error() {
 			assert!(Delegation::delegation_nodes(operation.id).is_none());
 			assert!(Delegation::delegation_nodes(delegation1_id).is_none());
 			assert!(Delegation::delegation_nodes(delegation3_id).is_none());
-			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
-			assert!(Balances::reserved_balance(ACCOUNT_01).is_zero());
+			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00).is_zero());
+			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_01).is_zero());
 		});
 }
 
@@ -1214,10 +1261,13 @@ fn direct_owner_revoke_and_remove_delegation_successful() {
 			);
 
 			assert_eq!(
-				Balances::reserved_balance(ACCOUNT_00),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
 				2 * <Test as Config>::Deposit::get()
 			);
-			assert_eq!(Balances::reserved_balance(ACCOUNT_01), <Test as Config>::Deposit::get());
+			assert_eq!(
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_01),
+				<Test as Config>::Deposit::get()
+			);
 
 			// Removing root delegation should also remove its child but not hierarchy root
 			assert_ok!(Delegation::remove_delegation(
@@ -1230,8 +1280,11 @@ fn direct_owner_revoke_and_remove_delegation_successful() {
 			assert!(Delegation::delegation_nodes(operation.delegation_id).is_none());
 			assert!(Delegation::delegation_nodes(parent_id).is_none());
 			assert!(Delegation::delegation_nodes(delegation_id).is_none());
-			assert_eq!(Balances::reserved_balance(ACCOUNT_00), <Test as Config>::Deposit::get());
-			assert!(Balances::reserved_balance(ACCOUNT_01).is_zero());
+			assert_eq!(
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
+				<Test as Config>::Deposit::get()
+			);
+			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_01).is_zero());
 		});
 }
 
@@ -1271,10 +1324,13 @@ fn parent_owner_revoke_delegation_successful() {
 		.build_and_execute_with_sanity_tests(|| {
 			// Parent should not be able to remove the child delegation directly
 			assert_eq!(
-				Balances::reserved_balance(ACCOUNT_00),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
 				2 * <Test as Config>::Deposit::get()
 			);
-			assert_eq!(Balances::reserved_balance(ACCOUNT_01), <Test as Config>::Deposit::get());
+			assert_eq!(
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_01),
+				<Test as Config>::Deposit::get()
+			);
 			assert_noop!(
 				Delegation::remove_delegation(
 					DoubleOrigin(ACCOUNT_00, revoker.clone()).into(),
@@ -1316,10 +1372,10 @@ fn parent_owner_revoke_delegation_successful() {
 			assert!(Delegation::delegation_nodes(parent_id).is_some());
 			assert!(Delegation::delegation_nodes(delegation_id).is_none());
 			assert_eq!(
-				Balances::reserved_balance(ACCOUNT_00),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
 				2 * <Test as Config>::Deposit::get()
 			);
-			assert!(Balances::reserved_balance(ACCOUNT_01).is_zero());
+			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_01).is_zero());
 		});
 }
 
@@ -1449,9 +1505,18 @@ fn parent_too_far_revoke_and_remove_delegation_error() {
 			);
 
 			// removal
-			assert_eq!(Balances::reserved_balance(ACCOUNT_00), <Test as Config>::Deposit::get());
-			assert_eq!(Balances::reserved_balance(ACCOUNT_02), <Test as Config>::Deposit::get());
-			assert_eq!(Balances::reserved_balance(ACCOUNT_01), <Test as Config>::Deposit::get());
+			assert_eq!(
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
+				<Test as Config>::Deposit::get()
+			);
+			assert_eq!(
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_02),
+				<Test as Config>::Deposit::get()
+			);
+			assert_eq!(
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_01),
+				<Test as Config>::Deposit::get()
+			);
 
 			assert_noop!(
 				Delegation::remove_delegation(
@@ -1560,8 +1625,8 @@ fn direct_owner_reclaim_deposit_delegation_successful() {
 			assert!(Delegation::delegation_nodes(delegation_id).is_none());
 
 			// We have released all the deposits by deleting the root node.
-			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
-			assert!(Balances::reserved_balance(ACCOUNT_01).is_zero());
+			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00).is_zero());
+			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_01).is_zero());
 		});
 }
 
@@ -1595,10 +1660,13 @@ fn parent_owner_reclaim_deposit_error() {
 			// Parent should not be able to claim the deposit for the child delegation
 			// directly
 			assert_eq!(
-				Balances::reserved_balance(ACCOUNT_00),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
 				2 * <Test as Config>::Deposit::get()
 			);
-			assert_eq!(Balances::reserved_balance(ACCOUNT_01), <Test as Config>::Deposit::get());
+			assert_eq!(
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_01),
+				<Test as Config>::Deposit::get()
+			);
 			assert_noop!(
 				Delegation::reclaim_deposit(
 					RuntimeOrigin::signed(ACCOUNT_00),
@@ -1975,6 +2043,10 @@ fn is_delegating_delegation_not_found() {
 
 	// Root -> Delegation 1
 	let mut ext = ExtBuilder::default()
+		.with_balances(vec![(
+			ACCOUNT_00,
+			<<Test as Config>::Currency as Inspect<delegation::AccountIdOf<Test>>>::minimum_balance(),
+		)])
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, user_1.clone(), ACCOUNT_00)])
 		.build();
 
@@ -2043,7 +2115,10 @@ fn remove_single_hierarchy() {
 		.build_and_execute_with_sanity_tests(|| {
 			assert!(Delegation::delegation_hierarchies(hierarchy_root_id).is_some());
 			assert!(Delegation::delegation_nodes(hierarchy_root_id).is_some());
-			assert_eq!(Balances::reserved_balance(ACCOUNT_00), <Test as Config>::Deposit::get());
+			assert_eq!(
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
+				<Test as Config>::Deposit::get()
+			);
 
 			// Remove
 			assert_noop!(
@@ -2061,7 +2136,7 @@ fn remove_single_hierarchy() {
 			));
 			assert!(Delegation::delegation_hierarchies(hierarchy_root_id).is_none());
 			assert!(Delegation::delegation_nodes(hierarchy_root_id).is_none());
-			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
+			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00).is_zero());
 		});
 }
 
@@ -2113,12 +2188,18 @@ fn remove_children_gas_runs_out() {
 			(delegation4_id, delegation4_node),
 		])
 		.build_and_execute_with_sanity_tests(|| {
-			assert_eq!(Balances::reserved_balance(ACCOUNT_00), <Test as Config>::Deposit::get());
 			assert_eq!(
-				Balances::reserved_balance(ACCOUNT_01),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
+				<Test as Config>::Deposit::get()
+			);
+			assert_eq!(
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_01),
 				3 * <Test as Config>::Deposit::get()
 			);
-			assert_eq!(Balances::reserved_balance(ACCOUNT_02), <Test as Config>::Deposit::get());
+			assert_eq!(
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_02),
+				<Test as Config>::Deposit::get()
+			);
 
 			// Should not be able to remove root because tree traversal steps are
 			// insufficient
@@ -2138,12 +2219,18 @@ fn remove_children_gas_runs_out() {
 			assert!(Delegation::delegation_nodes(delegation2_id).is_some());
 			assert!(Delegation::delegation_nodes(delegation3_id).is_some());
 			assert!(Delegation::delegation_nodes(delegation4_id).is_some());
-			assert_eq!(Balances::reserved_balance(ACCOUNT_00), <Test as Config>::Deposit::get());
 			assert_eq!(
-				Balances::reserved_balance(ACCOUNT_01),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
+				<Test as Config>::Deposit::get()
+			);
+			assert_eq!(
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_01),
 				3 * <Test as Config>::Deposit::get()
 			);
-			assert_eq!(Balances::reserved_balance(ACCOUNT_02), <Test as Config>::Deposit::get());
+			assert_eq!(
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_02),
+				<Test as Config>::Deposit::get()
+			);
 
 			// Should be able to remove root only with depth = #_of_children + 1
 			assert_ok!(Delegation::remove_delegation(
@@ -2155,9 +2242,9 @@ fn remove_children_gas_runs_out() {
 			assert!(Delegation::delegation_nodes(delegation1_id).is_none());
 			assert!(Delegation::delegation_nodes(delegation2_id).is_none());
 			assert!(Delegation::delegation_nodes(delegation3_id).is_none());
-			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
-			assert!(Balances::reserved_balance(ACCOUNT_01).is_zero());
-			assert!(Balances::reserved_balance(ACCOUNT_02).is_zero());
+			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00).is_zero());
+			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_01).is_zero());
+			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_02).is_zero());
 		});
 }
 
@@ -2185,17 +2272,21 @@ fn test_change_deposit_owner() {
 	ExtBuilder::default()
 		.with_balances(vec![
 			(ACCOUNT_00, <Test as Config>::Deposit::get() * 2),
-			(ACCOUNT_01, <Test as Config>::Deposit::get()),
+			(
+				ACCOUNT_01,
+				<Test as Config>::Deposit::get()
+					+ <<Test as Config>::Currency as Inspect<delegation::AccountIdOf<Test>>>::minimum_balance(),
+			),
 		])
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, root_owner.clone())])
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, root_owner, ACCOUNT_00)])
 		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
 		.build_and_execute_with_sanity_tests(|| {
 			assert_eq!(
-				Balances::reserved_balance(ACCOUNT_00),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
 				<Test as Config>::Deposit::get() * 3
 			);
-			assert!(Balances::reserved_balance(ACCOUNT_01).is_zero());
+			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_01).is_zero());
 			assert_ok!(Delegation::change_deposit_owner(
 				DoubleOrigin(ACCOUNT_01, delegate).into(),
 				delegation_id
@@ -2203,10 +2294,13 @@ fn test_change_deposit_owner() {
 
 			// ACCOUNT_00 has still one deposit (there are two nodes)
 			assert_eq!(
-				Balances::reserved_balance(ACCOUNT_00),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
 				<Test as Config>::Deposit::get() * 2
 			);
-			assert_eq!(Balances::reserved_balance(ACCOUNT_01), <Test as Config>::Deposit::get());
+			assert_eq!(
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_01),
+				<Test as Config>::Deposit::get()
+			);
 		});
 }
 
@@ -2235,13 +2329,13 @@ fn test_change_deposit_owner_insufficient_balance() {
 		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
 		.build_and_execute_with_sanity_tests(|| {
 			assert_eq!(
-				Balances::reserved_balance(ACCOUNT_00),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
 				<Test as Config>::Deposit::get() * 3
 			);
-			assert!(Balances::reserved_balance(ACCOUNT_01).is_zero());
+			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_01).is_zero());
 			assert_noop!(
 				Delegation::change_deposit_owner(DoubleOrigin(ACCOUNT_01, delegate).into(), delegation_id),
-				pallet_balances::Error::<Test>::InsufficientBalance
+				TokenError::CannotCreateHold
 			);
 		});
 }
@@ -2338,7 +2432,7 @@ fn test_update_deposit() {
 		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
 		.build_and_execute_with_sanity_tests(|| {
 			assert_eq!(
-				Balances::reserved_balance(ACCOUNT_00),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
 				<Test as Config>::Deposit::get() * 3
 			);
 			assert_ok!(Delegation::update_deposit(
@@ -2348,7 +2442,7 @@ fn test_update_deposit() {
 
 			// ACCOUNT_00 has still one deposit (there are two nodes)
 			assert_eq!(
-				Balances::reserved_balance(ACCOUNT_00),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
 				<Test as Config>::Deposit::get() * 2
 			);
 		});
@@ -2380,7 +2474,7 @@ fn test_update_deposit_unauthorized() {
 		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
 		.build_and_execute_with_sanity_tests(|| {
 			assert_eq!(
-				Balances::reserved_balance(ACCOUNT_00),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
 				<Test as Config>::Deposit::get() * 3
 			);
 			assert_noop!(

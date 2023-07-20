@@ -16,13 +16,19 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+#[cfg(not(feature = "runtime-benchmarks"))]
+use crate::{DidRawOrigin, EnsureDidOrigin};
+
 use frame_support::{
 	parameter_types,
-	traits::{Currency, OnUnbalanced, ReservableCurrency},
+	traits::{
+		fungible::{Balanced, Credit, MutateHold},
+		OnUnbalanced,
+	},
 	weights::constants::RocksDbWeight,
 };
 use frame_system::EnsureSigned;
-use pallet_balances::NegativeImbalance;
+use pallet_balances::Pallet as PalletBalance;
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
 use sp_core::{ecdsa, ed25519, sr25519, Pair};
@@ -42,10 +48,9 @@ use crate::{
 		RelationshipDeriveError,
 	},
 	service_endpoints::DidEndpoint,
-	utils as crate_utils, AccountIdOf, Config, CurrencyOf, DidBlacklist, DidEndpointsCount, KeyIdOf, ServiceEndpoints,
+	utils as crate_utils, AccountIdOf, Config, CurrencyOf, DidBlacklist, DidEndpointsCount, HoldReason, KeyIdOf,
+	ServiceEndpoints,
 };
-#[cfg(not(feature = "runtime-benchmarks"))]
-use crate::{DidRawOrigin, EnsureDidOrigin};
 
 pub(crate) type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 pub(crate) type Block = frame_system::mocking::MockBlock<Test>;
@@ -56,7 +61,7 @@ pub(crate) type AccountPublic = <Signature as Verify>::Signer;
 pub(crate) type AccountId = <AccountPublic as IdentifyAccount>::AccountId;
 pub(crate) type Index = u64;
 pub(crate) type BlockNumber = u64;
-
+type CreditOf<T> = Credit<<T as frame_system::Config>::AccountId, PalletBalance<T, ()>>;
 pub(crate) type DidIdentifier = AccountId;
 pub(crate) type CtypeHash = Hash;
 
@@ -70,7 +75,7 @@ frame_support::construct_runtime!(
 		NodeBlock = Block,
 		UncheckedExtrinsic = UncheckedExtrinsic,
 	{
-		Did: did::{Pallet, Call, Storage, Event<T>, Origin<T>},
+		Did: did::{Pallet, Call, Storage, HoldReason, Event<T>, Origin<T>},
 		Ctype: ctype::{Pallet, Call, Storage, Event<T>},
 		Balances: pallet_balances::{Pallet, Call, Storage, Event<T>},
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
@@ -133,13 +138,13 @@ parameter_types! {
 
 pub struct ToAccount<R>(sp_std::marker::PhantomData<R>);
 
-impl<R> OnUnbalanced<NegativeImbalance<R>> for ToAccount<R>
+impl<R> OnUnbalanced<CreditOf<R>> for ToAccount<R>
 where
 	R: pallet_balances::Config,
 	<R as frame_system::Config>::AccountId: From<AccountId>,
 {
-	fn on_nonzero_unbalanced(amount: NegativeImbalance<R>) {
-		pallet_balances::Pallet::<R>::resolve_creating(&ACCOUNT_FEE.into(), amount);
+	fn on_nonzero_unbalanced(amount: CreditOf<R>) {
+		let _ = pallet_balances::Pallet::<R>::resolve(&ACCOUNT_FEE.into(), amount);
 	}
 }
 
@@ -149,6 +154,7 @@ impl Config for Test {
 	type RuntimeCall = RuntimeCall;
 	type EnsureOrigin = EnsureSigned<DidIdentifier>;
 	type KeyDeposit = KeyDeposit;
+	type RuntimeHoldReason = RuntimeHoldReason;
 	type ServiceEndpointDeposit = KeyDeposit;
 	type OriginSuccess = AccountId;
 	type RuntimeEvent = ();
@@ -173,9 +179,15 @@ parameter_types! {
 	pub const ExistentialDeposit: Balance = 500;
 	pub const MaxLocks: u32 = 50;
 	pub const MaxReserves: u32 = 50;
+	pub const MaxHolds: u32 = 50;
+	pub const MaxFreezes: u32 = 50;
 }
 
 impl pallet_balances::Config for Test {
+	type FreezeIdentifier = RuntimeFreezeReason;
+	type HoldIdentifier = RuntimeHoldReason;
+	type MaxFreezes = MaxFreezes;
+	type MaxHolds = MaxHolds;
 	type Balance = Balance;
 	type DustRemoval = ();
 	type RuntimeEvent = ();
@@ -493,7 +505,7 @@ impl ExtBuilder {
 
 			for did in self.dids_stored.iter() {
 				did::Did::<Test>::insert(&did.0, did.1.clone());
-				CurrencyOf::<Test>::reserve(&did.1.deposit.owner, did.1.deposit.amount)
+				CurrencyOf::<Test>::hold(&HoldReason::Deposit.into(), &did.1.deposit.owner, did.1.deposit.amount)
 					.expect("Deposit owner should have enough balance");
 			}
 			for did in self.deleted_dids.iter() {
@@ -521,7 +533,7 @@ impl ExtBuilder {
 	pub fn build_with_keystore(self) -> sp_io::TestExternalities {
 		let mut ext = self.build(None);
 
-		let keystore = sp_keystore::testing::KeyStore::new();
+		let keystore = sp_keystore::testing::MemoryKeystore::new();
 		ext.register_extension(sp_keystore::KeystoreExt(sp_std::sync::Arc::new(keystore)));
 
 		ext

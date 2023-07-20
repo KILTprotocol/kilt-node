@@ -16,12 +16,15 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::{assert_err, assert_noop, assert_ok, traits::Currency};
+use frame_support::{
+	assert_err, assert_noop, assert_ok,
+	traits::fungible::{Inspect, InspectHold},
+};
 use parity_scale_codec::Encode;
 use sp_core::{ed25519, Pair};
 use sp_runtime::{
 	traits::{BadOrigin, Hash, Zero},
-	SaturatedConversion,
+	SaturatedConversion, TokenError,
 };
 use sp_std::{
 	collections::btree_set::BTreeSet,
@@ -34,7 +37,7 @@ use crate::{
 	mock::*,
 	mock_utils::*,
 	service_endpoints::DidEndpoint,
-	Error,
+	Error, HoldReason,
 };
 
 // create
@@ -50,7 +53,7 @@ fn check_successful_simple_ed25519_creation() {
 
 	let balance = <Test as did::Config>::BaseDeposit::get()
 		+ <Test as did::Config>::Fee::get()
-		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
+		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.build_and_execute_with_sanity_tests(None, || {
@@ -74,11 +77,11 @@ fn check_successful_simple_ed25519_creation() {
 			assert_eq!(stored_did.last_tx_counter, 0u64);
 
 			assert_eq!(
-				Balances::reserved_balance(ACCOUNT_00),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
 				<Test as did::Config>::BaseDeposit::get()
 			);
 
-			assert_eq!(Balances::free_balance(ACCOUNT_FEE), <Test as did::Config>::Fee::get());
+			assert_eq!(Balances::balance(&ACCOUNT_FEE), <Test as did::Config>::Fee::get());
 		});
 }
 
@@ -93,7 +96,7 @@ fn check_successful_simple_sr25519_creation() {
 
 	let balance = <Test as did::Config>::BaseDeposit::get()
 		+ <Test as did::Config>::Fee::get()
-		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
+		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.build_and_execute_with_sanity_tests(None, || {
@@ -117,10 +120,10 @@ fn check_successful_simple_sr25519_creation() {
 			assert_eq!(stored_did.last_tx_counter, 0u64);
 
 			assert_eq!(
-				Balances::reserved_balance(ACCOUNT_00),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
 				<Test as did::Config>::BaseDeposit::get()
 			);
-			assert_eq!(Balances::free_balance(ACCOUNT_FEE), <Test as did::Config>::Fee::get());
+			assert_eq!(Balances::balance(&ACCOUNT_FEE), <Test as did::Config>::Fee::get());
 		});
 }
 
@@ -135,7 +138,7 @@ fn check_successful_simple_ecdsa_creation() {
 
 	let balance = <Test as did::Config>::BaseDeposit::get()
 		+ <Test as did::Config>::Fee::get()
-		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
+		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.build_and_execute_with_sanity_tests(None, || {
@@ -159,10 +162,10 @@ fn check_successful_simple_ecdsa_creation() {
 			assert_eq!(stored_did.last_tx_counter, 0u64);
 
 			assert_eq!(
-				Balances::reserved_balance(ACCOUNT_00),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
 				<Test as did::Config>::BaseDeposit::get()
 			);
-			assert_eq!(Balances::free_balance(ACCOUNT_FEE), <Test as did::Config>::Fee::get());
+			assert_eq!(Balances::balance(&ACCOUNT_FEE), <Test as did::Config>::Fee::get());
 		});
 }
 
@@ -206,7 +209,7 @@ fn check_successful_complete_creation() {
 		+ required_balance_for_key_agreement
 		+ <Test as did::Config>::BaseDeposit::get()
 		+ <Test as did::Config>::Fee::get()
-		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
+		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
@@ -275,13 +278,13 @@ fn check_successful_complete_creation() {
 			);
 
 			assert_eq!(
-				Balances::reserved_balance(ACCOUNT_00),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
 				<Test as did::Config>::BaseDeposit::get()
 					+ required_balance_for_endpoint
 					+ required_balance_for_key_agreement
 					+ required_balance_for_keys
 			);
-			assert_eq!(Balances::free_balance(ACCOUNT_FEE), <Test as did::Config>::Fee::get());
+			assert_eq!(Balances::balance(&ACCOUNT_FEE), <Test as did::Config>::Fee::get());
 		});
 }
 
@@ -297,7 +300,9 @@ fn check_deposit_change_by_adding_service_endpoint() {
 	let new_service_endpoint2: DidEndpoint<Test> =
 		DidEndpoint::new(b"id2".to_vec(), vec![b"type2".to_vec()], vec![b"url2".to_vec()]);
 
-	let balance = <Test as did::Config>::BaseDeposit::get() + <Test as did::Config>::ServiceEndpointDeposit::get();
+	let balance = <Test as did::Config>::BaseDeposit::get()
+		+ <Test as did::Config>::ServiceEndpointDeposit::get()
+		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), balance)])
@@ -310,15 +315,18 @@ fn check_deposit_change_by_adding_service_endpoint() {
 			));
 
 			assert_eq!(
-				Balances::reserved_balance(alice_did.clone()),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &alice_did),
 				<Test as did::Config>::ServiceEndpointDeposit::get() + <Test as did::Config>::BaseDeposit::get()
 			);
 
-			assert_eq!(Balances::free_balance(alice_did.clone()), Zero::zero());
+			assert_eq!(
+				Balances::balance(&alice_did),
+				<<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance()
+			);
 
 			assert_noop!(
 				Did::add_service_endpoint(RuntimeOrigin::signed(alice_did.clone()), new_service_endpoint2.clone()),
-				pallet_balances::Error::<Test>::InsufficientBalance
+				TokenError::FundsUnavailable
 			);
 
 			assert!(did::ServiceEndpoints::<Test>::get(alice_did.clone(), new_service_endpoint.id).is_some());
@@ -332,14 +340,14 @@ fn check_duplicate_did_creation() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let auth_did_key = DidVerificationKey::from(auth_key.public());
-	let mock_did = generate_base_did_details::<Test>(auth_did_key, None);
+	let mock_did = generate_base_did_details::<Test>(auth_did_key, Some(ACCOUNT_00));
 	let details = generate_base_did_creation_details::<Test>(alice_did.clone(), ACCOUNT_00);
 
 	let signature = auth_key.sign(details.encode().as_ref());
 
 	let balance = <Test as did::Config>::BaseDeposit::get() * 20
 		+ <Test as did::Config>::Fee::get()
-		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
+		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.with_dids(vec![(alice_did, mock_did)])
@@ -360,15 +368,15 @@ fn check_unauthorised_submitter_did_creation_error() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let auth_did_key = DidVerificationKey::from(auth_key.public());
-	let mock_did = generate_base_did_details::<Test>(auth_did_key, None);
+	let mock_did = generate_base_did_details::<Test>(auth_did_key, Some(ACCOUNT_00));
 	// Use ACCOUNT_01 to generate the DID creation operation
 	let details = generate_base_did_creation_details::<Test>(alice_did.clone(), ACCOUNT_01);
 
 	let signature = auth_key.sign(details.encode().as_ref());
 
-	let balance = <Test as did::Config>::BaseDeposit::get()
+	let balance = <Test as did::Config>::BaseDeposit::get() * 2
 		+ <Test as did::Config>::Fee::get()
-		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
+		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.with_dids(vec![(alice_did, mock_did)])
@@ -415,7 +423,7 @@ fn check_did_already_deleted_creation() {
 
 	let balance = <Test as did::Config>::BaseDeposit::get()
 		+ <Test as did::Config>::Fee::get()
-		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
+		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.with_deleted_dids(vec![alice_did])
@@ -444,7 +452,7 @@ fn check_invalid_signature_format_did_creation() {
 
 	let balance = <Test as did::Config>::BaseDeposit::get()
 		+ <Test as did::Config>::Fee::get()
-		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
+		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.build_and_execute_with_sanity_tests(None, || {
@@ -470,7 +478,7 @@ fn check_invalid_signature_did_creation() {
 
 	let balance = <Test as did::Config>::BaseDeposit::get()
 		+ <Test as did::Config>::Fee::get()
-		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
+		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.build_and_execute_with_sanity_tests(None, || {
@@ -496,7 +504,7 @@ fn check_swapped_did_subject_did_creation() {
 
 	let balance = <Test as did::Config>::BaseDeposit::get()
 		+ <Test as did::Config>::Fee::get()
-		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
+		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.build_and_execute_with_sanity_tests(None, || {
@@ -525,7 +533,7 @@ fn check_max_limit_key_agreement_keys_did_creation() {
 
 	let balance = <Test as did::Config>::BaseDeposit::get()
 		+ <Test as did::Config>::Fee::get()
-		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
+		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.build(None)
@@ -561,7 +569,7 @@ fn check_max_limit_service_endpoints_count_did_creation() {
 	let balance = required_balance_for_service_endpoints
 		+ <Test as did::Config>::BaseDeposit::get()
 		+ <Test as did::Config>::Fee::get()
-		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
+		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.build_and_execute_with_sanity_tests(None, || {
@@ -589,7 +597,7 @@ fn check_max_limit_service_id_length_did_creation() {
 
 	let balance = <Test as did::Config>::BaseDeposit::get()
 		+ <Test as did::Config>::Fee::get()
-		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
+		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.build(None)
@@ -624,7 +632,7 @@ fn check_max_limit_service_type_count_did_creation() {
 
 	let balance = <Test as did::Config>::BaseDeposit::get()
 		+ <Test as did::Config>::Fee::get()
-		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
+		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.build(None)
@@ -653,7 +661,7 @@ fn check_max_limit_service_type_length_did_creation() {
 
 	let balance = <Test as did::Config>::BaseDeposit::get()
 		+ <Test as did::Config>::Fee::get()
-		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
+		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.build(None)
@@ -688,7 +696,7 @@ fn check_max_limit_service_url_count_did_creation() {
 
 	let balance = <Test as did::Config>::BaseDeposit::get()
 		+ <Test as did::Config>::Fee::get()
-		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
+		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.build(None)
@@ -717,7 +725,7 @@ fn check_max_limit_service_url_length_did_creation() {
 
 	let balance = <Test as did::Config>::BaseDeposit::get()
 		+ <Test as did::Config>::Fee::get()
-		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
+		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.build(None)
@@ -746,7 +754,7 @@ fn check_invalid_service_id_character_did_creation() {
 	let balance = <Test as did::Config>::BaseDeposit::get()
 		+ <Test as did::Config>::Fee::get()
 		+ <Test as did::Config>::ServiceEndpointDeposit::get()
-		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
+		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.build_and_execute_with_sanity_tests(None, || {
@@ -774,7 +782,7 @@ fn check_invalid_service_type_character_did_creation() {
 	let balance = <Test as did::Config>::BaseDeposit::get()
 		+ <Test as did::Config>::Fee::get()
 		+ <Test as did::Config>::ServiceEndpointDeposit::get()
-		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
+		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.build_and_execute_with_sanity_tests(None, || {
@@ -802,7 +810,7 @@ fn check_invalid_service_url_character_did_creation() {
 	let balance = <Test as did::Config>::BaseDeposit::get()
 		+ <Test as did::Config>::ServiceEndpointDeposit::get()
 		+ <Test as did::Config>::Fee::get()
-		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
+		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.build_and_execute_with_sanity_tests(None, || {
@@ -1128,7 +1136,8 @@ fn check_max_public_keys_delegation_key_addition_error() {
 	let new_del_key = get_sr25519_delegation_key(false);
 	let key_agreement_keys = get_key_agreement_keys::<Test>(MaxTotalKeyAgreementKeys::get());
 
-	let mut did_details = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), None);
+	let mut did_details =
+		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(alice_did.clone()));
 	assert_ok!(did_details.add_key_agreement_keys(key_agreement_keys, 0u64,));
 
 	// Fill public key map to its max by adding
@@ -1139,6 +1148,7 @@ fn check_max_public_keys_delegation_key_addition_error() {
 
 	// Update delegation key. The old one should be removed.
 	ExtBuilder::default()
+		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(alice_did.clone(), did_details)])
 		.build_and_execute_with_sanity_tests(None, || {
 			System::set_block_number(new_block_number);
@@ -1160,7 +1170,8 @@ fn check_max_public_keys_reused_key_delegation_key_update_error() {
 	let new_del_key = get_sr25519_delegation_key(true);
 	let key_agreement_keys = get_key_agreement_keys::<Test>(MaxTotalKeyAgreementKeys::get());
 
-	let mut did_details = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), None);
+	let mut did_details =
+		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(alice_did.clone()));
 	assert_ok!(did_details.add_key_agreement_keys(key_agreement_keys, 0u64,));
 	// Same key for auth and delegation
 	assert_ok!(did_details.update_delegation_key(DidVerificationKey::from(old_del_key.public()), 0u64));
@@ -1175,6 +1186,7 @@ fn check_max_public_keys_reused_key_delegation_key_update_error() {
 	// as authentication key.
 	ExtBuilder::default()
 		.with_dids(vec![(alice_did.clone(), did_details)])
+		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.build_and_execute_with_sanity_tests(None, || {
 			System::set_block_number(new_block_number);
 			assert_noop!(
@@ -1279,9 +1291,11 @@ fn check_key_not_present_delegation_key_deletion_error() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 
-	let old_did_details = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), None);
+	let old_did_details =
+		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(alice_did.clone()));
 
 	ExtBuilder::default()
+		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_noop!(
@@ -1417,7 +1431,8 @@ fn check_max_public_keys_attestation_key_addition_error() {
 	let new_att_key = get_sr25519_attestation_key(false);
 	let key_agreement_keys = get_key_agreement_keys::<Test>(MaxTotalKeyAgreementKeys::get());
 
-	let mut did_details = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), None);
+	let mut did_details =
+		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(alice_did.clone()));
 	assert_ok!(did_details.add_key_agreement_keys(key_agreement_keys, 0u64,));
 
 	// Fill public key map to its max by adding
@@ -1428,6 +1443,7 @@ fn check_max_public_keys_attestation_key_addition_error() {
 
 	// Update attestation key. The old one should be removed.
 	ExtBuilder::default()
+		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(alice_did.clone(), did_details)])
 		.build_and_execute_with_sanity_tests(None, || {
 			System::set_block_number(new_block_number);
@@ -1449,7 +1465,8 @@ fn check_max_public_keys_reused_key_attestation_key_update_error() {
 	let new_att_key = get_sr25519_delegation_key(true);
 	let key_agreement_keys = get_key_agreement_keys::<Test>(MaxTotalKeyAgreementKeys::get());
 
-	let mut did_details = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), None);
+	let mut did_details =
+		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(alice_did.clone()));
 	assert_ok!(did_details.add_key_agreement_keys(key_agreement_keys, 0u64,));
 	// Same key for auth and attestation
 	assert_ok!(did_details.update_attestation_key(DidVerificationKey::from(old_att_key.public()), 0u64));
@@ -1463,6 +1480,7 @@ fn check_max_public_keys_reused_key_attestation_key_update_error() {
 	// Update attestation key. The old one should not be removed as it is still used
 	// as authentication key.
 	ExtBuilder::default()
+		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(alice_did.clone(), did_details)])
 		.build_and_execute_with_sanity_tests(None, || {
 			System::set_block_number(new_block_number);
@@ -1567,9 +1585,11 @@ fn check_key_not_present_attestation_key_deletion_error() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 
-	let old_did_details = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), None);
+	let old_did_details =
+		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(alice_did.clone()));
 
 	ExtBuilder::default()
+		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_noop!(
@@ -1621,7 +1641,8 @@ fn check_max_public_keys_key_agreement_key_addition_error() {
 	let key_agreement_keys = get_key_agreement_keys::<Test>(MaxTotalKeyAgreementKeys::get());
 	let new_key_agreement_key = get_x25519_encryption_key(true);
 
-	let mut did_details = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), None);
+	let mut did_details =
+		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(alice_did.clone()));
 	assert_ok!(did_details.add_key_agreement_keys(key_agreement_keys, 0u64,));
 
 	// Fill public key map to its max by adding
@@ -1631,6 +1652,7 @@ fn check_max_public_keys_key_agreement_key_addition_error() {
 	let new_block_number: BlockNumber = 1;
 
 	ExtBuilder::default()
+		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(alice_did.clone(), did_details)])
 		.build_and_execute_with_sanity_tests(None, || {
 			System::set_block_number(new_block_number);
@@ -1711,9 +1733,11 @@ fn check_key_not_found_key_agreement_key_deletion_error() {
 	let test_enc_key = get_x25519_encryption_key(true);
 
 	// No enc key added
-	let old_did_details = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), None);
+	let old_did_details =
+		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(alice_did.clone()));
 
 	ExtBuilder::default()
+		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_noop!(
@@ -1849,7 +1873,8 @@ fn check_max_services_count_addition_error() {
 	);
 	let new_service_endpoint = DidEndpoint::new(b"id".to_vec(), vec![b"type".to_vec()], vec![b"url".to_vec()]);
 
-	let old_did_details = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), None);
+	let old_did_details =
+		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(alice_did.clone()));
 
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
@@ -2029,7 +2054,8 @@ fn check_invalid_service_type_character_addition_error() {
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let new_service_details = DidEndpoint::new(b"id".to_vec(), vec!["å".bytes().collect()], vec![b"url".to_vec()]);
 
-	let old_did_details = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), None);
+	let old_did_details =
+		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(alice_did.clone()));
 
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
@@ -2048,9 +2074,11 @@ fn check_invalid_service_url_character_addition_error() {
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let new_service_details = DidEndpoint::new(b"id".to_vec(), vec![b"type".to_vec()], vec!["å".bytes().collect()]);
 
-	let old_did_details = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), None);
+	let old_did_details =
+		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(alice_did.clone()));
 
 	ExtBuilder::default()
+		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
 		.build_and_execute_with_sanity_tests(None, || {
@@ -2097,10 +2125,12 @@ fn check_service_not_present_deletion_error() {
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let service_id = b"id".to_vec();
 
-	let old_did_details = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), None);
+	let old_did_details =
+		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(alice_did.clone()));
 
 	ExtBuilder::default()
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
+		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_noop!(
 				Did::remove_service_endpoint(
@@ -2125,7 +2155,7 @@ fn check_successful_deletion_no_endpoints() {
 
 	let balance = <Test as did::Config>::BaseDeposit::get() * 2
 		+ <Test as did::Config>::Fee::get() * 2
-		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
+		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
@@ -2133,13 +2163,13 @@ fn check_successful_deletion_no_endpoints() {
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_eq!(did::pallet::DidEndpointsCount::<Test>::get(&alice_did), 0);
 			assert_eq!(
-				Balances::reserved_balance(ACCOUNT_00),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
 				<Test as did::Config>::BaseDeposit::get()
 			);
 			assert_ok!(Did::delete(RuntimeOrigin::signed(alice_did.clone()), 0));
 			assert!(Did::get_did(alice_did.clone()).is_none());
 			assert!(Did::get_deleted_did(alice_did.clone()).is_some());
-			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
+			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00).is_zero());
 
 			assert_eq!(did::pallet::DidEndpointsCount::<Test>::get(&alice_did), 0);
 
@@ -2171,7 +2201,7 @@ fn check_successful_deletion_with_endpoints() {
 
 	let balance = <Test as did::Config>::BaseDeposit::get() * 2
 		+ <Test as did::Config>::Fee::get() * 2
-		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
+		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
@@ -2180,13 +2210,13 @@ fn check_successful_deletion_with_endpoints() {
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_eq!(did::pallet::DidEndpointsCount::<Test>::get(&alice_did), 1);
 			assert_eq!(
-				Balances::reserved_balance(ACCOUNT_00),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
 				<Test as did::Config>::BaseDeposit::get()
 			);
 			assert_ok!(Did::delete(RuntimeOrigin::signed(alice_did.clone()), 1));
 			assert!(Did::get_did(alice_did.clone()).is_none());
 			assert!(Did::get_deleted_did(alice_did.clone()).is_some());
-			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
+			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00).is_zero());
 
 			assert_eq!(did::pallet::DidEndpointsCount::<Test>::get(&alice_did), 0);
 
@@ -2213,7 +2243,7 @@ fn check_did_not_present_deletion() {
 
 	let balance = <Test as did::Config>::BaseDeposit::get()
 		+ <Test as did::Config>::Fee::get()
-		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
+		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.build_and_execute_with_sanity_tests(None, || {
@@ -2236,7 +2266,7 @@ fn check_service_count_too_small_deletion_error() {
 
 	let balance = <Test as did::Config>::BaseDeposit::get() * 2
 		+ <Test as did::Config>::Fee::get() * 2
-		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
+		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
@@ -2263,7 +2293,7 @@ fn check_successful_reclaiming() {
 
 	let balance = <Test as did::Config>::BaseDeposit::get() * 2
 		+ <Test as did::Config>::Fee::get() * 2
-		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
+		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
@@ -2272,7 +2302,7 @@ fn check_successful_reclaiming() {
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_eq!(did::pallet::DidEndpointsCount::<Test>::get(&alice_did), 1);
 			assert_eq!(
-				Balances::reserved_balance(ACCOUNT_00),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
 				<Test as did::Config>::BaseDeposit::get()
 			);
 			assert_ok!(Did::reclaim_deposit(
@@ -2282,7 +2312,7 @@ fn check_successful_reclaiming() {
 			));
 			assert!(Did::get_did(alice_did.clone()).is_none());
 			assert!(Did::get_deleted_did(alice_did.clone()).is_some());
-			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
+			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00).is_zero());
 			assert_eq!(did::pallet::DidEndpointsCount::<Test>::get(&alice_did), 0);
 
 			// Re-adding the same DID identifier should fail.
@@ -2311,14 +2341,14 @@ fn unauthorized_reclaiming() {
 
 	let balance = <Test as did::Config>::BaseDeposit::get()
 		+ <Test as did::Config>::Fee::get()
-		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
+		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.with_dids(vec![(alice_did.clone(), did_details)])
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_eq!(
-				Balances::reserved_balance(ACCOUNT_00),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
 				<Test as did::Config>::BaseDeposit::get()
 			);
 			assert_noop!(
@@ -2340,7 +2370,7 @@ fn check_service_count_too_small_reclaim_error() {
 
 	let balance = <Test as did::Config>::BaseDeposit::get() * 2
 		+ <Test as did::Config>::Fee::get() * 2
-		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
+		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
@@ -2383,7 +2413,8 @@ fn check_too_small_tx_counter_after_wrap_call_error() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let caller = ACCOUNT_00;
-	let mut mock_did = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), None);
+	let mut mock_did =
+		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(did.clone()));
 	// After wrapping tx_counter becomes 0 again.
 	mock_did.last_tx_counter = 0u64;
 
@@ -2396,6 +2427,7 @@ fn check_too_small_tx_counter_after_wrap_call_error() {
 	let signature = auth_key.sign(call_operation.encode().as_ref());
 
 	ExtBuilder::default()
+		.with_balances(vec![(did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(did, mock_did)])
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_noop!(
@@ -2414,7 +2446,8 @@ fn check_too_small_tx_counter_call_error() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let caller = ACCOUNT_00;
-	let mut mock_did = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), None);
+	let mut mock_did =
+		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(did.clone()));
 	mock_did.last_tx_counter = 1u64;
 
 	let mut call_operation = generate_test_did_call(
@@ -2426,6 +2459,7 @@ fn check_too_small_tx_counter_call_error() {
 	let signature = auth_key.sign(call_operation.encode().as_ref());
 
 	ExtBuilder::default()
+		.with_balances(vec![(did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(did, mock_did)])
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_noop!(
@@ -2444,7 +2478,7 @@ fn check_equal_tx_counter_call_error() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let caller = ACCOUNT_00;
-	let mock_did = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), None);
+	let mock_did = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(did.clone()));
 
 	let mut call_operation = generate_test_did_call(
 		DidVerificationKeyRelationship::Authentication,
@@ -2455,6 +2489,7 @@ fn check_equal_tx_counter_call_error() {
 	let signature = auth_key.sign(call_operation.encode().as_ref());
 
 	ExtBuilder::default()
+		.with_balances(vec![(did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(did, mock_did)])
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_noop!(
@@ -2473,7 +2508,7 @@ fn check_too_large_tx_counter_call_error() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let caller = ACCOUNT_00;
-	let mock_did = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), None);
+	let mock_did = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(did.clone()));
 
 	let mut call_operation = generate_test_did_call(
 		DidVerificationKeyRelationship::Authentication,
@@ -2484,6 +2519,7 @@ fn check_too_large_tx_counter_call_error() {
 	let signature = auth_key.sign(call_operation.encode().as_ref());
 
 	ExtBuilder::default()
+		.with_balances(vec![(did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(did, mock_did)])
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_noop!(
@@ -2503,7 +2539,7 @@ fn check_tx_block_number_too_low_error() {
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let caller = ACCOUNT_00;
 
-	let mock_did = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), None);
+	let mock_did = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(did.clone()));
 
 	let call_operation = generate_test_did_call(
 		DidVerificationKeyRelationship::Authentication,
@@ -2513,6 +2549,7 @@ fn check_tx_block_number_too_low_error() {
 	let signature = auth_key.sign(call_operation.encode().as_ref());
 
 	ExtBuilder::default()
+		.with_balances(vec![(did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(did, mock_did)])
 		.build_and_execute_with_sanity_tests(None, || {
 			// System block number 1 past the max block the operation was allowed for.
@@ -2542,7 +2579,7 @@ fn check_tx_block_number_too_high_error() {
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let caller = ACCOUNT_00;
 
-	let mock_did = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), None);
+	let mock_did = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(did.clone()));
 
 	let mut call_operation = generate_test_did_call(
 		DidVerificationKeyRelationship::Authentication,
@@ -2554,6 +2591,7 @@ fn check_tx_block_number_too_high_error() {
 	let signature = auth_key.sign(call_operation.encode().as_ref());
 
 	ExtBuilder::default()
+		.with_balances(vec![(did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(did, mock_did)])
 		.build_and_execute_with_sanity_tests(None, || {
 			// System block number is still too low, meaning that the block number used in
@@ -2575,7 +2613,7 @@ fn check_verification_key_not_present_call_error() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let caller = ACCOUNT_00;
-	let mock_did = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), None);
+	let mock_did = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(did.clone()));
 
 	// The operation requires the delegation key that is currently not stored for
 	// the given DID.
@@ -2587,7 +2625,8 @@ fn check_verification_key_not_present_call_error() {
 	let signature = auth_key.sign(call_operation.encode().as_ref());
 
 	ExtBuilder::default()
-		.with_dids(vec![(did, mock_did)])
+		.with_dids(vec![(did.clone(), mock_did)])
+		.with_balances(vec![(did, DEFAULT_BALANCE)])
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_noop!(
 				Did::submit_did_call(
@@ -2606,7 +2645,7 @@ fn check_invalid_signature_format_call_error() {
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let caller = ACCOUNT_00;
 	let alternative_auth_key = get_ed25519_authentication_key(true);
-	let mock_did = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), None);
+	let mock_did = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(did.clone()));
 
 	let call_operation = generate_test_did_call(
 		DidVerificationKeyRelationship::Authentication,
@@ -2616,6 +2655,7 @@ fn check_invalid_signature_format_call_error() {
 	let signature = alternative_auth_key.sign(call_operation.encode().as_ref());
 
 	ExtBuilder::default()
+		.with_balances(vec![(did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(did, mock_did)])
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_noop!(
@@ -2635,7 +2675,7 @@ fn check_bad_submitter_error() {
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let caller = ACCOUNT_00;
 	let alternative_auth_key = get_sr25519_authentication_key(false);
-	let mock_did = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), None);
+	let mock_did = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(did.clone()));
 
 	let submitter = ACCOUNT_01;
 
@@ -2643,7 +2683,8 @@ fn check_bad_submitter_error() {
 	let signature = alternative_auth_key.sign(call_operation.encode().as_ref());
 
 	ExtBuilder::default()
-		.with_dids(vec![(did, mock_did)])
+		.with_dids(vec![(did.clone(), mock_did)])
+		.with_balances(vec![(did, DEFAULT_BALANCE)])
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_noop!(
 				Did::submit_did_call(
@@ -2662,7 +2703,7 @@ fn check_invalid_signature_call_error() {
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let caller = ACCOUNT_00;
 	let alternative_auth_key = get_sr25519_authentication_key(false);
-	let mock_did = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), None);
+	let mock_did = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(did.clone()));
 
 	let call_operation = generate_test_did_call(
 		DidVerificationKeyRelationship::Authentication,
@@ -2672,6 +2713,7 @@ fn check_invalid_signature_call_error() {
 	let signature = alternative_auth_key.sign(call_operation.encode().as_ref());
 
 	ExtBuilder::default()
+		.with_balances(vec![(did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(did, mock_did)])
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_noop!(
@@ -2692,7 +2734,8 @@ fn check_call_attestation_key_successful() {
 	let caller = ACCOUNT_00;
 	let attestation_key = get_ed25519_attestation_key(true);
 
-	let mut mock_did = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), None);
+	let mut mock_did =
+		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(did.clone()));
 	assert_ok!(mock_did.update_attestation_key(DidVerificationKey::from(attestation_key.public()), 0));
 
 	let call_operation = generate_test_did_call(
@@ -2703,6 +2746,7 @@ fn check_call_attestation_key_successful() {
 	let signature = attestation_key.sign(call_operation.encode().as_ref());
 
 	ExtBuilder::default()
+		.with_balances(vec![(did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(did, mock_did)])
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_ok!(Did::submit_did_call(
@@ -2720,7 +2764,8 @@ fn check_call_attestation_key_error() {
 	let caller = ACCOUNT_00;
 	let attestation_key = get_ed25519_attestation_key(true);
 
-	let mut mock_did = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), None);
+	let mut mock_did =
+		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(did.clone()));
 	assert_ok!(mock_did.update_attestation_key(DidVerificationKey::from(attestation_key.public()), 0));
 
 	let call_operation = generate_test_did_call(
@@ -2731,6 +2776,7 @@ fn check_call_attestation_key_error() {
 	let signature = attestation_key.sign(call_operation.encode().as_ref());
 
 	ExtBuilder::default()
+		.with_balances(vec![(did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(did.clone(), mock_did)])
 		.with_ctypes(vec![(
 			<Test as frame_system::Config>::Hashing::hash(&get_attestation_key_test_input()[..]),
@@ -2755,7 +2801,8 @@ fn check_call_delegation_key_successful() {
 	let caller = ACCOUNT_00;
 	let delegation_key = get_ed25519_delegation_key(true);
 
-	let mut mock_did = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), None);
+	let mut mock_did =
+		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(caller.clone()));
 	assert_ok!(mock_did.update_delegation_key(DidVerificationKey::from(delegation_key.public()), 0));
 
 	let call_operation = generate_test_did_call(
@@ -2767,6 +2814,7 @@ fn check_call_delegation_key_successful() {
 
 	ExtBuilder::default()
 		.with_dids(vec![(did, mock_did)])
+		.with_balances(vec![(caller.clone(), DEFAULT_BALANCE)])
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_ok!(Did::submit_did_call(
 				RuntimeOrigin::signed(caller),
@@ -2783,7 +2831,8 @@ fn check_call_delegation_key_error() {
 	let caller = ACCOUNT_00;
 	let delegation_key = get_ed25519_delegation_key(true);
 
-	let mut mock_did = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), None);
+	let mut mock_did =
+		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(did.clone()));
 	assert_ok!(mock_did.update_delegation_key(DidVerificationKey::from(delegation_key.public()), 0));
 
 	let call_operation = generate_test_did_call(
@@ -2794,6 +2843,7 @@ fn check_call_delegation_key_error() {
 	let signature = delegation_key.sign(call_operation.encode().as_ref());
 
 	ExtBuilder::default()
+		.with_balances(vec![(did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(did.clone(), mock_did)])
 		.with_ctypes(vec![(
 			<Test as frame_system::Config>::Hashing::hash(&get_delegation_key_test_input()[..]),
@@ -2817,7 +2867,7 @@ fn check_call_authentication_key_successful() {
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let caller = ACCOUNT_00;
 
-	let mock_did = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), None);
+	let mock_did = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(did.clone()));
 
 	let call_operation = generate_test_did_call(
 		DidVerificationKeyRelationship::Authentication,
@@ -2827,6 +2877,7 @@ fn check_call_authentication_key_successful() {
 	let signature = auth_key.sign(call_operation.encode().as_ref());
 
 	ExtBuilder::default()
+		.with_balances(vec![(did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(did, mock_did)])
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_ok!(Did::submit_did_call(
@@ -2843,7 +2894,7 @@ fn check_call_authentication_key_error() {
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let caller = ACCOUNT_00;
 
-	let mock_did = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), None);
+	let mock_did = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(did.clone()));
 
 	let call_operation = generate_test_did_call(
 		DidVerificationKeyRelationship::Authentication,
@@ -2854,6 +2905,7 @@ fn check_call_authentication_key_error() {
 
 	ExtBuilder::default()
 		.with_dids(vec![(did.clone(), mock_did)])
+		.with_balances(vec![(did.clone(), DEFAULT_BALANCE)])
 		.with_ctypes(vec![(
 			<Test as frame_system::Config>::Hashing::hash(&get_authentication_key_test_input()[..]),
 			did,
@@ -2904,14 +2956,15 @@ fn check_authentication_successful_operation_verification() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
 
-	let mock_did = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), None);
+	let mock_did = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(did.clone()));
 
 	let call_operation =
 		generate_test_did_call(DidVerificationKeyRelationship::Authentication, did.clone(), ACCOUNT_00);
 	let signature = auth_key.sign(call_operation.encode().as_ref());
 
 	ExtBuilder::default()
-		.with_dids(vec![(did, mock_did.clone())])
+		.with_dids(vec![(did.clone(), mock_did.clone())])
+		.with_balances(vec![(did, DEFAULT_BALANCE)])
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_ok!(Did::verify_did_operation_signature_and_increase_nonce(
 				&call_operation,
@@ -2929,7 +2982,8 @@ fn check_attestation_successful_operation_verification() {
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let attestation_key = get_ed25519_attestation_key(true);
 
-	let mut mock_did = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), None);
+	let mut mock_did =
+		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(did.clone()));
 	assert_ok!(mock_did.update_attestation_key(DidVerificationKey::from(attestation_key.public()), 0));
 
 	let call_operation =
@@ -2937,7 +2991,8 @@ fn check_attestation_successful_operation_verification() {
 	let signature = attestation_key.sign(call_operation.encode().as_ref());
 
 	ExtBuilder::default()
-		.with_dids(vec![(did, mock_did.clone())])
+		.with_dids(vec![(did.clone(), mock_did.clone())])
+		.with_balances(vec![(did, DEFAULT_BALANCE)])
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_ok!(Did::verify_did_operation_signature_and_increase_nonce(
 				&call_operation,
@@ -2955,7 +3010,8 @@ fn check_delegation_successful_operation_verification() {
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let delegation_key = get_ecdsa_delegation_key(true);
 
-	let mut mock_did = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), None);
+	let mut mock_did =
+		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(did.clone()));
 	assert_ok!(mock_did.update_delegation_key(DidVerificationKey::from(delegation_key.public()), 0));
 
 	let call_operation = generate_test_did_call(
@@ -2966,6 +3022,7 @@ fn check_delegation_successful_operation_verification() {
 	let signature = delegation_key.sign(call_operation.encode().as_ref());
 
 	ExtBuilder::default()
+		.with_balances(vec![(did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(did, mock_did.clone())])
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_ok!(Did::verify_did_operation_signature_and_increase_nonce(
@@ -3002,7 +3059,8 @@ fn check_tx_counter_wrap_operation_verification() {
 	let auth_key = get_sr25519_authentication_key(true);
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
 
-	let mut mock_did = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), None);
+	let mut mock_did =
+		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(did.clone()));
 	mock_did.last_tx_counter = u64::MAX;
 
 	let mut call_operation =
@@ -3012,7 +3070,8 @@ fn check_tx_counter_wrap_operation_verification() {
 	let signature = auth_key.sign(call_operation.encode().as_ref());
 
 	ExtBuilder::default()
-		.with_dids(vec![(did, mock_did)])
+		.with_dids(vec![(did.clone(), mock_did)])
+		.with_balances(vec![(did, DEFAULT_BALANCE)])
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_ok!(Did::verify_did_operation_signature_and_increase_nonce(
 				&call_operation,
@@ -3029,7 +3088,8 @@ fn check_smaller_counter_operation_verification() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let did = get_did_identifier_from_ed25519_key(auth_key.public());
 
-	let mut mock_did = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), None);
+	let mut mock_did =
+		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(did.clone()));
 	mock_did.last_tx_counter = 1;
 
 	let mut call_operation = generate_test_did_call(
@@ -3041,7 +3101,8 @@ fn check_smaller_counter_operation_verification() {
 	let signature = auth_key.sign(call_operation.encode().as_ref());
 
 	ExtBuilder::default()
-		.with_dids(vec![(did, mock_did)])
+		.with_dids(vec![(did.clone(), mock_did)])
+		.with_balances(vec![(did, DEFAULT_BALANCE)])
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_noop!(
 				Did::verify_did_operation_signature_and_increase_nonce(
@@ -3058,7 +3119,7 @@ fn check_equal_counter_operation_verification() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let did = get_did_identifier_from_ed25519_key(auth_key.public());
 
-	let mock_did = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), None);
+	let mock_did = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(did.clone()));
 
 	let mut call_operation = generate_test_did_call(
 		DidVerificationKeyRelationship::CapabilityDelegation,
@@ -3069,6 +3130,7 @@ fn check_equal_counter_operation_verification() {
 	let signature = auth_key.sign(call_operation.encode().as_ref());
 
 	ExtBuilder::default()
+		.with_balances(vec![(did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(did, mock_did)])
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_noop!(
@@ -3086,7 +3148,7 @@ fn check_too_large_counter_operation_verification() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let did = get_did_identifier_from_ed25519_key(auth_key.public());
 
-	let mock_did = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), None);
+	let mock_did = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(did.clone()));
 
 	let mut call_operation = generate_test_did_call(
 		DidVerificationKeyRelationship::CapabilityDelegation,
@@ -3097,7 +3159,8 @@ fn check_too_large_counter_operation_verification() {
 	let signature = auth_key.sign(call_operation.encode().as_ref());
 
 	ExtBuilder::default()
-		.with_dids(vec![(did, mock_did)])
+		.with_dids(vec![(did.clone(), mock_did)])
+		.with_balances(vec![(did, DEFAULT_BALANCE)])
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_noop!(
 				Did::verify_did_operation_signature_and_increase_nonce(
@@ -3114,13 +3177,14 @@ fn check_verification_key_not_present_operation_verification() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let did = get_did_identifier_from_ed25519_key(auth_key.public());
 
-	let mock_did = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), None);
+	let mock_did = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(did.clone()));
 
 	let call_operation =
 		generate_test_did_call(DidVerificationKeyRelationship::AssertionMethod, did.clone(), ACCOUNT_00);
 	let signature = auth_key.sign(call_operation.encode().as_ref());
 
 	ExtBuilder::default()
+		.with_balances(vec![(did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(did, mock_did)])
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_noop!(
@@ -3142,13 +3206,14 @@ fn check_invalid_signature_format_operation_verification() {
 	// Expected an Sr25519, given an Ed25519
 	let invalid_key = get_ed25519_authentication_key(true);
 
-	let mock_did = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), None);
+	let mock_did = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(did.clone()));
 
 	let call_operation =
 		generate_test_did_call(DidVerificationKeyRelationship::Authentication, did.clone(), ACCOUNT_00);
 	let signature = invalid_key.sign(call_operation.encode().as_ref());
 
 	ExtBuilder::default()
+		.with_balances(vec![(did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(did, mock_did)])
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_noop!(
@@ -3168,13 +3233,14 @@ fn check_invalid_signature_operation_verification() {
 	// Using same key type but different seed (default = false)
 	let alternative_key = get_sr25519_authentication_key(false);
 
-	let mock_did = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), None);
+	let mock_did = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(did.clone()));
 
 	let call_operation =
 		generate_test_did_call(DidVerificationKeyRelationship::Authentication, did.clone(), ACCOUNT_00);
 	let signature = alternative_key.sign(&call_operation.encode());
 
 	ExtBuilder::default()
+		.with_balances(vec![(did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(did, mock_did)])
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_noop!(
@@ -3194,26 +3260,27 @@ fn check_invalid_signature_operation_verification() {
 fn test_change_deposit_owner() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
-	let mut did_details = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), None);
+	let mut did_details =
+		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(alice_did.clone()));
 	did_details.deposit.owner = ACCOUNT_00;
 	did_details.deposit.amount = <Test as did::Config>::BaseDeposit::get();
 
 	let balance = <Test as did::Config>::BaseDeposit::get() * 2
 		+ <Test as did::Config>::Fee::get() * 2
-		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
+		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance), (alice_did.clone(), balance)])
 		.with_dids(vec![(alice_did.clone(), did_details)])
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_eq!(
-				Balances::reserved_balance(ACCOUNT_00),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
 				<Test as did::Config>::BaseDeposit::get()
 			);
 			assert_ok!(Did::change_deposit_owner(RuntimeOrigin::signed(alice_did.clone())));
-			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
+			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00).is_zero());
 			assert_eq!(
-				Balances::reserved_balance(alice_did),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &alice_did),
 				<Test as did::Config>::BaseDeposit::get()
 			);
 		});
@@ -3223,13 +3290,14 @@ fn test_change_deposit_owner() {
 fn test_change_deposit_owner_insufficient_balance() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
-	let mut did_details = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), None);
+	let mut did_details =
+		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(ACCOUNT_00));
 	did_details.deposit.owner = ACCOUNT_00;
 	did_details.deposit.amount = <Test as did::Config>::BaseDeposit::get();
 
 	let balance = <Test as did::Config>::BaseDeposit::get() * 2
 		+ <Test as did::Config>::Fee::get() * 2
-		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
+		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
@@ -3237,7 +3305,7 @@ fn test_change_deposit_owner_insufficient_balance() {
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_noop!(
 				Did::change_deposit_owner(RuntimeOrigin::signed(alice_did.clone())),
-				pallet_balances::Error::<Test>::InsufficientBalance
+				TokenError::CannotCreateHold
 			);
 		});
 }
@@ -3249,7 +3317,7 @@ fn test_change_deposit_owner_not_found() {
 
 	let balance = <Test as did::Config>::BaseDeposit::get() * 2
 		+ <Test as did::Config>::Fee::get() * 2
-		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
+		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), balance)])
@@ -3270,7 +3338,7 @@ fn test_change_deposit_owner_not_authorized() {
 
 	let balance = <Test as did::Config>::BaseDeposit::get() * 2
 		+ <Test as did::Config>::Fee::get() * 2
-		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
+		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did, balance), (bob_did.clone(), balance)])
@@ -3293,14 +3361,14 @@ fn test_update_deposit() {
 
 	let balance = <Test as did::Config>::BaseDeposit::get() * 2
 		+ <Test as did::Config>::Fee::get() * 2
-		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
+		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), balance)])
 		.with_dids(vec![(alice_did.clone(), did_details)])
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_eq!(
-				Balances::reserved_balance(alice_did.clone()),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &alice_did),
 				<Test as did::Config>::BaseDeposit::get() * 2
 			);
 
@@ -3310,7 +3378,7 @@ fn test_update_deposit() {
 			));
 
 			assert_eq!(
-				Balances::reserved_balance(alice_did.clone()),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &alice_did),
 				<Test as did::Config>::BaseDeposit::get()
 			);
 
@@ -3318,7 +3386,7 @@ fn test_update_deposit() {
 				Did::get_did(&alice_did)
 					.expect("DID should be present on chain.")
 					.deposit,
-				kilt_support::deposit::Deposit {
+				kilt_support::Deposit {
 					owner: alice_did,
 					amount: <Test as did::Config>::BaseDeposit::get(),
 				}
@@ -3340,14 +3408,14 @@ fn test_update_deposit_unauthorized() {
 
 	let balance = <Test as did::Config>::BaseDeposit::get() * 2
 		+ <Test as did::Config>::Fee::get() * 2
-		+ <<Test as did::Config>::Currency as Currency<did::AccountIdOf<Test>>>::minimum_balance();
+		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), balance)])
 		.with_dids(vec![(alice_did.clone(), did_details)])
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_eq!(
-				Balances::reserved_balance(alice_did.clone()),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &alice_did),
 				<Test as did::Config>::BaseDeposit::get() * 2
 			);
 			assert_noop!(

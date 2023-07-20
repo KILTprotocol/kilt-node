@@ -21,12 +21,14 @@
 use std::{convert::TryInto, iter};
 
 use frame_support::{
-	assert_noop, assert_ok, storage::bounded_btree_map::BoundedBTreeMap, traits::EstimateNextSessionRotation,
+	assert_noop, assert_ok,
+	storage::bounded_btree_map::BoundedBTreeMap,
+	traits::{fungible::Inspect, EstimateNextSessionRotation},
 	BoundedVec,
 };
 use kilt_runtime_api_staking::StakingRates;
 use pallet_authorship::EventHandler;
-use pallet_balances::{BalanceLock, Error as BalancesError, Reasons};
+use pallet_balances::{Error as BalancesError, Freezes, IdAmount};
 use pallet_session::{SessionManager, ShouldEndSession};
 use sp_runtime::{traits::Zero, Perbill, Permill, Perquintill, SaturatedConversion};
 
@@ -39,7 +41,7 @@ use crate::{
 	types::{
 		BalanceOf, Candidate, CandidateStatus, DelegationCounter, Delegator, RoundInfo, Stake, StakeOf, TotalStake,
 	},
-	CandidatePool, Config, Error, Event, Event as StakeEvent, InflationInfo, RewardRate, StakingInfo, STAKING_ID,
+	CandidatePool, Config, Error, Event, Event as StakeEvent, FreezeReason, InflationInfo, RewardRate, StakingInfo,
 };
 
 #[test]
@@ -114,7 +116,7 @@ fn genesis() {
 
 			// 1
 			assert_eq!(Balances::usable_balance(1), 500);
-			assert_eq!(Balances::free_balance(1), 1000);
+			assert_eq!(Balances::balance(&1), 1000);
 			assert!(StakePallet::is_active_candidate(&1).is_some());
 			assert_eq!(
 				StakePallet::candidate_pool(1),
@@ -137,7 +139,7 @@ fn genesis() {
 			);
 			// 2
 			assert_eq!(Balances::usable_balance(2), 100);
-			assert_eq!(Balances::free_balance(2), 300);
+			assert_eq!(Balances::balance(&2), 300);
 			assert!(StakePallet::is_active_candidate(&2).is_some());
 			assert_eq!(
 				StakePallet::candidate_pool(2),
@@ -169,17 +171,17 @@ fn genesis() {
 			for x in 3..7 {
 				assert!(StakePallet::is_delegator(&x));
 				assert_eq!(Balances::usable_balance(x), 0);
-				assert_eq!(Balances::free_balance(x), 100);
+				assert_eq!(Balances::balance(&x), 100);
 			}
 			// Uninvolved
 			for x in 7..10 {
 				assert!(!StakePallet::is_delegator(&x));
 			}
-			assert_eq!(Balances::free_balance(7), 100);
+			assert_eq!(Balances::balance(&7), 100);
 			assert_eq!(Balances::usable_balance(7), 100);
-			assert_eq!(Balances::free_balance(8), 9);
+			assert_eq!(Balances::balance(&8), 9);
 			assert_eq!(Balances::usable_balance(8), 9);
-			assert_eq!(Balances::free_balance(9), 4);
+			assert_eq!(Balances::balance(&9), 4);
 			assert_eq!(Balances::usable_balance(9), 4);
 
 			// Safety first checks
@@ -232,16 +234,16 @@ fn genesis() {
 			);
 			for x in 1..5 {
 				assert!(StakePallet::is_active_candidate(&x).is_some());
-				assert_eq!(Balances::free_balance(x), 100);
+				assert_eq!(Balances::balance(&x), 100);
 				assert_eq!(Balances::usable_balance(x), 80);
 			}
 			assert!(StakePallet::is_active_candidate(&5).is_some());
-			assert_eq!(Balances::free_balance(5), 100);
+			assert_eq!(Balances::balance(&5), 100);
 			assert_eq!(Balances::usable_balance(5), 90);
 			// Delegators
 			for x in 6..11 {
 				assert!(StakePallet::is_delegator(&x));
-				assert_eq!(Balances::free_balance(x), 100);
+				assert_eq!(Balances::balance(&x), 100);
 				assert_eq!(Balances::usable_balance(x), 90);
 			}
 
@@ -973,8 +975,8 @@ fn multiple_delegations() {
 			assert_eq!(StakePallet::delegator_state(17).unwrap().amount, 11);
 			assert_eq!(Balances::usable_balance(8), 90);
 			assert_eq!(Balances::usable_balance(17), 89);
-			assert_eq!(Balances::free_balance(8), 100);
-			assert_eq!(Balances::free_balance(17), 100);
+			assert_eq!(Balances::balance(&8), 100);
+			assert_eq!(Balances::balance(&17), 100);
 
 			roll_to(35, vec![Some(1), Some(2), Some(3), Some(4)]);
 			assert_ok!(StakePallet::execute_leave_candidates(RuntimeOrigin::signed(2), 2));
@@ -998,8 +1000,8 @@ fn multiple_delegations() {
 			);
 			assert_eq!(Balances::usable_balance(17), 100);
 			assert_eq!(Balances::usable_balance(8), 100);
-			assert_eq!(Balances::free_balance(17), 100);
-			assert_eq!(Balances::free_balance(8), 100);
+			assert_eq!(Balances::balance(&17), 100);
+			assert_eq!(Balances::balance(&8), 100);
 		});
 }
 
@@ -1287,7 +1289,7 @@ fn delegators_bond() {
 			assert_ok!(StakePallet::execute_leave_candidates(RuntimeOrigin::signed(1), 1));
 			assert!(!StakePallet::is_delegator(&6));
 			assert_eq!(Balances::usable_balance(6), 80);
-			assert_eq!(Balances::free_balance(6), 100);
+			assert_eq!(Balances::balance(&6), 100);
 		});
 }
 
@@ -1612,11 +1614,11 @@ fn coinbase_rewards_many_blocks_simple_check() {
 			let authors: Vec<Option<AccountId>> = (0u64..=end_block).map(|i| Some(i % 2 + 1)).collect();
 			roll_to_claim_rewards(end_block, authors);
 
-			let rewards_1 = Balances::free_balance(1).saturating_sub(40_000_000 * DECIMALS);
-			let rewards_2 = Balances::free_balance(2).saturating_sub(40_000_000 * DECIMALS);
-			let rewards_3 = Balances::free_balance(3).saturating_sub(40_000_000 * DECIMALS);
-			let rewards_4 = Balances::free_balance(4).saturating_sub(20_000_000 * DECIMALS);
-			let rewards_5 = Balances::free_balance(5).saturating_sub(20_000_000 * DECIMALS);
+			let rewards_1 = Balances::balance(&1).saturating_sub(40_000_000 * DECIMALS);
+			let rewards_2 = Balances::balance(&2).saturating_sub(40_000_000 * DECIMALS);
+			let rewards_3 = Balances::balance(&3).saturating_sub(40_000_000 * DECIMALS);
+			let rewards_4 = Balances::balance(&4).saturating_sub(20_000_000 * DECIMALS);
+			let rewards_5 = Balances::balance(&5).saturating_sub(20_000_000 * DECIMALS);
 			let expected_collator_rewards =
 				num_of_years * inflation.collator.reward_rate.annual * 16_000_000 * DECIMALS;
 			let expected_delegator_rewards =
@@ -2124,17 +2126,17 @@ fn unlock_unstaked() {
 			let mut unstaking: BoundedBTreeMap<BlockNumber, BalanceOf<Test>, <Test as Config>::MaxUnstakeRequests> =
 				BoundedBTreeMap::new();
 			assert_ok!(unstaking.try_insert(3, 100));
-			let lock = BalanceLock {
-				id: STAKING_ID,
+			let freeze = IdAmount {
+				id: <Test as Config>::FreezeIdentifier::from(FreezeReason::Staking),
 				amount: 100,
-				reasons: Reasons::All,
 			};
+
 			assert_eq!(StakePallet::unstaking(2), unstaking);
-			assert_eq!(Balances::locks(2), vec![lock.clone()]);
+			assert_eq!(Freezes::<Test>::get(2), vec![freeze.clone()]);
 			// shouldn't be able to unlock anything
 			assert_ok!(StakePallet::unlock_unstaked(RuntimeOrigin::signed(2), 2));
 			assert_eq!(StakePallet::unstaking(2), unstaking);
-			assert_eq!(Balances::locks(2), vec![lock.clone()]);
+			assert_eq!(Freezes::<Test>::get(2), vec![freeze.clone()]);
 
 			// join delegators and revoke again --> consume unstaking at block 3
 			roll_to(2, vec![]);
@@ -2143,28 +2145,28 @@ fn unlock_unstaked() {
 			unstaking.remove(&3);
 			assert_ok!(unstaking.try_insert(4, 100));
 			assert_eq!(StakePallet::unstaking(2), unstaking);
-			assert_eq!(Balances::locks(2), vec![lock.clone()]);
+			assert_eq!(Freezes::<Test>::get(2), vec![freeze.clone()]);
 			// shouldn't be able to unlock anything
 			assert_ok!(StakePallet::unlock_unstaked(RuntimeOrigin::signed(2), 2));
 			assert_eq!(StakePallet::unstaking(2), unstaking);
-			assert_eq!(Balances::locks(2), vec![lock.clone()]);
+			assert_eq!(Freezes::<Test>::get(2), vec![freeze.clone()]);
 
 			// should reduce unlocking but not unlock anything
 			roll_to(3, vec![]);
 			assert_eq!(StakePallet::unstaking(2), unstaking);
-			assert_eq!(Balances::locks(2), vec![lock.clone()]);
+			assert_eq!(Freezes::<Test>::get(2), vec![freeze.clone()]);
 			// shouldn't be able to unlock anything
 			assert_ok!(StakePallet::unlock_unstaked(RuntimeOrigin::signed(2), 2));
 			assert_eq!(StakePallet::unstaking(2), unstaking);
-			assert_eq!(Balances::locks(2), vec![lock.clone()]);
+			assert_eq!(Freezes::<Test>::get(2), vec![freeze.clone()]);
 
 			roll_to(4, vec![]);
 			unstaking.remove(&4);
-			assert_eq!(Balances::locks(2), vec![lock]);
+			assert_eq!(Freezes::<Test>::get(2), vec![freeze]);
 			// shouldn't be able to unlock anything
 			assert_ok!(StakePallet::unlock_unstaked(RuntimeOrigin::signed(2), 2));
 			assert_eq!(StakePallet::unstaking(2), unstaking);
-			assert_eq!(Balances::locks(2), vec![]);
+			assert_eq!(Freezes::<Test>::get(2), vec![]);
 		});
 
 	// less_unstaked_than_restaked
@@ -2181,17 +2183,16 @@ fn unlock_unstaked() {
 			let mut unstaking: BoundedBTreeMap<BlockNumber, BalanceOf<Test>, <Test as Config>::MaxUnstakeRequests> =
 				BoundedBTreeMap::new();
 			assert_ok!(unstaking.try_insert(3, 10));
-			let mut lock = BalanceLock {
-				id: STAKING_ID,
+			let mut lock = IdAmount {
+				id: <Test as Config>::FreezeIdentifier::from(FreezeReason::Staking),
 				amount: 10,
-				reasons: Reasons::All,
 			};
 			assert_eq!(StakePallet::unstaking(2), unstaking);
-			assert_eq!(Balances::locks(2), vec![lock.clone()]);
+			assert_eq!(Freezes::<Test>::get(2), vec![lock.clone()]);
 			// shouldn't be able to unlock anything
 			assert_ok!(StakePallet::unlock_unstaked(RuntimeOrigin::signed(2), 2));
 			assert_eq!(StakePallet::unstaking(2), unstaking);
-			assert_eq!(Balances::locks(2), vec![lock.clone()]);
+			assert_eq!(Freezes::<Test>::get(2), vec![lock.clone()]);
 
 			// join delegators and revoke again
 			roll_to(2, vec![]);
@@ -2201,27 +2202,27 @@ fn unlock_unstaked() {
 			assert_ok!(unstaking.try_insert(4, 100));
 			lock.amount = 100;
 			assert_eq!(StakePallet::unstaking(2), unstaking);
-			assert_eq!(Balances::locks(2), vec![lock.clone()]);
+			assert_eq!(Freezes::<Test>::get(2), vec![lock.clone()]);
 			// shouldn't be able to unlock anything
 			assert_ok!(StakePallet::unlock_unstaked(RuntimeOrigin::signed(2), 2));
 			assert_eq!(StakePallet::unstaking(2), unstaking);
-			assert_eq!(Balances::locks(2), vec![lock.clone()]);
+			assert_eq!(Freezes::<Test>::get(2), vec![lock.clone()]);
 
 			roll_to(3, vec![]);
 			assert_eq!(StakePallet::unstaking(2), unstaking);
-			assert_eq!(Balances::locks(2), vec![lock.clone()]);
+			assert_eq!(Freezes::<Test>::get(2), vec![lock.clone()]);
 			// shouldn't be able to unlock anything
 			assert_ok!(StakePallet::unlock_unstaked(RuntimeOrigin::signed(2), 2));
 			assert_eq!(StakePallet::unstaking(2), unstaking);
-			assert_eq!(Balances::locks(2), vec![lock.clone()]);
+			assert_eq!(Freezes::<Test>::get(2), vec![lock.clone()]);
 
 			// unlock unstaked, remove lock, empty unlocking
 			roll_to(4, vec![]);
 			unstaking.remove(&4);
-			assert_eq!(Balances::locks(2), vec![lock]);
+			assert_eq!(Freezes::<Test>::get(2), vec![lock]);
 			assert_ok!(StakePallet::unlock_unstaked(RuntimeOrigin::signed(2), 2));
 			assert_eq!(StakePallet::unstaking(2), unstaking);
-			assert_eq!(Balances::locks(2), vec![]);
+			assert_eq!(Freezes::<Test>::get(2), vec![]);
 		});
 
 	// more_unstaked_than_restaked
@@ -2240,17 +2241,16 @@ fn unlock_unstaked() {
 			let mut unstaking: BoundedBTreeMap<BlockNumber, BalanceOf<Test>, <Test as Config>::MaxUnstakeRequests> =
 				BoundedBTreeMap::new();
 			assert_ok!(unstaking.try_insert(3, 100));
-			let mut lock = BalanceLock {
-				id: STAKING_ID,
+			let mut lock = IdAmount {
+				id: <Test as Config>::FreezeIdentifier::from(FreezeReason::Staking),
 				amount: 100,
-				reasons: Reasons::All,
 			};
 			assert_eq!(StakePallet::unstaking(2), unstaking);
-			assert_eq!(Balances::locks(2), vec![lock.clone()]);
+			assert_eq!(Freezes::<Test>::get(2), vec![lock.clone()]);
 			// shouldn't be able to unlock anything
 			assert_ok!(StakePallet::unlock_unstaked(RuntimeOrigin::signed(2), 2));
 			assert_eq!(StakePallet::unstaking(2), unstaking);
-			assert_eq!(Balances::locks(2), vec![lock.clone()]);
+			assert_eq!(Freezes::<Test>::get(2), vec![lock.clone()]);
 
 			// join delegators and revoke again
 			roll_to(2, vec![]);
@@ -2259,30 +2259,30 @@ fn unlock_unstaked() {
 			assert_ok!(unstaking.try_insert(3, 90));
 			assert_ok!(unstaking.try_insert(4, 10));
 			assert_eq!(StakePallet::unstaking(2), unstaking);
-			assert_eq!(Balances::locks(2), vec![lock.clone()]);
+			assert_eq!(Freezes::<Test>::get(2), vec![lock.clone()]);
 			// shouldn't be able to unlock anything
 			assert_ok!(StakePallet::unlock_unstaked(RuntimeOrigin::signed(2), 2));
 			assert_eq!(StakePallet::unstaking(2), unstaking);
-			assert_eq!(Balances::locks(2), vec![lock.clone()]);
+			assert_eq!(Freezes::<Test>::get(2), vec![lock.clone()]);
 
 			// should reduce unlocking but not unlock anything
 			roll_to(3, vec![]);
 			assert_eq!(StakePallet::unstaking(2), unstaking);
-			assert_eq!(Balances::locks(2), vec![lock.clone()]);
+			assert_eq!(Freezes::<Test>::get(2), vec![lock.clone()]);
 			// should be able to unlock 90 of 100 from unstaking
 			assert_ok!(StakePallet::unlock_unstaked(RuntimeOrigin::signed(2), 2));
 			unstaking.remove(&3);
 			lock.amount = 10;
 			assert_eq!(StakePallet::unstaking(2), unstaking);
-			assert_eq!(Balances::locks(2), vec![lock.clone()]);
+			assert_eq!(Freezes::<Test>::get(2), vec![lock.clone()]);
 
 			roll_to(4, vec![]);
-			assert_eq!(Balances::locks(2), vec![lock]);
+			assert_eq!(Freezes::<Test>::get(2), vec![lock]);
 			// should be able to unlock 10 of remaining 10
 			assert_ok!(StakePallet::unlock_unstaked(RuntimeOrigin::signed(2), 2));
 			unstaking.remove(&4);
 			assert_eq!(StakePallet::unstaking(2), unstaking);
-			assert_eq!(Balances::locks(2), vec![]);
+			assert_eq!(Freezes::<Test>::get(2), vec![]);
 		});
 
 	// test_stake_less
@@ -2315,13 +2315,12 @@ fn unlock_unstaked() {
 			let mut unstaking: BoundedBTreeMap<BlockNumber, BalanceOf<Test>, <Test as Config>::MaxUnstakeRequests> =
 				BoundedBTreeMap::new();
 			assert_ok!(unstaking.try_insert(3, 60));
-			let mut lock = BalanceLock {
-				id: STAKING_ID,
+			let mut lock = IdAmount {
+				id: <Test as Config>::FreezeIdentifier::from(FreezeReason::Staking),
 				amount: 200,
-				reasons: Reasons::All,
 			};
-			assert_eq!(Balances::locks(1), vec![lock.clone()]);
-			assert_eq!(Balances::locks(2), vec![lock.clone()]);
+			assert_eq!(Freezes::<Test>::get(1), vec![lock.clone()]);
+			assert_eq!(Freezes::<Test>::get(2), vec![lock.clone()]);
 			assert_eq!(StakePallet::unstaking(1), unstaking);
 			assert_eq!(StakePallet::unstaking(2), unstaking);
 			// shouldn't be able to unlock anything
@@ -2329,15 +2328,15 @@ fn unlock_unstaked() {
 			assert_ok!(StakePallet::unlock_unstaked(RuntimeOrigin::signed(2), 2));
 			assert_eq!(StakePallet::unstaking(1), unstaking);
 			assert_eq!(StakePallet::unstaking(2), unstaking);
-			assert_eq!(Balances::locks(1), vec![lock.clone()]);
-			assert_eq!(Balances::locks(2), vec![lock.clone()]);
+			assert_eq!(Freezes::<Test>::get(1), vec![lock.clone()]);
+			assert_eq!(Freezes::<Test>::get(2), vec![lock.clone()]);
 
 			roll_to(2, vec![]);
 			assert_ok!(StakePallet::candidate_stake_less(RuntimeOrigin::signed(1), 10),);
 			assert_ok!(StakePallet::delegator_stake_less(RuntimeOrigin::signed(2), 10),);
 			assert_ok!(unstaking.try_insert(4, 10));
-			assert_eq!(Balances::locks(1), vec![lock.clone()]);
-			assert_eq!(Balances::locks(2), vec![lock.clone()]);
+			assert_eq!(Freezes::<Test>::get(1), vec![lock.clone()]);
+			assert_eq!(Freezes::<Test>::get(2), vec![lock.clone()]);
 			assert_eq!(StakePallet::unstaking(1), unstaking);
 			assert_eq!(StakePallet::unstaking(2), unstaking);
 			// shouldn't be able to unlock anything
@@ -2345,16 +2344,16 @@ fn unlock_unstaked() {
 			assert_ok!(StakePallet::unlock_unstaked(RuntimeOrigin::signed(2), 2));
 			assert_eq!(StakePallet::unstaking(1), unstaking);
 			assert_eq!(StakePallet::unstaking(2), unstaking);
-			assert_eq!(Balances::locks(1), vec![lock.clone()]);
-			assert_eq!(Balances::locks(2), vec![lock.clone()]);
+			assert_eq!(Freezes::<Test>::get(1), vec![lock.clone()]);
+			assert_eq!(Freezes::<Test>::get(2), vec![lock.clone()]);
 
 			roll_to(3, vec![]);
 			assert_ok!(StakePallet::candidate_stake_less(RuntimeOrigin::signed(1), 10),);
 			assert_ok!(StakePallet::delegator_stake_less(RuntimeOrigin::signed(2), 10),);
 			assert_ok!(unstaking.try_insert(5, 10));
 			assert_ok!(unstaking.try_insert(5, 10));
-			assert_eq!(Balances::locks(1), vec![lock.clone()]);
-			assert_eq!(Balances::locks(2), vec![lock.clone()]);
+			assert_eq!(Freezes::<Test>::get(1), vec![lock.clone()]);
+			assert_eq!(Freezes::<Test>::get(2), vec![lock.clone()]);
 			assert_eq!(StakePallet::unstaking(1), unstaking);
 			assert_eq!(StakePallet::unstaking(2), unstaking);
 			// should unlock 60
@@ -2364,8 +2363,8 @@ fn unlock_unstaked() {
 			unstaking.remove(&3);
 			assert_eq!(StakePallet::unstaking(1), unstaking);
 			assert_eq!(StakePallet::unstaking(2), unstaking);
-			assert_eq!(Balances::locks(1), vec![lock.clone()]);
-			assert_eq!(Balances::locks(2), vec![lock.clone()]);
+			assert_eq!(Freezes::<Test>::get(1), vec![lock.clone()]);
+			assert_eq!(Freezes::<Test>::get(2), vec![lock.clone()]);
 
 			// reach MaxUnstakeRequests
 			roll_to(4, vec![]);
@@ -2382,8 +2381,8 @@ fn unlock_unstaked() {
 			assert_ok!(unstaking.try_insert(8, 10));
 			assert_eq!(StakePallet::unstaking(1), unstaking);
 			assert_eq!(StakePallet::unstaking(2), unstaking);
-			assert_eq!(Balances::locks(1), vec![lock.clone()]);
-			assert_eq!(Balances::locks(2), vec![lock.clone()]);
+			assert_eq!(Freezes::<Test>::get(1), vec![lock.clone()]);
+			assert_eq!(Freezes::<Test>::get(2), vec![lock.clone()]);
 
 			roll_to(7, vec![]);
 			assert_noop!(
@@ -2403,8 +2402,8 @@ fn unlock_unstaked() {
 			lock.amount = 100;
 			assert_eq!(StakePallet::unstaking(1), unstaking);
 			assert_eq!(StakePallet::unstaking(2), unstaking);
-			assert_eq!(Balances::locks(1), vec![lock.clone()]);
-			assert_eq!(Balances::locks(2), vec![lock.clone()]);
+			assert_eq!(Freezes::<Test>::get(1), vec![lock.clone()]);
+			assert_eq!(Freezes::<Test>::get(2), vec![lock.clone()]);
 			assert_ok!(StakePallet::candidate_stake_less(RuntimeOrigin::signed(1), 40));
 			assert_ok!(StakePallet::delegator_stake_less(RuntimeOrigin::signed(2), 40));
 			assert_ok!(unstaking.try_insert(9, 40));
@@ -2414,8 +2413,8 @@ fn unlock_unstaked() {
 			assert_ok!(unstaking.try_insert(9, 20));
 			assert_eq!(StakePallet::unstaking(1), unstaking);
 			assert_eq!(StakePallet::unstaking(2), unstaking);
-			assert_eq!(Balances::locks(1), vec![lock.clone()]);
-			assert_eq!(Balances::locks(2), vec![lock]);
+			assert_eq!(Freezes::<Test>::get(1), vec![lock.clone()]);
+			assert_eq!(Freezes::<Test>::get(2), vec![lock]);
 		});
 }
 
@@ -2673,8 +2672,8 @@ fn adjust_reward_rates() {
 
 			// reward once in first year
 			roll_to_claim_rewards(2, authors.clone());
-			let c_rewards_0 = Balances::free_balance(1).saturating_sub(10_000_000 * DECIMALS);
-			let d_rewards_0 = Balances::free_balance(2).saturating_sub(90_000_000 * DECIMALS);
+			let c_rewards_0 = Balances::balance(&1).saturating_sub(10_000_000 * DECIMALS);
+			let d_rewards_0 = Balances::balance(&2).saturating_sub(90_000_000 * DECIMALS);
 			assert!(!c_rewards_0.is_zero());
 			assert!(!d_rewards_0.is_zero());
 
@@ -2695,10 +2694,10 @@ fn adjust_reward_rates() {
 			assert_eq!(StakePallet::inflation_config(), inflation_1);
 			// reward once in 2nd year
 			roll_to_claim_rewards(<Test as Config>::BLOCKS_PER_YEAR + 2, authors.clone());
-			let c_rewards_1 = Balances::free_balance(1)
+			let c_rewards_1 = Balances::balance(&1)
 				.saturating_sub(10_000_000 * DECIMALS)
 				.saturating_sub(c_rewards_0);
-			let d_rewards_1 = Balances::free_balance(2)
+			let d_rewards_1 = Balances::balance(&2)
 				.saturating_sub(90_000_000 * DECIMALS)
 				.saturating_sub(d_rewards_0);
 			assert!(
@@ -2724,15 +2723,15 @@ fn adjust_reward_rates() {
 				Perquintill::from_float(0.051),
 			);
 			assert_eq!(StakePallet::inflation_config(), inflation_2);
-			// reward once in 3rd year. Rewards should 5.1%.
+			// reward once in 3rd year
 			roll_to_claim_rewards(2 * <Test as Config>::BLOCKS_PER_YEAR + 2, authors.clone());
-			let c_rewards_2 = Balances::free_balance(1)
+			let c_rewards_2 = Balances::balance(&1)
 				.saturating_sub(10_000_000 * DECIMALS)
 				.saturating_sub(c_rewards_0)
 				.saturating_sub(c_rewards_1);
 			assert!(c_rewards_1 > c_rewards_2);
-			// should be less as previous (2nd) year
-			let d_rewards_2 = Balances::free_balance(2)
+			// should be zero because we set reward rate to zero
+			let d_rewards_2 = Balances::balance(&2)
 				.saturating_sub(90_000_000 * DECIMALS)
 				.saturating_sub(d_rewards_0)
 				.saturating_sub(d_rewards_1);
@@ -3279,7 +3278,7 @@ fn authorities_per_round() {
 			// roll to last block of round 0
 			roll_to_claim_rewards(4, authors.clone());
 			let reward_0 = inflation.collator.reward_rate.per_block * stake * 2;
-			assert_eq!(Balances::free_balance(1), stake + reward_0);
+			assert_eq!(Balances::balance(&1), stake + reward_0);
 			// increase max selected candidates which will become effective in round 2
 			assert_ok!(StakePallet::set_max_selected_candidates(RuntimeOrigin::root(), 10));
 
@@ -3288,22 +3287,19 @@ fn authorities_per_round() {
 			// round 1
 			roll_to_claim_rewards(9, authors.clone());
 			let reward_1 = inflation.collator.reward_rate.per_block * stake * 2;
-			assert_eq!(Balances::free_balance(1), stake + reward_0 + reward_1);
+			assert_eq!(Balances::balance(&1), stake + reward_0 + reward_1);
 
 			// roll to last block of round 2
 			// should multiply with 4 because there are only 4 candidates
 			roll_to_claim_rewards(14, authors.clone());
 			let reward_2 = inflation.collator.reward_rate.per_block * stake * 4;
-			assert_eq!(Balances::free_balance(1), stake + reward_0 + reward_1 + reward_2);
+			assert_eq!(Balances::balance(&1), stake + reward_0 + reward_1 + reward_2);
 
 			// roll to last block of round 3
 			// should multiply with 4 because there are only 4 candidates
 			roll_to_claim_rewards(19, authors);
 			let reward_3 = inflation.collator.reward_rate.per_block * stake * 4;
-			assert_eq!(
-				Balances::free_balance(1),
-				stake + reward_0 + reward_1 + reward_2 + reward_3
-			);
+			assert_eq!(Balances::balance(&1), stake + reward_0 + reward_1 + reward_2 + reward_3);
 		});
 }
 
@@ -3444,13 +3440,13 @@ fn network_reward_multiple_blocks() {
 			assert_eq!(max_stake, StakePallet::max_candidate_stake());
 			let total_collator_stake = max_stake.saturating_mul(<Test as Config>::MinCollators::get().into());
 			assert_eq!(total_collator_stake, StakePallet::total_collator_stake().collators);
-			assert!(Balances::free_balance(TREASURY_ACC).is_zero());
+			assert!(Balances::balance(&TREASURY_ACC).is_zero());
 			let total_issuance = <Test as Config>::Currency::total_issuance();
 
 			// total issuance should not increase when not noting authors because we haven't
 			// reached NetworkRewardStart yet
 			roll_to(10, vec![None]);
-			assert!(Balances::free_balance(TREASURY_ACC).is_zero());
+			assert!(Balances::balance(&TREASURY_ACC).is_zero());
 			assert_eq!(total_issuance, <Test as Config>::Currency::total_issuance());
 
 			// set current block to one block before NetworkRewardStart
@@ -3459,12 +3455,12 @@ fn network_reward_multiple_blocks() {
 
 			// network rewards should only appear 1 block after start
 			roll_to(network_reward_start, vec![None]);
-			assert!(Balances::free_balance(TREASURY_ACC).is_zero());
+			assert!(Balances::balance(&TREASURY_ACC).is_zero());
 			assert_eq!(total_issuance, <Test as Config>::Currency::total_issuance());
 
 			// should mint to treasury now
 			roll_to(network_reward_start + 1, vec![None]);
-			let network_reward = Balances::free_balance(TREASURY_ACC);
+			let network_reward = Balances::balance(&TREASURY_ACC);
 			assert!(!network_reward.is_zero());
 			assert_eq!(
 				total_issuance + network_reward,
@@ -3476,7 +3472,7 @@ fn network_reward_multiple_blocks() {
 
 			// should mint exactly the same amount
 			roll_to(network_reward_start + 2, vec![None]);
-			assert_eq!(2 * network_reward, Balances::free_balance(TREASURY_ACC));
+			assert_eq!(2 * network_reward, Balances::balance(&TREASURY_ACC));
 			assert_eq!(
 				total_issuance + 2 * network_reward,
 				<Test as Config>::Currency::total_issuance()
@@ -3484,7 +3480,7 @@ fn network_reward_multiple_blocks() {
 
 			// should mint exactly the same amount in each block
 			roll_to(network_reward_start + 100, vec![None]);
-			assert_eq!(100 * network_reward, Balances::free_balance(TREASURY_ACC));
+			assert_eq!(100 * network_reward, Balances::balance(&TREASURY_ACC));
 			assert_eq!(
 				total_issuance + 100 * network_reward,
 				<Test as Config>::Currency::total_issuance()
@@ -3494,7 +3490,7 @@ fn network_reward_multiple_blocks() {
 			// based on MaxCollatorCandidateStake and MaxSelectedCandidates
 			assert_ok!(StakePallet::init_leave_candidates(RuntimeOrigin::signed(1)));
 			roll_to(network_reward_start + 101, vec![None]);
-			assert_eq!(101 * network_reward, Balances::free_balance(TREASURY_ACC));
+			assert_eq!(101 * network_reward, Balances::balance(&TREASURY_ACC));
 			assert_eq!(
 				total_issuance + 101 * network_reward,
 				<Test as Config>::Currency::total_issuance()
@@ -3519,7 +3515,7 @@ fn network_reward_increase_max_candidate_stake() {
 
 			// should mint to treasury now
 			roll_to(network_reward_start + 1, vec![None]);
-			let reward_before = Balances::free_balance(TREASURY_ACC);
+			let reward_before = Balances::balance(&TREASURY_ACC);
 			assert!(!reward_before.is_zero());
 			assert_eq!(
 				total_issuance + reward_before,
@@ -3534,7 +3530,7 @@ fn network_reward_increase_max_candidate_stake() {
 				max_stake_doubled
 			));
 			roll_to(network_reward_start + 2, vec![None]);
-			assert_eq!(reward_before + reward_after, Balances::free_balance(TREASURY_ACC));
+			assert_eq!(reward_before + reward_after, Balances::balance(&TREASURY_ACC));
 			assert_eq!(
 				reward_before + reward_after + total_issuance,
 				<Test as Config>::Currency::total_issuance()
@@ -3559,7 +3555,7 @@ fn network_reward_increase_max_collator_count() {
 
 			// should mint to treasury now
 			roll_to(network_reward_start + 1, vec![None]);
-			let reward_before = Balances::free_balance(TREASURY_ACC);
+			let reward_before = Balances::balance(&TREASURY_ACC);
 			assert!(!reward_before.is_zero());
 			assert_eq!(
 				total_issuance + reward_before,
@@ -3573,7 +3569,7 @@ fn network_reward_increase_max_collator_count() {
 				<Test as Config>::MinCollators::get() * 3
 			));
 			roll_to(network_reward_start + 2, vec![None]);
-			assert_eq!(reward_before + reward_after, Balances::free_balance(TREASURY_ACC));
+			assert_eq!(reward_before + reward_after, Balances::balance(&TREASURY_ACC));
 			assert_eq!(
 				reward_before + reward_after + total_issuance,
 				<Test as Config>::Currency::total_issuance()
@@ -4246,9 +4242,9 @@ fn rewards_incrementing_and_claiming() {
 			assert_ok!(StakePallet::claim_rewards(RuntimeOrigin::signed(1)));
 			assert!(StakePallet::rewards(1).is_zero());
 			// delegator situation should be unchanged
-			assert!(Balances::free_balance(1) > DECIMALS);
-			assert_eq!(Balances::free_balance(2), DECIMALS);
-			assert_eq!(Balances::free_balance(3), DECIMALS);
+			assert!(Balances::balance(&1) > DECIMALS);
+			assert_eq!(Balances::balance(&2), DECIMALS);
+			assert_eq!(Balances::balance(&3), DECIMALS);
 
 			// incrementing again should not change anything because collator has not
 			// authored blocks since last inc
@@ -4256,9 +4252,9 @@ fn rewards_incrementing_and_claiming() {
 			assert_eq!(StakePallet::blocks_rewarded(2), 2);
 			// claim for 2 to move rewards into balance
 			assert_ok!(StakePallet::claim_rewards(RuntimeOrigin::signed(2)));
-			assert!(Balances::free_balance(2) > DECIMALS);
+			assert!(Balances::balance(&2) > DECIMALS);
 			assert!(StakePallet::rewards(2).is_zero());
-			assert_eq!(Balances::free_balance(3), DECIMALS);
+			assert_eq!(Balances::balance(&3), DECIMALS);
 
 			// should not be able to claim for incorrect role
 			assert_noop!(

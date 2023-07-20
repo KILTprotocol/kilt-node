@@ -18,7 +18,7 @@
 
 use frame_support::{
 	dispatch::DispatchClass,
-	traits::{Currency, Get, Imbalance, OnUnbalanced},
+	traits::{fungible::Balanced, Currency, Get, Imbalance, OnUnbalanced},
 	weights::{
 		Weight, WeightToFee as WeightToFeeT, WeightToFeeCoefficient, WeightToFeeCoefficients, WeightToFeePolynomial,
 	},
@@ -28,7 +28,7 @@ use pallet_transaction_payment::OnChargeTransaction;
 use smallvec::smallvec;
 use sp_runtime::Perbill;
 
-use crate::{constants::MILLI_KILT, AccountId, Balance, NegativeImbalanceOf};
+use crate::{constants::MILLI_KILT, AccountId, Balance, CreditOf, NegativeImbalanceOf};
 
 /// Split two Imbalances between two unbalanced handlers.
 /// The first Imbalance will be split according to the given ratio. The second
@@ -74,6 +74,22 @@ where
 	fn on_nonzero_unbalanced(amount: NegativeImbalanceOf<R>) {
 		if let Some(author) = <pallet_authorship::Pallet<R>>::author() {
 			<pallet_balances::Pallet<R>>::resolve_creating(&author, amount);
+		}
+	}
+}
+
+pub struct ToAuthorCredit<R>(sp_std::marker::PhantomData<R>);
+impl<R> OnUnbalanced<CreditOf<R>> for ToAuthorCredit<R>
+where
+	R: pallet_balances::Config + pallet_authorship::Config,
+	<R as frame_system::Config>::AccountId: From<AccountId>,
+	<R as frame_system::Config>::AccountId: Into<AccountId>,
+	<R as pallet_balances::Config>::Balance: Into<u128>,
+{
+	fn on_nonzero_unbalanced(amount: CreditOf<R>) {
+		if let Some(author) = <pallet_authorship::Pallet<R>>::author() {
+			let result = pallet_balances::Pallet::<R>::resolve(&author, amount);
+			debug_assert!(result.is_ok(), "The whole credit cannot be countered");
 		}
 	}
 }
@@ -139,7 +155,7 @@ mod tests {
 	};
 	use frame_support::{dispatch::DispatchClass, parameter_types, traits::FindAuthor};
 	use frame_system::limits;
-	use sp_core::H256;
+	use sp_core::{ConstU64, H256};
 	use sp_runtime::{
 		testing::Header,
 		traits::{BlakeTwo256, IdentityLookup},
@@ -215,9 +231,13 @@ mod tests {
 
 	impl pallet_balances::Config for Test {
 		type Balance = u64;
+		type FreezeIdentifier = ();
+		type HoldIdentifier = ();
+		type MaxFreezes = ();
+		type MaxHolds = ();
 		type RuntimeEvent = RuntimeEvent;
 		type DustRemoval = ();
-		type ExistentialDeposit = ();
+		type ExistentialDeposit = ConstU64<1>;
 		type AccountStore = System;
 		type MaxLocks = ();
 		type MaxReserves = ();
@@ -266,8 +286,8 @@ mod tests {
 	#[test]
 	fn test_fees_and_tip_split() {
 		new_test_ext().execute_with(|| {
-			let fee = Balances::issue(10);
-			let tip = Balances::issue(20);
+			let fee = <Balances as Currency<<Test as frame_system::Config>::AccountId>>::issue(10);
+			let tip = <Balances as Currency<<Test as frame_system::Config>::AccountId>>::issue(20);
 
 			assert_eq!(Balances::free_balance(TREASURY_ACC), 0);
 			assert_eq!(Balances::free_balance(AUTHOR_ACC), 0);

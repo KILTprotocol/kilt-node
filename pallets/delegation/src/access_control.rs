@@ -221,7 +221,7 @@ mod tests {
 
 	use attestation::{mock::generate_base_attestation, AttestationAccessControl};
 	use ctype::mock::get_ctype_hash;
-	use kilt_support::{deposit::Deposit, mock::mock_origin::DoubleOrigin};
+	use kilt_support::{mock::mock_origin::DoubleOrigin, Deposit};
 
 	use super::*;
 	use crate::{mock::*, DelegationDetails, DelegationNode};

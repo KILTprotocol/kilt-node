@@ -18,7 +18,7 @@
 
 use bitflags::bitflags;
 use frame_support::{storage::bounded_btree_set::BoundedBTreeSet, traits::Get};
-use kilt_support::deposit::Deposit;
+use kilt_support::Deposit;
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 

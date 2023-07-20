@@ -20,7 +20,7 @@ use crate::{
 	types::BalanceOf, BlocksAuthored, BlocksRewarded, CandidatePool, Config, DelegatorState, InflationConfig, Pallet,
 	Rewards, TotalCollatorStake,
 };
-use frame_support::traits::Currency;
+use frame_support::traits::fungible::Inspect;
 use sp_runtime::{
 	traits::{Saturating, Zero},
 	Perquintill,

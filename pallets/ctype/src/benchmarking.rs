@@ -19,7 +19,10 @@
 use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
 use frame_support::{
 	sp_runtime::traits::Hash,
-	traits::{Currency, EnsureOrigin, Get},
+	traits::{
+		fungible::{Inspect, Mutate},
+		EnsureOrigin, Get,
+	},
 };
 use sp_std::{
 	convert::{TryFrom, TryInto},
@@ -37,8 +40,9 @@ const MAX_CTYPE_SIZE: u32 = 5 * 1024 * 1024;
 benchmarks! {
 	where_clause {
 		where
-		<<T as Config>::Currency as Currency<AccountIdOf<T>>>::Balance: TryFrom<usize>,
-		<<<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance as TryFrom<usize>>::Error: Debug,
+		<<T as Config>::Currency as Inspect<AccountIdOf<T>>>::Balance: TryFrom<usize>,
+		<T as Config>::Currency: Mutate<T::AccountId>,
+		<<<T as Config>::Currency as Inspect<<T as frame_system::Config>::AccountId>>::Balance as TryFrom<usize>>::Error: Debug,
 		T::EnsureOrigin: GenerateBenchmarkOrigin<T::RuntimeOrigin, T::AccountId, T::CtypeCreatorId>,
 		T::BlockNumber: From<u64>,
 	}
@@ -53,7 +57,7 @@ benchmarks! {
 		let ctype_hash = <T as frame_system::Config>::Hashing::hash(&ctype[..]);
 
 		let initial_balance = <T as Config>::Fee::get() * ctype.len().try_into().unwrap() + <T as Config>::Currency::minimum_balance();
-		<T as Config>::Currency::make_free_balance_be(&caller, initial_balance);
+		<T as Config>::Currency::set_balance(&caller, initial_balance);
 		let origin = T::EnsureOrigin::generate_origin(caller, did.clone());
 
 	}: _<T::RuntimeOrigin>(origin, ctype)
@@ -73,7 +77,7 @@ benchmarks! {
 		let new_block_number = 500u64.into();
 
 		let initial_balance = <T as Config>::Fee::get() * ctype.len().try_into().unwrap() + <T as Config>::Currency::minimum_balance();
-		<T as Config>::Currency::make_free_balance_be(&caller, initial_balance);
+		<T as Config>::Currency::set_balance(&caller, initial_balance);
 		let origin = T::EnsureOrigin::generate_origin(caller, did);
 		Pallet::<T>::add(origin, ctype).expect("CType creation should not fail.");
 		let overarching_origin = T::OverarchingOrigin::try_successful_origin().expect("Successful origin creation should not fail.");

@@ -18,12 +18,15 @@
 
 use frame_support::{
 	storage::bounded_btree_set::BoundedBTreeSet,
-	traits::{Currency, Get},
+	traits::{
+		fungible::{Inspect, Mutate},
+		Get,
+	},
 };
 use sp_core::H256;
 
 use ctype::{mock as ctype_mock, CtypeHashOf};
-use kilt_support::deposit::Deposit;
+use kilt_support::Deposit;
 
 use crate::{
 	self as delegation, AccountIdOf, Config, CurrencyOf, DelegationDetails, DelegationHierarchyDetails, DelegationNode,
@@ -73,11 +76,13 @@ pub fn initialize_pallet<T>(
 	delegation_hierarchies: DelegationHierarchyInitialization<T>,
 ) where
 	T: Config,
+	<T as Config>::Currency: Mutate<AccountIdOf<T>>,
 {
 	for (root_id, details, hierarchy_owner, deposit_owner) in delegation_hierarchies {
 		// manually mint to enable deposit reserving
-		let balance = CurrencyOf::<T>::free_balance(&deposit_owner);
-		CurrencyOf::<T>::make_free_balance_be(&deposit_owner, balance + <T as Config>::Deposit::get());
+
+		let balance = CurrencyOf::<T>::balance(&deposit_owner);
+		CurrencyOf::<T>::set_balance(&deposit_owner, balance + <T as Config>::Deposit::get());
 
 		// reserve deposit and store
 		delegation::Pallet::<T>::create_and_store_new_hierarchy(
@@ -98,8 +103,8 @@ pub fn initialize_pallet<T>(
 
 		// manually mint to enable deposit reserving
 		let deposit_owner = del.1.deposit.owner.clone();
-		let balance = CurrencyOf::<T>::free_balance(&deposit_owner.clone());
-		CurrencyOf::<T>::make_free_balance_be(&deposit_owner.clone(), balance + <T as Config>::Deposit::get());
+		let balance = CurrencyOf::<T>::balance(&deposit_owner);
+		CurrencyOf::<T>::set_balance(&deposit_owner, balance + <T as Config>::Deposit::get());
 
 		// reserve deposit and store
 		delegation::Pallet::<T>::store_delegation_under_parent(
@@ -256,12 +261,18 @@ pub(crate) mod runtime {
 	}
 
 	parameter_types! {
-		pub const ExistentialDeposit: Balance = 0;
+		pub const ExistentialDeposit: Balance = 1;
 		pub const MaxLocks: u32 = 50;
 		pub const MaxReserves: u32 = 50;
+		pub const MaxHolds: u32 = 50;
+		pub const MaxFreezes: u32 = 50;
 	}
 
 	impl pallet_balances::Config for Test {
+		type FreezeIdentifier = RuntimeFreezeReason;
+		type HoldIdentifier = RuntimeHoldReason;
+		type MaxFreezes = MaxFreezes;
+		type MaxHolds = MaxHolds;
 		type Balance = Balance;
 		type DustRemoval = ();
 		type RuntimeEvent = ();
@@ -304,6 +315,7 @@ pub(crate) mod runtime {
 	impl attestation::Config for Test {
 		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<AccountId, DelegatorIdOf<Self>>;
 		type OriginSuccess = mock_origin::DoubleOrigin<AccountId, DelegatorIdOf<Self>>;
+		type RuntimeHoldReason = RuntimeHoldReason;
 		type RuntimeEvent = ();
 		type WeightInfo = ();
 
@@ -327,6 +339,7 @@ pub(crate) mod runtime {
 
 	impl Config for Test {
 		type Signature = (SubjectId, Vec<u8>);
+		type RuntimeHoldReason = RuntimeHoldReason;
 		type DelegationSignatureVerification = EqualVerify<Self::DelegationEntityId, Vec<u8>>;
 		type DelegationEntityId = SubjectId;
 		type DelegationNodeId = Hash;
@@ -530,7 +543,7 @@ pub(crate) mod runtime {
 		pub fn build_with_keystore(self) -> sp_io::TestExternalities {
 			let mut ext = self.build();
 
-			let keystore = sp_keystore::testing::KeyStore::new();
+			let keystore = sp_keystore::testing::MemoryKeystore::new();
 			ext.register_extension(sp_keystore::KeystoreExt(sp_std::sync::Arc::new(keystore)));
 
 			ext

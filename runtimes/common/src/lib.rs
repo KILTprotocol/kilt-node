@@ -29,9 +29,13 @@ pub use frame_support::weights::constants::{BlockExecutionWeight, ExtrinsicBaseW
 use frame_support::{
 	dispatch::DispatchClass,
 	parameter_types,
-	traits::{Contains, ContainsLengthBound, Currency, Get, SortedMembers},
+	traits::{
+		fungible::{Balanced, Credit},
+		Contains, ContainsLengthBound, Currency, Get, OnUnbalanced, SortedMembers,
+	},
 };
 use frame_system::limits;
+use pallet_balances::Pallet as PalletBalance;
 use pallet_transaction_payment::{Multiplier, TargetedFeeAdjustment};
 use sp_runtime::{
 	generic,
@@ -72,6 +76,8 @@ pub mod opaque {
 
 /// An index to a block.
 pub type BlockNumber = u64;
+
+pub(crate) type CreditOf<T> = Credit<<T as frame_system::Config>::AccountId, PalletBalance<T, ()>>;
 
 /// Alias to 512-bit hash when used in the context of a transaction signature on
 /// the chain.
@@ -194,5 +200,19 @@ where
 				.try_insert(pos, who.clone())
 				.expect("Should not fail to add members"),
 		})
+	}
+}
+
+pub struct SendDustAndFeesToTreasury<T>(sp_std::marker::PhantomData<T>);
+
+impl<T> OnUnbalanced<CreditOf<T>> for SendDustAndFeesToTreasury<T>
+where
+	T: pallet_balances::Config,
+	T: pallet_treasury::Config,
+{
+	fn on_nonzero_unbalanced(amount: CreditOf<T>) {
+		let treasury_account_id = pallet_treasury::Pallet::<T>::account_id();
+		let result = pallet_balances::Pallet::<T>::resolve(&treasury_account_id, amount);
+		debug_assert!(result.is_ok(), "The whole credit cannot be countered");
 	}
 }

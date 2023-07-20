@@ -80,14 +80,15 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::unused_unit)]
 
+#[cfg(feature = "runtime-benchmarks")]
+pub mod benchmarking;
 pub mod default_weights;
 pub mod did_details;
 pub mod errors;
+pub mod migrations;
 pub mod origin;
 pub mod service_endpoints;
 
-#[cfg(feature = "runtime-benchmarks")]
-pub mod benchmarking;
 #[cfg(test)]
 mod mock;
 #[cfg(any(feature = "runtime-benchmarks", test))]
@@ -119,7 +120,7 @@ use frame_support::{
 	dispatch::{DispatchError, DispatchResult, Dispatchable, GetDispatchInfo, PostDispatchInfo},
 	ensure,
 	storage::types::StorageMap,
-	traits::{Get, OnUnbalanced, WithdrawReasons},
+	traits::{Get, OnUnbalanced},
 	Parameter,
 };
 use frame_system::ensure_signed;
@@ -140,12 +141,16 @@ pub mod pallet {
 	use did_details::DidCreationDetails;
 	use frame_support::{
 		pallet_prelude::*,
-		traits::{Currency, ExistenceRequirement, Imbalance, ReservableCurrency, StorageVersion},
+		traits::{
+			fungible::{Balanced, Credit, Inspect, MutateHold},
+			tokens::{Fortitude, Precision, Preservation},
+			StorageVersion,
+		},
 	};
 	use frame_system::pallet_prelude::*;
 	use kilt_support::{
-		deposit::Deposit,
 		traits::{CallSources, StorageDepositCollector},
+		Deposit,
 	};
 	use service_endpoints::DidEndpoint;
 	use sp_runtime::traits::BadOrigin;
@@ -159,7 +164,7 @@ pub mod pallet {
 	};
 
 	/// The current storage version.
-	const STORAGE_VERSION: StorageVersion = StorageVersion::new(4);
+	pub(crate) const STORAGE_VERSION: StorageVersion = StorageVersion::new(5);
 
 	/// Reference to a payload of data of variable size.
 	pub type Payload = [u8];
@@ -183,9 +188,14 @@ pub mod pallet {
 	#[pallet::origin]
 	pub type Origin<T> = DidRawOrigin<DidIdentifierOf<T>, AccountIdOf<T>>;
 
-	pub type BalanceOf<T> = <CurrencyOf<T> as Currency<AccountIdOf<T>>>::Balance;
+	pub type BalanceOf<T> = <CurrencyOf<T> as Inspect<AccountIdOf<T>>>::Balance;
 	pub(crate) type CurrencyOf<T> = <T as Config>::Currency;
-	pub(crate) type NegativeImbalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::NegativeImbalance;
+	pub(crate) type CreditOf<T> = Credit<<T as frame_system::Config>::AccountId, <T as Config>::Currency>;
+
+	#[pallet::composite_enum]
+	pub enum HoldReason {
+		Deposit,
+	}
 
 	pub(crate) type DidCreationDetailsOf<T> =
 		DidCreationDetails<DidIdentifierOf<T>, AccountIdOf<T>, <T as Config>::MaxNewKeyAgreementKeys, DidEndpoint<T>>;
@@ -223,8 +233,10 @@ pub mod pallet {
 		/// Overarching event type.
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
+		type RuntimeHoldReason: From<HoldReason>;
+
 		/// The currency that is used to reserve funds for each did.
-		type Currency: ReservableCurrency<AccountIdOf<Self>>;
+		type Currency: Balanced<AccountIdOf<Self>> + MutateHold<AccountIdOf<Self>, Reason = Self::RuntimeHoldReason>;
 
 		/// The amount of balance that will be taken for each DID as a deposit
 		/// to incentivise fair use of the on chain storage. The deposits
@@ -252,7 +264,7 @@ pub mod pallet {
 		type Fee: Get<BalanceOf<Self>>;
 
 		/// The logic for handling the fee.
-		type FeeCollector: OnUnbalanced<NegativeImbalanceOf<Self>>;
+		type FeeCollector: OnUnbalanced<CreditOf<Self>>;
 
 		/// Maximum number of total public keys which can be stored per DID key
 		/// identifier. This includes the ones currently used for
@@ -588,16 +600,16 @@ pub mod pallet {
 
 			Did::<T>::insert(&did_identifier, did_entry.clone());
 
-			// Withdraw the fee. We made sure that enough balance is available. But if this
-			// fails, we don't withdraw anything.
-			let imbalance = <T::Currency as Currency<AccountIdOf<T>>>::withdraw(
+			let imbalance: CreditOf<T> = <T::Currency as Balanced<AccountIdOf<T>>>::withdraw(
 				&did_entry.deposit.owner,
 				T::Fee::get(),
-				WithdrawReasons::FEE,
-				ExistenceRequirement::AllowDeath,
-			)
-			.unwrap_or_else(|_| NegativeImbalanceOf::<T>::zero());
+				Precision::Exact,
+				Preservation::Preserve,
+				Fortitude::Polite,
+			)?;
+
 			T::FeeCollector::on_unbalanced(imbalance);
+
 			Self::deposit_event(Event::DidCreated(sender, did_identifier));
 
 			Ok(())
@@ -1250,7 +1262,7 @@ pub mod pallet {
 			let did_entry = Did::<T>::take(&did_subject).ok_or(Error::<T>::NotFound)?;
 
 			DidEndpointsCount::<T>::remove(&did_subject);
-			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&did_entry.deposit);
+			DidDepositCollector::<T>::free_deposit(did_entry.deposit)?;
 			// Mark as deleted to prevent potential replay-attacks of re-adding a previously
 			// deleted DID.
 			DidBlacklist::<T>::insert(&did_subject, ());
@@ -1263,18 +1275,25 @@ pub mod pallet {
 		}
 	}
 
-	struct DidDepositCollector<T: Config>(PhantomData<T>);
-	impl<T: Config> StorageDepositCollector<AccountIdOf<T>, DidIdentifierOf<T>> for DidDepositCollector<T> {
-		type Currency = T::Currency;
+	pub(crate) struct DidDepositCollector<T: Config>(PhantomData<T>);
+	impl<T: Config> StorageDepositCollector<AccountIdOf<T>, DidIdentifierOf<T>, T::RuntimeHoldReason>
+		for DidDepositCollector<T>
+	{
+		type Currency = <T as Config>::Currency;
+		type Reason = HoldReason;
+
+		fn reason() -> Self::Reason {
+			HoldReason::Deposit
+		}
 
 		fn deposit(
 			key: &DidIdentifierOf<T>,
-		) -> Result<Deposit<AccountIdOf<T>, <Self::Currency as Currency<AccountIdOf<T>>>::Balance>, DispatchError> {
+		) -> Result<Deposit<AccountIdOf<T>, <Self::Currency as Inspect<AccountIdOf<T>>>::Balance>, DispatchError> {
 			let did_entry = Did::<T>::get(key).ok_or(Error::<T>::NotFound)?;
 			Ok(did_entry.deposit)
 		}
 
-		fn deposit_amount(key: &DidIdentifierOf<T>) -> <Self::Currency as Currency<AccountIdOf<T>>>::Balance {
+		fn deposit_amount(key: &DidIdentifierOf<T>) -> <Self::Currency as Inspect<AccountIdOf<T>>>::Balance {
 			let did_entry = Did::<T>::get(key);
 			match did_entry {
 				Some(entry) => entry.calculate_deposit(key),
@@ -1285,7 +1304,7 @@ pub mod pallet {
 
 		fn store_deposit(
 			key: &DidIdentifierOf<T>,
-			deposit: Deposit<AccountIdOf<T>, <Self::Currency as Currency<AccountIdOf<T>>>::Balance>,
+			deposit: Deposit<AccountIdOf<T>, <Self::Currency as Inspect<AccountIdOf<T>>>::Balance>,
 		) -> Result<(), DispatchError> {
 			let did_entry = Did::<T>::get(key).ok_or(Error::<T>::NotFound)?;
 			Did::<T>::insert(key, DidDetails { deposit, ..did_entry });

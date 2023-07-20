@@ -90,9 +90,15 @@ pub mod runtime {
 		pub const ExistentialDeposit: Balance = 500;
 		pub const MaxLocks: u32 = 50;
 		pub const MaxReserves: u32 = 50;
+		pub const MaxHolds: u32 = 50;
+		pub const MaxFreezes: u32 = 50;
 	}
 
 	impl pallet_balances::Config for Test {
+		type FreezeIdentifier = ();
+		type HoldIdentifier = ();
+		type MaxFreezes = MaxFreezes;
+		type MaxHolds = MaxHolds;
 		type Balance = Balance;
 		type DustRemoval = ();
 		type RuntimeEvent = ();
@@ -132,12 +138,12 @@ pub mod runtime {
 
 		#[cfg(feature = "runtime-benchmarks")]
 		pub(crate) fn build_with_keystore(self) -> sp_io::TestExternalities {
-			use sp_keystore::{testing::KeyStore, KeystoreExt};
+			use sp_keystore::{testing::MemoryKeystore, KeystoreExt};
 			use sp_std::sync::Arc;
 
 			let mut ext = self.build();
 
-			let keystore = KeyStore::new();
+			let keystore = MemoryKeystore::new();
 			ext.register_extension(KeystoreExt(Arc::new(keystore)));
 
 			ext
