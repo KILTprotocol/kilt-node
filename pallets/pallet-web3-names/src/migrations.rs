@@ -16,130 +16,130 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::{
-	traits::{Get, GetStorageVersion, OnRuntimeUpgrade, ReservableCurrency, StorageVersion},
-	weights::Weight,
-};
-use kilt_support::migration::switch_reserved_to_hold;
+use frame_support::{ensure, pallet_prelude::DispatchResult, traits::ReservableCurrency};
+use kilt_support::{migration::switch_reserved_to_hold, Deposit};
 use sp_runtime::SaturatedConversion;
-use sp_std::marker::PhantomData;
 
-use crate::{AccountIdOf, Config, CurrencyOf, HoldReason, Owner, Pallet, STORAGE_VERSION as TARGET_STORAGE_VERSION};
+use crate::{web3_name::Web3NameOwnership, AccountIdOf, Config, CurrencyOf, Error, HoldReason, Owner, Web3NameOf};
 
-const CURRENT_STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
-
-pub struct BalanceMigration<T>(PhantomData<T>);
-
-impl<T: Config> OnRuntimeUpgrade for BalanceMigration<T>
+pub fn update_balance_for_entry<T: Config>(key: &Web3NameOf<T>) -> DispatchResult
 where
 	<T as Config>::Currency: ReservableCurrency<T::AccountId>,
 {
-	fn on_runtime_upgrade() -> frame_support::weights::Weight {
-		log::info!("W3n: Initiating migration");
+	Owner::<T>::try_mutate(key, |details| {
+		if let Some(d) = details {
+			ensure!(d.deposit.version.is_none(), Error::<T>::BalanceMigration);
 
-		let onchain_storage_version = Pallet::<T>::on_chain_storage_version();
-		if onchain_storage_version == CURRENT_STORAGE_VERSION {
-			TARGET_STORAGE_VERSION.put::<Pallet<T>>();
-			<T as frame_system::Config>::DbWeight::get()
-				.reads_writes(1, 1)
-				.saturating_add(do_migration::<T>())
+			*d = Web3NameOwnership {
+				deposit: Deposit {
+					version: Some(1),
+					owner: d.deposit.owner.clone(),
+					amount: d.deposit.amount,
+				},
+				..d.clone()
+			};
+
+			switch_reserved_to_hold::<AccountIdOf<T>, CurrencyOf<T>>(
+				d.clone().deposit.owner,
+				&HoldReason::Deposit.into(),
+				d.deposit.amount.saturated_into(),
+			)
 		} else {
-			log::info!(
-			"W3N: No migration needed. This file should be deleted. Current storage version: {:?}, Required Version for update: {:?}", 
-			onchain_storage_version,
-			CURRENT_STORAGE_VERSION
-		);
-			<T as frame_system::Config>::DbWeight::get().reads(1)
+			Err(Error::<T>::NotFound.into())
 		}
-	}
-
-	#[cfg(feature = "try-runtime")]
-	fn pre_upgrade() -> Result<sp_std::vec::Vec<u8>, &'static str> {
-		use sp_std::vec;
-
-		let has_all_user_no_holds = Owner::<T>::iter_values()
-			.map(|details: crate::Web3OwnershipOf<T>| {
-				kilt_support::migration::has_user_reserved_balance::<AccountIdOf<T>, CurrencyOf<T>>(
-					&details.deposit.owner,
-					&HoldReason::Deposit.into(),
-				)
-			})
-			.all(|user| user);
-
-		assert!(has_all_user_no_holds, "Pre Upgrade W3n: there are users with holds!");
-
-		assert_eq!(Pallet::<T>::on_chain_storage_version(), CURRENT_STORAGE_VERSION);
-
-		log::info!("W3n: Pre migration checks successful");
-
-		Ok(vec![])
-	}
-
-	#[cfg(feature = "try-runtime")]
-	fn post_upgrade(_pre_state: sp_std::vec::Vec<u8>) -> Result<(), &'static str> {
-		use frame_support::traits::fungible::InspectHold;
-		use sp_runtime::Saturating;
-		use sp_std::collections::btree_map::BTreeMap;
-
-		use crate::BalanceOf;
-
-		let mut map_user_deposit: BTreeMap<AccountIdOf<T>, BalanceOf<T>> = BTreeMap::new();
-
-		Owner::<T>::iter_values().for_each(|details| {
-			map_user_deposit
-				.entry(details.deposit.owner)
-				.and_modify(|balance| *balance = balance.saturating_add(details.deposit.amount))
-				.or_insert(details.deposit.amount);
-		});
-
-		map_user_deposit
-			.iter()
-			.try_for_each(|(who, amount)| -> Result<(), &'static str> {
-				let hold_balance: BalanceOf<T> =
-					<T as Config>::Currency::balance_on_hold(&HoldReason::Deposit.into(), who).saturated_into();
-
-				assert!(
-					amount.eq(&hold_balance),
-					"W3n: Hold balance is not matching for attestation {:?}. Expected hold: {:?}. Real hold: {:?}",
-					who,
-					amount,
-					hold_balance
-				);
-				Ok(())
-			})?;
-
-		assert_eq!(Pallet::<T>::on_chain_storage_version(), TARGET_STORAGE_VERSION);
-
-		log::info!("W3n: Post migration checks successful");
-		Ok(())
-	}
+	})
 }
 
-fn do_migration<T: Config>() -> Weight
-where
-	<T as Config>::Currency: ReservableCurrency<T::AccountId>,
-{
-	Owner::<T>::iter()
-		.map(|(key, w3n_details)| -> Weight {
-			let deposit = w3n_details.deposit;
-			let result = switch_reserved_to_hold::<AccountIdOf<T>, CurrencyOf<T>>(
-				deposit.owner,
-				&HoldReason::Deposit.into(),
-				deposit.amount.saturated_into(),
-			);
+#[cfg(test)]
+pub mod test {
+	use frame_support::traits::{fungible::InspectHold, ReservableCurrency};
+	use sp_runtime::traits::Zero;
 
-			if result.is_err() {
-				log::error!(
-					" W3n: Could not convert reserves to hold from w3n: {:?}  error: {:?}",
-					key,
-					result
+	use crate::{migrations::update_balance_for_entry, mock::*, AccountIdOf, Config, HoldReason, Owner};
+
+	#[test]
+	fn test_setup() {
+		let web3_name_00 = get_web3_name(WEB3_NAME_00_INPUT);
+		ExtBuilder::default()
+			.with_balances(vec![(ACCOUNT_00, Web3NameDeposit::get() * 2)])
+			.with_web3_names(vec![(DID_00, web3_name_00, ACCOUNT_00)])
+			.build_and_execute_with_sanity_tests(|| {
+				translate_holds_to_reserve();
+				set_deposit_version_to_none();
+
+				// before the migration the balance should be reseved and not on
+				// hold.
+				let hold_balance = <<Test as Config>::Currency as InspectHold<AccountIdOf<Test>>>::balance_on_hold(
+					&HoldReason::Deposit.into(),
+					&ACCOUNT_00,
 				);
-			}
 
-			// Currency::reserve and Currency::hold each read and write to the DB once.
-			// Since we are uncertain about which operation may fail, in the event of an
-			// error, we assume the worst-case scenario here.
-			<T as frame_system::Config>::DbWeight::get().reads_writes(2, 2)
-		})
-		.fold(Weight::zero(), |acc, next| acc.saturating_add(next))
+				let reserved_balance =
+					<<Test as Config>::Currency as ReservableCurrency<AccountIdOf<Test>>>::reserved_balance(
+						&ACCOUNT_00,
+					);
+
+				assert_eq!(hold_balance, 0);
+				assert_eq!(reserved_balance, Web3NameDeposit::get());
+			})
+	}
+
+	#[test]
+	fn test_balance_migration_w3n() {
+		let web3_name_00 = get_web3_name(WEB3_NAME_00_INPUT);
+		ExtBuilder::default()
+			.with_balances(vec![(ACCOUNT_00, Web3NameDeposit::get() * 2)])
+			.with_web3_names(vec![(DID_00, web3_name_00.clone(), ACCOUNT_00)])
+			.build_and_execute_with_sanity_tests(|| {
+				translate_holds_to_reserve();
+				set_deposit_version_to_none();
+
+				let delegation_pre_migration = Owner::<Test>::get(web3_name_00.clone());
+
+				let balance_on_reserve_pre_migration = <<Test as Config>::Currency as ReservableCurrency<
+					AccountIdOf<Test>,
+				>>::reserved_balance(&ACCOUNT_00);
+
+				//Delegation should be in storage
+				assert!(delegation_pre_migration.is_some());
+
+				//before the migration the version should be none.
+				assert!(delegation_pre_migration.clone().unwrap().deposit.version.is_none());
+
+				// before the migration the deposit should be reserved.
+				assert_eq!(
+					balance_on_reserve_pre_migration,
+					delegation_pre_migration.unwrap().deposit.amount
+				);
+
+				assert!(update_balance_for_entry::<Test>(&web3_name_00.clone()).is_ok());
+
+				let delegation_post_migration = Owner::<Test>::get(web3_name_00.clone());
+
+				let balance_on_reserve_post_migration = <<Test as Config>::Currency as ReservableCurrency<
+					AccountIdOf<Test>,
+				>>::reserved_balance(&ACCOUNT_00);
+
+				let balance_on_hold = <<Test as Config>::Currency as InspectHold<AccountIdOf<Test>>>::balance_on_hold(
+					&HoldReason::Deposit.into(),
+					&ACCOUNT_00,
+				);
+
+				//Delegation should be still in the storage
+				assert!(delegation_post_migration.is_some());
+
+				// Since reserved balance count to hold balance, it should not be zero
+				assert!(!balance_on_reserve_post_migration.is_zero());
+
+				// ... and be as much as the hold balance
+				assert_eq!(balance_on_reserve_post_migration, balance_on_hold);
+
+				//... and the version should be 1.
+				assert!(delegation_post_migration.clone().unwrap().deposit.version.is_some());
+				assert!(delegation_post_migration.unwrap().deposit.version.unwrap() == 1);
+
+				// Nothing should happen
+				assert!(update_balance_for_entry::<Test>(&web3_name_00).is_err());
+			})
+	}
 }
