@@ -52,7 +52,7 @@ const DELEGATION_KEY_ID: KeyTypeId = KeyTypeId(*b"0002");
 const UNUSED_KEY_ID: KeyTypeId = KeyTypeId(*b"1111");
 const MAX_PAYLOAD_BYTE_LENGTH: u32 = 5 * 1024 * 1024;
 
-fn get_ed25519_public_authentication_key() -> ed25519::Public {
+pub fn get_ed25519_public_authentication_key() -> ed25519::Public {
 	ed25519_generate(AUTHENTICATION_KEY_ID, None)
 }
 
@@ -1157,6 +1157,7 @@ benchmarks! {
 		assert_eq!(
 			Did::<T>::get(&did_subject).expect("DID entry should be retained").deposit,
 			Deposit {
+				version: Some(1),
 				owner: did_account,
 				amount: <T as Config>::BaseDeposit::get()
 			},
@@ -1183,6 +1184,7 @@ benchmarks! {
 		assert_eq!(
 			Did::<T>::get(&did_subject).expect("DID entry should be retained").deposit,
 			Deposit {
+				version: Some(1),
 				owner: did_account,
 				amount: <T as Config>::BaseDeposit::get()
 			},

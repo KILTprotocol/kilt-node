@@ -41,6 +41,18 @@ impl From<AccountId32> for LinkableAccountId {
 	}
 }
 
+impl From<[u8; 20]> for LinkableAccountId {
+	fn from(account_id: [u8; 20]) -> Self {
+		Self::AccountId20(account_id.into())
+	}
+}
+
+impl From<[u8; 32]> for LinkableAccountId {
+	fn from(account_id: [u8; 32]) -> Self {
+		Self::AccountId32(account_id.into())
+	}
+}
+
 #[cfg(feature = "std")]
 impl std::fmt::Display for LinkableAccountId {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

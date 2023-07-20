@@ -19,7 +19,7 @@
 use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite, Zero};
 use frame_support::{
 	dispatch::RawOrigin,
-	traits::{fungible::Mutate, Get},
+	traits::{fungible::Mutate, Get, ReservableCurrency},
 	BoundedVec,
 };
 use sp_std::{boxed::Box, vec, vec::Vec};
@@ -62,6 +62,7 @@ benchmarks! {
 		<T as Config>::CredentialId: Default,
 		T::BlockNumber: From<u64>,
 		<T as Config>::Currency: Mutate<T::AccountId>,
+		<T as Config>::Currency: ReservableCurrency<T::AccountId>,
 	}
 
 	add {
@@ -246,7 +247,7 @@ benchmarks! {
 		);
 	}
 
-	update_deposit {
+update_deposit {
 		let deposit_owner: AccountIdOf<T> = account("caller", 0, SEED);
 		let attester: T::AttesterId = account("attester", 0, SEED);
 		let ctype_hash: T::Hash = T::Hash::default();
@@ -265,6 +266,7 @@ benchmarks! {
 			attester,
 			Some(ctype_hash),
 			Some(Deposit::<T::AccountId, BalanceOf<T>> {
+				version: Some(1),
 				owner: deposit_owner.clone(),
 				amount: <T as Config>::Deposit::get() + <T as Config>::Deposit::get(),
 			})

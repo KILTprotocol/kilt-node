@@ -478,7 +478,7 @@ benchmarks! {
 		assert_eq!(<T as Config>::Currency::total_balance_on_hold(&deposit_owner_new), <T as Config>::Deposit::get());
 	}
 
-	update_deposit {
+update_deposit {
 		let deposit_owner: T::AccountId = account("sender", 0, SEED);
 		let (root_acc, hierarchy_id, _, leaf_id) = setup_delegations::<T>(1, ONE_CHILD_PER_LEVEL.expect(">0"), Permissions::DELEGATE)?;
 		let root_node = DelegationNodes::<T>::get(hierarchy_id).expect("Root hierarchy node should be present on chain.");
