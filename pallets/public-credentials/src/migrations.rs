@@ -30,7 +30,7 @@ where
 {
 	Credentials::<T>::try_mutate(key, key2, |details| {
 		if let Some(d) = details {
-			ensure!(d.deposit.version.is_none(), Error::<T>::Migration);
+			ensure!(d.deposit.version.is_none(), Error::<T>::BalanceMigration);
 
 			*d = CredentialEntry {
 				deposit: Deposit {

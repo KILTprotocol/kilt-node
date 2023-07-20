@@ -222,7 +222,178 @@ pub mod pallet {
 		type RuntimeOrigin: From<RawOrigin<DidIdentifierOf<Self>>>;
 
 		/// The origin check for all DID calls inside this pallet.
-		type EnsureOrigin: EnsureOrigin<
+		type EnsureOrigin: EnsureOrigin<benchmarks! {
+			where_clause {
+				where
+				T: core::fmt::Debug,
+				<T as Config>::EnsureOrigin: GenerateBenchmarkOrigin<T::RuntimeOrigin, T::AccountId, T::AttesterId>,
+				T: ctype::Config<CtypeCreatorId = T::AttesterId>,
+				T::BlockNumber: From<u64>,
+				<T as Config>::Currency: Mutate<T::AccountId>
+			}
+		
+			add {
+				let sender: T::AccountId = account("sender", 0, SEED);
+				let attester: T::AttesterId = account("attester", 0, SEED);
+				let claim_hash: T::Hash = T::Hashing::hash(b"claim");
+				let ctype_hash: T::Hash = T::Hash::default();
+		
+				ctype::Ctypes::<T>::insert(ctype_hash, CtypeEntryOf::<T> {
+					creator: attester.clone(),
+					created_at: 0u64.into()
+				});
+				<T as Config>::Currency::set_balance(&sender, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
+		
+				let origin = <T as Config>::EnsureOrigin::generate_origin(sender.clone(), attester.clone());
+			}: _<T::RuntimeOrigin>(origin, claim_hash, ctype_hash, None)
+			verify {
+				assert!(Attestations::<T>::contains_key(claim_hash));
+				assert_eq!(Pallet::<T>::attestations(claim_hash), Some(AttestationDetails {
+					ctype_hash,
+					attester,
+					authorization_id: None,
+					revoked: false,
+					deposit: kilt_support::Deposit {
+						version: Some(1),
+						owner: sender,
+						amount: <T as Config>::Deposit::get(),
+					}
+				}));
+			}
+		
+			revoke {
+				let sender: T::AccountId = account("sender", 0, SEED);
+				let attester: T::AttesterId = account("attester", 0, SEED);
+				let claim_hash: T::Hash = T::Hashing::hash(b"claim");
+				let ctype_hash: T::Hash = T::Hash::default();
+		
+				ctype::Ctypes::<T>::insert(ctype_hash, CtypeEntryOf::<T> {
+					creator: attester.clone(),
+					created_at: 0u64.into()
+				});
+				<T as Config>::Currency::set_balance(&sender, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
+		
+				let origin = <T as Config>::EnsureOrigin::generate_origin(sender.clone(), attester.clone());
+				Pallet::<T>::add(origin.clone(), claim_hash, ctype_hash, None)?;
+			}: _<T::RuntimeOrigin>(origin, claim_hash, None)
+			verify {
+				assert!(Attestations::<T>::contains_key(claim_hash));
+				assert_eq!(Attestations::<T>::get(claim_hash), Some(AttestationDetails {
+					ctype_hash,
+					attester,
+					authorization_id: None,
+					revoked: true,
+					deposit: kilt_support::Deposit {
+						version: Some(1),
+						owner: sender,
+						amount: <T as Config>::Deposit::get(),
+					}
+				}));
+			}
+		
+			remove {
+				let attester: T::AttesterId = account("attester", 0, SEED);
+				let sender: T::AccountId = account("sender", 0, SEED);
+				let claim_hash: T::Hash = T::Hashing::hash(b"claim");
+				let ctype_hash: T::Hash = T::Hash::default();
+		
+				ctype::Ctypes::<T>::insert(ctype_hash, CtypeEntryOf::<T> {
+					creator: attester.clone(),
+					created_at: 0u64.into()
+				});
+				<T as Config>::Currency::set_balance(&sender, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
+		
+				let origin = <T as Config>::EnsureOrigin::generate_origin(sender.clone(), attester.clone());
+				Pallet::<T>::add(origin, claim_hash, ctype_hash, None)?;
+				let origin = <T as Config>::EnsureOrigin::generate_origin(sender, attester);
+			}: _<T::RuntimeOrigin>(origin, claim_hash, None)
+			verify {
+				assert!(!Attestations::<T>::contains_key(claim_hash));
+			}
+		
+			reclaim_deposit {
+				let attester: T::AttesterId = account("attester", 0, SEED);
+				let sender: T::AccountId = account("sender", 0, SEED);
+				let claim_hash: T::Hash = T::Hashing::hash(b"claim");
+				let ctype_hash: T::Hash = T::Hash::default();
+		
+				ctype::Ctypes::<T>::insert(ctype_hash, CtypeEntryOf::<T> {
+					creator: attester.clone(),
+					created_at: 0u64.into()
+				});
+				<T as Config>::Currency::set_balance(&sender, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
+		
+				let origin = <T as Config>::EnsureOrigin::generate_origin(sender.clone(), attester);
+				Pallet::<T>::add(origin, claim_hash, ctype_hash, None)?;
+				let origin = RawOrigin::Signed(sender);
+			}: _(origin, claim_hash)
+			verify {
+				assert!(!Attestations::<T>::contains_key(claim_hash));
+			}
+		
+			change_deposit_owner {
+				let attester: T::AttesterId = account("attester", 0, SEED);
+				let deposit_owner_old: T::AccountId = account("sender", 0, SEED);
+				let deposit_owner_new: T::AccountId = account("sender", 1, SEED);
+				let claim_hash: T::Hash = T::Hashing::hash(b"claim");
+				let ctype_hash: T::Hash = T::Hash::default();
+		
+				ctype::Ctypes::<T>::insert(ctype_hash, CtypeEntryOf::<T> {
+					creator: attester.clone(),
+					created_at: 0u64.into()
+				});
+				<T as Config>::Currency::set_balance(&deposit_owner_old, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
+				<T as Config>::Currency::set_balance(&deposit_owner_new, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
+		
+				let origin = <T as Config>::EnsureOrigin::generate_origin(deposit_owner_old, attester.clone());
+				Pallet::<T>::add(origin, claim_hash, ctype_hash, None)?;
+				let origin = <T as Config>::EnsureOrigin::generate_origin(deposit_owner_new.clone(), attester.clone());
+			}: _<T::RuntimeOrigin>(origin, claim_hash)
+			verify {
+				assert_eq!(Attestations::<T>::get(claim_hash), Some(AttestationDetails {
+					ctype_hash,
+					attester,
+					authorization_id: None,
+					revoked: false,
+					deposit: kilt_support::Deposit {
+						version: Some(1),
+						owner: deposit_owner_new,
+						amount: <T as Config>::Deposit::get(),
+					}
+				}));
+			}
+		
+			update_deposit {
+				let attester: T::AttesterId = account("attester", 0, SEED);
+				let deposit_owner: T::AccountId = account("sender", 0, SEED);
+				let claim_hash: T::Hash = T::Hashing::hash(b"claim");
+				let ctype_hash: T::Hash = T::Hash::default();
+		
+				ctype::Ctypes::<T>::insert(ctype_hash, CtypeEntryOf::<T> {
+					creator: attester.clone(),
+					created_at: 0u64.into()
+				});
+				<T as Config>::Currency::set_balance(&deposit_owner, <T as Config>::Deposit::get() + <T as Config>::Deposit::get());
+		
+				let origin = <T as Config>::EnsureOrigin::generate_origin(deposit_owner.clone(), attester.clone());
+				Pallet::<T>::add(origin, claim_hash, ctype_hash, None).expect("claim should be added");
+		
+				let origin = RawOrigin::Signed(deposit_owner.clone());
+			}: _(origin, claim_hash)
+			verify {
+				assert_eq!(Attestations::<T>::get(claim_hash), Some(AttestationDetails {
+					ctype_hash,
+					attester,
+					authorization_id: None,
+					revoked: false,
+					deposit: kilt_support::Deposit {
+						version: Some(1),
+						owner: deposit_owner,
+						amount: <T as Config>::Deposit::get(),
+					}
+				}));
+			}
+		}
 			<Self as frame_system::Config>::RuntimeOrigin,
 			Success = <Self as Config>::OriginSuccess,
 		>;

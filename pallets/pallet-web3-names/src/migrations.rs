@@ -28,7 +28,7 @@ where
 {
 	Owner::<T>::try_mutate(key, |details| {
 		if let Some(d) = details {
-			ensure!(d.deposit.version.is_none(), Error::<T>::Migration);
+			ensure!(d.deposit.version.is_none(), Error::<T>::BalanceMigration);
 
 			*d = Web3NameOwnership {
 				deposit: Deposit {
