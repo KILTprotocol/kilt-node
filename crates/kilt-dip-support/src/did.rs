@@ -16,6 +16,8 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use core::task::Context;
+
 use did::{
 	did_details::{DidPublicKey, DidPublicKeyDetails, DidVerificationKey},
 	DidSignature, DidVerificationKeyRelationship,
@@ -31,7 +33,7 @@ use sp_std::marker::PhantomData;
 
 use crate::{
 	merkle::RevealedDidKey,
-	traits::{Bump, DidDipOriginFilter},
+	traits::{Bump, DidDipOriginFilter, DidSignatureVerifierContextProvider},
 };
 
 #[derive(Encode, Decode, RuntimeDebug, Clone, Eq, PartialEq, TypeInfo)]
@@ -46,6 +48,89 @@ pub struct MerkleLeavesAndDidSignature<MerkleLeaves, BlockNumber> {
 	pub did_signature: TimeBoundDidSignature<BlockNumber>,
 }
 
+pub struct MerkleDidSignatureVerifier<
+	Call,
+	Submitter,
+	DidLocalDetails,
+	MerkleProofEntries,
+	ContextProvider,
+	RemoteKeyId,
+	RemoteBlockNumber,
+>(
+	PhantomData<(
+		Call,
+		Submitter,
+		DidLocalDetails,
+		MerkleProofEntries,
+		ContextProvider,
+		RemoteKeyId,
+		RemoteBlockNumber,
+	)>,
+);
+
+impl<Call, Submitter, DidLocalDetails, MerkleProofEntries, ContextProvider, RemoteKeyId, RemoteBlockNumber>
+	MerkleDidSignatureVerifier<
+		Call,
+		Submitter,
+		DidLocalDetails,
+		MerkleProofEntries,
+		ContextProvider,
+		RemoteKeyId,
+		RemoteBlockNumber,
+	> where
+	ContextProvider: DidSignatureVerifierContextProvider,
+	ContextProvider::BlockNumber: Encode + CheckedSub + PartialOrd,
+	ContextProvider::Hash: Encode,
+	ContextProvider::SignedExtra: Encode,
+	DidLocalDetails: Bump + Default + Encode,
+	MerkleProofEntries: AsRef<[RevealedDidKey<RemoteKeyId, RemoteBlockNumber>]>,
+{
+	pub fn verify_did_signature_for_call(
+		call: &Call,
+		submitter: &Submitter,
+		local_details: &mut Option<DidLocalDetails>,
+		merkle_revealed_did_signature: MerkleLeavesAndDidSignature<MerkleProofEntries, ContextProvider::BlockNumber>,
+	) -> Result<(DidVerificationKey, DidVerificationKeyRelationship), ()> {
+		let block_number = ContextProvider::block_number();
+		let is_signature_fresh = if let Some(blocks_ago_from_now) =
+			block_number.checked_sub(&merkle_revealed_did_signature.did_signature.block_number)
+		{
+			// False if the signature is too old.
+			blocks_ago_from_now <= ContextProvider::SIGNATURE_VALIDITY
+		} else {
+			// Signature generated at a future time, not possible to verify.
+			false
+		};
+		ensure!(is_signature_fresh, ());
+		let encoded_payload = (
+			call,
+			&local_details,
+			submitter,
+			&merkle_revealed_did_signature.did_signature.block_number,
+			ContextProvider::genesis_hash(),
+			ContextProvider::signed_extra(),
+		)
+			.encode();
+		// Only consider verification keys from the set of revealed keys.
+		let mut proof_verification_keys = merkle_revealed_did_signature.merkle_leaves.as_ref().iter().filter_map(|RevealedDidKey {
+			relationship, details: DidPublicKeyDetails { key, .. }, .. } | {
+				let DidPublicKey::PublicVerificationKey(key) = key else { return None };
+					Some((key, DidVerificationKeyRelationship::try_from(relationship).expect("Should never fail to build a VerificationRelationship from the given DidKeyRelationship because we have already made sure the conditions hold."))) 		});
+		let valid_signing_key = proof_verification_keys.find(|(verification_key, _)| {
+			verification_key
+				.verify_signature(&encoded_payload, &merkle_revealed_did_signature.did_signature.signature)
+				.is_ok()
+		});
+		let Some((key, relationship)) = valid_signing_key else { return Err(()) };
+		if let Some(details) = local_details {
+			details.bump();
+		} else {
+			*local_details = Some(DidLocalDetails::default());
+		}
+		Ok((key.clone(), relationship))
+	}
+}
+
 /// A type that verifies a DID signature over some DID keys revealed by a
 /// previously-verified Merkle proof. It requires the `Details` type to
 /// implement the `Bump` trait to avoid replay attacks. The basic verification
@@ -53,140 +138,139 @@ pub struct MerkleLeavesAndDidSignature<MerkleLeaves, BlockNumber> {
 /// (call, identity details, submitter_address, submission_block_number,
 /// genesis_hash). Additional details can be added to the end of the tuple by
 /// providing a `SignedExtraProvider`.
-pub struct MerkleRevealedDidSignatureVerifier<
-	KeyId,
-	BlockNumber,
-	Digest,
-	Details,
-	AccountId,
-	MerkleProofEntries,
-	BlockNumberProvider,
-	const SIGNATURE_VALIDITY: u64,
-	GenesisHashProvider,
-	Hash,
-	SignedExtraProvider = (),
-	SignedExtra = (),
->(
-	#[allow(clippy::type_complexity)]
-	PhantomData<(
-		KeyId,
-		BlockNumber,
-		Digest,
-		Details,
-		AccountId,
-		MerkleProofEntries,
-		BlockNumberProvider,
-		ConstU64<SIGNATURE_VALIDITY>,
-		GenesisHashProvider,
-		Hash,
-		SignedExtraProvider,
-		SignedExtra,
-	)>,
-);
+// pub struct MerkleRevealedDidSignatureVerifier<
+// 	KeyId,
+// 	BlockNumber,
+// 	Digest,
+// 	Details,
+// 	AccountId,
+// 	MerkleProofEntries,
+// 	BlockNumberProvider,
+// 	const SIGNATURE_VALIDITY: u64,
+// 	GenesisHashProvider,
+// 	Hash,
+// 	SignedExtraProvider = (),
+// 	SignedExtra = (),
+// >(
+// 	#[allow(clippy::type_complexity)]
+// 	PhantomData<(
+// 		KeyId,
+// 		BlockNumber,
+// 		Digest,
+// 		Details,
+// 		AccountId,
+// 		MerkleProofEntries,
+// 		BlockNumberProvider,
+// 		ConstU64<SIGNATURE_VALIDITY>,
+// 		GenesisHashProvider,
+// 		Hash,
+// 		SignedExtraProvider,
+// 		SignedExtra,
+// 	)>,
+// );
+// impl<
+// 		Call,
+// 		Subject,
+// 		KeyId,
+// 		BlockNumber,
+// 		Digest,
+// 		Details,
+// 		AccountId,
+// 		MerkleProofEntries,
+// 		BlockNumberProvider,
+// 		const SIGNATURE_VALIDITY: u64,
+// 		GenesisHashProvider,
+// 		Hash,
+// 		SignedExtraProvider,
+// 		SignedExtra,
+// 	> IdentityProofVerifier<Call, Subject>
+// 	for MerkleRevealedDidSignatureVerifier<
+// 		KeyId,
+// 		BlockNumber,
+// 		Digest,
+// 		Details,
+// 		AccountId,
+// 		MerkleProofEntries,
+// 		BlockNumberProvider,
+// 		SIGNATURE_VALIDITY,
+// 		GenesisHashProvider,
+// 		Hash,
+// 		SignedExtraProvider,
+// 		SignedExtra,
+// 	> where
+// 	AccountId: Encode,
+// 	BlockNumber: Encode + CheckedSub + Into<u64> + PartialOrd + sp_std::fmt::Debug,
+// 	Call: Encode,
+// 	Digest: Encode,
+// 	Details: Bump + Default + Encode,
+// 	MerkleProofEntries: AsRef<[RevealedDidKey<KeyId, BlockNumber>]>,
+// 	BlockNumberProvider: Get<BlockNumber>,
+// 	GenesisHashProvider: Get<Hash>,
+// 	Hash: Encode,
+// 	SignedExtraProvider: Get<SignedExtra>,
+// 	SignedExtra: Encode,
+// {
+// 	// TODO: Error handling
+// 	type Error = ();
+// 	/// The proof must be a list of Merkle leaves that have been previously
+// 	/// verified by the Merkle proof verifier, and the additional DID signature.
+// 	type Proof = MerkleLeavesAndDidSignature<MerkleProofEntries, BlockNumber>;
+// 	/// The `Details` that are part of the identity details must implement the
+// 	/// `Bump` trait.
+// 	type IdentityDetails = Details;
+// 	/// The type of the submitter's accounts.
+// 	type Submitter = AccountId;
+// 	/// Successful verifications return the verification key used to validate
+// 	/// the provided signature and its relationship to the DID subject.
+// 	type VerificationResult = (DidVerificationKey, DidVerificationKeyRelationship);
 
-impl<
-		Call,
-		Subject,
-		KeyId,
-		BlockNumber,
-		Digest,
-		Details,
-		AccountId,
-		MerkleProofEntries,
-		BlockNumberProvider,
-		const SIGNATURE_VALIDITY: u64,
-		GenesisHashProvider,
-		Hash,
-		SignedExtraProvider,
-		SignedExtra,
-	> IdentityProofVerifier<Call, Subject>
-	for MerkleRevealedDidSignatureVerifier<
-		KeyId,
-		BlockNumber,
-		Digest,
-		Details,
-		AccountId,
-		MerkleProofEntries,
-		BlockNumberProvider,
-		SIGNATURE_VALIDITY,
-		GenesisHashProvider,
-		Hash,
-		SignedExtraProvider,
-		SignedExtra,
-	> where
-	AccountId: Encode,
-	BlockNumber: Encode + CheckedSub + Into<u64> + PartialOrd + sp_std::fmt::Debug,
-	Call: Encode,
-	Digest: Encode,
-	Details: Bump + Default + Encode,
-	MerkleProofEntries: AsRef<[RevealedDidKey<KeyId, BlockNumber>]>,
-	BlockNumberProvider: Get<BlockNumber>,
-	GenesisHashProvider: Get<Hash>,
-	Hash: Encode,
-	SignedExtraProvider: Get<SignedExtra>,
-	SignedExtra: Encode,
-{
-	// TODO: Error handling
-	type Error = ();
-	/// The proof must be a list of Merkle leaves that have been previously
-	/// verified by the Merkle proof verifier, and the additional DID signature.
-	type Proof = MerkleLeavesAndDidSignature<MerkleProofEntries, BlockNumber>;
-	/// The `Details` that are part of the identity details must implement the
-	/// `Bump` trait.
-	type IdentityDetails = Details;
-	/// The type of the submitter's accounts.
-	type Submitter = AccountId;
-	/// Successful verifications return the verification key used to validate
-	/// the provided signature and its relationship to the DID subject.
-	type VerificationResult = (DidVerificationKey, DidVerificationKeyRelationship);
+// 	fn verify_proof_for_call_against_details(
+// 		call: &Call,
+// 		_subject: &Subject,
+// 		submitter: &Self::Submitter,
+// 		identity_details: &mut Option<Self::IdentityDetails>,
+// 		proof: Self::Proof,
+// 	) -> Result<Self::VerificationResult, Self::Error> {
+// 		let block_number = BlockNumberProvider::get();
+// 		let is_signature_fresh =
+// 			if let Some(blocks_ago_from_now) = block_number.checked_sub(&proof.did_signature.block_number) {
+// 				// False if the signature is too old.
+// 				blocks_ago_from_now.into() <= SIGNATURE_VALIDITY
+// 			} else {
+// 				// Signature generated at a future time, not possible to verify.
+// 				false
+// 			};
 
-	fn verify_proof_for_call_against_details(
-		call: &Call,
-		_subject: &Subject,
-		submitter: &Self::Submitter,
-		identity_details: &mut Option<Self::IdentityDetails>,
-		proof: Self::Proof,
-	) -> Result<Self::VerificationResult, Self::Error> {
-		let block_number = BlockNumberProvider::get();
-		let is_signature_fresh =
-			if let Some(blocks_ago_from_now) = block_number.checked_sub(&proof.did_signature.block_number) {
-				// False if the signature is too old.
-				blocks_ago_from_now.into() <= SIGNATURE_VALIDITY
-			} else {
-				// Signature generated at a future time, not possible to verify.
-				false
-			};
-
-		ensure!(is_signature_fresh, ());
-		let encoded_payload = (
-			call,
-			&identity_details,
-			submitter,
-			&proof.did_signature.block_number,
-			GenesisHashProvider::get(),
-			SignedExtraProvider::get(),
-		)
-			.encode();
-		// Only consider verification keys from the set of revealed keys.
-		let mut proof_verification_keys = proof.merkle_leaves.as_ref().iter().filter_map(|RevealedDidKey {
-				relationship, details: DidPublicKeyDetails { key, .. }, .. } | {
-					let DidPublicKey::PublicVerificationKey(key) = key else { return None };
-						Some((key, DidVerificationKeyRelationship::try_from(*relationship).expect("Should never fail to build a VerificationRelationship from the given DidKeyRelationship because we have already made sure the conditions hold."))) 		});
-		let valid_signing_key = proof_verification_keys.find(|(verification_key, _)| {
-			verification_key
-				.verify_signature(&encoded_payload, &proof.did_signature.signature)
-				.is_ok()
-		});
-		let Some((key, relationship)) = valid_signing_key else { return Err(()) };
-		// TODO: bump details.
-		if let Some(details) = identity_details {
-			details.bump();
-		} else {
-			*identity_details = Some(Details::default());
-		}
-		Ok((key.clone(), relationship))
-	}
-}
+// 		ensure!(is_signature_fresh, ());
+// 		let encoded_payload = (
+// 			call,
+// 			&identity_details,
+// 			submitter,
+// 			&proof.did_signature.block_number,
+// 			GenesisHashProvider::get(),
+// 			SignedExtraProvider::get(),
+// 		)
+// 			.encode();
+// 		// Only consider verification keys from the set of revealed keys.
+// 		let mut proof_verification_keys = proof.merkle_leaves.as_ref().iter().filter_map(|RevealedDidKey {
+// 				relationship, details: DidPublicKeyDetails { key, .. }, .. } | {
+// 					let DidPublicKey::PublicVerificationKey(key) = key else { return None };
+// 						Some((key, DidVerificationKeyRelationship::try_from(*relationship).expect("Should never fail to build a VerificationRelationship from the given DidKeyRelationship because we have already made sure the conditions hold."))) 		});
+// 		let valid_signing_key = proof_verification_keys.find(|(verification_key, _)| {
+// 			verification_key
+// 				.verify_signature(&encoded_payload, &proof.did_signature.signature)
+// 				.is_ok()
+// 		});
+// 		let Some((key, relationship)) = valid_signing_key else { return Err(()) };
+// 		// TODO: bump details.
+// 		if let Some(details) = identity_details {
+// 			details.bump();
+// 		} else {
+// 			*identity_details = Some(Details::default());
+// 		}
+// 		Ok((key.clone(), relationship))
+// 	}
+// }
 
 /// A type that chains a DID signature verification, as provided by
 /// `MerkleRevealedDidSignatureVerifier`, and a call filtering logic based on
@@ -196,49 +280,50 @@ impl<
 /// some additional lookups on the call. The `CallVerifier` only performs
 /// internal checks, while all input and output types are taken from the
 /// provided `DidSignatureVerifier` type.
-pub struct DidSignatureAndCallVerifier<DidSignatureVerifier, CallVerifier>(
-	PhantomData<(DidSignatureVerifier, CallVerifier)>,
-);
+// pub struct DidSignatureAndCallVerifier<DidSignatureVerifier, CallVerifier>(
+// 	PhantomData<(DidSignatureVerifier, CallVerifier)>,
+// );
 
-impl<Call, Subject, DidSignatureVerifier, CallVerifier> IdentityProofVerifier<Call, Subject>
-	for DidSignatureAndCallVerifier<DidSignatureVerifier, CallVerifier>
-where
-	DidSignatureVerifier: IdentityProofVerifier<Call, Subject>,
-	CallVerifier: DidDipOriginFilter<Call, OriginInfo = DidSignatureVerifier::VerificationResult>,
-{
-	// FIXME: Better error handling
-	type Error = ();
-	/// The input proof is the same accepted by the `DidSignatureVerifier`.
-	type Proof = DidSignatureVerifier::Proof;
-	/// The identity details are the same accepted by the
-	/// `DidSignatureVerifier`.
-	type IdentityDetails = DidSignatureVerifier::IdentityDetails;
-	/// The submitter address is the same accepted by the
-	/// `DidSignatureVerifier`.
-	type Submitter = DidSignatureVerifier::Submitter;
-	/// The verification result is the same accepted by the
-	/// `DidSignatureVerifier`.
-	type VerificationResult = DidSignatureVerifier::VerificationResult;
+// impl<Call, Subject, DidSignatureVerifier, CallVerifier>
+// IdentityProofVerifier<Call, Subject>
+// 	for DidSignatureAndCallVerifier<DidSignatureVerifier, CallVerifier>
+// where
+// 	DidSignatureVerifier: IdentityProofVerifier<Call, Subject>,
+// 	CallVerifier: DidDipOriginFilter<Call, OriginInfo =
+// DidSignatureVerifier::VerificationResult>, {
+// 	// FIXME: Better error handling
+// 	type Error = ();
+// 	/// The input proof is the same accepted by the `DidSignatureVerifier`.
+// 	type Proof = DidSignatureVerifier::Proof;
+// 	/// The identity details are the same accepted by the
+// 	/// `DidSignatureVerifier`.
+// 	type IdentityDetails = DidSignatureVerifier::IdentityDetails;
+// 	/// The submitter address is the same accepted by the
+// 	/// `DidSignatureVerifier`.
+// 	type Submitter = DidSignatureVerifier::Submitter;
+// 	/// The verification result is the same accepted by the
+// 	/// `DidSignatureVerifier`.
+// 	type VerificationResult = DidSignatureVerifier::VerificationResult;
 
-	fn verify_proof_for_call_against_details(
-		call: &Call,
-		subject: &Subject,
-		submitter: &Self::Submitter,
-		identity_details: &mut Option<Self::IdentityDetails>,
-		proof: Self::Proof,
-	) -> Result<Self::VerificationResult, Self::Error> {
-		let did_signing_key = DidSignatureVerifier::verify_proof_for_call_against_details(
-			call,
-			subject,
-			submitter,
-			identity_details,
-			proof,
-		)
-		.map_err(|_| ())?;
-		CallVerifier::check_call_origin_info(call, &did_signing_key).map_err(|_| ())?;
-		Ok(did_signing_key)
-	}
-}
+// 	fn verify_proof_for_call_against_details(
+// 		call: &Call,
+// 		subject: &Subject,
+// 		submitter: &Self::Submitter,
+// 		identity_details: &mut Option<Self::IdentityDetails>,
+// 		proof: Self::Proof,
+// 	) -> Result<Self::VerificationResult, Self::Error> {
+// 		let did_signing_key =
+// DidSignatureVerifier::verify_proof_for_call_against_details( 			call,
+// 			subject,
+// 			submitter,
+// 			identity_details,
+// 			proof,
+// 		)
+// 		.map_err(|_| ())?;
+// 		CallVerifier::check_call_origin_info(call, &did_signing_key).map_err(|_|
+// ())?; 		Ok(did_signing_key)
+// 	}
+// }
 
 pub struct CombinedIdentityResult<OutputA, OutputB, OutputC> {
 	pub a: OutputA,

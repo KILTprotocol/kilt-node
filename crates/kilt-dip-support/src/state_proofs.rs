@@ -16,13 +16,19 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use pallet_dip_consumer::traits::IdentityProofVerifier;
 use parity_scale_codec::{Decode, HasCompact};
-use sp_core::U256;
-use sp_runtime::{generic::Header, traits::Hash};
+use sp_core::{ConstU32, U256};
+use sp_runtime::generic::Header;
 use sp_std::{marker::PhantomData, vec::Vec};
 use sp_trie::StorageProof;
 
 use substrate_no_std_port::read_proof_check;
+
+use crate::{
+	merkle::MerkleProof,
+	state_proofs::{parachain::DipCommitmentValueProofVerifier, relay_chain::ParachainHeadProofVerifier},
+};
 
 // Ported from https://github.com/paritytech/substrate/blob/b27c470eaff379f512d1dec052aff5d551ed3b03/primitives/state-machine/src/lib.rs#L1076
 // Needs to be replaced with its runtime-friendly version when available, or be
@@ -83,18 +89,115 @@ mod substrate_no_std_port {
 	}
 }
 
-pub mod relay_chain {
+#[derive(Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo, Clone)]
+pub struct DipSiblingParachainStateProof<RelayBlockHeight, InnerProof> {
+	para_root_proof: ParaRootProof<RelayBlockHeight>,
+	dip_commitment_proof: Vec<Vec<u8>>,
+	inner: InnerProof,
+}
+
+pub struct DipCommitmentStateProofVerifier<
+	RelayInfoProvider,
+	IdentityDetails,
+	Submitter,
+	ProviderParaIdProvider,
+	ParaInfoProvider,
+	ProviderAccountId,
+	ProviderKeyId,
+	ProviderWeb3Name,
+	ProviderLinkedAccountId,
+	const MAX_REVEALED_KEYS_COUNT: u32,
+	const MAX_REVEALED_ACCOUNTS_COUNT: u32,
+>(
+	PhantomData<(
+		RelayInfoProvider,
+		IdentityDetails,
+		Submitter,
+		ProviderParaIdProvider,
+		ParaInfoProvider,
+		ProviderAccountId,
+		ProviderKeyId,
+		ProviderWeb3Name,
+		ProviderLinkedAccountId,
+		ConstU32<MAX_REVEALED_KEYS_COUNT>,
+		ConstU32<MAX_REVEALED_ACCOUNTS_COUNT>,
+	)>,
+);
+
+impl<Call, Subject, IdentityDetails, Submitter, RelayInfoProvider, ProviderParaIdProvider>
+	IdentityProofVerifier<Call, Subject>
+	for DipCommitmentStateProofVerifier<
+		IdentityDetails,
+		Submitter,
+		RelayInfoProvider,
+		ProviderParaIdProvider,
+		ParaInfoProvider,
+	> where
+	RelayInfoProvider: RelayChainStateInfoProvider,
+	RelayInfoProvider::Hasher: 'static,
+	OutputOf<RelayInfoProvider::Hasher>: Ord,
+	RelayInfoProvider::BlockNumber: Copy + Into<U256> + TryFrom<U256> + HasCompact,
+	RelayInfoProvider::Key: AsRef<[u8]>,
+	ProviderParaIdProvider: Get<RelayInfoProvider::ParaId>,
+	ParaInfoProvider: ParachainStateInfoProvider,
+	ParaInfoProvider::Hasher: 'static,
+	OutputOf<ParaInfoProvider::Hasher>: Ord,
+	ParaInfoProvider::Commitment: Decode,
+	ParaInfoProvider::Key: AsRef<[u8]>,
+{
+	type Error = ();
+	type IdentityDetails = IdentityDetails;
+	type Proof = DipSiblingParachainStateProof<RelayInfoProvider::BlockNumber, MerkleProof>;
+	type Submitter = Submitter;
+	type VerificationResult = ParaInfoProvider::Commitment;
+
+	fn verify_proof_for_call_against_details(
+		call: &Call,
+		subject: &Subject,
+		submitter: &Self::Submitter,
+		identity_details: &mut Option<Self::IdentityDetails>,
+		proof: Self::Proof,
+	) -> Result<Self::VerificationResult, Self::Error> {
+		let parachain_header = ParachainHeadProofVerifier::<
+			RelayInfoProvider,
+			IdentityDetails,
+			Submitter,
+			ProviderParaIdProvider,
+		>::verify_proof_for_parachain(
+			&ProviderParaIdProvider::get(),
+			&proof.relay_block_height,
+			proof.para_root_proof,
+		)?;
+		DipCommitmentValueProofVerifier::<ParaInfoProvider>::verify_proof_for_identifier(
+			subject,
+			parachain_header.state_root.into(),
+			proof.dip_commitment_proof,
+		)
+	}
+}
+
+mod relay_chain {
 	use super::*;
 
-	use crate::traits::RelayChainStateInfoProvider;
+	use sp_core::Get;
 
-	pub struct ParachainHeadProofVerifier<RelayInfoProvider>(PhantomData<RelayInfoProvider>);
+	use pallet_dip_consumer::traits::IdentityProofVerifier;
 
-	impl<RelayInfoProvider> ParachainHeadProofVerifier<RelayInfoProvider>
+	use crate::{
+		traits::{OutputOf, RelayChainStateInfoProvider},
+		ParaRootProof,
+	};
+
+	pub(super) struct ParachainHeadProofVerifier<RelayInfoProvider, IdentityDetails, Submitter, ProviderParaIdProvider>(
+		PhantomData<(RelayInfoProvider, IdentityDetails, Submitter, ProviderParaIdProvider)>,
+	);
+
+	impl<RelayInfoProvider, IdentityDetails, Submitter, ProviderParaIdProvider>
+		ParachainHeadProofVerifier<RelayInfoProvider, IdentityDetails, Submitter, ProviderParaIdProvider>
 	where
 		RelayInfoProvider: RelayChainStateInfoProvider,
 		RelayInfoProvider::Hasher: 'static,
-		<RelayInfoProvider::Hasher as Hash>::Output: Ord,
+		OutputOf<RelayInfoProvider::Hasher>: Ord,
 		RelayInfoProvider::BlockNumber: Copy + Into<U256> + TryFrom<U256> + HasCompact,
 		RelayInfoProvider::Key: AsRef<[u8]>,
 	{
@@ -104,8 +207,7 @@ pub mod relay_chain {
 			relay_height: &RelayInfoProvider::BlockNumber,
 			proof: impl IntoIterator<Item = Vec<u8>>,
 		) -> Result<Header<RelayInfoProvider::BlockNumber, RelayInfoProvider::Hasher>, ()> {
-			let relay_state_root: <<RelayInfoProvider as RelayChainStateInfoProvider>::Hasher as Hash>::Output =
-				RelayInfoProvider::state_root_for_block(relay_height).ok_or(())?;
+			let relay_state_root = RelayInfoProvider::state_root_for_block(relay_height).ok_or(())?;
 			let parachain_storage_key = RelayInfoProvider::parachain_head_storage_key(para_id);
 			let storage_proof = StorageProof::new(proof);
 			let revealed_leaves = read_proof_check::<RelayInfoProvider::Hasher, _>(
@@ -115,12 +217,43 @@ pub mod relay_chain {
 			)
 			.map_err(|_| ())?;
 			// TODO: Remove at some point
-			debug_assert!(revealed_leaves.len() == 1usize);
-			debug_assert!(revealed_leaves.contains_key(parachain_storage_key.as_ref()));
+			{
+				debug_assert!(revealed_leaves.len() == 1usize);
+				debug_assert!(revealed_leaves.contains_key(parachain_storage_key.as_ref()));
+			}
 			let Some(Some(encoded_head)) = revealed_leaves.get(parachain_storage_key.as_ref()) else { return Err(()) };
 			// TODO: Figure out why RPC call returns 2 bytes in front which we don't need
 			let mut unwrapped_head = &encoded_head[2..];
 			Header::decode(&mut unwrapped_head).map_err(|_| ())
+		}
+	}
+
+	pub struct RococoParachainRuntime<Runtime>(PhantomData<Runtime>);
+
+	impl<Runtime> RelayChainStateInfoProvider for RococoParachainRuntime<Runtime>
+	where
+		Runtime: pallet_relay_store::Config,
+	{
+		type BlockNumber = u32;
+		type Hasher = BlakeTwo256;
+		type Key = StorageKey;
+		type ParaId = u32;
+
+		fn state_root_for_block(block_height: &Self::BlockNumber) -> Option<OutputOf<Self::Hasher>> {
+			pallet_relay_store::Pallet::<Runtime>::latest_relay_head_for_block(block_height)
+				.map(|relay_header| relay_header.relay_parent_storage_root)
+		}
+
+		fn parachain_head_storage_key(para_id: &Self::ParaId) -> Self::Key {
+			// TODO: It's not possible to access the runtime definition from here.
+			let encoded_para_id = para_id.encode();
+			let storage_key = [
+				frame_support::storage::storage_prefix(b"Paras", b"Heads").as_slice(),
+				sp_io::hashing::twox_64(&encoded_para_id).as_slice(),
+				encoded_para_id.as_slice(),
+			]
+			.concat();
+			StorageKey(storage_key)
 		}
 	}
 
@@ -157,9 +290,7 @@ pub mod relay_chain {
 				StorageKey(storage_key)
 			}
 
-			fn state_root_for_block(
-				_block_height: &Self::BlockNumber,
-			) -> Option<<Self::Hasher as sp_runtime::traits::Hash>::Output> {
+			fn state_root_for_block(_block_height: &Self::BlockNumber) -> Option<OutputOf<Self::Hasher>> {
 				Some(hex!("81b75d95075d16005ee0a987a3f061d3011ada919b261e9b02961b9b3725f3fd").into())
 			}
 		}
@@ -180,36 +311,39 @@ pub mod relay_chain {
 			// "0xcd710b30bd2eab0352ddcc26417aa1941b3c252fcb29d88eff4f3de5de4476c32c0cfd6c23b92a7826080000"
 			//
 			let expected_spiritnet_head_at_block = hex!("65541097fb02782e14f43074f0b00e44ae8e9fe426982323ef1d329739740d37f252ff006d1156941db1bccd58ce3a1cac4f40cad91f692d94e98f501dd70081a129b69a3e2ef7e1ff84ba3d86dab4e95f2c87f6b1055ebd48519c185360eae58f05d1ea08066175726120dcdc6308000000000561757261010170ccfaf3756d1a8dd8ae5c89094199d6d32e5dd9f0920f6fe30f986815b5e701974ea0e0e0a901401f2c72e3dd8dbdf4aa55d59bf3e7021856cdb8038419eb8c").to_vec();
-			let returned_head = ParachainHeadProofVerifier::<StaticPolkadotInfoProvider>::verify_proof_for_parachain(
-				&2_086,
-				&16_363_919,
-				spiritnet_head_proof_at_block,
-			)
-			.expect("Parachain head proof verification should not fail.");
+			let returned_head =
+				ParachainHeadProofVerifier::<StaticPolkadotInfoProvider, (), (), ()>::verify_proof_for_parachain(
+					&2_086,
+					&16_363_919,
+					spiritnet_head_proof_at_block,
+				)
+				.expect("Parachain head proof verification should not fail.");
 			assert!(returned_head.encode() == expected_spiritnet_head_at_block, "Parachain head returned from the state proof verification should not be different than the pre-computed one.");
 		}
 	}
 }
 
-pub mod parachain {
+mod parachain {
+	use pallet_dip_consumer::traits::IdentityProofVerifier;
+
 	use super::*;
 
-	use crate::traits::ParachainStateInfoProvider;
+	use crate::traits::{OutputOf, ParachainStateInfoProvider};
 
-	pub struct DipCommitmentValueProofVerifier<ParaInfoProvider>(PhantomData<ParaInfoProvider>);
+	pub(super) struct DipCommitmentValueProofVerifier<ParaInfoProvider>(PhantomData<ParaInfoProvider>);
 
 	impl<ParaInfoProvider> DipCommitmentValueProofVerifier<ParaInfoProvider>
 	where
 		ParaInfoProvider: ParachainStateInfoProvider,
 		ParaInfoProvider::Hasher: 'static,
-		<ParaInfoProvider::Hasher as Hash>::Output: Ord,
+		OutputOf<ParaInfoProvider::Hasher>: Ord,
 		ParaInfoProvider::Commitment: Decode,
 		ParaInfoProvider::Key: AsRef<[u8]>,
 	{
 		#[allow(clippy::result_unit_err)]
 		pub fn verify_proof_for_identifier(
 			identifier: &ParaInfoProvider::Identifier,
-			state_root: <ParaInfoProvider::Hasher as Hash>::Output,
+			state_root: OutputOf<ParaInfoProvider::Hasher>,
 			proof: impl IntoIterator<Item = Vec<u8>>,
 		) -> Result<ParaInfoProvider::Commitment, ()> {
 			let dip_commitment_storage_key = ParaInfoProvider::dip_subject_storage_key(identifier);
@@ -221,10 +355,36 @@ pub mod parachain {
 			)
 			.map_err(|_| ())?;
 			// TODO: Remove at some point
-			debug_assert!(revealed_leaves.len() == 1usize);
-			debug_assert!(revealed_leaves.contains_key(dip_commitment_storage_key.as_ref()));
+			{
+				debug_assert!(revealed_leaves.len() == 1usize);
+				debug_assert!(revealed_leaves.contains_key(dip_commitment_storage_key.as_ref()));
+			}
 			let Some(Some(encoded_commitment)) = revealed_leaves.get(dip_commitment_storage_key.as_ref()) else { return Err(()) };
 			ParaInfoProvider::Commitment::decode(&mut &encoded_commitment[..]).map_err(|_| ())
+		}
+	}
+
+	pub struct DipProviderParachainRuntime<Runtime>(PhantomData<Runtime>);
+
+	impl<Runtime> ParachainStateInfoProvider for DipProviderParachainRuntime<Runtime>
+	where
+		Runtime: pallet_dip_provider::Config,
+	{
+		type Commitment = <Runtime as pallet_dip_provider::Config>::IdentityCommitment;
+		type Hasher = <Runtime as frame_system::Config>::Hashing;
+		type Identifier = <Runtime as pallet_dip_provider::Config>::Identifier;
+		type Key = StorageKey;
+
+		fn dip_subject_storage_key(identifier: &Self::Identifier) -> Self::Key {
+			// TODO: Replace with actual runtime definition
+			let encoded_identifier = identifier.encode();
+			let storage_key = [
+				frame_support::storage::storage_prefix(b"DipProvider", b"IdentityCommitments").as_slice(),
+				sp_io::hashing::twox_64(&encoded_identifier).as_slice(),
+				encoded_identifier.as_slice(),
+			]
+			.concat();
+			StorageKey(storage_key)
 		}
 	}
 
