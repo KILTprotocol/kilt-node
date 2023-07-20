@@ -19,7 +19,6 @@ scale-info = {workspace = true, features = ["derive"]}
 
 # DIP
 did.workspace = true
-dip-support.workspace = true
 kilt-dip-support.workspace = true
 kilt-runtime-api-dip-provider.workspace = true
 pallet-did-lookup.workspace = true
@@ -78,7 +77,6 @@ std = [
 	"parity-scale-codec/std",
 	"scale-info/std",
   "did/std",
-  "dip-support/std",
   "kilt-dip-support/std",
   "kilt-runtime-api-dip-provider/std",
   "pallet-did-lookup/std",
