@@ -69,4 +69,6 @@ std = [
   "xcm-executor/std",
   "cumulus-pallet-parachain-system/std",
 ]
-runtime-benchmarks = []
+runtime-benchmarks = [
+  "rococo-runtime/runtime-benchmarks"
+]
