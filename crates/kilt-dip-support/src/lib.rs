@@ -151,7 +151,7 @@ impl<
 	SiblingProviderStateInfo::Key: AsRef<[u8]>,
 
 	LocalContextProvider: DidSignatureVerifierContext,
-	LocalContextProvider::BlockNumber: Encode + CheckedSub + PartialOrd<u16>,
+	LocalContextProvider::BlockNumber: Encode + CheckedSub + From<u16> + PartialOrd,
 	LocalContextProvider::Hash: Encode,
 	LocalContextProvider::SignedExtra: Encode,
 	LocalDidDetails: Bump + Default + Encode,
@@ -242,3 +242,7 @@ impl<
 		Ok(proof_leaves)
 	}
 }
+
+pub use state_proofs::{
+	parachain::KiltDipCommitmentsForDipProviderPallet, relay_chain::RococoStateRootsViaRelayStorePallet,
+};

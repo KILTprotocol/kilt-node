@@ -24,7 +24,7 @@ use sp_runtime::{BoundedVec, SaturatedConversion};
 use sp_std::{fmt::Debug, marker::PhantomData, vec::Vec};
 use sp_trie::{verify_trie_proof, LayoutV1};
 
-#[derive(Encode, Decode, RuntimeDebug, Clone, Eq, PartialEq, Default)]
+#[derive(Encode, Decode, RuntimeDebug, Clone, Eq, PartialEq, Default, TypeInfo)]
 pub struct DidMerkleProof<BlindedValues, Leaf> {
 	pub blinded: BlindedValues,
 	// TODO: Probably replace with a different data structure for better lookup capabilities
