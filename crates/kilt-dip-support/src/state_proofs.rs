@@ -267,6 +267,7 @@ pub(super) mod parachain {
 	where
 		Runtime: pallet_dip_provider::Config,
 	{
+		type BlockNumber = <Runtime as frame_system::Config>::BlockNumber;
 		type Commitment = <Runtime as pallet_dip_provider::Config>::IdentityCommitment;
 		type Hasher = <Runtime as frame_system::Config>::Hashing;
 		type Identifier = <Runtime as pallet_dip_provider::Config>::Identifier;
@@ -299,6 +300,7 @@ pub(super) mod parachain {
 
 		// We use the `system::eventCount()` storage entry as a unit test here.
 		impl ProviderParachainStateInfo for StaticSpiritnetInfoProvider {
+			type BlockNumber = u32;
 			// The type of the `eventCount()` storage entry.
 			type Commitment = u32;
 			type Hasher = BlakeTwo256;

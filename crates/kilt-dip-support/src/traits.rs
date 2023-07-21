@@ -65,6 +65,7 @@ pub trait RelayChainStateInfo {
 }
 
 pub trait ProviderParachainStateInfo {
+	type BlockNumber;
 	type Commitment;
 	type Key;
 	type Hasher: sp_runtime::traits::Hash;
