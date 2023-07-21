@@ -90,20 +90,21 @@ pub mod pallet {
 				new_validation_data.relay_parent_storage_root,
 				new_validation_data.relay_parent_number,
 			);
-			LatestRelayHeads::<T>::insert(
-				relay_block_height,
-				RelayParentInfo {
-					relay_parent_storage_root: new_validation_data.relay_parent_storage_root,
-				},
-			);
 			let push_res = latest_block_heights.try_push(relay_block_height);
 			if let Err(err) = push_res {
 				log::error!(
 					"Pushing a new relay block to the queue should not fail but it did when adding relay block n. {:?}",
 					err
 				);
+			} else {
+				LatestBlockHeights::<T>::set(latest_block_heights);
+				LatestRelayHeads::<T>::insert(
+					relay_block_height,
+					RelayParentInfo {
+						relay_parent_storage_root: new_validation_data.relay_parent_storage_root,
+					},
+				);
 			}
-			LatestBlockHeights::<T>::set(latest_block_heights);
 		}
 	}
 }
