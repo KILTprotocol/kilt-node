@@ -33,7 +33,7 @@ use crate::{
 	did::{RevealedDidKeysAndSignature, RevealedDidKeysSignatureAndCallVerifier, TimeBoundDidSignature},
 	merkle::{DidMerkleProof, DidMerkleProofVerifier, RevealedDidMerkleProofLeaf, RevealedDidMerkleProofLeaves},
 	state_proofs::{parachain::DipIdentityCommitmentProofVerifier, relay_chain::SiblingParachainHeadProofVerifier},
-	traits::{Bump, DidSignatureVerifierContext, DipCallOriginFilter, ProviderParachainStateInfo, RelayChainStateInfo},
+	traits::{Bump, DidSignatureVerifierContext, DipCallOriginFilter},
 	utils::OutputOf,
 };
 
@@ -68,34 +68,32 @@ pub struct DipMerkleProofAndDidSignature<BlindedValues, Leaf, BlockNumber> {
 	did_signature: TimeBoundDidSignature<BlockNumber>,
 }
 
-pub struct StateProofDipIdentifier<
-	RelayInfoProvider,
-	ProviderParaIdProvider,
-	ParaInfoProvider,
+pub struct DipSiblingProviderStateProofVerifier<
+	RelayChainStateInfo,
+	SiblingProviderParachainId,
+	SiblingProviderStateInfo,
 	TxSubmitter,
 	ProviderDipMerkleHasher,
 	ProviderDidKeyId,
-	ProviderBlockNumber,
 	ProviderWeb3Name,
 	ProviderLinkedAccountId,
 	const MAX_REVEALED_KEYS_COUNT: u32,
 	const MAX_REVEALED_ACCOUNTS_COUNT: u32,
-	DidLocalDetails,
+	LocalDidDetails,
 	LocalContextProvider,
 	LocalDidCallVerifier,
 >(
 	#[allow(clippy::type_complexity)]
 	PhantomData<(
-		RelayInfoProvider,
-		ProviderParaIdProvider,
-		ParaInfoProvider,
+		RelayChainStateInfo,
+		SiblingProviderParachainId,
+		SiblingProviderStateInfo,
 		TxSubmitter,
 		ProviderDipMerkleHasher,
 		ProviderDidKeyId,
-		ProviderBlockNumber,
 		ProviderWeb3Name,
 		ProviderLinkedAccountId,
-		DidLocalDetails,
+		LocalDidDetails,
 		LocalContextProvider,
 		LocalDidCallVerifier,
 	)>,
@@ -104,79 +102,83 @@ pub struct StateProofDipIdentifier<
 impl<
 		Call,
 		Subject,
-		RelayInfoProvider,
-		ProviderParaIdProvider,
-		ParaInfoProvider,
+		RelayChainStateInfo,
+		SiblingProviderParachainId,
+		SiblingProviderStateInfo,
 		TxSubmitter,
 		ProviderDipMerkleHasher,
 		ProviderDidKeyId,
-		ProviderBlockNumber,
 		ProviderWeb3Name,
 		ProviderLinkedAccountId,
 		const MAX_REVEALED_KEYS_COUNT: u32,
 		const MAX_REVEALED_ACCOUNTS_COUNT: u32,
-		DidLocalDetails,
+		LocalDidDetails,
 		LocalContextProvider,
 		LocalDidCallVerifier,
 	> IdentityProofVerifier<Call, Subject>
-	for StateProofDipIdentifier<
-		RelayInfoProvider,
-		ProviderParaIdProvider,
-		ParaInfoProvider,
+	for DipSiblingProviderStateProofVerifier<
+		RelayChainStateInfo,
+		SiblingProviderParachainId,
+		SiblingProviderStateInfo,
 		TxSubmitter,
 		ProviderDipMerkleHasher,
 		ProviderDidKeyId,
-		ProviderBlockNumber,
 		ProviderWeb3Name,
 		ProviderLinkedAccountId,
 		MAX_REVEALED_KEYS_COUNT,
 		MAX_REVEALED_ACCOUNTS_COUNT,
-		DidLocalDetails,
+		LocalDidDetails,
 		LocalContextProvider,
 		LocalDidCallVerifier,
 	> where
 	Call: Encode,
 	TxSubmitter: Encode,
 
-	RelayInfoProvider: RelayChainStateInfo,
-	RelayInfoProvider::Hasher: 'static,
-	OutputOf<RelayInfoProvider::Hasher>: Ord,
-	RelayInfoProvider::BlockNumber: Copy + Into<U256> + TryFrom<U256> + HasCompact,
-	RelayInfoProvider::Key: AsRef<[u8]>,
+	RelayChainStateInfo: traits::RelayChainStateInfo,
+	RelayChainStateInfo::Hasher: 'static,
+	OutputOf<RelayChainStateInfo::Hasher>: Ord,
+	RelayChainStateInfo::BlockNumber: Copy + Into<U256> + TryFrom<U256> + HasCompact,
+	RelayChainStateInfo::Key: AsRef<[u8]>,
 
-	ProviderParaIdProvider: Get<RelayInfoProvider::ParaId>,
+	SiblingProviderParachainId: Get<RelayChainStateInfo::ParaId>,
 
-	ParaInfoProvider: ProviderParachainStateInfo<Identifier = Subject, Commitment = ProviderDipMerkleHasher::Out>,
-	ParaInfoProvider::Hasher: 'static,
-	OutputOf<ParaInfoProvider::Hasher>: Ord + From<OutputOf<RelayInfoProvider::Hasher>>,
-	ParaInfoProvider::Commitment: Decode,
-	ParaInfoProvider::Key: AsRef<[u8]>,
+	SiblingProviderStateInfo:
+		traits::ProviderParachainStateInfo<Identifier = Subject, Commitment = ProviderDipMerkleHasher::Out>,
+	SiblingProviderStateInfo::Hasher: 'static,
+	OutputOf<SiblingProviderStateInfo::Hasher>: Ord + From<OutputOf<RelayChainStateInfo::Hasher>>,
+	SiblingProviderStateInfo::BlockNumber: Encode + Clone,
+	SiblingProviderStateInfo::Commitment: Decode,
+	SiblingProviderStateInfo::Key: AsRef<[u8]>,
 
 	LocalContextProvider: DidSignatureVerifierContext,
 	LocalContextProvider::BlockNumber: Encode + CheckedSub + PartialOrd<u16>,
 	LocalContextProvider::Hash: Encode,
 	LocalContextProvider::SignedExtra: Encode,
-	DidLocalDetails: Bump + Default + Encode,
+	LocalDidDetails: Bump + Default + Encode,
 	LocalDidCallVerifier: DipCallOriginFilter<Call, OriginInfo = (DidVerificationKey, DidVerificationKeyRelationship)>,
 
-	ProviderBlockNumber: Encode + Clone,
 	ProviderDipMerkleHasher: sp_core::Hasher,
-	ProviderDidKeyId: Encode + Clone + Ord + Into<ProviderDipMerkleHasher::Out>,
+	ProviderDidKeyId: Encode + Clone + Into<ProviderDipMerkleHasher::Out>,
 	ProviderLinkedAccountId: Encode + Clone,
 	ProviderWeb3Name: Encode + Clone,
 {
 	type Error = ();
-	type IdentityDetails = DidLocalDetails;
+	type IdentityDetails = LocalDidDetails;
 	type Proof = SiblingParachainDipStateProof<
-		RelayInfoProvider::BlockNumber,
+		RelayChainStateInfo::BlockNumber,
 		Vec<Vec<u8>>,
-		RevealedDidMerkleProofLeaf<ProviderDidKeyId, ProviderBlockNumber, ProviderWeb3Name, ProviderLinkedAccountId>,
+		RevealedDidMerkleProofLeaf<
+			ProviderDidKeyId,
+			SiblingProviderStateInfo::BlockNumber,
+			ProviderWeb3Name,
+			ProviderLinkedAccountId,
+		>,
 		LocalContextProvider::BlockNumber,
 	>;
 	type Submitter = TxSubmitter;
 	type VerificationResult = RevealedDidMerkleProofLeaves<
 		ProviderDidKeyId,
-		ProviderBlockNumber,
+		SiblingProviderStateInfo::BlockNumber,
 		ProviderWeb3Name,
 		ProviderLinkedAccountId,
 		MAX_REVEALED_KEYS_COUNT,
@@ -192,15 +194,15 @@ impl<
 	) -> Result<Self::VerificationResult, Self::Error> {
 		// 1. Verify relay chain proof.
 		let provider_parachain_header =
-			SiblingParachainHeadProofVerifier::<RelayInfoProvider>::verify_proof_for_parachain(
-				&ProviderParaIdProvider::get(),
+			SiblingParachainHeadProofVerifier::<RelayChainStateInfo>::verify_proof_for_parachain(
+				&SiblingProviderParachainId::get(),
 				&proof.para_state_root.relay_block_height,
 				proof.para_state_root.proof,
 			)?;
 
 		// 2. Verify parachain state proof.
 		let subject_identity_commitment =
-			DipIdentityCommitmentProofVerifier::<ParaInfoProvider>::verify_proof_for_identifier(
+			DipIdentityCommitmentProofVerifier::<SiblingProviderStateInfo>::verify_proof_for_identifier(
 				subject,
 				provider_parachain_header.state_root.into(),
 				proof.dip_identity_commitment,
@@ -209,10 +211,10 @@ impl<
 		// 3. Verify DIP merkle proof.
 		let proof_leaves = DidMerkleProofVerifier::<
 			ProviderDipMerkleHasher,
-			ProviderDidKeyId,
-			ProviderBlockNumber,
-			ProviderWeb3Name,
-			ProviderLinkedAccountId,
+			_,
+			_,
+			_,
+			_,
 			MAX_REVEALED_KEYS_COUNT,
 			MAX_REVEALED_ACCOUNTS_COUNT,
 		>::verify_dip_merkle_proof(&subject_identity_commitment, proof.dip_proof.merkle_proof)?;
