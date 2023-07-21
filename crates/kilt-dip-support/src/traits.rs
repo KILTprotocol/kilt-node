@@ -83,7 +83,7 @@ pub trait DidSignatureVerifierContext {
 
 	fn block_number() -> Self::BlockNumber;
 	fn genesis_hash() -> Self::Hash;
-	fn signed_extra() -> Option<Self::SignedExtra>;
+	fn signed_extra() -> Self::SignedExtra;
 }
 
 pub struct FrameSystemDidSignatureContext<T, const SIGNATURE_VALIDITY: u16>(PhantomData<T>);
@@ -107,7 +107,7 @@ where
 		frame_system::Pallet::<T>::block_hash(T::BlockNumber::zero())
 	}
 
-	fn signed_extra() -> Option<Self::SignedExtra> {
-		None
+	fn signed_extra() -> Self::SignedExtra {
+		()
 	}
 }
