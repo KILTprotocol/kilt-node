@@ -26,7 +26,7 @@ use sp_runtime::SaturatedConversion;
 use sp_std::marker::PhantomData;
 
 #[cfg(feature = "try-runtime")]
-use sp_runtime::TryRuntimeErro;
+use sp_runtime::TryRuntimeError;
 
 use crate::{
 	AccountIdOf, Attestations, Config, CurrencyOf, HoldReason, Pallet, STORAGE_VERSION as TARGET_STORAGE_VERSION,
