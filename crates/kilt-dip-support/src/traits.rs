@@ -107,7 +107,5 @@ where
 		frame_system::Pallet::<T>::block_hash(T::BlockNumber::zero())
 	}
 
-	fn signed_extra() -> Self::SignedExtra {
-		()
-	}
+	fn signed_extra() -> Self::SignedExtra {}
 }
