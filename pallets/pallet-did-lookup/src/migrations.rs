@@ -28,6 +28,9 @@ use scale_info::TypeInfo;
 use sp_runtime::{AccountId32, SaturatedConversion};
 use sp_std::marker::PhantomData;
 
+#[cfg(feature = "try-runtime")]
+use sp_runtime::TryRuntimeError;
+
 use crate::{
 	linkable_account::LinkableAccountId, AccountIdOf, Config, ConnectedDids, CurrencyOf, HoldReason, Pallet,
 	STORAGE_VERSION as TARGET_STORAGE_VERSION,
@@ -90,7 +93,7 @@ impl<T: crate::pallet::Config> OnRuntimeUpgrade for CleanupMigration<T> {
 	}
 
 	#[cfg(feature = "try-runtime")]
-	fn pre_upgrade() -> Result<sp_std::vec::Vec<u8>, &'static str> {
+	fn pre_upgrade() -> Result<sp_std::vec::Vec<u8>, TryRuntimeError> {
 		use sp_std::vec;
 
 		assert_eq!(
@@ -106,7 +109,7 @@ impl<T: crate::pallet::Config> OnRuntimeUpgrade for CleanupMigration<T> {
 	}
 
 	#[cfg(feature = "try-runtime")]
-	fn post_upgrade(_pre_state: sp_std::vec::Vec<u8>) -> Result<(), &'static str> {
+	fn post_upgrade(_pre_state: sp_std::vec::Vec<u8>) -> Result<(), TryRuntimeError> {
 		assert_eq!(
 			Pallet::<T>::on_chain_storage_version(),
 			StorageVersion::new(4),
@@ -148,7 +151,7 @@ where
 	}
 
 	#[cfg(feature = "try-runtime")]
-	fn pre_upgrade() -> Result<sp_std::vec::Vec<u8>, &'static str> {
+	fn pre_upgrade() -> Result<sp_std::vec::Vec<u8>, TryRuntimeError> {
 		use sp_std::vec;
 
 		let has_all_user_no_holds = ConnectedDids::<T>::iter_values()
@@ -170,7 +173,7 @@ where
 	}
 
 	#[cfg(feature = "try-runtime")]
-	fn post_upgrade(_pre_state: sp_std::vec::Vec<u8>) -> Result<(), &'static str> {
+	fn post_upgrade(_pre_state: sp_std::vec::Vec<u8>) -> Result<(), TryRuntimeError> {
 		use frame_support::traits::fungible::InspectHold;
 		use sp_std::collections::btree_map::BTreeMap;
 
@@ -187,7 +190,7 @@ where
 
 		map_user_deposit
 			.iter()
-			.try_for_each(|(who, amount)| -> Result<(), &'static str> {
+			.try_for_each(|(who, amount)| -> Result<(), TryRuntimeError> {
 				let hold_balance: BalanceOf<T> =
 					<T as Config>::Currency::balance_on_hold(&HoldReason::Deposit.into(), who).saturated_into();
 

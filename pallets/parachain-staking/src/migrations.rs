@@ -27,6 +27,9 @@ use pallet_balances::{BalanceLock, Freezes, IdAmount, Locks};
 use sp_runtime::SaturatedConversion;
 use sp_std::marker::PhantomData;
 
+#[cfg(feature = "try-runtime")]
+use sp_runtime::TryRuntimeError;
+
 use crate::{
 	types::{AccountIdOf, CurrencyOf},
 	Config, FreezeReason, Pallet, STORAGE_VERSION as TARGET_STORAGE_VERSION,
@@ -63,7 +66,7 @@ where
 	}
 
 	#[cfg(feature = "try-runtime")]
-	fn pre_upgrade() -> Result<sp_std::vec::Vec<u8>, &'static str> {
+	fn pre_upgrade() -> Result<sp_std::vec::Vec<u8>, TryRuntimeError> {
 		use sp_runtime::traits::Zero;
 		use sp_std::vec;
 
@@ -78,7 +81,7 @@ where
 	}
 
 	#[cfg(feature = "try-runtime")]
-	fn post_upgrade(_pre_state: sp_std::vec::Vec<u8>) -> Result<(), &'static str> {
+	fn post_upgrade(_pre_state: sp_std::vec::Vec<u8>) -> Result<(), TryRuntimeError> {
 		use sp_runtime::traits::Zero;
 
 		let count_freezes = pallet_balances::Freezes::<T>::iter().count();

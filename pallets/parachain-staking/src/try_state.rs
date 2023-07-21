@@ -21,7 +21,7 @@ use kilt_support::test_utils::log_and_return_error_message;
 use scale_info::prelude::format;
 use sp_runtime::{
 	traits::{CheckedAdd, Zero},
-	SaturatedConversion, Saturating,
+	SaturatedConversion, Saturating, TryRuntimeError,
 };
 
 use crate::{
@@ -31,14 +31,14 @@ use crate::{
 	Round, TopCandidates, TotalCollatorStake,
 };
 
-pub(crate) fn do_try_state<T: Config>() -> Result<(), &'static str> {
+pub(crate) fn do_try_state<T: Config>() -> Result<(), TryRuntimeError> {
 	validate_candiate_pool::<T>()?;
 	validate_delegators::<T>()?;
 	validate_top_candidates::<T>()?;
 	validate_stake::<T>()
 }
 
-fn validate_candiate_pool<T: Config>() -> Result<(), &'static str> {
+fn validate_candiate_pool<T: Config>() -> Result<(), TryRuntimeError> {
 	// check if enough collators are set.
 	ensure!(
 		CandidatePool::<T>::count() >= T::MinCollators::get(),
@@ -50,7 +50,7 @@ fn validate_candiate_pool<T: Config>() -> Result<(), &'static str> {
 	);
 
 	CandidatePool::<T>::iter_values().try_for_each(
-		|candidate: Candidate<T::AccountId, BalanceOf<T>, _>| -> Result<(), &'static str> {
+		|candidate: Candidate<T::AccountId, BalanceOf<T>, _>| -> Result<(), TryRuntimeError> {
 			let sum_delegations: BalanceOf<T> = candidate
 				.delegators
 				.iter()
@@ -95,7 +95,7 @@ fn validate_candiate_pool<T: Config>() -> Result<(), &'static str> {
 	)
 }
 
-fn validate_top_candidates<T: Config>() -> Result<(), &'static str> {
+fn validate_top_candidates<T: Config>() -> Result<(), TryRuntimeError> {
 	let top_candidates = TopCandidates::<T>::get();
 
 	// check if enough top candidates are set.
@@ -108,35 +108,37 @@ fn validate_top_candidates<T: Config>() -> Result<(), &'static str> {
 		))
 	);
 
-	top_candidates.iter().try_for_each(|stake| -> Result<(), &'static str> {
-		// top candidates should be part of the candidate pool.
-		ensure!(
-			CandidatePool::<T>::contains_key(&stake.owner),
-			log_and_return_error_message(format!("Unknown candidate {:?} in top candidates.", stake.owner))
-		);
+	top_candidates
+		.iter()
+		.try_for_each(|stake| -> Result<(), TryRuntimeError> {
+			// top candidates should be part of the candidate pool.
+			ensure!(
+				CandidatePool::<T>::contains_key(&stake.owner),
+				log_and_return_error_message(format!("Unknown candidate {:?} in top candidates.", stake.owner))
+			);
 
-		// an account can not be candidate and delegator.
-		ensure!(
-			DelegatorState::<T>::get(&stake.owner).is_none(),
-			log_and_return_error_message(format!("Account {:?} is delegator and candidate.", stake.owner))
-		);
+			// an account can not be candidate and delegator.
+			ensure!(
+				DelegatorState::<T>::get(&stake.owner).is_none(),
+				log_and_return_error_message(format!("Account {:?} is delegator and candidate.", stake.owner))
+			);
 
-		// a top candidate should be active.
-		ensure!(
-			Pallet::<T>::is_active_candidate(&stake.owner).unwrap(),
-			log_and_return_error_message(format!("Top candidate {:?} is inactive", stake.owner))
-		);
+			// a top candidate should be active.
+			ensure!(
+				Pallet::<T>::is_active_candidate(&stake.owner).unwrap(),
+				log_and_return_error_message(format!("Top candidate {:?} is inactive", stake.owner))
+			);
 
-		Ok(())
-	})
+			Ok(())
+		})
 }
 
 fn validate_delegators_from_collator<T: Config>(
 	delegators: OrderedSet<Stake<T::AccountId, BalanceOf<T>>, T::MaxDelegatorsPerCollator>,
-) -> Result<(), &'static str> {
+) -> Result<(), TryRuntimeError> {
 	delegators
 		.iter()
-		.try_for_each(|delegator_stake| -> Result<(), &'static str> {
+		.try_for_each(|delegator_stake| -> Result<(), TryRuntimeError> {
 			let last_delegation = LastDelegation::<T>::get(&delegator_stake.owner);
 			let round = Round::<T>::get();
 			let counter = if last_delegation.round < round.current {
@@ -174,7 +176,7 @@ fn validate_delegators_from_collator<T: Config>(
 		})
 }
 
-fn validate_stake<T: Config>() -> Result<(), &'static str> {
+fn validate_stake<T: Config>() -> Result<(), TryRuntimeError> {
 	// the total fund has to be the sum over the first [MaxSelectedCandidates] of
 	// [TopCandidates].
 	let top_candidates = TopCandidates::<T>::get();
@@ -218,8 +220,8 @@ fn validate_stake<T: Config>() -> Result<(), &'static str> {
 	Ok(())
 }
 
-fn validate_delegators<T: Config>() -> Result<(), &'static str> {
-	DelegatorState::<T>::iter_values().try_for_each(|delegator_details| -> Result<(), &'static str> {
+fn validate_delegators<T: Config>() -> Result<(), TryRuntimeError> {
+	DelegatorState::<T>::iter_values().try_for_each(|delegator_details| -> Result<(), TryRuntimeError> {
 		ensure!(
 			CandidatePool::<T>::contains_key(&delegator_details.owner),
 			log_and_return_error_message(format!("Collator {:?} not found", delegator_details.owner))

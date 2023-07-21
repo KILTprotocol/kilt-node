@@ -48,6 +48,11 @@ use sp_std::marker::PhantomData;
 /// Weights for `frame_system`.
 pub struct WeightInfo<T>(PhantomData<T>);
 impl<T: frame_system::Config> frame_system::WeightInfo for WeightInfo<T> {
+	fn set_code() -> Weight {
+		Weight::from_parts(87_586_619_000, 1485)
+			.saturating_add(T::DbWeight::get().reads(1_u64))
+			.saturating_add(T::DbWeight::get().writes(2_u64))
+	}
 	fn remark(b: u32, ) -> Weight {
 		Weight::from_parts(9_320_004 as u64, 0)
 			// Standard Error: 0

@@ -86,13 +86,13 @@ pub mod default_weights;
 pub mod did_details;
 pub mod errors;
 pub mod migrations;
-pub mod origin;
-pub mod service_endpoints;
 
 #[cfg(test)]
 mod mock;
 #[cfg(any(feature = "runtime-benchmarks", test))]
 mod mock_utils;
+pub mod origin;
+pub mod service_endpoints;
 #[cfg(test)]
 mod tests;
 
@@ -500,7 +500,7 @@ pub mod pallet {
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
 		#[cfg(feature = "try-runtime")]
-		fn try_state(_n: BlockNumberFor<T>) -> Result<(), &'static str> {
+		fn try_state(_n: BlockNumberFor<T>) -> Result<(), DispatchError> {
 			crate::try_state::do_try_state::<T>()
 		}
 	}

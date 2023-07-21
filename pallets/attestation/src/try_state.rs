@@ -19,11 +19,12 @@
 use frame_support::ensure;
 use kilt_support::test_utils::log_and_return_error_message;
 use scale_info::prelude::format;
+use sp_runtime::TryRuntimeError;
 
 use crate::{Attestations, Config, ExternalAttestations};
 
-pub(crate) fn do_try_state<T: Config>() -> Result<(), &'static str> {
-	Attestations::<T>::iter().try_for_each(|(claim_hash, attestation_details)| -> Result<(), &'static str> {
+pub(crate) fn do_try_state<T: Config>() -> Result<(), TryRuntimeError> {
+	Attestations::<T>::iter().try_for_each(|(claim_hash, attestation_details)| -> Result<(), TryRuntimeError> {
 		if let Some(authorization_id) = attestation_details.authorization_id {
 			ensure!(
 				ExternalAttestations::<T>::get(&authorization_id, claim_hash),
@@ -31,7 +32,7 @@ pub(crate) fn do_try_state<T: Config>() -> Result<(), &'static str> {
 					"External attestation with authorization_id: {:?} and claim_hash {:?} does not exist",
 					authorization_id, claim_hash
 				))
-			)
+			);
 		}
 		Ok(())
 	})
