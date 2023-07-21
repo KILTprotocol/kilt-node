@@ -29,8 +29,14 @@ use sp_std::marker::PhantomData;
 
 use crate::{
 	merkle::RevealedDidKey,
-	traits::{Bump, DidDipOriginFilter, DidSignatureVerifierContextProvider},
+	traits::{Bump, DidSignatureVerifierContext, DipCallOriginFilter},
 };
+
+#[derive(Encode, Decode, RuntimeDebug, Clone, Eq, PartialEq, TypeInfo)]
+pub(crate) struct RevealedDidKeysAndSignature<RevealedDidKeys, BlockNumber> {
+	pub merkle_leaves: RevealedDidKeys,
+	pub did_signature: TimeBoundDidSignature<BlockNumber>,
+}
 
 #[derive(Encode, Decode, RuntimeDebug, Clone, Eq, PartialEq, TypeInfo)]
 pub struct TimeBoundDidSignature<BlockNumber> {
@@ -38,13 +44,7 @@ pub struct TimeBoundDidSignature<BlockNumber> {
 	pub block_number: BlockNumber,
 }
 
-#[derive(Encode, Decode, RuntimeDebug, Clone, Eq, PartialEq, TypeInfo)]
-pub struct MerkleLeavesAndDidSignature<MerkleLeaves, BlockNumber> {
-	pub merkle_leaves: MerkleLeaves,
-	pub did_signature: TimeBoundDidSignature<BlockNumber>,
-}
-
-pub struct MerkleDidSignatureAndCallVerifier<
+pub(crate) struct RevealedDidKeysSignatureAndCallVerifier<
 	Call,
 	Submitter,
 	DidLocalDetails,
@@ -77,7 +77,7 @@ impl<
 		RemoteBlockNumber,
 		CallVerifier,
 	>
-	MerkleDidSignatureAndCallVerifier<
+	RevealedDidKeysSignatureAndCallVerifier<
 		Call,
 		Submitter,
 		DidLocalDetails,
@@ -89,20 +89,20 @@ impl<
 	> where
 	Call: Encode,
 	Submitter: Encode,
-	ContextProvider: DidSignatureVerifierContextProvider,
+	ContextProvider: DidSignatureVerifierContext,
 	ContextProvider::BlockNumber: Encode + CheckedSub + PartialOrd<u16>,
 	ContextProvider::Hash: Encode,
 	ContextProvider::SignedExtra: Encode,
 	DidLocalDetails: Bump + Default + Encode,
-	MerkleProofEntries: AsRef<[RevealedDidKey<RemoteKeyId, RemoteBlockNumber>]>,
-	CallVerifier: DidDipOriginFilter<Call, OriginInfo = (DidVerificationKey, DidVerificationKeyRelationship)>,
+	MerkleProofEntries: sp_std::borrow::Borrow<[RevealedDidKey<RemoteKeyId, RemoteBlockNumber>]>,
+	CallVerifier: DipCallOriginFilter<Call, OriginInfo = (DidVerificationKey, DidVerificationKeyRelationship)>,
 {
 	#[allow(clippy::result_unit_err)]
-	pub fn verify_did_signature_for_call(
+	pub(crate) fn verify_did_signature_for_call(
 		call: &Call,
 		submitter: &Submitter,
 		local_details: &mut Option<DidLocalDetails>,
-		merkle_revealed_did_signature: MerkleLeavesAndDidSignature<MerkleProofEntries, ContextProvider::BlockNumber>,
+		merkle_revealed_did_signature: RevealedDidKeysAndSignature<MerkleProofEntries, ContextProvider::BlockNumber>,
 	) -> Result<(DidVerificationKey, DidVerificationKeyRelationship), ()> {
 		let block_number = ContextProvider::block_number();
 		let is_signature_fresh = if let Some(blocks_ago_from_now) =
@@ -125,7 +125,7 @@ impl<
 		)
 			.encode();
 		// Only consider verification keys from the set of revealed keys.
-		let mut proof_verification_keys = merkle_revealed_did_signature.merkle_leaves.as_ref().iter().filter_map(|RevealedDidKey {
+		let mut proof_verification_keys = merkle_revealed_did_signature.merkle_leaves.borrow().iter().filter_map(|RevealedDidKey {
 			relationship, details: DidPublicKeyDetails { key, .. }, .. } | {
 				let DidPublicKey::PublicVerificationKey(key) = key else { return None };
 					Some((key, DidVerificationKeyRelationship::try_from(*relationship).expect("Should never fail to build a VerificationRelationship from the given DidKeyRelationship because we have already made sure the conditions hold."))) 		});
