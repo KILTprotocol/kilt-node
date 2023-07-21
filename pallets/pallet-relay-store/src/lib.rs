@@ -40,8 +40,8 @@ pub mod pallet {
 	#[pallet::getter(fn latest_relay_head_for_block)]
 	pub(crate) type LatestRelayHeads<T: Config> = StorageMap<_, Twox64Concat, u32, RelayParentInfo<H256>>;
 
-	// TODO: Replace this with an array once support for const generics is fully
-	// supported in Substrate.
+	// TODO: Replace this with a fixed-length array once support for const generics
+	// is fully supported in Substrate.
 	#[pallet::storage]
 	pub(crate) type LatestBlockHeights<T: Config> =
 		StorageValue<_, BoundedVec<u32, T::MaxRelayBlocksStored>, ValueQuery>;
