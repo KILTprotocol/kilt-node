@@ -18,7 +18,6 @@
 
 use did::{did_details::DidPublicKeyDetails, DidVerificationKeyRelationship};
 use frame_support::{traits::ConstU32, RuntimeDebug};
-use pallet_dip_consumer::{identity::IdentityDetails, traits::IdentityProofVerifier};
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_runtime::{BoundedVec, SaturatedConversion};
@@ -27,9 +26,9 @@ use sp_trie::{verify_trie_proof, LayoutV1};
 
 pub type BlindedValue = Vec<u8>;
 
-#[derive(Encode, Decode, RuntimeDebug, Clone, Eq, PartialEq, TypeInfo, Default)]
-pub struct MerkleProof<BlindedValue, Leaf> {
-	pub blinded: BlindedValue,
+#[derive(Encode, Decode, RuntimeDebug, Clone, Eq, PartialEq, Default)]
+pub struct MerkleProof<BlindedValues, Leaf> {
+	pub blinded: BlindedValues,
 	// TODO: Probably replace with a different data structure for better lookupcapabilities
 	pub revealed: Vec<Leaf>,
 }
@@ -246,6 +245,7 @@ impl<
 	LinkedAccountId: Encode + Clone,
 	Web3Name: Encode + Clone,
 {
+	#[allow(clippy::result_unit_err)]
 	pub fn verify_dip_merkle_proof(
 		identity_commitment: &Hasher::Out,
 		proof: MerkleProof<Vec<Vec<u8>>, ProofLeaf<KeyId, BlockNumber, Web3Name, LinkedAccountId>>,

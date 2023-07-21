@@ -24,11 +24,8 @@ use frame_support::ensure;
 use pallet_dip_provider::traits::IdentityProvider;
 use parity_scale_codec::{Decode, Encode, HasCompact};
 use scale_info::TypeInfo;
-use sp_core::{ConstU32, ConstU64, Get, Hasher, RuntimeDebug, U256};
-use sp_runtime::{
-	traits::{CheckedSub, Hash},
-	BoundedVec, SaturatedConversion,
-};
+use sp_core::{ConstU32, Get, RuntimeDebug, U256};
+use sp_runtime::{traits::CheckedSub, BoundedVec, SaturatedConversion};
 use sp_std::{marker::PhantomData, vec::Vec};
 use sp_trie::{verify_trie_proof, LayoutV1};
 
@@ -39,6 +36,7 @@ use ::did::{
 use pallet_dip_consumer::traits::IdentityProofVerifier;
 
 use crate::{
+	did::TimeBoundDidSignature,
 	merkle::{MerkleProof, ProofLeaf, RevealedDidKey, RevealedWeb3Name, VerificationResult},
 	traits::{
 		Bump, DidDipOriginFilter, DidSignatureVerifierContextProvider, OutputOf, ParachainStateInfoProvider,
@@ -143,11 +141,11 @@ where
 	}
 }
 
-#[derive(Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo, Clone)]
-pub struct DipStateProof<RelayBlockHeight, DipProof> {
+#[derive(Encode, Decode, PartialEq, Eq, RuntimeDebug, TypeInfo, Clone)]
+pub struct DipStateProof<RelayBlockHeight, BlindedValues, Leaf, BlockNumber> {
 	para_root_proof: ParaRootProof<RelayBlockHeight>,
 	dip_commitment_proof: Vec<Vec<u8>>,
-	dip_proof: DipProof,
+	dip_proof: DipMerkleProofAndDidSignature<BlindedValues, Leaf, BlockNumber>,
 }
 
 #[derive(Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo, Clone)]
@@ -156,8 +154,15 @@ pub struct ParaRootProof<RelayBlockHeight> {
 	proof: Vec<Vec<u8>>,
 }
 
+#[derive(Encode, Decode, PartialEq, Eq, RuntimeDebug, TypeInfo, Clone)]
+pub struct DipMerkleProofAndDidSignature<BlindedValues, Leaf, BlockNumber> {
+	merkle_proof: MerkleProof<BlindedValues, Leaf>,
+	did_signature: TimeBoundDidSignature<BlockNumber>,
+}
+
 pub struct StateProofDipIdentifier<
 	RelayInfoProvider,
+	ProviderParaIdProvider,
 	ParaInfoProvider,
 	TxSubmitter,
 	ProviderDipMerkleHasher,
@@ -171,8 +176,10 @@ pub struct StateProofDipIdentifier<
 	LocalContextProvider,
 	LocalDidCallVerifier,
 >(
+	#[allow(clippy::type_complexity)]
 	PhantomData<(
 		RelayInfoProvider,
+		ProviderParaIdProvider,
 		ParaInfoProvider,
 		TxSubmitter,
 		ProviderDipMerkleHasher,
@@ -190,6 +197,7 @@ impl<
 		Call,
 		Subject,
 		RelayInfoProvider,
+		ProviderParaIdProvider,
 		ParaInfoProvider,
 		TxSubmitter,
 		ProviderDipMerkleHasher,
@@ -205,6 +213,7 @@ impl<
 	> IdentityProofVerifier<Call, Subject>
 	for StateProofDipIdentifier<
 		RelayInfoProvider,
+		ProviderParaIdProvider,
 		ParaInfoProvider,
 		TxSubmitter,
 		ProviderDipMerkleHasher,
@@ -227,9 +236,11 @@ impl<
 	RelayInfoProvider::BlockNumber: Copy + Into<U256> + TryFrom<U256> + HasCompact,
 	RelayInfoProvider::Key: AsRef<[u8]>,
 
-	ParaInfoProvider: ParachainStateInfoProvider,
+	ProviderParaIdProvider: Get<RelayInfoProvider::ParaId>,
+
+	ParaInfoProvider: ParachainStateInfoProvider<Identifier = Subject, Commitment = ProviderDipMerkleHasher::Out>,
 	ParaInfoProvider::Hasher: 'static,
-	OutputOf<ParaInfoProvider::Hasher>: Ord,
+	OutputOf<ParaInfoProvider::Hasher>: Ord + From<OutputOf<RelayInfoProvider::Hasher>>,
 	ParaInfoProvider::Commitment: Decode,
 	ParaInfoProvider::Key: AsRef<[u8]>,
 
@@ -250,10 +261,9 @@ impl<
 	type IdentityDetails = DidLocalDetails;
 	type Proof = DipStateProof<
 		RelayInfoProvider::BlockNumber,
-		MerkleProof<
-			Vec<u8>,
-			ProofLeaf<ProviderDidKeyId, ProviderBlockNumber, ProviderWeb3Name, ProviderLinkedAccountId>,
-		>,
+		Vec<Vec<u8>>,
+		ProofLeaf<ProviderDidKeyId, ProviderBlockNumber, ProviderWeb3Name, ProviderLinkedAccountId>,
+		LocalContextProvider::BlockNumber,
 	>;
 	type Submitter = TxSubmitter;
 	type VerificationResult = VerificationResult<
@@ -272,274 +282,130 @@ impl<
 		identity_details: &mut Option<Self::IdentityDetails>,
 		proof: Self::Proof,
 	) -> Result<Self::VerificationResult, Self::Error> {
-		Err(())
+		// 1. Verify relay chain proof.
+		let provider_parachain_header =
+			state_proofs::relay_chain::ParachainHeadProofVerifier::<RelayInfoProvider>::verify_proof_for_parachain(
+				&ProviderParaIdProvider::get(),
+				&proof.para_root_proof.relay_block_height,
+				proof.para_root_proof.proof,
+			)?;
+
+		// 2. Verify parachain state proof.
+		let subject_identity_commitment =
+			state_proofs::parachain::DipCommitmentValueProofVerifier::<ParaInfoProvider>::verify_proof_for_identifier(
+				subject,
+				provider_parachain_header.state_root.into(),
+				proof.dip_commitment_proof,
+			)?;
+
+		// 3. Verify DIP identity proof.
+		let proof_leaves = proof
+			.dip_proof
+			.merkle_proof
+			.revealed
+			.iter()
+			.map(|leaf| (leaf.encoded_key(), Some(leaf.encoded_value())))
+			.collect::<Vec<(Vec<u8>, Option<Vec<u8>>)>>();
+		verify_trie_proof::<LayoutV1<ProviderDipMerkleHasher>, _, _, _>(
+			&subject_identity_commitment,
+			&proof.dip_proof.merkle_proof.blinded,
+			&proof_leaves,
+		)
+		.map_err(|_| ())?;
+
+		#[allow(clippy::type_complexity)]
+		let (did_keys, web3_name, linked_accounts): (
+			BoundedVec<RevealedDidKey<ProviderDidKeyId, ProviderBlockNumber>, ConstU32<MAX_REVEALED_KEYS_COUNT>>,
+			Option<RevealedWeb3Name<ProviderWeb3Name, ProviderBlockNumber>>,
+			BoundedVec<ProviderLinkedAccountId, ConstU32<MAX_REVEALED_ACCOUNTS_COUNT>>,
+		) = proof.dip_proof.merkle_proof.revealed.iter().try_fold(
+			(
+				BoundedVec::with_bounded_capacity(MAX_REVEALED_KEYS_COUNT.saturated_into()),
+				None,
+				BoundedVec::with_bounded_capacity(MAX_REVEALED_ACCOUNTS_COUNT.saturated_into()),
+			),
+			|(mut keys, web3_name, mut linked_accounts), leaf| match leaf {
+				ProofLeaf::DidKey(key_id, key_value) => {
+					keys.try_push(RevealedDidKey {
+						// TODO: Avoid cloning if possible
+						id: key_id.0.clone(),
+						relationship: key_id.1,
+						details: key_value.0.clone(),
+					})
+					.map_err(|_| ())?;
+					Ok::<_, ()>((keys, web3_name, linked_accounts))
+				}
+				// TODO: Avoid cloning if possible
+				ProofLeaf::Web3Name(revealed_web3_name, details) => Ok((
+					keys,
+					Some(RevealedWeb3Name {
+						web3_name: revealed_web3_name.0.clone(),
+						claimed_at: details.0.clone(),
+					}),
+					linked_accounts,
+				)),
+				ProofLeaf::LinkedAccount(account_id, _) => {
+					linked_accounts.try_push(account_id.0.clone()).map_err(|_| ())?;
+					Ok::<_, ()>((keys, web3_name, linked_accounts))
+				}
+			},
+		)?;
+		let verification_result = VerificationResult {
+			did_keys,
+			web3_name,
+			linked_accounts,
+		};
+
+		// 4. Verify DID signature.
+		let block_number = LocalContextProvider::block_number();
+		let is_signature_fresh =
+			if let Some(blocks_ago_from_now) = block_number.checked_sub(&proof.dip_proof.did_signature.block_number) {
+				blocks_ago_from_now <= LocalContextProvider::SIGNATURE_VALIDITY
+			} else {
+				false
+			};
+		ensure!(is_signature_fresh, ());
+		let encoded_payload = (
+			call,
+			&identity_details,
+			submitter,
+			&proof.dip_proof.did_signature.block_number,
+			LocalContextProvider::genesis_hash(),
+			LocalContextProvider::signed_extra(),
+		)
+			.encode();
+
+		let mut proof_verification_keys = verification_result.as_ref().iter().filter_map(
+			|RevealedDidKey {
+			     relationship,
+			     details: DidPublicKeyDetails { key, .. },
+			     ..
+			 }| {
+				let DidPublicKey::PublicVerificationKey(key) = key else { return None };
+				Some((
+					key,
+					DidVerificationKeyRelationship::try_from(*relationship).expect(
+						"Should never
+			fail to build a VerificationRelationship from the given DidKeyRelationship
+			because we have already made sure the conditions hold.",
+					),
+				))
+			},
+		);
+		let valid_signing_key = proof_verification_keys.find(|(verification_key, _)| {
+			verification_key
+				.verify_signature(&encoded_payload, &proof.dip_proof.did_signature.signature)
+				.is_ok()
+		});
+		let Some((key, relationship)) = valid_signing_key else { return Err(()) };
+		if let Some(details) = identity_details {
+			details.bump();
+		} else {
+			*identity_details = Some(Self::IdentityDetails::default());
+		}
+
+		// 4.1 Verify call required relationship
+		LocalDidCallVerifier::check_call_origin_info(call, &(key.clone(), relationship)).map_err(|_| ())?;
+		Ok(verification_result)
 	}
 }
-
-// pub struct StateProofDipVerifier<
-// 	RelayInfoProvider,
-// 	ParaInfoProvider,
-// 	ProviderKeyId,
-// 	ProviderParaIdProvider,
-// 	ProviderBlockNumber,
-// 	ProviderAccountIdentityDetails,
-// 	ProviderWeb3Name,
-// 	ProviderHasher,
-// 	ProviderLinkedAccountId,
-// 	ConsumerAccountId,
-// 	ConsumerBlockNumber,
-// 	ConsumerBlockNumberProvider,
-// 	ConsumerGenesisHashProvider,
-// 	CallVerifier,
-// 	const MAX_REVEALED_KEYS_COUNT: u32,
-// 	const MAX_REVEALED_ACCOUNTS_COUNT: u32,
-// 	const SIGNATURE_VALIDITY: u64,
-// 	SignedExtra = (),
-// 	SignedExtraProvider = (),
-// >(
-// 	#[allow(clippy::type_complexity)]
-// 	PhantomData<(
-// 		RelayInfoProvider,
-// 		ParaInfoProvider,
-// 		ProviderKeyId,
-// 		ProviderParaIdProvider,
-// 		ProviderBlockNumber,
-// 		ProviderAccountIdentityDetails,
-// 		ProviderWeb3Name,
-// 		ProviderHasher,
-// 		ProviderLinkedAccountId,
-// 		ConsumerAccountId,
-// 		ConsumerBlockNumber,
-// 		ConsumerBlockNumberProvider,
-// 		ConsumerGenesisHashProvider,
-// 		CallVerifier,
-// 		ConstU32<MAX_REVEALED_KEYS_COUNT>,
-// 		ConstU32<MAX_REVEALED_ACCOUNTS_COUNT>,
-// 		ConstU64<SIGNATURE_VALIDITY>,
-// 		SignedExtra,
-// 		SignedExtraProvider,
-// 	)>,
-// );
-
-// impl<
-// 		Call,
-// 		Subject,
-// 		RelayInfoProvider,
-// 		ParaInfoProvider,
-// 		ProviderKeyId,
-// 		ProviderParaIdProvider,
-// 		ProviderBlockNumber,
-// 		ProviderAccountIdentityDetails,
-// 		ProviderWeb3Name,
-// 		ProviderHasher,
-// 		ProviderLinkedAccountId,
-// 		ConsumerAccountId,
-// 		ConsumerBlockNumber,
-// 		ConsumerBlockNumberProvider,
-// 		ConsumerGenesisHashProvider,
-// 		CallVerifier,
-// 		const MAX_REVEALED_KEYS_COUNT: u32,
-// 		const MAX_REVEALED_ACCOUNTS_COUNT: u32,
-// 		const SIGNATURE_VALIDITY: u64,
-// 		SignedExtra,
-// 		SignedExtraProvider,
-// 	> IdentityProofVerifier<Call, Subject>
-// 	for StateProofDipVerifier<
-// 		RelayInfoProvider,
-// 		ParaInfoProvider,
-// 		ProviderKeyId,
-// 		ProviderParaIdProvider,
-// 		ProviderBlockNumber,
-// 		ProviderAccountIdentityDetails,
-// 		ProviderWeb3Name,
-// 		ProviderHasher,
-// 		ProviderLinkedAccountId,
-// 		ConsumerAccountId,
-// 		ConsumerBlockNumber,
-// 		ConsumerBlockNumberProvider,
-// 		ConsumerGenesisHashProvider,
-// 		CallVerifier,
-// 		MAX_REVEALED_KEYS_COUNT,
-// 		MAX_REVEALED_ACCOUNTS_COUNT,
-// 		SIGNATURE_VALIDITY,
-// 		SignedExtra,
-// 		SignedExtraProvider,
-// 	> where
-// 	RelayInfoProvider: RelayChainStateInfoProvider,
-// 	RelayInfoProvider::Hasher: 'static,
-// 	<RelayInfoProvider::Hasher as Hash>::Output: Ord,
-// 	RelayInfoProvider::BlockNumber: Copy + Into<U256> + TryFrom<U256> +
-// HasCompact, 	RelayInfoProvider::Key: AsRef<[u8]>,
-// 	ParaInfoProvider: ParachainStateInfoProvider<Identifier = Subject, Commitment
-// = ProviderHasher::Out>, 	ParaInfoProvider::Hasher: 'static,
-// 	<ParaInfoProvider::Hasher as Hash>::Output: Ord
-// 		+ Encode
-// 		+ PartialEq<<RelayInfoProvider::Hasher as Hash>::Output>
-// 		+ From<<RelayInfoProvider::Hasher as Hash>::Output>,
-// 	ParaInfoProvider::Commitment: Decode,
-// 	ParaInfoProvider::Key: AsRef<[u8]>,
-// 	ProviderKeyId: Encode + Clone,
-// 	ProviderBlockNumber: Encode + Clone,
-// 	ProviderWeb3Name: Encode + Clone,
-// 	ProviderLinkedAccountId: Encode + Clone,
-// 	ProviderHasher: Hasher,
-// 	ProviderParaIdProvider: Get<RelayInfoProvider::ParaId>,
-// 	Call: Encode,
-// 	ConsumerAccountId: Encode,
-// 	ProviderAccountIdentityDetails: Encode + Bump + Default,
-// 	ConsumerBlockNumber: CheckedSub + Into<u64> + Encode,
-// 	ConsumerBlockNumberProvider: Get<ConsumerBlockNumber>,
-// 	ConsumerGenesisHashProvider: Get<<ParaInfoProvider::Hasher as Hash>::Output>,
-// 	SignedExtra: Encode,
-// 	SignedExtraProvider: Get<SignedExtra>,
-// 	CallVerifier: DidDipOriginFilter<Call, OriginInfo = (DidVerificationKey,
-// DidVerificationKeyRelationship)>, {
-// 	// TODO: Better error handling
-// 	type Error = ();
-// 	type IdentityDetails = ProviderAccountIdentityDetails;
-// 	type Proof = DipSiblingParachainStateProof<
-// 		RelayInfoProvider::BlockNumber,
-// 		MerkleLeavesAndDidSignature<
-// 			MerkleProof<
-// 				Vec<Vec<u8>>,
-// 				ProofLeaf<ProviderKeyId, ProviderBlockNumber, ProviderWeb3Name,
-// ProviderLinkedAccountId>, 			>,
-// 			ConsumerBlockNumber,
-// 		>,
-// 	>;
-// 	type Submitter = ConsumerAccountId;
-// 	type VerificationResult = VerificationResult<
-// 		ProviderKeyId,
-// 		ProviderBlockNumber,
-// 		ProviderWeb3Name,
-// 		ProviderLinkedAccountId,
-// 		MAX_REVEALED_KEYS_COUNT,
-// 		MAX_REVEALED_ACCOUNTS_COUNT,
-// 	>;
-
-// 	fn verify_proof_for_call_against_details(
-// 		call: &Call,
-// 		subject: &Subject,
-// 		submitter: &Self::Submitter,
-// 		identity_details: &mut Option<Self::IdentityDetails>,
-// 		proof: Self::Proof,
-// 	) -> Result<Self::VerificationResult, Self::Error> {
-// 		let DipSiblingParachainStateProof {
-// 			para_root_proof,
-// 			dip_commitment_proof,
-// 			dip_proof,
-// 		} = proof;
-// 		// 1. Verify relay chain proof.
-// 		let provider_parachain_header =
-// 			state_proofs::relay_chain::ParachainHeadProofVerifier::<RelayInfoProvider,
-// _,>::verify_proof_for_parachain( 				&ProviderParaIdProvider::get(),
-// 				&para_root_proof.relay_block_height,
-// 				para_root_proof.proof,
-// 			)?;
-// 		// 2. Verify parachain state proof.
-// 		let subject_identity_commitment =
-// 			state_proofs::parachain::DipCommitmentValueProofVerifier::<ParaInfoProvider>::verify_proof_for_identifier(
-// 				subject,
-// 				provider_parachain_header.state_root.into(),
-// 				dip_commitment_proof,
-// 			)?;
-
-// 		// 3. Verify DIP identity proof (taken from existing implementation).
-// 		let proof_leaves = dip_proof
-// 			.merkle_leaves
-// 			.revealed
-// 			.iter()
-// 			.map(|leaf| (leaf.encoded_key(), Some(leaf.encoded_value())))
-// 			.collect::<Vec<(Vec<u8>, Option<Vec<u8>>)>>();
-// 		verify_trie_proof::<LayoutV1<ProviderHasher>, _, _, _>(
-// 			&subject_identity_commitment,
-// 			&dip_proof.merkle_leaves.blinded,
-// 			&proof_leaves,
-// 		)
-// 		.map_err(|_| ())?;
-// 		#[allow(clippy::type_complexity)]
-// 		let (did_keys, web3_name, linked_accounts): (
-// 			BoundedVec<RevealedDidKey<ProviderKeyId, ProviderBlockNumber>,
-// ConstU32<MAX_REVEALED_KEYS_COUNT>>, 			Option<RevealedWeb3Name<ProviderWeb3Name,
-// ProviderBlockNumber>>, 			BoundedVec<ProviderLinkedAccountId,
-// ConstU32<MAX_REVEALED_ACCOUNTS_COUNT>>, 		) = dip_proof.merkle_leaves.revealed.
-// iter().try_fold( 			(
-// 				BoundedVec::with_bounded_capacity(MAX_REVEALED_KEYS_COUNT.saturated_into()),
-// 				None,
-// 				BoundedVec::with_bounded_capacity(MAX_REVEALED_ACCOUNTS_COUNT.
-// saturated_into()), 			),
-// 			|(mut keys, web3_name, mut linked_accounts), leaf| match leaf {
-// 				ProofLeaf::DidKey(key_id, key_value) => {
-// 					keys.try_push(RevealedDidKey {
-// 						// TODO: Avoid cloning if possible
-// 						id: key_id.0.clone(),
-// 						relationship: key_id.1,
-// 						details: key_value.0.clone(),
-// 					})
-// 					.map_err(|_| ())?;
-// 					Ok::<_, ()>((keys, web3_name, linked_accounts))
-// 				}
-// 				// TODO: Avoid cloning if possible
-// 				ProofLeaf::Web3Name(revealed_web3_name, details) => Ok((
-// 					keys,
-// 					Some(RevealedWeb3Name {
-// 						web3_name: revealed_web3_name.0.clone(),
-// 						claimed_at: details.0.clone(),
-// 					}),
-// 					linked_accounts,
-// 				)),
-// 				ProofLeaf::LinkedAccount(account_id, _) => {
-// 					linked_accounts.try_push(account_id.0.clone()).map_err(|_| ())?;
-// 					Ok::<_, ()>((keys, web3_name, linked_accounts))
-// 				}
-// 			},
-// 		)?;
-// 		let verification_result = VerificationResult {
-// 			did_keys,
-// 			web3_name,
-// 			linked_accounts,
-// 		};
-
-// 		// 4. Verify DID signature (taken from existing implementation).
-// 		let block_number = ConsumerBlockNumberProvider::get();
-// 		let is_signature_fresh =
-// 			if let Some(blocks_ago_from_now) =
-// block_number.checked_sub(&dip_proof.did_signature.block_number) {
-// 				blocks_ago_from_now.into() <= SIGNATURE_VALIDITY
-// 			} else {
-// 				false
-// 			};
-// 		ensure!(is_signature_fresh, ());
-// 		let encoded_payload = (
-// 			call,
-// 			&identity_details,
-// 			submitter,
-// 			&dip_proof.did_signature.block_number,
-// 			ConsumerGenesisHashProvider::get(),
-// 			SignedExtraProvider::get(),
-// 		)
-// 			.encode();
-// 		let mut proof_verification_keys =
-// verification_result.as_ref().iter().filter_map(|RevealedDidKey {
-// 			relationship, details: DidPublicKeyDetails { key, .. }, .. } | {
-// 				let DidPublicKey::PublicVerificationKey(key) = key else { return None };
-// 					Some((key,
-// DidVerificationKeyRelationship::try_from(*relationship).expect("Should never
-// fail to build a VerificationRelationship from the given DidKeyRelationship
-// because we have already made sure the conditions hold."))) 		});
-// 		let valid_signing_key = proof_verification_keys.find(|(verification_key, _)|
-// { 			verification_key
-// 				.verify_signature(&encoded_payload, &dip_proof.did_signature.signature)
-// 				.is_ok()
-// 		});
-// 		let Some((key, relationship)) = valid_signing_key else { return Err(()) };
-// 		if let Some(details) = identity_details {
-// 			details.bump();
-// 		} else {
-// 			*identity_details = Some(Self::IdentityDetails::default());
-// 		}
-// 		// 4.1 Verify call required relationship
-// 		CallVerifier::check_call_origin_info(call, &(key.clone(),
-// relationship)).map_err(|_| ())?; 		Ok(verification_result)
-// 	}
-// }

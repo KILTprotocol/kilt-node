@@ -16,23 +16,19 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use core::task::Context;
-
 use did::{
 	did_details::{DidPublicKey, DidPublicKeyDetails, DidVerificationKey},
 	DidSignature, DidVerificationKeyRelationship,
 };
 use frame_support::ensure;
-use pallet_dip_consumer::traits::IdentityProofVerifier;
-use pallet_dip_provider::traits::IdentityProvider;
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
-use sp_core::{ConstU64, Get, RuntimeDebug};
+use sp_core::RuntimeDebug;
 use sp_runtime::traits::CheckedSub;
 use sp_std::marker::PhantomData;
 
 use crate::{
-	merkle::{DidMerkleProofVerifier, RevealedDidKey},
+	merkle::RevealedDidKey,
 	traits::{Bump, DidDipOriginFilter, DidSignatureVerifierContextProvider},
 };
 
@@ -58,6 +54,7 @@ pub struct MerkleDidSignatureAndCallVerifier<
 	RemoteBlockNumber,
 	CallVerifier,
 >(
+	#[allow(clippy::type_complexity)]
 	PhantomData<(
 		Call,
 		Submitter,
@@ -100,6 +97,7 @@ impl<
 	MerkleProofEntries: AsRef<[RevealedDidKey<RemoteKeyId, RemoteBlockNumber>]>,
 	CallVerifier: DidDipOriginFilter<Call, OriginInfo = (DidVerificationKey, DidVerificationKeyRelationship)>,
 {
+	#[allow(clippy::result_unit_err)]
 	pub fn verify_did_signature_for_call(
 		call: &Call,
 		submitter: &Submitter,

@@ -16,19 +16,13 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use pallet_dip_consumer::traits::IdentityProofVerifier;
 use parity_scale_codec::{Decode, HasCompact};
-use sp_core::{ConstU32, U256};
+use sp_core::U256;
 use sp_runtime::generic::Header;
 use sp_std::{marker::PhantomData, vec::Vec};
 use sp_trie::StorageProof;
 
 use substrate_no_std_port::read_proof_check;
-
-use crate::{
-	merkle::MerkleProof,
-	state_proofs::{parachain::DipCommitmentValueProofVerifier, relay_chain::ParachainHeadProofVerifier},
-};
 
 // Ported from https://github.com/paritytech/substrate/blob/b27c470eaff379f512d1dec052aff5d551ed3b03/primitives/state-machine/src/lib.rs#L1076
 // Needs to be replaced with its runtime-friendly version when available, or be
@@ -89,19 +83,14 @@ mod substrate_no_std_port {
 	}
 }
 
-mod relay_chain {
+pub(super) mod relay_chain {
 	use super::*;
 
 	use parity_scale_codec::Encode;
-	use sp_core::{storage::StorageKey, Get};
+	use sp_core::storage::StorageKey;
 	use sp_runtime::traits::BlakeTwo256;
 
-	use pallet_dip_consumer::traits::IdentityProofVerifier;
-
-	use crate::{
-		traits::{OutputOf, RelayChainStateInfoProvider},
-		ParaRootProof,
-	};
+	use crate::traits::{OutputOf, RelayChainStateInfoProvider};
 
 	pub struct ParachainHeadProofVerifier<RelayInfoProvider>(PhantomData<RelayInfoProvider>);
 
@@ -234,10 +223,9 @@ mod relay_chain {
 	}
 }
 
-mod parachain {
+pub(super) mod parachain {
 	use super::*;
 
-	use pallet_dip_consumer::traits::IdentityProofVerifier;
 	use parity_scale_codec::Encode;
 	use sp_core::storage::StorageKey;
 

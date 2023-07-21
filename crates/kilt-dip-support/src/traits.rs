@@ -16,9 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use parity_scale_codec::Encode;
-use sp_core::{storage::StorageKey, Get};
-use sp_runtime::traits::{BlakeTwo256, CheckedAdd, One, Zero};
+use sp_runtime::traits::{CheckedAdd, One, Zero};
 use sp_std::marker::PhantomData;
 
 // TODO: Switch to the `Incrementable` trait once it's added to the root of
