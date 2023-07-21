@@ -90,7 +90,7 @@ impl<
 	Call: Encode,
 	Submitter: Encode,
 	ContextProvider: DidSignatureVerifierContext,
-	ContextProvider::BlockNumber: Encode + CheckedSub + PartialOrd<u16>,
+	ContextProvider::BlockNumber: Encode + CheckedSub + From<u16> + PartialOrd,
 	ContextProvider::Hash: Encode,
 	ContextProvider::SignedExtra: Encode,
 	DidLocalDetails: Bump + Default + Encode,
@@ -109,7 +109,7 @@ impl<
 			block_number.checked_sub(&merkle_revealed_did_signature.did_signature.block_number)
 		{
 			// False if the signature is too old.
-			blocks_ago_from_now <= ContextProvider::SIGNATURE_VALIDITY
+			blocks_ago_from_now <= ContextProvider::SIGNATURE_VALIDITY.into()
 		} else {
 			// Signature generated at a future time, not possible to verify.
 			false
