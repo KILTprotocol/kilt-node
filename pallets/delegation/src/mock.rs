@@ -178,7 +178,7 @@ pub(crate) mod runtime {
 
 	use frame_support::{
 		parameter_types,
-		traits::{fungible::MutateHold, tokens::Precision},
+		traits::{fungible::MutateHold, tokens::Precision, ReservableCurrency},
 		weights::constants::RocksDbWeight,
 	};
 	use frame_system::EnsureSigned;
@@ -188,7 +188,7 @@ pub(crate) mod runtime {
 	use sp_core::{ed25519, sr25519, Pair};
 	use sp_runtime::{
 		testing::Header,
-		traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify, ReservableCurrency},
+		traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
 		MultiSignature, MultiSigner,
 	};
 
