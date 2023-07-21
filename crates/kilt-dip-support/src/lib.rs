@@ -52,8 +52,7 @@ pub struct SiblingParachainDipStateProof<
 > {
 	para_state_root: SiblingParachainRootStateProof<RelayBlockHeight>,
 	dip_identity_commitment: Vec<Vec<u8>>,
-	dip_proof:
-		DipMerkleProofAndDidSignature<DipMerkleProofBlindedValues, DipMerkleProofRevealedLeaf, DipProviderBlockNumber>,
+	did: DipMerkleProofAndDidSignature<DipMerkleProofBlindedValues, DipMerkleProofRevealedLeaf, DipProviderBlockNumber>,
 }
 
 #[derive(Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo, Clone)]
@@ -64,8 +63,8 @@ pub struct SiblingParachainRootStateProof<RelayBlockHeight> {
 
 #[derive(Encode, Decode, PartialEq, Eq, RuntimeDebug, TypeInfo, Clone)]
 pub struct DipMerkleProofAndDidSignature<BlindedValues, Leaf, BlockNumber> {
-	merkle_proof: DidMerkleProof<BlindedValues, Leaf>,
-	did_signature: TimeBoundDidSignature<BlockNumber>,
+	leaves: DidMerkleProof<BlindedValues, Leaf>,
+	signature: TimeBoundDidSignature<BlockNumber>,
 }
 
 pub struct DipSiblingProviderStateProofVerifier<
@@ -217,7 +216,7 @@ impl<
 			_,
 			MAX_REVEALED_KEYS_COUNT,
 			MAX_REVEALED_ACCOUNTS_COUNT,
-		>::verify_dip_merkle_proof(&subject_identity_commitment, proof.dip_proof.merkle_proof)?;
+		>::verify_dip_merkle_proof(&subject_identity_commitment, proof.did.leaves)?;
 
 		// 4. Verify DID signature.
 		RevealedDidKeysSignatureAndCallVerifier::<
@@ -235,7 +234,7 @@ impl<
 			identity_details,
 			RevealedDidKeysAndSignature {
 				merkle_leaves: proof_leaves.borrow(),
-				did_signature: proof.dip_proof.did_signature,
+				did_signature: proof.did.signature,
 			},
 		)?;
 
