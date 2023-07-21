@@ -20,10 +20,10 @@ use did::{did_details::DidVerificationKey, DidVerificationKeyRelationship, KeyId
 use dip_provider_runtime_template::{BlockNumber as ProviderBlockNumber, Web3Name};
 use frame_support::traits::Contains;
 use kilt_dip_support::{
-	did::MerkleLeavesAndDidSignature,
-	merkle::{MerkleProof, ProofLeaf},
+	did::RevealedDidKeysAndSignature,
+	merkle::{DidMerkleProof, RevealedDidMerkleProofLeaf},
 	traits::{
-		BlockNumberProvider, DidDipOriginFilter, DipProviderParachainRuntime, GenesisProvider, RococoParachainRuntime,
+		BlockNumberProvider, DipCallOriginFilter, DipProviderParachainRuntime, GenesisProvider, RococoParachainRuntime,
 	},
 	DipSiblingParachainStateProof, StateProofDipVerifier,
 };
@@ -60,8 +60,8 @@ impl pallet_dip_consumer::Config for Runtime {
 	type Identifier = DidIdentifier;
 	type IdentityProof = DipSiblingParachainStateProof<
 		u32,
-		MerkleLeavesAndDidSignature<
-			MerkleProof<Vec<Vec<u8>>, ProofLeaf<Hash, BlockNumber, Web3Name, LinkableAccountId>>,
+		RevealedDidKeysAndSignature<
+			DidMerkleProof<Vec<Vec<u8>>, RevealedDidMerkleProofLeaf<Hash, BlockNumber, Web3Name, LinkableAccountId>>,
 			BlockNumber,
 		>,
 	>;
@@ -119,7 +119,7 @@ fn single_key_relationship<'a>(
 
 pub struct DipCallFilter;
 
-impl DidDipOriginFilter<RuntimeCall> for DipCallFilter {
+impl DipCallOriginFilter<RuntimeCall> for DipCallFilter {
 	type Error = ();
 	type OriginInfo = (DidVerificationKey, DidVerificationKeyRelationship);
 	type Success = ();

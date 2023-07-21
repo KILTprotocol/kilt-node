@@ -19,6 +19,8 @@
 use sp_runtime::traits::{CheckedAdd, One, Zero};
 use sp_std::marker::PhantomData;
 
+use crate::utils::OutputOf;
+
 // TODO: Switch to the `Incrementable` trait once it's added to the root of
 // `frame_support`.
 /// A trait for "bumpable" types, i.e., types that have some notion of order of
@@ -40,7 +42,7 @@ where
 
 /// A trait for types that implement some sort of access control logic on the
 /// provided input `Call` type.
-pub trait DidDipOriginFilter<Call> {
+pub trait DipCallOriginFilter<Call> {
 	/// The error type for cases where the checks fail.
 	type Error;
 	/// The type of additional information required by the type to perform the
@@ -52,9 +54,7 @@ pub trait DidDipOriginFilter<Call> {
 	fn check_call_origin_info(call: &Call, info: &Self::OriginInfo) -> Result<Self::Success, Self::Error>;
 }
 
-pub type OutputOf<Hasher> = <Hasher as sp_runtime::traits::Hash>::Output;
-
-pub trait RelayChainStateInfoProvider {
+pub trait RelayChainStateInfo {
 	type BlockNumber;
 	type Key;
 	type Hasher: sp_runtime::traits::Hash;
@@ -64,7 +64,7 @@ pub trait RelayChainStateInfoProvider {
 	fn parachain_head_storage_key(para_id: &Self::ParaId) -> Self::Key;
 }
 
-pub trait ParachainStateInfoProvider {
+pub trait ProviderParachainStateInfo {
 	type Commitment;
 	type Key;
 	type Hasher: sp_runtime::traits::Hash;
@@ -73,7 +73,7 @@ pub trait ParachainStateInfoProvider {
 	fn dip_subject_storage_key(identifier: &Self::Identifier) -> Self::Key;
 }
 
-pub trait DidSignatureVerifierContextProvider {
+pub trait DidSignatureVerifierContext {
 	const SIGNATURE_VALIDITY: u16;
 
 	type BlockNumber;
@@ -85,10 +85,10 @@ pub trait DidSignatureVerifierContextProvider {
 	fn signed_extra() -> Option<Self::SignedExtra>;
 }
 
-pub struct FrameSystemProvider<T, const SIGNATURE_VALIDITY: u16>(PhantomData<T>);
+pub struct FrameSystemDidSignatureContext<T, const SIGNATURE_VALIDITY: u16>(PhantomData<T>);
 
-impl<T, const SIGNATURE_VALIDITY: u16> DidSignatureVerifierContextProvider
-	for FrameSystemProvider<T, SIGNATURE_VALIDITY>
+impl<T, const SIGNATURE_VALIDITY: u16> DidSignatureVerifierContext
+	for FrameSystemDidSignatureContext<T, SIGNATURE_VALIDITY>
 where
 	T: frame_system::Config,
 {

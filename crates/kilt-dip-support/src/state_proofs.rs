@@ -16,11 +16,13 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use parity_scale_codec::{Decode, HasCompact};
-use sp_core::U256;
+use parity_scale_codec::{Decode, Encode, HasCompact};
+use sp_core::{storage::StorageKey, U256};
 use sp_runtime::generic::Header;
 use sp_std::{marker::PhantomData, vec::Vec};
 use sp_trie::StorageProof;
+
+use crate::utils::OutputOf;
 
 use substrate_no_std_port::read_proof_check;
 
@@ -86,32 +88,30 @@ mod substrate_no_std_port {
 pub(super) mod relay_chain {
 	use super::*;
 
-	use parity_scale_codec::Encode;
-	use sp_core::storage::StorageKey;
 	use sp_runtime::traits::BlakeTwo256;
 
-	use crate::traits::{OutputOf, RelayChainStateInfoProvider};
+	use crate::traits::RelayChainStateInfo;
 
-	pub struct ParachainHeadProofVerifier<RelayInfoProvider>(PhantomData<RelayInfoProvider>);
+	pub struct SiblingParachainHeadProofVerifier<RelayChainState>(PhantomData<RelayChainState>);
 
-	impl<RelayInfoProvider> ParachainHeadProofVerifier<RelayInfoProvider>
+	impl<RelayChainState> SiblingParachainHeadProofVerifier<RelayChainState>
 	where
-		RelayInfoProvider: RelayChainStateInfoProvider,
-		RelayInfoProvider::Hasher: 'static,
-		OutputOf<RelayInfoProvider::Hasher>: Ord,
-		RelayInfoProvider::BlockNumber: Copy + Into<U256> + TryFrom<U256> + HasCompact,
-		RelayInfoProvider::Key: AsRef<[u8]>,
+		RelayChainState: RelayChainStateInfo,
+		RelayChainState::Hasher: 'static,
+		OutputOf<RelayChainState::Hasher>: Ord,
+		RelayChainState::BlockNumber: Copy + Into<U256> + TryFrom<U256> + HasCompact,
+		RelayChainState::Key: AsRef<[u8]>,
 	{
 		#[allow(clippy::result_unit_err)]
 		pub fn verify_proof_for_parachain(
-			para_id: &RelayInfoProvider::ParaId,
-			relay_height: &RelayInfoProvider::BlockNumber,
+			para_id: &RelayChainState::ParaId,
+			relay_height: &RelayChainState::BlockNumber,
 			proof: impl IntoIterator<Item = Vec<u8>>,
-		) -> Result<Header<RelayInfoProvider::BlockNumber, RelayInfoProvider::Hasher>, ()> {
-			let relay_state_root = RelayInfoProvider::state_root_for_block(relay_height).ok_or(())?;
-			let parachain_storage_key = RelayInfoProvider::parachain_head_storage_key(para_id);
+		) -> Result<Header<RelayChainState::BlockNumber, RelayChainState::Hasher>, ()> {
+			let relay_state_root = RelayChainState::state_root_for_block(relay_height).ok_or(())?;
+			let parachain_storage_key = RelayChainState::parachain_head_storage_key(para_id);
 			let storage_proof = StorageProof::new(proof);
-			let revealed_leaves = read_proof_check::<RelayInfoProvider::Hasher, _>(
+			let revealed_leaves = read_proof_check::<RelayChainState::Hasher, _>(
 				relay_state_root,
 				storage_proof,
 				[&parachain_storage_key].iter(),
@@ -129,9 +129,9 @@ pub(super) mod relay_chain {
 		}
 	}
 
-	pub struct RococoParachainRuntime<Runtime>(PhantomData<Runtime>);
+	pub struct RococoStateRootsViaRelayStorePallet<Runtime>(PhantomData<Runtime>);
 
-	impl<Runtime> RelayChainStateInfoProvider for RococoParachainRuntime<Runtime>
+	impl<Runtime> RelayChainStateInfo for RococoStateRootsViaRelayStorePallet<Runtime>
 	where
 		Runtime: pallet_relay_store::Config,
 	{
@@ -163,15 +163,13 @@ pub(super) mod relay_chain {
 		use super::*;
 
 		use hex_literal::hex;
-		use parity_scale_codec::Encode;
-		use sp_core::storage::StorageKey;
 		use sp_runtime::traits::BlakeTwo256;
 
 		// Polkadot block n: 16_363_919,
 		// hash 0x18e90e9aa8e3b063f60386ba1b0415111798e72d01de58b1438d620d42f58e39
 		struct StaticPolkadotInfoProvider;
 
-		impl RelayChainStateInfoProvider for StaticPolkadotInfoProvider {
+		impl RelayChainStateInfo for StaticPolkadotInfoProvider {
 			type BlockNumber = u32;
 			type Hasher = BlakeTwo256;
 			type Key = StorageKey;
@@ -212,12 +210,13 @@ pub(super) mod relay_chain {
 			// "0xcd710b30bd2eab0352ddcc26417aa1941b3c252fcb29d88eff4f3de5de4476c32c0cfd6c23b92a7826080000"
 			//
 			let expected_spiritnet_head_at_block = hex!("65541097fb02782e14f43074f0b00e44ae8e9fe426982323ef1d329739740d37f252ff006d1156941db1bccd58ce3a1cac4f40cad91f692d94e98f501dd70081a129b69a3e2ef7e1ff84ba3d86dab4e95f2c87f6b1055ebd48519c185360eae58f05d1ea08066175726120dcdc6308000000000561757261010170ccfaf3756d1a8dd8ae5c89094199d6d32e5dd9f0920f6fe30f986815b5e701974ea0e0e0a901401f2c72e3dd8dbdf4aa55d59bf3e7021856cdb8038419eb8c").to_vec();
-			let returned_head = ParachainHeadProofVerifier::<StaticPolkadotInfoProvider>::verify_proof_for_parachain(
-				&2_086,
-				&16_363_919,
-				spiritnet_head_proof_at_block,
-			)
-			.expect("Parachain head proof verification should not fail.");
+			let returned_head =
+				SiblingParachainHeadProofVerifier::<StaticPolkadotInfoProvider>::verify_proof_for_parachain(
+					&2_086,
+					&16_363_919,
+					spiritnet_head_proof_at_block,
+				)
+				.expect("Parachain head proof verification should not fail.");
 			assert!(returned_head.encode() == expected_spiritnet_head_at_block, "Parachain head returned from the state proof verification should not be different than the pre-computed one.");
 		}
 	}
@@ -226,30 +225,27 @@ pub(super) mod relay_chain {
 pub(super) mod parachain {
 	use super::*;
 
-	use parity_scale_codec::Encode;
-	use sp_core::storage::StorageKey;
+	use crate::traits::ProviderParachainStateInfo;
 
-	use crate::traits::{OutputOf, ParachainStateInfoProvider};
+	pub struct DipIdentityCommitmentProofVerifier<ParaInfo>(PhantomData<ParaInfo>);
 
-	pub struct DipCommitmentValueProofVerifier<ParaInfoProvider>(PhantomData<ParaInfoProvider>);
-
-	impl<ParaInfoProvider> DipCommitmentValueProofVerifier<ParaInfoProvider>
+	impl<ParaInfo> DipIdentityCommitmentProofVerifier<ParaInfo>
 	where
-		ParaInfoProvider: ParachainStateInfoProvider,
-		ParaInfoProvider::Hasher: 'static,
-		OutputOf<ParaInfoProvider::Hasher>: Ord,
-		ParaInfoProvider::Commitment: Decode,
-		ParaInfoProvider::Key: AsRef<[u8]>,
+		ParaInfo: ProviderParachainStateInfo,
+		ParaInfo::Hasher: 'static,
+		OutputOf<ParaInfo::Hasher>: Ord,
+		ParaInfo::Commitment: Decode,
+		ParaInfo::Key: AsRef<[u8]>,
 	{
 		#[allow(clippy::result_unit_err)]
 		pub fn verify_proof_for_identifier(
-			identifier: &ParaInfoProvider::Identifier,
-			state_root: OutputOf<ParaInfoProvider::Hasher>,
+			identifier: &ParaInfo::Identifier,
+			state_root: OutputOf<ParaInfo::Hasher>,
 			proof: impl IntoIterator<Item = Vec<u8>>,
-		) -> Result<ParaInfoProvider::Commitment, ()> {
-			let dip_commitment_storage_key = ParaInfoProvider::dip_subject_storage_key(identifier);
+		) -> Result<ParaInfo::Commitment, ()> {
+			let dip_commitment_storage_key = ParaInfo::dip_subject_storage_key(identifier);
 			let storage_proof = StorageProof::new(proof);
-			let revealed_leaves = read_proof_check::<ParaInfoProvider::Hasher, _>(
+			let revealed_leaves = read_proof_check::<ParaInfo::Hasher, _>(
 				state_root,
 				storage_proof,
 				[&dip_commitment_storage_key].iter(),
@@ -261,13 +257,13 @@ pub(super) mod parachain {
 				debug_assert!(revealed_leaves.contains_key(dip_commitment_storage_key.as_ref()));
 			}
 			let Some(Some(encoded_commitment)) = revealed_leaves.get(dip_commitment_storage_key.as_ref()) else { return Err(()) };
-			ParaInfoProvider::Commitment::decode(&mut &encoded_commitment[..]).map_err(|_| ())
+			ParaInfo::Commitment::decode(&mut &encoded_commitment[..]).map_err(|_| ())
 		}
 	}
 
-	pub struct DipProviderParachainRuntime<Runtime>(PhantomData<Runtime>);
+	pub struct KiltDipCommitmentsForDipProviderPallet<Runtime>(PhantomData<Runtime>);
 
-	impl<Runtime> ParachainStateInfoProvider for DipProviderParachainRuntime<Runtime>
+	impl<Runtime> ProviderParachainStateInfo for KiltDipCommitmentsForDipProviderPallet<Runtime>
 	where
 		Runtime: pallet_dip_provider::Config,
 	{
@@ -294,7 +290,7 @@ pub(super) mod parachain {
 		use super::*;
 
 		use hex_literal::hex;
-		use sp_core::{storage::StorageKey, H256};
+		use sp_core::H256;
 		use sp_runtime::traits::BlakeTwo256;
 
 		// Spiritnet block n: 4_184_668,
@@ -302,7 +298,7 @@ pub(super) mod parachain {
 		struct StaticSpiritnetInfoProvider;
 
 		// We use the `system::eventCount()` storage entry as a unit test here.
-		impl ParachainStateInfoProvider for StaticSpiritnetInfoProvider {
+		impl ProviderParachainStateInfo for StaticSpiritnetInfoProvider {
 			// The type of the `eventCount()` storage entry.
 			type Commitment = u32;
 			type Hasher = BlakeTwo256;
@@ -336,7 +332,7 @@ pub(super) mod parachain {
 			// "0x26aa394eea5630e07c48ae0c9558cef70a98fdbe9ce6c55837576c60c7af3850"
 			let expected_event_count_at_block = 5;
 			let returned_event_count =
-				DipCommitmentValueProofVerifier::<StaticSpiritnetInfoProvider>::verify_proof_for_identifier(
+				DipIdentityCommitmentProofVerifier::<StaticSpiritnetInfoProvider>::verify_proof_for_identifier(
 					&(),
 					spiritnet_state_root,
 					spiritnet_event_count_proof_at_block,
