@@ -22,6 +22,7 @@ use frame_support::{
 	weights::Weight,
 	StorageHasher, Twox128,
 };
+use kilt_support::test_utils::log_and_return_error_message;
 use pallet_membership::Instance2;
 use sp_core::Get;
 use sp_io::MultiRemovalResults;
@@ -48,8 +49,8 @@ where
 
 		ensure!(
 			frame_support::migration::have_storage_value(PALLET_RUNTIME_NAME, PALLET_STORAGE_NAME, b""),
-			TryRuntimeError::Other(
-				"Storage in pallet_insecure_randomness_collective_flip is already empty before migration.",
+			log_and_return_error_message(
+				"Storage in pallet_insecure_randomness_collective_flip is already empty before migration.".into(),
 			)
 		);
 		Ok(sp_std::vec::Vec::default())
@@ -78,8 +79,8 @@ where
 
 		ensure!(
 			!frame_support::migration::have_storage_value(PALLET_RUNTIME_NAME, PALLET_STORAGE_NAME, b""),
-			TryRuntimeError::Other(
-				"Storage in pallet_insecure_randomness_collective_flip is not empty after migration.",
+			log_and_return_error_message(
+				"Storage in pallet_insecure_randomness_collective_flip is not empty after migration.".into()
 			)
 		);
 		Ok(())
