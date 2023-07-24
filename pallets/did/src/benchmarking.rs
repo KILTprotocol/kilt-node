@@ -1157,7 +1157,6 @@ benchmarks! {
 		assert_eq!(
 			Did::<T>::get(&did_subject).expect("DID entry should be retained").deposit,
 			Deposit {
-				version: Some(1),
 				owner: did_account,
 				amount: <T as Config>::BaseDeposit::get()
 			},
@@ -1184,7 +1183,6 @@ benchmarks! {
 		assert_eq!(
 			Did::<T>::get(&did_subject).expect("DID entry should be retained").deposit,
 			Deposit {
-				version: Some(1),
 				owner: did_account,
 				amount: <T as Config>::BaseDeposit::get()
 			},

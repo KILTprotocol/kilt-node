@@ -266,7 +266,6 @@ benchmarks! {
 			attester,
 			Some(ctype_hash),
 			Some(Deposit::<T::AccountId, BalanceOf<T>> {
-				version: Some(1),
 				owner: deposit_owner.clone(),
 				amount: <T as Config>::Deposit::get() + <T as Config>::Deposit::get(),
 			})

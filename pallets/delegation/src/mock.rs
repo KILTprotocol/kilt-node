@@ -135,7 +135,6 @@ pub fn generate_base_delegation_node<T: Config>(
 		hierarchy_root_id: hierarchy_id,
 		parent,
 		deposit: Deposit {
-			version: Some(1),
 			owner: deposit_owner,
 			amount: <T as Config>::Deposit::get(),
 		},

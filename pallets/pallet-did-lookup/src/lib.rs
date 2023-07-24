@@ -408,7 +408,6 @@ pub mod pallet {
 			account: LinkableAccountId,
 		) -> DispatchResult {
 			let deposit = Deposit {
-				version: Some(1),
 				owner: sender,
 				amount: T::Deposit::get(),
 			};

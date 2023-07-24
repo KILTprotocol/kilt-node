@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::{ensure, pallet_prelude::DispatchResult, traits::ReservableCurrency};
+use frame_support::{pallet_prelude::DispatchResult, traits::ReservableCurrency};
 use kilt_support::{migration::switch_reserved_to_hold, Deposit};
 use sp_runtime::SaturatedConversion;
 
@@ -28,11 +28,8 @@ where
 {
 	Owner::<T>::try_mutate(key, |details| {
 		if let Some(d) = details {
-			ensure!(d.deposit.version.is_none(), Error::<T>::BalanceMigration);
-
 			*d = Web3NameOwnership {
 				deposit: Deposit {
-					version: Some(1),
 					owner: d.deposit.owner.clone(),
 					amount: d.deposit.amount,
 				},
@@ -64,9 +61,6 @@ pub mod test {
 			.with_balances(vec![(ACCOUNT_00, Web3NameDeposit::get() * 2)])
 			.with_web3_names(vec![(DID_00, web3_name_00, ACCOUNT_00)])
 			.build_and_execute_with_sanity_tests(|| {
-				translate_holds_to_reserve();
-				set_deposit_version_to_none();
-
 				// before the migration the balance should be reseved and not on
 				// hold.
 				let hold_balance = <<Test as Config>::Currency as InspectHold<AccountIdOf<Test>>>::balance_on_hold(
@@ -91,9 +85,6 @@ pub mod test {
 			.with_balances(vec![(ACCOUNT_00, Web3NameDeposit::get() * 2)])
 			.with_web3_names(vec![(DID_00, web3_name_00.clone(), ACCOUNT_00)])
 			.build_and_execute_with_sanity_tests(|| {
-				translate_holds_to_reserve();
-				set_deposit_version_to_none();
-
 				let delegation_pre_migration = Owner::<Test>::get(web3_name_00.clone());
 
 				let balance_on_reserve_pre_migration = <<Test as Config>::Currency as ReservableCurrency<
@@ -102,9 +93,6 @@ pub mod test {
 
 				//Delegation should be in storage
 				assert!(delegation_pre_migration.is_some());
-
-				//before the migration the version should be none.
-				assert!(delegation_pre_migration.clone().unwrap().deposit.version.is_none());
 
 				// before the migration the deposit should be reserved.
 				assert_eq!(
@@ -133,10 +121,6 @@ pub mod test {
 
 				// ... and be as much as the hold balance
 				assert_eq!(balance_on_reserve_post_migration, balance_on_hold);
-
-				//... and the version should be 1.
-				assert!(delegation_post_migration.clone().unwrap().deposit.version.is_some());
-				assert!(delegation_post_migration.unwrap().deposit.version.unwrap() == 1);
 
 				// Nothing should happen
 				assert!(update_balance_for_entry::<Test>(&web3_name_00).is_err());

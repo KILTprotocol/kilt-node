@@ -62,7 +62,6 @@ benchmarks! {
 		let did_public_auth_key = get_ed25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(did_public_auth_key).into_account().into();
 		let mut did_details = generate_base_did_details::<T>(DidVerificationKey::from(did_public_auth_key), Some(caller.clone()));
-		did_details.deposit.version = None;
 		did_details.deposit.amount = <T as did::Config>::BaseDeposit::get();
 
 		did::Did::<T>::insert(did_subject.clone(), did_details.clone());
@@ -90,7 +89,6 @@ benchmarks! {
 		let hold_balance = <<T as did::Config>::Currency as  InspectHold<AccountIdOf<T>>>::balance_on_hold(&did::HoldReason::Deposit.into(), &caller);
 		assert_eq!(hold_balance, did_details.deposit.amount);
 		assert!(details.is_some());
-		assert!(details.unwrap().deposit.version.is_none())
 	}
 
 	staking_weight {

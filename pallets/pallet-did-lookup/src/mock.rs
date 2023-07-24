@@ -242,17 +242,3 @@ pub(crate) fn translate_holds_to_reserve() {
 			})
 	});
 }
-
-pub(crate) fn set_deposit_version_to_none() {
-	ConnectedDids::<Test>::iter().for_each(|(key, details)| {
-		let mut deposit_with_version_none = details.deposit;
-		deposit_with_version_none.version = None;
-		ConnectedDids::<Test>::set(
-			key,
-			Some(ConnectionRecord {
-				deposit: deposit_with_version_none,
-				..details
-			}),
-		)
-	})
-}

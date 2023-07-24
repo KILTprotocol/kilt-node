@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::{ensure, traits::ReservableCurrency};
+use frame_support::traits::ReservableCurrency;
 use kilt_support::{migration::switch_reserved_to_hold, Deposit};
 use sp_runtime::{DispatchResult, SaturatedConversion};
 
@@ -30,11 +30,8 @@ where
 {
 	Credentials::<T>::try_mutate(key, key2, |details| {
 		if let Some(d) = details {
-			ensure!(d.deposit.version.is_none(), Error::<T>::BalanceMigration);
-
 			*d = CredentialEntry {
 				deposit: Deposit {
-					version: Some(1),
 					owner: d.deposit.owner.clone(),
 					amount: d.deposit.amount,
 				},
@@ -73,7 +70,6 @@ pub mod test {
 		let mut new_credential =
 			generate_base_credential_entry::<Test>(ACCOUNT_00, 0, attester.clone(), Some(ctype_hash_1), None);
 		new_credential.authorization_id = Some(attester.clone());
-		new_credential.deposit.version = None;
 
 		let credential_id: CredentialIdOf<Test> = CredentialIdOf::<Test>::default();
 		let deposit: Balance = <Test as Config>::Deposit::get();
@@ -111,7 +107,6 @@ pub mod test {
 		let mut new_credential =
 			generate_base_credential_entry::<Test>(ACCOUNT_00, 0, attester.clone(), Some(ctype_hash_1), None);
 		new_credential.authorization_id = Some(attester.clone());
-		new_credential.deposit.version = None;
 
 		let credential_id: CredentialIdOf<Test> = CredentialIdOf::<Test>::default();
 		let deposit: Balance = <Test as Config>::Deposit::get();
@@ -130,9 +125,6 @@ pub mod test {
 
 				//Delegation should be in storage
 				assert!(delegation_pre_migration.is_some());
-
-				//before the migration the version should be none.
-				assert!(delegation_pre_migration.clone().unwrap().deposit.version.is_none());
 
 				// before the migration the deposit should be reserved.
 				assert_eq!(
@@ -161,10 +153,6 @@ pub mod test {
 
 				// ... and be as much as the hold balance
 				assert_eq!(balance_on_reserve_post_migration, balance_on_hold);
-
-				//... and the version should be 1.
-				assert!(delegation_post_migration.clone().unwrap().deposit.version.is_some());
-				assert!(delegation_post_migration.unwrap().deposit.version.unwrap() == 1);
 
 				//Nothing should happen
 				assert!(update_balance_for_entry::<Test>(&subject_id, &credential_id).is_err());

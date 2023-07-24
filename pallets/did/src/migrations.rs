@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::{ensure, pallet_prelude::DispatchResult, traits::ReservableCurrency};
+use frame_support::{pallet_prelude::DispatchResult, traits::ReservableCurrency};
 use kilt_support::{migration::switch_reserved_to_hold, Deposit};
 use sp_runtime::SaturatedConversion;
 
@@ -28,11 +28,8 @@ where
 {
 	Did::<T>::try_mutate(key, |details| {
 		if let Some(d) = details {
-			ensure!(d.deposit.version.is_none(), Error::<T>::BalanceMigration);
-
 			*d = DidDetails {
 				deposit: Deposit {
-					version: Some(1),
 					owner: d.deposit.owner.clone(),
 					amount: d.deposit.amount,
 				},
@@ -71,7 +68,6 @@ pub mod test {
 
 		let mut did_details =
 			generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(alice_did.clone()));
-		did_details.deposit.version = None;
 		did_details.deposit.amount = <Test as did::Config>::BaseDeposit::get();
 
 		let balance = <Test as did::Config>::BaseDeposit::get()
@@ -105,7 +101,6 @@ pub mod test {
 
 		let mut did_details =
 			generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(alice_did.clone()));
-		did_details.deposit.version = None;
 		did_details.deposit.amount = <Test as did::Config>::BaseDeposit::get();
 
 		let balance = <Test as did::Config>::BaseDeposit::get()
@@ -125,9 +120,6 @@ pub mod test {
 
 				//did should be in storage
 				assert!(did_pre_migration.is_some());
-
-				//before the migration the version should be none.
-				assert!(did_pre_migration.clone().unwrap().deposit.version.is_none());
 
 				// before the migration the deposit should be reserved.
 				assert_eq!(
@@ -155,10 +147,6 @@ pub mod test {
 
 				// ... and be as much as the hold balance
 				assert_eq!(balance_on_reserve_post_migration, balance_on_hold);
-
-				//... and the version should be 1.
-				assert!(did_post_migration.clone().unwrap().deposit.version.is_some());
-				assert!(did_post_migration.unwrap().deposit.version.unwrap() == 1);
 
 				// Nothing should happen
 				assert!(update_balance_for_entry::<Test>(&alice_did.clone()).is_err());

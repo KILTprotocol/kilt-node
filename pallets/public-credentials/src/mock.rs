@@ -96,7 +96,9 @@ pub(crate) mod runtime {
 
 	use frame_support::{
 		dispatch::Weight,
-		traits::{ConstU128, ConstU16, ConstU32, ConstU64},
+		traits::{
+			fungible::MutateHold, tokens::Precision, ConstU128, ConstU16, ConstU32, ConstU64, ReservableCurrency,
+		},
 		weights::constants::RocksDbWeight,
 	};
 	use frame_system::EnsureSigned;
@@ -113,7 +115,9 @@ pub(crate) mod runtime {
 
 	use ctype::{CtypeCreatorOf, CtypeEntryOf, CtypeHashOf};
 
-	use crate::{Config, CredentialEntryOf, Error, InputSubjectIdOf, PublicCredentialsAccessControl};
+	use crate::{
+		AccountIdOf, Config, CredentialEntryOf, Error, HoldReason, InputSubjectIdOf, PublicCredentialsAccessControl,
+	};
 
 	pub(crate) type BlockNumber = u64;
 	pub(crate) type Balance = u128;
@@ -466,5 +470,24 @@ pub(crate) mod runtime {
 
 			ext
 		}
+	}
+	pub(crate) fn translate_holds_to_reserve() {
+		pallet_balances::Holds::<Test>::iter().for_each(|(user, holds)| {
+			holds
+				.iter()
+				.filter(|hold| hold.id == HoldReason::Deposit.into())
+				.for_each(|hold| {
+					<<Test as Config>::Currency as MutateHold<AccountIdOf<Test>>>::release(
+						&HoldReason::Deposit.into(),
+						&user,
+						hold.amount,
+						Precision::Exact,
+					)
+					.expect("Translation to reserves should not fail");
+
+					<<Test as Config>::Currency as ReservableCurrency<AccountIdOf<Test>>>::reserve(&user, hold.amount)
+						.expect("Reserving Balance should not fail.");
+				})
+		});
 	}
 }

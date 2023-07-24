@@ -17,7 +17,6 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_support::{
-	ensure,
 	pallet_prelude::{DispatchResult, ValueQuery},
 	storage_alias,
 	traits::{Get, GetStorageVersion, OnRuntimeUpgrade, ReservableCurrency, StorageVersion},
@@ -126,11 +125,8 @@ where
 {
 	ConnectedDids::<T>::try_mutate(key, |details| {
 		if let Some(d) = details {
-			ensure!(d.deposit.version.is_none(), Error::<T>::Migration);
-
 			*d = ConnectionRecord {
 				deposit: Deposit {
-					version: Some(1),
 					owner: d.deposit.owner.clone(),
 					amount: d.deposit.amount,
 				},
@@ -193,7 +189,6 @@ pub mod test {
 			.with_connections(vec![(ACCOUNT_00, DID_00, LINKABLE_ACCOUNT_00)])
 			.build_and_execute_with_sanity_tests(|| {
 				translate_holds_to_reserve();
-				set_deposit_version_to_none();
 
 				// before the migration the balance should be reseved and not on
 				// hold.
@@ -218,9 +213,6 @@ pub mod test {
 
 				//Delegation should be in storage
 				assert!(connected_did_pre_migration.is_some());
-
-				//before the migration the version should be none.
-				assert!(connected_did_pre_migration.clone().unwrap().deposit.version.is_none());
 
 				// before the migration the deposit should be reserved.
 				assert_eq!(
@@ -249,10 +241,6 @@ pub mod test {
 
 				// ... and be as much as the hold balance
 				assert_eq!(balance_on_reserve_post_migration, balance_on_hold);
-
-				//... and the version should be 1.
-				assert!(connected_did_post_migration.clone().unwrap().deposit.version.is_some());
-				assert!(connected_did_post_migration.unwrap().deposit.version.unwrap() == 1);
 
 				// Nothing should happen
 				assert!(update_balance_for_entry::<Test>(&LINKABLE_ACCOUNT_00).is_err());
