@@ -38,11 +38,13 @@ pub mod pallet {
 	use pallet_did_lookup::linkable_account::LinkableAccountId;
 	use pallet_web3_names::Web3NameOf;
 	use public_credentials::{CredentialIdOf, SubjectIdOf};
-	use sp_runtime::SaturatedConversion;
+	use sp_runtime::{traits::Hash, SaturatedConversion};
 
 	use crate::default_weights::WeightInfo;
 
 	type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
+
+	type HashOf<T> = <T as frame_system::Config>::Hash;
 
 	#[derive(Encode, Decode, TypeInfo, Debug, Clone, PartialEq)]
 	pub struct EntriesToMigrate<T>
@@ -87,6 +89,10 @@ pub mod pallet {
 	#[pallet::pallet]
 	pub struct Pallet<T>(_);
 
+	#[pallet::storage]
+	#[pallet::getter(fn connected_dids)]
+	pub type MigratedKeys<T> = StorageMap<_, Blake2_128Concat, HashOf<T>, ()>;
+
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
@@ -129,6 +135,7 @@ pub mod pallet {
 			requested_migrations
 				.attestation
 				.iter()
+				.filter(|key| Self::is_key_already_migrated(<T as frame_system::Config>::Hashing::hash_of(key)))
 				.try_for_each(|attestation_hash| {
 					attestation::migrations::update_balance_for_entry::<T>(attestation_hash)
 				})?;
@@ -140,6 +147,7 @@ pub mod pallet {
 			requested_migrations
 				.did
 				.iter()
+				.filter(|key| Self::is_key_already_migrated(<T as frame_system::Config>::Hashing::hash_of(key)))
 				.try_for_each(|did_hash| did::migrations::update_balance_for_entry::<T>(did_hash))?;
 
 			requested_migrations.lookup.iter().try_for_each(|did_lookup_hash| {
@@ -149,16 +157,25 @@ pub mod pallet {
 			requested_migrations
 				.w3n
 				.iter()
+				.filter(|key| Self::is_key_already_migrated(<T as frame_system::Config>::Hashing::hash_of(key)))
 				.try_for_each(|w3n| pallet_web3_names::migrations::update_balance_for_entry::<T>(w3n))?;
 
 			requested_migrations
 				.staking
 				.iter()
+				.filter(|key| Self::is_key_already_migrated(<T as frame_system::Config>::Hashing::hash_of(key)))
 				.try_for_each(|account| parachain_staking::migrations::update_or_create_freeze::<T>(account))?;
 
 			requested_migrations
 				.public_credentials
 				.iter()
+				.filter(|(subject_id, credential_id)| {
+					let mut key = subject_id.encode();
+					let mut credential_encoded = credential_id.encode();
+					key.append(&mut credential_encoded);
+
+					Self::is_key_already_migrated(<T as frame_system::Config>::Hashing::hash_of(&key))
+				})
 				.try_for_each(|(subject_id, credential_id)| {
 					public_credentials::migrations::update_balance_for_entry::<T>(subject_id, credential_id)
 				})?;
@@ -166,6 +183,16 @@ pub mod pallet {
 			Self::deposit_event(Event::EntriesUpdated(requested_migrations));
 
 			Ok(())
+		}
+	}
+
+	impl<T: Config> Pallet<T> {
+		fn is_key_already_migrated(key: HashOf<T>) -> bool {
+			if MigratedKeys::<T>::contains_key(key) {
+				return false;
+			}
+			MigratedKeys::<T>::insert(key, ());
+			true
 		}
 	}
 }
