@@ -105,6 +105,6 @@ where
 		StorageVersion::new(4).put::<pallet_membership::Pallet<T, Instance2>>();
 		StorageVersion::new(1).put::<cumulus_pallet_dmp_queue::Pallet<T>>();
 
-		<T as frame_system::Config>::DbWeight::get().reads_writes(0, 5)
+		<T as frame_system::Config>::DbWeight::get().writes(5)
 	}
 }
