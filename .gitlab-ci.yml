@@ -3,33 +3,25 @@ stages:
   - build
 
 clippy:
-  # Corresponds to paritytech/ci-linux:production at the time of this PR
-  # https://hub.docker.com/layers/ci-linux/paritytech/ci-linux/production/images/sha256-4e8c072ea12bc17d99cb531adb58dea5a4c7d4880a8a86525052d24d1454e89e?context=explore
-  image: paritytech/ci-linux@sha256:4e8c072ea12bc17d99cb531adb58dea5a4c7d4880a8a86525052d24d1454e89e
+  image: paritytech/ci-unified:bullseye-1.70.0
   stage: test
   script:
     - cargo clippy --all-features --all-targets --locked -- -D warnings
 
 fmt:
-  # Corresponds to paritytech/ci-linux:production at the time of this PR
-  # https://hub.docker.com/layers/ci-linux/paritytech/ci-linux/production/images/sha256-4e8c072ea12bc17d99cb531adb58dea5a4c7d4880a8a86525052d24d1454e89e?context=explore
-  image: paritytech/ci-linux@sha256:4e8c072ea12bc17d99cb531adb58dea5a4c7d4880a8a86525052d24d1454e89e
+  image: paritytech/ci-unified:bullseye-1.70.0
   stage: test
   script:
     - cargo fmt -- --check
 
 test:
-  # Corresponds to paritytech/ci-linux:production at the time of this PR
-  # https://hub.docker.com/layers/ci-linux/paritytech/ci-linux/production/images/sha256-4e8c072ea12bc17d99cb531adb58dea5a4c7d4880a8a86525052d24d1454e89e?context=explore
-  image: paritytech/ci-linux@sha256:4e8c072ea12bc17d99cb531adb58dea5a4c7d4880a8a86525052d24d1454e89e
+  image: paritytech/ci-unified:bullseye-1.70.0
   stage: test
   script:
     - cargo test --all --all-targets --locked
 
 test-features:
-  # Corresponds to paritytech/ci-linux:production at the time of this PR
-  # https://hub.docker.com/layers/ci-linux/paritytech/ci-linux/production/images/sha256-4e8c072ea12bc17d99cb531adb58dea5a4c7d4880a8a86525052d24d1454e89e?context=explore
-  image: paritytech/ci-linux@sha256:4e8c072ea12bc17d99cb531adb58dea5a4c7d4880a8a86525052d24d1454e89e
+  image: paritytech/ci-unified:bullseye-1.70.0
   stage: test
   script:
     - cargo test --all --all-features --all-targets --locked
