@@ -22,7 +22,7 @@ use frame_support::{
 	weights::Weight,
 	StorageHasher, Twox128,
 };
-use kilt_support::test_utils::log_and_return_error_message;
+
 use pallet_membership::Instance2;
 use sp_core::Get;
 use sp_io::MultiRemovalResults;
@@ -34,6 +34,8 @@ use sp_runtime::TryRuntimeError;
 const PALLET_RUNTIME_NAME: &[u8] = b"RandomnessCollectiveFlip";
 #[cfg(feature = "try-runtime")]
 const PALLET_STORAGE_NAME: &[u8] = b"RandomMaterial";
+#[cfg(any(feature = "try-runtime", test))]
+use kilt_support::test_utils::log_and_return_error_message;
 
 pub struct RemoveInsecureRandomnessPallet<T>(PhantomData<T>);
 
