@@ -96,7 +96,7 @@ build-wasm-spiritnet:
     - export AUTHORIZE_UPGRADE_PREFIX=0x02
     - cp -r * /build
     - /srtool/build build
-    - subwasm meta --format=json+scale /out/out/spiritnet_runtime.compact.wasm > /out/spiritnet-metadata.json
+    - subwasm meta --format=json+scale /out/spiritnet_runtime.compact.wasm > /out/spiritnet-metadata.json
     - mkdir ./out
     - mv /out/* ./out/
   artifacts:
