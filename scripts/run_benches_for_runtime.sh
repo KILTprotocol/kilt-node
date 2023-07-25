@@ -37,7 +37,7 @@ pallets=(
 )
 
 if [ "$runtime" = "peregrine" ]; then
-  pallets+="pallet-configuration"
+  pallets+=("pallet-configuration")
 fi
 
 echo "[+] Running all runtime benchmarks for $runtime --chain=$chain"
