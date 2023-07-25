@@ -57,7 +57,7 @@ build:
 
 build-wasm-peregrine:
   image:
-    name: paritytech/srtool:1.66.1-0.9.25
+    name: paritytech/srtool:1.70.0
     entrypoint: [""]
   stage: build
   only:
@@ -71,16 +71,18 @@ build-wasm-peregrine:
     - export AUTHORIZE_UPGRADE_PREFIX=0x02
     - cp -r * /build
     - /srtool/build build
+    - subwasm meta --format=json+scale /out/peregrine_runtime.compact.wasm > /out/peregrine-metadata.json
     - mkdir ./out
     - mv /out/* ./out/
   artifacts:
     paths:
       - out/*.wasm
+      - out/*.json
     expire_in: 12 week
 
 build-wasm-spiritnet:
   image:
-    name: paritytech/srtool:1.66.1-0.9.25
+    name: paritytech/srtool:1.70.0
     entrypoint: [""]
   stage: build
   only:
@@ -94,9 +96,11 @@ build-wasm-spiritnet:
     - export AUTHORIZE_UPGRADE_PREFIX=0x02
     - cp -r * /build
     - /srtool/build build
+    - subwasm meta --format=json+scale /out/out/spiritnet_runtime.compact.wasm > /out/spiritnet-metadata.json
     - mkdir ./out
     - mv /out/* ./out/
   artifacts:
     paths:
       - out/*.wasm
+      - out/*.json
     expire_in: 12 week
