@@ -33,12 +33,14 @@ pub mod runtime {
 	};
 	use pallet_web3_names::web3_name::AsciiWeb3Name;
 	use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
+	use runtime_common::AuthorityId;
 	use scale_info::TypeInfo;
 	use sp_core::{ConstU128, ConstU32};
 	use sp_runtime::{
+		impl_opaque_keys,
 		testing::Header,
-		traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
-		AccountId32, MultiSignature,
+		traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, OpaqueKeys, Verify},
+		AccountId32, MultiSignature, Perquintill,
 	};
 
 	type BalanceOf<T> = <<T as ctype::Config>::Currency as Inspect<AccountId>>::Balance;
@@ -52,7 +54,6 @@ pub mod runtime {
 	type AttesterOf<T> = <T as attestation::Config>::AttesterId;
 	type DidIdentifier = AccountId;
 
-	pub const UNIT: Balance = 10u128.pow(15);
 	pub const MICRO_KILT: Balance = 10u128.pow(9);
 
 	frame_support::construct_runtime!(
@@ -71,6 +72,9 @@ pub mod runtime {
 			DidLookup: pallet_did_lookup::{Pallet, Storage, Call, Event<T>, HoldReason},
 			W3n: pallet_web3_names,
 			PublicCredentials: public_credentials,
+			Aura: pallet_aura::{Pallet, Storage},
+			Session: pallet_session::{Pallet, Call, Storage, Event, Config<T>},
+			StakePallet: parachain_staking::{Pallet, Call, Storage, Config<T>, Event<T>, FreezeReason},
 		}
 	);
 
@@ -133,7 +137,7 @@ pub mod runtime {
 	}
 
 	impl pallet_balances::Config for Test {
-		type FreezeIdentifier = ();
+		type FreezeIdentifier = RuntimeFreezeReason;
 		type HoldIdentifier = RuntimeHoldReason;
 		type MaxFreezes = ();
 		type MaxHolds = ();
@@ -357,6 +361,87 @@ pub mod runtime {
 		type OriginSuccess = mock_origin::DoubleOrigin<AccountId, Self::AttesterId>;
 		type SubjectId = TestSubjectId;
 		type WeightInfo = ();
+	}
+
+	pub(crate) type BlockNumber = u64;
+	pub(crate) const BLOCKS_PER_ROUND: BlockNumber = 5;
+
+	parameter_types! {
+		pub const MinBlocksPerRound: BlockNumber = 3;
+		pub const StakeDuration: u32 = 2;
+		pub const ExitQueueDelay: u32 = 2;
+		pub const DefaultBlocksPerRound: BlockNumber = BLOCKS_PER_ROUND;
+		pub const MinCollators: u32 = 2;
+		pub const MaxDelegationsPerRound: u32 = 2;
+		#[derive(Debug, Eq, PartialEq)]
+		pub const MaxDelegatorsPerCollator: u32 = 4;
+		pub const MinCollatorStake: Balance = 10;
+		#[derive(Debug, Eq, PartialEq)]
+		pub const MaxCollatorCandidates: u32 = 10;
+		pub const MinDelegatorStake: Balance = 5;
+		pub const MaxUnstakeRequests: u32 = 6;
+		pub const NetworkRewardRate: Perquintill = Perquintill::from_percent(10);
+		pub const NetworkRewardStart: BlockNumber = 5 * 5 * 60 * 24 * 36525 / 100;
+	}
+
+	parameter_types! {
+		pub const MinimumPeriod: u64 = 1;
+	}
+
+	impl pallet_timestamp::Config for Test {
+		type Moment = u64;
+		type OnTimestampSet = ();
+		type MinimumPeriod = MinimumPeriod;
+		type WeightInfo = ();
+	}
+
+	impl pallet_aura::Config for Test {
+		type AuthorityId = AuthorityId;
+		type DisabledValidators = ();
+		type MaxAuthorities = MaxCollatorCandidates;
+	}
+
+	impl_opaque_keys! {
+		pub struct MockSessionKeys {
+			pub aura: Aura,
+		}
+	}
+
+	impl pallet_session::Config for Test {
+		type RuntimeEvent = ();
+		type ValidatorId = AccountId;
+		type ValidatorIdOf = sp_runtime::traits::ConvertInto;
+		type ShouldEndSession = StakePallet;
+		type NextSessionRotation = StakePallet;
+		type SessionManager = StakePallet;
+		type SessionHandler = <MockSessionKeys as OpaqueKeys>::KeyTypeIdProviders;
+		type Keys = MockSessionKeys;
+		type WeightInfo = ();
+	}
+
+	impl parachain_staking::Config for Test {
+		type RuntimeEvent = ();
+		type Currency = Balances;
+		type CurrencyBalance = <Self as pallet_balances::Config>::Balance;
+		type MinBlocksPerRound = MinBlocksPerRound;
+		type DefaultBlocksPerRound = DefaultBlocksPerRound;
+		type StakeDuration = StakeDuration;
+		type ExitQueueDelay = ExitQueueDelay;
+		type MinCollators = MinCollators;
+		type MinRequiredCollators = MinCollators;
+		type MaxDelegationsPerRound = MaxDelegationsPerRound;
+		type MaxDelegatorsPerCollator = MaxDelegatorsPerCollator;
+		type MinCollatorStake = MinCollatorStake;
+		type MinCollatorCandidateStake = MinCollatorStake;
+		type MaxTopCandidates = MaxCollatorCandidates;
+		type MinDelegatorStake = MinDelegatorStake;
+		type MaxUnstakeRequests = MaxUnstakeRequests;
+		type NetworkRewardRate = NetworkRewardRate;
+		type NetworkRewardStart = NetworkRewardStart;
+		type NetworkRewardBeneficiary = ();
+		type WeightInfo = ();
+		type FreezeIdentifier = RuntimeFreezeReason;
+		const BLOCKS_PER_YEAR: Self::BlockNumber = 5 * 60 * 24 * 36525 / 100;
 	}
 
 	pub(crate) const DID_00: SubjectId = SubjectId(AccountId32::new([1u8; 32]));

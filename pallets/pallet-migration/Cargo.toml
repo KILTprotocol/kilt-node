@@ -17,6 +17,10 @@ targets = ["x86_64-unknown-linux-gnu"]
 env_logger.workspace = true
 kilt-support = {workspace = true, features = ["mock", "try-runtime"]}
 frame-benchmarking = {workspace = true, features = ["std"]}
+pallet-aura = {workspace = true, features = ["std"]}
+pallet-timestamp = {workspace = true, features = ["std"]}
+sp-consensus-aura = {workspace = true, features = ["std"]}
+pallet-session = {workspace = true, features = ["std"]}
 
 [dependencies]
 # Internal dependencies
