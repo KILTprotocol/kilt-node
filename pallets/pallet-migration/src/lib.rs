@@ -25,6 +25,8 @@ pub use pallet::*;
 mod benchmarking;
 pub mod default_weights;
 
+#[cfg(test)]
+mod mock;
 #[frame_support::pallet]
 pub mod pallet {
 	use attestation::ClaimHashOf;

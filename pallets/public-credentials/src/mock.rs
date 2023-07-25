@@ -16,15 +16,17 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::traits::Get;
-use parity_scale_codec::Encode;
-use sp_runtime::traits::Hash;
+use frame_support::{traits::Get, weights::Weight};
+use parity_scale_codec::{Decode, Encode};
+use scale_info::TypeInfo;
+use sp_runtime::{traits::Hash, DispatchError};
 
 use kilt_support::{traits::StorageDepositCollector, Deposit};
 
 use crate::{
 	AttesterOf, BalanceOf, Config, CredentialEntryOf, CredentialIdOf, CredentialSubjects, Credentials, CtypeHashOf,
 	InputClaimsContentOf, InputCredentialOf, InputSubjectIdOf, PublicCredentialDepositCollector,
+	PublicCredentialsAccessControl,
 };
 
 // Generate a public credential using a many Default::default() as possible.
@@ -86,6 +88,94 @@ pub(crate) fn insert_public_credentials<T: Config>(
 	CredentialSubjects::<T>::insert(credential_id, subject_id);
 }
 
+/// Authorize iff the subject of the origin and the provided attester id
+/// match.
+#[derive(Clone, Debug, Encode, Decode, TypeInfo, PartialEq, Eq)]
+#[scale_info(skip_type_params(T))]
+pub struct MockAccessControl<T: Config>(pub T::AttesterId);
+
+impl<T> PublicCredentialsAccessControl<T::AttesterId, T::AuthorizationId, CtypeHashOf<T>, CredentialIdOf<T>>
+	for MockAccessControl<T>
+where
+	T: Config<AuthorizationId = <T as Config>::AttesterId>,
+{
+	fn can_issue(
+		&self,
+		who: &T::AttesterId,
+		_ctype: &CtypeHashOf<T>,
+		_credential_id: &CredentialIdOf<T>,
+	) -> Result<Weight, DispatchError> {
+		if who == &self.0 {
+			Ok(Weight::zero())
+		} else {
+			Err(DispatchError::Other("Unauthorized"))
+		}
+	}
+
+	fn can_revoke(
+		&self,
+		who: &T::AttesterId,
+		_ctype: &CtypeHashOf<T>,
+		_credential_id: &CredentialIdOf<T>,
+		authorization_id: &T::AuthorizationId,
+	) -> Result<Weight, DispatchError> {
+		if authorization_id == who {
+			Ok(Weight::zero())
+		} else {
+			Err(DispatchError::Other("Unauthorized"))
+		}
+	}
+
+	fn can_unrevoke(
+		&self,
+		who: &T::AttesterId,
+		_ctype: &CtypeHashOf<T>,
+		_credential_id: &CredentialIdOf<T>,
+		authorization_id: &T::AuthorizationId,
+	) -> Result<Weight, DispatchError> {
+		if authorization_id == who {
+			Ok(Weight::zero())
+		} else {
+			Err(DispatchError::Other("Unauthorized"))
+		}
+	}
+
+	fn can_remove(
+		&self,
+		who: &T::AttesterId,
+		_ctype: &CtypeHashOf<T>,
+		_credential_id: &CredentialIdOf<T>,
+		authorization_id: &T::AuthorizationId,
+	) -> Result<Weight, DispatchError> {
+		#[cfg(test)]
+		println!("{:#?}", who);
+		#[cfg(test)]
+		println!("{:#?}", authorization_id);
+		if authorization_id == who {
+			Ok(Weight::zero())
+		} else {
+			Err(DispatchError::Other("Unauthorized"))
+		}
+	}
+
+	fn authorization_id(&self) -> T::AuthorizationId {
+		self.0.clone()
+	}
+
+	fn can_issue_weight(&self) -> Weight {
+		Weight::zero()
+	}
+	fn can_revoke_weight(&self) -> Weight {
+		Weight::zero()
+	}
+	fn can_unrevoke_weight(&self) -> Weight {
+		Weight::zero()
+	}
+	fn can_remove_weight(&self) -> Weight {
+		Weight::zero()
+	}
+}
+
 #[cfg(test)]
 pub use crate::mock::runtime::*;
 
@@ -95,7 +185,6 @@ pub(crate) mod runtime {
 	use super::*;
 
 	use frame_support::{
-		dispatch::Weight,
 		traits::{
 			fungible::MutateHold, tokens::Precision, ConstU128, ConstU16, ConstU32, ConstU64, ReservableCurrency,
 		},
@@ -108,16 +197,14 @@ pub(crate) mod runtime {
 	use sp_runtime::{
 		testing::Header,
 		traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
-		DispatchError, MultiSignature, MultiSigner,
+		MultiSignature, MultiSigner,
 	};
 
 	use kilt_support::mock::{mock_origin, SubjectId};
 
 	use ctype::{CtypeCreatorOf, CtypeEntryOf, CtypeHashOf};
 
-	use crate::{
-		AccountIdOf, Config, CredentialEntryOf, Error, HoldReason, InputSubjectIdOf, PublicCredentialsAccessControl,
-	};
+	use crate::{AccountIdOf, Config, CredentialEntryOf, Error, HoldReason, InputSubjectIdOf};
 
 	pub(crate) type BlockNumber = u64;
 	pub(crate) type Balance = u128;
@@ -183,92 +270,6 @@ pub(crate) mod runtime {
 	impl From<[u8; 32]> for TestSubjectId {
 		fn from(value: [u8; 32]) -> Self {
 			Self(value)
-		}
-	}
-
-	/// Authorize iff the subject of the origin and the provided attester id
-	/// match.
-	#[derive(Clone, Debug, Encode, Decode, TypeInfo, PartialEq, Eq)]
-	#[scale_info(skip_type_params(T))]
-	pub struct MockAccessControl<T: Config>(pub T::AttesterId);
-
-	impl<T> PublicCredentialsAccessControl<T::AttesterId, T::AuthorizationId, CtypeHashOf<T>, CredentialIdOf<T>>
-		for MockAccessControl<T>
-	where
-		T: Config<AuthorizationId = <T as Config>::AttesterId>,
-	{
-		fn can_issue(
-			&self,
-			who: &T::AttesterId,
-			_ctype: &CtypeHashOf<T>,
-			_credential_id: &CredentialIdOf<T>,
-		) -> Result<Weight, DispatchError> {
-			if who == &self.0 {
-				Ok(Weight::zero())
-			} else {
-				Err(DispatchError::Other("Unauthorized"))
-			}
-		}
-
-		fn can_revoke(
-			&self,
-			who: &T::AttesterId,
-			_ctype: &CtypeHashOf<T>,
-			_credential_id: &CredentialIdOf<T>,
-			authorization_id: &T::AuthorizationId,
-		) -> Result<Weight, DispatchError> {
-			if authorization_id == who {
-				Ok(Weight::zero())
-			} else {
-				Err(DispatchError::Other("Unauthorized"))
-			}
-		}
-
-		fn can_unrevoke(
-			&self,
-			who: &T::AttesterId,
-			_ctype: &CtypeHashOf<T>,
-			_credential_id: &CredentialIdOf<T>,
-			authorization_id: &T::AuthorizationId,
-		) -> Result<Weight, DispatchError> {
-			if authorization_id == who {
-				Ok(Weight::zero())
-			} else {
-				Err(DispatchError::Other("Unauthorized"))
-			}
-		}
-
-		fn can_remove(
-			&self,
-			who: &T::AttesterId,
-			_ctype: &CtypeHashOf<T>,
-			_credential_id: &CredentialIdOf<T>,
-			authorization_id: &T::AuthorizationId,
-		) -> Result<Weight, DispatchError> {
-			println!("{:#?}", who);
-			println!("{:#?}", authorization_id);
-			if authorization_id == who {
-				Ok(Weight::zero())
-			} else {
-				Err(DispatchError::Other("Unauthorized"))
-			}
-		}
-
-		fn authorization_id(&self) -> T::AuthorizationId {
-			self.0.clone()
-		}
-
-		fn can_issue_weight(&self) -> Weight {
-			Weight::zero()
-		}
-		fn can_revoke_weight(&self) -> Weight {
-			Weight::zero()
-		}
-		fn can_unrevoke_weight(&self) -> Weight {
-			Weight::zero()
-		}
-		fn can_remove_weight(&self) -> Weight {
-			Weight::zero()
 		}
 	}
 

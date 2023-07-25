@@ -15,7 +15,7 @@ targets = ["x86_64-unknown-linux-gnu"]
 
 [dev-dependencies]
 env_logger.workspace = true
-
+kilt-support = {workspace = true, features = ["mock", "try-runtime"]}
 frame-benchmarking = {workspace = true, features = ["std"]}
 
 [dependencies]
@@ -60,6 +60,7 @@ runtime-benchmarks = [
   "parachain-staking/runtime-benchmarks",
   "public-credentials/runtime-benchmarks",
   "runtime-common/runtime-benchmarks", 
+  "ctype/runtime-benchmarks"
 ]
 
 std = [
@@ -79,6 +80,7 @@ std = [
   "parachain-staking/std",
   "public-credentials/std",
   "runtime-common/std",
+  "ctype/std"
 ]
 
 try-runtime = [
@@ -92,4 +94,5 @@ try-runtime = [
   "parachain-staking/try-runtime",
   "public-credentials/try-runtime",
   "runtime-common/try-runtime",
+  "ctype/try-runtime"
 ]

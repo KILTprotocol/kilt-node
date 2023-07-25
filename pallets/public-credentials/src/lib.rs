@@ -39,7 +39,7 @@ pub mod migrations;
 mod benchmarking;
 
 #[cfg(any(test, feature = "runtime-benchmarks"))]
-mod mock;
+pub mod mock;
 
 #[cfg(test)]
 mod tests;

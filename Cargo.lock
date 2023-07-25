@@ -6339,6 +6339,7 @@ dependencies = [
  "frame-benchmarking",
  "frame-support",
  "frame-system",
+ "kilt-support",
  "pallet-balances",
  "pallet-did-lookup",
  "pallet-web3-names",
