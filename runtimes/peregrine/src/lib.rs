@@ -511,7 +511,7 @@ impl pallet_membership::Config<TipsMembershipProvider> for Runtime {
 	type PrimeOrigin = MoreThanHalfCouncil;
 	type MembershipInitialized = ();
 	type MembershipChanged = ();
-	type MaxMembers = constants::governance::TechnicalMaxMembers;
+	type MaxMembers = constants::governance::TipperMaxMembers;
 	type WeightInfo = weights::pallet_membership::WeightInfo<Runtime>;
 }
 
@@ -590,14 +590,14 @@ impl ctype::Config for Runtime {
 }
 
 impl did::Config for Runtime {
-	type DidIdentifier = DidIdentifier;
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeCall = RuntimeCall;
+	type RuntimeOrigin = RuntimeOrigin;
+	type Currency = Balances;
+	type DidIdentifier = DidIdentifier;
 	type KeyDeposit = constants::did::KeyDeposit;
 	type ServiceEndpointDeposit = constants::did::ServiceEndpointDeposit;
 	type BaseDeposit = constants::did::DidBaseDeposit;
-	type RuntimeOrigin = RuntimeOrigin;
-	type Currency = Balances;
 	type Fee = constants::did::DidFee;
 	type FeeCollector = Treasury;
 
@@ -756,6 +756,7 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 							| pallet_indices::Call::free { .. }
 							| pallet_indices::Call::freeze { .. }
 					)
+					| RuntimeCall::Multisig(..)
 					| RuntimeCall::ParachainStaking(..)
 					// Excludes `ParachainSystem`
 					| RuntimeCall::Preimage(..)
@@ -827,6 +828,7 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 							| pallet_did_lookup::Call::change_deposit_owner { .. }
 					)
 					| RuntimeCall::Indices(..)
+					| RuntimeCall::Multisig(..)
 					| RuntimeCall::ParachainStaking(..)
 					// Excludes `ParachainSystem`
 					| RuntimeCall::Preimage(..)
@@ -1116,7 +1118,6 @@ mod benches {
 		[public_credentials, PublicCredentials]
 		[pallet_xcm, PolkadotXcm]
 		[frame_benchmarking::baseline, Baseline::<Runtime>]
-
 	);
 }
 

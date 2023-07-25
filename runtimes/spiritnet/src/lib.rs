@@ -573,8 +573,6 @@ impl ctype::Config for Runtime {
 
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
-	// 3/5 of the technical committees can override the block number of one or more
-	// CTypes.
 	type OverarchingOrigin = EnsureRoot<AccountId>;
 
 	type RuntimeEvent = RuntimeEvent;
@@ -582,11 +580,11 @@ impl ctype::Config for Runtime {
 }
 
 impl did::Config for Runtime {
-	type DidIdentifier = DidIdentifier;
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeCall = RuntimeCall;
 	type RuntimeOrigin = RuntimeOrigin;
 	type Currency = Balances;
+	type DidIdentifier = DidIdentifier;
 	type KeyDeposit = constants::did::KeyDeposit;
 	type ServiceEndpointDeposit = constants::did::ServiceEndpointDeposit;
 	type BaseDeposit = constants::did::DidBaseDeposit;
@@ -748,6 +746,7 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 							| pallet_indices::Call::free { .. }
 							| pallet_indices::Call::freeze { .. }
 					)
+					| RuntimeCall::Multisig(..)
 					| RuntimeCall::ParachainStaking(..)
 					// Excludes `ParachainSystem`
 					| RuntimeCall::Preimage(..)
@@ -819,6 +818,7 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 							| pallet_did_lookup::Call::change_deposit_owner { .. }
 					)
 					| RuntimeCall::Indices(..)
+					| RuntimeCall::Multisig(..)
 					| RuntimeCall::ParachainStaking(..)
 					// Excludes `ParachainSystem`
 					| RuntimeCall::Preimage(..)
@@ -938,7 +938,7 @@ construct_runtime! {
 		// DELETED: RelayMigration: pallet_relay_migration::{Pallet, Call, Storage, Event<T>} = 36,
 		// DELETED: DynFilter: pallet_dyn_filter = 37,
 
-		//  A stateless pallet with helper extrinsics (batch extrinsics, send from different origins, ...)
+		// A stateless pallet with helper extrinsics (batch extrinsics, send from different origins, ...)
 		Utility: pallet_utility = 40,
 
 		// Vesting. Usable initially, but removed once all vesting is finished.
@@ -985,6 +985,7 @@ construct_runtime! {
 		DmpQueue: cumulus_pallet_dmp_queue::{Pallet, Call, Storage, Event<T>} = 85,
 	}
 }
+
 impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for RuntimeCall {
 	fn derive_verification_key_relationship(&self) -> did::DeriveDidCallKeyRelationshipResult {
 		/// ensure that all calls have the same VerificationKeyRelationship
@@ -1034,6 +1035,7 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for RuntimeCall 
 		RuntimeCall::System(frame_system::Call::remark { remark: vec![] })
 	}
 }
+
 /// The address format for describing accounts.
 pub type Address = sp_runtime::MultiAddress<AccountId, ()>;
 /// Block header type as expected by this runtime.
