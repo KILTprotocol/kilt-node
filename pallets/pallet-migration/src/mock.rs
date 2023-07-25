@@ -43,6 +43,8 @@ pub mod runtime {
 		AccountId32, MultiSignature, Perquintill,
 	};
 
+	use crate::{self as migration, Config};
+
 	type BalanceOf<T> = <<T as ctype::Config>::Currency as Inspect<AccountId>>::Balance;
 	pub type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 	pub type Block = frame_system::mocking::MockBlock<Test>;
@@ -75,8 +77,20 @@ pub mod runtime {
 			Aura: pallet_aura::{Pallet, Storage},
 			Session: pallet_session::{Pallet, Call, Storage, Event, Config<T>},
 			StakePallet: parachain_staking::{Pallet, Call, Storage, Config<T>, Event<T>, FreezeReason},
+			Migration: migration,
 		}
 	);
+
+	parameter_types! {
+		pub const MaxMigrations: u8 = 38;
+
+	}
+
+	impl Config for Test {
+		type MaxMigrations = MaxMigrations;
+		type RuntimeEvent = ();
+		type WeightInfo = ();
+	}
 
 	parameter_types! {
 		pub const SS58Prefix: u8 = 38;
