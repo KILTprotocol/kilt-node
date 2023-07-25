@@ -474,7 +474,7 @@ checksum = "1181e1e0d1fce796a03db1ae795d67167da795f9cf4a39c37589e85ef57f26d3"
 
 [[package]]
 name = "attestation"
-version = "1.11.0-dev"
+version = "1.12.0-dev"
 dependencies = [
  "ctype",
  "frame-benchmarking",
@@ -1426,7 +1426,7 @@ dependencies = [
 
 [[package]]
 name = "ctype"
-version = "1.11.0-dev"
+version = "1.12.0-dev"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -2082,7 +2082,7 @@ dependencies = [
 
 [[package]]
 name = "delegation"
-version = "1.11.0-dev"
+version = "1.12.0-dev"
 dependencies = [
  "attestation",
  "bitflags",
@@ -2220,7 +2220,7 @@ dependencies = [
 
 [[package]]
 name = "did"
-version = "1.11.0-dev"
+version = "1.12.0-dev"
 dependencies = [
  "ctype",
  "env_logger 0.10.0",
@@ -4073,7 +4073,7 @@ dependencies = [
 
 [[package]]
 name = "kilt-asset-dids"
-version = "1.11.0-dev"
+version = "1.12.0-dev"
 dependencies = [
  "base58",
  "frame-support",
@@ -4088,7 +4088,7 @@ dependencies = [
 
 [[package]]
 name = "kilt-parachain"
-version = "1.11.0-dev"
+version = "1.12.0-dev"
 dependencies = [
  "clap",
  "cumulus-client-cli",
@@ -4152,7 +4152,7 @@ dependencies = [
 
 [[package]]
 name = "kilt-runtime-api-did"
-version = "1.11.0-dev"
+version = "1.12.0-dev"
 dependencies = [
  "did",
  "kilt-support",
@@ -4164,7 +4164,7 @@ dependencies = [
 
 [[package]]
 name = "kilt-runtime-api-public-credentials"
-version = "1.11.0-dev"
+version = "1.12.0-dev"
 dependencies = [
  "kilt-support",
  "parity-scale-codec",
@@ -4174,7 +4174,7 @@ dependencies = [
 
 [[package]]
 name = "kilt-runtime-api-staking"
-version = "1.11.0-dev"
+version = "1.12.0-dev"
 dependencies = [
  "parity-scale-codec",
  "scale-info",
@@ -4184,7 +4184,7 @@ dependencies = [
 
 [[package]]
 name = "kilt-support"
-version = "1.11.0-dev"
+version = "1.12.0-dev"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -5031,7 +5031,7 @@ dependencies = [
 
 [[package]]
 name = "mashnet-node"
-version = "1.11.0-dev"
+version = "1.12.0-dev"
 dependencies = [
  "clap",
  "frame-benchmarking",
@@ -5075,7 +5075,7 @@ dependencies = [
 
 [[package]]
 name = "mashnet-node-runtime"
-version = "1.11.0-dev"
+version = "1.12.0-dev"
 dependencies = [
  "attestation",
  "ctype",
@@ -6007,7 +6007,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-configuration"
-version = "1.11.0-dev"
+version = "1.12.0-dev"
 dependencies = [
  "cumulus-pallet-parachain-system",
  "frame-benchmarking",
@@ -6061,7 +6061,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-did-lookup"
-version = "1.11.0-dev"
+version = "1.12.0-dev"
 dependencies = [
  "base58",
  "blake2",
@@ -6237,7 +6237,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-inflation"
-version = "1.11.0-dev"
+version = "1.12.0-dev"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -6772,7 +6772,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-web3-names"
-version = "1.11.0-dev"
+version = "1.12.0-dev"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -6858,7 +6858,7 @@ dependencies = [
 
 [[package]]
 name = "parachain-staking"
-version = "1.11.0-dev"
+version = "1.12.0-dev"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -7051,7 +7051,7 @@ checksum = "478c572c3d73181ff3c2539045f6eb99e5491218eae919370993b890cdbdd98e"
 
 [[package]]
 name = "peregrine-runtime"
-version = "1.11.0-dev"
+version = "1.12.0-dev"
 dependencies = [
  "attestation",
  "ctype",
@@ -8723,7 +8723,7 @@ dependencies = [
 
 [[package]]
 name = "public-credentials"
-version = "1.11.0-dev"
+version = "1.12.0-dev"
 dependencies = [
  "ctype",
  "frame-benchmarking",
@@ -9270,7 +9270,7 @@ dependencies = [
 
 [[package]]
 name = "runtime-common"
-version = "1.11.0-dev"
+version = "1.12.0-dev"
 dependencies = [
  "attestation",
  "cumulus-primitives-core",
@@ -11776,7 +11776,7 @@ checksum = "6e63cff320ae2c57904679ba7cb63280a3dc4613885beafb148ee7bf9aa9042d"
 
 [[package]]
 name = "spiritnet-runtime"
-version = "1.11.0-dev"
+version = "1.12.0-dev"
 dependencies = [
  "attestation",
  "ctype",
