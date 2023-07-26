@@ -22,6 +22,8 @@ use frame_support::{
 };
 use sp_runtime::{traits::Zero, SaturatedConversion};
 
+use pallet_balances::{Config, Holds, Pallet};
+
 /// Checks some precondition of the migrations.
 pub fn has_user_reserved_balance<AccountId, Currency: ReservableCurrency<AccountId> + MutateHold<AccountId>>(
 	owner: &AccountId,
@@ -44,4 +46,20 @@ pub fn switch_reserved_to_hold<AccountId, Currency: ReservableCurrency<AccountId
 	);
 	let to_hold_balance = amount.saturating_sub(remaining_balance.saturated_into());
 	Currency::hold(reason, &owner, to_hold_balance.saturated_into())
+}
+
+pub fn translate_holds_to_reserve<T: Config>(hold_id: T::HoldIdentifier)
+where
+	T: Config,
+{
+	use frame_support::traits::tokens::Precision;
+
+	Holds::<T>::iter().for_each(|(user, holds)| {
+		holds.iter().filter(|hold| hold.id == hold_id).for_each(|hold| {
+			Pallet::<T>::release(&hold_id, &user, hold.amount, Precision::Exact)
+				.expect("Translation to reserves should not fail");
+
+			Pallet::<T>::reserve(&user, hold.amount).expect("Reserving Balance should not fail.");
+		})
+	});
 }

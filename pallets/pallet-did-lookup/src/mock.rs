@@ -222,23 +222,3 @@ impl ExtBuilder {
 		ext
 	}
 }
-
-pub(crate) fn translate_holds_to_reserve() {
-	Holds::<Test>::iter().for_each(|(user, holds)| {
-		holds
-			.iter()
-			.filter(|hold| hold.id == HoldReason::Deposit.into())
-			.for_each(|hold| {
-				<<Test as Config>::Currency as MutateHold<AccountIdOf<Test>>>::release(
-					&HoldReason::Deposit.into(),
-					&user,
-					hold.amount,
-					Precision::Exact,
-				)
-				.expect("Translation to reserves should not fail");
-
-				<<Test as Config>::Currency as ReservableCurrency<AccountIdOf<Test>>>::reserve(&user, hold.amount)
-					.expect("Reserving Balance should not fail.");
-			})
-	});
-}

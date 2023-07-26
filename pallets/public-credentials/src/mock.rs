@@ -73,7 +73,7 @@ pub(crate) fn generate_base_credential_entry<T: Config>(
 	}
 }
 
-pub(crate) fn insert_public_credentials<T: Config>(
+pub fn insert_public_credentials<T: Config>(
 	subject_id: T::SubjectId,
 	credential_id: CredentialIdOf<T>,
 	credential_entry: CredentialEntryOf<T>,
@@ -471,24 +471,5 @@ pub(crate) mod runtime {
 
 			ext
 		}
-	}
-	pub(crate) fn translate_holds_to_reserve() {
-		pallet_balances::Holds::<Test>::iter().for_each(|(user, holds)| {
-			holds
-				.iter()
-				.filter(|hold| hold.id == HoldReason::Deposit.into())
-				.for_each(|hold| {
-					<<Test as Config>::Currency as MutateHold<AccountIdOf<Test>>>::release(
-						&HoldReason::Deposit.into(),
-						&user,
-						hold.amount,
-						Precision::Exact,
-					)
-					.expect("Translation to reserves should not fail");
-
-					<<Test as Config>::Currency as ReservableCurrency<AccountIdOf<Test>>>::reserve(&user, hold.amount)
-						.expect("Reserving Balance should not fail.");
-				})
-		});
 	}
 }

@@ -61,8 +61,7 @@ pub mod test {
 			.with_balances(vec![(ACCOUNT_00, Web3NameDeposit::get() * 2)])
 			.with_web3_names(vec![(DID_00, web3_name_00, ACCOUNT_00)])
 			.build_and_execute_with_sanity_tests(|| {
-				// before the migration the balance should be reseved and not on
-				// hold.
+				kilt_support::migration::translate_holds_to_reserve::<Test>(HoldReason::Deposit.into());
 				let hold_balance = <<Test as Config>::Currency as InspectHold<AccountIdOf<Test>>>::balance_on_hold(
 					&HoldReason::Deposit.into(),
 					&ACCOUNT_00,
@@ -85,6 +84,7 @@ pub mod test {
 			.with_balances(vec![(ACCOUNT_00, Web3NameDeposit::get() * 2)])
 			.with_web3_names(vec![(DID_00, web3_name_00.clone(), ACCOUNT_00)])
 			.build_and_execute_with_sanity_tests(|| {
+				kilt_support::migration::translate_holds_to_reserve::<Test>(HoldReason::Deposit.into());
 				let delegation_pre_migration = Owner::<Test>::get(web3_name_00.clone());
 
 				let balance_on_reserve_pre_migration = <<Test as Config>::Currency as ReservableCurrency<

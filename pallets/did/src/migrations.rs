@@ -77,7 +77,7 @@ pub mod test {
 			.with_balances(vec![(alice_did.clone(), balance)])
 			.with_dids(vec![(alice_did.clone(), did_details)])
 			.build_and_execute_with_sanity_tests(None, || {
-				translate_holds_to_reserve();
+				kilt_support::migration::translate_holds_to_reserve::<Test>(HoldReason::Deposit.into());
 
 				// before the migration the balance should be reseved and not on
 				// hold.
@@ -110,7 +110,7 @@ pub mod test {
 			.with_balances(vec![(alice_did.clone(), balance)])
 			.with_dids(vec![(alice_did.clone(), did_details)])
 			.build_and_execute_with_sanity_tests(None, || {
-				translate_holds_to_reserve();
+				kilt_support::migration::translate_holds_to_reserve::<Test>(HoldReason::Deposit.into());
 
 				let did_pre_migration = Did::<Test>::get(alice_did.clone());
 

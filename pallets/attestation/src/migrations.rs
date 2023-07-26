@@ -69,7 +69,7 @@ pub mod test {
 			.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
 			.with_attestations(vec![(claim_hash, attestations)])
 			.build_and_execute_with_sanity_tests(|| {
-				translate_holds_to_reserve();
+				kilt_support::migration::translate_holds_to_reserve::<Test>(HoldReason::Deposit.into());
 
 				// before the migration the balance should be reseved and not on
 				// hold.
@@ -100,7 +100,7 @@ pub mod test {
 			.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
 			.with_attestations(vec![(claim_hash, attestations)])
 			.build_and_execute_with_sanity_tests(|| {
-				translate_holds_to_reserve();
+				kilt_support::migration::translate_holds_to_reserve::<Test>(HoldReason::Deposit.into());
 
 				let attestation_pre_migration = Attestations::<Test>::get(claim_hash);
 

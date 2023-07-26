@@ -24,7 +24,9 @@ pub mod runtime {
 		RelationshipDeriveError,
 	};
 	use frame_support::{
-		ord_parameter_types, parameter_types, traits::fungible::Inspect, weights::constants::RocksDbWeight,
+		ord_parameter_types, parameter_types,
+		traits::fungible::{Inspect, MutateHold},
+		weights::constants::RocksDbWeight,
 	};
 	use frame_system::{EnsureRoot, EnsureSigned, EnsureSignedBy};
 	use kilt_support::{
@@ -561,6 +563,21 @@ pub mod runtime {
 			self
 		}
 
+		fn translate_all_holds_to_reserves() {
+			let deposit_reasons: Vec<RuntimeHoldReason> = vec![
+				attestation::HoldReason::Deposit.into(),
+				delegation::HoldReason::Deposit.into(),
+				did::HoldReason::Deposit.into(),
+				pallet_did_lookup::HoldReason::Deposit.into(),
+				pallet_web3_names::HoldReason::Deposit.into(),
+				public_credentials::HoldReason::Deposit.into(),
+			];
+
+			deposit_reasons
+				.iter()
+				.for_each(|hold_id| kilt_support::migration::translate_holds_to_reserve::<Test>(*hold_id))
+		}
+
 		pub(crate) fn build(self) -> sp_io::TestExternalities {
 			let mut storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
 			pallet_balances::GenesisConfig::<Test> {
@@ -580,7 +597,43 @@ pub mod runtime {
 						},
 					);
 				}
+
+				delegation::mock::initialize_pallet::<Test>(self.delegations, self.delegation_hierarchies);
+
+				for (claim_hash, details) in self.attestations {
+					attestation::mock::insert_attestation::<Test>(claim_hash, details);
+				}
+
+				for did in self.dids_stored.iter() {
+					did::Did::<Test>::insert(&did.0, did.1.clone());
+					pallet_balances::Pallet::<Test>::hold(
+						&did::HoldReason::Deposit.into(),
+						&did.1.deposit.owner,
+						did.1.deposit.amount,
+					)
+					.expect("Deposit owner should have enough balance");
+				}
+
+				for (sender, did, account) in self.connections {
+					pallet_did_lookup::Pallet::<Test>::add_association(sender, did, account)
+						.expect("Should create connection");
+				}
+
+				for (owner, web3_name, payer) in self.claimed_web3_names {
+					pallet_web3_names::Pallet::<Test>::register_name(web3_name, owner, payer)
+						.expect("Could not register name");
+				}
+
+				for (subject_id, credential_id, credential_entry) in self.public_credentials {
+					public_credentials::mock::insert_public_credentials::<Test>(
+						subject_id,
+						credential_id,
+						credential_entry,
+					);
+				}
 			});
+
+			Self::translate_all_holds_to_reserves();
 
 			ext
 		}

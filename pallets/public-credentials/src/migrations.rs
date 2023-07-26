@@ -79,7 +79,7 @@ pub mod test {
 			.with_public_credentials(vec![(subject_id, credential_id, new_credential)])
 			.with_ctypes(vec![(ctype_hash_1, attester)])
 			.build_and_execute_with_sanity_tests(|| {
-				translate_holds_to_reserve();
+				kilt_support::migration::translate_holds_to_reserve::<Test>(HoldReason::Deposit.into());
 
 				// before the migration the balance should be reseved and not on
 				// hold.
@@ -116,7 +116,7 @@ pub mod test {
 			.with_public_credentials(vec![(subject_id, credential_id, new_credential)])
 			.with_ctypes(vec![(ctype_hash_1, attester)])
 			.build_and_execute_with_sanity_tests(|| {
-				translate_holds_to_reserve();
+				kilt_support::migration::translate_holds_to_reserve::<Test>(HoldReason::Deposit.into());
 				let delegation_pre_migration = Credentials::<Test>::get(subject_id, credential_id);
 
 				let balance_on_reserve_pre_migration = <<Test as Config>::Currency as ReservableCurrency<
