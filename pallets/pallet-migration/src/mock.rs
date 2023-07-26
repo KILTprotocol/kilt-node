@@ -126,12 +126,6 @@ pub mod runtime {
 	}
 
 	parameter_types! {
-		pub const ExistentialDeposit: Balance = 500;
-		pub const MaxLocks: u32 = 50;
-		pub const MaxReserves: u32 = 50;
-	}
-
-	parameter_types! {
 		pub const MaxDelegatedAttestations: u32 = 1000;
 		pub const Deposit: Balance = 100;
 	}
@@ -150,11 +144,19 @@ pub mod runtime {
 		type AccessControl = MockAccessControl<Self>;
 	}
 
+	parameter_types! {
+		pub const ExistentialDeposit: Balance = 500;
+		pub const MaxLocks: u32 = 50;
+		pub const MaxReserves: u32 = 50;
+		pub const MaxFreezes: u32 = 50;
+		pub const MaxHolds: u32 = 50;
+	}
+
 	impl pallet_balances::Config for Test {
 		type FreezeIdentifier = RuntimeFreezeReason;
 		type HoldIdentifier = RuntimeHoldReason;
-		type MaxFreezes = ();
-		type MaxHolds = ();
+		type MaxFreezes = MaxFreezes;
+		type MaxHolds = MaxHolds;
 		type Balance = Balance;
 		type DustRemoval = ();
 		type RuntimeEvent = ();
@@ -172,12 +174,9 @@ pub mod runtime {
 		type SubjectId = SubjectId;
 	}
 
-	parameter_types! {
-		pub const Fee: Balance = 500;
-	}
-
 	ord_parameter_types! {
 		pub const OverarchingOrigin: AccountId = ACCOUNT_00;
+		pub const Fee: Balance = 500;
 	}
 
 	impl ctype::Config for Test {
@@ -187,7 +186,6 @@ pub mod runtime {
 		type OriginSuccess = mock_origin::DoubleOrigin<AccountId, SubjectId>;
 		type RuntimeEvent = ();
 		type WeightInfo = ();
-
 		type Currency = Balances;
 		type Fee = Fee;
 		type FeeCollector = ();
@@ -326,6 +324,7 @@ pub mod runtime {
 		type WeightInfo = ();
 	}
 
+	//TODO: move back to public credentials.
 	#[derive(
 		Default,
 		Clone,
@@ -466,6 +465,21 @@ pub mod runtime {
 	pub(crate) struct ExtBuilder {
 		ctypes_stored: Vec<(CtypeHashOf<Test>, SubjectId)>,
 		balances: Vec<(AccountId, BalanceOf<Test>)>,
+		attestations: Vec<(attestation::ClaimHashOf<Test>, attestation::AttestationDetailsOf<Test>)>,
+		delegations: Vec<(delegation::DelegationNodeIdOf<Test>, delegation::DelegationNodeOf<Test>)>,
+		delegation_hierarchies: delegation::mock::DelegationHierarchyInitialization<Test>,
+		dids_stored: Vec<(DidIdentifier, did::did_details::DidDetails<Test>)>,
+		connections: Vec<(
+			AccountId,
+			SubjectId,
+			pallet_did_lookup::linkable_account::LinkableAccountId,
+		)>,
+		claimed_web3_names: Vec<(TestWeb3NameOwner, TestWeb3Name, TestWeb3NamePayer)>,
+		public_credentials: Vec<(
+			<Test as public_credentials::Config>::SubjectId,
+			public_credentials::CredentialIdOf<Test>,
+			public_credentials::CredentialEntryOf<Test>,
+		)>,
 	}
 
 	impl ExtBuilder {
@@ -476,6 +490,74 @@ pub mod runtime {
 
 		pub(crate) fn with_balances(mut self, balances: Vec<(AccountId, BalanceOf<Test>)>) -> Self {
 			self.balances = balances;
+			self
+		}
+
+		#[must_use]
+		pub fn with_connections(
+			mut self,
+			connections: Vec<(
+				AccountId,
+				SubjectId,
+				pallet_did_lookup::linkable_account::LinkableAccountId,
+			)>,
+		) -> Self {
+			self.connections = connections;
+			self
+		}
+
+		#[must_use]
+		pub fn with_web3_names(
+			mut self,
+			web3_names: Vec<(TestWeb3NameOwner, TestWeb3Name, TestWeb3NamePayer)>,
+		) -> Self {
+			self.claimed_web3_names = web3_names;
+			self
+		}
+
+		#[must_use]
+		pub fn with_dids(mut self, dids: Vec<(DidIdentifier, did::did_details::DidDetails<Test>)>) -> Self {
+			self.dids_stored = dids;
+			self
+		}
+
+		#[must_use]
+		pub fn with_attestations(
+			mut self,
+			attestations: Vec<(attestation::ClaimHashOf<Test>, attestation::AttestationDetailsOf<Test>)>,
+		) -> Self {
+			self.attestations = attestations;
+			self
+		}
+
+		#[must_use]
+		pub fn with_delegation_hierarchies(
+			mut self,
+			delegation_hierarchies: delegation::mock::DelegationHierarchyInitialization<Test>,
+		) -> Self {
+			self.delegation_hierarchies = delegation_hierarchies;
+			self
+		}
+
+		#[must_use]
+		pub fn with_delegations(
+			mut self,
+			delegations: Vec<(delegation::DelegationNodeIdOf<Test>, delegation::DelegationNodeOf<Test>)>,
+		) -> Self {
+			self.delegations = delegations;
+			self
+		}
+
+		#[must_use]
+		pub fn with_public_credentials(
+			mut self,
+			credentials: Vec<(
+				<Test as public_credentials::Config>::SubjectId,
+				public_credentials::CredentialIdOf<Test>,
+				public_credentials::CredentialEntryOf<Test>,
+			)>,
+		) -> Self {
+			self.public_credentials = credentials;
 			self
 		}
 

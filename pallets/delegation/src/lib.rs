@@ -134,7 +134,7 @@ pub mod pallet {
 
 	pub(crate) type DelegationDetailsOf<T> = DelegationDetails<DelegatorIdOf<T>>;
 
-	pub(crate) type DelegationNodeOf<T> = DelegationNode<
+	pub type DelegationNodeOf<T> = DelegationNode<
 		DelegationNodeIdOf<T>,
 		<T as Config>::MaxChildren,
 		DelegationDetailsOf<T>,

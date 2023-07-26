@@ -21,12 +21,15 @@
 pub use crate::default_weights::WeightInfo;
 pub use pallet::*;
 
-#[cfg(feature = "runtime-benchmarks")]
-mod benchmarking;
 pub mod default_weights;
 
+#[cfg(feature = "runtime-benchmarks")]
+mod benchmarking;
 #[cfg(test)]
 mod mock;
+#[cfg(test)]
+mod test;
+
 #[frame_support::pallet]
 pub mod pallet {
 	use attestation::ClaimHashOf;
