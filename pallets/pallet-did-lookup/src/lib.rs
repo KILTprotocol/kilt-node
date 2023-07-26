@@ -402,7 +402,7 @@ pub mod pallet {
 	}
 
 	impl<T: Config> Pallet<T> {
-		pub(crate) fn add_association(
+		pub fn add_association(
 			sender: AccountIdOf<T>,
 			did_identifier: DidIdentifierOf<T>,
 			account: LinkableAccountId,

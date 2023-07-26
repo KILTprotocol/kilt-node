@@ -419,7 +419,7 @@ pub mod pallet {
 		/// the provided account. This function must be called after
 		/// `check_claiming_preconditions` as it does not verify all the
 		/// preconditions again.
-		pub(crate) fn register_name(
+		pub fn register_name(
 			name: Web3NameOf<T>,
 			owner: Web3NameOwnerOf<T>,
 			deposit_payer: AccountIdOf<T>,
