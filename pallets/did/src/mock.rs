@@ -23,13 +23,12 @@ use frame_support::{
 	parameter_types,
 	traits::{
 		fungible::{Balanced, Credit, MutateHold},
-		tokens::Precision,
-		OnUnbalanced, ReservableCurrency,
+		OnUnbalanced,
 	},
 	weights::constants::RocksDbWeight,
 };
 use frame_system::EnsureSigned;
-use pallet_balances::{Holds, Pallet as PalletBalance};
+use pallet_balances::Pallet as PalletBalance;
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
 use sp_core::{ecdsa, ed25519, sr25519, Pair};

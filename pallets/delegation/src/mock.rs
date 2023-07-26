@@ -171,17 +171,12 @@ where
 
 #[cfg(test)]
 pub(crate) mod runtime {
-	use crate::{BalanceOf, DelegateSignatureTypeOf, DelegationAc, DelegationNodeIdOf, DelegationNodeOf, HoldReason};
+	use crate::{BalanceOf, DelegateSignatureTypeOf, DelegationAc, DelegationNodeIdOf, DelegationNodeOf};
 
 	use super::*;
 
-	use frame_support::{
-		parameter_types,
-		traits::{fungible::MutateHold, tokens::Precision, ReservableCurrency},
-		weights::constants::RocksDbWeight,
-	};
+	use frame_support::{parameter_types, weights::constants::RocksDbWeight};
 	use frame_system::EnsureSigned;
-	use pallet_balances::Holds;
 	use parity_scale_codec::Encode;
 	use scale_info::TypeInfo;
 	use sp_core::{ed25519, sr25519, Pair};

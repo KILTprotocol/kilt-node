@@ -185,9 +185,7 @@ pub(crate) mod runtime {
 	use super::*;
 
 	use frame_support::{
-		traits::{
-			fungible::MutateHold, tokens::Precision, ConstU128, ConstU16, ConstU32, ConstU64, ReservableCurrency,
-		},
+		traits::{ConstU128, ConstU16, ConstU32, ConstU64},
 		weights::constants::RocksDbWeight,
 	};
 	use frame_system::EnsureSigned;
@@ -204,7 +202,7 @@ pub(crate) mod runtime {
 
 	use ctype::{CtypeCreatorOf, CtypeEntryOf, CtypeHashOf};
 
-	use crate::{AccountIdOf, Config, CredentialEntryOf, Error, HoldReason, InputSubjectIdOf};
+	use crate::{Config, CredentialEntryOf, Error, InputSubjectIdOf};
 
 	pub(crate) type BlockNumber = u64;
 	pub(crate) type Balance = u128;
