@@ -109,7 +109,7 @@ pub mod pallet {
 	pub type ClaimHashOf<T> = <T as frame_system::Config>::Hash;
 
 	/// Type of an attester identifier.
-	pub(crate) type AttesterOf<T> = <T as Config>::AttesterId;
+	pub type AttesterOf<T> = <T as Config>::AttesterId;
 
 	/// Authorization id type
 	pub(crate) type AuthorizationIdOf<T> = <T as Config>::AuthorizationId;
