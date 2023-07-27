@@ -21,6 +21,9 @@ pallet-aura = {workspace = true, features = ["std"]}
 pallet-timestamp = {workspace = true, features = ["std"]}
 sp-consensus-aura = {workspace = true, features = ["std"]}
 pallet-session = {workspace = true, features = ["std"]}
+attestation = {workspace = true, features = ["mock"]}
+ctype = {workspace = true, features = ["mock"]}
+delegation = {workspace = true, features = ["mock"]}
 
 [dependencies]
 # Internal dependencies
