@@ -33,19 +33,20 @@ pub mod runtime {
 		mock::{mock_origin, SubjectId},
 		signature::EqualVerify,
 	};
+	use pallet_did_lookup::linkable_account::LinkableAccountId;
 	use pallet_web3_names::web3_name::AsciiWeb3Name;
 	use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 	use runtime_common::AuthorityId;
 	use scale_info::TypeInfo;
-	use sp_core::{ConstU128, ConstU32};
+	use sp_core::{ed25519, ConstU128, ConstU32};
 	use sp_runtime::{
 		impl_opaque_keys,
 		testing::Header,
 		traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, OpaqueKeys, Verify},
-		AccountId32, MultiSignature, Perquintill,
+		AccountId32, BoundedVec, MultiSignature, MultiSigner, Perquintill,
 	};
 
-	use crate::{self as migration, Config};
+	use crate::{self as migration, Config, EntriesToMigrate};
 
 	type BalanceOf<T> = <<T as ctype::Config>::Currency as Inspect<AccountId>>::Balance;
 	pub type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
@@ -59,6 +60,7 @@ pub mod runtime {
 	type DidIdentifier = AccountId;
 
 	pub const MICRO_KILT: Balance = 10u128.pow(9);
+	pub const KILT: Balance = 10u128.pow(15);
 
 	frame_support::construct_runtime!(
 		pub enum Test where
@@ -85,7 +87,6 @@ pub mod runtime {
 
 	parameter_types! {
 		pub const MaxMigrations: u8 = 38;
-
 	}
 
 	impl Config for Test {
@@ -113,7 +114,6 @@ pub mod runtime {
 		type BlockHashCount = BlockHashCount;
 		type DbWeight = RocksDbWeight;
 		type Version = ();
-
 		type PalletInfo = PalletInfo;
 		type AccountData = pallet_balances::AccountData<Balance>;
 		type OnNewAccount = ();
@@ -178,7 +178,7 @@ pub mod runtime {
 
 	ord_parameter_types! {
 		pub const OverarchingOrigin: AccountId = ACCOUNT_00;
-		pub const Fee: Balance = 500;
+		pub const Fee: Balance = 0;
 	}
 
 	impl ctype::Config for Test {
@@ -231,7 +231,7 @@ pub mod runtime {
 		#[derive(Debug, Clone)]
 		pub const MaxPublicKeysPerDid: u32 = 13u32;
 		pub const MaxBlocksTxValidity: u64 = 300u64;
-		pub const DidFee: Balance = MICRO_KILT;
+		pub const DidFee: Balance = 0;
 		pub const MaxNumberOfServicesPerDid: u32 = 25u32;
 		pub const MaxServiceIdLength: u32 = 50u32;
 		pub const MaxServiceTypeLength: u32 = 50u32;
@@ -283,7 +283,7 @@ pub mod runtime {
 	}
 
 	parameter_types! {
-		pub const DidLookupDeposit: Balance = 10;
+		pub const DidLookupDeposit: Balance = MICRO_KILT;
 	}
 
 	impl pallet_did_lookup::Config for Test {
@@ -308,7 +308,7 @@ pub mod runtime {
 		pub const MaxNameLength: u32 = 32;
 		pub const MinNameLength: u32 = 3;
 		// Easier to setup insufficient funds for deposit but still above existential deposit
-		pub const Web3NameDeposit: Balance = 2 * ExistentialDeposit::get();
+		pub const Web3NameDeposit: Balance = MICRO_KILT;
 	}
 
 	impl pallet_web3_names::Config for Test {
@@ -326,7 +326,6 @@ pub mod runtime {
 		type WeightInfo = ();
 	}
 
-	//TODO: move back to public credentials.
 	#[derive(
 		Default,
 		Clone,
@@ -459,9 +458,19 @@ pub mod runtime {
 		const BLOCKS_PER_YEAR: Self::BlockNumber = 5 * 60 * 24 * 36525 / 100;
 	}
 
-	pub(crate) const DID_00: SubjectId = SubjectId(AccountId32::new([1u8; 32]));
+	pub(crate) const DID_00: SubjectId = SubjectId(AccountId32::new([0u8; 32]));
 	pub(crate) const ACCOUNT_00: AccountId = AccountId::new([1u8; 32]);
-	pub(crate) const ACCOUNT_01: AccountId = AccountId::new([2u8; 32]);
+	pub(crate) const ALICE_SEED: [u8; 32] = [1u8; 32];
+	pub(crate) const BOB_SEED: [u8; 32] = [2u8; 32];
+	pub const CLAIM_HASH_SEED_12: u64 = 12u64;
+	pub const DELEGATION_ID_SEED_3: u64 = 3u64;
+	pub(crate) const LINKABLE_ACCOUNT_00: LinkableAccountId = LinkableAccountId::AccountId32(ACCOUNT_00);
+	pub(crate) const WEB3_NAME_00_INPUT: &[u8; 12] = b"web3_name_00";
+	pub(crate) const SUBJECT_ID_00: TestSubjectId = TestSubjectId([100u8; 32]);
+
+	pub fn get_did_identifier_from_ed25519_key(public_key: ed25519::Public) -> DidIdentifier {
+		MultiSigner::from(public_key).into_account()
+	}
 
 	#[derive(Clone, Default)]
 	pub(crate) struct ExtBuilder {
@@ -563,21 +572,6 @@ pub mod runtime {
 			self
 		}
 
-		fn translate_all_holds_to_reserves() {
-			let deposit_reasons: Vec<RuntimeHoldReason> = vec![
-				attestation::HoldReason::Deposit.into(),
-				delegation::HoldReason::Deposit.into(),
-				did::HoldReason::Deposit.into(),
-				pallet_did_lookup::HoldReason::Deposit.into(),
-				pallet_web3_names::HoldReason::Deposit.into(),
-				public_credentials::HoldReason::Deposit.into(),
-			];
-
-			deposit_reasons
-				.iter()
-				.for_each(|hold_id| kilt_support::migration::translate_holds_to_reserve::<Test>(*hold_id))
-		}
-
 		pub(crate) fn build(self) -> sp_io::TestExternalities {
 			let mut storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
 			pallet_balances::GenesisConfig::<Test> {
@@ -633,8 +627,6 @@ pub mod runtime {
 				}
 			});
 
-			Self::translate_all_holds_to_reserves();
-
 			ext
 		}
 
@@ -649,6 +641,33 @@ pub mod runtime {
 			ext.register_extension(KeystoreExt(Arc::new(keystore)));
 
 			ext
+		}
+	}
+
+	pub(crate) fn translate_all_holds_to_reserves() {
+		let deposit_reasons: Vec<RuntimeHoldReason> = vec![
+			attestation::HoldReason::Deposit.into(),
+			delegation::HoldReason::Deposit.into(),
+			did::HoldReason::Deposit.into(),
+			pallet_did_lookup::HoldReason::Deposit.into(),
+			pallet_web3_names::HoldReason::Deposit.into(),
+			public_credentials::HoldReason::Deposit.into(),
+		];
+
+		deposit_reasons
+			.iter()
+			.for_each(|hold_id| kilt_support::migration::translate_holds_to_reserve::<Test>(*hold_id))
+	}
+
+	pub(crate) fn get_default_entries_to_migrate<T: Config>() -> EntriesToMigrate<T> {
+		EntriesToMigrate {
+			attestation: BoundedVec::default(),
+			delegation: BoundedVec::default(),
+			did: BoundedVec::default(),
+			lookup: BoundedVec::default(),
+			public_credentials: BoundedVec::default(),
+			staking: BoundedVec::default(),
+			w3n: BoundedVec::default(),
 		}
 	}
 }
