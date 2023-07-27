@@ -140,35 +140,73 @@ pub mod pallet {
 			requested_migrations
 				.attestation
 				.iter()
-				.filter(|key| Self::is_key_already_migrated(<T as frame_system::Config>::Hashing::hash_of(key)))
+				.filter(|key| Self::is_key_already_migrated(**key, b"attestaion        ", b"Attestations   "))
 				.try_for_each(|attestation_hash| {
 					attestation::migrations::update_balance_for_entry::<T>(attestation_hash)
 				})?;
 
-			requested_migrations.delegation.iter().try_for_each(|delegation_hash| {
-				delegation::migrations::update_balance_for_entry::<T>(delegation_hash)
-			})?;
+			requested_migrations
+				.delegation
+				.iter()
+				.filter(|key| {
+					Self::is_key_already_migrated(
+						<T as frame_system::Config>::Hashing::hash_of(key),
+						b"delegation        ",
+						b"DelegationNodes",
+					)
+				})
+				.try_for_each(|delegation_hash| {
+					delegation::migrations::update_balance_for_entry::<T>(delegation_hash)
+				})?;
 
 			requested_migrations
 				.did
 				.iter()
-				.filter(|key| Self::is_key_already_migrated(<T as frame_system::Config>::Hashing::hash_of(key)))
+				.filter(|key| {
+					Self::is_key_already_migrated(
+						<T as frame_system::Config>::Hashing::hash_of(key),
+						b"did               ",
+						b"Did            ",
+					)
+				})
 				.try_for_each(|did_hash| did::migrations::update_balance_for_entry::<T>(did_hash))?;
 
-			requested_migrations.lookup.iter().try_for_each(|did_lookup_hash| {
-				pallet_did_lookup::migrations::update_balance_for_entry::<T>(did_lookup_hash)
-			})?;
+			requested_migrations
+				.lookup
+				.iter()
+				.filter(|key| {
+					Self::is_key_already_migrated(
+						<T as frame_system::Config>::Hashing::hash_of(key),
+						b"pallet-did-lookup ",
+						b"ConnectedDids  ",
+					)
+				})
+				.try_for_each(|did_lookup_hash| {
+					pallet_did_lookup::migrations::update_balance_for_entry::<T>(did_lookup_hash)
+				})?;
 
 			requested_migrations
 				.w3n
 				.iter()
-				.filter(|key| Self::is_key_already_migrated(<T as frame_system::Config>::Hashing::hash_of(key)))
+				.filter(|key| {
+					Self::is_key_already_migrated(
+						<T as frame_system::Config>::Hashing::hash_of(key),
+						b"pallet-web3-names ",
+						b"Owner          ",
+					)
+				})
 				.try_for_each(|w3n| pallet_web3_names::migrations::update_balance_for_entry::<T>(w3n))?;
 
 			requested_migrations
 				.staking
 				.iter()
-				.filter(|key| Self::is_key_already_migrated(<T as frame_system::Config>::Hashing::hash_of(key)))
+				.filter(|key| {
+					Self::is_key_already_migrated(
+						<T as frame_system::Config>::Hashing::hash_of(key),
+						b"pallet-balances   ",
+						b"Reserves       ",
+					)
+				})
 				.try_for_each(|account| parachain_staking::migrations::update_or_create_freeze::<T>(account))?;
 
 			requested_migrations
@@ -179,7 +217,11 @@ pub mod pallet {
 					let mut credential_encoded = credential_id.encode();
 					key.append(&mut credential_encoded);
 
-					Self::is_key_already_migrated(<T as frame_system::Config>::Hashing::hash_of(&key))
+					Self::is_key_already_migrated(
+						<T as frame_system::Config>::Hashing::hash_of(&key),
+						b"public-credentials",
+						b"Credentials    ",
+					)
 				})
 				.try_for_each(|(subject_id, credential_id)| {
 					public_credentials::migrations::update_balance_for_entry::<T>(subject_id, credential_id)
@@ -192,11 +234,19 @@ pub mod pallet {
 	}
 
 	impl<T: Config> Pallet<T> {
-		fn is_key_already_migrated(key: HashOf<T>) -> bool {
-			if MigratedKeys::<T>::contains_key(key) {
+		fn calculate_full_key(key: HashOf<T>, pallet: &[u8; 18], storage_name: &[u8; 15]) -> HashOf<T> {
+			let mut full_key = key.encode();
+			full_key.append(&mut pallet.encode());
+			full_key.append(&mut storage_name.encode());
+			<T as frame_system::Config>::Hashing::hash(&full_key)
+		}
+
+		fn is_key_already_migrated(key: HashOf<T>, pallet: &[u8; 18], storage_name: &[u8; 15]) -> bool {
+			let full_key = Self::calculate_full_key(key, pallet, storage_name);
+			if MigratedKeys::<T>::contains_key(full_key) {
 				return false;
 			}
-			MigratedKeys::<T>::insert(key, ());
+			MigratedKeys::<T>::insert(full_key, ());
 			true
 		}
 	}
