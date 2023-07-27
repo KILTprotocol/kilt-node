@@ -23,7 +23,7 @@ sp-consensus-aura = {workspace = true, features = ["std"]}
 pallet-session = {workspace = true, features = ["std"]}
 attestation = {workspace = true, features = ["mock"]}
 ctype = {workspace = true, features = ["mock"]}
-delegation = {workspace = true, features = ["mock"]}
+delegation = {workspace = true, features = ["mock"]} 
 
 [dependencies]
 # Internal dependencies
@@ -35,6 +35,7 @@ pallet-web3-names.workspace = true
 parachain-staking.workspace = true
 public-credentials.workspace = true
 runtime-common.workspace = true 
+kilt-support.workspace = true
 
 ctype = {workspace = true, optional = true}
 
@@ -67,7 +68,10 @@ runtime-benchmarks = [
   "parachain-staking/runtime-benchmarks",
   "public-credentials/runtime-benchmarks",
   "runtime-common/runtime-benchmarks", 
-  "ctype/runtime-benchmarks"
+  "ctype/runtime-benchmarks",
+  "kilt-support/runtime-benchmarks",
+  "pallet-balances/runtime-benchmarks",
+  "sp-runtime/runtime-benchmarks"
 ]
 
 std = [

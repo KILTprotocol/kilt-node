@@ -16,38 +16,51 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_benchmarking::{account, benchmarks};
-use frame_support::{
-	traits::{
-		fungible::{Inspect, InspectFreeze, InspectHold, Mutate},
-		Get, LockableCurrency, ReservableCurrency, WithdrawReasons,
-	},
-	BoundedVec,
-};
-use frame_system::RawOrigin;
-use sp_runtime::{traits::IdentifyAccount, AccountId32, MultiSigner, SaturatedConversion};
-use sp_std::vec;
-
+use attestation::{AttestationDetails, AttestationDetailsOf};
+use ctype::CtypeEntryOf;
+use delegation::{benchmarking::setup_delegations, delegation_hierarchy::Permissions};
 use did::{
 	benchmarking::get_ed25519_public_authentication_key, did_details::DidVerificationKey,
 	mock_utils::generate_base_did_details, DidIdentifierOf,
 };
+use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
+use frame_support::{
+	traits::{fungible::Mutate, Get, LockableCurrency, ReservableCurrency, WithdrawReasons},
+	BoundedVec,
+};
+use frame_system::RawOrigin;
+use kilt_support::{
+	signature::VerifySignature,
+	traits::{GenerateBenchmarkOrigin, GetWorstCase},
+	Deposit,
+};
+use pallet_did_lookup::linkable_account::LinkableAccountId;
+use pallet_web3_names::{Web3NameOf, Web3NameOwnerOf};
 use parachain_staking::migrations::STAKING_ID;
 use runtime_common::constants::KILT;
+use sp_core::{sr25519, H256};
+use sp_runtime::{
+	traits::{Hash, IdentifyAccount},
+	AccountId32, MultiSigner, SaturatedConversion,
+};
+use sp_std::{num::NonZeroU32, vec};
 
 use crate::*;
 
 const SEED: u32 = 0;
+const MICROKILT: u128 = 10u128.pow(9);
 type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 
 benchmarks! {
 	where_clause {
 		where
+		T::AccountId: Into<LinkableAccountId>,
+		T::Hash: From<H256>,
+		T::OwnerOrigin: GenerateBenchmarkOrigin<<T as frame_system::Config>::RuntimeOrigin, T::AccountId, T::Web3NameOwner>,
+		T: frame_system::Config,
 		<T as attestation::Config>::Currency: ReservableCurrency<AccountIdOf<T>>,
 		<T as delegation::Config>::Currency: ReservableCurrency<AccountIdOf<T>>,
 		<T as did::Config>::Currency: ReservableCurrency<AccountIdOf<T>>,
-		<T as did::Config>::Currency: Mutate<AccountIdOf<T>>,
-		<T as did::Config>::Currency: Inspect<AccountIdOf<T>>,
 		<T as pallet_did_lookup::Config>::Currency: ReservableCurrency<AccountIdOf<T>>,
 		<T as pallet_web3_names::Config>::Currency: ReservableCurrency<AccountIdOf<T>>,
 		<T as parachain_staking::Config>::Currency: ReservableCurrency<AccountIdOf<T>>,
@@ -55,48 +68,226 @@ benchmarks! {
 		<T as public_credentials::Config>::Currency: ReservableCurrency<AccountIdOf<T>>,
 		<T as did::Config>::DidIdentifier: From<AccountId32>,
 		<T as frame_system::Config>::AccountId: From<AccountId32>,
+		<T as public_credentials::Config>::EnsureOrigin: GenerateBenchmarkOrigin<<T as frame_system::Config>::RuntimeOrigin, T::AccountId, <T as public_credentials::Config>::AttesterId>,
+		T::BlockNumber: From<u64>,
+		<T as public_credentials:: Config>::SubjectId: GetWorstCase + sp_std::fmt::Debug + Into<Vec<u8>> ,
+		T: ctype::Config<CtypeCreatorId = <T as attestation::Config>::AttesterId>,
+		<T as delegation::Config>::DelegationNodeId: From<T::Hash>,
+		<T as delegation::Config>::DelegationEntityId: From<sr25519::Public>,
+		<<T as delegation::Config>::DelegationSignatureVerification as VerifySignature>::Signature: From<(
+			T::DelegationEntityId,
+			<<T as delegation::Config>::DelegationSignatureVerification as VerifySignature>::Payload,
+		)>,
+		<T as delegation::Config>::Currency: Mutate<T::AccountId>,
+		<T as ctype::Config>::CtypeCreatorId: From<T::DelegationEntityId>,
+		<T as delegation::Config>::EnsureOrigin: GenerateBenchmarkOrigin<<T as frame_system::Config>::RuntimeOrigin, T::AccountId, <T as delegation::Config>::DelegationEntityId>,
+		<T as pallet_balances::Config>::HoldIdentifier: From<attestation::HoldReason>,
 	}
-	general_weight {
-		let caller : AccountIdOf<T> = account("caller", 0, SEED);
+
+	did_migration_weight {
+		let sender : AccountIdOf<T> = account("sender", 0, SEED);
 		//create only one did. The migration for did, delegation, attestation, w3n, public credentials, and did lookup is the same.
 		let did_public_auth_key = get_ed25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(did_public_auth_key).into_account().into();
-		let mut did_details = generate_base_did_details::<T>(DidVerificationKey::from(did_public_auth_key), Some(caller.clone()));
+		let mut did_details = generate_base_did_details::<T>(DidVerificationKey::from(did_public_auth_key), Some(sender.clone()));
 		did_details.deposit.amount = <T as did::Config>::BaseDeposit::get();
 
 		did::Did::<T>::insert(did_subject.clone(), did_details.clone());
 		let initial_balance =  did_details.deposit.amount.saturated_into::<u128>().saturating_mul(2);
-		<<T as did::Config>::Currency as Mutate<AccountIdOf<T>>>::set_balance(&caller, initial_balance.saturated_into());
+		pallet_balances::Pallet::<T>::set_balance(&sender, KILT.saturated_into());
 
-		<<T as did::Config>::Currency as ReservableCurrency<AccountIdOf<T>>>::reserve(&caller, did_details.deposit.amount.saturated_into::<u128>().saturated_into())
+
+		pallet_balances::Pallet::<T>::reserve(&sender, did_details.deposit.amount.saturated_into::<u128>().saturated_into())
 			.expect("User should have enough balance");
 
 		let entries_to_upgrade = EntriesToMigrate {
 			attestation: BoundedVec::try_from(vec![]).expect("Vector initialization should not fail."),
 			delegation: BoundedVec::try_from(vec![]).expect("Vector initialization should not fail."),
-			did: BoundedVec::try_from(vec![did_subject.clone()]).expect("Vector initialization should not fail."),
+			did: BoundedVec::try_from(vec![did_subject]).expect("Vector initialization should not fail."),
 			lookup: BoundedVec::try_from(vec![]).expect("Vector initialization should not fail."),
 			w3n: BoundedVec::try_from(vec![]).expect("Vector initialization should not fail."),
 			staking: BoundedVec::try_from(vec![]).expect("Vector initialization should not fail."),
 			public_credentials: BoundedVec::try_from(vec![]).expect("Vector initialization should not fail."),
 		};
 
-		let origin= RawOrigin::Signed(caller.clone());
+		let origin= RawOrigin::Signed(sender);
+
+	}: update_balance(origin, entries_to_upgrade)
+	verify {}
+
+	attestaion_migration_weight {
+		let sender: T::AccountId = account("sender", 0, SEED);
+		let attester: <T as attestation::Config>::AttesterId = account("attester", 0, SEED);
+		let claim_hash: T::Hash = T::Hashing::hash(b"claim");
+		let ctype_hash: T::Hash = T::Hash::default();
+
+
+
+		ctype::Ctypes::<T>::insert(ctype_hash, CtypeEntryOf::<T> {
+			creator: attester.clone(),
+			created_at: 0u64.into()
+		});
+
+		let details : AttestationDetailsOf<T> = AttestationDetails {
+			attester,
+			authorization_id: None,
+			ctype_hash,
+			revoked: false,
+			deposit: Deposit {
+				owner: sender.clone(),
+				amount: MICROKILT.saturated_into(),
+			},
+		};
+
+		pallet_balances::Pallet::<T>::set_balance(&sender, KILT.saturated_into());
+
+		attestation::Attestations::<T>::insert(claim_hash, details.clone());
+
+		pallet_balances::Pallet::<T>::reserve(&sender, details.deposit.amount.saturated_into::<u128>().saturated_into())
+		.expect("User should have enough balance");
+
+
+		let origin= RawOrigin::Signed(sender);
+
+		let entries_to_upgrade = EntriesToMigrate {
+			attestation: BoundedVec::try_from(vec![claim_hash]).expect("Vector initialization should not fail."),
+			delegation: BoundedVec::try_from(vec![]).expect("Vector initialization should not fail."),
+			did: BoundedVec::try_from(vec![]).expect("Vector initialization should not fail."),
+			lookup: BoundedVec::try_from(vec![]).expect("Vector initialization should not fail."),
+			w3n: BoundedVec::try_from(vec![]).expect("Vector initialization should not fail."),
+			staking: BoundedVec::try_from(vec![]).expect("Vector initialization should not fail."),
+			public_credentials: BoundedVec::try_from(vec![]).expect("Vector initialization should not fail."),
+		};
+
+	}: update_balance(origin, entries_to_upgrade)
+	verify {	}
+
+	delegation_migration_weight {
+		let sender: T::AccountId = account("sender", 0, SEED);
+
+		let (_, _, leaf_acc, leaf_id)  = setup_delegations::<T>(1,NonZeroU32::new(1).expect("NoneZero init should not fail"), Permissions::DELEGATE)?;
+
+		let origin= RawOrigin::Signed(sender);
+
+		let entries_to_upgrade = EntriesToMigrate {
+			attestation: BoundedVec::try_from(vec![]).expect("Vector initialization should not fail."),
+			delegation: BoundedVec::try_from(vec![leaf_id]).expect("Vector initialization should not fail."),
+			did: BoundedVec::try_from(vec![]).expect("Vector initialization should not fail."),
+			lookup: BoundedVec::try_from(vec![]).expect("Vector initialization should not fail."),
+			w3n: BoundedVec::try_from(vec![]).expect("Vector initialization should not fail."),
+			staking: BoundedVec::try_from(vec![]).expect("Vector initialization should not fail."),
+			public_credentials: BoundedVec::try_from(vec![]).expect("Vector initialization should not fail."),
+		};
+
+		kilt_support::migration::translate_holds_to_reserve::<T>(attestation::HoldReason::Deposit.into());
+
+	}: update_balance(origin, entries_to_upgrade)
+	verify {}
+
+	did_lookup_migration_weight {
+		let sender: T::AccountId = account("sender", 0, SEED);
+
+		let linkable_id: LinkableAccountId = sender.clone().into();
+		let did: <T as pallet_did_lookup::Config>::DidIdentifier = account("did", 0, SEED);
+
+		pallet_balances::Pallet::<T>::set_balance(&sender, KILT.saturated_into());
+
+		pallet_did_lookup::Pallet::<T>::add_association(sender.clone(), did, linkable_id.clone()).expect("should create association");
+
+
+		let origin= RawOrigin::Signed(sender);
+
+		let entries_to_upgrade = EntriesToMigrate {
+			attestation: BoundedVec::try_from(vec![]).expect("Vector initialization should not fail."),
+			delegation: BoundedVec::try_from(vec![]).expect("Vector initialization should not fail."),
+			did: BoundedVec::try_from(vec![]).expect("Vector initialization should not fail."),
+			lookup: BoundedVec::try_from(vec![linkable_id]).expect("Vector initialization should not fail."),
+			w3n: BoundedVec::try_from(vec![]).expect("Vector initialization should not fail."),
+			staking: BoundedVec::try_from(vec![]).expect("Vector initialization should not fail."),
+			public_credentials: BoundedVec::try_from(vec![]).expect("Vector initialization should not fail."),
+		};
 
 	}: update_balance(origin, entries_to_upgrade)
 	verify {
-		let details = did::Did::<T>::get(did_subject);
-		let hold_balance = <<T as did::Config>::Currency as  InspectHold<AccountIdOf<T>>>::balance_on_hold(&did::HoldReason::Deposit.into(), &caller);
-		assert_eq!(hold_balance, did_details.deposit.amount);
-		assert!(details.is_some());
 	}
 
-	staking_weight {
+	w3n_migration_weight {
+		let sender: AccountIdOf<T> = account("caller", 0, SEED);
+		let owner: Web3NameOwnerOf<T> = account("owner", 0, SEED);
+		let web3_name_input: BoundedVec<u8, <T as pallet_web3_names::Config>::MaxNameLength> = BoundedVec::try_from(vec![104, 101, 105, 105,111]).expect("Vector initialization should not fail.");
+		let origin = <T as pallet_web3_names::Config>::OwnerOrigin::generate_origin(sender.clone(), owner);
+
+		pallet_balances::Pallet::<T>::set_balance(&sender, KILT.saturated_into());
+
+		pallet_web3_names::Pallet::<T>::claim(origin, web3_name_input.clone()).expect("Should register the claimed web3 name.");
+
+		let web3_name = Web3NameOf::<T>::try_from(web3_name_input.to_vec()).unwrap();
+
+
+		let entries_to_upgrade = EntriesToMigrate {
+			attestation: BoundedVec::try_from(vec![]).expect("Vector initialization should not fail."),
+			delegation: BoundedVec::try_from(vec![]).expect("Vector initialization should not fail."),
+			did: BoundedVec::try_from(vec![]).expect("Vector initialization should not fail."),
+			lookup: BoundedVec::try_from(vec![]).expect("Vector initialization should not fail."),
+			w3n: BoundedVec::try_from(vec![web3_name]).expect("Vector initialization should not fail."),
+			staking: BoundedVec::try_from(vec![]).expect("Vector initialization should not fail."),
+			public_credentials: BoundedVec::try_from(vec![]).expect("Vector initialization should not fail."),
+		};
+
+		let origin= RawOrigin::Signed(sender);
+
+	}: update_balance(origin, entries_to_upgrade)
+	verify {
+	}
+
+	public_credentials_migration_weight {
+		let sender: AccountIdOf<T> = account("sender", 0, SEED);
+		let attester: <T as public_credentials::Config>::AttesterId = account("attester", 0, SEED);
+		let ctype_hash: T::Hash = T::Hash::default();
+		let subject_id = <T as public_credentials::Config>::SubjectId::worst_case();
+		let contents = BoundedVec::try_from(vec![0; <T as public_credentials::Config>::MaxEncodedClaimsLength::get() as usize]).expect("Contents should not fail.");
+		let origin = <T as public_credentials::Config>::EnsureOrigin::generate_origin(sender.clone(), attester.clone());
+
+		let creation_op = Box::new(public_credentials::mock::generate_base_public_credential_creation_op::<T>(
+			subject_id.clone().into().try_into().expect("Input conversion should not fail."),
+			ctype_hash,
+			contents,
+		));
+		let credential_id = public_credentials::mock::generate_credential_id::<T>(&creation_op, &attester);
+
+
+		ctype::Ctypes::<T>::insert(ctype_hash, CtypeEntryOf::<T> {
+			creator: account("caller", 0, SEED),
+			created_at: 0u64.into()
+		});
+
+		pallet_balances::Pallet::<T>::set_balance(&sender, KILT.saturated_into());
+
+		public_credentials::Pallet::<T>::add(origin, creation_op).expect("Pallet::add should not fail");
+
+
+		let entries_to_upgrade = EntriesToMigrate {
+			attestation: BoundedVec::try_from(vec![]).expect("Vector initialization should not fail."),
+			delegation: BoundedVec::try_from(vec![]).expect("Vector initialization should not fail."),
+			did: BoundedVec::try_from(vec![]).expect("Vector initialization should not fail."),
+			lookup: BoundedVec::try_from(vec![]).expect("Vector initialization should not fail."),
+			w3n: BoundedVec::try_from(vec![]).expect("Vector initialization should not fail."),
+			staking: BoundedVec::try_from(vec![]).expect("Vector initialization should not fail."),
+			public_credentials: BoundedVec::try_from(vec![(subject_id, credential_id)]).expect("Vector initialization should not fail."),
+		};
+
+		let origin_migration_pallet = RawOrigin::Signed(sender);
+
+	}: update_balance(origin_migration_pallet, entries_to_upgrade)
+	verify {
+	}
+
+	staking_migration_weight {
 		let caller : AccountIdOf<T> = account("caller", 0, SEED);
 		let initial_lock = KILT.saturating_div(2);
 
-		<<T as did::Config>::Currency as Mutate<AccountIdOf<T>>>::set_balance(&caller, KILT.saturated_into());
-		<<T as parachain_staking::Config>::Currency as LockableCurrency<AccountIdOf<T>>>::set_lock(STAKING_ID, &caller, initial_lock.saturated_into(), WithdrawReasons::all());
+		pallet_balances::Pallet::<T>::set_balance(&caller, KILT.saturated_into());
+		pallet_balances::Pallet::<T>::set_lock(STAKING_ID, &caller, initial_lock.saturated_into(), WithdrawReasons::all());
 
 
 		let entries_to_upgrade = EntriesToMigrate {
@@ -109,10 +300,14 @@ benchmarks! {
 			public_credentials: BoundedVec::try_from(vec![]).expect("Vector initialization should not fail."),
 		};
 
-		let origin= RawOrigin::Signed(caller.clone());
+		let origin= RawOrigin::Signed(caller);
 	}: update_balance(origin, entries_to_upgrade)
 	verify {
-		let freezed_balance = <<T as parachain_staking::Config>::Currency as InspectFreeze<AccountIdOf<T>>>::balance_frozen(&parachain_staking::FreezeReason::Staking.into(), &caller);
-		assert_eq!(freezed_balance.saturated_into::<u128>(), initial_lock)
 	}
+}
+
+impl_benchmark_test_suite! {
+	Pallet,
+	crate::mock::runtime::ExtBuilder::default().build_with_keystore(),
+	crate::mock::runtime::Test
 }

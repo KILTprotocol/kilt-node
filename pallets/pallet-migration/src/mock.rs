@@ -15,6 +15,8 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
+
+pub use runtime::*;
 #[cfg(test)]
 pub mod runtime {
 	use attestation::mock::MockAccessControl;
@@ -356,6 +358,20 @@ pub mod runtime {
 			} else {
 				Ok(Self(inner))
 			}
+		}
+	}
+
+	#[cfg(feature = "runtime-benchmarks")]
+	impl kilt_support::traits::GetWorstCase for TestSubjectId {
+		// Only used for benchmark testing, not really relevant.
+		fn worst_case() -> Self {
+			crate::mock::TestSubjectId::default()
+		}
+	}
+
+	impl From<TestSubjectId> for Vec<u8> {
+		fn from(value: TestSubjectId) -> Self {
+			value.0.into()
 		}
 	}
 
