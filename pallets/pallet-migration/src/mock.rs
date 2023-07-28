@@ -16,7 +16,23 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use crate::{Config, EntriesToMigrate};
+use sp_runtime::BoundedVec;
+
+#[cfg(test)]
 pub use runtime::*;
+
+pub(crate) fn get_default_entries_to_migrate<T: Config>() -> EntriesToMigrate<T> {
+	EntriesToMigrate {
+		attestation: BoundedVec::default(),
+		delegation: BoundedVec::default(),
+		did: BoundedVec::default(),
+		lookup: BoundedVec::default(),
+		public_credentials: BoundedVec::default(),
+		staking: BoundedVec::default(),
+		w3n: BoundedVec::default(),
+	}
+}
 #[cfg(test)]
 pub mod runtime {
 	use attestation::mock::MockAccessControl;
@@ -45,10 +61,10 @@ pub mod runtime {
 		impl_opaque_keys,
 		testing::Header,
 		traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, OpaqueKeys, Verify},
-		AccountId32, BoundedVec, MultiSignature, MultiSigner, Perquintill,
+		AccountId32, MultiSignature, MultiSigner, Perquintill,
 	};
 
-	use crate::{self as migration, Config, EntriesToMigrate};
+	use crate::{self as migration, Config};
 
 	type BalanceOf<T> = <<T as ctype::Config>::Currency as Inspect<AccountId>>::Balance;
 	pub type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
@@ -88,7 +104,7 @@ pub mod runtime {
 	);
 
 	parameter_types! {
-		pub const MaxMigrations: u8 = 38;
+		pub const MaxMigrations: u8 = 42;
 	}
 
 	impl Config for Test {
@@ -673,17 +689,5 @@ pub mod runtime {
 		deposit_reasons
 			.iter()
 			.for_each(|hold_id| kilt_support::migration::translate_holds_to_reserve::<Test>(*hold_id))
-	}
-
-	pub(crate) fn get_default_entries_to_migrate<T: Config>() -> EntriesToMigrate<T> {
-		EntriesToMigrate {
-			attestation: BoundedVec::default(),
-			delegation: BoundedVec::default(),
-			did: BoundedVec::default(),
-			lookup: BoundedVec::default(),
-			public_credentials: BoundedVec::default(),
-			staking: BoundedVec::default(),
-			w3n: BoundedVec::default(),
-		}
 	}
 }
