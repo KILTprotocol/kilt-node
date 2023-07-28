@@ -188,7 +188,7 @@ impl pallet_multisig::Config for Runtime {
 }
 
 parameter_types! {
-	pub const  MaxMigrationsPerPallet: u32 = 10;
+	pub const  MaxMigrationsPerPallet: u32 = 100;
 }
 
 impl pallet_migration::Config for Runtime {
