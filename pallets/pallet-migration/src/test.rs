@@ -43,7 +43,7 @@ use public_credentials::{mock::generate_base_credential_entry, CredentialIdOf, S
 use sp_core::{ed25519, Pair};
 use sp_runtime::BoundedVec;
 
-use crate::{mock::runtime::*, Config, MigratedKeys};
+use crate::{mock::*, Config, MigratedKeys};
 
 #[test]
 fn check_succesful_migration() {
