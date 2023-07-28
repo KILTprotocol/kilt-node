@@ -236,8 +236,6 @@ pub mod pallet {
 		/// Catch-all for any other errors that should not happen, yet it
 		/// happened.
 		Internal,
-		/// The balance is already migrated
-		BalanceMigration,
 	}
 
 	#[pallet::hooks]

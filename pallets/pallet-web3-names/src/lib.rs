@@ -187,8 +187,6 @@ pub mod pallet {
 		TooLong,
 		/// A name that contains not allowed characters is being claimed.
 		InvalidCharacter,
-		/// The balance is already migrated
-		BalanceMigration,
 	}
 
 	#[pallet::hooks]

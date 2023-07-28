@@ -301,8 +301,6 @@ pub mod pallet {
 		/// The max number of all children has been reached for the
 		/// corresponding delegation node.
 		MaxChildrenExceeded,
-		/// The balance is already migrated
-		BalanceMigration,
 	}
 
 	#[pallet::hooks]

@@ -229,8 +229,6 @@ pub mod pallet {
 		/// reached for the corresponding delegation id such that another one
 		/// cannot be added.
 		MaxDelegatedAttestationsExceeded,
-		/// The balance is already migrated
-		BalanceMigration,
 	}
 
 	#[pallet::call]
