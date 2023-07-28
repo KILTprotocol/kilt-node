@@ -114,24 +114,24 @@ fn check_succesful_migration() {
 
 			let mut requested_migrations = get_default_entries_to_migrate();
 
-			let attestations: BoundedVec<ClaimHashOf<Test>, <Test as Config>::MaxMigrations> =
+			let attestations: BoundedVec<ClaimHashOf<Test>, <Test as Config>::MaxMigrationsPerPallet> =
 				BoundedVec::try_from([claim_hash].to_vec()).expect("Vec init should not fail for attestaions");
 
-			let delegations: BoundedVec<DelegationNodeIdOf<Test>, <Test as Config>::MaxMigrations> =
+			let delegations: BoundedVec<DelegationNodeIdOf<Test>, <Test as Config>::MaxMigrationsPerPallet> =
 				BoundedVec::try_from([parent_id].to_vec()).expect("Vec init should not fail for delegations");
 
-			let did: BoundedVec<DidIdentifierOf<Test>, <Test as Config>::MaxMigrations> =
+			let did: BoundedVec<DidIdentifierOf<Test>, <Test as Config>::MaxMigrationsPerPallet> =
 				BoundedVec::try_from([alice_did].to_vec()).expect("Vec init should not fail for did");
 
-			let lookup: BoundedVec<LinkableAccountId, <Test as Config>::MaxMigrations> =
+			let lookup: BoundedVec<LinkableAccountId, <Test as Config>::MaxMigrationsPerPallet> =
 				BoundedVec::try_from([LINKABLE_ACCOUNT_00].to_vec()).expect("Vec init should not fail for lookup");
 
-			let w3n: BoundedVec<Web3NameOf<Test>, <Test as Config>::MaxMigrations> =
+			let w3n: BoundedVec<Web3NameOf<Test>, <Test as Config>::MaxMigrationsPerPallet> =
 				BoundedVec::try_from([web3_name_00].to_vec()).expect("Vec init should not fail for w3n");
 
 			let public_credentials: BoundedVec<
 				(SubjectIdOf<Test>, CredentialIdOf<Test>),
-				<Test as Config>::MaxMigrations,
+				<Test as Config>::MaxMigrationsPerPallet,
 			> = BoundedVec::try_from([(subject_id, credential_id)].to_vec())
 				.expect("Vec init should not fail for public_credentials");
 
@@ -255,24 +255,24 @@ fn check_unsuccesful_migration() {
 
 			let mut requested_migrations = get_default_entries_to_migrate();
 
-			let attestations: BoundedVec<ClaimHashOf<Test>, <Test as Config>::MaxMigrations> =
+			let attestations: BoundedVec<ClaimHashOf<Test>, <Test as Config>::MaxMigrationsPerPallet> =
 				BoundedVec::try_from([claim_hash].to_vec()).expect("Vec init should not fail for attestaions");
 
-			let delegations: BoundedVec<DelegationNodeIdOf<Test>, <Test as Config>::MaxMigrations> =
+			let delegations: BoundedVec<DelegationNodeIdOf<Test>, <Test as Config>::MaxMigrationsPerPallet> =
 				BoundedVec::try_from([parent_id].to_vec()).expect("Vec init should not fail for delegations");
 
-			let did: BoundedVec<DidIdentifierOf<Test>, <Test as Config>::MaxMigrations> =
+			let did: BoundedVec<DidIdentifierOf<Test>, <Test as Config>::MaxMigrationsPerPallet> =
 				BoundedVec::try_from([alice_did].to_vec()).expect("Vec init should not fail for did");
 
-			let lookup: BoundedVec<LinkableAccountId, <Test as Config>::MaxMigrations> =
+			let lookup: BoundedVec<LinkableAccountId, <Test as Config>::MaxMigrationsPerPallet> =
 				BoundedVec::try_from([LINKABLE_ACCOUNT_00].to_vec()).expect("Vec init should not fail for lookup");
 
-			let w3n: BoundedVec<Web3NameOf<Test>, <Test as Config>::MaxMigrations> =
+			let w3n: BoundedVec<Web3NameOf<Test>, <Test as Config>::MaxMigrationsPerPallet> =
 				BoundedVec::try_from([web3_name_00].to_vec()).expect("Vec init should not fail for w3n");
 
 			let public_credentials: BoundedVec<
 				(SubjectIdOf<Test>, CredentialIdOf<Test>),
-				<Test as Config>::MaxMigrations,
+				<Test as Config>::MaxMigrationsPerPallet,
 			> = BoundedVec::try_from([(subject_id, credential_id)].to_vec())
 				.expect("Vec init should not fail for public_credentials");
 
@@ -313,7 +313,7 @@ fn check_migration_staking() {
 
 			let mut requested_migrations = get_default_entries_to_migrate();
 
-			let staking: BoundedVec<AccountId, <Test as Config>::MaxMigrations> =
+			let staking: BoundedVec<AccountId, <Test as Config>::MaxMigrationsPerPallet> =
 				BoundedVec::try_from([ACCOUNT_00].to_vec()).expect("Vec init should not fail for staking");
 
 			requested_migrations.staking = staking;

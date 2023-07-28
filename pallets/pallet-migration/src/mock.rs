@@ -104,11 +104,11 @@ pub mod runtime {
 	);
 
 	parameter_types! {
-		pub const MaxMigrations: u8 = 42;
+		pub const MaxMigrationsPerPallet: u8 = 42;
 	}
 
 	impl Config for Test {
-		type MaxMigrations = MaxMigrations;
+		type MaxMigrationsPerPallet = MaxMigrationsPerPallet;
 		type RuntimeEvent = ();
 		type WeightInfo = ();
 	}

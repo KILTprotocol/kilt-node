@@ -189,12 +189,12 @@ impl pallet_multisig::Config for Runtime {
 }
 
 parameter_types! {
-	pub const MaxMigrations: u32 = 10;
+	pub const  MaxMigrationsPerPallet: u32 = 10;
 }
 
 impl pallet_migration::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
-	type MaxMigrations = MaxMigrations;
+	type MaxMigrationsPerPallet = MaxMigrationsPerPallet;
 	type WeightInfo = weights::pallet_migration::WeightInfo<Runtime>;
 }
 

@@ -61,13 +61,13 @@ pub mod pallet {
 		T: public_credentials::Config,
 		T: Config,
 	{
-		pub attestation: BoundedVec<ClaimHashOf<T>, <T as Config>::MaxMigrations>,
-		pub delegation: BoundedVec<DelegationNodeIdOf<T>, <T as Config>::MaxMigrations>,
-		pub did: BoundedVec<DidIdentifierOf<T>, <T as Config>::MaxMigrations>,
-		pub lookup: BoundedVec<LinkableAccountId, <T as Config>::MaxMigrations>,
-		pub w3n: BoundedVec<Web3NameOf<T>, <T as Config>::MaxMigrations>,
-		pub staking: BoundedVec<AccountIdOf<T>, <T as Config>::MaxMigrations>,
-		pub public_credentials: BoundedVec<(SubjectIdOf<T>, CredentialIdOf<T>), <T as Config>::MaxMigrations>,
+		pub attestation: BoundedVec<ClaimHashOf<T>, <T as Config>::MaxMigrationsPerPallet>,
+		pub delegation: BoundedVec<DelegationNodeIdOf<T>, <T as Config>::MaxMigrationsPerPallet>,
+		pub did: BoundedVec<DidIdentifierOf<T>, <T as Config>::MaxMigrationsPerPallet>,
+		pub lookup: BoundedVec<LinkableAccountId, <T as Config>::MaxMigrationsPerPallet>,
+		pub w3n: BoundedVec<Web3NameOf<T>, <T as Config>::MaxMigrationsPerPallet>,
+		pub staking: BoundedVec<AccountIdOf<T>, <T as Config>::MaxMigrationsPerPallet>,
+		pub public_credentials: BoundedVec<(SubjectIdOf<T>, CredentialIdOf<T>), <T as Config>::MaxMigrationsPerPallet>,
 	}
 
 	#[pallet::config]
@@ -86,7 +86,7 @@ pub mod pallet {
 
 		/// The max amount on migrations for each pallet
 		#[pallet::constant]
-		type MaxMigrations: Get<u32>;
+		type MaxMigrationsPerPallet: Get<u32>;
 
 		/// Weight information for extrinsics in this pallet.
 		type WeightInfo: WeightInfo;
