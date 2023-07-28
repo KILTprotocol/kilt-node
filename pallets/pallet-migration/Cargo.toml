@@ -24,6 +24,8 @@ pallet-session = {workspace = true, features = ["std"]}
 attestation = {workspace = true, features = ["mock"]}
 ctype = {workspace = true, features = ["mock"]}
 delegation = {workspace = true, features = ["mock"]} 
+did = {workspace = true, features = ["mock"]} 
+public-credentials = {workspace = true, features = ["mock"]} 
 
 [dependencies]
 # Internal dependencies
@@ -91,7 +93,8 @@ std = [
   "parachain-staking/std",
   "public-credentials/std",
   "runtime-common/std",
-  "ctype/std"
+  "ctype/std",
+  "pallet-balances/std",
 ]
 
 try-runtime = [
@@ -105,5 +108,6 @@ try-runtime = [
   "parachain-staking/try-runtime",
   "public-credentials/try-runtime",
   "runtime-common/try-runtime",
-  "ctype/try-runtime"
+  "ctype/try-runtime",
+  "pallet-balances/try-runtime",
 ]

@@ -91,7 +91,7 @@ pub mod service_endpoints;
 
 #[cfg(test)]
 mod mock;
-#[cfg(any(feature = "runtime-benchmarks", test))]
+#[cfg(any(feature = "runtime-benchmarks", test, feature = "mock"))]
 pub mod mock_utils;
 #[cfg(test)]
 mod tests;

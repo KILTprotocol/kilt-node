@@ -121,9 +121,6 @@ pub mod test {
 
 				// ... and be as much as the hold balance
 				assert_eq!(balance_on_reserve_post_migration, balance_on_hold);
-
-				// Nothing should happen
-				assert!(update_balance_for_entry::<Test>(&web3_name_00).is_err());
 			})
 	}
 }

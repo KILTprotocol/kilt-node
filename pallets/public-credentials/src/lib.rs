@@ -38,7 +38,7 @@ pub mod migrations;
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 
-#[cfg(any(test, feature = "runtime-benchmarks"))]
+#[cfg(any(test, feature = "runtime-benchmarks", feature = "mock"))]
 pub mod mock;
 
 #[cfg(test)]
