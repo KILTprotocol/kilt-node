@@ -33,11 +33,11 @@ pub fn has_user_reserved_balance<AccountId, Currency: ReservableCurrency<Account
 }
 
 pub fn switch_reserved_to_hold<AccountId, Currency: ReservableCurrency<AccountId> + MutateHold<AccountId>>(
-	owner: AccountId,
+	owner: &AccountId,
 	reason: &Currency::Reason,
 	amount: u128,
 ) -> DispatchResult {
-	let remaining_balance = Currency::unreserve(&owner, amount.saturated_into());
+	let remaining_balance = Currency::unreserve(owner, amount.saturated_into());
 	debug_assert!(
 		remaining_balance.is_zero(),
 		"Could not unreserve balance. Remaining: {:?}. To unreserve: {:?}",
@@ -45,7 +45,7 @@ pub fn switch_reserved_to_hold<AccountId, Currency: ReservableCurrency<AccountId
 		amount
 	);
 	let to_hold_balance = amount.saturating_sub(remaining_balance.saturated_into());
-	Currency::hold(reason, &owner, to_hold_balance.saturated_into())
+	Currency::hold(reason, owner, to_hold_balance.saturated_into())
 }
 
 pub fn translate_holds_to_reserve<T: Config>(hold_id: T::HoldIdentifier)

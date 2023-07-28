@@ -37,7 +37,7 @@ where
 			};
 
 			switch_reserved_to_hold::<AccountIdOf<T>, CurrencyOf<T>>(
-				d.clone().deposit.owner,
+				&d.deposit.owner,
 				&HoldReason::Deposit.into(),
 				d.deposit.amount.saturated_into(),
 			)
