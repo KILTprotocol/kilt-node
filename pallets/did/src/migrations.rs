@@ -27,23 +27,21 @@ where
 	<T as Config>::Currency: ReservableCurrency<T::AccountId>,
 {
 	Did::<T>::try_mutate(key, |details| {
-		if let Some(d) = details {
-			*d = DidDetails {
-				deposit: Deposit {
-					owner: d.deposit.owner.clone(),
-					amount: d.deposit.amount,
-				},
-				..d.clone()
-			};
+		let Some(d) = details else { return Err(Error::<T>::NotFound.into()); };
 
-			switch_reserved_to_hold::<AccountIdOf<T>, CurrencyOf<T>>(
-				&d.deposit.owner,
-				&HoldReason::Deposit.into(),
-				d.deposit.amount.saturated_into(),
-			)
-		} else {
-			Err(Error::<T>::NotFound.into())
-		}
+		*d = DidDetails {
+			deposit: Deposit {
+				owner: d.deposit.owner.clone(),
+				amount: d.deposit.amount,
+			},
+			..d.clone()
+		};
+
+		switch_reserved_to_hold::<AccountIdOf<T>, CurrencyOf<T>>(
+			&d.deposit.owner,
+			&HoldReason::Deposit.into(),
+			d.deposit.amount.saturated_into(),
+		)
 	})
 }
 
