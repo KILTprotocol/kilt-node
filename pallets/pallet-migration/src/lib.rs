@@ -42,7 +42,7 @@ pub mod pallet {
 	use pallet_did_lookup::linkable_account::LinkableAccountId;
 	use pallet_web3_names::Web3NameOf;
 	use public_credentials::{CredentialIdOf, SubjectIdOf};
-	use sp_runtime::{traits::Hash, SaturatedConversion};
+	use sp_runtime::traits::Hash;
 	use sp_std::vec::Vec;
 
 	use crate::default_weights::WeightInfo;
@@ -141,18 +141,8 @@ pub mod pallet {
 	{
 		#[pallet::call_index(0)]
 		#[pallet::weight({
-			let mut count_general_migration = requested_migrations.attestation.len();
-			count_general_migration = count_general_migration.saturating_add(requested_migrations.delegation.len());
-			count_general_migration = count_general_migration.saturating_add(requested_migrations.did.len());
-			count_general_migration = count_general_migration.saturating_add(requested_migrations.lookup.len());
-			count_general_migration = count_general_migration.saturating_add(requested_migrations.w3n.len());
-			count_general_migration = count_general_migration.saturating_add( requested_migrations.public_credentials.len());
-			let count_staking_migration = requested_migrations.staking.len();
-
-			let general_weight = <T as crate::Config>::WeightInfo::general_weight().saturating_mul(count_general_migration.saturated_into());
-			let staking_weight = <T as crate::Config>::WeightInfo::staking_weight().saturating_mul(count_staking_migration.saturated_into());
-
-			general_weight.saturating_add(staking_weight)
+			//TODO: Placeholder.
+			Weight::from_parts(1_000_000, 1_000_000)
 		})]
 		pub fn update_balance(origin: OriginFor<T>, requested_migrations: EntriesToMigrate<T>) -> DispatchResult {
 			ensure_signed(origin)?;
