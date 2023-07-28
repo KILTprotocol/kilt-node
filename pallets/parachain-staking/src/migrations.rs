@@ -39,8 +39,6 @@ where
 		<T as pallet_balances::Config>::MaxLocks,
 	> = Locks::<T>::get(user_id);
 
-	debug_assert!(!locks.is_empty(), "No locks");
-
 	locks
 		.iter()
 		.filter(|lock| lock.id == STAKING_ID)
