@@ -20,8 +20,8 @@ use frame_support::{
 	pallet_prelude::DispatchResult,
 	traits::{fungible::freeze::Mutate as MutateFreeze, LockIdentifier, LockableCurrency},
 };
-use pallet_balances::{BalanceLock, Freezes, Locks};
-use sp_runtime::{SaturatedConversion, WeakBoundedVec};
+use pallet_balances::{Freezes, Locks};
+use sp_runtime::SaturatedConversion;
 
 use crate::{
 	types::{AccountIdOf, CurrencyOf},
@@ -34,10 +34,7 @@ pub fn update_or_create_freeze<T: Config>(user_id: &T::AccountId) -> DispatchRes
 where
 	CurrencyOf<T>: LockableCurrency<AccountIdOf<T>>,
 {
-	let locks: WeakBoundedVec<
-		BalanceLock<<T as pallet_balances::Config>::Balance>,
-		<T as pallet_balances::Config>::MaxLocks,
-	> = Locks::<T>::get(user_id);
+	let locks = Locks::<T>::get(user_id);
 
 	locks
 		.iter()
