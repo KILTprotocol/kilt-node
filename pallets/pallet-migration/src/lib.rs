@@ -35,7 +35,7 @@ pub mod pallet {
 	use delegation::DelegationNodeIdOf;
 	use did::DidIdentifierOf;
 	use frame_support::{
-		pallet_prelude::{DispatchResult, *},
+		pallet_prelude::*,
 		traits::{LockableCurrency, ReservableCurrency},
 	};
 	use frame_system::pallet_prelude::*;
