@@ -20,12 +20,11 @@
 
 pub use crate::default_weights::WeightInfo;
 pub use pallet::*;
-
 pub mod default_weights;
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
-#[cfg(test)]
+#[cfg(any(test, feature = "runtime-benchmarks"))]
 mod mock;
 #[cfg(test)]
 mod test;
@@ -44,6 +43,7 @@ pub mod pallet {
 	use pallet_web3_names::Web3NameOf;
 	use public_credentials::{CredentialIdOf, SubjectIdOf};
 	use sp_runtime::{traits::Hash, SaturatedConversion};
+	use sp_std::vec::Vec;
 
 	use crate::default_weights::WeightInfo;
 
@@ -85,6 +85,7 @@ pub mod pallet {
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
 		/// The max amount on migrations for each pallet
+		#[pallet::constant]
 		type MaxMigrations: Get<u32>;
 
 		/// Weight information for extrinsics in this pallet.
@@ -107,6 +108,24 @@ pub mod pallet {
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {}
 
+	// Some constants to distinguish between the different pallets
+	pub(crate) const ATTESTATION_PALLET: &[u8] = b"attestation";
+	pub(crate) const DELEGATION_PALLET: &[u8] = b"delegation";
+	pub(crate) const DID_PALLET: &[u8] = b"did";
+	pub(crate) const DID_LOOKUP_PALLET: &[u8] = b"pallet-did-lookup";
+	pub(crate) const W3N_PALLET: &[u8] = b"pallet-web3-names";
+	pub(crate) const BALANCES_PALLET: &[u8] = b"pallet-balances";
+	pub(crate) const PUBLIC_CREDENTIALS_PALLET: &[u8] = b"public-credentials";
+
+	// Some constants to distinguish between the different storage maps.
+	pub(crate) const ATTESTATION_STORAGE_NAME: &[u8] = b"Attestations";
+	pub(crate) const DELEGATION_STORAGE_NAME: &[u8] = b"DelegationNodes";
+	pub(crate) const DID_STORAGE_NAME: &[u8] = b"Did";
+	pub(crate) const DID_LOOKUP_STORAGE_NAME: &[u8] = b"ConnectedDids";
+	pub(crate) const W3N_STORAGE_NAME: &[u8] = b"Owner";
+	pub(crate) const BALANCES_STORAGE_NAME: &[u8] = b"Reserves";
+	pub(crate) const PUBLIC_CREDENTIALS_STORAGE_NAME: &[u8] = b"Credentials";
+
 	#[pallet::call]
 	impl<T: Config> Pallet<T>
 	where
@@ -118,6 +137,7 @@ pub mod pallet {
 		<T as parachain_staking::Config>::Currency: ReservableCurrency<AccountIdOf<T>>,
 		<T as parachain_staking::Config>::Currency: LockableCurrency<AccountIdOf<T>>,
 		<T as public_credentials::Config>::Currency: ReservableCurrency<AccountIdOf<T>>,
+		<T as frame_system::Config>::AccountId: Into<[u8; 32]>,
 	{
 		#[pallet::call_index(0)]
 		#[pallet::weight({
@@ -140,7 +160,7 @@ pub mod pallet {
 			requested_migrations
 				.attestation
 				.iter()
-				.filter(|key| Self::is_key_already_migrated(**key, b"attestaion        ", b"Attestations   "))
+				.filter(|key| Self::is_key_already_migrated(key.as_ref(), ATTESTATION_PALLET, ATTESTATION_STORAGE_NAME))
 				.try_for_each(|attestation_hash| {
 					attestation::migrations::update_balance_for_entry::<T>(attestation_hash)
 				})?;
@@ -148,13 +168,7 @@ pub mod pallet {
 			requested_migrations
 				.delegation
 				.iter()
-				.filter(|key| {
-					Self::is_key_already_migrated(
-						<T as frame_system::Config>::Hashing::hash_of(key),
-						b"delegation        ",
-						b"DelegationNodes",
-					)
-				})
+				.filter(|key| Self::is_key_already_migrated(key.as_ref(), DELEGATION_PALLET, DELEGATION_STORAGE_NAME))
 				.try_for_each(|delegation_hash| {
 					delegation::migrations::update_balance_for_entry::<T>(delegation_hash)
 				})?;
@@ -162,25 +176,13 @@ pub mod pallet {
 			requested_migrations
 				.did
 				.iter()
-				.filter(|key| {
-					Self::is_key_already_migrated(
-						<T as frame_system::Config>::Hashing::hash_of(key),
-						b"did               ",
-						b"Did            ",
-					)
-				})
+				.filter(|key| Self::is_key_already_migrated(key.as_ref(), DID_PALLET, DID_STORAGE_NAME))
 				.try_for_each(|did_hash| did::migrations::update_balance_for_entry::<T>(did_hash))?;
 
 			requested_migrations
 				.lookup
 				.iter()
-				.filter(|key| {
-					Self::is_key_already_migrated(
-						<T as frame_system::Config>::Hashing::hash_of(key),
-						b"pallet-did-lookup ",
-						b"ConnectedDids  ",
-					)
-				})
+				.filter(|key| Self::is_key_already_migrated(key.as_ref(), DID_LOOKUP_PALLET, DID_LOOKUP_STORAGE_NAME))
 				.try_for_each(|did_lookup_hash| {
 					pallet_did_lookup::migrations::update_balance_for_entry::<T>(did_lookup_hash)
 				})?;
@@ -188,24 +190,15 @@ pub mod pallet {
 			requested_migrations
 				.w3n
 				.iter()
-				.filter(|key| {
-					Self::is_key_already_migrated(
-						<T as frame_system::Config>::Hashing::hash_of(key),
-						b"pallet-web3-names ",
-						b"Owner          ",
-					)
-				})
+				.filter(|key| Self::is_key_already_migrated(key.as_ref(), W3N_PALLET, W3N_STORAGE_NAME))
 				.try_for_each(|w3n| pallet_web3_names::migrations::update_balance_for_entry::<T>(w3n))?;
 
 			requested_migrations
 				.staking
 				.iter()
-				.filter(|key| {
-					Self::is_key_already_migrated(
-						<T as frame_system::Config>::Hashing::hash_of(key),
-						b"pallet-balances   ",
-						b"Reserves       ",
-					)
+				.filter(|&key| {
+					let account_bytes: [u8; 32] = key.clone().into();
+					Self::is_key_already_migrated(&account_bytes, BALANCES_PALLET, BALANCES_STORAGE_NAME)
 				})
 				.try_for_each(|account| parachain_staking::migrations::update_or_create_freeze::<T>(account))?;
 
@@ -213,15 +206,7 @@ pub mod pallet {
 				.public_credentials
 				.iter()
 				.filter(|(subject_id, credential_id)| {
-					let mut key = subject_id.encode();
-					let mut credential_encoded = credential_id.encode();
-					key.append(&mut credential_encoded);
-
-					Self::is_key_already_migrated(
-						<T as frame_system::Config>::Hashing::hash_of(&key),
-						b"public-credentials",
-						b"Credentials    ",
-					)
+					Self::filter_disclosure_public_credentials(subject_id, credential_id)
 				})
 				.try_for_each(|(subject_id, credential_id)| {
 					public_credentials::migrations::update_balance_for_entry::<T>(subject_id, credential_id)
@@ -234,20 +219,44 @@ pub mod pallet {
 	}
 
 	impl<T: Config> Pallet<T> {
-		fn calculate_full_key(key: HashOf<T>, pallet: &[u8; 18], storage_name: &[u8; 15]) -> HashOf<T> {
-			let mut full_key = key.encode();
-			full_key.append(&mut pallet.encode());
-			full_key.append(&mut storage_name.encode());
-			<T as frame_system::Config>::Hashing::hash(&full_key)
+		pub fn calculate_full_key(storage_key: &[u8], pallet_name: &[u8], storage_name: &[u8]) -> HashOf<T> {
+			let vec_capacity = storage_key.len() + pallet_name.len() + storage_name.len();
+			let mut full_key: Vec<u8> = Vec::with_capacity(vec_capacity);
+			full_key.extend_from_slice(storage_key);
+			full_key.extend_from_slice(pallet_name);
+			full_key.extend_from_slice(storage_name);
+			<T as frame_system::Config>::Hashing::hash_of(&full_key)
 		}
 
-		fn is_key_already_migrated(key: HashOf<T>, pallet: &[u8; 18], storage_name: &[u8; 15]) -> bool {
-			let full_key = Self::calculate_full_key(key, pallet, storage_name);
+		fn is_key_already_migrated(key: &[u8], pallet_name: &[u8], storage_name: &[u8]) -> bool {
+			let full_key = Self::calculate_full_key(key, pallet_name, storage_name);
 			if MigratedKeys::<T>::contains_key(full_key) {
 				return false;
 			}
 			MigratedKeys::<T>::insert(full_key, ());
 			true
+		}
+
+		pub fn calculate_public_credentials_key(
+			subject_id: &<T as public_credentials::Config>::SubjectId,
+			credential_id: &<T as public_credentials::Config>::CredentialId,
+		) -> Vec<u8> {
+			let subject_id_encoded = subject_id.encode();
+			let subject_id_ref: &[u8] = subject_id_encoded.as_ref();
+			let credential_id_ref = credential_id.as_ref();
+			let vec_capacity = subject_id_ref.len() + credential_id_ref.len();
+			let mut key: Vec<u8> = Vec::with_capacity(vec_capacity);
+			key.extend_from_slice(subject_id_ref);
+			key.extend_from_slice(credential_id_ref);
+			key
+		}
+
+		fn filter_disclosure_public_credentials(
+			subject_id: &<T as public_credentials::Config>::SubjectId,
+			credential_id: &<T as public_credentials::Config>::CredentialId,
+		) -> bool {
+			let key = Self::calculate_public_credentials_key(subject_id, credential_id);
+			Self::is_key_already_migrated(key.as_ref(), PUBLIC_CREDENTIALS_PALLET, PUBLIC_CREDENTIALS_STORAGE_NAME)
 		}
 	}
 }
