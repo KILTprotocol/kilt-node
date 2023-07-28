@@ -53,6 +53,15 @@ impl From<[u8; 32]> for LinkableAccountId {
 	}
 }
 
+impl AsRef<[u8]> for LinkableAccountId {
+	fn as_ref(&self) -> &[u8] {
+		match self {
+			LinkableAccountId::AccountId20(value) => &value.0,
+			LinkableAccountId::AccountId32(value) => value.as_ref(),
+		}
+	}
+}
+
 #[cfg(feature = "std")]
 impl std::fmt::Display for LinkableAccountId {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

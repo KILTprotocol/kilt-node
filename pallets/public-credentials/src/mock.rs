@@ -224,7 +224,7 @@ pub(crate) mod runtime {
 		PartialOrd,
 		TypeInfo,
 	)]
-	pub struct TestSubjectId([u8; 32]);
+	pub struct TestSubjectId(pub [u8; 32]);
 
 	impl TryFrom<Vec<u8>> for TestSubjectId {
 		type Error = Error<Test>;

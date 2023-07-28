@@ -50,6 +50,12 @@ impl<T: Config> From<AsciiWeb3Name<T>> for Vec<u8> {
 	}
 }
 
+impl<T: Config> AsRef<[u8]> for AsciiWeb3Name<T> {
+	fn as_ref(&self) -> &[u8] {
+		self.0.as_ref()
+	}
+}
+
 impl<T: Config> TryFrom<Vec<u8>> for AsciiWeb3Name<T> {
 	type Error = Error<T>;
 

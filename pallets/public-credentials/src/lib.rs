@@ -142,7 +142,7 @@ pub mod pallet {
 		/// credential content.
 		type CredentialHash: Hash<Output = Self::CredentialId>;
 		/// The type of a credential identifier.
-		type CredentialId: Parameter + MaxEncodedLen;
+		type CredentialId: Parameter + MaxEncodedLen + AsRef<[u8]>;
 		/// The currency that is used to reserve funds for each credential.
 		type Currency: MutateHold<AccountIdOf<Self>, Reason = Self::RuntimeHoldReason>;
 		/// The type of the origin when successfully converted from the outer
