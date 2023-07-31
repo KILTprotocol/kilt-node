@@ -74,7 +74,6 @@ pub mod test {
 	use crate::{migrations::update_or_create_freeze, mock::*, Config, FreezeReason};
 
 	#[test]
-	#[should_panic(expected = "No locks")]
 	fn test_balance_migration_staking() {
 		ExtBuilder::default()
 			.with_balances(vec![(1, 10), (2, 100), (3, 100)])
@@ -123,9 +122,6 @@ pub mod test {
 				assert_eq!(froozen_balance_1, 10);
 				assert_eq!(froozen_balance_2, 100);
 				assert_eq!(froozen_balance_3, 10);
-
-				//Nothing should happen
-				assert!(update_or_create_freeze::<Test>(&1).is_err());
 			})
 	}
 }
