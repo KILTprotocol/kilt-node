@@ -34,47 +34,11 @@ pub(crate) fn do_try_state<T: Config>() -> Result<(), TryRuntimeError> {
 				log_and_return_error_message(format!("Delegation hierarchy {:?} not found", hierarchy_id))
 			);
 
-			let parent_count = DelegationNodes::<T>::iter_values()
-				.filter(|delegation_node: &DelegationNodeOf<T>| delegation_node.children.contains(&delegation_node_id))
-				.count();
-
-			if delegation_details.parent.is_some() {
-				// If node is a leaf or intermediate, check if it occurs only once. Otherwise we
-				// have cycles.
-				ensure!(
-					parent_count == 1,
-					log_and_return_error_message(format!(
-						"Delegation with cycles detected. Node {:?} in hierarchy {:?} has two or more parents.",
-						delegation_node_id, hierarchy_id
-					))
-				);
-			} else {
-				// if parent is None, check that the root is not the children
-				// from another node.
-				ensure!(
-					parent_count == 0,
-					log_and_return_error_message(format!(
-						"Root node {:?} is child from other delegation nodes",
-						delegation_node_id
-					))
-				);
-			}
+			// Delegation hierarchy should be a tree.
+			check_no_cycles::<T>(&delegation_details, &delegation_node_id)?;
 
 			// if a node is revoked, the subtree should be revoked as well.
-			if delegation_details.details.revoked {
-				let is_subtree_revoked = get_merged_subtree::<T>(delegation_details)
-					.iter()
-					.map(|child: &DelegationNodeOf<T>| child.details.revoked)
-					.all(|x| x);
-				ensure!(
-					is_subtree_revoked,
-					log_and_return_error_message(format!(
-						"Revoked delegation node {:?} has an unrevoked subtree.",
-						delegation_node_id
-					))
-				);
-			}
-			Ok(())
+			check_subtree_is_revoked::<T>(delegation_details, &delegation_node_id)
 		},
 	)
 }
@@ -88,4 +52,56 @@ fn get_merged_subtree<T: Config>(node: DelegationNodeOf<T>) -> sp_std::vec::Vec<
 		children.extend(child_nodes);
 	}
 	children
+}
+
+fn check_subtree_is_revoked<T: Config>(
+	delegation_details: DelegationNodeOf<T>,
+	delegation_node_id: &<T as Config>::DelegationNodeId,
+) -> Result<(), TryRuntimeError> {
+	if delegation_details.details.revoked {
+		let is_subtree_revoked = get_merged_subtree::<T>(delegation_details)
+			.iter()
+			.map(|child: &DelegationNodeOf<T>| child.details.revoked)
+			.all(|x| x);
+		ensure!(
+			is_subtree_revoked,
+			log_and_return_error_message(format!(
+				"Revoked delegation node {:?} has an unrevoked subtree.",
+				delegation_node_id
+			))
+		);
+	}
+	Ok(())
+}
+
+fn check_no_cycles<T: Config>(
+	delegation_details: &DelegationNodeOf<T>,
+	delegation_node_id: &<T as Config>::DelegationNodeId,
+) -> Result<(), TryRuntimeError> {
+	let parent_count = DelegationNodes::<T>::iter_values()
+		.filter(|delegation_node: &DelegationNodeOf<T>| delegation_node.children.contains(delegation_node_id))
+		.count();
+
+	if delegation_details.parent.is_some() {
+		// If node is a leaf or intermediate, check if it occurs only once. Otherwise we
+		// have cycles.
+		ensure!(
+			parent_count == 1,
+			log_and_return_error_message(format!(
+				"Delegation with cycles detected. Node {:?} in hierarchy {:?} has two or more parents.",
+				delegation_node_id, delegation_details.hierarchy_root_id
+			))
+		);
+	} else {
+		// if parent is None, check that the root is not the children
+		// from another node.
+		ensure!(
+			parent_count == 0,
+			log_and_return_error_message(format!(
+				"Root node {:?} is child from other delegation nodes",
+				delegation_node_id
+			))
+		);
+	}
+	Ok(())
 }
