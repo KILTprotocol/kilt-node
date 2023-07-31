@@ -20,9 +20,10 @@ use crate::{Config, CredentialSubjects, Credentials};
 use frame_support::ensure;
 use kilt_support::test_utils::log_and_return_error_message;
 use scale_info::prelude::format;
+use sp_runtime::TryRuntimeError;
 
-pub(crate) fn do_try_state<T: Config>() -> Result<(), &'static str> {
-	Credentials::<T>::iter().try_for_each(|(subject_id, credential_id, entry)| -> Result<(), &'static str> {
+pub(crate) fn do_try_state<T: Config>() -> Result<(), TryRuntimeError> {
+	Credentials::<T>::iter().try_for_each(|(subject_id, credential_id, entry)| -> Result<(), TryRuntimeError> {
 		ensure!(
 			CredentialSubjects::<T>::get(&credential_id) == Some(subject_id.clone()),
 			log_and_return_error_message(format!(
@@ -39,7 +40,7 @@ pub(crate) fn do_try_state<T: Config>() -> Result<(), &'static str> {
 		Ok(())
 	})?;
 
-	CredentialSubjects::<T>::iter().try_for_each(|(credential_id, subject_id)| -> Result<(), &'static str> {
+	CredentialSubjects::<T>::iter().try_for_each(|(credential_id, subject_id)| -> Result<(), TryRuntimeError> {
 		ensure!(
 			Credentials::<T>::contains_key(subject_id, &credential_id),
 			log_and_return_error_message(format!("Unknown credential {:?}", credential_id))

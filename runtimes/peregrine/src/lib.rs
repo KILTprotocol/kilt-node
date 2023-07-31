@@ -227,6 +227,7 @@ impl pallet_transaction_payment::Config for Runtime {
 impl pallet_sudo::Config for Runtime {
 	type RuntimeCall = RuntimeCall;
 	type RuntimeEvent = RuntimeEvent;
+	type WeightInfo = weights::pallet_sudo::WeightInfo<Runtime>;
 }
 
 parameter_types! {
@@ -1121,6 +1122,7 @@ mod benches {
 		[pallet_collective, TechnicalCommittee]
 		[pallet_membership, TechnicalMembership]
 		[pallet_treasury, Treasury]
+		[pallet_sudo, Sudo]
 		[pallet_utility, Utility]
 		[pallet_vesting, Vesting]
 		[pallet_scheduler, Scheduler]

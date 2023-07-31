@@ -159,6 +159,8 @@ parameter_types! {
 }
 
 impl pallet_xcm::Config for Runtime {
+	type MaxRemoteLockConsumers = ConstU32<10>;
+	type RemoteLockConsumerIdentifier = [u8; 8];
 	type RuntimeEvent = RuntimeEvent;
 	type SendXcmOrigin = EnsureXcmOrigin<RuntimeOrigin, LocalOriginToLocation>;
 	type XcmRouter = XcmRouter;

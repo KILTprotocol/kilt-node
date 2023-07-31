@@ -177,7 +177,7 @@ pub mod pallet {
 
 	#[pallet::genesis_config]
 	pub struct GenesisConfig<T: Config> {
-		pub links: Vec<(LinkableAccountId, ConnectionRecordOf<T>)>,
+		pub links: sp_std::vec::Vec<(LinkableAccountId, ConnectionRecordOf<T>)>,
 	}
 
 	#[cfg(feature = "std")]
@@ -203,7 +203,7 @@ pub mod pallet {
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
 		#[cfg(feature = "try-runtime")]
-		fn try_state(_n: BlockNumberFor<T>) -> Result<(), &'static str> {
+		fn try_state(_n: BlockNumberFor<T>) -> Result<(), sp_runtime::TryRuntimeError> {
 			crate::try_state::do_try_state::<T>()
 		}
 	}

@@ -132,6 +132,7 @@ runtime-benchmarks = [
   "pallet-indices/runtime-benchmarks",
   "pallet-inflation/runtime-benchmarks",
   "pallet-membership/runtime-benchmarks",
+  "pallet-sudo/runtime-benchmarks",
   "pallet-multisig/runtime-benchmarks",
   "pallet-preimage/runtime-benchmarks",
   "pallet-proxy/runtime-benchmarks",
@@ -270,5 +271,5 @@ try-runtime = [
 ]
 with-tracing = [
   "frame-executive/with-tracing",
-  "sp-io/with-tracing"
+  "sp-io/with-tracing",
 ]

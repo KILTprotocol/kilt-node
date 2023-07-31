@@ -25,6 +25,9 @@ use log;
 use sp_runtime::SaturatedConversion;
 use sp_std::marker::PhantomData;
 
+#[cfg(feature = "try-runtime")]
+use sp_runtime::TryRuntimeError;
+
 use crate::{
 	AccountIdOf, Attestations, Config, CurrencyOf, HoldReason, Pallet, STORAGE_VERSION as TARGET_STORAGE_VERSION,
 };
@@ -60,7 +63,7 @@ where
 	}
 
 	#[cfg(feature = "try-runtime")]
-	fn pre_upgrade() -> Result<sp_std::vec::Vec<u8>, &'static str> {
+	fn pre_upgrade() -> Result<sp_std::vec::Vec<u8>, TryRuntimeError> {
 		use sp_std::vec;
 
 		let has_all_user_no_holds = Attestations::<T>::iter_values()
@@ -85,7 +88,7 @@ where
 	}
 
 	#[cfg(feature = "try-runtime")]
-	fn post_upgrade(_pre_state: sp_std::vec::Vec<u8>) -> Result<(), &'static str> {
+	fn post_upgrade(_pre_state: sp_std::vec::Vec<u8>) -> Result<(), TryRuntimeError> {
 		use frame_support::traits::fungible::InspectHold;
 		use sp_runtime::Saturating;
 		use sp_std::collections::btree_map::BTreeMap;
@@ -103,7 +106,7 @@ where
 
 		map_user_deposit
 			.iter()
-			.try_for_each(|(who, amount)| -> Result<(), &'static str> {
+			.try_for_each(|(who, amount)| -> Result<(), TryRuntimeError> {
 				let hold_balance: BalanceOf<T> =
 					<T as Config>::Currency::balance_on_hold(&HoldReason::Deposit.into(), who).saturated_into();
 

@@ -33,14 +33,15 @@ runtime-common = {workspace = true, features = ["std"]}
 frame-system = {workspace = true, features = ["std"]}
 pallet-transaction-payment = {workspace = true, features = ["std"]}
 sc-basic-authorship.workspace = true
-sc-cli = {workspace = true}
+sc-cli.workspace = true 
 sc-client-api.workspace = true
 sc-consensus.workspace = true
 sc-consensus-aura.workspace = true
-sc-executor = {workspace = true}
+sc-executor.workspace = true
 sc-consensus-grandpa.workspace = true
 sc-keystore.workspace = true
-sc-service = {workspace = true}
+sc-service.workspace = true
+sc-network.workspace = true
 sc-telemetry.workspace = true
 sc-transaction-pool.workspace = true
 sc-transaction-pool-api.workspace = true

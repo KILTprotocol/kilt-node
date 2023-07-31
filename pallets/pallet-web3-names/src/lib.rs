@@ -28,7 +28,6 @@ pub mod web3_name;
 
 #[cfg(any(test, feature = "runtime-benchmarks"))]
 mod mock;
-
 #[cfg(any(test, feature = "try-runtime"))]
 mod try_state;
 
@@ -191,7 +190,7 @@ pub mod pallet {
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
 		#[cfg(feature = "try-runtime")]
-		fn try_state(_n: BlockNumberFor<T>) -> Result<(), &'static str> {
+		fn try_state(_n: BlockNumberFor<T>) -> Result<(), sp_runtime::TryRuntimeError> {
 			crate::try_state::do_try_state::<T>()
 		}
 	}
