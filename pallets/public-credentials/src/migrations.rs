@@ -17,33 +17,21 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_support::traits::ReservableCurrency;
-use kilt_support::{migration::switch_reserved_to_hold, Deposit};
+use kilt_support::migration::switch_reserved_to_hold;
 use sp_runtime::{DispatchResult, SaturatedConversion};
 
-use crate::{
-	AccountIdOf, Config, CredentialEntry, CredentialIdOf, Credentials, CurrencyOf, Error, HoldReason, SubjectIdOf,
-};
+use crate::{AccountIdOf, Config, CredentialIdOf, Credentials, CurrencyOf, Error, HoldReason, SubjectIdOf};
 
 pub fn update_balance_for_entry<T: Config>(key: &SubjectIdOf<T>, key2: &CredentialIdOf<T>) -> DispatchResult
 where
 	<T as Config>::Currency: ReservableCurrency<T::AccountId>,
 {
-	Credentials::<T>::try_mutate(key, key2, |details| {
-		let Some(d) = details else { return Err(Error::<T>::NotFound.into()); };
-		*d = CredentialEntry {
-			deposit: Deposit {
-				owner: d.deposit.owner.clone(),
-				amount: d.deposit.amount,
-			},
-			..d.clone()
-		};
-
-		switch_reserved_to_hold::<AccountIdOf<T>, CurrencyOf<T>>(
-			&d.deposit.owner,
-			&HoldReason::Deposit.into(),
-			d.deposit.amount.saturated_into(),
-		)
-	})
+	let Some(details) = Credentials::<T>::get(key, key2)  else { return Err(Error::<T>::NotFound.into()); };
+	switch_reserved_to_hold::<AccountIdOf<T>, CurrencyOf<T>>(
+		&details.deposit.owner,
+		&HoldReason::Deposit.into(),
+		details.deposit.amount.saturated_into(),
+	)
 }
 
 #[cfg(test)]

@@ -21,15 +21,14 @@ use frame_support::{
 	storage_alias,
 	traits::{Get, GetStorageVersion, OnRuntimeUpgrade, ReservableCurrency, StorageVersion},
 };
-use kilt_support::{migration::switch_reserved_to_hold, Deposit};
+use kilt_support::migration::switch_reserved_to_hold;
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_runtime::{AccountId32, SaturatedConversion};
 use sp_std::marker::PhantomData;
 
 use crate::{
-	linkable_account::LinkableAccountId, AccountIdOf, Config, ConnectedDids, ConnectionRecord, CurrencyOf, Error,
-	HoldReason, Pallet,
+	linkable_account::LinkableAccountId, AccountIdOf, Config, ConnectedDids, CurrencyOf, Error, HoldReason, Pallet,
 };
 
 /// A unified log target for did-lookup-migration operations.
@@ -123,23 +122,12 @@ pub fn update_balance_for_entry<T: Config>(key: &LinkableAccountId) -> DispatchR
 where
 	<T as Config>::Currency: ReservableCurrency<T::AccountId>,
 {
-	ConnectedDids::<T>::try_mutate(key, |details| {
-		let Some(d) = details else { return Err(Error::<T>::NotFound.into()); };
-
-		*d = ConnectionRecord {
-			deposit: Deposit {
-				owner: d.deposit.owner.clone(),
-				amount: d.deposit.amount,
-			},
-			..d.clone()
-		};
-
-		switch_reserved_to_hold::<AccountIdOf<T>, CurrencyOf<T>>(
-			&d.deposit.owner,
-			&HoldReason::Deposit.into(),
-			d.deposit.amount.saturated_into(),
-		)
-	})
+	let Some(details) = ConnectedDids::<T>::get(key)  else { return Err(Error::<T>::NotFound.into()); };
+	switch_reserved_to_hold::<AccountIdOf<T>, CurrencyOf<T>>(
+		&details.deposit.owner,
+		&HoldReason::Deposit.into(),
+		details.deposit.amount.saturated_into(),
+	)
 }
 
 #[cfg(test)]

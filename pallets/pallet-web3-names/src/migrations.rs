@@ -17,31 +17,21 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_support::{pallet_prelude::DispatchResult, traits::ReservableCurrency};
-use kilt_support::{migration::switch_reserved_to_hold, Deposit};
+use kilt_support::migration::switch_reserved_to_hold;
 use sp_runtime::SaturatedConversion;
 
-use crate::{web3_name::Web3NameOwnership, AccountIdOf, Config, CurrencyOf, Error, HoldReason, Owner, Web3NameOf};
+use crate::{AccountIdOf, Config, CurrencyOf, Error, HoldReason, Owner, Web3NameOf};
 
 pub fn update_balance_for_entry<T: Config>(key: &Web3NameOf<T>) -> DispatchResult
 where
 	<T as Config>::Currency: ReservableCurrency<T::AccountId>,
 {
-	Owner::<T>::try_mutate(key, |details| {
-		let Some(d) = details else { return Err(Error::<T>::NotFound.into()); };
-		*d = Web3NameOwnership {
-			deposit: Deposit {
-				owner: d.deposit.owner.clone(),
-				amount: d.deposit.amount,
-			},
-			..d.clone()
-		};
-
-		switch_reserved_to_hold::<AccountIdOf<T>, CurrencyOf<T>>(
-			&d.deposit.owner,
-			&HoldReason::Deposit.into(),
-			d.deposit.amount.saturated_into(),
-		)
-	})
+	let Some(details) = Owner::<T>::get(key)  else { return Err(Error::<T>::NotFound.into()); };
+	switch_reserved_to_hold::<AccountIdOf<T>, CurrencyOf<T>>(
+		&details.deposit.owner,
+		&HoldReason::Deposit.into(),
+		details.deposit.amount.saturated_into(),
+	)
 }
 
 #[cfg(test)]
