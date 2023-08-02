@@ -29,7 +29,6 @@ pub(crate) fn get_default_entries_to_migrate<T: Config>() -> EntriesToMigrate<T>
 		did: BoundedVec::default(),
 		lookup: BoundedVec::default(),
 		public_credentials: BoundedVec::default(),
-		staking: BoundedVec::default(),
 		w3n: BoundedVec::default(),
 	}
 }
@@ -105,12 +104,15 @@ pub mod runtime {
 
 	parameter_types! {
 		pub const MaxMigrationsPerPallet: u8 = 42;
+		pub const MaxKeyLength: u32 = 1000;
 	}
 
 	impl Config for Test {
 		type MaxMigrationsPerPallet = MaxMigrationsPerPallet;
+		type MaxKeyLength = MaxKeyLength;
 		type RuntimeEvent = ();
 		type WeightInfo = ();
+		type Currency = Balances;
 	}
 
 	parameter_types! {
@@ -162,6 +164,7 @@ pub mod runtime {
 		type AttesterId = SubjectId;
 		type AuthorizationId = SubjectId;
 		type AccessControl = MockAccessControl<Self>;
+		type MigrationManager = ();
 	}
 
 	parameter_types! {
@@ -238,6 +241,7 @@ pub mod runtime {
 		type Currency = Balances;
 		type Deposit = DepositMock;
 		type WeightInfo = ();
+		type MigrationManager = ();
 	}
 
 	parameter_types! {
@@ -298,6 +302,7 @@ pub mod runtime {
 		type MaxServiceUrlLength = MaxServiceUrlLength;
 		type MaxNumberOfTypesPerService = MaxNumberOfTypesPerService;
 		type MaxNumberOfUrlsPerService = MaxNumberOfUrlsPerService;
+		type MigrationManager = ();
 	}
 
 	parameter_types! {
@@ -313,6 +318,7 @@ pub mod runtime {
 		type OriginSuccess = mock_origin::DoubleOrigin<AccountId, SubjectId>;
 		type DidIdentifier = SubjectId;
 		type WeightInfo = ();
+		type MigrationManager = ();
 	}
 
 	pub(crate) type TestWeb3Name = AsciiWeb3Name<Test>;
@@ -342,6 +348,7 @@ pub mod runtime {
 		type Web3Name = TestWeb3Name;
 		type Web3NameOwner = TestWeb3NameOwner;
 		type WeightInfo = ();
+		type MigrationManager = ();
 	}
 
 	#[derive(
@@ -407,6 +414,7 @@ pub mod runtime {
 		type OriginSuccess = mock_origin::DoubleOrigin<AccountId, Self::AttesterId>;
 		type SubjectId = TestSubjectId;
 		type WeightInfo = ();
+		type MigrationManager = ();
 	}
 
 	pub(crate) type BlockNumber = u64;

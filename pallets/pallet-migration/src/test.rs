@@ -31,14 +31,12 @@ use did::{did_details::DidVerificationKey, mock_utils::generate_base_did_details
 use frame_support::{
 	assert_ok, assert_storage_noop,
 	traits::{
-		fungible::{Inspect, InspectFreeze, InspectHold},
+		fungible::{Inspect, InspectHold},
 		tokens::{Fortitude, Preservation},
-		LockableCurrency, WithdrawReasons,
 	},
 };
 use pallet_did_lookup::linkable_account::LinkableAccountId;
 use pallet_web3_names::{web3_name::AsciiWeb3Name, Web3NameOf};
-use parachain_staking::migrations::STAKING_ID;
 use public_credentials::{mock::generate_base_credential_entry, CredentialIdOf, SubjectIdOf};
 use sp_core::{ed25519, Pair};
 use sp_runtime::BoundedVec;
@@ -287,53 +285,6 @@ fn check_unsuccesful_migration() {
 				RuntimeOrigin::signed(ACCOUNT_00),
 				requested_migrations.clone()
 			));
-
-			// Nothing should happen now
-			assert_storage_noop!(
-				Migration::update_balance(RuntimeOrigin::signed(ACCOUNT_00), requested_migrations)
-					.expect("should not panic")
-			);
-		});
-}
-
-#[test]
-fn check_migration_staking() {
-	ExtBuilder::default()
-		.with_balances(vec![(ACCOUNT_00, KILT)])
-		.build()
-		.execute_with(|| {
-			// The user has locked balance with [STAKING_ID]
-			pallet_balances::Pallet::<Test>::set_lock(STAKING_ID, &ACCOUNT_00, MICRO_KILT, WithdrawReasons::all());
-
-			let locks_pre_migration = pallet_balances::Locks::<Test>::get(&ACCOUNT_00);
-
-			assert_eq!(locks_pre_migration.iter().count(), 1);
-			assert_eq!(locks_pre_migration[0].id, STAKING_ID);
-			assert_eq!(locks_pre_migration[0].amount, MICRO_KILT);
-
-			let mut requested_migrations = get_default_entries_to_migrate();
-
-			let staking: BoundedVec<AccountId, <Test as Config>::MaxMigrationsPerPallet> =
-				BoundedVec::try_from([ACCOUNT_00].to_vec()).expect("Vec init should not fail for staking");
-
-			requested_migrations.staking = staking;
-
-			assert_ok!(Migration::update_balance(
-				RuntimeOrigin::signed(ACCOUNT_00),
-				requested_migrations.clone()
-			));
-
-			// After the migration the lock should be gone
-			let locks_post_migration = pallet_balances::Locks::<Test>::get(&ACCOUNT_00);
-			assert_eq!(locks_post_migration.iter().count(), 0);
-
-			// ... and the balance is frozen
-			let frozen_balance = pallet_balances::Pallet::<Test>::balance_frozen(
-				&parachain_staking::FreezeReason::Staking.into(),
-				&ACCOUNT_00,
-			);
-
-			assert_eq!(frozen_balance, MICRO_KILT);
 
 			// Nothing should happen now
 			assert_storage_noop!(

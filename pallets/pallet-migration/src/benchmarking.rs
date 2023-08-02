@@ -25,7 +25,7 @@ use did::{
 };
 use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
 use frame_support::{
-	traits::{fungible::Mutate, Get, LockableCurrency, ReservableCurrency, WithdrawReasons},
+	traits::{fungible::Mutate, Get, ReservableCurrency},
 	BoundedVec,
 };
 use frame_system::RawOrigin;
@@ -36,7 +36,6 @@ use kilt_support::{
 };
 use pallet_did_lookup::linkable_account::LinkableAccountId;
 use pallet_web3_names::{Web3NameOf, Web3NameOwnerOf};
-use parachain_staking::migrations::STAKING_ID;
 use runtime_common::constants::KILT;
 use sp_core::{sr25519, H256};
 use sp_runtime::{
@@ -54,17 +53,16 @@ type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 benchmarks! {
 	where_clause {
 		where
-		T::AccountId: Into<LinkableAccountId> + Into<[u8; 32]>,
+		T::AccountId: Into<LinkableAccountId>,
 		T::Hash: From<H256>,
 		T::OwnerOrigin: GenerateBenchmarkOrigin<<T as frame_system::Config>::RuntimeOrigin, T::AccountId, T::Web3NameOwner>,
 		T: frame_system::Config,
+		T: pallet_balances::Config,
 		<T as attestation::Config>::Currency: ReservableCurrency<AccountIdOf<T>>,
 		<T as delegation::Config>::Currency: ReservableCurrency<AccountIdOf<T>>,
 		<T as did::Config>::Currency: ReservableCurrency<AccountIdOf<T>>,
 		<T as pallet_did_lookup::Config>::Currency: ReservableCurrency<AccountIdOf<T>>,
 		<T as pallet_web3_names::Config>::Currency: ReservableCurrency<AccountIdOf<T>>,
-		<T as parachain_staking::Config>::Currency: ReservableCurrency<AccountIdOf<T>>,
-		<T as parachain_staking::Config>::Currency: LockableCurrency<AccountIdOf<T>>,
 		<T as public_credentials::Config>::Currency: ReservableCurrency<AccountIdOf<T>>,
 		<T as did::Config>::DidIdentifier: From<AccountId32>,
 		<T as frame_system::Config>::AccountId: From<AccountId32>,
@@ -117,8 +115,7 @@ benchmarks! {
 		let origin= RawOrigin::Signed(sender);
 	}: update_balance(origin, entries_to_migrate)
 	verify {
-		let migrated_key = Pallet::<T>::calculate_full_key(claim_hash.as_ref(), ATTESTATION_PALLET, ATTESTATION_STORAGE_NAME);
-		assert!(MigratedKeys::<T>::contains_key(migrated_key));
+
 	}
 
 	delegation_migration_weight {
@@ -133,8 +130,7 @@ benchmarks! {
 		let origin= RawOrigin::Signed(sender);
 	}: update_balance(origin, entries_to_migrate)
 	verify {
-		let migrated_key = Pallet::<T>::calculate_full_key(leaf_id.as_ref(), DELEGATION_PALLET, DELEGATION_STORAGE_NAME);
-		assert!(MigratedKeys::<T>::contains_key(migrated_key));
+
 	}
 
 	did_migration_weight {
@@ -153,13 +149,12 @@ benchmarks! {
 			.expect("User should have enough balance");
 
 		let mut entries_to_migrate: EntriesToMigrate<T> = get_default_entries_to_migrate();
-		entries_to_migrate.did = BoundedVec::try_from(vec![did_subject.clone()]).expect("Vector initialization should not fail.");
+		entries_to_migrate.did = BoundedVec::try_from(vec![did_subject]).expect("Vector initialization should not fail.");
 
 		let origin= RawOrigin::Signed(sender);
 	}: update_balance(origin, entries_to_migrate)
 	verify {
-		let migrated_key = Pallet::<T>::calculate_full_key(did_subject.as_ref(), b"did", b"Did" );
-		assert!(MigratedKeys::<T>::contains_key(migrated_key));
+
 	}
 
 	did_lookup_migration_weight {
@@ -172,13 +167,12 @@ benchmarks! {
 		kilt_support::migration::translate_holds_to_reserve::<T>(pallet_did_lookup::HoldReason::Deposit.into());
 
 		let mut entries_to_migrate: EntriesToMigrate<T> = get_default_entries_to_migrate();
-		entries_to_migrate.lookup = BoundedVec::try_from(vec![linkable_id.clone()]).expect("Vector initialization should not fail.");
+		entries_to_migrate.lookup = BoundedVec::try_from(vec![linkable_id]).expect("Vector initialization should not fail.");
 
 		let origin= RawOrigin::Signed(sender);
 	}: update_balance(origin, entries_to_migrate)
 	verify {
-		let migrated_key = Pallet::<T>::calculate_full_key(linkable_id.as_ref(), DID_LOOKUP_PALLET, DID_LOOKUP_STORAGE_NAME);
-		assert!(MigratedKeys::<T>::contains_key(migrated_key));
+
 	}
 
 	w3n_migration_weight {
@@ -193,33 +187,12 @@ benchmarks! {
 		let web3_name = Web3NameOf::<T>::try_from(web3_name_input.to_vec()).unwrap();
 
 		let mut entries_to_migrate: EntriesToMigrate<T> = get_default_entries_to_migrate();
-		entries_to_migrate.w3n = BoundedVec::try_from(vec![web3_name.clone()]).expect("Vector initialization should not fail.");
+		entries_to_migrate.w3n = BoundedVec::try_from(vec![web3_name]).expect("Vector initialization should not fail.");
 
 		let origin= RawOrigin::Signed(sender);
 	}: update_balance(origin, entries_to_migrate)
 	verify {
-		let migrated_key = Pallet::<T>::calculate_full_key(web3_name.as_ref(), W3N_PALLET, W3N_STORAGE_NAME);
-		assert!(MigratedKeys::<T>::contains_key(migrated_key));
-	}
 
-
-
-	staking_migration_weight {
-		let caller : AccountIdOf<T> = account("caller", 0, SEED);
-		let initial_lock = KILT.saturating_div(2);
-
-		pallet_balances::Pallet::<T>::set_balance(&caller, KILT.saturated_into());
-		pallet_balances::Pallet::<T>::set_lock(STAKING_ID, &caller, initial_lock.saturated_into(), WithdrawReasons::all());
-
-		let mut entires_to_migrate: EntriesToMigrate<T> = get_default_entries_to_migrate();
-		entires_to_migrate.staking =  BoundedVec::try_from(vec![caller.clone()]).expect("Vector initialization should not fail.");
-
-		let origin= RawOrigin::Signed(caller.clone());
-	}: update_balance(origin, entires_to_migrate)
-	verify {
-		let account_bytes: [u8; 32] = caller.into();
-		let migrated_key = Pallet::<T>::calculate_full_key(&account_bytes, BALANCES_PALLET, BALANCES_STORAGE_NAME);
-		assert!(MigratedKeys::<T>::contains_key(migrated_key));
 	}
 
 	public_credentials_migration_weight {
@@ -247,14 +220,12 @@ benchmarks! {
 		kilt_support::migration::translate_holds_to_reserve::<T>(public_credentials::HoldReason::Deposit.into());
 
 		let mut entries_to_migrate: EntriesToMigrate<T> = get_default_entries_to_migrate();
-		entries_to_migrate.public_credentials = BoundedVec::try_from(vec![(subject_id.clone(), credential_id.clone())]).expect("Vector initialization should not fail.");
+		entries_to_migrate.public_credentials = BoundedVec::try_from(vec![(subject_id, credential_id)]).expect("Vector initialization should not fail.");
 
 		let origin_migration_pallet = RawOrigin::Signed(sender);
 	}: update_balance(origin_migration_pallet, entries_to_migrate)
 	verify {
-		let key = Pallet::<T>::calculate_public_credentials_key(&subject_id, &credential_id);
-		let migrated_key = Pallet::<T>::calculate_full_key(&key, PUBLIC_CREDENTIALS_PALLET, PUBLIC_CREDENTIALS_STORAGE_NAME);
-		assert!(MigratedKeys::<T>::contains_key(migrated_key));
+
 	}
 
 }

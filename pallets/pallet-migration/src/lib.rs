@@ -20,6 +20,7 @@
 
 pub use crate::default_weights::WeightInfo;
 pub use pallet::*;
+
 pub mod default_weights;
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -31,25 +32,27 @@ mod test;
 
 #[frame_support::pallet]
 pub mod pallet {
-	use attestation::ClaimHashOf;
-	use delegation::DelegationNodeIdOf;
-	use did::DidIdentifierOf;
+	use attestation::{Attestations, ClaimHashOf};
+	use core::fmt::Debug;
+	use delegation::{DelegationNodeIdOf, DelegationNodes};
+	use did::{Did, DidIdentifierOf};
 	use frame_support::{
 		pallet_prelude::*,
-		traits::{LockableCurrency, ReservableCurrency},
+		traits::{Currency, ReservableCurrency},
 	};
 	use frame_system::pallet_prelude::*;
-	use pallet_did_lookup::linkable_account::LinkableAccountId;
-	use pallet_web3_names::Web3NameOf;
-	use public_credentials::{CredentialIdOf, SubjectIdOf};
-	use sp_runtime::traits::Hash;
+	use kilt_support::traits::MigrationManager;
+	use pallet_did_lookup::{linkable_account::LinkableAccountId, ConnectedDids};
+	use pallet_web3_names::{Owner, Web3NameOf};
+	use public_credentials::{CredentialIdOf, Credentials, SubjectIdOf};
+	use sp_runtime::DispatchError;
 	use sp_std::vec::Vec;
 
 	use crate::default_weights::WeightInfo;
 
-	type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
+	pub(crate) type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 
-	type HashOf<T> = <T as frame_system::Config>::Hash;
+	pub(crate) type BalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::Balance;
 
 	#[derive(Encode, Decode, TypeInfo, Debug, Clone, PartialEq)]
 	pub struct EntriesToMigrate<T>
@@ -66,7 +69,6 @@ pub mod pallet {
 		pub did: BoundedVec<DidIdentifierOf<T>, <T as Config>::MaxMigrationsPerPallet>,
 		pub lookup: BoundedVec<LinkableAccountId, <T as Config>::MaxMigrationsPerPallet>,
 		pub w3n: BoundedVec<Web3NameOf<T>, <T as Config>::MaxMigrationsPerPallet>,
-		pub staking: BoundedVec<AccountIdOf<T>, <T as Config>::MaxMigrationsPerPallet>,
 		pub public_credentials: BoundedVec<(SubjectIdOf<T>, CredentialIdOf<T>), <T as Config>::MaxMigrationsPerPallet>,
 	}
 
@@ -78,7 +80,6 @@ pub mod pallet {
 		+ did::Config
 		+ pallet_did_lookup::Config
 		+ pallet_web3_names::Config
-		+ parachain_staking::Config
 		+ public_credentials::Config
 		+ TypeInfo
 	{
@@ -88,8 +89,20 @@ pub mod pallet {
 		#[pallet::constant]
 		type MaxMigrationsPerPallet: Get<u32>;
 
+		/// The max length of keys
+		#[pallet::constant]
+		type MaxKeyLength: Get<u32>;
+
 		/// Weight information for extrinsics in this pallet.
 		type WeightInfo: WeightInfo;
+
+		/// The currency module that takes care to release reserves
+		type Currency: ReservableCurrency<AccountIdOf<Self>>;
+	}
+
+	#[pallet::error]
+	pub enum Error<T> {
+		KeyParse,
 	}
 
 	#[pallet::pallet]
@@ -97,7 +110,7 @@ pub mod pallet {
 
 	#[pallet::storage]
 	#[pallet::getter(fn connected_dids)]
-	pub type MigratedKeys<T> = StorageMap<_, Blake2_128Concat, HashOf<T>, ()>;
+	pub type MigratedKeys<T> = StorageMap<_, Blake2_128Concat, BoundedVec<u8, <T as Config>::MaxKeyLength>, ()>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -108,24 +121,6 @@ pub mod pallet {
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {}
 
-	// Some constants to distinguish between the different pallets
-	pub(crate) const ATTESTATION_PALLET: &[u8] = b"attestation";
-	pub(crate) const DELEGATION_PALLET: &[u8] = b"delegation";
-	pub(crate) const DID_PALLET: &[u8] = b"did";
-	pub(crate) const DID_LOOKUP_PALLET: &[u8] = b"pallet-did-lookup";
-	pub(crate) const W3N_PALLET: &[u8] = b"pallet-web3-names";
-	pub(crate) const BALANCES_PALLET: &[u8] = b"pallet-balances";
-	pub(crate) const PUBLIC_CREDENTIALS_PALLET: &[u8] = b"public-credentials";
-
-	// Some constants to distinguish between the different storage maps.
-	pub(crate) const ATTESTATION_STORAGE_NAME: &[u8] = b"Attestations";
-	pub(crate) const DELEGATION_STORAGE_NAME: &[u8] = b"DelegationNodes";
-	pub(crate) const DID_STORAGE_NAME: &[u8] = b"Did";
-	pub(crate) const DID_LOOKUP_STORAGE_NAME: &[u8] = b"ConnectedDids";
-	pub(crate) const W3N_STORAGE_NAME: &[u8] = b"Owner";
-	pub(crate) const BALANCES_STORAGE_NAME: &[u8] = b"Reserves";
-	pub(crate) const PUBLIC_CREDENTIALS_STORAGE_NAME: &[u8] = b"Credentials";
-
 	#[pallet::call]
 	impl<T: Config> Pallet<T>
 	where
@@ -134,10 +129,7 @@ pub mod pallet {
 		<T as did::Config>::Currency: ReservableCurrency<AccountIdOf<T>>,
 		<T as pallet_did_lookup::Config>::Currency: ReservableCurrency<AccountIdOf<T>>,
 		<T as pallet_web3_names::Config>::Currency: ReservableCurrency<AccountIdOf<T>>,
-		<T as parachain_staking::Config>::Currency: ReservableCurrency<AccountIdOf<T>>,
-		<T as parachain_staking::Config>::Currency: LockableCurrency<AccountIdOf<T>>,
 		<T as public_credentials::Config>::Currency: ReservableCurrency<AccountIdOf<T>>,
-		<T as frame_system::Config>::AccountId: Into<[u8; 32]>,
 	{
 		#[pallet::call_index(0)]
 		#[pallet::weight({
@@ -147,59 +139,61 @@ pub mod pallet {
 		pub fn update_balance(origin: OriginFor<T>, requested_migrations: EntriesToMigrate<T>) -> DispatchResult {
 			ensure_signed(origin)?;
 
-			requested_migrations
-				.attestation
-				.iter()
-				.filter(|key| Self::is_key_already_migrated(key.as_ref(), ATTESTATION_PALLET, ATTESTATION_STORAGE_NAME))
-				.try_for_each(|attestation_hash| {
-					attestation::migrations::update_balance_for_entry::<T>(attestation_hash)
-				})?;
+			requested_migrations.attestation.iter().try_for_each(|key| {
+				let is_migrated = Self::is_key_migrated(Attestations::<T>::hashed_key_for(key))?;
+				if !is_migrated {
+					attestation::migrations::update_balance_for_entry::<T>(key)
+				} else {
+					Ok(())
+				}
+			})?;
 
-			requested_migrations
-				.delegation
-				.iter()
-				.filter(|key| Self::is_key_already_migrated(key.as_ref(), DELEGATION_PALLET, DELEGATION_STORAGE_NAME))
-				.try_for_each(|delegation_hash| {
-					delegation::migrations::update_balance_for_entry::<T>(delegation_hash)
-				})?;
+			requested_migrations.delegation.iter().try_for_each(|key| {
+				let is_migrated = Self::is_key_migrated(DelegationNodes::<T>::hashed_key_for(key))?;
+				if !is_migrated {
+					delegation::migrations::update_balance_for_entry::<T>(key)
+				} else {
+					Ok(())
+				}
+			})?;
 
-			requested_migrations
-				.did
-				.iter()
-				.filter(|key| Self::is_key_already_migrated(key.as_ref(), DID_PALLET, DID_STORAGE_NAME))
-				.try_for_each(|did_hash| did::migrations::update_balance_for_entry::<T>(did_hash))?;
+			requested_migrations.did.iter().try_for_each(|key| {
+				let is_migrated = Self::is_key_migrated(Did::<T>::hashed_key_for(key))?;
+				if !is_migrated {
+					did::migrations::update_balance_for_entry::<T>(key)
+				} else {
+					Ok(())
+				}
+			})?;
 
-			requested_migrations
-				.lookup
-				.iter()
-				.filter(|key| Self::is_key_already_migrated(key.as_ref(), DID_LOOKUP_PALLET, DID_LOOKUP_STORAGE_NAME))
-				.try_for_each(|did_lookup_hash| {
-					pallet_did_lookup::migrations::update_balance_for_entry::<T>(did_lookup_hash)
-				})?;
+			requested_migrations.lookup.iter().try_for_each(|key| {
+				let is_migrated = Self::is_key_migrated(ConnectedDids::<T>::hashed_key_for(key))?;
+				if !is_migrated {
+					pallet_did_lookup::migrations::update_balance_for_entry::<T>(key)
+				} else {
+					Ok(())
+				}
+			})?;
 
-			requested_migrations
-				.w3n
-				.iter()
-				.filter(|key| Self::is_key_already_migrated(key.as_ref(), W3N_PALLET, W3N_STORAGE_NAME))
-				.try_for_each(|w3n| pallet_web3_names::migrations::update_balance_for_entry::<T>(w3n))?;
-
-			requested_migrations
-				.staking
-				.iter()
-				.filter(|&key| {
-					let account_bytes: [u8; 32] = key.clone().into();
-					Self::is_key_already_migrated(&account_bytes, BALANCES_PALLET, BALANCES_STORAGE_NAME)
-				})
-				.try_for_each(|account| parachain_staking::migrations::update_or_create_freeze::<T>(account))?;
+			requested_migrations.w3n.iter().try_for_each(|key| {
+				let is_migrated = Self::is_key_migrated(Owner::<T>::hashed_key_for(key))?;
+				if !is_migrated {
+					pallet_web3_names::migrations::update_balance_for_entry::<T>(key)
+				} else {
+					Ok(())
+				}
+			})?;
 
 			requested_migrations
 				.public_credentials
 				.iter()
-				.filter(|(subject_id, credential_id)| {
-					Self::filter_disclosure_public_credentials(subject_id, credential_id)
-				})
-				.try_for_each(|(subject_id, credential_id)| {
-					public_credentials::migrations::update_balance_for_entry::<T>(subject_id, credential_id)
+				.try_for_each(|(key, key2)| {
+					let is_migrated = Self::is_key_migrated(Credentials::<T>::hashed_key_for(key, key2))?;
+					if !is_migrated {
+						public_credentials::migrations::update_balance_for_entry::<T>(key, key2)
+					} else {
+						Ok(())
+					}
 				})?;
 
 			Self::deposit_event(Event::EntriesUpdated(requested_migrations));
@@ -209,44 +203,31 @@ pub mod pallet {
 	}
 
 	impl<T: Config> Pallet<T> {
-		pub fn calculate_full_key(storage_key: &[u8], pallet_name: &[u8], storage_name: &[u8]) -> HashOf<T> {
-			let vec_capacity = storage_key.len() + pallet_name.len() + storage_name.len();
-			let mut full_key: Vec<u8> = Vec::with_capacity(vec_capacity);
-			full_key.extend_from_slice(storage_key);
-			full_key.extend_from_slice(pallet_name);
-			full_key.extend_from_slice(storage_name);
-			<T as frame_system::Config>::Hashing::hash_of(&full_key)
-		}
+		fn is_key_migrated(key: Vec<u8>) -> Result<bool, DispatchError> {
+			let Ok(full_key) = BoundedVec::try_from(key) else {return Err(Error::<T>::KeyParse.into());};
 
-		fn is_key_already_migrated(key: &[u8], pallet_name: &[u8], storage_name: &[u8]) -> bool {
-			let full_key = Self::calculate_full_key(key, pallet_name, storage_name);
-			if MigratedKeys::<T>::contains_key(full_key) {
-				return false;
+			if MigratedKeys::<T>::contains_key(&full_key) {
+				return Ok(true);
 			}
 			MigratedKeys::<T>::insert(full_key, ());
-			true
+			Ok(false)
+		}
+	}
+
+	impl<T: Config> MigrationManager<AccountIdOf<T>, BalanceOf<T>> for Pallet<T> {
+		fn exclude_key_from_migration(key: Vec<u8>) -> Result<(), DispatchError> {
+			let Ok(full_key) = BoundedVec::try_from(key) else {return Err(Error::<T>::KeyParse.into());};
+			MigratedKeys::<T>::insert(full_key, ());
+			Ok(())
 		}
 
-		pub fn calculate_public_credentials_key(
-			subject_id: &<T as public_credentials::Config>::SubjectId,
-			credential_id: &<T as public_credentials::Config>::CredentialId,
-		) -> Vec<u8> {
-			let subject_id_encoded = subject_id.encode();
-			let subject_id_ref: &[u8] = subject_id_encoded.as_ref();
-			let credential_id_ref = credential_id.as_ref();
-			let vec_capacity = subject_id_ref.len() + credential_id_ref.len();
-			let mut key: Vec<u8> = Vec::with_capacity(vec_capacity);
-			key.extend_from_slice(subject_id_ref);
-			key.extend_from_slice(credential_id_ref);
-			key
+		fn is_key_migrated(key: Vec<u8>) -> Result<bool, DispatchError> {
+			let Ok(full_key) = BoundedVec::try_from(key) else {return Err(Error::<T>::KeyParse.into());};
+			Ok(MigratedKeys::<T>::contains_key(full_key))
 		}
 
-		fn filter_disclosure_public_credentials(
-			subject_id: &<T as public_credentials::Config>::SubjectId,
-			credential_id: &<T as public_credentials::Config>::CredentialId,
-		) -> bool {
-			let key = Self::calculate_public_credentials_key(subject_id, credential_id);
-			Self::is_key_already_migrated(key.as_ref(), PUBLIC_CREDENTIALS_PALLET, PUBLIC_CREDENTIALS_STORAGE_NAME)
+		fn release_reserved_deposit(user: &AccountIdOf<T>, balance: &BalanceOf<T>) {
+			<<T as Config>::Currency as ReservableCurrency<AccountIdOf<T>>>::unreserve(user, *balance);
 		}
 	}
 }
