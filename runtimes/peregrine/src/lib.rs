@@ -189,10 +189,14 @@ impl pallet_multisig::Config for Runtime {
 
 parameter_types! {
 	pub const  MaxMigrationsPerPallet: u32 = 100;
+	//TODO: Placeholder once everything is fine, calculcate the exact max key length.
+	pub const  MaxKeyLength: u32 = 1000;
 }
 
 impl pallet_migration::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
+	type Currency = Balances;
+	type MaxKeyLength = MaxKeyLength;
 	type MaxMigrationsPerPallet = MaxMigrationsPerPallet;
 	type WeightInfo = weights::pallet_migration::WeightInfo<Runtime>;
 }
