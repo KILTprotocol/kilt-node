@@ -23,7 +23,10 @@ use frame_support::{
 	traits::Get,
 	RuntimeDebug,
 };
-use kilt_support::{traits::StorageDepositCollector, Deposit};
+use kilt_support::{
+	traits::{MigrationManager, StorageDepositCollector},
+	Deposit,
+};
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen, WrapperTypeEncode};
 use scale_info::TypeInfo;
 use sp_core::{ecdsa, ed25519, sr25519};
@@ -35,7 +38,7 @@ use sp_std::{convert::TryInto, vec::Vec};
 
 use crate::{
 	errors::{self, DidError},
-	utils, AccountIdOf, BalanceOf, BlockNumberOf, Config, DidAuthorizedCallOperationOf, DidCreationDetailsOf,
+	utils, AccountIdOf, BalanceOf, BlockNumberOf, Config, Did, DidAuthorizedCallOperationOf, DidCreationDetailsOf,
 	DidDepositCollector, DidEndpointsCount, DidIdentifierOf, KeyIdOf, Payload,
 };
 
@@ -349,10 +352,18 @@ impl<T: Config> DidDetails<T> {
 			Ordering::Less => {
 				let deposit_to_release = self.deposit.amount.saturating_sub(new_required_deposit);
 
-				DidDepositCollector::<T>::free_deposit(Deposit {
-					owner: self.deposit.owner.clone(),
-					amount: deposit_to_release,
-				})?;
+				let is_key_migrated =
+					<T as Config>::MigrationManager::is_key_migrated(Did::<T>::hashed_key_for(did_subject))?;
+
+				if is_key_migrated {
+					DidDepositCollector::<T>::free_deposit(Deposit {
+						owner: self.deposit.owner.clone(),
+						amount: deposit_to_release,
+					})?;
+				} else {
+					<T as Config>::MigrationManager::release_reserved_deposit(&self.deposit.owner, &deposit_to_release);
+				}
+
 				self.deposit.amount = self.deposit.amount.saturating_sub(deposit_to_release);
 			}
 			_ => (),
@@ -398,6 +409,7 @@ impl<T: Config> DidDetails<T> {
 		new_did_details.deposit.amount = deposit_amount;
 
 		DidDepositCollector::<T>::create_deposit(details.submitter, deposit_amount)?;
+		<T as Config>::MigrationManager::exclude_key_from_migration(Did::<T>::hashed_key_for(did_subject))?;
 
 		Ok(new_did_details)
 	}
