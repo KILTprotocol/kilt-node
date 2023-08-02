@@ -173,6 +173,7 @@ pub(crate) mod runtime {
 		type Web3Name = TestWeb3Name;
 		type Web3NameOwner = TestWeb3NameOwner;
 		type WeightInfo = ();
+		type MigrationManager = ();
 	}
 
 	impl mock_origin::Config for Test {

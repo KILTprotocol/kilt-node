@@ -313,6 +313,7 @@ pub(crate) mod runtime {
 		type RuntimeHoldReason = RuntimeHoldReason;
 		type RuntimeEvent = ();
 		type WeightInfo = ();
+		type MigrationManager = ();
 
 		type Currency = Balances;
 		type Deposit = Deposit;
@@ -349,6 +350,7 @@ pub(crate) mod runtime {
 		type Currency = Balances;
 		type Deposit = DepositMock;
 		type WeightInfo = ();
+		type MigrationManager = ();
 	}
 
 	pub(crate) const ACCOUNT_00: AccountId = AccountId::new([1u8; 32]);

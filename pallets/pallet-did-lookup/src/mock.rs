@@ -117,6 +117,7 @@ parameter_types! {
 }
 
 impl pallet_did_lookup::Config for Test {
+	type MigrationManager = ();
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeHoldReason = RuntimeHoldReason;
 	type Currency = Balances;

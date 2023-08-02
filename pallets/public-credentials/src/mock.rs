@@ -366,6 +366,7 @@ pub(crate) mod runtime {
 		type OriginSuccess = mock_origin::DoubleOrigin<AccountId, Self::AttesterId>;
 		type SubjectId = TestSubjectId;
 		type WeightInfo = ();
+		type MigrationManager = ();
 	}
 
 	pub(crate) const ACCOUNT_00: AccountId = AccountId::new([1u8; 32]);
