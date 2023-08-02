@@ -48,6 +48,7 @@ pub fn switch_reserved_to_hold<AccountId, Currency: ReservableCurrency<AccountId
 	Currency::hold(reason, owner, to_hold_balance.saturated_into())
 }
 
+#[cfg(any(feature = "mock", feature = "runtime-benchmarks"))]
 pub fn translate_holds_to_reserve<T: Config>(hold_id: T::HoldIdentifier)
 where
 	T: Config,
