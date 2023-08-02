@@ -104,7 +104,7 @@ impl<AccountId, Balance> MigrationManager<AccountId, Balance> for () {
 	}
 
 	fn is_key_migrated(_key: Vec<u8>) -> Result<bool, DispatchError> {
-		Ok(false)
+		Ok(true)
 	}
 
 	fn release_reserved_deposit(_user: &AccountId, _balance: &Balance) {}
