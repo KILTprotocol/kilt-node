@@ -98,7 +98,7 @@ pub mod pallet {
 
 	use ctype::CtypeHashOf;
 	use kilt_support::{
-		traits::{CallSources, StorageDepositCollector},
+		traits::{CallSources, MigrationManager, StorageDepositCollector},
 		Deposit,
 	};
 
@@ -160,6 +160,9 @@ pub mod pallet {
 
 		type AccessControl: Parameter
 			+ AttestationAccessControl<Self::AttesterId, Self::AuthorizationId, CtypeHashOf<Self>, ClaimHashOf<Self>>;
+
+		/// Migration manager to handle new created entries
+		type MigrationManager: MigrationManager<AccountIdOf<Self>, BalanceOf<Self>>;
 	}
 
 	#[pallet::pallet]
@@ -287,6 +290,7 @@ pub mod pallet {
 			let authorization_id = authorization.as_ref().map(|ac| ac.authorization_id());
 
 			let deposit = AttestationStorageDepositCollector::<T>::create_deposit(payer, deposit_amount)?;
+			<T as Config>::MigrationManager::exclude_key_from_migration(Attestations::<T>::hashed_key_for(claim_hash))?;
 
 			log::debug!("insert Attestation");
 
@@ -483,7 +487,17 @@ pub mod pallet {
 
 	impl<T: Config> Pallet<T> {
 		fn remove_attestation(attestation: AttestationDetailsOf<T>, claim_hash: ClaimHashOf<T>) -> DispatchResult {
-			AttestationStorageDepositCollector::<T>::free_deposit(attestation.deposit)?;
+			let is_key_migrated =
+				<T as Config>::MigrationManager::is_key_migrated(Attestations::<T>::hashed_key_for(claim_hash))?;
+			if is_key_migrated {
+				AttestationStorageDepositCollector::<T>::free_deposit(attestation.deposit)?;
+			} else {
+				<T as Config>::MigrationManager::release_reserved_deposit(
+					&attestation.deposit.owner,
+					&attestation.deposit.amount,
+				)
+			}
+
 			Attestations::<T>::remove(claim_hash);
 			if let Some(authorization_id) = &attestation.authorization_id {
 				ExternalAttestations::<T>::remove(authorization_id, claim_hash);

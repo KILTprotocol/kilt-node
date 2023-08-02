@@ -149,7 +149,7 @@ pub mod pallet {
 	};
 	use frame_system::pallet_prelude::*;
 	use kilt_support::{
-		traits::{CallSources, StorageDepositCollector},
+		traits::{CallSources, MigrationManager, StorageDepositCollector},
 		Deposit,
 	};
 	use service_endpoints::DidEndpoint;
@@ -213,7 +213,7 @@ pub mod pallet {
 			+ DeriveDidCallAuthorizationVerificationKeyRelationship;
 
 		/// Type for a DID subject identifier.
-		type DidIdentifier: Parameter + DidVerifiableIdentifier + MaxEncodedLen + AsRef<[u8]>;
+		type DidIdentifier: Parameter + DidVerifiableIdentifier + MaxEncodedLen;
 
 		/// Origin type expected by the proxied dispatchable calls.
 		#[cfg(not(feature = "runtime-benchmarks"))]
@@ -315,6 +315,9 @@ pub mod pallet {
 
 		/// Weight information for extrinsics in this pallet.
 		type WeightInfo: WeightInfo;
+
+		/// Migration manager to handle new created entries
+		type MigrationManager: MigrationManager<AccountIdOf<Self>, BalanceOf<Self>>;
 	}
 
 	#[pallet::pallet]
@@ -1262,7 +1265,17 @@ pub mod pallet {
 			let did_entry = Did::<T>::take(&did_subject).ok_or(Error::<T>::NotFound)?;
 
 			DidEndpointsCount::<T>::remove(&did_subject);
-			DidDepositCollector::<T>::free_deposit(did_entry.deposit)?;
+
+			let is_key_migrated =
+				<T as Config>::MigrationManager::is_key_migrated(Did::<T>::hashed_key_for(did_subject.clone()))?;
+			if is_key_migrated {
+				DidDepositCollector::<T>::free_deposit(did_entry.deposit)?;
+			} else {
+				<T as Config>::MigrationManager::release_reserved_deposit(
+					&did_entry.deposit.owner,
+					&did_entry.deposit.amount,
+				)
+			}
 			// Mark as deleted to prevent potential replay-attacks of re-adding a previously
 			// deleted DID.
 			DidBlacklist::<T>::insert(&did_subject, ());

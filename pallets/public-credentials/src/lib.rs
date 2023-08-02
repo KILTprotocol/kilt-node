@@ -64,6 +64,7 @@ pub mod pallet {
 		Parameter,
 	};
 	use frame_system::pallet_prelude::*;
+	use kilt_support::traits::MigrationManager;
 	use sp_runtime::traits::{Hash, SaturatedConversion};
 	use sp_std::{boxed::Box, vec::Vec};
 
@@ -142,7 +143,7 @@ pub mod pallet {
 		/// credential content.
 		type CredentialHash: Hash<Output = Self::CredentialId>;
 		/// The type of a credential identifier.
-		type CredentialId: Parameter + MaxEncodedLen + AsRef<[u8]>;
+		type CredentialId: Parameter + MaxEncodedLen;
 		/// The currency that is used to reserve funds for each credential.
 		type Currency: MutateHold<AccountIdOf<Self>, Reason = Self::RuntimeHoldReason>;
 		/// The type of the origin when successfully converted from the outer
@@ -167,6 +168,9 @@ pub mod pallet {
 		/// identifier.
 		#[pallet::constant]
 		type MaxSubjectIdLength: Get<u32>;
+
+		/// Migration manager to handle new created entries
+		type MigrationManager: MigrationManager<AccountIdOf<Self>, BalanceOf<Self>>;
 	}
 
 	#[pallet::pallet]
@@ -304,6 +308,11 @@ pub mod pallet {
 
 			let deposit = PublicCredentialDepositCollector::<T>::create_deposit(payer, deposit_amount)
 				.map_err(|_| Error::<T>::UnableToPayFees)?;
+
+			<T as Config>::MigrationManager::exclude_key_from_migration(Credentials::<T>::hashed_key_for(
+				&subject,
+				&credential_id,
+			))?;
 
 			let block_number = frame_system::Pallet::<T>::block_number();
 
@@ -547,9 +556,21 @@ pub mod pallet {
 			credential_id: CredentialIdOf<T>,
 			credential: CredentialEntryOf<T>,
 		) -> DispatchResult {
-			PublicCredentialDepositCollector::<T>::free_deposit(credential.deposit)?;
-			Credentials::<T>::remove(&credential_subject, &credential_id);
+			let Some(details) = Credentials::<T>::take(&credential_subject, &credential_id) else { return Err(Error::<T>::NotFound.into()); } ;
 			CredentialSubjects::<T>::remove(&credential_id);
+
+			let is_key_migrated = <T as Config>::MigrationManager::is_key_migrated(Credentials::<T>::hashed_key_for(
+				&credential_subject,
+				&credential_id,
+			))?;
+			if is_key_migrated {
+				PublicCredentialDepositCollector::<T>::free_deposit(credential.deposit)?;
+			} else {
+				<T as Config>::MigrationManager::release_reserved_deposit(
+					&details.deposit.owner,
+					&details.deposit.amount,
+				);
+			}
 
 			Self::deposit_event(Event::CredentialRemoved {
 				subject_id: credential_subject,

@@ -83,7 +83,7 @@ mod try_state;
 pub use crate::{access_control::DelegationAc, default_weights::WeightInfo, delegation_hierarchy::*, pallet::*};
 
 use frame_support::{dispatch::DispatchResult, ensure, pallet_prelude::Weight, traits::Get};
-use kilt_support::traits::StorageDepositCollector;
+use kilt_support::traits::{MigrationManager, StorageDepositCollector};
 use parity_scale_codec::Encode;
 use sp_runtime::{traits::Hash, DispatchError};
 use sp_std::{marker::PhantomData, vec::Vec};
@@ -194,6 +194,9 @@ pub mod pallet {
 		/// `2 ^ MaxParentChecks`.
 		#[pallet::constant]
 		type MaxChildren: Get<u32> + Clone + TypeInfo;
+
+		/// Migration manager to handle new created entries
+		type MigrationManager: MigrationManager<AccountIdOf<Self>, BalanceOf<Self>>;
 	}
 
 	#[pallet::pallet]
@@ -744,6 +747,7 @@ pub mod pallet {
 			deposit_owner: AccountIdOf<T>,
 		) -> DispatchResult {
 			DelegationDepositCollector::<T>::create_deposit(deposit_owner.clone(), <T as Config>::Deposit::get())?;
+			<T as Config>::MigrationManager::exclude_key_from_migration(DelegationNodes::<T>::hashed_key_for(root_id))?;
 
 			let root_node = DelegationNode::new_root_node(
 				root_id,
@@ -771,6 +775,9 @@ pub mod pallet {
 			deposit_owner: AccountIdOf<T>,
 		) -> DispatchResult {
 			DelegationDepositCollector::<T>::create_deposit(deposit_owner, <T as Config>::Deposit::get())?;
+			<T as Config>::MigrationManager::exclude_key_from_migration(DelegationNodes::<T>::hashed_key_for(
+				delegation_id,
+			))?;
 
 			// Add the new node as a child of that node
 			parent_node
@@ -983,7 +990,17 @@ pub mod pallet {
 			// We can clear storage now that all children have been removed
 			DelegationNodes::<T>::remove(*delegation);
 
-			DelegationDepositCollector::<T>::free_deposit(delegation_node.clone().deposit)?;
+			let is_key_migrated =
+				<T as Config>::MigrationManager::is_key_migrated(DelegationNodes::<T>::hashed_key_for(delegation))?;
+			if is_key_migrated {
+				DelegationDepositCollector::<T>::free_deposit(delegation_node.clone().deposit)?;
+			} else {
+				<T as Config>::MigrationManager::release_reserved_deposit(
+					&delegation_node.deposit.owner,
+					&delegation_node.deposit.amount,
+				);
+			}
+
 			consumed_weight = consumed_weight.saturating_add(T::DbWeight::get().reads_writes(1, 2));
 
 			// Deposit event that the delegation has been removed

@@ -57,7 +57,7 @@ pub mod pallet {
 	use sp_std::{fmt::Debug, vec::Vec};
 
 	use kilt_support::{
-		traits::{CallSources, StorageDepositCollector},
+		traits::{CallSources, MigrationManager, StorageDepositCollector},
 		Deposit,
 	};
 
@@ -133,12 +133,14 @@ pub mod pallet {
 			+ Clone
 			+ TypeInfo
 			+ TryFrom<Vec<u8>, Error = Error<Self>>
-			+ MaxEncodedLen
-			+ AsRef<[u8]>;
+			+ MaxEncodedLen;
 		/// The type of a name owner.
 		type Web3NameOwner: Parameter + MaxEncodedLen;
 		/// Weight information for extrinsics in this pallet.
 		type WeightInfo: WeightInfo;
+
+		/// Migration manager to handle new created entries
+		type MigrationManager: MigrationManager<AccountIdOf<Self>, BalanceOf<Self>>;
 	}
 
 	#[pallet::event]
@@ -424,7 +426,9 @@ pub mod pallet {
 			deposit_payer: AccountIdOf<T>,
 		) -> DispatchResult {
 			let block_number = frame_system::Pallet::<T>::block_number();
+
 			let deposit = Web3NameStorageDepositCollector::<T>::create_deposit(deposit_payer, T::Deposit::get())?;
+			<T as Config>::MigrationManager::exclude_key_from_migration(Owner::<T>::hashed_key_for(&name))?;
 
 			Names::<T>::insert(&owner, name.clone());
 			Owner::<T>::insert(
@@ -472,8 +476,18 @@ pub mod pallet {
 			let name_ownership = Owner::<T>::take(name).unwrap();
 			Names::<T>::remove(&name_ownership.owner);
 
+			let is_key_migrated = <T as Config>::MigrationManager::is_key_migrated(Owner::<T>::hashed_key_for(name))?;
+
+			if is_key_migrated {
+				Web3NameStorageDepositCollector::<T>::free_deposit(name_ownership.clone().deposit)?;
+			} else {
+				<T as Config>::MigrationManager::release_reserved_deposit(
+					&name_ownership.deposit.owner,
+					&name_ownership.deposit.amount,
+				)
+			}
+
 			// Should never fail since we checked in the preconditions
-			Web3NameStorageDepositCollector::<T>::free_deposit(name_ownership.clone().deposit)?;
 
 			Ok(name_ownership)
 		}
