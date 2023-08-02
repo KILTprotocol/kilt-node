@@ -26,13 +26,17 @@ kilt-support.workspace = true
 parachain-staking.workspace = true
 public-credentials.workspace = true
 
-
 # Substrate dependencies
+cumulus-pallet-parachain-system.workspace = true
+cumulus-pallet-dmp-queue.workspace = true
+cumulus-pallet-xcmp-queue.workspace = true
 frame-support.workspace = true
 frame-system.workspace = true
 pallet-authorship.workspace = true
 pallet-balances.workspace = true
 pallet-membership.workspace = true
+pallet-multisig.workspace = true
+pallet-tips.workspace = true
 pallet-transaction-payment.workspace = true
 pallet-treasury.workspace = true
 sp-consensus-aura.workspace = true
@@ -54,13 +58,17 @@ xcm.workspace = true
 default = ["std"]
 fast-gov = []
 runtime-benchmarks = [
+  "cumulus-pallet-parachain-system/runtime-benchmarks",
+  "cumulus-pallet-xcmp-queue/runtime-benchmarks",
   "attestation/runtime-benchmarks",
   "frame-support/runtime-benchmarks",
   "frame-system/runtime-benchmarks",
   "kilt-support/runtime-benchmarks",
   "pallet-balances/runtime-benchmarks",
   "pallet-membership/runtime-benchmarks",
+  "pallet-multisig/runtime-benchmarks",
   "pallet-treasury/runtime-benchmarks",
+  "pallet-tips/runtime-benchmarks",
   "polkadot-parachain/runtime-benchmarks",
   "public-credentials/runtime-benchmarks",
   "sp-runtime/runtime-benchmarks",
@@ -68,8 +76,11 @@ runtime-benchmarks = [
   "xcm-executor/runtime-benchmarks",
 ]
 std = [
+  "cumulus-pallet-parachain-system/std",
+  "cumulus-pallet-dmp-queue/std",
+  "cumulus-pallet-xcmp-queue/std",
   "attestation/std",
-  "parity-scale-codec/std", 
+  "parity-scale-codec/std",
   "cumulus-primitives-core/std",
   "frame-support/std",
   "frame-system/std",
@@ -78,9 +89,11 @@ std = [
   "log/std",
   "pallet-authorship/std",
   "pallet-balances/std",
+  "pallet-multisig/std",
   "pallet-membership/std",
   "pallet-transaction-payment/std",
   "pallet-treasury/std",
+  "pallet-tips/std",
   "parachain-staking/std",
   "polkadot-parachain/std",
   "public-credentials/std",
@@ -95,6 +108,9 @@ std = [
   "xcm/std",
 ]
 try-runtime = [
+  "cumulus-pallet-parachain-system/try-runtime",
+  "cumulus-pallet-dmp-queue/try-runtime",
+  "cumulus-pallet-xcmp-queue/try-runtime",
   "attestation/try-runtime",
   "frame-support/try-runtime",
   "frame-system/try-runtime",
@@ -102,7 +118,9 @@ try-runtime = [
   "pallet-authorship/try-runtime",
   "pallet-balances/try-runtime",
   "pallet-membership/try-runtime",
+  "pallet-multisig/try-runtime",
   "pallet-transaction-payment/try-runtime",
+  "pallet-treasury/try-runtime",
   "pallet-treasury/try-runtime",
   "parachain-staking/try-runtime",
   "public-credentials/try-runtime",

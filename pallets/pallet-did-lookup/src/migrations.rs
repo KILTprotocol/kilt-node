@@ -27,6 +27,9 @@ use scale_info::TypeInfo;
 use sp_runtime::{AccountId32, SaturatedConversion};
 use sp_std::marker::PhantomData;
 
+#[cfg(feature = "try-runtime")]
+use sp_runtime::TryRuntimeError;
+
 use crate::{
 	linkable_account::LinkableAccountId, AccountIdOf, Config, ConnectedDids, CurrencyOf, Error, HoldReason, Pallet,
 };
@@ -88,7 +91,7 @@ impl<T: crate::pallet::Config> OnRuntimeUpgrade for CleanupMigration<T> {
 	}
 
 	#[cfg(feature = "try-runtime")]
-	fn pre_upgrade() -> Result<sp_std::vec::Vec<u8>, &'static str> {
+	fn pre_upgrade() -> Result<sp_std::vec::Vec<u8>, TryRuntimeError> {
 		use sp_std::vec;
 
 		assert_eq!(
@@ -104,7 +107,7 @@ impl<T: crate::pallet::Config> OnRuntimeUpgrade for CleanupMigration<T> {
 	}
 
 	#[cfg(feature = "try-runtime")]
-	fn post_upgrade(_pre_state: sp_std::vec::Vec<u8>) -> Result<(), &'static str> {
+	fn post_upgrade(_pre_state: sp_std::vec::Vec<u8>) -> Result<(), TryRuntimeError> {
 		assert_eq!(
 			Pallet::<T>::on_chain_storage_version(),
 			StorageVersion::new(4),

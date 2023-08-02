@@ -17,9 +17,10 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use scale_info::prelude::string::String;
+use sp_runtime::TryRuntimeError;
 
 /// Logs the error message and returns "Sanity test error"
-pub fn log_and_return_error_message(error_message: String) -> &'static str {
+pub fn log_and_return_error_message(error_message: String) -> TryRuntimeError {
 	log::error!("{}", error_message);
-	"Test error"
+	TryRuntimeError::Other("Test")
 }

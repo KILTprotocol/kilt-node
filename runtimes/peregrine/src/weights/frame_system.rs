@@ -52,6 +52,11 @@ use sp_std::marker::PhantomData;
 /// Weight functions for `frame_system`.
 pub struct WeightInfo<T>(PhantomData<T>);
 impl<T: frame_system::Config> frame_system::WeightInfo for WeightInfo<T> {
+	fn set_code() -> Weight {
+		Weight::from_parts(87_586_619_000, 1485)
+			.saturating_add(T::DbWeight::get().reads(1_u64))
+			.saturating_add(T::DbWeight::get().writes(2_u64))
+	}
 	/// The range of component `b` is `[0, 3932160]`.
 	fn remark(_b: u32, ) -> Weight {
 		// Proof Size summary in bytes:

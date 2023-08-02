@@ -18,14 +18,13 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 mod deposit;
-
 pub use deposit::Deposit;
-
 pub mod migration;
 pub mod signature;
 pub mod traits;
 
 #[cfg(any(feature = "runtime-benchmarks", feature = "mock"))]
 pub mod mock;
+
 #[cfg(any(feature = "try-runtime", test))]
 pub mod test_utils;
