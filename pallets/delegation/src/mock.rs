@@ -313,7 +313,6 @@ pub(crate) mod runtime {
 		type RuntimeHoldReason = RuntimeHoldReason;
 		type RuntimeEvent = ();
 		type WeightInfo = ();
-		type MigrationManager = ();
 
 		type Currency = Balances;
 		type Deposit = Deposit;
@@ -321,6 +320,7 @@ pub(crate) mod runtime {
 		type AttesterId = SubjectId;
 		type AuthorizationId = DelegationNodeIdOf<Self>;
 		type AccessControl = DelegationAc<Self>;
+		type MigrationManager = ();
 	}
 
 	parameter_types! {

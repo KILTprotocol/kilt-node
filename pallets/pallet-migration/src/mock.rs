@@ -53,6 +53,7 @@ pub mod runtime {
 	use pallet_did_lookup::linkable_account::LinkableAccountId;
 	use pallet_web3_names::web3_name::AsciiWeb3Name;
 	use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
+	use public_credentials::InputSubjectIdOf;
 	use runtime_common::AuthorityId;
 	use scale_info::TypeInfo;
 	use sp_core::{ed25519, ConstU128, ConstU32};
@@ -164,7 +165,7 @@ pub mod runtime {
 		type AttesterId = SubjectId;
 		type AuthorizationId = SubjectId;
 		type AccessControl = MockAccessControl<Self>;
-		type MigrationManager = ();
+		type MigrationManager = Migration;
 	}
 
 	parameter_types! {
@@ -241,7 +242,7 @@ pub mod runtime {
 		type Currency = Balances;
 		type Deposit = DepositMock;
 		type WeightInfo = ();
-		type MigrationManager = ();
+		type MigrationManager = Migration;
 	}
 
 	parameter_types! {
@@ -302,7 +303,7 @@ pub mod runtime {
 		type MaxServiceUrlLength = MaxServiceUrlLength;
 		type MaxNumberOfTypesPerService = MaxNumberOfTypesPerService;
 		type MaxNumberOfUrlsPerService = MaxNumberOfUrlsPerService;
-		type MigrationManager = ();
+		type MigrationManager = Migration;
 	}
 
 	parameter_types! {
@@ -318,7 +319,7 @@ pub mod runtime {
 		type OriginSuccess = mock_origin::DoubleOrigin<AccountId, SubjectId>;
 		type DidIdentifier = SubjectId;
 		type WeightInfo = ();
-		type MigrationManager = ();
+		type MigrationManager = Migration;
 	}
 
 	pub(crate) type TestWeb3Name = AsciiWeb3Name<Test>;
@@ -348,7 +349,7 @@ pub mod runtime {
 		type Web3Name = TestWeb3Name;
 		type Web3NameOwner = TestWeb3NameOwner;
 		type WeightInfo = ();
-		type MigrationManager = ();
+		type MigrationManager = Migration;
 	}
 
 	#[derive(
@@ -398,6 +399,22 @@ pub mod runtime {
 		}
 	}
 
+	impl From<TestSubjectId> for InputSubjectIdOf<Test> {
+		fn from(value: TestSubjectId) -> Self {
+			value
+				.0
+				.to_vec()
+				.try_into()
+				.expect("Test subject ID should fit into the expected input subject ID of for the test runtime.")
+		}
+	}
+
+	impl From<[u8; 32]> for TestSubjectId {
+		fn from(value: [u8; 32]) -> Self {
+			Self(value)
+		}
+	}
+
 	impl public_credentials::Config for Test {
 		type AccessControl = public_credentials::mock::MockAccessControl<Self>;
 		type AttesterId = SubjectId;
@@ -414,7 +431,7 @@ pub mod runtime {
 		type OriginSuccess = mock_origin::DoubleOrigin<AccountId, Self::AttesterId>;
 		type SubjectId = TestSubjectId;
 		type WeightInfo = ();
-		type MigrationManager = ();
+		type MigrationManager = Migration;
 	}
 
 	pub(crate) type BlockNumber = u64;

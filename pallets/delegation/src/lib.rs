@@ -721,7 +721,7 @@ pub mod pallet {
 		/// # <weight>
 		/// Weight: O(1)
 		/// # </weight>
-		pub(crate) fn calculate_delegation_creation_hash(
+		pub fn calculate_delegation_creation_hash(
 			delegation_id: &DelegationNodeIdOf<T>,
 			root_id: &DelegationNodeIdOf<T>,
 			parent_id: &DelegationNodeIdOf<T>,
