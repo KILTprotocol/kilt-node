@@ -110,7 +110,6 @@ pub mod runtime {
 
 	impl Config for Test {
 		type MaxMigrationsPerPallet = MaxMigrationsPerPallet;
-		type MaxKeyLength = MaxKeyLength;
 		type RuntimeEvent = ();
 		type WeightInfo = ();
 		type Currency = Balances;

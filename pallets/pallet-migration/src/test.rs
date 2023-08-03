@@ -52,7 +52,10 @@ use public_credentials::{
 	CredentialIdOf, Credentials, InputClaimsContentOf,
 };
 use sp_core::{ed25519, sr25519, Pair};
-use sp_runtime::{traits::IdentifyAccount, BoundedVec, MultiSignature, MultiSigner};
+use sp_runtime::{
+	traits::{Hash, IdentifyAccount},
+	BoundedVec, MultiSignature, MultiSigner,
+};
 
 use crate::{mock::*, MigratedKeys};
 
@@ -317,8 +320,8 @@ fn check_excluded_keys_attestation() {
 		.build()
 		.execute_with(|| {
 			let attestation_key = Attestations::<Test>::hashed_key_for(claim_hash);
-			let bounded_key = BoundedVec::try_from(attestation_key).expect("Key generation should not fail");
-			assert!(!MigratedKeys::<Test>::contains_key(&bounded_key));
+			let hashed_key = <Test as frame_system::Config>::Hashing::hash(&attestation_key[..]);
+			assert!(!MigratedKeys::<Test>::contains_key(hashed_key));
 
 			assert_ok!(Attestation::add(
 				DoubleOrigin(ACCOUNT_00, attester).into(),
@@ -327,7 +330,7 @@ fn check_excluded_keys_attestation() {
 				None
 			));
 
-			assert!(MigratedKeys::<Test>::contains_key(bounded_key));
+			assert!(MigratedKeys::<Test>::contains_key(hashed_key));
 
 			let mut requested_migrations = get_default_entries_to_migrate();
 
@@ -378,8 +381,8 @@ fn check_excluded_keys_delegation() {
 		.build()
 		.execute_with(|| {
 			let delegation_key = DelegationNodes::<Test>::hashed_key_for(delegation_id);
-			let bounded_key = BoundedVec::try_from(delegation_key).expect("Key generation should not fail");
-			assert!(!MigratedKeys::<Test>::contains_key(&bounded_key));
+			let hashed_key = <Test as frame_system::Config>::Hashing::hash(&delegation_key[..]);
+			assert!(!MigratedKeys::<Test>::contains_key(hashed_key));
 
 			let delegate_signature = (delegate.clone(), delegation_hash);
 
@@ -392,7 +395,7 @@ fn check_excluded_keys_delegation() {
 				delegate_signature
 			));
 
-			assert!(MigratedKeys::<Test>::contains_key(bounded_key));
+			assert!(MigratedKeys::<Test>::contains_key(hashed_key));
 
 			let mut requested_migrations = get_default_entries_to_migrate();
 
@@ -422,8 +425,8 @@ fn check_excluded_keys_did() {
 		.build()
 		.execute_with(|| {
 			let did_key = did::Did::<Test>::hashed_key_for(&alice_did);
-			let bounded_key = BoundedVec::try_from(did_key).expect("Key generation should not fail");
-			assert!(!MigratedKeys::<Test>::contains_key(&bounded_key));
+			let hashed_key = <Test as frame_system::Config>::Hashing::hash(&did_key[..]);
+			assert!(!MigratedKeys::<Test>::contains_key(hashed_key));
 
 			assert_ok!(Did::create(
 				RuntimeOrigin::signed(ACCOUNT_00),
@@ -431,7 +434,7 @@ fn check_excluded_keys_did() {
 				did::DidSignature::from(signature),
 			));
 
-			assert!(MigratedKeys::<Test>::contains_key(bounded_key));
+			assert!(MigratedKeys::<Test>::contains_key(hashed_key));
 
 			let mut requested_migrations = get_default_entries_to_migrate();
 
@@ -462,8 +465,8 @@ fn check_excluded_keys_lookup() {
 		.build()
 		.execute_with(|| {
 			let hashed_linked_key = ConnectedDids::<Test>::hashed_key_for(&linked_acc);
-			let bounded_key = BoundedVec::try_from(hashed_linked_key).expect("Key generation should not fail");
-			assert!(!MigratedKeys::<Test>::contains_key(&bounded_key));
+			let hashed_key = <Test as frame_system::Config>::Hashing::hash(&hashed_linked_key[..]);
+			assert!(!MigratedKeys::<Test>::contains_key(hashed_key));
 
 			assert!(DidLookup::associate_account(
 				mock_origin::DoubleOrigin(ACCOUNT_00, DID_00).into(),
@@ -472,7 +475,7 @@ fn check_excluded_keys_lookup() {
 			)
 			.is_ok());
 
-			assert!(MigratedKeys::<Test>::contains_key(bounded_key));
+			assert!(MigratedKeys::<Test>::contains_key(hashed_key));
 
 			let mut requested_migrations = get_default_entries_to_migrate();
 
@@ -496,15 +499,15 @@ fn check_excluded_keys_w3n() {
 		.build()
 		.execute_with(|| {
 			let hashed_w3n = Owner::<Test>::hashed_key_for(&web3_name_00);
-			let bounded_key = BoundedVec::try_from(hashed_w3n).expect("Key generation should not fail");
-			assert!(!MigratedKeys::<Test>::contains_key(&bounded_key));
+			let hashed_key = <Test as frame_system::Config>::Hashing::hash(&hashed_w3n[..]);
+			assert!(!MigratedKeys::<Test>::contains_key(hashed_key));
 
 			assert_ok!(pallet_web3_names::Pallet::<Test>::claim(
 				mock_origin::DoubleOrigin(ACCOUNT_00, DID_00).into(),
 				web3_name_00.0.clone()
 			));
 
-			assert!(MigratedKeys::<Test>::contains_key(bounded_key));
+			assert!(MigratedKeys::<Test>::contains_key(hashed_key));
 
 			let mut requested_migrations = get_default_entries_to_migrate();
 
@@ -538,15 +541,14 @@ fn check_excluded_keys_public_credentials() {
 		.build()
 		.execute_with(|| {
 			let hashed_public_credential_key = Credentials::<Test>::hashed_key_for(subject_id, credential_id);
-			let bounded_key =
-				BoundedVec::try_from(hashed_public_credential_key).expect("Key generation should not fail");
-			assert!(!MigratedKeys::<Test>::contains_key(&bounded_key));
+			let hashed_key = <Test as frame_system::Config>::Hashing::hash(&hashed_public_credential_key[..]);
+			assert!(!MigratedKeys::<Test>::contains_key(hashed_key));
 
 			assert_ok!(PublicCredentials::add(
 				DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
 				Box::new(new_credential.clone())
 			));
-			assert!(MigratedKeys::<Test>::contains_key(bounded_key));
+			assert!(MigratedKeys::<Test>::contains_key(hashed_key));
 
 			let mut requested_migrations = get_default_entries_to_migrate();
 

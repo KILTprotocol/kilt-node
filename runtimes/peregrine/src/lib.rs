@@ -196,7 +196,6 @@ parameter_types! {
 impl pallet_migration::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type Currency = Balances;
-	type MaxKeyLength = MaxKeyLength;
 	type MaxMigrationsPerPallet = MaxMigrationsPerPallet;
 	type WeightInfo = weights::pallet_migration::WeightInfo<Runtime>;
 }

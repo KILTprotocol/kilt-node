@@ -45,7 +45,7 @@ pub mod pallet {
 	use pallet_did_lookup::{linkable_account::LinkableAccountId, ConnectedDids};
 	use pallet_web3_names::{Owner, Web3NameOf};
 	use public_credentials::{CredentialIdOf, Credentials, SubjectIdOf};
-	use sp_runtime::DispatchError;
+	use sp_runtime::{traits::Hash, DispatchError};
 	use sp_std::vec::Vec;
 
 	use crate::default_weights::WeightInfo;
@@ -53,6 +53,8 @@ pub mod pallet {
 	pub(crate) type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 
 	pub(crate) type BalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::Balance;
+
+	pub type HashOf<T> = <T as frame_system::Config>::Hash;
 
 	#[derive(Encode, Decode, TypeInfo, Debug, Clone, PartialEq)]
 	pub struct EntriesToMigrate<T>
@@ -89,10 +91,6 @@ pub mod pallet {
 		#[pallet::constant]
 		type MaxMigrationsPerPallet: Get<u32>;
 
-		/// The max length of keys
-		#[pallet::constant]
-		type MaxKeyLength: Get<u32>;
-
 		/// Weight information for extrinsics in this pallet.
 		type WeightInfo: WeightInfo;
 
@@ -110,7 +108,7 @@ pub mod pallet {
 
 	#[pallet::storage]
 	#[pallet::getter(fn connected_dids)]
-	pub type MigratedKeys<T> = StorageMap<_, Blake2_128Concat, BoundedVec<u8, <T as Config>::MaxKeyLength>, ()>;
+	pub type MigratedKeys<T> = StorageMap<_, Blake2_128Concat, HashOf<T>, ()>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -204,26 +202,26 @@ pub mod pallet {
 
 	impl<T: Config> Pallet<T> {
 		fn is_key_migrated(key: Vec<u8>) -> Result<bool, DispatchError> {
-			let Ok(full_key) = BoundedVec::try_from(key) else {return Err(Error::<T>::KeyParse.into());};
+			let key_hash = <T as frame_system::Config>::Hashing::hash(&key[..]);
 
-			if MigratedKeys::<T>::contains_key(&full_key) {
+			if MigratedKeys::<T>::contains_key(key_hash) {
 				return Ok(true);
 			}
-			MigratedKeys::<T>::insert(full_key, ());
+			MigratedKeys::<T>::insert(key_hash, ());
 			Ok(false)
 		}
 	}
 
 	impl<T: Config> MigrationManager<AccountIdOf<T>, BalanceOf<T>> for Pallet<T> {
 		fn exclude_key_from_migration(key: Vec<u8>) -> Result<(), DispatchError> {
-			let Ok(full_key) = BoundedVec::try_from(key) else {return Err(Error::<T>::KeyParse.into());};
-			MigratedKeys::<T>::insert(full_key, ());
+			let key_hash = <T as frame_system::Config>::Hashing::hash(&key[..]);
+			MigratedKeys::<T>::insert(key_hash, ());
 			Ok(())
 		}
 
 		fn is_key_migrated(key: Vec<u8>) -> Result<bool, DispatchError> {
-			let Ok(full_key) = BoundedVec::try_from(key) else {return Err(Error::<T>::KeyParse.into());};
-			Ok(MigratedKeys::<T>::contains_key(full_key))
+			let key_hash = <T as frame_system::Config>::Hashing::hash(&key[..]);
+			Ok(MigratedKeys::<T>::contains_key(key_hash))
 		}
 
 		fn release_reserved_deposit(user: &AccountIdOf<T>, balance: &BalanceOf<T>) {
