@@ -18,6 +18,7 @@
 
 use fluent_uri::Uri;
 use parity_scale_codec::Encode;
+use scale_info::prelude::format;
 use sp_runtime::traits::Hash;
 use sp_std::vec::Vec;
 
