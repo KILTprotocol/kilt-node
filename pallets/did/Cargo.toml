@@ -65,6 +65,7 @@ runtime-benchmarks = [
   "sp-runtime/runtime-benchmarks",
 ]
 std = [
+  "fluent-uri/std",
   "parity-scale-codec/std",
   "ctype/std",
   "frame-support/std",
