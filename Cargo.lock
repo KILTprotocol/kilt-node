@@ -2181,6 +2181,7 @@ version = "1.11.0-rc0"
 dependencies = [
  "ctype",
  "env_logger 0.10.0",
+ "fluent-uri",
  "frame-benchmarking",
  "frame-support",
  "frame-system",
@@ -2699,6 +2700,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "98de4bbd547a563b716d8dfa9aad1cb19bfab00f4fa09a6a4ed21dbcf44ce9c4"
 dependencies = [
  "num-traits",
+]
+
+[[package]]
+name = "fluent-uri"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "17c704e9dbe1ddd863da1e6ff3567795087b1eb201ce80d8fa81162e1516500d"
+dependencies = [
+ "bitflags",
 ]
 
 [[package]]
