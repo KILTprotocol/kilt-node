@@ -953,7 +953,7 @@ impl WeightInfo for () {
 	/// Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
 	fn remove_ecdsa_delegation_key() -> Weight {
 		// Proof Size summary in bytes:
-		/  Measured:  `2135`
+		//  Measured:  `2135`
 		//  Estimated: `5777`
 		// Minimum execution time: 64_414 nanoseconds.
 		Weight::from_parts(65_556_000, 5777)
