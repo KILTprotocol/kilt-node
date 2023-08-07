@@ -88,9 +88,11 @@ mod substrate_no_std_port {
 pub(super) mod relay_chain {
 	use super::*;
 
-	use sp_runtime::traits::BlakeTwo256;
+	use frame_support::ensure;
+	use parity_scale_codec::Codec;
+	use sp_runtime::traits::{AtLeast32BitUnsigned, BlakeTwo256, MaybeDisplay, Member, SimpleBitOps};
 
-	use crate::traits::RelayChainStateInfo;
+	use crate::traits::{self, RelayChainStateInfo};
 
 	pub struct SiblingParachainHeadProofVerifier<RelayChainState>(PhantomData<RelayChainState>);
 
@@ -218,6 +220,32 @@ pub(super) mod relay_chain {
 				)
 				.expect("Parachain head proof verification should not fail.");
 			assert!(returned_head.encode() == expected_spiritnet_head_at_block, "Parachain head returned from the state proof verification should not be different than the pre-computed one.");
+		}
+	}
+
+	pub struct PastStateRootProvider<HistoryProvider>(PhantomData<HistoryProvider>);
+
+	impl<HistoryProvider> PastStateRootProvider<HistoryProvider>
+	where
+		HistoryProvider: traits::HistoryProvider,
+		HistoryProvider::BlockNumber: Member
+			+ sp_std::hash::Hash
+			+ Copy
+			+ MaybeDisplay
+			+ AtLeast32BitUnsigned
+			+ Codec
+			+ Into<U256>
+			+ TryFrom<U256>,
+		<HistoryProvider::Hasher as sp_runtime::traits::Hash>::Output:
+			Default + sp_std::hash::Hash + Copy + Member + MaybeDisplay + SimpleBitOps + Codec,
+	{
+		pub fn verify_past_state(
+			block_number: HistoryProvider::BlockNumber,
+			header: Header<HistoryProvider::BlockNumber, HistoryProvider::Hasher>,
+		) -> Result<<HistoryProvider::Hasher as sp_runtime::traits::Hash>::Output, ()> {
+			let block_hash = HistoryProvider::block_hash_for(&block_number).ok_or(())?;
+			ensure!(block_hash == header.hash(), ());
+			Ok(header.state_root)
 		}
 	}
 }

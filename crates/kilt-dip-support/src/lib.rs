@@ -43,6 +43,10 @@ pub mod state_proofs;
 pub mod traits;
 pub mod utils;
 
+pub use state_proofs::{
+	parachain::KiltDipCommitmentsForDipProviderPallet, relay_chain::RococoStateRootsViaRelayStorePallet,
+};
+
 #[derive(Encode, Decode, PartialEq, Eq, RuntimeDebug, TypeInfo, Clone)]
 pub struct SiblingParachainDipStateProof<
 	RelayBlockHeight,
@@ -241,7 +245,3 @@ impl<
 		Ok(proof_leaves)
 	}
 }
-
-pub use state_proofs::{
-	parachain::KiltDipCommitmentsForDipProviderPallet, relay_chain::RococoStateRootsViaRelayStorePallet,
-};

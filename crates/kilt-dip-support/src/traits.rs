@@ -109,3 +109,29 @@ where
 
 	fn signed_extra() -> Self::SignedExtra {}
 }
+
+pub trait HistoryProvider {
+	type BlockNumber;
+	type Hasher: sp_runtime::traits::Hash;
+
+	fn block_hash_for(block: &Self::BlockNumber) -> Option<<Self::Hasher as sp_runtime::traits::Hash>::Output>;
+}
+
+impl<T> HistoryProvider for T
+where
+	T: frame_system::Config,
+{
+	type BlockNumber = T::BlockNumber;
+	type Hasher = T::Hashing;
+
+	fn block_hash_for(block: &Self::BlockNumber) -> Option<<Self::Hasher as sp_runtime::traits::Hash>::Output> {
+		let default_block_hash_value = <T::Hash as Default>::default();
+		let retrieved_block = frame_system::Pallet::<T>::block_hash(block);
+
+		if retrieved_block == default_block_hash_value {
+			None
+		} else {
+			Some(retrieved_block)
+		}
+	}
+}
