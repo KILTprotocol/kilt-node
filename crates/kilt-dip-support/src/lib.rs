@@ -20,12 +20,12 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use parity_scale_codec::{Decode, Encode, HasCompact};
+use parity_scale_codec::{Codec, Decode, Encode, HasCompact};
 use scale_info::TypeInfo;
 use sp_core::{Get, RuntimeDebug, U256};
 use sp_runtime::{
 	generic::Header,
-	traits::{CheckedSub, Hash},
+	traits::{AtLeast32BitUnsigned, CheckedSub, Hash, MaybeDisplay, Member, SimpleBitOps},
 };
 use sp_std::{borrow::Borrow, marker::PhantomData, vec::Vec};
 
@@ -36,7 +36,10 @@ use crate::{
 	did::{RevealedDidKeysAndSignature, RevealedDidKeysSignatureAndCallVerifier, TimeBoundDidSignature},
 	merkle::{DidMerkleProof, DidMerkleProofVerifier, RevealedDidMerkleProofLeaf, RevealedDidMerkleProofLeaves},
 	state_proofs::{parachain::DipIdentityCommitmentProofVerifier, relay_chain::SiblingParachainHeadProofVerifier},
-	traits::{Bump, DidSignatureVerifierContext, DipCallOriginFilter, RelayChainStorageInfo},
+	traits::{
+		Bump, DidSignatureVerifierContext, DipCallOriginFilter, HistoryProvider, ProviderParachainStateInfo,
+		RelayChainStateInfo, RelayChainStorageInfo,
+	},
 	utils::OutputOf,
 };
 
@@ -140,7 +143,7 @@ impl<
 	Call: Encode,
 	TxSubmitter: Encode,
 
-	RelayChainStateInfo: traits::RelayChainStorageInfo + traits::RelayChainStateInfo<LookupInfo = ()>,
+	RelayChainStateInfo: traits::RelayChainStorageInfo + traits::RelayChainStateInfo,
 	RelayChainStateInfo::Hasher: 'static,
 	OutputOf<RelayChainStateInfo::Hasher>: Ord,
 	RelayChainStateInfo::BlockNumber: Copy + Into<U256> + TryFrom<U256> + HasCompact,
@@ -263,7 +266,7 @@ pub struct ChildParachainDipStateProof<
 }
 
 pub struct DipChildProviderStateProofVerifier<
-	RelayChainStateInfo,
+	RelayChainInfo,
 	SiblingProviderParachainId,
 	SiblingProviderStateInfo,
 	TxSubmitter,
@@ -279,7 +282,7 @@ pub struct DipChildProviderStateProofVerifier<
 >(
 	#[allow(clippy::type_complexity)]
 	PhantomData<(
-		RelayChainStateInfo,
+		RelayChainInfo,
 		SiblingProviderParachainId,
 		SiblingProviderStateInfo,
 		TxSubmitter,
@@ -296,7 +299,7 @@ pub struct DipChildProviderStateProofVerifier<
 impl<
 		Call,
 		Subject,
-		RelayChainStateInfo,
+		RelayChainInfo,
 		SiblingProviderParachainId,
 		SiblingProviderStateInfo,
 		TxSubmitter,
@@ -311,7 +314,7 @@ impl<
 		LocalDidCallVerifier,
 	> IdentityProofVerifier<Call, Subject>
 	for DipChildProviderStateProofVerifier<
-		RelayChainStateInfo,
+		RelayChainInfo,
 		SiblingProviderParachainId,
 		SiblingProviderStateInfo,
 		TxSubmitter,
@@ -328,18 +331,32 @@ impl<
 	Call: Encode,
 	TxSubmitter: Encode,
 
-	RelayChainStateInfo: traits::RelayChainStorageInfo + traits::HistoryProvider,
-	RelayChainStateInfo::Hasher: 'static,
-	OutputOf<RelayChainStateInfo::Hasher>: Ord,
-	RelayChainStateInfo::BlockNumber: Copy + Into<U256> + TryFrom<U256> + HasCompact,
-	RelayChainStateInfo::Key: AsRef<[u8]>,
+	RelayChainInfo: RelayChainStorageInfo
+		+ RelayChainStateInfo
+		+ HistoryProvider<
+			BlockNumber = <RelayChainInfo as RelayChainStateInfo>::BlockNumber,
+			Hasher = <RelayChainInfo as RelayChainStateInfo>::Hasher,
+		>,
+	<RelayChainInfo as RelayChainStateInfo>::Hasher: 'static,
+	OutputOf<<RelayChainInfo as RelayChainStateInfo>::Hasher>:
+		Ord + Default + sp_std::hash::Hash + Copy + Member + MaybeDisplay + SimpleBitOps + Codec,
+	<RelayChainInfo as RelayChainStateInfo>::BlockNumber: Copy
+		+ Into<U256>
+		+ TryFrom<U256>
+		+ HasCompact
+		+ Member
+		+ sp_std::hash::Hash
+		+ MaybeDisplay
+		+ AtLeast32BitUnsigned
+		+ Codec,
+	RelayChainInfo::Key: AsRef<[u8]>,
 
-	SiblingProviderParachainId: Get<RelayChainStateInfo::ParaId>,
+	SiblingProviderParachainId: Get<RelayChainInfo::ParaId>,
 
 	SiblingProviderStateInfo:
-		traits::ProviderParachainStateInfo<Identifier = Subject, Commitment = ProviderDipMerkleHasher::Out>,
+		ProviderParachainStateInfo<Identifier = Subject, Commitment = ProviderDipMerkleHasher::Out>,
 	SiblingProviderStateInfo::Hasher: 'static,
-	OutputOf<SiblingProviderStateInfo::Hasher>: Ord + From<OutputOf<RelayChainStateInfo::Hasher>>,
+	OutputOf<SiblingProviderStateInfo::Hasher>: Ord + From<OutputOf<<RelayChainInfo as RelayChainStateInfo>::Hasher>>,
 	SiblingProviderStateInfo::BlockNumber: Encode + Clone,
 	SiblingProviderStateInfo::Commitment: Decode,
 	SiblingProviderStateInfo::Key: AsRef<[u8]>,
@@ -359,8 +376,8 @@ impl<
 	type Error = ();
 	type IdentityDetails = LocalDidDetails;
 	type Proof = ChildParachainDipStateProof<
-		RelayChainStateInfo::BlockNumber,
-		RelayChainStateInfo::Hasher,
+		<RelayChainInfo as RelayChainStateInfo>::BlockNumber,
+		<RelayChainInfo as RelayChainStateInfo>::Hasher,
 		Vec<Vec<u8>>,
 		RevealedDidMerkleProofLeaf<
 			ProviderDidKeyId,
@@ -387,50 +404,64 @@ impl<
 		identity_details: &mut Option<Self::IdentityDetails>,
 		proof: Self::Proof,
 	) -> Result<Self::VerificationResult, Self::Error> {
-		// 1. Retrieve proof block hash from provider
-		let state_root_at_block =
-			RelayChainStateInfo::block_hash_for(&proof.para_state_root.relay_block_height).ok_or(())?;
+		// 1. Retrieve block hash from provider at the proof height
+		let block_hash_at_height =
+			RelayChainInfo::block_hash_for(&proof.para_state_root.relay_block_height).ok_or(())?;
 
-		struct StaticRootProvider<BlockNumber, Hasher, StorageInfo>(PhantomData<(BlockNumber, Hasher, StorageInfo)>);
-
-		impl<BlockNumber, Hasher, StorageInfo> traits::RelayChainStorageInfo
-			for StaticRootProvider<BlockNumber, Hasher, StorageInfo>
-		where
-			StorageInfo: RelayChainStorageInfo,
-		{
-			type Key = StorageInfo::Key;
-			type ParaId = StorageInfo::ParaId;
-
-			fn parachain_head_storage_key(para_id: &Self::ParaId) -> Self::Key {
-				StorageInfo::parachain_head_storage_key(para_id)
-			}
+		// 1.1 Verify that the provided header hashes to the same block has retrieved
+		if block_hash_at_height != proof.header.hash() {
+			return Err(());
 		}
-		impl<BlockNumber, Hasher, StorageInfo> traits::RelayChainStateInfo
-			for StaticRootProvider<BlockNumber, Hasher, StorageInfo>
-		where
-			Hasher: Hash,
-		{
-			type BlockNumber = BlockNumber;
-			type Hasher = Hasher;
-			type LookupInfo = OutputOf<Hasher>;
-
-			fn state_root_for_block(
-				_block_height: &Self::BlockNumber,
-				lookup_info: &Self::LookupInfo,
-			) -> Option<OutputOf<Hasher>> {
-				Some(*lookup_info)
-			}
-		}
+		// 1.2 If so, extract the state root from the header
+		let state_root_at_height = proof.header.state_root;
 
 		// FIXME: Compilation error
 		// 2. Verify relay chain proof
-		let provider_parachain_header = SiblingParachainHeadProofVerifier::<
-			StaticRootProvider<RelayChainStateInfo::BlockNumber, RelayChainStateInfo::Hasher, RelayChainStateInfo>,
-		>::verify_proof_for_parachain(
-			&SiblingProviderParachainId::get(),
-			&proof.para_state_root.relay_block_height,
-			proof.para_state_root.proof,
+		let provider_parachain_header =
+			SiblingParachainHeadProofVerifier::<RelayChainInfo>::verify_proof_for_parachain_with_root(
+				&SiblingProviderParachainId::get(),
+				&state_root_at_height,
+				proof.para_state_root.proof,
+			)?;
+
+		// 3. Verify parachain state proof.
+		let subject_identity_commitment =
+			DipIdentityCommitmentProofVerifier::<SiblingProviderStateInfo>::verify_proof_for_identifier(
+				subject,
+				provider_parachain_header.state_root.into(),
+				proof.dip_identity_commitment,
+			)?;
+
+		// 4. Verify DIP merkle proof.
+		let proof_leaves = DidMerkleProofVerifier::<
+			ProviderDipMerkleHasher,
+			_,
+			_,
+			_,
+			_,
+			MAX_REVEALED_KEYS_COUNT,
+			MAX_REVEALED_ACCOUNTS_COUNT,
+		>::verify_dip_merkle_proof(&subject_identity_commitment, proof.did.leaves)?;
+
+		// 5. Verify DID signature.
+		RevealedDidKeysSignatureAndCallVerifier::<
+			_,
+			_,
+			_,
+			_,
+			LocalContextProvider,
+			_,
+			_,
+			LocalDidCallVerifier,
+		>::verify_did_signature_for_call(
+			call,
+			submitter,
+			identity_details,
+			RevealedDidKeysAndSignature {
+				merkle_leaves: proof_leaves.borrow(),
+				did_signature: proof.did.signature,
+			},
 		)?;
-		Err(())
+		Ok(proof_leaves)
 	}
 }

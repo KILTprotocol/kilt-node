@@ -88,17 +88,15 @@ mod substrate_no_std_port {
 pub(super) mod relay_chain {
 	use super::*;
 
-	use frame_support::ensure;
-	use parity_scale_codec::Codec;
-	use sp_runtime::traits::{AtLeast32BitUnsigned, BlakeTwo256, MaybeDisplay, Member, SimpleBitOps};
+	use sp_runtime::traits::BlakeTwo256;
 
-	use crate::traits::{self, RelayChainStateInfo, RelayChainStorageInfo};
+	use crate::traits::{RelayChainStateInfo, RelayChainStorageInfo};
 
 	pub struct SiblingParachainHeadProofVerifier<RelayChainState>(PhantomData<RelayChainState>);
 
 	impl<RelayChainState> SiblingParachainHeadProofVerifier<RelayChainState>
 	where
-		RelayChainState: RelayChainStorageInfo + RelayChainStateInfo<LookupInfo = ()>,
+		RelayChainState: RelayChainStorageInfo + RelayChainStateInfo,
 		RelayChainState::Hasher: 'static,
 		OutputOf<RelayChainState::Hasher>: Ord,
 		RelayChainState::BlockNumber: Copy + Into<U256> + TryFrom<U256> + HasCompact,
@@ -110,15 +108,20 @@ pub(super) mod relay_chain {
 			relay_height: &RelayChainState::BlockNumber,
 			proof: impl IntoIterator<Item = Vec<u8>>,
 		) -> Result<Header<RelayChainState::BlockNumber, RelayChainState::Hasher>, ()> {
-			let relay_state_root = RelayChainState::state_root_for_block(relay_height, &()).ok_or(())?;
+			let relay_state_root = RelayChainState::state_root_for_block(relay_height).ok_or(())?;
+			Self::verify_proof_for_parachain_with_root(para_id, &relay_state_root, proof)
+		}
+
+		pub(crate) fn verify_proof_for_parachain_with_root(
+			para_id: &RelayChainState::ParaId,
+			root: &OutputOf<<RelayChainState as RelayChainStateInfo>::Hasher>,
+			proof: impl IntoIterator<Item = Vec<u8>>,
+		) -> Result<Header<RelayChainState::BlockNumber, RelayChainState::Hasher>, ()> {
 			let parachain_storage_key = RelayChainState::parachain_head_storage_key(para_id);
 			let storage_proof = StorageProof::new(proof);
-			let revealed_leaves = read_proof_check::<RelayChainState::Hasher, _>(
-				relay_state_root,
-				storage_proof,
-				[&parachain_storage_key].iter(),
-			)
-			.map_err(|_| ())?;
+			let revealed_leaves =
+				read_proof_check::<RelayChainState::Hasher, _>(*root, storage_proof, [&parachain_storage_key].iter())
+					.map_err(|_| ())?;
 			// TODO: Remove at some point
 			{
 				debug_assert!(revealed_leaves.len() == 1usize);
@@ -159,12 +162,8 @@ pub(super) mod relay_chain {
 	{
 		type BlockNumber = u32;
 		type Hasher = BlakeTwo256;
-		type LookupInfo = ();
 
-		fn state_root_for_block(
-			block_height: &Self::BlockNumber,
-			_lookup_info: &Self::LookupInfo,
-		) -> Option<OutputOf<Self::Hasher>> {
+		fn state_root_for_block(block_height: &Self::BlockNumber) -> Option<OutputOf<Self::Hasher>> {
 			pallet_relay_store::Pallet::<Runtime>::latest_relay_head_for_block(block_height)
 				.map(|relay_header| relay_header.relay_parent_storage_root)
 		}
@@ -203,12 +202,8 @@ pub(super) mod relay_chain {
 		impl RelayChainStateInfo for StaticPolkadotInfoProvider {
 			type BlockNumber = u32;
 			type Hasher = BlakeTwo256;
-			type LookupInfo = ();
 
-			fn state_root_for_block(
-				_block_height: &Self::BlockNumber,
-				_lookup_info: &Self::LookupInfo,
-			) -> Option<OutputOf<Self::Hasher>> {
+			fn state_root_for_block(_block_height: &Self::BlockNumber) -> Option<OutputOf<Self::Hasher>> {
 				Some(hex!("81b75d95075d16005ee0a987a3f061d3011ada919b261e9b02961b9b3725f3fd").into())
 			}
 		}
@@ -237,114 +232,6 @@ pub(super) mod relay_chain {
 				)
 				.expect("Parachain head proof verification should not fail.");
 			assert!(returned_head.encode() == expected_spiritnet_head_at_block, "Parachain head returned from the state proof verification should not be different than the pre-computed one.");
-		}
-	}
-
-	pub struct PastStateRootProvider<HistoryProvider>(PhantomData<HistoryProvider>);
-
-	impl<HistoryProvider> PastStateRootProvider<HistoryProvider>
-	where
-		HistoryProvider: traits::HistoryProvider,
-		HistoryProvider::BlockNumber: Member
-			+ sp_std::hash::Hash
-			+ Copy
-			+ MaybeDisplay
-			+ AtLeast32BitUnsigned
-			+ Codec
-			+ Into<U256>
-			+ TryFrom<U256>,
-		<HistoryProvider::Hasher as sp_runtime::traits::Hash>::Output:
-			Default + sp_std::hash::Hash + Copy + Member + MaybeDisplay + SimpleBitOps + Codec,
-	{
-		pub fn verify_past_state(
-			block_number: HistoryProvider::BlockNumber,
-			header: Header<HistoryProvider::BlockNumber, HistoryProvider::Hasher>,
-		) -> Result<<HistoryProvider::Hasher as sp_runtime::traits::Hash>::Output, ()> {
-			let block_hash = HistoryProvider::block_hash_for(&block_number).ok_or(())?;
-			ensure!(block_hash == header.hash(), ());
-			Ok(header.state_root)
-		}
-	}
-
-	#[cfg(test)]
-	mod past_state_root_provider_tests {
-		use super::*;
-
-		use hex_literal::hex;
-		use sp_runtime::{Digest, DigestItem};
-
-		use crate::traits::HistoryProvider;
-
-		const BLOCK_NUMBER: u64 = 4_362_970;
-
-		struct SpiritnetStaticBlockProvider;
-
-		impl HistoryProvider for SpiritnetStaticBlockProvider {
-			type BlockNumber = u64;
-			type Hasher = BlakeTwo256;
-
-			fn block_hash_for(block: &Self::BlockNumber) -> Option<<Self::Hasher as sp_runtime::traits::Hash>::Output> {
-				if block == &BLOCK_NUMBER {
-					Some(hex!("b9700ad2c2cad8ba5bf1affb98c377e9ba4f28ceaecc22285f636a3971a7c3f4").into())
-				} else {
-					None
-				}
-			}
-		}
-
-		#[test]
-		fn test_correct_block_verification() {
-			let header_at_block = Header::<u64, BlakeTwo256> {
-				digest: Digest {
-					logs: vec![
-						DigestItem::PreRuntime(*b"aura", hex!("9ad3660800000000").to_vec()),
-						DigestItem::Seal(*b"aura", hex!("066a1734615150b91a99779f770a47a47e91680cf0dbc97fea08d10b0bad19066eaccd401394589b84e346145713e98ae709fd52933871d2383640bd76c3158b").to_vec())
-					]
-				},
-				extrinsics_root: hex!("5031bb2622631dc5da356f9023a5b751c837854de0de9af746942e7594c051f8").into(),
-				number: BLOCK_NUMBER,
-				parent_hash: hex!("bd5f86c2de02153751ebbe12986103f9b7a809fda03d4564495de83fd37280d0").into(),
-				state_root: hex!("5963f41159ad1ff28f6617cf9519f48a5ca9927ffa98c692d3841ab702006c4d").into()
-			};
-			let state_root =
-				PastStateRootProvider::<SpiritnetStaticBlockProvider>::verify_past_state(BLOCK_NUMBER, header_at_block)
-					.expect("State verification should not fail.");
-			assert_eq!(
-				state_root,
-				hex!("5963f41159ad1ff28f6617cf9519f48a5ca9927ffa98c692d3841ab702006c4d").into()
-			);
-		}
-
-		#[test]
-		fn test_invalid_block_verification() {
-			let invalid_header_at_block = Header::<u64, BlakeTwo256> {
-				digest: Digest {
-					logs: vec![
-						DigestItem::PreRuntime(*b"aura", hex!("9ad3660800000000").to_vec()),
-						DigestItem::Seal(*b"aura", hex!("066a1734615150b91a99779f770a47a47e91680cf0dbc97fea08d10b0bad19066eaccd401394589b84e346145713e98ae709fd52933871d2383640bd76c3158b").to_vec())
-					]
-				},
-				extrinsics_root: hex!("5031bb2622631dc5da356f9023a5b751c837854de0de9af746942e7594c051f8").into(),
-				number: BLOCK_NUMBER,
-				parent_hash: hex!("bd5f86c2de02153751ebbe12986103f9b7a809fda03d4564495de83fd37280d0").into(),
-				// Changed the last byte from 0x4d to 0x4c.
-				state_root: hex!("5963f41159ad1ff28f6617cf9519f48a5ca9927ffa98c692d3841ab702006c4c").into()
-			};
-			let state_root = PastStateRootProvider::<SpiritnetStaticBlockProvider>::verify_past_state(
-				BLOCK_NUMBER,
-				invalid_header_at_block,
-			);
-			assert_eq!(state_root, Err(()));
-		}
-
-		#[test]
-		fn test_block_not_found() {
-			let non_existing_block_number = 1;
-			let state_root = PastStateRootProvider::<SpiritnetStaticBlockProvider>::verify_past_state(
-				non_existing_block_number,
-				Header::<u64, BlakeTwo256>::new_from_number(non_existing_block_number),
-			);
-			assert_eq!(state_root, Err(()));
 		}
 	}
 }

@@ -64,12 +64,8 @@ pub trait RelayChainStorageInfo {
 pub trait RelayChainStateInfo {
 	type BlockNumber;
 	type Hasher: sp_runtime::traits::Hash;
-	type LookupInfo;
 
-	fn state_root_for_block(
-		block_height: &Self::BlockNumber,
-		lookup_info: &Self::LookupInfo,
-	) -> Option<OutputOf<Self::Hasher>>;
+	fn state_root_for_block(block_height: &Self::BlockNumber) -> Option<OutputOf<Self::Hasher>>;
 }
 
 pub trait ProviderParachainStateInfo {
