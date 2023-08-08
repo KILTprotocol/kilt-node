@@ -125,8 +125,8 @@ where
 	type Hasher = T::Hashing;
 
 	fn block_hash_for(block: &Self::BlockNumber) -> Option<<Self::Hasher as sp_runtime::traits::Hash>::Output> {
-		let default_block_hash_value = <T::Hash as Default>::default();
 		let retrieved_block = frame_system::Pallet::<T>::block_hash(block);
+		let default_block_hash_value = <T::Hash as Default>::default();
 
 		if retrieved_block == default_block_hash_value {
 			None
