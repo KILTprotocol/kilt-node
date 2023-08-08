@@ -92,13 +92,13 @@ pub(super) mod relay_chain {
 	use parity_scale_codec::Codec;
 	use sp_runtime::traits::{AtLeast32BitUnsigned, BlakeTwo256, MaybeDisplay, Member, SimpleBitOps};
 
-	use crate::traits::{self, RelayChainStateInfo};
+	use crate::traits::{self, RelayChainStateInfo, RelayChainStorageInfo};
 
 	pub struct SiblingParachainHeadProofVerifier<RelayChainState>(PhantomData<RelayChainState>);
 
 	impl<RelayChainState> SiblingParachainHeadProofVerifier<RelayChainState>
 	where
-		RelayChainState: RelayChainStateInfo,
+		RelayChainState: RelayChainStorageInfo + RelayChainStateInfo<LookupInfo = ()>,
 		RelayChainState::Hasher: 'static,
 		OutputOf<RelayChainState::Hasher>: Ord,
 		RelayChainState::BlockNumber: Copy + Into<U256> + TryFrom<U256> + HasCompact,
@@ -110,7 +110,7 @@ pub(super) mod relay_chain {
 			relay_height: &RelayChainState::BlockNumber,
 			proof: impl IntoIterator<Item = Vec<u8>>,
 		) -> Result<Header<RelayChainState::BlockNumber, RelayChainState::Hasher>, ()> {
-			let relay_state_root = RelayChainState::state_root_for_block(relay_height).ok_or(())?;
+			let relay_state_root = RelayChainState::state_root_for_block(relay_height, &()).ok_or(())?;
 			let parachain_storage_key = RelayChainState::parachain_head_storage_key(para_id);
 			let storage_proof = StorageProof::new(proof);
 			let revealed_leaves = read_proof_check::<RelayChainState::Hasher, _>(
@@ -133,19 +133,12 @@ pub(super) mod relay_chain {
 
 	pub struct RococoStateRootsViaRelayStorePallet<Runtime>(PhantomData<Runtime>);
 
-	impl<Runtime> RelayChainStateInfo for RococoStateRootsViaRelayStorePallet<Runtime>
+	impl<Runtime> RelayChainStorageInfo for RococoStateRootsViaRelayStorePallet<Runtime>
 	where
 		Runtime: pallet_relay_store::Config,
 	{
-		type BlockNumber = u32;
-		type Hasher = BlakeTwo256;
 		type Key = StorageKey;
 		type ParaId = u32;
-
-		fn state_root_for_block(block_height: &Self::BlockNumber) -> Option<OutputOf<Self::Hasher>> {
-			pallet_relay_store::Pallet::<Runtime>::latest_relay_head_for_block(block_height)
-				.map(|relay_header| relay_header.relay_parent_storage_root)
-		}
 
 		fn parachain_head_storage_key(para_id: &Self::ParaId) -> Self::Key {
 			// TODO: It's not possible to access the runtime definition from here.
@@ -160,6 +153,23 @@ pub(super) mod relay_chain {
 		}
 	}
 
+	impl<Runtime> RelayChainStateInfo for RococoStateRootsViaRelayStorePallet<Runtime>
+	where
+		Runtime: pallet_relay_store::Config,
+	{
+		type BlockNumber = u32;
+		type Hasher = BlakeTwo256;
+		type LookupInfo = ();
+
+		fn state_root_for_block(
+			block_height: &Self::BlockNumber,
+			_lookup_info: &Self::LookupInfo,
+		) -> Option<OutputOf<Self::Hasher>> {
+			pallet_relay_store::Pallet::<Runtime>::latest_relay_head_for_block(block_height)
+				.map(|relay_header| relay_header.relay_parent_storage_root)
+		}
+	}
+
 	#[cfg(test)]
 	mod polkadot_parachain_head_proof_verifier_tests {
 		use super::*;
@@ -171,9 +181,7 @@ pub(super) mod relay_chain {
 		// hash 0x18e90e9aa8e3b063f60386ba1b0415111798e72d01de58b1438d620d42f58e39
 		struct StaticPolkadotInfoProvider;
 
-		impl RelayChainStateInfo for StaticPolkadotInfoProvider {
-			type BlockNumber = u32;
-			type Hasher = BlakeTwo256;
+		impl RelayChainStorageInfo for StaticPolkadotInfoProvider {
 			type Key = StorageKey;
 			type ParaId = u32;
 
@@ -190,8 +198,17 @@ pub(super) mod relay_chain {
 				.concat();
 				StorageKey(storage_key)
 			}
+		}
 
-			fn state_root_for_block(_block_height: &Self::BlockNumber) -> Option<OutputOf<Self::Hasher>> {
+		impl RelayChainStateInfo for StaticPolkadotInfoProvider {
+			type BlockNumber = u32;
+			type Hasher = BlakeTwo256;
+			type LookupInfo = ();
+
+			fn state_root_for_block(
+				_block_height: &Self::BlockNumber,
+				_lookup_info: &Self::LookupInfo,
+			) -> Option<OutputOf<Self::Hasher>> {
 				Some(hex!("81b75d95075d16005ee0a987a3f061d3011ada919b261e9b02961b9b3725f3fd").into())
 			}
 		}
