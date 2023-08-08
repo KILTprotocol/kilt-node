@@ -55,16 +55,15 @@ pub trait DipCallOriginFilter<Call> {
 }
 
 pub trait RelayChainStorageInfo {
+	type BlockNumber;
+	type Hasher: sp_runtime::traits::Hash;
 	type Key;
 	type ParaId;
 
 	fn parachain_head_storage_key(para_id: &Self::ParaId) -> Self::Key;
 }
 
-pub trait RelayChainStateInfo {
-	type BlockNumber;
-	type Hasher: sp_runtime::traits::Hash;
-
+pub trait RelayChainStateInfo: RelayChainStorageInfo {
 	fn state_root_for_block(block_height: &Self::BlockNumber) -> Option<OutputOf<Self::Hasher>>;
 }
 

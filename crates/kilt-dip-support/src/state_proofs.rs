@@ -86,9 +86,9 @@ mod substrate_no_std_port {
 }
 
 pub(super) mod relay_chain {
-	use super::*;
-
 	use sp_runtime::traits::BlakeTwo256;
+
+	use super::*;
 
 	use crate::traits::{RelayChainStateInfo, RelayChainStorageInfo};
 
@@ -96,25 +96,15 @@ pub(super) mod relay_chain {
 
 	impl<RelayChainState> SiblingParachainHeadProofVerifier<RelayChainState>
 	where
-		RelayChainState: RelayChainStorageInfo + RelayChainStateInfo,
+		RelayChainState: RelayChainStorageInfo,
 		RelayChainState::Hasher: 'static,
 		OutputOf<RelayChainState::Hasher>: Ord,
 		RelayChainState::BlockNumber: Copy + Into<U256> + TryFrom<U256> + HasCompact,
 		RelayChainState::Key: AsRef<[u8]>,
 	{
-		#[allow(clippy::result_unit_err)]
-		pub fn verify_proof_for_parachain(
+		pub fn verify_proof_for_parachain_with_root(
 			para_id: &RelayChainState::ParaId,
-			relay_height: &RelayChainState::BlockNumber,
-			proof: impl IntoIterator<Item = Vec<u8>>,
-		) -> Result<Header<RelayChainState::BlockNumber, RelayChainState::Hasher>, ()> {
-			let relay_state_root = RelayChainState::state_root_for_block(relay_height).ok_or(())?;
-			Self::verify_proof_for_parachain_with_root(para_id, &relay_state_root, proof)
-		}
-
-		pub(crate) fn verify_proof_for_parachain_with_root(
-			para_id: &RelayChainState::ParaId,
-			root: &OutputOf<<RelayChainState as RelayChainStateInfo>::Hasher>,
+			root: &OutputOf<<RelayChainState as RelayChainStorageInfo>::Hasher>,
 			proof: impl IntoIterator<Item = Vec<u8>>,
 		) -> Result<Header<RelayChainState::BlockNumber, RelayChainState::Hasher>, ()> {
 			let parachain_storage_key = RelayChainState::parachain_head_storage_key(para_id);
@@ -134,12 +124,33 @@ pub(super) mod relay_chain {
 		}
 	}
 
+	impl<RelayChainState> SiblingParachainHeadProofVerifier<RelayChainState>
+	where
+		RelayChainState: RelayChainStorageInfo + RelayChainStateInfo,
+		RelayChainState::Hasher: 'static,
+		OutputOf<RelayChainState::Hasher>: Ord,
+		RelayChainState::BlockNumber: Copy + Into<U256> + TryFrom<U256> + HasCompact,
+		RelayChainState::Key: AsRef<[u8]>,
+	{
+		#[allow(clippy::result_unit_err)]
+		pub fn verify_proof_for_parachain(
+			para_id: &RelayChainState::ParaId,
+			relay_height: &RelayChainState::BlockNumber,
+			proof: impl IntoIterator<Item = Vec<u8>>,
+		) -> Result<Header<RelayChainState::BlockNumber, RelayChainState::Hasher>, ()> {
+			let relay_state_root = RelayChainState::state_root_for_block(relay_height).ok_or(())?;
+			Self::verify_proof_for_parachain_with_root(para_id, &relay_state_root, proof)
+		}
+	}
+
 	pub struct RococoStateRootsViaRelayStorePallet<Runtime>(PhantomData<Runtime>);
 
 	impl<Runtime> RelayChainStorageInfo for RococoStateRootsViaRelayStorePallet<Runtime>
 	where
 		Runtime: pallet_relay_store::Config,
 	{
+		type BlockNumber = u32;
+		type Hasher = BlakeTwo256;
 		type Key = StorageKey;
 		type ParaId = u32;
 
@@ -160,9 +171,6 @@ pub(super) mod relay_chain {
 	where
 		Runtime: pallet_relay_store::Config,
 	{
-		type BlockNumber = u32;
-		type Hasher = BlakeTwo256;
-
 		fn state_root_for_block(block_height: &Self::BlockNumber) -> Option<OutputOf<Self::Hasher>> {
 			pallet_relay_store::Pallet::<Runtime>::latest_relay_head_for_block(block_height)
 				.map(|relay_header| relay_header.relay_parent_storage_root)
@@ -181,6 +189,8 @@ pub(super) mod relay_chain {
 		struct StaticPolkadotInfoProvider;
 
 		impl RelayChainStorageInfo for StaticPolkadotInfoProvider {
+			type BlockNumber = u32;
+			type Hasher = BlakeTwo256;
 			type Key = StorageKey;
 			type ParaId = u32;
 
@@ -200,9 +210,6 @@ pub(super) mod relay_chain {
 		}
 
 		impl RelayChainStateInfo for StaticPolkadotInfoProvider {
-			type BlockNumber = u32;
-			type Hasher = BlakeTwo256;
-
 			fn state_root_for_block(_block_height: &Self::BlockNumber) -> Option<OutputOf<Self::Hasher>> {
 				Some(hex!("81b75d95075d16005ee0a987a3f061d3011ada919b261e9b02961b9b3725f3fd").into())
 			}

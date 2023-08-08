@@ -38,7 +38,7 @@ use crate::{
 	state_proofs::{parachain::DipIdentityCommitmentProofVerifier, relay_chain::SiblingParachainHeadProofVerifier},
 	traits::{
 		Bump, DidSignatureVerifierContext, DipCallOriginFilter, HistoryProvider, ProviderParachainStateInfo,
-		RelayChainStateInfo, RelayChainStorageInfo,
+		RelayChainStorageInfo,
 	},
 	utils::OutputOf,
 };
@@ -332,15 +332,14 @@ impl<
 	TxSubmitter: Encode,
 
 	RelayChainInfo: RelayChainStorageInfo
-		+ RelayChainStateInfo
 		+ HistoryProvider<
-			BlockNumber = <RelayChainInfo as RelayChainStateInfo>::BlockNumber,
-			Hasher = <RelayChainInfo as RelayChainStateInfo>::Hasher,
+			BlockNumber = <RelayChainInfo as RelayChainStorageInfo>::BlockNumber,
+			Hasher = <RelayChainInfo as RelayChainStorageInfo>::Hasher,
 		>,
-	<RelayChainInfo as RelayChainStateInfo>::Hasher: 'static,
-	OutputOf<<RelayChainInfo as RelayChainStateInfo>::Hasher>:
+	<RelayChainInfo as RelayChainStorageInfo>::Hasher: 'static,
+	OutputOf<<RelayChainInfo as RelayChainStorageInfo>::Hasher>:
 		Ord + Default + sp_std::hash::Hash + Copy + Member + MaybeDisplay + SimpleBitOps + Codec,
-	<RelayChainInfo as RelayChainStateInfo>::BlockNumber: Copy
+	<RelayChainInfo as RelayChainStorageInfo>::BlockNumber: Copy
 		+ Into<U256>
 		+ TryFrom<U256>
 		+ HasCompact
@@ -356,7 +355,7 @@ impl<
 	SiblingProviderStateInfo:
 		ProviderParachainStateInfo<Identifier = Subject, Commitment = ProviderDipMerkleHasher::Out>,
 	SiblingProviderStateInfo::Hasher: 'static,
-	OutputOf<SiblingProviderStateInfo::Hasher>: Ord + From<OutputOf<<RelayChainInfo as RelayChainStateInfo>::Hasher>>,
+	OutputOf<SiblingProviderStateInfo::Hasher>: Ord + From<OutputOf<<RelayChainInfo as RelayChainStorageInfo>::Hasher>>,
 	SiblingProviderStateInfo::BlockNumber: Encode + Clone,
 	SiblingProviderStateInfo::Commitment: Decode,
 	SiblingProviderStateInfo::Key: AsRef<[u8]>,
@@ -376,8 +375,8 @@ impl<
 	type Error = ();
 	type IdentityDetails = LocalDidDetails;
 	type Proof = ChildParachainDipStateProof<
-		<RelayChainInfo as RelayChainStateInfo>::BlockNumber,
-		<RelayChainInfo as RelayChainStateInfo>::Hasher,
+		<RelayChainInfo as RelayChainStorageInfo>::BlockNumber,
+		<RelayChainInfo as RelayChainStorageInfo>::Hasher,
 		Vec<Vec<u8>>,
 		RevealedDidMerkleProofLeaf<
 			ProviderDidKeyId,
