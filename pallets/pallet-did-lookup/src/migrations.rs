@@ -142,7 +142,7 @@ where
 				.saturating_add(do_migration::<T>());
 		}
 		log::info!(
-			"Did lookup: No migration needed. This file should be deleted. Current storage version: {:?}, Required Version for update: {:?}", 
+			"Did lookup: No migration needed. This file should be deleted. Current storage version: {:?}, Required Version for update: {:?}",
 			onchain_storage_version,
 			CURRENT_STORAGE_VERSION
 		);
@@ -175,6 +175,7 @@ where
 	#[cfg(feature = "try-runtime")]
 	fn post_upgrade(_pre_state: sp_std::vec::Vec<u8>) -> Result<(), TryRuntimeError> {
 		use frame_support::traits::fungible::InspectHold;
+		use sp_runtime::Saturating;
 		use sp_std::collections::btree_map::BTreeMap;
 
 		use crate::BalanceOf;

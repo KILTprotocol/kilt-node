@@ -67,9 +67,11 @@ pub mod pallet {
 		traits::{CallSources, StorageDepositCollector},
 		Deposit,
 	};
-	use runtime_common::Balance;
-
-	use sp_runtime::traits::BlockNumberProvider;
+	use parity_scale_codec::Codec;
+	use sp_runtime::{
+		traits::{AtLeast32BitUnsigned, BlockNumberProvider, MaybeSerializeDeserialize},
+		FixedPointOperand,
+	};
 
 	pub use crate::connection_record::ConnectionRecord;
 
@@ -107,8 +109,19 @@ pub mod pallet {
 
 		type RuntimeHoldReason: From<HoldReason>;
 
+		type Balance: Parameter
+			+ Member
+			+ AtLeast32BitUnsigned
+			+ Codec
+			+ Default
+			+ Copy
+			+ MaybeSerializeDeserialize
+			+ sp_std::fmt::Debug
+			+ MaxEncodedLen
+			+ TypeInfo
+			+ FixedPointOperand;
 		/// The currency that is used to reserve funds for each did.
-		type Currency: MutateHold<AccountIdOf<Self>, Reason = Self::RuntimeHoldReason, Balance = Balance>;
+		type Currency: MutateHold<AccountIdOf<Self>, Reason = Self::RuntimeHoldReason, Balance = Self::Balance>;
 
 		/// The amount of balance that will be taken for each DID as a deposit
 		/// to incentivise fair use of the on chain storage. The deposit can be

@@ -634,6 +634,7 @@ impl pallet_did_lookup::Config for Runtime {
 
 	type DidIdentifier = DidIdentifier;
 
+	type Balance = Balance;
 	type Currency = Balances;
 	type Deposit = constants::did_lookup::DidLookupDeposit;
 
