@@ -105,7 +105,6 @@ pub mod pallet {
 
 		type RuntimeHoldReason: From<HoldReason>;
 
-		// type Balance: frame_support::traits::tokens::Balance;
 		/// The currency that is used to reserve funds for each did.
 		type Currency: MutateHold<AccountIdOf<Self>, Reason = Self::RuntimeHoldReason>;
 
