@@ -45,7 +45,7 @@ mod substrate_no_std_port {
 		keys: I,
 	) -> Result<BTreeMap<Vec<u8>, Option<Vec<u8>>>, ()>
 	where
-		H: Hasher + 'static,
+		H: Hasher,
 		H::Out: Ord + Codec,
 		I: IntoIterator,
 		I::Item: AsRef<[u8]>,
@@ -92,12 +92,12 @@ pub(super) mod relay_chain {
 
 	use crate::traits::{RelayChainStateInfo, RelayChainStorageInfo};
 
-	pub struct SiblingParachainHeadProofVerifier<RelayChainState>(PhantomData<RelayChainState>);
+	pub struct ParachainHeadProofVerifier<RelayChainState>(PhantomData<RelayChainState>);
 
-	impl<RelayChainState> SiblingParachainHeadProofVerifier<RelayChainState>
+	// Uses the provided `root` to verify the proof.
+	impl<RelayChainState> ParachainHeadProofVerifier<RelayChainState>
 	where
 		RelayChainState: RelayChainStorageInfo,
-		RelayChainState::Hasher: 'static,
 		OutputOf<RelayChainState::Hasher>: Ord,
 		RelayChainState::BlockNumber: Copy + Into<U256> + TryFrom<U256> + HasCompact,
 		RelayChainState::Key: AsRef<[u8]>,
@@ -124,10 +124,11 @@ pub(super) mod relay_chain {
 		}
 	}
 
-	impl<RelayChainState> SiblingParachainHeadProofVerifier<RelayChainState>
+	// Relies on the `RelayChainState::state_root_for_block` to retrieve the state
+	// root for the given block.
+	impl<RelayChainState> ParachainHeadProofVerifier<RelayChainState>
 	where
-		RelayChainState: RelayChainStorageInfo + RelayChainStateInfo,
-		RelayChainState::Hasher: 'static,
+		RelayChainState: RelayChainStateInfo,
 		OutputOf<RelayChainState::Hasher>: Ord,
 		RelayChainState::BlockNumber: Copy + Into<U256> + TryFrom<U256> + HasCompact,
 		RelayChainState::Key: AsRef<[u8]>,
@@ -231,13 +232,12 @@ pub(super) mod relay_chain {
 			// "0xcd710b30bd2eab0352ddcc26417aa1941b3c252fcb29d88eff4f3de5de4476c32c0cfd6c23b92a7826080000"
 			//
 			let expected_spiritnet_head_at_block = hex!("65541097fb02782e14f43074f0b00e44ae8e9fe426982323ef1d329739740d37f252ff006d1156941db1bccd58ce3a1cac4f40cad91f692d94e98f501dd70081a129b69a3e2ef7e1ff84ba3d86dab4e95f2c87f6b1055ebd48519c185360eae58f05d1ea08066175726120dcdc6308000000000561757261010170ccfaf3756d1a8dd8ae5c89094199d6d32e5dd9f0920f6fe30f986815b5e701974ea0e0e0a901401f2c72e3dd8dbdf4aa55d59bf3e7021856cdb8038419eb8c").to_vec();
-			let returned_head =
-				SiblingParachainHeadProofVerifier::<StaticPolkadotInfoProvider>::verify_proof_for_parachain(
-					&2_086,
-					&16_363_919,
-					spiritnet_head_proof_at_block,
-				)
-				.expect("Parachain head proof verification should not fail.");
+			let returned_head = ParachainHeadProofVerifier::<StaticPolkadotInfoProvider>::verify_proof_for_parachain(
+				&2_086,
+				&16_363_919,
+				spiritnet_head_proof_at_block,
+			)
+			.expect("Parachain head proof verification should not fail.");
 			assert!(returned_head.encode() == expected_spiritnet_head_at_block, "Parachain head returned from the state proof verification should not be different than the pre-computed one.");
 		}
 	}
@@ -253,7 +253,6 @@ pub(super) mod parachain {
 	impl<ParaInfo> DipIdentityCommitmentProofVerifier<ParaInfo>
 	where
 		ParaInfo: ProviderParachainStateInfo,
-		ParaInfo::Hasher: 'static,
 		OutputOf<ParaInfo::Hasher>: Ord,
 		ParaInfo::Commitment: Decode,
 		ParaInfo::Key: AsRef<[u8]>,

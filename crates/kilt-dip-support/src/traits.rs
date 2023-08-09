@@ -117,7 +117,7 @@ pub trait HistoryProvider {
 	type BlockNumber;
 	type Hasher: sp_runtime::traits::Hash;
 
-	fn block_hash_for(block: &Self::BlockNumber) -> Option<<Self::Hasher as sp_runtime::traits::Hash>::Output>;
+	fn block_hash_for(block: &Self::BlockNumber) -> Option<OutputOf<Self::Hasher>>;
 }
 
 impl<T> HistoryProvider for T
@@ -127,7 +127,7 @@ where
 	type BlockNumber = T::BlockNumber;
 	type Hasher = T::Hashing;
 
-	fn block_hash_for(block: &Self::BlockNumber) -> Option<<Self::Hasher as sp_runtime::traits::Hash>::Output> {
+	fn block_hash_for(block: &Self::BlockNumber) -> Option<OutputOf<Self::Hasher>> {
 		let retrieved_block = frame_system::Pallet::<T>::block_hash(block);
 		let default_block_hash_value = <T::Hash as Default>::default();
 

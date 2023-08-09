@@ -35,7 +35,7 @@ use pallet_dip_consumer::traits::IdentityProofVerifier;
 use crate::{
 	did::{RevealedDidKeysAndSignature, RevealedDidKeysSignatureAndCallVerifier, TimeBoundDidSignature},
 	merkle::{DidMerkleProof, DidMerkleProofVerifier, RevealedDidMerkleProofLeaf, RevealedDidMerkleProofLeaves},
-	state_proofs::{parachain::DipIdentityCommitmentProofVerifier, relay_chain::SiblingParachainHeadProofVerifier},
+	state_proofs::{parachain::DipIdentityCommitmentProofVerifier, relay_chain::ParachainHeadProofVerifier},
 	traits::{
 		Bump, DidSignatureVerifierContext, DipCallOriginFilter, HistoryProvider, ProviderParachainStateInfo,
 		RelayChainStorageInfo,
@@ -144,7 +144,6 @@ impl<
 	TxSubmitter: Encode,
 
 	RelayChainStateInfo: traits::RelayChainStorageInfo + traits::RelayChainStateInfo,
-	RelayChainStateInfo::Hasher: 'static,
 	OutputOf<RelayChainStateInfo::Hasher>: Ord,
 	RelayChainStateInfo::BlockNumber: Copy + Into<U256> + TryFrom<U256> + HasCompact,
 	RelayChainStateInfo::Key: AsRef<[u8]>,
@@ -153,7 +152,6 @@ impl<
 
 	SiblingProviderStateInfo:
 		traits::ProviderParachainStateInfo<Identifier = Subject, Commitment = ProviderDipMerkleHasher::Out>,
-	SiblingProviderStateInfo::Hasher: 'static,
 	OutputOf<SiblingProviderStateInfo::Hasher>: Ord + From<OutputOf<RelayChainStateInfo::Hasher>>,
 	SiblingProviderStateInfo::BlockNumber: Encode + Clone,
 	SiblingProviderStateInfo::Commitment: Decode,
@@ -202,12 +200,11 @@ impl<
 		proof: Self::Proof,
 	) -> Result<Self::VerificationResult, Self::Error> {
 		// 1. Verify relay chain proof.
-		let provider_parachain_header =
-			SiblingParachainHeadProofVerifier::<RelayChainStateInfo>::verify_proof_for_parachain(
-				&SiblingProviderParachainId::get(),
-				&proof.para_state_root.relay_block_height,
-				proof.para_state_root.proof,
-			)?;
+		let provider_parachain_header = ParachainHeadProofVerifier::<RelayChainStateInfo>::verify_proof_for_parachain(
+			&SiblingProviderParachainId::get(),
+			&proof.para_state_root.relay_block_height,
+			proof.para_state_root.proof,
+		)?;
 
 		// 2. Verify parachain state proof.
 		let subject_identity_commitment =
@@ -336,7 +333,6 @@ impl<
 			BlockNumber = <RelayChainInfo as RelayChainStorageInfo>::BlockNumber,
 			Hasher = <RelayChainInfo as RelayChainStorageInfo>::Hasher,
 		>,
-	<RelayChainInfo as RelayChainStorageInfo>::Hasher: 'static,
 	OutputOf<<RelayChainInfo as RelayChainStorageInfo>::Hasher>:
 		Ord + Default + sp_std::hash::Hash + Copy + Member + MaybeDisplay + SimpleBitOps + Codec,
 	<RelayChainInfo as RelayChainStorageInfo>::BlockNumber: Copy
@@ -354,7 +350,6 @@ impl<
 
 	SiblingProviderStateInfo:
 		ProviderParachainStateInfo<Identifier = Subject, Commitment = ProviderDipMerkleHasher::Out>,
-	SiblingProviderStateInfo::Hasher: 'static,
 	OutputOf<SiblingProviderStateInfo::Hasher>: Ord + From<OutputOf<<RelayChainInfo as RelayChainStorageInfo>::Hasher>>,
 	SiblingProviderStateInfo::BlockNumber: Encode + Clone,
 	SiblingProviderStateInfo::Commitment: Decode,
@@ -417,7 +412,7 @@ impl<
 		// FIXME: Compilation error
 		// 2. Verify relay chain proof
 		let provider_parachain_header =
-			SiblingParachainHeadProofVerifier::<RelayChainInfo>::verify_proof_for_parachain_with_root(
+			ParachainHeadProofVerifier::<RelayChainInfo>::verify_proof_for_parachain_with_root(
 				&SiblingProviderParachainId::get(),
 				&state_root_at_height,
 				proof.para_state_root.proof,
