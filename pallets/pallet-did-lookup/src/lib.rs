@@ -67,11 +67,7 @@ pub mod pallet {
 		traits::{CallSources, StorageDepositCollector},
 		Deposit,
 	};
-	use parity_scale_codec::Codec;
-	use sp_runtime::{
-		traits::{AtLeast32BitUnsigned, BlockNumberProvider, MaybeSerializeDeserialize},
-		FixedPointOperand,
-	};
+	use sp_runtime::traits::{BlockNumberProvider, MaybeSerializeDeserialize};
 
 	pub use crate::connection_record::ConnectionRecord;
 
@@ -109,17 +105,7 @@ pub mod pallet {
 
 		type RuntimeHoldReason: From<HoldReason>;
 
-		type Balance: Parameter
-			+ Member
-			+ AtLeast32BitUnsigned
-			+ Codec
-			+ Default
-			+ Copy
-			+ MaybeSerializeDeserialize
-			+ sp_std::fmt::Debug
-			+ MaxEncodedLen
-			+ TypeInfo
-			+ FixedPointOperand;
+		type Balance: frame_support::traits::tokens::Balance + MaybeSerializeDeserialize;
 		/// The currency that is used to reserve funds for each did.
 		type Currency: MutateHold<AccountIdOf<Self>, Reason = Self::RuntimeHoldReason, Balance = Self::Balance>;
 
