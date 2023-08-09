@@ -33,7 +33,7 @@ use crate::{AccountId, DidIdentifier, Runtime, RuntimeCall, RuntimeOrigin};
 pub type ProofVerifier = DipSiblingProviderStateProofVerifier<
 	RococoStateRootsViaRelayStorePallet<Runtime>,
 	ConstU32<2_000>,
-	KiltDipCommitmentsForDipProviderPallet<dip_provider_runtime_template::Runtime>,
+	KiltDipCommitmentsForDipProviderPallet<ProviderRuntime>,
 	AccountId,
 	BlakeTwo256,
 	KeyIdOf<ProviderRuntime>,
