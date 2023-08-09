@@ -118,7 +118,6 @@ parameter_types! {
 impl pallet_did_lookup::Config for Test {
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeHoldReason = RuntimeHoldReason;
-	type Balance = Balance;
 	type Currency = Balances;
 	type Deposit = DidLookupDeposit;
 	type EnsureOrigin = mock_origin::EnsureDoubleOrigin<AccountId, SubjectId>;

@@ -105,9 +105,9 @@ pub mod pallet {
 
 		type RuntimeHoldReason: From<HoldReason>;
 
-		type Balance: frame_support::traits::tokens::Balance;
+		// type Balance: frame_support::traits::tokens::Balance;
 		/// The currency that is used to reserve funds for each did.
-		type Currency: MutateHold<AccountIdOf<Self>, Reason = Self::RuntimeHoldReason, Balance = Self::Balance>;
+		type Currency: MutateHold<AccountIdOf<Self>, Reason = Self::RuntimeHoldReason>;
 
 		/// The amount of balance that will be taken for each DID as a deposit
 		/// to incentivise fair use of the on chain storage. The deposit can be
@@ -177,7 +177,8 @@ pub mod pallet {
 	#[pallet::genesis_config]
 	pub struct GenesisConfig<T: Config>
 	where
-		T::Balance: MaybeSerializeDeserialize,
+		<T::Currency as Inspect<AccountIdOf<T>>>::Balance:
+			frame_support::traits::tokens::Balance + MaybeSerializeDeserialize,
 	{
 		pub links: sp_std::vec::Vec<(LinkableAccountId, ConnectionRecordOf<T>)>,
 	}
@@ -185,7 +186,8 @@ pub mod pallet {
 	#[cfg(feature = "std")]
 	impl<T: Config> Default for GenesisConfig<T>
 	where
-		T::Balance: MaybeSerializeDeserialize,
+		<T::Currency as Inspect<AccountIdOf<T>>>::Balance:
+			frame_support::traits::tokens::Balance + MaybeSerializeDeserialize,
 	{
 		fn default() -> Self {
 			Self {
@@ -197,7 +199,8 @@ pub mod pallet {
 	#[pallet::genesis_build]
 	impl<T: Config> GenesisBuild<T> for GenesisConfig<T>
 	where
-		T::Balance: MaybeSerializeDeserialize,
+		<T::Currency as Inspect<AccountIdOf<T>>>::Balance:
+			frame_support::traits::tokens::Balance + MaybeSerializeDeserialize,
 	{
 		fn build(&self) {
 			// populate link records
