@@ -6,7 +6,7 @@ homepage = "https://kilt.io/"
 license-file = "LICENSE"
 readme = "README.md"
 repository = "https://github.com/KILTprotocol/kilt-node"
-version = "1.11.0-rc0"
+version = "1.11.0-rc1"
 
 [workspace]
 members = [
