@@ -72,7 +72,7 @@ build-wasm-peregrine:
     - cp -r * /build
     - /srtool/build build
     - subwasm meta --format=json+scale /out/peregrine_runtime.compact.wasm > /out/peregrine-metadata.json
-    - subwasm get -o spiritnet-live.wasm wss://peregrine.kilt.io
+    - subwasm get -o peregrine-live.wasm wss://peregrine.kilt.io
     - subwasm diff --no-color peregrine-live.wasm /out/peregrine_runtime.compact.wasm > /out/peregrine-diff.txt
     - mkdir ./out
     - mv /out/* ./out/
