@@ -176,8 +176,7 @@ pub mod pallet {
 	#[pallet::genesis_config]
 	pub struct GenesisConfig<T: Config>
 	where
-		<T::Currency as Inspect<AccountIdOf<T>>>::Balance:
-			frame_support::traits::tokens::Balance + MaybeSerializeDeserialize,
+		<T::Currency as Inspect<AccountIdOf<T>>>::Balance: MaybeSerializeDeserialize,
 	{
 		pub links: sp_std::vec::Vec<(LinkableAccountId, ConnectionRecordOf<T>)>,
 	}
@@ -185,8 +184,7 @@ pub mod pallet {
 	#[cfg(feature = "std")]
 	impl<T: Config> Default for GenesisConfig<T>
 	where
-		<T::Currency as Inspect<AccountIdOf<T>>>::Balance:
-			frame_support::traits::tokens::Balance + MaybeSerializeDeserialize,
+		<T::Currency as Inspect<AccountIdOf<T>>>::Balance: MaybeSerializeDeserialize,
 	{
 		fn default() -> Self {
 			Self {
@@ -198,8 +196,7 @@ pub mod pallet {
 	#[pallet::genesis_build]
 	impl<T: Config> GenesisBuild<T> for GenesisConfig<T>
 	where
-		<T::Currency as Inspect<AccountIdOf<T>>>::Balance:
-			frame_support::traits::tokens::Balance + MaybeSerializeDeserialize,
+		<T::Currency as Inspect<AccountIdOf<T>>>::Balance: MaybeSerializeDeserialize,
 	{
 		fn build(&self) {
 			// populate link records
