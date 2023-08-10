@@ -282,12 +282,12 @@ pub mod governance {
 	#[cfg(feature = "fast-gov")]
 	pub const COUNCIL_MOTION_DURATION: BlockNumber = 4 * MINUTES;
 	#[cfg(not(feature = "fast-gov"))]
-	pub const COUNCIL_MOTION_DURATION: BlockNumber = 3 * DAYS;
+	pub const COUNCIL_MOTION_DURATION: BlockNumber = 7 * DAYS;
 
 	#[cfg(feature = "fast-gov")]
 	pub const TECHNICAL_MOTION_DURATION: BlockNumber = 4 * MINUTES;
 	#[cfg(not(feature = "fast-gov"))]
-	pub const TECHNICAL_MOTION_DURATION: BlockNumber = 3 * DAYS;
+	pub const TECHNICAL_MOTION_DURATION: BlockNumber = 7 * DAYS;
 
 	parameter_types! {
 		// Democracy Pallet
