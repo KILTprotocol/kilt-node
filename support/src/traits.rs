@@ -16,10 +16,13 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::traits::{Currency, ReservableCurrency};
+use frame_support::traits::{
+	fungible::hold::Mutate,
+	tokens::fungible::{Inspect, MutateHold},
+};
 use sp_runtime::DispatchError;
 
-use crate::{deposit::Deposit, free_deposit};
+use crate::deposit::{free_deposit, reserve_deposit, Deposit};
 
 /// The sources of a call struct.
 ///
@@ -86,26 +89,51 @@ pub trait ItemFilter<Item> {
 	fn should_include(&self, credential: &Item) -> bool;
 }
 
-pub trait StorageDepositCollector<AccountId, Key> {
-	type Currency: ReservableCurrency<AccountId>;
+pub trait StorageDepositCollector<AccountId, Key, RuntimeHoldReason> {
+	type Currency: MutateHold<AccountId, Reason = RuntimeHoldReason>;
+	// TODO: This could also be replaced with a `Borrow<RuntimeHoldReason>` or an
+	// `AsRef<RuntimeHoldReason>`, but not sure what trait the runtime composite
+	// enum implements.
+	type Reason: Into<RuntimeHoldReason> + Clone;
+
+	/// Returns the hold reason for deposits taken by the deposit collector;
+	fn reason() -> Self::Reason;
 
 	/// Returns the deposit of the storage entry that is stored behind the key.
-	fn deposit(
-		key: &Key,
-	) -> Result<Deposit<AccountId, <Self::Currency as Currency<AccountId>>::Balance>, DispatchError>;
+	fn deposit(key: &Key)
+		-> Result<Deposit<AccountId, <Self::Currency as Inspect<AccountId>>::Balance>, DispatchError>;
 
 	/// Returns the deposit amount that should be reserved for the storage entry
 	/// behind the key.
 	///
 	/// This value can differ from the actual deposit that is reserved at the
 	/// time, since the deposit can be changed.
-	fn deposit_amount(key: &Key) -> <Self::Currency as Currency<AccountId>>::Balance;
+	fn deposit_amount(key: &Key) -> <Self::Currency as Inspect<AccountId>>::Balance;
 
 	/// Store the new deposit information in the storage entry behind the key.
 	fn store_deposit(
 		key: &Key,
-		deposit: Deposit<AccountId, <Self::Currency as Currency<AccountId>>::Balance>,
+		deposit: Deposit<AccountId, <Self::Currency as Inspect<AccountId>>::Balance>,
 	) -> Result<(), DispatchError>;
+
+	/// Release the deposit.
+	fn free_deposit(
+		deposit: Deposit<AccountId, <Self::Currency as Inspect<AccountId>>::Balance>,
+	) -> Result<<Self::Currency as Inspect<AccountId>>::Balance, DispatchError> {
+		free_deposit::<AccountId, Self::Currency>(&deposit, &Self::reason().into())
+	}
+
+	/// Creates a new deposit for user.
+	///
+	/// # Errors
+	/// Can fail if the user has not enough balance.
+	fn create_deposit(
+		who: AccountId,
+		amount: <Self::Currency as Inspect<AccountId>>::Balance,
+	) -> Result<Deposit<AccountId, <Self::Currency as Inspect<AccountId>>::Balance>, DispatchError> {
+		let reason = Self::reason();
+		reserve_deposit::<AccountId, Self::Currency>(who, amount, &reason.into())
+	}
 
 	/// Change the deposit owner.
 	///
@@ -114,14 +142,15 @@ pub trait StorageDepositCollector<AccountId, Key> {
 	/// will not change even if the required byte and item fees were updated.
 	fn change_deposit_owner(key: &Key, new_owner: AccountId) -> Result<(), DispatchError> {
 		let deposit = Self::deposit(key)?;
+		let reason = Self::reason();
 
-		free_deposit::<AccountId, Self::Currency>(&deposit);
+		free_deposit::<AccountId, Self::Currency>(&deposit, &reason.clone().into())?;
 
 		let deposit = Deposit {
 			owner: new_owner,
 			..deposit
 		};
-		Self::Currency::reserve(&deposit.owner, deposit.amount)?;
+		Self::Currency::hold(&reason.into(), &deposit.owner, deposit.amount)?;
 
 		Self::store_deposit(key, deposit)?;
 
@@ -136,14 +165,15 @@ pub trait StorageDepositCollector<AccountId, Key> {
 	/// the deposit was raised.
 	fn update_deposit(key: &Key) -> Result<(), DispatchError> {
 		let deposit = Self::deposit(key)?;
+		let reason = Self::reason();
 
-		free_deposit::<AccountId, Self::Currency>(&deposit);
+		free_deposit::<AccountId, Self::Currency>(&deposit, &reason.clone().into())?;
 
 		let deposit = Deposit {
 			amount: Self::deposit_amount(key),
 			..deposit
 		};
-		Self::Currency::reserve(&deposit.owner, deposit.amount)?;
+		Self::Currency::hold(&reason.into(), &deposit.owner, deposit.amount)?;
 
 		Self::store_deposit(key, deposit)?;
 

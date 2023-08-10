@@ -124,7 +124,7 @@ where
 pub mod barriers {
 	use super::*;
 
-	use frame_support::ensure;
+	use frame_support::{ensure, traits::ProcessMessageError};
 	use xcm::v3::{Instruction, Junction::Parachain, ParentThen};
 	use xcm_executor::traits::ShouldExecute;
 
@@ -187,7 +187,7 @@ pub mod barriers {
 			instructions: &mut [Instruction<RuntimeCall>],
 			_max_weight: Weight,
 			_weight_credit: &mut Weight,
-		) -> Result<(), ()> {
+		) -> Result<(), ProcessMessageError> {
 			#[cfg(feature = "std")]
 			println!(
 				"AllowParachainProviderAsSubaccount::should_execute(origin = {:?}, instructions = {:?}",
@@ -196,9 +196,9 @@ pub mod barriers {
 			// Ensure that the origin is a parachain allowed to act as identity provider.
 			ensure!(
 				*origin == ParentThen(Parachain(ProviderParaId::get()).into()).into(),
-				()
+				ProcessMessageError::Yield
 			);
-			check_expected_dip_instruction_order(instructions)
+			check_expected_dip_instruction_order(instructions).map_err(|_| ProcessMessageError::Yield)
 		}
 	}
 
@@ -216,7 +216,7 @@ pub mod barriers {
 			instructions: &mut [Instruction<RuntimeCall>],
 			max_weight: Weight,
 			weight_credit: &mut Weight,
-		) -> Result<(), ()> {
+		) -> Result<(), ProcessMessageError> {
 			Barrier::should_execute(origin, instructions, max_weight, weight_credit).or_else(|_| {
 				AllowParachainProviderAsSubaccount::<ProviderParaId>::should_execute(
 					origin,
@@ -242,7 +242,7 @@ pub mod barriers {
 			instructions: &mut [Instruction<RuntimeCall>],
 			max_weight: Weight,
 			weight_credit: &mut Weight,
-		) -> Result<(), ()> {
+		) -> Result<(), ProcessMessageError> {
 			Barrier::should_execute(origin, instructions, max_weight, weight_credit)?;
 			AllowParachainProviderAsSubaccount::<ProviderParaId>::should_execute(
 				origin,

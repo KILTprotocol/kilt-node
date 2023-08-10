@@ -51,7 +51,7 @@ impl<T: frame_system::Config> pallet_proxy::WeightInfo for WeightInfo<T> {
 	// Storage: Proxy Proxies (r:1 w:0)
 	// Proof: Proxy Proxies (max_values: None, max_size: Some(467), added: 2942, mode: MaxEncodedLen)
 	fn proxy(_p: u32, ) -> Weight {
-		Weight::from_ref_time(24_929_956 as u64)
+		Weight::from_parts(24_929_956 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 	}
 	// Storage: Proxy Proxies (r:1 w:0)
@@ -61,9 +61,9 @@ impl<T: frame_system::Config> pallet_proxy::WeightInfo for WeightInfo<T> {
 	// Storage: System Account (r:1 w:1)
 	// Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
 	fn proxy_announced(a: u32, _p: u32, ) -> Weight {
-		Weight::from_ref_time(41_483_872 as u64)
+		Weight::from_parts(41_483_872 as u64, 0)
 			// Standard Error: 43_404
-			.saturating_add(Weight::from_ref_time(122_506 as u64).saturating_mul(a as u64))
+			.saturating_add(Weight::from_parts(122_506 as u64, 0).saturating_mul(a as u64))
 			.saturating_add(T::DbWeight::get().reads(3 as u64))
 			.saturating_add(T::DbWeight::get().writes(2 as u64))
 	}
@@ -72,9 +72,9 @@ impl<T: frame_system::Config> pallet_proxy::WeightInfo for WeightInfo<T> {
 	// Storage: System Account (r:1 w:1)
 	// Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
 	fn remove_announcement(a: u32, _p: u32, ) -> Weight {
-		Weight::from_ref_time(25_637_685 as u64)
+		Weight::from_parts(25_637_685 as u64, 0)
 			// Standard Error: 31_182
-			.saturating_add(Weight::from_ref_time(310_154 as u64).saturating_mul(a as u64))
+			.saturating_add(Weight::from_parts(310_154 as u64, 0).saturating_mul(a as u64))
 			.saturating_add(T::DbWeight::get().reads(2 as u64))
 			.saturating_add(T::DbWeight::get().writes(2 as u64))
 	}
@@ -83,11 +83,11 @@ impl<T: frame_system::Config> pallet_proxy::WeightInfo for WeightInfo<T> {
 	// Storage: System Account (r:1 w:1)
 	// Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
 	fn reject_announcement(a: u32, p: u32, ) -> Weight {
-		Weight::from_ref_time(23_441_094 as u64)
+		Weight::from_parts(23_441_094 as u64, 0)
 			// Standard Error: 42_108
-			.saturating_add(Weight::from_ref_time(486_177 as u64).saturating_mul(a as u64))
+			.saturating_add(Weight::from_parts(486_177 as u64, 0).saturating_mul(a as u64))
 			// Standard Error: 46_746
-			.saturating_add(Weight::from_ref_time(189_817 as u64).saturating_mul(p as u64))
+			.saturating_add(Weight::from_parts(189_817 as u64, 0).saturating_mul(p as u64))
 			.saturating_add(T::DbWeight::get().reads(2 as u64))
 			.saturating_add(T::DbWeight::get().writes(2 as u64))
 	}
@@ -98,54 +98,54 @@ impl<T: frame_system::Config> pallet_proxy::WeightInfo for WeightInfo<T> {
 	// Storage: System Account (r:1 w:1)
 	// Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
 	fn announce(a: u32, p: u32, ) -> Weight {
-		Weight::from_ref_time(33_809_817 as u64)
+		Weight::from_parts(33_809_817 as u64, 0)
 			// Standard Error: 63_991
-			.saturating_add(Weight::from_ref_time(546_841 as u64).saturating_mul(a as u64))
+			.saturating_add(Weight::from_parts(546_841 as u64, 0).saturating_mul(a as u64))
 			// Standard Error: 71_040
-			.saturating_add(Weight::from_ref_time(163_484 as u64).saturating_mul(p as u64))
+			.saturating_add(Weight::from_parts(163_484 as u64, 0).saturating_mul(p as u64))
 			.saturating_add(T::DbWeight::get().reads(3 as u64))
 			.saturating_add(T::DbWeight::get().writes(2 as u64))
 	}
 	// Storage: Proxy Proxies (r:1 w:1)
 	// Proof: Proxy Proxies (max_values: None, max_size: Some(467), added: 2942, mode: MaxEncodedLen)
 	fn add_proxy(p: u32, ) -> Weight {
-		Weight::from_ref_time(26_271_824 as u64)
+		Weight::from_parts(26_271_824 as u64, 0)
 			// Standard Error: 68_528
-			.saturating_add(Weight::from_ref_time(739_793 as u64).saturating_mul(p as u64))
+			.saturating_add(Weight::from_parts(739_793 as u64, 0).saturating_mul(p as u64))
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	// Storage: Proxy Proxies (r:1 w:1)
 	// Proof: Proxy Proxies (max_values: None, max_size: Some(467), added: 2942, mode: MaxEncodedLen)
 	fn remove_proxy(_p: u32, ) -> Weight {
-		Weight::from_ref_time(31_310_212 as u64)
+		Weight::from_parts(31_310_212 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	// Storage: Proxy Proxies (r:1 w:1)
 	// Proof: Proxy Proxies (max_values: None, max_size: Some(467), added: 2942, mode: MaxEncodedLen)
 	fn remove_proxies(p: u32, ) -> Weight {
-		Weight::from_ref_time(22_999_382 as u64)
+		Weight::from_parts(22_999_382 as u64, 0)
 			// Standard Error: 77_197
-			.saturating_add(Weight::from_ref_time(89_076 as u64).saturating_mul(p as u64))
+			.saturating_add(Weight::from_parts(89_076 as u64, 0).saturating_mul(p as u64))
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	// Storage: Proxy Proxies (r:1 w:1)
 	// Proof: Proxy Proxies (max_values: None, max_size: Some(467), added: 2942, mode: MaxEncodedLen)
 	fn create_pure(p: u32, ) -> Weight {
-		Weight::from_ref_time(29_724_514 as u64)
+		Weight::from_parts(29_724_514 as u64, 0)
 			// Standard Error: 117_550
-			.saturating_add(Weight::from_ref_time(1_203_667 as u64).saturating_mul(p as u64))
+			.saturating_add(Weight::from_parts(1_203_667 as u64, 0).saturating_mul(p as u64))
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	// Storage: Proxy Proxies (r:1 w:1)
 	// Proof: Proxy Proxies (max_values: None, max_size: Some(467), added: 2942, mode: MaxEncodedLen)
 	fn kill_pure(p: u32, ) -> Weight {
-		Weight::from_ref_time(23_020_019 as u64)
+		Weight::from_parts(23_020_019 as u64, 0)
 			// Standard Error: 63_735
-			.saturating_add(Weight::from_ref_time(272_602 as u64).saturating_mul(p as u64))
+			.saturating_add(Weight::from_parts(272_602 as u64, 0).saturating_mul(p as u64))
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}

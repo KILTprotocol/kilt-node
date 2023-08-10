@@ -51,4 +51,6 @@ std = [
   "xcm-executor/std",
   "xcm/std"
 ]
-runtime-benchmarks = []
+runtime-benchmarks = [
+  "pallet-dip-consumer/runtime-benchmarks"
+]

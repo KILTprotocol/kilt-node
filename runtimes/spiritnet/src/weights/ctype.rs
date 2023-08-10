@@ -53,16 +53,16 @@ impl<T: frame_system::Config> ctype::WeightInfo for WeightInfo<T> {
 	// Storage: Ctype Ctypes (r:1 w:1)
 	// Proof: Ctype Ctypes (max_values: None, max_size: Some(88), added: 2563, mode: MaxEncodedLen)
 	fn add(l: u32, ) -> Weight {
-		Weight::from_ref_time(4_058_770 as u64)
+		Weight::from_parts(4_058_770 as u64, 0)
 			// Standard Error: 0
-			.saturating_add(Weight::from_ref_time(2_059 as u64).saturating_mul(l as u64))
+			.saturating_add(Weight::from_parts(2_059 as u64, 0).saturating_mul(l as u64))
 			.saturating_add(T::DbWeight::get().reads(3 as u64))
 			.saturating_add(T::DbWeight::get().writes(3 as u64))
 	}
 	// Storage: Ctype Ctypes (r:1 w:1)
 	// Proof: Ctype Ctypes (max_values: None, max_size: Some(88), added: 2563, mode: MaxEncodedLen)
 	fn set_block_number() -> Weight {
-		Weight::from_ref_time(18_686_000 as u64)
+		Weight::from_parts(18_686_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}

@@ -40,7 +40,7 @@ use crate::{
 parameter_types! {
 	pub HereLocation: MultiLocation = MultiLocation::here();
 	pub NoneNetworkId: Option<NetworkId> = None;
-	pub UnitWeightCost: Weight = Weight::from_ref_time(1_000);
+	pub UnitWeightCost: Weight = Weight::from_parts(1_000, 0);
 	pub UniversalLocation: InteriorMultiLocation = Parachain(ParachainInfo::parachain_id().into()).into();
 }
 
@@ -121,11 +121,14 @@ pub type XcmPalletToRemoteLocationConverter = SignedToAccountId32<RuntimeOrigin,
 impl pallet_xcm::Config for Runtime {
 	const VERSION_DISCOVERY_QUEUE_SIZE: u32 = 100;
 
+	type AdminOrigin = EnsureRoot<AccountId>;
 	type AdvertisedXcmVersion = pallet_xcm::CurrentXcmVersion;
 	type Currency = Balances;
 	type CurrencyMatcher = ();
 	type ExecuteXcmOrigin = EnsureXcmOrigin<RuntimeOrigin, XcmPalletToRemoteLocationConverter>;
 	type MaxLockers = ConstU32<8>;
+	type MaxRemoteLockConsumers = ConstU32<8>;
+	type RemoteLockConsumerIdentifier = [u8; 8];
 	type RuntimeCall = RuntimeCall;
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeOrigin = RuntimeOrigin;

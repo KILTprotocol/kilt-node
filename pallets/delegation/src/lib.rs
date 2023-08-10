@@ -66,7 +66,7 @@
 mod access_control;
 pub mod default_weights;
 pub mod delegation_hierarchy;
-
+pub mod migrations;
 #[cfg(any(feature = "mock", test))]
 pub mod mock;
 
@@ -81,12 +81,7 @@ mod try_state;
 
 pub use crate::{access_control::DelegationAc, default_weights::WeightInfo, delegation_hierarchy::*, pallet::*};
 
-use frame_support::{
-	dispatch::DispatchResult,
-	ensure,
-	pallet_prelude::Weight,
-	traits::{Get, ReservableCurrency},
-};
+use frame_support::{dispatch::DispatchResult, ensure, pallet_prelude::Weight, traits::Get};
 use kilt_support::traits::StorageDepositCollector;
 use parity_scale_codec::Encode;
 use sp_runtime::{traits::Hash, DispatchError};
@@ -98,18 +93,21 @@ pub mod pallet {
 	use super::*;
 	use frame_support::{
 		pallet_prelude::*,
-		traits::{Currency, StorageVersion},
+		traits::{
+			fungible::{Inspect, MutateHold},
+			StorageVersion,
+		},
 	};
 	use frame_system::pallet_prelude::*;
 	use kilt_support::{
-		deposit::Deposit,
 		signature::{SignatureVerificationError, VerifySignature},
 		traits::CallSources,
+		Deposit,
 	};
 	use scale_info::TypeInfo;
 
 	/// The current storage version.
-	const STORAGE_VERSION: StorageVersion = StorageVersion::new(3);
+	pub(crate) const STORAGE_VERSION: StorageVersion = StorageVersion::new(4);
 
 	/// Type of a delegation node identifier.
 	pub type DelegationNodeIdOf<T> = <T as Config>::DelegationNodeId;
@@ -129,9 +127,24 @@ pub mod pallet {
 
 	pub(crate) type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 
-	pub(crate) type BalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::Balance;
+	pub(crate) type BalanceOf<T> = <<T as Config>::Currency as Inspect<AccountIdOf<T>>>::Balance;
 
 	pub(crate) type CurrencyOf<T> = <T as Config>::Currency;
+
+	pub(crate) type DelegationDetailsOf<T> = DelegationDetails<DelegatorIdOf<T>>;
+
+	pub(crate) type DelegationNodeOf<T> = DelegationNode<
+		DelegationNodeIdOf<T>,
+		<T as Config>::MaxChildren,
+		DelegationDetailsOf<T>,
+		AccountIdOf<T>,
+		BalanceOf<T>,
+	>;
+
+	#[pallet::composite_enum]
+	pub enum HoldReason {
+		Deposit,
+	}
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config + ctype::Config {
@@ -150,9 +163,10 @@ pub mod pallet {
 		type OriginSuccess: CallSources<AccountIdOf<Self>, DelegatorIdOf<Self>>;
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 		type WeightInfo: WeightInfo;
+		type RuntimeHoldReason: From<HoldReason>;
 
 		/// The currency that is used to reserve funds for each delegation.
-		type Currency: ReservableCurrency<AccountIdOf<Self>>;
+		type Currency: MutateHold<AccountIdOf<Self>, Reason = Self::RuntimeHoldReason>;
 
 		/// The deposit that is required for storing a delegation.
 		#[pallet::constant]
@@ -178,11 +192,10 @@ pub mod pallet {
 		/// tree, this should be twice the maximum depth of the tree, i.e.
 		/// `2 ^ MaxParentChecks`.
 		#[pallet::constant]
-		type MaxChildren: Get<u32> + Clone;
+		type MaxChildren: Get<u32> + Clone + TypeInfo;
 	}
 
 	#[pallet::pallet]
-	#[pallet::generate_store(pub(super) trait Store)]
 	#[pallet::storage_version(STORAGE_VERSION)]
 	pub struct Pallet<T>(_);
 
@@ -191,7 +204,7 @@ pub mod pallet {
 	/// It maps from a node ID to the node details.
 	#[pallet::storage]
 	#[pallet::getter(fn delegation_nodes)]
-	pub type DelegationNodes<T> = StorageMap<_, Blake2_128Concat, DelegationNodeIdOf<T>, DelegationNode<T>>;
+	pub type DelegationNodes<T> = StorageMap<_, Blake2_128Concat, DelegationNodeIdOf<T>, DelegationNodeOf<T>>;
 
 	/// Delegation hierarchies stored on chain.
 	///
@@ -199,7 +212,7 @@ pub mod pallet {
 	#[pallet::storage]
 	#[pallet::getter(fn delegation_hierarchies)]
 	pub type DelegationHierarchies<T> =
-		StorageMap<_, Blake2_128Concat, DelegationNodeIdOf<T>, DelegationHierarchyDetails<T>>;
+		StorageMap<_, Blake2_128Concat, DelegationNodeIdOf<T>, DelegationHierarchyDetails<CtypeHashOf<T>>>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -292,7 +305,7 @@ pub mod pallet {
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
 		#[cfg(feature = "try-runtime")]
-		fn try_state(_n: BlockNumberFor<T>) -> Result<(), &'static str> {
+		fn try_state(_n: BlockNumberFor<T>) -> Result<(), sp_runtime::TryRuntimeError> {
 			crate::try_state::do_try_state::<T>()
 		}
 	}
@@ -348,7 +361,7 @@ pub mod pallet {
 			log::debug!("trying to insert Delegation Root");
 			Self::create_and_store_new_hierarchy(
 				root_node_id,
-				DelegationHierarchyDetails::<T> { ctype_hash },
+				DelegationHierarchyDetails { ctype_hash },
 				creator.clone(),
 				payer,
 			)?;
@@ -725,11 +738,11 @@ pub mod pallet {
 		/// nodes storage.
 		pub(crate) fn create_and_store_new_hierarchy(
 			root_id: DelegationNodeIdOf<T>,
-			hierarchy_details: DelegationHierarchyDetails<T>,
+			hierarchy_details: DelegationHierarchyDetails<CtypeHashOf<T>>,
 			hierarchy_owner: DelegatorIdOf<T>,
 			deposit_owner: AccountIdOf<T>,
 		) -> DispatchResult {
-			CurrencyOf::<T>::reserve(&deposit_owner, <T as Config>::Deposit::get())?;
+			DelegationDepositCollector::<T>::create_deposit(deposit_owner.clone(), <T as Config>::Deposit::get())?;
 
 			let root_node = DelegationNode::new_root_node(
 				root_id,
@@ -751,15 +764,17 @@ pub mod pallet {
 		// not, the behaviour of the system is undefined.
 		pub(crate) fn store_delegation_under_parent(
 			delegation_id: DelegationNodeIdOf<T>,
-			delegation_node: DelegationNode<T>,
+			delegation_node: DelegationNodeOf<T>,
 			parent_id: DelegationNodeIdOf<T>,
-			mut parent_node: DelegationNode<T>,
+			mut parent_node: DelegationNodeOf<T>,
 			deposit_owner: AccountIdOf<T>,
 		) -> DispatchResult {
-			CurrencyOf::<T>::reserve(&deposit_owner, <T as Config>::Deposit::get())?;
+			DelegationDepositCollector::<T>::create_deposit(deposit_owner, <T as Config>::Deposit::get())?;
 
 			// Add the new node as a child of that node
-			parent_node.try_add_child(delegation_id)?;
+			parent_node
+				.try_add_child(delegation_id)
+				.map_err(|_| Error::<T>::MaxChildrenExceeded)?;
 
 			<DelegationNodes<T>>::insert(delegation_id, delegation_node);
 			<DelegationNodes<T>>::insert(parent_id, parent_node);
@@ -967,8 +982,7 @@ pub mod pallet {
 			// We can clear storage now that all children have been removed
 			DelegationNodes::<T>::remove(*delegation);
 
-			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&delegation_node.deposit);
-
+			DelegationDepositCollector::<T>::free_deposit(delegation_node.clone().deposit)?;
 			consumed_weight = consumed_weight.saturating_add(T::DbWeight::get().reads_writes(1, 2));
 
 			// Deposit event that the delegation has been removed
@@ -979,23 +993,30 @@ pub mod pallet {
 	}
 
 	struct DelegationDepositCollector<T: Config>(PhantomData<T>);
-	impl<T: Config> StorageDepositCollector<AccountIdOf<T>, DelegationNodeIdOf<T>> for DelegationDepositCollector<T> {
+	impl<T: Config> StorageDepositCollector<AccountIdOf<T>, DelegationNodeIdOf<T>, T::RuntimeHoldReason>
+		for DelegationDepositCollector<T>
+	{
 		type Currency = <T as Config>::Currency;
+		type Reason = HoldReason;
+
+		fn reason() -> Self::Reason {
+			HoldReason::Deposit
+		}
 
 		fn deposit(
 			key: &DelegationNodeIdOf<T>,
-		) -> Result<Deposit<AccountIdOf<T>, <Self::Currency as Currency<AccountIdOf<T>>>::Balance>, DispatchError> {
+		) -> Result<Deposit<AccountIdOf<T>, <Self::Currency as Inspect<AccountIdOf<T>>>::Balance>, DispatchError> {
 			let delegation_node = DelegationNodes::<T>::get(key).ok_or(Error::<T>::DelegationNotFound)?;
 			Ok(delegation_node.deposit)
 		}
 
-		fn deposit_amount(_key: &DelegationNodeIdOf<T>) -> <Self::Currency as Currency<AccountIdOf<T>>>::Balance {
+		fn deposit_amount(_key: &DelegationNodeIdOf<T>) -> <Self::Currency as Inspect<AccountIdOf<T>>>::Balance {
 			<T as Config>::Deposit::get()
 		}
 
 		fn store_deposit(
 			key: &DelegationNodeIdOf<T>,
-			deposit: Deposit<AccountIdOf<T>, <Self::Currency as Currency<AccountIdOf<T>>>::Balance>,
+			deposit: Deposit<AccountIdOf<T>, <Self::Currency as Inspect<AccountIdOf<T>>>::Balance>,
 		) -> Result<(), DispatchError> {
 			let delegation_node = DelegationNodes::<T>::get(key).ok_or(Error::<T>::DelegationNotFound)?;
 			DelegationNodes::<T>::insert(

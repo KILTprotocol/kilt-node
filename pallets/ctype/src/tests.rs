@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::{assert_noop, assert_ok, sp_runtime::traits::Hash};
+use frame_support::{assert_noop, assert_ok, sp_runtime::traits::Hash, traits::fungible::Inspect};
 use frame_system::RawOrigin;
 use sp_runtime::DispatchError;
 
@@ -53,7 +53,7 @@ fn check_successful_ctype_creation() {
 				}
 			);
 			assert_eq!(
-				Balances::free_balance(deposit_owner),
+				Balances::balance(&deposit_owner),
 				initial_balance.saturating_sub(<Test as ctype::Config>::Fee::get())
 			);
 		});

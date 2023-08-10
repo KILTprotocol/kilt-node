@@ -21,13 +21,16 @@ use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite, vec, Ve
 use frame_support::{
 	pallet_prelude::EnsureOrigin,
 	sp_runtime::SaturatedConversion,
-	traits::{Currency, Get},
+	traits::{
+		fungible::{Inspect, Mutate},
+		Get,
+	},
 	BoundedVec,
 };
 use frame_system::RawOrigin;
 use sp_runtime::app_crypto::sr25519;
 
-use kilt_support::{deposit::Deposit, traits::GenerateBenchmarkOrigin};
+use kilt_support::{traits::GenerateBenchmarkOrigin, Deposit};
 
 use crate::{
 	mock::insert_raw_w3n, AccountIdOf, Banned, Call, Config, CurrencyOf, Names, Owner, Pallet, Web3NameOf,
@@ -37,11 +40,14 @@ use crate::{
 const CALLER_SEED: u32 = 0;
 const OWNER_SEED: u32 = 1;
 
-fn make_free_for_did<T: Config>(account: &AccountIdOf<T>) {
-	let balance = <CurrencyOf<T> as Currency<AccountIdOf<T>>>::minimum_balance()
+fn make_free_for_did<T: Config>(account: &AccountIdOf<T>)
+where
+	<T as Config>::Currency: Mutate<T::AccountId>,
+{
+	let balance = <CurrencyOf<T> as Inspect<AccountIdOf<T>>>::minimum_balance()
 		+ <T as Config>::Deposit::get()
 		+ <T as Config>::Deposit::get();
-	<CurrencyOf<T> as Currency<AccountIdOf<T>>>::make_free_balance_be(account, balance);
+	CurrencyOf::<T>::set_balance(account, balance);
 }
 
 fn generate_web3_name_input(length: usize) -> Vec<u8> {
@@ -55,6 +61,7 @@ benchmarks! {
 		T::Web3NameOwner: From<T::AccountId>,
 		T::OwnerOrigin: GenerateBenchmarkOrigin<T::RuntimeOrigin, T::AccountId, T::Web3NameOwner>,
 		T::BanOrigin: EnsureOrigin<T::RuntimeOrigin>,
+		<T as Config>::Currency: Mutate<T::AccountId>,
 	}
 
 	claim {

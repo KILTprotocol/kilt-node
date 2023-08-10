@@ -55,14 +55,14 @@ impl<T: frame_system::Config> attestation::WeightInfo for WeightInfo<T> {
 	// Storage: System Account (r:1 w:1)
 	// Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
 	fn add() -> Weight {
-		Weight::from_ref_time(32_883_000 as u64)
+		Weight::from_parts(32_883_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(3 as u64))
 			.saturating_add(T::DbWeight::get().writes(2 as u64))
 	}
 	// Storage: Attestation Attestations (r:1 w:1)
 	// Proof: Attestation Attestations (max_values: None, max_size: Some(195), added: 2670, mode: MaxEncodedLen)
 	fn revoke() -> Weight {
-		Weight::from_ref_time(18_271_000 as u64)
+		Weight::from_parts(18_271_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
@@ -71,7 +71,7 @@ impl<T: frame_system::Config> attestation::WeightInfo for WeightInfo<T> {
 	// Storage: System Account (r:1 w:1)
 	// Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
 	fn remove() -> Weight {
-		Weight::from_ref_time(31_556_000 as u64)
+		Weight::from_parts(31_556_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(2 as u64))
 			.saturating_add(T::DbWeight::get().writes(2 as u64))
 	}
@@ -80,7 +80,7 @@ impl<T: frame_system::Config> attestation::WeightInfo for WeightInfo<T> {
 	// Storage: System Account (r:1 w:1)
 	// Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
 	fn reclaim_deposit() -> Weight {
-		Weight::from_ref_time(47_092_000 as u64)
+		Weight::from_parts(47_092_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(2 as u64))
 			.saturating_add(T::DbWeight::get().writes(2 as u64))
 	}
@@ -89,7 +89,7 @@ impl<T: frame_system::Config> attestation::WeightInfo for WeightInfo<T> {
 	// Storage: System Account (r:2 w:2)
 	// Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
 	fn change_deposit_owner() -> Weight {
-		Weight::from_ref_time(44_125_000 as u64)
+		Weight::from_parts(44_125_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(3 as u64))
 			.saturating_add(T::DbWeight::get().writes(3 as u64))
 	}
@@ -98,7 +98,7 @@ impl<T: frame_system::Config> attestation::WeightInfo for WeightInfo<T> {
 	// Storage: System Account (r:1 w:1)
 	// Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
 	fn update_deposit() -> Weight {
-		Weight::from_ref_time(39_086_000 as u64)
+		Weight::from_parts(39_086_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(2 as u64))
 			.saturating_add(T::DbWeight::get().writes(2 as u64))
 	}

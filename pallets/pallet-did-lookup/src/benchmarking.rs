@@ -22,7 +22,10 @@
 use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
 use frame_support::{
 	crypto::ecdsa::ECDSAExt,
-	traits::{Currency, Get},
+	traits::{
+		fungible::{Inspect, Mutate},
+		Get,
+	},
 };
 use frame_system::RawOrigin;
 use sha3::{Digest, Keccak256};
@@ -33,7 +36,7 @@ use sp_runtime::{
 	AccountId32, KeyTypeId,
 };
 
-use kilt_support::{deposit::Deposit, traits::GenerateBenchmarkOrigin};
+use kilt_support::{traits::GenerateBenchmarkOrigin, Deposit};
 
 use crate::{
 	account::AccountId20,
@@ -47,11 +50,14 @@ const SEED: u32 = 0;
 
 // Free 2x deposit amount + existential deposit so that we can use this function
 // to link an account two times to two different DIDs.
-fn make_free_for_did<T: Config>(account: &AccountIdOf<T>) {
-	let balance = <CurrencyOf<T> as Currency<AccountIdOf<T>>>::minimum_balance()
+fn make_free_for_did<T: Config>(account: &AccountIdOf<T>)
+where
+	<T as Config>::Currency: Mutate<T::AccountId>,
+{
+	let balance = <CurrencyOf<T> as Inspect<AccountIdOf<T>>>::minimum_balance()
 		+ <T as Config>::Deposit::get()
 		+ <T as Config>::Deposit::get();
-	<CurrencyOf<T> as Currency<AccountIdOf<T>>>::make_free_balance_be(account, balance);
+	CurrencyOf::<T>::set_balance(account, balance);
 }
 
 benchmarks! {
@@ -60,6 +66,7 @@ benchmarks! {
 		T::AccountId: From<sr25519::Public> + From<ed25519::Public> + Into<LinkableAccountId> + Into<AccountId32> + From<sp_runtime::AccountId32>,
 		T::DidIdentifier: From<T::AccountId>,
 		T::EnsureOrigin: GenerateBenchmarkOrigin<T::RuntimeOrigin, T::AccountId, T::DidIdentifier>,
+		<T as Config>::Currency: Mutate<T::AccountId>,
 	}
 
 	associate_account_multisig_sr25519 {

@@ -16,10 +16,13 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::traits::ReservableCurrency;
+use frame_support::traits::{
+	fungible::{hold::Mutate, Inspect},
+	tokens::Precision,
+};
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
-use sp_runtime::{traits::Zero, DispatchError};
+use sp_runtime::DispatchError;
 
 /// An amount of balance reserved by the specified address.
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
@@ -29,18 +32,29 @@ pub struct Deposit<Account, Balance> {
 	pub amount: Balance,
 }
 
-pub fn reserve_deposit<Account, Currency: ReservableCurrency<Account>>(
+pub(crate) fn reserve_deposit<Account, Currency: Mutate<Account>>(
 	account: Account,
 	deposit_amount: Currency::Balance,
+	reason: &Currency::Reason,
 ) -> Result<Deposit<Account, Currency::Balance>, DispatchError> {
-	Currency::reserve(&account, deposit_amount)?;
+	Currency::hold(reason, &account, deposit_amount)?;
 	Ok(Deposit {
 		owner: account,
 		amount: deposit_amount,
 	})
 }
 
-pub fn free_deposit<Account, Currency: ReservableCurrency<Account>>(deposit: &Deposit<Account, Currency::Balance>) {
-	let err_amount = Currency::unreserve(&deposit.owner, deposit.amount);
-	debug_assert!(err_amount.is_zero());
+pub(crate) fn free_deposit<Account, Currency: Mutate<Account>>(
+	deposit: &Deposit<Account, Currency::Balance>,
+	reason: &Currency::Reason,
+) -> Result<<Currency as Inspect<Account>>::Balance, DispatchError> {
+	let result = Currency::release(reason, &deposit.owner, deposit.amount, Precision::BestEffort);
+	debug_assert!(
+		result == Ok(deposit.amount),
+		"Released deposit amount does not match with expected amount. Expected: {:?}, Released amount: {:?}  Error: {:?}",
+		deposit.amount,
+		result.ok(),
+		result.err(),
+	);
+	result
 }

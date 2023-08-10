@@ -16,13 +16,17 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::{assert_noop, assert_ok, BoundedVec};
+use frame_support::{
+	assert_noop, assert_ok,
+	traits::fungible::{Inspect, InspectHold},
+	BoundedVec,
+};
 
 use frame_system::RawOrigin;
-use kilt_support::{deposit::Deposit, mock::mock_origin};
-use sp_runtime::{traits::Zero, DispatchError};
+use kilt_support::{mock::mock_origin, Deposit};
+use sp_runtime::{traits::Zero, DispatchError, TokenError};
 
-use crate::{mock::*, Banned, Config, Error, Names, Owner, Pallet, Web3OwnershipOf};
+use crate::{mock::*, Banned, Config, Error, HoldReason, Names, Owner, Pallet, Web3OwnershipOf};
 
 // #############################################################################
 // Name claiming
@@ -36,7 +40,7 @@ fn claiming_successful() {
 		.build_and_execute_with_sanity_tests(|| {
 			assert!(Names::<Test>::get(&DID_00).is_none());
 			assert!(Owner::<Test>::get(&web3_name_00).is_none());
-			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
+			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00).is_zero());
 
 			assert_ok!(Pallet::<Test>::claim(
 				mock_origin::DoubleOrigin(ACCOUNT_00, DID_00).into(),
@@ -60,11 +64,11 @@ fn claiming_successful() {
 				}
 			);
 			// Test that the deposit was reserved correctly.
-			assert_eq!(Balances::reserved_balance(ACCOUNT_00), Web3NameDeposit::get());
 			assert_eq!(
-				Balances::free_balance(ACCOUNT_00),
-				initial_balance - Web3NameDeposit::get(),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
+				Web3NameDeposit::get()
 			);
+			assert_eq!(Balances::balance(&ACCOUNT_00), initial_balance - Web3NameDeposit::get(),);
 
 			// Test that the same name cannot be claimed again.
 			assert_noop!(
@@ -172,8 +176,8 @@ fn releasing_by_owner_successful() {
 			assert!(Owner::<Test>::get(&web3_name_00).is_none());
 
 			// Test that the deposit was returned to the payer correctly.
-			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
-			assert_eq!(Balances::free_balance(ACCOUNT_00), initial_balance);
+			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00).is_zero());
+			assert_eq!(Balances::balance(&ACCOUNT_00), initial_balance);
 		})
 }
 
@@ -192,10 +196,9 @@ fn releasing_by_payer_successful() {
 			));
 			assert!(Names::<Test>::get(&DID_00).is_none());
 			assert!(Owner::<Test>::get(&web3_name_00).is_none());
-
 			// Test that the deposit was returned to the payer correctly.
-			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
-			assert_eq!(Balances::free_balance(ACCOUNT_00), initial_balance);
+			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00).is_zero());
+			assert_eq!(Balances::balance(&ACCOUNT_00), initial_balance);
 		})
 }
 
@@ -265,8 +268,8 @@ fn banning_successful() {
 			assert!(Owner::<Test>::get(&web3_name_00).is_none());
 			assert!(Banned::<Test>::get(&web3_name_00).is_some());
 
-			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
-			assert_eq!(Balances::free_balance(ACCOUNT_00), initial_balance);
+			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00).is_zero());
+			assert_eq!(Balances::balance(&ACCOUNT_00), initial_balance);
 
 			// Ban an unclaimed name
 			assert_ok!(Pallet::<Test>::ban(RawOrigin::Root.into(), web3_name_01.clone().0));
@@ -385,8 +388,11 @@ fn test_change_deposit_owner() {
 					amount: <Test as Config>::Deposit::get()
 				}
 			);
-			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
-			assert_eq!(Balances::reserved_balance(ACCOUNT_01), <Test as Config>::Deposit::get());
+			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00).is_zero());
+			assert_eq!(
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_01),
+				<Test as Config>::Deposit::get()
+			);
 		})
 }
 
@@ -400,7 +406,7 @@ fn test_change_deposit_owner_insufficient_balance() {
 		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				Pallet::<Test>::change_deposit_owner(mock_origin::DoubleOrigin(ACCOUNT_01, DID_00).into()),
-				pallet_balances::Error::<Test>::InsufficientBalance
+				TokenError::CannotCreateHold
 			);
 		})
 }
@@ -435,7 +441,7 @@ fn test_update_deposit() {
 				<Test as Config>::Deposit::get() * 2,
 			);
 			assert_eq!(
-				Balances::reserved_balance(ACCOUNT_00),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
 				<Test as Config>::Deposit::get() * 2
 			);
 			assert_ok!(Pallet::<Test>::update_deposit(
@@ -451,7 +457,10 @@ fn test_update_deposit() {
 					amount: <Test as Config>::Deposit::get()
 				}
 			);
-			assert_eq!(Balances::reserved_balance(ACCOUNT_00), <Test as Config>::Deposit::get());
+			assert_eq!(
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
+				<Test as Config>::Deposit::get()
+			);
 		})
 }
 
@@ -470,7 +479,7 @@ fn test_update_deposit_unauthorized() {
 				<Test as Config>::Deposit::get() * 2,
 			);
 			assert_eq!(
-				Balances::reserved_balance(ACCOUNT_00),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
 				<Test as Config>::Deposit::get() * 2
 			);
 			assert_noop!(

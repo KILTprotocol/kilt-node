@@ -53,11 +53,11 @@ impl<T: frame_system::Config> pallet_vesting::WeightInfo for WeightInfo<T> {
 	// Storage: Balances Locks (r:1 w:1)
 	// Proof: Balances Locks (max_values: None, max_size: Some(1299), added: 3774, mode: MaxEncodedLen)
 	fn vest_locked(l: u32, s: u32, ) -> Weight {
-		Weight::from_ref_time(33_400_641 as u64)
+		Weight::from_parts(33_400_641 as u64, 0)
 			// Standard Error: 7_324
-			.saturating_add(Weight::from_ref_time(44_003 as u64).saturating_mul(l as u64))
+			.saturating_add(Weight::from_parts(44_003 as u64, 0).saturating_mul(l as u64))
 			// Standard Error: 13_032
-			.saturating_add(Weight::from_ref_time(97_512 as u64).saturating_mul(s as u64))
+			.saturating_add(Weight::from_parts(97_512 as u64, 0).saturating_mul(s as u64))
 			.saturating_add(T::DbWeight::get().reads(2 as u64))
 			.saturating_add(T::DbWeight::get().writes(2 as u64))
 	}
@@ -66,9 +66,9 @@ impl<T: frame_system::Config> pallet_vesting::WeightInfo for WeightInfo<T> {
 	// Storage: Balances Locks (r:1 w:1)
 	// Proof: Balances Locks (max_values: None, max_size: Some(1299), added: 3774, mode: MaxEncodedLen)
 	fn vest_unlocked(l: u32, _s: u32, ) -> Weight {
-		Weight::from_ref_time(35_069_059 as u64)
+		Weight::from_parts(35_069_059 as u64, 0)
 			// Standard Error: 4_836
-			.saturating_add(Weight::from_ref_time(28_435 as u64).saturating_mul(l as u64))
+			.saturating_add(Weight::from_parts(28_435 as u64, 0).saturating_mul(l as u64))
 			.saturating_add(T::DbWeight::get().reads(2 as u64))
 			.saturating_add(T::DbWeight::get().writes(2 as u64))
 	}
@@ -79,11 +79,11 @@ impl<T: frame_system::Config> pallet_vesting::WeightInfo for WeightInfo<T> {
 	// Storage: System Account (r:1 w:1)
 	// Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
 	fn vest_other_locked(l: u32, s: u32, ) -> Weight {
-		Weight::from_ref_time(40_289_268 as u64)
+		Weight::from_parts(40_289_268 as u64, 0)
 			// Standard Error: 4_796
-			.saturating_add(Weight::from_ref_time(15_247 as u64).saturating_mul(l as u64))
+			.saturating_add(Weight::from_parts(15_247 as u64, 0).saturating_mul(l as u64))
 			// Standard Error: 8_533
-			.saturating_add(Weight::from_ref_time(19_258 as u64).saturating_mul(s as u64))
+			.saturating_add(Weight::from_parts(19_258 as u64, 0).saturating_mul(s as u64))
 			.saturating_add(T::DbWeight::get().reads(3 as u64))
 			.saturating_add(T::DbWeight::get().writes(3 as u64))
 	}
@@ -94,11 +94,11 @@ impl<T: frame_system::Config> pallet_vesting::WeightInfo for WeightInfo<T> {
 	// Storage: System Account (r:1 w:1)
 	// Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
 	fn vest_other_unlocked(l: u32, s: u32, ) -> Weight {
-		Weight::from_ref_time(38_349_682 as u64)
+		Weight::from_parts(38_349_682 as u64, 0)
 			// Standard Error: 4_594
-			.saturating_add(Weight::from_ref_time(35_747 as u64).saturating_mul(l as u64))
+			.saturating_add(Weight::from_parts(35_747 as u64, 0).saturating_mul(l as u64))
 			// Standard Error: 8_173
-			.saturating_add(Weight::from_ref_time(21_563 as u64).saturating_mul(s as u64))
+			.saturating_add(Weight::from_parts(21_563 as u64, 0).saturating_mul(s as u64))
 			.saturating_add(T::DbWeight::get().reads(3 as u64))
 			.saturating_add(T::DbWeight::get().writes(3 as u64))
 	}
@@ -109,9 +109,9 @@ impl<T: frame_system::Config> pallet_vesting::WeightInfo for WeightInfo<T> {
 	// Storage: Balances Locks (r:1 w:1)
 	// Proof: Balances Locks (max_values: None, max_size: Some(1299), added: 3774, mode: MaxEncodedLen)
 	fn vested_transfer(l: u32, _s: u32, ) -> Weight {
-		Weight::from_ref_time(54_860_618 as u64)
+		Weight::from_parts(54_860_618 as u64, 0)
 			// Standard Error: 12_316
-			.saturating_add(Weight::from_ref_time(51_714 as u64).saturating_mul(l as u64))
+			.saturating_add(Weight::from_parts(51_714 as u64, 0).saturating_mul(l as u64))
 			.saturating_add(T::DbWeight::get().reads(3 as u64))
 			.saturating_add(T::DbWeight::get().writes(3 as u64))
 	}
@@ -122,11 +122,11 @@ impl<T: frame_system::Config> pallet_vesting::WeightInfo for WeightInfo<T> {
 	// Storage: Balances Locks (r:1 w:1)
 	// Proof: Balances Locks (max_values: None, max_size: Some(1299), added: 3774, mode: MaxEncodedLen)
 	fn force_vested_transfer(l: u32, s: u32, ) -> Weight {
-		Weight::from_ref_time(61_203_879 as u64)
+		Weight::from_parts(61_203_879 as u64, 0)
 			// Standard Error: 16_405
-			.saturating_add(Weight::from_ref_time(50_578 as u64).saturating_mul(l as u64))
+			.saturating_add(Weight::from_parts(50_578 as u64, 0).saturating_mul(l as u64))
 			// Standard Error: 29_187
-			.saturating_add(Weight::from_ref_time(59_211 as u64).saturating_mul(s as u64))
+			.saturating_add(Weight::from_parts(59_211 as u64, 0).saturating_mul(s as u64))
 			.saturating_add(T::DbWeight::get().reads(4 as u64))
 			.saturating_add(T::DbWeight::get().writes(4 as u64))
 	}
@@ -137,11 +137,11 @@ impl<T: frame_system::Config> pallet_vesting::WeightInfo for WeightInfo<T> {
 	// Storage: System Account (r:1 w:1)
 	// Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
 	fn not_unlocking_merge_schedules(l: u32, s: u32, ) -> Weight {
-		Weight::from_ref_time(38_957_662 as u64)
+		Weight::from_parts(38_957_662 as u64, 0)
 			// Standard Error: 3_010
-			.saturating_add(Weight::from_ref_time(34_046 as u64).saturating_mul(l as u64))
+			.saturating_add(Weight::from_parts(34_046 as u64, 0).saturating_mul(l as u64))
 			// Standard Error: 5_559
-			.saturating_add(Weight::from_ref_time(37_367 as u64).saturating_mul(s as u64))
+			.saturating_add(Weight::from_parts(37_367 as u64, 0).saturating_mul(s as u64))
 			.saturating_add(T::DbWeight::get().reads(3 as u64))
 			.saturating_add(T::DbWeight::get().writes(3 as u64))
 	}
@@ -152,11 +152,11 @@ impl<T: frame_system::Config> pallet_vesting::WeightInfo for WeightInfo<T> {
 	// Storage: System Account (r:1 w:1)
 	// Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
 	fn unlocking_merge_schedules(l: u32, s: u32, ) -> Weight {
-		Weight::from_ref_time(38_940_362 as u64)
+		Weight::from_parts(38_940_362 as u64, 0)
 			// Standard Error: 6_011
-			.saturating_add(Weight::from_ref_time(28_458 as u64).saturating_mul(l as u64))
+			.saturating_add(Weight::from_parts(28_458 as u64, 0).saturating_mul(l as u64))
 			// Standard Error: 11_100
-			.saturating_add(Weight::from_ref_time(59_868 as u64).saturating_mul(s as u64))
+			.saturating_add(Weight::from_parts(59_868 as u64, 0).saturating_mul(s as u64))
 			.saturating_add(T::DbWeight::get().reads(3 as u64))
 			.saturating_add(T::DbWeight::get().writes(3 as u64))
 	}

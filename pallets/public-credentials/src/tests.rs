@@ -16,13 +16,18 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::{assert_noop, assert_ok, traits::Get};
+use frame_support::{
+	assert_noop, assert_ok,
+	traits::{fungible::InspectHold, Get},
+};
 use sp_runtime::traits::Zero;
 
 use ctype::mock::get_ctype_hash;
-use kilt_support::{deposit::Deposit, mock::mock_origin::DoubleOrigin};
+use kilt_support::{mock::mock_origin::DoubleOrigin, Deposit};
 
-use crate::{mock::*, Config, CredentialIdOf, CredentialSubjects, Credentials, Error, InputClaimsContentOf};
+use crate::{
+	mock::*, Config, CredentialIdOf, CredentialSubjects, Credentials, Error, HoldReason, InputClaimsContentOf,
+};
 
 // add
 
@@ -47,11 +52,11 @@ fn add_successful_without_authorization() {
 	let deposit: Balance = <Test as Config>::Deposit::get();
 
 	ExtBuilder::default()
-		.with_balances(vec![(ACCOUNT_00, (deposit) * 2)])
+		.with_balances(vec![(ACCOUNT_00, (deposit) * 2 + MIN_BALANCE)])
 		.with_ctypes(vec![(ctype_hash_1, attester.clone()), (ctype_hash_2, attester.clone())])
 		.build_and_execute_with_sanity_tests(|| {
 			// Check for 0 reserved deposit
-			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
+			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00).is_zero());
 
 			assert_ok!(PublicCredentials::add(
 				DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
@@ -69,7 +74,10 @@ fn add_successful_without_authorization() {
 			assert_eq!(CredentialSubjects::<Test>::get(credential_id_1), Some(subject_id));
 
 			// Check deposit reservation logic
-			assert_eq!(Balances::reserved_balance(ACCOUNT_00), deposit);
+			assert_eq!(
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
+				deposit
+			);
 
 			// Re-issuing the same credential will fail
 			assert_noop!(
@@ -81,7 +89,10 @@ fn add_successful_without_authorization() {
 			);
 
 			// Check deposit has not changed
-			assert_eq!(Balances::reserved_balance(ACCOUNT_00), deposit);
+			assert_eq!(
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
+				deposit
+			);
 
 			System::set_block_number(1);
 
@@ -103,7 +114,10 @@ fn add_successful_without_authorization() {
 			assert_eq!(CredentialSubjects::<Test>::get(credential_id_2), Some(subject_id));
 
 			// Deposit is 2x now
-			assert_eq!(Balances::reserved_balance(ACCOUNT_00), 2 * deposit);
+			assert_eq!(
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
+				2 * deposit
+			);
 		});
 }
 
@@ -122,7 +136,7 @@ fn add_successful_with_authorization() {
 	let deposit: Balance = <Test as Config>::Deposit::get();
 
 	ExtBuilder::default()
-		.with_balances(vec![(ACCOUNT_00, deposit)])
+		.with_balances(vec![(ACCOUNT_00, deposit + MIN_BALANCE)])
 		.with_ctypes(vec![(ctype_hash, attester.clone())])
 		.build_and_execute_with_sanity_tests(|| {
 			assert_ok!(PublicCredentials::add(
@@ -261,7 +275,7 @@ fn revoke_successful() {
 	let deposit: Balance = <Test as Config>::Deposit::get();
 
 	ExtBuilder::default()
-		.with_balances(vec![(ACCOUNT_00, deposit)])
+		.with_balances(vec![(ACCOUNT_00, deposit + MIN_BALANCE)])
 		.with_public_credentials(vec![(subject_id, credential_id, new_credential)])
 		.with_ctypes(vec![(ctype_hash_1, attester.clone())])
 		.build_and_execute_with_sanity_tests(|| {
@@ -304,7 +318,7 @@ fn revoke_same_attester_wrong_ac() {
 	let deposit: Balance = <Test as Config>::Deposit::get();
 
 	ExtBuilder::default()
-		.with_balances(vec![(ACCOUNT_00, deposit)])
+		.with_balances(vec![(ACCOUNT_00, deposit + MIN_BALANCE)])
 		.with_public_credentials(vec![(subject_id, credential_id, new_credential)])
 		.with_ctypes(vec![(ctype_hash_1, attester.clone())])
 		.build_and_execute_with_sanity_tests(|| {
@@ -335,7 +349,7 @@ fn revoke_unauthorized() {
 	let deposit: Balance = <Test as Config>::Deposit::get();
 
 	ExtBuilder::default()
-		.with_balances(vec![(ACCOUNT_00, deposit)])
+		.with_balances(vec![(ACCOUNT_00, deposit + MIN_BALANCE)])
 		.with_public_credentials(vec![(subject_id, credential_id, new_credential)])
 		.with_ctypes(vec![(ctype_hash_1, attester.clone())])
 		.build_and_execute_with_sanity_tests(|| {
@@ -363,7 +377,7 @@ fn revoke_ac_not_found() {
 	let deposit: Balance = <Test as Config>::Deposit::get();
 
 	ExtBuilder::default()
-		.with_balances(vec![(ACCOUNT_00, deposit)])
+		.with_balances(vec![(ACCOUNT_00, deposit + MIN_BALANCE)])
 		.with_public_credentials(vec![(subject_id, credential_id, new_credential)])
 		.with_ctypes(vec![(ctype_hash_1, attester)])
 		.build_and_execute_with_sanity_tests(|| {
@@ -408,7 +422,7 @@ fn unrevoke_successful() {
 	let deposit: Balance = <Test as Config>::Deposit::get();
 
 	ExtBuilder::default()
-		.with_balances(vec![(ACCOUNT_00, deposit)])
+		.with_balances(vec![(ACCOUNT_00, deposit + MIN_BALANCE)])
 		.with_public_credentials(vec![(subject_id, credential_id, new_credential)])
 		.with_ctypes(vec![(ctype_hash_1, attester.clone())])
 		.build_and_execute_with_sanity_tests(|| {
@@ -452,7 +466,7 @@ fn unrevoke_same_attester_wrong_ac() {
 	let deposit: Balance = <Test as Config>::Deposit::get();
 
 	ExtBuilder::default()
-		.with_balances(vec![(ACCOUNT_00, deposit)])
+		.with_balances(vec![(ACCOUNT_00, deposit + MIN_BALANCE)])
 		.with_public_credentials(vec![(subject_id, credential_id, new_credential)])
 		.with_ctypes(vec![(ctype_hash_1, attester.clone())])
 		.build_and_execute_with_sanity_tests(|| {
@@ -484,7 +498,7 @@ fn unrevoke_unauthorized() {
 	let deposit: Balance = <Test as Config>::Deposit::get();
 
 	ExtBuilder::default()
-		.with_balances(vec![(ACCOUNT_00, deposit)])
+		.with_balances(vec![(ACCOUNT_00, deposit + MIN_BALANCE)])
 		.with_ctypes(vec![(ctype_hash_1, attester.clone())])
 		.with_public_credentials(vec![(subject_id, credential_id, new_credential)])
 		.build_and_execute_with_sanity_tests(|| {
@@ -513,7 +527,7 @@ fn unrevoke_ac_not_found() {
 	let deposit: Balance = <Test as Config>::Deposit::get();
 
 	ExtBuilder::default()
-		.with_balances(vec![(ACCOUNT_00, deposit)])
+		.with_balances(vec![(ACCOUNT_00, deposit + MIN_BALANCE)])
 		.with_public_credentials(vec![(subject_id, credential_id, new_credential)])
 		.with_ctypes(vec![(ctype_hash_1, attester)])
 		.build_and_execute_with_sanity_tests(|| {
@@ -555,7 +569,7 @@ fn remove_successful() {
 	let deposit: Balance = <Test as Config>::Deposit::get();
 
 	ExtBuilder::default()
-		.with_balances(vec![(ACCOUNT_00, deposit)])
+		.with_balances(vec![(ACCOUNT_00, deposit + MIN_BALANCE)])
 		.with_public_credentials(vec![(subject_id, credential_id, new_credential)])
 		.build_and_execute_with_sanity_tests(|| {
 			assert_ok!(PublicCredentials::remove(
@@ -569,7 +583,7 @@ fn remove_successful() {
 			assert!(CredentialSubjects::<Test>::get(credential_id).is_none());
 
 			// Check deposit release logic
-			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
+			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00).is_zero());
 
 			// Removing the same credential again will fail
 			assert_noop!(
@@ -590,7 +604,7 @@ fn remove_same_attester_wrong_ac() {
 	let deposit: Balance = <Test as Config>::Deposit::get();
 
 	ExtBuilder::default()
-		.with_balances(vec![(ACCOUNT_00, deposit)])
+		.with_balances(vec![(ACCOUNT_00, deposit + MIN_BALANCE)])
 		.with_public_credentials(vec![(subject_id, credential_id, new_credential)])
 		.build_and_execute_with_sanity_tests(|| {
 			assert_ok!(PublicCredentials::remove(
@@ -618,7 +632,7 @@ fn remove_unauthorized() {
 	let deposit: Balance = <Test as Config>::Deposit::get();
 
 	ExtBuilder::default()
-		.with_balances(vec![(ACCOUNT_00, deposit)])
+		.with_balances(vec![(ACCOUNT_00, deposit + MIN_BALANCE)])
 		.with_public_credentials(vec![(subject_id, credential_id, new_credential)])
 		.with_ctypes(vec![(ctype_hash_1, attester.clone())])
 		.build_and_execute_with_sanity_tests(|| {
@@ -646,7 +660,7 @@ fn remove_ac_not_found() {
 	let deposit: Balance = <Test as Config>::Deposit::get();
 
 	ExtBuilder::default()
-		.with_balances(vec![(ACCOUNT_00, deposit)])
+		.with_balances(vec![(ACCOUNT_00, deposit + MIN_BALANCE)])
 		.with_public_credentials(vec![(subject_id, credential_id, new_credential)])
 		.with_ctypes(vec![(ctype_hash_1, attester)])
 		.build_and_execute_with_sanity_tests(|| {
@@ -688,7 +702,7 @@ fn reclaim_deposit_successful() {
 	let deposit: Balance = <Test as Config>::Deposit::get();
 
 	ExtBuilder::default()
-		.with_balances(vec![(ACCOUNT_00, deposit)])
+		.with_balances(vec![(ACCOUNT_00, deposit + MIN_BALANCE)])
 		.with_public_credentials(vec![(subject_id, credential_id, new_credential)])
 		.build_and_execute_with_sanity_tests(|| {
 			assert_ok!(PublicCredentials::reclaim_deposit(
@@ -701,7 +715,7 @@ fn reclaim_deposit_successful() {
 			assert!(CredentialSubjects::<Test>::get(credential_id).is_none());
 
 			// Check deposit release logic
-			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
+			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00).is_zero());
 
 			// Reclaiming the deposit for the same credential again will fail
 			assert_noop!(
@@ -742,7 +756,7 @@ fn reclaim_deposit_unauthorized() {
 	let deposit: Balance = <Test as Config>::Deposit::get();
 
 	ExtBuilder::default()
-		.with_balances(vec![(ACCOUNT_00, deposit)])
+		.with_balances(vec![(ACCOUNT_00, deposit + MIN_BALANCE)])
 		.with_public_credentials(vec![(subject_id, credential_id, new_credential)])
 		.with_ctypes(vec![(ctype_hash_1, attester)])
 		.build_and_execute_with_sanity_tests(|| {
@@ -774,7 +788,10 @@ fn test_change_deposit_owner() {
 	let credential_id: CredentialIdOf<Test> = CredentialIdOf::<Test>::default();
 
 	ExtBuilder::default()
-		.with_balances(vec![(ACCOUNT_00, deposit), (ACCOUNT_01, deposit)])
+		.with_balances(vec![
+			(ACCOUNT_00, deposit + MIN_BALANCE),
+			(ACCOUNT_01, deposit + MIN_BALANCE),
+		])
 		.with_public_credentials(vec![(subject_id, credential_id, new_credential)])
 		.with_ctypes(vec![(ctype_hash_1, attester.clone())])
 		.build_and_execute_with_sanity_tests(|| {
@@ -791,8 +808,11 @@ fn test_change_deposit_owner() {
 					.owner,
 				ACCOUNT_01
 			);
-			assert_eq!(Balances::reserved_balance(ACCOUNT_01), <Test as Config>::Deposit::get());
-			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
+			assert_eq!(
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_01),
+				<Test as Config>::Deposit::get()
+			);
+			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00).is_zero());
 		});
 }
 
@@ -835,7 +855,10 @@ fn test_change_deposit_owner_unauthorized() {
 	let credential_id: CredentialIdOf<Test> = CredentialIdOf::<Test>::default();
 
 	ExtBuilder::default()
-		.with_balances(vec![(ACCOUNT_00, deposit), (ACCOUNT_01, deposit)])
+		.with_balances(vec![
+			(ACCOUNT_00, deposit + MIN_BALANCE),
+			(ACCOUNT_01, deposit + MIN_BALANCE),
+		])
 		.with_public_credentials(vec![(subject_id, credential_id, new_credential)])
 		.with_ctypes(vec![(ctype_hash_1, attester)])
 		.build_and_execute_with_sanity_tests(|| {
@@ -867,7 +890,7 @@ fn test_update_deposit() {
 	let credential_id: CredentialIdOf<Test> = CredentialIdOf::<Test>::default();
 
 	ExtBuilder::default()
-		.with_balances(vec![(ACCOUNT_00, deposit_old)])
+		.with_balances(vec![(ACCOUNT_00, deposit_old + MIN_BALANCE)])
 		.with_public_credentials(vec![(subject_id, credential_id, new_credential)])
 		.with_ctypes(vec![(ctype_hash_1, attester)])
 		.build_and_execute_with_sanity_tests(|| {
@@ -884,7 +907,10 @@ fn test_update_deposit() {
 					.amount,
 				<Test as Config>::Deposit::get()
 			);
-			assert_eq!(Balances::reserved_balance(ACCOUNT_00), <Test as Config>::Deposit::get());
+			assert_eq!(
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
+				<Test as Config>::Deposit::get()
+			);
 		});
 }
 
@@ -914,7 +940,7 @@ fn test_update_deposit_unauthorized() {
 	let deposit: Balance = <Test as Config>::Deposit::get();
 
 	ExtBuilder::default()
-		.with_balances(vec![(ACCOUNT_00, deposit)])
+		.with_balances(vec![(ACCOUNT_00, deposit + MIN_BALANCE)])
 		.with_ctypes(vec![(ctype_hash_1, attester)])
 		.with_public_credentials(vec![(subject_id, credential_id, new_credential)])
 		.build_and_execute_with_sanity_tests(|| {

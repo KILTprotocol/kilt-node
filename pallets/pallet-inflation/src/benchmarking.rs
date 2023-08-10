@@ -23,7 +23,7 @@ use super::*;
 
 use crate::Pallet as Inflation;
 use frame_benchmarking::{benchmarks, impl_benchmark_test_suite};
-use frame_support::traits::{Currency, Get, OnInitialize};
+use frame_support::traits::{fungible::Inspect, Get, OnInitialize};
 use sp_runtime::traits::{One, Saturating};
 
 benchmarks! {

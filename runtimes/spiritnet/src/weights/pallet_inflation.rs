@@ -51,11 +51,11 @@ impl<T: frame_system::Config> pallet_inflation::WeightInfo for WeightInfo<T> {
 	// Storage: System Account (r:1 w:1)
 	// Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
 	fn on_initialize_mint_to_treasury() -> Weight {
-		Weight::from_ref_time(31_117_000 as u64)
+		Weight::from_parts(31_117_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	fn on_initialize_no_action() -> Weight {
-		Weight::from_ref_time(309_000 as u64)
+		Weight::from_parts(309_000 as u64, 0)
 	}
 }

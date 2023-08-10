@@ -16,7 +16,10 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::traits::{Currency, Get};
+use frame_support::traits::{
+	fungible::{Credit, Inspect},
+	Get,
+};
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_runtime::{
@@ -309,8 +312,9 @@ pub struct DelegationCounter {
 	pub counter: u32,
 }
 
+pub type CurrencyOf<T> = <T as Config>::Currency;
 pub type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
-pub type BalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::Balance;
+pub type BalanceOf<T> = <<T as Config>::Currency as Inspect<AccountIdOf<T>>>::Balance;
 pub type CandidateOf<T, S> = Candidate<AccountIdOf<T>, BalanceOf<T>, S>;
 pub type StakeOf<T> = Stake<AccountIdOf<T>, BalanceOf<T>>;
-pub type NegativeImbalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::NegativeImbalance;
+pub(crate) type CreditOf<T> = Credit<<T as frame_system::Config>::AccountId, <T as Config>::Currency>;

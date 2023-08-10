@@ -57,7 +57,7 @@ impl<T: frame_system::Config> delegation::WeightInfo for WeightInfo<T> {
 	// Storage: Delegation DelegationNodes (r:0 w:1)
 	// Proof: Delegation DelegationNodes (max_values: None, max_size: Some(32200), added: 34675, mode: MaxEncodedLen)
 	fn create_hierarchy() -> Weight {
-		Weight::from_ref_time(53_947_000 as u64)
+		Weight::from_parts(53_947_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(3 as u64))
 			.saturating_add(T::DbWeight::get().writes(3 as u64))
 	}
@@ -66,7 +66,7 @@ impl<T: frame_system::Config> delegation::WeightInfo for WeightInfo<T> {
 	// Storage: System Account (r:1 w:1)
 	// Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
 	fn add_delegation() -> Weight {
-		Weight::from_ref_time(38_012_000 as u64)
+		Weight::from_parts(38_012_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(3 as u64))
 			.saturating_add(T::DbWeight::get().writes(3 as u64))
 	}
@@ -75,9 +75,9 @@ impl<T: frame_system::Config> delegation::WeightInfo for WeightInfo<T> {
 	// Storage: Delegation DelegationHierarchies (r:1 w:0)
 	// Proof: Delegation DelegationHierarchies (max_values: None, max_size: Some(80), added: 2555, mode: MaxEncodedLen)
 	fn revoke_delegation_root_child(r: u32, _c: u32, ) -> Weight {
-		Weight::from_ref_time(17_953_942 as u64)
+		Weight::from_parts(17_953_942 as u64, 0)
 			// Standard Error: 19_848
-			.saturating_add(Weight::from_ref_time(11_249_984 as u64).saturating_mul(r as u64))
+			.saturating_add(Weight::from_parts(11_249_984 as u64, 0).saturating_mul(r as u64))
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().reads((1 as u64).saturating_mul(r as u64)))
 			.saturating_add(T::DbWeight::get().writes((1 as u64).saturating_mul(r as u64)))
@@ -87,9 +87,9 @@ impl<T: frame_system::Config> delegation::WeightInfo for WeightInfo<T> {
 	// Storage: Delegation DelegationHierarchies (r:1 w:0)
 	// Proof: Delegation DelegationHierarchies (max_values: None, max_size: Some(80), added: 2555, mode: MaxEncodedLen)
 	fn revoke_delegation_leaf(_r: u32, c: u32, ) -> Weight {
-		Weight::from_ref_time(26_014_217 as u64)
+		Weight::from_parts(26_014_217 as u64, 0)
 			// Standard Error: 15_771
-			.saturating_add(Weight::from_ref_time(4_457_617 as u64).saturating_mul(c as u64))
+			.saturating_add(Weight::from_parts(4_457_617 as u64, 0).saturating_mul(c as u64))
 			.saturating_add(T::DbWeight::get().reads(2 as u64))
 			.saturating_add(T::DbWeight::get().reads((1 as u64).saturating_mul(c as u64)))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
@@ -101,9 +101,9 @@ impl<T: frame_system::Config> delegation::WeightInfo for WeightInfo<T> {
 	// Storage: Delegation DelegationHierarchies (r:1 w:1)
 	// Proof: Delegation DelegationHierarchies (max_values: None, max_size: Some(80), added: 2555, mode: MaxEncodedLen)
 	fn remove_delegation(r: u32, ) -> Weight {
-		Weight::from_ref_time(45_044_770 as u64)
+		Weight::from_parts(45_044_770 as u64, 0)
 			// Standard Error: 47_701
-			.saturating_add(Weight::from_ref_time(19_680_850 as u64).saturating_mul(r as u64))
+			.saturating_add(Weight::from_parts(19_680_850 as u64, 0).saturating_mul(r as u64))
 			.saturating_add(T::DbWeight::get().reads(3 as u64))
 			.saturating_add(T::DbWeight::get().reads((1 as u64).saturating_mul(r as u64)))
 			.saturating_add(T::DbWeight::get().writes(3 as u64))
@@ -116,9 +116,9 @@ impl<T: frame_system::Config> delegation::WeightInfo for WeightInfo<T> {
 	// Storage: Delegation DelegationHierarchies (r:0 w:1)
 	// Proof: Delegation DelegationHierarchies (max_values: None, max_size: Some(80), added: 2555, mode: MaxEncodedLen)
 	fn reclaim_deposit(r: u32, ) -> Weight {
-		Weight::from_ref_time(37_027_802 as u64)
+		Weight::from_parts(37_027_802 as u64, 0)
 			// Standard Error: 34_662
-			.saturating_add(Weight::from_ref_time(19_854_845 as u64).saturating_mul(r as u64))
+			.saturating_add(Weight::from_parts(19_854_845 as u64, 0).saturating_mul(r as u64))
 			.saturating_add(T::DbWeight::get().reads(2 as u64))
 			.saturating_add(T::DbWeight::get().reads((1 as u64).saturating_mul(r as u64)))
 			.saturating_add(T::DbWeight::get().writes(3 as u64))
@@ -129,24 +129,24 @@ impl<T: frame_system::Config> delegation::WeightInfo for WeightInfo<T> {
 	// Storage: Delegation DelegationHierarchies (r:1 w:0)
 	// Proof: Delegation DelegationHierarchies (max_values: None, max_size: Some(80), added: 2555, mode: MaxEncodedLen)
 	fn can_attest() -> Weight {
-		Weight::from_ref_time(12_823_000 as u64)
+		Weight::from_parts(12_823_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(2 as u64))
 	}
 	// Storage: Delegation DelegationNodes (r:6 w:0)
 	// Proof: Delegation DelegationNodes (max_values: None, max_size: Some(32200), added: 34675, mode: MaxEncodedLen)
 	fn can_revoke(c: u32, ) -> Weight {
-		Weight::from_ref_time(8_523_936 as u64)
+		Weight::from_parts(8_523_936 as u64 ,0)
 			// Standard Error: 16_661
-			.saturating_add(Weight::from_ref_time(3_529_860 as u64).saturating_mul(c as u64))
+			.saturating_add(Weight::from_parts(3_529_860 as u64, 0).saturating_mul(c as u64))
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().reads((1 as u64).saturating_mul(c as u64)))
 	}
 	// Storage: Delegation DelegationNodes (r:6 w:0)
 	// Proof: Delegation DelegationNodes (max_values: None, max_size: Some(32200), added: 34675, mode: MaxEncodedLen)
 	fn can_remove(c: u32, ) -> Weight {
-		Weight::from_ref_time(8_518_974 as u64)
+		Weight::from_parts(8_518_974 as u64, 0)
 			// Standard Error: 16_049
-			.saturating_add(Weight::from_ref_time(3_544_659 as u64).saturating_mul(c as u64))
+			.saturating_add(Weight::from_parts(3_544_659 as u64, 0).saturating_mul(c as u64))
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().reads((1 as u64).saturating_mul(c as u64)))
 	}
@@ -155,7 +155,7 @@ impl<T: frame_system::Config> delegation::WeightInfo for WeightInfo<T> {
 	// Storage: System Account (r:2 w:2)
 	// Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
 	fn change_deposit_owner() -> Weight {
-		Weight::from_ref_time(45_144_000 as u64)
+		Weight::from_parts(45_144_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(3 as u64))
 			.saturating_add(T::DbWeight::get().writes(3 as u64))
 	}
@@ -164,7 +164,7 @@ impl<T: frame_system::Config> delegation::WeightInfo for WeightInfo<T> {
 	// Storage: System Account (r:1 w:1)
 	// Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
 	fn update_deposit() -> Weight {
-		Weight::from_ref_time(41_756_000 as u64)
+		Weight::from_parts(41_756_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(2 as u64))
 			.saturating_add(T::DbWeight::get().writes(2 as u64))
 	}

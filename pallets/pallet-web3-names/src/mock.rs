@@ -15,12 +15,12 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
+use frame_support::traits::fungible::MutateHold;
+use kilt_support::Deposit;
 
-use frame_support::traits::ReservableCurrency;
-
-use kilt_support::deposit::Deposit;
-
-use crate::{AccountIdOf, BalanceOf, Config, CurrencyOf, Names, Owner, Web3NameOf, Web3NameOwnerOf, Web3OwnershipOf};
+use crate::{
+	AccountIdOf, BalanceOf, Config, CurrencyOf, HoldReason, Names, Owner, Web3NameOf, Web3NameOwnerOf, Web3OwnershipOf,
+};
 
 pub(crate) type BlockNumberOf<T> = <T as frame_system::Config>::BlockNumber;
 
@@ -31,7 +31,8 @@ pub(crate) fn insert_raw_w3n<T: Config>(
 	block_number: BlockNumberOf<T>,
 	deposit: BalanceOf<T>,
 ) {
-	CurrencyOf::<T>::reserve(&payer, deposit).expect("Payer should have enough funds for deposit");
+	CurrencyOf::<T>::hold(&HoldReason::Deposit.into(), &payer, deposit)
+		.expect("Payer should have enough funds for deposit");
 
 	Names::<T>::insert(&owner, name.clone());
 	Owner::<T>::insert(
@@ -84,7 +85,7 @@ pub(crate) mod runtime {
 		{
 			System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
 			Balances: pallet_balances::{Pallet, Call, Storage, Event<T>},
-			Web3Names: pallet_web3_names::{Pallet, Storage, Call, Event<T>},
+			Web3Names: pallet_web3_names::{Pallet, Storage, Call, Event<T>, HoldReason},
 			MockOrigin: mock_origin::{Pallet, Origin<T>},
 		}
 	);
@@ -125,9 +126,15 @@ pub(crate) mod runtime {
 		pub const ExistentialDeposit: Balance = 10;
 		pub const MaxLocks: u32 = 50;
 		pub const MaxReserves: u32 = 50;
+		pub const MaxHolds: u32 = 50;
+		pub const MaxFreezes: u32 = 50;
 	}
 
 	impl pallet_balances::Config for Test {
+		type FreezeIdentifier = RuntimeFreezeReason;
+		type HoldIdentifier = RuntimeHoldReason;
+		type MaxFreezes = MaxFreezes;
+		type MaxHolds = MaxHolds;
 		type Balance = Balance;
 		type DustRemoval = ();
 		type RuntimeEvent = RuntimeEvent;
@@ -158,6 +165,7 @@ pub(crate) mod runtime {
 		type OwnerOrigin = TestOwnerOrigin;
 		type OriginSuccess = TestOriginSuccess;
 		type Currency = Balances;
+		type RuntimeHoldReason = RuntimeHoldReason;
 		type Deposit = Web3NameDeposit;
 		type RuntimeEvent = RuntimeEvent;
 		type MaxNameLength = MaxNameLength;
@@ -224,7 +232,8 @@ pub(crate) mod runtime {
 
 			ext.execute_with(|| {
 				for (owner, web3_name, payer) in self.claimed_web3_names {
-					pallet_web3_names::Pallet::<Test>::register_name(web3_name, owner, payer);
+					pallet_web3_names::Pallet::<Test>::register_name(web3_name, owner, payer)
+						.expect("Could not register name");
 				}
 
 				for web3_name in self.banned_web3_names {
@@ -246,7 +255,7 @@ pub(crate) mod runtime {
 		pub fn build_with_keystore(self) -> sp_io::TestExternalities {
 			let mut ext = self.build();
 
-			let keystore = sp_keystore::testing::KeyStore::new();
+			let keystore = sp_keystore::testing::MemoryKeystore::new();
 			ext.register_extension(sp_keystore::KeystoreExt(std::sync::Arc::new(keystore)));
 
 			ext

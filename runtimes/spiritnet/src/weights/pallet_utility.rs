@@ -49,24 +49,24 @@ use sp_std::marker::PhantomData;
 pub struct WeightInfo<T>(PhantomData<T>);
 impl<T: frame_system::Config> pallet_utility::WeightInfo for WeightInfo<T> {
 	fn batch(c: u32, ) -> Weight {
-		Weight::from_ref_time(79_134_909 as u64)
+		Weight::from_parts(79_134_909 as u64, 0)
 			// Standard Error: 21_258
-			.saturating_add(Weight::from_ref_time(5_084_810 as u64).saturating_mul(c as u64))
+			.saturating_add(Weight::from_parts(5_084_810 as u64, 0).saturating_mul(c as u64))
 	}
 	fn as_derivative() -> Weight {
-		Weight::from_ref_time(9_379_000 as u64)
+		Weight::from_parts(9_379_000 as u64, 0)
 	}
 	fn batch_all(c: u32, ) -> Weight {
-		Weight::from_ref_time(56_869_903 as u64)
+		Weight::from_parts(56_869_903 as u64, 0)
 			// Standard Error: 18_968
-			.saturating_add(Weight::from_ref_time(5_396_723 as u64).saturating_mul(c as u64))
+			.saturating_add(Weight::from_parts(5_396_723 as u64, 0).saturating_mul(c as u64))
 	}
 	fn dispatch_as() -> Weight {
-		Weight::from_ref_time(10_999_000 as u64)
+		Weight::from_parts(10_999_000 as u64, 0)
 	}
 	fn force_batch(c: u32, ) -> Weight {
-		Weight::from_ref_time(68_110_842 as u64)
+		Weight::from_parts(68_110_842 as u64, 0)
 			// Standard Error: 9_807
-			.saturating_add(Weight::from_ref_time(5_069_264 as u64).saturating_mul(c as u64))
+			.saturating_add(Weight::from_parts(5_069_264 as u64, 0).saturating_mul(c as u64))
 	}
 }

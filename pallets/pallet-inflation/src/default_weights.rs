@@ -73,7 +73,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		//  Measured:  `0`
 		//  Estimated: `0`
 		// Minimum execution time: 114 nanoseconds.
-		Weight::from_ref_time(139_000)
+		Weight::from_parts(139_000, 0)
 	}
 }
 
@@ -95,6 +95,6 @@ impl WeightInfo for () {
 		//  Measured:  `0`
 		//  Estimated: `0`
 		// Minimum execution time: 114 nanoseconds.
-		Weight::from_ref_time(139_000)
+		Weight::from_parts(139_000, 0)
 	}
 }

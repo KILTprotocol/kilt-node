@@ -57,7 +57,7 @@ impl<T: frame_system::Config> pallet_web3_names::WeightInfo for WeightInfo<T> {
 	// Storage: System Account (r:1 w:1)
 	// Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
 	fn claim(_n: u32, ) -> Weight {
-		Weight::from_ref_time(40_237_964 as u64)
+		Weight::from_parts(40_237_964 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(4 as u64))
 			.saturating_add(T::DbWeight::get().writes(3 as u64))
 	}
@@ -68,7 +68,7 @@ impl<T: frame_system::Config> pallet_web3_names::WeightInfo for WeightInfo<T> {
 	// Storage: System Account (r:1 w:1)
 	// Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
 	fn release_by_owner() -> Weight {
-		Weight::from_ref_time(32_912_000 as u64)
+		Weight::from_parts(32_912_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(3 as u64))
 			.saturating_add(T::DbWeight::get().writes(3 as u64))
 	}
@@ -79,9 +79,9 @@ impl<T: frame_system::Config> pallet_web3_names::WeightInfo for WeightInfo<T> {
 	// Storage: Web3Names Names (r:0 w:1)
 	// Proof: Web3Names Names (max_values: None, max_size: Some(81), added: 2556, mode: MaxEncodedLen)
 	fn reclaim_deposit(n: u32, ) -> Weight {
-		Weight::from_ref_time(31_703_821 as u64)
+		Weight::from_parts(31_703_821 as u64, 0)
 			// Standard Error: 36_296
-			.saturating_add(Weight::from_ref_time(235_783 as u64).saturating_mul(n as u64))
+			.saturating_add(Weight::from_parts(235_783 as u64, 0).saturating_mul(n as u64))
 			.saturating_add(T::DbWeight::get().reads(2 as u64))
 			.saturating_add(T::DbWeight::get().writes(3 as u64))
 	}
@@ -94,14 +94,14 @@ impl<T: frame_system::Config> pallet_web3_names::WeightInfo for WeightInfo<T> {
 	// Storage: Web3Names Names (r:0 w:1)
 	// Proof: Web3Names Names (max_values: None, max_size: Some(81), added: 2556, mode: MaxEncodedLen)
 	fn ban(_n: u32, ) -> Weight {
-		Weight::from_ref_time(43_007_574 as u64)
+		Weight::from_parts(43_007_574 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(3 as u64))
 			.saturating_add(T::DbWeight::get().writes(4 as u64))
 	}
 	// Storage: Web3Names Banned (r:1 w:1)
 	// Proof: Web3Names Banned (max_values: None, max_size: Some(49), added: 2524, mode: MaxEncodedLen)
 	fn unban(_n: u32, ) -> Weight {
-		Weight::from_ref_time(17_954_246 as u64)
+		Weight::from_parts(17_954_246 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
@@ -112,7 +112,7 @@ impl<T: frame_system::Config> pallet_web3_names::WeightInfo for WeightInfo<T> {
 	// Storage: System Account (r:2 w:2)
 	// Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
 	fn change_deposit_owner() -> Weight {
-		Weight::from_ref_time(66_017_000 as u64)
+		Weight::from_parts(66_017_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(4 as u64))
 			.saturating_add(T::DbWeight::get().writes(3 as u64))
 	}
@@ -121,7 +121,7 @@ impl<T: frame_system::Config> pallet_web3_names::WeightInfo for WeightInfo<T> {
 	// Storage: System Account (r:1 w:1)
 	// Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
 	fn update_deposit() -> Weight {
-		Weight::from_ref_time(57_911_000 as u64)
+		Weight::from_parts(57_911_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(2 as u64))
 			.saturating_add(T::DbWeight::get().writes(2 as u64))
 	}

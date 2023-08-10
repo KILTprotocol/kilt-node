@@ -16,15 +16,18 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::{assert_err, assert_noop, assert_ok};
+use frame_support::{
+	assert_err, assert_noop, assert_ok,
+	traits::fungible::{Inspect, InspectHold},
+};
 use kilt_support::mock::mock_origin::DoubleOrigin;
 
 use crate::{
 	self as delegation,
 	mock::{runtime::*, *},
-	Config, Error,
+	Config, Error, HoldReason,
 };
-use sp_runtime::traits::Zero;
+use sp_runtime::{traits::Zero, TokenError};
 
 // submit_delegation_root_creation_operation()
 
@@ -37,7 +40,11 @@ fn create_root_delegation_successful() {
 
 	ExtBuilder::default()
 		.with_ctypes(vec![(operation.ctype_hash, creator.clone())])
-		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get())])
+		.with_balances(vec![(
+			ACCOUNT_00,
+			<Test as Config>::Deposit::get()
+				+ <<Test as Config>::Currency as Inspect<delegation::AccountIdOf<Test>>>::minimum_balance(),
+		)])
 		.build_and_execute_with_sanity_tests(|| {
 			// Create root hierarchy
 			assert_ok!(Delegation::create_hierarchy(
@@ -47,7 +54,10 @@ fn create_root_delegation_successful() {
 			));
 
 			// Check reserved balance
-			assert_eq!(Balances::reserved_balance(ACCOUNT_00), <Test as Config>::Deposit::get());
+			assert_eq!(
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
+				<Test as Config>::Deposit::get()
+			);
 
 			// Get stored hierarchy
 			let stored_hierarchy_details = Delegation::delegation_hierarchies(hierarchy_root_id)
@@ -71,7 +81,7 @@ fn duplicate_create_root_delegation_error() {
 	let creator = ed25519_did_from_seed(&ALICE_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
-	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let hierarchy_details = generate_base_delegation_hierarchy_details::<Test>();
 
 	let operation = generate_base_delegation_hierarchy_creation_operation::<Test>(hierarchy_root_id);
 
@@ -125,7 +135,7 @@ fn create_delegation_direct_root_successful() {
 	let delegate = sr25519_did_from_seed(&BOB_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
-	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let hierarchy_details = generate_base_delegation_hierarchy_details::<Test>();
 
 	ExtBuilder::default()
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, creator.clone())])
@@ -136,14 +146,26 @@ fn create_delegation_direct_root_successful() {
 			ACCOUNT_00,
 		)])
 		.with_balances(vec![
-			(ACCOUNT_00, <Test as Config>::Deposit::get()),
-			(ACCOUNT_01, <Test as Config>::Deposit::get()),
+			(
+				ACCOUNT_00,
+				<Test as Config>::Deposit::get()
+					+ <<Test as Config>::Currency as Inspect<delegation::AccountIdOf<Test>>>::minimum_balance(),
+			),
+			(
+				ACCOUNT_01,
+				<Test as Config>::Deposit::get()
+					+ <<Test as Config>::Currency as Inspect<delegation::AccountIdOf<Test>>>::minimum_balance(),
+			),
 		])
 		.build_and_execute_with_sanity_tests(|| {
 			// Create delegation to root
 			let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
-			let delegation_node =
-				generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(hierarchy_root_id), ACCOUNT_01);
+			let delegation_node = generate_base_delegation_node::<Test>(
+				hierarchy_root_id,
+				delegate.clone(),
+				Some(hierarchy_root_id),
+				ACCOUNT_01,
+			);
 			let delegation_info = Delegation::calculate_delegation_creation_hash(
 				&delegation_id,
 				&hierarchy_root_id,
@@ -155,7 +177,10 @@ fn create_delegation_direct_root_successful() {
 				generate_base_delegation_creation_operation(delegation_id, delegate_signature, delegation_node);
 
 			// 1 Deposit should be reserved for hierarchy
-			assert_eq!(Balances::reserved_balance(ACCOUNT_00), <Test as Config>::Deposit::get());
+			assert_eq!(
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
+				<Test as Config>::Deposit::get()
+			);
 
 			// Add delegation to root
 			assert_ok!(Delegation::add_delegation(
@@ -169,7 +194,7 @@ fn create_delegation_direct_root_successful() {
 
 			// 2 Deposits should be reserved for hierarchy and delegation to root
 			assert_eq!(
-				Balances::reserved_balance(ACCOUNT_00),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
 				2 * <Test as Config>::Deposit::get()
 			);
 
@@ -196,10 +221,10 @@ fn create_delegation_with_parent_successful() {
 	let delegate = sr25519_did_from_seed(&BOB_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
-	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let hierarchy_details = generate_base_delegation_hierarchy_details::<Test>();
 	let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
 	let parent_node =
-		generate_base_delegation_node(hierarchy_root_id, creator.clone(), Some(hierarchy_root_id), ACCOUNT_00);
+		generate_base_delegation_node::<Test>(hierarchy_root_id, creator.clone(), Some(hierarchy_root_id), ACCOUNT_00);
 
 	ExtBuilder::default()
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, creator.clone())])
@@ -211,14 +236,22 @@ fn create_delegation_with_parent_successful() {
 		)])
 		.with_delegations(vec![(parent_id, parent_node)])
 		.with_balances(vec![
-			(ACCOUNT_00, <Test as Config>::Deposit::get()),
-			(ACCOUNT_01, <Test as Config>::Deposit::get()),
+			(
+				ACCOUNT_00,
+				<Test as Config>::Deposit::get()
+					+ <<Test as Config>::Currency as Inspect<delegation::AccountIdOf<Test>>>::minimum_balance(),
+			),
+			(
+				ACCOUNT_01,
+				<Test as Config>::Deposit::get()
+					+ <<Test as Config>::Currency as Inspect<delegation::AccountIdOf<Test>>>::minimum_balance(),
+			),
 		])
 		.build_and_execute_with_sanity_tests(|| {
 			// Create sub-delegation
 			let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
 			let delegation_node =
-				generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(parent_id), ACCOUNT_00);
+				generate_base_delegation_node::<Test>(hierarchy_root_id, delegate.clone(), Some(parent_id), ACCOUNT_00);
 			let delegation_info = Delegation::calculate_delegation_creation_hash(
 				&delegation_id,
 				&hierarchy_root_id,
@@ -231,7 +264,7 @@ fn create_delegation_with_parent_successful() {
 
 			// Should have deposited for hierarchy and parent delegation
 			assert_eq!(
-				Balances::reserved_balance(ACCOUNT_00),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
 				2 * <Test as Config>::Deposit::get()
 			);
 
@@ -247,10 +280,10 @@ fn create_delegation_with_parent_successful() {
 
 			// Should have deposited for hierarchy, parent delegation and sub-delegation
 			assert_eq!(
-				Balances::reserved_balance(ACCOUNT_00),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
 				3 * <Test as Config>::Deposit::get()
 			);
-			assert!(Balances::reserved_balance(ACCOUNT_01).is_zero());
+			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_01).is_zero());
 
 			// Data in stored delegation and operation should match
 			let stored_delegation =
@@ -277,10 +310,10 @@ fn create_delegation_direct_root_revoked_error() {
 	let delegate = sr25519_did_from_seed(&BOB_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
-	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let hierarchy_details = generate_base_delegation_hierarchy_details::<Test>();
 	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
 	let delegation_node =
-		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(hierarchy_root_id), ACCOUNT_00);
+		generate_base_delegation_node::<Test>(hierarchy_root_id, delegate.clone(), Some(hierarchy_root_id), ACCOUNT_00);
 
 	let delegation_hash = &hash_to_u8(Delegation::calculate_delegation_creation_hash(
 		&delegation_id,
@@ -328,15 +361,15 @@ fn create_delegation_with_parent_revoked_error() {
 	let delegate = sr25519_did_from_seed(&BOB_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
-	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let hierarchy_details = generate_base_delegation_hierarchy_details::<Test>();
 
 	let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
 	let parent_node =
-		generate_base_delegation_node(hierarchy_root_id, creator.clone(), Some(hierarchy_root_id), ACCOUNT_00);
+		generate_base_delegation_node::<Test>(hierarchy_root_id, creator.clone(), Some(hierarchy_root_id), ACCOUNT_00);
 
 	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
 	let delegation_node =
-		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(parent_id), ACCOUNT_00);
+		generate_base_delegation_node::<Test>(hierarchy_root_id, delegate.clone(), Some(parent_id), ACCOUNT_00);
 
 	let delegation_info = Delegation::calculate_delegation_creation_hash(
 		&delegation_id,
@@ -389,10 +422,10 @@ fn invalid_delegate_signature_create_delegation_error() {
 	let delegate = sr25519_did_from_seed(&BOB_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
-	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let hierarchy_details = generate_base_delegation_hierarchy_details::<Test>();
 	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
 	let delegation_node =
-		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(hierarchy_root_id), ACCOUNT_00);
+		generate_base_delegation_node::<Test>(hierarchy_root_id, delegate.clone(), Some(hierarchy_root_id), ACCOUNT_00);
 
 	let delegate_signature = (delegate.clone(), vec![]);
 
@@ -428,10 +461,10 @@ fn duplicate_delegation_create_delegation_error() {
 	let delegate = sr25519_did_from_seed(&BOB_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
-	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let hierarchy_details = generate_base_delegation_hierarchy_details::<Test>();
 	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
 	let delegation_node =
-		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(hierarchy_root_id), ACCOUNT_00);
+		generate_base_delegation_node::<Test>(hierarchy_root_id, delegate.clone(), Some(hierarchy_root_id), ACCOUNT_00);
 
 	let delegation_hash = &hash_to_u8(Delegation::calculate_delegation_creation_hash(
 		&delegation_id,
@@ -519,9 +552,9 @@ fn not_owner_of_parent_create_delegation_error() {
 	let alternative_owner = ed25519_did_from_seed(&CHARLIE_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
-	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let hierarchy_details = generate_base_delegation_hierarchy_details::<Test>();
 	let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
-	let parent_node = generate_base_delegation_node(
+	let parent_node = generate_base_delegation_node::<Test>(
 		hierarchy_root_id,
 		alternative_owner,
 		Some(hierarchy_root_id),
@@ -530,7 +563,7 @@ fn not_owner_of_parent_create_delegation_error() {
 
 	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
 	let delegation_node =
-		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(parent_id), ACCOUNT_00);
+		generate_base_delegation_node::<Test>(hierarchy_root_id, delegate.clone(), Some(parent_id), ACCOUNT_00);
 
 	let delegation_hash = &hash_to_u8(Delegation::calculate_delegation_creation_hash(
 		&delegation_id,
@@ -573,7 +606,7 @@ fn unauthorised_delegation_create_delegation_error() {
 	let delegate = sr25519_did_from_seed(&BOB_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
-	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let hierarchy_details = generate_base_delegation_hierarchy_details::<Test>();
 	let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
 	let mut parent_node =
 		generate_base_delegation_node::<Test>(hierarchy_root_id, creator.clone(), Some(hierarchy_root_id), ACCOUNT_00);
@@ -581,7 +614,7 @@ fn unauthorised_delegation_create_delegation_error() {
 
 	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
 	let delegation_node =
-		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(parent_id), ACCOUNT_00);
+		generate_base_delegation_node::<Test>(hierarchy_root_id, delegate.clone(), Some(parent_id), ACCOUNT_00);
 
 	let delegation_hash = &hash_to_u8(Delegation::calculate_delegation_creation_hash(
 		&delegation_id,
@@ -625,7 +658,7 @@ fn empty_revoke_root_successful() {
 	let revoker = ed25519_did_from_seed(&ALICE_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
-	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let hierarchy_details = generate_base_delegation_hierarchy_details::<Test>();
 
 	let operation = generate_base_delegation_hierarchy_revocation_operation(hierarchy_root_id);
 
@@ -661,13 +694,14 @@ fn list_hierarchy_revoke_and_remove_root_successful() {
 	let delegate = sr25519_did_from_seed(&BOB_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
-	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let hierarchy_details = generate_base_delegation_hierarchy_details::<Test>();
 	let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
 	let parent_node =
-		generate_base_delegation_node(hierarchy_root_id, revoker.clone(), Some(hierarchy_root_id), ACCOUNT_00);
+		generate_base_delegation_node::<Test>(hierarchy_root_id, revoker.clone(), Some(hierarchy_root_id), ACCOUNT_00);
 
 	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
-	let delegation_node = generate_base_delegation_node(hierarchy_root_id, delegate, Some(parent_id), ACCOUNT_01);
+	let delegation_node =
+		generate_base_delegation_node::<Test>(hierarchy_root_id, delegate, Some(parent_id), ACCOUNT_01);
 
 	let mut operation = generate_base_delegation_hierarchy_revocation_operation(hierarchy_root_id);
 	operation.max_children = 2u32;
@@ -688,10 +722,13 @@ fn list_hierarchy_revoke_and_remove_root_successful() {
 		.build_and_execute_with_sanity_tests(|| {
 			assert!(Delegation::delegation_hierarchies(hierarchy_root_id).is_some());
 			assert_eq!(
-				Balances::reserved_balance(ACCOUNT_00),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
 				2 * <Test as Config>::Deposit::get()
 			);
-			assert_eq!(Balances::reserved_balance(ACCOUNT_01), <Test as Config>::Deposit::get());
+			assert_eq!(
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_01),
+				<Test as Config>::Deposit::get()
+			);
 
 			// Revoke root
 			assert_ok!(Delegation::revoke_delegation(
@@ -732,8 +769,8 @@ fn list_hierarchy_revoke_and_remove_root_successful() {
 			assert!(Delegation::delegation_hierarchies(hierarchy_root_id).is_none());
 			assert!(Delegation::delegation_nodes(parent_id).is_none());
 			assert!(Delegation::delegation_nodes(delegation_id).is_none());
-			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
-			assert!(Balances::reserved_balance(ACCOUNT_01).is_zero());
+			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00).is_zero());
+			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_01).is_zero());
 		});
 }
 
@@ -743,14 +780,14 @@ fn tree_hierarchy_revoke_and_remove_root_successful() {
 	let delegate = sr25519_did_from_seed(&BOB_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
-	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let hierarchy_details = generate_base_delegation_hierarchy_details::<Test>();
 	let delegation1_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
 	let delegation1_node =
-		generate_base_delegation_node(hierarchy_root_id, revoker.clone(), Some(hierarchy_root_id), ACCOUNT_00);
+		generate_base_delegation_node::<Test>(hierarchy_root_id, revoker.clone(), Some(hierarchy_root_id), ACCOUNT_00);
 
 	let delegation2_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
 	let delegation2_node =
-		generate_base_delegation_node(hierarchy_root_id, delegate, Some(hierarchy_root_id), ACCOUNT_01);
+		generate_base_delegation_node::<Test>(hierarchy_root_id, delegate, Some(hierarchy_root_id), ACCOUNT_01);
 
 	let mut operation = generate_base_delegation_hierarchy_revocation_operation(hierarchy_root_id);
 	operation.max_children = 2u32;
@@ -801,10 +838,13 @@ fn tree_hierarchy_revoke_and_remove_root_successful() {
 			);
 
 			assert_eq!(
-				Balances::reserved_balance(ACCOUNT_00),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
 				2 * <Test as Config>::Deposit::get()
 			);
-			assert_eq!(Balances::reserved_balance(ACCOUNT_01), <Test as Config>::Deposit::get());
+			assert_eq!(
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_01),
+				<Test as Config>::Deposit::get()
+			);
 
 			// Removing root should also remove children and hierarchy
 			assert_ok!(Delegation::remove_delegation(
@@ -817,8 +857,8 @@ fn tree_hierarchy_revoke_and_remove_root_successful() {
 			assert!(Delegation::delegation_hierarchies(hierarchy_root_id).is_none());
 			assert!(Delegation::delegation_nodes(delegation1_id).is_none());
 			assert!(Delegation::delegation_nodes(delegation2_id).is_none());
-			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
-			assert!(Balances::reserved_balance(ACCOUNT_01).is_zero());
+			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00).is_zero());
+			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_01).is_zero());
 		});
 }
 
@@ -828,13 +868,14 @@ fn max_max_revocations_revoke_and_remove_successful() {
 	let delegate = sr25519_did_from_seed(&BOB_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
-	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let hierarchy_details = generate_base_delegation_hierarchy_details::<Test>();
 	let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
 	let parent_node =
-		generate_base_delegation_node(hierarchy_root_id, revoker.clone(), Some(hierarchy_root_id), ACCOUNT_00);
+		generate_base_delegation_node::<Test>(hierarchy_root_id, revoker.clone(), Some(hierarchy_root_id), ACCOUNT_00);
 
 	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
-	let delegation_node = generate_base_delegation_node(hierarchy_root_id, delegate, Some(parent_id), ACCOUNT_01);
+	let delegation_node =
+		generate_base_delegation_node::<Test>(hierarchy_root_id, delegate, Some(parent_id), ACCOUNT_01);
 
 	let mut operation = generate_base_delegation_hierarchy_revocation_operation(hierarchy_root_id);
 	operation.max_children = MaxRevocations::get();
@@ -882,10 +923,13 @@ fn max_max_revocations_revoke_and_remove_successful() {
 			);
 
 			assert_eq!(
-				Balances::reserved_balance(ACCOUNT_00),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
 				2 * <Test as Config>::Deposit::get()
 			);
-			assert_eq!(Balances::reserved_balance(ACCOUNT_01), <Test as Config>::Deposit::get());
+			assert_eq!(
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_01),
+				<Test as Config>::Deposit::get()
+			);
 
 			// Removing root should also remove children and hierarchy
 			assert_ok!(Delegation::remove_delegation(
@@ -898,8 +942,8 @@ fn max_max_revocations_revoke_and_remove_successful() {
 			assert!(Delegation::delegation_hierarchies(hierarchy_root_id).is_none());
 			assert!(Delegation::delegation_nodes(parent_id).is_none());
 			assert!(Delegation::delegation_nodes(delegation_id).is_none());
-			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
-			assert!(Balances::reserved_balance(ACCOUNT_01).is_zero());
+			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00).is_zero());
+			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_01).is_zero());
 		});
 }
 
@@ -938,7 +982,7 @@ fn different_root_creator_revoke_and_remove_root_error() {
 	let unauthorized = ed25519_did_from_seed(&CHARLIE_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
-	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let hierarchy_details = generate_base_delegation_hierarchy_details::<Test>();
 
 	let operation = generate_base_delegation_hierarchy_revocation_operation(hierarchy_root_id);
 
@@ -976,11 +1020,11 @@ fn too_small_max_revocations_revoke_and_remove_root_error() {
 	let delegate = ed25519_did_from_seed(&BOB_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
-	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let hierarchy_details = generate_base_delegation_hierarchy_details::<Test>();
 
 	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
 	let delegation_node =
-		generate_base_delegation_node(hierarchy_root_id, delegate, Some(hierarchy_root_id), ACCOUNT_00);
+		generate_base_delegation_node::<Test>(hierarchy_root_id, delegate, Some(hierarchy_root_id), ACCOUNT_00);
 
 	let mut operation = generate_base_delegation_hierarchy_revocation_operation(hierarchy_root_id);
 	operation.max_children = 0u32;
@@ -1025,17 +1069,18 @@ fn exact_children_max_revocations_revoke_and_remove_root_error() {
 	let delegate = ed25519_did_from_seed(&BOB_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
-	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let hierarchy_details = generate_base_delegation_hierarchy_details::<Test>();
 	let delegation1_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
 	let delegation1_node =
-		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(hierarchy_root_id), ACCOUNT_01);
+		generate_base_delegation_node::<Test>(hierarchy_root_id, delegate.clone(), Some(hierarchy_root_id), ACCOUNT_01);
 
 	let delegation2_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
 	let delegation2_node =
-		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(delegation1_id), ACCOUNT_01);
+		generate_base_delegation_node::<Test>(hierarchy_root_id, delegate.clone(), Some(delegation1_id), ACCOUNT_01);
 
 	let delegation3_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_3);
-	let delegation3_node = generate_base_delegation_node(hierarchy_root_id, delegate, Some(delegation1_id), ACCOUNT_01);
+	let delegation3_node =
+		generate_base_delegation_node::<Test>(hierarchy_root_id, delegate, Some(delegation1_id), ACCOUNT_01);
 
 	let mut operation = generate_base_delegation_hierarchy_revocation_operation(hierarchy_root_id);
 	// set max children below required minimum of 3 to revoke/remove entire tree
@@ -1059,7 +1104,10 @@ fn exact_children_max_revocations_revoke_and_remove_root_error() {
 			(delegation3_id, delegation3_node),
 		])
 		.build_and_execute_with_sanity_tests(|| {
-			assert_eq!(Balances::reserved_balance(ACCOUNT_00), <Test as Config>::Deposit::get());
+			assert_eq!(
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
+				<Test as Config>::Deposit::get()
+			);
 
 			// Should not revoke root because tree traversal steps are insufficient
 			// assert_err and not assert_noop because the storage is indeed changed, but
@@ -1101,9 +1149,12 @@ fn exact_children_max_revocations_revoke_and_remove_root_error() {
 			);
 
 			// Should not remove root because tree traversal steps are insufficient
-			assert_eq!(Balances::reserved_balance(ACCOUNT_00), <Test as Config>::Deposit::get());
 			assert_eq!(
-				Balances::reserved_balance(ACCOUNT_01),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
+				<Test as Config>::Deposit::get()
+			);
+			assert_eq!(
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_01),
 				3 * <Test as Config>::Deposit::get()
 			);
 			// assert_err and not assert_noop because the storage is indeed changed, but
@@ -1121,9 +1172,12 @@ fn exact_children_max_revocations_revoke_and_remove_root_error() {
 			assert!(Delegation::delegation_nodes(delegation1_id).is_some());
 			assert!(Delegation::delegation_nodes(delegation2_id).is_some());
 			assert!(Delegation::delegation_nodes(delegation3_id).is_some());
-			assert_eq!(Balances::reserved_balance(ACCOUNT_00), <Test as Config>::Deposit::get());
 			assert_eq!(
-				Balances::reserved_balance(ACCOUNT_01),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
+				<Test as Config>::Deposit::get()
+			);
+			assert_eq!(
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_01),
 				3 * <Test as Config>::Deposit::get()
 			);
 
@@ -1136,8 +1190,8 @@ fn exact_children_max_revocations_revoke_and_remove_root_error() {
 			assert!(Delegation::delegation_nodes(operation.id).is_none());
 			assert!(Delegation::delegation_nodes(delegation1_id).is_none());
 			assert!(Delegation::delegation_nodes(delegation3_id).is_none());
-			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
-			assert!(Balances::reserved_balance(ACCOUNT_01).is_zero());
+			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00).is_zero());
+			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_01).is_zero());
 		});
 }
 
@@ -1151,14 +1205,15 @@ fn direct_owner_revoke_and_remove_delegation_successful() {
 	let delegate = ed25519_did_from_seed(&BOB_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
-	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let hierarchy_details = generate_base_delegation_hierarchy_details::<Test>();
 
 	let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
 	let parent_node =
-		generate_base_delegation_node(hierarchy_root_id, revoker.clone(), Some(hierarchy_root_id), ACCOUNT_00);
+		generate_base_delegation_node::<Test>(hierarchy_root_id, revoker.clone(), Some(hierarchy_root_id), ACCOUNT_00);
 
 	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
-	let delegation_node = generate_base_delegation_node(hierarchy_root_id, delegate, Some(parent_id), ACCOUNT_01);
+	let delegation_node =
+		generate_base_delegation_node::<Test>(hierarchy_root_id, delegate, Some(parent_id), ACCOUNT_01);
 
 	let mut operation = generate_base_delegation_revocation_operation(parent_id);
 	operation.max_revocations = 2u32;
@@ -1206,10 +1261,13 @@ fn direct_owner_revoke_and_remove_delegation_successful() {
 			);
 
 			assert_eq!(
-				Balances::reserved_balance(ACCOUNT_00),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
 				2 * <Test as Config>::Deposit::get()
 			);
-			assert_eq!(Balances::reserved_balance(ACCOUNT_01), <Test as Config>::Deposit::get());
+			assert_eq!(
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_01),
+				<Test as Config>::Deposit::get()
+			);
 
 			// Removing root delegation should also remove its child but not hierarchy root
 			assert_ok!(Delegation::remove_delegation(
@@ -1222,8 +1280,11 @@ fn direct_owner_revoke_and_remove_delegation_successful() {
 			assert!(Delegation::delegation_nodes(operation.delegation_id).is_none());
 			assert!(Delegation::delegation_nodes(parent_id).is_none());
 			assert!(Delegation::delegation_nodes(delegation_id).is_none());
-			assert_eq!(Balances::reserved_balance(ACCOUNT_00), <Test as Config>::Deposit::get());
-			assert!(Balances::reserved_balance(ACCOUNT_01).is_zero());
+			assert_eq!(
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
+				<Test as Config>::Deposit::get()
+			);
+			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_01).is_zero());
 		});
 }
 
@@ -1233,15 +1294,15 @@ fn parent_owner_revoke_delegation_successful() {
 	let delegate = ed25519_did_from_seed(&BOB_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
-	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let hierarchy_details = generate_base_delegation_hierarchy_details::<Test>();
 
 	let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
 	let parent_node =
-		generate_base_delegation_node(hierarchy_root_id, revoker.clone(), Some(hierarchy_root_id), ACCOUNT_00);
+		generate_base_delegation_node::<Test>(hierarchy_root_id, revoker.clone(), Some(hierarchy_root_id), ACCOUNT_00);
 
 	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
 	let delegation_node =
-		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(hierarchy_root_id), ACCOUNT_01);
+		generate_base_delegation_node::<Test>(hierarchy_root_id, delegate.clone(), Some(hierarchy_root_id), ACCOUNT_01);
 
 	let mut operation = generate_base_delegation_revocation_operation(delegation_id);
 	operation.max_parent_checks = 1u32;
@@ -1263,10 +1324,13 @@ fn parent_owner_revoke_delegation_successful() {
 		.build_and_execute_with_sanity_tests(|| {
 			// Parent should not be able to remove the child delegation directly
 			assert_eq!(
-				Balances::reserved_balance(ACCOUNT_00),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
 				2 * <Test as Config>::Deposit::get()
 			);
-			assert_eq!(Balances::reserved_balance(ACCOUNT_01), <Test as Config>::Deposit::get());
+			assert_eq!(
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_01),
+				<Test as Config>::Deposit::get()
+			);
 			assert_noop!(
 				Delegation::remove_delegation(
 					DoubleOrigin(ACCOUNT_00, revoker.clone()).into(),
@@ -1308,10 +1372,10 @@ fn parent_owner_revoke_delegation_successful() {
 			assert!(Delegation::delegation_nodes(parent_id).is_some());
 			assert!(Delegation::delegation_nodes(delegation_id).is_none());
 			assert_eq!(
-				Balances::reserved_balance(ACCOUNT_00),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
 				2 * <Test as Config>::Deposit::get()
 			);
-			assert!(Balances::reserved_balance(ACCOUNT_01).is_zero());
+			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_01).is_zero());
 		});
 }
 
@@ -1320,7 +1384,7 @@ fn delegation_not_found_revoke_and_remove_delegation_error() {
 	let revoker = ed25519_did_from_seed(&ALICE_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
-	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let hierarchy_details = generate_base_delegation_hierarchy_details::<Test>();
 	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
 
 	let operation = generate_base_delegation_revocation_operation(delegation_id);
@@ -1361,11 +1425,11 @@ fn not_delegating_revoke_and_remove_delegation_error() {
 	let revoker = ed25519_did_from_seed(&BOB_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
-	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let hierarchy_details = generate_base_delegation_hierarchy_details::<Test>();
 
 	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
 	let delegation_node =
-		generate_base_delegation_node(hierarchy_root_id, owner.clone(), Some(hierarchy_root_id), ACCOUNT_00);
+		generate_base_delegation_node::<Test>(hierarchy_root_id, owner.clone(), Some(hierarchy_root_id), ACCOUNT_00);
 
 	let mut operation = generate_base_delegation_revocation_operation(delegation_id);
 	operation.max_parent_checks = MaxParentChecks::get();
@@ -1403,9 +1467,9 @@ fn parent_too_far_revoke_and_remove_delegation_error() {
 	let intermediate = ed25519_did_from_seed(&CHARLIE_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
-	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let hierarchy_details = generate_base_delegation_hierarchy_details::<Test>();
 	let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
-	let parent_node = generate_base_delegation_node(
+	let parent_node = generate_base_delegation_node::<Test>(
 		hierarchy_root_id,
 		intermediate.clone(),
 		Some(hierarchy_root_id),
@@ -1414,7 +1478,7 @@ fn parent_too_far_revoke_and_remove_delegation_error() {
 
 	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
 	let delegation_node =
-		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(parent_id), ACCOUNT_02);
+		generate_base_delegation_node::<Test>(hierarchy_root_id, delegate.clone(), Some(parent_id), ACCOUNT_02);
 
 	let mut operation = generate_base_delegation_revocation_operation(delegation_id);
 	operation.max_revocations = 2u32;
@@ -1441,9 +1505,18 @@ fn parent_too_far_revoke_and_remove_delegation_error() {
 			);
 
 			// removal
-			assert_eq!(Balances::reserved_balance(ACCOUNT_00), <Test as Config>::Deposit::get());
-			assert_eq!(Balances::reserved_balance(ACCOUNT_02), <Test as Config>::Deposit::get());
-			assert_eq!(Balances::reserved_balance(ACCOUNT_01), <Test as Config>::Deposit::get());
+			assert_eq!(
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
+				<Test as Config>::Deposit::get()
+			);
+			assert_eq!(
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_02),
+				<Test as Config>::Deposit::get()
+			);
+			assert_eq!(
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_01),
+				<Test as Config>::Deposit::get()
+			);
 
 			assert_noop!(
 				Delegation::remove_delegation(
@@ -1475,12 +1548,13 @@ fn too_many_revocations_revoke_delegation_error() {
 	let delegate = ed25519_did_from_seed(&BOB_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
-	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let hierarchy_details = generate_base_delegation_hierarchy_details::<Test>();
 	let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
 	let parent_node =
-		generate_base_delegation_node(hierarchy_root_id, revoker.clone(), Some(hierarchy_root_id), ACCOUNT_00);
+		generate_base_delegation_node::<Test>(hierarchy_root_id, revoker.clone(), Some(hierarchy_root_id), ACCOUNT_00);
 	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
-	let delegation_node = generate_base_delegation_node(hierarchy_root_id, delegate, Some(parent_id), ACCOUNT_00);
+	let delegation_node =
+		generate_base_delegation_node::<Test>(hierarchy_root_id, delegate, Some(parent_id), ACCOUNT_00);
 
 	let operation = generate_base_delegation_revocation_operation(parent_id);
 
@@ -1518,12 +1592,13 @@ fn direct_owner_reclaim_deposit_delegation_successful() {
 	let delegate = ed25519_did_from_seed(&BOB_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
-	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let hierarchy_details = generate_base_delegation_hierarchy_details::<Test>();
 	let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
 	let parent_node =
-		generate_base_delegation_node(hierarchy_root_id, revoker.clone(), Some(hierarchy_root_id), ACCOUNT_00);
+		generate_base_delegation_node::<Test>(hierarchy_root_id, revoker.clone(), Some(hierarchy_root_id), ACCOUNT_00);
 	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
-	let delegation_node = generate_base_delegation_node(hierarchy_root_id, delegate, Some(parent_id), ACCOUNT_00);
+	let delegation_node =
+		generate_base_delegation_node::<Test>(hierarchy_root_id, delegate, Some(parent_id), ACCOUNT_00);
 
 	let mut operation = generate_base_delegation_deposit_claim_operation(hierarchy_root_id);
 	operation.max_removals = 2u32;
@@ -1550,8 +1625,8 @@ fn direct_owner_reclaim_deposit_delegation_successful() {
 			assert!(Delegation::delegation_nodes(delegation_id).is_none());
 
 			// We have released all the deposits by deleting the root node.
-			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
-			assert!(Balances::reserved_balance(ACCOUNT_01).is_zero());
+			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00).is_zero());
+			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_01).is_zero());
 		});
 }
 
@@ -1562,12 +1637,13 @@ fn parent_owner_reclaim_deposit_error() {
 	let delegate = ed25519_did_from_seed(&BOB_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
-	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let hierarchy_details = generate_base_delegation_hierarchy_details::<Test>();
 	let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
 	let parent_node =
-		generate_base_delegation_node(hierarchy_root_id, revoker.clone(), Some(hierarchy_root_id), ACCOUNT_00);
+		generate_base_delegation_node::<Test>(hierarchy_root_id, revoker.clone(), Some(hierarchy_root_id), ACCOUNT_00);
 	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
-	let delegation_node = generate_base_delegation_node(hierarchy_root_id, delegate, Some(parent_id), ACCOUNT_01);
+	let delegation_node =
+		generate_base_delegation_node::<Test>(hierarchy_root_id, delegate, Some(parent_id), ACCOUNT_01);
 
 	let mut operation = generate_base_delegation_deposit_claim_operation(delegation_id);
 	operation.max_removals = 1u32;
@@ -1584,10 +1660,13 @@ fn parent_owner_reclaim_deposit_error() {
 			// Parent should not be able to claim the deposit for the child delegation
 			// directly
 			assert_eq!(
-				Balances::reserved_balance(ACCOUNT_00),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
 				2 * <Test as Config>::Deposit::get()
 			);
-			assert_eq!(Balances::reserved_balance(ACCOUNT_01), <Test as Config>::Deposit::get());
+			assert_eq!(
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_01),
+				<Test as Config>::Deposit::get()
+			);
 			assert_noop!(
 				Delegation::reclaim_deposit(
 					RuntimeOrigin::signed(ACCOUNT_00),
@@ -1604,7 +1683,7 @@ fn delegation_not_found_reclaim_deposit_error() {
 	let revoker = ed25519_did_from_seed(&ALICE_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
-	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let hierarchy_details = generate_base_delegation_hierarchy_details::<Test>();
 	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
 
 	let operation = generate_base_delegation_deposit_claim_operation(delegation_id);
@@ -1630,7 +1709,7 @@ fn max_removals_too_large_reclaim_deposit_error() {
 	let revoker = ed25519_did_from_seed(&ALICE_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
-	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let hierarchy_details = generate_base_delegation_hierarchy_details::<Test>();
 
 	let mut operation = generate_base_delegation_deposit_claim_operation(hierarchy_root_id);
 	operation.max_removals = <Test as Config>::MaxRemovals::get() + 1;
@@ -1660,12 +1739,14 @@ fn is_delegating_direct_not_revoked() {
 	let user_3 = ed25519_did_from_seed(&CHARLIE_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
-	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let hierarchy_details = generate_base_delegation_hierarchy_details::<Test>();
 	let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
-	let parent_node = generate_base_delegation_node(hierarchy_root_id, user_2, Some(hierarchy_root_id), ACCOUNT_00);
+	let parent_node =
+		generate_base_delegation_node::<Test>(hierarchy_root_id, user_2, Some(hierarchy_root_id), ACCOUNT_00);
 
 	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
-	let delegation_node = generate_base_delegation_node(hierarchy_root_id, user_3.clone(), Some(parent_id), ACCOUNT_01);
+	let delegation_node =
+		generate_base_delegation_node::<Test>(hierarchy_root_id, user_3.clone(), Some(parent_id), ACCOUNT_01);
 
 	let max_parent_checks = 0u32;
 
@@ -1694,12 +1775,14 @@ fn is_delegating_direct_not_revoked_max_parent_checks_value() {
 	let user_3 = ed25519_did_from_seed(&CHARLIE_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
-	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let hierarchy_details = generate_base_delegation_hierarchy_details::<Test>();
 	let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
-	let parent_node = generate_base_delegation_node(hierarchy_root_id, user_2, Some(hierarchy_root_id), ACCOUNT_00);
+	let parent_node =
+		generate_base_delegation_node::<Test>(hierarchy_root_id, user_2, Some(hierarchy_root_id), ACCOUNT_00);
 
 	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
-	let delegation_node = generate_base_delegation_node(hierarchy_root_id, user_3.clone(), Some(parent_id), ACCOUNT_01);
+	let delegation_node =
+		generate_base_delegation_node::<Test>(hierarchy_root_id, user_3.clone(), Some(parent_id), ACCOUNT_01);
 
 	let max_parent_checks = u32::MAX;
 
@@ -1728,13 +1811,14 @@ fn is_delegating_direct_revoked() {
 	let user_3 = ed25519_did_from_seed(&CHARLIE_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
-	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let hierarchy_details = generate_base_delegation_hierarchy_details::<Test>();
 	let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
-	let parent_node = generate_base_delegation_node(hierarchy_root_id, user_2, Some(hierarchy_root_id), ACCOUNT_00);
+	let parent_node =
+		generate_base_delegation_node::<Test>(hierarchy_root_id, user_2, Some(hierarchy_root_id), ACCOUNT_00);
 
 	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
 	let mut delegation_node =
-		generate_base_delegation_node(hierarchy_root_id, user_3.clone(), Some(parent_id), ACCOUNT_00);
+		generate_base_delegation_node::<Test>(hierarchy_root_id, user_3.clone(), Some(parent_id), ACCOUNT_00);
 	delegation_node.details.revoked = true;
 
 	let max_parent_checks = 0u32;
@@ -1764,13 +1848,14 @@ fn is_delegating_direct_revoked_max_parent_checks_value() {
 	let user_3 = ed25519_did_from_seed(&CHARLIE_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
-	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let hierarchy_details = generate_base_delegation_hierarchy_details::<Test>();
 	let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
-	let parent_node = generate_base_delegation_node(hierarchy_root_id, user_2, Some(hierarchy_root_id), ACCOUNT_00);
+	let parent_node =
+		generate_base_delegation_node::<Test>(hierarchy_root_id, user_2, Some(hierarchy_root_id), ACCOUNT_00);
 
 	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
 	let mut delegation_node =
-		generate_base_delegation_node(hierarchy_root_id, user_3.clone(), Some(parent_id), ACCOUNT_00);
+		generate_base_delegation_node::<Test>(hierarchy_root_id, user_3.clone(), Some(parent_id), ACCOUNT_00);
 	delegation_node.details.revoked = true;
 
 	let max_parent_checks = u32::MAX;
@@ -1800,13 +1885,13 @@ fn is_delegating_max_parent_not_revoked() {
 	let user_3 = ed25519_did_from_seed(&CHARLIE_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
-	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let hierarchy_details = generate_base_delegation_hierarchy_details::<Test>();
 	let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
 	let parent_node =
-		generate_base_delegation_node(hierarchy_root_id, user_2.clone(), Some(hierarchy_root_id), ACCOUNT_00);
+		generate_base_delegation_node::<Test>(hierarchy_root_id, user_2.clone(), Some(hierarchy_root_id), ACCOUNT_00);
 
 	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
-	let delegation_node = generate_base_delegation_node(hierarchy_root_id, user_3, Some(parent_id), ACCOUNT_01);
+	let delegation_node = generate_base_delegation_node::<Test>(hierarchy_root_id, user_3, Some(parent_id), ACCOUNT_01);
 
 	let max_parent_checks = 1u32;
 
@@ -1835,15 +1920,16 @@ fn is_delegating_max_parent_revoked() {
 	let user_3 = ed25519_did_from_seed(&CHARLIE_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
-	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let hierarchy_details = generate_base_delegation_hierarchy_details::<Test>();
 
 	let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
 	let mut parent_node =
-		generate_base_delegation_node(hierarchy_root_id, user_2.clone(), Some(hierarchy_root_id), ACCOUNT_00);
+		generate_base_delegation_node::<Test>(hierarchy_root_id, user_2.clone(), Some(hierarchy_root_id), ACCOUNT_00);
 
 	parent_node.details.revoked = true;
 	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
-	let mut delegation_node = generate_base_delegation_node(hierarchy_root_id, user_3, Some(parent_id), ACCOUNT_01);
+	let mut delegation_node =
+		generate_base_delegation_node::<Test>(hierarchy_root_id, user_3, Some(parent_id), ACCOUNT_01);
 	delegation_node.details.revoked = true;
 
 	let max_parent_checks = 2u32;
@@ -1873,13 +1959,14 @@ fn is_delegating_root_owner_not_revoked() {
 	let user_3 = ed25519_did_from_seed(&CHARLIE_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
-	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let hierarchy_details = generate_base_delegation_hierarchy_details::<Test>();
 
 	let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
-	let parent_node = generate_base_delegation_node(hierarchy_root_id, user_2, Some(hierarchy_root_id), ACCOUNT_00);
+	let parent_node =
+		generate_base_delegation_node::<Test>(hierarchy_root_id, user_2, Some(hierarchy_root_id), ACCOUNT_00);
 
 	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
-	let delegation_node = generate_base_delegation_node(hierarchy_root_id, user_3, Some(parent_id), ACCOUNT_01);
+	let delegation_node = generate_base_delegation_node::<Test>(hierarchy_root_id, user_3, Some(parent_id), ACCOUNT_01);
 
 	let max_parent_checks = 2u32;
 
@@ -1908,12 +1995,13 @@ fn is_delegating_root_owner_revoked() {
 	let user_3 = ed25519_did_from_seed(&CHARLIE_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
-	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let hierarchy_details = generate_base_delegation_hierarchy_details::<Test>();
 	let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
-	let parent_node = generate_base_delegation_node(hierarchy_root_id, user_2, Some(hierarchy_root_id), ACCOUNT_00);
+	let parent_node =
+		generate_base_delegation_node::<Test>(hierarchy_root_id, user_2, Some(hierarchy_root_id), ACCOUNT_00);
 
 	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
-	let delegation_node = generate_base_delegation_node(hierarchy_root_id, user_3, Some(parent_id), ACCOUNT_01);
+	let delegation_node = generate_base_delegation_node::<Test>(hierarchy_root_id, user_3, Some(parent_id), ACCOUNT_01);
 
 	let max_parent_checks = 2u32;
 
@@ -1948,13 +2036,17 @@ fn is_delegating_delegation_not_found() {
 	let user_1 = ed25519_did_from_seed(&ALICE_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
-	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let hierarchy_details = generate_base_delegation_hierarchy_details::<Test>();
 	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
 
 	let max_parent_checks = 2u32;
 
 	// Root -> Delegation 1
 	let mut ext = ExtBuilder::default()
+		.with_balances(vec![(
+			ACCOUNT_00,
+			<<Test as Config>::Currency as Inspect<delegation::AccountIdOf<Test>>>::minimum_balance(),
+		)])
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, user_1.clone(), ACCOUNT_00)])
 		.build();
 
@@ -1973,13 +2065,14 @@ fn is_delegating_root_after_max_limit() {
 	let user_3 = ed25519_did_from_seed(&CHARLIE_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
-	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let hierarchy_details = generate_base_delegation_hierarchy_details::<Test>();
 
 	let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
-	let parent_node = generate_base_delegation_node(hierarchy_root_id, user_2, Some(hierarchy_root_id), ACCOUNT_00);
+	let parent_node =
+		generate_base_delegation_node::<Test>(hierarchy_root_id, user_2, Some(hierarchy_root_id), ACCOUNT_00);
 
 	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
-	let delegation_node = generate_base_delegation_node(hierarchy_root_id, user_3, Some(parent_id), ACCOUNT_01);
+	let delegation_node = generate_base_delegation_node::<Test>(hierarchy_root_id, user_3, Some(parent_id), ACCOUNT_01);
 
 	// 1 less than needed
 	let max_parent_checks = 1u32;
@@ -2008,7 +2101,7 @@ fn remove_single_hierarchy() {
 	let attacker = ed25519_did_from_seed(&CHARLIE_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
-	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let hierarchy_details = generate_base_delegation_hierarchy_details::<Test>();
 
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get())])
@@ -2022,7 +2115,10 @@ fn remove_single_hierarchy() {
 		.build_and_execute_with_sanity_tests(|| {
 			assert!(Delegation::delegation_hierarchies(hierarchy_root_id).is_some());
 			assert!(Delegation::delegation_nodes(hierarchy_root_id).is_some());
-			assert_eq!(Balances::reserved_balance(ACCOUNT_00), <Test as Config>::Deposit::get());
+			assert_eq!(
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
+				<Test as Config>::Deposit::get()
+			);
 
 			// Remove
 			assert_noop!(
@@ -2040,7 +2136,7 @@ fn remove_single_hierarchy() {
 			));
 			assert!(Delegation::delegation_hierarchies(hierarchy_root_id).is_none());
 			assert!(Delegation::delegation_nodes(hierarchy_root_id).is_none());
-			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
+			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00).is_zero());
 		});
 }
 
@@ -2051,20 +2147,22 @@ fn remove_children_gas_runs_out() {
 	let child = ed25519_did_from_seed(&CHARLIE_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
-	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let hierarchy_details = generate_base_delegation_hierarchy_details::<Test>();
 	let delegation1_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
 	let delegation1_node =
-		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(hierarchy_root_id), ACCOUNT_01);
+		generate_base_delegation_node::<Test>(hierarchy_root_id, delegate.clone(), Some(hierarchy_root_id), ACCOUNT_01);
 
 	let delegation2_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
 	let delegation2_node =
-		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(delegation1_id), ACCOUNT_01);
+		generate_base_delegation_node::<Test>(hierarchy_root_id, delegate.clone(), Some(delegation1_id), ACCOUNT_01);
 
 	let delegation3_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_3);
-	let delegation3_node = generate_base_delegation_node(hierarchy_root_id, delegate, Some(delegation1_id), ACCOUNT_01);
+	let delegation3_node =
+		generate_base_delegation_node::<Test>(hierarchy_root_id, delegate, Some(delegation1_id), ACCOUNT_01);
 
 	let delegation4_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_4);
-	let delegation4_node = generate_base_delegation_node(hierarchy_root_id, child, Some(delegation3_id), ACCOUNT_02);
+	let delegation4_node =
+		generate_base_delegation_node::<Test>(hierarchy_root_id, child, Some(delegation3_id), ACCOUNT_02);
 
 	let mut operation = generate_base_delegation_hierarchy_revocation_operation(hierarchy_root_id);
 	// set max children below required minimum of 4 to revoke/remove entire tree
@@ -2090,12 +2188,18 @@ fn remove_children_gas_runs_out() {
 			(delegation4_id, delegation4_node),
 		])
 		.build_and_execute_with_sanity_tests(|| {
-			assert_eq!(Balances::reserved_balance(ACCOUNT_00), <Test as Config>::Deposit::get());
 			assert_eq!(
-				Balances::reserved_balance(ACCOUNT_01),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
+				<Test as Config>::Deposit::get()
+			);
+			assert_eq!(
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_01),
 				3 * <Test as Config>::Deposit::get()
 			);
-			assert_eq!(Balances::reserved_balance(ACCOUNT_02), <Test as Config>::Deposit::get());
+			assert_eq!(
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_02),
+				<Test as Config>::Deposit::get()
+			);
 
 			// Should not be able to remove root because tree traversal steps are
 			// insufficient
@@ -2115,12 +2219,18 @@ fn remove_children_gas_runs_out() {
 			assert!(Delegation::delegation_nodes(delegation2_id).is_some());
 			assert!(Delegation::delegation_nodes(delegation3_id).is_some());
 			assert!(Delegation::delegation_nodes(delegation4_id).is_some());
-			assert_eq!(Balances::reserved_balance(ACCOUNT_00), <Test as Config>::Deposit::get());
 			assert_eq!(
-				Balances::reserved_balance(ACCOUNT_01),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
+				<Test as Config>::Deposit::get()
+			);
+			assert_eq!(
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_01),
 				3 * <Test as Config>::Deposit::get()
 			);
-			assert_eq!(Balances::reserved_balance(ACCOUNT_02), <Test as Config>::Deposit::get());
+			assert_eq!(
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_02),
+				<Test as Config>::Deposit::get()
+			);
 
 			// Should be able to remove root only with depth = #_of_children + 1
 			assert_ok!(Delegation::remove_delegation(
@@ -2132,9 +2242,9 @@ fn remove_children_gas_runs_out() {
 			assert!(Delegation::delegation_nodes(delegation1_id).is_none());
 			assert!(Delegation::delegation_nodes(delegation2_id).is_none());
 			assert!(Delegation::delegation_nodes(delegation3_id).is_none());
-			assert!(Balances::reserved_balance(ACCOUNT_00).is_zero());
-			assert!(Balances::reserved_balance(ACCOUNT_01).is_zero());
-			assert!(Balances::reserved_balance(ACCOUNT_02).is_zero());
+			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00).is_zero());
+			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_01).is_zero());
+			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_02).is_zero());
 		});
 }
 
@@ -2147,9 +2257,9 @@ fn test_change_deposit_owner() {
 	let delegate = ed25519_did_from_seed(&BOB_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
-	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let hierarchy_details = generate_base_delegation_hierarchy_details::<Test>();
 	let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
-	let parent_node = generate_base_delegation_node(
+	let parent_node = generate_base_delegation_node::<Test>(
 		hierarchy_root_id,
 		root_owner.clone(),
 		Some(hierarchy_root_id),
@@ -2157,22 +2267,26 @@ fn test_change_deposit_owner() {
 	);
 	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
 	let delegation_node =
-		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(parent_id), ACCOUNT_00);
+		generate_base_delegation_node::<Test>(hierarchy_root_id, delegate.clone(), Some(parent_id), ACCOUNT_00);
 
 	ExtBuilder::default()
 		.with_balances(vec![
 			(ACCOUNT_00, <Test as Config>::Deposit::get() * 2),
-			(ACCOUNT_01, <Test as Config>::Deposit::get()),
+			(
+				ACCOUNT_01,
+				<Test as Config>::Deposit::get()
+					+ <<Test as Config>::Currency as Inspect<delegation::AccountIdOf<Test>>>::minimum_balance(),
+			),
 		])
 		.with_ctypes(vec![(hierarchy_details.ctype_hash, root_owner.clone())])
 		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, root_owner, ACCOUNT_00)])
 		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
 		.build_and_execute_with_sanity_tests(|| {
 			assert_eq!(
-				Balances::reserved_balance(ACCOUNT_00),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
 				<Test as Config>::Deposit::get() * 3
 			);
-			assert!(Balances::reserved_balance(ACCOUNT_01).is_zero());
+			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_01).is_zero());
 			assert_ok!(Delegation::change_deposit_owner(
 				DoubleOrigin(ACCOUNT_01, delegate).into(),
 				delegation_id
@@ -2180,10 +2294,13 @@ fn test_change_deposit_owner() {
 
 			// ACCOUNT_00 has still one deposit (there are two nodes)
 			assert_eq!(
-				Balances::reserved_balance(ACCOUNT_00),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
 				<Test as Config>::Deposit::get() * 2
 			);
-			assert_eq!(Balances::reserved_balance(ACCOUNT_01), <Test as Config>::Deposit::get());
+			assert_eq!(
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_01),
+				<Test as Config>::Deposit::get()
+			);
 		});
 }
 
@@ -2193,9 +2310,9 @@ fn test_change_deposit_owner_insufficient_balance() {
 	let delegate = ed25519_did_from_seed(&BOB_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
-	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let hierarchy_details = generate_base_delegation_hierarchy_details::<Test>();
 	let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
-	let parent_node = generate_base_delegation_node(
+	let parent_node = generate_base_delegation_node::<Test>(
 		hierarchy_root_id,
 		root_owner.clone(),
 		Some(hierarchy_root_id),
@@ -2203,7 +2320,7 @@ fn test_change_deposit_owner_insufficient_balance() {
 	);
 	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
 	let delegation_node =
-		generate_base_delegation_node(hierarchy_root_id, delegate.clone(), Some(parent_id), ACCOUNT_00);
+		generate_base_delegation_node::<Test>(hierarchy_root_id, delegate.clone(), Some(parent_id), ACCOUNT_00);
 
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 2)])
@@ -2212,13 +2329,13 @@ fn test_change_deposit_owner_insufficient_balance() {
 		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
 		.build_and_execute_with_sanity_tests(|| {
 			assert_eq!(
-				Balances::reserved_balance(ACCOUNT_00),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
 				<Test as Config>::Deposit::get() * 3
 			);
-			assert!(Balances::reserved_balance(ACCOUNT_01).is_zero());
+			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_01).is_zero());
 			assert_noop!(
 				Delegation::change_deposit_owner(DoubleOrigin(ACCOUNT_01, delegate).into(), delegation_id),
-				pallet_balances::Error::<Test>::InsufficientBalance
+				TokenError::CannotCreateHold
 			);
 		});
 }
@@ -2229,16 +2346,17 @@ fn test_change_deposit_owner_unauthorized() {
 	let delegate = ed25519_did_from_seed(&BOB_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
-	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let hierarchy_details = generate_base_delegation_hierarchy_details::<Test>();
 	let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
-	let parent_node = generate_base_delegation_node(
+	let parent_node = generate_base_delegation_node::<Test>(
 		hierarchy_root_id,
 		root_owner.clone(),
 		Some(hierarchy_root_id),
 		ACCOUNT_00,
 	);
 	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
-	let delegation_node = generate_base_delegation_node(hierarchy_root_id, delegate, Some(parent_id), ACCOUNT_00);
+	let delegation_node =
+		generate_base_delegation_node::<Test>(hierarchy_root_id, delegate, Some(parent_id), ACCOUNT_00);
 
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 2)])
@@ -2264,9 +2382,9 @@ fn test_change_deposit_owner_not_found() {
 	let delegate = ed25519_did_from_seed(&BOB_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
-	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let hierarchy_details = generate_base_delegation_hierarchy_details::<Test>();
 	let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
-	let parent_node = generate_base_delegation_node(
+	let parent_node = generate_base_delegation_node::<Test>(
 		hierarchy_root_id,
 		root_owner.clone(),
 		Some(hierarchy_root_id),
@@ -2294,16 +2412,17 @@ fn test_update_deposit() {
 	let delegate = ed25519_did_from_seed(&BOB_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
-	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let hierarchy_details = generate_base_delegation_hierarchy_details::<Test>();
 	let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
-	let parent_node = generate_base_delegation_node(
+	let parent_node = generate_base_delegation_node::<Test>(
 		hierarchy_root_id,
 		root_owner.clone(),
 		Some(hierarchy_root_id),
 		ACCOUNT_00,
 	);
 	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
-	let mut delegation_node = generate_base_delegation_node(hierarchy_root_id, delegate, Some(parent_id), ACCOUNT_00);
+	let mut delegation_node =
+		generate_base_delegation_node::<Test>(hierarchy_root_id, delegate, Some(parent_id), ACCOUNT_00);
 	delegation_node.deposit.amount = <Test as Config>::Deposit::get() * 2;
 
 	ExtBuilder::default()
@@ -2313,7 +2432,7 @@ fn test_update_deposit() {
 		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
 		.build_and_execute_with_sanity_tests(|| {
 			assert_eq!(
-				Balances::reserved_balance(ACCOUNT_00),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
 				<Test as Config>::Deposit::get() * 3
 			);
 			assert_ok!(Delegation::update_deposit(
@@ -2323,7 +2442,7 @@ fn test_update_deposit() {
 
 			// ACCOUNT_00 has still one deposit (there are two nodes)
 			assert_eq!(
-				Balances::reserved_balance(ACCOUNT_00),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
 				<Test as Config>::Deposit::get() * 2
 			);
 		});
@@ -2335,16 +2454,17 @@ fn test_update_deposit_unauthorized() {
 	let delegate = ed25519_did_from_seed(&BOB_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
-	let hierarchy_details = generate_base_delegation_hierarchy_details();
+	let hierarchy_details = generate_base_delegation_hierarchy_details::<Test>();
 	let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
-	let parent_node = generate_base_delegation_node(
+	let parent_node = generate_base_delegation_node::<Test>(
 		hierarchy_root_id,
 		root_owner.clone(),
 		Some(hierarchy_root_id),
 		ACCOUNT_00,
 	);
 	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
-	let mut delegation_node = generate_base_delegation_node(hierarchy_root_id, delegate, Some(parent_id), ACCOUNT_00);
+	let mut delegation_node =
+		generate_base_delegation_node::<Test>(hierarchy_root_id, delegate, Some(parent_id), ACCOUNT_00);
 	delegation_node.deposit.amount = <Test as Config>::Deposit::get() * 2;
 
 	ExtBuilder::default()
@@ -2354,7 +2474,7 @@ fn test_update_deposit_unauthorized() {
 		.with_delegations(vec![(parent_id, parent_node), (delegation_id, delegation_node)])
 		.build_and_execute_with_sanity_tests(|| {
 			assert_eq!(
-				Balances::reserved_balance(ACCOUNT_00),
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
 				<Test as Config>::Deposit::get() * 3
 			);
 			assert_noop!(
