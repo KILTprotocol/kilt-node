@@ -67,9 +67,7 @@ pub mod pallet {
 		traits::{CallSources, StorageDepositCollector},
 		Deposit,
 	};
-	use runtime_common::Balance;
-
-	use sp_runtime::traits::BlockNumberProvider;
+	use sp_runtime::traits::{BlockNumberProvider, MaybeSerializeDeserialize};
 
 	pub use crate::connection_record::ConnectionRecord;
 
@@ -108,7 +106,7 @@ pub mod pallet {
 		type RuntimeHoldReason: From<HoldReason>;
 
 		/// The currency that is used to reserve funds for each did.
-		type Currency: MutateHold<AccountIdOf<Self>, Reason = Self::RuntimeHoldReason, Balance = Balance>;
+		type Currency: MutateHold<AccountIdOf<Self>, Reason = Self::RuntimeHoldReason>;
 
 		/// The amount of balance that will be taken for each DID as a deposit
 		/// to incentivise fair use of the on chain storage. The deposit can be
@@ -176,12 +174,18 @@ pub mod pallet {
 	}
 
 	#[pallet::genesis_config]
-	pub struct GenesisConfig<T: Config> {
+	pub struct GenesisConfig<T: Config>
+	where
+		<T::Currency as Inspect<AccountIdOf<T>>>::Balance: MaybeSerializeDeserialize,
+	{
 		pub links: sp_std::vec::Vec<(LinkableAccountId, ConnectionRecordOf<T>)>,
 	}
 
 	#[cfg(feature = "std")]
-	impl<T: Config> Default for GenesisConfig<T> {
+	impl<T: Config> Default for GenesisConfig<T>
+	where
+		<T::Currency as Inspect<AccountIdOf<T>>>::Balance: MaybeSerializeDeserialize,
+	{
 		fn default() -> Self {
 			Self {
 				links: Default::default(),
@@ -190,7 +194,10 @@ pub mod pallet {
 	}
 
 	#[pallet::genesis_build]
-	impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
+	impl<T: Config> GenesisBuild<T> for GenesisConfig<T>
+	where
+		<T::Currency as Inspect<AccountIdOf<T>>>::Balance: MaybeSerializeDeserialize,
+	{
 		fn build(&self) {
 			// populate link records
 			for (acc, connection) in &self.links {

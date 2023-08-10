@@ -6143,7 +6143,6 @@ dependencies = [
  "log",
  "pallet-balances",
  "parity-scale-codec",
- "runtime-common",
  "scale-info",
  "serde",
  "sha3",
