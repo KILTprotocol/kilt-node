@@ -73,7 +73,7 @@ build-wasm-peregrine:
     - /srtool/build build
     - subwasm meta --format=json+scale /out/peregrine_runtime.compact.wasm > /out/peregrine-metadata.json
     - subwasm get -o peregrine-live.wasm wss://peregrine.kilt.io
-    - subwasm diff --no-color peregrine-live.wasm /out/peregrine_runtime.compact.wasm > /out/peregrine-diff.txt
+    - subwasm diff --no-color peregrine-live.wasm /out/peregrine_runtime.compact.wasm | tee /out/peregrine-diff.txt
     - mkdir ./out
     - mv /out/* ./out/
   artifacts:
@@ -101,7 +101,7 @@ build-wasm-spiritnet:
     - /srtool/build build
     - subwasm meta --format=json+scale /out/spiritnet_runtime.compact.wasm > /out/spiritnet-metadata.json
     - subwasm get -o spiritnet-live.wasm wss://spiritnet.kilt.io
-    - subwasm diff --no-color spiritnet-live.wasm /out/spiritnet_runtime.compact.wasm > /out/spiritnet-diff.txt
+    - subwasm diff --no-color spiritnet-live.wasm /out/spiritnet_runtime.compact.wasm | tee /out/spiritnet-diff.txt
     - mkdir ./out
     - mv /out/* ./out/
   artifacts:
