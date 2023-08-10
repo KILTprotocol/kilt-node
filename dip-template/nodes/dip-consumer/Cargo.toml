@@ -32,6 +32,7 @@ sc-client-api.workspace = true
 sc-consensus.workspace = true
 sc-executor.workspace = true
 sc-network.workspace = true
+sc-network-sync.workspace = true
 sc-rpc-api.workspace = true
 sc-service.workspace = true
 sc-sysinfo.workspace = true

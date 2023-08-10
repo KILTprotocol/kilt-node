@@ -1,48 +1,49 @@
 [package]
 authors.workspace = true
+description = "Common interfaces, types, constants and functionality for all KILT runtimes."
 documentation.workspace = true
 edition.workspace = true
 homepage.workspace = true
 license-file.workspace = true
+name = "runtime-common"
 readme.workspace = true
 repository.workspace = true
 version.workspace = true
-name = "runtime-common"
-description = "Common interfaces, types, constants and functionality for all KILT runtimes."
 
 [dev-dependencies]
 sp-io = {workspace = true, features = ["std"]}
 
 [dependencies]
 # External dependencies
-parity-scale-codec = {workspace = true, features = ["derive"]}
-log.workspace = true
 kilt-asset-dids.workspace = true
+log.workspace = true
+parity-scale-codec = {workspace = true, features = ["derive"]}
 scale-info = {workspace = true, features = ["derive"]}
 smallvec.workspace = true
 
-# Internal dependencies
 attestation.workspace = true
-ctype.workspace = true
-delegation = {workspace = true, optional = true}
 did.workspace = true
+kilt-support.workspace = true
 kilt-dip-support.workspace = true
 pallet-did-lookup.workspace = true
-pallet-dip-consumer.workspace = true
 pallet-dip-provider.workspace = true
-pallet-inflation = {workspace = true, optional = true}
-kilt-support.workspace = true
+pallet-web3-names.workspace = true
 parachain-staking.workspace = true
 public-credentials.workspace = true
-pallet-web3-names.workspace = true
 
 # Substrate dependencies
+cumulus-pallet-parachain-system.workspace = true
+cumulus-pallet-dmp-queue.workspace = true
+cumulus-pallet-xcmp-queue.workspace = true
 frame-support.workspace = true
 frame-system.workspace = true
 pallet-authorship.workspace = true
 pallet-balances.workspace = true
 pallet-membership.workspace = true
+pallet-multisig.workspace = true
+pallet-tips.workspace = true
 pallet-transaction-payment.workspace = true
+pallet-treasury.workspace = true
 sp-consensus-aura.workspace = true
 sp-core.workspace = true
 sp-io.workspace = true
@@ -55,26 +56,27 @@ cumulus-primitives-core.workspace = true
 
 # Polkadot dependencies
 polkadot-parachain.workspace = true
-xcm.workspace = true
 xcm-builder.workspace = true
 xcm-executor.workspace = true
+xcm.workspace = true
 
 [features]
 default = ["std"]
 fast-gov = []
 runtime-benchmarks = [
+  "cumulus-pallet-parachain-system/runtime-benchmarks",
+  "cumulus-pallet-xcmp-queue/runtime-benchmarks",
   "attestation/runtime-benchmarks",
-  "ctype/runtime-benchmarks",
-  "did/runtime-benchmarks",
-  "pallet-did-lookup/runtime-benchmarks",
-  "pallet-dip-consumer/runtime-benchmarks",
   "frame-support/runtime-benchmarks",
   "frame-system/runtime-benchmarks",
   "kilt-dip-support/runtime-benchmarks",
   "kilt-support/runtime-benchmarks",
+  "kilt-dip-support/runtime-benchmarks",
   "pallet-balances/runtime-benchmarks",
   "pallet-membership/runtime-benchmarks",
-  "parachain-staking/runtime-benchmarks",
+  "pallet-multisig/runtime-benchmarks",
+  "pallet-treasury/runtime-benchmarks",
+  "pallet-tips/runtime-benchmarks",
   "polkadot-parachain/runtime-benchmarks",
   "public-credentials/runtime-benchmarks",
   "sp-runtime/runtime-benchmarks",
@@ -82,23 +84,30 @@ runtime-benchmarks = [
   "xcm-executor/runtime-benchmarks",
 ]
 std = [
+  "cumulus-pallet-parachain-system/std",
+  "cumulus-pallet-dmp-queue/std",
+  "cumulus-pallet-xcmp-queue/std",
   "attestation/std",
-  "ctype/std",
-  "cumulus-primitives-core/std",
   "did/std",
+  "parity-scale-codec/std",
+  "cumulus-primitives-core/std",
   "frame-support/std",
   "frame-system/std",
   "kilt-asset-dids/std",
-  "kilt-dip-support/std",
   "kilt-support/std",
+  "kilt-dip-support/std",
+  "pallet-did-lookup/std",
+  "pallet-dip-provider/std",
+  "pallet-web3-names/std",
   "log/std",
   "pallet-authorship/std",
   "pallet-balances/std",
-  "pallet-did-lookup/std",
-  "pallet-dip-consumer/std",
-  "pallet-dip-provider/std",
+  "pallet-multisig/std",
   "pallet-membership/std",
+  "pallet-multisig/std",
   "pallet-transaction-payment/std",
+  "pallet-treasury/std",
+  "pallet-tips/std",
   "parachain-staking/std",
   "parity-scale-codec/std",
   "polkadot-parachain/std",
@@ -115,17 +124,20 @@ std = [
   "xcm/std",
 ]
 try-runtime = [
+  "cumulus-pallet-parachain-system/try-runtime",
+  "cumulus-pallet-dmp-queue/try-runtime",
+  "cumulus-pallet-xcmp-queue/try-runtime",
   "attestation/try-runtime",
-  "delegation",
   "frame-support/try-runtime",
   "frame-system/try-runtime",
   "kilt-support/try-runtime",
   "pallet-authorship/try-runtime",
   "pallet-balances/try-runtime",
-  "pallet-did-lookup/try-runtime",
-  "pallet-inflation",
   "pallet-membership/try-runtime",
+  "pallet-multisig/try-runtime",
   "pallet-transaction-payment/try-runtime",
+  "pallet-treasury/try-runtime",
+  "pallet-treasury/try-runtime",
   "parachain-staking/try-runtime",
   "public-credentials/try-runtime",
 ]

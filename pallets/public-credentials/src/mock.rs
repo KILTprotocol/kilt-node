@@ -20,11 +20,11 @@ use frame_support::traits::Get;
 use parity_scale_codec::Encode;
 use sp_runtime::traits::Hash;
 
-use kilt_support::deposit::Deposit;
+use kilt_support::{traits::StorageDepositCollector, Deposit};
 
 use crate::{
 	AttesterOf, BalanceOf, Config, CredentialEntryOf, CredentialIdOf, CredentialSubjects, Credentials, CtypeHashOf,
-	CurrencyOf, InputClaimsContentOf, InputCredentialOf, InputSubjectIdOf,
+	InputClaimsContentOf, InputCredentialOf, InputSubjectIdOf, PublicCredentialDepositCollector,
 };
 
 // Generate a public credential using a many Default::default() as possible.
@@ -76,7 +76,7 @@ pub(crate) fn insert_public_credentials<T: Config>(
 	credential_id: CredentialIdOf<T>,
 	credential_entry: CredentialEntryOf<T>,
 ) {
-	kilt_support::reserve_deposit::<T::AccountId, CurrencyOf<T>>(
+	PublicCredentialDepositCollector::<T>::create_deposit(
 		credential_entry.deposit.owner.clone(),
 		credential_entry.deposit.amount,
 	)
@@ -280,7 +280,7 @@ pub(crate) mod runtime {
 			Ctype: ctype::{Pallet, Call, Storage, Event<T>},
 			Balances: pallet_balances::{Pallet, Call, Storage, Event<T>},
 			MockOrigin: mock_origin::{Pallet, Origin<T>},
-			PublicCredentials: crate::{Pallet, Call, Storage, Event<T>},
+			PublicCredentials: crate::{Pallet, Call, Storage,HoldReason, Event<T>},
 		}
 	);
 
@@ -319,6 +319,10 @@ pub(crate) mod runtime {
 	}
 
 	impl pallet_balances::Config for Test {
+		type FreezeIdentifier = RuntimeFreezeReason;
+		type HoldIdentifier = RuntimeHoldReason;
+		type MaxFreezes = ConstU32<10>;
+		type MaxHolds = ConstU32<10>;
 		type Balance = Balance;
 		type DustRemoval = ();
 		type RuntimeEvent = ();
@@ -348,6 +352,7 @@ pub(crate) mod runtime {
 		type AttesterId = SubjectId;
 		type AuthorizationId = SubjectId;
 		type CredentialId = Hash;
+		type RuntimeHoldReason = RuntimeHoldReason;
 		type CredentialHash = BlakeTwo256;
 		type Currency = Balances;
 		type Deposit = ConstU128<{ 10 * MILLI_UNIT }>;
@@ -362,6 +367,8 @@ pub(crate) mod runtime {
 
 	pub(crate) const ACCOUNT_00: AccountId = AccountId::new([1u8; 32]);
 	pub(crate) const ACCOUNT_01: AccountId = AccountId::new([2u8; 32]);
+	// Min Balance has to be >= [ExistentialDeposit]
+	pub(crate) const MIN_BALANCE: Balance = MILLI_UNIT;
 
 	pub(crate) const ALICE_SEED: [u8; 32] = [0u8; 32];
 	pub(crate) const BOB_SEED: [u8; 32] = [1u8; 32];
@@ -454,7 +461,7 @@ pub(crate) mod runtime {
 		pub(crate) fn build_with_keystore(self) -> sp_io::TestExternalities {
 			let mut ext = self.build();
 
-			let keystore = sp_keystore::testing::KeyStore::new();
+			let keystore = sp_keystore::testing::MemoryKeystore::new();
 			ext.register_extension(sp_keystore::KeystoreExt(std::sync::Arc::new(keystore)));
 
 			ext

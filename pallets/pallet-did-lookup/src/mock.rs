@@ -16,10 +16,10 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::{parameter_types, traits::ReservableCurrency};
+use frame_support::parameter_types;
 use kilt_support::{
-	deposit::Deposit,
 	mock::{mock_origin, SubjectId},
+	traits::StorageDepositCollector,
 };
 use sp_runtime::{
 	testing::Header,
@@ -29,7 +29,7 @@ use sp_runtime::{
 
 use crate::{
 	self as pallet_did_lookup, linkable_account::LinkableAccountId, AccountIdOf, BalanceOf, Config, ConnectedAccounts,
-	ConnectedDids, ConnectionRecord, CurrencyOf, DidIdentifierOf,
+	ConnectedDids, ConnectionRecord, DidIdentifierOf, LinkableAccountDepositCollector,
 };
 
 pub(crate) type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
@@ -50,7 +50,7 @@ frame_support::construct_runtime!(
 	{
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
 		Balances: pallet_balances::{Pallet, Call, Storage, Event<T>},
-		DidLookup: pallet_did_lookup::{Pallet, Storage, Call, Event<T>},
+		DidLookup: pallet_did_lookup::{Pallet, Storage, Call, Event<T>, HoldReason},
 		MockOrigin: mock_origin::{Pallet, Origin<T>},
 	}
 );
@@ -91,9 +91,15 @@ parameter_types! {
 	pub const ExistentialDeposit: Balance = 10;
 	pub const MaxLocks: u32 = 50;
 	pub const MaxReserves: u32 = 50;
+	pub const MaxHolds: u32 = 50;
+	pub const MaxFreezes: u32 = 50;
 }
 
 impl pallet_balances::Config for Test {
+	type FreezeIdentifier = RuntimeFreezeReason;
+	type HoldIdentifier = RuntimeHoldReason;
+	type MaxFreezes = MaxFreezes;
+	type MaxHolds = MaxHolds;
 	type Balance = Balance;
 	type DustRemoval = ();
 	type RuntimeEvent = RuntimeEvent;
@@ -111,14 +117,12 @@ parameter_types! {
 
 impl pallet_did_lookup::Config for Test {
 	type RuntimeEvent = RuntimeEvent;
-
+	type RuntimeHoldReason = RuntimeHoldReason;
 	type Currency = Balances;
 	type Deposit = DidLookupDeposit;
-
 	type EnsureOrigin = mock_origin::EnsureDoubleOrigin<AccountId, SubjectId>;
 	type OriginSuccess = mock_origin::DoubleOrigin<AccountId, SubjectId>;
 	type DidIdentifier = SubjectId;
-
 	type WeightInfo = ();
 }
 
@@ -140,21 +144,19 @@ pub(crate) fn insert_raw_connection<T: Config>(
 	account: LinkableAccountId,
 	deposit: BalanceOf<T>,
 ) {
-	let deposit = Deposit {
-		owner: sender,
-		amount: deposit,
-	};
+	let deposit = LinkableAccountDepositCollector::<T>::create_deposit(sender, deposit)
+		.expect("Account should have enough balance");
+
 	let record = ConnectionRecord {
 		deposit,
 		did: did_identifier.clone(),
 	};
 
-	CurrencyOf::<T>::reserve(&record.deposit.owner, record.deposit.amount).expect("Account should have enough balance");
-
 	ConnectedDids::<T>::mutate(&account, |did_entry| {
 		if let Some(old_connection) = did_entry.replace(record) {
 			ConnectedAccounts::<T>::remove(&old_connection.did, &account);
-			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&old_connection.deposit);
+			LinkableAccountDepositCollector::<T>::free_deposit(old_connection.deposit)
+				.expect("Could not release deposit of account");
 		}
 	});
 	ConnectedAccounts::<T>::insert(&did_identifier, &account, ());
@@ -210,7 +212,7 @@ impl ExtBuilder {
 	pub fn build_with_keystore(self) -> sp_io::TestExternalities {
 		let mut ext = self.build();
 
-		let keystore = sp_keystore::testing::KeyStore::new();
+		let keystore = sp_keystore::testing::MemoryKeystore::new();
 		ext.register_extension(sp_keystore::KeystoreExt(std::sync::Arc::new(keystore)));
 
 		ext

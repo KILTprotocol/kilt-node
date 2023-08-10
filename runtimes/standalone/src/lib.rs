@@ -29,7 +29,7 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use frame_support::{
 	construct_runtime, parameter_types,
-	traits::{Currency, Everything, InstanceFilter, KeyOwnerProofSystem},
+	traits::{Everything, InstanceFilter},
 	weights::{constants::RocksDbWeight, ConstantMultiplier, IdentityFee, Weight},
 };
 pub use frame_system::Call as SystemCall;
@@ -41,9 +41,10 @@ use frame_try_runtime::UpgradeCheckSelect;
 
 use pallet_grandpa::{fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
 use pallet_transaction_payment::{CurrencyAdapter, FeeDetails};
+use scale_info::TypeInfo;
 use sp_api::impl_runtime_apis;
 use sp_consensus_aura::{ed25519::AuthorityId as AuraId, SlotDuration};
-use sp_core::{crypto::KeyTypeId, ConstU64, OpaqueMetadata};
+use sp_core::{ConstU64, OpaqueMetadata};
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
 	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, NumberFor, OpaqueKeys},
@@ -61,7 +62,6 @@ use runtime_common::{
 	authorization::{AuthorizationId, PalletAuthorize},
 	constants::{self, EXISTENTIAL_DEPOSIT, KILT},
 	errors::PublicCredentialsApiError,
-	fees::ToAuthor,
 	AccountId, Balance, BlockNumber, DidIdentifier, Hash, Index, Signature, SlowAdjustingFeeUpdate,
 };
 
@@ -86,9 +86,6 @@ pub use sp_runtime::BuildStorage;
 
 /// Digest item type.
 pub type DigestItem = generic::DigestItem;
-
-pub type NegativeImbalance<T> =
-	<pallet_balances::Pallet<T> as Currency<<T as frame_system::Config>::AccountId>>::NegativeImbalance;
 
 /// Opaque types. These are used by the CLI to instantiate machinery that don't
 /// need to know the specifics of the runtime. They can then be made to be
@@ -121,7 +118,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("mashnet-node"),
 	impl_name: create_runtime_str!("mashnet-node"),
 	authoring_version: 4,
-	spec_version: 11100,
+	spec_version: 11200,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 4,
@@ -212,20 +209,12 @@ impl pallet_aura::Config for Runtime {
 
 impl pallet_grandpa::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
-
-	type KeyOwnerProofSystem = ();
-
-	type KeyOwnerProof = <Self::KeyOwnerProofSystem as KeyOwnerProofSystem<(KeyTypeId, GrandpaId)>>::Proof;
-
-	type KeyOwnerIdentification =
-		<Self::KeyOwnerProofSystem as KeyOwnerProofSystem<(KeyTypeId, GrandpaId)>>::IdentificationTuple;
-
-	type HandleEquivocation = ();
-
+	type KeyOwnerProof = sp_core::Void;
 	type WeightInfo = ();
 	type MaxAuthorities = MaxAuthorities;
 	// This is a purely random value
 	type MaxSetIdSessionEntries = ConstU64<100>;
+	type EquivocationReportSystem = ();
 }
 
 parameter_types! {
@@ -253,9 +242,15 @@ parameter_types! {
 	pub const ExistentialDeposit: u128 = EXISTENTIAL_DEPOSIT;
 	pub const MaxLocks: u32 = 50;
 	pub const MaxReserves: u32 = 50;
+	pub const MaxFreezes: u32 = 50;
+	pub const MaxHolds: u32 = 50;
 }
 
 impl pallet_balances::Config for Runtime {
+	type FreezeIdentifier = RuntimeFreezeReason;
+	type HoldIdentifier = RuntimeHoldReason;
+	type MaxFreezes = MaxFreezes;
+	type MaxHolds = MaxHolds;
 	type MaxLocks = MaxLocks;
 	type MaxReserves = MaxReserves;
 	type ReserveIdentifier = [u8; 8];
@@ -285,6 +280,7 @@ impl pallet_transaction_payment::Config for Runtime {
 }
 
 impl pallet_sudo::Config for Runtime {
+	type WeightInfo = ();
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeCall = RuntimeCall;
 }
@@ -295,6 +291,7 @@ parameter_types! {
 }
 
 impl attestation::Config for Runtime {
+	type RuntimeHoldReason = RuntimeHoldReason;
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
 	type OriginSuccess = did::DidRawOrigin<DidIdentifier, AccountId>;
 	type RuntimeEvent = RuntimeEvent;
@@ -312,12 +309,13 @@ parameter_types! {
 	pub const MaxParentChecks: u32 = constants::delegation::MAX_PARENT_CHECKS;
 	pub const MaxRevocations: u32 = constants::delegation::MAX_REVOCATIONS;
 	pub const MaxRemovals: u32 = constants::delegation::MAX_REMOVALS;
-	#[derive(Clone)]
+	#[derive(Clone, TypeInfo)]
 	pub const MaxChildren: u32 = constants::delegation::MAX_CHILDREN;
 	pub const DelegationDeposit: Balance = constants::delegation::DELEGATION_DEPOSIT;
 }
 
 impl delegation::Config for Runtime {
+	type RuntimeHoldReason = RuntimeHoldReason;
 	#[cfg(not(feature = "runtime-benchmarks"))]
 	type Signature = did::DidSignature;
 	#[cfg(not(feature = "runtime-benchmarks"))]
@@ -350,7 +348,7 @@ parameter_types! {
 impl ctype::Config for Runtime {
 	type Currency = Balances;
 	type Fee = Fee;
-	type FeeCollector = runtime_common::fees::ToAuthor<Runtime>;
+	type FeeCollector = runtime_common::fees::ToAuthorCredit<Runtime>;
 
 	type CtypeCreatorId = DidIdentifier;
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
@@ -361,7 +359,9 @@ impl ctype::Config for Runtime {
 }
 
 parameter_types! {
+	#[derive(Debug, Clone, Eq, PartialEq, TypeInfo, Decode, Encode)]
 	pub const MaxNewKeyAgreementKeys: u32 = constants::did::MAX_KEY_AGREEMENT_KEYS;
+	#[derive(Clone)]
 	pub const MaxPublicKeysPerDid: u32 = constants::did::MAX_PUBLIC_KEYS_PER_DID;
 	#[derive(Debug, Clone, Eq, PartialEq)]
 	pub const MaxTotalKeyAgreementKeys: u32 = constants::did::MAX_TOTAL_KEY_AGREEMENT_KEYS;
@@ -377,6 +377,7 @@ parameter_types! {
 }
 
 impl did::Config for Runtime {
+	type RuntimeHoldReason = RuntimeHoldReason;
 	type DidIdentifier = DidIdentifier;
 	type KeyDeposit = constants::did::KeyDeposit;
 	type ServiceEndpointDeposit = constants::did::ServiceEndpointDeposit;
@@ -386,7 +387,7 @@ impl did::Config for Runtime {
 	type RuntimeOrigin = RuntimeOrigin;
 	type Currency = Balances;
 	type Fee = DidFee;
-	type FeeCollector = ToAuthor<Runtime>;
+	type FeeCollector = runtime_common::fees::ToAuthorCredit<Runtime>;
 
 	#[cfg(not(feature = "runtime-benchmarks"))]
 	type EnsureOrigin = did::EnsureDidOrigin<Self::DidIdentifier, AccountId>;
@@ -412,6 +413,7 @@ impl did::Config for Runtime {
 }
 
 impl pallet_did_lookup::Config for Runtime {
+	type RuntimeHoldReason = RuntimeHoldReason;
 	type RuntimeEvent = RuntimeEvent;
 
 	type DidIdentifier = DidIdentifier;
@@ -426,6 +428,7 @@ impl pallet_did_lookup::Config for Runtime {
 }
 
 impl pallet_web3_names::Config for Runtime {
+	type RuntimeHoldReason = RuntimeHoldReason;
 	type BanOrigin = EnsureRoot<AccountId>;
 	type OwnerOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
@@ -473,6 +476,7 @@ impl pallet_utility::Config for Runtime {
 }
 
 impl public_credentials::Config for Runtime {
+	type RuntimeHoldReason = RuntimeHoldReason;
 	type AccessControl = PalletAuthorize<DelegationAc<Runtime>>;
 	type AttesterId = DidIdentifier;
 	type AuthorizationId = AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>;
@@ -683,7 +687,6 @@ construct_runtime!(
 
 		Session: pallet_session = 15,
 		Authorship: pallet_authorship = 16,
-
 		// Democracy: pallet_democracy = 25,
 		// Council: pallet_collective = 26,
 		// TechnicalCommittee: pallet_collective = 27,
@@ -836,6 +839,14 @@ impl_runtime_apis! {
 	impl sp_api::Metadata<Block> for Runtime {
 		fn metadata() -> OpaqueMetadata {
 			OpaqueMetadata::new(Runtime::metadata().into())
+		}
+
+		fn metadata_at_version(version: u32) -> Option<OpaqueMetadata> {
+			Runtime::metadata_at_version(version)
+		}
+
+		fn metadata_versions() -> sp_std::vec::Vec<u32> {
+			Runtime::metadata_versions()
 		}
 	}
 

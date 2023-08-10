@@ -25,6 +25,7 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 use pallet_did_lookup::linkable_account::LinkableAccountId;
 use pallet_web3_names::web3_name::AsciiWeb3Name;
 use parity_scale_codec::{Decode, Encode};
+use scale_info::TypeInfo;
 pub use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 pub use sp_runtime::{MultiAddress, Perbill, Permill};
 
@@ -268,6 +269,7 @@ impl parachain_info::Config for Runtime {}
 impl pallet_sudo::Config for Runtime {
 	type RuntimeCall = RuntimeCall;
 	type RuntimeEvent = RuntimeEvent;
+	type WeightInfo = ();
 }
 
 pub const EXISTENTIAL_DEPOSIT: Balance = MILLIUNIT;
@@ -277,6 +279,10 @@ impl pallet_balances::Config for Runtime {
 	type Balance = Balance;
 	type DustRemoval = ();
 	type ExistentialDeposit = ConstU128<EXISTENTIAL_DEPOSIT>;
+	type FreezeIdentifier = RuntimeFreezeReason;
+	type HoldIdentifier = RuntimeHoldReason;
+	type MaxFreezes = ConstU32<50>;
+	type MaxHolds = ConstU32<50>;
 	type MaxLocks = ConstU32<50>;
 	type MaxReserves = ConstU32<50>;
 	type ReserveIdentifier = [u8; 8];
@@ -359,6 +365,8 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for RuntimeCall 
 parameter_types! {
 	#[derive(Debug, Clone, Eq, PartialEq)]
 	pub const MaxTotalKeyAgreementKeys: u32 = 50;
+	#[derive(Debug, Clone, Eq, PartialEq, TypeInfo, Encode, Decode)]
+	pub const MaxNewKeyAgreementKeys: u32 = 50;
 }
 
 impl did::Config for Runtime {
@@ -370,7 +378,7 @@ impl did::Config for Runtime {
 	type FeeCollector = ();
 	type KeyDeposit = ConstU128<UNIT>;
 	type MaxBlocksTxValidity = ConstU32<HOURS>;
-	type MaxNewKeyAgreementKeys = ConstU32<50>;
+	type MaxNewKeyAgreementKeys = MaxNewKeyAgreementKeys;
 	type MaxNumberOfServicesPerDid = ConstU32<1>;
 	type MaxNumberOfTypesPerService = ConstU32<1>;
 	type MaxNumberOfUrlsPerService = ConstU32<1>;
@@ -382,6 +390,7 @@ impl did::Config for Runtime {
 	type OriginSuccess = DidRawOrigin<AccountId, DidIdentifier>;
 	type RuntimeCall = RuntimeCall;
 	type RuntimeEvent = RuntimeEvent;
+	type RuntimeHoldReason = RuntimeHoldReason;
 	type RuntimeOrigin = RuntimeOrigin;
 	type ServiceEndpointDeposit = ConstU128<UNIT>;
 	type WeightInfo = ();
@@ -394,6 +403,7 @@ impl pallet_did_lookup::Config for Runtime {
 	type EnsureOrigin = EnsureDidOrigin<DidIdentifier, AccountId>;
 	type OriginSuccess = DidRawOrigin<AccountId, DidIdentifier>;
 	type RuntimeEvent = RuntimeEvent;
+	type RuntimeHoldReason = RuntimeHoldReason;
 	type WeightInfo = ();
 }
 
@@ -408,12 +418,13 @@ impl pallet_web3_names::Config for Runtime {
 	type OriginSuccess = DidRawOrigin<AccountId, DidIdentifier>;
 	type OwnerOrigin = EnsureDidOrigin<DidIdentifier, AccountId>;
 	type RuntimeEvent = RuntimeEvent;
+	type RuntimeHoldReason = RuntimeHoldReason;
 	type Web3Name = Web3Name;
 	type Web3NameOwner = DidIdentifier;
 	type WeightInfo = ();
 }
 
-#[derive(Encode, Decode)]
+#[derive(Encode, Decode, TypeInfo)]
 pub struct DipProofRequest {
 	identifier: DidIdentifier,
 	keys: Vec<KeyIdOf<Runtime>>,
@@ -449,6 +460,14 @@ impl_runtime_apis! {
 	impl sp_api::Metadata<Block> for Runtime {
 		fn metadata() -> OpaqueMetadata {
 			OpaqueMetadata::new(Runtime::metadata().into())
+		}
+
+		fn metadata_at_version(version: u32) -> Option<OpaqueMetadata> {
+			Runtime::metadata_at_version(version)
+		}
+
+		fn metadata_versions() -> sp_std::vec::Vec<u32> {
+			Runtime::metadata_versions()
 		}
 	}
 

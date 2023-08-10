@@ -70,5 +70,6 @@ std = [
   "cumulus-pallet-parachain-system/std",
 ]
 runtime-benchmarks = [
+  "pallet-dip-consumer/runtime-benchmarks",
   "rococo-runtime/runtime-benchmarks"
 ]

@@ -20,13 +20,13 @@ use frame_support::ensure;
 use kilt_support::test_utils::log_and_return_error_message;
 use scale_info::prelude::format;
 use sp_core::Get;
-use sp_runtime::SaturatedConversion;
+use sp_runtime::{SaturatedConversion, TryRuntimeError};
 
 use crate::{did_details::DidDetails, Config, Did, DidBlacklist, DidEndpointsCount, DidIdentifierOf, ServiceEndpoints};
 
-pub(crate) fn do_try_state<T: Config>() -> Result<(), &'static str> {
+pub(crate) fn do_try_state<T: Config>() -> Result<(), TryRuntimeError> {
 	Did::<T>::iter().try_for_each(
-		|(did_subject, did_details): (DidIdentifierOf<T>, DidDetails<T>)| -> Result<(), &'static str> {
+		|(did_subject, did_details): (DidIdentifierOf<T>, DidDetails<T>)| -> Result<(), TryRuntimeError> {
 			let service_endpoints_count = ServiceEndpoints::<T>::iter_prefix(&did_subject).count();
 
 			ensure!(
@@ -69,7 +69,7 @@ pub(crate) fn do_try_state<T: Config>() -> Result<(), &'static str> {
 		},
 	)?;
 
-	DidBlacklist::<T>::iter_keys().try_for_each(|deleted_did_subject| -> Result<(), &'static str> {
+	DidBlacklist::<T>::iter_keys().try_for_each(|deleted_did_subject| -> Result<(), TryRuntimeError> {
 		let service_endpoints_count = ServiceEndpoints::<T>::iter_prefix(&deleted_did_subject).count();
 		ensure!(
 			service_endpoints_count == 0,

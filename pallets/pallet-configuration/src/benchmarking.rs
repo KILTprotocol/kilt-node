@@ -15,3 +15,26 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
+
+use frame_benchmarking::{benchmarks, impl_benchmark_test_suite};
+use frame_support::traits::EnsureOriginWithArg;
+
+use crate::*;
+
+benchmarks! {
+
+	set_configuration {
+		let new_config = Configuration { relay_block_strictly_increasing: true };
+		let origin = T::EnsureOrigin::try_successful_origin(&new_config).expect("Should build successful origin");
+
+	}: _<T::RuntimeOrigin>(origin, new_config)
+	verify {
+		assert_eq!(ConfigurationStore::<T>::get(), Configuration { relay_block_strictly_increasing: true });
+	}
+}
+
+impl_benchmark_test_suite! {
+	Pallet,
+	crate::mock::runtime::ExtBuilder::default().build_with_keystore(),
+	crate::mock::runtime::Test
+}

@@ -13,6 +13,7 @@ pallets=(
 	ctype
 	delegation
 	did
+	pallet-configuration
 	pallet-did-lookup
 	pallet-inflation
 	pallet-web3-names

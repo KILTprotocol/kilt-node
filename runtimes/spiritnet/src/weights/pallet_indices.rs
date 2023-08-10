@@ -51,7 +51,7 @@ impl<T: frame_system::Config> pallet_indices::WeightInfo for WeightInfo<T> {
 	// Storage: Indices Accounts (r:1 w:1)
 	// Proof: Indices Accounts (max_values: None, max_size: Some(73), added: 2548, mode: MaxEncodedLen)
 	fn claim() -> Weight {
-		Weight::from_ref_time(23_245_000 as u64)
+		Weight::from_parts(23_245_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
@@ -60,14 +60,14 @@ impl<T: frame_system::Config> pallet_indices::WeightInfo for WeightInfo<T> {
 	// Storage: System Account (r:1 w:1)
 	// Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
 	fn transfer() -> Weight {
-		Weight::from_ref_time(30_412_000 as u64)
+		Weight::from_parts(30_412_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(2 as u64))
 			.saturating_add(T::DbWeight::get().writes(2 as u64))
 	}
 	// Storage: Indices Accounts (r:1 w:1)
 	// Proof: Indices Accounts (max_values: None, max_size: Some(73), added: 2548, mode: MaxEncodedLen)
 	fn free() -> Weight {
-		Weight::from_ref_time(25_174_000 as u64)
+		Weight::from_parts(25_174_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
@@ -76,14 +76,14 @@ impl<T: frame_system::Config> pallet_indices::WeightInfo for WeightInfo<T> {
 	// Storage: System Account (r:1 w:1)
 	// Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
 	fn force_transfer() -> Weight {
-		Weight::from_ref_time(29_725_000 as u64)
+		Weight::from_parts(29_725_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(2 as u64))
 			.saturating_add(T::DbWeight::get().writes(2 as u64))
 	}
 	// Storage: Indices Accounts (r:1 w:1)
 	// Proof: Indices Accounts (max_values: None, max_size: Some(73), added: 2548, mode: MaxEncodedLen)
 	fn freeze() -> Weight {
-		Weight::from_ref_time(27_373_000 as u64)
+		Weight::from_parts(27_373_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(1 as u64))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}

@@ -57,9 +57,9 @@ impl<T: frame_system::Config> public_credentials::WeightInfo for WeightInfo<T> {
 	// Storage: PublicCredentials CredentialSubjects (r:0 w:1)
 	// Proof: PublicCredentials CredentialSubjects (max_values: None, max_size: Some(312), added: 2787, mode: MaxEncodedLen)
 	fn add(c: u32, ) -> Weight {
-		Weight::from_ref_time(52_767_011 as u64)
+		Weight::from_parts(52_767_011 as u64, 0)
 			// Standard Error: 20
-			.saturating_add(Weight::from_ref_time(3_182 as u64).saturating_mul(c as u64))
+			.saturating_add(Weight::from_parts(3_182 as u64, 0).saturating_mul(c as u64))
 			.saturating_add(T::DbWeight::get().reads(3 as u64))
 			.saturating_add(T::DbWeight::get().writes(3 as u64))
 	}
@@ -68,7 +68,7 @@ impl<T: frame_system::Config> public_credentials::WeightInfo for WeightInfo<T> {
 	// Storage: PublicCredentials Credentials (r:1 w:1)
 	// Proof: PublicCredentials Credentials (max_values: None, max_size: Some(475), added: 2950, mode: MaxEncodedLen)
 	fn revoke() -> Weight {
-		Weight::from_ref_time(27_663_000 as u64)
+		Weight::from_parts(27_663_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(2 as u64))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
@@ -77,7 +77,7 @@ impl<T: frame_system::Config> public_credentials::WeightInfo for WeightInfo<T> {
 	// Storage: PublicCredentials Credentials (r:1 w:1)
 	// Proof: PublicCredentials Credentials (max_values: None, max_size: Some(475), added: 2950, mode: MaxEncodedLen)
 	fn unrevoke() -> Weight {
-		Weight::from_ref_time(27_570_000 as u64)
+		Weight::from_parts(27_570_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(2 as u64))
 			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
@@ -88,7 +88,7 @@ impl<T: frame_system::Config> public_credentials::WeightInfo for WeightInfo<T> {
 	// Storage: System Account (r:1 w:1)
 	// Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
 	fn remove() -> Weight {
-		Weight::from_ref_time(45_902_000 as u64)
+		Weight::from_parts(45_902_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(3 as u64))
 			.saturating_add(T::DbWeight::get().writes(3 as u64))
 	}
@@ -99,7 +99,7 @@ impl<T: frame_system::Config> public_credentials::WeightInfo for WeightInfo<T> {
 	// Storage: System Account (r:1 w:1)
 	// Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
 	fn reclaim_deposit() -> Weight {
-		Weight::from_ref_time(68_877_000 as u64)
+		Weight::from_parts(68_877_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(3 as u64))
 			.saturating_add(T::DbWeight::get().writes(3 as u64))
 	}
@@ -110,7 +110,7 @@ impl<T: frame_system::Config> public_credentials::WeightInfo for WeightInfo<T> {
 	// Storage: System Account (r:2 w:2)
 	// Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
 	fn change_deposit_owner() -> Weight {
-		Weight::from_ref_time(58_093_000 as u64)
+		Weight::from_parts(58_093_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(4 as u64))
 			.saturating_add(T::DbWeight::get().writes(3 as u64))
 	}
@@ -121,7 +121,7 @@ impl<T: frame_system::Config> public_credentials::WeightInfo for WeightInfo<T> {
 	// Storage: System Account (r:1 w:1)
 	// Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
 	fn update_deposit() -> Weight {
-		Weight::from_ref_time(54_520_000 as u64)
+		Weight::from_parts(54_520_000 as u64, 0)
 			.saturating_add(T::DbWeight::get().reads(3 as u64))
 			.saturating_add(T::DbWeight::get().writes(2 as u64))
 	}

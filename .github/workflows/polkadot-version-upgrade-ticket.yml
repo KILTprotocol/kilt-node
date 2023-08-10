@@ -30,7 +30,7 @@ jobs:
     steps:
       - name: Install subalfred
         env:
-          SUBALFRED_VERSION: 0.9.1
+          SUBALFRED_VERSION: 0.9.2
         run: cargo install --version $SUBALFRED_VERSION --git https://github.com/hack-ink/subalfred.git subalfred
       - name: Run subalfred for Substrate
         env:

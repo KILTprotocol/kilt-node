@@ -17,10 +17,10 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use crate as pallet_inflation;
-use crate::NegativeImbalanceOf;
+use crate::CreditOf;
 use frame_support::{
 	parameter_types,
-	traits::{Currency, OnFinalize, OnInitialize, OnUnbalanced},
+	traits::{fungible::Balanced, OnFinalize, OnInitialize, OnUnbalanced},
 };
 
 use sp_runtime::{
@@ -98,6 +98,10 @@ parameter_types! {
 }
 
 impl pallet_balances::Config for Test {
+	type FreezeIdentifier = ();
+	type HoldIdentifier = ();
+	type MaxFreezes = ();
+	type MaxHolds = ();
 	type MaxLocks = MaxLocks;
 	type MaxReserves = MaxReserves;
 	type ReserveIdentifier = [u8; 8];
@@ -110,10 +114,10 @@ impl pallet_balances::Config for Test {
 }
 
 pub struct ToBeneficiary();
-impl OnUnbalanced<NegativeImbalanceOf<Test>> for ToBeneficiary {
-	fn on_nonzero_unbalanced(amount: NegativeImbalanceOf<Test>) {
+impl OnUnbalanced<CreditOf<Test>> for ToBeneficiary {
+	fn on_nonzero_unbalanced(amount: CreditOf<Test>) {
 		// Must resolve into existing but better to be safe.
-		<Test as pallet_inflation::Config>::Currency::resolve_creating(&TREASURY_ACC, amount);
+		let _ = <Test as pallet_inflation::Config>::Currency::resolve(&TREASURY_ACC, amount);
 	}
 }
 
