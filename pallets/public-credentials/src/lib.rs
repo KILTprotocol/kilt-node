@@ -556,7 +556,8 @@ pub mod pallet {
 			credential_id: CredentialIdOf<T>,
 			credential: CredentialEntryOf<T>,
 		) -> DispatchResult {
-			let Some(details) = Credentials::<T>::take(&credential_subject, &credential_id) else { return Err(Error::<T>::NotFound.into()); } ;
+			let details =
+				Credentials::<T>::take(&credential_subject, &credential_id).ok_or(Error::<T>::NotFound.into())?;
 			CredentialSubjects::<T>::remove(&credential_id);
 
 			let is_key_migrated = <T as Config>::MigrationManager::is_key_migrated(Credentials::<T>::hashed_key_for(
