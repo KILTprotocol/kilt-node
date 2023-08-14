@@ -171,7 +171,7 @@ pub mod pallet {
 		/// the deposit.
 		InsufficientFunds,
 
-		/// The ConnectedAccounts and ConnectedDids storage are out of sync
+		/// The ConnectedAccounts and ConnectedDids storage are out of sync.
 		///
 		/// NOTE: this will only be returned if the storage has inconsistencies.
 		Migration,
