@@ -26,7 +26,7 @@ pub fn update_balance_for_entry<T: Config>(key: &DelegationNodeIdOf<T>) -> Dispa
 where
 	<T as Config>::Currency: ReservableCurrency<T::AccountId>,
 {
-	let Some(details) = DelegationNodes::<T>::get(key)  else { return Err(Error::<T>::DelegationNotFound.into()); };
+	let details = DelegationNodes::<T>::get(key).ok_or(Error::<T>::DelegationNotFound)?;
 	switch_reserved_to_hold::<AccountIdOf<T>, CurrencyOf<T>>(
 		&details.deposit.owner,
 		&HoldReason::Deposit.into(),
