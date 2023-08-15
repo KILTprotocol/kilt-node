@@ -25,6 +25,7 @@ sp-keystore = {workspace = true, features = ["std"]}
 
 [dependencies]
 # External dependencies
+fluent-uri.workspace = true
 log.workspace = true
 
 # Internal dependencies
@@ -64,6 +65,7 @@ runtime-benchmarks = [
   "sp-runtime/runtime-benchmarks",
 ]
 std = [
+  "fluent-uri/std",
   "parity-scale-codec/std",
   "ctype/std",
   "frame-support/std",

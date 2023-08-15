@@ -36,7 +36,6 @@ sha3.workspace = true
 
 # Internal dependencies
 kilt-support.workspace = true
-runtime-common.workspace = true
 
 # Substrate dependencies
 frame-support.workspace = true
