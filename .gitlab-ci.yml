@@ -72,12 +72,15 @@ build-wasm-peregrine:
     - cp -r * /build
     - /srtool/build build
     - subwasm meta --format=json+scale /out/peregrine_runtime.compact.wasm > /out/peregrine-metadata.json
+    - subwasm get -o peregrine-live.wasm wss://peregrine.kilt.io
+    - subwasm diff --no-color peregrine-live.wasm /out/peregrine_runtime.compact.wasm | tee /out/peregrine-diff.txt
     - mkdir ./out
     - mv /out/* ./out/
   artifacts:
     paths:
       - out/*.wasm
       - out/*.json
+      - out/*.txt
     expire_in: 12 week
 
 build-wasm-spiritnet:
@@ -97,10 +100,13 @@ build-wasm-spiritnet:
     - cp -r * /build
     - /srtool/build build
     - subwasm meta --format=json+scale /out/spiritnet_runtime.compact.wasm > /out/spiritnet-metadata.json
+    - subwasm get -o spiritnet-live.wasm wss://spiritnet.kilt.io
+    - subwasm diff --no-color spiritnet-live.wasm /out/spiritnet_runtime.compact.wasm | tee /out/spiritnet-diff.txt
     - mkdir ./out
     - mv /out/* ./out/
   artifacts:
     paths:
       - out/*.wasm
       - out/*.json
+      - out/*.txt
     expire_in: 12 week
