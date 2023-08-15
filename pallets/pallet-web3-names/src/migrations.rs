@@ -26,7 +26,7 @@ pub fn update_balance_for_entry<T: Config>(key: &Web3NameOf<T>) -> DispatchResul
 where
 	<T as Config>::Currency: ReservableCurrency<T::AccountId>,
 {
-	let details = Owner::<T>::get(key).ok_or(Error::<T>::NotFound.into())?;
+	let details = Owner::<T>::get(key).ok_or(Error::<T>::NotFound)?;
 	switch_reserved_to_hold::<AccountIdOf<T>, CurrencyOf<T>>(
 		&details.deposit.owner,
 		&HoldReason::Deposit.into(),
