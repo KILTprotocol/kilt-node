@@ -25,7 +25,10 @@ use did::{
 };
 use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
 use frame_support::{
-	traits::{fungible::Mutate, Get, ReservableCurrency},
+	traits::{
+		fungible::{Inspect, Mutate},
+		Get, ReservableCurrency,
+	},
 	BoundedVec,
 };
 use frame_system::RawOrigin;
@@ -58,12 +61,12 @@ benchmarks! {
 		T::OwnerOrigin: GenerateBenchmarkOrigin<<T as frame_system::Config>::RuntimeOrigin, T::AccountId, T::Web3NameOwner>,
 		T: frame_system::Config,
 		T: pallet_balances::Config,
-		<T as attestation::Config>::Currency: ReservableCurrency<AccountIdOf<T>>,
-		<T as delegation::Config>::Currency: ReservableCurrency<AccountIdOf<T>>,
-		<T as did::Config>::Currency: ReservableCurrency<AccountIdOf<T>>,
-		<T as pallet_did_lookup::Config>::Currency: ReservableCurrency<AccountIdOf<T>>,
-		<T as pallet_web3_names::Config>::Currency: ReservableCurrency<AccountIdOf<T>>,
-		<T as public_credentials::Config>::Currency: ReservableCurrency<AccountIdOf<T>>,
+		<T as attestation::Config>::Currency: ReservableCurrency<AccountIdOf<T>, Balance = <<T as attestation::Config>::Currency as Inspect<AccountIdOf<T>>>::Balance>,
+		<T as delegation::Config>::Currency: ReservableCurrency<AccountIdOf<T>, Balance = <<T as delegation::Config>::Currency as Inspect<AccountIdOf<T>>>::Balance>,
+		<T as did::Config>::Currency: ReservableCurrency<AccountIdOf<T>, Balance = <<T as did::Config>::Currency as Inspect<AccountIdOf<T>>>::Balance>,
+		<T as pallet_did_lookup::Config>::Currency: ReservableCurrency<AccountIdOf<T>,Balance = <<T as pallet_did_lookup::Config>::Currency as Inspect<AccountIdOf<T>>>::Balance>,
+		<T as pallet_web3_names::Config>::Currency: ReservableCurrency<AccountIdOf<T>, Balance = <<T as pallet_web3_names::Config>::Currency as Inspect<AccountIdOf<T>>>::Balance>,
+		<T as public_credentials::Config>::Currency: ReservableCurrency<AccountIdOf<T>, Balance = <<T as public_credentials::Config>::Currency as Inspect<AccountIdOf<T>>>::Balance>,
 		<T as did::Config>::DidIdentifier: From<AccountId32>,
 		<T as frame_system::Config>::AccountId: From<AccountId32>,
 		<T as public_credentials::Config>::EnsureOrigin: GenerateBenchmarkOrigin<<T as frame_system::Config>::RuntimeOrigin, T::AccountId, <T as public_credentials::Config>::AttesterId>,

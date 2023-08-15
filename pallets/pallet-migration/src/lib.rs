@@ -38,7 +38,7 @@ pub mod pallet {
 	use did::{Did, DidIdentifierOf};
 	use frame_support::{
 		pallet_prelude::*,
-		traits::{Currency, ReservableCurrency},
+		traits::{fungible::Inspect, Currency, ReservableCurrency},
 	};
 	use frame_system::pallet_prelude::*;
 	use kilt_support::traits::MigrationManager;
@@ -122,12 +122,30 @@ pub mod pallet {
 	#[pallet::call]
 	impl<T: Config> Pallet<T>
 	where
-		<T as attestation::Config>::Currency: ReservableCurrency<AccountIdOf<T>>,
-		<T as delegation::Config>::Currency: ReservableCurrency<AccountIdOf<T>>,
-		<T as did::Config>::Currency: ReservableCurrency<AccountIdOf<T>>,
-		<T as pallet_did_lookup::Config>::Currency: ReservableCurrency<AccountIdOf<T>>,
-		<T as pallet_web3_names::Config>::Currency: ReservableCurrency<AccountIdOf<T>>,
-		<T as public_credentials::Config>::Currency: ReservableCurrency<AccountIdOf<T>>,
+		<T as attestation::Config>::Currency: ReservableCurrency<
+			AccountIdOf<T>,
+			Balance = <<T as attestation::Config>::Currency as Inspect<AccountIdOf<T>>>::Balance,
+		>,
+		<T as delegation::Config>::Currency: ReservableCurrency<
+			AccountIdOf<T>,
+			Balance = <<T as delegation::Config>::Currency as Inspect<AccountIdOf<T>>>::Balance,
+		>,
+		<T as did::Config>::Currency: ReservableCurrency<
+			AccountIdOf<T>,
+			Balance = <<T as did::Config>::Currency as Inspect<AccountIdOf<T>>>::Balance,
+		>,
+		<T as pallet_did_lookup::Config>::Currency: ReservableCurrency<
+			AccountIdOf<T>,
+			Balance = <<T as pallet_did_lookup::Config>::Currency as Inspect<AccountIdOf<T>>>::Balance,
+		>,
+		<T as pallet_web3_names::Config>::Currency: ReservableCurrency<
+			AccountIdOf<T>,
+			Balance = <<T as pallet_web3_names::Config>::Currency as Inspect<AccountIdOf<T>>>::Balance,
+		>,
+		<T as public_credentials::Config>::Currency: ReservableCurrency<
+			AccountIdOf<T>,
+			Balance = <<T as public_credentials::Config>::Currency as Inspect<AccountIdOf<T>>>::Balance,
+		>,
 	{
 		#[pallet::call_index(0)]
 		#[pallet::weight({

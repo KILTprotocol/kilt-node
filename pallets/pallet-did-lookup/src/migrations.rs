@@ -19,7 +19,7 @@
 use frame_support::{
 	pallet_prelude::{DispatchResult, ValueQuery},
 	storage_alias,
-	traits::{Get, GetStorageVersion, OnRuntimeUpgrade, ReservableCurrency, StorageVersion},
+	traits::{fungible::Inspect, Get, GetStorageVersion, OnRuntimeUpgrade, ReservableCurrency, StorageVersion},
 };
 use kilt_support::migration::switch_reserved_to_hold;
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
@@ -123,7 +123,8 @@ impl<T: crate::pallet::Config> OnRuntimeUpgrade for CleanupMigration<T> {
 
 pub fn update_balance_for_entry<T: Config>(key: &LinkableAccountId) -> DispatchResult
 where
-	<T as Config>::Currency: ReservableCurrency<T::AccountId>,
+	<T as Config>::Currency:
+		ReservableCurrency<T::AccountId, Balance = <<T as Config>::Currency as Inspect<AccountIdOf<T>>>::Balance>,
 {
 	let details = ConnectedDids::<T>::get(key).ok_or(Error::<T>::NotFound)?;
 	switch_reserved_to_hold::<AccountIdOf<T>, CurrencyOf<T>>(

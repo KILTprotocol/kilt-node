@@ -18,9 +18,12 @@
 
 use frame_support::{
 	pallet_prelude::DispatchResult,
-	traits::{fungible::hold::Mutate as MutateHold, ReservableCurrency},
+	traits::{
+		fungible::{hold::Mutate as MutateHold, Inspect},
+		ReservableCurrency,
+	},
 };
-use sp_runtime::{traits::Zero, SaturatedConversion};
+use sp_runtime::{traits::Zero, SaturatedConversion, Saturating};
 
 use pallet_balances::{Config, Holds, Pallet};
 
@@ -32,11 +35,15 @@ pub fn has_user_reserved_balance<AccountId, Currency: ReservableCurrency<Account
 	Currency::balance_on_hold(reason, owner).is_zero() && Currency::reserved_balance(owner) > Zero::zero()
 }
 
-pub fn switch_reserved_to_hold<AccountId, Currency: ReservableCurrency<AccountId> + MutateHold<AccountId>>(
+pub fn switch_reserved_to_hold<AccountId, Currency>(
 	owner: &AccountId,
 	reason: &Currency::Reason,
-	amount: u128,
-) -> DispatchResult {
+	amount: <Currency as Inspect<AccountId>>::Balance,
+) -> DispatchResult
+where
+	Currency: ReservableCurrency<AccountId>
+		+ MutateHold<AccountId, Balance = <Currency as frame_support::traits::Currency<AccountId>>::Balance>,
+{
 	let remaining_balance = Currency::unreserve(owner, amount.saturated_into());
 	debug_assert!(
 		remaining_balance.is_zero(),

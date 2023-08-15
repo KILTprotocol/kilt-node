@@ -16,7 +16,10 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::{pallet_prelude::DispatchResult, traits::ReservableCurrency};
+use frame_support::{
+	pallet_prelude::DispatchResult,
+	traits::{fungible::Inspect, ReservableCurrency},
+};
 use kilt_support::migration::switch_reserved_to_hold;
 use sp_runtime::SaturatedConversion;
 
@@ -24,7 +27,8 @@ use crate::{AccountIdOf, Config, CurrencyOf, DelegationNodeIdOf, DelegationNodes
 
 pub fn update_balance_for_entry<T: Config>(key: &DelegationNodeIdOf<T>) -> DispatchResult
 where
-	<T as Config>::Currency: ReservableCurrency<T::AccountId>,
+	<T as Config>::Currency:
+		ReservableCurrency<T::AccountId, Balance = <<T as Config>::Currency as Inspect<AccountIdOf<T>>>::Balance>,
 {
 	let details = DelegationNodes::<T>::get(key).ok_or(Error::<T>::DelegationNotFound)?;
 	switch_reserved_to_hold::<AccountIdOf<T>, CurrencyOf<T>>(
