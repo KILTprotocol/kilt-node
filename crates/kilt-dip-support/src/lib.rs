@@ -77,6 +77,7 @@ pub struct DipMerkleProofAndDidSignature<BlindedValues, Leaf, BlockNumber> {
 	signature: TimeBoundDidSignature<BlockNumber>,
 }
 
+#[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug, TypeInfo)]
 pub struct DipSiblingProviderStateProofVerifier<
 	RelayChainStateInfo,
 	SiblingProviderParachainId,
@@ -249,6 +250,7 @@ impl<
 	}
 }
 
+#[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug, TypeInfo)]
 pub struct ChildParachainDipStateProof<
 	RelayBlockHeight: Copy + Into<U256> + TryFrom<U256>,
 	RelayBlockHasher: Hash,
