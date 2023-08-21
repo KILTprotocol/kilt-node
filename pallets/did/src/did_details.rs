@@ -72,6 +72,16 @@ impl DidVerificationKey {
 	}
 }
 
+impl AsRef<[u8]> for DidVerificationKey {
+	fn as_ref(&self) -> &[u8] {
+		match self {
+			DidVerificationKey::Ed25519(key) => &key.0[..],
+			DidVerificationKey::Sr25519(key) => &key.0[..],
+			DidVerificationKey::Ecdsa(key) => &key.0[..],
+		}
+	}
+}
+
 impl From<ed25519::Public> for DidVerificationKey {
 	fn from(key: ed25519::Public) -> Self {
 		DidVerificationKey::Ed25519(key)

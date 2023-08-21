@@ -213,7 +213,7 @@ pub mod pallet {
 			+ DeriveDidCallAuthorizationVerificationKeyRelationship;
 
 		/// Type for a DID subject identifier.
-		type DidIdentifier: Parameter + DidVerifiableIdentifier + MaxEncodedLen;
+		type DidIdentifier: Parameter + DidVerifiableIdentifier + MaxEncodedLen + From<AccountIdOf<Self>>;
 
 		/// Origin type expected by the proxied dispatchable calls.
 		#[cfg(not(feature = "runtime-benchmarks"))]
@@ -506,7 +506,10 @@ pub mod pallet {
 	}
 
 	#[pallet::call]
-	impl<T: Config> Pallet<T> {
+	impl<T: Config> Pallet<T>
+	where
+		T::AccountId: AsRef<[u8; 32]>,
+	{
 		/// Store a new DID on chain, after verifying that the creation
 		/// operation has been signed by the KILT account associated with the
 		/// identifier of the DID being created and that a DID with the same
@@ -1140,9 +1143,72 @@ pub mod pallet {
 			Did::<T>::insert(&did, did_entry);
 			Ok(())
 		}
+
+		#[allow(clippy::boxed_local)]
+		#[pallet::call_index(15)]
+		#[pallet::weight({
+			let di = did_call.call.get_dispatch_info();
+			let max_sig_weight = <T as pallet::Config>::WeightInfo::submit_did_call_ed25519_key()
+			.max(<T as pallet::Config>::WeightInfo::submit_did_call_sr25519_key())
+			.max(<T as pallet::Config>::WeightInfo::submit_did_call_ecdsa_key());
+
+			(max_sig_weight.saturating_add(di.weight), di.class)
+		})]
+		pub fn do_did_call(
+			origin: OriginFor<T>,
+			did_call: Box<DidAuthorizedCallOperationOf<T>>,
+		) -> DispatchResultWithPostInfo {
+			let who = ensure_signed(origin)?;
+			let did_identifier: DidIdentifierOf<T> = who.clone().into();
+
+			ensure!(did_call.submitter == who, Error::<T>::BadDidOrigin);
+			ensure!(did_call.did == did_identifier, Error::<T>::BadDidOrigin);
+
+			// Compute the right DID verification key to use to verify the operation
+			// signature
+			let verification_key_relationship = did_call
+				.call
+				.derive_verification_key_relationship()
+				.map_err(Error::<T>::from)?;
+
+			// Wrap the operation in the expected structure, specifying the key retrieved
+			let wrapped_operation: did_details::DidAuthorizedCallOperationWithVerificationRelationship<T> =
+				DidAuthorizedCallOperationWithVerificationRelationship {
+					operation: *did_call,
+					verification_key_relationship,
+				};
+
+			Pallet::<T>::verify_did_operation_account(&wrapped_operation, who.clone()).map_err(Error::<T>::from)?;
+
+			log::debug!("Dispatch call from DID {:?}", did_identifier);
+
+			// Dispatch the referenced [Call] instance and return its result
+			let DidAuthorizedCallOperation { did, call, .. }: DidAuthorizedCallOperationOf<T> =
+				wrapped_operation.operation;
+
+			#[cfg(not(feature = "runtime-benchmarks"))]
+			let result = call.dispatch(
+				DidRawOrigin {
+					id: did,
+					submitter: who,
+				}
+				.into(),
+			);
+			#[cfg(feature = "runtime-benchmarks")]
+			let result = call.dispatch(RawOrigin::Signed(did).into());
+
+			let dispatch_event_payload = result.map(|_| ()).map_err(|e| e.error);
+
+			Self::deposit_event(Event::DidCallDispatched(did_identifier, dispatch_event_payload));
+
+			result
+		}
 	}
 
-	impl<T: Config> Pallet<T> {
+	impl<T: Config> Pallet<T>
+	where
+		T::AccountId: AsRef<[u8; 32]>,
+	{
 		/// Verify the validity (i.e., nonce, signature and mortality) of a
 		/// DID-authorized operation and, if valid, update the DID state with
 		/// the latest nonce.
@@ -1176,6 +1242,30 @@ pub mod pallet {
 			Did::<T>::insert(&operation.did, did_details);
 
 			Ok(())
+		}
+
+		pub fn verify_did_operation_account(
+			operation: &DidAuthorizedCallOperationWithVerificationRelationship<T>,
+			account: AccountIdOf<T>,
+		) -> Result<(), DidError> {
+			// Check that the tx has not expired.
+			Self::validate_block_number_value(operation.block_number)?;
+
+			let did_details = Did::<T>::get(&operation.did).ok_or(StorageError::NotFound(errors::NotFoundKind::Did))?;
+
+			let verification_key = did_details
+				.get_verification_key_for_key_type(operation.verification_key_relationship)
+				.ok_or_else(|| {
+					DidError::Storage(StorageError::NotFound(errors::NotFoundKind::Key(
+						operation.verification_key_relationship.into(),
+					)))
+				})?;
+
+			if account.as_ref() == verification_key.as_ref() {
+				Ok(())
+			} else {
+				Err(DidError::Signature(SignatureError::InvalidData))
+			}
 		}
 
 		/// Check if the provided block number is valid,
