@@ -23,6 +23,7 @@ did.workspace = true
 kilt-dip-support.workspace = true
 pallet-did-lookup.workspace = true
 pallet-dip-consumer.workspace = true
+pallet-postit.workspace = true
 pallet-relay-store.workspace = true
 runtime-common.workspace = true
 
@@ -75,6 +76,7 @@ std = [
   "kilt-dip-support/std",
   "pallet-did-lookup/std",
   "pallet-dip-consumer/std",
+  "pallet-postit/std",
   "pallet-relay-store/std",
   "runtime-common/std",
 	"frame-executive/std",

@@ -2397,6 +2397,7 @@ dependencies = [
  "pallet-collator-selection",
  "pallet-did-lookup",
  "pallet-dip-consumer",
+ "pallet-postit",
  "pallet-relay-store",
  "pallet-session",
  "pallet-sudo",

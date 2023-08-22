@@ -21,6 +21,8 @@
 pub mod post;
 pub mod traits;
 
+pub use pallet::*;
+
 #[frame_support::pallet(dev_mode)]
 pub mod pallet {
 
@@ -48,9 +50,9 @@ pub mod pallet {
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
+		type MaxTextLength: Get<u32>;
 		type OriginCheck: EnsureOrigin<<Self as frame_system::Config>::RuntimeOrigin, Success = Self::OriginSuccess>;
 		type OriginSuccess: Usernamable<Username = Self::Username>;
-		type MaxTextLength: Get<u32>;
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 		type Username: Encode + Decode + TypeInfo + MaxEncodedLen + Clone + PartialEq + Debug + Default;
 	}
@@ -75,9 +77,13 @@ pub mod pallet {
 			author: T::Username,
 		},
 		NewComment {
-			post_id: T::Hash,
+			resource_id: T::Hash,
 			comment_id: T::Hash,
 			author: T::Username,
+		},
+		NewLike {
+			resource_id: T::Hash,
+			liker: T::Username,
 		},
 	}
 
@@ -134,8 +140,13 @@ pub mod pallet {
 				})
 			})
 			.map_err(|_| DispatchError::Other("No post or comment with provided ID found."))?;
-			let comment = CommentOf::<T>::from_post_id_text_and_author(resource_id, text, author);
+			let comment = CommentOf::<T>::from_post_id_text_and_author(resource_id, text, author.clone());
 			Comments::<T>::insert(comment_id, comment);
+			Self::deposit_event(Event::NewComment {
+				resource_id,
+				comment_id,
+				author,
+			});
 			Ok(())
 		}
 
@@ -158,7 +169,7 @@ pub mod pallet {
 						comment
 							.details
 							.likes
-							.try_push(liker)
+							.try_push(liker.clone())
 							.expect("Failed to add like to comment.");
 						Ok(())
 					} else {
@@ -167,6 +178,7 @@ pub mod pallet {
 				})
 			})
 			.map_err(|_| DispatchError::Other("No post or comment with provided ID found."))?;
+			Self::deposit_event(Event::NewLike { resource_id, liker });
 			Ok(())
 		}
 	}
