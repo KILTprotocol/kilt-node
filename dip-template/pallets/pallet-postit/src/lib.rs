@@ -21,7 +21,7 @@
 pub mod post;
 pub mod traits;
 
-#[frame_support::pallet]
+#[frame_support::pallet(dev_mode)]
 pub mod pallet {
 
 	use super::*;
@@ -64,7 +64,6 @@ pub mod pallet {
 	pub type Comments<T> = StorageMap<_, Twox64Concat, <T as frame_system::Config>::Hash, CommentOf<T>>;
 
 	#[pallet::pallet]
-	#[pallet::generate_store(pub(super) trait Store)]
 	#[pallet::storage_version(STORAGE_VERSION)]
 	pub struct Pallet<T>(_);
 
