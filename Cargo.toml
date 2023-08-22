@@ -68,7 +68,7 @@ kilt-runtime-api-public-credentials = {path = "runtime-api/public-credentials", 
 kilt-runtime-api-staking = {path = "runtime-api/staking", default-features = false}
 
 # Internal KILT runtimes (with default disabled)
-mashnet-node-runtime = {path = "runtimes/standalone", default-features = false}
+kestrel-runtime = {path = "runtimes/kestrel", default-features = false}
 peregrine-runtime = {path = "runtimes/peregrine", default-features = false}
 spiritnet-runtime = {path = "runtimes/spiritnet", default-features = false}
 

@@ -29,7 +29,7 @@ use sp_consensus_aura::ed25519::AuthorityPair as AuraPair;
 
 use std::{sync::Arc, time::Duration};
 
-use mashnet_node_runtime::{self, opaque::Block, RuntimeApi};
+use kestrel_runtime::{self, opaque::Block, RuntimeApi};
 
 // Our native executor instance.
 pub struct ExecutorDispatch;
@@ -38,11 +38,11 @@ impl sc_executor::NativeExecutionDispatch for ExecutorDispatch {
 	type ExtendHostFunctions = frame_benchmarking::benchmarking::HostFunctions;
 
 	fn dispatch(method: &str, data: &[u8]) -> Option<Vec<u8>> {
-		mashnet_node_runtime::api::dispatch(method, data)
+		kestrel_runtime::api::dispatch(method, data)
 	}
 
 	fn native_version() -> sc_executor::NativeVersion {
-		mashnet_node_runtime::native_version()
+		kestrel_runtime::native_version()
 	}
 }
 

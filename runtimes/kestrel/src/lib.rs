@@ -115,8 +115,8 @@ pub mod opaque {
 /// This runtime version.
 #[sp_version::runtime_version]
 pub const VERSION: RuntimeVersion = RuntimeVersion {
-	spec_name: create_runtime_str!("mashnet-node"),
-	impl_name: create_runtime_str!("mashnet-node"),
+	spec_name: create_runtime_str!("kilt-kestrel"),
+	impl_name: create_runtime_str!("kilt-kestrel"),
 	authoring_version: 4,
 	spec_version: 11200,
 	impl_version: 0,
