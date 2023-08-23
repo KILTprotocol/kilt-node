@@ -188,7 +188,8 @@ register_validate_block! {
 	CheckInherents = CheckInherents,
 }
 
-pub const SS58_PREFIX: u16 = 100;
+// Same as official KILT prefix.
+pub const SS58_PREFIX: u16 = 38;
 const AVERAGE_ON_INITIALIZE_RATIO: Perbill = Perbill::from_percent(5);
 const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
 const MAXIMUM_BLOCK_WEIGHT: Weight = Weight::from_parts(

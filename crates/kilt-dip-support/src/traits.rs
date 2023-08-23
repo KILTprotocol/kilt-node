@@ -16,6 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use sp_core::storage::StorageKey;
 use sp_runtime::traits::{CheckedAdd, One, Zero};
 use sp_std::marker::PhantomData;
 
@@ -54,14 +55,17 @@ pub trait DipCallOriginFilter<Call> {
 	fn check_call_origin_info(call: &Call, info: &Self::OriginInfo) -> Result<Self::Success, Self::Error>;
 }
 
-pub trait RelayChainStateInfo {
+pub trait RelayChainStorageInfo {
 	type BlockNumber;
-	type Key;
 	type Hasher: sp_runtime::traits::Hash;
+	type Key;
 	type ParaId;
 
-	fn state_root_for_block(block_height: &Self::BlockNumber) -> Option<OutputOf<Self::Hasher>>;
 	fn parachain_head_storage_key(para_id: &Self::ParaId) -> Self::Key;
+}
+
+pub trait RelayChainStateInfo: RelayChainStorageInfo {
+	fn state_root_for_block(block_height: &Self::BlockNumber) -> Option<OutputOf<Self::Hasher>>;
 }
 
 pub trait ProviderParachainStateInfo {
@@ -72,6 +76,25 @@ pub trait ProviderParachainStateInfo {
 	type Identifier;
 
 	fn dip_subject_storage_key(identifier: &Self::Identifier) -> Self::Key;
+}
+
+pub struct ProviderParachainStateInfoViaProviderPallet<T>(PhantomData<T>);
+
+impl<T> ProviderParachainStateInfo for ProviderParachainStateInfoViaProviderPallet<T>
+where
+	T: pallet_dip_provider::Config,
+{
+	type BlockNumber = T::BlockNumber;
+	type Commitment = T::IdentityCommitment;
+	type Hasher = T::Hashing;
+	type Identifier = T::Identifier;
+	type Key = StorageKey;
+
+	fn dip_subject_storage_key(identifier: &Self::Identifier) -> Self::Key {
+		StorageKey(pallet_dip_provider::IdentityCommitments::<T>::hashed_key_for(
+			identifier,
+		))
+	}
 }
 
 pub trait DidSignatureVerifierContext {
@@ -108,4 +131,30 @@ where
 	}
 
 	fn signed_extra() -> Self::SignedExtra {}
+}
+
+pub trait HistoricalBlockRegistry {
+	type BlockNumber;
+	type Hasher: sp_runtime::traits::Hash;
+
+	fn block_hash_for(block: &Self::BlockNumber) -> Option<OutputOf<Self::Hasher>>;
+}
+
+impl<T> HistoricalBlockRegistry for T
+where
+	T: frame_system::Config,
+{
+	type BlockNumber = T::BlockNumber;
+	type Hasher = T::Hashing;
+
+	fn block_hash_for(block: &Self::BlockNumber) -> Option<OutputOf<Self::Hasher>> {
+		let retrieved_block = frame_system::Pallet::<T>::block_hash(block);
+		let default_block_hash_value = <T::Hash as Default>::default();
+
+		if retrieved_block == default_block_hash_value {
+			None
+		} else {
+			Some(retrieved_block)
+		}
+	}
 }

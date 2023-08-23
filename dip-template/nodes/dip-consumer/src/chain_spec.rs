@@ -99,7 +99,6 @@ fn testnet_genesis(
 		},
 		aura: Default::default(),
 		aura_ext: Default::default(),
-		did_lookup: Default::default(),
 	}
 }
 

@@ -45,7 +45,7 @@ mod substrate_no_std_port {
 		keys: I,
 	) -> Result<BTreeMap<Vec<u8>, Option<Vec<u8>>>, ()>
 	where
-		H: Hasher + 'static,
+		H: Hasher,
 		H::Out: Ord + Codec,
 		I: IntoIterator,
 		I::Item: AsRef<[u8]>,
@@ -90,33 +90,28 @@ pub(super) mod relay_chain {
 
 	use sp_runtime::traits::BlakeTwo256;
 
-	use crate::traits::RelayChainStateInfo;
+	use crate::traits::{RelayChainStateInfo, RelayChainStorageInfo};
 
-	pub struct SiblingParachainHeadProofVerifier<RelayChainState>(PhantomData<RelayChainState>);
+	pub struct ParachainHeadProofVerifier<RelayChainState>(PhantomData<RelayChainState>);
 
-	impl<RelayChainState> SiblingParachainHeadProofVerifier<RelayChainState>
+	// Uses the provided `root` to verify the proof.
+	impl<RelayChainState> ParachainHeadProofVerifier<RelayChainState>
 	where
-		RelayChainState: RelayChainStateInfo,
-		RelayChainState::Hasher: 'static,
+		RelayChainState: RelayChainStorageInfo,
 		OutputOf<RelayChainState::Hasher>: Ord,
 		RelayChainState::BlockNumber: Copy + Into<U256> + TryFrom<U256> + HasCompact,
 		RelayChainState::Key: AsRef<[u8]>,
 	{
-		#[allow(clippy::result_unit_err)]
-		pub fn verify_proof_for_parachain(
+		pub fn verify_proof_for_parachain_with_root(
 			para_id: &RelayChainState::ParaId,
-			relay_height: &RelayChainState::BlockNumber,
+			root: &OutputOf<<RelayChainState as RelayChainStorageInfo>::Hasher>,
 			proof: impl IntoIterator<Item = Vec<u8>>,
 		) -> Result<Header<RelayChainState::BlockNumber, RelayChainState::Hasher>, ()> {
-			let relay_state_root = RelayChainState::state_root_for_block(relay_height).ok_or(())?;
 			let parachain_storage_key = RelayChainState::parachain_head_storage_key(para_id);
 			let storage_proof = StorageProof::new(proof);
-			let revealed_leaves = read_proof_check::<RelayChainState::Hasher, _>(
-				relay_state_root,
-				storage_proof,
-				[&parachain_storage_key].iter(),
-			)
-			.map_err(|_| ())?;
+			let revealed_leaves =
+				read_proof_check::<RelayChainState::Hasher, _>(*root, storage_proof, [&parachain_storage_key].iter())
+					.map_err(|_| ())?;
 			// TODO: Remove at some point
 			{
 				debug_assert!(revealed_leaves.len() == 1usize);
@@ -129,9 +124,29 @@ pub(super) mod relay_chain {
 		}
 	}
 
+	// Relies on the `RelayChainState::state_root_for_block` to retrieve the state
+	// root for the given block.
+	impl<RelayChainState> ParachainHeadProofVerifier<RelayChainState>
+	where
+		RelayChainState: RelayChainStateInfo,
+		OutputOf<RelayChainState::Hasher>: Ord,
+		RelayChainState::BlockNumber: Copy + Into<U256> + TryFrom<U256> + HasCompact,
+		RelayChainState::Key: AsRef<[u8]>,
+	{
+		#[allow(clippy::result_unit_err)]
+		pub fn verify_proof_for_parachain(
+			para_id: &RelayChainState::ParaId,
+			relay_height: &RelayChainState::BlockNumber,
+			proof: impl IntoIterator<Item = Vec<u8>>,
+		) -> Result<Header<RelayChainState::BlockNumber, RelayChainState::Hasher>, ()> {
+			let relay_state_root = RelayChainState::state_root_for_block(relay_height).ok_or(())?;
+			Self::verify_proof_for_parachain_with_root(para_id, &relay_state_root, proof)
+		}
+	}
+
 	pub struct RococoStateRootsViaRelayStorePallet<Runtime>(PhantomData<Runtime>);
 
-	impl<Runtime> RelayChainStateInfo for RococoStateRootsViaRelayStorePallet<Runtime>
+	impl<Runtime> RelayChainStorageInfo for RococoStateRootsViaRelayStorePallet<Runtime>
 	where
 		Runtime: pallet_relay_store::Config,
 	{
@@ -139,11 +154,6 @@ pub(super) mod relay_chain {
 		type Hasher = BlakeTwo256;
 		type Key = StorageKey;
 		type ParaId = u32;
-
-		fn state_root_for_block(block_height: &Self::BlockNumber) -> Option<OutputOf<Self::Hasher>> {
-			pallet_relay_store::Pallet::<Runtime>::latest_relay_head_for_block(block_height)
-				.map(|relay_header| relay_header.relay_parent_storage_root)
-		}
 
 		fn parachain_head_storage_key(para_id: &Self::ParaId) -> Self::Key {
 			// TODO: It's not possible to access the runtime definition from here.
@@ -158,6 +168,16 @@ pub(super) mod relay_chain {
 		}
 	}
 
+	impl<Runtime> RelayChainStateInfo for RococoStateRootsViaRelayStorePallet<Runtime>
+	where
+		Runtime: pallet_relay_store::Config,
+	{
+		fn state_root_for_block(block_height: &Self::BlockNumber) -> Option<OutputOf<Self::Hasher>> {
+			pallet_relay_store::Pallet::<Runtime>::latest_relay_head_for_block(block_height)
+				.map(|relay_header| relay_header.relay_parent_storage_root)
+		}
+	}
+
 	#[cfg(test)]
 	mod polkadot_parachain_head_proof_verifier_tests {
 		use super::*;
@@ -169,7 +189,7 @@ pub(super) mod relay_chain {
 		// hash 0x18e90e9aa8e3b063f60386ba1b0415111798e72d01de58b1438d620d42f58e39
 		struct StaticPolkadotInfoProvider;
 
-		impl RelayChainStateInfo for StaticPolkadotInfoProvider {
+		impl RelayChainStorageInfo for StaticPolkadotInfoProvider {
 			type BlockNumber = u32;
 			type Hasher = BlakeTwo256;
 			type Key = StorageKey;
@@ -188,7 +208,9 @@ pub(super) mod relay_chain {
 				.concat();
 				StorageKey(storage_key)
 			}
+		}
 
+		impl RelayChainStateInfo for StaticPolkadotInfoProvider {
 			fn state_root_for_block(_block_height: &Self::BlockNumber) -> Option<OutputOf<Self::Hasher>> {
 				Some(hex!("81b75d95075d16005ee0a987a3f061d3011ada919b261e9b02961b9b3725f3fd").into())
 			}
@@ -210,13 +232,12 @@ pub(super) mod relay_chain {
 			// "0xcd710b30bd2eab0352ddcc26417aa1941b3c252fcb29d88eff4f3de5de4476c32c0cfd6c23b92a7826080000"
 			//
 			let expected_spiritnet_head_at_block = hex!("65541097fb02782e14f43074f0b00e44ae8e9fe426982323ef1d329739740d37f252ff006d1156941db1bccd58ce3a1cac4f40cad91f692d94e98f501dd70081a129b69a3e2ef7e1ff84ba3d86dab4e95f2c87f6b1055ebd48519c185360eae58f05d1ea08066175726120dcdc6308000000000561757261010170ccfaf3756d1a8dd8ae5c89094199d6d32e5dd9f0920f6fe30f986815b5e701974ea0e0e0a901401f2c72e3dd8dbdf4aa55d59bf3e7021856cdb8038419eb8c").to_vec();
-			let returned_head =
-				SiblingParachainHeadProofVerifier::<StaticPolkadotInfoProvider>::verify_proof_for_parachain(
-					&2_086,
-					&16_363_919,
-					spiritnet_head_proof_at_block,
-				)
-				.expect("Parachain head proof verification should not fail.");
+			let returned_head = ParachainHeadProofVerifier::<StaticPolkadotInfoProvider>::verify_proof_for_parachain(
+				&2_086,
+				&16_363_919,
+				spiritnet_head_proof_at_block,
+			)
+			.expect("Parachain head proof verification should not fail.");
 			assert!(returned_head.encode() == expected_spiritnet_head_at_block, "Parachain head returned from the state proof verification should not be different than the pre-computed one.");
 		}
 	}
@@ -232,7 +253,6 @@ pub(super) mod parachain {
 	impl<ParaInfo> DipIdentityCommitmentProofVerifier<ParaInfo>
 	where
 		ParaInfo: ProviderParachainStateInfo,
-		ParaInfo::Hasher: 'static,
 		OutputOf<ParaInfo::Hasher>: Ord,
 		ParaInfo::Commitment: Decode,
 		ParaInfo::Key: AsRef<[u8]>,
@@ -258,31 +278,6 @@ pub(super) mod parachain {
 			}
 			let Some(Some(encoded_commitment)) = revealed_leaves.get(dip_commitment_storage_key.as_ref()) else { return Err(()) };
 			ParaInfo::Commitment::decode(&mut &encoded_commitment[..]).map_err(|_| ())
-		}
-	}
-
-	pub struct KiltDipCommitmentsForDipProviderPallet<Runtime>(PhantomData<Runtime>);
-
-	impl<Runtime> ProviderParachainStateInfo for KiltDipCommitmentsForDipProviderPallet<Runtime>
-	where
-		Runtime: pallet_dip_provider::Config,
-	{
-		type BlockNumber = <Runtime as frame_system::Config>::BlockNumber;
-		type Commitment = <Runtime as pallet_dip_provider::Config>::IdentityCommitment;
-		type Hasher = <Runtime as frame_system::Config>::Hashing;
-		type Identifier = <Runtime as pallet_dip_provider::Config>::Identifier;
-		type Key = StorageKey;
-
-		fn dip_subject_storage_key(identifier: &Self::Identifier) -> Self::Key {
-			// TODO: Replace with actual runtime definition
-			let encoded_identifier = identifier.encode();
-			let storage_key = [
-				frame_support::storage::storage_prefix(b"DipProvider", b"IdentityCommitments").as_slice(),
-				sp_io::hashing::twox_64(&encoded_identifier).as_slice(),
-				encoded_identifier.as_slice(),
-			]
-			.concat();
-			StorageKey(storage_key)
 		}
 	}
 
