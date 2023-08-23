@@ -37,7 +37,7 @@ use crate::{
 	merkle::{DidMerkleProof, DidMerkleProofVerifier, RevealedDidMerkleProofLeaf, RevealedDidMerkleProofLeaves},
 	state_proofs::{parachain::DipIdentityCommitmentProofVerifier, relay_chain::ParachainHeadProofVerifier},
 	traits::{
-		Bump, DidSignatureVerifierContext, DipCallOriginFilter, HistoryProvider, ProviderParachainStateInfo,
+		Bump, DidSignatureVerifierContext, DipCallOriginFilter, HistoricalBlockRegistry, ProviderParachainStateInfo,
 		RelayChainStorageInfo,
 	},
 	utils::OutputOf,
@@ -49,9 +49,7 @@ pub mod state_proofs;
 pub mod traits;
 pub mod utils;
 
-pub use state_proofs::{
-	parachain::KiltDipCommitmentsForDipProviderPallet, relay_chain::RococoStateRootsViaRelayStorePallet,
-};
+pub use state_proofs::relay_chain::RococoStateRootsViaRelayStorePallet;
 
 #[derive(Encode, Decode, PartialEq, Eq, RuntimeDebug, TypeInfo, Clone)]
 pub struct SiblingParachainDipStateProof<
@@ -259,7 +257,7 @@ pub struct ChildParachainDipStateProof<
 	DipProviderBlockNumber,
 > {
 	para_state_root: ParachainRootStateProof<RelayBlockHeight>,
-	header: Header<RelayBlockHeight, RelayBlockHasher>,
+	relay_header: Header<RelayBlockHeight, RelayBlockHasher>,
 	dip_identity_commitment: Vec<Vec<u8>>,
 	did: DipMerkleProofAndDidSignature<DipMerkleProofBlindedValues, DipMerkleProofRevealedLeaf, DipProviderBlockNumber>,
 }
@@ -331,7 +329,7 @@ impl<
 	TxSubmitter: Encode,
 
 	RelayChainInfo: RelayChainStorageInfo
-		+ HistoryProvider<
+		+ HistoricalBlockRegistry<
 			BlockNumber = <RelayChainInfo as RelayChainStorageInfo>::BlockNumber,
 			Hasher = <RelayChainInfo as RelayChainStorageInfo>::Hasher,
 		>,
@@ -405,11 +403,11 @@ impl<
 			RelayChainInfo::block_hash_for(&proof.para_state_root.relay_block_height).ok_or(())?;
 
 		// 1.1 Verify that the provided header hashes to the same block has retrieved
-		if block_hash_at_height != proof.header.hash() {
+		if block_hash_at_height != proof.relay_header.hash() {
 			return Err(());
 		}
 		// 1.2 If so, extract the state root from the header
-		let state_root_at_height = proof.header.state_root;
+		let state_root_at_height = proof.relay_header.state_root;
 
 		// FIXME: Compilation error
 		// 2. Verify relay chain proof

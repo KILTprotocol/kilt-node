@@ -86,9 +86,9 @@ mod substrate_no_std_port {
 }
 
 pub(super) mod relay_chain {
-	use sp_runtime::traits::BlakeTwo256;
-
 	use super::*;
+
+	use sp_runtime::traits::BlakeTwo256;
 
 	use crate::traits::{RelayChainStateInfo, RelayChainStorageInfo};
 
@@ -278,31 +278,6 @@ pub(super) mod parachain {
 			}
 			let Some(Some(encoded_commitment)) = revealed_leaves.get(dip_commitment_storage_key.as_ref()) else { return Err(()) };
 			ParaInfo::Commitment::decode(&mut &encoded_commitment[..]).map_err(|_| ())
-		}
-	}
-
-	pub struct KiltDipCommitmentsForDipProviderPallet<Runtime>(PhantomData<Runtime>);
-
-	impl<Runtime> ProviderParachainStateInfo for KiltDipCommitmentsForDipProviderPallet<Runtime>
-	where
-		Runtime: pallet_dip_provider::Config,
-	{
-		type BlockNumber = <Runtime as frame_system::Config>::BlockNumber;
-		type Commitment = <Runtime as pallet_dip_provider::Config>::IdentityCommitment;
-		type Hasher = <Runtime as frame_system::Config>::Hashing;
-		type Identifier = <Runtime as pallet_dip_provider::Config>::Identifier;
-		type Key = StorageKey;
-
-		fn dip_subject_storage_key(identifier: &Self::Identifier) -> Self::Key {
-			// TODO: Replace with actual runtime definition
-			let encoded_identifier = identifier.encode();
-			let storage_key = [
-				frame_support::storage::storage_prefix(b"DipProvider", b"IdentityCommitments").as_slice(),
-				sp_io::hashing::twox_64(&encoded_identifier).as_slice(),
-				encoded_identifier.as_slice(),
-			]
-			.concat();
-			StorageKey(storage_key)
 		}
 	}
 

@@ -20,8 +20,8 @@ use did::{did_details::DidVerificationKey, DidVerificationKeyRelationship, KeyId
 use dip_provider_runtime_template::{Runtime as ProviderRuntime, Web3Name};
 use frame_support::traits::Contains;
 use kilt_dip_support::{
-	traits::{DipCallOriginFilter, FrameSystemDidSignatureContext},
-	DipSiblingProviderStateProofVerifier, KiltDipCommitmentsForDipProviderPallet, RococoStateRootsViaRelayStorePallet,
+	traits::{DipCallOriginFilter, FrameSystemDidSignatureContext, ProviderParachainStateInfoViaProviderPallet},
+	DipSiblingProviderStateProofVerifier, RococoStateRootsViaRelayStorePallet,
 };
 use pallet_did_lookup::linkable_account::LinkableAccountId;
 use pallet_dip_consumer::traits::IdentityProofVerifier;
@@ -35,7 +35,7 @@ pub type MerkleProofVerifierOutputOf<Call, Subject> =
 pub type ProofVerifier = DipSiblingProviderStateProofVerifier<
 	RococoStateRootsViaRelayStorePallet<Runtime>,
 	ConstU32<2_000>,
-	KiltDipCommitmentsForDipProviderPallet<ProviderRuntime>,
+	ProviderParachainStateInfoViaProviderPallet<ProviderRuntime>,
 	AccountId,
 	BlakeTwo256,
 	KeyIdOf<ProviderRuntime>,
