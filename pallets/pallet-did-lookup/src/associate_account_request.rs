@@ -19,11 +19,11 @@
 use crate::{
 	account::{AccountId20, EthereumSignature},
 	linkable_account::LinkableAccountId,
-	signature::get_wrapped_payload,
 };
 
 use base58::ToBase58;
 use blake2::{Blake2b512, Digest};
+use kilt_support::signature::{WrapType, get_wrapped_payload};
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::{
 	prelude::{format, string::String},
@@ -47,11 +47,11 @@ impl AssociateAccountRequest {
 		let encoded_payload = get_challenge(did_identifier, expiration).into_bytes();
 		match self {
 			AssociateAccountRequest::Polkadot(acc, proof) => proof.verify(
-				&get_wrapped_payload(&encoded_payload[..], crate::signature::WrapType::Substrate)[..],
+				&get_wrapped_payload(&encoded_payload[..], WrapType::Substrate)[..],
 				acc,
 			),
 			AssociateAccountRequest::Ethereum(acc, proof) => proof.verify(
-				&get_wrapped_payload(&encoded_payload[..], crate::signature::WrapType::Ethereum)[..],
+				&get_wrapped_payload(&encoded_payload[..], WrapType::Ethereum)[..],
 				acc,
 			),
 		}
