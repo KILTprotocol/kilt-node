@@ -1159,7 +1159,7 @@ impl_runtime_apis! {
 	#[cfg(feature = "try-runtime")]
 	impl frame_try_runtime::TryRuntime<Block> for Runtime {
 		fn on_runtime_upgrade(checks: UpgradeCheckSelect) -> (Weight, Weight) {
-			log::info!("try-runtime::on_runtime_upgrade mashnet-node standalone.");
+			log::info!("try-runtime::on_runtime_upgrade kestrel runtime.");
 			let weight = Executive::try_runtime_upgrade(checks).unwrap();
 			(weight, runtime_common::BlockWeights::get().max_block)
 		}
