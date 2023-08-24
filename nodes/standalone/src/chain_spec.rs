@@ -26,8 +26,8 @@ use runtime_common::{AccountId, AccountPublic};
 use hex_literal::hex;
 use sc_service::{self, ChainType, Properties};
 use sp_consensus_aura::ed25519::AuthorityId as AuraId;
+use sp_consensus_grandpa::AuthorityId as GrandpaId;
 use sp_core::{crypto::UncheckedInto, ed25519, sr25519, Pair, Public};
-use sp_finality_grandpa::AuthorityId as GrandpaId;
 use sp_runtime::traits::IdentifyAccount;
 
 // Note this is the URL for the telemetry server

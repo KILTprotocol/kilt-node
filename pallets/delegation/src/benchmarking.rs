@@ -18,7 +18,6 @@
 
 use super::*;
 
-use codec::Encode;
 use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
 use frame_support::{
 	dispatch::DispatchErrorWithPostInfo,
@@ -26,6 +25,7 @@ use frame_support::{
 	traits::{Currency, Get},
 };
 use frame_system::RawOrigin;
+use parity_scale_codec::Encode;
 use sp_core::{offchain::KeyTypeId, sr25519};
 use sp_io::crypto::sr25519_generate;
 use sp_runtime::traits::Zero;
@@ -321,7 +321,7 @@ benchmarks! {
 	}: revoke_delegation<T::RuntimeOrigin>(origin, child_id, c, r)
 	verify {
 		assert!(DelegationNodes::<T>::contains_key(child_id));
-		let DelegationNode::<T> { details, .. } = DelegationNodes::<T>::get(leaf_id).ok_or("Child of root should have delegation id")?;
+		let DelegationNodeOf::<T> { details, .. } = DelegationNodes::<T>::get(leaf_id).ok_or("Child of root should have delegation id")?;
 		assert!(details.revoked);
 
 		assert!(DelegationNodes::<T>::contains_key(leaf_id));
@@ -345,7 +345,7 @@ benchmarks! {
 	}: revoke_delegation<T::RuntimeOrigin>(origin, leaf_id, c, r)
 	verify {
 		assert!(DelegationNodes::<T>::contains_key(leaf_id));
-		let DelegationNode::<T> { details, .. } = DelegationNodes::<T>::get(leaf_id).ok_or("Child of root should have delegation id")?;
+		let DelegationNodeOf::<T> { details, .. } = DelegationNodes::<T>::get(leaf_id).ok_or("Child of root should have delegation id")?;
 		assert!(details.revoked);
 	}
 	// TODO: Might want to add variant iterating over children instead of depth at some later point

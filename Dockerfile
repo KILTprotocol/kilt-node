@@ -1,9 +1,7 @@
 # this container builds the kilt-parachain binary from source files and the runtime library
 # pinned the version to avoid build cache invalidation
 
-# Corresponds to paritytech/ci-linux:production at the time of this PR
-# https://hub.docker.com/layers/ci-linux/paritytech/ci-linux/production/images/sha256-4e8c072ea12bc17d99cb531adb58dea5a4c7d4880a8a86525052d24d1454e89e?context=explore
-FROM paritytech/ci-linux@sha256:4e8c072ea12bc17d99cb531adb58dea5a4c7d4880a8a86525052d24d1454e89e as builder
+FROM paritytech/ci-unified:bullseye-1.70.0 as builder
 
 WORKDIR /build
 
@@ -25,8 +23,8 @@ COPY --from=builder /build/target/release/$NODE_TYPE /usr/local/bin/node-executa
 RUN useradd -m -u 1000 -U -s /bin/sh -d /node node && \
 	mkdir -p /node/.local/share/node && \
 	chown -R node:node /node/.local && \
-	ln -s /node/.local/share/node /data && \
-	rm -rf /usr/bin /usr/sbin
+	ln -s /node/.local/share/node /data
+
 
 USER node
 EXPOSE 30333 9933 9944

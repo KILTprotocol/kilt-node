@@ -1,5 +1,5 @@
 // KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2022 BOTLabs GmbH
+// Copyright (C) 2019-2023 BOTLabs GmbH
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -16,31 +16,25 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use codec::{Decode, Encode, MaxEncodedLen};
-use scale_info::TypeInfo;
+use frame_benchmarking::{benchmarks, impl_benchmark_test_suite};
+use frame_support::traits::EnsureOriginWithArg;
 
-use crate::migrations::MixedStorageKey;
+use crate::*;
 
-#[derive(Clone, Debug, Eq, PartialEq, Encode, Decode, MaxEncodedLen, TypeInfo, Default)]
-pub enum MigrationState {
-	/// The migration was successful.
-	Done,
+benchmarks! {
 
-	/// The storage has still the old layout, the migration wasn't started yet
-	#[default]
-	PreUpgrade,
+	set_configuration {
+		let new_config = Configuration { relay_block_strictly_increasing: true };
+		let origin = T::EnsureOrigin::try_successful_origin(&new_config).expect("Should build successful origin");
 
-	/// The upgrade is in progress and did migrate all storage up to the
-	/// `MixedStorageKey`.
-	Upgrading(MixedStorageKey),
+	}: _<T::RuntimeOrigin>(origin, new_config)
+	verify {
+		assert_eq!(ConfigurationStore::<T>::get(), Configuration { relay_block_strictly_increasing: true });
+	}
 }
 
-impl MigrationState {
-	pub fn is_done(&self) -> bool {
-		matches!(self, MigrationState::Done)
-	}
-
-	pub fn is_in_progress(&self) -> bool {
-		!matches!(self, MigrationState::Done)
-	}
+impl_benchmark_test_suite! {
+	Pallet,
+	crate::mock::runtime::ExtBuilder::default().build_with_keystore(),
+	crate::mock::runtime::Test
 }

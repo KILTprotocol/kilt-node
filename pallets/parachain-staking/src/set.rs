@@ -16,8 +16,8 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::{traits::Get, BoundedVec, DefaultNoBound, RuntimeDebug};
+use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_runtime::{traits::Zero, SaturatedConversion};
 use sp_std::{
@@ -39,6 +39,10 @@ impl<T: Ord + Clone, S: Get<u32>> OrderedSet<T, S> {
 	/// Create a new empty set.
 	pub fn new() -> Self {
 		Self(BoundedVec::default())
+	}
+
+	pub fn iter(&self) -> sp_std::slice::Iter<'_, T> {
+		self.0.iter()
 	}
 
 	/// Creates an ordered set from a `BoundedVec`.

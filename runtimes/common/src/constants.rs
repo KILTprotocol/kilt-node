@@ -57,6 +57,11 @@ pub const MICRO_KILT: Balance = 10u128.pow(9);
 
 pub const EXISTENTIAL_DEPOSIT: Balance = 10 * MILLI_KILT;
 
+/// Deposit that must be provided for each occupied storage item.
+pub const DEPOSIT_STORAGE_ITEM: Balance = 56 * MILLI_KILT;
+
+/// Deposit that must be provided for each occupied storage byte.
+pub const DEPOSIT_STORAGE_BYTE: Balance = 50 * MICRO_KILT;
 // 1 in 4 blocks (on average, not counting collisions) will be primary babe
 // blocks.
 pub const PRIMARY_PROBABILITY: (u64, u64) = (1, 4);
@@ -102,7 +107,7 @@ pub fn kilt_inflation_config() -> InflationInfo {
 /// Calculate the storage deposit based on the number of storage items and the
 /// combined byte size of those items.
 pub const fn deposit(items: u32, bytes: u32) -> Balance {
-	items as Balance * 56 * MILLI_KILT + (bytes as Balance) * 50 * MICRO_KILT
+	items as Balance * DEPOSIT_STORAGE_ITEM + (bytes as Balance) * DEPOSIT_STORAGE_BYTE
 }
 
 /// The size of an index in the index pallet.
@@ -139,6 +144,8 @@ pub mod attestation {
 }
 
 pub mod delegation {
+	use scale_info::TypeInfo;
+
 	use super::*;
 
 	pub const DELEGATION_DEPOSIT: Balance = KILT;
@@ -153,7 +160,7 @@ pub mod delegation {
 		pub const MaxParentChecks: u32 = MAX_PARENT_CHECKS;
 		pub const MaxRevocations: u32 = MAX_REVOCATIONS;
 		pub const MaxRemovals: u32 = MAX_REMOVALS;
-		#[derive(Clone)]
+		#[derive(Clone, TypeInfo)]
 		pub const MaxChildren: u32 = MAX_CHILDREN;
 		pub const DelegationDeposit: Balance = DELEGATION_DEPOSIT;
 	}
@@ -298,25 +305,56 @@ pub mod governance {
 		pub const TechnicalMotionDuration: BlockNumber = TECHNICAL_MOTION_DURATION;
 		pub const TechnicalMaxProposals: u32 = 100;
 		pub const TechnicalMaxMembers: u32 = 100;
+		// Tipper Group
+		pub const TipperMaxMembers: u32 = 21;
+	}
+}
+
+pub mod multisig {
+	use super::*;
+
+	parameter_types! {
+		pub const MaxSignitors: u32 = 64;
+		pub const DepositBase: Balance = DEPOSIT_STORAGE_ITEM;
+		pub const DepositFactor: Balance = DEPOSIT_STORAGE_BYTE;
 	}
 }
 
 pub mod did {
+	use parity_scale_codec::{Decode, Encode};
+	use scale_info::TypeInfo;
+
 	use super::*;
 
-	/// The size is checked in the runtime by a test.
-	pub const MAX_DID_BYTE_LENGTH: u32 = 9918;
+	///  Max length of a key (including its enum discriminants).
+	pub const MAX_KEY_LENGTH: u32 = 35;
 
-	pub const DID_DEPOSIT: Balance = deposit(2 + MAX_NUMBER_OF_SERVICES_PER_DID, MAX_DID_BYTE_LENGTH);
+	///  Max length of a single service entry.
+	/// It is the sum of:
+	/// - the maximum service ID length
+	/// - the maximum service type length * the maximum number of service types
+	///   for a single service
+	/// - the maximum service URL length * the maximum number of URLs for a
+	///   single service
+	/// - Additional padding bytes to make up for the different encoding size of
+	///   the different const values (each BoundedVec has additional bytes
+	///   encoded in compact form indicating the max length of the vec)
+	pub const MAX_SERVICE_ENDPOINT_BYTE_LENGTH: u32 = MAX_SERVICE_ID_LENGTH
+		+ MAX_NUMBER_OF_TYPES_PER_SERVICE * MAX_SERVICE_TYPE_LENGTH
+		+ MAX_NUMBER_OF_URLS_PER_SERVICE * MAX_SERVICE_URL_LENGTH
+		+ 8;
+
+	pub const DID_BASE_DEPOSIT: Balance = 2 * KILT;
+	pub const KEY_DEPOSIT: Balance = deposit(0, MAX_KEY_LENGTH);
+	pub const SERVICE_ENDPOINT_DEPOSIT: Balance = deposit(1, MAX_SERVICE_ENDPOINT_BYTE_LENGTH);
+
 	pub const DID_FEE: Balance = 50 * MILLI_KILT;
 	pub const MAX_KEY_AGREEMENT_KEYS: u32 = 10;
-	pub const MAX_URL_LENGTH: u32 = 200;
 	// This has been reduced from the previous 100, but it might still need
 	// fine-tuning depending on our needs.
 	pub const MAX_PUBLIC_KEYS_PER_DID: u32 = 20;
 	// At most the max number of keys - 1 for authentication
 	pub const MAX_TOTAL_KEY_AGREEMENT_KEYS: u32 = MAX_PUBLIC_KEYS_PER_DID - 1;
-	pub const MAX_ENDPOINT_URLS_COUNT: u32 = 3;
 	pub const MAX_BLOCKS_TX_VALIDITY: BlockNumber = HOURS;
 
 	pub const MAX_NUMBER_OF_SERVICES_PER_DID: u32 = 25;
@@ -324,20 +362,20 @@ pub mod did {
 	pub const MAX_SERVICE_TYPE_LENGTH: u32 = 50;
 	pub const MAX_NUMBER_OF_TYPES_PER_SERVICE: u32 = 1;
 	pub const MAX_SERVICE_URL_LENGTH: u32 = 200;
-	pub const MAX_NUMBER_OF_URLS_PER_SERVICE: u32 = 1;
+	pub const MAX_NUMBER_OF_URLS_PER_SERVICE: u32 = 2;
 
 	parameter_types! {
+		#[derive(Debug, Clone, Eq, PartialEq, TypeInfo, Decode, Encode)]
 		pub const MaxNewKeyAgreementKeys: u32 = MAX_KEY_AGREEMENT_KEYS;
-		#[derive(Debug, Clone, Eq, PartialEq)]
-		pub const MaxUrlLength: u32 = MAX_URL_LENGTH;
+		#[derive(Clone)]
 		pub const MaxPublicKeysPerDid: u32 = MAX_PUBLIC_KEYS_PER_DID;
 		#[derive(Debug, Clone, Eq, PartialEq)]
 		pub const MaxTotalKeyAgreementKeys: u32 = MAX_TOTAL_KEY_AGREEMENT_KEYS;
-		#[derive(Debug, Clone, Eq, PartialEq)]
-		pub const MaxEndpointUrlsCount: u32 = MAX_ENDPOINT_URLS_COUNT;
 		// Standalone block time is half the duration of a parachain block.
 		pub const MaxBlocksTxValidity: BlockNumber = MAX_BLOCKS_TX_VALIDITY;
-		pub const DidDeposit: Balance = DID_DEPOSIT;
+		pub const DidBaseDeposit: Balance = DID_BASE_DEPOSIT;
+		pub const KeyDeposit: Balance = KEY_DEPOSIT;
+		pub const ServiceEndpointDeposit: Balance = SERVICE_ENDPOINT_DEPOSIT;
 		pub const DidFee: Balance = DID_FEE;
 		pub const MaxNumberOfServicesPerDid: u32 = MAX_NUMBER_OF_SERVICES_PER_DID;
 		pub const MaxServiceIdLength: u32 = MAX_SERVICE_ID_LENGTH;
@@ -418,7 +456,7 @@ pub mod tips {
 	parameter_types! {
 		pub const MaximumReasonLength: u32 = 16384;
 		pub const TipCountdown: BlockNumber = DAYS;
-		pub const TipFindersFee: Percent = Percent::from_percent(20);
+		pub const TipFindersFee: Percent = Percent::from_percent(0);
 		pub const TipReportDepositBase: Balance = deposit(1, 1);
 	}
 }

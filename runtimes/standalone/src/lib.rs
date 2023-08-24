@@ -27,23 +27,24 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
-use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::{
 	construct_runtime, parameter_types,
-	traits::{Currency, InstanceFilter, KeyOwnerProofSystem},
+	traits::{Currency, Everything, InstanceFilter},
 	weights::{constants::RocksDbWeight, ConstantMultiplier, IdentityFee, Weight},
 };
 pub use frame_system::Call as SystemCall;
 use frame_system::EnsureRoot;
+use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 
 #[cfg(feature = "try-runtime")]
 use frame_try_runtime::UpgradeCheckSelect;
 
 use pallet_grandpa::{fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
 use pallet_transaction_payment::{CurrencyAdapter, FeeDetails};
+use scale_info::TypeInfo;
 use sp_api::impl_runtime_apis;
 use sp_consensus_aura::{ed25519::AuthorityId as AuraId, SlotDuration};
-use sp_core::{crypto::KeyTypeId, ConstU64, OpaqueMetadata};
+use sp_core::{ConstU64, OpaqueMetadata};
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
 	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, NumberFor, OpaqueKeys},
@@ -121,7 +122,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("mashnet-node"),
 	impl_name: create_runtime_str!("mashnet-node"),
 	authoring_version: 4,
-	spec_version: 11000,
+	spec_version: 11101,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 4,
@@ -144,26 +145,10 @@ parameter_types! {
 	pub const SS58Prefix: u8 = 38;
 }
 
-pub struct MigrationFilter;
-impl frame_support::traits::Contains<RuntimeCall> for MigrationFilter {
-	fn contains(c: &RuntimeCall) -> bool {
-		match c {
-			// Enable DidLookup migration calls for ongoing migration
-			RuntimeCall::DidLookup(pallet_did_lookup::Call::migrate { .. }) => {
-				DidLookup::migration_state().is_in_progress()
-			}
-			// For all other DidLookup calls, check whether migration is ongoing
-			RuntimeCall::DidLookup(_) => DidLookup::migration_state().is_done(),
-			// Enable all non-DidLookup calls
-			_ => true,
-		}
-	}
-}
-
 // Configure FRAME pallets to include in runtime.
 impl frame_system::Config for Runtime {
 	/// The basic call filter to use in dispatchable.
-	type BaseCallFilter = MigrationFilter;
+	type BaseCallFilter = Everything;
 	/// Block & extrinsics weights: base values and limits.
 	type BlockWeights = runtime_common::BlockWeights;
 	/// The maximum length of a block (in bytes).
@@ -228,20 +213,12 @@ impl pallet_aura::Config for Runtime {
 
 impl pallet_grandpa::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
-
-	type KeyOwnerProofSystem = ();
-
-	type KeyOwnerProof = <Self::KeyOwnerProofSystem as KeyOwnerProofSystem<(KeyTypeId, GrandpaId)>>::Proof;
-
-	type KeyOwnerIdentification =
-		<Self::KeyOwnerProofSystem as KeyOwnerProofSystem<(KeyTypeId, GrandpaId)>>::IdentificationTuple;
-
-	type HandleEquivocation = ();
-
+	type KeyOwnerProof = sp_core::Void;
 	type WeightInfo = ();
 	type MaxAuthorities = MaxAuthorities;
 	// This is a purely random value
 	type MaxSetIdSessionEntries = ConstU64<100>;
+	type EquivocationReportSystem = ();
 }
 
 parameter_types! {
@@ -328,7 +305,7 @@ parameter_types! {
 	pub const MaxParentChecks: u32 = constants::delegation::MAX_PARENT_CHECKS;
 	pub const MaxRevocations: u32 = constants::delegation::MAX_REVOCATIONS;
 	pub const MaxRemovals: u32 = constants::delegation::MAX_REMOVALS;
-	#[derive(Clone)]
+	#[derive(Clone, TypeInfo)]
 	pub const MaxChildren: u32 = constants::delegation::MAX_CHILDREN;
 	pub const DelegationDeposit: Balance = constants::delegation::DELEGATION_DEPOSIT;
 }
@@ -377,17 +354,14 @@ impl ctype::Config for Runtime {
 }
 
 parameter_types! {
+	#[derive(Debug, Clone, Eq, PartialEq, TypeInfo, Decode, Encode)]
 	pub const MaxNewKeyAgreementKeys: u32 = constants::did::MAX_KEY_AGREEMENT_KEYS;
-	#[derive(Debug, Clone, Eq, PartialEq)]
-	pub const MaxUrlLength: u32 = constants::did::MAX_URL_LENGTH;
+	#[derive(Clone)]
 	pub const MaxPublicKeysPerDid: u32 = constants::did::MAX_PUBLIC_KEYS_PER_DID;
 	#[derive(Debug, Clone, Eq, PartialEq)]
 	pub const MaxTotalKeyAgreementKeys: u32 = constants::did::MAX_TOTAL_KEY_AGREEMENT_KEYS;
-	#[derive(Debug, Clone, Eq, PartialEq)]
-	pub const MaxEndpointUrlsCount: u32 = constants::did::MAX_ENDPOINT_URLS_COUNT;
 	// Standalone block time is half the duration of a parachain block.
 	pub const MaxBlocksTxValidity: BlockNumber = constants::did::MAX_BLOCKS_TX_VALIDITY * 2;
-	pub const DidDeposit: Balance = constants::did::DID_DEPOSIT;
 	pub const DidFee: Balance = constants::did::DID_FEE;
 	pub const MaxNumberOfServicesPerDid: u32 = constants::did::MAX_NUMBER_OF_SERVICES_PER_DID;
 	pub const MaxServiceIdLength: u32 = constants::did::MAX_SERVICE_ID_LENGTH;
@@ -399,11 +373,13 @@ parameter_types! {
 
 impl did::Config for Runtime {
 	type DidIdentifier = DidIdentifier;
+	type KeyDeposit = constants::did::KeyDeposit;
+	type ServiceEndpointDeposit = constants::did::ServiceEndpointDeposit;
+	type BaseDeposit = constants::did::DidBaseDeposit;
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeCall = RuntimeCall;
 	type RuntimeOrigin = RuntimeOrigin;
 	type Currency = Balances;
-	type Deposit = DidDeposit;
 	type Fee = DidFee;
 	type FeeCollector = ToAuthor<Runtime>;
 
@@ -490,8 +466,6 @@ impl pallet_utility::Config for Runtime {
 	type PalletsOrigin = OriginCaller;
 	type WeightInfo = ();
 }
-
-impl pallet_randomness_collective_flip::Config for Runtime {}
 
 impl public_credentials::Config for Runtime {
 	type AccessControl = PalletAuthorize<DelegationAc<Runtime>>;
@@ -669,6 +643,16 @@ impl pallet_proxy::Config for Runtime {
 	type WeightInfo = ();
 }
 
+impl pallet_multisig::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type RuntimeCall = RuntimeCall;
+	type Currency = Balances;
+	type DepositBase = constants::multisig::DepositBase;
+	type DepositFactor = constants::multisig::DepositFactor;
+	type MaxSignatories = constants::multisig::MaxSignitors;
+	type WeightInfo = ();
+}
+
 construct_runtime!(
 	pub enum Runtime where
 		Block = Block,
@@ -676,7 +660,7 @@ construct_runtime!(
 		UncheckedExtrinsic = UncheckedExtrinsic
 	{
 		System: frame_system = 0,
-		RandomnessCollectiveFlip: pallet_randomness_collective_flip = 1,
+		// DELETED: RandomnessCollectiveFlip: pallet_insecure_randomness_collective_flip = 1,
 
 		Timestamp: pallet_timestamp = 2,
 		Aura: pallet_aura = 3,
@@ -694,8 +678,6 @@ construct_runtime!(
 
 		Session: pallet_session = 15,
 		Authorship: pallet_authorship = 16,
-
-		// // Governance stuff; uncallable initially.
 		// Democracy: pallet_democracy = 25,
 		// Council: pallet_collective = 26,
 		// TechnicalCommittee: pallet_collective = 27,
@@ -703,7 +685,6 @@ construct_runtime!(
 		// TechnicalMembership: pallet_membership = 29,
 		// Treasury: pallet_treasury = 30,
 
-		// // System scheduler.
 		// Scheduler: pallet_scheduler = 32,
 
 		// DELETED: Vesting: pallet_vesting = 33,
@@ -712,8 +693,11 @@ construct_runtime!(
 		// DELETED CrowdloanContributors: 36,
 
 		Proxy: pallet_proxy::{Pallet, Call, Storage, Event<T>} = 37,
+
 		Web3Names: pallet_web3_names = 38,
 		PublicCredentials: public_credentials = 39,
+
+		Multisig: pallet_multisig = 47,
 	}
 );
 
@@ -798,21 +782,25 @@ pub type Executive = frame_executive::Executive<
 	frame_system::ChainContext<Runtime>,
 	Runtime,
 	AllPalletsWithSystem,
-	pallet_did_lookup::migrations::EthereumMigration<Runtime>,
+	pallet_did_lookup::migrations::CleanupMigration<Runtime>,
 >;
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benches {
 	frame_benchmarking::define_benchmarks!(
-		// KILT
-		[attestation, Attestation]
+		[frame_system, SystemBench::<Runtime>]
+		[pallet_timestamp, Timestamp]
+		[pallet_indices, Indices]
+		[pallet_balances, Balances]
 		[ctype, Ctype]
+		[attestation, Attestation]
 		[delegation, Delegation]
 		[did, Did]
 		[pallet_did_lookup, DidLookup]
+		[pallet_utility, Utility]
+		[pallet_proxy, Proxy]
 		[pallet_web3_names, Web3Names]
 		[public_credentials, PublicCredentials]
-		// Substrate
 		[frame_benchmarking::baseline, Baseline::<Runtime>]
 		[frame_system, SystemBench::<Runtime>]
 		[pallet_balances, Balances]
@@ -820,6 +808,7 @@ mod benches {
 		[pallet_timestamp, Timestamp]
 		[pallet_utility, Utility]
 		[pallet_proxy, Proxy]
+		[pallet_multisig, Multisig]
 	);
 }
 
@@ -846,7 +835,7 @@ impl_runtime_apis! {
 
 	impl frame_system_rpc_runtime_api::AccountNonceApi<Block, AccountId, Index> for Runtime {
 		fn account_nonce(account: AccountId) -> Index {
-			frame_system::Pallet::<Runtime>::account_nonce(&account)
+			frame_system::Pallet::<Runtime>::account_nonce(account)
 		}
 	}
 

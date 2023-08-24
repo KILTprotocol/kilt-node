@@ -42,7 +42,7 @@ fn check_successful_ctype_creation() {
 				DoubleOrigin(deposit_owner.clone(), creator.clone()).into(),
 				ctype
 			));
-			let stored_ctype_creator = Ctype::ctypes(&ctype_hash).expect("CType hash should be present on chain.");
+			let stored_ctype_creator = Ctype::ctypes(ctype_hash).expect("CType hash should be present on chain.");
 
 			// Verify the CType has the right owner and block number
 			assert_eq!(

@@ -23,6 +23,8 @@ use frame_support::{
 };
 use frame_system::EnsureSigned;
 use pallet_balances::NegativeImbalance;
+use parity_scale_codec::{Decode, Encode};
+use scale_info::TypeInfo;
 use sp_core::{ecdsa, ed25519, sr25519, Pair};
 use sp_runtime::{
 	testing::{Header, H256},
@@ -59,6 +61,8 @@ pub(crate) type DidIdentifier = AccountId;
 pub(crate) type CtypeHash = Hash;
 
 const MICRO_KILT: Balance = 10u128.pow(9);
+const MILLI_KILT: Balance = 10u128.pow(12);
+const KILT: Balance = 10u128.pow(15);
 
 frame_support::construct_runtime!(
 	pub enum Test where
@@ -107,16 +111,14 @@ impl frame_system::Config for Test {
 }
 
 parameter_types! {
+	#[derive(Clone, TypeInfo, Debug, PartialEq, Eq, Encode, Decode)]
 	pub const MaxNewKeyAgreementKeys: u32 = 10u32;
-	#[derive(Debug, Clone, Eq, PartialEq)]
-	pub const MaxUrlLength: u32 = 200u32;
 	#[derive(Debug, Clone, Eq, PartialEq)]
 	pub const MaxTotalKeyAgreementKeys: u32 = 10u32;
 	// IMPORTANT: Needs to be at least MaxTotalKeyAgreementKeys + 3 (auth, delegation, attestation keys) for benchmarks!
 	#[derive(Debug, Clone)]
 	pub const MaxPublicKeysPerDid: u32 = 13u32;
 	pub const MaxBlocksTxValidity: u64 = 300u64;
-	pub const Deposit: Balance = 10 * MICRO_KILT;
 	pub const DidFee: Balance = MICRO_KILT;
 	pub const MaxNumberOfServicesPerDid: u32 = 25u32;
 	pub const MaxServiceIdLength: u32 = 50u32;
@@ -124,6 +126,9 @@ parameter_types! {
 	pub const MaxServiceUrlLength: u32 = 100u32;
 	pub const MaxNumberOfTypesPerService: u32 = 1u32;
 	pub const MaxNumberOfUrlsPerService: u32 = 1u32;
+	pub const KeyDeposit :Balance = 32 * MICRO_KILT;
+	pub const ServiceEndpointDeposit :Balance = 50 * MICRO_KILT;
+	pub const BaseDeposit: Balance = 100 * MILLI_KILT;
 }
 
 pub struct ToAccount<R>(sp_std::marker::PhantomData<R>);
@@ -143,10 +148,12 @@ impl Config for Test {
 	type RuntimeOrigin = RuntimeOrigin;
 	type RuntimeCall = RuntimeCall;
 	type EnsureOrigin = EnsureSigned<DidIdentifier>;
+	type KeyDeposit = KeyDeposit;
+	type ServiceEndpointDeposit = KeyDeposit;
 	type OriginSuccess = AccountId;
 	type RuntimeEvent = ();
 	type Currency = Balances;
-	type Deposit = Deposit;
+	type BaseDeposit = BaseDeposit;
 	type Fee = DidFee;
 	type FeeCollector = ToAccount<Test>;
 	type MaxNewKeyAgreementKeys = MaxNewKeyAgreementKeys;
@@ -203,6 +210,8 @@ impl ctype::Config for Test {
 	type Fee = Fee;
 	type FeeCollector = ();
 }
+
+pub(crate) const DEFAULT_BALANCE: Balance = 10 * KILT;
 
 pub(crate) const ACCOUNT_00: AccountId = AccountId::new([1u8; 32]);
 pub(crate) const ACCOUNT_01: AccountId = AccountId::new([2u8; 32]);
@@ -499,6 +508,13 @@ impl ExtBuilder {
 		});
 
 		ext
+	}
+
+	pub fn build_and_execute_with_sanity_tests(self, ext: Option<sp_io::TestExternalities>, test: impl FnOnce()) {
+		self.build(ext).execute_with(|| {
+			test();
+			crate::try_state::do_try_state::<Test>().expect("Sanity test for did failed.");
+		})
 	}
 
 	#[cfg(feature = "runtime-benchmarks")]

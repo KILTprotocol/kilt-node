@@ -18,3 +18,5 @@ If necessary provide information about dependencies (specific configuration, bra
   - [ ] If not, I have left a well-balanced amount of inline comments
 - [ ] I have [left the code in a better state](https://deviq.com/principles/boy-scout-rule)
 - [ ] I have documented the changes (where applicable)
+    * Either PR or Ticket to update [the Docs](https://github.com/KILTprotocol/docs)
+    * Link the PR/Ticket here

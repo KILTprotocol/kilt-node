@@ -17,7 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 ///! This module contains utilities for testing.
-use codec::{Decode, Encode, MaxEncodedLen};
+use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_core::sr25519;
 use sp_runtime::AccountId32;
@@ -31,8 +31,8 @@ use sp_runtime::AccountId32;
 pub mod mock_origin {
 	use sp_std::marker::PhantomData;
 
-	use codec::{Decode, Encode, MaxEncodedLen};
 	use frame_support::{traits::EnsureOrigin, Parameter};
+	use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 	use scale_info::TypeInfo;
 	use sp_runtime::AccountId32;
 

@@ -1,0 +1,39 @@
+Description: Tests the basics of the network
+Network: ./network-config.toml
+Creds: config
+
+
+# check if parachains is producing blocks
+
+kilt-node-bob: log line contains regex "\[Parachain\] .* finalized #\d+" within 120 seconds
+kilt-node-alice: log line contains regex "\[Parachain\] .* finalized #\d+" within 120 seconds
+kilt-node-dave: log line contains regex "\[Parachain\] .* finalized #\d+" within 120 seconds
+kilt-node-charlie: log line contains regex "\[Parachain\] .* finalized #\d+" within 120 seconds
+
+#check if relay chain is producing blocks
+
+kilt-node-bob: log line contains regex "\[Relaychain\] .* finalized #\d+" within 120 seconds
+kilt-node-alice: log line contains regex "\[Relaychain\] .* finalized #\d+" within 120 seconds
+kilt-node-dave: log line contains regex "\[Relaychain\] .* finalized #\d+" within 120 seconds
+kilt-node-charlie: log line contains regex "\[Relaychain\] .* finalized #\d+" within 120 seconds
+
+# check if peer connections are established in the parachain
+
+kilt-node-bob: reports peers count is at least 2
+kilt-node-alice: reports peers count is at least 2
+kilt-node-charlie: reports peers count is at least 2
+kilt-node-dave: reports peers count is at least 2
+
+# check if peer connections are established in the relaychain
+
+alice: reports peers count is at least 1
+bob: reports peers count is at least 1
+
+
+# check if an error occurred
+
+alice: count of log lines containing "error" is 0 within 10 seconds
+kilt-node-bob: count of log lines containing "error" is 0 within 10 seconds
+kilt-node-charlie: count of log lines containing "error" is 0 within 10 seconds
+kilt-node-alice: count of log lines containing "error" is 0 within 10 seconds
+kilt-node-dave: count of log lines containing "error" is 0 within 10 seconds

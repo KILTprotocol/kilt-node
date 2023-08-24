@@ -70,6 +70,9 @@ pub mod mock;
 #[cfg(feature = "runtime-benchmarks")]
 pub mod benchmarking;
 
+#[cfg(any(feature = "try-runtime", test))]
+mod try_state;
+
 mod access_control;
 #[cfg(test)]
 mod tests;
@@ -112,6 +115,9 @@ pub mod pallet {
 
 	pub(crate) type CurrencyOf<T> = <T as Config>::Currency;
 
+	pub type AttestationDetailsOf<T> =
+		AttestationDetails<CtypeHashOf<T>, AttesterOf<T>, AuthorizationIdOf<T>, AccountIdOf<T>, BalanceOf<T>>;
+
 	#[pallet::config]
 	pub trait Config: frame_system::Config + ctype::Config {
 		type EnsureOrigin: EnsureOrigin<
@@ -143,19 +149,23 @@ pub mod pallet {
 	}
 
 	#[pallet::pallet]
-	#[pallet::generate_store(pub(super) trait Store)]
 	#[pallet::storage_version(STORAGE_VERSION)]
 	pub struct Pallet<T>(_);
 
 	#[pallet::hooks]
-	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {}
+	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+		#[cfg(feature = "try-runtime")]
+		fn try_state(_n: BlockNumberFor<T>) -> Result<(), &'static str> {
+			crate::try_state::do_try_state::<T>()
+		}
+	}
 
 	/// Attestations stored on chain.
 	///
 	/// It maps from a claim hash to the full attestation.
 	#[pallet::storage]
 	#[pallet::getter(fn attestations)]
-	pub type Attestations<T> = StorageMap<_, Blake2_128Concat, ClaimHashOf<T>, AttestationDetails<T>>;
+	pub type Attestations<T> = StorageMap<_, Blake2_128Concat, ClaimHashOf<T>, AttestationDetailsOf<T>>;
 
 	/// Delegated attestations stored on chain.
 	///
@@ -264,8 +274,6 @@ pub mod pallet {
 
 			let deposit = kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(payer, deposit_amount)?;
 
-			// *** No Fail beyond this point ***
-
 			log::debug!("insert Attestation");
 
 			Attestations::<T>::insert(
@@ -331,8 +339,6 @@ pub mod pallet {
 				)?;
 			}
 
-			// *** No Fail beyond this point ***
-
 			log::debug!("revoking Attestation");
 			Attestations::<T>::insert(
 				claim_hash,
@@ -389,8 +395,6 @@ pub mod pallet {
 				)?;
 			}
 
-			// *** No Fail beyond this point ***
-
 			log::debug!("removing Attestation");
 
 			Self::remove_attestation(attestation, claim_hash);
@@ -415,8 +419,6 @@ pub mod pallet {
 			let attestation = Attestations::<T>::get(claim_hash).ok_or(Error::<T>::NotFound)?;
 
 			ensure!(attestation.deposit.owner == who, Error::<T>::NotAuthorized);
-
-			// *** No Fail beyond this point ***
 
 			log::debug!("removing Attestation");
 
@@ -466,7 +468,7 @@ pub mod pallet {
 	}
 
 	impl<T: Config> Pallet<T> {
-		fn remove_attestation(attestation: AttestationDetails<T>, claim_hash: ClaimHashOf<T>) {
+		fn remove_attestation(attestation: AttestationDetailsOf<T>, claim_hash: ClaimHashOf<T>) {
 			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&attestation.deposit);
 			Attestations::<T>::remove(claim_hash);
 			if let Some(authorization_id) = &attestation.authorization_id {

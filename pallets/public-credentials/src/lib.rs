@@ -39,8 +39,11 @@ mod benchmarking;
 
 #[cfg(any(test, feature = "runtime-benchmarks"))]
 mod mock;
+
 #[cfg(test)]
 mod tests;
+#[cfg(any(test, feature = "try-runtime"))]
+mod try_state;
 
 pub use crate::{
 	access_control::AccessControl as PublicCredentialsAccessControl, credentials::*, default_weights::WeightInfo,
@@ -154,7 +157,6 @@ pub mod pallet {
 	}
 
 	#[pallet::pallet]
-	#[pallet::generate_store(pub(super) trait Store)]
 	#[pallet::storage_version(STORAGE_VERSION)]
 	pub struct Pallet<T>(_);
 
@@ -229,6 +231,14 @@ pub mod pallet {
 		Internal,
 	}
 
+	#[pallet::hooks]
+	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+		#[cfg(feature = "try-runtime")]
+		fn try_state(_n: BlockNumberFor<T>) -> Result<(), &'static str> {
+			crate::try_state::do_try_state::<T>()
+		}
+	}
+
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
 		/// Register a new public credential on chain.
@@ -287,8 +297,6 @@ pub mod pallet {
 
 			let deposit = kilt_support::reserve_deposit::<T::AccountId, CurrencyOf<T>>(payer, deposit_amount)
 				.map_err(|_| Error::<T>::UnableToPayFees)?;
-
-			// *** No Fail beyond this point ***
 
 			let block_number = frame_system::Pallet::<T>::block_number();
 

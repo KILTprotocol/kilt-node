@@ -16,12 +16,12 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use codec::MaxEncodedLen;
 use frame_support::{
 	codec::{Decode, Encode},
 	traits::EnsureOrigin,
 };
 use kilt_support::traits::CallSources;
+use parity_scale_codec::MaxEncodedLen;
 use scale_info::TypeInfo;
 use sp_runtime::RuntimeDebug;
 use sp_std::marker::PhantomData;

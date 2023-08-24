@@ -20,6 +20,9 @@
 pub mod deposit;
 pub use deposit::{free_deposit, reserve_deposit};
 
+#[cfg(any(feature = "try-runtime", test))]
+pub mod test_utils;
+
 #[cfg(any(feature = "runtime-benchmarks", feature = "mock"))]
 pub mod mock;
 pub mod signature;

@@ -16,8 +16,8 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use codec::Encode;
 use frame_support::traits::Get;
+use parity_scale_codec::Encode;
 use sp_runtime::traits::Hash;
 
 use kilt_support::deposit::Deposit;
@@ -94,13 +94,13 @@ pub use crate::mock::runtime::*;
 pub(crate) mod runtime {
 	use super::*;
 
-	use codec::{Decode, Encode, MaxEncodedLen};
 	use frame_support::{
 		dispatch::Weight,
 		traits::{ConstU128, ConstU16, ConstU32, ConstU64},
 		weights::constants::RocksDbWeight,
 	};
 	use frame_system::EnsureSigned;
+	use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 	use scale_info::TypeInfo;
 	use sp_core::{sr25519, Pair};
 	use sp_runtime::{
@@ -441,6 +441,13 @@ pub(crate) mod runtime {
 			});
 
 			ext
+		}
+
+		pub fn build_and_execute_with_sanity_tests(self, test: impl FnOnce()) {
+			self.build().execute_with(|| {
+				test();
+				crate::try_state::do_try_state::<Test>().expect("Sanity test for public credential failed.");
+			})
 		}
 
 		#[cfg(feature = "runtime-benchmarks")]

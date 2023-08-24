@@ -23,7 +23,7 @@ pub use v1::*;
 pub mod v1 {
 	use crate::errors::asset::{Error, IdentifierError, NamespaceError, ReferenceError};
 
-	use codec::{Decode, Encode, MaxEncodedLen};
+	use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 	use scale_info::TypeInfo;
 
 	use core::{format_args, str};
@@ -34,32 +34,32 @@ pub mod v1 {
 
 	/// The minimum length, including separator symbols, an asset ID can have
 	/// according to the minimum values defined by the CAIP-19 definition.
-	pub const MINIMUM_ASSET_ID_LENGTH: usize = MINIMUM_NAMESPACE_LENGTH + 1 + MINIMUM_REFERENCE_LENGTH;
+	pub const MINIMUM_ASSET_ID_LENGTH: usize = MINIMUM_ASSET_NAMESPACE_LENGTH + 1 + MINIMUM_ASSET_REFERENCE_LENGTH;
 	/// The maximum length, including separator symbols, an asset ID can have
 	/// according to the minimum values defined by the CAIP-19 definition.
 	pub const MAXIMUM_ASSET_ID_LENGTH: usize =
-		MAXIMUM_NAMESPACE_LENGTH + 1 + MAXIMUM_REFERENCE_LENGTH + 1 + MAXIMUM_IDENTIFIER_LENGTH;
+		MAXIMUM_NAMESPACE_LENGTH + 1 + MAXIMUM_ASSET_REFERENCE_LENGTH + 1 + MAXIMUM_ASSET_IDENTIFIER_LENGTH;
 
 	/// The minimum length of a valid asset ID namespace.
-	pub const MINIMUM_NAMESPACE_LENGTH: usize = 3;
+	pub const MINIMUM_ASSET_NAMESPACE_LENGTH: usize = 3;
 	/// The maximum length of a valid asset ID namespace.
 	pub const MAXIMUM_NAMESPACE_LENGTH: usize = 8;
-	const MAXIMUM_NAMESPACE_LENGTH_U32: u32 = MAXIMUM_NAMESPACE_LENGTH as u32;
+	const MAXIMUM_ASSET_NAMESPACE_LENGTH_U32: u32 = MAXIMUM_NAMESPACE_LENGTH as u32;
 	/// The minimum length of a valid asset ID reference.
-	pub const MINIMUM_REFERENCE_LENGTH: usize = 1;
+	pub const MINIMUM_ASSET_REFERENCE_LENGTH: usize = 1;
 	/// The maximum length of a valid asset ID reference.
-	pub const MAXIMUM_REFERENCE_LENGTH: usize = 128;
-	const MAXIMUM_REFERENCE_LENGTH_U32: u32 = MAXIMUM_REFERENCE_LENGTH as u32;
+	pub const MAXIMUM_ASSET_REFERENCE_LENGTH: usize = 128;
+	const MAXIMUM_ASSET_REFERENCE_LENGTH_U32: u32 = MAXIMUM_ASSET_REFERENCE_LENGTH as u32;
 	/// The minimum length of a valid asset ID identifier.
-	pub const MINIMUM_IDENTIFIER_LENGTH: usize = 1;
+	pub const MINIMUM_ASSET_IDENTIFIER_LENGTH: usize = 1;
 	/// The maximum length of a valid asset ID reference.
-	pub const MAXIMUM_IDENTIFIER_LENGTH: usize = 78;
-	const MAXIMUM_IDENTIFIER_LENGTH_U32: u32 = MAXIMUM_IDENTIFIER_LENGTH as u32;
+	pub const MAXIMUM_ASSET_IDENTIFIER_LENGTH: usize = 78;
+	const MAXIMUM_ASSET_IDENTIFIER_LENGTH_U32: u32 = MAXIMUM_ASSET_IDENTIFIER_LENGTH as u32;
 
 	/// Separator between asset namespace and asset reference.
-	const NAMESPACE_REFERENCE_SEPARATOR: u8 = b':';
+	const ASSET_NAMESPACE_REFERENCE_SEPARATOR: u8 = b':';
 	/// Separator between asset reference and asset identifier.
-	const REFERENCE_IDENTIFIER_SEPARATOR: u8 = b':';
+	const ASSET_REFERENCE_IDENTIFIER_SEPARATOR: u8 = b':';
 
 	/// Namespace for Slip44 assets.
 	pub const SLIP44_NAMESPACE: &[u8] = b"slip44";
@@ -177,7 +177,7 @@ pub mod v1 {
 						str::from_utf8(SLIP44_NAMESPACE)
 							.expect("Conversion of Slip44 namespace to string should never fail.")
 					)?;
-					write!(f, "{}", char::from(NAMESPACE_REFERENCE_SEPARATOR))?;
+					write!(f, "{}", char::from(ASSET_NAMESPACE_REFERENCE_SEPARATOR))?;
 					reference.fmt(f)?;
 				}
 				Self::Erc20(reference) => {
@@ -187,7 +187,7 @@ pub mod v1 {
 						str::from_utf8(ERC20_NAMESPACE)
 							.expect("Conversion of Erc20 namespace to string should never fail.")
 					)?;
-					write!(f, "{}", char::from(NAMESPACE_REFERENCE_SEPARATOR))?;
+					write!(f, "{}", char::from(ASSET_NAMESPACE_REFERENCE_SEPARATOR))?;
 					reference.fmt(f)?;
 				}
 				Self::Erc721(EvmSmartContractNonFungibleReference(reference, identifier)) => {
@@ -197,10 +197,10 @@ pub mod v1 {
 						str::from_utf8(ERC721_NAMESPACE)
 							.expect("Conversion of Erc721 namespace to string should never fail.")
 					)?;
-					write!(f, "{}", char::from(NAMESPACE_REFERENCE_SEPARATOR))?;
+					write!(f, "{}", char::from(ASSET_NAMESPACE_REFERENCE_SEPARATOR))?;
 					reference.fmt(f)?;
 					if let Some(id) = identifier {
-						write!(f, "{}", char::from(REFERENCE_IDENTIFIER_SEPARATOR))?;
+						write!(f, "{}", char::from(ASSET_REFERENCE_IDENTIFIER_SEPARATOR))?;
 						id.fmt(f)?;
 					}
 				}
@@ -211,10 +211,10 @@ pub mod v1 {
 						str::from_utf8(ERC1155_NAMESPACE)
 							.expect("Conversion of Erc1155 namespace to string should never fail.")
 					)?;
-					write!(f, "{}", char::from(NAMESPACE_REFERENCE_SEPARATOR))?;
+					write!(f, "{}", char::from(ASSET_NAMESPACE_REFERENCE_SEPARATOR))?;
 					reference.fmt(f)?;
 					if let Some(id) = identifier {
-						write!(f, "{}", char::from(REFERENCE_IDENTIFIER_SEPARATOR))?;
+						write!(f, "{}", char::from(ASSET_REFERENCE_IDENTIFIER_SEPARATOR))?;
 						id.fmt(f)?;
 					}
 				}
@@ -224,10 +224,10 @@ pub mod v1 {
 					id,
 				}) => {
 					namespace.fmt(f)?;
-					write!(f, "{}", char::from(NAMESPACE_REFERENCE_SEPARATOR))?;
+					write!(f, "{}", char::from(ASSET_NAMESPACE_REFERENCE_SEPARATOR))?;
 					reference.fmt(f)?;
 					if let Some(identifier) = id {
-						write!(f, "{}", char::from(REFERENCE_IDENTIFIER_SEPARATOR))?;
+						write!(f, "{}", char::from(ASSET_REFERENCE_IDENTIFIER_SEPARATOR))?;
 						identifier.fmt(f)?;
 					}
 				}
@@ -238,7 +238,7 @@ pub mod v1 {
 
 	const fn check_namespace_length_bounds(namespace: &[u8]) -> Result<(), NamespaceError> {
 		let namespace_length = namespace.len();
-		if namespace_length < MINIMUM_NAMESPACE_LENGTH {
+		if namespace_length < MINIMUM_ASSET_NAMESPACE_LENGTH {
 			Err(NamespaceError::TooShort)
 		} else if namespace_length > MAXIMUM_NAMESPACE_LENGTH {
 			Err(NamespaceError::TooLong)
@@ -249,9 +249,9 @@ pub mod v1 {
 
 	const fn check_reference_length_bounds(reference: &[u8]) -> Result<(), ReferenceError> {
 		let reference_length = reference.len();
-		if reference_length < MINIMUM_REFERENCE_LENGTH {
+		if reference_length < MINIMUM_ASSET_REFERENCE_LENGTH {
 			Err(ReferenceError::TooShort)
-		} else if reference_length > MAXIMUM_REFERENCE_LENGTH {
+		} else if reference_length > MAXIMUM_ASSET_REFERENCE_LENGTH {
 			Err(ReferenceError::TooLong)
 		} else {
 			Ok(())
@@ -260,9 +260,9 @@ pub mod v1 {
 
 	const fn check_identifier_length_bounds(identifier: &[u8]) -> Result<(), IdentifierError> {
 		let identifier_length = identifier.len();
-		if identifier_length < MINIMUM_IDENTIFIER_LENGTH {
+		if identifier_length < MINIMUM_ASSET_IDENTIFIER_LENGTH {
 			Err(IdentifierError::TooShort)
-		} else if identifier_length > MAXIMUM_IDENTIFIER_LENGTH {
+		} else if identifier_length > MAXIMUM_ASSET_IDENTIFIER_LENGTH {
 			Err(IdentifierError::TooLong)
 		} else {
 			Ok(())
@@ -272,12 +272,12 @@ pub mod v1 {
 	/// Split the given input into its components, i.e., namespace, reference,
 	/// and identifier, if the proper separators are found.
 	fn split_components(input: &[u8]) -> AssetComponents {
-		let mut split = input.splitn(2, |c| *c == NAMESPACE_REFERENCE_SEPARATOR);
+		let mut split = input.splitn(2, |c| *c == ASSET_NAMESPACE_REFERENCE_SEPARATOR);
 		let (namespace, reference) = (split.next(), split.next());
 
 		// Split the remaining reference to extract the identifier, if present
 		let (reference, identifier) = if let Some(r) = reference {
-			let mut split = r.splitn(2, |c| *c == REFERENCE_IDENTIFIER_SEPARATOR);
+			let mut split = r.splitn(2, |c| *c == ASSET_REFERENCE_IDENTIFIER_SEPARATOR);
 			// Split the reference further, if present
 			(split.next(), split.next())
 		} else {
@@ -442,7 +442,7 @@ pub mod v1 {
 	/// identifier without applying any special parsing/decoding logic.
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
 	pub struct EvmSmartContractNonFungibleIdentifier(
-		pub(crate) BoundedVec<u8, ConstU32<MAXIMUM_IDENTIFIER_LENGTH_U32>>,
+		pub(crate) BoundedVec<u8, ConstU32<MAXIMUM_ASSET_IDENTIFIER_LENGTH_U32>>,
 	);
 
 	impl EvmSmartContractNonFungibleIdentifier {
@@ -456,7 +456,7 @@ pub mod v1 {
 			check_identifier_length_bounds(input)?;
 
 			input.iter().try_for_each(|c| {
-				if !(b'0'..=b'9').contains(c) {
+				if !c.is_ascii_digit() {
 					log::trace!("Provided input has some invalid values as expected by a smart contract-based asset identifier.");
 					Err(IdentifierError::InvalidFormat)
 				} else {
@@ -542,7 +542,7 @@ pub mod v1 {
 	/// It stores the provided UTF8-encoded namespace without trying to apply
 	/// any parsing/decoding logic.
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
-	pub struct GenericAssetNamespace(pub(crate) BoundedVec<u8, ConstU32<MAXIMUM_NAMESPACE_LENGTH_U32>>);
+	pub struct GenericAssetNamespace(pub(crate) BoundedVec<u8, ConstU32<MAXIMUM_ASSET_NAMESPACE_LENGTH_U32>>);
 
 	impl GenericAssetNamespace {
 		/// Parse a generic UTF8-encoded asset namespace, failing if the input
@@ -591,7 +591,7 @@ pub mod v1 {
 
 	/// A generic asset reference as defined in the [CAIP-19 spec](https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-19.md).
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
-	pub struct GenericAssetReference(pub(crate) BoundedVec<u8, ConstU32<MAXIMUM_REFERENCE_LENGTH_U32>>);
+	pub struct GenericAssetReference(pub(crate) BoundedVec<u8, ConstU32<MAXIMUM_ASSET_REFERENCE_LENGTH_U32>>);
 
 	impl GenericAssetReference {
 		/// Parse a generic UTF8-encoded asset reference, failing if the input
@@ -640,7 +640,7 @@ pub mod v1 {
 
 	/// A generic asset identifier as defined in the [CAIP-19 spec](https://github.com/ChainAgnostic/CAIPs/blob/master/CAIPs/caip-19.md).
 	#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
-	pub struct GenericAssetIdentifier(pub(crate) BoundedVec<u8, ConstU32<MAXIMUM_IDENTIFIER_LENGTH_U32>>);
+	pub struct GenericAssetIdentifier(pub(crate) BoundedVec<u8, ConstU32<MAXIMUM_ASSET_IDENTIFIER_LENGTH_U32>>);
 
 	impl GenericAssetIdentifier {
 		/// Parse a generic UTF8-encoded asset identifier, failing if the input

@@ -21,11 +21,11 @@ use crate::{
 	cli::{Cli, RelayChainCli, Subcommand},
 	service::{new_partial, PeregrineRuntimeExecutor, SpiritnetRuntimeExecutor},
 };
-use codec::Encode;
 use cumulus_client_cli::generate_genesis_block;
 use cumulus_primitives_core::ParaId;
 use frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE};
 use log::{info, warn};
+use parity_scale_codec::Encode;
 #[cfg(feature = "try-runtime")]
 use polkadot_service::TaskManager;
 use runtime_common::Block;
@@ -343,11 +343,15 @@ pub fn run() -> Result<()> {
 		}
 		#[cfg(feature = "try-runtime")]
 		Some(Subcommand::TryRuntime(cmd)) => {
+			use runtime_common::constants::MILLISECS_PER_BLOCK;
 			use sc_executor::{sp_wasm_interface::ExtendedHostFunctions, NativeExecutionDispatch};
+			use try_runtime_cli::block_building_info::timestamp_with_aura_info;
+
 			let runner = cli.create_runner(cmd)?;
 			let registry = &runner.config().prometheus_config.as_ref().map(|cfg| &cfg.registry);
 			let task_manager = TaskManager::new(runner.config().tokio_handle.clone(), *registry)
 				.map_err(|e| format!("Error: {:?}", e))?;
+			let info_provider = timestamp_with_aura_info(MILLISECS_PER_BLOCK);
 
 			if runner.config().chain_spec.is_peregrine() {
 				runner.async_run(|_| {
@@ -355,7 +359,7 @@ pub fn run() -> Result<()> {
 						cmd.run::<Block, ExtendedHostFunctions<
 							sp_io::SubstrateHostFunctions,
 							<PeregrineRuntimeExecutor as NativeExecutionDispatch>::ExtendHostFunctions,
-						>>(),
+						>, _>(Some(info_provider)),
 						task_manager,
 					))
 				})
@@ -365,7 +369,7 @@ pub fn run() -> Result<()> {
 						cmd.run::<Block, ExtendedHostFunctions<
 							sp_io::SubstrateHostFunctions,
 							<SpiritnetRuntimeExecutor as NativeExecutionDispatch>::ExtendHostFunctions,
-						>>(),
+						>, _>(Some(info_provider)),
 						task_manager,
 					))
 				})

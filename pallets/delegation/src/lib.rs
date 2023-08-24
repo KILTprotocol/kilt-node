@@ -76,9 +76,11 @@ pub mod benchmarking;
 #[cfg(test)]
 mod tests;
 
+#[cfg(any(feature = "try-runtime", test))]
+mod try_state;
+
 pub use crate::{access_control::DelegationAc, default_weights::WeightInfo, delegation_hierarchy::*, pallet::*};
 
-use codec::Encode;
 use frame_support::{
 	dispatch::DispatchResult,
 	ensure,
@@ -86,6 +88,7 @@ use frame_support::{
 	traits::{Get, ReservableCurrency},
 };
 use kilt_support::traits::StorageDepositCollector;
+use parity_scale_codec::Encode;
 use sp_runtime::{traits::Hash, DispatchError};
 use sp_std::{marker::PhantomData, vec::Vec};
 
@@ -129,6 +132,16 @@ pub mod pallet {
 	pub(crate) type BalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::Balance;
 
 	pub(crate) type CurrencyOf<T> = <T as Config>::Currency;
+
+	pub(crate) type DelegationDetailsOf<T> = DelegationDetails<DelegatorIdOf<T>>;
+
+	pub(crate) type DelegationNodeOf<T> = DelegationNode<
+		DelegationNodeIdOf<T>,
+		<T as Config>::MaxChildren,
+		DelegationDetailsOf<T>,
+		AccountIdOf<T>,
+		BalanceOf<T>,
+	>;
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config + ctype::Config {
@@ -175,11 +188,10 @@ pub mod pallet {
 		/// tree, this should be twice the maximum depth of the tree, i.e.
 		/// `2 ^ MaxParentChecks`.
 		#[pallet::constant]
-		type MaxChildren: Get<u32> + Clone;
+		type MaxChildren: Get<u32> + Clone + TypeInfo;
 	}
 
 	#[pallet::pallet]
-	#[pallet::generate_store(pub(super) trait Store)]
 	#[pallet::storage_version(STORAGE_VERSION)]
 	pub struct Pallet<T>(_);
 
@@ -188,7 +200,7 @@ pub mod pallet {
 	/// It maps from a node ID to the node details.
 	#[pallet::storage]
 	#[pallet::getter(fn delegation_nodes)]
-	pub type DelegationNodes<T> = StorageMap<_, Blake2_128Concat, DelegationNodeIdOf<T>, DelegationNode<T>>;
+	pub type DelegationNodes<T> = StorageMap<_, Blake2_128Concat, DelegationNodeIdOf<T>, DelegationNodeOf<T>>;
 
 	/// Delegation hierarchies stored on chain.
 	///
@@ -196,7 +208,7 @@ pub mod pallet {
 	#[pallet::storage]
 	#[pallet::getter(fn delegation_hierarchies)]
 	pub type DelegationHierarchies<T> =
-		StorageMap<_, Blake2_128Concat, DelegationNodeIdOf<T>, DelegationHierarchyDetails<T>>;
+		StorageMap<_, Blake2_128Concat, DelegationNodeIdOf<T>, DelegationHierarchyDetails<CtypeHashOf<T>>>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -286,6 +298,14 @@ pub mod pallet {
 		MaxChildrenExceeded,
 	}
 
+	#[pallet::hooks]
+	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+		#[cfg(feature = "try-runtime")]
+		fn try_state(_n: BlockNumberFor<T>) -> Result<(), &'static str> {
+			crate::try_state::do_try_state::<T>()
+		}
+	}
+
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
 		/// Create a new delegation root associated with a given CType hash.
@@ -334,12 +354,10 @@ pub mod pallet {
 				<ctype::Error<T>>::NotFound
 			);
 
-			// *** No Fail beyond this point ***
-
 			log::debug!("trying to insert Delegation Root");
 			Self::create_and_store_new_hierarchy(
 				root_node_id,
-				DelegationHierarchyDetails::<T> { ctype_hash },
+				DelegationHierarchyDetails { ctype_hash },
 				creator.clone(),
 				payer,
 			)?;
@@ -430,8 +448,6 @@ pub mod pallet {
 				Error::<T>::UnauthorizedDelegation
 			);
 
-			// *** No Fail except during store_delegation_under_parent beyond this point ***
-
 			Self::store_delegation_under_parent(
 				delegation_id,
 				DelegationNode::new_node(
@@ -521,8 +537,6 @@ pub mod pallet {
 			let (authorized, parent_checks) = Self::is_delegating(&invoker, &delegation_id, max_parent_checks)?;
 			ensure!(authorized, Error::<T>::UnauthorizedRevocation);
 
-			// *** No Fail except during revocation beyond this point ***
-
 			// Revoke the delegation and recursively all of its children (add 1 to
 			// max_revocations to account for the node itself)
 			let (revocation_checks, _) = Self::revoke(&delegation_id, &invoker, max_revocations.saturating_add(1))?;
@@ -586,8 +600,6 @@ pub mod pallet {
 
 			ensure!(max_removals <= T::MaxRemovals::get(), Error::<T>::MaxRemovalsTooLarge);
 
-			// *** No Fail except during removal beyond this point ***
-
 			// Remove the delegation and recursively all of its children (add 1 to
 			// max_removals to account for the node itself)
 			let (removal_checks, _) = Self::remove(&delegation_id, max_removals.saturating_add(1))?;
@@ -640,8 +652,6 @@ pub mod pallet {
 			ensure!(delegation.deposit.owner == who, Error::<T>::UnauthorizedRemoval);
 
 			ensure!(max_removals <= T::MaxRemovals::get(), Error::<T>::MaxRemovalsTooLarge);
-
-			// *** No Fail except during removal beyond this point ***
 
 			// Remove the delegation and recursively all of its children (add 1 to
 			// max_removals to account for the node itself), releasing the associated
@@ -724,13 +734,11 @@ pub mod pallet {
 		/// nodes storage.
 		pub(crate) fn create_and_store_new_hierarchy(
 			root_id: DelegationNodeIdOf<T>,
-			hierarchy_details: DelegationHierarchyDetails<T>,
+			hierarchy_details: DelegationHierarchyDetails<CtypeHashOf<T>>,
 			hierarchy_owner: DelegatorIdOf<T>,
 			deposit_owner: AccountIdOf<T>,
 		) -> DispatchResult {
 			CurrencyOf::<T>::reserve(&deposit_owner, <T as Config>::Deposit::get())?;
-
-			// *** No Fail beyond this point ***
 
 			let root_node = DelegationNode::new_root_node(
 				root_id,
@@ -752,17 +760,17 @@ pub mod pallet {
 		// not, the behaviour of the system is undefined.
 		pub(crate) fn store_delegation_under_parent(
 			delegation_id: DelegationNodeIdOf<T>,
-			delegation_node: DelegationNode<T>,
+			delegation_node: DelegationNodeOf<T>,
 			parent_id: DelegationNodeIdOf<T>,
-			mut parent_node: DelegationNode<T>,
+			mut parent_node: DelegationNodeOf<T>,
 			deposit_owner: AccountIdOf<T>,
 		) -> DispatchResult {
 			CurrencyOf::<T>::reserve(&deposit_owner, <T as Config>::Deposit::get())?;
 
 			// Add the new node as a child of that node
-			parent_node.try_add_child(delegation_id)?;
-
-			// *** No Fail beyond this point ***
+			parent_node
+				.try_add_child(delegation_id)
+				.map_err(|_| Error::<T>::MaxChildrenExceeded)?;
 
 			<DelegationNodes<T>>::insert(delegation_id, delegation_node);
 			<DelegationNodes<T>>::insert(parent_id, parent_node);
@@ -881,8 +889,6 @@ pub mod pallet {
 				// changed but is still valid.
 				ensure!(revocations < max_revocations, Error::<T>::ExceededRevocationBounds);
 
-				// *** No Fail beyond this point ***
-
 				// Set revoked flag and store delegation node
 				delegation_node.details.revoked = true;
 				<DelegationNodes<T>>::insert(*delegation, delegation_node);
@@ -968,8 +974,6 @@ pub mod pallet {
 			// If we run out of removal gas, we only remove children. The tree will be
 			// changed but is still valid.
 			ensure!(removals < max_removals, Error::<T>::ExceededRemovalBounds);
-
-			// *** No Fail beyond this point ***
 
 			// We can clear storage now that all children have been removed
 			DelegationNodes::<T>::remove(*delegation);

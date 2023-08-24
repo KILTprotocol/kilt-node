@@ -102,7 +102,6 @@ pub mod pallet {
 	}
 
 	#[pallet::pallet]
-	#[pallet::generate_store(pub(super) trait Store)]
 	#[pallet::storage_version(STORAGE_VERSION)]
 	pub struct Pallet<T>(_);
 
@@ -172,8 +171,6 @@ pub mod pallet {
 			let hash = <T as frame_system::Config>::Hashing::hash(&ctype[..]);
 
 			ensure!(!Ctypes::<T>::contains_key(hash), Error::<T>::AlreadyExists);
-
-			// *** No Fail except during withdraw beyond this point  ***
 
 			// Collect the fees. This should not fail since we checked the free balance in
 			// the beginning.

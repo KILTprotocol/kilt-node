@@ -16,9 +16,9 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use codec::Encode;
-use frame_support::{assert_noop, assert_ok, assert_storage_noop, crypto::ecdsa::ECDSAExt};
+use frame_support::{assert_noop, assert_ok, crypto::ecdsa::ECDSAExt};
 use kilt_support::{deposit::Deposit, mock::mock_origin};
+use parity_scale_codec::Encode;
 use sha3::{Digest, Keccak256};
 use sp_runtime::{
 	app_crypto::{ecdsa, sr25519, Pair},
@@ -30,11 +30,9 @@ use crate::{
 	account::{AccountId20, EthereumSignature},
 	associate_account_request::{get_challenge, AssociateAccountRequest},
 	linkable_account::LinkableAccountId,
-	migration_state::MigrationState,
-	migrations::{add_legacy_association, get_mixed_storage_iterator, MixedStorageKey},
 	mock::*,
 	signature::get_wrapped_payload,
-	ConnectedAccounts, ConnectedDids, ConnectionRecord, Error, MigrationStateStore,
+	ConnectedAccounts, ConnectedDids, ConnectionRecord, Error,
 };
 
 #[test]
@@ -44,8 +42,7 @@ fn test_add_association_sender() {
 			(ACCOUNT_00, <Test as crate::Config>::Deposit::get() * 50),
 			(ACCOUNT_01, <Test as crate::Config>::Deposit::get() * 50),
 		])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			// new association. No overwrite
 			assert!(DidLookup::associate_sender(mock_origin::DoubleOrigin(ACCOUNT_00, DID_00).into()).is_ok());
 			assert_eq!(
@@ -92,8 +89,7 @@ fn test_add_association_account() {
 			(ACCOUNT_00, <Test as crate::Config>::Deposit::get() * 50),
 			(ACCOUNT_01, <Test as crate::Config>::Deposit::get() * 50),
 		])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let pair_alice = sr25519::Pair::from_seed(b"Alice                           ");
 			let expire_at: BlockNumber = 500;
 			let account_hash_alice = MultiSigner::from(pair_alice.public()).into_account();
@@ -196,8 +192,7 @@ fn test_add_eth_association() {
 			(ACCOUNT_00, <Test as crate::Config>::Deposit::get() * 50),
 			(ACCOUNT_01, <Test as crate::Config>::Deposit::get() * 50),
 		])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let expire_at: BlockNumber = 500;
 			let eth_pair = ecdsa::Pair::generate().0;
 			let eth_account = AccountId20(eth_pair.public().to_eth_address().unwrap());
@@ -241,8 +236,7 @@ fn test_add_association_account_invalid_signature() {
 			(ACCOUNT_00, <Test as crate::Config>::Deposit::get() * 50),
 			(ACCOUNT_01, <Test as crate::Config>::Deposit::get() * 50),
 		])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let pair_alice = sr25519::Pair::from_seed(b"Alice                           ");
 			let account_hash_alice = MultiSigner::from(pair_alice.public()).into_account();
 			let expire_at: BlockNumber = 500;
@@ -267,8 +261,7 @@ fn test_add_association_account_expired() {
 			(ACCOUNT_00, <Test as crate::Config>::Deposit::get() * 50),
 			(ACCOUNT_01, <Test as crate::Config>::Deposit::get() * 50),
 		])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			let pair_alice = sr25519::Pair::from_seed(b"Alice                           ");
 			let account_hash_alice = MultiSigner::from(pair_alice.public()).into_account();
 			let expire_at: BlockNumber = 2;
@@ -296,8 +289,7 @@ fn test_remove_association_sender() {
 			(ACCOUNT_01, <Test as crate::Config>::Deposit::get() * 50),
 		])
 		.with_connections(vec![(ACCOUNT_00, DID_01, LINKABLE_ACCOUNT_00)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			// remove association
 			assert!(DidLookup::remove_sender_association(RuntimeOrigin::signed(ACCOUNT_00)).is_ok());
 			assert_eq!(ConnectedDids::<Test>::get(LinkableAccountId::from(ACCOUNT_00)), None);
@@ -313,8 +305,7 @@ fn test_remove_association_sender_not_found() {
 			(ACCOUNT_00, <Test as crate::Config>::Deposit::get() * 50),
 			(ACCOUNT_01, <Test as crate::Config>::Deposit::get() * 50),
 		])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				DidLookup::remove_sender_association(RuntimeOrigin::signed(ACCOUNT_00)),
 				Error::<Test>::NotFound
@@ -330,8 +321,7 @@ fn test_remove_association_account() {
 			(ACCOUNT_01, <Test as crate::Config>::Deposit::get() * 50),
 		])
 		.with_connections(vec![(ACCOUNT_01, DID_01, LINKABLE_ACCOUNT_00)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert!(DidLookup::remove_account_association(
 				mock_origin::DoubleOrigin(ACCOUNT_00, DID_01).into(),
 				LinkableAccountId::from(ACCOUNT_00.clone())
@@ -350,8 +340,7 @@ fn test_remove_association_account_not_found() {
 			(ACCOUNT_00, <Test as crate::Config>::Deposit::get() * 50),
 			(ACCOUNT_01, <Test as crate::Config>::Deposit::get() * 50),
 		])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_eq!(ConnectedDids::<Test>::get(LinkableAccountId::from(ACCOUNT_00)), None);
 
 			assert_noop!(
@@ -372,8 +361,7 @@ fn test_remove_association_account_not_authorized() {
 			(ACCOUNT_01, <Test as crate::Config>::Deposit::get() * 50),
 		])
 		.with_connections(vec![(ACCOUNT_01, DID_01, LINKABLE_ACCOUNT_00)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				DidLookup::remove_account_association(
 					mock_origin::DoubleOrigin(ACCOUNT_01, DID_00).into(),
@@ -396,8 +384,7 @@ fn test_reclaim_deposit() {
 			(ACCOUNT_01, <Test as crate::Config>::Deposit::get() * 50),
 		])
 		.with_connections(vec![(ACCOUNT_01, DID_01, LINKABLE_ACCOUNT_00)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_ok!(DidLookup::reclaim_deposit(
 				RuntimeOrigin::signed(ACCOUNT_01),
 				ACCOUNT_00.into()
@@ -414,8 +401,7 @@ fn test_reclaim_deposit_not_authorized() {
 			(ACCOUNT_01, <Test as crate::Config>::Deposit::get() * 50),
 		])
 		.with_connections(vec![(ACCOUNT_01, DID_01, LINKABLE_ACCOUNT_00)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				DidLookup::reclaim_deposit(RuntimeOrigin::signed(ACCOUNT_00), ACCOUNT_00.into()),
 				Error::<Test>::NotAuthorized
@@ -438,8 +424,7 @@ fn test_change_deposit_owner() {
 			(ACCOUNT_01, <Test as crate::Config>::Deposit::get() * 50),
 		])
 		.with_connections(vec![(ACCOUNT_00, DID_00, LINKABLE_ACCOUNT_00)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_ok!(DidLookup::change_deposit_owner(
 				mock_origin::DoubleOrigin(ACCOUNT_01, DID_00).into(),
 				ACCOUNT_00.into()
@@ -457,8 +442,7 @@ fn test_change_deposit_owner_insufficient_balance() {
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, <Test as crate::Config>::Deposit::get() * 50)])
 		.with_connections(vec![(ACCOUNT_00, DID_00, LINKABLE_ACCOUNT_00)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				DidLookup::change_deposit_owner(
 					mock_origin::DoubleOrigin(ACCOUNT_01, DID_00).into(),
@@ -473,8 +457,7 @@ fn test_change_deposit_owner_insufficient_balance() {
 fn test_change_deposit_owner_not_found() {
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, <Test as crate::Config>::Deposit::get() * 50)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				DidLookup::change_deposit_owner(
 					mock_origin::DoubleOrigin(ACCOUNT_01, DID_00).into(),
@@ -490,8 +473,7 @@ fn test_change_deposit_owner_not_authorized() {
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, <Test as crate::Config>::Deposit::get() * 50)])
 		.with_connections(vec![(ACCOUNT_00, DID_00, LINKABLE_ACCOUNT_00)])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			assert_noop!(
 				DidLookup::change_deposit_owner(
 					mock_origin::DoubleOrigin(ACCOUNT_01, DID_01).into(),
@@ -509,8 +491,7 @@ fn test_update_deposit() {
 			(ACCOUNT_00, <Test as crate::Config>::Deposit::get() * 50),
 			(ACCOUNT_01, <Test as crate::Config>::Deposit::get() * 50),
 		])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			insert_raw_connection::<Test>(
 				ACCOUNT_00,
 				DID_00,
@@ -539,8 +520,7 @@ fn test_update_deposit_unauthorized() {
 			(ACCOUNT_00, <Test as crate::Config>::Deposit::get() * 50),
 			(ACCOUNT_01, <Test as crate::Config>::Deposit::get() * 50),
 		])
-		.build()
-		.execute_with(|| {
+		.build_and_execute_with_sanity_tests(|| {
 			insert_raw_connection::<Test>(
 				ACCOUNT_00,
 				DID_00,
@@ -555,165 +535,5 @@ fn test_update_deposit_unauthorized() {
 				DidLookup::update_deposit(RuntimeOrigin::signed(ACCOUNT_01), ACCOUNT_00.into()),
 				Error::<Test>::NotAuthorized
 			);
-		})
-}
-
-// #############################################################################
-// migrate
-
-#[test]
-fn partial_migration() {
-	let deposit_account = || generate_acc32(usize::MAX);
-
-	ExtBuilder::default()
-		.with_balances(vec![(
-			deposit_account(),
-			<Test as crate::Config>::Deposit::get() * 50_000,
-		)])
-		.build()
-		.execute_with(|| {
-			for i in 0..50 {
-				add_legacy_association::<Test>(
-					deposit_account(),
-					generate_did(i),
-					generate_acc32(i),
-					<Test as crate::Config>::Deposit::get(),
-				);
-			}
-			assert_eq!(
-				get_mixed_storage_iterator::<Test>(None).fold((0usize, 0usize, 0usize), |acc, key| match key {
-					MixedStorageKey::V1(_) => (acc.0 + 1, acc.1, acc.2),
-					MixedStorageKey::V2(LinkableAccountId::AccountId20(_)) => (acc.0, acc.1 + 1, acc.2),
-					MixedStorageKey::V2(LinkableAccountId::AccountId32(_)) => (acc.0, acc.1, acc.2 + 1),
-				}),
-				(50usize, 0usize, 0usize),
-				"We should only have V1 keys"
-			);
-			assert_eq!(MigrationStateStore::<Test>::get(), MigrationState::PreUpgrade);
-
-			// The tuple contains the number of keys in storage
-			// (old Key, 20Bytes Account key, 32Bytes Account Key)
-			let expected_key_distributions = [
-				(40usize, 0usize, 10usize),
-				(30usize, 0usize, 20usize),
-				(22usize, 0usize, 28usize),
-				(16usize, 0usize, 34usize),
-				(12usize, 0usize, 38usize),
-				(9usize, 0usize, 41usize),
-				(5usize, 0usize, 45usize),
-				(0usize, 0usize, 50usize),
-			];
-
-			for distribution in expected_key_distributions {
-				assert_ok!(DidLookup::migrate(RuntimeOrigin::signed(deposit_account()), 10));
-
-				// Since we also iterate over already migrated keys, we don't get 10 migrated
-				// accounts with a limit of 10.
-				assert_eq!(
-					get_mixed_storage_iterator::<Test>(None).fold((0usize, 0usize, 0usize), |acc, key| match key {
-						MixedStorageKey::V1(_) => (acc.0 + 1, acc.1, acc.2),
-						MixedStorageKey::V2(LinkableAccountId::AccountId20(_)) => (acc.0, acc.1 + 1, acc.2),
-						MixedStorageKey::V2(LinkableAccountId::AccountId32(_)) => (acc.0, acc.1, acc.2 + 1),
-					}),
-					distribution,
-					"We should end up with the expected distribution"
-				);
-
-				// as long as there are old storage keys, we should be in the `Upgrading` state
-				if distribution.0 != 0 {
-					assert!(matches!(
-						MigrationStateStore::<Test>::get(),
-						MigrationState::Upgrading(_)
-					));
-				}
-			}
-
-			assert_eq!(MigrationStateStore::<Test>::get(), MigrationState::Done);
-
-			// once everything is migrated, this should do nothing
-			assert_storage_noop!(
-				DidLookup::migrate(RuntimeOrigin::signed(deposit_account()), 10).expect("Should not fail")
-			);
-		})
-}
-
-#[test]
-fn migrate_nothing() {
-	let deposit_account = || generate_acc32(usize::MAX);
-
-	ExtBuilder::default()
-		.with_balances(vec![(
-			deposit_account(),
-			<Test as crate::Config>::Deposit::get() * 50_000,
-		)])
-		.build()
-		.execute_with(|| {
-			for i in 0..50 {
-				add_legacy_association::<Test>(
-					deposit_account(),
-					generate_did(i),
-					generate_acc32(i),
-					<Test as crate::Config>::Deposit::get(),
-				);
-			}
-			assert_eq!(
-				get_mixed_storage_iterator::<Test>(None).fold((0usize, 0usize, 0usize), |acc, key| match key {
-					MixedStorageKey::V1(_) => (acc.0 + 1, acc.1, acc.2),
-					MixedStorageKey::V2(LinkableAccountId::AccountId20(_)) => (acc.0, acc.1 + 1, acc.2),
-					MixedStorageKey::V2(LinkableAccountId::AccountId32(_)) => (acc.0, acc.1, acc.2 + 1),
-				}),
-				(50usize, 0usize, 0usize),
-				"We should only have V1 keys"
-			);
-			assert_eq!(MigrationStateStore::<Test>::get(), MigrationState::PreUpgrade);
-
-			assert_storage_noop!(
-				DidLookup::migrate(RuntimeOrigin::signed(deposit_account()), 0).expect("Should not return an error")
-			);
-		})
-}
-
-#[test]
-fn migrate_all_at_once() {
-	let deposit_account = || generate_acc32(usize::MAX);
-
-	ExtBuilder::default()
-		.with_balances(vec![(
-			deposit_account(),
-			<Test as crate::Config>::Deposit::get() * 50_000,
-		)])
-		.build()
-		.execute_with(|| {
-			for i in 0..50 {
-				add_legacy_association::<Test>(
-					deposit_account(),
-					generate_did(i),
-					generate_acc32(i),
-					<Test as crate::Config>::Deposit::get(),
-				);
-			}
-			assert_eq!(
-				get_mixed_storage_iterator::<Test>(None).fold((0usize, 0usize, 0usize), |acc, key| match key {
-					MixedStorageKey::V1(_) => (acc.0 + 1, acc.1, acc.2),
-					MixedStorageKey::V2(LinkableAccountId::AccountId20(_)) => (acc.0, acc.1 + 1, acc.2),
-					MixedStorageKey::V2(LinkableAccountId::AccountId32(_)) => (acc.0, acc.1, acc.2 + 1),
-				}),
-				(50usize, 0usize, 0usize),
-				"We should only have V1 keys"
-			);
-			assert_eq!(MigrationStateStore::<Test>::get(), MigrationState::PreUpgrade);
-
-			assert_ok!(DidLookup::migrate(RuntimeOrigin::signed(deposit_account()), u32::MAX));
-
-			assert_eq!(
-				get_mixed_storage_iterator::<Test>(None).fold((0usize, 0usize, 0usize), |acc, key| match key {
-					MixedStorageKey::V1(_) => (acc.0 + 1, acc.1, acc.2),
-					MixedStorageKey::V2(LinkableAccountId::AccountId20(_)) => (acc.0, acc.1 + 1, acc.2),
-					MixedStorageKey::V2(LinkableAccountId::AccountId32(_)) => (acc.0, acc.1, acc.2 + 1),
-				}),
-				(0usize, 0usize, 50usize),
-				"We should only have V2 AccountId32 keys"
-			);
-			assert_eq!(MigrationStateStore::<Test>::get(), MigrationState::Done);
 		})
 }

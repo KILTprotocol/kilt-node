@@ -18,8 +18,8 @@
 
 use sp_std::{fmt::Debug, marker::PhantomData, ops::Deref, vec::Vec};
 
-use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::{ensure, sp_runtime::SaturatedConversion, traits::Get, BoundedVec, RuntimeDebug};
+use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 
 use crate::{Config, Error};

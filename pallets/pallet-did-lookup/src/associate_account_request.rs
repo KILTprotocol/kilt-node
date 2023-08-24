@@ -24,7 +24,7 @@ use crate::{
 
 use base58::ToBase58;
 use blake2::{Blake2b512, Digest};
-use codec::{Decode, Encode, MaxEncodedLen};
+use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::{
 	prelude::{format, string::String},
 	TypeInfo,

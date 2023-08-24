@@ -21,7 +21,6 @@ use kilt_support::{
 	deposit::Deposit,
 	mock::{mock_origin, SubjectId},
 };
-use sp_core::blake2_256;
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
@@ -29,8 +28,8 @@ use sp_runtime::{
 };
 
 use crate::{
-	self as pallet_did_lookup, account::AccountId20, linkable_account::LinkableAccountId, AccountIdOf, BalanceOf,
-	Config, ConnectedAccounts, ConnectedDids, ConnectionRecord, CurrencyOf, DidIdentifierOf,
+	self as pallet_did_lookup, linkable_account::LinkableAccountId, AccountIdOf, BalanceOf, Config, ConnectedAccounts,
+	ConnectedDids, ConnectionRecord, CurrencyOf, DidIdentifierOf,
 };
 
 pub(crate) type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
@@ -135,26 +134,6 @@ pub(crate) const DID_00: SubjectId = SubjectId(ACCOUNT_00);
 pub(crate) const DID_01: SubjectId = SubjectId(ACCOUNT_01);
 pub(crate) const LINKABLE_ACCOUNT_00: LinkableAccountId = LinkableAccountId::AccountId32(ACCOUNT_00);
 
-pub(crate) fn generate_acc32(index: usize) -> AccountId {
-	let bytes = blake2_256(&index.to_be_bytes()[..]);
-
-	AccountId::new(bytes)
-}
-
-pub(crate) fn generate_acc20(index: usize) -> AccountId20 {
-	let bytes = blake2_256(&index.to_be_bytes()[..]);
-	let mut acc_bytes = [1u8; 20];
-
-	// copy bytes from usize into array
-	acc_bytes.copy_from_slice(&bytes[12..]);
-
-	AccountId20(acc_bytes)
-}
-
-pub(crate) fn generate_did(index: usize) -> SubjectId {
-	SubjectId(generate_acc32(index))
-}
-
 pub(crate) fn insert_raw_connection<T: Config>(
 	sender: AccountIdOf<T>,
 	did_identifier: DidIdentifierOf<T>,
@@ -218,6 +197,13 @@ impl ExtBuilder {
 			}
 		});
 		ext
+	}
+
+	pub fn build_and_execute_with_sanity_tests(self, test: impl FnOnce()) {
+		self.build().execute_with(|| {
+			test();
+			crate::try_state::do_try_state::<Test>().expect("Sanity test for did lookup failed.");
+		})
 	}
 
 	#[cfg(feature = "runtime-benchmarks")]

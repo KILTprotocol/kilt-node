@@ -1,0 +1,13 @@
+Description: smoke tests
+Network: ./network-config.toml
+Creds: config
+
+#parachain
+kilt-node-bob: is up within 10 seconds
+kilt-node-charlie: is up within 10 seconds
+kilt-node-alice: is up within 10 seconds
+kilt-node-dave: is up within 10 seconds
+
+# validators
+alice: is up
+bob: is up
