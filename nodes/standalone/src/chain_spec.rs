@@ -18,7 +18,7 @@
 
 //! KILT chain specification
 
-use mashnet_node_runtime::{
+use kestrel_runtime::{
 	BalancesConfig, GenesisConfig, IndicesConfig, SessionConfig, SudoConfig, SystemConfig, WASM_BINARY,
 };
 use runtime_common::{AccountId, AccountPublic};
@@ -171,7 +171,7 @@ fn devnet_genesis(
 					(
 						x.0.clone(),
 						x.0.clone(),
-						mashnet_node_runtime::opaque::SessionKeys {
+						kestrel_runtime::opaque::SessionKeys {
 							aura: x.1.clone(),
 							grandpa: x.2.clone(),
 						},

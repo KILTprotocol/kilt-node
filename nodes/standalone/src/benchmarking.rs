@@ -22,7 +22,7 @@
 
 use crate::service::FullClient;
 
-use mashnet_node_runtime as runtime;
+use kestrel_runtime as runtime;
 use runtime::{BalancesCall, SystemCall};
 use runtime_common::{AccountId, Balance, Signature};
 use sc_cli::Result;
