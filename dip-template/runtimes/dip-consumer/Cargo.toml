@@ -25,6 +25,8 @@ pallet-did-lookup.workspace = true
 pallet-dip-consumer.workspace = true
 pallet-postit.workspace = true
 pallet-relay-store.workspace = true
+pallet-web3-names.workspace = true
+peregrine-runtime.workspace = true
 runtime-common.workspace = true
 
 # Substrate
@@ -78,6 +80,8 @@ std = [
   "pallet-dip-consumer/std",
   "pallet-postit/std",
   "pallet-relay-store/std",
+  "pallet-web3-names/std",
+  "peregrine-runtime/std",
   "runtime-common/std",
 	"frame-executive/std",
 	"frame-support/std",

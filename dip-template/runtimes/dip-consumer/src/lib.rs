@@ -22,7 +22,7 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
-use dip_provider_runtime_template::Web3Name;
+use peregrine_runtime::Runtime as PeregrineRuntime;
 pub use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 pub use sp_runtime::{MultiAddress, Perbill, Permill};
 
@@ -352,6 +352,8 @@ impl pallet_aura::Config for Runtime {
 }
 
 impl cumulus_pallet_aura_ext::Config for Runtime {}
+
+pub type Web3Name = pallet_web3_names::Web3NameOf<PeregrineRuntime>;
 
 impl pallet_postit::Config for Runtime {
 	type MaxTextLength = ConstU32<160>;
