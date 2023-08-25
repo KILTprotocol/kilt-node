@@ -137,7 +137,6 @@ use frame_system::RawOrigin;
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
-	use crate::service_endpoints::utils as service_endpoints_utils;
 	use did_details::DidCreationDetails;
 	use frame_support::{
 		pallet_prelude::*,
@@ -157,10 +156,11 @@ pub mod pallet {
 
 	use crate::{
 		did_details::{
-			DeriveDidCallAuthorizationVerificationKeyRelationship, DidAuthorizedCallOperation, DidDetails,
-			DidEncryptionKey, DidSignature, DidVerifiableIdentifier, DidVerificationKey, RelationshipDeriveError,
+			DeriveDidCallAuthorizationVerificationKeyRelationship, DidAuthorizedCallOperation,
+			DidCreationDetailsFromAccount, DidDetails, DidEncryptionKey, DidSignature, DidVerifiableIdentifier,
+			DidVerificationKey, RelationshipDeriveError,
 		},
-		service_endpoints::ServiceEndpointId,
+		service_endpoints::{utils as service_endpoints_utils, ServiceEndpointId},
 	};
 
 	/// The current storage version.
@@ -200,6 +200,9 @@ pub mod pallet {
 	pub(crate) type DidCreationDetailsOf<T> =
 		DidCreationDetails<DidIdentifierOf<T>, AccountIdOf<T>, <T as Config>::MaxNewKeyAgreementKeys, DidEndpoint<T>>;
 
+	pub(crate) type DidCreationDetailsFromAccountOf<T> =
+		DidCreationDetailsFromAccount<<T as Config>::MaxNewKeyAgreementKeys, DidEndpoint<T>, AccountIdOf<T>>;
+
 	pub(crate) type DidAuthorizedCallOperationOf<T> =
 		DidAuthorizedCallOperation<DidIdentifierOf<T>, DidCallableOf<T>, BlockNumberOf<T>, AccountIdOf<T>, u64>;
 
@@ -213,7 +216,10 @@ pub mod pallet {
 			+ DeriveDidCallAuthorizationVerificationKeyRelationship;
 
 		/// Type for a DID subject identifier.
-		type DidIdentifier: Parameter + DidVerifiableIdentifier + MaxEncodedLen + From<AccountIdOf<Self>>;
+		type DidIdentifier: Parameter
+			+ DidVerifiableIdentifier<AccountIdOf<Self>>
+			+ MaxEncodedLen
+			+ From<AccountIdOf<Self>>;
 
 		/// Origin type expected by the proxied dispatchable calls.
 		#[cfg(not(feature = "runtime-benchmarks"))]
@@ -508,7 +514,7 @@ pub mod pallet {
 	#[pallet::call]
 	impl<T: Config> Pallet<T>
 	where
-		T::AccountId: AsRef<[u8; 32]>,
+		T::AccountId: AsRef<[u8]>,
 	{
 		/// Store a new DID on chain, after verifying that the creation
 		/// operation has been signed by the KILT account associated with the
@@ -636,7 +642,10 @@ pub mod pallet {
 		/// # </weight>
 		#[pallet::call_index(1)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::set_ed25519_authentication_key().max(<T as pallet::Config>::WeightInfo::set_sr25519_authentication_key()).max(<T as pallet::Config>::WeightInfo::set_ecdsa_authentication_key()))]
-		pub fn set_authentication_key(origin: OriginFor<T>, new_key: DidVerificationKey) -> DispatchResult {
+		pub fn set_authentication_key(
+			origin: OriginFor<T>,
+			new_key: DidVerificationKey<AccountIdOf<T>>,
+		) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
 			let mut did_details = Did::<T>::get(&did_subject).ok_or(Error::<T>::NotFound)?;
 
@@ -676,7 +685,7 @@ pub mod pallet {
 		/// # </weight>
 		#[pallet::call_index(2)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::set_ed25519_delegation_key().max(<T as pallet::Config>::WeightInfo::set_sr25519_delegation_key()).max(<T as pallet::Config>::WeightInfo::set_ecdsa_delegation_key()))]
-		pub fn set_delegation_key(origin: OriginFor<T>, new_key: DidVerificationKey) -> DispatchResult {
+		pub fn set_delegation_key(origin: OriginFor<T>, new_key: DidVerificationKey<AccountIdOf<T>>) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
 			let mut did_details = Did::<T>::get(&did_subject).ok_or(Error::<T>::NotFound)?;
 
@@ -743,7 +752,10 @@ pub mod pallet {
 		/// # </weight>
 		#[pallet::call_index(4)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::set_ed25519_attestation_key().max(<T as pallet::Config>::WeightInfo::set_sr25519_attestation_key()).max(<T as pallet::Config>::WeightInfo::set_ecdsa_attestation_key()))]
-		pub fn set_attestation_key(origin: OriginFor<T>, new_key: DidVerificationKey) -> DispatchResult {
+		pub fn set_attestation_key(
+			origin: OriginFor<T>,
+			new_key: DidVerificationKey<AccountIdOf<T>>,
+		) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
 			let mut did_details = Did::<T>::get(&did_subject).ok_or(Error::<T>::NotFound)?;
 
@@ -1144,10 +1156,9 @@ pub mod pallet {
 			Ok(())
 		}
 
-		#[allow(clippy::boxed_local)]
 		#[pallet::call_index(15)]
 		#[pallet::weight(1000)]
-		pub fn do_did_call(
+		pub fn dispatch_as(
 			origin: OriginFor<T>,
 			did_identifier: DidIdentifierOf<T>,
 			call: DidCallableOf<T>,
@@ -1159,7 +1170,7 @@ pub mod pallet {
 			let verification_key_relationship =
 				call.derive_verification_key_relationship().map_err(Error::<T>::from)?;
 
-			Pallet::<T>::verify_authorization(&did_identifier, &who, verification_key_relationship)
+			Pallet::<T>::verify_account_authorization(&did_identifier, &who, verification_key_relationship)
 				.map_err(Error::<T>::from)?;
 
 			log::debug!("Dispatch call from DID {:?}", did_identifier);
@@ -1181,11 +1192,65 @@ pub mod pallet {
 
 			result
 		}
+
+		#[pallet::call_index(16)]
+		#[pallet::weight(1000)]
+		pub fn create_from_account(
+			origin: OriginFor<T>,
+			details: DidCreationDetailsFromAccountOf<T>,
+			authentication_key: DidVerificationKey<AccountIdOf<T>>,
+		) -> DispatchResult {
+			let sender = ensure_signed(origin)?;
+			let did_identifier: DidIdentifierOf<T> = sender.clone().into();
+			//TODO: check sender == authentication_key
+
+			// Make sure that DIDs cannot be created again after they have been deleted.
+			ensure!(
+				!DidBlacklist::<T>::contains_key(&did_identifier),
+				Error::<T>::AlreadyDeleted
+			);
+
+			// There has to be no other DID with the same identifier already saved on chain,
+			// otherwise generate a AlreadyExists error.
+			ensure!(!Did::<T>::contains_key(&did_identifier), Error::<T>::AlreadyExists);
+
+			log::debug!("Creating DID {:?}", &did_identifier);
+
+			// Validate all the size constraints for the service endpoints.
+			let input_service_endpoints = details.new_service_details.clone();
+			service_endpoints_utils::validate_new_service_endpoints(&input_service_endpoints)
+				.map_err(Error::<T>::from)?;
+
+			input_service_endpoints.iter().for_each(|service| {
+				ServiceEndpoints::<T>::insert(&did_identifier, &service.id, service.clone());
+			});
+			DidEndpointsCount::<T>::insert(&did_identifier, input_service_endpoints.len().saturated_into::<u32>());
+
+			let did_entry =
+				DidDetails::from_account_creation_details(sender.clone(), details, authentication_key, &did_identifier)
+					.map_err(Error::<T>::from)?;
+
+			Did::<T>::insert(&did_identifier, did_entry.clone());
+
+			let imbalance: CreditOf<T> = <T::Currency as Balanced<AccountIdOf<T>>>::withdraw(
+				&did_entry.deposit.owner,
+				T::Fee::get(),
+				Precision::Exact,
+				Preservation::Preserve,
+				Fortitude::Polite,
+			)?;
+
+			T::FeeCollector::on_unbalanced(imbalance);
+
+			Self::deposit_event(Event::DidCreated(sender, did_identifier));
+
+			Ok(())
+		}
 	}
 
 	impl<T: Config> Pallet<T>
 	where
-		T::AccountId: AsRef<[u8; 32]>,
+		T::AccountId: AsRef<[u8]>,
 	{
 		/// Verify the validity (i.e., nonce, signature and mortality) of a
 		/// DID-authorized operation and, if valid, update the DID state with
@@ -1222,7 +1287,7 @@ pub mod pallet {
 			Ok(())
 		}
 
-		pub fn verify_authorization(
+		pub fn verify_account_authorization(
 			did_identifier: &DidIdentifierOf<T>,
 			account: &AccountIdOf<T>,
 			verification_key_relationship: DidVerificationKeyRelationship,
