@@ -50,31 +50,18 @@ pub fn make_dev_spec() -> Result<ChainSpec, String> {
 		move || {
 			testnet_genesis(
 				wasm,
-				vec![
-					(
-						get_account_id_from_seed::<sr25519::Public>("Alice"),
-						None,
-						2 * MinCollatorStake::get(),
-					),
-					(
-						get_account_id_from_seed::<sr25519::Public>("Bob"),
-						None,
-						2 * MinCollatorStake::get(),
-					),
-				],
+				vec![(
+					get_account_id_from_seed::<sr25519::Public>("Alice"),
+					None,
+					2 * MinCollatorStake::get(),
+				)],
 				kilt_inflation_config(),
 				MAX_COLLATOR_STAKE,
 				get_account_id_from_seed::<sr25519::Public>("Alice"),
-				vec![
-					(
-						get_account_id_from_seed::<sr25519::Public>("Alice"),
-						get_from_seed::<AuthorityId>("Alice"),
-					),
-					(
-						get_account_id_from_seed::<sr25519::Public>("Bob"),
-						get_from_seed::<AuthorityId>("Bob"),
-					),
-				],
+				vec![(
+					get_account_id_from_seed::<sr25519::Public>("Alice"),
+					get_from_seed::<AuthorityId>("Alice"),
+				)],
 				vec![
 					get_account_id_from_seed::<sr25519::Public>("Alice"),
 					get_account_id_from_seed::<sr25519::Public>("Bob"),
