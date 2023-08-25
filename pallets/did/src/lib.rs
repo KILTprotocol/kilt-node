@@ -1146,56 +1146,34 @@ pub mod pallet {
 
 		#[allow(clippy::boxed_local)]
 		#[pallet::call_index(15)]
-		#[pallet::weight({
-			let di = did_call.call.get_dispatch_info();
-			let max_sig_weight = <T as pallet::Config>::WeightInfo::submit_did_call_ed25519_key()
-			.max(<T as pallet::Config>::WeightInfo::submit_did_call_sr25519_key())
-			.max(<T as pallet::Config>::WeightInfo::submit_did_call_ecdsa_key());
-
-			(max_sig_weight.saturating_add(di.weight), di.class)
-		})]
+		#[pallet::weight(1000)]
 		pub fn do_did_call(
 			origin: OriginFor<T>,
-			did_call: Box<DidAuthorizedCallOperationOf<T>>,
+			did_identifier: DidIdentifierOf<T>,
+			call: DidCallableOf<T>,
 		) -> DispatchResultWithPostInfo {
 			let who = ensure_signed(origin)?;
-			let did_identifier: DidIdentifierOf<T> = who.clone().into();
-
-			ensure!(did_call.submitter == who, Error::<T>::BadDidOrigin);
-			ensure!(did_call.did == did_identifier, Error::<T>::BadDidOrigin);
 
 			// Compute the right DID verification key to use to verify the operation
 			// signature
-			let verification_key_relationship = did_call
-				.call
-				.derive_verification_key_relationship()
+			let verification_key_relationship =
+				call.derive_verification_key_relationship().map_err(Error::<T>::from)?;
+
+			Pallet::<T>::verify_authorization(&did_identifier, &who, verification_key_relationship)
 				.map_err(Error::<T>::from)?;
 
-			// Wrap the operation in the expected structure, specifying the key retrieved
-			let wrapped_operation: did_details::DidAuthorizedCallOperationWithVerificationRelationship<T> =
-				DidAuthorizedCallOperationWithVerificationRelationship {
-					operation: *did_call,
-					verification_key_relationship,
-				};
-
-			Pallet::<T>::verify_did_operation_account(&wrapped_operation, who.clone()).map_err(Error::<T>::from)?;
-
 			log::debug!("Dispatch call from DID {:?}", did_identifier);
-
-			// Dispatch the referenced [Call] instance and return its result
-			let DidAuthorizedCallOperation { did, call, .. }: DidAuthorizedCallOperationOf<T> =
-				wrapped_operation.operation;
 
 			#[cfg(not(feature = "runtime-benchmarks"))]
 			let result = call.dispatch(
 				DidRawOrigin {
-					id: did,
+					id: did_identifier.clone(),
 					submitter: who,
 				}
 				.into(),
 			);
 			#[cfg(feature = "runtime-benchmarks")]
-			let result = call.dispatch(RawOrigin::Signed(did).into());
+			let result = call.dispatch(RawOrigin::Signed(did_identifier.clone()).into());
 
 			let dispatch_event_payload = result.map(|_| ()).map_err(|e| e.error);
 
@@ -1244,20 +1222,19 @@ pub mod pallet {
 			Ok(())
 		}
 
-		pub fn verify_did_operation_account(
-			operation: &DidAuthorizedCallOperationWithVerificationRelationship<T>,
-			account: AccountIdOf<T>,
+		pub fn verify_authorization(
+			did_identifier: &DidIdentifierOf<T>,
+			account: &AccountIdOf<T>,
+			verification_key_relationship: DidVerificationKeyRelationship,
 		) -> Result<(), DidError> {
-			// Check that the tx has not expired.
-			Self::validate_block_number_value(operation.block_number)?;
-
-			let did_details = Did::<T>::get(&operation.did).ok_or(StorageError::NotFound(errors::NotFoundKind::Did))?;
+			let did_details =
+				Did::<T>::get(&did_identifier).ok_or(StorageError::NotFound(errors::NotFoundKind::Did))?;
 
 			let verification_key = did_details
-				.get_verification_key_for_key_type(operation.verification_key_relationship)
+				.get_verification_key_for_key_type(verification_key_relationship)
 				.ok_or_else(|| {
 					DidError::Storage(StorageError::NotFound(errors::NotFoundKind::Key(
-						operation.verification_key_relationship.into(),
+						verification_key_relationship.into(),
 					)))
 				})?;
 
