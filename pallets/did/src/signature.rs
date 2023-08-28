@@ -30,7 +30,7 @@ use crate::{
 pub struct DidSignatureVerify<T>(PhantomData<T>);
 impl<T: Config> VerifySignature for DidSignatureVerify<T>
 where
-	T::AccountId: AsRef<[u8]>,
+	T::AccountId: AsRef<[u8]> + AsRef<[u8; 32]> + From<[u8; 32]>,
 {
 	type SignerId = <T as Config>::DidIdentifier;
 	type Payload = Vec<u8>;

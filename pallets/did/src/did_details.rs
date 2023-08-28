@@ -77,6 +77,20 @@ impl<AccountId> DidVerificationKey<AccountId> {
 			_ => Err(errors::SignatureError::InvalidFormat),
 		}
 	}
+
+	pub fn into_account(&self) -> AccountId
+	where
+		AccountId: From<[u8; 32]> + AsRef<[u8; 32]>,
+	{
+		let bytes = match self {
+			DidVerificationKey::Ed25519(pub_key) => pub_key.0,
+			DidVerificationKey::Sr25519(pub_key) => pub_key.0,
+			DidVerificationKey::Ecdsa(pub_key) => sp_io::hashing::blake2_256(pub_key.as_ref()).into(),
+			DidVerificationKey::Account(acc_id) => *acc_id.as_ref(),
+		};
+
+		bytes.into()
+	}
 }
 
 impl<AccountId: AsRef<[u8]>> AsRef<[u8]> for DidVerificationKey<AccountId> {

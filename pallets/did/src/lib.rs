@@ -514,7 +514,7 @@ pub mod pallet {
 	#[pallet::call]
 	impl<T: Config> Pallet<T>
 	where
-		T::AccountId: AsRef<[u8]>,
+		T::AccountId: AsRef<[u8]> + AsRef<[u8; 32]> + From<[u8; 32]>,
 	{
 		/// Store a new DID on chain, after verifying that the creation
 		/// operation has been signed by the KILT account associated with the
@@ -1202,7 +1202,8 @@ pub mod pallet {
 		) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
 			let did_identifier: DidIdentifierOf<T> = sender.clone().into();
-			//TODO: check sender == authentication_key
+			let auth_key_id: AccountIdOf<T> = authentication_key.into_account();
+			ensure!(auth_key_id == sender, Error::<T>::BadDidOrigin);
 
 			// Make sure that DIDs cannot be created again after they have been deleted.
 			ensure!(
@@ -1250,7 +1251,7 @@ pub mod pallet {
 
 	impl<T: Config> Pallet<T>
 	where
-		T::AccountId: AsRef<[u8]>,
+		T::AccountId: AsRef<[u8]> + AsRef<[u8; 32]> + From<[u8; 32]>,
 	{
 		/// Verify the validity (i.e., nonce, signature and mortality) of a
 		/// DID-authorized operation and, if valid, update the DID state with
@@ -1303,7 +1304,7 @@ pub mod pallet {
 					)))
 				})?;
 
-			if account.as_ref() == verification_key.as_ref() {
+			if AsRef::<[u8]>::as_ref(account) == verification_key.as_ref() {
 				Ok(())
 			} else {
 				Err(DidError::Signature(SignatureError::InvalidData))
