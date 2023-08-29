@@ -122,6 +122,8 @@ pub mod pallet {
 
 	pub(crate) type HoldReasonOf<T> = <T as Config>::RuntimeHoldReason;
 
+	pub(crate) type MigrationManagerOf<T> = <T as Config>::MigrationManager;
+
 	pub type AttestationDetailsOf<T> =
 		AttestationDetails<CtypeHashOf<T>, AttesterOf<T>, AuthorizationIdOf<T>, AccountIdOf<T>, BalanceOf<T>>;
 
@@ -463,7 +465,10 @@ pub mod pallet {
 			let attestation = Attestations::<T>::get(claim_hash).ok_or(Error::<T>::NotFound)?;
 			ensure!(attestation.attester == subject, Error::<T>::NotAuthorized);
 
-			AttestationStorageDepositCollector::<T>::change_deposit_owner(&claim_hash, sender)?;
+			AttestationStorageDepositCollector::<T>::change_deposit_owner::<MigrationManagerOf<T>>(
+				&claim_hash,
+				sender,
+			)?;
 
 			Ok(())
 		}
@@ -479,7 +484,7 @@ pub mod pallet {
 			let attestation = Attestations::<T>::get(claim_hash).ok_or(Error::<T>::NotFound)?;
 			ensure!(attestation.deposit.owner == sender, Error::<T>::NotAuthorized);
 
-			AttestationStorageDepositCollector::<T>::update_deposit(&claim_hash)?;
+			AttestationStorageDepositCollector::<T>::update_deposit::<MigrationManagerOf<T>>(&claim_hash)?;
 
 			Ok(())
 		}
@@ -515,6 +520,10 @@ pub mod pallet {
 
 		fn reason() -> Self::Reason {
 			HoldReason::Deposit
+		}
+
+		fn get_hashed_key(key: &ClaimHashOf<T>) -> Result<sp_std::vec::Vec<u8>, DispatchError> {
+			Ok(Attestations::<T>::hashed_key_for(key))
 		}
 
 		fn deposit(

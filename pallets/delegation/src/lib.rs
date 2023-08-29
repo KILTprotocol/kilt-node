@@ -133,6 +133,8 @@ pub mod pallet {
 
 	pub(crate) type DelegationDetailsOf<T> = DelegationDetails<DelegatorIdOf<T>>;
 
+	pub(crate) type MigrationManagerOf<T> = <T as Config>::MigrationManager;
+
 	pub type DelegationNodeOf<T> = DelegationNode<
 		DelegationNodeIdOf<T>,
 		<T as Config>::MaxChildren,
@@ -691,7 +693,10 @@ pub mod pallet {
 			// parent or another ancestor.
 			ensure!(delegation.details.owner == source.subject(), Error::<T>::AccessDenied);
 
-			DelegationDepositCollector::<T>::change_deposit_owner(&delegation_id, source.sender())
+			DelegationDepositCollector::<T>::change_deposit_owner::<MigrationManagerOf<T>>(
+				&delegation_id,
+				source.sender(),
+			)
 		}
 
 		/// Updates the deposit amount to the current deposit rate.
@@ -708,7 +713,7 @@ pub mod pallet {
 			// parent or another ancestor.
 			ensure!(delegation.deposit.owner == sender, Error::<T>::AccessDenied);
 
-			DelegationDepositCollector::<T>::update_deposit(&delegation_id)?;
+			DelegationDepositCollector::<T>::update_deposit::<MigrationManagerOf<T>>(&delegation_id)?;
 
 			Ok(())
 		}
@@ -1015,6 +1020,10 @@ pub mod pallet {
 	{
 		type Currency = <T as Config>::Currency;
 		type Reason = HoldReason;
+
+		fn get_hashed_key(key: &DelegationNodeIdOf<T>) -> Result<sp_std::vec::Vec<u8>, DispatchError> {
+			Ok(DelegationNodes::<T>::hashed_key_for(key))
+		}
 
 		fn reason() -> Self::Reason {
 			HoldReason::Deposit

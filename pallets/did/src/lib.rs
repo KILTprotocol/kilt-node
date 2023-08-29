@@ -1125,7 +1125,7 @@ pub mod pallet {
 			let subject = source.subject();
 			let sender = source.sender();
 
-			DidDepositCollector::<T>::change_deposit_owner(&subject, sender)?;
+			DidDepositCollector::<T>::change_deposit_owner::<<T as Config>::MigrationManager>(&subject, sender)?;
 
 			Ok(())
 		}
@@ -1297,6 +1297,10 @@ pub mod pallet {
 
 		fn reason() -> Self::Reason {
 			HoldReason::Deposit
+		}
+
+		fn get_hashed_key(key: &DidIdentifierOf<T>) -> Result<sp_std::vec::Vec<u8>, DispatchError> {
+			Ok(Did::<T>::hashed_key_for(key))
 		}
 
 		fn deposit(

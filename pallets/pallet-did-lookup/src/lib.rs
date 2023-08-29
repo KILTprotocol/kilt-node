@@ -84,6 +84,8 @@ pub mod pallet {
 	/// The connection record type.
 	pub(crate) type ConnectionRecordOf<T> = ConnectionRecord<DidIdentifierOf<T>, AccountIdOf<T>, BalanceOf<T>>;
 
+	pub(crate) type MigrationManagerOf<T> = <T as Config>::MigrationManager;
+
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(4);
 
 	#[pallet::composite_enum]
@@ -388,7 +390,10 @@ pub mod pallet {
 			let record = ConnectedDids::<T>::get(&account).ok_or(Error::<T>::NotFound)?;
 			ensure!(record.did == subject, Error::<T>::NotAuthorized);
 
-			LinkableAccountDepositCollector::<T>::change_deposit_owner(&account, source.sender())
+			LinkableAccountDepositCollector::<T>::change_deposit_owner::<MigrationManagerOf<T>>(
+				&account,
+				source.sender(),
+			)
 		}
 
 		/// Updates the deposit amount to the current deposit rate.
@@ -402,7 +407,7 @@ pub mod pallet {
 			let record = ConnectedDids::<T>::get(&account).ok_or(Error::<T>::NotFound)?;
 			ensure!(record.deposit.owner == source, Error::<T>::NotAuthorized);
 
-			LinkableAccountDepositCollector::<T>::update_deposit(&account)
+			LinkableAccountDepositCollector::<T>::update_deposit::<MigrationManagerOf<T>>(&account)
 		}
 
 		// Old call that was used to migrate
@@ -474,6 +479,10 @@ pub mod pallet {
 
 		fn reason() -> Self::Reason {
 			HoldReason::Deposit
+		}
+
+		fn get_hashed_key(key: &LinkableAccountId) -> Result<sp_std::vec::Vec<u8>, DispatchError> {
+			Ok(ConnectedDids::<T>::hashed_key_for(key))
 		}
 
 		fn deposit(

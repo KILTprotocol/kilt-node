@@ -73,6 +73,7 @@ pub mod pallet {
 	pub type Web3OwnershipOf<T> =
 		Web3NameOwnership<Web3NameOwnerOf<T>, Deposit<AccountIdOf<T>, BalanceOf<T>>, BlockNumberFor<T>>;
 
+	pub(crate) type MigrationManagerOf<T> = <T as Config>::MigrationManager;
 	pub(crate) type CurrencyOf<T> = <T as Config>::Currency;
 	pub type BalanceOf<T> = <CurrencyOf<T> as Inspect<AccountIdOf<T>>>::Balance;
 
@@ -363,7 +364,10 @@ pub mod pallet {
 			let source = <T as Config>::OwnerOrigin::ensure_origin(origin)?;
 			let w3n_owner = source.subject();
 			let name = Names::<T>::get(&w3n_owner).ok_or(Error::<T>::NotFound)?;
-			Web3NameStorageDepositCollector::<T>::change_deposit_owner(&name, source.sender())?;
+			Web3NameStorageDepositCollector::<T>::change_deposit_owner::<MigrationManagerOf<T>>(
+				&name,
+				source.sender(),
+			)?;
 
 			Ok(())
 		}
@@ -379,7 +383,7 @@ pub mod pallet {
 			let w3n_entry = Owner::<T>::get(&name).ok_or(Error::<T>::NotFound)?;
 			ensure!(w3n_entry.deposit.owner == source, Error::<T>::NotAuthorized);
 
-			Web3NameStorageDepositCollector::<T>::update_deposit(&name)?;
+			Web3NameStorageDepositCollector::<T>::update_deposit::<MigrationManagerOf<T>>(&name)?;
 
 			Ok(())
 		}
@@ -542,6 +546,10 @@ pub mod pallet {
 	{
 		type Currency = T::Currency;
 		type Reason = HoldReason;
+
+		fn get_hashed_key(key: &T::Web3Name) -> Result<sp_std::vec::Vec<u8>, DispatchError> {
+			Ok(Owner::<T>::hashed_key_for(key))
+		}
 
 		fn reason() -> Self::Reason {
 			HoldReason::Deposit

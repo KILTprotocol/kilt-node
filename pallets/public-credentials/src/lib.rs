@@ -65,7 +65,10 @@ pub mod pallet {
 	};
 	use frame_system::pallet_prelude::*;
 	use kilt_support::traits::MigrationManager;
-	use sp_runtime::traits::{Hash, SaturatedConversion};
+	use sp_runtime::{
+		traits::{Hash, SaturatedConversion},
+		DispatchError,
+	};
 	use sp_std::{boxed::Box, vec::Vec};
 
 	pub use ctype::CtypeHashOf;
@@ -104,6 +107,7 @@ pub mod pallet {
 	pub type AttesterOf<T> = <T as Config>::AttesterId;
 	/// The type of account's balances.
 	pub type BalanceOf<T> = <CurrencyOf<T> as Inspect<AccountIdOf<T>>>::Balance;
+	pub(crate) type MigrationManagerOf<T> = <T as Config>::MigrationManager;
 	pub(crate) type AuthorizationIdOf<T> = <T as Config>::AuthorizationId;
 	pub type CredentialIdOf<T> = <<T as Config>::CredentialHash as sp_runtime::traits::Hash>::Output;
 
@@ -526,7 +530,10 @@ pub mod pallet {
 
 			ensure!(subject == credential_entry.attester, Error::<T>::NotAuthorized);
 
-			PublicCredentialDepositCollector::<T>::change_deposit_owner(&credential_id, source.sender())?;
+			PublicCredentialDepositCollector::<T>::change_deposit_owner::<MigrationManagerOf<T>>(
+				&credential_id,
+				source.sender(),
+			)?;
 
 			Ok(())
 		}
@@ -542,7 +549,7 @@ pub mod pallet {
 
 			ensure!(source == credential_entry.deposit.owner, Error::<T>::NotAuthorized);
 
-			PublicCredentialDepositCollector::<T>::update_deposit(&credential_id)?;
+			PublicCredentialDepositCollector::<T>::update_deposit::<MigrationManagerOf<T>>(&credential_id)?;
 
 			Ok(())
 		}
@@ -635,6 +642,11 @@ pub mod pallet {
 
 		fn reason() -> Self::Reason {
 			HoldReason::Deposit
+		}
+
+		fn get_hashed_key(credential_id: &CredentialIdOf<T>) -> Result<sp_std::vec::Vec<u8>, DispatchError> {
+			let credential_subject = CredentialSubjects::<T>::get(credential_id).ok_or(Error::<T>::NotFound)?;
+			Ok(Credentials::<T>::hashed_key_for(&credential_subject, credential_id))
 		}
 
 		fn deposit(
