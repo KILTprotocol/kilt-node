@@ -45,7 +45,7 @@ pub mod pallet {
 	use pallet_did_lookup::{linkable_account::LinkableAccountId, ConnectedDids};
 	use pallet_web3_names::{Owner, Web3NameOf};
 	use public_credentials::{CredentialIdOf, Credentials, SubjectIdOf};
-	use sp_runtime::{traits::Hash, DispatchError};
+	use sp_runtime::traits::Hash;
 	use sp_std::vec::Vec;
 
 	use crate::default_weights::WeightInfo;
@@ -156,7 +156,7 @@ pub mod pallet {
 			ensure_signed(origin)?;
 
 			requested_migrations.attestation.iter().try_for_each(|key| {
-				let is_migrated = Self::is_key_migrated(Attestations::<T>::hashed_key_for(key))?;
+				let is_migrated = Self::is_key_migrated(Attestations::<T>::hashed_key_for(key));
 				if !is_migrated {
 					attestation::migrations::update_balance_for_attestation::<T>(key)
 				} else {
@@ -165,7 +165,7 @@ pub mod pallet {
 			})?;
 
 			requested_migrations.delegation.iter().try_for_each(|key| {
-				let is_migrated = Self::is_key_migrated(DelegationNodes::<T>::hashed_key_for(key))?;
+				let is_migrated = Self::is_key_migrated(DelegationNodes::<T>::hashed_key_for(key));
 				if !is_migrated {
 					delegation::migrations::update_balance_for_delegation::<T>(key)
 				} else {
@@ -174,7 +174,7 @@ pub mod pallet {
 			})?;
 
 			requested_migrations.did.iter().try_for_each(|key| {
-				let is_migrated = Self::is_key_migrated(Did::<T>::hashed_key_for(key))?;
+				let is_migrated = Self::is_key_migrated(Did::<T>::hashed_key_for(key));
 				if !is_migrated {
 					did::migrations::update_balance_for_did::<T>(key)
 				} else {
@@ -183,7 +183,7 @@ pub mod pallet {
 			})?;
 
 			requested_migrations.lookup.iter().try_for_each(|key| {
-				let is_migrated = Self::is_key_migrated(ConnectedDids::<T>::hashed_key_for(key))?;
+				let is_migrated = Self::is_key_migrated(ConnectedDids::<T>::hashed_key_for(key));
 				if !is_migrated {
 					pallet_did_lookup::migrations::update_balance_for_did_lookup::<T>(key)
 				} else {
@@ -192,7 +192,7 @@ pub mod pallet {
 			})?;
 
 			requested_migrations.w3n.iter().try_for_each(|key| {
-				let is_migrated = Self::is_key_migrated(Owner::<T>::hashed_key_for(key))?;
+				let is_migrated = Self::is_key_migrated(Owner::<T>::hashed_key_for(key));
 				if !is_migrated {
 					pallet_web3_names::migrations::update_balance_for_w3n::<T>(key)
 				} else {
@@ -204,7 +204,7 @@ pub mod pallet {
 				.public_credentials
 				.iter()
 				.try_for_each(|(key, key2)| {
-					let is_migrated = Self::is_key_migrated(Credentials::<T>::hashed_key_for(key, key2))?;
+					let is_migrated = Self::is_key_migrated(Credentials::<T>::hashed_key_for(key, key2));
 					if !is_migrated {
 						public_credentials::migrations::update_balance_for_public_credentials::<T>(key, key2)
 					} else {
@@ -219,14 +219,14 @@ pub mod pallet {
 	}
 
 	impl<T: Config> Pallet<T> {
-		fn is_key_migrated(key: Vec<u8>) -> Result<bool, DispatchError> {
+		fn is_key_migrated(key: Vec<u8>) -> bool {
 			let key_hash = <T as frame_system::Config>::Hashing::hash(&key[..]);
 
 			if MigratedKeys::<T>::contains_key(key_hash) {
-				return Ok(true);
+				return true;
 			}
 			MigratedKeys::<T>::insert(key_hash, ());
-			Ok(false)
+			false
 		}
 	}
 
