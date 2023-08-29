@@ -408,15 +408,12 @@ impl<T: Config> DidDetails<T> {
 			new_did_details.update_attestation_key(attesation_key, current_block_number)?;
 		}
 
-		if let Some(delegation_key) = details.clone().new_delegation_key {
+		if let Some(delegation_key) = details.new_delegation_key {
 			new_did_details.update_delegation_key(delegation_key, current_block_number)?;
 		}
 
 		let deposit_amount = new_did_details.calculate_deposit(did_subject);
 		new_did_details.deposit.amount = deposit_amount;
-
-		DidDepositCollector::<T>::create_deposit(details.submitter, deposit_amount)?;
-		<T as Config>::MigrationManager::exclude_key_from_migration(Did::<T>::hashed_key_for(did_subject));
 
 		Ok(new_did_details)
 	}

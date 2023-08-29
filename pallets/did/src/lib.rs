@@ -598,8 +598,11 @@ pub mod pallet {
 			});
 			DidEndpointsCount::<T>::insert(&did_identifier, input_service_endpoints.len().saturated_into::<u32>());
 
-			let did_entry = DidDetails::from_creation_details(*details, account_did_auth_key, &did_identifier)
+			let did_entry = DidDetails::from_creation_details(*details.clone(), account_did_auth_key, &did_identifier)
 				.map_err(Error::<T>::from)?;
+
+			DidDepositCollector::<T>::create_deposit(details.submitter, did_entry.deposit.amount)?;
+			<T as Config>::MigrationManager::exclude_key_from_migration(Did::<T>::hashed_key_for(&did_identifier));
 
 			Did::<T>::insert(&did_identifier, did_entry.clone());
 
