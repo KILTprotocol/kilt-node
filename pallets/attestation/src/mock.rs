@@ -26,7 +26,7 @@
 use frame_support::{dispatch::Weight, traits::Get};
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
-use sp_core::{sr25519, Pair, H256};
+use sp_core::{sr25519, H256};
 use sp_runtime::{traits::IdentifyAccount, DispatchError, MultiSigner};
 
 use ctype::CtypeHashOf;
