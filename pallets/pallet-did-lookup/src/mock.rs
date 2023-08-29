@@ -139,6 +139,7 @@ pub(crate) const ACCOUNT_01: AccountId = AccountId::new([2u8; 32]);
 pub(crate) const DID_00: SubjectId = SubjectId(ACCOUNT_00);
 pub(crate) const DID_01: SubjectId = SubjectId(ACCOUNT_01);
 pub(crate) const LINKABLE_ACCOUNT_00: LinkableAccountId = LinkableAccountId::AccountId32(ACCOUNT_00);
+pub(crate) const LINKABLE_ACCOUNT_01: LinkableAccountId = LinkableAccountId::AccountId32(ACCOUNT_01);
 
 pub(crate) fn insert_raw_connection<T: Config>(
 	sender: AccountIdOf<T>,

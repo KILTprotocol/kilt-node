@@ -601,7 +601,9 @@ pub mod pallet {
 			let did_entry = DidDetails::from_creation_details(*details.clone(), account_did_auth_key, &did_identifier)
 				.map_err(Error::<T>::from)?;
 
-			DidDepositCollector::<T>::create_deposit(details.submitter, did_entry.deposit.amount)?;
+			DidDepositCollector::<T>::create_deposit(details.submitter, did_entry.deposit.amount)
+				.map_err(|_e| Error::<T>::UnableToPayFees)?;
+
 			<T as Config>::MigrationManager::exclude_key_from_migration(Did::<T>::hashed_key_for(&did_identifier));
 
 			Did::<T>::insert(&did_identifier, did_entry.clone());

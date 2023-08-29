@@ -378,6 +378,7 @@ pub(crate) mod runtime {
 	pub(crate) const BOB_SEED: [u8; 32] = [1u8; 32];
 
 	pub(crate) const SUBJECT_ID_00: TestSubjectId = TestSubjectId([100u8; 32]);
+	pub(crate) const SUBJECT_ID_01: TestSubjectId = TestSubjectId([1u8; 32]);
 	pub(crate) const INVALID_SUBJECT_ID: TestSubjectId = TestSubjectId([255u8; 32]);
 
 	pub(crate) fn sr25519_did_from_seed(seed: &[u8; 32]) -> SubjectId {
