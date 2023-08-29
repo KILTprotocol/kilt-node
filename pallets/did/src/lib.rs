@@ -1267,7 +1267,7 @@ pub mod pallet {
 			DidEndpointsCount::<T>::remove(&did_subject);
 
 			let is_key_migrated =
-				<T as Config>::MigrationManager::is_key_migrated(Did::<T>::hashed_key_for(did_subject.clone()))?;
+				<T as Config>::MigrationManager::is_key_migrated(Did::<T>::hashed_key_for(did_subject.clone()));
 			if is_key_migrated {
 				DidDepositCollector::<T>::free_deposit(did_entry.deposit)?;
 			} else {

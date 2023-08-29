@@ -427,7 +427,7 @@ pub mod pallet {
 			let block_number = frame_system::Pallet::<T>::block_number();
 
 			let deposit = Web3NameStorageDepositCollector::<T>::create_deposit(deposit_payer, T::Deposit::get())?;
-			<T as Config>::MigrationManager::exclude_key_from_migration(Owner::<T>::hashed_key_for(&name))?;
+			<T as Config>::MigrationManager::exclude_key_from_migration(Owner::<T>::hashed_key_for(&name));
 
 			Names::<T>::insert(&owner, name.clone());
 			Owner::<T>::insert(
@@ -475,7 +475,7 @@ pub mod pallet {
 			let name_ownership = Owner::<T>::take(name).unwrap();
 			Names::<T>::remove(&name_ownership.owner);
 
-			let is_key_migrated = <T as Config>::MigrationManager::is_key_migrated(Owner::<T>::hashed_key_for(name))?;
+			let is_key_migrated = <T as Config>::MigrationManager::is_key_migrated(Owner::<T>::hashed_key_for(name));
 
 			if is_key_migrated {
 				Web3NameStorageDepositCollector::<T>::free_deposit(name_ownership.clone().deposit)?;

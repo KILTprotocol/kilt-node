@@ -353,7 +353,7 @@ impl<T: Config> DidDetails<T> {
 				let deposit_to_release = self.deposit.amount.saturating_sub(new_required_deposit);
 
 				let is_key_migrated =
-					<T as Config>::MigrationManager::is_key_migrated(Did::<T>::hashed_key_for(did_subject))?;
+					<T as Config>::MigrationManager::is_key_migrated(Did::<T>::hashed_key_for(did_subject));
 
 				if is_key_migrated {
 					DidDepositCollector::<T>::free_deposit(Deposit {
@@ -409,7 +409,7 @@ impl<T: Config> DidDetails<T> {
 		new_did_details.deposit.amount = deposit_amount;
 
 		DidDepositCollector::<T>::create_deposit(details.submitter, deposit_amount)?;
-		<T as Config>::MigrationManager::exclude_key_from_migration(Did::<T>::hashed_key_for(did_subject))?;
+		<T as Config>::MigrationManager::exclude_key_from_migration(Did::<T>::hashed_key_for(did_subject));
 
 		Ok(new_did_details)
 	}

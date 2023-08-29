@@ -426,7 +426,7 @@ pub mod pallet {
 			};
 
 			LinkableAccountDepositCollector::<T>::create_deposit(record.clone().deposit.owner, record.deposit.amount)?;
-			<T as Config>::MigrationManager::exclude_key_from_migration(ConnectedDids::<T>::hashed_key_for(&account))?;
+			<T as Config>::MigrationManager::exclude_key_from_migration(ConnectedDids::<T>::hashed_key_for(&account));
 
 			ConnectedDids::<T>::mutate(&account, |did_entry| -> DispatchResult {
 				if let Some(old_connection) = did_entry.replace(record) {
@@ -445,7 +445,7 @@ pub mod pallet {
 		pub(crate) fn remove_association(account: LinkableAccountId) -> DispatchResult {
 			if let Some(connection) = ConnectedDids::<T>::take(&account) {
 				let is_key_migrated =
-					<T as Config>::MigrationManager::is_key_migrated(ConnectedDids::<T>::hashed_key_for(&account))?;
+					<T as Config>::MigrationManager::is_key_migrated(ConnectedDids::<T>::hashed_key_for(&account));
 
 				if is_key_migrated {
 					LinkableAccountDepositCollector::<T>::free_deposit(connection.deposit)?;

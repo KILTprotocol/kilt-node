@@ -93,18 +93,16 @@ pub trait ItemFilter<Item> {
 pub trait MigrationManager<AccountId, Balance> {
 	fn release_reserved_deposit(user: &AccountId, balance: &Balance);
 
-	fn exclude_key_from_migration(key: Vec<u8>) -> Result<(), DispatchError>;
+	fn exclude_key_from_migration(key: Vec<u8>);
 
-	fn is_key_migrated(key: Vec<u8>) -> Result<bool, DispatchError>;
+	fn is_key_migrated(key: Vec<u8>) -> bool;
 }
 
 impl<AccountId, Balance> MigrationManager<AccountId, Balance> for () {
-	fn exclude_key_from_migration(_key: Vec<u8>) -> Result<(), DispatchError> {
-		Ok(())
-	}
+	fn exclude_key_from_migration(_key: Vec<u8>) {}
 
-	fn is_key_migrated(_key: Vec<u8>) -> Result<bool, DispatchError> {
-		Ok(true)
+	fn is_key_migrated(_key: Vec<u8>) -> bool {
+		true
 	}
 
 	fn release_reserved_deposit(_user: &AccountId, _balance: &Balance) {}

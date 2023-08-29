@@ -312,7 +312,7 @@ pub mod pallet {
 			<T as Config>::MigrationManager::exclude_key_from_migration(Credentials::<T>::hashed_key_for(
 				&subject,
 				&credential_id,
-			))?;
+			));
 
 			let block_number = frame_system::Pallet::<T>::block_number();
 
@@ -562,7 +562,7 @@ pub mod pallet {
 			let is_key_migrated = <T as Config>::MigrationManager::is_key_migrated(Credentials::<T>::hashed_key_for(
 				&credential_subject,
 				&credential_id,
-			))?;
+			));
 			if is_key_migrated {
 				PublicCredentialDepositCollector::<T>::free_deposit(credential.deposit)?;
 			} else {

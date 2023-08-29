@@ -290,7 +290,7 @@ pub mod pallet {
 			let authorization_id = authorization.as_ref().map(|ac| ac.authorization_id());
 
 			let deposit = AttestationStorageDepositCollector::<T>::create_deposit(payer, deposit_amount)?;
-			<T as Config>::MigrationManager::exclude_key_from_migration(Attestations::<T>::hashed_key_for(claim_hash))?;
+			<T as Config>::MigrationManager::exclude_key_from_migration(Attestations::<T>::hashed_key_for(claim_hash));
 
 			log::debug!("insert Attestation");
 
@@ -488,7 +488,7 @@ pub mod pallet {
 	impl<T: Config> Pallet<T> {
 		fn remove_attestation(attestation: AttestationDetailsOf<T>, claim_hash: ClaimHashOf<T>) -> DispatchResult {
 			let is_key_migrated =
-				<T as Config>::MigrationManager::is_key_migrated(Attestations::<T>::hashed_key_for(claim_hash))?;
+				<T as Config>::MigrationManager::is_key_migrated(Attestations::<T>::hashed_key_for(claim_hash));
 			if is_key_migrated {
 				AttestationStorageDepositCollector::<T>::free_deposit(attestation.deposit)?;
 			} else {

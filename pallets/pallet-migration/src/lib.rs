@@ -231,15 +231,14 @@ pub mod pallet {
 	}
 
 	impl<T: Config> MigrationManager<AccountIdOf<T>, BalanceOf<T>> for Pallet<T> {
-		fn exclude_key_from_migration(key: Vec<u8>) -> Result<(), DispatchError> {
+		fn exclude_key_from_migration(key: Vec<u8>) {
 			let key_hash = <T as frame_system::Config>::Hashing::hash(&key[..]);
 			MigratedKeys::<T>::insert(key_hash, ());
-			Ok(())
 		}
 
-		fn is_key_migrated(key: Vec<u8>) -> Result<bool, DispatchError> {
+		fn is_key_migrated(key: Vec<u8>) -> bool {
 			let key_hash = <T as frame_system::Config>::Hashing::hash(&key[..]);
-			Ok(MigratedKeys::<T>::contains_key(key_hash))
+			MigratedKeys::<T>::contains_key(key_hash)
 		}
 
 		fn release_reserved_deposit(user: &AccountIdOf<T>, balance: &BalanceOf<T>) {
