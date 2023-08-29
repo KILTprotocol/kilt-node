@@ -168,9 +168,7 @@ pub fn insert_attestation<T: Config>(claim_hash: ClaimHashOf<T>, details: Attest
 }
 
 pub fn sr25519_did_from_seed(seed: &[u8; 32]) -> SubjectId {
-	MultiSigner::from(sr25519::Pair::from_seed(seed).public())
-		.into_account()
-		.into()
+	MultiSigner::from(sr25519::Public(*seed)).into_account().into()
 }
 
 pub fn claim_hash_from_seed(seed: u64) -> Hash {
