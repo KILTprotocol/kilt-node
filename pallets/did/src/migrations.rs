@@ -104,24 +104,22 @@ pub mod test {
 
 				let did_pre_migration = Did::<Test>::get(alice_did.clone());
 
-				let balance_on_reserve_pre_migration = <<Test as Config>::Currency as ReservableCurrency<
-					AccountIdOf<Test>,
-				>>::reserved_balance(&alice_did.clone());
+				let reserved_pre_migration =
+					<<Test as Config>::Currency as ReservableCurrency<AccountIdOf<Test>>>::reserved_balance(
+						&alice_did.clone(),
+					);
 
 				//did should be in storage
 				assert!(did_pre_migration.is_some());
 
 				// before the migration the deposit should be reserved.
-				assert_eq!(
-					balance_on_reserve_pre_migration,
-					did_pre_migration.unwrap().deposit.amount
-				);
+				assert_eq!(reserved_pre_migration, did_pre_migration.unwrap().deposit.amount);
 
 				assert!(update_balance_for_did::<Test>(&alice_did.clone()).is_ok());
 
 				let did_post_migration = Did::<Test>::get(alice_did.clone());
 
-				let balance_on_reserve_post_migration =
+				let reserved_post_migration =
 					<<Test as Config>::Currency as ReservableCurrency<AccountIdOf<Test>>>::reserved_balance(&alice_did);
 
 				let balance_on_hold = <<Test as Config>::Currency as InspectHold<AccountIdOf<Test>>>::balance_on_hold(
@@ -133,10 +131,10 @@ pub mod test {
 				assert!(did_post_migration.is_some());
 
 				// Since reserved balance count to hold balance, it should not be zero
-				assert!(!balance_on_reserve_post_migration.is_zero());
+				assert!(!reserved_post_migration.is_zero());
 
 				// ... and be as much as the hold balance
-				assert_eq!(balance_on_reserve_post_migration, balance_on_hold);
+				assert_eq!(reserved_post_migration, balance_on_hold);
 			});
 	}
 }

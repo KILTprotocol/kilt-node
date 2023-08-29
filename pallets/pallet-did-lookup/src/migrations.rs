@@ -197,16 +197,17 @@ pub mod test {
 
 				let connected_did_pre_migration = ConnectedDids::<Test>::get(LINKABLE_ACCOUNT_00);
 
-				let balance_on_reserve_pre_migration = <<Test as Config>::Currency as ReservableCurrency<
-					AccountIdOf<Test>,
-				>>::reserved_balance(&ACCOUNT_00);
+				let reserved_pre_migration =
+					<<Test as Config>::Currency as ReservableCurrency<AccountIdOf<Test>>>::reserved_balance(
+						&ACCOUNT_00,
+					);
 
 				//Delegation should be in storage
 				assert!(connected_did_pre_migration.is_some());
 
 				// before the migration the deposit should be reserved.
 				assert_eq!(
-					balance_on_reserve_pre_migration,
+					reserved_pre_migration,
 					connected_did_pre_migration.unwrap().deposit.amount
 				);
 
@@ -214,9 +215,10 @@ pub mod test {
 
 				let connected_did_post_migration = ConnectedDids::<Test>::get(LINKABLE_ACCOUNT_00);
 
-				let balance_on_reserve_post_migration = <<Test as Config>::Currency as ReservableCurrency<
-					AccountIdOf<Test>,
-				>>::reserved_balance(&ACCOUNT_00);
+				let reserved_post_migration =
+					<<Test as Config>::Currency as ReservableCurrency<AccountIdOf<Test>>>::reserved_balance(
+						&ACCOUNT_00,
+					);
 
 				let balance_on_hold = <<Test as Config>::Currency as InspectHold<AccountIdOf<Test>>>::balance_on_hold(
 					&HoldReason::Deposit.into(),
@@ -227,10 +229,10 @@ pub mod test {
 				assert!(connected_did_post_migration.is_some());
 
 				// Since reserved balance count to hold balance, it should not be zero
-				assert!(!balance_on_reserve_post_migration.is_zero());
+				assert!(!reserved_post_migration.is_zero());
 
 				// ... and be as much as the hold balance
-				assert_eq!(balance_on_reserve_post_migration, balance_on_hold);
+				assert_eq!(reserved_post_migration, balance_on_hold);
 			})
 	}
 }
