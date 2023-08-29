@@ -343,18 +343,25 @@ impl<T: Config> DidDetails<T> {
 	pub fn update_deposit(&mut self, did_subject: &DidIdentifierOf<T>) -> Result<(), DispatchError> {
 		let new_required_deposit = self.calculate_deposit(did_subject);
 
+		let is_key_migrated = <T as Config>::MigrationManager::is_key_migrated(Did::<T>::hashed_key_for(did_subject));
+
 		match new_required_deposit.cmp(&self.deposit.amount) {
 			Ordering::Greater => {
 				let deposit_to_reserve = new_required_deposit.saturating_sub(self.deposit.amount);
+
+				if !is_key_migrated {
+					<T as Config>::MigrationManager::release_reserved_deposit(
+						&self.deposit.owner,
+						&self.deposit.amount,
+					);
+					<T as Config>::MigrationManager::exclude_key_from_migration(Did::<T>::hashed_key_for(did_subject));
+				}
 				DidDepositCollector::<T>::create_deposit(self.deposit.clone().owner, deposit_to_reserve)?;
 				self.deposit.amount = self.deposit.amount.saturating_add(deposit_to_reserve);
 			}
+
 			Ordering::Less => {
 				let deposit_to_release = self.deposit.amount.saturating_sub(new_required_deposit);
-
-				let is_key_migrated =
-					<T as Config>::MigrationManager::is_key_migrated(Did::<T>::hashed_key_for(did_subject));
-
 				if is_key_migrated {
 					DidDepositCollector::<T>::free_deposit(Deposit {
 						owner: self.deposit.owner.clone(),
