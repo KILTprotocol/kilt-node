@@ -202,13 +202,13 @@ pub mod test {
 						&ACCOUNT_00,
 					);
 
-				//Delegation should be in storage
+				//Connected did should be in storage
 				assert!(connected_did_pre_migration.is_some());
 
 				// before the migration the deposit should be reserved.
 				assert_eq!(
 					reserved_pre_migration,
-					connected_did_pre_migration.unwrap().deposit.amount
+					connected_did_pre_migration.clone().unwrap().deposit.amount
 				);
 
 				assert!(update_balance_for_did_lookup::<Test>(&LINKABLE_ACCOUNT_00).is_ok());
@@ -227,6 +227,9 @@ pub mod test {
 
 				//Delegation should be still in the storage
 				assert!(connected_did_post_migration.is_some());
+
+				// ... and it should be the same
+				assert_eq!(connected_did_post_migration, connected_did_pre_migration);
 
 				// Since reserved balance count to hold balance, it should not be zero
 				assert!(!reserved_post_migration.is_zero());

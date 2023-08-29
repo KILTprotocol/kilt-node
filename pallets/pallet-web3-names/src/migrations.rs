@@ -75,22 +75,25 @@ pub mod test {
 			.with_web3_names(vec![(DID_00, web3_name_00.clone(), ACCOUNT_00)])
 			.build_and_execute_with_sanity_tests(|| {
 				kilt_support::migration::translate_holds_to_reserve::<Test>(HoldReason::Deposit.into());
-				let delegation_pre_migration = Owner::<Test>::get(web3_name_00.clone());
+				let w3n_pre_migration = Owner::<Test>::get(web3_name_00.clone());
 
 				let reserved_pre_migration =
 					<<Test as Config>::Currency as ReservableCurrency<AccountIdOf<Test>>>::reserved_balance(
 						&ACCOUNT_00,
 					);
 
-				//Delegation should be in storage
-				assert!(delegation_pre_migration.is_some());
+				//w3n should be in storage
+				assert!(w3n_pre_migration.is_some());
 
 				// before the migration the deposit should be reserved.
-				assert_eq!(reserved_pre_migration, delegation_pre_migration.unwrap().deposit.amount);
+				assert_eq!(
+					reserved_pre_migration,
+					w3n_pre_migration.clone().unwrap().deposit.amount
+				);
 
 				assert!(update_balance_for_w3n::<Test>(&web3_name_00.clone()).is_ok());
 
-				let delegation_post_migration = Owner::<Test>::get(web3_name_00.clone());
+				let w3n_post_migration = Owner::<Test>::get(web3_name_00.clone());
 
 				let reserved_post_migration =
 					<<Test as Config>::Currency as ReservableCurrency<AccountIdOf<Test>>>::reserved_balance(
@@ -103,7 +106,10 @@ pub mod test {
 				);
 
 				//Delegation should be still in the storage
-				assert!(delegation_post_migration.is_some());
+				assert!(w3n_post_migration.is_some());
+
+				// ... and it should be the same
+				assert_eq!(w3n_post_migration, w3n_pre_migration);
 
 				// Since reserved balance count to hold balance, it should not be zero
 				assert!(!reserved_post_migration.is_zero());

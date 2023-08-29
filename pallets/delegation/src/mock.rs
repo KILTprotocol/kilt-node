@@ -328,7 +328,7 @@ pub(crate) mod runtime {
 		pub const MaxParentChecks: u32 = 5;
 		pub const MaxRevocations: u32 = 5;
 		pub const MaxRemovals: u32 = 5;
-		#[derive(Clone, TypeInfo)]
+		#[derive(Clone, TypeInfo, PartialEq, Debug)]
 		pub const MaxChildren: u32 = 1000;
 		pub const DepositMock: Balance = DELEGATION_DEPOSIT;
 	}

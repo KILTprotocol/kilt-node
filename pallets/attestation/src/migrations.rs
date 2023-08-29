@@ -105,7 +105,7 @@ pub mod test {
 				// before the migration the deposit should be reserved.
 				assert_eq!(
 					reserved_pre_migration,
-					attestation_pre_migration.unwrap().deposit.amount
+					attestation_pre_migration.clone().unwrap().deposit.amount
 				);
 
 				assert!(update_balance_for_attestation::<Test>(&claim_hash).is_ok());
@@ -122,6 +122,9 @@ pub mod test {
 
 				//attestations should be still in the storage
 				assert!(attestation_post_migration.is_some());
+
+				// ... and should be the same
+				assert_eq!(attestation_post_migration, attestation_pre_migration);
 
 				// Since reserved balance count to hold balance, it should not be zero
 				assert!(!reserved_post_migration.is_zero());

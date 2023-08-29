@@ -113,7 +113,10 @@ pub mod test {
 				assert!(did_pre_migration.is_some());
 
 				// before the migration the deposit should be reserved.
-				assert_eq!(reserved_pre_migration, did_pre_migration.unwrap().deposit.amount);
+				assert_eq!(
+					reserved_pre_migration,
+					did_pre_migration.clone().unwrap().deposit.amount
+				);
 
 				assert!(update_balance_for_did::<Test>(&alice_did.clone()).is_ok());
 
@@ -129,6 +132,9 @@ pub mod test {
 
 				//did should be still in the storage
 				assert!(did_post_migration.is_some());
+
+				// ... and should be the same
+				assert_eq!(did_post_migration, did_pre_migration);
 
 				// Since reserved balance count to hold balance, it should not be zero
 				assert!(!reserved_post_migration.is_zero());
