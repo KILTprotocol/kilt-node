@@ -24,7 +24,7 @@ use frame_support::{
 use kilt_support::migration::switch_reserved_to_hold;
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
-use sp_runtime::{AccountId32, SaturatedConversion};
+use sp_runtime::AccountId32;
 use sp_std::marker::PhantomData;
 
 #[cfg(feature = "try-runtime")]
@@ -130,7 +130,7 @@ where
 	switch_reserved_to_hold::<AccountIdOf<T>, CurrencyOf<T>>(
 		&details.deposit.owner,
 		&HoldReason::Deposit.into(),
-		details.deposit.amount.saturated_into(),
+		details.deposit.amount,
 	)
 }
 

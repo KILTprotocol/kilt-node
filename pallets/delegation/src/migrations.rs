@@ -21,7 +21,6 @@ use frame_support::{
 	traits::{fungible::Inspect, ReservableCurrency},
 };
 use kilt_support::migration::switch_reserved_to_hold;
-use sp_runtime::SaturatedConversion;
 
 use crate::{AccountIdOf, Config, CurrencyOf, DelegationNodeIdOf, DelegationNodes, Error, HoldReason};
 
@@ -34,7 +33,7 @@ where
 	switch_reserved_to_hold::<AccountIdOf<T>, CurrencyOf<T>>(
 		&details.deposit.owner,
 		&HoldReason::Deposit.into(),
-		details.deposit.amount.saturated_into(),
+		details.deposit.amount,
 	)
 }
 

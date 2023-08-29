@@ -23,17 +23,9 @@ use frame_support::{
 		ReservableCurrency,
 	},
 };
-use sp_runtime::{traits::Zero, SaturatedConversion, Saturating};
+use sp_runtime::{traits::Zero, Saturating};
 
 use pallet_balances::{Config, Holds, Pallet};
-
-/// Checks some precondition of the migrations.
-pub fn has_user_reserved_balance<AccountId, Currency: ReservableCurrency<AccountId> + MutateHold<AccountId>>(
-	owner: &AccountId,
-	reason: &Currency::Reason,
-) -> bool {
-	Currency::balance_on_hold(reason, owner).is_zero() && Currency::reserved_balance(owner) > Zero::zero()
-}
 
 pub fn switch_reserved_to_hold<AccountId, Currency>(
 	owner: &AccountId,
@@ -44,15 +36,15 @@ where
 	Currency: ReservableCurrency<AccountId>
 		+ MutateHold<AccountId, Balance = <Currency as frame_support::traits::Currency<AccountId>>::Balance>,
 {
-	let remaining_balance = Currency::unreserve(owner, amount.saturated_into());
+	let remaining_balance = Currency::unreserve(owner, amount);
 	debug_assert!(
 		remaining_balance.is_zero(),
 		"Could not unreserve balance. Remaining: {:?}. To unreserve: {:?}",
 		remaining_balance,
 		amount
 	);
-	let to_hold_balance = amount.saturating_sub(remaining_balance.saturated_into());
-	Currency::hold(reason, owner, to_hold_balance.saturated_into())
+	let to_hold_balance = amount.saturating_sub(remaining_balance);
+	Currency::hold(reason, owner, to_hold_balance)
 }
 
 #[cfg(any(feature = "mock", feature = "runtime-benchmarks"))]
