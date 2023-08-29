@@ -24,7 +24,7 @@ use kilt_support::migration::switch_reserved_to_hold;
 
 use crate::{AccountIdOf, Config, CurrencyOf, DelegationNodeIdOf, DelegationNodes, Error, HoldReason};
 
-pub fn update_balance_for_entry<T: Config>(key: &DelegationNodeIdOf<T>) -> DispatchResult
+pub fn update_balance_for_delegation<T: Config>(key: &DelegationNodeIdOf<T>) -> DispatchResult
 where
 	<T as Config>::Currency:
 		ReservableCurrency<T::AccountId, Balance = <<T as Config>::Currency as Inspect<AccountIdOf<T>>>::Balance>,
@@ -42,7 +42,7 @@ pub mod test {
 	use frame_support::traits::{fungible::InspectHold, ReservableCurrency};
 	use sp_runtime::traits::Zero;
 
-	use crate::{migrations::update_balance_for_entry, mock::*, AccountIdOf, Config, DelegationNodes, HoldReason};
+	use crate::{migrations::update_balance_for_delegation, mock::*, AccountIdOf, Config, DelegationNodes, HoldReason};
 
 	#[test]
 	fn test_setup() {
@@ -124,7 +124,7 @@ pub mod test {
 					delegation_pre_migration.unwrap().deposit.amount
 				);
 
-				assert!(update_balance_for_entry::<Test>(&delegation_id).is_ok());
+				assert!(update_balance_for_delegation::<Test>(&delegation_id).is_ok());
 
 				let delegation_post_migration = DelegationNodes::<Test>::get(delegation_id);
 

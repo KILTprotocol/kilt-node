@@ -24,7 +24,7 @@ use kilt_support::migration::switch_reserved_to_hold;
 
 use crate::{AccountIdOf, Config, CurrencyOf, Did, DidIdentifierOf, Error, HoldReason};
 
-pub fn update_balance_for_entry<T: Config>(key: &DidIdentifierOf<T>) -> DispatchResult
+pub fn update_balance_for_did<T: Config>(key: &DidIdentifierOf<T>) -> DispatchResult
 where
 	<T as Config>::Currency:
 		ReservableCurrency<T::AccountId, Balance = <<T as Config>::Currency as Inspect<AccountIdOf<T>>>::Balance>,
@@ -47,7 +47,7 @@ pub mod test {
 	use sp_runtime::traits::Zero;
 
 	use crate::{
-		self as did, did_details::DidVerificationKey, migrations::update_balance_for_entry, mock::*, mock_utils::*,
+		self as did, did_details::DidVerificationKey, migrations::update_balance_for_did, mock::*, mock_utils::*,
 		AccountIdOf, Config, Did, HoldReason,
 	};
 
@@ -117,7 +117,7 @@ pub mod test {
 					did_pre_migration.unwrap().deposit.amount
 				);
 
-				assert!(update_balance_for_entry::<Test>(&alice_did.clone()).is_ok());
+				assert!(update_balance_for_did::<Test>(&alice_did.clone()).is_ok());
 
 				let did_post_migration = Did::<Test>::get(alice_did.clone());
 

@@ -158,7 +158,7 @@ pub mod pallet {
 			requested_migrations.attestation.iter().try_for_each(|key| {
 				let is_migrated = Self::is_key_migrated(Attestations::<T>::hashed_key_for(key))?;
 				if !is_migrated {
-					attestation::migrations::update_balance_for_entry::<T>(key)
+					attestation::migrations::update_balance_for_attestation::<T>(key)
 				} else {
 					Ok(())
 				}
@@ -167,7 +167,7 @@ pub mod pallet {
 			requested_migrations.delegation.iter().try_for_each(|key| {
 				let is_migrated = Self::is_key_migrated(DelegationNodes::<T>::hashed_key_for(key))?;
 				if !is_migrated {
-					delegation::migrations::update_balance_for_entry::<T>(key)
+					delegation::migrations::update_balance_for_delegation::<T>(key)
 				} else {
 					Ok(())
 				}
@@ -176,7 +176,7 @@ pub mod pallet {
 			requested_migrations.did.iter().try_for_each(|key| {
 				let is_migrated = Self::is_key_migrated(Did::<T>::hashed_key_for(key))?;
 				if !is_migrated {
-					did::migrations::update_balance_for_entry::<T>(key)
+					did::migrations::update_balance_for_did::<T>(key)
 				} else {
 					Ok(())
 				}
@@ -185,7 +185,7 @@ pub mod pallet {
 			requested_migrations.lookup.iter().try_for_each(|key| {
 				let is_migrated = Self::is_key_migrated(ConnectedDids::<T>::hashed_key_for(key))?;
 				if !is_migrated {
-					pallet_did_lookup::migrations::update_balance_for_entry::<T>(key)
+					pallet_did_lookup::migrations::update_balance_for_did_lookup::<T>(key)
 				} else {
 					Ok(())
 				}
@@ -194,7 +194,7 @@ pub mod pallet {
 			requested_migrations.w3n.iter().try_for_each(|key| {
 				let is_migrated = Self::is_key_migrated(Owner::<T>::hashed_key_for(key))?;
 				if !is_migrated {
-					pallet_web3_names::migrations::update_balance_for_entry::<T>(key)
+					pallet_web3_names::migrations::update_balance_for_w3n::<T>(key)
 				} else {
 					Ok(())
 				}
@@ -206,7 +206,7 @@ pub mod pallet {
 				.try_for_each(|(key, key2)| {
 					let is_migrated = Self::is_key_migrated(Credentials::<T>::hashed_key_for(key, key2))?;
 					if !is_migrated {
-						public_credentials::migrations::update_balance_for_entry::<T>(key, key2)
+						public_credentials::migrations::update_balance_for_public_credentials::<T>(key, key2)
 					} else {
 						Ok(())
 					}

@@ -24,7 +24,7 @@ use kilt_support::migration::switch_reserved_to_hold;
 
 use crate::{AccountIdOf, Config, CurrencyOf, Error, HoldReason, Owner, Web3NameOf};
 
-pub fn update_balance_for_entry<T: Config>(key: &Web3NameOf<T>) -> DispatchResult
+pub fn update_balance_for_w3n<T: Config>(key: &Web3NameOf<T>) -> DispatchResult
 where
 	<T as Config>::Currency:
 		ReservableCurrency<T::AccountId, Balance = <<T as Config>::Currency as Inspect<AccountIdOf<T>>>::Balance>,
@@ -42,7 +42,7 @@ pub mod test {
 	use frame_support::traits::{fungible::InspectHold, ReservableCurrency};
 	use sp_runtime::traits::Zero;
 
-	use crate::{migrations::update_balance_for_entry, mock::*, AccountIdOf, Config, HoldReason, Owner};
+	use crate::{migrations::update_balance_for_w3n, mock::*, AccountIdOf, Config, HoldReason, Owner};
 
 	#[test]
 	fn test_setup() {
@@ -90,7 +90,7 @@ pub mod test {
 					delegation_pre_migration.unwrap().deposit.amount
 				);
 
-				assert!(update_balance_for_entry::<Test>(&web3_name_00.clone()).is_ok());
+				assert!(update_balance_for_w3n::<Test>(&web3_name_00.clone()).is_ok());
 
 				let delegation_post_migration = Owner::<Test>::get(web3_name_00.clone());
 

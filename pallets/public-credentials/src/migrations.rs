@@ -22,7 +22,10 @@ use sp_runtime::DispatchResult;
 
 use crate::{AccountIdOf, Config, CredentialIdOf, Credentials, CurrencyOf, Error, HoldReason, SubjectIdOf};
 
-pub fn update_balance_for_entry<T: Config>(key: &SubjectIdOf<T>, key2: &CredentialIdOf<T>) -> DispatchResult
+pub fn update_balance_for_public_credentials<T: Config>(
+	key: &SubjectIdOf<T>,
+	key2: &CredentialIdOf<T>,
+) -> DispatchResult
 where
 	<T as Config>::Currency:
 		ReservableCurrency<T::AccountId, Balance = <<T as Config>::Currency as Inspect<AccountIdOf<T>>>::Balance>,
@@ -44,7 +47,8 @@ pub mod test {
 	use sp_runtime::traits::Zero;
 
 	use crate::{
-		migrations::update_balance_for_entry, mock::*, AccountIdOf, Config, CredentialIdOf, Credentials, HoldReason,
+		migrations::update_balance_for_public_credentials, mock::*, AccountIdOf, Config, CredentialIdOf, Credentials,
+		HoldReason,
 	};
 
 	#[test]
@@ -118,7 +122,7 @@ pub mod test {
 					delegation_pre_migration.unwrap().deposit.amount
 				);
 
-				assert!(update_balance_for_entry::<Test>(&subject_id, &credential_id).is_ok());
+				assert!(update_balance_for_public_credentials::<Test>(&subject_id, &credential_id).is_ok());
 
 				let delegation_post_migration = Credentials::<Test>::get(subject_id, credential_id);
 

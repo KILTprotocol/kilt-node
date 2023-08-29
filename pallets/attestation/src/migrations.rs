@@ -24,7 +24,7 @@ use kilt_support::migration::switch_reserved_to_hold;
 
 use crate::{AccountIdOf, Attestations, ClaimHashOf, Config, CurrencyOf, Error, HoldReason};
 
-pub fn update_balance_for_entry<T: Config>(key: &ClaimHashOf<T>) -> DispatchResult
+pub fn update_balance_for_attestation<T: Config>(key: &ClaimHashOf<T>) -> DispatchResult
 where
 	<T as Config>::Currency:
 		ReservableCurrency<T::AccountId, Balance = <<T as Config>::Currency as Inspect<AccountIdOf<T>>>::Balance>,
@@ -44,7 +44,7 @@ pub mod test {
 	use sp_runtime::traits::Zero;
 
 	use crate::{
-		migrations::update_balance_for_entry, mock::*, AccountIdOf, Attestations, AttesterOf, Config, HoldReason,
+		migrations::update_balance_for_attestation, mock::*, AccountIdOf, Attestations, AttesterOf, Config, HoldReason,
 	};
 
 	#[test]
@@ -107,7 +107,7 @@ pub mod test {
 					attestation_pre_migration.unwrap().deposit.amount
 				);
 
-				assert!(update_balance_for_entry::<Test>(&claim_hash).is_ok());
+				assert!(update_balance_for_attestation::<Test>(&claim_hash).is_ok());
 
 				let attestation_post_migration = Attestations::<Test>::get(claim_hash);
 
