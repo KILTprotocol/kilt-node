@@ -179,11 +179,12 @@ pub trait StorageDepositCollector<AccountId, Key, RuntimeHoldReason> {
 			DepositMigrationManager::exclude_key_from_migration(hashed_key);
 		}
 
-		Self::Currency::hold(&reason.into(), &deposit.owner, deposit.amount)?;
 		let deposit = Deposit {
 			owner: new_owner,
 			..deposit
 		};
+
+		Self::Currency::hold(&reason.into(), &deposit.owner, deposit.amount)?;
 
 		Self::store_deposit(key, deposit)?;
 
