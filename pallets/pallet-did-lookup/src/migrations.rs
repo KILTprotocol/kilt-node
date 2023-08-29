@@ -136,10 +136,15 @@ where
 
 #[cfg(test)]
 pub mod test {
-	use frame_support::traits::{fungible::InspectHold, ReservableCurrency};
+	use frame_support::{
+		assert_noop,
+		traits::{fungible::InspectHold, ReservableCurrency},
+	};
 	use sp_runtime::traits::Zero;
 
-	use crate::{migrations::update_balance_for_did_lookup, mock::*, AccountIdOf, Config, ConnectedDids, HoldReason};
+	use crate::{
+		migrations::update_balance_for_did_lookup, mock::*, AccountIdOf, Config, ConnectedDids, Error, HoldReason,
+	};
 
 	#[test]
 	fn test_setup() {
@@ -236,6 +241,12 @@ pub mod test {
 
 				// ... and be as much as the hold balance
 				assert_eq!(reserved_post_migration, balance_on_hold);
+
+				// should throw error if connected did does not exist
+				assert_noop!(
+					update_balance_for_did_lookup::<Test>(&LINKABLE_ACCOUNT_01),
+					Error::<Test>::NotFound
+				);
 			})
 	}
 }

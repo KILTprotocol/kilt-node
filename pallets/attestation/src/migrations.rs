@@ -40,11 +40,15 @@ where
 #[cfg(test)]
 pub mod test {
 	use ctype::mock::get_ctype_hash;
-	use frame_support::traits::{fungible::InspectHold, ReservableCurrency};
+	use frame_support::{
+		assert_noop,
+		traits::{fungible::InspectHold, ReservableCurrency},
+	};
 	use sp_runtime::traits::Zero;
 
 	use crate::{
-		migrations::update_balance_for_attestation, mock::*, AccountIdOf, Attestations, AttesterOf, Config, HoldReason,
+		migrations::update_balance_for_attestation, mock::*, AccountIdOf, Attestations, AttesterOf, Config, Error,
+		HoldReason,
 	};
 
 	#[test]
@@ -82,6 +86,7 @@ pub mod test {
 	fn test_balance_migration_attestation() {
 		let attester: AttesterOf<Test> = sr25519_did_from_seed(&ALICE_SEED);
 		let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
+		let claim_hash2 = claim_hash_from_seed(CLAIM_HASH_SEED_02);
 		let ctype_hash = get_ctype_hash::<Test>(true);
 		let attestations = generate_base_attestation::<Test>(attester.clone(), ACCOUNT_00);
 
@@ -131,6 +136,12 @@ pub mod test {
 
 				// ... and be as much as the hold balance
 				assert_eq!(reserved_post_migration, balance_on_hold);
+
+				// should throw error if claim hash does not exist
+				assert_noop!(
+					update_balance_for_attestation::<Test>(&claim_hash2),
+					Error::<Test>::NotFound
+				);
 			});
 	}
 }

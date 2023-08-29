@@ -39,10 +39,13 @@ where
 
 #[cfg(test)]
 pub mod test {
-	use frame_support::traits::{fungible::InspectHold, ReservableCurrency};
+	use frame_support::{
+		assert_noop,
+		traits::{fungible::InspectHold, ReservableCurrency},
+	};
 	use sp_runtime::traits::Zero;
 
-	use crate::{migrations::update_balance_for_w3n, mock::*, AccountIdOf, Config, HoldReason, Owner};
+	use crate::{migrations::update_balance_for_w3n, mock::*, AccountIdOf, Config, Error, HoldReason, Owner};
 
 	#[test]
 	fn test_setup() {
@@ -70,6 +73,7 @@ pub mod test {
 	#[test]
 	fn test_balance_migration_w3n() {
 		let web3_name_00 = get_web3_name(WEB3_NAME_00_INPUT);
+		let web3_name_01 = get_web3_name(WEB3_NAME_01_INPUT);
 		ExtBuilder::default()
 			.with_balances(vec![(ACCOUNT_00, Web3NameDeposit::get() * 2)])
 			.with_web3_names(vec![(DID_00, web3_name_00.clone(), ACCOUNT_00)])
@@ -116,6 +120,9 @@ pub mod test {
 
 				// ... and be as much as the hold balance
 				assert_eq!(reserved_post_migration, balance_on_hold);
+
+				// should throw error if w3n does not exist
+				assert_noop!(update_balance_for_w3n::<Test>(&web3_name_01), Error::<Test>::NotFound);
 			})
 	}
 }

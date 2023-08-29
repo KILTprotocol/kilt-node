@@ -39,10 +39,15 @@ where
 
 #[cfg(test)]
 pub mod test {
-	use frame_support::traits::{fungible::InspectHold, ReservableCurrency};
+	use frame_support::{
+		assert_noop,
+		traits::{fungible::InspectHold, ReservableCurrency},
+	};
 	use sp_runtime::traits::Zero;
 
-	use crate::{migrations::update_balance_for_delegation, mock::*, AccountIdOf, Config, DelegationNodes, HoldReason};
+	use crate::{
+		migrations::update_balance_for_delegation, mock::*, AccountIdOf, Config, DelegationNodes, Error, HoldReason,
+	};
 
 	#[test]
 	fn test_setup() {
@@ -94,6 +99,7 @@ pub mod test {
 		let hierarchy_details = generate_base_delegation_hierarchy_details::<Test>();
 
 		let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_1);
+		let delegation_id2 = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_2);
 		let delegation_details =
 			generate_base_delegation_node::<Test>(hierarchy_root_id, user_2, Some(hierarchy_root_id), ACCOUNT_01);
 
@@ -150,6 +156,12 @@ pub mod test {
 
 				// ... and be as much as the hold balance
 				assert_eq!(reserved_post_migration, balance_on_hold);
+
+				// should throw error if delegation does not exist
+				assert_noop!(
+					update_balance_for_delegation::<Test>(&delegation_id2),
+					Error::<Test>::DelegationNotFound
+				);
 			});
 	}
 }

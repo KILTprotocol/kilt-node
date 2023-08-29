@@ -39,16 +39,19 @@ where
 
 #[cfg(test)]
 pub mod test {
-	use frame_support::traits::{
-		fungible::{Inspect, InspectHold},
-		ReservableCurrency,
+	use frame_support::{
+		assert_noop,
+		traits::{
+			fungible::{Inspect, InspectHold},
+			ReservableCurrency,
+		},
 	};
 	use sp_core::Pair;
 	use sp_runtime::traits::Zero;
 
 	use crate::{
 		self as did, did_details::DidVerificationKey, migrations::update_balance_for_did, mock::*, mock_utils::*,
-		AccountIdOf, Config, Did, HoldReason,
+		AccountIdOf, Config, Did, Error, HoldReason,
 	};
 
 	#[test]
@@ -87,7 +90,9 @@ pub mod test {
 	#[test]
 	fn test_balance_migration_did() {
 		let auth_key = get_ed25519_authentication_key(true);
+		let auth_key2 = get_ed25519_authentication_key(false);
 		let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
+		let bob_did = get_did_identifier_from_ed25519_key(auth_key2.public());
 
 		let mut did_details =
 			generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(alice_did.clone()));
@@ -141,6 +146,9 @@ pub mod test {
 
 				// ... and be as much as the hold balance
 				assert_eq!(reserved_post_migration, balance_on_hold);
+
+				// should throw error if did does not exist
+				assert_noop!(update_balance_for_did::<Test>(&bob_did), Error::<Test>::NotFound);
 			});
 	}
 }

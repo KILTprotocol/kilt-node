@@ -42,13 +42,16 @@ where
 pub mod test {
 
 	use ctype::mock::get_ctype_hash;
-	use frame_support::traits::{fungible::InspectHold, ReservableCurrency};
+	use frame_support::{
+		assert_noop,
+		traits::{fungible::InspectHold, ReservableCurrency},
+	};
 	use sp_core::Get;
 	use sp_runtime::traits::Zero;
 
 	use crate::{
 		migrations::update_balance_for_public_credentials, mock::*, AccountIdOf, Config, CredentialIdOf, Credentials,
-		HoldReason,
+		Error, HoldReason,
 	};
 
 	#[test]
@@ -94,6 +97,7 @@ pub mod test {
 
 		let ctype_hash_1 = get_ctype_hash::<Test>(true);
 		let subject_id: <Test as Config>::SubjectId = SUBJECT_ID_00;
+		let subject_id2: <Test as Config>::SubjectId = SUBJECT_ID_01;
 		let mut new_credential =
 			generate_base_credential_entry::<Test>(ACCOUNT_00, 0, attester.clone(), Some(ctype_hash_1), None);
 		new_credential.authorization_id = Some(attester.clone());
@@ -148,6 +152,12 @@ pub mod test {
 
 				// ... and be as much as the hold balance
 				assert_eq!(reserved_post_migration, balance_on_hold);
+
+				// should throw error if public credential does not exist
+				assert_noop!(
+					update_balance_for_public_credentials::<Test>(&subject_id2, &credential_id),
+					Error::<Test>::NotFound
+				);
 			})
 	}
 }
