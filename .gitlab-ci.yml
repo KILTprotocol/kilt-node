@@ -40,7 +40,7 @@ build:
       - /^[dev-](\w*-)*[0-9]?$/
   variables:
     DOCKER_HUB_PARACHAIN: "kiltprotocol/kilt-node"
-    DOCKER_HUB_STANDALONE: "kiltprotocol/mashnet-node"
+    DOCKER_HUB_STANDALONE: "kiltprotocol/standalone-node"
   before_script:
     - aws --version
     - docker --version

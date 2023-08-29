@@ -7,12 +7,12 @@ license-file.workspace = true
 readme.workspace = true
 repository.workspace = true
 version.workspace = true
-name = "mashnet-node"
+name = "standalone-node"
 description = "Client for KILT standalone development chain."
 build = "build.rs"
 
 [[bin]]
-name = "mashnet-node"
+name = "standalone-node"
 path = "src/main.rs"
 
 [build-dependencies]
@@ -26,14 +26,14 @@ hex-literal.workspace = true
 futures = { workspace = true, features = ["thread-pool"]}
 
 # Internal dependencies
-mashnet-node-runtime = {workspace = true, features = ["std"]}
+kestrel-runtime = {workspace = true, features = ["std"]}
 runtime-common = {workspace = true, features = ["std"]}
 
 # Substrate dependencies
 frame-system = {workspace = true, features = ["std"]}
 pallet-transaction-payment = {workspace = true, features = ["std"]}
 sc-basic-authorship.workspace = true
-sc-cli.workspace = true 
+sc-cli.workspace = true
 sc-client-api.workspace = true
 sc-consensus.workspace = true
 sc-consensus-aura.workspace = true
@@ -75,14 +75,14 @@ runtime-benchmarks = [
   "frame-benchmarking/runtime-benchmarks",
   "frame-benchmarking-cli/runtime-benchmarks",
   "frame-system/runtime-benchmarks",
-  "mashnet-node-runtime/runtime-benchmarks",
+  "kestrel-runtime/runtime-benchmarks",
   "runtime-common/runtime-benchmarks",
   "sc-service/runtime-benchmarks",
   "sp-runtime/runtime-benchmarks",
 ]
 try-runtime = [
   "frame-system/try-runtime",
-  "mashnet-node-runtime/try-runtime",
+  "kestrel-runtime/try-runtime",
   "pallet-transaction-payment/try-runtime",
   "runtime-common/try-runtime",
   "try-runtime-cli",
