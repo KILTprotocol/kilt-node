@@ -37,7 +37,7 @@ use crate::{
 	mock::*,
 	mock_utils::*,
 	service_endpoints::DidEndpoint,
-	DidRawOrigin, Error, HoldReason,
+	Error, HoldReason,
 };
 
 // create
@@ -304,15 +304,18 @@ fn check_deposit_change_by_adding_service_endpoint() {
 		+ <Test as did::Config>::ServiceEndpointDeposit::get()
 		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+
+	#[cfg(feature = "runtime-benchmarks")]
+	let origin = RuntimeOrigin::signed(alice_did.clone());
+
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), balance)])
 		.with_dids(vec![(alice_did.clone(), did_details)])
 		.build(None)
 		.execute_with(|| {
-			assert_ok!(Did::add_service_endpoint(
-				DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into(),
-				new_service_endpoint.clone()
-			));
+			assert_ok!(Did::add_service_endpoint(origin.clone(), new_service_endpoint.clone()));
 
 			assert_eq!(
 				Balances::balance_on_hold(&HoldReason::Deposit.into(), &alice_did),
@@ -325,10 +328,7 @@ fn check_deposit_change_by_adding_service_endpoint() {
 			);
 
 			assert_noop!(
-				Did::add_service_endpoint(
-					DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into(),
-					new_service_endpoint2.clone()
-				),
+				Did::add_service_endpoint(origin, new_service_endpoint2.clone()),
 				TokenError::FundsUnavailable
 			);
 
@@ -841,6 +841,12 @@ fn check_successful_authentication_key_update() {
 
 	let new_block_number: BlockNumber = 1;
 
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+
+	#[cfg(feature = "runtime-benchmarks")]
+	let origin = RuntimeOrigin::signed(alice_did.clone());
+
 	// Update authentication key. The old one should be removed.
 	ExtBuilder::default()
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
@@ -848,7 +854,7 @@ fn check_successful_authentication_key_update() {
 		.build_and_execute_with_sanity_tests(None, || {
 			System::set_block_number(new_block_number);
 			assert_ok!(Did::set_authentication_key(
-				DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into(),
+				origin,
 				DidVerificationKey::from(new_auth_key.public())
 			));
 			let new_did_details = Did::get_did(&alice_did).expect("ALICE_DID should be present on chain.");
@@ -883,6 +889,12 @@ fn check_successful_authentication_key_max_public_keys_update() {
 
 	let new_block_number: BlockNumber = 1;
 
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+
+	#[cfg(feature = "runtime-benchmarks")]
+	let origin = RuntimeOrigin::signed(alice_did.clone());
+
 	// Update authentication key. The old one should be removed.
 	ExtBuilder::default()
 		.with_dids(vec![(alice_did.clone(), did_details)])
@@ -890,7 +902,7 @@ fn check_successful_authentication_key_max_public_keys_update() {
 		.build_and_execute_with_sanity_tests(None, || {
 			System::set_block_number(new_block_number);
 			assert_ok!(Did::set_authentication_key(
-				DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into(),
+				origin,
 				DidVerificationKey::from(new_auth_key.public())
 			));
 
@@ -923,13 +935,19 @@ fn check_reused_key_authentication_key_update() {
 
 	let new_block_number: BlockNumber = 1;
 
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+
+	#[cfg(feature = "runtime-benchmarks")]
+	let origin = RuntimeOrigin::signed(alice_did.clone());
+
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
 		.build_and_execute_with_sanity_tests(None, || {
 			System::set_block_number(new_block_number);
 			assert_ok!(Did::set_authentication_key(
-				DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into(),
+				origin,
 				DidVerificationKey::from(new_auth_key.public())
 			));
 
@@ -975,16 +993,20 @@ fn check_max_keys_authentication_key_update_error() {
 	// Update authentication key. Since the old one is not removed because it is the
 	// same as the delegation key, the update should fail as the max number of
 	// public keys is already present.
+
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+
+	#[cfg(feature = "runtime-benchmarks")]
+	let origin = RuntimeOrigin::signed(alice_did.clone());
+
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
-		.with_dids(vec![(alice_did.clone(), did_details)])
+		.with_dids(vec![(alice_did, did_details)])
 		.build_and_execute_with_sanity_tests(None, || {
 			System::set_block_number(new_block_number);
 			assert_noop!(
-				Did::set_authentication_key(
-					DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into(),
-					DidVerificationKey::from(new_auth_key.public())
-				),
+				Did::set_authentication_key(origin, DidVerificationKey::from(new_auth_key.public())),
 				did::Error::<Test>::MaxPublicKeysExceeded
 			);
 		});
@@ -998,14 +1020,17 @@ fn check_did_not_present_authentication_key_update_error() {
 
 	let new_block_number: BlockNumber = 1;
 
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did, alice_did).into();
+
+	#[cfg(feature = "runtime-benchmarks")]
+	let origin = RuntimeOrigin::signed(alice_did);
+
 	// Update authentication key. The old one should be removed.
 	ExtBuilder::default().build(None).execute_with(|| {
 		System::set_block_number(new_block_number);
 		assert_noop!(
-			Did::set_authentication_key(
-				DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into(),
-				DidVerificationKey::from(new_auth_key.public())
-			),
+			Did::set_authentication_key(origin, DidVerificationKey::from(new_auth_key.public())),
 			did::Error::<Test>::NotFound
 		);
 	});
@@ -1024,6 +1049,12 @@ fn check_successful_delegation_key_update() {
 
 	let new_block_number: BlockNumber = 1;
 
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+
+	#[cfg(feature = "runtime-benchmarks")]
+	let origin = RuntimeOrigin::signed(alice_did.clone());
+
 	// Update delegation key. The old one should be removed.
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
@@ -1031,7 +1062,7 @@ fn check_successful_delegation_key_update() {
 		.build_and_execute_with_sanity_tests(None, || {
 			System::set_block_number(new_block_number);
 			assert_ok!(Did::set_delegation_key(
-				DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into(),
+				origin,
 				DidVerificationKey::from(new_del_key.public())
 			));
 
@@ -1068,6 +1099,12 @@ fn check_successful_delegation_key_max_public_keys_update() {
 
 	let new_block_number: BlockNumber = 1;
 
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+
+	#[cfg(feature = "runtime-benchmarks")]
+	let origin = RuntimeOrigin::signed(alice_did.clone());
+
 	// Update delegation key. The old one should be removed.
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
@@ -1075,7 +1112,7 @@ fn check_successful_delegation_key_max_public_keys_update() {
 		.build_and_execute_with_sanity_tests(None, || {
 			System::set_block_number(new_block_number);
 			assert_ok!(Did::set_delegation_key(
-				DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into(),
+				origin,
 				DidVerificationKey::from(new_del_key.public())
 			));
 
@@ -1106,13 +1143,19 @@ fn check_reused_key_delegation_key_update() {
 
 	let new_block_number: BlockNumber = 1;
 
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+
+	#[cfg(feature = "runtime-benchmarks")]
+	let origin = RuntimeOrigin::signed(alice_did.clone());
+
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
 		.build_and_execute_with_sanity_tests(None, || {
 			System::set_block_number(new_block_number);
 			assert_ok!(Did::set_delegation_key(
-				DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into(),
+				origin,
 				DidVerificationKey::from(new_del_key.public())
 			));
 
@@ -1149,17 +1192,20 @@ fn check_max_public_keys_delegation_key_addition_error() {
 
 	let new_block_number: BlockNumber = 1;
 
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+
+	#[cfg(feature = "runtime-benchmarks")]
+	let origin = RuntimeOrigin::signed(alice_did.clone());
+
 	// Update delegation key. The old one should be removed.
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
-		.with_dids(vec![(alice_did.clone(), did_details)])
+		.with_dids(vec![(alice_did, did_details)])
 		.build_and_execute_with_sanity_tests(None, || {
 			System::set_block_number(new_block_number);
 			assert_noop!(
-				Did::set_delegation_key(
-					DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into(),
-					DidVerificationKey::from(new_del_key.public())
-				),
+				Did::set_delegation_key(origin, DidVerificationKey::from(new_del_key.public())),
 				did::Error::<Test>::MaxPublicKeysExceeded
 			);
 		});
@@ -1185,18 +1231,21 @@ fn check_max_public_keys_reused_key_delegation_key_update_error() {
 
 	let new_block_number: BlockNumber = 1;
 
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+
+	#[cfg(feature = "runtime-benchmarks")]
+	let origin = RuntimeOrigin::signed(alice_did.clone());
+
 	// Update delegation key. The old one should not be removed as it is still used
 	// as authentication key.
 	ExtBuilder::default()
 		.with_dids(vec![(alice_did.clone(), did_details)])
-		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
+		.with_balances(vec![(alice_did, DEFAULT_BALANCE)])
 		.build_and_execute_with_sanity_tests(None, || {
 			System::set_block_number(new_block_number);
 			assert_noop!(
-				Did::set_delegation_key(
-					DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into(),
-					DidVerificationKey::from(new_del_key.public())
-				),
+				Did::set_delegation_key(origin, DidVerificationKey::from(new_del_key.public())),
 				did::Error::<Test>::MaxPublicKeysExceeded
 			);
 		});
@@ -1210,14 +1259,17 @@ fn check_did_not_present_delegation_key_update_error() {
 
 	let new_block_number: BlockNumber = 1;
 
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did, alice_did).into();
+
+	#[cfg(feature = "runtime-benchmarks")]
+	let origin = RuntimeOrigin::signed(alice_did);
+
 	// Update delegation key. The old one should be removed.
 	ExtBuilder::default().build(None).execute_with(|| {
 		System::set_block_number(new_block_number);
 		assert_noop!(
-			Did::set_delegation_key(
-				DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into(),
-				DidVerificationKey::from(new_del_key.public())
-			),
+			Did::set_delegation_key(origin, DidVerificationKey::from(new_del_key.public())),
 			did::Error::<Test>::NotFound
 		);
 	});
@@ -1233,13 +1285,17 @@ fn check_successful_delegation_key_deletion() {
 		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(alice_did.clone()));
 	assert_ok!(old_did_details.update_delegation_key(DidVerificationKey::from(old_del_key.public()), 0u64));
 
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+
+	#[cfg(feature = "runtime-benchmarks")]
+	let origin = RuntimeOrigin::signed(alice_did.clone());
+
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
 		.build_and_execute_with_sanity_tests(None, || {
-			assert_ok!(Did::remove_delegation_key(
-				DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into()
-			));
+			assert_ok!(Did::remove_delegation_key(origin));
 
 			let new_did_details = Did::get_did(&alice_did).expect("ALICE_DID should be present on chain.");
 			assert!(new_did_details.delegation_key.is_none());
@@ -1261,13 +1317,17 @@ fn check_successful_reused_delegation_key_deletion() {
 		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(alice_did.clone()));
 	assert_ok!(old_did_details.update_delegation_key(DidVerificationKey::from(old_del_key.public()), 0u64));
 
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+
+	#[cfg(feature = "runtime-benchmarks")]
+	let origin = RuntimeOrigin::signed(alice_did.clone());
+
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(alice_did.clone(), old_did_details.clone())])
 		.build_and_execute_with_sanity_tests(None, || {
-			assert_ok!(Did::remove_delegation_key(
-				DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into()
-			));
+			assert_ok!(Did::remove_delegation_key(origin));
 
 			let new_did_details = Did::get_did(&alice_did).expect("ALICE_DID should be present on chain.");
 			assert!(new_did_details.delegation_key.is_none());
@@ -1285,11 +1345,14 @@ fn check_did_not_present_delegation_key_deletion_error() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did, alice_did).into();
+
+	#[cfg(feature = "runtime-benchmarks")]
+	let origin = RuntimeOrigin::signed(alice_did);
+
 	ExtBuilder::default().build(None).execute_with(|| {
-		assert_noop!(
-			Did::remove_delegation_key(DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into()),
-			did::Error::<Test>::NotFound
-		);
+		assert_noop!(Did::remove_delegation_key(origin), did::Error::<Test>::NotFound);
 	});
 }
 
@@ -1301,12 +1364,18 @@ fn check_key_not_present_delegation_key_deletion_error() {
 	let old_did_details =
 		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(alice_did.clone()));
 
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+
+	#[cfg(feature = "runtime-benchmarks")]
+	let origin = RuntimeOrigin::signed(alice_did.clone());
+
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
-		.with_dids(vec![(alice_did.clone(), old_did_details)])
+		.with_dids(vec![(alice_did, old_did_details)])
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_noop!(
-				Did::remove_delegation_key(DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into()),
+				Did::remove_delegation_key(origin),
 				did::Error::<Test>::VerificationKeyNotFound
 			);
 		});
@@ -1325,6 +1394,12 @@ fn check_successful_attestation_key_update() {
 
 	let new_block_number: BlockNumber = 1;
 
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+
+	#[cfg(feature = "runtime-benchmarks")]
+	let origin = RuntimeOrigin::signed(alice_did.clone());
+
 	// Update attestation key. The old one should be removed.
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
@@ -1332,7 +1407,7 @@ fn check_successful_attestation_key_update() {
 		.build_and_execute_with_sanity_tests(None, || {
 			System::set_block_number(new_block_number);
 			assert_ok!(Did::set_attestation_key(
-				DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into(),
+				origin,
 				DidVerificationKey::from(new_att_key.public())
 			));
 			let new_did_details = Did::get_did(&alice_did).expect("ALICE_DID should be present on chain.");
@@ -1368,6 +1443,12 @@ fn check_successful_attestation_key_max_public_keys_update() {
 
 	let new_block_number: BlockNumber = 1;
 
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+
+	#[cfg(feature = "runtime-benchmarks")]
+	let origin = RuntimeOrigin::signed(alice_did.clone());
+
 	// Update attestation key. The old one should be removed.
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
@@ -1375,7 +1456,7 @@ fn check_successful_attestation_key_max_public_keys_update() {
 		.build_and_execute_with_sanity_tests(None, || {
 			System::set_block_number(new_block_number);
 			assert_ok!(Did::set_attestation_key(
-				DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into(),
+				origin,
 				DidVerificationKey::from(new_att_key.public())
 			));
 			let new_did_details = Did::get_did(&alice_did).expect("ALICE_DID should be present on chain.");
@@ -1405,13 +1486,19 @@ fn check_reused_key_attestation_key_update() {
 
 	let new_block_number: BlockNumber = 1;
 
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+
+	#[cfg(feature = "runtime-benchmarks")]
+	let origin = RuntimeOrigin::signed(alice_did.clone());
+
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
 		.build_and_execute_with_sanity_tests(None, || {
 			System::set_block_number(new_block_number);
 			assert_ok!(Did::set_attestation_key(
-				DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into(),
+				origin,
 				DidVerificationKey::from(new_att_key.public())
 			));
 
@@ -1448,17 +1535,20 @@ fn check_max_public_keys_attestation_key_addition_error() {
 
 	let new_block_number: BlockNumber = 1;
 
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+
+	#[cfg(feature = "runtime-benchmarks")]
+	let origin = RuntimeOrigin::signed(alice_did.clone());
+
 	// Update attestation key. The old one should be removed.
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
-		.with_dids(vec![(alice_did.clone(), did_details)])
+		.with_dids(vec![(alice_did, did_details)])
 		.build_and_execute_with_sanity_tests(None, || {
 			System::set_block_number(new_block_number);
 			assert_noop!(
-				Did::set_attestation_key(
-					DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into(),
-					DidVerificationKey::from(new_att_key.public())
-				),
+				Did::set_attestation_key(origin, DidVerificationKey::from(new_att_key.public())),
 				did::Error::<Test>::MaxPublicKeysExceeded
 			);
 		});
@@ -1484,18 +1574,21 @@ fn check_max_public_keys_reused_key_attestation_key_update_error() {
 
 	let new_block_number: BlockNumber = 1;
 
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+
+	#[cfg(feature = "runtime-benchmarks")]
+	let origin = RuntimeOrigin::signed(alice_did.clone());
+
 	// Update attestation key. The old one should not be removed as it is still used
 	// as authentication key.
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
-		.with_dids(vec![(alice_did.clone(), did_details)])
+		.with_dids(vec![(alice_did, did_details)])
 		.build_and_execute_with_sanity_tests(None, || {
 			System::set_block_number(new_block_number);
 			assert_noop!(
-				Did::set_attestation_key(
-					DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into(),
-					DidVerificationKey::from(new_att_key.public())
-				),
+				Did::set_attestation_key(origin, DidVerificationKey::from(new_att_key.public())),
 				did::Error::<Test>::MaxPublicKeysExceeded
 			);
 		});
@@ -1509,14 +1602,17 @@ fn check_did_not_present_attestation_key_update_error() {
 
 	let new_block_number: BlockNumber = 1;
 
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did, alice_did).into();
+
+	#[cfg(feature = "runtime-benchmarks")]
+	let origin = RuntimeOrigin::signed(alice_did);
+
 	// Update delegation key. The old one should be removed.
 	ExtBuilder::default().build(None).execute_with(|| {
 		System::set_block_number(new_block_number);
 		assert_noop!(
-			Did::set_delegation_key(
-				DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into(),
-				DidVerificationKey::from(new_att_key.public())
-			),
+			Did::set_delegation_key(origin, DidVerificationKey::from(new_att_key.public())),
 			did::Error::<Test>::NotFound
 		);
 	});
@@ -1532,13 +1628,17 @@ fn check_successful_attestation_key_deletion() {
 		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(alice_did.clone()));
 	assert_ok!(old_did_details.update_attestation_key(DidVerificationKey::from(old_att_key.public()), 0u64));
 
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+
+	#[cfg(feature = "runtime-benchmarks")]
+	let origin = RuntimeOrigin::signed(alice_did.clone());
+
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
 		.build_and_execute_with_sanity_tests(None, || {
-			assert_ok!(Did::remove_attestation_key(
-				DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into()
-			));
+			assert_ok!(Did::remove_attestation_key(origin));
 
 			let new_did_details = Did::get_did(&alice_did).expect("ALICE_DID should be present on chain.");
 			assert!(new_did_details.attestation_key.is_none());
@@ -1560,13 +1660,17 @@ fn check_successful_reused_attestation_key_deletion() {
 		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(alice_did.clone()));
 	assert_ok!(old_did_details.update_attestation_key(DidVerificationKey::from(old_att_key.public()), 0u64));
 
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+
+	#[cfg(feature = "runtime-benchmarks")]
+	let origin = RuntimeOrigin::signed(alice_did.clone());
+
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(alice_did.clone(), old_did_details.clone())])
 		.build_and_execute_with_sanity_tests(None, || {
-			assert_ok!(Did::remove_attestation_key(
-				DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into()
-			));
+			assert_ok!(Did::remove_attestation_key(origin));
 			let new_did_details = Did::get_did(&alice_did).expect("ALICE_DID should be present on chain.");
 			assert!(new_did_details.attestation_key.is_none());
 			let public_keys = new_did_details.public_keys;
@@ -1583,11 +1687,14 @@ fn check_did_not_present_attestation_key_deletion_error() {
 	let auth_key = get_ed25519_authentication_key(true);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did, alice_did).into();
+
+	#[cfg(feature = "runtime-benchmarks")]
+	let origin = RuntimeOrigin::signed(alice_did);
+
 	ExtBuilder::default().build(None).execute_with(|| {
-		assert_noop!(
-			Did::remove_attestation_key(DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into()),
-			did::Error::<Test>::NotFound
-		);
+		assert_noop!(Did::remove_attestation_key(origin), did::Error::<Test>::NotFound);
 	});
 }
 
@@ -1599,12 +1706,18 @@ fn check_key_not_present_attestation_key_deletion_error() {
 	let old_did_details =
 		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(alice_did.clone()));
 
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+
+	#[cfg(feature = "runtime-benchmarks")]
+	let origin = RuntimeOrigin::signed(alice_did.clone());
+
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
-		.with_dids(vec![(alice_did.clone(), old_did_details)])
+		.with_dids(vec![(alice_did, old_did_details)])
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_noop!(
-				Did::remove_attestation_key(DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into()),
+				Did::remove_attestation_key(origin),
 				did::Error::<Test>::VerificationKeyNotFound
 			);
 		});
@@ -1621,15 +1734,18 @@ fn check_successful_key_agreement_key_addition() {
 
 	let new_block_number: BlockNumber = 1;
 
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+
+	#[cfg(feature = "runtime-benchmarks")]
+	let origin = RuntimeOrigin::signed(alice_did.clone());
+
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
 		.build_and_execute_with_sanity_tests(None, || {
 			System::set_block_number(new_block_number);
-			assert_ok!(Did::add_key_agreement_key(
-				DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into(),
-				new_key_agreement_key,
-			));
+			assert_ok!(Did::add_key_agreement_key(origin, new_key_agreement_key,));
 			let new_did_details = Did::get_did(&alice_did).expect("ALICE_DID should be present on chain.");
 			assert_eq!(new_did_details.key_agreement_keys.len(), 1);
 			assert_eq!(
@@ -1662,16 +1778,19 @@ fn check_max_public_keys_key_agreement_key_addition_error() {
 
 	let new_block_number: BlockNumber = 1;
 
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+
+	#[cfg(feature = "runtime-benchmarks")]
+	let origin = RuntimeOrigin::signed(alice_did.clone());
+
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
-		.with_dids(vec![(alice_did.clone(), did_details)])
+		.with_dids(vec![(alice_did, did_details)])
 		.build_and_execute_with_sanity_tests(None, || {
 			System::set_block_number(new_block_number);
 			assert_noop!(
-				Did::add_key_agreement_key(
-					DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into(),
-					new_key_agreement_key,
-				),
+				Did::add_key_agreement_key(origin, new_key_agreement_key,),
 				did::Error::<Test>::MaxPublicKeysExceeded
 			);
 		});
@@ -1685,14 +1804,17 @@ fn check_did_not_present_key_agreement_key_addition_error() {
 
 	let new_block_number: BlockNumber = 1;
 
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did, alice_did).into();
+
+	#[cfg(feature = "runtime-benchmarks")]
+	let origin = RuntimeOrigin::signed(alice_did);
+
 	// Update delegation key. The old one should be removed.
 	ExtBuilder::default().build(None).execute_with(|| {
 		System::set_block_number(new_block_number);
 		assert_noop!(
-			Did::add_key_agreement_key(
-				DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into(),
-				new_enc_key
-			),
+			Did::add_key_agreement_key(origin, new_enc_key),
 			did::Error::<Test>::NotFound
 		);
 	});
@@ -1708,12 +1830,18 @@ fn check_successful_key_agreement_key_deletion() {
 		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(alice_did.clone()));
 	assert_ok!(old_did_details.add_key_agreement_key(old_enc_key, 0u64));
 
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+
+	#[cfg(feature = "runtime-benchmarks")]
+	let origin = RuntimeOrigin::signed(alice_did.clone());
+
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_ok!(Did::remove_key_agreement_key(
-				DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into(),
+				origin,
 				generate_key_id(&old_enc_key.into()),
 			));
 			let new_did_details = Did::get_did(&alice_did).expect("ALICE_DID should be present on chain.");
@@ -1732,12 +1860,15 @@ fn check_did_not_found_key_agreement_key_deletion_error() {
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let test_enc_key = get_x25519_encryption_key(true);
 
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did, alice_did).into();
+
+	#[cfg(feature = "runtime-benchmarks")]
+	let origin = RuntimeOrigin::signed(alice_did);
+
 	ExtBuilder::default().build(None).execute_with(|| {
 		assert_noop!(
-			Did::remove_key_agreement_key(
-				DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into(),
-				generate_key_id(&test_enc_key.into())
-			),
+			Did::remove_key_agreement_key(origin, generate_key_id(&test_enc_key.into())),
 			did::Error::<Test>::NotFound
 		);
 	});
@@ -1753,15 +1884,18 @@ fn check_key_not_found_key_agreement_key_deletion_error() {
 	let old_did_details =
 		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(alice_did.clone()));
 
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+
+	#[cfg(feature = "runtime-benchmarks")]
+	let origin = RuntimeOrigin::signed(alice_did.clone());
+
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
-		.with_dids(vec![(alice_did.clone(), old_did_details)])
+		.with_dids(vec![(alice_did, old_did_details)])
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_noop!(
-				Did::remove_key_agreement_key(
-					DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into(),
-					generate_key_id(&test_enc_key.into())
-				),
+				Did::remove_key_agreement_key(origin, generate_key_id(&test_enc_key.into())),
 				did::Error::<Test>::VerificationKeyNotFound
 			);
 		});
@@ -1778,14 +1912,17 @@ fn check_service_addition_no_prior_service_successful() {
 	let old_did_details =
 		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(alice_did.clone()));
 
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+
+	#[cfg(feature = "runtime-benchmarks")]
+	let origin = RuntimeOrigin::signed(alice_did.clone());
+
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
 		.build_and_execute_with_sanity_tests(None, || {
-			assert_ok!(Did::add_service_endpoint(
-				DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into(),
-				new_service_endpoint.clone()
-			));
+			assert_ok!(Did::add_service_endpoint(origin, new_service_endpoint.clone()));
 			let stored_endpoint = did::pallet::ServiceEndpoints::<Test>::get(&alice_did, &new_service_endpoint.id)
 				.expect("Service endpoint should be stored.");
 			assert_eq!(stored_endpoint, new_service_endpoint);
@@ -1815,15 +1952,18 @@ fn check_service_addition_one_from_full_successful() {
 	let old_did_details =
 		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(alice_did.clone()));
 
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+
+	#[cfg(feature = "runtime-benchmarks")]
+	let origin = RuntimeOrigin::signed(alice_did.clone());
+
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
 		.with_endpoints(vec![(alice_did.clone(), old_service_endpoints)])
 		.build_and_execute_with_sanity_tests(None, || {
-			assert_ok!(Did::add_service_endpoint(
-				DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into(),
-				new_service_endpoint.clone()
-			));
+			assert_ok!(Did::add_service_endpoint(origin, new_service_endpoint.clone()));
 			assert_eq!(
 				did::pallet::DidEndpointsCount::<Test>::get(&alice_did),
 				<Test as did::Config>::MaxNumberOfServicesPerDid::get()
@@ -1844,15 +1984,18 @@ fn check_did_not_present_services_addition_error() {
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let new_service_endpoint = DidEndpoint::new(b"id".to_vec(), vec![b"type".to_vec()], vec![b"url".to_vec()]);
 
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+
+	#[cfg(feature = "runtime-benchmarks")]
+	let origin = RuntimeOrigin::signed(alice_did.clone());
+
 	ExtBuilder::default()
-		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
+		.with_balances(vec![(alice_did, DEFAULT_BALANCE)])
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
-				Did::add_service_endpoint(
-					DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into(),
-					new_service_endpoint
-				),
+				Did::add_service_endpoint(origin, new_service_endpoint),
 				did::Error::<Test>::NotFound
 			);
 		});
@@ -1867,16 +2010,19 @@ fn check_service_already_present_addition_error() {
 	let old_did_details =
 		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(alice_did.clone()));
 
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+
+	#[cfg(feature = "runtime-benchmarks")]
+	let origin = RuntimeOrigin::signed(alice_did.clone());
+
 	ExtBuilder::default()
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
-		.with_endpoints(vec![(alice_did.clone(), vec![service_endpoint.clone()])])
+		.with_endpoints(vec![(alice_did, vec![service_endpoint.clone()])])
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_noop!(
-				Did::add_service_endpoint(
-					DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into(),
-					service_endpoint
-				),
+				Did::add_service_endpoint(origin, service_endpoint),
 				did::Error::<Test>::ServiceAlreadyExists
 			);
 		});
@@ -1899,16 +2045,19 @@ fn check_max_services_count_addition_error() {
 	let old_did_details =
 		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(alice_did.clone()));
 
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+
+	#[cfg(feature = "runtime-benchmarks")]
+	let origin = RuntimeOrigin::signed(alice_did.clone());
+
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
-		.with_endpoints(vec![(alice_did.clone(), old_service_endpoints)])
+		.with_endpoints(vec![(alice_did, old_service_endpoints)])
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_noop!(
-				Did::add_service_endpoint(
-					DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into(),
-					new_service_endpoint
-				),
+				Did::add_service_endpoint(origin, new_service_endpoint),
 				did::Error::<Test>::MaxNumberOfServicesExceeded
 			);
 		});
@@ -1929,17 +2078,20 @@ fn check_max_service_id_length_addition_error() {
 	)[0]
 	.clone();
 
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+
+	#[cfg(feature = "runtime-benchmarks")]
+	let origin = RuntimeOrigin::signed(alice_did.clone());
+
 	let old_did_details = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), None);
 
 	ExtBuilder::default()
-		.with_dids(vec![(alice_did.clone(), old_did_details)])
+		.with_dids(vec![(alice_did, old_did_details)])
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
-				Did::add_service_endpoint(
-					DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into(),
-					new_service_endpoint
-				),
+				Did::add_service_endpoint(origin, new_service_endpoint),
 				did::Error::<Test>::MaxServiceIdLengthExceeded
 			);
 		});
@@ -1962,15 +2114,18 @@ fn check_max_service_type_length_addition_error() {
 
 	let old_did_details = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), None);
 
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+
+	#[cfg(feature = "runtime-benchmarks")]
+	let origin = RuntimeOrigin::signed(alice_did.clone());
+
 	ExtBuilder::default()
-		.with_dids(vec![(alice_did.clone(), old_did_details)])
+		.with_dids(vec![(alice_did, old_did_details)])
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
-				Did::add_service_endpoint(
-					DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into(),
-					new_service_endpoint
-				),
+				Did::add_service_endpoint(origin, new_service_endpoint),
 				did::Error::<Test>::MaxServiceTypeLengthExceeded
 			);
 		});
@@ -1993,15 +2148,18 @@ fn check_max_service_type_count_addition_error() {
 
 	let old_did_details = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), None);
 
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+
+	#[cfg(feature = "runtime-benchmarks")]
+	let origin = RuntimeOrigin::signed(alice_did.clone());
+
 	ExtBuilder::default()
-		.with_dids(vec![(alice_did.clone(), old_did_details)])
+		.with_dids(vec![(alice_did, old_did_details)])
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
-				Did::add_service_endpoint(
-					DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into(),
-					new_service_endpoint
-				),
+				Did::add_service_endpoint(origin, new_service_endpoint),
 				did::Error::<Test>::MaxNumberOfTypesPerServiceExceeded
 			);
 		});
@@ -2024,15 +2182,18 @@ fn check_max_service_url_length_addition_error() {
 
 	let old_did_details = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), None);
 
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+
+	#[cfg(feature = "runtime-benchmarks")]
+	let origin = RuntimeOrigin::signed(alice_did.clone());
+
 	ExtBuilder::default()
-		.with_dids(vec![(alice_did.clone(), old_did_details)])
+		.with_dids(vec![(alice_did, old_did_details)])
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
-				Did::add_service_endpoint(
-					DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into(),
-					new_service_endpoint
-				),
+				Did::add_service_endpoint(origin, new_service_endpoint),
 				did::Error::<Test>::MaxServiceUrlLengthExceeded
 			);
 		});
@@ -2055,15 +2216,18 @@ fn check_max_service_url_count_addition_error() {
 
 	let old_did_details = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), None);
 
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+
+	#[cfg(feature = "runtime-benchmarks")]
+	let origin = RuntimeOrigin::signed(alice_did.clone());
+
 	ExtBuilder::default()
-		.with_dids(vec![(alice_did.clone(), old_did_details)])
+		.with_dids(vec![(alice_did, old_did_details)])
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
-				Did::add_service_endpoint(
-					DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into(),
-					new_service_endpoint
-				),
+				Did::add_service_endpoint(origin, new_service_endpoint),
 				did::Error::<Test>::MaxNumberOfUrlsPerServiceExceeded
 			);
 		});
@@ -2078,15 +2242,18 @@ fn character_addition_error() {
 	let old_did_details =
 		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(alice_did.clone()));
 
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+
+	#[cfg(feature = "runtime-benchmarks")]
+	let origin = RuntimeOrigin::signed(alice_did.clone());
+
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
-		.with_dids(vec![(alice_did.clone(), old_did_details)])
+		.with_dids(vec![(alice_did, old_did_details)])
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_noop!(
-				Did::add_service_endpoint(
-					DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into(),
-					new_service_details
-				),
+				Did::add_service_endpoint(origin, new_service_details),
 				did::Error::<Test>::InvalidServiceEncoding
 			);
 		});
@@ -2101,15 +2268,18 @@ fn check_invalid_service_type_character_addition_error() {
 	let old_did_details =
 		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(alice_did.clone()));
 
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+
+	#[cfg(feature = "runtime-benchmarks")]
+	let origin = RuntimeOrigin::signed(alice_did.clone());
+
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
-		.with_dids(vec![(alice_did.clone(), old_did_details)])
+		.with_dids(vec![(alice_did, old_did_details)])
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_noop!(
-				Did::add_service_endpoint(
-					DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into(),
-					new_service_details
-				),
+				Did::add_service_endpoint(origin, new_service_details),
 				did::Error::<Test>::InvalidServiceEncoding
 			);
 		});
@@ -2124,16 +2294,19 @@ fn check_invalid_service_url_character_addition_error() {
 	let old_did_details =
 		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(alice_did.clone()));
 
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+
+	#[cfg(feature = "runtime-benchmarks")]
+	let origin = RuntimeOrigin::signed(alice_did.clone());
+
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
-		.with_dids(vec![(alice_did.clone(), old_did_details)])
+		.with_dids(vec![(alice_did, old_did_details)])
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_noop!(
-				Did::add_service_endpoint(
-					DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into(),
-					new_service_details
-				),
+				Did::add_service_endpoint(origin, new_service_details),
 				did::Error::<Test>::InvalidServiceEncoding
 			);
 		});
@@ -2151,15 +2324,18 @@ fn check_service_deletion_successful() {
 	let old_did_details =
 		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(alice_did.clone()));
 
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+
+	#[cfg(feature = "runtime-benchmarks")]
+	let origin = RuntimeOrigin::signed(alice_did.clone());
+
 	ExtBuilder::default()
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_endpoints(vec![(alice_did.clone(), vec![old_service_endpoint.clone()])])
 		.build_and_execute_with_sanity_tests(None, || {
-			assert_ok!(Did::remove_service_endpoint(
-				DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into(),
-				old_service_endpoint.id
-			));
+			assert_ok!(Did::remove_service_endpoint(origin, old_service_endpoint.id));
 			// Counter should be deleted from the storage.
 			assert_eq!(did::pallet::DidEndpointsCount::<Test>::get(&alice_did), 0);
 			assert_eq!(
@@ -2178,15 +2354,18 @@ fn check_service_not_present_deletion_error() {
 	let old_did_details =
 		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(alice_did.clone()));
 
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+
+	#[cfg(feature = "runtime-benchmarks")]
+	let origin = RuntimeOrigin::signed(alice_did.clone());
+
 	ExtBuilder::default()
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
-		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
+		.with_balances(vec![(alice_did, DEFAULT_BALANCE)])
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_noop!(
-				Did::remove_service_endpoint(
-					DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into(),
-					service_id.try_into().expect("Service ID to delete too long")
-				),
+				Did::remove_service_endpoint(origin, service_id.try_into().expect("Service ID to delete too long")),
 				did::Error::<Test>::ServiceNotFound
 			);
 		});
@@ -2207,6 +2386,12 @@ fn check_successful_deletion_no_endpoints() {
 		+ <Test as did::Config>::Fee::get() * 2
 		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+
+	#[cfg(feature = "runtime-benchmarks")]
+	let origin = RuntimeOrigin::signed(alice_did.clone());
+
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.with_dids(vec![(alice_did.clone(), did_details)])
@@ -2216,10 +2401,7 @@ fn check_successful_deletion_no_endpoints() {
 				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
 				<Test as did::Config>::BaseDeposit::get()
 			);
-			assert_ok!(Did::delete(
-				DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into(),
-				0
-			));
+			assert_ok!(Did::delete(origin, 0));
 			assert!(Did::get_did(alice_did.clone()).is_none());
 			assert!(Did::get_deleted_did(alice_did.clone()).is_some());
 			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00).is_zero());
@@ -2256,6 +2438,12 @@ fn check_successful_deletion_with_endpoints() {
 		+ <Test as did::Config>::Fee::get() * 2
 		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+
+	#[cfg(feature = "runtime-benchmarks")]
+	let origin = RuntimeOrigin::signed(alice_did.clone());
+
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.with_dids(vec![(alice_did.clone(), did_details)])
@@ -2266,10 +2454,7 @@ fn check_successful_deletion_with_endpoints() {
 				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
 				<Test as did::Config>::BaseDeposit::get()
 			);
-			assert_ok!(Did::delete(
-				DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into(),
-				1
-			));
+			assert_ok!(Did::delete(origin, 1));
 			assert!(Did::get_did(alice_did.clone()).is_none());
 			assert!(Did::get_deleted_did(alice_did.clone()).is_some());
 			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00).is_zero());
@@ -2300,13 +2485,17 @@ fn check_did_not_present_deletion() {
 	let balance = <Test as did::Config>::BaseDeposit::get()
 		+ <Test as did::Config>::Fee::get()
 		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
+
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did, alice_did).into();
+
+	#[cfg(feature = "runtime-benchmarks")]
+	let origin = RuntimeOrigin::signed(alice_did);
+
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.build_and_execute_with_sanity_tests(None, || {
-			assert_noop!(
-				Did::delete(DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into(), 0),
-				did::Error::<Test>::NotFound
-			);
+			assert_noop!(Did::delete(origin, 0), did::Error::<Test>::NotFound);
 		});
 }
 
@@ -2324,13 +2513,19 @@ fn check_service_count_too_small_deletion_error() {
 		+ <Test as did::Config>::Fee::get() * 2
 		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+
+	#[cfg(feature = "runtime-benchmarks")]
+	let origin = RuntimeOrigin::signed(alice_did.clone());
+
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.with_dids(vec![(alice_did.clone(), did_details)])
-		.with_endpoints(vec![(alice_did.clone(), vec![service_endpoint])])
+		.with_endpoints(vec![(alice_did, vec![service_endpoint])])
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_noop!(
-				Did::delete(DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into(), 0),
+				Did::delete(origin, 0),
 				did::Error::<Test>::MaxStoredEndpointsCountExceeded
 			);
 		});
@@ -3325,6 +3520,12 @@ fn test_change_deposit_owner() {
 		+ <Test as did::Config>::Fee::get() * 2
 		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+
+	#[cfg(feature = "runtime-benchmarks")]
+	let origin = RuntimeOrigin::signed(alice_did.clone());
+
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance), (alice_did.clone(), balance)])
 		.with_dids(vec![(alice_did.clone(), did_details)])
@@ -3333,9 +3534,7 @@ fn test_change_deposit_owner() {
 				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
 				<Test as did::Config>::BaseDeposit::get()
 			);
-			assert_ok!(Did::change_deposit_owner(
-				DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into()
-			));
+			assert_ok!(Did::change_deposit_owner(origin));
 			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00).is_zero());
 			assert_eq!(
 				Balances::balance_on_hold(&HoldReason::Deposit.into(), &alice_did),
@@ -3357,14 +3556,17 @@ fn test_change_deposit_owner_insufficient_balance() {
 		+ <Test as did::Config>::Fee::get() * 2
 		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+
+	#[cfg(feature = "runtime-benchmarks")]
+	let origin = RuntimeOrigin::signed(alice_did.clone());
+
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
-		.with_dids(vec![(alice_did.clone(), did_details)])
+		.with_dids(vec![(alice_did, did_details)])
 		.build_and_execute_with_sanity_tests(None, || {
-			assert_noop!(
-				Did::change_deposit_owner(DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into()),
-				TokenError::CannotCreateHold
-			);
+			assert_noop!(Did::change_deposit_owner(origin), TokenError::CannotCreateHold);
 		});
 }
 
@@ -3377,13 +3579,16 @@ fn test_change_deposit_owner_not_found() {
 		+ <Test as did::Config>::Fee::get() * 2
 		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+
+	#[cfg(feature = "runtime-benchmarks")]
+	let origin = RuntimeOrigin::signed(alice_did.clone());
+
 	ExtBuilder::default()
-		.with_balances(vec![(alice_did.clone(), balance)])
+		.with_balances(vec![(alice_did, balance)])
 		.build_and_execute_with_sanity_tests(None, || {
-			assert_noop!(
-				Did::change_deposit_owner(DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into()),
-				crate::Error::<Test>::NotFound
-			);
+			assert_noop!(Did::change_deposit_owner(origin), crate::Error::<Test>::NotFound);
 		});
 }
 
@@ -3398,13 +3603,16 @@ fn test_change_deposit_owner_not_authorized() {
 		+ <Test as did::Config>::Fee::get() * 2
 		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	let origin: RuntimeOrigin = crate::DidRawOrigin::new(bob_did.clone(), alice_did.clone()).into();
+
+	#[cfg(feature = "runtime-benchmarks")]
+	let origin = RuntimeOrigin::signed(alice_did.clone());
+
 	ExtBuilder::default()
-		.with_balances(vec![(alice_did.clone(), balance), (bob_did.clone(), balance)])
+		.with_balances(vec![(alice_did, balance), (bob_did, balance)])
 		.build_and_execute_with_sanity_tests(None, || {
-			assert_noop!(
-				Did::change_deposit_owner(DidRawOrigin::new(bob_did.clone(), alice_did.clone()).into()),
-				crate::Error::<Test>::NotFound
-			);
+			assert_noop!(Did::change_deposit_owner(origin), crate::Error::<Test>::NotFound);
 		});
 }
 
