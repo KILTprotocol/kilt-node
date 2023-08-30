@@ -28,7 +28,6 @@ use frame_support::{
 	weights::constants::RocksDbWeight,
 };
 use frame_system::EnsureSigned;
-use kilt_support::mock::mock_origin::EnsureDoubleOrigin;
 use pallet_balances::Pallet as PalletBalance;
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
@@ -150,11 +149,19 @@ where
 }
 
 impl Config for Test {
+	#[cfg(feature = "runtime-benchmarks")]
+	type EnsureOrigin = EnsureSigned<DidIdentifier>;
+	#[cfg(feature = "runtime-benchmarks")]
+	type OriginSuccess = AccountId;
+
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	type EnsureOrigin = EnsureDidOrigin<DidIdentifier, AccountId>;
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	type OriginSuccess = DidRawOrigin<AccountId, DidIdentifier>;
+
 	type DidIdentifier = DidIdentifier;
 	type RuntimeOrigin = RuntimeOrigin;
 	type RuntimeCall = RuntimeCall;
-	type EnsureOrigin = EnsureDidOrigin<DidIdentifier, AccountId>;
-	type OriginSuccess = DidRawOrigin<DidIdentifier, AccountId>;
 	type KeyDeposit = KeyDeposit;
 	type RuntimeHoldReason = RuntimeHoldReason;
 	type ServiceEndpointDeposit = KeyDeposit;
