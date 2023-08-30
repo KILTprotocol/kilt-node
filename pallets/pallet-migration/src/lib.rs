@@ -156,8 +156,11 @@ pub mod pallet {
 			ensure_signed(origin)?;
 
 			requested_migrations.attestation.iter().try_for_each(|key| {
-				let is_migrated = Self::is_key_migrated(Attestations::<T>::hashed_key_for(key));
+				let storage_key = Attestations::<T>::hashed_key_for(key);
+				let is_migrated = Self::is_key_migrated(&storage_key);
 				if !is_migrated {
+					let key_hash = <T as frame_system::Config>::Hashing::hash(&storage_key[..]);
+					MigratedKeys::<T>::insert(key_hash, ());
 					attestation::migrations::update_balance_for_attestation::<T>(key)
 				} else {
 					Ok(())
@@ -165,8 +168,11 @@ pub mod pallet {
 			})?;
 
 			requested_migrations.delegation.iter().try_for_each(|key| {
-				let is_migrated = Self::is_key_migrated(DelegationNodes::<T>::hashed_key_for(key));
+				let storage_key = DelegationNodes::<T>::hashed_key_for(key);
+				let is_migrated = Self::is_key_migrated(&storage_key);
 				if !is_migrated {
+					let key_hash = <T as frame_system::Config>::Hashing::hash(&storage_key[..]);
+					MigratedKeys::<T>::insert(key_hash, ());
 					delegation::migrations::update_balance_for_delegation::<T>(key)
 				} else {
 					Ok(())
@@ -174,8 +180,11 @@ pub mod pallet {
 			})?;
 
 			requested_migrations.did.iter().try_for_each(|key| {
-				let is_migrated = Self::is_key_migrated(Did::<T>::hashed_key_for(key));
+				let storage_key = Did::<T>::hashed_key_for(key);
+				let is_migrated = Self::is_key_migrated(&storage_key);
 				if !is_migrated {
+					let key_hash = <T as frame_system::Config>::Hashing::hash(&storage_key[..]);
+					MigratedKeys::<T>::insert(key_hash, ());
 					did::migrations::update_balance_for_did::<T>(key)
 				} else {
 					Ok(())
@@ -183,8 +192,11 @@ pub mod pallet {
 			})?;
 
 			requested_migrations.lookup.iter().try_for_each(|key| {
-				let is_migrated = Self::is_key_migrated(ConnectedDids::<T>::hashed_key_for(key));
+				let storage_key = ConnectedDids::<T>::hashed_key_for(key);
+				let is_migrated = Self::is_key_migrated(&storage_key);
 				if !is_migrated {
+					let key_hash = <T as frame_system::Config>::Hashing::hash(&storage_key[..]);
+					MigratedKeys::<T>::insert(key_hash, ());
 					pallet_did_lookup::migrations::update_balance_for_did_lookup::<T>(key)
 				} else {
 					Ok(())
@@ -192,8 +204,11 @@ pub mod pallet {
 			})?;
 
 			requested_migrations.w3n.iter().try_for_each(|key| {
-				let is_migrated = Self::is_key_migrated(Owner::<T>::hashed_key_for(key));
+				let storage_key = Owner::<T>::hashed_key_for(key);
+				let is_migrated = Self::is_key_migrated(&storage_key);
 				if !is_migrated {
+					let key_hash = <T as frame_system::Config>::Hashing::hash(&storage_key[..]);
+					MigratedKeys::<T>::insert(key_hash, ());
 					pallet_web3_names::migrations::update_balance_for_w3n::<T>(key)
 				} else {
 					Ok(())
@@ -204,8 +219,11 @@ pub mod pallet {
 				.public_credentials
 				.iter()
 				.try_for_each(|(key, key2)| {
-					let is_migrated = Self::is_key_migrated(Credentials::<T>::hashed_key_for(key, key2));
+					let storage_key = Credentials::<T>::hashed_key_for(key, key2);
+					let is_migrated = Self::is_key_migrated(&storage_key);
 					if !is_migrated {
+						let key_hash = <T as frame_system::Config>::Hashing::hash(&storage_key[..]);
+						MigratedKeys::<T>::insert(key_hash, ());
 						public_credentials::migrations::update_balance_for_public_credentials::<T>(key, key2)
 					} else {
 						Ok(())
@@ -219,13 +237,11 @@ pub mod pallet {
 	}
 
 	impl<T: Config> Pallet<T> {
-		fn is_key_migrated(key: Vec<u8>) -> bool {
-			let key_hash = <T as frame_system::Config>::Hashing::hash(&key[..]);
-
+		pub(crate) fn is_key_migrated(key: &[u8]) -> bool {
+			let key_hash = <T as frame_system::Config>::Hashing::hash(key);
 			if MigratedKeys::<T>::contains_key(key_hash) {
 				return true;
 			}
-			MigratedKeys::<T>::insert(key_hash, ());
 			false
 		}
 	}
@@ -237,8 +253,7 @@ pub mod pallet {
 		}
 
 		fn is_key_migrated(key: Vec<u8>) -> bool {
-			let key_hash = <T as frame_system::Config>::Hashing::hash(&key[..]);
-			MigratedKeys::<T>::contains_key(key_hash)
+			Self::is_key_migrated(&key)
 		}
 
 		fn release_reserved_deposit(user: &AccountIdOf<T>, balance: &BalanceOf<T>) {
