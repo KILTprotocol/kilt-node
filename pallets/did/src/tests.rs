@@ -37,7 +37,7 @@ use crate::{
 	mock::*,
 	mock_utils::*,
 	service_endpoints::DidEndpoint,
-	Error, HoldReason,
+	DidRawOrigin, Error, HoldReason,
 };
 
 // create
@@ -310,7 +310,7 @@ fn check_deposit_change_by_adding_service_endpoint() {
 		.build(None)
 		.execute_with(|| {
 			assert_ok!(Did::add_service_endpoint(
-				RuntimeOrigin::signed(alice_did.clone()),
+				DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into(),
 				new_service_endpoint.clone()
 			));
 
@@ -325,7 +325,10 @@ fn check_deposit_change_by_adding_service_endpoint() {
 			);
 
 			assert_noop!(
-				Did::add_service_endpoint(RuntimeOrigin::signed(alice_did.clone()), new_service_endpoint2.clone()),
+				Did::add_service_endpoint(
+					DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into(),
+					new_service_endpoint2.clone()
+				),
 				TokenError::FundsUnavailable
 			);
 
@@ -845,7 +848,7 @@ fn check_successful_authentication_key_update() {
 		.build_and_execute_with_sanity_tests(None, || {
 			System::set_block_number(new_block_number);
 			assert_ok!(Did::set_authentication_key(
-				RuntimeOrigin::signed(alice_did.clone()),
+				DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into(),
 				DidVerificationKey::from(new_auth_key.public())
 			));
 			let new_did_details = Did::get_did(&alice_did).expect("ALICE_DID should be present on chain.");
@@ -887,7 +890,7 @@ fn check_successful_authentication_key_max_public_keys_update() {
 		.build_and_execute_with_sanity_tests(None, || {
 			System::set_block_number(new_block_number);
 			assert_ok!(Did::set_authentication_key(
-				RuntimeOrigin::signed(alice_did.clone()),
+				DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into(),
 				DidVerificationKey::from(new_auth_key.public())
 			));
 
@@ -926,7 +929,7 @@ fn check_reused_key_authentication_key_update() {
 		.build_and_execute_with_sanity_tests(None, || {
 			System::set_block_number(new_block_number);
 			assert_ok!(Did::set_authentication_key(
-				RuntimeOrigin::signed(alice_did.clone()),
+				DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into(),
 				DidVerificationKey::from(new_auth_key.public())
 			));
 
@@ -979,7 +982,7 @@ fn check_max_keys_authentication_key_update_error() {
 			System::set_block_number(new_block_number);
 			assert_noop!(
 				Did::set_authentication_key(
-					RuntimeOrigin::signed(alice_did.clone()),
+					DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into(),
 					DidVerificationKey::from(new_auth_key.public())
 				),
 				did::Error::<Test>::MaxPublicKeysExceeded
@@ -1000,7 +1003,7 @@ fn check_did_not_present_authentication_key_update_error() {
 		System::set_block_number(new_block_number);
 		assert_noop!(
 			Did::set_authentication_key(
-				RuntimeOrigin::signed(alice_did.clone()),
+				DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into(),
 				DidVerificationKey::from(new_auth_key.public())
 			),
 			did::Error::<Test>::NotFound
@@ -1028,7 +1031,7 @@ fn check_successful_delegation_key_update() {
 		.build_and_execute_with_sanity_tests(None, || {
 			System::set_block_number(new_block_number);
 			assert_ok!(Did::set_delegation_key(
-				RuntimeOrigin::signed(alice_did.clone()),
+				DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into(),
 				DidVerificationKey::from(new_del_key.public())
 			));
 
@@ -1072,7 +1075,7 @@ fn check_successful_delegation_key_max_public_keys_update() {
 		.build_and_execute_with_sanity_tests(None, || {
 			System::set_block_number(new_block_number);
 			assert_ok!(Did::set_delegation_key(
-				RuntimeOrigin::signed(alice_did.clone()),
+				DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into(),
 				DidVerificationKey::from(new_del_key.public())
 			));
 
@@ -1109,7 +1112,7 @@ fn check_reused_key_delegation_key_update() {
 		.build_and_execute_with_sanity_tests(None, || {
 			System::set_block_number(new_block_number);
 			assert_ok!(Did::set_delegation_key(
-				RuntimeOrigin::signed(alice_did.clone()),
+				DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into(),
 				DidVerificationKey::from(new_del_key.public())
 			));
 
@@ -1154,7 +1157,7 @@ fn check_max_public_keys_delegation_key_addition_error() {
 			System::set_block_number(new_block_number);
 			assert_noop!(
 				Did::set_delegation_key(
-					RuntimeOrigin::signed(alice_did.clone()),
+					DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into(),
 					DidVerificationKey::from(new_del_key.public())
 				),
 				did::Error::<Test>::MaxPublicKeysExceeded
@@ -1191,7 +1194,7 @@ fn check_max_public_keys_reused_key_delegation_key_update_error() {
 			System::set_block_number(new_block_number);
 			assert_noop!(
 				Did::set_delegation_key(
-					RuntimeOrigin::signed(alice_did.clone()),
+					DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into(),
 					DidVerificationKey::from(new_del_key.public())
 				),
 				did::Error::<Test>::MaxPublicKeysExceeded
@@ -1212,7 +1215,7 @@ fn check_did_not_present_delegation_key_update_error() {
 		System::set_block_number(new_block_number);
 		assert_noop!(
 			Did::set_delegation_key(
-				RuntimeOrigin::signed(alice_did.clone()),
+				DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into(),
 				DidVerificationKey::from(new_del_key.public())
 			),
 			did::Error::<Test>::NotFound
@@ -1234,7 +1237,9 @@ fn check_successful_delegation_key_deletion() {
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
 		.build_and_execute_with_sanity_tests(None, || {
-			assert_ok!(Did::remove_delegation_key(RuntimeOrigin::signed(alice_did.clone())));
+			assert_ok!(Did::remove_delegation_key(
+				DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into()
+			));
 
 			let new_did_details = Did::get_did(&alice_did).expect("ALICE_DID should be present on chain.");
 			assert!(new_did_details.delegation_key.is_none());
@@ -1260,7 +1265,9 @@ fn check_successful_reused_delegation_key_deletion() {
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(alice_did.clone(), old_did_details.clone())])
 		.build_and_execute_with_sanity_tests(None, || {
-			assert_ok!(Did::remove_delegation_key(RuntimeOrigin::signed(alice_did.clone())));
+			assert_ok!(Did::remove_delegation_key(
+				DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into()
+			));
 
 			let new_did_details = Did::get_did(&alice_did).expect("ALICE_DID should be present on chain.");
 			assert!(new_did_details.delegation_key.is_none());
@@ -1280,7 +1287,7 @@ fn check_did_not_present_delegation_key_deletion_error() {
 
 	ExtBuilder::default().build(None).execute_with(|| {
 		assert_noop!(
-			Did::remove_delegation_key(RuntimeOrigin::signed(alice_did.clone())),
+			Did::remove_delegation_key(DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into()),
 			did::Error::<Test>::NotFound
 		);
 	});
@@ -1299,7 +1306,7 @@ fn check_key_not_present_delegation_key_deletion_error() {
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_noop!(
-				Did::remove_delegation_key(RuntimeOrigin::signed(alice_did.clone())),
+				Did::remove_delegation_key(DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into()),
 				did::Error::<Test>::VerificationKeyNotFound
 			);
 		});
@@ -1325,7 +1332,7 @@ fn check_successful_attestation_key_update() {
 		.build_and_execute_with_sanity_tests(None, || {
 			System::set_block_number(new_block_number);
 			assert_ok!(Did::set_attestation_key(
-				RuntimeOrigin::signed(alice_did.clone()),
+				DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into(),
 				DidVerificationKey::from(new_att_key.public())
 			));
 			let new_did_details = Did::get_did(&alice_did).expect("ALICE_DID should be present on chain.");
@@ -1368,7 +1375,7 @@ fn check_successful_attestation_key_max_public_keys_update() {
 		.build_and_execute_with_sanity_tests(None, || {
 			System::set_block_number(new_block_number);
 			assert_ok!(Did::set_attestation_key(
-				RuntimeOrigin::signed(alice_did.clone()),
+				DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into(),
 				DidVerificationKey::from(new_att_key.public())
 			));
 			let new_did_details = Did::get_did(&alice_did).expect("ALICE_DID should be present on chain.");
@@ -1404,7 +1411,7 @@ fn check_reused_key_attestation_key_update() {
 		.build_and_execute_with_sanity_tests(None, || {
 			System::set_block_number(new_block_number);
 			assert_ok!(Did::set_attestation_key(
-				RuntimeOrigin::signed(alice_did.clone()),
+				DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into(),
 				DidVerificationKey::from(new_att_key.public())
 			));
 
@@ -2042,7 +2049,10 @@ fn character_addition_error() {
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_noop!(
-				Did::add_service_endpoint(RuntimeOrigin::signed(alice_did.clone()), new_service_details),
+				Did::add_service_endpoint(
+					DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into(),
+					new_service_details
+				),
 				did::Error::<Test>::InvalidServiceEncoding
 			);
 		});
@@ -2062,7 +2072,10 @@ fn check_invalid_service_type_character_addition_error() {
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_noop!(
-				Did::add_service_endpoint(RuntimeOrigin::signed(alice_did.clone()), new_service_details),
+				Did::add_service_endpoint(
+					DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into(),
+					new_service_details
+				),
 				did::Error::<Test>::InvalidServiceEncoding
 			);
 		});
@@ -2083,7 +2096,10 @@ fn check_invalid_service_url_character_addition_error() {
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_noop!(
-				Did::add_service_endpoint(RuntimeOrigin::signed(alice_did.clone()), new_service_details),
+				Did::add_service_endpoint(
+					DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into(),
+					new_service_details
+				),
 				did::Error::<Test>::InvalidServiceEncoding
 			);
 		});
@@ -2107,7 +2123,7 @@ fn check_service_deletion_successful() {
 		.with_endpoints(vec![(alice_did.clone(), vec![old_service_endpoint.clone()])])
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_ok!(Did::remove_service_endpoint(
-				RuntimeOrigin::signed(alice_did.clone()),
+				DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into(),
 				old_service_endpoint.id
 			));
 			// Counter should be deleted from the storage.
@@ -2134,7 +2150,7 @@ fn check_service_not_present_deletion_error() {
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_noop!(
 				Did::remove_service_endpoint(
-					RuntimeOrigin::signed(alice_did.clone()),
+					DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into(),
 					service_id.try_into().expect("Service ID to delete too long")
 				),
 				did::Error::<Test>::ServiceNotFound
@@ -2166,7 +2182,10 @@ fn check_successful_deletion_no_endpoints() {
 				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
 				<Test as did::Config>::BaseDeposit::get()
 			);
-			assert_ok!(Did::delete(RuntimeOrigin::signed(alice_did.clone()), 0));
+			assert_ok!(Did::delete(
+				DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into(),
+				0
+			));
 			assert!(Did::get_did(alice_did.clone()).is_none());
 			assert!(Did::get_deleted_did(alice_did.clone()).is_some());
 			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00).is_zero());
@@ -2213,7 +2232,10 @@ fn check_successful_deletion_with_endpoints() {
 				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
 				<Test as did::Config>::BaseDeposit::get()
 			);
-			assert_ok!(Did::delete(RuntimeOrigin::signed(alice_did.clone()), 1));
+			assert_ok!(Did::delete(
+				DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into(),
+				1
+			));
 			assert!(Did::get_did(alice_did.clone()).is_none());
 			assert!(Did::get_deleted_did(alice_did.clone()).is_some());
 			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00).is_zero());
@@ -2274,7 +2296,7 @@ fn check_service_count_too_small_deletion_error() {
 		.with_endpoints(vec![(alice_did.clone(), vec![service_endpoint])])
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_noop!(
-				Did::delete(RuntimeOrigin::signed(alice_did.clone()), 0),
+				Did::delete(DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into(), 0),
 				did::Error::<Test>::MaxStoredEndpointsCountExceeded
 			);
 		});
