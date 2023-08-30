@@ -305,7 +305,7 @@ fn check_deposit_change_by_adding_service_endpoint() {
 		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 
 	#[cfg(not(feature = "runtime-benchmarks"))]
-	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+	let origin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
 
 	#[cfg(feature = "runtime-benchmarks")]
 	let origin = RuntimeOrigin::signed(alice_did.clone());
@@ -842,7 +842,7 @@ fn check_successful_authentication_key_update() {
 	let new_block_number: BlockNumber = 1;
 
 	#[cfg(not(feature = "runtime-benchmarks"))]
-	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+	let origin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
 
 	#[cfg(feature = "runtime-benchmarks")]
 	let origin = RuntimeOrigin::signed(alice_did.clone());
@@ -890,7 +890,7 @@ fn check_successful_authentication_key_max_public_keys_update() {
 	let new_block_number: BlockNumber = 1;
 
 	#[cfg(not(feature = "runtime-benchmarks"))]
-	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+	let origin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
 
 	#[cfg(feature = "runtime-benchmarks")]
 	let origin = RuntimeOrigin::signed(alice_did.clone());
@@ -936,7 +936,7 @@ fn check_reused_key_authentication_key_update() {
 	let new_block_number: BlockNumber = 1;
 
 	#[cfg(not(feature = "runtime-benchmarks"))]
-	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+	let origin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
 
 	#[cfg(feature = "runtime-benchmarks")]
 	let origin = RuntimeOrigin::signed(alice_did.clone());
@@ -995,7 +995,7 @@ fn check_max_keys_authentication_key_update_error() {
 	// public keys is already present.
 
 	#[cfg(not(feature = "runtime-benchmarks"))]
-	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+	let origin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
 
 	#[cfg(feature = "runtime-benchmarks")]
 	let origin = RuntimeOrigin::signed(alice_did.clone());
@@ -1050,7 +1050,7 @@ fn check_successful_delegation_key_update() {
 	let new_block_number: BlockNumber = 1;
 
 	#[cfg(not(feature = "runtime-benchmarks"))]
-	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+	let origin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
 
 	#[cfg(feature = "runtime-benchmarks")]
 	let origin = RuntimeOrigin::signed(alice_did.clone());
@@ -1100,7 +1100,7 @@ fn check_successful_delegation_key_max_public_keys_update() {
 	let new_block_number: BlockNumber = 1;
 
 	#[cfg(not(feature = "runtime-benchmarks"))]
-	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+	let origin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
 
 	#[cfg(feature = "runtime-benchmarks")]
 	let origin = RuntimeOrigin::signed(alice_did.clone());
@@ -1144,7 +1144,7 @@ fn check_reused_key_delegation_key_update() {
 	let new_block_number: BlockNumber = 1;
 
 	#[cfg(not(feature = "runtime-benchmarks"))]
-	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+	let origin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
 
 	#[cfg(feature = "runtime-benchmarks")]
 	let origin = RuntimeOrigin::signed(alice_did.clone());
@@ -1193,7 +1193,7 @@ fn check_max_public_keys_delegation_key_addition_error() {
 	let new_block_number: BlockNumber = 1;
 
 	#[cfg(not(feature = "runtime-benchmarks"))]
-	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+	let origin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
 
 	#[cfg(feature = "runtime-benchmarks")]
 	let origin = RuntimeOrigin::signed(alice_did.clone());
@@ -1232,7 +1232,7 @@ fn check_max_public_keys_reused_key_delegation_key_update_error() {
 	let new_block_number: BlockNumber = 1;
 
 	#[cfg(not(feature = "runtime-benchmarks"))]
-	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+	let origin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
 
 	#[cfg(feature = "runtime-benchmarks")]
 	let origin = RuntimeOrigin::signed(alice_did.clone());
@@ -1286,7 +1286,7 @@ fn check_successful_delegation_key_deletion() {
 	assert_ok!(old_did_details.update_delegation_key(DidVerificationKey::from(old_del_key.public()), 0u64));
 
 	#[cfg(not(feature = "runtime-benchmarks"))]
-	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+	let origin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
 
 	#[cfg(feature = "runtime-benchmarks")]
 	let origin = RuntimeOrigin::signed(alice_did.clone());
@@ -1318,7 +1318,7 @@ fn check_successful_reused_delegation_key_deletion() {
 	assert_ok!(old_did_details.update_delegation_key(DidVerificationKey::from(old_del_key.public()), 0u64));
 
 	#[cfg(not(feature = "runtime-benchmarks"))]
-	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+	let origin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
 
 	#[cfg(feature = "runtime-benchmarks")]
 	let origin = RuntimeOrigin::signed(alice_did.clone());
@@ -1365,7 +1365,7 @@ fn check_key_not_present_delegation_key_deletion_error() {
 		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(alice_did.clone()));
 
 	#[cfg(not(feature = "runtime-benchmarks"))]
-	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+	let origin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
 
 	#[cfg(feature = "runtime-benchmarks")]
 	let origin = RuntimeOrigin::signed(alice_did.clone());
@@ -1395,7 +1395,7 @@ fn check_successful_attestation_key_update() {
 	let new_block_number: BlockNumber = 1;
 
 	#[cfg(not(feature = "runtime-benchmarks"))]
-	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+	let origin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
 
 	#[cfg(feature = "runtime-benchmarks")]
 	let origin = RuntimeOrigin::signed(alice_did.clone());
@@ -1444,7 +1444,7 @@ fn check_successful_attestation_key_max_public_keys_update() {
 	let new_block_number: BlockNumber = 1;
 
 	#[cfg(not(feature = "runtime-benchmarks"))]
-	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+	let origin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
 
 	#[cfg(feature = "runtime-benchmarks")]
 	let origin = RuntimeOrigin::signed(alice_did.clone());
@@ -1487,7 +1487,7 @@ fn check_reused_key_attestation_key_update() {
 	let new_block_number: BlockNumber = 1;
 
 	#[cfg(not(feature = "runtime-benchmarks"))]
-	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+	let origin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
 
 	#[cfg(feature = "runtime-benchmarks")]
 	let origin = RuntimeOrigin::signed(alice_did.clone());
@@ -1536,7 +1536,7 @@ fn check_max_public_keys_attestation_key_addition_error() {
 	let new_block_number: BlockNumber = 1;
 
 	#[cfg(not(feature = "runtime-benchmarks"))]
-	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+	let origin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
 
 	#[cfg(feature = "runtime-benchmarks")]
 	let origin = RuntimeOrigin::signed(alice_did.clone());
@@ -1575,7 +1575,7 @@ fn check_max_public_keys_reused_key_attestation_key_update_error() {
 	let new_block_number: BlockNumber = 1;
 
 	#[cfg(not(feature = "runtime-benchmarks"))]
-	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+	let origin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
 
 	#[cfg(feature = "runtime-benchmarks")]
 	let origin = RuntimeOrigin::signed(alice_did.clone());
@@ -1629,7 +1629,7 @@ fn check_successful_attestation_key_deletion() {
 	assert_ok!(old_did_details.update_attestation_key(DidVerificationKey::from(old_att_key.public()), 0u64));
 
 	#[cfg(not(feature = "runtime-benchmarks"))]
-	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+	let origin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
 
 	#[cfg(feature = "runtime-benchmarks")]
 	let origin = RuntimeOrigin::signed(alice_did.clone());
@@ -1661,7 +1661,7 @@ fn check_successful_reused_attestation_key_deletion() {
 	assert_ok!(old_did_details.update_attestation_key(DidVerificationKey::from(old_att_key.public()), 0u64));
 
 	#[cfg(not(feature = "runtime-benchmarks"))]
-	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+	let origin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
 
 	#[cfg(feature = "runtime-benchmarks")]
 	let origin = RuntimeOrigin::signed(alice_did.clone());
@@ -1707,7 +1707,7 @@ fn check_key_not_present_attestation_key_deletion_error() {
 		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(alice_did.clone()));
 
 	#[cfg(not(feature = "runtime-benchmarks"))]
-	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+	let origin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
 
 	#[cfg(feature = "runtime-benchmarks")]
 	let origin = RuntimeOrigin::signed(alice_did.clone());
@@ -1735,7 +1735,7 @@ fn check_successful_key_agreement_key_addition() {
 	let new_block_number: BlockNumber = 1;
 
 	#[cfg(not(feature = "runtime-benchmarks"))]
-	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+	let origin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
 
 	#[cfg(feature = "runtime-benchmarks")]
 	let origin = RuntimeOrigin::signed(alice_did.clone());
@@ -1779,7 +1779,7 @@ fn check_max_public_keys_key_agreement_key_addition_error() {
 	let new_block_number: BlockNumber = 1;
 
 	#[cfg(not(feature = "runtime-benchmarks"))]
-	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+	let origin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
 
 	#[cfg(feature = "runtime-benchmarks")]
 	let origin = RuntimeOrigin::signed(alice_did.clone());
@@ -1831,7 +1831,7 @@ fn check_successful_key_agreement_key_deletion() {
 	assert_ok!(old_did_details.add_key_agreement_key(old_enc_key, 0u64));
 
 	#[cfg(not(feature = "runtime-benchmarks"))]
-	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+	let origin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
 
 	#[cfg(feature = "runtime-benchmarks")]
 	let origin = RuntimeOrigin::signed(alice_did.clone());
@@ -1885,7 +1885,7 @@ fn check_key_not_found_key_agreement_key_deletion_error() {
 		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(alice_did.clone()));
 
 	#[cfg(not(feature = "runtime-benchmarks"))]
-	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+	let origin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
 
 	#[cfg(feature = "runtime-benchmarks")]
 	let origin = RuntimeOrigin::signed(alice_did.clone());
@@ -1913,7 +1913,7 @@ fn check_service_addition_no_prior_service_successful() {
 		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(alice_did.clone()));
 
 	#[cfg(not(feature = "runtime-benchmarks"))]
-	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+	let origin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
 
 	#[cfg(feature = "runtime-benchmarks")]
 	let origin = RuntimeOrigin::signed(alice_did.clone());
@@ -1953,7 +1953,7 @@ fn check_service_addition_one_from_full_successful() {
 		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(alice_did.clone()));
 
 	#[cfg(not(feature = "runtime-benchmarks"))]
-	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+	let origin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
 
 	#[cfg(feature = "runtime-benchmarks")]
 	let origin = RuntimeOrigin::signed(alice_did.clone());
@@ -1985,7 +1985,7 @@ fn check_did_not_present_services_addition_error() {
 	let new_service_endpoint = DidEndpoint::new(b"id".to_vec(), vec![b"type".to_vec()], vec![b"url".to_vec()]);
 
 	#[cfg(not(feature = "runtime-benchmarks"))]
-	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+	let origin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
 
 	#[cfg(feature = "runtime-benchmarks")]
 	let origin = RuntimeOrigin::signed(alice_did.clone());
@@ -2011,7 +2011,7 @@ fn check_service_already_present_addition_error() {
 		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(alice_did.clone()));
 
 	#[cfg(not(feature = "runtime-benchmarks"))]
-	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+	let origin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
 
 	#[cfg(feature = "runtime-benchmarks")]
 	let origin = RuntimeOrigin::signed(alice_did.clone());
@@ -2046,7 +2046,7 @@ fn check_max_services_count_addition_error() {
 		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(alice_did.clone()));
 
 	#[cfg(not(feature = "runtime-benchmarks"))]
-	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+	let origin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
 
 	#[cfg(feature = "runtime-benchmarks")]
 	let origin = RuntimeOrigin::signed(alice_did.clone());
@@ -2079,7 +2079,7 @@ fn check_max_service_id_length_addition_error() {
 	.clone();
 
 	#[cfg(not(feature = "runtime-benchmarks"))]
-	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+	let origin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
 
 	#[cfg(feature = "runtime-benchmarks")]
 	let origin = RuntimeOrigin::signed(alice_did.clone());
@@ -2115,7 +2115,7 @@ fn check_max_service_type_length_addition_error() {
 	let old_did_details = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), None);
 
 	#[cfg(not(feature = "runtime-benchmarks"))]
-	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+	let origin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
 
 	#[cfg(feature = "runtime-benchmarks")]
 	let origin = RuntimeOrigin::signed(alice_did.clone());
@@ -2149,7 +2149,7 @@ fn check_max_service_type_count_addition_error() {
 	let old_did_details = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), None);
 
 	#[cfg(not(feature = "runtime-benchmarks"))]
-	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+	let origin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
 
 	#[cfg(feature = "runtime-benchmarks")]
 	let origin = RuntimeOrigin::signed(alice_did.clone());
@@ -2183,7 +2183,7 @@ fn check_max_service_url_length_addition_error() {
 	let old_did_details = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), None);
 
 	#[cfg(not(feature = "runtime-benchmarks"))]
-	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+	let origin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
 
 	#[cfg(feature = "runtime-benchmarks")]
 	let origin = RuntimeOrigin::signed(alice_did.clone());
@@ -2217,7 +2217,7 @@ fn check_max_service_url_count_addition_error() {
 	let old_did_details = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), None);
 
 	#[cfg(not(feature = "runtime-benchmarks"))]
-	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+	let origin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
 
 	#[cfg(feature = "runtime-benchmarks")]
 	let origin = RuntimeOrigin::signed(alice_did.clone());
@@ -2243,7 +2243,7 @@ fn character_addition_error() {
 		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(alice_did.clone()));
 
 	#[cfg(not(feature = "runtime-benchmarks"))]
-	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+	let origin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
 
 	#[cfg(feature = "runtime-benchmarks")]
 	let origin = RuntimeOrigin::signed(alice_did.clone());
@@ -2269,7 +2269,7 @@ fn check_invalid_service_type_character_addition_error() {
 		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(alice_did.clone()));
 
 	#[cfg(not(feature = "runtime-benchmarks"))]
-	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+	let origin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
 
 	#[cfg(feature = "runtime-benchmarks")]
 	let origin = RuntimeOrigin::signed(alice_did.clone());
@@ -2295,7 +2295,7 @@ fn check_invalid_service_url_character_addition_error() {
 		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(alice_did.clone()));
 
 	#[cfg(not(feature = "runtime-benchmarks"))]
-	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+	let origin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
 
 	#[cfg(feature = "runtime-benchmarks")]
 	let origin = RuntimeOrigin::signed(alice_did.clone());
@@ -2325,7 +2325,7 @@ fn check_service_deletion_successful() {
 		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(alice_did.clone()));
 
 	#[cfg(not(feature = "runtime-benchmarks"))]
-	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+	let origin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
 
 	#[cfg(feature = "runtime-benchmarks")]
 	let origin = RuntimeOrigin::signed(alice_did.clone());
@@ -2355,7 +2355,7 @@ fn check_service_not_present_deletion_error() {
 		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(alice_did.clone()));
 
 	#[cfg(not(feature = "runtime-benchmarks"))]
-	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+	let origin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
 
 	#[cfg(feature = "runtime-benchmarks")]
 	let origin = RuntimeOrigin::signed(alice_did.clone());
@@ -2387,7 +2387,7 @@ fn check_successful_deletion_no_endpoints() {
 		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 
 	#[cfg(not(feature = "runtime-benchmarks"))]
-	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+	let origin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
 
 	#[cfg(feature = "runtime-benchmarks")]
 	let origin = RuntimeOrigin::signed(alice_did.clone());
@@ -2439,7 +2439,7 @@ fn check_successful_deletion_with_endpoints() {
 		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 
 	#[cfg(not(feature = "runtime-benchmarks"))]
-	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+	let origin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
 
 	#[cfg(feature = "runtime-benchmarks")]
 	let origin = RuntimeOrigin::signed(alice_did.clone());
@@ -2514,7 +2514,7 @@ fn check_service_count_too_small_deletion_error() {
 		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 
 	#[cfg(not(feature = "runtime-benchmarks"))]
-	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+	let origin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
 
 	#[cfg(feature = "runtime-benchmarks")]
 	let origin = RuntimeOrigin::signed(alice_did.clone());
@@ -3521,7 +3521,7 @@ fn test_change_deposit_owner() {
 		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 
 	#[cfg(not(feature = "runtime-benchmarks"))]
-	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+	let origin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
 
 	#[cfg(feature = "runtime-benchmarks")]
 	let origin = RuntimeOrigin::signed(alice_did.clone());
@@ -3557,7 +3557,7 @@ fn test_change_deposit_owner_insufficient_balance() {
 		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 
 	#[cfg(not(feature = "runtime-benchmarks"))]
-	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+	let origin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
 
 	#[cfg(feature = "runtime-benchmarks")]
 	let origin = RuntimeOrigin::signed(alice_did.clone());
@@ -3580,7 +3580,7 @@ fn test_change_deposit_owner_not_found() {
 		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 
 	#[cfg(not(feature = "runtime-benchmarks"))]
-	let origin: RuntimeOrigin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
+	let origin = crate::DidRawOrigin::new(alice_did.clone(), alice_did.clone()).into();
 
 	#[cfg(feature = "runtime-benchmarks")]
 	let origin = RuntimeOrigin::signed(alice_did.clone());
