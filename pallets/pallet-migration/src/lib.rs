@@ -239,10 +239,7 @@ pub mod pallet {
 	impl<T: Config> Pallet<T> {
 		pub(crate) fn is_key_migrated(key: &[u8]) -> bool {
 			let key_hash = <T as frame_system::Config>::Hashing::hash(key);
-			if MigratedKeys::<T>::contains_key(key_hash) {
-				return true;
-			}
-			false
+			MigratedKeys::<T>::contains_key(key_hash)
 		}
 	}
 
