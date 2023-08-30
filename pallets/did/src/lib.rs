@@ -1133,7 +1133,7 @@ pub mod pallet {
 		#[pallet::call_index(14)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::update_deposit())]
 		pub fn update_deposit(origin: OriginFor<T>, did: DidIdentifierOf<T>) -> DispatchResult {
-			let sender = ensure_signed(origin.clone())?;
+			let sender = ensure_signed(origin)?;
 			let mut did_entry = Did::<T>::get(&did).ok_or(Error::<T>::NotFound)?;
 			ensure!(did_entry.deposit.owner == sender, Error::<T>::BadDidOrigin);
 			did_entry.update_deposit(&did)?;
