@@ -35,7 +35,7 @@ use sp_core::{ecdsa, ed25519, sr25519, Pair};
 use sp_runtime::{
 	testing::{Header, H256},
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
-	MultiSignature, MultiSigner, SaturatedConversion,
+	AccountId32, MultiSignature, MultiSigner, SaturatedConversion,
 };
 use sp_std::vec::Vec;
 
@@ -392,6 +392,13 @@ pub(crate) fn get_none_key_call() -> RuntimeCall {
 	RuntimeCall::Ctype(ctype::Call::add {
 		ctype: get_none_key_test_input(),
 	})
+}
+
+pub(crate) fn build_test_origin(account: AccountId32, _did: AccountId32) -> RuntimeOrigin {
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	return crate::DidRawOrigin::new(account, did).into();
+
+	RuntimeOrigin::signed(account)
 }
 
 impl DeriveDidCallAuthorizationVerificationKeyRelationship for RuntimeCall {
