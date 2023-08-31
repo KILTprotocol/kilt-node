@@ -149,7 +149,7 @@ pub mod runtime {
 
 	parameter_types! {
 		pub const MaxDelegatedAttestations: u32 = 1000;
-		pub const Deposit: Balance = 100;
+		pub const Deposit: Balance = MICRO_KILT;
 	}
 
 	impl attestation::Config for Test {
@@ -221,7 +221,7 @@ pub mod runtime {
 		pub const MaxRemovals: u32 = 5;
 		#[derive(Clone, TypeInfo)]
 		pub const MaxChildren: u32 = 1000;
-		pub const DepositMock: Balance = 100;
+		pub const DepositMock: Balance = MICRO_KILT;
 	}
 
 	impl delegation::Config for Test {

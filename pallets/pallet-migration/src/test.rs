@@ -57,7 +57,7 @@ use sp_runtime::{
 	BoundedVec, MultiSignature, MultiSigner,
 };
 
-use crate::{mock::*, MigratedKeys};
+use crate::{mock::*, MigratedKeys, Pallet};
 
 #[test]
 fn check_succesful_migration() {
@@ -446,6 +446,254 @@ fn check_excluded_keys_did() {
 				Migration::update_balance(RuntimeOrigin::signed(ACCOUNT_00), requested_migrations)
 					.expect("Update balance should not panic")
 			);
+		});
+}
+
+#[test]
+fn migrate_key_by_update_deposit_did() {
+	let auth_key = ed25519::Pair::from_seed(&ALICE_SEED);
+	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
+
+	let mut details = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(ACCOUNT_00));
+	details.deposit.amount = MICRO_KILT;
+
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, KILT * 2)])
+		.with_dids(vec![(alice_did.clone(), details)])
+		.build()
+		.execute_with(|| {
+			translate_all_holds_to_reserves();
+			let reserved_balance = pallet_balances::Pallet::<Test>::reserved_balance(ACCOUNT_00);
+
+			assert_eq!(reserved_balance, MICRO_KILT);
+
+			let did_key = did::Did::<Test>::hashed_key_for(&alice_did);
+			assert!(!Pallet::<Test>::is_key_migrated(&did_key));
+
+			assert_ok!(Did::update_deposit(
+				RuntimeOrigin::signed(ACCOUNT_00),
+				alice_did.clone()
+			));
+
+			let did_details = Did::get_did(alice_did);
+
+			assert!(did_details.is_some());
+
+			assert!(Pallet::<Test>::is_key_migrated(&did_key));
+
+			let hold_balance =
+				pallet_balances::Pallet::<Test>::balance_on_hold(&did::HoldReason::Deposit.into(), &ACCOUNT_00);
+
+			assert_eq!(hold_balance, did_details.unwrap().deposit.amount);
+		});
+}
+
+#[test]
+fn migrate_key_by_update_deposit_delegation() {
+	let creator = sr25519_did_from_seed(&BOB_SEED);
+
+	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
+	let hierarchy_details = generate_base_delegation_hierarchy_details::<Test>();
+	let delegation_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_3);
+	let delegation_details =
+		generate_base_delegation_node::<Test>(hierarchy_root_id, creator.clone(), Some(hierarchy_root_id), ACCOUNT_00);
+
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, KILT)])
+		.with_delegation_hierarchies(vec![(hierarchy_root_id, hierarchy_details, creator, ACCOUNT_00)])
+		.with_delegations(vec![(delegation_id, delegation_details)])
+		.build()
+		.execute_with(|| {
+			translate_all_holds_to_reserves();
+			let count = MigratedKeys::<Test>::iter().count() as u32;
+			let cursor = MigratedKeys::<Test>::clear(count, None).maybe_cursor;
+
+			assert!(cursor.is_none());
+
+			let reserved_balance = pallet_balances::Pallet::<Test>::reserved_balance(ACCOUNT_00);
+
+			// the deposit for the hierarchy and delegation are for each 1 MIRCO_KILT
+			assert_eq!(reserved_balance, 2 * MICRO_KILT);
+
+			let hashed_key = DelegationNodes::<Test>::hashed_key_for(delegation_id);
+			assert!(!Pallet::<Test>::is_key_migrated(&hashed_key));
+
+			assert_ok!(Delegation::update_deposit(
+				RuntimeOrigin::signed(ACCOUNT_00),
+				delegation_id,
+			));
+
+			let delegation_node = DelegationNodes::<Test>::get(delegation_id);
+
+			assert!(delegation_node.is_some());
+
+			let hold_balance =
+				pallet_balances::Pallet::<Test>::balance_on_hold(&delegation::HoldReason::Deposit.into(), &ACCOUNT_00);
+
+			// we have only update the delegation node. Not the hierarchy
+			assert_eq!(hold_balance, MICRO_KILT);
+
+			assert!(Pallet::<Test>::is_key_migrated(&hashed_key));
+		});
+}
+
+#[test]
+fn migrate_key_by_update_deposit_lookup() {
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, KILT)])
+		.with_connections(vec![(ACCOUNT_00, DID_00, LINKABLE_ACCOUNT_00)])
+		.build()
+		.execute_with(|| {
+			translate_all_holds_to_reserves();
+			let count = MigratedKeys::<Test>::iter().count() as u32;
+			let cursor = MigratedKeys::<Test>::clear(count, None).maybe_cursor;
+
+			assert!(cursor.is_none());
+
+			let reserved_balance = pallet_balances::Pallet::<Test>::reserved_balance(ACCOUNT_00);
+
+			assert_eq!(reserved_balance, MICRO_KILT);
+
+			let hashed_key = ConnectedDids::<Test>::hashed_key_for(&LINKABLE_ACCOUNT_00);
+
+			assert!(!Pallet::<Test>::is_key_migrated(&hashed_key));
+
+			assert_ok!(DidLookup::update_deposit(
+				RuntimeOrigin::signed(ACCOUNT_00),
+				LINKABLE_ACCOUNT_00
+			));
+
+			assert!(Pallet::<Test>::is_key_migrated(&hashed_key));
+
+			let hold_balance = pallet_balances::Pallet::<Test>::balance_on_hold(
+				&pallet_did_lookup::HoldReason::Deposit.into(),
+				&ACCOUNT_00,
+			);
+			assert_eq!(hold_balance, MICRO_KILT);
+		});
+}
+
+#[test]
+fn migrate_key_by_update_deposit_w3n() {
+	let web3_name_00 = AsciiWeb3Name::try_from(WEB3_NAME_00_INPUT.to_vec()).expect("W3n name creation should not fail");
+
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, KILT)])
+		.with_web3_names(vec![(DID_00, web3_name_00.clone(), ACCOUNT_00)])
+		.build()
+		.execute_with(|| {
+			translate_all_holds_to_reserves();
+			let count = MigratedKeys::<Test>::iter().count() as u32;
+			let cursor = MigratedKeys::<Test>::clear(count, None).maybe_cursor;
+			assert!(cursor.is_none());
+
+			let reserved_balance = pallet_balances::Pallet::<Test>::reserved_balance(ACCOUNT_00);
+
+			assert_eq!(reserved_balance, MICRO_KILT);
+
+			let hashed_key = Owner::<Test>::hashed_key_for(&web3_name_00);
+
+			assert!(!Pallet::<Test>::is_key_migrated(&hashed_key));
+
+			assert_ok!(W3n::update_deposit(
+				RuntimeOrigin::signed(ACCOUNT_00),
+				BoundedVec::try_from(WEB3_NAME_00_INPUT.to_vec()).expect("Input should not fail")
+			));
+
+			assert!(Pallet::<Test>::is_key_migrated(&hashed_key));
+
+			let hold_balance = pallet_balances::Pallet::<Test>::balance_on_hold(
+				&pallet_web3_names::HoldReason::Deposit.into(),
+				&ACCOUNT_00,
+			);
+			assert_eq!(hold_balance, MICRO_KILT);
+		});
+}
+
+#[test]
+fn migrate_key_by_update_deposit_public_credentials() {
+	let attester: AttesterOf<Test> = sr25519_did_from_seed(&ALICE_SEED);
+	let ctype_hash = get_ctype_hash::<Test>(true);
+
+	let deposit = kilt_support::Deposit {
+		owner: ACCOUNT_00,
+		amount: 10 * MICRO_KILT,
+	};
+
+	let subject_id: <Test as public_credentials::Config>::SubjectId = SUBJECT_ID_00;
+	let new_credential =
+		generate_base_credential_entry::<Test>(ACCOUNT_00, 0, attester, Some(ctype_hash), Some(deposit));
+	let credential_id: CredentialIdOf<Test> = CredentialIdOf::<Test>::default();
+
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, KILT)])
+		.with_public_credentials(vec![(subject_id, credential_id, new_credential)])
+		.build()
+		.execute_with(|| {
+			translate_all_holds_to_reserves();
+			let count = MigratedKeys::<Test>::iter().count() as u32;
+			let cursor = MigratedKeys::<Test>::clear(count, None).maybe_cursor;
+			assert!(cursor.is_none());
+
+			let reserved_balance = pallet_balances::Pallet::<Test>::reserved_balance(ACCOUNT_00);
+
+			assert_eq!(reserved_balance, 10 * MICRO_KILT);
+
+			let hashed_key = Credentials::<Test>::hashed_key_for(subject_id, credential_id);
+
+			assert!(!Pallet::<Test>::is_key_migrated(&hashed_key));
+
+			assert_ok!(PublicCredentials::update_deposit(
+				RuntimeOrigin::signed(ACCOUNT_00),
+				credential_id
+			));
+
+			assert!(Pallet::<Test>::is_key_migrated(&hashed_key));
+
+			let hold_balance = pallet_balances::Pallet::<Test>::balance_on_hold(
+				&public_credentials::HoldReason::Deposit.into(),
+				&ACCOUNT_00,
+			);
+			assert_eq!(hold_balance, 10 * MICRO_KILT);
+		});
+}
+
+#[test]
+fn migrate_key_by_update_deposit_attestation() {
+	// attestaion
+	let attester: AttesterOf<Test> = sr25519_did_from_seed(&ALICE_SEED);
+	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_12);
+	let mut attestation = generate_base_attestation::<Test>(attester, ACCOUNT_00);
+	attestation.deposit.amount = MICRO_KILT;
+
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, KILT)])
+		.with_attestations(vec![(claim_hash, attestation)])
+		.build()
+		.execute_with(|| {
+			translate_all_holds_to_reserves();
+			let count = MigratedKeys::<Test>::iter().count() as u32;
+			let cursor = MigratedKeys::<Test>::clear(count, None).maybe_cursor;
+			assert!(cursor.is_none());
+
+			let reserved_balance = pallet_balances::Pallet::<Test>::reserved_balance(ACCOUNT_00);
+
+			assert_eq!(reserved_balance, MICRO_KILT);
+
+			let hashed_key = Attestations::<Test>::hashed_key_for(claim_hash);
+
+			assert!(!Pallet::<Test>::is_key_migrated(&hashed_key));
+
+			assert_ok!(Attestation::update_deposit(
+				RuntimeOrigin::signed(ACCOUNT_00),
+				claim_hash
+			));
+
+			assert!(Pallet::<Test>::is_key_migrated(&hashed_key));
+
+			let hold_balance =
+				pallet_balances::Pallet::<Test>::balance_on_hold(&attestation::HoldReason::Deposit.into(), &ACCOUNT_00);
+			assert_eq!(hold_balance, MICRO_KILT);
 		});
 }
 

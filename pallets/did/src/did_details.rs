@@ -354,10 +354,13 @@ impl<T: Config> DidDetails<T> {
 						&self.deposit.owner,
 						&self.deposit.amount,
 					);
+					DidDepositCollector::<T>::create_deposit(self.deposit.clone().owner, new_required_deposit)?;
 					<T as Config>::MigrationManager::exclude_key_from_migration(Did::<T>::hashed_key_for(did_subject));
+					self.deposit.amount = new_required_deposit;
+				} else {
+					DidDepositCollector::<T>::create_deposit(self.deposit.clone().owner, deposit_to_reserve)?;
+					self.deposit.amount = self.deposit.amount.saturating_add(deposit_to_reserve);
 				}
-				DidDepositCollector::<T>::create_deposit(self.deposit.clone().owner, deposit_to_reserve)?;
-				self.deposit.amount = self.deposit.amount.saturating_add(deposit_to_reserve);
 			}
 
 			Ordering::Less => {
