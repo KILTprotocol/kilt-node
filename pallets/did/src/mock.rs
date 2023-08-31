@@ -317,7 +317,7 @@ pub fn get_ecdsa_delegation_key(seed: &[u8; 32]) -> ecdsa::Pair {
 	ecdsa::Pair::from_seed(seed)
 }
 
-pub fn generate_key_id(key: &DidPublicKey) -> KeyIdOf<Test> {
+pub fn generate_key_id(key: &DidPublicKey<AccountId>) -> KeyIdOf<Test> {
 	crate_utils::calculate_key_id::<Test>(key)
 }
 

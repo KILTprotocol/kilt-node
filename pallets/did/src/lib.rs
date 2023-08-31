@@ -1156,12 +1156,13 @@ pub mod pallet {
 			Ok(())
 		}
 
+		#[allow(clippy::boxed_local)]
 		#[pallet::call_index(15)]
 		#[pallet::weight(1000)]
 		pub fn dispatch_as(
 			origin: OriginFor<T>,
 			did_identifier: DidIdentifierOf<T>,
-			call: DidCallableOf<T>,
+			call: Box<DidCallableOf<T>>,
 		) -> DispatchResultWithPostInfo {
 			let who = ensure_signed(origin)?;
 
