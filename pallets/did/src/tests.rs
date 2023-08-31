@@ -44,7 +44,7 @@ use crate::{
 
 #[test]
 fn check_successful_simple_ed25519_creation() {
-	let auth_key = get_ed25519_authentication_key(true);
+	let auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let auth_did_key = DidVerificationKey::from(auth_key.public());
 	let details = generate_base_did_creation_details::<Test>(alice_did.clone(), ACCOUNT_00);
@@ -87,7 +87,7 @@ fn check_successful_simple_ed25519_creation() {
 
 #[test]
 fn check_successful_simple_sr25519_creation() {
-	let auth_key = get_sr25519_authentication_key(true);
+	let auth_key = get_sr25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let auth_did_key = DidVerificationKey::from(auth_key.public());
 	let details = generate_base_did_creation_details::<Test>(alice_did.clone(), ACCOUNT_00);
@@ -129,7 +129,7 @@ fn check_successful_simple_sr25519_creation() {
 
 #[test]
 fn check_successful_simple_ecdsa_creation() {
-	let auth_key = get_ecdsa_authentication_key(true);
+	let auth_key = get_ecdsa_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_ecdsa_key(auth_key.public());
 	let auth_did_key = DidVerificationKey::from(auth_key.public());
 	let details = generate_base_did_creation_details::<Test>(alice_did.clone(), ACCOUNT_00);
@@ -171,18 +171,21 @@ fn check_successful_simple_ecdsa_creation() {
 
 #[test]
 fn check_successful_complete_creation() {
-	let auth_key = get_sr25519_authentication_key(true);
+	let auth_key = get_sr25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let auth_did_key = DidVerificationKey::from(auth_key.public());
 	let enc_keys = DidNewKeyAgreementKeySetOf::<Test>::try_from(
-		vec![get_x25519_encryption_key(true), get_x25519_encryption_key(false)]
-			.iter()
-			.copied()
-			.collect::<BTreeSet<DidEncryptionKey>>(),
+		vec![
+			get_x25519_encryption_key(&ENC_SEED_0),
+			get_x25519_encryption_key(&ENC_SEED_1),
+		]
+		.iter()
+		.copied()
+		.collect::<BTreeSet<DidEncryptionKey>>(),
 	)
 	.expect("Exceeded BoundedBTreeSet bounds when creating new key agreement keys");
-	let del_key = get_sr25519_delegation_key(true);
-	let att_key = get_ecdsa_attestation_key(true);
+	let del_key = get_sr25519_delegation_key(&DEL_SEED_0);
+	let att_key = get_ecdsa_attestation_key(&AUTH_SEED_0);
 	let mut details = generate_base_did_creation_details::<Test>(alice_did.clone(), ACCOUNT_00);
 	details.new_key_agreement_keys = enc_keys.clone();
 	details.new_attestation_key = Some(DidVerificationKey::from(att_key.public()));
@@ -290,7 +293,7 @@ fn check_successful_complete_creation() {
 
 #[test]
 fn check_deposit_change_by_adding_service_endpoint() {
-	let auth_key = get_ed25519_authentication_key(true);
+	let auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let mut did_details =
 		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(alice_did.clone()));
@@ -337,7 +340,7 @@ fn check_deposit_change_by_adding_service_endpoint() {
 
 #[test]
 fn check_duplicate_did_creation() {
-	let auth_key = get_sr25519_authentication_key(true);
+	let auth_key = get_sr25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let auth_did_key = DidVerificationKey::from(auth_key.public());
 	let mock_did = generate_base_did_details::<Test>(auth_did_key, Some(ACCOUNT_00));
@@ -365,7 +368,7 @@ fn check_duplicate_did_creation() {
 
 #[test]
 fn check_unauthorised_submitter_did_creation_error() {
-	let auth_key = get_sr25519_authentication_key(true);
+	let auth_key = get_sr25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let auth_did_key = DidVerificationKey::from(auth_key.public());
 	let mock_did = generate_base_did_details::<Test>(auth_did_key, Some(ACCOUNT_00));
@@ -395,7 +398,7 @@ fn check_unauthorised_submitter_did_creation_error() {
 
 #[test]
 fn create_fail_insufficient_balance() {
-	let auth_key = get_sr25519_authentication_key(true);
+	let auth_key = get_sr25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let details = generate_base_did_creation_details::<Test>(alice_did, ACCOUNT_00);
 
@@ -415,7 +418,7 @@ fn create_fail_insufficient_balance() {
 
 #[test]
 fn check_did_already_deleted_creation() {
-	let auth_key = get_sr25519_authentication_key(true);
+	let auth_key = get_sr25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let details = generate_base_did_creation_details::<Test>(alice_did.clone(), ACCOUNT_00);
 
@@ -441,10 +444,10 @@ fn check_did_already_deleted_creation() {
 
 #[test]
 fn check_invalid_signature_format_did_creation() {
-	let auth_key = get_sr25519_authentication_key(true);
+	let auth_key = get_sr25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
 	// Using an Ed25519 key where an Sr25519 is expected
-	let invalid_key = get_ed25519_authentication_key(true);
+	let invalid_key = get_ed25519_authentication_key(&AUTH_SEED_0);
 	// DID creation contains auth_key, but signature is generated using invalid_key
 	let details = generate_base_did_creation_details::<Test>(alice_did, ACCOUNT_00);
 
@@ -469,9 +472,9 @@ fn check_invalid_signature_format_did_creation() {
 
 #[test]
 fn check_invalid_signature_did_creation() {
-	let auth_key = get_sr25519_authentication_key(true);
+	let auth_key = get_sr25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
-	let alternative_key = get_sr25519_authentication_key(false);
+	let alternative_key = get_sr25519_authentication_key(&AUTH_SEED_1);
 	let details = generate_base_did_creation_details::<Test>(alice_did, ACCOUNT_00);
 
 	let signature = alternative_key.sign(details.encode().as_ref());
@@ -495,8 +498,8 @@ fn check_invalid_signature_did_creation() {
 
 #[test]
 fn check_swapped_did_subject_did_creation() {
-	let auth_key = get_sr25519_authentication_key(true);
-	let swapped_key = get_sr25519_authentication_key(false);
+	let auth_key = get_sr25519_authentication_key(&AUTH_SEED_0);
+	let swapped_key = get_sr25519_authentication_key(&AUTH_SEED_1);
 	let swapped_did = get_did_identifier_from_sr25519_key(swapped_key.public());
 	let details = generate_base_did_creation_details::<Test>(swapped_did, ACCOUNT_00);
 
@@ -522,7 +525,7 @@ fn check_swapped_did_subject_did_creation() {
 #[test]
 #[should_panic = "Failed to convert key_agreement_keys to BoundedBTreeSet"]
 fn check_max_limit_key_agreement_keys_did_creation() {
-	let auth_key = get_sr25519_authentication_key(true);
+	let auth_key = get_sr25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
 	// Max keys allowed + 1
 	let enc_keys = get_key_agreement_keys::<Test>(MaxNewKeyAgreementKeys::get().saturating_add(1));
@@ -551,7 +554,7 @@ fn check_max_limit_key_agreement_keys_did_creation() {
 
 #[test]
 fn check_max_limit_service_endpoints_count_did_creation() {
-	let auth_key = get_sr25519_authentication_key(true);
+	let auth_key = get_sr25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let mut details = generate_base_did_creation_details::<Test>(alice_did, ACCOUNT_00);
 	details.new_service_details = get_service_endpoints(
@@ -587,7 +590,7 @@ fn check_max_limit_service_endpoints_count_did_creation() {
 #[test]
 #[should_panic = "Service ID too long."]
 fn check_max_limit_service_id_length_did_creation() {
-	let auth_key = get_sr25519_authentication_key(true);
+	let auth_key = get_sr25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let mut details = generate_base_did_creation_details::<Test>(alice_did, ACCOUNT_00);
 	details.new_service_details =
@@ -616,7 +619,7 @@ fn check_max_limit_service_id_length_did_creation() {
 #[test]
 #[should_panic = "Too many types for the given service."]
 fn check_max_limit_service_type_count_did_creation() {
-	let auth_key = get_sr25519_authentication_key(true);
+	let auth_key = get_sr25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let mut details = generate_base_did_creation_details::<Test>(alice_did, ACCOUNT_00);
 	details.new_service_details = get_service_endpoints(
@@ -651,7 +654,7 @@ fn check_max_limit_service_type_count_did_creation() {
 #[test]
 #[should_panic = "Service type too long."]
 fn check_max_limit_service_type_length_did_creation() {
-	let auth_key = get_sr25519_authentication_key(true);
+	let auth_key = get_sr25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let mut details = generate_base_did_creation_details::<Test>(alice_did, ACCOUNT_00);
 	details.new_service_details =
@@ -680,7 +683,7 @@ fn check_max_limit_service_type_length_did_creation() {
 #[test]
 #[should_panic = "Too many URLs for the given service."]
 fn check_max_limit_service_url_count_did_creation() {
-	let auth_key = get_sr25519_authentication_key(true);
+	let auth_key = get_sr25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let mut details = generate_base_did_creation_details::<Test>(alice_did, ACCOUNT_00);
 	details.new_service_details = get_service_endpoints(
@@ -715,7 +718,7 @@ fn check_max_limit_service_url_count_did_creation() {
 #[test]
 #[should_panic = "URL too long."]
 fn check_max_limit_service_url_length_did_creation() {
-	let auth_key = get_sr25519_authentication_key(true);
+	let auth_key = get_sr25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let mut details = generate_base_did_creation_details::<Test>(alice_did, ACCOUNT_00);
 	details.new_service_details =
@@ -743,7 +746,7 @@ fn check_max_limit_service_url_length_did_creation() {
 
 #[test]
 fn check_invalid_service_id_character_did_creation() {
-	let auth_key = get_sr25519_authentication_key(true);
+	let auth_key = get_sr25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let new_service_details = DidEndpoint::new("å".bytes().collect(), vec![b"type".to_vec()], vec![b"url".to_vec()]);
 	let mut details = generate_base_did_creation_details::<Test>(alice_did, ACCOUNT_00);
@@ -771,7 +774,7 @@ fn check_invalid_service_id_character_did_creation() {
 
 #[test]
 fn check_invalid_service_type_character_did_creation() {
-	let auth_key = get_sr25519_authentication_key(true);
+	let auth_key = get_sr25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let new_service_details = DidEndpoint::new(b"id".to_vec(), vec!["å".bytes().collect()], vec![b"url".to_vec()]);
 	let mut details = generate_base_did_creation_details::<Test>(alice_did, ACCOUNT_00);
@@ -799,7 +802,7 @@ fn check_invalid_service_type_character_did_creation() {
 
 #[test]
 fn check_invalid_service_url_character_did_creation() {
-	let auth_key = get_sr25519_authentication_key(true);
+	let auth_key = get_sr25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let new_service_details = DidEndpoint::new(b"id".to_vec(), vec![b"type".to_vec()], vec!["å".bytes().collect()]);
 	let mut details = generate_base_did_creation_details::<Test>(alice_did, ACCOUNT_00);
@@ -829,9 +832,9 @@ fn check_invalid_service_url_character_did_creation() {
 
 #[test]
 fn check_successful_authentication_key_update() {
-	let old_auth_key = get_ed25519_authentication_key(true);
+	let old_auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_ed25519_key(old_auth_key.public());
-	let new_auth_key = get_ed25519_authentication_key(false);
+	let new_auth_key = get_ed25519_authentication_key(&AUTH_SEED_1);
 
 	let old_did_details =
 		generate_base_did_details::<Test>(DidVerificationKey::from(old_auth_key.public()), Some(alice_did.clone()));
@@ -865,9 +868,9 @@ fn check_successful_authentication_key_update() {
 
 #[test]
 fn check_successful_authentication_key_max_public_keys_update() {
-	let old_auth_key = get_ed25519_authentication_key(true);
+	let old_auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_ed25519_key(old_auth_key.public());
-	let new_auth_key = get_ed25519_authentication_key(false);
+	let new_auth_key = get_ed25519_authentication_key(&AUTH_SEED_1);
 	let key_agreement_keys = get_key_agreement_keys::<Test>(MaxTotalKeyAgreementKeys::get());
 
 	let mut did_details =
@@ -908,10 +911,10 @@ fn check_successful_authentication_key_max_public_keys_update() {
 
 #[test]
 fn check_reused_key_authentication_key_update() {
-	let old_auth_key = get_ed25519_authentication_key(true);
+	let old_auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_ed25519_key(old_auth_key.public());
 	let old_delegation_key = old_auth_key;
-	let new_auth_key = get_ed25519_authentication_key(false);
+	let new_auth_key = get_ed25519_authentication_key(&AUTH_SEED_1);
 
 	let mut old_did_details =
 		generate_base_did_details::<Test>(DidVerificationKey::from(old_auth_key.public()), Some(alice_did.clone()));
@@ -952,10 +955,10 @@ fn check_reused_key_authentication_key_update() {
 
 #[test]
 fn check_max_keys_authentication_key_update_error() {
-	let old_auth_key = get_ed25519_authentication_key(true);
+	let old_auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_ed25519_key(old_auth_key.public());
 	let delegation_key = old_auth_key;
-	let new_auth_key = get_ed25519_authentication_key(false);
+	let new_auth_key = get_ed25519_authentication_key(&AUTH_SEED_1);
 	let key_agreement_keys = get_key_agreement_keys::<Test>(MaxTotalKeyAgreementKeys::get());
 
 	let mut did_details =
@@ -989,9 +992,9 @@ fn check_max_keys_authentication_key_update_error() {
 
 #[test]
 fn check_did_not_present_authentication_key_update_error() {
-	let old_auth_key = get_ed25519_authentication_key(true);
+	let old_auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_ed25519_key(old_auth_key.public());
-	let new_auth_key = get_ed25519_authentication_key(false);
+	let new_auth_key = get_ed25519_authentication_key(&AUTH_SEED_1);
 
 	let new_block_number: BlockNumber = 1;
 
@@ -1010,10 +1013,10 @@ fn check_did_not_present_authentication_key_update_error() {
 
 #[test]
 fn check_successful_delegation_key_update() {
-	let auth_key = get_ed25519_authentication_key(true);
-	let old_del_key = get_sr25519_delegation_key(true);
+	let auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
+	let old_del_key = get_sr25519_delegation_key(&DEL_SEED_0);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
-	let new_del_key = get_sr25519_delegation_key(false);
+	let new_del_key = get_sr25519_delegation_key(&DEL_SEED_1);
 
 	let mut old_did_details =
 		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(alice_did.clone()));
@@ -1048,10 +1051,10 @@ fn check_successful_delegation_key_update() {
 
 #[test]
 fn check_successful_delegation_key_max_public_keys_update() {
-	let auth_key = get_ed25519_authentication_key(true);
+	let auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
-	let old_del_key = get_sr25519_delegation_key(true);
-	let new_del_key = get_sr25519_delegation_key(false);
+	let old_del_key = get_sr25519_delegation_key(&DEL_SEED_0);
+	let new_del_key = get_sr25519_delegation_key(&DEL_SEED_1);
 	let key_agreement_keys = get_key_agreement_keys::<Test>(MaxTotalKeyAgreementKeys::get());
 
 	let mut did_details =
@@ -1091,10 +1094,10 @@ fn check_successful_delegation_key_max_public_keys_update() {
 
 #[test]
 fn check_reused_key_delegation_key_update() {
-	let old_auth_key = get_ed25519_authentication_key(true);
+	let old_auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_ed25519_key(old_auth_key.public());
 	let old_del_key = old_auth_key;
-	let new_del_key = get_sr25519_delegation_key(true);
+	let new_del_key = get_sr25519_delegation_key(&DEL_SEED_0);
 
 	let mut old_did_details =
 		generate_base_did_details::<Test>(DidVerificationKey::from(old_auth_key.public()), Some(alice_did.clone()));
@@ -1131,9 +1134,9 @@ fn check_reused_key_delegation_key_update() {
 
 #[test]
 fn check_max_public_keys_delegation_key_addition_error() {
-	let auth_key = get_ed25519_authentication_key(true);
+	let auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
-	let new_del_key = get_sr25519_delegation_key(false);
+	let new_del_key = get_sr25519_delegation_key(&DEL_SEED_1);
 	let key_agreement_keys = get_key_agreement_keys::<Test>(MaxTotalKeyAgreementKeys::get());
 
 	let mut did_details =
@@ -1164,10 +1167,10 @@ fn check_max_public_keys_delegation_key_addition_error() {
 
 #[test]
 fn check_max_public_keys_reused_key_delegation_key_update_error() {
-	let auth_key = get_ed25519_authentication_key(true);
+	let auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let old_del_key = auth_key;
-	let new_del_key = get_sr25519_delegation_key(true);
+	let new_del_key = get_sr25519_delegation_key(&DEL_SEED_0);
 	let key_agreement_keys = get_key_agreement_keys::<Test>(MaxTotalKeyAgreementKeys::get());
 
 	let mut did_details =
@@ -1201,9 +1204,9 @@ fn check_max_public_keys_reused_key_delegation_key_update_error() {
 
 #[test]
 fn check_did_not_present_delegation_key_update_error() {
-	let auth_key = get_ed25519_authentication_key(true);
+	let auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
-	let new_del_key = get_sr25519_delegation_key(false);
+	let new_del_key = get_sr25519_delegation_key(&DEL_SEED_1);
 
 	let new_block_number: BlockNumber = 1;
 
@@ -1222,8 +1225,8 @@ fn check_did_not_present_delegation_key_update_error() {
 
 #[test]
 fn check_successful_delegation_key_deletion() {
-	let auth_key = get_ed25519_authentication_key(true);
-	let old_del_key = get_sr25519_delegation_key(true);
+	let auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
+	let old_del_key = get_sr25519_delegation_key(&DEL_SEED_0);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 
 	let mut old_did_details =
@@ -1248,7 +1251,7 @@ fn check_successful_delegation_key_deletion() {
 
 #[test]
 fn check_successful_reused_delegation_key_deletion() {
-	let auth_key = get_ed25519_authentication_key(true);
+	let auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
 	let old_del_key = auth_key;
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 
@@ -1275,7 +1278,7 @@ fn check_successful_reused_delegation_key_deletion() {
 
 #[test]
 fn check_did_not_present_delegation_key_deletion_error() {
-	let auth_key = get_ed25519_authentication_key(true);
+	let auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 
 	ExtBuilder::default().build(None).execute_with(|| {
@@ -1288,7 +1291,7 @@ fn check_did_not_present_delegation_key_deletion_error() {
 
 #[test]
 fn check_key_not_present_delegation_key_deletion_error() {
-	let auth_key = get_ed25519_authentication_key(true);
+	let auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 
 	let old_did_details =
@@ -1307,10 +1310,10 @@ fn check_key_not_present_delegation_key_deletion_error() {
 
 #[test]
 fn check_successful_attestation_key_update() {
-	let auth_key = get_ed25519_authentication_key(true);
-	let old_att_key = get_sr25519_attestation_key(true);
+	let auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
+	let old_att_key = get_sr25519_attestation_key(&ATT_SEED_0);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
-	let new_att_key = get_sr25519_attestation_key(false);
+	let new_att_key = get_sr25519_attestation_key(&ATT_SEED_1);
 
 	let mut old_did_details =
 		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(alice_did.clone()));
@@ -1344,11 +1347,11 @@ fn check_successful_attestation_key_update() {
 
 #[test]
 fn check_successful_attestation_key_max_public_keys_update() {
-	let auth_key = get_ed25519_authentication_key(true);
+	let auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
-	let old_att_key = get_sr25519_attestation_key(true);
+	let old_att_key = get_sr25519_attestation_key(&ATT_SEED_0);
 	let key_agreement_keys = get_key_agreement_keys::<Test>(MaxTotalKeyAgreementKeys::get());
-	let new_att_key = get_sr25519_attestation_key(false);
+	let new_att_key = get_sr25519_attestation_key(&ATT_SEED_1);
 
 	let mut did_details =
 		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(alice_did.clone()));
@@ -1386,10 +1389,10 @@ fn check_successful_attestation_key_max_public_keys_update() {
 
 #[test]
 fn check_reused_key_attestation_key_update() {
-	let old_auth_key = get_ed25519_authentication_key(true);
+	let old_auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_ed25519_key(old_auth_key.public());
 	let old_att_key = old_auth_key;
-	let new_att_key = get_sr25519_attestation_key(true);
+	let new_att_key = get_sr25519_attestation_key(&ATT_SEED_0);
 
 	let mut old_did_details =
 		generate_base_did_details::<Test>(DidVerificationKey::from(old_auth_key.public()), Some(alice_did.clone()));
@@ -1426,9 +1429,9 @@ fn check_reused_key_attestation_key_update() {
 
 #[test]
 fn check_max_public_keys_attestation_key_addition_error() {
-	let auth_key = get_ed25519_authentication_key(true);
+	let auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
-	let new_att_key = get_sr25519_attestation_key(false);
+	let new_att_key = get_sr25519_attestation_key(&ATT_SEED_1);
 	let key_agreement_keys = get_key_agreement_keys::<Test>(MaxTotalKeyAgreementKeys::get());
 
 	let mut did_details =
@@ -1459,10 +1462,10 @@ fn check_max_public_keys_attestation_key_addition_error() {
 
 #[test]
 fn check_max_public_keys_reused_key_attestation_key_update_error() {
-	let auth_key = get_ed25519_authentication_key(true);
+	let auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let old_att_key = auth_key;
-	let new_att_key = get_sr25519_delegation_key(true);
+	let new_att_key = get_sr25519_delegation_key(&DEL_SEED_0);
 	let key_agreement_keys = get_key_agreement_keys::<Test>(MaxTotalKeyAgreementKeys::get());
 
 	let mut did_details =
@@ -1496,9 +1499,9 @@ fn check_max_public_keys_reused_key_attestation_key_update_error() {
 
 #[test]
 fn check_did_not_present_attestation_key_update_error() {
-	let auth_key = get_ed25519_authentication_key(true);
+	let auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
-	let new_att_key = get_sr25519_delegation_key(false);
+	let new_att_key = get_sr25519_delegation_key(&DEL_SEED_1);
 
 	let new_block_number: BlockNumber = 1;
 
@@ -1517,8 +1520,8 @@ fn check_did_not_present_attestation_key_update_error() {
 
 #[test]
 fn check_successful_attestation_key_deletion() {
-	let auth_key = get_ed25519_authentication_key(true);
-	let old_att_key = get_sr25519_attestation_key(true);
+	let auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
+	let old_att_key = get_sr25519_attestation_key(&ATT_SEED_0);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 
 	let mut old_did_details =
@@ -1543,7 +1546,7 @@ fn check_successful_attestation_key_deletion() {
 
 #[test]
 fn check_successful_reused_attestation_key_deletion() {
-	let auth_key = get_ed25519_authentication_key(true);
+	let auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
 	let old_att_key = auth_key;
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 
@@ -1569,7 +1572,7 @@ fn check_successful_reused_attestation_key_deletion() {
 
 #[test]
 fn check_did_not_present_attestation_key_deletion_error() {
-	let auth_key = get_ed25519_authentication_key(true);
+	let auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 
 	ExtBuilder::default().build(None).execute_with(|| {
@@ -1582,7 +1585,7 @@ fn check_did_not_present_attestation_key_deletion_error() {
 
 #[test]
 fn check_key_not_present_attestation_key_deletion_error() {
-	let auth_key = get_ed25519_authentication_key(true);
+	let auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 
 	let old_did_details =
@@ -1601,9 +1604,9 @@ fn check_key_not_present_attestation_key_deletion_error() {
 
 #[test]
 fn check_successful_key_agreement_key_addition() {
-	let auth_key = get_ed25519_authentication_key(true);
+	let auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
-	let new_key_agreement_key = get_x25519_encryption_key(true);
+	let new_key_agreement_key = get_x25519_encryption_key(&ENC_SEED_0);
 
 	let old_did_details =
 		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(alice_did.clone()));
@@ -1635,11 +1638,11 @@ fn check_successful_key_agreement_key_addition() {
 
 #[test]
 fn check_max_public_keys_key_agreement_key_addition_error() {
-	let auth_key = get_ed25519_authentication_key(true);
+	let auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 
 	let key_agreement_keys = get_key_agreement_keys::<Test>(MaxTotalKeyAgreementKeys::get());
-	let new_key_agreement_key = get_x25519_encryption_key(true);
+	let new_key_agreement_key = get_x25519_encryption_key(&ENC_SEED_0);
 
 	let mut did_details =
 		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(alice_did.clone()));
@@ -1665,9 +1668,9 @@ fn check_max_public_keys_key_agreement_key_addition_error() {
 
 #[test]
 fn check_did_not_present_key_agreement_key_addition_error() {
-	let auth_key = get_ed25519_authentication_key(true);
+	let auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
-	let new_enc_key = get_x25519_encryption_key(true);
+	let new_enc_key = get_x25519_encryption_key(&ENC_SEED_0);
 
 	let new_block_number: BlockNumber = 1;
 
@@ -1683,9 +1686,9 @@ fn check_did_not_present_key_agreement_key_addition_error() {
 
 #[test]
 fn check_successful_key_agreement_key_deletion() {
-	let auth_key = get_ed25519_authentication_key(true);
+	let auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
-	let old_enc_key = get_x25519_encryption_key(true);
+	let old_enc_key = get_x25519_encryption_key(&ENC_SEED_0);
 
 	let mut old_did_details =
 		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(alice_did.clone()));
@@ -1711,9 +1714,9 @@ fn check_successful_key_agreement_key_deletion() {
 
 #[test]
 fn check_did_not_found_key_agreement_key_deletion_error() {
-	let auth_key = get_ed25519_authentication_key(true);
+	let auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
-	let test_enc_key = get_x25519_encryption_key(true);
+	let test_enc_key = get_x25519_encryption_key(&ENC_SEED_0);
 
 	ExtBuilder::default().build(None).execute_with(|| {
 		assert_noop!(
@@ -1728,9 +1731,9 @@ fn check_did_not_found_key_agreement_key_deletion_error() {
 
 #[test]
 fn check_key_not_found_key_agreement_key_deletion_error() {
-	let auth_key = get_ed25519_authentication_key(true);
+	let auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
-	let test_enc_key = get_x25519_encryption_key(true);
+	let test_enc_key = get_x25519_encryption_key(&ENC_SEED_0);
 
 	// No enc key added
 	let old_did_details =
@@ -1754,7 +1757,7 @@ fn check_key_not_found_key_agreement_key_deletion_error() {
 
 #[test]
 fn check_service_addition_no_prior_service_successful() {
-	let auth_key = get_ed25519_authentication_key(true);
+	let auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let new_service_endpoint = DidEndpoint::new(b"id".to_vec(), vec![b"type".to_vec()], vec![b"url".to_vec()]);
 
@@ -1782,7 +1785,7 @@ fn check_service_addition_no_prior_service_successful() {
 
 #[test]
 fn check_service_addition_one_from_full_successful() {
-	let auth_key = get_ed25519_authentication_key(true);
+	let auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let old_service_endpoints = get_service_endpoints(
 		// -1 from the max number
@@ -1823,7 +1826,7 @@ fn check_service_addition_one_from_full_successful() {
 
 #[test]
 fn check_did_not_present_services_addition_error() {
-	let auth_key = get_ed25519_authentication_key(true);
+	let auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let new_service_endpoint = DidEndpoint::new(b"id".to_vec(), vec![b"type".to_vec()], vec![b"url".to_vec()]);
 
@@ -1840,7 +1843,7 @@ fn check_did_not_present_services_addition_error() {
 
 #[test]
 fn check_service_already_present_addition_error() {
-	let auth_key = get_ed25519_authentication_key(true);
+	let auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let service_endpoint = DidEndpoint::new(b"id".to_vec(), vec![b"type".to_vec()], vec![b"url".to_vec()]);
 
@@ -1861,7 +1864,7 @@ fn check_service_already_present_addition_error() {
 
 #[test]
 fn check_max_services_count_addition_error() {
-	let auth_key = get_ed25519_authentication_key(true);
+	let auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let old_service_endpoints = get_service_endpoints(
 		<Test as did::Config>::MaxNumberOfServicesPerDid::get(),
@@ -1891,7 +1894,7 @@ fn check_max_services_count_addition_error() {
 #[test]
 #[should_panic = "Service ID too long."]
 fn check_max_service_id_length_addition_error() {
-	let auth_key = get_ed25519_authentication_key(true);
+	let auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let new_service_endpoint = get_service_endpoints(
 		1,
@@ -1919,7 +1922,7 @@ fn check_max_service_id_length_addition_error() {
 #[test]
 #[should_panic = "Service type too long."]
 fn check_max_service_type_length_addition_error() {
-	let auth_key = get_ed25519_authentication_key(true);
+	let auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let new_service_endpoint = get_service_endpoints(
 		1,
@@ -1947,7 +1950,7 @@ fn check_max_service_type_length_addition_error() {
 #[test]
 #[should_panic = "Too many types for the given service."]
 fn check_max_service_type_count_addition_error() {
-	let auth_key = get_ed25519_authentication_key(true);
+	let auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let new_service_endpoint = get_service_endpoints(
 		1,
@@ -1975,7 +1978,7 @@ fn check_max_service_type_count_addition_error() {
 #[test]
 #[should_panic = "Service URL too long."]
 fn check_max_service_url_length_addition_error() {
-	let auth_key = get_ed25519_authentication_key(true);
+	let auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let new_service_endpoint = get_service_endpoints(
 		1,
@@ -2003,7 +2006,7 @@ fn check_max_service_url_length_addition_error() {
 #[test]
 #[should_panic = "Too many URLs for the given service."]
 fn check_max_service_url_count_addition_error() {
-	let auth_key = get_ed25519_authentication_key(true);
+	let auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let new_service_endpoint = get_service_endpoints(
 		1,
@@ -2030,7 +2033,7 @@ fn check_max_service_url_count_addition_error() {
 
 #[test]
 fn character_addition_error() {
-	let auth_key = get_ed25519_authentication_key(true);
+	let auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let new_service_details = DidEndpoint::new("å".bytes().collect(), vec![b"type".to_vec()], vec![b"url".to_vec()]);
 
@@ -2050,7 +2053,7 @@ fn character_addition_error() {
 
 #[test]
 fn check_invalid_service_type_character_addition_error() {
-	let auth_key = get_ed25519_authentication_key(true);
+	let auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let new_service_details = DidEndpoint::new(b"id".to_vec(), vec!["å".bytes().collect()], vec![b"url".to_vec()]);
 
@@ -2070,7 +2073,7 @@ fn check_invalid_service_type_character_addition_error() {
 
 #[test]
 fn check_invalid_service_url_character_addition_error() {
-	let auth_key = get_ed25519_authentication_key(true);
+	let auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let new_service_details = DidEndpoint::new(b"id".to_vec(), vec![b"type".to_vec()], vec!["å".bytes().collect()]);
 
@@ -2094,7 +2097,7 @@ fn check_invalid_service_url_character_addition_error() {
 #[test]
 fn check_service_deletion_successful() {
 	initialize_logger();
-	let auth_key = get_ed25519_authentication_key(true);
+	let auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let old_service_endpoint = DidEndpoint::new(b"id".to_vec(), vec![b"type".to_vec()], vec![b"url".to_vec()]);
 
@@ -2121,7 +2124,7 @@ fn check_service_deletion_successful() {
 
 #[test]
 fn check_service_not_present_deletion_error() {
-	let auth_key = get_ed25519_authentication_key(true);
+	let auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let service_id = b"id".to_vec();
 
@@ -2146,7 +2149,7 @@ fn check_service_not_present_deletion_error() {
 
 #[test]
 fn check_successful_deletion_no_endpoints() {
-	let auth_key = get_ed25519_authentication_key(true);
+	let auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 
 	let mut did_details = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), None);
@@ -2191,7 +2194,7 @@ fn check_successful_deletion_no_endpoints() {
 
 #[test]
 fn check_successful_deletion_with_endpoints() {
-	let auth_key = get_ed25519_authentication_key(true);
+	let auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let service_endpoint = DidEndpoint::new(b"id".to_vec(), vec![b"type".to_vec()], vec![b"url".to_vec()]);
 
@@ -2238,7 +2241,7 @@ fn check_successful_deletion_with_endpoints() {
 
 #[test]
 fn check_did_not_present_deletion() {
-	let auth_key = get_ed25519_authentication_key(true);
+	let auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 
 	let balance = <Test as did::Config>::BaseDeposit::get()
@@ -2256,7 +2259,7 @@ fn check_did_not_present_deletion() {
 
 #[test]
 fn check_service_count_too_small_deletion_error() {
-	let auth_key = get_ed25519_authentication_key(true);
+	let auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let service_endpoint = DidEndpoint::new(b"id".to_vec(), vec![b"type".to_vec()], vec![b"url".to_vec()]);
 
@@ -2284,7 +2287,7 @@ fn check_service_count_too_small_deletion_error() {
 
 #[test]
 fn check_successful_reclaiming() {
-	let auth_key = get_ed25519_authentication_key(true);
+	let auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let old_service_endpoint = DidEndpoint::new(b"id".to_vec(), vec![b"type".to_vec()], vec![b"url".to_vec()]);
 	let mut did_details = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), None);
@@ -2333,7 +2336,7 @@ fn check_successful_reclaiming() {
 
 #[test]
 fn unauthorized_reclaiming() {
-	let auth_key = get_ed25519_authentication_key(true);
+	let auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let mut did_details = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), None);
 	did_details.deposit.owner = ACCOUNT_00;
@@ -2360,7 +2363,7 @@ fn unauthorized_reclaiming() {
 
 #[test]
 fn check_service_count_too_small_reclaim_error() {
-	let auth_key = get_ed25519_authentication_key(true);
+	let auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let service_endpoint = DidEndpoint::new(b"id".to_vec(), vec![b"type".to_vec()], vec![b"url".to_vec()]);
 
@@ -2388,7 +2391,7 @@ fn check_service_count_too_small_reclaim_error() {
 
 #[test]
 fn check_did_not_found_call_error() {
-	let auth_key = get_sr25519_authentication_key(true);
+	let auth_key = get_sr25519_authentication_key(&AUTH_SEED_0);
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let caller = ACCOUNT_00;
 
@@ -2410,7 +2413,7 @@ fn check_did_not_found_call_error() {
 
 #[test]
 fn check_too_small_tx_counter_after_wrap_call_error() {
-	let auth_key = get_sr25519_authentication_key(true);
+	let auth_key = get_sr25519_authentication_key(&AUTH_SEED_0);
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let caller = ACCOUNT_00;
 	let mut mock_did =
@@ -2443,7 +2446,7 @@ fn check_too_small_tx_counter_after_wrap_call_error() {
 
 #[test]
 fn check_too_small_tx_counter_call_error() {
-	let auth_key = get_sr25519_authentication_key(true);
+	let auth_key = get_sr25519_authentication_key(&AUTH_SEED_0);
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let caller = ACCOUNT_00;
 	let mut mock_did =
@@ -2475,7 +2478,7 @@ fn check_too_small_tx_counter_call_error() {
 
 #[test]
 fn check_equal_tx_counter_call_error() {
-	let auth_key = get_sr25519_authentication_key(true);
+	let auth_key = get_sr25519_authentication_key(&AUTH_SEED_0);
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let caller = ACCOUNT_00;
 	let mock_did = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(did.clone()));
@@ -2505,7 +2508,7 @@ fn check_equal_tx_counter_call_error() {
 
 #[test]
 fn check_too_large_tx_counter_call_error() {
-	let auth_key = get_sr25519_authentication_key(true);
+	let auth_key = get_sr25519_authentication_key(&AUTH_SEED_0);
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let caller = ACCOUNT_00;
 	let mock_did = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(did.clone()));
@@ -2535,7 +2538,7 @@ fn check_too_large_tx_counter_call_error() {
 
 #[test]
 fn check_tx_block_number_too_low_error() {
-	let auth_key = get_sr25519_authentication_key(true);
+	let auth_key = get_sr25519_authentication_key(&AUTH_SEED_0);
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let caller = ACCOUNT_00;
 
@@ -2575,7 +2578,7 @@ fn check_tx_block_number_too_low_error() {
 
 #[test]
 fn check_tx_block_number_too_high_error() {
-	let auth_key = get_sr25519_authentication_key(true);
+	let auth_key = get_sr25519_authentication_key(&AUTH_SEED_0);
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let caller = ACCOUNT_00;
 
@@ -2610,7 +2613,7 @@ fn check_tx_block_number_too_high_error() {
 
 #[test]
 fn check_verification_key_not_present_call_error() {
-	let auth_key = get_sr25519_authentication_key(true);
+	let auth_key = get_sr25519_authentication_key(&AUTH_SEED_0);
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let caller = ACCOUNT_00;
 	let mock_did = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(did.clone()));
@@ -2641,10 +2644,10 @@ fn check_verification_key_not_present_call_error() {
 
 #[test]
 fn check_invalid_signature_format_call_error() {
-	let auth_key = get_sr25519_authentication_key(true);
+	let auth_key = get_sr25519_authentication_key(&AUTH_SEED_0);
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let caller = ACCOUNT_00;
-	let alternative_auth_key = get_ed25519_authentication_key(true);
+	let alternative_auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
 	let mock_did = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(did.clone()));
 
 	let call_operation = generate_test_did_call(
@@ -2671,10 +2674,10 @@ fn check_invalid_signature_format_call_error() {
 
 #[test]
 fn check_bad_submitter_error() {
-	let auth_key = get_sr25519_authentication_key(true);
+	let auth_key = get_sr25519_authentication_key(&AUTH_SEED_0);
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let caller = ACCOUNT_00;
-	let alternative_auth_key = get_sr25519_authentication_key(false);
+	let alternative_auth_key = get_sr25519_authentication_key(&AUTH_SEED_1);
 	let mock_did = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(did.clone()));
 
 	let submitter = ACCOUNT_01;
@@ -2699,10 +2702,10 @@ fn check_bad_submitter_error() {
 
 #[test]
 fn check_invalid_signature_call_error() {
-	let auth_key = get_sr25519_authentication_key(true);
+	let auth_key = get_sr25519_authentication_key(&AUTH_SEED_0);
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let caller = ACCOUNT_00;
-	let alternative_auth_key = get_sr25519_authentication_key(false);
+	let alternative_auth_key = get_sr25519_authentication_key(&AUTH_SEED_1);
 	let mock_did = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(did.clone()));
 
 	let call_operation = generate_test_did_call(
@@ -2729,10 +2732,10 @@ fn check_invalid_signature_call_error() {
 
 #[test]
 fn check_call_attestation_key_successful() {
-	let auth_key = get_sr25519_authentication_key(true);
+	let auth_key = get_sr25519_authentication_key(&AUTH_SEED_0);
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let caller = ACCOUNT_00;
-	let attestation_key = get_ed25519_attestation_key(true);
+	let attestation_key = get_ed25519_attestation_key(&ATT_SEED_0);
 
 	let mut mock_did =
 		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(did.clone()));
@@ -2759,10 +2762,10 @@ fn check_call_attestation_key_successful() {
 
 #[test]
 fn check_call_attestation_key_error() {
-	let auth_key = get_sr25519_authentication_key(true);
+	let auth_key = get_sr25519_authentication_key(&AUTH_SEED_0);
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let caller = ACCOUNT_00;
-	let attestation_key = get_ed25519_attestation_key(true);
+	let attestation_key = get_ed25519_attestation_key(&ATT_SEED_0);
 
 	let mut mock_did =
 		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(did.clone()));
@@ -2796,10 +2799,10 @@ fn check_call_attestation_key_error() {
 
 #[test]
 fn check_call_delegation_key_successful() {
-	let auth_key = get_sr25519_authentication_key(true);
+	let auth_key = get_sr25519_authentication_key(&AUTH_SEED_0);
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let caller = ACCOUNT_00;
-	let delegation_key = get_ed25519_delegation_key(true);
+	let delegation_key = get_ed25519_delegation_key(&DEL_SEED_0);
 
 	let mut mock_did =
 		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(caller.clone()));
@@ -2826,10 +2829,10 @@ fn check_call_delegation_key_successful() {
 
 #[test]
 fn check_call_delegation_key_error() {
-	let auth_key = get_sr25519_authentication_key(true);
+	let auth_key = get_sr25519_authentication_key(&AUTH_SEED_0);
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let caller = ACCOUNT_00;
-	let delegation_key = get_ed25519_delegation_key(true);
+	let delegation_key = get_ed25519_delegation_key(&ATT_SEED_0);
 
 	let mut mock_did =
 		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(did.clone()));
@@ -2863,7 +2866,7 @@ fn check_call_delegation_key_error() {
 
 #[test]
 fn check_call_authentication_key_successful() {
-	let auth_key = get_sr25519_authentication_key(true);
+	let auth_key = get_sr25519_authentication_key(&AUTH_SEED_0);
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let caller = ACCOUNT_00;
 
@@ -2890,7 +2893,7 @@ fn check_call_authentication_key_successful() {
 
 #[test]
 fn check_call_authentication_key_error() {
-	let auth_key = get_sr25519_authentication_key(true);
+	let auth_key = get_sr25519_authentication_key(&AUTH_SEED_0);
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let caller = ACCOUNT_00;
 
@@ -2924,7 +2927,7 @@ fn check_call_authentication_key_error() {
 
 #[test]
 fn check_null_key_error() {
-	let auth_key = get_sr25519_authentication_key(true);
+	let auth_key = get_sr25519_authentication_key(&AUTH_SEED_0);
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
 	let caller = ACCOUNT_00;
 
@@ -2953,7 +2956,7 @@ fn check_null_key_error() {
 
 #[test]
 fn check_authentication_successful_operation_verification() {
-	let auth_key = get_sr25519_authentication_key(true);
+	let auth_key = get_sr25519_authentication_key(&AUTH_SEED_0);
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
 
 	let mock_did = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(did.clone()));
@@ -2978,9 +2981,9 @@ fn check_authentication_successful_operation_verification() {
 
 #[test]
 fn check_attestation_successful_operation_verification() {
-	let auth_key = get_sr25519_authentication_key(true);
+	let auth_key = get_sr25519_authentication_key(&AUTH_SEED_0);
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
-	let attestation_key = get_ed25519_attestation_key(true);
+	let attestation_key = get_ed25519_attestation_key(&ATT_SEED_0);
 
 	let mut mock_did =
 		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(did.clone()));
@@ -3006,9 +3009,9 @@ fn check_attestation_successful_operation_verification() {
 
 #[test]
 fn check_delegation_successful_operation_verification() {
-	let auth_key = get_sr25519_authentication_key(true);
+	let auth_key = get_sr25519_authentication_key(&AUTH_SEED_0);
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
-	let delegation_key = get_ecdsa_delegation_key(true);
+	let delegation_key = get_ecdsa_delegation_key(&DEL_SEED_0);
 
 	let mut mock_did =
 		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(did.clone()));
@@ -3037,7 +3040,7 @@ fn check_delegation_successful_operation_verification() {
 
 #[test]
 fn check_did_not_present_operation_verification() {
-	let auth_key = get_sr25519_authentication_key(true);
+	let auth_key = get_sr25519_authentication_key(&AUTH_SEED_0);
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
 
 	let call_operation = generate_test_did_call(DidVerificationKeyRelationship::CapabilityDelegation, did, ACCOUNT_00);
@@ -3056,7 +3059,7 @@ fn check_did_not_present_operation_verification() {
 
 #[test]
 fn check_tx_counter_wrap_operation_verification() {
-	let auth_key = get_sr25519_authentication_key(true);
+	let auth_key = get_sr25519_authentication_key(&AUTH_SEED_0);
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
 
 	let mut mock_did =
@@ -3085,7 +3088,7 @@ fn check_tx_counter_wrap_operation_verification() {
 
 #[test]
 fn check_smaller_counter_operation_verification() {
-	let auth_key = get_ed25519_authentication_key(true);
+	let auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
 	let did = get_did_identifier_from_ed25519_key(auth_key.public());
 
 	let mut mock_did =
@@ -3116,7 +3119,7 @@ fn check_smaller_counter_operation_verification() {
 
 #[test]
 fn check_equal_counter_operation_verification() {
-	let auth_key = get_ed25519_authentication_key(true);
+	let auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
 	let did = get_did_identifier_from_ed25519_key(auth_key.public());
 
 	let mock_did = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(did.clone()));
@@ -3145,7 +3148,7 @@ fn check_equal_counter_operation_verification() {
 
 #[test]
 fn check_too_large_counter_operation_verification() {
-	let auth_key = get_ed25519_authentication_key(true);
+	let auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
 	let did = get_did_identifier_from_ed25519_key(auth_key.public());
 
 	let mock_did = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(did.clone()));
@@ -3174,7 +3177,7 @@ fn check_too_large_counter_operation_verification() {
 
 #[test]
 fn check_verification_key_not_present_operation_verification() {
-	let auth_key = get_ed25519_authentication_key(true);
+	let auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
 	let did = get_did_identifier_from_ed25519_key(auth_key.public());
 
 	let mock_did = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(did.clone()));
@@ -3201,10 +3204,10 @@ fn check_verification_key_not_present_operation_verification() {
 
 #[test]
 fn check_invalid_signature_format_operation_verification() {
-	let auth_key = get_sr25519_authentication_key(true);
+	let auth_key = get_sr25519_authentication_key(&AUTH_SEED_0);
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
 	// Expected an Sr25519, given an Ed25519
-	let invalid_key = get_ed25519_authentication_key(true);
+	let invalid_key = get_ed25519_authentication_key(&AUTH_SEED_0);
 
 	let mock_did = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(did.clone()));
 
@@ -3228,10 +3231,10 @@ fn check_invalid_signature_format_operation_verification() {
 
 #[test]
 fn check_invalid_signature_operation_verification() {
-	let auth_key = get_sr25519_authentication_key(true);
+	let auth_key = get_sr25519_authentication_key(&AUTH_SEED_0);
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
 	// Using same key type but different seed (default = false)
-	let alternative_key = get_sr25519_authentication_key(false);
+	let alternative_key = get_sr25519_authentication_key(&AUTH_SEED_1);
 
 	let mock_did = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(did.clone()));
 
@@ -3258,7 +3261,7 @@ fn check_invalid_signature_operation_verification() {
 
 #[test]
 fn test_change_deposit_owner() {
-	let auth_key = get_ed25519_authentication_key(true);
+	let auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let mut did_details =
 		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(alice_did.clone()));
@@ -3288,7 +3291,7 @@ fn test_change_deposit_owner() {
 
 #[test]
 fn test_change_deposit_owner_insufficient_balance() {
-	let auth_key = get_ed25519_authentication_key(true);
+	let auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let mut did_details =
 		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(ACCOUNT_00));
@@ -3312,7 +3315,7 @@ fn test_change_deposit_owner_insufficient_balance() {
 
 #[test]
 fn test_change_deposit_owner_not_found() {
-	let auth_key = get_ed25519_authentication_key(true);
+	let auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 
 	let balance = <Test as did::Config>::BaseDeposit::get() * 2
@@ -3331,8 +3334,8 @@ fn test_change_deposit_owner_not_found() {
 
 #[test]
 fn test_change_deposit_owner_not_authorized() {
-	let alice_auth_key = get_ed25519_authentication_key(true);
-	let bob_auth_key = get_ed25519_authentication_key(false);
+	let alice_auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
+	let bob_auth_key = get_ed25519_authentication_key(&AUTH_SEED_1);
 	let alice_did = get_did_identifier_from_ed25519_key(alice_auth_key.public());
 	let bob_did = get_did_identifier_from_ed25519_key(bob_auth_key.public());
 
@@ -3350,10 +3353,12 @@ fn test_change_deposit_owner_not_authorized() {
 		});
 }
 
-/// Update the deposit amount
+// #############################################################################
+// update deposit
+
 #[test]
 fn test_update_deposit() {
-	let auth_key = get_ed25519_authentication_key(true);
+	let auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let mut did_details = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), None);
 	did_details.deposit.owner = alice_did.clone();
@@ -3396,10 +3401,10 @@ fn test_update_deposit() {
 
 #[test]
 fn test_update_deposit_unauthorized() {
-	let alice_auth_key = get_ed25519_authentication_key(true);
+	let alice_auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_ed25519_key(alice_auth_key.public());
 
-	let bob_auth_key = get_ed25519_authentication_key(false);
+	let bob_auth_key = get_ed25519_authentication_key(&AUTH_SEED_1);
 	let bob_did = get_did_identifier_from_ed25519_key(bob_auth_key.public());
 
 	let mut did_details = generate_base_did_details::<Test>(DidVerificationKey::from(alice_auth_key.public()), None);
