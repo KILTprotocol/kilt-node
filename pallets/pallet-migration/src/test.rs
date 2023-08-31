@@ -52,10 +52,7 @@ use public_credentials::{
 	CredentialIdOf, Credentials, InputClaimsContentOf,
 };
 use sp_core::{ed25519, sr25519, Pair};
-use sp_runtime::{
-	traits::{Hash, IdentifyAccount},
-	BoundedVec, MultiSignature, MultiSigner,
-};
+use sp_runtime::{traits::IdentifyAccount, BoundedVec, MultiSignature, MultiSigner};
 
 use crate::{mock::*, MigratedKeys, Pallet};
 
@@ -319,9 +316,9 @@ fn check_excluded_keys_attestation() {
 		.with_ctypes(vec![(attestation.ctype_hash, attester.clone())])
 		.build()
 		.execute_with(|| {
-			let attestation_key = Attestations::<Test>::hashed_key_for(claim_hash);
-			let hashed_key = <Test as frame_system::Config>::Hashing::hash(&attestation_key[..]);
-			assert!(!MigratedKeys::<Test>::contains_key(hashed_key));
+			let hashed_key = Attestations::<Test>::hashed_key_for(claim_hash);
+
+			assert!(!Pallet::<Test>::is_key_migrated(&hashed_key));
 
 			assert_ok!(Attestation::add(
 				DoubleOrigin(ACCOUNT_00, attester).into(),
@@ -330,7 +327,7 @@ fn check_excluded_keys_attestation() {
 				None
 			));
 
-			assert!(MigratedKeys::<Test>::contains_key(hashed_key));
+			assert!(Pallet::<Test>::is_key_migrated(&hashed_key));
 
 			let mut requested_migrations = get_default_entries_to_migrate();
 
@@ -380,9 +377,9 @@ fn check_excluded_keys_delegation() {
 		.with_delegations(vec![(parent_id, parent_node.clone())])
 		.build()
 		.execute_with(|| {
-			let delegation_key = DelegationNodes::<Test>::hashed_key_for(delegation_id);
-			let hashed_key = <Test as frame_system::Config>::Hashing::hash(&delegation_key[..]);
-			assert!(!MigratedKeys::<Test>::contains_key(hashed_key));
+			let hashed_key = DelegationNodes::<Test>::hashed_key_for(delegation_id);
+
+			assert!(!Pallet::<Test>::is_key_migrated(&hashed_key));
 
 			let delegate_signature = (delegate.clone(), delegation_hash);
 
@@ -395,7 +392,7 @@ fn check_excluded_keys_delegation() {
 				delegate_signature
 			));
 
-			assert!(MigratedKeys::<Test>::contains_key(hashed_key));
+			assert!(Pallet::<Test>::is_key_migrated(&hashed_key));
 
 			let mut requested_migrations = get_default_entries_to_migrate();
 
@@ -415,18 +412,16 @@ fn check_excluded_keys_delegation() {
 fn check_excluded_keys_did() {
 	let auth_key = ed25519::Pair::from_seed(&ALICE_SEED);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
-
 	let details = generate_base_did_creation_details::<Test>(alice_did.clone(), ACCOUNT_00);
-
 	let signature = auth_key.sign(details.encode().as_ref());
 
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, KILT)])
 		.build()
 		.execute_with(|| {
-			let did_key = did::Did::<Test>::hashed_key_for(&alice_did);
-			let hashed_key = <Test as frame_system::Config>::Hashing::hash(&did_key[..]);
-			assert!(!MigratedKeys::<Test>::contains_key(hashed_key));
+			let hashed_key = did::Did::<Test>::hashed_key_for(&alice_did);
+
+			assert!(!Pallet::<Test>::is_key_migrated(&hashed_key));
 
 			assert_ok!(Did::create(
 				RuntimeOrigin::signed(ACCOUNT_00),
@@ -434,13 +429,128 @@ fn check_excluded_keys_did() {
 				did::DidSignature::from(signature),
 			));
 
-			assert!(MigratedKeys::<Test>::contains_key(hashed_key));
+			assert!(Pallet::<Test>::is_key_migrated(&hashed_key));
 
 			let mut requested_migrations = get_default_entries_to_migrate();
 
 			let dids = BoundedVec::try_from([alice_did].to_vec()).expect("Vec init should not fail for did");
 
 			requested_migrations.did = dids;
+
+			assert_storage_noop!(
+				Migration::update_balance(RuntimeOrigin::signed(ACCOUNT_00), requested_migrations)
+					.expect("Update balance should not panic")
+			);
+		});
+}
+
+#[test]
+fn check_excluded_keys_lookup() {
+	let pair_alice = sr25519::Pair::from_seed(b"Alice                           ");
+	let expire_at: BlockNumber = 500;
+	let account_hash_alice = MultiSigner::from(pair_alice.public()).into_account();
+	let sig_alice_0 = MultiSignature::from(
+		pair_alice.sign(&[b"<Bytes>", get_challenge(&DID_00, expire_at).as_bytes(), b"</Bytes>"].concat()[..]),
+	);
+
+	let linked_acc = LinkableAccountId::from(account_hash_alice.clone());
+
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, KILT)])
+		.build()
+		.execute_with(|| {
+			let hashed_key = ConnectedDids::<Test>::hashed_key_for(&linked_acc);
+
+			assert!(!Pallet::<Test>::is_key_migrated(&hashed_key));
+
+			assert_ok!(DidLookup::associate_account(
+				mock_origin::DoubleOrigin(ACCOUNT_00, DID_00).into(),
+				AssociateAccountRequest::Polkadot(account_hash_alice.clone(), sig_alice_0),
+				expire_at,
+			));
+
+			assert!(Pallet::<Test>::is_key_migrated(&hashed_key));
+
+			let mut requested_migrations = get_default_entries_to_migrate();
+
+			let lookup = BoundedVec::try_from([linked_acc].to_vec()).expect("Vec init should not fail for did");
+
+			requested_migrations.lookup = lookup;
+
+			assert_storage_noop!(
+				Migration::update_balance(RuntimeOrigin::signed(ACCOUNT_00), requested_migrations)
+					.expect("Update balance should not panic")
+			);
+		});
+}
+
+#[test]
+fn check_excluded_keys_w3n() {
+	let web3_name_00 = AsciiWeb3Name::try_from(WEB3_NAME_00_INPUT.to_vec()).expect("W3n name creation should not fail");
+
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, KILT)])
+		.build()
+		.execute_with(|| {
+			let hashed_key = Owner::<Test>::hashed_key_for(&web3_name_00);
+
+			assert!(!Pallet::<Test>::is_key_migrated(&hashed_key));
+
+			assert_ok!(pallet_web3_names::Pallet::<Test>::claim(
+				mock_origin::DoubleOrigin(ACCOUNT_00, DID_00).into(),
+				web3_name_00.0.clone()
+			));
+
+			assert!(Pallet::<Test>::is_key_migrated(&hashed_key));
+
+			let mut requested_migrations = get_default_entries_to_migrate();
+
+			let w3n = BoundedVec::try_from([web3_name_00].to_vec()).expect("Vec init should not fail for did");
+
+			requested_migrations.w3n = w3n;
+
+			assert_storage_noop!(
+				Migration::update_balance(RuntimeOrigin::signed(ACCOUNT_00), requested_migrations)
+					.expect("Update balance should not panic")
+			);
+		});
+}
+
+#[test]
+fn check_excluded_keys_public_credentials() {
+	let attester = sr25519_did_from_seed(&ALICE_SEED);
+	let subject_id = SUBJECT_ID_00;
+	let ctype_hash = get_ctype_hash::<Test>(true);
+
+	let new_credential = generate_base_public_credential_creation_op::<Test>(
+		subject_id.into(),
+		ctype_hash,
+		InputClaimsContentOf::<Test>::default(),
+	);
+	let credential_id: CredentialIdOf<Test> = generate_credential_id::<Test>(&new_credential, &attester);
+
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, KILT)])
+		.with_ctypes(vec![(ctype_hash, attester.clone())])
+		.build()
+		.execute_with(|| {
+			let hashed_key = Credentials::<Test>::hashed_key_for(subject_id, credential_id);
+
+			assert!(!Pallet::<Test>::is_key_migrated(&hashed_key));
+
+			assert_ok!(PublicCredentials::add(
+				DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
+				Box::new(new_credential.clone())
+			));
+
+			assert!(Pallet::<Test>::is_key_migrated(&hashed_key));
+
+			let mut requested_migrations = get_default_entries_to_migrate();
+
+			let public_credentials =
+				BoundedVec::try_from([(subject_id, credential_id)].to_vec()).expect("Vec init should not fail for did");
+
+			requested_migrations.public_credentials = public_credentials;
 
 			assert_storage_noop!(
 				Migration::update_balance(RuntimeOrigin::signed(ACCOUNT_00), requested_migrations)
@@ -505,10 +615,7 @@ fn migrate_key_by_update_deposit_delegation() {
 		.build()
 		.execute_with(|| {
 			translate_all_holds_to_reserves();
-			let count = MigratedKeys::<Test>::iter().count() as u32;
-			let cursor = MigratedKeys::<Test>::clear(count, None).maybe_cursor;
-
-			assert!(cursor.is_none());
+			clear_storage();
 
 			let reserved_balance = pallet_balances::Pallet::<Test>::reserved_balance(ACCOUNT_00);
 
@@ -523,6 +630,8 @@ fn migrate_key_by_update_deposit_delegation() {
 				delegation_id,
 			));
 
+			assert!(Pallet::<Test>::is_key_migrated(&hashed_key));
+
 			let delegation_node = DelegationNodes::<Test>::get(delegation_id);
 
 			assert!(delegation_node.is_some());
@@ -532,8 +641,6 @@ fn migrate_key_by_update_deposit_delegation() {
 
 			// we have only update the delegation node. Not the hierarchy
 			assert_eq!(hold_balance, MICRO_KILT);
-
-			assert!(Pallet::<Test>::is_key_migrated(&hashed_key));
 		});
 }
 
@@ -545,10 +652,7 @@ fn migrate_key_by_update_deposit_lookup() {
 		.build()
 		.execute_with(|| {
 			translate_all_holds_to_reserves();
-			let count = MigratedKeys::<Test>::iter().count() as u32;
-			let cursor = MigratedKeys::<Test>::clear(count, None).maybe_cursor;
-
-			assert!(cursor.is_none());
+			clear_storage();
 
 			let reserved_balance = pallet_balances::Pallet::<Test>::reserved_balance(ACCOUNT_00);
 
@@ -583,9 +687,7 @@ fn migrate_key_by_update_deposit_w3n() {
 		.build()
 		.execute_with(|| {
 			translate_all_holds_to_reserves();
-			let count = MigratedKeys::<Test>::iter().count() as u32;
-			let cursor = MigratedKeys::<Test>::clear(count, None).maybe_cursor;
-			assert!(cursor.is_none());
+			clear_storage();
 
 			let reserved_balance = pallet_balances::Pallet::<Test>::reserved_balance(ACCOUNT_00);
 
@@ -631,9 +733,7 @@ fn migrate_key_by_update_deposit_public_credentials() {
 		.build()
 		.execute_with(|| {
 			translate_all_holds_to_reserves();
-			let count = MigratedKeys::<Test>::iter().count() as u32;
-			let cursor = MigratedKeys::<Test>::clear(count, None).maybe_cursor;
-			assert!(cursor.is_none());
+			clear_storage();
 
 			let reserved_balance = pallet_balances::Pallet::<Test>::reserved_balance(ACCOUNT_00);
 
@@ -672,9 +772,7 @@ fn migrate_key_by_update_deposit_attestation() {
 		.build()
 		.execute_with(|| {
 			translate_all_holds_to_reserves();
-			let count = MigratedKeys::<Test>::iter().count() as u32;
-			let cursor = MigratedKeys::<Test>::clear(count, None).maybe_cursor;
-			assert!(cursor.is_none());
+			clear_storage();
 
 			let reserved_balance = pallet_balances::Pallet::<Test>::reserved_balance(ACCOUNT_00);
 
@@ -694,120 +792,5 @@ fn migrate_key_by_update_deposit_attestation() {
 			let hold_balance =
 				pallet_balances::Pallet::<Test>::balance_on_hold(&attestation::HoldReason::Deposit.into(), &ACCOUNT_00);
 			assert_eq!(hold_balance, MICRO_KILT);
-		});
-}
-
-#[test]
-fn check_excluded_keys_lookup() {
-	let pair_alice = sr25519::Pair::from_seed(b"Alice                           ");
-	let expire_at: BlockNumber = 500;
-	let account_hash_alice = MultiSigner::from(pair_alice.public()).into_account();
-	let sig_alice_0 = MultiSignature::from(
-		pair_alice.sign(&[b"<Bytes>", get_challenge(&DID_00, expire_at).as_bytes(), b"</Bytes>"].concat()[..]),
-	);
-
-	let linked_acc = LinkableAccountId::from(account_hash_alice.clone());
-
-	ExtBuilder::default()
-		.with_balances(vec![(ACCOUNT_00, KILT)])
-		.build()
-		.execute_with(|| {
-			let hashed_linked_key = ConnectedDids::<Test>::hashed_key_for(&linked_acc);
-			let hashed_key = <Test as frame_system::Config>::Hashing::hash(&hashed_linked_key[..]);
-			assert!(!MigratedKeys::<Test>::contains_key(hashed_key));
-
-			assert!(DidLookup::associate_account(
-				mock_origin::DoubleOrigin(ACCOUNT_00, DID_00).into(),
-				AssociateAccountRequest::Polkadot(account_hash_alice.clone(), sig_alice_0),
-				expire_at,
-			)
-			.is_ok());
-
-			assert!(MigratedKeys::<Test>::contains_key(hashed_key));
-
-			let mut requested_migrations = get_default_entries_to_migrate();
-
-			let lookup = BoundedVec::try_from([linked_acc].to_vec()).expect("Vec init should not fail for did");
-
-			requested_migrations.lookup = lookup;
-
-			assert_storage_noop!(
-				Migration::update_balance(RuntimeOrigin::signed(ACCOUNT_00), requested_migrations)
-					.expect("Update balance should not panic")
-			);
-		});
-}
-
-#[test]
-fn check_excluded_keys_w3n() {
-	let web3_name_00 = AsciiWeb3Name::try_from(WEB3_NAME_00_INPUT.to_vec()).expect("W3n name creation should not fail");
-
-	ExtBuilder::default()
-		.with_balances(vec![(ACCOUNT_00, KILT)])
-		.build()
-		.execute_with(|| {
-			let hashed_w3n = Owner::<Test>::hashed_key_for(&web3_name_00);
-			let hashed_key = <Test as frame_system::Config>::Hashing::hash(&hashed_w3n[..]);
-			assert!(!MigratedKeys::<Test>::contains_key(hashed_key));
-
-			assert_ok!(pallet_web3_names::Pallet::<Test>::claim(
-				mock_origin::DoubleOrigin(ACCOUNT_00, DID_00).into(),
-				web3_name_00.0.clone()
-			));
-
-			assert!(MigratedKeys::<Test>::contains_key(hashed_key));
-
-			let mut requested_migrations = get_default_entries_to_migrate();
-
-			let w3n = BoundedVec::try_from([web3_name_00].to_vec()).expect("Vec init should not fail for did");
-
-			requested_migrations.w3n = w3n;
-
-			assert_storage_noop!(
-				Migration::update_balance(RuntimeOrigin::signed(ACCOUNT_00), requested_migrations)
-					.expect("Update balance should not panic")
-			);
-		});
-}
-
-#[test]
-fn check_excluded_keys_public_credentials() {
-	let attester = sr25519_did_from_seed(&ALICE_SEED);
-	let subject_id = SUBJECT_ID_00;
-	let ctype_hash = get_ctype_hash::<Test>(true);
-
-	let new_credential = generate_base_public_credential_creation_op::<Test>(
-		subject_id.into(),
-		ctype_hash,
-		InputClaimsContentOf::<Test>::default(),
-	);
-	let credential_id: CredentialIdOf<Test> = generate_credential_id::<Test>(&new_credential, &attester);
-
-	ExtBuilder::default()
-		.with_balances(vec![(ACCOUNT_00, KILT)])
-		.with_ctypes(vec![(ctype_hash, attester.clone())])
-		.build()
-		.execute_with(|| {
-			let hashed_public_credential_key = Credentials::<Test>::hashed_key_for(subject_id, credential_id);
-			let hashed_key = <Test as frame_system::Config>::Hashing::hash(&hashed_public_credential_key[..]);
-			assert!(!MigratedKeys::<Test>::contains_key(hashed_key));
-
-			assert_ok!(PublicCredentials::add(
-				DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
-				Box::new(new_credential.clone())
-			));
-			assert!(MigratedKeys::<Test>::contains_key(hashed_key));
-
-			let mut requested_migrations = get_default_entries_to_migrate();
-
-			let public_credentials =
-				BoundedVec::try_from([(subject_id, credential_id)].to_vec()).expect("Vec init should not fail for did");
-
-			requested_migrations.public_credentials = public_credentials;
-
-			assert_storage_noop!(
-				Migration::update_balance(RuntimeOrigin::signed(ACCOUNT_00), requested_migrations)
-					.expect("Update balance should not panic")
-			);
 		});
 }

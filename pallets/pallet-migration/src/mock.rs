@@ -64,7 +64,7 @@ pub mod runtime {
 		AccountId32, MultiSignature, MultiSigner, Perquintill,
 	};
 
-	use crate::{self as migration, Config};
+	use crate::{self as migration, Config, MigratedKeys};
 
 	type BalanceOf<T> = <<T as ctype::Config>::Currency as Inspect<AccountId>>::Balance;
 	pub type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
@@ -713,5 +713,11 @@ pub mod runtime {
 		deposit_reasons
 			.iter()
 			.for_each(|hold_id| kilt_support::migration::translate_holds_to_reserve::<Test>(*hold_id))
+	}
+
+	pub(crate) fn clear_storage() {
+		let count = MigratedKeys::<Test>::iter().count() as u32;
+		let cursor = MigratedKeys::<Test>::clear(count, None).maybe_cursor;
+		assert!(cursor.is_none());
 	}
 }
