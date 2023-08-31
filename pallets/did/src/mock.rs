@@ -400,7 +400,7 @@ pub(crate) fn build_test_origin(account: AccountId, did: DidIdentifier) -> Runti
 }
 
 #[cfg(feature = "runtime-benchmarks")]
-pub(crate) fn build_test_origin(account: AccountId32, _did: AccountId32) -> RuntimeOrigin {
+pub(crate) fn build_test_origin(account: AccountId, _did: DidIdentifier) -> RuntimeOrigin {
 	RuntimeOrigin::signed(account)
 }
 
