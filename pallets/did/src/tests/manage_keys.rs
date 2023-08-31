@@ -33,6 +33,8 @@ fn check_successful_authentication_key_update() {
 
 	let new_block_number: BlockNumber = 1;
 
+	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
+
 	// Update authentication key. The old one should be removed.
 	ExtBuilder::default()
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
@@ -40,7 +42,7 @@ fn check_successful_authentication_key_update() {
 		.build_and_execute_with_sanity_tests(None, || {
 			System::set_block_number(new_block_number);
 			assert_ok!(Did::set_authentication_key(
-				RuntimeOrigin::signed(alice_did.clone()),
+				origin,
 				DidVerificationKey::from(new_auth_key.public())
 			));
 			let new_did_details = Did::get_did(&alice_did).expect("ALICE_DID should be present on chain.");
@@ -75,6 +77,8 @@ fn check_successful_authentication_key_max_public_keys_update() {
 
 	let new_block_number: BlockNumber = 1;
 
+	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
+
 	// Update authentication key. The old one should be removed.
 	ExtBuilder::default()
 		.with_dids(vec![(alice_did.clone(), did_details)])
@@ -82,7 +86,7 @@ fn check_successful_authentication_key_max_public_keys_update() {
 		.build_and_execute_with_sanity_tests(None, || {
 			System::set_block_number(new_block_number);
 			assert_ok!(Did::set_authentication_key(
-				RuntimeOrigin::signed(alice_did.clone()),
+				origin,
 				DidVerificationKey::from(new_auth_key.public())
 			));
 
@@ -115,13 +119,15 @@ fn check_reused_key_authentication_key_update() {
 
 	let new_block_number: BlockNumber = 1;
 
+	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
+
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
 		.build_and_execute_with_sanity_tests(None, || {
 			System::set_block_number(new_block_number);
 			assert_ok!(Did::set_authentication_key(
-				RuntimeOrigin::signed(alice_did.clone()),
+				origin,
 				DidVerificationKey::from(new_auth_key.public())
 			));
 
@@ -164,6 +170,8 @@ fn check_max_keys_authentication_key_update_error() {
 
 	let new_block_number: BlockNumber = 1;
 
+	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
+
 	// Update authentication key. Since the old one is not removed because it is the
 	// same as the delegation key, the update should fail as the max number of
 	// public keys is already present.
@@ -173,10 +181,7 @@ fn check_max_keys_authentication_key_update_error() {
 		.build_and_execute_with_sanity_tests(None, || {
 			System::set_block_number(new_block_number);
 			assert_noop!(
-				Did::set_authentication_key(
-					RuntimeOrigin::signed(alice_did.clone()),
-					DidVerificationKey::from(new_auth_key.public())
-				),
+				Did::set_authentication_key(origin, DidVerificationKey::from(new_auth_key.public())),
 				did::Error::<Test>::MaxPublicKeysExceeded
 			);
 		});
@@ -190,14 +195,13 @@ fn check_did_not_present_authentication_key_update_error() {
 
 	let new_block_number: BlockNumber = 1;
 
+	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
+
 	// Update authentication key. The old one should be removed.
 	ExtBuilder::default().build(None).execute_with(|| {
 		System::set_block_number(new_block_number);
 		assert_noop!(
-			Did::set_authentication_key(
-				RuntimeOrigin::signed(alice_did.clone()),
-				DidVerificationKey::from(new_auth_key.public())
-			),
+			Did::set_authentication_key(origin, DidVerificationKey::from(new_auth_key.public())),
 			did::Error::<Test>::NotFound
 		);
 	});
@@ -216,6 +220,8 @@ fn check_successful_delegation_key_update() {
 
 	let new_block_number: BlockNumber = 1;
 
+	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
+
 	// Update delegation key. The old one should be removed.
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
@@ -223,7 +229,7 @@ fn check_successful_delegation_key_update() {
 		.build_and_execute_with_sanity_tests(None, || {
 			System::set_block_number(new_block_number);
 			assert_ok!(Did::set_delegation_key(
-				RuntimeOrigin::signed(alice_did.clone()),
+				origin,
 				DidVerificationKey::from(new_del_key.public())
 			));
 
@@ -260,6 +266,8 @@ fn check_successful_delegation_key_max_public_keys_update() {
 
 	let new_block_number: BlockNumber = 1;
 
+	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
+
 	// Update delegation key. The old one should be removed.
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
@@ -267,7 +275,7 @@ fn check_successful_delegation_key_max_public_keys_update() {
 		.build_and_execute_with_sanity_tests(None, || {
 			System::set_block_number(new_block_number);
 			assert_ok!(Did::set_delegation_key(
-				RuntimeOrigin::signed(alice_did.clone()),
+				origin,
 				DidVerificationKey::from(new_del_key.public())
 			));
 
@@ -298,13 +306,15 @@ fn check_reused_key_delegation_key_update() {
 
 	let new_block_number: BlockNumber = 1;
 
+	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
+
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
 		.build_and_execute_with_sanity_tests(None, || {
 			System::set_block_number(new_block_number);
 			assert_ok!(Did::set_delegation_key(
-				RuntimeOrigin::signed(alice_did.clone()),
+				origin,
 				DidVerificationKey::from(new_del_key.public())
 			));
 
@@ -341,6 +351,8 @@ fn check_max_public_keys_delegation_key_addition_error() {
 
 	let new_block_number: BlockNumber = 1;
 
+	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
+
 	// Update delegation key. The old one should be removed.
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
@@ -348,10 +360,7 @@ fn check_max_public_keys_delegation_key_addition_error() {
 		.build_and_execute_with_sanity_tests(None, || {
 			System::set_block_number(new_block_number);
 			assert_noop!(
-				Did::set_delegation_key(
-					RuntimeOrigin::signed(alice_did.clone()),
-					DidVerificationKey::from(new_del_key.public())
-				),
+				Did::set_delegation_key(origin, DidVerificationKey::from(new_del_key.public())),
 				did::Error::<Test>::MaxPublicKeysExceeded
 			);
 		});
@@ -377,6 +386,8 @@ fn check_max_public_keys_reused_key_delegation_key_update_error() {
 
 	let new_block_number: BlockNumber = 1;
 
+	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
+
 	// Update delegation key. The old one should not be removed as it is still used
 	// as authentication key.
 	ExtBuilder::default()
@@ -385,10 +396,7 @@ fn check_max_public_keys_reused_key_delegation_key_update_error() {
 		.build_and_execute_with_sanity_tests(None, || {
 			System::set_block_number(new_block_number);
 			assert_noop!(
-				Did::set_delegation_key(
-					RuntimeOrigin::signed(alice_did.clone()),
-					DidVerificationKey::from(new_del_key.public())
-				),
+				Did::set_delegation_key(origin, DidVerificationKey::from(new_del_key.public())),
 				did::Error::<Test>::MaxPublicKeysExceeded
 			);
 		});
@@ -402,14 +410,13 @@ fn check_did_not_present_delegation_key_update_error() {
 
 	let new_block_number: BlockNumber = 1;
 
+	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
+
 	// Update delegation key. The old one should be removed.
 	ExtBuilder::default().build(None).execute_with(|| {
 		System::set_block_number(new_block_number);
 		assert_noop!(
-			Did::set_delegation_key(
-				RuntimeOrigin::signed(alice_did.clone()),
-				DidVerificationKey::from(new_del_key.public())
-			),
+			Did::set_delegation_key(origin, DidVerificationKey::from(new_del_key.public())),
 			did::Error::<Test>::NotFound
 		);
 	});
@@ -425,11 +432,13 @@ fn check_successful_delegation_key_deletion() {
 		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(alice_did.clone()));
 	assert_ok!(old_did_details.update_delegation_key(DidVerificationKey::from(old_del_key.public()), 0u64));
 
+	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
+
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
 		.build_and_execute_with_sanity_tests(None, || {
-			assert_ok!(Did::remove_delegation_key(RuntimeOrigin::signed(alice_did.clone())));
+			assert_ok!(Did::remove_delegation_key(origin));
 
 			let new_did_details = Did::get_did(&alice_did).expect("ALICE_DID should be present on chain.");
 			assert!(new_did_details.delegation_key.is_none());
@@ -451,11 +460,13 @@ fn check_successful_reused_delegation_key_deletion() {
 		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(alice_did.clone()));
 	assert_ok!(old_did_details.update_delegation_key(DidVerificationKey::from(old_del_key.public()), 0u64));
 
+	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
+
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(alice_did.clone(), old_did_details.clone())])
 		.build_and_execute_with_sanity_tests(None, || {
-			assert_ok!(Did::remove_delegation_key(RuntimeOrigin::signed(alice_did.clone())));
+			assert_ok!(Did::remove_delegation_key(origin));
 
 			let new_did_details = Did::get_did(&alice_did).expect("ALICE_DID should be present on chain.");
 			assert!(new_did_details.delegation_key.is_none());
@@ -473,11 +484,10 @@ fn check_did_not_present_delegation_key_deletion_error() {
 	let auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 
+	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
+
 	ExtBuilder::default().build(None).execute_with(|| {
-		assert_noop!(
-			Did::remove_delegation_key(RuntimeOrigin::signed(alice_did.clone())),
-			did::Error::<Test>::NotFound
-		);
+		assert_noop!(Did::remove_delegation_key(origin), did::Error::<Test>::NotFound);
 	});
 }
 
@@ -489,12 +499,14 @@ fn check_key_not_present_delegation_key_deletion_error() {
 	let old_did_details =
 		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(alice_did.clone()));
 
+	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
+
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_noop!(
-				Did::remove_delegation_key(RuntimeOrigin::signed(alice_did.clone())),
+				Did::remove_delegation_key(origin),
 				did::Error::<Test>::VerificationKeyNotFound
 			);
 		});
@@ -513,6 +525,8 @@ fn check_successful_attestation_key_update() {
 
 	let new_block_number: BlockNumber = 1;
 
+	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
+
 	// Update attestation key. The old one should be removed.
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
@@ -520,7 +534,7 @@ fn check_successful_attestation_key_update() {
 		.build_and_execute_with_sanity_tests(None, || {
 			System::set_block_number(new_block_number);
 			assert_ok!(Did::set_attestation_key(
-				RuntimeOrigin::signed(alice_did.clone()),
+				origin,
 				DidVerificationKey::from(new_att_key.public())
 			));
 			let new_did_details = Did::get_did(&alice_did).expect("ALICE_DID should be present on chain.");
@@ -556,6 +570,8 @@ fn check_successful_attestation_key_max_public_keys_update() {
 
 	let new_block_number: BlockNumber = 1;
 
+	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
+
 	// Update attestation key. The old one should be removed.
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
@@ -563,7 +579,7 @@ fn check_successful_attestation_key_max_public_keys_update() {
 		.build_and_execute_with_sanity_tests(None, || {
 			System::set_block_number(new_block_number);
 			assert_ok!(Did::set_attestation_key(
-				RuntimeOrigin::signed(alice_did.clone()),
+				origin,
 				DidVerificationKey::from(new_att_key.public())
 			));
 			let new_did_details = Did::get_did(&alice_did).expect("ALICE_DID should be present on chain.");
@@ -593,13 +609,15 @@ fn check_reused_key_attestation_key_update() {
 
 	let new_block_number: BlockNumber = 1;
 
+	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
+
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
 		.build_and_execute_with_sanity_tests(None, || {
 			System::set_block_number(new_block_number);
 			assert_ok!(Did::set_attestation_key(
-				RuntimeOrigin::signed(alice_did.clone()),
+				origin,
 				DidVerificationKey::from(new_att_key.public())
 			));
 
@@ -636,6 +654,8 @@ fn check_max_public_keys_attestation_key_addition_error() {
 
 	let new_block_number: BlockNumber = 1;
 
+	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
+
 	// Update attestation key. The old one should be removed.
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
@@ -643,10 +663,7 @@ fn check_max_public_keys_attestation_key_addition_error() {
 		.build_and_execute_with_sanity_tests(None, || {
 			System::set_block_number(new_block_number);
 			assert_noop!(
-				Did::set_attestation_key(
-					RuntimeOrigin::signed(alice_did.clone()),
-					DidVerificationKey::from(new_att_key.public())
-				),
+				Did::set_attestation_key(origin, DidVerificationKey::from(new_att_key.public())),
 				did::Error::<Test>::MaxPublicKeysExceeded
 			);
 		});
@@ -672,6 +689,8 @@ fn check_max_public_keys_reused_key_attestation_key_update_error() {
 
 	let new_block_number: BlockNumber = 1;
 
+	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
+
 	// Update attestation key. The old one should not be removed as it is still used
 	// as authentication key.
 	ExtBuilder::default()
@@ -680,10 +699,7 @@ fn check_max_public_keys_reused_key_attestation_key_update_error() {
 		.build_and_execute_with_sanity_tests(None, || {
 			System::set_block_number(new_block_number);
 			assert_noop!(
-				Did::set_attestation_key(
-					RuntimeOrigin::signed(alice_did.clone()),
-					DidVerificationKey::from(new_att_key.public())
-				),
+				Did::set_attestation_key(origin, DidVerificationKey::from(new_att_key.public())),
 				did::Error::<Test>::MaxPublicKeysExceeded
 			);
 		});
@@ -697,14 +713,13 @@ fn check_did_not_present_attestation_key_update_error() {
 
 	let new_block_number: BlockNumber = 1;
 
+	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
+
 	// Update delegation key. The old one should be removed.
 	ExtBuilder::default().build(None).execute_with(|| {
 		System::set_block_number(new_block_number);
 		assert_noop!(
-			Did::set_delegation_key(
-				RuntimeOrigin::signed(alice_did.clone()),
-				DidVerificationKey::from(new_att_key.public())
-			),
+			Did::set_delegation_key(origin, DidVerificationKey::from(new_att_key.public())),
 			did::Error::<Test>::NotFound
 		);
 	});
@@ -720,11 +735,13 @@ fn check_successful_attestation_key_deletion() {
 		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(alice_did.clone()));
 	assert_ok!(old_did_details.update_attestation_key(DidVerificationKey::from(old_att_key.public()), 0u64));
 
+	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
+
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
 		.build_and_execute_with_sanity_tests(None, || {
-			assert_ok!(Did::remove_attestation_key(RuntimeOrigin::signed(alice_did.clone())));
+			assert_ok!(Did::remove_attestation_key(origin));
 
 			let new_did_details = Did::get_did(&alice_did).expect("ALICE_DID should be present on chain.");
 			assert!(new_did_details.attestation_key.is_none());
@@ -746,11 +763,13 @@ fn check_successful_reused_attestation_key_deletion() {
 		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(alice_did.clone()));
 	assert_ok!(old_did_details.update_attestation_key(DidVerificationKey::from(old_att_key.public()), 0u64));
 
+	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
+
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(alice_did.clone(), old_did_details.clone())])
 		.build_and_execute_with_sanity_tests(None, || {
-			assert_ok!(Did::remove_attestation_key(RuntimeOrigin::signed(alice_did.clone())));
+			assert_ok!(Did::remove_attestation_key(origin));
 			let new_did_details = Did::get_did(&alice_did).expect("ALICE_DID should be present on chain.");
 			assert!(new_did_details.attestation_key.is_none());
 			let public_keys = new_did_details.public_keys;
@@ -767,11 +786,10 @@ fn check_did_not_present_attestation_key_deletion_error() {
 	let auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 
+	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
+
 	ExtBuilder::default().build(None).execute_with(|| {
-		assert_noop!(
-			Did::remove_attestation_key(RuntimeOrigin::signed(alice_did.clone())),
-			did::Error::<Test>::NotFound
-		);
+		assert_noop!(Did::remove_attestation_key(origin), did::Error::<Test>::NotFound);
 	});
 }
 
@@ -783,12 +801,14 @@ fn check_key_not_present_attestation_key_deletion_error() {
 	let old_did_details =
 		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(alice_did.clone()));
 
+	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
+
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_noop!(
-				Did::remove_attestation_key(RuntimeOrigin::signed(alice_did.clone())),
+				Did::remove_attestation_key(origin),
 				did::Error::<Test>::VerificationKeyNotFound
 			);
 		});
@@ -805,15 +825,14 @@ fn check_successful_key_agreement_key_addition() {
 
 	let new_block_number: BlockNumber = 1;
 
+	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
+
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
 		.build_and_execute_with_sanity_tests(None, || {
 			System::set_block_number(new_block_number);
-			assert_ok!(Did::add_key_agreement_key(
-				RuntimeOrigin::signed(alice_did.clone()),
-				new_key_agreement_key,
-			));
+			assert_ok!(Did::add_key_agreement_key(origin, new_key_agreement_key,));
 			let new_did_details = Did::get_did(&alice_did).expect("ALICE_DID should be present on chain.");
 			assert_eq!(new_did_details.key_agreement_keys.len(), 1);
 			assert_eq!(
@@ -846,13 +865,15 @@ fn check_max_public_keys_key_agreement_key_addition_error() {
 
 	let new_block_number: BlockNumber = 1;
 
+	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
+
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(alice_did.clone(), did_details)])
 		.build_and_execute_with_sanity_tests(None, || {
 			System::set_block_number(new_block_number);
 			assert_noop!(
-				Did::add_key_agreement_key(RuntimeOrigin::signed(alice_did.clone()), new_key_agreement_key,),
+				Did::add_key_agreement_key(origin, new_key_agreement_key,),
 				did::Error::<Test>::MaxPublicKeysExceeded
 			);
 		});
@@ -866,11 +887,13 @@ fn check_did_not_present_key_agreement_key_addition_error() {
 
 	let new_block_number: BlockNumber = 1;
 
+	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
+
 	// Update delegation key. The old one should be removed.
 	ExtBuilder::default().build(None).execute_with(|| {
 		System::set_block_number(new_block_number);
 		assert_noop!(
-			Did::add_key_agreement_key(RuntimeOrigin::signed(alice_did.clone()), new_enc_key),
+			Did::add_key_agreement_key(origin, new_enc_key),
 			did::Error::<Test>::NotFound
 		);
 	});
@@ -886,12 +909,14 @@ fn check_successful_key_agreement_key_deletion() {
 		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(alice_did.clone()));
 	assert_ok!(old_did_details.add_key_agreement_key(old_enc_key, 0u64));
 
+	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
+
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_ok!(Did::remove_key_agreement_key(
-				RuntimeOrigin::signed(alice_did.clone()),
+				origin,
 				generate_key_id(&old_enc_key.into()),
 			));
 			let new_did_details = Did::get_did(&alice_did).expect("ALICE_DID should be present on chain.");
@@ -910,12 +935,11 @@ fn check_did_not_found_key_agreement_key_deletion_error() {
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let test_enc_key = get_x25519_encryption_key(&ENC_SEED_0);
 
+	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
+
 	ExtBuilder::default().build(None).execute_with(|| {
 		assert_noop!(
-			Did::remove_key_agreement_key(
-				RuntimeOrigin::signed(alice_did.clone()),
-				generate_key_id(&test_enc_key.into())
-			),
+			Did::remove_key_agreement_key(origin, generate_key_id(&test_enc_key.into())),
 			did::Error::<Test>::NotFound
 		);
 	});
@@ -931,15 +955,14 @@ fn check_key_not_found_key_agreement_key_deletion_error() {
 	let old_did_details =
 		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(alice_did.clone()));
 
+	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
+
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_noop!(
-				Did::remove_key_agreement_key(
-					RuntimeOrigin::signed(alice_did.clone()),
-					generate_key_id(&test_enc_key.into())
-				),
+				Did::remove_key_agreement_key(origin, generate_key_id(&test_enc_key.into())),
 				did::Error::<Test>::VerificationKeyNotFound
 			);
 		});

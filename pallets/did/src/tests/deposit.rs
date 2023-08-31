@@ -151,6 +151,8 @@ fn test_change_deposit_owner() {
 		+ <Test as did::Config>::Fee::get() * 2
 		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 
+	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
+
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance), (alice_did.clone(), balance)])
 		.with_dids(vec![(alice_did.clone(), did_details)])
@@ -159,7 +161,7 @@ fn test_change_deposit_owner() {
 				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
 				<Test as did::Config>::BaseDeposit::get()
 			);
-			assert_ok!(Did::change_deposit_owner(RuntimeOrigin::signed(alice_did.clone())));
+			assert_ok!(Did::change_deposit_owner(origin));
 			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00).is_zero());
 			assert_eq!(
 				Balances::balance_on_hold(&HoldReason::Deposit.into(), &alice_did),
@@ -181,14 +183,13 @@ fn test_change_deposit_owner_insufficient_balance() {
 		+ <Test as did::Config>::Fee::get() * 2
 		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 
+	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
+
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.with_dids(vec![(alice_did.clone(), did_details)])
 		.build_and_execute_with_sanity_tests(None, || {
-			assert_noop!(
-				Did::change_deposit_owner(RuntimeOrigin::signed(alice_did.clone())),
-				TokenError::CannotCreateHold
-			);
+			assert_noop!(Did::change_deposit_owner(origin), TokenError::CannotCreateHold);
 		});
 }
 
@@ -201,13 +202,12 @@ fn test_change_deposit_owner_not_found() {
 		+ <Test as did::Config>::Fee::get() * 2
 		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 
+	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
+
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), balance)])
 		.build_and_execute_with_sanity_tests(None, || {
-			assert_noop!(
-				Did::change_deposit_owner(RuntimeOrigin::signed(alice_did.clone())),
-				crate::Error::<Test>::NotFound
-			);
+			assert_noop!(Did::change_deposit_owner(origin), crate::Error::<Test>::NotFound);
 		});
 }
 
@@ -222,13 +222,12 @@ fn test_change_deposit_owner_not_authorized() {
 		+ <Test as did::Config>::Fee::get() * 2
 		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 
+	let origin = build_test_origin(bob_did.clone(), bob_did.clone());
+
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did, balance), (bob_did.clone(), balance)])
 		.build_and_execute_with_sanity_tests(None, || {
-			assert_noop!(
-				Did::change_deposit_owner(RuntimeOrigin::signed(bob_did.clone())),
-				crate::Error::<Test>::NotFound
-			);
+			assert_noop!(Did::change_deposit_owner(origin), crate::Error::<Test>::NotFound);
 		});
 }
 
@@ -244,6 +243,8 @@ fn test_update_deposit() {
 		+ <Test as did::Config>::Fee::get() * 2
 		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 
+	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
+
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), balance)])
 		.with_dids(vec![(alice_did.clone(), did_details)])
@@ -253,10 +254,7 @@ fn test_update_deposit() {
 				<Test as did::Config>::BaseDeposit::get() * 2
 			);
 
-			assert_ok!(Did::update_deposit(
-				RuntimeOrigin::signed(alice_did.clone()),
-				alice_did.clone()
-			));
+			assert_ok!(Did::update_deposit(origin, alice_did.clone()));
 
 			assert_eq!(
 				Balances::balance_on_hold(&HoldReason::Deposit.into(), &alice_did),
@@ -291,6 +289,8 @@ fn test_update_deposit_unauthorized() {
 		+ <Test as did::Config>::Fee::get() * 2
 		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 
+	let origin = build_test_origin(bob_did.clone(), bob_did.clone());
+
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), balance)])
 		.with_dids(vec![(alice_did.clone(), did_details)])
@@ -300,7 +300,7 @@ fn test_update_deposit_unauthorized() {
 				<Test as did::Config>::BaseDeposit::get() * 2
 			);
 			assert_noop!(
-				Did::update_deposit(RuntimeOrigin::signed(bob_did.clone()), alice_did.clone()),
+				Did::update_deposit(origin, alice_did.clone()),
 				Error::<Test>::BadDidOrigin
 			);
 		});

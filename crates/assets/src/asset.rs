@@ -26,7 +26,7 @@ pub mod v1 {
 	use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 	use scale_info::TypeInfo;
 
-	use core::{format_args, str};
+	use core::str;
 
 	use frame_support::{sp_runtime::RuntimeDebug, traits::ConstU32, BoundedVec};
 	use sp_core::U256;

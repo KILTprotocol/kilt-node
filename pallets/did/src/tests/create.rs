@@ -28,6 +28,7 @@ fn check_successful_simple_ed25519_creation() {
 	let balance = <Test as did::Config>::BaseDeposit::get()
 		+ <Test as did::Config>::Fee::get()
 		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
+
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.build_and_execute_with_sanity_tests(None, || {

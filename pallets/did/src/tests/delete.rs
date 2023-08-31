@@ -41,6 +41,8 @@ fn check_successful_deletion_no_endpoints() {
 		+ <Test as did::Config>::Fee::get() * 2
 		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 
+	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
+
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.with_dids(vec![(alice_did.clone(), did_details)])
@@ -50,7 +52,7 @@ fn check_successful_deletion_no_endpoints() {
 				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
 				<Test as did::Config>::BaseDeposit::get()
 			);
-			assert_ok!(Did::delete(RuntimeOrigin::signed(alice_did.clone()), 0));
+			assert_ok!(Did::delete(origin, 0));
 			assert!(Did::get_did(alice_did.clone()).is_none());
 			assert!(Did::get_deleted_did(alice_did.clone()).is_some());
 			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00).is_zero());
@@ -87,6 +89,8 @@ fn check_successful_deletion_with_endpoints() {
 		+ <Test as did::Config>::Fee::get() * 2
 		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 
+	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
+
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.with_dids(vec![(alice_did.clone(), did_details)])
@@ -97,7 +101,7 @@ fn check_successful_deletion_with_endpoints() {
 				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
 				<Test as did::Config>::BaseDeposit::get()
 			);
-			assert_ok!(Did::delete(RuntimeOrigin::signed(alice_did.clone()), 1));
+			assert_ok!(Did::delete(origin, 1));
 			assert!(Did::get_did(alice_did.clone()).is_none());
 			assert!(Did::get_deleted_did(alice_did.clone()).is_some());
 			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00).is_zero());
@@ -128,13 +132,13 @@ fn check_did_not_present_deletion() {
 	let balance = <Test as did::Config>::BaseDeposit::get()
 		+ <Test as did::Config>::Fee::get()
 		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
+
+	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
+
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.build_and_execute_with_sanity_tests(None, || {
-			assert_noop!(
-				Did::delete(RuntimeOrigin::signed(alice_did), 0),
-				did::Error::<Test>::NotFound
-			);
+			assert_noop!(Did::delete(origin, 0), did::Error::<Test>::NotFound);
 		});
 }
 
@@ -152,13 +156,15 @@ fn check_service_count_too_small_deletion_error() {
 		+ <Test as did::Config>::Fee::get() * 2
 		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 
+	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
+
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.with_dids(vec![(alice_did.clone(), did_details)])
 		.with_endpoints(vec![(alice_did.clone(), vec![service_endpoint])])
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_noop!(
-				Did::delete(RuntimeOrigin::signed(alice_did.clone()), 0),
+				Did::delete(origin, 0),
 				did::Error::<Test>::MaxStoredEndpointsCountExceeded
 			);
 		});
