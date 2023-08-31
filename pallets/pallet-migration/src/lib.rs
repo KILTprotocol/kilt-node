@@ -46,7 +46,6 @@ pub mod pallet {
 	use pallet_web3_names::{Owner, Web3NameOf};
 	use public_credentials::{CredentialIdOf, Credentials, SubjectIdOf};
 	use sp_runtime::traits::Hash;
-	use sp_std::vec::Vec;
 
 	use crate::default_weights::WeightInfo;
 
@@ -159,7 +158,7 @@ pub mod pallet {
 				let storage_key = Attestations::<T>::hashed_key_for(key);
 				let is_migrated = Self::is_key_migrated(&storage_key);
 				if !is_migrated {
-					let key_hash = <T as frame_system::Config>::Hashing::hash(&storage_key[..]);
+					let key_hash = <T as frame_system::Config>::Hashing::hash(&storage_key);
 					MigratedKeys::<T>::insert(key_hash, ());
 					attestation::migrations::update_balance_for_attestation::<T>(key)
 				} else {
@@ -171,7 +170,7 @@ pub mod pallet {
 				let storage_key = DelegationNodes::<T>::hashed_key_for(key);
 				let is_migrated = Self::is_key_migrated(&storage_key);
 				if !is_migrated {
-					let key_hash = <T as frame_system::Config>::Hashing::hash(&storage_key[..]);
+					let key_hash = <T as frame_system::Config>::Hashing::hash(&storage_key);
 					MigratedKeys::<T>::insert(key_hash, ());
 					delegation::migrations::update_balance_for_delegation::<T>(key)
 				} else {
@@ -183,7 +182,7 @@ pub mod pallet {
 				let storage_key = Did::<T>::hashed_key_for(key);
 				let is_migrated = Self::is_key_migrated(&storage_key);
 				if !is_migrated {
-					let key_hash = <T as frame_system::Config>::Hashing::hash(&storage_key[..]);
+					let key_hash = <T as frame_system::Config>::Hashing::hash(&storage_key);
 					MigratedKeys::<T>::insert(key_hash, ());
 					did::migrations::update_balance_for_did::<T>(key)
 				} else {
@@ -195,7 +194,7 @@ pub mod pallet {
 				let storage_key = ConnectedDids::<T>::hashed_key_for(key);
 				let is_migrated = Self::is_key_migrated(&storage_key);
 				if !is_migrated {
-					let key_hash = <T as frame_system::Config>::Hashing::hash(&storage_key[..]);
+					let key_hash = <T as frame_system::Config>::Hashing::hash(&storage_key);
 					MigratedKeys::<T>::insert(key_hash, ());
 					pallet_did_lookup::migrations::update_balance_for_did_lookup::<T>(key)
 				} else {
@@ -207,7 +206,7 @@ pub mod pallet {
 				let storage_key = Owner::<T>::hashed_key_for(key);
 				let is_migrated = Self::is_key_migrated(&storage_key);
 				if !is_migrated {
-					let key_hash = <T as frame_system::Config>::Hashing::hash(&storage_key[..]);
+					let key_hash = <T as frame_system::Config>::Hashing::hash(&storage_key);
 					MigratedKeys::<T>::insert(key_hash, ());
 					pallet_web3_names::migrations::update_balance_for_w3n::<T>(key)
 				} else {
@@ -222,7 +221,7 @@ pub mod pallet {
 					let storage_key = Credentials::<T>::hashed_key_for(key, key2);
 					let is_migrated = Self::is_key_migrated(&storage_key);
 					if !is_migrated {
-						let key_hash = <T as frame_system::Config>::Hashing::hash(&storage_key[..]);
+						let key_hash = <T as frame_system::Config>::Hashing::hash(&storage_key);
 						MigratedKeys::<T>::insert(key_hash, ());
 						public_credentials::migrations::update_balance_for_public_credentials::<T>(key, key2)
 					} else {
@@ -244,13 +243,13 @@ pub mod pallet {
 	}
 
 	impl<T: Config> MigrationManager<AccountIdOf<T>, BalanceOf<T>> for Pallet<T> {
-		fn exclude_key_from_migration(key: Vec<u8>) {
-			let key_hash = <T as frame_system::Config>::Hashing::hash(&key[..]);
+		fn exclude_key_from_migration(key: &[u8]) {
+			let key_hash = <T as frame_system::Config>::Hashing::hash(key);
 			MigratedKeys::<T>::insert(key_hash, ());
 		}
 
-		fn is_key_migrated(key: Vec<u8>) -> bool {
-			Self::is_key_migrated(&key)
+		fn is_key_migrated(key: &[u8]) -> bool {
+			Self::is_key_migrated(key)
 		}
 
 		fn release_reserved_deposit(user: &AccountIdOf<T>, balance: &BalanceOf<T>) {

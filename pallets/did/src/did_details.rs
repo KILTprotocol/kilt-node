@@ -343,7 +343,9 @@ impl<T: Config> DidDetails<T> {
 	pub fn update_deposit(&mut self, did_subject: &DidIdentifierOf<T>) -> Result<(), DispatchError> {
 		let new_required_deposit = self.calculate_deposit(did_subject);
 
-		let is_key_migrated = <T as Config>::MigrationManager::is_key_migrated(Did::<T>::hashed_key_for(did_subject));
+		let hashed_key = Did::<T>::hashed_key_for(did_subject);
+
+		let is_key_migrated = <T as Config>::MigrationManager::is_key_migrated(&hashed_key);
 
 		match new_required_deposit.cmp(&self.deposit.amount) {
 			Ordering::Greater => {
@@ -355,7 +357,7 @@ impl<T: Config> DidDetails<T> {
 						&self.deposit.amount,
 					);
 					DidDepositCollector::<T>::create_deposit(self.deposit.clone().owner, new_required_deposit)?;
-					<T as Config>::MigrationManager::exclude_key_from_migration(Did::<T>::hashed_key_for(did_subject));
+					<T as Config>::MigrationManager::exclude_key_from_migration(&hashed_key);
 					self.deposit.amount = new_required_deposit;
 				} else {
 					DidDepositCollector::<T>::create_deposit(self.deposit.clone().owner, deposit_to_reserve)?;

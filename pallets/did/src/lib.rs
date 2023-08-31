@@ -604,7 +604,7 @@ pub mod pallet {
 			DidDepositCollector::<T>::create_deposit(details.submitter, did_entry.deposit.amount)
 				.map_err(|_e| Error::<T>::UnableToPayFees)?;
 
-			<T as Config>::MigrationManager::exclude_key_from_migration(Did::<T>::hashed_key_for(&did_identifier));
+			<T as Config>::MigrationManager::exclude_key_from_migration(&Did::<T>::hashed_key_for(&did_identifier));
 
 			Did::<T>::insert(&did_identifier, did_entry.clone());
 
@@ -1269,7 +1269,7 @@ pub mod pallet {
 			DidEndpointsCount::<T>::remove(&did_subject);
 
 			let is_key_migrated =
-				<T as Config>::MigrationManager::is_key_migrated(Did::<T>::hashed_key_for(did_subject.clone()));
+				<T as Config>::MigrationManager::is_key_migrated(&Did::<T>::hashed_key_for(did_subject.clone()));
 			if is_key_migrated {
 				DidDepositCollector::<T>::free_deposit(did_entry.deposit)?;
 			} else {

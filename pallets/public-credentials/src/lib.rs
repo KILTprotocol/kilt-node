@@ -313,7 +313,7 @@ pub mod pallet {
 			let deposit = PublicCredentialDepositCollector::<T>::create_deposit(payer, deposit_amount)
 				.map_err(|_| Error::<T>::UnableToPayFees)?;
 
-			<T as Config>::MigrationManager::exclude_key_from_migration(Credentials::<T>::hashed_key_for(
+			<T as Config>::MigrationManager::exclude_key_from_migration(&Credentials::<T>::hashed_key_for(
 				&subject,
 				&credential_id,
 			));
@@ -566,7 +566,7 @@ pub mod pallet {
 			let details = Credentials::<T>::take(&credential_subject, &credential_id).ok_or(Error::<T>::NotFound)?;
 			CredentialSubjects::<T>::remove(&credential_id);
 
-			let is_key_migrated = <T as Config>::MigrationManager::is_key_migrated(Credentials::<T>::hashed_key_for(
+			let is_key_migrated = <T as Config>::MigrationManager::is_key_migrated(&Credentials::<T>::hashed_key_for(
 				&credential_subject,
 				&credential_id,
 			));

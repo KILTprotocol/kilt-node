@@ -93,15 +93,15 @@ pub trait ItemFilter<Item> {
 pub trait MigrationManager<AccountId, Balance> {
 	fn release_reserved_deposit(user: &AccountId, balance: &Balance);
 
-	fn exclude_key_from_migration(key: Vec<u8>);
+	fn exclude_key_from_migration(key: &[u8]);
 
-	fn is_key_migrated(key: Vec<u8>) -> bool;
+	fn is_key_migrated(key: &[u8]) -> bool;
 }
 
 impl<AccountId, Balance> MigrationManager<AccountId, Balance> for () {
-	fn exclude_key_from_migration(_key: Vec<u8>) {}
+	fn exclude_key_from_migration(_key: &[u8]) {}
 
-	fn is_key_migrated(_key: Vec<u8>) -> bool {
+	fn is_key_migrated(_key: &[u8]) -> bool {
 		true
 	}
 
@@ -168,7 +168,7 @@ pub trait StorageDepositCollector<AccountId, Key, RuntimeHoldReason> {
 		DepositMigrationManager: MigrationManager<AccountId, <Self::Currency as Inspect<AccountId>>::Balance>,
 	{
 		let hashed_key = Self::get_hashed_key(key)?;
-		let is_key_migrated = DepositMigrationManager::is_key_migrated(hashed_key.clone());
+		let is_key_migrated = DepositMigrationManager::is_key_migrated(&hashed_key);
 		let deposit = Self::deposit(key)?;
 		let reason = Self::reason();
 
@@ -176,7 +176,7 @@ pub trait StorageDepositCollector<AccountId, Key, RuntimeHoldReason> {
 			free_deposit::<AccountId, Self::Currency>(&deposit, &reason.clone().into())?;
 		} else {
 			DepositMigrationManager::release_reserved_deposit(&deposit.owner, &deposit.amount);
-			DepositMigrationManager::exclude_key_from_migration(hashed_key);
+			DepositMigrationManager::exclude_key_from_migration(&hashed_key);
 		}
 
 		let deposit = Deposit {
@@ -204,13 +204,13 @@ pub trait StorageDepositCollector<AccountId, Key, RuntimeHoldReason> {
 		let deposit = Self::deposit(key)?;
 		let reason = Self::reason();
 		let hashed_key = Self::get_hashed_key(key)?;
-		let is_key_migrated = DepositMigrationManager::is_key_migrated(hashed_key.clone());
+		let is_key_migrated = DepositMigrationManager::is_key_migrated(&hashed_key);
 
 		if is_key_migrated {
 			free_deposit::<AccountId, Self::Currency>(&deposit, &reason.clone().into())?;
 		} else {
 			DepositMigrationManager::release_reserved_deposit(&deposit.owner, &deposit.amount);
-			DepositMigrationManager::exclude_key_from_migration(hashed_key);
+			DepositMigrationManager::exclude_key_from_migration(&hashed_key);
 		}
 
 		let deposit = Deposit {

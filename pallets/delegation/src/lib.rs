@@ -751,7 +751,7 @@ pub mod pallet {
 			deposit_owner: AccountIdOf<T>,
 		) -> DispatchResult {
 			DelegationDepositCollector::<T>::create_deposit(deposit_owner.clone(), <T as Config>::Deposit::get())?;
-			<T as Config>::MigrationManager::exclude_key_from_migration(DelegationNodes::<T>::hashed_key_for(root_id));
+			<T as Config>::MigrationManager::exclude_key_from_migration(&DelegationNodes::<T>::hashed_key_for(root_id));
 
 			let root_node = DelegationNode::new_root_node(
 				root_id,
@@ -779,7 +779,7 @@ pub mod pallet {
 			deposit_owner: AccountIdOf<T>,
 		) -> DispatchResult {
 			DelegationDepositCollector::<T>::create_deposit(deposit_owner, <T as Config>::Deposit::get())?;
-			<T as Config>::MigrationManager::exclude_key_from_migration(DelegationNodes::<T>::hashed_key_for(
+			<T as Config>::MigrationManager::exclude_key_from_migration(&DelegationNodes::<T>::hashed_key_for(
 				delegation_id,
 			));
 
@@ -995,7 +995,7 @@ pub mod pallet {
 			DelegationNodes::<T>::remove(*delegation);
 
 			let is_key_migrated =
-				<T as Config>::MigrationManager::is_key_migrated(DelegationNodes::<T>::hashed_key_for(delegation));
+				<T as Config>::MigrationManager::is_key_migrated(&DelegationNodes::<T>::hashed_key_for(delegation));
 			if is_key_migrated {
 				DelegationDepositCollector::<T>::free_deposit(delegation_node.clone().deposit)?;
 			} else {
