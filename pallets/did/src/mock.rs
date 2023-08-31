@@ -149,14 +149,22 @@ where
 }
 
 impl Config for Test {
+	#[cfg(feature = "runtime-benchmarks")]
+	type EnsureOrigin = EnsureSigned<DidIdentifier>;
+	#[cfg(feature = "runtime-benchmarks")]
+	type OriginSuccess = AccountId;
+
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	type EnsureOrigin = EnsureDidOrigin<DidIdentifier, AccountId>;
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	type OriginSuccess = DidRawOrigin<AccountId, DidIdentifier>;
+
 	type DidIdentifier = DidIdentifier;
 	type RuntimeOrigin = RuntimeOrigin;
 	type RuntimeCall = RuntimeCall;
-	type EnsureOrigin = EnsureSigned<DidIdentifier>;
 	type KeyDeposit = KeyDeposit;
 	type RuntimeHoldReason = RuntimeHoldReason;
 	type ServiceEndpointDeposit = KeyDeposit;
-	type OriginSuccess = AccountId;
 	type RuntimeEvent = ();
 	type Currency = Balances;
 	type BaseDeposit = BaseDeposit;
@@ -384,6 +392,16 @@ pub(crate) fn get_none_key_call() -> RuntimeCall {
 	RuntimeCall::Ctype(ctype::Call::add {
 		ctype: get_none_key_test_input(),
 	})
+}
+
+#[cfg(not(feature = "runtime-benchmarks"))]
+pub(crate) fn build_test_origin(account: AccountId, did: DidIdentifier) -> RuntimeOrigin {
+	crate::DidRawOrigin::new(account, did).into()
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+pub(crate) fn build_test_origin(account: AccountId, _did: DidIdentifier) -> RuntimeOrigin {
+	RuntimeOrigin::signed(account)
 }
 
 impl DeriveDidCallAuthorizationVerificationKeyRelationship for RuntimeCall {
