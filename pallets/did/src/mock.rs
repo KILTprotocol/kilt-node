@@ -35,7 +35,7 @@ use sp_core::{ecdsa, ed25519, sr25519, Pair};
 use sp_runtime::{
 	testing::{Header, H256},
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
-	AccountId32, MultiSignature, MultiSigner, SaturatedConversion,
+	MultiSignature, MultiSigner, SaturatedConversion,
 };
 use sp_std::vec::Vec;
 
