@@ -395,7 +395,7 @@ pub(crate) fn get_none_key_call() -> RuntimeCall {
 }
 
 #[cfg(not(feature = "runtime-benchmarks"))]
-pub(crate) fn build_test_origin(account: AccountId32, did: AccountId32) -> RuntimeOrigin {
+pub(crate) fn build_test_origin(account: AccountId, did: DidIdentifier) -> RuntimeOrigin {
 	crate::DidRawOrigin::new(account, did).into()
 }
 
