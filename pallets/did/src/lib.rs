@@ -156,9 +156,8 @@ pub mod pallet {
 
 	use crate::{
 		did_details::{
-			DeriveDidCallAuthorizationVerificationKeyRelationship, DidAuthorizedCallOperation,
-			DidCreationDetailsFromAccount, DidDetails, DidEncryptionKey, DidSignature, DidVerifiableIdentifier,
-			DidVerificationKey, RelationshipDeriveError,
+			DeriveDidCallAuthorizationVerificationKeyRelationship, DidAuthorizedCallOperation, DidDetails,
+			DidEncryptionKey, DidSignature, DidVerifiableIdentifier, DidVerificationKey, RelationshipDeriveError,
 		},
 		service_endpoints::{utils as service_endpoints_utils, ServiceEndpointId},
 	};
@@ -199,9 +198,6 @@ pub mod pallet {
 
 	pub(crate) type DidCreationDetailsOf<T> =
 		DidCreationDetails<DidIdentifierOf<T>, AccountIdOf<T>, <T as Config>::MaxNewKeyAgreementKeys, DidEndpoint<T>>;
-
-	pub(crate) type DidCreationDetailsFromAccountOf<T> =
-		DidCreationDetailsFromAccount<<T as Config>::MaxNewKeyAgreementKeys, DidEndpoint<T>, AccountIdOf<T>>;
 
 	pub(crate) type DidAuthorizedCallOperationOf<T> =
 		DidAuthorizedCallOperation<DidIdentifierOf<T>, DidCallableOf<T>, BlockNumberOf<T>, AccountIdOf<T>, u64>;
@@ -1198,7 +1194,6 @@ pub mod pallet {
 		#[pallet::weight(1000)]
 		pub fn create_from_account(
 			origin: OriginFor<T>,
-			details: DidCreationDetailsFromAccountOf<T>,
 			authentication_key: DidVerificationKey<AccountIdOf<T>>,
 		) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
@@ -1218,18 +1213,8 @@ pub mod pallet {
 
 			log::debug!("Creating DID {:?}", &did_identifier);
 
-			// Validate all the size constraints for the service endpoints.
-			let input_service_endpoints = details.new_service_details.clone();
-			service_endpoints_utils::validate_new_service_endpoints(&input_service_endpoints)
-				.map_err(Error::<T>::from)?;
-
-			input_service_endpoints.iter().for_each(|service| {
-				ServiceEndpoints::<T>::insert(&did_identifier, &service.id, service.clone());
-			});
-			DidEndpointsCount::<T>::insert(&did_identifier, input_service_endpoints.len().saturated_into::<u32>());
-
 			let did_entry =
-				DidDetails::from_account_creation_details(sender.clone(), details, authentication_key, &did_identifier)
+				DidDetails::from_account_creation_details(sender.clone(), authentication_key, &did_identifier)
 					.map_err(Error::<T>::from)?;
 
 			Did::<T>::insert(&did_identifier, did_entry.clone());

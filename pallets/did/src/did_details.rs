@@ -23,10 +23,7 @@ use frame_support::{
 	traits::Get,
 	RuntimeDebug,
 };
-use kilt_support::{
-	traits::StorageDepositCollector,
-	Deposit,
-};
+use kilt_support::{traits::StorageDepositCollector, Deposit};
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen, WrapperTypeEncode};
 use scale_info::TypeInfo;
 use sp_core::{ecdsa, ed25519, sr25519};
@@ -38,9 +35,8 @@ use sp_std::{convert::TryInto, vec::Vec};
 
 use crate::{
 	errors::{self, DidError},
-	utils, AccountIdOf, BalanceOf, BlockNumberOf, Config, DidAuthorizedCallOperationOf,
-	DidCreationDetailsFromAccountOf, DidCreationDetailsOf, DidDepositCollector, DidEndpointsCount, DidIdentifierOf,
-	KeyIdOf, Payload,
+	utils, AccountIdOf, BalanceOf, BlockNumberOf, Config, DidAuthorizedCallOperationOf, DidCreationDetailsOf,
+	DidDepositCollector, DidEndpointsCount, DidIdentifierOf, KeyIdOf, Payload,
 };
 
 /// Public verification key that a DID can control.
@@ -437,16 +433,9 @@ impl<T: Config> DidDetails<T> {
 	// authentication key.
 	pub fn from_account_creation_details(
 		submitter: AccountIdOf<T>,
-		details: DidCreationDetailsFromAccountOf<T>,
 		new_auth_key: DidVerificationKey<AccountIdOf<T>>,
 		did_subject: &DidIdentifierOf<T>,
 	) -> Result<Self, DidError> {
-		ensure!(
-			details.new_key_agreement_keys.len()
-				<= <<T as Config>::MaxNewKeyAgreementKeys>::get().saturated_into::<usize>(),
-			errors::InputError::MaxKeyAgreementKeysLimitExceeded
-		);
-
 		let current_block_number = frame_system::Pallet::<T>::block_number();
 
 		let deposit = Deposit {
@@ -458,15 +447,6 @@ impl<T: Config> DidDetails<T> {
 		// Creates a new DID with the given authentication key.
 		let mut new_did_details = DidDetails::new(new_auth_key, current_block_number, deposit)?;
 
-		new_did_details.add_key_agreement_keys(details.clone().new_key_agreement_keys, current_block_number)?;
-
-		if let Some(attesation_key) = details.clone().new_attestation_key {
-			new_did_details.update_attestation_key(attesation_key, current_block_number)?;
-		}
-
-		if let Some(delegation_key) = details.clone().new_delegation_key {
-			new_did_details.update_delegation_key(delegation_key, current_block_number)?;
-		}
 
 		let deposit_amount = new_did_details.calculate_deposit(did_subject);
 		new_did_details.deposit.amount = deposit_amount;
@@ -701,22 +681,6 @@ where
 	pub did: DidIdentifier,
 	/// The authorised submitter of the creation operation.
 	pub submitter: AccountId,
-	/// The new key agreement keys.
-	pub new_key_agreement_keys: DidNewKeyAgreementKeySet<MaxNewKeyAgreementKeys>,
-	/// \[OPTIONAL\] The new attestation key.
-	pub new_attestation_key: Option<DidVerificationKey<AccountId>>,
-	/// \[OPTIONAL\] The new delegation key.
-	pub new_delegation_key: Option<DidVerificationKey<AccountId>>,
-	/// The service endpoints details.
-	pub new_service_details: Vec<DidEndpoint>,
-}
-
-/// The details of a new DID to create.
-#[derive(Clone, RuntimeDebug, Decode, Encode, PartialEq, TypeInfo)]
-pub struct DidCreationDetailsFromAccount<MaxNewKeyAgreementKeys, DidEndpoint, AccountId>
-where
-	MaxNewKeyAgreementKeys: Get<u32> + Clone,
-{
 	/// The new key agreement keys.
 	pub new_key_agreement_keys: DidNewKeyAgreementKeySet<MaxNewKeyAgreementKeys>,
 	/// \[OPTIONAL\] The new attestation key.
