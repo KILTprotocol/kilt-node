@@ -128,7 +128,7 @@ benchmarks! {
 		where
 		T::DidIdentifier: From<AccountId32>,
 		<T as frame_system::Config>::RuntimeOrigin: From<RawOrigin<T::DidIdentifier>>,
-		<T as frame_system::Config>::AccountId: From<AccountId32> + AsRef<[u8]> + AsRef<[u8;32]> + From<[u8; 32]>,
+		<T as frame_system::Config>::AccountId: From<AccountId32>,
 		<T as Config>::Currency: Mutate<T::AccountId>,
 	}
 
