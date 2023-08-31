@@ -24,7 +24,6 @@ use frame_support::{
 	RuntimeDebug,
 };
 use kilt_support::{
-	signature::{get_wrapped_payload, WrapType},
 	traits::StorageDepositCollector,
 	Deposit,
 };
@@ -173,12 +172,6 @@ pub enum DidSignature {
 	Sr25519(sr25519::Signature),
 	/// An Ecdsa signature.
 	Ecdsa(ecdsa::Signature),
-	/// A Ed25519 signature.
-	WrappedEd25519(ed25519::Signature),
-	/// A Sr25519 signature.
-	WrappedSr25519(sr25519::Signature),
-	/// An Ecdsa signature.
-	WrappedEcdsa(ecdsa::Signature),
 }
 
 impl From<ed25519::Signature> for DidSignature {
@@ -252,45 +245,6 @@ impl<I: AsRef<[u8; 32]>, AccountId> DidVerifiableIdentifier<AccountId> for I {
 				// ECDSA uses blake2-256 hashing algorithm for signatures, so we hash the given
 				// message to recover the public key.
 				let hashed_message = sp_io::hashing::blake2_256(payload);
-				let recovered_pk: [u8; 33] =
-					sp_io::crypto::secp256k1_ecdsa_recover_compressed(&ecdsa_signature, &hashed_message)
-						.map_err(|_| errors::SignatureError::InvalidData)?;
-				let hashed_recovered_pk = sp_io::hashing::blake2_256(&recovered_pk);
-				// The hashed recovered public key must be equal to the AccountId32 value, which
-				// is the hashed key.
-				ensure!(
-					&hashed_recovered_pk == raw_public_key,
-					errors::SignatureError::InvalidData
-				);
-				// Safe to reconstruct the public key using the recovered value from
-				// secp256k1_ecdsa_recover_compressed
-				Ok(DidVerificationKey::from(ecdsa::Public(recovered_pk)))
-			}
-			DidSignature::WrappedEd25519(_) => {
-				// from_raw simply converts a byte array into a public key with no particular
-				// validations
-				let ed25519_did_key = DidVerificationKey::Ed25519(ed25519::Public::from_raw(*raw_public_key));
-				let wrapped_payload = get_wrapped_payload(payload, WrapType::Substrate);
-				ed25519_did_key
-					.verify_signature(&wrapped_payload[..], signature)
-					.map(|_| ed25519_did_key)
-			}
-			DidSignature::WrappedSr25519(_) => {
-				let sr25519_did_key = DidVerificationKey::Sr25519(sr25519::Public::from_raw(*raw_public_key));
-				let wrapped_payload = get_wrapped_payload(payload, WrapType::Substrate);
-				sr25519_did_key
-					.verify_signature(&wrapped_payload[..], signature)
-					.map(|_| sr25519_did_key)
-			}
-			DidSignature::WrappedEcdsa(_) => {
-				let ecdsa_signature: [u8; 65] = signature
-					.encode()
-					.try_into()
-					.map_err(|_| errors::SignatureError::InvalidData)?;
-				let wrapped_payload = get_wrapped_payload(payload, WrapType::Ethereum);
-				// ECDSA uses blake2-256 hashing algorithm for signatures, so we hash the given
-				// message to recover the public key.
-				let hashed_message = sp_io::hashing::blake2_256(&wrapped_payload[..]);
 				let recovered_pk: [u8; 33] =
 					sp_io::crypto::secp256k1_ecdsa_recover_compressed(&ecdsa_signature, &hashed_message)
 						.map_err(|_| errors::SignatureError::InvalidData)?;

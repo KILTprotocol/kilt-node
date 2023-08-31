@@ -31,6 +31,7 @@ pub mod linkable_account;
 pub mod migrations;
 
 mod connection_record;
+mod signature;
 
 #[cfg(all(test, feature = "std"))]
 mod tests;
