@@ -177,7 +177,7 @@ fn check_max_keys_authentication_key_update_error() {
 	// public keys is already present.
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
-		.with_dids(vec![(alice_did.clone(), did_details)])
+		.with_dids(vec![(alice_did, did_details)])
 		.build_and_execute_with_sanity_tests(None, || {
 			System::set_block_number(new_block_number);
 			assert_noop!(
@@ -195,7 +195,7 @@ fn check_did_not_present_authentication_key_update_error() {
 
 	let new_block_number: BlockNumber = 1;
 
-	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
+	let origin = build_test_origin(alice_did.clone(), alice_did);
 
 	// Update authentication key. The old one should be removed.
 	ExtBuilder::default().build(None).execute_with(|| {
@@ -356,7 +356,7 @@ fn check_max_public_keys_delegation_key_addition_error() {
 	// Update delegation key. The old one should be removed.
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
-		.with_dids(vec![(alice_did.clone(), did_details)])
+		.with_dids(vec![(alice_did, did_details)])
 		.build_and_execute_with_sanity_tests(None, || {
 			System::set_block_number(new_block_number);
 			assert_noop!(
@@ -392,7 +392,7 @@ fn check_max_public_keys_reused_key_delegation_key_update_error() {
 	// as authentication key.
 	ExtBuilder::default()
 		.with_dids(vec![(alice_did.clone(), did_details)])
-		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
+		.with_balances(vec![(alice_did, DEFAULT_BALANCE)])
 		.build_and_execute_with_sanity_tests(None, || {
 			System::set_block_number(new_block_number);
 			assert_noop!(
@@ -410,7 +410,7 @@ fn check_did_not_present_delegation_key_update_error() {
 
 	let new_block_number: BlockNumber = 1;
 
-	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
+	let origin = build_test_origin(alice_did.clone(), alice_did);
 
 	// Update delegation key. The old one should be removed.
 	ExtBuilder::default().build(None).execute_with(|| {
@@ -484,7 +484,7 @@ fn check_did_not_present_delegation_key_deletion_error() {
 	let auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 
-	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
+	let origin = build_test_origin(alice_did.clone(), alice_did);
 
 	ExtBuilder::default().build(None).execute_with(|| {
 		assert_noop!(Did::remove_delegation_key(origin), did::Error::<Test>::NotFound);
@@ -503,7 +503,7 @@ fn check_key_not_present_delegation_key_deletion_error() {
 
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
-		.with_dids(vec![(alice_did.clone(), old_did_details)])
+		.with_dids(vec![(alice_did, old_did_details)])
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_noop!(
 				Did::remove_delegation_key(origin),
@@ -659,7 +659,7 @@ fn check_max_public_keys_attestation_key_addition_error() {
 	// Update attestation key. The old one should be removed.
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
-		.with_dids(vec![(alice_did.clone(), did_details)])
+		.with_dids(vec![(alice_did, did_details)])
 		.build_and_execute_with_sanity_tests(None, || {
 			System::set_block_number(new_block_number);
 			assert_noop!(
@@ -695,7 +695,7 @@ fn check_max_public_keys_reused_key_attestation_key_update_error() {
 	// as authentication key.
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
-		.with_dids(vec![(alice_did.clone(), did_details)])
+		.with_dids(vec![(alice_did, did_details)])
 		.build_and_execute_with_sanity_tests(None, || {
 			System::set_block_number(new_block_number);
 			assert_noop!(
@@ -713,7 +713,7 @@ fn check_did_not_present_attestation_key_update_error() {
 
 	let new_block_number: BlockNumber = 1;
 
-	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
+	let origin = build_test_origin(alice_did.clone(), alice_did);
 
 	// Update delegation key. The old one should be removed.
 	ExtBuilder::default().build(None).execute_with(|| {
@@ -786,7 +786,7 @@ fn check_did_not_present_attestation_key_deletion_error() {
 	let auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 
-	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
+	let origin = build_test_origin(alice_did.clone(), alice_did);
 
 	ExtBuilder::default().build(None).execute_with(|| {
 		assert_noop!(Did::remove_attestation_key(origin), did::Error::<Test>::NotFound);
@@ -805,7 +805,7 @@ fn check_key_not_present_attestation_key_deletion_error() {
 
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
-		.with_dids(vec![(alice_did.clone(), old_did_details)])
+		.with_dids(vec![(alice_did, old_did_details)])
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_noop!(
 				Did::remove_attestation_key(origin),
@@ -869,7 +869,7 @@ fn check_max_public_keys_key_agreement_key_addition_error() {
 
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
-		.with_dids(vec![(alice_did.clone(), did_details)])
+		.with_dids(vec![(alice_did, did_details)])
 		.build_and_execute_with_sanity_tests(None, || {
 			System::set_block_number(new_block_number);
 			assert_noop!(
@@ -887,7 +887,7 @@ fn check_did_not_present_key_agreement_key_addition_error() {
 
 	let new_block_number: BlockNumber = 1;
 
-	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
+	let origin = build_test_origin(alice_did.clone(), alice_did);
 
 	// Update delegation key. The old one should be removed.
 	ExtBuilder::default().build(None).execute_with(|| {
@@ -935,7 +935,7 @@ fn check_did_not_found_key_agreement_key_deletion_error() {
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let test_enc_key = get_x25519_encryption_key(&ENC_SEED_0);
 
-	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
+	let origin = build_test_origin(alice_did.clone(), alice_did);
 
 	ExtBuilder::default().build(None).execute_with(|| {
 		assert_noop!(
@@ -959,7 +959,7 @@ fn check_key_not_found_key_agreement_key_deletion_error() {
 
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
-		.with_dids(vec![(alice_did.clone(), old_did_details)])
+		.with_dids(vec![(alice_did, old_did_details)])
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_noop!(
 				Did::remove_key_agreement_key(origin, generate_key_id(&test_enc_key.into())),

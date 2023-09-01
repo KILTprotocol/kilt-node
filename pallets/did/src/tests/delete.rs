@@ -133,7 +133,7 @@ fn check_did_not_present_deletion() {
 		+ <Test as did::Config>::Fee::get()
 		+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
 
-	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
+	let origin = build_test_origin(alice_did.clone(), alice_did);
 
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
@@ -161,7 +161,7 @@ fn check_service_count_too_small_deletion_error() {
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, balance)])
 		.with_dids(vec![(alice_did.clone(), did_details)])
-		.with_endpoints(vec![(alice_did.clone(), vec![service_endpoint])])
+		.with_endpoints(vec![(alice_did, vec![service_endpoint])])
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_noop!(
 				Did::delete(origin, 0),
