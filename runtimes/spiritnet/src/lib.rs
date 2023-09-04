@@ -198,7 +198,7 @@ impl pallet_indices::Config for Runtime {
 
 impl pallet_balances::Config for Runtime {
 	type FreezeIdentifier = RuntimeFreezeReason;
-	type HoldIdentifier = RuntimeHoldReason;
+	type RuntimeHoldReason = RuntimeHoldReason;
 	type MaxFreezes = MaxFreezes;
 	type MaxHolds = MaxHolds;
 	/// The type for recording an account's balance.

@@ -96,7 +96,7 @@ pub mod runtime {
 
 	impl pallet_balances::Config for Test {
 		type FreezeIdentifier = ();
-		type HoldIdentifier = ();
+		type RuntimeHoldReason = ();
 		type MaxFreezes = MaxFreezes;
 		type MaxHolds = MaxHolds;
 		type Balance = Balance;

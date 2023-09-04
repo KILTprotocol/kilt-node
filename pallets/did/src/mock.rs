@@ -193,7 +193,7 @@ parameter_types! {
 
 impl pallet_balances::Config for Test {
 	type FreezeIdentifier = RuntimeFreezeReason;
-	type HoldIdentifier = RuntimeHoldReason;
+	type RuntimeHoldReason = RuntimeHoldReason;
 	type MaxFreezes = MaxFreezes;
 	type MaxHolds = MaxHolds;
 	type Balance = Balance;

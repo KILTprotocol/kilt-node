@@ -33,8 +33,8 @@ use ctype::CtypeHashOf;
 use kilt_support::{traits::StorageDepositCollector, Deposit};
 
 use crate::{
-	pallet::AuthorizationIdOf, AccountIdOf, AttestationAccessControl, AttestationDetails, AttestationDetailsOf,
-	AttesterOf, BalanceOf, ClaimHashOf, Config,
+	self as attestation, pallet::AuthorizationIdOf, AccountIdOf, AttestationAccessControl, AttestationDetails,
+	AttestationDetailsOf, AttesterOf, BalanceOf, ClaimHashOf, Config,
 };
 
 #[cfg(test)]
@@ -172,9 +172,8 @@ pub(crate) mod runtime {
 	use frame_system::EnsureSigned;
 	use sp_core::{ed25519, sr25519, Pair};
 	use sp_runtime::{
-		testing::Header,
 		traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
-		MultiSignature, MultiSigner,
+		BuildStorage, MultiSignature, MultiSigner,
 	};
 
 	use ctype::{CtypeCreatorOf, CtypeEntryOf};
@@ -182,7 +181,6 @@ pub(crate) mod runtime {
 
 	use super::*;
 
-	type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 	type Block = frame_system::mocking::MockBlock<Test>;
 
 	pub type Hash = sp_core::H256;
@@ -196,16 +194,13 @@ pub(crate) mod runtime {
 	pub const ATTESTATION_DEPOSIT: Balance = 10 * MILLI_UNIT;
 
 	frame_support::construct_runtime!(
-		pub enum Test where
-			Block = Block,
-			NodeBlock = Block,
-			UncheckedExtrinsic = UncheckedExtrinsic,
+		pub enum Test
 		{
-			System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
-			Attestation: crate::{Pallet, Call, Storage, Event<T>, HoldReason},
-			Ctype: ctype::{Pallet, Call, Storage, Event<T>},
-			Balances: pallet_balances::{Pallet, Call, Storage, Event<T>},
-			MockOrigin: mock_origin::{Pallet, Origin<T>},
+			System: frame_system,
+			Attestation: attestation,
+			Ctype: ctype,
+			Balances: pallet_balances,
+			MockOrigin: mock_origin,
 		}
 	);
 
@@ -217,13 +212,12 @@ pub(crate) mod runtime {
 	impl frame_system::Config for Test {
 		type RuntimeOrigin = RuntimeOrigin;
 		type RuntimeCall = RuntimeCall;
-		type Index = u64;
-		type BlockNumber = u64;
 		type Hash = Hash;
 		type Hashing = BlakeTwo256;
 		type AccountId = AccountId;
 		type Lookup = IdentityLookup<Self::AccountId>;
-		type Header = Header;
+		type Block = Block;
+		type Nonce = u32;
 		type RuntimeEvent = ();
 		type BlockHashCount = BlockHashCount;
 		type DbWeight = RocksDbWeight;
@@ -252,7 +246,7 @@ pub(crate) mod runtime {
 
 	impl pallet_balances::Config for Test {
 		type FreezeIdentifier = RuntimeFreezeReason;
-		type HoldIdentifier = RuntimeHoldReason;
+		type RuntimeHoldReason = RuntimeHoldReason;
 		type MaxFreezes = MaxFreezes;
 		type MaxHolds = MaxHolds;
 		type Balance = Balance;
@@ -363,7 +357,7 @@ pub(crate) mod runtime {
 		}
 
 		pub fn build(self) -> sp_io::TestExternalities {
-			let mut storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
+			let mut storage = frame_system::GenesisConfig::<Test>::default().build_storage().unwrap();
 			pallet_balances::GenesisConfig::<Test> {
 				balances: self.balances.clone(),
 			}

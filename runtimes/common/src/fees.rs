@@ -232,7 +232,7 @@ mod tests {
 	impl pallet_balances::Config for Test {
 		type Balance = u64;
 		type FreezeIdentifier = ();
-		type HoldIdentifier = ();
+		type RuntimeHoldReason = ();
 		type MaxFreezes = ();
 		type MaxHolds = ();
 		type RuntimeEvent = RuntimeEvent;
