@@ -24,6 +24,7 @@ use frame_support::{
 		EnsureOrigin, Get,
 	},
 };
+use frame_system::pallet_prelude::BlockNumberFor;
 use sp_std::{
 	convert::{TryFrom, TryInto},
 	fmt::Debug,
@@ -44,7 +45,8 @@ benchmarks! {
 		<T as Config>::Currency: Mutate<T::AccountId>,
 		<<<T as Config>::Currency as Inspect<<T as frame_system::Config>::AccountId>>::Balance as TryFrom<usize>>::Error: Debug,
 		T::EnsureOrigin: GenerateBenchmarkOrigin<T::RuntimeOrigin, T::AccountId, T::CtypeCreatorId>,
-		T::BlockNumber: From<u64>,
+		BlockNumberFor<T>: From<u64>,
+
 	}
 
 	add {
