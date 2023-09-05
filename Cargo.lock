@@ -2289,6 +2289,7 @@ dependencies = [
  "frame-benchmarking",
  "frame-support",
  "frame-system",
+ "hex-literal 0.3.4",
  "kilt-support",
  "log",
  "pallet-balances",

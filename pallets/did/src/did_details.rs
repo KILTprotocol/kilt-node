@@ -431,7 +431,7 @@ impl<T: Config> DidDetails<T> {
 
 	// Creates a new DID entry from some [DidCreationDetails] and a given
 	// authentication key.
-	pub fn from_account_creation_details(
+	pub fn from_account(
 		submitter: AccountIdOf<T>,
 		new_auth_key: DidVerificationKey<AccountIdOf<T>>,
 		did_subject: &DidIdentifierOf<T>,

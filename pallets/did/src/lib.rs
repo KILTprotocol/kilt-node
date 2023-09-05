@@ -1214,7 +1214,7 @@ pub mod pallet {
 			log::debug!("Creating DID {:?}", &did_identifier);
 
 			let did_entry =
-				DidDetails::from_account_creation_details(sender.clone(), authentication_key, &did_identifier)
+				DidDetails::from_account(sender.clone(), authentication_key, &did_identifier)
 					.map_err(Error::<T>::from)?;
 
 			Did::<T>::insert(&did_identifier, did_entry.clone());
