@@ -16,12 +16,13 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite, Zero};
+use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
 use frame_support::{
 	dispatch::RawOrigin,
 	traits::{fungible::Mutate, Get},
 	BoundedVec,
 };
+use frame_system::pallet_prelude::BlockNumberFor;
 use sp_std::{boxed::Box, vec, vec::Vec};
 
 use ctype::CtypeEntryOf;
@@ -60,7 +61,7 @@ benchmarks! {
 		<T as Config>::EnsureOrigin: GenerateBenchmarkOrigin<T::RuntimeOrigin, T::AccountId, T::AttesterId>,
 		<T as Config>::SubjectId: GetWorstCase + Into<Vec<u8>> + sp_std::fmt::Debug,
 		<T as Config>::CredentialId: Default,
-		T::BlockNumber: From<u64>,
+		BlockNumberFor<T>: From<u64>,
 		<T as Config>::Currency: Mutate<T::AccountId>,
 	}
 

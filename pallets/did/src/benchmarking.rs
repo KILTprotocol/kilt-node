@@ -22,6 +22,7 @@ use frame_support::{
 	assert_ok,
 	traits::fungible::{Inspect, Mutate, MutateHold},
 };
+use frame_system::pallet_prelude::BlockNumberFor;
 use frame_system::RawOrigin;
 use parity_scale_codec::Encode;
 use sp_core::{crypto::KeyTypeId, ecdsa, ed25519, sr25519};
@@ -111,7 +112,7 @@ fn generate_base_did_call_operation<T: Config>(
 		did,
 		call: test_call,
 		tx_counter: 1u64,
-		block_number: T::BlockNumber::default(),
+		block_number: BlockNumberFor::<T>::default(),
 		submitter,
 	}
 }
@@ -454,7 +455,7 @@ benchmarks! {
 
 	/* set_authentication_key extrinsic */
 	set_ed25519_authentication_key {
-		let block_number = T::BlockNumber::zero();
+		let block_number = BlockNumberFor::<T>::zero();
 		let old_did_public_auth_key = get_ed25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(old_did_public_auth_key).into_account().into();
 		let did_account: AccountIdOf<T> = MultiSigner::from(old_did_public_auth_key).into_account().into();
@@ -478,7 +479,7 @@ benchmarks! {
 	}
 
 	set_sr25519_authentication_key {
-		let block_number = T::BlockNumber::zero();
+		let block_number = BlockNumberFor::<T>::zero();
 		let old_did_public_auth_key = get_sr25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(old_did_public_auth_key).into_account().into();
 		let did_account: AccountIdOf<T> = MultiSigner::from(old_did_public_auth_key).into_account().into();
@@ -502,7 +503,7 @@ benchmarks! {
 	}
 
 	set_ecdsa_authentication_key {
-		let block_number = T::BlockNumber::zero();
+		let block_number = BlockNumberFor::<T>::zero();
 		let old_did_public_auth_key = get_ecdsa_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(old_did_public_auth_key).into_account().into();
 		let did_account: AccountIdOf<T> = MultiSigner::from(old_did_public_auth_key).into_account().into();
@@ -527,7 +528,7 @@ benchmarks! {
 
 	/* set_delegation_key extrinsic */
 	set_ed25519_delegation_key {
-		let block_number = T::BlockNumber::zero();
+		let block_number = BlockNumberFor::<T>::zero();
 		let public_auth_key = get_ed25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(public_auth_key).into_account().into();
 		let did_account: AccountIdOf<T> = MultiSigner::from(public_auth_key).into_account().into();
@@ -551,7 +552,7 @@ benchmarks! {
 	}
 
 	set_sr25519_delegation_key {
-		let block_number = T::BlockNumber::zero();
+		let block_number = BlockNumberFor::<T>::zero();
 		let public_auth_key = get_sr25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(public_auth_key).into_account().into();
 		let old_delegation_key = get_sr25519_public_delegation_key();
@@ -575,7 +576,7 @@ benchmarks! {
 	}
 
 	set_ecdsa_delegation_key {
-		let block_number = T::BlockNumber::zero();
+		let block_number = BlockNumberFor::<T>::zero();
 		let public_auth_key = get_ecdsa_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(public_auth_key).into_account().into();
 		let did_account: AccountIdOf<T> = MultiSigner::from(public_auth_key).into_account().into();
@@ -601,7 +602,7 @@ benchmarks! {
 
 	/* remove_delegation_key extrinsic */
 	remove_ed25519_delegation_key {
-		let block_number = T::BlockNumber::zero();
+		let block_number = BlockNumberFor::<T>::zero();
 		let public_auth_key = get_ed25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(public_auth_key).into_account().into();
 		let did_account: AccountIdOf<T> = MultiSigner::from(public_auth_key).into_account().into();
@@ -625,7 +626,7 @@ benchmarks! {
 	}
 
 	remove_sr25519_delegation_key {
-		let block_number = T::BlockNumber::zero();
+		let block_number = BlockNumberFor::<T>::zero();
 		let public_auth_key = get_sr25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(public_auth_key).into_account().into();
 		let did_account: AccountIdOf<T> = MultiSigner::from(public_auth_key).into_account().into();
@@ -649,7 +650,7 @@ benchmarks! {
 	}
 
 	remove_ecdsa_delegation_key {
-		let block_number = T::BlockNumber::zero();
+		let block_number = BlockNumberFor::<T>::zero();
 		let public_auth_key = get_ecdsa_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(public_auth_key).into_account().into();
 		let did_account: AccountIdOf<T> = MultiSigner::from(public_auth_key).into_account().into();
@@ -674,7 +675,7 @@ benchmarks! {
 
 	/* set_attestation_key extrinsic */
 	set_ed25519_attestation_key {
-		let block_number = T::BlockNumber::zero();
+		let block_number = BlockNumberFor::<T>::zero();
 		let public_auth_key = get_ed25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(public_auth_key).into_account().into();
 		let did_account: AccountIdOf<T> = MultiSigner::from(public_auth_key).into_account().into();
@@ -698,7 +699,7 @@ benchmarks! {
 	}
 
 	set_sr25519_attestation_key {
-		let block_number = T::BlockNumber::zero();
+		let block_number = BlockNumberFor::<T>::zero();
 		let public_auth_key = get_sr25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(public_auth_key).into_account().into();
 		let did_account: AccountIdOf<T> = MultiSigner::from(public_auth_key).into_account().into();
@@ -722,7 +723,7 @@ benchmarks! {
 	}
 
 	set_ecdsa_attestation_key {
-		let block_number = T::BlockNumber::zero();
+		let block_number = BlockNumberFor::<T>::zero();
 		let public_auth_key = get_ecdsa_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(public_auth_key).into_account().into();
 		let did_account: AccountIdOf<T> = MultiSigner::from(public_auth_key).into_account().into();
@@ -747,7 +748,7 @@ benchmarks! {
 
 	/* remove_attestation_key extrinsic */
 	remove_ed25519_attestation_key {
-		let block_number = T::BlockNumber::zero();
+		let block_number = BlockNumberFor::<T>::zero();
 		let public_auth_key = get_ed25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(public_auth_key).into_account().into();
 		let did_account: AccountIdOf<T> = MultiSigner::from(public_auth_key).into_account().into();
@@ -771,7 +772,7 @@ benchmarks! {
 	}
 
 	remove_sr25519_attestation_key {
-		let block_number = T::BlockNumber::zero();
+		let block_number = BlockNumberFor::<T>::zero();
 		let public_auth_key = get_sr25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(public_auth_key).into_account().into();
 		let did_account: AccountIdOf<T> = MultiSigner::from(public_auth_key).into_account().into();
@@ -795,7 +796,7 @@ benchmarks! {
 	}
 
 	remove_ecdsa_attestation_key {
-		let block_number = T::BlockNumber::zero();
+		let block_number = BlockNumberFor::<T>::zero();
 		let public_auth_key = get_ecdsa_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(public_auth_key).into_account().into();
 		let did_account: AccountIdOf<T> = MultiSigner::from(public_auth_key).into_account().into();
@@ -820,7 +821,7 @@ benchmarks! {
 
 	/* add_key_agreement_keys extrinsic */
 	add_ed25519_key_agreement_key {
-		let block_number = T::BlockNumber::zero();
+		let block_number = BlockNumberFor::<T>::zero();
 		let public_auth_key = get_ed25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(public_auth_key).into_account().into();
 		let did_account: AccountIdOf<T> = MultiSigner::from(public_auth_key).into_account().into();
@@ -846,7 +847,7 @@ benchmarks! {
 	}
 
 	add_sr25519_key_agreement_key {
-		let block_number = T::BlockNumber::zero();
+		let block_number = BlockNumberFor::<T>::zero();
 		let public_auth_key = get_sr25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(public_auth_key).into_account().into();
 		let mut key_agreement_keys = get_key_agreement_keys::<T>(T::MaxNewKeyAgreementKeys::get());
@@ -872,7 +873,7 @@ benchmarks! {
 	}
 
 	add_ecdsa_key_agreement_key {
-		let block_number = T::BlockNumber::zero();
+		let block_number = BlockNumberFor::<T>::zero();
 		let public_auth_key = get_ecdsa_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(public_auth_key).into_account().into();
 		let did_account: AccountIdOf<T> = MultiSigner::from(public_auth_key).into_account().into();
@@ -899,7 +900,7 @@ benchmarks! {
 
 	/* remove_key_agreement_keys extrinsic */
 	remove_ed25519_key_agreement_key {
-		let block_number = T::BlockNumber::zero();
+		let block_number = BlockNumberFor::<T>::zero();
 		let public_auth_key = get_ed25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(public_auth_key).into_account().into();
 		let did_account: AccountIdOf<T> = MultiSigner::from(public_auth_key).into_account().into();
@@ -924,7 +925,7 @@ benchmarks! {
 	}
 
 	remove_sr25519_key_agreement_key {
-		let block_number = T::BlockNumber::zero();
+		let block_number = BlockNumberFor::<T>::zero();
 		let public_auth_key = get_sr25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(public_auth_key).into_account().into();
 		let did_account: AccountIdOf<T> = MultiSigner::from(public_auth_key).into_account().into();
@@ -949,7 +950,7 @@ benchmarks! {
 	}
 
 	remove_ecdsa_key_agreement_key {
-		let block_number = T::BlockNumber::zero();
+		let block_number = BlockNumberFor::<T>::zero();
 		let public_auth_key = get_ecdsa_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(public_auth_key).into_account().into();
 		let did_account: AccountIdOf<T> = MultiSigner::from(public_auth_key).into_account().into();
@@ -1060,7 +1061,7 @@ benchmarks! {
 		let l in 1 .. MAX_PAYLOAD_BYTE_LENGTH;
 
 		let payload: Vec<u8> = (0u8..u8::MAX).cycle().take(l.try_into().unwrap()).collect();
-		let block_number = T::BlockNumber::zero();
+		let block_number = BlockNumberFor::<T>::zero();
 
 		let public_auth_key = get_sr25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(public_auth_key).into_account().into();
@@ -1087,7 +1088,7 @@ benchmarks! {
 		let l in 1 .. MAX_PAYLOAD_BYTE_LENGTH;
 
 		let payload: Vec<u8> = (0u8..u8::MAX).cycle().take(l.try_into().unwrap()).collect();
-		let block_number = T::BlockNumber::zero();
+		let block_number = BlockNumberFor::<T>::zero();
 
 		let public_auth_key = get_ed25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(public_auth_key).into_account().into();
@@ -1114,7 +1115,7 @@ benchmarks! {
 		let l in 1 .. MAX_PAYLOAD_BYTE_LENGTH;
 
 		let payload: Vec<u8> = (0u8..u8::MAX).cycle().take(l.try_into().unwrap()).collect();
-		let block_number = T::BlockNumber::zero();
+		let block_number = BlockNumberFor::<T>::zero();
 
 		let public_auth_key = get_ecdsa_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(public_auth_key).into_account().into();

@@ -90,11 +90,10 @@ pub mod pallet {
 	/// The type of the credential subject input. It is bound in max length.
 	pub type InputClaimsContentOf<T> = BoundedVec<u8, <T as Config>::MaxEncodedClaimsLength>;
 	pub type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
-	pub type BlockNumberOf<T> = <T as frame_system::Config>::BlockNumber;
 	pub type CredentialEntryOf<T> = CredentialEntry<
 		CtypeHashOf<T>,
 		AttesterOf<T>,
-		BlockNumberOf<T>,
+		BlockNumberFor<T>,
 		AccountIdOf<T>,
 		BalanceOf<T>,
 		AuthorizationIdOf<T>,
