@@ -16,9 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::{
-	assert_noop, assert_ok,
-};
+use frame_support::{assert_noop, assert_ok};
 use parity_scale_codec::Encode;
 use sp_core::Pair;
 

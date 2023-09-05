@@ -1279,8 +1279,7 @@ pub mod pallet {
 			account: &AccountIdOf<T>,
 			verification_key_relationship: DidVerificationKeyRelationship,
 		) -> Result<(), DidError> {
-			let did_details =
-				Did::<T>::get(&did_identifier).ok_or(StorageError::NotFound(errors::NotFoundKind::Did))?;
+			let did_details = Did::<T>::get(did_identifier).ok_or(StorageError::NotFound(errors::NotFoundKind::Did))?;
 
 			let verification_key = did_details
 				.get_verification_key_for_key_type(verification_key_relationship)

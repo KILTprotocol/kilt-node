@@ -150,7 +150,7 @@ fn check_did_not_present_services_addition_error() {
 	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
 
 	ExtBuilder::default()
-		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
+		.with_balances(vec![(alice_did, DEFAULT_BALANCE)])
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
@@ -174,7 +174,7 @@ fn check_service_already_present_addition_error() {
 	ExtBuilder::default()
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
-		.with_endpoints(vec![(alice_did.clone(), vec![service_endpoint.clone()])])
+		.with_endpoints(vec![(alice_did, vec![service_endpoint.clone()])])
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_noop!(
 				Did::add_service_endpoint(origin, service_endpoint),
@@ -205,7 +205,7 @@ fn check_max_services_count_addition_error() {
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
-		.with_endpoints(vec![(alice_did.clone(), old_service_endpoints)])
+		.with_endpoints(vec![(alice_did, old_service_endpoints)])
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_noop!(
 				Did::add_service_endpoint(origin, new_service_endpoint),
@@ -234,7 +234,7 @@ fn check_max_service_id_length_addition_error() {
 	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
 
 	ExtBuilder::default()
-		.with_dids(vec![(alice_did.clone(), old_did_details)])
+		.with_dids(vec![(alice_did, old_did_details)])
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
@@ -264,7 +264,7 @@ fn check_max_service_type_length_addition_error() {
 	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
 
 	ExtBuilder::default()
-		.with_dids(vec![(alice_did.clone(), old_did_details)])
+		.with_dids(vec![(alice_did, old_did_details)])
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
@@ -294,7 +294,7 @@ fn check_max_service_type_count_addition_error() {
 	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
 
 	ExtBuilder::default()
-		.with_dids(vec![(alice_did.clone(), old_did_details)])
+		.with_dids(vec![(alice_did, old_did_details)])
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
@@ -324,7 +324,7 @@ fn check_max_service_url_length_addition_error() {
 	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
 
 	ExtBuilder::default()
-		.with_dids(vec![(alice_did.clone(), old_did_details)])
+		.with_dids(vec![(alice_did, old_did_details)])
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
@@ -354,7 +354,7 @@ fn check_max_service_url_count_addition_error() {
 	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
 
 	ExtBuilder::default()
-		.with_dids(vec![(alice_did.clone(), old_did_details)])
+		.with_dids(vec![(alice_did, old_did_details)])
 		.build(None)
 		.execute_with(|| {
 			assert_noop!(
@@ -377,7 +377,7 @@ fn character_addition_error() {
 
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
-		.with_dids(vec![(alice_did.clone(), old_did_details)])
+		.with_dids(vec![(alice_did, old_did_details)])
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_noop!(
 				Did::add_service_endpoint(origin, new_service_details),
@@ -399,7 +399,7 @@ fn check_invalid_service_type_character_addition_error() {
 
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
-		.with_dids(vec![(alice_did.clone(), old_did_details)])
+		.with_dids(vec![(alice_did, old_did_details)])
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_noop!(
 				Did::add_service_endpoint(origin, new_service_details),
@@ -422,7 +422,7 @@ fn check_invalid_service_url_character_addition_error() {
 	ExtBuilder::default()
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
 		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
-		.with_dids(vec![(alice_did.clone(), old_did_details)])
+		.with_dids(vec![(alice_did, old_did_details)])
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_noop!(
 				Did::add_service_endpoint(origin, new_service_details),
@@ -473,7 +473,7 @@ fn check_service_not_present_deletion_error() {
 
 	ExtBuilder::default()
 		.with_dids(vec![(alice_did.clone(), old_did_details)])
-		.with_balances(vec![(alice_did.clone(), DEFAULT_BALANCE)])
+		.with_balances(vec![(alice_did, DEFAULT_BALANCE)])
 		.build_and_execute_with_sanity_tests(None, || {
 			assert_noop!(
 				Did::remove_service_endpoint(origin, service_id.try_into().expect("Service ID to delete too long")),

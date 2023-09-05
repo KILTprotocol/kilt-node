@@ -80,7 +80,7 @@ impl<AccountId> DidVerificationKey<AccountId> {
 		let bytes = match self {
 			DidVerificationKey::Ed25519(pub_key) => pub_key.0,
 			DidVerificationKey::Sr25519(pub_key) => pub_key.0,
-			DidVerificationKey::Ecdsa(pub_key) => sp_io::hashing::blake2_256(pub_key.as_ref()).into(),
+			DidVerificationKey::Ecdsa(pub_key) => sp_io::hashing::blake2_256(pub_key.as_ref()),
 			DidVerificationKey::Account(acc_id) => *acc_id.as_ref(),
 		};
 
@@ -446,7 +446,6 @@ impl<T: Config> DidDetails<T> {
 
 		// Creates a new DID with the given authentication key.
 		let mut new_did_details = DidDetails::new(new_auth_key, current_block_number, deposit)?;
-
 
 		let deposit_amount = new_did_details.calculate_deposit(did_subject);
 		new_did_details.deposit.amount = deposit_amount;
