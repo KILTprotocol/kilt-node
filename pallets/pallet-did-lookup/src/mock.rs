@@ -17,14 +17,14 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_support::parameter_types;
+use frame_system::pallet_prelude::BlockNumberFor;
 use kilt_support::{
 	mock::{mock_origin, SubjectId},
 	traits::StorageDepositCollector,
 };
 use sp_runtime::{
-	testing::Header,
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
-	MultiSignature,
+	BuildStorage, MultiSignature,
 };
 
 use crate::{
@@ -32,23 +32,17 @@ use crate::{
 	ConnectedDids, ConnectionRecord, DidIdentifierOf, LinkableAccountDepositCollector,
 };
 
-pub(crate) type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 pub(crate) type Block = frame_system::mocking::MockBlock<Test>;
 pub(crate) type Hash = sp_core::H256;
 pub(crate) type Balance = u128;
 pub(crate) type Signature = MultiSignature;
 pub(crate) type AccountPublic = <Signature as Verify>::Signer;
 pub(crate) type AccountId = <AccountPublic as IdentifyAccount>::AccountId;
-pub(crate) type Index = u64;
-pub(crate) type BlockNumber = u64;
 
 frame_support::construct_runtime!(
-	pub enum Test where
-		Block = Block,
-		NodeBlock = Block,
-		UncheckedExtrinsic = UncheckedExtrinsic,
+	pub enum Test
 	{
-		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
+		System: frame_system,
 		Balances: pallet_balances::{Pallet, Call, Storage, Event<T>},
 		DidLookup: pallet_did_lookup::{Pallet, Storage, Call, Event<T>, HoldReason},
 		MockOrigin: mock_origin::{Pallet, Origin<T>},
@@ -57,7 +51,7 @@ frame_support::construct_runtime!(
 
 parameter_types! {
 	pub const SS58Prefix: u8 = 38;
-	pub const BlockHashCount: BlockNumber = 2400;
+	pub const BlockHashCount: BlockNumberFor<Test> = 2400;
 }
 
 impl frame_system::Config for Test {
@@ -65,15 +59,14 @@ impl frame_system::Config for Test {
 	type BlockWeights = ();
 	type BlockLength = ();
 	type DbWeight = ();
+	type Block = Block;
+	type Nonce = u32;
 	type RuntimeOrigin = RuntimeOrigin;
 	type RuntimeCall = RuntimeCall;
-	type Index = Index;
-	type BlockNumber = BlockNumber;
 	type Hash = Hash;
 	type Hashing = BlakeTwo256;
 	type AccountId = AccountId;
 	type Lookup = IdentityLookup<Self::AccountId>;
-	type Header = Header;
 	type RuntimeEvent = RuntimeEvent;
 	type BlockHashCount = BlockHashCount;
 	type Version = ();
@@ -184,7 +177,7 @@ impl ExtBuilder {
 	}
 
 	pub fn build(self) -> sp_io::TestExternalities {
-		let mut storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
+		let mut storage = frame_system::GenesisConfig::<Test>::default().build_storage().unwrap();
 		pallet_balances::GenesisConfig::<Test> {
 			balances: self.balances.clone(),
 		}

@@ -53,7 +53,7 @@ pub mod pallet {
 		associate_account_request::AssociateAccountRequest, default_weights::WeightInfo,
 		linkable_account::LinkableAccountId,
 	};
-
+	use frame_support::traits::GenesisBuild;
 	use frame_support::{
 		ensure,
 		pallet_prelude::*,
@@ -249,7 +249,7 @@ pub mod pallet {
 		pub fn associate_account(
 			origin: OriginFor<T>,
 			req: AssociateAccountRequest,
-			expiration: <T as frame_system::Config>::BlockNumber,
+			expiration: BlockNumberFor<T>,
 		) -> DispatchResult {
 			let source = <T as Config>::EnsureOrigin::ensure_origin(origin)?;
 			let did_identifier = source.subject();
@@ -270,7 +270,7 @@ pub mod pallet {
 			);
 
 			ensure!(
-				req.verify::<T::DidIdentifier, T::BlockNumber>(&did_identifier, expiration),
+				req.verify::<T::DidIdentifier, BlockNumberFor<T>>(&did_identifier, expiration),
 				Error::<T>::NotAuthorized
 			);
 
