@@ -66,7 +66,6 @@ pub mod pallet {
 	pub(crate) const STORAGE_VERSION: StorageVersion = StorageVersion::new(2);
 
 	pub type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
-	pub type BlockNumberFor<T> = <T as frame_system::Config>::BlockNumber;
 	pub type Web3NameOwnerOf<T> = <T as Config>::Web3NameOwner;
 	pub type Web3NameInput<T> = BoundedVec<u8, <T as Config>::MaxNameLength>;
 	pub type Web3NameOf<T> = <T as Config>::Web3Name;
