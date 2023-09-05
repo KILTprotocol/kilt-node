@@ -237,14 +237,14 @@ pub(crate) const ACCOUNT_00: AccountId = AccountId::new([1u8; 32]);
 pub(crate) const ACCOUNT_01: AccountId = AccountId::new([2u8; 32]);
 pub(crate) const ACCOUNT_FEE: AccountId = AccountId::new([u8::MAX; 32]);
 
-const DEFAULT_AUTH_SEED: [u8; 32] = [4u8; 32];
-const ALTERNATIVE_AUTH_SEED: [u8; 32] = [40u8; 32];
-const DEFAULT_ENC_SEED: [u8; 32] = [254u8; 32];
-const ALTERNATIVE_ENC_SEED: [u8; 32] = [255u8; 32];
-const DEFAULT_ATT_SEED: [u8; 32] = [6u8; 32];
-const ALTERNATIVE_ATT_SEED: [u8; 32] = [60u8; 32];
-const DEFAULT_DEL_SEED: [u8; 32] = [7u8; 32];
-const ALTERNATIVE_DEL_SEED: [u8; 32] = [70u8; 32];
+pub(crate) const AUTH_SEED_0: [u8; 32] = [4u8; 32];
+pub(crate) const AUTH_SEED_1: [u8; 32] = [40u8; 32];
+pub(crate) const ENC_SEED_0: [u8; 32] = [254u8; 32];
+pub(crate) const ENC_SEED_1: [u8; 32] = [255u8; 32];
+pub(crate) const ATT_SEED_0: [u8; 32] = [6u8; 32];
+pub(crate) const ATT_SEED_1: [u8; 32] = [60u8; 32];
+pub(crate) const DEL_SEED_0: [u8; 32] = [7u8; 32];
+pub(crate) const DEL_SEED_1: [u8; 32] = [70u8; 32];
 
 /// Solely used to fill public keys in unit tests to check for correct error
 /// throws. Thus, it does not matter whether the correct key types get added
@@ -277,84 +277,44 @@ pub fn get_did_identifier_from_ecdsa_key(public_key: ecdsa::Public) -> DidIdenti
 	MultiSigner::from(public_key).into_account()
 }
 
-pub fn get_ed25519_authentication_key(default: bool) -> ed25519::Pair {
-	if default {
-		ed25519::Pair::from_seed(&DEFAULT_AUTH_SEED)
-	} else {
-		ed25519::Pair::from_seed(&ALTERNATIVE_AUTH_SEED)
-	}
+pub fn get_ed25519_authentication_key(seed: &[u8; 32]) -> ed25519::Pair {
+	ed25519::Pair::from_seed(seed)
 }
 
-pub fn get_sr25519_authentication_key(default: bool) -> sr25519::Pair {
-	if default {
-		sr25519::Pair::from_seed(&DEFAULT_AUTH_SEED)
-	} else {
-		sr25519::Pair::from_seed(&ALTERNATIVE_AUTH_SEED)
-	}
+pub fn get_sr25519_authentication_key(seed: &[u8; 32]) -> sr25519::Pair {
+	sr25519::Pair::from_seed(seed)
 }
 
-pub fn get_ecdsa_authentication_key(default: bool) -> ecdsa::Pair {
-	if default {
-		ecdsa::Pair::from_seed(&DEFAULT_AUTH_SEED)
-	} else {
-		ecdsa::Pair::from_seed(&ALTERNATIVE_AUTH_SEED)
-	}
+pub fn get_ecdsa_authentication_key(seed: &[u8; 32]) -> ecdsa::Pair {
+	ecdsa::Pair::from_seed(seed)
 }
 
-pub fn get_x25519_encryption_key(default: bool) -> DidEncryptionKey {
-	if default {
-		DidEncryptionKey::X25519(DEFAULT_ENC_SEED)
-	} else {
-		DidEncryptionKey::X25519(ALTERNATIVE_ENC_SEED)
-	}
+pub fn get_x25519_encryption_key(seed: &[u8; 32]) -> DidEncryptionKey {
+	DidEncryptionKey::X25519(*seed)
 }
 
-pub fn get_ed25519_attestation_key(default: bool) -> ed25519::Pair {
-	if default {
-		ed25519::Pair::from_seed(&DEFAULT_ATT_SEED)
-	} else {
-		ed25519::Pair::from_seed(&ALTERNATIVE_ATT_SEED)
-	}
+pub fn get_ed25519_attestation_key(seed: &[u8; 32]) -> ed25519::Pair {
+	ed25519::Pair::from_seed(seed)
 }
 
-pub fn get_sr25519_attestation_key(default: bool) -> sr25519::Pair {
-	if default {
-		sr25519::Pair::from_seed(&DEFAULT_ATT_SEED)
-	} else {
-		sr25519::Pair::from_seed(&ALTERNATIVE_ATT_SEED)
-	}
+pub fn get_sr25519_attestation_key(seed: &[u8; 32]) -> sr25519::Pair {
+	sr25519::Pair::from_seed(seed)
 }
 
-pub fn get_ecdsa_attestation_key(default: bool) -> ecdsa::Pair {
-	if default {
-		ecdsa::Pair::from_seed(&DEFAULT_ATT_SEED)
-	} else {
-		ecdsa::Pair::from_seed(&ALTERNATIVE_ATT_SEED)
-	}
+pub fn get_ecdsa_attestation_key(seed: &[u8; 32]) -> ecdsa::Pair {
+	ecdsa::Pair::from_seed(seed)
 }
 
-pub fn get_ed25519_delegation_key(default: bool) -> ed25519::Pair {
-	if default {
-		ed25519::Pair::from_seed(&DEFAULT_DEL_SEED)
-	} else {
-		ed25519::Pair::from_seed(&ALTERNATIVE_DEL_SEED)
-	}
+pub fn get_ed25519_delegation_key(seed: &[u8; 32]) -> ed25519::Pair {
+	ed25519::Pair::from_seed(seed)
 }
 
-pub fn get_sr25519_delegation_key(default: bool) -> sr25519::Pair {
-	if default {
-		sr25519::Pair::from_seed(&DEFAULT_DEL_SEED)
-	} else {
-		sr25519::Pair::from_seed(&ALTERNATIVE_DEL_SEED)
-	}
+pub fn get_sr25519_delegation_key(seed: &[u8; 32]) -> sr25519::Pair {
+	sr25519::Pair::from_seed(seed)
 }
 
-pub fn get_ecdsa_delegation_key(default: bool) -> ecdsa::Pair {
-	if default {
-		ecdsa::Pair::from_seed(&DEFAULT_DEL_SEED)
-	} else {
-		ecdsa::Pair::from_seed(&ALTERNATIVE_DEL_SEED)
-	}
+pub fn get_ecdsa_delegation_key(seed: &[u8; 32]) -> ecdsa::Pair {
+	ecdsa::Pair::from_seed(seed)
 }
 
 pub fn generate_key_id(key: &DidPublicKey) -> KeyIdOf<Test> {

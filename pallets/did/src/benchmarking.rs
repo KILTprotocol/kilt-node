@@ -129,7 +129,7 @@ benchmarks! {
 		T::DidIdentifier: From<AccountId32>,
 		<T as frame_system::Config>::RuntimeOrigin: From<RawOrigin<T::DidIdentifier>>,
 		<T as frame_system::Config>::AccountId: From<AccountId32>,
-		<T as Config>::Currency: Mutate<T::AccountId>
+		<T as Config>::Currency: Mutate<T::AccountId>,
 	}
 
 	/* create extrinsic */
