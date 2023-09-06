@@ -20,7 +20,10 @@ use frame_support::assert_ok;
 use sp_core::{ecdsa, ed25519, sr25519};
 use sp_runtime::traits::Hash;
 
-use crate::{did_details::DidVerificationKey, mock::*, mock_utils::*, AccountIdOf, DidIdentifierOf, Error, tests::dispatch_as::blueprint_failed_dispatch};
+use crate::{
+	did_details::DidVerificationKey, mock::*, mock_utils::*, tests::dispatch_as::blueprint_failed_dispatch,
+	AccountIdOf, DidIdentifierOf, Error,
+};
 
 use super::blueprint_successful_dispatch;
 
