@@ -94,8 +94,8 @@ fn load_spec(id: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, St
 	}
 }
 
-fn native_runtime_version(spec: &Box<dyn ChainSpec>) -> &'static RuntimeVersion {
-	if spec.is_spiritnet() {
+fn native_runtime_version(is_spiritnet: bool) -> &'static RuntimeVersion {
+	if is_spiritnet {
 		&spiritnet_runtime::VERSION
 	} else {
 		&peregrine_runtime::VERSION
@@ -422,7 +422,7 @@ pub fn run() -> Result<()> {
 				let parachain_account =
 					AccountIdConversion::<polkadot_primitives::AccountId>::into_account_truncating(&id);
 
-				let state_version = native_runtime_version(&config.chain_spec).state_version();
+				let state_version = native_runtime_version(config.chain_spec.is_spiritnet()).state_version();
 				let block: Block =
 					generate_genesis_block(&*config.chain_spec, state_version).map_err(|e| format!("{:?}", e))?;
 				let genesis_state = format!("0x{:?}", HexDisplay::from(&block.header().encode()));
