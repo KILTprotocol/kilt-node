@@ -33,7 +33,7 @@ fn blueprint_successful_dispatch_with_key(
 	verification_key: DidVerificationKey<AccountIdOf<Test>>,
 	deposit_owner: AccountIdOf<Test>,
 ) {
-	let did_details = generate_base_did_details(verification_key, Some(deposit_owner.clone()));
+	let did_details = generate_base_did_details(verification_key, Some(deposit_owner));
 	let ctype_hash = <Test as frame_system::Config>::Hashing::hash(&get_authentication_key_test_input()[..]);
 
 	blueprint_successful_dispatch(
@@ -106,7 +106,7 @@ fn blueprint_failed_dispatch_with_key(
 	let deposit_owner = ACCOUNT_02;
 	let did_identifier = ACCOUNT_02;
 
-	let mut did_details = generate_base_did_details(authentication_key, Some(deposit_owner.clone()));
+	let mut did_details = generate_base_did_details(authentication_key, Some(deposit_owner));
 	assert_ok!(did_details.update_attestation_key(attestation_key, 0));
 	assert_ok!(did_details.update_delegation_key(delegation_key, 0));
 
