@@ -43,9 +43,9 @@ frame_support::construct_runtime!(
 	pub enum Test
 	{
 		System: frame_system,
-		Balances: pallet_balances::{Pallet, Call, Storage, Event<T>},
-		DidLookup: pallet_did_lookup::{Pallet, Storage, Call, Event<T>, HoldReason},
-		MockOrigin: mock_origin::{Pallet, Origin<T>},
+		Balances: pallet_balances,
+		DidLookup: pallet_did_lookup,
+		MockOrigin: mock_origin,
 	}
 );
 

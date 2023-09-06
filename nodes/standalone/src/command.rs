@@ -16,16 +16,19 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use crate::service::ExecutorDispatch;
 use crate::{
 	benchmarking::{inherent_benchmark_data, RemarkBuilder, TransferKeepAliveBuilder},
 	chain_spec,
 	cli::{Cli, Subcommand},
 	service,
 };
+
 use frame_benchmarking_cli::{BenchmarkCmd, ExtrinsicFactory, SUBSTRATE_REFERENCE_HARDWARE};
 use kestrel_runtime::opaque::Block;
 use runtime_common::constants::EXISTENTIAL_DEPOSIT;
 use sc_cli::SubstrateCli;
+use sc_executor::{sp_wasm_interface::ExtendedHostFunctions, NativeExecutionDispatch};
 use sc_service::PartialComponents;
 use sp_keyring::Sr25519Keyring;
 
@@ -128,7 +131,7 @@ pub fn run() -> sc_cli::Result<()> {
 					backend,
 					..
 				} = service::new_partial(&config)?;
-				let aux_revert = Box::new(|client, _, blocks| {
+				let aux_revert = Box::new(move |client, _, blocks| {
 					sc_consensus_grandpa::revert(client, blocks)?;
 					Ok(())
 				});
@@ -148,8 +151,10 @@ pub fn run() -> sc_cli::Result<()> {
 							You can enable it with `--features runtime-benchmarks`."
 								.into());
 						}
-
-						cmd.run::<Block, ()>(config)
+						cmd.run::<Block, ExtendedHostFunctions<
+							sp_io::SubstrateHostFunctions,
+							<ExecutorDispatch as NativeExecutionDispatch>::ExtendHostFunctions,
+						>>(config)
 					}
 					BenchmarkCmd::Block(cmd) => {
 						let PartialComponents { client, .. } = service::new_partial(&config)?;
@@ -193,8 +198,6 @@ pub fn run() -> sc_cli::Result<()> {
 		}
 		#[cfg(feature = "try-runtime")]
 		Some(Subcommand::TryRuntime(cmd)) => {
-			use crate::service::ExecutorDispatch;
-			use sc_executor::{sp_wasm_interface::ExtendedHostFunctions, NativeExecutionDispatch};
 			use try_runtime_cli::block_building_info::timestamp_with_aura_info;
 
 			let runner = cli.create_runner(cmd)?;
@@ -215,7 +218,7 @@ pub fn run() -> sc_cli::Result<()> {
 			})
 		}
 		#[cfg(not(feature = "try-runtime"))]
-		Some(Subcommand::TryRuntime) => Err("TryRuntime wasn't enabled when building the node. \
+		Some(Subcommand::TryRuntime) => Err("TryRuntime wasn't enabled when building the standalone node. \
 				You can enable it with `--features try-runtime`."
 			.into()),
 		Some(Subcommand::ChainInfo(cmd)) => {

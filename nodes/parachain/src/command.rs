@@ -262,7 +262,7 @@ pub fn run() -> Result<()> {
 					)?;
 					cmd.run::<Block>(&*spec, &*partials.client)
 				} else {
-					let partials = new_partial::<spiritnet_runtime::RuntimeApi, SpiritnetRuntimeExecutor, _>(
+					let partials = new_partial::<peregrine_runtime::RuntimeApi, PeregrineRuntimeExecutor, _>(
 						&config,
 						crate::service::build_import_queue,
 					)?;
