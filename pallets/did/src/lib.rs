@@ -510,7 +510,7 @@ pub mod pallet {
 	#[pallet::call]
 	impl<T: Config> Pallet<T>
 	where
-		T::AccountId: AsRef<[u8]> + AsRef<[u8; 32]> + From<[u8; 32]>,
+		T::AccountId: AsRef<[u8; 32]> + From<[u8; 32]>,
 	{
 		/// Store a new DID on chain, after verifying that the creation
 		/// operation has been signed by the KILT account associated with the
@@ -1236,7 +1236,7 @@ pub mod pallet {
 
 	impl<T: Config> Pallet<T>
 	where
-		T::AccountId: AsRef<[u8]> + AsRef<[u8; 32]> + From<[u8; 32]>,
+		T::AccountId: AsRef<[u8; 32]> + From<[u8; 32]>,
 	{
 		/// Verify the validity (i.e., nonce, signature and mortality) of a
 		/// DID-authorized operation and, if valid, update the DID state with
@@ -1288,7 +1288,7 @@ pub mod pallet {
 					)))
 				})?;
 
-			if AsRef::<[u8]>::as_ref(account) == verification_key.as_ref() {
+			if account == &verification_key.into_account() {
 				Ok(())
 			} else {
 				Err(DidError::Signature(SignatureError::InvalidData))
@@ -1353,7 +1353,7 @@ pub mod pallet {
 		/// Deletes DID details from storage, including its linked service
 		/// endpoints, adds the identifier to the blacklisted DIDs and frees the
 		/// deposit.
-		fn delete_did(did_subject: DidIdentifierOf<T>, endpoints_to_remove: u32) -> DispatchResult {
+		pub(crate) fn delete_did(did_subject: DidIdentifierOf<T>, endpoints_to_remove: u32) -> DispatchResult {
 			let current_endpoints_count = DidEndpointsCount::<T>::get(&did_subject);
 			ensure!(
 				current_endpoints_count <= endpoints_to_remove,

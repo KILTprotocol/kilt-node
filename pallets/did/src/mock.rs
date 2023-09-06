@@ -235,6 +235,7 @@ pub(crate) const DEFAULT_BALANCE: Balance = 10 * KILT;
 
 pub(crate) const ACCOUNT_00: AccountId = AccountId::new([1u8; 32]);
 pub(crate) const ACCOUNT_01: AccountId = AccountId::new([2u8; 32]);
+pub(crate) const ACCOUNT_02: AccountId = AccountId::new([3u8; 32]);
 pub(crate) const ACCOUNT_FEE: AccountId = AccountId::new([u8::MAX; 32]);
 
 pub(crate) const AUTH_SEED_0: [u8; 32] = [4u8; 32];
