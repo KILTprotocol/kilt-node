@@ -33,8 +33,8 @@ use ctype::CtypeHashOf;
 use kilt_support::{traits::StorageDepositCollector, Deposit};
 
 use crate::{
-	self as attestation, pallet::AuthorizationIdOf, AccountIdOf, AttestationAccessControl, AttestationDetails,
-	AttestationDetailsOf, AttesterOf, BalanceOf, ClaimHashOf, Config,
+	pallet::AuthorizationIdOf, AccountIdOf, AttestationAccessControl, AttestationDetails, AttestationDetailsOf,
+	AttesterOf, BalanceOf, ClaimHashOf, Config,
 };
 
 #[cfg(test)]
@@ -168,6 +168,8 @@ pub fn insert_attestation<T: Config>(claim_hash: ClaimHashOf<T>, details: Attest
 /// Mocks that are only used internally
 #[cfg(test)]
 pub(crate) mod runtime {
+	use super::*;
+
 	use frame_support::{parameter_types, weights::constants::RocksDbWeight};
 	use frame_system::EnsureSigned;
 	use sp_core::{ed25519, sr25519, Pair};
@@ -179,7 +181,7 @@ pub(crate) mod runtime {
 	use ctype::{CtypeCreatorOf, CtypeEntryOf};
 	use kilt_support::mock::{mock_origin, SubjectId};
 
-	use super::*;
+	use crate::{self as attestation};
 
 	type Block = frame_system::mocking::MockBlock<Test>;
 

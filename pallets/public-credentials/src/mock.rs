@@ -113,9 +113,10 @@ pub(crate) mod runtime {
 
 	use ctype::{CtypeCreatorOf, CtypeEntryOf, CtypeHashOf};
 
-	use crate::{Config, CredentialEntryOf, Error, InputSubjectIdOf, PublicCredentialsAccessControl};
+	use crate::{
+		self as public_credentials, Config, CredentialEntryOf, Error, InputSubjectIdOf, PublicCredentialsAccessControl,
+	};
 
-	pub(crate) type BlockNumber = u64;
 	pub(crate) type Balance = u128;
 	pub(crate) type Hash = sp_core::H256;
 	pub(crate) type AccountPublic = <MultiSignature as Verify>::Signer;
@@ -269,6 +270,7 @@ pub(crate) mod runtime {
 	}
 
 	pub(crate) const MILLI_UNIT: Balance = 10u128.pow(12);
+	type Block = frame_system::mocking::MockBlock<Test>;
 
 	frame_support::construct_runtime!(
 		pub enum Test
@@ -277,7 +279,7 @@ pub(crate) mod runtime {
 			Ctype: ctype,
 			Balances: pallet_balances,
 			MockOrigin: mock_origin,
-			PublicCredentials: crate::{Pallet, Call, Storage,HoldReason, Event<T>},
+			PublicCredentials: public_credentials,
 		}
 	);
 

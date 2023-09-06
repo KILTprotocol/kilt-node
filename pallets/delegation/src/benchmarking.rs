@@ -27,7 +27,7 @@ use frame_support::{
 		Get,
 	},
 };
-use frame_system::pallet_prelude::BlockNumberFor;
+use frame_system::pallet_prelude::{BlockNumberFor, HeaderFor};
 use frame_system::RawOrigin;
 use parity_scale_codec::Encode;
 use sp_core::{offchain::KeyTypeId, sr25519};
