@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-mod attests;
+mod create;
+mod delete;
 mod deposit;
-mod remove;
 mod revoke;
