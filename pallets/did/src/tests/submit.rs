@@ -29,6 +29,33 @@ use crate::{
 };
 
 #[test]
+fn check_call_authentication_key_successful() {
+	let auth_key = get_sr25519_authentication_key(&AUTH_SEED_0);
+	let did = get_did_identifier_from_sr25519_key(auth_key.public());
+	let caller = ACCOUNT_00;
+
+	let mock_did = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(did.clone()));
+
+	let call_operation = generate_test_did_call(
+		DidVerificationKeyRelationship::Authentication,
+		did.clone(),
+		caller.clone(),
+	);
+	let signature = auth_key.sign(call_operation.encode().as_ref());
+
+	ExtBuilder::default()
+		.with_balances(vec![(did.clone(), DEFAULT_BALANCE)])
+		.with_dids(vec![(did, mock_did)])
+		.build_and_execute_with_sanity_tests(None, || {
+			assert_ok!(Did::submit_did_call(
+				RuntimeOrigin::signed(caller),
+				Box::new(call_operation.operation),
+				did::DidSignature::from(signature)
+			));
+		});
+}
+
+#[test]
 fn check_did_not_found_call_error() {
 	let auth_key = get_sr25519_authentication_key(&AUTH_SEED_0);
 	let did = get_did_identifier_from_sr25519_key(auth_key.public());
@@ -500,33 +527,6 @@ fn check_call_delegation_key_error() {
 				),
 				ctype::Error::<Test>::AlreadyExists
 			);
-		});
-}
-
-#[test]
-fn check_call_authentication_key_successful() {
-	let auth_key = get_sr25519_authentication_key(&AUTH_SEED_0);
-	let did = get_did_identifier_from_sr25519_key(auth_key.public());
-	let caller = ACCOUNT_00;
-
-	let mock_did = generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(did.clone()));
-
-	let call_operation = generate_test_did_call(
-		DidVerificationKeyRelationship::Authentication,
-		did.clone(),
-		caller.clone(),
-	);
-	let signature = auth_key.sign(call_operation.encode().as_ref());
-
-	ExtBuilder::default()
-		.with_balances(vec![(did.clone(), DEFAULT_BALANCE)])
-		.with_dids(vec![(did, mock_did)])
-		.build_and_execute_with_sanity_tests(None, || {
-			assert_ok!(Did::submit_did_call(
-				RuntimeOrigin::signed(caller),
-				Box::new(call_operation.operation),
-				did::DidSignature::from(signature)
-			));
 		});
 }
 
