@@ -36,6 +36,7 @@ sc-basic-authorship.workspace = true
 sc-cli.workspace = true
 sc-client-api.workspace = true
 sc-consensus.workspace = true
+sc-offchain.workspace = true
 sc-consensus-aura.workspace = true
 sc-executor.workspace = true
 sc-consensus-grandpa.workspace = true

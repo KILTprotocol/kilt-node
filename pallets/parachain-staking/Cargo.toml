@@ -23,7 +23,7 @@ sp-io = {workspace = true, features = ["std"]}
 parity-scale-codec = {workspace = true, features = ["derive"]}
 log.workspace = true
 scale-info = {workspace = true, features = ["derive", "serde"]}
-serde = {workspace = true, optional = true}
+serde = {workspace = true, default-features= false, features=["derive"]}
 
 # Internal dependencies
 kilt-runtime-api-staking.workspace = true
@@ -63,7 +63,7 @@ std = [
   "pallet-balances/std",
   "pallet-session/std",
   "scale-info/std",
-  "serde",
+  "serde/std",
   "sp-runtime/std",
   "sp-staking/std",
   "sp-std/std",

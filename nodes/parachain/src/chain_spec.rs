@@ -22,7 +22,7 @@
 #![allow(clippy::derive_partial_eq_without_eq)]
 
 use cumulus_primitives_core::ParaId;
-use polkadot_primitives::v4::LOWEST_PUBLIC_ID;
+use polkadot_primitives::v5::LOWEST_PUBLIC_ID;
 use runtime_common::{AccountId, AccountPublic};
 use sc_chain_spec::{ChainSpecExtension, ChainSpecGroup};
 use sc_service::Properties;

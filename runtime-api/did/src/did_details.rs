@@ -16,11 +16,12 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use frame_system::pallet_prelude::BlockNumberFor;
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 
-use did::{did_details::DidPublicKeyDetails, AccountIdOf, BalanceOf, BlockNumberOf, KeyIdOf};
+use did::{did_details::DidPublicKeyDetails, AccountIdOf, BalanceOf, KeyIdOf};
 use kilt_support::Deposit;
 
 #[derive(Encode, Decode, TypeInfo, Clone, Debug, Eq, PartialEq, MaxEncodedLen)]
@@ -35,7 +36,7 @@ pub struct DidDetails<Key: Ord, BlockNumber: MaxEncodedLen, AccountId, Balance> 
 }
 
 impl<T: did::Config> From<did::did_details::DidDetails<T>>
-	for DidDetails<KeyIdOf<T>, BlockNumberOf<T>, AccountIdOf<T>, BalanceOf<T>>
+	for DidDetails<KeyIdOf<T>, BlockNumberFor<T>, AccountIdOf<T>, BalanceOf<T>>
 {
 	fn from(did_details: did::did_details::DidDetails<T>) -> Self {
 		Self {

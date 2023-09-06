@@ -40,7 +40,7 @@ jsonrpsee = "0.16.2"
 libsecp256k1 = {version = "0.7", default-features = false}
 log = "0.4.17"
 scale-info = {version = "2.1.1", default-features = false}
-serde = "1.0.144"
+serde =  {version = "1.0.144", default-features = false}
 serde_json = "1.0.85"
 sha3 = {version = "0.10.0", default-features = false}
 smallvec = "1.8.0"
@@ -162,6 +162,7 @@ sc-client-api = {git = "https://github.com/paritytech/substrate", branch = "polk
 sc-consensus = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v1.0.0"}
 sc-consensus-aura = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v1.0.0"}
 sc-executor = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v1.0.0"}
+sc-offchain = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v1.0.0" }
 sc-consensus-grandpa = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v1.0.0"}
 sc-keystore = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v1.0.0"}
 sc-network = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v1.0.0"}

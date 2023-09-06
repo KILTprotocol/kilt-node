@@ -23,6 +23,7 @@ use frame_support::{
 	BoundedVec,
 };
 use frame_system::pallet_prelude::BlockNumberFor;
+use sp_runtime::traits::Zero;
 use sp_std::{boxed::Box, vec, vec::Vec};
 
 use ctype::CtypeEntryOf;
@@ -262,7 +263,7 @@ benchmarks! {
 
 		let credential_entry = generate_base_credential_entry::<T>(
 			deposit_owner.clone(),
-			T::BlockNumber::zero(),
+			BlockNumberFor::<T>::zero(),
 			attester,
 			Some(ctype_hash),
 			Some(Deposit::<T::AccountId, BalanceOf<T>> {

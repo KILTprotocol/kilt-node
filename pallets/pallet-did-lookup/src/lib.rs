@@ -53,7 +53,6 @@ pub mod pallet {
 		associate_account_request::AssociateAccountRequest, default_weights::WeightInfo,
 		linkable_account::LinkableAccountId,
 	};
-	use frame_support::traits::GenesisBuild;
 	use frame_support::{
 		ensure,
 		pallet_prelude::*,
@@ -174,6 +173,7 @@ pub mod pallet {
 	}
 
 	#[pallet::genesis_config]
+	#[derive(frame_support::DefaultNoBound)]
 	pub struct GenesisConfig<T: Config>
 	where
 		<T::Currency as Inspect<AccountIdOf<T>>>::Balance: MaybeSerializeDeserialize,
@@ -181,20 +181,8 @@ pub mod pallet {
 		pub links: sp_std::vec::Vec<(LinkableAccountId, ConnectionRecordOf<T>)>,
 	}
 
-	#[cfg(feature = "std")]
-	impl<T: Config> Default for GenesisConfig<T>
-	where
-		<T::Currency as Inspect<AccountIdOf<T>>>::Balance: MaybeSerializeDeserialize,
-	{
-		fn default() -> Self {
-			Self {
-				links: Default::default(),
-			}
-		}
-	}
-
 	#[pallet::genesis_build]
-	impl<T: Config> GenesisBuild<T> for GenesisConfig<T>
+	impl<T: Config> BuildGenesisConfig for GenesisConfig<T>
 	where
 		<T::Currency as Inspect<AccountIdOf<T>>>::Balance: MaybeSerializeDeserialize,
 	{

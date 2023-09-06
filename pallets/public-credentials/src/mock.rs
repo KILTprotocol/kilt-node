@@ -24,9 +24,8 @@ use sp_runtime::traits::Hash;
 use kilt_support::{traits::StorageDepositCollector, Deposit};
 
 use crate::{
-	self as public_credentials, AttesterOf, BalanceOf, Config, CredentialEntryOf, CredentialIdOf, CredentialSubjects,
-	Credentials, CtypeHashOf, InputClaimsContentOf, InputCredentialOf, InputSubjectIdOf,
-	PublicCredentialDepositCollector,
+	AttesterOf, BalanceOf, Config, CredentialEntryOf, CredentialIdOf, CredentialSubjects, Credentials, CtypeHashOf,
+	InputClaimsContentOf, InputCredentialOf, InputSubjectIdOf, PublicCredentialDepositCollector,
 };
 
 // Generate a public credential using a many Default::default() as possible.
@@ -106,9 +105,8 @@ pub(crate) mod runtime {
 	use scale_info::TypeInfo;
 	use sp_core::{sr25519, Pair};
 	use sp_runtime::{
-		testing::Header,
 		traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
-		DispatchError, MultiSignature, MultiSigner,
+		BuildStorage, DispatchError, MultiSignature, MultiSigner,
 	};
 
 	use kilt_support::mock::{mock_origin, SubjectId};
@@ -420,7 +418,7 @@ pub(crate) mod runtime {
 		}
 
 		pub(crate) fn build(self) -> sp_io::TestExternalities {
-			let mut storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
+			let mut storage = frame_system::GenesisConfig::<Test>::default().build_storage().unwrap();
 			pallet_balances::GenesisConfig::<Test> {
 				balances: self.balances.clone(),
 			}
