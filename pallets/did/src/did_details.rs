@@ -593,7 +593,7 @@ impl<T: Config> DidDetails<T> {
 		}?;
 		let key_details = self.public_keys.get(&key_id)?;
 		if let DidPublicKey::PublicVerificationKey(key) = &key_details.key {
-			Some(&key)
+			Some(key)
 		} else {
 			// The case of something different than a verification key should never happen.
 			None
