@@ -280,3 +280,98 @@ fn test_add_association_account_expired() {
 			);
 		});
 }
+
+#[test]
+fn test_remove_association_sender() {
+	ExtBuilder::default()
+		.with_balances(vec![
+			(ACCOUNT_00, <Test as crate::Config>::Deposit::get() * 50),
+			(ACCOUNT_01, <Test as crate::Config>::Deposit::get() * 50),
+		])
+		.with_connections(vec![(ACCOUNT_00, DID_01, LINKABLE_ACCOUNT_00)])
+		.build_and_execute_with_sanity_tests(|| {
+			// remove association
+			assert!(DidLookup::remove_sender_association(RuntimeOrigin::signed(ACCOUNT_00)).is_ok());
+			assert_eq!(ConnectedDids::<Test>::get(LinkableAccountId::from(ACCOUNT_00)), None);
+			assert!(ConnectedAccounts::<Test>::get(DID_01, LinkableAccountId::from(ACCOUNT_00)).is_none());
+			assert_eq!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00), 0);
+		});
+}
+
+#[test]
+fn test_remove_association_sender_not_found() {
+	ExtBuilder::default()
+		.with_balances(vec![
+			(ACCOUNT_00, <Test as crate::Config>::Deposit::get() * 50),
+			(ACCOUNT_01, <Test as crate::Config>::Deposit::get() * 50),
+		])
+		.build_and_execute_with_sanity_tests(|| {
+			assert_noop!(
+				DidLookup::remove_sender_association(RuntimeOrigin::signed(ACCOUNT_00)),
+				Error::<Test>::NotFound
+			);
+		});
+}
+
+#[test]
+fn test_remove_association_account() {
+	ExtBuilder::default()
+		.with_balances(vec![
+			(ACCOUNT_00, <Test as crate::Config>::Deposit::get() * 50),
+			(ACCOUNT_01, <Test as crate::Config>::Deposit::get() * 50),
+		])
+		.with_connections(vec![(ACCOUNT_01, DID_01, LINKABLE_ACCOUNT_00)])
+		.build_and_execute_with_sanity_tests(|| {
+			assert!(DidLookup::remove_account_association(
+				mock_origin::DoubleOrigin(ACCOUNT_00, DID_01).into(),
+				LinkableAccountId::from(ACCOUNT_00.clone())
+			)
+			.is_ok());
+			assert_eq!(ConnectedDids::<Test>::get(LinkableAccountId::from(ACCOUNT_00)), None);
+			assert!(ConnectedAccounts::<Test>::get(DID_01, LinkableAccountId::from(ACCOUNT_00)).is_none());
+			assert_eq!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_01), 0);
+		});
+}
+
+#[test]
+fn test_remove_association_account_not_found() {
+	ExtBuilder::default()
+		.with_balances(vec![
+			(ACCOUNT_00, <Test as crate::Config>::Deposit::get() * 50),
+			(ACCOUNT_01, <Test as crate::Config>::Deposit::get() * 50),
+		])
+		.build_and_execute_with_sanity_tests(|| {
+			assert_eq!(ConnectedDids::<Test>::get(LinkableAccountId::from(ACCOUNT_00)), None);
+
+			assert_noop!(
+				DidLookup::remove_account_association(
+					mock_origin::DoubleOrigin(ACCOUNT_01, DID_01).into(),
+					LinkableAccountId::from(ACCOUNT_00)
+				),
+				Error::<Test>::NotFound
+			);
+		});
+}
+
+#[test]
+fn test_remove_association_account_not_authorized() {
+	ExtBuilder::default()
+		.with_balances(vec![
+			(ACCOUNT_00, <Test as crate::Config>::Deposit::get() * 50),
+			(ACCOUNT_01, <Test as crate::Config>::Deposit::get() * 50),
+		])
+		.with_connections(vec![(ACCOUNT_01, DID_01, LINKABLE_ACCOUNT_00)])
+		.build_and_execute_with_sanity_tests(|| {
+			assert_noop!(
+				DidLookup::remove_account_association(
+					mock_origin::DoubleOrigin(ACCOUNT_01, DID_00).into(),
+					ACCOUNT_00.into()
+				),
+				Error::<Test>::NotAuthorized
+			);
+			assert_eq!(
+				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_01),
+				<Test as crate::Config>::Deposit::get()
+			);
+		});
+}
