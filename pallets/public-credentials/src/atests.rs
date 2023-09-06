@@ -16,29 +16,31 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::{assert_noop, assert_ok, crypto::ecdsa::ECDSAExt, traits::fungible::InspectHold};
-use kilt_support::{mock::mock_origin, Deposit};
-use parity_scale_codec::Encode;
-use sha3::{Digest, Keccak256};
-use sp_runtime::{
-	app_crypto::{ecdsa, sr25519, Pair},
-	traits::{IdentifyAccount, Zero},
-	MultiSignature, MultiSigner, TokenError,
+use frame_support::{
+	assert_noop, assert_ok,
+	traits::{fungible::InspectHold, Get},
 };
+use sp_runtime::traits::Zero;
+
+use ctype::mock::get_ctype_hash;
+use kilt_support::{mock::mock_origin::DoubleOrigin, Deposit};
 
 use crate::{
-	account::{AccountId20, EthereumSignature},
-	associate_account_request::{get_challenge, AssociateAccountRequest},
-	linkable_account::LinkableAccountId,
-	mock::*,
-	signature::get_wrapped_payload,
-	ConnectedAccounts, ConnectedDids, ConnectionRecord, Error, HoldReason,
+	mock::*, Config, CredentialIdOf, CredentialSubjects, Credentials, Error, HoldReason, InputClaimsContentOf,
 };
 
+// add
 
 
 
+// revoke
 
- 
+
+
+// remove
+
+
+
+// reclaim_deposit
 
 
