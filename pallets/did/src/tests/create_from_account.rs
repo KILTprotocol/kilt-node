@@ -29,7 +29,8 @@ use crate::{
 };
 
 /// Tests the creation of a DID.
-/// This assumes that the `account` can be derived from the `verification_key` and the creation is successful.
+/// This assumes that the `account` can be derived from the `verification_key`
+/// and the creation is successful.
 fn blueprint_test_successful(account_id: AccountIdOf<Test>, verification_key: DidVerificationKey<AccountIdOf<Test>>) {
 	let balance = <Test as Config>::BaseDeposit::get()
 		+ <Test as Config>::Fee::get()
@@ -72,7 +73,7 @@ fn blueprint_test_successful(account_id: AccountIdOf<Test>, verification_key: Di
 #[test]
 fn successful_ed25519() {
 	let verification_key = DidVerificationKey::Ed25519(ed25519::Public(*ACCOUNT_00.as_ref()));
-	blueprint_test_successful(ACCOUNT_00, verification_key.clone());
+	blueprint_test_successful(ACCOUNT_00, verification_key);
 }
 
 #[test]
@@ -99,7 +100,8 @@ fn successful_account() {
 }
 
 /// Tests the creation of a DID.
-/// This assumes that the `account` can be derived from the `verification_key` and the creation is successful.
+/// This assumes that the `account` can be derived from the `verification_key`
+/// and the creation is successful.
 fn blueprint_test_wrong_key(account_id: AccountIdOf<Test>, verification_key: DidVerificationKey<AccountIdOf<Test>>) {
 	let balance = <Test as Config>::BaseDeposit::get()
 		+ <Test as Config>::Fee::get()
@@ -120,7 +122,7 @@ fn blueprint_test_wrong_key(account_id: AccountIdOf<Test>, verification_key: Did
 #[test]
 fn should_check_matching_keys_ed25519() {
 	let verification_key = DidVerificationKey::Ed25519(ed25519::Public(*ACCOUNT_01.as_ref()));
-	blueprint_test_wrong_key(ACCOUNT_00, verification_key.clone());
+	blueprint_test_wrong_key(ACCOUNT_00, verification_key);
 }
 
 #[test]
@@ -205,13 +207,12 @@ fn should_not_create_without_funds() {
 	let verification_key = DidVerificationKey::Sr25519(sr25519::Public(*ACCOUNT_00.as_ref()));
 	let account_id = ACCOUNT_00;
 
-	ExtBuilder::default()
-		.build_and_execute_with_sanity_tests(None, || {
-			assert!(Did::get_did(&account_id).is_none());
+	ExtBuilder::default().build_and_execute_with_sanity_tests(None, || {
+		assert!(Did::get_did(&account_id).is_none());
 
-			assert_noop!(
-				Did::create_from_account(RuntimeOrigin::signed(account_id.clone()), verification_key.clone(),),
-				Error::<Test>::UnableToPayFees
-			);
-		});
+		assert_noop!(
+			Did::create_from_account(RuntimeOrigin::signed(account_id.clone()), verification_key.clone(),),
+			Error::<Test>::UnableToPayFees
+		);
+	});
 }
