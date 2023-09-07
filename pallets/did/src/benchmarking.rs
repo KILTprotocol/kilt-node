@@ -1189,6 +1189,39 @@ benchmarks! {
 			},
 		)
 	}
+
+	dispatch_as {
+		// ecdsa keys are the most expensive since they require an additional hashing step
+		let did_public_auth_key = get_ecdsa_public_authentication_key();
+		let did_subject: DidIdentifierOf<T> = MultiSigner::from(did_public_auth_key).into_account().into();
+		let did_account: AccountIdOf<T> = MultiSigner::from(did_public_auth_key).into_account().into();
+
+		let did_details = generate_base_did_details::<T>(DidVerificationKey::from(did_public_auth_key), None);
+
+		Did::<T>::insert(&did_subject, did_details.clone());
+		make_free_for_did::<T>(&did_account);
+		CurrencyOf::<T>::hold(&HoldReason::Deposit.into(), &did_account, did_details.deposit.amount).expect("should reserve currency");
+
+		let test_call = <T as Config>::RuntimeCall::get_call_for_did_call_benchmark();
+		let origin = RawOrigin::Signed(did_subject.clone());
+		let did_to_call = did_subject.clone();
+	}: _(origin, did_to_call, Box::new(test_call))
+	verify {
+	}
+
+	create_from_account {
+		// ecdsa keys are the most expensive since they require an additional hashing step
+		let did_public_auth_key = get_ecdsa_public_authentication_key();
+		let did_subject: DidIdentifierOf<T> = MultiSigner::from(did_public_auth_key).into_account().into();
+		let did_account: AccountIdOf<T> = MultiSigner::from(did_public_auth_key).into_account().into();
+
+		let authentication_key = DidVerificationKey::from(did_public_auth_key);
+		make_free_for_did::<T>(&did_account);
+		let origin = RawOrigin::Signed(did_subject.clone());
+	}: _(origin, authentication_key)
+	verify {
+			Did::<T>::get(&did_subject).expect("DID entry should be created");
+	}
 }
 
 impl_benchmark_test_suite! {
