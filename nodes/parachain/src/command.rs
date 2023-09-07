@@ -286,10 +286,10 @@ pub fn run() -> Result<()> {
 					if cfg!(feature = "runtime-benchmarks") {
 						match runtime {
 							"spiritnet" => runner.sync_run(|config| {
-								cmd.run::<Block, <SpiritnetRuntimeExecutor as NativeExecutionDispatch>::ExtendHostFunctions >(config)
+								cmd.run::<Block, <SpiritnetRuntimeExecutor as NativeExecutionDispatch>::ExtendHostFunctions>(config)
 							}),
 							"peregrine" => runner.sync_run(|config| {
-								cmd.run::<Block, <PeregrineRuntimeExecutor as NativeExecutionDispatch>::ExtendHostFunctions >(config)
+								cmd.run::<Block, <PeregrineRuntimeExecutor as NativeExecutionDispatch>::ExtendHostFunctions>(config)
 							}),
 							_ => Err("Unknown parachain runtime".into()),
 						}
