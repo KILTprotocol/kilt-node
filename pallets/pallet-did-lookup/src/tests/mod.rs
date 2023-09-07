@@ -15,6 +15,5 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
-mod create;
-mod delete;
+mod associate;
 mod deposit;
