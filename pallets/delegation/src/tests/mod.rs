@@ -18,6 +18,6 @@
 
 mod create;
 mod delegation;
+mod delete;
 mod deposit;
-mod remove;
 mod revoke;
