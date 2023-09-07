@@ -1155,7 +1155,7 @@ pub mod pallet {
 
 		#[allow(clippy::boxed_local)]
 		#[pallet::call_index(15)]
-		#[pallet::weight(1000)]
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::dispatch_as())]
 		pub fn dispatch_as(
 			origin: OriginFor<T>,
 			did_identifier: DidIdentifierOf<T>,
@@ -1192,7 +1192,7 @@ pub mod pallet {
 		}
 
 		#[pallet::call_index(16)]
-		#[pallet::weight(1000)]
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::create_from_account())]
 		pub fn create_from_account(
 			origin: OriginFor<T>,
 			authentication_key: DidVerificationKey<AccountIdOf<T>>,
