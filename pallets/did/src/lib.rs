@@ -1153,9 +1153,31 @@ pub mod pallet {
 			Ok(())
 		}
 
+		/// Proxy a dispatchable call of another runtime extrinsic that
+		/// supports a DID origin.
+		///
+		/// The referenced DID identifier must be present on chain before the
+		/// operation is dispatched.
+		///
+		/// A call submitted through this extrinsic must be signed with the
+		/// right DID key, depending on the call. In contrast to the
+		/// `submit_did_call` extrinsic, this call doesn't separate the sender
+		/// from the DID subject. The key that must be used for this DID call
+		/// is required to also be a valid account with enough balance to pay
+		/// for fees.
+		///
+		/// The dispatch origin must be a KILT account with enough funds to
+		/// execute the extrinsic and must correspond to the required DID
+		/// Verification Key.
+		///
+		/// Emits `DidCallDispatched`.
 		#[allow(clippy::boxed_local)]
 		#[pallet::call_index(15)]
-		#[pallet::weight(<T as pallet::Config>::WeightInfo::dispatch_as())]
+		#[pallet::weight({
+			let dispatch_info = call.get_dispatch_info();
+
+			(<T as pallet::Config>::WeightInfo::dispatch_as().saturating_add(dispatch_info.weight), dispatch_info.class)
+		})]
 		pub fn dispatch_as(
 			origin: OriginFor<T>,
 			did_identifier: DidIdentifierOf<T>,
@@ -1163,8 +1185,6 @@ pub mod pallet {
 		) -> DispatchResultWithPostInfo {
 			let who = ensure_signed(origin)?;
 
-			// Compute the right DID verification key to use to verify the operation
-			// signature
 			let verification_key_relationship =
 				call.derive_verification_key_relationship().map_err(Error::<T>::from)?;
 
@@ -1191,6 +1211,32 @@ pub mod pallet {
 			result
 		}
 
+		/// Store a new DID on chain.
+		///
+		/// The DID identifier is derived from the account ID that submits this
+		/// call. The authentication key must correspond to the account ID that
+		/// submitted this call. For accounts that use the ed25519 and sr25519
+		/// schema, the authentication key must be of the
+		/// `DidVerificationKey::Ed25519` or `DidVerificationKey::Sr25519`
+		/// variant and contains the public key. For Ecdsa accounts, the
+		/// `DidVerificationKey::Ecdsa` variant is calculated by hashing the
+		/// Ecdsa public key.
+		///
+		/// If this call is dispatched by an account id that doesn't correspond
+		/// to a public private key pair, the `DidVerificationKey::Account`
+		/// variant shall be used (Multisig, Pure Proxy, Governance origins).
+		/// The resulting DID can NOT be used for signing data and is therefore
+		/// limited to onchain activities.
+		///
+		/// There must be no DID information stored on chain under the same DID
+		/// identifier. This call will fail if there exists a DID with the same
+		/// identifier or if a DID with the same identifier existed and was
+		/// deleted.
+		///
+		/// The origin for this account must be funded and provide the required
+		/// deposit and fee.
+		///
+		/// Emits `DidCreated`.
 		#[pallet::call_index(16)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::create_from_account())]
 		pub fn create_from_account(

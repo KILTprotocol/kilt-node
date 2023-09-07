@@ -130,7 +130,7 @@ benchmarks! {
 		<T as frame_system::Config>::RuntimeOrigin: From<RawOrigin<T::DidIdentifier>>,
 		<T as frame_system::Config>::AccountId: From<AccountId32>,
 		<T as Config>::Currency: Mutate<T::AccountId>,
-		T::AccountId: AsRef<[u8]> + AsRef<[u8; 32]> + From<[u8; 32]>,
+		T::AccountId: AsRef<[u8; 32]> + From<[u8; 32]>,
 	}
 
 	/* create extrinsic */
@@ -1204,10 +1204,7 @@ benchmarks! {
 
 		let test_call = <T as Config>::RuntimeCall::get_call_for_did_call_benchmark();
 		let origin = RawOrigin::Signed(did_subject.clone());
-		let did_to_call = did_subject.clone();
-	}: _(origin, did_to_call, Box::new(test_call))
-	verify {
-	}
+	}: _(origin, did_subject, Box::new(test_call))
 
 	create_from_account {
 		// ecdsa keys are the most expensive since they require an additional hashing step
