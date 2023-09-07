@@ -18,12 +18,7 @@
 
 //! Unit testing
 
-
-
-use frame_support::{
-	assert_noop, assert_ok,
-	storage::bounded_btree_map::BoundedBTreeMap,
-};
+use frame_support::{assert_noop, assert_ok, storage::bounded_btree_map::BoundedBTreeMap};
 use kilt_runtime_api_staking::StakingRates;
 use pallet_authorship::EventHandler;
 use pallet_balances::{Freezes, IdAmount};
@@ -31,13 +26,9 @@ use pallet_balances::{Freezes, IdAmount};
 use sp_runtime::{traits::Zero, Perquintill};
 
 use crate::{
-	mock::{
-		roll_to, AccountId, Balance, BlockNumber,
-		ExtBuilder, RuntimeOrigin, StakePallet, Test, DECIMALS,
-	},
-	types::{
-		BalanceOf, TotalStake,
-	}, Config, Error, FreezeReason,
+	mock::{roll_to, AccountId, Balance, BlockNumber, ExtBuilder, RuntimeOrigin, StakePallet, Test, DECIMALS},
+	types::{BalanceOf, TotalStake},
+	Config, Error, FreezeReason,
 };
 
 #[test]
