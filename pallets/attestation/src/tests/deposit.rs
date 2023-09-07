@@ -39,9 +39,6 @@ fn test_reclaim_deposit_not_found() {
 		});
 }
 
-// #############################################################################
-// transfer deposit
-
 #[test]
 fn test_change_deposit_owner() {
 	let attester: AttesterOf<Test> = sr25519_did_from_seed(&ALICE_SEED);

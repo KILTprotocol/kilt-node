@@ -121,8 +121,6 @@ fn ctype_not_found_create_root_delegation_error() {
 	});
 }
 
-// submit_delegation_creation_operation()
-
 #[test]
 fn create_delegation_direct_root_successful() {
 	let creator = ed25519_did_from_seed(&ALICE_SEED);
