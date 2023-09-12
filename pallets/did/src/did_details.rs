@@ -89,17 +89,6 @@ impl<AccountId> DidVerificationKey<AccountId> {
 	}
 }
 
-impl<AccountId: AsRef<[u8]>> AsRef<[u8]> for DidVerificationKey<AccountId> {
-	fn as_ref(&self) -> &[u8] {
-		match self {
-			DidVerificationKey::Ed25519(key) => &key.0[..],
-			DidVerificationKey::Sr25519(key) => &key.0[..],
-			DidVerificationKey::Ecdsa(key) => &key.0[..],
-			DidVerificationKey::Account(account) => account.as_ref(),
-		}
-	}
-}
-
 impl<AccountId> From<ed25519::Public> for DidVerificationKey<AccountId> {
 	fn from(key: ed25519::Public) -> Self {
 		DidVerificationKey::Ed25519(key)
