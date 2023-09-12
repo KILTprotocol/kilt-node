@@ -28,7 +28,7 @@ use parity_scale_codec::{Decode, Encode, MaxEncodedLen, WrapperTypeEncode};
 use scale_info::TypeInfo;
 use sp_core::{ecdsa, ed25519, sr25519};
 use sp_runtime::{
-	traits::{Verify, Zero},
+	traits::{IdentifyAccount, Verify, Zero},
 	DispatchError, MultiSignature, SaturatedConversion, Saturating,
 };
 use sp_std::{convert::TryInto, vec::Vec};
@@ -72,11 +72,15 @@ impl<AccountId> DidVerificationKey<AccountId> {
 			_ => Err(errors::SignatureError::InvalidFormat),
 		}
 	}
+}
 
-	pub fn into_account(&self) -> AccountId
-	where
-		AccountId: From<[u8; 32]> + AsRef<[u8; 32]>,
-	{
+impl<AccountId> IdentifyAccount for DidVerificationKey<AccountId>
+where
+	AccountId: From<[u8; 32]> + AsRef<[u8; 32]>,
+{
+	type AccountId = AccountId;
+
+	fn into_account(self) -> Self::AccountId {
 		let bytes = match self {
 			DidVerificationKey::Ed25519(pub_key) => pub_key.0,
 			DidVerificationKey::Sr25519(pub_key) => pub_key.0,

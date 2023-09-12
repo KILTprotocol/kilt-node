@@ -154,6 +154,7 @@ pub mod pallet {
 	};
 	use service_endpoints::DidEndpoint;
 	use sp_runtime::traits::BadOrigin;
+	use sp_runtime::traits::IdentifyAccount;
 
 	use crate::{
 		did_details::{
@@ -1245,7 +1246,7 @@ pub mod pallet {
 		) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
 			let did_identifier: DidIdentifierOf<T> = sender.clone().into();
-			let auth_key_id: AccountIdOf<T> = authentication_key.into_account();
+			let auth_key_id: AccountIdOf<T> = authentication_key.clone().into_account();
 			ensure!(auth_key_id == sender, Error::<T>::BadDidOrigin);
 
 			// Make sure that DIDs cannot be created again after they have been deleted.
@@ -1335,7 +1336,7 @@ pub mod pallet {
 					)))
 				})?;
 
-			if account == &verification_key.into_account() {
+			if account == &verification_key.clone().into_account() {
 				Ok(())
 			} else {
 				Err(DidError::Signature(SignatureError::InvalidData))
