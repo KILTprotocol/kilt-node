@@ -1246,8 +1246,6 @@ pub mod pallet {
 		) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
 			let did_identifier: DidIdentifierOf<T> = sender.clone().into();
-			let auth_key_id: AccountIdOf<T> = authentication_key.clone().into_account();
-			ensure!(auth_key_id == sender, Error::<T>::BadDidOrigin);
 
 			// Make sure that DIDs cannot be created again after they have been deleted.
 			ensure!(
