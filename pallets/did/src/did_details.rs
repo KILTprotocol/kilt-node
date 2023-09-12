@@ -80,6 +80,7 @@ impl<AccountId> DidVerificationKey<AccountId> {
 		let bytes = match self {
 			DidVerificationKey::Ed25519(pub_key) => pub_key.0,
 			DidVerificationKey::Sr25519(pub_key) => pub_key.0,
+			// Hash the Ecdsa key the same way it's done in substrate (the ecdsa key is 33 bytes, one byte too long)
 			DidVerificationKey::Ecdsa(pub_key) => sp_io::hashing::blake2_256(pub_key.as_ref()),
 			DidVerificationKey::Account(acc_id) => *acc_id.as_ref(),
 		};
