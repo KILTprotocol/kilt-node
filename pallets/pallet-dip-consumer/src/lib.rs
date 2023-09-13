@@ -113,6 +113,9 @@ pub mod pallet {
 			proof: T::IdentityProof,
 			call: Box<<T as Config>::RuntimeCall>,
 		) -> DispatchResult {
+			#[cfg(feature = "std")]
+			println!("New dispatch_as call!");
+
 			// TODO: Make origin check configurable, and require that it at least returns
 			// the submitter's account.
 			let submitter = ensure_signed(origin)?;
