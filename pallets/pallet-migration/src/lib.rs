@@ -46,6 +46,7 @@ pub mod pallet {
 	use pallet_web3_names::{Owner, Web3NameOf};
 	use public_credentials::{CredentialIdOf, Credentials, SubjectIdOf};
 	use sp_runtime::traits::Hash;
+	use sp_runtime::SaturatedConversion;
 
 	use crate::default_weights::WeightInfo;
 
@@ -148,8 +149,14 @@ pub mod pallet {
 	{
 		#[pallet::call_index(0)]
 		#[pallet::weight({
-			//TODO: Placeholder.
-			Weight::from_parts(1_000_000, 1_000_000)
+
+			let mut weight = <T as crate::Config>::WeightInfo::attestation_migration_weight().saturating_mul(requested_migrations.attestation.len().saturated_into());
+			weight = weight.saturating_add(<T as crate::Config>::WeightInfo::delegation_migration_weight().saturating_mul(requested_migrations.delegation.len().saturated_into()));
+			weight = weight.saturating_add(<T as crate::Config>::WeightInfo::did_migration_weight().saturating_mul(requested_migrations.did.len().saturated_into()));
+			weight = weight.saturating_add(<T as crate::Config>::WeightInfo::did_lookup_migration_weight().saturating_mul(requested_migrations.lookup.len().saturated_into()));
+			weight = weight.saturating_add(<T as crate::Config>::WeightInfo::w3n_migration_weight().saturating_mul(requested_migrations.w3n.len().saturated_into()));
+			weight = weight.saturating_add(<T as crate::Config>::WeightInfo::public_credentials_migration_weight().saturating_mul(requested_migrations.public_credentials.len().saturated_into()));
+			weight
 		})]
 		pub fn update_balance(origin: OriginFor<T>, requested_migrations: EntriesToMigrate<T>) -> DispatchResult {
 			ensure_signed(origin)?;

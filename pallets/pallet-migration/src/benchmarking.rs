@@ -117,9 +117,7 @@ benchmarks! {
 
 		let origin= RawOrigin::Signed(sender);
 	}: update_balance(origin, entries_to_migrate)
-	verify {
-
-	}
+	verify {}
 
 	delegation_migration_weight {
 		let sender: T::AccountId = account("sender", 0, SEED);
@@ -132,9 +130,7 @@ benchmarks! {
 
 		let origin= RawOrigin::Signed(sender);
 	}: update_balance(origin, entries_to_migrate)
-	verify {
-
-	}
+	verify {}
 
 	did_migration_weight {
 		let sender : AccountIdOf<T> = account("sender", 0, SEED);
@@ -142,10 +138,9 @@ benchmarks! {
 		let did_public_auth_key = get_ed25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(did_public_auth_key).into_account().into();
 		let mut did_details = generate_base_did_details::<T>(DidVerificationKey::from(did_public_auth_key), Some(sender.clone()));
-		did_details.deposit.amount = <T as did::Config>::BaseDeposit::get();
+		did_details.deposit.amount = MICROKILT.saturated_into();
 
 		did::Did::<T>::insert(did_subject.clone(), did_details.clone());
-		let initial_balance =  did_details.deposit.amount.saturated_into::<u128>().saturating_mul(2);
 		pallet_balances::Pallet::<T>::set_balance(&sender, KILT.saturated_into());
 
 		pallet_balances::Pallet::<T>::reserve(&sender, did_details.deposit.amount.saturated_into::<u128>().saturated_into())
@@ -156,9 +151,7 @@ benchmarks! {
 
 		let origin= RawOrigin::Signed(sender);
 	}: update_balance(origin, entries_to_migrate)
-	verify {
-
-	}
+	verify {}
 
 	did_lookup_migration_weight {
 		let sender: T::AccountId = account("sender", 0, SEED);
@@ -174,9 +167,7 @@ benchmarks! {
 
 		let origin= RawOrigin::Signed(sender);
 	}: update_balance(origin, entries_to_migrate)
-	verify {
-
-	}
+	verify {}
 
 	w3n_migration_weight {
 		let sender: AccountIdOf<T> = account("caller", 0, SEED);
@@ -194,9 +185,7 @@ benchmarks! {
 
 		let origin= RawOrigin::Signed(sender);
 	}: update_balance(origin, entries_to_migrate)
-	verify {
-
-	}
+	verify {}
 
 	public_credentials_migration_weight {
 		let sender: AccountIdOf<T> = account("sender", 0, SEED);
@@ -227,9 +216,7 @@ benchmarks! {
 
 		let origin_migration_pallet = RawOrigin::Signed(sender);
 	}: update_balance(origin_migration_pallet, entries_to_migrate)
-	verify {
-
-	}
+	verify {}
 
 }
 
