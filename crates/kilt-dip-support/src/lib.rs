@@ -398,19 +398,27 @@ impl<
 		identity_details: &mut Option<Self::IdentityDetails>,
 		proof: Self::Proof,
 	) -> Result<Self::VerificationResult, Self::Error> {
+		#[cfg(feature = "std")]
+		println!("AAAAA");
 		// 1. Retrieve block hash from provider at the proof height
 		let block_hash_at_height =
 			RelayChainInfo::block_hash_for(&proof.para_state_root.relay_block_height).ok_or(())?;
 
+		#[cfg(feature = "std")]
+		println!("BBBBB");
 		// 1.1 Verify that the provided header hashes to the same block has retrieved
 		if block_hash_at_height != proof.relay_header.hash() {
 			return Err(());
 		}
+		#[cfg(feature = "std")]
+		println!("CCCCC");
 		// 1.2 If so, extract the state root from the header
 		let state_root_at_height = proof.relay_header.state_root;
 
 		// FIXME: Compilation error
 		// 2. Verify relay chain proof
+		#[cfg(feature = "std")]
+		println!("DDDDD");
 		let provider_parachain_header =
 			ParachainHeadProofVerifier::<RelayChainInfo>::verify_proof_for_parachain_with_root(
 				&SiblingProviderParachainId::get(),
@@ -419,6 +427,8 @@ impl<
 			)?;
 
 		// 3. Verify parachain state proof.
+		#[cfg(feature = "std")]
+		println!("EEEEE");
 		let subject_identity_commitment =
 			DipIdentityCommitmentProofVerifier::<SiblingProviderStateInfo>::verify_proof_for_identifier(
 				subject,
@@ -427,6 +437,8 @@ impl<
 			)?;
 
 		// 4. Verify DIP merkle proof.
+		#[cfg(feature = "std")]
+		println!("FFFFF");
 		let proof_leaves = DidMerkleProofVerifier::<
 			ProviderDipMerkleHasher,
 			_,
@@ -438,6 +450,8 @@ impl<
 		>::verify_dip_merkle_proof(&subject_identity_commitment, proof.did.leaves)?;
 
 		// 5. Verify DID signature.
+		#[cfg(feature = "std")]
+		println!("GGGGG");
 		RevealedDidKeysSignatureAndCallVerifier::<
 			_,
 			_,
