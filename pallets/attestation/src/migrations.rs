@@ -77,7 +77,7 @@ pub mod test {
 						&ACCOUNT_00,
 					);
 
-				assert_eq!(hold_balance, 0);
+				assert!(hold_balance.is_zero());
 				assert_eq!(reserved_balance, <Test as Config>::Deposit::get());
 			})
 	}

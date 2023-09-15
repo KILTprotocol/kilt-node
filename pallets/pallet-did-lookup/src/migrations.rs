@@ -169,7 +169,7 @@ pub mod test {
 						&ACCOUNT_00,
 					);
 
-				assert_eq!(hold_balance, 0);
+				assert!(hold_balance.is_zero());
 				assert_eq!(reserved_balance, <Test as Config>::Deposit::get());
 			})
 	}
@@ -197,7 +197,7 @@ pub mod test {
 						&ACCOUNT_00,
 					);
 
-				assert_eq!(hold_balance, 0);
+				assert!(hold_balance.is_zero());
 				assert_eq!(reserved_balance, <Test as Config>::Deposit::get());
 
 				let connected_did_pre_migration = ConnectedDids::<Test>::get(LINKABLE_ACCOUNT_00);

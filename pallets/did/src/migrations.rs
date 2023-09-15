@@ -82,7 +82,7 @@ pub mod test {
 				let reserved_balance =
 					<<Test as Config>::Currency as ReservableCurrency<AccountIdOf<Test>>>::reserved_balance(&alice_did);
 
-				assert_eq!(hold_balance, 0);
+				assert!(hold_balance.is_zero());
 				assert_eq!(reserved_balance, <Test as Config>::BaseDeposit::get());
 			})
 	}
