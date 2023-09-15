@@ -25,6 +25,7 @@ use frame_support::{
 };
 use sp_runtime::{traits::Zero, Saturating};
 
+#[cfg(any(feature = "mock", feature = "runtime-benchmarks"))]
 use pallet_balances::{Config, Holds, Pallet};
 
 pub fn switch_reserved_to_hold<AccountId, Currency>(
