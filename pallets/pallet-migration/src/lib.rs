@@ -18,8 +18,6 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-pub use pallet::*;
-
 pub mod default_weights;
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -29,25 +27,28 @@ mod mock;
 #[cfg(test)]
 mod test;
 
+pub use crate::{default_weights::WeightInfo, pallet::*};
+
 #[frame_support::pallet]
 pub mod pallet {
-	use attestation::{Attestations, ClaimHashOf};
+	use super::*;
+
 	use core::fmt::Debug;
-	use delegation::{DelegationNodeIdOf, DelegationNodes};
-	use did::{Did, DidIdentifierOf};
 	use frame_support::{
 		pallet_prelude::*,
 		traits::{fungible::Inspect, Currency, ReservableCurrency},
 	};
 	use frame_system::pallet_prelude::*;
+	use sp_runtime::traits::Hash;
+	use sp_runtime::SaturatedConversion;
+
+	use attestation::{Attestations, ClaimHashOf};
+	use delegation::{DelegationNodeIdOf, DelegationNodes};
+	use did::{Did, DidIdentifierOf};
 	use kilt_support::traits::BalanceMigrationManager;
 	use pallet_did_lookup::{linkable_account::LinkableAccountId, ConnectedDids};
 	use pallet_web3_names::{Owner, Web3NameOf};
 	use public_credentials::{CredentialIdOf, Credentials, SubjectIdOf};
-	use sp_runtime::traits::Hash;
-	use sp_runtime::SaturatedConversion;
-
-	use crate::default_weights::WeightInfo;
 
 	pub(crate) type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 

@@ -73,7 +73,7 @@ pub mod test {
 				let hold_balance_pre_migration =
 					<<Test as Config>::Currency as InspectHold<AccountIdOf<Test>>>::balance_on_hold(
 						&HoldReason::Deposit.into(),
-						&ACCOUNT_00,
+						&alice_did,
 					);
 
 				assert_eq!(hold_balance_pre_migration, <Test as did::Config>::BaseDeposit::get());
