@@ -53,7 +53,7 @@ pub mod test {
 
 	#[test]
 	fn test_setup() {
-		let attester: AttesterOf<Test> = sr25519_did_from_seed(&ALICE_SEED);
+		let attester: AttesterOf<Test> = sr25519_did_from_public_key(&ALICE_SEED);
 		let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 		let ctype_hash = get_ctype_hash::<Test>(true);
 		let attestations = generate_base_attestation::<Test>(attester.clone(), ACCOUNT_00);
@@ -90,7 +90,7 @@ pub mod test {
 
 	#[test]
 	fn test_balance_migration_attestation() {
-		let attester: AttesterOf<Test> = sr25519_did_from_seed(&ALICE_SEED);
+		let attester: AttesterOf<Test> = sr25519_did_from_public_key(&ALICE_SEED);
 		let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 		let claim_hash2 = claim_hash_from_seed(CLAIM_HASH_SEED_02);
 		let ctype_hash = get_ctype_hash::<Test>(true);

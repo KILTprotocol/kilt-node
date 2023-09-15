@@ -17,7 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use attestation::{
-	mock::{claim_hash_from_seed, generate_base_attestation, sr25519_did_from_seed},
+	mock::{claim_hash_from_seed, generate_base_attestation, sr25519_did_from_public_key},
 	Attestations, AttesterOf,
 };
 use ctype::mock::get_ctype_hash;
@@ -59,13 +59,13 @@ use crate::{mock::*, EntriesToMigrate, MigratedKeys, Pallet};
 #[test]
 fn check_succesful_migration() {
 	// attestaion
-	let attester: AttesterOf<Test> = sr25519_did_from_seed(&ALICE_SEED);
+	let attester: AttesterOf<Test> = sr25519_did_from_public_key(&ALICE_SEED);
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_12);
 	let mut attestation = generate_base_attestation::<Test>(attester.clone(), ACCOUNT_00);
 	attestation.deposit.amount = MICRO_KILT;
 
 	// delegation
-	let creator = sr25519_did_from_seed(&BOB_SEED);
+	let creator = sr25519_did_from_public_key(&BOB_SEED);
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
 	let hierarchy_details = generate_base_delegation_hierarchy_details::<Test>();
 	let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_3);
@@ -211,13 +211,13 @@ fn check_succesful_migration() {
 #[test]
 fn check_attempt_to_migrate_already_migrated_keys() {
 	// attestaion
-	let attester: AttesterOf<Test> = sr25519_did_from_seed(&ALICE_SEED);
+	let attester: AttesterOf<Test> = sr25519_did_from_public_key(&ALICE_SEED);
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_12);
 	let mut attestation = generate_base_attestation::<Test>(attester.clone(), ACCOUNT_00);
 	attestation.deposit.amount = MICRO_KILT;
 
 	// delegation
-	let creator = sr25519_did_from_seed(&BOB_SEED);
+	let creator = sr25519_did_from_public_key(&BOB_SEED);
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
 	let hierarchy_details = generate_base_delegation_hierarchy_details::<Test>();
 	let parent_id = delegation_id_from_seed::<Test>(DELEGATION_ID_SEED_3);
@@ -303,7 +303,7 @@ fn check_attempt_to_migrate_already_migrated_keys() {
 #[test]
 fn check_excluded_keys_attestation() {
 	// attestaion
-	let attester: AttesterOf<Test> = sr25519_did_from_seed(&ALICE_SEED);
+	let attester: AttesterOf<Test> = sr25519_did_from_public_key(&ALICE_SEED);
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_12);
 	let mut attestation = generate_base_attestation::<Test>(attester.clone(), ACCOUNT_00);
 	attestation.deposit.amount = MICRO_KILT;
@@ -345,8 +345,8 @@ fn check_excluded_keys_attestation() {
 #[test]
 fn check_excluded_keys_delegation() {
 	// delegation
-	let creator = sr25519_did_from_seed(&BOB_SEED);
-	let delegate = sr25519_did_from_seed(&ALICE_SEED);
+	let creator = sr25519_did_from_public_key(&BOB_SEED);
+	let delegate = sr25519_did_from_public_key(&ALICE_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
 	let hierarchy_details = generate_base_delegation_hierarchy_details::<Test>();
@@ -521,7 +521,7 @@ fn check_excluded_keys_w3n() {
 
 #[test]
 fn check_excluded_keys_public_credentials() {
-	let attester = sr25519_did_from_seed(&ALICE_SEED);
+	let attester = sr25519_did_from_public_key(&ALICE_SEED);
 	let subject_id = SUBJECT_ID_00;
 	let ctype_hash = get_ctype_hash::<Test>(true);
 
@@ -604,7 +604,7 @@ fn migrate_key_by_update_deposit_did() {
 
 #[test]
 fn migrate_key_by_update_deposit_delegation() {
-	let creator = sr25519_did_from_seed(&BOB_SEED);
+	let creator = sr25519_did_from_public_key(&BOB_SEED);
 
 	let hierarchy_root_id = get_delegation_hierarchy_id::<Test>(true);
 	let hierarchy_details = generate_base_delegation_hierarchy_details::<Test>();
@@ -718,7 +718,7 @@ fn migrate_key_by_update_deposit_w3n() {
 
 #[test]
 fn migrate_key_by_update_deposit_public_credentials() {
-	let attester: AttesterOf<Test> = sr25519_did_from_seed(&ALICE_SEED);
+	let attester: AttesterOf<Test> = sr25519_did_from_public_key(&ALICE_SEED);
 	let ctype_hash = get_ctype_hash::<Test>(true);
 
 	let deposit = kilt_support::Deposit {
@@ -765,7 +765,7 @@ fn migrate_key_by_update_deposit_public_credentials() {
 #[test]
 fn migrate_key_by_update_deposit_attestation() {
 	// attestaion
-	let attester: AttesterOf<Test> = sr25519_did_from_seed(&ALICE_SEED);
+	let attester: AttesterOf<Test> = sr25519_did_from_public_key(&ALICE_SEED);
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_12);
 	let mut attestation = generate_base_attestation::<Test>(attester, ACCOUNT_00);
 	attestation.deposit.amount = MICRO_KILT;

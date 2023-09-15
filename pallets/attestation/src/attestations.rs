@@ -68,7 +68,7 @@ mod tests {
 	fn test_no_need_to_migrate_if_none() {
 		let old = OldAttestationDetailsOf::<Test> {
 			ctype_hash: claim_hash_from_seed(CLAIM_HASH_SEED_01),
-			attester: sr25519_did_from_seed(&ALICE_SEED),
+			attester: sr25519_did_from_public_key(&ALICE_SEED),
 			delegation_id: None,
 			revoked: true,
 			deposit: Deposit {
@@ -83,7 +83,7 @@ mod tests {
 			new,
 			Ok(AttestationDetailsOf::<Test> {
 				ctype_hash: claim_hash_from_seed(CLAIM_HASH_SEED_01),
-				attester: sr25519_did_from_seed(&ALICE_SEED),
+				attester: sr25519_did_from_public_key(&ALICE_SEED),
 				authorization_id: None,
 				revoked: true,
 				deposit: Deposit {

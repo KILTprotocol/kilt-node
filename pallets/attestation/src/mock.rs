@@ -167,7 +167,7 @@ pub fn insert_attestation<T: Config>(claim_hash: ClaimHashOf<T>, details: Attest
 	}
 }
 
-pub fn sr25519_did_from_seed(public_key: &[u8; 32]) -> SubjectId {
+pub fn sr25519_did_from_public_key(public_key: &[u8; 32]) -> SubjectId {
 	MultiSigner::from(sr25519::Public(*public_key)).into_account().into()
 }
 
