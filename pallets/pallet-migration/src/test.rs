@@ -209,7 +209,7 @@ fn check_succesful_migration() {
 }
 
 #[test]
-fn check_unsuccesful_migration() {
+fn check_attempt_to_migrate_already_migrated_keys() {
 	// attestaion
 	let attester: AttesterOf<Test> = sr25519_did_from_seed(&ALICE_SEED);
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_12);
@@ -262,8 +262,6 @@ fn check_unsuccesful_migration() {
 		.with_public_credentials(vec![(subject_id, credential_id, new_credential)])
 		.build()
 		.execute_with(|| {
-			translate_all_holds_to_reserves();
-
 			let mut requested_migrations = EntriesToMigrate::default();
 
 			let attestations =
