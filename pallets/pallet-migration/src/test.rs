@@ -292,7 +292,7 @@ fn check_attempt_to_migrate_already_migrated_keys() {
 				requested_migrations.clone()
 			));
 
-			// Nothing should happen now
+			// Since the keys are already migrated, a second attempt should have not affect to the storage.
 			assert_storage_noop!(
 				Migration::update_balance(RuntimeOrigin::signed(ACCOUNT_00), requested_migrations)
 					.expect("Update balance should not panic")
