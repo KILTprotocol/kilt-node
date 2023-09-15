@@ -56,7 +56,7 @@ pub mod test {
 
 	#[test]
 	fn test_setup() {
-		let auth_key = get_ed25519_authentication_key(true);
+		let auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
 		let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 
 		let mut did_details =
@@ -89,8 +89,8 @@ pub mod test {
 
 	#[test]
 	fn test_balance_migration_did() {
-		let auth_key = get_ed25519_authentication_key(true);
-		let auth_key2 = get_ed25519_authentication_key(false);
+		let auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
+		let auth_key2 = get_ed25519_authentication_key(&AUTH_SEED_1);
 		let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 		let bob_did = get_did_identifier_from_ed25519_key(auth_key2.public());
 
