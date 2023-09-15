@@ -56,13 +56,11 @@ pub mod runtime {
 	use pallet_web3_names::web3_name::AsciiWeb3Name;
 	use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 	use public_credentials::InputSubjectIdOf;
-	use runtime_common::AuthorityId;
 	use scale_info::TypeInfo;
 	use sp_core::{ed25519, ConstU128, ConstU32};
 	use sp_runtime::{
-		impl_opaque_keys,
 		testing::Header,
-		traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, OpaqueKeys, Verify},
+		traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
 		AccountId32, MultiSignature, MultiSigner, Perquintill,
 	};
 
@@ -98,9 +96,6 @@ pub mod runtime {
 			DidLookup: pallet_did_lookup::{Pallet, Storage, Call, Event<T>, HoldReason},
 			W3n: pallet_web3_names,
 			PublicCredentials: public_credentials,
-			Aura: pallet_aura::{Pallet, Storage},
-			Session: pallet_session::{Pallet, Call, Storage, Event, Config<T>},
-			StakePallet: parachain_staking::{Pallet, Call, Storage, Config<T>, Event<T>, FreezeReason},
 			Migration: migration,
 		}
 	);
@@ -458,62 +453,6 @@ pub mod runtime {
 
 	parameter_types! {
 		pub const MinimumPeriod: u64 = 1;
-	}
-
-	impl pallet_timestamp::Config for Test {
-		type Moment = u64;
-		type OnTimestampSet = ();
-		type MinimumPeriod = MinimumPeriod;
-		type WeightInfo = ();
-	}
-
-	impl pallet_aura::Config for Test {
-		type AuthorityId = AuthorityId;
-		type DisabledValidators = ();
-		type MaxAuthorities = MaxCollatorCandidates;
-	}
-
-	impl_opaque_keys! {
-		pub struct MockSessionKeys {
-			pub aura: Aura,
-		}
-	}
-
-	impl pallet_session::Config for Test {
-		type RuntimeEvent = ();
-		type ValidatorId = AccountId;
-		type ValidatorIdOf = sp_runtime::traits::ConvertInto;
-		type ShouldEndSession = StakePallet;
-		type NextSessionRotation = StakePallet;
-		type SessionManager = StakePallet;
-		type SessionHandler = <MockSessionKeys as OpaqueKeys>::KeyTypeIdProviders;
-		type Keys = MockSessionKeys;
-		type WeightInfo = ();
-	}
-
-	impl parachain_staking::Config for Test {
-		type RuntimeEvent = ();
-		type Currency = Balances;
-		type CurrencyBalance = <Self as pallet_balances::Config>::Balance;
-		type MinBlocksPerRound = MinBlocksPerRound;
-		type DefaultBlocksPerRound = DefaultBlocksPerRound;
-		type StakeDuration = StakeDuration;
-		type ExitQueueDelay = ExitQueueDelay;
-		type MinCollators = MinCollators;
-		type MinRequiredCollators = MinCollators;
-		type MaxDelegationsPerRound = MaxDelegationsPerRound;
-		type MaxDelegatorsPerCollator = MaxDelegatorsPerCollator;
-		type MinCollatorStake = MinCollatorStake;
-		type MinCollatorCandidateStake = MinCollatorStake;
-		type MaxTopCandidates = MaxCollatorCandidates;
-		type MinDelegatorStake = MinDelegatorStake;
-		type MaxUnstakeRequests = MaxUnstakeRequests;
-		type NetworkRewardRate = NetworkRewardRate;
-		type NetworkRewardStart = NetworkRewardStart;
-		type NetworkRewardBeneficiary = ();
-		type WeightInfo = ();
-		type FreezeIdentifier = RuntimeFreezeReason;
-		const BLOCKS_PER_YEAR: Self::BlockNumber = 5 * 60 * 24 * 36525 / 100;
 	}
 
 	pub(crate) const DID_00: SubjectId = SubjectId(AccountId32::new([0u8; 32]));
