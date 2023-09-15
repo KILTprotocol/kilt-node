@@ -128,12 +128,10 @@ fn check_succesful_migration() {
 
 			assert!(free_balance_pre_migration < KILT);
 
-			let mut requested_migrations = EntriesToMigrate::default();
-
-			let attestations =
+			let attestation =
 				BoundedVec::try_from([claim_hash].to_vec()).expect("Vec init should not fail for attestaions");
 
-			let delegations =
+			let delegation =
 				BoundedVec::try_from([parent_id].to_vec()).expect("Vec init should not fail for delegations");
 
 			let did = BoundedVec::try_from([alice_did].to_vec()).expect("Vec init should not fail for did");
@@ -146,12 +144,14 @@ fn check_succesful_migration() {
 			let public_credentials = BoundedVec::try_from([(subject_id, credential_id)].to_vec())
 				.expect("Vec init should not fail for public_credentials");
 
-			requested_migrations.attestation = attestations;
-			requested_migrations.delegation = delegations;
-			requested_migrations.did = did;
-			requested_migrations.lookup = lookup;
-			requested_migrations.w3n = w3n;
-			requested_migrations.public_credentials = public_credentials;
+			let requested_migrations = EntriesToMigrate {
+				attestation,
+				delegation,
+				did,
+				lookup,
+				w3n,
+				public_credentials,
+			};
 
 			assert_ok!(Migration::update_balance(
 				RuntimeOrigin::signed(ACCOUNT_00),
@@ -262,12 +262,10 @@ fn check_attempt_to_migrate_already_migrated_keys() {
 		.with_public_credentials(vec![(subject_id, credential_id, new_credential)])
 		.build()
 		.execute_with(|| {
-			let mut requested_migrations = EntriesToMigrate::default();
-
-			let attestations =
+			let attestation =
 				BoundedVec::try_from([claim_hash].to_vec()).expect("Vec init should not fail for attestaions");
 
-			let delegations =
+			let delegation =
 				BoundedVec::try_from([parent_id].to_vec()).expect("Vec init should not fail for delegations");
 
 			let did = BoundedVec::try_from([alice_did].to_vec()).expect("Vec init should not fail for did");
@@ -280,12 +278,14 @@ fn check_attempt_to_migrate_already_migrated_keys() {
 			let public_credentials = BoundedVec::try_from([(subject_id, credential_id)].to_vec())
 				.expect("Vec init should not fail for public_credentials");
 
-			requested_migrations.attestation = attestations;
-			requested_migrations.delegation = delegations;
-			requested_migrations.did = did;
-			requested_migrations.lookup = lookup;
-			requested_migrations.w3n = w3n;
-			requested_migrations.public_credentials = public_credentials;
+			let requested_migrations = EntriesToMigrate {
+				attestation,
+				delegation,
+				did,
+				lookup,
+				w3n,
+				public_credentials,
+			};
 
 			assert_ok!(Migration::update_balance(
 				RuntimeOrigin::signed(ACCOUNT_00),
@@ -327,12 +327,13 @@ fn check_excluded_keys_attestation() {
 
 			assert!(Pallet::<Test>::is_key_migrated(&hashed_key));
 
-			let mut requested_migrations = EntriesToMigrate::default();
-
-			let attestations =
+			let attestation =
 				BoundedVec::try_from([claim_hash].to_vec()).expect("Vec init should not fail for attestaions");
 
-			requested_migrations.attestation = attestations;
+			let requested_migrations = EntriesToMigrate {
+				attestation,
+				..Default::default()
+			};
 
 			assert_storage_noop!(
 				Migration::update_balance(RuntimeOrigin::signed(ACCOUNT_00), requested_migrations)
@@ -392,12 +393,13 @@ fn check_excluded_keys_delegation() {
 
 			assert!(Pallet::<Test>::is_key_migrated(&hashed_key));
 
-			let mut requested_migrations = EntriesToMigrate::default();
-
-			let delegations =
+			let delegation =
 				BoundedVec::try_from([delegation_id].to_vec()).expect("Vec init should not fail for attestaions");
 
-			requested_migrations.delegation = delegations;
+			let requested_migrations = EntriesToMigrate {
+				delegation,
+				..Default::default()
+			};
 
 			assert_storage_noop!(
 				Migration::update_balance(RuntimeOrigin::signed(ACCOUNT_00), requested_migrations)
@@ -429,11 +431,12 @@ fn check_excluded_keys_did() {
 
 			assert!(Pallet::<Test>::is_key_migrated(&hashed_key));
 
-			let mut requested_migrations = EntriesToMigrate::default();
+			let did = BoundedVec::try_from([alice_did].to_vec()).expect("Vec init should not fail for did");
 
-			let dids = BoundedVec::try_from([alice_did].to_vec()).expect("Vec init should not fail for did");
-
-			requested_migrations.did = dids;
+			let requested_migrations = EntriesToMigrate {
+				did,
+				..Default::default()
+			};
 
 			assert_storage_noop!(
 				Migration::update_balance(RuntimeOrigin::signed(ACCOUNT_00), requested_migrations)
@@ -469,11 +472,12 @@ fn check_excluded_keys_lookup() {
 
 			assert!(Pallet::<Test>::is_key_migrated(&hashed_key));
 
-			let mut requested_migrations = EntriesToMigrate::default();
-
 			let lookup = BoundedVec::try_from([linked_acc].to_vec()).expect("Vec init should not fail for did");
 
-			requested_migrations.lookup = lookup;
+			let requested_migrations = EntriesToMigrate {
+				lookup,
+				..Default::default()
+			};
 
 			assert_storage_noop!(
 				Migration::update_balance(RuntimeOrigin::signed(ACCOUNT_00), requested_migrations)
@@ -501,11 +505,12 @@ fn check_excluded_keys_w3n() {
 
 			assert!(Pallet::<Test>::is_key_migrated(&hashed_key));
 
-			let mut requested_migrations = EntriesToMigrate::default();
-
 			let w3n = BoundedVec::try_from([web3_name_00].to_vec()).expect("Vec init should not fail for did");
 
-			requested_migrations.w3n = w3n;
+			let requested_migrations = EntriesToMigrate {
+				w3n,
+				..Default::default()
+			};
 
 			assert_storage_noop!(
 				Migration::update_balance(RuntimeOrigin::signed(ACCOUNT_00), requested_migrations)
@@ -543,12 +548,13 @@ fn check_excluded_keys_public_credentials() {
 
 			assert!(Pallet::<Test>::is_key_migrated(&hashed_key));
 
-			let mut requested_migrations = EntriesToMigrate::default();
-
 			let public_credentials =
 				BoundedVec::try_from([(subject_id, credential_id)].to_vec()).expect("Vec init should not fail for did");
 
-			requested_migrations.public_credentials = public_credentials;
+			let requested_migrations = EntriesToMigrate {
+				public_credentials,
+				..Default::default()
+			};
 
 			assert_storage_noop!(
 				Migration::update_balance(RuntimeOrigin::signed(ACCOUNT_00), requested_migrations)
