@@ -70,10 +70,16 @@ pub mod test {
 			.with_balances(vec![(alice_did.clone(), balance)])
 			.with_dids(vec![(alice_did.clone(), did_details)])
 			.build_and_execute_with_sanity_tests(None, || {
+				let hold_balance_pre_migration =
+					<<Test as Config>::Currency as InspectHold<AccountIdOf<Test>>>::balance_on_hold(
+						&HoldReason::Deposit.into(),
+						&ACCOUNT_00,
+					);
+
+				assert_eq!(hold_balance_pre_migration, <Test as did::Config>::BaseDeposit::get());
+
 				kilt_support::migration::translate_holds_to_reserve::<Test>(HoldReason::Deposit.into());
 
-				// before the migration the balance should be reseved and not on
-				// hold.
 				let hold_balance = <<Test as Config>::Currency as InspectHold<AccountIdOf<Test>>>::balance_on_hold(
 					&HoldReason::Deposit.into(),
 					&alice_did,
