@@ -98,7 +98,7 @@ pub mod pallet {
 
 	use ctype::CtypeHashOf;
 	use kilt_support::{
-		traits::{CallSources, MigrationManager, StorageDepositCollector},
+		traits::{BalanceMigrationManager, CallSources, StorageDepositCollector},
 		Deposit,
 	};
 
@@ -122,7 +122,7 @@ pub mod pallet {
 
 	pub(crate) type HoldReasonOf<T> = <T as Config>::RuntimeHoldReason;
 
-	pub(crate) type MigrationManagerOf<T> = <T as Config>::MigrationManager;
+	pub(crate) type BalanceMigrationManagerOf<T> = <T as Config>::BalanceMigrationManager;
 
 	pub type AttestationDetailsOf<T> =
 		AttestationDetails<CtypeHashOf<T>, AttesterOf<T>, AuthorizationIdOf<T>, AccountIdOf<T>, BalanceOf<T>>;
@@ -164,7 +164,7 @@ pub mod pallet {
 			+ AttestationAccessControl<Self::AttesterId, Self::AuthorizationId, CtypeHashOf<Self>, ClaimHashOf<Self>>;
 
 		/// Migration manager to handle new created entries
-		type MigrationManager: MigrationManager<AccountIdOf<Self>, BalanceOf<Self>>;
+		type BalanceMigrationManager: BalanceMigrationManager<AccountIdOf<Self>, BalanceOf<Self>>;
 	}
 
 	#[pallet::pallet]
@@ -292,7 +292,9 @@ pub mod pallet {
 			let authorization_id = authorization.as_ref().map(|ac| ac.authorization_id());
 
 			let deposit = AttestationStorageDepositCollector::<T>::create_deposit(payer, deposit_amount)?;
-			<T as Config>::MigrationManager::exclude_key_from_migration(&Attestations::<T>::hashed_key_for(claim_hash));
+			<T as Config>::BalanceMigrationManager::exclude_key_from_migration(&Attestations::<T>::hashed_key_for(
+				claim_hash,
+			));
 
 			log::debug!("insert Attestation");
 
@@ -465,7 +467,7 @@ pub mod pallet {
 			let attestation = Attestations::<T>::get(claim_hash).ok_or(Error::<T>::NotFound)?;
 			ensure!(attestation.attester == subject, Error::<T>::NotAuthorized);
 
-			AttestationStorageDepositCollector::<T>::change_deposit_owner::<MigrationManagerOf<T>>(
+			AttestationStorageDepositCollector::<T>::change_deposit_owner::<BalanceMigrationManagerOf<T>>(
 				&claim_hash,
 				sender,
 			)?;
@@ -484,7 +486,7 @@ pub mod pallet {
 			let attestation = Attestations::<T>::get(claim_hash).ok_or(Error::<T>::NotFound)?;
 			ensure!(attestation.deposit.owner == sender, Error::<T>::NotAuthorized);
 
-			AttestationStorageDepositCollector::<T>::update_deposit::<MigrationManagerOf<T>>(&claim_hash)?;
+			AttestationStorageDepositCollector::<T>::update_deposit::<BalanceMigrationManagerOf<T>>(&claim_hash)?;
 
 			Ok(())
 		}
@@ -493,11 +495,11 @@ pub mod pallet {
 	impl<T: Config> Pallet<T> {
 		fn remove_attestation(attestation: AttestationDetailsOf<T>, claim_hash: ClaimHashOf<T>) -> DispatchResult {
 			let is_key_migrated =
-				<T as Config>::MigrationManager::is_key_migrated(&Attestations::<T>::hashed_key_for(claim_hash));
+				<T as Config>::BalanceMigrationManager::is_key_migrated(&Attestations::<T>::hashed_key_for(claim_hash));
 			if is_key_migrated {
 				AttestationStorageDepositCollector::<T>::free_deposit(attestation.deposit)?;
 			} else {
-				<T as Config>::MigrationManager::release_reserved_deposit(
+				<T as Config>::BalanceMigrationManager::release_reserved_deposit(
 					&attestation.deposit.owner,
 					&attestation.deposit.amount,
 				)

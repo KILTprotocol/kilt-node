@@ -320,7 +320,7 @@ pub(crate) mod runtime {
 		type AttesterId = SubjectId;
 		type AuthorizationId = DelegationNodeIdOf<Self>;
 		type AccessControl = DelegationAc<Self>;
-		type MigrationManager = ();
+		type BalanceMigrationManager = ();
 	}
 
 	parameter_types! {
@@ -350,7 +350,7 @@ pub(crate) mod runtime {
 		type Currency = Balances;
 		type Deposit = DepositMock;
 		type WeightInfo = ();
-		type MigrationManager = ();
+		type BalanceMigrationManager = ();
 	}
 
 	pub(crate) const ACCOUNT_00: AccountId = AccountId::new([1u8; 32]);

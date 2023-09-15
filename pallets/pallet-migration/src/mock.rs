@@ -164,7 +164,7 @@ pub mod runtime {
 		type AttesterId = SubjectId;
 		type AuthorizationId = SubjectId;
 		type AccessControl = MockAccessControl<Self>;
-		type MigrationManager = Migration;
+		type BalanceMigrationManager = Migration;
 	}
 
 	parameter_types! {
@@ -241,7 +241,7 @@ pub mod runtime {
 		type Currency = Balances;
 		type Deposit = DepositMock;
 		type WeightInfo = ();
-		type MigrationManager = Migration;
+		type BalanceMigrationManager = Migration;
 	}
 
 	parameter_types! {
@@ -302,7 +302,7 @@ pub mod runtime {
 		type MaxServiceUrlLength = MaxServiceUrlLength;
 		type MaxNumberOfTypesPerService = MaxNumberOfTypesPerService;
 		type MaxNumberOfUrlsPerService = MaxNumberOfUrlsPerService;
-		type MigrationManager = Migration;
+		type BalanceMigrationManager = Migration;
 	}
 
 	parameter_types! {
@@ -318,7 +318,7 @@ pub mod runtime {
 		type OriginSuccess = mock_origin::DoubleOrigin<AccountId, SubjectId>;
 		type DidIdentifier = SubjectId;
 		type WeightInfo = ();
-		type MigrationManager = Migration;
+		type BalanceMigrationManager = Migration;
 	}
 
 	pub(crate) type TestWeb3Name = AsciiWeb3Name<Test>;
@@ -348,7 +348,7 @@ pub mod runtime {
 		type Web3Name = TestWeb3Name;
 		type Web3NameOwner = TestWeb3NameOwner;
 		type WeightInfo = ();
-		type MigrationManager = Migration;
+		type BalanceMigrationManager = Migration;
 	}
 
 	#[derive(
@@ -430,7 +430,7 @@ pub mod runtime {
 		type OriginSuccess = mock_origin::DoubleOrigin<AccountId, Self::AttesterId>;
 		type SubjectId = TestSubjectId;
 		type WeightInfo = ();
-		type MigrationManager = Migration;
+		type BalanceMigrationManager = Migration;
 	}
 
 	pub(crate) type BlockNumber = u64;

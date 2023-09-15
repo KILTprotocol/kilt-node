@@ -90,7 +90,7 @@ pub trait ItemFilter<Item> {
 	fn should_include(&self, credential: &Item) -> bool;
 }
 
-pub trait MigrationManager<AccountId, Balance> {
+pub trait BalanceMigrationManager<AccountId, Balance> {
 	fn release_reserved_deposit(user: &AccountId, balance: &Balance);
 
 	fn exclude_key_from_migration(key: &[u8]);
@@ -98,7 +98,7 @@ pub trait MigrationManager<AccountId, Balance> {
 	fn is_key_migrated(key: &[u8]) -> bool;
 }
 
-impl<AccountId, Balance> MigrationManager<AccountId, Balance> for () {
+impl<AccountId, Balance> BalanceMigrationManager<AccountId, Balance> for () {
 	fn exclude_key_from_migration(_key: &[u8]) {}
 
 	fn is_key_migrated(_key: &[u8]) -> bool {
@@ -163,20 +163,24 @@ pub trait StorageDepositCollector<AccountId, Key, RuntimeHoldReason> {
 	/// The deposit balance of the current owner will be freed, while the
 	/// deposit balance of the new owner will get reserved. The deposit amount
 	/// will not change even if the required byte and item fees were updated.
-	fn change_deposit_owner<DepositMigrationManager>(key: &Key, new_owner: AccountId) -> Result<(), DispatchError>
+	fn change_deposit_owner<DepositBalanceMigrationManager>(
+		key: &Key,
+		new_owner: AccountId,
+	) -> Result<(), DispatchError>
 	where
-		DepositMigrationManager: MigrationManager<AccountId, <Self::Currency as Inspect<AccountId>>::Balance>,
+		DepositBalanceMigrationManager:
+			BalanceMigrationManager<AccountId, <Self::Currency as Inspect<AccountId>>::Balance>,
 	{
 		let hashed_key = Self::get_hashed_key(key)?;
-		let is_key_migrated = DepositMigrationManager::is_key_migrated(&hashed_key);
+		let is_key_migrated = DepositBalanceMigrationManager::is_key_migrated(&hashed_key);
 		let deposit = Self::deposit(key)?;
 		let reason = Self::reason();
 
 		if is_key_migrated {
 			free_deposit::<AccountId, Self::Currency>(&deposit, &reason.clone().into())?;
 		} else {
-			DepositMigrationManager::release_reserved_deposit(&deposit.owner, &deposit.amount);
-			DepositMigrationManager::exclude_key_from_migration(&hashed_key);
+			DepositBalanceMigrationManager::release_reserved_deposit(&deposit.owner, &deposit.amount);
+			DepositBalanceMigrationManager::exclude_key_from_migration(&hashed_key);
 		}
 
 		let deposit = Deposit {
@@ -197,20 +201,21 @@ pub trait StorageDepositCollector<AccountId, Key, RuntimeHoldReason> {
 	/// updates the deposit amount. It either frees parts of the reserved
 	/// balance in case the deposit was lowered or reserves more balance when
 	/// the deposit was raised.
-	fn update_deposit<DepositMigrationManager>(key: &Key) -> Result<(), DispatchError>
+	fn update_deposit<DepositBalanceMigrationManager>(key: &Key) -> Result<(), DispatchError>
 	where
-		DepositMigrationManager: MigrationManager<AccountId, <Self::Currency as Inspect<AccountId>>::Balance>,
+		DepositBalanceMigrationManager:
+			BalanceMigrationManager<AccountId, <Self::Currency as Inspect<AccountId>>::Balance>,
 	{
 		let deposit = Self::deposit(key)?;
 		let reason = Self::reason();
 		let hashed_key = Self::get_hashed_key(key)?;
-		let is_key_migrated = DepositMigrationManager::is_key_migrated(&hashed_key);
+		let is_key_migrated = DepositBalanceMigrationManager::is_key_migrated(&hashed_key);
 
 		if is_key_migrated {
 			free_deposit::<AccountId, Self::Currency>(&deposit, &reason.clone().into())?;
 		} else {
-			DepositMigrationManager::release_reserved_deposit(&deposit.owner, &deposit.amount);
-			DepositMigrationManager::exclude_key_from_migration(&hashed_key);
+			DepositBalanceMigrationManager::release_reserved_deposit(&deposit.owner, &deposit.amount);
+			DepositBalanceMigrationManager::exclude_key_from_migration(&hashed_key);
 		}
 
 		let deposit = Deposit {

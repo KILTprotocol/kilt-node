@@ -41,7 +41,7 @@ pub mod pallet {
 		traits::{fungible::Inspect, Currency, ReservableCurrency},
 	};
 	use frame_system::pallet_prelude::*;
-	use kilt_support::traits::MigrationManager;
+	use kilt_support::traits::BalanceMigrationManager;
 	use pallet_did_lookup::{linkable_account::LinkableAccountId, ConnectedDids};
 	use pallet_web3_names::{Owner, Web3NameOf};
 	use public_credentials::{CredentialIdOf, Credentials, SubjectIdOf};
@@ -249,7 +249,7 @@ pub mod pallet {
 		}
 	}
 
-	impl<T: Config> MigrationManager<AccountIdOf<T>, BalanceOf<T>> for Pallet<T> {
+	impl<T: Config> BalanceMigrationManager<AccountIdOf<T>, BalanceOf<T>> for Pallet<T> {
 		fn exclude_key_from_migration(key: &[u8]) {
 			let key_hash = <T as frame_system::Config>::Hashing::hash(key);
 			MigratedKeys::<T>::insert(key_hash, ());

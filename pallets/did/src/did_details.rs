@@ -24,7 +24,7 @@ use frame_support::{
 	RuntimeDebug,
 };
 use kilt_support::{
-	traits::{MigrationManager, StorageDepositCollector},
+	traits::{BalanceMigrationManager, StorageDepositCollector},
 	Deposit,
 };
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen, WrapperTypeEncode};
@@ -345,19 +345,19 @@ impl<T: Config> DidDetails<T> {
 
 		let hashed_key = Did::<T>::hashed_key_for(did_subject);
 
-		let is_key_migrated = <T as Config>::MigrationManager::is_key_migrated(&hashed_key);
+		let is_key_migrated = <T as Config>::BalanceMigrationManager::is_key_migrated(&hashed_key);
 
 		match new_required_deposit.cmp(&self.deposit.amount) {
 			Ordering::Greater => {
 				let deposit_to_reserve = new_required_deposit.saturating_sub(self.deposit.amount);
 
 				if !is_key_migrated {
-					<T as Config>::MigrationManager::release_reserved_deposit(
+					<T as Config>::BalanceMigrationManager::release_reserved_deposit(
 						&self.deposit.owner,
 						&self.deposit.amount,
 					);
 					DidDepositCollector::<T>::create_deposit(self.deposit.clone().owner, new_required_deposit)?;
-					<T as Config>::MigrationManager::exclude_key_from_migration(&hashed_key);
+					<T as Config>::BalanceMigrationManager::exclude_key_from_migration(&hashed_key);
 					self.deposit.amount = new_required_deposit;
 				} else {
 					DidDepositCollector::<T>::create_deposit(self.deposit.clone().owner, deposit_to_reserve)?;
@@ -373,7 +373,10 @@ impl<T: Config> DidDetails<T> {
 						amount: deposit_to_release,
 					})?;
 				} else {
-					<T as Config>::MigrationManager::release_reserved_deposit(&self.deposit.owner, &deposit_to_release);
+					<T as Config>::BalanceMigrationManager::release_reserved_deposit(
+						&self.deposit.owner,
+						&deposit_to_release,
+					);
 				}
 
 				self.deposit.amount = self.deposit.amount.saturating_sub(deposit_to_release);

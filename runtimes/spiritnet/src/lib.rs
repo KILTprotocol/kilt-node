@@ -551,7 +551,7 @@ impl attestation::Config for Runtime {
 	type AttesterId = DidIdentifier;
 	type AuthorizationId = AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>;
 	type AccessControl = PalletAuthorize<DelegationAc<Runtime>>;
-	type MigrationManager = Migration;
+	type BalanceMigrationManager = Migration;
 }
 
 impl delegation::Config for Runtime {
@@ -581,7 +581,7 @@ impl delegation::Config for Runtime {
 	type WeightInfo = weights::delegation::WeightInfo<Runtime>;
 	type Currency = Balances;
 	type Deposit = constants::delegation::DelegationDeposit;
-	type MigrationManager = Migration;
+	type BalanceMigrationManager = Migration;
 }
 
 impl ctype::Config for Runtime {
@@ -634,7 +634,7 @@ impl did::Config for Runtime {
 	type MaxNumberOfTypesPerService = constants::did::MaxNumberOfTypesPerService;
 	type MaxNumberOfUrlsPerService = constants::did::MaxNumberOfUrlsPerService;
 	type WeightInfo = weights::did::WeightInfo<Runtime>;
-	type MigrationManager = Migration;
+	type BalanceMigrationManager = Migration;
 }
 
 impl pallet_did_lookup::Config for Runtime {
@@ -650,7 +650,7 @@ impl pallet_did_lookup::Config for Runtime {
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
 
 	type WeightInfo = weights::pallet_did_lookup::WeightInfo<Runtime>;
-	type MigrationManager = Migration;
+	type BalanceMigrationManager = Migration;
 }
 
 impl pallet_web3_names::Config for Runtime {
@@ -666,7 +666,7 @@ impl pallet_web3_names::Config for Runtime {
 	type Web3Name = pallet_web3_names::web3_name::AsciiWeb3Name<Runtime>;
 	type Web3NameOwner = DidIdentifier;
 	type WeightInfo = weights::pallet_web3_names::WeightInfo<Runtime>;
-	type MigrationManager = Migration;
+	type BalanceMigrationManager = Migration;
 }
 
 impl pallet_inflation::Config for Runtime {
@@ -727,7 +727,7 @@ impl public_credentials::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type SubjectId = runtime_common::assets::AssetDid;
 	type WeightInfo = weights::public_credentials::WeightInfo<Runtime>;
-	type MigrationManager = Migration;
+	type BalanceMigrationManager = Migration;
 }
 
 /// The type used to represent the kinds of proxying allowed.

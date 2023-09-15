@@ -56,7 +56,7 @@ pub mod pallet {
 	use sp_std::{fmt::Debug, vec::Vec};
 
 	use kilt_support::{
-		traits::{CallSources, MigrationManager, StorageDepositCollector},
+		traits::{BalanceMigrationManager, CallSources, StorageDepositCollector},
 		Deposit,
 	};
 
@@ -73,7 +73,7 @@ pub mod pallet {
 	pub type Web3OwnershipOf<T> =
 		Web3NameOwnership<Web3NameOwnerOf<T>, Deposit<AccountIdOf<T>, BalanceOf<T>>, BlockNumberFor<T>>;
 
-	pub(crate) type MigrationManagerOf<T> = <T as Config>::MigrationManager;
+	pub(crate) type BalanceMigrationManagerOf<T> = <T as Config>::BalanceMigrationManager;
 	pub(crate) type CurrencyOf<T> = <T as Config>::Currency;
 	pub type BalanceOf<T> = <CurrencyOf<T> as Inspect<AccountIdOf<T>>>::Balance;
 
@@ -140,7 +140,7 @@ pub mod pallet {
 		type WeightInfo: WeightInfo;
 
 		/// Migration manager to handle new created entries
-		type MigrationManager: MigrationManager<AccountIdOf<Self>, BalanceOf<Self>>;
+		type BalanceMigrationManager: BalanceMigrationManager<AccountIdOf<Self>, BalanceOf<Self>>;
 	}
 
 	#[pallet::event]
@@ -364,7 +364,7 @@ pub mod pallet {
 			let source = <T as Config>::OwnerOrigin::ensure_origin(origin)?;
 			let w3n_owner = source.subject();
 			let name = Names::<T>::get(&w3n_owner).ok_or(Error::<T>::NotFound)?;
-			Web3NameStorageDepositCollector::<T>::change_deposit_owner::<MigrationManagerOf<T>>(
+			Web3NameStorageDepositCollector::<T>::change_deposit_owner::<BalanceMigrationManagerOf<T>>(
 				&name,
 				source.sender(),
 			)?;
@@ -383,7 +383,7 @@ pub mod pallet {
 			let w3n_entry = Owner::<T>::get(&name).ok_or(Error::<T>::NotFound)?;
 			ensure!(w3n_entry.deposit.owner == source, Error::<T>::NotAuthorized);
 
-			Web3NameStorageDepositCollector::<T>::update_deposit::<MigrationManagerOf<T>>(&name)?;
+			Web3NameStorageDepositCollector::<T>::update_deposit::<BalanceMigrationManagerOf<T>>(&name)?;
 
 			Ok(())
 		}
@@ -431,7 +431,7 @@ pub mod pallet {
 			let block_number = frame_system::Pallet::<T>::block_number();
 
 			let deposit = Web3NameStorageDepositCollector::<T>::create_deposit(deposit_payer, T::Deposit::get())?;
-			<T as Config>::MigrationManager::exclude_key_from_migration(&Owner::<T>::hashed_key_for(&name));
+			<T as Config>::BalanceMigrationManager::exclude_key_from_migration(&Owner::<T>::hashed_key_for(&name));
 
 			Names::<T>::insert(&owner, name.clone());
 			Owner::<T>::insert(
@@ -479,12 +479,13 @@ pub mod pallet {
 			let name_ownership = Owner::<T>::take(name).unwrap();
 			Names::<T>::remove(&name_ownership.owner);
 
-			let is_key_migrated = <T as Config>::MigrationManager::is_key_migrated(&Owner::<T>::hashed_key_for(name));
+			let is_key_migrated =
+				<T as Config>::BalanceMigrationManager::is_key_migrated(&Owner::<T>::hashed_key_for(name));
 
 			if is_key_migrated {
 				Web3NameStorageDepositCollector::<T>::free_deposit(name_ownership.clone().deposit)?;
 			} else {
-				<T as Config>::MigrationManager::release_reserved_deposit(
+				<T as Config>::BalanceMigrationManager::release_reserved_deposit(
 					&name_ownership.deposit.owner,
 					&name_ownership.deposit.amount,
 				)

@@ -64,7 +64,7 @@ pub mod pallet {
 		Parameter,
 	};
 	use frame_system::pallet_prelude::*;
-	use kilt_support::traits::MigrationManager;
+	use kilt_support::traits::BalanceMigrationManager;
 	use sp_runtime::{
 		traits::{Hash, SaturatedConversion},
 		DispatchError,
@@ -107,7 +107,7 @@ pub mod pallet {
 	pub type AttesterOf<T> = <T as Config>::AttesterId;
 	/// The type of account's balances.
 	pub type BalanceOf<T> = <CurrencyOf<T> as Inspect<AccountIdOf<T>>>::Balance;
-	pub(crate) type MigrationManagerOf<T> = <T as Config>::MigrationManager;
+	pub(crate) type BalanceMigrationManagerOf<T> = <T as Config>::BalanceMigrationManager;
 	pub(crate) type AuthorizationIdOf<T> = <T as Config>::AuthorizationId;
 	pub type CredentialIdOf<T> = <<T as Config>::CredentialHash as sp_runtime::traits::Hash>::Output;
 
@@ -174,7 +174,7 @@ pub mod pallet {
 		type MaxSubjectIdLength: Get<u32>;
 
 		/// Migration manager to handle new created entries
-		type MigrationManager: MigrationManager<AccountIdOf<Self>, BalanceOf<Self>>;
+		type BalanceMigrationManager: BalanceMigrationManager<AccountIdOf<Self>, BalanceOf<Self>>;
 	}
 
 	#[pallet::pallet]
@@ -313,7 +313,7 @@ pub mod pallet {
 			let deposit = PublicCredentialDepositCollector::<T>::create_deposit(payer, deposit_amount)
 				.map_err(|_| Error::<T>::UnableToPayFees)?;
 
-			<T as Config>::MigrationManager::exclude_key_from_migration(&Credentials::<T>::hashed_key_for(
+			<T as Config>::BalanceMigrationManager::exclude_key_from_migration(&Credentials::<T>::hashed_key_for(
 				&subject,
 				&credential_id,
 			));
@@ -530,7 +530,7 @@ pub mod pallet {
 
 			ensure!(subject == credential_entry.attester, Error::<T>::NotAuthorized);
 
-			PublicCredentialDepositCollector::<T>::change_deposit_owner::<MigrationManagerOf<T>>(
+			PublicCredentialDepositCollector::<T>::change_deposit_owner::<BalanceMigrationManagerOf<T>>(
 				&credential_id,
 				source.sender(),
 			)?;
@@ -549,7 +549,7 @@ pub mod pallet {
 
 			ensure!(source == credential_entry.deposit.owner, Error::<T>::NotAuthorized);
 
-			PublicCredentialDepositCollector::<T>::update_deposit::<MigrationManagerOf<T>>(&credential_id)?;
+			PublicCredentialDepositCollector::<T>::update_deposit::<BalanceMigrationManagerOf<T>>(&credential_id)?;
 
 			Ok(())
 		}
@@ -566,14 +566,13 @@ pub mod pallet {
 			let details = Credentials::<T>::take(&credential_subject, &credential_id).ok_or(Error::<T>::NotFound)?;
 			CredentialSubjects::<T>::remove(&credential_id);
 
-			let is_key_migrated = <T as Config>::MigrationManager::is_key_migrated(&Credentials::<T>::hashed_key_for(
-				&credential_subject,
-				&credential_id,
-			));
+			let is_key_migrated = <T as Config>::BalanceMigrationManager::is_key_migrated(
+				&Credentials::<T>::hashed_key_for(&credential_subject, &credential_id),
+			);
 			if is_key_migrated {
 				PublicCredentialDepositCollector::<T>::free_deposit(credential.deposit)?;
 			} else {
-				<T as Config>::MigrationManager::release_reserved_deposit(
+				<T as Config>::BalanceMigrationManager::release_reserved_deposit(
 					&details.deposit.owner,
 					&details.deposit.amount,
 				);

@@ -302,7 +302,7 @@ impl attestation::Config for Runtime {
 	type AttesterId = DidIdentifier;
 	type AuthorizationId = AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>;
 	type AccessControl = PalletAuthorize<DelegationAc<Runtime>>;
-	type MigrationManager = ();
+	type BalanceMigrationManager = ();
 }
 
 parameter_types! {
@@ -340,7 +340,7 @@ impl delegation::Config for Runtime {
 	type WeightInfo = ();
 	type Currency = Balances;
 	type Deposit = DelegationDeposit;
-	type MigrationManager = ();
+	type BalanceMigrationManager = ();
 }
 
 parameter_types! {
@@ -412,7 +412,7 @@ impl did::Config for Runtime {
 	type MaxNumberOfTypesPerService = MaxNumberOfTypesPerService;
 	type MaxNumberOfUrlsPerService = MaxNumberOfUrlsPerService;
 	type WeightInfo = ();
-	type MigrationManager = ();
+	type BalanceMigrationManager = ();
 }
 
 impl pallet_did_lookup::Config for Runtime {
@@ -426,7 +426,7 @@ impl pallet_did_lookup::Config for Runtime {
 
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
-	type MigrationManager = ();
+	type BalanceMigrationManager = ();
 	type WeightInfo = ();
 }
 
@@ -443,7 +443,7 @@ impl pallet_web3_names::Config for Runtime {
 	type Web3Name = pallet_web3_names::web3_name::AsciiWeb3Name<Runtime>;
 	type Web3NameOwner = DidIdentifier;
 	type WeightInfo = ();
-	type MigrationManager = ();
+	type BalanceMigrationManager = ();
 }
 
 parameter_types! {
@@ -495,7 +495,7 @@ impl public_credentials::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type SubjectId = runtime_common::assets::AssetDid;
 	type WeightInfo = ();
-	type MigrationManager = ();
+	type BalanceMigrationManager = ();
 }
 
 /// The type used to represent the kinds of proxying allowed.

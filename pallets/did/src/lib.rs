@@ -149,7 +149,7 @@ pub mod pallet {
 	};
 	use frame_system::pallet_prelude::*;
 	use kilt_support::{
-		traits::{CallSources, MigrationManager, StorageDepositCollector},
+		traits::{BalanceMigrationManager, CallSources, StorageDepositCollector},
 		Deposit,
 	};
 	use service_endpoints::DidEndpoint;
@@ -317,7 +317,7 @@ pub mod pallet {
 		type WeightInfo: WeightInfo;
 
 		/// Migration manager to handle new created entries
-		type MigrationManager: MigrationManager<AccountIdOf<Self>, BalanceOf<Self>>;
+		type BalanceMigrationManager: BalanceMigrationManager<AccountIdOf<Self>, BalanceOf<Self>>;
 	}
 
 	#[pallet::pallet]
@@ -604,7 +604,9 @@ pub mod pallet {
 			DidDepositCollector::<T>::create_deposit(details.submitter, did_entry.deposit.amount)
 				.map_err(|_e| Error::<T>::UnableToPayFees)?;
 
-			<T as Config>::MigrationManager::exclude_key_from_migration(&Did::<T>::hashed_key_for(&did_identifier));
+			<T as Config>::BalanceMigrationManager::exclude_key_from_migration(&Did::<T>::hashed_key_for(
+				&did_identifier,
+			));
 
 			Did::<T>::insert(&did_identifier, did_entry.clone());
 
@@ -1130,7 +1132,7 @@ pub mod pallet {
 			let subject = source.subject();
 			let sender = source.sender();
 
-			DidDepositCollector::<T>::change_deposit_owner::<<T as Config>::MigrationManager>(&subject, sender)?;
+			DidDepositCollector::<T>::change_deposit_owner::<<T as Config>::BalanceMigrationManager>(&subject, sender)?;
 
 			Ok(())
 		}
@@ -1269,11 +1271,11 @@ pub mod pallet {
 			DidEndpointsCount::<T>::remove(&did_subject);
 
 			let is_key_migrated =
-				<T as Config>::MigrationManager::is_key_migrated(&Did::<T>::hashed_key_for(did_subject.clone()));
+				<T as Config>::BalanceMigrationManager::is_key_migrated(&Did::<T>::hashed_key_for(did_subject.clone()));
 			if is_key_migrated {
 				DidDepositCollector::<T>::free_deposit(did_entry.deposit)?;
 			} else {
-				<T as Config>::MigrationManager::release_reserved_deposit(
+				<T as Config>::BalanceMigrationManager::release_reserved_deposit(
 					&did_entry.deposit.owner,
 					&did_entry.deposit.amount,
 				)

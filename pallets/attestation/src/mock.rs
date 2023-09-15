@@ -316,7 +316,7 @@ pub(crate) mod runtime {
 		type AttesterId = SubjectId;
 		type AuthorizationId = SubjectId;
 		type AccessControl = MockAccessControl<Self>;
-		type MigrationManager = ();
+		type BalanceMigrationManager = ();
 	}
 
 	pub(crate) const ACCOUNT_00: AccountId = AccountId::new([1u8; 32]);
