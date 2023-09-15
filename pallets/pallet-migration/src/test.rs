@@ -54,7 +54,7 @@ use public_credentials::{
 use sp_core::{ed25519, sr25519, Pair};
 use sp_runtime::{traits::IdentifyAccount, BoundedVec, MultiSignature, MultiSigner};
 
-use crate::{mock::*, MigratedKeys, Pallet};
+use crate::{mock::*, EntriesToMigrate, MigratedKeys, Pallet};
 
 #[test]
 fn check_succesful_migration() {
@@ -128,7 +128,7 @@ fn check_succesful_migration() {
 
 			assert!(free_balance_pre_migration < KILT);
 
-			let mut requested_migrations = get_default_entries_to_migrate();
+			let mut requested_migrations = EntriesToMigrate::default();
 
 			let attestations =
 				BoundedVec::try_from([claim_hash].to_vec()).expect("Vec init should not fail for attestaions");
@@ -264,7 +264,7 @@ fn check_unsuccesful_migration() {
 		.execute_with(|| {
 			translate_all_holds_to_reserves();
 
-			let mut requested_migrations = get_default_entries_to_migrate();
+			let mut requested_migrations = EntriesToMigrate::default();
 
 			let attestations =
 				BoundedVec::try_from([claim_hash].to_vec()).expect("Vec init should not fail for attestaions");
@@ -329,7 +329,7 @@ fn check_excluded_keys_attestation() {
 
 			assert!(Pallet::<Test>::is_key_migrated(&hashed_key));
 
-			let mut requested_migrations = get_default_entries_to_migrate();
+			let mut requested_migrations = EntriesToMigrate::default();
 
 			let attestations =
 				BoundedVec::try_from([claim_hash].to_vec()).expect("Vec init should not fail for attestaions");
@@ -394,7 +394,7 @@ fn check_excluded_keys_delegation() {
 
 			assert!(Pallet::<Test>::is_key_migrated(&hashed_key));
 
-			let mut requested_migrations = get_default_entries_to_migrate();
+			let mut requested_migrations = EntriesToMigrate::default();
 
 			let delegations =
 				BoundedVec::try_from([delegation_id].to_vec()).expect("Vec init should not fail for attestaions");
@@ -431,7 +431,7 @@ fn check_excluded_keys_did() {
 
 			assert!(Pallet::<Test>::is_key_migrated(&hashed_key));
 
-			let mut requested_migrations = get_default_entries_to_migrate();
+			let mut requested_migrations = EntriesToMigrate::default();
 
 			let dids = BoundedVec::try_from([alice_did].to_vec()).expect("Vec init should not fail for did");
 
@@ -471,7 +471,7 @@ fn check_excluded_keys_lookup() {
 
 			assert!(Pallet::<Test>::is_key_migrated(&hashed_key));
 
-			let mut requested_migrations = get_default_entries_to_migrate();
+			let mut requested_migrations = EntriesToMigrate::default();
 
 			let lookup = BoundedVec::try_from([linked_acc].to_vec()).expect("Vec init should not fail for did");
 
@@ -503,7 +503,7 @@ fn check_excluded_keys_w3n() {
 
 			assert!(Pallet::<Test>::is_key_migrated(&hashed_key));
 
-			let mut requested_migrations = get_default_entries_to_migrate();
+			let mut requested_migrations = EntriesToMigrate::default();
 
 			let w3n = BoundedVec::try_from([web3_name_00].to_vec()).expect("Vec init should not fail for did");
 
@@ -545,7 +545,7 @@ fn check_excluded_keys_public_credentials() {
 
 			assert!(Pallet::<Test>::is_key_migrated(&hashed_key));
 
-			let mut requested_migrations = get_default_entries_to_migrate();
+			let mut requested_migrations = EntriesToMigrate::default();
 
 			let public_credentials =
 				BoundedVec::try_from([(subject_id, credential_id)].to_vec()).expect("Vec init should not fail for did");

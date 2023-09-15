@@ -17,21 +17,23 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use crate::{Config, EntriesToMigrate};
-use sp_runtime::BoundedVec;
 
 #[cfg(test)]
 pub use runtime::*;
 
-pub(crate) fn get_default_entries_to_migrate<T: Config>() -> EntriesToMigrate<T> {
-	EntriesToMigrate {
-		attestation: BoundedVec::default(),
-		delegation: BoundedVec::default(),
-		did: BoundedVec::default(),
-		lookup: BoundedVec::default(),
-		public_credentials: BoundedVec::default(),
-		w3n: BoundedVec::default(),
+impl<T: Config> Default for EntriesToMigrate<T> {
+	fn default() -> Self {
+		EntriesToMigrate {
+			attestation: Default::default(),
+			delegation: Default::default(),
+			did: Default::default(),
+			lookup: Default::default(),
+			w3n: Default::default(),
+			public_credentials: Default::default(),
+		}
 	}
 }
+
 #[cfg(test)]
 pub mod runtime {
 	use attestation::mock::MockAccessControl;

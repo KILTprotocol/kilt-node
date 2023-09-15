@@ -47,7 +47,7 @@ use sp_runtime::{
 };
 use sp_std::{boxed::Box, num::NonZeroU32, vec, vec::Vec};
 
-use crate::{mock::get_default_entries_to_migrate, *};
+use crate::*;
 
 const SEED: u32 = 0;
 const MICROKILT: u128 = 10u128.pow(9);
@@ -112,7 +112,7 @@ benchmarks! {
 		pallet_balances::Pallet::<T>::reserve(&sender, details.deposit.amount.saturated_into::<u128>().saturated_into())
 		.expect("User should have enough balance");
 
-		let mut entries_to_migrate: EntriesToMigrate<T> = get_default_entries_to_migrate();
+		let mut entries_to_migrate: EntriesToMigrate<T> = EntriesToMigrate::default();
 		entries_to_migrate.attestation = BoundedVec::try_from(vec![claim_hash]).expect("Vector initialization should not fail.");
 
 		let origin= RawOrigin::Signed(sender);
@@ -123,7 +123,7 @@ benchmarks! {
 		let sender: T::AccountId = account("sender", 0, SEED);
 		let (_, _, leaf_acc, leaf_id)  = setup_delegations::<T>(1,NonZeroU32::new(1).expect("NoneZero init should not fail"), Permissions::DELEGATE)?;
 
-		let mut entries_to_migrate: EntriesToMigrate<T> = get_default_entries_to_migrate();
+		let mut entries_to_migrate: EntriesToMigrate<T> = EntriesToMigrate::default();
 		entries_to_migrate.delegation = BoundedVec::try_from(vec![leaf_id]).expect("Vector initialization should not fail.");
 
 		kilt_support::migration::translate_holds_to_reserve::<T>(delegation::HoldReason::Deposit.into());
@@ -146,7 +146,7 @@ benchmarks! {
 		pallet_balances::Pallet::<T>::reserve(&sender, did_details.deposit.amount.saturated_into::<u128>().saturated_into())
 			.expect("User should have enough balance");
 
-		let mut entries_to_migrate: EntriesToMigrate<T> = get_default_entries_to_migrate();
+		let mut entries_to_migrate: EntriesToMigrate<T> = EntriesToMigrate::default();
 		entries_to_migrate.did = BoundedVec::try_from(vec![did_subject]).expect("Vector initialization should not fail.");
 
 		let origin= RawOrigin::Signed(sender);
@@ -162,7 +162,7 @@ benchmarks! {
 		pallet_did_lookup::Pallet::<T>::add_association(sender.clone(), did, linkable_id.clone()).expect("should create association");
 		kilt_support::migration::translate_holds_to_reserve::<T>(pallet_did_lookup::HoldReason::Deposit.into());
 
-		let mut entries_to_migrate: EntriesToMigrate<T> = get_default_entries_to_migrate();
+		let mut entries_to_migrate: EntriesToMigrate<T> = EntriesToMigrate::default();
 		entries_to_migrate.lookup = BoundedVec::try_from(vec![linkable_id]).expect("Vector initialization should not fail.");
 
 		let origin= RawOrigin::Signed(sender);
@@ -180,7 +180,7 @@ benchmarks! {
 		kilt_support::migration::translate_holds_to_reserve::<T>(pallet_web3_names::HoldReason::Deposit.into());
 		let web3_name = Web3NameOf::<T>::try_from(web3_name_input.to_vec()).unwrap();
 
-		let mut entries_to_migrate: EntriesToMigrate<T> = get_default_entries_to_migrate();
+		let mut entries_to_migrate: EntriesToMigrate<T> = EntriesToMigrate::default();
 		entries_to_migrate.w3n = BoundedVec::try_from(vec![web3_name]).expect("Vector initialization should not fail.");
 
 		let origin= RawOrigin::Signed(sender);
@@ -211,7 +211,7 @@ benchmarks! {
 		public_credentials::Pallet::<T>::add(origin, creation_op).expect("Pallet::add should not fail");
 		kilt_support::migration::translate_holds_to_reserve::<T>(public_credentials::HoldReason::Deposit.into());
 
-		let mut entries_to_migrate: EntriesToMigrate<T> = get_default_entries_to_migrate();
+		let mut entries_to_migrate: EntriesToMigrate<T> = EntriesToMigrate::default();
 		entries_to_migrate.public_credentials = BoundedVec::try_from(vec![(subject_id, credential_id)]).expect("Vector initialization should not fail.");
 
 		let origin_migration_pallet = RawOrigin::Signed(sender);
