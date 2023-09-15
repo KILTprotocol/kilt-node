@@ -351,7 +351,10 @@ impl<T: Config> DidDetails<T> {
 			Ordering::Greater => {
 				let deposit_to_reserve = new_required_deposit.saturating_sub(self.deposit.amount);
 
-				if !is_key_migrated {
+				if is_key_migrated {
+					DidDepositCollector::<T>::create_deposit(self.deposit.clone().owner, deposit_to_reserve)?;
+					self.deposit.amount = self.deposit.amount.saturating_add(deposit_to_reserve);
+				} else {
 					<T as Config>::BalanceMigrationManager::release_reserved_deposit(
 						&self.deposit.owner,
 						&self.deposit.amount,
@@ -359,9 +362,6 @@ impl<T: Config> DidDetails<T> {
 					DidDepositCollector::<T>::create_deposit(self.deposit.clone().owner, new_required_deposit)?;
 					<T as Config>::BalanceMigrationManager::exclude_key_from_migration(&hashed_key);
 					self.deposit.amount = new_required_deposit;
-				} else {
-					DidDepositCollector::<T>::create_deposit(self.deposit.clone().owner, deposit_to_reserve)?;
-					self.deposit.amount = self.deposit.amount.saturating_add(deposit_to_reserve);
 				}
 			}
 
