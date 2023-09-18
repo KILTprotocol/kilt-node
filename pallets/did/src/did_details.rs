@@ -16,27 +16,26 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use core::cmp::Ordering;
 use frame_support::{
 	ensure,
 	storage::{bounded_btree_map::BoundedBTreeMap, bounded_btree_set::BoundedBTreeSet},
 	traits::Get,
 	RuntimeDebug,
 };
-use kilt_support::{traits::StorageDepositCollector, Deposit};
+use kilt_support::Deposit;
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen, WrapperTypeEncode};
 use scale_info::TypeInfo;
 use sp_core::{ecdsa, ed25519, sr25519};
 use sp_runtime::{
 	traits::{IdentifyAccount, Verify, Zero},
-	DispatchError, MultiSignature, SaturatedConversion, Saturating,
+	MultiSignature, SaturatedConversion, Saturating,
 };
 use sp_std::{convert::TryInto, vec::Vec};
 
 use crate::{
 	errors::{self, DidError},
 	utils, AccountIdOf, BalanceOf, BlockNumberOf, Config, DidAuthorizedCallOperationOf, DidCreationDetailsOf,
-	DidDepositCollector, DidEndpointsCount, DidIdentifierOf, KeyIdOf, Payload,
+	DidEndpointsCount, DidIdentifierOf, KeyIdOf, Payload,
 };
 
 /// Public verification key that a DID can control.
@@ -358,29 +357,6 @@ impl<T: Config> DidDetails<T> {
 		deposit
 	}
 
-	pub fn update_deposit(&mut self, did_subject: &DidIdentifierOf<T>) -> Result<(), DispatchError> {
-		let new_required_deposit = self.calculate_deposit(did_subject);
-
-		match new_required_deposit.cmp(&self.deposit.amount) {
-			Ordering::Greater => {
-				let deposit_to_reserve = new_required_deposit.saturating_sub(self.deposit.amount);
-				DidDepositCollector::<T>::create_deposit(self.deposit.clone().owner, deposit_to_reserve)?;
-				self.deposit.amount = self.deposit.amount.saturating_add(deposit_to_reserve);
-			}
-			Ordering::Less => {
-				let deposit_to_release = self.deposit.amount.saturating_sub(new_required_deposit);
-
-				DidDepositCollector::<T>::free_deposit(Deposit {
-					owner: self.deposit.owner.clone(),
-					amount: deposit_to_release,
-				})?;
-				self.deposit.amount = self.deposit.amount.saturating_sub(deposit_to_release);
-			}
-			_ => (),
-		};
-		Ok(())
-	}
-
 	// Creates a new DID entry from some [DidCreationDetails] and a given
 	// authentication key.
 	pub fn from_creation_details(
@@ -418,8 +394,6 @@ impl<T: Config> DidDetails<T> {
 		let deposit_amount = new_did_details.calculate_deposit(did_subject);
 		new_did_details.deposit.amount = deposit_amount;
 
-		DidDepositCollector::<T>::create_deposit(details.submitter, deposit_amount)?;
-
 		Ok(new_did_details)
 	}
 
@@ -443,8 +417,6 @@ impl<T: Config> DidDetails<T> {
 
 		let deposit_amount = new_did_details.calculate_deposit(did_subject);
 		new_did_details.deposit.amount = deposit_amount;
-
-		DidDepositCollector::<T>::create_deposit(submitter, deposit_amount)?;
 
 		Ok(new_did_details)
 	}

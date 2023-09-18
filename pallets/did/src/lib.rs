@@ -100,7 +100,6 @@ mod tests;
 #[cfg(any(feature = "try-runtime", test))]
 mod try_state;
 
-mod create;
 mod signature;
 mod utils;
 
@@ -154,8 +153,7 @@ pub mod pallet {
 		Deposit,
 	};
 	use service_endpoints::DidEndpoint;
-	use sp_runtime::traits::BadOrigin;
-	use sp_runtime::traits::IdentifyAccount;
+	use sp_runtime::traits::{BadOrigin, IdentifyAccount};
 
 	use crate::{
 		did_details::{
@@ -636,8 +634,7 @@ pub mod pallet {
 				.update_authentication_key(new_key, frame_system::Pallet::<T>::block_number())
 				.map_err(Error::<T>::from)?;
 
-			did_details.update_deposit(&did_subject)?;
-			Did::<T>::insert(&did_subject, did_details);
+			Self::try_update_did(&did_subject, did_details)?;
 			log::debug!("Authentication key set");
 
 			Self::deposit_event(Event::DidUpdated(did_subject));
@@ -671,8 +668,7 @@ pub mod pallet {
 				.update_delegation_key(new_key, frame_system::Pallet::<T>::block_number())
 				.map_err(Error::<T>::from)?;
 
-			did_details.update_deposit(&did_subject)?;
-			Did::<T>::insert(&did_subject, did_details);
+			Self::try_update_did(&did_subject, did_details)?;
 			log::debug!("Delegation key set");
 
 			Self::deposit_event(Event::DidUpdated(did_subject));
@@ -703,8 +699,7 @@ pub mod pallet {
 			log::debug!("Removing delegation key for DID {:?}", &did_subject);
 			did_details.remove_delegation_key().map_err(Error::<T>::from)?;
 
-			did_details.update_deposit(&did_subject)?;
-			Did::<T>::insert(&did_subject, did_details);
+			Self::try_update_did(&did_subject, did_details)?;
 			log::debug!("Delegation key removed");
 
 			Self::deposit_event(Event::DidUpdated(did_subject));
@@ -741,8 +736,7 @@ pub mod pallet {
 				.update_attestation_key(new_key, frame_system::Pallet::<T>::block_number())
 				.map_err(Error::<T>::from)?;
 
-			did_details.update_deposit(&did_subject)?;
-			Did::<T>::insert(&did_subject, did_details);
+			Self::try_update_did(&did_subject, did_details)?;
 			log::debug!("Attestation key set");
 
 			Self::deposit_event(Event::DidUpdated(did_subject));
@@ -773,8 +767,7 @@ pub mod pallet {
 			log::debug!("Removing attestation key for DID {:?}", &did_subject);
 			did_details.remove_attestation_key().map_err(Error::<T>::from)?;
 
-			did_details.update_deposit(&did_subject)?;
-			Did::<T>::insert(&did_subject, did_details);
+			Self::try_update_did(&did_subject, did_details)?;
 			log::debug!("Attestation key removed");
 
 			Self::deposit_event(Event::DidUpdated(did_subject));
@@ -806,8 +799,7 @@ pub mod pallet {
 				.add_key_agreement_key(new_key, frame_system::Pallet::<T>::block_number())
 				.map_err(Error::<T>::from)?;
 
-			did_details.update_deposit(&did_subject)?;
-			Did::<T>::insert(&did_subject, did_details);
+			Self::try_update_did(&did_subject, did_details)?;
 			log::debug!("Key agreement key set");
 
 			Self::deposit_event(Event::DidUpdated(did_subject));
@@ -836,8 +828,7 @@ pub mod pallet {
 			log::debug!("Removing key agreement key for DID {:?}", &did_subject);
 			did_details.remove_key_agreement_key(key_id).map_err(Error::<T>::from)?;
 
-			did_details.update_deposit(&did_subject)?;
-			Did::<T>::insert(&did_subject, did_details);
+			Self::try_update_did(&did_subject, did_details)?;
 			log::debug!("Key agreement key removed");
 
 			Self::deposit_event(Event::DidUpdated(did_subject));
@@ -866,7 +857,7 @@ pub mod pallet {
 				.map_err(Error::<T>::from)?;
 
 			// Verify that the DID is present.
-			let mut did = Did::<T>::get(&did_subject).ok_or(Error::<T>::NotFound)?;
+			let did_details = Did::<T>::get(&did_subject).ok_or(Error::<T>::NotFound)?;
 
 			let currently_stored_endpoints_count = DidEndpointsCount::<T>::get(&did_subject);
 
@@ -886,9 +877,8 @@ pub mod pallet {
 				},
 			)?;
 			DidEndpointsCount::<T>::insert(&did_subject, currently_stored_endpoints_count.saturating_add(1));
-			did.update_deposit(&did_subject)?;
 
-			Did::<T>::insert(&did_subject, did);
+			Self::try_update_did(&did_subject, did_details)?;
 
 			Self::deposit_event(Event::DidUpdated(did_subject));
 
@@ -912,7 +902,7 @@ pub mod pallet {
 		pub fn remove_service_endpoint(origin: OriginFor<T>, service_id: ServiceEndpointId<T>) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
 
-			let mut did_details = Did::<T>::get(&did_subject).ok_or(Error::<T>::NotFound)?;
+			let did_details = Did::<T>::get(&did_subject).ok_or(Error::<T>::NotFound)?;
 
 			ensure!(
 				ServiceEndpoints::<T>::take(&did_subject, &service_id).is_some(),
@@ -929,8 +919,7 @@ pub mod pallet {
 				}
 			});
 
-			did_details.update_deposit(&did_subject)?;
-			Did::<T>::insert(&did_subject, did_details);
+			Self::try_update_did(&did_subject, did_details)?;
 
 			Self::deposit_event(Event::DidUpdated(did_subject));
 
@@ -1126,10 +1115,10 @@ pub mod pallet {
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::update_deposit())]
 		pub fn update_deposit(origin: OriginFor<T>, did: DidIdentifierOf<T>) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
-			let mut did_entry = Did::<T>::get(&did).ok_or(Error::<T>::NotFound)?;
+			let did_entry = Did::<T>::get(&did).ok_or(Error::<T>::NotFound)?;
 			ensure!(did_entry.deposit.owner == sender, Error::<T>::BadDidOrigin);
-			did_entry.update_deposit(&did)?;
-			Did::<T>::insert(&did, did_entry);
+
+			Self::try_update_did(&did, did_entry)?;
 			Ok(())
 		}
 
@@ -1256,20 +1245,54 @@ pub mod pallet {
 			// otherwise generate a AlreadyExists error.
 			ensure!(!Did::<T>::contains_key(&did_identifier), Error::<T>::AlreadyExists);
 
+			// Collect fee
 			let imbalance: CreditOf<T> = <T::Currency as Balanced<AccountIdOf<T>>>::withdraw(
 				&did_entry.deposit.owner,
 				T::Fee::get(),
 				Precision::Exact,
 				Preservation::Preserve,
 				Fortitude::Polite,
-			)?;
+			)
+			.map_err(|_| Error::<T>::UnableToPayFees)?;
+			T::FeeCollector::on_unbalanced(imbalance);
+
+			DidDepositCollector::<T>::create_deposit(sender.clone(), did_entry.deposit.amount)
+				.map_err(|_| Error::<T>::UnableToPayFees)?;
 
 			Did::<T>::insert(&did_identifier, did_entry);
 
-			T::FeeCollector::on_unbalanced(imbalance);
-
 			Pallet::<T>::deposit_event(Event::DidCreated(sender, did_identifier));
 
+			Ok(())
+		}
+
+		pub fn try_update_did(did_identifier: &DidIdentifierOf<T>, mut did_details: DidDetails<T>) -> DispatchResult {
+			Self::try_update_deposit(&mut did_details, did_identifier)?;
+			Did::<T>::insert(did_identifier, did_details);
+
+			Ok(())
+		}
+
+		fn try_update_deposit(did_details: &mut DidDetails<T>, did_subject: &DidIdentifierOf<T>) -> DispatchResult {
+			let new_required_deposit = did_details.calculate_deposit(did_subject);
+
+			match new_required_deposit.cmp(&did_details.deposit.amount) {
+				core::cmp::Ordering::Greater => {
+					let deposit_to_reserve = new_required_deposit.saturating_sub(did_details.deposit.amount);
+					DidDepositCollector::<T>::create_deposit(did_details.deposit.clone().owner, deposit_to_reserve)?;
+					did_details.deposit.amount = did_details.deposit.amount.saturating_add(deposit_to_reserve);
+				}
+				core::cmp::Ordering::Less => {
+					let deposit_to_release = did_details.deposit.amount.saturating_sub(new_required_deposit);
+
+					DidDepositCollector::<T>::free_deposit(Deposit {
+						owner: did_details.deposit.owner.clone(),
+						amount: deposit_to_release,
+					})?;
+					did_details.deposit.amount = did_details.deposit.amount.saturating_sub(deposit_to_release);
+				}
+				_ => (),
+			};
 			Ok(())
 		}
 
