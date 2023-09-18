@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
+use frame_benchmarking::{account, benchmarks};
 use frame_support::traits::{fungible::Mutate, Get};
 use frame_system::RawOrigin;
 use sp_runtime::traits::Hash;
@@ -195,10 +195,10 @@ benchmarks! {
 			}
 		}));
 	}
-}
 
-impl_benchmark_test_suite! {
-	Pallet,
-	crate::mock::ExtBuilder::default().build_with_keystore(),
-	crate::mock::Test
+	impl_benchmark_test_suite!(
+		Pallet,
+		crate::mock::ExtBuilder::default().build_with_keystore(),
+		crate::mock::Test
+	)
 }
