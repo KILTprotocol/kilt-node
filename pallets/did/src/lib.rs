@@ -100,6 +100,7 @@ mod tests;
 #[cfg(any(feature = "try-runtime", test))]
 mod try_state;
 
+mod create;
 mod signature;
 mod utils;
 
@@ -572,21 +573,9 @@ pub mod pallet {
 			signature: DidSignature,
 		) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
-
-			ensure!(sender == details.submitter, BadOrigin);
 			let did_identifier = details.did.clone();
 
-			// Make sure that DIDs cannot be created again after they have been deleted.
-			ensure!(
-				!DidBlacklist::<T>::contains_key(&did_identifier),
-				Error::<T>::AlreadyDeleted
-			);
-
-			// There has to be no other DID with the same identifier already saved on chain,
-			// otherwise generate a AlreadyExists error.
-			ensure!(!Did::<T>::contains_key(&did_identifier), Error::<T>::AlreadyExists);
-
-			log::debug!("Creating DID {:?}", &did_identifier);
+			ensure!(sender == details.submitter, BadOrigin);
 
 			let account_did_auth_key = did_identifier
 				.verify_and_recover_signature(&details.encode(), &signature)
@@ -605,19 +594,9 @@ pub mod pallet {
 			let did_entry = DidDetails::from_creation_details(*details, account_did_auth_key, &did_identifier)
 				.map_err(Error::<T>::from)?;
 
-			Did::<T>::insert(&did_identifier, did_entry.clone());
+			log::debug!("Creating DID {:?}", &did_identifier);
 
-			let imbalance: CreditOf<T> = <T::Currency as Balanced<AccountIdOf<T>>>::withdraw(
-				&did_entry.deposit.owner,
-				T::Fee::get(),
-				Precision::Exact,
-				Preservation::Preserve,
-				Fortitude::Polite,
-			)?;
-
-			T::FeeCollector::on_unbalanced(imbalance);
-
-			Self::deposit_event(Event::DidCreated(sender, did_identifier));
+			Self::try_insert_did(did_identifier, did_entry, sender)?;
 
 			Ok(())
 		}
@@ -1247,6 +1226,26 @@ pub mod pallet {
 			let sender = ensure_signed(origin)?;
 			let did_identifier: DidIdentifierOf<T> = sender.clone().into();
 
+			log::debug!("Creating DID {:?}", &did_identifier);
+
+			let did_entry = DidDetails::from_account(sender.clone(), authentication_key, &did_identifier)
+				.map_err(Error::<T>::from)?;
+
+			Self::try_insert_did(did_identifier, did_entry, sender)?;
+
+			Ok(())
+		}
+	}
+
+	impl<T: Config> Pallet<T>
+	where
+		T::AccountId: AsRef<[u8; 32]> + From<[u8; 32]>,
+	{
+		pub fn try_insert_did(
+			did_identifier: DidIdentifierOf<T>,
+			did_entry: DidDetails<T>,
+			sender: AccountIdOf<T>,
+		) -> DispatchResult {
 			// Make sure that DIDs cannot be created again after they have been deleted.
 			ensure!(
 				!DidBlacklist::<T>::contains_key(&did_identifier),
@@ -1257,13 +1256,6 @@ pub mod pallet {
 			// otherwise generate a AlreadyExists error.
 			ensure!(!Did::<T>::contains_key(&did_identifier), Error::<T>::AlreadyExists);
 
-			log::debug!("Creating DID {:?}", &did_identifier);
-
-			let did_entry = DidDetails::from_account(sender.clone(), authentication_key, &did_identifier)
-				.map_err(Error::<T>::from)?;
-
-			Did::<T>::insert(&did_identifier, did_entry.clone());
-
 			let imbalance: CreditOf<T> = <T::Currency as Balanced<AccountIdOf<T>>>::withdraw(
 				&did_entry.deposit.owner,
 				T::Fee::get(),
@@ -1272,18 +1264,15 @@ pub mod pallet {
 				Fortitude::Polite,
 			)?;
 
+			Did::<T>::insert(&did_identifier, did_entry);
+
 			T::FeeCollector::on_unbalanced(imbalance);
 
-			Self::deposit_event(Event::DidCreated(sender, did_identifier));
+			Pallet::<T>::deposit_event(Event::DidCreated(sender, did_identifier));
 
 			Ok(())
 		}
-	}
 
-	impl<T: Config> Pallet<T>
-	where
-		T::AccountId: AsRef<[u8; 32]> + From<[u8; 32]>,
-	{
 		/// Verify the validity (i.e., nonce, signature and mortality) of a
 		/// DID-authorized operation and, if valid, update the DID state with
 		/// the latest nonce.

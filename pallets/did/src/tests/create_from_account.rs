@@ -109,7 +109,8 @@ fn should_not_overwrite() {
 		+ <<Test as Config>::Currency as Inspect<AccountIdOf<Test>>>::minimum_balance();
 
 	ExtBuilder::default()
-		.with_balances(vec![(account_id.clone(), balance)])
+		// we take twice the amount of balance so that we can create two DIDs
+		.with_balances(vec![(account_id.clone(), balance * 2)])
 		.build_and_execute_with_sanity_tests(None, || {
 			assert!(Did::get_did(&account_id).is_none());
 
