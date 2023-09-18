@@ -1230,6 +1230,16 @@ pub mod pallet {
 	where
 		T::AccountId: AsRef<[u8; 32]> + From<[u8; 32]>,
 	{
+		/// Try creating a DID.
+		///
+		/// # Errors
+		///
+		/// * When the DID was deleted, this function returns a `AlreadyDeleted`
+		///   error.
+		/// * When the DID already exists, this function returns a
+		///   `AlreadyExists` error.
+		/// * When the [sender] doesn't have enough free balance, this function
+		///   returns a `UnableToPayFees` error.
 		pub fn try_insert_did(
 			did_identifier: DidIdentifierOf<T>,
 			did_entry: DidDetails<T>,
@@ -1266,6 +1276,12 @@ pub mod pallet {
 			Ok(())
 		}
 
+		/// Try updating the DID.
+		///
+		/// # Errors
+		///
+		/// This can fail when the deposit owner doesn't have enough free
+		/// balance.
 		pub fn try_update_did(did_identifier: &DidIdentifierOf<T>, mut did_details: DidDetails<T>) -> DispatchResult {
 			Self::try_update_deposit(&mut did_details, did_identifier)?;
 			Did::<T>::insert(did_identifier, did_details);
@@ -1299,12 +1315,6 @@ pub mod pallet {
 		/// Verify the validity (i.e., nonce, signature and mortality) of a
 		/// DID-authorized operation and, if valid, update the DID state with
 		/// the latest nonce.
-		///
-		/// # <weight>
-		/// Weight: O(1)
-		/// - Reads: Did
-		/// - Writes: Did
-		/// # </weight>
 		pub fn verify_did_operation_signature_and_increase_nonce(
 			operation: &DidAuthorizedCallOperationWithVerificationRelationship<T>,
 			signature: &DidSignature,
@@ -1331,6 +1341,14 @@ pub mod pallet {
 			Ok(())
 		}
 
+		/// Verify that [account] is authorized to dispatch DID calls on behave
+		/// of [did_identifier].
+		///
+		/// # Errors
+		///
+		/// This function returns an error if the did was not found, the
+		/// verification key was not found or the account didn't match the
+		/// verification key.
 		pub fn verify_account_authorization(
 			did_identifier: &DidIdentifierOf<T>,
 			account: &AccountIdOf<T>,
