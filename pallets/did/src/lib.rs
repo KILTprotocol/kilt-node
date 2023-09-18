@@ -589,8 +589,10 @@ pub mod pallet {
 			});
 			DidEndpointsCount::<T>::insert(&did_identifier, input_service_endpoints.len().saturated_into::<u32>());
 
-			let did_entry = DidDetails::from_creation_details(*details, account_did_auth_key, &did_identifier)
-				.map_err(Error::<T>::from)?;
+			let mut did_entry =
+				DidDetails::new_with_creation_details(*details, account_did_auth_key).map_err(Error::<T>::from)?;
+			did_entry.deposit.amount =
+				did_entry.calculate_deposit(input_service_endpoints.len().saturated_into::<u32>());
 
 			log::debug!("Creating DID {:?}", &did_identifier);
 
@@ -1217,8 +1219,9 @@ pub mod pallet {
 
 			log::debug!("Creating DID {:?}", &did_identifier);
 
-			let did_entry = DidDetails::from_account(sender.clone(), authentication_key, &did_identifier)
-				.map_err(Error::<T>::from)?;
+			let current_block_number = frame_system::Pallet::<T>::block_number();
+			let did_entry =
+				DidDetails::new(authentication_key, current_block_number, sender.clone()).map_err(Error::<T>::from)?;
 
 			Self::try_insert_did(did_identifier, did_entry, sender)?;
 
@@ -1290,7 +1293,8 @@ pub mod pallet {
 		}
 
 		fn try_update_deposit(did_details: &mut DidDetails<T>, did_subject: &DidIdentifierOf<T>) -> DispatchResult {
-			let new_required_deposit = did_details.calculate_deposit(did_subject);
+			let endpoint_count = DidEndpointsCount::<T>::get(did_subject);
+			let new_required_deposit = did_details.calculate_deposit(endpoint_count);
 
 			match new_required_deposit.cmp(&did_details.deposit.amount) {
 				core::cmp::Ordering::Greater => {
@@ -1351,7 +1355,7 @@ pub mod pallet {
 		/// verification key.
 		pub fn verify_account_authorization(
 			did_identifier: &DidIdentifierOf<T>,
-			account: &AccountIdOf<T>,
+			submitter_account: &AccountIdOf<T>,
 			verification_key_relationship: DidVerificationKeyRelationship,
 		) -> Result<(), DidError> {
 			let did_details = Did::<T>::get(did_identifier).ok_or(StorageError::NotFound(errors::NotFoundKind::Did))?;
@@ -1364,7 +1368,7 @@ pub mod pallet {
 					)))
 				})?;
 
-			if account == &verification_key.clone().into_account() {
+			if submitter_account == &verification_key.clone().into_account() {
 				Ok(())
 			} else {
 				Err(DidError::Signature(SignatureError::InvalidData))
@@ -1486,7 +1490,10 @@ pub mod pallet {
 		fn deposit_amount(key: &DidIdentifierOf<T>) -> <Self::Currency as Inspect<AccountIdOf<T>>>::Balance {
 			let did_entry = Did::<T>::get(key);
 			match did_entry {
-				Some(entry) => entry.calculate_deposit(key),
+				Some(entry) => {
+					let endpoint_count = DidEndpointsCount::<T>::get(key);
+					entry.calculate_deposit(endpoint_count)
+				}
 				// If there is no entry return 0
 				_ => Zero::zero(),
 			}

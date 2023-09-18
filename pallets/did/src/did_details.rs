@@ -34,8 +34,8 @@ use sp_std::{convert::TryInto, vec::Vec};
 
 use crate::{
 	errors::{self, DidError},
-	utils, AccountIdOf, BalanceOf, BlockNumberOf, Config, DidAuthorizedCallOperationOf, DidCreationDetailsOf,
-	DidEndpointsCount, DidIdentifierOf, KeyIdOf, Payload,
+	utils, AccountIdOf, BalanceOf, BlockNumberOf, Config, DidAuthorizedCallOperationOf, DidCreationDetailsOf, KeyIdOf,
+	Payload,
 };
 
 /// Public verification key that a DID can control.
@@ -310,7 +310,7 @@ impl<T: Config> DidDetails<T> {
 	pub fn new(
 		authentication_key: DidVerificationKey<AccountIdOf<T>>,
 		block_number: BlockNumberOf<T>,
-		deposit: Deposit<AccountIdOf<T>, BalanceOf<T>>,
+		deposit_owner: AccountIdOf<T>,
 	) -> Result<Self, errors::StorageError> {
 		let mut public_keys = DidPublicKeyMapOf::<T>::default();
 		let authentication_key_id = utils::calculate_key_id::<T>(&authentication_key.clone().into());
@@ -324,7 +324,13 @@ impl<T: Config> DidDetails<T> {
 			)
 			.map_err(|_| errors::StorageError::MaxPublicKeysExceeded)?;
 
-		Ok(Self {
+		let deposit = Deposit {
+			owner: deposit_owner,
+			// set deposit for the moment to zero. We will update it, when all keys are set.
+			amount: Zero::zero(),
+		};
+
+		let mut new_did_details = Self {
 			authentication_key: authentication_key_id,
 			key_agreement_keys: DidKeyAgreementKeySetOf::<T>::default(),
 			attestation_key: None,
@@ -332,13 +338,21 @@ impl<T: Config> DidDetails<T> {
 			public_keys,
 			last_tx_counter: 0u64,
 			deposit,
-		})
+		};
+
+		let deposit_amount = new_did_details.calculate_deposit(0);
+		new_did_details.deposit.amount = deposit_amount;
+
+		Ok(new_did_details)
 	}
 
-	pub fn calculate_deposit(&self, did_subject: &DidIdentifierOf<T>) -> BalanceOf<T> {
+	/// Calculate the deposit that should be secured for the DID based on the number of keys and service endpoints.
+	///
+	/// Since service endpoints are not stored inside the DidDetails, the number of endpoints need to be provided.
+	pub fn calculate_deposit(&self, endpoint_count: u32) -> BalanceOf<T> {
 		let mut deposit: BalanceOf<T> = T::BaseDeposit::get();
 
-		let endpoint_count: BalanceOf<T> = DidEndpointsCount::<T>::get(did_subject).into();
+		let endpoint_count: BalanceOf<T> = endpoint_count.into();
 		deposit = deposit.saturating_add(endpoint_count.saturating_mul(T::ServiceEndpointDeposit::get()));
 
 		let key_agreement_count: BalanceOf<T> = self.key_agreement_keys.len().saturated_into();
@@ -357,12 +371,11 @@ impl<T: Config> DidDetails<T> {
 		deposit
 	}
 
-	// Creates a new DID entry from some [DidCreationDetails] and a given
-	// authentication key.
-	pub fn from_creation_details(
+	/// Creates a new DID entry from some [DidCreationDetails] and a given
+	/// authentication key.
+	pub fn new_with_creation_details(
 		details: DidCreationDetailsOf<T>,
 		new_auth_key: DidVerificationKey<AccountIdOf<T>>,
-		did_subject: &DidIdentifierOf<T>,
 	) -> Result<Self, DidError> {
 		ensure!(
 			details.new_key_agreement_keys.len()
@@ -372,54 +385,25 @@ impl<T: Config> DidDetails<T> {
 
 		let current_block_number = frame_system::Pallet::<T>::block_number();
 
-		let deposit = Deposit {
-			owner: details.clone().submitter,
-			// set deposit for the moment to zero. We will update it, when all keys are set.
-			amount: Zero::zero(),
-		};
-
 		// Creates a new DID with the given authentication key.
-		let mut new_did_details = DidDetails::new(new_auth_key, current_block_number, deposit)?;
+		let mut new_did_details = DidDetails::new(new_auth_key, current_block_number, details.clone().submitter)?;
 
 		new_did_details.add_key_agreement_keys(details.clone().new_key_agreement_keys, current_block_number)?;
 
-		if let Some(attesation_key) = details.clone().new_attestation_key {
-			new_did_details.update_attestation_key(attesation_key, current_block_number)?;
+		if let Some(attestation_key) = details.clone().new_attestation_key {
+			new_did_details.update_attestation_key(attestation_key, current_block_number)?;
 		}
 
 		if let Some(delegation_key) = details.new_delegation_key {
 			new_did_details.update_delegation_key(delegation_key, current_block_number)?;
 		}
 
-		let deposit_amount = new_did_details.calculate_deposit(did_subject);
+		let deposit_amount = new_did_details.calculate_deposit(0);
 		new_did_details.deposit.amount = deposit_amount;
 
 		Ok(new_did_details)
 	}
 
-	// Creates a new DID entry from some [DidCreationDetails] and a given
-	// authentication key.
-	pub fn from_account(
-		submitter: AccountIdOf<T>,
-		new_auth_key: DidVerificationKey<AccountIdOf<T>>,
-		did_subject: &DidIdentifierOf<T>,
-	) -> Result<Self, DidError> {
-		let current_block_number = frame_system::Pallet::<T>::block_number();
-
-		let deposit = Deposit {
-			owner: submitter,
-			// set deposit for the moment to zero. We will update it, when all keys are set.
-			amount: Zero::zero(),
-		};
-
-		// Creates a new DID with the given authentication key.
-		let mut new_did_details = DidDetails::new(new_auth_key, current_block_number, deposit)?;
-
-		let deposit_amount = new_did_details.calculate_deposit(did_subject);
-		new_did_details.deposit.amount = deposit_amount;
-
-		Ok(new_did_details)
-	}
 	/// Update the DID authentication key.
 	///
 	/// The old key is deleted from the set of public keys if it is
