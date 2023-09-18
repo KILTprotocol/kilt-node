@@ -343,7 +343,9 @@ benchmarks! {
 		let did_public_auth_key = get_ed25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(did_public_auth_key).into_account().into();
 
-		let did_details = generate_base_did_details::<T>(DidVerificationKey::from(did_public_auth_key), None);
+		let mut did_details = generate_base_did_details::<T>(DidVerificationKey::from(did_public_auth_key), None);
+		did_details.deposit.amount = did_details.calculate_deposit(c);
+
 		let service_endpoints = get_service_endpoints::<T>(
 			c,
 			T::MaxServiceIdLength::get(),
@@ -353,7 +355,10 @@ benchmarks! {
 			T::MaxServiceUrlLength::get(),
 		);
 
-		Did::<T>::insert(&did_subject, did_details);
+		let deposit_owner = did_details.deposit.owner.clone();
+		make_free_for_did::<T>(&deposit_owner);
+		Pallet::<T>::try_insert_did(did_subject.clone(), did_details, deposit_owner).expect("DID should be created!");
+
 		save_service_endpoints(&did_subject, &service_endpoints);
 		let origin = RawOrigin::Signed(did_subject.clone());
 	}: _(origin, c)
@@ -376,7 +381,8 @@ benchmarks! {
 		let did_public_auth_key = get_ed25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(did_public_auth_key).into_account().into();
 
-		let did_details = generate_base_did_details::<T>(DidVerificationKey::from(did_public_auth_key), None);
+		let mut did_details = generate_base_did_details::<T>(DidVerificationKey::from(did_public_auth_key), None);
+		did_details.deposit.amount = did_details.calculate_deposit(c);
 		let service_endpoints = get_service_endpoints::<T>(
 			c,
 			T::MaxServiceIdLength::get(),
@@ -386,7 +392,10 @@ benchmarks! {
 			T::MaxServiceUrlLength::get(),
 		);
 
-		Did::<T>::insert(&did_subject, did_details.clone());
+		let deposit_owner = did_details.deposit.owner.clone();
+		make_free_for_did::<T>(&deposit_owner);
+		Pallet::<T>::try_insert_did(did_subject.clone(), did_details.clone(), deposit_owner).expect("DID should be created!");
+
 		save_service_endpoints(&did_subject, &service_endpoints);
 		let origin = RawOrigin::Signed(did_details.deposit.owner);
 		let subject_clone = did_subject.clone();
