@@ -17,7 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use super::*;
-use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite, Zero};
+use frame_benchmarking::{account, benchmarks, Zero};
 use frame_support::{
 	assert_ok,
 	traits::fungible::{Inspect, Mutate, MutateHold},
@@ -1219,10 +1219,10 @@ benchmarks! {
 	verify {
 			Did::<T>::get(&did_subject).expect("DID entry should be created");
 	}
-}
 
-impl_benchmark_test_suite! {
-	Pallet,
-	crate::mock::ExtBuilder::default().build_with_keystore(),
-	crate::mock::Test
+	impl_benchmark_test_suite!(
+		Pallet,
+		crate::mock::ExtBuilder::default().build_with_keystore(),
+		crate::mock::Test
+	)
 }
