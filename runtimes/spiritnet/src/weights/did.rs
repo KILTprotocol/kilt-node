@@ -723,6 +723,38 @@ impl<T: frame_system::Config> did::WeightInfo for WeightInfo<T> {
 			.saturating_add(T::DbWeight::get().reads(4))
 			.saturating_add(T::DbWeight::get().writes(3))
 	}
+
+	/// Storage: Did Did (r:1 w:0)
+	/// Proof: Did Did (max_values: None, max_size: Some(2312), added: 4787, mode: MaxEncodedLen)
+	fn dispatch_as() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `353`
+		//  Estimated: `5777`
+		// Minimum execution time: 186_836_000 picoseconds.
+		Weight::from_parts(189_377_000, 0)
+			.saturating_add(Weight::from_parts(0, 5777))
+			.saturating_add(T::DbWeight::get().reads(1))
+	}
+	/// Storage: Did DidBlacklist (r:1 w:0)
+	/// Proof: Did DidBlacklist (max_values: None, max_size: Some(48), added: 2523, mode: MaxEncodedLen)
+	/// Storage: Did Did (r:1 w:1)
+	/// Proof: Did Did (max_values: None, max_size: Some(2312), added: 4787, mode: MaxEncodedLen)
+	/// Storage: Did DidEndpointsCount (r:1 w:0)
+	/// Proof: Did DidEndpointsCount (max_values: None, max_size: Some(52), added: 2527, mode: MaxEncodedLen)
+	/// Storage: System Account (r:2 w:2)
+	/// Proof: System Account (max_values: None, max_size: Some(132), added: 2607, mode: MaxEncodedLen)
+	/// Storage: Balances Holds (r:1 w:1)
+	/// Proof: Balances Holds (max_values: None, max_size: Some(949), added: 3424, mode: MaxEncodedLen)
+	fn create_from_account() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `999`
+		//  Estimated: `6204`
+		// Minimum execution time: 1_008_739_000 picoseconds.
+		Weight::from_parts(1_020_810_000, 0)
+			.saturating_add(Weight::from_parts(0, 6204))
+			.saturating_add(T::DbWeight::get().reads(6))
+			.saturating_add(T::DbWeight::get().writes(4))
+	}
 }
 
 #[cfg(test)]

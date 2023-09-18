@@ -29,7 +29,7 @@ pub struct DidDetails<Key: Ord, BlockNumber: MaxEncodedLen, AccountId, Balance> 
 	pub key_agreement_keys: BTreeSet<Key>,
 	pub delegation_key: Option<Key>,
 	pub attestation_key: Option<Key>,
-	pub public_keys: BTreeMap<Key, DidPublicKeyDetails<BlockNumber>>,
+	pub public_keys: BTreeMap<Key, DidPublicKeyDetails<BlockNumber, AccountId>>,
 	pub last_tx_counter: u64,
 	pub deposit: Deposit<AccountId, Balance>,
 }
