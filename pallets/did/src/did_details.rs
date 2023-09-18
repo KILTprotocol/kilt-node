@@ -387,7 +387,7 @@ impl<T: Config> DidDetails<T> {
 			new_did_details.update_attestation_key(attesation_key, current_block_number)?;
 		}
 
-		if let Some(delegation_key) = details.clone().new_delegation_key {
+		if let Some(delegation_key) = details.new_delegation_key {
 			new_did_details.update_delegation_key(delegation_key, current_block_number)?;
 		}
 
@@ -407,7 +407,7 @@ impl<T: Config> DidDetails<T> {
 		let current_block_number = frame_system::Pallet::<T>::block_number();
 
 		let deposit = Deposit {
-			owner: submitter.clone(),
+			owner: submitter,
 			// set deposit for the moment to zero. We will update it, when all keys are set.
 			amount: Zero::zero(),
 		};
