@@ -16,16 +16,8 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-// TODO: Crate documentation
+pub trait Usernamable {
+	type Username;
 
-#![cfg_attr(not(feature = "std"), no_std)]
-
-use frame_support::RuntimeDebug;
-use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
-use scale_info::TypeInfo;
-
-#[derive(Clone, Eq, PartialEq, Encode, Decode, TypeInfo, MaxEncodedLen, RuntimeDebug)]
-pub enum IdentityDetailsAction<Identifier, Proof, Details = ()> {
-	Updated(Identifier, Proof, Details),
-	Deleted(Identifier),
+	fn username(&self) -> Result<Self::Username, &'static str>;
 }

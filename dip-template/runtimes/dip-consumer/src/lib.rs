@@ -22,10 +22,7 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
-use did::KeyIdOf;
 use dip_provider_runtime_template::Web3Name;
-use kilt_dip_support::merkle::VerificationResult;
-use pallet_did_lookup::linkable_account::LinkableAccountId;
 pub use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 pub use sp_runtime::{MultiAddress, Perbill, Permill};
 
@@ -51,7 +48,6 @@ use frame_system::{
 };
 use pallet_balances::AccountData;
 use pallet_collator_selection::IdentityCollator;
-use pallet_dip_consumer::{DipOrigin, EnsureDipOrigin};
 use pallet_session::{FindAccountFromAuthorIndex, PeriodicSessions};
 use pallet_transaction_payment::{CurrencyAdapter, FeeDetails, RuntimeDispatchInfo};
 use sp_api::impl_runtime_apis;
@@ -68,8 +64,8 @@ use sp_std::{prelude::*, time::Duration};
 use sp_version::RuntimeVersion;
 
 mod dip;
-mod xcm_config;
-pub use crate::{dip::*, xcm_config::*};
+mod origin_adapter;
+pub use crate::{dip::*, origin_adapter::*};
 
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
@@ -136,17 +132,12 @@ construct_runtime!(
 		Aura: pallet_aura = 23,
 		AuraExt: cumulus_pallet_aura_ext = 24,
 
-		// XCM
-		XcmpQueue: cumulus_pallet_xcmp_queue = 30,
-		DmpQueue: cumulus_pallet_dmp_queue = 31,
-		PolkadotXcm: pallet_xcm = 32,
-		CumulusXcm: cumulus_pallet_xcm = 33,
-
-		// DID lookup
-		DidLookup: pallet_did_lookup = 40,
+		// PostIt
+		PostIt: pallet_postit = 30,
 
 		// DIP
-		DipConsumer: pallet_dip_consumer = 50,
+		DipConsumer: pallet_dip_consumer = 40,
+		RelayStore: pallet_relay_store = 41,
 	}
 );
 
@@ -251,21 +242,16 @@ impl frame_system::Config for Runtime {
 	type Version = Version;
 }
 
-parameter_types! {
-	pub const ReservedDmpWeight: Weight = MAXIMUM_BLOCK_WEIGHT.saturating_div(4);
-	pub const ReservedXcmpWeight: Weight = MAXIMUM_BLOCK_WEIGHT.saturating_div(4);
-}
-
 impl cumulus_pallet_parachain_system::Config for Runtime {
 	type CheckAssociatedRelayNumber = RelayNumberStrictlyIncreases;
-	type DmpMessageHandler = DmpQueue;
+	type DmpMessageHandler = ();
 	type OnSystemEvent = ();
-	type OutboundXcmpMessageSource = XcmpQueue;
-	type ReservedDmpWeight = ReservedDmpWeight;
-	type ReservedXcmpWeight = ReservedXcmpWeight;
+	type OutboundXcmpMessageSource = ();
+	type ReservedDmpWeight = ();
+	type ReservedXcmpWeight = ();
 	type RuntimeEvent = RuntimeEvent;
 	type SelfParaId = ParachainInfo;
-	type XcmpMessageHandler = XcmpQueue;
+	type XcmpMessageHandler = ();
 }
 
 impl pallet_timestamp::Config for Runtime {
@@ -367,27 +353,12 @@ impl pallet_aura::Config for Runtime {
 
 impl cumulus_pallet_aura_ext::Config for Runtime {}
 
-parameter_types! {
-	pub const LinkDeposit: Balance = UNIT;
-}
-
-impl pallet_did_lookup::Config for Runtime {
-	type Currency = Balances;
-	type Deposit = ConstU128<UNIT>;
-	type DidIdentifier = DidIdentifier;
-	type EnsureOrigin = EnsureDipOrigin<
-		DidIdentifier,
-		AccountId,
-		VerificationResult<KeyIdOf<Runtime>, BlockNumber, Web3Name, LinkableAccountId, 10, 10>,
-	>;
-	type OriginSuccess = DipOrigin<
-		DidIdentifier,
-		AccountId,
-		VerificationResult<KeyIdOf<Runtime>, BlockNumber, Web3Name, LinkableAccountId, 10, 10>,
-	>;
+impl pallet_postit::Config for Runtime {
+	type MaxTextLength = ConstU32<160>;
+	type OriginCheck = EnsureDipOriginAdapter;
+	type OriginSuccess = DipOriginAdapter;
 	type RuntimeEvent = RuntimeEvent;
-	type RuntimeHoldReason = RuntimeHoldReason;
-	type WeightInfo = ();
+	type Username = Web3Name;
 }
 
 impl_runtime_apis! {

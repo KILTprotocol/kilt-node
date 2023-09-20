@@ -16,17 +16,11 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use did::{DidRawOrigin, EnsureDidOrigin};
-use runtime_common::dip::{did::LinkedDidInfoProviderOf, merkle::DidMerkleRootGenerator};
+use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
+use scale_info::TypeInfo;
+use sp_core::RuntimeDebug;
 
-use crate::{AccountId, DidIdentifier, Hash, Runtime, RuntimeEvent};
-
-impl pallet_dip_provider::Config for Runtime {
-	type CommitOriginCheck = EnsureDidOrigin<DidIdentifier, AccountId>;
-	type CommitOrigin = DidRawOrigin<DidIdentifier, AccountId>;
-	type Identifier = DidIdentifier;
-	type IdentityCommitment = Hash;
-	type IdentityCommitmentGenerator = DidMerkleRootGenerator<Runtime>;
-	type IdentityProvider = LinkedDidInfoProviderOf<Runtime>;
-	type RuntimeEvent = RuntimeEvent;
+#[derive(PartialEq, Eq, Clone, Encode, Decode, TypeInfo, RuntimeDebug, MaxEncodedLen)]
+pub struct RelayParentInfo<Hash> {
+	pub relay_parent_storage_root: Hash,
 }

@@ -18,8 +18,8 @@
 
 use did::did_details::DidDetails;
 use kilt_dip_support::{
-	did::{CombineIdentityFrom, CombinedIdentityResult},
 	merkle::RevealedWeb3Name,
+	utils::{CombineIdentityFrom, CombinedIdentityResult},
 };
 use pallet_did_lookup::linkable_account::LinkableAccountId;
 use pallet_dip_provider::traits::IdentityProvider;

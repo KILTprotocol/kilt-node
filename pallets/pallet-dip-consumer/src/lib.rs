@@ -31,15 +31,13 @@ pub use crate::{origin::*, pallet::*};
 pub mod pallet {
 	use super::*;
 
-	use cumulus_pallet_xcm::ensure_sibling_para;
 	use frame_support::{dispatch::Dispatchable, pallet_prelude::*, traits::Contains, Twox64Concat};
 	use frame_system::pallet_prelude::*;
-	use parity_scale_codec::MaxEncodedLen;
+	use parity_scale_codec::{FullCodec, MaxEncodedLen};
+	use scale_info::TypeInfo;
 	use sp_std::boxed::Box;
 
-	use dip_support::IdentityDetailsAction;
-
-	use crate::{identity::IdentityDetails, traits::IdentityProofVerifier};
+	use crate::traits::IdentityProofVerifier;
 
 	pub type VerificationResultOf<T> = <<T as Config>::ProofVerifier as IdentityProofVerifier<
 		<T as Config>::RuntimeCall,
@@ -48,15 +46,10 @@ pub mod pallet {
 
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(0);
 
-	// TODO: Store also additional details received by the provider.
 	#[pallet::storage]
 	#[pallet::getter(fn identity_proofs)]
-	pub(crate) type IdentityEntries<T> = StorageMap<
-		_,
-		Twox64Concat,
-		<T as Config>::Identifier,
-		IdentityDetails<<T as Config>::ProofDigest, <T as Config>::IdentityDetails>,
-	>;
+	pub(crate) type IdentityEntries<T> =
+		StorageMap<_, Twox64Concat, <T as Config>::Identifier, <T as Config>::LocalIdentityInfo>;
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
@@ -65,50 +58,32 @@ pub mod pallet {
 		type DipCallOriginFilter: Contains<<Self as Config>::RuntimeCall>;
 		/// The identifier of a subject, e.g., a DID.
 		type Identifier: Parameter + MaxEncodedLen;
-		/// The details stored in this pallet associated with any given subject.
-		type IdentityDetails: Parameter + MaxEncodedLen + Default;
 		/// The proof users must provide to operate with their higher-level
 		/// identity. Depending on the use cases, this proof can contain
 		/// heterogeneous bits of information that the proof verifier will
 		/// utilize. For instance, a proof could contain both a Merkle proof and
 		/// a DID signature.
-		type Proof: Parameter;
-		/// The type of the committed proof digest used as the basis for
-		/// verifying identity proofs.
-		type ProofDigest: Parameter + MaxEncodedLen;
+		type IdentityProof: Parameter;
+		/// The details stored in this pallet associated with any given subject.
+		type LocalIdentityInfo: FullCodec + TypeInfo + MaxEncodedLen;
 		/// The logic of the proof verifier, called upon each execution of the
 		/// `dispatch_as` extrinsic.
 		type ProofVerifier: IdentityProofVerifier<
 			<Self as Config>::RuntimeCall,
 			Self::Identifier,
-			Proof = Self::Proof,
-			IdentityDetails = IdentityDetails<Self::ProofDigest, Self::IdentityDetails>,
+			Proof = Self::IdentityProof,
+			IdentityDetails = Self::LocalIdentityInfo,
 			Submitter = <Self as frame_system::Config>::AccountId,
 		>;
 		/// The overarching runtime call type.
 		type RuntimeCall: Parameter + Dispatchable<RuntimeOrigin = <Self as Config>::RuntimeOrigin>;
-		/// The overarching event type.
-		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 		/// The overarching runtime origin type.
-		type RuntimeOrigin: From<Origin<Self>>
-			+ From<<Self as frame_system::Config>::RuntimeOrigin>
-			+ Into<Result<cumulus_pallet_xcm::Origin, <Self as Config>::RuntimeOrigin>>;
+		type RuntimeOrigin: From<Origin<Self>> + From<<Self as frame_system::Config>::RuntimeOrigin>;
 	}
 
 	#[pallet::pallet]
 	#[pallet::storage_version(STORAGE_VERSION)]
 	pub struct Pallet<T>(_);
-
-	#[pallet::event]
-	#[pallet::generate_deposit(pub(super) fn deposit_event)]
-	pub enum Event<T: Config> {
-		/// The identity information related to a given subject has been
-		/// deleted.
-		IdentityInfoDeleted(T::Identifier),
-		/// The identity information related to a given subject has been updated
-		/// to a new digest.
-		IdentityInfoUpdated(T::Identifier, T::ProofDigest),
-	}
 
 	#[pallet::error]
 	pub enum Error<T> {
@@ -129,59 +104,34 @@ pub mod pallet {
 	// TODO: Benchmarking
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
-		#[pallet::call_index(0)]
-		#[pallet::weight(0)]
-		pub fn process_identity_action(
-			origin: OriginFor<T>,
-			action: IdentityDetailsAction<T::Identifier, T::ProofDigest>,
-		) -> DispatchResult {
-			ensure_sibling_para(<T as Config>::RuntimeOrigin::from(origin))?;
-
-			let event = match action {
-				IdentityDetailsAction::Updated(identifier, proof, _) => {
-					IdentityEntries::<T>::mutate(
-						&identifier,
-						|entry: &mut Option<
-							IdentityDetails<<T as Config>::ProofDigest, <T as Config>::IdentityDetails>,
-						>| { *entry = Some(proof.clone().into()) },
-					);
-					Ok::<_, Error<T>>(Event::<T>::IdentityInfoUpdated(identifier, proof))
-				}
-				IdentityDetailsAction::Deleted(identifier) => {
-					IdentityEntries::<T>::remove(&identifier);
-					Ok::<_, Error<T>>(Event::<T>::IdentityInfoDeleted(identifier))
-				}
-			}?;
-
-			Self::deposit_event(event);
-
-			Ok(())
-		}
-
 		// TODO: Replace with a SignedExtra.
-		#[pallet::call_index(1)]
+		#[pallet::call_index(0)]
 		#[pallet::weight(0)]
 		pub fn dispatch_as(
 			origin: OriginFor<T>,
 			identifier: T::Identifier,
-			proof: T::Proof,
+			proof: T::IdentityProof,
 			call: Box<<T as Config>::RuntimeCall>,
 		) -> DispatchResult {
+			// TODO: Make origin check configurable, and require that it at least returns
+			// the submitter's account.
 			let submitter = ensure_signed(origin)?;
 			// TODO: Proper error handling
 			ensure!(T::DipCallOriginFilter::contains(&*call), Error::<T>::Dispatch);
-			let mut identity_entry = IdentityEntries::<T>::get(&identifier).ok_or(Error::<T>::IdentityNotFound)?;
+			let mut identity_entry = IdentityEntries::<T>::get(&identifier);
 			let proof_verification_result = T::ProofVerifier::verify_proof_for_call_against_details(
 				&*call,
 				&identifier,
 				&submitter,
 				&mut identity_entry,
-				&proof,
-			)
-			.map_err(|_| Error::<T>::InvalidProof)?;
+				proof,
+			);
 			// Write the identity info to storage after it has optionally been updated by
-			// the `ProofVerifier`.
-			IdentityEntries::<T>::mutate(&identifier, |entry| *entry = Some(identity_entry));
+			// the `ProofVerifier`, regardless of whether the proof has been verified or
+			// not.
+			IdentityEntries::<T>::mutate(&identifier, |entry| *entry = identity_entry);
+			// Unwrap the result if `ok`.
+			let proof_verification_result = proof_verification_result.map_err(|_| Error::<T>::InvalidProof)?;
 			let did_origin = DipOrigin {
 				identifier,
 				account_address: submitter,

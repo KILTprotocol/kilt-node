@@ -16,9 +16,11 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use sp_core::Get;
+use sp_core::storage::StorageKey;
 use sp_runtime::traits::{CheckedAdd, One, Zero};
 use sp_std::marker::PhantomData;
+
+use crate::utils::OutputOf;
 
 // TODO: Switch to the `Incrementable` trait once it's added to the root of
 // `frame_support`.
@@ -41,7 +43,7 @@ where
 
 /// A trait for types that implement some sort of access control logic on the
 /// provided input `Call` type.
-pub trait DidDipOriginFilter<Call> {
+pub trait DipCallOriginFilter<Call> {
 	/// The error type for cases where the checks fail.
 	type Error;
 	/// The type of additional information required by the type to perform the
@@ -53,25 +55,106 @@ pub trait DidDipOriginFilter<Call> {
 	fn check_call_origin_info(call: &Call, info: &Self::OriginInfo) -> Result<Self::Success, Self::Error>;
 }
 
-pub struct GenesisProvider<T>(PhantomData<T>);
+pub trait RelayChainStorageInfo {
+	type BlockNumber;
+	type Hasher: sp_runtime::traits::Hash;
+	type Key;
+	type ParaId;
 
-impl<T> Get<T::Hash> for GenesisProvider<T>
+	fn parachain_head_storage_key(para_id: &Self::ParaId) -> Self::Key;
+}
+
+pub trait RelayChainStateInfo: RelayChainStorageInfo {
+	fn state_root_for_block(block_height: &Self::BlockNumber) -> Option<OutputOf<Self::Hasher>>;
+}
+
+pub trait ProviderParachainStateInfo {
+	type BlockNumber;
+	type Commitment;
+	type Key;
+	type Hasher: sp_runtime::traits::Hash;
+	type Identifier;
+
+	fn dip_subject_storage_key(identifier: &Self::Identifier) -> Self::Key;
+}
+
+pub struct ProviderParachainStateInfoViaProviderPallet<T>(PhantomData<T>);
+
+impl<T> ProviderParachainStateInfo for ProviderParachainStateInfoViaProviderPallet<T>
 where
-	T: frame_system::Config,
-	T::BlockNumber: Zero,
+	T: pallet_dip_provider::Config,
 {
-	fn get() -> T::Hash {
-		frame_system::Pallet::<T>::block_hash(T::BlockNumber::zero())
+	type BlockNumber = T::BlockNumber;
+	type Commitment = T::IdentityCommitment;
+	type Hasher = T::Hashing;
+	type Identifier = T::Identifier;
+	type Key = StorageKey;
+
+	fn dip_subject_storage_key(identifier: &Self::Identifier) -> Self::Key {
+		StorageKey(pallet_dip_provider::IdentityCommitments::<T>::hashed_key_for(
+			identifier,
+		))
 	}
 }
 
-pub struct BlockNumberProvider<T>(PhantomData<T>);
+pub trait DidSignatureVerifierContext {
+	const SIGNATURE_VALIDITY: u16;
 
-impl<T> Get<T::BlockNumber> for BlockNumberProvider<T>
+	type BlockNumber;
+	type Hash;
+	type SignedExtra;
+
+	fn block_number() -> Self::BlockNumber;
+	fn genesis_hash() -> Self::Hash;
+	fn signed_extra() -> Self::SignedExtra;
+}
+
+pub struct FrameSystemDidSignatureContext<T, const SIGNATURE_VALIDITY: u16>(PhantomData<T>);
+
+impl<T, const SIGNATURE_VALIDITY: u16> DidSignatureVerifierContext
+	for FrameSystemDidSignatureContext<T, SIGNATURE_VALIDITY>
 where
 	T: frame_system::Config,
 {
-	fn get() -> T::BlockNumber {
+	const SIGNATURE_VALIDITY: u16 = SIGNATURE_VALIDITY;
+
+	type BlockNumber = T::BlockNumber;
+	type Hash = T::Hash;
+	type SignedExtra = ();
+
+	fn block_number() -> Self::BlockNumber {
 		frame_system::Pallet::<T>::block_number()
+	}
+
+	fn genesis_hash() -> Self::Hash {
+		frame_system::Pallet::<T>::block_hash(T::BlockNumber::zero())
+	}
+
+	fn signed_extra() -> Self::SignedExtra {}
+}
+
+pub trait HistoricalBlockRegistry {
+	type BlockNumber;
+	type Hasher: sp_runtime::traits::Hash;
+
+	fn block_hash_for(block: &Self::BlockNumber) -> Option<OutputOf<Self::Hasher>>;
+}
+
+impl<T> HistoricalBlockRegistry for T
+where
+	T: frame_system::Config,
+{
+	type BlockNumber = T::BlockNumber;
+	type Hasher = T::Hashing;
+
+	fn block_hash_for(block: &Self::BlockNumber) -> Option<OutputOf<Self::Hasher>> {
+		let retrieved_block = frame_system::Pallet::<T>::block_hash(block);
+		let default_block_hash_value = <T::Hash as Default>::default();
+
+		if retrieved_block == default_block_hash_value {
+			None
+		} else {
+			Some(retrieved_block)
+		}
 	}
 }

@@ -18,22 +18,22 @@
 
 use did::{DidVerificationKeyRelationship, KeyIdOf};
 use frame_support::RuntimeDebug;
-use kilt_dip_support::merkle::{DidKeyMerkleKey, DidKeyMerkleValue, MerkleProof};
+use kilt_dip_support::merkle::{DidKeyMerkleKey, DidKeyMerkleValue, DidMerkleProof};
 use pallet_did_lookup::linkable_account::LinkableAccountId;
-use pallet_dip_provider::traits::IdentityProofGenerator;
+use pallet_dip_provider::traits::IdentityCommitmentGenerator;
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
 use sp_std::{borrow::ToOwned, marker::PhantomData, vec::Vec};
 use sp_trie::{generate_trie_proof, LayoutV1, MemoryDB, TrieDBMutBuilder, TrieHash, TrieMut};
 
-use kilt_dip_support::merkle::{DidKeyRelationship, ProofLeaf};
+use kilt_dip_support::merkle::{DidKeyRelationship, RevealedDidMerkleProofLeaf};
 
 use crate::{dip::did::LinkedDidInfoOf, DidIdentifier};
 
 pub type BlindedValue = Vec<u8>;
-pub type DidMerkleProofOf<T> = MerkleProof<
+pub type DidMerkleProofOf<T> = DidMerkleProof<
 	Vec<BlindedValue>,
-	ProofLeaf<
+	RevealedDidMerkleProofLeaf<
 		KeyIdOf<T>,
 		<T as frame_system::Config>::BlockNumber,
 		<T as pallet_web3_names::Config>::Web3Name,
@@ -49,7 +49,7 @@ pub struct CompleteMerkleProof<Root, Proof> {
 
 pub struct DidMerkleRootGenerator<T>(PhantomData<T>);
 
-type ProofLeafOf<T> = ProofLeaf<
+type ProofLeafOf<T> = RevealedDidMerkleProofLeaf<
 	KeyIdOf<T>,
 	<T as frame_system::Config>::BlockNumber,
 	<T as pallet_web3_names::Config>::Web3Name,
@@ -212,12 +212,18 @@ where
 				} else {
 					Err(())
 				}?;
-				Ok(ProofLeaf::DidKey(did_key_merkle_key, key_details.clone().into()))
+				Ok(RevealedDidMerkleProofLeaf::DidKey(
+					did_key_merkle_key,
+					key_details.clone().into(),
+				))
 			})
 			.chain(account_ids.map(|account_id| -> Result<ProofLeafOf<T>, ()> {
 				let Some(linked_accounts) = linked_accounts else { return Err(()) };
 				if linked_accounts.contains(account_id) {
-					Ok(ProofLeaf::LinkedAccount(account_id.clone().into(), ().into()))
+					Ok(RevealedDidMerkleProofLeaf::LinkedAccount(
+						account_id.clone().into(),
+						().into(),
+					))
 				} else {
 					Err(())
 				}
@@ -227,7 +233,7 @@ where
 		match (should_include_web3_name, linked_web3_name) {
 			// If web3name should be included and it exists...
 			(true, Some(web3name_details)) => {
-				leaves.push(ProofLeaf::Web3Name(
+				leaves.push(RevealedDidMerkleProofLeaf::Web3Name(
 					web3name_details.web3_name.clone().into(),
 					web3name_details.claimed_at.into(),
 				));
@@ -251,7 +257,7 @@ where
 	}
 }
 
-impl<T> IdentityProofGenerator<DidIdentifier, LinkedDidInfoOf<T>> for DidMerkleRootGenerator<T>
+impl<T> IdentityCommitmentGenerator<DidIdentifier, LinkedDidInfoOf<T>> for DidMerkleRootGenerator<T>
 where
 	T: did::Config + pallet_did_lookup::Config + pallet_web3_names::Config,
 {

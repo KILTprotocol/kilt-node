@@ -11,11 +11,14 @@ repository.workspace = true
 version.workspace = true
 
 [dependencies]
+# External dependencies
+hash-db.workspace = true
+
 # Internal dependencies
 did.workspace = true
-dip-support.workspace = true
 pallet-dip-consumer.workspace = true
 pallet-dip-provider.workspace = true
+pallet-relay-store.workspace = true
 
 # Parity dependencies
 parity-scale-codec = {workspace = true, features = ["derive"]}
@@ -26,31 +29,47 @@ frame-system.workspace = true
 frame-support.workspace = true
 sp-runtime.workspace = true
 sp-core.workspace = true
-sp-trie.workspace = true
+sp-io.workspace = true
+sp-state-machine.workspace = true
 sp-std.workspace = true
+sp-trie.workspace = true
 
 # Polkadot dependencies
+rococo-runtime.workspace = true
 xcm.workspace = true
 xcm-executor.workspace = true
+
+# Cumulus dependencies
+cumulus-pallet-parachain-system.workspace = true
+
+[dev-dependencies]
+hex-literal.workspace = true
+sp-io = { workspace = true, features = ["std"] }
 
 [features]
 default = ["std"]
 std = [
+  "hash-db/std",
   "did/std",
-  "dip-support/std",
   "pallet-dip-consumer/std",
   "pallet-dip-provider/std",
+  "pallet-relay-store/std",
   "parity-scale-codec/std",
   "scale-info/std",
   "frame-system/std",
   "frame-support/std",
   "sp-runtime/std",
   "sp-core/std",
-  "sp-trie/std",
+  "sp-io/std",
+  "sp-state-machine/std",
   "sp-std/std",
+  "sp-trie/std",
+  "rococo-runtime/std",
+  "xcm/std",
   "xcm-executor/std",
-  "xcm/std"
+  "cumulus-pallet-parachain-system/std",
 ]
 runtime-benchmarks = [
-  "pallet-dip-consumer/runtime-benchmarks"
+  "pallet-dip-consumer/runtime-benchmarks",
+  "rococo-runtime/runtime-benchmarks"
 ]

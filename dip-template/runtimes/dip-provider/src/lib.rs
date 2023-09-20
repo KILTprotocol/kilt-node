@@ -76,8 +76,7 @@ pub use sp_runtime::BuildStorage;
 use sp_version::NativeVersion;
 
 mod dip;
-mod xcm_config;
-pub use crate::{dip::*, xcm_config::*};
+pub use crate::dip::*;
 
 pub type AccountId = AccountId32;
 pub type Address = MultiAddress<AccountId, ()>;
@@ -136,19 +135,13 @@ construct_runtime!(
 		Aura: pallet_aura = 23,
 		AuraExt: cumulus_pallet_aura_ext = 24,
 
-		// XCM
-		XcmpQueue: cumulus_pallet_xcmp_queue = 30,
-		DmpQueue: cumulus_pallet_dmp_queue = 31,
-		PolkadotXcm: pallet_xcm = 32,
-		CumulusXcm: cumulus_pallet_xcm = 33,
-
 		// DID
-		Did: did = 40,
-		DidLookup: pallet_did_lookup = 41,
-		Web3Names: pallet_web3_names = 42,
+		Did: did = 30,
+		DidLookup: pallet_did_lookup = 31,
+		Web3Names: pallet_web3_names = 32,
 
 		// DIP
-		DipProvider: pallet_dip_provider = 50,
+		DipProvider: pallet_dip_provider = 40,
 	}
 );
 
@@ -195,7 +188,8 @@ register_validate_block! {
 	CheckInherents = CheckInherents,
 }
 
-pub const SS58_PREFIX: u16 = 100;
+// Same as official KILT prefix.
+pub const SS58_PREFIX: u16 = 38;
 const AVERAGE_ON_INITIALIZE_RATIO: Perbill = Perbill::from_percent(5);
 const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
 const MAXIMUM_BLOCK_WEIGHT: Weight = Weight::from_parts(
@@ -252,21 +246,16 @@ impl frame_system::Config for Runtime {
 	type Version = Version;
 }
 
-parameter_types! {
-	pub const ReservedDmpWeight: Weight = MAXIMUM_BLOCK_WEIGHT.saturating_div(4);
-	pub const ReservedXcmpWeight: Weight = MAXIMUM_BLOCK_WEIGHT.saturating_div(4);
-}
-
 impl cumulus_pallet_parachain_system::Config for Runtime {
 	type CheckAssociatedRelayNumber = RelayNumberStrictlyIncreases;
-	type DmpMessageHandler = DmpQueue;
+	type DmpMessageHandler = ();
 	type OnSystemEvent = ();
-	type OutboundXcmpMessageSource = XcmpQueue;
-	type ReservedDmpWeight = ReservedDmpWeight;
-	type ReservedXcmpWeight = ReservedXcmpWeight;
+	type OutboundXcmpMessageSource = ();
+	type ReservedDmpWeight = ();
+	type ReservedXcmpWeight = ();
 	type RuntimeEvent = RuntimeEvent;
 	type SelfParaId = ParachainInfo;
-	type XcmpMessageHandler = XcmpQueue;
+	type XcmpMessageHandler = ();
 }
 
 impl pallet_timestamp::Config for Runtime {

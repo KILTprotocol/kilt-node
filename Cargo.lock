@@ -2381,14 +2381,11 @@ dependencies = [
  "cumulus-pallet-aura-ext",
  "cumulus-pallet-dmp-queue",
  "cumulus-pallet-parachain-system",
- "cumulus-pallet-xcm",
- "cumulus-pallet-xcmp-queue",
  "cumulus-primitives-core",
  "cumulus-primitives-timestamp",
  "cumulus-primitives-utility",
  "did",
  "dip-provider-runtime-template",
- "dip-support",
  "frame-executive",
  "frame-support",
  "frame-system",
@@ -2400,13 +2397,14 @@ dependencies = [
  "pallet-collator-selection",
  "pallet-did-lookup",
  "pallet-dip-consumer",
+ "pallet-postit",
+ "pallet-relay-store",
  "pallet-session",
  "pallet-sudo",
  "pallet-timestamp",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc-runtime-api",
  "pallet-utility",
- "pallet-xcm",
  "parachain-info",
  "parity-scale-codec",
  "polkadot-parachain",
@@ -2424,9 +2422,6 @@ dependencies = [
  "sp-transaction-pool",
  "sp-version",
  "substrate-wasm-builder",
- "xcm",
- "xcm-builder",
- "xcm-executor",
 ]
 
 [[package]]
@@ -2486,13 +2481,10 @@ dependencies = [
  "cumulus-pallet-aura-ext",
  "cumulus-pallet-dmp-queue",
  "cumulus-pallet-parachain-system",
- "cumulus-pallet-xcm",
- "cumulus-pallet-xcmp-queue",
  "cumulus-primitives-core",
  "cumulus-primitives-timestamp",
  "cumulus-primitives-utility",
  "did",
- "dip-support",
  "frame-executive",
  "frame-support",
  "frame-system",
@@ -2511,7 +2503,6 @@ dependencies = [
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc-runtime-api",
  "pallet-web3-names",
- "pallet-xcm",
  "parachain-info",
  "parity-scale-codec",
  "runtime-common",
@@ -2528,18 +2519,6 @@ dependencies = [
  "sp-transaction-pool",
  "sp-version",
  "substrate-wasm-builder",
- "xcm",
- "xcm-builder",
- "xcm-executor",
-]
-
-[[package]]
-name = "dip-support"
-version = "1.12.0-dev"
-dependencies = [
- "frame-support",
- "parity-scale-codec",
- "scale-info",
 ]
 
 [[package]]
@@ -4402,16 +4381,22 @@ dependencies = [
 name = "kilt-dip-support"
 version = "1.12.0-dev"
 dependencies = [
+ "cumulus-pallet-parachain-system",
  "did",
- "dip-support",
  "frame-support",
  "frame-system",
+ "hash-db",
+ "hex-literal 0.3.4",
  "pallet-dip-consumer",
  "pallet-dip-provider",
+ "pallet-relay-store",
  "parity-scale-codec",
+ "rococo-runtime",
  "scale-info",
  "sp-core",
+ "sp-io",
  "sp-runtime",
+ "sp-state-machine",
  "sp-std",
  "sp-trie",
  "xcm",
@@ -6429,13 +6414,12 @@ dependencies = [
 name = "pallet-dip-consumer"
 version = "1.12.0-dev"
 dependencies = [
- "cumulus-pallet-xcm",
- "dip-support",
  "frame-support",
  "frame-system",
  "kilt-support",
  "parity-scale-codec",
  "scale-info",
+ "sp-core",
  "sp-std",
 ]
 
@@ -6444,13 +6428,11 @@ name = "pallet-dip-provider"
 version = "1.12.0-dev"
 dependencies = [
  "did",
- "dip-support",
  "frame-support",
  "frame-system",
  "parity-scale-codec",
  "scale-info",
  "sp-std",
- "xcm",
 ]
 
 [[package]]
@@ -6792,6 +6774,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-postit"
+version = "1.12.0-dev"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-preimage"
 version = "4.0.0-dev"
 source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.43#5e49f6e44820affccaf517fd22af564f4b495d40"
@@ -6871,6 +6865,21 @@ dependencies = [
  "serde",
  "sp-arithmetic",
  "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "pallet-relay-store"
+version = "1.12.0-dev"
+dependencies = [
+ "cumulus-pallet-parachain-system",
+ "frame-support",
+ "frame-system",
+ "log",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
  "sp-runtime",
  "sp-std",
 ]

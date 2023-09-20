@@ -19,11 +19,12 @@ scale-info = {workspace = true, features = ["derive"]}
 
 # DIP
 dip-provider-runtime-template.workspace = true
-dip-support.workspace = true
 did.workspace = true
 kilt-dip-support.workspace = true
 pallet-did-lookup.workspace = true
 pallet-dip-consumer.workspace = true
+pallet-postit.workspace = true
+pallet-relay-store.workspace = true
 runtime-common.workspace = true
 
 # Substrate
@@ -53,18 +54,10 @@ sp-std.workspace = true
 sp-transaction-pool.workspace = true
 sp-version.workspace = true
 
-# Polkadot
-pallet-xcm.workspace = true
-xcm.workspace = true
-xcm-builder.workspace = true
-xcm-executor.workspace = true
-
 # Cumulus
 cumulus-pallet-aura-ext.workspace = true
 cumulus-pallet-dmp-queue.workspace = true
 cumulus-pallet-parachain-system.workspace = true
-cumulus-pallet-xcm.workspace = true
-cumulus-pallet-xcmp-queue.workspace = true
 cumulus-primitives-core.workspace = true
 cumulus-primitives-timestamp.workspace = true
 cumulus-primitives-utility.workspace = true
@@ -79,11 +72,12 @@ std = [
 	"parity-scale-codec/std",
 	"scale-info/std",
   "dip-provider-runtime-template/std",
-  "dip-support/std",
   "did/std",
   "kilt-dip-support/std",
   "pallet-did-lookup/std",
   "pallet-dip-consumer/std",
+  "pallet-postit/std",
+  "pallet-relay-store/std",
   "runtime-common/std",
 	"frame-executive/std",
 	"frame-support/std",
@@ -110,15 +104,9 @@ std = [
 	"sp-std/std",
 	"sp-transaction-pool/std",
 	"sp-version/std",
-  "pallet-xcm/std",
-	"xcm/std",
-	"xcm-builder/std",
-	"xcm-executor/std",
   "cumulus-pallet-aura-ext/std",
 	"cumulus-pallet-dmp-queue/std",
 	"cumulus-pallet-parachain-system/std",
-	"cumulus-pallet-xcm/std",
-	"cumulus-pallet-xcmp-queue/std",
 	"cumulus-primitives-core/std",
 	"cumulus-primitives-timestamp/std",
 	"cumulus-primitives-utility/std",
@@ -128,10 +116,9 @@ std = [
 
 runtime-benchmarks = [
   "dip-provider-runtime-template/runtime-benchmarks",
+  "kilt-dip-support/runtime-benchmarks",
   "pallet-dip-consumer/runtime-benchmarks",
   "runtime-common/runtime-benchmarks",
   "frame-support/runtime-benchmarks",
   "frame-system/runtime-benchmarks",
-  "pallet-xcm/runtime-benchmarks",
-  "xcm-builder/runtime-benchmarks",
 ]
