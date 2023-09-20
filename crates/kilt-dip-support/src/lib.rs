@@ -56,11 +56,11 @@ pub struct SiblingParachainDipStateProof<
 	RelayBlockHeight,
 	DipMerkleProofBlindedValues,
 	DipMerkleProofRevealedLeaf,
-	DipProviderBlockNumber,
+	LocalBlockNumber,
 > {
 	para_state_root: ParachainRootStateProof<RelayBlockHeight>,
 	dip_identity_commitment: Vec<Vec<u8>>,
-	did: DipMerkleProofAndDidSignature<DipMerkleProofBlindedValues, DipMerkleProofRevealedLeaf, DipProviderBlockNumber>,
+	did: DipMerkleProofAndDidSignature<DipMerkleProofBlindedValues, DipMerkleProofRevealedLeaf, LocalBlockNumber>,
 }
 
 #[derive(Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo, Clone)]
@@ -250,22 +250,21 @@ impl<
 
 #[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug, TypeInfo)]
 pub struct ChildParachainDipStateProof<
-	RelayBlockHeight: Copy + Into<U256> + TryFrom<U256>,
-	RelayBlockHasher: Hash,
+	ParentBlockHeight: Copy + Into<U256> + TryFrom<U256>,
+	ParentBlockHasher: Hash,
 	DipMerkleProofBlindedValues,
 	DipMerkleProofRevealedLeaf,
-	DipProviderBlockNumber,
 > {
-	para_state_root: ParachainRootStateProof<RelayBlockHeight>,
-	relay_header: Header<RelayBlockHeight, RelayBlockHasher>,
+	para_state_root: ParachainRootStateProof<ParentBlockHeight>,
+	relay_header: Header<ParentBlockHeight, ParentBlockHasher>,
 	dip_identity_commitment: Vec<Vec<u8>>,
-	did: DipMerkleProofAndDidSignature<DipMerkleProofBlindedValues, DipMerkleProofRevealedLeaf, DipProviderBlockNumber>,
+	did: DipMerkleProofAndDidSignature<DipMerkleProofBlindedValues, DipMerkleProofRevealedLeaf, ParentBlockHeight>,
 }
 
 pub struct DipChildProviderStateProofVerifier<
 	RelayChainInfo,
-	SiblingProviderParachainId,
-	SiblingProviderStateInfo,
+	ChildProviderParachainId,
+	ChildProviderStateInfo,
 	TxSubmitter,
 	ProviderDipMerkleHasher,
 	ProviderDidKeyId,
@@ -280,8 +279,8 @@ pub struct DipChildProviderStateProofVerifier<
 	#[allow(clippy::type_complexity)]
 	PhantomData<(
 		RelayChainInfo,
-		SiblingProviderParachainId,
-		SiblingProviderStateInfo,
+		ChildProviderParachainId,
+		ChildProviderStateInfo,
 		TxSubmitter,
 		ProviderDipMerkleHasher,
 		ProviderDidKeyId,
@@ -297,8 +296,8 @@ impl<
 		Call,
 		Subject,
 		RelayChainInfo,
-		SiblingProviderParachainId,
-		SiblingProviderStateInfo,
+		ChildProviderParachainId,
+		ChildProviderStateInfo,
 		TxSubmitter,
 		ProviderDipMerkleHasher,
 		ProviderDidKeyId,
@@ -312,8 +311,8 @@ impl<
 	> IdentityProofVerifier<Call, Subject>
 	for DipChildProviderStateProofVerifier<
 		RelayChainInfo,
-		SiblingProviderParachainId,
-		SiblingProviderStateInfo,
+		ChildProviderParachainId,
+		ChildProviderStateInfo,
 		TxSubmitter,
 		ProviderDipMerkleHasher,
 		ProviderDidKeyId,
@@ -346,17 +345,17 @@ impl<
 		+ Codec,
 	RelayChainInfo::Key: AsRef<[u8]>,
 
-	SiblingProviderParachainId: Get<RelayChainInfo::ParaId>,
+	ChildProviderParachainId: Get<RelayChainInfo::ParaId>,
 
-	SiblingProviderStateInfo:
-		ProviderParachainStateInfo<Identifier = Subject, Commitment = ProviderDipMerkleHasher::Out>,
-	OutputOf<SiblingProviderStateInfo::Hasher>: Ord + From<OutputOf<<RelayChainInfo as RelayChainStorageInfo>::Hasher>>,
-	SiblingProviderStateInfo::BlockNumber: Encode + Clone,
-	SiblingProviderStateInfo::Commitment: Decode,
-	SiblingProviderStateInfo::Key: AsRef<[u8]>,
+	ChildProviderStateInfo: ProviderParachainStateInfo<Identifier = Subject, Commitment = ProviderDipMerkleHasher::Out>,
+	OutputOf<ChildProviderStateInfo::Hasher>: Ord + From<OutputOf<<RelayChainInfo as RelayChainStorageInfo>::Hasher>>,
+	ChildProviderStateInfo::BlockNumber: Encode + Clone,
+	ChildProviderStateInfo::Commitment: Decode,
+	ChildProviderStateInfo::Key: AsRef<[u8]>,
 
-	LocalContextProvider: DidSignatureVerifierContext,
-	LocalContextProvider::BlockNumber: Encode + CheckedSub + From<u16> + PartialOrd,
+	LocalContextProvider:
+		DidSignatureVerifierContext<BlockNumber = <RelayChainInfo as RelayChainStorageInfo>::BlockNumber>,
+	LocalContextProvider::BlockNumber: CheckedSub + From<u16>,
 	LocalContextProvider::Hash: Encode,
 	LocalContextProvider::SignedExtra: Encode,
 	LocalDidDetails: Bump + Default + Encode,
@@ -375,16 +374,15 @@ impl<
 		Vec<Vec<u8>>,
 		RevealedDidMerkleProofLeaf<
 			ProviderDidKeyId,
-			SiblingProviderStateInfo::BlockNumber,
+			ChildProviderStateInfo::BlockNumber,
 			ProviderWeb3Name,
 			ProviderLinkedAccountId,
 		>,
-		LocalContextProvider::BlockNumber,
 	>;
 	type Submitter = TxSubmitter;
 	type VerificationResult = RevealedDidMerkleProofLeaves<
 		ProviderDidKeyId,
-		SiblingProviderStateInfo::BlockNumber,
+		ChildProviderStateInfo::BlockNumber,
 		ProviderWeb3Name,
 		ProviderLinkedAccountId,
 		MAX_REVEALED_KEYS_COUNT,
@@ -413,14 +411,14 @@ impl<
 		// 2. Verify relay chain proof
 		let provider_parachain_header =
 			ParachainHeadProofVerifier::<RelayChainInfo>::verify_proof_for_parachain_with_root(
-				&SiblingProviderParachainId::get(),
+				&ChildProviderParachainId::get(),
 				&state_root_at_height,
 				proof.para_state_root.proof,
 			)?;
 
 		// 3. Verify parachain state proof.
 		let subject_identity_commitment =
-			DipIdentityCommitmentProofVerifier::<SiblingProviderStateInfo>::verify_proof_for_identifier(
+			DipIdentityCommitmentProofVerifier::<ChildProviderStateInfo>::verify_proof_for_identifier(
 				subject,
 				provider_parachain_header.state_root.into(),
 				proof.dip_identity_commitment,

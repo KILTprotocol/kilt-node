@@ -32,6 +32,12 @@ impl EnsureOrigin<RuntimeOrigin> for EnsureDipOriginAdapter {
 	fn try_origin(o: RuntimeOrigin) -> Result<Self::Success, RuntimeOrigin> {
 		EnsureDipOrigin::try_origin(o).map(DipOriginAdapter)
 	}
+
+	#[cfg(feature = "runtime-benchmarks")]
+	fn try_successful_origin() -> Result<RuntimeOrigin, ()> {
+		// TODO: Replace with actual DIP origin upon benchmarking
+		Ok(RuntimeOrigin::root())
+	}
 }
 
 #[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
