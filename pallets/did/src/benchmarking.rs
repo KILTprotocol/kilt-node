@@ -604,7 +604,7 @@ benchmarks! {
 		let origin = RawOrigin::Signed(did_subject.clone());
 		let cloned_new_delegation_key = new_delegation_key.clone();
 	}: set_delegation_key(origin, cloned_new_delegation_key)
-		verify {
+	verify {
 		let new_delegation_key_id = utils::calculate_key_id::<T>(&DidPublicKey::from(new_delegation_key));
 		assert_eq!(Did::<T>::get(&did_subject).unwrap().delegation_key, Some(new_delegation_key_id));
 	}
@@ -1052,7 +1052,7 @@ benchmarks! {
 		let origin = RawOrigin::Signed(did_subject.clone());
 		let cloned_endpoint_id = endpoint_id.clone();
 	}: _(origin, cloned_endpoint_id)
-		verify {
+	verify {
 		assert!(
 			ServiceEndpoints::<T>::get(&did_subject, &endpoint_id).is_none()
 		);
@@ -1092,7 +1092,7 @@ benchmarks! {
 	}: {
 		DidSignatureVerify::<T>::verify(&did_subject, &payload, &did_signature).expect("should verify");
 	}
-	verify {}
+
 	signature_verification_ed25519 {
 		let l in 1 .. MAX_PAYLOAD_BYTE_LENGTH;
 
@@ -1119,7 +1119,7 @@ benchmarks! {
 	}: {
 		DidSignatureVerify::<T>::verify(&did_subject, &payload, &did_signature).expect("should verify");
 	}
-	verify {}
+
 	signature_verification_ecdsa {
 		let l in 1 .. MAX_PAYLOAD_BYTE_LENGTH;
 
@@ -1146,7 +1146,6 @@ benchmarks! {
 	}: {
 		DidSignatureVerify::<T>::verify(&did_subject, &payload, &did_signature).expect("should verify");
 	}
-	verify {}
 
 	change_deposit_owner {
 		let did_public_auth_key = get_ed25519_public_authentication_key();
