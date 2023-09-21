@@ -121,7 +121,7 @@ build-wasm-try-runtime:
   script:
     - cargo build --release -p $RUNTIME-runtime --features try-runtime
     - mkdir ./out
-    - mv target/release/wbuild/$RUNTIME-runtime/*.wasm /out/
+    - mv target/release/wbuild/$RUNTIME-runtime/*.wasm ./out/
   artifacts:
     paths:
       - out/*.wasm
