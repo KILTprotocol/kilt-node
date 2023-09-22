@@ -15,6 +15,7 @@ targets = ["x86_64-unknown-linux-gnu"]
 
 [dev-dependencies]
 env_logger.workspace = true
+hex-literal.workspace = true
 
 ctype = {workspace = true, features = ["mock"]}
 kilt-support = {workspace = true, features = ["mock", "try-runtime"]}

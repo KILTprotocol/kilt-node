@@ -23,7 +23,7 @@ use crate::{
 	service,
 };
 use frame_benchmarking_cli::{BenchmarkCmd, ExtrinsicFactory, SUBSTRATE_REFERENCE_HARDWARE};
-use mashnet_node_runtime::opaque::Block;
+use kestrel_runtime::opaque::Block;
 use runtime_common::constants::EXISTENTIAL_DEPOSIT;
 use sc_cli::{ChainSpec, RuntimeVersion, SubstrateCli};
 use sc_service::PartialComponents;
@@ -63,7 +63,7 @@ impl SubstrateCli for Cli {
 	}
 
 	fn native_runtime_version(_: &Box<dyn ChainSpec>) -> &'static RuntimeVersion {
-		&mashnet_node_runtime::VERSION
+		&kestrel_runtime::VERSION
 	}
 }
 

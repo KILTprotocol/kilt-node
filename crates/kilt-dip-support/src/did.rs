@@ -51,6 +51,7 @@ pub(crate) struct RevealedDidKeysSignatureAndCallVerifier<
 	MerkleProofEntries,
 	ContextProvider,
 	RemoteKeyId,
+	RemoteAccountId,
 	RemoteBlockNumber,
 	CallVerifier,
 >(
@@ -62,6 +63,7 @@ pub(crate) struct RevealedDidKeysSignatureAndCallVerifier<
 		MerkleProofEntries,
 		ContextProvider,
 		RemoteKeyId,
+		RemoteAccountId,
 		RemoteBlockNumber,
 		CallVerifier,
 	)>,
@@ -74,6 +76,7 @@ impl<
 		MerkleProofEntries,
 		ContextProvider,
 		RemoteKeyId,
+		RemoteAccountId,
 		RemoteBlockNumber,
 		CallVerifier,
 	>
@@ -84,6 +87,7 @@ impl<
 		MerkleProofEntries,
 		ContextProvider,
 		RemoteKeyId,
+		RemoteAccountId,
 		RemoteBlockNumber,
 		CallVerifier,
 	> where
@@ -94,8 +98,9 @@ impl<
 	ContextProvider::Hash: Encode,
 	ContextProvider::SignedExtra: Encode,
 	DidLocalDetails: Bump + Default + Encode,
-	MerkleProofEntries: sp_std::borrow::Borrow<[RevealedDidKey<RemoteKeyId, RemoteBlockNumber>]>,
-	CallVerifier: DipCallOriginFilter<Call, OriginInfo = (DidVerificationKey, DidVerificationKeyRelationship)>,
+	RemoteAccountId: Clone,
+	MerkleProofEntries: sp_std::borrow::Borrow<[RevealedDidKey<RemoteKeyId, RemoteBlockNumber, RemoteAccountId>]>,
+	CallVerifier: DipCallOriginFilter<Call, OriginInfo = (DidVerificationKey<RemoteAccountId>, DidVerificationKeyRelationship)>,
 {
 	#[allow(clippy::result_unit_err)]
 	pub(crate) fn verify_did_signature_for_call(
@@ -103,7 +108,7 @@ impl<
 		submitter: &Submitter,
 		local_details: &mut Option<DidLocalDetails>,
 		merkle_revealed_did_signature: RevealedDidKeysAndSignature<MerkleProofEntries, ContextProvider::BlockNumber>,
-	) -> Result<(DidVerificationKey, DidVerificationKeyRelationship), ()> {
+	) -> Result<(DidVerificationKey<RemoteAccountId>, DidVerificationKeyRelationship), ()> {
 		let block_number = ContextProvider::block_number();
 		let is_signature_fresh = if let Some(blocks_ago_from_now) =
 			block_number.checked_sub(&merkle_revealed_did_signature.did_signature.block_number)

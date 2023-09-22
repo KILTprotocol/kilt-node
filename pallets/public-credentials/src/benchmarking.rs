@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite, Zero};
+use frame_benchmarking::{account, benchmarks, Zero};
 use frame_support::{
 	dispatch::RawOrigin,
 	traits::{fungible::Mutate, Get},
@@ -288,10 +288,10 @@ benchmarks! {
 			T::Deposit::get()
 		);
 	}
-}
 
-impl_benchmark_test_suite! {
-	Pallet,
-	crate::mock::ExtBuilder::default().build_with_keystore(),
-	crate::mock::Test
+	impl_benchmark_test_suite!(
+		Pallet,
+		crate::mock::ExtBuilder::default().build_with_keystore(),
+		crate::mock::Test
+	)
 }

@@ -83,6 +83,7 @@ pub struct DipSiblingProviderStateProofVerifier<
 	TxSubmitter,
 	ProviderDipMerkleHasher,
 	ProviderDidKeyId,
+	ProviderAccountId,
 	ProviderWeb3Name,
 	ProviderLinkedAccountId,
 	const MAX_REVEALED_KEYS_COUNT: u32,
@@ -99,6 +100,7 @@ pub struct DipSiblingProviderStateProofVerifier<
 		TxSubmitter,
 		ProviderDipMerkleHasher,
 		ProviderDidKeyId,
+		ProviderAccountId,
 		ProviderWeb3Name,
 		ProviderLinkedAccountId,
 		LocalDidDetails,
@@ -116,6 +118,7 @@ impl<
 		TxSubmitter,
 		ProviderDipMerkleHasher,
 		ProviderDidKeyId,
+		ProviderAccountId,
 		ProviderWeb3Name,
 		ProviderLinkedAccountId,
 		const MAX_REVEALED_KEYS_COUNT: u32,
@@ -131,6 +134,7 @@ impl<
 		TxSubmitter,
 		ProviderDipMerkleHasher,
 		ProviderDidKeyId,
+		ProviderAccountId,
 		ProviderWeb3Name,
 		ProviderLinkedAccountId,
 		MAX_REVEALED_KEYS_COUNT,
@@ -161,10 +165,11 @@ impl<
 	LocalContextProvider::Hash: Encode,
 	LocalContextProvider::SignedExtra: Encode,
 	LocalDidDetails: Bump + Default + Encode,
-	LocalDidCallVerifier: DipCallOriginFilter<Call, OriginInfo = (DidVerificationKey, DidVerificationKeyRelationship)>,
+	LocalDidCallVerifier: DipCallOriginFilter<Call, OriginInfo = (DidVerificationKey<ProviderAccountId>, DidVerificationKeyRelationship)>,
 
 	ProviderDipMerkleHasher: sp_core::Hasher,
 	ProviderDidKeyId: Encode + Clone + Into<ProviderDipMerkleHasher::Out>,
+	ProviderAccountId: Encode + Clone,
 	ProviderLinkedAccountId: Encode + Clone,
 	ProviderWeb3Name: Encode + Clone,
 {
@@ -175,6 +180,7 @@ impl<
 		Vec<Vec<u8>>,
 		RevealedDidMerkleProofLeaf<
 			ProviderDidKeyId,
+			ProviderAccountId,
 			SiblingProviderStateInfo::BlockNumber,
 			ProviderWeb3Name,
 			ProviderLinkedAccountId,
@@ -184,6 +190,7 @@ impl<
 	type Submitter = TxSubmitter;
 	type VerificationResult = RevealedDidMerkleProofLeaves<
 		ProviderDidKeyId,
+		ProviderAccountId,
 		SiblingProviderStateInfo::BlockNumber,
 		ProviderWeb3Name,
 		ProviderLinkedAccountId,
@@ -220,6 +227,7 @@ impl<
 			_,
 			_,
 			_,
+			_,
 			MAX_REVEALED_KEYS_COUNT,
 			MAX_REVEALED_ACCOUNTS_COUNT,
 		>::verify_dip_merkle_proof(&subject_identity_commitment, proof.did.leaves)?;
@@ -231,6 +239,7 @@ impl<
 			_,
 			_,
 			LocalContextProvider,
+			_,
 			_,
 			_,
 			LocalDidCallVerifier,
@@ -268,6 +277,7 @@ pub struct DipChildProviderStateProofVerifier<
 	TxSubmitter,
 	ProviderDipMerkleHasher,
 	ProviderDidKeyId,
+	ProviderAccountId,
 	ProviderWeb3Name,
 	ProviderLinkedAccountId,
 	const MAX_REVEALED_KEYS_COUNT: u32,
@@ -284,6 +294,7 @@ pub struct DipChildProviderStateProofVerifier<
 		TxSubmitter,
 		ProviderDipMerkleHasher,
 		ProviderDidKeyId,
+		ProviderAccountId,
 		ProviderWeb3Name,
 		ProviderLinkedAccountId,
 		LocalDidDetails,
@@ -301,6 +312,7 @@ impl<
 		TxSubmitter,
 		ProviderDipMerkleHasher,
 		ProviderDidKeyId,
+		ProviderAccountId,
 		ProviderWeb3Name,
 		ProviderLinkedAccountId,
 		const MAX_REVEALED_KEYS_COUNT: u32,
@@ -316,6 +328,7 @@ impl<
 		TxSubmitter,
 		ProviderDipMerkleHasher,
 		ProviderDidKeyId,
+		ProviderAccountId,
 		ProviderWeb3Name,
 		ProviderLinkedAccountId,
 		MAX_REVEALED_KEYS_COUNT,
@@ -359,10 +372,11 @@ impl<
 	LocalContextProvider::Hash: Encode,
 	LocalContextProvider::SignedExtra: Encode,
 	LocalDidDetails: Bump + Default + Encode,
-	LocalDidCallVerifier: DipCallOriginFilter<Call, OriginInfo = (DidVerificationKey, DidVerificationKeyRelationship)>,
+	LocalDidCallVerifier: DipCallOriginFilter<Call, OriginInfo = (DidVerificationKey<ProviderAccountId>, DidVerificationKeyRelationship)>,
 
 	ProviderDipMerkleHasher: sp_core::Hasher,
 	ProviderDidKeyId: Encode + Clone + Into<ProviderDipMerkleHasher::Out>,
+	ProviderAccountId: Encode + Clone,
 	ProviderLinkedAccountId: Encode + Clone,
 	ProviderWeb3Name: Encode + Clone,
 {
@@ -374,6 +388,7 @@ impl<
 		Vec<Vec<u8>>,
 		RevealedDidMerkleProofLeaf<
 			ProviderDidKeyId,
+			ProviderAccountId,
 			ChildProviderStateInfo::BlockNumber,
 			ProviderWeb3Name,
 			ProviderLinkedAccountId,
@@ -382,6 +397,7 @@ impl<
 	type Submitter = TxSubmitter;
 	type VerificationResult = RevealedDidMerkleProofLeaves<
 		ProviderDidKeyId,
+		ProviderAccountId,
 		ChildProviderStateInfo::BlockNumber,
 		ProviderWeb3Name,
 		ProviderLinkedAccountId,
@@ -431,6 +447,7 @@ impl<
 			_,
 			_,
 			_,
+			_,
 			MAX_REVEALED_KEYS_COUNT,
 			MAX_REVEALED_ACCOUNTS_COUNT,
 		>::verify_dip_merkle_proof(&subject_identity_commitment, proof.did.leaves)?;
@@ -442,6 +459,7 @@ impl<
 			_,
 			_,
 			LocalContextProvider,
+			_,
 			_,
 			_,
 			LocalDidCallVerifier,

@@ -144,7 +144,6 @@ pub mod pallet {
 
 	use core::cmp::Ordering;
 	use frame_support::{
-		assert_ok,
 		pallet_prelude::*,
 		storage::bounded_btree_map::BoundedBTreeMap,
 		traits::{
@@ -709,13 +708,13 @@ pub mod pallet {
 					"Account does not have enough balance to stake."
 				);
 				if let Some(delegated_val) = opt_val {
-					assert_ok!(Pallet::<T>::join_delegators(
+					frame_support::assert_ok!(Pallet::<T>::join_delegators(
 						T::RuntimeOrigin::from(Some(actor.clone()).into()),
 						T::Lookup::unlookup(delegated_val.clone()),
 						balance,
 					));
 				} else {
-					assert_ok!(Pallet::<T>::join_candidates(
+					frame_support::assert_ok!(Pallet::<T>::join_candidates(
 						T::RuntimeOrigin::from(Some(actor.clone()).into()),
 						balance
 					));

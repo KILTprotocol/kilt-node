@@ -17,7 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use did::{did_details::DidPublicKeyDetails, DidVerificationKeyRelationship};
-use frame_support::{traits::ConstU32, RuntimeDebug};
+use frame_support::{traits::ConstU32, DefaultNoBound, RuntimeDebug};
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_runtime::{BoundedVec, SaturatedConversion};
@@ -66,10 +66,10 @@ impl<KeyId> From<(KeyId, DidKeyRelationship)> for DidKeyMerkleKey<KeyId> {
 }
 
 #[derive(Clone, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo)]
-pub struct DidKeyMerkleValue<BlockNumber>(pub DidPublicKeyDetails<BlockNumber>);
+pub struct DidKeyMerkleValue<BlockNumber, AccountId>(pub DidPublicKeyDetails<BlockNumber, AccountId>);
 
-impl<BlockNumber> From<DidPublicKeyDetails<BlockNumber>> for DidKeyMerkleValue<BlockNumber> {
-	fn from(value: DidPublicKeyDetails<BlockNumber>) -> Self {
+impl<BlockNumber, AccountId> From<DidPublicKeyDetails<BlockNumber, AccountId>> for DidKeyMerkleValue<BlockNumber, AccountId> {
+	fn from(value: DidPublicKeyDetails<BlockNumber, AccountId>) -> Self {
 		Self(value)
 	}
 }
@@ -110,16 +110,16 @@ impl From<()> for LinkedAccountMerkleValue {
 }
 
 #[derive(Clone, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo)]
-pub enum RevealedDidMerkleProofLeaf<KeyId, BlockNumber, Web3Name, LinkedAccountId> {
+pub enum RevealedDidMerkleProofLeaf<KeyId, AccountId, BlockNumber, Web3Name, LinkedAccountId> {
 	// The key and value for the leaves of a merkle proof that contain a reference
 	// (by ID) to the key details, provided in a separate leaf.
-	DidKey(DidKeyMerkleKey<KeyId>, DidKeyMerkleValue<BlockNumber>),
+	DidKey(DidKeyMerkleKey<KeyId>, DidKeyMerkleValue<BlockNumber, AccountId>),
 	Web3Name(Web3NameMerkleKey<Web3Name>, Web3NameMerkleValue<BlockNumber>),
 	LinkedAccount(LinkedAccountMerkleKey<LinkedAccountId>, LinkedAccountMerkleValue),
 }
 
-impl<KeyId, BlockNumber, Web3Name, LinkedAccountId>
-	RevealedDidMerkleProofLeaf<KeyId, BlockNumber, Web3Name, LinkedAccountId>
+impl<KeyId, AccountId, BlockNumber, Web3Name, LinkedAccountId>
+	RevealedDidMerkleProofLeaf<KeyId, AccountId, BlockNumber, Web3Name, LinkedAccountId>
 where
 	KeyId: Encode,
 	Web3Name: Encode,
@@ -134,9 +134,10 @@ where
 	}
 }
 
-impl<KeyId, BlockNumber, Web3Name, LinkedAccountId>
-	RevealedDidMerkleProofLeaf<KeyId, BlockNumber, Web3Name, LinkedAccountId>
+impl<KeyId, AccountId, BlockNumber, Web3Name, LinkedAccountId>
+	RevealedDidMerkleProofLeaf<KeyId, AccountId, BlockNumber, Web3Name, LinkedAccountId>
 where
+	AccountId: Encode,
 	BlockNumber: Encode,
 {
 	pub fn encoded_value(&self) -> Vec<u8> {
@@ -149,10 +150,10 @@ where
 }
 
 #[derive(Clone, Encode, Decode, PartialEq, MaxEncodedLen, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo)]
-pub struct RevealedDidKey<KeyId, BlockNumber> {
+pub struct RevealedDidKey<KeyId, BlockNumber, AccountId> {
 	pub id: KeyId,
 	pub relationship: DidKeyRelationship,
-	pub details: DidPublicKeyDetails<BlockNumber>,
+	pub details: DidPublicKeyDetails<BlockNumber, AccountId>,
 }
 
 #[derive(Clone, Encode, Decode, PartialEq, MaxEncodedLen, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo)]
@@ -161,30 +162,59 @@ pub struct RevealedWeb3Name<Web3Name, BlockNumber> {
 	pub claimed_at: BlockNumber,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, TypeInfo, MaxEncodedLen, Encode, Decode, Default)]
+#[derive(Clone, Debug, PartialEq, Eq, TypeInfo, MaxEncodedLen, Encode, Decode, DefaultNoBound)]
 pub struct RevealedDidMerkleProofLeaves<
 	KeyId,
+	AccountId,
 	BlockNumber,
 	Web3Name,
 	LinkedAccountId,
 	const MAX_REVEALED_KEYS_COUNT: u32,
 	const MAX_REVEALED_ACCOUNTS_COUNT: u32,
 > {
-	pub did_keys: BoundedVec<RevealedDidKey<KeyId, BlockNumber>, ConstU32<MAX_REVEALED_KEYS_COUNT>>,
+	pub did_keys: BoundedVec<RevealedDidKey<KeyId, BlockNumber, AccountId>, ConstU32<MAX_REVEALED_KEYS_COUNT>>,
 	pub web3_name: Option<RevealedWeb3Name<Web3Name, BlockNumber>>,
 	pub linked_accounts: BoundedVec<LinkedAccountId, ConstU32<MAX_REVEALED_ACCOUNTS_COUNT>>,
 }
 
+// impl<
+// 		KeyId,
+// 		AccountId,
+// 		BlockNumber,
+// 		Web3Name,
+// 		LinkedAccountId,
+// 		const MAX_REVEALED_KEYS_COUNT: u32,
+// 		const MAX_REVEALED_ACCOUNTS_COUNT: u32,
+// 	> Default for RevealedDidMerkleProofLeaves<
+// 	KeyId,
+// 	AccountId,
+// 	BlockNumber,
+// 	Web3Name,
+// 	LinkedAccountId,
+// 	MAX_REVEALED_KEYS_COUNT,
+// 	MAX_REVEALED_ACCOUNTS_COUNT,
+// > {
+// 	fn default() -> Self {
+// 		Self {
+// 			did_keys: BoundedVec::default(),
+// 			linked_accounts: BoundedVec::default(),
+// 			web3_name: None,
+// 		}
+// 	}
+// }
+
 impl<
 		KeyId,
+		AccountId,
 		BlockNumber,
 		Web3Name,
 		LinkedAccountId,
 		const MAX_REVEALED_KEYS_COUNT: u32,
 		const MAX_REVEALED_ACCOUNTS_COUNT: u32,
-	> sp_std::borrow::Borrow<[RevealedDidKey<KeyId, BlockNumber>]>
+	> sp_std::borrow::Borrow<[RevealedDidKey<KeyId, BlockNumber, AccountId>]>
 	for RevealedDidMerkleProofLeaves<
 		KeyId,
+		AccountId,
 		BlockNumber,
 		Web3Name,
 		LinkedAccountId,
@@ -192,7 +222,7 @@ impl<
 		MAX_REVEALED_ACCOUNTS_COUNT,
 	>
 {
-	fn borrow(&self) -> &[RevealedDidKey<KeyId, BlockNumber>] {
+	fn borrow(&self) -> &[RevealedDidKey<KeyId, BlockNumber, AccountId>] {
 		self.did_keys.borrow()
 	}
 }
@@ -203,16 +233,18 @@ impl<
 pub(crate) struct DidMerkleProofVerifier<
 	Hasher,
 	KeyId,
+	AccountId,
 	BlockNumber,
 	Web3Name,
 	LinkedAccountId,
 	const MAX_REVEALED_KEYS_COUNT: u32,
 	const MAX_REVEALED_ACCOUNTS_COUNT: u32,
->(#[allow(clippy::type_complexity)] PhantomData<(Hasher, KeyId, BlockNumber, Web3Name, LinkedAccountId)>);
+>(#[allow(clippy::type_complexity)] PhantomData<(Hasher, KeyId, AccountId, BlockNumber, Web3Name, LinkedAccountId)>);
 
 impl<
 		Hasher,
 		KeyId,
+		AccountId,
 		BlockNumber,
 		Web3Name,
 		LinkedAccountId,
@@ -222,6 +254,7 @@ impl<
 	DidMerkleProofVerifier<
 		Hasher,
 		KeyId,
+		AccountId,
 		BlockNumber,
 		Web3Name,
 		LinkedAccountId,
@@ -231,16 +264,19 @@ impl<
 	BlockNumber: Encode + Clone,
 	Hasher: sp_core::Hasher,
 	KeyId: Encode + Clone,
+	AccountId: Encode + Clone,
 	LinkedAccountId: Encode + Clone,
 	Web3Name: Encode + Clone,
 {
 	#[allow(clippy::result_unit_err)]
+	#[allow(clippy::type_complexity)]
 	pub(crate) fn verify_dip_merkle_proof(
 		identity_commitment: &Hasher::Out,
-		proof: DidMerkleProof<Vec<Vec<u8>>, RevealedDidMerkleProofLeaf<KeyId, BlockNumber, Web3Name, LinkedAccountId>>,
+		proof: DidMerkleProof<Vec<Vec<u8>>, RevealedDidMerkleProofLeaf<KeyId, AccountId, BlockNumber, Web3Name, LinkedAccountId>>,
 	) -> Result<
 		RevealedDidMerkleProofLeaves<
 			KeyId,
+			AccountId,
 			BlockNumber,
 			Web3Name,
 			LinkedAccountId,
@@ -264,7 +300,7 @@ impl<
 		// leaves to something the consumer can easily operate on.
 		#[allow(clippy::type_complexity)]
 		let (did_keys, web3_name, linked_accounts): (
-			BoundedVec<RevealedDidKey<KeyId, BlockNumber>, ConstU32<MAX_REVEALED_KEYS_COUNT>>,
+			BoundedVec<RevealedDidKey<KeyId, BlockNumber, AccountId>, ConstU32<MAX_REVEALED_KEYS_COUNT>>,
 			Option<RevealedWeb3Name<Web3Name, BlockNumber>>,
 			BoundedVec<LinkedAccountId, ConstU32<MAX_REVEALED_ACCOUNTS_COUNT>>,
 		) = proof.revealed.iter().try_fold(

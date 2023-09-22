@@ -1,11 +1,11 @@
 [package]
 authors.workspace = true
-description = "Standalone runtime for KILT development"
+description = "Kestrel runtime for KILT development. This is a standalone chain and does not require a relaychain."
 documentation.workspace = true
 edition.workspace = true
 homepage.workspace = true
 license-file.workspace = true
-name = "mashnet-node-runtime"
+name = "kestrel-runtime"
 readme.workspace = true
 repository.workspace = true
 version.workspace = true

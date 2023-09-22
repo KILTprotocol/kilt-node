@@ -35,6 +35,7 @@ pub type DidMerkleProofOf<T> = DidMerkleProof<
 	Vec<BlindedValue>,
 	RevealedDidMerkleProofLeaf<
 		KeyIdOf<T>,
+		<T as frame_system::Config>::AccountId,
 		<T as frame_system::Config>::BlockNumber,
 		<T as pallet_web3_names::Config>::Web3Name,
 		LinkableAccountId,
@@ -51,6 +52,7 @@ pub struct DidMerkleRootGenerator<T>(PhantomData<T>);
 
 type ProofLeafOf<T> = RevealedDidMerkleProofLeaf<
 	KeyIdOf<T>,
+	<T as frame_system::Config>::AccountId,
 	<T as frame_system::Config>::BlockNumber,
 	<T as pallet_web3_names::Config>::Web3Name,
 	LinkableAccountId,

@@ -17,7 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use did::{did_details::DidVerificationKey, DidVerificationKeyRelationship, KeyIdOf};
-use dip_provider_runtime_template::{Runtime as ProviderRuntime, Web3Name};
+use dip_provider_runtime_template::{AccountId as ProviderAccountId, Runtime as ProviderRuntime, Web3Name};
 use frame_support::traits::Contains;
 use kilt_dip_support::{
 	traits::{DipCallOriginFilter, FrameSystemDidSignatureContext, ProviderParachainStateInfoViaProviderPallet},
@@ -39,6 +39,7 @@ pub type ProofVerifier = DipSiblingProviderStateProofVerifier<
 	AccountId,
 	BlakeTwo256,
 	KeyIdOf<ProviderRuntime>,
+	ProviderAccountId,
 	Web3Name,
 	LinkableAccountId,
 	10,
@@ -109,7 +110,7 @@ pub struct DipCallFilter;
 
 impl DipCallOriginFilter<RuntimeCall> for DipCallFilter {
 	type Error = ();
-	type OriginInfo = (DidVerificationKey, DidVerificationKeyRelationship);
+	type OriginInfo = (DidVerificationKey<ProviderAccountId>, DidVerificationKeyRelationship);
 	type Success = ();
 
 	// Accepts only a DipOrigin for the DidLookup pallet calls.

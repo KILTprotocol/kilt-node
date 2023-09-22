@@ -19,6 +19,6 @@ docker build \
 docker build \
     --cache-from $AWS_REGISTRY/kilt-parachain/collator:builder \
     --cache-from $AWS_REGISTRY/kilt/prototype-chain:$target_tag \
-    --build-arg NODE_TYPE=mashnet-node \
-    -t local/mashnet-node:$target_tag \
+    --build-arg NODE_TYPE=standalone-node \
+    -t local/standalone-node:$target_tag \
     .

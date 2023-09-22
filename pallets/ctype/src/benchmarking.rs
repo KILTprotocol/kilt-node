@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
+use frame_benchmarking::{account, benchmarks};
 use frame_support::{
 	sp_runtime::traits::Hash,
 	traits::{
@@ -89,10 +89,10 @@ benchmarks! {
 		// Verify the CType has the right block number
 		assert_eq!(stored_ctype_entry.created_at, new_block_number);
 	}
-}
 
-impl_benchmark_test_suite! {
-	Pallet,
-	crate::mock::runtime::ExtBuilder::default().build_with_keystore(),
-	crate::mock::runtime::Test
+	impl_benchmark_test_suite!(
+		Pallet,
+		crate::mock::runtime::ExtBuilder::default().build_with_keystore(),
+		crate::mock::runtime::Test
+	)
 }

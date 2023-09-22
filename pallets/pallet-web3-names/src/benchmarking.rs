@@ -17,7 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 #![cfg(feature = "runtime-benchmarks")]
 
-use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite, vec, Vec, Zero};
+use frame_benchmarking::{account, benchmarks, vec, Vec, Zero};
 use frame_support::{
 	pallet_prelude::EnsureOrigin,
 	sp_runtime::SaturatedConversion,
@@ -199,10 +199,10 @@ benchmarks! {
 			amount: <T as Config>::Deposit::get(),
 		});
 	}
-}
 
-impl_benchmark_test_suite! {
-	Pallet,
-	crate::mock::ExtBuilder::default().build_with_keystore(),
-	crate::mock::Test
+	impl_benchmark_test_suite!(
+		Pallet,
+		crate::mock::ExtBuilder::default().build_with_keystore(),
+		crate::mock::Test
+	)
 }

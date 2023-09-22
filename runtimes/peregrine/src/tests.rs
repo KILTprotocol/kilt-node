@@ -68,7 +68,7 @@ fn did_storage_sizes() {
 	assert_eq!(max_did_endpoint_size, MAX_SERVICE_ENDPOINT_BYTE_LENGTH as usize);
 
 	// DID key
-	let max_did_key_size = did::did_details::DidPublicKey::max_encoded_len();
+	let max_did_key_size = did::did_details::DidPublicKey::<AccountId>::max_encoded_len();
 	assert_eq!(max_did_key_size, MAX_KEY_LENGTH as usize);
 }
 

@@ -16,41 +16,42 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use core::cmp::Ordering;
 use frame_support::{
 	ensure,
 	storage::{bounded_btree_map::BoundedBTreeMap, bounded_btree_set::BoundedBTreeSet},
 	traits::Get,
 	RuntimeDebug,
 };
-use kilt_support::{traits::StorageDepositCollector, Deposit};
+use kilt_support::Deposit;
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen, WrapperTypeEncode};
 use scale_info::TypeInfo;
 use sp_core::{ecdsa, ed25519, sr25519};
 use sp_runtime::{
-	traits::{Verify, Zero},
-	DispatchError, MultiSignature, SaturatedConversion, Saturating,
+	traits::{IdentifyAccount, Verify, Zero},
+	MultiSignature, SaturatedConversion, Saturating,
 };
 use sp_std::{convert::TryInto, vec::Vec};
 
 use crate::{
 	errors::{self, DidError},
-	utils, AccountIdOf, BalanceOf, BlockNumberOf, Config, DidAuthorizedCallOperationOf, DidCreationDetailsOf,
-	DidDepositCollector, DidEndpointsCount, DidIdentifierOf, KeyIdOf, Payload,
+	utils, AccountIdOf, BalanceOf, BlockNumberOf, Config, DidAuthorizedCallOperationOf, DidCreationDetailsOf, KeyIdOf,
+	Payload,
 };
 
-/// Types of verification keys a DID can control.
+/// Public verification key that a DID can control.
 #[derive(Clone, Decode, RuntimeDebug, Encode, Eq, Ord, PartialEq, PartialOrd, TypeInfo, MaxEncodedLen)]
-pub enum DidVerificationKey {
+pub enum DidVerificationKey<AccountId> {
 	/// An Ed25519 public key.
 	Ed25519(ed25519::Public),
 	/// A Sr25519 public key.
 	Sr25519(sr25519::Public),
 	/// An ECDSA public key.
 	Ecdsa(ecdsa::Public),
+	/// Account Identifier
+	Account(AccountId),
 }
 
-impl DidVerificationKey {
+impl<AccountId> DidVerificationKey<AccountId> {
 	/// Verify a DID signature using one of the DID keys.
 	pub fn verify_signature(&self, payload: &Payload, signature: &DidSignature) -> Result<(), errors::SignatureError> {
 		match (self, signature) {
@@ -72,19 +73,38 @@ impl DidVerificationKey {
 	}
 }
 
-impl From<ed25519::Public> for DidVerificationKey {
+impl<AccountId> IdentifyAccount for DidVerificationKey<AccountId>
+where
+	AccountId: From<[u8; 32]> + AsRef<[u8; 32]>,
+{
+	type AccountId = AccountId;
+
+	fn into_account(self) -> Self::AccountId {
+		let bytes = match self {
+			DidVerificationKey::Ed25519(pub_key) => pub_key.0,
+			DidVerificationKey::Sr25519(pub_key) => pub_key.0,
+			// Hash the Ecdsa key the same way it's done in substrate (the ecdsa key is 33 bytes, one byte too long)
+			DidVerificationKey::Ecdsa(pub_key) => sp_io::hashing::blake2_256(pub_key.as_ref()),
+			DidVerificationKey::Account(acc_id) => *acc_id.as_ref(),
+		};
+
+		bytes.into()
+	}
+}
+
+impl<AccountId> From<ed25519::Public> for DidVerificationKey<AccountId> {
 	fn from(key: ed25519::Public) -> Self {
 		DidVerificationKey::Ed25519(key)
 	}
 }
 
-impl From<sr25519::Public> for DidVerificationKey {
+impl<AccountId> From<sr25519::Public> for DidVerificationKey<AccountId> {
 	fn from(key: sr25519::Public) -> Self {
 		DidVerificationKey::Sr25519(key)
 	}
 }
 
-impl From<ecdsa::Public> for DidVerificationKey {
+impl<AccountId> From<ecdsa::Public> for DidVerificationKey<AccountId> {
 	fn from(key: ecdsa::Public) -> Self {
 		DidVerificationKey::Ecdsa(key)
 	}
@@ -99,20 +119,20 @@ pub enum DidEncryptionKey {
 
 /// A general public key under the control of the DID.
 #[derive(Clone, Decode, RuntimeDebug, Encode, Eq, Ord, PartialEq, PartialOrd, TypeInfo, MaxEncodedLen)]
-pub enum DidPublicKey {
+pub enum DidPublicKey<AccountId> {
 	/// A verification key, used to generate and verify signatures.
-	PublicVerificationKey(DidVerificationKey),
+	PublicVerificationKey(DidVerificationKey<AccountId>),
 	/// An encryption key, used to encrypt and decrypt payloads.
 	PublicEncryptionKey(DidEncryptionKey),
 }
 
-impl From<DidVerificationKey> for DidPublicKey {
-	fn from(verification_key: DidVerificationKey) -> Self {
+impl<AccountId> From<DidVerificationKey<AccountId>> for DidPublicKey<AccountId> {
+	fn from(verification_key: DidVerificationKey<AccountId>) -> Self {
 		Self::PublicVerificationKey(verification_key)
 	}
 }
 
-impl From<DidEncryptionKey> for DidPublicKey {
+impl<AccountId> From<DidEncryptionKey> for DidPublicKey<AccountId> {
 	fn from(encryption_key: DidEncryptionKey) -> Self {
 		Self::PublicEncryptionKey(encryption_key)
 	}
@@ -171,7 +191,7 @@ impl From<MultiSignature> for DidSignature {
 	}
 }
 
-pub trait DidVerifiableIdentifier {
+pub trait DidVerifiableIdentifier<AccountId> {
 	/// Allows a verifiable identifier to verify a signature it produces and
 	/// return the public key
 	/// associated with the identifier.
@@ -179,15 +199,15 @@ pub trait DidVerifiableIdentifier {
 		&self,
 		payload: &Payload,
 		signature: &DidSignature,
-	) -> Result<DidVerificationKey, errors::SignatureError>;
+	) -> Result<DidVerificationKey<AccountId>, errors::SignatureError>;
 }
 
-impl<I: AsRef<[u8; 32]>> DidVerifiableIdentifier for I {
+impl<I: AsRef<[u8; 32]>, AccountId> DidVerifiableIdentifier<AccountId> for I {
 	fn verify_and_recover_signature(
 		&self,
 		payload: &Payload,
 		signature: &DidSignature,
-	) -> Result<DidVerificationKey, errors::SignatureError> {
+	) -> Result<DidVerificationKey<AccountId>, errors::SignatureError> {
 		// So far, either the raw Ed25519/Sr25519 public key or the Blake2-256 hashed
 		// ECDSA public key.
 		let raw_public_key: &[u8; 32] = self.as_ref();
@@ -238,15 +258,15 @@ impl<I: AsRef<[u8; 32]>> DidVerifiableIdentifier for I {
 /// It is currently used to keep track of all the past and current
 /// attestation keys a DID might control.
 #[derive(Clone, RuntimeDebug, Decode, Encode, PartialEq, Ord, PartialOrd, Eq, TypeInfo, MaxEncodedLen)]
-pub struct DidPublicKeyDetails<BlockNumber> {
+pub struct DidPublicKeyDetails<BlockNumber, AccountId> {
 	/// A public key the DID controls.
-	pub key: DidPublicKey,
+	pub key: DidPublicKey<AccountId>,
 	/// The block number in which the verification key was added to the DID.
 	pub block_number: BlockNumber,
 }
 
 /// The details associated to a DID identity.
-#[derive(Clone, Decode, Encode, PartialEq, TypeInfo, MaxEncodedLen)]
+#[derive(Clone, Decode, Encode, PartialEq, TypeInfo, MaxEncodedLen, Debug)]
 #[scale_info(skip_type_params(T))]
 #[codec(mel_bound())]
 
@@ -288,9 +308,9 @@ impl<T: Config> DidDetails<T> {
 	///
 	/// The tx counter is automatically set to 0.
 	pub fn new(
-		authentication_key: DidVerificationKey,
+		authentication_key: DidVerificationKey<AccountIdOf<T>>,
 		block_number: BlockNumberOf<T>,
-		deposit: Deposit<AccountIdOf<T>, BalanceOf<T>>,
+		deposit_owner: AccountIdOf<T>,
 	) -> Result<Self, errors::StorageError> {
 		let mut public_keys = DidPublicKeyMapOf::<T>::default();
 		let authentication_key_id = utils::calculate_key_id::<T>(&authentication_key.clone().into());
@@ -304,7 +324,13 @@ impl<T: Config> DidDetails<T> {
 			)
 			.map_err(|_| errors::StorageError::MaxPublicKeysExceeded)?;
 
-		Ok(Self {
+		let deposit = Deposit {
+			owner: deposit_owner,
+			// set deposit for the moment to zero. We will update it, when all keys are set.
+			amount: Zero::zero(),
+		};
+
+		let mut new_did_details = Self {
 			authentication_key: authentication_key_id,
 			key_agreement_keys: DidKeyAgreementKeySetOf::<T>::default(),
 			attestation_key: None,
@@ -312,13 +338,21 @@ impl<T: Config> DidDetails<T> {
 			public_keys,
 			last_tx_counter: 0u64,
 			deposit,
-		})
+		};
+
+		let deposit_amount = new_did_details.calculate_deposit(0);
+		new_did_details.deposit.amount = deposit_amount;
+
+		Ok(new_did_details)
 	}
 
-	pub fn calculate_deposit(&self, did_subject: &DidIdentifierOf<T>) -> BalanceOf<T> {
+	/// Calculate the deposit that should be secured for the DID based on the number of keys and service endpoints.
+	///
+	/// Since service endpoints are not stored inside the DidDetails, the number of endpoints need to be provided.
+	pub fn calculate_deposit(&self, endpoint_count: u32) -> BalanceOf<T> {
 		let mut deposit: BalanceOf<T> = T::BaseDeposit::get();
 
-		let endpoint_count: BalanceOf<T> = DidEndpointsCount::<T>::get(did_subject).into();
+		let endpoint_count: BalanceOf<T> = endpoint_count.into();
 		deposit = deposit.saturating_add(endpoint_count.saturating_mul(T::ServiceEndpointDeposit::get()));
 
 		let key_agreement_count: BalanceOf<T> = self.key_agreement_keys.len().saturated_into();
@@ -337,35 +371,11 @@ impl<T: Config> DidDetails<T> {
 		deposit
 	}
 
-	pub fn update_deposit(&mut self, did_subject: &DidIdentifierOf<T>) -> Result<(), DispatchError> {
-		let new_required_deposit = self.calculate_deposit(did_subject);
-
-		match new_required_deposit.cmp(&self.deposit.amount) {
-			Ordering::Greater => {
-				let deposit_to_reserve = new_required_deposit.saturating_sub(self.deposit.amount);
-				DidDepositCollector::<T>::create_deposit(self.deposit.clone().owner, deposit_to_reserve)?;
-				self.deposit.amount = self.deposit.amount.saturating_add(deposit_to_reserve);
-			}
-			Ordering::Less => {
-				let deposit_to_release = self.deposit.amount.saturating_sub(new_required_deposit);
-
-				DidDepositCollector::<T>::free_deposit(Deposit {
-					owner: self.deposit.owner.clone(),
-					amount: deposit_to_release,
-				})?;
-				self.deposit.amount = self.deposit.amount.saturating_sub(deposit_to_release);
-			}
-			_ => (),
-		};
-		Ok(())
-	}
-
-	// Creates a new DID entry from some [DidCreationDetails] and a given
-	// authentication key.
-	pub fn from_creation_details(
+	/// Creates a new DID entry from some [DidCreationDetails] and a given
+	/// authentication key.
+	pub fn new_with_creation_details(
 		details: DidCreationDetailsOf<T>,
-		new_auth_key: DidVerificationKey,
-		did_subject: &DidIdentifierOf<T>,
+		new_auth_key: DidVerificationKey<AccountIdOf<T>>,
 	) -> Result<Self, DidError> {
 		ensure!(
 			details.new_key_agreement_keys.len()
@@ -375,29 +385,21 @@ impl<T: Config> DidDetails<T> {
 
 		let current_block_number = frame_system::Pallet::<T>::block_number();
 
-		let deposit = Deposit {
-			owner: details.clone().submitter,
-			// set deposit for the moment to zero. We will update it, when all keys are set.
-			amount: Zero::zero(),
-		};
-
 		// Creates a new DID with the given authentication key.
-		let mut new_did_details = DidDetails::new(new_auth_key, current_block_number, deposit)?;
+		let mut new_did_details = DidDetails::new(new_auth_key, current_block_number, details.clone().submitter)?;
 
 		new_did_details.add_key_agreement_keys(details.clone().new_key_agreement_keys, current_block_number)?;
 
-		if let Some(attesation_key) = details.clone().new_attestation_key {
-			new_did_details.update_attestation_key(attesation_key, current_block_number)?;
+		if let Some(attestation_key) = details.clone().new_attestation_key {
+			new_did_details.update_attestation_key(attestation_key, current_block_number)?;
 		}
 
-		if let Some(delegation_key) = details.clone().new_delegation_key {
+		if let Some(delegation_key) = details.new_delegation_key {
 			new_did_details.update_delegation_key(delegation_key, current_block_number)?;
 		}
 
-		let deposit_amount = new_did_details.calculate_deposit(did_subject);
+		let deposit_amount = new_did_details.calculate_deposit(0);
 		new_did_details.deposit.amount = deposit_amount;
-
-		DidDepositCollector::<T>::create_deposit(details.submitter, deposit_amount)?;
 
 		Ok(new_did_details)
 	}
@@ -409,7 +411,7 @@ impl<T: Config> DidDetails<T> {
 	/// set of public keys.
 	pub fn update_authentication_key(
 		&mut self,
-		new_authentication_key: DidVerificationKey,
+		new_authentication_key: DidVerificationKey<AccountIdOf<T>>,
 		block_number: BlockNumberOf<T>,
 	) -> Result<(), errors::StorageError> {
 		let old_authentication_key_id = self.authentication_key;
@@ -487,7 +489,7 @@ impl<T: Config> DidDetails<T> {
 	/// set of public keys.
 	pub fn update_attestation_key(
 		&mut self,
-		new_attestation_key: DidVerificationKey,
+		new_attestation_key: DidVerificationKey<AccountIdOf<T>>,
 		block_number: BlockNumberOf<T>,
 	) -> Result<(), errors::StorageError> {
 		let new_attestation_key_id = utils::calculate_key_id::<T>(&new_attestation_key.clone().into());
@@ -530,7 +532,7 @@ impl<T: Config> DidDetails<T> {
 	/// set of public keys.
 	pub fn update_delegation_key(
 		&mut self,
-		new_delegation_key: DidVerificationKey,
+		new_delegation_key: DidVerificationKey<AccountIdOf<T>>,
 		block_number: BlockNumberOf<T>,
 	) -> Result<(), errors::StorageError> {
 		let new_delegation_key_id = utils::calculate_key_id::<T>(&new_delegation_key.clone().into());
@@ -566,8 +568,8 @@ impl<T: Config> DidDetails<T> {
 		Ok(())
 	}
 
-	// Remove a key from the map of public keys if none of the other keys, i.e.,
-	// authentication, key agreement, attestation, or delegation, is referencing it.
+	/// Remove a key from the map of public keys if none of the other keys, i.e.,
+	/// authentication, key agreement, attestation, or delegation, is referencing it.
 	pub fn remove_key_if_unused(&mut self, key_id: KeyIdOf<T>) {
 		if self.authentication_key != key_id
 			&& self.attestation_key != Some(key_id)
@@ -583,7 +585,7 @@ impl<T: Config> DidDetails<T> {
 	pub fn get_verification_key_for_key_type(
 		&self,
 		key_type: DidVerificationKeyRelationship,
-	) -> Option<&DidVerificationKey> {
+	) -> Option<&DidVerificationKey<AccountIdOf<T>>> {
 		let key_id = match key_type {
 			DidVerificationKeyRelationship::AssertionMethod => self.attestation_key,
 			DidVerificationKeyRelationship::Authentication => Some(self.authentication_key),
@@ -612,8 +614,11 @@ pub(crate) type DidNewKeyAgreementKeySet<MaxNewKeyAgreementKeys> =
 
 pub(crate) type DidKeyAgreementKeySetOf<T> = BoundedBTreeSet<KeyIdOf<T>, <T as Config>::MaxTotalKeyAgreementKeys>;
 
-pub(crate) type DidPublicKeyMapOf<T> =
-	BoundedBTreeMap<KeyIdOf<T>, DidPublicKeyDetails<BlockNumberOf<T>>, <T as Config>::MaxPublicKeysPerDid>;
+pub(crate) type DidPublicKeyMapOf<T> = BoundedBTreeMap<
+	KeyIdOf<T>,
+	DidPublicKeyDetails<BlockNumberOf<T>, AccountIdOf<T>>,
+	<T as Config>::MaxPublicKeysPerDid,
+>;
 
 /// The details of a new DID to create.
 #[derive(Clone, RuntimeDebug, Decode, Encode, PartialEq, TypeInfo)]
@@ -628,9 +633,9 @@ where
 	/// The new key agreement keys.
 	pub new_key_agreement_keys: DidNewKeyAgreementKeySet<MaxNewKeyAgreementKeys>,
 	/// \[OPTIONAL\] The new attestation key.
-	pub new_attestation_key: Option<DidVerificationKey>,
+	pub new_attestation_key: Option<DidVerificationKey<AccountId>>,
 	/// \[OPTIONAL\] The new delegation key.
-	pub new_delegation_key: Option<DidVerificationKey>,
+	pub new_delegation_key: Option<DidVerificationKey<AccountId>>,
 	/// The service endpoints details.
 	pub new_service_details: Vec<DidEndpoint>,
 }
