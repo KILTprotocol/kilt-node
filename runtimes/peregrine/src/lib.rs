@@ -472,10 +472,10 @@ impl pallet_treasury::Config for Runtime {
 
 type CouncilCollective = pallet_collective::Instance1;
 impl pallet_collective::Config<CouncilCollective> for Runtime {
-	type MaxProposalWeight = MaxProposalWeight;
 	type RuntimeOrigin = RuntimeOrigin;
 	type Proposal = RuntimeCall;
 	type RuntimeEvent = RuntimeEvent;
+	type MaxProposalWeight = MaxProposalWeight;
 	type MotionDuration = constants::governance::CouncilMotionDuration;
 	type MaxProposals = constants::governance::CouncilMaxProposals;
 	type MaxMembers = constants::governance::CouncilMaxMembers;
@@ -522,7 +522,7 @@ impl pallet_membership::Config<TipsMembershipProvider> for Runtime {
 	type PrimeOrigin = MoreThanHalfCouncil;
 	type MembershipInitialized = ();
 	type MembershipChanged = ();
-	type MaxMembers = constants::governance::TechnicalMaxMembers;
+	type MaxMembers = constants::governance::TipperMaxMembers;
 	type WeightInfo = weights::pallet_membership::WeightInfo<Runtime>;
 }
 
@@ -602,15 +602,15 @@ impl ctype::Config for Runtime {
 }
 
 impl did::Config for Runtime {
-	type DidIdentifier = DidIdentifier;
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeCall = RuntimeCall;
 	type RuntimeHoldReason = RuntimeHoldReason;
+	type RuntimeOrigin = RuntimeOrigin;
+	type Currency = Balances;
+	type DidIdentifier = DidIdentifier;
 	type KeyDeposit = constants::did::KeyDeposit;
 	type ServiceEndpointDeposit = constants::did::ServiceEndpointDeposit;
 	type BaseDeposit = constants::did::DidBaseDeposit;
-	type RuntimeOrigin = RuntimeOrigin;
-	type Currency = Balances;
 	type Fee = constants::did::DidFee;
 	type FeeCollector = runtime_common::SendDustAndFeesToTreasury<Runtime>;
 
@@ -653,12 +653,12 @@ impl pallet_did_lookup::Config for Runtime {
 }
 
 impl pallet_web3_names::Config for Runtime {
+	type RuntimeHoldReason = RuntimeHoldReason;
 	type BanOrigin = EnsureRoot<AccountId>;
 	type OwnerOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
 	type Currency = Balances;
 	type Deposit = constants::web3_names::Web3NameDeposit;
-	type RuntimeHoldReason = RuntimeHoldReason;
 	type RuntimeEvent = RuntimeEvent;
 	type MaxNameLength = constants::web3_names::MaxNameLength;
 	type MinNameLength = constants::web3_names::MinNameLength;
@@ -772,6 +772,7 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 							| pallet_indices::Call::free { .. }
 							| pallet_indices::Call::freeze { .. }
 					)
+					| RuntimeCall::Multisig(..)
 					| RuntimeCall::ParachainStaking(..)
 					// Excludes `ParachainSystem`
 					| RuntimeCall::Preimage(..)
@@ -843,6 +844,7 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 							| pallet_did_lookup::Call::change_deposit_owner { .. }
 					)
 					| RuntimeCall::Indices(..)
+					| RuntimeCall::Multisig(..)
 					| RuntimeCall::ParachainStaking(..)
 					// Excludes `ParachainSystem`
 					| RuntimeCall::Preimage(..)
@@ -1140,7 +1142,6 @@ mod benches {
 		[public_credentials, PublicCredentials]
 		[pallet_xcm, PolkadotXcm]
 		[frame_benchmarking::baseline, Baseline::<Runtime>]
-
 	);
 }
 
