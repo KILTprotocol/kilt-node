@@ -119,7 +119,7 @@ build-wasm-try-runtime:
   image: paritytech/ci-unified:bullseye-1.70.0
   stage: build
   script:
-    - cargo build --release -p ${RUNTIME}-runtime --features try-runtime
+    - cargo build --locked --release -p ${RUNTIME}-runtime --features try-runtime
     - mkdir ./out
     - mv target/release/wbuild/${RUNTIME}-runtime/${RUNTIME}_runtime.compact.compressed.wasm ./out/dangerous_${RUNTIME}_${CI_COMMIT_TAG}.try-runtime.wasm
   artifacts:
