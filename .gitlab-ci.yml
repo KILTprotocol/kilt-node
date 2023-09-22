@@ -127,6 +127,7 @@ build-wasm-try-runtime:
     - export AUTHORIZE_UPGRADE_PREFIX=0x02
     - cp -r * /build
     - /srtool/build build --default-features try-runtime
+    - mkdir ./out
     - mv /out/${RUNTIME}_runtime.compact.compressed.wasm ./out/dangerous_${RUNTIME}_${CI_COMMIT_TAG}.try-runtime.wasm
   artifacts:
     name: ${RUNTIME}_${CI_COMMIT_TAG}_try-runtime
