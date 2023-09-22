@@ -68,7 +68,9 @@ impl<KeyId> From<(KeyId, DidKeyRelationship)> for DidKeyMerkleKey<KeyId> {
 #[derive(Clone, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo)]
 pub struct DidKeyMerkleValue<BlockNumber, AccountId>(pub DidPublicKeyDetails<BlockNumber, AccountId>);
 
-impl<BlockNumber, AccountId> From<DidPublicKeyDetails<BlockNumber, AccountId>> for DidKeyMerkleValue<BlockNumber, AccountId> {
+impl<BlockNumber, AccountId> From<DidPublicKeyDetails<BlockNumber, AccountId>>
+	for DidKeyMerkleValue<BlockNumber, AccountId>
+{
 	fn from(value: DidPublicKeyDetails<BlockNumber, AccountId>) -> Self {
 		Self(value)
 	}
@@ -272,7 +274,10 @@ impl<
 	#[allow(clippy::type_complexity)]
 	pub(crate) fn verify_dip_merkle_proof(
 		identity_commitment: &Hasher::Out,
-		proof: DidMerkleProof<Vec<Vec<u8>>, RevealedDidMerkleProofLeaf<KeyId, AccountId, BlockNumber, Web3Name, LinkedAccountId>>,
+		proof: DidMerkleProof<
+			Vec<Vec<u8>>,
+			RevealedDidMerkleProofLeaf<KeyId, AccountId, BlockNumber, Web3Name, LinkedAccountId>,
+		>,
 	) -> Result<
 		RevealedDidMerkleProofLeaves<
 			KeyId,

@@ -61,8 +61,12 @@ where
 	type Success = Web3OwnershipOf<T>;
 
 	fn retrieve(identifier: &T::Web3NameOwner) -> Result<Option<Self::Success>, Self::Error> {
-		let Some(web3_name) = pallet_web3_names::Pallet::<T>::names(identifier) else { return Ok(None) };
-		let Some(details) = pallet_web3_names::Pallet::<T>::owner(&web3_name) else { return Err(()) };
+		let Some(web3_name) = pallet_web3_names::Pallet::<T>::names(identifier) else {
+			return Ok(None);
+		};
+		let Some(details) = pallet_web3_names::Pallet::<T>::owner(&web3_name) else {
+			return Err(());
+		};
 		Ok(Some(Web3OwnershipOf::<T> {
 			web3_name,
 			claimed_at: details.claimed_at,

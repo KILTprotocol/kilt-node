@@ -75,7 +75,9 @@ where
 	// details leaf, as we already do with out `DidDetails` type.
 	fn calculate_root_with_db(identity: &LinkedDidInfoOf<T>, db: &mut MemoryDB<T::Hashing>) -> Result<T::Hash, ()> {
 		// Fails if the DID details do not exist.
-		let (Some(did_details), web3_name, linked_accounts) = (&identity.a, &identity.b, &identity.c) else { return Err(()) };
+		let (Some(did_details), web3_name, linked_accounts) = (&identity.a, &identity.b, &identity.c) else {
+			return Err(());
+		};
 		let mut trie = TrieHash::<LayoutV1<T::Hashing>>::default();
 		let mut trie_builder = TrieDBMutBuilder::<LayoutV1<T::Hashing>>::new(db, &mut trie).build();
 
@@ -193,7 +195,9 @@ where
 		A: Iterator<Item = &'a LinkableAccountId>,
 	{
 		// Fails if the DID details do not exist.
-		let (Some(did_details), linked_web3_name, linked_accounts) = (&identity.a, &identity.b, &identity.c) else { return Err(()) };
+		let (Some(did_details), linked_web3_name, linked_accounts) = (&identity.a, &identity.b, &identity.c) else {
+			return Err(());
+		};
 
 		let mut db = MemoryDB::default();
 		let root = Self::calculate_root_with_db(identity, &mut db)?;
@@ -220,7 +224,9 @@ where
 				))
 			})
 			.chain(account_ids.map(|account_id| -> Result<ProofLeafOf<T>, ()> {
-				let Some(linked_accounts) = linked_accounts else { return Err(()) };
+				let Some(linked_accounts) = linked_accounts else {
+					return Err(());
+				};
 				if linked_accounts.contains(account_id) {
 					Ok(RevealedDidMerkleProofLeaf::LinkedAccount(
 						account_id.clone().into(),

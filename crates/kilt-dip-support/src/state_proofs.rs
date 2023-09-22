@@ -117,7 +117,9 @@ pub(super) mod relay_chain {
 				debug_assert!(revealed_leaves.len() == 1usize);
 				debug_assert!(revealed_leaves.contains_key(parachain_storage_key.as_ref()));
 			}
-			let Some(Some(encoded_head)) = revealed_leaves.get(parachain_storage_key.as_ref()) else { return Err(()) };
+			let Some(Some(encoded_head)) = revealed_leaves.get(parachain_storage_key.as_ref()) else {
+				return Err(());
+			};
 			// TODO: Figure out why RPC call returns 2 bytes in front which we don't need
 			let mut unwrapped_head = &encoded_head[2..];
 			Header::decode(&mut unwrapped_head).map_err(|_| ())
@@ -276,7 +278,9 @@ pub(super) mod parachain {
 				debug_assert!(revealed_leaves.len() == 1usize);
 				debug_assert!(revealed_leaves.contains_key(dip_commitment_storage_key.as_ref()));
 			}
-			let Some(Some(encoded_commitment)) = revealed_leaves.get(dip_commitment_storage_key.as_ref()) else { return Err(()) };
+			let Some(Some(encoded_commitment)) = revealed_leaves.get(dip_commitment_storage_key.as_ref()) else {
+				return Err(());
+			};
 			ParaInfo::Commitment::decode(&mut &encoded_commitment[..]).map_err(|_| ())
 		}
 	}

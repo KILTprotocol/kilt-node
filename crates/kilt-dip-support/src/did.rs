@@ -100,7 +100,8 @@ impl<
 	DidLocalDetails: Bump + Default + Encode,
 	RemoteAccountId: Clone,
 	MerkleProofEntries: sp_std::borrow::Borrow<[RevealedDidKey<RemoteKeyId, RemoteBlockNumber, RemoteAccountId>]>,
-	CallVerifier: DipCallOriginFilter<Call, OriginInfo = (DidVerificationKey<RemoteAccountId>, DidVerificationKeyRelationship)>,
+	CallVerifier:
+		DipCallOriginFilter<Call, OriginInfo = (DidVerificationKey<RemoteAccountId>, DidVerificationKeyRelationship)>,
 {
 	#[allow(clippy::result_unit_err)]
 	pub(crate) fn verify_did_signature_for_call(
@@ -139,7 +140,9 @@ impl<
 				.verify_signature(&encoded_payload, &merkle_revealed_did_signature.did_signature.signature)
 				.is_ok()
 		});
-		let Some((key, relationship)) = valid_signing_key else { return Err(()) };
+		let Some((key, relationship)) = valid_signing_key else {
+			return Err(());
+		};
 		if let Some(details) = local_details {
 			details.bump();
 		} else {

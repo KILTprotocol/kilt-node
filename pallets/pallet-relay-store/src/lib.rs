@@ -71,7 +71,9 @@ pub mod pallet {
 		fn on_finalize(_n: BlockNumberFor<T>) {
 			// Called before the validation data is cleaned in the
 			// parachain_system::on_finalize hook
-			let Some(new_validation_data) = cumulus_pallet_parachain_system::Pallet::<T>::validation_data() else { return; };
+			let Some(new_validation_data) = cumulus_pallet_parachain_system::Pallet::<T>::validation_data() else {
+				return;
+			};
 			let mut latest_block_heights = LatestBlockHeights::<T>::get();
 			// Remove old relay block from both storage entries.
 			if latest_block_heights.is_full() {
