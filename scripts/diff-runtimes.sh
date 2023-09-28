@@ -15,7 +15,8 @@ curl -o artifacts-pere.zip -L --raw --header "Private-Token: ${GITLAB_TOKEN}" "h
 unzip -u artifacts-spirit.zip -d artifacts-spirit
 unzip -u artifacts-pere.zip -d artifacts-pere
 
-cargo build --release -p kilt-parachain
+cargo build --release -p spiritnet-runtime
+cargo build --release -p peregrine-runtime
 
 subwasm diff --no-color $SPIRITNET_DIR/out/spiritnet_runtime.compact.compressed.wasm target/release/wbuild/spiritnet-runtime/spiritnet_runtime.compact.compressed.wasm | tee develop-diff-spiritnet.txt
 subwasm diff --no-color $PEREGRINE_DIR/out/peregrine_runtime.compact.compressed.wasm target/release/wbuild/peregrine-runtime/peregrine_runtime.compact.compressed.wasm | tee develop-diff-peregrine.txt
