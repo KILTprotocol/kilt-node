@@ -1097,8 +1097,6 @@ pub type Executive = frame_executive::Executive<
 	// Executes pallet hooks in the order of definition in construct_runtime
 	AllPalletsWithSystem,
 	(
-		pallet_did_lookup::migrations::CleanupMigration<Runtime>,
-		runtime_common::migrations::RemoveInsecureRandomnessPallet<Runtime>,
 		attestation::migrations::BalanceMigration<Runtime>,
 		delegation::migrations::BalanceMigration<Runtime>,
 		did::migrations::BalanceMigration<Runtime>,
