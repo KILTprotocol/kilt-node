@@ -17,7 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_support::{
-	traits::{OnRuntimeUpgrade, StorageVersion},
+	traits::{GetStorageVersion, OnRuntimeUpgrade},
 	weights::Weight,
 };
 
@@ -35,18 +35,24 @@ impl<T> OnRuntimeUpgrade for BumpStorageVersion<T>
 where
 	T: frame_system::Config,
 	T: pallet_tips::Config,
+	T: pallet_multisig::Config,
 	T: cumulus_pallet_parachain_system::Config,
 	T: pallet_membership::Config<Instance2>,
 	T: cumulus_pallet_xcmp_queue::Config,
 	T: cumulus_pallet_dmp_queue::Config,
 {
 	fn on_runtime_upgrade() -> Weight {
-		StorageVersion::new(4).put::<pallet_tips::Pallet<T>>();
-		StorageVersion::new(2).put::<cumulus_pallet_parachain_system::Pallet<T>>();
-		StorageVersion::new(2).put::<cumulus_pallet_xcmp_queue::Pallet<T>>();
-		StorageVersion::new(4).put::<pallet_membership::Pallet<T, Instance2>>();
-		StorageVersion::new(1).put::<cumulus_pallet_dmp_queue::Pallet<T>>();
+		log::info!("BumpStorageVersion: Initiating migration");
 
-		<T as frame_system::Config>::DbWeight::get().writes(5)
+		pallet_tips::Pallet::<T>::current_storage_version().put::<pallet_tips::Pallet<T>>();
+		cumulus_pallet_parachain_system::Pallet::<T>::current_storage_version()
+			.put::<cumulus_pallet_parachain_system::Pallet<T>>();
+		cumulus_pallet_xcmp_queue::Pallet::<T>::current_storage_version().put::<cumulus_pallet_xcmp_queue::Pallet<T>>();
+		pallet_membership::Pallet::<T, Instance2>::current_storage_version()
+			.put::<pallet_membership::Pallet<T, Instance2>>();
+		cumulus_pallet_dmp_queue::Pallet::<T>::current_storage_version().put::<cumulus_pallet_dmp_queue::Pallet<T>>();
+		pallet_multisig::Pallet::<T>::current_storage_version().put::<pallet_multisig::Pallet<T>>();
+
+		<T as frame_system::Config>::DbWeight::get().writes(6)
 	}
 }

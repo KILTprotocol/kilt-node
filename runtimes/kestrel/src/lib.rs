@@ -791,7 +791,7 @@ pub type Executive = frame_executive::Executive<
 	frame_system::ChainContext<Runtime>,
 	Runtime,
 	AllPalletsWithSystem,
-	pallet_did_lookup::migrations::CleanupMigration<Runtime>,
+	(),
 >;
 
 #[cfg(feature = "runtime-benchmarks")]
