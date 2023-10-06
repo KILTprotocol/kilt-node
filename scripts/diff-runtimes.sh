@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set +e
+
 GITLAB_TOKE=
 PROJECT_ID="26909212"
 BRANCH_NAME="develop"
@@ -18,5 +20,26 @@ unzip -u artifacts-pere.zip -d artifacts-pere
 cargo build --release -p spiritnet-runtime
 cargo build --release -p peregrine-runtime
 
-subwasm diff --no-color $SPIRITNET_DIR/out/spiritnet_runtime.compact.compressed.wasm target/release/wbuild/spiritnet-runtime/spiritnet_runtime.compact.compressed.wasm | tee develop-diff-spiritnet.txt
+echo "V V V --- Past the output below into the PR descriptoin --- V V V"
+
+echo "<details>"
+echo "<summary>Peregrine Diff</summary>"
+echo ""
+echo '```'
+
 subwasm diff --no-color $PEREGRINE_DIR/out/peregrine_runtime.compact.compressed.wasm target/release/wbuild/peregrine-runtime/peregrine_runtime.compact.compressed.wasm | tee develop-diff-peregrine.txt
+
+echo '```'
+echo ""
+echo "</details>"
+echo ""
+echo "<details>"
+echo "<summary>Spiritnet Diff</summary>"
+echo ""
+echo '```'
+
+subwasm diff --no-color $SPIRITNET_DIR/out/spiritnet_runtime.compact.compressed.wasm target/release/wbuild/spiritnet-runtime/spiritnet_runtime.compact.compressed.wasm | tee develop-diff-spiritnet.txt
+
+echo '```'
+echo ""
+echo "</details>"
