@@ -201,7 +201,7 @@ mod tests {
 		type BaseCallFilter = frame_support::traits::Everything;
 		type RuntimeOrigin = RuntimeOrigin;
 		type Block = Block;
-		type Nonce = u32;
+		type Nonce = u64;
 
 		type RuntimeCall = RuntimeCall;
 		type Hash = H256;

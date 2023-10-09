@@ -94,7 +94,7 @@ pub(crate) mod runtime {
 		type BlockLength = ();
 		type DbWeight = ();
 		type Block = Block;
-		type Nonce = u32;
+		type Nonce = u64;
 		type RuntimeOrigin = RuntimeOrigin;
 		type RuntimeCall = RuntimeCall;
 		type Hash = Hash;

@@ -230,7 +230,7 @@ pub(crate) mod runtime {
 		type RuntimeOrigin = RuntimeOrigin;
 		type RuntimeCall = RuntimeCall;
 		type Block = Block;
-		type Nonce = u32;
+		type Nonce = u64;
 
 		type Hash = Hash;
 		type Hashing = BlakeTwo256;
