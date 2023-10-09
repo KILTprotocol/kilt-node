@@ -163,7 +163,7 @@ impl frame_system::Config for Runtime {
 	/// The block type as expected in this runtime
 	type Block = Block;
 	/// The nonce type for storing how many extrinsics an account has signed.
-	type Nonce = runtime_common::Nonce;
+	type Nonce = Nonce;
 	/// The ubiquitous event type.
 	type RuntimeEvent = RuntimeEvent;
 	/// The ubiquitous origin type.

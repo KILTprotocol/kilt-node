@@ -62,7 +62,7 @@ use runtime_common::{
 	errors::PublicCredentialsApiError,
 	fees::{ToAuthor, WeightToFee},
 	pallet_id, AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights, DidIdentifier,
-	FeeSplit, Hash, Header, Nonce, Signature, SlowAdjustingFeeUpdate,
+	FeeSplit, Hash, Header, Nonce, Nonce, Signature, SlowAdjustingFeeUpdate,
 };
 
 use crate::xcm_config::{XcmConfig, XcmOriginToTransactDispatchOrigin};
@@ -124,7 +124,7 @@ impl frame_system::Config for Runtime {
 	/// dispatchers.
 	type Lookup = AccountIdLookup<AccountId, ()>;
 	/// The nonce type for storing how many extrinsics an account has signed.
-	type Nonce = runtime_common::Nonce;
+	type Nonce = Nonce;
 	/// The block type as expected in this runtime
 	type Block = Block;
 	/// The type for hashing blocks and tries.

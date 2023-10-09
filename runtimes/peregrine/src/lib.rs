@@ -124,7 +124,7 @@ impl frame_system::Config for Runtime {
 	/// dispatchers.
 	type Lookup = AccountIdLookup<AccountId, ()>;
 	/// The nonce type for storing how many extrinsics an account has signed.
-	type Nonce = runtime_common::Nonce;
+	type Nonce = Nonce;
 	/// The block type as expected in this runtime
 	type Block = Block;
 	/// The type for hashing blocks and tries.
