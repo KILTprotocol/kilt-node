@@ -31,7 +31,7 @@ use frame_support::{
 	traits::{ConstU32, EitherOfDiverse, Everything, InstanceFilter, PrivilegeCmp},
 	weights::{ConstantMultiplier, Weight},
 };
-use frame_system::{EnsureRoot, EnsureSigned};
+use frame_system::{pallet_prelude::BlockNumberFor, EnsureRoot, EnsureSigned};
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 
 #[cfg(feature = "try-runtime")]
@@ -689,7 +689,7 @@ impl parachain_staking::Config for Runtime {
 	type NetworkRewardBeneficiary = runtime_common::SendDustAndFeesToTreasury<Runtime>;
 	type WeightInfo = weights::parachain_staking::WeightInfo<Runtime>;
 
-	const BLOCKS_PER_YEAR: BlockNumber = constants::BLOCKS_PER_YEAR;
+	const BLOCKS_PER_YEAR: BlockNumberFor<Self> = constants::BLOCKS_PER_YEAR;
 }
 
 impl pallet_utility::Config for Runtime {
