@@ -62,7 +62,7 @@ use runtime_common::{
 	errors::PublicCredentialsApiError,
 	fees::{ToAuthor, WeightToFee},
 	pallet_id, AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights, DidIdentifier,
-	FeeSplit, Hash, Header, Nonce, Nonce, Signature, SlowAdjustingFeeUpdate,
+	FeeSplit, Hash, Header, Nonce, Signature, SlowAdjustingFeeUpdate,
 };
 
 use crate::xcm_config::{XcmConfig, XcmOriginToTransactDispatchOrigin};
