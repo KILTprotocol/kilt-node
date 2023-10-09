@@ -950,7 +950,7 @@ construct_runtime! {
 		// reserved: parachain council election = 33,
 		TechnicalMembership: pallet_membership::<Instance1> = 34,
 		Treasury: pallet_treasury = 35,
-		// DELETED: RelayMigration: pallet_relay_migration::{Pallet, Call, Storage, Event<T>} = 36,
+		// DELETED: RelayMigration: pallet_relay_migration = 36,
 		// DELETED: DynFilter: pallet_dyn_filter = 37,
 
 		// A stateless pallet with helper extrinsics (batch extrinsics, send from different origins, ...)
@@ -1084,8 +1084,7 @@ pub type Executive = frame_executive::Executive<
 	// Executes pallet hooks in the order of definition in construct_runtime
 	AllPalletsWithSystem,
 	(
-		pallet_did_lookup::migrations::CleanupMigration<Runtime>,
-		runtime_common::migrations::RemoveInsecureRandomnessPallet<Runtime>,
+		runtime_common::migrations::BumpStorageVersion<Runtime>,
 		attestation::migrations::BalanceMigration<Runtime>,
 		delegation::migrations::BalanceMigration<Runtime>,
 		did::migrations::BalanceMigration<Runtime>,

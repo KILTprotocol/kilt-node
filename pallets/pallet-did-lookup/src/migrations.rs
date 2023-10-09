@@ -17,112 +17,22 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_support::{
-	pallet_prelude::ValueQuery,
-	storage_alias,
 	traits::{Get, GetStorageVersion, OnRuntimeUpgrade, ReservableCurrency, StorageVersion},
 	weights::Weight,
 };
 use kilt_support::migration::switch_reserved_to_hold;
-use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
-use scale_info::TypeInfo;
-use sp_runtime::{AccountId32, SaturatedConversion};
+use sp_runtime::SaturatedConversion;
 use sp_std::marker::PhantomData;
 
 #[cfg(feature = "try-runtime")]
 use sp_runtime::TryRuntimeError;
 
 use crate::{
-	linkable_account::LinkableAccountId, AccountIdOf, Config, ConnectedDids, CurrencyOf, HoldReason, Pallet,
-	STORAGE_VERSION as TARGET_STORAGE_VERSION,
+	AccountIdOf, Config, ConnectedDids, CurrencyOf, HoldReason, Pallet, STORAGE_VERSION as TARGET_STORAGE_VERSION,
 };
 
 /// A unified log target for did-lookup-migration operations.
 pub const LOG_TARGET: &str = "runtime::pallet-did-lookup::migrations";
-
-#[derive(Clone, Debug, Eq, PartialEq, Encode, Decode, MaxEncodedLen, TypeInfo)]
-pub enum MixedStorageKey {
-	V1(AccountId32),
-	V2(LinkableAccountId),
-}
-
-#[derive(Clone, Debug, Eq, PartialEq, Encode, Decode, MaxEncodedLen, TypeInfo, Default)]
-pub enum MigrationState {
-	/// The migration was successful.
-	Done,
-
-	/// The storage has still the old layout, the migration wasn't started yet
-	#[default]
-	PreUpgrade,
-
-	/// The upgrade is in progress and did migrate all storage up to the
-	/// `MixedStorageKey`.
-	Upgrading(MixedStorageKey),
-}
-
-impl MigrationState {
-	pub fn is_done(&self) -> bool {
-		matches!(self, MigrationState::Done)
-	}
-
-	pub fn is_in_progress(&self) -> bool {
-		!matches!(self, MigrationState::Done)
-	}
-}
-
-#[storage_alias]
-type MigrationStateStore<T: Config> = StorageValue<Pallet<T>, MigrationState, ValueQuery>;
-
-pub struct CleanupMigration<T>(PhantomData<T>);
-
-impl<T: crate::pallet::Config> OnRuntimeUpgrade for CleanupMigration<T> {
-	fn on_runtime_upgrade() -> frame_support::weights::Weight {
-		if Pallet::<T>::on_chain_storage_version() == StorageVersion::new(3) {
-			log::info!("🔎 DidLookup: Initiating migration");
-			MigrationStateStore::<T>::kill();
-			StorageVersion::new(4).put::<Pallet<T>>();
-
-			T::DbWeight::get().reads_writes(1, 2)
-		} else {
-			// wrong storage version
-			log::info!(
-				target: LOG_TARGET,
-				"Migration did not execute. This probably should be removed"
-			);
-			<T as frame_system::Config>::DbWeight::get().reads(1)
-		}
-	}
-
-	#[cfg(feature = "try-runtime")]
-	fn pre_upgrade() -> Result<sp_std::vec::Vec<u8>, TryRuntimeError> {
-		use sp_std::vec;
-
-		assert_eq!(
-			Pallet::<T>::on_chain_storage_version(),
-			StorageVersion::new(3),
-			"On-chain storage version should be 3 before the migration"
-		);
-		assert!(MigrationStateStore::<T>::exists(), "Migration state should exist");
-
-		log::info!(target: LOG_TARGET, "🔎 DidLookup: Pre migration checks successful");
-
-		Ok(vec![])
-	}
-
-	#[cfg(feature = "try-runtime")]
-	fn post_upgrade(_pre_state: sp_std::vec::Vec<u8>) -> Result<(), TryRuntimeError> {
-		assert_eq!(
-			Pallet::<T>::on_chain_storage_version(),
-			StorageVersion::new(4),
-			"On-chain storage version should be updated"
-		);
-		assert!(!MigrationStateStore::<T>::exists(), "Migration state should be deleted");
-
-		log::info!(target: LOG_TARGET, "🔎 DidLookup: Post migration checks successful");
-
-		Ok(())
-	}
-}
-
 const CURRENT_STORAGE_VERSION: StorageVersion = StorageVersion::new(4);
 
 pub struct BalanceMigration<T>(PhantomData<T>);
