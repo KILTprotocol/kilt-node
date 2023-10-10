@@ -17,7 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use super::*;
-use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite, Zero};
+use frame_benchmarking::{account, benchmarks, Zero};
 use frame_support::{
 	assert_ok,
 	traits::fungible::{Inspect, Mutate, MutateHold},
@@ -131,6 +131,7 @@ benchmarks! {
 		<T as frame_system::Config>::RuntimeOrigin: From<RawOrigin<T::DidIdentifier>>,
 		<T as frame_system::Config>::AccountId: From<AccountId32>,
 		<T as Config>::Currency: Mutate<T::AccountId>,
+		T::AccountId: AsRef<[u8; 32]> + From<[u8; 32]>,
 	}
 
 	/* create extrinsic */
@@ -343,7 +344,9 @@ benchmarks! {
 		let did_public_auth_key = get_ed25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(did_public_auth_key).into_account().into();
 
-		let did_details = generate_base_did_details::<T>(DidVerificationKey::from(did_public_auth_key), None);
+		let mut did_details = generate_base_did_details::<T>(DidVerificationKey::from(did_public_auth_key), None);
+		did_details.deposit.amount = did_details.calculate_deposit(c);
+
 		let service_endpoints = get_service_endpoints::<T>(
 			c,
 			T::MaxServiceIdLength::get(),
@@ -353,7 +356,10 @@ benchmarks! {
 			T::MaxServiceUrlLength::get(),
 		);
 
-		Did::<T>::insert(&did_subject, did_details);
+		let deposit_owner = did_details.deposit.owner.clone();
+		make_free_for_did::<T>(&deposit_owner);
+		Pallet::<T>::try_insert_did(did_subject.clone(), did_details, deposit_owner).expect("DID should be created!");
+
 		save_service_endpoints(&did_subject, &service_endpoints);
 		let origin = RawOrigin::Signed(did_subject.clone());
 	}: _(origin, c)
@@ -376,7 +382,8 @@ benchmarks! {
 		let did_public_auth_key = get_ed25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(did_public_auth_key).into_account().into();
 
-		let did_details = generate_base_did_details::<T>(DidVerificationKey::from(did_public_auth_key), None);
+		let mut did_details = generate_base_did_details::<T>(DidVerificationKey::from(did_public_auth_key), None);
+		did_details.deposit.amount = did_details.calculate_deposit(c);
 		let service_endpoints = get_service_endpoints::<T>(
 			c,
 			T::MaxServiceIdLength::get(),
@@ -386,7 +393,10 @@ benchmarks! {
 			T::MaxServiceUrlLength::get(),
 		);
 
-		Did::<T>::insert(&did_subject, did_details.clone());
+		let deposit_owner = did_details.deposit.owner.clone();
+		make_free_for_did::<T>(&deposit_owner);
+		Pallet::<T>::try_insert_did(did_subject.clone(), did_details.clone(), deposit_owner).expect("DID should be created!");
+
 		save_service_endpoints(&did_subject, &service_endpoints);
 		let origin = RawOrigin::Signed(did_details.deposit.owner);
 		let subject_clone = did_subject.clone();
@@ -595,7 +605,7 @@ benchmarks! {
 		let origin = RawOrigin::Signed(did_subject.clone());
 		let cloned_new_delegation_key = new_delegation_key.clone();
 	}: set_delegation_key(origin, cloned_new_delegation_key)
-		verify {
+	verify {
 		let new_delegation_key_id = utils::calculate_key_id::<T>(&DidPublicKey::from(new_delegation_key));
 		assert_eq!(Did::<T>::get(&did_subject).unwrap().delegation_key, Some(new_delegation_key_id));
 	}
@@ -1043,7 +1053,7 @@ benchmarks! {
 		let origin = RawOrigin::Signed(did_subject.clone());
 		let cloned_endpoint_id = endpoint_id.clone();
 	}: _(origin, cloned_endpoint_id)
-		verify {
+	verify {
 		assert!(
 			ServiceEndpoints::<T>::get(&did_subject, &endpoint_id).is_none()
 		);
@@ -1083,7 +1093,7 @@ benchmarks! {
 	}: {
 		DidSignatureVerify::<T>::verify(&did_subject, &payload, &did_signature).expect("should verify");
 	}
-	verify {}
+
 	signature_verification_ed25519 {
 		let l in 1 .. MAX_PAYLOAD_BYTE_LENGTH;
 
@@ -1110,7 +1120,7 @@ benchmarks! {
 	}: {
 		DidSignatureVerify::<T>::verify(&did_subject, &payload, &did_signature).expect("should verify");
 	}
-	verify {}
+
 	signature_verification_ecdsa {
 		let l in 1 .. MAX_PAYLOAD_BYTE_LENGTH;
 
@@ -1137,7 +1147,6 @@ benchmarks! {
 	}: {
 		DidSignatureVerify::<T>::verify(&did_subject, &payload, &did_signature).expect("should verify");
 	}
-	verify {}
 
 	change_deposit_owner {
 		let did_public_auth_key = get_ed25519_public_authentication_key();
@@ -1189,10 +1198,40 @@ benchmarks! {
 			},
 		)
 	}
-}
 
-impl_benchmark_test_suite! {
-	Pallet,
-	crate::mock::ExtBuilder::default().build_with_keystore(),
-	crate::mock::Test
+	dispatch_as {
+		// ecdsa keys are the most expensive since they require an additional hashing step
+		let did_public_auth_key = get_ecdsa_public_authentication_key();
+		let did_subject: DidIdentifierOf<T> = MultiSigner::from(did_public_auth_key).into_account().into();
+		let did_account: AccountIdOf<T> = MultiSigner::from(did_public_auth_key).into_account().into();
+
+		let did_details = generate_base_did_details::<T>(DidVerificationKey::from(did_public_auth_key), None);
+
+		Did::<T>::insert(&did_subject, did_details.clone());
+		make_free_for_did::<T>(&did_account);
+		CurrencyOf::<T>::hold(&HoldReason::Deposit.into(), &did_account, did_details.deposit.amount).expect("should reserve currency");
+
+		let test_call = <T as Config>::RuntimeCall::get_call_for_did_call_benchmark();
+		let origin = RawOrigin::Signed(did_subject.clone());
+	}: _(origin, did_subject, Box::new(test_call))
+
+	create_from_account {
+		// ecdsa keys are the most expensive since they require an additional hashing step
+		let did_public_auth_key = get_ecdsa_public_authentication_key();
+		let did_subject: DidIdentifierOf<T> = MultiSigner::from(did_public_auth_key).into_account().into();
+		let did_account: AccountIdOf<T> = MultiSigner::from(did_public_auth_key).into_account().into();
+
+		let authentication_key = DidVerificationKey::from(did_public_auth_key);
+		make_free_for_did::<T>(&did_account);
+		let origin = RawOrigin::Signed(did_subject.clone());
+	}: _(origin, authentication_key)
+	verify {
+			Did::<T>::get(&did_subject).expect("DID entry should be created");
+	}
+
+	impl_benchmark_test_suite!(
+		Pallet,
+		crate::mock::ExtBuilder::default().build_with_keystore(),
+		crate::mock::Test
+	)
 }

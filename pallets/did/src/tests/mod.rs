@@ -17,7 +17,9 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 mod create;
+mod create_from_account;
 mod delete;
+mod dispatch_as;
 mod manage_keys;
 mod service_endpoint;
 mod submit;

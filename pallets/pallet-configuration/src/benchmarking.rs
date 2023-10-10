@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_benchmarking::{benchmarks, impl_benchmark_test_suite};
+use frame_benchmarking::benchmarks;
 use frame_support::traits::EnsureOriginWithArg;
 
 use crate::*;
@@ -31,10 +31,10 @@ benchmarks! {
 	verify {
 		assert_eq!(ConfigurationStore::<T>::get(), Configuration { relay_block_strictly_increasing: true });
 	}
-}
 
-impl_benchmark_test_suite! {
-	Pallet,
-	crate::mock::runtime::ExtBuilder::default().build_with_keystore(),
-	crate::mock::runtime::Test
+	impl_benchmark_test_suite!(
+		Pallet,
+		crate::mock::runtime::ExtBuilder::default().build_with_keystore(),
+		crate::mock::runtime::Test
+	)
 }

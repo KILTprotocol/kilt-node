@@ -195,12 +195,13 @@ impl pallet_indices::Config for Runtime {
 }
 
 impl pallet_balances::Config for Runtime {
+	/// The type for recording an account's balance.
+	type Balance = Balance;
 	type FreezeIdentifier = RuntimeFreezeReason;
 	type RuntimeHoldReason = RuntimeHoldReason;
 	type MaxFreezes = MaxFreezes;
 	type MaxHolds = MaxHolds;
-	/// The type for recording an account's balance.
-	type Balance = Balance;
+
 	/// The ubiquitous event type.
 	type RuntimeEvent = RuntimeEvent;
 	type DustRemoval = runtime_common::SendDustAndFeesToTreasury<Runtime>;
@@ -531,10 +532,9 @@ impl pallet_tips::Config for Runtime {
 }
 
 impl attestation::Config for Runtime {
-	type RuntimeHoldReason = RuntimeHoldReason;
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
-
+	type RuntimeHoldReason = RuntimeHoldReason;
 	type RuntimeEvent = RuntimeEvent;
 	type WeightInfo = weights::attestation::WeightInfo<Runtime>;
 
@@ -548,7 +548,6 @@ impl attestation::Config for Runtime {
 
 impl delegation::Config for Runtime {
 	type DelegationEntityId = DidIdentifier;
-	type RuntimeHoldReason = RuntimeHoldReason;
 	type DelegationNodeId = Hash;
 
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
@@ -565,6 +564,7 @@ impl delegation::Config for Runtime {
 	type DelegationSignatureVerification = AlwaysVerify<AccountId, Vec<u8>, Self::Signature>;
 
 	type RuntimeEvent = RuntimeEvent;
+	type RuntimeHoldReason = RuntimeHoldReason;
 	type MaxSignatureByteLength = constants::delegation::MaxSignatureByteLength;
 	type MaxParentChecks = constants::delegation::MaxParentChecks;
 	type MaxRevocations = constants::delegation::MaxRevocations;
@@ -583,8 +583,6 @@ impl ctype::Config for Runtime {
 
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
-	// 3/5 of the technical committees can override the block number of one or more
-	// CTypes.
 	type OverarchingOrigin = EnsureRoot<AccountId>;
 
 	type RuntimeEvent = RuntimeEvent;
@@ -592,12 +590,12 @@ impl ctype::Config for Runtime {
 }
 
 impl did::Config for Runtime {
-	type DidIdentifier = DidIdentifier;
 	type RuntimeEvent = RuntimeEvent;
-	type RuntimeHoldReason = RuntimeHoldReason;
 	type RuntimeCall = RuntimeCall;
+	type RuntimeHoldReason = RuntimeHoldReason;
 	type RuntimeOrigin = RuntimeOrigin;
 	type Currency = Balances;
+	type DidIdentifier = DidIdentifier;
 	type KeyDeposit = constants::did::KeyDeposit;
 	type ServiceEndpointDeposit = constants::did::ServiceEndpointDeposit;
 	type BaseDeposit = constants::did::DidBaseDeposit;
@@ -666,11 +664,10 @@ impl pallet_inflation::Config for Runtime {
 }
 
 impl parachain_staking::Config for Runtime {
-	type FreezeIdentifier = RuntimeFreezeReason;
 	type RuntimeEvent = RuntimeEvent;
 	type Currency = Balances;
 	type CurrencyBalance = Balance;
-
+	type FreezeIdentifier = RuntimeFreezeReason;
 	type MinBlocksPerRound = constants::staking::MinBlocksPerRound;
 	type DefaultBlocksPerRound = constants::staking::DefaultBlocksPerRound;
 	type StakeDuration = constants::staking::StakeDuration;
@@ -700,8 +697,8 @@ impl pallet_utility::Config for Runtime {
 }
 
 impl public_credentials::Config for Runtime {
-	type AccessControl = PalletAuthorize<DelegationAc<Runtime>>;
 	type RuntimeHoldReason = RuntimeHoldReason;
+	type AccessControl = PalletAuthorize<DelegationAc<Runtime>>;
 	type AttesterId = DidIdentifier;
 	type AuthorizationId = AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>;
 	type CredentialId = Hash;
@@ -763,6 +760,7 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 							| pallet_indices::Call::free { .. }
 							| pallet_indices::Call::freeze { .. }
 					)
+					| RuntimeCall::Multisig(..)
 					| RuntimeCall::ParachainStaking(..)
 					// Excludes `ParachainSystem`
 					| RuntimeCall::Preimage(..)
@@ -834,6 +832,7 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 							| pallet_did_lookup::Call::change_deposit_owner { .. }
 					)
 					| RuntimeCall::Indices(..)
+					| RuntimeCall::Multisig(..)
 					| RuntimeCall::ParachainStaking(..)
 					// Excludes `ParachainSystem`
 					| RuntimeCall::Preimage(..)
@@ -928,9 +927,9 @@ construct_runtime! {
 		// DELETED: RandomnessCollectiveFlip: pallet_insecure_randomness_collective_flip = 1,
 
 		Timestamp: pallet_timestamp = 2,
-		Indices: pallet_indices::{Pallet, Call, Storage, Event<T>} = 5,
+		Indices: pallet_indices exclude_parts { Config } = 5,
 		Balances: pallet_balances = 6,
-		TransactionPayment: pallet_transaction_payment::{Pallet, Storage, Event<T>} = 7,
+		TransactionPayment: pallet_transaction_payment exclude_parts { Config } = 7,
 
 		// Consensus support.
 		// The following order MUST NOT be changed: Aura -> Session -> Staking -> Authorship -> AuraExt
@@ -938,7 +937,7 @@ construct_runtime! {
 		Aura: pallet_aura = 23,
 		Session: pallet_session = 22,
 		ParachainStaking: parachain_staking = 21,
-		Authorship: pallet_authorship::{Pallet, Storage} = 20,
+		Authorship: pallet_authorship = 20,
 		AuraExt: cumulus_pallet_aura_ext = 24,
 
 		Democracy: pallet_democracy = 30,
@@ -950,23 +949,23 @@ construct_runtime! {
 		// DELETED: RelayMigration: pallet_relay_migration::{Pallet, Call, Storage, Event<T>} = 36,
 		// DELETED: DynFilter: pallet_dyn_filter = 37,
 
-		//  A stateless pallet with helper extrinsics (batch extrinsics, send from different origins, ...)
+		// A stateless pallet with helper extrinsics (batch extrinsics, send from different origins, ...)
 		Utility: pallet_utility = 40,
 
 		// Vesting. Usable initially, but removed once all vesting is finished.
 		Vesting: pallet_vesting = 41,
 
-		Scheduler: pallet_scheduler::{Pallet, Call, Storage, Event<T>} = 42,
+		Scheduler: pallet_scheduler = 42,
 
 		// Allowing accounts to give permission to other accounts to dispatch types of calls from their signed origin
-		Proxy: pallet_proxy::{Pallet, Call, Storage, Event<T>} = 43,
+		Proxy: pallet_proxy = 43,
 
 		// Preimage pallet allows the storage of large bytes blob
-		Preimage: pallet_preimage::{Pallet, Call, Storage, Event<T>} = 44,
+		Preimage: pallet_preimage = 44,
 
 		// Tips module to reward contributions to the ecosystem with small amount of KILTs.
 		TipsMembership: pallet_membership::<Instance2> = 45,
-		Tips: pallet_tips::{Pallet, Call, Storage, Event<T>} = 46,
+		Tips: pallet_tips = 46,
 
 		Multisig: pallet_multisig = 47,
 
@@ -988,15 +987,16 @@ construct_runtime! {
 		ParachainSystem: cumulus_pallet_parachain_system = 80,
 		ParachainInfo: parachain_info = 81,
 		// Wrap and unwrap XCMP messages to send and receive them. Queue them for later processing.
-		XcmpQueue: cumulus_pallet_xcmp_queue::{Pallet, Call, Storage, Event<T>} = 82,
+		XcmpQueue: cumulus_pallet_xcmp_queue = 82,
 		// Build XCM scripts.
 		PolkadotXcm: pallet_xcm = 83,
 		// Does nothing cool, just provides an origin.
-		CumulusXcm: cumulus_pallet_xcm::{Pallet, Event<T>, Origin} = 84,
+		CumulusXcm: cumulus_pallet_xcm exclude_parts { Call } = 84,
 		// Queue and pass DMP messages on to be executed.
-		DmpQueue: cumulus_pallet_dmp_queue::{Pallet, Call, Storage, Event<T>} = 85,
+		DmpQueue: cumulus_pallet_dmp_queue = 85,
 	}
 }
+
 impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for RuntimeCall {
 	fn derive_verification_key_relationship(&self) -> did::DeriveDidCallKeyRelationshipResult {
 		/// ensure that all calls have the same VerificationKeyRelationship
@@ -1046,6 +1046,7 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for RuntimeCall 
 		RuntimeCall::System(frame_system::Call::remark { remark: vec![] })
 	}
 }
+
 /// The address format for describing accounts.
 pub type Address = sp_runtime::MultiAddress<AccountId, ()>;
 /// Block header type as expected by this runtime.
