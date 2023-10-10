@@ -346,9 +346,11 @@ impl<T: Config> DidDetails<T> {
 		Ok(new_did_details)
 	}
 
-	/// Calculate the deposit that should be secured for the DID based on the number of keys and service endpoints.
+	/// Calculate the deposit that should be secured for the DID based on the
+	/// number of keys and service endpoints.
 	///
-	/// Since service endpoints are not stored inside the DidDetails, the number of endpoints need to be provided.
+	/// Since service endpoints are not stored inside the DidDetails, the number
+	/// of endpoints need to be provided.
 	pub fn calculate_deposit(&self, endpoint_count: u32) -> BalanceOf<T> {
 		let mut deposit: BalanceOf<T> = T::BaseDeposit::get();
 
@@ -568,8 +570,9 @@ impl<T: Config> DidDetails<T> {
 		Ok(())
 	}
 
-	/// Remove a key from the map of public keys if none of the other keys, i.e.,
-	/// authentication, key agreement, attestation, or delegation, is referencing it.
+	/// Remove a key from the map of public keys if none of the other keys,
+	/// i.e., authentication, key agreement, attestation, or delegation, is
+	/// referencing it.
 	pub fn remove_key_if_unused(&mut self, key_id: KeyIdOf<T>) {
 		if self.authentication_key != key_id
 			&& self.attestation_key != Some(key_id)
