@@ -17,6 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_support::{assert_noop, assert_ok, crypto::ecdsa::ECDSAExt, traits::fungible::InspectHold};
+use frame_system::pallet_prelude::BlockNumberFor;
 use kilt_support::{mock::mock_origin, Deposit};
 use parity_scale_codec::Encode;
 use sha3::{Digest, Keccak256};
@@ -91,7 +92,7 @@ fn test_add_association_account() {
 		])
 		.build_and_execute_with_sanity_tests(|| {
 			let pair_alice = sr25519::Pair::from_seed(b"Alice                           ");
-			let expire_at: BlockNumber = 500;
+			let expire_at: BlockNumberFor<Test> = 500;
 			let account_hash_alice = MultiSigner::from(pair_alice.public()).into_account();
 			let sig_alice_0 = MultiSignature::from(
 				pair_alice.sign(&[b"<Bytes>", get_challenge(&DID_00, expire_at).as_bytes(), b"</Bytes>"].concat()[..]),
@@ -193,7 +194,7 @@ fn test_add_eth_association() {
 			(ACCOUNT_01, <Test as crate::Config>::Deposit::get() * 50),
 		])
 		.build_and_execute_with_sanity_tests(|| {
-			let expire_at: BlockNumber = 500;
+			let expire_at: BlockNumberFor<Test> = 500;
 			let eth_pair = ecdsa::Pair::generate().0;
 			let eth_account = AccountId20(eth_pair.public().to_eth_address().unwrap());
 
@@ -239,7 +240,7 @@ fn test_add_association_account_invalid_signature() {
 		.build_and_execute_with_sanity_tests(|| {
 			let pair_alice = sr25519::Pair::from_seed(b"Alice                           ");
 			let account_hash_alice = MultiSigner::from(pair_alice.public()).into_account();
-			let expire_at: BlockNumber = 500;
+			let expire_at: BlockNumberFor<Test> = 500;
 			// Try signing only the encoded tuple without the <Bytes>...</Bytes> wrapper
 			let sig_alice_0 = MultiSignature::from(pair_alice.sign(&Encode::encode(&(&DID_01, expire_at))[..]));
 
@@ -264,7 +265,7 @@ fn test_add_association_account_expired() {
 		.build_and_execute_with_sanity_tests(|| {
 			let pair_alice = sr25519::Pair::from_seed(b"Alice                           ");
 			let account_hash_alice = MultiSigner::from(pair_alice.public()).into_account();
-			let expire_at: BlockNumber = 2;
+			let expire_at: BlockNumberFor<Test> = 2;
 			let sig_alice_0 = MultiSignature::from(
 				pair_alice.sign(&[b"<Bytes>", &Encode::encode(&(&DID_01, expire_at))[..], b"</Bytes>"].concat()[..]),
 			);

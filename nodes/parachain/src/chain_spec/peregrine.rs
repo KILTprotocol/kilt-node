@@ -21,8 +21,9 @@
 use cumulus_primitives_core::ParaId;
 use hex_literal::hex;
 use peregrine_runtime::{
-	BalancesConfig, CouncilConfig, GenesisConfig, InflationInfo, ParachainInfoConfig, ParachainStakingConfig,
-	PolkadotXcmConfig, SessionConfig, SudoConfig, SystemConfig, TechnicalCommitteeConfig, VestingConfig, WASM_BINARY,
+	BalancesConfig, CouncilConfig, InflationInfo, ParachainInfoConfig, ParachainStakingConfig, PolkadotXcmConfig,
+	RuntimeGenesisConfig, SessionConfig, SudoConfig, SystemConfig, TechnicalCommitteeConfig, VestingConfig,
+	WASM_BINARY,
 };
 use runtime_common::{
 	constants::{kilt_inflation_config, staking::MinCollatorStake, MAX_COLLATOR_STAKE},
@@ -37,7 +38,7 @@ use crate::chain_spec::{get_account_id_from_seed, get_from_seed, get_properties,
 const SAFE_XCM_VERSION: u32 = xcm::prelude::XCM_VERSION;
 
 /// Specialized `ChainSpec` for the normal parachain runtime.
-pub type ChainSpec = sc_service::GenericChainSpec<GenesisConfig, Extensions>;
+pub type ChainSpec = sc_service::GenericChainSpec<RuntimeGenesisConfig, Extensions>;
 
 pub fn make_dev_spec() -> Result<ChainSpec, String> {
 	let properties = get_properties("PILT", 15, 38);
@@ -147,7 +148,7 @@ fn testnet_genesis(
 	initial_authorities: Vec<(AccountId, AuthorityId)>,
 	endowed_accounts: Vec<AccountId>,
 	id: ParaId,
-) -> GenesisConfig {
+) -> RuntimeGenesisConfig {
 	type VestingPeriod = BlockNumber;
 	type LockingPeriod = BlockNumber;
 
@@ -161,9 +162,10 @@ fn testnet_genesis(
 	let botlabs_accounts: Vec<(AccountId, Balance, VestingPeriod, LockingPeriod)> =
 		serde_json::from_slice(botlabs_accounts_json).expect("The file botlabs_accounts.json exists and is valid; qed");
 
-	GenesisConfig {
+	RuntimeGenesisConfig {
 		system: SystemConfig {
 			code: wasm_binary.to_vec(),
+			..Default::default()
 		},
 		balances: BalancesConfig {
 			balances: endowed_accounts
@@ -175,7 +177,10 @@ fn testnet_genesis(
 				.collect(),
 		},
 		sudo: SudoConfig { key: Some(root_key) },
-		parachain_info: ParachainInfoConfig { parachain_id: id },
+		parachain_info: ParachainInfoConfig {
+			parachain_id: id,
+			..Default::default()
+		},
 		vesting: VestingConfig {
 			vesting: botlabs_accounts
 				.iter()
@@ -218,6 +223,7 @@ fn testnet_genesis(
 		},
 		polkadot_xcm: PolkadotXcmConfig {
 			safe_xcm_version: Some(SAFE_XCM_VERSION),
+			..Default::default()
 		},
 		did_lookup: Default::default(),
 	}

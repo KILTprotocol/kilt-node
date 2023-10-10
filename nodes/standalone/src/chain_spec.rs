@@ -19,7 +19,7 @@
 //! KILT chain specification
 
 use kestrel_runtime::{
-	BalancesConfig, GenesisConfig, IndicesConfig, SessionConfig, SudoConfig, SystemConfig, WASM_BINARY,
+	BalancesConfig, IndicesConfig, RuntimeGenesisConfig, SessionConfig, SudoConfig, SystemConfig, WASM_BINARY,
 };
 use runtime_common::{AccountId, AccountPublic};
 
@@ -35,7 +35,7 @@ use sp_runtime::traits::IdentifyAccount;
 
 /// Specialised `ChainSpec`. This is a specialisation of the general Substrate
 /// ChainSpec type.
-pub type ChainSpec = sc_service::GenericChainSpec<GenesisConfig>;
+pub type ChainSpec = sc_service::GenericChainSpec<RuntimeGenesisConfig>;
 
 /// Helper function to generate a crypto pair from seed
 fn get_from_secret<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pair>::Public {
@@ -154,10 +154,11 @@ fn devnet_genesis(
 	initial_authorities: Vec<(AccountId, AuraId, GrandpaId)>,
 	root_key: AccountId,
 	endowed_accounts: Vec<AccountId>,
-) -> GenesisConfig {
-	GenesisConfig {
+) -> RuntimeGenesisConfig {
+	RuntimeGenesisConfig {
 		system: SystemConfig {
 			code: wasm_binary.to_vec(),
+			..Default::default()
 		},
 		indices: IndicesConfig { indices: vec![] },
 		transaction_payment: Default::default(),

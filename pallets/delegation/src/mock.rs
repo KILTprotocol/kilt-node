@@ -186,9 +186,8 @@ pub(crate) mod runtime {
 	use scale_info::TypeInfo;
 	use sp_core::{ed25519, sr25519, Pair};
 	use sp_runtime::{
-		testing::Header,
 		traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
-		MultiSignature, MultiSigner,
+		BuildStorage, MultiSignature, MultiSigner,
 	};
 
 	use attestation::{mock::insert_attestation, AttestationDetailsOf, ClaimHashOf};
@@ -198,7 +197,6 @@ pub(crate) mod runtime {
 		signature::EqualVerify,
 	};
 
-	pub(crate) type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 	pub(crate) type Block = frame_system::mocking::MockBlock<Test>;
 
 	pub(crate) type Hash = sp_core::H256;
@@ -212,14 +210,10 @@ pub(crate) mod runtime {
 	pub(crate) const ATTESTATION_DEPOSIT: Balance = 10 * MILLI_UNIT;
 
 	frame_support::construct_runtime!(
-		pub enum Test where
-			Block = Block,
-			NodeBlock = Block,
-			UncheckedExtrinsic = UncheckedExtrinsic,
+		pub enum Test
 		{
-			System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
-			Balances: pallet_balances::{Pallet, Call, Storage, Event<T>},
-
+			System: frame_system,
+			Balances: pallet_balances,
 			Attestation: attestation,
 			Ctype: ctype,
 			Delegation: delegation,
@@ -235,13 +229,14 @@ pub(crate) mod runtime {
 	impl frame_system::Config for Test {
 		type RuntimeOrigin = RuntimeOrigin;
 		type RuntimeCall = RuntimeCall;
-		type Index = u64;
-		type BlockNumber = u64;
+		type Block = Block;
+		type Nonce = u64;
+
 		type Hash = Hash;
 		type Hashing = BlakeTwo256;
 		type AccountId = AccountId;
 		type Lookup = IdentityLookup<Self::AccountId>;
-		type Header = Header;
+
 		type RuntimeEvent = ();
 		type BlockHashCount = BlockHashCount;
 		type DbWeight = RocksDbWeight;
@@ -270,7 +265,7 @@ pub(crate) mod runtime {
 
 	impl pallet_balances::Config for Test {
 		type FreezeIdentifier = RuntimeFreezeReason;
-		type HoldIdentifier = RuntimeHoldReason;
+		type RuntimeHoldReason = RuntimeHoldReason;
 		type MaxFreezes = MaxFreezes;
 		type MaxHolds = MaxHolds;
 		type Balance = Balance;
@@ -502,7 +497,7 @@ pub(crate) mod runtime {
 		}
 
 		pub fn build(self) -> sp_io::TestExternalities {
-			let mut storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
+			let mut storage = frame_system::GenesisConfig::<Test>::default().build_storage().unwrap();
 			pallet_balances::GenesisConfig::<Test> {
 				balances: self.balances.clone(),
 			}

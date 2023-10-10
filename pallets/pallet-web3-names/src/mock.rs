@@ -16,19 +16,18 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 use frame_support::traits::fungible::MutateHold;
+use frame_system::pallet_prelude::BlockNumberFor;
 use kilt_support::Deposit;
 
 use crate::{
 	AccountIdOf, BalanceOf, Config, CurrencyOf, HoldReason, Names, Owner, Web3NameOf, Web3NameOwnerOf, Web3OwnershipOf,
 };
 
-pub(crate) type BlockNumberOf<T> = <T as frame_system::Config>::BlockNumber;
-
 pub(crate) fn insert_raw_w3n<T: Config>(
 	payer: AccountIdOf<T>,
 	owner: Web3NameOwnerOf<T>,
 	name: Web3NameOf<T>,
-	block_number: BlockNumberOf<T>,
+	block_number: BlockNumberFor<T>,
 	deposit: BalanceOf<T>,
 ) {
 	CurrencyOf::<T>::hold(&HoldReason::Deposit.into(), &payer, deposit)
@@ -58,14 +57,12 @@ pub(crate) mod runtime {
 	use frame_system::EnsureRoot;
 	use kilt_support::mock::{mock_origin, SubjectId};
 	use sp_runtime::{
-		testing::Header,
 		traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
-		MultiSignature,
+		BuildStorage, MultiSignature,
 	};
 
 	use crate::{self as pallet_web3_names, web3_name::AsciiWeb3Name};
 
-	type Index = u64;
 	type BlockNumber = u64;
 	pub(crate) type Balance = u128;
 
@@ -74,19 +71,15 @@ pub(crate) mod runtime {
 	type AccountPublic = <Signature as Verify>::Signer;
 	type AccountId = <AccountPublic as IdentifyAccount>::AccountId;
 
-	type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 	type Block = frame_system::mocking::MockBlock<Test>;
 
 	frame_support::construct_runtime!(
-		pub enum Test where
-			Block = Block,
-			NodeBlock = Block,
-			UncheckedExtrinsic = UncheckedExtrinsic,
+		pub enum Test
 		{
-			System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
-			Balances: pallet_balances::{Pallet, Call, Storage, Event<T>},
-			Web3Names: pallet_web3_names::{Pallet, Storage, Call, Event<T>, HoldReason},
-			MockOrigin: mock_origin::{Pallet, Origin<T>},
+			System: frame_system,
+			Balances: pallet_balances,
+			Web3Names: pallet_web3_names,
+			MockOrigin: mock_origin,
 		}
 	);
 
@@ -100,15 +93,14 @@ pub(crate) mod runtime {
 		type BlockWeights = ();
 		type BlockLength = ();
 		type DbWeight = ();
+		type Block = Block;
+		type Nonce = u64;
 		type RuntimeOrigin = RuntimeOrigin;
 		type RuntimeCall = RuntimeCall;
-		type Index = Index;
-		type BlockNumber = BlockNumber;
 		type Hash = Hash;
 		type Hashing = BlakeTwo256;
 		type AccountId = AccountId;
 		type Lookup = IdentityLookup<Self::AccountId>;
-		type Header = Header;
 		type RuntimeEvent = RuntimeEvent;
 		type BlockHashCount = BlockHashCount;
 		type Version = ();
@@ -132,7 +124,7 @@ pub(crate) mod runtime {
 
 	impl pallet_balances::Config for Test {
 		type FreezeIdentifier = RuntimeFreezeReason;
-		type HoldIdentifier = RuntimeHoldReason;
+		type RuntimeHoldReason = RuntimeHoldReason;
 		type MaxFreezes = MaxFreezes;
 		type MaxHolds = MaxHolds;
 		type Balance = Balance;
@@ -222,7 +214,7 @@ pub(crate) mod runtime {
 		}
 
 		pub fn build(self) -> sp_io::TestExternalities {
-			let mut storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
+			let mut storage = frame_system::GenesisConfig::<Test>::default().build_storage().unwrap();
 			pallet_balances::GenesisConfig::<Test> {
 				balances: self.balances.clone(),
 			}

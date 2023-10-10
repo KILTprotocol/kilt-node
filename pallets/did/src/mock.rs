@@ -33,9 +33,9 @@ use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
 use sp_core::{ecdsa, ed25519, sr25519, Pair};
 use sp_runtime::{
-	testing::{Header, H256},
+	testing::H256,
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
-	MultiSignature, MultiSigner, SaturatedConversion,
+	BuildStorage, MultiSignature, MultiSigner, SaturatedConversion,
 };
 use sp_std::vec::Vec;
 
@@ -52,15 +52,12 @@ use crate::{
 	ServiceEndpoints,
 };
 
-pub(crate) type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 pub(crate) type Block = frame_system::mocking::MockBlock<Test>;
 pub(crate) type Hash = sp_core::H256;
 pub(crate) type Balance = u128;
 pub(crate) type Signature = MultiSignature;
 pub(crate) type AccountPublic = <Signature as Verify>::Signer;
 pub(crate) type AccountId = <AccountPublic as IdentifyAccount>::AccountId;
-pub(crate) type Index = u64;
-pub(crate) type BlockNumber = u64;
 type CreditOf<T> = Credit<<T as frame_system::Config>::AccountId, PalletBalance<T, ()>>;
 pub(crate) type DidIdentifier = AccountId;
 pub(crate) type CtypeHash = Hash;
@@ -70,15 +67,12 @@ const MILLI_KILT: Balance = 10u128.pow(12);
 const KILT: Balance = 10u128.pow(15);
 
 frame_support::construct_runtime!(
-	pub enum Test where
-		Block = Block,
-		NodeBlock = Block,
-		UncheckedExtrinsic = UncheckedExtrinsic,
+	pub enum Test
 	{
-		Did: did::{Pallet, Call, Storage, HoldReason, Event<T>, Origin<T>},
-		Ctype: ctype::{Pallet, Call, Storage, Event<T>},
-		Balances: pallet_balances::{Pallet, Call, Storage, Event<T>},
-		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
+		Did: did,
+		Ctype: ctype,
+		Balances: pallet_balances,
+		System: frame_system,
 	}
 );
 
@@ -90,18 +84,16 @@ parameter_types! {
 impl frame_system::Config for Test {
 	type RuntimeOrigin = RuntimeOrigin;
 	type RuntimeCall = RuntimeCall;
-	type Index = Index;
-	type BlockNumber = BlockNumber;
+	type Block = Block;
+	type Nonce = u64;
 	type Hash = Hash;
 	type Hashing = BlakeTwo256;
 	type AccountId = <<Signature as Verify>::Signer as IdentifyAccount>::AccountId;
 	type Lookup = IdentityLookup<Self::AccountId>;
-	type Header = Header;
 	type RuntimeEvent = ();
 	type BlockHashCount = BlockHashCount;
 	type DbWeight = RocksDbWeight;
 	type Version = ();
-
 	type PalletInfo = PalletInfo;
 	type AccountData = pallet_balances::AccountData<Balance>;
 	type OnNewAccount = ();
@@ -193,7 +185,7 @@ parameter_types! {
 
 impl pallet_balances::Config for Test {
 	type FreezeIdentifier = RuntimeFreezeReason;
-	type HoldIdentifier = RuntimeHoldReason;
+	type RuntimeHoldReason = RuntimeHoldReason;
 	type MaxFreezes = MaxFreezes;
 	type MaxHolds = MaxHolds;
 	type Balance = Balance;
@@ -462,7 +454,7 @@ impl ExtBuilder {
 		let mut ext = if let Some(ext) = ext {
 			ext
 		} else {
-			let mut storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
+			let mut storage = frame_system::GenesisConfig::<Test>::default().build_storage().unwrap();
 			pallet_balances::GenesisConfig::<Test> {
 				balances: self.balances.clone(),
 			}

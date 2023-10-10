@@ -17,6 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_support::traits::Get;
+use frame_system::pallet_prelude::BlockNumberFor;
 use parity_scale_codec::Encode;
 use sp_runtime::traits::Hash;
 
@@ -53,7 +54,7 @@ pub fn generate_credential_id<T: Config>(
 /// as non-revoked and with no authorization ID associated with it.
 pub(crate) fn generate_base_credential_entry<T: Config>(
 	payer: T::AccountId,
-	block_number: <T as frame_system::Config>::BlockNumber,
+	block_number: BlockNumberFor<T>,
 	attester: T::AttesterId,
 	ctype_hash: Option<CtypeHashOf<T>>,
 	deposit: Option<Deposit<T::AccountId, BalanceOf<T>>>,
@@ -104,18 +105,18 @@ pub(crate) mod runtime {
 	use scale_info::TypeInfo;
 	use sp_core::{sr25519, Pair};
 	use sp_runtime::{
-		testing::Header,
 		traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
-		DispatchError, MultiSignature, MultiSigner,
+		BuildStorage, DispatchError, MultiSignature, MultiSigner,
 	};
 
 	use kilt_support::mock::{mock_origin, SubjectId};
 
 	use ctype::{CtypeCreatorOf, CtypeEntryOf, CtypeHashOf};
 
-	use crate::{Config, CredentialEntryOf, Error, InputSubjectIdOf, PublicCredentialsAccessControl};
+	use crate::{
+		self as public_credentials, Config, CredentialEntryOf, Error, InputSubjectIdOf, PublicCredentialsAccessControl,
+	};
 
-	pub(crate) type BlockNumber = u64;
 	pub(crate) type Balance = u128;
 	pub(crate) type Hash = sp_core::H256;
 	pub(crate) type AccountPublic = <MultiSignature as Verify>::Signer;
@@ -269,18 +270,16 @@ pub(crate) mod runtime {
 	}
 
 	pub(crate) const MILLI_UNIT: Balance = 10u128.pow(12);
+	type Block = frame_system::mocking::MockBlock<Test>;
 
 	frame_support::construct_runtime!(
-		pub enum Test where
-			Block = frame_system::mocking::MockBlock<Test>,
-			NodeBlock = frame_system::mocking::MockBlock<Test>,
-			UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>,
+		pub enum Test
 		{
-			System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
-			Ctype: ctype::{Pallet, Call, Storage, Event<T>},
-			Balances: pallet_balances::{Pallet, Call, Storage, Event<T>},
-			MockOrigin: mock_origin::{Pallet, Origin<T>},
-			PublicCredentials: crate::{Pallet, Call, Storage,HoldReason, Event<T>},
+			System: frame_system,
+			Ctype: ctype,
+			Balances: pallet_balances,
+			MockOrigin: mock_origin,
+			PublicCredentials: public_credentials,
 		}
 	);
 
@@ -293,13 +292,12 @@ pub(crate) mod runtime {
 	impl frame_system::Config for Test {
 		type RuntimeOrigin = RuntimeOrigin;
 		type RuntimeCall = RuntimeCall;
-		type Index = u64;
-		type BlockNumber = BlockNumber;
+		type Block = Block;
+		type Nonce = u64;
 		type Hash = Hash;
 		type Hashing = BlakeTwo256;
 		type AccountId = AccountId;
 		type Lookup = IdentityLookup<Self::AccountId>;
-		type Header = Header;
 		type RuntimeEvent = ();
 		type BlockHashCount = ConstU64<250>;
 		type DbWeight = RocksDbWeight;
@@ -320,7 +318,7 @@ pub(crate) mod runtime {
 
 	impl pallet_balances::Config for Test {
 		type FreezeIdentifier = RuntimeFreezeReason;
-		type HoldIdentifier = RuntimeHoldReason;
+		type RuntimeHoldReason = RuntimeHoldReason;
 		type MaxFreezes = ConstU32<10>;
 		type MaxHolds = ConstU32<10>;
 		type Balance = Balance;
@@ -422,7 +420,7 @@ pub(crate) mod runtime {
 		}
 
 		pub(crate) fn build(self) -> sp_io::TestExternalities {
-			let mut storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
+			let mut storage = frame_system::GenesisConfig::<Test>::default().build_storage().unwrap();
 			pallet_balances::GenesisConfig::<Test> {
 				balances: self.balances.clone(),
 			}
