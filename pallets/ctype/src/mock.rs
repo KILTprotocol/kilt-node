@@ -40,9 +40,8 @@ pub mod runtime {
 	use frame_system::EnsureSignedBy;
 	use kilt_support::mock::{mock_origin, SubjectId};
 	use sp_runtime::{
-		testing::Header,
 		traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
-		AccountId32, MultiSignature,
+		AccountId32, BuildStorage, MultiSignature,
 	};
 
 	use crate::{BalanceOf, CtypeEntryOf, Ctypes};
@@ -61,15 +60,12 @@ pub mod runtime {
 	pub const MILLI_UNIT: Balance = 10u128.pow(12);
 
 	frame_support::construct_runtime!(
-		pub enum Test where
-			Block = Block,
-			NodeBlock = Block,
-			UncheckedExtrinsic = UncheckedExtrinsic,
+		pub enum Test
 		{
-			System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
+			System: frame_system,
 			Ctype: crate::{Pallet, Call, Storage, Event<T>},
-			Balances: pallet_balances::{Pallet, Call, Storage, Event<T>},
-			MockOrigin: mock_origin::{Pallet, Origin<T>},
+			Balances: pallet_balances,
+			MockOrigin: mock_origin,
 		}
 	);
 
@@ -81,13 +77,13 @@ pub mod runtime {
 	impl frame_system::Config for Test {
 		type RuntimeOrigin = RuntimeOrigin;
 		type RuntimeCall = RuntimeCall;
-		type Index = u64;
-		type BlockNumber = u64;
+		type Block = Block;
+		type Nonce = u64;
+
 		type Hash = Hash;
 		type Hashing = BlakeTwo256;
 		type AccountId = AccountId;
 		type Lookup = IdentityLookup<Self::AccountId>;
-		type Header = Header;
 		type RuntimeEvent = ();
 		type BlockHashCount = BlockHashCount;
 		type DbWeight = RocksDbWeight;
@@ -114,7 +110,7 @@ pub mod runtime {
 
 	impl pallet_balances::Config for Test {
 		type FreezeIdentifier = ();
-		type HoldIdentifier = ();
+		type RuntimeHoldReason = ();
 		type MaxFreezes = ();
 		type MaxHolds = ();
 		type Balance = Balance;
@@ -177,7 +173,7 @@ pub mod runtime {
 		}
 
 		pub(crate) fn build(self) -> sp_io::TestExternalities {
-			let mut storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
+			let mut storage = frame_system::GenesisConfig::<Test>::default().build_storage().unwrap();
 			pallet_balances::GenesisConfig::<Test> {
 				balances: self.balances.clone(),
 			}

@@ -27,6 +27,7 @@ use frame_support::{
 		Get,
 	},
 };
+use frame_system::pallet_prelude::BlockNumberFor;
 use frame_system::RawOrigin;
 use parity_scale_codec::Encode;
 use sp_core::{offchain::KeyTypeId, sr25519};
@@ -65,7 +66,7 @@ where
 	T::DelegationNodeId: From<T::Hash>,
 	T::CtypeCreatorId: From<T::DelegationEntityId>,
 	<T as Config>::EnsureOrigin: GenerateBenchmarkOrigin<T::RuntimeOrigin, T::AccountId, T::DelegationEntityId>,
-	T::BlockNumber: From<u64>,
+	BlockNumberFor<T>: From<u64>,
 	<T as Config>::Currency: Mutate<T::AccountId>,
 {
 	log::info!("create delegation root");
@@ -205,7 +206,7 @@ where
 		<<T as Config>::DelegationSignatureVerification as VerifySignature>::Payload,
 	)>,
 	<T as Config>::EnsureOrigin: GenerateBenchmarkOrigin<T::RuntimeOrigin, T::AccountId, T::DelegationEntityId>,
-	T::BlockNumber: From<u64>,
+	BlockNumberFor<T>: From<u64>,
 	<T as Config>::Currency: Mutate<T::AccountId>,
 {
 	let (
@@ -242,7 +243,7 @@ benchmarks! {
 			<<T as Config>::DelegationSignatureVerification as VerifySignature>::Payload,
 		)>,
 		<T as Config>::EnsureOrigin: GenerateBenchmarkOrigin<T::RuntimeOrigin, T::AccountId, T::DelegationEntityId>,
-		T::BlockNumber: From<u64>,
+		BlockNumberFor::<T>: From<u64>,
 		<T as Config>::Currency: Mutate<T::AccountId>
 	}
 

@@ -22,6 +22,7 @@ use frame_support::{
 	traits::Get,
 	RuntimeDebug,
 };
+use frame_system::pallet_prelude::BlockNumberFor;
 use kilt_support::Deposit;
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen, WrapperTypeEncode};
 use scale_info::TypeInfo;
@@ -34,8 +35,7 @@ use sp_std::{convert::TryInto, vec::Vec};
 
 use crate::{
 	errors::{self, DidError},
-	utils, AccountIdOf, BalanceOf, BlockNumberOf, Config, DidAuthorizedCallOperationOf, DidCreationDetailsOf, KeyIdOf,
-	Payload,
+	utils, AccountIdOf, BalanceOf, Config, DidAuthorizedCallOperationOf, DidCreationDetailsOf, KeyIdOf, Payload,
 };
 
 /// Public verification key that a DID can control.
@@ -309,7 +309,7 @@ impl<T: Config> DidDetails<T> {
 	/// The tx counter is automatically set to 0.
 	pub fn new(
 		authentication_key: DidVerificationKey<AccountIdOf<T>>,
-		block_number: BlockNumberOf<T>,
+		block_number: BlockNumberFor<T>,
 		deposit_owner: AccountIdOf<T>,
 	) -> Result<Self, errors::StorageError> {
 		let mut public_keys = DidPublicKeyMapOf::<T>::default();
@@ -414,7 +414,7 @@ impl<T: Config> DidDetails<T> {
 	pub fn update_authentication_key(
 		&mut self,
 		new_authentication_key: DidVerificationKey<AccountIdOf<T>>,
-		block_number: BlockNumberOf<T>,
+		block_number: BlockNumberFor<T>,
 	) -> Result<(), errors::StorageError> {
 		let old_authentication_key_id = self.authentication_key;
 		let new_authentication_key_id = utils::calculate_key_id::<T>(&new_authentication_key.clone().into());
@@ -441,7 +441,7 @@ impl<T: Config> DidDetails<T> {
 	pub fn add_key_agreement_keys(
 		&mut self,
 		new_key_agreement_keys: DidNewKeyAgreementKeySet<T::MaxNewKeyAgreementKeys>,
-		block_number: BlockNumberOf<T>,
+		block_number: BlockNumberFor<T>,
 	) -> Result<(), errors::StorageError> {
 		for new_key_agreement_key in new_key_agreement_keys {
 			self.add_key_agreement_key(new_key_agreement_key, block_number)?;
@@ -455,7 +455,7 @@ impl<T: Config> DidDetails<T> {
 	pub fn add_key_agreement_key(
 		&mut self,
 		new_key_agreement_key: DidEncryptionKey,
-		block_number: BlockNumberOf<T>,
+		block_number: BlockNumberFor<T>,
 	) -> Result<(), errors::StorageError> {
 		let new_key_agreement_id = utils::calculate_key_id::<T>(&new_key_agreement_key.into());
 		self.public_keys
@@ -492,7 +492,7 @@ impl<T: Config> DidDetails<T> {
 	pub fn update_attestation_key(
 		&mut self,
 		new_attestation_key: DidVerificationKey<AccountIdOf<T>>,
-		block_number: BlockNumberOf<T>,
+		block_number: BlockNumberFor<T>,
 	) -> Result<(), errors::StorageError> {
 		let new_attestation_key_id = utils::calculate_key_id::<T>(&new_attestation_key.clone().into());
 		if let Some(old_attestation_key_id) = self.attestation_key.take() {
@@ -535,7 +535,7 @@ impl<T: Config> DidDetails<T> {
 	pub fn update_delegation_key(
 		&mut self,
 		new_delegation_key: DidVerificationKey<AccountIdOf<T>>,
-		block_number: BlockNumberOf<T>,
+		block_number: BlockNumberFor<T>,
 	) -> Result<(), errors::StorageError> {
 		let new_delegation_key_id = utils::calculate_key_id::<T>(&new_delegation_key.clone().into());
 		if let Some(old_delegation_key_id) = self.delegation_key.take() {
@@ -619,7 +619,7 @@ pub(crate) type DidKeyAgreementKeySetOf<T> = BoundedBTreeSet<KeyIdOf<T>, <T as C
 
 pub(crate) type DidPublicKeyMapOf<T> = BoundedBTreeMap<
 	KeyIdOf<T>,
-	DidPublicKeyDetails<BlockNumberOf<T>, AccountIdOf<T>>,
+	DidPublicKeyDetails<BlockNumberFor<T>, AccountIdOf<T>>,
 	<T as Config>::MaxPublicKeysPerDid,
 >;
 

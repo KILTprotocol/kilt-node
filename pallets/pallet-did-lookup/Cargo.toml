@@ -28,6 +28,7 @@ test-log = "0.2.11"
 base58.workspace = true
 blake2 = {version = "0.10.6", default-features = false}
 parity-scale-codec = {workspace = true, features = ["derive"]}
+serde = {workspace = true, default-features= false, features=["derive"]}
 hex.workspace = true
 libsecp256k1 = {workspace = true, features = ["hmac"]}
 log.workspace = true
@@ -47,9 +48,6 @@ sp-std.workspace = true
 
 # Benchmarking dependencies
 frame-benchmarking = {workspace = true, optional = true}
-
-# std dependencies
-serde = {workspace = true, optional = true}
 
 [features]
 default = ["std"]
@@ -72,7 +70,7 @@ std = [
   "libsecp256k1/std",
   "scale-info/std",
   "sha3/std",
-  "serde",
+  "serde/std",
   "sp-core/std",
   "sp-io/std",
   "sp-runtime/std",

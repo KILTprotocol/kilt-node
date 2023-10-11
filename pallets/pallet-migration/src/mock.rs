@@ -59,15 +59,13 @@ pub mod runtime {
 	use scale_info::TypeInfo;
 	use sp_core::{ed25519, ConstU128, ConstU32};
 	use sp_runtime::{
-		testing::Header,
 		traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
-		AccountId32, MultiSignature, MultiSigner, Perquintill,
+		AccountId32, BuildStorage, MultiSignature, MultiSigner, Perquintill,
 	};
 
 	use crate::{self as migration, Config, MigratedKeys};
 
 	type BalanceOf<T> = <<T as ctype::Config>::Currency as Inspect<AccountId>>::Balance;
-	pub type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 	pub type Block = frame_system::mocking::MockBlock<Test>;
 	pub type Hash = sp_core::H256;
 	pub type Balance = u128;
@@ -81,19 +79,16 @@ pub mod runtime {
 	pub const KILT: Balance = 10u128.pow(15);
 
 	frame_support::construct_runtime!(
-		pub enum Test where
-			Block = Block,
-			NodeBlock = Block,
-			UncheckedExtrinsic = UncheckedExtrinsic,
+		pub enum Test
 		{
-			System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
+			System: frame_system,
 			Ctype: ctype,
-			Balances: pallet_balances::{Pallet, Call, Storage, Event<T>},
-			MockOrigin: mock_origin::{Pallet, Origin<T>},
+			Balances: pallet_balances,
+			MockOrigin: mock_origin,
 			Attestation: attestation,
 			Delegation: delegation,
 			Did: did,
-			DidLookup: pallet_did_lookup::{Pallet, Storage, Call, Event<T>, HoldReason},
+			DidLookup: pallet_did_lookup,
 			W3n: pallet_web3_names,
 			PublicCredentials: public_credentials,
 			Migration: migration,
@@ -102,7 +97,6 @@ pub mod runtime {
 
 	parameter_types! {
 		pub const MaxMigrationsPerPallet: u8 = 42;
-		pub const MaxKeyLength: u32 = 1000;
 	}
 
 	impl Config for Test {
@@ -120,13 +114,12 @@ pub mod runtime {
 	impl frame_system::Config for Test {
 		type RuntimeOrigin = RuntimeOrigin;
 		type RuntimeCall = RuntimeCall;
-		type Index = u64;
-		type BlockNumber = u64;
+		type Nonce = u64;
+		type Block = Block;
 		type Hash = Hash;
 		type Hashing = BlakeTwo256;
 		type AccountId = AccountId;
 		type Lookup = IdentityLookup<Self::AccountId>;
-		type Header = Header;
 		type RuntimeEvent = ();
 		type BlockHashCount = BlockHashCount;
 		type DbWeight = RocksDbWeight;
@@ -174,7 +167,7 @@ pub mod runtime {
 
 	impl pallet_balances::Config for Test {
 		type FreezeIdentifier = RuntimeFreezeReason;
-		type HoldIdentifier = RuntimeHoldReason;
+		type RuntimeHoldReason = RuntimeHoldReason;
 		type MaxFreezes = MaxFreezes;
 		type MaxHolds = MaxHolds;
 		type Balance = Balance;
@@ -570,7 +563,7 @@ pub mod runtime {
 		}
 
 		pub(crate) fn build(self) -> sp_io::TestExternalities {
-			let mut storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
+			let mut storage = frame_system::GenesisConfig::<Test>::default().build_storage().unwrap();
 			pallet_balances::GenesisConfig::<Test> {
 				balances: self.balances.clone(),
 			}

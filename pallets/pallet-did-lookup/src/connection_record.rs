@@ -19,10 +19,10 @@
 use kilt_support::Deposit;
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
+use serde::{Deserialize, Serialize};
 
 /// A record in the ConnectedDid map.
-#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Clone, Decode, Debug, Encode, TypeInfo, Eq, PartialEq, MaxEncodedLen)]
+#[derive(Clone, Decode, Debug, Encode, TypeInfo, Eq, PartialEq, MaxEncodedLen, Serialize, Deserialize)]
 pub struct ConnectionRecord<DidIdentifier, Account, Balance> {
 	/// The did that is connected to the key under which the record was stored.
 	pub did: DidIdentifier,

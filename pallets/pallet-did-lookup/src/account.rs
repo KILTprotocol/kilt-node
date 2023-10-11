@@ -26,14 +26,27 @@
 use frame_support::{crypto::ecdsa::ECDSAExt, RuntimeDebug};
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
+use serde::{Deserialize, Serialize};
 use sha3::{Digest, Keccak256};
 use sp_core::{ecdsa, H160, H256};
 
 /// The AccountId20 type.
 /// It is a 20-byte Ethereum address.
-#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 #[derive(
-	Eq, PartialEq, Copy, Clone, Encode, Decode, TypeInfo, MaxEncodedLen, Default, PartialOrd, Ord, RuntimeDebug,
+	Eq,
+	PartialEq,
+	Copy,
+	Clone,
+	Encode,
+	Decode,
+	TypeInfo,
+	MaxEncodedLen,
+	Default,
+	PartialOrd,
+	Ord,
+	RuntimeDebug,
+	Serialize,
+	Deserialize,
 )]
 pub struct AccountId20(pub [u8; 20]);
 

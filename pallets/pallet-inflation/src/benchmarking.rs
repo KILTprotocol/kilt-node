@@ -24,13 +24,14 @@ use super::*;
 use crate::Pallet as Inflation;
 use frame_benchmarking::{benchmarks, impl_benchmark_test_suite};
 use frame_support::traits::{fungible::Inspect, Get, OnInitialize};
+use frame_system::pallet_prelude::BlockNumberFor;
 use sp_runtime::traits::{One, Saturating};
 
 benchmarks! {
 
 	on_initialize_mint_to_treasury {
 		let issuance = T::Currency::total_issuance();
-		let block = T::BlockNumber::one();
+		let block = BlockNumberFor::<T>::one();
 	}: { Inflation::<T>::on_initialize(block) }
 	verify {
 		assert!(T::Currency::total_issuance() > issuance);
@@ -38,7 +39,7 @@ benchmarks! {
 
 	on_initialize_no_action {
 		let issuance = T::Currency::total_issuance();
-		let block = T::InitialPeriodLength::get().saturating_add(<T as frame_system::Config>::BlockNumber::one());
+		let block = T::InitialPeriodLength::get().saturating_add(BlockNumberFor::<T>::one());
 	}: { Inflation::<T>::on_initialize(block) }
 	verify {
 		assert_eq!(T::Currency::total_issuance(), issuance);

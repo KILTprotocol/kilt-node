@@ -31,7 +31,7 @@ use frame_support::{
 	},
 	BoundedVec,
 };
-use frame_system::RawOrigin;
+use frame_system::{pallet_prelude::BlockNumberFor, RawOrigin};
 use kilt_support::{
 	signature::VerifySignature,
 	traits::{GenerateBenchmarkOrigin, GetWorstCase},
@@ -70,7 +70,7 @@ benchmarks! {
 		<T as did::Config>::DidIdentifier: From<AccountId32>,
 		<T as frame_system::Config>::AccountId: From<AccountId32>,
 		<T as public_credentials::Config>::EnsureOrigin: GenerateBenchmarkOrigin<<T as frame_system::Config>::RuntimeOrigin, T::AccountId, <T as public_credentials::Config>::AttesterId>,
-		T::BlockNumber: From<u64>,
+		BlockNumberFor<T>: From<u64>,
 		<T as public_credentials:: Config>::SubjectId: GetWorstCase + sp_std::fmt::Debug + Into<Vec<u8>> ,
 		T: ctype::Config<CtypeCreatorId = <T as attestation::Config>::AttesterId>,
 		<T as delegation::Config>::DelegationNodeId: From<T::Hash>,
@@ -82,7 +82,7 @@ benchmarks! {
 		<T as delegation::Config>::Currency: Mutate<T::AccountId>,
 		<T as ctype::Config>::CtypeCreatorId: From<T::DelegationEntityId>,
 		<T as delegation::Config>::EnsureOrigin: GenerateBenchmarkOrigin<<T as frame_system::Config>::RuntimeOrigin, T::AccountId, <T as delegation::Config>::DelegationEntityId>,
-		<T as pallet_balances::Config>::HoldIdentifier: From<delegation::HoldReason> + From<pallet_did_lookup::HoldReason> + From<pallet_web3_names::HoldReason> + From<public_credentials::HoldReason>,
+		<T as pallet_balances::Config>::RuntimeHoldReason: From<delegation::HoldReason> + From<pallet_did_lookup::HoldReason> + From<pallet_web3_names::HoldReason> + From<public_credentials::HoldReason>,
 	}
 
 	attestation_migration_weight {

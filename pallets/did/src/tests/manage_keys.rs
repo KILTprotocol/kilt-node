@@ -17,6 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_support::{assert_noop, assert_ok};
+use frame_system::pallet_prelude::BlockNumberFor;
 use sp_core::Pair;
 use sp_runtime::SaturatedConversion;
 
@@ -31,7 +32,7 @@ fn check_successful_authentication_key_update() {
 	let old_did_details =
 		generate_base_did_details::<Test>(DidVerificationKey::from(old_auth_key.public()), Some(alice_did.clone()));
 
-	let new_block_number: BlockNumber = 1;
+	let new_block_number: BlockNumberFor<Test> = 1;
 
 	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
 
@@ -75,7 +76,7 @@ fn check_successful_authentication_key_max_public_keys_update() {
 	// MaxPublicKeysPerDid - MaxTotalKeyAgreementKeys many keys
 	did_details = fill_public_keys(did_details);
 
-	let new_block_number: BlockNumber = 1;
+	let new_block_number: BlockNumberFor<Test> = 1;
 
 	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
 
@@ -117,7 +118,7 @@ fn check_reused_key_authentication_key_update() {
 	// Same key for auth and del key
 	assert_ok!(old_did_details.update_delegation_key(DidVerificationKey::from(old_delegation_key.public()), 0u64));
 
-	let new_block_number: BlockNumber = 1;
+	let new_block_number: BlockNumberFor<Test> = 1;
 
 	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
 
@@ -168,7 +169,7 @@ fn check_max_keys_authentication_key_update_error() {
 	// MaxPublicKeysPerDid - MaxTotalKeyAgreementKeys many keys
 	did_details = fill_public_keys(did_details);
 
-	let new_block_number: BlockNumber = 1;
+	let new_block_number: BlockNumberFor<Test> = 1;
 
 	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
 
@@ -193,7 +194,7 @@ fn check_did_not_present_authentication_key_update_error() {
 	let alice_did = get_did_identifier_from_ed25519_key(old_auth_key.public());
 	let new_auth_key = get_ed25519_authentication_key(&AUTH_SEED_1);
 
-	let new_block_number: BlockNumber = 1;
+	let new_block_number: BlockNumberFor<Test> = 1;
 
 	let origin = build_test_origin(alice_did.clone(), alice_did);
 
@@ -218,7 +219,7 @@ fn check_successful_delegation_key_update() {
 		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(alice_did.clone()));
 	assert_ok!(old_did_details.update_delegation_key(DidVerificationKey::from(old_del_key.public()), 0u64));
 
-	let new_block_number: BlockNumber = 1;
+	let new_block_number: BlockNumberFor<Test> = 1;
 
 	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
 
@@ -264,7 +265,7 @@ fn check_successful_delegation_key_max_public_keys_update() {
 	// MaxPublicKeysPerDid - MaxTotalKeyAgreementKeys many keys
 	did_details = fill_public_keys(did_details);
 
-	let new_block_number: BlockNumber = 1;
+	let new_block_number: BlockNumberFor<Test> = 1;
 
 	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
 
@@ -304,7 +305,7 @@ fn check_reused_key_delegation_key_update() {
 	// Same key for auth and del key
 	assert_ok!(old_did_details.update_delegation_key(DidVerificationKey::from(old_del_key.public()), 0u64));
 
-	let new_block_number: BlockNumber = 1;
+	let new_block_number: BlockNumberFor<Test> = 1;
 
 	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
 
@@ -349,7 +350,7 @@ fn check_max_public_keys_delegation_key_addition_error() {
 	// MaxPublicKeysPerDid - MaxTotalKeyAgreementKeys many keys
 	did_details = fill_public_keys(did_details);
 
-	let new_block_number: BlockNumber = 1;
+	let new_block_number: BlockNumberFor<Test> = 1;
 
 	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
 
@@ -384,7 +385,7 @@ fn check_max_public_keys_reused_key_delegation_key_update_error() {
 	// MaxPublicKeysPerDid - MaxTotalKeyAgreementKeys many keys
 	did_details = fill_public_keys(did_details);
 
-	let new_block_number: BlockNumber = 1;
+	let new_block_number: BlockNumberFor<Test> = 1;
 
 	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
 
@@ -408,7 +409,7 @@ fn check_did_not_present_delegation_key_update_error() {
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let new_del_key = get_sr25519_delegation_key(&DEL_SEED_1);
 
-	let new_block_number: BlockNumber = 1;
+	let new_block_number: BlockNumberFor<Test> = 1;
 
 	let origin = build_test_origin(alice_did.clone(), alice_did);
 
@@ -523,7 +524,7 @@ fn check_successful_attestation_key_update() {
 		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(alice_did.clone()));
 	assert_ok!(old_did_details.update_attestation_key(DidVerificationKey::from(old_att_key.public()), 0u64));
 
-	let new_block_number: BlockNumber = 1;
+	let new_block_number: BlockNumberFor<Test> = 1;
 
 	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
 
@@ -568,7 +569,7 @@ fn check_successful_attestation_key_max_public_keys_update() {
 	// MaxPublicKeysPerDid - MaxTotalKeyAgreementKeys many keys
 	did_details = fill_public_keys(did_details);
 
-	let new_block_number: BlockNumber = 1;
+	let new_block_number: BlockNumberFor<Test> = 1;
 
 	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
 
@@ -607,7 +608,7 @@ fn check_reused_key_attestation_key_update() {
 	// Same key for auth and att key
 	assert_ok!(old_did_details.update_attestation_key(DidVerificationKey::from(old_att_key.public()), 0u64));
 
-	let new_block_number: BlockNumber = 1;
+	let new_block_number: BlockNumberFor<Test> = 1;
 
 	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
 
@@ -652,7 +653,7 @@ fn check_max_public_keys_attestation_key_addition_error() {
 	// MaxPublicKeysPerDid - MaxTotalKeyAgreementKeys many keys
 	did_details = fill_public_keys(did_details);
 
-	let new_block_number: BlockNumber = 1;
+	let new_block_number: BlockNumberFor<Test> = 1;
 
 	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
 
@@ -687,7 +688,7 @@ fn check_max_public_keys_reused_key_attestation_key_update_error() {
 	// MaxPublicKeysPerDid - MaxTotalKeyAgreementKeys many keys
 	did_details = fill_public_keys(did_details);
 
-	let new_block_number: BlockNumber = 1;
+	let new_block_number: BlockNumberFor<Test> = 1;
 
 	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
 
@@ -711,7 +712,7 @@ fn check_did_not_present_attestation_key_update_error() {
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let new_att_key = get_sr25519_delegation_key(&DEL_SEED_1);
 
-	let new_block_number: BlockNumber = 1;
+	let new_block_number: BlockNumberFor<Test> = 1;
 
 	let origin = build_test_origin(alice_did.clone(), alice_did);
 
@@ -823,7 +824,7 @@ fn check_successful_key_agreement_key_addition() {
 	let old_did_details =
 		generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(alice_did.clone()));
 
-	let new_block_number: BlockNumber = 1;
+	let new_block_number: BlockNumberFor<Test> = 1;
 
 	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
 
@@ -863,7 +864,7 @@ fn check_max_public_keys_key_agreement_key_addition_error() {
 	// MaxPublicKeysPerDid - MaxTotalKeyAgreementKeys many keys
 	did_details = fill_public_keys(did_details);
 
-	let new_block_number: BlockNumber = 1;
+	let new_block_number: BlockNumberFor<Test> = 1;
 
 	let origin = build_test_origin(alice_did.clone(), alice_did.clone());
 
@@ -885,7 +886,7 @@ fn check_did_not_present_key_agreement_key_addition_error() {
 	let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
 	let new_enc_key = get_x25519_encryption_key(&ENC_SEED_0);
 
-	let new_block_number: BlockNumber = 1;
+	let new_block_number: BlockNumberFor<Test> = 1;
 
 	let origin = build_test_origin(alice_did.clone(), alice_did);
 

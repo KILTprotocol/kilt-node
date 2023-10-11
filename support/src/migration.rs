@@ -49,7 +49,7 @@ where
 }
 
 #[cfg(any(feature = "mock", feature = "runtime-benchmarks"))]
-pub fn translate_holds_to_reserve<T: Config>(hold_id: T::HoldIdentifier)
+pub fn translate_holds_to_reserve<T: Config>(hold_id: T::RuntimeHoldReason)
 where
 	T: Config,
 {

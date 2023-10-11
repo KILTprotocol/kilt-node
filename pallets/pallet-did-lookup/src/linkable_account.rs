@@ -18,12 +18,14 @@
 
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
+use serde::{Deserialize, Serialize};
 use sp_runtime::AccountId32;
 
 use crate::account::AccountId20;
 
-#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, MaxEncodedLen, TypeInfo)]
+#[derive(
+	Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, MaxEncodedLen, TypeInfo, Serialize, Deserialize,
+)]
 pub enum LinkableAccountId {
 	AccountId20(AccountId20),
 	AccountId32(AccountId32),

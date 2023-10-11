@@ -22,11 +22,13 @@ use frame_support::traits::{
 };
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
+use serde::{Deserialize, Serialize};
 use sp_runtime::DispatchError;
 
 /// An amount of balance reserved by the specified address.
-#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Clone, Debug, Encode, Decode, Eq, PartialEq, Ord, PartialOrd, TypeInfo, MaxEncodedLen)]
+#[derive(
+	Clone, Debug, Encode, Decode, Eq, PartialEq, Ord, PartialOrd, TypeInfo, MaxEncodedLen, Serialize, Deserialize,
+)]
 pub struct Deposit<Account, Balance> {
 	pub owner: Account,
 	pub amount: Balance,
