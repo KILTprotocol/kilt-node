@@ -16,16 +16,18 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::traits::Get;
+use frame_support::{traits::Get, weights::Weight};
 use frame_system::pallet_prelude::BlockNumberFor;
-use parity_scale_codec::Encode;
-use sp_runtime::traits::Hash;
+use parity_scale_codec::{Decode, Encode};
+use scale_info::TypeInfo;
+use sp_runtime::{traits::Hash, DispatchError};
 
 use kilt_support::{traits::StorageDepositCollector, Deposit};
 
 use crate::{
 	AttesterOf, BalanceOf, Config, CredentialEntryOf, CredentialIdOf, CredentialSubjects, Credentials, CtypeHashOf,
 	InputClaimsContentOf, InputCredentialOf, InputSubjectIdOf, PublicCredentialDepositCollector,
+	PublicCredentialsAccessControl,
 };
 
 // Generate a public credential using a many Default::default() as possible.
@@ -52,7 +54,7 @@ pub fn generate_credential_id<T: Config>(
 /// Generates a basic credential entry using the provided input parameters
 /// and the default value for the other ones. The credential will be marked
 /// as non-revoked and with no authorization ID associated with it.
-pub(crate) fn generate_base_credential_entry<T: Config>(
+pub fn generate_base_credential_entry<T: Config>(
 	payer: T::AccountId,
 	block_number: BlockNumberFor<T>,
 	attester: T::AttesterId,
@@ -72,7 +74,7 @@ pub(crate) fn generate_base_credential_entry<T: Config>(
 	}
 }
 
-pub(crate) fn insert_public_credentials<T: Config>(
+pub fn insert_public_credentials<T: Config>(
 	subject_id: T::SubjectId,
 	credential_id: CredentialIdOf<T>,
 	credential_entry: CredentialEntryOf<T>,
@@ -87,6 +89,94 @@ pub(crate) fn insert_public_credentials<T: Config>(
 	CredentialSubjects::<T>::insert(credential_id, subject_id);
 }
 
+/// Authorize iff the subject of the origin and the provided attester id
+/// match.
+#[derive(Clone, Debug, Encode, Decode, TypeInfo, PartialEq, Eq)]
+#[scale_info(skip_type_params(T))]
+pub struct MockAccessControl<T: Config>(pub T::AttesterId);
+
+impl<T> PublicCredentialsAccessControl<T::AttesterId, T::AuthorizationId, CtypeHashOf<T>, CredentialIdOf<T>>
+	for MockAccessControl<T>
+where
+	T: Config<AuthorizationId = <T as Config>::AttesterId>,
+{
+	fn can_issue(
+		&self,
+		who: &T::AttesterId,
+		_ctype: &CtypeHashOf<T>,
+		_credential_id: &CredentialIdOf<T>,
+	) -> Result<Weight, DispatchError> {
+		if who == &self.0 {
+			Ok(Weight::zero())
+		} else {
+			Err(DispatchError::Other("Unauthorized"))
+		}
+	}
+
+	fn can_revoke(
+		&self,
+		who: &T::AttesterId,
+		_ctype: &CtypeHashOf<T>,
+		_credential_id: &CredentialIdOf<T>,
+		authorization_id: &T::AuthorizationId,
+	) -> Result<Weight, DispatchError> {
+		if authorization_id == who {
+			Ok(Weight::zero())
+		} else {
+			Err(DispatchError::Other("Unauthorized"))
+		}
+	}
+
+	fn can_unrevoke(
+		&self,
+		who: &T::AttesterId,
+		_ctype: &CtypeHashOf<T>,
+		_credential_id: &CredentialIdOf<T>,
+		authorization_id: &T::AuthorizationId,
+	) -> Result<Weight, DispatchError> {
+		if authorization_id == who {
+			Ok(Weight::zero())
+		} else {
+			Err(DispatchError::Other("Unauthorized"))
+		}
+	}
+
+	fn can_remove(
+		&self,
+		who: &T::AttesterId,
+		_ctype: &CtypeHashOf<T>,
+		_credential_id: &CredentialIdOf<T>,
+		authorization_id: &T::AuthorizationId,
+	) -> Result<Weight, DispatchError> {
+		#[cfg(test)]
+		println!("{:#?}", who);
+		#[cfg(test)]
+		println!("{:#?}", authorization_id);
+		if authorization_id == who {
+			Ok(Weight::zero())
+		} else {
+			Err(DispatchError::Other("Unauthorized"))
+		}
+	}
+
+	fn authorization_id(&self) -> T::AuthorizationId {
+		self.0.clone()
+	}
+
+	fn can_issue_weight(&self) -> Weight {
+		Weight::zero()
+	}
+	fn can_revoke_weight(&self) -> Weight {
+		Weight::zero()
+	}
+	fn can_unrevoke_weight(&self) -> Weight {
+		Weight::zero()
+	}
+	fn can_remove_weight(&self) -> Weight {
+		Weight::zero()
+	}
+}
+
 #[cfg(test)]
 pub use crate::mock::runtime::*;
 
@@ -96,7 +186,6 @@ pub(crate) mod runtime {
 	use super::*;
 
 	use frame_support::{
-		dispatch::Weight,
 		traits::{ConstU128, ConstU16, ConstU32, ConstU64},
 		weights::constants::RocksDbWeight,
 	};
@@ -106,16 +195,14 @@ pub(crate) mod runtime {
 	use sp_core::{sr25519, Pair};
 	use sp_runtime::{
 		traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
-		BuildStorage, DispatchError, MultiSignature, MultiSigner,
+		BuildStorage, MultiSignature, MultiSigner,
 	};
 
 	use kilt_support::mock::{mock_origin, SubjectId};
 
 	use ctype::{CtypeCreatorOf, CtypeEntryOf, CtypeHashOf};
 
-	use crate::{
-		self as public_credentials, Config, CredentialEntryOf, Error, InputSubjectIdOf, PublicCredentialsAccessControl,
-	};
+	use crate::{self as public_credentials, Config, CredentialEntryOf, Error, InputSubjectIdOf};
 
 	pub(crate) type Balance = u128;
 	pub(crate) type Hash = sp_core::H256;
@@ -136,7 +223,7 @@ pub(crate) mod runtime {
 		PartialOrd,
 		TypeInfo,
 	)]
-	pub struct TestSubjectId([u8; 32]);
+	pub struct TestSubjectId(pub [u8; 32]);
 
 	impl TryFrom<Vec<u8>> for TestSubjectId {
 		type Error = Error<Test>;
@@ -180,92 +267,6 @@ pub(crate) mod runtime {
 	impl From<[u8; 32]> for TestSubjectId {
 		fn from(value: [u8; 32]) -> Self {
 			Self(value)
-		}
-	}
-
-	/// Authorize iff the subject of the origin and the provided attester id
-	/// match.
-	#[derive(Clone, Debug, Encode, Decode, TypeInfo, PartialEq, Eq)]
-	#[scale_info(skip_type_params(T))]
-	pub struct MockAccessControl<T: Config>(pub T::AttesterId);
-
-	impl<T> PublicCredentialsAccessControl<T::AttesterId, T::AuthorizationId, CtypeHashOf<T>, CredentialIdOf<T>>
-		for MockAccessControl<T>
-	where
-		T: Config<AuthorizationId = <T as Config>::AttesterId>,
-	{
-		fn can_issue(
-			&self,
-			who: &T::AttesterId,
-			_ctype: &CtypeHashOf<T>,
-			_credential_id: &CredentialIdOf<T>,
-		) -> Result<Weight, DispatchError> {
-			if who == &self.0 {
-				Ok(Weight::zero())
-			} else {
-				Err(DispatchError::Other("Unauthorized"))
-			}
-		}
-
-		fn can_revoke(
-			&self,
-			who: &T::AttesterId,
-			_ctype: &CtypeHashOf<T>,
-			_credential_id: &CredentialIdOf<T>,
-			authorization_id: &T::AuthorizationId,
-		) -> Result<Weight, DispatchError> {
-			if authorization_id == who {
-				Ok(Weight::zero())
-			} else {
-				Err(DispatchError::Other("Unauthorized"))
-			}
-		}
-
-		fn can_unrevoke(
-			&self,
-			who: &T::AttesterId,
-			_ctype: &CtypeHashOf<T>,
-			_credential_id: &CredentialIdOf<T>,
-			authorization_id: &T::AuthorizationId,
-		) -> Result<Weight, DispatchError> {
-			if authorization_id == who {
-				Ok(Weight::zero())
-			} else {
-				Err(DispatchError::Other("Unauthorized"))
-			}
-		}
-
-		fn can_remove(
-			&self,
-			who: &T::AttesterId,
-			_ctype: &CtypeHashOf<T>,
-			_credential_id: &CredentialIdOf<T>,
-			authorization_id: &T::AuthorizationId,
-		) -> Result<Weight, DispatchError> {
-			println!("{:#?}", who);
-			println!("{:#?}", authorization_id);
-			if authorization_id == who {
-				Ok(Weight::zero())
-			} else {
-				Err(DispatchError::Other("Unauthorized"))
-			}
-		}
-
-		fn authorization_id(&self) -> T::AuthorizationId {
-			self.0.clone()
-		}
-
-		fn can_issue_weight(&self) -> Weight {
-			Weight::zero()
-		}
-		fn can_revoke_weight(&self) -> Weight {
-			Weight::zero()
-		}
-		fn can_unrevoke_weight(&self) -> Weight {
-			Weight::zero()
-		}
-		fn can_remove_weight(&self) -> Weight {
-			Weight::zero()
 		}
 	}
 
@@ -361,6 +362,7 @@ pub(crate) mod runtime {
 		type OriginSuccess = mock_origin::DoubleOrigin<AccountId, Self::AttesterId>;
 		type SubjectId = TestSubjectId;
 		type WeightInfo = ();
+		type BalanceMigrationManager = ();
 	}
 
 	pub(crate) const ACCOUNT_00: AccountId = AccountId::new([1u8; 32]);
@@ -372,6 +374,7 @@ pub(crate) mod runtime {
 	pub(crate) const BOB_SEED: [u8; 32] = [1u8; 32];
 
 	pub(crate) const SUBJECT_ID_00: TestSubjectId = TestSubjectId([100u8; 32]);
+	pub(crate) const SUBJECT_ID_01: TestSubjectId = TestSubjectId([1u8; 32]);
 	pub(crate) const INVALID_SUBJECT_ID: TestSubjectId = TestSubjectId([255u8; 32]);
 
 	pub(crate) fn sr25519_did_from_seed(seed: &[u8; 32]) -> SubjectId {

@@ -26,16 +26,18 @@
 use frame_support::{dispatch::Weight, traits::Get};
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
-use sp_core::H256;
-use sp_runtime::DispatchError;
+use sp_core::{sr25519, H256};
+use sp_runtime::{traits::IdentifyAccount, DispatchError, MultiSigner};
 
 use ctype::CtypeHashOf;
-use kilt_support::{traits::StorageDepositCollector, Deposit};
+use kilt_support::{mock::SubjectId, traits::StorageDepositCollector, Deposit};
 
 use crate::{
 	pallet::AuthorizationIdOf, AccountIdOf, AttestationAccessControl, AttestationDetails, AttestationDetailsOf,
 	AttesterOf, BalanceOf, ClaimHashOf, Config,
 };
+
+pub type Hash = sp_core::H256;
 
 #[cfg(test)]
 pub use crate::mock::runtime::*;
@@ -165,6 +167,14 @@ pub fn insert_attestation<T: Config>(claim_hash: ClaimHashOf<T>, details: Attest
 	}
 }
 
+pub fn sr25519_did_from_public_key(public_key: &[u8; 32]) -> SubjectId {
+	MultiSigner::from(sr25519::Public(*public_key)).into_account().into()
+}
+
+pub fn claim_hash_from_seed(seed: u64) -> Hash {
+	Hash::from_low_u64_be(seed)
+}
+
 /// Mocks that are only used internally
 #[cfg(test)]
 pub(crate) mod runtime {
@@ -172,7 +182,8 @@ pub(crate) mod runtime {
 
 	use frame_support::{parameter_types, weights::constants::RocksDbWeight};
 	use frame_system::EnsureSigned;
-	use sp_core::{ed25519, sr25519, Pair};
+
+	use sp_core::{ed25519, Pair};
 	use sp_runtime::{
 		traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
 		BuildStorage, MultiSignature, MultiSigner,
@@ -185,7 +196,6 @@ pub(crate) mod runtime {
 
 	type Block = frame_system::mocking::MockBlock<Test>;
 
-	pub type Hash = sp_core::H256;
 	pub type Balance = u128;
 	pub type Signature = MultiSignature;
 	pub type AccountPublic = <Signature as Verify>::Signer;
@@ -302,6 +312,7 @@ pub(crate) mod runtime {
 		type AttesterId = SubjectId;
 		type AuthorizationId = SubjectId;
 		type AccessControl = MockAccessControl<Self>;
+		type BalanceMigrationManager = ();
 	}
 
 	pub(crate) const ACCOUNT_00: AccountId = AccountId::new([1u8; 32]);
@@ -314,18 +325,8 @@ pub(crate) mod runtime {
 	pub const CLAIM_HASH_SEED_01: u64 = 1u64;
 	pub const CLAIM_HASH_SEED_02: u64 = 2u64;
 
-	pub fn claim_hash_from_seed(seed: u64) -> Hash {
-		Hash::from_low_u64_be(seed)
-	}
-
 	pub fn ed25519_did_from_seed(seed: &[u8; 32]) -> SubjectId {
 		MultiSigner::from(ed25519::Pair::from_seed(seed).public())
-			.into_account()
-			.into()
-	}
-
-	pub fn sr25519_did_from_seed(seed: &[u8; 32]) -> SubjectId {
-		MultiSigner::from(sr25519::Pair::from_seed(seed).public())
 			.into_account()
 			.into()
 	}

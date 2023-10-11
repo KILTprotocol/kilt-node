@@ -31,10 +31,7 @@ use crate::{Config, Error};
 #[derive(Encode, Decode, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 #[scale_info(skip_type_params(T, MinLength, MaxLength))]
 #[codec(mel_bound())]
-pub struct AsciiWeb3Name<T: Config>(
-	pub(crate) BoundedVec<u8, T::MaxNameLength>,
-	PhantomData<(T, T::MinNameLength)>,
-);
+pub struct AsciiWeb3Name<T: Config>(pub BoundedVec<u8, T::MaxNameLength>, PhantomData<(T, T::MinNameLength)>);
 
 impl<T: Config> Deref for AsciiWeb3Name<T> {
 	type Target = BoundedVec<u8, T::MaxNameLength>;
@@ -47,6 +44,12 @@ impl<T: Config> Deref for AsciiWeb3Name<T> {
 impl<T: Config> From<AsciiWeb3Name<T>> for Vec<u8> {
 	fn from(name: AsciiWeb3Name<T>) -> Self {
 		name.0.into_inner()
+	}
+}
+
+impl<T: Config> AsRef<[u8]> for AsciiWeb3Name<T> {
+	fn as_ref(&self) -> &[u8] {
+		self.0.as_ref()
 	}
 }
 

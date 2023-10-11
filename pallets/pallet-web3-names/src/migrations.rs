@@ -17,132 +17,120 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_support::{
-	traits::{Get, GetStorageVersion, OnRuntimeUpgrade, ReservableCurrency, StorageVersion},
-	weights::Weight,
+	pallet_prelude::DispatchResult,
+	traits::{fungible::Inspect, ReservableCurrency},
 };
 use kilt_support::migration::switch_reserved_to_hold;
-use sp_runtime::SaturatedConversion;
-use sp_std::marker::PhantomData;
 
-#[cfg(feature = "try-runtime")]
-use sp_runtime::TryRuntimeError;
+use crate::{AccountIdOf, Config, CurrencyOf, Error, HoldReason, Owner, Web3NameOf};
 
-use crate::{AccountIdOf, Config, CurrencyOf, HoldReason, Owner, Pallet, STORAGE_VERSION as TARGET_STORAGE_VERSION};
-
-const CURRENT_STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
-
-pub struct BalanceMigration<T>(PhantomData<T>);
-
-impl<T: Config> OnRuntimeUpgrade for BalanceMigration<T>
+pub fn update_balance_for_w3n<T: Config>(key: &Web3NameOf<T>) -> DispatchResult
 where
-	<T as Config>::Currency: ReservableCurrency<T::AccountId>,
+	<T as Config>::Currency:
+		ReservableCurrency<T::AccountId, Balance = <<T as Config>::Currency as Inspect<AccountIdOf<T>>>::Balance>,
 {
-	fn on_runtime_upgrade() -> frame_support::weights::Weight {
-		log::info!("W3n: Initiating migration");
-
-		let onchain_storage_version = Pallet::<T>::on_chain_storage_version();
-		if onchain_storage_version == CURRENT_STORAGE_VERSION {
-			TARGET_STORAGE_VERSION.put::<Pallet<T>>();
-			<T as frame_system::Config>::DbWeight::get()
-				.reads_writes(1, 1)
-				.saturating_add(do_migration::<T>())
-		} else {
-			log::info!(
-			"W3N: No migration needed. This file should be deleted. Current storage version: {:?}, Required Version for update: {:?}", 
-			onchain_storage_version,
-			CURRENT_STORAGE_VERSION
-		);
-			<T as frame_system::Config>::DbWeight::get().reads(1)
-		}
-	}
-
-	#[cfg(feature = "try-runtime")]
-	fn pre_upgrade() -> Result<sp_std::vec::Vec<u8>, TryRuntimeError> {
-		use sp_std::vec;
-
-		let has_all_user_no_holds = Owner::<T>::iter_values()
-			.map(|details: crate::Web3OwnershipOf<T>| {
-				kilt_support::migration::has_user_reserved_balance::<AccountIdOf<T>, CurrencyOf<T>>(
-					&details.deposit.owner,
-					&HoldReason::Deposit.into(),
-				)
-			})
-			.all(|user| user);
-
-		assert!(has_all_user_no_holds, "Pre Upgrade W3n: there are users with holds!");
-
-		assert_eq!(Pallet::<T>::on_chain_storage_version(), CURRENT_STORAGE_VERSION);
-
-		log::info!("W3n: Pre migration checks successful");
-
-		Ok(vec![])
-	}
-
-	#[cfg(feature = "try-runtime")]
-	fn post_upgrade(_pre_state: sp_std::vec::Vec<u8>) -> Result<(), TryRuntimeError> {
-		use frame_support::traits::fungible::InspectHold;
-		use sp_runtime::Saturating;
-		use sp_std::collections::btree_map::BTreeMap;
-
-		use crate::BalanceOf;
-
-		let mut map_user_deposit: BTreeMap<AccountIdOf<T>, BalanceOf<T>> = BTreeMap::new();
-
-		Owner::<T>::iter_values().for_each(|details| {
-			map_user_deposit
-				.entry(details.deposit.owner)
-				.and_modify(|balance| *balance = balance.saturating_add(details.deposit.amount))
-				.or_insert(details.deposit.amount);
-		});
-
-		map_user_deposit
-			.iter()
-			.try_for_each(|(who, amount)| -> Result<(), TryRuntimeError> {
-				let hold_balance: BalanceOf<T> =
-					<T as Config>::Currency::balance_on_hold(&HoldReason::Deposit.into(), who).saturated_into();
-
-				assert!(
-					amount.eq(&hold_balance),
-					"W3n: Hold balance is not matching for attestation {:?}. Expected hold: {:?}. Real hold: {:?}",
-					who,
-					amount,
-					hold_balance
-				);
-				Ok(())
-			})?;
-
-		assert_eq!(Pallet::<T>::on_chain_storage_version(), TARGET_STORAGE_VERSION);
-
-		log::info!("W3n: Post migration checks successful");
-		Ok(())
-	}
+	let details = Owner::<T>::get(key).ok_or(Error::<T>::NotFound)?;
+	switch_reserved_to_hold::<AccountIdOf<T>, CurrencyOf<T>>(
+		&details.deposit.owner,
+		&HoldReason::Deposit.into(),
+		details.deposit.amount,
+	)
 }
 
-fn do_migration<T: Config>() -> Weight
-where
-	<T as Config>::Currency: ReservableCurrency<T::AccountId>,
-{
-	Owner::<T>::iter()
-		.map(|(key, w3n_details)| -> Weight {
-			let deposit = w3n_details.deposit;
-			let result = switch_reserved_to_hold::<AccountIdOf<T>, CurrencyOf<T>>(
-				deposit.owner,
-				&HoldReason::Deposit.into(),
-				deposit.amount.saturated_into(),
-			);
+#[cfg(test)]
+pub mod test {
+	use frame_support::{
+		assert_noop,
+		traits::{fungible::InspectHold, ReservableCurrency},
+	};
+	use sp_runtime::traits::Zero;
 
-			if result.is_err() {
-				log::error!(
-					" W3n: Could not convert reserves to hold from w3n: {:?}  error: {:?}",
-					key,
-					result
+	use crate::{migrations::update_balance_for_w3n, mock::*, AccountIdOf, Config, Error, HoldReason, Owner};
+
+	#[test]
+	fn test_setup() {
+		let web3_name_00 = get_web3_name(WEB3_NAME_00_INPUT);
+		ExtBuilder::default()
+			.with_balances(vec![(ACCOUNT_00, Web3NameDeposit::get() * 2)])
+			.with_web3_names(vec![(DID_00, web3_name_00, ACCOUNT_00)])
+			.build_and_execute_with_sanity_tests(|| {
+				let hold_balance_pre_migration =
+					<<Test as Config>::Currency as InspectHold<AccountIdOf<Test>>>::balance_on_hold(
+						&HoldReason::Deposit.into(),
+						&ACCOUNT_00,
+					);
+
+				assert_eq!(hold_balance_pre_migration, <Test as Config>::Deposit::get());
+
+				kilt_support::migration::translate_holds_to_reserve::<Test>(HoldReason::Deposit.into());
+				let hold_balance = <<Test as Config>::Currency as InspectHold<AccountIdOf<Test>>>::balance_on_hold(
+					&HoldReason::Deposit.into(),
+					&ACCOUNT_00,
 				);
-			}
 
-			// Currency::reserve and Currency::hold each read and write to the DB once.
-			// Since we are uncertain about which operation may fail, in the event of an
-			// error, we assume the worst-case scenario here.
-			<T as frame_system::Config>::DbWeight::get().reads_writes(2, 2)
-		})
-		.fold(Weight::zero(), |acc, next| acc.saturating_add(next))
+				let reserved_balance =
+					<<Test as Config>::Currency as ReservableCurrency<AccountIdOf<Test>>>::reserved_balance(
+						&ACCOUNT_00,
+					);
+
+				assert!(hold_balance.is_zero());
+				assert_eq!(reserved_balance, Web3NameDeposit::get());
+			})
+	}
+
+	#[test]
+	fn test_balance_migration_w3n() {
+		let web3_name_00 = get_web3_name(WEB3_NAME_00_INPUT);
+		let web3_name_01 = get_web3_name(WEB3_NAME_01_INPUT);
+		ExtBuilder::default()
+			.with_balances(vec![(ACCOUNT_00, Web3NameDeposit::get() * 2)])
+			.with_web3_names(vec![(DID_00, web3_name_00.clone(), ACCOUNT_00)])
+			.build_and_execute_with_sanity_tests(|| {
+				kilt_support::migration::translate_holds_to_reserve::<Test>(HoldReason::Deposit.into());
+				let w3n_pre_migration = Owner::<Test>::get(web3_name_00.clone());
+
+				let reserved_pre_migration =
+					<<Test as Config>::Currency as ReservableCurrency<AccountIdOf<Test>>>::reserved_balance(
+						&ACCOUNT_00,
+					);
+
+				//w3n should be in storage
+				assert!(w3n_pre_migration.is_some());
+
+				// before the migration the deposit should be reserved.
+				assert_eq!(
+					reserved_pre_migration,
+					w3n_pre_migration.clone().unwrap().deposit.amount
+				);
+
+				assert!(update_balance_for_w3n::<Test>(&web3_name_00.clone()).is_ok());
+
+				let w3n_post_migration = Owner::<Test>::get(web3_name_00.clone());
+
+				let reserved_post_migration =
+					<<Test as Config>::Currency as ReservableCurrency<AccountIdOf<Test>>>::reserved_balance(
+						&ACCOUNT_00,
+					);
+
+				let balance_on_hold = <<Test as Config>::Currency as InspectHold<AccountIdOf<Test>>>::balance_on_hold(
+					&HoldReason::Deposit.into(),
+					&ACCOUNT_00,
+				);
+
+				//Delegation should be still in the storage
+				assert!(w3n_post_migration.is_some());
+
+				// ... and it should be the same
+				assert_eq!(w3n_post_migration, w3n_pre_migration);
+
+				// Since reserved balance count to hold balance, it should not be zero
+				assert!(!reserved_post_migration.is_zero());
+
+				// ... and be as much as the hold balance
+				assert_eq!(reserved_post_migration, balance_on_hold);
+
+				// should throw error if w3n does not exist
+				assert_noop!(update_balance_for_w3n::<Test>(&web3_name_01), Error::<Test>::NotFound);
+			})
+	}
 }
