@@ -18,7 +18,7 @@
 
 use super::*;
 
-use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
+use frame_benchmarking::{account, benchmarks};
 use frame_support::{
 	dispatch::DispatchErrorWithPostInfo,
 	storage::bounded_btree_set::BoundedBTreeSet,
@@ -416,8 +416,6 @@ benchmarks! {
 		};
 
 	}: { ac.can_attest(&leaf_acc, &ctype, &claim).expect("Should be allowed") }
-	verify {
-	}
 
 	can_revoke {
 		let c in 1 .. T::MaxParentChecks::get();
@@ -435,8 +433,6 @@ benchmarks! {
 		};
 
 	}: { ac.can_revoke(&root_acc, &ctype, &claim, &leaf_id).expect("Should be allowed") }
-	verify {
-	}
 
 	can_remove {
 		let c in 1 .. T::MaxParentChecks::get();
@@ -454,8 +450,6 @@ benchmarks! {
 		};
 
 	}: { ac.can_remove(&root_acc, &ctype, &claim, &leaf_id).expect("Should be allowed") }
-	verify {
-	}
 
 	change_deposit_owner {
 		let deposit_owner_old: T::AccountId = account("sender", 0, SEED);
@@ -493,12 +487,10 @@ benchmarks! {
 
 		let origin = RawOrigin::Signed(deposit_owner);
 	}: _(origin, hierarchy_id)
-	verify {
-	}
-}
 
-impl_benchmark_test_suite! {
-	Pallet,
-	crate::mock::runtime::ExtBuilder::default().build_with_keystore(),
-	crate::mock::runtime::Test
+	impl_benchmark_test_suite!(
+		Pallet,
+		crate::mock::runtime::ExtBuilder::default().build_with_keystore(),
+		crate::mock::runtime::Test
+	)
 }

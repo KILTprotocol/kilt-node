@@ -2,13 +2,23 @@
 Please include a summary of the changes provided with this pull request and which issue has been fixed.
 Please also provide some context if necessary.
 
-## How to test:
-Please provide a brief step-by-step instruction.
-If necessary provide information about dependencies (specific configuration, branches, database dumps, etc.)
+## Metadata Diff to Develop Branch
 
-- Step 1
-- Step 2
-- etc.
+<details>
+<summary>Peregrine Diff</summary>
+
+```
+```
+
+</details>
+
+<details>
+<summary>Spiritnet Diff</summary>
+
+```
+```
+
+</details>
 
 ## Checklist:
 
