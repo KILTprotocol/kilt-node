@@ -27,8 +27,7 @@ use frame_support::{
 	},
 	BoundedVec,
 };
-use frame_system::pallet_prelude::BlockNumberFor;
-use frame_system::RawOrigin;
+use frame_system::{pallet_prelude::BlockNumberFor, RawOrigin};
 use sp_runtime::app_crypto::sr25519;
 
 use kilt_support::{traits::GenerateBenchmarkOrigin, Deposit};
