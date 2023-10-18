@@ -24,7 +24,7 @@ use crate::{self as attestation, mock::*, AttesterOf, Config, HoldReason};
 
 #[test]
 fn test_remove() {
-	let attester: AttesterOf<Test> = sr25519_did_from_seed(&ALICE_SEED);
+	let attester: AttesterOf<Test> = sr25519_did_from_public_key(&ALICE_SEED);
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 	let attestation = generate_base_attestation::<Test>(attester.clone(), ACCOUNT_00);
 	let authorization_info = None;
@@ -45,8 +45,8 @@ fn test_remove() {
 
 #[test]
 fn test_remove_authorized() {
-	let attester: AttesterOf<Test> = sr25519_did_from_seed(&ALICE_SEED);
-	let revoker: AttesterOf<Test> = sr25519_did_from_seed(&BOB_SEED);
+	let attester: AttesterOf<Test> = sr25519_did_from_public_key(&ALICE_SEED);
+	let revoker: AttesterOf<Test> = sr25519_did_from_public_key(&BOB_SEED);
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 	let mut attestation = generate_base_attestation::<Test>(attester, ACCOUNT_00);
 	attestation.authorization_id = Some(revoker.clone());
@@ -69,8 +69,8 @@ fn test_remove_authorized() {
 
 #[test]
 fn test_remove_unauthorized() {
-	let attester: AttesterOf<Test> = sr25519_did_from_seed(&ALICE_SEED);
-	let evil: AttesterOf<Test> = sr25519_did_from_seed(&BOB_SEED);
+	let attester: AttesterOf<Test> = sr25519_did_from_public_key(&ALICE_SEED);
+	let evil: AttesterOf<Test> = sr25519_did_from_public_key(&BOB_SEED);
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 	let attestation = generate_base_attestation::<Test>(attester.clone(), ACCOUNT_00);
 	let authorization_info = Some(MockAccessControl(evil.clone()));
@@ -93,7 +93,7 @@ fn test_remove_unauthorized() {
 
 #[test]
 fn test_remove_not_found() {
-	let attester: AttesterOf<Test> = sr25519_did_from_seed(&ALICE_SEED);
+	let attester: AttesterOf<Test> = sr25519_did_from_public_key(&ALICE_SEED);
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 	let attestation = generate_base_attestation::<Test>(attester.clone(), ACCOUNT_00);
 

@@ -56,6 +56,7 @@ pallet-inflation = {path = "pallets/pallet-inflation", default-features = false}
 pallet-web3-names = {path = "pallets/pallet-web3-names", default-features = false}
 parachain-staking = {path = "pallets/parachain-staking", default-features = false}
 public-credentials = {path = "pallets/public-credentials", default-features = false}
+pallet-migration = {path = "pallets/pallet-migration", default-features = false}
 
 # Internal support (with default disabled)
 kilt-asset-dids = {path = "crates/assets", default-features = false}

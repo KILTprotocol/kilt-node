@@ -19,7 +19,7 @@
 use frame_benchmarking::{account, benchmarks, Zero};
 use frame_support::{
 	dispatch::RawOrigin,
-	traits::{fungible::Mutate, Get},
+	traits::{fungible::Mutate, Get, ReservableCurrency},
 	BoundedVec,
 };
 use frame_system::pallet_prelude::BlockNumberFor;
@@ -63,6 +63,7 @@ benchmarks! {
 		<T as Config>::CredentialId: Default,
 		BlockNumberFor<T>: From<u64>,
 		<T as Config>::Currency: Mutate<T::AccountId>,
+		<T as Config>::Currency: ReservableCurrency<T::AccountId>,
 	}
 
 	add {

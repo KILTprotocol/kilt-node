@@ -63,7 +63,7 @@ pub mod pallet {
 	};
 	use frame_system::pallet_prelude::*;
 	use kilt_support::{
-		traits::{CallSources, StorageDepositCollector},
+		traits::{BalanceMigrationManager, CallSources, StorageDepositCollector},
 		Deposit,
 	};
 	use sp_runtime::traits::{BlockNumberProvider, MaybeSerializeDeserialize};
@@ -83,7 +83,9 @@ pub mod pallet {
 	/// The connection record type.
 	pub(crate) type ConnectionRecordOf<T> = ConnectionRecord<DidIdentifierOf<T>, AccountIdOf<T>, BalanceOf<T>>;
 
-	pub(crate) const STORAGE_VERSION: StorageVersion = StorageVersion::new(5);
+	pub(crate) type BalanceMigrationManagerOf<T> = <T as Config>::BalanceMigrationManager;
+
+	const STORAGE_VERSION: StorageVersion = StorageVersion::new(4);
 
 	#[pallet::composite_enum]
 	pub enum HoldReason {
@@ -115,6 +117,9 @@ pub mod pallet {
 
 		/// Weight information for extrinsics in this pallet.
 		type WeightInfo: WeightInfo;
+
+		/// Migration manager to handle new created entries
+		type BalanceMigrationManager: BalanceMigrationManager<AccountIdOf<Self>, BalanceOf<Self>>;
 	}
 
 	#[pallet::pallet]
@@ -373,7 +378,10 @@ pub mod pallet {
 			let record = ConnectedDids::<T>::get(&account).ok_or(Error::<T>::NotFound)?;
 			ensure!(record.did == subject, Error::<T>::NotAuthorized);
 
-			LinkableAccountDepositCollector::<T>::change_deposit_owner(&account, source.sender())
+			LinkableAccountDepositCollector::<T>::change_deposit_owner::<BalanceMigrationManagerOf<T>>(
+				&account,
+				source.sender(),
+			)
 		}
 
 		/// Updates the deposit amount to the current deposit rate.
@@ -387,7 +395,7 @@ pub mod pallet {
 			let record = ConnectedDids::<T>::get(&account).ok_or(Error::<T>::NotFound)?;
 			ensure!(record.deposit.owner == source, Error::<T>::NotAuthorized);
 
-			LinkableAccountDepositCollector::<T>::update_deposit(&account)
+			LinkableAccountDepositCollector::<T>::update_deposit::<BalanceMigrationManagerOf<T>>(&account)
 		}
 
 		// Old call that was used to migrate
@@ -396,7 +404,7 @@ pub mod pallet {
 	}
 
 	impl<T: Config> Pallet<T> {
-		pub(crate) fn add_association(
+		pub fn add_association(
 			sender: AccountIdOf<T>,
 			did_identifier: DidIdentifierOf<T>,
 			account: LinkableAccountId,
@@ -411,6 +419,9 @@ pub mod pallet {
 			};
 
 			LinkableAccountDepositCollector::<T>::create_deposit(record.clone().deposit.owner, record.deposit.amount)?;
+			<T as Config>::BalanceMigrationManager::exclude_key_from_migration(&ConnectedDids::<T>::hashed_key_for(
+				&account,
+			));
 
 			ConnectedDids::<T>::mutate(&account, |did_entry| -> DispatchResult {
 				if let Some(old_connection) = did_entry.replace(record) {
@@ -428,7 +439,19 @@ pub mod pallet {
 
 		pub(crate) fn remove_association(account: LinkableAccountId) -> DispatchResult {
 			if let Some(connection) = ConnectedDids::<T>::take(&account) {
-				LinkableAccountDepositCollector::<T>::free_deposit(connection.deposit)?;
+				let is_key_migrated = <T as Config>::BalanceMigrationManager::is_key_migrated(
+					&ConnectedDids::<T>::hashed_key_for(&account),
+				);
+
+				if is_key_migrated {
+					LinkableAccountDepositCollector::<T>::free_deposit(connection.deposit)?;
+				} else {
+					<T as Config>::BalanceMigrationManager::release_reserved_deposit(
+						&connection.deposit.owner,
+						&connection.deposit.amount,
+					)
+				}
+
 				ConnectedAccounts::<T>::remove(&connection.did, &account);
 				Self::deposit_event(Event::AssociationRemoved(account, connection.did));
 				Ok(())
@@ -447,6 +470,10 @@ pub mod pallet {
 
 		fn reason() -> Self::Reason {
 			HoldReason::Deposit
+		}
+
+		fn get_hashed_key(key: &LinkableAccountId) -> Result<sp_std::vec::Vec<u8>, DispatchError> {
+			Ok(ConnectedDids::<T>::hashed_key_for(key))
 		}
 
 		fn deposit(

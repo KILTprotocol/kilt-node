@@ -173,6 +173,7 @@ impl Config for Test {
 	type MaxServiceUrlLength = MaxServiceUrlLength;
 	type MaxNumberOfTypesPerService = MaxNumberOfTypesPerService;
 	type MaxNumberOfUrlsPerService = MaxNumberOfUrlsPerService;
+	type BalanceMigrationManager = ();
 }
 
 parameter_types! {

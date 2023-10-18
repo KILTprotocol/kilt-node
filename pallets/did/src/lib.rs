@@ -92,8 +92,8 @@ pub mod service_endpoints;
 
 #[cfg(test)]
 mod mock;
-#[cfg(any(feature = "runtime-benchmarks", test))]
-mod mock_utils;
+#[cfg(any(feature = "runtime-benchmarks", test, feature = "mock"))]
+pub mod mock_utils;
 #[cfg(test)]
 mod tests;
 
@@ -149,7 +149,7 @@ pub mod pallet {
 	};
 	use frame_system::pallet_prelude::*;
 	use kilt_support::{
-		traits::{CallSources, StorageDepositCollector},
+		traits::{BalanceMigrationManager, CallSources, StorageDepositCollector},
 		Deposit,
 	};
 	use service_endpoints::DidEndpoint;
@@ -164,7 +164,7 @@ pub mod pallet {
 	};
 
 	/// The current storage version.
-	pub(crate) const STORAGE_VERSION: StorageVersion = StorageVersion::new(5);
+	const STORAGE_VERSION: StorageVersion = StorageVersion::new(4);
 
 	/// Reference to a payload of data of variable size.
 	pub type Payload = [u8];
@@ -315,6 +315,9 @@ pub mod pallet {
 
 		/// Weight information for extrinsics in this pallet.
 		type WeightInfo: WeightInfo;
+
+		/// Migration manager to handle new created entries
+		type BalanceMigrationManager: BalanceMigrationManager<AccountIdOf<Self>, BalanceOf<Self>>;
 	}
 
 	#[pallet::pallet]
@@ -1102,7 +1105,7 @@ pub mod pallet {
 			let subject = source.subject();
 			let sender = source.sender();
 
-			DidDepositCollector::<T>::change_deposit_owner(&subject, sender)?;
+			DidDepositCollector::<T>::change_deposit_owner::<<T as Config>::BalanceMigrationManager>(&subject, sender)?;
 
 			Ok(())
 		}
@@ -1269,6 +1272,10 @@ pub mod pallet {
 			DidDepositCollector::<T>::create_deposit(sender.clone(), did_entry.deposit.amount)
 				.map_err(|_| Error::<T>::UnableToPayFees)?;
 
+			<T as Config>::BalanceMigrationManager::exclude_key_from_migration(&Did::<T>::hashed_key_for(
+				&did_identifier,
+			));
+
 			Did::<T>::insert(&did_identifier, did_entry);
 
 			Pallet::<T>::deposit_event(Event::DidCreated(sender, did_identifier));
@@ -1292,20 +1299,46 @@ pub mod pallet {
 		fn try_update_deposit(did_details: &mut DidDetails<T>, did_subject: &DidIdentifierOf<T>) -> DispatchResult {
 			let endpoint_count = DidEndpointsCount::<T>::get(did_subject);
 			let new_required_deposit = did_details.calculate_deposit(endpoint_count);
+			let hashed_key = Did::<T>::hashed_key_for(did_subject);
+
+			let is_key_migrated = <T as Config>::BalanceMigrationManager::is_key_migrated(&hashed_key);
 
 			match new_required_deposit.cmp(&did_details.deposit.amount) {
 				core::cmp::Ordering::Greater => {
 					let deposit_to_reserve = new_required_deposit.saturating_sub(did_details.deposit.amount);
-					DidDepositCollector::<T>::create_deposit(did_details.deposit.clone().owner, deposit_to_reserve)?;
-					did_details.deposit.amount = did_details.deposit.amount.saturating_add(deposit_to_reserve);
+
+					if is_key_migrated {
+						DidDepositCollector::<T>::create_deposit(
+							did_details.deposit.clone().owner,
+							deposit_to_reserve,
+						)?;
+						did_details.deposit.amount = did_details.deposit.amount.saturating_add(deposit_to_reserve);
+					} else {
+						<T as Config>::BalanceMigrationManager::release_reserved_deposit(
+							&did_details.deposit.owner,
+							&did_details.deposit.amount,
+						);
+						DidDepositCollector::<T>::create_deposit(
+							did_details.deposit.clone().owner,
+							new_required_deposit,
+						)?;
+						<T as Config>::BalanceMigrationManager::exclude_key_from_migration(&hashed_key);
+						did_details.deposit.amount = new_required_deposit;
+					}
 				}
 				core::cmp::Ordering::Less => {
 					let deposit_to_release = did_details.deposit.amount.saturating_sub(new_required_deposit);
-
-					DidDepositCollector::<T>::free_deposit(Deposit {
-						owner: did_details.deposit.owner.clone(),
-						amount: deposit_to_release,
-					})?;
+					if is_key_migrated {
+						DidDepositCollector::<T>::free_deposit(Deposit {
+							owner: did_details.deposit.owner.clone(),
+							amount: deposit_to_release,
+						})?;
+					} else {
+						<T as Config>::BalanceMigrationManager::release_reserved_deposit(
+							&did_details.deposit.owner,
+							&deposit_to_release,
+						);
+					}
 					did_details.deposit.amount = did_details.deposit.amount.saturating_sub(deposit_to_release);
 				}
 				_ => (),
@@ -1453,7 +1486,17 @@ pub mod pallet {
 			let did_entry = Did::<T>::take(&did_subject).ok_or(Error::<T>::NotFound)?;
 
 			DidEndpointsCount::<T>::remove(&did_subject);
-			DidDepositCollector::<T>::free_deposit(did_entry.deposit)?;
+
+			let is_key_migrated =
+				<T as Config>::BalanceMigrationManager::is_key_migrated(&Did::<T>::hashed_key_for(did_subject.clone()));
+			if is_key_migrated {
+				DidDepositCollector::<T>::free_deposit(did_entry.deposit)?;
+			} else {
+				<T as Config>::BalanceMigrationManager::release_reserved_deposit(
+					&did_entry.deposit.owner,
+					&did_entry.deposit.amount,
+				)
+			}
 			// Mark as deleted to prevent potential replay-attacks of re-adding a previously
 			// deleted DID.
 			DidBlacklist::<T>::insert(&did_subject, ());
@@ -1475,6 +1518,10 @@ pub mod pallet {
 
 		fn reason() -> Self::Reason {
 			HoldReason::Deposit
+		}
+
+		fn get_hashed_key(key: &DidIdentifierOf<T>) -> Result<sp_std::vec::Vec<u8>, DispatchError> {
+			Ok(Did::<T>::hashed_key_for(key))
 		}
 
 		fn deposit(

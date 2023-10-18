@@ -24,7 +24,7 @@ use crate::{self as attestation, mock::*, AttesterOf, Config, HoldReason};
 
 #[test]
 fn test_revoke_remove() {
-	let revoker: AttesterOf<Test> = sr25519_did_from_seed(&ALICE_SEED);
+	let revoker: AttesterOf<Test> = sr25519_did_from_public_key(&ALICE_SEED);
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 	let attestation = generate_base_attestation::<Test>(revoker.clone(), ACCOUNT_00);
 
@@ -59,8 +59,8 @@ fn test_revoke_remove() {
 
 #[test]
 fn test_authorized_revoke() {
-	let attester: AttesterOf<Test> = sr25519_did_from_seed(&ALICE_SEED);
-	let revoker: AttesterOf<Test> = sr25519_did_from_seed(&BOB_SEED);
+	let attester: AttesterOf<Test> = sr25519_did_from_public_key(&ALICE_SEED);
+	let revoker: AttesterOf<Test> = sr25519_did_from_public_key(&BOB_SEED);
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 	let authorization_info = Some(MockAccessControl(revoker.clone()));
 	let mut attestation = generate_base_attestation::<Test>(attester.clone(), ACCOUNT_00);
@@ -90,9 +90,9 @@ fn test_authorized_revoke() {
 
 #[test]
 fn test_unauthorized_revoke() {
-	let attester: AttesterOf<Test> = sr25519_did_from_seed(&ALICE_SEED);
-	let revoker: AttesterOf<Test> = sr25519_did_from_seed(&BOB_SEED);
-	let evil: AttesterOf<Test> = sr25519_did_from_seed(&CHARLIE_SEED);
+	let attester: AttesterOf<Test> = sr25519_did_from_public_key(&ALICE_SEED);
+	let revoker: AttesterOf<Test> = sr25519_did_from_public_key(&BOB_SEED);
+	let evil: AttesterOf<Test> = sr25519_did_from_public_key(&CHARLIE_SEED);
 
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 	let authorization_info = Some(MockAccessControl(revoker.clone()));
@@ -113,7 +113,7 @@ fn test_unauthorized_revoke() {
 
 #[test]
 fn test_revoke_not_found() {
-	let revoker: AttesterOf<Test> = sr25519_did_from_seed(&ALICE_SEED);
+	let revoker: AttesterOf<Test> = sr25519_did_from_public_key(&ALICE_SEED);
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 	let authorization_info = Some(MockAccessControl(revoker.clone()));
 	let attestation = generate_base_attestation::<Test>(revoker.clone(), ACCOUNT_00);
@@ -135,7 +135,7 @@ fn test_revoke_not_found() {
 
 #[test]
 fn test_already_revoked() {
-	let revoker: AttesterOf<Test> = sr25519_did_from_seed(&ALICE_SEED);
+	let revoker: AttesterOf<Test> = sr25519_did_from_public_key(&ALICE_SEED);
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 	let authorization_info = Some(MockAccessControl(revoker.clone()));
 

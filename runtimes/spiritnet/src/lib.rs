@@ -186,6 +186,12 @@ impl pallet_multisig::Config for Runtime {
 	type WeightInfo = weights::pallet_multisig::WeightInfo<Runtime>;
 }
 
+impl pallet_migration::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type Currency = Balances;
+	type MaxMigrationsPerPallet = constants::pallet_migration::MaxMigrationsPerPallet;
+	type WeightInfo = weights::pallet_migration::WeightInfo<Runtime>;
+}
 impl pallet_indices::Config for Runtime {
 	type AccountIndex = Nonce;
 	type Currency = pallet_balances::Pallet<Runtime>;
@@ -544,6 +550,7 @@ impl attestation::Config for Runtime {
 	type AttesterId = DidIdentifier;
 	type AuthorizationId = AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>;
 	type AccessControl = PalletAuthorize<DelegationAc<Runtime>>;
+	type BalanceMigrationManager = Migration;
 }
 
 impl delegation::Config for Runtime {
@@ -573,6 +580,7 @@ impl delegation::Config for Runtime {
 	type WeightInfo = weights::delegation::WeightInfo<Runtime>;
 	type Currency = Balances;
 	type Deposit = constants::delegation::DelegationDeposit;
+	type BalanceMigrationManager = Migration;
 }
 
 impl ctype::Config for Runtime {
@@ -623,6 +631,7 @@ impl did::Config for Runtime {
 	type MaxNumberOfTypesPerService = constants::did::MaxNumberOfTypesPerService;
 	type MaxNumberOfUrlsPerService = constants::did::MaxNumberOfUrlsPerService;
 	type WeightInfo = weights::did::WeightInfo<Runtime>;
+	type BalanceMigrationManager = Migration;
 }
 
 impl pallet_did_lookup::Config for Runtime {
@@ -638,6 +647,7 @@ impl pallet_did_lookup::Config for Runtime {
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
 
 	type WeightInfo = weights::pallet_did_lookup::WeightInfo<Runtime>;
+	type BalanceMigrationManager = Migration;
 }
 
 impl pallet_web3_names::Config for Runtime {
@@ -653,6 +663,7 @@ impl pallet_web3_names::Config for Runtime {
 	type Web3Name = pallet_web3_names::web3_name::AsciiWeb3Name<Runtime>;
 	type Web3NameOwner = DidIdentifier;
 	type WeightInfo = weights::pallet_web3_names::WeightInfo<Runtime>;
+	type BalanceMigrationManager = Migration;
 }
 
 impl pallet_inflation::Config for Runtime {
@@ -712,6 +723,7 @@ impl public_credentials::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type SubjectId = runtime_common::assets::AssetDid;
 	type WeightInfo = weights::public_credentials::WeightInfo<Runtime>;
+	type BalanceMigrationManager = Migration;
 }
 
 /// The type used to represent the kinds of proxying allowed.
@@ -980,6 +992,7 @@ construct_runtime! {
 		DidLookup: pallet_did_lookup = 67,
 		Web3Names: pallet_web3_names = 68,
 		PublicCredentials: public_credentials = 69,
+		Migration: pallet_migration = 70,
 
 		// Parachains pallets. Start indices at 80 to leave room.
 
@@ -1081,13 +1094,7 @@ pub type Executive = frame_executive::Executive<
 	AllPalletsWithSystem,
 	(
 		runtime_common::migrations::BumpStorageVersion<Runtime>,
-		attestation::migrations::BalanceMigration<Runtime>,
-		delegation::migrations::BalanceMigration<Runtime>,
-		did::migrations::BalanceMigration<Runtime>,
-		pallet_did_lookup::migrations::BalanceMigration<Runtime>,
-		pallet_web3_names::migrations::BalanceMigration<Runtime>,
 		parachain_staking::migrations::BalanceMigration<Runtime>,
-		public_credentials::migrations::BalanceMigration<Runtime>,
 	),
 >;
 
@@ -1121,6 +1128,7 @@ mod benches {
 		[pallet_web3_names, Web3Names]
 		[public_credentials, PublicCredentials]
 		[pallet_xcm, PolkadotXcm]
+		[pallet_migration, Migration]
 		[frame_benchmarking::baseline, Baseline::<Runtime>]
 	);
 }

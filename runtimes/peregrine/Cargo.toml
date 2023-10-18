@@ -41,6 +41,7 @@ pallet-configuration.workspace = true
 pallet-did-lookup.workspace = true
 pallet-inflation.workspace = true
 pallet-web3-names.workspace = true
+pallet-migration.workspace = true
 parachain-staking.workspace = true
 public-credentials.workspace = true
 runtime-common.workspace = true
@@ -134,6 +135,7 @@ runtime-benchmarks = [
   "pallet-membership/runtime-benchmarks",
   "pallet-sudo/runtime-benchmarks",
   "pallet-multisig/runtime-benchmarks",
+  "pallet-migration/runtime-benchmarks",
   "pallet-preimage/runtime-benchmarks",
   "pallet-proxy/runtime-benchmarks",
   "pallet-scheduler/runtime-benchmarks",
@@ -190,6 +192,7 @@ std = [
   "pallet-inflation/std",
   "pallet-membership/std",
   "pallet-multisig/std",
+  "pallet-migration/std",
   "pallet-preimage/std",
   "pallet-proxy/std",
   "pallet-scheduler/std",
@@ -251,6 +254,7 @@ try-runtime = [
   "pallet-inflation/try-runtime",
   "pallet-membership/try-runtime",
   "pallet-multisig/try-runtime",
+  "pallet-migration/try-runtime",
   "pallet-preimage/try-runtime",
   "pallet-proxy/try-runtime",
   "pallet-scheduler/try-runtime",

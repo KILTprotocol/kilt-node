@@ -16,6 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use ctype::{mock as ctype_mock, CtypeHashOf};
 use frame_support::{
 	storage::bounded_btree_set::BoundedBTreeSet,
 	traits::{
@@ -23,10 +24,8 @@ use frame_support::{
 		Get,
 	},
 };
-use sp_core::H256;
-
-use ctype::{mock as ctype_mock, CtypeHashOf};
 use kilt_support::Deposit;
+use sp_core::H256;
 
 use crate::{
 	self as delegation, AccountIdOf, Config, CurrencyOf, DelegationDetails, DelegationHierarchyDetails, DelegationNode,
@@ -85,13 +84,8 @@ pub fn initialize_pallet<T>(
 		CurrencyOf::<T>::set_balance(&deposit_owner, balance + <T as Config>::Deposit::get());
 
 		// reserve deposit and store
-		delegation::Pallet::<T>::create_and_store_new_hierarchy(
-			root_id,
-			details,
-			hierarchy_owner,
-			deposit_owner.clone(),
-		)
-		.expect("Each deposit owner should have sufficient balance to create a hierarchy");
+		delegation::Pallet::<T>::create_and_store_new_hierarchy(root_id, details, hierarchy_owner, deposit_owner)
+			.expect("Should not exceed max children");
 	}
 
 	for del in delegations {
@@ -107,12 +101,13 @@ pub fn initialize_pallet<T>(
 		CurrencyOf::<T>::set_balance(&deposit_owner, balance + <T as Config>::Deposit::get());
 
 		// reserve deposit and store
+
 		delegation::Pallet::<T>::store_delegation_under_parent(
 			del.0,
 			del.1.clone(),
 			parent_node_id,
 			parent_node.clone(),
-			deposit_owner,
+			deposit_owner.clone(),
 		)
 		.expect("Should not exceed max children");
 	}
@@ -320,6 +315,7 @@ pub(crate) mod runtime {
 		type AttesterId = SubjectId;
 		type AuthorizationId = DelegationNodeIdOf<Self>;
 		type AccessControl = DelegationAc<Self>;
+		type BalanceMigrationManager = ();
 	}
 
 	parameter_types! {
@@ -327,7 +323,7 @@ pub(crate) mod runtime {
 		pub const MaxParentChecks: u32 = 5;
 		pub const MaxRevocations: u32 = 5;
 		pub const MaxRemovals: u32 = 5;
-		#[derive(Clone, TypeInfo)]
+		#[derive(Clone, TypeInfo, PartialEq, Debug)]
 		pub const MaxChildren: u32 = 1000;
 		pub const DepositMock: Balance = DELEGATION_DEPOSIT;
 	}
@@ -349,6 +345,7 @@ pub(crate) mod runtime {
 		type Currency = Balances;
 		type Deposit = DepositMock;
 		type WeightInfo = ();
+		type BalanceMigrationManager = ();
 	}
 
 	pub(crate) const ACCOUNT_00: AccountId = AccountId::new([1u8; 32]);

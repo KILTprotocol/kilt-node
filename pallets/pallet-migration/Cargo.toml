@@ -1,0 +1,113 @@
+[package]
+authors.workspace = true
+description = "Pallet for lazy migration"
+documentation.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license-file.workspace = true
+name = "pallet-migration"
+readme.workspace = true
+repository.workspace = true
+version.workspace = true
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dev-dependencies]
+env_logger.workspace = true
+kilt-support = {workspace = true, features = ["mock", "try-runtime"]}
+frame-benchmarking = {workspace = true, features = ["std"]}
+pallet-aura = {workspace = true, features = ["std"]}
+pallet-timestamp = {workspace = true, features = ["std"]}
+sp-consensus-aura = {workspace = true, features = ["std"]}
+pallet-session = {workspace = true, features = ["std"]}
+attestation = {workspace = true, features = ["mock"]}
+ctype = {workspace = true, features = ["mock"]}
+delegation = {workspace = true, features = ["mock"]} 
+did = {workspace = true, features = ["mock"]} 
+public-credentials = {workspace = true, features = ["mock"]} 
+
+[dependencies]
+# Internal dependencies
+attestation.workspace = true
+delegation.workspace = true
+did.workspace = true
+pallet-did-lookup.workspace = true
+pallet-web3-names.workspace = true
+parachain-staking.workspace = true
+public-credentials.workspace = true
+runtime-common.workspace = true 
+kilt-support.workspace = true
+
+ctype = {workspace = true, optional = true}
+
+# Substrate dependencies
+frame-support.workspace = true
+frame-system.workspace = true
+pallet-balances = {workspace = true, optional = true}
+parity-scale-codec = {workspace = true, features = ["derive"]}
+scale-info = {workspace = true, features = ["derive"]}
+sp-core.workspace = true
+sp-io.workspace = true
+sp-runtime.workspace = true
+sp-std.workspace = true
+
+# Benchmarking dependencies
+frame-benchmarking = {workspace = true, optional = true}
+sp-keystore = {workspace = true, optional = true}
+
+[features]
+default = ["std"]
+runtime-benchmarks = [
+  "frame-benchmarking",
+  "frame-support/runtime-benchmarks",
+  "frame-system/runtime-benchmarks",
+  "did/runtime-benchmarks",
+  "attestation/runtime-benchmarks",
+  "delegation/runtime-benchmarks",
+  "pallet-did-lookup/runtime-benchmarks",
+  "pallet-web3-names/runtime-benchmarks",
+  "parachain-staking/runtime-benchmarks",
+  "public-credentials/runtime-benchmarks",
+  "runtime-common/runtime-benchmarks", 
+  "ctype/runtime-benchmarks",
+  "kilt-support/runtime-benchmarks",
+  "pallet-balances/runtime-benchmarks",
+  "sp-runtime/runtime-benchmarks"
+]
+
+std = [
+  "parity-scale-codec/std",
+  "frame-support/std",
+  "frame-system/std",
+  "scale-info/std",
+  "sp-core/std",
+  "sp-io/std",
+  "sp-runtime/std",
+  "sp-std/std",
+  "did/std",
+  "attestation/std",
+  "delegation/std",
+  "pallet-did-lookup/std",
+  "pallet-web3-names/std",
+  "parachain-staking/std",
+  "public-credentials/std",
+  "runtime-common/std",
+  "ctype/std",
+  "pallet-balances/std",
+]
+
+try-runtime = [
+  "frame-support/try-runtime",
+  "frame-system/try-runtime",
+  "did/try-runtime",
+  "attestation/try-runtime",
+  "delegation/try-runtime",
+  "pallet-did-lookup/try-runtime",
+  "pallet-web3-names/try-runtime",
+  "parachain-staking/try-runtime",
+  "public-credentials/try-runtime",
+  "runtime-common/try-runtime",
+  "ctype/try-runtime",
+  "pallet-balances/try-runtime",
+]
