@@ -18,12 +18,14 @@
 
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
+use serde::{Deserialize, Serialize};
 use sp_runtime::AccountId32;
 
 use crate::account::AccountId20;
 
-#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, MaxEncodedLen, TypeInfo)]
+#[derive(
+	Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, MaxEncodedLen, TypeInfo, Serialize, Deserialize,
+)]
 pub enum LinkableAccountId {
 	AccountId20(AccountId20),
 	AccountId32(AccountId32),
@@ -38,6 +40,27 @@ impl From<AccountId20> for LinkableAccountId {
 impl From<AccountId32> for LinkableAccountId {
 	fn from(account_id: AccountId32) -> Self {
 		Self::AccountId32(account_id)
+	}
+}
+
+impl From<[u8; 20]> for LinkableAccountId {
+	fn from(account_id: [u8; 20]) -> Self {
+		Self::AccountId20(account_id.into())
+	}
+}
+
+impl From<[u8; 32]> for LinkableAccountId {
+	fn from(account_id: [u8; 32]) -> Self {
+		Self::AccountId32(account_id.into())
+	}
+}
+
+impl AsRef<[u8]> for LinkableAccountId {
+	fn as_ref(&self) -> &[u8] {
+		match self {
+			LinkableAccountId::AccountId20(value) => &value.0,
+			LinkableAccountId::AccountId32(value) => value.as_ref(),
+		}
 	}
 }
 

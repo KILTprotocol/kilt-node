@@ -16,141 +16,154 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::{
-	traits::{Get, GetStorageVersion, OnRuntimeUpgrade, ReservableCurrency, StorageVersion},
-	weights::Weight,
-};
+use frame_support::traits::{fungible::Inspect, ReservableCurrency};
 use kilt_support::migration::switch_reserved_to_hold;
-use sp_runtime::SaturatedConversion;
-use sp_std::marker::PhantomData;
+use sp_runtime::DispatchResult;
 
-#[cfg(feature = "try-runtime")]
-use sp_runtime::TryRuntimeError;
+use crate::{AccountIdOf, Config, CredentialIdOf, Credentials, CurrencyOf, Error, HoldReason, SubjectIdOf};
 
-use crate::{
-	AccountIdOf, Config, Credentials, CurrencyOf, HoldReason, Pallet, STORAGE_VERSION as TARGET_STORAGE_VERSION,
-};
-
-const CURRENT_STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
-
-pub struct BalanceMigration<T>(PhantomData<T>);
-
-impl<T: Config> OnRuntimeUpgrade for BalanceMigration<T>
+pub fn update_balance_for_public_credentials<T: Config>(
+	key: &SubjectIdOf<T>,
+	key2: &CredentialIdOf<T>,
+) -> DispatchResult
 where
-	<T as Config>::Currency: ReservableCurrency<T::AccountId>,
+	<T as Config>::Currency:
+		ReservableCurrency<T::AccountId, Balance = <<T as Config>::Currency as Inspect<AccountIdOf<T>>>::Balance>,
 {
-	fn on_runtime_upgrade() -> frame_support::weights::Weight {
-		log::info!("Public Credentials: Initiating migration");
-
-		let onchain_storage_version = Pallet::<T>::on_chain_storage_version();
-
-		if onchain_storage_version.eq(&CURRENT_STORAGE_VERSION) {
-			TARGET_STORAGE_VERSION.put::<Pallet<T>>();
-
-			<T as frame_system::Config>::DbWeight::get()
-				.reads_writes(0, 0)
-				.saturating_add(do_migration::<T>())
-		} else {
-			log::info!(
-				"Public Credential: No migration needed. This file should be deleted. Current storage version: {:?}, Required Version for update: {:?}", 
-				onchain_storage_version,
-				CURRENT_STORAGE_VERSION
-			);
-			<T as frame_system::Config>::DbWeight::get().reads_writes(0, 0)
-		}
-	}
-
-	#[cfg(feature = "try-runtime")]
-	fn pre_upgrade() -> Result<sp_std::vec::Vec<u8>, TryRuntimeError> {
-		use sp_std::vec;
-
-		let has_all_user_no_holds = Credentials::<T>::iter_values()
-			.map(|details: crate::CredentialEntryOf<T>| {
-				kilt_support::migration::has_user_reserved_balance::<AccountIdOf<T>, CurrencyOf<T>>(
-					&details.deposit.owner,
-					&HoldReason::Deposit.into(),
-				)
-			})
-			.all(|user| user);
-
-		assert!(
-			has_all_user_no_holds,
-			"Pre Upgrade Public Credentials: there are users with holds!"
-		);
-
-		assert_eq!(Pallet::<T>::on_chain_storage_version(), CURRENT_STORAGE_VERSION);
-
-		log::info!("Public Credentials: Pre migration checks successful");
-
-		Ok(vec![])
-	}
-
-	#[cfg(feature = "try-runtime")]
-	fn post_upgrade(_pre_state: sp_std::vec::Vec<u8>) -> Result<(), TryRuntimeError> {
-		use frame_support::traits::fungible::InspectHold;
-		use sp_runtime::Saturating;
-		use sp_std::collections::btree_map::BTreeMap;
-
-		use crate::BalanceOf;
-
-		let mut map_user_deposit: BTreeMap<AccountIdOf<T>, BalanceOf<T>> = BTreeMap::new();
-
-		Credentials::<T>::iter_values().for_each(|details| {
-			map_user_deposit
-				.entry(details.deposit.owner)
-				.and_modify(|balance| *balance = balance.saturating_add(details.deposit.amount))
-				.or_insert(details.deposit.amount);
-		});
-
-		map_user_deposit
-			.iter()
-			.try_for_each(|(who, amount)| -> Result<(), TryRuntimeError> {
-				let hold_balance: BalanceOf<T> =
-					<T as Config>::Currency::balance_on_hold(&HoldReason::Deposit.into(), who).saturated_into();
-
-				assert!(
-					amount.eq(&hold_balance),
-					"Public Credentials: Hold balance is not matching for attestation {:?}. Expected hold: {:?}. Real hold: {:?}",
-					who,
-					amount,
-					hold_balance
-				);
-				Ok(())
-			})?;
-
-		assert_eq!(Pallet::<T>::on_chain_storage_version(), TARGET_STORAGE_VERSION);
-
-		log::info!("Public Credentials: Post migration checks successful");
-		Ok(())
-	}
+	let details = Credentials::<T>::get(key, key2).ok_or(Error::<T>::NotFound)?;
+	switch_reserved_to_hold::<AccountIdOf<T>, CurrencyOf<T>>(
+		&details.deposit.owner,
+		&HoldReason::Deposit.into(),
+		details.deposit.amount,
+	)
 }
 
-fn do_migration<T: Config>() -> Weight
-where
-	<T as Config>::Currency: ReservableCurrency<T::AccountId>,
-{
-	Credentials::<T>::iter()
-		.map(|(key, key2, pc_details)| -> Weight {
-			let deposit = pc_details.deposit;
-			let error = switch_reserved_to_hold::<AccountIdOf<T>, CurrencyOf<T>>(
-				deposit.owner,
-				&HoldReason::Deposit.into(),
-				deposit.amount.saturated_into(),
-			);
+#[cfg(test)]
+pub mod test {
 
-			if error.is_err() {
-				log::error!(
-					"Public Credential: Could not convert reserves to hold from credential: {:?} {:?}, error: {:?}",
-					key,
-					key2,
-					error
+	use ctype::mock::get_ctype_hash;
+	use frame_support::{
+		assert_noop,
+		traits::{fungible::InspectHold, ReservableCurrency},
+	};
+	use sp_core::Get;
+	use sp_runtime::traits::Zero;
+
+	use crate::{
+		migrations::update_balance_for_public_credentials, mock::*, AccountIdOf, Config, CredentialIdOf, Credentials,
+		Error, HoldReason,
+	};
+
+	#[test]
+	fn test_setup() {
+		let attester = sr25519_did_from_seed(&ALICE_SEED);
+
+		let ctype_hash_1 = get_ctype_hash::<Test>(true);
+		let subject_id: <Test as Config>::SubjectId = SUBJECT_ID_00;
+		let mut new_credential =
+			generate_base_credential_entry::<Test>(ACCOUNT_00, 0, attester.clone(), Some(ctype_hash_1), None);
+		new_credential.authorization_id = Some(attester.clone());
+
+		let credential_id: CredentialIdOf<Test> = CredentialIdOf::<Test>::default();
+		let deposit: Balance = <Test as Config>::Deposit::get();
+
+		ExtBuilder::default()
+			.with_balances(vec![(ACCOUNT_00, deposit + MIN_BALANCE)])
+			.with_public_credentials(vec![(subject_id, credential_id, new_credential)])
+			.with_ctypes(vec![(ctype_hash_1, attester)])
+			.build_and_execute_with_sanity_tests(|| {
+				let hold_balance_pre_migration =
+					<<Test as Config>::Currency as InspectHold<AccountIdOf<Test>>>::balance_on_hold(
+						&HoldReason::Deposit.into(),
+						&ACCOUNT_00,
+					);
+
+				assert_eq!(hold_balance_pre_migration, <Test as Config>::Deposit::get());
+
+				kilt_support::migration::translate_holds_to_reserve::<Test>(HoldReason::Deposit.into());
+
+				let hold_balance = <<Test as Config>::Currency as InspectHold<AccountIdOf<Test>>>::balance_on_hold(
+					&HoldReason::Deposit.into(),
+					&ACCOUNT_00,
 				);
-			}
 
-			// Currency::reserve and Currency::hold each read and write to the DB once.
-			// Since we are uncertain about which operation may fail, in the event of an
-			// error, we assume the worst-case scenario here.
-			<T as frame_system::Config>::DbWeight::get().reads_writes(2, 2)
-		})
-		.fold(Weight::zero(), |acc, next| acc.saturating_add(next))
+				let reserved_balance =
+					<<Test as Config>::Currency as ReservableCurrency<AccountIdOf<Test>>>::reserved_balance(
+						&ACCOUNT_00,
+					);
+
+				assert!(hold_balance.is_zero());
+				assert_eq!(reserved_balance, <Test as Config>::Deposit::get());
+			})
+	}
+
+	#[test]
+	fn test_balance_migration_public_credential() {
+		let attester = sr25519_did_from_seed(&ALICE_SEED);
+
+		let ctype_hash_1 = get_ctype_hash::<Test>(true);
+		let subject_id: <Test as Config>::SubjectId = SUBJECT_ID_00;
+		let subject_id2: <Test as Config>::SubjectId = SUBJECT_ID_01;
+		let mut new_credential =
+			generate_base_credential_entry::<Test>(ACCOUNT_00, 0, attester.clone(), Some(ctype_hash_1), None);
+		new_credential.authorization_id = Some(attester.clone());
+
+		let credential_id: CredentialIdOf<Test> = CredentialIdOf::<Test>::default();
+		let deposit: Balance = <Test as Config>::Deposit::get();
+
+		ExtBuilder::default()
+			.with_balances(vec![(ACCOUNT_00, deposit + MIN_BALANCE)])
+			.with_public_credentials(vec![(subject_id, credential_id, new_credential)])
+			.with_ctypes(vec![(ctype_hash_1, attester)])
+			.build_and_execute_with_sanity_tests(|| {
+				kilt_support::migration::translate_holds_to_reserve::<Test>(HoldReason::Deposit.into());
+				let public_credentials_pre_migration = Credentials::<Test>::get(subject_id, credential_id);
+
+				let reserved_pre_migration =
+					<<Test as Config>::Currency as ReservableCurrency<AccountIdOf<Test>>>::reserved_balance(
+						&ACCOUNT_00,
+					);
+
+				//public credentials should be in storage
+				assert!(public_credentials_pre_migration.is_some());
+
+				// before the migration the deposit should be reserved.
+				assert_eq!(
+					reserved_pre_migration,
+					public_credentials_pre_migration.clone().unwrap().deposit.amount
+				);
+
+				assert!(update_balance_for_public_credentials::<Test>(&subject_id, &credential_id).is_ok());
+
+				let public_credentials_post_migration = Credentials::<Test>::get(subject_id, credential_id);
+
+				let reserved_post_migration =
+					<<Test as Config>::Currency as ReservableCurrency<AccountIdOf<Test>>>::reserved_balance(
+						&ACCOUNT_00,
+					);
+
+				let balance_on_hold = <<Test as Config>::Currency as InspectHold<AccountIdOf<Test>>>::balance_on_hold(
+					&HoldReason::Deposit.into(),
+					&ACCOUNT_00,
+				);
+
+				//Delegation should be still in the storage
+				assert!(public_credentials_post_migration.is_some());
+
+				// ... and it should be the same
+				assert_eq!(public_credentials_post_migration, public_credentials_pre_migration);
+
+				// Since reserved balance count to hold balance, it should not be zero
+				assert!(!reserved_post_migration.is_zero());
+
+				// ... and be as much as the hold balance
+				assert_eq!(reserved_post_migration, balance_on_hold);
+
+				// should throw error if public credential does not exist
+				assert_noop!(
+					update_balance_for_public_credentials::<Test>(&subject_id2, &credential_id),
+					Error::<Test>::NotFound
+				);
+			})
+	}
 }

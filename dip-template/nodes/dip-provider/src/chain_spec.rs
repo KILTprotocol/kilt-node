@@ -18,8 +18,8 @@
 
 use cumulus_primitives_core::ParaId;
 use dip_provider_runtime_template::{
-	AccountId, AuraId, BalancesConfig, CollatorSelectionConfig, GenesisConfig, ParachainInfoConfig, SessionConfig,
-	SessionKeys, Signature, SudoConfig, SystemConfig, EXISTENTIAL_DEPOSIT, SS58_PREFIX, WASM_BINARY,
+	AccountId, AuraId, BalancesConfig, CollatorSelectionConfig, ParachainInfoConfig, RuntimeGenesisConfig,
+	SessionConfig, SessionKeys, Signature, SudoConfig, SystemConfig, EXISTENTIAL_DEPOSIT, SS58_PREFIX, WASM_BINARY,
 };
 use sc_chain_spec::{ChainSpecExtension, ChainSpecGroup, Properties};
 use sc_service::{ChainType, GenericChainSpec};
@@ -29,7 +29,7 @@ use sp_runtime::traits::{IdentifyAccount, Verify};
 
 const PARA_ID: u32 = 2_000;
 
-pub type ChainSpec = GenericChainSpec<GenesisConfig, Extensions>;
+pub type ChainSpec = GenericChainSpec<RuntimeGenesisConfig, Extensions>;
 type AccountPublic = <Signature as Verify>::Signer;
 
 pub(crate) fn get_from_seed<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pair>::Public {
@@ -70,15 +70,19 @@ fn testnet_genesis(
 	invulnerables: Vec<(AccountId, AuraId)>,
 	endowed_accounts: Vec<AccountId>,
 	id: ParaId,
-) -> GenesisConfig {
-	GenesisConfig {
+) -> RuntimeGenesisConfig {
+	RuntimeGenesisConfig {
 		system: SystemConfig {
 			code: WASM_BINARY
 				.expect("WASM binary was not build, please build it!")
 				.to_vec(),
+			..Default::default()
 		},
 		parachain_system: Default::default(),
-		parachain_info: ParachainInfoConfig { parachain_id: id },
+		parachain_info: ParachainInfoConfig {
+			parachain_id: id,
+			..Default::default()
+		},
 		sudo: SudoConfig {
 			key: Some(endowed_accounts.first().unwrap().clone()),
 		},

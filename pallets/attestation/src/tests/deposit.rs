@@ -24,7 +24,7 @@ use crate::{self as attestation, mock::*, AttesterOf, Config, Error, HoldReason}
 
 #[test]
 fn test_reclaim_deposit_not_found() {
-	let attester: AttesterOf<Test> = sr25519_did_from_seed(&BOB_SEED);
+	let attester: AttesterOf<Test> = sr25519_did_from_public_key(&BOB_SEED);
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 	let attestation = generate_base_attestation::<Test>(attester.clone(), ACCOUNT_00);
 
@@ -41,8 +41,8 @@ fn test_reclaim_deposit_not_found() {
 
 #[test]
 fn test_change_deposit_owner() {
-	let attester: AttesterOf<Test> = sr25519_did_from_seed(&ALICE_SEED);
-	let other_authorized: AttesterOf<Test> = sr25519_did_from_seed(&BOB_SEED);
+	let attester: AttesterOf<Test> = sr25519_did_from_public_key(&ALICE_SEED);
+	let other_authorized: AttesterOf<Test> = sr25519_did_from_public_key(&BOB_SEED);
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 	let mut attestation = generate_base_attestation::<Test>(attester.clone(), ACCOUNT_00);
 	attestation.authorization_id = Some(other_authorized);
@@ -82,8 +82,8 @@ fn test_change_deposit_owner() {
 
 #[test]
 fn test_change_deposit_owner_insufficient_balance() {
-	let attester: AttesterOf<Test> = sr25519_did_from_seed(&ALICE_SEED);
-	let other_authorized: AttesterOf<Test> = sr25519_did_from_seed(&BOB_SEED);
+	let attester: AttesterOf<Test> = sr25519_did_from_public_key(&ALICE_SEED);
+	let other_authorized: AttesterOf<Test> = sr25519_did_from_public_key(&BOB_SEED);
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 	let mut attestation = generate_base_attestation::<Test>(attester.clone(), ACCOUNT_00);
 	attestation.authorization_id = Some(other_authorized);
@@ -106,8 +106,8 @@ fn test_change_deposit_owner_insufficient_balance() {
 
 #[test]
 fn test_change_deposit_owner_unauthorized() {
-	let attester: AttesterOf<Test> = sr25519_did_from_seed(&BOB_SEED);
-	let evil_actor: AttesterOf<Test> = sr25519_did_from_seed(&ALICE_SEED);
+	let attester: AttesterOf<Test> = sr25519_did_from_public_key(&BOB_SEED);
+	let evil_actor: AttesterOf<Test> = sr25519_did_from_public_key(&ALICE_SEED);
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 	let attestation = generate_base_attestation::<Test>(attester.clone(), ACCOUNT_00);
 
@@ -125,7 +125,7 @@ fn test_change_deposit_owner_unauthorized() {
 
 #[test]
 fn test_change_deposit_owner_not_found() {
-	let attester: AttesterOf<Test> = sr25519_did_from_seed(&BOB_SEED);
+	let attester: AttesterOf<Test> = sr25519_did_from_public_key(&BOB_SEED);
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 	let attestation = generate_base_attestation::<Test>(attester.clone(), ACCOUNT_00);
 
@@ -143,7 +143,7 @@ fn test_change_deposit_owner_not_found() {
 /// Update the deposit amount
 #[test]
 fn test_update_deposit() {
-	let attester: AttesterOf<Test> = sr25519_did_from_seed(&BOB_SEED);
+	let attester: AttesterOf<Test> = sr25519_did_from_public_key(&BOB_SEED);
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 	let attestation = generate_base_attestation_with_deposit::<Test>(
 		attester.clone(),
@@ -185,7 +185,7 @@ fn test_update_deposit() {
 /// Update the deposit amount
 #[test]
 fn test_update_deposit_unauthorized() {
-	let attester: AttesterOf<Test> = sr25519_did_from_seed(&BOB_SEED);
+	let attester: AttesterOf<Test> = sr25519_did_from_public_key(&BOB_SEED);
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 	let attestation = generate_base_attestation_with_deposit::<Test>(
 		attester.clone(),
@@ -211,8 +211,8 @@ fn test_update_deposit_unauthorized() {
 
 #[test]
 fn test_reclaim_deposit() {
-	let attester: AttesterOf<Test> = sr25519_did_from_seed(&ALICE_SEED);
-	let other_authorized: AttesterOf<Test> = sr25519_did_from_seed(&BOB_SEED);
+	let attester: AttesterOf<Test> = sr25519_did_from_public_key(&ALICE_SEED);
+	let other_authorized: AttesterOf<Test> = sr25519_did_from_public_key(&BOB_SEED);
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 	let mut attestation = generate_base_attestation::<Test>(attester.clone(), ACCOUNT_00);
 	attestation.authorization_id = Some(other_authorized.clone());
@@ -241,7 +241,7 @@ fn test_reclaim_deposit() {
 
 #[test]
 fn test_reclaim_deposit_authorization() {
-	let attester: AttesterOf<Test> = sr25519_did_from_seed(&BOB_SEED);
+	let attester: AttesterOf<Test> = sr25519_did_from_public_key(&BOB_SEED);
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 	let attestation = generate_base_attestation::<Test>(attester.clone(), ACCOUNT_00);
 
@@ -265,7 +265,7 @@ fn test_reclaim_deposit_authorization() {
 
 #[test]
 fn test_reclaim_deposit_unauthorized() {
-	let attester: AttesterOf<Test> = sr25519_did_from_seed(&BOB_SEED);
+	let attester: AttesterOf<Test> = sr25519_did_from_public_key(&BOB_SEED);
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 	let attestation = generate_base_attestation::<Test>(attester.clone(), ACCOUNT_00);
 

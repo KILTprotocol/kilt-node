@@ -27,7 +27,7 @@ use frame_support::{
 		Get, OnInitialize,
 	},
 };
-use frame_system::{Pallet as System, RawOrigin};
+use frame_system::{pallet_prelude::BlockNumberFor, Pallet as System, RawOrigin};
 use pallet_session::Pallet as Session;
 use sp_runtime::{
 	traits::{One, SaturatedConversion, StaticLookup},
@@ -101,7 +101,7 @@ where
 // fills unstake BTreeMap by unstaked many entries of 1
 fn fill_unstaking<T: Config>(collator: &T::AccountId, delegator: Option<&T::AccountId>, unstaked: u64)
 where
-	u64: Into<<T as frame_system::Config>::BlockNumber>,
+	u64: Into<BlockNumberFor<T>>,
 {
 	let who = delegator.unwrap_or(collator);
 	assert_eq!(Unstaking::<T>::get(who).len(), 0);
@@ -117,20 +117,20 @@ where
 				T::CurrencyBalance::one()
 			));
 		}
-		System::<T>::set_block_number(System::<T>::block_number() + T::BlockNumber::one());
+		System::<T>::set_block_number(System::<T>::block_number() + BlockNumberFor::<T>::one());
 	}
 	assert_eq!(Unstaking::<T>::get(who).len() as u64, unstaked);
 	assert!(Unstaking::<T>::get(who).len() <= T::MaxUnstakeRequests::get().try_into().unwrap());
 }
 
 benchmarks! {
-	where_clause { where u64: Into<<T as frame_system::Config>::BlockNumber>,
+	where_clause { where u64: Into<BlockNumberFor<T>>,
 		<T as Config>::Currency: Mutate<T::AccountId>
 	}
 
 	on_initialize_no_action {
 		assert_eq!(Round::<T>::get().current, 0u32);
-		let block = T::BlockNumber::one();
+		let block = BlockNumberFor::<T>::one();
 	}: { Pallet::<T>::on_initialize(block) }
 	verify {
 		assert_eq!(Round::<T>::get().current, 0u32);
@@ -147,7 +147,7 @@ benchmarks! {
 	on_initialize_network_rewards {
 		let issuance = T::Currency::total_issuance();
 		// if we only add by one, we also initialize a new year
-		let block = T::NetworkRewardStart::get() + T::BlockNumber::one() * 2_u64.into();
+		let block = T::NetworkRewardStart::get() + BlockNumberFor::<T>::one() * 2_u64.into();
 	}: { Pallet::<T>::on_initialize(block) }
 	verify {
 		let new_issuance = T::Currency::total_issuance();
@@ -169,7 +169,7 @@ benchmarks! {
 		assert_eq!(Session::<T>::current_index(), 0);
 
 		// jump to next block to trigger new round
-		let now = now + T::BlockNumber::one();
+		let now = now + BlockNumberFor::<T>::one();
 		System::<T>::set_block_number(now);
 		Session::<T>::on_initialize(now);
 		assert_eq!(Session::<T>::current_index(), 1);
@@ -221,7 +221,7 @@ benchmarks! {
 	}
 
 	set_blocks_per_round {
-		let bpr: T::BlockNumber = T::MinBlocksPerRound::get() + T::BlockNumber::one();
+		let bpr: BlockNumberFor::<T> = T::MinBlocksPerRound::get() + BlockNumberFor::<T>::one();
 	}: _(RawOrigin::Root, bpr)
 	verify {
 		assert_eq!(Round::<T>::get().length, bpr);
@@ -625,12 +625,12 @@ benchmarks! {
 		let collator = candidates[0].clone();
 
 		let old = InflationConfig::<T>::get();
-		assert_eq!(LastRewardReduction::<T>::get(), T::BlockNumber::zero());
-		System::<T>::set_block_number(T::BLOCKS_PER_YEAR + T::BlockNumber::one());
+		assert_eq!(LastRewardReduction::<T>::get(), BlockNumberFor::<T>::zero());
+		System::<T>::set_block_number(T::BLOCKS_PER_YEAR + BlockNumberFor::<T>::one());
 	}: _(RawOrigin::Signed(collator))
 	verify {
 		let new = InflationConfig::<T>::get();
-		assert_eq!(LastRewardReduction::<T>::get(), T::BlockNumber::one());
+		assert_eq!(LastRewardReduction::<T>::get(), BlockNumberFor::<T>::one());
 		assert_eq!(new.collator.max_rate, old.collator.max_rate);
 		assert_eq!(new.delegator.max_rate, old.delegator.max_rate);
 		assert!(new.collator.reward_rate.annual < old.collator.reward_rate.annual);

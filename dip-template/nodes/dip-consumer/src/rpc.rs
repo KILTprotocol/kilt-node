@@ -23,7 +23,7 @@ use substrate_frame_rpc_system::AccountNonceApi;
 
 use std::{error::Error, sync::Arc};
 
-use dip_consumer_runtime_template::{AccountId, Balance, Index as Nonce, NodeBlock as Block};
+use dip_consumer_runtime_template::{AccountId, Balance, NodeBlock as Block, Nonce};
 use jsonrpsee::RpcModule;
 use pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi;
 use sc_client_api::AuxStore;

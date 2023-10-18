@@ -17,6 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_support::storage::bounded_btree_set::BoundedBTreeSet;
+use frame_system::pallet_prelude::BlockNumberFor;
 use sp_runtime::{AccountId32, SaturatedConversion};
 use sp_std::{
 	collections::btree_set::BTreeSet,
@@ -28,7 +29,7 @@ use sp_std::{
 use crate::{
 	did_details::{DidCreationDetails, DidDetails, DidEncryptionKey, DidNewKeyAgreementKeySet, DidVerificationKey},
 	service_endpoints::DidEndpoint,
-	AccountIdOf, BlockNumberOf, Config, DidCreationDetailsOf, DidIdentifierOf,
+	AccountIdOf, Config, DidCreationDetailsOf, DidIdentifierOf,
 };
 
 pub(crate) type DidNewKeyAgreementKeySetOf<T> = DidNewKeyAgreementKeySet<<T as Config>::MaxNewKeyAgreementKeys>;
@@ -106,7 +107,7 @@ where
 {
 	DidDetails::new(
 		authentication_key,
-		BlockNumberOf::<T>::default(),
+		BlockNumberFor::<T>::default(),
 		deposit_owner.unwrap_or(AccountId32::new([0u8; 32]).into()),
 	)
 	.expect("Failed to generate new DidDetails from auth_key due to BoundedBTreeSet bound")

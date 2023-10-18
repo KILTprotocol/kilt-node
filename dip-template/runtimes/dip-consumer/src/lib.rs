@@ -52,7 +52,7 @@ use pallet_session::{FindAccountFromAuthorIndex, PeriodicSessions};
 use pallet_transaction_payment::{CurrencyAdapter, FeeDetails, RuntimeDispatchInfo};
 use sp_api::impl_runtime_apis;
 use sp_consensus_aura::SlotDuration;
-use sp_core::{crypto::KeyTypeId, ConstU128, ConstU16, OpaqueMetadata};
+use sp_core::{crypto::KeyTypeId, ConstBool, ConstU128, ConstU16, OpaqueMetadata};
 use sp_inherents::{CheckInherentsResult, InherentData};
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
@@ -82,7 +82,7 @@ pub type DidIdentifier = AccountId;
 pub type Hasher = BlakeTwo256;
 pub type Hash = sp_core::H256;
 pub type Header = generic::Header<BlockNumber, Hasher>;
-pub type Index = u32;
+pub type Nonce = u32;
 pub type Signature = MultiSignature;
 
 pub type SignedExtra = (
@@ -108,10 +108,7 @@ pub const UNIT: Balance = 1_000_000_000_000;
 pub const MILLIUNIT: Balance = UNIT / 1_000;
 
 construct_runtime!(
-	pub enum Runtime where
-		Block = Block,
-		NodeBlock = NodeBlock,
-		UncheckedExtrinsic = UncheckedExtrinsic,
+	pub enum Runtime
 	{
 		// System
 		System: frame_system = 0,
@@ -221,15 +218,14 @@ impl frame_system::Config for Runtime {
 	type BaseCallFilter = Everything;
 	type BlockHashCount = ConstU32<256>;
 	type BlockLength = RuntimeBlockLength;
-	type BlockNumber = BlockNumber;
+	type Block = Block;
 	type BlockWeights = RuntimeBlockWeights;
 	type DbWeight = RocksDbWeight;
 	type Hash = Hash;
-	type Hashing = Hasher;
-	type Header = generic::Header<BlockNumber, Hasher>;
-	type Index = Index;
+	type Hashing = BlakeTwo256;
 	type Lookup = AccountIdLookup<AccountId, ()>;
 	type MaxConsumers = ConstU32<16>;
+	type Nonce = u32;
 	type OnKilledAccount = ();
 	type OnNewAccount = ();
 	type OnSetCode = ParachainSetCode<Self>;
@@ -284,13 +280,13 @@ impl pallet_balances::Config for Runtime {
 	type DustRemoval = ();
 	type ExistentialDeposit = ConstU128<EXISTENTIAL_DEPOSIT>;
 	type FreezeIdentifier = RuntimeFreezeReason;
-	type HoldIdentifier = RuntimeHoldReason;
 	type MaxFreezes = ConstU32<50>;
 	type MaxHolds = ConstU32<50>;
 	type MaxLocks = ConstU32<50>;
 	type MaxReserves = ConstU32<50>;
 	type ReserveIdentifier = [u8; 8];
 	type RuntimeEvent = RuntimeEvent;
+	type RuntimeHoldReason = RuntimeHoldReason;
 	type WeightInfo = ();
 }
 
@@ -318,7 +314,7 @@ impl pallet_collator_selection::Config for Runtime {
 	type KickThreshold = ConstU32<{ 6 * HOURS }>;
 	type MaxCandidates = ConstU32<1_000>;
 	type MaxInvulnerables = ConstU32<100>;
-	type MinCandidates = ConstU32<5>;
+	type MinEligibleCollators = ConstU32<5>;
 	type RuntimeEvent = RuntimeEvent;
 	type UpdateOrigin = EnsureRoot<AccountId>;
 	type ValidatorId = AccountId;
@@ -346,6 +342,7 @@ impl pallet_session::Config for Runtime {
 }
 
 impl pallet_aura::Config for Runtime {
+	type AllowMultipleBlocksPerSlot = ConstBool<false>;
 	type AuthorityId = AuraId;
 	type DisabledValidators = ();
 	type MaxAuthorities = ConstU32<100_000>;
@@ -449,8 +446,8 @@ impl_runtime_apis! {
 		}
 	}
 
-	impl frame_system_rpc_runtime_api::AccountNonceApi<Block, AccountId, Index> for Runtime {
-		fn account_nonce(account: AccountId) -> Index {
+	impl frame_system_rpc_runtime_api::AccountNonceApi<Block, AccountId, Nonce> for Runtime {
+		fn account_nonce(account: AccountId) -> Nonce {
 			System::account_nonce(account)
 		}
 	}

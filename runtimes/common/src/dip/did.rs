@@ -17,6 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use did::did_details::DidDetails;
+use frame_system::pallet_prelude::BlockNumberFor;
 use kilt_dip_support::{
 	merkle::RevealedWeb3Name,
 	utils::{CombineIdentityFrom, CombinedIdentityResult},
@@ -47,8 +48,7 @@ where
 	}
 }
 
-pub type Web3OwnershipOf<T> =
-	RevealedWeb3Name<<T as pallet_web3_names::Config>::Web3Name, <T as frame_system::Config>::BlockNumber>;
+pub type Web3OwnershipOf<T> = RevealedWeb3Name<<T as pallet_web3_names::Config>::Web3Name, BlockNumberFor<T>>;
 
 pub struct DidWeb3NameProvider<T>(PhantomData<T>);
 

@@ -108,7 +108,7 @@ impl<T: Config> DidEndpoint<T> {
 	}
 }
 
-#[cfg(any(test, feature = "runtime-benchmarks"))]
+#[cfg(any(test, feature = "runtime-benchmarks", feature = "mock"))]
 impl<T: Config> DidEndpoint<T> {
 	pub(crate) fn new(id: Vec<u8>, types: Vec<Vec<u8>>, urls: Vec<Vec<u8>>) -> Self {
 		let bounded_id = id.try_into().expect("Service ID too long.");

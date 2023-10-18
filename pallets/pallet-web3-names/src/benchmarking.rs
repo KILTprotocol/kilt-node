@@ -27,6 +27,7 @@ use frame_support::{
 	},
 	BoundedVec,
 };
+use frame_system::pallet_prelude::BlockNumberFor;
 use frame_system::RawOrigin;
 use sp_runtime::app_crypto::sr25519;
 
@@ -187,7 +188,7 @@ benchmarks! {
 			deposit_owner.clone(),
 			owner,
 			web3_name.clone(),
-			T::BlockNumber::zero(),
+			BlockNumberFor::<T>::zero(),
 			<T as Config>::Deposit::get() + <T as Config>::Deposit::get()
 		);
 

@@ -34,17 +34,19 @@ use dip_provider_runtime_template::{api, native_version, NodeBlock as Block, Run
 use frame_benchmarking::benchmarking::HostFunctions;
 use frame_benchmarking_cli::SUBSTRATE_REFERENCE_HARDWARE;
 use sc_basic_authorship::ProposerFactory;
+use sc_client_api::Backend;
 use sc_consensus::{DefaultImportQueue, ImportQueue};
 use sc_executor::NativeElseWasmExecutor;
 use sc_network::NetworkBlock;
 use sc_network_sync::SyncingService;
 use sc_service::{
-	build_offchain_workers, new_full_parts, spawn_tasks, Configuration, PartialComponents, SpawnTasksParams,
-	TFullBackend, TFullClient, TaskManager,
+	new_full_parts, spawn_tasks, Configuration, PartialComponents, SpawnTasksParams, TFullBackend, TFullClient,
+	TaskManager,
 };
 use sc_sysinfo::{initialize_hwbench_telemetry, print_hwbench, HwBench};
 use sc_telemetry::{Telemetry, TelemetryHandle, TelemetryWorker, TelemetryWorkerHandle};
 use sc_transaction_pool::{BasicPool, FullPool};
+use sc_transaction_pool_api::OffchainTransactionPoolFactory;
 use sp_keystore::KeystorePtr;
 use substrate_prometheus_endpoint::Registry;
 
@@ -189,11 +191,23 @@ async fn start_node_impl(
 		.await?;
 
 	if parachain_config.offchain_worker.enabled {
-		build_offchain_workers(
-			&parachain_config,
-			task_manager.spawn_handle(),
-			client.clone(),
-			network.clone(),
+		use futures::FutureExt;
+
+		task_manager.spawn_handle().spawn(
+			"offchain-workers-runner",
+			"offchain-work",
+			sc_offchain::OffchainWorkers::new(sc_offchain::OffchainWorkerOptions {
+				runtime_api_provider: client.clone(),
+				keystore: Some(params.keystore_container.keystore()),
+				offchain_db: backend.offchain_storage(),
+				transaction_pool: Some(OffchainTransactionPoolFactory::new(transaction_pool.clone())),
+				network_provider: network.clone(),
+				is_validator: parachain_config.role.is_authority(),
+				enable_http_requests: false,
+				custom_extensions: move |_| vec![],
+			})
+			.run(client.clone(), task_manager.spawn_handle())
+			.boxed(),
 		);
 	}
 

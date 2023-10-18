@@ -104,8 +104,8 @@ pub type ChainId = u32;
 pub type Balance = u128;
 pub type Amount = i128;
 
-/// Index of a transaction in the chain.
-pub type Index = u64;
+/// Nonce of a transaction in the chain.
+pub type Nonce = u64;
 
 /// Hasher for chain data.
 pub type Hasher = BlakeTwo256;

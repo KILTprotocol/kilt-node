@@ -82,7 +82,7 @@ mod try_state;
 pub use crate::{access_control::DelegationAc, default_weights::WeightInfo, delegation_hierarchy::*, pallet::*};
 
 use frame_support::{dispatch::DispatchResult, ensure, pallet_prelude::Weight, traits::Get};
-use kilt_support::traits::StorageDepositCollector;
+use kilt_support::traits::{BalanceMigrationManager, StorageDepositCollector};
 use parity_scale_codec::Encode;
 use sp_runtime::{traits::Hash, DispatchError};
 use sp_std::{marker::PhantomData, vec::Vec};
@@ -107,7 +107,7 @@ pub mod pallet {
 	use scale_info::TypeInfo;
 
 	/// The current storage version.
-	pub(crate) const STORAGE_VERSION: StorageVersion = StorageVersion::new(4);
+	const STORAGE_VERSION: StorageVersion = StorageVersion::new(3);
 
 	/// Type of a delegation node identifier.
 	pub type DelegationNodeIdOf<T> = <T as Config>::DelegationNodeId;
@@ -133,7 +133,9 @@ pub mod pallet {
 
 	pub(crate) type DelegationDetailsOf<T> = DelegationDetails<DelegatorIdOf<T>>;
 
-	pub(crate) type DelegationNodeOf<T> = DelegationNode<
+	pub(crate) type BalanceMigrationManagerOf<T> = <T as Config>::BalanceMigrationManager;
+
+	pub type DelegationNodeOf<T> = DelegationNode<
 		DelegationNodeIdOf<T>,
 		<T as Config>::MaxChildren,
 		DelegationDetailsOf<T>,
@@ -193,6 +195,9 @@ pub mod pallet {
 		/// `2 ^ MaxParentChecks`.
 		#[pallet::constant]
 		type MaxChildren: Get<u32> + Clone + TypeInfo;
+
+		/// Migration manager to handle new created entries
+		type BalanceMigrationManager: BalanceMigrationManager<AccountIdOf<Self>, BalanceOf<Self>>;
 	}
 
 	#[pallet::pallet]
@@ -688,7 +693,10 @@ pub mod pallet {
 			// parent or another ancestor.
 			ensure!(delegation.details.owner == source.subject(), Error::<T>::AccessDenied);
 
-			DelegationDepositCollector::<T>::change_deposit_owner(&delegation_id, source.sender())
+			DelegationDepositCollector::<T>::change_deposit_owner::<BalanceMigrationManagerOf<T>>(
+				&delegation_id,
+				source.sender(),
+			)
 		}
 
 		/// Updates the deposit amount to the current deposit rate.
@@ -705,7 +713,7 @@ pub mod pallet {
 			// parent or another ancestor.
 			ensure!(delegation.deposit.owner == sender, Error::<T>::AccessDenied);
 
-			DelegationDepositCollector::<T>::update_deposit(&delegation_id)?;
+			DelegationDepositCollector::<T>::update_deposit::<BalanceMigrationManagerOf<T>>(&delegation_id)?;
 
 			Ok(())
 		}
@@ -718,7 +726,7 @@ pub mod pallet {
 		/// # <weight>
 		/// Weight: O(1)
 		/// # </weight>
-		pub(crate) fn calculate_delegation_creation_hash(
+		pub fn calculate_delegation_creation_hash(
 			delegation_id: &DelegationNodeIdOf<T>,
 			root_id: &DelegationNodeIdOf<T>,
 			parent_id: &DelegationNodeIdOf<T>,
@@ -743,6 +751,9 @@ pub mod pallet {
 			deposit_owner: AccountIdOf<T>,
 		) -> DispatchResult {
 			DelegationDepositCollector::<T>::create_deposit(deposit_owner.clone(), <T as Config>::Deposit::get())?;
+			<T as Config>::BalanceMigrationManager::exclude_key_from_migration(&DelegationNodes::<T>::hashed_key_for(
+				root_id,
+			));
 
 			let root_node = DelegationNode::new_root_node(
 				root_id,
@@ -770,6 +781,9 @@ pub mod pallet {
 			deposit_owner: AccountIdOf<T>,
 		) -> DispatchResult {
 			DelegationDepositCollector::<T>::create_deposit(deposit_owner, <T as Config>::Deposit::get())?;
+			<T as Config>::BalanceMigrationManager::exclude_key_from_migration(&DelegationNodes::<T>::hashed_key_for(
+				delegation_id,
+			));
 
 			// Add the new node as a child of that node
 			parent_node
@@ -982,7 +996,18 @@ pub mod pallet {
 			// We can clear storage now that all children have been removed
 			DelegationNodes::<T>::remove(*delegation);
 
-			DelegationDepositCollector::<T>::free_deposit(delegation_node.clone().deposit)?;
+			let is_key_migrated = <T as Config>::BalanceMigrationManager::is_key_migrated(
+				&DelegationNodes::<T>::hashed_key_for(delegation),
+			);
+			if is_key_migrated {
+				DelegationDepositCollector::<T>::free_deposit(delegation_node.clone().deposit)?;
+			} else {
+				<T as Config>::BalanceMigrationManager::release_reserved_deposit(
+					&delegation_node.deposit.owner,
+					&delegation_node.deposit.amount,
+				);
+			}
+
 			consumed_weight = consumed_weight.saturating_add(T::DbWeight::get().reads_writes(1, 2));
 
 			// Deposit event that the delegation has been removed
@@ -998,6 +1023,10 @@ pub mod pallet {
 	{
 		type Currency = <T as Config>::Currency;
 		type Reason = HoldReason;
+
+		fn get_hashed_key(key: &DelegationNodeIdOf<T>) -> Result<sp_std::vec::Vec<u8>, DispatchError> {
+			Ok(DelegationNodes::<T>::hashed_key_for(key))
+		}
 
 		fn reason() -> Self::Reason {
 			HoldReason::Deposit

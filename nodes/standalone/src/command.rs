@@ -16,16 +16,19 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use crate::service::ExecutorDispatch;
 use crate::{
 	benchmarking::{inherent_benchmark_data, RemarkBuilder, TransferKeepAliveBuilder},
 	chain_spec,
 	cli::{Cli, Subcommand},
 	service,
 };
+
 use frame_benchmarking_cli::{BenchmarkCmd, ExtrinsicFactory, SUBSTRATE_REFERENCE_HARDWARE};
 use kestrel_runtime::opaque::Block;
 use runtime_common::constants::EXISTENTIAL_DEPOSIT;
-use sc_cli::{ChainSpec, RuntimeVersion, SubstrateCli};
+use sc_cli::SubstrateCli;
+use sc_executor::{sp_wasm_interface::ExtendedHostFunctions, NativeExecutionDispatch};
 use sc_service::PartialComponents;
 use sp_keyring::Sr25519Keyring;
 
@@ -60,10 +63,6 @@ impl SubstrateCli for Cli {
 
 	fn load_spec(&self, id: &str) -> Result<Box<dyn sc_service::ChainSpec>, String> {
 		chain_spec::load_spec(id)
-	}
-
-	fn native_runtime_version(_: &Box<dyn ChainSpec>) -> &'static RuntimeVersion {
-		&kestrel_runtime::VERSION
 	}
 }
 
@@ -143,7 +142,6 @@ pub fn run() -> sc_cli::Result<()> {
 			let runner = cli.create_runner(cmd)?;
 
 			runner.sync_run(|config| {
-				let PartialComponents { client, .. } = service::new_partial(&config)?;
 				// This switch needs to be in the client, since the client decides
 				// which sub-commands it wants to support.
 				match cmd {
@@ -153,10 +151,15 @@ pub fn run() -> sc_cli::Result<()> {
 							You can enable it with `--features runtime-benchmarks`."
 								.into());
 						}
-
-						cmd.run::<Block, service::ExecutorDispatch>(config)
+						cmd.run::<Block, ExtendedHostFunctions<
+							sp_io::SubstrateHostFunctions,
+							<ExecutorDispatch as NativeExecutionDispatch>::ExtendHostFunctions,
+						>>(config)
 					}
-					BenchmarkCmd::Block(cmd) => cmd.run(client),
+					BenchmarkCmd::Block(cmd) => {
+						let PartialComponents { client, .. } = service::new_partial(&config)?;
+						cmd.run(client)
+					}
 					#[cfg(not(feature = "runtime-benchmarks"))]
 					BenchmarkCmd::Storage(_) => {
 						Err("Storage benchmarking can be enabled with `--features runtime-benchmarks`.".into())
@@ -195,8 +198,6 @@ pub fn run() -> sc_cli::Result<()> {
 		}
 		#[cfg(feature = "try-runtime")]
 		Some(Subcommand::TryRuntime(cmd)) => {
-			use crate::service::ExecutorDispatch;
-			use sc_executor::{sp_wasm_interface::ExtendedHostFunctions, NativeExecutionDispatch};
 			use try_runtime_cli::block_building_info::timestamp_with_aura_info;
 
 			let runner = cli.create_runner(cmd)?;

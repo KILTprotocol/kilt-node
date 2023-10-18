@@ -13,6 +13,7 @@ build = "build.rs"
 
 [dependencies]
 clap = {workspace = true, features = ["std", "derive"]}
+futures = { workspace = true }
 log = { workspace = true, features = ["std"] }
 parity-scale-codec = { workspace = true, features = ["std"] }
 serde = {workspace = true, features = ["std", "derive"]}
@@ -33,6 +34,7 @@ sc-consensus.workspace = true
 sc-executor.workspace = true
 sc-network.workspace = true
 sc-network-sync.workspace = true
+sc-offchain.workspace = true
 sc-rpc-api.workspace = true
 sc-service.workspace = true
 sc-sysinfo.workspace = true

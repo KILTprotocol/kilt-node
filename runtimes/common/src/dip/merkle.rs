@@ -18,6 +18,7 @@
 
 use did::{DidVerificationKeyRelationship, KeyIdOf};
 use frame_support::RuntimeDebug;
+use frame_system::pallet_prelude::BlockNumberFor;
 use kilt_dip_support::merkle::{DidKeyMerkleKey, DidKeyMerkleValue, DidMerkleProof};
 use pallet_did_lookup::linkable_account::LinkableAccountId;
 use pallet_dip_provider::traits::IdentityCommitmentGenerator;
@@ -36,7 +37,7 @@ pub type DidMerkleProofOf<T> = DidMerkleProof<
 	RevealedDidMerkleProofLeaf<
 		KeyIdOf<T>,
 		<T as frame_system::Config>::AccountId,
-		<T as frame_system::Config>::BlockNumber,
+		BlockNumberFor<T>,
 		<T as pallet_web3_names::Config>::Web3Name,
 		LinkableAccountId,
 	>,
@@ -53,7 +54,7 @@ pub struct DidMerkleRootGenerator<T>(PhantomData<T>);
 type ProofLeafOf<T> = RevealedDidMerkleProofLeaf<
 	KeyIdOf<T>,
 	<T as frame_system::Config>::AccountId,
-	<T as frame_system::Config>::BlockNumber,
+	BlockNumberFor<T>,
 	<T as pallet_web3_names::Config>::Web3Name,
 	LinkableAccountId,
 >;

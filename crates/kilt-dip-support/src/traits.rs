@@ -16,6 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use frame_system::pallet_prelude::BlockNumberFor;
 use sp_core::storage::StorageKey;
 use sp_runtime::traits::{CheckedAdd, One, Zero};
 use sp_std::marker::PhantomData;
@@ -84,7 +85,7 @@ impl<T> ProviderParachainStateInfo for ProviderParachainStateInfoViaProviderPall
 where
 	T: pallet_dip_provider::Config,
 {
-	type BlockNumber = T::BlockNumber;
+	type BlockNumber = BlockNumberFor<T>;
 	type Commitment = T::IdentityCommitment;
 	type Hasher = T::Hashing;
 	type Identifier = T::Identifier;
@@ -118,7 +119,7 @@ where
 {
 	const SIGNATURE_VALIDITY: u16 = SIGNATURE_VALIDITY;
 
-	type BlockNumber = T::BlockNumber;
+	type BlockNumber = BlockNumberFor<T>;
 	type Hash = T::Hash;
 	type SignedExtra = ();
 
@@ -127,7 +128,7 @@ where
 	}
 
 	fn genesis_hash() -> Self::Hash {
-		frame_system::Pallet::<T>::block_hash(T::BlockNumber::zero())
+		frame_system::Pallet::<T>::block_hash(Self::BlockNumber::zero())
 	}
 
 	fn signed_extra() -> Self::SignedExtra {}
@@ -144,7 +145,7 @@ impl<T> HistoricalBlockRegistry for T
 where
 	T: frame_system::Config,
 {
-	type BlockNumber = T::BlockNumber;
+	type BlockNumber = BlockNumberFor<T>;
 	type Hasher = T::Hashing;
 
 	fn block_hash_for(block: &Self::BlockNumber) -> Option<OutputOf<Self::Hasher>> {

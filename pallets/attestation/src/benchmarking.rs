@@ -18,6 +18,7 @@
 
 use frame_benchmarking::{account, benchmarks};
 use frame_support::traits::{fungible::Mutate, Get};
+use frame_system::pallet_prelude::BlockNumberFor;
 use frame_system::RawOrigin;
 use sp_runtime::traits::Hash;
 
@@ -34,7 +35,7 @@ benchmarks! {
 		T: core::fmt::Debug,
 		<T as Config>::EnsureOrigin: GenerateBenchmarkOrigin<T::RuntimeOrigin, T::AccountId, T::AttesterId>,
 		T: ctype::Config<CtypeCreatorId = T::AttesterId>,
-		T::BlockNumber: From<u64>,
+		BlockNumberFor<T>: From<u64>,
 		<T as Config>::Currency: Mutate<T::AccountId>
 	}
 

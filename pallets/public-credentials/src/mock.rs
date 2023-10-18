@@ -16,15 +16,18 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::traits::Get;
-use parity_scale_codec::Encode;
-use sp_runtime::traits::Hash;
+use frame_support::{traits::Get, weights::Weight};
+use frame_system::pallet_prelude::BlockNumberFor;
+use parity_scale_codec::{Decode, Encode};
+use scale_info::TypeInfo;
+use sp_runtime::{traits::Hash, DispatchError};
 
 use kilt_support::{traits::StorageDepositCollector, Deposit};
 
 use crate::{
 	AttesterOf, BalanceOf, Config, CredentialEntryOf, CredentialIdOf, CredentialSubjects, Credentials, CtypeHashOf,
 	InputClaimsContentOf, InputCredentialOf, InputSubjectIdOf, PublicCredentialDepositCollector,
+	PublicCredentialsAccessControl,
 };
 
 // Generate a public credential using a many Default::default() as possible.
@@ -51,9 +54,9 @@ pub fn generate_credential_id<T: Config>(
 /// Generates a basic credential entry using the provided input parameters
 /// and the default value for the other ones. The credential will be marked
 /// as non-revoked and with no authorization ID associated with it.
-pub(crate) fn generate_base_credential_entry<T: Config>(
+pub fn generate_base_credential_entry<T: Config>(
 	payer: T::AccountId,
-	block_number: <T as frame_system::Config>::BlockNumber,
+	block_number: BlockNumberFor<T>,
 	attester: T::AttesterId,
 	ctype_hash: Option<CtypeHashOf<T>>,
 	deposit: Option<Deposit<T::AccountId, BalanceOf<T>>>,
@@ -71,7 +74,7 @@ pub(crate) fn generate_base_credential_entry<T: Config>(
 	}
 }
 
-pub(crate) fn insert_public_credentials<T: Config>(
+pub fn insert_public_credentials<T: Config>(
 	subject_id: T::SubjectId,
 	credential_id: CredentialIdOf<T>,
 	credential_entry: CredentialEntryOf<T>,
@@ -86,6 +89,94 @@ pub(crate) fn insert_public_credentials<T: Config>(
 	CredentialSubjects::<T>::insert(credential_id, subject_id);
 }
 
+/// Authorize iff the subject of the origin and the provided attester id
+/// match.
+#[derive(Clone, Debug, Encode, Decode, TypeInfo, PartialEq, Eq)]
+#[scale_info(skip_type_params(T))]
+pub struct MockAccessControl<T: Config>(pub T::AttesterId);
+
+impl<T> PublicCredentialsAccessControl<T::AttesterId, T::AuthorizationId, CtypeHashOf<T>, CredentialIdOf<T>>
+	for MockAccessControl<T>
+where
+	T: Config<AuthorizationId = <T as Config>::AttesterId>,
+{
+	fn can_issue(
+		&self,
+		who: &T::AttesterId,
+		_ctype: &CtypeHashOf<T>,
+		_credential_id: &CredentialIdOf<T>,
+	) -> Result<Weight, DispatchError> {
+		if who == &self.0 {
+			Ok(Weight::zero())
+		} else {
+			Err(DispatchError::Other("Unauthorized"))
+		}
+	}
+
+	fn can_revoke(
+		&self,
+		who: &T::AttesterId,
+		_ctype: &CtypeHashOf<T>,
+		_credential_id: &CredentialIdOf<T>,
+		authorization_id: &T::AuthorizationId,
+	) -> Result<Weight, DispatchError> {
+		if authorization_id == who {
+			Ok(Weight::zero())
+		} else {
+			Err(DispatchError::Other("Unauthorized"))
+		}
+	}
+
+	fn can_unrevoke(
+		&self,
+		who: &T::AttesterId,
+		_ctype: &CtypeHashOf<T>,
+		_credential_id: &CredentialIdOf<T>,
+		authorization_id: &T::AuthorizationId,
+	) -> Result<Weight, DispatchError> {
+		if authorization_id == who {
+			Ok(Weight::zero())
+		} else {
+			Err(DispatchError::Other("Unauthorized"))
+		}
+	}
+
+	fn can_remove(
+		&self,
+		who: &T::AttesterId,
+		_ctype: &CtypeHashOf<T>,
+		_credential_id: &CredentialIdOf<T>,
+		authorization_id: &T::AuthorizationId,
+	) -> Result<Weight, DispatchError> {
+		#[cfg(test)]
+		println!("{:#?}", who);
+		#[cfg(test)]
+		println!("{:#?}", authorization_id);
+		if authorization_id == who {
+			Ok(Weight::zero())
+		} else {
+			Err(DispatchError::Other("Unauthorized"))
+		}
+	}
+
+	fn authorization_id(&self) -> T::AuthorizationId {
+		self.0.clone()
+	}
+
+	fn can_issue_weight(&self) -> Weight {
+		Weight::zero()
+	}
+	fn can_revoke_weight(&self) -> Weight {
+		Weight::zero()
+	}
+	fn can_unrevoke_weight(&self) -> Weight {
+		Weight::zero()
+	}
+	fn can_remove_weight(&self) -> Weight {
+		Weight::zero()
+	}
+}
+
 #[cfg(test)]
 pub use crate::mock::runtime::*;
 
@@ -95,7 +186,6 @@ pub(crate) mod runtime {
 	use super::*;
 
 	use frame_support::{
-		dispatch::Weight,
 		traits::{ConstU128, ConstU16, ConstU32, ConstU64},
 		weights::constants::RocksDbWeight,
 	};
@@ -104,18 +194,16 @@ pub(crate) mod runtime {
 	use scale_info::TypeInfo;
 	use sp_core::{sr25519, Pair};
 	use sp_runtime::{
-		testing::Header,
 		traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
-		DispatchError, MultiSignature, MultiSigner,
+		BuildStorage, MultiSignature, MultiSigner,
 	};
 
 	use kilt_support::mock::{mock_origin, SubjectId};
 
 	use ctype::{CtypeCreatorOf, CtypeEntryOf, CtypeHashOf};
 
-	use crate::{Config, CredentialEntryOf, Error, InputSubjectIdOf, PublicCredentialsAccessControl};
+	use crate::{self as public_credentials, Config, CredentialEntryOf, Error, InputSubjectIdOf};
 
-	pub(crate) type BlockNumber = u64;
 	pub(crate) type Balance = u128;
 	pub(crate) type Hash = sp_core::H256;
 	pub(crate) type AccountPublic = <MultiSignature as Verify>::Signer;
@@ -135,7 +223,7 @@ pub(crate) mod runtime {
 		PartialOrd,
 		TypeInfo,
 	)]
-	pub struct TestSubjectId([u8; 32]);
+	pub struct TestSubjectId(pub [u8; 32]);
 
 	impl TryFrom<Vec<u8>> for TestSubjectId {
 		type Error = Error<Test>;
@@ -182,105 +270,17 @@ pub(crate) mod runtime {
 		}
 	}
 
-	/// Authorize iff the subject of the origin and the provided attester id
-	/// match.
-	#[derive(Clone, Debug, Encode, Decode, TypeInfo, PartialEq, Eq)]
-	#[scale_info(skip_type_params(T))]
-	pub struct MockAccessControl<T: Config>(pub T::AttesterId);
-
-	impl<T> PublicCredentialsAccessControl<T::AttesterId, T::AuthorizationId, CtypeHashOf<T>, CredentialIdOf<T>>
-		for MockAccessControl<T>
-	where
-		T: Config<AuthorizationId = <T as Config>::AttesterId>,
-	{
-		fn can_issue(
-			&self,
-			who: &T::AttesterId,
-			_ctype: &CtypeHashOf<T>,
-			_credential_id: &CredentialIdOf<T>,
-		) -> Result<Weight, DispatchError> {
-			if who == &self.0 {
-				Ok(Weight::zero())
-			} else {
-				Err(DispatchError::Other("Unauthorized"))
-			}
-		}
-
-		fn can_revoke(
-			&self,
-			who: &T::AttesterId,
-			_ctype: &CtypeHashOf<T>,
-			_credential_id: &CredentialIdOf<T>,
-			authorization_id: &T::AuthorizationId,
-		) -> Result<Weight, DispatchError> {
-			if authorization_id == who {
-				Ok(Weight::zero())
-			} else {
-				Err(DispatchError::Other("Unauthorized"))
-			}
-		}
-
-		fn can_unrevoke(
-			&self,
-			who: &T::AttesterId,
-			_ctype: &CtypeHashOf<T>,
-			_credential_id: &CredentialIdOf<T>,
-			authorization_id: &T::AuthorizationId,
-		) -> Result<Weight, DispatchError> {
-			if authorization_id == who {
-				Ok(Weight::zero())
-			} else {
-				Err(DispatchError::Other("Unauthorized"))
-			}
-		}
-
-		fn can_remove(
-			&self,
-			who: &T::AttesterId,
-			_ctype: &CtypeHashOf<T>,
-			_credential_id: &CredentialIdOf<T>,
-			authorization_id: &T::AuthorizationId,
-		) -> Result<Weight, DispatchError> {
-			println!("{:#?}", who);
-			println!("{:#?}", authorization_id);
-			if authorization_id == who {
-				Ok(Weight::zero())
-			} else {
-				Err(DispatchError::Other("Unauthorized"))
-			}
-		}
-
-		fn authorization_id(&self) -> T::AuthorizationId {
-			self.0.clone()
-		}
-
-		fn can_issue_weight(&self) -> Weight {
-			Weight::zero()
-		}
-		fn can_revoke_weight(&self) -> Weight {
-			Weight::zero()
-		}
-		fn can_unrevoke_weight(&self) -> Weight {
-			Weight::zero()
-		}
-		fn can_remove_weight(&self) -> Weight {
-			Weight::zero()
-		}
-	}
-
 	pub(crate) const MILLI_UNIT: Balance = 10u128.pow(12);
+	type Block = frame_system::mocking::MockBlock<Test>;
 
 	frame_support::construct_runtime!(
-		pub enum Test where
-			Block = frame_system::mocking::MockBlock<Test>,
-			NodeBlock = frame_system::mocking::MockBlock<Test>,
-			UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>,
+		pub enum Test
 		{
-			System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
-			Ctype: ctype::{Pallet, Call, Storage, Event<T>},
-			Balances: pallet_balances::{Pallet, Call, Storage, Event<T>},
-			MockOrigin: mock_origin::{Pallet, Origin<T>},
-			PublicCredentials: crate::{Pallet, Call, Storage,HoldReason, Event<T>},
+			System: frame_system,
+			Ctype: ctype,
+			Balances: pallet_balances,
+			MockOrigin: mock_origin,
+			PublicCredentials: public_credentials,
 		}
 	);
 
@@ -293,13 +293,12 @@ pub(crate) mod runtime {
 	impl frame_system::Config for Test {
 		type RuntimeOrigin = RuntimeOrigin;
 		type RuntimeCall = RuntimeCall;
-		type Index = u64;
-		type BlockNumber = BlockNumber;
+		type Block = Block;
+		type Nonce = u64;
 		type Hash = Hash;
 		type Hashing = BlakeTwo256;
 		type AccountId = AccountId;
 		type Lookup = IdentityLookup<Self::AccountId>;
-		type Header = Header;
 		type RuntimeEvent = ();
 		type BlockHashCount = ConstU64<250>;
 		type DbWeight = RocksDbWeight;
@@ -320,7 +319,7 @@ pub(crate) mod runtime {
 
 	impl pallet_balances::Config for Test {
 		type FreezeIdentifier = RuntimeFreezeReason;
-		type HoldIdentifier = RuntimeHoldReason;
+		type RuntimeHoldReason = RuntimeHoldReason;
 		type MaxFreezes = ConstU32<10>;
 		type MaxHolds = ConstU32<10>;
 		type Balance = Balance;
@@ -363,6 +362,7 @@ pub(crate) mod runtime {
 		type OriginSuccess = mock_origin::DoubleOrigin<AccountId, Self::AttesterId>;
 		type SubjectId = TestSubjectId;
 		type WeightInfo = ();
+		type BalanceMigrationManager = ();
 	}
 
 	pub(crate) const ACCOUNT_00: AccountId = AccountId::new([1u8; 32]);
@@ -374,6 +374,7 @@ pub(crate) mod runtime {
 	pub(crate) const BOB_SEED: [u8; 32] = [1u8; 32];
 
 	pub(crate) const SUBJECT_ID_00: TestSubjectId = TestSubjectId([100u8; 32]);
+	pub(crate) const SUBJECT_ID_01: TestSubjectId = TestSubjectId([1u8; 32]);
 	pub(crate) const INVALID_SUBJECT_ID: TestSubjectId = TestSubjectId([255u8; 32]);
 
 	pub(crate) fn sr25519_did_from_seed(seed: &[u8; 32]) -> SubjectId {
@@ -422,7 +423,7 @@ pub(crate) mod runtime {
 		}
 
 		pub(crate) fn build(self) -> sp_io::TestExternalities {
-			let mut storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
+			let mut storage = frame_system::GenesisConfig::<Test>::default().build_storage().unwrap();
 			pallet_balances::GenesisConfig::<Test> {
 				balances: self.balances.clone(),
 			}
