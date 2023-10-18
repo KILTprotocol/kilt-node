@@ -4530,6 +4530,7 @@ dependencies = [
  "frame-system",
  "hash-db",
  "hex-literal 0.3.4",
+ "log",
  "pallet-dip-consumer",
  "pallet-dip-provider",
  "pallet-relay-store",

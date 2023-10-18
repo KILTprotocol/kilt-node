@@ -21,6 +21,8 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use parity_scale_codec::{Codec, Decode, Encode, HasCompact};
+use scale_info::prelude::string::String;
+use scale_info::prelude::string::ToString;
 use scale_info::TypeInfo;
 use sp_core::{Get, RuntimeDebug, U256};
 use sp_runtime::{
@@ -165,8 +167,11 @@ impl<
 	LocalContextProvider::Hash: Encode,
 	LocalContextProvider::SignedExtra: Encode,
 	LocalDidDetails: Bump + Default + Encode,
-	LocalDidCallVerifier:
-		DipCallOriginFilter<Call, OriginInfo = (DidVerificationKey<ProviderAccountId>, DidVerificationKeyRelationship)>,
+	LocalDidCallVerifier: DipCallOriginFilter<
+		Call,
+		OriginInfo = (DidVerificationKey<ProviderAccountId>, DidVerificationKeyRelationship),
+		Error = String,
+	>,
 
 	ProviderDipMerkleHasher: sp_core::Hasher,
 	ProviderDidKeyId: Encode + Clone + Into<ProviderDipMerkleHasher::Out>,
@@ -174,7 +179,7 @@ impl<
 	ProviderLinkedAccountId: Encode + Clone,
 	ProviderWeb3Name: Encode + Clone,
 {
-	type Error = ();
+	type Error = String;
 	type IdentityDetails = LocalDidDetails;
 	type Proof = SiblingParachainDipStateProof<
 		RelayChainStateInfo::BlockNumber,
@@ -373,8 +378,11 @@ impl<
 	LocalContextProvider::Hash: Encode,
 	LocalContextProvider::SignedExtra: Encode,
 	LocalDidDetails: Bump + Default + Encode,
-	LocalDidCallVerifier:
-		DipCallOriginFilter<Call, OriginInfo = (DidVerificationKey<ProviderAccountId>, DidVerificationKeyRelationship)>,
+	LocalDidCallVerifier: DipCallOriginFilter<
+		Call,
+		OriginInfo = (DidVerificationKey<ProviderAccountId>, DidVerificationKeyRelationship),
+		Error = String,
+	>,
 
 	ProviderDipMerkleHasher: sp_core::Hasher,
 	ProviderDidKeyId: Encode + Clone + Into<ProviderDipMerkleHasher::Out>,
@@ -382,7 +390,7 @@ impl<
 	ProviderLinkedAccountId: Encode + Clone,
 	ProviderWeb3Name: Encode + Clone,
 {
-	type Error = ();
+	type Error = String;
 	type IdentityDetails = LocalDidDetails;
 	type Proof = ChildParachainDipStateProof<
 		<RelayChainInfo as RelayChainStorageInfo>::BlockNumber,
@@ -415,12 +423,12 @@ impl<
 		proof: Self::Proof,
 	) -> Result<Self::VerificationResult, Self::Error> {
 		// 1. Retrieve block hash from provider at the proof height
-		let block_hash_at_height =
-			RelayChainInfo::block_hash_for(&proof.para_state_root.relay_block_height).ok_or(())?;
+		let block_hash_at_height = RelayChainInfo::block_hash_for(&proof.para_state_root.relay_block_height)
+			.ok_or("Could not find block hash for provided block height.")?;
 
 		// 1.1 Verify that the provided header hashes to the same block has retrieved
 		if block_hash_at_height != proof.relay_header.hash() {
-			return Err(());
+			return Err("Block height mismatch between retrieved block and provided block.".to_string());
 		}
 		// 1.2 If so, extract the state root from the header
 		let state_root_at_height = proof.relay_header.state_root;

@@ -35,7 +35,7 @@ pub mod pallet {
 	use frame_system::pallet_prelude::*;
 	use parity_scale_codec::{FullCodec, MaxEncodedLen};
 	use scale_info::TypeInfo;
-	use sp_std::boxed::Box;
+	use sp_std::{boxed::Box, fmt::Debug};
 
 	use crate::traits::IdentityProofVerifier;
 
@@ -66,17 +66,21 @@ pub mod pallet {
 		type IdentityProof: Parameter;
 		/// The details stored in this pallet associated with any given subject.
 		type LocalIdentityInfo: FullCodec + TypeInfo + MaxEncodedLen;
+		type ProofVerificationError: Clone + Eq + Debug + Decode;
 		/// The logic of the proof verifier, called upon each execution of the
 		/// `dispatch_as` extrinsic.
 		type ProofVerifier: IdentityProofVerifier<
 			<Self as Config>::RuntimeCall,
 			Self::Identifier,
+			Error = Self::ProofVerificationError,
 			Proof = Self::IdentityProof,
 			IdentityDetails = Self::LocalIdentityInfo,
 			Submitter = <Self as frame_system::Config>::AccountId,
 		>;
 		/// The overarching runtime call type.
 		type RuntimeCall: Parameter + Dispatchable<RuntimeOrigin = <Self as Config>::RuntimeOrigin>;
+		/// The overarching event type.
+		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 		/// The overarching runtime origin type.
 		type RuntimeOrigin: From<Origin<Self>> + From<<Self as frame_system::Config>::RuntimeOrigin>;
 	}
@@ -93,6 +97,12 @@ pub mod pallet {
 		InvalidProof,
 		/// The specified call could not be dispatched.
 		Dispatch,
+	}
+
+	#[pallet::event]
+	#[pallet::generate_deposit(pub(super) fn deposit_event)]
+	pub enum Event<T: Config> {
+		ProofVerificationFailed(T::ProofVerificationError),
 	}
 
 	/// The origin this pallet creates after a user has provided a valid
@@ -125,13 +135,14 @@ pub mod pallet {
 				&submitter,
 				&mut identity_entry,
 				proof,
-			);
-			// Write the identity info to storage after it has optionally been updated by
-			// the `ProofVerifier`, regardless of whether the proof has been verified or
-			// not.
+			)
+			// If verification fails, we generate an event with the details of why it failed (not possible to otherwise generate a generic message for the error).
+			// Inspiration taken from the utility pallet.
+			.map_err(|e| {
+				Self::deposit_event(Event::<T>::ProofVerificationFailed(e));
+				Error::<T>::InvalidProof
+			})?;
 			IdentityEntries::<T>::mutate(&identifier, |entry| *entry = identity_entry);
-			// Unwrap the result if `ok`.
-			let proof_verification_result = proof_verification_result.map_err(|_| Error::<T>::InvalidProof)?;
 			let did_origin = DipOrigin {
 				identifier,
 				account_address: submitter,

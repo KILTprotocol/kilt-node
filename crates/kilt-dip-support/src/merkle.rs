@@ -19,6 +19,7 @@
 use did::{did_details::DidPublicKeyDetails, DidVerificationKeyRelationship};
 use frame_support::{traits::ConstU32, DefaultNoBound, RuntimeDebug};
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
+use scale_info::prelude::string::String;
 use scale_info::TypeInfo;
 use sp_runtime::{BoundedVec, SaturatedConversion};
 use sp_std::{fmt::Debug, marker::PhantomData, vec::Vec};
@@ -179,32 +180,6 @@ pub struct RevealedDidMerkleProofLeaves<
 	pub linked_accounts: BoundedVec<LinkedAccountId, ConstU32<MAX_REVEALED_ACCOUNTS_COUNT>>,
 }
 
-// impl<
-// 		KeyId,
-// 		AccountId,
-// 		BlockNumber,
-// 		Web3Name,
-// 		LinkedAccountId,
-// 		const MAX_REVEALED_KEYS_COUNT: u32,
-// 		const MAX_REVEALED_ACCOUNTS_COUNT: u32,
-// 	> Default for RevealedDidMerkleProofLeaves<
-// 	KeyId,
-// 	AccountId,
-// 	BlockNumber,
-// 	Web3Name,
-// 	LinkedAccountId,
-// 	MAX_REVEALED_KEYS_COUNT,
-// 	MAX_REVEALED_ACCOUNTS_COUNT,
-// > {
-// 	fn default() -> Self {
-// 		Self {
-// 			did_keys: BoundedVec::default(),
-// 			linked_accounts: BoundedVec::default(),
-// 			web3_name: None,
-// 		}
-// 	}
-// }
-
 impl<
 		KeyId,
 		AccountId,
@@ -288,7 +263,7 @@ impl<
 			MAX_REVEALED_KEYS_COUNT,
 			MAX_REVEALED_ACCOUNTS_COUNT,
 		>,
-		(),
+		String,
 	> {
 		// TODO: more efficient by removing cloning and/or collecting.
 		// Did not find another way of mapping a Vec<(Vec<u8>, Vec<u8>)> to a
@@ -299,7 +274,7 @@ impl<
 			.map(|leaf| (leaf.encoded_key(), Some(leaf.encoded_value())))
 			.collect::<Vec<(Vec<u8>, Option<Vec<u8>>)>>();
 		verify_trie_proof::<LayoutV1<Hasher>, _, _, _>(identity_commitment, &proof.blinded, &proof_leaves)
-			.map_err(|_| ())?;
+			.map_err(|_| "Failed to verify DIP proof for provided DIP identity commitment.")?;
 
 		// At this point, we know the proof is valid. We just need to map the revealed
 		// leaves to something the consumer can easily operate on.
@@ -322,8 +297,8 @@ impl<
 						relationship: key_id.1,
 						details: key_value.0.clone(),
 					})
-					.map_err(|_| ())?;
-					Ok::<_, ()>((keys, web3_name, linked_accounts))
+					.map_err(|_| "Reached maximum number of keys that can be revealed in a DIP proof.")?;
+					Ok::<_, String>((keys, web3_name, linked_accounts))
 				}
 				// TODO: Avoid cloning if possible
 				RevealedDidMerkleProofLeaf::Web3Name(revealed_web3_name, details) => Ok((
@@ -335,8 +310,10 @@ impl<
 					linked_accounts,
 				)),
 				RevealedDidMerkleProofLeaf::LinkedAccount(account_id, _) => {
-					linked_accounts.try_push(account_id.0.clone()).map_err(|_| ())?;
-					Ok::<_, ()>((keys, web3_name, linked_accounts))
+					linked_accounts.try_push(account_id.0.clone()).map_err(|_| {
+						"Reached maximum number of linked accounts that can be revealed in a DIP proof."
+					})?;
+					Ok::<_, String>((keys, web3_name, linked_accounts))
 				}
 			},
 		)?;

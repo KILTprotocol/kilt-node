@@ -17,6 +17,8 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use parity_scale_codec::{Decode, Encode, HasCompact};
+use scale_info::prelude::string::String;
+use scale_info::prelude::string::ToString;
 use sp_core::{storage::StorageKey, U256};
 use sp_runtime::generic::Header;
 use sp_std::{marker::PhantomData, vec::Vec};
@@ -106,23 +108,23 @@ pub(super) mod relay_chain {
 			para_id: &RelayChainState::ParaId,
 			root: &OutputOf<<RelayChainState as RelayChainStorageInfo>::Hasher>,
 			proof: impl IntoIterator<Item = Vec<u8>>,
-		) -> Result<Header<RelayChainState::BlockNumber, RelayChainState::Hasher>, ()> {
+		) -> Result<Header<RelayChainState::BlockNumber, RelayChainState::Hasher>, String> {
 			let parachain_storage_key = RelayChainState::parachain_head_storage_key(para_id);
 			let storage_proof = StorageProof::new(proof);
 			let revealed_leaves =
 				read_proof_check::<RelayChainState::Hasher, _>(*root, storage_proof, [&parachain_storage_key].iter())
-					.map_err(|_| ())?;
+					.map_err(|_| "Failed to verify parachain head Merkle proof for retrieved parachain state root.")?;
 			// TODO: Remove at some point
 			{
 				debug_assert!(revealed_leaves.len() == 1usize);
 				debug_assert!(revealed_leaves.contains_key(parachain_storage_key.as_ref()));
 			}
 			let Some(Some(encoded_head)) = revealed_leaves.get(parachain_storage_key.as_ref()) else {
-				return Err(());
+				return Err("No parachain head leaf revealed in the provided Merkle proof.");
 			};
 			// TODO: Figure out why RPC call returns 2 bytes in front which we don't need
 			let mut unwrapped_head = &encoded_head[2..];
-			Header::decode(&mut unwrapped_head).map_err(|_| ())
+			Header::decode(&mut unwrapped_head).map_err(|_| "Failed to decode revealed header.")
 		}
 	}
 
@@ -140,8 +142,9 @@ pub(super) mod relay_chain {
 			para_id: &RelayChainState::ParaId,
 			relay_height: &RelayChainState::BlockNumber,
 			proof: impl IntoIterator<Item = Vec<u8>>,
-		) -> Result<Header<RelayChainState::BlockNumber, RelayChainState::Hasher>, ()> {
-			let relay_state_root = RelayChainState::state_root_for_block(relay_height).ok_or(())?;
+		) -> Result<Header<RelayChainState::BlockNumber, RelayChainState::Hasher>, String> {
+			let relay_state_root = RelayChainState::state_root_for_block(relay_height)
+				.ok_or("Could not find parachain state root for provided relay block height.")?;
 			Self::verify_proof_for_parachain_with_root(para_id, &relay_state_root, proof)
 		}
 	}
@@ -264,7 +267,7 @@ pub(super) mod parachain {
 			identifier: &ParaInfo::Identifier,
 			state_root: OutputOf<ParaInfo::Hasher>,
 			proof: impl IntoIterator<Item = Vec<u8>>,
-		) -> Result<ParaInfo::Commitment, ()> {
+		) -> Result<ParaInfo::Commitment, String> {
 			let dip_commitment_storage_key = ParaInfo::dip_subject_storage_key(identifier);
 			let storage_proof = StorageProof::new(proof);
 			let revealed_leaves = read_proof_check::<ParaInfo::Hasher, _>(
@@ -272,16 +275,19 @@ pub(super) mod parachain {
 				storage_proof,
 				[&dip_commitment_storage_key].iter(),
 			)
-			.map_err(|_| ())?;
+			.map_err(|_| {
+				"Failed to verify DIP identity commitment Merkle proof for provided parachain state root.".to_string()
+			})?;
 			// TODO: Remove at some point
 			{
 				debug_assert!(revealed_leaves.len() == 1usize);
 				debug_assert!(revealed_leaves.contains_key(dip_commitment_storage_key.as_ref()));
 			}
 			let Some(Some(encoded_commitment)) = revealed_leaves.get(dip_commitment_storage_key.as_ref()) else {
-				return Err(());
+				return Err("No DIP identity commitment leaf revealed in the provided Merkle proof.".to_string());
 			};
-			ParaInfo::Commitment::decode(&mut &encoded_commitment[..]).map_err(|_| ())
+			ParaInfo::Commitment::decode(&mut &encoded_commitment[..])
+				.map_err(|_| "Failed to decode revealed DIP identity commitment.".to_string())
 		}
 	}
 
