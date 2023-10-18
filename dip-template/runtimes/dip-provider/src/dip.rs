@@ -16,10 +16,33 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use did::{DidRawOrigin, EnsureDidOrigin};
-use runtime_common::dip::{did::LinkedDidInfoProviderOf, merkle::DidMerkleRootGenerator};
+use did::{DidRawOrigin, EnsureDidOrigin, KeyIdOf};
+use pallet_did_lookup::linkable_account::LinkableAccountId;
+use pallet_dip_provider::traits::IdentityProvider;
+use parity_scale_codec::{Decode, Encode};
+use runtime_common::dip::{
+	did::LinkedDidInfoProviderOf,
+	merkle::{DidMerkleProofError, DidMerkleRootGenerator},
+};
+use scale_info::TypeInfo;
+use sp_std::vec::Vec;
 
 use crate::{AccountId, DidIdentifier, Hash, Runtime, RuntimeEvent};
+
+#[derive(Encode, Decode, TypeInfo)]
+pub struct RuntimeApiDipProofRequest {
+	pub(crate) identifier: DidIdentifier,
+	pub(crate) keys: Vec<KeyIdOf<Runtime>>,
+	pub(crate) accounts: Vec<LinkableAccountId>,
+	pub(crate) should_include_web3_name: bool,
+}
+
+#[derive(Encode, Decode, TypeInfo)]
+pub enum RuntimeApiDipProofError {
+	IdentityProviderError(<LinkedDidInfoProviderOf<Runtime> as IdentityProvider<DidIdentifier>>::Error),
+	IdentityNotFound,
+	MerkleProofError(DidMerkleProofError),
+}
 
 impl pallet_dip_provider::Config for Runtime {
 	type CommitOriginCheck = EnsureDidOrigin<DidIdentifier, AccountId>;

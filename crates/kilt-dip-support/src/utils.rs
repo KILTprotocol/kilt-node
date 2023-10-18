@@ -17,6 +17,8 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use pallet_dip_provider::traits::IdentityProvider;
+use parity_scale_codec::{Decode, Encode};
+use scale_info::TypeInfo;
 use sp_std::marker::PhantomData;
 
 pub struct CombinedIdentityResult<OutputA, OutputB, OutputC> {
@@ -81,6 +83,7 @@ where
 
 pub struct CombineIdentityFrom<A, B, C>(PhantomData<(A, B, C)>);
 
+#[derive(Encode, Decode, TypeInfo)]
 pub enum CombineError<ErrorA, ErrorB, ErrorC> {
 	A(ErrorA),
 	B(ErrorB),
