@@ -24,7 +24,15 @@ use kilt_dip_support::{
 };
 use pallet_did_lookup::linkable_account::LinkableAccountId;
 use pallet_dip_provider::traits::IdentityProvider;
+use parity_scale_codec::{Decode, Encode};
+use scale_info::TypeInfo;
 use sp_std::{marker::PhantomData, vec::Vec};
+
+#[derive(Encode, Decode, TypeInfo)]
+pub enum DidIdentityProviderError {
+	DidNotFound,
+	InternalError,
+}
 
 pub struct DidIdentityProvider<T>(PhantomData<T>);
 
@@ -32,8 +40,7 @@ impl<T> IdentityProvider<T::DidIdentifier> for DidIdentityProvider<T>
 where
 	T: did::Config,
 {
-	// TODO: Proper error handling
-	type Error = ();
+	type Error = DidIdentityProviderError;
 	type Success = DidDetails<T>;
 
 	fn retrieve(identifier: &T::DidIdentifier) -> Result<Option<Self::Success>, Self::Error> {
@@ -43,7 +50,7 @@ where
 		) {
 			(Some(details), _) => Ok(Some(details)),
 			(_, Some(_)) => Ok(None),
-			_ => Err(()),
+			_ => Err(DidIdentityProviderError::DidNotFound),
 		}
 	}
 }
@@ -56,8 +63,7 @@ impl<T> IdentityProvider<T::Web3NameOwner> for DidWeb3NameProvider<T>
 where
 	T: pallet_web3_names::Config,
 {
-	// TODO: Proper error handling
-	type Error = ();
+	type Error = DidIdentityProviderError;
 	type Success = Web3OwnershipOf<T>;
 
 	fn retrieve(identifier: &T::Web3NameOwner) -> Result<Option<Self::Success>, Self::Error> {
@@ -65,7 +71,8 @@ where
 			return Ok(None);
 		};
 		let Some(details) = pallet_web3_names::Pallet::<T>::owner(&web3_name) else {
-			return Err(());
+			log::error!("Inconsistent reverse map pallet_web3_names::owner(web3_name). Cannot find owner for web3name {:#?}", web3_name);
+			return Err(DidIdentityProviderError::InternalError);
 		};
 		Ok(Some(Web3OwnershipOf::<T> {
 			web3_name,
@@ -80,8 +87,7 @@ impl<T> IdentityProvider<T::DidIdentifier> for DidLinkedAccountsProvider<T>
 where
 	T: pallet_did_lookup::Config,
 {
-	// TODO: Proper error handling
-	type Error = ();
+	type Error = DidIdentityProviderError;
 	type Success = Vec<LinkableAccountId>;
 
 	fn retrieve(identifier: &T::DidIdentifier) -> Result<Option<Self::Success>, Self::Error> {

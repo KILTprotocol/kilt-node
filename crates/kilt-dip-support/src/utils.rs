@@ -81,14 +81,19 @@ where
 
 pub struct CombineIdentityFrom<A, B, C>(PhantomData<(A, B, C)>);
 
+pub enum CombineError<ErrorA, ErrorB, ErrorC> {
+	A(ErrorA),
+	B(ErrorB),
+	C(ErrorC),
+}
+
 impl<Identifier, A, B, C> IdentityProvider<Identifier> for CombineIdentityFrom<A, B, C>
 where
 	A: IdentityProvider<Identifier>,
 	B: IdentityProvider<Identifier>,
 	C: IdentityProvider<Identifier>,
 {
-	// TODO: Proper error handling
-	type Error = ();
+	type Error = CombineError<A::Error, B::Error, C::Error>;
 	type Success = CombinedIdentityResult<Option<A::Success>, Option<B::Success>, Option<C::Success>>;
 
 	fn retrieve(identifier: &Identifier) -> Result<Option<Self::Success>, Self::Error> {
@@ -105,8 +110,9 @@ where
 				b: ok_b,
 				c: ok_c,
 			})),
-			// If any of them returns an `Err`, return an `Err`
-			_ => Err(()),
+			(Err(e), _, _) => Err(CombineError::A(e)),
+			(_, Err(e), _) => Err(CombineError::B(e)),
+			(_, _, Err(e)) => Err(CombineError::C(e)),
 		}
 	}
 }
