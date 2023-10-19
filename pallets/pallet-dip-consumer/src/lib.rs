@@ -92,7 +92,7 @@ pub mod pallet {
 		/// An identity with the provided identifier could not be found.
 		IdentityNotFound,
 		/// The identity proof provided could not be successfully verified.
-		InvalidProof { reason: u16 },
+		InvalidProof(u16),
 		/// The specified call could not be dispatched.
 		Dispatch,
 	}
@@ -133,7 +133,7 @@ pub mod pallet {
 			)
 			// If verification fails, we generate an event with the details of why it failed (not possible to otherwise
 			// generate a generic message for the error). Inspiration taken from the utility pallet.
-			.map_err(|e| Error::<T>::InvalidProof { reason: e.into() })?;
+			.map_err(|e| Error::<T>::InvalidProof(e.into()))?;
 			IdentityEntries::<T>::mutate(&identifier, |entry| *entry = identity_entry);
 			let did_origin = DipOrigin {
 				identifier,

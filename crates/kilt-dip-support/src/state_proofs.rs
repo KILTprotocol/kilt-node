@@ -17,6 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use parity_scale_codec::{Decode, Encode, HasCompact};
+use sp_core::RuntimeDebug;
 use sp_core::{storage::StorageKey, U256};
 use sp_runtime::generic::Header;
 use sp_std::{marker::PhantomData, vec::Vec};
@@ -92,6 +93,7 @@ pub(super) mod relay_chain {
 
 	use crate::traits::{RelayChainStateInfo, RelayChainStorageInfo};
 
+	#[derive(RuntimeDebug)]
 	pub enum ParachainHeadProofVerifierError {
 		InvalidMerkleProof,
 		RequiredLeafNotRevealed,
@@ -269,6 +271,7 @@ pub(super) mod parachain {
 
 	use crate::traits::ProviderParachainStateInfo;
 
+	#[derive(RuntimeDebug)]
 	pub enum DipIdentityCommitmentProofVerifierError {
 		InvalidMerkleProof,
 		RequiredLeafNotRevealed,

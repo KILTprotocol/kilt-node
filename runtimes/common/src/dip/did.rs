@@ -31,15 +31,14 @@ use sp_std::{marker::PhantomData, vec::Vec};
 #[derive(Encode, Decode, TypeInfo)]
 pub enum DidIdentityProviderError {
 	DidNotFound,
-	Internal(u16),
+	Internal,
 }
 
 impl From<DidIdentityProviderError> for u16 {
 	fn from(value: DidIdentityProviderError) -> Self {
 		match value {
 			DidIdentityProviderError::DidNotFound => 0,
-			// Must be 1 or higher, used mostly internally for easier debugging
-			DidIdentityProviderError::Internal(code) => code,
+			DidIdentityProviderError::Internal => u16::MAX,
 		}
 	}
 }
@@ -85,7 +84,7 @@ where
 				"Inconsistent reverse map pallet_web3_names::owner(web3_name). Cannot find owner for web3name {:#?}",
 				web3_name
 			);
-			return Err(DidIdentityProviderError::Internal(1));
+			return Err(DidIdentityProviderError::Internal);
 		};
 		Ok(Some(Web3OwnershipOf::<T> {
 			web3_name,
