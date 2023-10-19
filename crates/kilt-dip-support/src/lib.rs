@@ -129,13 +129,13 @@ where
 				error.into().to_be().into()
 			}
 			DipSiblingProviderStateProofVerifierError::IdentityCommitmentMerkleProofVerificationError(error) => {
-				u16::from(error.into().to_be()) | (1 << 8)
+				u16::from(error.into().to_be()) | (0b1 << 15)
 			}
 			DipSiblingProviderStateProofVerifierError::DipProofVerificationError(error) => {
-				u16::from(error.into().to_be()) | (2 << 8)
+				u16::from(error.into().to_be()) | (0b11 << 14)
 			}
 			DipSiblingProviderStateProofVerifierError::DidSignatureVerificationError(error) => {
-				u16::from(error.into().to_be()) | (3 << 8)
+				u16::from(error.into().to_be()) | (0b111 << 13)
 			}
 		}
 	}
@@ -391,16 +391,16 @@ where
 			DipChildProviderStateProofVerifierError::InvalidBlockHeight => 0,
 			DipChildProviderStateProofVerifierError::InvalidBlockHash => 1,
 			DipChildProviderStateProofVerifierError::ParachainHeadMerkleProofVerificationError(error) => {
-				u16::from(error.into().to_be()) | (1 << 8)
+				u16::from(error.into().to_be()) | (0b1 << 15)
 			}
 			DipChildProviderStateProofVerifierError::IdentityCommitmentMerkleProofVerificationError(error) => {
-				u16::from(error.into().to_be()) | (2 << 8)
+				u16::from(error.into().to_be()) | (0b11 << 14)
 			}
 			DipChildProviderStateProofVerifierError::DipProofVerificationError(error) => {
-				u16::from(error.into().to_be()) | (3 << 8)
+				u16::from(error.into().to_be()) | (0b111 << 13)
 			}
 			DipChildProviderStateProofVerifierError::DidSignatureVerificationError(error) => {
-				u16::from(error.into().to_be()) | (4 << 8)
+				u16::from(error.into().to_be()) | (0b1111 << 12)
 			}
 		}
 	}
