@@ -52,5 +52,6 @@ impl pallet_dip_provider::Config for Runtime {
 	type IdentityCommitmentGenerator = DidMerkleRootGenerator<Runtime>;
 	type IdentityCommitmentGeneratorError = DidMerkleProofError;
 	type IdentityProvider = LinkedDidInfoProviderOf<Runtime>;
+	type IdentityProviderError = <LinkedDidInfoProviderOf<Runtime> as IdentityProvider<DidIdentifier>>::Error;
 	type RuntimeEvent = RuntimeEvent;
 }

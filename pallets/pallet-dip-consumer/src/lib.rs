@@ -129,7 +129,10 @@ pub mod pallet {
 			// TODO: Proper error handling
 			ensure!(T::DipCallOriginFilter::contains(&*call), Error::<T>::Dispatch);
 			let mut identity_entry = IdentityEntries::<T>::get(&identifier);
-			let proof_verification_result = T::ProofVerifier::verify_proof_for_call_against_details(
+			let proof_verification_result: <<T as Config>::ProofVerifier as IdentityProofVerifier<
+				<T as Config>::RuntimeCall,
+				<T as Config>::Identifier,
+			>>::VerificationResult = T::ProofVerifier::verify_proof_for_call_against_details(
 				&*call,
 				&identifier,
 				&submitter,

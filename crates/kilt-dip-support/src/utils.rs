@@ -90,6 +90,21 @@ pub enum CombineError<ErrorA, ErrorB, ErrorC> {
 	C(ErrorC),
 }
 
+impl<ErrorA, ErrorB, ErrorC> From<CombineError<ErrorA, ErrorB, ErrorC>> for u16
+where
+	ErrorA: Into<u16>,
+	ErrorB: Into<u16>,
+	ErrorC: Into<u16>,
+{
+	fn from(value: CombineError<ErrorA, ErrorB, ErrorC>) -> Self {
+		match value {
+			CombineError::A(error) => error.into(),
+			CombineError::B(error) => error.into(),
+			CombineError::C(error) => error.into(),
+		}
+	}
+}
+
 impl<Identifier, A, B, C> IdentityProvider<Identifier> for CombineIdentityFrom<A, B, C>
 where
 	A: IdentityProvider<Identifier>,

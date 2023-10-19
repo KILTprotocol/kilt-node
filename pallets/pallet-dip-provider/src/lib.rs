@@ -51,8 +51,9 @@ pub mod pallet {
 			Error = Self::IdentityCommitmentGeneratorError,
 			Output = Self::IdentityCommitment,
 		>;
-		type IdentityCommitmentGeneratorError: Clone + Debug + PartialEq;
-		type IdentityProvider: IdentityProvider<Self::Identifier>;
+		type IdentityCommitmentGeneratorError: Into<u16>;
+		type IdentityProvider: IdentityProvider<Self::Identifier, Error = Self::IdentityProviderError>;
+		type IdentityProviderError: Into<u16>;
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 	}
 
@@ -68,9 +69,6 @@ pub mod pallet {
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
-		IdentityCommitmentFailed {
-			error: T::IdentityCommitmentGeneratorError,
-		},
 		IdentityCommitted {
 			identifier: T::Identifier,
 			commitment: T::IdentityCommitment,
@@ -82,8 +80,8 @@ pub mod pallet {
 
 	#[pallet::error]
 	pub enum Error<T> {
-		IdentityNotFound,
-		IdentityCommitmentGeneration,
+		IdentityProvider { reason: u16 },
+		IdentityCommitmentGenerator { reason: u16 },
 	}
 
 	#[pallet::call]
@@ -99,12 +97,9 @@ pub mod pallet {
 			let identity_commitment: Option<T::IdentityCommitment> = match T::IdentityProvider::retrieve(&identifier) {
 				Ok(Some(identity)) => T::IdentityCommitmentGenerator::generate_commitment(&identifier, &identity)
 					.map(Some)
-					.map_err(|error| {
-						Self::deposit_event(Event::<T>::IdentityCommitmentFailed { error });
-						Error::<T>::IdentityCommitmentGeneration
-					}),
+					.map_err(|error| Error::<T>::IdentityCommitmentGenerator { reason: error.into() }),
 				Ok(None) => Ok(None),
-				Err(_) => Err(Error::<T>::IdentityNotFound),
+				Err(error) => Err(Error::<T>::IdentityProvider { reason: error.into() }),
 			}?;
 
 			if let Some(commitment) = identity_commitment {

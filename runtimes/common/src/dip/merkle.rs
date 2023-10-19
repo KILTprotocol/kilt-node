@@ -15,7 +15,6 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
-
 use did::{DidVerificationKeyRelationship, KeyIdOf};
 use frame_support::RuntimeDebug;
 use frame_system::pallet_prelude::BlockNumberFor;
@@ -55,7 +54,20 @@ pub enum DidMerkleProofError {
 	KeyNotFound,
 	LinkedAccountNotFound,
 	Web3NameNotFound,
-	InternalError,
+	Internal(u16),
+}
+
+impl From<DidMerkleProofError> for u16 {
+	fn from(value: DidMerkleProofError) -> Self {
+		match value {
+			DidMerkleProofError::DidNotFound => 0,
+			DidMerkleProofError::KeyNotFound => 1,
+			DidMerkleProofError::LinkedAccountNotFound => 2,
+			DidMerkleProofError::Web3NameNotFound => 3,
+			// Must be 4 or higher, used mostly internally for easier debugging
+			DidMerkleProofError::Internal(code) => code,
+		}
+	}
 }
 
 pub struct DidMerkleRootGenerator<T>(PhantomData<T>);
@@ -100,7 +112,7 @@ where
 			.get(&did_details.authentication_key)
 			.ok_or_else(|| {
 				log::error!("Authentication key should be part of the public keys.");
-				DidMerkleProofError::InternalError
+				DidMerkleProofError::Internal(4)
 			})?;
 		let auth_leaf = ProofLeafOf::<T>::DidKey(
 			DidKeyMerkleKey(
@@ -116,13 +128,13 @@ where
 					"Failed to insert authentication key in the trie builder. Authentication leaf: {:#?}",
 					auth_leaf
 				);
-				DidMerkleProofError::InternalError
+				DidMerkleProofError::Internal(5)
 			})?;
 		// Attestation key, if present
 		if let Some(att_key_id) = did_details.attestation_key {
 			let att_key_details = did_details.public_keys.get(&att_key_id).ok_or_else(|| {
 				log::error!("Attestation key should be part of the public keys.");
-				DidMerkleProofError::InternalError
+				DidMerkleProofError::Internal(6)
 			})?;
 			let att_leaf = ProofLeafOf::<T>::DidKey(
 				(att_key_id, DidVerificationKeyRelationship::AssertionMethod.into()).into(),
@@ -135,14 +147,14 @@ where
 						"Failed to insert attestation key in the trie builder. Attestation leaf: {:#?}",
 						att_leaf
 					);
-					DidMerkleProofError::InternalError
+					DidMerkleProofError::Internal(7)
 				})?;
 		};
 		// Delegation key, if present
 		if let Some(del_key_id) = did_details.delegation_key {
 			let del_key_details = did_details.public_keys.get(&del_key_id).ok_or_else(|| {
 				log::error!("Delegation key should be part of the public keys.");
-				DidMerkleProofError::InternalError
+				DidMerkleProofError::Internal(8)
 			})?;
 			let del_leaf = ProofLeafOf::<T>::DidKey(
 				(del_key_id, DidVerificationKeyRelationship::CapabilityDelegation.into()).into(),
@@ -155,7 +167,7 @@ where
 						"Failed to insert delegation key in the trie builder. Delegation leaf: {:#?}",
 						del_leaf
 					);
-					DidMerkleProofError::InternalError
+					DidMerkleProofError::Internal(9)
 				})?;
 		};
 		// Key agreement keys
@@ -165,7 +177,7 @@ where
 			.try_for_each(|id| -> Result<(), DidMerkleProofError> {
 				let key_agreement_details = did_details.public_keys.get(id).ok_or_else(|| {
 					log::error!("Key agreement key should be part of the public keys.");
-					DidMerkleProofError::InternalError
+					DidMerkleProofError::Internal(10)
 				})?;
 				let enc_leaf = ProofLeafOf::<T>::DidKey(
 					(*id, DidKeyRelationship::Encryption).into(),
@@ -178,7 +190,7 @@ where
 							"Failed to insert key agreement key in the trie builder. Key agreement leaf: {:#?}",
 							enc_leaf
 						);
-						DidMerkleProofError::InternalError
+						DidMerkleProofError::Internal(11)
 					})?;
 				Ok(())
 			})?;
@@ -199,7 +211,7 @@ where
 								"Failed to insert linked account in the trie builder. Linked account leaf: {:#?}",
 								linked_account_leaf
 							);
-							DidMerkleProofError::InternalError
+							DidMerkleProofError::Internal(12)
 						})?;
 					Ok(())
 				})?;
@@ -221,7 +233,7 @@ where
 						"Failed to insert web3name in the trie builder. Web3name leaf: {:#?}",
 						web3_name_leaf
 					);
-					DidMerkleProofError::InternalError
+					DidMerkleProofError::Internal(13)
 				})?;
 		}
 
@@ -270,7 +282,7 @@ where
 					Ok((*key_id, DidKeyRelationship::Encryption).into())
 				} else {
 					log::error!("Unknown key ID {:#?} retrieved from DID details.", key_id);
-					Err(DidMerkleProofError::InternalError)
+					Err(DidMerkleProofError::Internal(14))
 				}?;
 				Ok(RevealedDidMerkleProofLeaf::DidKey(
 					did_key_merkle_key,
@@ -315,7 +327,7 @@ where
 				"Failed to generate a merkle proof for the encoded keys: {:#?}",
 				encoded_keys
 			);
-			DidMerkleProofError::InternalError
+			DidMerkleProofError::Internal(15)
 		})?;
 		Ok(CompleteMerkleProof {
 			root,
