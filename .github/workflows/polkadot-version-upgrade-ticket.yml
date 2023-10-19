@@ -45,7 +45,7 @@ jobs:
         with:
           title: "[AUTOMATIC] Update Polkadot dependencies from ${{ inputs.current-version }} to ${{ inputs.target-version }}"
           body: |
-            ## Polkadot changes
+            ## Polkadot SDK changes
             ${{ env.SUBALFRED_POLKADOT_OUTPUT }}
           labels: kiltbot, ⛓ KILT node
           column: 📥  Inbox
