@@ -19,8 +19,7 @@
 use did::{did_details::DidPublicKeyDetails, DidVerificationKeyRelationship};
 use frame_support::{traits::ConstU32, DefaultNoBound, RuntimeDebug};
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
-use scale_info::prelude::string::String;
-use scale_info::TypeInfo;
+use scale_info::{prelude::string::String, TypeInfo};
 use sp_runtime::{BoundedVec, SaturatedConversion};
 use sp_std::{fmt::Debug, marker::PhantomData, vec::Vec};
 use sp_trie::{verify_trie_proof, LayoutV1};

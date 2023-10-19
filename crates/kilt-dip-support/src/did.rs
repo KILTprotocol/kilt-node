@@ -22,12 +22,13 @@ use did::{
 };
 use frame_support::ensure;
 use parity_scale_codec::{Decode, Encode};
-use scale_info::prelude::string::String;
-use scale_info::TypeInfo;
+use scale_info::{
+	prelude::string::{String, ToString},
+	TypeInfo,
+};
 use sp_core::RuntimeDebug;
 use sp_runtime::traits::CheckedSub;
-use sp_std::marker::PhantomData;
-use sp_std::vec::Vec;
+use sp_std::{marker::PhantomData, vec::Vec};
 
 use crate::{
 	merkle::RevealedDidKey,
@@ -115,8 +116,7 @@ impl<
 		local_details: &mut Option<DidLocalDetails>,
 		merkle_revealed_did_signature: RevealedDidKeysAndSignature<MerkleProofEntries, ContextProvider::BlockNumber>,
 	) -> Result<(DidVerificationKey<RemoteAccountId>, DidVerificationKeyRelationship), String> {
-		let block_number: <ContextProvider as DidSignatureVerifierContext>::BlockNumber =
-			ContextProvider::block_number();
+		let block_number = ContextProvider::block_number();
 		let is_signature_fresh = if let Some(blocks_ago_from_now) =
 			block_number.checked_sub(&merkle_revealed_did_signature.did_signature.block_number)
 		{

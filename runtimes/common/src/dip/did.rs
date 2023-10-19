@@ -71,7 +71,10 @@ where
 			return Ok(None);
 		};
 		let Some(details) = pallet_web3_names::Pallet::<T>::owner(&web3_name) else {
-			log::error!("Inconsistent reverse map pallet_web3_names::owner(web3_name). Cannot find owner for web3name {:#?}", web3_name);
+			log::error!(
+				"Inconsistent reverse map pallet_web3_names::owner(web3_name). Cannot find owner for web3name {:#?}",
+				web3_name
+			);
 			return Err(DidIdentityProviderError::InternalError);
 		};
 		Ok(Some(Web3OwnershipOf::<T> {

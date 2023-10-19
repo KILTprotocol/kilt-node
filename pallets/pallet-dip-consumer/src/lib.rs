@@ -136,8 +136,8 @@ pub mod pallet {
 				&mut identity_entry,
 				proof,
 			)
-			// If verification fails, we generate an event with the details of why it failed (not possible to otherwise generate a generic message for the error).
-			// Inspiration taken from the utility pallet.
+			// If verification fails, we generate an event with the details of why it failed (not possible to otherwise
+			// generate a generic message for the error). Inspiration taken from the utility pallet.
 			.map_err(|e| {
 				Self::deposit_event(Event::<T>::ProofVerificationFailed(e));
 				Error::<T>::InvalidProof

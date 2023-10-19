@@ -88,7 +88,7 @@ where
 		db: &mut MemoryDB<T::Hashing>,
 	) -> Result<T::Hash, DidMerkleProofError> {
 		// Fails if the DID details do not exist.
-		let (Some(did_details), web3_name, linked_accounts) = (&identity.a, &identity.b, &identity.c)  else {
+		let (Some(did_details), web3_name, linked_accounts) = (&identity.a, &identity.b, &identity.c) else {
 			return Err(DidMerkleProofError::DidNotFound);
 		};
 		let mut trie = TrieHash::<LayoutV1<T::Hashing>>::default();
@@ -279,7 +279,8 @@ where
 			})
 			.chain(account_ids.map(|account_id| -> Result<_, DidMerkleProofError> {
 				let Some(linked_accounts) = linked_accounts else {
-					// Directly LinkedAccountNotFound since there's no linked accounts to check against.
+					// Directly LinkedAccountNotFound since there's no linked accounts to check
+					// against.
 					return Err(DidMerkleProofError::LinkedAccountNotFound);
 				};
 				if linked_accounts.contains(account_id) {

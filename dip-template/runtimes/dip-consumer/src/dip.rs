@@ -25,7 +25,7 @@ use kilt_dip_support::{
 };
 use pallet_did_lookup::linkable_account::LinkableAccountId;
 use pallet_dip_consumer::traits::IdentityProofVerifier;
-use scale_info::prelude::string::String;
+use scale_info::prelude::string::{String, ToString};
 use sp_core::ConstU32;
 use sp_runtime::traits::BlakeTwo256;
 

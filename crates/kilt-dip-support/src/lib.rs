@@ -21,9 +21,10 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use parity_scale_codec::{Codec, Decode, Encode, HasCompact};
-use scale_info::prelude::string::String;
-use scale_info::prelude::string::ToString;
-use scale_info::TypeInfo;
+use scale_info::{
+	prelude::string::{String, ToString},
+	TypeInfo,
+};
 use sp_core::{Get, RuntimeDebug, U256};
 use sp_runtime::{
 	generic::Header,

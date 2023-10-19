@@ -17,8 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use parity_scale_codec::{Decode, Encode, HasCompact};
-use scale_info::prelude::string::String;
-use scale_info::prelude::string::ToString;
+use scale_info::prelude::string::{String, ToString};
 use sp_core::{storage::StorageKey, U256};
 use sp_runtime::generic::Header;
 use sp_std::{marker::PhantomData, vec::Vec};
@@ -120,11 +119,11 @@ pub(super) mod relay_chain {
 				debug_assert!(revealed_leaves.contains_key(parachain_storage_key.as_ref()));
 			}
 			let Some(Some(encoded_head)) = revealed_leaves.get(parachain_storage_key.as_ref()) else {
-				return Err("No parachain head leaf revealed in the provided Merkle proof.");
+				return Err("No parachain head leaf revealed in the provided Merkle proof.".to_string());
 			};
 			// TODO: Figure out why RPC call returns 2 bytes in front which we don't need
 			let mut unwrapped_head = &encoded_head[2..];
-			Header::decode(&mut unwrapped_head).map_err(|_| "Failed to decode revealed header.")
+			Header::decode(&mut unwrapped_head).map_err(|_| "Failed to decode revealed header.".to_string())
 		}
 	}
 

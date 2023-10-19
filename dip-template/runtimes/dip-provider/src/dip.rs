@@ -39,8 +39,8 @@ pub struct RuntimeApiDipProofRequest {
 
 #[derive(Encode, Decode, TypeInfo)]
 pub enum RuntimeApiDipProofError {
-	IdentityProviderError(<LinkedDidInfoProviderOf<Runtime> as IdentityProvider<DidIdentifier>>::Error),
 	IdentityNotFound,
+	IdentityProviderError(<LinkedDidInfoProviderOf<Runtime> as IdentityProvider<DidIdentifier>>::Error),
 	MerkleProofError(DidMerkleProofError),
 }
 
