@@ -49,7 +49,7 @@ pub struct CompleteMerkleProof<Root, Proof> {
 	pub proof: Proof,
 }
 
-#[derive(Encode, Decode, TypeInfo)]
+#[derive(Clone, RuntimeDebug, Encode, Decode, TypeInfo, PartialEq)]
 pub enum DidMerkleProofError {
 	DidNotFound,
 	KeyNotFound,

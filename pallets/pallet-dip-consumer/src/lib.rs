@@ -66,7 +66,7 @@ pub mod pallet {
 		type IdentityProof: Parameter;
 		/// The details stored in this pallet associated with any given subject.
 		type LocalIdentityInfo: FullCodec + TypeInfo + MaxEncodedLen;
-		type ProofVerificationError: Clone + Eq + Debug + Decode;
+		type ProofVerificationError: Clone + Debug + PartialEq;
 		/// The logic of the proof verifier, called upon each execution of the
 		/// `dispatch_as` extrinsic.
 		type ProofVerifier: IdentityProofVerifier<

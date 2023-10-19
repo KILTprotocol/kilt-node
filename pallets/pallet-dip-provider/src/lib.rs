@@ -48,8 +48,10 @@ pub mod pallet {
 		type IdentityCommitmentGenerator: IdentityCommitmentGenerator<
 			Self::Identifier,
 			IdentityOf<Self>,
+			Error = Self::IdentityCommitmentGeneratorError,
 			Output = Self::IdentityCommitment,
 		>;
+		type IdentityCommitmentGeneratorError: Clone + Debug + PartialEq;
 		type IdentityProvider: IdentityProvider<Self::Identifier>;
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 	}
@@ -66,6 +68,9 @@ pub mod pallet {
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
+		IdentityCommitmentFailed {
+			error: T::IdentityCommitmentGeneratorError,
+		},
 		IdentityCommitted {
 			identifier: T::Identifier,
 			commitment: T::IdentityCommitment,
@@ -94,7 +99,10 @@ pub mod pallet {
 			let identity_commitment: Option<T::IdentityCommitment> = match T::IdentityProvider::retrieve(&identifier) {
 				Ok(Some(identity)) => T::IdentityCommitmentGenerator::generate_commitment(&identifier, &identity)
 					.map(Some)
-					.map_err(|_| Error::<T>::IdentityCommitmentGeneration),
+					.map_err(|error| {
+						Self::deposit_event(Event::<T>::IdentityCommitmentFailed { error });
+						Error::<T>::IdentityCommitmentGeneration
+					}),
 				Ok(None) => Ok(None),
 				Err(_) => Err(Error::<T>::IdentityNotFound),
 			}?;
@@ -111,5 +119,7 @@ pub mod pallet {
 
 			Ok(())
 		}
+		// TODO: Add extrinsic to remove commitment without requiring the identity to be
+		// deleted.
 	}
 }

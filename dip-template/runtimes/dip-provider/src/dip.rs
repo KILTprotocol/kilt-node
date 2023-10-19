@@ -50,6 +50,7 @@ impl pallet_dip_provider::Config for Runtime {
 	type Identifier = DidIdentifier;
 	type IdentityCommitment = Hash;
 	type IdentityCommitmentGenerator = DidMerkleRootGenerator<Runtime>;
+	type IdentityCommitmentGeneratorError = DidMerkleProofError;
 	type IdentityProvider = LinkedDidInfoProviderOf<Runtime>;
 	type RuntimeEvent = RuntimeEvent;
 }
