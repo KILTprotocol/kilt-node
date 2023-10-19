@@ -25,11 +25,10 @@ use kilt_dip_support::{
 };
 use pallet_did_lookup::linkable_account::LinkableAccountId;
 use pallet_dip_consumer::traits::IdentityProofVerifier;
-use scale_info::prelude::string::{String, ToString};
 use sp_core::ConstU32;
 use sp_runtime::traits::BlakeTwo256;
 
-use crate::{AccountId, DidIdentifier, Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin};
+use crate::{AccountId, DidIdentifier, Runtime, RuntimeCall, RuntimeOrigin};
 
 pub type MerkleProofVerifierOutputOf<Call, Subject> =
 	<ProofVerifier as IdentityProofVerifier<Call, Subject>>::VerificationResult;
@@ -56,10 +55,9 @@ impl pallet_dip_consumer::Config for Runtime {
 	type Identifier = DidIdentifier;
 	type IdentityProof = <ProofVerifier as IdentityProofVerifier<RuntimeCall, DidIdentifier>>::Proof;
 	type LocalIdentityInfo = u128;
-	type ProofVerificationError = String;
+	type ProofVerificationError = <ProofVerifier as IdentityProofVerifier<RuntimeCall, DidIdentifier>>::Error;
 	type ProofVerifier = ProofVerifier;
 	type RuntimeCall = RuntimeCall;
-	type RuntimeEvent = RuntimeEvent;
 	type RuntimeOrigin = RuntimeOrigin;
 }
 
@@ -109,24 +107,26 @@ fn single_key_relationship<'a>(
 		})
 }
 
+pub enum DipCallFilterError {
+	BadOrigin,
+	WrongVerificationRelationship,
+}
+
 pub struct DipCallFilter;
 
 impl DipCallOriginFilter<RuntimeCall> for DipCallFilter {
-	type Error = String;
+	type Error = DipCallFilterError;
 	type OriginInfo = (DidVerificationKey<ProviderAccountId>, DidVerificationKeyRelationship);
 	type Success = ();
 
 	// Accepts only a DipOrigin for the DidLookup pallet calls.
 	fn check_call_origin_info(call: &RuntimeCall, info: &Self::OriginInfo) -> Result<Self::Success, Self::Error> {
 		let key_relationship =
-			single_key_relationship([call].into_iter()).map_err(|_| "Call cannot be authorized by a DID origin.")?;
+			single_key_relationship([call].into_iter()).map_err(|_| DipCallFilterError::BadOrigin)?;
 		if info.1 == key_relationship {
 			Ok(())
 		} else {
-			Err(
-				"DID key used to authorize the operation is not of the same relationship expected by this call."
-					.to_string(),
-			)
+			Err(DipCallFilterError::WrongVerificationRelationship)
 		}
 	}
 }

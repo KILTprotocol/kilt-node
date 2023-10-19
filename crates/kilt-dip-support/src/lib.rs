@@ -21,10 +21,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use parity_scale_codec::{Codec, Decode, Encode, HasCompact};
-use scale_info::{
-	prelude::string::{String, ToString},
-	TypeInfo,
-};
+use scale_info::TypeInfo;
 use sp_core::{Get, RuntimeDebug, U256};
 use sp_runtime::{
 	generic::Header,
@@ -36,9 +33,18 @@ use ::did::{did_details::DidVerificationKey, DidVerificationKeyRelationship};
 use pallet_dip_consumer::traits::IdentityProofVerifier;
 
 use crate::{
-	did::{RevealedDidKeysAndSignature, RevealedDidKeysSignatureAndCallVerifier, TimeBoundDidSignature},
-	merkle::{DidMerkleProof, DidMerkleProofVerifier, RevealedDidMerkleProofLeaf, RevealedDidMerkleProofLeaves},
-	state_proofs::{parachain::DipIdentityCommitmentProofVerifier, relay_chain::ParachainHeadProofVerifier},
+	did::{
+		RevealedDidKeysAndSignature, RevealedDidKeysSignatureAndCallVerifier,
+		RevealedDidKeysSignatureAndCallVerifierError, TimeBoundDidSignature,
+	},
+	merkle::{
+		DidMerkleProof, DidMerkleProofVerifier, DidMerkleProofVerifierError, RevealedDidMerkleProofLeaf,
+		RevealedDidMerkleProofLeaves,
+	},
+	state_proofs::{
+		parachain::{DipIdentityCommitmentProofVerifier, DipIdentityCommitmentProofVerifierError},
+		relay_chain::{ParachainHeadProofVerifier, ParachainHeadProofVerifierError},
+	},
 	traits::{
 		Bump, DidSignatureVerifierContext, DipCallOriginFilter, HistoricalBlockRegistry, ProviderParachainStateInfo,
 		RelayChainStorageInfo,
@@ -76,6 +82,63 @@ pub struct ParachainRootStateProof<RelayBlockHeight> {
 pub struct DipMerkleProofAndDidSignature<BlindedValues, Leaf, BlockNumber> {
 	leaves: DidMerkleProof<BlindedValues, Leaf>,
 	signature: TimeBoundDidSignature<BlockNumber>,
+}
+
+pub enum DipSiblingProviderStateProofVerifierError<
+	ParachainHeadMerkleProofVerificationError,
+	IdentityCommitmentMerkleProofVerificationError,
+	DipProofVerificationError,
+	DidSignatureVerificationError,
+> {
+	ParachainHeadMerkleProofVerificationError(ParachainHeadMerkleProofVerificationError),
+	IdentityCommitmentMerkleProofVerificationError(IdentityCommitmentMerkleProofVerificationError),
+	DipProofVerificationError(DipProofVerificationError),
+	DidSignatureVerificationError(DidSignatureVerificationError),
+}
+
+impl<
+		ParachainHeadMerkleProofVerificationError,
+		IdentityCommitmentMerkleProofVerificationError,
+		DipProofVerificationError,
+		DidSignatureVerificationError,
+	>
+	From<
+		DipSiblingProviderStateProofVerifierError<
+			ParachainHeadMerkleProofVerificationError,
+			IdentityCommitmentMerkleProofVerificationError,
+			DipProofVerificationError,
+			DidSignatureVerificationError,
+		>,
+	> for u16
+where
+	ParachainHeadMerkleProofVerificationError: Into<u8>,
+	IdentityCommitmentMerkleProofVerificationError: Into<u8>,
+	DipProofVerificationError: Into<u8>,
+	DidSignatureVerificationError: Into<u8>,
+{
+	fn from(
+		value: DipSiblingProviderStateProofVerifierError<
+			ParachainHeadMerkleProofVerificationError,
+			IdentityCommitmentMerkleProofVerificationError,
+			DipProofVerificationError,
+			DidSignatureVerificationError,
+		>,
+	) -> Self {
+		match value {
+			DipSiblingProviderStateProofVerifierError::ParachainHeadMerkleProofVerificationError(error) => {
+				error.into().to_be().into()
+			}
+			DipSiblingProviderStateProofVerifierError::IdentityCommitmentMerkleProofVerificationError(error) => {
+				u16::from(error.into().to_be()) | (1 << 8)
+			}
+			DipSiblingProviderStateProofVerifierError::DipProofVerificationError(error) => {
+				u16::from(error.into().to_be()) | (2 << 8)
+			}
+			DipSiblingProviderStateProofVerifierError::DidSignatureVerificationError(error) => {
+				u16::from(error.into().to_be()) | (3 << 8)
+			}
+		}
+	}
 }
 
 #[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug, TypeInfo)]
@@ -168,11 +231,8 @@ impl<
 	LocalContextProvider::Hash: Encode,
 	LocalContextProvider::SignedExtra: Encode,
 	LocalDidDetails: Bump + Default + Encode,
-	LocalDidCallVerifier: DipCallOriginFilter<
-		Call,
-		OriginInfo = (DidVerificationKey<ProviderAccountId>, DidVerificationKeyRelationship),
-		Error = String,
-	>,
+	LocalDidCallVerifier:
+		DipCallOriginFilter<Call, OriginInfo = (DidVerificationKey<ProviderAccountId>, DidVerificationKeyRelationship)>,
 
 	ProviderDipMerkleHasher: sp_core::Hasher,
 	ProviderDidKeyId: Encode + Clone + Into<ProviderDipMerkleHasher::Out>,
@@ -180,7 +240,12 @@ impl<
 	ProviderLinkedAccountId: Encode + Clone,
 	ProviderWeb3Name: Encode + Clone,
 {
-	type Error = String;
+	type Error = DipSiblingProviderStateProofVerifierError<
+		ParachainHeadProofVerifierError,
+		DipIdentityCommitmentProofVerifierError,
+		DidMerkleProofVerifierError,
+		RevealedDidKeysSignatureAndCallVerifierError,
+	>;
 	type IdentityDetails = LocalDidDetails;
 	type Proof = SiblingParachainDipStateProof<
 		RelayChainStateInfo::BlockNumber,
@@ -217,7 +282,8 @@ impl<
 			&SiblingProviderParachainId::get(),
 			&proof.para_state_root.relay_block_height,
 			proof.para_state_root.proof,
-		)?;
+		)
+		.map_err(DipSiblingProviderStateProofVerifierError::ParachainHeadMerkleProofVerificationError)?;
 
 		// 2. Verify parachain state proof.
 		let subject_identity_commitment =
@@ -225,7 +291,8 @@ impl<
 				subject,
 				provider_parachain_header.state_root.into(),
 				proof.dip_identity_commitment,
-			)?;
+			)
+			.map_err(DipSiblingProviderStateProofVerifierError::IdentityCommitmentMerkleProofVerificationError)?;
 
 		// 3. Verify DIP merkle proof.
 		let proof_leaves = DidMerkleProofVerifier::<
@@ -237,7 +304,8 @@ impl<
 			_,
 			MAX_REVEALED_KEYS_COUNT,
 			MAX_REVEALED_ACCOUNTS_COUNT,
-		>::verify_dip_merkle_proof(&subject_identity_commitment, proof.did.leaves)?;
+		>::verify_dip_merkle_proof(&subject_identity_commitment, proof.did.leaves)
+		.map_err(DipSiblingProviderStateProofVerifierError::DipProofVerificationError)?;
 
 		// 4. Verify DID signature.
 		RevealedDidKeysSignatureAndCallVerifier::<
@@ -258,7 +326,7 @@ impl<
 				merkle_leaves: proof_leaves.borrow(),
 				did_signature: proof.did.signature,
 			},
-		)?;
+		).map_err(DipSiblingProviderStateProofVerifierError::DidSignatureVerificationError)?;
 
 		Ok(proof_leaves)
 	}
@@ -275,6 +343,67 @@ pub struct ChildParachainDipStateProof<
 	relay_header: Header<ParentBlockHeight, ParentBlockHasher>,
 	dip_identity_commitment: Vec<Vec<u8>>,
 	did: DipMerkleProofAndDidSignature<DipMerkleProofBlindedValues, DipMerkleProofRevealedLeaf, ParentBlockHeight>,
+}
+
+pub enum DipChildProviderStateProofVerifierError<
+	ParachainHeadMerkleProofVerificationError,
+	IdentityCommitmentMerkleProofVerificationError,
+	DipProofVerificationError,
+	DidSignatureVerificationError,
+> {
+	InvalidBlockHeight,
+	InvalidBlockHash,
+	ParachainHeadMerkleProofVerificationError(ParachainHeadMerkleProofVerificationError),
+	IdentityCommitmentMerkleProofVerificationError(IdentityCommitmentMerkleProofVerificationError),
+	DipProofVerificationError(DipProofVerificationError),
+	DidSignatureVerificationError(DidSignatureVerificationError),
+}
+
+impl<
+		ParachainHeadMerkleProofVerificationError,
+		IdentityCommitmentMerkleProofVerificationError,
+		DipProofVerificationError,
+		DidSignatureVerificationError,
+	>
+	From<
+		DipChildProviderStateProofVerifierError<
+			ParachainHeadMerkleProofVerificationError,
+			IdentityCommitmentMerkleProofVerificationError,
+			DipProofVerificationError,
+			DidSignatureVerificationError,
+		>,
+	> for u16
+where
+	ParachainHeadMerkleProofVerificationError: Into<u8>,
+	IdentityCommitmentMerkleProofVerificationError: Into<u8>,
+	DipProofVerificationError: Into<u8>,
+	DidSignatureVerificationError: Into<u8>,
+{
+	fn from(
+		value: DipChildProviderStateProofVerifierError<
+			ParachainHeadMerkleProofVerificationError,
+			IdentityCommitmentMerkleProofVerificationError,
+			DipProofVerificationError,
+			DidSignatureVerificationError,
+		>,
+	) -> Self {
+		match value {
+			DipChildProviderStateProofVerifierError::InvalidBlockHeight => 0,
+			DipChildProviderStateProofVerifierError::InvalidBlockHash => 1,
+			DipChildProviderStateProofVerifierError::ParachainHeadMerkleProofVerificationError(error) => {
+				u16::from(error.into().to_be()) | (1 << 8)
+			}
+			DipChildProviderStateProofVerifierError::IdentityCommitmentMerkleProofVerificationError(error) => {
+				u16::from(error.into().to_be()) | (2 << 8)
+			}
+			DipChildProviderStateProofVerifierError::DipProofVerificationError(error) => {
+				u16::from(error.into().to_be()) | (3 << 8)
+			}
+			DipChildProviderStateProofVerifierError::DidSignatureVerificationError(error) => {
+				u16::from(error.into().to_be()) | (4 << 8)
+			}
+		}
+	}
 }
 
 pub struct DipChildProviderStateProofVerifier<
@@ -379,11 +508,8 @@ impl<
 	LocalContextProvider::Hash: Encode,
 	LocalContextProvider::SignedExtra: Encode,
 	LocalDidDetails: Bump + Default + Encode,
-	LocalDidCallVerifier: DipCallOriginFilter<
-		Call,
-		OriginInfo = (DidVerificationKey<ProviderAccountId>, DidVerificationKeyRelationship),
-		Error = String,
-	>,
+	LocalDidCallVerifier:
+		DipCallOriginFilter<Call, OriginInfo = (DidVerificationKey<ProviderAccountId>, DidVerificationKeyRelationship)>,
 
 	ProviderDipMerkleHasher: sp_core::Hasher,
 	ProviderDidKeyId: Encode + Clone + Into<ProviderDipMerkleHasher::Out>,
@@ -391,7 +517,12 @@ impl<
 	ProviderLinkedAccountId: Encode + Clone,
 	ProviderWeb3Name: Encode + Clone,
 {
-	type Error = String;
+	type Error = DipChildProviderStateProofVerifierError<
+		ParachainHeadProofVerifierError,
+		DipIdentityCommitmentProofVerifierError,
+		DidMerkleProofVerifierError,
+		RevealedDidKeysSignatureAndCallVerifierError,
+	>;
 	type IdentityDetails = LocalDidDetails;
 	type Proof = ChildParachainDipStateProof<
 		<RelayChainInfo as RelayChainStorageInfo>::BlockNumber,
@@ -425,11 +556,11 @@ impl<
 	) -> Result<Self::VerificationResult, Self::Error> {
 		// 1. Retrieve block hash from provider at the proof height
 		let block_hash_at_height = RelayChainInfo::block_hash_for(&proof.para_state_root.relay_block_height)
-			.ok_or("Could not find block hash for provided block height.")?;
+			.ok_or(DipChildProviderStateProofVerifierError::InvalidBlockHeight)?;
 
 		// 1.1 Verify that the provided header hashes to the same block has retrieved
 		if block_hash_at_height != proof.relay_header.hash() {
-			return Err("Block height mismatch between retrieved block and provided block.".to_string());
+			return Err(DipChildProviderStateProofVerifierError::InvalidBlockHash);
 		}
 		// 1.2 If so, extract the state root from the header
 		let state_root_at_height = proof.relay_header.state_root;
@@ -441,7 +572,8 @@ impl<
 				&ChildProviderParachainId::get(),
 				&state_root_at_height,
 				proof.para_state_root.proof,
-			)?;
+			)
+			.map_err(DipChildProviderStateProofVerifierError::ParachainHeadMerkleProofVerificationError)?;
 
 		// 3. Verify parachain state proof.
 		let subject_identity_commitment =
@@ -449,7 +581,8 @@ impl<
 				subject,
 				provider_parachain_header.state_root.into(),
 				proof.dip_identity_commitment,
-			)?;
+			)
+			.map_err(DipChildProviderStateProofVerifierError::IdentityCommitmentMerkleProofVerificationError)?;
 
 		// 4. Verify DIP merkle proof.
 		let proof_leaves = DidMerkleProofVerifier::<
@@ -461,7 +594,8 @@ impl<
 			_,
 			MAX_REVEALED_KEYS_COUNT,
 			MAX_REVEALED_ACCOUNTS_COUNT,
-		>::verify_dip_merkle_proof(&subject_identity_commitment, proof.did.leaves)?;
+		>::verify_dip_merkle_proof(&subject_identity_commitment, proof.did.leaves)
+		.map_err(DipChildProviderStateProofVerifierError::DipProofVerificationError)?;
 
 		// 5. Verify DID signature.
 		RevealedDidKeysSignatureAndCallVerifier::<
@@ -482,7 +616,7 @@ impl<
 				merkle_leaves: proof_leaves.borrow(),
 				did_signature: proof.did.signature,
 			},
-		)?;
+		).map_err(DipChildProviderStateProofVerifierError::DidSignatureVerificationError)?;
 		Ok(proof_leaves)
 	}
 }

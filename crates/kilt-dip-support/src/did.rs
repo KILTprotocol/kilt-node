@@ -22,10 +22,7 @@ use did::{
 };
 use frame_support::ensure;
 use parity_scale_codec::{Decode, Encode};
-use scale_info::{
-	prelude::string::{String, ToString},
-	TypeInfo,
-};
+use scale_info::TypeInfo;
 use sp_core::RuntimeDebug;
 use sp_runtime::traits::CheckedSub;
 use sp_std::{marker::PhantomData, vec::Vec};
@@ -45,6 +42,24 @@ pub(crate) struct RevealedDidKeysAndSignature<RevealedDidKeys, BlockNumber> {
 pub struct TimeBoundDidSignature<BlockNumber> {
 	pub signature: DidSignature,
 	pub block_number: BlockNumber,
+}
+
+pub enum RevealedDidKeysSignatureAndCallVerifierError {
+	SignatureNotFresh,
+	SignatureUnverifiable,
+	OriginCheckFailed,
+	Internal,
+}
+
+impl From<RevealedDidKeysSignatureAndCallVerifierError> for u8 {
+	fn from(value: RevealedDidKeysSignatureAndCallVerifierError) -> Self {
+		match value {
+			RevealedDidKeysSignatureAndCallVerifierError::SignatureNotFresh => 0,
+			RevealedDidKeysSignatureAndCallVerifierError::SignatureUnverifiable => 1,
+			RevealedDidKeysSignatureAndCallVerifierError::OriginCheckFailed => 2,
+			RevealedDidKeysSignatureAndCallVerifierError::Internal => u8::MAX,
+		}
+	}
 }
 
 pub(crate) struct RevealedDidKeysSignatureAndCallVerifier<
@@ -103,11 +118,8 @@ impl<
 	DidLocalDetails: Bump + Default + Encode,
 	RemoteAccountId: Clone,
 	MerkleProofEntries: sp_std::borrow::Borrow<[RevealedDidKey<RemoteKeyId, RemoteBlockNumber, RemoteAccountId>]>,
-	CallVerifier: DipCallOriginFilter<
-		Call,
-		OriginInfo = (DidVerificationKey<RemoteAccountId>, DidVerificationKeyRelationship),
-		Error = String,
-	>,
+	CallVerifier:
+		DipCallOriginFilter<Call, OriginInfo = (DidVerificationKey<RemoteAccountId>, DidVerificationKeyRelationship)>,
 {
 	#[allow(clippy::result_unit_err)]
 	pub(crate) fn verify_did_signature_for_call(
@@ -115,7 +127,10 @@ impl<
 		submitter: &Submitter,
 		local_details: &mut Option<DidLocalDetails>,
 		merkle_revealed_did_signature: RevealedDidKeysAndSignature<MerkleProofEntries, ContextProvider::BlockNumber>,
-	) -> Result<(DidVerificationKey<RemoteAccountId>, DidVerificationKeyRelationship), String> {
+	) -> Result<
+		(DidVerificationKey<RemoteAccountId>, DidVerificationKeyRelationship),
+		RevealedDidKeysSignatureAndCallVerifierError,
+	> {
 		let block_number = ContextProvider::block_number();
 		let is_signature_fresh = if let Some(blocks_ago_from_now) =
 			block_number.checked_sub(&merkle_revealed_did_signature.did_signature.block_number)
@@ -128,7 +143,7 @@ impl<
 		};
 		ensure!(
 			is_signature_fresh,
-			"Failed to verify provided DID signature because is not fresh enough."
+			RevealedDidKeysSignatureAndCallVerifierError::SignatureNotFresh,
 		);
 		let encoded_payload = (
 			call,
@@ -148,7 +163,7 @@ impl<
 					Some(Ok((key.clone(), vr)))
 				} else {
 					log::error!("Should never fail to build a VerificationRelationship from the given DidKeyRelationship because we have already made sure the conditions hold.");
-					Some(Err("InternalError"))
+					Some(Err(RevealedDidKeysSignatureAndCallVerifierError::Internal))
 				}
 			}).collect::<Result<_, _>>()?;
 		let valid_signing_key = proof_verification_keys.iter().find(|(verification_key, _)| {
@@ -157,14 +172,15 @@ impl<
 				.is_ok()
 		});
 		let Some((key, relationship)) = valid_signing_key else {
-			return Err("Failed to verify the call signature using any of the revealed keys.".to_string());
+			return Err(RevealedDidKeysSignatureAndCallVerifierError::SignatureUnverifiable);
 		};
 		if let Some(details) = local_details {
 			details.bump();
 		} else {
 			*local_details = Some(DidLocalDetails::default());
 		};
-		CallVerifier::check_call_origin_info(call, &(key.clone(), *relationship))?;
+		CallVerifier::check_call_origin_info(call, &(key.clone(), *relationship))
+			.map_err(|_| RevealedDidKeysSignatureAndCallVerifierError::OriginCheckFailed)?;
 		Ok((key.clone(), *relationship))
 	}
 }

@@ -17,7 +17,6 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use parity_scale_codec::{Decode, Encode, HasCompact};
-use scale_info::prelude::string::{String, ToString};
 use sp_core::{storage::StorageKey, U256};
 use sp_runtime::generic::Header;
 use sp_std::{marker::PhantomData, vec::Vec};
@@ -93,6 +92,24 @@ pub(super) mod relay_chain {
 
 	use crate::traits::{RelayChainStateInfo, RelayChainStorageInfo};
 
+	pub enum ParachainHeadProofVerifierError {
+		InvalidMerkleProof,
+		RequiredLeafNotRevealed,
+		HeaderDecode,
+		ParachainStateRootNotFound,
+	}
+
+	impl From<ParachainHeadProofVerifierError> for u8 {
+		fn from(value: ParachainHeadProofVerifierError) -> Self {
+			match value {
+				ParachainHeadProofVerifierError::InvalidMerkleProof => 0,
+				ParachainHeadProofVerifierError::RequiredLeafNotRevealed => 1,
+				ParachainHeadProofVerifierError::HeaderDecode => 2,
+				ParachainHeadProofVerifierError::ParachainStateRootNotFound => 3,
+			}
+		}
+	}
+
 	pub struct ParachainHeadProofVerifier<RelayChainState>(PhantomData<RelayChainState>);
 
 	// Uses the provided `root` to verify the proof.
@@ -107,23 +124,23 @@ pub(super) mod relay_chain {
 			para_id: &RelayChainState::ParaId,
 			root: &OutputOf<<RelayChainState as RelayChainStorageInfo>::Hasher>,
 			proof: impl IntoIterator<Item = Vec<u8>>,
-		) -> Result<Header<RelayChainState::BlockNumber, RelayChainState::Hasher>, String> {
+		) -> Result<Header<RelayChainState::BlockNumber, RelayChainState::Hasher>, ParachainHeadProofVerifierError> {
 			let parachain_storage_key = RelayChainState::parachain_head_storage_key(para_id);
 			let storage_proof = StorageProof::new(proof);
 			let revealed_leaves =
 				read_proof_check::<RelayChainState::Hasher, _>(*root, storage_proof, [&parachain_storage_key].iter())
-					.map_err(|_| "Failed to verify parachain head Merkle proof for retrieved parachain state root.")?;
+					.map_err(|_| ParachainHeadProofVerifierError::InvalidMerkleProof)?;
 			// TODO: Remove at some point
 			{
 				debug_assert!(revealed_leaves.len() == 1usize);
 				debug_assert!(revealed_leaves.contains_key(parachain_storage_key.as_ref()));
 			}
 			let Some(Some(encoded_head)) = revealed_leaves.get(parachain_storage_key.as_ref()) else {
-				return Err("No parachain head leaf revealed in the provided Merkle proof.".to_string());
+				return Err(ParachainHeadProofVerifierError::RequiredLeafNotRevealed);
 			};
 			// TODO: Figure out why RPC call returns 2 bytes in front which we don't need
 			let mut unwrapped_head = &encoded_head[2..];
-			Header::decode(&mut unwrapped_head).map_err(|_| "Failed to decode revealed header.".to_string())
+			Header::decode(&mut unwrapped_head).map_err(|_| ParachainHeadProofVerifierError::HeaderDecode)
 		}
 	}
 
@@ -141,9 +158,9 @@ pub(super) mod relay_chain {
 			para_id: &RelayChainState::ParaId,
 			relay_height: &RelayChainState::BlockNumber,
 			proof: impl IntoIterator<Item = Vec<u8>>,
-		) -> Result<Header<RelayChainState::BlockNumber, RelayChainState::Hasher>, String> {
+		) -> Result<Header<RelayChainState::BlockNumber, RelayChainState::Hasher>, ParachainHeadProofVerifierError> {
 			let relay_state_root = RelayChainState::state_root_for_block(relay_height)
-				.ok_or("Could not find parachain state root for provided relay block height.")?;
+				.ok_or(ParachainHeadProofVerifierError::ParachainStateRootNotFound)?;
 			Self::verify_proof_for_parachain_with_root(para_id, &relay_state_root, proof)
 		}
 	}
@@ -252,6 +269,22 @@ pub(super) mod parachain {
 
 	use crate::traits::ProviderParachainStateInfo;
 
+	pub enum DipIdentityCommitmentProofVerifierError {
+		InvalidMerkleProof,
+		RequiredLeafNotRevealed,
+		CommitmentDecode,
+	}
+
+	impl From<DipIdentityCommitmentProofVerifierError> for u8 {
+		fn from(value: DipIdentityCommitmentProofVerifierError) -> Self {
+			match value {
+				DipIdentityCommitmentProofVerifierError::InvalidMerkleProof => 0,
+				DipIdentityCommitmentProofVerifierError::RequiredLeafNotRevealed => 1,
+				DipIdentityCommitmentProofVerifierError::CommitmentDecode => 2,
+			}
+		}
+	}
+
 	pub struct DipIdentityCommitmentProofVerifier<ParaInfo>(PhantomData<ParaInfo>);
 
 	impl<ParaInfo> DipIdentityCommitmentProofVerifier<ParaInfo>
@@ -266,7 +299,7 @@ pub(super) mod parachain {
 			identifier: &ParaInfo::Identifier,
 			state_root: OutputOf<ParaInfo::Hasher>,
 			proof: impl IntoIterator<Item = Vec<u8>>,
-		) -> Result<ParaInfo::Commitment, String> {
+		) -> Result<ParaInfo::Commitment, DipIdentityCommitmentProofVerifierError> {
 			let dip_commitment_storage_key = ParaInfo::dip_subject_storage_key(identifier);
 			let storage_proof = StorageProof::new(proof);
 			let revealed_leaves = read_proof_check::<ParaInfo::Hasher, _>(
@@ -274,19 +307,17 @@ pub(super) mod parachain {
 				storage_proof,
 				[&dip_commitment_storage_key].iter(),
 			)
-			.map_err(|_| {
-				"Failed to verify DIP identity commitment Merkle proof for provided parachain state root.".to_string()
-			})?;
+			.map_err(|_| DipIdentityCommitmentProofVerifierError::InvalidMerkleProof)?;
 			// TODO: Remove at some point
 			{
 				debug_assert!(revealed_leaves.len() == 1usize);
 				debug_assert!(revealed_leaves.contains_key(dip_commitment_storage_key.as_ref()));
 			}
 			let Some(Some(encoded_commitment)) = revealed_leaves.get(dip_commitment_storage_key.as_ref()) else {
-				return Err("No DIP identity commitment leaf revealed in the provided Merkle proof.".to_string());
+				return Err(DipIdentityCommitmentProofVerifierError::RequiredLeafNotRevealed);
 			};
 			ParaInfo::Commitment::decode(&mut &encoded_commitment[..])
-				.map_err(|_| "Failed to decode revealed DIP identity commitment.".to_string())
+				.map_err(|_| DipIdentityCommitmentProofVerifierError::CommitmentDecode)
 		}
 	}
 

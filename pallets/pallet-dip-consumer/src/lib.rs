@@ -35,7 +35,7 @@ pub mod pallet {
 	use frame_system::pallet_prelude::*;
 	use parity_scale_codec::{FullCodec, MaxEncodedLen};
 	use scale_info::TypeInfo;
-	use sp_std::{boxed::Box, fmt::Debug};
+	use sp_std::boxed::Box;
 
 	use crate::traits::IdentityProofVerifier;
 
@@ -66,7 +66,7 @@ pub mod pallet {
 		type IdentityProof: Parameter;
 		/// The details stored in this pallet associated with any given subject.
 		type LocalIdentityInfo: FullCodec + TypeInfo + MaxEncodedLen;
-		type ProofVerificationError: Clone + Debug + PartialEq;
+		type ProofVerificationError: Into<u16>;
 		/// The logic of the proof verifier, called upon each execution of the
 		/// `dispatch_as` extrinsic.
 		type ProofVerifier: IdentityProofVerifier<
@@ -79,8 +79,6 @@ pub mod pallet {
 		>;
 		/// The overarching runtime call type.
 		type RuntimeCall: Parameter + Dispatchable<RuntimeOrigin = <Self as Config>::RuntimeOrigin>;
-		/// The overarching event type.
-		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 		/// The overarching runtime origin type.
 		type RuntimeOrigin: From<Origin<Self>> + From<<Self as frame_system::Config>::RuntimeOrigin>;
 	}
@@ -94,15 +92,9 @@ pub mod pallet {
 		/// An identity with the provided identifier could not be found.
 		IdentityNotFound,
 		/// The identity proof provided could not be successfully verified.
-		InvalidProof,
+		InvalidProof { reason: u16 },
 		/// The specified call could not be dispatched.
 		Dispatch,
-	}
-
-	#[pallet::event]
-	#[pallet::generate_deposit(pub(super) fn deposit_event)]
-	pub enum Event<T: Config> {
-		ProofVerificationFailed(T::ProofVerificationError),
 	}
 
 	/// The origin this pallet creates after a user has provided a valid
@@ -141,10 +133,7 @@ pub mod pallet {
 			)
 			// If verification fails, we generate an event with the details of why it failed (not possible to otherwise
 			// generate a generic message for the error). Inspiration taken from the utility pallet.
-			.map_err(|e| {
-				Self::deposit_event(Event::<T>::ProofVerificationFailed(e));
-				Error::<T>::InvalidProof
-			})?;
+			.map_err(|e| Error::<T>::InvalidProof { reason: e.into() })?;
 			IdentityEntries::<T>::mutate(&identifier, |entry| *entry = identity_entry);
 			let did_origin = DipOrigin {
 				identifier,
