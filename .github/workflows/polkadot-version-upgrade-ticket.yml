@@ -26,49 +26,27 @@ jobs:
   create-ticket:
     runs-on: ubuntu-latest
     container:
-      image: rust:1.67.0
+      image: rust:1.73.0
     steps:
       - name: Install subalfred
         env:
           SUBALFRED_VERSION: 0.9.2
         run: cargo install --version $SUBALFRED_VERSION --git https://github.com/hack-ink/subalfred.git subalfred
-      - name: Run subalfred for Substrate
-        env:
-          GITHUB_TOKEN: ${{ secrets.REPO_ACCESS_TOKEN }}
-        run: |
-          EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
-          echo "SUBALFRED_SUBSTRATE_OUTPUT<<$EOF" >> $GITHUB_ENV
-          subalfred track-updates paritytech/substrate --from polkadot-v${{ inputs.current-version }} --to polkadot-v${{ inputs.target-version }} >> $GITHUB_ENV
-          echo "$EOF" >> $GITHUB_ENV
-      - name: Run subalfred for Polkadot
+      - name: Run subalfred for Polkadot SDK
         env:
           GITHUB_TOKEN: ${{ secrets.REPO_ACCESS_TOKEN }}
         run: |
           EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
           echo "SUBALFRED_POLKADOT_OUTPUT<<$EOF" >> $GITHUB_ENV
-          subalfred track-updates paritytech/polkadot --from release-v${{ inputs.current-version }} --to release-v${{ inputs.target-version }} >> $GITHUB_ENV
-          echo "$EOF" >> $GITHUB_ENV
-      - name: Run subalfred for Cumulus
-        env:
-          GITHUB_TOKEN: ${{ secrets.REPO_ACCESS_TOKEN }}
-        run: |
-          EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
-          echo "SUBALFRED_CUMULUS_OUTPUT<<$EOF" >> $GITHUB_ENV
-          subalfred track-updates paritytech/cumulus --from polkadot-v${{ inputs.current-version }} --to polkadot-v${{ inputs.target-version }} >> $GITHUB_ENV
+          subalfred track-updates paritytech/polkadot-sdk --from polkadot-v${{ inputs.current-version }} --to polkadot-v${{ inputs.target-version }} >> $GITHUB_ENV
           echo "$EOF" >> $GITHUB_ENV
       - name: Create issue from commands output
         uses: imjohnbo/issue-bot@v3
         with:
           title: "[AUTOMATIC] Update Polkadot dependencies from ${{ inputs.current-version }} to ${{ inputs.target-version }}"
           body: |
-            ## Substrate changes
-            ${{ env.SUBALFRED_SUBSTRATE_OUTPUT }}
-
-            ## Polkadot changes
+            ## Polkadot SDK changes
             ${{ env.SUBALFRED_POLKADOT_OUTPUT }}
-
-            ## Cumulus changes
-            ${{ env.SUBALFRED_CUMULUS_OUTPUT }}
           labels: kiltbot, ⛓ KILT node
           column: 📥  Inbox
           assignees: ${{ inputs.assignee }}
