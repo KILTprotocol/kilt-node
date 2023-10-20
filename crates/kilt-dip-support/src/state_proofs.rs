@@ -17,8 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use parity_scale_codec::{Decode, Encode, HasCompact};
-use sp_core::RuntimeDebug;
-use sp_core::{storage::StorageKey, U256};
+use sp_core::{storage::StorageKey, RuntimeDebug, U256};
 use sp_runtime::generic::Header;
 use sp_std::{marker::PhantomData, vec::Vec};
 use sp_trie::StorageProof;
@@ -98,7 +97,7 @@ pub(super) mod relay_chain {
 		InvalidMerkleProof,
 		RequiredLeafNotRevealed,
 		HeaderDecode,
-		ParachainStateRootNotFound,
+		RelaychainStateRootNotFound,
 	}
 
 	impl From<ParachainHeadProofVerifierError> for u8 {
@@ -107,7 +106,7 @@ pub(super) mod relay_chain {
 				ParachainHeadProofVerifierError::InvalidMerkleProof => 0,
 				ParachainHeadProofVerifierError::RequiredLeafNotRevealed => 1,
 				ParachainHeadProofVerifierError::HeaderDecode => 2,
-				ParachainHeadProofVerifierError::ParachainStateRootNotFound => 3,
+				ParachainHeadProofVerifierError::RelaychainStateRootNotFound => 3,
 			}
 		}
 	}
@@ -162,7 +161,7 @@ pub(super) mod relay_chain {
 			proof: impl IntoIterator<Item = Vec<u8>>,
 		) -> Result<Header<RelayChainState::BlockNumber, RelayChainState::Hasher>, ParachainHeadProofVerifierError> {
 			let relay_state_root = RelayChainState::state_root_for_block(relay_height)
-				.ok_or(ParachainHeadProofVerifierError::ParachainStateRootNotFound)?;
+				.ok_or(ParachainHeadProofVerifierError::RelaychainStateRootNotFound)?;
 			Self::verify_proof_for_parachain_with_root(para_id, &relay_state_root, proof)
 		}
 	}

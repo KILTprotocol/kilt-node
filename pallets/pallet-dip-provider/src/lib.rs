@@ -80,8 +80,8 @@ pub mod pallet {
 
 	#[pallet::error]
 	pub enum Error<T> {
-		IdentityProvider { reason: u16 },
-		IdentityCommitmentGenerator { reason: u16 },
+		IdentityProvider(u16),
+		IdentityCommitmentGenerator(u16),
 	}
 
 	#[pallet::call]
@@ -97,9 +97,9 @@ pub mod pallet {
 			let identity_commitment: Option<T::IdentityCommitment> = match T::IdentityProvider::retrieve(&identifier) {
 				Ok(Some(identity)) => T::IdentityCommitmentGenerator::generate_commitment(&identifier, &identity)
 					.map(Some)
-					.map_err(|error| Error::<T>::IdentityCommitmentGenerator { reason: error.into() }),
+					.map_err(|error| Error::<T>::IdentityCommitmentGenerator(error.into())),
 				Ok(None) => Ok(None),
-				Err(error) => Err(Error::<T>::IdentityProvider { reason: error.into() }),
+				Err(error) => Err(Error::<T>::IdentityProvider(error.into())),
 			}?;
 
 			if let Some(commitment) = identity_commitment {

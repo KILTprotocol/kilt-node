@@ -121,18 +121,13 @@ pub mod pallet {
 			// TODO: Proper error handling
 			ensure!(T::DipCallOriginFilter::contains(&*call), Error::<T>::Dispatch);
 			let mut identity_entry = IdentityEntries::<T>::get(&identifier);
-			let proof_verification_result: <<T as Config>::ProofVerifier as IdentityProofVerifier<
-				<T as Config>::RuntimeCall,
-				<T as Config>::Identifier,
-			>>::VerificationResult = T::ProofVerifier::verify_proof_for_call_against_details(
+			let proof_verification_result = T::ProofVerifier::verify_proof_for_call_against_details(
 				&*call,
 				&identifier,
 				&submitter,
 				&mut identity_entry,
 				proof,
 			)
-			// If verification fails, we generate an event with the details of why it failed (not possible to otherwise
-			// generate a generic message for the error). Inspiration taken from the utility pallet.
 			.map_err(|e| Error::<T>::InvalidProof(e.into()))?;
 			IdentityEntries::<T>::mutate(&identifier, |entry| *entry = identity_entry);
 			let did_origin = DipOrigin {
