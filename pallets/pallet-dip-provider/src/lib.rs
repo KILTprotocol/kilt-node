@@ -31,13 +31,22 @@ pub mod pallet {
 	use frame_support::{pallet_prelude::*, traits::EnsureOrigin};
 	use frame_system::pallet_prelude::*;
 	use parity_scale_codec::FullCodec;
+	use sp_io::MultiRemovalResults;
 	use sp_std::fmt::Debug;
 
 	use crate::traits::{IdentityCommitmentGenerator, IdentityProvider, SubmitterInfo};
 
 	pub type IdentityOf<T> = <<T as Config>::IdentityProvider as IdentityProvider<<T as Config>::Identifier>>::Success;
+	pub type IdentityCommitmentVersion = u16;
 
+	pub const LATEST_COMMITMENT_VERSION: IdentityCommitmentVersion = 0;
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(0);
+
+	#[derive(Encode, Decode, RuntimeDebug, TypeInfo, Clone, PartialEq)]
+	pub enum VersionOrLimit {
+		Version(IdentityCommitmentVersion),
+		Limit(u32),
+	}
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
@@ -59,8 +68,14 @@ pub mod pallet {
 
 	#[pallet::storage]
 	#[pallet::getter(fn identity_commitments)]
-	pub type IdentityCommitments<T> =
-		StorageMap<_, Twox64Concat, <T as Config>::Identifier, <T as Config>::IdentityCommitment>;
+	pub type IdentityCommitments<T> = StorageDoubleMap<
+		_,
+		Twox64Concat,
+		<T as Config>::Identifier,
+		Twox64Concat,
+		IdentityCommitmentVersion,
+		<T as Config>::IdentityCommitment,
+	>;
 
 	#[pallet::pallet]
 	#[pallet::storage_version(STORAGE_VERSION)]
@@ -72,6 +87,11 @@ pub mod pallet {
 		IdentityCommitted {
 			identifier: T::Identifier,
 			commitment: T::IdentityCommitment,
+			version: IdentityCommitmentVersion,
+		},
+		VersionedIdentityDeleted {
+			identifier: T::Identifier,
+			version: IdentityCommitmentVersion,
 		},
 		IdentityDeleted {
 			identifier: T::Identifier,
@@ -80,6 +100,8 @@ pub mod pallet {
 
 	#[pallet::error]
 	pub enum Error<T> {
+		IdentityNotFound,
+		LimitTooLow,
 		IdentityProvider(u16),
 		IdentityCommitmentGenerator(u16),
 	}
@@ -89,32 +111,70 @@ pub mod pallet {
 		#[pallet::call_index(0)]
 		// TODO: Update weight
 		#[pallet::weight(0)]
-		pub fn commit_identity(origin: OriginFor<T>, identifier: T::Identifier) -> DispatchResult {
+		pub fn commit_identity(
+			origin: OriginFor<T>,
+			identifier: T::Identifier,
+			version: Option<IdentityCommitmentVersion>,
+		) -> DispatchResult {
 			// TODO: use dispatcher to get deposit
 			let _dispatcher =
 				T::CommitOriginCheck::ensure_origin(origin).map(|e: <T as Config>::CommitOrigin| e.submitter())?;
 
-			let identity_commitment: Option<T::IdentityCommitment> = match T::IdentityProvider::retrieve(&identifier) {
-				Ok(Some(identity)) => T::IdentityCommitmentGenerator::generate_commitment(&identifier, &identity)
-					.map(Some)
-					.map_err(|error| Error::<T>::IdentityCommitmentGenerator(error.into())),
-				Ok(None) => Ok(None),
+			let commitment_version = version.unwrap_or(LATEST_COMMITMENT_VERSION);
+			let commitment = match T::IdentityProvider::retrieve(&identifier) {
+				Ok(Some(identity)) => {
+					T::IdentityCommitmentGenerator::generate_commitment(&identifier, &identity, commitment_version)
+						.map_err(|error| Error::<T>::IdentityCommitmentGenerator(error.into()))
+				}
+				Ok(None) => Err(Error::<T>::IdentityNotFound),
 				Err(error) => Err(Error::<T>::IdentityProvider(error.into())),
 			}?;
 
-			if let Some(commitment) = identity_commitment {
-				// TODO: Take deposit (once 0.9.42 PR is merged into develop)
-				IdentityCommitments::<T>::insert(&identifier, commitment.clone());
-				Self::deposit_event(Event::<T>::IdentityCommitted { identifier, commitment });
-			} else {
-				// TODO: Release deposit (once 0.9.42 PR is merged into develop)
-				IdentityCommitments::<T>::remove(&identifier);
-				Self::deposit_event(Event::<T>::IdentityDeleted { identifier });
-			}
-
+			// TODO: Take deposit (once 0.9.42 PR is merged into develop)
+			IdentityCommitments::<T>::insert(&identifier, commitment_version, commitment.clone());
+			Self::deposit_event(Event::<T>::IdentityCommitted {
+				identifier,
+				commitment,
+				version: commitment_version,
+			});
 			Ok(())
 		}
-		// TODO: Add extrinsic to remove commitment without requiring the identity to be
-		// deleted.
+
+		#[pallet::call_index(1)]
+		// TODO: Update weight
+		#[pallet::weight(0)]
+		pub fn delete_identity_commitment(
+			origin: OriginFor<T>,
+			identifier: T::Identifier,
+			version_or_limit: VersionOrLimit,
+		) -> DispatchResult {
+			let _dispatcher =
+				T::CommitOriginCheck::ensure_origin(origin).map(|e: <T as Config>::CommitOrigin| e.submitter())?;
+
+			match version_or_limit {
+				VersionOrLimit::Version(version) => {
+					let commitment = IdentityCommitments::<T>::take(&identifier, version);
+					match commitment {
+						Some(_) => Err(Error::<T>::IdentityNotFound),
+						None => {
+							Self::deposit_event(Event::<T>::VersionedIdentityDeleted { identifier, version });
+							Ok(())
+						}
+					}
+				}
+				VersionOrLimit::Limit(limit) => {
+					let MultiRemovalResults { maybe_cursor, .. } =
+						IdentityCommitments::<T>::clear_prefix(&identifier, limit, None);
+					match maybe_cursor {
+						Some(_) => Err(Error::<T>::LimitTooLow),
+						None => {
+							Self::deposit_event(Event::<T>::IdentityDeleted { identifier });
+							Ok(())
+						}
+					}
+				}
+			}?;
+			Ok(())
+		}
 	}
 }

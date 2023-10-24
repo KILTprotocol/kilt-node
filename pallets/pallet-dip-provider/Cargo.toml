@@ -19,6 +19,7 @@ frame-support.workspace = true
 frame-system.workspace = true
 parity-scale-codec = {workspace = true, features = ["derive"]}
 scale-info = {workspace = true, features = ["derive"]}
+sp-io.workspace = true
 sp-std.workspace = true
 
 [features]
