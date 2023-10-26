@@ -71,17 +71,17 @@ impl From<DidMerkleProofError> for u16 {
 	}
 }
 
-pub struct DidMerkleRootGenerator<T>(PhantomData<T>);
+pub mod v0 {
+	use super::*;
 
-type ProofLeafOf<T> = RevealedDidMerkleProofLeaf<
-	KeyIdOf<T>,
-	<T as frame_system::Config>::AccountId,
-	BlockNumberFor<T>,
-	<T as pallet_web3_names::Config>::Web3Name,
-	LinkableAccountId,
->;
+	type ProofLeafOf<T> = RevealedDidMerkleProofLeaf<
+		KeyIdOf<T>,
+		<T as frame_system::Config>::AccountId,
+		BlockNumberFor<T>,
+		<T as pallet_web3_names::Config>::Web3Name,
+		LinkableAccountId,
+	>;
 
-mod v1 {
 	pub(super) fn calculate_root_with_db<Runtime>(
 		identity: &LinkedDidInfoOf<Runtime>,
 		db: &mut MemoryDB<Runtime::Hashing>,
@@ -249,7 +249,7 @@ mod v1 {
 		};
 
 		let mut db = MemoryDB::default();
-		let root = Self::calculate_root_with_db(identity, &mut db)?;
+		let root = calculate_root_with_db(identity, &mut db)?;
 
 		let mut leaves = key_ids
 			.map(|key_id| -> Result<_, DidMerkleProofError> {
@@ -329,15 +329,16 @@ mod v1 {
 
 	pub(super) fn generate_commitment<Runtime>(
 		identity: &LinkedDidInfoOf<Runtime>,
-		version: IdentityCommitmentVersion,
-	) -> Result<Runtime::Hash, Self::Error>
+	) -> Result<Runtime::Hash, DidMerkleProofError>
 	where
 		Runtime: did::Config + pallet_did_lookup::Config + pallet_web3_names::Config,
 	{
 		let mut db = MemoryDB::default();
-		Self::calculate_root_with_db(identity, &mut db)
+		calculate_root_with_db(identity, &mut db)
 	}
 }
+
+pub struct DidMerkleRootGenerator<T>(PhantomData<T>);
 
 impl<Runtime> IdentityCommitmentGenerator<DidIdentifier, LinkedDidInfoOf<Runtime>> for DidMerkleRootGenerator<Runtime>
 where
@@ -352,21 +353,19 @@ where
 		version: IdentityCommitmentVersion,
 	) -> Result<Runtime::Hash, Self::Error> {
 		match version {
-			0 => {
-				let mut db = MemoryDB::default();
-				v1::calculate_root_with_db::<Runtime>(identity, &mut db)
-			}
+			0 => v0::generate_commitment::<Runtime>(identity),
 			_ => Err(DidMerkleProofError::UnsupportedVersion),
 		}
 	}
 }
 
-impl<Runtime> IdentityCommitmentGenerator<DidIdentifier, LinkedDidInfoOf<Runtime>> for DidMerkleRootGenerator<Runtime>
+impl<Runtime> DidMerkleRootGenerator<Runtime>
 where
 	Runtime: did::Config + pallet_did_lookup::Config + pallet_web3_names::Config,
 {
-	fn generate_proof<'a, K, A>(
+	pub fn generate_proof<'a, K, A>(
 		identity: &LinkedDidInfoOf<Runtime>,
+		version: IdentityCommitmentVersion,
 		key_ids: K,
 		should_include_web3_name: bool,
 		account_ids: A,
@@ -376,7 +375,7 @@ where
 		A: Iterator<Item = &'a LinkableAccountId>,
 	{
 		match version {
-			0 => v1::generate_proof(identity, key_ids, should_include_web3_name, account_ids),
+			0 => v0::generate_proof(identity, key_ids, should_include_web3_name, account_ids),
 			_ => Err(DidMerkleProofError::UnsupportedVersion),
 		}
 	}

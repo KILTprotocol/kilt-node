@@ -22,7 +22,7 @@ use parity_scale_codec::{Decode, Encode, HasCompact};
 use scale_info::TypeInfo;
 use sp_core::{RuntimeDebug, U256};
 use sp_runtime::traits::{CheckedSub, Get};
-use sp_std::marker::PhantomData;
+use sp_std::{marker::PhantomData, vec::Vec};
 
 use crate::{
 	did::RevealedDidKeysSignatureAndCallVerifierError,
@@ -33,14 +33,15 @@ use crate::{
 };
 
 #[derive(Encode, Decode, PartialEq, Eq, RuntimeDebug, TypeInfo, Clone)]
+#[non_exhaustive]
 pub enum VersionedSiblingParachainDipStateProof<
 	RelayBlockHeight,
 	DipMerkleProofBlindedValues,
 	DipMerkleProofRevealedLeaf,
 	LocalBlockNumber,
 > {
-	V1(
-		v1::SiblingParachainDipStateProof<
+	V0(
+		v0::SiblingParachainDipStateProof<
 			RelayBlockHeight,
 			DipMerkleProofBlindedValues,
 			DipMerkleProofRevealedLeaf,
@@ -55,6 +56,7 @@ pub enum DipSiblingProviderStateProofVerifierError<
 	DipProofVerificationError,
 	DidSignatureVerificationError,
 > {
+	UnsupportedVersion,
 	ParachainHeadMerkleProof(ParachainHeadMerkleProofVerificationError),
 	IdentityCommitmentMerkleProof(IdentityCommitmentMerkleProofVerificationError),
 	DipProof(DipProofVerificationError),
@@ -90,12 +92,15 @@ where
 		>,
 	) -> Self {
 		match value {
-			DipSiblingProviderStateProofVerifierError::ParachainHeadMerkleProof(error) => error.into() as u16,
-			DipSiblingProviderStateProofVerifierError::IdentityCommitmentMerkleProof(error) => {
+			DipSiblingProviderStateProofVerifierError::UnsupportedVersion => 0,
+			DipSiblingProviderStateProofVerifierError::ParachainHeadMerkleProof(error) => {
 				u8::MAX as u16 + error.into() as u16
 			}
-			DipSiblingProviderStateProofVerifierError::DipProof(error) => u8::MAX as u16 * 2 + error.into() as u16,
-			DipSiblingProviderStateProofVerifierError::DidSignature(error) => u8::MAX as u16 * 3 + error.into() as u16,
+			DipSiblingProviderStateProofVerifierError::IdentityCommitmentMerkleProof(error) => {
+				u8::MAX as u16 * 2 + error.into() as u16
+			}
+			DipSiblingProviderStateProofVerifierError::DipProof(error) => u8::MAX as u16 * 3 + error.into() as u16,
+			DipSiblingProviderStateProofVerifierError::DidSignature(error) => u8::MAX as u16 * 4 + error.into() as u16,
 		}
 	}
 }
@@ -205,7 +210,7 @@ impl<
 		RevealedDidKeysSignatureAndCallVerifierError,
 	>;
 	type IdentityDetails = LocalDidDetails;
-	type Proof = v1::SiblingParachainDipStateProof<
+	type Proof = VersionedSiblingParachainDipStateProof<
 		RelayChainStateInfo::BlockNumber,
 		Vec<Vec<u8>>,
 		RevealedDidMerkleProofLeaf<
@@ -235,33 +240,41 @@ impl<
 		identity_details: &mut Option<Self::IdentityDetails>,
 		proof: Self::Proof,
 	) -> Result<Self::VerificationResult, Self::Error> {
-		v1::DipSiblingProviderStateProofVerifier::<
-			RelayChainStateInfo,
-			SiblingProviderParachainId,
-			SiblingProviderStateInfo,
-			TxSubmitter,
-			ProviderDipMerkleHasher,
-			ProviderDidKeyId,
-			ProviderAccountId,
-			ProviderWeb3Name,
-			ProviderLinkedAccountId,
-			MAX_REVEALED_KEYS_COUNT,
-			MAX_REVEALED_ACCOUNTS_COUNT,
-			LocalDidDetails,
-			LocalContextProvider,
-			LocalDidCallVerifier,
-		>::verify_proof_for_call_against_details(call, subject, submitter, identity_details, proof)
+		match proof {
+			VersionedSiblingParachainDipStateProof::V0(v0_proof) => {
+				v0::DipSiblingProviderStateProofVerifier::<
+					RelayChainStateInfo,
+					SiblingProviderParachainId,
+					SiblingProviderStateInfo,
+					TxSubmitter,
+					ProviderDipMerkleHasher,
+					ProviderDidKeyId,
+					ProviderAccountId,
+					ProviderWeb3Name,
+					ProviderLinkedAccountId,
+					MAX_REVEALED_KEYS_COUNT,
+					MAX_REVEALED_ACCOUNTS_COUNT,
+					LocalDidDetails,
+					LocalContextProvider,
+					LocalDidCallVerifier,
+				>::verify_proof_for_call_against_details(call, subject, submitter, identity_details, v0_proof)
+			}
+		}
 	}
 }
 
-mod v1 {
+pub mod latest {
+	pub use super::v0::SiblingParachainDipStateProof;
+}
+
+mod v0 {
 	use super::*;
 
 	use sp_std::borrow::Borrow;
 
 	use crate::{
 		did::{RevealedDidKeysAndSignature, RevealedDidKeysSignatureAndCallVerifier},
-		export::common::v1::{DipMerkleProofAndDidSignature, ParachainRootStateProof},
+		export::common::v0::{DipMerkleProofAndDidSignature, ParachainRootStateProof},
 		merkle::DidMerkleProofVerifier,
 		state_proofs::{parachain::DipIdentityCommitmentProofVerifier, relay_chain::ParachainHeadProofVerifier},
 		traits::ProviderParachainStateInfo,

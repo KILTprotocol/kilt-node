@@ -18,21 +18,33 @@
 
 use did::{did_details::DidVerificationKey, DidVerificationKeyRelationship};
 use pallet_dip_consumer::traits::IdentityProofVerifier;
-use parity_scale_codec::{Decode, Encode, HasCompact};
+use parity_scale_codec::{Codec, Decode, Encode, HasCompact};
 use scale_info::TypeInfo;
 use sp_core::{RuntimeDebug, U256};
-use sp_runtime::traits::{CheckedSub, Get, Hash};
-use sp_std::marker::PhantomData;
+use sp_runtime::traits::{AtLeast32BitUnsigned, CheckedSub, Get, Hash, MaybeDisplay, Member, SimpleBitOps};
+use sp_std::{marker::PhantomData, vec::Vec};
+
+use crate::{
+	did::RevealedDidKeysSignatureAndCallVerifierError,
+	merkle::{DidMerkleProofVerifierError, RevealedDidMerkleProofLeaf, RevealedDidMerkleProofLeaves},
+	state_proofs::{parachain::DipIdentityCommitmentProofVerifierError, relay_chain::ParachainHeadProofVerifierError},
+	traits::{
+		Bump, DidSignatureVerifierContext, DipCallOriginFilter, HistoricalBlockRegistry, ProviderParachainStateInfo,
+		RelayChainStorageInfo,
+	},
+	utils::OutputOf,
+};
 
 #[derive(Encode, Decode, PartialEq, Eq, RuntimeDebug, TypeInfo, Clone)]
+#[non_exhaustive]
 pub enum VersionedChildParachainDipStateProof<
 	ParentBlockHeight: Copy + Into<U256> + TryFrom<U256>,
 	ParentBlockHasher: Hash,
 	DipMerkleProofBlindedValues,
 	DipMerkleProofRevealedLeaf,
 > {
-	V1(
-		v1::ChildParachainDipStateProof<
+	V0(
+		v0::ChildParachainDipStateProof<
 			ParentBlockHeight,
 			ParentBlockHasher,
 			DipMerkleProofBlindedValues,
@@ -47,6 +59,7 @@ pub enum DipChildProviderStateProofVerifierError<
 	DipProofVerificationError,
 	DidSignatureVerificationError,
 > {
+	UnsupportedVersion,
 	InvalidBlockHeight,
 	InvalidBlockHash,
 	ParachainHeadMerkleProof(ParachainHeadMerkleProofVerificationError),
@@ -84,8 +97,9 @@ where
 		>,
 	) -> Self {
 		match value {
-			DipChildProviderStateProofVerifierError::InvalidBlockHeight => 0,
-			DipChildProviderStateProofVerifierError::InvalidBlockHash => 1,
+			DipChildProviderStateProofVerifierError::UnsupportedVersion => 0,
+			DipChildProviderStateProofVerifierError::InvalidBlockHeight => 1,
+			DipChildProviderStateProofVerifierError::InvalidBlockHash => 2,
 			DipChildProviderStateProofVerifierError::ParachainHeadMerkleProof(error) => {
 				u8::MAX as u16 + error.into() as u16
 			}
@@ -98,7 +112,182 @@ where
 	}
 }
 
-mod v1 {
+pub struct VersionedDipChildProviderStateProofVerifier<
+	RelayChainInfo,
+	ChildProviderParachainId,
+	ChildProviderStateInfo,
+	TxSubmitter,
+	ProviderDipMerkleHasher,
+	ProviderDidKeyId,
+	ProviderAccountId,
+	ProviderWeb3Name,
+	ProviderLinkedAccountId,
+	const MAX_REVEALED_KEYS_COUNT: u32,
+	const MAX_REVEALED_ACCOUNTS_COUNT: u32,
+	LocalDidDetails,
+	LocalContextProvider,
+	LocalDidCallVerifier,
+>(
+	#[allow(clippy::type_complexity)]
+	PhantomData<(
+		RelayChainInfo,
+		ChildProviderParachainId,
+		ChildProviderStateInfo,
+		TxSubmitter,
+		ProviderDipMerkleHasher,
+		ProviderDidKeyId,
+		ProviderAccountId,
+		ProviderWeb3Name,
+		ProviderLinkedAccountId,
+		LocalDidDetails,
+		LocalContextProvider,
+		LocalDidCallVerifier,
+	)>,
+);
+
+impl<
+		Call,
+		Subject,
+		RelayChainInfo,
+		ChildProviderParachainId,
+		ChildProviderStateInfo,
+		TxSubmitter,
+		ProviderDipMerkleHasher,
+		ProviderDidKeyId,
+		ProviderAccountId,
+		ProviderWeb3Name,
+		ProviderLinkedAccountId,
+		const MAX_REVEALED_KEYS_COUNT: u32,
+		const MAX_REVEALED_ACCOUNTS_COUNT: u32,
+		LocalDidDetails,
+		LocalContextProvider,
+		LocalDidCallVerifier,
+	> IdentityProofVerifier<Call, Subject>
+	for VersionedDipChildProviderStateProofVerifier<
+		RelayChainInfo,
+		ChildProviderParachainId,
+		ChildProviderStateInfo,
+		TxSubmitter,
+		ProviderDipMerkleHasher,
+		ProviderDidKeyId,
+		ProviderAccountId,
+		ProviderWeb3Name,
+		ProviderLinkedAccountId,
+		MAX_REVEALED_KEYS_COUNT,
+		MAX_REVEALED_ACCOUNTS_COUNT,
+		LocalDidDetails,
+		LocalContextProvider,
+		LocalDidCallVerifier,
+	> where
+	Call: Encode,
+	TxSubmitter: Encode,
+
+	RelayChainInfo: RelayChainStorageInfo
+		+ HistoricalBlockRegistry<
+			BlockNumber = <RelayChainInfo as RelayChainStorageInfo>::BlockNumber,
+			Hasher = <RelayChainInfo as RelayChainStorageInfo>::Hasher,
+		>,
+	OutputOf<<RelayChainInfo as RelayChainStorageInfo>::Hasher>:
+		Ord + Default + sp_std::hash::Hash + Copy + Member + MaybeDisplay + SimpleBitOps + Codec,
+	<RelayChainInfo as RelayChainStorageInfo>::BlockNumber: Copy
+		+ Into<U256>
+		+ TryFrom<U256>
+		+ HasCompact
+		+ Member
+		+ sp_std::hash::Hash
+		+ MaybeDisplay
+		+ AtLeast32BitUnsigned
+		+ Codec,
+	RelayChainInfo::Key: AsRef<[u8]>,
+
+	ChildProviderParachainId: Get<RelayChainInfo::ParaId>,
+
+	ChildProviderStateInfo: ProviderParachainStateInfo<Identifier = Subject, Commitment = ProviderDipMerkleHasher::Out>,
+	OutputOf<ChildProviderStateInfo::Hasher>: Ord + From<OutputOf<<RelayChainInfo as RelayChainStorageInfo>::Hasher>>,
+	ChildProviderStateInfo::BlockNumber: Encode + Clone,
+	ChildProviderStateInfo::Commitment: Decode,
+	ChildProviderStateInfo::Key: AsRef<[u8]>,
+
+	LocalContextProvider:
+		DidSignatureVerifierContext<BlockNumber = <RelayChainInfo as RelayChainStorageInfo>::BlockNumber>,
+	LocalContextProvider::BlockNumber: CheckedSub + From<u16>,
+	LocalContextProvider::Hash: Encode,
+	LocalContextProvider::SignedExtra: Encode,
+	LocalDidDetails: Bump + Default + Encode,
+	LocalDidCallVerifier:
+		DipCallOriginFilter<Call, OriginInfo = (DidVerificationKey<ProviderAccountId>, DidVerificationKeyRelationship)>,
+
+	ProviderDipMerkleHasher: sp_core::Hasher,
+	ProviderDidKeyId: Encode + Clone + Into<ProviderDipMerkleHasher::Out>,
+	ProviderAccountId: Encode + Clone,
+	ProviderLinkedAccountId: Encode + Clone,
+	ProviderWeb3Name: Encode + Clone,
+{
+	type Error = DipChildProviderStateProofVerifierError<
+		ParachainHeadProofVerifierError,
+		DipIdentityCommitmentProofVerifierError,
+		DidMerkleProofVerifierError,
+		RevealedDidKeysSignatureAndCallVerifierError,
+	>;
+	type IdentityDetails = LocalDidDetails;
+	type Proof = VersionedChildParachainDipStateProof<
+		<RelayChainInfo as RelayChainStorageInfo>::BlockNumber,
+		<RelayChainInfo as RelayChainStorageInfo>::Hasher,
+		Vec<Vec<u8>>,
+		RevealedDidMerkleProofLeaf<
+			ProviderDidKeyId,
+			ProviderAccountId,
+			ChildProviderStateInfo::BlockNumber,
+			ProviderWeb3Name,
+			ProviderLinkedAccountId,
+		>,
+	>;
+	type Submitter = TxSubmitter;
+	type VerificationResult = RevealedDidMerkleProofLeaves<
+		ProviderDidKeyId,
+		ProviderAccountId,
+		ChildProviderStateInfo::BlockNumber,
+		ProviderWeb3Name,
+		ProviderLinkedAccountId,
+		MAX_REVEALED_KEYS_COUNT,
+		MAX_REVEALED_ACCOUNTS_COUNT,
+	>;
+
+	fn verify_proof_for_call_against_details(
+		call: &Call,
+		subject: &Subject,
+		submitter: &Self::Submitter,
+		identity_details: &mut Option<Self::IdentityDetails>,
+		proof: Self::Proof,
+	) -> Result<Self::VerificationResult, Self::Error> {
+		match proof {
+			VersionedChildParachainDipStateProof::V0(v0_proof) => {
+				v0::DipChildProviderStateProofVerifier::<
+					RelayChainInfo,
+					ChildProviderParachainId,
+					ChildProviderStateInfo,
+					TxSubmitter,
+					ProviderDipMerkleHasher,
+					ProviderDidKeyId,
+					ProviderAccountId,
+					ProviderWeb3Name,
+					ProviderLinkedAccountId,
+					MAX_REVEALED_KEYS_COUNT,
+					MAX_REVEALED_ACCOUNTS_COUNT,
+					LocalDidDetails,
+					LocalContextProvider,
+					LocalDidCallVerifier,
+				>::verify_proof_for_call_against_details(call, subject, submitter, identity_details, v0_proof)
+			}
+		}
+	}
+}
+
+pub mod latest {
+	pub use super::v0::ChildParachainDipStateProof;
+}
+
+mod v0 {
 	use super::*;
 
 	use parity_scale_codec::Codec;
@@ -106,14 +295,14 @@ mod v1 {
 		generic::Header,
 		traits::{AtLeast32BitUnsigned, Hash, MaybeDisplay, Member, SimpleBitOps},
 	};
-	use sp_std::borrow::Borrow;
+	use sp_std::{borrow::Borrow, vec::Vec};
 
 	use crate::{
 		did::{
 			RevealedDidKeysAndSignature, RevealedDidKeysSignatureAndCallVerifier,
 			RevealedDidKeysSignatureAndCallVerifierError,
 		},
-		export::common::v1::{DipMerkleProofAndDidSignature, ParachainRootStateProof},
+		export::common::v0::{DipMerkleProofAndDidSignature, ParachainRootStateProof},
 		merkle::{
 			DidMerkleProofVerifier, DidMerkleProofVerifierError, RevealedDidMerkleProofLeaf,
 			RevealedDidMerkleProofLeaves,

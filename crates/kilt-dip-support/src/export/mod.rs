@@ -19,3 +19,16 @@
 mod child;
 mod common;
 mod sibling;
+
+pub use child::{
+	DipChildProviderStateProofVerifierError, VersionedChildParachainDipStateProof,
+	VersionedDipChildProviderStateProofVerifier,
+};
+pub use sibling::{
+	DipSiblingProviderStateProofVerifierError, VersionedDipSiblingProviderStateProofVerifier,
+	VersionedSiblingParachainDipStateProof,
+};
+
+pub mod latest {
+	pub use super::{child::latest::*, common::latest::*, sibling::latest::*};
+}

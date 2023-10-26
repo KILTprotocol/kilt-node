@@ -18,7 +18,7 @@
 
 use did::{DidRawOrigin, EnsureDidOrigin, KeyIdOf};
 use pallet_did_lookup::linkable_account::LinkableAccountId;
-use pallet_dip_provider::traits::IdentityProvider;
+use pallet_dip_provider::{traits::IdentityProvider, IdentityCommitmentVersion};
 use parity_scale_codec::{Decode, Encode};
 use runtime_common::dip::{
 	did::LinkedDidInfoProviderOf,
@@ -32,6 +32,7 @@ use crate::{AccountId, DidIdentifier, Hash, Runtime, RuntimeEvent};
 #[derive(Encode, Decode, TypeInfo)]
 pub struct RuntimeApiDipProofRequest {
 	pub(crate) identifier: DidIdentifier,
+	pub(crate) version: IdentityCommitmentVersion,
 	pub(crate) keys: Vec<KeyIdOf<Runtime>>,
 	pub(crate) accounts: Vec<LinkableAccountId>,
 	pub(crate) should_include_web3_name: bool,
