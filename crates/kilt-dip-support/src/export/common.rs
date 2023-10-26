@@ -16,14 +16,22 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-// TODO: Crate documentation
+pub mod v1 {
+	use parity_scale_codec::{Decode, Encode};
+	use scale_info::TypeInfo;
+	use sp_core::RuntimeDebug;
 
-#![cfg_attr(not(feature = "std"), no_std)]
+	use crate::{did::TimeBoundDidSignature, merkle::DidMerkleProof};
 
-pub mod did;
-pub mod merkle;
-pub mod state_proofs;
-pub mod traits;
-pub mod utils;
+	#[derive(Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo, Clone)]
+	pub struct ParachainRootStateProof<RelayBlockHeight> {
+		pub(crate) relay_block_height: RelayBlockHeight,
+		pub(crate) proof: Vec<Vec<u8>>,
+	}
 
-mod export;
+	#[derive(Encode, Decode, PartialEq, Eq, RuntimeDebug, TypeInfo, Clone)]
+	pub struct DipMerkleProofAndDidSignature<BlindedValues, Leaf, BlockNumber> {
+		pub(crate) leaves: DidMerkleProof<BlindedValues, Leaf>,
+		pub(crate) signature: TimeBoundDidSignature<BlockNumber>,
+	}
+}

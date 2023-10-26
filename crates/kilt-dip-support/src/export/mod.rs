@@ -16,14 +16,6 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-// TODO: Crate documentation
-
-#![cfg_attr(not(feature = "std"), no_std)]
-
-pub mod did;
-pub mod merkle;
-pub mod state_proofs;
-pub mod traits;
-pub mod utils;
-
-mod export;
+mod child;
+mod common;
+mod sibling;
