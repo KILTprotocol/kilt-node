@@ -22,7 +22,6 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
-use pallet_did_lookup::linkable_account::LinkableAccountId;
 use pallet_web3_names::web3_name::AsciiWeb3Name;
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
@@ -34,7 +33,7 @@ use cumulus_pallet_parachain_system::{
 };
 use cumulus_primitives_core::CollationInfo;
 use cumulus_primitives_timestamp::InherentDataProvider;
-use did::{DidRawOrigin, EnsureDidOrigin, KeyIdOf};
+use did::{DidRawOrigin, EnsureDidOrigin};
 use frame_support::{
 	construct_runtime,
 	dispatch::DispatchClass,
@@ -425,14 +424,6 @@ impl pallet_web3_names::Config for Runtime {
 	type WeightInfo = ();
 }
 
-#[derive(Encode, Decode, TypeInfo)]
-pub struct DipProofRequest {
-	identifier: DidIdentifier,
-	keys: Vec<KeyIdOf<Runtime>>,
-	accounts: Vec<LinkableAccountId>,
-	should_include_web3_name: bool,
-}
-
 impl_runtime_apis! {
 	impl sp_consensus_aura::AuraApi<Block, AuraId> for Runtime {
 		fn slot_duration() -> SlotDuration {
@@ -578,13 +569,14 @@ impl_runtime_apis! {
 	}
 
 	// TODO: Support generating different versions of the proof, based on the provided parameter
-	impl kilt_runtime_api_dip_provider::DipProvider<Block, DipProofRequest, CompleteMerkleProof<Hash, DidMerkleProofOf<Runtime>>, ()> for Runtime {
-		fn generate_proof(request: DipProofRequest) -> Result<CompleteMerkleProof<Hash, DidMerkleProofOf<Runtime>>, ()> {
-			let Some(linked_did_info) = <Runtime as pallet_dip_provider::Config>::IdentityProvider::retrieve(&request.identifier)? else { return Err(()) };
-			if linked_did_info.a.is_none() {
-				return Err(());
-			}
-			DidMerkleRootGenerator::<Runtime>::generate_proof(&linked_did_info, request.keys.iter(), request.should_include_web3_name, request.accounts.iter())
+	impl kilt_runtime_api_dip_provider::DipProvider<Block, RuntimeApiDipProofRequest, CompleteMerkleProof<Hash, DidMerkleProofOf<Runtime>>, RuntimeApiDipProofError> for Runtime {
+		fn generate_proof(request: RuntimeApiDipProofRequest) -> Result<CompleteMerkleProof<Hash, DidMerkleProofOf<Runtime>>, RuntimeApiDipProofError> {
+			let linked_did_info = match <Runtime as pallet_dip_provider::Config>::IdentityProvider::retrieve(&request.identifier) {
+				Ok(Some(linked_did_info)) => Ok(linked_did_info),
+				Ok(None) => Err(RuntimeApiDipProofError::IdentityNotFound),
+				Err(e) => Err(RuntimeApiDipProofError::IdentityProviderError(e))
+			}?;
+			DidMerkleRootGenerator::<Runtime>::generate_proof(&linked_did_info, request.keys.iter(), request.should_include_web3_name, request.accounts.iter()).map_err(RuntimeApiDipProofError::MerkleProofError)
 		}
 	}
 }

@@ -25,7 +25,7 @@ use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
 use sp_core::RuntimeDebug;
 use sp_runtime::traits::CheckedSub;
-use sp_std::marker::PhantomData;
+use sp_std::{marker::PhantomData, vec::Vec};
 
 use crate::{
 	merkle::RevealedDidKey,
@@ -42,6 +42,24 @@ pub(crate) struct RevealedDidKeysAndSignature<RevealedDidKeys, BlockNumber> {
 pub struct TimeBoundDidSignature<BlockNumber> {
 	pub signature: DidSignature,
 	pub block_number: BlockNumber,
+}
+
+pub enum RevealedDidKeysSignatureAndCallVerifierError {
+	SignatureNotFresh,
+	SignatureUnverifiable,
+	OriginCheckFailed,
+	Internal,
+}
+
+impl From<RevealedDidKeysSignatureAndCallVerifierError> for u8 {
+	fn from(value: RevealedDidKeysSignatureAndCallVerifierError) -> Self {
+		match value {
+			RevealedDidKeysSignatureAndCallVerifierError::SignatureNotFresh => 0,
+			RevealedDidKeysSignatureAndCallVerifierError::SignatureUnverifiable => 1,
+			RevealedDidKeysSignatureAndCallVerifierError::OriginCheckFailed => 2,
+			RevealedDidKeysSignatureAndCallVerifierError::Internal => u8::MAX,
+		}
+	}
 }
 
 pub(crate) struct RevealedDidKeysSignatureAndCallVerifier<
@@ -109,7 +127,10 @@ impl<
 		submitter: &Submitter,
 		local_details: &mut Option<DidLocalDetails>,
 		merkle_revealed_did_signature: RevealedDidKeysAndSignature<MerkleProofEntries, ContextProvider::BlockNumber>,
-	) -> Result<(DidVerificationKey<RemoteAccountId>, DidVerificationKeyRelationship), ()> {
+	) -> Result<
+		(DidVerificationKey<RemoteAccountId>, DidVerificationKeyRelationship),
+		RevealedDidKeysSignatureAndCallVerifierError,
+	> {
 		let block_number = ContextProvider::block_number();
 		let is_signature_fresh = if let Some(blocks_ago_from_now) =
 			block_number.checked_sub(&merkle_revealed_did_signature.did_signature.block_number)
@@ -120,7 +141,10 @@ impl<
 			// Signature generated at a future time, not possible to verify.
 			false
 		};
-		ensure!(is_signature_fresh, ());
+		ensure!(
+			is_signature_fresh,
+			RevealedDidKeysSignatureAndCallVerifierError::SignatureNotFresh,
+		);
 		let encoded_payload = (
 			call,
 			&local_details,
@@ -131,24 +155,32 @@ impl<
 		)
 			.encode();
 		// Only consider verification keys from the set of revealed keys.
-		let mut proof_verification_keys = merkle_revealed_did_signature.merkle_leaves.borrow().iter().filter_map(|RevealedDidKey {
+		let proof_verification_keys: Vec<(DidVerificationKey<RemoteAccountId>, DidVerificationKeyRelationship)> = merkle_revealed_did_signature.merkle_leaves.borrow().iter().filter_map(|RevealedDidKey {
 			relationship, details: DidPublicKeyDetails { key, .. }, .. } | {
 				let DidPublicKey::PublicVerificationKey(key) = key else { return None };
-					Some((key, DidVerificationKeyRelationship::try_from(*relationship).expect("Should never fail to build a VerificationRelationship from the given DidKeyRelationship because we have already made sure the conditions hold."))) 		});
-		let valid_signing_key = proof_verification_keys.find(|(verification_key, _)| {
+				if let Ok(vr) = DidVerificationKeyRelationship::try_from(*relationship) {
+					// TODO: Fix this logic to avoid cloning
+					Some(Ok((key.clone(), vr)))
+				} else {
+					log::error!("Should never fail to build a VerificationRelationship from the given DidKeyRelationship because we have already made sure the conditions hold.");
+					Some(Err(RevealedDidKeysSignatureAndCallVerifierError::Internal))
+				}
+			}).collect::<Result<_, _>>()?;
+		let valid_signing_key = proof_verification_keys.iter().find(|(verification_key, _)| {
 			verification_key
 				.verify_signature(&encoded_payload, &merkle_revealed_did_signature.did_signature.signature)
 				.is_ok()
 		});
 		let Some((key, relationship)) = valid_signing_key else {
-			return Err(());
+			return Err(RevealedDidKeysSignatureAndCallVerifierError::SignatureUnverifiable);
 		};
 		if let Some(details) = local_details {
 			details.bump();
 		} else {
 			*local_details = Some(DidLocalDetails::default());
 		};
-		CallVerifier::check_call_origin_info(call, &(key.clone(), relationship)).map_err(|_| ())?;
-		Ok((key.clone(), relationship))
+		CallVerifier::check_call_origin_info(call, &(key.clone(), *relationship))
+			.map_err(|_| RevealedDidKeysSignatureAndCallVerifierError::OriginCheckFailed)?;
+		Ok((key.clone(), *relationship))
 	}
 }

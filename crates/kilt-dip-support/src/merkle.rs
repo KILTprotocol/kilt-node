@@ -44,7 +44,6 @@ impl From<DidVerificationKeyRelationship> for DidKeyRelationship {
 }
 
 impl TryFrom<DidKeyRelationship> for DidVerificationKeyRelationship {
-	// TODO: Error handling
 	type Error = ();
 
 	fn try_from(value: DidKeyRelationship) -> Result<Self, Self::Error> {
@@ -179,32 +178,6 @@ pub struct RevealedDidMerkleProofLeaves<
 	pub linked_accounts: BoundedVec<LinkedAccountId, ConstU32<MAX_REVEALED_ACCOUNTS_COUNT>>,
 }
 
-// impl<
-// 		KeyId,
-// 		AccountId,
-// 		BlockNumber,
-// 		Web3Name,
-// 		LinkedAccountId,
-// 		const MAX_REVEALED_KEYS_COUNT: u32,
-// 		const MAX_REVEALED_ACCOUNTS_COUNT: u32,
-// 	> Default for RevealedDidMerkleProofLeaves<
-// 	KeyId,
-// 	AccountId,
-// 	BlockNumber,
-// 	Web3Name,
-// 	LinkedAccountId,
-// 	MAX_REVEALED_KEYS_COUNT,
-// 	MAX_REVEALED_ACCOUNTS_COUNT,
-// > {
-// 	fn default() -> Self {
-// 		Self {
-// 			did_keys: BoundedVec::default(),
-// 			linked_accounts: BoundedVec::default(),
-// 			web3_name: None,
-// 		}
-// 	}
-// }
-
 impl<
 		KeyId,
 		AccountId,
@@ -226,6 +199,22 @@ impl<
 {
 	fn borrow(&self) -> &[RevealedDidKey<KeyId, BlockNumber, AccountId>] {
 		self.did_keys.borrow()
+	}
+}
+
+pub enum DidMerkleProofVerifierError {
+	InvalidMerkleProof,
+	TooManyRevealedKeys,
+	TooManyRevealedAccounts,
+}
+
+impl From<DidMerkleProofVerifierError> for u8 {
+	fn from(value: DidMerkleProofVerifierError) -> Self {
+		match value {
+			DidMerkleProofVerifierError::InvalidMerkleProof => 0,
+			DidMerkleProofVerifierError::TooManyRevealedKeys => 1,
+			DidMerkleProofVerifierError::TooManyRevealedAccounts => 2,
+		}
 	}
 }
 
@@ -288,7 +277,7 @@ impl<
 			MAX_REVEALED_KEYS_COUNT,
 			MAX_REVEALED_ACCOUNTS_COUNT,
 		>,
-		(),
+		DidMerkleProofVerifierError,
 	> {
 		// TODO: more efficient by removing cloning and/or collecting.
 		// Did not find another way of mapping a Vec<(Vec<u8>, Vec<u8>)> to a
@@ -299,7 +288,7 @@ impl<
 			.map(|leaf| (leaf.encoded_key(), Some(leaf.encoded_value())))
 			.collect::<Vec<(Vec<u8>, Option<Vec<u8>>)>>();
 		verify_trie_proof::<LayoutV1<Hasher>, _, _, _>(identity_commitment, &proof.blinded, &proof_leaves)
-			.map_err(|_| ())?;
+			.map_err(|_| DidMerkleProofVerifierError::InvalidMerkleProof)?;
 
 		// At this point, we know the proof is valid. We just need to map the revealed
 		// leaves to something the consumer can easily operate on.
@@ -322,8 +311,8 @@ impl<
 						relationship: key_id.1,
 						details: key_value.0.clone(),
 					})
-					.map_err(|_| ())?;
-					Ok::<_, ()>((keys, web3_name, linked_accounts))
+					.map_err(|_| DidMerkleProofVerifierError::TooManyRevealedKeys)?;
+					Ok::<_, DidMerkleProofVerifierError>((keys, web3_name, linked_accounts))
 				}
 				// TODO: Avoid cloning if possible
 				RevealedDidMerkleProofLeaf::Web3Name(revealed_web3_name, details) => Ok((
@@ -335,8 +324,10 @@ impl<
 					linked_accounts,
 				)),
 				RevealedDidMerkleProofLeaf::LinkedAccount(account_id, _) => {
-					linked_accounts.try_push(account_id.0.clone()).map_err(|_| ())?;
-					Ok::<_, ()>((keys, web3_name, linked_accounts))
+					linked_accounts
+						.try_push(account_id.0.clone())
+						.map_err(|_| DidMerkleProofVerifierError::TooManyRevealedAccounts)?;
+					Ok::<_, DidMerkleProofVerifierError>((keys, web3_name, linked_accounts))
 				}
 			},
 		)?;

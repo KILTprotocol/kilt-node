@@ -17,6 +17,8 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use pallet_dip_provider::traits::IdentityProvider;
+use parity_scale_codec::{Decode, Encode};
+use scale_info::TypeInfo;
 use sp_std::marker::PhantomData;
 
 pub struct CombinedIdentityResult<OutputA, OutputB, OutputC> {
@@ -81,14 +83,35 @@ where
 
 pub struct CombineIdentityFrom<A, B, C>(PhantomData<(A, B, C)>);
 
+#[derive(Encode, Decode, TypeInfo)]
+pub enum CombineError<ErrorA, ErrorB, ErrorC> {
+	A(ErrorA),
+	B(ErrorB),
+	C(ErrorC),
+}
+
+impl<ErrorA, ErrorB, ErrorC> From<CombineError<ErrorA, ErrorB, ErrorC>> for u16
+where
+	ErrorA: Into<u16>,
+	ErrorB: Into<u16>,
+	ErrorC: Into<u16>,
+{
+	fn from(value: CombineError<ErrorA, ErrorB, ErrorC>) -> Self {
+		match value {
+			CombineError::A(error) => error.into(),
+			CombineError::B(error) => error.into(),
+			CombineError::C(error) => error.into(),
+		}
+	}
+}
+
 impl<Identifier, A, B, C> IdentityProvider<Identifier> for CombineIdentityFrom<A, B, C>
 where
 	A: IdentityProvider<Identifier>,
 	B: IdentityProvider<Identifier>,
 	C: IdentityProvider<Identifier>,
 {
-	// TODO: Proper error handling
-	type Error = ();
+	type Error = CombineError<A::Error, B::Error, C::Error>;
 	type Success = CombinedIdentityResult<Option<A::Success>, Option<B::Success>, Option<C::Success>>;
 
 	fn retrieve(identifier: &Identifier) -> Result<Option<Self::Success>, Self::Error> {
@@ -105,8 +128,9 @@ where
 				b: ok_b,
 				c: ok_c,
 			})),
-			// If any of them returns an `Err`, return an `Err`
-			_ => Err(()),
+			(Err(e), _, _) => Err(CombineError::A(e)),
+			(_, Err(e), _) => Err(CombineError::B(e)),
+			(_, _, Err(e)) => Err(CombineError::C(e)),
 		}
 	}
 }

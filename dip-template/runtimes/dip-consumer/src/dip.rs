@@ -55,6 +55,7 @@ impl pallet_dip_consumer::Config for Runtime {
 	type Identifier = DidIdentifier;
 	type IdentityProof = <ProofVerifier as IdentityProofVerifier<RuntimeCall, DidIdentifier>>::Proof;
 	type LocalIdentityInfo = u128;
+	type ProofVerificationError = <ProofVerifier as IdentityProofVerifier<RuntimeCall, DidIdentifier>>::Error;
 	type ProofVerifier = ProofVerifier;
 	type RuntimeCall = RuntimeCall;
 	type RuntimeOrigin = RuntimeOrigin;
@@ -106,20 +107,26 @@ fn single_key_relationship<'a>(
 		})
 }
 
+pub enum DipCallFilterError {
+	BadOrigin,
+	WrongVerificationRelationship,
+}
+
 pub struct DipCallFilter;
 
 impl DipCallOriginFilter<RuntimeCall> for DipCallFilter {
-	type Error = ();
+	type Error = DipCallFilterError;
 	type OriginInfo = (DidVerificationKey<ProviderAccountId>, DidVerificationKeyRelationship);
 	type Success = ();
 
 	// Accepts only a DipOrigin for the DidLookup pallet calls.
 	fn check_call_origin_info(call: &RuntimeCall, info: &Self::OriginInfo) -> Result<Self::Success, Self::Error> {
-		let key_relationship = single_key_relationship([call].into_iter())?;
+		let key_relationship =
+			single_key_relationship([call].into_iter()).map_err(|_| DipCallFilterError::BadOrigin)?;
 		if info.1 == key_relationship {
 			Ok(())
 		} else {
-			Err(())
+			Err(DipCallFilterError::WrongVerificationRelationship)
 		}
 	}
 }

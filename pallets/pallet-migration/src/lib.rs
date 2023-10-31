@@ -39,8 +39,7 @@ pub mod pallet {
 		traits::{fungible::Inspect, Currency, ReservableCurrency},
 	};
 	use frame_system::pallet_prelude::*;
-	use sp_runtime::traits::Hash;
-	use sp_runtime::SaturatedConversion;
+	use sp_runtime::{traits::Hash, SaturatedConversion};
 
 	use attestation::{Attestations, ClaimHashOf};
 	use delegation::{DelegationNodeIdOf, DelegationNodes};
