@@ -44,7 +44,6 @@ impl From<DidVerificationKeyRelationship> for DidKeyRelationship {
 }
 
 impl TryFrom<DidKeyRelationship> for DidVerificationKeyRelationship {
-	// TODO: Error handling
 	type Error = ();
 
 	fn try_from(value: DidKeyRelationship) -> Result<Self, Self::Error> {

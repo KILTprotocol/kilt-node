@@ -126,16 +126,16 @@ where
 	) -> Self {
 		match value {
 			DipSiblingProviderStateProofVerifierError::ParachainHeadMerkleProofVerificationError(error) => {
-				error.into().to_be().into()
+				error.into() as u16
 			}
 			DipSiblingProviderStateProofVerifierError::IdentityCommitmentMerkleProofVerificationError(error) => {
-				u16::from(error.into().to_be()) | (0b1 << 15)
+				u8::MAX as u16 + error.into() as u16
 			}
 			DipSiblingProviderStateProofVerifierError::DipProofVerificationError(error) => {
-				u16::from(error.into().to_be()) | (0b11 << 14)
+				u8::MAX as u16 * 2 + error.into() as u16
 			}
 			DipSiblingProviderStateProofVerifierError::DidSignatureVerificationError(error) => {
-				u16::from(error.into().to_be()) | (0b111 << 13)
+				u8::MAX as u16 * 3 + error.into() as u16
 			}
 		}
 	}
@@ -391,16 +391,16 @@ where
 			DipChildProviderStateProofVerifierError::InvalidBlockHeight => 0,
 			DipChildProviderStateProofVerifierError::InvalidBlockHash => 1,
 			DipChildProviderStateProofVerifierError::ParachainHeadMerkleProofVerificationError(error) => {
-				u16::from(error.into().to_be()) | (0b1 << 15)
+				u8::MAX as u16 + error.into() as u16
 			}
 			DipChildProviderStateProofVerifierError::IdentityCommitmentMerkleProofVerificationError(error) => {
-				u16::from(error.into().to_be()) | (0b11 << 14)
+				u8::MAX as u16 * 2 + error.into() as u16
 			}
 			DipChildProviderStateProofVerifierError::DipProofVerificationError(error) => {
-				u16::from(error.into().to_be()) | (0b111 << 13)
+				u8::MAX as u16 * 3 + error.into() as u16
 			}
 			DipChildProviderStateProofVerifierError::DidSignatureVerificationError(error) => {
-				u16::from(error.into().to_be()) | (0b1111 << 12)
+				u8::MAX as u16 * 4 + error.into() as u16
 			}
 		}
 	}

@@ -93,8 +93,8 @@ pub mod pallet {
 		IdentityNotFound,
 		/// The identity proof provided could not be successfully verified.
 		InvalidProof(u16),
-		/// The specified call could not be dispatched.
-		Dispatch,
+		/// The specified call is filtered by the DIP call origin filter.
+		Filtered,
 	}
 
 	/// The origin this pallet creates after a user has provided a valid
@@ -118,8 +118,7 @@ pub mod pallet {
 			// TODO: Make origin check configurable, and require that it at least returns
 			// the submitter's account.
 			let submitter = ensure_signed(origin)?;
-			// TODO: Proper error handling
-			ensure!(T::DipCallOriginFilter::contains(&*call), Error::<T>::Dispatch);
+			ensure!(T::DipCallOriginFilter::contains(&*call), Error::<T>::Filtered);
 			let mut identity_entry = IdentityEntries::<T>::get(&identifier);
 			let proof_verification_result = T::ProofVerifier::verify_proof_for_call_against_details(
 				&*call,
@@ -136,7 +135,7 @@ pub mod pallet {
 				details: proof_verification_result,
 			};
 			// TODO: Use dispatch info for weight calculation
-			let _ = call.dispatch(did_origin.into()).map_err(|_| Error::<T>::Dispatch)?;
+			let _ = call.dispatch(did_origin.into()).map_err(|e| e.error)?;
 			Ok(())
 		}
 	}
