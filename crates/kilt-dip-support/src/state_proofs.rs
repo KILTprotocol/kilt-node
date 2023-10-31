@@ -302,7 +302,7 @@ pub(super) mod parachain {
 			state_root: OutputOf<ParaInfo::Hasher>,
 			proof: impl IntoIterator<Item = Vec<u8>>,
 		) -> Result<ParaInfo::Commitment, DipIdentityCommitmentProofVerifierError> {
-			let dip_commitment_storage_key = ParaInfo::dip_subject_storage_key(identifier);
+			let dip_commitment_storage_key = ParaInfo::dip_subject_storage_key(identifier, 0);
 			let storage_proof = StorageProof::new(proof);
 			let revealed_leaves = read_proof_check::<ParaInfo::Hasher, _>(
 				state_root,
@@ -328,6 +328,7 @@ pub(super) mod parachain {
 		use super::*;
 
 		use hex_literal::hex;
+		use pallet_dip_provider::IdentityCommitmentVersion;
 		use sp_core::H256;
 		use sp_runtime::traits::BlakeTwo256;
 
@@ -345,7 +346,10 @@ pub(super) mod parachain {
 			type Identifier = ();
 			type Key = StorageKey;
 
-			fn dip_subject_storage_key(_identifier: &Self::Identifier) -> Self::Key {
+			fn dip_subject_storage_key(
+				_identifier: &Self::Identifier,
+				_version: IdentityCommitmentVersion,
+			) -> Self::Key {
 				// system::eventCount() raw storage key
 				let storage_key = hex!("26aa394eea5630e07c48ae0c9558cef70a98fdbe9ce6c55837576c60c7af3850").to_vec();
 				StorageKey(storage_key)

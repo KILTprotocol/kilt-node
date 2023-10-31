@@ -17,6 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_system::pallet_prelude::BlockNumberFor;
+use pallet_dip_provider::IdentityCommitmentVersion;
 use sp_core::storage::StorageKey;
 use sp_runtime::traits::{CheckedAdd, One, Zero};
 use sp_std::marker::PhantomData;
@@ -76,7 +77,7 @@ pub trait ProviderParachainStateInfo {
 	type Hasher: sp_runtime::traits::Hash;
 	type Identifier;
 
-	fn dip_subject_storage_key(identifier: &Self::Identifier) -> Self::Key;
+	fn dip_subject_storage_key(identifier: &Self::Identifier, version: IdentityCommitmentVersion) -> Self::Key;
 }
 
 pub struct ProviderParachainStateInfoViaProviderPallet<T>(PhantomData<T>);
@@ -91,9 +92,9 @@ where
 	type Identifier = T::Identifier;
 	type Key = StorageKey;
 
-	fn dip_subject_storage_key(identifier: &Self::Identifier) -> Self::Key {
+	fn dip_subject_storage_key(identifier: &Self::Identifier, version: IdentityCommitmentVersion) -> Self::Key {
 		StorageKey(pallet_dip_provider::IdentityCommitments::<T>::hashed_key_for(
-			identifier,
+			identifier, version,
 		))
 	}
 }

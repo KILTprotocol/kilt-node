@@ -16,17 +16,19 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-// TODO: Crate documentation
+mod child;
+mod common;
+mod sibling;
 
-#![cfg_attr(not(feature = "std"), no_std)]
+pub use child::{
+	DipChildProviderStateProofVerifierError, VersionedChildParachainDipStateProof,
+	VersionedDipChildProviderStateProofVerifier,
+};
+pub use sibling::{
+	DipSiblingProviderStateProofVerifierError, VersionedDipSiblingProviderStateProofVerifier,
+	VersionedSiblingParachainDipStateProof,
+};
 
-pub mod did;
-pub mod merkle;
-pub mod state_proofs;
-pub mod traits;
-pub mod utils;
-
-mod export;
-
-pub use export::*;
-pub use state_proofs::relay_chain::RococoStateRootsViaRelayStorePallet;
+pub mod latest {
+	pub use super::{child::latest::*, common::latest::*, sibling::latest::*};
+}

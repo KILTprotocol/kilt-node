@@ -568,7 +568,6 @@ impl_runtime_apis! {
 		}
 	}
 
-	// TODO: Support generating different versions of the proof, based on the provided parameter
 	impl kilt_runtime_api_dip_provider::DipProvider<Block, RuntimeApiDipProofRequest, CompleteMerkleProof<Hash, DidMerkleProofOf<Runtime>>, RuntimeApiDipProofError> for Runtime {
 		fn generate_proof(request: RuntimeApiDipProofRequest) -> Result<CompleteMerkleProof<Hash, DidMerkleProofOf<Runtime>>, RuntimeApiDipProofError> {
 			let linked_did_info = match <Runtime as pallet_dip_provider::Config>::IdentityProvider::retrieve(&request.identifier) {
@@ -576,7 +575,7 @@ impl_runtime_apis! {
 				Ok(None) => Err(RuntimeApiDipProofError::IdentityNotFound),
 				Err(e) => Err(RuntimeApiDipProofError::IdentityProviderError(e))
 			}?;
-			DidMerkleRootGenerator::<Runtime>::generate_proof(&linked_did_info, request.keys.iter(), request.should_include_web3_name, request.accounts.iter()).map_err(RuntimeApiDipProofError::MerkleProofError)
+			DidMerkleRootGenerator::<Runtime>::generate_proof(&linked_did_info, request.version, request.keys.iter(), request.should_include_web3_name, request.accounts.iter()).map_err(RuntimeApiDipProofError::MerkleProofError)
 		}
 	}
 }

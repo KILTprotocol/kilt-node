@@ -22,11 +22,17 @@ pub use identity_generation::*;
 pub mod identity_generation {
 	use sp_std::marker::PhantomData;
 
+	use crate::IdentityCommitmentVersion;
+
 	pub trait IdentityCommitmentGenerator<Identifier, Identity> {
 		type Error;
 		type Output;
 
-		fn generate_commitment(identifier: &Identifier, identity: &Identity) -> Result<Self::Output, Self::Error>;
+		fn generate_commitment(
+			identifier: &Identifier,
+			identity: &Identity,
+			version: IdentityCommitmentVersion,
+		) -> Result<Self::Output, Self::Error>;
 	}
 
 	// Implement the `IdentityCommitmentGenerator` by returning the `Default` value
@@ -41,7 +47,11 @@ pub mod identity_generation {
 		type Error = ();
 		type Output = Output;
 
-		fn generate_commitment(_identifier: &Identifier, _identity: &Identity) -> Result<Self::Output, Self::Error> {
+		fn generate_commitment(
+			_identifier: &Identifier,
+			_identity: &Identity,
+			_version: IdentityCommitmentVersion,
+		) -> Result<Self::Output, Self::Error> {
 			Ok(Output::default())
 		}
 	}
