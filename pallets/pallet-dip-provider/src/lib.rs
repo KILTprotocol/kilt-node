@@ -31,22 +31,16 @@ pub mod pallet {
 	use frame_support::{pallet_prelude::*, traits::EnsureOrigin};
 	use frame_system::pallet_prelude::*;
 	use parity_scale_codec::FullCodec;
-	use sp_io::MultiRemovalResults;
 	use sp_std::fmt::Debug;
 
-	use crate::traits::{IdentityCommitmentGenerator, IdentityProvider, SubmitterInfo};
+	use crate::traits::{IdentityCommitmentGenerator, IdentityProvider, ProviderHooks, SubmitterInfo};
 
 	pub type IdentityOf<T> = <<T as Config>::IdentityProvider as IdentityProvider<<T as Config>::Identifier>>::Success;
 	pub type IdentityCommitmentVersion = u16;
 
 	pub const LATEST_COMMITMENT_VERSION: IdentityCommitmentVersion = 0;
+	pub const MAX_COMMITMENTS_PER_IDENTITY: u16 = LATEST_COMMITMENT_VERSION + 1;
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(0);
-
-	#[derive(Encode, Decode, RuntimeDebug, TypeInfo, Clone, PartialEq)]
-	pub enum VersionOrLimit {
-		Version(IdentityCommitmentVersion),
-		Limit(u32),
-	}
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
@@ -63,6 +57,11 @@ pub mod pallet {
 		type IdentityCommitmentGeneratorError: Into<u16>;
 		type IdentityProvider: IdentityProvider<Self::Identifier, Error = Self::IdentityProviderError>;
 		type IdentityProviderError: Into<u16>;
+		type ProviderHooks: ProviderHooks<
+			Identifier = Self::Identifier,
+			Submitter = Self::AccountId,
+			IdentityCommitment = Self::IdentityCommitment,
+		>;
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 	}
 
@@ -104,6 +103,7 @@ pub mod pallet {
 		LimitTooLow,
 		IdentityProvider(u16),
 		IdentityCommitmentGenerator(u16),
+		HookError(u16),
 	}
 
 	#[pallet::call]
@@ -116,27 +116,43 @@ pub mod pallet {
 			identifier: T::Identifier,
 			version: Option<IdentityCommitmentVersion>,
 		) -> DispatchResult {
-			// TODO: use dispatcher to get deposit
-			let _dispatcher =
+			let dispatcher =
 				T::CommitOriginCheck::ensure_origin(origin).map(|e: <T as Config>::CommitOrigin| e.submitter())?;
 
 			let commitment_version = version.unwrap_or(LATEST_COMMITMENT_VERSION);
 			let commitment = match T::IdentityProvider::retrieve(&identifier) {
+				Ok(None) => Err(Error::<T>::IdentityNotFound),
+				Err(error) => Err(Error::<T>::IdentityProvider(error.into())),
 				Ok(Some(identity)) => {
 					T::IdentityCommitmentGenerator::generate_commitment(&identifier, &identity, commitment_version)
 						.map_err(|error| Error::<T>::IdentityCommitmentGenerator(error.into()))
 				}
-				Ok(None) => Err(Error::<T>::IdentityNotFound),
-				Err(error) => Err(Error::<T>::IdentityProvider(error.into())),
 			}?;
 
-			// TODO: Take deposit (once 0.9.42 PR is merged into develop)
-			IdentityCommitments::<T>::insert(&identifier, commitment_version, commitment.clone());
-			Self::deposit_event(Event::<T>::IdentityCommitted {
-				identifier,
-				commitment,
-				version: commitment_version,
-			});
+			IdentityCommitments::<T>::try_mutate(&identifier, commitment_version, |commitment_entry| {
+				if let Some(old_commitment) = commitment_entry {
+					T::ProviderHooks::on_commitment_removed(
+						&identifier,
+						&dispatcher,
+						old_commitment,
+						commitment_version,
+					)
+					.map_err(|e| Error::<T>::HookError(e.into()))?;
+					Self::deposit_event(Event::<T>::VersionedIdentityDeleted {
+						identifier: identifier.clone(),
+						version: commitment_version,
+					});
+				}
+				T::ProviderHooks::on_identity_committed(&identifier, &dispatcher, &commitment, commitment_version)
+					.map_err(|e| Error::<T>::HookError(e.into()))?;
+				*commitment_entry = Some(commitment.clone());
+				Self::deposit_event(Event::<T>::IdentityCommitted {
+					identifier: identifier.clone(),
+					commitment,
+					version: commitment_version,
+				});
+				Ok::<_, Error<T>>(())
+			})?;
 			Ok(())
 		}
 
@@ -146,34 +162,32 @@ pub mod pallet {
 		pub fn delete_identity_commitment(
 			origin: OriginFor<T>,
 			identifier: T::Identifier,
-			version_or_limit: VersionOrLimit,
+			version: Option<IdentityCommitmentVersion>,
 		) -> DispatchResult {
-			let _dispatcher =
+			let dispatcher =
 				T::CommitOriginCheck::ensure_origin(origin).map(|e: <T as Config>::CommitOrigin| e.submitter())?;
 
-			match version_or_limit {
-				VersionOrLimit::Version(version) => {
-					let commitment = IdentityCommitments::<T>::take(&identifier, version);
-					match commitment {
-						Some(_) => Err(Error::<T>::IdentityNotFound),
-						None => {
-							Self::deposit_event(Event::<T>::VersionedIdentityDeleted { identifier, version });
-							Ok(())
-						}
+			let commitment_version = version.unwrap_or(LATEST_COMMITMENT_VERSION);
+			IdentityCommitments::<T>::try_mutate(&identifier, commitment_version, |commitment_entry| {
+				match commitment_entry {
+					None => Err(Error::<T>::IdentityNotFound),
+					Some(commitment) => {
+						T::ProviderHooks::on_commitment_removed(
+							&identifier,
+							&dispatcher,
+							commitment,
+							commitment_version,
+						)
+						.map_err(|e| Error::<T>::HookError(e.into()))?;
+						*commitment_entry = None;
+						Self::deposit_event(Event::<T>::VersionedIdentityDeleted {
+							identifier: identifier.clone(),
+							version: commitment_version,
+						});
+						Ok(())
 					}
 				}
-				VersionOrLimit::Limit(limit) => {
-					let MultiRemovalResults { maybe_cursor, .. } =
-						IdentityCommitments::<T>::clear_prefix(&identifier, limit, None);
-					match maybe_cursor {
-						Some(_) => Err(Error::<T>::LimitTooLow),
-						None => {
-							Self::deposit_event(Event::<T>::IdentityDeleted { identifier });
-							Ok(())
-						}
-					}
-				}
-			}?;
+			})?;
 			Ok(())
 		}
 	}

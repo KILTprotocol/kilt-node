@@ -16,13 +16,16 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use core::marker::PhantomData;
+
+use crate::IdentityCommitmentVersion;
 use did::DidRawOrigin;
 
 pub use identity_generation::*;
 pub mod identity_generation {
-	use sp_std::marker::PhantomData;
+	use super::*;
 
-	use crate::IdentityCommitmentVersion;
+	use sp_std::marker::PhantomData;
 
 	pub trait IdentityCommitmentGenerator<Identifier, Identity> {
 		type Error;
@@ -118,5 +121,55 @@ where
 
 	fn submitter(&self) -> Self::Submitter {
 		self.submitter.clone()
+	}
+}
+
+pub trait ProviderHooks {
+	type Identifier;
+	type IdentityCommitment;
+	type Error: Into<u16>;
+	type Submitter;
+	type Success;
+
+	fn on_identity_committed(
+		identifier: &Self::Identifier,
+		submitter: &Self::Submitter,
+		commitment: &Self::IdentityCommitment,
+		version: IdentityCommitmentVersion,
+	) -> Result<Self::Success, Self::Error>;
+
+	fn on_commitment_removed(
+		identifier: &Self::Identifier,
+		submitter: &Self::Submitter,
+		commitment: &Self::IdentityCommitment,
+		version: IdentityCommitmentVersion,
+	) -> Result<Self::Success, Self::Error>;
+}
+
+pub struct NoopHooks<Identifier, Commitment, Submitter>(PhantomData<(Identifier, Commitment, Submitter)>);
+
+impl<Identifier, Commitment, Submitter> ProviderHooks for NoopHooks<Identifier, Commitment, Submitter> {
+	type Error = u16;
+	type Identifier = Identifier;
+	type IdentityCommitment = Commitment;
+	type Submitter = Submitter;
+	type Success = ();
+
+	fn on_commitment_removed(
+		_identifier: &Self::Identifier,
+		_submitter: &Self::Submitter,
+		_commitment: &Self::IdentityCommitment,
+		_version: IdentityCommitmentVersion,
+	) -> Result<Self::Success, Self::Error> {
+		Ok(())
+	}
+
+	fn on_identity_committed(
+		_identifier: &Self::Identifier,
+		_submitter: &Self::Submitter,
+		_commitment: &Self::IdentityCommitment,
+		_version: IdentityCommitmentVersion,
+	) -> Result<Self::Success, Self::Error> {
+		Ok(())
 	}
 }
