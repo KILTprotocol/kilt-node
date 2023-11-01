@@ -86,8 +86,8 @@ pub mod deposit {
 
 	pub const DEPOSIT: Balance = 100_000;
 
-	// TODO: Store deposits somewhere, so that they can be freed up if the deposit
-	// amount changes.
+	// TODO: Store deposits somewhere, so that they can be freed up even after the
+	// deposit amount changes.
 	pub struct CommitmentDepositCollector;
 
 	impl StorageDepositCollector<AccountId, (AccountId, IdentityCommitmentVersion), RuntimeHoldReason>
@@ -141,7 +141,8 @@ pub mod deposit {
 			version: IdentityCommitmentVersion,
 		) -> Result<Self::Success, Self::Error> {
 			let _deposit = Self::create_deposit(submitter, DEPOSIT);
-			// TODO: Store deposit somewhere
+			// TODO: Store deposit somewhere, perhaps inside the provider pallet, via some
+			// metadata tricks?
 			Ok(())
 		}
 
@@ -155,29 +156,6 @@ pub mod deposit {
 			Self::free_deposit(deposit)
 		}
 	}
-
-	// impl<Currency, HoldReason, const DEPOSIT_AMOUNT: Balance> ProviderHooks
-	// 	for CommitmentDepositCollector<Currency, HoldReason, DEPOSIT_AMOUNT>
-	// where
-	// 	Currency: MutateHold<AccountId, Reason = HoldReason>,
-	// 	HoldReason: Default,
-	// {
-	// 	type Error = CommitmentDepositCollector;
-	// 	type Identifier = DidIdentifier;
-	// 	type IdentityCommitment = Hash;
-	// 	type Submitter = AccountId;
-	// 	type Success = ();
-
-	// 	fn on_identity_committed(
-	// 		identifier: &Self::Identifier,
-	// 		submitter: &Self::Submitter,
-	// 		commitment: &Self::IdentityCommitment,
-	// 		version: IdentityCommitmentVersion,
-	// 	) -> Result<Self::Success, Self::Error> {
-	// 		let reason = HoldReason::default();
-	// 		reserve_deposit
-	// 	}
-	// }
 }
 
 impl pallet_dip_provider::Config for Runtime {
