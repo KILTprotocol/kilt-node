@@ -28,7 +28,7 @@ use kilt_support::{traits::StorageDepositCollector, Deposit};
 use pallet_dip_provider::{traits::ProviderHooks, IdentityCommitmentVersion};
 use parity_scale_codec::Encode;
 use sp_runtime::traits::{Get, Hash};
-use sp_std::marker::PhantomData;
+use sp_std::{marker::PhantomData, vec::Vec};
 
 use crate::{AccountIdOf, BalanceOf, Config, Deposits, Error, HoldReason, MAX_NAMESPACE_LENGTH};
 

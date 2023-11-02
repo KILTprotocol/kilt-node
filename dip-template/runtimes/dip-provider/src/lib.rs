@@ -137,7 +137,8 @@ construct_runtime!(
 		Web3Names: pallet_web3_names = 32,
 
 		// DIP
-		DipProvider: pallet_dip_provider = 40,
+		DepositStorage: pallet_deposit_storage = 40,
+		DipProvider: pallet_dip_provider = 41,
 	}
 );
 

@@ -18,10 +18,7 @@
 
 use did::{DidRawOrigin, EnsureDidOrigin, KeyIdOf};
 use pallet_did_lookup::linkable_account::LinkableAccountId;
-use pallet_dip_provider::{
-	traits::{IdentityProvider, NoopHooks},
-	IdentityCommitmentVersion,
-};
+use pallet_dip_provider::{traits::IdentityProvider, IdentityCommitmentVersion};
 use parity_scale_codec::{Decode, Encode};
 use runtime_common::dip::{
 	did::LinkedDidInfoProviderOf,
@@ -30,7 +27,7 @@ use runtime_common::dip::{
 use scale_info::TypeInfo;
 use sp_std::vec::Vec;
 
-use crate::{AccountId, DidIdentifier, Hash, Runtime, RuntimeEvent};
+use crate::{AccountId, Balances, DidIdentifier, Hash, Runtime, RuntimeEvent};
 
 pub mod runtime_api {
 	use super::*;
@@ -53,112 +50,36 @@ pub mod runtime_api {
 }
 
 pub mod deposit {
+	use crate::{Balance, RuntimeHoldReason, UNIT};
+
 	use super::*;
-	use crate::{Balance, Balances, RuntimeHoldReason};
 
-	use frame_support::traits::{fungible::Inspect, tokens::fungible::MutateHold};
+	use frame_support::traits::Get;
+	use pallet_deposit_storage::{StorageDepositCollectorViaDepositsPallet, MAX_NAMESPACE_LENGTH};
+	use sp_core::{ConstU128, ConstU32};
+	use sp_runtime::BoundedVec;
 
-	use kilt_support::{traits::StorageDepositCollector, Deposit};
-	use pallet_dip_provider::{traits::ProviderHooks, HoldReason};
-	use sp_runtime::DispatchError;
+	pub struct Namespace;
 
-	pub enum CommitmentDepositCollectorError {
-		Internal,
-	}
-
-	impl From<CommitmentDepositCollectorError> for u16 {
-		fn from(value: CommitmentDepositCollectorError) -> Self {
-			match value {
-				CommitmentDepositCollectorError::Internal => u16::MAX,
-			}
+	impl Get<BoundedVec<u8, ConstU32<MAX_NAMESPACE_LENGTH>>> for Namespace {
+		fn get() -> BoundedVec<u8, ConstU32<MAX_NAMESPACE_LENGTH>> {
+			(*b"DipProvider").to_vec().try_into().expect("Should never fail.")
 		}
 	}
 
-	impl From<CommitmentDepositCollectorError> for DispatchError {
-		fn from(value: CommitmentDepositCollectorError) -> Self {
-			match value {
-				CommitmentDepositCollectorError::Internal => {
-					DispatchError::Other("CommitmentDepositCollectorError::Internal")
-				}
-			}
-		}
-	}
+	pub const DEPOSIT_AMOUNT: Balance = 100 * UNIT;
 
-	pub const DEPOSIT: Balance = 100_000;
+	pub type DepositCollectorHooks = StorageDepositCollectorViaDepositsPallet<
+		Runtime,
+		Namespace,
+		ConstU128<DEPOSIT_AMOUNT>,
+		(AccountId, IdentityCommitmentVersion),
+		RuntimeHoldReason,
+	>;
+}
 
-	// TODO: Store deposits somewhere, so that they can be freed up even after the
-	// deposit amount changes.
-	// TODO: Define a new pallet storing all the deposits, and bind this to that
-	// pallet, so that this cannot be used without the runtime deploying that pallet
-	// as well. Move this inside that pallet altogether.
-	pub struct CommitmentDepositCollector;
-
-	impl StorageDepositCollector<AccountId, (AccountId, IdentityCommitmentVersion), RuntimeHoldReason>
-		for CommitmentDepositCollector
-	{
-		type Currency = Balances;
-		type Reason = HoldReason;
-
-		fn reason() -> Self::Reason {
-			Self::Reason::Deposit
-		}
-
-		fn deposit(
-			key: &(AccountId, IdentityCommitmentVersion),
-		) -> Result<Deposit<AccountId, <Self::Currency as Inspect<AccountId>>::Balance>, DispatchError> {
-			log::error!("CommitmentDepositCollector::deposit(key) called, when it should not have, since it returns a dummy value.");
-			Err(CommitmentDepositCollectorError::Internal.into())
-		}
-
-		fn deposit_amount(
-			key: &(AccountId, IdentityCommitmentVersion),
-		) -> <Self::Currency as Inspect<AccountId>>::Balance {
-			DEPOSIT
-		}
-
-		fn get_hashed_key(key: &(AccountId, IdentityCommitmentVersion)) -> Result<Vec<u8>, DispatchError> {
-			log::error!("CommitmentDepositCollector::get_hashed_key(key) called, when it should not have, since it returns a dummy value.");
-			Err(CommitmentDepositCollectorError::Internal.into())
-		}
-
-		fn store_deposit(
-			key: &(AccountId, IdentityCommitmentVersion),
-			deposit: Deposit<AccountId, <Self::Currency as Inspect<AccountId>>::Balance>,
-		) -> Result<(), DispatchError> {
-			log::error!("CommitmentDepositCollector::get_hashed_key(key) called, when it should not have, since it returns a dummy value.");
-			Err(CommitmentDepositCollectorError::Internal.into())
-		}
-	}
-
-	impl ProviderHooks for CommitmentDepositCollector {
-		type Error = CommitmentDepositCollectorError;
-		type Identifier = DidIdentifier;
-		type IdentityCommitment = Hash;
-		type Submitter = AccountId;
-		type Success = ();
-
-		fn on_identity_committed(
-			identifier: &Self::Identifier,
-			submitter: &Self::Submitter,
-			commitment: &Self::IdentityCommitment,
-			version: IdentityCommitmentVersion,
-		) -> Result<Self::Success, Self::Error> {
-			let _deposit = Self::create_deposit(submitter, DEPOSIT);
-			// TODO: Store deposit somewhere, perhaps inside the provider pallet, via some
-			// metadata tricks?
-			Ok(())
-		}
-
-		fn on_commitment_removed(
-			identifier: &Self::Identifier,
-			submitter: &Self::Submitter,
-			commitment: &Self::IdentityCommitment,
-			version: IdentityCommitmentVersion,
-		) -> Result<Self::Success, Self::Error> {
-			let deposit = Self::deposit((submitter, version))?;
-			Self::free_deposit(deposit)
-		}
-	}
+impl pallet_deposit_storage::Config for Runtime {
+	type Currency = Balances;
 }
 
 impl pallet_dip_provider::Config for Runtime {
@@ -170,7 +91,6 @@ impl pallet_dip_provider::Config for Runtime {
 	type IdentityCommitmentGeneratorError = DidMerkleProofError;
 	type IdentityProvider = LinkedDidInfoProviderOf<Runtime>;
 	type IdentityProviderError = <LinkedDidInfoProviderOf<Runtime> as IdentityProvider<DidIdentifier>>::Error;
-	// TODO: Change to deposit collector
-	type ProviderHooks = NoopHooks<Self::Identifier, Self::IdentityCommitment, Self::AccountId>;
+	type ProviderHooks = deposit::DepositCollectorHooks;
 	type RuntimeEvent = RuntimeEvent;
 }

@@ -16,6 +16,9 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+#![cfg_attr(not(feature = "std"), no_std)]
+#![recursion_limit = "256"]
+
 mod deposit;
 
 pub use deposit::StorageDepositCollectorViaDepositsPallet;
