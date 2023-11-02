@@ -95,11 +95,14 @@ where
 	}
 }
 
-type DepositKey<Runtime> = (AccountIdOf<Runtime>, IdentityCommitmentVersion);
-
 impl<Runtime, Namespace, DepositAmount, RuntimeHoldReason> ProviderHooks
-	for StorageDepositCollectorViaDepositsPallet<Runtime, Namespace, DepositAmount, DepositKey<Runtime>, RuntimeHoldReason>
-where
+	for StorageDepositCollectorViaDepositsPallet<
+		Runtime,
+		Namespace,
+		DepositAmount,
+		(AccountIdOf<Runtime>, IdentityCommitmentVersion),
+		RuntimeHoldReason,
+	> where
 	Runtime: pallet_dip_provider::Config + Config,
 	Runtime::Currency: MutateHold<AccountIdOf<Runtime>, Reason = RuntimeHoldReason>,
 	Namespace: Get<BoundedVec<u8, ConstU32<MAX_NAMESPACE_LENGTH>>>,
