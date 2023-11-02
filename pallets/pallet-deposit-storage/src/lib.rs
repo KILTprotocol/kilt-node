@@ -48,6 +48,7 @@ pub mod pallet {
 	pub type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 	pub type BalanceOf<T> = <<T as Config>::Currency as Inspect<AccountIdOf<T>>>::Balance;
 	pub type DepositKey<T> = <T as frame_system::Config>::Hash;
+	pub type DepositEntryOf<T> = DepositEntry<AccountIdOf<T>, BalanceOf<T>, <T as Config>::RuntimeHoldReason>;
 	pub type Namespace = BoundedVec<u8, ConstU32<MAX_NAMESPACE_LENGTH>>;
 
 	#[pallet::config]
@@ -73,19 +74,12 @@ pub mod pallet {
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
-		DepositReclaimed(DepositEntry<AccountIdOf<T>, BalanceOf<T>, T::RuntimeHoldReason>),
+		DepositReclaimed(DepositEntryOf<T>),
 	}
 
 	// Double map (namespace, key) -> deposit
 	#[pallet::storage]
-	pub type Deposits<T> = StorageDoubleMap<
-		_,
-		Twox64Concat,
-		Namespace,
-		Twox64Concat,
-		DepositKey<T>,
-		DepositEntry<AccountIdOf<T>, BalanceOf<T>, <T as Config>::RuntimeHoldReason>,
-	>;
+	pub type Deposits<T> = StorageDoubleMap<_, Twox64Concat, Namespace, Twox64Concat, DepositKey<T>, DepositEntryOf<T>>;
 
 	#[pallet::pallet]
 	#[pallet::storage_version(STORAGE_VERSION)]
