@@ -1,0 +1,38 @@
+[package]
+authors.workspace = true
+documentation.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license-file.workspace = true
+readme.workspace = true
+repository.workspace = true
+version.workspace = true
+name = "pallet-deposit-storage"
+description = "Stores all deposits under a single pallet, with suport for namespacing different deposit contexts."
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+# Substrate dependencies
+frame-support.workspace = true
+frame-system.workspace = true
+kilt-support.workspace = true
+pallet-dip-provider.workspace = true
+parity-scale-codec = {workspace = true, features = ["derive"]}
+scale-info = {workspace = true, features = ["derive"]}
+sp-runtime.workspace = true
+sp-std.workspace = true
+
+[features]
+default = ["std"]
+std = [
+  "frame-support/std",
+  "frame-system/std",
+  "kilt-support/std",
+  "pallet-dip-provider/std",
+  "parity-scale-codec/std",
+  "scale-info/std",
+  "sp-runtime/std",
+  "sp-std/std",
+]

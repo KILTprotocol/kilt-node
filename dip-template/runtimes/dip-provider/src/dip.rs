@@ -88,6 +88,9 @@ pub mod deposit {
 
 	// TODO: Store deposits somewhere, so that they can be freed up even after the
 	// deposit amount changes.
+	// TODO: Define a new pallet storing all the deposits, and bind this to that
+	// pallet, so that this cannot be used without the runtime deploying that pallet
+	// as well. Move this inside that pallet altogether.
 	pub struct CommitmentDepositCollector;
 
 	impl StorageDepositCollector<AccountId, (AccountId, IdentityCommitmentVersion), RuntimeHoldReason>
