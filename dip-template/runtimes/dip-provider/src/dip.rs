@@ -17,6 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use did::{DidRawOrigin, EnsureDidOrigin, KeyIdOf};
+use frame_system::EnsureSigned;
 use pallet_did_lookup::linkable_account::LinkableAccountId;
 use pallet_dip_provider::{traits::IdentityProvider, IdentityCommitmentVersion};
 use parity_scale_codec::{Decode, Encode};
@@ -27,7 +28,7 @@ use runtime_common::dip::{
 use scale_info::TypeInfo;
 use sp_std::vec::Vec;
 
-use crate::{AccountId, Balances, DidIdentifier, Hash, Runtime, RuntimeEvent};
+use crate::{AccountId, Balances, DidIdentifier, Hash, Runtime, RuntimeEvent, RuntimeHoldReason};
 
 pub mod runtime_api {
 	use super::*;
@@ -50,7 +51,7 @@ pub mod runtime_api {
 }
 
 pub mod deposit {
-	use crate::{Balance, RuntimeHoldReason, UNIT};
+	use crate::{Balance, UNIT};
 
 	use super::*;
 
@@ -74,12 +75,14 @@ pub mod deposit {
 		Namespace,
 		ConstU128<DEPOSIT_AMOUNT>,
 		(AccountId, IdentityCommitmentVersion),
-		RuntimeHoldReason,
 	>;
 }
 
 impl pallet_deposit_storage::Config for Runtime {
+	type CheckOrigin = EnsureSigned<AccountId>;
 	type Currency = Balances;
+	type RuntimeEvent = RuntimeEvent;
+	type RuntimeHoldReason = RuntimeHoldReason;
 }
 
 impl pallet_dip_provider::Config for Runtime {

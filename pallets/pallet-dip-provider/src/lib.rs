@@ -42,11 +42,6 @@ pub mod pallet {
 	pub const MAX_COMMITMENTS_PER_IDENTITY: u16 = LATEST_COMMITMENT_VERSION + 1;
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(0);
 
-	#[pallet::composite_enum]
-	pub enum HoldReason {
-		Deposit,
-	}
-
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
 		type CommitOriginCheck: EnsureOrigin<Self::RuntimeOrigin, Success = Self::CommitOrigin>;

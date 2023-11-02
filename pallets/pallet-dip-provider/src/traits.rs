@@ -16,10 +16,10 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use core::marker::PhantomData;
+use did::DidRawOrigin;
+use sp_std::marker::PhantomData;
 
 use crate::IdentityCommitmentVersion;
-use did::DidRawOrigin;
 
 pub use identity_generation::*;
 pub mod identity_generation {
