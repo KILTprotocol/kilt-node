@@ -24,15 +24,22 @@ mod deposit;
 pub use deposit::StorageDepositCollectorViaDepositsPallet;
 pub use pallet::*;
 
-#[frame_support::pallet]
+#[frame_support::pallet(dev_mode)]
 pub mod pallet {
 	use super::*;
 
 	use frame_support::{
 		pallet_prelude::*,
-		traits::{fungible::Inspect, ConstU32},
+		traits::{
+			fungible::{Inspect, MutateHold},
+			ConstU32, EnsureOrigin,
+		},
 	};
-	use kilt_support::Deposit;
+	use frame_system::pallet_prelude::*;
+	use parity_scale_codec::FullCodec;
+	use sp_std::fmt::Debug;
+
+	use deposit::{free_deposit, DepositEntry};
 
 	/// The current storage version.
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(0);
@@ -40,10 +47,15 @@ pub mod pallet {
 
 	pub type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 	pub type BalanceOf<T> = <<T as Config>::Currency as Inspect<AccountIdOf<T>>>::Balance;
+	pub type DepositKey<T> = <T as frame_system::Config>::Hash;
+	pub type Namespace = BoundedVec<u8, ConstU32<MAX_NAMESPACE_LENGTH>>;
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
-		type Currency: Inspect<Self::AccountId>;
+		type CheckOrigin: EnsureOrigin<Self::RuntimeOrigin, Success = Self::AccountId>;
+		type Currency: MutateHold<Self::AccountId, Reason = Self::RuntimeHoldReason>;
+		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
+		type RuntimeHoldReason: Clone + PartialEq + Debug + FullCodec + MaxEncodedLen + TypeInfo;
 	}
 
 	#[pallet::composite_enum]
@@ -55,6 +67,13 @@ pub mod pallet {
 	pub enum Error<T> {
 		DepositNotFound,
 		DepositExisting,
+		Unauthorized,
+	}
+
+	#[pallet::event]
+	#[pallet::generate_deposit(pub(super) fn deposit_event)]
+	pub enum Event<T: Config> {
+		DepositReclaimed(DepositEntry<AccountIdOf<T>, BalanceOf<T>, T::RuntimeHoldReason>),
 	}
 
 	// Double map (namespace, key) -> deposit
@@ -62,13 +81,42 @@ pub mod pallet {
 	pub type Deposits<T> = StorageDoubleMap<
 		_,
 		Twox64Concat,
-		BoundedVec<u8, ConstU32<MAX_NAMESPACE_LENGTH>>,
+		Namespace,
 		Twox64Concat,
-		<T as frame_system::Config>::Hash,
-		Deposit<<T as frame_system::Config>::AccountId, BalanceOf<T>>,
+		DepositKey<T>,
+		DepositEntry<AccountIdOf<T>, BalanceOf<T>, <T as Config>::RuntimeHoldReason>,
 	>;
 
 	#[pallet::pallet]
 	#[pallet::storage_version(STORAGE_VERSION)]
 	pub struct Pallet<T>(_);
+
+	#[pallet::call]
+	impl<T: Config> Pallet<T> {
+		#[pallet::call_index(0)]
+		// TODO: Update weight
+		#[pallet::weight(0)]
+		pub fn reclaim_deposit(origin: OriginFor<T>, namespace: Namespace, key: DepositKey<T>) -> DispatchResult {
+			let dispatcher = T::CheckOrigin::ensure_origin(origin)?;
+
+			Deposits::<T>::try_mutate(namespace, key, |deposit_entry| match deposit_entry {
+				None => Err(DispatchError::from(Error::<T>::DepositNotFound)),
+				Some(ref existing_deposit_entry) => {
+					ensure!(
+						existing_deposit_entry.deposit.owner == dispatcher,
+						DispatchError::from(Error::<T>::Unauthorized)
+					);
+
+					free_deposit::<AccountIdOf<T>, T::Currency>(
+						&existing_deposit_entry.deposit,
+						&existing_deposit_entry.reason,
+					)?;
+					Self::deposit_event(Event::<T>::DepositReclaimed(existing_deposit_entry.clone()));
+					*deposit_entry = None;
+					Ok(())
+				}
+			})?;
+			Ok(())
+		}
+	}
 }

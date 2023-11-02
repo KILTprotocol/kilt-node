@@ -19,35 +19,43 @@
 use frame_support::{
 	sp_runtime::DispatchError,
 	traits::{
-		fungible::{Inspect, MutateHold},
+		fungible::{hold::Mutate, Inspect, MutateHold},
+		tokens::Precision,
 		ConstU32,
 	},
 	BoundedVec,
 };
 use kilt_support::{traits::StorageDepositCollector, Deposit};
 use pallet_dip_provider::{traits::ProviderHooks, IdentityCommitmentVersion};
-use parity_scale_codec::Encode;
+use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
+use scale_info::TypeInfo;
 use sp_runtime::traits::{Get, Hash};
 use sp_std::{marker::PhantomData, vec::Vec};
 
 use crate::{AccountIdOf, BalanceOf, Config, Deposits, Error, HoldReason, MAX_NAMESPACE_LENGTH};
 
+#[derive(Clone, Debug, Encode, Decode, Eq, PartialEq, Ord, PartialOrd, TypeInfo, MaxEncodedLen)]
+pub struct DepositEntry<AccountId, Balance, Reason> {
+	pub(crate) deposit: Deposit<AccountId, Balance>,
+	pub(crate) reason: Reason,
+}
+
 type HasherOf<Runtime> = <Runtime as frame_system::Config>::Hashing;
 
-pub struct StorageDepositCollectorViaDepositsPallet<Runtime, Namespace, DepositAmount, Key, RuntimeHoldReason>(
-	PhantomData<(Runtime, Namespace, DepositAmount, Key, RuntimeHoldReason)>,
+pub struct StorageDepositCollectorViaDepositsPallet<Runtime, Namespace, DepositAmount, Key>(
+	PhantomData<(Runtime, Namespace, DepositAmount, Key)>,
 );
 
-impl<Runtime, Namespace, DepositAmount, Key, RuntimeHoldReason>
-	StorageDepositCollector<AccountIdOf<Runtime>, Key, RuntimeHoldReason>
-	for StorageDepositCollectorViaDepositsPallet<Runtime, Namespace, DepositAmount, Key, RuntimeHoldReason>
+impl<Runtime, Namespace, DepositAmount, Key>
+	StorageDepositCollector<AccountIdOf<Runtime>, Key, Runtime::RuntimeHoldReason>
+	for StorageDepositCollectorViaDepositsPallet<Runtime, Namespace, DepositAmount, Key>
 where
 	Runtime: Config,
-	Runtime::Currency: MutateHold<AccountIdOf<Runtime>, Reason = RuntimeHoldReason>,
+	Runtime::Currency: MutateHold<AccountIdOf<Runtime>, Reason = Runtime::RuntimeHoldReason>,
+	Runtime::RuntimeHoldReason: From<HoldReason>,
 	Namespace: Get<BoundedVec<u8, ConstU32<MAX_NAMESPACE_LENGTH>>>,
 	DepositAmount: Get<BalanceOf<Runtime>>,
 	Key: Encode,
-	RuntimeHoldReason: From<HoldReason>,
 {
 	type Currency = Runtime::Currency;
 	type Reason = HoldReason;
@@ -62,7 +70,7 @@ where
 	{
 		let namespace = Namespace::get();
 		let key_hash = HasherOf::<Runtime>::hash(key.encode().as_ref());
-		let deposit = Deposits::<Runtime>::get(namespace, key_hash)
+		let DepositEntry { deposit, .. } = Deposits::<Runtime>::get(namespace, key_hash)
 			.ok_or(DispatchError::from(Error::<Runtime>::DepositNotFound))?;
 		Ok(deposit)
 	}
@@ -83,10 +91,14 @@ where
 	) -> Result<(), DispatchError> {
 		let namespace = Namespace::get();
 		let key_hash = HasherOf::<Runtime>::hash(key.encode().as_ref());
+		let reason = Self::reason();
 		Deposits::<Runtime>::try_mutate(namespace, key_hash, |deposit_entry| match deposit_entry {
 			Some(_) => Err(Error::<Runtime>::DepositExisting),
 			None => {
-				*deposit_entry = Some(deposit);
+				*deposit_entry = Some(DepositEntry {
+					deposit,
+					reason: reason.into(),
+				});
 				Ok(())
 			}
 		})
@@ -95,19 +107,18 @@ where
 	}
 }
 
-impl<Runtime, Namespace, DepositAmount, RuntimeHoldReason> ProviderHooks
+impl<Runtime, Namespace, DepositAmount> ProviderHooks
 	for StorageDepositCollectorViaDepositsPallet<
 		Runtime,
 		Namespace,
 		DepositAmount,
 		(AccountIdOf<Runtime>, IdentityCommitmentVersion),
-		RuntimeHoldReason,
 	> where
 	Runtime: pallet_dip_provider::Config + Config,
-	Runtime::Currency: MutateHold<AccountIdOf<Runtime>, Reason = RuntimeHoldReason>,
+	Runtime::Currency: MutateHold<AccountIdOf<Runtime>, Reason = Runtime::RuntimeHoldReason>,
+	Runtime::RuntimeHoldReason: From<HoldReason>,
 	Namespace: Get<BoundedVec<u8, ConstU32<MAX_NAMESPACE_LENGTH>>>,
 	DepositAmount: Get<BalanceOf<Runtime>>,
-	RuntimeHoldReason: From<HoldReason>,
 {
 	type Error = u16;
 	type Identifier = Runtime::Identifier;
@@ -136,4 +147,20 @@ impl<Runtime, Namespace, DepositAmount, RuntimeHoldReason> ProviderHooks
 		Self::free_deposit(deposit).map_err(|_| 4u16)?;
 		Ok(())
 	}
+}
+
+// Taken from dip_support logic, not to make that pub
+pub(crate) fn free_deposit<Account, Currency: Mutate<Account>>(
+	deposit: &Deposit<Account, Currency::Balance>,
+	reason: &Currency::Reason,
+) -> Result<<Currency as Inspect<Account>>::Balance, DispatchError> {
+	let result = Currency::release(reason, &deposit.owner, deposit.amount, Precision::BestEffort);
+	debug_assert!(
+		result == Ok(deposit.amount),
+		"Released deposit amount does not match with expected amount. Expected: {:?}, Released amount: {:?}  Error: {:?}",
+		deposit.amount,
+		result.ok(),
+		result.err(),
+	);
+	result
 }
