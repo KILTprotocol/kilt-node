@@ -26,6 +26,8 @@ pub use pallet::*;
 
 #[frame_support::pallet(dev_mode)]
 pub mod pallet {
+	use crate::deposit::{reserve_deposit, DepositEntry};
+
 	use super::*;
 
 	use frame_support::{
@@ -39,7 +41,7 @@ pub mod pallet {
 	use parity_scale_codec::FullCodec;
 	use sp_std::fmt::Debug;
 
-	use deposit::{free_deposit, DepositEntry};
+	use deposit::free_deposit;
 
 	/// The current storage version.
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(0);
@@ -47,7 +49,7 @@ pub mod pallet {
 
 	pub type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 	pub type BalanceOf<T> = <<T as Config>::Currency as Inspect<AccountIdOf<T>>>::Balance;
-	pub type DepositKey<T> = <T as frame_system::Config>::Hash;
+	pub type DepositKeyOf<T> = <T as frame_system::Config>::Hash;
 	pub type DepositEntryOf<T> = DepositEntry<AccountIdOf<T>, BalanceOf<T>, <T as Config>::RuntimeHoldReason>;
 	pub type Namespace = BoundedVec<u8, ConstU32<MAX_NAMESPACE_LENGTH>>;
 
@@ -74,12 +76,15 @@ pub mod pallet {
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
+		DepositAdded(DepositEntryOf<T>),
 		DepositReclaimed(DepositEntryOf<T>),
 	}
 
 	// Double map (namespace, key) -> deposit
 	#[pallet::storage]
-	pub type Deposits<T> = StorageDoubleMap<_, Twox64Concat, Namespace, Twox64Concat, DepositKey<T>, DepositEntryOf<T>>;
+	#[pallet::getter(fn deposits)]
+	pub(crate) type Deposits<T> =
+		StorageDoubleMap<_, Twox64Concat, Namespace, Twox64Concat, DepositKeyOf<T>, DepositEntryOf<T>>;
 
 	#[pallet::pallet]
 	#[pallet::storage_version(STORAGE_VERSION)]
@@ -90,7 +95,7 @@ pub mod pallet {
 		#[pallet::call_index(0)]
 		// TODO: Update weight
 		#[pallet::weight(0)]
-		pub fn reclaim_deposit(origin: OriginFor<T>, namespace: Namespace, key: DepositKey<T>) -> DispatchResult {
+		pub fn reclaim_deposit(origin: OriginFor<T>, namespace: Namespace, key: DepositKeyOf<T>) -> DispatchResult {
 			let dispatcher = T::CheckOrigin::ensure_origin(origin)?;
 
 			Deposits::<T>::try_mutate(namespace, key, |deposit_entry| match deposit_entry {
@@ -107,6 +112,25 @@ pub mod pallet {
 					)?;
 					Self::deposit_event(Event::<T>::DepositReclaimed(existing_deposit_entry.clone()));
 					*deposit_entry = None;
+					Ok(())
+				}
+			})?;
+			Ok(())
+		}
+	}
+
+	impl<T: Config> Pallet<T> {
+		pub fn add_deposit(namespace: Namespace, key: DepositKeyOf<T>, entry: DepositEntryOf<T>) -> DispatchResult {
+			Deposits::<T>::try_mutate(namespace, key, |deposit_entry| match deposit_entry {
+				Some(_) => Err(DispatchError::from(Error::<T>::DepositExisting)),
+				None => {
+					reserve_deposit::<AccountIdOf<T>, T::Currency>(
+						entry.deposit.owner.clone(),
+						entry.deposit.amount,
+						&entry.reason,
+					)?;
+					Self::deposit_event(Event::<T>::DepositAdded(entry.clone()));
+					*deposit_entry = Some(entry);
 					Ok(())
 				}
 			})?;
