@@ -26,6 +26,7 @@ use runtime_common::dip::{
 	merkle::{DidMerkleProofError, DidMerkleRootGenerator},
 };
 use scale_info::TypeInfo;
+use sp_core::ConstU32;
 use sp_std::vec::Vec;
 
 use crate::{
@@ -59,18 +60,18 @@ pub mod deposit {
 
 	use frame_support::traits::Get;
 	use pallet_deposit_storage::{
-		traits::DepositStorageHooks, DepositEntryOf, FixedDepositCollectorViaDepositsPallet, MAX_NAMESPACE_LENGTH,
+		traits::DepositStorageHooks, DepositEntryOf, DepositKeyOf, FixedDepositCollectorViaDepositsPallet, NamespaceOf,
 	};
-	use sp_core::{ConstU128, ConstU32};
+	use sp_core::ConstU128;
 	use sp_runtime::BoundedVec;
 
 	pub const NAMESPACE: [u8; 11] = *b"DipProvider";
 
 	pub struct Namespace;
 
-	impl Get<BoundedVec<u8, ConstU32<MAX_NAMESPACE_LENGTH>>> for Namespace {
-		fn get() -> BoundedVec<u8, ConstU32<MAX_NAMESPACE_LENGTH>> {
-			debug_assert!(NAMESPACE.len() <= MAX_NAMESPACE_LENGTH as usize, "Namespace is longer than the maximum namespace length configured in the pallet_deposit_storage pallet.");
+	impl Get<BoundedVec<u8, <Runtime as pallet_deposit_storage::Config>::MaxNamespaceLength>> for Namespace {
+		fn get() -> BoundedVec<u8, <Runtime as pallet_deposit_storage::Config>::MaxNamespaceLength> {
+			debug_assert!(NAMESPACE.len() as u32 <= <Runtime as pallet_deposit_storage::Config>::MaxNamespaceLength::get(), "Namespace is longer than the maximum namespace length configured in the pallet_deposit_storage pallet.");
 			NAMESPACE
 				.to_vec()
 				.try_into()
@@ -102,8 +103,8 @@ pub mod deposit {
 		type Error = CommitmentDepositRemovalHookError;
 
 		fn on_deposit_reclaimed(
-			_namespace: &pallet_deposit_storage::Namespace,
-			key: &pallet_deposit_storage::DepositKey,
+			_namespace: &NamespaceOf<Runtime>,
+			key: &DepositKeyOf<Runtime>,
 			_deposit: DepositEntryOf<Runtime>,
 		) -> Result<(), Self::Error> {
 			let (identifier, commitment_version) = <(DidIdentifier, IdentityCommitmentVersion)>::decode(&mut &key[..])
@@ -128,6 +129,8 @@ impl pallet_deposit_storage::Config for Runtime {
 	type CheckOrigin = EnsureSigned<AccountId>;
 	type Currency = Balances;
 	type DepositHooks = DepositHooks;
+	type MaxKeyLength = ConstU32<256>;
+	type MaxNamespaceLength = ConstU32<32>;
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeHoldReason = RuntimeHoldReason;
 }

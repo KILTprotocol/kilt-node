@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use crate::{Config, DepositEntryOf, DepositKey, Namespace};
+use crate::{Config, DepositEntryOf, DepositKeyOf, NamespaceOf};
 
 pub trait DepositStorageHooks<Runtime>
 where
@@ -25,8 +25,8 @@ where
 	type Error: Into<u16>;
 
 	fn on_deposit_reclaimed(
-		namespace: &Namespace,
-		key: &DepositKey,
+		namespace: &NamespaceOf<Runtime>,
+		key: &DepositKeyOf<Runtime>,
 		deposit: DepositEntryOf<Runtime>,
 	) -> Result<(), Self::Error>;
 }
@@ -40,8 +40,8 @@ where
 	type Error = u16;
 
 	fn on_deposit_reclaimed(
-		_namespace: &Namespace,
-		_key: &DepositKey,
+		_namespace: &NamespaceOf<Runtime>,
+		_key: &DepositKeyOf<Runtime>,
 		_deposit: DepositEntryOf<Runtime>,
 	) -> Result<(), Self::Error> {
 		Ok(())

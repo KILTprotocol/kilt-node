@@ -21,7 +21,6 @@ use frame_support::{
 	traits::{
 		fungible::{hold::Mutate, Inspect},
 		tokens::Precision,
-		ConstU32,
 	},
 	BoundedVec,
 };
@@ -32,7 +31,7 @@ use scale_info::TypeInfo;
 use sp_runtime::traits::Get;
 use sp_std::marker::PhantomData;
 
-use crate::{BalanceOf, Config, Error, HoldReason, Pallet, MAX_KEY_LENGTH, MAX_NAMESPACE_LENGTH};
+use crate::{BalanceOf, Config, Error, HoldReason, Pallet};
 
 #[derive(Clone, Debug, Encode, Decode, Eq, PartialEq, Ord, PartialOrd, TypeInfo, MaxEncodedLen)]
 pub struct DepositEntry<AccountId, Balance, Reason> {
@@ -46,6 +45,7 @@ pub struct FixedDepositCollectorViaDepositsPallet<DepositsNamespace, FixedDeposi
 
 pub enum FixedDepositCollectorViaDepositsPalletError {
 	DepositAlreadyTaken,
+	DepositNotFound,
 	FailedToHold,
 	FailedToRelease,
 	Internal,
@@ -55,8 +55,9 @@ impl From<FixedDepositCollectorViaDepositsPalletError> for u16 {
 	fn from(value: FixedDepositCollectorViaDepositsPalletError) -> Self {
 		match value {
 			FixedDepositCollectorViaDepositsPalletError::DepositAlreadyTaken => 0,
-			FixedDepositCollectorViaDepositsPalletError::FailedToHold => 1,
-			FixedDepositCollectorViaDepositsPalletError::FailedToRelease => 2,
+			FixedDepositCollectorViaDepositsPalletError::DepositNotFound => 1,
+			FixedDepositCollectorViaDepositsPalletError::FailedToHold => 2,
+			FixedDepositCollectorViaDepositsPalletError::FailedToRelease => 3,
 			FixedDepositCollectorViaDepositsPalletError::Internal => u16::MAX,
 		}
 	}
@@ -66,22 +67,23 @@ impl<Runtime, DepositsNamespace, FixedDepositAmount> ProviderHooks<Runtime>
 	for FixedDepositCollectorViaDepositsPallet<DepositsNamespace, FixedDepositAmount>
 where
 	Runtime: pallet_dip_provider::Config + Config,
-	DepositsNamespace: Get<BoundedVec<u8, ConstU32<MAX_NAMESPACE_LENGTH>>>,
+	DepositsNamespace: Get<BoundedVec<u8, Runtime::MaxNamespaceLength>>,
 	FixedDepositAmount: Get<BalanceOf<Runtime>>,
 {
 	type Error = u16;
 
 	fn on_identity_committed(
-		_identifier: &Runtime::Identifier,
+		identifier: &Runtime::Identifier,
 		submitter: &Runtime::AccountId,
 		_commitment: &Runtime::IdentityCommitment,
 		version: IdentityCommitmentVersion,
 	) -> Result<(), Self::Error> {
 		let namespace = DepositsNamespace::get();
-		let key = (submitter, version).encode().try_into().map_err(|_| {
+		let key = (identifier, version).encode().try_into().map_err(|_| {
 			log::error!(
-				"Failed to convert tuple ({:#?}, {version}) to BoundedVec with max length {MAX_KEY_LENGTH}",
-				submitter,
+				"Failed to convert tuple ({:#?}, {version}) to BoundedVec with max length {}",
+				identifier,
+				Runtime::MaxNamespaceLength::get()
 			);
 			FixedDepositCollectorViaDepositsPalletError::Internal
 		})?;
@@ -96,26 +98,44 @@ where
 			pallet_error if pallet_error == DispatchError::from(Error::<Runtime>::DepositExisting) => {
 				FixedDepositCollectorViaDepositsPalletError::DepositAlreadyTaken
 			}
-			_ => FixedDepositCollectorViaDepositsPalletError::Internal,
+			_ => {
+				log::error!(
+					"Error {:#?} should not be generated inside `on_identity_committed` hook.",
+					e
+				);
+				FixedDepositCollectorViaDepositsPalletError::Internal
+			}
 		})?;
 		Ok(())
 	}
 
 	fn on_commitment_removed(
-		_identifier: &Runtime::Identifier,
-		submitter: &Runtime::AccountId,
+		identifier: &Runtime::Identifier,
+		_submitter: &Runtime::AccountId,
 		_commitment: &Runtime::IdentityCommitment,
 		version: pallet_dip_provider::IdentityCommitmentVersion,
 	) -> Result<(), Self::Error> {
 		let namespace = DepositsNamespace::get();
-		let key = (submitter, version).encode().try_into().map_err(|_| {
+		let key = (identifier, version).encode().try_into().map_err(|_| {
 			log::error!(
-				"Failed to convert tuple ({:#?}, {version}) to BoundedVec with max length {MAX_KEY_LENGTH}",
-				submitter
+				"Failed to convert tuple ({:#?}, {version}) to BoundedVec with max length {}",
+				identifier,
+				Runtime::MaxKeyLength::get()
 			);
 			FixedDepositCollectorViaDepositsPalletError::Internal
 		})?;
-		Pallet::<Runtime>::remove_deposit(&namespace, &key, None).map_err(|_| 2u16)?;
+		Pallet::<Runtime>::remove_deposit(&namespace, &key, None).map_err(|e| match e {
+			pallet_error if pallet_error == DispatchError::from(Error::<Runtime>::DepositNotFound) => {
+				FixedDepositCollectorViaDepositsPalletError::DepositNotFound
+			}
+			_ => {
+				log::error!(
+					"Error {:#?} should not be generated inside `on_commitment_removed` hook.",
+					e
+				);
+				FixedDepositCollectorViaDepositsPalletError::Internal
+			}
+		})?;
 		Ok(())
 	}
 }
