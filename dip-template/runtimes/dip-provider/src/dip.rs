@@ -28,7 +28,10 @@ use runtime_common::dip::{
 use scale_info::TypeInfo;
 use sp_std::vec::Vec;
 
-use crate::{AccountId, Balances, DidIdentifier, Hash, Runtime, RuntimeEvent, RuntimeHoldReason};
+use crate::{
+	deposit::CommitmentDepositRemovalHook, AccountId, Balances, DidIdentifier, Hash, Runtime, RuntimeEvent,
+	RuntimeHoldReason,
+};
 
 pub mod runtime_api {
 	use super::*;
@@ -56,7 +59,9 @@ pub mod deposit {
 	use crate::{Balance, UNIT};
 
 	use frame_support::traits::Get;
-	use pallet_deposit_storage::{FixedDepositCollectorViaDepositsPallet, MAX_NAMESPACE_LENGTH, traits::DepositStorageHooks};
+	use pallet_deposit_storage::{
+		traits::DepositStorageHooks, DepositEntryOf, FixedDepositCollectorViaDepositsPallet, MAX_NAMESPACE_LENGTH,
+	};
 	use sp_core::{ConstU128, ConstU32};
 	use sp_runtime::BoundedVec;
 
@@ -79,12 +84,44 @@ pub mod deposit {
 	pub type DepositCollectorHooks =
 		FixedDepositCollectorViaDepositsPallet<Runtime, Namespace, ConstU128<DEPOSIT_AMOUNT>>;
 
+	pub enum CommitmentDepositRemovalHookError {
+		DecodeKey,
+		Internal,
+	}
+
+	impl From<CommitmentDepositRemovalHookError> for u16 {
+		fn from(value: CommitmentDepositRemovalHookError) -> Self {
+			match value {
+				CommitmentDepositRemovalHookError::DecodeKey => 0,
+				CommitmentDepositRemovalHookError::Internal => u16::MAX,
+			}
+		}
+	}
+
 	pub struct CommitmentDepositRemovalHook;
 
-	impl DepositStorageHooks for CommitmentDepositRemovalHook {
-		fn on_deposit_reclaimed(namespace: &pallet_deposit_storage::Namespace, key: &pallet_deposit_storage::DepositKey) -> Result<(), sp_runtime::DispatchError> {
-			// TODO: Resume from here
-			let (submitter, commitment_version) = <(AccountId, IdentityCommitmentVersion)>::decode(&mut key)
+	impl DepositStorageHooks<Runtime> for CommitmentDepositRemovalHook {
+		type Error = CommitmentDepositRemovalHookError;
+
+		fn on_deposit_reclaimed(
+			_namespace: &pallet_deposit_storage::Namespace,
+			key: &pallet_deposit_storage::DepositKey,
+			_deposit: DepositEntryOf<Runtime>,
+		) -> Result<(), Self::Error> {
+			let (identifier, commitment_version) = <(DidIdentifier, IdentityCommitmentVersion)>::decode(&mut &key[..])
+				.map_err(|_| CommitmentDepositRemovalHookError::DecodeKey)?;
+			pallet_dip_provider::Pallet::<Runtime>::delete_identity_commitment_storage_entry(
+				&identifier,
+				commitment_version,
+			)
+			.map_err(|_| {
+				log::error!(
+					"Should not fail to remove commitment for identifier {:#?} and version {commitment_version}",
+					identifier
+				);
+				CommitmentDepositRemovalHookError::Internal
+			})?;
+			Ok(())
 		}
 	}
 }
@@ -92,7 +129,7 @@ pub mod deposit {
 impl pallet_deposit_storage::Config for Runtime {
 	type CheckOrigin = EnsureSigned<AccountId>;
 	type Currency = Balances;
-	type DepositHooks = ;
+	type DepositHooks = CommitmentDepositRemovalHook;
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeHoldReason = RuntimeHoldReason;
 }

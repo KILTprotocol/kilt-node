@@ -16,18 +16,36 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use sp_runtime::DispatchError;
+use sp_std::marker::PhantomData;
 
-use crate::{DepositKey, Namespace};
+use crate::{Config, DepositEntryOf, DepositKey, Namespace};
 
-pub trait DepositStorageHooks {
-	fn on_deposit_reclaimed(namespace: &Namespace, key: &DepositKey) -> Result<(), DispatchError>;
+pub trait DepositStorageHooks<Runtime>
+where
+	Runtime: Config,
+{
+	type Error: Into<u16>;
+
+	fn on_deposit_reclaimed(
+		namespace: &Namespace,
+		key: &DepositKey,
+		deposit: DepositEntryOf<Runtime>,
+	) -> Result<(), Self::Error>;
 }
 
-pub struct NoopDepositStorageHooks;
+pub struct NoopDepositStorageHooks<Runtime>(PhantomData<Runtime>);
 
-impl DepositStorageHooks for NoopDepositStorageHooks {
-	fn on_deposit_reclaimed(_namespace: &Namespace, _key: &DepositKey) -> Result<(), DispatchError> {
+impl<Runtime> DepositStorageHooks<Runtime> for NoopDepositStorageHooks<Runtime>
+where
+	Runtime: Config,
+{
+	type Error = u16;
+
+	fn on_deposit_reclaimed(
+		_namespace: &Namespace,
+		_key: &DepositKey,
+		_deposit: DepositEntryOf<Runtime>,
+	) -> Result<(), Self::Error> {
 		Ok(())
 	}
 }

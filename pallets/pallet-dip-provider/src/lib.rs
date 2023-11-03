@@ -168,27 +168,24 @@ pub mod pallet {
 				T::CommitOriginCheck::ensure_origin(origin).map(|e: <T as Config>::CommitOrigin| e.submitter())?;
 
 			let commitment_version = version.unwrap_or(LATEST_COMMITMENT_VERSION);
-			IdentityCommitments::<T>::try_mutate(&identifier, commitment_version, |commitment_entry| {
-				match commitment_entry {
-					None => Err(Error::<T>::IdentityNotFound),
-					Some(commitment) => {
-						T::ProviderHooks::on_commitment_removed(
-							&identifier,
-							&dispatcher,
-							commitment,
-							commitment_version,
-						)
-						.map_err(|e| Error::<T>::HookError(e.into()))?;
-						*commitment_entry = None;
-						Self::deposit_event(Event::<T>::VersionedIdentityDeleted {
-							identifier: identifier.clone(),
-							version: commitment_version,
-						});
-						Ok(())
-					}
-				}
-			})?;
+			let commitment = Self::delete_identity_commitment_storage_entry(&identifier, commitment_version)?;
+			T::ProviderHooks::on_commitment_removed(&identifier, &dispatcher, &commitment, commitment_version)
+				.map_err(|e| Error::<T>::HookError(e.into()))?;
 			Ok(())
+		}
+	}
+
+	impl<T: Config> Pallet<T> {
+		pub fn delete_identity_commitment_storage_entry(
+			identifier: &T::Identifier,
+			version: IdentityCommitmentVersion,
+		) -> Result<T::IdentityCommitment, DispatchError> {
+			let commitment = IdentityCommitments::<T>::take(identifier, version).ok_or(Error::<T>::IdentityNotFound)?;
+			Self::deposit_event(Event::<T>::VersionedIdentityDeleted {
+				identifier: identifier.clone(),
+				version,
+			});
+			Ok(commitment)
 		}
 	}
 }

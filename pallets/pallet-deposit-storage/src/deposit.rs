@@ -84,7 +84,8 @@ where
 		let namespace = DepositsNamespace::get();
 		let key = (submitter, version).encode().try_into().map_err(|_| {
 			log::error!(
-				"Failed to convert tuple ({submitter}, {version}) to BoundedVec with max length {MAX_KEY_LENGTH}"
+				"Failed to convert tuple ({:#?}, {version}) to BoundedVec with max length {MAX_KEY_LENGTH}",
+				submitter,
 			);
 			FixedDepositCollectorViaDepositsPalletError::Internal
 		})?;
@@ -113,7 +114,8 @@ where
 		let namespace = DepositsNamespace::get();
 		let key = (submitter, version).encode().try_into().map_err(|_| {
 			log::error!(
-				"Failed to convert tuple ({submitter}, {version}) to BoundedVec with max length {MAX_KEY_LENGTH}"
+				"Failed to convert tuple ({:#?}, {version}) to BoundedVec with max length {MAX_KEY_LENGTH}",
+				submitter
 			);
 			FixedDepositCollectorViaDepositsPalletError::Internal
 		})?;

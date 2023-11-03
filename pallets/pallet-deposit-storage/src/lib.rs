@@ -43,6 +43,7 @@ pub mod pallet {
 	};
 	use frame_system::pallet_prelude::*;
 	use parity_scale_codec::FullCodec;
+	use sp_runtime::DispatchError;
 	use sp_std::fmt::Debug;
 
 	/// The current storage version.
@@ -60,7 +61,7 @@ pub mod pallet {
 	pub trait Config: frame_system::Config {
 		type CheckOrigin: EnsureOrigin<Self::RuntimeOrigin, Success = Self::AccountId>;
 		type Currency: Mutate<Self::AccountId, Reason = Self::RuntimeHoldReason>;
-		type DepositHooks: DepositStorageHooks;
+		type DepositHooks: DepositStorageHooks<Self>;
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 		type RuntimeHoldReason: From<HoldReason> + Clone + PartialEq + Debug + FullCodec + MaxEncodedLen + TypeInfo;
 	}
@@ -75,6 +76,7 @@ pub mod pallet {
 		DepositNotFound,
 		DepositExisting,
 		Unauthorized,
+		HookError(u16),
 	}
 
 	#[pallet::event]
@@ -102,8 +104,9 @@ pub mod pallet {
 		pub fn reclaim_deposit(origin: OriginFor<T>, namespace: Namespace, key: DepositKey) -> DispatchResult {
 			let dispatcher = T::CheckOrigin::ensure_origin(origin)?;
 
-			Self::remove_deposit(&namespace, &key, Some(&dispatcher))?;
-			T::DepositHooks::on_deposit_reclaimed(&namespace, &key)?;
+			let deposit = Self::remove_deposit(&namespace, &key, Some(&dispatcher))?;
+			T::DepositHooks::on_deposit_reclaimed(&namespace, &key, deposit)
+				.map_err(|e| Error::<T>::HookError(e.into()))?;
 			Ok(())
 		}
 	}
@@ -130,27 +133,17 @@ pub mod pallet {
 			namespace: &Namespace,
 			key: &DepositKey,
 			expected_owner: Option<&AccountIdOf<T>>,
-		) -> DispatchResult {
-			Deposits::<T>::try_mutate(namespace, key, |deposit_entry| match deposit_entry {
-				None => Err(DispatchError::from(Error::<T>::DepositNotFound)),
-				Some(ref existing_deposit_entry) => {
-					if let Some(expected_owner) = expected_owner {
-						ensure!(
-							existing_deposit_entry.deposit.owner == *expected_owner,
-							DispatchError::from(Error::<T>::Unauthorized)
-						);
-					};
-
-					free_deposit::<AccountIdOf<T>, T::Currency>(
-						&existing_deposit_entry.deposit,
-						&existing_deposit_entry.reason,
-					)?;
-					Self::deposit_event(Event::<T>::DepositReclaimed(existing_deposit_entry.clone()));
-					*deposit_entry = None;
-					Ok(())
-				}
-			})?;
-			Ok(())
+		) -> Result<DepositEntryOf<T>, DispatchError> {
+			let existing_entry = Deposits::<T>::take(namespace, key).ok_or(Error::<T>::DepositNotFound)?;
+			if let Some(expected_owner) = expected_owner {
+				ensure!(
+					existing_entry.deposit.owner == *expected_owner,
+					Error::<T>::Unauthorized
+				);
+			}
+			free_deposit::<AccountIdOf<T>, T::Currency>(&existing_entry.deposit, &existing_entry.reason)?;
+			Self::deposit_event(Event::<T>::DepositReclaimed(existing_entry.clone()));
+			Ok(existing_entry)
 		}
 	}
 }
