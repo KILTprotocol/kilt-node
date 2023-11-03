@@ -29,18 +29,16 @@ use kilt_support::Deposit;
 use pallet_dip_provider::{traits::ProviderHooks, IdentityCommitmentVersion};
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
-use sp_runtime::traits::{Get, Hash};
+use sp_runtime::traits::Get;
 use sp_std::marker::PhantomData;
 
-use crate::{AccountIdOf, BalanceOf, Config, Error, HoldReason, Pallet, MAX_NAMESPACE_LENGTH};
+use crate::{AccountIdOf, BalanceOf, Config, Error, HoldReason, Pallet, MAX_KEY_LENGTH, MAX_NAMESPACE_LENGTH};
 
 #[derive(Clone, Debug, Encode, Decode, Eq, PartialEq, Ord, PartialOrd, TypeInfo, MaxEncodedLen)]
 pub struct DepositEntry<AccountId, Balance, Reason> {
 	pub(crate) deposit: Deposit<AccountId, Balance>,
 	pub(crate) reason: Reason,
 }
-
-type HasherOf<Runtime> = <Runtime as frame_system::Config>::Hashing;
 
 pub struct FixedDepositCollectorViaDepositsPallet<Runtime, DepositsNamespace, FixedDepositAmount>(
 	PhantomData<(Runtime, DepositsNamespace, FixedDepositAmount)>,
@@ -84,7 +82,12 @@ where
 		version: IdentityCommitmentVersion,
 	) -> Result<Self::Success, Self::Error> {
 		let namespace = DepositsNamespace::get();
-		let key_hash = HasherOf::<Runtime>::hash((submitter, version).encode().as_ref());
+		let key = (submitter, version).encode().try_into().map_err(|_| {
+			log::error!(
+				"Failed to convert tuple ({submitter}, {version}) to BoundedVec with max length {MAX_KEY_LENGTH}"
+			);
+			FixedDepositCollectorViaDepositsPalletError::Internal
+		})?;
 		let deposit_entry = DepositEntry {
 			deposit: Deposit {
 				amount: FixedDepositAmount::get(),
@@ -92,7 +95,7 @@ where
 			},
 			reason: HoldReason::Deposit.into(),
 		};
-		Pallet::<Runtime>::add_deposit(namespace, key_hash, deposit_entry).map_err(|e| match e {
+		Pallet::<Runtime>::add_deposit(namespace, key, deposit_entry).map_err(|e| match e {
 			pallet_error if pallet_error == DispatchError::from(Error::<Runtime>::DepositExisting) => {
 				FixedDepositCollectorViaDepositsPalletError::DepositAlreadyTaken
 			}
@@ -108,8 +111,13 @@ where
 		version: pallet_dip_provider::IdentityCommitmentVersion,
 	) -> Result<Self::Success, Self::Error> {
 		let namespace = DepositsNamespace::get();
-		let key_hash = HasherOf::<Runtime>::hash((submitter, version).encode().as_ref());
-		Pallet::<Runtime>::remove_deposit(namespace, key_hash, None).map_err(|_| 2u16)?;
+		let key = (submitter, version).encode().try_into().map_err(|_| {
+			log::error!(
+				"Failed to convert tuple ({submitter}, {version}) to BoundedVec with max length {MAX_KEY_LENGTH}"
+			);
+			FixedDepositCollectorViaDepositsPalletError::Internal
+		})?;
+		Pallet::<Runtime>::remove_deposit(&namespace, &key, None).map_err(|_| 2u16)?;
 		Ok(())
 	}
 }

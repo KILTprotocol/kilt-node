@@ -6452,6 +6452,7 @@ dependencies = [
  "frame-support",
  "frame-system",
  "kilt-support",
+ "log",
  "pallet-dip-provider",
  "parity-scale-codec",
  "scale-info",

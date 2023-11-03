@@ -20,13 +20,17 @@
 #![recursion_limit = "256"]
 
 mod deposit;
+pub mod traits;
 
 pub use deposit::FixedDepositCollectorViaDepositsPallet;
 pub use pallet::*;
 
 #[frame_support::pallet(dev_mode)]
 pub mod pallet {
-	use crate::deposit::{free_deposit, reserve_deposit, DepositEntry};
+	use crate::{
+		deposit::{free_deposit, reserve_deposit, DepositEntry},
+		traits::DepositStorageHooks,
+	};
 
 	use super::*;
 
@@ -44,10 +48,11 @@ pub mod pallet {
 	/// The current storage version.
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(0);
 	pub const MAX_NAMESPACE_LENGTH: u32 = 16;
+	pub const MAX_KEY_LENGTH: u32 = 256;
 
 	pub type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 	pub type BalanceOf<T> = <<T as Config>::Currency as Inspect<AccountIdOf<T>>>::Balance;
-	pub type DepositKeyOf<T> = <T as frame_system::Config>::Hash;
+	pub type DepositKey = BoundedVec<u8, ConstU32<MAX_KEY_LENGTH>>;
 	pub type DepositEntryOf<T> = DepositEntry<AccountIdOf<T>, BalanceOf<T>, <T as Config>::RuntimeHoldReason>;
 	pub type Namespace = BoundedVec<u8, ConstU32<MAX_NAMESPACE_LENGTH>>;
 
@@ -55,6 +60,7 @@ pub mod pallet {
 	pub trait Config: frame_system::Config {
 		type CheckOrigin: EnsureOrigin<Self::RuntimeOrigin, Success = Self::AccountId>;
 		type Currency: Mutate<Self::AccountId, Reason = Self::RuntimeHoldReason>;
+		type DepositHooks: DepositStorageHooks;
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 		type RuntimeHoldReason: From<HoldReason> + Clone + PartialEq + Debug + FullCodec + MaxEncodedLen + TypeInfo;
 	}
@@ -82,7 +88,7 @@ pub mod pallet {
 	#[pallet::storage]
 	#[pallet::getter(fn deposits)]
 	pub(crate) type Deposits<T> =
-		StorageDoubleMap<_, Twox64Concat, Namespace, Twox64Concat, DepositKeyOf<T>, DepositEntryOf<T>>;
+		StorageDoubleMap<_, Twox64Concat, Namespace, Twox64Concat, DepositKey, DepositEntryOf<T>>;
 
 	#[pallet::pallet]
 	#[pallet::storage_version(STORAGE_VERSION)]
@@ -93,15 +99,17 @@ pub mod pallet {
 		#[pallet::call_index(0)]
 		// TODO: Update weight
 		#[pallet::weight(0)]
-		pub fn reclaim_deposit(origin: OriginFor<T>, namespace: Namespace, key: DepositKeyOf<T>) -> DispatchResult {
+		pub fn reclaim_deposit(origin: OriginFor<T>, namespace: Namespace, key: DepositKey) -> DispatchResult {
 			let dispatcher = T::CheckOrigin::ensure_origin(origin)?;
 
-			Self::remove_deposit(namespace, key, Some(dispatcher))
+			Self::remove_deposit(&namespace, &key, Some(&dispatcher))?;
+			T::DepositHooks::on_deposit_reclaimed(&namespace, &key)?;
+			Ok(())
 		}
 	}
 
 	impl<T: Config> Pallet<T> {
-		pub fn add_deposit(namespace: Namespace, key: DepositKeyOf<T>, entry: DepositEntryOf<T>) -> DispatchResult {
+		pub fn add_deposit(namespace: Namespace, key: DepositKey, entry: DepositEntryOf<T>) -> DispatchResult {
 			Deposits::<T>::try_mutate(namespace, key, |deposit_entry| match deposit_entry {
 				Some(_) => Err(DispatchError::from(Error::<T>::DepositExisting)),
 				None => {
@@ -119,16 +127,16 @@ pub mod pallet {
 		}
 
 		pub fn remove_deposit(
-			namespace: Namespace,
-			key: DepositKeyOf<T>,
-			expected_owner: Option<AccountIdOf<T>>,
+			namespace: &Namespace,
+			key: &DepositKey,
+			expected_owner: Option<&AccountIdOf<T>>,
 		) -> DispatchResult {
 			Deposits::<T>::try_mutate(namespace, key, |deposit_entry| match deposit_entry {
 				None => Err(DispatchError::from(Error::<T>::DepositNotFound)),
 				Some(ref existing_deposit_entry) => {
 					if let Some(expected_owner) = expected_owner {
 						ensure!(
-							existing_deposit_entry.deposit.owner == expected_owner,
+							existing_deposit_entry.deposit.owner == *expected_owner,
 							DispatchError::from(Error::<T>::Unauthorized)
 						);
 					};

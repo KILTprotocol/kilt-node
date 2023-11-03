@@ -56,7 +56,7 @@ pub mod deposit {
 	use crate::{Balance, UNIT};
 
 	use frame_support::traits::Get;
-	use pallet_deposit_storage::{FixedDepositCollectorViaDepositsPallet, MAX_NAMESPACE_LENGTH};
+	use pallet_deposit_storage::{FixedDepositCollectorViaDepositsPallet, MAX_NAMESPACE_LENGTH, traits::DepositStorageHooks};
 	use sp_core::{ConstU128, ConstU32};
 	use sp_runtime::BoundedVec;
 
@@ -78,11 +78,21 @@ pub mod deposit {
 
 	pub type DepositCollectorHooks =
 		FixedDepositCollectorViaDepositsPallet<Runtime, Namespace, ConstU128<DEPOSIT_AMOUNT>>;
+
+	pub struct CommitmentDepositRemovalHook;
+
+	impl DepositStorageHooks for CommitmentDepositRemovalHook {
+		fn on_deposit_reclaimed(namespace: &pallet_deposit_storage::Namespace, key: &pallet_deposit_storage::DepositKey) -> Result<(), sp_runtime::DispatchError> {
+			// TODO: Resume from here
+			let (submitter, commitment_version) = <(AccountId, IdentityCommitmentVersion)>::decode(&mut key)
+		}
+	}
 }
 
 impl pallet_deposit_storage::Config for Runtime {
 	type CheckOrigin = EnsureSigned<AccountId>;
 	type Currency = Balances;
+	type DepositHooks = ;
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeHoldReason = RuntimeHoldReason;
 }

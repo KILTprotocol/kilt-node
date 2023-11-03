@@ -24,6 +24,8 @@ scale-info = {workspace = true, features = ["derive"]}
 sp-runtime.workspace = true
 sp-std.workspace = true
 
+log.workspace = true
+
 [features]
 default = ["std"]
 std = [
@@ -35,4 +37,5 @@ std = [
   "scale-info/std",
   "sp-runtime/std",
   "sp-std/std",
+  "log/std",
 ]
