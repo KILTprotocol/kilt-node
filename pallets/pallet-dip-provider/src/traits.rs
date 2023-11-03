@@ -17,9 +17,9 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use did::DidRawOrigin;
-use sp_std::marker::PhantomData;
+use frame_support::sp_runtime::AccountId32;
 
-use crate::IdentityCommitmentVersion;
+use crate::{Config, IdentityCommitmentVersion};
 
 pub use identity_generation::*;
 pub mod identity_generation {
@@ -105,7 +105,7 @@ pub trait SubmitterInfo {
 	fn submitter(&self) -> Self::Submitter;
 }
 
-impl SubmitterInfo for frame_support::sp_runtime::AccountId32 {
+impl SubmitterInfo for AccountId32 {
 	type Submitter = Self;
 
 	fn submitter(&self) -> Self::Submitter {
@@ -124,52 +124,50 @@ where
 	}
 }
 
-pub trait ProviderHooks {
-	type Identifier;
-	type IdentityCommitment;
+pub trait ProviderHooks<Runtime>
+where
+	Runtime: Config,
+{
 	type Error: Into<u16>;
-	type Submitter;
-	type Success;
 
 	fn on_identity_committed(
-		identifier: &Self::Identifier,
-		submitter: &Self::Submitter,
-		commitment: &Self::IdentityCommitment,
+		identifier: &Runtime::Identifier,
+		submitter: &Runtime::AccountId,
+		commitment: &Runtime::IdentityCommitment,
 		version: IdentityCommitmentVersion,
-	) -> Result<Self::Success, Self::Error>;
+	) -> Result<(), Self::Error>;
 
 	fn on_commitment_removed(
-		identifier: &Self::Identifier,
-		submitter: &Self::Submitter,
-		commitment: &Self::IdentityCommitment,
+		identifier: &Runtime::Identifier,
+		submitter: &Runtime::AccountId,
+		commitment: &Runtime::IdentityCommitment,
 		version: IdentityCommitmentVersion,
-	) -> Result<Self::Success, Self::Error>;
+	) -> Result<(), Self::Error>;
 }
 
-pub struct NoopHooks<Identifier, Commitment, Submitter>(PhantomData<(Identifier, Commitment, Submitter)>);
+pub struct NoopHooks;
 
-impl<Identifier, Commitment, Submitter> ProviderHooks for NoopHooks<Identifier, Commitment, Submitter> {
+impl<Runtime> ProviderHooks<Runtime> for NoopHooks
+where
+	Runtime: Config,
+{
 	type Error = u16;
-	type Identifier = Identifier;
-	type IdentityCommitment = Commitment;
-	type Submitter = Submitter;
-	type Success = ();
 
 	fn on_commitment_removed(
-		_identifier: &Self::Identifier,
-		_submitter: &Self::Submitter,
-		_commitment: &Self::IdentityCommitment,
+		_identifier: &Runtime::Identifier,
+		_submitter: &Runtime::AccountId,
+		_commitment: &Runtime::IdentityCommitment,
 		_version: IdentityCommitmentVersion,
-	) -> Result<Self::Success, Self::Error> {
+	) -> Result<(), Self::Error> {
 		Ok(())
 	}
 
 	fn on_identity_committed(
-		_identifier: &Self::Identifier,
-		_submitter: &Self::Submitter,
-		_commitment: &Self::IdentityCommitment,
+		_identifier: &Runtime::Identifier,
+		_submitter: &Runtime::AccountId,
+		_commitment: &Runtime::IdentityCommitment,
 		_version: IdentityCommitmentVersion,
-	) -> Result<Self::Success, Self::Error> {
+	) -> Result<(), Self::Error> {
 		Ok(())
 	}
 }

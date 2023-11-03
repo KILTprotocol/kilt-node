@@ -32,7 +32,7 @@ use scale_info::TypeInfo;
 use sp_runtime::traits::Get;
 use sp_std::marker::PhantomData;
 
-use crate::{AccountIdOf, BalanceOf, Config, Error, HoldReason, Pallet, MAX_KEY_LENGTH, MAX_NAMESPACE_LENGTH};
+use crate::{BalanceOf, Config, Error, HoldReason, Pallet, MAX_KEY_LENGTH, MAX_NAMESPACE_LENGTH};
 
 #[derive(Clone, Debug, Encode, Decode, Eq, PartialEq, Ord, PartialOrd, TypeInfo, MaxEncodedLen)]
 pub struct DepositEntry<AccountId, Balance, Reason> {
@@ -40,8 +40,8 @@ pub struct DepositEntry<AccountId, Balance, Reason> {
 	pub(crate) reason: Reason,
 }
 
-pub struct FixedDepositCollectorViaDepositsPallet<Runtime, DepositsNamespace, FixedDepositAmount>(
-	PhantomData<(Runtime, DepositsNamespace, FixedDepositAmount)>,
+pub struct FixedDepositCollectorViaDepositsPallet<DepositsNamespace, FixedDepositAmount>(
+	PhantomData<(DepositsNamespace, FixedDepositAmount)>,
 );
 
 pub enum FixedDepositCollectorViaDepositsPalletError {
@@ -62,25 +62,21 @@ impl From<FixedDepositCollectorViaDepositsPalletError> for u16 {
 	}
 }
 
-impl<Runtime, DepositsNamespace, FixedDepositAmount> ProviderHooks
-	for FixedDepositCollectorViaDepositsPallet<Runtime, DepositsNamespace, FixedDepositAmount>
+impl<Runtime, DepositsNamespace, FixedDepositAmount> ProviderHooks<Runtime>
+	for FixedDepositCollectorViaDepositsPallet<DepositsNamespace, FixedDepositAmount>
 where
 	Runtime: pallet_dip_provider::Config + Config,
 	DepositsNamespace: Get<BoundedVec<u8, ConstU32<MAX_NAMESPACE_LENGTH>>>,
 	FixedDepositAmount: Get<BalanceOf<Runtime>>,
 {
 	type Error = u16;
-	type Identifier = Runtime::Identifier;
-	type IdentityCommitment = Runtime::IdentityCommitment;
-	type Submitter = AccountIdOf<Runtime>;
-	type Success = ();
 
 	fn on_identity_committed(
-		_identifier: &Self::Identifier,
-		submitter: &Self::Submitter,
-		_commitment: &Self::IdentityCommitment,
+		_identifier: &Runtime::Identifier,
+		submitter: &Runtime::AccountId,
+		_commitment: &Runtime::IdentityCommitment,
 		version: IdentityCommitmentVersion,
-	) -> Result<Self::Success, Self::Error> {
+	) -> Result<(), Self::Error> {
 		let namespace = DepositsNamespace::get();
 		let key = (submitter, version).encode().try_into().map_err(|_| {
 			log::error!(
@@ -106,11 +102,11 @@ where
 	}
 
 	fn on_commitment_removed(
-		_identifier: &Self::Identifier,
-		submitter: &Self::Submitter,
-		_commitment: &Self::IdentityCommitment,
+		_identifier: &Runtime::Identifier,
+		submitter: &Runtime::AccountId,
+		_commitment: &Runtime::IdentityCommitment,
 		version: pallet_dip_provider::IdentityCommitmentVersion,
-	) -> Result<Self::Success, Self::Error> {
+	) -> Result<(), Self::Error> {
 		let namespace = DepositsNamespace::get();
 		let key = (submitter, version).encode().try_into().map_err(|_| {
 			log::error!(

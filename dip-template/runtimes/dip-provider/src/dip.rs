@@ -29,8 +29,7 @@ use scale_info::TypeInfo;
 use sp_std::vec::Vec;
 
 use crate::{
-	deposit::CommitmentDepositRemovalHook, AccountId, Balances, DidIdentifier, Hash, Runtime, RuntimeEvent,
-	RuntimeHoldReason,
+	deposit::DepositHooks, AccountId, Balances, DidIdentifier, Hash, Runtime, RuntimeEvent, RuntimeHoldReason,
 };
 
 pub mod runtime_api {
@@ -81,8 +80,7 @@ pub mod deposit {
 
 	pub const DEPOSIT_AMOUNT: Balance = 2 * UNIT;
 
-	pub type DepositCollectorHooks =
-		FixedDepositCollectorViaDepositsPallet<Runtime, Namespace, ConstU128<DEPOSIT_AMOUNT>>;
+	pub type DepositCollectorHooks = FixedDepositCollectorViaDepositsPallet<Namespace, ConstU128<DEPOSIT_AMOUNT>>;
 
 	pub enum CommitmentDepositRemovalHookError {
 		DecodeKey,
@@ -98,9 +96,9 @@ pub mod deposit {
 		}
 	}
 
-	pub struct CommitmentDepositRemovalHook;
+	pub struct DepositHooks;
 
-	impl DepositStorageHooks<Runtime> for CommitmentDepositRemovalHook {
+	impl DepositStorageHooks<Runtime> for DepositHooks {
 		type Error = CommitmentDepositRemovalHookError;
 
 		fn on_deposit_reclaimed(
@@ -129,7 +127,7 @@ pub mod deposit {
 impl pallet_deposit_storage::Config for Runtime {
 	type CheckOrigin = EnsureSigned<AccountId>;
 	type Currency = Balances;
-	type DepositHooks = CommitmentDepositRemovalHook;
+	type DepositHooks = DepositHooks;
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeHoldReason = RuntimeHoldReason;
 }

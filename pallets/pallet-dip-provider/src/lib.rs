@@ -57,11 +57,7 @@ pub mod pallet {
 		type IdentityCommitmentGeneratorError: Into<u16>;
 		type IdentityProvider: IdentityProvider<Self::Identifier, Error = Self::IdentityProviderError>;
 		type IdentityProviderError: Into<u16>;
-		type ProviderHooks: ProviderHooks<
-			Identifier = Self::Identifier,
-			Submitter = Self::AccountId,
-			IdentityCommitment = Self::IdentityCommitment,
-		>;
+		type ProviderHooks: ProviderHooks<Self>;
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 	}
 
@@ -103,7 +99,7 @@ pub mod pallet {
 		LimitTooLow,
 		IdentityProvider(u16),
 		IdentityCommitmentGenerator(u16),
-		HookError(u16),
+		Hook(u16),
 	}
 
 	#[pallet::call]
@@ -137,14 +133,14 @@ pub mod pallet {
 						old_commitment,
 						commitment_version,
 					)
-					.map_err(|e| Error::<T>::HookError(e.into()))?;
+					.map_err(|e| Error::<T>::Hook(e.into()))?;
 					Self::deposit_event(Event::<T>::VersionedIdentityDeleted {
 						identifier: identifier.clone(),
 						version: commitment_version,
 					});
 				}
 				T::ProviderHooks::on_identity_committed(&identifier, &dispatcher, &commitment, commitment_version)
-					.map_err(|e| Error::<T>::HookError(e.into()))?;
+					.map_err(|e| Error::<T>::Hook(e.into()))?;
 				*commitment_entry = Some(commitment.clone());
 				Self::deposit_event(Event::<T>::IdentityCommitted {
 					identifier: identifier.clone(),
@@ -170,7 +166,7 @@ pub mod pallet {
 			let commitment_version = version.unwrap_or(LATEST_COMMITMENT_VERSION);
 			let commitment = Self::delete_identity_commitment_storage_entry(&identifier, commitment_version)?;
 			T::ProviderHooks::on_commitment_removed(&identifier, &dispatcher, &commitment, commitment_version)
-				.map_err(|e| Error::<T>::HookError(e.into()))?;
+				.map_err(|e| Error::<T>::Hook(e.into()))?;
 			Ok(())
 		}
 	}

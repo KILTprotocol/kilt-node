@@ -16,8 +16,6 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use sp_std::marker::PhantomData;
-
 use crate::{Config, DepositEntryOf, DepositKey, Namespace};
 
 pub trait DepositStorageHooks<Runtime>
@@ -33,9 +31,9 @@ where
 	) -> Result<(), Self::Error>;
 }
 
-pub struct NoopDepositStorageHooks<Runtime>(PhantomData<Runtime>);
+pub struct NoopDepositStorageHooks;
 
-impl<Runtime> DepositStorageHooks<Runtime> for NoopDepositStorageHooks<Runtime>
+impl<Runtime> DepositStorageHooks<Runtime> for NoopDepositStorageHooks
 where
 	Runtime: Config,
 {
