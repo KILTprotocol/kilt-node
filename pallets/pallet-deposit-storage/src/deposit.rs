@@ -19,20 +19,20 @@
 use frame_support::{
 	sp_runtime::DispatchError,
 	traits::{
-		fungible::{hold::Mutate, Inspect, MutateHold},
+		fungible::{hold::Mutate, Inspect},
 		tokens::Precision,
 		ConstU32,
 	},
 	BoundedVec,
 };
-use kilt_support::{traits::StorageDepositCollector, Deposit};
+use kilt_support::Deposit;
 use pallet_dip_provider::{traits::ProviderHooks, IdentityCommitmentVersion};
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_runtime::traits::{Get, Hash};
-use sp_std::{marker::PhantomData, vec::Vec};
+use sp_std::marker::PhantomData;
 
-use crate::{AccountIdOf, BalanceOf, Config, Deposits, Error, HoldReason, MAX_NAMESPACE_LENGTH};
+use crate::{AccountIdOf, BalanceOf, Config, HoldReason, Pallet, MAX_NAMESPACE_LENGTH};
 
 #[derive(Clone, Debug, Encode, Decode, Eq, PartialEq, Ord, PartialOrd, TypeInfo, MaxEncodedLen)]
 pub struct DepositEntry<AccountId, Balance, Reason> {
@@ -42,83 +42,16 @@ pub struct DepositEntry<AccountId, Balance, Reason> {
 
 type HasherOf<Runtime> = <Runtime as frame_system::Config>::Hashing;
 
-pub struct StorageDepositCollectorViaDepositsPallet<Runtime, Namespace, DepositAmount, Key>(
-	PhantomData<(Runtime, Namespace, DepositAmount, Key)>,
+pub struct FixedDepositCollectorViaDepositsPallet<Runtime, DepositsNamespace, FixedDepositAmount>(
+	PhantomData<(Runtime, DepositsNamespace, FixedDepositAmount)>,
 );
 
-impl<Runtime, Namespace, DepositAmount, Key>
-	StorageDepositCollector<AccountIdOf<Runtime>, Key, Runtime::RuntimeHoldReason>
-	for StorageDepositCollectorViaDepositsPallet<Runtime, Namespace, DepositAmount, Key>
+impl<Runtime, DepositsNamespace, FixedDepositAmount> ProviderHooks
+	for FixedDepositCollectorViaDepositsPallet<Runtime, DepositsNamespace, FixedDepositAmount>
 where
-	Runtime: Config,
-	Runtime::Currency: MutateHold<AccountIdOf<Runtime>, Reason = Runtime::RuntimeHoldReason>,
-	Runtime::RuntimeHoldReason: From<HoldReason>,
-	Namespace: Get<BoundedVec<u8, ConstU32<MAX_NAMESPACE_LENGTH>>>,
-	DepositAmount: Get<BalanceOf<Runtime>>,
-	Key: Encode,
-{
-	type Currency = Runtime::Currency;
-	type Reason = HoldReason;
-
-	fn reason() -> Self::Reason {
-		HoldReason::Deposit
-	}
-
-	fn deposit(
-		key: &Key,
-	) -> Result<Deposit<AccountIdOf<Runtime>, <Self::Currency as Inspect<AccountIdOf<Runtime>>>::Balance>, DispatchError>
-	{
-		let namespace = Namespace::get();
-		let key_hash = HasherOf::<Runtime>::hash(key.encode().as_ref());
-		let DepositEntry { deposit, .. } = Deposits::<Runtime>::get(namespace, key_hash)
-			.ok_or(DispatchError::from(Error::<Runtime>::DepositNotFound))?;
-		Ok(deposit)
-	}
-
-	fn deposit_amount(_key: &Key) -> <Self::Currency as Inspect<AccountIdOf<Runtime>>>::Balance {
-		DepositAmount::get()
-	}
-
-	fn get_hashed_key(key: &Key) -> Result<Vec<u8>, DispatchError> {
-		let namespace = Namespace::get();
-		let key_hash = HasherOf::<Runtime>::hash(key.encode().as_ref());
-		Ok(Deposits::<Runtime>::hashed_key_for(namespace, key_hash))
-	}
-
-	fn store_deposit(
-		key: &Key,
-		deposit: Deposit<AccountIdOf<Runtime>, <Self::Currency as Inspect<AccountIdOf<Runtime>>>::Balance>,
-	) -> Result<(), DispatchError> {
-		let namespace = Namespace::get();
-		let key_hash = HasherOf::<Runtime>::hash(key.encode().as_ref());
-		let reason = Self::reason();
-		Deposits::<Runtime>::try_mutate(namespace, key_hash, |deposit_entry| match deposit_entry {
-			Some(_) => Err(Error::<Runtime>::DepositExisting),
-			None => {
-				*deposit_entry = Some(DepositEntry {
-					deposit,
-					reason: reason.into(),
-				});
-				Ok(())
-			}
-		})
-		.map_err(DispatchError::from)?;
-		Ok(())
-	}
-}
-
-impl<Runtime, Namespace, DepositAmount> ProviderHooks
-	for StorageDepositCollectorViaDepositsPallet<
-		Runtime,
-		Namespace,
-		DepositAmount,
-		(AccountIdOf<Runtime>, IdentityCommitmentVersion),
-	> where
 	Runtime: pallet_dip_provider::Config + Config,
-	Runtime::Currency: MutateHold<AccountIdOf<Runtime>, Reason = Runtime::RuntimeHoldReason>,
-	Runtime::RuntimeHoldReason: From<HoldReason>,
-	Namespace: Get<BoundedVec<u8, ConstU32<MAX_NAMESPACE_LENGTH>>>,
-	DepositAmount: Get<BalanceOf<Runtime>>,
+	DepositsNamespace: Get<BoundedVec<u8, ConstU32<MAX_NAMESPACE_LENGTH>>>,
+	FixedDepositAmount: Get<BalanceOf<Runtime>>,
 {
 	type Error = u16;
 	type Identifier = Runtime::Identifier;
@@ -132,8 +65,16 @@ impl<Runtime, Namespace, DepositAmount> ProviderHooks
 		_commitment: &Self::IdentityCommitment,
 		version: IdentityCommitmentVersion,
 	) -> Result<Self::Success, Self::Error> {
-		let deposit = Self::create_deposit(submitter.clone(), DepositAmount::get()).map_err(|_| 1u16)?;
-		Self::store_deposit(&(submitter.clone(), version), deposit).map_err(|_| 2u16)?;
+		let namespace = DepositsNamespace::get();
+		let key_hash = HasherOf::<Runtime>::hash((submitter, version).encode().as_ref());
+		let deposit_entry = DepositEntry {
+			deposit: Deposit {
+				amount: FixedDepositAmount::get(),
+				owner: submitter.clone(),
+			},
+			reason: HoldReason::Deposit.into(),
+		};
+		Pallet::<Runtime>::add_deposit(namespace, key_hash, deposit_entry).map_err(|_| 1u16)?;
 		Ok(())
 	}
 
@@ -143,10 +84,24 @@ impl<Runtime, Namespace, DepositAmount> ProviderHooks
 		_commitment: &Self::IdentityCommitment,
 		version: pallet_dip_provider::IdentityCommitmentVersion,
 	) -> Result<Self::Success, Self::Error> {
-		let deposit = Self::deposit(&(submitter.clone(), version)).map_err(|_| 3u16)?;
-		Self::free_deposit(deposit).map_err(|_| 4u16)?;
+		let namespace = DepositsNamespace::get();
+		let key_hash = HasherOf::<Runtime>::hash((submitter, version).encode().as_ref());
+		Pallet::<Runtime>::remove_deposit(namespace, key_hash, None).map_err(|_| 2u16)?;
 		Ok(())
 	}
+}
+
+// Taken from dip_support logic, not to make that pub
+pub(crate) fn reserve_deposit<Account, Currency: Mutate<Account>>(
+	account: Account,
+	deposit_amount: Currency::Balance,
+	reason: &Currency::Reason,
+) -> Result<Deposit<Account, Currency::Balance>, DispatchError> {
+	Currency::hold(reason, &account, deposit_amount)?;
+	Ok(Deposit {
+		owner: account,
+		amount: deposit_amount,
+	})
 }
 
 // Taken from dip_support logic, not to make that pub

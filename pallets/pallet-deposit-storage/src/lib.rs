@@ -21,27 +21,25 @@
 
 mod deposit;
 
-pub use deposit::StorageDepositCollectorViaDepositsPallet;
+pub use deposit::FixedDepositCollectorViaDepositsPallet;
 pub use pallet::*;
 
 #[frame_support::pallet(dev_mode)]
 pub mod pallet {
-	use crate::deposit::{reserve_deposit, DepositEntry};
+	use crate::deposit::{free_deposit, reserve_deposit, DepositEntry};
 
 	use super::*;
 
 	use frame_support::{
 		pallet_prelude::*,
 		traits::{
-			fungible::{Inspect, MutateHold},
+			fungible::{hold::Mutate, Inspect},
 			ConstU32, EnsureOrigin,
 		},
 	};
 	use frame_system::pallet_prelude::*;
 	use parity_scale_codec::FullCodec;
 	use sp_std::fmt::Debug;
-
-	use deposit::free_deposit;
 
 	/// The current storage version.
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(0);
@@ -56,9 +54,9 @@ pub mod pallet {
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
 		type CheckOrigin: EnsureOrigin<Self::RuntimeOrigin, Success = Self::AccountId>;
-		type Currency: MutateHold<Self::AccountId, Reason = Self::RuntimeHoldReason>;
+		type Currency: Mutate<Self::AccountId, Reason = Self::RuntimeHoldReason>;
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
-		type RuntimeHoldReason: Clone + PartialEq + Debug + FullCodec + MaxEncodedLen + TypeInfo;
+		type RuntimeHoldReason: From<HoldReason> + Clone + PartialEq + Debug + FullCodec + MaxEncodedLen + TypeInfo;
 	}
 
 	#[pallet::composite_enum]
@@ -98,24 +96,7 @@ pub mod pallet {
 		pub fn reclaim_deposit(origin: OriginFor<T>, namespace: Namespace, key: DepositKeyOf<T>) -> DispatchResult {
 			let dispatcher = T::CheckOrigin::ensure_origin(origin)?;
 
-			Deposits::<T>::try_mutate(namespace, key, |deposit_entry| match deposit_entry {
-				None => Err(DispatchError::from(Error::<T>::DepositNotFound)),
-				Some(ref existing_deposit_entry) => {
-					ensure!(
-						existing_deposit_entry.deposit.owner == dispatcher,
-						DispatchError::from(Error::<T>::Unauthorized)
-					);
-
-					free_deposit::<AccountIdOf<T>, T::Currency>(
-						&existing_deposit_entry.deposit,
-						&existing_deposit_entry.reason,
-					)?;
-					Self::deposit_event(Event::<T>::DepositReclaimed(existing_deposit_entry.clone()));
-					*deposit_entry = None;
-					Ok(())
-				}
-			})?;
-			Ok(())
+			Self::remove_deposit(namespace, key, Some(dispatcher))
 		}
 	}
 
@@ -131,6 +112,33 @@ pub mod pallet {
 					)?;
 					Self::deposit_event(Event::<T>::DepositAdded(entry.clone()));
 					*deposit_entry = Some(entry);
+					Ok(())
+				}
+			})?;
+			Ok(())
+		}
+
+		pub fn remove_deposit(
+			namespace: Namespace,
+			key: DepositKeyOf<T>,
+			expected_owner: Option<AccountIdOf<T>>,
+		) -> DispatchResult {
+			Deposits::<T>::try_mutate(namespace, key, |deposit_entry| match deposit_entry {
+				None => Err(DispatchError::from(Error::<T>::DepositNotFound)),
+				Some(ref existing_deposit_entry) => {
+					if let Some(expected_owner) = expected_owner {
+						ensure!(
+							existing_deposit_entry.deposit.owner == expected_owner,
+							DispatchError::from(Error::<T>::Unauthorized)
+						);
+					};
+
+					free_deposit::<AccountIdOf<T>, T::Currency>(
+						&existing_deposit_entry.deposit,
+						&existing_deposit_entry.reason,
+					)?;
+					Self::deposit_event(Event::<T>::DepositReclaimed(existing_deposit_entry.clone()));
+					*deposit_entry = None;
 					Ok(())
 				}
 			})?;

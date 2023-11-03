@@ -51,12 +51,12 @@ pub mod runtime_api {
 }
 
 pub mod deposit {
-	use crate::{Balance, UNIT};
-
 	use super::*;
 
+	use crate::{Balance, UNIT};
+
 	use frame_support::traits::Get;
-	use pallet_deposit_storage::{StorageDepositCollectorViaDepositsPallet, MAX_NAMESPACE_LENGTH};
+	use pallet_deposit_storage::{FixedDepositCollectorViaDepositsPallet, MAX_NAMESPACE_LENGTH};
 	use sp_core::{ConstU128, ConstU32};
 	use sp_runtime::BoundedVec;
 
@@ -70,12 +70,8 @@ pub mod deposit {
 
 	pub const DEPOSIT_AMOUNT: Balance = 100 * UNIT;
 
-	pub type DepositCollectorHooks = StorageDepositCollectorViaDepositsPallet<
-		Runtime,
-		Namespace,
-		ConstU128<DEPOSIT_AMOUNT>,
-		(AccountId, IdentityCommitmentVersion),
-	>;
+	pub type DepositCollectorHooks =
+		FixedDepositCollectorViaDepositsPallet<Runtime, Namespace, ConstU128<DEPOSIT_AMOUNT>>;
 }
 
 impl pallet_deposit_storage::Config for Runtime {
