@@ -32,7 +32,7 @@ use scale_info::TypeInfo;
 use sp_runtime::traits::{Get, Hash};
 use sp_std::marker::PhantomData;
 
-use crate::{AccountIdOf, BalanceOf, Config, HoldReason, Pallet, MAX_NAMESPACE_LENGTH};
+use crate::{AccountIdOf, BalanceOf, Config, Error, HoldReason, Pallet, MAX_NAMESPACE_LENGTH};
 
 #[derive(Clone, Debug, Encode, Decode, Eq, PartialEq, Ord, PartialOrd, TypeInfo, MaxEncodedLen)]
 pub struct DepositEntry<AccountId, Balance, Reason> {
@@ -45,6 +45,24 @@ type HasherOf<Runtime> = <Runtime as frame_system::Config>::Hashing;
 pub struct FixedDepositCollectorViaDepositsPallet<Runtime, DepositsNamespace, FixedDepositAmount>(
 	PhantomData<(Runtime, DepositsNamespace, FixedDepositAmount)>,
 );
+
+pub enum FixedDepositCollectorViaDepositsPalletError {
+	DepositAlreadyTaken,
+	FailedToHold,
+	FailedToRelease,
+	Internal,
+}
+
+impl From<FixedDepositCollectorViaDepositsPalletError> for u16 {
+	fn from(value: FixedDepositCollectorViaDepositsPalletError) -> Self {
+		match value {
+			FixedDepositCollectorViaDepositsPalletError::DepositAlreadyTaken => 0,
+			FixedDepositCollectorViaDepositsPalletError::FailedToHold => 1,
+			FixedDepositCollectorViaDepositsPalletError::FailedToRelease => 2,
+			FixedDepositCollectorViaDepositsPalletError::Internal => u16::MAX,
+		}
+	}
+}
 
 impl<Runtime, DepositsNamespace, FixedDepositAmount> ProviderHooks
 	for FixedDepositCollectorViaDepositsPallet<Runtime, DepositsNamespace, FixedDepositAmount>
@@ -74,7 +92,12 @@ where
 			},
 			reason: HoldReason::Deposit.into(),
 		};
-		Pallet::<Runtime>::add_deposit(namespace, key_hash, deposit_entry).map_err(|_| 1u16)?;
+		Pallet::<Runtime>::add_deposit(namespace, key_hash, deposit_entry).map_err(|e| match e {
+			pallet_error if pallet_error == DispatchError::from(Error::<Runtime>::DepositExisting) => {
+				FixedDepositCollectorViaDepositsPalletError::DepositAlreadyTaken
+			}
+			_ => FixedDepositCollectorViaDepositsPalletError::Internal,
+		})?;
 		Ok(())
 	}
 

@@ -60,15 +60,21 @@ pub mod deposit {
 	use sp_core::{ConstU128, ConstU32};
 	use sp_runtime::BoundedVec;
 
+	pub const NAMESPACE: [u8; 11] = *b"DipProvider";
+
 	pub struct Namespace;
 
 	impl Get<BoundedVec<u8, ConstU32<MAX_NAMESPACE_LENGTH>>> for Namespace {
 		fn get() -> BoundedVec<u8, ConstU32<MAX_NAMESPACE_LENGTH>> {
-			(*b"DipProvider").to_vec().try_into().expect("Should never fail.")
+			debug_assert!(NAMESPACE.len() <= MAX_NAMESPACE_LENGTH as usize, "Namespace is longer than the maximum namespace length configured in the pallet_deposit_storage pallet.");
+			NAMESPACE
+				.to_vec()
+				.try_into()
+				.expect("Namespace should never fail to be converted to a BoundedVec.")
 		}
 	}
 
-	pub const DEPOSIT_AMOUNT: Balance = 100 * UNIT;
+	pub const DEPOSIT_AMOUNT: Balance = 2 * UNIT;
 
 	pub type DepositCollectorHooks =
 		FixedDepositCollectorViaDepositsPallet<Runtime, Namespace, ConstU128<DEPOSIT_AMOUNT>>;
