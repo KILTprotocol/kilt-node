@@ -30,7 +30,8 @@ use sp_core::ConstU32;
 use sp_std::vec::Vec;
 
 use crate::{
-	deposit::DepositHooks, AccountId, Balances, DidIdentifier, Hash, Runtime, RuntimeEvent, RuntimeHoldReason,
+	deposit::{DepositHooks, DepositNamespaces},
+	AccountId, Balances, DidIdentifier, Hash, Runtime, RuntimeEvent, RuntimeHoldReason,
 };
 
 pub mod runtime_api {
@@ -60,28 +61,28 @@ pub mod deposit {
 
 	use frame_support::traits::Get;
 	use pallet_deposit_storage::{
-		traits::DepositStorageHooks, DepositEntryOf, DepositKeyOf, FixedDepositCollectorViaDepositsPallet, NamespaceOf,
+		traits::DepositStorageHooks, DepositEntryOf, DepositKeyOf, FixedDepositCollectorViaDepositsPallet,
 	};
-	use sp_core::ConstU128;
-	use sp_runtime::BoundedVec;
+	use parity_scale_codec::MaxEncodedLen;
+	use sp_core::{ConstU128, RuntimeDebug};
 
-	pub const NAMESPACE: [u8; 11] = *b"DipProvider";
+	#[derive(Encode, Decode, MaxEncodedLen, TypeInfo, Clone, PartialEq, Eq, RuntimeDebug)]
+	pub enum DepositNamespaces {
+		DipProvider,
+	}
 
-	pub struct Namespace;
+	pub struct DipProviderDepositNamespace;
 
-	impl Get<BoundedVec<u8, <Runtime as pallet_deposit_storage::Config>::MaxNamespaceLength>> for Namespace {
-		fn get() -> BoundedVec<u8, <Runtime as pallet_deposit_storage::Config>::MaxNamespaceLength> {
-			debug_assert!(NAMESPACE.len() as u32 <= <Runtime as pallet_deposit_storage::Config>::MaxNamespaceLength::get(), "Namespace is longer than the maximum namespace length configured in the pallet_deposit_storage pallet.");
-			NAMESPACE
-				.to_vec()
-				.try_into()
-				.expect("Namespace should never fail to be converted to a BoundedVec.")
+	impl Get<DepositNamespaces> for DipProviderDepositNamespace {
+		fn get() -> DepositNamespaces {
+			DepositNamespaces::DipProvider
 		}
 	}
 
 	pub const DEPOSIT_AMOUNT: Balance = 2 * UNIT;
 
-	pub type DepositCollectorHooks = FixedDepositCollectorViaDepositsPallet<Namespace, ConstU128<DEPOSIT_AMOUNT>>;
+	pub type DepositCollectorHooks =
+		FixedDepositCollectorViaDepositsPallet<DipProviderDepositNamespace, ConstU128<DEPOSIT_AMOUNT>>;
 
 	pub enum CommitmentDepositRemovalHookError {
 		DecodeKey,
@@ -103,7 +104,7 @@ pub mod deposit {
 		type Error = CommitmentDepositRemovalHookError;
 
 		fn on_deposit_reclaimed(
-			_namespace: &NamespaceOf<Runtime>,
+			_namespace: &<Runtime as pallet_deposit_storage::Config>::Namespace,
 			key: &DepositKeyOf<Runtime>,
 			_deposit: DepositEntryOf<Runtime>,
 		) -> Result<(), Self::Error> {
@@ -130,7 +131,7 @@ impl pallet_deposit_storage::Config for Runtime {
 	type Currency = Balances;
 	type DepositHooks = DepositHooks;
 	type MaxKeyLength = ConstU32<256>;
-	type MaxNamespaceLength = ConstU32<32>;
+	type Namespace = DepositNamespaces;
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeHoldReason = RuntimeHoldReason;
 }
