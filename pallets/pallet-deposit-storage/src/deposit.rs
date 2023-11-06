@@ -22,7 +22,6 @@ use frame_support::{
 		fungible::{hold::Mutate, Inspect},
 		tokens::Precision,
 	},
-	BoundedVec,
 };
 use kilt_support::Deposit;
 use pallet_dip_provider::{traits::ProviderHooks, IdentityCommitmentVersion};
@@ -67,7 +66,7 @@ impl<Runtime, DepositsNamespace, FixedDepositAmount> ProviderHooks<Runtime>
 	for FixedDepositCollectorViaDepositsPallet<DepositsNamespace, FixedDepositAmount>
 where
 	Runtime: pallet_dip_provider::Config + Config,
-	DepositsNamespace: Get<BoundedVec<u8, Runtime::MaxNamespaceLength>>,
+	DepositsNamespace: Get<Runtime::Namespace>,
 	FixedDepositAmount: Get<BalanceOf<Runtime>>,
 {
 	type Error = u16;
@@ -83,7 +82,7 @@ where
 			log::error!(
 				"Failed to convert tuple ({:#?}, {version}) to BoundedVec with max length {}",
 				identifier,
-				Runtime::MaxNamespaceLength::get()
+				Runtime::MaxKeyLength::get()
 			);
 			FixedDepositCollectorViaDepositsPalletError::Internal
 		})?;
