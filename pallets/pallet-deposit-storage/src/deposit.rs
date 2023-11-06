@@ -24,7 +24,7 @@ use frame_support::{
 	},
 };
 use kilt_support::Deposit;
-use pallet_dip_provider::{traits::ProviderHooks, IdentityCommitmentVersion};
+use pallet_dip_provider::{traits::ProviderHooks as DipProviderHooks, IdentityCommitmentVersion};
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_runtime::traits::Get;
@@ -62,7 +62,7 @@ impl From<FixedDepositCollectorViaDepositsPalletError> for u16 {
 	}
 }
 
-impl<Runtime, DepositsNamespace, FixedDepositAmount> ProviderHooks<Runtime>
+impl<Runtime, DepositsNamespace, FixedDepositAmount> DipProviderHooks<Runtime>
 	for FixedDepositCollectorViaDepositsPallet<DepositsNamespace, FixedDepositAmount>
 where
 	Runtime: pallet_dip_provider::Config + Config,
