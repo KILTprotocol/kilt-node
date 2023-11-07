@@ -20,10 +20,7 @@ use frame_support::RuntimeDebug;
 use frame_system::pallet_prelude::BlockNumberFor;
 use kilt_dip_support::merkle::{DidKeyMerkleKey, DidKeyMerkleValue, DidMerkleProof};
 use pallet_did_lookup::linkable_account::LinkableAccountId;
-use pallet_dip_provider::{
-	traits::{IdentityCommitmentGenerator, IdentityProvider},
-	IdentityCommitmentVersion, IdentityOf,
-};
+use pallet_dip_provider::{traits::IdentityCommitmentGenerator, IdentityCommitmentVersion};
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
 use sp_std::{borrow::ToOwned, marker::PhantomData, vec::Vec};
@@ -31,7 +28,7 @@ use sp_trie::{generate_trie_proof, LayoutV1, MemoryDB, TrieDBMutBuilder, TrieHas
 
 use kilt_dip_support::merkle::{DidKeyRelationship, RevealedDidMerkleProofLeaf};
 
-use crate::dip::did::LinkedDidInfoOf;
+use crate::{dip::did::LinkedDidInfoOf, DidIdentifier};
 
 pub type BlindedValue = Vec<u8>;
 pub type DidMerkleProofOf<T> = DidMerkleProof<
@@ -343,17 +340,16 @@ pub mod v0 {
 
 pub struct DidMerkleRootGenerator<T>(PhantomData<T>);
 
-impl<Runtime> IdentityCommitmentGenerator<Runtime> for DidMerkleRootGenerator<Runtime>
+impl<Runtime> IdentityCommitmentGenerator<DidIdentifier, LinkedDidInfoOf<Runtime>> for DidMerkleRootGenerator<Runtime>
 where
-	Runtime: did::Config + pallet_did_lookup::Config + pallet_web3_names::Config + pallet_dip_provider::Config,
-	Runtime::IdentityProvider: IdentityProvider<Runtime, Identity = LinkedDidInfoOf<Runtime>>,
+	Runtime: did::Config + pallet_did_lookup::Config + pallet_web3_names::Config,
 {
 	type Error = DidMerkleProofError;
-	type IdentityCommitment = Runtime::Hash;
+	type Output = Runtime::Hash;
 
 	fn generate_commitment(
-		_identifier: &Runtime::Identifier,
-		identity: &IdentityOf<Runtime>,
+		_identifier: &DidIdentifier,
+		identity: &LinkedDidInfoOf<Runtime>,
 		version: IdentityCommitmentVersion,
 	) -> Result<Runtime::Hash, Self::Error> {
 		match version {

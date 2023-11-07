@@ -16,31 +16,46 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use did::{DidVerificationKey, DidVerificationKeyRelationship};
-use dip_provider_runtime_template::{AccountId as ProviderAccountId, Runtime as ProviderRuntime};
+use did::{DidVerificationKey, DidVerificationKeyRelationship, KeyIdOf};
+use dip_provider_runtime_template::{AccountId as ProviderAccountId, Runtime as ProviderRuntime, Web3Name};
 use frame_support::traits::Contains;
 use kilt_dip_support::{
-	traits::DipCallOriginFilter, RelayStateRootsViaRelayStorePallet, VersionedKiltDipSiblingProviderStateProofVerifier,
+	traits::DipCallOriginFilter, FrameSystemDidSignatureContext, ProviderParachainStateInfoViaProviderPallet,
+	RelayStateRootsViaRelayStorePallet, VersionedDipSiblingProviderStateProofVerifier,
 };
+use pallet_did_lookup::linkable_account::LinkableAccountId;
+use pallet_dip_consumer::traits::IdentityProofVerifier;
 use sp_core::ConstU32;
 use sp_runtime::traits::BlakeTwo256;
 
 use crate::{AccountId, DidIdentifier, Runtime, RuntimeCall, RuntimeOrigin};
 
-pub type ProofVerifier = VersionedKiltDipSiblingProviderStateProofVerifier<
-	ProviderRuntime,
+pub type MerkleProofVerifierOutputOf<Call, Subject> =
+	<ProofVerifier as IdentityProofVerifier<Call, Subject>>::VerificationResult;
+pub type ProofVerifier = VersionedDipSiblingProviderStateProofVerifier<
 	RelayStateRootsViaRelayStorePallet<Runtime>,
+	ConstU32<2_000>,
+	ProviderParachainStateInfoViaProviderPallet<ProviderRuntime>,
+	AccountId,
 	BlakeTwo256,
+	KeyIdOf<ProviderRuntime>,
+	ProviderAccountId,
+	Web3Name,
+	LinkableAccountId,
+	10,
+	10,
+	u128,
+	// Signatures are valid for 50 blocks
+	FrameSystemDidSignatureContext<Runtime, 50>,
 	DipCallFilter,
-	10,
-	10,
-	50,
 >;
 
 impl pallet_dip_consumer::Config for Runtime {
 	type DipCallOriginFilter = PreliminaryDipOriginFilter;
 	type Identifier = DidIdentifier;
+	type IdentityProof = <ProofVerifier as IdentityProofVerifier<RuntimeCall, DidIdentifier>>::Proof;
 	type LocalIdentityInfo = u128;
+	type ProofVerificationError = <ProofVerifier as IdentityProofVerifier<RuntimeCall, DidIdentifier>>::Error;
 	type ProofVerifier = ProofVerifier;
 	type RuntimeCall = RuntimeCall;
 	type RuntimeOrigin = RuntimeOrigin;
