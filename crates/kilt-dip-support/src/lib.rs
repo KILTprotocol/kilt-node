@@ -29,5 +29,4 @@ pub mod utils;
 mod export;
 
 pub use export::*;
-pub use state_proofs::relay_chain::RelayStateRootsViaRelayStorePallet;
-pub use traits::{FrameSystemDidSignatureContext, ProviderParachainStateInfoViaProviderPallet};
+pub use state_proofs::relay_chain::RococoStateRootsViaRelayStorePallet;

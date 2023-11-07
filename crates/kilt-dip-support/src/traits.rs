@@ -17,7 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_system::pallet_prelude::BlockNumberFor;
-use pallet_dip_provider::{IdentityCommitmentOf, IdentityCommitmentVersion};
+use pallet_dip_provider::IdentityCommitmentVersion;
 use sp_core::storage::StorageKey;
 use sp_runtime::traits::{CheckedAdd, One, Zero};
 use sp_std::marker::PhantomData;
@@ -87,7 +87,7 @@ where
 	T: pallet_dip_provider::Config,
 {
 	type BlockNumber = BlockNumberFor<T>;
-	type Commitment = IdentityCommitmentOf<T>;
+	type Commitment = T::IdentityCommitment;
 	type Hasher = T::Hashing;
 	type Identifier = T::Identifier;
 	type Key = StorageKey;

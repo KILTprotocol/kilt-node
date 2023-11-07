@@ -166,9 +166,9 @@ pub(super) mod relay_chain {
 		}
 	}
 
-	pub struct RelayStateRootsViaRelayStorePallet<Runtime>(PhantomData<Runtime>);
+	pub struct RococoStateRootsViaRelayStorePallet<Runtime>(PhantomData<Runtime>);
 
-	impl<Runtime> RelayChainStorageInfo for RelayStateRootsViaRelayStorePallet<Runtime>
+	impl<Runtime> RelayChainStorageInfo for RococoStateRootsViaRelayStorePallet<Runtime>
 	where
 		Runtime: pallet_relay_store::Config,
 	{
@@ -190,7 +190,7 @@ pub(super) mod relay_chain {
 		}
 	}
 
-	impl<Runtime> RelayChainStateInfo for RelayStateRootsViaRelayStorePallet<Runtime>
+	impl<Runtime> RelayChainStateInfo for RococoStateRootsViaRelayStorePallet<Runtime>
 	where
 		Runtime: pallet_relay_store::Config,
 	{

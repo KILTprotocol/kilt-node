@@ -39,8 +39,10 @@ pub mod pallet {
 
 	use crate::traits::IdentityProofVerifier;
 
-	pub type ProofOf<T> = <<T as Config>::ProofVerifier as IdentityProofVerifier<T>>::Proof;
-	pub type VerificationResultOf<T> = <<T as Config>::ProofVerifier as IdentityProofVerifier<T>>::VerificationResult;
+	pub type VerificationResultOf<T> = <<T as Config>::ProofVerifier as IdentityProofVerifier<
+		<T as Config>::RuntimeCall,
+		<T as Config>::Identifier,
+	>>::VerificationResult;
 
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(0);
 
@@ -56,11 +58,25 @@ pub mod pallet {
 		type DipCallOriginFilter: Contains<<Self as Config>::RuntimeCall>;
 		/// The identifier of a subject, e.g., a DID.
 		type Identifier: Parameter + MaxEncodedLen;
+		/// The proof users must provide to operate with their higher-level
+		/// identity. Depending on the use cases, this proof can contain
+		/// heterogeneous bits of information that the proof verifier will
+		/// utilize. For instance, a proof could contain both a Merkle proof and
+		/// a DID signature.
+		type IdentityProof: Parameter;
 		/// The details stored in this pallet associated with any given subject.
 		type LocalIdentityInfo: FullCodec + TypeInfo + MaxEncodedLen;
+		type ProofVerificationError: Into<u16>;
 		/// The logic of the proof verifier, called upon each execution of the
 		/// `dispatch_as` extrinsic.
-		type ProofVerifier: IdentityProofVerifier<Self>;
+		type ProofVerifier: IdentityProofVerifier<
+			<Self as Config>::RuntimeCall,
+			Self::Identifier,
+			Error = Self::ProofVerificationError,
+			Proof = Self::IdentityProof,
+			IdentityDetails = Self::LocalIdentityInfo,
+			Submitter = <Self as frame_system::Config>::AccountId,
+		>;
 		/// The overarching runtime call type.
 		type RuntimeCall: Parameter + Dispatchable<RuntimeOrigin = <Self as Config>::RuntimeOrigin>;
 		/// The overarching runtime origin type.
@@ -96,7 +112,7 @@ pub mod pallet {
 		pub fn dispatch_as(
 			origin: OriginFor<T>,
 			identifier: T::Identifier,
-			proof: ProofOf<T>,
+			proof: T::IdentityProof,
 			call: Box<<T as Config>::RuntimeCall>,
 		) -> DispatchResult {
 			// TODO: Make origin check configurable, and require that it at least returns
