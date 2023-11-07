@@ -25,7 +25,7 @@ pub use child::{
 	VersionedDipChildProviderStateProofVerifier,
 };
 pub use sibling::{
-	DipSiblingProviderStateProofVerifierError, VersionedDipSiblingProviderStateProofVerifier,
+	DipSiblingProviderStateProofVerifierError, VersionedSiblingKiltProviderVerifier,
 	VersionedSiblingParachainDipStateProof,
 };
 

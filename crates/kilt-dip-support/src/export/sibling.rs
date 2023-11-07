@@ -16,7 +16,10 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use did::{did_details::DidVerificationKey, DidVerificationKeyRelationship};
+use cumulus_primitives_core::ParaId;
+use did::{did_details::DidVerificationKey, DidVerificationKeyRelationship, KeyIdOf};
+use frame_system::pallet_prelude::BlockNumberFor;
+use pallet_did_lookup::linkable_account::LinkableAccountId;
 use pallet_dip_consumer::traits::IdentityProofVerifier;
 use parity_scale_codec::{Decode, Encode, HasCompact};
 use scale_info::TypeInfo;
@@ -30,6 +33,7 @@ use crate::{
 	state_proofs::{parachain::DipIdentityCommitmentProofVerifierError, relay_chain::ParachainHeadProofVerifierError},
 	traits::{self, Bump, DidSignatureVerifierContext, DipCallOriginFilter},
 	utils::OutputOf,
+	FrameSystemDidSignatureContext, ProviderParachainStateInfoViaProviderPallet,
 };
 
 #[derive(Encode, Decode, PartialEq, Eq, RuntimeDebug, TypeInfo, Clone)]
@@ -105,7 +109,144 @@ where
 	}
 }
 
-pub struct VersionedDipSiblingProviderStateProofVerifier<
+struct KiltParachainId<Runtime, Id>(PhantomData<(Runtime, Id)>);
+
+impl<Runtime, Id> Get<Id> for KiltParachainId<Runtime, Id>
+where
+	Runtime: parachain_info::Config,
+	Id: From<ParaId>,
+{
+	fn get() -> Id {
+		parachain_info::Pallet::<Runtime>::parachain_id().into()
+	}
+}
+
+pub struct VersionedSiblingKiltProviderVerifier<
+	KiltRuntime,
+	ConsumerRuntime,
+	RelayChainStateInfo,
+	KiltDipMerkleHasher,
+	LocalDidCallVerifier,
+	const MAX_REVEALED_KEYS_COUNT: u32,
+	const MAX_REVEALED_ACCOUNTS_COUNT: u32,
+	const MAX_DID_SIGNATURE_DURATION: u16,
+>(
+	PhantomData<(
+		KiltRuntime,
+		ConsumerRuntime,
+		RelayChainStateInfo,
+		KiltDipMerkleHasher,
+		LocalDidCallVerifier,
+	)>,
+);
+
+impl<
+		KiltRuntime,
+		ConsumerRuntime,
+		RelayChainStateInfo,
+		KiltDipMerkleHasher,
+		LocalDidCallVerifier,
+		const MAX_REVEALED_KEYS_COUNT: u32,
+		const MAX_REVEALED_ACCOUNTS_COUNT: u32,
+		const MAX_DID_SIGNATURE_DURATION: u16,
+	>
+	IdentityProofVerifier<
+		<ConsumerRuntime as pallet_dip_consumer::Config>::RuntimeCall,
+		<KiltRuntime as did::Config>::DidIdentifier,
+	>
+	for VersionedSiblingKiltProviderVerifier<
+		KiltRuntime,
+		ConsumerRuntime,
+		RelayChainStateInfo,
+		KiltDipMerkleHasher,
+		LocalDidCallVerifier,
+		MAX_REVEALED_KEYS_COUNT,
+		MAX_REVEALED_ACCOUNTS_COUNT,
+		MAX_DID_SIGNATURE_DURATION,
+	> where
+	KiltRuntime: did::Config
+		+ pallet_web3_names::Config
+		+ pallet_did_lookup::Config
+		+ parachain_info::Config
+		+ pallet_dip_provider::Config<Identifier = <KiltRuntime as did::Config>::DidIdentifier>,
+	OutputOf<KiltRuntime::Hashing>: Ord + From<OutputOf<RelayChainStateInfo::Hasher>>,
+	KeyIdOf<KiltRuntime>: Into<KiltDipMerkleHasher::Out>,
+	KiltDipMerkleHasher: sp_core::Hasher<Out = KiltRuntime::IdentityCommitment>,
+	ConsumerRuntime: pallet_dip_consumer::Config,
+	ConsumerRuntime::LocalIdentityInfo: Bump + Default + Encode,
+	RelayChainStateInfo: traits::RelayChainStorageInfo + traits::RelayChainStateInfo,
+	RelayChainStateInfo::ParaId: From<ParaId>,
+	RelayChainStateInfo::BlockNumber: Copy + Into<U256> + TryFrom<U256> + HasCompact,
+	RelayChainStateInfo::Key: AsRef<[u8]>,
+	LocalDidCallVerifier: DipCallOriginFilter<
+		<ConsumerRuntime as pallet_dip_consumer::Config>::RuntimeCall,
+		OriginInfo = (
+			DidVerificationKey<KiltRuntime::AccountId>,
+			DidVerificationKeyRelationship,
+		),
+	>,
+{
+	type Error = DipSiblingProviderStateProofVerifierError<
+		ParachainHeadProofVerifierError,
+		DipIdentityCommitmentProofVerifierError,
+		DidMerkleProofVerifierError,
+		RevealedDidKeysSignatureAndCallVerifierError,
+	>;
+	type IdentityDetails = ConsumerRuntime::LocalIdentityInfo;
+	type Proof = VersionedSiblingParachainDipStateProof<
+		RelayChainStateInfo::BlockNumber,
+		Vec<Vec<u8>>,
+		RevealedDidMerkleProofLeaf<
+			KeyIdOf<KiltRuntime>,
+			KiltRuntime::AccountId,
+			BlockNumberFor<KiltRuntime>,
+			KiltRuntime::Web3Name,
+			LinkableAccountId,
+		>,
+		BlockNumberFor<ConsumerRuntime>,
+	>;
+	type Submitter = ConsumerRuntime::AccountId;
+	type VerificationResult = RevealedDidMerkleProofLeaves<
+		KeyIdOf<KiltRuntime>,
+		KiltRuntime::AccountId,
+		BlockNumberFor<KiltRuntime>,
+		KiltRuntime::Web3Name,
+		LinkableAccountId,
+		MAX_REVEALED_KEYS_COUNT,
+		MAX_REVEALED_ACCOUNTS_COUNT,
+	>;
+
+	fn verify_proof_for_call_against_details(
+		call: &<ConsumerRuntime as pallet_dip_consumer::Config>::RuntimeCall,
+		subject: &<KiltRuntime as did::Config>::DidIdentifier,
+		submitter: &Self::Submitter,
+		identity_details: &mut Option<Self::IdentityDetails>,
+		proof: Self::Proof,
+	) -> Result<Self::VerificationResult, Self::Error> {
+		match proof {
+			VersionedSiblingParachainDipStateProof::V0(v0_proof) => {
+				v0::DipSiblingProviderStateProofVerifier::<
+					RelayChainStateInfo,
+					KiltParachainId<KiltRuntime, RelayChainStateInfo::ParaId>,
+					ProviderParachainStateInfoViaProviderPallet<KiltRuntime>,
+					ConsumerRuntime::AccountId,
+					KiltDipMerkleHasher,
+					KeyIdOf<KiltRuntime>,
+					KiltRuntime::AccountId,
+					KiltRuntime::Web3Name,
+					LinkableAccountId,
+					MAX_REVEALED_KEYS_COUNT,
+					MAX_REVEALED_ACCOUNTS_COUNT,
+					ConsumerRuntime::LocalIdentityInfo,
+					FrameSystemDidSignatureContext<ConsumerRuntime, MAX_DID_SIGNATURE_DURATION>,
+					LocalDidCallVerifier,
+				>::verify_proof_for_call_against_details(call, subject, submitter, identity_details, v0_proof)
+			}
+		}
+	}
+}
+
+pub struct GenericVersionedDipSiblingProviderStateProofVerifier<
 	RelayChainStateInfo,
 	SiblingProviderParachainId,
 	SiblingProviderStateInfo,
@@ -156,7 +297,7 @@ impl<
 		LocalContextProvider,
 		LocalDidCallVerifier,
 	> IdentityProofVerifier<Call, Subject>
-	for VersionedDipSiblingProviderStateProofVerifier<
+	for GenericVersionedDipSiblingProviderStateProofVerifier<
 		RelayChainStateInfo,
 		SiblingProviderParachainId,
 		SiblingProviderStateInfo,
