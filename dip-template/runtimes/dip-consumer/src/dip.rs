@@ -21,7 +21,7 @@ use dip_provider_runtime_template::{AccountId as ProviderAccountId, Runtime as P
 use frame_support::traits::Contains;
 use kilt_dip_support::{
 	traits::{DipCallOriginFilter, FrameSystemDidSignatureContext, ProviderParachainStateInfoViaProviderPallet},
-	RococoStateRootsViaRelayStorePallet, VersionedDipSiblingProviderStateProofVerifier,
+	RelayStateRootsViaRelayStorePallet, VersionedDipSiblingProviderStateProofVerifier,
 };
 use pallet_did_lookup::linkable_account::LinkableAccountId;
 use pallet_dip_consumer::traits::IdentityProofVerifier;
@@ -33,7 +33,7 @@ use crate::{AccountId, DidIdentifier, Runtime, RuntimeCall, RuntimeOrigin};
 pub type MerkleProofVerifierOutputOf<Call, Subject> =
 	<ProofVerifier as IdentityProofVerifier<Call, Subject>>::VerificationResult;
 pub type ProofVerifier = VersionedDipSiblingProviderStateProofVerifier<
-	RococoStateRootsViaRelayStorePallet<Runtime>,
+	RelayStateRootsViaRelayStorePallet<Runtime>,
 	ConstU32<2_000>,
 	ProviderParachainStateInfoViaProviderPallet<ProviderRuntime>,
 	AccountId,
