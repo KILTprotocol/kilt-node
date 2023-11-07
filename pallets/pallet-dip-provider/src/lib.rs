@@ -40,7 +40,6 @@ pub mod pallet {
 	pub type IdentityCommitmentVersion = u16;
 
 	pub const LATEST_COMMITMENT_VERSION: IdentityCommitmentVersion = 0;
-	pub const MAX_COMMITMENTS_PER_IDENTITY: u16 = LATEST_COMMITMENT_VERSION + 1;
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(0);
 
 	#[pallet::config]
