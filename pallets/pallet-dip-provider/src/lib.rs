@@ -23,6 +23,7 @@
 pub mod traits;
 
 pub use crate::pallet::*;
+pub use traits::{DefaultIdentityCommitmentGenerator, DefaultIdentityProvider, NoneIdentityProvider, NoopHooks};
 
 #[frame_support::pallet(dev_mode)]
 pub mod pallet {

@@ -26,6 +26,7 @@ pub mod traits;
 mod origin;
 
 pub use crate::{origin::*, pallet::*};
+pub use traits::SuccessfulProofVerifier;
 
 #[frame_support::pallet(dev_mode)]
 pub mod pallet {
