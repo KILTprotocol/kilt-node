@@ -16,12 +16,12 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use did::{did_details::DidVerificationKey, DidVerificationKeyRelationship, KeyIdOf};
+use did::{DidVerificationKey, DidVerificationKeyRelationship, KeyIdOf};
 use dip_provider_runtime_template::{AccountId as ProviderAccountId, Runtime as ProviderRuntime, Web3Name};
 use frame_support::traits::Contains;
 use kilt_dip_support::{
-	traits::{DipCallOriginFilter, FrameSystemDidSignatureContext, ProviderParachainStateInfoViaProviderPallet},
-	RococoStateRootsViaRelayStorePallet, VersionedDipSiblingProviderStateProofVerifier,
+	traits::DipCallOriginFilter, FrameSystemDidSignatureContext, ProviderParachainStateInfoViaProviderPallet,
+	RelayStateRootsViaRelayStorePallet, VersionedDipSiblingProviderStateProofVerifier,
 };
 use pallet_did_lookup::linkable_account::LinkableAccountId;
 use pallet_dip_consumer::traits::IdentityProofVerifier;
@@ -33,7 +33,7 @@ use crate::{AccountId, DidIdentifier, Runtime, RuntimeCall, RuntimeOrigin};
 pub type MerkleProofVerifierOutputOf<Call, Subject> =
 	<ProofVerifier as IdentityProofVerifier<Call, Subject>>::VerificationResult;
 pub type ProofVerifier = VersionedDipSiblingProviderStateProofVerifier<
-	RococoStateRootsViaRelayStorePallet<Runtime>,
+	RelayStateRootsViaRelayStorePallet<Runtime>,
 	ConstU32<2_000>,
 	ProviderParachainStateInfoViaProviderPallet<ProviderRuntime>,
 	AccountId,

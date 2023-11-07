@@ -105,16 +105,17 @@ where
 	}
 }
 
-impl<Identifier, A, B, C> IdentityProvider<Identifier> for CombineIdentityFrom<A, B, C>
+impl<Runtime, A, B, C> IdentityProvider<Runtime> for CombineIdentityFrom<A, B, C>
 where
-	A: IdentityProvider<Identifier>,
-	B: IdentityProvider<Identifier>,
-	C: IdentityProvider<Identifier>,
+	Runtime: pallet_dip_provider::Config,
+	A: IdentityProvider<Runtime>,
+	B: IdentityProvider<Runtime>,
+	C: IdentityProvider<Runtime>,
 {
 	type Error = CombineError<A::Error, B::Error, C::Error>;
-	type Success = CombinedIdentityResult<Option<A::Success>, Option<B::Success>, Option<C::Success>>;
+	type Identity = CombinedIdentityResult<Option<A::Identity>, Option<B::Identity>, Option<C::Identity>>;
 
-	fn retrieve(identifier: &Identifier) -> Result<Option<Self::Success>, Self::Error> {
+	fn retrieve(identifier: &Runtime::Identifier) -> Result<Option<Self::Identity>, Self::Error> {
 		match (
 			A::retrieve(identifier),
 			B::retrieve(identifier),

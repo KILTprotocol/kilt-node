@@ -139,8 +139,7 @@ pub struct VersionedDipSiblingProviderStateProofVerifier<
 );
 
 impl<
-		Call,
-		Subject,
+		Runtime,
 		RelayChainStateInfo,
 		SiblingProviderParachainId,
 		SiblingProviderStateInfo,
@@ -155,7 +154,7 @@ impl<
 		LocalDidDetails,
 		LocalContextProvider,
 		LocalDidCallVerifier,
-	> IdentityProofVerifier<Call, Subject>
+	> IdentityProofVerifier<Runtime>
 	for VersionedDipSiblingProviderStateProofVerifier<
 		RelayChainStateInfo,
 		SiblingProviderParachainId,
@@ -172,7 +171,8 @@ impl<
 		LocalContextProvider,
 		LocalDidCallVerifier,
 	> where
-	Call: Encode,
+	Runtime: pallet_dip_consumer::Config,
+	<Runtime as pallet_dip_consumer::Config>::RuntimeCall: Encode,
 	TxSubmitter: Encode,
 
 	RelayChainStateInfo: traits::RelayChainStorageInfo + traits::RelayChainStateInfo,
@@ -183,7 +183,7 @@ impl<
 	SiblingProviderParachainId: Get<RelayChainStateInfo::ParaId>,
 
 	SiblingProviderStateInfo:
-		traits::ProviderParachainStateInfo<Identifier = Subject, Commitment = ProviderDipMerkleHasher::Out>,
+		traits::ProviderParachainStateInfo<Identifier = Runtime::Identifier, Commitment = ProviderDipMerkleHasher::Out>,
 	OutputOf<SiblingProviderStateInfo::Hasher>: Ord + From<OutputOf<RelayChainStateInfo::Hasher>>,
 	SiblingProviderStateInfo::BlockNumber: Encode + Clone,
 	SiblingProviderStateInfo::Commitment: Decode,
@@ -194,8 +194,10 @@ impl<
 	LocalContextProvider::Hash: Encode,
 	LocalContextProvider::SignedExtra: Encode,
 	LocalDidDetails: Bump + Default + Encode,
-	LocalDidCallVerifier:
-		DipCallOriginFilter<Call, OriginInfo = (DidVerificationKey<ProviderAccountId>, DidVerificationKeyRelationship)>,
+	LocalDidCallVerifier: DipCallOriginFilter<
+		<Runtime as pallet_dip_consumer::Config>::RuntimeCall,
+		OriginInfo = (DidVerificationKey<ProviderAccountId>, DidVerificationKeyRelationship),
+	>,
 
 	ProviderDipMerkleHasher: sp_core::Hasher,
 	ProviderDidKeyId: Encode + Clone + Into<ProviderDipMerkleHasher::Out>,
@@ -209,7 +211,6 @@ impl<
 		DidMerkleProofVerifierError,
 		RevealedDidKeysSignatureAndCallVerifierError,
 	>;
-	type IdentityDetails = LocalDidDetails;
 	type Proof = VersionedSiblingParachainDipStateProof<
 		RelayChainStateInfo::BlockNumber,
 		Vec<Vec<u8>>,
@@ -222,7 +223,6 @@ impl<
 		>,
 		LocalContextProvider::BlockNumber,
 	>;
-	type Submitter = TxSubmitter;
 	type VerificationResult = RevealedDidMerkleProofLeaves<
 		ProviderDidKeyId,
 		ProviderAccountId,
@@ -234,10 +234,10 @@ impl<
 	>;
 
 	fn verify_proof_for_call_against_details(
-		call: &Call,
-		subject: &Subject,
-		submitter: &Self::Submitter,
-		identity_details: &mut Option<Self::IdentityDetails>,
+		call: &<Runtime as pallet_dip_consumer::Config>::RuntimeCall,
+		subject: &Runtime::Identifier,
+		submitter: &Runtime::AccountId,
+		identity_details: &mut Option<Runtime::LocalIdentityInfo>,
 		proof: Self::Proof,
 	) -> Result<Self::VerificationResult, Self::Error> {
 		match proof {
@@ -268,8 +268,10 @@ pub mod latest {
 }
 
 mod v0 {
+
 	use super::*;
 
+	use frame_support::Parameter;
 	use sp_std::borrow::Borrow;
 
 	use crate::{
@@ -327,8 +329,7 @@ mod v0 {
 	);
 
 	impl<
-			Call,
-			Subject,
+			Runtime,
 			RelayChainStateInfo,
 			SiblingProviderParachainId,
 			SiblingProviderStateInfo,
@@ -343,7 +344,7 @@ mod v0 {
 			LocalDidDetails,
 			LocalContextProvider,
 			LocalDidCallVerifier,
-		> IdentityProofVerifier<Call, Subject>
+		> IdentityProofVerifier<Runtime>
 		for DipSiblingProviderStateProofVerifier<
 			RelayChainStateInfo,
 			SiblingProviderParachainId,
@@ -360,38 +361,42 @@ mod v0 {
 			LocalContextProvider,
 			LocalDidCallVerifier,
 		> where
-		Call: Encode,
+		Runtime: pallet_dip_consumer::Config,
+		<Runtime as pallet_dip_consumer::Config>::RuntimeCall: Encode,
+		Runtime::LocalIdentityInfo: Default,
 		TxSubmitter: Encode,
 
 		RelayChainStateInfo: traits::RelayChainStorageInfo + traits::RelayChainStateInfo,
 		OutputOf<RelayChainStateInfo::Hasher>: Ord,
-		RelayChainStateInfo::BlockNumber: Copy + Into<U256> + TryFrom<U256> + HasCompact,
+		RelayChainStateInfo::BlockNumber: Copy + Into<U256> + TryFrom<U256> + HasCompact + Parameter,
 		RelayChainStateInfo::Key: AsRef<[u8]>,
 
 		SiblingProviderParachainId: Get<RelayChainStateInfo::ParaId>,
 
-		SiblingProviderStateInfo:
-			traits::ProviderParachainStateInfo<Identifier = Subject, Commitment = ProviderDipMerkleHasher::Out>,
+		SiblingProviderStateInfo: traits::ProviderParachainStateInfo<
+			Identifier = Runtime::Identifier,
+			Commitment = ProviderDipMerkleHasher::Out,
+		>,
 		OutputOf<SiblingProviderStateInfo::Hasher>: Ord + From<OutputOf<RelayChainStateInfo::Hasher>>,
-		SiblingProviderStateInfo::BlockNumber: Encode + Clone,
+		SiblingProviderStateInfo::BlockNumber: Parameter,
 		SiblingProviderStateInfo::Commitment: Decode,
 		SiblingProviderStateInfo::Key: AsRef<[u8]>,
 
 		LocalContextProvider: DidSignatureVerifierContext,
-		LocalContextProvider::BlockNumber: Encode + CheckedSub + From<u16> + PartialOrd,
+		LocalContextProvider::BlockNumber: Parameter + CheckedSub + From<u16> + PartialOrd,
 		LocalContextProvider::Hash: Encode,
 		LocalContextProvider::SignedExtra: Encode,
 		LocalDidDetails: Bump + Default + Encode,
 		LocalDidCallVerifier: DipCallOriginFilter<
-			Call,
+			<Runtime as pallet_dip_consumer::Config>::RuntimeCall,
 			OriginInfo = (DidVerificationKey<ProviderAccountId>, DidVerificationKeyRelationship),
 		>,
 
 		ProviderDipMerkleHasher: sp_core::Hasher,
-		ProviderDidKeyId: Encode + Clone + Into<ProviderDipMerkleHasher::Out>,
-		ProviderAccountId: Encode + Clone,
-		ProviderLinkedAccountId: Encode + Clone,
-		ProviderWeb3Name: Encode + Clone,
+		ProviderDidKeyId: Parameter + Into<ProviderDipMerkleHasher::Out>,
+		ProviderAccountId: Parameter,
+		ProviderLinkedAccountId: Parameter,
+		ProviderWeb3Name: Parameter,
 	{
 		type Error = DipSiblingProviderStateProofVerifierError<
 			ParachainHeadProofVerifierError,
@@ -399,7 +404,6 @@ mod v0 {
 			DidMerkleProofVerifierError,
 			RevealedDidKeysSignatureAndCallVerifierError,
 		>;
-		type IdentityDetails = LocalDidDetails;
 		type Proof = SiblingParachainDipStateProof<
 			RelayChainStateInfo::BlockNumber,
 			Vec<Vec<u8>>,
@@ -412,7 +416,6 @@ mod v0 {
 			>,
 			LocalContextProvider::BlockNumber,
 		>;
-		type Submitter = TxSubmitter;
 		type VerificationResult = RevealedDidMerkleProofLeaves<
 			ProviderDidKeyId,
 			ProviderAccountId,
@@ -424,10 +427,10 @@ mod v0 {
 		>;
 
 		fn verify_proof_for_call_against_details(
-			call: &Call,
-			subject: &Subject,
-			submitter: &Self::Submitter,
-			identity_details: &mut Option<Self::IdentityDetails>,
+			call: &<Runtime as pallet_dip_consumer::Config>::RuntimeCall,
+			subject: &Runtime::Identifier,
+			submitter: &Runtime::AccountId,
+			identity_details: &mut Option<Runtime::LocalIdentityInfo>,
 			proof: Self::Proof,
 		) -> Result<Self::VerificationResult, Self::Error> {
 			// 1. Verify relay chain proof.

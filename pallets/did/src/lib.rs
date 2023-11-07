@@ -107,8 +107,8 @@ pub use crate::{
 	default_weights::WeightInfo,
 	did_details::{
 		DeriveDidCallAuthorizationVerificationKeyRelationship, DeriveDidCallKeyRelationshipResult,
-		DidAuthorizedCallOperationWithVerificationRelationship, DidSignature, DidVerificationKeyRelationship,
-		RelationshipDeriveError,
+		DidAuthorizedCallOperationWithVerificationRelationship, DidSignature, DidVerificationKey,
+		DidVerificationKeyRelationship, RelationshipDeriveError,
 	},
 	origin::{DidRawOrigin, EnsureDidOrigin},
 	pallet::*,
