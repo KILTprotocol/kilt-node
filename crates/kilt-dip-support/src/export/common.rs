@@ -28,7 +28,7 @@ pub mod v0 {
 
 	use crate::{did::TimeBoundDidSignature, merkle::DidMerkleProof};
 
-	#[derive(Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo, Clone)]
+	#[derive(Encode, Decode, PartialEq, Eq, RuntimeDebug, TypeInfo, Clone)]
 	pub struct ParachainRootStateProof<RelayBlockHeight> {
 		pub(crate) relay_block_height: RelayBlockHeight,
 		pub(crate) proof: Vec<Vec<u8>>,

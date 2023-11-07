@@ -17,9 +17,11 @@ log.workspace = true
 
 # Internal dependencies
 did.workspace = true
+pallet-did-lookup.workspace = true
 pallet-dip-consumer.workspace = true
 pallet-dip-provider.workspace = true
 pallet-relay-store.workspace = true
+pallet-web3-names.workspace = true
 
 # Parity dependencies
 parity-scale-codec = {workspace = true, features = ["derive"]}
@@ -42,6 +44,7 @@ xcm-executor.workspace = true
 
 # Cumulus dependencies
 cumulus-pallet-parachain-system.workspace = true
+parachain-info.workspace = true
 
 [dev-dependencies]
 hex-literal.workspace = true
@@ -53,9 +56,11 @@ std = [
   "hash-db/std",
   "log/std",
   "did/std",
+  "pallet-did-lookup/std",
   "pallet-dip-consumer/std",
   "pallet-dip-provider/std",
   "pallet-relay-store/std",
+  "pallet-web3-names/std",
   "parity-scale-codec/std",
   "scale-info/std",
   "frame-system/std",
@@ -70,6 +75,7 @@ std = [
   "xcm/std",
   "xcm-executor/std",
   "cumulus-pallet-parachain-system/std",
+  "parachain-info/std",
 ]
 runtime-benchmarks = [
   "pallet-dip-consumer/runtime-benchmarks",

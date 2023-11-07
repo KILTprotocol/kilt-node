@@ -34,6 +34,7 @@ pub mod pallet {
 	use crate::traits::{IdentityCommitmentGenerator, IdentityProvider, ProviderHooks, SubmitterInfo};
 
 	pub type IdentityOf<T> = <<T as Config>::IdentityProvider as IdentityProvider<T>>::Identity;
+	pub type IdentityProviderOf<T> = <T as Config>::IdentityProvider;
 	pub type IdentityCommitmentOf<T> =
 		<<T as Config>::IdentityCommitmentGenerator as IdentityCommitmentGenerator<T>>::IdentityCommitment;
 	pub type IdentityCommitmentVersion = u16;

@@ -16,9 +16,9 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use crate::{AccountId, DidIdentifier, MerkleProofVerifierOutputOf, RuntimeCall, RuntimeOrigin, Web3Name};
+use crate::{AccountId, DidIdentifier, Runtime, RuntimeOrigin, Web3Name};
 use frame_support::traits::EnsureOrigin;
-use pallet_dip_consumer::{DipOrigin, EnsureDipOrigin};
+use pallet_dip_consumer::{DipOrigin, EnsureDipOrigin, VerificationResultOf};
 use pallet_postit::traits::Usernamable;
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
@@ -41,9 +41,7 @@ impl EnsureOrigin<RuntimeOrigin> for EnsureDipOriginAdapter {
 }
 
 #[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
-pub struct DipOriginAdapter(
-	DipOrigin<DidIdentifier, AccountId, MerkleProofVerifierOutputOf<RuntimeCall, DidIdentifier>>,
-);
+pub struct DipOriginAdapter(DipOrigin<DidIdentifier, AccountId, VerificationResultOf<Runtime>>);
 
 impl Usernamable for DipOriginAdapter {
 	type Username = Web3Name;

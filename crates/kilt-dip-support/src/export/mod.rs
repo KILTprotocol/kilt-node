@@ -16,19 +16,20 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-mod child;
+// mod child;
 mod common;
 mod sibling;
 
-pub use child::{
-	DipChildProviderStateProofVerifierError, VersionedChildParachainDipStateProof,
-	VersionedDipChildProviderStateProofVerifier,
-};
+// pub use child::{
+// 	DipChildProviderStateProofVerifierError,
+// VersionedChildParachainDipStateProof,
+// 	VersionedDipChildProviderStateProofVerifier,
+// };
 pub use sibling::{
-	DipSiblingProviderStateProofVerifierError, VersionedDipSiblingProviderStateProofVerifier,
+	DipSiblingProviderStateProofVerifierError, VersionedKiltDipSiblingProviderStateProofVerifier,
 	VersionedSiblingParachainDipStateProof,
 };
 
 pub mod latest {
-	pub use super::{child::latest::*, common::latest::*, sibling::latest::*};
+	pub use super::{common::latest::*, sibling::latest::*};
 }
