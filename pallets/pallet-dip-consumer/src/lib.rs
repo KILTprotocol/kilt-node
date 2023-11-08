@@ -40,10 +40,9 @@ pub mod pallet {
 
 	use crate::traits::IdentityProofVerifier;
 
-	pub type VerificationResultOf<T> = <<T as Config>::ProofVerifier as IdentityProofVerifier<
-		<T as Config>::RuntimeCall,
-		<T as Config>::Identifier,
-	>>::VerificationResult;
+	pub type IdentityProofOf<T> = <<T as Config>::ProofVerifier as IdentityProofVerifier<T>>::Proof;
+	pub type RuntimeCallOf<T> = <T as Config>::RuntimeCall;
+	pub type VerificationResultOf<T> = <<T as Config>::ProofVerifier as IdentityProofVerifier<T>>::VerificationResult;
 
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(0);
 
@@ -56,31 +55,15 @@ pub mod pallet {
 	pub trait Config: frame_system::Config {
 		/// Preliminary filter to filter out calls before doing any heavier
 		/// computations.
-		type DipCallOriginFilter: Contains<<Self as Config>::RuntimeCall>;
+		type DipCallOriginFilter: Contains<RuntimeCallOf<Self>>;
 		/// The identifier of a subject, e.g., a DID.
 		type Identifier: Parameter + MaxEncodedLen;
-		/// The proof users must provide to operate with their higher-level
-		/// identity. Depending on the use cases, this proof can contain
-		/// heterogeneous bits of information that the proof verifier will
-		/// utilize. For instance, a proof could contain both a Merkle proof and
-		/// a DID signature.
-		type IdentityProof: Parameter;
 		/// The details stored in this pallet associated with any given subject.
 		type LocalIdentityInfo: FullCodec + TypeInfo + MaxEncodedLen;
-		type ProofVerificationError: Into<u16>;
 		/// The logic of the proof verifier, called upon each execution of the
 		/// `dispatch_as` extrinsic.
-		type ProofVerifier: IdentityProofVerifier<
-			<Self as Config>::RuntimeCall,
-			Self::Identifier,
-			Error = Self::ProofVerificationError,
-			Proof = Self::IdentityProof,
-			IdentityDetails = Self::LocalIdentityInfo,
-			Submitter = <Self as frame_system::Config>::AccountId,
-		>;
-		/// The overarching runtime call type.
+		type ProofVerifier: IdentityProofVerifier<Self>;
 		type RuntimeCall: Parameter + Dispatchable<RuntimeOrigin = <Self as Config>::RuntimeOrigin>;
-		/// The overarching runtime origin type.
 		type RuntimeOrigin: From<Origin<Self>> + From<<Self as frame_system::Config>::RuntimeOrigin>;
 	}
 
@@ -113,8 +96,8 @@ pub mod pallet {
 		pub fn dispatch_as(
 			origin: OriginFor<T>,
 			identifier: T::Identifier,
-			proof: T::IdentityProof,
-			call: Box<<T as Config>::RuntimeCall>,
+			proof: IdentityProofOf<T>,
+			call: Box<RuntimeCallOf<T>>,
 		) -> DispatchResult {
 			// TODO: Make origin check configurable, and require that it at least returns
 			// the submitter's account.
