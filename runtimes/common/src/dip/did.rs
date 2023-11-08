@@ -45,17 +45,18 @@ impl From<DidIdentityProviderError> for u16 {
 
 pub struct DidIdentityProvider<T>(PhantomData<T>);
 
-impl<T> IdentityProvider<T::DidIdentifier> for DidIdentityProvider<T>
+impl<Runtime> IdentityProvider<Runtime> for DidIdentityProvider<Runtime>
 where
-	T: did::Config,
+	Runtime:
+		did::Config<DidIdentifier = <Runtime as pallet_dip_provider::Config>::Identifier> + pallet_dip_provider::Config,
 {
 	type Error = DidIdentityProviderError;
-	type Success = DidDetails<T>;
+	type Success = DidDetails<Runtime>;
 
-	fn retrieve(identifier: &T::DidIdentifier) -> Result<Option<Self::Success>, Self::Error> {
+	fn retrieve(identifier: &Runtime::Identifier) -> Result<Option<Self::Success>, Self::Error> {
 		match (
-			did::Pallet::<T>::get_did(identifier),
-			did::Pallet::<T>::get_deleted_did(identifier),
+			did::Pallet::<Runtime>::get_did(identifier),
+			did::Pallet::<Runtime>::get_deleted_did(identifier),
 		) {
 			(Some(details), _) => Ok(Some(details)),
 			(_, Some(_)) => Ok(None),
@@ -68,25 +69,26 @@ pub type Web3OwnershipOf<T> = RevealedWeb3Name<<T as pallet_web3_names::Config>:
 
 pub struct DidWeb3NameProvider<T>(PhantomData<T>);
 
-impl<T> IdentityProvider<T::Web3NameOwner> for DidWeb3NameProvider<T>
+impl<Runtime> IdentityProvider<Runtime> for DidWeb3NameProvider<Runtime>
 where
-	T: pallet_web3_names::Config,
+	Runtime: pallet_web3_names::Config<Web3NameOwner = <Runtime as pallet_dip_provider::Config>::Identifier>
+		+ pallet_dip_provider::Config,
 {
 	type Error = DidIdentityProviderError;
-	type Success = Web3OwnershipOf<T>;
+	type Success = Web3OwnershipOf<Runtime>;
 
-	fn retrieve(identifier: &T::Web3NameOwner) -> Result<Option<Self::Success>, Self::Error> {
-		let Some(web3_name) = pallet_web3_names::Pallet::<T>::names(identifier) else {
+	fn retrieve(identifier: &Runtime::Identifier) -> Result<Option<Self::Success>, Self::Error> {
+		let Some(web3_name) = pallet_web3_names::Pallet::<Runtime>::names(identifier) else {
 			return Ok(None);
 		};
-		let Some(details) = pallet_web3_names::Pallet::<T>::owner(&web3_name) else {
+		let Some(details) = pallet_web3_names::Pallet::<Runtime>::owner(&web3_name) else {
 			log::error!(
 				"Inconsistent reverse map pallet_web3_names::owner(web3_name). Cannot find owner for web3name {:#?}",
 				web3_name
 			);
 			return Err(DidIdentityProviderError::Internal);
 		};
-		Ok(Some(Web3OwnershipOf::<T> {
+		Ok(Some(Web3OwnershipOf::<Runtime> {
 			web3_name,
 			claimed_at: details.claimed_at,
 		}))
@@ -95,16 +97,17 @@ where
 
 pub struct DidLinkedAccountsProvider<T>(PhantomData<T>);
 
-impl<T> IdentityProvider<T::DidIdentifier> for DidLinkedAccountsProvider<T>
+impl<Runtime> IdentityProvider<Runtime> for DidLinkedAccountsProvider<Runtime>
 where
-	T: pallet_did_lookup::Config,
+	Runtime: pallet_did_lookup::Config<DidIdentifier = <Runtime as pallet_dip_provider::Config>::Identifier>
+		+ pallet_dip_provider::Config,
 {
 	type Error = DidIdentityProviderError;
 	type Success = Vec<LinkableAccountId>;
 
-	fn retrieve(identifier: &T::DidIdentifier) -> Result<Option<Self::Success>, Self::Error> {
+	fn retrieve(identifier: &Runtime::Identifier) -> Result<Option<Self::Success>, Self::Error> {
 		Ok(Some(
-			pallet_did_lookup::ConnectedAccounts::<T>::iter_key_prefix(identifier).collect(),
+			pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(identifier).collect(),
 		))
 	}
 }
