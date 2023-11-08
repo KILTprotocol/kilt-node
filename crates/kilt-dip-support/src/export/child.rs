@@ -118,23 +118,11 @@ where
 	}
 }
 
-struct KiltParachainId<Runtime, Id>(PhantomData<(Runtime, Id)>);
-
-impl<Runtime, Id> Get<Id> for KiltParachainId<Runtime, Id>
-where
-	Runtime: parachain_info::Config,
-	Id: From<ParaId>,
-{
-	fn get() -> Id {
-		parachain_info::Pallet::<Runtime>::parachain_id().into()
-	}
-}
-
 // Implements the same `IdentityProvider` trait, but it is internally configured
 // by receiving the runtime definitions of both the provider and the receiver.
-pub struct VersionedChildKiltProviderVerifier<
+pub struct KiltVersionedChildProviderVerifier<
 	KiltRuntime,
-	ConsumerRuntime,
+	KiltParachainId,
 	RelayChainInfo,
 	KiltDipMerkleHasher,
 	LocalDidCallVerifier,
@@ -144,7 +132,7 @@ pub struct VersionedChildKiltProviderVerifier<
 >(
 	PhantomData<(
 		KiltRuntime,
-		ConsumerRuntime,
+		KiltParachainId,
 		RelayChainInfo,
 		KiltDipMerkleHasher,
 		LocalDidCallVerifier,
@@ -152,8 +140,9 @@ pub struct VersionedChildKiltProviderVerifier<
 );
 
 impl<
-		KiltRuntime,
 		ConsumerRuntime,
+		KiltRuntime,
+		KiltParachainId,
 		RelayChainInfo,
 		KiltDipMerkleHasher,
 		LocalDidCallVerifier,
@@ -161,9 +150,9 @@ impl<
 		const MAX_REVEALED_ACCOUNTS_COUNT: u32,
 		const MAX_DID_SIGNATURE_DURATION: u16,
 	> IdentityProofVerifier<ConsumerRuntime>
-	for VersionedChildKiltProviderVerifier<
+	for KiltVersionedChildProviderVerifier<
 		KiltRuntime,
-		ConsumerRuntime,
+		KiltParachainId,
 		RelayChainInfo,
 		KiltDipMerkleHasher,
 		LocalDidCallVerifier,
@@ -176,6 +165,7 @@ impl<
 		+ pallet_did_lookup::Config
 		+ parachain_info::Config
 		+ pallet_dip_provider::Config<Identifier = ConsumerRuntime::Identifier>,
+	KiltParachainId: Get<RelayChainInfo::ParaId>,
 	OutputOf<KiltRuntime::Hashing>: Ord + From<OutputOf<<RelayChainInfo as RelayChainStorageInfo>::Hasher>>,
 	KeyIdOf<KiltRuntime>: Into<KiltDipMerkleHasher::Out>,
 	KiltDipMerkleHasher: sp_core::Hasher<Out = IdentityCommitmentOf<KiltRuntime>>,
@@ -245,28 +235,26 @@ impl<
 		identity_details: &mut Option<ConsumerRuntime::LocalIdentityInfo>,
 		proof: Self::Proof,
 	) -> Result<Self::VerificationResult, Self::Error> {
-		match proof {
-			VersionedChildParachainDipStateProof::V0(v0_proof) => <v0::DipChildProviderStateProofVerifier<
-				RelayChainInfo,
-				KiltParachainId<KiltRuntime, RelayChainInfo::ParaId>,
-				ProviderParachainStateInfoViaProviderPallet<KiltRuntime>,
-				KiltDipMerkleHasher,
-				KeyIdOf<KiltRuntime>,
-				KiltRuntime::AccountId,
-				KiltRuntime::Web3Name,
-				LinkableAccountId,
-				MAX_REVEALED_KEYS_COUNT,
-				MAX_REVEALED_ACCOUNTS_COUNT,
-				FrameSystemDidSignatureContext<ConsumerRuntime, MAX_DID_SIGNATURE_DURATION>,
-				LocalDidCallVerifier,
-			> as IdentityProofVerifier<ConsumerRuntime>>::verify_proof_for_call_against_details(
-				call,
-				subject,
-				submitter,
-				identity_details,
-				v0_proof,
-			),
-		}
+		<GenericVersionedDipChildProviderStateProofVerifier<
+			RelayChainInfo,
+			KiltParachainId,
+			ProviderParachainStateInfoViaProviderPallet<KiltRuntime>,
+			KiltDipMerkleHasher,
+			KeyIdOf<KiltRuntime>,
+			KiltRuntime::AccountId,
+			KiltRuntime::Web3Name,
+			LinkableAccountId,
+			MAX_REVEALED_KEYS_COUNT,
+			MAX_REVEALED_ACCOUNTS_COUNT,
+			FrameSystemDidSignatureContext<ConsumerRuntime, MAX_DID_SIGNATURE_DURATION>,
+			LocalDidCallVerifier,
+		> as IdentityProofVerifier<ConsumerRuntime>>::verify_proof_for_call_against_details(
+			call,
+			subject,
+			submitter,
+			identity_details,
+			proof,
+		)
 	}
 }
 
@@ -274,7 +262,7 @@ impl<
 // used in cases in which it is not possible or not desirable to depend on the
 // whole provider runtime definition. Hence, required types must be filled in
 // manually.
-pub struct VersionedDipChildProviderStateProofVerifier<
+pub struct GenericVersionedDipChildProviderStateProofVerifier<
 	RelayChainInfo,
 	ChildProviderParachainId,
 	ChildProviderStateInfo,
@@ -318,7 +306,7 @@ impl<
 		LocalContextProvider,
 		LocalDidCallVerifier,
 	> IdentityProofVerifier<ConsumerRuntime>
-	for VersionedDipChildProviderStateProofVerifier<
+	for GenericVersionedDipChildProviderStateProofVerifier<
 		RelayChainInfo,
 		ChildProviderParachainId,
 		ChildProviderStateInfo,

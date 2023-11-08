@@ -16,15 +16,16 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-mod child;
+pub mod child;
+pub mod sibling;
+
 mod common;
-mod sibling;
 
 pub use child::{
-	DipChildProviderStateProofVerifierError, VersionedChildKiltProviderVerifier, VersionedChildParachainDipStateProof,
+	DipChildProviderStateProofVerifierError, KiltVersionedChildProviderVerifier, VersionedChildParachainDipStateProof,
 };
 pub use sibling::{
-	DipSiblingProviderStateProofVerifierError, VersionedSiblingKiltProviderVerifier,
+	DipSiblingProviderStateProofVerifierError, KiltVersionedSiblingProviderVerifier,
 	VersionedSiblingParachainDipStateProof,
 };
 
