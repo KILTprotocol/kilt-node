@@ -21,6 +21,7 @@ use did::{did_details::DidVerificationKey, DidVerificationKeyRelationship, KeyId
 use frame_system::pallet_prelude::BlockNumberFor;
 use pallet_did_lookup::linkable_account::LinkableAccountId;
 use pallet_dip_consumer::traits::IdentityProofVerifier;
+use pallet_dip_provider::IdentityCommitmentOf;
 use parity_scale_codec::{Decode, Encode, HasCompact};
 use scale_info::TypeInfo;
 use sp_core::{RuntimeDebug, U256};
@@ -171,7 +172,7 @@ impl<
 		+ pallet_dip_provider::Config<Identifier = <KiltRuntime as did::Config>::DidIdentifier>,
 	OutputOf<KiltRuntime::Hashing>: Ord + From<OutputOf<RelayChainStateInfo::Hasher>>,
 	KeyIdOf<KiltRuntime>: Into<KiltDipMerkleHasher::Out>,
-	KiltDipMerkleHasher: sp_core::Hasher<Out = KiltRuntime::IdentityCommitment>,
+	KiltDipMerkleHasher: sp_core::Hasher<Out = IdentityCommitmentOf<KiltRuntime>>,
 	ConsumerRuntime: pallet_dip_consumer::Config,
 	ConsumerRuntime::LocalIdentityInfo: Bump + Default + Encode,
 	RelayChainStateInfo: traits::RelayChainStorageInfo + traits::RelayChainStateInfo,
