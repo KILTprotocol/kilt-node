@@ -28,8 +28,7 @@ use sp_runtime::traits::BlakeTwo256;
 
 use crate::{DidIdentifier, Runtime, RuntimeCall, RuntimeOrigin};
 
-pub type MerkleProofVerifierOutputOf<Call, Subject> =
-	<ProofVerifier as IdentityProofVerifier<Call, Subject>>::VerificationResult;
+pub type MerkleProofVerifierOutputOf<T> = <ProofVerifier as IdentityProofVerifier<T>>::VerificationResult;
 pub type ProofVerifier = VersionedSiblingKiltProviderVerifier<
 	ProviderRuntime,
 	Runtime,
@@ -44,9 +43,7 @@ pub type ProofVerifier = VersionedSiblingKiltProviderVerifier<
 impl pallet_dip_consumer::Config for Runtime {
 	type DipCallOriginFilter = PreliminaryDipOriginFilter;
 	type Identifier = DidIdentifier;
-	type IdentityProof = <ProofVerifier as IdentityProofVerifier<RuntimeCall, DidIdentifier>>::Proof;
 	type LocalIdentityInfo = u128;
-	type ProofVerificationError = <ProofVerifier as IdentityProofVerifier<RuntimeCall, DidIdentifier>>::Error;
 	type ProofVerifier = ProofVerifier;
 	type RuntimeCall = RuntimeCall;
 	type RuntimeOrigin = RuntimeOrigin;

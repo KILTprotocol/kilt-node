@@ -16,7 +16,9 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::Parameter;
+use parity_scale_codec::{Decode, Encode};
+use scale_info::TypeInfo;
+use sp_std::fmt::Debug;
 
 use crate::{Config, RuntimeCallOf};
 
@@ -25,7 +27,7 @@ where
 	Runtime: Config,
 {
 	type Error: Into<u16>;
-	type Proof: Parameter;
+	type Proof: TypeInfo + Encode + Decode + Clone + Debug + PartialEq;
 	type VerificationResult;
 
 	fn verify_proof_for_call_against_details(
