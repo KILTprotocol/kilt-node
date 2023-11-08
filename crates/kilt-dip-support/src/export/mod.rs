@@ -21,8 +21,7 @@ mod common;
 mod sibling;
 
 pub use child::{
-	DipChildProviderStateProofVerifierError, VersionedChildParachainDipStateProof,
-	VersionedDipChildProviderStateProofVerifier,
+	DipChildProviderStateProofVerifierError, VersionedChildKiltProviderVerifier, VersionedChildParachainDipStateProof,
 };
 pub use sibling::{
 	DipSiblingProviderStateProofVerifierError, VersionedSiblingKiltProviderVerifier,

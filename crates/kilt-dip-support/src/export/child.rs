@@ -130,7 +130,9 @@ where
 	}
 }
 
-pub struct VersionedSiblingKiltProviderVerifier<
+// Implements the same `IdentityProvider` trait, but it is internally configured
+// by receiving the runtime definitions of both the provider and the receiver.
+pub struct VersionedChildKiltProviderVerifier<
 	KiltRuntime,
 	ConsumerRuntime,
 	RelayChainInfo,
@@ -159,7 +161,7 @@ impl<
 		const MAX_REVEALED_ACCOUNTS_COUNT: u32,
 		const MAX_DID_SIGNATURE_DURATION: u16,
 	> IdentityProofVerifier<ConsumerRuntime>
-	for VersionedSiblingKiltProviderVerifier<
+	for VersionedChildKiltProviderVerifier<
 		KiltRuntime,
 		ConsumerRuntime,
 		RelayChainInfo,
@@ -268,6 +270,10 @@ impl<
 	}
 }
 
+// More generic version compared to `VersionedChildKiltProviderVerifier`, to be
+// used in cases in which it is not possible or not desirable to depend on the
+// whole provider runtime definition. Hence, required types must be filled in
+// manually.
 pub struct VersionedDipChildProviderStateProofVerifier<
 	RelayChainInfo,
 	ChildProviderParachainId,

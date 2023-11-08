@@ -20,7 +20,7 @@ use did::{did_details::DidVerificationKey, DidVerificationKeyRelationship};
 use dip_provider_runtime_template::{AccountId as ProviderAccountId, Runtime as ProviderRuntime};
 use frame_support::traits::Contains;
 use kilt_dip_support::{
-	traits::DipCallOriginFilter, RelayStateRootsViaRelayStorePallet, VersionedSiblingKiltProviderVerifier,
+	traits::DipCallOriginFilter, RelayStateRootsViaRelayStorePallet, VersionedChildKiltProviderVerifier,
 };
 use pallet_dip_consumer::traits::IdentityProofVerifier;
 use sp_core::ConstU32;
@@ -29,7 +29,7 @@ use sp_runtime::traits::BlakeTwo256;
 use crate::{DidIdentifier, Runtime, RuntimeCall, RuntimeOrigin};
 
 pub type MerkleProofVerifierOutputOf<T> = <ProofVerifier as IdentityProofVerifier<T>>::VerificationResult;
-pub type ProofVerifier = VersionedSiblingKiltProviderVerifier<
+pub type ProofVerifier = VersionedChildKiltProviderVerifier<
 	ProviderRuntime,
 	Runtime,
 	RelayStateRootsViaRelayStorePallet<Runtime>,

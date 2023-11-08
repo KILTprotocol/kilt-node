@@ -123,6 +123,8 @@ where
 	}
 }
 
+// Implements the same `IdentityProvider` trait, but it is internally configured
+// by receiving the runtime definitions of both the provider and the receiver.
 pub struct VersionedSiblingKiltProviderVerifier<
 	KiltRuntime,
 	ConsumerRuntime,
@@ -244,6 +246,10 @@ impl<
 	}
 }
 
+// More generic version compared to `VersionedSiblingKiltProviderVerifier`, to
+// be used in cases in which it is not possible or not desirable to depend on
+// the whole provider runtime definition. Hence, required types must be filled
+// in manually.
 pub struct GenericVersionedDipSiblingProviderStateProofVerifier<
 	RelayChainStateInfo,
 	SiblingProviderParachainId,
