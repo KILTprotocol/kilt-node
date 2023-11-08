@@ -1110,6 +1110,7 @@ pub type Executive = frame_executive::Executive<
 	(
 		runtime_common::migrations::BumpStorageVersion<Runtime>,
 		parachain_staking::migrations::BalanceMigration<Runtime>,
+		pallet_xcm::migration::v1::MigrateToV1<Runtime>,
 	),
 >;
 
