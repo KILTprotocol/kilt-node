@@ -31,7 +31,7 @@ use sp_std::vec::Vec;
 
 use crate::{
 	deposit::{DepositHooks, DepositNamespaces},
-	AccountId, Balances, DidIdentifier, Hash, Runtime, RuntimeEvent, RuntimeHoldReason,
+	AccountId, Balances, DidIdentifier, Runtime, RuntimeEvent, RuntimeHoldReason,
 };
 
 pub mod runtime_api {
@@ -49,7 +49,7 @@ pub mod runtime_api {
 	#[derive(Encode, Decode, TypeInfo)]
 	pub enum DipProofError {
 		IdentityNotFound,
-		IdentityProviderError(<LinkedDidInfoProviderOf<Runtime> as IdentityProvider<DidIdentifier>>::Error),
+		IdentityProviderError(<LinkedDidInfoProviderOf<Runtime> as IdentityProvider<Runtime>>::Error),
 		MerkleProofError(DidMerkleProofError),
 	}
 }
@@ -140,11 +140,8 @@ impl pallet_dip_provider::Config for Runtime {
 	type CommitOriginCheck = EnsureDidOrigin<DidIdentifier, AccountId>;
 	type CommitOrigin = DidRawOrigin<DidIdentifier, AccountId>;
 	type Identifier = DidIdentifier;
-	type IdentityCommitment = Hash;
 	type IdentityCommitmentGenerator = DidMerkleRootGenerator<Runtime>;
-	type IdentityCommitmentGeneratorError = DidMerkleProofError;
 	type IdentityProvider = LinkedDidInfoProviderOf<Runtime>;
-	type IdentityProviderError = <LinkedDidInfoProviderOf<Runtime> as IdentityProvider<DidIdentifier>>::Error;
 	type ProviderHooks = deposit::DepositCollectorHooks;
 	type RuntimeEvent = RuntimeEvent;
 }
