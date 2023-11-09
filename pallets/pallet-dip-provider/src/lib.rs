@@ -72,7 +72,7 @@ pub mod pallet {
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
-		IdentityCommitted {
+		VersionedIdentityCommitted {
 			identifier: T::Identifier,
 			commitment: IdentityCommitmentOf<T>,
 			version: IdentityCommitmentVersion,
@@ -81,15 +81,11 @@ pub mod pallet {
 			identifier: T::Identifier,
 			version: IdentityCommitmentVersion,
 		},
-		IdentityDeleted {
-			identifier: T::Identifier,
-		},
 	}
 
 	#[pallet::error]
 	pub enum Error<T> {
 		IdentityNotFound,
-		LimitTooLow,
 		IdentityProvider(u16),
 		IdentityCommitmentGenerator(u16),
 		Hook(u16),
@@ -135,7 +131,7 @@ pub mod pallet {
 				T::ProviderHooks::on_identity_committed(&identifier, &dispatcher, &commitment, commitment_version)
 					.map_err(|e| Error::<T>::Hook(e.into()))?;
 				*commitment_entry = Some(commitment.clone());
-				Self::deposit_event(Event::<T>::IdentityCommitted {
+				Self::deposit_event(Event::<T>::VersionedIdentityCommitted {
 					identifier: identifier.clone(),
 					commitment,
 					version: commitment_version,

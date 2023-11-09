@@ -75,8 +75,6 @@ pub mod pallet {
 
 	#[pallet::error]
 	pub enum Error<T> {
-		/// An identity with the provided identifier could not be found.
-		IdentityNotFound,
 		/// The identity proof provided could not be successfully verified.
 		InvalidProof(u16),
 		/// The specified call is filtered by the DIP call origin filter.
