@@ -96,7 +96,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_version: 11200,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
-	transaction_version: 6,
+	transaction_version: 7,
 	state_version: 0,
 };
 
@@ -754,6 +754,14 @@ impl Default for ProxyType {
 
 impl InstanceFilter<RuntimeCall> for ProxyType {
 	fn filter(&self, c: &RuntimeCall) -> bool {
+		if let RuntimeCall::Did(did::Call::dispatch_as {
+			did_identifier: _,
+			call,
+		}) = c
+		{
+			return self.filter(call);
+		}
+
 		match self {
 			ProxyType::Any => true,
 			ProxyType::NonTransfer => matches!(
