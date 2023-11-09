@@ -56,6 +56,8 @@ pub mod pallet {
 		/// Preliminary filter to filter out calls before doing any heavier
 		/// computations.
 		type DipCallOriginFilter: Contains<RuntimeCallOf<Self>>;
+		/// The origin check for the `dispatch_as` call.
+		type DispatchOriginCheck: EnsureOrigin<<Self as frame_system::Config>::RuntimeOrigin, Success = Self::AccountId>;
 		/// The identifier of a subject, e.g., a DID.
 		type Identifier: Parameter + MaxEncodedLen;
 		/// The details stored in this pallet associated with any given subject.
@@ -99,9 +101,7 @@ pub mod pallet {
 			proof: IdentityProofOf<T>,
 			call: Box<RuntimeCallOf<T>>,
 		) -> DispatchResult {
-			// TODO: Make origin check configurable, and require that it at least returns
-			// the submitter's account.
-			let submitter = ensure_signed(origin)?;
+			let submitter = T::DispatchOriginCheck::ensure_origin(origin)?;
 			ensure!(T::DipCallOriginFilter::contains(&*call), Error::<T>::Filtered);
 			let mut identity_entry = IdentityEntries::<T>::get(&identifier);
 			let proof_verification_result = T::ProofVerifier::verify_proof_for_call_against_details(

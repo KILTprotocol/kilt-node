@@ -19,6 +19,7 @@
 use did::{did_details::DidVerificationKey, DidVerificationKeyRelationship};
 use dip_provider_runtime_template::{AccountId as ProviderAccountId, Runtime as ProviderRuntime};
 use frame_support::traits::Contains;
+use frame_system::EnsureSigned;
 use kilt_dip_support::{
 	traits::DipCallOriginFilter, KiltVersionedSiblingProviderVerifier, RelayStateRootsViaRelayStorePallet,
 };
@@ -26,7 +27,7 @@ use pallet_dip_consumer::traits::IdentityProofVerifier;
 use sp_core::ConstU32;
 use sp_runtime::traits::BlakeTwo256;
 
-use crate::{DidIdentifier, Runtime, RuntimeCall, RuntimeOrigin};
+use crate::{AccountId, DidIdentifier, Runtime, RuntimeCall, RuntimeOrigin};
 
 pub type MerkleProofVerifierOutput = <ProofVerifier as IdentityProofVerifier<Runtime>>::VerificationResult;
 pub type ProofVerifier = KiltVersionedSiblingProviderVerifier<
@@ -42,6 +43,7 @@ pub type ProofVerifier = KiltVersionedSiblingProviderVerifier<
 
 impl pallet_dip_consumer::Config for Runtime {
 	type DipCallOriginFilter = PreliminaryDipOriginFilter;
+	type DispatchOriginCheck = EnsureSigned<AccountId>;
 	type Identifier = DidIdentifier;
 	type LocalIdentityInfo = u128;
 	type ProofVerifier = ProofVerifier;
