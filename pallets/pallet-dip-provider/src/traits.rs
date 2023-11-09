@@ -17,12 +17,15 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use did::DidRawOrigin;
+use frame_support::sp_runtime::AccountId32;
+
+use crate::{Config, IdentityCommitmentVersion};
 
 pub use identity_generation::*;
 pub mod identity_generation {
-	use sp_std::marker::PhantomData;
+	use super::*;
 
-	use crate::IdentityCommitmentVersion;
+	use sp_std::marker::PhantomData;
 
 	pub trait IdentityCommitmentGenerator<Identifier, Identity> {
 		type Error;
@@ -102,7 +105,7 @@ pub trait SubmitterInfo {
 	fn submitter(&self) -> Self::Submitter;
 }
 
-impl SubmitterInfo for frame_support::sp_runtime::AccountId32 {
+impl SubmitterInfo for AccountId32 {
 	type Submitter = Self;
 
 	fn submitter(&self) -> Self::Submitter {
@@ -118,5 +121,53 @@ where
 
 	fn submitter(&self) -> Self::Submitter {
 		self.submitter.clone()
+	}
+}
+
+pub trait ProviderHooks<Runtime>
+where
+	Runtime: Config,
+{
+	type Error: Into<u16>;
+
+	fn on_identity_committed(
+		identifier: &Runtime::Identifier,
+		submitter: &Runtime::AccountId,
+		commitment: &Runtime::IdentityCommitment,
+		version: IdentityCommitmentVersion,
+	) -> Result<(), Self::Error>;
+
+	fn on_commitment_removed(
+		identifier: &Runtime::Identifier,
+		submitter: &Runtime::AccountId,
+		commitment: &Runtime::IdentityCommitment,
+		version: IdentityCommitmentVersion,
+	) -> Result<(), Self::Error>;
+}
+
+pub struct NoopHooks;
+
+impl<Runtime> ProviderHooks<Runtime> for NoopHooks
+where
+	Runtime: Config,
+{
+	type Error = u16;
+
+	fn on_commitment_removed(
+		_identifier: &Runtime::Identifier,
+		_submitter: &Runtime::AccountId,
+		_commitment: &Runtime::IdentityCommitment,
+		_version: IdentityCommitmentVersion,
+	) -> Result<(), Self::Error> {
+		Ok(())
+	}
+
+	fn on_identity_committed(
+		_identifier: &Runtime::Identifier,
+		_submitter: &Runtime::AccountId,
+		_commitment: &Runtime::IdentityCommitment,
+		_version: IdentityCommitmentVersion,
+	) -> Result<(), Self::Error> {
+		Ok(())
 	}
 }

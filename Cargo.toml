@@ -55,6 +55,7 @@ ctype = {path = "pallets/ctype", default-features = false}
 delegation = {path = "pallets/delegation", default-features = false}
 did = {path = "pallets/did", default-features = false}
 pallet-configuration = {path = "pallets/pallet-configuration", default-features = false}
+pallet-deposit-storage = {path = "pallets/pallet-deposit-storage", default-features = false}
 pallet-dip-consumer = {path = "pallets/pallet-dip-consumer", default-features = false}
 pallet-dip-provider = {path = "pallets/pallet-dip-provider", default-features = false}
 pallet-did-lookup = {path = "pallets/pallet-did-lookup", default-features = false}

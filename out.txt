@@ -1,1 +1,0 @@
-pallet-dip-consumer v1.12.0-dev (/home/antonio/Developer/kilt-node/pallets/pallet-dip-consumer)

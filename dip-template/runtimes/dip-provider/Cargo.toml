@@ -14,13 +14,16 @@ version.workspace = true
 substrate-wasm-builder.workspace = true
 
 [dependencies]
+log.workspace = true
 parity-scale-codec = {workspace = true, features = ["derive"]}
 scale-info = {workspace = true, features = ["derive"]}
 
 # DIP
 did.workspace = true
+kilt-support.workspace = true
 kilt-dip-support.workspace = true
 kilt-runtime-api-dip-provider.workspace = true
+pallet-deposit-storage.workspace = true
 pallet-did-lookup.workspace = true
 pallet-dip-provider.workspace = true
 pallet-web3-names.workspace = true
@@ -66,11 +69,14 @@ default = [
 	"std",
 ]
 std = [
+  "log/std",
 	"parity-scale-codec/std",
 	"scale-info/std",
   "did/std",
+  "kilt-support/std",
   "kilt-dip-support/std",
   "kilt-runtime-api-dip-provider/std",
+  "pallet-deposit-storage/std",
   "pallet-did-lookup/std",
   "pallet-dip-provider/std",
   "pallet-web3-names/std",
