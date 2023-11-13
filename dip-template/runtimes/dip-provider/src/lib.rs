@@ -571,8 +571,7 @@ impl_runtime_apis! {
 
 	impl kilt_runtime_api_dip_provider::DipProvider<Block, runtime_api::DipProofRequest, CompleteMerkleProof<Hash, DidMerkleProofOf<Runtime>>, runtime_api::DipProofError> for Runtime {
 		fn generate_proof(request: runtime_api::DipProofRequest) -> Result<CompleteMerkleProof<Hash, DidMerkleProofOf<Runtime>>, runtime_api::DipProofError> {
-			let maybe_identity_details = IdentityProviderOf::<Runtime>::retrieve(&request.identifier).map_err(runtime_api::DipProofError::IdentityProviderError)?;
-			let identity_details = maybe_identity_details.ok_or(runtime_api::DipProofError::IdentityNotFound)?;
+			let identity_details = IdentityProviderOf::<Runtime>::retrieve(&request.identifier).map_err(runtime_api::DipProofError::IdentityProviderError)?;
 
 			DidMerkleRootGenerator::<Runtime>::generate_proof(&identity_details, request.version, request.keys.iter(), request.should_include_web3_name, request.accounts.iter()).map_err(runtime_api::DipProofError::MerkleProofError)
 		}

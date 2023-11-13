@@ -34,7 +34,7 @@ pub mod identity_provision {
 		type Error: Into<u16>;
 		type Success;
 
-		fn retrieve(identifier: &Runtime::Identifier) -> Result<Option<Self::Success>, Self::Error>;
+		fn retrieve(identifier: &Runtime::Identifier) -> Result<Self::Success, Self::Error>;
 	}
 
 	// Return the `Default` value if `Identity` adn `Details` both implement it.
@@ -48,23 +48,8 @@ pub mod identity_provision {
 		type Error = u16;
 		type Success = Identity;
 
-		fn retrieve(_identifier: &Runtime::Identifier) -> Result<Option<Self::Success>, Self::Error> {
-			Ok(Some(Identity::default()))
-		}
-	}
-
-	// Always return `None`. Might be useful for tests.
-	pub struct NoneIdentityProvider;
-
-	impl<Runtime> IdentityProvider<Runtime> for NoneIdentityProvider
-	where
-		Runtime: Config,
-	{
-		type Error = u16;
-		type Success = ();
-
-		fn retrieve(_identifier: &Runtime::Identifier) -> Result<Option<Self::Success>, Self::Error> {
-			Ok(None)
+		fn retrieve(_identifier: &Runtime::Identifier) -> Result<Self::Success, Self::Error> {
+			Ok(Identity::default())
 		}
 	}
 }

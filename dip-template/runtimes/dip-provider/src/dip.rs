@@ -19,10 +19,10 @@
 use did::{DidRawOrigin, EnsureDidOrigin, KeyIdOf};
 use frame_system::EnsureSigned;
 use pallet_did_lookup::linkable_account::LinkableAccountId;
-use pallet_dip_provider::{traits::IdentityProvider, IdentityCommitmentVersion};
+use pallet_dip_provider::IdentityCommitmentVersion;
 use parity_scale_codec::{Decode, Encode};
 use runtime_common::dip::{
-	did::LinkedDidInfoProviderOf,
+	did::{LinkedDidInfoProvider, LinkedDidInfoProviderError},
 	merkle::{DidMerkleProofError, DidMerkleRootGenerator},
 };
 use scale_info::TypeInfo;
@@ -48,8 +48,7 @@ pub mod runtime_api {
 
 	#[derive(Encode, Decode, TypeInfo)]
 	pub enum DipProofError {
-		IdentityNotFound,
-		IdentityProviderError(<LinkedDidInfoProviderOf<Runtime> as IdentityProvider<Runtime>>::Error),
+		IdentityProviderError(LinkedDidInfoProviderError),
 		MerkleProofError(DidMerkleProofError),
 	}
 }
@@ -141,7 +140,7 @@ impl pallet_dip_provider::Config for Runtime {
 	type CommitOrigin = DidRawOrigin<DidIdentifier, AccountId>;
 	type Identifier = DidIdentifier;
 	type IdentityCommitmentGenerator = DidMerkleRootGenerator<Runtime>;
-	type IdentityProvider = LinkedDidInfoProviderOf<Runtime>;
+	type IdentityProvider = LinkedDidInfoProvider;
 	type ProviderHooks = deposit::DepositCollectorHooks;
 	type RuntimeEvent = RuntimeEvent;
 }

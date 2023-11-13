@@ -22,8 +22,10 @@
 
 pub mod traits;
 
-pub use crate::pallet::*;
-pub use traits::{DefaultIdentityCommitmentGenerator, DefaultIdentityProvider, NoneIdentityProvider, NoopHooks};
+pub use crate::{
+	pallet::*,
+	traits::{DefaultIdentityCommitmentGenerator, DefaultIdentityProvider, NoopHooks},
+};
 
 #[frame_support::pallet(dev_mode)]
 pub mod pallet {
@@ -85,7 +87,7 @@ pub mod pallet {
 
 	#[pallet::error]
 	pub enum Error<T> {
-		IdentityNotFound,
+		CommitmentNotFound,
 		IdentityProvider(u16),
 		IdentityCommitmentGenerator(u16),
 		Hook(u16),
@@ -105,14 +107,11 @@ pub mod pallet {
 				T::CommitOriginCheck::ensure_origin(origin).map(|e: <T as Config>::CommitOrigin| e.submitter())?;
 
 			let commitment_version = version.unwrap_or(LATEST_COMMITMENT_VERSION);
-			let commitment = match T::IdentityProvider::retrieve(&identifier) {
-				Ok(None) => Err(Error::<T>::IdentityNotFound),
-				Err(error) => Err(Error::<T>::IdentityProvider(error.into())),
-				Ok(Some(identity)) => {
-					T::IdentityCommitmentGenerator::generate_commitment(&identifier, &identity, commitment_version)
-						.map_err(|error| Error::<T>::IdentityCommitmentGenerator(error.into()))
-				}
-			}?;
+			let identity = T::IdentityProvider::retrieve(&identifier)
+				.map_err(|error| Error::<T>::IdentityProvider(error.into()))?;
+			let commitment =
+				T::IdentityCommitmentGenerator::generate_commitment(&identifier, &identity, commitment_version)
+					.map_err(|error| Error::<T>::IdentityCommitmentGenerator(error.into()))?;
 
 			IdentityCommitments::<T>::try_mutate(&identifier, commitment_version, |commitment_entry| {
 				if let Some(old_commitment) = commitment_entry {
@@ -165,7 +164,8 @@ pub mod pallet {
 			identifier: &T::Identifier,
 			version: IdentityCommitmentVersion,
 		) -> Result<IdentityCommitmentOf<T>, DispatchError> {
-			let commitment = IdentityCommitments::<T>::take(identifier, version).ok_or(Error::<T>::IdentityNotFound)?;
+			let commitment =
+				IdentityCommitments::<T>::take(identifier, version).ok_or(Error::<T>::CommitmentNotFound)?;
 			Self::deposit_event(Event::<T>::VersionedIdentityDeleted {
 				identifier: identifier.clone(),
 				version,
