@@ -62,6 +62,7 @@ pub mod identity_generation {
 
 pub use identity_provision::*;
 pub mod identity_provision {
+	use frame_support::weights::Weight;
 	use sp_std::marker::PhantomData;
 
 	pub trait IdentityProvider<Identifier> {
@@ -69,6 +70,8 @@ pub mod identity_provision {
 		type Success;
 
 		fn retrieve(identifier: &Identifier) -> Result<Option<Self::Success>, Self::Error>;
+
+		fn get_retrieve_weight(identifier: &Identifier) -> Weight;
 	}
 
 	// Return the `Default` value if `Identity` adn `Details` both implement it.
@@ -84,6 +87,10 @@ pub mod identity_provision {
 		fn retrieve(_identifier: &Identifier) -> Result<Option<Self::Success>, Self::Error> {
 			Ok(Some(Identity::default()))
 		}
+
+		fn get_retrieve_weight(_identifier: &Identifier) -> Weight {
+			Weight::zero()
+		}
 	}
 
 	// Always return `None`. Might be useful for tests.
@@ -95,6 +102,10 @@ pub mod identity_provision {
 
 		fn retrieve(_identifier: &Identifier) -> Result<Option<Self::Success>, Self::Error> {
 			Ok(None)
+		}
+
+		fn get_retrieve_weight(_identifier: &Identifier) -> Weight {
+			Weight::zero()
 		}
 	}
 }

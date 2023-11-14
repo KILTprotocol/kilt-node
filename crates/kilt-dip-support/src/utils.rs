@@ -16,6 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use frame_support::weights::Weight;
 use pallet_dip_provider::traits::IdentityProvider;
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
@@ -132,6 +133,12 @@ where
 			(_, Err(e), _) => Err(CombineError::B(e)),
 			(_, _, Err(e)) => Err(CombineError::C(e)),
 		}
+	}
+
+	fn get_retrieve_weight(identifier: &Identifier) -> Weight {
+		A::get_retrieve_weight(identifier)
+			.saturating_add(B::get_retrieve_weight(identifier))
+			.saturating_add(C::get_retrieve_weight(identifier))
 	}
 }
 
