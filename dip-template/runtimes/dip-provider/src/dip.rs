@@ -48,8 +48,8 @@ pub mod runtime_api {
 
 	#[derive(Encode, Decode, TypeInfo)]
 	pub enum DipProofError {
-		IdentityProviderError(LinkedDidInfoProviderError),
-		MerkleProofError(DidMerkleProofError),
+		IdentityProvider(LinkedDidInfoProviderError),
+		MerkleProof(DidMerkleProofError),
 	}
 }
 
