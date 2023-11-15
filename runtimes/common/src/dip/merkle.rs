@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 use did::{DidVerificationKeyRelationship, KeyIdOf};
-use frame_support::RuntimeDebug;
+use frame_support::{pallet_prelude::Weight, RuntimeDebug};
 use frame_system::pallet_prelude::BlockNumberFor;
 use kilt_dip_support::merkle::{DidKeyMerkleKey, DidKeyMerkleValue, DidMerkleProof};
 use pallet_did_lookup::linkable_account::LinkableAccountId;
@@ -356,6 +356,10 @@ where
 			0 => v0::generate_commitment::<Runtime>(identity),
 			_ => Err(DidMerkleProofError::UnsupportedVersion),
 		}
+	}
+
+	fn get_generate_commitment_weight() -> Weight {
+		Weight::zero()
 	}
 }
 

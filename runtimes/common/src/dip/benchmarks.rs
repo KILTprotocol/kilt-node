@@ -29,7 +29,7 @@ use pallet_balances::Pallet as BalancePallet;
 use sp_runtime::SaturatedConversion;
 use pallet_did_lookup::linkable_account::LinkableAccountId;
 
-use crate::{dip::did::{DidIdentityProvider, DidWeb3NameProvider, DidLinkedAccountsProvider}, constants::KILT};
+use crate::{dip::{did::{DidIdentityProvider, DidWeb3NameProvider, DidLinkedAccountsProvider, LinkedDidInfoOf}, merkle::DidMerkleRootGenerator }, constants::KILT};
 
 const AUTHENTICATION_KEY_ID: KeyTypeId = KeyTypeId(*b"0000");
 
@@ -52,7 +52,10 @@ fn generate_web3_name_input(length: usize) -> Vec<u8> {
 		T::OwnerOrigin: GenerateBenchmarkOrigin<<T as frame_system::Config>::RuntimeOrigin, T::AccountId, T::Web3NameOwner>,
 	)]
 pub mod benchmarks {
-	use super::{Config, Pallet, *};
+	
+use pallet_dip_provider::IdentityCommitmentVersion;
+
+use super::{Config, Pallet, *};
 
 	#[benchmark]
 	fn retrieve_did() {
@@ -101,6 +104,22 @@ pub mod benchmarks {
 		#[block]
 		{
 			DidLinkedAccountsProvider::<T>::retrieve(&did).expect("Retrieve linked accounts should not fail.");	
+		}
+	}
+
+	#[benchmark]
+	fn proof_generator() {
+
+		let identity = LinkedDidInfoOf::<T> {
+			..Default::default()			
+		};
+
+		let version = 0;
+ 
+	
+		#[block]
+		{
+			DidMerkleRootGenerator::<T>::generate_proof(identity, version, key_ids, true, account_ids)
 		}
 	}
 }

@@ -25,6 +25,7 @@ pub use identity_generation::*;
 pub mod identity_generation {
 	use super::*;
 
+	use frame_support::weights::Weight;
 	use sp_std::marker::PhantomData;
 
 	pub trait IdentityCommitmentGenerator<Identifier, Identity> {
@@ -36,6 +37,8 @@ pub mod identity_generation {
 			identity: &Identity,
 			version: IdentityCommitmentVersion,
 		) -> Result<Self::Output, Self::Error>;
+
+		fn get_generate_commitment_weight() -> Weight;
 	}
 
 	// Implement the `IdentityCommitmentGenerator` by returning the `Default` value
@@ -56,6 +59,10 @@ pub mod identity_generation {
 			_version: IdentityCommitmentVersion,
 		) -> Result<Self::Output, Self::Error> {
 			Ok(Output::default())
+		}
+
+		fn get_generate_commitment_weight() -> Weight {
+			Weight::zero()
 		}
 	}
 }

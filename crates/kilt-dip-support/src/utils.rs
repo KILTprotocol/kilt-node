@@ -22,6 +22,7 @@ use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
 use sp_std::marker::PhantomData;
 
+#[derive(Default)]
 pub struct CombinedIdentityResult<OutputA, OutputB, OutputC> {
 	pub a: OutputA,
 	pub b: OutputB,
