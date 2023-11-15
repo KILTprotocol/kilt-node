@@ -17,6 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use did::did_details::DidDetails;
+use frame_support::weights::Weight;
 use frame_system::pallet_prelude::BlockNumberFor;
 use kilt_dip_support::{
 	merkle::RevealedWeb3Name,
@@ -28,7 +29,9 @@ use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
 use sp_std::{marker::PhantomData, vec::Vec};
 
-#[derive(Encode, Decode, TypeInfo)]
+use crate::dip::weights::{SubstrateWeight, WeightInfo};
+
+#[derive(Encode, Decode, TypeInfo, Debug)]
 pub enum DidIdentityProviderError {
 	DidNotFound,
 	Internal,
@@ -62,6 +65,10 @@ where
 			_ => Err(DidIdentityProviderError::DidNotFound),
 		}
 	}
+
+	fn get_retrieve_weight(_identifier: &T::DidIdentifier) -> Weight {
+		SubstrateWeight::<T>::retrieve_did()
+	}
 }
 
 pub type Web3OwnershipOf<T> = RevealedWeb3Name<<T as pallet_web3_names::Config>::Web3Name, BlockNumberFor<T>>;
@@ -91,6 +98,10 @@ where
 			claimed_at: details.claimed_at,
 		}))
 	}
+
+	fn get_retrieve_weight(_identifier: &T::Web3NameOwner) -> Weight {
+		SubstrateWeight::<T>::retrieve_w3n()
+	}
 }
 
 pub struct DidLinkedAccountsProvider<T>(PhantomData<T>);
@@ -106,6 +117,10 @@ where
 		Ok(Some(
 			pallet_did_lookup::ConnectedAccounts::<T>::iter_key_prefix(identifier).collect(),
 		))
+	}
+
+	fn get_retrieve_weight(_identifier: &T::DidIdentifier) -> Weight {
+		SubstrateWeight::<T>::retrieve_linked_accounts()
 	}
 }
 
