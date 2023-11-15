@@ -20,7 +20,10 @@ use frame_support::RuntimeDebug;
 use frame_system::pallet_prelude::BlockNumberFor;
 use kilt_dip_support::merkle::{DidKeyMerkleKey, DidKeyMerkleValue, DidMerkleProof};
 use pallet_did_lookup::linkable_account::LinkableAccountId;
-use pallet_dip_provider::{traits::IdentityCommitmentGenerator, IdentityCommitmentVersion};
+use pallet_dip_provider::{
+	traits::{IdentityCommitmentGenerator, IdentityProvider},
+	IdentityCommitmentVersion, IdentityOf,
+};
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
 use sp_std::{borrow::ToOwned, marker::PhantomData, vec::Vec};
@@ -28,7 +31,7 @@ use sp_trie::{generate_trie_proof, LayoutV1, MemoryDB, TrieDBMutBuilder, TrieHas
 
 use kilt_dip_support::merkle::{DidKeyRelationship, RevealedDidMerkleProofLeaf};
 
-use crate::{dip::did::LinkedDidInfoOf, DidIdentifier};
+use crate::dip::did::LinkedDidInfoOf;
 
 pub type BlindedValue = Vec<u8>;
 pub type DidMerkleProofOf<T> = DidMerkleProof<
@@ -51,7 +54,6 @@ pub struct CompleteMerkleProof<Root, Proof> {
 #[derive(Clone, RuntimeDebug, Encode, Decode, TypeInfo, PartialEq)]
 pub enum DidMerkleProofError {
 	UnsupportedVersion,
-	DidNotFound,
 	KeyNotFound,
 	LinkedAccountNotFound,
 	Web3NameNotFound,
@@ -62,10 +64,9 @@ impl From<DidMerkleProofError> for u16 {
 	fn from(value: DidMerkleProofError) -> Self {
 		match value {
 			DidMerkleProofError::UnsupportedVersion => 0,
-			DidMerkleProofError::DidNotFound => 1,
-			DidMerkleProofError::KeyNotFound => 2,
-			DidMerkleProofError::LinkedAccountNotFound => 3,
-			DidMerkleProofError::Web3NameNotFound => 4,
+			DidMerkleProofError::KeyNotFound => 1,
+			DidMerkleProofError::LinkedAccountNotFound => 2,
+			DidMerkleProofError::Web3NameNotFound => 3,
 			DidMerkleProofError::Internal => u16::MAX,
 		}
 	}
@@ -89,10 +90,11 @@ pub mod v0 {
 	where
 		Runtime: did::Config + pallet_did_lookup::Config + pallet_web3_names::Config,
 	{
-		// Fails if the DID details do not exist.
-		let (Some(did_details), web3_name, linked_accounts) = (&identity.a, &identity.b, &identity.c) else {
-			return Err(DidMerkleProofError::DidNotFound);
-		};
+		let LinkedDidInfoOf {
+			did_details,
+			web3_name_details,
+			linked_accounts,
+		} = identity;
 		let mut trie = TrieHash::<LayoutV1<Runtime::Hashing>>::default();
 		let mut trie_builder = TrieDBMutBuilder::<LayoutV1<Runtime::Hashing>>::new(db, &mut trie).build();
 
@@ -186,30 +188,28 @@ pub mod v0 {
 			})?;
 
 		// Linked accounts
-		if let Some(linked_accounts) = linked_accounts {
-			linked_accounts
-				.iter()
-				.try_for_each(|linked_account| -> Result<(), DidMerkleProofError> {
-					let linked_account_leaf =
-						ProofLeafOf::<Runtime>::LinkedAccount(linked_account.clone().into(), ().into());
-					trie_builder
-						.insert(
-							linked_account_leaf.encoded_key().as_slice(),
-							linked_account_leaf.encoded_value().as_slice(),
-						)
-						.map_err(|_| {
-							log::error!(
-								"Failed to insert linked account in the trie builder. Linked account leaf: {:#?}",
-								linked_account_leaf
-							);
-							DidMerkleProofError::Internal
-						})?;
-					Ok(())
-				})?;
-		}
+		linked_accounts
+			.iter()
+			.try_for_each(|linked_account| -> Result<(), DidMerkleProofError> {
+				let linked_account_leaf =
+					ProofLeafOf::<Runtime>::LinkedAccount(linked_account.clone().into(), ().into());
+				trie_builder
+					.insert(
+						linked_account_leaf.encoded_key().as_slice(),
+						linked_account_leaf.encoded_value().as_slice(),
+					)
+					.map_err(|_| {
+						log::error!(
+							"Failed to insert linked account in the trie builder. Linked account leaf: {:#?}",
+							linked_account_leaf
+						);
+						DidMerkleProofError::Internal
+					})?;
+				Ok(())
+			})?;
 
 		// Web3name, if present
-		if let Some(web3name_details) = web3_name {
+		if let Some(web3name_details) = web3_name_details {
 			let web3_name_leaf = ProofLeafOf::<Runtime>::Web3Name(
 				web3name_details.web3_name.clone().into(),
 				web3name_details.claimed_at.into(),
@@ -243,10 +243,11 @@ pub mod v0 {
 		K: Iterator<Item = &'a KeyIdOf<Runtime>>,
 		A: Iterator<Item = &'a LinkableAccountId>,
 	{
-		// Fails if the DID details do not exist.
-		let (Some(did_details), linked_web3_name, linked_accounts) = (&identity.a, &identity.b, &identity.c) else {
-			return Err(DidMerkleProofError::DidNotFound);
-		};
+		let LinkedDidInfoOf {
+			did_details,
+			web3_name_details,
+			linked_accounts,
+		} = identity;
 
 		let mut db = MemoryDB::default();
 		let root = calculate_root_with_db(identity, &mut db)?;
@@ -278,11 +279,6 @@ pub mod v0 {
 				))
 			})
 			.chain(account_ids.map(|account_id| -> Result<_, DidMerkleProofError> {
-				let Some(linked_accounts) = linked_accounts else {
-					// Directly LinkedAccountNotFound since there's no linked accounts to check
-					// against.
-					return Err(DidMerkleProofError::LinkedAccountNotFound);
-				};
 				if linked_accounts.contains(account_id) {
 					Ok(RevealedDidMerkleProofLeaf::LinkedAccount(
 						account_id.clone().into(),
@@ -294,7 +290,7 @@ pub mod v0 {
 			}))
 			.collect::<Result<Vec<_>, _>>()?;
 
-		match (should_include_web3_name, linked_web3_name) {
+		match (should_include_web3_name, web3_name_details) {
 			// If web3name should be included and it exists...
 			(true, Some(web3name_details)) => {
 				leaves.push(RevealedDidMerkleProofLeaf::Web3Name(
@@ -328,10 +324,11 @@ pub mod v0 {
 	}
 
 	pub(super) fn generate_commitment<Runtime>(
-		identity: &LinkedDidInfoOf<Runtime>,
+		identity: &IdentityOf<Runtime>,
 	) -> Result<Runtime::Hash, DidMerkleProofError>
 	where
-		Runtime: did::Config + pallet_did_lookup::Config + pallet_web3_names::Config,
+		Runtime: did::Config + pallet_did_lookup::Config + pallet_web3_names::Config + pallet_dip_provider::Config,
+		Runtime::IdentityProvider: IdentityProvider<Runtime, Success = LinkedDidInfoOf<Runtime>>,
 	{
 		let mut db = MemoryDB::default();
 		calculate_root_with_db(identity, &mut db)
@@ -340,18 +337,19 @@ pub mod v0 {
 
 pub struct DidMerkleRootGenerator<T>(PhantomData<T>);
 
-impl<Runtime> IdentityCommitmentGenerator<DidIdentifier, LinkedDidInfoOf<Runtime>> for DidMerkleRootGenerator<Runtime>
+impl<Runtime> IdentityCommitmentGenerator<Runtime> for DidMerkleRootGenerator<Runtime>
 where
-	Runtime: did::Config + pallet_did_lookup::Config + pallet_web3_names::Config,
+	Runtime: did::Config + pallet_did_lookup::Config + pallet_web3_names::Config + pallet_dip_provider::Config,
+	Runtime::IdentityProvider: IdentityProvider<Runtime, Success = LinkedDidInfoOf<Runtime>>,
 {
 	type Error = DidMerkleProofError;
 	type Output = Runtime::Hash;
 
 	fn generate_commitment(
-		_identifier: &DidIdentifier,
-		identity: &LinkedDidInfoOf<Runtime>,
+		_identifier: &Runtime::Identifier,
+		identity: &IdentityOf<Runtime>,
 		version: IdentityCommitmentVersion,
-	) -> Result<Runtime::Hash, Self::Error> {
+	) -> Result<Self::Output, Self::Error> {
 		match version {
 			0 => v0::generate_commitment::<Runtime>(identity),
 			_ => Err(DidMerkleProofError::UnsupportedVersion),

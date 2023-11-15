@@ -29,4 +29,8 @@ pub mod utils;
 mod export;
 
 pub use export::*;
-pub use state_proofs::relay_chain::RococoStateRootsViaRelayStorePallet;
+pub use state_proofs::{
+	parachain::{DipIdentityCommitmentProofVerifier, DipIdentityCommitmentProofVerifierError},
+	relay_chain::{ParachainHeadProofVerifier, ParachainHeadProofVerifierError, RelayStateRootsViaRelayStorePallet},
+};
+pub use traits::{FrameSystemDidSignatureContext, ProviderParachainStateInfoViaProviderPallet};

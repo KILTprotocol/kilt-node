@@ -16,40 +16,42 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use sp_std::marker::PhantomData;
+use frame_support::Parameter;
 
-pub trait IdentityProofVerifier<Call, Subject> {
-	type Error;
-	type IdentityDetails;
-	type Proof;
-	type Submitter;
+use crate::{Config, RuntimeCallOf};
+
+pub trait IdentityProofVerifier<Runtime>
+where
+	Runtime: Config,
+{
+	type Error: Into<u16>;
+	type Proof: Parameter;
 	type VerificationResult;
 
 	fn verify_proof_for_call_against_details(
-		call: &Call,
-		subject: &Subject,
-		submitter: &Self::Submitter,
-		identity_details: &mut Option<Self::IdentityDetails>,
+		call: &RuntimeCallOf<Runtime>,
+		subject: &Runtime::Identifier,
+		submitter: &Runtime::AccountId,
+		identity_details: &mut Option<Runtime::LocalIdentityInfo>,
 		proof: Self::Proof,
 	) -> Result<Self::VerificationResult, Self::Error>;
 }
 
 // Always returns success.
-pub struct SuccessfulProofVerifier<IdentityDetails, Proof, Submitter>(PhantomData<(IdentityDetails, Proof, Submitter)>);
-impl<Call, Subject, IdentityDetails, Proof, Submitter> IdentityProofVerifier<Call, Subject>
-	for SuccessfulProofVerifier<IdentityDetails, Proof, Submitter>
+pub struct SuccessfulProofVerifier;
+impl<Runtime> IdentityProofVerifier<Runtime> for SuccessfulProofVerifier
+where
+	Runtime: Config,
 {
-	type Error = ();
-	type IdentityDetails = IdentityDetails;
-	type Proof = Proof;
-	type Submitter = Submitter;
+	type Error = u16;
+	type Proof = ();
 	type VerificationResult = ();
 
 	fn verify_proof_for_call_against_details(
-		_call: &Call,
-		_subject: &Subject,
-		_submitter: &Self::Submitter,
-		_identity_details: &mut Option<Self::IdentityDetails>,
+		_call: &RuntimeCallOf<Runtime>,
+		_subject: &Runtime::Identifier,
+		_submitter: &Runtime::AccountId,
+		_identity_details: &mut Option<Runtime::LocalIdentityInfo>,
 		_proof: Self::Proof,
 	) -> Result<Self::VerificationResult, Self::Error> {
 		Ok(())
