@@ -1,4 +1,4 @@
-# Decentralized Identity Provider (DIP) pallet
+# Decentralized Identity Provider (DIP) provider pallet
 
 This pallet is a core component of the Decentralized Identity Provider protocol.
 It enables a Substrate-based chain (provider) to bridge the identities of its users to other connected chains (consumers) trustlessly.
@@ -46,5 +46,5 @@ Similarly, the `VersionedIdentityDeleted`, is called whenever a commitment is de
 
 ## Calls
 
-* `pub fn commit_identity(origin: OriginFor<T>, identifier: T::Identifier, version: Option<IdentityCommitmentVersion> ) -> DispatchResult`: Generate a new versioned commitment for the subject identified by the provided `Identifier`. If an old commitment for the same version is present, it is overridden. Hooks are called before the new commitment is stored, and optionally before the old one is replaced.
-* `pub fn delete_identity_commitment(origin: OriginFor<T>, identifier: T::Identifier, version: Option<IdentityCommitmentVersion>) -> DispatchResult`: Delete an identity commitment of a specific version for a specific `Identifier`. If a commitment of the provided version does not exist for the given `Identifier`, an error is returned. Hooks are called after the commitment has been removed.
+0. `pub fn commit_identity(origin: OriginFor<T>, identifier: T::Identifier, version: Option<IdentityCommitmentVersion> ) -> DispatchResult`: Generate a new versioned commitment for the subject identified by the provided `Identifier`. If an old commitment for the same version is present, it is overridden. Hooks are called before the new commitment is stored, and optionally before the old one is replaced.
+1. `pub fn delete_identity_commitment(origin: OriginFor<T>, identifier: T::Identifier, version: Option<IdentityCommitmentVersion>) -> DispatchResult`: Delete an identity commitment of a specific version for a specific `Identifier`. If a commitment of the provided version does not exist for the given `Identifier`, an error is returned. Hooks are called after the commitment has been removed.
