@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 use did::{DidVerificationKeyRelationship, KeyIdOf};
-use frame_support::{pallet_prelude::Weight, RuntimeDebug};
+use frame_support::{ensure, pallet_prelude::Weight, RuntimeDebug};
 use frame_system::pallet_prelude::BlockNumberFor;
 use kilt_dip_support::merkle::{DidKeyMerkleKey, DidKeyMerkleValue, DidMerkleProof};
 use pallet_did_lookup::linkable_account::LinkableAccountId;
@@ -56,6 +56,7 @@ pub enum DidMerkleProofError {
 	LinkedAccountNotFound,
 	Web3NameNotFound,
 	Internal,
+	ExcessiveLinkedAccounts,
 }
 
 impl From<DidMerkleProofError> for u16 {
@@ -66,12 +67,17 @@ impl From<DidMerkleProofError> for u16 {
 			DidMerkleProofError::KeyNotFound => 2,
 			DidMerkleProofError::LinkedAccountNotFound => 3,
 			DidMerkleProofError::Web3NameNotFound => 4,
+			DidMerkleProofError::ExcessiveLinkedAccounts => 5,
 			DidMerkleProofError::Internal => u16::MAX,
 		}
 	}
 }
 
 pub mod v0 {
+	use sp_trie::TrieDBMut;
+
+	use crate::dip::did::Web3OwnershipOf;
+
 	use super::*;
 
 	type ProofLeafOf<T> = RevealedDidMerkleProofLeaf<
@@ -81,6 +87,61 @@ pub mod v0 {
 		<T as pallet_web3_names::Config>::Web3Name,
 		LinkableAccountId,
 	>;
+	pub(crate) fn insert_linked_accounts<Runtime>(
+		trie_builder: &mut TrieDBMut<LayoutV1<Runtime::Hashing>>,
+		linked_accounts: &Vec<LinkableAccountId>,
+	) -> Result<(), DidMerkleProofError>
+	where
+		Runtime: did::Config + pallet_web3_names::Config,
+	{
+		linked_accounts
+			.iter()
+			.try_for_each(|linked_account| -> Result<(), DidMerkleProofError> {
+				let linked_account_leaf =
+					ProofLeafOf::<Runtime>::LinkedAccount(linked_account.clone().into(), ().into());
+				trie_builder
+					.insert(
+						linked_account_leaf.encoded_key().as_slice(),
+						linked_account_leaf.encoded_value().as_slice(),
+					)
+					.map_err(|_| {
+						log::error!(
+							"Failed to insert linked account in the trie builder. Linked account leaf: {:#?}",
+							linked_account_leaf
+						);
+						DidMerkleProofError::Internal
+					})?;
+				Ok(())
+			})
+	}
+
+	// Function to insert web3name into the trie builder
+	pub(crate) fn insert_web3name<Runtime>(
+		trie_builder: &mut TrieDBMut<LayoutV1<Runtime::Hashing>>,
+		web3name_details: &Web3OwnershipOf<Runtime>,
+	) -> Result<(), DidMerkleProofError>
+	where
+		Runtime: did::Config + pallet_web3_names::Config,
+	{
+		let web3_name_leaf = ProofLeafOf::<Runtime>::Web3Name(
+			web3name_details.web3_name.clone().into(),
+			web3name_details.claimed_at.into(),
+		);
+		trie_builder
+			.insert(
+				web3_name_leaf.encoded_key().as_slice(),
+				web3_name_leaf.encoded_value().as_slice(),
+			)
+			.map_err(|_| {
+				log::error!(
+					"Failed to insert web3name in the trie builder. Web3name leaf: {:#?}",
+					web3_name_leaf
+				);
+				DidMerkleProofError::Internal
+			})?;
+
+		Ok(())
+	}
 
 	pub(super) fn calculate_root_with_db<Runtime>(
 		identity: &LinkedDidInfoOf<Runtime>,
@@ -104,6 +165,7 @@ pub mod v0 {
 				log::error!("Authentication key should be part of the public keys.");
 				DidMerkleProofError::Internal
 			})?;
+
 		let auth_leaf = ProofLeafOf::<Runtime>::DidKey(
 			DidKeyMerkleKey(
 				did_details.authentication_key,
@@ -187,45 +249,12 @@ pub mod v0 {
 
 		// Linked accounts
 		if let Some(linked_accounts) = linked_accounts {
-			linked_accounts
-				.iter()
-				.try_for_each(|linked_account| -> Result<(), DidMerkleProofError> {
-					let linked_account_leaf =
-						ProofLeafOf::<Runtime>::LinkedAccount(linked_account.clone().into(), ().into());
-					trie_builder
-						.insert(
-							linked_account_leaf.encoded_key().as_slice(),
-							linked_account_leaf.encoded_value().as_slice(),
-						)
-						.map_err(|_| {
-							log::error!(
-								"Failed to insert linked account in the trie builder. Linked account leaf: {:#?}",
-								linked_account_leaf
-							);
-							DidMerkleProofError::Internal
-						})?;
-					Ok(())
-				})?;
+			insert_linked_accounts::<Runtime>(&mut trie_builder, linked_accounts)?;
 		}
 
 		// Web3name, if present
 		if let Some(web3name_details) = web3_name {
-			let web3_name_leaf = ProofLeafOf::<Runtime>::Web3Name(
-				web3name_details.web3_name.clone().into(),
-				web3name_details.claimed_at.into(),
-			);
-			trie_builder
-				.insert(
-					web3_name_leaf.encoded_key().as_slice(),
-					web3_name_leaf.encoded_value().as_slice(),
-				)
-				.map_err(|_| {
-					log::error!(
-						"Failed to insert web3name in the trie builder. Web3name leaf: {:#?}",
-						web3_name_leaf
-					);
-					DidMerkleProofError::Internal
-				})?;
+			insert_web3name::<Runtime>(&mut trie_builder, web3name_details)?;
 		}
 
 		trie_builder.commit();
@@ -352,6 +381,13 @@ where
 		identity: &LinkedDidInfoOf<Runtime>,
 		version: IdentityCommitmentVersion,
 	) -> Result<Runtime::Hash, Self::Error> {
+		if let Some(linked_accounts) = &identity.c {
+			ensure!(
+				linked_accounts.len() < Self::MAX_LINKED_ACCOUNTS,
+				DidMerkleProofError::ExcessiveLinkedAccounts
+			);
+		}
+
 		match version {
 			0 => v0::generate_commitment::<Runtime>(identity),
 			_ => Err(DidMerkleProofError::UnsupportedVersion),
@@ -383,4 +419,12 @@ where
 			_ => Err(DidMerkleProofError::UnsupportedVersion),
 		}
 	}
+}
+
+pub trait MaxAccounts {
+	const MAX_LINKED_ACCOUNTS: usize;
+}
+
+impl<Runtime> MaxAccounts for DidMerkleRootGenerator<Runtime> {
+	const MAX_LINKED_ACCOUNTS: usize = 25;
 }
