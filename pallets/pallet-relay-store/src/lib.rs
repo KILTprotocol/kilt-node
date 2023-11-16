@@ -16,7 +16,10 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-// TODO: Pallet description
+//! Pallet to store the last N (configurable) relay chain state roots to be used
+//! for cross-chain state proof verification. The pallet relies on the
+//! cumulus_parachain_system hook to populate the block `ValidationData` with
+//! the latest relay chain state root.
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -36,18 +39,24 @@ pub mod pallet {
 
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(0);
 
+	/// Maps from a relaychain block height to its related information,
+	/// including the state root.
 	#[pallet::storage]
 	#[pallet::getter(fn latest_relay_head_for_block)]
 	pub(crate) type LatestRelayHeads<T: Config> = StorageMap<_, Twox64Concat, u32, RelayParentInfo<H256>>;
 
 	// TODO: Replace this with a fixed-length array once support for const generics
 	// is fully supported in Substrate.
+	/// Storage value complimentary to [`LatestRelayHeads`] implementing a FIFO
+	/// queue of the last N relay chain blocks info.
 	#[pallet::storage]
 	pub(crate) type LatestBlockHeights<T: Config> =
 		StorageValue<_, BoundedVec<u32, T::MaxRelayBlocksStored>, ValueQuery>;
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
+		/// The maximum number of relaychain block details to store. When the
+		/// limit is reached, oldest blocks are overridden with new ones.
 		#[pallet::constant]
 		type MaxRelayBlocksStored: Get<u32>;
 	}
@@ -63,7 +72,7 @@ pub mod pallet {
 	{
 		fn on_initialize(_n: BlockNumberFor<T>) -> Weight {
 			// Reserve weight to update the last relay state root
-			// TODO: Replace with benchmarked version of `on_finalize(`
+			// TODO: Replace with benchmarked version of `on_finalize()`
 			<T as frame_system::Config>::DbWeight::get().writes(2)
 		}
 
