@@ -22,13 +22,21 @@ use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_std::marker::PhantomData;
 
+/// An origin passed down to the to-be-dispatched `Call` upon successful DIP
+/// proof verification.
 #[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct DipOrigin<Identifier, AccountId, Details> {
+	/// The subject identifier which is performing the DIP operation.
 	pub identifier: Identifier,
+	/// The local account address of the tx submitter.
 	pub account_address: AccountId,
+	/// Details returned by the proof verifier upon successful proof
+	/// verification.
 	pub details: Details,
 }
 
+/// Implementation of the `EnsureOrigin` trait verifying that a given origin is
+/// a `DipOrigin`.
 pub struct EnsureDipOrigin<Identifier, AccountId, Details>(PhantomData<(Identifier, AccountId, Details)>);
 
 #[cfg(not(feature = "runtime-benchmarks"))]
