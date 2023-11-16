@@ -16,9 +16,39 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-// TODO: Pallet description
+//! This pallet is a core component of the Decentralized Identity Provider
+//! protocol. It enables a Substrate-based chain (provider) to bridge the
+//! identities of its users to other connected chains (consumers) trustlessly. A
+//! consumer chain is *connected* to a provider if there is a way for the
+//! consumer chain to verify state proofs about parts of the state of the
+//! provider chain.
+
+//! The pallet is agnostic over the chain-specific definition of *identity*, and
+//! delegates the definition of it to the provider chain's runtime.
+
+//! What the pallet stores are *identity commitments*, which are opaque byte
+//! blobs put in the pallet storage and on which the cross-chain identity
+//! bridging protocol can be built. As for identities, the definition of an
+//! identity commitment must be provided by the runtime and is therefore
+//! provider-specific. Naturally, this definition must be made available to
+//! consumers willing to integrate the identities living on the provider chain.
+
+//! Because providers and consumers evolve at different speeds, identity
+//! commitments are versioned. This allows the provider chain to upgrade to a
+//! newer commitment scheme, while still giving its users the possibility to use
+//! the old version, if the chains on which they want to use their identity does
+//! not yet support the new scheme.
+
+//! Identity commitments can be replaced (e.g., if something in the identity
+//! info changes), or removed altogether by the identity subject. After removal,
+//! the identity becomes unusable cross-chain, although it will still continue
+//! to exist on the provider chain and will be usable for local operations.
 
 #![cfg_attr(not(feature = "std"), no_std)]
+
+// !!! When Rust docs changes here, make sure to update the crate README.md file
+// as well.
+// !!!
 
 pub mod traits;
 
@@ -47,15 +77,35 @@ pub mod pallet {
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
+		/// The check ensuring a given runtime origin is allowed to generate and
+		/// remove identity commitments.
 		type CommitOriginCheck: EnsureOriginWithArg<Self::RuntimeOrigin, Self::Identifier, Success = Self::CommitOrigin>;
+		/// The resulting origin if `CommitOriginCheck` returns with errors. The
+		/// origin is not required to be an `AccountId`, but must include
+		/// information about the `AccountId` of the tx submitter.
 		type CommitOrigin: SubmitterInfo<Submitter = Self::AccountId>;
+		/// The type of an identifier used to retrieve identity information
+		/// about a subject.
 		type Identifier: Parameter + MaxEncodedLen;
+		/// The type responsible for generating identity commitments, given the
+		/// identity information associated to a given `Identifier`.
 		type IdentityCommitmentGenerator: IdentityCommitmentGenerator<Self>;
+		/// The type responsible for retrieving the information associated to a
+		/// subject given their identifier. The information can potentially be
+		/// retrieved from any source, using a combination of on-chain and
+		/// off-chain solutions.
 		type IdentityProvider: IdentityProvider<Self>;
+		/// Customizable external logic to handle events in which a new identity
+		/// commitment is generated or removed.
 		type ProviderHooks: ProviderHooks<Self>;
+		/// The aggregate `Event` type.
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 	}
 
+	/// The pallet contains a single storage element, the `IdentityCommitments`
+	/// double map. Its first key is the `Identifier` of subjects, while the
+	/// second key is the commitment version. The values are identity
+	/// commitments.
 	#[pallet::storage]
 	#[pallet::getter(fn identity_commitments)]
 	pub type IdentityCommitments<T> = StorageDoubleMap<
@@ -74,27 +124,42 @@ pub mod pallet {
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
+		/// A new commitment has been stored.
 		VersionedIdentityCommitted {
+			/// The identifier of the identity committed.
 			identifier: T::Identifier,
+			/// The value of the commitment.
 			commitment: IdentityCommitmentOf<T>,
+			/// The version of the commitment.
 			version: IdentityCommitmentVersion,
 		},
+		/// A commitment has been deleted.
 		VersionedIdentityDeleted {
+			/// The identifier of the identity committed.
 			identifier: T::Identifier,
+			/// The version of the commitment.
 			version: IdentityCommitmentVersion,
 		},
 	}
 
 	#[pallet::error]
 	pub enum Error<T> {
+		/// The specified commitment cannot be found.
 		CommitmentNotFound,
+		/// Error when retrieving the identity details of the provided subject.
 		IdentityProvider(u16),
+		/// Error when generating a commitment for the retrieved identity.
 		IdentityCommitmentGenerator(u16),
+		/// Error inside the external hook logic.
 		Hook(u16),
 	}
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
+		/// Generate a new versioned commitment for the subject identified by
+		/// the provided `Identifier`. If an old commitment for the same version
+		/// is present, it is overridden. Hooks are called before the new
+		/// commitment is stored, and optionally before the old one is replaced.
 		#[pallet::call_index(0)]
 		// TODO: Update weight
 		#[pallet::weight(0)]
@@ -140,6 +205,10 @@ pub mod pallet {
 			Ok(())
 		}
 
+		/// Delete an identity commitment of a specific version for a specific
+		/// `Identifier`. If a commitment of the provided version does not exist
+		/// for the given `Identifier`, an error is returned. Hooks are called
+		/// after the commitment has been removed.
 		#[pallet::call_index(1)]
 		// TODO: Update weight
 		#[pallet::weight(0)]
