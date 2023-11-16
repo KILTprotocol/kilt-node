@@ -27,6 +27,9 @@ pub mod identity_provision {
 
 	use sp_std::marker::PhantomData;
 
+	/// A trait to retrieve identity information for a given identifier. The
+	/// information can come from a variety of different sources, as this pallet
+	/// does not impose any restrictions on that.
 	pub trait IdentityProvider<Runtime>
 	where
 		Runtime: Config,
@@ -34,10 +37,13 @@ pub mod identity_provision {
 		type Error: Into<u16>;
 		type Success;
 
+		/// Return the identity information for the identifier, if found.
+		/// Otherwise, return an error.
 		fn retrieve(identifier: &Runtime::Identifier) -> Result<Self::Success, Self::Error>;
 	}
 
-	// Return the `Default` value if `Identity` adn `Details` both implement it.
+	/// Return the `Default` value of the provided `Identity` type if it
+	/// implements the `Default` trait.
 	pub struct DefaultIdentityProvider<Identity>(PhantomData<Identity>);
 
 	impl<Runtime, Identity> IdentityProvider<Runtime> for DefaultIdentityProvider<Identity>
@@ -64,6 +70,8 @@ pub mod identity_generation {
 	use scale_info::TypeInfo;
 	use sp_std::{fmt::Debug, marker::PhantomData};
 
+	/// A trait to generate an identity commitment of a given version for some
+	/// identity info retrieved by the [`IdentityProvider`].
 	pub trait IdentityCommitmentGenerator<Runtime>
 	where
 		Runtime: Config,
@@ -72,6 +80,8 @@ pub mod identity_generation {
 		type Error: Into<u16>;
 		type Output: Clone + Eq + Debug + TypeInfo + FullCodec + MaxEncodedLen;
 
+		/// Return the identity commitment for the given version and identity
+		/// information.
 		fn generate_commitment(
 			identifier: &Runtime::Identifier,
 			identity: &IdentityOf<Runtime>,
@@ -79,8 +89,8 @@ pub mod identity_generation {
 		) -> Result<Self::Output, Self::Error>;
 	}
 
-	// Implement the `IdentityCommitmentGenerator` by returning the `Default` value
-	// for the `Output` type.
+	/// Implement the [`IdentityCommitmentGenerator`] trait by returning the
+	/// `Default` value for the `Output` type.
 	pub struct DefaultIdentityCommitmentGenerator<Output>(PhantomData<Output>);
 
 	impl<Runtime, Output> IdentityCommitmentGenerator<Runtime> for DefaultIdentityCommitmentGenerator<Output>
@@ -101,6 +111,8 @@ pub mod identity_generation {
 	}
 }
 
+/// A trait for types that, among other things, contain information about the
+/// submitter of a tx.
 pub trait SubmitterInfo {
 	type Submitter;
 
@@ -126,6 +138,8 @@ where
 	}
 }
 
+/// Hooks for additional customizable logic to be executed when new identity
+/// commitments are stored or old ones are removed.
 pub trait ProviderHooks<Runtime>
 where
 	Runtime: Config,
@@ -147,6 +161,7 @@ where
 	) -> Result<(), Self::Error>;
 }
 
+/// Implement the [`ProviderHooks`] trait with noops.
 pub struct NoopHooks;
 
 impl<Runtime> ProviderHooks<Runtime> for NoopHooks
