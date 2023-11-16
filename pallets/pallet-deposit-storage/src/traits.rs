@@ -18,12 +18,16 @@
 
 use crate::{Config, DepositEntryOf, DepositKeyOf};
 
+/// A trait to configure additional custom logic whenever a deposit-related
+/// operation takes place.
 pub trait DepositStorageHooks<Runtime>
 where
 	Runtime: Config,
 {
 	type Error: Into<u16>;
 
+	/// Called by the pallet whenever a deposit for a given namespace and key is
+	/// removed.
 	fn on_deposit_reclaimed(
 		namespace: &Runtime::Namespace,
 		key: &DepositKeyOf<Runtime>,
@@ -31,6 +35,7 @@ where
 	) -> Result<(), Self::Error>;
 }
 
+/// Dummy implementation of the [`DepositStorageHooks`] trait that does a noop.
 pub struct NoopDepositStorageHooks;
 
 impl<Runtime> DepositStorageHooks<Runtime> for NoopDepositStorageHooks
