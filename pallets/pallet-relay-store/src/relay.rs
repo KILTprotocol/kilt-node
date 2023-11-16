@@ -20,7 +20,9 @@ use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_core::RuntimeDebug;
 
+/// Information associated to a relaychain block.
 #[derive(PartialEq, Eq, Clone, Encode, Decode, TypeInfo, RuntimeDebug, MaxEncodedLen)]
 pub struct RelayParentInfo<Hash> {
+	/// The relaychain block storage root.
 	pub relay_parent_storage_root: Hash,
 }
