@@ -16,69 +16,8 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-//! This pallet is a core component of the Decentralized Identity Provider
-//! protocol. It enables entities with an identity on a connected
-//! Substrate-based chain (provider) to use those identities on the chain this
-//! pallet is deployed (consumers) without requiring those entities to set up a
-//! new identity locally. A consumer chain is *connected* to a provider if there
-//! is a way for the consumer chain to verify state proofs about parts of the
-//! state of the provider chain.
-
-//! A cross-chain transaction with DIP assumes the entity submitting the
-//! transaction has already generated a cross-chain identity commitment on the
-//! provider chain, by interacting with the DIP provider pallet on the provider
-//! chain. With a generated identity commitment, a cross-chain transaction flow
-//! for a generic entity `A` works as follows:
-
-//! 1. `A` generates a state proof proving the state of the identity commitment
-//!    on the provider chain.
-//! 2. `A` generates any additional information required for an identity proof
-//!    to be successfully verified by the consumer runtime.
-//! 3. `A`, using their account `AccC` on the consumer chain, calls the
-//!    `dispatch_as` extrinsic by providing its identifier on the provider
-//!    chain, the generated proof, and the `Call` to be dispatched on the
-//!    consumer chain.
-//!    1. This pallet verifies if the proof is correct, if not returns an error.
-//!    2. This pallet dispatches the provided `Call` with a new origin created
-//!       by this pallet, returning any errors the dispatch action returns. The
-//!       origin contains the information revealed in the proof, the identifier
-//!       of the acting subject and the account `AccC` dispatching the
-//!       transaction.
-
-//! The pallet is agnostic over the chain-specific definition of *identity proof
-//! verifier* and *identifier*, although, when deployed, they must be configured
-//! to respect the definition of identity and identity commitment established by
-//! the provider this pallet is linked to.
-
-//! For instance, if the provider establishes that an identity commitment is a
-//! Merkle root of a set of public keys, an identity proof for the consumer will
-//! most likely be a Merkle proof revealing a subset of those keys. Similarly,
-//! if the provider defines an identity commitment as some ZK-commitment, the
-//! respective identity proof on the consumer chain will be a ZK-proof verifying
-//! the validity of the commitment and therefore of the revealed information.
-
-//! For identifiers, if the provider establishes that an identifier is a public
-//! key, the same definition must be used in the consumer pallet. Other definitions for an identifier, such as a simple integer or a [Decentralized Identifier (DID)](https://www.w3.org/TR/did-core/), must also be configured in the same way.
-
-//! The pallet allows the consumer runtime to define some `LocalIdentityInfo`
-//! associated with each identifier, which the pallet's proof verifier can
-//! access and optionally modify upon proof verification. Any changes made to
-//! the `LocalIdentityInfo` will be persisted if the identity proof is verified
-//! correctly and the extrinsic executed successfully.
-
-//! If the consumer does not need to store anything in addition to the
-//! information an identity proof conveys, they can simply use an empty tuple
-//! `()` for the local identity info. Another example could be the use of
-//! signatures, which requires nonce to avoid replay protections. In this case,
-//! a simple numeric type such as a `u64` or a `u128` could be used, and bumped
-//! by the proof verifies when validating each new cross-chain transaction
-//! proof.
-
 #![cfg_attr(not(feature = "std"), no_std)]
-
-// !!! When Rust docs changes here, make sure to update the crate README.md file
-// as well.
-// !!!
+#![doc = include_str!("../README.md")]
 
 pub mod traits;
 
