@@ -16,12 +16,17 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use did::{did_details::DidVerificationKey, DidVerificationKeyRelationship};
-use pallet_dip_consumer::traits::IdentityProofVerifier;
+use cumulus_primitives_core::ParaId;
+use did::{did_details::DidVerificationKey, DidVerificationKeyRelationship, KeyIdOf};
+use frame_support::Parameter;
+use frame_system::pallet_prelude::BlockNumberFor;
+use pallet_did_lookup::linkable_account::LinkableAccountId;
+use pallet_dip_consumer::{traits::IdentityProofVerifier, RuntimeCallOf};
+use pallet_dip_provider::IdentityCommitmentOf;
 use parity_scale_codec::{Decode, Encode, HasCompact};
 use scale_info::TypeInfo;
 use sp_core::{RuntimeDebug, U256};
-use sp_runtime::traits::{CheckedSub, Get};
+use sp_runtime::traits::Get;
 use sp_std::{marker::PhantomData, vec::Vec};
 
 use crate::{
@@ -30,6 +35,7 @@ use crate::{
 	state_proofs::{parachain::DipIdentityCommitmentProofVerifierError, relay_chain::ParachainHeadProofVerifierError},
 	traits::{self, Bump, DidSignatureVerifierContext, DipCallOriginFilter},
 	utils::OutputOf,
+	FrameSystemDidSignatureContext, ProviderParachainStateInfoViaProviderPallet,
 };
 
 #[derive(Encode, Decode, PartialEq, Eq, RuntimeDebug, TypeInfo, Clone)]
@@ -104,12 +110,137 @@ where
 		}
 	}
 }
+// Implements the same `IdentityProvider` trait, but it is internally configured
+// by receiving the runtime definitions of both the provider and the receiver.
+pub struct KiltVersionedSiblingProviderVerifier<
+	KiltRuntime,
+	KiltParachainId,
+	RelayChainStateInfo,
+	KiltDipMerkleHasher,
+	LocalDidCallVerifier,
+	const MAX_REVEALED_KEYS_COUNT: u32,
+	const MAX_REVEALED_ACCOUNTS_COUNT: u32,
+	const MAX_DID_SIGNATURE_DURATION: u16,
+>(
+	PhantomData<(
+		KiltRuntime,
+		KiltParachainId,
+		RelayChainStateInfo,
+		KiltDipMerkleHasher,
+		LocalDidCallVerifier,
+	)>,
+);
 
-pub struct VersionedDipSiblingProviderStateProofVerifier<
+impl<
+		ConsumerRuntime,
+		KiltRuntime,
+		KiltParachainId,
+		RelayChainStateInfo,
+		KiltDipMerkleHasher,
+		LocalDidCallVerifier,
+		const MAX_REVEALED_KEYS_COUNT: u32,
+		const MAX_REVEALED_ACCOUNTS_COUNT: u32,
+		const MAX_DID_SIGNATURE_DURATION: u16,
+	> IdentityProofVerifier<ConsumerRuntime>
+	for KiltVersionedSiblingProviderVerifier<
+		KiltRuntime,
+		KiltParachainId,
+		RelayChainStateInfo,
+		KiltDipMerkleHasher,
+		LocalDidCallVerifier,
+		MAX_REVEALED_KEYS_COUNT,
+		MAX_REVEALED_ACCOUNTS_COUNT,
+		MAX_DID_SIGNATURE_DURATION,
+	> where
+	KiltRuntime: did::Config
+		+ pallet_web3_names::Config
+		+ pallet_did_lookup::Config
+		+ parachain_info::Config
+		+ pallet_dip_provider::Config<Identifier = ConsumerRuntime::Identifier>,
+	KiltParachainId: Get<RelayChainStateInfo::ParaId>,
+	OutputOf<KiltRuntime::Hashing>: Ord + From<OutputOf<RelayChainStateInfo::Hasher>>,
+	KeyIdOf<KiltRuntime>: Into<KiltDipMerkleHasher::Out>,
+	KiltDipMerkleHasher: sp_core::Hasher<Out = IdentityCommitmentOf<KiltRuntime>>,
+	ConsumerRuntime: pallet_dip_consumer::Config,
+	ConsumerRuntime::LocalIdentityInfo: Bump + Default + Encode,
+	RelayChainStateInfo: traits::RelayChainStorageInfo + traits::RelayChainStateInfo,
+	RelayChainStateInfo::ParaId: From<ParaId>,
+	RelayChainStateInfo::BlockNumber: Parameter + 'static + Copy + Into<U256> + TryFrom<U256> + HasCompact,
+	RelayChainStateInfo::Key: AsRef<[u8]>,
+	LocalDidCallVerifier: DipCallOriginFilter<
+		RuntimeCallOf<ConsumerRuntime>,
+		OriginInfo = (
+			DidVerificationKey<KiltRuntime::AccountId>,
+			DidVerificationKeyRelationship,
+		),
+	>,
+{
+	type Error = DipSiblingProviderStateProofVerifierError<
+		ParachainHeadProofVerifierError,
+		DipIdentityCommitmentProofVerifierError,
+		DidMerkleProofVerifierError,
+		RevealedDidKeysSignatureAndCallVerifierError,
+	>;
+	type Proof = VersionedSiblingParachainDipStateProof<
+		RelayChainStateInfo::BlockNumber,
+		Vec<Vec<u8>>,
+		RevealedDidMerkleProofLeaf<
+			KeyIdOf<KiltRuntime>,
+			KiltRuntime::AccountId,
+			BlockNumberFor<KiltRuntime>,
+			KiltRuntime::Web3Name,
+			LinkableAccountId,
+		>,
+		BlockNumberFor<ConsumerRuntime>,
+	>;
+	type VerificationResult = RevealedDidMerkleProofLeaves<
+		KeyIdOf<KiltRuntime>,
+		KiltRuntime::AccountId,
+		BlockNumberFor<KiltRuntime>,
+		KiltRuntime::Web3Name,
+		LinkableAccountId,
+		MAX_REVEALED_KEYS_COUNT,
+		MAX_REVEALED_ACCOUNTS_COUNT,
+	>;
+
+	fn verify_proof_for_call_against_details(
+		call: &RuntimeCallOf<ConsumerRuntime>,
+		subject: &ConsumerRuntime::Identifier,
+		submitter: &ConsumerRuntime::AccountId,
+		identity_details: &mut Option<ConsumerRuntime::LocalIdentityInfo>,
+		proof: Self::Proof,
+	) -> Result<Self::VerificationResult, Self::Error> {
+		<GenericVersionedDipSiblingProviderStateProofVerifier<
+			RelayChainStateInfo,
+			KiltParachainId,
+			ProviderParachainStateInfoViaProviderPallet<KiltRuntime>,
+			KiltDipMerkleHasher,
+			KeyIdOf<KiltRuntime>,
+			KiltRuntime::AccountId,
+			KiltRuntime::Web3Name,
+			LinkableAccountId,
+			MAX_REVEALED_KEYS_COUNT,
+			MAX_REVEALED_ACCOUNTS_COUNT,
+			FrameSystemDidSignatureContext<ConsumerRuntime, MAX_DID_SIGNATURE_DURATION>,
+			LocalDidCallVerifier,
+		> as IdentityProofVerifier<ConsumerRuntime>>::verify_proof_for_call_against_details(
+			call,
+			subject,
+			submitter,
+			identity_details,
+			proof,
+		)
+	}
+}
+
+// More generic version compared to `VersionedSiblingKiltProviderVerifier`, to
+// be used in cases in which it is not possible or not desirable to depend on
+// the whole provider runtime definition. Hence, required types must be filled
+// in manually.
+pub struct GenericVersionedDipSiblingProviderStateProofVerifier<
 	RelayChainStateInfo,
 	SiblingProviderParachainId,
 	SiblingProviderStateInfo,
-	TxSubmitter,
 	ProviderDipMerkleHasher,
 	ProviderDidKeyId,
 	ProviderAccountId,
@@ -117,7 +248,6 @@ pub struct VersionedDipSiblingProviderStateProofVerifier<
 	ProviderLinkedAccountId,
 	const MAX_REVEALED_KEYS_COUNT: u32,
 	const MAX_REVEALED_ACCOUNTS_COUNT: u32,
-	LocalDidDetails,
 	LocalContextProvider,
 	LocalDidCallVerifier,
 >(
@@ -126,25 +256,21 @@ pub struct VersionedDipSiblingProviderStateProofVerifier<
 		RelayChainStateInfo,
 		SiblingProviderParachainId,
 		SiblingProviderStateInfo,
-		TxSubmitter,
 		ProviderDipMerkleHasher,
 		ProviderDidKeyId,
 		ProviderAccountId,
 		ProviderWeb3Name,
 		ProviderLinkedAccountId,
-		LocalDidDetails,
 		LocalContextProvider,
 		LocalDidCallVerifier,
 	)>,
 );
 
 impl<
-		Call,
-		Subject,
+		ConsumerRuntime,
 		RelayChainStateInfo,
 		SiblingProviderParachainId,
 		SiblingProviderStateInfo,
-		TxSubmitter,
 		ProviderDipMerkleHasher,
 		ProviderDidKeyId,
 		ProviderAccountId,
@@ -152,15 +278,13 @@ impl<
 		ProviderLinkedAccountId,
 		const MAX_REVEALED_KEYS_COUNT: u32,
 		const MAX_REVEALED_ACCOUNTS_COUNT: u32,
-		LocalDidDetails,
 		LocalContextProvider,
 		LocalDidCallVerifier,
-	> IdentityProofVerifier<Call, Subject>
-	for VersionedDipSiblingProviderStateProofVerifier<
+	> IdentityProofVerifier<ConsumerRuntime>
+	for GenericVersionedDipSiblingProviderStateProofVerifier<
 		RelayChainStateInfo,
 		SiblingProviderParachainId,
 		SiblingProviderStateInfo,
-		TxSubmitter,
 		ProviderDipMerkleHasher,
 		ProviderDidKeyId,
 		ProviderAccountId,
@@ -168,40 +292,41 @@ impl<
 		ProviderLinkedAccountId,
 		MAX_REVEALED_KEYS_COUNT,
 		MAX_REVEALED_ACCOUNTS_COUNT,
-		LocalDidDetails,
 		LocalContextProvider,
 		LocalDidCallVerifier,
 	> where
-	Call: Encode,
-	TxSubmitter: Encode,
+	ConsumerRuntime: pallet_dip_consumer::Config,
+	ConsumerRuntime::LocalIdentityInfo: Bump + Default,
 
 	RelayChainStateInfo: traits::RelayChainStorageInfo + traits::RelayChainStateInfo,
 	OutputOf<RelayChainStateInfo::Hasher>: Ord,
-	RelayChainStateInfo::BlockNumber: Copy + Into<U256> + TryFrom<U256> + HasCompact,
+	RelayChainStateInfo::BlockNumber: Parameter + 'static + Copy + Into<U256> + TryFrom<U256> + HasCompact,
 	RelayChainStateInfo::Key: AsRef<[u8]>,
 
 	SiblingProviderParachainId: Get<RelayChainStateInfo::ParaId>,
 
-	SiblingProviderStateInfo:
-		traits::ProviderParachainStateInfo<Identifier = Subject, Commitment = ProviderDipMerkleHasher::Out>,
+	SiblingProviderStateInfo: traits::ProviderParachainStateInfo<
+		Identifier = ConsumerRuntime::Identifier,
+		Commitment = ProviderDipMerkleHasher::Out,
+	>,
 	OutputOf<SiblingProviderStateInfo::Hasher>: Ord + From<OutputOf<RelayChainStateInfo::Hasher>>,
-	SiblingProviderStateInfo::BlockNumber: Encode + Clone,
+	SiblingProviderStateInfo::BlockNumber: Parameter + 'static,
 	SiblingProviderStateInfo::Commitment: Decode,
 	SiblingProviderStateInfo::Key: AsRef<[u8]>,
 
-	LocalContextProvider: DidSignatureVerifierContext,
-	LocalContextProvider::BlockNumber: Encode + CheckedSub + From<u16> + PartialOrd,
-	LocalContextProvider::Hash: Encode,
+	LocalContextProvider:
+		DidSignatureVerifierContext<BlockNumber = BlockNumberFor<ConsumerRuntime>, Hash = ConsumerRuntime::Hash>,
 	LocalContextProvider::SignedExtra: Encode,
-	LocalDidDetails: Bump + Default + Encode,
-	LocalDidCallVerifier:
-		DipCallOriginFilter<Call, OriginInfo = (DidVerificationKey<ProviderAccountId>, DidVerificationKeyRelationship)>,
+	LocalDidCallVerifier: DipCallOriginFilter<
+		RuntimeCallOf<ConsumerRuntime>,
+		OriginInfo = (DidVerificationKey<ProviderAccountId>, DidVerificationKeyRelationship),
+	>,
 
 	ProviderDipMerkleHasher: sp_core::Hasher,
-	ProviderDidKeyId: Encode + Clone + Into<ProviderDipMerkleHasher::Out>,
-	ProviderAccountId: Encode + Clone,
-	ProviderLinkedAccountId: Encode + Clone,
-	ProviderWeb3Name: Encode + Clone,
+	ProviderDidKeyId: Parameter + 'static + Into<ProviderDipMerkleHasher::Out>,
+	ProviderAccountId: Parameter + 'static,
+	ProviderLinkedAccountId: Parameter + 'static,
+	ProviderWeb3Name: Parameter + 'static,
 {
 	type Error = DipSiblingProviderStateProofVerifierError<
 		ParachainHeadProofVerifierError,
@@ -209,7 +334,6 @@ impl<
 		DidMerkleProofVerifierError,
 		RevealedDidKeysSignatureAndCallVerifierError,
 	>;
-	type IdentityDetails = LocalDidDetails;
 	type Proof = VersionedSiblingParachainDipStateProof<
 		RelayChainStateInfo::BlockNumber,
 		Vec<Vec<u8>>,
@@ -220,9 +344,8 @@ impl<
 			ProviderWeb3Name,
 			ProviderLinkedAccountId,
 		>,
-		LocalContextProvider::BlockNumber,
+		BlockNumberFor<ConsumerRuntime>,
 	>;
-	type Submitter = TxSubmitter;
 	type VerificationResult = RevealedDidMerkleProofLeaves<
 		ProviderDidKeyId,
 		ProviderAccountId,
@@ -234,31 +357,33 @@ impl<
 	>;
 
 	fn verify_proof_for_call_against_details(
-		call: &Call,
-		subject: &Subject,
-		submitter: &Self::Submitter,
-		identity_details: &mut Option<Self::IdentityDetails>,
+		call: &RuntimeCallOf<ConsumerRuntime>,
+		subject: &ConsumerRuntime::Identifier,
+		submitter: &ConsumerRuntime::AccountId,
+		identity_details: &mut Option<ConsumerRuntime::LocalIdentityInfo>,
 		proof: Self::Proof,
 	) -> Result<Self::VerificationResult, Self::Error> {
 		match proof {
-			VersionedSiblingParachainDipStateProof::V0(v0_proof) => {
-				v0::DipSiblingProviderStateProofVerifier::<
-					RelayChainStateInfo,
-					SiblingProviderParachainId,
-					SiblingProviderStateInfo,
-					TxSubmitter,
-					ProviderDipMerkleHasher,
-					ProviderDidKeyId,
-					ProviderAccountId,
-					ProviderWeb3Name,
-					ProviderLinkedAccountId,
-					MAX_REVEALED_KEYS_COUNT,
-					MAX_REVEALED_ACCOUNTS_COUNT,
-					LocalDidDetails,
-					LocalContextProvider,
-					LocalDidCallVerifier,
-				>::verify_proof_for_call_against_details(call, subject, submitter, identity_details, v0_proof)
-			}
+			VersionedSiblingParachainDipStateProof::V0(v0_proof) => <v0::DipSiblingProviderStateProofVerifier<
+				RelayChainStateInfo,
+				SiblingProviderParachainId,
+				SiblingProviderStateInfo,
+				ProviderDipMerkleHasher,
+				ProviderDidKeyId,
+				ProviderAccountId,
+				ProviderWeb3Name,
+				ProviderLinkedAccountId,
+				MAX_REVEALED_KEYS_COUNT,
+				MAX_REVEALED_ACCOUNTS_COUNT,
+				LocalContextProvider,
+				LocalDidCallVerifier,
+			> as IdentityProofVerifier<ConsumerRuntime>>::verify_proof_for_call_against_details(
+				call,
+				subject,
+				submitter,
+				identity_details,
+				v0_proof,
+			),
 		}
 	}
 }
@@ -270,6 +395,7 @@ pub mod latest {
 mod v0 {
 	use super::*;
 
+	use frame_support::Parameter;
 	use sp_std::borrow::Borrow;
 
 	use crate::{
@@ -297,7 +423,6 @@ mod v0 {
 		RelayChainStateInfo,
 		SiblingProviderParachainId,
 		SiblingProviderStateInfo,
-		TxSubmitter,
 		ProviderDipMerkleHasher,
 		ProviderDidKeyId,
 		ProviderAccountId,
@@ -305,7 +430,6 @@ mod v0 {
 		ProviderLinkedAccountId,
 		const MAX_REVEALED_KEYS_COUNT: u32,
 		const MAX_REVEALED_ACCOUNTS_COUNT: u32,
-		LocalDidDetails,
 		LocalContextProvider,
 		LocalDidCallVerifier,
 	>(
@@ -314,25 +438,21 @@ mod v0 {
 			RelayChainStateInfo,
 			SiblingProviderParachainId,
 			SiblingProviderStateInfo,
-			TxSubmitter,
 			ProviderDipMerkleHasher,
 			ProviderDidKeyId,
 			ProviderAccountId,
 			ProviderWeb3Name,
 			ProviderLinkedAccountId,
-			LocalDidDetails,
 			LocalContextProvider,
 			LocalDidCallVerifier,
 		)>,
 	);
 
 	impl<
-			Call,
-			Subject,
+			ConsumerRuntime,
 			RelayChainStateInfo,
 			SiblingProviderParachainId,
 			SiblingProviderStateInfo,
-			TxSubmitter,
 			ProviderDipMerkleHasher,
 			ProviderDidKeyId,
 			ProviderAccountId,
@@ -340,15 +460,13 @@ mod v0 {
 			ProviderLinkedAccountId,
 			const MAX_REVEALED_KEYS_COUNT: u32,
 			const MAX_REVEALED_ACCOUNTS_COUNT: u32,
-			LocalDidDetails,
 			LocalContextProvider,
 			LocalDidCallVerifier,
-		> IdentityProofVerifier<Call, Subject>
+		> IdentityProofVerifier<ConsumerRuntime>
 		for DipSiblingProviderStateProofVerifier<
 			RelayChainStateInfo,
 			SiblingProviderParachainId,
 			SiblingProviderStateInfo,
-			TxSubmitter,
 			ProviderDipMerkleHasher,
 			ProviderDidKeyId,
 			ProviderAccountId,
@@ -356,42 +474,41 @@ mod v0 {
 			ProviderLinkedAccountId,
 			MAX_REVEALED_KEYS_COUNT,
 			MAX_REVEALED_ACCOUNTS_COUNT,
-			LocalDidDetails,
 			LocalContextProvider,
 			LocalDidCallVerifier,
 		> where
-		Call: Encode,
-		TxSubmitter: Encode,
+		ConsumerRuntime: pallet_dip_consumer::Config,
+		ConsumerRuntime::LocalIdentityInfo: Bump + Default,
 
 		RelayChainStateInfo: traits::RelayChainStorageInfo + traits::RelayChainStateInfo,
 		OutputOf<RelayChainStateInfo::Hasher>: Ord,
-		RelayChainStateInfo::BlockNumber: Copy + Into<U256> + TryFrom<U256> + HasCompact,
+		RelayChainStateInfo::BlockNumber: Parameter + 'static + Copy + Into<U256> + TryFrom<U256> + HasCompact,
 		RelayChainStateInfo::Key: AsRef<[u8]>,
 
 		SiblingProviderParachainId: Get<RelayChainStateInfo::ParaId>,
 
-		SiblingProviderStateInfo:
-			traits::ProviderParachainStateInfo<Identifier = Subject, Commitment = ProviderDipMerkleHasher::Out>,
+		SiblingProviderStateInfo: traits::ProviderParachainStateInfo<
+			Identifier = ConsumerRuntime::Identifier,
+			Commitment = ProviderDipMerkleHasher::Out,
+		>,
 		OutputOf<SiblingProviderStateInfo::Hasher>: Ord + From<OutputOf<RelayChainStateInfo::Hasher>>,
-		SiblingProviderStateInfo::BlockNumber: Encode + Clone,
+		SiblingProviderStateInfo::BlockNumber: Parameter + 'static,
 		SiblingProviderStateInfo::Commitment: Decode,
 		SiblingProviderStateInfo::Key: AsRef<[u8]>,
 
-		LocalContextProvider: DidSignatureVerifierContext,
-		LocalContextProvider::BlockNumber: Encode + CheckedSub + From<u16> + PartialOrd,
-		LocalContextProvider::Hash: Encode,
+		LocalContextProvider:
+			DidSignatureVerifierContext<BlockNumber = BlockNumberFor<ConsumerRuntime>, Hash = ConsumerRuntime::Hash>,
 		LocalContextProvider::SignedExtra: Encode,
-		LocalDidDetails: Bump + Default + Encode,
 		LocalDidCallVerifier: DipCallOriginFilter<
-			Call,
+			RuntimeCallOf<ConsumerRuntime>,
 			OriginInfo = (DidVerificationKey<ProviderAccountId>, DidVerificationKeyRelationship),
 		>,
 
 		ProviderDipMerkleHasher: sp_core::Hasher,
-		ProviderDidKeyId: Encode + Clone + Into<ProviderDipMerkleHasher::Out>,
-		ProviderAccountId: Encode + Clone,
-		ProviderLinkedAccountId: Encode + Clone,
-		ProviderWeb3Name: Encode + Clone,
+		ProviderDidKeyId: Parameter + 'static + Into<ProviderDipMerkleHasher::Out>,
+		ProviderAccountId: Parameter + 'static,
+		ProviderLinkedAccountId: Parameter + 'static,
+		ProviderWeb3Name: Parameter + 'static,
 	{
 		type Error = DipSiblingProviderStateProofVerifierError<
 			ParachainHeadProofVerifierError,
@@ -399,7 +516,6 @@ mod v0 {
 			DidMerkleProofVerifierError,
 			RevealedDidKeysSignatureAndCallVerifierError,
 		>;
-		type IdentityDetails = LocalDidDetails;
 		type Proof = SiblingParachainDipStateProof<
 			RelayChainStateInfo::BlockNumber,
 			Vec<Vec<u8>>,
@@ -410,9 +526,8 @@ mod v0 {
 				ProviderWeb3Name,
 				ProviderLinkedAccountId,
 			>,
-			LocalContextProvider::BlockNumber,
+			BlockNumberFor<ConsumerRuntime>,
 		>;
-		type Submitter = TxSubmitter;
 		type VerificationResult = RevealedDidMerkleProofLeaves<
 			ProviderDidKeyId,
 			ProviderAccountId,
@@ -424,10 +539,10 @@ mod v0 {
 		>;
 
 		fn verify_proof_for_call_against_details(
-			call: &Call,
-			subject: &Subject,
-			submitter: &Self::Submitter,
-			identity_details: &mut Option<Self::IdentityDetails>,
+			call: &RuntimeCallOf<ConsumerRuntime>,
+			subject: &ConsumerRuntime::Identifier,
+			submitter: &ConsumerRuntime::AccountId,
+			identity_details: &mut Option<ConsumerRuntime::LocalIdentityInfo>,
 			proof: Self::Proof,
 		) -> Result<Self::VerificationResult, Self::Error> {
 			// 1. Verify relay chain proof.

@@ -25,7 +25,7 @@ pub mod traits;
 
 mod origin;
 
-pub use crate::{origin::*, pallet::*};
+pub use crate::{origin::*, pallet::*, traits::SuccessfulProofVerifier};
 
 #[frame_support::pallet(dev_mode)]
 pub mod pallet {
@@ -39,10 +39,9 @@ pub mod pallet {
 
 	use crate::traits::IdentityProofVerifier;
 
-	pub type VerificationResultOf<T> = <<T as Config>::ProofVerifier as IdentityProofVerifier<
-		<T as Config>::RuntimeCall,
-		<T as Config>::Identifier,
-	>>::VerificationResult;
+	pub type IdentityProofOf<T> = <<T as Config>::ProofVerifier as IdentityProofVerifier<T>>::Proof;
+	pub type RuntimeCallOf<T> = <T as Config>::RuntimeCall;
+	pub type VerificationResultOf<T> = <<T as Config>::ProofVerifier as IdentityProofVerifier<T>>::VerificationResult;
 
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(0);
 
@@ -55,31 +54,17 @@ pub mod pallet {
 	pub trait Config: frame_system::Config {
 		/// Preliminary filter to filter out calls before doing any heavier
 		/// computations.
-		type DipCallOriginFilter: Contains<<Self as Config>::RuntimeCall>;
+		type DipCallOriginFilter: Contains<RuntimeCallOf<Self>>;
+		/// The origin check for the `dispatch_as` call.
+		type DispatchOriginCheck: EnsureOrigin<<Self as frame_system::Config>::RuntimeOrigin, Success = Self::AccountId>;
 		/// The identifier of a subject, e.g., a DID.
 		type Identifier: Parameter + MaxEncodedLen;
-		/// The proof users must provide to operate with their higher-level
-		/// identity. Depending on the use cases, this proof can contain
-		/// heterogeneous bits of information that the proof verifier will
-		/// utilize. For instance, a proof could contain both a Merkle proof and
-		/// a DID signature.
-		type IdentityProof: Parameter;
 		/// The details stored in this pallet associated with any given subject.
 		type LocalIdentityInfo: FullCodec + TypeInfo + MaxEncodedLen;
-		type ProofVerificationError: Into<u16>;
 		/// The logic of the proof verifier, called upon each execution of the
 		/// `dispatch_as` extrinsic.
-		type ProofVerifier: IdentityProofVerifier<
-			<Self as Config>::RuntimeCall,
-			Self::Identifier,
-			Error = Self::ProofVerificationError,
-			Proof = Self::IdentityProof,
-			IdentityDetails = Self::LocalIdentityInfo,
-			Submitter = <Self as frame_system::Config>::AccountId,
-		>;
-		/// The overarching runtime call type.
+		type ProofVerifier: IdentityProofVerifier<Self>;
 		type RuntimeCall: Parameter + Dispatchable<RuntimeOrigin = <Self as Config>::RuntimeOrigin>;
-		/// The overarching runtime origin type.
 		type RuntimeOrigin: From<Origin<Self>> + From<<Self as frame_system::Config>::RuntimeOrigin>;
 	}
 
@@ -89,8 +74,6 @@ pub mod pallet {
 
 	#[pallet::error]
 	pub enum Error<T> {
-		/// An identity with the provided identifier could not be found.
-		IdentityNotFound,
 		/// The identity proof provided could not be successfully verified.
 		InvalidProof(u16),
 		/// The specified call is filtered by the DIP call origin filter.
@@ -112,12 +95,10 @@ pub mod pallet {
 		pub fn dispatch_as(
 			origin: OriginFor<T>,
 			identifier: T::Identifier,
-			proof: T::IdentityProof,
-			call: Box<<T as Config>::RuntimeCall>,
+			proof: IdentityProofOf<T>,
+			call: Box<RuntimeCallOf<T>>,
 		) -> DispatchResult {
-			// TODO: Make origin check configurable, and require that it at least returns
-			// the submitter's account.
-			let submitter = ensure_signed(origin)?;
+			let submitter = T::DispatchOriginCheck::ensure_origin(origin)?;
 			ensure!(T::DipCallOriginFilter::contains(&*call), Error::<T>::Filtered);
 			let mut identity_entry = IdentityEntries::<T>::get(&identifier);
 			let proof_verification_result = T::ProofVerifier::verify_proof_for_call_against_details(

@@ -170,10 +170,11 @@ use super::{Config, Pallet, *};
 		};
 
 		let identity = LinkedDidInfoOf::<T> {
-			a: Some(entry),
-			b: Some(w3n_ownership),
-			c: Some(vec![owner.into()])
+		 	did_details: entry,
+			web3_name_details: Some(w3n_ownership),
+			linked_accounts: vec![owner.into()]
 		};
+		
 		let version = 0;
  	
 		#[block]

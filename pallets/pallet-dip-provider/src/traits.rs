@@ -19,99 +19,96 @@
 use did::DidRawOrigin;
 use frame_support::sp_runtime::AccountId32;
 
-use crate::{Config, IdentityCommitmentVersion};
+use crate::{Config, IdentityCommitmentOf, IdentityCommitmentVersion};
 
-pub use identity_generation::*;
-pub mod identity_generation {
+pub use identity_provision::*;
+pub mod identity_provision {
 	use super::*;
 
 	use frame_support::weights::Weight;
 	use sp_std::marker::PhantomData;
 
-	pub trait IdentityCommitmentGenerator<Identifier, Identity> {
-		type Error;
-		type Output;
+	pub trait IdentityProvider<Runtime>
+	where
+		Runtime: Config,
+	{
+		type Error: Into<u16>;
+		type Success;
+
+		fn retrieve(identifier: &Runtime::Identifier) -> Result<Self::Success, Self::Error>;
+		fn get_retrieve_weight() -> Weight;
+	}
+
+	// Return the `Default` value if `Identity` adn `Details` both implement it.
+	pub struct DefaultIdentityProvider<Identity>(PhantomData<Identity>);
+
+	impl<Runtime, Identity> IdentityProvider<Runtime> for DefaultIdentityProvider<Identity>
+	where
+		Runtime: Config,
+		Identity: Default,
+	{
+		type Error = u16;
+		type Success = Identity;
+
+		fn retrieve(_identifier: &Runtime::Identifier) -> Result<Self::Success, Self::Error> {
+			Ok(Identity::default())
+		}
+
+		fn get_retrieve_weight() -> Weight {
+			Weight::zero()
+		}
+	}
+}
+
+pub use identity_generation::*;
+pub mod identity_generation {
+	use super::*;
+
+	use crate::IdentityOf;
+
+	use frame_support::weights::Weight;
+	use parity_scale_codec::{FullCodec, MaxEncodedLen};
+	use scale_info::TypeInfo;
+	use sp_std::{fmt::Debug, marker::PhantomData};
+
+	pub trait IdentityCommitmentGenerator<Runtime>
+	where
+		Runtime: Config,
+		Runtime::IdentityProvider: IdentityProvider<Runtime>,
+	{
+		type Error: Into<u16>;
+		type Output: Clone + Eq + Debug + TypeInfo + FullCodec + MaxEncodedLen;
 
 		fn generate_commitment(
-			identifier: &Identifier,
-			identity: &Identity,
+			identifier: &Runtime::Identifier,
+			identity: &IdentityOf<Runtime>,
 			version: IdentityCommitmentVersion,
 		) -> Result<Self::Output, Self::Error>;
 
-		fn get_generate_commitment_weight() -> Weight;
+		fn get_generate_commitment_weight(_identifier: &Runtime::Identifier) -> Weight;
 	}
 
 	// Implement the `IdentityCommitmentGenerator` by returning the `Default` value
 	// for the `Output` type.
 	pub struct DefaultIdentityCommitmentGenerator<Output>(PhantomData<Output>);
 
-	impl<Identifier, Identity, Output> IdentityCommitmentGenerator<Identifier, Identity>
-		for DefaultIdentityCommitmentGenerator<Output>
+	impl<Runtime, Output> IdentityCommitmentGenerator<Runtime> for DefaultIdentityCommitmentGenerator<Output>
 	where
-		Output: Default,
+		Runtime: Config,
+		Output: Default + Clone + Eq + Debug + TypeInfo + FullCodec + MaxEncodedLen,
 	{
-		type Error = ();
+		type Error = u16;
 		type Output = Output;
 
 		fn generate_commitment(
-			_identifier: &Identifier,
-			_identity: &Identity,
+			_identifier: &Runtime::Identifier,
+			_identity: &IdentityOf<Runtime>,
 			_version: IdentityCommitmentVersion,
 		) -> Result<Self::Output, Self::Error> {
 			Ok(Output::default())
 		}
 
-		fn get_generate_commitment_weight() -> Weight {
-			Weight::zero()
-		}
-	}
-}
-
-pub use identity_provision::*;
-pub mod identity_provision {
-	use frame_support::weights::Weight;
-	use sp_std::marker::PhantomData;
-
-	pub trait IdentityProvider<Identifier> {
-		type Error;
-		type Success;
-
-		fn retrieve(identifier: &Identifier) -> Result<Option<Self::Success>, Self::Error>;
-
-		fn get_retrieve_weight(identifier: &Identifier) -> Weight;
-	}
-
-	// Return the `Default` value if `Identity` adn `Details` both implement it.
-	pub struct DefaultIdentityProvider<Identity>(PhantomData<Identity>);
-
-	impl<Identifier, Identity> IdentityProvider<Identifier> for DefaultIdentityProvider<Identity>
-	where
-		Identity: Default,
-	{
-		type Error = ();
-		type Success = Identity;
-
-		fn retrieve(_identifier: &Identifier) -> Result<Option<Self::Success>, Self::Error> {
-			Ok(Some(Identity::default()))
-		}
-
-		fn get_retrieve_weight(_identifier: &Identifier) -> Weight {
-			Weight::zero()
-		}
-	}
-
-	// Always return `None`. Might be useful for tests.
-	pub struct NoneIdentityProvider;
-
-	impl<Identifier> IdentityProvider<Identifier> for NoneIdentityProvider {
-		type Error = ();
-		type Success = ();
-
-		fn retrieve(_identifier: &Identifier) -> Result<Option<Self::Success>, Self::Error> {
-			Ok(None)
-		}
-
-		fn get_retrieve_weight(_identifier: &Identifier) -> Weight {
+		fn get_generate_commitment_weight(_identifier: &Runtime::Identifier) -> Weight {
 			Weight::zero()
 		}
 	}
@@ -151,14 +148,14 @@ where
 	fn on_identity_committed(
 		identifier: &Runtime::Identifier,
 		submitter: &Runtime::AccountId,
-		commitment: &Runtime::IdentityCommitment,
+		commitment: &IdentityCommitmentOf<Runtime>,
 		version: IdentityCommitmentVersion,
 	) -> Result<(), Self::Error>;
 
 	fn on_commitment_removed(
 		identifier: &Runtime::Identifier,
 		submitter: &Runtime::AccountId,
-		commitment: &Runtime::IdentityCommitment,
+		commitment: &IdentityCommitmentOf<Runtime>,
 		version: IdentityCommitmentVersion,
 	) -> Result<(), Self::Error>;
 }
@@ -174,7 +171,7 @@ where
 	fn on_commitment_removed(
 		_identifier: &Runtime::Identifier,
 		_submitter: &Runtime::AccountId,
-		_commitment: &Runtime::IdentityCommitment,
+		_commitment: &IdentityCommitmentOf<Runtime>,
 		_version: IdentityCommitmentVersion,
 	) -> Result<(), Self::Error> {
 		Ok(())
@@ -183,7 +180,7 @@ where
 	fn on_identity_committed(
 		_identifier: &Runtime::Identifier,
 		_submitter: &Runtime::AccountId,
-		_commitment: &Runtime::IdentityCommitment,
+		_commitment: &IdentityCommitmentOf<Runtime>,
 		_version: IdentityCommitmentVersion,
 	) -> Result<(), Self::Error> {
 		Ok(())

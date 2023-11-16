@@ -24,6 +24,7 @@ pub mod traits;
 
 pub use deposit::FixedDepositCollectorViaDepositsPallet;
 pub use pallet::*;
+pub use traits::NoopDepositStorageHooks;
 
 #[frame_support::pallet(dev_mode)]
 pub mod pallet {

@@ -22,7 +22,10 @@
 
 pub mod traits;
 
-pub use crate::pallet::*;
+pub use crate::{
+	pallet::*,
+	traits::{DefaultIdentityCommitmentGenerator, DefaultIdentityProvider, NoopHooks},
+};
 
 #[frame_support::pallet(dev_mode)]
 pub mod pallet {
@@ -30,13 +33,13 @@ pub mod pallet {
 
 	use frame_support::{pallet_prelude::*, traits::EnsureOrigin};
 	use frame_system::pallet_prelude::*;
-	use parity_scale_codec::FullCodec;
-	use sp_std::fmt::Debug;
 
 	use crate::traits::{IdentityCommitmentGenerator, IdentityProvider, ProviderHooks, SubmitterInfo};
 
+	pub type IdentityCommitmentOf<T> =
+		<<T as Config>::IdentityCommitmentGenerator as IdentityCommitmentGenerator<T>>::Output;
 	pub type IdentityProviderOf<T> = <T as Config>::IdentityProvider;
-	pub type IdentityOf<T> = <<T as Config>::IdentityProvider as IdentityProvider<<T as Config>::Identifier>>::Success;
+	pub type IdentityOf<T> = <<T as Config>::IdentityProvider as IdentityProvider<T>>::Success;
 	pub type IdentityCommitmentVersion = u16;
 
 	pub const LATEST_COMMITMENT_VERSION: IdentityCommitmentVersion = 0;
@@ -47,16 +50,8 @@ pub mod pallet {
 		type CommitOriginCheck: EnsureOrigin<Self::RuntimeOrigin, Success = Self::CommitOrigin>;
 		type CommitOrigin: SubmitterInfo<Submitter = Self::AccountId>;
 		type Identifier: Parameter + MaxEncodedLen;
-		type IdentityCommitment: Clone + Eq + Debug + TypeInfo + FullCodec + MaxEncodedLen;
-		type IdentityCommitmentGenerator: IdentityCommitmentGenerator<
-			Self::Identifier,
-			IdentityOf<Self>,
-			Error = Self::IdentityCommitmentGeneratorError,
-			Output = Self::IdentityCommitment,
-		>;
-		type IdentityCommitmentGeneratorError: Into<u16>;
-		type IdentityProvider: IdentityProvider<Self::Identifier, Error = Self::IdentityProviderError>;
-		type IdentityProviderError: Into<u16>;
+		type IdentityCommitmentGenerator: IdentityCommitmentGenerator<Self>;
+		type IdentityProvider: IdentityProvider<Self>;
 		type ProviderHooks: ProviderHooks<Self>;
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 	}
@@ -69,7 +64,7 @@ pub mod pallet {
 		<T as Config>::Identifier,
 		Twox64Concat,
 		IdentityCommitmentVersion,
-		<T as Config>::IdentityCommitment,
+		IdentityCommitmentOf<T>,
 	>;
 
 	#[pallet::pallet]
@@ -79,24 +74,20 @@ pub mod pallet {
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
-		IdentityCommitted {
+		VersionedIdentityCommitted {
 			identifier: T::Identifier,
-			commitment: T::IdentityCommitment,
+			commitment: IdentityCommitmentOf<T>,
 			version: IdentityCommitmentVersion,
 		},
 		VersionedIdentityDeleted {
 			identifier: T::Identifier,
 			version: IdentityCommitmentVersion,
 		},
-		IdentityDeleted {
-			identifier: T::Identifier,
-		},
 	}
 
 	#[pallet::error]
 	pub enum Error<T> {
-		IdentityNotFound,
-		LimitTooLow,
+		CommitmentNotFound,
 		IdentityProvider(u16),
 		IdentityCommitmentGenerator(u16),
 		Hook(u16),
@@ -116,14 +107,11 @@ pub mod pallet {
 				T::CommitOriginCheck::ensure_origin(origin).map(|e: <T as Config>::CommitOrigin| e.submitter())?;
 
 			let commitment_version = version.unwrap_or(LATEST_COMMITMENT_VERSION);
-			let commitment = match T::IdentityProvider::retrieve(&identifier) {
-				Ok(None) => Err(Error::<T>::IdentityNotFound),
-				Err(error) => Err(Error::<T>::IdentityProvider(error.into())),
-				Ok(Some(identity)) => {
-					T::IdentityCommitmentGenerator::generate_commitment(&identifier, &identity, commitment_version)
-						.map_err(|error| Error::<T>::IdentityCommitmentGenerator(error.into()))
-				}
-			}?;
+			let identity = T::IdentityProvider::retrieve(&identifier)
+				.map_err(|error| Error::<T>::IdentityProvider(error.into()))?;
+			let commitment =
+				T::IdentityCommitmentGenerator::generate_commitment(&identifier, &identity, commitment_version)
+					.map_err(|error| Error::<T>::IdentityCommitmentGenerator(error.into()))?;
 
 			IdentityCommitments::<T>::try_mutate(&identifier, commitment_version, |commitment_entry| {
 				if let Some(old_commitment) = commitment_entry {
@@ -142,7 +130,7 @@ pub mod pallet {
 				T::ProviderHooks::on_identity_committed(&identifier, &dispatcher, &commitment, commitment_version)
 					.map_err(|e| Error::<T>::Hook(e.into()))?;
 				*commitment_entry = Some(commitment.clone());
-				Self::deposit_event(Event::<T>::IdentityCommitted {
+				Self::deposit_event(Event::<T>::VersionedIdentityCommitted {
 					identifier: identifier.clone(),
 					commitment,
 					version: commitment_version,
@@ -175,8 +163,9 @@ pub mod pallet {
 		pub fn delete_identity_commitment_storage_entry(
 			identifier: &T::Identifier,
 			version: IdentityCommitmentVersion,
-		) -> Result<T::IdentityCommitment, DispatchError> {
-			let commitment = IdentityCommitments::<T>::take(identifier, version).ok_or(Error::<T>::IdentityNotFound)?;
+		) -> Result<IdentityCommitmentOf<T>, DispatchError> {
+			let commitment =
+				IdentityCommitments::<T>::take(identifier, version).ok_or(Error::<T>::CommitmentNotFound)?;
 			Self::deposit_event(Event::<T>::VersionedIdentityDeleted {
 				identifier: identifier.clone(),
 				version,

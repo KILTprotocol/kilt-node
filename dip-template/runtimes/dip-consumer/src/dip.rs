@@ -16,46 +16,36 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use did::{did_details::DidVerificationKey, DidVerificationKeyRelationship, KeyIdOf};
-use dip_provider_runtime_template::{AccountId as ProviderAccountId, Runtime as ProviderRuntime, Web3Name};
+use did::{did_details::DidVerificationKey, DidVerificationKeyRelationship};
+use dip_provider_runtime_template::{AccountId as ProviderAccountId, Runtime as ProviderRuntime};
 use frame_support::traits::Contains;
+use frame_system::EnsureSigned;
 use kilt_dip_support::{
-	traits::{DipCallOriginFilter, FrameSystemDidSignatureContext, ProviderParachainStateInfoViaProviderPallet},
-	RococoStateRootsViaRelayStorePallet, VersionedDipSiblingProviderStateProofVerifier,
+	traits::DipCallOriginFilter, KiltVersionedSiblingProviderVerifier, RelayStateRootsViaRelayStorePallet,
 };
-use pallet_did_lookup::linkable_account::LinkableAccountId;
 use pallet_dip_consumer::traits::IdentityProofVerifier;
 use sp_core::ConstU32;
 use sp_runtime::traits::BlakeTwo256;
 
 use crate::{AccountId, DidIdentifier, Runtime, RuntimeCall, RuntimeOrigin};
 
-pub type MerkleProofVerifierOutputOf<Call, Subject> =
-	<ProofVerifier as IdentityProofVerifier<Call, Subject>>::VerificationResult;
-pub type ProofVerifier = VersionedDipSiblingProviderStateProofVerifier<
-	RococoStateRootsViaRelayStorePallet<Runtime>,
+pub type MerkleProofVerifierOutput = <ProofVerifier as IdentityProofVerifier<Runtime>>::VerificationResult;
+pub type ProofVerifier = KiltVersionedSiblingProviderVerifier<
+	ProviderRuntime,
 	ConstU32<2_000>,
-	ProviderParachainStateInfoViaProviderPallet<ProviderRuntime>,
-	AccountId,
+	RelayStateRootsViaRelayStorePallet<Runtime>,
 	BlakeTwo256,
-	KeyIdOf<ProviderRuntime>,
-	ProviderAccountId,
-	Web3Name,
-	LinkableAccountId,
-	10,
-	10,
-	u128,
-	// Signatures are valid for 50 blocks
-	FrameSystemDidSignatureContext<Runtime, 50>,
 	DipCallFilter,
+	10,
+	10,
+	50,
 >;
 
 impl pallet_dip_consumer::Config for Runtime {
 	type DipCallOriginFilter = PreliminaryDipOriginFilter;
+	type DispatchOriginCheck = EnsureSigned<AccountId>;
 	type Identifier = DidIdentifier;
-	type IdentityProof = <ProofVerifier as IdentityProofVerifier<RuntimeCall, DidIdentifier>>::Proof;
 	type LocalIdentityInfo = u128;
-	type ProofVerificationError = <ProofVerifier as IdentityProofVerifier<RuntimeCall, DidIdentifier>>::Error;
 	type ProofVerifier = ProofVerifier;
 	type RuntimeCall = RuntimeCall;
 	type RuntimeOrigin = RuntimeOrigin;
