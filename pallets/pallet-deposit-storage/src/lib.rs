@@ -16,8 +16,14 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+//! Pallet to store namespaced deposits for the configured `Currency`. It allows
+//! the original payer of a deposit to claim it back, triggering a hook to
+//! optionally perform related actions somewhere else in the runtime.
+//! Each deposit is identified by a namespace and a key. There cannot be two
+//! equal keys under the same namespace, but the same key can be present under
+//! different namespaces.
+
 #![cfg_attr(not(feature = "std"), no_std)]
-#![recursion_limit = "256"]
 
 mod deposit;
 pub mod traits;
@@ -58,17 +64,27 @@ pub mod pallet {
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
+		/// The maximum length of keys.
 		#[pallet::constant]
 		type MaxKeyLength: Get<u32>;
 
+		/// The origin check, returning an `AccountId` upon completion, for who
+		/// can reclaim a deposit.
 		type CheckOrigin: EnsureOrigin<Self::RuntimeOrigin, Success = Self::AccountId>;
+		/// The currency from which deposits are to be taken.
 		type Currency: Mutate<Self::AccountId, Reason = Self::RuntimeHoldReason>;
+		/// Additional logic to execute whenever a new deposit a created or a
+		/// deposit is released.
 		type DepositHooks: DepositStorageHooks<Self>;
+		/// The type of a deposit namespace.
 		type Namespace: Parameter;
+		/// The aggregated `Event` type.
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
+		/// The aggregated `HoldReason` type.
 		type RuntimeHoldReason: From<HoldReason> + Clone + PartialEq + Debug + FullCodec + MaxEncodedLen + TypeInfo;
 	}
 
+	/// The hold reasons for deposits taken by the pallet.
 	#[pallet::composite_enum]
 	pub enum HoldReason {
 		Deposit,
@@ -76,28 +92,45 @@ pub mod pallet {
 
 	#[pallet::error]
 	pub enum Error<T> {
+		/// The deposit with the provided key was not found within the specified
+		/// namespace.
 		DepositNotFound,
+		/// A deposit with the provided key already exists within the specified
+		/// namespace.
 		DepositExisting,
+		/// The origin was not authorized to perform the operation on the
+		/// specified deposit entry.
 		Unauthorized,
+		/// The external hook failed.
 		Hook(u16),
 	}
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
+		/// A new deposit has been reserved and stored.
 		DepositAdded {
+			/// The deposit namespace.
 			namespace: T::Namespace,
+			/// The deposit key.
 			key: DepositKeyOf<T>,
+			/// The deposit details.
 			deposit_entry: DepositEntryOf<T>,
 		},
+		/// A deposit has been released and deleted from storage.
 		DepositReclaimed {
+			/// The deposit namespace.
 			namespace: T::Namespace,
+			/// The deposit key.
 			key: DepositKeyOf<T>,
+			/// The deposit details.
 			deposit_entry: DepositEntryOf<T>,
 		},
 	}
 
-	// Double map (namespace, key) -> deposit
+	/// Storage of all deposits. Its first key is a namespace, and the second
+	/// one the deposit key. Its value include the details associated to a
+	/// deposit instance.
 	#[pallet::storage]
 	#[pallet::getter(fn deposits)]
 	pub(crate) type Deposits<T> =
@@ -109,6 +142,10 @@ pub mod pallet {
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
+		/// Reclaim a deposit that was previously taken. If there is no deposit
+		/// with the given key under the given namespace, it returns an error.
+		/// If a deposit exists, the deposit hooks are invoked after the deposit
+		/// has been removed from the pallet storage.
 		#[pallet::call_index(0)]
 		// TODO: Update weight
 		#[pallet::weight(0)]
@@ -122,6 +159,10 @@ pub mod pallet {
 	}
 
 	impl<T: Config> Pallet<T> {
+		/// Add a deposit identified by the given key under the given namespace.
+		/// If there is already a deposit entry for the same key under the same
+		/// namespace, it returns an error. It also returns an error if the
+		/// deposit cannot be reserved on the pallet's `Currency`.
 		pub fn add_deposit(namespace: T::Namespace, key: DepositKeyOf<T>, entry: DepositEntryOf<T>) -> DispatchResult {
 			Deposits::<T>::try_mutate(&namespace, &key, |deposit_entry| match deposit_entry {
 				Some(_) => Err(DispatchError::from(Error::<T>::DepositExisting)),
@@ -143,6 +184,11 @@ pub mod pallet {
 			Ok(())
 		}
 
+		/// Remove and release a deposit identified by the given key under the
+		/// given namespace. If there is no deposit with under the provided
+		/// namespace with the provided key, it returns an error. It also
+		/// returns an error if the deposit cannot be released on the pallet's
+		/// `Currency`.
 		pub fn remove_deposit(
 			namespace: &T::Namespace,
 			key: &DepositKeyOf<T>,
