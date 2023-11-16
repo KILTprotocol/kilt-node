@@ -16,39 +16,8 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-//! This pallet is a core component of the Decentralized Identity Provider
-//! protocol. It enables a Substrate-based chain (provider) to bridge the
-//! identities of its users to other connected chains (consumers) trustlessly. A
-//! consumer chain is *connected* to a provider if there is a way for the
-//! consumer chain to verify state proofs about parts of the state of the
-//! provider chain.
-
-//! The pallet is agnostic over the chain-specific definition of *identity*, and
-//! delegates the definition of it to the provider chain's runtime.
-
-//! What the pallet stores are *identity commitments*, which are opaque byte
-//! blobs put in the pallet storage and on which the cross-chain identity
-//! bridging protocol can be built. As for identities, the definition of an
-//! identity commitment must be provided by the runtime and is therefore
-//! provider-specific. Naturally, this definition must be made available to
-//! consumers willing to integrate the identities living on the provider chain.
-
-//! Because providers and consumers evolve at different speeds, identity
-//! commitments are versioned. This allows the provider chain to upgrade to a
-//! newer commitment scheme, while still giving its users the possibility to use
-//! the old version, if the chains on which they want to use their identity does
-//! not yet support the new scheme.
-
-//! Identity commitments can be replaced (e.g., if something in the identity
-//! info changes), or removed altogether by the identity subject. After removal,
-//! the identity becomes unusable cross-chain, although it will still continue
-//! to exist on the provider chain and will be usable for local operations.
-
 #![cfg_attr(not(feature = "std"), no_std)]
-
-// !!! When Rust docs changes here, make sure to update the crate README.md file
-// as well.
-// !!!
+#![doc = include_str!("../README.md")]
 
 pub mod traits;
 
