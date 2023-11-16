@@ -21,21 +21,22 @@ use did::{did_details::DidVerificationKey, DidIdentifierOf};
 use frame_benchmarking::v2::*;
 use kilt_support::traits::GenerateBenchmarkOrigin;
 use pallet_dip_provider::traits::IdentityProvider;
-use sp_core::{ed25519::Public};
+use sp_core::ed25519::Public;
 use sp_io::crypto::ed25519_generate;
 use sp_runtime::{traits::IdentifyAccount, KeyTypeId, MultiSigner};
 use frame_support::{traits::fungible::Mutate, BoundedVec};
 use pallet_balances::Pallet as BalancePallet;
+use frame_system::pallet_prelude::BlockNumberFor;
 use sp_runtime::SaturatedConversion;
 use pallet_did_lookup::linkable_account::LinkableAccountId;
 use pallet_dip_provider::traits::IdentityCommitmentGenerator;
 
-use crate::{dip::{did::{Web3OwnershipOf ,DidIdentityProvider, DidWeb3NameProvider, DidLinkedAccountsProvider, LinkedDidInfoOf}, merkle::DidMerkleRootGenerator }, constants::KILT};
+use crate::{dip::{did::{Web3OwnershipOf, LinkedDidInfoProvider,  LinkedDidInfoOf}, merkle::DidMerkleRootGenerator }, constants::KILT};
 
 const AUTHENTICATION_KEY_ID: KeyTypeId = KeyTypeId(*b"0000");
 
 
-pub trait Config: did::Config + frame_system::Config + pallet_balances::Config + pallet_web3_names::Config + pallet_did_lookup::Config {}
+pub trait Config: did::Config + frame_system::Config + pallet_balances::Config + pallet_web3_names::Config + pallet_did_lookup::Config + pallet_dip_provider::Config {}
 pub struct Pallet<T: Config>(did::Pallet<T>);
 
 
@@ -81,11 +82,16 @@ fn generate_web3_name_input(length: usize) -> Vec<u8> {
 		<T as frame_system::Config>::AccountId: From<sp_runtime::AccountId32>,
 		<T as frame_system::Config>::Hash: From<[u8; 32]>, 
 		T::OwnerOrigin: GenerateBenchmarkOrigin<<T as frame_system::Config>::RuntimeOrigin, T::AccountId, T::Web3NameOwner>,
-		sp_runtime::AccountId32: From<<T as did::Config>::DidIdentifier>
+		sp_runtime::AccountId32: From<<T as did::Config>::DidIdentifier>, 
+		T: did::Config<DidIdentifier = <T as pallet_dip_provider::Config>::Identifier>
+		+ pallet_web3_names::Config<Web3NameOwner = <T as pallet_dip_provider::Config>::Identifier>
+		+ pallet_did_lookup::Config<DidIdentifier = <T as pallet_dip_provider::Config>::Identifier>
+		+ pallet_dip_provider::Config,
+		T::IdentityProvider: IdentityProvider<T, Success = LinkedDidInfoOf<T>>,
 	)]
 pub mod benchmarks {
 	
-use frame_system::pallet_prelude::BlockNumberFor;
+
 
 use super::{Config, Pallet, *};
 
@@ -98,35 +104,16 @@ use super::{Config, Pallet, *};
 		let did_public_auth_key = get_ed25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(did_public_auth_key).into_account().into();
 		let entry = did::mock_utils::generate_base_did_details::<T>(DidVerificationKey::from(authentication_key), Some(owner.clone()));
-		did::Pallet::<T>::try_insert_did(did_subject.clone(), entry, owner).expect("Inserting DID should not fail.");
+		did::Pallet::<T>::try_insert_did(did_subject.clone(), entry, owner.clone()).expect("Inserting DID should not fail.");
 
+		insert_linked_acc::<T>(did_subject.clone().into(), owner.clone());
+
+		insert_w3n::<T>(did_subject.clone().into(), owner);
+
+		
 		#[block]
 		{
-			DidIdentityProvider::<T>::retrieve(&did_subject).expect("Retrieve DID should not fail.");
-		}
-	}
-
-	#[benchmark]
-	fn retrieve_w3n() {
-	let claimer: pallet_web3_names::AccountIdOf<T> = account("ALICE", 0, 0);
-	let owner: <T as pallet_web3_names::Config>::Web3NameOwner = account("BOB", 0, 0);
-	insert_w3n::<T>(owner.clone(), claimer);
-		#[block]
-		{
-			DidWeb3NameProvider::<T>::retrieve(&owner).expect("Retrieve w3n should not fail.");
-		}
-	}
-
-	#[benchmark]
-	fn retrieve_linked_accounts() {
-
-		let did: <T as pallet_did_lookup::Config>::DidIdentifier = account("did", 0, 0);
-		let caller: T::AccountId = account("caller", 0, 0);
-		insert_linked_acc::<T>(did.clone(), caller);
-	
-		#[block]
-		{
-			DidLinkedAccountsProvider::<T>::retrieve(&did).expect("Retrieve linked accounts should not fail.");	
+			LinkedDidInfoProvider::<T>::retrieve(&did_subject).expect("Retrieve DID should not fail.");
 		}
 	}
 
@@ -174,7 +161,7 @@ use super::{Config, Pallet, *};
 			web3_name_details: Some(w3n_ownership),
 			linked_accounts: vec![owner.into()]
 		};
-		
+
 		let version = 0;
  	
 		#[block]

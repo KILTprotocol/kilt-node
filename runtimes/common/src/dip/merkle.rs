@@ -88,6 +88,7 @@ pub mod v0 {
 		<T as pallet_web3_names::Config>::Web3Name,
 		LinkableAccountId,
 	>;
+
 	pub(crate) fn insert_linked_accounts<Runtime>(
 		trie_builder: &mut TrieDBMut<LayoutV1<Runtime::Hashing>>,
 		linked_accounts: &Vec<LinkableAccountId>,
@@ -116,7 +117,6 @@ pub mod v0 {
 			})
 	}
 
-	// Function to insert web3name into the trie builder
 	pub(crate) fn insert_web3name<Runtime>(
 		trie_builder: &mut TrieDBMut<LayoutV1<Runtime::Hashing>>,
 		web3name_details: &Web3OwnershipOf<Runtime>,

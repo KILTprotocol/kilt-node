@@ -24,11 +24,11 @@ use pallet_did_lookup::linkable_account::LinkableAccountId;
 use pallet_dip_provider::traits::IdentityProvider;
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
-use sp_std::vec::Vec;
+use sp_std::{marker::PhantomData, vec::Vec};
 
 use crate::dip::weights::{SubstrateWeight, WeightInfo};
 
-#[derive(Encode, Decode, TypeInfo)]
+#[derive(Encode, Decode, TypeInfo, Debug)]
 pub enum LinkedDidInfoProviderError {
 	DidNotFound,
 	DidDeleted,
@@ -57,9 +57,9 @@ where
 	pub linked_accounts: Vec<LinkableAccountId>,
 }
 
-pub struct LinkedDidInfoProvider;
+pub struct LinkedDidInfoProvider<T>(PhantomData<T>);
 
-impl<Runtime> IdentityProvider<Runtime> for LinkedDidInfoProvider
+impl<Runtime> IdentityProvider<Runtime> for LinkedDidInfoProvider<Runtime>
 where
 	Runtime: did::Config<DidIdentifier = <Runtime as pallet_dip_provider::Config>::Identifier>
 		+ pallet_web3_names::Config<Web3NameOwner = <Runtime as pallet_dip_provider::Config>::Identifier>
