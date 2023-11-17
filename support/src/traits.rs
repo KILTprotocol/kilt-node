@@ -20,7 +20,7 @@ use frame_support::traits::{
 	fungible::hold::Mutate,
 	tokens::fungible::{Inspect, MutateHold},
 };
-use sp_runtime::DispatchError;
+use sp_runtime::{traits::BlakeTwo256, AccountId32, DispatchError};
 use sp_std::vec::Vec;
 
 use crate::deposit::{free_deposit, reserve_deposit, Deposit};
@@ -83,6 +83,20 @@ pub trait GenerateBenchmarkOrigin<OuterOrigin, AccountId, SubjectId> {
 #[cfg(feature = "runtime-benchmarks")]
 pub trait GetWorstCase {
 	fn worst_case() -> Self;
+}
+
+/// Trait that allows instanciating multiple instances of a type.
+#[cfg(feature = "runtime-benchmarks")]
+pub trait Instanciate {
+	fn new(instance: u32) -> Self;
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+impl Instanciate for AccountId32 {
+	fn new(instance: u32) -> Self {
+		use sp_runtime::traits::Hash;
+		AccountId32::from(<[u8; 32]>::from(BlakeTwo256::hash(&instance.to_be_bytes())))
+	}
 }
 
 /// Generic filter.

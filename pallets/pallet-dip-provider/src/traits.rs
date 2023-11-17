@@ -139,6 +139,17 @@ where
 	}
 }
 
+#[cfg(any(test, feature = "runtime-benchmarks"))]
+impl<DidIdentifier, AccountId> SubmitterInfo for kilt_support::mock::mock_origin::DoubleOrigin<AccountId, DidIdentifier>
+where
+	AccountId: Clone,
+{
+	type Submitter = AccountId;
+	fn submitter(&self) -> Self::Submitter {
+		self.0.clone()
+	}
+}
+
 pub trait ProviderHooks<Runtime>
 where
 	Runtime: Config,

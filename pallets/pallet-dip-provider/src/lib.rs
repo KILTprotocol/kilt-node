@@ -22,6 +22,11 @@
 
 pub mod traits;
 
+#[cfg(feature = "runtime-benchmarks")]
+mod benchmarking;
+#[cfg(test)]
+mod mock;
+
 pub use crate::{
 	pallet::*,
 	traits::{DefaultIdentityCommitmentGenerator, DefaultIdentityProvider, NoopHooks},
