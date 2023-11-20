@@ -34,7 +34,7 @@ use crate::{
 	merkle::{DidMerkleProofVerifierError, RevealedDidMerkleProofLeaf, RevealedDidMerkleProofLeaves},
 	state_proofs::{parachain::DipIdentityCommitmentProofVerifierError, relay_chain::ParachainHeadProofVerifierError},
 	traits::{
-		Bump, DidSignatureVerifierContext, DipCallOriginFilter, HistoricalBlockRegistry, ProviderParachainStateInfo,
+		Bump, DidSignatureVerifierContext, DipCallOriginFilter, HistoricalBlockRegistry, ProviderParachainStorageInfo,
 		RelayChainStorageInfo,
 	},
 	utils::OutputOf,
@@ -346,8 +346,10 @@ impl<
 
 	ChildProviderParachainId: Get<RelayChainInfo::ParaId>,
 
-	ChildProviderStateInfo:
-		ProviderParachainStateInfo<Identifier = ConsumerRuntime::Identifier, Commitment = ProviderDipMerkleHasher::Out>,
+	ChildProviderStateInfo: ProviderParachainStorageInfo<
+		Identifier = ConsumerRuntime::Identifier,
+		Commitment = ProviderDipMerkleHasher::Out,
+	>,
 	OutputOf<ChildProviderStateInfo::Hasher>: Ord + From<OutputOf<<RelayChainInfo as RelayChainStorageInfo>::Hasher>>,
 	ChildProviderStateInfo::BlockNumber: Parameter + 'static,
 	ChildProviderStateInfo::Commitment: Decode,
@@ -457,7 +459,7 @@ mod v0 {
 		},
 		traits::{
 			Bump, DidSignatureVerifierContext, DipCallOriginFilter, HistoricalBlockRegistry,
-			ProviderParachainStateInfo, RelayChainStorageInfo,
+			ProviderParachainStorageInfo, RelayChainStorageInfo,
 		},
 		utils::OutputOf,
 	};
@@ -559,7 +561,7 @@ mod v0 {
 
 		ChildProviderParachainId: Get<RelayChainInfo::ParaId>,
 
-		ChildProviderStateInfo: ProviderParachainStateInfo<
+		ChildProviderStateInfo: ProviderParachainStorageInfo<
 			Identifier = ConsumerRuntime::Identifier,
 			Commitment = ProviderDipMerkleHasher::Out,
 		>,

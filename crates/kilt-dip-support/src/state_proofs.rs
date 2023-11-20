@@ -87,6 +87,7 @@ mod substrate_no_std_port {
 	}
 }
 
+/// Relaychain-related state proof logic.
 pub(super) mod relay_chain {
 	use super::*;
 
@@ -113,6 +114,12 @@ pub(super) mod relay_chain {
 		}
 	}
 
+	/// Verifier of state proofs that reveal the value of a parachain head at a
+	/// given relaychain block number.
+	/// The generic types indicate the following:
+	/// * `RelayChainState`: defines the relaychain runtime types relevant for
+	///   state proof verification, and returns the relaychain runtime's storage
+	///   key identifying a parachain with a given ID.
 	pub struct ParachainHeadProofVerifier<RelayChainState>(PhantomData<RelayChainState>);
 
 	// Uses the provided `root` to verify the proof.
@@ -123,6 +130,8 @@ pub(super) mod relay_chain {
 		RelayChainState::BlockNumber: Copy + Into<U256> + TryFrom<U256> + HasCompact,
 		RelayChainState::Key: AsRef<[u8]>,
 	{
+		/// Given a relaychain state root, verify a state proof for the
+		/// parachain with the provided ID.
 		pub fn verify_proof_for_parachain_with_root(
 			para_id: &RelayChainState::ParaId,
 			root: &OutputOf<<RelayChainState as RelayChainStorageInfo>::Hasher>,
@@ -156,6 +165,9 @@ pub(super) mod relay_chain {
 		RelayChainState::BlockNumber: Copy + Into<U256> + TryFrom<U256> + HasCompact,
 		RelayChainState::Key: AsRef<[u8]>,
 	{
+		/// Given a relaychain state root provided by the [`RelayChainState`]
+		/// generic type, verify a state proof for the parachain with the
+		/// provided ID.
 		#[allow(clippy::result_unit_err)]
 		pub fn verify_proof_for_parachain(
 			para_id: &RelayChainState::ParaId,
@@ -168,6 +180,12 @@ pub(super) mod relay_chain {
 		}
 	}
 
+	/// Implementor of the [`RelayChainStorageInfo`] trait that return the state
+	/// root of a relaychain block with a given number by retrieving it from the
+	/// [`pallet_relay_store::Pallet`] pallet storage. It hardcodes the
+	/// relaychain `BlockNumber`, `Hasher`, `StorageKey`, and `ParaId` to the
+	/// ones used by Polkadot-based relaychains. This type cannot be used with
+	/// relaychains that adopt a different definition for any on those types.
 	pub struct RelayStateRootsViaRelayStorePallet<Runtime>(PhantomData<Runtime>);
 
 	impl<Runtime> RelayChainStorageInfo for RelayStateRootsViaRelayStorePallet<Runtime>
@@ -267,10 +285,11 @@ pub(super) mod relay_chain {
 	}
 }
 
+/// Parachain-related state proof logic.
 pub(super) mod parachain {
 	use super::*;
 
-	use crate::traits::ProviderParachainStateInfo;
+	use crate::traits::ProviderParachainStorageInfo;
 
 	#[derive(RuntimeDebug)]
 	pub enum DipIdentityCommitmentProofVerifierError {
@@ -289,15 +308,24 @@ pub(super) mod parachain {
 		}
 	}
 
+	/// Verifier of state proofs that reveal the value of the DIP commitment for
+	/// a given subject on the provider chain. The generic types indicate the
+	/// following:
+	/// * `ParaInfo`: defines the provider parachain runtime types relevant for
+	///   state proof verification, and returns the provider's runtime storage
+	///   key identifying the identity commitment for a subject with the given
+	///   identifier.
 	pub struct DipIdentityCommitmentProofVerifier<ParaInfo>(PhantomData<ParaInfo>);
 
 	impl<ParaInfo> DipIdentityCommitmentProofVerifier<ParaInfo>
 	where
-		ParaInfo: ProviderParachainStateInfo,
+		ParaInfo: ProviderParachainStorageInfo,
 		OutputOf<ParaInfo::Hasher>: Ord,
 		ParaInfo::Commitment: Decode,
 		ParaInfo::Key: AsRef<[u8]>,
 	{
+		/// Given a parachain state root, verify a state proof for the
+		/// commitment of a given subject identifier.
 		#[allow(clippy::result_unit_err)]
 		pub fn verify_proof_for_identifier(
 			identifier: &ParaInfo::Identifier,
@@ -339,7 +367,7 @@ pub(super) mod parachain {
 		struct StaticSpiritnetInfoProvider;
 
 		// We use the `system::eventCount()` storage entry as a unit test here.
-		impl ProviderParachainStateInfo for StaticSpiritnetInfoProvider {
+		impl ProviderParachainStorageInfo for StaticSpiritnetInfoProvider {
 			type BlockNumber = u32;
 			// The type of the `eventCount()` storage entry.
 			type Commitment = u32;

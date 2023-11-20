@@ -305,7 +305,7 @@ impl<
 
 	SiblingProviderParachainId: Get<RelayChainStateInfo::ParaId>,
 
-	SiblingProviderStateInfo: traits::ProviderParachainStateInfo<
+	SiblingProviderStateInfo: traits::ProviderParachainStorageInfo<
 		Identifier = ConsumerRuntime::Identifier,
 		Commitment = ProviderDipMerkleHasher::Out,
 	>,
@@ -403,7 +403,7 @@ mod v0 {
 		export::common::v0::{DipMerkleProofAndDidSignature, ParachainRootStateProof},
 		merkle::DidMerkleProofVerifier,
 		state_proofs::{parachain::DipIdentityCommitmentProofVerifier, relay_chain::ParachainHeadProofVerifier},
-		traits::ProviderParachainStateInfo,
+		traits::ProviderParachainStorageInfo,
 	};
 
 	#[derive(Encode, Decode, PartialEq, Eq, RuntimeDebug, TypeInfo, Clone)]
@@ -487,7 +487,7 @@ mod v0 {
 
 		SiblingProviderParachainId: Get<RelayChainStateInfo::ParaId>,
 
-		SiblingProviderStateInfo: traits::ProviderParachainStateInfo<
+		SiblingProviderStateInfo: traits::ProviderParachainStorageInfo<
 			Identifier = ConsumerRuntime::Identifier,
 			Commitment = ProviderDipMerkleHasher::Out,
 		>,
@@ -567,7 +567,7 @@ mod v0 {
 			let proof_leaves: RevealedDidMerkleProofLeaves<
 				ProviderDidKeyId,
 				ProviderAccountId,
-				<SiblingProviderStateInfo as ProviderParachainStateInfo>::BlockNumber,
+				<SiblingProviderStateInfo as ProviderParachainStorageInfo>::BlockNumber,
 				ProviderWeb3Name,
 				ProviderLinkedAccountId,
 				MAX_REVEALED_KEYS_COUNT,
