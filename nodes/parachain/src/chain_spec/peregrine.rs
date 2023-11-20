@@ -25,17 +25,17 @@ use sc_telemetry::TelemetryEndpoints;
 use sp_core::{crypto::UncheckedInto, sr25519};
 use sp_runtime::traits::Zero;
 
-use runtime_common::{
-	constants::{kilt_inflation_config, staking::MinCollatorStake, KILT, MAX_COLLATOR_STAKE},
-	AccountId, AuthorityId, Balance, BlockNumber,
-};
+use super::TELEMETRY_URL;
+use crate::chain_spec::{get_account_id_from_seed, get_from_seed, get_properties, Extensions, DEFAULT_PARA_ID};
 use peregrine_runtime::{
 	BalancesConfig, CouncilConfig, InflationInfo, ParachainInfoConfig, ParachainStakingConfig, PolkadotXcmConfig,
 	RuntimeGenesisConfig, SessionConfig, SudoConfig, SystemConfig, TechnicalCommitteeConfig, VestingConfig,
 	WASM_BINARY,
 };
-use crate::chain_spec::{get_account_id_from_seed, get_from_seed, get_properties, Extensions, DEFAULT_PARA_ID};
-use super::TELEMETRY_URL;
+use runtime_common::{
+	constants::{kilt_inflation_config, staking::MinCollatorStake, KILT, MAX_COLLATOR_STAKE},
+	AccountId, AuthorityId, Balance, BlockNumber,
+};
 
 const SAFE_XCM_VERSION: u32 = xcm::prelude::XCM_VERSION;
 
