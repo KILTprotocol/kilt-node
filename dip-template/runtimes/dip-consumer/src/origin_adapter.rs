@@ -24,6 +24,11 @@ use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_core::RuntimeDebug;
 
+/// An origin adapter which is used to make sure that a given [`DipOrigin`]
+/// contains, among other things, a web3name. If a pallet extrinsic that
+/// requires this origin is called with a DIP proof that does not revealed the
+/// web3name linked to the subject, the extrinsic will fail with a `BadOrigin`
+/// error.
 pub struct EnsureDipOriginAdapter;
 
 impl EnsureOrigin<RuntimeOrigin> for EnsureDipOriginAdapter {
@@ -40,6 +45,8 @@ impl EnsureOrigin<RuntimeOrigin> for EnsureDipOriginAdapter {
 	}
 }
 
+/// A wrapper around a [`DipOrigin`] that makes sure the origin has a web3name,
+/// or else the origin is invalid.
 #[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct DipOriginAdapter(DipOrigin<DidIdentifier, AccountId, MerkleProofVerifierOutput>);
 

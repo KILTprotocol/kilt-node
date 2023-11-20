@@ -37,12 +37,21 @@ use crate::{
 pub mod runtime_api {
 	use super::*;
 
+	/// Parameters for a DIP proof request.
 	#[derive(Encode, Decode, TypeInfo)]
 	pub struct DipProofRequest {
+		/// The subject identifier for which to generate the DIP proof.
 		pub(crate) identifier: DidIdentifier,
+		/// The DIP version.
 		pub(crate) version: IdentityCommitmentVersion,
+		/// The DID key IDs of the subject's DID Document to reveal in the DIP
+		/// proof.
 		pub(crate) keys: Vec<KeyIdOf<Runtime>>,
+		/// The list of accounts linked to the subject's DID to reveal in the
+		/// DIP proof.
 		pub(crate) accounts: Vec<LinkableAccountId>,
+		/// A flag indicating whether the web3name claimed by the DID subject
+		/// should revealed in the DIP proof.
 		pub(crate) should_include_web3_name: bool,
 	}
 
@@ -70,6 +79,8 @@ pub mod deposit {
 		DipProvider,
 	}
 
+	/// The namespace to use in the [`pallet_deposit_storage::Pallet`] to store
+	/// all deposits related to DIP commitments.
 	pub struct DipProviderDepositNamespace;
 
 	impl Get<DepositNamespaces> for DipProviderDepositNamespace {
@@ -78,8 +89,11 @@ pub mod deposit {
 		}
 	}
 
+	/// The amount of tokens locked for each identity commitment.
 	pub const DEPOSIT_AMOUNT: Balance = 2 * UNIT;
 
+	/// The additional logic to execute whenever a deposit is removed by its
+	/// owner directly via the [`pallet_deposit_storage::Pallet`] pallet.
 	pub type DepositCollectorHooks =
 		FixedDepositCollectorViaDepositsPallet<DipProviderDepositNamespace, ConstU128<DEPOSIT_AMOUNT>>;
 
@@ -97,6 +111,11 @@ pub mod deposit {
 		}
 	}
 
+	/// The logic to execute whenever an identity commitment is generated and
+	/// stored in the [`pallet_dip_provider::Pallet`] pallet.
+	///
+	/// Upon storing and removing identity commitments, this hook will reserve
+	/// or release deposits from the [`pallet_deposit_storage::Pallet`] pallet.
 	pub struct DepositHooks;
 
 	impl DepositStorageHooks<Runtime> for DepositHooks {
@@ -126,7 +145,10 @@ pub mod deposit {
 }
 
 impl pallet_deposit_storage::Config for Runtime {
+	// Any signed origin can submit the tx, which will go through only if the
+	// deposit payer matches the signed origin.
 	type CheckOrigin = EnsureSigned<AccountId>;
+	// The balances pallet is used to reserve/unreserve tokens.
 	type Currency = Balances;
 	type DepositHooks = DepositHooks;
 	type MaxKeyLength = ConstU32<256>;
@@ -136,10 +158,16 @@ impl pallet_deposit_storage::Config for Runtime {
 }
 
 impl pallet_dip_provider::Config for Runtime {
+	// Only DID origins can submit the commitment identity tx, which will go through
+	// only if the DID in the origin matches the identifier specified in the tx.
 	type CommitOriginCheck = EnsureDidOrigin<DidIdentifier, AccountId>;
 	type CommitOrigin = DidRawOrigin<DidIdentifier, AccountId>;
 	type Identifier = DidIdentifier;
+	// The identity commitment is defined as the Merkle root of the linked identity
+	// info, as specified by the [`LinkedDidInfoProvider`].
 	type IdentityCommitmentGenerator = DidMerkleRootGenerator<Runtime>;
+	// Identity info is defined as the collection of DID keys, linked accounts, and
+	// the optional web3name of a given DID subject.
 	type IdentityProvider = LinkedDidInfoProvider;
 	type ProviderHooks = deposit::DepositCollectorHooks;
 	type RuntimeEvent = RuntimeEvent;
