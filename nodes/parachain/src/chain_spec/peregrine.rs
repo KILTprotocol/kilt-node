@@ -20,27 +20,29 @@
 
 use cumulus_primitives_core::ParaId;
 use hex_literal::hex;
+use sc_service::ChainType;
+use sc_telemetry::TelemetryEndpoints;
+use sp_core::{crypto::UncheckedInto, sr25519};
+use sp_runtime::traits::Zero;
+
+use runtime_common::{
+	constants::{kilt_inflation_config, staking::MinCollatorStake, KILT, MAX_COLLATOR_STAKE},
+	AccountId, AuthorityId, Balance, BlockNumber,
+};
 use peregrine_runtime::{
 	BalancesConfig, CouncilConfig, InflationInfo, ParachainInfoConfig, ParachainStakingConfig, PolkadotXcmConfig,
 	RuntimeGenesisConfig, SessionConfig, SudoConfig, SystemConfig, TechnicalCommitteeConfig, VestingConfig,
 	WASM_BINARY,
 };
-use runtime_common::{
-	constants::{kilt_inflation_config, staking::MinCollatorStake, MAX_COLLATOR_STAKE},
-	AccountId, AuthorityId, Balance, BlockNumber,
-};
-use sc_service::ChainType;
-use sp_core::sr25519;
-use sp_runtime::traits::Zero;
-
 use crate::chain_spec::{get_account_id_from_seed, get_from_seed, get_properties, Extensions, DEFAULT_PARA_ID};
+use super::TELEMETRY_URL;
 
 const SAFE_XCM_VERSION: u32 = xcm::prelude::XCM_VERSION;
 
 /// Specialized `ChainSpec` for the normal parachain runtime.
 pub type ChainSpec = sc_service::GenericChainSpec<RuntimeGenesisConfig, Extensions>;
 
-pub fn make_dev_spec() -> Result<ChainSpec, String> {
+pub fn get_chain_spec_dev() -> Result<ChainSpec, String> {
 	let properties = get_properties("PILT", 15, 38);
 	let wasm = WASM_BINARY.ok_or("No WASM")?;
 
@@ -65,7 +67,6 @@ pub fn make_dev_spec() -> Result<ChainSpec, String> {
 				],
 				kilt_inflation_config(),
 				MAX_COLLATOR_STAKE,
-				get_account_id_from_seed::<sr25519::Public>("Alice"),
 				vec![
 					(
 						get_account_id_from_seed::<sr25519::Public>("Alice"),
@@ -77,20 +78,39 @@ pub fn make_dev_spec() -> Result<ChainSpec, String> {
 					),
 				],
 				vec![
-					get_account_id_from_seed::<sr25519::Public>("Alice"),
-					get_account_id_from_seed::<sr25519::Public>("Bob"),
-					get_account_id_from_seed::<sr25519::Public>("Charlie"),
-					get_account_id_from_seed::<sr25519::Public>("Dave"),
-					get_account_id_from_seed::<sr25519::Public>("Eve"),
-					get_account_id_from_seed::<sr25519::Public>("Ferdie"),
-					get_account_id_from_seed::<sr25519::Public>("Alice//stash"),
-					get_account_id_from_seed::<sr25519::Public>("Bob//stash"),
-					get_account_id_from_seed::<sr25519::Public>("Charlie//stash"),
-					get_account_id_from_seed::<sr25519::Public>("Dave//stash"),
-					get_account_id_from_seed::<sr25519::Public>("Eve//stash"),
-					get_account_id_from_seed::<sr25519::Public>("Ferdie//stash"),
+					(get_account_id_from_seed::<sr25519::Public>("Alice"), 10000000 * KILT),
+					(get_account_id_from_seed::<sr25519::Public>("Bob"), 10000000 * KILT),
+					(get_account_id_from_seed::<sr25519::Public>("Charlie"), 10000000 * KILT),
+					(get_account_id_from_seed::<sr25519::Public>("Dave"), 10000000 * KILT),
+					(get_account_id_from_seed::<sr25519::Public>("Eve"), 10000000 * KILT),
+					(get_account_id_from_seed::<sr25519::Public>("Ferdie"), 10000000 * KILT),
+					(
+						get_account_id_from_seed::<sr25519::Public>("Alice//stash"),
+						10000000 * KILT,
+					),
+					(
+						get_account_id_from_seed::<sr25519::Public>("Bob//stash"),
+						10000000 * KILT,
+					),
+					(
+						get_account_id_from_seed::<sr25519::Public>("Charlie//stash"),
+						10000000 * KILT,
+					),
+					(
+						get_account_id_from_seed::<sr25519::Public>("Dave//stash"),
+						10000000 * KILT,
+					),
+					(
+						get_account_id_from_seed::<sr25519::Public>("Eve//stash"),
+						10000000 * KILT,
+					),
+					(
+						get_account_id_from_seed::<sr25519::Public>("Ferdie//stash"),
+						10000000 * KILT,
+					),
 				],
 				DEFAULT_PARA_ID,
+				get_account_id_from_seed::<sr25519::Public>("Alice"),
 			)
 		},
 		vec![],
@@ -120,10 +140,10 @@ pub fn make_new_spec() -> Result<ChainSpec, String> {
 				vec![],
 				kilt_inflation_config(),
 				MAX_COLLATOR_STAKE,
-				hex!["d206033ba2eadf615c510f2c11f32d931b27442e5cfb64884afa2241dfa66e70"].into(),
 				vec![],
 				vec![],
 				id,
+				hex!["d206033ba2eadf615c510f2c11f32d931b27442e5cfb64884afa2241dfa66e70"].into(),
 			)
 		},
 		Vec::new(),
@@ -138,29 +158,88 @@ pub fn make_new_spec() -> Result<ChainSpec, String> {
 	))
 }
 
+const RILT_COL_ACC_1: [u8; 32] = hex!["6a5c355bca369a54c334542fd91cf70822be92f215a1049ceb04f36baba9b87b"];
+const RILT_COL_SESSION_1: [u8; 32] = hex!["66c4ca0710c2c8a92504f281d992000508ce255543016545014cf0bfbbe71429"];
+const RILT_COL_ACC_2: [u8; 32] = hex!["768538a941d1e4730c31830ab85a54ff34aaaad1f81bdd246db11802a57a5412"];
+const RILT_COL_SESSION_2: [u8; 32] = hex!["7cff6c7a53c4630a0a35f8793a04b663681575bbfa43dbe5848b220bc4bd1963"];
+
+pub fn get_chain_spec_rilt() -> Result<ChainSpec, String> {
+	let properties = get_properties("RILT", 15, 38);
+	let wasm = WASM_BINARY.ok_or("No WASM")?;
+	let id: ParaId = 2086.into();
+
+	Ok(ChainSpec::from_genesis(
+		"RILT",
+		"kilt_rococo",
+		ChainType::Live,
+		move || {
+			testnet_genesis(
+				wasm,
+				vec![
+					(RILT_COL_ACC_1.into(), None, 200_000 * KILT),
+					(RILT_COL_ACC_2.into(), None, 200_000 * KILT),
+				],
+				kilt_inflation_config(),
+				MAX_COLLATOR_STAKE,
+				vec![
+					(RILT_COL_ACC_1.into(), RILT_COL_SESSION_1.unchecked_into()),
+					(RILT_COL_ACC_2.into(), RILT_COL_SESSION_2.unchecked_into()),
+				],
+				vec![
+					(RILT_COL_ACC_1.into(), 1_000_000 * KILT),
+					(RILT_COL_ACC_2.into(), 1_000_000 * KILT),
+				],
+				id,
+				RILT_COL_ACC_1.into(),
+			)
+		},
+		vec![
+			"/dns4/bootnode.kilt.io/tcp/30365/p2p/12D3KooWS2h3rxqEC9bzrFNKVgrT1iaGz2UAWA1jVG1EB6dEoeJm"
+				.parse()
+				.expect("bootnode address is formatted correctly; qed"),
+			"/dns4/bootnode.kilt.io/tcp/30366/p2p/12D3KooWMSF7Vefmpf67iGMkPrUgvXw38HoxaLmTNpYGYikFS7DZ"
+				.parse()
+				.expect("bootnode address is formatted correctly; qed"),
+		],
+		Some(TelemetryEndpoints::new(vec![(TELEMETRY_URL.to_string(), 0)]).expect("RILT telemetry url is valid; qed")),
+		None,
+		None,
+		Some(properties),
+		Extensions {
+			relay_chain: "rococo".into(),
+			para_id: id.into(),
+		},
+	))
+}
+
+pub fn load_rilt_spec() -> Result<ChainSpec, String> {
+	ChainSpec::from_json_bytes(&include_bytes!("../../res/rilt.json")[..])
+}
+
 #[allow(clippy::too_many_arguments)]
 fn testnet_genesis(
 	wasm_binary: &[u8],
 	stakers: Vec<(AccountId, Option<AccountId>, Balance)>,
 	inflation_config: InflationInfo,
 	max_candidate_stake: Balance,
-	root_key: AccountId,
 	initial_authorities: Vec<(AccountId, AuthorityId)>,
-	endowed_accounts: Vec<AccountId>,
+	endowed_accounts: Vec<(AccountId, Balance)>,
 	id: ParaId,
+	root_key: AccountId,
 ) -> RuntimeGenesisConfig {
 	type VestingPeriod = BlockNumber;
 	type LockingPeriod = BlockNumber;
 
 	// vesting and locks as initially designed
-	let airdrop_accounts_json = &include_bytes!("../../res/genesis/claimable-accounts.json")[..];
-	let airdrop_accounts: Vec<(AccountId, Balance, VestingPeriod, LockingPeriod)> =
-		serde_json::from_slice(airdrop_accounts_json).expect("The file genesis_accounts.json exists and is valid; qed");
+	let claimable_accounts_json = &include_bytes!("../../res/genesis/claimable-accounts.json")[..];
+	let claimable_accounts: Vec<(AccountId, Balance, VestingPeriod, LockingPeriod)> =
+		serde_json::from_slice(claimable_accounts_json)
+			.expect("The file genesis_accounts.json exists and is valid; qed");
 
 	// botlabs account should not be migrated but some have vesting
-	let botlabs_accounts_json = &include_bytes!("../../res/genesis/owned-accounts.json")[..];
-	let botlabs_accounts: Vec<(AccountId, Balance, VestingPeriod, LockingPeriod)> =
-		serde_json::from_slice(botlabs_accounts_json).expect("The file botlabs_accounts.json exists and is valid; qed");
+	let owned_accounts_json = &include_bytes!("../../res/genesis/owned-accounts.json")[..];
+	let owned_accounts: Vec<(AccountId, Balance, VestingPeriod, LockingPeriod)> =
+		serde_json::from_slice(owned_accounts_json).expect("The file botlabs_accounts.json exists and is valid; qed");
 
 	RuntimeGenesisConfig {
 		system: SystemConfig {
@@ -171,9 +250,13 @@ fn testnet_genesis(
 			balances: endowed_accounts
 				.iter()
 				.cloned()
-				.map(|k| (k, 10000000000000000000000000000_u128))
-				.chain(airdrop_accounts.iter().cloned().map(|(who, total, _, _)| (who, total)))
-				.chain(botlabs_accounts.iter().cloned().map(|(who, total, _, _)| (who, total)))
+				.chain(
+					claimable_accounts
+						.iter()
+						.cloned()
+						.map(|(who, total, _, _)| (who, total)),
+				)
+				.chain(owned_accounts.iter().cloned().map(|(who, total, _, _)| (who, total)))
 				.collect(),
 		},
 		sudo: SudoConfig { key: Some(root_key) },
@@ -182,25 +265,13 @@ fn testnet_genesis(
 			..Default::default()
 		},
 		vesting: VestingConfig {
-			vesting: botlabs_accounts
+			vesting: owned_accounts
 				.iter()
 				.cloned()
 				.filter(|(_, _, vesting_length, _)| !vesting_length.is_zero())
 				.map(|(who, _, vesting_length, _)| (who, 0u64, vesting_length, 0))
 				.collect(),
 		},
-		council: CouncilConfig {
-			members: vec![],
-			phantom: Default::default(),
-		},
-		technical_committee: TechnicalCommitteeConfig {
-			members: vec![],
-			phantom: Default::default(),
-		},
-		treasury: Default::default(),
-		tips_membership: Default::default(),
-		technical_membership: Default::default(),
-		democracy: Default::default(),
 		parachain_staking: ParachainStakingConfig {
 			stakers,
 			inflation_config,
@@ -221,6 +292,18 @@ fn testnet_genesis(
 				})
 				.collect::<Vec<_>>(),
 		},
+		council: CouncilConfig {
+			members: initial_authorities.iter().map(|(acc, _)| acc).cloned().collect(),
+			phantom: Default::default(),
+		},
+		technical_committee: TechnicalCommitteeConfig {
+			members: initial_authorities.iter().map(|(acc, _)| acc).cloned().collect(),
+			phantom: Default::default(),
+		},
+		treasury: Default::default(),
+		technical_membership: Default::default(),
+		tips_membership: Default::default(),
+		democracy: Default::default(),
 		polkadot_xcm: PolkadotXcmConfig {
 			safe_xcm_version: Some(SAFE_XCM_VERSION),
 			..Default::default()
