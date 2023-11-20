@@ -74,8 +74,8 @@
 //!   creation or update operation is bounded by `MaxNewKeyAgreementKeys`.
 //! - After it is generated and signed by a client, a DID-authorised operation
 //!   can be submitted for evaluation anytime between the time the operation is
-//!   created and [MaxBlocksTxValidity] blocks after that. After this time has
-//!   elapsed, the operation is considered invalid.
+//!   created and [`Config::MaxBlocksTxValidity`] blocks after that. After this
+//!   time has elapsed, the operation is considered invalid.
 
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::unused_unit)]
@@ -1241,7 +1241,7 @@ pub mod pallet {
 		///   error.
 		/// * When the DID already exists, this function returns a
 		///   `AlreadyExists` error.
-		/// * When the [sender] doesn't have enough free balance, this function
+		/// * When the `sender` doesn't have enough free balance, this function
 		///   returns a `UnableToPayFees` error.
 		pub fn try_insert_did(
 			did_identifier: DidIdentifierOf<T>,
@@ -1375,8 +1375,8 @@ pub mod pallet {
 			Ok(())
 		}
 
-		/// Verify that [account] is authorized to dispatch DID calls on behave
-		/// of [did_identifier].
+		/// Verify that `account` is authorized to dispatch DID calls on behave
+		/// of `did_identifier`.
 		///
 		/// # Errors
 		///
