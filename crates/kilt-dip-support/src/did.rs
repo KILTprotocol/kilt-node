@@ -74,7 +74,10 @@ impl From<RevealedDidKeysSignatureAndCallVerifierError> for u8 {
 }
 
 /// Proof verifier that tries to verify a DID signature over a given payload by
-/// using one of the DID keys revealed in the Merkle proof.
+/// using one of the DID keys revealed in the Merkle proof. This verifier is to
+/// typically be used in conjunction with a verifier that takes a user-provided
+/// input Merkle proof, verifies it, and transforms it into a struct that this
+/// and other verifiers can easily consume, e.g., a list of DID keys.
 /// The generic types indicate the following:
 /// * `Call`: The call to be dispatched on the local chain after verifying the
 ///   DID signature.
@@ -163,7 +166,7 @@ impl<
 		(DidVerificationKey<RemoteAccountId>, DidVerificationKeyRelationship),
 		RevealedDidKeysSignatureAndCallVerifierError,
 	> {
-		let block_number = ContextProvider::block_number();
+		let block_number = ContextProvider::current_block_number();
 		let is_signature_fresh = if let Some(blocks_ago_from_now) =
 			block_number.checked_sub(&merkle_revealed_did_signature.did_signature.block_number)
 		{

@@ -16,4 +16,5 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+/// The output of a type implementing the [`sp_runtime::traits::Hash`] trait.
 pub type OutputOf<Hasher> = <Hasher as sp_runtime::traits::Hash>::Output;

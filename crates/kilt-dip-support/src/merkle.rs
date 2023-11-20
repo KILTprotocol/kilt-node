@@ -26,6 +26,7 @@ use sp_runtime::{BoundedVec, SaturatedConversion};
 use sp_std::{fmt::Debug, marker::PhantomData, vec::Vec};
 use sp_trie::{verify_trie_proof, LayoutV1};
 
+/// Type of a Merkle proof containing DID-related information.
 #[derive(Encode, Decode, RuntimeDebug, Clone, Eq, PartialEq, Default, TypeInfo)]
 pub struct DidMerkleProof<BlindedValues, Leaf> {
 	pub blinded: BlindedValues,
@@ -33,6 +34,7 @@ pub struct DidMerkleProof<BlindedValues, Leaf> {
 	pub revealed: Vec<Leaf>,
 }
 
+/// Relationship of a key to a DID Document.
 #[derive(Clone, Copy, RuntimeDebug, Encode, Decode, PartialEq, Eq, TypeInfo, PartialOrd, Ord, MaxEncodedLen)]
 pub enum DidKeyRelationship {
 	Encryption,
@@ -57,6 +59,7 @@ impl TryFrom<DidKeyRelationship> for DidVerificationKeyRelationship {
 	}
 }
 
+/// The key of a Merkle leaf revealing a DID key for a DID Document.
 #[derive(Clone, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo)]
 pub struct DidKeyMerkleKey<KeyId>(pub KeyId, pub DidKeyRelationship);
 
@@ -65,7 +68,7 @@ impl<KeyId> From<(KeyId, DidKeyRelationship)> for DidKeyMerkleKey<KeyId> {
 		Self(value.0, value.1)
 	}
 }
-
+/// The value of a Merkle leaf revealing a DID key for a DID Document.
 #[derive(Clone, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo)]
 pub struct DidKeyMerkleValue<BlockNumber, AccountId>(pub DidPublicKeyDetails<BlockNumber, AccountId>);
 
@@ -77,6 +80,7 @@ impl<BlockNumber, AccountId> From<DidPublicKeyDetails<BlockNumber, AccountId>>
 	}
 }
 
+/// The key of a Merkle leaf revealing the web3name linked to a DID Document.
 #[derive(Clone, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo)]
 pub struct Web3NameMerkleKey<Web3Name>(pub Web3Name);
 
@@ -85,6 +89,7 @@ impl<Web3Name> From<Web3Name> for Web3NameMerkleKey<Web3Name> {
 		Self(value)
 	}
 }
+/// The value of a Merkle leaf revealing the web3name linked to a DID Document.
 #[derive(Clone, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo)]
 pub struct Web3NameMerkleValue<BlockNumber>(pub BlockNumber);
 
@@ -94,6 +99,7 @@ impl<BlockNumber> From<BlockNumber> for Web3NameMerkleValue<BlockNumber> {
 	}
 }
 
+/// The key of a Merkle leaf revealing the an account linked to a DID Document.
 #[derive(Clone, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo)]
 pub struct LinkedAccountMerkleKey<AccountId>(pub AccountId);
 
@@ -102,7 +108,8 @@ impl<AccountId> From<AccountId> for LinkedAccountMerkleKey<AccountId> {
 		Self(value)
 	}
 }
-
+/// The value of a Merkle leaf revealing the an account linked to a DID
+/// Document.
 #[derive(Clone, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo)]
 pub struct LinkedAccountMerkleValue;
 
@@ -112,10 +119,10 @@ impl From<()> for LinkedAccountMerkleValue {
 	}
 }
 
+/// All possible Merkle leaf types that can be revealed as part of a DIP
+/// identity Merkle proof.
 #[derive(Clone, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo)]
 pub enum RevealedDidMerkleProofLeaf<KeyId, AccountId, BlockNumber, Web3Name, LinkedAccountId> {
-	// The key and value for the leaves of a merkle proof that contain a reference
-	// (by ID) to the key details, provided in a separate leaf.
 	DidKey(DidKeyMerkleKey<KeyId>, DidKeyMerkleValue<BlockNumber, AccountId>),
 	Web3Name(Web3NameMerkleKey<Web3Name>, Web3NameMerkleValue<BlockNumber>),
 	LinkedAccount(LinkedAccountMerkleKey<LinkedAccountId>, LinkedAccountMerkleValue),
@@ -152,19 +159,32 @@ where
 	}
 }
 
+/// The details of a DID key after it has been successfully verified in a Merkle
+/// proof.
 #[derive(Clone, Encode, Decode, PartialEq, MaxEncodedLen, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo)]
 pub struct RevealedDidKey<KeyId, BlockNumber, AccountId> {
+	/// The key ID, according to the provider's definition.
 	pub id: KeyId,
+	/// The key relationship to the subject's DID Document.
 	pub relationship: DidKeyRelationship,
+	/// The details of the DID Key, including its creation block number on the
+	/// provider chain.
 	pub details: DidPublicKeyDetails<BlockNumber, AccountId>,
 }
 
+/// The details of a web3name after it has been successfully verified in a
+/// Merkle proof.
 #[derive(Clone, Encode, Decode, PartialEq, MaxEncodedLen, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo)]
 pub struct RevealedWeb3Name<Web3Name, BlockNumber> {
+	/// The web3name.
 	pub web3_name: Web3Name,
+	/// The block number on the provider chain in which it was linked to the DID
+	/// subject.
 	pub claimed_at: BlockNumber,
 }
 
+/// The complete set of information that is provided by the DIP Merkle proof
+/// verifier upon successful verification of a DIP Merkle proof.
 #[derive(Clone, Debug, PartialEq, Eq, TypeInfo, MaxEncodedLen, Encode, Decode, DefaultNoBound)]
 pub struct RevealedDidMerkleProofLeaves<
 	KeyId,
@@ -175,8 +195,13 @@ pub struct RevealedDidMerkleProofLeaves<
 	const MAX_REVEALED_KEYS_COUNT: u32,
 	const MAX_REVEALED_ACCOUNTS_COUNT: u32,
 > {
+	/// The list of [`RevealedDidKey`]s revealed in the Merkle proof, up to a
+	/// maximum of `MAX_REVEALED_KEYS_COUNT`.
 	pub did_keys: BoundedVec<RevealedDidKey<KeyId, BlockNumber, AccountId>, ConstU32<MAX_REVEALED_KEYS_COUNT>>,
+	/// The optional [`RevealedWeb3Name`] revealed in the Merkle proof.
 	pub web3_name: Option<RevealedWeb3Name<Web3Name, BlockNumber>>,
+	/// The list of linked accounts revealed in the Merkle proof, up to a
+	/// maximum of `MAX_REVEALED_ACCOUNTS_COUNT`.
 	pub linked_accounts: BoundedVec<LinkedAccountId, ConstU32<MAX_REVEALED_ACCOUNTS_COUNT>>,
 }
 
@@ -220,9 +245,30 @@ impl From<DidMerkleProofVerifierError> for u8 {
 	}
 }
 
-/// A type that verifies a Merkle proof that reveals some leaves representing
-/// keys in a DID Document.
-/// Can also be used on its own, without any DID signature verification.
+/// A type that verifies a DIP Merkle proof revealing some leaves representing
+/// parts of a KILT DID identity stored on the KILT chain.
+/// If cross-chain DID signatures are not required for the specific use case,
+/// this verifier can also be used on its own, without any DID signature
+/// verification.
+/// The Merkle proof is assumed to have been generated using one of the
+/// versioned identity commitment generators, as shown in the [KILT runtime
+/// definitions](../../../runtimes/common/src/dip/README.md).
+/// The generic types indicate the following:
+/// * `Hasher`: The hasher used by the producer to hash the Merkle leaves and
+///   produce the identity commitment.
+/// * `KeyId`: The type of a DID key ID according to the producer's definition.
+/// * `AccountId`: The type of an account ID according to the producer's
+///   definition.
+/// * `BlockNumber`: The type of a block number according to the producer's
+///   definition.
+/// * `Web3Name`: The type of a web3names according to the producer's
+///   definition.
+/// * `LinkedAccountId`: The type of a DID-linked account ID according to the
+///   producer's definition.
+/// * `MAX_REVEALED_KEYS_COUNT`: The maximum number of DID keys that are
+///   supported when verifying the Merkle proof.
+/// * `MAX_REVEALED_ACCOUNTS_COUNT`: The maximum number of linked accounts that
+///   are supported when verifying the Merkle proof.
 pub(crate) struct DidMerkleProofVerifier<
 	Hasher,
 	KeyId,
