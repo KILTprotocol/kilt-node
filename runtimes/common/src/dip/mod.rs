@@ -16,5 +16,9 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+#![doc = include_str!("./README.md")]
+
+/// Logic for collecting information related to a KILT DID.
 pub mod did;
+/// Logic for generating Merkle commitments of a KILT DID identity.
 pub mod merkle;

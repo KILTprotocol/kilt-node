@@ -45,15 +45,24 @@ impl From<LinkedDidInfoProviderError> for u16 {
 pub type Web3OwnershipOf<Runtime> =
 	RevealedWeb3Name<<Runtime as pallet_web3_names::Config>::Web3Name, BlockNumberFor<Runtime>>;
 
+/// Identity information related to a KILT DID relevant for cross-chain
+/// transactions via the DIP protocol.
 pub struct LinkedDidInfoOf<Runtime>
 where
 	Runtime: did::Config + pallet_web3_names::Config,
 {
+	/// The DID Document of the subject.
 	pub did_details: DidDetails<Runtime>,
+	/// The optional web3name details linked to the subject.
 	pub web3_name_details: Option<Web3OwnershipOf<Runtime>>,
+	/// The list of accounts the subject has previously linked via the linking
+	/// pallet.
 	pub linked_accounts: Vec<LinkableAccountId>,
 }
 
+/// Type implementing the [`IdentityProvider`] trait which is responsible for
+/// collecting the DID information relevant for DIP cross-chain transactions by
+/// interacting with the different pallets involved.
 pub struct LinkedDidInfoProvider;
 
 impl<Runtime> IdentityProvider<Runtime> for LinkedDidInfoProvider
