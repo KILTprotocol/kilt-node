@@ -20,7 +20,7 @@ After removal, the identity becomes unusable cross-chain, although it will still
 
 Being chain-agnostic, most of the runtime configurations must be passed to the pallet's `Config` trait. Specifically:
 
-* `type CommitOriginCheck: EnsureOrigin<Self::RuntimeOrigin, Success = Self::CommitOrigin>`: The check ensuring a runtime origin is allowed to generate and remove identity commitments.
+* `type CommitOriginCheck: EnsureOrigin<Self::RuntimeOrigin, Success = Self::CommitOrigin>`: The check ensuring a given runtime origin is allowed to generate and remove identity commitments.
 * `type CommitOrigin: SubmitterInfo<Submitter = Self::AccountId>`: The resulting origin if `CommitOriginCheck` returns with errors. The origin is not required to be an `AccountId`, but must include information about the `AccountId` of the tx submitter.
 * `type Identifier: Parameter + MaxEncodedLen`: The type of an identifier used to retrieve identity information about a subject.
 * `type IdentityCommitmentGenerator: IdentityCommitmentGenerator<Self>`: The type responsible for generating identity commitments, given the identity information associated to a given `Identifier`.
