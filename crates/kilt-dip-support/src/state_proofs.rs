@@ -165,7 +165,7 @@ pub(super) mod relay_chain {
 		RelayChainState::BlockNumber: Copy + Into<U256> + TryFrom<U256> + HasCompact,
 		RelayChainState::Key: AsRef<[u8]>,
 	{
-		/// Given a relaychain state root provided by the [`RelayChainState`]
+		/// Given a relaychain state root provided by the `RelayChainState`
 		/// generic type, verify a state proof for the parachain with the
 		/// provided ID.
 		#[allow(clippy::result_unit_err)]

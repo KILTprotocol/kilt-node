@@ -21,11 +21,13 @@
 use parity_scale_codec::Codec;
 
 sp_api::decl_runtime_apis! {
+	/// Runtime API to generate a DIP proof with the provided parameters.
 	pub trait DipProvider<ProofRequest, Success, Error> where
 		ProofRequest: Codec,
 		Success: Codec,
 		Error: Codec,
 		{
+			/// Generate a DIP proof with the parameters specified in the request.
 			fn generate_proof(request: ProofRequest) -> Result<Success, Error>;
 		}
 }

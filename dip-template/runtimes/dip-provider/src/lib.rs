@@ -16,6 +16,12 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+//! Runtime template of a Decentralized Identity Provider (DIP) provider, which
+//! includes, beyond system pallets, [`did::Pallet`],
+//! [`pallet_web3_names::Pallet`], and [`pallet_did_lookup::Pallet`] pallets, as
+//! well as the [`pallet_dip_provider::Pallet`] pallet and the
+//! [`pallet_deposit_storage::Pallet`] pallet.
+
 #![cfg_attr(not(feature = "std"), no_std)]
 #![recursion_limit = "256"]
 
