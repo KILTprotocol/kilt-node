@@ -23,6 +23,12 @@
 pub mod identity;
 pub mod traits;
 
+#[cfg(test)]
+pub mod mock;
+
+#[cfg(feature = "runtime-benchmarks")]
+pub mod benchmarking;
+
 mod origin;
 
 pub use crate::{origin::*, pallet::*, traits::SuccessfulProofVerifier};
@@ -31,7 +37,12 @@ pub use crate::{origin::*, pallet::*, traits::SuccessfulProofVerifier};
 pub mod pallet {
 	use super::*;
 
-	use frame_support::{dispatch::Dispatchable, pallet_prelude::*, traits::Contains, Twox64Concat};
+	use frame_support::{
+		dispatch::{Dispatchable, GetDispatchInfo},
+		pallet_prelude::*,
+		traits::Contains,
+		Twox64Concat,
+	};
 	use frame_system::pallet_prelude::*;
 	use parity_scale_codec::{FullCodec, MaxEncodedLen};
 	use scale_info::TypeInfo;
@@ -47,7 +58,7 @@ pub mod pallet {
 
 	#[pallet::storage]
 	#[pallet::getter(fn identity_proofs)]
-	pub(crate) type IdentityEntries<T> =
+	pub type IdentityEntries<T> =
 		StorageMap<_, Twox64Concat, <T as Config>::Identifier, <T as Config>::LocalIdentityInfo>;
 
 	#[pallet::config]
@@ -64,7 +75,7 @@ pub mod pallet {
 		/// The logic of the proof verifier, called upon each execution of the
 		/// `dispatch_as` extrinsic.
 		type ProofVerifier: IdentityProofVerifier<Self>;
-		type RuntimeCall: Parameter + Dispatchable<RuntimeOrigin = <Self as Config>::RuntimeOrigin>;
+		type RuntimeCall: Parameter + Dispatchable<RuntimeOrigin = <Self as Config>::RuntimeOrigin> + GetDispatchInfo;
 		type RuntimeOrigin: From<Origin<Self>> + From<<Self as frame_system::Config>::RuntimeOrigin>;
 	}
 

@@ -34,7 +34,7 @@ mod benchmarks {
 		let submitter = T::AccountId::new(1);
 		let subject = T::Identifier::new(1);
 		let commitment_version = 0;
-		// TODO insert worst case. Did with all keys.
+		// TODO insert worst case. Did with all keys, w3n and .
 
 		assert!(Pallet::<T>::identity_commitments(&subject, commitment_version).is_none());
 

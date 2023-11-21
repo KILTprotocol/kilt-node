@@ -6495,12 +6495,15 @@ dependencies = [
 name = "pallet-dip-consumer"
 version = "1.12.0-dev"
 dependencies = [
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
  "kilt-support",
  "parity-scale-codec",
  "scale-info",
  "sp-core",
+ "sp-io",
+ "sp-keystore",
  "sp-std",
 ]
 
