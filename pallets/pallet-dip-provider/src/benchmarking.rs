@@ -40,7 +40,7 @@ mod benchmarks {
 		let origin: T::RuntimeOrigin = T::CommitOriginCheck::generate_origin(submitter, subject);
 
 		#[extrinsic_call]
-		Pallet::commit_identity(origin, subject, Some(commitment_version));
+		Pallet::<T>::commit_identity(origin.into(), subject, Some(commitment_version));
 
 		assert!(Pallet::identity_commitments(&subject, commitment_version).is_some());
 	}

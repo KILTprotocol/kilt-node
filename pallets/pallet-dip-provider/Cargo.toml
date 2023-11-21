@@ -21,8 +21,8 @@ sp-io = { workspace = true, features = ["std"] }
 did.workspace = true
 frame-support.workspace = true
 frame-system.workspace = true
-parity-scale-codec = {workspace = true, features = ["derive"]}
-scale-info = {workspace = true, features = ["derive"]}
+parity-scale-codec = { workspace = true, features = ["derive"] }
+scale-info = { workspace = true, features = ["derive"] }
 sp-std.workspace = true
 
 # Benchmarks
@@ -47,5 +47,5 @@ runtime-benchmarks = [
   "frame-benchmarking/runtime-benchmarks",
   "kilt-support/mock",
   "kilt-support/runtime-benchmarks",
-  "sp-keystore"
+  "sp-keystore",
 ]

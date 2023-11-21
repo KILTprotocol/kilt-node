@@ -16,9 +16,5 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-#[cfg(feature = "runtime-benchmarks")]
-pub mod benchmarks;
-
 pub mod did;
 pub mod merkle;
-pub mod weights;

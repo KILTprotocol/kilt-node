@@ -89,61 +89,6 @@ pub mod v0 {
 		LinkableAccountId,
 	>;
 
-	pub(crate) fn insert_linked_accounts<Runtime>(
-		trie_builder: &mut TrieDBMut<LayoutV1<Runtime::Hashing>>,
-		linked_accounts: &Vec<LinkableAccountId>,
-	) -> Result<(), DidMerkleProofError>
-	where
-		Runtime: did::Config + pallet_web3_names::Config,
-	{
-		linked_accounts
-			.iter()
-			.try_for_each(|linked_account| -> Result<(), DidMerkleProofError> {
-				let linked_account_leaf =
-					ProofLeafOf::<Runtime>::LinkedAccount(linked_account.clone().into(), ().into());
-				trie_builder
-					.insert(
-						linked_account_leaf.encoded_key().as_slice(),
-						linked_account_leaf.encoded_value().as_slice(),
-					)
-					.map_err(|_| {
-						log::error!(
-							"Failed to insert linked account in the trie builder. Linked account leaf: {:#?}",
-							linked_account_leaf
-						);
-						DidMerkleProofError::Internal
-					})?;
-				Ok(())
-			})
-	}
-
-	pub(crate) fn insert_web3name<Runtime>(
-		trie_builder: &mut TrieDBMut<LayoutV1<Runtime::Hashing>>,
-		web3name_details: &Web3OwnershipOf<Runtime>,
-	) -> Result<(), DidMerkleProofError>
-	where
-		Runtime: did::Config + pallet_web3_names::Config,
-	{
-		let web3_name_leaf = ProofLeafOf::<Runtime>::Web3Name(
-			web3name_details.web3_name.clone().into(),
-			web3name_details.claimed_at.into(),
-		);
-		trie_builder
-			.insert(
-				web3_name_leaf.encoded_key().as_slice(),
-				web3_name_leaf.encoded_value().as_slice(),
-			)
-			.map_err(|_| {
-				log::error!(
-					"Failed to insert web3name in the trie builder. Web3name leaf: {:#?}",
-					web3_name_leaf
-				);
-				DidMerkleProofError::Internal
-			})?;
-
-		Ok(())
-	}
-
 	pub(super) fn calculate_root_with_db<Runtime>(
 		identity: &LinkedDidInfoOf<Runtime>,
 		db: &mut MemoryDB<Runtime::Hashing>,
