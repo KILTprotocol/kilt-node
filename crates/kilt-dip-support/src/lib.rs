@@ -19,6 +19,10 @@
 //! Collection of support traits, types and functions for integrating KILT as an
 //! identity provider following the Decentralized Identity Provider (DIP)
 //! protocol.
+//!
+//! Consumers of KILT identities should prefer using directly
+//! [`KiltVersionedChildProviderVerifier`] for consumer relaychains and
+//! [`KiltVersionedSiblingProviderVerifier`] for consumer sibling parachains.
 
 #![cfg_attr(not(feature = "std"), no_std)]
 

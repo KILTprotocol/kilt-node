@@ -30,13 +30,18 @@ pub mod v0 {
 
 	#[derive(Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo, Clone)]
 	pub struct ParachainRootStateProof<RelayBlockHeight> {
+		/// The relaychain block height for which the proof has been generated.
 		pub(crate) relay_block_height: RelayBlockHeight,
+		/// The raw state proof.
 		pub(crate) proof: Vec<Vec<u8>>,
 	}
 
 	#[derive(Encode, Decode, PartialEq, Eq, RuntimeDebug, TypeInfo, Clone)]
 	pub struct DipMerkleProofAndDidSignature<BlindedValues, Leaf, BlockNumber> {
+		/// The DIP Merkle proof revealing some leaves about the DID subject's
+		/// identity.
 		pub(crate) leaves: DidMerkleProof<BlindedValues, Leaf>,
+		/// The cross-chain DID signature.
 		pub(crate) signature: TimeBoundDidSignature<BlockNumber>,
 	}
 }
