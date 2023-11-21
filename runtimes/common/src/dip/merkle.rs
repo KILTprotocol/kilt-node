@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 use did::{DidVerificationKeyRelationship, KeyIdOf};
-use frame_support::{ensure, pallet_prelude::Weight, RuntimeDebug};
+use frame_support::{pallet_prelude::Weight, RuntimeDebug};
 use frame_system::pallet_prelude::BlockNumberFor;
 use kilt_dip_support::merkle::{DidKeyMerkleKey, DidKeyMerkleValue, DidMerkleProof};
 use pallet_did_lookup::linkable_account::LinkableAccountId;
@@ -75,9 +75,6 @@ impl From<DidMerkleProofError> for u16 {
 }
 
 pub mod v0 {
-	use sp_trie::TrieDBMut;
-
-	use crate::dip::did::Web3OwnershipOf;
 
 	use super::*;
 

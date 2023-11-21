@@ -34,15 +34,39 @@ mod benchmarks {
 		let submitter = T::AccountId::new(1);
 		let subject = T::Identifier::new(1);
 		let commitment_version = 0;
+		// TODO insert worst case. Did with all keys.
 
-		assert!(Pallet::identity_commitments(&subject, commitment_version).is_none());
+		assert!(Pallet::<T>::identity_commitments(&subject, commitment_version).is_none());
 
-		let origin: T::RuntimeOrigin = T::CommitOriginCheck::generate_origin(submitter, subject);
+		let origin: T::RuntimeOrigin = T::CommitOriginCheck::generate_origin(submitter, subject.clone());
 
 		#[extrinsic_call]
-		Pallet::<T>::commit_identity(origin.into(), subject, Some(commitment_version));
+		Pallet::<T>::commit_identity(origin as T::RuntimeOrigin, subject.clone(), Some(commitment_version));
 
-		assert!(Pallet::identity_commitments(&subject, commitment_version).is_some());
+		assert!(Pallet::<T>::identity_commitments(&subject, commitment_version).is_some());
+	}
+
+	#[benchmark]
+	fn delete_identity_commitment() {
+		let submitter = T::AccountId::new(1);
+		let subject = T::Identifier::new(1);
+		let commitment_version = 0;
+
+		let origin: T::RuntimeOrigin = T::CommitOriginCheck::generate_origin(submitter, subject.clone());
+
+		Pallet::<T>::commit_identity(
+			origin.clone() as T::RuntimeOrigin,
+			subject.clone(),
+			Some(commitment_version),
+		)
+		.expect("Inserting Identity should not fail.");
+
+		assert!(Pallet::<T>::identity_commitments(&subject, commitment_version).is_some());
+
+		#[extrinsic_call]
+		Pallet::<T>::delete_identity_commitment(origin as T::RuntimeOrigin, subject.clone(), Some(commitment_version));
+
+		assert!(Pallet::<T>::identity_commitments(&subject, commitment_version).is_none());
 	}
 
 	#[cfg(test)]

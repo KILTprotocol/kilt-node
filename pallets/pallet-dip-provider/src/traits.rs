@@ -25,7 +25,6 @@ pub use identity_provision::*;
 pub mod identity_provision {
 	use super::*;
 
-	use frame_support::weights::Weight;
 	use sp_std::marker::PhantomData;
 
 	pub trait IdentityProvider<Runtime>
@@ -36,7 +35,6 @@ pub mod identity_provision {
 		type Success;
 
 		fn retrieve(identifier: &Runtime::Identifier) -> Result<Self::Success, Self::Error>;
-		fn get_retrieve_weight() -> Weight;
 	}
 
 	// Return the `Default` value if `Identity` adn `Details` both implement it.
@@ -52,10 +50,6 @@ pub mod identity_provision {
 
 		fn retrieve(_identifier: &Runtime::Identifier) -> Result<Self::Success, Self::Error> {
 			Ok(Identity::default())
-		}
-
-		fn get_retrieve_weight() -> Weight {
-			Weight::zero()
 		}
 	}
 }

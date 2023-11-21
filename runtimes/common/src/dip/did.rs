@@ -17,7 +17,6 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use did::did_details::DidDetails;
-use frame_support::weights::Weight;
 use frame_system::pallet_prelude::BlockNumberFor;
 use kilt_dip_support::merkle::RevealedWeb3Name;
 use pallet_did_lookup::linkable_account::LinkableAccountId;
@@ -25,8 +24,6 @@ use pallet_dip_provider::traits::IdentityProvider;
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
 use sp_std::{marker::PhantomData, vec::Vec};
-
-use crate::dip::weights::{SubstrateWeight, WeightInfo};
 
 #[derive(Encode, Decode, TypeInfo, Debug)]
 pub enum LinkedDidInfoProviderError {
@@ -99,9 +96,5 @@ where
 			web3_name_details,
 			linked_accounts,
 		})
-	}
-
-	fn get_retrieve_weight() -> Weight {
-		SubstrateWeight::<Runtime>::retrieve_linked_accounts()
 	}
 }
