@@ -60,7 +60,6 @@ pub mod identity_generation {
 
 	use crate::IdentityOf;
 
-	use frame_support::weights::Weight;
 	use parity_scale_codec::{FullCodec, MaxEncodedLen};
 	use scale_info::TypeInfo;
 	use sp_std::{fmt::Debug, marker::PhantomData};
@@ -78,8 +77,6 @@ pub mod identity_generation {
 			identity: &IdentityOf<Runtime>,
 			version: IdentityCommitmentVersion,
 		) -> Result<Self::Output, Self::Error>;
-
-		fn get_generate_commitment_weight(_identifier: &Runtime::Identifier) -> Weight;
 	}
 
 	// Implement the `IdentityCommitmentGenerator` by returning the `Default` value
@@ -100,10 +97,6 @@ pub mod identity_generation {
 			_version: IdentityCommitmentVersion,
 		) -> Result<Self::Output, Self::Error> {
 			Ok(Output::default())
-		}
-
-		fn get_generate_commitment_weight(_identifier: &Runtime::Identifier) -> Weight {
-			Weight::zero()
 		}
 	}
 }

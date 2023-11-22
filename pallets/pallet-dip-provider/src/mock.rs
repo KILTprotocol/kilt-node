@@ -84,13 +84,13 @@ impl mock_origin::Config for TestRuntime {
 pub(crate) struct ExtBuilder;
 
 impl ExtBuilder {
-	pub fn build(self) -> sp_io::TestExternalities {
+	pub fn _build(self) -> sp_io::TestExternalities {
 		sp_io::TestExternalities::default()
 	}
 
 	#[cfg(feature = "runtime-benchmarks")]
 	pub fn build_with_keystore(self) -> sp_io::TestExternalities {
-		let mut ext = self.build();
+		let mut ext = self._build();
 
 		let keystore = sp_keystore::testing::MemoryKeystore::new();
 		ext.register_extension(sp_keystore::KeystoreExt(sp_std::sync::Arc::new(keystore)));

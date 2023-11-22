@@ -20,8 +20,11 @@ use frame_support::traits::{
 	fungible::hold::Mutate,
 	tokens::fungible::{Inspect, MutateHold},
 };
-use sp_runtime::{traits::BlakeTwo256, AccountId32, DispatchError};
+use sp_runtime::DispatchError;
 use sp_std::vec::Vec;
+
+#[cfg(feature = "runtime-benchmarks")]
+use sp_runtime::{traits::BlakeTwo256, AccountId32};
 
 use crate::deposit::{free_deposit, reserve_deposit, Deposit};
 
