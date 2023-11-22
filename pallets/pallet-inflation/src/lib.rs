@@ -24,8 +24,8 @@
 //!
 //! ## Assumptions
 //!
-//! - The minting of rewards after [InitialPeriodLength] many blocks is handled
-//!   by another pallet, e.g., ParachainStaking.
+//! - The minting of rewards after [`Config::InitialPeriodLength`] many blocks
+//!   is handled by another pallet, e.g., ParachainStaking.
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
