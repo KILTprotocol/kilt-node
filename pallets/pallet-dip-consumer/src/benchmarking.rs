@@ -38,7 +38,7 @@ mod benchmarks {
 	use super::*;
 
 	#[benchmark]
-	fn commit_identity() {
+	fn dispatch_as() {
 		let submitter = T::AccountId::new(1);
 		let subject = T::Identifier::new(1);
 
@@ -50,6 +50,7 @@ mod benchmarks {
 
 		let boxed_call = Box::from(call);
 
+		// todo no into in block.
 		#[block]
 		{
 			Pallet::<T>::dispatch_as(origin.into(), subject.clone(), ().into(), boxed_call)
