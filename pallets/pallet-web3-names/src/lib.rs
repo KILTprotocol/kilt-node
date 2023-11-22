@@ -314,7 +314,11 @@ pub mod pallet {
 			let (decoded_name, is_claimed) = Self::check_banning_preconditions(name)?;
 
 			if is_claimed {
-				Self::unregister_name(&decoded_name)?;
+				let owner = Self::unregister_name(&decoded_name)?.owner;
+				Self::deposit_event(Event::<T>::Web3NameReleased {
+					owner,
+					name: decoded_name.clone(),
+				});
 			}
 
 			Self::ban_name(&decoded_name);

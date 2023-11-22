@@ -210,10 +210,7 @@ pub mod pallet {
 		AttestationRevoked(AttesterOf<T>, ClaimHashOf<T>),
 		/// An attestation has been removed.
 		/// \[account id, claim hash\]
-		AttestationRemoved(AttesterOf<T>, ClaimHashOf<T>),
-		/// The deposit owner reclaimed a deposit by removing an attestation.
-		/// \[account id, claim hash\]
-		DepositReclaimed(AccountIdOf<T>, ClaimHashOf<T>),
+		AttestationRemoved(ClaimHashOf<T>),
 	}
 
 	#[pallet::error]
@@ -420,14 +417,13 @@ pub mod pallet {
 			log::debug!("removing Attestation");
 
 			Self::remove_attestation(attestation, claim_hash)?;
-			Self::deposit_event(Event::AttestationRemoved(who, claim_hash));
 
 			Ok(Some(<T as pallet::Config>::WeightInfo::remove()).into())
 		}
 
 		/// Reclaim a storage deposit by removing an attestation
 		///
-		/// Emits `DepositReclaimed`.
+		/// Emits `AttestationRemoved`.
 		///
 		/// # <weight>
 		/// Weight: O(1)
@@ -445,7 +441,6 @@ pub mod pallet {
 			log::debug!("removing Attestation");
 
 			Self::remove_attestation(attestation, claim_hash)?;
-			Self::deposit_event(Event::DepositReclaimed(who, claim_hash));
 
 			Ok(())
 		}
@@ -509,6 +504,7 @@ pub mod pallet {
 			if let Some(authorization_id) = &attestation.authorization_id {
 				ExternalAttestations::<T>::remove(authorization_id, claim_hash);
 			}
+			Self::deposit_event(Event::AttestationRemoved(claim_hash));
 			Ok(())
 		}
 	}
