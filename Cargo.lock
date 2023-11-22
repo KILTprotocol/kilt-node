@@ -6530,6 +6530,7 @@ dependencies = [
  "sp-core",
  "sp-io",
  "sp-keystore",
+ "sp-runtime",
  "sp-std",
 ]
 
@@ -6542,11 +6543,12 @@ dependencies = [
  "frame-support",
  "frame-system",
  "kilt-support",
- "pallet-did-lookup",
  "parity-scale-codec",
  "scale-info",
+ "sp-core",
  "sp-io",
  "sp-keystore",
+ "sp-runtime",
  "sp-std",
 ]
 
