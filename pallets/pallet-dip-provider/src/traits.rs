@@ -37,7 +37,7 @@ pub mod identity_provision {
 		fn retrieve(identifier: &Runtime::Identifier) -> Result<Self::Success, Self::Error>;
 	}
 
-	// Return the `Default` value if `Identity` adn `Details` both implement it.
+	// Return the `Default` value if `Identity` and `Details` both implement it.
 	pub struct DefaultIdentityProvider<Identity>(PhantomData<Identity>);
 
 	impl<Runtime, Identity> IdentityProvider<Runtime> for DefaultIdentityProvider<Identity>

@@ -29,6 +29,7 @@ sp-std.workspace = true
 frame-benchmarking = { workspace = true, optional = true }
 kilt-support = { workspace = true, optional = true }
 sp-keystore = { workspace = true, optional = true }
+pallet-did-lookup = { workspace = true, optional = true }
 
 [features]
 default = ["std"]
@@ -48,4 +49,6 @@ runtime-benchmarks = [
   "kilt-support/mock",
   "kilt-support/runtime-benchmarks",
   "sp-keystore",
+  "pallet-did-lookup",
+
 ]

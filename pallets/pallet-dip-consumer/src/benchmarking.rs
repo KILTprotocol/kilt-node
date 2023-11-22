@@ -55,8 +55,6 @@ mod benchmarks {
 			Pallet::<T>::dispatch_as(origin.into(), subject.clone(), ().into(), boxed_call)
 				.expect("Dispatch_as should not fail.");
 		}
-
-		// assert!(Pallet::<T>::identity_commitments(&subject, commitment_version).is_some());
 	}
 
 	#[cfg(test)]

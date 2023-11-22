@@ -58,7 +58,6 @@ pub enum DidMerkleProofError {
 	LinkedAccountNotFound,
 	Web3NameNotFound,
 	Internal,
-	ExcessiveLinkedAccounts,
 }
 
 impl From<DidMerkleProofError> for u16 {
@@ -68,7 +67,6 @@ impl From<DidMerkleProofError> for u16 {
 			DidMerkleProofError::KeyNotFound => 1,
 			DidMerkleProofError::LinkedAccountNotFound => 2,
 			DidMerkleProofError::Web3NameNotFound => 3,
-			DidMerkleProofError::ExcessiveLinkedAccounts => 4,
 			DidMerkleProofError::Internal => u16::MAX,
 		}
 	}
@@ -381,12 +379,4 @@ where
 			_ => Err(DidMerkleProofError::UnsupportedVersion),
 		}
 	}
-}
-
-pub trait MaxAccounts {
-	const MAX_LINKED_ACCOUNTS: usize;
-}
-
-impl<Runtime> MaxAccounts for DidMerkleRootGenerator<Runtime> {
-	const MAX_LINKED_ACCOUNTS: usize = 25;
 }

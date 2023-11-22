@@ -88,6 +88,13 @@ pub trait GetWorstCase {
 	fn worst_case() -> Self;
 }
 
+#[cfg(feature = "runtime-benchmarks")]
+impl GetWorstCase for u32 {
+	fn worst_case() -> Self {
+		u32::MAX
+	}
+}
+
 /// Trait that allows instanciating multiple instances of a type.
 #[cfg(feature = "runtime-benchmarks")]
 pub trait Instanciate {

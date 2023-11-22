@@ -16,17 +16,19 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use crate::{Call, Config, Pallet};
+use crate::{traits::IdentityProvider, Call, Config, Pallet};
 use frame_benchmarking::v2::*;
-use kilt_support::traits::{GenerateBenchmarkOrigin, Instanciate};
+use kilt_support::traits::{GenerateBenchmarkOrigin, GetWorstCase, Instanciate};
 
 #[benchmarks(
 	where
 		T::CommitOriginCheck: GenerateBenchmarkOrigin<T::RuntimeOrigin, T::AccountId, T::Identifier>,
 		T::AccountId: Instanciate,
 		T::Identifier: Instanciate,
+		<<T as Config>::IdentityProvider as IdentityProvider<T>>::Success: GetWorstCase
 )]
 mod benchmarks {
+
 	use super::*;
 
 	#[benchmark]
@@ -34,11 +36,12 @@ mod benchmarks {
 		let submitter = T::AccountId::new(1);
 		let subject = T::Identifier::new(1);
 		let commitment_version = 0;
-		// TODO insert worst case. Did with all keys, w3n and .
 
 		assert!(Pallet::<T>::identity_commitments(&subject, commitment_version).is_none());
 
 		let origin: T::RuntimeOrigin = T::CommitOriginCheck::generate_origin(submitter, subject.clone());
+
+		<<<T as Config>::IdentityProvider as IdentityProvider<T>>::Success as GetWorstCase>::worst_case();
 
 		#[extrinsic_call]
 		Pallet::<T>::commit_identity(origin as T::RuntimeOrigin, subject.clone(), Some(commitment_version));
