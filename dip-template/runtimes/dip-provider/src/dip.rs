@@ -140,7 +140,7 @@ impl pallet_dip_provider::Config for Runtime {
 	type CommitOrigin = DidRawOrigin<DidIdentifier, AccountId>;
 	type Identifier = DidIdentifier;
 	type IdentityCommitmentGenerator = DidMerkleRootGenerator<Runtime>;
-	type IdentityProvider = LinkedDidInfoProvider<Runtime>;
+	type IdentityProvider = LinkedDidInfoProvider;
 	type ProviderHooks = deposit::DepositCollectorHooks;
 	type RuntimeEvent = RuntimeEvent;
 }
