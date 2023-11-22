@@ -32,7 +32,7 @@ use crate::{authorization::AuthorizationId, AccountId, Balance, BlockNumber, Has
 pub use benchmarks::*;
 
 /// Thin wrapper around the `AssetDid` type, that implements the required
-/// TryFrom<Vec<u8>> trait.
+/// `TryFrom<Vec<u8>>` trait.
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
 pub struct AssetDid(AssetIdentifier);
 

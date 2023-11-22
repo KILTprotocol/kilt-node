@@ -24,15 +24,15 @@ use crate::did_details::DidVerificationKeyRelationship;
 /// All the errors that can be generated when validating a DID operation.
 #[derive(Debug, Eq, PartialEq, TypeInfo)]
 pub enum DidError {
-	/// See [Storage].
+	/// See [`StorageError`].
 	Storage(StorageError),
-	/// See [Signature].
+	/// See [`SignatureError`].
 	Signature(SignatureError),
-	/// See [Input].
+	/// See [`InputError`].
 	Input(InputError),
 	/// An error that is not supposed to take place, yet it happened.
 	Internal,
-	/// An error that is related to updating the deposit
+	/// An error that is related to updating the deposit.
 	Deposit(DispatchError),
 }
 
