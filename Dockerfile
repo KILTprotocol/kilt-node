@@ -5,20 +5,21 @@ FROM paritytech/ci-unified:bullseye-1.70.0 as builder
 
 WORKDIR /build
 
-ARG FEATURES=default
+ARG BINARY=kilt-parachain
 
 COPY . .
 
-RUN cargo build --locked --release --features $FEATURES
+RUN cargo build --locked --release -p $BINARY
 
 # ===== SECOND STAGE ======
 
 FROM docker.io/library/ubuntu:20.04
-LABEL description="This is the 2nd stage: a very small image where we copy the kilt-parachain binary."
 
-ARG NODE_TYPE=kilt-parachain
+ARG BINARY=kilt-parachain
 
-COPY --from=builder /build/target/release/$NODE_TYPE /usr/local/bin/node-executable
+LABEL description="This is the 2nd stage: a very small image where we copy the ${BINARY} binary."
+
+COPY --from=builder /build/target/release/$BINARY /usr/local/bin/node-executable
 
 RUN useradd -m -u 1000 -U -s /bin/sh -d /node node && \
 	mkdir -p /node/.local/share/node && \
