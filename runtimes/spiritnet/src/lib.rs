@@ -1130,7 +1130,6 @@ mod benches {
 		[pallet_xcm, PolkadotXcm]
 		[pallet_migration, Migration]
 		[frame_benchmarking::baseline, Baseline::<Runtime>]
-
 	);
 }
 
@@ -1427,7 +1426,6 @@ impl_runtime_apis! {
 			impl frame_system_benchmarking::Config for Runtime {}
 			impl cumulus_pallet_session_benchmarking::Config for Runtime {}
 			impl frame_benchmarking::baseline::Config for Runtime {}
-
 
 			let whitelist: Vec<TrackedStorageKey> = vec![
 				// Block Number
