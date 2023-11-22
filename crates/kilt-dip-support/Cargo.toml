@@ -24,8 +24,8 @@ pallet-relay-store.workspace = true
 pallet-web3-names.workspace = true
 
 # Parity dependencies
-parity-scale-codec = {workspace = true, features = ["derive"]}
-scale-info = {workspace = true, features = ["derive"]}
+parity-scale-codec = { workspace = true, features = ["derive"] }
+scale-info = { workspace = true, features = ["derive"] }
 
 # Substrate dependencies
 frame-system.workspace = true
@@ -81,5 +81,6 @@ std = [
 ]
 runtime-benchmarks = [
   "pallet-dip-consumer/runtime-benchmarks",
-  "rococo-runtime/runtime-benchmarks"
+  "rococo-runtime/runtime-benchmarks",
+  "pallet-dip-provider/runtime-benchmarks",
 ]

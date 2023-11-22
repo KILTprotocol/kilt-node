@@ -71,7 +71,6 @@ runtime-benchmarks = [
   "frame-system/runtime-benchmarks",
   "kilt-dip-support/runtime-benchmarks",
   "kilt-support/runtime-benchmarks",
-  "kilt-dip-support/runtime-benchmarks",
   "pallet-balances/runtime-benchmarks",
   "pallet-membership/runtime-benchmarks",
   "pallet-multisig/runtime-benchmarks",
