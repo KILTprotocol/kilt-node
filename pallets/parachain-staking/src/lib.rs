@@ -143,7 +143,6 @@ pub mod pallet {
 	pub use crate::inflation::{InflationInfo, RewardRate, StakingInfo};
 
 	use core::cmp::Ordering;
-	use frame_support::traits::BuildGenesisConfig;
 	use frame_support::{
 		pallet_prelude::*,
 		storage::bounded_btree_map::BoundedBTreeMap,
@@ -153,7 +152,7 @@ pub mod pallet {
 				fungible::{Inspect, MutateFreeze, Unbalanced},
 				Fortitude, Precision, Preservation,
 			},
-			EstimateNextSessionRotation, Get, OnUnbalanced, StorageVersion,
+			BuildGenesisConfig, EstimateNextSessionRotation, Get, OnUnbalanced, StorageVersion,
 		},
 		BoundedVec,
 	};
@@ -584,7 +583,7 @@ pub mod pallet {
 	/// The sum of all collator and their delegator stakes.
 	///
 	/// Note: There are more funds locked by this pallet, since the backing for
-	/// non collating candidates is not included in [TotalCollatorStake].
+	/// non collating candidates is not included in `TotalCollatorStake`.
 	#[pallet::storage]
 	#[pallet::getter(fn total_collator_stake)]
 	pub(crate) type TotalCollatorStake<T: Config> = StorageValue<_, TotalStake<BalanceOf<T>>, ValueQuery>;
@@ -594,9 +593,9 @@ pub mod pallet {
 	/// Each time the stake of a collator is increased, it is checked whether
 	/// this pushes another candidate out of the list. When the stake is
 	/// reduced however, it is not checked if another candidate has more stake,
-	/// since this would require iterating over the entire [CandidatePool].
+	/// since this would require iterating over the entire `CandidatePool`.
 	///
-	/// There must always be more candidates than [MaxSelectedCandidates] so
+	/// There must always be more candidates than `MaxSelectedCandidates` so
 	/// that a collator can drop out of the collator set by reducing their
 	/// stake.
 	#[pallet::storage]
@@ -1628,13 +1627,6 @@ pub mod pallet {
 		/// Unlock all previously staked funds that are now available for
 		/// unlocking by the origin account after `StakeDuration` blocks have
 		/// elapsed.
-		///
-		/// Weight: O(U) where U is the number of locked unstaking requests
-		/// bounded by `MaxUnstakeRequests`.
-		/// - Reads: [Origin Account], Unstaking, Freezes
-		/// - Writes: Unstaking, Freezes
-		/// - Kills: Unstaking & Freezes if no balance is locked anymore
-		/// # </weight>
 		#[pallet::call_index(16)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::unlock_unstaked(
 			T::MaxUnstakeRequests::get().saturated_into::<u32>()
@@ -2513,8 +2505,8 @@ pub mod pallet {
 		/// 2. In hook new_session: Read the current top n candidates from the
 		///    TopCandidates and assign this set to author blocks for the next
 		///    session.
-		/// 3. AuRa queries the authorities from the session pallet for
-		///    this session and picks authors on round-robin-basis from list of
+		/// 3. AuRa queries the authorities from the session pallet for this
+		///    session and picks authors on round-robin-basis from list of
 		///    authorities.
 		fn new_session(new_index: SessionIndex) -> Option<Vec<T::AccountId>> {
 			log::debug!(
