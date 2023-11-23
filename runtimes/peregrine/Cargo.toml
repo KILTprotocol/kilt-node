@@ -19,10 +19,10 @@ sp-io.workspace = true
 [dependencies]
 # External dependencies
 log.workspace = true
-parity-scale-codec = {workspace = true, features = ["derive"]}
-scale-info = {workspace = true, features = ["derive"]}
+parity-scale-codec = { workspace = true, features = ["derive"] }
+scale-info = { workspace = true, features = ["derive"] }
 
-hex-literal = {workspace = true, optional = true}
+hex-literal = { workspace = true, optional = true }
 
 # RPC & Runtime API
 frame-system-rpc-runtime-api.workspace = true
@@ -45,6 +45,8 @@ pallet-migration.workspace = true
 parachain-staking.workspace = true
 public-credentials.workspace = true
 runtime-common.workspace = true
+pallet-dip-provider.workspace = true
+pallet-dip-consumer.workspace = true
 
 # Substrate dependencies
 sp-api.workspace = true
@@ -101,12 +103,12 @@ xcm-executor.workspace = true
 xcm.workspace = true
 
 # Benchmarking dependencies
-cumulus-pallet-session-benchmarking = {workspace = true, optional = true}
-frame-benchmarking = {workspace = true, optional = true}
-frame-system-benchmarking = {workspace = true, optional = true}
+cumulus-pallet-session-benchmarking = { workspace = true, optional = true }
+frame-benchmarking = { workspace = true, optional = true }
+frame-system-benchmarking = { workspace = true, optional = true }
 
 # Runtime tests
-frame-try-runtime = {workspace = true, optional = true}
+frame-try-runtime = { workspace = true, optional = true }
 
 [features]
 default = ["std"]
@@ -152,6 +154,8 @@ runtime-benchmarks = [
   "sp-runtime/runtime-benchmarks",
   "xcm-builder/runtime-benchmarks",
   "xcm-executor/runtime-benchmarks",
+  "pallet-dip-provider/runtime-benchmarks",
+  "pallet-dip-consumer/runtime-benchmarks",
 ]
 std = [
   "attestation/std",
@@ -227,6 +231,8 @@ std = [
   "xcm-builder/std",
   "xcm-executor/std",
   "xcm/std",
+  "pallet-dip-provider/std",
+  "pallet-dip-consumer/std",
 ]
 try-runtime = [
   "attestation/try-runtime",
@@ -272,8 +278,7 @@ try-runtime = [
   "parachain-staking/try-runtime",
   "public-credentials/try-runtime",
   "runtime-common/try-runtime",
+  "pallet-dip-provider/try-runtime",
+  "pallet-dip-consumer/try-runtime",
 ]
-with-tracing = [
-  "frame-executive/with-tracing",
-  "sp-io/with-tracing",
-]
+with-tracing = ["frame-executive/with-tracing", "sp-io/with-tracing"]
