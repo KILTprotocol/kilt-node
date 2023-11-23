@@ -5,11 +5,12 @@ FROM paritytech/ci-unified:bullseye-1.70.0 as builder
 
 WORKDIR /build
 
+ARG FEATURES=default
 ARG BINARY=kilt-parachain
 
 COPY . .
 
-RUN cargo build --locked --release -p $BINARY
+RUN cargo build --locked --release --features $FEATURES -p $BINARY
 
 # ===== SECOND STAGE ======
 
