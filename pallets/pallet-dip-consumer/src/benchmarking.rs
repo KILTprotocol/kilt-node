@@ -16,12 +16,8 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use crate::{
-	traits::{IdentityProofVerifier, SuccessfulProofVerifier},
-	Call, Config, IdentityEntries, Pallet,
-};
+use crate::{traits::IdentityProofVerifier, Call, Config, IdentityEntries, Pallet};
 use frame_benchmarking::v2::*;
-use frame_support::pallet_prelude::IsType;
 use frame_system::RawOrigin;
 use kilt_support::traits::Instanciate;
 
@@ -29,7 +25,7 @@ use kilt_support::traits::Instanciate;
 	where
 		T::AccountId: Instanciate,
 		T::Identifier: Instanciate,
-        <<T as Config>::ProofVerifier as IdentityProofVerifier<T>>::Proof: IsType<<SuccessfulProofVerifier as IdentityProofVerifier<T>>::Proof>,
+        <<T as Config>::ProofVerifier as IdentityProofVerifier<T>>::Proof: Default,
         <T as Config>::RuntimeCall: From<frame_system::Call<T>>
 
 ) ]
@@ -50,7 +46,7 @@ mod benchmarks {
 
 		let boxed_call = Box::from(call);
 
-		let proof = ().into();
+		let proof: <<T as Config>::ProofVerifier as IdentityProofVerifier<T>>::Proof = Default::default();
 
 		#[extrinsic_call]
 		Pallet::<T>::dispatch_as(
