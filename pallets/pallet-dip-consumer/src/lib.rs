@@ -126,7 +126,7 @@ pub mod pallet {
 				account_address: submitter,
 				details: proof_verification_result,
 			};
-			// TODO: Use dispatch info for weight calculation
+
 			#[cfg(not(feature = "runtime-benchmark"))]
 			let _ = call.dispatch(did_origin.into()).map_err(|e| e.error)?;
 			Ok(())

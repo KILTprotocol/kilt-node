@@ -25,6 +25,9 @@ use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
 use sp_std::vec::Vec;
 
+#[cfg(feature = "runtime-benchmarks")]
+use kilt_support::traits::GetWorstCase;
+
 #[derive(Encode, Decode, TypeInfo, Debug)]
 pub enum LinkedDidInfoProviderError {
 	DidNotFound,
@@ -96,5 +99,74 @@ where
 			web3_name_details,
 			linked_accounts,
 		})
+	}
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+impl<Runtime> GetWorstCase for LinkedDidInfoOf<Runtime>
+where
+	Runtime: did::Config<DidIdentifier = <Runtime as pallet_dip_provider::Config>::Identifier>
+		+ pallet_web3_names::Config<Web3NameOwner = <Runtime as pallet_dip_provider::Config>::Identifier>
+		+ pallet_did_lookup::Config<DidIdentifier = <Runtime as pallet_dip_provider::Config>::Identifier>
+		+ pallet_dip_provider::Config,
+	<Runtime as frame_system::Config>::AccountId: AsRef<[u8; 32]> + From<[u8; 32]>,
+{
+	/// The worst case for the [LinkedDidInfor] is a DID with all keys set, a web3name and linked accounts in the palled_did_lookup pallet.
+	fn worst_case() -> Self {
+		use did::{
+			did_details::DidVerificationKey,
+			mock_utils::{generate_base_did_creation_details, get_key_agreement_keys},
+		};
+		use frame_benchmarking::{account, Zero};
+		use sp_io::crypto::ed25519_generate;
+		use sp_runtime::{traits::Get, BoundedVec, KeyTypeId};
+
+		// Did Details.
+		let did: <Runtime as did::Config>::DidIdentifier = account("did", 0, 0);
+		let submitter: <Runtime as frame_system::Config>::AccountId = account("submitter", 1, 1);
+
+		let max_new_keys = <Runtime as did::Config>::MaxNewKeyAgreementKeys::get();
+
+		let new_key_agreement_keys = get_key_agreement_keys::<Runtime>(max_new_keys);
+
+		let mut did_creation_details = generate_base_did_creation_details(did, submitter);
+
+		// TODO check if I have to set different seed. Prob not but lets be sure.
+		let attestation_key = ed25519_generate(KeyTypeId(*b"0001"), None);
+		let delegation_key = ed25519_generate(KeyTypeId(*b"0002"), None);
+		let auth_key = ed25519_generate(KeyTypeId(*b"0003"), None);
+		did_creation_details.new_attestation_key = Some(DidVerificationKey::from(attestation_key));
+		did_creation_details.new_delegation_key = Some(DidVerificationKey::from(delegation_key));
+		did_creation_details.new_key_agreement_keys = new_key_agreement_keys;
+
+		let did_details = did::did_details::DidDetails::new_with_creation_details(
+			did_creation_details,
+			DidVerificationKey::from(auth_key),
+		)
+		.expect("Creation of DID details should not fail.");
+
+		let max_name_length = <Runtime as pallet_web3_names::Config>::MaxNameLength::get()
+			.try_into()
+			.expect("max name length should not fail.");
+
+		let web3_name_input: BoundedVec<u8, <Runtime as pallet_web3_names::Config>::MaxNameLength> =
+			BoundedVec::try_from(vec![b'1'; max_name_length]).expect("BoundedVec creation should not fail.");
+
+		let web3_name = pallet_web3_names::Web3NameOf::<Runtime>::try_from(web3_name_input.to_vec())
+			.expect("Creation of w3n from w3n input should not fail.");
+
+		let web3_name_details = Some(RevealedWeb3Name {
+			web3_name,
+			claimed_at: BlockNumberFor::<Runtime>::zero(),
+		});
+
+		// Difficult. How many linked accounts can a did have?
+		let linked_accounts = vec![];
+
+		LinkedDidInfoOf {
+			did_details,
+			linked_accounts,
+			web3_name_details,
+		}
 	}
 }

@@ -18,7 +18,7 @@
 
 use crate::{
 	traits::{IdentityProofVerifier, SuccessfulProofVerifier},
-	Config, IdentityEntries, Pallet,
+	Call, Config, IdentityEntries, Pallet,
 };
 use frame_benchmarking::v2::*;
 use frame_support::pallet_prelude::IsType;
@@ -50,12 +50,15 @@ mod benchmarks {
 
 		let boxed_call = Box::from(call);
 
-		// todo no into in block.
-		#[block]
-		{
-			Pallet::<T>::dispatch_as(origin.into(), subject.clone(), ().into(), boxed_call)
-				.expect("Dispatch_as should not fail.");
-		}
+		let proof = ().into();
+
+		#[extrinsic_call]
+		Pallet::<T>::dispatch_as(
+			<T as frame_system::Config>::RuntimeOrigin::from(origin) as <T as frame_system::Config>::RuntimeOrigin,
+			subject.clone(),
+			proof,
+			boxed_call,
+		);
 	}
 
 	#[cfg(test)]

@@ -25,6 +25,7 @@ use frame_support::{
 	},
 	traits::{ConstU16, ConstU32, ConstU64, Everything},
 };
+
 use frame_system::mocking::MockBlock;
 use kilt_support::mock::mock_origin::{self as mock_origin, DoubleOrigin, EnsureDoubleOrigin};
 
