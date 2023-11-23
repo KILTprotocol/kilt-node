@@ -120,12 +120,22 @@ where
 			mock_utils::{generate_base_did_creation_details, get_key_agreement_keys},
 		};
 		use frame_benchmarking::{account, vec, Zero};
+		use frame_support::traits::fungible::Mutate;
 		use sp_io::crypto::{ed25519_generate, sr25519_generate};
-		use sp_runtime::{traits::Get, BoundedVec, KeyTypeId};
+		use sp_runtime::{traits::Get, BoundedVec, KeyTypeId, SaturatedConversion};
+
+		use crate::constants::KILT;
 
 		// Did Details.
 		let did: <Runtime as did::Config>::DidIdentifier = account("did", 0, 0);
 		let submitter: <Runtime as frame_system::Config>::AccountId = account("submitter", 1, 1);
+		let amount = KILT * 100;
+
+		// give a bit money
+		<pallet_balances::Pallet<Runtime> as Mutate<<Runtime as frame_system::Config>::AccountId>>::set_balance(
+			&submitter,
+			amount.saturated_into(),
+		);
 
 		let max_new_keys = <Runtime as did::Config>::MaxNewKeyAgreementKeys::get();
 
