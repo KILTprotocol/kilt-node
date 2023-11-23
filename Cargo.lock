@@ -7645,6 +7645,8 @@ dependencies = [
  "pallet-configuration",
  "pallet-democracy",
  "pallet-did-lookup",
+ "pallet-dip-consumer",
+ "pallet-dip-provider",
  "pallet-indices",
  "pallet-inflation",
  "pallet-membership",
