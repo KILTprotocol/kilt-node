@@ -85,6 +85,10 @@ pub mod pallet {
 
 	pub(crate) type BalanceMigrationManagerOf<T> = <T as Config>::BalanceMigrationManager;
 
+	/// Defines a upper limit for the benchmarks. Has to be alter if a user has more linked accounts.
+	#[cfg(any(feature = "runtime-benchmarks", feature = "try-runtime"))]
+	pub const MAX_LINKED_ACCOUNT: u32 = 10;
+
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(4);
 
 	#[pallet::composite_enum]

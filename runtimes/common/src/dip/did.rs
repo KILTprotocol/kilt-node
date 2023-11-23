@@ -108,7 +108,9 @@ where
 	Runtime: did::Config<DidIdentifier = <Runtime as pallet_dip_provider::Config>::Identifier>
 		+ pallet_web3_names::Config<Web3NameOwner = <Runtime as pallet_dip_provider::Config>::Identifier>
 		+ pallet_did_lookup::Config<DidIdentifier = <Runtime as pallet_dip_provider::Config>::Identifier>
-		+ pallet_dip_provider::Config,
+		+ pallet_dip_provider::Config
+		+ pallet_balances::Config,
+	<Runtime as frame_system::Config>::AccountId: Into<LinkableAccountId> + From<sp_core::sr25519::Public>,
 	<Runtime as frame_system::Config>::AccountId: AsRef<[u8; 32]> + From<[u8; 32]>,
 {
 	/// The worst case for the [LinkedDidInfor] is a DID with all keys set, a web3name and linked accounts in the palled_did_lookup pallet.
@@ -117,8 +119,8 @@ where
 			did_details::DidVerificationKey,
 			mock_utils::{generate_base_did_creation_details, get_key_agreement_keys},
 		};
-		use frame_benchmarking::{account, Zero};
-		use sp_io::crypto::ed25519_generate;
+		use frame_benchmarking::{account, vec, Zero};
+		use sp_io::crypto::{ed25519_generate, sr25519_generate};
 		use sp_runtime::{traits::Get, BoundedVec, KeyTypeId};
 
 		// Did Details.
@@ -129,7 +131,7 @@ where
 
 		let new_key_agreement_keys = get_key_agreement_keys::<Runtime>(max_new_keys);
 
-		let mut did_creation_details = generate_base_did_creation_details(did, submitter);
+		let mut did_creation_details = generate_base_did_creation_details(did.clone(), submitter.clone());
 
 		// TODO check if I have to set different seed. Prob not but lets be sure.
 		let attestation_key = ed25519_generate(KeyTypeId(*b"0001"), None);
@@ -145,6 +147,10 @@ where
 		)
 		.expect("Creation of DID details should not fail.");
 
+		// add to storage.
+		did::Pallet::<Runtime>::try_insert_did(did.clone(), did_details.clone(), submitter.clone())
+			.expect("Inserting Did should not fail.");
+
 		let max_name_length = <Runtime as pallet_web3_names::Config>::MaxNameLength::get()
 			.try_into()
 			.expect("max name length should not fail.");
@@ -155,13 +161,25 @@ where
 		let web3_name = pallet_web3_names::Web3NameOf::<Runtime>::try_from(web3_name_input.to_vec())
 			.expect("Creation of w3n from w3n input should not fail.");
 
+		pallet_web3_names::Pallet::<Runtime>::register_name(web3_name.clone(), did.clone(), submitter.clone())
+			.expect("Inserting w3n into storage should not fail.");
+
 		let web3_name_details = Some(RevealedWeb3Name {
 			web3_name,
 			claimed_at: BlockNumberFor::<Runtime>::zero(),
 		});
 
-		// Difficult. How many linked accounts can a did have?
-		let linked_accounts = vec![];
+		let mut linked_accounts = vec![];
+
+		(0..pallet_did_lookup::MAX_LINKED_ACCOUNT).for_each(|index| {
+			let connected_acc = sr25519_generate(KeyTypeId(*b"aura"), Some(index.to_be_bytes().to_vec()));
+			let connected_acc_id: <Runtime as frame_system::Config>::AccountId = connected_acc.into();
+			let linkable_id: LinkableAccountId = connected_acc_id.clone().into();
+			pallet_did_lookup::Pallet::<Runtime>::add_association(submitter.clone(), did.clone(), linkable_id.clone())
+				.expect("association should not fail.");
+
+			linked_accounts.push(linkable_id);
+		});
 
 		LinkedDidInfoOf {
 			did_details,
