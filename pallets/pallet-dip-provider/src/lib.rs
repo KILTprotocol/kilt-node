@@ -20,6 +20,7 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
+pub mod default_weights;
 pub mod traits;
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -37,6 +38,7 @@ pub use crate::{
 pub mod pallet {
 	use super::*;
 
+	use default_weights::WeightInfo;
 	use frame_support::{pallet_prelude::*, traits::EnsureOrigin};
 	use frame_system::pallet_prelude::*;
 
@@ -60,6 +62,7 @@ pub mod pallet {
 		type IdentityProvider: IdentityProvider<Self>;
 		type ProviderHooks: ProviderHooks<Self>;
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
+		type WeightInfo: WeightInfo;
 	}
 
 	#[pallet::storage]

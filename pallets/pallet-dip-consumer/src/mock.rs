@@ -70,6 +70,7 @@ impl crate::Config for TestRuntime {
 	type Identifier = AccountId32;
 	type DispatchOriginCheck = EnsureSigned<Self::Identifier>;
 	type DipCallOriginFilter = ();
+	type WeightInfo = ();
 }
 
 #[derive(Default)]

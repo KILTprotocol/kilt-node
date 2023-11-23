@@ -19,6 +19,7 @@
 use did::did_details::DidDetails;
 use frame_system::pallet_prelude::BlockNumberFor;
 use kilt_dip_support::merkle::RevealedWeb3Name;
+use kilt_support::traits::Instanciate;
 use pallet_did_lookup::linkable_account::LinkableAccountId;
 use pallet_dip_provider::traits::IdentityProvider;
 use parity_scale_codec::{Decode, Encode};
@@ -112,6 +113,8 @@ where
 		+ pallet_balances::Config,
 	<Runtime as frame_system::Config>::AccountId: Into<LinkableAccountId> + From<sp_core::sr25519::Public>,
 	<Runtime as frame_system::Config>::AccountId: AsRef<[u8; 32]> + From<[u8; 32]>,
+	Runtime::AccountId: Instanciate,
+	Runtime::Identifier: Instanciate,
 {
 	/// The worst case for the [LinkedDidInfor] is a DID with all keys set, a web3name and linked accounts in the palled_did_lookup pallet.
 	fn worst_case() -> Self {
@@ -119,7 +122,7 @@ where
 			did_details::DidVerificationKey,
 			mock_utils::{generate_base_did_creation_details, get_key_agreement_keys},
 		};
-		use frame_benchmarking::{account, vec, Zero};
+		use frame_benchmarking::{vec, Zero};
 		use frame_support::traits::fungible::Mutate;
 		use sp_io::crypto::{ed25519_generate, sr25519_generate};
 		use sp_runtime::{traits::Get, BoundedVec, KeyTypeId, SaturatedConversion};
@@ -127,8 +130,8 @@ where
 		use crate::constants::KILT;
 
 		// Did Details.
-		let did: <Runtime as did::Config>::DidIdentifier = account("did", 0, 0);
-		let submitter: <Runtime as frame_system::Config>::AccountId = account("submitter", 1, 1);
+		let submitter = Runtime::AccountId::new(1);
+		let did = Runtime::Identifier::new(1);
 		let amount = KILT * 100;
 
 		// give a bit money
@@ -182,7 +185,7 @@ where
 		let mut linked_accounts = vec![];
 
 		(0..pallet_did_lookup::MAX_LINKED_ACCOUNT).for_each(|index| {
-			let connected_acc = sr25519_generate(KeyTypeId(*b"aura"), Some(index.to_be_bytes().to_vec()));
+			let connected_acc = sr25519_generate(KeyTypeId(index.to_be_bytes()), None);
 			let connected_acc_id: <Runtime as frame_system::Config>::AccountId = connected_acc.into();
 			let linkable_id: LinkableAccountId = connected_acc_id.clone().into();
 			pallet_did_lookup::Pallet::<Runtime>::add_association(submitter.clone(), did.clone(), linkable_id.clone())

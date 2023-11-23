@@ -20,6 +20,7 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
+pub mod default_weights;
 pub mod identity;
 pub mod traits;
 
@@ -37,6 +38,7 @@ pub use crate::{origin::*, pallet::*, traits::SuccessfulProofVerifier};
 pub mod pallet {
 	use super::*;
 
+	use default_weights::WeightInfo;
 	use frame_support::{
 		dispatch::{Dispatchable, GetDispatchInfo},
 		pallet_prelude::*,
@@ -77,6 +79,7 @@ pub mod pallet {
 		type ProofVerifier: IdentityProofVerifier<Self>;
 		type RuntimeCall: Parameter + Dispatchable<RuntimeOrigin = <Self as Config>::RuntimeOrigin> + GetDispatchInfo;
 		type RuntimeOrigin: From<Origin<Self>> + From<<Self as frame_system::Config>::RuntimeOrigin>;
+		type WeightInfo: WeightInfo;
 	}
 
 	#[pallet::pallet]

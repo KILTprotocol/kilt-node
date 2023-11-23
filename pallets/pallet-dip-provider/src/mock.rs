@@ -73,6 +73,7 @@ impl crate::Config for TestRuntime {
 	type IdentityProvider = DefaultIdentityProvider<u32>;
 	type ProviderHooks = NoopHooks;
 	type RuntimeEvent = RuntimeEvent;
+	type WeightInfo = ();
 }
 
 impl mock_origin::Config for TestRuntime {

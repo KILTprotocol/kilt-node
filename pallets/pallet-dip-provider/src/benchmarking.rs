@@ -57,6 +57,8 @@ mod benchmarks {
 
 		let origin: T::RuntimeOrigin = T::CommitOriginCheck::generate_origin(submitter, subject.clone());
 
+		<<<T as Config>::IdentityProvider as IdentityProvider<T>>::Success as GetWorstCase>::worst_case();
+
 		Pallet::<T>::commit_identity(
 			origin.clone() as T::RuntimeOrigin,
 			subject.clone(),
