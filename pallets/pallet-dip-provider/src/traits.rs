@@ -184,8 +184,3 @@ where
 		Ok(())
 	}
 }
-
-#[cfg(feature = "runtime-benchmarks")]
-pub trait SetupDipIdentityProviderBenchmark<DidIdentifier, AccountId> {
-	fn get_worst_case(did: DidIdentifier, submitter: AccountId) -> Self;
-}
