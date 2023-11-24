@@ -168,7 +168,6 @@ pub(super) mod relay_chain {
 		/// Given a relaychain state root provided by the `RelayChainState`
 		/// generic type, verify a state proof for the parachain with the
 		/// provided ID.
-		#[allow(clippy::result_unit_err)]
 		pub fn verify_proof_for_parachain(
 			para_id: &RelayChainState::ParaId,
 			relay_height: &RelayChainState::BlockNumber,
@@ -326,7 +325,6 @@ pub(super) mod parachain {
 	{
 		/// Given a parachain state root, verify a state proof for the
 		/// commitment of a given subject identifier.
-		#[allow(clippy::result_unit_err)]
 		pub fn verify_proof_for_identifier(
 			identifier: &ParaInfo::Identifier,
 			state_root: OutputOf<ParaInfo::Hasher>,
