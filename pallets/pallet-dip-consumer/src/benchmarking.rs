@@ -19,13 +19,13 @@
 use crate::{traits::IdentityProofVerifier, Call, Config, IdentityEntries, Pallet};
 use frame_benchmarking::v2::*;
 use frame_system::RawOrigin;
-use kilt_support::traits::Instanciate;
+use kilt_support::traits::{GetWorstCase, Instanciate};
 
 #[benchmarks(
 	where
 		T::AccountId: Instanciate,
 		T::Identifier: Instanciate,
-        <<T as Config>::ProofVerifier as IdentityProofVerifier<T>>::Proof: Default,
+        <<T as Config>::ProofVerifier as IdentityProofVerifier<T>>::Proof: GetWorstCase,
         <T as Config>::RuntimeCall: From<frame_system::Call<T>>
 
 ) ]
@@ -46,7 +46,7 @@ mod benchmarks {
 
 		let boxed_call = Box::from(call);
 
-		let proof: <<T as Config>::ProofVerifier as IdentityProofVerifier<T>>::Proof = Default::default();
+		let proof = <<<T as Config>::ProofVerifier as IdentityProofVerifier<T>>::Proof as GetWorstCase>::worst_case();
 
 		#[extrinsic_call]
 		Pallet::<T>::dispatch_as(

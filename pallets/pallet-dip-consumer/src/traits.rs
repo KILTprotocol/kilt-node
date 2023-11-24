@@ -17,6 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_support::Parameter;
+use kilt_support::traits::GetWorstCase;
 
 use crate::{Config, RuntimeCallOf};
 

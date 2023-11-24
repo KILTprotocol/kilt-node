@@ -9894,6 +9894,7 @@ dependencies = [
  "cumulus-pallet-xcmp-queue",
  "cumulus-primitives-core",
  "did",
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
  "kilt-asset-dids",

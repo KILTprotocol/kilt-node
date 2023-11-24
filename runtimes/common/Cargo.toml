@@ -60,6 +60,8 @@ xcm-builder.workspace = true
 xcm-executor.workspace = true
 xcm.workspace = true
 
+#benchmarking 
+frame-benchmarking = { workspace = true, optional = true }
 
 [features]
 default = ["std"]
@@ -82,6 +84,7 @@ runtime-benchmarks = [
   "sp-runtime/runtime-benchmarks",
   "xcm-builder/runtime-benchmarks",
   "xcm-executor/runtime-benchmarks",
+  "frame-benchmarking",
 ]
 std = [
   "cumulus-pallet-parachain-system/std",
