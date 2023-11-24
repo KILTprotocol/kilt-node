@@ -956,6 +956,27 @@ impl pallet_dip_provider::Config for Runtime {
 	type WeightInfo = ();
 }
 
+#[derive(Encode, Decode, MaxEncodedLen, scale_info::TypeInfo, Clone, PartialEq, Eq, RuntimeDebug)]
+pub enum DepositNamespaces {
+	ExampleNameSpaces,
+}
+
+impl Default for DepositNamespaces {
+	fn default() -> Self {
+		DepositNamespaces::ExampleNameSpaces
+	}
+}
+
+impl pallet_deposit_storage::Config for Runtime {
+	type CheckOrigin = EnsureSigned<AccountId>;
+	type Currency = Balances;
+	type DepositHooks = pallet_deposit_storage::traits::NoopDepositStorageHooks;
+	type MaxKeyLength = ConstU32<256>;
+	type RuntimeEvent = RuntimeEvent;
+	type RuntimeHoldReason = RuntimeHoldReason;
+	type Namespace = DepositNamespaces;
+}
+
 pub struct PreliminaryDipOriginFilter;
 
 impl frame_support::traits::Contains<RuntimeCall> for PreliminaryDipOriginFilter {
@@ -1040,6 +1061,7 @@ construct_runtime! {
 		Migration: pallet_migration = 70,
 		PalletDipProvider: pallet_dip_provider = 71,
 		PalletDipConsumer: pallet_dip_consumer = 72,
+		StorageDeposit: pallet_deposit_storage = 73,
 
 		// Parachains pallets. Start indices at 80 to leave room.
 
@@ -1181,6 +1203,7 @@ mod benches {
 		[frame_benchmarking::baseline, Baseline::<Runtime>]
 		[pallet_dip_provider, PalletDipProvider]
 		[pallet_dip_consumer, PalletDipConsumer]
+		[pallet_deposit_storage, StorageDeposit]
 	);
 }
 

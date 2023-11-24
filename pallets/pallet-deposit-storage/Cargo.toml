@@ -13,18 +13,27 @@ description = "Stores all deposits under a single pallet, with suport for namesp
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
 
+[dev-dependencies]
+sp-keystore = { workspace = true, features = ["std"] }
+
 [dependencies]
 # Substrate dependencies
 frame-support.workspace = true
 frame-system.workspace = true
 kilt-support.workspace = true
 pallet-dip-provider.workspace = true
-parity-scale-codec = {workspace = true, features = ["derive"]}
-scale-info = {workspace = true, features = ["derive"]}
+parity-scale-codec = { workspace = true, features = ["derive"] }
+scale-info = { workspace = true, features = ["derive"] }
 sp-runtime.workspace = true
 sp-std.workspace = true
 
 log.workspace = true
+
+# Benchmarking
+pallet-balances = { workspace = true, optional = true }
+frame-benchmarking = { workspace = true, optional = true }
+sp-io = { workspace = true, optional = true }
+
 
 [features]
 default = ["std"]
@@ -38,4 +47,9 @@ std = [
   "sp-runtime/std",
   "sp-std/std",
   "log/std",
+  "sp-keystore/std",
 ]
+
+runtime-benchmarks = ["frame-benchmarking", "pallet-balances"]
+
+try-runtime = ["kilt-support/try-runtime"]

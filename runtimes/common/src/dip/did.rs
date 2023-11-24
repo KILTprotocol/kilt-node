@@ -26,7 +26,7 @@ use scale_info::TypeInfo;
 use sp_std::vec::Vec;
 
 #[cfg(feature = "runtime-benchmarks")]
-use kilt_support::traits::{GetWorstCase, IdentityContext};
+use kilt_support::{benchmark::IdentityContext, traits::GetWorstCase};
 
 #[derive(Encode, Decode, TypeInfo, Debug)]
 pub enum LinkedDidInfoProviderError {

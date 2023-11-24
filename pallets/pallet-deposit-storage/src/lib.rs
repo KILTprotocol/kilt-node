@@ -22,6 +22,12 @@
 mod deposit;
 pub mod traits;
 
+#[cfg(test)]
+mod mock;
+
+#[cfg(feature = "runtime-benchmarks")]
+mod benchmarking;
+
 pub use deposit::FixedDepositCollectorViaDepositsPallet;
 pub use pallet::*;
 pub use traits::NoopDepositStorageHooks;

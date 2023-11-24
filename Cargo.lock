@@ -6479,13 +6479,17 @@ dependencies = [
 name = "pallet-deposit-storage"
 version = "1.12.0-dev"
 dependencies = [
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
  "kilt-support",
  "log",
+ "pallet-balances",
  "pallet-dip-provider",
  "parity-scale-codec",
  "scale-info",
+ "sp-io",
+ "sp-keystore",
  "sp-runtime",
  "sp-std",
 ]
@@ -7644,6 +7648,7 @@ dependencies = [
  "pallet-collective",
  "pallet-configuration",
  "pallet-democracy",
+ "pallet-deposit-storage",
  "pallet-did-lookup",
  "pallet-dip-consumer",
  "pallet-dip-provider",
