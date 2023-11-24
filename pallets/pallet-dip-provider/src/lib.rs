@@ -39,7 +39,7 @@ pub mod pallet {
 	use super::*;
 
 	use default_weights::WeightInfo;
-	use frame_support::{pallet_prelude::*, traits::EnsureOrigin};
+	use frame_support::{pallet_prelude::*, traits::EnsureOriginWithArg};
 	use frame_system::pallet_prelude::*;
 
 	use crate::traits::{IdentityCommitmentGenerator, IdentityProvider, ProviderHooks, SubmitterInfo};
@@ -55,7 +55,7 @@ pub mod pallet {
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
-		type CommitOriginCheck: EnsureOrigin<Self::RuntimeOrigin, Success = Self::CommitOrigin>;
+		type CommitOriginCheck: EnsureOriginWithArg<Self::RuntimeOrigin, Self::Identifier, Success = Self::CommitOrigin>;
 		type CommitOrigin: SubmitterInfo<Submitter = Self::AccountId>;
 		type Identifier: Parameter + MaxEncodedLen;
 		type IdentityCommitmentGenerator: IdentityCommitmentGenerator<Self>;
@@ -112,8 +112,8 @@ pub mod pallet {
 			identifier: T::Identifier,
 			version: Option<IdentityCommitmentVersion>,
 		) -> DispatchResult {
-			let dispatcher =
-				T::CommitOriginCheck::ensure_origin(origin).map(|e: <T as Config>::CommitOrigin| e.submitter())?;
+			let dispatcher = T::CommitOriginCheck::ensure_origin(origin, &identifier)
+				.map(|e: <T as Config>::CommitOrigin| e.submitter())?;
 
 			let commitment_version = version.unwrap_or(LATEST_COMMITMENT_VERSION);
 			let identity = T::IdentityProvider::retrieve(&identifier)
@@ -157,8 +157,8 @@ pub mod pallet {
 			identifier: T::Identifier,
 			version: Option<IdentityCommitmentVersion>,
 		) -> DispatchResult {
-			let dispatcher =
-				T::CommitOriginCheck::ensure_origin(origin).map(|e: <T as Config>::CommitOrigin| e.submitter())?;
+			let dispatcher = T::CommitOriginCheck::ensure_origin(origin, &identifier)
+				.map(|e: <T as Config>::CommitOrigin| e.submitter())?;
 
 			let commitment_version = version.unwrap_or(LATEST_COMMITMENT_VERSION);
 			let commitment = Self::delete_identity_commitment_storage_entry(&identifier, commitment_version)?;

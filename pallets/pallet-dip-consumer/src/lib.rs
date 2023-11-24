@@ -42,7 +42,7 @@ pub mod pallet {
 	use frame_support::{
 		dispatch::{Dispatchable, GetDispatchInfo},
 		pallet_prelude::*,
-		traits::Contains,
+		traits::{Contains, EnsureOriginWithArg},
 		Twox64Concat,
 	};
 	use frame_system::pallet_prelude::*;
@@ -69,7 +69,11 @@ pub mod pallet {
 		/// computations.
 		type DipCallOriginFilter: Contains<RuntimeCallOf<Self>>;
 		/// The origin check for the `dispatch_as` call.
-		type DispatchOriginCheck: EnsureOrigin<<Self as frame_system::Config>::RuntimeOrigin, Success = Self::AccountId>;
+		type DispatchOriginCheck: EnsureOriginWithArg<
+			<Self as frame_system::Config>::RuntimeOrigin,
+			Self::Identifier,
+			Success = Self::AccountId,
+		>;
 		/// The identifier of a subject, e.g., a DID.
 		type Identifier: Parameter + MaxEncodedLen;
 		/// The details stored in this pallet associated with any given subject.
@@ -112,7 +116,7 @@ pub mod pallet {
 			proof: IdentityProofOf<T>,
 			call: Box<RuntimeCallOf<T>>,
 		) -> DispatchResult {
-			let submitter = T::DispatchOriginCheck::ensure_origin(origin)?;
+			let submitter = T::DispatchOriginCheck::ensure_origin(origin, &identifier)?;
 			ensure!(T::DipCallOriginFilter::contains(&*call), Error::<T>::Filtered);
 			let mut identity_entry = IdentityEntries::<T>::get(&identifier);
 			let proof_verification_result = T::ProofVerifier::verify_proof_for_call_against_details(

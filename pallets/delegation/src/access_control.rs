@@ -42,7 +42,7 @@ use crate::{
 ///    * sender delegation node is equal to OR parent of the delegation node
 ///      stored in the attestation
 ///
-/// Can remove attestations if <the same as revoke>
+/// Can remove attestations if (the same as revoke)
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub struct DelegationAc<T: Config> {
 	pub(crate) subject_node_id: DelegationNodeIdOf<T>,

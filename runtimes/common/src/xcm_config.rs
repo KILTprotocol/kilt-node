@@ -61,8 +61,8 @@ where
 	}
 }
 
-/// Reserved funds to the relay chain can't return. See https://github.com/paritytech/polkadot/issues/5233
-/// Usage of the new xcm matcher. See https://github.com/paritytech/polkadot/pull/7098
+/// Reserved funds to the relay chain can't return. See <https://github.com/paritytech/polkadot/issues/5233>
+/// Usage of the new xcm matcher. See <https://github.com/paritytech/polkadot/pull/7098>
 pub struct DenyReserveTransferToRelayChain;
 impl ShouldExecute for DenyReserveTransferToRelayChain {
 	fn should_execute<RuntimeCall>(

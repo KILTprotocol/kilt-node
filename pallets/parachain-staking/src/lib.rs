@@ -583,7 +583,7 @@ pub mod pallet {
 	/// The sum of all collator and their delegator stakes.
 	///
 	/// Note: There are more funds locked by this pallet, since the backing for
-	/// non collating candidates is not included in [TotalCollatorStake].
+	/// non collating candidates is not included in `TotalCollatorStake`.
 	#[pallet::storage]
 	#[pallet::getter(fn total_collator_stake)]
 	pub(crate) type TotalCollatorStake<T: Config> = StorageValue<_, TotalStake<BalanceOf<T>>, ValueQuery>;
@@ -593,9 +593,9 @@ pub mod pallet {
 	/// Each time the stake of a collator is increased, it is checked whether
 	/// this pushes another candidate out of the list. When the stake is
 	/// reduced however, it is not checked if another candidate has more stake,
-	/// since this would require iterating over the entire [CandidatePool].
+	/// since this would require iterating over the entire `CandidatePool`.
 	///
-	/// There must always be more candidates than [MaxSelectedCandidates] so
+	/// There must always be more candidates than `MaxSelectedCandidates` so
 	/// that a collator can drop out of the collator set by reducing their
 	/// stake.
 	#[pallet::storage]
@@ -1627,13 +1627,6 @@ pub mod pallet {
 		/// Unlock all previously staked funds that are now available for
 		/// unlocking by the origin account after `StakeDuration` blocks have
 		/// elapsed.
-		///
-		/// Weight: O(U) where U is the number of locked unstaking requests
-		/// bounded by `MaxUnstakeRequests`.
-		/// - Reads: [Origin Account], Unstaking, Freezes
-		/// - Writes: Unstaking, Freezes
-		/// - Kills: Unstaking & Freezes if no balance is locked anymore
-		/// # </weight>
 		#[pallet::call_index(16)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::unlock_unstaked(
 			T::MaxUnstakeRequests::get().saturated_into::<u32>()

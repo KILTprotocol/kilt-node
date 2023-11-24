@@ -88,8 +88,8 @@ pub mod pallet {
 	pub(crate) type CurrencyOf<T> = <T as Config>::Currency;
 
 	/// The type of the credential subject input. It is bound in max length.
-	/// It is transformed inside the `add` operation into a [<T as
-	/// Config>::SubjectId].
+	/// It is transformed inside the `add` operation into a
+	/// [`Config::SubjectId`].
 	pub type InputSubjectIdOf<T> = BoundedVec<u8, <T as Config>::MaxSubjectIdLength>;
 	/// The type of the credential subject input. It is bound in max length.
 	pub type InputClaimsContentOf<T> = BoundedVec<u8, <T as Config>::MaxEncodedClaimsLength>;
