@@ -16,7 +16,8 @@
 
 use crate::traits::GetWorstCase;
 
-pub struct IdentityContext<DidIdentifier = (), AccountId = ()> {
+/// Manly used for the DIP benchmarking. The worst case can be created for the did and submitter.
+pub struct IdentityContext<DidIdentifier, AccountId> {
 	pub did: DidIdentifier,
 	pub submitter: AccountId,
 }

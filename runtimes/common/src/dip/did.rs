@@ -145,7 +145,6 @@ where
 
 		let mut did_creation_details = generate_base_did_creation_details(did.clone(), submitter.clone());
 
-		// TODO check if I have to set different seed. Prob not but lets be sure.
 		let attestation_key = ed25519_generate(KeyTypeId(*b"0001"), None);
 		let delegation_key = ed25519_generate(KeyTypeId(*b"0002"), None);
 		let auth_key = ed25519_generate(KeyTypeId(*b"0003"), None);
