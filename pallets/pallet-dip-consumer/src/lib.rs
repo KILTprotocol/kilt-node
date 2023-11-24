@@ -109,7 +109,11 @@ pub mod pallet {
 	impl<T: Config> Pallet<T> {
 		// TODO: Replace with a SignedExtra.
 		#[pallet::call_index(0)]
-		#[pallet::weight(0)]
+		#[pallet::weight({
+			let extrinsic_weight = <T as Config>::WeightInfo::dispatch_as();
+			let call_weight = call.get_dispatch_info().weight;
+			extrinsic_weight.saturating_add(call_weight)
+		})]
 		pub fn dispatch_as(
 			origin: OriginFor<T>,
 			identifier: T::Identifier,

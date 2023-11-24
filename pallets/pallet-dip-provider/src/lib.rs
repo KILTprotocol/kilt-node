@@ -106,7 +106,9 @@ pub mod pallet {
 	impl<T: Config> Pallet<T> {
 		#[pallet::call_index(0)]
 		// TODO: Update weight
-		#[pallet::weight(0)]
+		#[pallet::weight({
+			<T as Config>::WeightInfo::commit_identity()
+		})]
 		pub fn commit_identity(
 			origin: OriginFor<T>,
 			identifier: T::Identifier,
@@ -151,7 +153,9 @@ pub mod pallet {
 
 		#[pallet::call_index(1)]
 		// TODO: Update weight
-		#[pallet::weight(0)]
+		#[pallet::weight({
+			<T as Config>::WeightInfo::delete_identity_commitment()
+		})]
 		pub fn delete_identity_commitment(
 			origin: OriginFor<T>,
 			identifier: T::Identifier,
