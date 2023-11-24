@@ -113,7 +113,6 @@ where
 	<Runtime as frame_system::Config>::AccountId: Into<LinkableAccountId> + From<sp_core::sr25519::Public>,
 	<Runtime as frame_system::Config>::AccountId: AsRef<[u8; 32]> + From<[u8; 32]>,
 {
-	/// The worst case for the [LinkedDidInfor] is a DID with all keys set, a web3name and linked accounts in the palled_did_lookup pallet.
 	fn worst_case(context: IdentityContext<Runtime::Identifier, Runtime::AccountId>) -> Self {
 		use did::{
 			did_details::DidVerificationKey,
