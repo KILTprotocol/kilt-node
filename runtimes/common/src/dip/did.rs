@@ -133,7 +133,7 @@ where
 
 		let amount = KILT * 100;
 
-		// give a bit money
+		// give some money
 		<pallet_balances::Pallet<Runtime> as Mutate<<Runtime as frame_system::Config>::AccountId>>::set_balance(
 			&submitter,
 			amount.saturated_into(),
