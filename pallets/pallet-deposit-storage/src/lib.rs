@@ -19,6 +19,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![recursion_limit = "256"]
 
+pub mod default_weights;
 mod deposit;
 pub mod traits;
 
@@ -35,6 +36,7 @@ pub use traits::NoopDepositStorageHooks;
 #[frame_support::pallet(dev_mode)]
 pub mod pallet {
 	use crate::{
+		default_weights::WeightInfo,
 		deposit::{free_deposit, reserve_deposit, DepositEntry},
 		traits::DepositStorageHooks,
 	};
@@ -73,6 +75,7 @@ pub mod pallet {
 		type Namespace: Parameter;
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 		type RuntimeHoldReason: From<HoldReason> + Clone + PartialEq + Debug + FullCodec + MaxEncodedLen + TypeInfo;
+		type WeightInfo: WeightInfo;
 	}
 
 	#[pallet::composite_enum]

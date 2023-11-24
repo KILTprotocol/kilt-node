@@ -133,6 +133,7 @@ impl pallet_deposit_storage::Config for Runtime {
 	type Namespace = DepositNamespaces;
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeHoldReason = RuntimeHoldReason;
+	type WeightInfo = ();
 }
 
 impl pallet_dip_provider::Config for Runtime {

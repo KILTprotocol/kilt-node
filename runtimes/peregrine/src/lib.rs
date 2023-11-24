@@ -975,6 +975,7 @@ impl pallet_deposit_storage::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeHoldReason = RuntimeHoldReason;
 	type Namespace = DepositNamespaces;
+	type WeightInfo = ();
 }
 
 pub struct PreliminaryDipOriginFilter;
