@@ -19,7 +19,10 @@
 use crate::{traits::IdentityProofVerifier, Call, Config, IdentityEntries, Pallet};
 use frame_benchmarking::v2::*;
 use frame_system::RawOrigin;
-use kilt_support::traits::{GetWorstCase, IdentityContext, Instanciate};
+use kilt_support::{
+	benchmark::IdentityContext,
+	traits::{GetWorstCase, Instanciate},
+};
 
 #[benchmarks(
 	where

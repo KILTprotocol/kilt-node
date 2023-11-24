@@ -88,26 +88,6 @@ pub trait GetWorstCase<Context = ()> {
 	fn worst_case(context: Context) -> Self;
 }
 
-#[cfg(feature = "runtime-benchmarks")]
-impl<T> GetWorstCase<IdentityContext<T, T>> for u32 {
-	fn worst_case(_context: IdentityContext<T, T>) -> Self {
-		u32::MAX
-	}
-}
-
-#[cfg(feature = "runtime-benchmarks")]
-impl<T> GetWorstCase<IdentityContext<T, T>> for () {
-	fn worst_case(_context: IdentityContext<T, T>) -> Self {
-		()
-	}
-}
-
-#[cfg(feature = "runtime-benchmarks")]
-pub struct IdentityContext<DidIdentifier = (), AccountId = ()> {
-	pub did: DidIdentifier,
-	pub submitter: AccountId,
-}
-
 /// Trait that allows instanciating multiple instances of a type.
 #[cfg(feature = "runtime-benchmarks")]
 pub trait Instanciate {

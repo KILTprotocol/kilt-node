@@ -18,7 +18,10 @@
 
 use crate::{traits::IdentityProvider, Call, Config, Pallet};
 use frame_benchmarking::v2::*;
-use kilt_support::traits::{GenerateBenchmarkOrigin, GetWorstCase, IdentityContext, Instanciate};
+use kilt_support::{
+	benchmark::IdentityContext,
+	traits::{GenerateBenchmarkOrigin, GetWorstCase, Instanciate},
+};
 
 #[benchmarks(
 	where

@@ -14,20 +14,21 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// If you feel like getting in touch with us, you can do so at info@botlabs.org
-#![cfg_attr(not(feature = "std"), no_std)]
+use crate::traits::GetWorstCase;
 
-mod deposit;
-pub use deposit::Deposit;
-pub mod migration;
-pub mod signature;
-pub mod traits;
+pub struct IdentityContext<DidIdentifier = (), AccountId = ()> {
+	pub did: DidIdentifier,
+	pub submitter: AccountId,
+}
 
-#[cfg(any(feature = "runtime-benchmarks", feature = "mock"))]
-pub mod mock;
+impl<T> GetWorstCase<IdentityContext<T, T>> for u32 {
+	fn worst_case(_context: IdentityContext<T, T>) -> Self {
+		u32::MAX
+	}
+}
 
-#[cfg(any(feature = "try-runtime", test))]
-pub mod test_utils;
-
-#[cfg(feature = "runtime-benchmarks")]
-pub mod benchmark;
+impl<T> GetWorstCase<IdentityContext<T, T>> for () {
+	fn worst_case(_context: IdentityContext<T, T>) -> Self {
+		()
+	}
+}
