@@ -953,6 +953,7 @@ impl pallet_dip_provider::Config for Runtime {
 	type IdentityProvider = runtime_common::dip::did::LinkedDidInfoProvider;
 	type ProviderHooks = pallet_dip_provider::NoopHooks;
 	type RuntimeEvent = RuntimeEvent;
+	type WeightInfo = ();
 }
 
 pub struct PreliminaryDipOriginFilter;
@@ -971,6 +972,7 @@ impl pallet_dip_consumer::Config for Runtime {
 	type ProofVerifier = pallet_dip_consumer::traits::SuccessfulProofVerifier;
 	type RuntimeCall = RuntimeCall;
 	type RuntimeOrigin = RuntimeOrigin;
+	type WeightInfo = ();
 }
 
 construct_runtime! {

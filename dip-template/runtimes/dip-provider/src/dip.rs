@@ -143,4 +143,5 @@ impl pallet_dip_provider::Config for Runtime {
 	type IdentityProvider = LinkedDidInfoProvider;
 	type ProviderHooks = deposit::DepositCollectorHooks;
 	type RuntimeEvent = RuntimeEvent;
+	type WeightInfo = ();
 }

@@ -49,6 +49,7 @@ impl pallet_dip_consumer::Config for Runtime {
 	type ProofVerifier = ProofVerifier;
 	type RuntimeCall = RuntimeCall;
 	type RuntimeOrigin = RuntimeOrigin;
+	type WeightInfo = ();
 }
 
 pub struct PreliminaryDipOriginFilter;

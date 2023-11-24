@@ -19,7 +19,6 @@
 use did::did_details::DidDetails;
 use frame_system::pallet_prelude::BlockNumberFor;
 use kilt_dip_support::merkle::RevealedWeb3Name;
-use kilt_support::traits::Instanciate;
 use pallet_did_lookup::linkable_account::LinkableAccountId;
 use pallet_dip_provider::traits::IdentityProvider;
 use parity_scale_codec::{Decode, Encode};
@@ -27,7 +26,7 @@ use scale_info::TypeInfo;
 use sp_std::vec::Vec;
 
 #[cfg(feature = "runtime-benchmarks")]
-use kilt_support::traits::GetWorstCase;
+use kilt_support::traits::{GetWorstCase, IdentityContext};
 
 #[derive(Encode, Decode, TypeInfo, Debug)]
 pub enum LinkedDidInfoProviderError {
@@ -104,7 +103,7 @@ where
 }
 
 #[cfg(feature = "runtime-benchmarks")]
-impl<Runtime> GetWorstCase for LinkedDidInfoOf<Runtime>
+impl<Runtime> GetWorstCase<IdentityContext<Runtime::Identifier, Runtime::AccountId>> for LinkedDidInfoOf<Runtime>
 where
 	Runtime: did::Config<DidIdentifier = <Runtime as pallet_dip_provider::Config>::Identifier>
 		+ pallet_web3_names::Config<Web3NameOwner = <Runtime as pallet_dip_provider::Config>::Identifier>
@@ -113,11 +112,9 @@ where
 		+ pallet_balances::Config,
 	<Runtime as frame_system::Config>::AccountId: Into<LinkableAccountId> + From<sp_core::sr25519::Public>,
 	<Runtime as frame_system::Config>::AccountId: AsRef<[u8; 32]> + From<[u8; 32]>,
-	Runtime::AccountId: Instanciate,
-	Runtime::Identifier: Instanciate,
 {
 	/// The worst case for the [LinkedDidInfor] is a DID with all keys set, a web3name and linked accounts in the palled_did_lookup pallet.
-	fn worst_case() -> Self {
+	fn worst_case(context: IdentityContext<Runtime::Identifier, Runtime::AccountId>) -> Self {
 		use did::{
 			did_details::DidVerificationKey,
 			mock_utils::{generate_base_did_creation_details, get_key_agreement_keys},
@@ -130,8 +127,10 @@ where
 		use crate::constants::KILT;
 
 		// Did Details.
-		let submitter = Runtime::AccountId::new(1);
-		let did = Runtime::Identifier::new(1);
+
+		let submitter = context.submitter;
+		let did = context.did;
+
 		let amount = KILT * 100;
 
 		// give a bit money

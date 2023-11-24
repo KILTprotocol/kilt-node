@@ -71,7 +71,7 @@ benchmarks! {
 		let sender: T::AccountId = account("sender", 0, SEED);
 		let attester: T::AttesterId = account("attester", 0, SEED);
 		let ctype_hash: T::Hash = T::Hash::default();
-		let subject_id = <T as Config>::SubjectId::worst_case();
+		let subject_id = <T as Config>::SubjectId::worst_case(());
 		let contents = BoundedVec::try_from(vec![0; c as usize]).expect("Contents should not fail.");
 
 		let creation_op = Box::new(generate_base_public_credential_creation_op::<T>(
@@ -98,7 +98,7 @@ benchmarks! {
 		let sender: T::AccountId = account("sender", 0, SEED);
 		let attester: T::AttesterId = account("attester", 0, SEED);
 		let ctype_hash: T::Hash = T::Hash::default();
-		let subject_id = <T as Config>::SubjectId::worst_case();
+		let subject_id = <T as Config>::SubjectId::worst_case(());
 		let contents = BoundedVec::try_from(vec![0; <T as Config>::MaxEncodedClaimsLength::get() as usize]).expect("Contents should not fail.");
 		let origin = <T as Config>::EnsureOrigin::generate_origin(sender.clone(), attester.clone());
 
@@ -127,7 +127,7 @@ benchmarks! {
 		let sender: T::AccountId = account("sender", 0, SEED);
 		let attester: T::AttesterId = account("attester", 0, SEED);
 		let ctype_hash: T::Hash = T::Hash::default();
-		let subject_id = <T as Config>::SubjectId::worst_case();
+		let subject_id = <T as Config>::SubjectId::worst_case(());
 		let contents = BoundedVec::try_from(vec![0; <T as Config>::MaxEncodedClaimsLength::get() as usize]).expect("Contents should not fail.");
 		let origin = <T as Config>::EnsureOrigin::generate_origin(sender.clone(), attester.clone());
 
@@ -156,7 +156,7 @@ benchmarks! {
 		let sender: T::AccountId = account("sender", 0, SEED);
 		let attester: T::AttesterId = account("attester", 0, SEED);
 		let ctype_hash: T::Hash = T::Hash::default();
-		let subject_id = <T as Config>::SubjectId::worst_case();
+		let subject_id = <T as Config>::SubjectId::worst_case(());
 		let contents = BoundedVec::try_from(vec![0; <T as Config>::MaxEncodedClaimsLength::get() as usize]).expect("Contents should not fail.");
 		let origin = <T as Config>::EnsureOrigin::generate_origin(sender.clone(), attester.clone());
 
@@ -185,7 +185,7 @@ benchmarks! {
 		let sender: T::AccountId = account("sender", 0, SEED);
 		let attester: T::AttesterId = account("attester", 0, SEED);
 		let ctype_hash: T::Hash = T::Hash::default();
-		let subject_id = <T as Config>::SubjectId::worst_case();
+		let subject_id = <T as Config>::SubjectId::worst_case(());
 		let contents = BoundedVec::try_from(vec![0; <T as Config>::MaxEncodedClaimsLength::get() as usize]).expect("Contents should not fail.");
 		let origin = <T as Config>::EnsureOrigin::generate_origin(sender.clone(), attester.clone());
 
@@ -216,7 +216,7 @@ benchmarks! {
 		let deposit_owner_new: AccountIdOf<T> = account("caller", 1, SEED);
 		let attester: T::AttesterId = account("attester", 0, SEED);
 		let ctype_hash: T::Hash = T::Hash::default();
-		let subject_id = <T as Config>::SubjectId::worst_case();
+		let subject_id = <T as Config>::SubjectId::worst_case(());
 		let contents = BoundedVec::try_from(vec![0; <T as Config>::MaxEncodedClaimsLength::get() as usize]).expect("Contents should not fail.");
 		let origin = <T as Config>::EnsureOrigin::generate_origin(deposit_owner_old.clone(), attester.clone());
 
@@ -252,7 +252,7 @@ benchmarks! {
 		let deposit_owner: AccountIdOf<T> = account("caller", 0, SEED);
 		let attester: T::AttesterId = account("attester", 0, SEED);
 		let ctype_hash: T::Hash = T::Hash::default();
-		let subject_id = <T as Config>::SubjectId::worst_case();
+		let subject_id = <T as Config>::SubjectId::worst_case(());
 		let origin = <T as Config>::EnsureOrigin::generate_origin(deposit_owner.clone(), attester.clone());
 
 		reserve_balance::<T>(&deposit_owner);

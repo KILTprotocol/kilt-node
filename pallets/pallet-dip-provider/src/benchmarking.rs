@@ -18,16 +18,19 @@
 
 use crate::{traits::IdentityProvider, Call, Config, Pallet};
 use frame_benchmarking::v2::*;
-use kilt_support::traits::{GenerateBenchmarkOrigin, GetWorstCase, Instanciate};
+use kilt_support::traits::{GenerateBenchmarkOrigin, GetWorstCase, IdentityContext, Instanciate};
 
 #[benchmarks(
 	where
 		T::CommitOriginCheck: GenerateBenchmarkOrigin<T::RuntimeOrigin, T::AccountId, T::Identifier>,
 		T::AccountId: Instanciate,
 		T::Identifier: Instanciate,
-		<<T as Config>::IdentityProvider as IdentityProvider<T>>::Success: GetWorstCase
+		<<T as Config>::IdentityProvider as IdentityProvider<T>>::Success: GetWorstCase<IdentityContext<T::Identifier, T::AccountId>>
 )]
 mod benchmarks {
+
+	type IdentityContextOf<Runtime> =
+		IdentityContext<<Runtime as Config>::Identifier, <Runtime as frame_system::Config>::AccountId>;
 
 	use super::*;
 
@@ -37,11 +40,18 @@ mod benchmarks {
 		let subject = T::Identifier::new(1);
 		let commitment_version = 0;
 
+		let context = IdentityContext::<T::Identifier, T::AccountId> {
+			did: subject.clone(),
+			submitter: submitter.clone(),
+		};
+
 		assert!(Pallet::<T>::identity_commitments(&subject, commitment_version).is_none());
 
 		let origin: T::RuntimeOrigin = T::CommitOriginCheck::generate_origin(submitter, subject.clone());
 
-		<<<T as Config>::IdentityProvider as IdentityProvider<T>>::Success as GetWorstCase>::worst_case();
+		<<<T as Config>::IdentityProvider as IdentityProvider<T>>::Success as GetWorstCase<
+			IdentityContextOf<T>,
+		>>::worst_case(context);
 
 		#[extrinsic_call]
 		Pallet::<T>::commit_identity(origin as T::RuntimeOrigin, subject.clone(), Some(commitment_version));
@@ -55,9 +65,16 @@ mod benchmarks {
 		let subject = T::Identifier::new(1);
 		let commitment_version = 0;
 
-		let origin: T::RuntimeOrigin = T::CommitOriginCheck::generate_origin(submitter, subject.clone());
+		let origin: T::RuntimeOrigin = T::CommitOriginCheck::generate_origin(submitter.clone(), subject.clone());
 
-		<<<T as Config>::IdentityProvider as IdentityProvider<T>>::Success as GetWorstCase>::worst_case();
+		let context = IdentityContext::<T::Identifier, T::AccountId> {
+			did: subject.clone(),
+			submitter: submitter.clone(),
+		};
+
+		<<<T as Config>::IdentityProvider as IdentityProvider<T>>::Success as GetWorstCase<
+			IdentityContextOf<T>,
+		>>::worst_case(context);
 
 		Pallet::<T>::commit_identity(
 			origin.clone() as T::RuntimeOrigin,

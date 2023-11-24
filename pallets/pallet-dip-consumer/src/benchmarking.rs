@@ -19,24 +19,31 @@
 use crate::{traits::IdentityProofVerifier, Call, Config, IdentityEntries, Pallet};
 use frame_benchmarking::v2::*;
 use frame_system::RawOrigin;
-use kilt_support::traits::{GetWorstCase, Instanciate};
+use kilt_support::traits::{GetWorstCase, IdentityContext, Instanciate};
 
 #[benchmarks(
 	where
 		T::AccountId: Instanciate,
 		T::Identifier: Instanciate,
-        <<T as Config>::ProofVerifier as IdentityProofVerifier<T>>::Proof: GetWorstCase,
-        <T as Config>::RuntimeCall: From<frame_system::Call<T>>
-
+        <<T as Config>::ProofVerifier as IdentityProofVerifier<T>>::Proof: GetWorstCase<IdentityContext<T::Identifier, T::AccountId>>,
+        <T as Config>::RuntimeCall: From<frame_system::Call<T>>,
 ) ]
 mod benchmarks {
 
 	use super::*;
 
+	type IdentityContextOf<Runtime> =
+		IdentityContext<<Runtime as Config>::Identifier, <Runtime as frame_system::Config>::AccountId>;
+
 	#[benchmark]
 	fn dispatch_as() {
 		let submitter = T::AccountId::new(1);
 		let subject = T::Identifier::new(1);
+
+		let context = IdentityContext::<T::Identifier, T::AccountId> {
+			did: subject.clone(),
+			submitter: submitter.clone(),
+		};
 
 		assert!(IdentityEntries::<T>::get(&subject).is_none());
 
@@ -46,7 +53,9 @@ mod benchmarks {
 
 		let boxed_call = Box::from(call);
 
-		let proof = <<<T as Config>::ProofVerifier as IdentityProofVerifier<T>>::Proof as GetWorstCase>::worst_case();
+		let proof = <<<T as Config>::ProofVerifier as IdentityProofVerifier<T>>::Proof as GetWorstCase<
+			IdentityContextOf<T>,
+		>>::worst_case(context);
 
 		#[extrinsic_call]
 		Pallet::<T>::dispatch_as(
