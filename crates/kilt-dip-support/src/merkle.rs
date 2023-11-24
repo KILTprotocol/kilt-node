@@ -307,7 +307,6 @@ impl<
 	LinkedAccountId: Encode + Clone,
 	Web3Name: Encode + Clone,
 {
-	#[allow(clippy::result_unit_err)]
 	#[allow(clippy::type_complexity)]
 	pub(crate) fn verify_dip_merkle_proof(
 		identity_commitment: &Hasher::Out,
