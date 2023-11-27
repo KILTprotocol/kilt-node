@@ -33,15 +33,17 @@ use sc_telemetry::TelemetryEndpoints;
 use sp_runtime::traits::AccountIdConversion;
 
 use crate::{
-	chain_spec::{development_config, Extensions},
+	chain_spec::{development_config, ChainSpec as ConsumerChainSpec, Extensions},
 	cli::{Cli, RelayChainCli, Subcommand},
 	service::{new_partial, start_parachain_node},
 };
 
 fn load_spec(id: &str) -> std::result::Result<Box<dyn ChainSpec>, String> {
 	match id {
-		"dev" => Ok(Box::new(development_config())),
-		_ => Err("Unrecognized spec ID.".into()),
+		"dev" | "" => Ok(Box::new(development_config())),
+		path => Ok(Box::new(ConsumerChainSpec::from_json_file(std::path::PathBuf::from(
+			path,
+		))?)),
 	}
 }
 
