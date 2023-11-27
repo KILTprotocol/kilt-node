@@ -121,4 +121,5 @@ runtime-benchmarks = [
   "runtime-common/runtime-benchmarks",
   "frame-support/runtime-benchmarks",
   "frame-system/runtime-benchmarks",
+  "pallet-utility/runtime-benchmarks",
 ]
