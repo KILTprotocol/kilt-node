@@ -21,8 +21,8 @@ use std::{fs::create_dir_all, net::SocketAddr};
 use cumulus_primitives_core::ParaId;
 use log::{info, warn};
 use sc_cli::{
-	ChainSpec as ChainSpecTrait, CliConfiguration, DefaultConfigurationValues, ImportParams, KeystoreParams,
-	LoggerBuilder, NetworkParams, Result, SharedParams, SubstrateCli,
+	ChainSpec, CliConfiguration, DefaultConfigurationValues, ImportParams, KeystoreParams, LoggerBuilder,
+	NetworkParams, Result, SharedParams, SubstrateCli,
 };
 use sc_service::{
 	config::{BasePath, PrometheusConfig},
@@ -33,15 +33,17 @@ use sc_telemetry::TelemetryEndpoints;
 use sp_runtime::traits::AccountIdConversion;
 
 use crate::{
-	chain_spec::{development_config, ChainSpec, Extensions},
+	chain_spec::{development_config, ChainSpec as ConsumerChainSpec, Extensions},
 	cli::{Cli, RelayChainCli, Subcommand},
 	service::{new_partial, start_parachain_node},
 };
 
-fn load_spec(id: &str) -> std::result::Result<Box<dyn ChainSpecTrait>, String> {
+fn load_spec(id: &str) -> std::result::Result<Box<dyn ChainSpec>, String> {
 	match id {
 		"dev" | "" => Ok(Box::new(development_config())),
-		path => Ok(Box::new(ChainSpec::from_json_file(std::path::PathBuf::from(path))?)),
+		path => Ok(Box::new(ConsumerChainSpec::from_json_file(std::path::PathBuf::from(
+			path,
+		))?)),
 	}
 }
 
@@ -76,7 +78,7 @@ impl SubstrateCli for Cli {
 		2023
 	}
 
-	fn load_spec(&self, id: &str) -> std::result::Result<Box<dyn ChainSpecTrait>, String> {
+	fn load_spec(&self, id: &str) -> std::result::Result<Box<dyn ChainSpec>, String> {
 		load_spec(id)
 	}
 }
@@ -112,7 +114,7 @@ impl SubstrateCli for RelayChainCli {
 		2023
 	}
 
-	fn load_spec(&self, id: &str) -> std::result::Result<Box<dyn ChainSpecTrait>, String> {
+	fn load_spec(&self, id: &str) -> std::result::Result<Box<dyn ChainSpec>, String> {
 		polkadot_cli::Cli::from_iter([RelayChainCli::executable_name()].iter()).load_spec(id)
 	}
 }
@@ -289,7 +291,7 @@ impl CliConfiguration<Self> for RelayChainCli {
 	fn prometheus_config(
 		&self,
 		default_listen_port: u16,
-		chain_spec: &Box<dyn ChainSpecTrait>,
+		chain_spec: &Box<dyn ChainSpec>,
 	) -> Result<Option<PrometheusConfig>> {
 		self.base.base.prometheus_config(default_listen_port, chain_spec)
 	}
@@ -361,7 +363,7 @@ impl CliConfiguration<Self> for RelayChainCli {
 		self.base.base.announce_block()
 	}
 
-	fn telemetry_endpoints(&self, chain_spec: &Box<dyn ChainSpecTrait>) -> Result<Option<TelemetryEndpoints>> {
+	fn telemetry_endpoints(&self, chain_spec: &Box<dyn ChainSpec>) -> Result<Option<TelemetryEndpoints>> {
 		self.base.base.telemetry_endpoints(chain_spec)
 	}
 }
