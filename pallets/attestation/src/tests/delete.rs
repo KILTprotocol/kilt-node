@@ -81,14 +81,12 @@ fn test_remove_revoked() {
 			assert!(Attestation::attestations(claim_hash).is_none());
 			assert_eq!(
 				events(),
-				vec![
-					Event::AttestationRemoved {
-						attester: attester.clone(),
-						claim_hash,
-						ctype_hash,
-						authorized_by: attestation::authorized_by::AuthorizedBy::Attester(attester.clone())
-					}
-				]
+				vec![Event::AttestationRemoved {
+					attester: attester.clone(),
+					claim_hash,
+					ctype_hash,
+					authorized_by: attestation::authorized_by::AuthorizedBy::Attester(attester.clone())
+				}]
 			);
 		});
 }

@@ -20,7 +20,7 @@ use frame_support::{assert_noop, assert_ok, traits::fungible::InspectHold};
 use kilt_support::{mock::mock_origin::DoubleOrigin, Deposit};
 use sp_runtime::{traits::Zero, TokenError};
 
-use crate::{self as attestation, mock::*, AttesterOf, Config, Error, HoldReason, Event};
+use crate::{self as attestation, mock::*, AttesterOf, Config, Error, Event, HoldReason};
 
 #[test]
 fn test_reclaim_deposit_not_found() {
@@ -300,7 +300,6 @@ fn test_reclaim_deposit() {
 		});
 }
 
-
 #[test]
 fn test_reclaim_deposit_revoked() {
 	let attester: AttesterOf<Test> = sr25519_did_from_public_key(&BOB_SEED);
@@ -327,14 +326,12 @@ fn test_reclaim_deposit_revoked() {
 
 			assert_eq!(
 				events(),
-				vec![
-					Event::AttestationRemoved {
-						attester: attester.clone(),
-						claim_hash,
-						ctype_hash,
-						authorized_by: attestation::authorized_by::AuthorizedBy::DepositOwner(ACCOUNT_00)
-					}
-				]
+				vec![Event::AttestationRemoved {
+					attester: attester.clone(),
+					claim_hash,
+					ctype_hash,
+					authorized_by: attestation::authorized_by::AuthorizedBy::DepositOwner(ACCOUNT_00)
+				}]
 			);
 		});
 }

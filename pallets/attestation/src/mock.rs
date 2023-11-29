@@ -384,7 +384,8 @@ pub(crate) mod runtime {
 			let mut ext = sp_io::TestExternalities::new(storage);
 
 			ext.execute_with(|| {
-				// ensure that we are not at the genesis block. Events are not registered for the genesis block.
+				// ensure that we are not at the genesis block. Events are not registered for
+				// the genesis block.
 				System::set_block_number(System::block_number() + 1);
 
 				for ctype in self.ctypes {
