@@ -22,14 +22,14 @@ pub struct IdentityContext<DidIdentifier, AccountId> {
 	pub submitter: AccountId,
 }
 
-impl<T> GetWorstCase<IdentityContext<T, T>> for u32 {
-	fn worst_case(_context: IdentityContext<T, T>) -> Self {
+impl<T> GetWorstCase<T> for u32 {
+	fn worst_case(_context: T) -> Self {
 		u32::MAX
 	}
 }
 
-impl<T> GetWorstCase<IdentityContext<T, T>> for () {
-	fn worst_case(_context: IdentityContext<T, T>) -> Self {
+impl<T> GetWorstCase<T> for () {
+	fn worst_case(_context: T) -> Self {
 		()
 	}
 }
