@@ -23,16 +23,16 @@ use frame_support::{
 		traits::{BlakeTwo256, IdentityLookup},
 		AccountId32,
 	},
-	traits::{ConstU16, ConstU32, ConstU64, Everything},
+	traits::{ConstU16, ConstU32, ConstU64, Contains, Everything},
 };
 use frame_system::{mocking::MockBlock, EnsureSigned};
 
-use crate::{self as dip_consumer, traits::SuccessfulProofVerifier};
+use crate::traits::SuccessfulProofVerifier;
 
 construct_runtime!(
 	pub struct TestRuntime {
 		System: frame_system,
-		DipConsumer: dip_consumer,
+		DipConsumer: crate,
 	}
 );
 
@@ -62,6 +62,14 @@ impl frame_system::Config for TestRuntime {
 	type Version = ();
 }
 
+pub struct CallFilter;
+
+impl Contains<RuntimeCall> for CallFilter {
+	fn contains(t: &RuntimeCall) -> bool {
+		matches!(t, RuntimeCall::System { .. })
+	}
+}
+
 impl crate::Config for TestRuntime {
 	type RuntimeOrigin = RuntimeOrigin;
 	type RuntimeCall = RuntimeCall;
@@ -69,7 +77,7 @@ impl crate::Config for TestRuntime {
 	type LocalIdentityInfo = u128;
 	type Identifier = AccountId32;
 	type DispatchOriginCheck = EnsureSigned<Self::Identifier>;
-	type DipCallOriginFilter = ();
+	type DipCallOriginFilter = CallFilter;
 	type WeightInfo = ();
 }
 
