@@ -14,22 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use crate::traits::GetWorstCase;
-
 /// Manly used for the DIP benchmarking. The worst case can be created for the did and submitter.
 pub struct IdentityContext<DidIdentifier, AccountId> {
 	pub did: DidIdentifier,
 	pub submitter: AccountId,
-}
-
-impl<T> GetWorstCase<T> for u32 {
-	fn worst_case(_context: T) -> Self {
-		u32::MAX
-	}
-}
-
-impl<T> GetWorstCase<T> for () {
-	fn worst_case(_context: T) -> Self {
-		()
-	}
 }
