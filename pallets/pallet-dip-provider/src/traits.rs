@@ -33,6 +33,7 @@ pub mod identity_provision {
 	{
 		type Error: Into<u16>;
 		type Success;
+		const MAX_LINKED_ACCOUNT: u32;
 
 		fn retrieve(identifier: &Runtime::Identifier) -> Result<Self::Success, Self::Error>;
 	}
@@ -47,6 +48,7 @@ pub mod identity_provision {
 	{
 		type Error = u16;
 		type Success = Identity;
+		const MAX_LINKED_ACCOUNT: u32 = 0;
 
 		fn retrieve(_identifier: &Runtime::Identifier) -> Result<Self::Success, Self::Error> {
 			Ok(Identity::default())

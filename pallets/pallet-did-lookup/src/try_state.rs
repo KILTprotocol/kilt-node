@@ -19,9 +19,9 @@
 use frame_support::ensure;
 use kilt_support::test_utils::log_and_return_error_message;
 use scale_info::prelude::format;
-use sp_runtime::{SaturatedConversion, TryRuntimeError};
+use sp_runtime::TryRuntimeError;
 
-use crate::{Config, ConnectedAccounts, ConnectedDids, MAX_LINKED_ACCOUNT};
+use crate::{Config, ConnectedAccounts, ConnectedDids};
 
 pub(crate) fn do_try_state<T: Config>() -> Result<(), TryRuntimeError> {
 	ConnectedDids::<T>::iter().try_for_each(|(account, record)| -> Result<(), TryRuntimeError> {
@@ -39,15 +39,6 @@ pub(crate) fn do_try_state<T: Config>() -> Result<(), TryRuntimeError> {
 				log_and_return_error_message(format!(
 					"Linked Account {:?} for did {:?} not match",
 					linked_account_id, did_identifier
-				))
-			);
-
-			ensure!(
-				ConnectedAccounts::<T>::iter_prefix(did_identifier.clone()).count()
-					< MAX_LINKED_ACCOUNT.saturated_into(),
-				log_and_return_error_message(format!(
-					"DID {:?} has more linked accounts than {:?}",
-					did_identifier, MAX_LINKED_ACCOUNT
 				))
 			);
 

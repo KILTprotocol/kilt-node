@@ -17,12 +17,14 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use did::did_details::DidDetails;
+use frame_support::ensure;
 use frame_system::pallet_prelude::BlockNumberFor;
 use kilt_dip_support::merkle::RevealedWeb3Name;
 use pallet_did_lookup::linkable_account::LinkableAccountId;
 use pallet_dip_provider::traits::IdentityProvider;
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
+use sp_runtime::SaturatedConversion;
 use sp_std::vec::Vec;
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -33,6 +35,7 @@ pub enum LinkedDidInfoProviderError {
 	DidNotFound,
 	DidDeleted,
 	Internal,
+	MaxLinkedAccounts,
 }
 
 impl From<LinkedDidInfoProviderError> for u16 {
@@ -40,6 +43,7 @@ impl From<LinkedDidInfoProviderError> for u16 {
 		match value {
 			LinkedDidInfoProviderError::DidNotFound => 0,
 			LinkedDidInfoProviderError::DidDeleted => 1,
+			LinkedDidInfoProviderError::MaxLinkedAccounts => 2,
 			LinkedDidInfoProviderError::Internal => u16::MAX,
 		}
 	}
@@ -68,6 +72,7 @@ where
 {
 	type Error = LinkedDidInfoProviderError;
 	type Success = LinkedDidInfoOf<Runtime>;
+	const MAX_LINKED_ACCOUNT: u32 = 20;
 
 	fn retrieve(identifier: &Runtime::Identifier) -> Result<Self::Success, Self::Error> {
 		let did_details = match (
@@ -93,7 +98,14 @@ where
 		} else {
 			Ok(None)
 		}?;
-		let linked_accounts = pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(identifier).collect();
+		let linked_accounts: Vec<_> =
+			pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(identifier).collect();
+
+		ensure!(
+			<Self as IdentityProvider<Runtime>>::MAX_LINKED_ACCOUNT > linked_accounts.len().saturated_into(),
+			LinkedDidInfoProviderError::MaxLinkedAccounts
+		);
+
 		Ok(LinkedDidInfoOf {
 			did_details,
 			web3_name_details,
@@ -112,6 +124,7 @@ where
 		+ pallet_balances::Config,
 	<Runtime as frame_system::Config>::AccountId: Into<LinkableAccountId> + From<sp_core::sr25519::Public>,
 	<Runtime as frame_system::Config>::AccountId: AsRef<[u8; 32]> + From<[u8; 32]>,
+	LinkedDidInfoOf<Runtime>: IdentityProvider<Runtime>,
 {
 	fn worst_case(context: IdentityContext<Runtime::Identifier, Runtime::AccountId>) -> Self {
 		use did::{
@@ -121,7 +134,7 @@ where
 		use frame_benchmarking::{vec, Zero};
 		use frame_support::traits::fungible::Mutate;
 		use sp_io::crypto::{ed25519_generate, sr25519_generate};
-		use sp_runtime::{traits::Get, BoundedVec, KeyTypeId, SaturatedConversion};
+		use sp_runtime::{traits::Get, BoundedVec, KeyTypeId};
 
 		use crate::constants::KILT;
 
@@ -181,7 +194,7 @@ where
 
 		let mut linked_accounts = vec![];
 
-		(0..pallet_did_lookup::MAX_LINKED_ACCOUNT).for_each(|index| {
+		(0..Self::MAX_LINKED_ACCOUNT).for_each(|index| {
 			let connected_acc = sr25519_generate(KeyTypeId(index.to_be_bytes()), None);
 			let connected_acc_id: <Runtime as frame_system::Config>::AccountId = connected_acc.into();
 			let linkable_id: LinkableAccountId = connected_acc_id.clone().into();
