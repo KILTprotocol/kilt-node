@@ -216,6 +216,7 @@ fn test_reclaim_deposit_authorization() {
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 	let mut attestation = generate_base_attestation::<Test>(attester.clone(), ACCOUNT_00);
 	attestation.authorization_id = Some(other_authorized.clone());
+	let ctype_hash = attestation.ctype_hash;
 
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
@@ -242,11 +243,13 @@ fn test_reclaim_deposit_authorization() {
 					Event::AttestationRevoked {
 						attester: attester.clone(),
 						claim_hash,
+						ctype_hash,
 						authorized_by: attestation::authorized_by::AuthorizedBy::DepositOwner(ACCOUNT_00)
 					},
 					Event::AttestationRemoved {
 						attester: attester.clone(),
 						claim_hash,
+						ctype_hash,
 						authorized_by: attestation::authorized_by::AuthorizedBy::DepositOwner(ACCOUNT_00)
 					}
 				]
@@ -259,6 +262,7 @@ fn test_reclaim_deposit() {
 	let attester: AttesterOf<Test> = sr25519_did_from_public_key(&BOB_SEED);
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 	let attestation = generate_base_attestation::<Test>(attester.clone(), ACCOUNT_00);
+	let ctype_hash = attestation.ctype_hash;
 
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
@@ -282,11 +286,13 @@ fn test_reclaim_deposit() {
 					Event::AttestationRevoked {
 						attester: attester.clone(),
 						claim_hash,
+						ctype_hash,
 						authorized_by: attestation::authorized_by::AuthorizedBy::DepositOwner(ACCOUNT_00)
 					},
 					Event::AttestationRemoved {
 						attester: attester.clone(),
 						claim_hash,
+						ctype_hash,
 						authorized_by: attestation::authorized_by::AuthorizedBy::DepositOwner(ACCOUNT_00)
 					}
 				]
@@ -301,6 +307,7 @@ fn test_reclaim_deposit_revoked() {
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 	let mut attestation = generate_base_attestation::<Test>(attester.clone(), ACCOUNT_00);
 	attestation.revoked = true;
+	let ctype_hash = attestation.ctype_hash;
 
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
@@ -324,6 +331,7 @@ fn test_reclaim_deposit_revoked() {
 					Event::AttestationRemoved {
 						attester: attester.clone(),
 						claim_hash,
+						ctype_hash,
 						authorized_by: attestation::authorized_by::AuthorizedBy::DepositOwner(ACCOUNT_00)
 					}
 				]

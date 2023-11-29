@@ -219,6 +219,8 @@ pub mod pallet {
 			authorized_by: AuthorizedByOf<T>,
 			/// The attester who initially created the attestation.
 			attester: AttesterOf<T>,
+			/// The ctype of the attested credential.
+			ctype_hash: CtypeHashOf<T>,
 			/// The claim hash of the credential that is revoked.
 			claim_hash: ClaimHashOf<T>,
 		},
@@ -228,6 +230,8 @@ pub mod pallet {
 			authorized_by: AuthorizedByOf<T>,
 			/// The attester who initially created the attestation.
 			attester: AttesterOf<T>,
+			/// The ctype of the attested credential.
+			ctype_hash: CtypeHashOf<T>,
 			/// The claim hash of the credential for which the attestation entry
 			/// was deleted.
 			claim_hash: ClaimHashOf<T>,
@@ -384,6 +388,7 @@ pub mod pallet {
 			Self::deposit_event(Event::AttestationRevoked {
 				attester,
 				authorized_by,
+				ctype_hash: attestation.ctype_hash,
 				claim_hash,
 			});
 
@@ -521,12 +526,14 @@ pub mod pallet {
 					attester: attestation.attester.clone(),
 					authorized_by: authorized_by.clone(),
 					claim_hash,
+					ctype_hash: attestation.ctype_hash,
 				});
 			}
 			Self::deposit_event(Event::AttestationRemoved {
 				attester: attestation.attester,
 				authorized_by,
 				claim_hash,
+				ctype_hash: attestation.ctype_hash,
 			});
 			Ok(())
 		}

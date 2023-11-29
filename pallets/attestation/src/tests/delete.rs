@@ -27,6 +27,7 @@ fn test_remove() {
 	let attester: AttesterOf<Test> = sr25519_did_from_public_key(&ALICE_SEED);
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 	let attestation = generate_base_attestation::<Test>(attester.clone(), ACCOUNT_00);
+	let ctype_hash = attestation.ctype_hash;
 
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
@@ -45,12 +46,14 @@ fn test_remove() {
 					Event::AttestationRevoked {
 						attester: attester.clone(),
 						claim_hash,
-						authorized_by: attestation::authorized_by::AuthorizedBy::Attester(attester.clone())
+						authorized_by: attestation::authorized_by::AuthorizedBy::Attester(attester.clone()),
+						ctype_hash,
 					},
 					Event::AttestationRemoved {
 						attester: attester.clone(),
 						claim_hash,
-						authorized_by: attestation::authorized_by::AuthorizedBy::Attester(attester.clone())
+						authorized_by: attestation::authorized_by::AuthorizedBy::Attester(attester.clone()),
+						ctype_hash,
 					}
 				]
 			);
@@ -63,6 +66,7 @@ fn test_remove_revoked() {
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 	let mut attestation = generate_base_attestation::<Test>(attester.clone(), ACCOUNT_00);
 	attestation.revoked = true;
+	let ctype_hash = attestation.ctype_hash;
 
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
@@ -81,6 +85,7 @@ fn test_remove_revoked() {
 					Event::AttestationRemoved {
 						attester: attester.clone(),
 						claim_hash,
+						ctype_hash,
 						authorized_by: attestation::authorized_by::AuthorizedBy::Attester(attester.clone())
 					}
 				]
@@ -96,6 +101,7 @@ fn test_remove_authorized() {
 	let mut attestation = generate_base_attestation::<Test>(attester.clone(), ACCOUNT_00);
 	attestation.authorization_id = Some(revoker.clone());
 	let authorization_info = Some(MockAccessControl(revoker.clone()));
+	let ctype_hash = attestation.ctype_hash;
 
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
@@ -115,11 +121,13 @@ fn test_remove_authorized() {
 					Event::AttestationRevoked {
 						attester: attester.clone(),
 						claim_hash,
+						ctype_hash,
 						authorized_by: attestation::authorized_by::AuthorizedBy::Authorization(revoker.clone())
 					},
 					Event::AttestationRemoved {
 						attester: attester.clone(),
 						claim_hash,
+						ctype_hash,
 						authorized_by: attestation::authorized_by::AuthorizedBy::Authorization(revoker.clone())
 					}
 				]

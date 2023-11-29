@@ -27,6 +27,7 @@ fn test_revoke_remove() {
 	let revoker: AttesterOf<Test> = sr25519_did_from_public_key(&ALICE_SEED);
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 	let attestation = generate_base_attestation::<Test>(revoker.clone(), ACCOUNT_00);
+	let ctype_hash = attestation.ctype_hash;
 
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
@@ -51,6 +52,7 @@ fn test_revoke_remove() {
 				vec![Event::AttestationRevoked {
 					attester: revoker.clone(),
 					claim_hash,
+					ctype_hash,
 					authorized_by: attestation::authorized_by::AuthorizedBy::Attester(revoker.clone())
 				}]
 			);
@@ -69,6 +71,7 @@ fn test_revoke_remove() {
 				vec![Event::AttestationRemoved {
 					attester: revoker.clone(),
 					claim_hash,
+					ctype_hash,
 					authorized_by: attestation::authorized_by::AuthorizedBy::Attester(revoker.clone())
 				}]
 			);
@@ -83,6 +86,7 @@ fn test_authorized_revoke() {
 	let authorization_info = Some(MockAccessControl(revoker.clone()));
 	let mut attestation = generate_base_attestation::<Test>(attester.clone(), ACCOUNT_00);
 	attestation.authorization_id = Some(revoker.clone());
+	let ctype_hash = attestation.ctype_hash;
 
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
@@ -108,6 +112,7 @@ fn test_authorized_revoke() {
 				vec![Event::AttestationRevoked {
 					attester: attester.clone(),
 					claim_hash,
+					ctype_hash,
 					authorized_by: attestation::authorized_by::AuthorizedBy::Authorization(revoker.clone())
 				}]
 			);
