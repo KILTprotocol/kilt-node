@@ -23,9 +23,6 @@ use frame_support::traits::{
 use sp_runtime::DispatchError;
 use sp_std::vec::Vec;
 
-#[cfg(feature = "runtime-benchmarks")]
-use sp_runtime::{traits::BlakeTwo256, AccountId32};
-
 use crate::deposit::{free_deposit, reserve_deposit, Deposit};
 
 /// The sources of a call struct.
@@ -95,10 +92,12 @@ pub trait Instanciate {
 }
 
 #[cfg(feature = "runtime-benchmarks")]
-impl Instanciate for AccountId32 {
+impl Instanciate for sp_runtime::AccountId32 {
 	fn new(instance: u32) -> Self {
 		use sp_runtime::traits::Hash;
-		AccountId32::from(<[u8; 32]>::from(BlakeTwo256::hash(&instance.to_be_bytes())))
+		sp_runtime::AccountId32::from(<[u8; 32]>::from(sp_runtime::traits::BlakeTwo256::hash(
+			&instance.to_be_bytes(),
+		)))
 	}
 }
 
