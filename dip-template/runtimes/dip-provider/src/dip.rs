@@ -34,6 +34,8 @@ use crate::{
 	AccountId, Balances, DidIdentifier, Runtime, RuntimeEvent, RuntimeHoldReason,
 };
 
+const MAX_LINKED_ACCOUNTS: u32 = 20;
+
 pub mod runtime_api {
 	use super::*;
 
@@ -141,7 +143,7 @@ impl pallet_dip_provider::Config for Runtime {
 	type CommitOrigin = DidRawOrigin<DidIdentifier, AccountId>;
 	type Identifier = DidIdentifier;
 	type IdentityCommitmentGenerator = DidMerkleRootGenerator<Runtime>;
-	type IdentityProvider = LinkedDidInfoProvider;
+	type IdentityProvider = LinkedDidInfoProvider<MAX_LINKED_ACCOUNTS>;
 	type ProviderHooks = deposit::DepositCollectorHooks;
 	type RuntimeEvent = RuntimeEvent;
 	type WeightInfo = ();

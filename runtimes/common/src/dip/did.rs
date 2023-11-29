@@ -52,7 +52,7 @@ impl From<LinkedDidInfoProviderError> for u16 {
 pub type Web3OwnershipOf<Runtime> =
 	RevealedWeb3Name<<Runtime as pallet_web3_names::Config>::Web3Name, BlockNumberFor<Runtime>>;
 
-pub struct LinkedDidInfoOf<Runtime>
+pub struct LinkedDidInfoOf<Runtime, const MAX_LINKED_ACCOUNTS: u32>
 where
 	Runtime: did::Config + pallet_web3_names::Config,
 {
@@ -61,9 +61,9 @@ where
 	pub linked_accounts: Vec<LinkableAccountId>,
 }
 
-pub struct LinkedDidInfoProvider;
+pub struct LinkedDidInfoProvider<const MAX_LINKED_ACCOUNTS: u32>;
 
-impl<Runtime> IdentityProvider<Runtime> for LinkedDidInfoProvider
+impl<Runtime, const MAX_LINKED_ACCOUNTS: u32> IdentityProvider<Runtime> for LinkedDidInfoProvider<MAX_LINKED_ACCOUNTS>
 where
 	Runtime: did::Config<DidIdentifier = <Runtime as pallet_dip_provider::Config>::Identifier>
 		+ pallet_web3_names::Config<Web3NameOwner = <Runtime as pallet_dip_provider::Config>::Identifier>
@@ -71,8 +71,7 @@ where
 		+ pallet_dip_provider::Config,
 {
 	type Error = LinkedDidInfoProviderError;
-	type Success = LinkedDidInfoOf<Runtime>;
-	const MAX_LINKED_ACCOUNT: u32 = 20;
+	type Success = LinkedDidInfoOf<Runtime, MAX_LINKED_ACCOUNTS>;
 
 	fn retrieve(identifier: &Runtime::Identifier) -> Result<Self::Success, Self::Error> {
 		let did_details = match (
@@ -98,13 +97,17 @@ where
 		} else {
 			Ok(None)
 		}?;
-		let linked_accounts: Vec<_> =
-			pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(identifier).collect();
 
-		ensure!(
-			<Self as IdentityProvider<Runtime>>::MAX_LINKED_ACCOUNT > linked_accounts.len().saturated_into(),
-			LinkedDidInfoProviderError::MaxLinkedAccounts
-		);
+		let has_user_to_many_acc = pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(identifier)
+			.skip(MAX_LINKED_ACCOUNTS.saturated_into())
+			.next()
+			.is_some();
+
+		ensure!(has_user_to_many_acc, LinkedDidInfoProviderError::MaxLinkedAccounts);
+
+		let linked_accounts: Vec<_> = pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(identifier)
+			.take(MAX_LINKED_ACCOUNTS.saturated_into())
+			.collect();
 
 		Ok(LinkedDidInfoOf {
 			did_details,
@@ -115,7 +118,8 @@ where
 }
 
 #[cfg(feature = "runtime-benchmarks")]
-impl<Runtime> GetWorstCase<IdentityContext<Runtime::Identifier, Runtime::AccountId>> for LinkedDidInfoOf<Runtime>
+impl<Runtime, const MAX_LINKED_ACCOUNTS: u32> GetWorstCase<IdentityContext<Runtime::Identifier, Runtime::AccountId>>
+	for LinkedDidInfoOf<Runtime, MAX_LINKED_ACCOUNTS>
 where
 	Runtime: did::Config<DidIdentifier = <Runtime as pallet_dip_provider::Config>::Identifier>
 		+ pallet_web3_names::Config<Web3NameOwner = <Runtime as pallet_dip_provider::Config>::Identifier>
@@ -124,7 +128,6 @@ where
 		+ pallet_balances::Config,
 	<Runtime as frame_system::Config>::AccountId: Into<LinkableAccountId> + From<sp_core::sr25519::Public>,
 	<Runtime as frame_system::Config>::AccountId: AsRef<[u8; 32]> + From<[u8; 32]>,
-	LinkedDidInfoOf<Runtime>: IdentityProvider<Runtime>,
 {
 	fn worst_case(context: IdentityContext<Runtime::Identifier, Runtime::AccountId>) -> Self {
 		use did::{
@@ -194,7 +197,7 @@ where
 
 		let mut linked_accounts = vec![];
 
-		(0..Self::MAX_LINKED_ACCOUNT).for_each(|index| {
+		(0..MAX_LINKED_ACCOUNTS).for_each(|index| {
 			let connected_acc = sr25519_generate(KeyTypeId(index.to_be_bytes()), None);
 			let connected_acc_id: <Runtime as frame_system::Config>::AccountId = connected_acc.into();
 			let linkable_id: LinkableAccountId = connected_acc_id.clone().into();
