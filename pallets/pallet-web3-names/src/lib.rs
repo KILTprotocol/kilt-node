@@ -224,7 +224,7 @@ pub mod pallet {
 
 			let decoded_name = Self::check_claiming_preconditions(name, &owner, &payer)?;
 
-			Self::register_name(decoded_name.clone(), owner.clone(), payer)?;
+			Self::register_name(decoded_name, owner, payer)?;
 
 			Ok(())
 		}
