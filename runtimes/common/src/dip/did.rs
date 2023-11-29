@@ -101,7 +101,7 @@ where
 		let has_user_to_many_acc = pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(identifier)
 			.skip(MAX_LINKED_ACCOUNTS.saturated_into())
 			.next()
-			.is_some();
+			.is_none();
 
 		ensure!(has_user_to_many_acc, LinkedDidInfoProviderError::MaxLinkedAccounts);
 
