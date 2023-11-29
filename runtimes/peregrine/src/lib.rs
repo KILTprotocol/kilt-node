@@ -945,58 +945,6 @@ impl pallet_proxy::Config for Runtime {
 	type WeightInfo = weights::pallet_proxy::WeightInfo<Runtime>;
 }
 
-impl pallet_dip_provider::Config for Runtime {
-	type CommitOriginCheck = did::EnsureDidOrigin<DidIdentifier, AccountId>;
-	type CommitOrigin = did::DidRawOrigin<DidIdentifier, AccountId>;
-	type Identifier = DidIdentifier;
-	type IdentityCommitmentGenerator = runtime_common::dip::merkle::DidMerkleRootGenerator<Runtime>;
-	type IdentityProvider = runtime_common::dip::did::LinkedDidInfoProvider;
-	type ProviderHooks = pallet_dip_provider::NoopHooks;
-	type RuntimeEvent = RuntimeEvent;
-	type WeightInfo = ();
-}
-
-#[derive(Encode, Decode, MaxEncodedLen, scale_info::TypeInfo, Clone, PartialEq, Eq, RuntimeDebug)]
-pub enum DepositNamespaces {
-	ExampleNameSpaces,
-}
-
-impl Default for DepositNamespaces {
-	fn default() -> Self {
-		DepositNamespaces::ExampleNameSpaces
-	}
-}
-
-impl pallet_deposit_storage::Config for Runtime {
-	type CheckOrigin = EnsureSigned<AccountId>;
-	type Currency = Balances;
-	type DepositHooks = pallet_deposit_storage::traits::NoopDepositStorageHooks;
-	type MaxKeyLength = ConstU32<256>;
-	type RuntimeEvent = RuntimeEvent;
-	type RuntimeHoldReason = RuntimeHoldReason;
-	type Namespace = DepositNamespaces;
-	type WeightInfo = ();
-}
-
-pub struct PreliminaryDipOriginFilter;
-
-impl frame_support::traits::Contains<RuntimeCall> for PreliminaryDipOriginFilter {
-	fn contains(_t: &RuntimeCall) -> bool {
-		true
-	}
-}
-
-impl pallet_dip_consumer::Config for Runtime {
-	type DipCallOriginFilter = PreliminaryDipOriginFilter;
-	type DispatchOriginCheck = EnsureSigned<AccountId>;
-	type Identifier = DidIdentifier;
-	type LocalIdentityInfo = u128;
-	type ProofVerifier = pallet_dip_consumer::traits::SuccessfulProofVerifier;
-	type RuntimeCall = RuntimeCall;
-	type RuntimeOrigin = RuntimeOrigin;
-	type WeightInfo = ();
-}
-
 construct_runtime! {
 	pub enum Runtime
 	{
@@ -1060,9 +1008,6 @@ construct_runtime! {
 		Web3Names: pallet_web3_names = 68,
 		PublicCredentials: public_credentials = 69,
 		Migration: pallet_migration = 70,
-		PalletDipProvider: pallet_dip_provider = 71,
-		PalletDipConsumer: pallet_dip_consumer = 72,
-		StorageDeposit: pallet_deposit_storage = 73,
 
 		// Parachains pallets. Start indices at 80 to leave room.
 
@@ -1203,9 +1148,6 @@ mod benches {
 		[pallet_xcm, PolkadotXcm]
 		[pallet_migration, Migration]
 		[frame_benchmarking::baseline, Baseline::<Runtime>]
-		[pallet_dip_provider, PalletDipProvider]
-		[pallet_dip_consumer, PalletDipConsumer]
-		[pallet_deposit_storage, StorageDeposit]
 	);
 }
 

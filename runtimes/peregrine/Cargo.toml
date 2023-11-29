@@ -45,10 +45,6 @@ pallet-migration.workspace = true
 parachain-staking.workspace = true
 public-credentials.workspace = true
 runtime-common.workspace = true
-pallet-dip-provider.workspace = true
-pallet-dip-consumer.workspace = true
-pallet-deposit-storage.workspace = true
-
 
 # Substrate dependencies
 sp-api.workspace = true
@@ -156,9 +152,6 @@ runtime-benchmarks = [
   "sp-runtime/runtime-benchmarks",
   "xcm-builder/runtime-benchmarks",
   "xcm-executor/runtime-benchmarks",
-  "pallet-dip-provider/runtime-benchmarks",
-  "pallet-dip-consumer/runtime-benchmarks",
-  "pallet-deposit-storage/runtime-benchmarks",
 ]
 std = [
   "attestation/std",
@@ -234,9 +227,6 @@ std = [
   "xcm-builder/std",
   "xcm-executor/std",
   "xcm/std",
-  "pallet-dip-provider/std",
-  "pallet-dip-consumer/std",
-  "pallet-deposit-storage/std",
 ]
 try-runtime = [
   "attestation/try-runtime",
@@ -282,8 +272,5 @@ try-runtime = [
   "parachain-staking/try-runtime",
   "public-credentials/try-runtime",
   "runtime-common/try-runtime",
-  "pallet-dip-provider/try-runtime",
-  "pallet-dip-consumer/try-runtime",
-  "pallet-deposit-storage/try-runtime",
 ]
 with-tracing = ["frame-executive/with-tracing", "sp-io/with-tracing"]
