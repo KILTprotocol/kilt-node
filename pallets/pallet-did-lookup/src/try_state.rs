@@ -46,7 +46,7 @@ pub(crate) fn do_try_state<T: Config>() -> Result<(), TryRuntimeError> {
 				ConnectedAccounts::<T>::iter_prefix(did_identifier.clone()).count()
 					< MAX_LINKED_ACCOUNT.saturated_into(),
 				log_and_return_error_message(format!(
-					"DID {:?} has more linked accounts as {:?}",
+					"DID {:?} has more linked accounts than {:?}",
 					did_identifier, MAX_LINKED_ACCOUNT
 				))
 			);
