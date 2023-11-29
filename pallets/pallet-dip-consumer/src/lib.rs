@@ -60,7 +60,7 @@ pub mod pallet {
 
 	#[pallet::storage]
 	#[pallet::getter(fn identity_proofs)]
-	pub type IdentityEntries<T> =
+	pub(crate) type IdentityEntries<T> =
 		StorageMap<_, Twox64Concat, <T as Config>::Identifier, <T as Config>::LocalIdentityInfo>;
 
 	#[pallet::config]
