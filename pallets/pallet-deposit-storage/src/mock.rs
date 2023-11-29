@@ -34,15 +34,10 @@ use crate::{self as storage_deposit_pallet, NoopDepositStorageHooks};
 
 pub(crate) type Balance = u128;
 
-#[derive(Encode, Decode, MaxEncodedLen, TypeInfo, Clone, PartialEq, Eq, RuntimeDebug)]
+#[derive(Encode, Decode, MaxEncodedLen, TypeInfo, Clone, PartialEq, Eq, RuntimeDebug, Default)]
 pub enum DepositNamespaces {
+	#[default]
 	ExampleNameSpaces,
-}
-
-impl Default for DepositNamespaces {
-	fn default() -> Self {
-		DepositNamespaces::ExampleNameSpaces
-	}
 }
 
 construct_runtime!(

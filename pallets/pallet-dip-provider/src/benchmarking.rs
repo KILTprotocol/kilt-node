@@ -74,7 +74,7 @@ mod benchmarks {
 
 		let context = IdentityContext::<T::Identifier, T::AccountId> {
 			did: subject.clone(),
-			submitter: submitter.clone(),
+			submitter,
 		};
 
 		<<<T as Config>::IdentityProvider as IdentityProvider<T>>::Success as GetWorstCase<

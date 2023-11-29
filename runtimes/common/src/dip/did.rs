@@ -99,8 +99,7 @@ where
 		}?;
 
 		let has_user_to_many_acc = pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(identifier)
-			.skip(MAX_LINKED_ACCOUNTS.saturated_into())
-			.next()
+			.nth(MAX_LINKED_ACCOUNTS.saturated_into())
 			.is_none();
 
 		ensure!(has_user_to_many_acc, LinkedDidInfoProviderError::MaxLinkedAccounts);
@@ -200,7 +199,7 @@ where
 		(0..MAX_LINKED_ACCOUNTS).for_each(|index| {
 			let connected_acc = sr25519_generate(KeyTypeId(index.to_be_bytes()), None);
 			let connected_acc_id: <Runtime as frame_system::Config>::AccountId = connected_acc.into();
-			let linkable_id: LinkableAccountId = connected_acc_id.clone().into();
+			let linkable_id: LinkableAccountId = connected_acc_id.into();
 			pallet_did_lookup::Pallet::<Runtime>::add_association(submitter.clone(), did.clone(), linkable_id.clone())
 				.expect("association should not fail.");
 
