@@ -60,10 +60,13 @@ mod benchmarks {
 			IdentityContextOf<T>,
 		>>::worst_case(context);
 
+		let cloned_subject = subject.clone();
+		let origin = <T as frame_system::Config>::RuntimeOrigin::from(origin);
+
 		#[extrinsic_call]
 		Pallet::<T>::dispatch_as(
-			<T as frame_system::Config>::RuntimeOrigin::from(origin) as <T as frame_system::Config>::RuntimeOrigin,
-			subject.clone(),
+			origin as <T as frame_system::Config>::RuntimeOrigin,
+			cloned_subject,
 			proof,
 			boxed_call,
 		);

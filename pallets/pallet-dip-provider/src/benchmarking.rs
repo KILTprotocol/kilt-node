@@ -56,8 +56,10 @@ mod benchmarks {
 			IdentityContextOf<T>,
 		>>::worst_case(context);
 
+		let cloned_subject = subject.clone();
+
 		#[extrinsic_call]
-		Pallet::<T>::commit_identity(origin as T::RuntimeOrigin, subject.clone(), Some(commitment_version));
+		Pallet::<T>::commit_identity(origin as T::RuntimeOrigin, cloned_subject, Some(commitment_version));
 
 		assert!(Pallet::<T>::identity_commitments(&subject, commitment_version).is_some());
 	}

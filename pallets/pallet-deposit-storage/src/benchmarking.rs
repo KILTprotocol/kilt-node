@@ -68,8 +68,11 @@ mod benchmarks {
 
 		assert!(Deposits::<T>::get(&namespace, &key).is_some());
 
+		let cloned_namespace = namespace.clone();
+		let cloned_key = key.clone();
+
 		#[extrinsic_call]
-		Pallet::<T>::reclaim_deposit(origin, namespace.clone(), key.clone());
+		Pallet::<T>::reclaim_deposit(origin, cloned_namespace, cloned_key);
 
 		assert!(Deposits::<T>::get(&namespace, &key).is_none());
 	}
