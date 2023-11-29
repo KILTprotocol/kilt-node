@@ -49,6 +49,7 @@ std = [
   "log/std",
   "sp-keystore/std",
   "pallet-balances/std",
+  "sp-io/std",
 ]
 
 runtime-benchmarks = ["frame-benchmarking", "pallet-balances"]

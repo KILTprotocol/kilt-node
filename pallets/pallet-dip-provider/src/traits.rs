@@ -128,7 +128,7 @@ where
 	}
 }
 
-#[cfg(feature = "runtime-benchmarks")]
+#[cfg(any(feature = "runtime-benchmarks", test))]
 impl<DidIdentifier, AccountId> SubmitterInfo for kilt_support::mock::mock_origin::DoubleOrigin<AccountId, DidIdentifier>
 where
 	AccountId: Clone,
