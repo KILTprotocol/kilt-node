@@ -192,7 +192,7 @@ pub(crate) mod runtime {
 	use ctype::{CtypeCreatorOf, CtypeEntryOf};
 	use kilt_support::mock::{mock_origin, SubjectId};
 
-	use crate::{self as attestation};
+	use crate::{self as attestation, Event};
 
 	type Block = frame_system::mocking::MockBlock<Test>;
 
@@ -204,6 +204,20 @@ pub(crate) mod runtime {
 	pub const UNIT: Balance = 10u128.pow(15);
 	pub const MILLI_UNIT: Balance = 10u128.pow(12);
 	pub const ATTESTATION_DEPOSIT: Balance = 10 * MILLI_UNIT;
+
+	pub(crate) fn events() -> Vec<Event<Test>> {
+		System::events()
+			.into_iter()
+			.map(|r| r.event)
+			.filter_map(|e| {
+				if let RuntimeEvent::Attestation(e) = e {
+					Some(e)
+				} else {
+					None
+				}
+			})
+			.collect::<Vec<_>>()
+	}
 
 	frame_support::construct_runtime!(
 		pub enum Test
@@ -230,7 +244,7 @@ pub(crate) mod runtime {
 		type Lookup = IdentityLookup<Self::AccountId>;
 		type Block = Block;
 		type Nonce = u64;
-		type RuntimeEvent = ();
+		type RuntimeEvent = RuntimeEvent;
 		type BlockHashCount = BlockHashCount;
 		type DbWeight = RocksDbWeight;
 		type Version = ();
@@ -263,7 +277,7 @@ pub(crate) mod runtime {
 		type MaxHolds = MaxHolds;
 		type Balance = Balance;
 		type DustRemoval = ();
-		type RuntimeEvent = ();
+		type RuntimeEvent = RuntimeEvent;
 		type ExistentialDeposit = ExistentialDeposit;
 		type AccountStore = System;
 		type WeightInfo = ();
@@ -281,7 +295,7 @@ pub(crate) mod runtime {
 		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<AccountId, Self::CtypeCreatorId>;
 		type OriginSuccess = mock_origin::DoubleOrigin<AccountId, Self::CtypeCreatorId>;
 		type OverarchingOrigin = EnsureSigned<AccountId>;
-		type RuntimeEvent = ();
+		type RuntimeEvent = RuntimeEvent;
 		type WeightInfo = ();
 
 		type Currency = Balances;
@@ -303,7 +317,7 @@ pub(crate) mod runtime {
 	impl Config for Test {
 		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<AccountId, AttesterOf<Self>>;
 		type OriginSuccess = mock_origin::DoubleOrigin<AccountId, AttesterOf<Self>>;
-		type RuntimeEvent = ();
+		type RuntimeEvent = RuntimeEvent;
 		type WeightInfo = ();
 		type RuntimeHoldReason = RuntimeHoldReason;
 		type Currency = Balances;
@@ -370,6 +384,10 @@ pub(crate) mod runtime {
 			let mut ext = sp_io::TestExternalities::new(storage);
 
 			ext.execute_with(|| {
+				// ensure that we are not at the genesis block. Events are not registered for
+				// the genesis block.
+				System::set_block_number(System::block_number() + 1);
+
 				for ctype in self.ctypes {
 					ctype::Ctypes::<Test>::insert(
 						ctype.0,

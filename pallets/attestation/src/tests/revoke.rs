@@ -20,13 +20,14 @@ use frame_support::{assert_noop, assert_ok, traits::fungible::InspectHold};
 use kilt_support::mock::mock_origin::DoubleOrigin;
 use sp_runtime::{traits::Zero, DispatchError};
 
-use crate::{self as attestation, mock::*, AttesterOf, Config, HoldReason};
+use crate::{self as attestation, mock::*, AttesterOf, Config, Event, HoldReason};
 
 #[test]
 fn test_revoke_remove() {
 	let revoker: AttesterOf<Test> = sr25519_did_from_public_key(&ALICE_SEED);
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 	let attestation = generate_base_attestation::<Test>(revoker.clone(), ACCOUNT_00);
+	let ctype_hash = attestation.ctype_hash;
 
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
@@ -46,6 +47,17 @@ fn test_revoke_remove() {
 				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
 				<Test as Config>::Deposit::get()
 			);
+			assert_eq!(
+				events(),
+				vec![Event::AttestationRevoked {
+					attester: revoker.clone(),
+					claim_hash,
+					ctype_hash,
+					authorized_by: attestation::authorized_by::AuthorizedBy::Attester(revoker.clone())
+				}]
+			);
+
+			System::reset_events();
 
 			assert_ok!(Attestation::remove(
 				DoubleOrigin(ACCOUNT_00, revoker.clone()).into(),
@@ -54,6 +66,15 @@ fn test_revoke_remove() {
 			));
 			assert!(Attestation::attestations(claim_hash).is_none());
 			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00).is_zero());
+			assert_eq!(
+				events(),
+				vec![Event::AttestationRemoved {
+					attester: revoker.clone(),
+					claim_hash,
+					ctype_hash,
+					authorized_by: attestation::authorized_by::AuthorizedBy::Attester(revoker.clone())
+				}]
+			);
 		});
 }
 
@@ -65,10 +86,11 @@ fn test_authorized_revoke() {
 	let authorization_info = Some(MockAccessControl(revoker.clone()));
 	let mut attestation = generate_base_attestation::<Test>(attester.clone(), ACCOUNT_00);
 	attestation.authorization_id = Some(revoker.clone());
+	let ctype_hash = attestation.ctype_hash;
 
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
-		.with_ctypes(vec![(attestation.ctype_hash, attester)])
+		.with_ctypes(vec![(attestation.ctype_hash, attester.clone())])
 		.with_attestations(vec![(claim_hash, attestation)])
 		.build_and_execute_with_sanity_tests(|| {
 			assert_ok!(Attestation::revoke(
@@ -84,6 +106,15 @@ fn test_authorized_revoke() {
 			assert_eq!(
 				Balances::balance_on_hold(&HoldReason::Deposit.into(), &ACCOUNT_00),
 				<Test as Config>::Deposit::get()
+			);
+			assert_eq!(
+				events(),
+				vec![Event::AttestationRevoked {
+					attester: attester.clone(),
+					claim_hash,
+					ctype_hash,
+					authorized_by: attestation::authorized_by::AuthorizedBy::Authorization(revoker.clone())
+				}]
 			);
 		});
 }
