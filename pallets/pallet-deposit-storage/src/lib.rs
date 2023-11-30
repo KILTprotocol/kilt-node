@@ -33,7 +33,7 @@ pub use deposit::FixedDepositCollectorViaDepositsPallet;
 pub use pallet::*;
 pub use traits::NoopDepositStorageHooks;
 
-#[frame_support::pallet(dev_mode)]
+#[frame_support::pallet]
 pub mod pallet {
 	use crate::{
 		default_weights::WeightInfo,
@@ -72,7 +72,7 @@ pub mod pallet {
 		type CheckOrigin: EnsureOrigin<Self::RuntimeOrigin, Success = Self::AccountId>;
 		type Currency: Mutate<Self::AccountId, Reason = Self::RuntimeHoldReason>;
 		type DepositHooks: DepositStorageHooks<Self>;
-		type Namespace: Parameter;
+		type Namespace: Parameter + MaxEncodedLen;
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 		type RuntimeHoldReason: From<HoldReason> + Clone + PartialEq + Debug + FullCodec + MaxEncodedLen + TypeInfo;
 		type WeightInfo: WeightInfo;

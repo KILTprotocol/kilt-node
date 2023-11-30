@@ -34,7 +34,7 @@ mod origin;
 
 pub use crate::{origin::*, pallet::*, traits::SuccessfulProofVerifier};
 
-#[frame_support::pallet(dev_mode)]
+#[frame_support::pallet]
 pub mod pallet {
 	use super::*;
 
