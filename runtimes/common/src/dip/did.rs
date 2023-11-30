@@ -98,7 +98,7 @@ where
 			Ok(None)
 		}?;
 
-		// Check if the user has to many linked accounts. If he has more then [MAX_LINKED_ACCOUNTS] we throw an error
+		// Check if the user has too many linked accounts. If they have more than [MAX_LINKED_ACCOUNTS], we throw an error.
 		let has_user_to_many_acc = pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(identifier)
 			.nth(MAX_LINKED_ACCOUNTS.saturated_into())
 			.is_none();
