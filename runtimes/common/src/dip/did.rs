@@ -35,7 +35,7 @@ pub enum LinkedDidInfoProviderError {
 	DidNotFound,
 	DidDeleted,
 	Internal,
-	MaxLinkedAccounts,
+	TooManyLinkedAccounts,
 }
 
 impl From<LinkedDidInfoProviderError> for u16 {
@@ -43,7 +43,7 @@ impl From<LinkedDidInfoProviderError> for u16 {
 		match value {
 			LinkedDidInfoProviderError::DidNotFound => 0,
 			LinkedDidInfoProviderError::DidDeleted => 1,
-			LinkedDidInfoProviderError::MaxLinkedAccounts => 2,
+			LinkedDidInfoProviderError::TooManyLinkedAccounts => 2,
 			LinkedDidInfoProviderError::Internal => u16::MAX,
 		}
 	}
@@ -98,11 +98,12 @@ where
 			Ok(None)
 		}?;
 
+		// Check if the user has to many linked accounts. If he has more then [MAX_LINKED_ACCOUNTS] we throw an error
 		let has_user_to_many_acc = pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(identifier)
 			.nth(MAX_LINKED_ACCOUNTS.saturated_into())
 			.is_none();
 
-		ensure!(has_user_to_many_acc, LinkedDidInfoProviderError::MaxLinkedAccounts);
+		ensure!(has_user_to_many_acc, LinkedDidInfoProviderError::TooManyLinkedAccounts);
 
 		let linked_accounts: Vec<_> = pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(identifier)
 			.take(MAX_LINKED_ACCOUNTS.saturated_into())
