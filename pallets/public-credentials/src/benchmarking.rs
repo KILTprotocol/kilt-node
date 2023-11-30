@@ -19,9 +19,10 @@
 use frame_benchmarking::{account, benchmarks, Zero};
 use frame_support::{
 	dispatch::RawOrigin,
-	traits::{fungible::Mutate, Get},
+	traits::{fungible::Mutate, Get, ReservableCurrency},
 	BoundedVec,
 };
+use frame_system::pallet_prelude::BlockNumberFor;
 use sp_std::{boxed::Box, vec, vec::Vec};
 
 use ctype::CtypeEntryOf;
@@ -60,8 +61,9 @@ benchmarks! {
 		<T as Config>::EnsureOrigin: GenerateBenchmarkOrigin<T::RuntimeOrigin, T::AccountId, T::AttesterId>,
 		<T as Config>::SubjectId: GetWorstCase + Into<Vec<u8>> + sp_std::fmt::Debug,
 		<T as Config>::CredentialId: Default,
-		T::BlockNumber: From<u64>,
+		BlockNumberFor<T>: From<u64>,
 		<T as Config>::Currency: Mutate<T::AccountId>,
+		<T as Config>::Currency: ReservableCurrency<T::AccountId>,
 	}
 
 	add {
@@ -261,7 +263,7 @@ benchmarks! {
 
 		let credential_entry = generate_base_credential_entry::<T>(
 			deposit_owner.clone(),
-			T::BlockNumber::zero(),
+			BlockNumberFor::<T>::zero(),
 			attester,
 			Some(ctype_hash),
 			Some(Deposit::<T::AccountId, BalanceOf<T>> {

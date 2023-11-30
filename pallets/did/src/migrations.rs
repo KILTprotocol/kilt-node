@@ -17,134 +17,144 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_support::{
-	traits::{Get, GetStorageVersion, OnRuntimeUpgrade, ReservableCurrency, StorageVersion},
-	weights::Weight,
+	pallet_prelude::DispatchResult,
+	traits::{fungible::Inspect, ReservableCurrency},
 };
 use kilt_support::migration::switch_reserved_to_hold;
-use log;
-use sp_runtime::SaturatedConversion;
-use sp_std::marker::PhantomData;
 
-#[cfg(feature = "try-runtime")]
-use sp_runtime::TryRuntimeError;
+use crate::{AccountIdOf, Config, CurrencyOf, Did, DidIdentifierOf, Error, HoldReason};
 
-use crate::{AccountIdOf, Config, CurrencyOf, Did, HoldReason, Pallet, STORAGE_VERSION as TARGET_STORAGE_VERSION};
-
-const CURRENT_STORAGE_VERSION: StorageVersion = StorageVersion::new(4);
-
-pub struct BalanceMigration<T>(PhantomData<T>);
-
-impl<T: Config> OnRuntimeUpgrade for BalanceMigration<T>
+pub fn update_balance_for_did<T: Config>(key: &DidIdentifierOf<T>) -> DispatchResult
 where
-	<T as Config>::Currency: ReservableCurrency<T::AccountId>,
+	<T as Config>::Currency:
+		ReservableCurrency<T::AccountId, Balance = <<T as Config>::Currency as Inspect<AccountIdOf<T>>>::Balance>,
 {
-	fn on_runtime_upgrade() -> frame_support::weights::Weight {
-		log::info!("Did: Initiating migration");
-
-		let onchain_storage_version = Pallet::<T>::on_chain_storage_version();
-		if onchain_storage_version == CURRENT_STORAGE_VERSION {
-			TARGET_STORAGE_VERSION.put::<Pallet<T>>();
-			<T as frame_system::Config>::DbWeight::get()
-				.reads_writes(1, 1)
-				.saturating_add(do_migration::<T>())
-		} else {
-			log::info!(
-				"Did: No migration needed. This file should be deleted. Current storage version: {:?}, Required Version for update: {:?}", 
-				onchain_storage_version,
-				CURRENT_STORAGE_VERSION
-			);
-			<T as frame_system::Config>::DbWeight::get().reads(1)
-		}
-	}
-
-	#[cfg(feature = "try-runtime")]
-	fn pre_upgrade() -> Result<sp_std::vec::Vec<u8>, TryRuntimeError> {
-		use frame_support::ensure;
-		use sp_std::vec;
-
-		let has_all_user_no_holds = Did::<T>::iter_values()
-			.map(|details: crate::did_details::DidDetails<T>| {
-				kilt_support::migration::has_user_reserved_balance::<AccountIdOf<T>, CurrencyOf<T>>(
-					&details.deposit.owner,
-					&HoldReason::Deposit.into(),
-				)
-			})
-			.all(|user| user);
-
-		ensure!(has_all_user_no_holds, "Pre Upgrade Did: there are users with holds!");
-
-		assert_eq!(Pallet::<T>::on_chain_storage_version(), CURRENT_STORAGE_VERSION);
-
-		log::info!("Did: Pre migration checks successful");
-
-		Ok(vec![])
-	}
-
-	#[cfg(feature = "try-runtime")]
-	fn post_upgrade(_pre_state: sp_std::vec::Vec<u8>) -> Result<(), TryRuntimeError> {
-		use frame_support::traits::fungible::InspectHold;
-		use sp_runtime::Saturating;
-		use sp_std::collections::btree_map::BTreeMap;
-
-		use crate::BalanceOf;
-
-		let mut map_user_deposit: BTreeMap<AccountIdOf<T>, BalanceOf<T>> = BTreeMap::new();
-
-		Did::<T>::iter_values().for_each(|details| {
-			map_user_deposit
-				.entry(details.deposit.owner)
-				.and_modify(|balance| *balance = balance.saturating_add(details.deposit.amount))
-				.or_insert(details.deposit.amount);
-		});
-
-		map_user_deposit
-			.iter()
-			.try_for_each(|(who, amount)| -> Result<(), TryRuntimeError> {
-				let hold_balance: BalanceOf<T> =
-					<T as Config>::Currency::balance_on_hold(&HoldReason::Deposit.into(), who).saturated_into();
-
-				assert!(
-					amount.eq(&hold_balance),
-					"Did: Hold balance is not matching for attestation {:?}. Expected hold: {:?}. Real hold: {:?}",
-					who,
-					amount,
-					hold_balance
-				);
-				Ok(())
-			})?;
-
-		assert_eq!(Pallet::<T>::on_chain_storage_version(), TARGET_STORAGE_VERSION);
-
-		log::info!("Did: Post migration checks successful");
-		Ok(())
-	}
+	let details = Did::<T>::get(key).ok_or(Error::<T>::NotFound)?;
+	switch_reserved_to_hold::<AccountIdOf<T>, CurrencyOf<T>>(
+		&details.deposit.owner,
+		&HoldReason::Deposit.into(),
+		details.deposit.amount,
+	)
 }
 
-fn do_migration<T: Config>() -> Weight
-where
-	<T as Config>::Currency: ReservableCurrency<T::AccountId>,
-{
-	Did::<T>::iter()
-		.map(|(key, did_details)| -> Weight {
-			let deposit = did_details.deposit;
-			let result = switch_reserved_to_hold::<AccountIdOf<T>, CurrencyOf<T>>(
-				deposit.owner,
-				&HoldReason::Deposit.into(),
-				deposit.amount.saturated_into(),
-			);
+#[cfg(test)]
+pub mod test {
+	use frame_support::{
+		assert_noop,
+		traits::{
+			fungible::{Inspect, InspectHold},
+			ReservableCurrency,
+		},
+	};
+	use sp_core::Pair;
+	use sp_runtime::traits::Zero;
 
-			if result.is_err() {
-				log::error!(
-					" Did: Could not convert reserves to hold from did: {:?} error: {:?}",
-					key,
-					result
+	use crate::{
+		self as did, did_details::DidVerificationKey, migrations::update_balance_for_did, mock::*, mock_utils::*,
+		AccountIdOf, Config, Did, Error, HoldReason,
+	};
+
+	#[test]
+	fn test_setup() {
+		let auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
+		let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
+
+		let mut did_details =
+			generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(alice_did.clone()));
+		did_details.deposit.amount = <Test as did::Config>::BaseDeposit::get();
+
+		let balance = <Test as did::Config>::BaseDeposit::get()
+			+ <Test as did::Config>::Fee::get()
+			+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
+		ExtBuilder::default()
+			.with_balances(vec![(alice_did.clone(), balance)])
+			.with_dids(vec![(alice_did.clone(), did_details)])
+			.build_and_execute_with_sanity_tests(None, || {
+				let hold_balance_pre_migration =
+					<<Test as Config>::Currency as InspectHold<AccountIdOf<Test>>>::balance_on_hold(
+						&HoldReason::Deposit.into(),
+						&alice_did,
+					);
+
+				assert_eq!(hold_balance_pre_migration, <Test as did::Config>::BaseDeposit::get());
+
+				kilt_support::migration::translate_holds_to_reserve::<Test>(HoldReason::Deposit.into());
+
+				let hold_balance = <<Test as Config>::Currency as InspectHold<AccountIdOf<Test>>>::balance_on_hold(
+					&HoldReason::Deposit.into(),
+					&alice_did,
 				);
-			}
 
-			// Currency::reserve and Currency::hold each read and write to the DB once.
-			// Since we are uncertain about which operation may fail, in the event of an
-			// error, we assume the worst-case scenario here.
-			<T as frame_system::Config>::DbWeight::get().reads_writes(2, 2)
-		})
-		.fold(Weight::zero(), |acc, next| acc.saturating_add(next))
+				let reserved_balance =
+					<<Test as Config>::Currency as ReservableCurrency<AccountIdOf<Test>>>::reserved_balance(&alice_did);
+
+				assert!(hold_balance.is_zero());
+				assert_eq!(reserved_balance, <Test as Config>::BaseDeposit::get());
+			})
+	}
+
+	#[test]
+	fn test_balance_migration_did() {
+		let auth_key = get_ed25519_authentication_key(&AUTH_SEED_0);
+		let auth_key2 = get_ed25519_authentication_key(&AUTH_SEED_1);
+		let alice_did = get_did_identifier_from_ed25519_key(auth_key.public());
+		let bob_did = get_did_identifier_from_ed25519_key(auth_key2.public());
+
+		let mut did_details =
+			generate_base_did_details::<Test>(DidVerificationKey::from(auth_key.public()), Some(alice_did.clone()));
+		did_details.deposit.amount = <Test as did::Config>::BaseDeposit::get();
+
+		let balance = <Test as did::Config>::BaseDeposit::get()
+			+ <Test as did::Config>::Fee::get()
+			+ <<Test as did::Config>::Currency as Inspect<did::AccountIdOf<Test>>>::minimum_balance();
+		ExtBuilder::default()
+			.with_balances(vec![(alice_did.clone(), balance)])
+			.with_dids(vec![(alice_did.clone(), did_details)])
+			.build_and_execute_with_sanity_tests(None, || {
+				kilt_support::migration::translate_holds_to_reserve::<Test>(HoldReason::Deposit.into());
+
+				let did_pre_migration = Did::<Test>::get(alice_did.clone());
+
+				let reserved_pre_migration =
+					<<Test as Config>::Currency as ReservableCurrency<AccountIdOf<Test>>>::reserved_balance(
+						&alice_did.clone(),
+					);
+
+				//did should be in storage
+				assert!(did_pre_migration.is_some());
+
+				// before the migration the deposit should be reserved.
+				assert_eq!(
+					reserved_pre_migration,
+					did_pre_migration.clone().unwrap().deposit.amount
+				);
+
+				assert!(update_balance_for_did::<Test>(&alice_did.clone()).is_ok());
+
+				let did_post_migration = Did::<Test>::get(alice_did.clone());
+
+				let reserved_post_migration =
+					<<Test as Config>::Currency as ReservableCurrency<AccountIdOf<Test>>>::reserved_balance(&alice_did);
+
+				let balance_on_hold = <<Test as Config>::Currency as InspectHold<AccountIdOf<Test>>>::balance_on_hold(
+					&HoldReason::Deposit.into(),
+					&alice_did.clone(),
+				);
+
+				//did should be still in the storage
+				assert!(did_post_migration.is_some());
+
+				// ... and should be the same
+				assert_eq!(did_post_migration, did_pre_migration);
+
+				// Since reserved balance count to hold balance, it should not be zero
+				assert!(!reserved_post_migration.is_zero());
+
+				// ... and be as much as the hold balance
+				assert_eq!(reserved_post_migration, balance_on_hold);
+
+				// should throw error if did does not exist
+				assert_noop!(update_balance_for_did::<Test>(&bob_did), Error::<Test>::NotFound);
+			});
+	}
 }

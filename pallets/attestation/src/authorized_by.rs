@@ -16,29 +16,19 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::{assert_noop, assert_ok, crypto::ecdsa::ECDSAExt, traits::fungible::InspectHold};
-use kilt_support::{mock::mock_origin, Deposit};
-use parity_scale_codec::Encode;
-use sha3::{Digest, Keccak256};
-use sp_runtime::{
-	app_crypto::{ecdsa, sr25519, Pair},
-	traits::{IdentifyAccount, Zero},
-	MultiSignature, MultiSigner, TokenError,
-};
+use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
+use scale_info::TypeInfo;
 
-use crate::{
-	account::{AccountId20, EthereumSignature},
-	associate_account_request::{get_challenge, AssociateAccountRequest},
-	linkable_account::LinkableAccountId,
-	mock::*,
-	signature::get_wrapped_payload,
-	ConnectedAccounts, ConnectedDids, ConnectionRecord, Error, HoldReason,
-};
-
-
-
-
-
- 
-
-
+/// Describes who authorized the associated action.
+///
+/// This can either be the attester that issued this attestation, another
+/// attester who is authorized by the `authorization_id` or the deposit owner.
+#[derive(Clone, Debug, Encode, Decode, Eq, PartialEq, TypeInfo, MaxEncodedLen)]
+pub enum AuthorizedBy<Account, Attester> {
+	/// Authorized by the deposit owner.
+	DepositOwner(Account),
+	/// Authorized by who issued the attestation.
+	Attester(Attester),
+	/// Authorized by the authorization_id.
+	Authorization(Attester),
+}

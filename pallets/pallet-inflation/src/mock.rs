@@ -23,45 +23,39 @@ use frame_support::{
 	traits::{fungible::Balanced, OnFinalize, OnInitialize, OnUnbalanced},
 };
 
+use frame_system::pallet_prelude::BlockNumberFor;
 use sp_runtime::{
-	testing::Header,
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
-	MultiSignature,
+	BuildStorage, MultiSignature,
 };
 
-type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
 type Hash = sp_core::H256;
 type Balance = u128;
 type Signature = MultiSignature;
 type AccountPublic = <Signature as Verify>::Signer;
 type AccountId = <AccountPublic as IdentifyAccount>::AccountId;
-type Index = u64;
-type BlockNumber = u64;
 
 pub(crate) const TREASURY_ACC: AccountId = AccountId::new([1u8; 32]);
 
-pub const BLOCKS_PER_YEAR: BlockNumber = 60_000 / 12_000 * 60 * 24 * 36525 / 100;
+pub const BLOCKS_PER_YEAR: BlockNumberFor<Test> = 60_000 / 12_000 * 60 * 24 * 36525 / 100;
 pub const KILT: Balance = 10u128.pow(15);
-pub const INITIAL_PERIOD_LENGTH: BlockNumber = BLOCKS_PER_YEAR.saturating_mul(5);
+pub const INITIAL_PERIOD_LENGTH: BlockNumberFor<Test> = BLOCKS_PER_YEAR.saturating_mul(5);
 const YEARLY_REWARD: Balance = 2_000_000u128 * KILT;
 pub const INITIAL_PERIOD_REWARD_PER_BLOCK: Balance = YEARLY_REWARD / (BLOCKS_PER_YEAR as Balance);
 
 frame_support::construct_runtime!(
-	pub enum Test where
-		Block = Block,
-		NodeBlock = Block,
-		UncheckedExtrinsic = UncheckedExtrinsic,
+	pub enum Test
 	{
-		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
-		Balances: pallet_balances::{Pallet, Call, Storage, Event<T>},
-		Inflation: pallet_inflation::{Pallet, Storage},
+		System: frame_system,
+		Balances: pallet_balances,
+		Inflation: pallet_inflation,
 	}
 );
 
 parameter_types! {
 	pub const SS58Prefix: u8 = 38;
-	pub const BlockHashCount: BlockNumber = 2400;
+	pub const BlockHashCount: BlockNumberFor<Test> = 2400;
 }
 
 impl frame_system::Config for Test {
@@ -71,13 +65,12 @@ impl frame_system::Config for Test {
 	type DbWeight = ();
 	type RuntimeOrigin = RuntimeOrigin;
 	type RuntimeCall = RuntimeCall;
-	type Index = Index;
-	type BlockNumber = BlockNumber;
+	type Block = Block;
+	type Nonce = u64;
 	type Hash = Hash;
 	type Hashing = BlakeTwo256;
 	type AccountId = AccountId;
 	type Lookup = IdentityLookup<Self::AccountId>;
-	type Header = Header;
 	type RuntimeEvent = RuntimeEvent;
 	type BlockHashCount = BlockHashCount;
 	type Version = ();
@@ -99,7 +92,7 @@ parameter_types! {
 
 impl pallet_balances::Config for Test {
 	type FreezeIdentifier = ();
-	type HoldIdentifier = ();
+	type RuntimeHoldReason = ();
 	type MaxFreezes = ();
 	type MaxHolds = ();
 	type MaxLocks = MaxLocks;
@@ -122,7 +115,7 @@ impl OnUnbalanced<CreditOf<Test>> for ToBeneficiary {
 }
 
 parameter_types! {
-	pub const InitialPeriodLength: BlockNumber = INITIAL_PERIOD_LENGTH;
+	pub const InitialPeriodLength: BlockNumberFor<Test> = INITIAL_PERIOD_LENGTH;
 	pub const InitialPeriodReward: Balance = INITIAL_PERIOD_REWARD_PER_BLOCK;
 }
 
@@ -134,7 +127,7 @@ impl pallet_inflation::Config for Test {
 	type WeightInfo = ();
 }
 
-pub(crate) fn roll_to(n: BlockNumber) {
+pub(crate) fn roll_to(n: BlockNumberFor<Test>) {
 	while System::block_number() < n {
 		<AllPalletsWithSystem as OnFinalize<u64>>::on_finalize(System::block_number());
 		System::set_block_number(System::block_number() + 1);
@@ -144,8 +137,8 @@ pub(crate) fn roll_to(n: BlockNumber) {
 
 // Build genesis storage according to the mock runtime.
 pub fn new_test_ext() -> sp_io::TestExternalities {
-	frame_system::GenesisConfig::default()
-		.build_storage::<Test>()
+	frame_system::GenesisConfig::<Test>::default()
+		.build_storage()
 		.unwrap()
 		.into()
 }

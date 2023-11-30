@@ -157,23 +157,18 @@ mod tests {
 	use frame_system::limits;
 	use sp_core::{ConstU64, H256};
 	use sp_runtime::{
-		testing::Header,
 		traits::{BlakeTwo256, IdentityLookup},
-		Perbill,
+		BuildStorage, Perbill,
 	};
 
-	type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 	type Block = frame_system::mocking::MockBlock<Test>;
 
 	frame_support::construct_runtime!(
-		pub enum Test where
-			Block = Block,
-			NodeBlock = Block,
-			UncheckedExtrinsic = UncheckedExtrinsic,
+		pub enum Test
 		{
-			System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
-			Authorship: pallet_authorship::{Pallet, Storage},
-			Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
+			System: frame_system,
+			Authorship: pallet_authorship,
+			Balances: pallet_balances,
 		}
 	);
 
@@ -205,14 +200,14 @@ mod tests {
 	impl frame_system::Config for Test {
 		type BaseCallFilter = frame_support::traits::Everything;
 		type RuntimeOrigin = RuntimeOrigin;
-		type Index = u64;
-		type BlockNumber = u64;
+		type Block = Block;
+		type Nonce = u64;
+
 		type RuntimeCall = RuntimeCall;
 		type Hash = H256;
 		type Hashing = BlakeTwo256;
 		type AccountId = AccountId;
 		type Lookup = IdentityLookup<Self::AccountId>;
-		type Header = Header;
 		type RuntimeEvent = RuntimeEvent;
 		type BlockHashCount = BlockHashCount;
 		type BlockLength = BlockLength;
@@ -232,7 +227,7 @@ mod tests {
 	impl pallet_balances::Config for Test {
 		type Balance = u64;
 		type FreezeIdentifier = ();
-		type HoldIdentifier = ();
+		type RuntimeHoldReason = ();
 		type MaxFreezes = ();
 		type MaxHolds = ();
 		type RuntimeEvent = RuntimeEvent;
@@ -271,7 +266,7 @@ mod tests {
 	}
 
 	pub fn new_test_ext() -> sp_io::TestExternalities {
-		let mut t = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
+		let mut t = frame_system::GenesisConfig::<Test>::default().build_storage().unwrap();
 		// We use default for brevity, but you can configure as desired if needed.
 		pallet_balances::GenesisConfig::<Test>::default()
 			.assimilate_storage(&mut t)

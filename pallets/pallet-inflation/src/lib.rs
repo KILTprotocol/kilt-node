@@ -24,8 +24,8 @@
 //!
 //! ## Assumptions
 //!
-//! - The minting of rewards after [InitialPeriodLength] many blocks is handled
-//!   by another pallet, e.g., ParachainStaking.
+//! - The minting of rewards after [`Config::InitialPeriodLength`] many blocks
+//!   is handled by another pallet, e.g., ParachainStaking.
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -69,7 +69,7 @@ pub mod pallet {
 		/// minted. Once the current block exceeds this, rewards are no further
 		/// issued.
 		#[pallet::constant]
-		type InitialPeriodLength: Get<<Self as frame_system::Config>::BlockNumber>;
+		type InitialPeriodLength: Get<BlockNumberFor<Self>>;
 
 		/// The amount of newly issued tokens per block during the initial
 		/// period.
@@ -89,7 +89,7 @@ pub mod pallet {
 
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
-		fn on_initialize(now: T::BlockNumber) -> Weight {
+		fn on_initialize(now: BlockNumberFor<T>) -> Weight {
 			// The complement of this is handled in ParachainStaking.
 			if now <= T::InitialPeriodLength::get() {
 				let reward = T::Currency::issue(T::InitialPeriodReward::get());

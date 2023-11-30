@@ -18,8 +18,8 @@ sp-io.workspace = true
 
 [dependencies]
 # External dependencies
-parity-scale-codec = {workspace = true, features = ["derive"]}
 log.workspace = true
+parity-scale-codec = {workspace = true, features = ["derive"]}
 scale-info = {workspace = true, features = ["derive"]}
 
 hex-literal = {workspace = true, optional = true}
@@ -39,6 +39,7 @@ did.workspace = true
 kilt-support.workspace = true
 pallet-did-lookup.workspace = true
 pallet-inflation.workspace = true
+pallet-migration.workspace = true
 pallet-web3-names.workspace = true
 parachain-staking.workspace = true
 public-credentials.workspace = true
@@ -93,9 +94,9 @@ parachain-info.workspace = true
 
 # Polkadot dependencies
 pallet-xcm.workspace = true
-xcm.workspace = true
 xcm-builder.workspace = true
 xcm-executor.workspace = true
+xcm.workspace = true
 
 # Benchmarking dependencies
 cumulus-pallet-session-benchmarking = {workspace = true, optional = true}
@@ -142,6 +143,7 @@ runtime-benchmarks = [
   "pallet-multisig/runtime-benchmarks",
   "parachain-staking/runtime-benchmarks",
   "public-credentials/runtime-benchmarks",
+  "pallet-migration/runtime-benchmarks",
   "runtime-common/runtime-benchmarks",
   "sp-runtime/runtime-benchmarks",
   "xcm-builder/runtime-benchmarks",
@@ -188,6 +190,7 @@ std = [
   "pallet-scheduler/std",
   "pallet-session/std",
   "pallet-multisig/std",
+  "pallet-migration/std",
   "pallet-timestamp/std",
   "pallet-tips/std",
   "pallet-transaction-payment-rpc-runtime-api/std",
@@ -243,6 +246,7 @@ try-runtime = [
   "pallet-indices/try-runtime",
   "pallet-inflation/try-runtime",
   "pallet-membership/try-runtime",
+  "pallet-migration/try-runtime",
   "pallet-preimage/try-runtime",
   "pallet-proxy/try-runtime",
   "pallet-scheduler/try-runtime",

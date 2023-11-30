@@ -26,16 +26,18 @@
 use frame_support::{dispatch::Weight, traits::Get};
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
-use sp_core::H256;
-use sp_runtime::DispatchError;
+use sp_core::{sr25519, H256};
+use sp_runtime::{traits::IdentifyAccount, DispatchError, MultiSigner};
 
 use ctype::CtypeHashOf;
-use kilt_support::{traits::StorageDepositCollector, Deposit};
+use kilt_support::{mock::SubjectId, traits::StorageDepositCollector, Deposit};
 
 use crate::{
 	pallet::AuthorizationIdOf, AccountIdOf, AttestationAccessControl, AttestationDetails, AttestationDetailsOf,
 	AttesterOf, BalanceOf, ClaimHashOf, Config,
 };
+
+pub type Hash = sp_core::H256;
 
 #[cfg(test)]
 pub use crate::mock::runtime::*;
@@ -165,27 +167,35 @@ pub fn insert_attestation<T: Config>(claim_hash: ClaimHashOf<T>, details: Attest
 	}
 }
 
+pub fn sr25519_did_from_public_key(public_key: &[u8; 32]) -> SubjectId {
+	MultiSigner::from(sr25519::Public(*public_key)).into_account().into()
+}
+
+pub fn claim_hash_from_seed(seed: u64) -> Hash {
+	Hash::from_low_u64_be(seed)
+}
+
 /// Mocks that are only used internally
 #[cfg(test)]
 pub(crate) mod runtime {
+	use super::*;
+
 	use frame_support::{parameter_types, weights::constants::RocksDbWeight};
 	use frame_system::EnsureSigned;
-	use sp_core::{ed25519, sr25519, Pair};
+
+	use sp_core::{ed25519, Pair};
 	use sp_runtime::{
-		testing::Header,
 		traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
-		MultiSignature, MultiSigner,
+		BuildStorage, MultiSignature, MultiSigner,
 	};
 
 	use ctype::{CtypeCreatorOf, CtypeEntryOf};
 	use kilt_support::mock::{mock_origin, SubjectId};
 
-	use super::*;
+	use crate::{self as attestation, Event};
 
-	type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 	type Block = frame_system::mocking::MockBlock<Test>;
 
-	pub type Hash = sp_core::H256;
 	pub type Balance = u128;
 	pub type Signature = MultiSignature;
 	pub type AccountPublic = <Signature as Verify>::Signer;
@@ -195,17 +205,28 @@ pub(crate) mod runtime {
 	pub const MILLI_UNIT: Balance = 10u128.pow(12);
 	pub const ATTESTATION_DEPOSIT: Balance = 10 * MILLI_UNIT;
 
+	pub(crate) fn events() -> Vec<Event<Test>> {
+		System::events()
+			.into_iter()
+			.map(|r| r.event)
+			.filter_map(|e| {
+				if let RuntimeEvent::Attestation(e) = e {
+					Some(e)
+				} else {
+					None
+				}
+			})
+			.collect::<Vec<_>>()
+	}
+
 	frame_support::construct_runtime!(
-		pub enum Test where
-			Block = Block,
-			NodeBlock = Block,
-			UncheckedExtrinsic = UncheckedExtrinsic,
+		pub enum Test
 		{
-			System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
-			Attestation: crate::{Pallet, Call, Storage, Event<T>, HoldReason},
-			Ctype: ctype::{Pallet, Call, Storage, Event<T>},
-			Balances: pallet_balances::{Pallet, Call, Storage, Event<T>},
-			MockOrigin: mock_origin::{Pallet, Origin<T>},
+			System: frame_system,
+			Attestation: attestation,
+			Ctype: ctype,
+			Balances: pallet_balances,
+			MockOrigin: mock_origin,
 		}
 	);
 
@@ -217,14 +238,13 @@ pub(crate) mod runtime {
 	impl frame_system::Config for Test {
 		type RuntimeOrigin = RuntimeOrigin;
 		type RuntimeCall = RuntimeCall;
-		type Index = u64;
-		type BlockNumber = u64;
 		type Hash = Hash;
 		type Hashing = BlakeTwo256;
 		type AccountId = AccountId;
 		type Lookup = IdentityLookup<Self::AccountId>;
-		type Header = Header;
-		type RuntimeEvent = ();
+		type Block = Block;
+		type Nonce = u64;
+		type RuntimeEvent = RuntimeEvent;
 		type BlockHashCount = BlockHashCount;
 		type DbWeight = RocksDbWeight;
 		type Version = ();
@@ -252,12 +272,12 @@ pub(crate) mod runtime {
 
 	impl pallet_balances::Config for Test {
 		type FreezeIdentifier = RuntimeFreezeReason;
-		type HoldIdentifier = RuntimeHoldReason;
+		type RuntimeHoldReason = RuntimeHoldReason;
 		type MaxFreezes = MaxFreezes;
 		type MaxHolds = MaxHolds;
 		type Balance = Balance;
 		type DustRemoval = ();
-		type RuntimeEvent = ();
+		type RuntimeEvent = RuntimeEvent;
 		type ExistentialDeposit = ExistentialDeposit;
 		type AccountStore = System;
 		type WeightInfo = ();
@@ -275,7 +295,7 @@ pub(crate) mod runtime {
 		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<AccountId, Self::CtypeCreatorId>;
 		type OriginSuccess = mock_origin::DoubleOrigin<AccountId, Self::CtypeCreatorId>;
 		type OverarchingOrigin = EnsureSigned<AccountId>;
-		type RuntimeEvent = ();
+		type RuntimeEvent = RuntimeEvent;
 		type WeightInfo = ();
 
 		type Currency = Balances;
@@ -297,7 +317,7 @@ pub(crate) mod runtime {
 	impl Config for Test {
 		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<AccountId, AttesterOf<Self>>;
 		type OriginSuccess = mock_origin::DoubleOrigin<AccountId, AttesterOf<Self>>;
-		type RuntimeEvent = ();
+		type RuntimeEvent = RuntimeEvent;
 		type WeightInfo = ();
 		type RuntimeHoldReason = RuntimeHoldReason;
 		type Currency = Balances;
@@ -306,6 +326,7 @@ pub(crate) mod runtime {
 		type AttesterId = SubjectId;
 		type AuthorizationId = SubjectId;
 		type AccessControl = MockAccessControl<Self>;
+		type BalanceMigrationManager = ();
 	}
 
 	pub(crate) const ACCOUNT_00: AccountId = AccountId::new([1u8; 32]);
@@ -318,18 +339,8 @@ pub(crate) mod runtime {
 	pub const CLAIM_HASH_SEED_01: u64 = 1u64;
 	pub const CLAIM_HASH_SEED_02: u64 = 2u64;
 
-	pub fn claim_hash_from_seed(seed: u64) -> Hash {
-		Hash::from_low_u64_be(seed)
-	}
-
 	pub fn ed25519_did_from_seed(seed: &[u8; 32]) -> SubjectId {
 		MultiSigner::from(ed25519::Pair::from_seed(seed).public())
-			.into_account()
-			.into()
-	}
-
-	pub fn sr25519_did_from_seed(seed: &[u8; 32]) -> SubjectId {
-		MultiSigner::from(sr25519::Pair::from_seed(seed).public())
 			.into_account()
 			.into()
 	}
@@ -363,7 +374,7 @@ pub(crate) mod runtime {
 		}
 
 		pub fn build(self) -> sp_io::TestExternalities {
-			let mut storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
+			let mut storage = frame_system::GenesisConfig::<Test>::default().build_storage().unwrap();
 			pallet_balances::GenesisConfig::<Test> {
 				balances: self.balances.clone(),
 			}
@@ -373,6 +384,10 @@ pub(crate) mod runtime {
 			let mut ext = sp_io::TestExternalities::new(storage);
 
 			ext.execute_with(|| {
+				// ensure that we are not at the genesis block. Events are not registered for
+				// the genesis block.
+				System::set_block_number(System::block_number() + 1);
+
 				for ctype in self.ctypes {
 					ctype::Ctypes::<Test>::insert(
 						ctype.0,

@@ -69,6 +69,7 @@ pub(crate) enum Subcommand {
 
 /// Command for building the genesis state of the parachain
 #[derive(Debug, Parser)]
+#[group(skip)]
 pub(crate) struct BuildSpecCmd {
 	#[command(flatten)]
 	pub(crate) inner_args: sc_cli::BuildSpecCmd,

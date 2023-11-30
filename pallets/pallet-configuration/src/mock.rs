@@ -23,9 +23,8 @@ pub mod runtime {
 	};
 	use frame_system::EnsureSignedBy;
 	use sp_runtime::{
-		testing::Header,
 		traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
-		MultiSignature,
+		BuildStorage, MultiSignature,
 	};
 
 	use crate::Config;
@@ -42,12 +41,9 @@ pub mod runtime {
 	pub const MILLI_UNIT: Balance = 10u128.pow(12);
 
 	frame_support::construct_runtime!(
-		pub enum Test where
-			Block = Block,
-			NodeBlock = Block,
-			UncheckedExtrinsic = UncheckedExtrinsic,
+		pub enum Test
 		{
-			System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
+			System: frame_system,
 			ConfigurationPallet: crate::{Pallet, Call, Storage, Event<T>},
 			Balances: pallet_balances::{Pallet, Call, Storage, Event<T>},
 		}
@@ -61,13 +57,12 @@ pub mod runtime {
 	impl frame_system::Config for Test {
 		type RuntimeOrigin = RuntimeOrigin;
 		type RuntimeCall = RuntimeCall;
-		type Index = u64;
-		type BlockNumber = u64;
+		type Block = Block;
+		type Nonce = u64;
 		type Hash = Hash;
 		type Hashing = BlakeTwo256;
 		type AccountId = AccountId;
 		type Lookup = IdentityLookup<Self::AccountId>;
-		type Header = Header;
 		type RuntimeEvent = ();
 		type BlockHashCount = BlockHashCount;
 		type DbWeight = RocksDbWeight;
@@ -96,7 +91,7 @@ pub mod runtime {
 
 	impl pallet_balances::Config for Test {
 		type FreezeIdentifier = ();
-		type HoldIdentifier = ();
+		type RuntimeHoldReason = ();
 		type MaxFreezes = MaxFreezes;
 		type MaxHolds = MaxHolds;
 		type Balance = Balance;
@@ -132,7 +127,7 @@ pub mod runtime {
 
 	impl ExtBuilder {
 		pub(crate) fn build(self) -> sp_io::TestExternalities {
-			let storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
+			let storage = frame_system::GenesisConfig::<Test>::default().build_storage().unwrap();
 			sp_io::TestExternalities::new(storage)
 		}
 

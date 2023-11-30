@@ -75,6 +75,7 @@ pub mod benchmarking;
 mod try_state;
 
 mod access_control;
+pub mod authorized_by;
 #[cfg(test)]
 mod tests;
 
@@ -86,6 +87,7 @@ pub use crate::{
 pub mod pallet {
 	use super::*;
 
+	use authorized_by::AuthorizedBy;
 	use frame_support::{
 		dispatch::{DispatchResult, DispatchResultWithPostInfo},
 		pallet_prelude::*,
@@ -98,18 +100,18 @@ pub mod pallet {
 
 	use ctype::CtypeHashOf;
 	use kilt_support::{
-		traits::{CallSources, StorageDepositCollector},
+		traits::{BalanceMigrationManager, CallSources, StorageDepositCollector},
 		Deposit,
 	};
 
 	/// The current storage version.
-	pub(crate) const STORAGE_VERSION: StorageVersion = StorageVersion::new(2);
+	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
 
 	/// Type of a claim hash.
 	pub type ClaimHashOf<T> = <T as frame_system::Config>::Hash;
 
 	/// Type of an attester identifier.
-	pub(crate) type AttesterOf<T> = <T as Config>::AttesterId;
+	pub type AttesterOf<T> = <T as Config>::AttesterId;
 
 	/// Authorization id type
 	pub(crate) type AuthorizationIdOf<T> = <T as Config>::AuthorizationId;
@@ -121,6 +123,10 @@ pub mod pallet {
 	pub(crate) type CurrencyOf<T> = <T as Config>::Currency;
 
 	pub(crate) type HoldReasonOf<T> = <T as Config>::RuntimeHoldReason;
+
+	pub(crate) type BalanceMigrationManagerOf<T> = <T as Config>::BalanceMigrationManager;
+
+	pub(crate) type AuthorizedByOf<T> = authorized_by::AuthorizedBy<AccountIdOf<T>, AttesterOf<T>>;
 
 	pub type AttestationDetailsOf<T> =
 		AttestationDetails<CtypeHashOf<T>, AttesterOf<T>, AuthorizationIdOf<T>, AccountIdOf<T>, BalanceOf<T>>;
@@ -160,6 +166,9 @@ pub mod pallet {
 
 		type AccessControl: Parameter
 			+ AttestationAccessControl<Self::AttesterId, Self::AuthorizationId, CtypeHashOf<Self>, ClaimHashOf<Self>>;
+
+		/// Migration manager to handle new created entries
+		type BalanceMigrationManager: BalanceMigrationManager<AccountIdOf<Self>, BalanceOf<Self>>;
 	}
 
 	#[pallet::pallet]
@@ -193,22 +202,40 @@ pub mod pallet {
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
 		/// A new attestation has been created.
-		/// \[attester ID, claim hash, CType hash, (optional) delegation ID\]
-		AttestationCreated(
-			AttesterOf<T>,
-			ClaimHashOf<T>,
-			CtypeHashOf<T>,
-			Option<AuthorizationIdOf<T>>,
-		),
+		AttestationCreated {
+			/// The DID which issued this attestation.
+			attester: AttesterOf<T>,
+			/// The claim hash of the attested credential.
+			claim_hash: ClaimHashOf<T>,
+			/// The ctype of the attested credential.
+			ctype_hash: CtypeHashOf<T>,
+			/// The authorization information. If this is available, it
+			/// authorizes a group of attesters to manage this attestation.
+			authorization: Option<AuthorizationIdOf<T>>,
+		},
 		/// An attestation has been revoked.
-		/// \[account id, claim hash\]
-		AttestationRevoked(AttesterOf<T>, ClaimHashOf<T>),
+		AttestationRevoked {
+			/// Who authorized the revocation of the attestation.
+			authorized_by: AuthorizedByOf<T>,
+			/// The attester who initially created the attestation.
+			attester: AttesterOf<T>,
+			/// The ctype of the attested credential.
+			ctype_hash: CtypeHashOf<T>,
+			/// The claim hash of the credential that is revoked.
+			claim_hash: ClaimHashOf<T>,
+		},
 		/// An attestation has been removed.
-		/// \[account id, claim hash\]
-		AttestationRemoved(AttesterOf<T>, ClaimHashOf<T>),
-		/// The deposit owner reclaimed a deposit by removing an attestation.
-		/// \[account id, claim hash\]
-		DepositReclaimed(AccountIdOf<T>, ClaimHashOf<T>),
+		AttestationRemoved {
+			/// Who authorized the deletion of the attestation.
+			authorized_by: AuthorizedByOf<T>,
+			/// The attester who initially created the attestation.
+			attester: AttesterOf<T>,
+			/// The ctype of the attested credential.
+			ctype_hash: CtypeHashOf<T>,
+			/// The claim hash of the credential for which the attestation entry
+			/// was deleted.
+			claim_hash: ClaimHashOf<T>,
+		},
 	}
 
 	#[pallet::error]
@@ -246,14 +273,6 @@ pub mod pallet {
 		/// `DelegationEntityId`.
 		///
 		/// Emits `AttestationCreated`.
-		///
-		/// # <weight>
-		/// Weight: O(1)
-		/// - Reads: [Origin Account], Ctype, Attestations
-		/// - Reads if delegation id is provided: Delegations, Roots,
-		///   DelegatedAttestations
-		/// - Writes: Attestations, (DelegatedAttestations)
-		/// # </weight>
 		#[pallet::call_index(0)]
 		#[pallet::weight(
 			<T as pallet::Config>::WeightInfo::add()
@@ -287,6 +306,9 @@ pub mod pallet {
 			let authorization_id = authorization.as_ref().map(|ac| ac.authorization_id());
 
 			let deposit = AttestationStorageDepositCollector::<T>::create_deposit(payer, deposit_amount)?;
+			<T as Config>::BalanceMigrationManager::exclude_key_from_migration(&Attestations::<T>::hashed_key_for(
+				claim_hash,
+			));
 
 			log::debug!("insert Attestation");
 
@@ -304,7 +326,12 @@ pub mod pallet {
 				ExternalAttestations::<T>::insert(authorization_id, claim_hash, true);
 			}
 
-			Self::deposit_event(Event::AttestationCreated(who, claim_hash, ctype_hash, authorization_id));
+			Self::deposit_event(Event::AttestationCreated {
+				attester: who,
+				claim_hash,
+				ctype_hash,
+				authorization: authorization_id,
+			});
 
 			Ok(())
 		}
@@ -317,15 +344,6 @@ pub mod pallet {
 		/// an ancestor thereof.
 		///
 		/// Emits `AttestationRevoked`.
-		///
-		/// # <weight>
-		/// Weight: O(P) where P is the number of steps required to verify that
-		/// the dispatch Origin controls the delegation entitled to revoke the
-		/// attestation. It is bounded by `max_parent_checks`.
-		/// - Reads: [Origin Account], Attestations, delegation::Roots
-		/// - Reads per delegation step P: delegation::Delegations
-		/// - Writes: Attestations, DelegatedAttestations
-		/// # </weight>
 		#[pallet::call_index(1)]
 		#[pallet::weight(
 			<T as pallet::Config>::WeightInfo::revoke()
@@ -340,10 +358,11 @@ pub mod pallet {
 			let who = source.subject();
 
 			let attestation = Attestations::<T>::get(claim_hash).ok_or(Error::<T>::NotFound)?;
+			let attester = attestation.attester.clone();
 
 			ensure!(!attestation.revoked, Error::<T>::AlreadyRevoked);
 
-			if attestation.attester != who {
+			let authorized_by = if attester != who {
 				let attestation_auth_id = attestation.authorization_id.as_ref().ok_or(Error::<T>::NotAuthorized)?;
 				authorization.ok_or(Error::<T>::NotAuthorized)?.can_revoke(
 					&who,
@@ -351,7 +370,11 @@ pub mod pallet {
 					&claim_hash,
 					attestation_auth_id,
 				)?;
-			}
+
+				AuthorizedBy::Authorization(who)
+			} else {
+				AuthorizedBy::Attester(who)
+			};
 
 			log::debug!("revoking Attestation");
 			Attestations::<T>::insert(
@@ -362,7 +385,12 @@ pub mod pallet {
 				},
 			);
 
-			Self::deposit_event(Event::AttestationRevoked(who, claim_hash));
+			Self::deposit_event(Event::AttestationRevoked {
+				attester,
+				authorized_by,
+				ctype_hash: attestation.ctype_hash,
+				claim_hash,
+			});
 
 			Ok(Some(<T as pallet::Config>::WeightInfo::revoke()).into())
 		}
@@ -374,16 +402,8 @@ pub mod pallet {
 		/// i.e., it was either the delegator of the attester or an ancestor
 		/// thereof.
 		///
-		/// Emits `AttestationRemoved`.
-		///
-		/// # <weight>
-		/// Weight: O(P) where P is the number of steps required to verify that
-		/// the dispatch Origin controls the delegation entitled to revoke the
-		/// attestation. It is bounded by `max_parent_checks`.
-		/// - Reads: [Origin Account], Attestations, delegation::Roots
-		/// - Reads per delegation step P: delegation::Delegations
-		/// - Writes: Attestations, DelegatedAttestations
-		/// # </weight>
+		/// Always emits `AttestationRemoved` and emits `AttestationRevoked`
+		/// only if the attestation was not revoked yet.
 		#[pallet::call_index(2)]
 		#[pallet::weight(
 			<T as pallet::Config>::WeightInfo::remove()
@@ -399,7 +419,7 @@ pub mod pallet {
 
 			let attestation = Attestations::<T>::get(claim_hash).ok_or(Error::<T>::NotFound)?;
 
-			if attestation.attester != who {
+			let authorized_by = if attestation.attester != who {
 				let attestation_auth_id = attestation.authorization_id.as_ref().ok_or(Error::<T>::NotAuthorized)?;
 				authorization.ok_or(Error::<T>::NotAuthorized)?.can_remove(
 					&who,
@@ -407,25 +427,22 @@ pub mod pallet {
 					&claim_hash,
 					attestation_auth_id,
 				)?;
-			}
+				AuthorizedBy::Authorization(who)
+			} else {
+				AuthorizedBy::Attester(who)
+			};
 
 			log::debug!("removing Attestation");
 
-			Self::remove_attestation(attestation, claim_hash)?;
-			Self::deposit_event(Event::AttestationRemoved(who, claim_hash));
+			Self::remove_attestation(authorized_by, attestation, claim_hash)?;
 
 			Ok(Some(<T as pallet::Config>::WeightInfo::remove()).into())
 		}
 
 		/// Reclaim a storage deposit by removing an attestation
 		///
-		/// Emits `DepositReclaimed`.
-		///
-		/// # <weight>
-		/// Weight: O(1)
-		/// - Reads: [Origin Account], Attestations, DelegatedAttestations
-		/// - Writes: Attestations, DelegatedAttestations
-		/// # </weight>
+		/// Always emits `AttestationRemoved` and emits `AttestationRevoked`
+		/// only if the attestation was not revoked yet.
 		#[pallet::call_index(3)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::reclaim_deposit())]
 		pub fn reclaim_deposit(origin: OriginFor<T>, claim_hash: ClaimHashOf<T>) -> DispatchResult {
@@ -436,8 +453,7 @@ pub mod pallet {
 
 			log::debug!("removing Attestation");
 
-			Self::remove_attestation(attestation, claim_hash)?;
-			Self::deposit_event(Event::DepositReclaimed(who, claim_hash));
+			Self::remove_attestation(AuthorizedBy::DepositOwner(who), attestation, claim_hash)?;
 
 			Ok(())
 		}
@@ -459,7 +475,10 @@ pub mod pallet {
 			let attestation = Attestations::<T>::get(claim_hash).ok_or(Error::<T>::NotFound)?;
 			ensure!(attestation.attester == subject, Error::<T>::NotAuthorized);
 
-			AttestationStorageDepositCollector::<T>::change_deposit_owner(&claim_hash, sender)?;
+			AttestationStorageDepositCollector::<T>::change_deposit_owner::<BalanceMigrationManagerOf<T>>(
+				&claim_hash,
+				sender,
+			)?;
 
 			Ok(())
 		}
@@ -475,19 +494,47 @@ pub mod pallet {
 			let attestation = Attestations::<T>::get(claim_hash).ok_or(Error::<T>::NotFound)?;
 			ensure!(attestation.deposit.owner == sender, Error::<T>::NotAuthorized);
 
-			AttestationStorageDepositCollector::<T>::update_deposit(&claim_hash)?;
+			AttestationStorageDepositCollector::<T>::update_deposit::<BalanceMigrationManagerOf<T>>(&claim_hash)?;
 
 			Ok(())
 		}
 	}
 
 	impl<T: Config> Pallet<T> {
-		fn remove_attestation(attestation: AttestationDetailsOf<T>, claim_hash: ClaimHashOf<T>) -> DispatchResult {
-			AttestationStorageDepositCollector::<T>::free_deposit(attestation.deposit)?;
+		fn remove_attestation(
+			authorized_by: AuthorizedByOf<T>,
+			attestation: AttestationDetailsOf<T>,
+			claim_hash: ClaimHashOf<T>,
+		) -> DispatchResult {
+			let is_key_migrated =
+				<T as Config>::BalanceMigrationManager::is_key_migrated(&Attestations::<T>::hashed_key_for(claim_hash));
+			if is_key_migrated {
+				AttestationStorageDepositCollector::<T>::free_deposit(attestation.deposit)?;
+			} else {
+				<T as Config>::BalanceMigrationManager::release_reserved_deposit(
+					&attestation.deposit.owner,
+					&attestation.deposit.amount,
+				)
+			}
+
 			Attestations::<T>::remove(claim_hash);
 			if let Some(authorization_id) = &attestation.authorization_id {
 				ExternalAttestations::<T>::remove(authorization_id, claim_hash);
 			}
+			if !attestation.revoked {
+				Self::deposit_event(Event::AttestationRevoked {
+					attester: attestation.attester.clone(),
+					authorized_by: authorized_by.clone(),
+					claim_hash,
+					ctype_hash: attestation.ctype_hash,
+				});
+			}
+			Self::deposit_event(Event::AttestationRemoved {
+				attester: attestation.attester,
+				authorized_by,
+				claim_hash,
+				ctype_hash: attestation.ctype_hash,
+			});
 			Ok(())
 		}
 	}
@@ -501,6 +548,10 @@ pub mod pallet {
 
 		fn reason() -> Self::Reason {
 			HoldReason::Deposit
+		}
+
+		fn get_hashed_key(key: &ClaimHashOf<T>) -> Result<sp_std::vec::Vec<u8>, DispatchError> {
+			Ok(Attestations::<T>::hashed_key_for(key))
 		}
 
 		fn deposit(

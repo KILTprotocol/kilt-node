@@ -103,8 +103,8 @@ pub type ChainId = u32;
 pub type Balance = u128;
 pub type Amount = i128;
 
-/// Index of a transaction in the chain.
-pub type Index = u64;
+/// Nonce of a transaction in the chain.
+pub type Nonce = u64;
 
 /// A hash of some data used by the chain.
 pub type Hash = sp_core::H256;
@@ -165,7 +165,7 @@ parameter_types! {
 pub type FeeSplit<R, B1, B2> = SplitFeesByRatio<R, FeeSplitRatio, B1, B2>;
 
 /// Parameterized slow adjusting fee updated based on
-/// https://w3f-research.readthedocs.io/en/latest/polkadot/Token%20Economics.html#-2.-slow-adjusting-mechanism
+/// <https://w3f-research.readthedocs.io/en/latest/polkadot/Token%20Economics.html#-2.-slow-adjusting-mechanism>
 pub type SlowAdjustingFeeUpdate<R> =
 	TargetedFeeAdjustment<R, TargetBlockFullness, AdjustmentVariable, MinimumMultiplier, MaximumMultiplier>;
 

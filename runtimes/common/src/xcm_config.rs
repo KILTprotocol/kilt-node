@@ -21,7 +21,7 @@ use frame_support::{log, match_types, parameter_types, traits::ProcessMessageErr
 use polkadot_parachain::primitives::Sibling;
 use xcm::latest::prelude::*;
 use xcm_builder::{AccountId32Aliases, CurrencyAdapter, IsConcrete, ParentIsPreset, SiblingParachainConvertsVia};
-use xcm_executor::traits::ShouldExecute;
+use xcm_executor::traits::{Properties, ShouldExecute};
 
 use crate::AccountId;
 
@@ -54,22 +54,22 @@ where
 		origin: &MultiLocation,
 		instructions: &mut [Instruction<Call>],
 		max_weight: Weight,
-		weight_credit: &mut Weight,
+		properties: &mut Properties,
 	) -> Result<(), ProcessMessageError> {
-		Deny::should_execute(origin, instructions, max_weight, weight_credit)?;
-		Allow::should_execute(origin, instructions, max_weight, weight_credit)
+		Deny::should_execute(origin, instructions, max_weight, properties)?;
+		Allow::should_execute(origin, instructions, max_weight, properties)
 	}
 }
 
-/// Reserved funds to the relay chain can't return. See https://github.com/paritytech/polkadot/issues/5233
-/// Usage of the new xcm matcher. See https://github.com/paritytech/polkadot/pull/7098
+/// Reserved funds to the relay chain can't return. See <https://github.com/paritytech/polkadot/issues/5233>
+/// Usage of the new xcm matcher. See <https://github.com/paritytech/polkadot/pull/7098>
 pub struct DenyReserveTransferToRelayChain;
 impl ShouldExecute for DenyReserveTransferToRelayChain {
 	fn should_execute<RuntimeCall>(
 		origin: &MultiLocation,
 		message: &mut [Instruction<RuntimeCall>],
 		_max_weight: Weight,
-		_weight_credit: &mut Weight,
+		_properties: &mut Properties,
 	) -> Result<(), ProcessMessageError> {
 		xcm_builder::MatchXcm::match_next_inst_while(
 			xcm_builder::CreateMatcher::matcher(message),

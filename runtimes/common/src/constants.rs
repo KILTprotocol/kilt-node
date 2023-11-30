@@ -320,6 +320,14 @@ pub mod multisig {
 	}
 }
 
+pub mod pallet_migration {
+	use super::*;
+
+	parameter_types! {
+		pub const  MaxMigrationsPerPallet: u32 = 100;
+	}
+}
+
 pub mod did {
 	use parity_scale_codec::{Decode, Encode};
 	use scale_info::TypeInfo;

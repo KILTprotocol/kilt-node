@@ -27,6 +27,7 @@ use frame_support::{
 		Get,
 	},
 };
+use frame_system::pallet_prelude::BlockNumberFor;
 use frame_system::RawOrigin;
 use sha3::{Digest, Keccak256};
 use sp_io::crypto::{ecdsa_generate, ed25519_generate, sr25519_generate};
@@ -76,7 +77,7 @@ benchmarks! {
 		let connected_acc = sr25519_generate(KeyTypeId(*b"aura"), None);
 		let connected_acc_id: T::AccountId = connected_acc.into();
 		let linkable_id: LinkableAccountId = connected_acc_id.clone().into();
-		let expire_at: <T as frame_system::Config>::BlockNumber = 500_u32.into();
+		let expire_at: BlockNumberFor<T> = 500_u32.into();
 
 		let sig = sp_io::crypto::sr25519_sign(
 			KeyTypeId(*b"aura"),
@@ -109,7 +110,7 @@ benchmarks! {
 		let connected_acc = ed25519_generate(KeyTypeId(*b"aura"), None);
 		let connected_acc_id: T::AccountId = connected_acc.into();
 		let linkable_id: LinkableAccountId = connected_acc_id.clone().into();
-		let expire_at: <T as frame_system::Config>::BlockNumber = 500_u32.into();
+		let expire_at: BlockNumberFor<T> = 500_u32.into();
 
 		let sig = sp_io::crypto::ed25519_sign(
 			KeyTypeId(*b"aura"),
@@ -142,7 +143,7 @@ benchmarks! {
 		let connected_acc = ecdsa_generate(KeyTypeId(*b"aura"), None);
 		let connected_acc_id = sp_runtime::MultiSigner::from(connected_acc).into_account();
 		let linkable_id: LinkableAccountId = connected_acc_id.clone().into();
-		let expire_at: <T as frame_system::Config>::BlockNumber = 500_u32.into();
+		let expire_at: BlockNumberFor<T> = 500_u32.into();
 
 		let sig = sp_io::crypto::ecdsa_sign(
 			KeyTypeId(*b"aura"),
@@ -172,7 +173,7 @@ benchmarks! {
 		let caller: T::AccountId = account("caller", 0, SEED);
 		let did: T::DidIdentifier = account("did", 0, SEED);
 		let previous_did: T::DidIdentifier = account("prev", 0, SEED + 1);
-		let expire_at: <T as frame_system::Config>::BlockNumber = 500_u32.into();
+		let expire_at: BlockNumberFor<T> = 500_u32.into();
 
 		let eth_public_key = ecdsa_generate(KeyTypeId(*b"aura"), None);
 		let eth_account = AccountId20(eth_public_key.to_eth_address().unwrap());

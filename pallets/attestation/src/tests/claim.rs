@@ -21,41 +21,50 @@ use frame_support::{assert_noop, assert_ok};
 use kilt_support::mock::mock_origin::DoubleOrigin;
 use sp_runtime::DispatchError;
 
-use crate::{self as attestation, mock::*, AttestationAccessControl, AttesterOf, Config};
+use crate::{self as attestation, mock::*, AttestationAccessControl, AttesterOf, Config, Event};
 
 #[test]
 fn test_attest_without_authorization() {
-	let attester: AttesterOf<Test> = sr25519_did_from_seed(&ALICE_SEED);
+	let attester: AttesterOf<Test> = sr25519_did_from_public_key(&ALICE_SEED);
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
-	let ctype_hash = get_ctype_hash::<Test>(true);
+	let ctype = get_ctype_hash::<Test>(true);
 	let authorization_info = None;
 
 	ExtBuilder::default()
-		.with_ctypes(vec![(ctype_hash, attester.clone())])
+		.with_ctypes(vec![(ctype, attester.clone())])
 		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
 		.build_and_execute_with_sanity_tests(|| {
 			assert_ok!(Attestation::add(
 				DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
 				claim_hash,
-				ctype_hash,
+				ctype,
 				authorization_info.clone()
 			));
 			let stored_attestation =
 				Attestation::attestations(claim_hash).expect("Attestation should be present on chain.");
 
-			assert_eq!(stored_attestation.ctype_hash, ctype_hash);
+			assert_eq!(stored_attestation.ctype_hash, ctype);
 			assert_eq!(stored_attestation.attester, attester);
 			assert_eq!(
 				stored_attestation.authorization_id,
 				authorization_info.map(|ac| ac.authorization_id())
 			);
 			assert!(!stored_attestation.revoked);
+			assert_eq!(
+				events(),
+				vec![Event::AttestationCreated {
+					attester: attester.clone(),
+					claim_hash,
+					ctype_hash: ctype,
+					authorization: None
+				}]
+			);
 		});
 }
 
 #[test]
 fn test_attest_authorized() {
-	let attester: AttesterOf<Test> = sr25519_did_from_seed(&ALICE_SEED);
+	let attester: AttesterOf<Test> = sr25519_did_from_public_key(&ALICE_SEED);
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 	let ctype = get_ctype_hash::<Test>(true);
 	let authorization_info = Some(MockAccessControl(attester.clone()));
@@ -81,13 +90,22 @@ fn test_attest_authorized() {
 				authorization_info.map(|ac| ac.authorization_id())
 			);
 			assert!(!stored_attestation.revoked);
+			assert_eq!(
+				events(),
+				vec![Event::AttestationCreated {
+					attester: attester.clone(),
+					claim_hash,
+					ctype_hash: ctype,
+					authorization: Some(attester)
+				}]
+			);
 		});
 }
 
 #[test]
 fn test_attest_unauthorized() {
-	let attester: AttesterOf<Test> = sr25519_did_from_seed(&ALICE_SEED);
-	let bob: AttesterOf<Test> = sr25519_did_from_seed(&BOB_SEED);
+	let attester: AttesterOf<Test> = sr25519_did_from_public_key(&ALICE_SEED);
+	let bob: AttesterOf<Test> = sr25519_did_from_public_key(&BOB_SEED);
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 	let ctype = get_ctype_hash::<Test>(true);
 	let authorization_info = Some(MockAccessControl(bob));
@@ -96,21 +114,21 @@ fn test_attest_unauthorized() {
 		.with_ctypes(vec![(ctype, attester.clone())])
 		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
 		.build_and_execute_with_sanity_tests(|| {
-			assert_eq!(
+			assert_noop!(
 				Attestation::add(
 					DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
 					claim_hash,
 					ctype,
 					authorization_info
 				),
-				Err(DispatchError::Other("Unauthorized"))
+				DispatchError::Other("Unauthorized")
 			);
 		});
 }
 
 #[test]
 fn test_attest_ctype_not_found() {
-	let attester: AttesterOf<Test> = sr25519_did_from_seed(&ALICE_SEED);
+	let attester: AttesterOf<Test> = sr25519_did_from_public_key(&ALICE_SEED);
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 	let ctype_hash = get_ctype_hash::<Test>(true);
 
@@ -131,7 +149,7 @@ fn test_attest_ctype_not_found() {
 
 #[test]
 fn test_attest_already_exists() {
-	let attester: AttesterOf<Test> = sr25519_did_from_seed(&ALICE_SEED);
+	let attester: AttesterOf<Test> = sr25519_did_from_public_key(&ALICE_SEED);
 	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
 	let attestation = generate_base_attestation::<Test>(attester.clone(), ACCOUNT_00);
 

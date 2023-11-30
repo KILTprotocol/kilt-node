@@ -36,8 +36,9 @@ use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 #[cfg(feature = "try-runtime")]
 use frame_try_runtime::UpgradeCheckSelect;
 
+use frame_system::pallet_prelude::BlockNumberFor;
 use sp_api::impl_runtime_apis;
-use sp_core::OpaqueMetadata;
+use sp_core::{ConstBool, OpaqueMetadata};
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
 	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, OpaqueKeys},
@@ -61,7 +62,7 @@ use runtime_common::{
 	errors::PublicCredentialsApiError,
 	fees::{ToAuthor, WeightToFee},
 	pallet_id, AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights, DidIdentifier,
-	FeeSplit, Hash, Header, Index, Signature, SlowAdjustingFeeUpdate,
+	FeeSplit, Hash, Header, Nonce, Signature, SlowAdjustingFeeUpdate,
 };
 
 use crate::xcm_config::{XcmConfig, XcmOriginToTransactDispatchOrigin};
@@ -122,16 +123,14 @@ impl frame_system::Config for Runtime {
 	/// The lookup mechanism to get account ID from whatever is passed in
 	/// dispatchers.
 	type Lookup = AccountIdLookup<AccountId, ()>;
-	/// The index type for storing how many extrinsics an account has signed.
-	type Index = Index;
-	/// The index type for blocks.
-	type BlockNumber = BlockNumber;
+	/// The nonce type for storing how many extrinsics an account has signed.
+	type Nonce = Nonce;
+	/// The block type as expected in this runtime
+	type Block = Block;
 	/// The type for hashing blocks and tries.
 	type Hash = Hash;
 	/// The hashing algorithm used.
 	type Hashing = BlakeTwo256;
-	/// The header type.
-	type Header = runtime_common::Header;
 	/// The ubiquitous event type.
 	type RuntimeEvent = RuntimeEvent;
 	/// The ubiquitous origin type.
@@ -187,8 +186,15 @@ impl pallet_multisig::Config for Runtime {
 	type WeightInfo = weights::pallet_multisig::WeightInfo<Runtime>;
 }
 
+impl pallet_migration::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type Currency = Balances;
+	type MaxMigrationsPerPallet = constants::pallet_migration::MaxMigrationsPerPallet;
+	type WeightInfo = weights::pallet_migration::WeightInfo<Runtime>;
+}
+
 impl pallet_indices::Config for Runtime {
-	type AccountIndex = Index;
+	type AccountIndex = Nonce;
 	type Currency = pallet_balances::Pallet<Runtime>;
 	type Deposit = constants::IndicesDeposit;
 	type RuntimeEvent = RuntimeEvent;
@@ -199,7 +205,7 @@ impl pallet_balances::Config for Runtime {
 	/// The type for recording an account's balance.
 	type Balance = Balance;
 	type FreezeIdentifier = RuntimeFreezeReason;
-	type HoldIdentifier = RuntimeHoldReason;
+	type RuntimeHoldReason = RuntimeHoldReason;
 	type MaxFreezes = MaxFreezes;
 	type MaxHolds = MaxHolds;
 
@@ -278,6 +284,7 @@ impl pallet_aura::Config for Runtime {
 	//TODO: handle disabled validators
 	type DisabledValidators = ();
 	type MaxAuthorities = MaxAuthorities;
+	type AllowMultipleBlocksPerSlot = ConstBool<false>;
 }
 
 parameter_types! {
@@ -472,10 +479,10 @@ impl pallet_treasury::Config for Runtime {
 
 type CouncilCollective = pallet_collective::Instance1;
 impl pallet_collective::Config<CouncilCollective> for Runtime {
-	type MaxProposalWeight = MaxProposalWeight;
 	type RuntimeOrigin = RuntimeOrigin;
 	type Proposal = RuntimeCall;
 	type RuntimeEvent = RuntimeEvent;
+	type MaxProposalWeight = MaxProposalWeight;
 	type MotionDuration = constants::governance::CouncilMotionDuration;
 	type MaxProposals = constants::governance::CouncilMaxProposals;
 	type MaxMembers = constants::governance::CouncilMaxMembers;
@@ -522,7 +529,7 @@ impl pallet_membership::Config<TipsMembershipProvider> for Runtime {
 	type PrimeOrigin = MoreThanHalfCouncil;
 	type MembershipInitialized = ();
 	type MembershipChanged = ();
-	type MaxMembers = constants::governance::TechnicalMaxMembers;
+	type MaxMembers = constants::governance::TipperMaxMembers;
 	type WeightInfo = weights::pallet_membership::WeightInfo<Runtime>;
 }
 
@@ -556,6 +563,7 @@ impl attestation::Config for Runtime {
 	type AttesterId = DidIdentifier;
 	type AuthorizationId = AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>;
 	type AccessControl = PalletAuthorize<DelegationAc<Runtime>>;
+	type BalanceMigrationManager = Migration;
 }
 
 impl delegation::Config for Runtime {
@@ -585,6 +593,7 @@ impl delegation::Config for Runtime {
 	type WeightInfo = weights::delegation::WeightInfo<Runtime>;
 	type Currency = Balances;
 	type Deposit = constants::delegation::DelegationDeposit;
+	type BalanceMigrationManager = Migration;
 }
 
 impl ctype::Config for Runtime {
@@ -602,15 +611,15 @@ impl ctype::Config for Runtime {
 }
 
 impl did::Config for Runtime {
-	type DidIdentifier = DidIdentifier;
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeCall = RuntimeCall;
 	type RuntimeHoldReason = RuntimeHoldReason;
+	type RuntimeOrigin = RuntimeOrigin;
+	type Currency = Balances;
+	type DidIdentifier = DidIdentifier;
 	type KeyDeposit = constants::did::KeyDeposit;
 	type ServiceEndpointDeposit = constants::did::ServiceEndpointDeposit;
 	type BaseDeposit = constants::did::DidBaseDeposit;
-	type RuntimeOrigin = RuntimeOrigin;
-	type Currency = Balances;
 	type Fee = constants::did::DidFee;
 	type FeeCollector = runtime_common::SendDustAndFeesToTreasury<Runtime>;
 
@@ -635,6 +644,7 @@ impl did::Config for Runtime {
 	type MaxNumberOfTypesPerService = constants::did::MaxNumberOfTypesPerService;
 	type MaxNumberOfUrlsPerService = constants::did::MaxNumberOfUrlsPerService;
 	type WeightInfo = weights::did::WeightInfo<Runtime>;
+	type BalanceMigrationManager = Migration;
 }
 
 impl pallet_did_lookup::Config for Runtime {
@@ -650,21 +660,23 @@ impl pallet_did_lookup::Config for Runtime {
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
 
 	type WeightInfo = weights::pallet_did_lookup::WeightInfo<Runtime>;
+	type BalanceMigrationManager = Migration;
 }
 
 impl pallet_web3_names::Config for Runtime {
+	type RuntimeHoldReason = RuntimeHoldReason;
 	type BanOrigin = EnsureRoot<AccountId>;
 	type OwnerOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
 	type Currency = Balances;
 	type Deposit = constants::web3_names::Web3NameDeposit;
-	type RuntimeHoldReason = RuntimeHoldReason;
 	type RuntimeEvent = RuntimeEvent;
 	type MaxNameLength = constants::web3_names::MaxNameLength;
 	type MinNameLength = constants::web3_names::MinNameLength;
 	type Web3Name = pallet_web3_names::web3_name::AsciiWeb3Name<Runtime>;
 	type Web3NameOwner = DidIdentifier;
 	type WeightInfo = weights::pallet_web3_names::WeightInfo<Runtime>;
+	type BalanceMigrationManager = Migration;
 }
 
 impl pallet_inflation::Config for Runtime {
@@ -698,7 +710,7 @@ impl parachain_staking::Config for Runtime {
 	type NetworkRewardBeneficiary = runtime_common::SendDustAndFeesToTreasury<Runtime>;
 	type WeightInfo = weights::parachain_staking::WeightInfo<Runtime>;
 
-	const BLOCKS_PER_YEAR: Self::BlockNumber = constants::BLOCKS_PER_YEAR;
+	const BLOCKS_PER_YEAR: BlockNumberFor<Self> = constants::BLOCKS_PER_YEAR;
 }
 
 impl pallet_utility::Config for Runtime {
@@ -724,6 +736,7 @@ impl public_credentials::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type SubjectId = runtime_common::assets::AssetDid;
 	type WeightInfo = weights::public_credentials::WeightInfo<Runtime>;
+	type BalanceMigrationManager = Migration;
 }
 
 /// The type used to represent the kinds of proxying allowed.
@@ -772,6 +785,7 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 							| pallet_indices::Call::free { .. }
 							| pallet_indices::Call::freeze { .. }
 					)
+					| RuntimeCall::Multisig(..)
 					| RuntimeCall::ParachainStaking(..)
 					// Excludes `ParachainSystem`
 					| RuntimeCall::Preimage(..)
@@ -843,6 +857,7 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 							| pallet_did_lookup::Call::change_deposit_owner { .. }
 					)
 					| RuntimeCall::Indices(..)
+					| RuntimeCall::Multisig(..)
 					| RuntimeCall::ParachainStaking(..)
 					// Excludes `ParachainSystem`
 					| RuntimeCall::Preimage(..)
@@ -931,18 +946,15 @@ impl pallet_proxy::Config for Runtime {
 }
 
 construct_runtime! {
-	pub enum Runtime where
-		Block = Block,
-		NodeBlock = runtime_common::Block,
-		UncheckedExtrinsic = UncheckedExtrinsic,
+	pub enum Runtime
 	{
 		System: frame_system = 0,
 		// DELETED: RandomnessCollectiveFlip: pallet_insecure_randomness_collective_flip = 1,
 
 		Timestamp: pallet_timestamp = 2,
-		Indices: pallet_indices::{Pallet, Call, Storage, Event<T>} = 5,
+		Indices: pallet_indices exclude_parts { Config } = 5,
 		Balances: pallet_balances = 6,
-		TransactionPayment: pallet_transaction_payment::{Pallet, Storage, Event<T>} = 7,
+		TransactionPayment: pallet_transaction_payment exclude_parts { Config } = 7,
 		Sudo: pallet_sudo = 8,
 		Configuration: pallet_configuration = 9,
 
@@ -952,7 +964,7 @@ construct_runtime! {
 		Aura: pallet_aura = 23,
 		Session: pallet_session = 22,
 		ParachainStaking: parachain_staking = 21,
-		Authorship: pallet_authorship::{Pallet, Storage} = 20,
+		Authorship: pallet_authorship = 20,
 		AuraExt: cumulus_pallet_aura_ext = 24,
 
 		Democracy: pallet_democracy = 30,
@@ -961,7 +973,7 @@ construct_runtime! {
 		// reserved: parachain council election = 33,
 		TechnicalMembership: pallet_membership::<Instance1> = 34,
 		Treasury: pallet_treasury = 35,
-		// DELETED: RelayMigration: pallet_relay_migration::{Pallet, Call, Storage, Event<T>} = 36,
+		// DELETED: RelayMigration: pallet_relay_migration = 36,
 		// DELETED: DynFilter: pallet_dyn_filter = 37,
 
 		// A stateless pallet with helper extrinsics (batch extrinsics, send from different origins, ...)
@@ -970,17 +982,17 @@ construct_runtime! {
 		// Vesting. Usable initially, but removed once all vesting is finished.
 		Vesting: pallet_vesting = 41,
 
-		Scheduler: pallet_scheduler::{Pallet, Call, Storage, Event<T>} = 42,
+		Scheduler: pallet_scheduler = 42,
 
 		// Allowing accounts to give permission to other accounts to dispatch types of calls from their signed origin
-		Proxy: pallet_proxy::{Pallet, Call, Storage, Event<T>} = 43,
+		Proxy: pallet_proxy = 43,
 
 		// Preimage pallet allows the storage of large bytes blob
-		Preimage: pallet_preimage::{Pallet, Call, Storage, Event<T>} = 44,
+		Preimage: pallet_preimage = 44,
 
 		// Tips module to reward contributions to the ecosystem with small amount of KILTs.
 		TipsMembership: pallet_membership::<Instance2> = 45,
-		Tips: pallet_tips::{Pallet, Call, Storage, Event<T>} = 46,
+		Tips: pallet_tips = 46,
 
 		Multisig: pallet_multisig = 47,
 
@@ -995,20 +1007,21 @@ construct_runtime! {
 		DidLookup: pallet_did_lookup = 67,
 		Web3Names: pallet_web3_names = 68,
 		PublicCredentials: public_credentials = 69,
+		Migration: pallet_migration = 70,
 
 		// Parachains pallets. Start indices at 80 to leave room.
 
 		// Among others: Send and receive DMP and XCMP messages.
 		ParachainSystem: cumulus_pallet_parachain_system = 80,
-		ParachainInfo: parachain_info::{Pallet, Storage, Config} = 81,
+		ParachainInfo: parachain_info = 81,
 		// Wrap and unwrap XCMP messages to send and receive them. Queue them for later processing.
-		XcmpQueue: cumulus_pallet_xcmp_queue::{Pallet, Call, Storage, Event<T>} = 82,
+		XcmpQueue: cumulus_pallet_xcmp_queue = 82,
 		// Build XCM scripts.
-		PolkadotXcm: pallet_xcm::{Pallet, Call, Event<T>, Origin, Config} = 83,
+		PolkadotXcm: pallet_xcm = 83,
 		// Does nothing cool, just provides an origin.
-		CumulusXcm: cumulus_pallet_xcm::{Pallet, Event<T>, Origin} = 84,
+		CumulusXcm: cumulus_pallet_xcm exclude_parts { Call } = 84,
 		// Queue and pass DMP messages on to be executed.
-		DmpQueue: cumulus_pallet_dmp_queue::{Pallet, Call, Storage, Event<T>} = 85,
+		DmpQueue: cumulus_pallet_dmp_queue = 85,
 	}
 }
 
@@ -1095,15 +1108,9 @@ pub type Executive = frame_executive::Executive<
 	// Executes pallet hooks in the order of definition in construct_runtime
 	AllPalletsWithSystem,
 	(
-		pallet_did_lookup::migrations::CleanupMigration<Runtime>,
-		runtime_common::migrations::RemoveInsecureRandomnessPallet<Runtime>,
-		attestation::migrations::BalanceMigration<Runtime>,
-		delegation::migrations::BalanceMigration<Runtime>,
-		did::migrations::BalanceMigration<Runtime>,
-		pallet_did_lookup::migrations::BalanceMigration<Runtime>,
-		pallet_web3_names::migrations::BalanceMigration<Runtime>,
+		runtime_common::migrations::BumpStorageVersion<Runtime>,
 		parachain_staking::migrations::BalanceMigration<Runtime>,
-		public_credentials::migrations::BalanceMigration<Runtime>,
+		pallet_xcm::migration::v1::MigrateToV1<Runtime>,
 	),
 >;
 
@@ -1139,8 +1146,8 @@ mod benches {
 		[pallet_web3_names, Web3Names]
 		[public_credentials, PublicCredentials]
 		[pallet_xcm, PolkadotXcm]
+		[pallet_migration, Migration]
 		[frame_benchmarking::baseline, Baseline::<Runtime>]
-
 	);
 }
 
@@ -1173,8 +1180,8 @@ impl_runtime_apis! {
 		}
 	}
 
-	impl frame_system_rpc_runtime_api::AccountNonceApi<Block, AccountId, Index> for Runtime {
-		fn account_nonce(account: AccountId) -> Index {
+	impl frame_system_rpc_runtime_api::AccountNonceApi<Block, AccountId, Nonce> for Runtime {
+		fn account_nonce(account: AccountId) -> Nonce {
 			frame_system::Pallet::<Runtime>::account_nonce(account)
 		}
 	}

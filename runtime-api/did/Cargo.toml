@@ -13,6 +13,7 @@ description = "Runtime APIs for dealing with DIDs."
 [dependencies]
 # External dependencies
 parity-scale-codec = {workspace = true, features = ["derive"]}
+frame-system = {workspace = true, default-features = false}
 scale-info = {workspace = true, default-features = false, features = ["derive"]}
 
 # Internal dependencies
@@ -26,6 +27,7 @@ sp-std.workspace = true
 [features]
 default = ["std"]
 std = [
+  "frame-system/std",
   "parity-scale-codec/std",
   "sp-api/std",
   "sp-std/std",
