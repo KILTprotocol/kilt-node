@@ -10,7 +10,7 @@ With a generated identity commitment, a cross-chain transaction flow for a gener
 1. `A` generates a state proof proving the state of the identity commitment on the provider chain.
 2. `A` generates any additional information required for an identity proof to be successfully verified by the consumer runtime.
 3. `A`, using their account `AccC` on the consumer chain, calls the `dispatch_as` extrinsic by providing its identifier on the provider chain, the generated proof, and the `Call` to be dispatched on the consumer chain.
-   1. This pallet verifies if the proof is correct, if not returns an error.
+   1. This pallet verifies if the proof is correct, if not it returns an error.
    2. This pallet dispatches the provided `Call` with a new origin created by this pallet, returning any errors the dispatch action returns. The origin contains the information revealed in the proof, the identifier of the acting subject and the account `AccC` dispatching the transaction.
 
 The pallet is agnostic over the chain-specific definition of *identity proof verifier* and *identifier*, although, when deployed, they must be configured to respect the definition of identity and identity commitment established by the provider this pallet is linked to.
