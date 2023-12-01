@@ -359,15 +359,18 @@ fn test_reclaim_deposit_unauthorized() {
 
 #[test]
 fn check_reserves_and_holds() {
-	let balance = <Test as Config>::Deposit::get() * 100;
+	// Set initial balance and amount to hold
+	let initial_balance = <Test as Config>::Deposit::get() * 100;
 	let balance_to_hold = <Test as Config>::Deposit::get();
 
 	ExtBuilder::default()
-		.with_balances(vec![(ACCOUNT_00, balance)])
+		.with_balances(vec![(ACCOUNT_00, initial_balance)])
 		.build_and_execute_with_sanity_tests(|| {
+			// Check initial total balance
 			let total_balance = Balances::total_balance(&ACCOUNT_00);
-			assert_eq!(total_balance, balance);
+			assert_eq!(total_balance, initial_balance);
 
+			// Check initial hold and reserved balances
 			let hold_balance = Balances::total_balance_on_hold(&ACCOUNT_00);
 			let reserved_balance =
 				<Balances as frame_support::traits::ReservableCurrency<crate::AccountIdOf<Test>>>::reserved_balance(
@@ -377,8 +380,7 @@ fn check_reserves_and_holds() {
 			assert_eq!(hold_balance, Zero::zero());
 			assert_eq!(reserved_balance, Zero::zero());
 
-			// Now hold some coins.
-
+			// Hold some coins
 			<Balances as frame_support::traits::fungible::MutateHold<crate::AccountIdOf<Test>>>::hold(
 				&HoldReason::Deposit.into(),
 				&ACCOUNT_00,
@@ -386,6 +388,7 @@ fn check_reserves_and_holds() {
 			)
 			.expect("Holding balance should not fail.");
 
+			// Check balances after holding
 			let hold_balance = Balances::total_balance_on_hold(&ACCOUNT_00);
 			let reserved_balance =
 				<Balances as frame_support::traits::ReservableCurrency<crate::AccountIdOf<Test>>>::reserved_balance(
@@ -395,13 +398,14 @@ fn check_reserves_and_holds() {
 			assert_eq!(hold_balance, balance_to_hold);
 			assert_eq!(reserved_balance, balance_to_hold);
 
-			// Now reserve some coins.
+			// Reserve some coins
 			<Balances as frame_support::traits::ReservableCurrency<crate::AccountIdOf<Test>>>::reserve(
 				&ACCOUNT_00,
 				balance_to_hold,
 			)
-			.expect("reserving balance should not fail.");
+			.expect("Reserving balance should not fail.");
 
+			// Check balances after reserving
 			let hold_balance = Balances::total_balance_on_hold(&ACCOUNT_00);
 			let reserved_balance =
 				<Balances as frame_support::traits::ReservableCurrency<crate::AccountIdOf<Test>>>::reserved_balance(

@@ -623,16 +623,20 @@ fn set_max_selected_candidates_total_stake() {
 
 #[test]
 fn check_locks_and_freezes() {
-	let balance = MILLI_KILT * 100;
+	// Set initial balance and amount to freeze
+	let initial_balance = MILLI_KILT * 100;
 	let balance_to_freeze = MILLI_KILT;
 	let account_00 = 0;
 
+	// Setup initial environment using ExtBuilder
 	ExtBuilder::default()
-		.with_balances(vec![(account_00, balance)])
+		.with_balances(vec![(account_00, initial_balance)])
 		.build_and_execute_with_sanity_tests(|| {
+			// Check initial total balance
 			let total_balance = Balances::total_balance(&account_00);
-			assert_eq!(total_balance, balance);
+			assert_eq!(total_balance, initial_balance);
 
+			// Set a lock on the account
 			<Balances as frame_support::traits::LockableCurrency<<Test as frame_system::Config>::AccountId>>::set_lock(
 				b"test    ".to_owned(),
 				&account_00,
@@ -640,27 +644,28 @@ fn check_locks_and_freezes() {
 				WithdrawReasons::RESERVE,
 			);
 
+			// Check usable balance after the lock
 			let usable_balance = Balances::usable_balance(&account_00);
+			assert_eq!(usable_balance, initial_balance - balance_to_freeze);
 
-			assert_eq!(usable_balance, balance - balance_to_freeze);
-
+			// Set a freeze on the account
 			<Balances as frame_support::traits::fungible::MutateFreeze<
-				<Test as frame_system::Config>::AccountId,
-			>>::set_freeze(&FreezeReason::Staking.into(), &account_00, balance_to_freeze)
-			.expect("Setting freeze should not fail.");
+                <Test as frame_system::Config>::AccountId,
+            >>::set_freeze(&FreezeReason::Staking.into(), &account_00, balance_to_freeze)
+            .expect("Setting freeze should not fail.");
 
-			// should be still the same since freezes/locks do not stack.
-			let usable_balance = crate::mock::Balances::usable_balance(&account_00);
-
-			assert_eq!(usable_balance, balance - balance_to_freeze);
-
-			<Balances as frame_support::traits::fungible::MutateFreeze<
-				<Test as frame_system::Config>::AccountId,
-			>>::extend_freeze(&FreezeReason::Staking.into(), &account_00, balance_to_freeze * 2)
-			.expect("increasing freeze should not fail.");
-
+			// Usable balance should remain the same since freezes/locks do not stack
 			let usable_balance = Balances::usable_balance(&account_00);
+			assert_eq!(usable_balance, initial_balance - balance_to_freeze);
 
-			assert_eq!(usable_balance, balance - 2 * balance_to_freeze);
+			// Extend the freeze on the account
+			<Balances as frame_support::traits::fungible::MutateFreeze<
+                <Test as frame_system::Config>::AccountId,
+            >>::extend_freeze(&FreezeReason::Staking.into(), &account_00, balance_to_freeze * 2)
+            .expect("Increasing freeze should not fail.");
+
+			// Check usable balance after extending freeze
+			let usable_balance = Balances::usable_balance(&account_00);
+			assert_eq!(usable_balance, initial_balance - 2 * balance_to_freeze);
 		});
 }
