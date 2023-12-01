@@ -35,6 +35,8 @@ mod benchmarks {
 	type IdentityContextOf<Runtime> =
 		IdentityContext<<Runtime as Config>::Identifier, <Runtime as frame_system::Config>::AccountId>;
 
+	use crate::IdentityOf;
+
 	use super::*;
 
 	#[benchmark]
@@ -52,9 +54,7 @@ mod benchmarks {
 
 		let origin: T::RuntimeOrigin = T::CommitOriginCheck::generate_origin(submitter, subject.clone());
 
-		<<<T as Config>::IdentityProvider as IdentityProvider<T>>::Success as GetWorstCase<
-			IdentityContextOf<T>,
-		>>::worst_case(context);
+		<IdentityOf<T> as GetWorstCase<IdentityContextOf<T>>>::worst_case(context);
 
 		let cloned_subject = subject.clone();
 
@@ -77,9 +77,8 @@ mod benchmarks {
 			submitter,
 		};
 
-		<<<T as Config>::IdentityProvider as IdentityProvider<T>>::Success as GetWorstCase<
-			IdentityContextOf<T>,
-		>>::worst_case(context);
+		<IdentityOf<T> as GetWorstCase<IdentityContextOf<T>>>::worst_case(context);
+		let cloned_subject = subject.clone();
 
 		Pallet::<T>::commit_identity(
 			origin.clone() as T::RuntimeOrigin,
@@ -91,7 +90,7 @@ mod benchmarks {
 		assert!(Pallet::<T>::identity_commitments(&subject, commitment_version).is_some());
 
 		#[extrinsic_call]
-		Pallet::<T>::delete_identity_commitment(origin as T::RuntimeOrigin, subject.clone(), Some(commitment_version));
+		Pallet::<T>::delete_identity_commitment(origin as T::RuntimeOrigin, cloned_subject, Some(commitment_version));
 
 		assert!(Pallet::<T>::identity_commitments(&subject, commitment_version).is_none());
 	}
