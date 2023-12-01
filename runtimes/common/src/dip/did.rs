@@ -24,7 +24,8 @@ use pallet_did_lookup::linkable_account::LinkableAccountId;
 use pallet_dip_provider::traits::IdentityProvider;
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
-use sp_runtime::SaturatedConversion;
+use sp_core::ConstU32;
+use sp_runtime::{BoundedVec, SaturatedConversion};
 use sp_std::vec::Vec;
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -58,7 +59,7 @@ where
 {
 	pub did_details: DidDetails<Runtime>,
 	pub web3_name_details: Option<Web3OwnershipOf<Runtime>>,
-	pub linked_accounts: Vec<LinkableAccountId>,
+	pub linked_accounts: BoundedVec<LinkableAccountId, ConstU32<MAX_LINKED_ACCOUNTS>>,
 }
 
 pub struct LinkedDidInfoProvider<const MAX_LINKED_ACCOUNTS: u32>;
@@ -98,16 +99,23 @@ where
 			Ok(None)
 		}?;
 
-		// Check if the user has too many linked accounts. If they have more than [MAX_LINKED_ACCOUNTS], we throw an error.
-		let has_user_to_many_acc = pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(identifier)
-			.nth(MAX_LINKED_ACCOUNTS.saturated_into())
-			.is_none();
+		// Check if the user has too many linked accounts. If they have more than
+		// [MAX_LINKED_ACCOUNTS], we throw an error.
+		let are_linked_accounts_within_limit =
+			pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(identifier)
+				.nth(MAX_LINKED_ACCOUNTS.saturated_into())
+				.is_none();
 
-		ensure!(has_user_to_many_acc, LinkedDidInfoProviderError::TooManyLinkedAccounts);
+		ensure!(
+			are_linked_accounts_within_limit,
+			LinkedDidInfoProviderError::TooManyLinkedAccounts
+		);
 
-		let linked_accounts: Vec<_> = pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(identifier)
+		let linked_accounts = pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(identifier)
 			.take(MAX_LINKED_ACCOUNTS.saturated_into())
-			.collect();
+			.collect::<Vec<_>>()
+			.try_into()
+			.map_err(|_| LinkedDidInfoProviderError::TooManyLinkedAccounts)?;
 
 		Ok(LinkedDidInfoOf {
 			did_details,
