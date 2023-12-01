@@ -16,7 +16,10 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::{assert_noop, assert_ok, traits::fungible::InspectHold};
+use frame_support::{
+	assert_noop, assert_ok,
+	traits::{fungible::InspectHold, Currency},
+};
 use kilt_support::{mock::mock_origin::DoubleOrigin, Deposit};
 use sp_runtime::{traits::Zero, TokenError};
 
@@ -351,5 +354,61 @@ fn test_reclaim_deposit_unauthorized() {
 				Attestation::reclaim_deposit(RuntimeOrigin::signed(ACCOUNT_01), claim_hash),
 				attestation::Error::<Test>::NotAuthorized,
 			);
+		});
+}
+
+#[test]
+fn check_reserves_and_holds() {
+	let balance = <Test as Config>::Deposit::get() * 100;
+	let balance_to_hold = <Test as Config>::Deposit::get();
+
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, balance)])
+		.build_and_execute_with_sanity_tests(|| {
+			let total_balance = Balances::total_balance(&ACCOUNT_00);
+			assert_eq!(total_balance, balance);
+
+			let hold_balance = Balances::total_balance_on_hold(&ACCOUNT_00);
+			let reserved_balance =
+				<Balances as frame_support::traits::ReservableCurrency<crate::AccountIdOf<Test>>>::reserved_balance(
+					&ACCOUNT_00,
+				);
+
+			assert_eq!(hold_balance, Zero::zero());
+			assert_eq!(reserved_balance, Zero::zero());
+
+			// Now hold some coins.
+
+			<Balances as frame_support::traits::fungible::MutateHold<crate::AccountIdOf<Test>>>::hold(
+				&HoldReason::Deposit.into(),
+				&ACCOUNT_00,
+				balance_to_hold,
+			)
+			.expect("Holding balance should not fail.");
+
+			let hold_balance = Balances::total_balance_on_hold(&ACCOUNT_00);
+			let reserved_balance =
+				<Balances as frame_support::traits::ReservableCurrency<crate::AccountIdOf<Test>>>::reserved_balance(
+					&ACCOUNT_00,
+				);
+
+			assert_eq!(hold_balance, balance_to_hold);
+			assert_eq!(reserved_balance, balance_to_hold);
+
+			// Now reserve some coins.
+			<Balances as frame_support::traits::ReservableCurrency<crate::AccountIdOf<Test>>>::reserve(
+				&ACCOUNT_00,
+				balance_to_hold,
+			)
+			.expect("reserving balance should not fail.");
+
+			let hold_balance = Balances::total_balance_on_hold(&ACCOUNT_00);
+			let reserved_balance =
+				<Balances as frame_support::traits::ReservableCurrency<crate::AccountIdOf<Test>>>::reserved_balance(
+					&ACCOUNT_00,
+				);
+
+			assert_eq!(hold_balance, balance_to_hold * 2);
+			assert_eq!(reserved_balance, balance_to_hold * 2);
 		});
 }
