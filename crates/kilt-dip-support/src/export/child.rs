@@ -629,7 +629,6 @@ mod v0 {
 			// 1.2 If so, extract the state root from the header
 			let state_root_at_height = proof.relay_header.state_root;
 
-			// FIXME: Compilation error
 			// 2. Verify relay chain proof
 			let provider_parachain_header =
 				ParachainHeadProofVerifier::<RelayChainInfo>::verify_proof_for_parachain_with_root(

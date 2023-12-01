@@ -104,7 +104,6 @@ pub mod pallet {
 	pub type Origin<T> =
 		DipOrigin<<T as Config>::Identifier, <T as frame_system::Config>::AccountId, VerificationResultOf<T>>;
 
-	// TODO: Benchmarking
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
 		// TODO: Replace with a SignedExtra.
