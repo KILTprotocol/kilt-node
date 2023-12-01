@@ -22,6 +22,12 @@
 
 mod relay;
 
+#[cfg(feature = "runtime-benchmarks")]
+mod benchmarking;
+
+#[cfg(test)]
+mod mock;
+
 pub use crate::pallet::*;
 
 #[frame_support::pallet]
@@ -68,7 +74,16 @@ pub mod pallet {
 		}
 
 		// TODO: Benchmarks
-		fn on_finalize(_n: BlockNumberFor<T>) {
+		fn on_finalize(n: BlockNumberFor<T>) {
+			Self::on_finalize_internal(n)
+		}
+	}
+
+	impl<T: Config> Pallet<T>
+	where
+		T: cumulus_pallet_parachain_system::Config,
+	{
+		pub(crate) fn on_finalize_internal(_n: BlockNumberFor<T>) {
 			// Called before the validation data is cleaned in the
 			// parachain_system::on_finalize hook
 			let Some(new_validation_data) = cumulus_pallet_parachain_system::Pallet::<T>::validation_data() else {

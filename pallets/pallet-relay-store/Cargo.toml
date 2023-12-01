@@ -13,6 +13,10 @@ version.workspace = true
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
 
+[dev-dependencies]
+cumulus-primitives-core = { workspace = true, features = ["std"] }
+sp-io = {workspace = true, features = ["std"]}
+
 [dependencies]
 cumulus-pallet-parachain-system.workspace = true
 frame-support.workspace = true
@@ -21,8 +25,12 @@ log.workspace = true
 parity-scale-codec = {workspace = true, features = ["derive"]}
 scale-info = {workspace = true, features = ["derive"]}
 sp-core.workspace = true
+sp-keystore = {workspace = true, optional = true}
 sp-runtime.workspace = true
 sp-std.workspace = true
+
+# Benchmarks
+frame-benchmarking = {workspace = true, optional = true}
 
 [features]
 default = ["std"]
@@ -35,8 +43,12 @@ std = [
   "sp-core/std",
   "sp-runtime/std",
   "sp-std/std",
+  "frame-benchmarking?/std",
 ]
 runtime-benchmarks = [
+  "cumulus-pallet-parachain-system/runtime-benchmarks",
   "frame-support/runtime-benchmarks",
   "frame-system/runtime-benchmarks",
+  "frame-benchmarking",
+  "sp-keystore"
 ]
