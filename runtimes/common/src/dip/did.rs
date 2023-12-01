@@ -35,8 +35,8 @@ use kilt_support::{benchmark::IdentityContext, traits::GetWorstCase};
 pub enum LinkedDidInfoProviderError {
 	DidNotFound,
 	DidDeleted,
-	Internal,
 	TooManyLinkedAccounts,
+	Internal,
 }
 
 impl From<LinkedDidInfoProviderError> for u16 {
@@ -115,6 +115,7 @@ where
 			.take(MAX_LINKED_ACCOUNTS.saturated_into())
 			.collect::<Vec<_>>()
 			.try_into()
+			// Should never happen since we checked above.
 			.map_err(|_| LinkedDidInfoProviderError::TooManyLinkedAccounts)?;
 
 		Ok(LinkedDidInfoOf {
@@ -145,7 +146,7 @@ where
 		use frame_benchmarking::{vec, Zero};
 		use frame_support::traits::fungible::Mutate;
 		use sp_io::crypto::{ed25519_generate, sr25519_generate};
-		use sp_runtime::{traits::Get, BoundedVec, KeyTypeId};
+		use sp_runtime::{traits::Get, KeyTypeId};
 
 		use crate::constants::KILT;
 
@@ -217,7 +218,9 @@ where
 
 		LinkedDidInfoOf {
 			did_details,
-			linked_accounts,
+			linked_accounts: linked_accounts
+				.try_into()
+				.expect("BoundedVec creation of linked accounts should not fail."),
 			web3_name_details,
 		}
 	}

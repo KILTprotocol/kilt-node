@@ -35,17 +35,17 @@ frame-benchmarking = {workspace = true, optional = true}
 pallet-balances = {workspace = true, optional = true}
 
 [features]
-default = [ "std" ]
+default = ["std"]
 std = [
-	"frame-support/std",
-	"frame-system/std",
-	"kilt-support/std",
-	"log/std",
-	"pallet-dip-provider/std",
-	"parity-scale-codec/std",
-	"scale-info/std",
-	"sp-runtime/std",
-	"sp-std/std",
+  "frame-support/std",
+  "frame-system/std",
+  "kilt-support/std",
+  "log/std",
+  "pallet-dip-provider/std",
+  "parity-scale-codec/std",
+  "scale-info/std",
+  "sp-runtime/std",
+  "sp-std/std",
   "frame-benchmarking?/std",
   "pallet-balances?/std",
 ]
@@ -56,7 +56,7 @@ runtime-benchmarks = [
   "kilt-support/runtime-benchmarks",
   "pallet-dip-provider/runtime-benchmarks",
   "sp-runtime/runtime-benchmarks",
-  "frame-benchmarking",
+  "frame-benchmarking/runtime-benchmarks",
   "pallet-balances/runtime-benchmarks",
 ]
 

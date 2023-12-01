@@ -41,7 +41,6 @@ pub(crate) fn do_try_state<T: Config>() -> Result<(), TryRuntimeError> {
 					linked_account_id, did_identifier
 				))
 			);
-
 			Ok(())
 		},
 	)

@@ -66,6 +66,9 @@ cumulus-primitives-utility.workspace = true
 pallet-collator-selection.workspace = true
 parachain-info.workspace = true
 
+# Benchmarks
+frame-benchmarking = {workspace = true, optional = true}
+
 [features]
 default = [
 	"std",
@@ -115,7 +118,8 @@ std = [
 	"cumulus-primitives-timestamp/std",
 	"cumulus-primitives-utility/std",
   "pallet-collator-selection/std",
-  "parachain-info/std"
+  "parachain-info/std",
+  "frame-benchmarking?/std",
 ]
 runtime-benchmarks = [
   "did/runtime-benchmarks",
@@ -126,5 +130,6 @@ runtime-benchmarks = [
   "runtime-common/runtime-benchmarks",
   "frame-system/runtime-benchmarks",
   "frame-support/runtime-benchmarks",
-  "pallet-utility/runtime-benchmarks"
+  "pallet-utility/runtime-benchmarks",
+  "frame-benchmarking/runtime-benchmarks",
 ]

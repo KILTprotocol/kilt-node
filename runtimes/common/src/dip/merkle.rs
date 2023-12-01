@@ -73,7 +73,6 @@ impl From<DidMerkleProofError> for u16 {
 }
 
 pub mod v0 {
-
 	use super::*;
 
 	type ProofLeafOf<T> = RevealedDidMerkleProofLeaf<
@@ -107,7 +106,6 @@ pub mod v0 {
 				log::error!("Authentication key should be part of the public keys.");
 				DidMerkleProofError::Internal
 			})?;
-
 		let auth_leaf = ProofLeafOf::<Runtime>::DidKey(
 			DidKeyMerkleKey(
 				did_details.authentication_key,

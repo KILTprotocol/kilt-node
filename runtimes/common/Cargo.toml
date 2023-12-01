@@ -11,14 +11,14 @@ repository.workspace = true
 version.workspace = true
 
 [dev-dependencies]
-sp-io = { workspace = true, features = ["std"] }
+sp-io = {workspace = true, features = ["std"]}
 
 [dependencies]
 # External dependencies
 kilt-asset-dids.workspace = true
 log.workspace = true
-parity-scale-codec = { workspace = true, features = ["derive"] }
-scale-info = { workspace = true, features = ["derive"] }
+parity-scale-codec = {workspace = true, features = ["derive"]}
+scale-info = {workspace = true, features = ["derive"]}
 smallvec.workspace = true
 
 attestation.workspace = true
@@ -60,7 +60,7 @@ xcm-builder.workspace = true
 xcm-executor.workspace = true
 xcm.workspace = true
 
-#benchmarking 
+#benchmarking
 frame-benchmarking = { workspace = true, optional = true }
 
 [features]
@@ -84,7 +84,7 @@ runtime-benchmarks = [
   "sp-runtime/runtime-benchmarks",
   "xcm-builder/runtime-benchmarks",
   "xcm-executor/runtime-benchmarks",
-  "frame-benchmarking",
+  "frame-benchmarking/runtime-benchmarks",
 ]
 std = [
   "cumulus-pallet-parachain-system/std",
@@ -125,6 +125,7 @@ std = [
   "xcm-builder/std",
   "xcm-executor/std",
   "xcm/std",
+  "frame-benchmarking?/std",
 ]
 try-runtime = [
   "cumulus-pallet-parachain-system/try-runtime",

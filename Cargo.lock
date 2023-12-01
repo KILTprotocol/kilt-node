@@ -2539,6 +2539,7 @@ dependencies = [
  "cumulus-primitives-timestamp",
  "cumulus-primitives-utility",
  "did",
+ "frame-benchmarking",
  "frame-executive",
  "frame-support",
  "frame-system",

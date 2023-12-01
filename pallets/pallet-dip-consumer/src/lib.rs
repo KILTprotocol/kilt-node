@@ -20,7 +20,7 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-pub mod default_weights;
+mod default_weights;
 pub mod identity;
 pub mod traits;
 
@@ -138,6 +138,9 @@ pub mod pallet {
 				details: proof_verification_result,
 			};
 
+			// TODO: Maybe find a nicer way to exclude the call dispatched from the
+			// benchmarks while making sure the call is actually dispatched and passes any
+			// filters the consumer proof verifier has set.
 			#[cfg(not(feature = "runtime-benchmark"))]
 			let _ = call.dispatch(did_origin.into()).map_err(|e| e.error)?;
 			Ok(())

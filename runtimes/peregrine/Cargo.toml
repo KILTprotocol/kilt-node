@@ -19,10 +19,10 @@ sp-io.workspace = true
 [dependencies]
 # External dependencies
 log.workspace = true
-parity-scale-codec = { workspace = true, features = ["derive"] }
-scale-info = { workspace = true, features = ["derive"] }
+parity-scale-codec = {workspace = true, features = ["derive"]}
+scale-info = {workspace = true, features = ["derive"]}
 
-hex-literal = { workspace = true, optional = true }
+hex-literal = {workspace = true, optional = true}
 
 # RPC & Runtime API
 frame-system-rpc-runtime-api.workspace = true
@@ -101,12 +101,12 @@ xcm-executor.workspace = true
 xcm.workspace = true
 
 # Benchmarking dependencies
-cumulus-pallet-session-benchmarking = { workspace = true, optional = true }
-frame-benchmarking = { workspace = true, optional = true }
-frame-system-benchmarking = { workspace = true, optional = true }
+cumulus-pallet-session-benchmarking = {workspace = true, optional = true}
+frame-benchmarking = {workspace = true, optional = true}
+frame-system-benchmarking = {workspace = true, optional = true}
 
 # Runtime tests
-frame-try-runtime = { workspace = true, optional = true }
+frame-try-runtime = {workspace = true, optional = true}
 
 [features]
 default = ["std"]
@@ -273,4 +273,7 @@ try-runtime = [
   "public-credentials/try-runtime",
   "runtime-common/try-runtime",
 ]
-with-tracing = ["frame-executive/with-tracing", "sp-io/with-tracing"]
+with-tracing = [
+  "frame-executive/with-tracing",
+  "sp-io/with-tracing",
+]

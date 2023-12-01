@@ -28,7 +28,7 @@ use sp_runtime::SaturatedConversion;
 		T::AccountId: Instanciate,
         T: Config + pallet_balances::Config,
         T::Namespace: Default
-) ]
+)]
 mod benchmarks {
 
 	use sp_runtime::BoundedVec;

@@ -19,7 +19,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![recursion_limit = "256"]
 
-pub mod default_weights;
+mod default_weights;
 mod deposit;
 pub mod traits;
 

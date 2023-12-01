@@ -434,6 +434,30 @@ impl pallet_web3_names::Config for Runtime {
 	type WeightInfo = ();
 }
 
+#[cfg(feature = "runtime-benchmarks")]
+mod benches {
+	frame_benchmarking::define_benchmarks!(
+		[frame_system, SystemBench::<Runtime>]
+		[cumulus_pallet_parachain_system, ParachainSystem]
+		[pallet_timestamp, Timestamp]
+		[pallet_sudo, Sudo]
+		[pallet_utility, Utility]
+		[pallet_balances, Balances]
+		[pallet_transaction_payment, TransactionPayment]
+		[pallet_authorship, Authorship]
+		[pallet_collator_selection, CollatorSelection]
+		[pallet_session, Session]
+		[pallet_aura, Aura]
+		[cumulus_pallet_aura_ext, AuraExt]
+		[did, Did]
+		[pallet_did_lookup, DidLookup]
+		[pallet_web3_names, Web3Names]
+		[pallet_deposit_storage, DepositStorage]
+		[pallet_dip_provider, DipProvider]
+		[frame_benchmarking::baseline, Baseline::<Runtime>]
+	);
+}
+
 impl_runtime_apis! {
 	impl sp_consensus_aura::AuraApi<Block, AuraId> for Runtime {
 		fn slot_duration() -> SlotDuration {

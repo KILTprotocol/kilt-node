@@ -30,7 +30,7 @@ use kilt_support::{
 		T::Identifier: Instanciate,
         <<T as Config>::ProofVerifier as IdentityProofVerifier<T>>::Proof: GetWorstCase<IdentityContext<T::Identifier, T::AccountId>>,
         <T as Config>::RuntimeCall: From<frame_system::Call<T>>,
-) ]
+)]
 mod benchmarks {
 
 	use super::*;
