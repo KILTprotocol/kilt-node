@@ -14,9 +14,10 @@ version.workspace = true
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dev-dependencies]
-kilt-support = {workspace = true, features = ["mock", "try-runtime"]}
+kilt-support = {workspace = true, features = ["std", "mock", "try-runtime"]}
 sp-io = {workspace = true, features = ["std"]}
 sp-keystore = {workspace = true, features = ["std"]}
+sp-runtime = {workspace = true, features = ["std"]}
 
 [dependencies]
 did.workspace = true
@@ -30,23 +31,21 @@ sp-std.workspace = true
 
 # Benchmarks
 frame-benchmarking = {workspace = true, optional = true}
-sp-io = {workspace = true, optional = true}
-sp-runtime.workspace = true
+sp-runtime = {workspace = true, optional = true}
 
 [features]
 default = [ "std" ]
 
 runtime-benchmarks = [
 	"did/runtime-benchmarks",
-	"frame-benchmarking",
 	"frame-support/runtime-benchmarks",
 	"frame-system/runtime-benchmarks",
 	"kilt-support/runtime-benchmarks",
-	"sp-runtime/runtime-benchmarks",
+  "frame-benchmarking",
+  "sp-runtime/runtime-benchmarks",
 ]
 std = [
 	"did/std",
-	"frame-benchmarking/std",
 	"frame-support/std",
 	"frame-system/std",
 	"kilt-support/std",
@@ -54,6 +53,8 @@ std = [
 	"scale-info/std",
 	"sp-core/std",
 	"sp-std/std",
+  "frame-benchmarking?/std",
+  "sp-runtime?/std",
 ]
 
 try-runtime = [ "did/try-runtime", "kilt-support/try-runtime" ]
