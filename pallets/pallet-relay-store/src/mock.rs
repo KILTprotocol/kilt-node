@@ -81,6 +81,7 @@ impl cumulus_pallet_parachain_system::Config for TestRuntime {
 
 impl crate::Config for TestRuntime {
 	type MaxRelayBlocksStored = ConstU32<5>;
+	type WeightInfo = ();
 }
 
 #[derive(Default)]

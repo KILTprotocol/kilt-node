@@ -20,6 +20,7 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
+mod default_weights;
 mod relay;
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -38,7 +39,7 @@ pub mod pallet {
 	use frame_system::pallet_prelude::*;
 	use sp_core::H256;
 
-	use crate::relay::RelayParentInfo;
+	use crate::{default_weights::WeightInfo, relay::RelayParentInfo};
 
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(0);
 
@@ -56,6 +57,7 @@ pub mod pallet {
 	pub trait Config: frame_system::Config {
 		#[pallet::constant]
 		type MaxRelayBlocksStored: Get<u32>;
+		type WeightInfo: WeightInfo;
 	}
 
 	#[pallet::pallet]
@@ -68,12 +70,9 @@ pub mod pallet {
 		T: cumulus_pallet_parachain_system::Config,
 	{
 		fn on_initialize(_n: BlockNumberFor<T>) -> Weight {
-			// Reserve weight to update the last relay state root
-			// TODO: Replace with benchmarked version of `on_finalize(`
-			<T as frame_system::Config>::DbWeight::get().writes(2)
+			<T as Config>::WeightInfo::on_finalize()
 		}
 
-		// TODO: Benchmarks
 		fn on_finalize(n: BlockNumberFor<T>) {
 			Self::on_finalize_internal(n)
 		}

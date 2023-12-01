@@ -124,4 +124,5 @@ impl DipCallOriginFilter<RuntimeCall> for DipCallFilter {
 
 impl pallet_relay_store::Config for Runtime {
 	type MaxRelayBlocksStored = ConstU32<100>;
+	type WeightInfo = ();
 }
