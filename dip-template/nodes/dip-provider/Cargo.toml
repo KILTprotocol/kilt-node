@@ -68,3 +68,9 @@ cumulus-relay-chain-interface.workspace = true
 
 [build-dependencies]
 substrate-build-script-utils.workspace = true
+
+[features]
+runtime-benchmarks = [
+  "frame-benchmarking-cli/runtime-benchmarks",
+  "dip-provider-runtime-template/runtime-benchmarks"
+]
