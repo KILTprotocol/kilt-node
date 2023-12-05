@@ -106,6 +106,8 @@ impl crate::Config for TestRuntime {
 	type RuntimeHoldReason = RuntimeHoldReason;
 	type MaxKeyLength = ConstU32<256>;
 	type Namespace = DepositNamespaces;
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHooks = ();
 	type WeightInfo = ();
 }
 

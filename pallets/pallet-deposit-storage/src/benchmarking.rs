@@ -16,22 +16,19 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use crate::{Call, Config, DepositEntryOf, DepositKeyOf, Deposits, HoldReason, Pallet};
 use frame_benchmarking::v2::*;
-use frame_support::traits::fungible::Mutate;
-use frame_system::RawOrigin;
-use kilt_support::{traits::Instanciate, Deposit};
-use sp_runtime::SaturatedConversion;
 
 #[benchmarks(
 	where
-		T::AccountId: Instanciate,
         T: Config + pallet_balances::Config,
-        T::Namespace: Default
 )]
 mod benchmarks {
+	use frame_support::traits::fungible::Mutate;
+	use frame_system::RawOrigin;
+	use kilt_support::Deposit;
+	use sp_runtime::SaturatedConversion;
 
-	use sp_runtime::BoundedVec;
+	use crate::{traits::BenchmarkHooks, Call, Config, DepositEntryOf, Deposits, HoldReason, Pallet};
 
 	use super::*;
 
@@ -39,13 +36,7 @@ mod benchmarks {
 
 	#[benchmark]
 	fn reclaim_deposit() {
-		let submitter = T::AccountId::new(1);
-
-		let origin = RawOrigin::Signed(submitter.clone());
-
-		let namespace: <T as Config>::Namespace = Default::default();
-
-		let key: DepositKeyOf<T> = BoundedVec::try_from(vec![1]).expect("Creation of key should not fail.");
+		let (submitter, namespace, key) = T::BenchmarkHooks::pre_reclaim_deposit();
 
 		assert!(Deposits::<T>::get(&namespace, &key).is_none());
 
@@ -68,6 +59,7 @@ mod benchmarks {
 
 		assert!(Deposits::<T>::get(&namespace, &key).is_some());
 
+		let origin = RawOrigin::Signed(submitter);
 		let cloned_namespace = namespace.clone();
 		let cloned_key = key.clone();
 
@@ -75,6 +67,8 @@ mod benchmarks {
 		Pallet::<T>::reclaim_deposit(origin, cloned_namespace, cloned_key);
 
 		assert!(Deposits::<T>::get(&namespace, &key).is_none());
+
+		T::BenchmarkHooks::post_reclaim_deposit();
 	}
 
 	#[cfg(test)]

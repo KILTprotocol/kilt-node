@@ -38,7 +38,7 @@ pub mod pallet {
 	use crate::{
 		default_weights::WeightInfo,
 		deposit::{free_deposit, reserve_deposit, DepositEntry},
-		traits::DepositStorageHooks,
+		traits::{BenchmarkHooks, DepositStorageHooks},
 	};
 
 	use super::*;
@@ -75,6 +75,8 @@ pub mod pallet {
 		type Namespace: Parameter + MaxEncodedLen;
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 		type RuntimeHoldReason: From<HoldReason> + Clone + PartialEq + Debug + FullCodec + MaxEncodedLen + TypeInfo;
+		#[cfg(feature = "runtime-benchmarks")]
+		type BenchmarkHooks: BenchmarkHooks<Self>;
 		type WeightInfo: WeightInfo;
 	}
 

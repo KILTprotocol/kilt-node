@@ -47,3 +47,39 @@ where
 		Ok(())
 	}
 }
+
+// Could be expanded to include traits to set up stuff before all benchmarks,
+// and before each benchmark case specifically.
+#[cfg(feature = "runtime-benchmarks")]
+pub trait BenchmarkHooks<Runtime>
+where
+	Runtime: Config,
+{
+	fn pre_reclaim_deposit() -> (
+		Runtime::AccountId,
+		Runtime::Namespace,
+		sp_runtime::BoundedVec<u8, Runtime::MaxKeyLength>,
+	);
+	fn post_reclaim_deposit();
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+impl<Runtime> BenchmarkHooks<Runtime> for ()
+where
+	Runtime: Config,
+	Runtime::AccountId: From<[u8; 32]>,
+	Runtime::Namespace: Default,
+{
+	fn pre_reclaim_deposit() -> (
+		Runtime::AccountId,
+		Runtime::Namespace,
+		sp_runtime::BoundedVec<u8, Runtime::MaxKeyLength>,
+	) {
+		(
+			Runtime::AccountId::from([100u8; 32]),
+			Runtime::Namespace::default(),
+			sp_runtime::BoundedVec::default(),
+		)
+	}
+	fn post_reclaim_deposit() {}
+}
