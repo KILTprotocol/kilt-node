@@ -17,6 +17,7 @@ log.workspace = true
 
 # Internal dependencies
 did.workspace = true
+kilt-support = {workspace = true, optional = true}
 pallet-did-lookup.workspace = true
 pallet-dip-consumer.workspace = true
 pallet-dip-provider.workspace = true
@@ -57,6 +58,7 @@ std = [
   "hash-db/std",
   "log/std",
   "did/std",
+  "kilt-support/std",
   "pallet-did-lookup/std",
   "pallet-dip-consumer/std",
   "pallet-dip-provider/std",
@@ -80,6 +82,7 @@ std = [
   "parachain-info/std",
 ]
 runtime-benchmarks = [
+  "kilt-support/runtime-benchmarks",
   "pallet-dip-consumer/runtime-benchmarks",
   "pallet-dip-provider/runtime-benchmarks",
   "rococo-runtime/runtime-benchmarks"

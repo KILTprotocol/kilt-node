@@ -14,7 +14,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-/// Manly used for the DIP benchmarking. The worst case can be created for the did and submitter.
+/// Manly used for the DIP benchmarking. The worst case can be created for the
+/// did and submitter.
+#[derive(Clone)]
 pub struct IdentityContext<DidIdentifier, AccountId> {
 	pub did: DidIdentifier,
 	pub submitter: AccountId,

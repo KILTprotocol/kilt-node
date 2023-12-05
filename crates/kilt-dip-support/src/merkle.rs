@@ -16,10 +16,14 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use did::{did_details::DidPublicKeyDetails, DidVerificationKeyRelationship};
+use did::{
+	did_details::{DidPublicKeyDetails, DidVerificationKey},
+	DidVerificationKeyRelationship,
+};
 use frame_support::{traits::ConstU32, DefaultNoBound, RuntimeDebug};
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
+use sp_core::ed25519;
 use sp_runtime::{BoundedVec, SaturatedConversion};
 use sp_std::{fmt::Debug, marker::PhantomData, vec::Vec};
 use sp_trie::{verify_trie_proof, LayoutV1};
@@ -29,6 +33,20 @@ pub struct DidMerkleProof<BlindedValues, Leaf> {
 	pub blinded: BlindedValues,
 	// TODO: Probably replace with a different data structure for better lookup capabilities
 	pub revealed: Vec<Leaf>,
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+impl<BlindedValues, Leaf, Context> kilt_support::traits::GetWorstCase<Context> for DidMerkleProof<BlindedValues, Leaf>
+where
+	BlindedValues: kilt_support::traits::GetWorstCase<Context>,
+	Leaf: Default + Clone,
+{
+	fn worst_case(context: Context) -> Self {
+		Self {
+			blinded: BlindedValues::worst_case(context),
+			revealed: sp_std::vec![Leaf::default(); 64],
+		}
+	}
 }
 
 #[derive(Clone, Copy, RuntimeDebug, Encode, Decode, PartialEq, Eq, TypeInfo, PartialOrd, Ord, MaxEncodedLen)]
@@ -117,6 +135,25 @@ pub enum RevealedDidMerkleProofLeaf<KeyId, AccountId, BlockNumber, Web3Name, Lin
 	DidKey(DidKeyMerkleKey<KeyId>, DidKeyMerkleValue<BlockNumber, AccountId>),
 	Web3Name(Web3NameMerkleKey<Web3Name>, Web3NameMerkleValue<BlockNumber>),
 	LinkedAccount(LinkedAccountMerkleKey<LinkedAccountId>, LinkedAccountMerkleValue),
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+impl<KeyId, AccountId, BlockNumber, Web3Name, LinkedAccountId> Default
+	for RevealedDidMerkleProofLeaf<KeyId, AccountId, BlockNumber, Web3Name, LinkedAccountId>
+where
+	KeyId: Default,
+	BlockNumber: Default,
+{
+	fn default() -> Self {
+		Self::DidKey(
+			(KeyId::default(), DidVerificationKeyRelationship::Authentication.into()).into(),
+			DidPublicKeyDetails {
+				key: DidVerificationKey::Ed25519(ed25519::Public::from_raw([0u8; 32])).into(),
+				block_number: BlockNumber::default(),
+			}
+			.into(),
+		)
+	}
 }
 
 impl<KeyId, AccountId, BlockNumber, Web3Name, LinkedAccountId>
@@ -259,7 +296,7 @@ impl<
 	LinkedAccountId: Encode + Clone,
 	Web3Name: Encode + Clone,
 {
-	#[allow(clippy::result_unit_err)]
+	#[cfg(not(feature = "runtime-benchmarks"))]
 	#[allow(clippy::type_complexity)]
 	pub(crate) fn verify_dip_merkle_proof(
 		identity_commitment: &Hasher::Out,
@@ -315,6 +352,79 @@ impl<
 					Ok::<_, DidMerkleProofVerifierError>((keys, web3_name, linked_accounts))
 				}
 				// TODO: Avoid cloning if possible
+				RevealedDidMerkleProofLeaf::Web3Name(revealed_web3_name, details) => Ok((
+					keys,
+					Some(RevealedWeb3Name {
+						web3_name: revealed_web3_name.0.clone(),
+						claimed_at: details.0.clone(),
+					}),
+					linked_accounts,
+				)),
+				RevealedDidMerkleProofLeaf::LinkedAccount(account_id, _) => {
+					linked_accounts
+						.try_push(account_id.0.clone())
+						.map_err(|_| DidMerkleProofVerifierError::TooManyRevealedAccounts)?;
+					Ok::<_, DidMerkleProofVerifierError>((keys, web3_name, linked_accounts))
+				}
+			},
+		)?;
+
+		Ok(RevealedDidMerkleProofLeaves {
+			did_keys,
+			web3_name,
+			linked_accounts,
+		})
+	}
+
+	#[cfg(feature = "runtime-benchmarks")]
+	#[allow(clippy::type_complexity)]
+	pub(crate) fn verify_dip_merkle_proof(
+		identity_commitment: &Hasher::Out,
+		proof: DidMerkleProof<
+			crate::BoundedBlindedValue<u8>,
+			RevealedDidMerkleProofLeaf<KeyId, AccountId, BlockNumber, Web3Name, LinkedAccountId>,
+		>,
+	) -> Result<
+		RevealedDidMerkleProofLeaves<
+			KeyId,
+			AccountId,
+			BlockNumber,
+			Web3Name,
+			LinkedAccountId,
+			MAX_REVEALED_KEYS_COUNT,
+			MAX_REVEALED_ACCOUNTS_COUNT,
+		>,
+		DidMerkleProofVerifierError,
+	> {
+		let proof_leaves = proof
+			.revealed
+			.iter()
+			.map(|leaf| (leaf.encoded_key(), Some(leaf.encoded_value())))
+			.collect::<Vec<(Vec<u8>, Option<Vec<u8>>)>>();
+		// Ignore result
+		let _ = verify_trie_proof::<LayoutV1<Hasher>, _, _, _>(identity_commitment, &proof.blinded, &proof_leaves);
+
+		#[allow(clippy::type_complexity)]
+		let (did_keys, web3_name, linked_accounts): (
+			BoundedVec<RevealedDidKey<KeyId, BlockNumber, AccountId>, ConstU32<MAX_REVEALED_KEYS_COUNT>>,
+			Option<RevealedWeb3Name<Web3Name, BlockNumber>>,
+			BoundedVec<LinkedAccountId, ConstU32<MAX_REVEALED_ACCOUNTS_COUNT>>,
+		) = proof.revealed.iter().try_fold(
+			(
+				BoundedVec::with_bounded_capacity(MAX_REVEALED_KEYS_COUNT.saturated_into()),
+				None,
+				BoundedVec::with_bounded_capacity(MAX_REVEALED_ACCOUNTS_COUNT.saturated_into()),
+			),
+			|(mut keys, web3_name, mut linked_accounts), leaf| match leaf {
+				RevealedDidMerkleProofLeaf::DidKey(key_id, key_value) => {
+					keys.try_push(RevealedDidKey {
+						id: key_id.0.clone(),
+						relationship: key_id.1,
+						details: key_value.0.clone(),
+					})
+					.map_err(|_| DidMerkleProofVerifierError::TooManyRevealedKeys)?;
+					Ok::<_, DidMerkleProofVerifierError>((keys, web3_name, linked_accounts))
+				}
 				RevealedDidMerkleProofLeaf::Web3Name(revealed_web3_name, details) => Ok((
 					keys,
 					Some(RevealedWeb3Name {

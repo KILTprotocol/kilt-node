@@ -4565,6 +4565,7 @@ dependencies = [
  "frame-system",
  "hash-db",
  "hex-literal 0.3.4",
+ "kilt-support",
  "log",
  "pallet-did-lookup",
  "pallet-dip-consumer",
