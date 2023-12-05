@@ -72,6 +72,13 @@ pub mod deposit {
 		DipProvider,
 	}
 
+	#[cfg(feature = "runtime-benchmarks")]
+	impl Default for DepositNamespaces {
+		fn default() -> Self {
+			Self::DipProvider
+		}
+	}
+
 	pub struct DipProviderDepositNamespace;
 
 	impl Get<DepositNamespaces> for DipProviderDepositNamespace {

@@ -67,7 +67,10 @@ pallet-collator-selection.workspace = true
 parachain-info.workspace = true
 
 # Benchmarks
+cumulus-pallet-session-benchmarking = {workspace = true, optional = true}
 frame-benchmarking = {workspace = true, optional = true}
+frame-system-benchmarking = {workspace = true, optional = true}
+hex-literal = {workspace = true, optional = true}
 
 [features]
 default = [
@@ -124,12 +127,21 @@ std = [
 runtime-benchmarks = [
   "did/runtime-benchmarks",
   "kilt-dip-support/runtime-benchmarks",
+  "pallet-deposit-storage/runtime-benchmarks",
   "pallet-did-lookup/runtime-benchmarks",
   "pallet-dip-provider/runtime-benchmarks",
   "pallet-web3-names/runtime-benchmarks",
   "runtime-common/runtime-benchmarks",
   "frame-system/runtime-benchmarks",
   "frame-support/runtime-benchmarks",
+  "pallet-balances/runtime-benchmarks",
+  "pallet-collator-selection/runtime-benchmarks",
+  "pallet-sudo/runtime-benchmarks",
+  "pallet-timestamp/runtime-benchmarks",
   "pallet-utility/runtime-benchmarks",
+  "sp-runtime/runtime-benchmarks",
+  "cumulus-pallet-session-benchmarking/runtime-benchmarks",
   "frame-benchmarking/runtime-benchmarks",
+  "frame-system-benchmarking/runtime-benchmarks",
+  "hex-literal"
 ]
