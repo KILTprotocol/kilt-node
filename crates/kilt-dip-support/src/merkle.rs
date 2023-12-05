@@ -417,12 +417,12 @@ impl<
 			),
 			|(mut keys, web3_name, mut linked_accounts), leaf| match leaf {
 				RevealedDidMerkleProofLeaf::DidKey(key_id, key_value) => {
-					keys.try_push(RevealedDidKey {
+					// Ignore error, just discard anything in excess.
+					let _ = keys.try_push(RevealedDidKey {
 						id: key_id.0.clone(),
 						relationship: key_id.1,
 						details: key_value.0.clone(),
-					})
-					.map_err(|_| DidMerkleProofVerifierError::TooManyRevealedKeys)?;
+					});
 					Ok::<_, DidMerkleProofVerifierError>((keys, web3_name, linked_accounts))
 				}
 				RevealedDidMerkleProofLeaf::Web3Name(revealed_web3_name, details) => Ok((
@@ -434,9 +434,8 @@ impl<
 					linked_accounts,
 				)),
 				RevealedDidMerkleProofLeaf::LinkedAccount(account_id, _) => {
-					linked_accounts
-						.try_push(account_id.0.clone())
-						.map_err(|_| DidMerkleProofVerifierError::TooManyRevealedAccounts)?;
+					// Ignore error, just discard anything in excess.
+					let _ = linked_accounts.try_push(account_id.0.clone());
 					Ok::<_, DidMerkleProofVerifierError>((keys, web3_name, linked_accounts))
 				}
 			},

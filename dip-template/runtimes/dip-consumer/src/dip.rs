@@ -55,6 +55,7 @@ impl pallet_dip_consumer::Config for Runtime {
 pub struct PreliminaryDipOriginFilter;
 
 impl Contains<RuntimeCall> for PreliminaryDipOriginFilter {
+	#[cfg(not(feature = "runtime-benchmarks"))]
 	fn contains(t: &RuntimeCall) -> bool {
 		matches!(
 			t,
@@ -63,6 +64,11 @@ impl Contains<RuntimeCall> for PreliminaryDipOriginFilter {
 				| RuntimeCall::Utility(pallet_utility::Call::batch_all { .. })
 				| RuntimeCall::Utility(pallet_utility::Call::force_batch { .. })
 		)
+	}
+
+	#[cfg(feature = "runtime-benchmarks")]
+	fn contains(_t: &RuntimeCall) -> bool {
+		true
 	}
 }
 
