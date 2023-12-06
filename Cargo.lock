@@ -2433,7 +2433,6 @@ dependencies = [
  "cumulus-pallet-aura-ext",
  "cumulus-pallet-dmp-queue",
  "cumulus-pallet-parachain-system",
- "cumulus-pallet-session-benchmarking",
  "cumulus-primitives-core",
  "cumulus-primitives-timestamp",
  "cumulus-primitives-utility",
@@ -2477,6 +2476,7 @@ dependencies = [
  "sp-std",
  "sp-transaction-pool",
  "sp-version",
+ "sp-weights",
  "substrate-wasm-builder",
 ]
 
@@ -2539,7 +2539,6 @@ dependencies = [
  "cumulus-pallet-aura-ext",
  "cumulus-pallet-dmp-queue",
  "cumulus-pallet-parachain-system",
- "cumulus-pallet-session-benchmarking",
  "cumulus-primitives-core",
  "cumulus-primitives-timestamp",
  "cumulus-primitives-utility",
@@ -2585,6 +2584,7 @@ dependencies = [
  "sp-std",
  "sp-transaction-pool",
  "sp-version",
+ "sp-weights",
  "substrate-wasm-builder",
 ]
 

@@ -53,6 +53,7 @@ sp-session.workspace = true
 sp-std.workspace = true
 sp-transaction-pool.workspace = true
 sp-version.workspace = true
+sp-weights.workspace = true
 
 # Cumulus
 cumulus-pallet-aura-ext.workspace = true
@@ -65,7 +66,6 @@ pallet-collator-selection.workspace = true
 parachain-info.workspace = true
 
 # Benchmarks
-cumulus-pallet-session-benchmarking = {workspace = true, optional = true}
 frame-benchmarking = {workspace = true, optional = true}
 frame-system-benchmarking = {workspace = true, optional = true}
 hex-literal = {workspace = true, optional = true}
@@ -110,6 +110,7 @@ std = [
 	"sp-std/std",
 	"sp-transaction-pool/std",
 	"sp-version/std",
+  "sp-weights/std",
   "cumulus-pallet-aura-ext/std",
 	"cumulus-pallet-dmp-queue/std",
 	"cumulus-pallet-parachain-system/std",
@@ -134,7 +135,6 @@ runtime-benchmarks = [
   "pallet-timestamp/runtime-benchmarks",
   "pallet-utility/runtime-benchmarks",
   "sp-runtime/runtime-benchmarks",
-  "cumulus-pallet-session-benchmarking/runtime-benchmarks",
   "frame-benchmarking/runtime-benchmarks",
   "frame-system-benchmarking/runtime-benchmarks",
   "hex-literal"

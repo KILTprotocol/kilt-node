@@ -31,7 +31,7 @@ use sp_std::vec::Vec;
 
 use crate::{
 	deposit::{DepositHooks, DepositNamespaces},
-	AccountId, Balances, DidIdentifier, Runtime, RuntimeEvent, RuntimeHoldReason,
+	weights, AccountId, Balances, DidIdentifier, Runtime, RuntimeEvent, RuntimeHoldReason,
 };
 
 const MAX_LINKED_ACCOUNTS: u32 = 20;
@@ -177,7 +177,7 @@ impl pallet_deposit_storage::Config for Runtime {
 	type Namespace = DepositNamespaces;
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeHoldReason = RuntimeHoldReason;
-	type WeightInfo = ();
+	type WeightInfo = weights::pallet_deposit_storage::WeightInfo<Runtime>;
 	#[cfg(feature = "runtime-benchmarks")]
 	type BenchmarkHooks = deposit::PalletDepositStorageBenchmarkHooks;
 }
@@ -190,5 +190,5 @@ impl pallet_dip_provider::Config for Runtime {
 	type IdentityProvider = LinkedDidInfoProvider<MAX_LINKED_ACCOUNTS>;
 	type ProviderHooks = deposit::DepositCollectorHooks;
 	type RuntimeEvent = RuntimeEvent;
-	type WeightInfo = ();
+	type WeightInfo = weights::pallet_dip_provider::WeightInfo<Runtime>;
 }

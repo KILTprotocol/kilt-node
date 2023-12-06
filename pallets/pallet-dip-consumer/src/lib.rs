@@ -32,7 +32,7 @@ pub mod benchmarking;
 
 mod origin;
 
-pub use crate::{origin::*, pallet::*, traits::SuccessfulProofVerifier};
+pub use crate::{default_weights::WeightInfo, origin::*, pallet::*, traits::SuccessfulProofVerifier};
 
 #[frame_support::pallet]
 pub mod pallet {

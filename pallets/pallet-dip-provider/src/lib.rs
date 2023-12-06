@@ -30,6 +30,7 @@ mod benchmarking;
 mod mock;
 
 pub use crate::{
+	default_weights::WeightInfo,
 	pallet::*,
 	traits::{DefaultIdentityCommitmentGenerator, DefaultIdentityProvider, NoopHooks},
 };

@@ -76,6 +76,7 @@ pub use sp_runtime::BuildStorage;
 use sp_version::NativeVersion;
 
 mod dip;
+mod weights;
 pub use crate::dip::*;
 
 pub type AccountId = AccountId32;
@@ -240,7 +241,7 @@ impl frame_system::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeOrigin = RuntimeOrigin;
 	type SS58Prefix = ConstU16<SS58_PREFIX>;
-	type SystemWeightInfo = ();
+	type SystemWeightInfo = weights::frame_system::WeightInfo<Runtime>;
 	type Version = Version;
 }
 
@@ -401,7 +402,7 @@ impl did::Config for Runtime {
 	type RuntimeHoldReason = RuntimeHoldReason;
 	type RuntimeOrigin = RuntimeOrigin;
 	type ServiceEndpointDeposit = ConstU128<UNIT>;
-	type WeightInfo = ();
+	type WeightInfo = weights::did::WeightInfo<Runtime>;
 }
 
 impl pallet_did_lookup::Config for Runtime {
@@ -413,7 +414,7 @@ impl pallet_did_lookup::Config for Runtime {
 	type OriginSuccess = DidRawOrigin<AccountId, DidIdentifier>;
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeHoldReason = RuntimeHoldReason;
-	type WeightInfo = ();
+	type WeightInfo = weights::pallet_did_lookup::WeightInfo<Runtime>;
 }
 
 pub type Web3Name = AsciiWeb3Name<Runtime>;
@@ -431,19 +432,13 @@ impl pallet_web3_names::Config for Runtime {
 	type RuntimeHoldReason = RuntimeHoldReason;
 	type Web3Name = Web3Name;
 	type Web3NameOwner = DidIdentifier;
-	type WeightInfo = ();
+	type WeightInfo = weights::pallet_web3_names::WeightInfo<Runtime>;
 }
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benches {
 	frame_benchmarking::define_benchmarks!(
 		[frame_system, SystemBench::<Runtime>]
-		[pallet_timestamp, Timestamp]
-		[pallet_sudo, Sudo]
-		[pallet_utility, Utility]
-		[pallet_balances, Balances]
-		[pallet_collator_selection, CollatorSelection]
-		[pallet_session, SessionBench::<Runtime>]
 		[did, Did]
 		[pallet_did_lookup, DidLookup]
 		[pallet_web3_names, Web3Names]
@@ -706,7 +701,6 @@ impl_runtime_apis! {
 			use frame_benchmarking::{Benchmarking, BenchmarkList};
 			use frame_support::traits::StorageInfoTrait;
 			use frame_system_benchmarking::Pallet as SystemBench;
-			use cumulus_pallet_session_benchmarking::Pallet as SessionBench;
 
 			let mut list = Vec::<BenchmarkList>::new();
 			list_benchmarks!(list, extra);
@@ -731,9 +725,6 @@ impl_runtime_apis! {
 					System::assert_last_event(cumulus_pallet_parachain_system::Event::<Runtime>::ValidationFunctionStored.into());
 				}
 			}
-
-			use cumulus_pallet_session_benchmarking::Pallet as SessionBench;
-			impl cumulus_pallet_session_benchmarking::Config for Runtime {}
 
 			use frame_support::traits::WhitelistedStorageKeys;
 			let whitelist = AllPalletsWithSystem::whitelisted_storage_keys();

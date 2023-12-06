@@ -65,6 +65,7 @@ use sp_version::RuntimeVersion;
 
 mod dip;
 mod origin_adapter;
+mod weights;
 pub use crate::{dip::*, origin_adapter::*};
 
 #[cfg(any(feature = "std", test))]
@@ -234,7 +235,7 @@ impl frame_system::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeOrigin = RuntimeOrigin;
 	type SS58Prefix = ConstU16<SS58_PREFIX>;
-	type SystemWeightInfo = ();
+	type SystemWeightInfo = weights::frame_system::WeightInfo<Runtime>;
 	type Version = Version;
 }
 
@@ -362,12 +363,6 @@ impl pallet_postit::Config for Runtime {
 mod benches {
 	frame_benchmarking::define_benchmarks!(
 		[frame_system, SystemBench::<Runtime>]
-		[pallet_timestamp, Timestamp]
-		[pallet_sudo, Sudo]
-		[pallet_utility, Utility]
-		[pallet_balances, Balances]
-		[pallet_collator_selection, CollatorSelection]
-		[pallet_session, SessionBench::<Runtime>]
 		[pallet_dip_consumer, DipConsumer]
 		[pallet_relay_store, RelayStore]
 	);
@@ -526,7 +521,6 @@ impl_runtime_apis! {
 			use frame_benchmarking::{Benchmarking, BenchmarkList};
 			use frame_support::traits::StorageInfoTrait;
 			use frame_system_benchmarking::Pallet as SystemBench;
-			use cumulus_pallet_session_benchmarking::Pallet as SessionBench;
 
 			let mut list = Vec::<BenchmarkList>::new();
 			list_benchmarks!(list, extra);
@@ -551,9 +545,6 @@ impl_runtime_apis! {
 					System::assert_last_event(cumulus_pallet_parachain_system::Event::<Runtime>::ValidationFunctionStored.into());
 				}
 			}
-
-			use cumulus_pallet_session_benchmarking::Pallet as SessionBench;
-			impl cumulus_pallet_session_benchmarking::Config for Runtime {}
 
 			use frame_support::traits::WhitelistedStorageKeys;
 			let whitelist = AllPalletsWithSystem::whitelisted_storage_keys();
