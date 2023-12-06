@@ -71,8 +71,7 @@ pub mod deposit {
 
 	use frame_support::traits::Get;
 	use pallet_deposit_storage::{
-		traits::{BenchmarkHooks, DepositStorageHooks},
-		DepositEntryOf, DepositKeyOf, FixedDepositCollectorViaDepositsPallet,
+		traits::DepositStorageHooks, DepositEntryOf, DepositKeyOf, FixedDepositCollectorViaDepositsPallet,
 	};
 	use parity_scale_codec::MaxEncodedLen;
 	use sp_core::{ConstU128, RuntimeDebug};
@@ -150,7 +149,7 @@ pub mod deposit {
 	pub struct PalletDepositStorageBenchmarkHooks;
 
 	#[cfg(feature = "runtime-benchmarks")]
-	impl BenchmarkHooks<Runtime> for PalletDepositStorageBenchmarkHooks {
+	impl pallet_deposit_storage::traits::BenchmarkHooks<Runtime> for PalletDepositStorageBenchmarkHooks {
 		fn pre_reclaim_deposit() -> (
 			<Runtime as frame_system::Config>::AccountId,
 			<Runtime as pallet_deposit_storage::Config>::Namespace,
