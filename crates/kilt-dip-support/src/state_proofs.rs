@@ -187,17 +187,7 @@ pub(super) mod relay_chain {
 			});
 			Ok(header)
 		}
-	}
 
-	// Relies on the `RelayChainState::state_root_for_block` to retrieve the state
-	// root for the given block.
-	impl<RelayChainState> ParachainHeadProofVerifier<RelayChainState>
-	where
-		RelayChainState: RelayChainStateInfo,
-		OutputOf<RelayChainState::Hasher>: Ord,
-		RelayChainState::BlockNumber: Copy + Into<U256> + TryFrom<U256> + HasCompact,
-		RelayChainState::Key: AsRef<[u8]>,
-	{
 		/// Given a relaychain state root provided by the `RelayChainState`
 		/// generic type, verify a state proof for the parachain with the
 		/// provided ID.
@@ -206,7 +196,10 @@ pub(super) mod relay_chain {
 			para_id: &RelayChainState::ParaId,
 			relay_height: &RelayChainState::BlockNumber,
 			proof: impl IntoIterator<Item = Vec<u8>>,
-		) -> Result<Header<RelayChainState::BlockNumber, RelayChainState::Hasher>, ParachainHeadProofVerifierError> {
+		) -> Result<Header<RelayChainState::BlockNumber, RelayChainState::Hasher>, ParachainHeadProofVerifierError>
+		where
+			RelayChainState: RelayChainStateInfo,
+		{
 			let relay_state_root = RelayChainState::state_root_for_block(relay_height)
 				.ok_or(ParachainHeadProofVerifierError::RelaychainStateRootNotFound)?;
 			Self::verify_proof_for_parachain_with_root(para_id, &relay_state_root, proof)
@@ -217,7 +210,10 @@ pub(super) mod relay_chain {
 			para_id: &RelayChainState::ParaId,
 			relay_height: &RelayChainState::BlockNumber,
 			proof: impl IntoIterator<Item = Vec<u8>>,
-		) -> Result<Header<RelayChainState::BlockNumber, RelayChainState::Hasher>, ParachainHeadProofVerifierError> {
+		) -> Result<Header<RelayChainState::BlockNumber, RelayChainState::Hasher>, ParachainHeadProofVerifierError>
+		where
+			RelayChainState: RelayChainStateInfo,
+		{
 			let relay_state_root = RelayChainState::state_root_for_block(relay_height).unwrap_or_default();
 			Self::verify_proof_for_parachain_with_root(para_id, &relay_state_root, proof)
 		}
