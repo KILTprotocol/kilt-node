@@ -370,7 +370,6 @@ pub(super) mod parachain {
 		/// Given a parachain state root, verify a state proof for the
 		/// commitment of a given subject identifier.
 		#[cfg(not(feature = "runtime-benchmarks"))]
-		#[allow(clippy::result_unit_err)]
 		pub fn verify_proof_for_identifier(
 			identifier: &ParaInfo::Identifier,
 			state_root: OutputOf<ParaInfo::Hasher>,

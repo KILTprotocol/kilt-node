@@ -235,7 +235,6 @@ impl<
 	}
 
 	#[cfg(feature = "runtime-benchmarks")]
-	#[allow(clippy::result_unit_err)]
 	pub(crate) fn verify_did_signature_for_call(
 		call: &Call,
 		submitter: &Submitter,
