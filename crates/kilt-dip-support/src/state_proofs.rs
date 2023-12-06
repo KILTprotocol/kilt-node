@@ -132,6 +132,7 @@ pub(super) mod relay_chain {
 	{
 		/// Given a relaychain state root, verify a state proof for the
 		/// parachain with the provided ID.
+		#[cfg(not(feature = "runtime-benchmarks"))]
 		pub fn verify_proof_for_parachain_with_root(
 			para_id: &RelayChainState::ParaId,
 			root: &OutputOf<<RelayChainState as RelayChainStorageInfo>::Hasher>,
@@ -154,6 +155,38 @@ pub(super) mod relay_chain {
 			let mut unwrapped_head = &encoded_head[2..];
 			Header::decode(&mut unwrapped_head).map_err(|_| ParachainHeadProofVerifierError::HeaderDecode)
 		}
+
+		// Ignores any errors returned by the `read_proof_check` function and returns a
+		// default Header in case of failure.
+		#[cfg(feature = "runtime-benchmarks")]
+		pub fn verify_proof_for_parachain_with_root(
+			para_id: &RelayChainState::ParaId,
+			root: &OutputOf<<RelayChainState as RelayChainStorageInfo>::Hasher>,
+			proof: impl IntoIterator<Item = Vec<u8>>,
+		) -> Result<Header<RelayChainState::BlockNumber, RelayChainState::Hasher>, ParachainHeadProofVerifierError> {
+			let parachain_storage_key = RelayChainState::parachain_head_storage_key(para_id);
+			let storage_proof = StorageProof::new(proof);
+			let revealed_leaves =
+				read_proof_check::<RelayChainState::Hasher, _>(*root, storage_proof, [&parachain_storage_key].iter())
+					.unwrap_or_default();
+			let encoded_head = if let Some(Some(encoded_head)) = revealed_leaves.get(parachain_storage_key.as_ref()) {
+				encoded_head.clone()
+			} else {
+				sp_std::vec![0u8; 3]
+			};
+			let mut unwrapped_head = &encoded_head[2..];
+			let header = Header::decode(&mut unwrapped_head).unwrap_or(Header {
+				number: U256::from(0u64)
+					.try_into()
+					.map_err(|_| "Block number should be created from a u64")
+					.unwrap(),
+				digest: Default::default(),
+				extrinsics_root: Default::default(),
+				parent_hash: Default::default(),
+				state_root: Default::default(),
+			});
+			Ok(header)
+		}
 	}
 
 	// Relies on the `RelayChainState::state_root_for_block` to retrieve the state
@@ -168,6 +201,7 @@ pub(super) mod relay_chain {
 		/// Given a relaychain state root provided by the `RelayChainState`
 		/// generic type, verify a state proof for the parachain with the
 		/// provided ID.
+		#[cfg(not(feature = "runtime-benchmarks"))]
 		pub fn verify_proof_for_parachain(
 			para_id: &RelayChainState::ParaId,
 			relay_height: &RelayChainState::BlockNumber,
@@ -175,6 +209,16 @@ pub(super) mod relay_chain {
 		) -> Result<Header<RelayChainState::BlockNumber, RelayChainState::Hasher>, ParachainHeadProofVerifierError> {
 			let relay_state_root = RelayChainState::state_root_for_block(relay_height)
 				.ok_or(ParachainHeadProofVerifierError::RelaychainStateRootNotFound)?;
+			Self::verify_proof_for_parachain_with_root(para_id, &relay_state_root, proof)
+		}
+
+		#[cfg(feature = "runtime-benchmarks")]
+		pub fn verify_proof_for_parachain(
+			para_id: &RelayChainState::ParaId,
+			relay_height: &RelayChainState::BlockNumber,
+			proof: impl IntoIterator<Item = Vec<u8>>,
+		) -> Result<Header<RelayChainState::BlockNumber, RelayChainState::Hasher>, ParachainHeadProofVerifierError> {
+			let relay_state_root = RelayChainState::state_root_for_block(relay_height).unwrap_or_default();
 			Self::verify_proof_for_parachain_with_root(para_id, &relay_state_root, proof)
 		}
 	}
@@ -325,6 +369,8 @@ pub(super) mod parachain {
 	{
 		/// Given a parachain state root, verify a state proof for the
 		/// commitment of a given subject identifier.
+		#[cfg(not(feature = "runtime-benchmarks"))]
+		#[allow(clippy::result_unit_err)]
 		pub fn verify_proof_for_identifier(
 			identifier: &ParaInfo::Identifier,
 			state_root: OutputOf<ParaInfo::Hasher>,
@@ -348,6 +394,33 @@ pub(super) mod parachain {
 			};
 			ParaInfo::Commitment::decode(&mut &encoded_commitment[..])
 				.map_err(|_| DipIdentityCommitmentProofVerifierError::CommitmentDecode)
+		}
+
+		#[cfg(feature = "runtime-benchmarks")]
+		pub fn verify_proof_for_identifier(
+			identifier: &ParaInfo::Identifier,
+			state_root: OutputOf<ParaInfo::Hasher>,
+			proof: impl IntoIterator<Item = Vec<u8>>,
+		) -> Result<ParaInfo::Commitment, DipIdentityCommitmentProofVerifierError>
+		where
+			ParaInfo::Commitment: Default,
+		{
+			let dip_commitment_storage_key = ParaInfo::dip_subject_storage_key(identifier, 0);
+			let storage_proof = StorageProof::new(proof);
+			let revealed_leaves = read_proof_check::<ParaInfo::Hasher, _>(
+				state_root,
+				storage_proof,
+				[&dip_commitment_storage_key].iter(),
+			)
+			.unwrap_or_default();
+			let encoded_commitment =
+				if let Some(Some(encoded_commitment)) = revealed_leaves.get(dip_commitment_storage_key.as_ref()) {
+					encoded_commitment.clone()
+				} else {
+					Vec::default()
+				};
+			let commitment = ParaInfo::Commitment::decode(&mut &encoded_commitment[..]).unwrap_or_default();
+			Ok(commitment)
 		}
 	}
 

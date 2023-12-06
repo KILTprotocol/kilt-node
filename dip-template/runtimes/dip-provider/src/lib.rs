@@ -82,6 +82,7 @@ pub use sp_runtime::BuildStorage;
 use sp_version::NativeVersion;
 
 mod dip;
+mod weights;
 pub use crate::dip::*;
 
 pub type AccountId = AccountId32;
@@ -246,7 +247,7 @@ impl frame_system::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeOrigin = RuntimeOrigin;
 	type SS58Prefix = ConstU16<SS58_PREFIX>;
-	type SystemWeightInfo = ();
+	type SystemWeightInfo = weights::frame_system::WeightInfo<Runtime>;
 	type Version = Version;
 }
 
@@ -407,7 +408,7 @@ impl did::Config for Runtime {
 	type RuntimeHoldReason = RuntimeHoldReason;
 	type RuntimeOrigin = RuntimeOrigin;
 	type ServiceEndpointDeposit = ConstU128<UNIT>;
-	type WeightInfo = ();
+	type WeightInfo = weights::did::WeightInfo<Runtime>;
 }
 
 impl pallet_did_lookup::Config for Runtime {
@@ -419,7 +420,7 @@ impl pallet_did_lookup::Config for Runtime {
 	type OriginSuccess = DidRawOrigin<AccountId, DidIdentifier>;
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeHoldReason = RuntimeHoldReason;
-	type WeightInfo = ();
+	type WeightInfo = weights::pallet_did_lookup::WeightInfo<Runtime>;
 }
 
 pub type Web3Name = AsciiWeb3Name<Runtime>;
@@ -437,7 +438,19 @@ impl pallet_web3_names::Config for Runtime {
 	type RuntimeHoldReason = RuntimeHoldReason;
 	type Web3Name = Web3Name;
 	type Web3NameOwner = DidIdentifier;
-	type WeightInfo = ();
+	type WeightInfo = weights::pallet_web3_names::WeightInfo<Runtime>;
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+mod benches {
+	frame_benchmarking::define_benchmarks!(
+		[frame_system, SystemBench::<Runtime>]
+		[did, Did]
+		[pallet_did_lookup, DidLookup]
+		[pallet_web3_names, Web3Names]
+		[pallet_deposit_storage, DepositStorage]
+		[pallet_dip_provider, DipProvider]
+	);
 }
 
 impl_runtime_apis! {
@@ -682,6 +695,52 @@ impl_runtime_apis! {
 			let identity_details = IdentityProviderOf::<Runtime>::retrieve(&request.identifier).map_err(runtime_api::DipProofError::IdentityProvider)?;
 
 			DidMerkleRootGenerator::<Runtime>::generate_proof(&identity_details, request.version, request.keys.iter(), request.should_include_web3_name, request.accounts.iter()).map_err(runtime_api::DipProofError::MerkleProof)
+		}
+	}
+
+	#[cfg(feature = "runtime-benchmarks")]
+	impl frame_benchmarking::Benchmark<Block> for Runtime {
+		fn benchmark_metadata(extra: bool) -> (
+			Vec<frame_benchmarking::BenchmarkList>,
+			Vec<frame_support::traits::StorageInfo>,
+		) {
+			use frame_benchmarking::{Benchmarking, BenchmarkList};
+			use frame_support::traits::StorageInfoTrait;
+			use frame_system_benchmarking::Pallet as SystemBench;
+
+			let mut list = Vec::<BenchmarkList>::new();
+			list_benchmarks!(list, extra);
+
+			let storage_info = AllPalletsWithSystem::storage_info();
+			(list, storage_info)
+		}
+
+		fn dispatch_benchmark(
+			config: frame_benchmarking::BenchmarkConfig
+		) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, sp_runtime::RuntimeString> {
+			use frame_benchmarking::{BenchmarkError, Benchmarking, BenchmarkBatch};
+
+			use frame_system_benchmarking::Pallet as SystemBench;
+			impl frame_system_benchmarking::Config for Runtime {
+				fn setup_set_code_requirements(code: &sp_std::vec::Vec<u8>) -> Result<(), BenchmarkError> {
+					ParachainSystem::initialize_for_set_code_benchmark(code.len() as u32);
+					Ok(())
+				}
+
+				fn verify_set_code() {
+					System::assert_last_event(cumulus_pallet_parachain_system::Event::<Runtime>::ValidationFunctionStored.into());
+				}
+			}
+
+			use frame_support::traits::WhitelistedStorageKeys;
+			let whitelist = AllPalletsWithSystem::whitelisted_storage_keys();
+
+			let mut batches = Vec::<BenchmarkBatch>::new();
+			let params = (&config, &whitelist);
+			add_benchmarks!(params, batches);
+
+			if batches.is_empty() { return Err("Benchmark not found for this pallet.".into()) }
+			Ok(batches)
 		}
 	}
 }

@@ -31,8 +31,10 @@ use sp_std::vec::Vec;
 
 use crate::{
 	deposit::{DepositHooks, DepositNamespaces},
-	AccountId, Balances, DidIdentifier, Runtime, RuntimeEvent, RuntimeHoldReason,
+	weights, AccountId, Balances, DidIdentifier, Runtime, RuntimeEvent, RuntimeHoldReason,
 };
+
+const MAX_LINKED_ACCOUNTS: u32 = 20;
 
 pub mod runtime_api {
 	use super::*;
@@ -69,7 +71,8 @@ pub mod deposit {
 
 	use frame_support::traits::Get;
 	use pallet_deposit_storage::{
-		traits::DepositStorageHooks, DepositEntryOf, DepositKeyOf, FixedDepositCollectorViaDepositsPallet,
+		traits::{BenchmarkHooks, DepositStorageHooks},
+		DepositEntryOf, DepositKeyOf, FixedDepositCollectorViaDepositsPallet,
 	};
 	use parity_scale_codec::MaxEncodedLen;
 	use sp_core::{ConstU128, RuntimeDebug};
@@ -142,9 +145,52 @@ pub mod deposit {
 			Ok(())
 		}
 	}
+
+	#[cfg(feature = "runtime-benchmarks")]
+	pub struct PalletDepositStorageBenchmarkHooks;
+
+	#[cfg(feature = "runtime-benchmarks")]
+	impl BenchmarkHooks<Runtime> for PalletDepositStorageBenchmarkHooks {
+		fn pre_reclaim_deposit() -> (
+			<Runtime as frame_system::Config>::AccountId,
+			<Runtime as pallet_deposit_storage::Config>::Namespace,
+			sp_runtime::BoundedVec<u8, <Runtime as pallet_deposit_storage::Config>::MaxKeyLength>,
+		) {
+			let submitter = AccountId::from([100u8; 32]);
+			let namespace = DepositNamespaces::DipProvider;
+			let did_identifier = DidIdentifier::from([200u8; 32]);
+			let commitment_version = 0u16;
+			let key: DepositKeyOf<Runtime> = (did_identifier.clone(), 0)
+				.encode()
+				.try_into()
+				.expect("Should not fail to create a key for a DIP commitment.");
+
+			pallet_dip_provider::IdentityCommitments::<Runtime>::insert(
+				&did_identifier,
+				commitment_version,
+				<Runtime as frame_system::Config>::Hash::default(),
+			);
+
+			assert!(
+				pallet_dip_provider::IdentityCommitments::<Runtime>::get(did_identifier, commitment_version).is_some()
+			);
+
+			(submitter, namespace, key)
+		}
+
+		fn post_reclaim_deposit() {
+			let did_identifier = DidIdentifier::from([200u8; 32]);
+			let commitment_version = 0u16;
+			assert!(
+				pallet_dip_provider::IdentityCommitments::<Runtime>::get(did_identifier, commitment_version).is_none()
+			);
+		}
+	}
 }
 
 impl pallet_deposit_storage::Config for Runtime {
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHooks = deposit::PalletDepositStorageBenchmarkHooks;
 	// Any signed origin can submit the tx, which will go through only if the
 	// deposit payer matches the signed origin.
 	type CheckOrigin = EnsureSigned<AccountId>;
@@ -155,6 +201,7 @@ impl pallet_deposit_storage::Config for Runtime {
 	type Namespace = DepositNamespaces;
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeHoldReason = RuntimeHoldReason;
+	type WeightInfo = weights::pallet_deposit_storage::WeightInfo<Runtime>;
 }
 
 impl pallet_dip_provider::Config for Runtime {
@@ -168,7 +215,8 @@ impl pallet_dip_provider::Config for Runtime {
 	type IdentityCommitmentGenerator = DidMerkleRootGenerator<Runtime>;
 	// Identity info is defined as the collection of DID keys, linked accounts, and
 	// the optional web3name of a given DID subject.
-	type IdentityProvider = LinkedDidInfoProvider;
+	type IdentityProvider = LinkedDidInfoProvider<MAX_LINKED_ACCOUNTS>;
 	type ProviderHooks = deposit::DepositCollectorHooks;
 	type RuntimeEvent = RuntimeEvent;
+	type WeightInfo = weights::pallet_dip_provider::WeightInfo<Runtime>;
 }

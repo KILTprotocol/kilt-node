@@ -23,9 +23,16 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
+mod default_weights;
 mod relay;
 
-pub use crate::pallet::*;
+#[cfg(feature = "runtime-benchmarks")]
+mod benchmarking;
+
+#[cfg(test)]
+mod mock;
+
+pub use crate::{default_weights::WeightInfo, pallet::*};
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -59,6 +66,7 @@ pub mod pallet {
 		/// limit is reached, oldest blocks are overridden with new ones.
 		#[pallet::constant]
 		type MaxRelayBlocksStored: Get<u32>;
+		type WeightInfo: WeightInfo;
 	}
 
 	#[pallet::pallet]
@@ -71,13 +79,19 @@ pub mod pallet {
 		T: cumulus_pallet_parachain_system::Config,
 	{
 		fn on_initialize(_n: BlockNumberFor<T>) -> Weight {
-			// Reserve weight to update the last relay state root
-			// TODO: Replace with benchmarked version of `on_finalize()`
-			<T as frame_system::Config>::DbWeight::get().writes(2)
+			<T as Config>::WeightInfo::on_finalize()
 		}
 
-		// TODO: Benchmarks
-		fn on_finalize(_n: BlockNumberFor<T>) {
+		fn on_finalize(n: BlockNumberFor<T>) {
+			Self::on_finalize_internal(n)
+		}
+	}
+
+	impl<T: Config> Pallet<T>
+	where
+		T: cumulus_pallet_parachain_system::Config,
+	{
+		pub(crate) fn on_finalize_internal(_n: BlockNumberFor<T>) {
 			// Called before the validation data is cleaned in the
 			// parachain_system::on_finalize hook
 			let Some(new_validation_data) = cumulus_pallet_parachain_system::Pallet::<T>::validation_data() else {

@@ -138,6 +138,17 @@ where
 	}
 }
 
+#[cfg(any(feature = "runtime-benchmarks", test))]
+impl<DidIdentifier, AccountId> SubmitterInfo for kilt_support::mock::mock_origin::DoubleOrigin<AccountId, DidIdentifier>
+where
+	AccountId: Clone,
+{
+	type Submitter = AccountId;
+	fn submitter(&self) -> Self::Submitter {
+		self.0.clone()
+	}
+}
+
 /// Hooks for additional customizable logic to be executed when new identity
 /// commitments are stored or old ones are removed.
 pub trait ProviderHooks<Runtime>

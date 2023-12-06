@@ -40,8 +40,7 @@ impl EnsureOrigin<RuntimeOrigin> for EnsureDipOriginAdapter {
 
 	#[cfg(feature = "runtime-benchmarks")]
 	fn try_successful_origin() -> Result<RuntimeOrigin, ()> {
-		// TODO: Replace with actual DIP origin upon benchmarking
-		Ok(RuntimeOrigin::root())
+		EnsureDipOrigin::<DidIdentifier, AccountId, MerkleProofVerifierOutput>::try_successful_origin()
 	}
 }
 

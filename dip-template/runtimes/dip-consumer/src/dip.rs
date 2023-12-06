@@ -27,7 +27,7 @@ use pallet_dip_consumer::traits::IdentityProofVerifier;
 use sp_core::ConstU32;
 use sp_runtime::traits::BlakeTwo256;
 
-use crate::{AccountId, DidIdentifier, Runtime, RuntimeCall, RuntimeOrigin};
+use crate::{weights, AccountId, DidIdentifier, Runtime, RuntimeCall, RuntimeOrigin};
 
 pub type MerkleProofVerifierOutput = <ProofVerifier as IdentityProofVerifier<Runtime>>::VerificationResult;
 /// The verifier logic assumes the provider is a sibling KILT parachain, and
@@ -59,6 +59,7 @@ impl pallet_dip_consumer::Config for Runtime {
 	type ProofVerifier = ProofVerifier;
 	type RuntimeCall = RuntimeCall;
 	type RuntimeOrigin = RuntimeOrigin;
+	type WeightInfo = weights::pallet_dip_consumer::WeightInfo<Runtime>;
 }
 
 /// A preliminary DID call filter that only allows dispatching of extrinsics
@@ -66,6 +67,7 @@ impl pallet_dip_consumer::Config for Runtime {
 pub struct PreliminaryDipOriginFilter;
 
 impl Contains<RuntimeCall> for PreliminaryDipOriginFilter {
+	#[cfg(not(feature = "runtime-benchmarks"))]
 	fn contains(t: &RuntimeCall) -> bool {
 		matches!(
 			t,
@@ -74,6 +76,11 @@ impl Contains<RuntimeCall> for PreliminaryDipOriginFilter {
 				| RuntimeCall::Utility(pallet_utility::Call::batch_all { .. })
 				| RuntimeCall::Utility(pallet_utility::Call::force_batch { .. })
 		)
+	}
+
+	#[cfg(feature = "runtime-benchmarks")]
+	fn contains(_t: &RuntimeCall) -> bool {
+		true
 	}
 }
 
@@ -147,4 +154,5 @@ impl pallet_relay_store::Config for Runtime {
 	// The pallet stores the last 100 relaychain state roots, making state proofs
 	// valid for at most 100 * 6 = 600 seconds.
 	type MaxRelayBlocksStored = ConstU32<100>;
+	type WeightInfo = weights::pallet_relay_store::WeightInfo<Runtime>;
 }

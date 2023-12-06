@@ -71,3 +71,7 @@ substrate-build-script-utils.workspace = true
 
 [features]
 default = []
+runtime-benchmarks = [
+  "frame-benchmarking-cli/runtime-benchmarks",
+  "dip-consumer-runtime-template/runtime-benchmarks",
+]

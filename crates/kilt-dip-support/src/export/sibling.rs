@@ -27,7 +27,7 @@ use parity_scale_codec::{Decode, Encode, HasCompact};
 use scale_info::TypeInfo;
 use sp_core::{RuntimeDebug, U256};
 use sp_runtime::traits::Get;
-use sp_std::{marker::PhantomData, vec::Vec};
+use sp_std::marker::PhantomData;
 
 use crate::{
 	did::RevealedDidKeysSignatureAndCallVerifierError,
@@ -35,7 +35,7 @@ use crate::{
 	state_proofs::{parachain::DipIdentityCommitmentProofVerifierError, relay_chain::ParachainHeadProofVerifierError},
 	traits::{self, Bump, DidSignatureVerifierContext, DipCallOriginFilter},
 	utils::OutputOf,
-	FrameSystemDidSignatureContext, ProviderParachainStateInfoViaProviderPallet,
+	BoundedBlindedValue, FrameSystemDidSignatureContext, ProviderParachainStateInfoViaProviderPallet,
 };
 
 /// A KILT-specific DIP identity proof for a sibling consumer that supports
@@ -58,6 +58,26 @@ pub enum VersionedSiblingParachainDipStateProof<
 			LocalBlockNumber,
 		>,
 	),
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+impl<RelayBlockHeight, DipMerkleProofBlindedValues, DipMerkleProofRevealedLeaf, LocalBlockNumber, Context>
+	kilt_support::traits::GetWorstCase<Context>
+	for VersionedSiblingParachainDipStateProof<
+		RelayBlockHeight,
+		DipMerkleProofBlindedValues,
+		DipMerkleProofRevealedLeaf,
+		LocalBlockNumber,
+	> where
+	RelayBlockHeight: Default,
+	DipMerkleProofBlindedValues: kilt_support::traits::GetWorstCase<Context>,
+	DipMerkleProofRevealedLeaf: Default + Clone,
+	LocalBlockNumber: Default,
+	Context: Clone,
+{
+	fn worst_case(context: Context) -> Self {
+		Self::V0(v0::SiblingParachainDipStateProof::worst_case(context))
+	}
 }
 
 pub enum DipSiblingProviderStateProofVerifierError<
@@ -228,7 +248,7 @@ impl<
 	>;
 	type Proof = VersionedSiblingParachainDipStateProof<
 		RelayChainStateInfo::BlockNumber,
-		Vec<Vec<u8>>,
+		BoundedBlindedValue<u8>,
 		RevealedDidMerkleProofLeaf<
 			KeyIdOf<KiltRuntime>,
 			KiltRuntime::AccountId,
@@ -386,7 +406,7 @@ impl<
 	>;
 	type Proof = VersionedSiblingParachainDipStateProof<
 		RelayChainStateInfo::BlockNumber,
-		Vec<Vec<u8>>,
+		BoundedBlindedValue<u8>,
 		RevealedDidMerkleProofLeaf<
 			ProviderDidKeyId,
 			ProviderAccountId,
@@ -468,11 +488,36 @@ pub mod v0 {
 		LocalBlockNumber,
 	> {
 		/// The state proof for the given parachain head.
-		para_state_root: ParachainRootStateProof<RelayBlockHeight>,
+		pub(crate) para_state_root: ParachainRootStateProof<RelayBlockHeight>,
 		/// The raw state proof for the DIP commitment of the given subject.
-		dip_identity_commitment: Vec<Vec<u8>>,
+		pub(crate) dip_identity_commitment: BoundedBlindedValue<u8>,
 		/// The cross-chain DID signature.
-		did: DipMerkleProofAndDidSignature<DipMerkleProofBlindedValues, DipMerkleProofRevealedLeaf, LocalBlockNumber>,
+		pub(crate) did:
+			DipMerkleProofAndDidSignature<DipMerkleProofBlindedValues, DipMerkleProofRevealedLeaf, LocalBlockNumber>,
+	}
+
+	#[cfg(feature = "runtime-benchmarks")]
+	impl<RelayBlockHeight, DipMerkleProofBlindedValues, DipMerkleProofRevealedLeaf, LocalBlockNumber, Context>
+		kilt_support::traits::GetWorstCase<Context>
+		for SiblingParachainDipStateProof<
+			RelayBlockHeight,
+			DipMerkleProofBlindedValues,
+			DipMerkleProofRevealedLeaf,
+			LocalBlockNumber,
+		> where
+		DipMerkleProofBlindedValues: kilt_support::traits::GetWorstCase<Context>,
+		DipMerkleProofRevealedLeaf: Default + Clone,
+		RelayBlockHeight: Default,
+		LocalBlockNumber: Default,
+		Context: Clone,
+	{
+		fn worst_case(context: Context) -> Self {
+			Self {
+				para_state_root: ParachainRootStateProof::worst_case(context.clone()),
+				dip_identity_commitment: BoundedBlindedValue::worst_case(context.clone()),
+				did: DipMerkleProofAndDidSignature::worst_case(context),
+			}
+		}
 	}
 
 	/// Generic proof verifier for KILT-specific DIP identity proofs coming from
@@ -642,7 +687,7 @@ pub mod v0 {
 		>;
 		type Proof = SiblingParachainDipStateProof<
 			RelayChainStateInfo::BlockNumber,
-			Vec<Vec<u8>>,
+			BoundedBlindedValue<u8>,
 			RevealedDidMerkleProofLeaf<
 				ProviderDidKeyId,
 				ProviderAccountId,

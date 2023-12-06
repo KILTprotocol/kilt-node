@@ -21,16 +21,24 @@
 
 pub mod traits;
 
+mod default_weights;
+
+#[cfg(test)]
+pub mod mock;
+
+#[cfg(feature = "runtime-benchmarks")]
+pub mod benchmarking;
+
 mod origin;
 
-pub use crate::{origin::*, pallet::*, traits::SuccessfulProofVerifier};
+pub use crate::{default_weights::WeightInfo, origin::*, pallet::*, traits::SuccessfulProofVerifier};
 
-#[frame_support::pallet(dev_mode)]
+#[frame_support::pallet]
 pub mod pallet {
 	use super::*;
 
 	use frame_support::{
-		dispatch::Dispatchable,
+		dispatch::{Dispatchable, GetDispatchInfo},
 		pallet_prelude::*,
 		traits::{Contains, EnsureOriginWithArg},
 		Twox64Concat,
@@ -85,10 +93,11 @@ pub mod pallet {
 		/// proof.
 		type ProofVerifier: IdentityProofVerifier<Self>;
 		/// The aggregated `Call` type.
-		type RuntimeCall: Parameter + Dispatchable<RuntimeOrigin = <Self as Config>::RuntimeOrigin>;
+		type RuntimeCall: Parameter + Dispatchable<RuntimeOrigin = <Self as Config>::RuntimeOrigin> + GetDispatchInfo;
 		/// The aggregated `Origin` type, which must include the origin exposed
 		/// by this pallet.
 		type RuntimeOrigin: From<Origin<Self>> + From<<Self as frame_system::Config>::RuntimeOrigin>;
+		type WeightInfo: WeightInfo;
 	}
 
 	/// The pallet contains a single storage element, the `IdentityEntries` map.
@@ -119,7 +128,6 @@ pub mod pallet {
 	pub type Origin<T> =
 		DipOrigin<<T as Config>::Identifier, <T as frame_system::Config>::AccountId, VerificationResultOf<T>>;
 
-	// TODO: Benchmarking
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
 		/// Try to dispatch a new local call only if it passes all the DIP
@@ -131,7 +139,11 @@ pub mod pallet {
 		/// applied to the `LocalIdentityInfo` by the proof verifier are
 		/// persisted to the pallet storage.
 		#[pallet::call_index(0)]
-		#[pallet::weight(0)]
+		#[pallet::weight({
+			let extrinsic_weight = <T as Config>::WeightInfo::dispatch_as();
+			let call_weight = call.get_dispatch_info().weight;
+			extrinsic_weight.saturating_add(call_weight)
+		})]
 		pub fn dispatch_as(
 			origin: OriginFor<T>,
 			identifier: T::Identifier,
@@ -155,7 +167,11 @@ pub mod pallet {
 				account_address: submitter,
 				details: proof_verification_result,
 			};
-			// TODO: Use dispatch info for weight calculation
+
+			// TODO: Maybe find a nicer way to exclude the call dispatched from the
+			// benchmarks while making sure the call is actually dispatched and passes any
+			// filters the consumer proof verifier has set.
+			#[cfg(not(feature = "runtime-benchmark"))]
 			let _ = call.dispatch(did_origin.into()).map_err(|e| e.error)?;
 			Ok(())
 		}

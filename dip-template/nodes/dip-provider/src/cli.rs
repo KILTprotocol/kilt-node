@@ -25,6 +25,7 @@ use sc_service::Configuration;
 
 use crate::chain_spec::Extensions;
 
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug, clap::Subcommand)]
 pub enum Subcommand {
 	BuildSpec(BuildSpecCmd),
@@ -44,6 +45,8 @@ pub enum Subcommand {
 	ExportGenesisState(ExportGenesisStateCommand),
 
 	ExportGenesisWasm(ExportGenesisWasmCommand),
+	#[command(subcommand)]
+	Benchmark(frame_benchmarking_cli::BenchmarkCmd),
 }
 
 #[derive(Debug, clap::Parser)]

@@ -27,7 +27,7 @@ use parity_scale_codec::{Codec, Decode, Encode, HasCompact};
 use scale_info::TypeInfo;
 use sp_core::{RuntimeDebug, U256};
 use sp_runtime::traits::{AtLeast32BitUnsigned, Get, Hash, MaybeDisplay, Member, SimpleBitOps};
-use sp_std::{marker::PhantomData, vec::Vec};
+use sp_std::marker::PhantomData;
 
 use crate::{
 	did::RevealedDidKeysSignatureAndCallVerifierError,
@@ -38,7 +38,7 @@ use crate::{
 		RelayChainStorageInfo,
 	},
 	utils::OutputOf,
-	FrameSystemDidSignatureContext, ProviderParachainStateInfoViaProviderPallet,
+	BoundedBlindedValue, FrameSystemDidSignatureContext, ProviderParachainStateInfoViaProviderPallet,
 };
 
 /// A KILT-specific DIP identity proof for a parent consumer that supports
@@ -254,7 +254,7 @@ impl<
 	type Proof = VersionedChildParachainDipStateProof<
 		<RelayChainInfo as RelayChainStorageInfo>::BlockNumber,
 		<RelayChainInfo as RelayChainStorageInfo>::Hasher,
-		Vec<Vec<u8>>,
+		BoundedBlindedValue<u8>,
 		RevealedDidMerkleProofLeaf<
 			KeyIdOf<KiltRuntime>,
 			KiltRuntime::AccountId,
@@ -428,7 +428,7 @@ impl<
 	type Proof = VersionedChildParachainDipStateProof<
 		<RelayChainInfo as RelayChainStorageInfo>::BlockNumber,
 		<RelayChainInfo as RelayChainStorageInfo>::Hasher,
-		Vec<Vec<u8>>,
+		BoundedBlindedValue<u8>,
 		RevealedDidMerkleProofLeaf<
 			ProviderDidKeyId,
 			ProviderAccountId,
@@ -721,7 +721,7 @@ pub mod v0 {
 		type Proof = ChildParachainDipStateProof<
 			<RelayChainInfo as RelayChainStorageInfo>::BlockNumber,
 			<RelayChainInfo as RelayChainStorageInfo>::Hasher,
-			Vec<Vec<u8>>,
+			BoundedBlindedValue<u8>,
 			RevealedDidMerkleProofLeaf<
 				ProviderDidKeyId,
 				ProviderAccountId,

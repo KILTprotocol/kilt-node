@@ -19,17 +19,26 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![doc = include_str!("../README.md")]
 
+mod default_weights;
 pub mod traits;
 
+#[cfg(feature = "runtime-benchmarks")]
+mod benchmarking;
+
+#[cfg(test)]
+mod mock;
+
 pub use crate::{
+	default_weights::WeightInfo,
 	pallet::*,
 	traits::{DefaultIdentityCommitmentGenerator, DefaultIdentityProvider, NoopHooks},
 };
 
-#[frame_support::pallet(dev_mode)]
+#[frame_support::pallet]
 pub mod pallet {
 	use super::*;
 
+	use default_weights::WeightInfo;
 	use frame_support::{pallet_prelude::*, traits::EnsureOriginWithArg};
 	use frame_system::pallet_prelude::*;
 
@@ -69,6 +78,7 @@ pub mod pallet {
 		type ProviderHooks: ProviderHooks<Self>;
 		/// The aggregate `Event` type.
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
+		type WeightInfo: WeightInfo;
 	}
 
 	/// The pallet contains a single storage element, the `IdentityCommitments`
@@ -130,8 +140,9 @@ pub mod pallet {
 		/// is present, it is overridden. Hooks are called before the new
 		/// commitment is stored, and optionally before the old one is replaced.
 		#[pallet::call_index(0)]
-		// TODO: Update weight
-		#[pallet::weight(0)]
+		#[pallet::weight({
+			<T as Config>::WeightInfo::commit_identity()
+		})]
 		pub fn commit_identity(
 			origin: OriginFor<T>,
 			identifier: T::Identifier,
@@ -179,8 +190,9 @@ pub mod pallet {
 		/// for the given `Identifier`, an error is returned. Hooks are called
 		/// after the commitment has been removed.
 		#[pallet::call_index(1)]
-		// TODO: Update weight
-		#[pallet::weight(0)]
+		#[pallet::weight({
+			<T as Config>::WeightInfo::delete_identity_commitment()
+		})]
 		pub fn delete_identity_commitment(
 			origin: OriginFor<T>,
 			identifier: T::Identifier,

@@ -40,3 +40,4 @@ pub use state_proofs::{
 	relay_chain::{ParachainHeadProofVerifier, ParachainHeadProofVerifierError, RelayStateRootsViaRelayStorePallet},
 };
 pub use traits::{FrameSystemDidSignatureContext, ProviderParachainStateInfoViaProviderPallet};
+pub use utils::BoundedBlindedValue;

@@ -25,16 +25,25 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
+mod default_weights;
 mod deposit;
 pub mod traits;
 
-pub use deposit::FixedDepositCollectorViaDepositsPallet;
-pub use pallet::*;
-pub use traits::NoopDepositStorageHooks;
+#[cfg(test)]
+mod mock;
 
-#[frame_support::pallet(dev_mode)]
+#[cfg(feature = "runtime-benchmarks")]
+mod benchmarking;
+
+pub use crate::{
+	default_weights::WeightInfo, deposit::FixedDepositCollectorViaDepositsPallet, pallet::*,
+	traits::NoopDepositStorageHooks,
+};
+
+#[frame_support::pallet]
 pub mod pallet {
 	use crate::{
+		default_weights::WeightInfo,
 		deposit::{free_deposit, reserve_deposit, DepositEntry},
 		traits::DepositStorageHooks,
 	};
@@ -68,6 +77,8 @@ pub mod pallet {
 		#[pallet::constant]
 		type MaxKeyLength: Get<u32>;
 
+		#[cfg(feature = "runtime-benchmarks")]
+		type BenchmarkHooks: crate::traits::BenchmarkHooks<Self>;
 		/// The origin check, returning an `AccountId` upon completion, for who
 		/// can reclaim a deposit.
 		type CheckOrigin: EnsureOrigin<Self::RuntimeOrigin, Success = Self::AccountId>;
@@ -77,11 +88,12 @@ pub mod pallet {
 		/// deposit is released.
 		type DepositHooks: DepositStorageHooks<Self>;
 		/// The type of a deposit namespace.
-		type Namespace: Parameter;
+		type Namespace: Parameter + MaxEncodedLen;
 		/// The aggregated `Event` type.
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 		/// The aggregated `HoldReason` type.
 		type RuntimeHoldReason: From<HoldReason> + Clone + PartialEq + Debug + FullCodec + MaxEncodedLen + TypeInfo;
+		type WeightInfo: WeightInfo;
 	}
 
 	/// The hold reasons for deposits taken by the pallet.
@@ -147,8 +159,9 @@ pub mod pallet {
 		/// If a deposit exists, the deposit hooks are invoked after the deposit
 		/// has been removed from the pallet storage.
 		#[pallet::call_index(0)]
-		// TODO: Update weight
-		#[pallet::weight(0)]
+		#[pallet::weight({
+			<T as Config>::WeightInfo::reclaim_deposit()
+		})]
 		pub fn reclaim_deposit(origin: OriginFor<T>, namespace: T::Namespace, key: DepositKeyOf<T>) -> DispatchResult {
 			let dispatcher = T::CheckOrigin::ensure_origin(origin)?;
 

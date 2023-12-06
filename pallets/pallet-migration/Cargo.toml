@@ -20,12 +20,13 @@ frame-benchmarking = {workspace = true, features = ["std"]}
 pallet-aura = {workspace = true, features = ["std"]}
 pallet-timestamp = {workspace = true, features = ["std"]}
 sp-consensus-aura = {workspace = true, features = ["std"]}
+sp-keystore = {workspace = true, features = ["std"]}
 pallet-session = {workspace = true, features = ["std"]}
 attestation = {workspace = true, features = ["mock"]}
 ctype = {workspace = true, features = ["mock"]}
-delegation = {workspace = true, features = ["mock"]} 
-did = {workspace = true, features = ["mock"]} 
-public-credentials = {workspace = true, features = ["mock"]} 
+delegation = {workspace = true, features = ["mock"]}
+did = {workspace = true, features = ["mock"]}
+public-credentials = {workspace = true, features = ["mock"]}
 
 [dependencies]
 # Internal dependencies
@@ -36,7 +37,7 @@ pallet-did-lookup.workspace = true
 pallet-web3-names.workspace = true
 parachain-staking.workspace = true
 public-credentials.workspace = true
-runtime-common.workspace = true 
+runtime-common.workspace = true
 kilt-support.workspace = true
 
 ctype = {workspace = true, optional = true}
@@ -69,7 +70,7 @@ runtime-benchmarks = [
   "pallet-web3-names/runtime-benchmarks",
   "parachain-staking/runtime-benchmarks",
   "public-credentials/runtime-benchmarks",
-  "runtime-common/runtime-benchmarks", 
+  "runtime-common/runtime-benchmarks",
   "ctype/runtime-benchmarks",
   "kilt-support/runtime-benchmarks",
   "pallet-balances/runtime-benchmarks",

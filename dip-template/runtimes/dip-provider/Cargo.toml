@@ -55,6 +55,7 @@ sp-session.workspace = true
 sp-std.workspace = true
 sp-transaction-pool.workspace = true
 sp-version.workspace = true
+sp-weights.workspace = true
 
 # Cumulus
 cumulus-pallet-aura-ext.workspace = true
@@ -65,6 +66,11 @@ cumulus-primitives-timestamp.workspace = true
 cumulus-primitives-utility.workspace = true
 pallet-collator-selection.workspace = true
 parachain-info.workspace = true
+
+# Benchmarks
+frame-benchmarking = {workspace = true, optional = true}
+frame-system-benchmarking = {workspace = true, optional = true}
+hex-literal = {workspace = true, optional = true}
 
 [features]
 default = [
@@ -108,6 +114,7 @@ std = [
 	"sp-std/std",
 	"sp-transaction-pool/std",
 	"sp-version/std",
+  "sp-weights/std",
   "cumulus-pallet-aura-ext/std",
 	"cumulus-pallet-dmp-queue/std",
 	"cumulus-pallet-parachain-system/std",
@@ -115,16 +122,26 @@ std = [
 	"cumulus-primitives-timestamp/std",
 	"cumulus-primitives-utility/std",
   "pallet-collator-selection/std",
-  "parachain-info/std"
+  "parachain-info/std",
+  "frame-benchmarking?/std",
 ]
 runtime-benchmarks = [
   "did/runtime-benchmarks",
   "kilt-dip-support/runtime-benchmarks",
+  "pallet-deposit-storage/runtime-benchmarks",
   "pallet-did-lookup/runtime-benchmarks",
   "pallet-dip-provider/runtime-benchmarks",
   "pallet-web3-names/runtime-benchmarks",
   "runtime-common/runtime-benchmarks",
   "frame-system/runtime-benchmarks",
   "frame-support/runtime-benchmarks",
-  "pallet-utility/runtime-benchmarks"
+  "pallet-balances/runtime-benchmarks",
+  "pallet-collator-selection/runtime-benchmarks",
+  "pallet-sudo/runtime-benchmarks",
+  "pallet-timestamp/runtime-benchmarks",
+  "pallet-utility/runtime-benchmarks",
+  "sp-runtime/runtime-benchmarks",
+  "frame-benchmarking/runtime-benchmarks",
+  "frame-system-benchmarking/runtime-benchmarks",
+  "hex-literal"
 ]
