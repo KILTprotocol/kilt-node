@@ -34,6 +34,8 @@ use kilt_dip_support::merkle::{DidKeyRelationship, RevealedDidMerkleProofLeaf};
 use crate::dip::did::LinkedDidInfoOf;
 
 pub type BlindedValue = Vec<u8>;
+/// Type of the Merkle proof revealing parts of the DIP identity of a given DID
+/// subject.
 pub type DidMerkleProofOf<T> = DidMerkleProof<
 	Vec<BlindedValue>,
 	RevealedDidMerkleProofLeaf<
@@ -45,9 +47,13 @@ pub type DidMerkleProofOf<T> = DidMerkleProof<
 	>,
 >;
 
+/// Type of a complete DIP Merkle proof.
 #[derive(Encode, Decode, RuntimeDebug, PartialEq, Eq, TypeInfo)]
 pub struct CompleteMerkleProof<Root, Proof> {
+	/// The Merkle root.
 	pub root: Root,
+	/// The Merkle proof revealing parts of the commitment that verify against
+	/// the provided root.
 	pub proof: Proof,
 }
 
@@ -75,6 +81,7 @@ impl From<DidMerkleProofError> for u16 {
 pub mod v0 {
 	use super::*;
 
+	/// Type of a Merkle leaf revealed as part of a DIP Merkle proof.
 	type ProofLeafOf<T> = RevealedDidMerkleProofLeaf<
 		KeyIdOf<T>,
 		<T as frame_system::Config>::AccountId,
@@ -83,6 +90,8 @@ pub mod v0 {
 		LinkableAccountId,
 	>;
 
+	/// Given the provided DID info, it calculates the Merkle commitment (root)
+	/// using the provided in-memory DB.
 	pub(super) fn calculate_root_with_db<Runtime, const MAX_LINKED_ACCOUNT: u32>(
 		identity: &LinkedDidInfoOf<Runtime, MAX_LINKED_ACCOUNT>,
 		db: &mut MemoryDB<Runtime::Hashing>,
@@ -232,6 +241,11 @@ pub mod v0 {
 		Ok(trie_builder.root().to_owned())
 	}
 
+	/// Given the provided DID info, and a set of DID key IDs, account IDs and a
+	/// web3name, generates a Merkle proof that reveals only the provided
+	/// identity components. The function fails if no key or account with the
+	/// specified ID can be found, or if a web3name is requested to be revealed
+	/// in the proof but is not present in the provided identity details.
 	pub(super) fn generate_proof<'a, Runtime, K, A, const MAX_LINKED_ACCOUNT: u32>(
 		identity: &LinkedDidInfoOf<Runtime, MAX_LINKED_ACCOUNT>,
 		key_ids: K,
@@ -323,6 +337,7 @@ pub mod v0 {
 		})
 	}
 
+	/// Given the provided DID info, generates a Merkle commitment (root).
 	pub(super) fn generate_commitment<Runtime, const MAX_LINKED_ACCOUNT: u32>(
 		identity: &IdentityOf<Runtime>,
 	) -> Result<Runtime::Hash, DidMerkleProofError>
@@ -335,6 +350,9 @@ pub mod v0 {
 	}
 }
 
+/// Type implementing the [`IdentityCommitmentGenerator`] and generating a
+/// Merkle root of the provided identity details, according to the description
+/// provided in the [README.md](./README.md),
 pub struct DidMerkleRootGenerator<T>(PhantomData<T>);
 
 impl<Runtime, const MAX_LINKED_ACCOUNT: u32> IdentityCommitmentGenerator<Runtime> for DidMerkleRootGenerator<Runtime>

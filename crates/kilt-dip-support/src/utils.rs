@@ -21,8 +21,11 @@ use scale_info::TypeInfo;
 use sp_core::RuntimeDebug;
 use sp_std::vec::Vec;
 
+/// The output of a type implementing the [`sp_runtime::traits::Hash`] trait.
 pub type OutputOf<Hasher> = <Hasher as sp_runtime::traits::Hash>::Output;
 
+/// The vector of vectors that implements a statically-configured maximum length
+/// without requiring const generics, used in benchmarking worst cases.
 #[derive(Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo, Clone)]
 pub struct BoundedBlindedValue<T>(Vec<Vec<T>>);
 

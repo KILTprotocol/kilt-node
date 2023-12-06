@@ -16,7 +16,13 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-// TODO: Crate documentation
+//! Collection of support traits, types, and functions for integrating KILT as
+//! an identity provider following the Decentralized Identity Provider (DIP)
+//! protocol.
+//!
+//! Consumers of KILT identities should prefer directly using
+//! [`KiltVersionedChildProviderVerifier`] for consumer relaychains and
+//! [`KiltVersionedSiblingProviderVerifier`] for consumer sibling parachains.
 
 #![cfg_attr(not(feature = "std"), no_std)]
 

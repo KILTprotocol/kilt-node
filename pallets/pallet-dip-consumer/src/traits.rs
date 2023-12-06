@@ -20,14 +20,25 @@ use frame_support::Parameter;
 
 use crate::{Config, RuntimeCallOf};
 
+/// A trait to verify a given DIP identity proof. The trait depends on the
+/// runtime definition of the consumer pallet's `Identifier` and of the system
+/// pallet's `AccountId`. The type of proof expected and the type returned upon
+/// successful verification is defined as an associated type.
 pub trait IdentityProofVerifier<Runtime>
 where
 	Runtime: Config,
 {
+	/// The error returned upon failed DIP proof verification.
 	type Error: Into<u16>;
+	/// The accepted type for a DIP identity proof.
 	type Proof: Parameter;
+	/// The type returned upon successful DIP proof verification.
 	type VerificationResult;
 
+	/// Verify a given DIP proof given the calling context, including the call
+	/// being dispatched, the DIP subject dispatching it, the account submitting
+	/// the DIP tx, and the identity details of the DIP subject as stored in the
+	/// consumer pallet.
 	fn verify_proof_for_call_against_details(
 		call: &RuntimeCallOf<Runtime>,
 		subject: &Runtime::Identifier,
@@ -37,7 +48,8 @@ where
 	) -> Result<Self::VerificationResult, Self::Error>;
 }
 
-// Always returns success.
+/// Dummy implementation of the [`IdentityProofVerifier`] trait which always
+/// returns `Ok(())`.
 pub struct SuccessfulProofVerifier;
 impl<Runtime> IdentityProofVerifier<Runtime> for SuccessfulProofVerifier
 where

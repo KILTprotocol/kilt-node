@@ -16,6 +16,8 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+//! Module to deal with cross-chain KILT DIDs.
+
 use did::{
 	did_details::{DidPublicKey, DidPublicKeyDetails, DidVerificationKey},
 	DidSignature, DidVerificationKeyRelationship,
@@ -31,15 +33,24 @@ use crate::{
 	traits::{Bump, DidSignatureVerifierContext, DipCallOriginFilter},
 };
 
+/// Type returned by the Merkle proof verifier component of the DIP consumer
+/// after verifying a DIP Merkle proof.
 #[derive(Encode, Decode, RuntimeDebug, Clone, Eq, PartialEq, TypeInfo)]
 pub(crate) struct RevealedDidKeysAndSignature<RevealedDidKeys, BlockNumber> {
+	/// The keys revelaed in the Merkle proof.
 	pub merkle_leaves: RevealedDidKeys,
+	/// The [`DIDSignature`] + consumer chain block number to which the DID
+	/// signature is anchored.
 	pub did_signature: TimeBoundDidSignature<BlockNumber>,
 }
 
+/// A DID signature anchored to a specific block height.
 #[derive(Encode, Decode, RuntimeDebug, Clone, Eq, PartialEq, TypeInfo)]
 pub struct TimeBoundDidSignature<BlockNumber> {
+	/// The signature.
 	pub signature: DidSignature,
+	/// The block number, in the context of the local executor, to which the
+	/// signature is anchored.
 	pub block_number: BlockNumber,
 }
 
@@ -75,6 +86,30 @@ impl From<RevealedDidKeysSignatureAndCallVerifierError> for u8 {
 	}
 }
 
+/// Proof verifier that tries to verify a DID signature over a given payload by
+/// using one of the DID keys revealed in the Merkle proof. This verifier is
+/// typically used in conjunction with a verifier that takes a user-provided
+/// input Merkle proof, verifies it, and transforms it into a struct that this
+/// and other verifiers can easily consume, e.g., a list of DID keys.
+/// The generic types are the following:
+/// * `Call`: The call to be dispatched on the local chain after verifying the
+///   DID signature.
+/// * `Submitter`: The blockchain account (**not** the identity subject)
+///   submitting the cross-chain transaction (and paying for its execution
+///   fees).
+/// * `DidLocalDetails`: Any information associated to the identity subject that
+///   is stored locally, e.g., under the `IdentityEntries` map of the
+///   `pallet-dip-consumer` pallet.
+/// * `MerkleProofEntries`: The type returned by the Merkle proof verifier that
+///   includes the identity parts revealed in the Merkle proof.
+/// * `ContextProvider`: Provides additional local context (e.g., current block
+///   number) to verify the DID signature.
+/// * `RemoteKeyId`: Definition of a DID key ID as specified by the provider.
+/// * `RemoteAccountId`: Definition of a linked account ID as specified by the
+///   provider.
+/// * `RemoteBlockNumber`: Definition of a block number on the provider chain.
+/// * `CallVerifier`: A type specifying whether the provided `Call` can be
+///   dispatched with the information provided in the DIP proof.
 pub(crate) struct RevealedDidKeysSignatureAndCallVerifier<
 	Call,
 	Submitter,
@@ -135,7 +170,6 @@ impl<
 		DipCallOriginFilter<Call, OriginInfo = (DidVerificationKey<RemoteAccountId>, DidVerificationKeyRelationship)>,
 {
 	#[cfg(not(feature = "runtime-benchmarks"))]
-	#[allow(clippy::result_unit_err)]
 	pub(crate) fn verify_did_signature_for_call(
 		call: &Call,
 		submitter: &Submitter,
@@ -147,7 +181,7 @@ impl<
 	> {
 		use frame_support::ensure;
 
-		let block_number = ContextProvider::block_number();
+		let block_number = ContextProvider::current_block_number();
 		let is_signature_fresh = if let Some(blocks_ago_from_now) =
 			block_number.checked_sub(&merkle_revealed_did_signature.did_signature.block_number)
 		{
@@ -213,7 +247,7 @@ impl<
 	> {
 		use sp_core::ed25519;
 
-		let block_number = ContextProvider::block_number();
+		let block_number = ContextProvider::current_block_number();
 		// Computed but ignored
 		if let Some(blocks_ago_from_now) =
 			block_number.checked_sub(&merkle_revealed_did_signature.did_signature.block_number)

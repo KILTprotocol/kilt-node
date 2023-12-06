@@ -16,13 +16,12 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-// TODO: Pallet description
-
 #![cfg_attr(not(feature = "std"), no_std)]
+#![doc = include_str!("../README.md")]
+
+pub mod traits;
 
 mod default_weights;
-pub mod identity;
-pub mod traits;
 
 #[cfg(test)]
 pub mod mock;
@@ -57,33 +56,57 @@ pub mod pallet {
 
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(0);
 
-	#[pallet::storage]
-	#[pallet::getter(fn identity_proofs)]
-	pub(crate) type IdentityEntries<T> =
-		StorageMap<_, Twox64Concat, <T as Config>::Identifier, <T as Config>::LocalIdentityInfo>;
-
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
-		/// Preliminary filter to filter out calls before doing any heavier
-		/// computations.
+		/// A preliminary filter that checks whether a provided `Call` accepts a
+		/// DIP origin or not. If a call such as a system call does not accept a
+		/// DIP origin, there is no need to verify the identity proof, hence the
+		/// execution can bail out early. This does not guarantee that the
+		/// dispatch call will succeed, but rather than it will mostly not fail
+		/// with a `BadOrigin` error.
 		type DipCallOriginFilter: Contains<RuntimeCallOf<Self>>;
-		/// The origin check for the `dispatch_as` call.
+		/// The origin check on the `dispatch_as` extrinsic to verify that the
+		/// caller is authorized to call the extrinsic. If successful, the check
+		/// must return a `AccountId` as defined by the consumer runtime.
 		type DispatchOriginCheck: EnsureOriginWithArg<
 			<Self as frame_system::Config>::RuntimeOrigin,
 			Self::Identifier,
 			Success = Self::AccountId,
 		>;
-		/// The identifier of a subject, e.g., a DID.
+		/// The type of a subject identifier. This must match the definition of
+		/// `Identifier` the identity provider has defined in their deployment
+		/// of the provider pallet.
 		type Identifier: Parameter + MaxEncodedLen;
-		/// The details stored in this pallet associated with any given subject.
+		/// Any additional information that must be available only to the
+		/// provider runtime that is required to provide additional context when
+		/// verifying a cross-chain identity proof.
 		type LocalIdentityInfo: FullCodec + TypeInfo + MaxEncodedLen;
-		/// The logic of the proof verifier, called upon each execution of the
-		/// `dispatch_as` extrinsic.
+		/// The core component of this pallet. It takes care of validating an
+		/// identity proof and optionally update any `LocalIdentityInfo`. It
+		/// also defines, via its associated type, the structure of the identity
+		/// proof that must be passed to the `dispatch_as` extrinsic. Although
+		/// not directly, the proof structure depends on the information that
+		/// goes into the identity commitment on the provider chain, as that
+		/// defines what information can be revealed as part of the commitment
+		/// proof. Additional info to satisfy requirements according to the
+		/// `LocalIdentityInfo` (e.g., a signature) must also be provided in the
+		/// proof.
 		type ProofVerifier: IdentityProofVerifier<Self>;
+		/// The aggregated `Call` type.
 		type RuntimeCall: Parameter + Dispatchable<RuntimeOrigin = <Self as Config>::RuntimeOrigin> + GetDispatchInfo;
+		/// The aggregated `Origin` type, which must include the origin exposed
+		/// by this pallet.
 		type RuntimeOrigin: From<Origin<Self>> + From<<Self as frame_system::Config>::RuntimeOrigin>;
 		type WeightInfo: WeightInfo;
 	}
+
+	/// The pallet contains a single storage element, the `IdentityEntries` map.
+	/// It maps from a subject `Identifier` to an instance of
+	/// `LocalIdentityInfo`.
+	#[pallet::storage]
+	#[pallet::getter(fn identity_proofs)]
+	pub(crate) type IdentityEntries<T> =
+		StorageMap<_, Twox64Concat, <T as Config>::Identifier, <T as Config>::LocalIdentityInfo>;
 
 	#[pallet::pallet]
 	#[pallet::storage_version(STORAGE_VERSION)]
@@ -97,15 +120,24 @@ pub mod pallet {
 		Filtered,
 	}
 
-	/// The origin this pallet creates after a user has provided a valid
-	/// identity proof to dispatch other calls.
+	/// The origin is created after the identity proof has been successfully
+	/// verified by the proof verifier, and it includes the identifier of the
+	/// subject, the address of the tx submitter, and the result returned by the
+	/// proof verifier upon successful verification.
 	#[pallet::origin]
 	pub type Origin<T> =
 		DipOrigin<<T as Config>::Identifier, <T as frame_system::Config>::AccountId, VerificationResultOf<T>>;
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
-		// TODO: Replace with a SignedExtra.
+		/// Try to dispatch a new local call only if it passes all the DIP
+		/// requirements. Specifically, the call will be dispatched if it passes
+		/// the preliminary `DipCallOriginFilter` and if the proof verifier
+		/// returns a `Ok(verification_result)` value. The value is then added
+		/// to the `DipOrigin` and passed down as the origin for the specified
+		/// `Call`. If the whole execution terminates successfully, any changes
+		/// applied to the `LocalIdentityInfo` by the proof verifier are
+		/// persisted to the pallet storage.
 		#[pallet::call_index(0)]
 		#[pallet::weight({
 			let extrinsic_weight = <T as Config>::WeightInfo::dispatch_as();

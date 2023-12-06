@@ -16,6 +16,17 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+//! Runtime template of a Decentralized Identity Provider (DIP) consumer, which
+//! does not itself include any identity-related pallets, but only the
+//! [`pallet_dip_consumer::Pallet`] pallet (configured to work with the
+//! [`dip_provider_runtime_template::Runtime`] template runtime), the
+//! [`pallet_relay_store::Pallet`] pallet to keep track of finalized relaychain
+//! state roots, and the example [`pallet_postit::Pallet`], which allows any
+//! entity that can be identified with a username (e.g., a web3name carried over
+//! from the provider chain) to post a message on chain, reply to another
+//! on-chain message (including another reply), or like a message and/or any of
+//! its replies.
+
 #![cfg_attr(not(feature = "std"), no_std)]
 #![recursion_limit = "256"]
 
