@@ -24,19 +24,49 @@ pub mod v0 {
 	use parity_scale_codec::{Decode, Encode};
 	use scale_info::TypeInfo;
 	use sp_core::RuntimeDebug;
-	use sp_std::vec::Vec;
 
-	use crate::{did::TimeBoundDidSignature, merkle::DidMerkleProof};
+	use crate::{did::TimeBoundDidSignature, merkle::DidMerkleProof, BoundedBlindedValue};
 
 	#[derive(Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo, Clone)]
 	pub struct ParachainRootStateProof<RelayBlockHeight> {
 		pub(crate) relay_block_height: RelayBlockHeight,
-		pub(crate) proof: Vec<Vec<u8>>,
+		pub(crate) proof: BoundedBlindedValue<u8>,
+	}
+
+	#[cfg(feature = "runtime-benchmarks")]
+	impl<RelayBlockHeight, Context> kilt_support::traits::GetWorstCase<Context>
+		for ParachainRootStateProof<RelayBlockHeight>
+	where
+		RelayBlockHeight: Default,
+	{
+		fn worst_case(context: Context) -> Self {
+			Self {
+				relay_block_height: RelayBlockHeight::default(),
+				proof: BoundedBlindedValue::worst_case(context),
+			}
+		}
 	}
 
 	#[derive(Encode, Decode, PartialEq, Eq, RuntimeDebug, TypeInfo, Clone)]
 	pub struct DipMerkleProofAndDidSignature<BlindedValues, Leaf, BlockNumber> {
 		pub(crate) leaves: DidMerkleProof<BlindedValues, Leaf>,
 		pub(crate) signature: TimeBoundDidSignature<BlockNumber>,
+	}
+
+	#[cfg(feature = "runtime-benchmarks")]
+	impl<BlindedValues, Leaf, BlockNumber, Context> kilt_support::traits::GetWorstCase<Context>
+		for DipMerkleProofAndDidSignature<BlindedValues, Leaf, BlockNumber>
+	where
+		BlindedValues: kilt_support::traits::GetWorstCase<Context>,
+		Leaf: Default + Clone,
+		BlockNumber: Default,
+		Context: Clone,
+	{
+		fn worst_case(context: Context) -> Self {
+			Self {
+				leaves: DidMerkleProof::worst_case(context.clone()),
+				signature: TimeBoundDidSignature::worst_case(context),
+			}
+		}
 	}
 }

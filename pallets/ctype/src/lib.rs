@@ -94,7 +94,7 @@ pub mod pallet {
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
-		type EnsureOrigin: EnsureOrigin<<Self as frame_system::Config>::RuntimeOrigin, Success = Self::OriginSuccess>;
+		type EnsureOrigin: EnsureOrigin<Self::RuntimeOrigin, Success = Self::OriginSuccess>;
 		type OverarchingOrigin: EnsureOrigin<<Self as frame_system::Config>::RuntimeOrigin>;
 		type OriginSuccess: CallSources<AccountIdOf<Self>, CtypeCreatorOf<Self>>;
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;

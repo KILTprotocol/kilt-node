@@ -27,7 +27,7 @@ use parity_scale_codec::{Codec, Decode, Encode, HasCompact};
 use scale_info::TypeInfo;
 use sp_core::{RuntimeDebug, U256};
 use sp_runtime::traits::{AtLeast32BitUnsigned, Get, Hash, MaybeDisplay, Member, SimpleBitOps};
-use sp_std::{marker::PhantomData, vec::Vec};
+use sp_std::marker::PhantomData;
 
 use crate::{
 	did::RevealedDidKeysSignatureAndCallVerifierError,
@@ -38,7 +38,7 @@ use crate::{
 		RelayChainStorageInfo,
 	},
 	utils::OutputOf,
-	FrameSystemDidSignatureContext, ProviderParachainStateInfoViaProviderPallet,
+	BoundedBlindedValue, FrameSystemDidSignatureContext, ProviderParachainStateInfoViaProviderPallet,
 };
 
 #[derive(Encode, Decode, PartialEq, Eq, RuntimeDebug, TypeInfo, Clone)]
@@ -209,7 +209,7 @@ impl<
 	type Proof = VersionedChildParachainDipStateProof<
 		<RelayChainInfo as RelayChainStorageInfo>::BlockNumber,
 		<RelayChainInfo as RelayChainStorageInfo>::Hasher,
-		Vec<Vec<u8>>,
+		BoundedBlindedValue<u8>,
 		RevealedDidMerkleProofLeaf<
 			KeyIdOf<KiltRuntime>,
 			KiltRuntime::AccountId,
@@ -376,7 +376,7 @@ impl<
 	type Proof = VersionedChildParachainDipStateProof<
 		<RelayChainInfo as RelayChainStorageInfo>::BlockNumber,
 		<RelayChainInfo as RelayChainStorageInfo>::Hasher,
-		Vec<Vec<u8>>,
+		BoundedBlindedValue<u8>,
 		RevealedDidMerkleProofLeaf<
 			ProviderDidKeyId,
 			ProviderAccountId,
@@ -592,7 +592,7 @@ mod v0 {
 		type Proof = ChildParachainDipStateProof<
 			<RelayChainInfo as RelayChainStorageInfo>::BlockNumber,
 			<RelayChainInfo as RelayChainStorageInfo>::Hasher,
-			Vec<Vec<u8>>,
+			BoundedBlindedValue<u8>,
 			RevealedDidMerkleProofLeaf<
 				ProviderDidKeyId,
 				ProviderAccountId,
@@ -629,7 +629,6 @@ mod v0 {
 			// 1.2 If so, extract the state root from the header
 			let state_root_at_height = proof.relay_header.state_root;
 
-			// FIXME: Compilation error
 			// 2. Verify relay chain proof
 			let provider_parachain_header =
 				ParachainHeadProofVerifier::<RelayChainInfo>::verify_proof_for_parachain_with_root(

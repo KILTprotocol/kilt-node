@@ -37,7 +37,7 @@ pub mod identity_provision {
 		fn retrieve(identifier: &Runtime::Identifier) -> Result<Self::Success, Self::Error>;
 	}
 
-	// Return the `Default` value if `Identity` adn `Details` both implement it.
+	// Return the `Default` value if `Identity` and `Details` both implement it.
 	pub struct DefaultIdentityProvider<Identity>(PhantomData<Identity>);
 
 	impl<Runtime, Identity> IdentityProvider<Runtime> for DefaultIdentityProvider<Identity>
@@ -123,6 +123,17 @@ where
 
 	fn submitter(&self) -> Self::Submitter {
 		self.submitter.clone()
+	}
+}
+
+#[cfg(any(feature = "runtime-benchmarks", test))]
+impl<DidIdentifier, AccountId> SubmitterInfo for kilt_support::mock::mock_origin::DoubleOrigin<AccountId, DidIdentifier>
+where
+	AccountId: Clone,
+{
+	type Submitter = AccountId;
+	fn submitter(&self) -> Self::Submitter {
+		self.0.clone()
 	}
 }
 

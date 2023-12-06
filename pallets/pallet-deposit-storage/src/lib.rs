@@ -19,16 +19,25 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![recursion_limit = "256"]
 
+mod default_weights;
 mod deposit;
 pub mod traits;
 
-pub use deposit::FixedDepositCollectorViaDepositsPallet;
-pub use pallet::*;
-pub use traits::NoopDepositStorageHooks;
+#[cfg(test)]
+mod mock;
 
-#[frame_support::pallet(dev_mode)]
+#[cfg(feature = "runtime-benchmarks")]
+mod benchmarking;
+
+pub use crate::{
+	default_weights::WeightInfo, deposit::FixedDepositCollectorViaDepositsPallet, pallet::*,
+	traits::NoopDepositStorageHooks,
+};
+
+#[frame_support::pallet]
 pub mod pallet {
 	use crate::{
+		default_weights::WeightInfo,
 		deposit::{free_deposit, reserve_deposit, DepositEntry},
 		traits::DepositStorageHooks,
 	};
@@ -61,12 +70,15 @@ pub mod pallet {
 		#[pallet::constant]
 		type MaxKeyLength: Get<u32>;
 
+		#[cfg(feature = "runtime-benchmarks")]
+		type BenchmarkHooks: crate::traits::BenchmarkHooks<Self>;
 		type CheckOrigin: EnsureOrigin<Self::RuntimeOrigin, Success = Self::AccountId>;
 		type Currency: Mutate<Self::AccountId, Reason = Self::RuntimeHoldReason>;
 		type DepositHooks: DepositStorageHooks<Self>;
-		type Namespace: Parameter;
+		type Namespace: Parameter + MaxEncodedLen;
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 		type RuntimeHoldReason: From<HoldReason> + Clone + PartialEq + Debug + FullCodec + MaxEncodedLen + TypeInfo;
+		type WeightInfo: WeightInfo;
 	}
 
 	#[pallet::composite_enum]
@@ -110,8 +122,9 @@ pub mod pallet {
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
 		#[pallet::call_index(0)]
-		// TODO: Update weight
-		#[pallet::weight(0)]
+		#[pallet::weight({
+			<T as Config>::WeightInfo::reclaim_deposit()
+		})]
 		pub fn reclaim_deposit(origin: OriginFor<T>, namespace: T::Namespace, key: DepositKeyOf<T>) -> DispatchResult {
 			let dispatcher = T::CheckOrigin::ensure_origin(origin)?;
 

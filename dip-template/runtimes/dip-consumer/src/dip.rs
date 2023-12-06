@@ -27,7 +27,7 @@ use pallet_dip_consumer::traits::IdentityProofVerifier;
 use sp_core::ConstU32;
 use sp_runtime::traits::BlakeTwo256;
 
-use crate::{AccountId, DidIdentifier, Runtime, RuntimeCall, RuntimeOrigin};
+use crate::{weights, AccountId, DidIdentifier, Runtime, RuntimeCall, RuntimeOrigin};
 
 pub type MerkleProofVerifierOutput = <ProofVerifier as IdentityProofVerifier<Runtime>>::VerificationResult;
 pub type ProofVerifier = KiltVersionedSiblingProviderVerifier<
@@ -49,11 +49,13 @@ impl pallet_dip_consumer::Config for Runtime {
 	type ProofVerifier = ProofVerifier;
 	type RuntimeCall = RuntimeCall;
 	type RuntimeOrigin = RuntimeOrigin;
+	type WeightInfo = weights::pallet_dip_consumer::WeightInfo<Runtime>;
 }
 
 pub struct PreliminaryDipOriginFilter;
 
 impl Contains<RuntimeCall> for PreliminaryDipOriginFilter {
+	#[cfg(not(feature = "runtime-benchmarks"))]
 	fn contains(t: &RuntimeCall) -> bool {
 		matches!(
 			t,
@@ -62,6 +64,11 @@ impl Contains<RuntimeCall> for PreliminaryDipOriginFilter {
 				| RuntimeCall::Utility(pallet_utility::Call::batch_all { .. })
 				| RuntimeCall::Utility(pallet_utility::Call::force_batch { .. })
 		)
+	}
+
+	#[cfg(feature = "runtime-benchmarks")]
+	fn contains(_t: &RuntimeCall) -> bool {
+		true
 	}
 }
 
@@ -123,4 +130,5 @@ impl DipCallOriginFilter<RuntimeCall> for DipCallFilter {
 
 impl pallet_relay_store::Config for Runtime {
 	type MaxRelayBlocksStored = ConstU32<100>;
+	type WeightInfo = weights::pallet_relay_store::WeightInfo<Runtime>;
 }
