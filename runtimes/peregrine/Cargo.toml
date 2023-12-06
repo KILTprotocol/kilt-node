@@ -155,7 +155,6 @@ runtime-benchmarks = [
 ]
 std = [
   "attestation/std",
-  "parity-scale-codec/std",
   "ctype/std",
   "cumulus-pallet-aura-ext/std",
   "cumulus-pallet-dmp-queue/std",
@@ -209,6 +208,7 @@ std = [
   "pallet-xcm/std",
   "parachain-info/std",
   "parachain-staking/std",
+  "parity-scale-codec/std",
   "public-credentials/std",
   "runtime-common/std",
   "scale-info/std",
