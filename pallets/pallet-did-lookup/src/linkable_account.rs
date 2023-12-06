@@ -73,3 +73,12 @@ impl std::fmt::Display for LinkableAccountId {
 		}
 	}
 }
+
+// Default implementation required by the DipDidOrigin origin type, only for
+// benchmarks.
+#[cfg(feature = "runtime-benchmarks")]
+impl Default for LinkableAccountId {
+	fn default() -> Self {
+		AccountId32::new([0u8; 32]).into()
+	}
+}

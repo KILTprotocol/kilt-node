@@ -53,7 +53,6 @@ runtime-benchmarks = [
   "sp-staking/runtime-benchmarks",
 ]
 std = [
-  "parity-scale-codec/std",
   "frame-benchmarking?/std",
   "frame-support/std",
   "frame-system/std",
@@ -62,6 +61,7 @@ std = [
   "pallet-authorship/std",
   "pallet-balances/std",
   "pallet-session/std",
+  "parity-scale-codec/std",
   "scale-info/std",
   "serde/std",
   "sp-runtime/std",

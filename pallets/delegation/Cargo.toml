@@ -68,7 +68,6 @@ runtime-benchmarks = [
 ]
 std = [
   "attestation/std",
-  "parity-scale-codec/std",
   "ctype/std",
   "frame-benchmarking?/std",
   "frame-support/std",
@@ -76,6 +75,7 @@ std = [
   "kilt-support/std",
   "log/std",
   "pallet-balances/std",
+  "parity-scale-codec/std",
   "public-credentials/std",
   "scale-info/std",
   "sp-core/std",
