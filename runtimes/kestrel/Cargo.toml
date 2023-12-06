@@ -102,7 +102,6 @@ runtime-benchmarks = [
 std = [
   "frame-benchmarking?/std",
   "attestation/std",
-  "parity-scale-codec/std",
   "ctype/std",
   "delegation/std",
   "did/std",
@@ -131,6 +130,7 @@ std = [
   "pallet-transaction-payment-rpc-runtime-api/std",
   "pallet-utility/std",
   "pallet-web3-names/std",
+  "parity-scale-codec/std",
   "public-credentials/std",
   "runtime-common/std",
   "scale-info/std",

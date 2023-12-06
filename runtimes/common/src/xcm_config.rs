@@ -19,7 +19,7 @@
 use core::{marker::PhantomData, ops::ControlFlow};
 use frame_support::{log, match_types, parameter_types, traits::ProcessMessageError, weights::Weight};
 use polkadot_parachain::primitives::Sibling;
-use xcm::latest::prelude::*;
+use xcm::v3::prelude::*;
 use xcm_builder::{AccountId32Aliases, CurrencyAdapter, IsConcrete, ParentIsPreset, SiblingParachainConvertsVia};
 use xcm_executor::traits::{Properties, ShouldExecute};
 

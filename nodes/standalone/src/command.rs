@@ -16,12 +16,12 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use crate::service::ExecutorDispatch;
 use crate::{
 	benchmarking::{inherent_benchmark_data, RemarkBuilder, TransferKeepAliveBuilder},
 	chain_spec,
 	cli::{Cli, Subcommand},
 	service,
+	service::ExecutorDispatch,
 };
 
 use frame_benchmarking_cli::{BenchmarkCmd, ExtrinsicFactory, SUBSTRATE_REFERENCE_HARDWARE};

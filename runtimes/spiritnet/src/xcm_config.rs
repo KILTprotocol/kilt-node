@@ -28,7 +28,7 @@ use frame_support::{
 use frame_system::EnsureRoot;
 use pallet_xcm::XcmPassthrough;
 use sp_core::ConstU32;
-use xcm::latest::prelude::*;
+use xcm::v3::prelude::*;
 use xcm_builder::{
 	AllowTopLevelPaidExecutionFrom, EnsureXcmOrigin, FixedWeightBounds, RelayChainAsNative, SiblingParachainAsNative,
 	SignedAccountId32AsNative, SignedToAccountId32, UsingComponents, WithComputedOrigin,

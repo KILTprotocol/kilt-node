@@ -27,8 +27,7 @@ use frame_support::{
 		Get,
 	},
 };
-use frame_system::pallet_prelude::BlockNumberFor;
-use frame_system::RawOrigin;
+use frame_system::{pallet_prelude::BlockNumberFor, RawOrigin};
 use sha3::{Digest, Keccak256};
 use sp_io::crypto::{ecdsa_generate, ed25519_generate, sr25519_generate};
 use sp_runtime::{
