@@ -170,6 +170,8 @@ pub mod deposit {
 }
 
 impl pallet_deposit_storage::Config for Runtime {
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHooks = deposit::PalletDepositStorageBenchmarkHooks;
 	type CheckOrigin = EnsureSigned<AccountId>;
 	type Currency = Balances;
 	type DepositHooks = DepositHooks;
@@ -178,8 +180,6 @@ impl pallet_deposit_storage::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeHoldReason = RuntimeHoldReason;
 	type WeightInfo = weights::pallet_deposit_storage::WeightInfo<Runtime>;
-	#[cfg(feature = "runtime-benchmarks")]
-	type BenchmarkHooks = deposit::PalletDepositStorageBenchmarkHooks;
 }
 
 impl pallet_dip_provider::Config for Runtime {

@@ -59,5 +59,3 @@ runtime-benchmarks = [
   "frame-benchmarking/runtime-benchmarks",
   "pallet-balances/runtime-benchmarks",
 ]
-
-try-runtime = [ "kilt-support/try-runtime" ]

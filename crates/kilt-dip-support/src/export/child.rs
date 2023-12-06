@@ -460,7 +460,6 @@ mod v0 {
 			ProviderParachainStateInfo, RelayChainStorageInfo,
 		},
 		utils::OutputOf,
-		BoundedBlindedValue,
 	};
 
 	#[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug, TypeInfo)]

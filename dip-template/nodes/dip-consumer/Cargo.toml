@@ -73,9 +73,4 @@ substrate-build-script-utils.workspace = true
 runtime-benchmarks = [
   "frame-benchmarking-cli/runtime-benchmarks",
   "dip-consumer-runtime-template/runtime-benchmarks",
-  # "frame-benchmarking/runtime-benchmarks",
-  # "polkadot-cli/runtime-benchmarks",
-	# "polkadot-primitives/runtime-benchmarks",
-	# "sc-service/runtime-benchmarks",
-	# "sp-runtime/runtime-benchmarks",
 ]

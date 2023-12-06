@@ -38,7 +38,6 @@ pub use crate::{default_weights::WeightInfo, origin::*, pallet::*, traits::Succe
 pub mod pallet {
 	use super::*;
 
-	use default_weights::WeightInfo;
 	use frame_support::{
 		dispatch::{Dispatchable, GetDispatchInfo},
 		pallet_prelude::*,

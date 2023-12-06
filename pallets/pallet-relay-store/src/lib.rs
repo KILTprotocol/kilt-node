@@ -39,7 +39,7 @@ pub mod pallet {
 	use frame_system::pallet_prelude::*;
 	use sp_core::H256;
 
-	use crate::{default_weights::WeightInfo, relay::RelayParentInfo};
+	use crate::relay::RelayParentInfo;
 
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(0);
 

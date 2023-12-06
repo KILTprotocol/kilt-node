@@ -20,7 +20,7 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-pub mod default_weights;
+mod default_weights;
 pub mod traits;
 
 #[cfg(feature = "runtime-benchmarks")]

@@ -58,7 +58,7 @@ std = [
   "hash-db/std",
   "log/std",
   "did/std",
-  "kilt-support/std",
+  "kilt-support?/std",
   "pallet-did-lookup/std",
   "pallet-dip-consumer/std",
   "pallet-dip-provider/std",

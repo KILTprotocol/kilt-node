@@ -52,5 +52,3 @@ std = [
   "frame-benchmarking?/std",
   "sp-runtime?/std",
 ]
-
-try-runtime = [ "kilt-support/try-runtime" ]
