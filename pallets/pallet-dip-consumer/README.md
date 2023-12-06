@@ -24,9 +24,9 @@ Other definitions for an identifier, such as a simple integer or a [Decentralize
 The pallet allows the consumer runtime to define some `LocalIdentityInfo` associated with each identifier, which the pallet's proof verifier can access and optionally modify upon proof verification.
 Any changes made to the `LocalIdentityInfo` will be persisted if the identity proof is verified correctly and the extrinsic executed successfully.
 
-If the consumer does not need to store anything in addition to the information an identity proof conveys, they can simply use an empty tuple `()` for the local identity info.
-Another example could be the use of signatures, which requires nonce to avoid replay protections.
-In this case, a simple numeric type such as a `u64` or a `u128` could be used, and bumped by the proof verifies when validating each new cross-chain transaction proof.
+If the consumer does not need to store anything in addition to the information an identity proof conveys, they can use an empty tuple `()` for the local identity info.
+Another example could be the use of signatures, which requires a nonce to avoid replay protections.
+In this case, a numeric type such as a `u64` or a `u128` could be used, and increased by the proof verifier when validating each new cross-chain transaction proof.
 
 ## The `Config` trait
 
@@ -55,6 +55,6 @@ Because the pallet allows other `Call`s to be dispatched after an identity proof
 
 The origin is created after the identity proof has been successfully verified by the proof verifier, and it includes the identifier of the subject, the address of the tx submitter, and the result returned by the proof verifier upon successful verification.
 
-## Calls
+## Calls (bullet numbers represent each call's encoded index)
 
-0. `pub fn dispatch_as(origin: OriginFor<T>, identifier: T::Identifier, proof: IdentityProofOf<T>, call: Box<RuntimeCallOf<T>>) -> DispatchResult`: Try to dispatch a new local call only if it passes all the DIP requirements. Specifically, the call will be dispatched if it passes the preliminary `DipCallOriginFilter` and if the proof verifier returns a `Ok(verification_result)` value. The value is then added to the `DipOrigin` and passed down as the origin for the specified `Call`. If the whole execution terminates successfully, any changes applied to the `LocalIdentityInfo` by the proof verifier are persisted to the pallet storage.
+0. `pub fn dispatch_as(origin: OriginFor<T>, identifier: T::Identifier, proof: IdentityProofOf<T>, call: Box<RuntimeCallOf<T>>) -> DispatchResult`: Try to dispatch a new local call only if it passes all the DIP requirements. Specifically, the call will be dispatched if it passes the preliminary `DipCallOriginFilter` and if the proof verifier returns an `Ok(verification_result)` value. The value is then added to the `DipOrigin` and passed down as the origin for the specified `Call`. If the whole execution terminates successfully, any changes applied to the `LocalIdentityInfo` by the proof verifier are persisted to the pallet storage.

@@ -53,7 +53,7 @@ impl pallet_dip_consumer::Config for Runtime {
 	type DispatchOriginCheck = EnsureSigned<AccountId>;
 	type Identifier = DidIdentifier;
 	// Local identity info contains a simple `u128` representing a nonce. This means
-	// that two cross-chain operations targeting the same chain and having the same
+	// that two cross-chain operations targeting the same chain and with the same
 	// nonce cannot be both successfully evaluated.
 	type LocalIdentityInfo = u128;
 	type ProofVerifier = ProofVerifier;

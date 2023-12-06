@@ -45,7 +45,7 @@ where
 
 /// A trait for types that implement some sort of access control logic on the
 /// provided input `Call` type.
-/// The generic types indicate the following:
+/// The generic types are the following:
 /// * `Call`: The type of the call being checked.
 pub trait DipCallOriginFilter<Call> {
 	/// The error type for cases where the checks fail.
@@ -107,7 +107,7 @@ pub trait ProviderParachainStorageInfo {
 /// Implementation of the [`ProviderParachainStorageInfo`] trait that builds on
 /// the definitions of a runtime that includes the DIP provider pallet (e.g.,
 /// KILT runtimes).
-/// The generic types indicate the following:
+/// The generic types are the following:
 /// * `T`: The runtime including the [`pallet_dip_provider::Pallet`] pallet.
 pub struct ProviderParachainStateInfoViaProviderPallet<T>(PhantomData<T>);
 
@@ -131,8 +131,8 @@ where
 /// A trait that provides the consumer parachain runtime additional context to
 /// verify cross-chain DID signatures by subjects of the provider parachain.
 pub trait DidSignatureVerifierContext {
-	/// Max number of blocks a cross-chain DID signature is to be considered
-	/// fresh.
+	/// Max number of blocks a cross-chain DID signature can have to be
+	/// considered fresh.
 	const SIGNATURE_VALIDITY: u16;
 
 	/// The type of consumer parachain's block numbers.
@@ -155,10 +155,10 @@ pub trait DidSignatureVerifierContext {
 
 /// Implementation of the [`DidSignatureVerifierContext`] trait that draws
 /// information dynamically from the consumer's runtime using its system pallet.
-/// The generic types indicate the following:
+/// The generic types are the following:
 /// * `T`: The runtime including the [`frame_system::Pallet`] pallet.
-/// * `SIGNATURE_VALIDITY`: The max number of blocks DID signatures are
-///   considered valid.
+/// * `SIGNATURE_VALIDITY`: The max number of blocks DID signatures can have to
+///   be considered valid.
 pub struct FrameSystemDidSignatureContext<T, const SIGNATURE_VALIDITY: u16>(PhantomData<T>);
 
 impl<T, const SIGNATURE_VALIDITY: u16> DidSignatureVerifierContext

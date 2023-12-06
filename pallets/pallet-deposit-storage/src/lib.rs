@@ -141,7 +141,7 @@ pub mod pallet {
 	}
 
 	/// Storage of all deposits. Its first key is a namespace, and the second
-	/// one the deposit key. Its value include the details associated to a
+	/// one the deposit key. Its value includes the details associated to a
 	/// deposit instance.
 	#[pallet::storage]
 	#[pallet::getter(fn deposits)]

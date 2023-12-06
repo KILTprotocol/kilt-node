@@ -124,12 +124,11 @@ where
 
 /// Proof verifier configured given a specific KILT runtime implementation.
 ///
-/// It is a specialization of the
+/// A specialization of the
 /// [`GenericVersionedDipChildProviderStateProofVerifier`] type, with
 /// configurations derived from the provided KILT runtime.
 ///
-/// The generic types
-/// indicate the following:
+/// The generic types are the following:
 /// * `KiltRuntime`: A KILT runtime definition.
 /// * `KiltParachainId`: The ID of the specific KILT parachain instance.
 /// * `RelayChainInfo`: The type providing information about the consumer
@@ -140,9 +139,9 @@ where
 ///   relationship. This information is used once the Merkle proof is verified,
 ///   to filter only the revealed keys that match the provided relationship.
 /// * `MAX_REVEALED_KEYS_COUNT`: Max number of DID keys that the verifier will
-///   accept being revealed as part of the DIP identity proof.
+///   accept revealed as part of the DIP identity proof.
 /// * `MAX_REVEALED_ACCOUNTS_COUNT`: Max number of linked accounts that the
-///   verifier will accept being revealed as part of the DIP identity proof.
+///   verifier will accept revealed as part of the DIP identity proof.
 /// * `MAX_DID_SIGNATURE_DURATION`: Max number of blocks a cross-chain DID
 ///   signature is considered fresh.
 ///
@@ -515,8 +514,8 @@ pub mod v0 {
 	};
 
 	/// The expected format of a cross-chain DIP identity proof when the
-	/// identity information is being bridged from a provider that is a child of
-	/// the chain where the information is being consumed (i.e., consumer
+	/// identity information is bridged from a provider that is a child of
+	/// the chain where the information is consumed (i.e., consumer
 	/// chain).
 	#[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug, TypeInfo)]
 	pub struct ChildParachainDipStateProof<
@@ -541,7 +540,7 @@ pub mod v0 {
 	/// The proof verification step is performed on every request, and this
 	/// specific verifier has no knowledge of caching or storing state about the
 	/// subject. It only takes the provided
-	/// `ConsumerRuntime::LocalIdentityInfo` and bumps it up if the proof is
+	/// `ConsumerRuntime::LocalIdentityInfo` and increases it if the proof is
 	/// successfully verified, to prevent replay attacks. If additional logic is
 	/// to be stored under the `ConsumerRuntime::LocalIdentityInfo` entry, a
 	/// different verifier or a wrapper around this verifier must be built.
@@ -550,7 +549,7 @@ pub mod v0 {
 	/// [`VersionedChildParachainDipStateProof`], and returns
 	/// [`RevealedDidMerkleProofLeaves`] if the proof is successfully verified.
 	/// This information is then made availabe as an origin to the downstream
-	/// call being dispatched.
+	/// call dispatched.
 	///
 	/// The verifier performs the following steps:
 	/// 1. Verifies the state proof about the state root of the relaychain block
@@ -594,9 +593,9 @@ pub mod v0 {
 	/// * `ProviderLinkedAccountId`: The runtime type of a linked account ID as
 	///   defined by the KILT child parachain.
 	/// * `MAX_REVEALED_KEYS_COUNT`: Max number of DID keys that the verifier
-	///   will accept being revealed as part of the DIP identity proof.
+	///   will accept revealed as part of the DIP identity proof.
 	/// * `MAX_REVEALED_ACCOUNTS_COUNT`: Max number of linked accounts that the
-	///   verifier will accept being revealed as part of the DIP identity proof.
+	///   verifier will accept revealed as part of the DIP identity proof.
 	/// * `LocalContextProvider`: The type providing context of the consumer
 	///   chain (e.g., current block number) for the sake of cross-chain DID
 	///   signature verification.

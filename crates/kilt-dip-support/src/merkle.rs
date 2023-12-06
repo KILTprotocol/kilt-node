@@ -117,7 +117,7 @@ impl<BlockNumber> From<BlockNumber> for Web3NameMerkleValue<BlockNumber> {
 	}
 }
 
-/// The key of a Merkle leaf revealing the an account linked to a DID Document.
+/// The key of a Merkle leaf revealing an account linked to a DID Document.
 #[derive(Clone, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo)]
 pub struct LinkedAccountMerkleKey<AccountId>(pub AccountId);
 
@@ -126,7 +126,7 @@ impl<AccountId> From<AccountId> for LinkedAccountMerkleKey<AccountId> {
 		Self(value)
 	}
 }
-/// The value of a Merkle leaf revealing the an account linked to a DID
+/// The value of a Merkle leaf revealing an account linked to a DID
 /// Document.
 #[derive(Clone, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo)]
 pub struct LinkedAccountMerkleValue;
@@ -290,7 +290,7 @@ impl From<DidMerkleProofVerifierError> for u8 {
 /// The Merkle proof is assumed to have been generated using one of the
 /// versioned identity commitment generators, as shown in the [KILT runtime
 /// definitions](../../../runtimes/common/src/dip/README.md).
-/// The generic types indicate the following:
+/// The generic types are the following:
 /// * `Hasher`: The hasher used by the producer to hash the Merkle leaves and
 ///   produce the identity commitment.
 /// * `KeyId`: The type of a DID key ID according to the producer's definition.

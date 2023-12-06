@@ -116,7 +116,7 @@ pub(super) mod relay_chain {
 
 	/// Verifier of state proofs that reveal the value of a parachain head at a
 	/// given relaychain block number.
-	/// The generic types indicate the following:
+	/// The generic types are the following:
 	/// * `RelayChainState`: defines the relaychain runtime types relevant for
 	///   state proof verification, and returns the relaychain runtime's storage
 	///   key identifying a parachain with a given ID.

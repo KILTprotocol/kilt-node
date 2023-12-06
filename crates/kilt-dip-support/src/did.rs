@@ -87,11 +87,11 @@ impl From<RevealedDidKeysSignatureAndCallVerifierError> for u8 {
 }
 
 /// Proof verifier that tries to verify a DID signature over a given payload by
-/// using one of the DID keys revealed in the Merkle proof. This verifier is to
-/// typically be used in conjunction with a verifier that takes a user-provided
+/// using one of the DID keys revealed in the Merkle proof. This verifier is
+/// typically used in conjunction with a verifier that takes a user-provided
 /// input Merkle proof, verifies it, and transforms it into a struct that this
 /// and other verifiers can easily consume, e.g., a list of DID keys.
-/// The generic types indicate the following:
+/// The generic types are the following:
 /// * `Call`: The call to be dispatched on the local chain after verifying the
 ///   DID signature.
 /// * `Submitter`: The blockchain account (**not** the identity subject)

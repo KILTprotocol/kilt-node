@@ -44,7 +44,7 @@ The `VersionedIdentityCommited` is called whenever a new commitment is stored, a
 
 Similarly, the `VersionedIdentityDeleted`, is called whenever a commitment is deleted, and contains information about the `Identifier` of the subject and the version of the commitment deleted.
 
-## Calls
+## Calls (bullet numbers represent each call's encoded index)
 
 0. `pub fn commit_identity(origin: OriginFor<T>, identifier: T::Identifier, version: Option<IdentityCommitmentVersion> ) -> DispatchResult`: Generate a new versioned commitment for the subject identified by the provided `Identifier`. If an old commitment for the same version is present, it is overridden. Hooks are called before the new commitment is stored, and optionally before the old one is replaced.
 1. `pub fn delete_identity_commitment(origin: OriginFor<T>, identifier: T::Identifier, version: Option<IdentityCommitmentVersion>) -> DispatchResult`: Delete an identity commitment of a specific version for a specific `Identifier`. If a commitment of the provided version does not exist for the given `Identifier`, an error is returned. Hooks are called after the commitment has been removed.
