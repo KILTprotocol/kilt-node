@@ -4350,7 +4350,8 @@ fn api_get_staking_rates() {
 		});
 }
 
-#[test] fn check_locks_and_reserves() { 
+#[test] 
+fn check_locks_and_reserves() { 
 	let initial_balance = crate::mock::MILLI_KILT * 100; 
 	let balance_to_freeze = crate::mock::MILLI_KILT; 
 	let account_00 = 0; 
