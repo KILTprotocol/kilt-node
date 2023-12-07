@@ -370,15 +370,50 @@ fn check_reserves_and_holds() {
 			let total_balance = Balances::total_balance(&ACCOUNT_00);
 			assert_eq!(total_balance, initial_balance);
 
-			// Check initial hold and reserved balances
-			let hold_balance = Balances::total_balance_on_hold(&ACCOUNT_00);
-			let reserved_balance =
-				<Balances as frame_support::traits::ReservableCurrency<crate::AccountIdOf<Test>>>::reserved_balance(
-					&ACCOUNT_00,
-				);
+			// Hold some coins
+			<Balances as frame_support::traits::fungible::MutateHold<crate::AccountIdOf<Test>>>::hold(
+				&HoldReason::Deposit.into(),
+				&ACCOUNT_00,
+				balance_to_hold,
+			)
+			.expect("Holding balance should not fail.");
 
-			assert_eq!(hold_balance, Zero::zero());
-			assert_eq!(reserved_balance, Zero::zero());
+			// Check balances after holding
+			let free_balance = Balances::usable_balance(&ACCOUNT_00);
+
+			assert_eq!(
+				free_balance,
+				initial_balance - crate::mock::ExistentialDeposit::get() - balance_to_hold
+			);
+
+			// Reserve some coins
+			<Balances as frame_support::traits::ReservableCurrency<crate::AccountIdOf<Test>>>::reserve(
+				&ACCOUNT_00,
+				balance_to_hold,
+			)
+			.expect("Reserving balance should not fail.");
+
+			let free_balance = Balances::usable_balance(&ACCOUNT_00);
+
+			assert_eq!(
+				free_balance,
+				initial_balance - crate::mock::ExistentialDeposit::get() - balance_to_hold * 2
+			);
+		});
+}
+
+#[test]
+fn check_holds_stack() {
+	// Set initial balance and amount to hold
+	let initial_balance = <Test as Config>::Deposit::get() * 100;
+	let balance_to_hold = <Test as Config>::Deposit::get();
+
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, initial_balance)])
+		.build_and_execute_with_sanity_tests(|| {
+			// Check initial total balance
+			let total_balance = Balances::total_balance(&ACCOUNT_00);
+			assert_eq!(total_balance, initial_balance);
 
 			// Hold some coins
 			<Balances as frame_support::traits::fungible::MutateHold<crate::AccountIdOf<Test>>>::hold(
@@ -389,30 +424,62 @@ fn check_reserves_and_holds() {
 			.expect("Holding balance should not fail.");
 
 			// Check balances after holding
-			let hold_balance = Balances::total_balance_on_hold(&ACCOUNT_00);
-			let reserved_balance =
-				<Balances as frame_support::traits::ReservableCurrency<crate::AccountIdOf<Test>>>::reserved_balance(
-					&ACCOUNT_00,
-				);
+			let free_balance = Balances::usable_balance(&ACCOUNT_00);
 
-			assert_eq!(hold_balance, balance_to_hold);
-			assert_eq!(reserved_balance, balance_to_hold);
+			assert_eq!(
+				free_balance,
+				initial_balance - crate::mock::ExistentialDeposit::get() - balance_to_hold
+			);
 
-			// Reserve some coins
-			<Balances as frame_support::traits::ReservableCurrency<crate::AccountIdOf<Test>>>::reserve(
+			<Balances as frame_support::traits::fungible::MutateHold<crate::AccountIdOf<Test>>>::hold(
+				&HoldReason::Test.into(),
 				&ACCOUNT_00,
 				balance_to_hold,
 			)
-			.expect("Reserving balance should not fail.");
+			.expect("Holding balance should not fail.");
 
-			// Check balances after reserving
-			let hold_balance = Balances::total_balance_on_hold(&ACCOUNT_00);
-			let reserved_balance =
-				<Balances as frame_support::traits::ReservableCurrency<crate::AccountIdOf<Test>>>::reserved_balance(
+			let hold_balance = Balances::usable_balance(&ACCOUNT_00);
+
+			assert_eq!(
+				hold_balance,
+				initial_balance - crate::mock::ExistentialDeposit::get() - balance_to_hold * 2
+			);
+		});
+}
+
+#[test]
+fn check_holds_fail() {
+	// Set initial balance and amount to hold
+	let initial_balance = <Test as Config>::Deposit::get() * 100;
+	let balance_to_hold = <Test as Config>::Deposit::get();
+
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, initial_balance)])
+		.build_and_execute_with_sanity_tests(|| {
+			// Check initial total balance
+			let total_balance = Balances::total_balance(&ACCOUNT_00);
+			assert_eq!(total_balance, initial_balance);
+
+			// Hold some coins
+			<Balances as frame_support::traits::fungible::MutateHold<crate::AccountIdOf<Test>>>::hold(
+				&HoldReason::Deposit.into(),
+				&ACCOUNT_00,
+				balance_to_hold * 99,
+			)
+			.expect("Holding balance should not fail.");
+
+			// Check balances after holding
+			let free_balance = Balances::usable_balance(&ACCOUNT_00);
+
+			assert_eq!(free_balance, balance_to_hold - crate::mock::ExistentialDeposit::get());
+
+			assert_noop!(
+				<Balances as frame_support::traits::fungible::MutateHold<crate::AccountIdOf<Test>>>::hold(
+					&HoldReason::Test.into(),
 					&ACCOUNT_00,
-				);
-
-			assert_eq!(hold_balance, balance_to_hold * 2);
-			assert_eq!(reserved_balance, balance_to_hold * 2);
+					balance_to_hold
+				),
+				TokenError::FundsUnavailable
+			);
 		});
 }
