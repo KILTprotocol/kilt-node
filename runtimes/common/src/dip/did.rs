@@ -84,14 +84,12 @@ where
 	type Success = LinkedDidInfoOf<Runtime, MAX_LINKED_ACCOUNTS>;
 
 	fn retrieve(identifier: &Runtime::Identifier) -> Result<Self::Success, Self::Error> {
-		let did_details = match (
-			did::Pallet::<Runtime>::get_did(identifier),
-			did::Pallet::<Runtime>::get_deleted_did(identifier),
-		) {
-			(Some(details), _) => Ok(details),
-			(_, Some(_)) => Err(LinkedDidInfoProviderError::DidDeleted),
-			_ => Err(LinkedDidInfoProviderError::DidNotFound),
-		}?;
+		ensure!(
+			did::Pallet::<Runtime>::get_deleted_did(identifier).is_none(),
+			LinkedDidInfoProviderError::DidDeleted,
+		);
+		let did_details = did::Pallet::<Runtime>::get_did(identifier).ok_or(LinkedDidInfoProviderError::DidNotFound)?;
+
 		let web3_name_details = if let Some(web3_name) = pallet_web3_names::Pallet::<Runtime>::names(identifier) {
 			let Some(ownership) = pallet_web3_names::Pallet::<Runtime>::owner(&web3_name) else {
 				log::error!(
