@@ -383,7 +383,7 @@ impl<
 			BoundedVec<RevealedDidKey<KeyId, BlockNumber, AccountId>, ConstU32<MAX_REVEALED_KEYS_COUNT>>,
 			Option<RevealedWeb3Name<Web3Name, BlockNumber>>,
 			BoundedVec<LinkedAccountId, ConstU32<MAX_REVEALED_ACCOUNTS_COUNT>>,
-		) = proof.revealed.iter().try_fold(
+		) = proof.revealed.into_iter().try_fold(
 			(
 				BoundedVec::with_bounded_capacity(MAX_REVEALED_KEYS_COUNT.saturated_into()),
 				None,
@@ -392,10 +392,9 @@ impl<
 			|(mut keys, web3_name, mut linked_accounts), leaf| match leaf {
 				RevealedDidMerkleProofLeaf::DidKey(key_id, key_value) => {
 					let res = keys.try_push(RevealedDidKey {
-						// TODO: Avoid cloning if possible
-						id: key_id.0.clone(),
+						id: key_id.0,
 						relationship: key_id.1,
-						details: key_value.0.clone(),
+						details: key_value.0,
 					});
 					cfg_if::cfg_if! {
 						if #[cfg(feature = "runtime-benchmarks")] {
@@ -407,17 +406,16 @@ impl<
 
 					Ok::<_, DidMerkleProofVerifierError>((keys, web3_name, linked_accounts))
 				}
-				// TODO: Avoid cloning if possible
 				RevealedDidMerkleProofLeaf::Web3Name(revealed_web3_name, details) => Ok((
 					keys,
 					Some(RevealedWeb3Name {
-						web3_name: revealed_web3_name.0.clone(),
-						claimed_at: details.0.clone(),
+						web3_name: revealed_web3_name.0,
+						claimed_at: details.0,
 					}),
 					linked_accounts,
 				)),
 				RevealedDidMerkleProofLeaf::LinkedAccount(account_id, _) => {
-					let res = linked_accounts.try_push(account_id.0.clone());
+					let res = linked_accounts.try_push(account_id.0);
 					cfg_if::cfg_if! {
 						if #[cfg(feature = "runtime-benchmarks")] {
 							drop(res);
