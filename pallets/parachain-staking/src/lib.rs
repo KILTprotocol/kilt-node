@@ -191,6 +191,7 @@ pub mod pallet {
 	#[pallet::composite_enum]
 	pub enum FreezeReason {
 		Staking,
+		Test,
 	}
 
 	/// Configuration trait of this pallet.

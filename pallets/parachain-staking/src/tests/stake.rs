@@ -630,8 +630,10 @@ fn check_locks_and_freezes() {
 
 	// Setup initial environment using ExtBuilder
 	ExtBuilder::default()
-		.with_balances(vec![(account_00, initial_balance)])
-		.build_and_execute_with_sanity_tests(|| {
+		.with_balances(vec![(account_00, initial_balance), (1, 400)])
+		.with_collators(vec![(1, 200)])
+		.build()
+		.execute_with(|| {
 			// Check initial total balance
 			let total_balance = Balances::total_balance(&account_00);
 			assert_eq!(total_balance, initial_balance);
@@ -667,5 +669,40 @@ fn check_locks_and_freezes() {
 			// Check usable balance after extending freeze
 			let usable_balance = Balances::usable_balance(&account_00);
 			assert_eq!(usable_balance, initial_balance - 2 * balance_to_freeze);
+		});
+}
+
+#[test]
+fn check_freezes_stack() {
+	// Set initial balance and amount to freeze
+	let initial_balance = MILLI_KILT * 100;
+	let balance_to_freeze = MILLI_KILT;
+	let account_00 = 0;
+
+	// Setup initial environment using ExtBuilder
+	ExtBuilder::default()
+		.with_balances(vec![(account_00, initial_balance), (1, 400)])
+		.with_collators(vec![(1, 200)])
+		.build()
+		.execute_with(|| {
+			// Check initial total balance
+			let total_balance = Balances::total_balance(&account_00);
+			assert_eq!(total_balance, initial_balance);
+
+			// Set a freeze on the account
+			<Balances as frame_support::traits::fungible::MutateFreeze<
+                <Test as frame_system::Config>::AccountId,
+            >>::set_freeze(&FreezeReason::Staking.into(), &account_00, balance_to_freeze)
+            .expect("Setting freeze should not fail.");
+
+			// Set a freeze on the account
+			<Balances as frame_support::traits::fungible::MutateFreeze<
+                <Test as frame_system::Config>::AccountId,
+            >>::set_freeze(&FreezeReason::Test.into(), &account_00, balance_to_freeze)
+            .expect("Setting freeze should not fail.");
+
+			// Usable balance should remain the same since freezes/locks do not stack
+			let usable_balance = Balances::usable_balance(&account_00);
+			assert_eq!(usable_balance, initial_balance - balance_to_freeze);
 		});
 }
