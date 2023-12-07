@@ -90,40 +90,9 @@ where
 		);
 		let did_details = did::Pallet::<Runtime>::get_did(identifier).ok_or(LinkedDidInfoProviderError::DidNotFound)?;
 
-		let web3_name_details = if let Some(web3_name) = pallet_web3_names::Pallet::<Runtime>::names(identifier) {
-			let Some(ownership) = pallet_web3_names::Pallet::<Runtime>::owner(&web3_name) else {
-				log::error!(
-					"Inconsistent reverse map pallet_web3_names::owner(web3_name). Cannot find owner for web3name {:#?}",
-					web3_name
-				);
-				return Err(LinkedDidInfoProviderError::Internal);
-			};
-			Ok(Some(Web3OwnershipOf::<Runtime> {
-				web3_name,
-				claimed_at: ownership.claimed_at,
-			}))
-		} else {
-			Ok(None)
-		}?;
+		let web3_name_details = retrieve_w3n::<Runtime>(identifier)?;
 
-		// Check if the user has too many linked accounts. If they have more than
-		// [MAX_LINKED_ACCOUNTS], we throw an error.
-		let are_linked_accounts_within_limit =
-			pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(identifier)
-				.nth(MAX_LINKED_ACCOUNTS.saturated_into())
-				.is_none();
-
-		ensure!(
-			are_linked_accounts_within_limit,
-			LinkedDidInfoProviderError::TooManyLinkedAccounts
-		);
-
-		let linked_accounts = pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(identifier)
-			.take(MAX_LINKED_ACCOUNTS.saturated_into())
-			.collect::<Vec<_>>()
-			.try_into()
-			// Should never happen since we checked above.
-			.map_err(|_| LinkedDidInfoProviderError::TooManyLinkedAccounts)?;
+		let linked_accounts = retrieve_linked_accounts::<Runtime, MAX_LINKED_ACCOUNTS>(identifier)?;
 
 		Ok(LinkedDidInfoOf {
 			did_details,
@@ -131,6 +100,59 @@ where
 			linked_accounts,
 		})
 	}
+}
+
+fn retrieve_w3n<Runtime>(
+	identifier: &Runtime::Identifier,
+) -> Result<Option<Web3OwnershipOf<Runtime>>, LinkedDidInfoProviderError>
+where
+	Runtime: did::Config<DidIdentifier = <Runtime as pallet_dip_provider::Config>::Identifier>
+		+ pallet_web3_names::Config<Web3NameOwner = <Runtime as pallet_dip_provider::Config>::Identifier>
+		+ pallet_dip_provider::Config,
+{
+	let Some(web3_name) = pallet_web3_names::Pallet::<Runtime>::names(identifier) else {
+		return Ok(None);
+	};
+
+	let ownership = pallet_web3_names::Pallet::<Runtime>::owner(&web3_name).ok_or_else(|| {
+		log::error!(
+			"Inconsistent reverse map pallet_web3_names::owner(web3_name). Cannot find owner for web3name {:#?}",
+			web3_name
+		);
+		LinkedDidInfoProviderError::Internal
+	})?;
+
+	Ok(Some(Web3OwnershipOf::<Runtime> {
+		web3_name,
+		claimed_at: ownership.claimed_at,
+	}))
+}
+
+fn retrieve_linked_accounts<Runtime, const MAX_LINKED_ACCOUNTS: u32>(
+	identifier: &Runtime::Identifier,
+) -> Result<BoundedVec<LinkableAccountId, ConstU32<MAX_LINKED_ACCOUNTS>>, LinkedDidInfoProviderError>
+where
+	Runtime: did::Config<DidIdentifier = <Runtime as pallet_dip_provider::Config>::Identifier>
+		+ pallet_did_lookup::Config<DidIdentifier = <Runtime as pallet_dip_provider::Config>::Identifier>
+		+ pallet_dip_provider::Config,
+{
+	// Check if the user has too many linked accounts. If they have more than
+	// [MAX_LINKED_ACCOUNTS], we throw an error.
+	let are_linked_accounts_within_limit = pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(identifier)
+		.nth(MAX_LINKED_ACCOUNTS.saturated_into())
+		.is_none();
+
+	ensure!(
+		are_linked_accounts_within_limit,
+		LinkedDidInfoProviderError::TooManyLinkedAccounts
+	);
+
+	pallet_did_lookup::ConnectedAccounts::<Runtime>::iter_key_prefix(identifier)
+		.take(MAX_LINKED_ACCOUNTS.saturated_into())
+		.collect::<Vec<_>>()
+		.try_into()
+		// Should never happen since we checked above.
+		.map_err(|_| LinkedDidInfoProviderError::TooManyLinkedAccounts)
 }
 
 #[cfg(feature = "runtime-benchmarks")]
