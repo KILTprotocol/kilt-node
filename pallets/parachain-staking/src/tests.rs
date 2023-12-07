@@ -21,7 +21,7 @@
 use std::{convert::TryInto, iter};
 
 use frame_support::{
-	assert_noop, assert_ok, storage::bounded_btree_map::BoundedBTreeMap, traits::EstimateNextSessionRotation,
+	assert_noop, assert_ok, storage::bounded_btree_map::BoundedBTreeMap, traits::{EstimateNextSessionRotation, WithdrawReasons},
 	BoundedVec,
 };
 use kilt_runtime_api_staking::StakingRates;
@@ -4349,3 +4349,24 @@ fn api_get_staking_rates() {
 			assert_eq!(rates, StakePallet::get_staking_rates());
 		});
 }
+
+#[test] fn check_locks_and_reserves() { 
+	let initial_balance = crate::mock::MILLI_KILT * 100; 
+	let balance_to_freeze = crate::mock::MILLI_KILT; 
+	let account_00 = 0; 
+
+	ExtBuilder::default() 
+	.with_balances(
+		vec![(account_00, initial_balance), (1, 22)]) .with_collators(vec![(1, 11)]) 
+	.build() 
+	.execute_with(|| { 
+		let total_balance = Balances::free_balance(&account_00); 
+		assert_eq!(total_balance, initial_balance); 
+		<Balances as frame_support::traits::LockableCurrency<<Test as frame_system::Config>::AccountId>>::set_lock( b"test    ".to_owned(), &account_00, balance_to_freeze, WithdrawReasons::all() ); 
+		let free_balance = Balances::usable_balance(&account_00); assert_eq!(free_balance, initial_balance - balance_to_freeze); 
+		<Balances as frame_support::traits::ReservableCurrency< <Test as frame_system::Config>::AccountId, >>::reserve(&account_00, balance_to_freeze) .expect("Setting reserve should not fail."); 
+		// should be less since locks and reserve stack. 
+		let usable_balance = Balances::usable_balance(&account_00);
+		 assert_eq!(usable_balance, initial_balance - balance_to_freeze * 2); 
+		}); 
+	}
