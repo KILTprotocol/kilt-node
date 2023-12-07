@@ -471,7 +471,7 @@ pub mod v0 {
 	use crate::{
 		did::{RevealedDidKeysAndSignature, RevealedDidKeysSignatureAndCallVerifier},
 		export::common::v0::{DipMerkleProofAndDidSignature, ParachainRootStateProof},
-		merkle::DidMerkleProofVerifier,
+		merkle::verify_dip_merkle_proof,
 		state_proofs::{parachain::DipIdentityCommitmentProofVerifier, relay_chain::ParachainHeadProofVerifier},
 		traits::ProviderParachainStorageInfo,
 	};
@@ -741,7 +741,7 @@ pub mod v0 {
 				ProviderLinkedAccountId,
 				MAX_REVEALED_KEYS_COUNT,
 				MAX_REVEALED_ACCOUNTS_COUNT,
-			> = DidMerkleProofVerifier::<
+			> = verify_dip_merkle_proof::<
 				ProviderDipMerkleHasher,
 				_,
 				_,
@@ -750,7 +750,7 @@ pub mod v0 {
 				_,
 				MAX_REVEALED_KEYS_COUNT,
 				MAX_REVEALED_ACCOUNTS_COUNT,
-			>::verify_dip_merkle_proof(&subject_identity_commitment, proof.did.leaves)
+			>(&subject_identity_commitment, proof.did.leaves)
 			.map_err(DipSiblingProviderStateProofVerifierError::DipProof)?;
 
 			// 4. Verify DID signature.

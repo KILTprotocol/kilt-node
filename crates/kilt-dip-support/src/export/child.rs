@@ -499,7 +499,7 @@ pub mod v0 {
 		},
 		export::common::v0::{DipMerkleProofAndDidSignature, ParachainRootStateProof},
 		merkle::{
-			DidMerkleProofVerifier, DidMerkleProofVerifierError, RevealedDidMerkleProofLeaf,
+			verify_dip_merkle_proof, DidMerkleProofVerifierError, RevealedDidMerkleProofLeaf,
 			RevealedDidMerkleProofLeaves,
 		},
 		state_proofs::{
@@ -776,7 +776,7 @@ pub mod v0 {
 				.map_err(DipChildProviderStateProofVerifierError::IdentityCommitmentMerkleProof)?;
 
 			// 4. Verify DIP merkle proof.
-			let proof_leaves = DidMerkleProofVerifier::<
+			let proof_leaves = verify_dip_merkle_proof::<
 				ProviderDipMerkleHasher,
 				_,
 				_,
@@ -785,7 +785,7 @@ pub mod v0 {
 				_,
 				MAX_REVEALED_KEYS_COUNT,
 				MAX_REVEALED_ACCOUNTS_COUNT,
-			>::verify_dip_merkle_proof(&subject_identity_commitment, proof.did.leaves)
+			>(&subject_identity_commitment, proof.did.leaves)
 			.map_err(DipChildProviderStateProofVerifierError::DipProof)?;
 
 			// 5. Verify DID signature.
