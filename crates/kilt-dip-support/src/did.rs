@@ -26,7 +26,7 @@ use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
 use sp_core::RuntimeDebug;
 use sp_runtime::traits::CheckedSub;
-use sp_std::{marker::PhantomData, vec::Vec};
+use sp_std::vec::Vec;
 
 use crate::{
 	merkle::RevealedDidKey,
@@ -110,7 +110,7 @@ impl From<RevealedDidKeysSignatureAndCallVerifierError> for u8 {
 /// * `RemoteBlockNumber`: Definition of a block number on the provider chain.
 /// * `CallVerifier`: A type specifying whether the provided `Call` can be
 ///   dispatched with the information provided in the DIP proof.
-pub(crate) struct RevealedDidKeysSignatureAndCallVerifier<
+pub(crate) fn verify_did_signature_for_call<
 	Call,
 	Submitter,
 	DidLocalDetails,
@@ -121,42 +121,15 @@ pub(crate) struct RevealedDidKeysSignatureAndCallVerifier<
 	RemoteBlockNumber,
 	CallVerifier,
 >(
-	#[allow(clippy::type_complexity)]
-	PhantomData<(
-		Call,
-		Submitter,
-		DidLocalDetails,
-		MerkleProofEntries,
-		ContextProvider,
-		RemoteKeyId,
-		RemoteAccountId,
-		RemoteBlockNumber,
-		CallVerifier,
-	)>,
-);
-
-impl<
-		Call,
-		Submitter,
-		DidLocalDetails,
-		MerkleProofEntries,
-		ContextProvider,
-		RemoteKeyId,
-		RemoteAccountId,
-		RemoteBlockNumber,
-		CallVerifier,
-	>
-	RevealedDidKeysSignatureAndCallVerifier<
-		Call,
-		Submitter,
-		DidLocalDetails,
-		MerkleProofEntries,
-		ContextProvider,
-		RemoteKeyId,
-		RemoteAccountId,
-		RemoteBlockNumber,
-		CallVerifier,
-	> where
+	call: &Call,
+	submitter: &Submitter,
+	local_details: &mut Option<DidLocalDetails>,
+	merkle_revealed_did_signature: RevealedDidKeysAndSignature<MerkleProofEntries, ContextProvider::BlockNumber>,
+) -> Result<
+	(DidVerificationKey<RemoteAccountId>, DidVerificationKeyRelationship),
+	RevealedDidKeysSignatureAndCallVerifierError,
+>
+where
 	Call: Encode,
 	Submitter: Encode,
 	ContextProvider: DidSignatureVerifierContext,
@@ -169,42 +142,33 @@ impl<
 	CallVerifier:
 		DipCallOriginFilter<Call, OriginInfo = (DidVerificationKey<RemoteAccountId>, DidVerificationKeyRelationship)>,
 {
-	pub(crate) fn verify_did_signature_for_call(
-		call: &Call,
-		submitter: &Submitter,
-		local_details: &mut Option<DidLocalDetails>,
-		merkle_revealed_did_signature: RevealedDidKeysAndSignature<MerkleProofEntries, ContextProvider::BlockNumber>,
-	) -> Result<
-		(DidVerificationKey<RemoteAccountId>, DidVerificationKeyRelationship),
-		RevealedDidKeysSignatureAndCallVerifierError,
-	> {
-		use frame_support::ensure;
+	use frame_support::ensure;
 
-		let block_number = ContextProvider::current_block_number();
-		let is_signature_fresh = if let Some(blocks_ago_from_now) =
-			block_number.checked_sub(&merkle_revealed_did_signature.did_signature.block_number)
-		{
-			// False if the signature is too old.
-			blocks_ago_from_now <= ContextProvider::SIGNATURE_VALIDITY.into()
-		} else {
-			// Signature generated at a future time, not possible to verify.
-			false
-		};
-		ensure!(
-			is_signature_fresh,
-			RevealedDidKeysSignatureAndCallVerifierError::SignatureNotFresh,
-		);
-		let encoded_payload = (
-			call,
-			&local_details,
-			submitter,
-			&merkle_revealed_did_signature.did_signature.block_number,
-			ContextProvider::genesis_hash(),
-			ContextProvider::signed_extra(),
-		)
-			.encode();
-		// Only consider verification keys from the set of revealed keys.
-		let proof_verification_keys: Vec<(DidVerificationKey<RemoteAccountId>, DidVerificationKeyRelationship)> = merkle_revealed_did_signature.merkle_leaves.borrow().iter().filter_map(|RevealedDidKey {
+	let block_number = ContextProvider::current_block_number();
+	let is_signature_fresh = if let Some(blocks_ago_from_now) =
+		block_number.checked_sub(&merkle_revealed_did_signature.did_signature.block_number)
+	{
+		// False if the signature is too old.
+		blocks_ago_from_now <= ContextProvider::SIGNATURE_VALIDITY.into()
+	} else {
+		// Signature generated at a future time, not possible to verify.
+		false
+	};
+	ensure!(
+		is_signature_fresh,
+		RevealedDidKeysSignatureAndCallVerifierError::SignatureNotFresh,
+	);
+	let encoded_payload = (
+		call,
+		&local_details,
+		submitter,
+		&merkle_revealed_did_signature.did_signature.block_number,
+		ContextProvider::genesis_hash(),
+		ContextProvider::signed_extra(),
+	)
+		.encode();
+	// Only consider verification keys from the set of revealed keys.
+	let proof_verification_keys: Vec<(DidVerificationKey<RemoteAccountId>, DidVerificationKeyRelationship)> = merkle_revealed_did_signature.merkle_leaves.borrow().iter().filter_map(|RevealedDidKey {
 			relationship, details: DidPublicKeyDetails { key, .. }, .. } | {
 				let DidPublicKey::PublicVerificationKey(key) = key else { return None };
 				if let Ok(vr) = DidVerificationKeyRelationship::try_from(*relationship) {
@@ -221,36 +185,35 @@ impl<
 					}
 				}
 			}).collect::<Result<_, _>>()?;
-		let valid_signing_key = proof_verification_keys.iter().find(|(verification_key, _)| {
-			verification_key
-				.verify_signature(&encoded_payload, &merkle_revealed_did_signature.did_signature.signature)
-				.is_ok()
-		});
-		cfg_if::cfg_if! {
-			if #[cfg(feature = "runtime-benchmarks")] {
-				let default = (
-					DidVerificationKey::Ed25519(sp_core::ed25519::Public::from_raw([0u8; 32])),
-					DidVerificationKeyRelationship::Authentication,
-				);
-				let (key, relationship) = valid_signing_key.unwrap_or(&default);
-			} else {
-				let (key, relationship) = valid_signing_key.ok_or(RevealedDidKeysSignatureAndCallVerifierError::SignatureUnverifiable)?;
-			}
-		}
-
-		if let Some(details) = local_details {
-			details.bump();
+	let valid_signing_key = proof_verification_keys.iter().find(|(verification_key, _)| {
+		verification_key
+			.verify_signature(&encoded_payload, &merkle_revealed_did_signature.did_signature.signature)
+			.is_ok()
+	});
+	cfg_if::cfg_if! {
+		if #[cfg(feature = "runtime-benchmarks")] {
+			let default = (
+				DidVerificationKey::Ed25519(sp_core::ed25519::Public::from_raw([0u8; 32])),
+				DidVerificationKeyRelationship::Authentication,
+			);
+			let (key, relationship) = valid_signing_key.unwrap_or(&default);
 		} else {
-			*local_details = Some(DidLocalDetails::default());
-		};
-		let res = CallVerifier::check_call_origin_info(call, &(key.clone(), *relationship));
-		cfg_if::cfg_if! {
-			if #[cfg(feature = "runtime-benchmarks")] {
-				drop(res);
-			} else {
-				res.map_err(|_| RevealedDidKeysSignatureAndCallVerifierError::OriginCheckFailed)?;
-			}
+			let (key, relationship) = valid_signing_key.ok_or(RevealedDidKeysSignatureAndCallVerifierError::SignatureUnverifiable)?;
 		}
-		Ok((key.clone(), *relationship))
 	}
+
+	if let Some(details) = local_details {
+		details.bump();
+	} else {
+		*local_details = Some(DidLocalDetails::default());
+	};
+	let res = CallVerifier::check_call_origin_info(call, &(key.clone(), *relationship));
+	cfg_if::cfg_if! {
+		if #[cfg(feature = "runtime-benchmarks")] {
+			drop(res);
+		} else {
+			res.map_err(|_| RevealedDidKeysSignatureAndCallVerifierError::OriginCheckFailed)?;
+		}
+	}
+	Ok((key.clone(), *relationship))
 }

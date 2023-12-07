@@ -494,8 +494,7 @@ pub mod v0 {
 
 	use crate::{
 		did::{
-			RevealedDidKeysAndSignature, RevealedDidKeysSignatureAndCallVerifier,
-			RevealedDidKeysSignatureAndCallVerifierError,
+			verify_did_signature_for_call, RevealedDidKeysAndSignature, RevealedDidKeysSignatureAndCallVerifierError,
 		},
 		export::common::v0::{DipMerkleProofAndDidSignature, ParachainRootStateProof},
 		merkle::{
@@ -789,26 +788,16 @@ pub mod v0 {
 			.map_err(DipChildProviderStateProofVerifierError::DipProof)?;
 
 			// 5. Verify DID signature.
-			RevealedDidKeysSignatureAndCallVerifier::<
-					_,
-					_,
-					_,
-					_,
-					LocalContextProvider,
-					_,
-					_,
-					_,
-					LocalDidCallVerifier,
-				>::verify_did_signature_for_call(
-					call,
-					submitter,
-					identity_details,
-					RevealedDidKeysAndSignature {
-						merkle_leaves: proof_leaves.borrow(),
-						did_signature: proof.did.signature,
-					},
-				)
-				.map_err(DipChildProviderStateProofVerifierError::DidSignature)?;
+			verify_did_signature_for_call::<_, _, _, _, LocalContextProvider, _, _, _, LocalDidCallVerifier>(
+				call,
+				submitter,
+				identity_details,
+				RevealedDidKeysAndSignature {
+					merkle_leaves: proof_leaves.borrow(),
+					did_signature: proof.did.signature,
+				},
+			)
+			.map_err(DipChildProviderStateProofVerifierError::DidSignature)?;
 			Ok(proof_leaves)
 		}
 	}
