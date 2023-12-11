@@ -38,7 +38,7 @@ pub mod pallet {
 	use super::*;
 
 	use frame_support::{
-		dispatch::{Dispatchable, GetDispatchInfo},
+		dispatch::{Dispatchable, GetDispatchInfo, PostDispatchInfo},
 		pallet_prelude::*,
 		traits::{Contains, EnsureOriginWithArg},
 		Twox64Concat,
@@ -93,7 +93,9 @@ pub mod pallet {
 		/// proof.
 		type ProofVerifier: IdentityProofVerifier<Self>;
 		/// The aggregated `Call` type.
-		type RuntimeCall: Parameter + Dispatchable<RuntimeOrigin = <Self as Config>::RuntimeOrigin> + GetDispatchInfo;
+		type RuntimeCall: Parameter
+			+ Dispatchable<PostInfo = PostDispatchInfo, RuntimeOrigin = <Self as Config>::RuntimeOrigin>
+			+ GetDispatchInfo;
 		/// The aggregated `Origin` type, which must include the origin exposed
 		/// by this pallet.
 		type RuntimeOrigin: From<Origin<Self>> + From<<Self as frame_system::Config>::RuntimeOrigin>;
@@ -149,7 +151,7 @@ pub mod pallet {
 			identifier: T::Identifier,
 			proof: IdentityProofOf<T>,
 			call: Box<RuntimeCallOf<T>>,
-		) -> DispatchResult {
+		) -> DispatchResultWithPostInfo {
 			let submitter = T::DispatchOriginCheck::ensure_origin(origin, &identifier)?;
 			ensure!(T::DipCallOriginFilter::contains(&*call), Error::<T>::Filtered);
 			let proof_verification_result = IdentityEntries::<T>::try_mutate(&identifier, |identity_entry| {
@@ -175,9 +177,13 @@ pub mod pallet {
 			// TODO: Maybe find a nicer way to exclude the call dispatched from the
 			// benchmarks while making sure the call is actually dispatched and passes any
 			// filters the consumer proof verifier has set.
-			#[cfg(not(feature = "runtime-benchmark"))]
-			let _ = call.dispatch(did_origin.into()).map_err(|e| e.error)?;
-			Ok(())
+			cfg_if::cfg_if! {
+				if #[cfg(not(feature = "runtime-benchmark"))] {
+					call.dispatch(did_origin.into())
+				} else {
+					().into()
+				}
+			}
 		}
 	}
 }
