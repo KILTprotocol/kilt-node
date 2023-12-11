@@ -39,7 +39,7 @@ pub mod pallet {
 
 	use crate::{
 		post::{Comment, Post},
-		traits::Usernamable,
+		traits::GetUsername,
 	};
 
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(0);
@@ -52,7 +52,7 @@ pub mod pallet {
 	pub trait Config: frame_system::Config {
 		type MaxTextLength: Get<u32>;
 		type OriginCheck: EnsureOrigin<<Self as frame_system::Config>::RuntimeOrigin, Success = Self::OriginSuccess>;
-		type OriginSuccess: Usernamable<Username = Self::Username>;
+		type OriginSuccess: GetUsername<Username = Self::Username>;
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 		type Username: Encode + Decode + TypeInfo + MaxEncodedLen + Clone + PartialEq + Debug + Default;
 	}

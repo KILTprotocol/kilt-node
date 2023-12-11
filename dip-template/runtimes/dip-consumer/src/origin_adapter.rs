@@ -19,7 +19,7 @@
 use crate::{AccountId, DidIdentifier, MerkleProofVerifierOutput, RuntimeOrigin, Web3Name};
 use frame_support::traits::EnsureOrigin;
 use pallet_dip_consumer::{DipOrigin, EnsureDipOrigin};
-use pallet_postit::traits::Usernamable;
+use pallet_postit::traits::GetUsername;
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_core::RuntimeDebug;
@@ -49,7 +49,7 @@ impl EnsureOrigin<RuntimeOrigin> for EnsureDipOriginAdapter {
 #[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct DipOriginAdapter(DipOrigin<DidIdentifier, AccountId, MerkleProofVerifierOutput>);
 
-impl Usernamable for DipOriginAdapter {
+impl GetUsername for DipOriginAdapter {
 	type Username = Web3Name;
 
 	fn username(&self) -> Result<Self::Username, &'static str> {
