@@ -279,8 +279,8 @@ impl From<DidMerkleProofVerifierError> for u8 {
 	}
 }
 
-/// A type that verifies a DIP Merkle proof revealing some leaves representing
-/// parts of a KILT DID identity stored on the KILT chain.
+/// A function that verifies a DIP Merkle proof revealing some leaves
+/// representing parts of a KILT DID identity stored on the KILT chain.
 /// If cross-chain DID signatures are not required for the specific use case,
 /// this verifier can also be used on its own, without any DID signature
 /// verification.

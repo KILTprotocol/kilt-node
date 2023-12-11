@@ -86,7 +86,7 @@ impl From<RevealedDidKeysSignatureAndCallVerifierError> for u8 {
 	}
 }
 
-/// Proof verifier that tries to verify a DID signature over a given payload by
+/// Function that tries to verify a DID signature over a given payload by
 /// using one of the DID keys revealed in the Merkle proof. This verifier is
 /// typically used in conjunction with a verifier that takes a user-provided
 /// input Merkle proof, verifies it, and transforms it into a struct that this
@@ -142,22 +142,26 @@ where
 	CallVerifier:
 		DipCallOriginFilter<Call, OriginInfo = (DidVerificationKey<RemoteAccountId>, DidVerificationKeyRelationship)>,
 {
-	use frame_support::ensure;
-
-	let block_number = ContextProvider::current_block_number();
-	let is_signature_fresh = if let Some(blocks_ago_from_now) =
-		block_number.checked_sub(&merkle_revealed_did_signature.did_signature.block_number)
-	{
-		// False if the signature is too old.
-		blocks_ago_from_now <= ContextProvider::SIGNATURE_VALIDITY.into()
-	} else {
-		// Signature generated at a future time, not possible to verify.
-		false
-	};
-	ensure!(
-		is_signature_fresh,
-		RevealedDidKeysSignatureAndCallVerifierError::SignatureNotFresh,
-	);
+	cfg_if::cfg_if! {
+		if #[cfg(feature = "runtime-benchmarks")] {
+			{}
+		} else {
+			let block_number = ContextProvider::current_block_number();
+			let is_signature_fresh = if let Some(blocks_ago_from_now) =
+				block_number.checked_sub(&merkle_revealed_did_signature.did_signature.block_number)
+			{
+				// False if the signature is too old.
+				blocks_ago_from_now <= ContextProvider::SIGNATURE_VALIDITY.into()
+			} else {
+				// Signature generated at a future time, not possible to verify.
+				false
+			};
+			frame_support::ensure!(
+				is_signature_fresh,
+				RevealedDidKeysSignatureAndCallVerifierError::SignatureNotFresh,
+			);
+		}
+	}
 	let encoded_payload = (
 		call,
 		&local_details,
