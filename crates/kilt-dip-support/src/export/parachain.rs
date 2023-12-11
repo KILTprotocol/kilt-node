@@ -43,7 +43,6 @@ use crate::{
 ///
 /// For more info, refer to the version-specific proofs.
 #[derive(Encode, Decode, PartialEq, Eq, RuntimeDebug, TypeInfo, Clone)]
-#[non_exhaustive]
 pub enum VersionedDipParachainStateProof<
 	RelayBlockHeight,
 	DipMerkleProofBlindedValues,
