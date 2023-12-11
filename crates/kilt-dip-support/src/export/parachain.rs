@@ -711,7 +711,7 @@ pub mod v0 {
 			identity_details: &mut Option<ConsumerRuntime::LocalIdentityInfo>,
 			proof: Self::Proof,
 		) -> Result<Self::VerificationResult, Self::Error> {
-			// 1. Verify relay chain proof.
+			// 1. Verify parachain state is finalized by relay chain and fresh.
 			let provider_parachain_header =
 				ParachainHeadProofVerifier::<RelayChainStateInfo>::verify_proof_for_parachain(
 					&SiblingProviderParachainId::get(),
@@ -720,7 +720,7 @@ pub mod v0 {
 				)
 				.map_err(DipParachainStateProofVerifierError::ParachainHeadMerkleProof)?;
 
-			// 2. Verify parachain state proof.
+			// 2. Verify commitment is included in provider parachain.
 			let subject_identity_commitment =
 				DipIdentityCommitmentProofVerifier::<SiblingProviderStateInfo>::verify_proof_for_identifier(
 					subject,
@@ -750,7 +750,7 @@ pub mod v0 {
 			>(&subject_identity_commitment, proof.did.leaves)
 			.map_err(DipParachainStateProofVerifierError::DipProof)?;
 
-			// 4. Verify DID signature.
+			// 4. Verify call is signed by one of the DID keys revealed at step 3.
 			verify_did_signature_for_call::<_, _, _, _, LocalContextProvider, _, _, _, LocalDidCallVerifier>(
 				call,
 				submitter,
