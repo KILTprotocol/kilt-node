@@ -24,7 +24,7 @@ smallvec.workspace = true
 attestation.workspace = true
 did.workspace = true
 kilt-support.workspace = true
-kilt-dip-support.workspace = true
+kilt-dip-primitives.workspace = true
 pallet-did-lookup.workspace = true
 pallet-dip-provider.workspace = true
 pallet-web3-names.workspace = true
@@ -72,7 +72,7 @@ runtime-benchmarks = [
   "attestation/runtime-benchmarks",
   "frame-support/runtime-benchmarks",
   "frame-system/runtime-benchmarks",
-  "kilt-dip-support/runtime-benchmarks",
+  "kilt-dip-primitives/runtime-benchmarks",
   "kilt-support/runtime-benchmarks",
   "pallet-balances/runtime-benchmarks",
   "pallet-membership/runtime-benchmarks",
@@ -98,7 +98,7 @@ std = [
   "frame-system/std",
   "kilt-asset-dids/std",
   "kilt-support/std",
-  "kilt-dip-support/std",
+  "kilt-dip-primitives/std",
   "pallet-did-lookup/std",
   "pallet-dip-provider/std",
   "pallet-web3-names/std",

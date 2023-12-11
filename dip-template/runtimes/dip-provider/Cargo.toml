@@ -21,7 +21,7 @@ scale-info = {workspace = true, features = ["derive"]}
 # DIP
 did.workspace = true
 kilt-support.workspace = true
-kilt-dip-support.workspace = true
+kilt-dip-primitives.workspace = true
 kilt-runtime-api-did.workspace = true
 kilt-runtime-api-dip-provider.workspace = true
 pallet-deposit-storage.workspace = true
@@ -82,7 +82,7 @@ std = [
 	"scale-info/std",
   "did/std",
   "kilt-support/std",
-  "kilt-dip-support/std",
+  "kilt-dip-primitives/std",
   "kilt-runtime-api-did/std",
   "kilt-runtime-api-dip-provider/std",
   "pallet-deposit-storage/std",
@@ -127,7 +127,7 @@ std = [
 ]
 runtime-benchmarks = [
   "did/runtime-benchmarks",
-  "kilt-dip-support/runtime-benchmarks",
+  "kilt-dip-primitives/runtime-benchmarks",
   "pallet-deposit-storage/runtime-benchmarks",
   "pallet-did-lookup/runtime-benchmarks",
   "pallet-dip-provider/runtime-benchmarks",

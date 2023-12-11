@@ -20,7 +20,7 @@ scale-info = {workspace = true, features = ["derive"]}
 # DIP
 dip-provider-runtime-template.workspace = true
 did.workspace = true
-kilt-dip-support.workspace = true
+kilt-dip-primitives.workspace = true
 pallet-did-lookup.workspace = true
 pallet-dip-consumer.workspace = true
 pallet-postit.workspace = true
@@ -79,7 +79,7 @@ std = [
 	"scale-info/std",
   "dip-provider-runtime-template/std",
   "did/std",
-  "kilt-dip-support/std",
+  "kilt-dip-primitives/std",
   "pallet-did-lookup/std",
   "pallet-dip-consumer/std",
   "pallet-postit/std",
@@ -123,7 +123,7 @@ std = [
 
 runtime-benchmarks = [
   "dip-provider-runtime-template/runtime-benchmarks",
-  "kilt-dip-support/runtime-benchmarks",
+  "kilt-dip-primitives/runtime-benchmarks",
   "pallet-dip-consumer/runtime-benchmarks",
   "pallet-relay-store/runtime-benchmarks",
   "runtime-common/runtime-benchmarks",

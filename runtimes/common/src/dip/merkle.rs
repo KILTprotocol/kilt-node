@@ -18,7 +18,7 @@
 use did::{DidVerificationKeyRelationship, KeyIdOf};
 use frame_support::RuntimeDebug;
 use frame_system::pallet_prelude::BlockNumberFor;
-use kilt_dip_support::merkle::{DidKeyMerkleKey, DidKeyMerkleValue, DidMerkleProof};
+use kilt_dip_primitives::merkle::{DidKeyMerkleKey, DidKeyMerkleValue, DidMerkleProof};
 use pallet_did_lookup::linkable_account::LinkableAccountId;
 use pallet_dip_provider::{
 	traits::{IdentityCommitmentGenerator, IdentityProvider},
@@ -29,7 +29,7 @@ use scale_info::TypeInfo;
 use sp_std::{borrow::ToOwned, marker::PhantomData, vec::Vec};
 use sp_trie::{generate_trie_proof, LayoutV1, MemoryDB, TrieDBMutBuilder, TrieHash, TrieMut};
 
-use kilt_dip_support::merkle::{DidKeyRelationship, RevealedDidMerkleProofLeaf};
+use kilt_dip_primitives::merkle::{DidKeyRelationship, RevealedDidMerkleProofLeaf};
 
 use crate::dip::did::LinkedDidInfoOf;
 

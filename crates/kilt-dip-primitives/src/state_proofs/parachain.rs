@@ -87,7 +87,7 @@ where
 	pub fn verify_proof_for_identifier(
 		identifier: &ParaInfo::Identifier,
 		state_root: OutputOf<ParaInfo::Hasher>,
-		proof: impl IntoIterator<Item = Vec<u8>>,
+		proof: impl IntoIterator<Item = sp_std::vec::Vec<u8>>,
 	) -> Result<ParaInfo::Commitment, DipIdentityCommitmentProofVerifierError>
 	where
 		ParaInfo::Commitment: Default,
@@ -101,7 +101,7 @@ where
 			if let Some(Some(encoded_commitment)) = revealed_leaves.get(dip_commitment_storage_key.as_ref()) {
 				encoded_commitment.clone()
 			} else {
-				Vec::default()
+				sp_std::vec::Vec::default()
 			};
 		let commitment = ParaInfo::Commitment::decode(&mut &encoded_commitment[..]).unwrap_or_default();
 		Ok(commitment)

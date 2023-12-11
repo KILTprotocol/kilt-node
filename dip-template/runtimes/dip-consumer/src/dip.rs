@@ -20,7 +20,7 @@ use did::{did_details::DidVerificationKey, DidVerificationKeyRelationship};
 use dip_provider_runtime_template::{AccountId as ProviderAccountId, Runtime as ProviderRuntime};
 use frame_support::traits::Contains;
 use frame_system::EnsureSigned;
-use kilt_dip_support::{
+use kilt_dip_primitives::{
 	traits::DipCallOriginFilter, KiltVersionedParachainVerifier, RelayStateRootsViaRelayStorePallet,
 };
 use pallet_dip_consumer::traits::IdentityProofVerifier;

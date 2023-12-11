@@ -18,8 +18,6 @@
 
 //! Module to deal with cross-chain state proofs.
 
-use sp_trie::StorageProof;
-
 /// Parachain-related state proof logic.
 pub(crate) mod parachain;
 /// Relaychain-related state proof logic.
@@ -29,14 +27,12 @@ pub(crate) mod relaychain;
 // Needs to be replaced with its runtime-friendly version when available, or be
 // kept up-to-date with upstream.
 mod substrate_no_std_port {
-	use super::*;
-
 	use hash_db::EMPTY_PREFIX;
 	use parity_scale_codec::Codec;
 	use sp_core::Hasher;
 	use sp_state_machine::{Backend, TrieBackend, TrieBackendBuilder};
-	use sp_std::collections::btree_map::BTreeMap;
-	use sp_trie::{HashDBT, MemoryDB};
+	use sp_std::{collections::btree_map::BTreeMap, vec::Vec};
+	use sp_trie::{HashDBT, MemoryDB, StorageProof};
 
 	pub(super) fn read_proof_check<H, I>(
 		root: H::Out,

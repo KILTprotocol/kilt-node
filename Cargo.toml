@@ -69,7 +69,7 @@ pallet-migration = {path = "pallets/pallet-migration", default-features = false}
 
 # Internal support (with default disabled)
 kilt-asset-dids = {path = "crates/assets", default-features = false}
-kilt-dip-support = {path = "crates/kilt-dip-support", default-features = false}
+kilt-dip-primitives = {path = "crates/kilt-dip-primitives", default-features = false}
 kilt-support = {path = "support", default-features = false}
 runtime-common = {path = "runtimes/common", default-features = false}
 

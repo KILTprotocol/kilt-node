@@ -19,7 +19,7 @@
 use parity_scale_codec::{Encode, HasCompact};
 use sp_core::{storage::StorageKey, RuntimeDebug, U256};
 use sp_runtime::{generic::Header, traits::BlakeTwo256};
-use sp_std::marker::PhantomData;
+use sp_std::{marker::PhantomData, vec::Vec};
 use sp_trie::StorageProof;
 
 use crate::{
