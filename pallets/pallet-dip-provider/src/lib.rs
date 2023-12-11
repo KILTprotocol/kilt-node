@@ -158,30 +158,27 @@ pub mod pallet {
 				T::IdentityCommitmentGenerator::generate_commitment(&identifier, &identity, commitment_version)
 					.map_err(|error| Error::<T>::IdentityCommitmentGenerator(error.into()))?;
 
-			IdentityCommitments::<T>::try_mutate(&identifier, commitment_version, |commitment_entry| {
-				if let Some(old_commitment) = commitment_entry {
-					T::ProviderHooks::on_commitment_removed(
-						&identifier,
-						&dispatcher,
-						old_commitment,
-						commitment_version,
-					)
-					.map_err(|e| Error::<T>::Hook(e.into()))?;
-					Self::deposit_event(Event::<T>::VersionedIdentityDeleted {
-						identifier: identifier.clone(),
-						version: commitment_version,
-					});
+			match Self::delete_identity_commitment_storage_entry(&identifier, commitment_version) {
+				// If an old commitment is found, call the relevant hook to deal with it.
+				Ok(commitment) => {
+					T::ProviderHooks::on_commitment_removed(&identifier, &dispatcher, &commitment, commitment_version)
+						.map_err(|e| Error::<T>::Hook(e.into()))?;
 				}
-				T::ProviderHooks::on_identity_committed(&identifier, &dispatcher, &commitment, commitment_version)
-					.map_err(|e| Error::<T>::Hook(e.into()))?;
-				*commitment_entry = Some(commitment.clone());
-				Self::deposit_event(Event::<T>::VersionedIdentityCommitted {
-					identifier: identifier.clone(),
-					commitment,
-					version: commitment_version,
-				});
-				Ok::<_, Error<T>>(())
-			})?;
+				// If no old commitment is found, move on.
+				Err(Error::<T>::CommitmentNotFound) => (),
+				// If a different error is returned, bubble it up.
+				Err(e) => return Err(e.into()),
+			};
+
+			IdentityCommitments::<T>::insert(&identifier, commitment_version, commitment.clone());
+			// Call hooks for new commitment.
+			T::ProviderHooks::on_identity_committed(&identifier, &dispatcher, &commitment, commitment_version)
+				.map_err(|e| Error::<T>::Hook(e.into()))?;
+			Self::deposit_event(Event::<T>::VersionedIdentityCommitted {
+				identifier: identifier.clone(),
+				commitment,
+				version: commitment_version,
+			});
 			Ok(())
 		}
 
@@ -200,8 +197,8 @@ pub mod pallet {
 		) -> DispatchResult {
 			let dispatcher = T::CommitOriginCheck::ensure_origin(origin, &identifier)
 				.map(|e: <T as Config>::CommitOrigin| e.submitter())?;
-
 			let commitment_version = version.unwrap_or(LATEST_COMMITMENT_VERSION);
+
 			let commitment = Self::delete_identity_commitment_storage_entry(&identifier, commitment_version)?;
 			T::ProviderHooks::on_commitment_removed(&identifier, &dispatcher, &commitment, commitment_version)
 				.map_err(|e| Error::<T>::Hook(e.into()))?;
@@ -213,7 +210,7 @@ pub mod pallet {
 		pub fn delete_identity_commitment_storage_entry(
 			identifier: &T::Identifier,
 			version: IdentityCommitmentVersion,
-		) -> Result<IdentityCommitmentOf<T>, DispatchError> {
+		) -> Result<IdentityCommitmentOf<T>, Error<T>> {
 			let commitment =
 				IdentityCommitments::<T>::take(identifier, version).ok_or(Error::<T>::CommitmentNotFound)?;
 			Self::deposit_event(Event::<T>::VersionedIdentityDeleted {
