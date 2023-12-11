@@ -469,9 +469,9 @@ pub mod v0 {
 	use sp_std::borrow::Borrow;
 
 	use crate::{
-		did::{RevealedDidKeysAndSignature, RevealedDidKeysSignatureAndCallVerifier},
+		did::{verify_did_signature_for_call, RevealedDidKeysAndSignature},
 		export::common::v0::{DipMerkleProofAndDidSignature, ParachainRootStateProof},
-		merkle::DidMerkleProofVerifier,
+		merkle::verify_dip_merkle_proof,
 		state_proofs::{parachain::DipIdentityCommitmentProofVerifier, relay_chain::ParachainHeadProofVerifier},
 		traits::ProviderParachainStorageInfo,
 	};
@@ -741,7 +741,7 @@ pub mod v0 {
 				ProviderLinkedAccountId,
 				MAX_REVEALED_KEYS_COUNT,
 				MAX_REVEALED_ACCOUNTS_COUNT,
-			> = DidMerkleProofVerifier::<
+			> = verify_dip_merkle_proof::<
 				ProviderDipMerkleHasher,
 				_,
 				_,
@@ -750,30 +750,20 @@ pub mod v0 {
 				_,
 				MAX_REVEALED_KEYS_COUNT,
 				MAX_REVEALED_ACCOUNTS_COUNT,
-			>::verify_dip_merkle_proof(&subject_identity_commitment, proof.did.leaves)
+			>(&subject_identity_commitment, proof.did.leaves)
 			.map_err(DipSiblingProviderStateProofVerifierError::DipProof)?;
 
 			// 4. Verify DID signature.
-			RevealedDidKeysSignatureAndCallVerifier::<
-					_,
-					_,
-					_,
-					_,
-					LocalContextProvider,
-					_,
-					_,
-					_,
-					LocalDidCallVerifier,
-				>::verify_did_signature_for_call(
-					call,
-					submitter,
-					identity_details,
-					RevealedDidKeysAndSignature {
-						merkle_leaves: proof_leaves.borrow(),
-						did_signature: proof.did.signature,
-					},
-				)
-				.map_err(DipSiblingProviderStateProofVerifierError::DidSignature)?;
+			verify_did_signature_for_call::<_, _, _, _, LocalContextProvider, _, _, _, LocalDidCallVerifier>(
+				call,
+				submitter,
+				identity_details,
+				RevealedDidKeysAndSignature {
+					merkle_leaves: proof_leaves.borrow(),
+					did_signature: proof.did.signature,
+				},
+			)
+			.map_err(DipSiblingProviderStateProofVerifierError::DidSignature)?;
 
 			Ok(proof_leaves)
 		}

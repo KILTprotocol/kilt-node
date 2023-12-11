@@ -494,12 +494,11 @@ pub mod v0 {
 
 	use crate::{
 		did::{
-			RevealedDidKeysAndSignature, RevealedDidKeysSignatureAndCallVerifier,
-			RevealedDidKeysSignatureAndCallVerifierError,
+			verify_did_signature_for_call, RevealedDidKeysAndSignature, RevealedDidKeysSignatureAndCallVerifierError,
 		},
 		export::common::v0::{DipMerkleProofAndDidSignature, ParachainRootStateProof},
 		merkle::{
-			DidMerkleProofVerifier, DidMerkleProofVerifierError, RevealedDidMerkleProofLeaf,
+			verify_dip_merkle_proof, DidMerkleProofVerifierError, RevealedDidMerkleProofLeaf,
 			RevealedDidMerkleProofLeaves,
 		},
 		state_proofs::{
@@ -776,7 +775,7 @@ pub mod v0 {
 				.map_err(DipChildProviderStateProofVerifierError::IdentityCommitmentMerkleProof)?;
 
 			// 4. Verify DIP merkle proof.
-			let proof_leaves = DidMerkleProofVerifier::<
+			let proof_leaves = verify_dip_merkle_proof::<
 				ProviderDipMerkleHasher,
 				_,
 				_,
@@ -785,30 +784,20 @@ pub mod v0 {
 				_,
 				MAX_REVEALED_KEYS_COUNT,
 				MAX_REVEALED_ACCOUNTS_COUNT,
-			>::verify_dip_merkle_proof(&subject_identity_commitment, proof.did.leaves)
+			>(&subject_identity_commitment, proof.did.leaves)
 			.map_err(DipChildProviderStateProofVerifierError::DipProof)?;
 
 			// 5. Verify DID signature.
-			RevealedDidKeysSignatureAndCallVerifier::<
-					_,
-					_,
-					_,
-					_,
-					LocalContextProvider,
-					_,
-					_,
-					_,
-					LocalDidCallVerifier,
-				>::verify_did_signature_for_call(
-					call,
-					submitter,
-					identity_details,
-					RevealedDidKeysAndSignature {
-						merkle_leaves: proof_leaves.borrow(),
-						did_signature: proof.did.signature,
-					},
-				)
-				.map_err(DipChildProviderStateProofVerifierError::DidSignature)?;
+			verify_did_signature_for_call::<_, _, _, _, LocalContextProvider, _, _, _, LocalDidCallVerifier>(
+				call,
+				submitter,
+				identity_details,
+				RevealedDidKeysAndSignature {
+					merkle_leaves: proof_leaves.borrow(),
+					did_signature: proof.did.signature,
+				},
+			)
+			.map_err(DipChildProviderStateProofVerifierError::DidSignature)?;
 			Ok(proof_leaves)
 		}
 	}
