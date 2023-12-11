@@ -26,19 +26,19 @@ use crate::utils::OutputOf;
 
 // TODO: Switch to the `Incrementable` trait once it's added to the root of
 // `frame_support`.
-/// A trait for "bumpable" types, i.e., types that have some notion of order of
-/// its members.
-pub trait Bump {
-	/// Bump the type instance to its next value. Overflows are assumed to be
-	/// taken care of by the type internal logic.
-	fn bump(&mut self);
+/// A trait for "incrementable" types, i.e., types that have some notion of
+/// order of its members.
+pub trait Incrementable {
+	/// Increment the type instance to its next value. Overflows are assumed to
+	/// be taken care of by the type internal logic.
+	fn increment(&mut self);
 }
 
-impl<T> Bump for T
+impl<T> Incrementable for T
 where
 	T: CheckedAdd + Zero + One,
 {
-	fn bump(&mut self) {
+	fn increment(&mut self) {
 		*self = self.checked_add(&Self::one()).unwrap_or_else(Self::zero);
 	}
 }

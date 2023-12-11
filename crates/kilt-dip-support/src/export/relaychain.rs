@@ -34,8 +34,8 @@ use crate::{
 	merkle::{DidMerkleProofVerifierError, RevealedDidMerkleProofLeaf, RevealedDidMerkleProofLeaves},
 	state_proofs::{parachain::DipIdentityCommitmentProofVerifierError, relaychain::ParachainHeadProofVerifierError},
 	traits::{
-		Bump, DidSignatureVerifierContext, DipCallOriginFilter, HistoricalBlockRegistry, ProviderParachainStorageInfo,
-		RelayChainStorageInfo,
+		DidSignatureVerifierContext, DipCallOriginFilter, HistoricalBlockRegistry, Incrementable,
+		ProviderParachainStorageInfo, RelayChainStorageInfo,
 	},
 	utils::OutputOf,
 	BoundedBlindedValue, FrameSystemDidSignatureContext, ProviderParachainStateInfoViaProviderPallet,
@@ -215,7 +215,7 @@ impl<
 	KeyIdOf<KiltRuntime>: Into<KiltDipMerkleHasher::Out>,
 	KiltDipMerkleHasher: sp_core::Hasher<Out = IdentityCommitmentOf<KiltRuntime>>,
 	ConsumerRuntime: pallet_dip_consumer::Config,
-	ConsumerRuntime::LocalIdentityInfo: Bump + Default + Encode,
+	ConsumerRuntime::LocalIdentityInfo: Incrementable + Default + Encode,
 	RelayChainInfo: RelayChainStorageInfo<BlockNumber = BlockNumberFor<ConsumerRuntime>>
 		+ HistoricalBlockRegistry<
 			BlockNumber = <RelayChainInfo as RelayChainStorageInfo>::BlockNumber,
@@ -371,7 +371,7 @@ impl<
 		LocalDidCallVerifier,
 	> where
 	ConsumerRuntime: pallet_dip_consumer::Config,
-	ConsumerRuntime::LocalIdentityInfo: Bump + Default,
+	ConsumerRuntime::LocalIdentityInfo: Incrementable + Default,
 
 	RelayChainInfo: RelayChainStorageInfo<BlockNumber = BlockNumberFor<ConsumerRuntime>>
 		+ HistoricalBlockRegistry<
@@ -507,7 +507,7 @@ pub mod v0 {
 			relaychain::{ParachainHeadProofVerifier, ParachainHeadProofVerifierError},
 		},
 		traits::{
-			Bump, DidSignatureVerifierContext, DipCallOriginFilter, HistoricalBlockRegistry,
+			DidSignatureVerifierContext, DipCallOriginFilter, HistoricalBlockRegistry, Incrementable,
 			ProviderParachainStorageInfo, RelayChainStorageInfo,
 		},
 		utils::OutputOf,
@@ -662,7 +662,7 @@ pub mod v0 {
 			LocalDidCallVerifier,
 		> where
 		ConsumerRuntime: pallet_dip_consumer::Config,
-		ConsumerRuntime::LocalIdentityInfo: Bump + Default,
+		ConsumerRuntime::LocalIdentityInfo: Incrementable + Default,
 
 		RelayChainInfo: RelayChainStorageInfo<BlockNumber = BlockNumberFor<ConsumerRuntime>>
 			+ HistoricalBlockRegistry<

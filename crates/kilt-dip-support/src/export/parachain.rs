@@ -33,7 +33,7 @@ use crate::{
 	did::RevealedDidKeysSignatureAndCallVerifierError,
 	merkle::{DidMerkleProofVerifierError, RevealedDidMerkleProofLeaf, RevealedDidMerkleProofLeaves},
 	state_proofs::{parachain::DipIdentityCommitmentProofVerifierError, relaychain::ParachainHeadProofVerifierError},
-	traits::{self, Bump, DidSignatureVerifierContext, DipCallOriginFilter},
+	traits::{self, DidSignatureVerifierContext, DipCallOriginFilter, Incrementable},
 	utils::OutputOf,
 	BoundedBlindedValue, FrameSystemDidSignatureContext, ProviderParachainStateInfoViaProviderPallet,
 };
@@ -228,7 +228,7 @@ impl<
 	KeyIdOf<KiltRuntime>: Into<KiltDipMerkleHasher::Out>,
 	KiltDipMerkleHasher: sp_core::Hasher<Out = IdentityCommitmentOf<KiltRuntime>>,
 	ConsumerRuntime: pallet_dip_consumer::Config,
-	ConsumerRuntime::LocalIdentityInfo: Bump + Default + Encode,
+	ConsumerRuntime::LocalIdentityInfo: Incrementable + Default + Encode,
 	RelayChainStateInfo: traits::RelayChainStorageInfo + traits::RelayChainStateInfo,
 	RelayChainStateInfo::ParaId: From<ParaId>,
 	RelayChainStateInfo::BlockNumber: Parameter + 'static + Copy + Into<U256> + TryFrom<U256> + HasCompact,
@@ -367,7 +367,7 @@ impl<
 		LocalDidCallVerifier,
 	> where
 	ConsumerRuntime: pallet_dip_consumer::Config,
-	ConsumerRuntime::LocalIdentityInfo: Bump + Default,
+	ConsumerRuntime::LocalIdentityInfo: Incrementable + Default,
 
 	RelayChainStateInfo: traits::RelayChainStorageInfo + traits::RelayChainStateInfo,
 	OutputOf<RelayChainStateInfo::Hasher>: Ord,
@@ -644,7 +644,7 @@ pub mod v0 {
 			LocalDidCallVerifier,
 		> where
 		ConsumerRuntime: pallet_dip_consumer::Config,
-		ConsumerRuntime::LocalIdentityInfo: Bump + Default,
+		ConsumerRuntime::LocalIdentityInfo: Incrementable + Default,
 
 		RelayChainStateInfo: traits::RelayChainStorageInfo + traits::RelayChainStateInfo,
 		OutputOf<RelayChainStateInfo::Hasher>: Ord,
