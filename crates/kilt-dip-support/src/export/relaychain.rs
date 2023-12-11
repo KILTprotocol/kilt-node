@@ -32,7 +32,7 @@ use sp_std::marker::PhantomData;
 use crate::{
 	did::RevealedDidKeysSignatureAndCallVerifierError,
 	merkle::{DidMerkleProofVerifierError, RevealedDidMerkleProofLeaf, RevealedDidMerkleProofLeaves},
-	state_proofs::{parachain::DipIdentityCommitmentProofVerifierError, relay_chain::ParachainHeadProofVerifierError},
+	state_proofs::{parachain::DipIdentityCommitmentProofVerifierError, relaychain::ParachainHeadProofVerifierError},
 	traits::{
 		Bump, DidSignatureVerifierContext, DipCallOriginFilter, HistoricalBlockRegistry, ProviderParachainStorageInfo,
 		RelayChainStorageInfo,
@@ -504,7 +504,7 @@ pub mod v0 {
 		},
 		state_proofs::{
 			parachain::{DipIdentityCommitmentProofVerifier, DipIdentityCommitmentProofVerifierError},
-			relay_chain::{ParachainHeadProofVerifier, ParachainHeadProofVerifierError},
+			relaychain::{ParachainHeadProofVerifier, ParachainHeadProofVerifierError},
 		},
 		traits::{
 			Bump, DidSignatureVerifierContext, DipCallOriginFilter, HistoricalBlockRegistry,

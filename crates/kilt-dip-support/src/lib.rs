@@ -37,7 +37,7 @@ mod export;
 pub use export::*;
 pub use state_proofs::{
 	parachain::{DipIdentityCommitmentProofVerifier, DipIdentityCommitmentProofVerifierError},
-	relay_chain::{ParachainHeadProofVerifier, ParachainHeadProofVerifierError, RelayStateRootsViaRelayStorePallet},
+	relaychain::{ParachainHeadProofVerifier, ParachainHeadProofVerifierError, RelayStateRootsViaRelayStorePallet},
 };
 pub use traits::{FrameSystemDidSignatureContext, ProviderParachainStateInfoViaProviderPallet};
 pub use utils::BoundedBlindedValue;
