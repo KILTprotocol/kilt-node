@@ -21,8 +21,8 @@
 //! protocol.
 //!
 //! Consumers of KILT identities should prefer directly using
-//! [`KiltVersionedChildProviderVerifier`] for consumer relaychains and
-//! [`KiltVersionedSiblingProviderVerifier`] for consumer sibling parachains.
+//! [`KiltVersionedRelaychainVerifier`] for consumer relaychains and
+//! [`KiltVersionedParachainVerifier`] for consumer sibling parachains.
 
 #![cfg_attr(not(feature = "std"), no_std)]
 

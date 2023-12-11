@@ -21,7 +21,7 @@ use dip_provider_runtime_template::{AccountId as ProviderAccountId, Runtime as P
 use frame_support::traits::Contains;
 use frame_system::EnsureSigned;
 use kilt_dip_support::{
-	traits::DipCallOriginFilter, KiltVersionedSiblingProviderVerifier, RelayStateRootsViaRelayStorePallet,
+	traits::DipCallOriginFilter, KiltVersionedParachainVerifier, RelayStateRootsViaRelayStorePallet,
 };
 use pallet_dip_consumer::traits::IdentityProofVerifier;
 use sp_core::ConstU32;
@@ -34,7 +34,7 @@ pub type MerkleProofVerifierOutput = <ProofVerifier as IdentityProofVerifier<Run
 /// that a KILT subject can provide DIP proof that reveal at most 10 DID keys
 /// and 10 linked accounts. Calls that do not pass the [`DipCallFilter`] will be
 /// discarded early on in the verification process.
-pub type ProofVerifier = KiltVersionedSiblingProviderVerifier<
+pub type ProofVerifier = KiltVersionedParachainVerifier<
 	ProviderRuntime,
 	ConstU32<2_000>,
 	RelayStateRootsViaRelayStorePallet<Runtime>,
