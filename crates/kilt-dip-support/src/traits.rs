@@ -43,8 +43,8 @@ where
 	}
 }
 
-/// A trait for types that implement some sort of access control logic on the
-/// provided input `Call` type.
+/// A trait for types that implement access control logic where the call is the
+/// controlled resource and access is granted based on the provided info.
 /// The generic types are the following:
 /// * `Call`: The type of the call being checked.
 pub trait DipCallOriginFilter<Call> {
