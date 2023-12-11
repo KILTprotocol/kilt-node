@@ -151,12 +151,14 @@ where
 /// * `LocalDidCallVerifier`: Logic to map `RuntimeCall`s to a specific DID key
 ///   relationship. This information is used once the Merkle proof is verified,
 ///   to filter only the revealed keys that match the provided relationship.
-/// * `MAX_REVEALED_KEYS_COUNT`: Max number of DID keys that the verifier will
-///   accept revealed as part of the DIP identity proof.
-/// * `MAX_REVEALED_ACCOUNTS_COUNT`: Max number of linked accounts that the
-///   verifier will accept revealed as part of the DIP identity proof.
-/// * `MAX_DID_SIGNATURE_DURATION`: Max number of blocks a cross-chain DID
-///   signature is considered fresh.
+/// * `MAX_REVEALED_KEYS_COUNT`: [OPTIONAL] Max number of DID keys that the
+///   verifier will accept revealed as part of the DIP identity proof. It
+///   defaults to **10**.
+/// * `MAX_REVEALED_ACCOUNTS_COUNT`: [OPTIONAL] Max number of linked accounts
+///   that the verifier will accept revealed as part of the DIP identity proof.
+///   It defaults to **10**.
+/// * `MAX_DID_SIGNATURE_DURATION`: [OPTIONAL] Max number of blocks a
+///   cross-chain DID signature is considered fresh. It defaults to **50**.
 ///
 /// It specializes the [`GenericVersionedParachainVerifier`]
 /// type by using the following types for its generics:
@@ -183,9 +185,9 @@ pub struct KiltVersionedParachainVerifier<
 	RelayChainStateInfo,
 	KiltDipMerkleHasher,
 	LocalDidCallVerifier,
-	const MAX_REVEALED_KEYS_COUNT: u32,
-	const MAX_REVEALED_ACCOUNTS_COUNT: u32,
-	const MAX_DID_SIGNATURE_DURATION: u16,
+	const MAX_REVEALED_KEYS_COUNT: u32 = 10,
+	const MAX_REVEALED_ACCOUNTS_COUNT: u32 = 10,
+	const MAX_DID_SIGNATURE_DURATION: u16 = 50,
 >(
 	PhantomData<(
 		KiltRuntime,
