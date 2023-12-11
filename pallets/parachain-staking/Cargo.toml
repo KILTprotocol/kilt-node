@@ -1,14 +1,14 @@
 [package]
 authors.workspace = true
+description = "Parachain parachain-staking pallet for collator delegation and selection as well as reward distribution"
 documentation.workspace = true
 edition.workspace = true
 homepage.workspace = true
 license-file.workspace = true
+name = "parachain-staking"
 readme.workspace = true
 repository.workspace = true
 version.workspace = true
-name = "parachain-staking"
-description = "Parachain parachain-staking pallet for collator delegation and selection as well as reward distribution"
 
 [dev-dependencies]
 kilt-support = {workspace = true, features = ["mock", "try-runtime"]}
@@ -20,10 +20,10 @@ sp-io = {workspace = true, features = ["std"]}
 
 [dependencies]
 # External dependencies
-parity-scale-codec = {workspace = true, features = ["derive"]}
 log.workspace = true
+parity-scale-codec = {workspace = true, features = ["derive"]}
 scale-info = {workspace = true, features = ["derive", "serde"]}
-serde = {workspace = true, default-features= false, features=["derive"]}
+serde = {workspace = true, default-features = false, features = ["derive"]}
 
 # Internal dependencies
 kilt-runtime-api-staking.workspace = true
@@ -51,6 +51,7 @@ runtime-benchmarks = [
   "pallet-balances/runtime-benchmarks",
   "sp-runtime/runtime-benchmarks",
   "sp-staking/runtime-benchmarks",
+  "kilt-support/runtime-benchmarks",
 ]
 std = [
   "frame-benchmarking?/std",
@@ -67,6 +68,7 @@ std = [
   "sp-runtime/std",
   "sp-staking/std",
   "sp-std/std",
+  "kilt-support/std",
 ]
 try-runtime = [
   "frame-system/try-runtime",
@@ -74,5 +76,5 @@ try-runtime = [
   "pallet-authorship/try-runtime",
   "pallet-balances/try-runtime",
   "pallet-session/try-runtime",
-  "kilt-support/try-runtime"
+  "kilt-support/try-runtime",
 ]
