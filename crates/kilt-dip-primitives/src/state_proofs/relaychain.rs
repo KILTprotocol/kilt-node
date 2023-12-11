@@ -174,7 +174,7 @@ where
 	type ParaId = u32;
 
 	fn parachain_head_storage_key(para_id: &Self::ParaId) -> Self::Key {
-		// TODO: It's not possible to access the runtime definition from here.
+		// TODO: Access the runtime definition from here, once and if exposed.
 		let encoded_para_id = para_id.encode();
 		let storage_key = [
 			frame_support::storage::storage_prefix(b"Paras", b"Heads").as_slice(),
