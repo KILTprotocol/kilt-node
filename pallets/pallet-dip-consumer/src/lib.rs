@@ -152,17 +152,21 @@ pub mod pallet {
 		) -> DispatchResult {
 			let submitter = T::DispatchOriginCheck::ensure_origin(origin, &identifier)?;
 			ensure!(T::DipCallOriginFilter::contains(&*call), Error::<T>::Filtered);
-			let mut identity_entry = IdentityEntries::<T>::get(&identifier);
-			let proof_verification_result = T::ProofVerifier::verify_proof_for_call_against_details(
-				&*call,
-				&identifier,
-				&submitter,
-				&mut identity_entry,
-				proof,
-			)
-			.map_err(|e| Error::<T>::InvalidProof(e.into()))?;
-			IdentityEntries::<T>::mutate(&identifier, |entry| *entry = identity_entry);
-			let did_origin = DipOrigin {
+			let proof_verification_result = IdentityEntries::<T>::try_mutate(&identifier, |identity_entry| {
+				T::ProofVerifier::verify_proof_for_call_against_details(
+					&*call,
+					&identifier,
+					&submitter,
+					identity_entry,
+					proof,
+				)
+				.map_err(|e| Error::<T>::InvalidProof(e.into()))
+			})?;
+			let did_origin: DipOrigin<
+				T::Identifier,
+				T::AccountId,
+				<T::ProofVerifier as IdentityProofVerifier<T>>::VerificationResult,
+			> = DipOrigin {
 				identifier,
 				account_address: submitter,
 				details: proof_verification_result,
