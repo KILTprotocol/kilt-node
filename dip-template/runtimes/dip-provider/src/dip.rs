@@ -96,8 +96,11 @@ pub mod deposit {
 
 	/// The additional logic to execute whenever a deposit is removed by its
 	/// owner directly via the [`pallet_deposit_storage::Pallet`] pallet.
-	pub type DepositCollectorHooks =
-		FixedDepositCollectorViaDepositsPallet<DipProviderDepositNamespace, ConstU128<DEPOSIT_AMOUNT>>;
+	pub type DepositCollectorHooks = FixedDepositCollectorViaDepositsPallet<
+		DipProviderDepositNamespace,
+		ConstU128<DEPOSIT_AMOUNT>,
+		(DidIdentifier, IdentityCommitmentVersion),
+	>;
 
 	pub enum CommitmentDepositRemovalHookError {
 		DecodeKey,

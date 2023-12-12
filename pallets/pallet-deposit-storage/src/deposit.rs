@@ -44,8 +44,8 @@ pub struct DepositEntry<AccountId, Balance, Reason> {
 /// Type implementing the [`DipProviderHooks`] hooks trait by taking a deposit
 /// whenever an identity commitment is stored, and releasing the deposit
 /// whenever an identity commitment is removed.
-pub struct FixedDepositCollectorViaDepositsPallet<DepositsNamespace, FixedDepositAmount>(
-	PhantomData<(DepositsNamespace, FixedDepositAmount)>,
+pub struct FixedDepositCollectorViaDepositsPallet<DepositsNamespace, FixedDepositAmount, DepositKey>(
+	PhantomData<(DepositsNamespace, FixedDepositAmount, DepositKey)>,
 );
 
 pub enum FixedDepositCollectorViaDepositsPalletError {
@@ -68,12 +68,13 @@ impl From<FixedDepositCollectorViaDepositsPalletError> for u16 {
 	}
 }
 
-impl<Runtime, DepositsNamespace, FixedDepositAmount> DipProviderHooks<Runtime>
-	for FixedDepositCollectorViaDepositsPallet<DepositsNamespace, FixedDepositAmount>
+impl<Runtime, DepositsNamespace, FixedDepositAmount, DepositKey> DipProviderHooks<Runtime>
+	for FixedDepositCollectorViaDepositsPallet<DepositsNamespace, FixedDepositAmount, DepositKey>
 where
 	Runtime: pallet_dip_provider::Config + Config,
 	DepositsNamespace: Get<Runtime::Namespace>,
 	FixedDepositAmount: Get<BalanceOf<Runtime>>,
+	DepositKey: From<(Runtime::Identifier, IdentityCommitmentVersion)> + Encode,
 {
 	type Error = u16;
 
@@ -84,14 +85,17 @@ where
 		version: IdentityCommitmentVersion,
 	) -> Result<(), Self::Error> {
 		let namespace = DepositsNamespace::get();
-		let key = (identifier, version).encode().try_into().map_err(|_| {
-			log::error!(
-				"Failed to convert tuple ({:#?}, {version}) to BoundedVec with max length {}",
-				identifier,
-				Runtime::MaxKeyLength::get()
-			);
-			FixedDepositCollectorViaDepositsPalletError::Internal
-		})?;
+		let key = DepositKey::from((identifier.clone(), version))
+			.encode()
+			.try_into()
+			.map_err(|_| {
+				log::error!(
+					"Failed to convert tuple ({:#?}, {version}) to BoundedVec with max length {}",
+					identifier,
+					Runtime::MaxKeyLength::get()
+				);
+				FixedDepositCollectorViaDepositsPalletError::Internal
+			})?;
 		let deposit_entry = DepositEntry {
 			deposit: Deposit {
 				amount: FixedDepositAmount::get(),
