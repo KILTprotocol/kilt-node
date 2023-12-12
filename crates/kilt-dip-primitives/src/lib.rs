@@ -31,13 +31,9 @@ pub mod merkle;
 pub mod state_proofs;
 pub mod traits;
 pub mod utils;
+pub mod verifier;
 
-mod export;
-
-pub use export::*;
-pub use state_proofs::{
-	parachain::{DipIdentityCommitmentProofVerifier, DipIdentityCommitmentProofVerifierError},
-	relaychain::{ParachainHeadProofVerifier, ParachainHeadProofVerifierError, RelayStateRootsViaRelayStorePallet},
-};
+pub use state_proofs::relaychain::RelayStateRootsViaRelayStorePallet;
 pub use traits::{FrameSystemDidSignatureContext, ProviderParachainStateInfoViaProviderPallet};
 pub use utils::BoundedBlindedValue;
+pub use verifier::*;

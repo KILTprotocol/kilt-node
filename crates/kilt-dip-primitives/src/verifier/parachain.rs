@@ -471,10 +471,10 @@ pub mod v0 {
 
 	use crate::{
 		did::{verify_did_signature_for_call, RevealedDidKeysAndSignature},
-		export::common::v0::{DipMerkleProofAndDidSignature, ParachainRootStateProof},
 		merkle::verify_dip_merkle_proof,
 		state_proofs::{parachain::DipIdentityCommitmentProofVerifier, relaychain::ParachainHeadProofVerifier},
 		traits::ProviderParachainStorageInfo,
+		verifier::common::v0::{DipMerkleProofAndDidSignature, ParachainRootStateProof},
 	};
 
 	/// The expected format of a cross-chain DIP identity proof when the

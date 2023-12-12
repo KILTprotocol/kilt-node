@@ -497,7 +497,6 @@ pub mod v0 {
 		did::{
 			verify_did_signature_for_call, RevealedDidKeysAndSignature, RevealedDidKeysSignatureAndCallVerifierError,
 		},
-		export::common::v0::{DipMerkleProofAndDidSignature, ParachainRootStateProof},
 		merkle::{
 			verify_dip_merkle_proof, DidMerkleProofVerifierError, RevealedDidMerkleProofLeaf,
 			RevealedDidMerkleProofLeaves,
@@ -511,6 +510,7 @@ pub mod v0 {
 			ProviderParachainStorageInfo, RelayChainStorageInfo,
 		},
 		utils::OutputOf,
+		verifier::common::v0::{DipMerkleProofAndDidSignature, ParachainRootStateProof},
 	};
 
 	/// The expected format of a cross-chain DIP identity proof when the
