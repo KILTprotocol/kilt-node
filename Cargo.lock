@@ -2445,7 +2445,7 @@ dependencies = [
  "frame-system-benchmarking",
  "frame-system-rpc-runtime-api",
  "hex-literal 0.3.4",
- "kilt-dip-support",
+ "kilt-dip-primitives",
  "pallet-aura",
  "pallet-authorship",
  "pallet-balances",
@@ -2550,7 +2550,7 @@ dependencies = [
  "frame-system-benchmarking",
  "frame-system-rpc-runtime-api",
  "hex-literal 0.3.4",
- "kilt-dip-support",
+ "kilt-dip-primitives",
  "kilt-runtime-api-did",
  "kilt-runtime-api-dip-provider",
  "kilt-support",
@@ -4555,7 +4555,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "kilt-dip-support"
+name = "kilt-dip-primitives"
 version = "1.12.0-dev"
 dependencies = [
  "cfg-if",
@@ -6537,6 +6537,7 @@ dependencies = [
 name = "pallet-dip-consumer"
 version = "1.12.0-dev"
 dependencies = [
+ "cfg-if",
  "frame-benchmarking",
  "frame-support",
  "frame-system",
@@ -9916,7 +9917,7 @@ dependencies = [
  "frame-support",
  "frame-system",
  "kilt-asset-dids",
- "kilt-dip-support",
+ "kilt-dip-primitives",
  "kilt-support",
  "log",
  "pallet-authorship",

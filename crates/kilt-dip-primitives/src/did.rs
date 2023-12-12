@@ -30,7 +30,7 @@ use sp_std::vec::Vec;
 
 use crate::{
 	merkle::RevealedDidKey,
-	traits::{Bump, DidSignatureVerifierContext, DipCallOriginFilter},
+	traits::{DidSignatureVerifierContext, DipCallOriginFilter, Incrementable},
 };
 
 /// Type returned by the Merkle proof verifier component of the DIP consumer
@@ -136,7 +136,7 @@ where
 	ContextProvider::BlockNumber: Encode + CheckedSub + From<u16> + PartialOrd,
 	ContextProvider::Hash: Encode,
 	ContextProvider::SignedExtra: Encode,
-	DidLocalDetails: Bump + Default + Encode,
+	DidLocalDetails: Incrementable + Default + Encode,
 	RemoteAccountId: Clone,
 	MerkleProofEntries: sp_std::borrow::Borrow<[RevealedDidKey<RemoteKeyId, RemoteBlockNumber, RemoteAccountId>]>,
 	CallVerifier:
@@ -207,7 +207,7 @@ where
 	}
 
 	if let Some(details) = local_details {
-		details.bump();
+		details.increment();
 	} else {
 		*local_details = Some(DidLocalDetails::default());
 	};

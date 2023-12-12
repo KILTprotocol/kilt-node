@@ -16,21 +16,20 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-/// Verification logic to integrate a child chain as a DIP provider.
-pub mod child;
 /// Verification logic to integrate a sibling chain as a DIP provider.
-pub mod sibling;
+pub mod parachain;
+/// Verification logic to integrate a child chain as a DIP provider.
+pub mod relaychain;
 
 mod common;
 
-pub use child::{
-	DipChildProviderStateProofVerifierError, KiltVersionedChildProviderVerifier, VersionedChildParachainDipStateProof,
+pub use parachain::{
+	DipParachainStateProofVerifierError, KiltVersionedParachainVerifier, VersionedDipParachainStateProof,
 };
-pub use sibling::{
-	DipSiblingProviderStateProofVerifierError, KiltVersionedSiblingProviderVerifier,
-	VersionedSiblingParachainDipStateProof,
+pub use relaychain::{
+	DipRelaychainStateProofVerifierError, KiltVersionedRelaychainVerifier, VersionedRelaychainStateProof,
 };
 
 pub mod latest {
-	pub use super::{child::latest::*, common::latest::*, sibling::latest::*};
+	pub use super::{common::latest::*, parachain::latest::*, relaychain::latest::*};
 }

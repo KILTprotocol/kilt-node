@@ -1,11 +1,11 @@
 [package]
 authors.workspace = true
-description = "Support types, traits, and functions for the KILT Decentralized Identity Provider (DIP) functionality as implemented by the KILT blockchain."
+description = "Primitive types, traits, and functions for the KILT Decentralized Identity Provider (DIP) functionality as implemented by the KILT blockchain."
 documentation.workspace = true
 edition.workspace = true
 homepage.workspace = true
 license-file.workspace = true
-name = "kilt-dip-support"
+name = "kilt-dip-primitives"
 readme.workspace = true
 repository.workspace = true
 version.workspace = true
@@ -14,7 +14,7 @@ version.workspace = true
 # External dependencies
 hash-db.workspace = true
 log.workspace = true
-cfg-if = "1.0"
+cfg-if.workspace = true
 
 # Internal dependencies
 did.workspace = true

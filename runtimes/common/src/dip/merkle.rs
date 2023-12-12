@@ -18,7 +18,7 @@
 use did::{DidVerificationKeyRelationship, KeyIdOf};
 use frame_support::RuntimeDebug;
 use frame_system::pallet_prelude::BlockNumberFor;
-use kilt_dip_support::merkle::{DidKeyMerkleKey, DidKeyMerkleValue, DidMerkleProof};
+use kilt_dip_primitives::merkle::{DidKeyMerkleKey, DidKeyMerkleValue, DidMerkleProof};
 use pallet_did_lookup::linkable_account::LinkableAccountId;
 use pallet_dip_provider::{
 	traits::{IdentityCommitmentGenerator, IdentityProvider},
@@ -29,7 +29,7 @@ use scale_info::TypeInfo;
 use sp_std::{borrow::ToOwned, marker::PhantomData, vec::Vec};
 use sp_trie::{generate_trie_proof, LayoutV1, MemoryDB, TrieDBMutBuilder, TrieHash, TrieMut};
 
-use kilt_dip_support::merkle::{DidKeyRelationship, RevealedDidMerkleProofLeaf};
+use kilt_dip_primitives::merkle::{DidKeyRelationship, RevealedDidMerkleProofLeaf};
 
 use crate::dip::did::LinkedDidInfoOf;
 
@@ -305,19 +305,18 @@ pub mod v0 {
 			.collect::<Result<Vec<_>, _>>()?;
 
 		match (should_include_web3_name, web3_name_details) {
-			// If web3name should be included and it exists...
+			// If web3name should be included and it exists, add to the leaves to be revealed...
 			(true, Some(web3name_details)) => {
 				leaves.push(RevealedDidMerkleProofLeaf::Web3Name(
 					web3name_details.web3_name.clone().into(),
 					web3name_details.claimed_at.into(),
 				));
-				Ok(())
 			}
-			// ...else if web3name should be included and it DOES NOT exist...
-			(true, None) => Err(DidMerkleProofError::Web3NameNotFound),
-			// ...else (if web3name should NOT be included).
-			(false, _) => Ok(()),
-		}?;
+			// ...else if web3name should be included and it DOES NOT exist, return an error...
+			(true, None) => return Err(DidMerkleProofError::Web3NameNotFound),
+			// ...else (if web3name should NOT be included), skip.
+			(false, _) => {}
+		};
 
 		let encoded_keys: Vec<Vec<u8>> = leaves.iter().map(|l| l.encoded_key()).collect();
 		let proof =

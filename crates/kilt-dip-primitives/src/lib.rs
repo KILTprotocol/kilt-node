@@ -21,8 +21,8 @@
 //! protocol.
 //!
 //! Consumers of KILT identities should prefer directly using
-//! [`KiltVersionedChildProviderVerifier`] for consumer relaychains and
-//! [`KiltVersionedSiblingProviderVerifier`] for consumer sibling parachains.
+//! [`KiltVersionedRelaychainVerifier`] for consumer relaychains and
+//! [`KiltVersionedParachainVerifier`] for consumer sibling parachains.
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -37,7 +37,7 @@ mod export;
 pub use export::*;
 pub use state_proofs::{
 	parachain::{DipIdentityCommitmentProofVerifier, DipIdentityCommitmentProofVerifierError},
-	relay_chain::{ParachainHeadProofVerifier, ParachainHeadProofVerifierError, RelayStateRootsViaRelayStorePallet},
+	relaychain::{ParachainHeadProofVerifier, ParachainHeadProofVerifierError, RelayStateRootsViaRelayStorePallet},
 };
 pub use traits::{FrameSystemDidSignatureContext, ProviderParachainStateInfoViaProviderPallet};
 pub use utils::BoundedBlindedValue;

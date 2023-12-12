@@ -20,8 +20,8 @@ use did::{did_details::DidVerificationKey, DidVerificationKeyRelationship};
 use dip_provider_runtime_template::{AccountId as ProviderAccountId, Runtime as ProviderRuntime};
 use frame_support::traits::Contains;
 use frame_system::EnsureSigned;
-use kilt_dip_support::{
-	traits::DipCallOriginFilter, KiltVersionedSiblingProviderVerifier, RelayStateRootsViaRelayStorePallet,
+use kilt_dip_primitives::{
+	traits::DipCallOriginFilter, KiltVersionedParachainVerifier, RelayStateRootsViaRelayStorePallet,
 };
 use pallet_dip_consumer::traits::IdentityProofVerifier;
 use sp_core::ConstU32;
@@ -32,17 +32,15 @@ use crate::{weights, AccountId, DidIdentifier, Runtime, RuntimeCall, RuntimeOrig
 pub type MerkleProofVerifierOutput = <ProofVerifier as IdentityProofVerifier<Runtime>>::VerificationResult;
 /// The verifier logic assumes the provider is a sibling KILT parachain, and
 /// that a KILT subject can provide DIP proof that reveal at most 10 DID keys
-/// and 10 linked accounts. Calls that do not pass the [`DipCallFilter`] will be
-/// discarded early on in the verification process.
-pub type ProofVerifier = KiltVersionedSiblingProviderVerifier<
+/// and 10 linked accounts (defaults provided by the
+/// `KiltVersionedParachainVerifier` type). Calls that do not pass the
+/// [`DipCallFilter`] will be discarded early on in the verification process.
+pub type ProofVerifier = KiltVersionedParachainVerifier<
 	ProviderRuntime,
 	ConstU32<2_000>,
 	RelayStateRootsViaRelayStorePallet<Runtime>,
 	BlakeTwo256,
 	DipCallFilter,
-	10,
-	10,
-	50,
 >;
 
 impl pallet_dip_consumer::Config for Runtime {
