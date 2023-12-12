@@ -305,19 +305,18 @@ pub mod v0 {
 			.collect::<Result<Vec<_>, _>>()?;
 
 		match (should_include_web3_name, web3_name_details) {
-			// If web3name should be included and it exists...
+			// If web3name should be included and it exists, add to the leaves to be revealed...
 			(true, Some(web3name_details)) => {
 				leaves.push(RevealedDidMerkleProofLeaf::Web3Name(
 					web3name_details.web3_name.clone().into(),
 					web3name_details.claimed_at.into(),
 				));
-				Ok(())
 			}
-			// ...else if web3name should be included and it DOES NOT exist...
-			(true, None) => Err(DidMerkleProofError::Web3NameNotFound),
-			// ...else (if web3name should NOT be included).
-			(false, _) => Ok(()),
-		}?;
+			// ...else if web3name should be included and it DOES NOT exist, return an error...
+			(true, None) => return Err(DidMerkleProofError::Web3NameNotFound),
+			// ...else (if web3name should NOT be included), skip.
+			(false, _) => {}
+		};
 
 		let encoded_keys: Vec<Vec<u8>> = leaves.iter().map(|l| l.encoded_key()).collect();
 		let proof =
