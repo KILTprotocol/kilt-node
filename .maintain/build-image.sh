@@ -27,14 +27,14 @@ docker build \
 PROVIDER_BIN_NAME="dip-provider-node-template"
 docker build \
 	--cache-from $AWS_REGISTRY/kilt-parachain/collator:builder \
-	--cache-from $AWS_REGISTRY/kilt-parachain/collator:$target_tag \
+	--cache-from $AWS_REGISTRY/dip-provider-node-template:$target_tag \
 	--build-arg NODE_TYPE=$PROVIDER_BIN_NAME \
 	-t local/$PROVIDER_BIN_NAME:$target_tag \
 	.
 CONSUMER_BIN_NAME="dip-consumer-node-template"
 docker build \
 	--cache-from $AWS_REGISTRY/kilt-parachain/collator:builder \
-	--cache-from $AWS_REGISTRY/kilt-parachain/collator:$target_tag \
+	--cache-from $AWS_REGISTRY/dip-consumer-node-template:$target_tag \
 	--build-arg NODE_TYPE=$CONSUMER_BIN_NAME \
 	-t local/$CONSUMER_BIN_NAME:$target_tag \
 	.
