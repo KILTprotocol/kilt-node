@@ -30,9 +30,8 @@ use crate::{
 	Balances, Runtime, RuntimeEvent, RuntimeHoldReason,
 };
 
+pub(crate) mod deposit;
 pub(crate) mod runtime_api;
-
-mod deposit;
 
 impl pallet_dip_provider::Config for Runtime {
 	// Only DID origins can submit the commitment identity tx, which will go through

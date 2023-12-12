@@ -38,6 +38,8 @@ use runtime_common::{
 	AccountId, BlockNumber, DidIdentifier,
 };
 
+use crate::dip::deposit::DepositKey;
+
 use super::{Runtime, RuntimeCall};
 
 #[test]
@@ -123,10 +125,7 @@ fn public_credentials_storage_sizes() {
 
 #[test]
 fn pallet_deposit_storage_max_key_length() {
-	assert_eq!(
-		<(DidIdentifier, IdentityCommitmentVersion)>::max_encoded_len(),
-		MAX_DEPOSIT_PALLET_KEY_LENGTH as usize
-	)
+	assert_eq!(DepositKey::max_encoded_len(), MAX_DEPOSIT_PALLET_KEY_LENGTH as usize)
 }
 
 #[test]

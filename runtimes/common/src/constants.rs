@@ -167,9 +167,10 @@ pub mod delegation {
 }
 
 pub mod deposit_storage {
-	// Keys are concatenation of (DidIdentifier, IdentityCommitmentVersion) which is
-	// 32 + 2 = 34 bytes.
-	pub const MAX_DEPOSIT_PALLET_KEY_LENGTH: u32 = 34;
+	// Keys is an enum with a single variant (DidIdentifier,
+	// IdentityCommitmentVersion) which is 32 + 2 = 34 bytes. Adding the
+	// discriminant byte, it totals to 35 bytes.
+	pub const MAX_DEPOSIT_PALLET_KEY_LENGTH: u32 = 35;
 }
 
 pub mod dip_provider {

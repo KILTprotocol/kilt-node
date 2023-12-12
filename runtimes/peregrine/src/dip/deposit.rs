@@ -42,10 +42,26 @@ impl Get<DepositNamespace> for DipProviderDepositNamespace {
 	}
 }
 
+/// The various different keys that can be stored in the storage-tracking
+/// pallet.
+#[derive(Encode, Decode, MaxEncodedLen, TypeInfo, Clone, PartialEq, Eq, RuntimeDebug)]
+pub enum DepositKey {
+	DipProvider {
+		identifier: DidIdentifier,
+		version: IdentityCommitmentVersion,
+	},
+}
+
+impl From<(DidIdentifier, IdentityCommitmentVersion)> for DepositKey {
+	fn from((identifier, version): (DidIdentifier, IdentityCommitmentVersion)) -> Self {
+		Self::DipProvider { identifier, version }
+	}
+}
+
 /// The additional logic to execute whenever a deposit is removed by its
 /// owner directly via the [`pallet_deposit_storage::Pallet`] pallet.
 pub type DepositCollectorHooks =
-	FixedDepositCollectorViaDepositsPallet<DipProviderDepositNamespace, ConstU128<COMMITMENT_DEPOSIT>>;
+	FixedDepositCollectorViaDepositsPallet<DipProviderDepositNamespace, ConstU128<COMMITMENT_DEPOSIT>, DepositKey>;
 
 pub enum CommitmentDepositRemovalHookError {
 	DecodeKey,
@@ -76,17 +92,17 @@ impl DepositStorageHooks<Runtime> for DepositHooks {
 		key: &DepositKeyOf<Runtime>,
 		deposit: DepositEntryOf<Runtime>,
 	) -> Result<(), Self::Error> {
-		let (identifier, commitment_version) = <(DidIdentifier, IdentityCommitmentVersion)>::decode(&mut &key[..])
-			.map_err(|_| CommitmentDepositRemovalHookError::DecodeKey)?;
+		let DepositKey::DipProvider { identifier, version } =
+			DepositKey::decode(&mut &key[..]).map_err(|_| CommitmentDepositRemovalHookError::DecodeKey)?;
 		pallet_dip_provider::Pallet::<Runtime>::delete_identity_commitment_storage_entry(
 			&identifier,
 			// Deposit owner is the only one authorized to remove the deposit.
 			&deposit.deposit.owner,
-			commitment_version,
+			version,
 		)
 		.map_err(|_| {
 			log::error!(
-				"Should not fail to remove commitment for identifier {:#?} and version {commitment_version}",
+				"Should not fail to remove commitment for identifier {:#?} and version {version}",
 				identifier
 			);
 			CommitmentDepositRemovalHookError::Internal
