@@ -36,9 +36,9 @@ use crate::{BalanceOf, Config, Error, HoldReason, Pallet};
 #[derive(Clone, Debug, Encode, Decode, Eq, PartialEq, Ord, PartialOrd, TypeInfo, MaxEncodedLen)]
 pub struct DepositEntry<AccountId, Balance, Reason> {
 	/// The [`Deposit`] entry.
-	pub(crate) deposit: Deposit<AccountId, Balance>,
+	pub deposit: Deposit<AccountId, Balance>,
 	/// The `Reason` for the deposit.
-	pub(crate) reason: Reason,
+	pub reason: Reason,
 }
 
 /// Type implementing the [`DipProviderHooks`] hooks trait by taking a deposit

@@ -158,14 +158,9 @@ pub mod pallet {
 				T::IdentityCommitmentGenerator::generate_commitment(&identifier, &identity, commitment_version)
 					.map_err(|error| Error::<T>::IdentityCommitmentGenerator(error.into()))?;
 
-			match Self::delete_identity_commitment_storage_entry(&identifier, commitment_version) {
-				// If an old commitment is found, call the relevant hook to deal with it.
-				Ok(commitment) => {
-					T::ProviderHooks::on_commitment_removed(&identifier, &dispatcher, &commitment, commitment_version)
-						.map_err(|e| Error::<T>::Hook(e.into()))?;
-				}
-				// If no old commitment is found, move on.
-				Err(Error::<T>::CommitmentNotFound) => (),
+			match Self::delete_identity_commitment_storage_entry(&identifier, &dispatcher, commitment_version) {
+				// Ignore if there was no previous commitment.
+				Ok(_) | Err(Error::<T>::CommitmentNotFound) => (),
 				// If a different error is returned, bubble it up.
 				Err(e) => return Err(e.into()),
 			};
@@ -199,9 +194,7 @@ pub mod pallet {
 				.map(|e: <T as Config>::CommitOrigin| e.submitter())?;
 			let commitment_version = version.unwrap_or(LATEST_COMMITMENT_VERSION);
 
-			let commitment = Self::delete_identity_commitment_storage_entry(&identifier, commitment_version)?;
-			T::ProviderHooks::on_commitment_removed(&identifier, &dispatcher, &commitment, commitment_version)
-				.map_err(|e| Error::<T>::Hook(e.into()))?;
+			Self::delete_identity_commitment_storage_entry(&identifier, &dispatcher, commitment_version)?;
 			Ok(())
 		}
 	}
@@ -209,10 +202,13 @@ pub mod pallet {
 	impl<T: Config> Pallet<T> {
 		pub fn delete_identity_commitment_storage_entry(
 			identifier: &T::Identifier,
+			dispatcher: &T::AccountId,
 			version: IdentityCommitmentVersion,
 		) -> Result<IdentityCommitmentOf<T>, Error<T>> {
 			let commitment =
 				IdentityCommitments::<T>::take(identifier, version).ok_or(Error::<T>::CommitmentNotFound)?;
+			T::ProviderHooks::on_commitment_removed(identifier, dispatcher, &commitment, version)
+				.map_err(|e| Error::<T>::Hook(e.into()))?;
 			Self::deposit_event(Event::<T>::VersionedIdentityDeleted {
 				identifier: identifier.clone(),
 				version,

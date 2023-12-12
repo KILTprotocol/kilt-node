@@ -126,12 +126,14 @@ pub mod deposit {
 		fn on_deposit_reclaimed(
 			_namespace: &<Runtime as pallet_deposit_storage::Config>::Namespace,
 			key: &DepositKeyOf<Runtime>,
-			_deposit: DepositEntryOf<Runtime>,
+			deposit: DepositEntryOf<Runtime>,
 		) -> Result<(), Self::Error> {
 			let (identifier, commitment_version) = <(DidIdentifier, IdentityCommitmentVersion)>::decode(&mut &key[..])
 				.map_err(|_| CommitmentDepositRemovalHookError::DecodeKey)?;
 			pallet_dip_provider::Pallet::<Runtime>::delete_identity_commitment_storage_entry(
 				&identifier,
+				// Deposit owner is the only one authorized to remove the deposit.
+				&deposit.deposit.owner,
 				commitment_version,
 			)
 			.map_err(|_| {
