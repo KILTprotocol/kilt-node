@@ -17,7 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_support::{traits::Currency, BoundedVec};
-use pallet_dip_provider::{IdentityCommitmentOf, IdentityCommitmentVersion};
+use pallet_dip_provider::IdentityCommitmentOf;
 use parity_scale_codec::MaxEncodedLen;
 
 use did::DeriveDidCallAuthorizationVerificationKeyRelationship;
@@ -35,7 +35,7 @@ use runtime_common::{
 		web3_names::MAX_NAME_BYTE_LENGTH,
 		MAX_INDICES_BYTE_LENGTH,
 	},
-	AccountId, BlockNumber, DidIdentifier,
+	AccountId, BlockNumber,
 };
 
 use crate::dip::deposit::DepositKey;
