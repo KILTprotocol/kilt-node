@@ -64,7 +64,7 @@ where
 	pub fn verify_proof_for_identifier(
 		identifier: &ParaInfo::Identifier,
 		state_root: OutputOf<ParaInfo::Hasher>,
-		proof: impl IntoIterator<Item = Vec<u8>>,
+		proof: impl IntoIterator<Item = sp_std::vec::Vec<u8>>,
 	) -> Result<ParaInfo::Commitment, DipIdentityCommitmentProofVerifierError> {
 		let dip_commitment_storage_key = ParaInfo::dip_subject_storage_key(identifier, 0);
 		let storage_proof = StorageProof::new(proof);
