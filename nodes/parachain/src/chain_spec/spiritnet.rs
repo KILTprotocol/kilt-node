@@ -124,59 +124,6 @@ pub fn get_chain_spec_dev() -> Result<ChainSpec, String> {
 	))
 }
 
-const WILT_COL_ACC_1: [u8; 32] = hex!["e6cf13c86a5f174acba79ca361dc429d89eb704c6a407af83f30b11ab8bc5045"];
-const WILT_COL_SESSION_1: [u8; 32] = hex!["e29df39b74777495ca00cd7a316ce98c5225d7088ae924b122fe0e2e6a4b5569"];
-const WILT_COL_ACC_2: [u8; 32] = hex!["e8ed0c2a40fb5a0bbb24c38f5c8cd83d79498ac029ac9f87497677f5701e3d2c"];
-const WILT_COL_SESSION_2: [u8; 32] = hex!["7cacfbce640321ba84a85f41dfb43c2a2ea14ed789c096ad62ee0491599b0f44"];
-
-pub fn get_chain_spec_wilt() -> Result<ChainSpec, String> {
-	let properties = get_properties("WILT", 15, 38);
-	let wasm = WASM_BINARY.ok_or("No WASM")?;
-	let id: ParaId = 2085.into();
-
-	Ok(ChainSpec::from_genesis(
-		"WILT",
-		"kilt_westend",
-		ChainType::Live,
-		move || {
-			testnet_genesis(
-				wasm,
-				vec![
-					(WILT_COL_ACC_1.into(), None, 30000 * KILT),
-					(WILT_COL_ACC_2.into(), None, 30000 * KILT),
-				],
-				kilt_inflation_config(),
-				MAX_COLLATOR_STAKE,
-				vec![
-					(WILT_COL_ACC_1.into(), WILT_COL_SESSION_1.unchecked_into()),
-					(WILT_COL_ACC_2.into(), WILT_COL_SESSION_2.unchecked_into()),
-				],
-				vec![
-					(WILT_COL_ACC_1.into(), 40000 * KILT),
-					(WILT_COL_ACC_2.into(), 40000 * KILT),
-				],
-				id,
-			)
-		},
-		vec![
-			"/dns4/bootnode.kilt.io/tcp/30360/p2p/12D3KooWRPR7q1Rgwurd4QGyUUbVnN4nXYNVzbLeuhFsd9eXmHJk"
-				.parse()
-				.expect("bootnode address is formatted correctly; qed"),
-			"/dns4/bootnode.kilt.io/tcp/30361/p2p/12D3KooWDAEqpTRsL76itsabbh4SeaqtCM6v9npQ8eCeqPbbuFE9"
-				.parse()
-				.expect("bootnode address is formatted correctly; qed"),
-		],
-		Some(TelemetryEndpoints::new(vec![(TELEMETRY_URL.to_string(), 0)]).expect("WILT telemetry url is valid; qed")),
-		None,
-		None,
-		Some(properties),
-		Extensions {
-			relay_chain: "westend".into(),
-			para_id: id.into(),
-		},
-	))
-}
-
 pub fn load_spiritnet_spec() -> Result<ChainSpec, String> {
 	ChainSpec::from_json_bytes(&include_bytes!("../../res/spiritnet.json")[..])
 }
