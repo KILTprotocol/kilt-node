@@ -140,7 +140,7 @@ impl<AccountId> From<DidEncryptionKey> for DidPublicKey<AccountId> {
 
 /// Verification methods a verification key can
 /// fulfil, according to the [DID specification](https://w3c.github.io/did-spec-registries/#verification-relationships).
-#[derive(Clone, Copy, RuntimeDebug, Decode, Encode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
+#[derive(Clone, Copy, RuntimeDebug, Decode, Encode, PartialEq, Eq, TypeInfo, MaxEncodedLen, PartialOrd, Ord)]
 pub enum DidVerificationKeyRelationship {
 	/// Key used to authenticate all the DID operations.
 	Authentication,

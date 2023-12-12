@@ -125,6 +125,8 @@ pub mod pallet {
 		/// The max encoded length of a name.
 		#[pallet::constant]
 		type MaxNameLength: Get<u32>;
+		// FIXME: Refactor the definition of AsciiWeb3Name so that we don't need to
+		// require `Ord` here
 		/// The type of a name.
 		type Web3Name: FullCodec
 			+ Debug
@@ -132,7 +134,8 @@ pub mod pallet {
 			+ Clone
 			+ TypeInfo
 			+ TryFrom<Vec<u8>, Error = Error<Self>>
-			+ MaxEncodedLen;
+			+ MaxEncodedLen
+			+ Ord;
 		/// The type of a name owner.
 		type Web3NameOwner: Parameter + MaxEncodedLen;
 		/// Weight information for extrinsics in this pallet.
@@ -224,11 +227,7 @@ pub mod pallet {
 
 			let decoded_name = Self::check_claiming_preconditions(name, &owner, &payer)?;
 
-			Self::register_name(decoded_name.clone(), owner.clone(), payer)?;
-			Self::deposit_event(Event::<T>::Web3NameClaimed {
-				owner,
-				name: decoded_name,
-			});
+			Self::register_name(decoded_name, owner, payer)?;
 
 			Ok(())
 		}
@@ -254,10 +253,6 @@ pub mod pallet {
 			let owned_name = Self::check_releasing_preconditions(&owner)?;
 
 			Self::unregister_name(&owned_name)?;
-			Self::deposit_event(Event::<T>::Web3NameReleased {
-				owner,
-				name: owned_name,
-			});
 
 			Ok(())
 		}
@@ -281,11 +276,7 @@ pub mod pallet {
 
 			let decoded_name = Self::check_reclaim_deposit_preconditions(name, &caller)?;
 
-			let Web3OwnershipOf::<T> { owner, .. } = Self::unregister_name(&decoded_name)?;
-			Self::deposit_event(Event::<T>::Web3NameReleased {
-				owner,
-				name: decoded_name,
-			});
+			Self::unregister_name(&decoded_name)?;
 
 			Ok(())
 		}
@@ -436,11 +427,13 @@ pub mod pallet {
 			Owner::<T>::insert(
 				&name,
 				Web3OwnershipOf::<T> {
-					owner,
+					owner: owner.clone(),
 					claimed_at: block_number,
 					deposit,
 				},
 			);
+
+			Self::deposit_event(Event::<T>::Web3NameClaimed { owner, name });
 			Ok(())
 		}
 
@@ -490,7 +483,10 @@ pub mod pallet {
 				)
 			}
 
-			// Should never fail since we checked in the preconditions
+			Self::deposit_event(Event::<T>::Web3NameReleased {
+				owner: name_ownership.owner.clone(),
+				name: name.clone(),
+			});
 
 			Ok(name_ownership)
 		}
