@@ -18,203 +18,28 @@
 
 //! KILT chain specification
 
+mod develop;
+mod rilt;
+mod testnet;
+
 use cumulus_primitives_core::ParaId;
-use hex_literal::hex;
-use sc_service::ChainType;
-use sc_telemetry::TelemetryEndpoints;
-use sp_core::{crypto::UncheckedInto, sr25519};
 use sp_runtime::traits::Zero;
 
-use super::TELEMETRY_URL;
-use crate::chain_spec::{get_account_id_from_seed, get_from_seed, get_properties, Extensions, DEFAULT_PARA_ID};
+use crate::chain_spec::Extensions;
 use peregrine_runtime::{
 	BalancesConfig, CouncilConfig, InflationInfo, ParachainInfoConfig, ParachainStakingConfig, PolkadotXcmConfig,
 	RuntimeGenesisConfig, SessionConfig, SudoConfig, SystemConfig, TechnicalCommitteeConfig, VestingConfig,
-	WASM_BINARY,
 };
-use runtime_common::{
-	constants::{kilt_inflation_config, staking::MinCollatorStake, KILT, MAX_COLLATOR_STAKE},
-	AccountId, AuthorityId, Balance, BlockNumber,
-};
+use runtime_common::{AccountId, AuthorityId, Balance, BlockNumber};
+
+pub use develop::get_chain_spec_dev;
+pub use rilt::{get_chain_spec_rilt, load_rilt_spec};
+pub use testnet::make_new_spec;
 
 const SAFE_XCM_VERSION: u32 = xcm::prelude::XCM_VERSION;
 
 /// Specialized `ChainSpec` for the normal parachain runtime.
 pub type ChainSpec = sc_service::GenericChainSpec<RuntimeGenesisConfig, Extensions>;
-
-pub fn get_chain_spec_dev() -> Result<ChainSpec, String> {
-	let properties = get_properties("PILT", 15, 38);
-	let wasm = WASM_BINARY.ok_or("No WASM")?;
-
-	Ok(ChainSpec::from_genesis(
-		"KILT Peregrine Develop",
-		"kilt_peregrine_dev",
-		ChainType::Local,
-		move || {
-			testnet_genesis(
-				wasm,
-				vec![
-					(
-						get_account_id_from_seed::<sr25519::Public>("Alice"),
-						None,
-						2 * MinCollatorStake::get(),
-					),
-					(
-						get_account_id_from_seed::<sr25519::Public>("Bob"),
-						None,
-						2 * MinCollatorStake::get(),
-					),
-				],
-				kilt_inflation_config(),
-				MAX_COLLATOR_STAKE,
-				vec![
-					(
-						get_account_id_from_seed::<sr25519::Public>("Alice"),
-						get_from_seed::<AuthorityId>("Alice"),
-					),
-					(
-						get_account_id_from_seed::<sr25519::Public>("Bob"),
-						get_from_seed::<AuthorityId>("Bob"),
-					),
-				],
-				vec![
-					(get_account_id_from_seed::<sr25519::Public>("Alice"), 10000000 * KILT),
-					(get_account_id_from_seed::<sr25519::Public>("Bob"), 10000000 * KILT),
-					(get_account_id_from_seed::<sr25519::Public>("Charlie"), 10000000 * KILT),
-					(get_account_id_from_seed::<sr25519::Public>("Dave"), 10000000 * KILT),
-					(get_account_id_from_seed::<sr25519::Public>("Eve"), 10000000 * KILT),
-					(get_account_id_from_seed::<sr25519::Public>("Ferdie"), 10000000 * KILT),
-					(
-						get_account_id_from_seed::<sr25519::Public>("Alice//stash"),
-						10000000 * KILT,
-					),
-					(
-						get_account_id_from_seed::<sr25519::Public>("Bob//stash"),
-						10000000 * KILT,
-					),
-					(
-						get_account_id_from_seed::<sr25519::Public>("Charlie//stash"),
-						10000000 * KILT,
-					),
-					(
-						get_account_id_from_seed::<sr25519::Public>("Dave//stash"),
-						10000000 * KILT,
-					),
-					(
-						get_account_id_from_seed::<sr25519::Public>("Eve//stash"),
-						10000000 * KILT,
-					),
-					(
-						get_account_id_from_seed::<sr25519::Public>("Ferdie//stash"),
-						10000000 * KILT,
-					),
-				],
-				DEFAULT_PARA_ID,
-				get_account_id_from_seed::<sr25519::Public>("Alice"),
-			)
-		},
-		vec![],
-		None,
-		None,
-		None,
-		Some(properties),
-		Extensions {
-			relay_chain: "rococo_local_testnet".into(),
-			para_id: DEFAULT_PARA_ID.into(),
-		},
-	))
-}
-
-pub fn make_new_spec() -> Result<ChainSpec, String> {
-	let properties = get_properties("PILT", 15, 38);
-	let wasm = WASM_BINARY.ok_or("No WASM")?;
-	let id: ParaId = 1000.into();
-
-	Ok(ChainSpec::from_genesis(
-		"KILT Peregrine Testnet",
-		"kilt_peregrine_testnet",
-		ChainType::Live,
-		move || {
-			testnet_genesis(
-				wasm,
-				vec![],
-				kilt_inflation_config(),
-				MAX_COLLATOR_STAKE,
-				vec![],
-				vec![],
-				id,
-				hex!["d206033ba2eadf615c510f2c11f32d931b27442e5cfb64884afa2241dfa66e70"].into(),
-			)
-		},
-		Vec::new(),
-		None,
-		None,
-		None,
-		Some(properties),
-		Extensions {
-			relay_chain: "rococo_local_testnet".into(),
-			para_id: id.into(),
-		},
-	))
-}
-
-const RILT_COL_ACC_1: [u8; 32] = hex!["6a5c355bca369a54c334542fd91cf70822be92f215a1049ceb04f36baba9b87b"];
-const RILT_COL_SESSION_1: [u8; 32] = hex!["66c4ca0710c2c8a92504f281d992000508ce255543016545014cf0bfbbe71429"];
-const RILT_COL_ACC_2: [u8; 32] = hex!["768538a941d1e4730c31830ab85a54ff34aaaad1f81bdd246db11802a57a5412"];
-const RILT_COL_SESSION_2: [u8; 32] = hex!["7cff6c7a53c4630a0a35f8793a04b663681575bbfa43dbe5848b220bc4bd1963"];
-
-pub fn get_chain_spec_rilt() -> Result<ChainSpec, String> {
-	let properties = get_properties("RILT", 15, 38);
-	let wasm = WASM_BINARY.ok_or("No WASM")?;
-	let id: ParaId = 2086.into();
-
-	Ok(ChainSpec::from_genesis(
-		"RILT",
-		"kilt_rococo",
-		ChainType::Live,
-		move || {
-			testnet_genesis(
-				wasm,
-				vec![
-					(RILT_COL_ACC_1.into(), None, 200_000 * KILT),
-					(RILT_COL_ACC_2.into(), None, 200_000 * KILT),
-				],
-				kilt_inflation_config(),
-				MAX_COLLATOR_STAKE,
-				vec![
-					(RILT_COL_ACC_1.into(), RILT_COL_SESSION_1.unchecked_into()),
-					(RILT_COL_ACC_2.into(), RILT_COL_SESSION_2.unchecked_into()),
-				],
-				vec![
-					(RILT_COL_ACC_1.into(), 1_000_000 * KILT),
-					(RILT_COL_ACC_2.into(), 1_000_000 * KILT),
-				],
-				id,
-				RILT_COL_ACC_1.into(),
-			)
-		},
-		vec![
-			"/dns4/bootnode.kilt.io/tcp/30365/p2p/12D3KooWS2h3rxqEC9bzrFNKVgrT1iaGz2UAWA1jVG1EB6dEoeJm"
-				.parse()
-				.expect("bootnode address is formatted correctly; qed"),
-			"/dns4/bootnode.kilt.io/tcp/30366/p2p/12D3KooWMSF7Vefmpf67iGMkPrUgvXw38HoxaLmTNpYGYikFS7DZ"
-				.parse()
-				.expect("bootnode address is formatted correctly; qed"),
-		],
-		Some(TelemetryEndpoints::new(vec![(TELEMETRY_URL.to_string(), 0)]).expect("RILT telemetry url is valid; qed")),
-		None,
-		None,
-		Some(properties),
-		Extensions {
-			relay_chain: "rococo".into(),
-			para_id: id.into(),
-		},
-	))
-}
-
-pub fn load_rilt_spec() -> Result<ChainSpec, String> {
-	ChainSpec::from_json_bytes(&include_bytes!("../../res/rilt.json")[..])
-}
 
 #[allow(clippy::too_many_arguments)]
 fn testnet_genesis(
