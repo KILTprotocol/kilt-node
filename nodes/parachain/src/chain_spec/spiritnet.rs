@@ -19,10 +19,8 @@
 //! KILT chain specification
 
 use cumulus_primitives_core::ParaId;
-use hex_literal::hex;
 use sc_service::ChainType;
-use sc_telemetry::TelemetryEndpoints;
-use sp_core::{crypto::UncheckedInto, sr25519};
+use sp_core::sr25519;
 use sp_runtime::traits::Zero;
 
 use runtime_common::{
@@ -35,7 +33,7 @@ use spiritnet_runtime::{
 };
 
 use super::{get_properties, Extensions};
-use crate::chain_spec::{get_account_id_from_seed, get_from_seed, DEFAULT_PARA_ID, TELEMETRY_URL};
+use crate::chain_spec::{get_account_id_from_seed, get_from_seed, DEFAULT_PARA_ID};
 
 const SAFE_XCM_VERSION: u32 = xcm::prelude::XCM_VERSION;
 
