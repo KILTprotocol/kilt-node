@@ -79,15 +79,14 @@ fn load_spec(id: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, St
 	log::info!("The following runtime was chosen based on the spec id: {}", runtime);
 
 	match (id, runtime) {
-		("dev", _) => Ok(Box::new(chain_spec::peregrine::make_dev_spec()?)),
+		("dev", _) => Ok(Box::new(chain_spec::peregrine::get_chain_spec_dev()?)),
 		("spiritnet-dev", _) => Ok(Box::new(chain_spec::spiritnet::get_chain_spec_dev()?)),
 		("peregrine-new", _) => Ok(Box::new(chain_spec::peregrine::make_new_spec()?)),
-		("wilt-new", _) => Ok(Box::new(chain_spec::spiritnet::get_chain_spec_wilt()?)),
-		("rilt-new", _) => Ok(Box::new(chain_spec::spiritnet::get_chain_spec_rilt()?)),
-		("rilt", _) => Ok(Box::new(chain_spec::spiritnet::load_rilt_spec()?)),
+		("rilt-new", _) => Ok(Box::new(chain_spec::peregrine::get_chain_spec_rilt()?)),
+		("rilt", _) => Ok(Box::new(chain_spec::peregrine::load_rilt_spec()?)),
 		("spiritnet", _) => Ok(Box::new(chain_spec::spiritnet::load_spiritnet_spec()?)),
 		("", "spiritnet") => Ok(Box::new(chain_spec::spiritnet::get_chain_spec_dev()?)),
-		("", "peregrine") => Ok(Box::new(chain_spec::peregrine::make_dev_spec()?)),
+		("", "peregrine") => Ok(Box::new(chain_spec::peregrine::get_chain_spec_dev()?)),
 		(path, "spiritnet") => Ok(Box::new(chain_spec::spiritnet::ChainSpec::from_json_file(path.into())?)),
 		(path, "peregrine") => Ok(Box::new(chain_spec::peregrine::ChainSpec::from_json_file(path.into())?)),
 		_ => Err("Unknown KILT parachain spec".to_owned()),
