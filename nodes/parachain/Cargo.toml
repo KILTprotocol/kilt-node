@@ -32,6 +32,7 @@ serde_json.workspace = true
 peregrine-runtime = {workspace = true, features = ["std"]}
 runtime-common = {workspace = true, features = ["std"]}
 spiritnet-runtime = {workspace = true, features = ["std"]}
+clone-runtime = {workspace = true, features = ["std"]}
 
 # Substrate dependencies
 sc-basic-authorship.workspace = true
