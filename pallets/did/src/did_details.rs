@@ -140,7 +140,7 @@ impl<AccountId> From<DidEncryptionKey> for DidPublicKey<AccountId> {
 
 /// Verification methods a verification key can
 /// fulfil, according to the [DID specification](https://w3c.github.io/did-spec-registries/#verification-relationships).
-#[derive(Clone, Copy, RuntimeDebug, Decode, Encode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
+#[derive(Clone, Copy, RuntimeDebug, Decode, Encode, PartialEq, Eq, TypeInfo, MaxEncodedLen, PartialOrd, Ord)]
 pub enum DidVerificationKeyRelationship {
 	/// Key used to authenticate all the DID operations.
 	Authentication,
@@ -188,6 +188,13 @@ impl From<MultiSignature> for DidSignature {
 			MultiSignature::Sr25519(sig) => Self::Sr25519(sig),
 			MultiSignature::Ecdsa(sig) => Self::Ecdsa(sig),
 		}
+	}
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+impl<Context> kilt_support::traits::GetWorstCase<Context> for DidSignature {
+	fn worst_case(_context: Context) -> Self {
+		Self::Sr25519(sp_core::sr25519::Signature::from_raw([0u8; 64]))
 	}
 }
 

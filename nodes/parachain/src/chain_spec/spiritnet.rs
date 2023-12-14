@@ -19,23 +19,21 @@
 //! KILT chain specification
 
 use cumulus_primitives_core::ParaId;
-use hex_literal::hex;
+use sc_service::ChainType;
+use sp_core::sr25519;
+use sp_runtime::traits::Zero;
+
 use runtime_common::{
 	constants::{kilt_inflation_config, staking::MinCollatorStake, KILT, MAX_COLLATOR_STAKE},
 	AccountId, AuthorityId, Balance, BlockNumber,
 };
-use sc_service::ChainType;
-use sc_telemetry::TelemetryEndpoints;
-use sp_core::{crypto::UncheckedInto, sr25519};
-use sp_runtime::traits::Zero;
 use spiritnet_runtime::{
 	BalancesConfig, CouncilConfig, InflationInfo, ParachainInfoConfig, ParachainStakingConfig, PolkadotXcmConfig,
 	RuntimeGenesisConfig, SessionConfig, SystemConfig, TechnicalCommitteeConfig, VestingConfig, WASM_BINARY,
 };
 
-use crate::chain_spec::{get_account_id_from_seed, get_from_seed, DEFAULT_PARA_ID, TELEMETRY_URL};
-
 use super::{get_properties, Extensions};
+use crate::chain_spec::{get_account_id_from_seed, get_from_seed, DEFAULT_PARA_ID};
 
 const SAFE_XCM_VERSION: u32 = xcm::prelude::XCM_VERSION;
 
@@ -122,116 +120,6 @@ pub fn get_chain_spec_dev() -> Result<ChainSpec, String> {
 			para_id: DEFAULT_PARA_ID.into(),
 		},
 	))
-}
-
-const WILT_COL_ACC_1: [u8; 32] = hex!["e6cf13c86a5f174acba79ca361dc429d89eb704c6a407af83f30b11ab8bc5045"];
-const WILT_COL_SESSION_1: [u8; 32] = hex!["e29df39b74777495ca00cd7a316ce98c5225d7088ae924b122fe0e2e6a4b5569"];
-const WILT_COL_ACC_2: [u8; 32] = hex!["e8ed0c2a40fb5a0bbb24c38f5c8cd83d79498ac029ac9f87497677f5701e3d2c"];
-const WILT_COL_SESSION_2: [u8; 32] = hex!["7cacfbce640321ba84a85f41dfb43c2a2ea14ed789c096ad62ee0491599b0f44"];
-
-pub fn get_chain_spec_wilt() -> Result<ChainSpec, String> {
-	let properties = get_properties("WILT", 15, 38);
-	let wasm = WASM_BINARY.ok_or("No WASM")?;
-	let id: ParaId = 2085.into();
-
-	Ok(ChainSpec::from_genesis(
-		"WILT",
-		"kilt_westend",
-		ChainType::Live,
-		move || {
-			testnet_genesis(
-				wasm,
-				vec![
-					(WILT_COL_ACC_1.into(), None, 30000 * KILT),
-					(WILT_COL_ACC_2.into(), None, 30000 * KILT),
-				],
-				kilt_inflation_config(),
-				MAX_COLLATOR_STAKE,
-				vec![
-					(WILT_COL_ACC_1.into(), WILT_COL_SESSION_1.unchecked_into()),
-					(WILT_COL_ACC_2.into(), WILT_COL_SESSION_2.unchecked_into()),
-				],
-				vec![
-					(WILT_COL_ACC_1.into(), 40000 * KILT),
-					(WILT_COL_ACC_2.into(), 40000 * KILT),
-				],
-				id,
-			)
-		},
-		vec![
-			"/dns4/bootnode.kilt.io/tcp/30360/p2p/12D3KooWRPR7q1Rgwurd4QGyUUbVnN4nXYNVzbLeuhFsd9eXmHJk"
-				.parse()
-				.expect("bootnode address is formatted correctly; qed"),
-			"/dns4/bootnode.kilt.io/tcp/30361/p2p/12D3KooWDAEqpTRsL76itsabbh4SeaqtCM6v9npQ8eCeqPbbuFE9"
-				.parse()
-				.expect("bootnode address is formatted correctly; qed"),
-		],
-		Some(TelemetryEndpoints::new(vec![(TELEMETRY_URL.to_string(), 0)]).expect("WILT telemetry url is valid; qed")),
-		None,
-		None,
-		Some(properties),
-		Extensions {
-			relay_chain: "westend".into(),
-			para_id: id.into(),
-		},
-	))
-}
-
-const RILT_COL_ACC_1: [u8; 32] = hex!["6a5c355bca369a54c334542fd91cf70822be92f215a1049ceb04f36baba9b87b"];
-const RILT_COL_SESSION_1: [u8; 32] = hex!["66c4ca0710c2c8a92504f281d992000508ce255543016545014cf0bfbbe71429"];
-const RILT_COL_ACC_2: [u8; 32] = hex!["768538a941d1e4730c31830ab85a54ff34aaaad1f81bdd246db11802a57a5412"];
-const RILT_COL_SESSION_2: [u8; 32] = hex!["7cff6c7a53c4630a0a35f8793a04b663681575bbfa43dbe5848b220bc4bd1963"];
-
-pub fn get_chain_spec_rilt() -> Result<ChainSpec, String> {
-	let properties = get_properties("RILT", 15, 38);
-	let wasm = WASM_BINARY.ok_or("No WASM")?;
-	let id: ParaId = 2086.into();
-
-	Ok(ChainSpec::from_genesis(
-		"RILT",
-		"kilt_rococo",
-		ChainType::Live,
-		move || {
-			testnet_genesis(
-				wasm,
-				vec![
-					(RILT_COL_ACC_1.into(), None, 200_000 * KILT),
-					(RILT_COL_ACC_2.into(), None, 200_000 * KILT),
-				],
-				kilt_inflation_config(),
-				MAX_COLLATOR_STAKE,
-				vec![
-					(RILT_COL_ACC_1.into(), RILT_COL_SESSION_1.unchecked_into()),
-					(RILT_COL_ACC_2.into(), RILT_COL_SESSION_2.unchecked_into()),
-				],
-				vec![
-					(RILT_COL_ACC_1.into(), 1_000_000 * KILT),
-					(RILT_COL_ACC_2.into(), 1_000_000 * KILT),
-				],
-				id,
-			)
-		},
-		vec![
-			"/dns4/bootnode.kilt.io/tcp/30365/p2p/12D3KooWS2h3rxqEC9bzrFNKVgrT1iaGz2UAWA1jVG1EB6dEoeJm"
-				.parse()
-				.expect("bootnode address is formatted correctly; qed"),
-			"/dns4/bootnode.kilt.io/tcp/30366/p2p/12D3KooWMSF7Vefmpf67iGMkPrUgvXw38HoxaLmTNpYGYikFS7DZ"
-				.parse()
-				.expect("bootnode address is formatted correctly; qed"),
-		],
-		Some(TelemetryEndpoints::new(vec![(TELEMETRY_URL.to_string(), 0)]).expect("RILT telemetry url is valid; qed")),
-		None,
-		None,
-		Some(properties),
-		Extensions {
-			relay_chain: "rococo".into(),
-			para_id: id.into(),
-		},
-	))
-}
-
-pub fn load_rilt_spec() -> Result<ChainSpec, String> {
-	ChainSpec::from_json_bytes(&include_bytes!("../../res/rilt.json")[..])
 }
 
 pub fn load_spiritnet_spec() -> Result<ChainSpec, String> {

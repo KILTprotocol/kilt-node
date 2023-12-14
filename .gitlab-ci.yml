@@ -2,11 +2,12 @@ stages:
   - test
   - build
 
-clippy:
+clippy-and-docs:
   image: paritytech/ci-unified:bullseye-1.70.0
   stage: test
   script:
     - cargo clippy --all-features --all-targets --locked -- -D warnings
+    - RUSTDOCFLAGS='-D warnings' cargo doc --all-features --no-deps --locked
 
 fmt:
   image: paritytech/ci-unified:bullseye-1.70.0
@@ -41,6 +42,8 @@ build:
   variables:
     DOCKER_HUB_PARACHAIN: "kiltprotocol/kilt-node"
     DOCKER_HUB_STANDALONE: "kiltprotocol/standalone-node"
+    DOCKER_HUB_DIP_PROVIDER_TEMPLATE: "kiltprotocol/dip-provider-node-template"
+    DOCKER_HUB_DIP_CONSUMER_TEMPLATE: "kiltprotocol/dip-consumer-node-template"
   before_script:
     - aws --version
     - docker --version

@@ -35,9 +35,9 @@ kilt-support.workspace = true
 ctype = {workspace = true, optional = true}
 
 # Substrate dependencies
-parity-scale-codec = {workspace = true, features = ["derive"]}
 frame-support.workspace = true
 frame-system.workspace = true
+parity-scale-codec = {workspace = true, features = ["derive"]}
 scale-info = {workspace = true, features = ["derive"]}
 sp-core.workspace = true
 sp-io.workspace = true
@@ -74,6 +74,7 @@ std = [
   "kilt-support/std",
   "log/std",
   "pallet-balances/std",
+  "parity-scale-codec/std",
   "scale-info/std",
   "sp-core/std",
   "sp-io/std",

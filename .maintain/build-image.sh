@@ -22,3 +22,19 @@ docker build \
     --build-arg NODE_TYPE=standalone-node \
     -t local/standalone-node:$target_tag \
     .
+
+# build DIP provider and consumer templates
+PROVIDER_BIN_NAME="dip-provider-node-template"
+docker build \
+	--cache-from $AWS_REGISTRY/kilt-parachain/collator:builder \
+	--cache-from $AWS_REGISTRY/$PROVIDER_BIN_NAME:$target_tag \
+	--build-arg NODE_TYPE=$PROVIDER_BIN_NAME \
+	-t local/$PROVIDER_BIN_NAME:$target_tag \
+	.
+CONSUMER_BIN_NAME="dip-consumer-node-template"
+docker build \
+	--cache-from $AWS_REGISTRY/kilt-parachain/collator:builder \
+	--cache-from $AWS_REGISTRY/$CONSUMER_BIN_NAME:$target_tag \
+	--build-arg NODE_TYPE=$CONSUMER_BIN_NAME \
+	-t local/$CONSUMER_BIN_NAME:$target_tag \
+	.

@@ -18,7 +18,7 @@
 
 use frame_support::{
 	codec::{Decode, Encode},
-	traits::EnsureOrigin,
+	traits::{EnsureOrigin, EnsureOriginWithArg},
 };
 use kilt_support::traits::CallSources;
 use parity_scale_codec::MaxEncodedLen;
@@ -61,6 +61,38 @@ where
 
 		Ok(OuterOrigin::from(DidRawOrigin {
 			id: zero_account_id.clone().into(),
+			submitter: zero_account_id,
+		}))
+	}
+}
+
+impl<OuterOrigin, DidIdentifier, AccountId> EnsureOriginWithArg<OuterOrigin, DidIdentifier>
+	for EnsureDidOrigin<DidIdentifier, AccountId>
+where
+	OuterOrigin: Into<Result<DidRawOrigin<DidIdentifier, AccountId>, OuterOrigin>>
+		+ From<DidRawOrigin<DidIdentifier, AccountId>>
+		+ Clone,
+	DidIdentifier: PartialEq<DidIdentifier> + Clone,
+	AccountId: Clone + Decode,
+{
+	type Success = DidRawOrigin<DidIdentifier, AccountId>;
+
+	fn try_origin(o: OuterOrigin, a: &DidIdentifier) -> Result<Self::Success, OuterOrigin> {
+		let did_origin: DidRawOrigin<DidIdentifier, AccountId> = o.clone().into()?;
+		if did_origin.id == *a {
+			Ok(did_origin)
+		} else {
+			Err(o)
+		}
+	}
+
+	#[cfg(feature = "runtime-benchmarks")]
+	fn try_successful_origin(a: &DidIdentifier) -> Result<OuterOrigin, ()> {
+		let zero_account_id = AccountId::decode(&mut sp_runtime::traits::TrailingZeroInput::zeroes())
+			.expect("infinite length input; no invalid inputs for type; qed");
+
+		Ok(OuterOrigin::from(DidRawOrigin {
+			id: a.clone(),
 			submitter: zero_account_id,
 		}))
 	}
