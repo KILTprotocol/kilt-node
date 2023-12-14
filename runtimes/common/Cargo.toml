@@ -22,7 +22,12 @@ scale-info = {workspace = true, features = ["derive"]}
 smallvec.workspace = true
 
 attestation.workspace = true
+did.workspace = true
 kilt-support.workspace = true
+kilt-dip-primitives.workspace = true
+pallet-did-lookup.workspace = true
+pallet-dip-provider.workspace = true
+pallet-web3-names.workspace = true
 parachain-staking.workspace = true
 public-credentials.workspace = true
 
@@ -44,6 +49,7 @@ sp-core.workspace = true
 sp-io.workspace = true
 sp-runtime.workspace = true
 sp-std.workspace = true
+sp-trie.workspace = true
 
 # Cumulus dependencies
 cumulus-primitives-core.workspace = true
@@ -54,6 +60,9 @@ xcm-builder.workspace = true
 xcm-executor.workspace = true
 xcm.workspace = true
 
+#benchmarking
+frame-benchmarking = { workspace = true, optional = true }
+
 [features]
 default = ["std"]
 fast-gov = []
@@ -63,6 +72,7 @@ runtime-benchmarks = [
   "attestation/runtime-benchmarks",
   "frame-support/runtime-benchmarks",
   "frame-system/runtime-benchmarks",
+  "kilt-dip-primitives/runtime-benchmarks",
   "kilt-support/runtime-benchmarks",
   "pallet-balances/runtime-benchmarks",
   "pallet-membership/runtime-benchmarks",
@@ -74,27 +84,35 @@ runtime-benchmarks = [
   "sp-runtime/runtime-benchmarks",
   "xcm-builder/runtime-benchmarks",
   "xcm-executor/runtime-benchmarks",
+  "frame-benchmarking/runtime-benchmarks",
 ]
 std = [
   "cumulus-pallet-parachain-system/std",
   "cumulus-pallet-dmp-queue/std",
   "cumulus-pallet-xcmp-queue/std",
   "attestation/std",
+  "did/std",
   "parity-scale-codec/std",
   "cumulus-primitives-core/std",
   "frame-support/std",
   "frame-system/std",
   "kilt-asset-dids/std",
   "kilt-support/std",
+  "kilt-dip-primitives/std",
+  "pallet-did-lookup/std",
+  "pallet-dip-provider/std",
+  "pallet-web3-names/std",
   "log/std",
   "pallet-authorship/std",
   "pallet-balances/std",
   "pallet-multisig/std",
   "pallet-membership/std",
+  "pallet-multisig/std",
   "pallet-transaction-payment/std",
   "pallet-treasury/std",
   "pallet-tips/std",
   "parachain-staking/std",
+  "parity-scale-codec/std",
   "polkadot-parachain/std",
   "public-credentials/std",
   "scale-info/std",
@@ -103,9 +121,11 @@ std = [
   "sp-io/std",
   "sp-runtime/std",
   "sp-std/std",
+  "sp-trie/std",
   "xcm-builder/std",
   "xcm-executor/std",
   "xcm/std",
+  "frame-benchmarking?/std",
 ]
 try-runtime = [
   "cumulus-pallet-parachain-system/try-runtime",

@@ -59,6 +59,7 @@ use runtime_common::{
 	assets::{AssetDid, PublicCredentialsFilter},
 	authorization::{AuthorizationId, PalletAuthorize},
 	constants::{self, UnvestedFundsAllowedWithdrawReasons, EXISTENTIAL_DEPOSIT, KILT},
+	dip::merkle::{CompleteMerkleProof, DidMerkleProofOf, DidMerkleRootGenerator},
 	errors::PublicCredentialsApiError,
 	fees::{ToAuthor, WeightToFee},
 	pallet_id, AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights, DidIdentifier,
@@ -78,6 +79,7 @@ pub use sp_runtime::BuildStorage;
 #[cfg(test)]
 mod tests;
 
+mod dip;
 mod weights;
 mod xcm_config;
 
@@ -777,8 +779,10 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 					| RuntimeCall::Ctype(..)
 					| RuntimeCall::Delegation(..)
 					| RuntimeCall::Democracy(..)
+					| RuntimeCall::DepositStorage(..)
 					| RuntimeCall::Did(..)
 					| RuntimeCall::DidLookup(..)
+					| RuntimeCall::DipProvider(..)
 					| RuntimeCall::Indices(
 						// Excludes `force_transfer`, and `transfer`
 						pallet_indices::Call::claim { .. }
@@ -830,6 +834,7 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 							| delegation::Call::change_deposit_owner { .. }
 					)
 					| RuntimeCall::Democracy(..)
+					// Excludes `DepositStorage`
 					| RuntimeCall::Did(
 						// Excludes `reclaim_deposit`
 						did::Call::add_key_agreement_key { .. }
@@ -856,6 +861,7 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 							| pallet_did_lookup::Call::update_deposit { .. }
 							| pallet_did_lookup::Call::change_deposit_owner { .. }
 					)
+					| RuntimeCall::DipProvider(..)
 					| RuntimeCall::Indices(..)
 					| RuntimeCall::Multisig(..)
 					| RuntimeCall::ParachainStaking(..)
@@ -1008,6 +1014,8 @@ construct_runtime! {
 		Web3Names: pallet_web3_names = 68,
 		PublicCredentials: public_credentials = 69,
 		Migration: pallet_migration = 70,
+		DipProvider: pallet_dip_provider = 71,
+		DepositStorage: pallet_deposit_storage = 72,
 
 		// Parachains pallets. Start indices at 80 to leave room.
 
@@ -1051,6 +1059,7 @@ impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for RuntimeCall 
 			RuntimeCall::Attestation { .. } => Ok(did::DidVerificationKeyRelationship::AssertionMethod),
 			RuntimeCall::Ctype { .. } => Ok(did::DidVerificationKeyRelationship::AssertionMethod),
 			RuntimeCall::Delegation { .. } => Ok(did::DidVerificationKeyRelationship::CapabilityDelegation),
+			RuntimeCall::DipProvider { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
 			// DID creation is not allowed through the DID proxy.
 			RuntimeCall::Did(did::Call::create { .. }) => Err(did::RelationshipDeriveError::NotCallableByDid),
 			RuntimeCall::Did { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
@@ -1147,6 +1156,8 @@ mod benches {
 		[public_credentials, PublicCredentials]
 		[pallet_xcm, PolkadotXcm]
 		[pallet_migration, Migration]
+		[pallet_dip_provider, DipProvider]
+		[pallet_deposit_storage, DepositStorage]
 		[frame_benchmarking::baseline, Baseline::<Runtime>]
 	);
 }
@@ -1410,6 +1421,16 @@ impl_runtime_apis! {
 
 		fn get_staking_rates() -> kilt_runtime_api_staking::StakingRates {
 			ParachainStaking::get_staking_rates()
+		}
+	}
+
+	impl kilt_runtime_api_dip_provider::DipProvider<Block, dip::runtime_api::DipProofRequest, CompleteMerkleProof<Hash, DidMerkleProofOf<Runtime>>, dip::runtime_api::DipProofError> for Runtime {
+		fn generate_proof(request: dip::runtime_api::DipProofRequest) -> Result<CompleteMerkleProof<Hash, DidMerkleProofOf<Runtime>>, dip::runtime_api::DipProofError> {
+			use pallet_dip_provider::traits::IdentityProvider;
+
+			let identity_details = pallet_dip_provider::IdentityProviderOf::<Runtime>::retrieve(&request.identifier).map_err(dip::runtime_api::DipProofError::IdentityProvider)?;
+
+			DidMerkleRootGenerator::<Runtime>::generate_proof(&identity_details, request.version, request.keys.iter(), request.should_include_web3_name, request.accounts.iter()).map_err(dip::runtime_api::DipProofError::MerkleProof)
 		}
 	}
 
