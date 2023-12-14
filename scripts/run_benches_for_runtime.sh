@@ -9,6 +9,7 @@ chain=$([ "$1" == "spiritnet" ] && echo "spiritnet-dev" || echo "dev")
 standard_args="--release --locked --features=runtime-benchmarks --bin=kilt-parachain"
 
 pallets=(
+	pallet-migration
 	attestation
 	ctype
 	delegation
@@ -34,6 +35,8 @@ pallets=(
 	pallet-xcm
 	parachain-staking
 	public-credentials
+	pallet-deposit-storage
+	pallet-dip-provider
 )
 
 if [ "$runtime" = "peregrine" ]; then
@@ -50,7 +53,6 @@ for pallet in "${pallets[@]}"; do
 	./target/release/kilt-parachain benchmark pallet \
 		--template=".maintain/runtime-weight-template.hbs" \
 		--header="HEADER-GPL" \
-		--execution=wasm \
 		--wasm-execution=compiled \
 		--heap-pages=4096 \
 		--steps=50 \
