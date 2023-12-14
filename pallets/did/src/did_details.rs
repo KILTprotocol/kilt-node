@@ -191,6 +191,13 @@ impl From<MultiSignature> for DidSignature {
 	}
 }
 
+#[cfg(feature = "runtime-benchmarks")]
+impl<Context> kilt_support::traits::GetWorstCase<Context> for DidSignature {
+	fn worst_case(_context: Context) -> Self {
+		Self::Sr25519(sp_core::sr25519::Signature::from_raw([0u8; 64]))
+	}
+}
+
 pub trait DidVerifiableIdentifier<AccountId> {
 	/// Allows a verifiable identifier to verify a signature it produces and
 	/// return the public key

@@ -81,8 +81,36 @@ pub trait GenerateBenchmarkOrigin<OuterOrigin, AccountId, SubjectId> {
 /// Trait that allows types to implement a worst case value for a type,
 /// only when running benchmarks.
 #[cfg(feature = "runtime-benchmarks")]
-pub trait GetWorstCase {
-	fn worst_case() -> Self;
+pub trait GetWorstCase<Context = ()> {
+	fn worst_case(context: Context) -> Self;
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+impl<T> GetWorstCase<T> for u32 {
+	fn worst_case(_context: T) -> Self {
+		u32::MAX
+	}
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+impl<T> GetWorstCase<T> for () {
+	fn worst_case(_context: T) -> Self {}
+}
+
+/// Trait that allows instanciating multiple instances of a type.
+#[cfg(feature = "runtime-benchmarks")]
+pub trait Instanciate {
+	fn new(instance: u32) -> Self;
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+impl Instanciate for sp_runtime::AccountId32 {
+	fn new(instance: u32) -> Self {
+		use sp_runtime::traits::Hash;
+		sp_runtime::AccountId32::from(<[u8; 32]>::from(sp_runtime::traits::BlakeTwo256::hash(
+			&instance.to_be_bytes(),
+		)))
+	}
 }
 
 /// Generic filter.

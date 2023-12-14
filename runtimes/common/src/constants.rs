@@ -166,6 +166,22 @@ pub mod delegation {
 	}
 }
 
+pub mod deposit_storage {
+	// Keys is an enum with a single variant (DidIdentifier,
+	// IdentityCommitmentVersion) which is 32 + 2 = 34 bytes. Adding the
+	// discriminant byte, it totals to 35 bytes.
+	pub const MAX_DEPOSIT_PALLET_KEY_LENGTH: u32 = 35;
+}
+
+pub mod dip_provider {
+	use super::*;
+
+	pub const MAX_LINKED_ACCOUNTS: u32 = 10;
+	// Commitment are 32-byte hashes.
+	pub const MAX_COMMITMENT_BYTE_LENGTH: u32 = 32;
+	pub const COMMITMENT_DEPOSIT: Balance = deposit(1, MAX_COMMITMENT_BYTE_LENGTH);
+}
+
 pub mod staking {
 	use super::*;
 

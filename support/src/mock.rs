@@ -32,7 +32,10 @@ use sp_runtime::AccountId32;
 pub mod mock_origin {
 	use sp_std::marker::PhantomData;
 
-	use frame_support::{traits::EnsureOrigin, Parameter};
+	use frame_support::{
+		traits::{EnsureOrigin, EnsureOriginWithArg},
+		Parameter,
+	};
 	use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 	use scale_info::TypeInfo;
 	use sp_runtime::AccountId32;
@@ -102,6 +105,35 @@ pub mod mock_origin {
 				TEST_ACC.clone().into(),
 				TEST_ACC.into(),
 			)))
+		}
+	}
+
+	impl<OuterOrigin, AccountId, SubjectId> EnsureOriginWithArg<OuterOrigin, SubjectId>
+		for EnsureDoubleOrigin<AccountId, SubjectId>
+	where
+		OuterOrigin: Into<Result<DoubleOrigin<AccountId, SubjectId>, OuterOrigin>>
+			+ From<DoubleOrigin<AccountId, SubjectId>>
+			+ Clone,
+		SubjectId: PartialEq<SubjectId> + Clone,
+		AccountId: Clone + Decode,
+	{
+		type Success = DoubleOrigin<AccountId, SubjectId>;
+
+		fn try_origin(o: OuterOrigin, a: &SubjectId) -> Result<Self::Success, OuterOrigin> {
+			let did_origin: DoubleOrigin<AccountId, SubjectId> = o.clone().into()?;
+			if did_origin.1 == *a {
+				Ok(did_origin)
+			} else {
+				Err(o)
+			}
+		}
+
+		#[cfg(feature = "runtime-benchmarks")]
+		fn try_successful_origin(a: &SubjectId) -> Result<OuterOrigin, ()> {
+			let zero_account_id = AccountId::decode(&mut sp_runtime::traits::TrailingZeroInput::zeroes())
+				.expect("infinite length input; no invalid inputs for type; qed");
+
+			Ok(OuterOrigin::from(DoubleOrigin(zero_account_id, a.clone())))
 		}
 	}
 
