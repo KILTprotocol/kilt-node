@@ -39,7 +39,7 @@ use pallet_balances::Pallet as PalletBalance;
 use pallet_transaction_payment::{Multiplier, TargetedFeeAdjustment};
 use sp_runtime::{
 	generic,
-	traits::{Bounded, IdentifyAccount, Verify},
+	traits::{BlakeTwo256, Bounded, IdentifyAccount, Verify},
 	FixedPointNumber, MultiSignature, Perquintill, SaturatedConversion,
 };
 use sp_std::marker::PhantomData;
@@ -47,6 +47,7 @@ use sp_std::marker::PhantomData;
 pub mod assets;
 pub mod authorization;
 pub mod constants;
+pub mod dip;
 pub mod errors;
 pub mod fees;
 pub mod migrations;
@@ -106,8 +107,10 @@ pub type Amount = i128;
 /// Nonce of a transaction in the chain.
 pub type Nonce = u64;
 
+/// Hasher for chain data.
+pub type Hasher = BlakeTwo256;
 /// A hash of some data used by the chain.
-pub type Hash = sp_core::H256;
+pub type Hash = <BlakeTwo256 as sp_core::Hasher>::Out;
 
 /// Digest item type.
 pub type DigestItem = generic::DigestItem;

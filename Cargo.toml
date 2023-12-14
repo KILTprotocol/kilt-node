@@ -11,6 +11,9 @@ version = "1.12.0-dev"
 [workspace]
 members = [
   "crates/*",
+  "dip-template/nodes/*",
+  "dip-template/pallets/*",
+  "dip-template/runtimes/*",
   "nodes/*",
   "pallets/*",
   "runtime-api/*",
@@ -29,10 +32,12 @@ substrate-wasm-builder = {git = "https://github.com/paritytech/substrate", branc
 # External (without extra features and with default disabled if necessary)
 base58 = {version = "0.2.0", default-features = false}
 bitflags = {version = "1.3.2", default-features = false}
+cfg-if = "1.0"
 clap = "4.1.6"
 env_logger = "0.10.0"
 fluent-uri = { version = "0.1.4", default-features = false }
 futures = {version = "0.3.21", default-features = false}
+hash-db = { version = "0.16.0", default-features = false }
 hex = {version = "0.4.0", default-features = false}
 hex-literal = "0.3.4"
 jsonrpsee = "0.16.2"
@@ -51,8 +56,12 @@ ctype = {path = "pallets/ctype", default-features = false}
 delegation = {path = "pallets/delegation", default-features = false}
 did = {path = "pallets/did", default-features = false}
 pallet-configuration = {path = "pallets/pallet-configuration", default-features = false}
+pallet-deposit-storage = {path = "pallets/pallet-deposit-storage", default-features = false}
+pallet-dip-consumer = {path = "pallets/pallet-dip-consumer", default-features = false}
+pallet-dip-provider = {path = "pallets/pallet-dip-provider", default-features = false}
 pallet-did-lookup = {path = "pallets/pallet-did-lookup", default-features = false}
 pallet-inflation = {path = "pallets/pallet-inflation", default-features = false}
+pallet-relay-store = {path = "pallets/pallet-relay-store", default-features = false}
 pallet-web3-names = {path = "pallets/pallet-web3-names", default-features = false}
 parachain-staking = {path = "pallets/parachain-staking", default-features = false}
 public-credentials = {path = "pallets/public-credentials", default-features = false}
@@ -60,11 +69,18 @@ pallet-migration = {path = "pallets/pallet-migration", default-features = false}
 
 # Internal support (with default disabled)
 kilt-asset-dids = {path = "crates/assets", default-features = false}
+kilt-dip-primitives = {path = "crates/kilt-dip-primitives", default-features = false}
 kilt-support = {path = "support", default-features = false}
 runtime-common = {path = "runtimes/common", default-features = false}
 
+# Templates
+dip-consumer-runtime-template = {path = "dip-template/runtimes/dip-consumer", default-features = false}
+dip-provider-runtime-template = {path = "dip-template/runtimes/dip-provider", default-features = false}
+pallet-postit = {path = "dip-template/pallets/pallet-postit", default-features = false}
+
 # Internal runtime API (with default disabled)
 kilt-runtime-api-did = {path = "runtime-api/did", default-features = false}
+kilt-runtime-api-dip-provider = {path = "runtime-api/dip-provider", default-features = false}
 kilt-runtime-api-public-credentials = {path = "runtime-api/public-credentials", default-features = false}
 kilt-runtime-api-staking = {path = "runtime-api/staking", default-features = false}
 
@@ -128,8 +144,10 @@ sp-offchain = {git = "https://github.com/paritytech/substrate", default-features
 sp-runtime = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v1.0.0"}
 sp-session = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v1.0.0"}
 sp-staking = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v1.0.0"}
+sp-state-machine = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v1.0.0"}
 sp-std = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v1.0.0"}
 sp-transaction-pool = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v1.0.0"}
+sp-trie = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v1.0.0"}
 sp-version = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v1.0.0"}
 sp-weights = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v1.0.0"}
 try-runtime-cli = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v1.0.0"}
@@ -137,6 +155,7 @@ try-runtime-cli = {git = "https://github.com/paritytech/substrate", default-feat
 # Polkadot (with default disabled)
 pallet-xcm = {git = "https://github.com/paritytech/polkadot", default-features = false, branch = "release-v1.0.0"}
 polkadot-parachain = {git = "https://github.com/paritytech/polkadot", default-features = false, branch = "release-v1.0.0"}
+rococo-runtime = {git = "https://github.com/paritytech/polkadot", default-features = false, branch = "release-v1.0.0"}
 xcm = {git = "https://github.com/paritytech/polkadot", default-features = false, branch = "release-v1.0.0"}
 xcm-builder = {git = "https://github.com/paritytech/polkadot", default-features = false, branch = "release-v1.0.0"}
 xcm-executor = {git = "https://github.com/paritytech/polkadot", default-features = false, branch = "release-v1.0.0"}
