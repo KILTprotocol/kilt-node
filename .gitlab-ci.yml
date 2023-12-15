@@ -42,6 +42,8 @@ build:
   variables:
     DOCKER_HUB_PARACHAIN: "kiltprotocol/kilt-node"
     DOCKER_HUB_STANDALONE: "kiltprotocol/standalone-node"
+    DOCKER_HUB_DIP_PROVIDER_TEMPLATE: "kiltprotocol/dip-provider-node-template"
+    DOCKER_HUB_DIP_CONSUMER_TEMPLATE: "kiltprotocol/dip-consumer-node-template"
   before_script:
     - aws --version
     - docker --version
