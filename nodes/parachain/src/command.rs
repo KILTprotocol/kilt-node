@@ -79,7 +79,8 @@ fn load_spec(id: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, St
 	log::info!("The following runtime was chosen based on the spec id: {}", runtime);
 
 	match (id, runtime) {
-		("clone", _) => Ok(Box::new(chain_spec::clone::get_chain_spec_dev()?)),
+		("clone-dev", _) => Ok(Box::new(chain_spec::clone::get_chain_spec_dev()?)),
+		("clone-new", _) => Ok(Box::new(chain_spec::clone::new_chain_spec()?)),
 		("dev", _) => Ok(Box::new(chain_spec::peregrine::get_chain_spec_dev()?)),
 		("spiritnet-dev", _) => Ok(Box::new(chain_spec::spiritnet::get_chain_spec_dev()?)),
 		("peregrine-new", _) => Ok(Box::new(chain_spec::peregrine::make_new_spec()?)),
@@ -90,6 +91,7 @@ fn load_spec(id: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, St
 		("", "peregrine") => Ok(Box::new(chain_spec::peregrine::get_chain_spec_dev()?)),
 		(path, "spiritnet") => Ok(Box::new(chain_spec::spiritnet::ChainSpec::from_json_file(path.into())?)),
 		(path, "peregrine") => Ok(Box::new(chain_spec::peregrine::ChainSpec::from_json_file(path.into())?)),
+		(path, "clone") => Ok(Box::new(chain_spec::clone::ChainSpec::from_json_file(path.into())?)),
 		_ => Err("Unknown KILT parachain spec".to_owned()),
 	}
 }

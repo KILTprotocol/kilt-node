@@ -19,8 +19,10 @@
 //! KILT chain specification
 
 use cumulus_primitives_core::ParaId;
+use hex_literal::hex;
 use runtime_common::constants::KILT;
 use sc_chain_spec::ChainType;
+use sp_core::crypto::UncheckedInto;
 use sp_core::sr25519;
 
 use clone_runtime::{
@@ -75,6 +77,47 @@ pub fn get_chain_spec_dev() -> Result<ChainSpec, String> {
 		Extensions {
 			relay_chain: "rococo_local_testnet".into(),
 			para_id: DEFAULT_PARA_ID.into(),
+		},
+	))
+}
+
+const CLN_COL1_ACC: [u8; 32] = hex!["34c6801027ff9c1d8700b06f1f8598c07a1ca66aaa7c2829a1801e9bcf72b132"];
+const CLN_COL1_SESSION: [u8; 32] = hex!["aee85fda658762e82ccc1cd83d95cadc1d3375208d4d16d9b932427290905e56"];
+const CLN_COL2_ACC: [u8; 32] = hex!["2e259a331de128fc889ed3c9d4b03f2f95600715fd21754c3da885b7ee75bf18"];
+const CLN_COL2_SESSION: [u8; 32] = hex!["82e6381d3241dc5e864c22f44f2a24cc2a51e09c9ca72d93061cdfbe22e38036"];
+
+pub fn new_chain_spec() -> Result<ChainSpec, String> {
+	let properties = get_properties("CLN", 15, 38);
+	let wasm = WASM_BINARY.ok_or("No WASM")?;
+	let id: ParaId = 2085.into();
+
+	Ok(ChainSpec::from_genesis(
+		"Clone",
+		"clone3",
+		ChainType::Live,
+		move || {
+			testnet_genesis(
+				wasm,
+				vec![
+					(CLN_COL1_ACC.into(), CLN_COL1_SESSION.unchecked_into()),
+					(CLN_COL2_ACC.into(), CLN_COL2_SESSION.unchecked_into()),
+				],
+				vec![
+					(CLN_COL1_ACC.into(), 4_000_000 * KILT),
+					(CLN_COL2_ACC.into(), 4_000_000 * KILT),
+				],
+				id,
+				CLN_COL1_ACC.into(),
+			)
+		},
+		vec![],
+		None,
+		None,
+		None,
+		Some(properties),
+		Extensions {
+			relay_chain: "polkadot".into(),
+			para_id: id.into(),
 		},
 	))
 }
