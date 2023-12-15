@@ -57,10 +57,9 @@ use crate::xcm_config::{XcmConfig, XcmOriginToTransactDispatchOrigin};
 
 #[cfg(feature = "try-runtime")]
 use frame_try_runtime::UpgradeCheckSelect;
+
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
-#[cfg(feature = "runtime-benchmarks")]
-use {kilt_support::signature::AlwaysVerify, runtime_common::benchmarks::DummySignature};
 
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
