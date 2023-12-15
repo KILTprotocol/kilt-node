@@ -51,12 +51,11 @@ frame-system.workspace = true
 pallet-aura.workspace = true
 pallet-authorship.workspace = true
 pallet-balances.workspace = true
+pallet-collator-selection.workspace = true
 pallet-session.workspace = true
 pallet-sudo.workspace = true
 pallet-timestamp.workspace = true
 pallet-transaction-payment.workspace = true
-pallet-utility.workspace = true
-pallet-collator-selection.workspace = true
 
 # Cumulus dependencies
 cumulus-pallet-aura-ext.workspace = true
