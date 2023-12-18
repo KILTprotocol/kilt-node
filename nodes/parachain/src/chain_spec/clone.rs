@@ -89,7 +89,7 @@ const CLN_COL2_SESSION: [u8; 32] = hex!["82e6381d3241dc5e864c22f44f2a24cc2a51e09
 pub fn new_chain_spec() -> Result<ChainSpec, String> {
 	let properties = get_properties("CLN", 15, 38);
 	let wasm = WASM_BINARY.ok_or("No WASM")?;
-	let id: ParaId = 2085.into();
+	let id: ParaId = 3358.into();
 
 	Ok(ChainSpec::from_genesis(
 		"Clone",
