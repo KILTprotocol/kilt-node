@@ -19,7 +19,7 @@
 use crate::{
 	chain_spec::{self},
 	cli::{Cli, RelayChainCli, Subcommand},
-	service::{new_partial, PeregrineRuntimeExecutor, SpiritnetRuntimeExecutor},
+	service::{new_partial, CloneRuntimeExecutor, PeregrineRuntimeExecutor, SpiritnetRuntimeExecutor},
 };
 use cumulus_client_cli::generate_genesis_block;
 use cumulus_primitives_core::ParaId;
@@ -42,6 +42,7 @@ use std::net::SocketAddr;
 trait IdentifyChain {
 	fn is_peregrine(&self) -> bool;
 	fn is_spiritnet(&self) -> bool;
+	fn is_clone(&self) -> bool;
 }
 
 impl IdentifyChain for dyn sc_service::ChainSpec {
@@ -54,6 +55,9 @@ impl IdentifyChain for dyn sc_service::ChainSpec {
 			|| self.id().eq("kilt_westend")
 			|| self.id().eq("kilt_rococo")
 	}
+	fn is_clone(&self) -> bool {
+		self.id().to_lowercase().contains("clone")
+	}
 }
 
 impl<T: sc_service::ChainSpec + 'static> IdentifyChain for T {
@@ -63,6 +67,9 @@ impl<T: sc_service::ChainSpec + 'static> IdentifyChain for T {
 	fn is_spiritnet(&self) -> bool {
 		<dyn sc_service::ChainSpec>::is_spiritnet(self)
 	}
+	fn is_clone(&self) -> bool {
+		<dyn sc_service::ChainSpec>::is_clone(self)
+	}
 }
 
 fn load_spec(id: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
@@ -71,6 +78,8 @@ fn load_spec(id: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, St
 		|| id.to_lowercase().contains("rilt")
 	{
 		"spiritnet"
+	} else if id.to_lowercase().contains("clone") {
+		"clone"
 	} else {
 		"peregrine"
 	};
@@ -199,6 +208,16 @@ macro_rules! construct_async_run {
 						{ $( $code )* }.map(|v| (v, task_manager))
 					})
 				}
+			"clone" => {
+				runner.async_run(|$config| {
+					let $components = new_partial::<clone_runtime::RuntimeApi, CloneRuntimeExecutor, _>(
+						&$config,
+						crate::service::build_import_queue::<CloneRuntimeExecutor, clone_runtime::RuntimeApi>,
+					)?;
+					let task_manager = $components.task_manager;
+					{ $( $code )* }.map(|v| (v, task_manager))
+				})
+			}
 			_ => panic!("unknown runtime"),
 		}
 	}}
@@ -293,6 +312,9 @@ pub fn run() -> Result<()> {
 							"peregrine" => runner.sync_run(|config| {
 								cmd.run::<Block, <PeregrineRuntimeExecutor as NativeExecutionDispatch>::ExtendHostFunctions>(config)
 							}),
+							"clone" => runner.sync_run(|config| {
+								cmd.run::<Block, <CloneRuntimeExecutor as NativeExecutionDispatch>::ExtendHostFunctions>(config)
+							}),
 							_ => Err("Unknown parachain runtime".into()),
 						}
 					} else {
@@ -384,6 +406,16 @@ pub fn run() -> Result<()> {
 						cmd.run::<Block, ExtendedHostFunctions<
 							sp_io::SubstrateHostFunctions,
 							<SpiritnetRuntimeExecutor as NativeExecutionDispatch>::ExtendHostFunctions,
+						>, _>(Some(info_provider)),
+						task_manager,
+					))
+				})
+			} else if runner.config().chain_spec.is_clone() {
+				runner.async_run(|_| {
+					Ok((
+						cmd.run::<Block, ExtendedHostFunctions<
+							sp_io::SubstrateHostFunctions,
+							<CloneRuntimeExecutor as NativeExecutionDispatch>::ExtendHostFunctions,
 						>, _>(Some(info_provider)),
 						task_manager,
 					))
