@@ -205,10 +205,18 @@ pub mod pallet {
 			dispatcher: &T::AccountId,
 			version: IdentityCommitmentVersion,
 		) -> Result<IdentityCommitmentOf<T>, Error<T>> {
-			let commitment =
-				IdentityCommitments::<T>::take(identifier, version).ok_or(Error::<T>::CommitmentNotFound)?;
+			let commitment = Self::delete_identity_commitment_storage_entry_without_hook(identifier, version)?;
 			T::ProviderHooks::on_commitment_removed(identifier, dispatcher, &commitment, version)
 				.map_err(|e| Error::<T>::Hook(e.into()))?;
+			Ok(commitment)
+		}
+
+		pub fn delete_identity_commitment_storage_entry_without_hook(
+			identifier: &T::Identifier,
+			version: IdentityCommitmentVersion,
+		) -> Result<IdentityCommitmentOf<T>, Error<T>> {
+			let commitment =
+				IdentityCommitments::<T>::take(identifier, version).ok_or(Error::<T>::CommitmentNotFound)?;
 			Self::deposit_event(Event::<T>::VersionedIdentityDeleted {
 				identifier: identifier.clone(),
 				version,
