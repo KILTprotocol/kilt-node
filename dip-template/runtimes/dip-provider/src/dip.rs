@@ -91,16 +91,33 @@ pub mod deposit {
 		}
 	}
 
+	/// The various different keys that can be stored in the storage-tracking
+	/// pallet.
+	/// Although the namespace is used to distinguish between keys, it is useful
+	/// to group all keys under the same enum to calculate the maximum length
+	/// that a key can take.
+	#[derive(Encode, Decode, MaxEncodedLen, TypeInfo, Clone, PartialEq, Eq, RuntimeDebug)]
+	pub struct DepositKey {
+		identifier: DidIdentifier,
+		commitment_version: IdentityCommitmentVersion,
+	}
+
+	impl From<(DidIdentifier, AccountId, IdentityCommitmentVersion)> for DepositKey {
+		fn from((identifier, _, version): (DidIdentifier, AccountId, IdentityCommitmentVersion)) -> Self {
+			Self {
+				identifier,
+				commitment_version: version,
+			}
+		}
+	}
+
 	/// The amount of tokens locked for each identity commitment.
 	pub const DEPOSIT_AMOUNT: Balance = 2 * UNIT;
 
 	/// The additional logic to execute whenever a deposit is removed by its
 	/// owner directly via the [`pallet_deposit_storage::Pallet`] pallet.
-	pub type DepositCollectorHooks = FixedDepositCollectorViaDepositsPallet<
-		DipProviderDepositNamespace,
-		ConstU128<DEPOSIT_AMOUNT>,
-		(DidIdentifier, IdentityCommitmentVersion),
-	>;
+	pub type DepositCollectorHooks =
+		FixedDepositCollectorViaDepositsPallet<DipProviderDepositNamespace, ConstU128<DEPOSIT_AMOUNT>, DepositKey>;
 
 	pub enum CommitmentDepositRemovalHookError {
 		DecodeKey,
@@ -129,14 +146,17 @@ pub mod deposit {
 		fn on_deposit_reclaimed(
 			_namespace: &<Runtime as pallet_deposit_storage::Config>::Namespace,
 			key: &DepositKeyOf<Runtime>,
-			deposit: DepositEntryOf<Runtime>,
+			_deposit: DepositEntryOf<Runtime>,
 		) -> Result<(), Self::Error> {
-			let (identifier, commitment_version) = <(DidIdentifier, IdentityCommitmentVersion)>::decode(&mut &key[..])
-				.map_err(|_| CommitmentDepositRemovalHookError::DecodeKey)?;
-			pallet_dip_provider::Pallet::<Runtime>::delete_identity_commitment_storage_entry(
+			let DepositKey {
+				identifier,
+				commitment_version,
+			} = DepositKey::decode(&mut &key[..]).map_err(|_| CommitmentDepositRemovalHookError::DecodeKey)?;
+			// No hook must be called otherwise it would try to delete the deposit again,
+			// leading to a circular call graph with leads to failure as soon as the deposit
+			// is trying to be deleted again.
+			pallet_dip_provider::Pallet::<Runtime>::delete_identity_commitment_storage_entry_without_hook(
 				&identifier,
-				// Deposit owner is the only one authorized to remove the deposit.
-				&deposit.deposit.owner,
 				commitment_version,
 			)
 			.map_err(|_| {
@@ -164,7 +184,7 @@ pub mod deposit {
 			let namespace = DepositNamespaces::DipProvider;
 			let did_identifier = DidIdentifier::from([200u8; 32]);
 			let commitment_version = 0u16;
-			let key: DepositKeyOf<Runtime> = (did_identifier.clone(), 0)
+			let key = DepositKey::from((did_identifier.clone(), submitter.clone(), commitment_version))
 				.encode()
 				.try_into()
 				.expect("Should not fail to create a key for a DIP commitment.");
