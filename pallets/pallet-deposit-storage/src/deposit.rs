@@ -74,7 +74,7 @@ where
 	Runtime: pallet_dip_provider::Config + Config,
 	DepositsNamespace: Get<Runtime::Namespace>,
 	FixedDepositAmount: Get<BalanceOf<Runtime>>,
-	DepositKey: From<(Runtime::Identifier, IdentityCommitmentVersion)> + Encode,
+	DepositKey: From<(Runtime::Identifier, Runtime::AccountId, IdentityCommitmentVersion)> + Encode,
 {
 	type Error = u16;
 
@@ -85,7 +85,7 @@ where
 		version: IdentityCommitmentVersion,
 	) -> Result<(), Self::Error> {
 		let namespace = DepositsNamespace::get();
-		let key = DepositKey::from((identifier.clone(), version))
+		let key = DepositKey::from((identifier.clone(), submitter.clone(), version))
 			.encode()
 			.try_into()
 			.map_err(|_| {
@@ -120,19 +120,22 @@ where
 
 	fn on_commitment_removed(
 		identifier: &Runtime::Identifier,
-		_submitter: &Runtime::AccountId,
+		submitter: &Runtime::AccountId,
 		_commitment: &IdentityCommitmentOf<Runtime>,
 		version: pallet_dip_provider::IdentityCommitmentVersion,
 	) -> Result<(), Self::Error> {
 		let namespace = DepositsNamespace::get();
-		let key = (identifier, version).encode().try_into().map_err(|_| {
-			log::error!(
-				"Failed to convert tuple ({:#?}, {version}) to BoundedVec with max length {}",
-				identifier,
-				Runtime::MaxKeyLength::get()
-			);
-			FixedDepositCollectorViaDepositsPalletError::Internal
-		})?;
+		let key = DepositKey::from((identifier.clone(), submitter.clone(), version))
+			.encode()
+			.try_into()
+			.map_err(|_| {
+				log::error!(
+					"Failed to convert tuple ({:#?}, {version}) to BoundedVec with max length {}",
+					identifier,
+					Runtime::MaxKeyLength::get()
+				);
+				FixedDepositCollectorViaDepositsPalletError::Internal
+			})?;
 		Pallet::<Runtime>::remove_deposit(&namespace, &key, None).map_err(|e| match e {
 			pallet_error if pallet_error == DispatchError::from(Error::<Runtime>::DepositNotFound) => {
 				FixedDepositCollectorViaDepositsPalletError::DepositNotFound
