@@ -93,7 +93,7 @@ pub type BlockNumber = u64;
 pub type DidIdentifier = AccountId;
 pub type Hash = sp_core::H256;
 pub type Header = generic::Header<BlockNumber, BlakeTwo256>;
-pub type Nonce = u32;
+pub type Nonce = u64;
 pub type Signature = MultiSignature;
 
 pub type SignedExtra = (
@@ -238,7 +238,7 @@ impl frame_system::Config for Runtime {
 	type Hashing = BlakeTwo256;
 	type Lookup = AccountIdLookup<AccountId, ()>;
 	type MaxConsumers = ConstU32<16>;
-	type Nonce = u32;
+	type Nonce = u64;
 	type OnKilledAccount = ();
 	type OnNewAccount = ();
 	type OnSetCode = ParachainSetCode<Self>;
