@@ -84,8 +84,8 @@ fn load_spec(id: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, St
 		"peregrine"
 	};
 
-	log::info!("Load spec id: {}", id);
-	log::info!("The following runtime was chosen based on the spec id: {}", runtime);
+	println!("Load spec id: {}", id);
+	println!("The following runtime was chosen based on the spec id: {}", runtime);
 
 	match (id, runtime) {
 		("clone-dev", _) => Ok(Box::new(chain_spec::clone::get_chain_spec_dev()?)),

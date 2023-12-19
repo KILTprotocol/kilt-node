@@ -256,7 +256,7 @@ parameter_types! {
 
 impl pallet_authorship::Config for Runtime {
 	type FindAuthor = pallet_session::FindAccountFromAuthorIndex<Self, Aura>;
-	type EventHandler = ();
+	type EventHandler = CollatorSelection;
 }
 
 parameter_types! {
@@ -310,10 +310,10 @@ construct_runtime! {
 		// The following order MUST NOT be changed: Aura -> Session -> Staking -> Authorship -> AuraExt
 		// Dependencies: AuraExt on Aura, Authorship and Session on ParachainStaking
 		Aura: pallet_aura = 23,
+		CollatorSelection: pallet_collator_selection = 25,
 		Session: pallet_session = 22,
 		Authorship: pallet_authorship = 20,
 		AuraExt: cumulus_pallet_aura_ext = 24,
-		CollatorSelection: pallet_collator_selection = 25,
 
 		// Parachains pallets. Start indices at 80 to leave room.
 
