@@ -89,12 +89,12 @@ pub type AccountId = AccountId32;
 pub type Address = MultiAddress<AccountId, ()>;
 pub type Balance = u128;
 pub type Block = generic::Block<Header, UncheckedExtrinsic>;
-pub type BlockNumber = u32;
+pub type BlockNumber = u64;
 pub type DidIdentifier = AccountId;
 pub type Hasher = BlakeTwo256;
 pub type Hash = sp_core::H256;
 pub type Header = generic::Header<BlockNumber, Hasher>;
-pub type Nonce = u32;
+pub type Nonce = u64;
 pub type Signature = MultiSignature;
 
 pub type SignedExtra = (
@@ -228,7 +228,7 @@ impl frame_system::Config for Runtime {
 	type AccountData = AccountData<Balance>;
 	type AccountId = AccountId;
 	type BaseCallFilter = Everything;
-	type BlockHashCount = ConstU32<256>;
+	type BlockHashCount = ConstU64<256>;
 	type BlockLength = RuntimeBlockLength;
 	type Block = Block;
 	type BlockWeights = RuntimeBlockWeights;
@@ -237,7 +237,7 @@ impl frame_system::Config for Runtime {
 	type Hashing = BlakeTwo256;
 	type Lookup = AccountIdLookup<AccountId, ()>;
 	type MaxConsumers = ConstU32<16>;
-	type Nonce = u32;
+	type Nonce = u64;
 	type OnKilledAccount = ();
 	type OnNewAccount = ();
 	type OnSetCode = ParachainSetCode<Self>;
@@ -323,7 +323,7 @@ parameter_types! {
 impl pallet_collator_selection::Config for Runtime {
 	type Currency = Balances;
 	type PotId = PotId;
-	type KickThreshold = ConstU32<{ 6 * HOURS }>;
+	type KickThreshold = ConstU64<{ 6 * HOURS }>;
 	type MaxCandidates = ConstU32<1_000>;
 	type MaxInvulnerables = ConstU32<100>;
 	type MinEligibleCollators = ConstU32<5>;
@@ -343,11 +343,11 @@ impl_opaque_keys! {
 
 impl pallet_session::Config for Runtime {
 	type Keys = SessionKeys;
-	type NextSessionRotation = PeriodicSessions<ConstU32<HOURS>, ConstU32<0>>;
+	type NextSessionRotation = PeriodicSessions<ConstU64<HOURS>, ConstU64<0>>;
 	type RuntimeEvent = RuntimeEvent;
 	type SessionHandler = <SessionKeys as OpaqueKeys>::KeyTypeIdProviders;
 	type SessionManager = CollatorSelection;
-	type ShouldEndSession = PeriodicSessions<ConstU32<HOURS>, ConstU32<0>>;
+	type ShouldEndSession = PeriodicSessions<ConstU64<HOURS>, ConstU64<0>>;
 	type ValidatorId = AccountId;
 	type ValidatorIdOf = IdentityCollator;
 	type WeightInfo = ();
