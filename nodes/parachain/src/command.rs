@@ -499,6 +499,17 @@ pub fn run() -> Result<()> {
 					.await
 					.map(|r| r.0)
 					.map_err(Into::into)
+				} else if config.chain_spec.is_clone() {
+					crate::service::start_node::<CloneRuntimeExecutor, clone_runtime::RuntimeApi>(
+						config,
+						polkadot_config,
+						collator_options,
+						id,
+						hwbench,
+					)
+					.await
+					.map(|r| r.0)
+					.map_err(Into::into)
 				} else {
 					Err("Unknown KILT parachain runtime, neither Spiritnet nor Peregrine".into())
 				}
