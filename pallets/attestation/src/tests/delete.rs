@@ -20,7 +20,7 @@ use frame_support::{assert_noop, assert_ok, traits::fungible::InspectHold};
 use kilt_support::mock::mock_origin::DoubleOrigin;
 use sp_runtime::traits::Zero;
 
-use crate::{self as attestation, mock::*, AttesterOf, Config, Event, HoldReason};
+use crate::{self as attestation, migrations, mock::*, AttesterOf, Config, Event, HoldReason, ExternalAttestations};
 
 #[test]
 fn test_remove() {
@@ -106,6 +106,9 @@ fn test_remove_authorized() {
 		.with_ctypes(vec![(attestation.ctype_hash, revoker.clone())])
 		.with_attestations(vec![(claim_hash, attestation)])
 		.build_and_execute_with_sanity_tests(|| {
+			assert!(Attestation::attestations(claim_hash).is_some());
+			assert!(Attestation::external_attestations(revoker.clone(), claim_hash));
+
 			assert_ok!(Attestation::remove(
 				DoubleOrigin(ACCOUNT_00, revoker.clone()).into(),
 				claim_hash,
@@ -171,6 +174,64 @@ fn test_remove_not_found() {
 			assert_noop!(
 				Attestation::remove(DoubleOrigin(ACCOUNT_00, attester.clone()).into(), claim_hash, None),
 				attestation::Error::<Test>::NotFound
+			);
+		});
+}
+
+#[test]
+fn test_remove_v1() {
+	let attester: AttesterOf<Test> = sr25519_did_from_public_key(&ALICE_SEED);
+	let claim_hash = claim_hash_from_seed(CLAIM_HASH_SEED_01);
+	let mut attestation = generate_base_attestation::<Test>(attester.clone(), ACCOUNT_00);
+	attestation.authorization_id = Some(attester.clone());
+	let ctype_hash = attestation.ctype_hash;
+
+	ExtBuilder::default()
+		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
+		.with_ctypes(vec![(attestation.ctype_hash, attester.clone())])
+		.with_attestations_v1(vec![(claim_hash, attestation.clone())])
+		.build_and_execute_with_sanity_tests(|| {
+			assert!(Attestation::attestations(claim_hash).is_some());
+			assert!(!ExternalAttestations::<Test>::get(
+				&attester.clone(),
+				&claim_hash
+			));
+			assert!(migrations::v1::ExternalAttestations::<Test>::get(
+				&attester.clone(),
+				&claim_hash
+			));
+
+			assert_ok!(Attestation::remove(
+				DoubleOrigin(ACCOUNT_00, attester.clone()).into(),
+				claim_hash,
+				None
+			));
+			assert!(Attestation::attestations(claim_hash).is_none());
+			assert!(!ExternalAttestations::<Test>::get(
+				&attester.clone(),
+				&claim_hash
+			));
+			assert!(!migrations::v1::ExternalAttestations::<Test>::get(
+				&attester.clone(),
+				&claim_hash
+			));
+
+			assert_eq!(
+				events(),
+				vec![
+					Event::AttestationRevoked {
+						attester: attester.clone(),
+						claim_hash,
+						authorized_by: attestation::authorized_by::AuthorizedBy::Attester(attester.clone()),
+						ctype_hash,
+					},
+					Event::AttestationRemoved {
+						attester: attester.clone(),
+						claim_hash,
+						authorized_by: attestation::authorized_by::AuthorizedBy::Attester(attester.clone()),
+						ctype_hash,
+					}
+				]
 			);
 		});
 }

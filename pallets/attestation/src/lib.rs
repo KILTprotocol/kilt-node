@@ -105,7 +105,7 @@ pub mod pallet {
 	};
 
 	/// The current storage version.
-	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
+	const STORAGE_VERSION: StorageVersion = StorageVersion::new(2);
 
 	/// Type of a claim hash.
 	pub type ClaimHashOf<T> = <T as frame_system::Config>::Hash;
@@ -194,9 +194,9 @@ pub mod pallet {
 	///
 	/// It maps from a delegation ID to a vector of claim hashes.
 	#[pallet::storage]
-	#[pallet::getter(fn external_attestations)]
-	pub type ExternalAttestations<T> =
-		StorageDoubleMap<_, Twox64Concat, AuthorizationIdOf<T>, Blake2_128Concat, ClaimHashOf<T>, bool, ValueQuery>;
+	// #[pallet::getter(fn external_attestations)]
+	pub(crate) type ExternalAttestations<T> =
+		StorageDoubleMap<_, Blake2_128Concat, AuthorizationIdOf<T>, Blake2_128Concat, ClaimHashOf<T>, bool, ValueQuery>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -501,6 +501,15 @@ pub mod pallet {
 	}
 
 	impl<T: Config> Pallet<T> {
+		// TODO: delete once
+		pub fn external_attestations(
+			authorization_id: AuthorizationIdOf<T>,
+			claim_hash: ClaimHashOf<T>,
+		) -> bool {
+			ExternalAttestations::<T>::get(&authorization_id, &claim_hash)
+				|| migrations::v1::ExternalAttestations::<T>::get(&authorization_id, &claim_hash)
+		}
+
 		fn remove_attestation(
 			authorized_by: AuthorizedByOf<T>,
 			attestation: AttestationDetailsOf<T>,
@@ -520,6 +529,7 @@ pub mod pallet {
 			Attestations::<T>::remove(claim_hash);
 			if let Some(authorization_id) = &attestation.authorization_id {
 				ExternalAttestations::<T>::remove(authorization_id, claim_hash);
+				migrations::v1::ExternalAttestations::<T>::remove(authorization_id, claim_hash);
 			}
 			if !attestation.revoked {
 				Self::deposit_event(Event::AttestationRevoked {

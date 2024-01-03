@@ -37,6 +37,24 @@ where
 	)
 }
 
+pub mod v1 {
+	use frame_support::{pallet_prelude::*, storage_alias, Blake2_128Concat};
+
+	use crate::{AuthorizationIdOf, ClaimHashOf, Config, Pallet};
+
+	/// The old `PageIndex` storage item.
+	#[storage_alias]
+	pub(crate) type ExternalAttestations<T: Config> = StorageDoubleMap<
+		Pallet<T>,
+		Twox64Concat,
+		AuthorizationIdOf<T>,
+		Blake2_128Concat,
+		ClaimHashOf<T>,
+		bool,
+		ValueQuery,
+	>;
+}
+
 #[cfg(test)]
 pub mod test {
 	use ctype::mock::get_ctype_hash;
