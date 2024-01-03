@@ -41,7 +41,6 @@ pub mod pallet {
 		dispatch::{Dispatchable, GetDispatchInfo, PostDispatchInfo},
 		pallet_prelude::*,
 		traits::{Contains, EnsureOriginWithArg},
-		Twox64Concat,
 	};
 	use frame_system::pallet_prelude::*;
 	use parity_scale_codec::{FullCodec, MaxEncodedLen};
@@ -108,7 +107,7 @@ pub mod pallet {
 	#[pallet::storage]
 	#[pallet::getter(fn identity_proofs)]
 	pub(crate) type IdentityEntries<T> =
-		StorageMap<_, Twox64Concat, <T as Config>::Identifier, <T as Config>::LocalIdentityInfo>;
+		StorageMap<_, Blake2_128Concat, <T as Config>::Identifier, <T as Config>::LocalIdentityInfo>;
 
 	#[pallet::pallet]
 	#[pallet::storage_version(STORAGE_VERSION)]
