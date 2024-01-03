@@ -57,10 +57,12 @@ pub mod pallet {
 		type Username: Encode + Decode + TypeInfo + MaxEncodedLen + Clone + PartialEq + Debug + Default;
 	}
 
+	// Safety: The hash is calculated on chain. The hashing algorithm provided by frame_system::Config must be cryptographically secure.
 	#[pallet::storage]
 	#[pallet::getter(fn posts)]
 	pub type Posts<T> = StorageMap<_, Twox64Concat, <T as frame_system::Config>::Hash, PostOf<T>>;
 
+	// Safety: The hash is calculated on chain. The hashing algorithm provided by frame_system::Config must be cryptographically secure.
 	#[pallet::storage]
 	#[pallet::getter(fn comments)]
 	pub type Comments<T> = StorageMap<_, Twox64Concat, <T as frame_system::Config>::Hash, CommentOf<T>>;
