@@ -42,7 +42,6 @@ pub mod v1 {
 
 	use crate::{AuthorizationIdOf, ClaimHashOf, Config, Pallet};
 
-	/// The old `PageIndex` storage item.
 	#[storage_alias]
 	pub(crate) type ExternalAttestations<T: Config> = StorageDoubleMap<
 		Pallet<T>,
