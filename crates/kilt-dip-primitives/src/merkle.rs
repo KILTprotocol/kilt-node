@@ -73,73 +73,37 @@ impl TryFrom<DidKeyRelationship> for DidVerificationKeyRelationship {
 	}
 }
 
-/// The key of a Merkle leaf revealing a DID key for a DID Document.
-#[derive(Clone, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo)]
-pub struct DidKeyMerkleKey<KeyId>(pub KeyId, pub DidKeyRelationship);
-
-impl<KeyId> From<(KeyId, DidKeyRelationship)> for DidKeyMerkleKey<KeyId> {
-	fn from(value: (KeyId, DidKeyRelationship)) -> Self {
-		Self(value.0, value.1)
-	}
-}
-/// The value of a Merkle leaf revealing a DID key for a DID Document.
-#[derive(Clone, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo)]
-pub struct DidKeyMerkleValue<BlockNumber, AccountId>(pub DidPublicKeyDetails<BlockNumber, AccountId>);
-
-impl<BlockNumber, AccountId> From<DidPublicKeyDetails<BlockNumber, AccountId>>
-	for DidKeyMerkleValue<BlockNumber, AccountId>
-{
-	fn from(value: DidPublicKeyDetails<BlockNumber, AccountId>) -> Self {
-		Self(value)
-	}
-}
-
-/// The key of a Merkle leaf revealing the web3name linked to a DID Document.
-#[derive(Clone, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo)]
-pub struct Web3NameMerkleKey<Web3Name>(pub Web3Name);
-
-impl<Web3Name> From<Web3Name> for Web3NameMerkleKey<Web3Name> {
-	fn from(value: Web3Name) -> Self {
-		Self(value)
-	}
-}
-/// The value of a Merkle leaf revealing the web3name linked to a DID Document.
-#[derive(Clone, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo)]
-pub struct Web3NameMerkleValue<BlockNumber>(pub BlockNumber);
-
-impl<BlockNumber> From<BlockNumber> for Web3NameMerkleValue<BlockNumber> {
-	fn from(value: BlockNumber) -> Self {
-		Self(value)
-	}
-}
-
-/// The key of a Merkle leaf revealing an account linked to a DID Document.
-#[derive(Clone, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo)]
-pub struct LinkedAccountMerkleKey<AccountId>(pub AccountId);
-
-impl<AccountId> From<AccountId> for LinkedAccountMerkleKey<AccountId> {
-	fn from(value: AccountId) -> Self {
-		Self(value)
-	}
-}
-/// The value of a Merkle leaf revealing an account linked to a DID
-/// Document.
-#[derive(Clone, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo)]
-pub struct LinkedAccountMerkleValue;
-
-impl From<()> for LinkedAccountMerkleValue {
-	fn from(_value: ()) -> Self {
-		Self
-	}
-}
-
 /// All possible Merkle leaf types that can be revealed as part of a DIP
 /// identity Merkle proof.
 #[derive(Clone, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo)]
 pub enum RevealedDidMerkleProofLeaf<KeyId, AccountId, BlockNumber, Web3Name, LinkedAccountId> {
-	DidKey(DidKeyMerkleKey<KeyId>, DidKeyMerkleValue<BlockNumber, AccountId>),
-	Web3Name(Web3NameMerkleKey<Web3Name>, Web3NameMerkleValue<BlockNumber>),
-	LinkedAccount(LinkedAccountMerkleKey<LinkedAccountId>, LinkedAccountMerkleValue),
+	DidKey(RevealedDidKey<KeyId, BlockNumber, AccountId>),
+	Web3Name(RevealedWeb3Name<Web3Name, BlockNumber>),
+	LinkedAccount(RevealedAccountId<LinkedAccountId>),
+}
+
+impl<KeyId, AccountId, BlockNumber, Web3Name, LinkedAccountId> From<RevealedDidKey<KeyId, BlockNumber, AccountId>>
+	for RevealedDidMerkleProofLeaf<KeyId, AccountId, BlockNumber, Web3Name, LinkedAccountId>
+{
+	fn from(value: RevealedDidKey<KeyId, BlockNumber, AccountId>) -> Self {
+		Self::DidKey(value)
+	}
+}
+
+impl<KeyId, AccountId, BlockNumber, Web3Name, LinkedAccountId> From<RevealedWeb3Name<Web3Name, BlockNumber>>
+	for RevealedDidMerkleProofLeaf<KeyId, AccountId, BlockNumber, Web3Name, LinkedAccountId>
+{
+	fn from(value: RevealedWeb3Name<Web3Name, BlockNumber>) -> Self {
+		Self::Web3Name(value)
+	}
+}
+
+impl<KeyId, AccountId, BlockNumber, Web3Name, LinkedAccountId> From<RevealedAccountId<LinkedAccountId>>
+	for RevealedDidMerkleProofLeaf<KeyId, AccountId, BlockNumber, Web3Name, LinkedAccountId>
+{
+	fn from(value: RevealedAccountId<LinkedAccountId>) -> Self {
+		Self::LinkedAccount(value)
+	}
 }
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -150,15 +114,16 @@ where
 	BlockNumber: Default,
 {
 	fn default() -> Self {
-		Self::DidKey(
-			(KeyId::default(), DidVerificationKeyRelationship::Authentication.into()).into(),
-			DidPublicKeyDetails {
+		RevealedDidKey {
+			id: KeyId::default(),
+			relationship: DidVerificationKeyRelationship::Authentication.into(),
+			details: DidPublicKeyDetails {
 				key: did::did_details::DidVerificationKey::Ed25519(sp_core::ed25519::Public::from_raw([0u8; 32]))
 					.into(),
 				block_number: BlockNumber::default(),
-			}
-			.into(),
-		)
+			},
+		}
+		.into()
 	}
 }
 
@@ -171,9 +136,9 @@ where
 {
 	pub fn encoded_key(&self) -> Vec<u8> {
 		match self {
-			RevealedDidMerkleProofLeaf::DidKey(key, _) => key.encode(),
-			RevealedDidMerkleProofLeaf::Web3Name(key, _) => key.encode(),
-			RevealedDidMerkleProofLeaf::LinkedAccount(key, _) => key.encode(),
+			RevealedDidMerkleProofLeaf::DidKey(RevealedDidKey { id, relationship, .. }) => (id, relationship).encode(),
+			RevealedDidMerkleProofLeaf::Web3Name(RevealedWeb3Name { web3_name, .. }) => web3_name.encode(),
+			RevealedDidMerkleProofLeaf::LinkedAccount(RevealedAccountId(account_id)) => account_id.encode(),
 		}
 	}
 }
@@ -186,9 +151,9 @@ where
 {
 	pub fn encoded_value(&self) -> Vec<u8> {
 		match self {
-			RevealedDidMerkleProofLeaf::DidKey(_, value) => value.encode(),
-			RevealedDidMerkleProofLeaf::Web3Name(_, value) => value.encode(),
-			RevealedDidMerkleProofLeaf::LinkedAccount(_, value) => value.encode(),
+			RevealedDidMerkleProofLeaf::DidKey(RevealedDidKey { details, .. }) => details.encode(),
+			RevealedDidMerkleProofLeaf::Web3Name(RevealedWeb3Name { claimed_at, .. }) => claimed_at.encode(),
+			RevealedDidMerkleProofLeaf::LinkedAccount(_) => ().encode(),
 		}
 	}
 }
@@ -217,6 +182,11 @@ pub struct RevealedWeb3Name<Web3Name, BlockNumber> {
 	pub claimed_at: BlockNumber,
 }
 
+/// The details of an account after it has been successfully verified in a
+/// Merkle proof.
+#[derive(Clone, Encode, Decode, PartialEq, MaxEncodedLen, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo)]
+pub struct RevealedAccountId<AccountId>(pub AccountId);
+
 /// The complete set of information that is provided by the DIP Merkle proof
 /// verifier upon successful verification of a DIP Merkle proof.
 #[derive(Clone, Debug, PartialEq, Eq, TypeInfo, MaxEncodedLen, Encode, Decode, DefaultNoBound)]
@@ -236,7 +206,7 @@ pub struct RevealedDidMerkleProofLeaves<
 	pub web3_name: Option<RevealedWeb3Name<Web3Name, BlockNumber>>,
 	/// The list of linked accounts revealed in the Merkle proof, up to a
 	/// maximum of `MAX_REVEALED_ACCOUNTS_COUNT`.
-	pub linked_accounts: BoundedVec<LinkedAccountId, ConstU32<MAX_REVEALED_ACCOUNTS_COUNT>>,
+	pub linked_accounts: BoundedVec<RevealedAccountId<LinkedAccountId>, ConstU32<MAX_REVEALED_ACCOUNTS_COUNT>>,
 }
 
 impl<
@@ -361,7 +331,7 @@ where
 	let (did_keys, web3_name, linked_accounts): (
 		BoundedVec<RevealedDidKey<KeyId, BlockNumber, AccountId>, ConstU32<MAX_REVEALED_KEYS_COUNT>>,
 		Option<RevealedWeb3Name<Web3Name, BlockNumber>>,
-		BoundedVec<LinkedAccountId, ConstU32<MAX_REVEALED_ACCOUNTS_COUNT>>,
+		BoundedVec<RevealedAccountId<LinkedAccountId>, ConstU32<MAX_REVEALED_ACCOUNTS_COUNT>>,
 	) = proof.revealed.into_iter().try_fold(
 		(
 			BoundedVec::with_bounded_capacity(MAX_REVEALED_KEYS_COUNT.saturated_into()),
@@ -369,12 +339,8 @@ where
 			BoundedVec::with_bounded_capacity(MAX_REVEALED_ACCOUNTS_COUNT.saturated_into()),
 		),
 		|(mut keys, web3_name, mut linked_accounts), leaf| match leaf {
-			RevealedDidMerkleProofLeaf::DidKey(key_id, key_value) => {
-				let res = keys.try_push(RevealedDidKey {
-					id: key_id.0,
-					relationship: key_id.1,
-					details: key_value.0,
-				});
+			RevealedDidMerkleProofLeaf::DidKey(revealed_did_key) => {
+				let res = keys.try_push(revealed_did_key);
 				cfg_if::cfg_if! {
 					if #[cfg(feature = "runtime-benchmarks")] {
 						drop(res);
@@ -385,16 +351,11 @@ where
 
 				Ok::<_, DidMerkleProofVerifierError>((keys, web3_name, linked_accounts))
 			}
-			RevealedDidMerkleProofLeaf::Web3Name(revealed_web3_name, details) => Ok((
-				keys,
-				Some(RevealedWeb3Name {
-					web3_name: revealed_web3_name.0,
-					claimed_at: details.0,
-				}),
-				linked_accounts,
-			)),
-			RevealedDidMerkleProofLeaf::LinkedAccount(account_id, _) => {
-				let res = linked_accounts.try_push(account_id.0);
+			RevealedDidMerkleProofLeaf::Web3Name(revealed_web3name) => {
+				Ok((keys, Some(revealed_web3name), linked_accounts))
+			}
+			RevealedDidMerkleProofLeaf::LinkedAccount(revealed_account_id) => {
+				let res = linked_accounts.try_push(revealed_account_id);
 				cfg_if::cfg_if! {
 					if #[cfg(feature = "runtime-benchmarks")] {
 						drop(res);
