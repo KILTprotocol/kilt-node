@@ -121,7 +121,7 @@ where
 		>,
 	) -> Self {
 		match value {
-			DipParachainStateProofVerifierError::UnsupportedVersion => 0,
+			DipParachainStateProofVerifierError::UnsupportedVersion => 1,
 			DipParachainStateProofVerifierError::ParachainHeadMerkleProof(error) => {
 				u8::MAX as u16 + error.into() as u16
 			}

@@ -40,9 +40,9 @@ pub enum MerkleProofError {
 impl From<MerkleProofError> for u8 {
 	fn from(value: MerkleProofError) -> Self {
 		match value {
-			MerkleProofError::InvalidProof => 0,
-			MerkleProofError::RequiredLeafNotRevealed => 1,
-			MerkleProofError::ResultDecoding => 2,
+			MerkleProofError::InvalidProof => 1,
+			MerkleProofError::RequiredLeafNotRevealed => 2,
+			MerkleProofError::ResultDecoding => 3,
 		}
 	}
 }

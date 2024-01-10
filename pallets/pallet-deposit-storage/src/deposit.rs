@@ -59,10 +59,10 @@ pub enum FixedDepositCollectorViaDepositsPalletError {
 impl From<FixedDepositCollectorViaDepositsPalletError> for u16 {
 	fn from(value: FixedDepositCollectorViaDepositsPalletError) -> Self {
 		match value {
-			FixedDepositCollectorViaDepositsPalletError::DepositAlreadyTaken => 0,
-			FixedDepositCollectorViaDepositsPalletError::DepositNotFound => 1,
-			FixedDepositCollectorViaDepositsPalletError::FailedToHold => 2,
-			FixedDepositCollectorViaDepositsPalletError::FailedToRelease => 3,
+			FixedDepositCollectorViaDepositsPalletError::DepositAlreadyTaken => 1,
+			FixedDepositCollectorViaDepositsPalletError::DepositNotFound => 2,
+			FixedDepositCollectorViaDepositsPalletError::FailedToHold => 3,
+			FixedDepositCollectorViaDepositsPalletError::FailedToRelease => 4,
 			FixedDepositCollectorViaDepositsPalletError::Internal => u16::MAX,
 		}
 	}

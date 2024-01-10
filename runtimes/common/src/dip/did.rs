@@ -42,9 +42,9 @@ pub enum LinkedDidInfoProviderError {
 impl From<LinkedDidInfoProviderError> for u16 {
 	fn from(value: LinkedDidInfoProviderError) -> Self {
 		match value {
-			LinkedDidInfoProviderError::DidNotFound => 0,
-			LinkedDidInfoProviderError::DidDeleted => 1,
-			LinkedDidInfoProviderError::TooManyLinkedAccounts => 2,
+			LinkedDidInfoProviderError::DidNotFound => 1,
+			LinkedDidInfoProviderError::DidDeleted => 2,
+			LinkedDidInfoProviderError::TooManyLinkedAccounts => 3,
 			LinkedDidInfoProviderError::Internal => u16::MAX,
 		}
 	}

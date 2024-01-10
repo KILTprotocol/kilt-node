@@ -127,7 +127,7 @@ pub mod deposit {
 	impl From<CommitmentDepositRemovalHookError> for u16 {
 		fn from(value: CommitmentDepositRemovalHookError) -> Self {
 			match value {
-				CommitmentDepositRemovalHookError::DecodeKey => 0,
+				CommitmentDepositRemovalHookError::DecodeKey => 1,
 				CommitmentDepositRemovalHookError::Internal => u16::MAX,
 			}
 		}

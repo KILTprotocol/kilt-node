@@ -69,10 +69,10 @@ pub enum DidMerkleProofError {
 impl From<DidMerkleProofError> for u16 {
 	fn from(value: DidMerkleProofError) -> Self {
 		match value {
-			DidMerkleProofError::UnsupportedVersion => 0,
-			DidMerkleProofError::KeyNotFound => 1,
-			DidMerkleProofError::LinkedAccountNotFound => 2,
-			DidMerkleProofError::Web3NameNotFound => 3,
+			DidMerkleProofError::UnsupportedVersion => 1,
+			DidMerkleProofError::KeyNotFound => 2,
+			DidMerkleProofError::LinkedAccountNotFound => 3,
+			DidMerkleProofError::Web3NameNotFound => 4,
 			DidMerkleProofError::Internal => u16::MAX,
 		}
 	}
