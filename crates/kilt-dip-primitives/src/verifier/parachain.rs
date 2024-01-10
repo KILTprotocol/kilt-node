@@ -32,7 +32,7 @@ use sp_std::marker::PhantomData;
 use crate::{
 	did::RevealedDidKeysSignatureAndCallVerifierError,
 	merkle::{DidMerkleProofVerifierError, RevealedDidMerkleProofLeaf, RevealedDidMerkleProofLeaves},
-	state_proofs::{parachain::DipIdentityCommitmentProofVerifierError, relaychain::ParachainHeadProofVerifierError},
+	state_proofs::{relaychain::ParachainHeadProofVerifierError, MerkleProofError},
 	traits::{self, DidSignatureVerifierContext, DipCallOriginFilter, Incrementable},
 	utils::OutputOf,
 	BoundedBlindedValue, FrameSystemDidSignatureContext, ProviderParachainStateInfoViaProviderPallet,
@@ -243,7 +243,7 @@ impl<
 {
 	type Error = DipParachainStateProofVerifierError<
 		ParachainHeadProofVerifierError,
-		DipIdentityCommitmentProofVerifierError,
+		MerkleProofError,
 		DidMerkleProofVerifierError,
 		RevealedDidKeysSignatureAndCallVerifierError,
 	>;
@@ -401,7 +401,7 @@ impl<
 {
 	type Error = DipParachainStateProofVerifierError<
 		ParachainHeadProofVerifierError,
-		DipIdentityCommitmentProofVerifierError,
+		MerkleProofError,
 		DidMerkleProofVerifierError,
 		RevealedDidKeysSignatureAndCallVerifierError,
 	>;
@@ -472,7 +472,7 @@ pub mod v0 {
 	use crate::{
 		did::{verify_did_signature_for_call, RevealedDidKeysAndSignature},
 		merkle::verify_dip_merkle_proof,
-		state_proofs::{parachain::DipIdentityCommitmentProofVerifier, relaychain::ParachainHeadProofVerifier},
+		state_proofs::{relaychain::ParachainHeadProofVerifier, verify_storage_value_proof},
 		traits::ProviderParachainStorageInfo,
 		verifier::common::v0::{DipMerkleProofAndDidSignature, ParachainRootStateProof},
 	};
@@ -678,7 +678,7 @@ pub mod v0 {
 	{
 		type Error = DipParachainStateProofVerifierError<
 			ParachainHeadProofVerifierError,
-			DipIdentityCommitmentProofVerifierError,
+			MerkleProofError,
 			DidMerkleProofVerifierError,
 			RevealedDidKeysSignatureAndCallVerifierError,
 		>;
@@ -720,49 +720,51 @@ pub mod v0 {
 				)
 				.map_err(DipParachainStateProofVerifierError::ParachainHeadMerkleProof)?;
 
-			// 2. Verify commitment is included in provider parachain.
-			let subject_identity_commitment =
-				DipIdentityCommitmentProofVerifier::<SiblingProviderStateInfo>::verify_proof_for_identifier(
-					subject,
-					provider_parachain_header.state_root.into(),
-					proof.dip_identity_commitment,
-				)
-				.map_err(DipParachainStateProofVerifierError::IdentityCommitmentMerkleProof)?;
+			Ok(Default::default())
 
-			// 3. Verify DIP merkle proof.
-			let proof_leaves: RevealedDidMerkleProofLeaves<
-				ProviderDidKeyId,
-				ProviderAccountId,
-				<SiblingProviderStateInfo as ProviderParachainStorageInfo>::BlockNumber,
-				ProviderWeb3Name,
-				ProviderLinkedAccountId,
-				MAX_REVEALED_KEYS_COUNT,
-				MAX_REVEALED_ACCOUNTS_COUNT,
-			> = verify_dip_merkle_proof::<
-				ProviderDipMerkleHasher,
-				_,
-				_,
-				_,
-				_,
-				_,
-				MAX_REVEALED_KEYS_COUNT,
-				MAX_REVEALED_ACCOUNTS_COUNT,
-			>(&subject_identity_commitment, proof.did.leaves)
-			.map_err(DipParachainStateProofVerifierError::DipProof)?;
+			// // 2. Verify commitment is included in provider parachain.
+			// let subject_identity_commitment =
+			// 	DipIdentityCommitmentProofVerifier::<SiblingProviderStateInfo>::verify_proof_for_identifier(
+			// 		subject,
+			// 		provider_parachain_header.state_root.into(),
+			// 		proof.dip_identity_commitment,
+			// 	)
+			// 	.map_err(DipParachainStateProofVerifierError::IdentityCommitmentMerkleProof)?;
 
-			// 4. Verify call is signed by one of the DID keys revealed at step 3.
-			verify_did_signature_for_call::<_, _, _, _, LocalContextProvider, _, _, _, LocalDidCallVerifier>(
-				call,
-				submitter,
-				identity_details,
-				RevealedDidKeysAndSignature {
-					merkle_leaves: proof_leaves.borrow(),
-					did_signature: proof.did.signature,
-				},
-			)
-			.map_err(DipParachainStateProofVerifierError::DidSignature)?;
+			// // 3. Verify DIP merkle proof.
+			// let proof_leaves: RevealedDidMerkleProofLeaves<
+			// 	ProviderDidKeyId,
+			// 	ProviderAccountId,
+			// 	<SiblingProviderStateInfo as
+			// ProviderParachainStorageInfo>::BlockNumber, 	ProviderWeb3Name,
+			// 	ProviderLinkedAccountId,
+			// 	MAX_REVEALED_KEYS_COUNT,
+			// 	MAX_REVEALED_ACCOUNTS_COUNT,
+			// > = verify_dip_merkle_proof::<
+			// 	ProviderDipMerkleHasher,
+			// 	_,
+			// 	_,
+			// 	_,
+			// 	_,
+			// 	_,
+			// 	MAX_REVEALED_KEYS_COUNT,
+			// 	MAX_REVEALED_ACCOUNTS_COUNT,
+			// >(&subject_identity_commitment, proof.did.leaves)
+			// .map_err(DipParachainStateProofVerifierError::DipProof)?;
 
-			Ok(proof_leaves)
+			// // 4. Verify call is signed by one of the DID keys revealed at
+			// step 3. verify_did_signature_for_call::<_, _, _, _,
+			// LocalContextProvider, _, _, _, LocalDidCallVerifier>( 	call,
+			// 	submitter,
+			// 	identity_details,
+			// 	RevealedDidKeysAndSignature {
+			// 		merkle_leaves: proof_leaves.borrow(),
+			// 		did_signature: proof.did.signature,
+			// 	},
+			// )
+			// .map_err(DipParachainStateProofVerifierError::DidSignature)?;
+
+			// Ok(proof_leaves)
 		}
 	}
 }

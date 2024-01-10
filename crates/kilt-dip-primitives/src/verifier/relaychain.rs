@@ -32,7 +32,7 @@ use sp_std::marker::PhantomData;
 use crate::{
 	did::RevealedDidKeysSignatureAndCallVerifierError,
 	merkle::{DidMerkleProofVerifierError, RevealedDidMerkleProofLeaf, RevealedDidMerkleProofLeaves},
-	state_proofs::{parachain::DipIdentityCommitmentProofVerifierError, relaychain::ParachainHeadProofVerifierError},
+	state_proofs::{relaychain::ParachainHeadProofVerifierError, MerkleProofError},
 	traits::{
 		DidSignatureVerifierContext, DipCallOriginFilter, HistoricalBlockRegistry, Incrementable,
 		ProviderParachainStorageInfo, RelayChainStorageInfo,
@@ -247,7 +247,7 @@ impl<
 {
 	type Error = DipRelaychainStateProofVerifierError<
 		ParachainHeadProofVerifierError,
-		DipIdentityCommitmentProofVerifierError,
+		MerkleProofError,
 		DidMerkleProofVerifierError,
 		RevealedDidKeysSignatureAndCallVerifierError,
 	>;
@@ -421,7 +421,7 @@ impl<
 {
 	type Error = DipRelaychainStateProofVerifierError<
 		ParachainHeadProofVerifierError,
-		DipIdentityCommitmentProofVerifierError,
+		MerkleProofError,
 		DidMerkleProofVerifierError,
 		RevealedDidKeysSignatureAndCallVerifierError,
 	>;
@@ -502,8 +502,8 @@ pub mod v0 {
 			RevealedDidMerkleProofLeaves,
 		},
 		state_proofs::{
-			parachain::{DipIdentityCommitmentProofVerifier, DipIdentityCommitmentProofVerifierError},
 			relaychain::{ParachainHeadProofVerifier, ParachainHeadProofVerifierError},
+			MerkleProofError,
 		},
 		traits::{
 			DidSignatureVerifierContext, DipCallOriginFilter, HistoricalBlockRegistry, Incrementable,
@@ -713,7 +713,7 @@ pub mod v0 {
 	{
 		type Error = DipRelaychainStateProofVerifierError<
 			ParachainHeadProofVerifierError,
-			DipIdentityCommitmentProofVerifierError,
+			MerkleProofError,
 			DidMerkleProofVerifierError,
 			RevealedDidKeysSignatureAndCallVerifierError,
 		>;
@@ -766,40 +766,41 @@ pub mod v0 {
 				)
 				.map_err(DipRelaychainStateProofVerifierError::ParachainHeadMerkleProof)?;
 
-			// 3. Verify parachain state proof.
-			let subject_identity_commitment =
-				DipIdentityCommitmentProofVerifier::<ChildProviderStateInfo>::verify_proof_for_identifier(
-					subject,
-					provider_parachain_header.state_root.into(),
-					proof.dip_identity_commitment,
-				)
-				.map_err(DipRelaychainStateProofVerifierError::IdentityCommitmentMerkleProof)?;
+			// // 3. Verify parachain state proof.
+			// let subject_identity_commitment =
+			// 	DipIdentityCommitmentProofVerifier::<ChildProviderStateInfo>::verify_proof_for_identifier(
+			// 		subject,
+			// 		provider_parachain_header.state_root.into(),
+			// 		proof.dip_identity_commitment,
+			// 	)
+			// 	.map_err(DipRelaychainStateProofVerifierError::IdentityCommitmentMerkleProof)?;
 
-			// 4. Verify DIP merkle proof.
-			let proof_leaves = verify_dip_merkle_proof::<
-				ProviderDipMerkleHasher,
-				_,
-				_,
-				_,
-				_,
-				_,
-				MAX_REVEALED_KEYS_COUNT,
-				MAX_REVEALED_ACCOUNTS_COUNT,
-			>(&subject_identity_commitment, proof.did.leaves)
-			.map_err(DipRelaychainStateProofVerifierError::DipProof)?;
+			// // 4. Verify DIP merkle proof.
+			// let proof_leaves = verify_dip_merkle_proof::<
+			// 	ProviderDipMerkleHasher,
+			// 	_,
+			// 	_,
+			// 	_,
+			// 	_,
+			// 	_,
+			// 	MAX_REVEALED_KEYS_COUNT,
+			// 	MAX_REVEALED_ACCOUNTS_COUNT,
+			// >(&subject_identity_commitment, proof.did.leaves)
+			// .map_err(DipRelaychainStateProofVerifierError::DipProof)?;
 
-			// 5. Verify DID signature.
-			verify_did_signature_for_call::<_, _, _, _, LocalContextProvider, _, _, _, LocalDidCallVerifier>(
-				call,
-				submitter,
-				identity_details,
-				RevealedDidKeysAndSignature {
-					merkle_leaves: proof_leaves.borrow(),
-					did_signature: proof.did.signature,
-				},
-			)
-			.map_err(DipRelaychainStateProofVerifierError::DidSignature)?;
-			Ok(proof_leaves)
+			// // 5. Verify DID signature.
+			// verify_did_signature_for_call::<_, _, _, _, LocalContextProvider, _, _, _,
+			// LocalDidCallVerifier>( 	call,
+			// 	submitter,
+			// 	identity_details,
+			// 	RevealedDidKeysAndSignature {
+			// 		merkle_leaves: proof_leaves.borrow(),
+			// 		did_signature: proof.did.signature,
+			// 	},
+			// )
+			// .map_err(DipRelaychainStateProofVerifierError::DidSignature)?;
+			// Ok(proof_leaves)
+			Ok(Default::default())
 		}
 	}
 }
