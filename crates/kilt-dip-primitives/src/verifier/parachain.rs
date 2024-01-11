@@ -263,13 +263,15 @@ pub mod v0 {
 
 	use frame_system::pallet_prelude::HeaderFor;
 	use pallet_web3_names::Web3NameOf;
-	use sp_core::storage::StorageKey;
 	use sp_runtime::traits::{Header, Zero};
 
 	use crate::{
 		merkle::RevealedDidKey,
 		state_proofs::verify_storage_value_proof,
-		verifier::common::v0::{DipMerkleProofAndDidSignature, ParachainRootStateProof},
+		verifier::common::{
+			calculate_dip_identity_commitment_storage_key_for_runtime, calculate_parachain_head_storage_key,
+			v0::{DipMerkleProofAndDidSignature, ParachainRootStateProof},
+		},
 	};
 
 	/// The expected format of a cross-chain DIP identity proof when the
@@ -379,14 +381,7 @@ pub mod v0 {
 			proof: Self::Proof,
 		) -> Result<Self::VerificationResult, Self::Error> {
 			// 1. Verify parachain state is finalized by relay chain and fresh.
-			let provider_head_storage_key = StorageKey(
-				[
-					frame_support::storage::storage_prefix(b"Paras", b"Heads").as_slice(),
-					sp_io::hashing::twox_64(PROVIDER_PARA_ID.encode().as_ref()).as_slice(),
-					PROVIDER_PARA_ID.encode().as_slice(),
-				]
-				.concat(),
-			);
+			let provider_head_storage_key = calculate_parachain_head_storage_key(PROVIDER_PARA_ID);
 			let relaychain_root_at_proof_block = RelaychainStateRoot::get(&proof.para_state_root.relay_block_height)
 				.expect("No relaychain block found for given height.");
 			let provider_parachain_header =
@@ -399,7 +394,7 @@ pub mod v0 {
 
 			// 2. Verify commitment is included in provider parachain.
 			let dip_commitment_storage_key =
-				StorageKey(pallet_dip_provider::IdentityCommitments::<ProviderRuntime>::hashed_key_for(subject, 0));
+				calculate_dip_identity_commitment_storage_key_for_runtime::<ProviderRuntime>(subject, 0);
 			let dip_commitment =
 				verify_storage_value_proof::<_, ProviderRuntime::Hashing, IdentityCommitmentOf<ProviderRuntime>>(
 					&dip_commitment_storage_key,
