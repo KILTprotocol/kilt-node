@@ -255,7 +255,7 @@ impl<
 }
 
 pub mod latest {
-	// pub use super::v0::ParachainDipStateProof;
+	pub use super::v0::ParachainDipStateProof;
 }
 
 pub mod v0 {
@@ -415,7 +415,7 @@ pub mod v0 {
 			let did_signature = proof
 				.did
 				.signature
-				.verify_time_bounds(current_block_number, SIGNATURE_VALIDITY.into())
+				.extract_signature_if_not_expired(current_block_number)
 				.unwrap_or_else(|_| panic!("Signature is not fresh."));
 
 			// Block number removed from the signature

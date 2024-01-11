@@ -23,40 +23,30 @@ use frame_support::ensure;
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
 use sp_core::RuntimeDebug;
-use sp_runtime::traits::CheckedSub;
 
 /// A DID signature anchored to a specific block height.
 #[derive(Encode, Decode, RuntimeDebug, Clone, Eq, PartialEq, TypeInfo)]
 pub struct TimeBoundDidSignature<BlockNumber> {
 	/// The signature.
 	pub signature: DidSignature,
-	/// The block number, in the context of the local executor, to which the
-	/// signature is anchored.
-	pub block_number: BlockNumber,
+	/// The block number until the signature is to be considered valid.
+	pub valid_until: BlockNumber,
 }
 
 impl<BlockNumber> TimeBoundDidSignature<BlockNumber>
 where
-	BlockNumber: CheckedSub + Ord,
+	BlockNumber: PartialOrd,
 {
-	/// Verifies the time bounds of the DID signatures and returns the signature
+	/// Verifies if the DID signature is expired and returns the signature
 	/// information after stripping time-related information.
-	pub fn verify_time_bounds(
+	pub fn extract_signature_if_not_expired(
 		self,
 		current_block_number: BlockNumber,
-		max_offset: BlockNumber,
 	) -> Result<DidSignature, DidSignatureVerificationError> {
-		let signature_block_number = self.block_number;
-
-		let is_signature_fresh =
-			if let Some(blocks_ago_from_now) = current_block_number.checked_sub(&signature_block_number) {
-				// False if the signature is too old.
-				blocks_ago_from_now <= max_offset
-			} else {
-				// Signature generated for a future time, not possible to verify.
-				false
-			};
-		ensure!(is_signature_fresh, DidSignatureVerificationError::SignatureNotFresh);
+		ensure!(
+			self.valid_until >= current_block_number,
+			DidSignatureVerificationError::SignatureExpired
+		);
 
 		Ok(self.signature)
 	}
@@ -71,21 +61,11 @@ where
 	fn worst_case(context: Context) -> Self {
 		Self {
 			signature: DidSignature::worst_case(context),
-			block_number: BlockNumber::default(),
+			valid_until: BlockNumber::default(),
 		}
 	}
 }
 
 pub enum DidSignatureVerificationError {
-	SignatureNotFresh,
-	SignatureUnverifiable,
-}
-
-impl From<DidSignatureVerificationError> for u8 {
-	fn from(value: DidSignatureVerificationError) -> Self {
-		match value {
-			DidSignatureVerificationError::SignatureNotFresh => 1,
-			DidSignatureVerificationError::SignatureUnverifiable => 2,
-		}
-	}
+	SignatureExpired,
 }

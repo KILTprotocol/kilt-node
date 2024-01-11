@@ -68,10 +68,13 @@ where
 	/// * `Hasher`: The hasher used by the producer to hash the Merkle leaves
 	///   and produce the identity commitment.
 	pub fn verify_against_commitment<Hasher>(
-		&self,
+		self,
 		commitment: &OutputOf<Hasher>,
 		max_leaves_revealed: usize,
-	) -> Result<(), DidMerkleProofVerificationError>
+	) -> Result<
+		impl IntoIterator<Item = RevealedDidMerkleProofLeaf<KeyId, AccountId, BlockNumber, Web3Name, LinkedAccountId>>,
+		DidMerkleProofVerificationError,
+	>
 	where
 		Hasher: Hash,
 	{
@@ -89,7 +92,7 @@ where
 		verify_trie_proof::<LayoutV1<Hasher>, _, _, _>(commitment, &self.blinded, &proof_leaves_key_value_pairs)
 			.map_err(|_| DidMerkleProofVerificationError::InvalidMerkleProof)?;
 
-		Ok(())
+		Ok(self.revealed)
 	}
 }
 
@@ -235,13 +238,4 @@ pub struct RevealedAccountId<AccountId>(pub AccountId);
 pub enum DidMerkleProofVerificationError {
 	InvalidMerkleProof,
 	TooManyLeaves,
-}
-
-impl From<DidMerkleProofVerificationError> for u8 {
-	fn from(value: DidMerkleProofVerificationError) -> Self {
-		match value {
-			DidMerkleProofVerificationError::InvalidMerkleProof => 1,
-			DidMerkleProofVerificationError::TooManyLeaves => 2,
-		}
-	}
 }
