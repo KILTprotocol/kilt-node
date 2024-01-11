@@ -234,7 +234,7 @@ impl<
 		proof: Self::Proof,
 	) -> Result<Self::VerificationResult, Self::Error> {
 		match proof {
-			VersionedDipParachainStateProof::V0(v0_proof) => <v0::Verifier<
+			VersionedDipParachainStateProof::V0(v0_proof) => <v0::ParachainVerifier<
 				RelaychainRuntime,
 				RelaychainStateRoot,
 				PROVIDER_PARA_ID,
@@ -300,7 +300,7 @@ pub mod v0 {
 		>,
 	}
 
-	pub struct Verifier<
+	pub struct ParachainVerifier<
 		RelaychainRuntime,
 		RelaychainStateRoot,
 		const PROVIDER_PARA_ID: u32,
@@ -330,7 +330,7 @@ pub mod v0 {
 			const MAX_LEAVES_REVEALED: usize,
 			const SIGNATURE_VALIDITY: u32,
 		> IdentityProofVerifier<ConsumerRuntime>
-		for Verifier<
+		for ParachainVerifier<
 			RelaychainRuntime,
 			RelaychainStateRoot,
 			PROVIDER_PARA_ID,

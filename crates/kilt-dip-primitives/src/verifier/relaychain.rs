@@ -521,8 +521,11 @@ pub mod v0 {
 	pub struct RelaychainDipStateProof<
 		ParentBlockHeight: Copy + Into<U256> + TryFrom<U256>,
 		ParentBlockHasher: Hash,
-		DipMerkleProofBlindedValues,
-		DipMerkleProofRevealedLeaf,
+		ProviderKeyId,
+		ProviderAccountId,
+		ProviderBlockNumber,
+		ProviderWeb3Name,
+		ProviderLinkedAccountId,
 	> {
 		/// The state proof for the given parachain head.
 		para_state_root: ParachainRootStateProof<ParentBlockHeight>,
@@ -530,9 +533,16 @@ pub mod v0 {
 		/// `para_state_root`.
 		relay_header: Header<ParentBlockHeight, ParentBlockHasher>,
 		/// The raw state proof for the DIP commitment of the given subject.
-		dip_identity_commitment: Vec<Vec<u8>>,
+		dip_identity_commitment: BoundedBlindedValue<u8>,
 		/// The cross-chain DID signature.
-		did: DipMerkleProofAndDidSignature<DipMerkleProofBlindedValues, DipMerkleProofRevealedLeaf, ParentBlockHeight>,
+		did: DipMerkleProofAndDidSignature<
+			ProviderKeyId,
+			ProviderAccountId,
+			ProviderBlockNumber,
+			ProviderWeb3Name,
+			ProviderLinkedAccountId,
+			ParentBlockHeight,
+		>,
 	}
 
 	/// Generic proof verifier for KILT-specific DIP identity proofs coming from
