@@ -31,8 +31,8 @@ pub mod merkle;
 pub mod state_proofs;
 pub mod traits;
 pub mod utils;
-// pub mod verifier;
+pub mod verifier;
 
 pub use traits::{FrameSystemDidSignatureContext, ProviderParachainStateInfoViaProviderPallet};
 pub use utils::BoundedBlindedValue;
-// pub use verifier::*;
+pub use verifier::*;

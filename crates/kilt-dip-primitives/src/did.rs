@@ -41,7 +41,7 @@ where
 {
 	/// Verifies the time bounds of the DID signatures and returns the signature
 	/// information after stripping time-related information.
-	pub(crate) fn verify_time_bounds(
+	pub fn verify_time_bounds(
 		self,
 		current_block_number: BlockNumber,
 		max_offset: BlockNumber,
@@ -79,8 +79,6 @@ where
 pub enum DidSignatureVerificationError {
 	SignatureNotFresh,
 	SignatureUnverifiable,
-	OriginCheckFailed,
-	Internal,
 }
 
 impl From<DidSignatureVerificationError> for u8 {
@@ -88,8 +86,6 @@ impl From<DidSignatureVerificationError> for u8 {
 		match value {
 			DidSignatureVerificationError::SignatureNotFresh => 1,
 			DidSignatureVerificationError::SignatureUnverifiable => 2,
-			DidSignatureVerificationError::OriginCheckFailed => 3,
-			DidSignatureVerificationError::Internal => u8::MAX,
 		}
 	}
 }

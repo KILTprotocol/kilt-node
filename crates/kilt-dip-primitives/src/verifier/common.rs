@@ -50,28 +50,11 @@ pub mod v0 {
 	}
 
 	#[derive(Encode, Decode, PartialEq, Eq, RuntimeDebug, TypeInfo, Clone)]
-	pub struct DipMerkleProofAndDidSignature<BlindedValues, Leaf, BlockNumber> {
+	pub struct DipMerkleProofAndDidSignature<KeyId, AccountId, BlockNumber, Web3Name, LinkedAccountId> {
 		/// The DIP Merkle proof revealing some leaves about the DID subject's
 		/// identity.
-		pub(crate) leaves: DidMerkleProof<BlindedValues, Leaf>,
+		pub(crate) leaves: DidMerkleProof<KeyId, AccountId, BlockNumber, Web3Name, LinkedAccountId>,
 		/// The cross-chain DID signature.
 		pub(crate) signature: TimeBoundDidSignature<BlockNumber>,
-	}
-
-	#[cfg(feature = "runtime-benchmarks")]
-	impl<BlindedValues, Leaf, BlockNumber, Context> kilt_support::traits::GetWorstCase<Context>
-		for DipMerkleProofAndDidSignature<BlindedValues, Leaf, BlockNumber>
-	where
-		BlindedValues: kilt_support::traits::GetWorstCase<Context>,
-		Leaf: Default + Clone,
-		BlockNumber: Default,
-		Context: Clone,
-	{
-		fn worst_case(context: Context) -> Self {
-			Self {
-				leaves: DidMerkleProof::worst_case(context.clone()),
-				signature: TimeBoundDidSignature::worst_case(context),
-			}
-		}
 	}
 }

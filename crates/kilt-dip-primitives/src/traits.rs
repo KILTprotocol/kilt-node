@@ -212,3 +212,15 @@ where
 		}
 	}
 }
+
+pub trait GetWithArg<Arg> {
+	type Result;
+
+	fn get(arg: &Arg) -> Self::Result;
+}
+
+pub trait GetWithoutArg {
+	type Result;
+
+	fn get() -> Self::Result;
+}
