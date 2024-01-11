@@ -21,10 +21,7 @@ pub mod latest {
 }
 
 pub mod v0 {
-	use did::{
-		did_details::{DidPublicKey, DidVerificationKey},
-		DidVerificationKeyRelationship,
-	};
+	use did::did_details::DidPublicKey;
 	use parity_scale_codec::{Decode, Encode};
 	use scale_info::TypeInfo;
 	use sp_core::RuntimeDebug;
@@ -63,16 +60,16 @@ pub mod v0 {
 	}
 
 	#[derive(Encode, Decode, PartialEq, Eq, RuntimeDebug, TypeInfo, Clone)]
-	pub struct DipMerkleProofAndDidSignature<KeyId, AccountId, BlockNumber, Web3Name, LinkedAccountId> {
+	pub struct DipMerkleProofAndDidSignature<KeyId, AccountId, BlockNumber, Web3Name, LinkedAccountId, LocalBlockNumber> {
 		/// The DIP Merkle proof revealing some leaves about the DID subject's
 		/// identity.
 		pub(crate) leaves: DidMerkleProof<KeyId, AccountId, BlockNumber, Web3Name, LinkedAccountId>,
 		/// The cross-chain DID signature.
-		pub(crate) signature: TimeBoundDidSignature<BlockNumber>,
+		pub(crate) signature: TimeBoundDidSignature<LocalBlockNumber>,
 	}
 
-	impl<KeyId, AccountId, BlockNumber, Web3Name, LinkedAccountId>
-		DipMerkleProofAndDidSignature<KeyId, AccountId, BlockNumber, Web3Name, LinkedAccountId>
+	impl<KeyId, AccountId, BlockNumber, Web3Name, LinkedAccountId, LocalBlockNumber>
+		DipMerkleProofAndDidSignature<KeyId, AccountId, BlockNumber, Web3Name, LinkedAccountId, LocalBlockNumber>
 	where
 		KeyId: Encode,
 		AccountId: Encode,
@@ -80,38 +77,46 @@ pub mod v0 {
 		Web3Name: Encode,
 		LinkedAccountId: Encode,
 	{
-		pub fn verify_against_commitment<Hasher>(
+		pub fn verify_merkle_proof_against_commitment<Hasher>(
 			self,
 			commitment: &OutputOf<Hasher>,
 			max_leaves_revealed: usize,
 		) -> Result<
-			impl IntoIterator<Item = RevealedDidMerkleProofLeaf<KeyId, AccountId, BlockNumber, Web3Name, LinkedAccountId>>,
+			RevealedLeavesAndDidSignature<KeyId, AccountId, BlockNumber, Web3Name, LinkedAccountId, LocalBlockNumber>,
 			DidMerkleProofVerificationError,
 		>
 		where
 			Hasher: Hash,
 		{
-			self.leaves
-				.verify_against_commitment::<Hasher>(commitment, max_leaves_revealed)
+			let revealed_leaves = self
+				.leaves
+				.verify_against_commitment::<Hasher>(commitment, max_leaves_revealed)?;
+			Ok(RevealedLeavesAndDidSignature {
+				signature: self.signature,
+				leaves: revealed_leaves.into_iter().collect(),
+			})
 		}
 	}
 
-	pub struct RevealedLeavesAndDidSignature<KeyId, AccountId, BlockNumber, Web3Name, LinkedAccountId> {
+	pub struct RevealedLeavesAndDidSignature<KeyId, AccountId, BlockNumber, Web3Name, LinkedAccountId, LocalBlockNumber> {
 		pub(crate) leaves: Vec<RevealedDidMerkleProofLeaf<KeyId, AccountId, BlockNumber, Web3Name, LinkedAccountId>>,
-		pub(crate) signature: TimeBoundDidSignature<BlockNumber>,
+		pub(crate) signature: TimeBoundDidSignature<LocalBlockNumber>,
 	}
 
-	impl<KeyId, AccountId, BlockNumber, Web3Name, LinkedAccountId>
-		RevealedLeavesAndDidSignature<KeyId, AccountId, BlockNumber, Web3Name, LinkedAccountId>
+	impl<KeyId, AccountId, BlockNumber, Web3Name, LinkedAccountId, LocalBlockNumber>
+		RevealedLeavesAndDidSignature<KeyId, AccountId, BlockNumber, Web3Name, LinkedAccountId, LocalBlockNumber>
 	where
-		BlockNumber: PartialOrd,
+		LocalBlockNumber: PartialOrd + Clone,
 	{
 		pub fn extract_signing_key_for_payload(
 			&self,
 			payload: &[u8],
-			current_block_number: BlockNumber,
+			current_block_number: LocalBlockNumber,
 		) -> Result<Option<&RevealedDidKey<KeyId, BlockNumber, AccountId>>, DidSignatureVerificationError> {
-			let signature = self.signature.extract_signature_if_not_expired(current_block_number)?;
+			let signature = self
+				.signature
+				.clone()
+				.extract_signature_if_not_expired(current_block_number)?;
 
 			let mut revealed_did_verification_keys = self.leaves.iter().filter_map(|leaf| {
 				// Skip if the leaf is not a DID key leaf.

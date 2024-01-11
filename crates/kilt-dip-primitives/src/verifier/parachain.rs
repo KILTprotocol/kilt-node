@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use did::{did_details::DidVerificationKey, DidVerificationKeyRelationship, KeyIdOf};
+use did::KeyIdOf;
 use frame_system::pallet_prelude::BlockNumberFor;
 use pallet_did_lookup::linkable_account::LinkableAccountId;
 use pallet_dip_consumer::{traits::IdentityProofVerifier, RuntimeCallOf};
@@ -28,7 +28,7 @@ use sp_core::RuntimeDebug;
 use sp_std::marker::PhantomData;
 
 use crate::{
-	merkle::RevealedDidMerkleProofLeaf,
+	merkle::RevealedDidKey,
 	traits::{DipCallOriginFilter, GetWithArg, GetWithoutArg, Incrementable},
 	utils::OutputOf,
 	BoundedBlindedValue,
@@ -44,6 +44,7 @@ pub enum VersionedDipParachainStateProof<
 	ProviderKeyId,
 	ProviderAccountId,
 	ProviderWeb3Name,
+	ProviderBlockNumber,
 	ProviderLinkedAccountId,
 	LocalBlockNumber,
 > {
@@ -53,6 +54,7 @@ pub enum VersionedDipParachainStateProof<
 			ProviderKeyId,
 			ProviderAccountId,
 			ProviderWeb3Name,
+			ProviderBlockNumber,
 			ProviderLinkedAccountId,
 			LocalBlockNumber,
 		>,
@@ -209,10 +211,7 @@ impl<
 	SignedExtra::Result: Encode,
 	DidCallVerifier: DipCallOriginFilter<
 		RuntimeCallOf<ConsumerRuntime>,
-		OriginInfo = (
-			DidVerificationKey<KiltRuntime::AccountId>,
-			DidVerificationKeyRelationship,
-		),
+		OriginInfo = RevealedDidKey<KeyIdOf<KiltRuntime>, BlockNumberFor<KiltRuntime>, KiltRuntime::AccountId>,
 	>,
 {
 	type Error = u16;
@@ -220,6 +219,7 @@ impl<
 		BlockNumberFor<RelaychainRuntime>,
 		KeyIdOf<KiltRuntime>,
 		KiltRuntime::AccountId,
+		BlockNumberFor<KiltRuntime>,
 		Web3NameOf<KiltRuntime>,
 		LinkableAccountId,
 		BlockNumberFor<ConsumerRuntime>,
@@ -261,13 +261,13 @@ pub mod latest {
 pub mod v0 {
 	use super::*;
 
-	use did::did_details::DidPublicKey;
 	use frame_system::pallet_prelude::HeaderFor;
 	use pallet_web3_names::Web3NameOf;
 	use sp_core::storage::StorageKey;
 	use sp_runtime::traits::{Header, Zero};
 
 	use crate::{
+		merkle::RevealedDidKey,
 		state_proofs::verify_storage_value_proof,
 		verifier::common::v0::{DipMerkleProofAndDidSignature, ParachainRootStateProof},
 	};
@@ -281,6 +281,7 @@ pub mod v0 {
 		RelayBlockHeight,
 		ProviderKeyId,
 		ProviderAccountId,
+		ProviderBlockNumber,
 		ProviderWeb3Name,
 		ProviderLinkedAccountId,
 		LocalBlockNumber,
@@ -290,9 +291,10 @@ pub mod v0 {
 		pub(crate) did: DipMerkleProofAndDidSignature<
 			ProviderKeyId,
 			ProviderAccountId,
-			LocalBlockNumber,
+			ProviderBlockNumber,
 			ProviderWeb3Name,
 			ProviderLinkedAccountId,
+			LocalBlockNumber,
 		>,
 	}
 
@@ -349,10 +351,11 @@ pub mod v0 {
 		SignedExtra::Result: Encode,
 		DidCallVerifier: DipCallOriginFilter<
 			RuntimeCallOf<ConsumerRuntime>,
-			OriginInfo = (
-				DidVerificationKey<ProviderRuntime::AccountId>,
-				DidVerificationKeyRelationship,
-			),
+			OriginInfo = RevealedDidKey<
+				KeyIdOf<ProviderRuntime>,
+				BlockNumberFor<ProviderRuntime>,
+				ProviderRuntime::AccountId,
+			>,
 		>,
 	{
 		type Error = u16;
@@ -360,10 +363,12 @@ pub mod v0 {
 			BlockNumberFor<RelaychainRuntime>,
 			KeyIdOf<ProviderRuntime>,
 			ProviderRuntime::AccountId,
+			BlockNumberFor<ProviderRuntime>,
 			Web3NameOf<ProviderRuntime>,
 			LinkableAccountId,
 			BlockNumberFor<ConsumerRuntime>,
 		>;
+
 		type VerificationResult = ();
 
 		fn verify_proof_for_call_against_details(
@@ -403,51 +408,28 @@ pub mod v0 {
 				)
 				.expect("Failed to verify DIP Merkle proof.");
 
-			let dip_proof = proof.did.leaves;
+			let did_proof = proof.did;
 
-			// 3. Verify DIP merkle proof.
-			dip_proof
-				.verify_against_commitment::<ProviderRuntime::Hashing>(&dip_commitment.into(), MAX_LEAVES_REVEALED)
+			// 3. Verify DIP Merkle proof.
+			let verified_proof = did_proof
+				.verify_merkle_proof_against_commitment::<ProviderRuntime::Hashing>(
+					&dip_commitment.into(),
+					MAX_LEAVES_REVEALED,
+				)
 				.unwrap_or_else(|_| panic!("Failed to verify DIP Merkle proof"));
 
 			// 4. Verify call is signed by one of the DID keys revealed at step 3.
 			let current_block_number = frame_system::Pallet::<ConsumerRuntime>::block_number();
-			let did_signature = proof
-				.did
-				.signature
-				.extract_signature_if_not_expired(current_block_number)
-				.unwrap_or_else(|_| panic!("Signature is not fresh."));
-
-			// Block number removed from the signature
 			let consumer_genesis_hash =
 				frame_system::Pallet::<ConsumerRuntime>::block_hash(BlockNumberFor::<ConsumerRuntime>::zero());
 			let signed_extra = SignedExtra::get();
 			let encoded_payload = (call, &identity_details, submitter, consumer_genesis_hash, signed_extra).encode();
-			let revealed_leaves = dip_proof.revealed;
+			let signing_key = verified_proof
+				.extract_signing_key_for_payload(&encoded_payload[..], current_block_number)
+				.unwrap_or_else(|_| panic!("Signature is not fresh."));
 
-			let mut revealed_did_verification_keys = revealed_leaves.iter().filter_map(|leaf| {
-				// Skip if the leaf is not a DID key leaf.
-				let RevealedDidMerkleProofLeaf::DidKey(did_key) = leaf else {
-					return None;
-				};
-				// Skip if the DID key is not a verification key.
-				let DidPublicKey::PublicVerificationKey(ref verification_key) = did_key.details.key else { return None };
-				let Ok(verification_relationship) = DidVerificationKeyRelationship::try_from(did_key.relationship) else {
-					log::error!("Should never fail to build a VerificationRelationship from the given DidKeyRelationship because we have already made sure the conditions hold.");
-					panic!("Should never fail to build a VerificationRelationship from the given DidKeyRelationship because we have already made sure the conditions hold.");
-				};
-				// Returns (key ID, the verified verification relationship, the verified public verification key).
-				Some((did_key.id, verification_relationship, verification_key))
-			});
-
-			let signing_key_details = revealed_did_verification_keys.find(|(_, _, public_verification_key)| {
-				public_verification_key
-					.verify_signature(&encoded_payload, &did_signature)
-					.is_ok()
-			});
-
-			let Some((_, key_relationship, key_details)) = signing_key_details else {
-				panic!("Did not find a valid signing key in the Merkle proof.");
+			let Some(signing_key) = signing_key else {
+				panic!("No key found.");
 			};
 
 			// Increment the local details
@@ -457,7 +439,7 @@ pub mod v0 {
 				*identity_details = Some(Default::default());
 			};
 
-			DidCallVerifier::check_call_origin_info(call, &(key_details.clone(), key_relationship))
+			DidCallVerifier::check_call_origin_info(call, signing_key)
 				.unwrap_or_else(|_| panic!("Failed to verify DID call info."));
 
 			Ok(())
