@@ -18,7 +18,7 @@
 
 /// Verification logic to integrate a child chain as a DIP provider.
 // pub mod relaychain;
-mod common;
+pub(crate) mod common;
 /// Verification logic to integrate a sibling chain as a DIP provider.
 pub mod parachain;
 /// Verification logic to integrate a child chain as a DIP provider.

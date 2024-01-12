@@ -33,6 +33,8 @@ pub mod traits;
 pub mod utils;
 pub mod verifier;
 
+mod test;
+
 pub use merkle::RevealedDidMerkleProofLeaf;
 pub use traits::RelayStateRootsViaRelayStorePallet;
 pub use utils::BoundedBlindedValue;
