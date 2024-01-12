@@ -143,11 +143,19 @@ pub mod pallet {
 	/// Storage of all deposits. Its first key is a namespace, and the second
 	/// one the deposit key. Its value includes the details associated to a
 	/// deposit instance.
-	// SAFETY: The Namespace is not chosen by the user but by the pallet and therefore doesn't allow for arbitrary data.
+	// SAFETY of Twox64Concat:
+	// The Namespace is not chosen by the user but by the pallet and therefore
+	// doesn't allow for arbitrary data.
 	#[pallet::storage]
 	#[pallet::getter(fn deposits)]
-	pub(crate) type Deposits<T> =
-		StorageDoubleMap<_, Twox64Concat, <T as Config>::Namespace, Blake2_128Concat, DepositKeyOf<T>, DepositEntryOf<T>>;
+	pub(crate) type Deposits<T> = StorageDoubleMap<
+		_,
+		Twox64Concat,
+		<T as Config>::Namespace,
+		Blake2_128Concat,
+		DepositKeyOf<T>,
+		DepositEntryOf<T>,
+	>;
 
 	#[pallet::pallet]
 	#[pallet::storage_version(STORAGE_VERSION)]

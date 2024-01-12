@@ -48,6 +48,8 @@ pub mod pallet {
 
 	/// Maps from a relaychain block height to its related information,
 	/// including the state root.
+	// SAFETY of Twox64Concat:
+	// The key is the relaychain blocknumber. It cannot be chosen or set arbitrarily.
 	#[pallet::storage]
 	#[pallet::getter(fn latest_relay_head_for_block)]
 	pub(crate) type LatestRelayHeads<T: Config> = StorageMap<_, Twox64Concat, u32, RelayParentInfo<H256>>;
