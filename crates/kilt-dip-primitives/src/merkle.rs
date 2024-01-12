@@ -123,7 +123,7 @@ impl TryFrom<DidKeyRelationship> for DidVerificationKeyRelationship {
 
 /// All possible Merkle leaf types that can be revealed as part of a DIP
 /// identity Merkle proof.
-#[derive(Clone, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo)]
+#[derive(Clone, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub enum RevealedDidMerkleProofLeaf<KeyId, AccountId, BlockNumber, Web3Name, LinkedAccountId> {
 	DidKey(RevealedDidKey<KeyId, BlockNumber, AccountId>),
 	Web3Name(RevealedWeb3Name<Web3Name, BlockNumber>),

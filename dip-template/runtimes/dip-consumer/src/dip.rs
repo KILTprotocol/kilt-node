@@ -16,16 +16,18 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use did::{did_details::DidVerificationKey, DidVerificationKeyRelationship};
+use did::{DidVerificationKeyRelationship, KeyIdOf};
 use dip_provider_runtime_template::{AccountId as ProviderAccountId, Runtime as ProviderRuntime};
 use frame_support::traits::Contains;
-use frame_system::EnsureSigned;
+use frame_system::{pallet_prelude::BlockNumberFor, EnsureSigned};
 use kilt_dip_primitives::{
-	traits::DipCallOriginFilter, KiltVersionedParachainVerifier, RelayStateRootsViaRelayStorePallet,
+	merkle::RevealedDidKey, traits::DipCallOriginFilter, KiltVersionedParachainVerifier,
+	RelayStateRootsViaRelayStorePallet,
 };
 use pallet_dip_consumer::traits::IdentityProofVerifier;
+use rococo_runtime::Runtime as RelaychainRuntime;
 use sp_core::ConstU32;
-use sp_runtime::traits::BlakeTwo256;
+use sp_std::marker::PhantomData;
 
 use crate::{weights, AccountId, DidIdentifier, Runtime, RuntimeCall, RuntimeOrigin};
 
@@ -36,11 +38,13 @@ pub type MerkleProofVerifierOutput = <ProofVerifier as IdentityProofVerifier<Run
 /// `KiltVersionedParachainVerifier` type). Calls that do not pass the
 /// [`DipCallFilter`] will be discarded early on in the verification process.
 pub type ProofVerifier = KiltVersionedParachainVerifier<
-	ProviderRuntime,
-	ConstU32<2_000>,
+	RelaychainRuntime,
 	RelayStateRootsViaRelayStorePallet<Runtime>,
-	BlakeTwo256,
-	DipCallFilter,
+	2_000,
+	ProviderRuntime,
+	(),
+	DipCallFilter<KeyIdOf<ProviderRuntime>, BlockNumberFor<ProviderRuntime>, ProviderAccountId>,
+	100,
 >;
 
 impl pallet_dip_consumer::Config for Runtime {
@@ -126,21 +130,38 @@ pub enum DipCallFilterError {
 	WrongVerificationRelationship,
 }
 
+impl From<DipCallFilterError> for u8 {
+	fn from(value: DipCallFilterError) -> Self {
+		match value {
+			DipCallFilterError::BadOrigin => 1,
+			DipCallFilterError::WrongVerificationRelationship => 2,
+		}
+	}
+}
+
 /// A call filter that requires calls to the [`pallet_postit::Pallet`] pallet to
 /// be authorized with a DID signature generated with a key of a given
 /// verification relationship.
-pub struct DipCallFilter;
+pub struct DipCallFilter<ProviderDidKeyId, ProviderBlockNumber, ProviderAccountId>(
+	PhantomData<(ProviderDidKeyId, ProviderBlockNumber, ProviderAccountId)>,
+);
 
-impl DipCallOriginFilter<RuntimeCall> for DipCallFilter {
+impl<ProviderDidKeyId, ProviderBlockNumber, ProviderAccountId> DipCallOriginFilter<RuntimeCall>
+	for DipCallFilter<ProviderDidKeyId, ProviderBlockNumber, ProviderAccountId>
+{
 	type Error = DipCallFilterError;
-	type OriginInfo = (DidVerificationKey<ProviderAccountId>, DidVerificationKeyRelationship);
+	type OriginInfo = RevealedDidKey<ProviderDidKeyId, ProviderBlockNumber, ProviderAccountId>;
 	type Success = ();
 
 	// Accepts only a DipOrigin for the DidLookup pallet calls.
 	fn check_call_origin_info(call: &RuntimeCall, info: &Self::OriginInfo) -> Result<Self::Success, Self::Error> {
-		let key_relationship =
+		let revealed_key_relationship: DidVerificationKeyRelationship = info
+			.relationship
+			.try_into()
+			.map_err(|_| DipCallFilterError::WrongVerificationRelationship)?;
+		let expected_key_relationship =
 			single_key_relationship([call].into_iter()).map_err(|_| DipCallFilterError::BadOrigin)?;
-		if info.1 == key_relationship {
+		if revealed_key_relationship == expected_key_relationship {
 			Ok(())
 		} else {
 			Err(DipCallFilterError::WrongVerificationRelationship)

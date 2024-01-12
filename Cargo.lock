@@ -2518,6 +2518,7 @@ dependencies = [
  "parachain-info",
  "parity-scale-codec",
  "polkadot-parachain",
+ "rococo-runtime",
  "runtime-common",
  "scale-info",
  "sp-api",

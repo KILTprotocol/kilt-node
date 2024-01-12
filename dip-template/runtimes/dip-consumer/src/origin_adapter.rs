@@ -18,6 +18,7 @@
 
 use crate::{AccountId, DidIdentifier, MerkleProofVerifierOutput, RuntimeOrigin, Web3Name};
 use frame_support::traits::EnsureOrigin;
+use kilt_dip_primitives::RevealedDidMerkleProofLeaf;
 use pallet_dip_consumer::{DipOrigin, EnsureDipOrigin};
 use pallet_postit::traits::GetUsername;
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
@@ -52,12 +53,18 @@ pub struct DipOriginAdapter(DipOrigin<DidIdentifier, AccountId, MerkleProofVerif
 impl GetUsername for DipOriginAdapter {
 	type Username = Web3Name;
 
+	// Use the first revealed web3name as the user's username
 	fn username(&self) -> Result<Self::Username, &'static str> {
 		self.0
 			.details
-			.web3_name
-			.as_ref()
-			.map(|leaf| leaf.web3_name.clone())
+			.iter()
+			.find_map(|revealed_leaf| {
+				if let RevealedDidMerkleProofLeaf::Web3Name(revealed_web3name_leaf) = revealed_leaf {
+					Some(revealed_web3name_leaf.web3_name.clone())
+				} else {
+					None
+				}
+			})
 			.ok_or("No username for the subject.")
 	}
 }

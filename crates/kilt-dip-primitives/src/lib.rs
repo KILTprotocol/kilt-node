@@ -33,6 +33,7 @@ pub mod traits;
 pub mod utils;
 pub mod verifier;
 
-pub use traits::{FrameSystemDidSignatureContext, ProviderParachainStateInfoViaProviderPallet};
+pub use merkle::RevealedDidMerkleProofLeaf;
+pub use traits::RelayStateRootsViaRelayStorePallet;
 pub use utils::BoundedBlindedValue;
 pub use verifier::*;

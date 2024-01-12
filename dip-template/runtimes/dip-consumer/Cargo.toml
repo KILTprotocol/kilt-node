@@ -65,6 +65,9 @@ cumulus-primitives-utility.workspace = true
 pallet-collator-selection.workspace = true
 parachain-info.workspace = true
 
+# Polkadot
+rococo-runtime.workspace = true
+
 # Benchmarks
 frame-benchmarking = {workspace = true, optional = true}
 frame-system-benchmarking = {workspace = true, optional = true}
