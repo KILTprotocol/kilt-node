@@ -20,7 +20,7 @@ use frame_support::{assert_noop, assert_ok, traits::fungible::InspectHold};
 use kilt_support::mock::mock_origin::DoubleOrigin;
 use sp_runtime::traits::Zero;
 
-use crate::{self as attestation, migrations, mock::*, AttesterOf, Config, Event, HoldReason, ExternalAttestations};
+use crate::{self as attestation, migrations, mock::*, AttesterOf, Config, Event, ExternalAttestations, HoldReason};
 
 #[test]
 fn test_remove() {
@@ -192,10 +192,7 @@ fn test_remove_v1() {
 		.with_attestations_v1(vec![(claim_hash, attestation)])
 		.build_and_execute_with_sanity_tests(|| {
 			assert!(Attestation::attestations(claim_hash).is_some());
-			assert!(!ExternalAttestations::<Test>::get(
-				attester.clone(),
-				claim_hash
-			));
+			assert!(!ExternalAttestations::<Test>::get(attester.clone(), claim_hash));
 			assert!(migrations::v1::ExternalAttestations::<Test>::get(
 				attester.clone(),
 				claim_hash
@@ -207,10 +204,7 @@ fn test_remove_v1() {
 				None
 			));
 			assert!(Attestation::attestations(claim_hash).is_none());
-			assert!(!ExternalAttestations::<Test>::get(
-				attester.clone(),
-				claim_hash
-			));
+			assert!(!ExternalAttestations::<Test>::get(attester.clone(), claim_hash));
 			assert!(!migrations::v1::ExternalAttestations::<Test>::get(
 				attester.clone(),
 				claim_hash
