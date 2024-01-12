@@ -104,10 +104,13 @@ pub mod pallet {
 	/// The pallet contains a single storage element, the `IdentityEntries` map.
 	/// It maps from a subject `Identifier` to an instance of
 	/// `LocalIdentityInfo`.
+	// SAFETY of Twox64Concat:
+	// The Identifier cannot be chosen freely it is therefore not efficient to
+	// craft specific hashes.
 	#[pallet::storage]
 	#[pallet::getter(fn identity_proofs)]
 	pub(crate) type IdentityEntries<T> =
-		StorageMap<_, Blake2_128Concat, <T as Config>::Identifier, <T as Config>::LocalIdentityInfo>;
+		StorageMap<_, Twox64Concat, <T as Config>::Identifier, <T as Config>::LocalIdentityInfo>;
 
 	#[pallet::pallet]
 	#[pallet::storage_version(STORAGE_VERSION)]

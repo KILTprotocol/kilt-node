@@ -501,7 +501,7 @@ pub mod pallet {
 	}
 
 	impl<T: Config> Pallet<T> {
-		// TODO: delete once
+		// TODO: Delete this and add `#[pallet::getter(fn external_attestations)]` once the migration is over.
 		pub fn external_attestations(authorization_id: AuthorizationIdOf<T>, claim_hash: ClaimHashOf<T>) -> bool {
 			ExternalAttestations::<T>::get(&authorization_id, claim_hash)
 				|| migrations::v1::ExternalAttestations::<T>::get(&authorization_id, claim_hash)
