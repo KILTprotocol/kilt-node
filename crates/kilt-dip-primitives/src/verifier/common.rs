@@ -30,6 +30,7 @@ pub mod v0 {
 	use scale_info::TypeInfo;
 	use sp_core::RuntimeDebug;
 	use sp_runtime::traits::Hash;
+	use sp_std::vec::Vec;
 
 	use crate::{
 		did::{DidSignatureVerificationError, TimeBoundDidSignature},

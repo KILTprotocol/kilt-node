@@ -37,14 +37,11 @@ pub type BlindedValue = Vec<u8>;
 /// Type of the Merkle proof revealing parts of the DIP identity of a given DID
 /// subject.
 pub type DidMerkleProofOf<T> = DidMerkleProof<
-	Vec<BlindedValue>,
-	RevealedDidMerkleProofLeaf<
-		KeyIdOf<T>,
-		<T as frame_system::Config>::AccountId,
-		BlockNumberFor<T>,
-		<T as pallet_web3_names::Config>::Web3Name,
-		LinkableAccountId,
-	>,
+	KeyIdOf<T>,
+	<T as frame_system::Config>::AccountId,
+	BlockNumberFor<T>,
+	<T as pallet_web3_names::Config>::Web3Name,
+	LinkableAccountId,
 >;
 
 /// Type of a complete DIP Merkle proof.
@@ -329,7 +326,7 @@ pub mod v0 {
 		Ok(CompleteMerkleProof {
 			root,
 			proof: DidMerkleProofOf::<Runtime> {
-				blinded: proof,
+				blinded: proof.into_iter().into(),
 				revealed: leaves.into_iter().collect(),
 			},
 		})

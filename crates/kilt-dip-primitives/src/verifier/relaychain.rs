@@ -445,6 +445,10 @@ pub mod v0 {
 				did: proof.did,
 			};
 
+			// TODO: Can we re-use the verification logic for the parachain verification?
+			// Current issue is implementing the expected `RelaychainStateRootStore` trait
+			// to return the state root we calculated above.
+
 			// 2. Verify parachain state is finalized by relay chain and fresh.
 			let provider_head_storage_key = calculate_parachain_head_storage_key(KILT_PARA_ID);
 			let provider_parachain_header =
