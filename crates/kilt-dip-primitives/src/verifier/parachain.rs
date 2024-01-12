@@ -24,11 +24,14 @@ use pallet_dip_provider::IdentityCommitmentOf;
 use pallet_web3_names::Web3NameOf;
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
-use sp_core::RuntimeDebug;
+use sp_core::{ConstU32, RuntimeDebug};
+use sp_runtime::BoundedVec;
 use sp_std::marker::PhantomData;
 
 use crate::{
-	merkle::RevealedDidKey,
+	did::DidSignatureVerificationError,
+	merkle::{DidMerkleProofVerificationError, RevealedDidKey, RevealedDidMerkleProofLeaf},
+	state_proofs::MerkleProofError,
 	traits::{DipCallOriginFilter, GetWithArg, GetWithoutArg, Incrementable},
 	utils::OutputOf,
 	BoundedBlindedValue,
@@ -40,78 +43,56 @@ use crate::{
 /// For more info, refer to the version-specific proofs.
 #[derive(Encode, Decode, PartialEq, Eq, RuntimeDebug, TypeInfo, Clone)]
 pub enum VersionedDipParachainStateProof<
-	RelayBlockHeight,
-	ProviderKeyId,
-	ProviderAccountId,
-	ProviderWeb3Name,
-	ProviderBlockNumber,
-	ProviderLinkedAccountId,
-	LocalBlockNumber,
+	RelayBlockNumber,
+	KiltDidKeyId,
+	KiltAccountId,
+	KiltWeb3Name,
+	KiltBlockNumber,
+	KiltLinkableAccountId,
+	ConsumerBlockNumber,
 > {
 	V0(
 		v0::ParachainDipStateProof<
-			RelayBlockHeight,
-			ProviderKeyId,
-			ProviderAccountId,
-			ProviderWeb3Name,
-			ProviderBlockNumber,
-			ProviderLinkedAccountId,
-			LocalBlockNumber,
+			RelayBlockNumber,
+			KiltDidKeyId,
+			KiltAccountId,
+			KiltWeb3Name,
+			KiltBlockNumber,
+			KiltLinkableAccountId,
+			ConsumerBlockNumber,
 		>,
 	),
 }
 
-pub enum DipParachainStateProofVerifierError<
-	ParachainHeadMerkleProofVerificationError,
-	IdentityCommitmentMerkleProofVerificationError,
-	DipProofVerificationError,
-	DidSignatureVerificationError,
-> {
+pub enum DipParachainStateProofVerifierError<DidOriginError> {
 	UnsupportedVersion,
-	ParachainHeadMerkleProof(ParachainHeadMerkleProofVerificationError),
-	IdentityCommitmentMerkleProof(IdentityCommitmentMerkleProofVerificationError),
-	DipProof(DipProofVerificationError),
+	RelaychainStateRootNotFound,
+	ParachainHeadMerkleProof(MerkleProofError),
+	IdentityCommitmentMerkleProof(MerkleProofError),
+	DipProof(DidMerkleProofVerificationError),
 	DidSignature(DidSignatureVerificationError),
+	DidOriginError(DidOriginError),
+	Internal,
 }
 
-impl<
-		ParachainHeadMerkleProofVerificationError,
-		IdentityCommitmentMerkleProofVerificationError,
-		DipProofVerificationError,
-		DidSignatureVerificationError,
-	>
-	From<
-		DipParachainStateProofVerifierError<
-			ParachainHeadMerkleProofVerificationError,
-			IdentityCommitmentMerkleProofVerificationError,
-			DipProofVerificationError,
-			DidSignatureVerificationError,
-		>,
-	> for u16
+impl<DidOriginError> From<DipParachainStateProofVerifierError<DidOriginError>> for u16
 where
-	ParachainHeadMerkleProofVerificationError: Into<u8>,
-	IdentityCommitmentMerkleProofVerificationError: Into<u8>,
-	DipProofVerificationError: Into<u8>,
-	DidSignatureVerificationError: Into<u8>,
+	DidOriginError: Into<u8>,
 {
-	fn from(
-		value: DipParachainStateProofVerifierError<
-			ParachainHeadMerkleProofVerificationError,
-			IdentityCommitmentMerkleProofVerificationError,
-			DipProofVerificationError,
-			DidSignatureVerificationError,
-		>,
-	) -> Self {
+	fn from(value: DipParachainStateProofVerifierError<DidOriginError>) -> Self {
 		match value {
 			DipParachainStateProofVerifierError::UnsupportedVersion => 1,
+			DipParachainStateProofVerifierError::RelaychainStateRootNotFound => 2,
 			DipParachainStateProofVerifierError::ParachainHeadMerkleProof(error) => {
-				u8::MAX as u16 + error.into() as u16
+				u8::MAX as u16 + u8::from(error) as u16
 			}
 			DipParachainStateProofVerifierError::IdentityCommitmentMerkleProof(error) => {
-				u8::MAX as u16 * 2 + error.into() as u16
+				u8::MAX as u16 * 2 + u8::from(error) as u16
 			}
-			DipParachainStateProofVerifierError::DipProof(error) => u8::MAX as u16 * 3 + error.into() as u16,
-			DipParachainStateProofVerifierError::DidSignature(error) => u8::MAX as u16 * 4 + error.into() as u16,
+			DipParachainStateProofVerifierError::DipProof(error) => u8::MAX as u16 * 3 + u8::from(error) as u16,
+			DipParachainStateProofVerifierError::DidSignature(error) => u8::MAX as u16 * 4 + u8::from(error) as u16,
+			DipParachainStateProofVerifierError::DidOriginError(error) => u8::MAX as u16 * 5 + error.into() as u16,
+			DipParachainStateProofVerifierError::Internal => u16::MAX,
 		}
 	}
 }
@@ -151,9 +132,9 @@ where
 /// * `ProviderDipMerkleHasher`: The provided `KiltDipMerkleHasher`.
 /// * `ProviderDidKeyId`: The [`KeyIdOf`] type configured with the provided
 ///   `KiltRuntime`.
-/// * `ProviderAccountId`: The `KiltRuntime::AccountId` type.
-/// * `ProviderWeb3Name`: The `KiltRuntime::Web3Name` type.
-/// * `ProviderLinkedAccountId`: The [`LinkableAccountId`] type.
+/// * `KiltAccountId`: The `KiltRuntime::AccountId` type.
+/// * `KiltWeb3Name`: The `KiltRuntime::Web3Name` type.
+/// * `KiltLinkableAccountId`: The [`LinkableAccountId`] type.
 /// * `MAX_REVEALED_KEYS_COUNT`: The provided `MAX_REVEALED_KEYS_COUNT`.
 /// * `MAX_REVEALED_ACCOUNTS_COUNT`: The provided `MAX_REVEALED_ACCOUNTS_COUNT`.
 /// * `LocalContextProvider`: The [`FrameSystemDidSignatureContext`] type
@@ -162,18 +143,17 @@ where
 /// * `LocalDidCallVerifier`: The provided `LocalDidCallVerifier`.
 pub struct KiltVersionedParachainVerifier<
 	RelaychainRuntime,
-	RelaychainStateRoot,
-	const PROVIDER_PARA_ID: u32,
-	ProviderRuntime,
+	RelaychainStateRootStore,
+	const KILT_PARA_ID: u32,
+	KiltRuntime,
 	SignedExtra,
 	DidCallVerifier,
-	const MAX_LEAVES_REVEALED: usize,
-	const SIGNATURE_VALIDITY: u32,
+	const MAX_LEAVES_REVEALED: u32,
 >(
 	PhantomData<(
 		RelaychainRuntime,
-		RelaychainStateRoot,
-		ProviderRuntime,
+		RelaychainStateRootStore,
+		KiltRuntime,
 		SignedExtra,
 		DidCallVerifier,
 	)>,
@@ -182,28 +162,26 @@ pub struct KiltVersionedParachainVerifier<
 impl<
 		ConsumerRuntime,
 		RelaychainRuntime,
-		RelaychainStateRoot,
-		const PROVIDER_PARA_ID: u32,
+		RelaychainStateRootStore,
+		const KILT_PARA_ID: u32,
 		KiltRuntime,
 		SignedExtra,
 		DidCallVerifier,
-		const MAX_LEAVES_REVEALED: usize,
-		const SIGNATURE_VALIDITY: u32,
+		const MAX_LEAVES_REVEALED: u32,
 	> IdentityProofVerifier<ConsumerRuntime>
 	for KiltVersionedParachainVerifier<
 		RelaychainRuntime,
-		RelaychainStateRoot,
-		PROVIDER_PARA_ID,
+		RelaychainStateRootStore,
+		KILT_PARA_ID,
 		KiltRuntime,
 		SignedExtra,
 		DidCallVerifier,
 		MAX_LEAVES_REVEALED,
-		SIGNATURE_VALIDITY,
 	> where
-	ConsumerRuntime: pallet_dip_consumer::Config<Identifier = KiltRuntime::Identifier> + pallet_relay_store::Config,
+	ConsumerRuntime: pallet_dip_consumer::Config<Identifier = KiltRuntime::Identifier>,
 	ConsumerRuntime::LocalIdentityInfo: Incrementable + Default,
 	RelaychainRuntime: frame_system::Config,
-	RelaychainStateRoot:
+	RelaychainStateRootStore:
 		GetWithArg<BlockNumberFor<RelaychainRuntime>, Result = Option<OutputOf<RelaychainRuntime::Hashing>>>,
 	KiltRuntime: pallet_dip_provider::Config + did::Config + pallet_web3_names::Config + pallet_did_lookup::Config,
 	IdentityCommitmentOf<KiltRuntime>: Into<KiltRuntime::Hash>,
@@ -213,8 +191,9 @@ impl<
 		RuntimeCallOf<ConsumerRuntime>,
 		OriginInfo = RevealedDidKey<KeyIdOf<KiltRuntime>, BlockNumberFor<KiltRuntime>, KiltRuntime::AccountId>,
 	>,
+	DidCallVerifier::Error: Into<u8>,
 {
-	type Error = u16;
+	type Error = DipParachainStateProofVerifierError<DidCallVerifier::Error>;
 	type Proof = VersionedDipParachainStateProof<
 		BlockNumberFor<RelaychainRuntime>,
 		KeyIdOf<KiltRuntime>,
@@ -224,7 +203,16 @@ impl<
 		LinkableAccountId,
 		BlockNumberFor<ConsumerRuntime>,
 	>;
-	type VerificationResult = ();
+	type VerificationResult = BoundedVec<
+		RevealedDidMerkleProofLeaf<
+			KeyIdOf<KiltRuntime>,
+			KiltRuntime::AccountId,
+			BlockNumberFor<KiltRuntime>,
+			Web3NameOf<KiltRuntime>,
+			LinkableAccountId,
+		>,
+		ConstU32<MAX_LEAVES_REVEALED>,
+	>;
 
 	fn verify_proof_for_call_against_details(
 		call: &RuntimeCallOf<ConsumerRuntime>,
@@ -236,13 +224,12 @@ impl<
 		match proof {
 			VersionedDipParachainStateProof::V0(v0_proof) => <v0::ParachainVerifier<
 				RelaychainRuntime,
-				RelaychainStateRoot,
-				PROVIDER_PARA_ID,
+				RelaychainStateRootStore,
+				KILT_PARA_ID,
 				KiltRuntime,
 				SignedExtra,
 				DidCallVerifier,
 				MAX_LEAVES_REVEALED,
-				SIGNATURE_VALIDITY,
 			> as IdentityProofVerifier<ConsumerRuntime>>::verify_proof_for_call_against_details(
 				call,
 				subject,
@@ -262,11 +249,12 @@ pub mod v0 {
 	use super::*;
 
 	use frame_system::pallet_prelude::HeaderFor;
-	use pallet_web3_names::Web3NameOf;
-	use sp_runtime::traits::{Header, Zero};
+	use sp_runtime::{
+		traits::{Header, Zero},
+		SaturatedConversion,
+	};
 
 	use crate::{
-		merkle::RevealedDidKey,
 		state_proofs::verify_storage_value_proof,
 		verifier::common::{
 			calculate_dip_identity_commitment_storage_key_for_runtime, calculate_parachain_head_storage_key,
@@ -280,40 +268,39 @@ pub mod v0 {
 	/// chain).
 	#[derive(Encode, Decode, PartialEq, Eq, RuntimeDebug, TypeInfo, Clone)]
 	pub struct ParachainDipStateProof<
-		RelayBlockHeight,
-		ProviderKeyId,
-		ProviderAccountId,
-		ProviderBlockNumber,
-		ProviderWeb3Name,
-		ProviderLinkedAccountId,
-		LocalBlockNumber,
+		RelayBlockNumber,
+		KiltDidKeyId,
+		KiltAccountId,
+		KiltBlockNumber,
+		KiltWeb3Name,
+		KiltLinkableAccountId,
+		ConsumerBlockNumber,
 	> {
-		pub(crate) para_state_root: ParachainRootStateProof<RelayBlockHeight>,
+		pub(crate) para_state_root: ParachainRootStateProof<RelayBlockNumber>,
 		pub(crate) dip_identity_commitment: BoundedBlindedValue<u8>,
 		pub(crate) did: DipMerkleProofAndDidSignature<
-			ProviderKeyId,
-			ProviderAccountId,
-			ProviderBlockNumber,
-			ProviderWeb3Name,
-			ProviderLinkedAccountId,
-			LocalBlockNumber,
+			KiltDidKeyId,
+			KiltAccountId,
+			KiltBlockNumber,
+			KiltWeb3Name,
+			KiltLinkableAccountId,
+			ConsumerBlockNumber,
 		>,
 	}
 
 	pub struct ParachainVerifier<
 		RelaychainRuntime,
-		RelaychainStateRoot,
-		const PROVIDER_PARA_ID: u32,
-		ProviderRuntime,
+		RelaychainStateRootStore,
+		const KILT_PARA_ID: u32,
+		KiltRuntime,
 		SignedExtra,
 		DidCallVerifier,
-		const MAX_LEAVES_REVEALED: usize,
-		const SIGNATURE_VALIDITY: u32,
+		const MAX_LEAVES_REVEALED: u32,
 	>(
 		PhantomData<(
 			RelaychainRuntime,
-			RelaychainStateRoot,
-			ProviderRuntime,
+			RelaychainStateRootStore,
+			KiltRuntime,
 			SignedExtra,
 			DidCallVerifier,
 		)>,
@@ -322,56 +309,58 @@ pub mod v0 {
 	impl<
 			ConsumerRuntime,
 			RelaychainRuntime,
-			RelaychainStateRoot,
-			const PROVIDER_PARA_ID: u32,
-			ProviderRuntime,
+			RelaychainStateRootStore,
+			const KILT_PARA_ID: u32,
+			KiltRuntime,
 			SignedExtra,
 			DidCallVerifier,
-			const MAX_LEAVES_REVEALED: usize,
-			const SIGNATURE_VALIDITY: u32,
+			const MAX_LEAVES_REVEALED: u32,
 		> IdentityProofVerifier<ConsumerRuntime>
 		for ParachainVerifier<
 			RelaychainRuntime,
-			RelaychainStateRoot,
-			PROVIDER_PARA_ID,
-			ProviderRuntime,
+			RelaychainStateRootStore,
+			KILT_PARA_ID,
+			KiltRuntime,
 			SignedExtra,
 			DidCallVerifier,
 			MAX_LEAVES_REVEALED,
-			SIGNATURE_VALIDITY,
 		> where
-		ConsumerRuntime:
-			pallet_dip_consumer::Config<Identifier = ProviderRuntime::Identifier> + pallet_relay_store::Config,
+		ConsumerRuntime: pallet_dip_consumer::Config<Identifier = KiltRuntime::Identifier>,
 		ConsumerRuntime::LocalIdentityInfo: Incrementable + Default,
 		RelaychainRuntime: frame_system::Config,
-		RelaychainStateRoot:
+		RelaychainStateRootStore:
 			GetWithArg<BlockNumberFor<RelaychainRuntime>, Result = Option<OutputOf<RelaychainRuntime::Hashing>>>,
-		ProviderRuntime:
-			pallet_dip_provider::Config + did::Config + pallet_web3_names::Config + pallet_did_lookup::Config,
-		IdentityCommitmentOf<ProviderRuntime>: Into<ProviderRuntime::Hash>,
+		KiltRuntime: pallet_dip_provider::Config + did::Config + pallet_web3_names::Config + pallet_did_lookup::Config,
+		IdentityCommitmentOf<KiltRuntime>: Into<KiltRuntime::Hash>,
 		SignedExtra: GetWithoutArg,
 		SignedExtra::Result: Encode,
 		DidCallVerifier: DipCallOriginFilter<
 			RuntimeCallOf<ConsumerRuntime>,
-			OriginInfo = RevealedDidKey<
-				KeyIdOf<ProviderRuntime>,
-				BlockNumberFor<ProviderRuntime>,
-				ProviderRuntime::AccountId,
-			>,
+			OriginInfo = RevealedDidKey<KeyIdOf<KiltRuntime>, BlockNumberFor<KiltRuntime>, KiltRuntime::AccountId>,
 		>,
+		DidCallVerifier::Error: Into<u8>,
 	{
-		type Error = u16;
+		type Error = DipParachainStateProofVerifierError<DidCallVerifier::Error>;
 		type Proof = ParachainDipStateProof<
 			BlockNumberFor<RelaychainRuntime>,
-			KeyIdOf<ProviderRuntime>,
-			ProviderRuntime::AccountId,
-			BlockNumberFor<ProviderRuntime>,
-			Web3NameOf<ProviderRuntime>,
+			KeyIdOf<KiltRuntime>,
+			KiltRuntime::AccountId,
+			BlockNumberFor<KiltRuntime>,
+			Web3NameOf<KiltRuntime>,
 			LinkableAccountId,
 			BlockNumberFor<ConsumerRuntime>,
 		>;
 
-		type VerificationResult = ();
+		type VerificationResult = BoundedVec<
+			RevealedDidMerkleProofLeaf<
+				KeyIdOf<KiltRuntime>,
+				KiltRuntime::AccountId,
+				BlockNumberFor<KiltRuntime>,
+				Web3NameOf<KiltRuntime>,
+				LinkableAccountId,
+			>,
+			ConstU32<MAX_LEAVES_REVEALED>,
+		>;
 
 		fn verify_proof_for_call_against_details(
 			call: &RuntimeCallOf<ConsumerRuntime>,
@@ -381,37 +370,38 @@ pub mod v0 {
 			proof: Self::Proof,
 		) -> Result<Self::VerificationResult, Self::Error> {
 			// 1. Verify parachain state is finalized by relay chain and fresh.
-			let provider_head_storage_key = calculate_parachain_head_storage_key(PROVIDER_PARA_ID);
-			let relaychain_root_at_proof_block = RelaychainStateRoot::get(&proof.para_state_root.relay_block_height)
-				.expect("No relaychain block found for given height.");
+			let provider_head_storage_key = calculate_parachain_head_storage_key(KILT_PARA_ID);
+			let relaychain_root_at_proof_block =
+				RelaychainStateRootStore::get(&proof.para_state_root.relay_block_height)
+					.ok_or(DipParachainStateProofVerifierError::RelaychainStateRootNotFound)?;
 			let provider_parachain_header =
-				verify_storage_value_proof::<_, RelaychainRuntime::Hashing, HeaderFor<ProviderRuntime>>(
+				verify_storage_value_proof::<_, RelaychainRuntime::Hashing, HeaderFor<KiltRuntime>>(
 					&provider_head_storage_key,
 					relaychain_root_at_proof_block,
 					proof.para_state_root.proof,
 				)
-				.expect("Proof verification failed");
+				.map_err(DipParachainStateProofVerifierError::ParachainHeadMerkleProof)?;
 
-			// 2. Verify commitment is included in provider parachain.
+			// 2. Verify commitment is included in provider parachain state.
 			let dip_commitment_storage_key =
-				calculate_dip_identity_commitment_storage_key_for_runtime::<ProviderRuntime>(subject, 0);
+				calculate_dip_identity_commitment_storage_key_for_runtime::<KiltRuntime>(subject, 0);
 			let dip_commitment =
-				verify_storage_value_proof::<_, ProviderRuntime::Hashing, IdentityCommitmentOf<ProviderRuntime>>(
+				verify_storage_value_proof::<_, KiltRuntime::Hashing, IdentityCommitmentOf<KiltRuntime>>(
 					&dip_commitment_storage_key,
 					*provider_parachain_header.state_root(),
 					proof.dip_identity_commitment,
 				)
-				.expect("Failed to verify DIP Merkle proof.");
+				.map_err(DipParachainStateProofVerifierError::IdentityCommitmentMerkleProof)?;
 
 			let did_proof = proof.did;
 
 			// 3. Verify DIP Merkle proof.
 			let verified_proof = did_proof
-				.verify_merkle_proof_against_commitment::<ProviderRuntime::Hashing>(
+				.verify_merkle_proof_against_commitment::<KiltRuntime::Hashing>(
 					&dip_commitment.into(),
-					MAX_LEAVES_REVEALED,
+					MAX_LEAVES_REVEALED.saturated_into(),
 				)
-				.unwrap_or_else(|_| panic!("Failed to verify DIP Merkle proof"));
+				.map_err(DipParachainStateProofVerifierError::DipProof)?;
 
 			// 4. Verify call is signed by one of the DID keys revealed at step 3.
 			let current_block_number = frame_system::Pallet::<ConsumerRuntime>::block_number();
@@ -421,11 +411,7 @@ pub mod v0 {
 			let encoded_payload = (call, &identity_details, submitter, consumer_genesis_hash, signed_extra).encode();
 			let signing_key = verified_proof
 				.extract_signing_key_for_payload(&encoded_payload[..], current_block_number)
-				.unwrap_or_else(|_| panic!("Signature is not fresh."));
-
-			let Some(signing_key) = signing_key else {
-				panic!("No key found.");
-			};
+				.map_err(DipParachainStateProofVerifierError::DidSignature)?;
 
 			// Increment the local details
 			if let Some(details) = identity_details {
@@ -435,9 +421,14 @@ pub mod v0 {
 			};
 
 			DidCallVerifier::check_call_origin_info(call, signing_key)
-				.unwrap_or_else(|_| panic!("Failed to verify DID call info."));
+				.map_err(DipParachainStateProofVerifierError::DidOriginError)?;
 
-			Ok(())
+			let result = verified_proof.leaves.try_into().map_err(|_| {
+				log::error!("Failed to convert vector of revealed leaves into BoundedVec. This should never happen since the bound checks were checked earlier on.");
+				DipParachainStateProofVerifierError::Internal
+			})?;
+
+			Ok(result)
 		}
 	}
 }

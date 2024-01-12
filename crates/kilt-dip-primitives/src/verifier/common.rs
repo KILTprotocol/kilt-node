@@ -116,7 +116,7 @@ pub mod v0 {
 			&self,
 			payload: &[u8],
 			current_block_number: LocalBlockNumber,
-		) -> Result<Option<&RevealedDidKey<KeyId, BlockNumber, AccountId>>, DidSignatureVerificationError> {
+		) -> Result<&RevealedDidKey<KeyId, BlockNumber, AccountId>, DidSignatureVerificationError> {
 			let signature = self
 				.signature
 				.clone()
@@ -139,13 +139,15 @@ pub mod v0 {
 				Some(did_key)
 			});
 
-			let maybe_signing_key_details = revealed_did_verification_keys.find(|did_key| {
-				let DidPublicKey::PublicVerificationKey(ref mapped_key) = did_key.details.key else {
-					return false;
-				};
-				mapped_key.verify_signature(payload, &signature).is_ok()
-			});
-			Ok(maybe_signing_key_details)
+			let signing_key_details = revealed_did_verification_keys
+				.find(|did_key| {
+					let DidPublicKey::PublicVerificationKey(ref mapped_key) = did_key.details.key else {
+						return false;
+					};
+					mapped_key.verify_signature(payload, &signature).is_ok()
+				})
+				.ok_or(DidSignatureVerificationError::SignerNotFound)?;
+			Ok(signing_key_details)
 		}
 	}
 }

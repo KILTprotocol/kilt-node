@@ -68,4 +68,14 @@ where
 
 pub enum DidSignatureVerificationError {
 	SignatureExpired,
+	SignerNotFound,
+}
+
+impl From<DidSignatureVerificationError> for u8 {
+	fn from(value: DidSignatureVerificationError) -> Self {
+		match value {
+			DidSignatureVerificationError::SignatureExpired => 1,
+			DidSignatureVerificationError::SignerNotFound => 2,
+		}
+	}
 }

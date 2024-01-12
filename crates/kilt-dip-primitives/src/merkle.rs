@@ -239,3 +239,12 @@ pub enum DidMerkleProofVerificationError {
 	InvalidMerkleProof,
 	TooManyLeaves,
 }
+
+impl From<DidMerkleProofVerificationError> for u8 {
+	fn from(value: DidMerkleProofVerificationError) -> Self {
+		match value {
+			DidMerkleProofVerificationError::InvalidMerkleProof => 1,
+			DidMerkleProofVerificationError::TooManyLeaves => 2,
+		}
+	}
+}
