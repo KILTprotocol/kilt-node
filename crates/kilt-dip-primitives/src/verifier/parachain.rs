@@ -146,16 +146,16 @@ pub struct KiltVersionedParachainVerifier<
 	RelaychainStateRootStore,
 	const KILT_PARA_ID: u32,
 	KiltRuntime,
-	SignedExtra,
 	DidCallVerifier,
-	const MAX_LEAVES_REVEALED: u32,
+	SignedExtra = (),
+	const MAX_LEAVES_REVEALED: u32 = 50,
 >(
 	PhantomData<(
 		RelaychainRuntime,
 		RelaychainStateRootStore,
 		KiltRuntime,
-		SignedExtra,
 		DidCallVerifier,
+		SignedExtra,
 	)>,
 );
 
@@ -165,8 +165,8 @@ impl<
 		RelaychainStateRootStore,
 		const KILT_PARA_ID: u32,
 		KiltRuntime,
-		SignedExtra,
 		DidCallVerifier,
+		SignedExtra,
 		const MAX_LEAVES_REVEALED: u32,
 	> IdentityProofVerifier<ConsumerRuntime>
 	for KiltVersionedParachainVerifier<
@@ -174,8 +174,8 @@ impl<
 		RelaychainStateRootStore,
 		KILT_PARA_ID,
 		KiltRuntime,
-		SignedExtra,
 		DidCallVerifier,
+		SignedExtra,
 		MAX_LEAVES_REVEALED,
 	> where
 	ConsumerRuntime: pallet_dip_consumer::Config<Identifier = KiltRuntime::Identifier>,
@@ -227,8 +227,8 @@ impl<
 				RelaychainStateRootStore,
 				KILT_PARA_ID,
 				KiltRuntime,
-				SignedExtra,
 				DidCallVerifier,
+				SignedExtra,
 				MAX_LEAVES_REVEALED,
 			> as IdentityProofVerifier<ConsumerRuntime>>::verify_proof_for_call_against_details(
 				call,
@@ -293,16 +293,16 @@ pub mod v0 {
 		RelaychainStateRootStore,
 		const KILT_PARA_ID: u32,
 		KiltRuntime,
-		SignedExtra,
 		DidCallVerifier,
+		SignedExtra,
 		const MAX_LEAVES_REVEALED: u32,
 	>(
 		PhantomData<(
 			RelaychainRuntime,
 			RelaychainStateRootStore,
 			KiltRuntime,
-			SignedExtra,
 			DidCallVerifier,
+			SignedExtra,
 		)>,
 	);
 
@@ -312,8 +312,8 @@ pub mod v0 {
 			RelaychainStateRootStore,
 			const KILT_PARA_ID: u32,
 			KiltRuntime,
-			SignedExtra,
 			DidCallVerifier,
+			SignedExtra,
 			const MAX_LEAVES_REVEALED: u32,
 		> IdentityProofVerifier<ConsumerRuntime>
 		for ParachainVerifier<
@@ -321,8 +321,8 @@ pub mod v0 {
 			RelaychainStateRootStore,
 			KILT_PARA_ID,
 			KiltRuntime,
-			SignedExtra,
 			DidCallVerifier,
+			SignedExtra,
 			MAX_LEAVES_REVEALED,
 		> where
 		ConsumerRuntime: pallet_dip_consumer::Config<Identifier = KiltRuntime::Identifier>,

@@ -42,9 +42,7 @@ pub type ProofVerifier = KiltVersionedParachainVerifier<
 	RelayStateRootsViaRelayStorePallet<Runtime>,
 	2_000,
 	ProviderRuntime,
-	(),
 	DipCallFilter<KeyIdOf<ProviderRuntime>, BlockNumberFor<ProviderRuntime>, ProviderAccountId>,
-	100,
 >;
 
 impl pallet_dip_consumer::Config for Runtime {

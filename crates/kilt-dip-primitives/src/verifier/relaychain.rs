@@ -147,26 +147,26 @@ pub struct KiltVersionedRelaychainVerifier<
 	ConsumerBlockHashStore,
 	const KILT_PARA_ID: u32,
 	KiltRuntime,
-	SignedExtra,
 	DidCallVerifier,
-	const MAX_LEAVES_REVEALED: u32,
->(#[allow(clippy::type_complexity)] PhantomData<(ConsumerBlockHashStore, KiltRuntime, SignedExtra, DidCallVerifier)>);
+	SignedExtra = (),
+	const MAX_LEAVES_REVEALED: u32 = 50,
+>(#[allow(clippy::type_complexity)] PhantomData<(ConsumerBlockHashStore, KiltRuntime, DidCallVerifier, SignedExtra)>);
 
 impl<
 		ConsumerRuntime,
 		ConsumerBlockHashStore,
 		const KILT_PARA_ID: u32,
 		KiltRuntime,
-		SignedExtra,
 		DidCallVerifier,
+		SignedExtra,
 		const MAX_LEAVES_REVEALED: u32,
 	> IdentityProofVerifier<ConsumerRuntime>
 	for KiltVersionedRelaychainVerifier<
 		ConsumerBlockHashStore,
 		KILT_PARA_ID,
 		KiltRuntime,
-		SignedExtra,
 		DidCallVerifier,
+		SignedExtra,
 		MAX_LEAVES_REVEALED,
 	> where
 	ConsumerRuntime: pallet_dip_consumer::Config<Identifier = KiltRuntime::Identifier>,
@@ -217,8 +217,8 @@ impl<
 				ConsumerBlockHashStore,
 				KILT_PARA_ID,
 				KiltRuntime,
-				SignedExtra,
 				DidCallVerifier,
+				SignedExtra,
 				MAX_LEAVES_REVEALED,
 			> as IdentityProofVerifier<ConsumerRuntime>>::verify_proof_for_call_against_details(
 				call,
@@ -358,12 +358,12 @@ pub mod v0 {
 		ConsumerBlockHashStore,
 		const KILT_PARA_ID: u32,
 		KiltRuntime,
-		SignedExtra,
 		DidCallVerifier,
+		SignedExtra,
 		const MAX_LEAVES_REVEALED: u32,
 	>(
 		#[allow(clippy::type_complexity)]
-		PhantomData<(ConsumerBlockHashStore, KiltRuntime, SignedExtra, DidCallVerifier)>,
+		PhantomData<(ConsumerBlockHashStore, KiltRuntime, DidCallVerifier, SignedExtra)>,
 	);
 
 	impl<
@@ -371,16 +371,16 @@ pub mod v0 {
 			ConsumerBlockHashStore,
 			const KILT_PARA_ID: u32,
 			KiltRuntime,
-			SignedExtra,
 			DidCallVerifier,
+			SignedExtra,
 			const MAX_LEAVES_REVEALED: u32,
 		> IdentityProofVerifier<ConsumerRuntime>
 		for RelaychainVerifier<
 			ConsumerBlockHashStore,
 			KILT_PARA_ID,
 			KiltRuntime,
-			SignedExtra,
 			DidCallVerifier,
+			SignedExtra,
 			MAX_LEAVES_REVEALED,
 		> where
 		ConsumerRuntime: pallet_dip_consumer::Config<Identifier = KiltRuntime::Identifier>,
