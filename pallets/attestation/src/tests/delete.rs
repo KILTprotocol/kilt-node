@@ -189,16 +189,16 @@ fn test_remove_v1() {
 	ExtBuilder::default()
 		.with_balances(vec![(ACCOUNT_00, <Test as Config>::Deposit::get() * 100)])
 		.with_ctypes(vec![(attestation.ctype_hash, attester.clone())])
-		.with_attestations_v1(vec![(claim_hash, attestation.clone())])
+		.with_attestations_v1(vec![(claim_hash, attestation)])
 		.build_and_execute_with_sanity_tests(|| {
 			assert!(Attestation::attestations(claim_hash).is_some());
 			assert!(!ExternalAttestations::<Test>::get(
-				&attester.clone(),
-				&claim_hash
+				attester.clone(),
+				claim_hash
 			));
 			assert!(migrations::v1::ExternalAttestations::<Test>::get(
-				&attester.clone(),
-				&claim_hash
+				attester.clone(),
+				claim_hash
 			));
 
 			assert_ok!(Attestation::remove(
@@ -208,12 +208,12 @@ fn test_remove_v1() {
 			));
 			assert!(Attestation::attestations(claim_hash).is_none());
 			assert!(!ExternalAttestations::<Test>::get(
-				&attester.clone(),
-				&claim_hash
+				attester.clone(),
+				claim_hash
 			));
 			assert!(!migrations::v1::ExternalAttestations::<Test>::get(
-				&attester.clone(),
-				&claim_hash
+				attester.clone(),
+				claim_hash
 			));
 
 			assert_eq!(
