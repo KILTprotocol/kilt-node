@@ -42,13 +42,13 @@ use crate::{
 };
 
 #[derive(Clone, RuntimeDebug, Encode, Decode, PartialEq, Eq, TypeInfo)]
-pub struct ProviderHeadProof<RelayBlockNumber, const MAX_LEAVE_COUNT: u32, const MAX_LEAVE_SIZE: u32> {
+pub struct ProviderHeadStateProof<RelayBlockNumber, const MAX_LEAVE_COUNT: u32, const MAX_LEAVE_SIZE: u32> {
 	pub(crate) relay_block_number: RelayBlockNumber,
 	pub(crate) proof: BoundedVec<BoundedVec<u8, ConstU32<MAX_LEAVE_SIZE>>, ConstU32<MAX_LEAVE_COUNT>>,
 }
 
 #[derive(Clone, RuntimeDebug, Encode, Decode, PartialEq, Eq, TypeInfo)]
-pub struct DipCommitmentProof<const MAX_LEAVE_COUNT: u32, const MAX_LEAVE_SIZE: u32>(
+pub struct DipCommitmentStateProof<const MAX_LEAVE_COUNT: u32, const MAX_LEAVE_SIZE: u32>(
 	pub(crate) BoundedVec<BoundedVec<u8, ConstU32<MAX_LEAVE_SIZE>>, ConstU32<MAX_LEAVE_COUNT>>,
 );
 
@@ -86,19 +86,39 @@ pub struct TimeBoundDidSignature<BlockNumber> {
 }
 
 pub enum Error {
+	InvalidRelayHeader,
+	RelayBlockNotFound,
 	RelayStateRootNotFound,
-	ProviderHeadProof(MerkleProofError),
+	TooManyDidLeaves,
+	InvalidDidMerkleProof,
+	InvalidSignatureTime,
+	InvalidDidKeyRevealed,
+	ParaHeadMerkleProof(MerkleProofError),
+	DipCommitmentMerkleProof(MerkleProofError),
+	Internal,
 }
 
 impl From<Error> for u8 {
 	fn from(value: Error) -> Self {
 		match value {
-			Error::RelayStateRootNotFound => 1,
-			Error::ProviderHeadProof(error) => match error {
+			Error::InvalidRelayHeader => 1,
+			Error::RelayBlockNotFound => 2,
+			Error::RelayStateRootNotFound => 3,
+			Error::TooManyDidLeaves => 4,
+			Error::InvalidDidMerkleProof => 5,
+			Error::InvalidSignatureTime => 6,
+			Error::InvalidDidKeyRevealed => 7,
+			Error::ParaHeadMerkleProof(error) => match error {
 				MerkleProofError::InvalidProof => 11,
 				MerkleProofError::RequiredLeafNotRevealed => 12,
 				MerkleProofError::ResultDecoding => 13,
 			},
+			Error::DipCommitmentMerkleProof(error) => match error {
+				MerkleProofError::InvalidProof => 21,
+				MerkleProofError::RequiredLeafNotRevealed => 22,
+				MerkleProofError::ResultDecoding => 23,
+			},
+			Error::Internal => u8::MAX,
 		}
 	}
 }
@@ -121,10 +141,13 @@ pub struct RelayDipDidProof<
 	const MAX_DID_MERKLE_LEAVES_REVEALED: u32 = 10,
 > {
 	pub(crate) relay_header: Header<RelayBlockNumber, RelayBlockHasher>,
-	pub(crate) provider_head_proof:
-		ProviderHeadProof<RelayBlockNumber, MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT, MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE>,
+	pub(crate) provider_head_proof: ProviderHeadStateProof<
+		RelayBlockNumber,
+		MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT,
+		MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE,
+	>,
 	pub(crate) dip_commitment_proof:
-		DipCommitmentProof<MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT, MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE>,
+		DipCommitmentStateProof<MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT, MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE>,
 	pub(crate) dip_proof: DidMerkleProof<
 		KiltDidKeyId,
 		KiltAccountId,
@@ -195,8 +218,7 @@ impl<
 		Error,
 	> {
 		if block_hash != &self.relay_header.hash() {
-			// TODO: Change
-			return Err(Error::RelayStateRootNotFound);
+			return Err(Error::InvalidRelayHeader);
 		}
 
 		Ok(RelayHeaderVerifiedParachainDipDidProof {
@@ -233,9 +255,7 @@ impl<
 	where
 		RelayHashStore: GetWithArg<RelayBlockNumber, Result = Option<OutputOf<RelayBlockHasher>>>,
 	{
-		// TODO: Change error
-		let relay_block_hash = RelayHashStore::get(&self.relay_header.number).ok_or(Error::RelayStateRootNotFound)?;
-
+		let relay_block_hash = RelayHashStore::get(&self.relay_header.number).ok_or(Error::RelayBlockNotFound)?;
 		self.verify_relay_header_with_block_hash(&relay_block_hash)
 	}
 }
@@ -257,10 +277,13 @@ pub struct RelayHeaderVerifiedParachainDipDidProof<
 	const MAX_DID_MERKLE_LEAVES_REVEALED: u32 = 10,
 > {
 	pub(crate) relay_state_root: OutputOf<RelayHasher>,
-	pub(crate) provider_head_proof:
-		ProviderHeadProof<RelayBlockNumber, MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT, MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE>,
+	pub(crate) provider_head_proof: ProviderHeadStateProof<
+		RelayBlockNumber,
+		MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT,
+		MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE,
+	>,
 	pub(crate) dip_commitment_proof:
-		DipCommitmentProof<MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT, MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE>,
+		DipCommitmentStateProof<MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT, MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE>,
 	pub(crate) dip_proof: DidMerkleProof<
 		KiltDidKeyId,
 		KiltAccountId,
@@ -362,10 +385,13 @@ pub struct ParachainDipDidProof<
 	const MAX_DID_MERKLE_PROOF_LEAVE_SIZE: u32 = 128,
 	const MAX_DID_MERKLE_LEAVES_REVEALED: u32 = 10,
 > {
-	pub(crate) provider_head_proof:
-		ProviderHeadProof<RelayBlockNumber, MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT, MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE>,
+	pub(crate) provider_head_proof: ProviderHeadStateProof<
+		RelayBlockNumber,
+		MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT,
+		MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE,
+	>,
 	pub(crate) dip_commitment_proof:
-		DipCommitmentProof<MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT, MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE>,
+		DipCommitmentStateProof<MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT, MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE>,
 	pub(crate) dip_proof: DidMerkleProof<
 		KiltDidKeyId,
 		KiltAccountId,
@@ -444,7 +470,7 @@ impl<
 			*relay_state_root,
 			self.provider_head_proof.proof.into_iter().map(|i| i.into()),
 		)
-		.map_err(Error::ProviderHeadProof)?;
+		.map_err(Error::ParaHeadMerkleProof)?;
 		Ok(RelayVerifiedDipProof {
 			state_root: *provider_header.state_root(),
 			dip_commitment_proof: self.dip_commitment_proof,
@@ -504,7 +530,7 @@ pub struct RelayVerifiedDipProof<
 > {
 	pub(crate) state_root: StateRoot,
 	pub(crate) dip_commitment_proof:
-		DipCommitmentProof<MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT, MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE>,
+		DipCommitmentStateProof<MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT, MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE>,
 	pub(crate) dip_proof: DidMerkleProof<
 		KiltDidKeyId,
 		KiltAccountId,
@@ -580,7 +606,7 @@ impl<
 			self.state_root.into(),
 			self.dip_commitment_proof.0.into_iter().map(|i| i.into()),
 		)
-		.map_err(Error::ProviderHeadProof)?;
+		.map_err(Error::DipCommitmentMerkleProof)?;
 		Ok(CommitmentVerifiedProof {
 			dip_commitment,
 			dip_proof: self.dip_proof,
@@ -669,11 +695,7 @@ impl<
 			.take(MAX_DID_MERKLE_LEAVES_REVEALED.saturated_into());
 
 		// If there are more keys than MAX_LEAVES_REVEALED, bail out.
-		ensure!(
-			revealed_keys.next().is_none(),
-			// TODO: Change
-			Error::RelayStateRootNotFound,
-		);
+		ensure!(revealed_keys.next().is_none(), Error::TooManyDidLeaves,);
 
 		let proof_leaves_key_value_pairs: Vec<(Vec<u8>, Option<Vec<u8>>)> = revealed_keys
 			.by_ref()
@@ -690,8 +712,7 @@ impl<
 				.as_slice(),
 			&proof_leaves_key_value_pairs,
 		)
-		// TODO: Change
-		.map_err(|_| Error::RelayStateRootNotFound)?;
+		.map_err(|_| Error::InvalidDidMerkleProof)?;
 
 		Ok(DipVerifiedProof {
 			revealed_leaves: self.dip_proof.revealed,
@@ -750,10 +771,7 @@ impl<
 		>,
 		Error,
 	> {
-		ensure!(
-			self.signature.valid_until >= *block_number,
-			Error::RelayStateRootNotFound
-		);
+		ensure!(self.signature.valid_until >= *block_number, Error::InvalidSignatureTime);
 		Ok(DipSignatureTimeVerifiedProof {
 			revealed_leaves: self.revealed_leaves,
 			signature: self.signature.signature,
@@ -831,9 +849,8 @@ impl<
 					return false;
 				};
 				verification_key.verify_signature(payload, &self.signature).is_ok()
-				// TODO: Change
 			})
-			.ok_or(Error::RelayStateRootNotFound)?;
+			.ok_or(Error::InvalidDidKeyRevealed)?;
 
 		Ok(DipSignatureVerifiedInfo {
 			revealed_leaves: self.revealed_leaves,
@@ -875,13 +892,14 @@ impl<
 		MAX_DID_MERKLE_LEAVES_REVEALED,
 	>
 {
-	pub fn get_signing_leaf(&self) -> &RevealedDidKey<KiltDidKeyId, KiltBlockNumber, KiltAccountId> {
+	pub fn get_signing_leaf(&self) -> Result<&RevealedDidKey<KiltDidKeyId, KiltBlockNumber, KiltAccountId>, Error> {
 		let RevealedDidMerkleProofLeaf::DidKey(did_key) =
 			&self.revealed_leaves[usize::saturated_from(self.signing_leaf_index)]
 		else {
-			panic!("Leaf should never fail to be converted to a DID key.")
+			log::error!("Should never fail to convert the signing leaf to a DID Key leaf.");
+			return Err(Error::Internal);
 		};
-		did_key
+		Ok(did_key)
 	}
 }
 

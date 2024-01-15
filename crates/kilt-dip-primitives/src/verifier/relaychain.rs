@@ -389,7 +389,9 @@ pub mod v0 {
 				.map_err(DipRelaychainStateProofVerifierError::ProofVerification)?;
 
 			// 6. Verify the signing key fulfills the requirements
-			let signing_key = revealed_did_info.get_signing_leaf();
+			let signing_key = revealed_did_info
+				.get_signing_leaf()
+				.map_err(DipRelaychainStateProofVerifierError::ProofVerification)?;
 			DidCallVerifier::check_call_origin_info(call, signing_key)
 				.map_err(DipRelaychainStateProofVerifierError::DidOriginError)?;
 
