@@ -24,17 +24,15 @@ use pallet_dip_provider::IdentityCommitmentOf;
 use pallet_web3_names::Web3NameOf;
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
-use sp_core::{ConstU32, RuntimeDebug, U256};
-use sp_runtime::{traits::Hash, BoundedVec};
+use sp_core::{RuntimeDebug, U256};
+use sp_runtime::traits::Hash;
 use sp_std::marker::PhantomData;
 
 use crate::{
-	did::DidSignatureVerificationError,
-	merkle::{DidMerkleProofVerificationError, RevealedDidKey, RevealedDidMerkleProofLeaf},
-	state_proofs::MerkleProofError,
+	merkle::v0::RevealedDidKey,
 	traits::{DipCallOriginFilter, GetWithArg, GetWithoutArg, Incrementable},
 	utils::OutputOf,
-	BoundedBlindedValue,
+	DipSignatureVerifiedInfo, Error,
 };
 
 /// A KILT-specific DIP identity proof for a parent consumer that supports
@@ -52,7 +50,7 @@ pub enum VersionedRelaychainStateProof<
 	KiltLinkableAccountId,
 > {
 	V0(
-		v0::RelaychainDipStateProof<
+		crate::merkle::v0::RelayDipDidProof<
 			ConsumerBlockNumber,
 			ConsumerBlockHasher,
 			KiltDidKeyId,
@@ -66,12 +64,7 @@ pub enum VersionedRelaychainStateProof<
 
 pub enum DipRelaychainStateProofVerifierError<DidOriginError> {
 	UnsupportedVersion,
-	BlockHashNotFound,
-	InvalidBlockHeader,
-	ParachainHeadMerkleProof(MerkleProofError),
-	IdentityCommitmentMerkleProof(MerkleProofError),
-	DipProof(DidMerkleProofVerificationError),
-	DidSignature(DidSignatureVerificationError),
+	ProofVerification(Error),
 	DidOriginError(DidOriginError),
 	Internal,
 }
@@ -83,17 +76,8 @@ where
 	fn from(value: DipRelaychainStateProofVerifierError<DidOriginError>) -> Self {
 		match value {
 			DipRelaychainStateProofVerifierError::UnsupportedVersion => 1,
-			DipRelaychainStateProofVerifierError::BlockHashNotFound => 2,
-			DipRelaychainStateProofVerifierError::InvalidBlockHeader => 3,
-			DipRelaychainStateProofVerifierError::ParachainHeadMerkleProof(error) => {
-				u8::MAX as u16 + u8::from(error) as u16
-			}
-			DipRelaychainStateProofVerifierError::IdentityCommitmentMerkleProof(error) => {
-				u8::MAX as u16 * 2 + u8::from(error) as u16
-			}
-			DipRelaychainStateProofVerifierError::DipProof(error) => u8::MAX as u16 * 3 + u8::from(error) as u16,
-			DipRelaychainStateProofVerifierError::DidSignature(error) => u8::MAX as u16 * 4 + u8::from(error) as u16,
-			DipRelaychainStateProofVerifierError::DidOriginError(error) => u8::MAX as u16 * 5 + error.into() as u16,
+			DipRelaychainStateProofVerifierError::ProofVerification(error) => u8::MAX as u16 + u8::from(error) as u16,
+			DipRelaychainStateProofVerifierError::DidOriginError(error) => u8::MAX as u16 * 2 + error.into() as u16,
 			DipRelaychainStateProofVerifierError::Internal => u16::MAX,
 		}
 	}
@@ -194,15 +178,12 @@ impl<
 		Web3NameOf<KiltRuntime>,
 		LinkableAccountId,
 	>;
-	type VerificationResult = BoundedVec<
-		RevealedDidMerkleProofLeaf<
-			KeyIdOf<KiltRuntime>,
-			KiltRuntime::AccountId,
-			BlockNumberFor<KiltRuntime>,
-			Web3NameOf<KiltRuntime>,
-			LinkableAccountId,
-		>,
-		ConstU32<MAX_LEAVES_REVEALED>,
+	type VerificationResult = DipSignatureVerifiedInfo<
+		KeyIdOf<KiltRuntime>,
+		KiltRuntime::AccountId,
+		BlockNumberFor<KiltRuntime>,
+		Web3NameOf<KiltRuntime>,
+		LinkableAccountId,
 	>;
 
 	fn verify_proof_for_call_against_details(
@@ -231,60 +212,13 @@ impl<
 	}
 }
 
-pub mod latest {
-	pub use super::v0::RelaychainDipStateProof;
-}
-
 pub mod v0 {
 	use super::*;
 
 	use frame_system::pallet_prelude::HeaderFor;
-	use sp_runtime::{
-		generic::Header,
-		traits::{Hash, Header as HeaderT, Zero},
-		SaturatedConversion,
-	};
+	use sp_runtime::traits::Zero;
 
-	use crate::{
-		latest::ParachainDipStateProof,
-		state_proofs::verify_storage_value_proof,
-		verifier::common::{
-			calculate_dip_identity_commitment_storage_key_for_runtime, calculate_parachain_head_storage_key,
-			v0::{DipMerkleProofAndDidSignature, ParachainRootStateProof},
-		},
-	};
-
-	/// The expected format of a cross-chain DIP identity proof when the
-	/// identity information is bridged from a provider that is a child of
-	/// the chain where the information is consumed (i.e., consumer
-	/// chain).
-	#[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug, TypeInfo)]
-	pub struct RelaychainDipStateProof<
-		ConsumerBlockNumber: Copy + Into<U256> + TryFrom<U256>,
-		ConsumerBlockHasher: Hash,
-		KiltDidKeyId,
-		KiltAccountId,
-		KiltBlockNumber,
-		KiltWeb3Name,
-		KiltLinkableAccountId,
-	> {
-		/// The state proof for the given parachain head.
-		para_state_root: ParachainRootStateProof<ConsumerBlockNumber>,
-		/// The relaychain header for the relaychain block specified in the
-		/// `para_state_root`.
-		relay_header: Header<ConsumerBlockNumber, ConsumerBlockHasher>,
-		/// The raw state proof for the DIP commitment of the given subject.
-		dip_identity_commitment: BoundedBlindedValue<u8>,
-		/// The cross-chain DID signature.
-		did: DipMerkleProofAndDidSignature<
-			KiltDidKeyId,
-			KiltAccountId,
-			KiltBlockNumber,
-			KiltWeb3Name,
-			KiltLinkableAccountId,
-			ConsumerBlockNumber,
-		>,
-	}
+	use crate::RelayDipDidProof;
 
 	/// Generic proof verifier for KILT-specific DIP identity proofs coming from
 	/// a child provider running one of the available KILT runtimes.
@@ -399,7 +333,7 @@ pub mod v0 {
 		DidCallVerifier::Error: Into<u8>,
 	{
 		type Error = DipRelaychainStateProofVerifierError<DidCallVerifier::Error>;
-		type Proof = RelaychainDipStateProof<
+		type Proof = RelayDipDidProof<
 			BlockNumberFor<ConsumerRuntime>,
 			ConsumerRuntime::Hashing,
 			KeyIdOf<KiltRuntime>,
@@ -408,15 +342,12 @@ pub mod v0 {
 			Web3NameOf<KiltRuntime>,
 			LinkableAccountId,
 		>;
-		type VerificationResult = BoundedVec<
-			RevealedDidMerkleProofLeaf<
-				KeyIdOf<KiltRuntime>,
-				KiltRuntime::AccountId,
-				BlockNumberFor<KiltRuntime>,
-				Web3NameOf<KiltRuntime>,
-				LinkableAccountId,
-			>,
-			ConstU32<MAX_LEAVES_REVEALED>,
+		type VerificationResult = DipSignatureVerifiedInfo<
+			KeyIdOf<KiltRuntime>,
+			KiltRuntime::AccountId,
+			BlockNumberFor<KiltRuntime>,
+			Web3NameOf<KiltRuntime>,
+			LinkableAccountId,
 		>;
 
 		fn verify_proof_for_call_against_details(
@@ -426,86 +357,50 @@ pub mod v0 {
 			identity_details: &mut Option<ConsumerRuntime::LocalIdentityInfo>,
 			proof: Self::Proof,
 		) -> Result<Self::VerificationResult, Self::Error> {
-			// 1. Retrieve block hash from provider at the proof height
-			let block_hash_at_height = ConsumerBlockHashStore::get(&proof.para_state_root.relay_block_height)
-				.ok_or(DipRelaychainStateProofVerifierError::BlockHashNotFound)?;
-
-			// 1.1 Verify that the provided header hashes to the same block hash retrieved
-			if block_hash_at_height != proof.relay_header.hash() {
-				return Err(DipRelaychainStateProofVerifierError::InvalidBlockHeader);
-			}
-			// 1.2 If so, extract the state root from the header
-			let state_root_at_height = proof.relay_header.state_root;
-
-			// Remove the header from the proof and verify the rest using the parachain
-			// verifier logic.
-			let parachain_proof = ParachainDipStateProof {
-				para_state_root: proof.para_state_root,
-				dip_identity_commitment: proof.dip_identity_commitment,
-				did: proof.did,
-			};
-
-			// TODO: Can we re-use the verification logic for the parachain verification?
-			// Current issue is implementing the expected `RelaychainStateRootStore` trait
-			// to return the state root we calculated above.
+			// 1. Verify provided relaychain header.
+			let proof_without_header = proof
+				.verify_relay_header::<ConsumerBlockHashStore>()
+				.map_err(DipRelaychainStateProofVerifierError::ProofVerification)?;
 
 			// 2. Verify parachain state is finalized by relay chain and fresh.
-			let provider_head_storage_key = calculate_parachain_head_storage_key(KILT_PARA_ID);
-			let provider_parachain_header =
-				verify_storage_value_proof::<_, ConsumerRuntime::Hashing, HeaderFor<KiltRuntime>>(
-					&provider_head_storage_key,
-					state_root_at_height,
-					parachain_proof.para_state_root.proof,
-				)
-				.map_err(DipRelaychainStateProofVerifierError::ParachainHeadMerkleProof)?;
+			let proof_without_relaychain = proof_without_header
+				.verify_provider_head_proof::<HeaderFor<KiltRuntime>>(KILT_PARA_ID)
+				.map_err(DipRelaychainStateProofVerifierError::ProofVerification)?;
 
 			// 3. Verify commitment is included in provider parachain state.
-			let dip_commitment_storage_key =
-				calculate_dip_identity_commitment_storage_key_for_runtime::<KiltRuntime>(subject, 0);
-			let dip_commitment =
-				verify_storage_value_proof::<_, KiltRuntime::Hashing, IdentityCommitmentOf<KiltRuntime>>(
-					&dip_commitment_storage_key,
-					*provider_parachain_header.state_root(),
-					parachain_proof.dip_identity_commitment,
-				)
-				.map_err(DipRelaychainStateProofVerifierError::IdentityCommitmentMerkleProof)?;
-
-			let did_proof = parachain_proof.did;
+			let proof_without_parachain = proof_without_relaychain
+				.verify_dip_commitment_proof_for_subject::<KiltRuntime::Hashing, KiltRuntime, _>(subject)
+				.map_err(DipRelaychainStateProofVerifierError::ProofVerification)?;
 
 			// 4. Verify DIP Merkle proof.
-			let verified_proof = did_proof
-				.verify_merkle_proof_against_commitment::<KiltRuntime::Hashing>(
-					&dip_commitment.into(),
-					MAX_LEAVES_REVEALED.saturated_into(),
-				)
-				.map_err(DipRelaychainStateProofVerifierError::DipProof)?;
+			let proof_without_dip_merkle = proof_without_parachain
+				.verify_dip_proof::<KiltRuntime::Hashing>()
+				.map_err(DipRelaychainStateProofVerifierError::ProofVerification)?;
 
-			// 5. Verify call is signed by one of the DID keys revealed at step 3.
+			// 5. Verify call is signed by one of the DID keys revealed in the proof
 			let current_block_number = frame_system::Pallet::<ConsumerRuntime>::block_number();
 			let consumer_genesis_hash =
 				frame_system::Pallet::<ConsumerRuntime>::block_hash(BlockNumberFor::<ConsumerRuntime>::zero());
 			let signed_extra = SignedExtra::get();
 			let encoded_payload = (call, &identity_details, submitter, consumer_genesis_hash, signed_extra).encode();
-			let signing_key = verified_proof
-				.extract_signing_key_for_payload(&encoded_payload[..], current_block_number)
-				.map_err(DipRelaychainStateProofVerifierError::DidSignature)?;
+			let revealed_did_info = proof_without_dip_merkle
+				.verify_signature_time(&current_block_number)
+				.and_then(|p| p.retrieve_signing_leaf_for_payload(&encoded_payload[..]))
+				.map_err(DipRelaychainStateProofVerifierError::ProofVerification)?;
 
-			// Increment the local details
+			// 6. Verify the signing key fulfills the requirements
+			let signing_key = revealed_did_info.get_signing_leaf();
+			DidCallVerifier::check_call_origin_info(call, signing_key)
+				.map_err(DipRelaychainStateProofVerifierError::DidOriginError)?;
+
+			// 7. Increment the local details
 			if let Some(details) = identity_details {
 				details.increment();
 			} else {
 				*identity_details = Some(Default::default());
 			};
 
-			DidCallVerifier::check_call_origin_info(call, signing_key)
-				.map_err(DipRelaychainStateProofVerifierError::DidOriginError)?;
-
-			let result = verified_proof.leaves.try_into().map_err(|_| {
-				log::error!("Failed to convert vector of revealed leaves into BoundedVec. This should never happen since the bound checks were checked earlier on.");
-				DipRelaychainStateProofVerifierError::Internal
-			})?;
-
-			Ok(result)
+			Ok(revealed_did_info)
 		}
 	}
 }

@@ -41,15 +41,18 @@ use crate::{
 	},
 };
 
+#[derive(Clone, RuntimeDebug, Encode, Decode, PartialEq, Eq, TypeInfo)]
 pub struct ProviderHeadProof<RelayBlockNumber, const MAX_LEAVE_COUNT: u32, const MAX_LEAVE_SIZE: u32> {
 	pub(crate) relay_block_number: RelayBlockNumber,
 	pub(crate) proof: BoundedVec<BoundedVec<u8, ConstU32<MAX_LEAVE_SIZE>>, ConstU32<MAX_LEAVE_COUNT>>,
 }
 
+#[derive(Clone, RuntimeDebug, Encode, Decode, PartialEq, Eq, TypeInfo)]
 pub struct DipCommitmentProof<const MAX_LEAVE_COUNT: u32, const MAX_LEAVE_SIZE: u32>(
 	pub(crate) BoundedVec<BoundedVec<u8, ConstU32<MAX_LEAVE_SIZE>>, ConstU32<MAX_LEAVE_COUNT>>,
 );
 
+#[derive(Clone, RuntimeDebug, Encode, Decode, PartialEq, Eq, TypeInfo)]
 pub struct DidMerkleProof<
 	ProviderDidKeyId,
 	ProviderAccountId,
@@ -74,7 +77,7 @@ pub struct DidMerkleProof<
 }
 
 /// A DID signature anchored to a specific block height.
-#[derive(Encode, Decode, RuntimeDebug, Clone, Eq, PartialEq, TypeInfo)]
+#[derive(Clone, RuntimeDebug, Encode, Decode, PartialEq, Eq, TypeInfo)]
 pub struct TimeBoundDidSignature<BlockNumber> {
 	/// The signature.
 	pub(crate) signature: DidSignature,
@@ -83,10 +86,24 @@ pub struct TimeBoundDidSignature<BlockNumber> {
 }
 
 pub enum Error {
-	ProviderHeadProof(MerkleProofError),
 	RelayStateRootNotFound,
+	ProviderHeadProof(MerkleProofError),
 }
 
+impl From<Error> for u8 {
+	fn from(value: Error) -> Self {
+		match value {
+			Error::RelayStateRootNotFound => 1,
+			Error::ProviderHeadProof(error) => match error {
+				MerkleProofError::InvalidProof => 11,
+				MerkleProofError::RequiredLeafNotRevealed => 12,
+				MerkleProofError::ResultDecoding => 13,
+			},
+		}
+	}
+}
+
+#[derive(Clone, RuntimeDebug, Encode, Decode, PartialEq, Eq, TypeInfo)]
 pub struct RelayDipDidProof<
 	RelayBlockNumber: Copy + Into<U256> + TryFrom<U256>,
 	RelayBlockHasher: Hash,
@@ -95,7 +112,6 @@ pub struct RelayDipDidProof<
 	KiltBlockNumber,
 	KiltWeb3Name,
 	KiltLinkableAccountId,
-	ConsumerBlockNumber,
 	const MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT: u32 = 10,
 	const MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE: u32 = 128,
 	const MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT: u32 = 10,
@@ -119,7 +135,7 @@ pub struct RelayDipDidProof<
 		MAX_DID_MERKLE_PROOF_LEAVE_SIZE,
 		MAX_DID_MERKLE_LEAVES_REVEALED,
 	>,
-	pub(crate) signature: TimeBoundDidSignature<ConsumerBlockNumber>,
+	pub(crate) signature: TimeBoundDidSignature<RelayBlockNumber>,
 }
 
 impl<
@@ -130,7 +146,6 @@ impl<
 		KiltBlockNumber,
 		KiltWeb3Name,
 		KiltLinkableAccountId,
-		ConsumerBlockNumber,
 		const MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT: u32,
 		const MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE: u32,
 		const MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT: u32,
@@ -147,7 +162,6 @@ impl<
 		KiltBlockNumber,
 		KiltWeb3Name,
 		KiltLinkableAccountId,
-		ConsumerBlockNumber,
 		MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT,
 		MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE,
 		MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT,
@@ -170,7 +184,6 @@ impl<
 			KiltBlockNumber,
 			KiltWeb3Name,
 			KiltLinkableAccountId,
-			ConsumerBlockNumber,
 			MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT,
 			MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE,
 			MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT,
@@ -207,7 +220,6 @@ impl<
 			KiltBlockNumber,
 			KiltWeb3Name,
 			KiltLinkableAccountId,
-			ConsumerBlockNumber,
 			MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT,
 			MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE,
 			MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT,
@@ -236,7 +248,6 @@ pub struct RelayHeaderVerifiedParachainDipDidProof<
 	KiltBlockNumber,
 	KiltWeb3Name,
 	KiltLinkableAccountId,
-	ConsumerBlockNumber,
 	const MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT: u32 = 10,
 	const MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE: u32 = 128,
 	const MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT: u32 = 10,
@@ -260,7 +271,7 @@ pub struct RelayHeaderVerifiedParachainDipDidProof<
 		MAX_DID_MERKLE_PROOF_LEAVE_SIZE,
 		MAX_DID_MERKLE_LEAVES_REVEALED,
 	>,
-	pub(crate) signature: TimeBoundDidSignature<ConsumerBlockNumber>,
+	pub(crate) signature: TimeBoundDidSignature<RelayBlockNumber>,
 }
 
 impl<
@@ -271,7 +282,6 @@ impl<
 		KiltBlockNumber,
 		KiltWeb3Name,
 		KiltLinkableAccountId,
-		ConsumerBlockNumber,
 		const MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT: u32,
 		const MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE: u32,
 		const MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT: u32,
@@ -288,7 +298,6 @@ impl<
 		KiltBlockNumber,
 		KiltWeb3Name,
 		KiltLinkableAccountId,
-		ConsumerBlockNumber,
 		MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT,
 		MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE,
 		MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT,
@@ -310,7 +319,7 @@ impl<
 			KiltBlockNumber,
 			KiltWeb3Name,
 			KiltLinkableAccountId,
-			ConsumerBlockNumber,
+			RelayBlockNumber,
 			MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT,
 			MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE,
 			MAX_DID_MERKLE_PROOF_LEAVE_COUNT,
@@ -336,6 +345,7 @@ impl<
 	}
 }
 
+#[derive(Clone, RuntimeDebug, Encode, Decode, PartialEq, Eq, TypeInfo)]
 pub struct ParachainDipDidProof<
 	RelayBlockNumber,
 	KiltDidKeyId,
@@ -787,7 +797,7 @@ impl<
 		self,
 		payload: &[u8],
 	) -> Result<
-		DipSignatureVerifiedProof<
+		DipSignatureVerifiedInfo<
 			KiltDidKeyId,
 			KiltAccountId,
 			KiltBlockNumber,
@@ -825,14 +835,15 @@ impl<
 			})
 			.ok_or(Error::RelayStateRootNotFound)?;
 
-		Ok(DipSignatureVerifiedProof {
+		Ok(DipSignatureVerifiedInfo {
 			revealed_leaves: self.revealed_leaves,
-			signing_leaf_index: index,
+			signing_leaf_index: index.saturated_into(),
 		})
 	}
 }
 
-pub struct DipSignatureVerifiedProof<
+#[derive(Clone, RuntimeDebug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
+pub struct DipSignatureVerifiedInfo<
 	KiltDidKeyId,
 	KiltAccountId,
 	KiltBlockNumber,
@@ -844,7 +855,7 @@ pub struct DipSignatureVerifiedProof<
 		RevealedDidMerkleProofLeaf<KiltDidKeyId, KiltAccountId, KiltBlockNumber, KiltWeb3Name, KiltLinkableAccountId>,
 		ConstU32<MAX_DID_MERKLE_LEAVES_REVEALED>,
 	>,
-	signing_leaf_index: usize,
+	signing_leaf_index: u32,
 }
 
 impl<
@@ -855,7 +866,7 @@ impl<
 		KiltLinkableAccountId,
 		const MAX_DID_MERKLE_LEAVES_REVEALED: u32,
 	>
-	DipSignatureVerifiedProof<
+	DipSignatureVerifiedInfo<
 		KiltDidKeyId,
 		KiltAccountId,
 		KiltBlockNumber,
@@ -864,25 +875,18 @@ impl<
 		MAX_DID_MERKLE_LEAVES_REVEALED,
 	>
 {
-	pub fn get_signing_leaf(
-		&self,
-	) -> &RevealedDidMerkleProofLeaf<KiltDidKeyId, KiltAccountId, KiltBlockNumber, KiltWeb3Name, KiltLinkableAccountId>
-	{
-		&self.revealed_leaves[self.signing_leaf_index]
-	}
-
-	pub fn to_inner(
-		self,
-	) -> BoundedVec<
-		RevealedDidMerkleProofLeaf<KiltDidKeyId, KiltAccountId, KiltBlockNumber, KiltWeb3Name, KiltLinkableAccountId>,
-		ConstU32<MAX_DID_MERKLE_LEAVES_REVEALED>,
-	> {
-		self.revealed_leaves
+	pub fn get_signing_leaf(&self) -> &RevealedDidKey<KiltDidKeyId, KiltBlockNumber, KiltAccountId> {
+		let RevealedDidMerkleProofLeaf::DidKey(did_key) =
+			&self.revealed_leaves[usize::saturated_from(self.signing_leaf_index)]
+		else {
+			panic!("Leaf should never fail to be converted to a DID key.")
+		};
+		did_key
 	}
 }
 
 /// Relationship of a key to a DID Document.
-#[derive(Clone, Copy, RuntimeDebug, Encode, Decode, PartialEq, Eq, TypeInfo, PartialOrd, Ord, MaxEncodedLen)]
+#[derive(Clone, Copy, RuntimeDebug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub enum DidKeyRelationship {
 	Encryption,
 	Verification(DidVerificationKeyRelationship),
@@ -908,7 +912,7 @@ impl TryFrom<DidKeyRelationship> for DidVerificationKeyRelationship {
 
 /// All possible Merkle leaf types that can be revealed as part of a DIP
 /// identity Merkle proof.
-#[derive(Clone, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[derive(Clone, Encode, Decode, PartialEq, Eq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub enum RevealedDidMerkleProofLeaf<KeyId, AccountId, BlockNumber, Web3Name, LinkedAccountId> {
 	DidKey(RevealedDidKey<KeyId, BlockNumber, AccountId>),
 	Web3Name(RevealedWeb3Name<Web3Name, BlockNumber>),
@@ -993,7 +997,7 @@ where
 
 /// The details of a DID key after it has been successfully verified in a Merkle
 /// proof.
-#[derive(Clone, Encode, Decode, PartialEq, MaxEncodedLen, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo)]
+#[derive(Clone, Encode, Decode, PartialEq, MaxEncodedLen, Eq, RuntimeDebug, TypeInfo)]
 pub struct RevealedDidKey<KeyId, BlockNumber, AccountId> {
 	/// The key ID, according to the provider's definition.
 	pub id: KeyId,
@@ -1006,7 +1010,7 @@ pub struct RevealedDidKey<KeyId, BlockNumber, AccountId> {
 
 /// The details of a web3name after it has been successfully verified in a
 /// Merkle proof.
-#[derive(Clone, Encode, Decode, PartialEq, MaxEncodedLen, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo)]
+#[derive(Clone, Encode, Decode, PartialEq, MaxEncodedLen, Eq, RuntimeDebug, TypeInfo)]
 pub struct RevealedWeb3Name<Web3Name, BlockNumber> {
 	/// The web3name.
 	pub web3_name: Web3Name,
@@ -1017,5 +1021,5 @@ pub struct RevealedWeb3Name<Web3Name, BlockNumber> {
 
 /// The details of an account after it has been successfully verified in a
 /// Merkle proof.
-#[derive(Clone, Encode, Decode, PartialEq, MaxEncodedLen, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo)]
+#[derive(Clone, Encode, Decode, PartialEq, MaxEncodedLen, Eq, RuntimeDebug, TypeInfo)]
 pub struct RevealedAccountId<AccountId>(pub AccountId);
