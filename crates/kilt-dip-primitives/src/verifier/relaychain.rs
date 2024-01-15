@@ -32,7 +32,7 @@ use crate::{
 	merkle::v0::RevealedDidKey,
 	traits::{DipCallOriginFilter, GetWithArg, GetWithoutArg, Incrementable},
 	utils::OutputOf,
-	DipSignatureVerifiedInfo, Error,
+	DipVerifiedInfo, Error,
 };
 
 /// A KILT-specific DIP identity proof for a parent consumer that supports
@@ -178,7 +178,7 @@ impl<
 		Web3NameOf<KiltRuntime>,
 		LinkableAccountId,
 	>;
-	type VerificationResult = DipSignatureVerifiedInfo<
+	type VerificationResult = DipVerifiedInfo<
 		KeyIdOf<KiltRuntime>,
 		KiltRuntime::AccountId,
 		BlockNumberFor<KiltRuntime>,
@@ -342,7 +342,7 @@ pub mod v0 {
 			Web3NameOf<KiltRuntime>,
 			LinkableAccountId,
 		>;
-		type VerificationResult = DipSignatureVerifiedInfo<
+		type VerificationResult = DipVerifiedInfo<
 			KeyIdOf<KiltRuntime>,
 			KiltRuntime::AccountId,
 			BlockNumberFor<KiltRuntime>,

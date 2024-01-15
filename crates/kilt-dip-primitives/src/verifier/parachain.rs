@@ -31,7 +31,7 @@ use crate::{
 	merkle::v0::RevealedDidKey,
 	traits::{DipCallOriginFilter, GetWithArg, GetWithoutArg, Incrementable},
 	utils::OutputOf,
-	DipSignatureVerifiedInfo, Error,
+	DipVerifiedInfo, Error,
 };
 
 /// A KILT-specific DIP identity proof for a sibling consumer that supports
@@ -47,6 +47,13 @@ pub enum VersionedDipParachainStateProof<
 	KiltBlockNumber,
 	KiltLinkableAccountId,
 	ConsumerBlockNumber,
+	const MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT: u32,
+	const MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE: u32,
+	const MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT: u32,
+	const MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE: u32,
+	const MAX_DID_MERKLE_PROOF_LEAVE_COUNT: u32,
+	const MAX_DID_MERKLE_PROOF_LEAVE_SIZE: u32,
+	const MAX_DID_MERKLE_LEAVES_REVEALED: u32,
 > {
 	V0(
 		crate::merkle::v0::ParachainDipDidProof<
@@ -57,6 +64,13 @@ pub enum VersionedDipParachainStateProof<
 			KiltBlockNumber,
 			KiltLinkableAccountId,
 			ConsumerBlockNumber,
+			MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT,
+			MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE,
+			MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT,
+			MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE,
+			MAX_DID_MERKLE_PROOF_LEAVE_COUNT,
+			MAX_DID_MERKLE_PROOF_LEAVE_SIZE,
+			MAX_DID_MERKLE_LEAVES_REVEALED,
 		>,
 	),
 }
@@ -133,7 +147,13 @@ pub struct KiltVersionedParachainVerifier<
 	KiltRuntime,
 	DidCallVerifier,
 	SignedExtra = (),
-	const MAX_LEAVES_REVEALED: u32 = 50,
+	const MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT: u32 = 10,
+	const MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE: u32 = 128,
+	const MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT: u32 = 10,
+	const MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE: u32 = 128,
+	const MAX_DID_MERKLE_PROOF_LEAVE_COUNT: u32 = 10,
+	const MAX_DID_MERKLE_PROOF_LEAVE_SIZE: u32 = 128,
+	const MAX_DID_MERKLE_LEAVES_REVEALED: u32 = 10,
 >(
 	PhantomData<(
 		RelaychainRuntime,
@@ -152,7 +172,13 @@ impl<
 		KiltRuntime,
 		DidCallVerifier,
 		SignedExtra,
-		const MAX_LEAVES_REVEALED: u32,
+		const MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT: u32,
+		const MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE: u32,
+		const MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT: u32,
+		const MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE: u32,
+		const MAX_DID_MERKLE_PROOF_LEAVE_COUNT: u32,
+		const MAX_DID_MERKLE_PROOF_LEAVE_SIZE: u32,
+		const MAX_DID_MERKLE_LEAVES_REVEALED: u32,
 	> IdentityProofVerifier<ConsumerRuntime>
 	for KiltVersionedParachainVerifier<
 		RelaychainRuntime,
@@ -161,7 +187,13 @@ impl<
 		KiltRuntime,
 		DidCallVerifier,
 		SignedExtra,
-		MAX_LEAVES_REVEALED,
+		MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT,
+		MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE,
+		MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT,
+		MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE,
+		MAX_DID_MERKLE_PROOF_LEAVE_COUNT,
+		MAX_DID_MERKLE_PROOF_LEAVE_SIZE,
+		MAX_DID_MERKLE_LEAVES_REVEALED,
 	> where
 	ConsumerRuntime: pallet_dip_consumer::Config<Identifier = KiltRuntime::Identifier>,
 	ConsumerRuntime::LocalIdentityInfo: Incrementable + Default,
@@ -187,13 +219,21 @@ impl<
 		Web3NameOf<KiltRuntime>,
 		LinkableAccountId,
 		BlockNumberFor<ConsumerRuntime>,
+		MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT,
+		MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE,
+		MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT,
+		MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE,
+		MAX_DID_MERKLE_PROOF_LEAVE_COUNT,
+		MAX_DID_MERKLE_PROOF_LEAVE_SIZE,
+		MAX_DID_MERKLE_LEAVES_REVEALED,
 	>;
-	type VerificationResult = DipSignatureVerifiedInfo<
+	type VerificationResult = DipVerifiedInfo<
 		KeyIdOf<KiltRuntime>,
 		KiltRuntime::AccountId,
 		BlockNumberFor<KiltRuntime>,
 		Web3NameOf<KiltRuntime>,
 		LinkableAccountId,
+		MAX_DID_MERKLE_LEAVES_REVEALED,
 	>;
 
 	fn verify_proof_for_call_against_details(
@@ -229,7 +269,7 @@ pub mod v0 {
 	use frame_system::pallet_prelude::HeaderFor;
 	use sp_runtime::traits::Zero;
 
-	use crate::merkle::v0::{DipSignatureVerifiedInfo, ParachainDipDidProof};
+	use crate::merkle::v0::{DipVerifiedInfo, ParachainDipDidProof};
 
 	pub struct ParachainVerifier<
 		RelaychainRuntime,
@@ -294,7 +334,7 @@ pub mod v0 {
 			BlockNumberFor<ConsumerRuntime>,
 		>;
 
-		type VerificationResult = DipSignatureVerifiedInfo<
+		type VerificationResult = DipVerifiedInfo<
 			KeyIdOf<KiltRuntime>,
 			KiltRuntime::AccountId,
 			BlockNumberFor<KiltRuntime>,

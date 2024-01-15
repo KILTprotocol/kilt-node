@@ -21,8 +21,7 @@ use dip_provider_runtime_template::{AccountId as ProviderAccountId, Runtime as P
 use frame_support::traits::Contains;
 use frame_system::{pallet_prelude::BlockNumberFor, EnsureSigned};
 use kilt_dip_primitives::{
-	merkle::RevealedDidKey, traits::DipCallOriginFilter, KiltVersionedParachainVerifier,
-	RelayStateRootsViaRelayStorePallet,
+	traits::DipCallOriginFilter, KiltVersionedParachainVerifier, RelayStateRootsViaRelayStorePallet, RevealedDidKey,
 };
 use pallet_dip_consumer::traits::IdentityProofVerifier;
 use rococo_runtime::Runtime as RelaychainRuntime;

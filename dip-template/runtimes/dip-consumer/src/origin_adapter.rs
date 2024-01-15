@@ -57,7 +57,7 @@ impl GetUsername for DipOriginAdapter {
 	fn username(&self) -> Result<Self::Username, &'static str> {
 		self.0
 			.details
-			.iter()
+			.iter_leaves()
 			.find_map(|revealed_leaf| {
 				if let RevealedDidMerkleProofLeaf::Web3Name(revealed_web3name_leaf) = revealed_leaf {
 					Some(revealed_web3name_leaf.web3_name.clone())

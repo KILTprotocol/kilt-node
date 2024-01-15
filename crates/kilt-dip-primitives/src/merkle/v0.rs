@@ -42,15 +42,13 @@ use crate::{
 };
 
 #[derive(Clone, RuntimeDebug, Encode, Decode, PartialEq, Eq, TypeInfo)]
-pub struct ProviderHeadStateProof<RelayBlockNumber, const MAX_LEAVE_COUNT: u32, const MAX_LEAVE_SIZE: u32> {
+pub struct ProviderHeadStateProof<RelayBlockNumber> {
 	pub(crate) relay_block_number: RelayBlockNumber,
-	pub(crate) proof: BoundedVec<BoundedVec<u8, ConstU32<MAX_LEAVE_SIZE>>, ConstU32<MAX_LEAVE_COUNT>>,
+	pub(crate) proof: Vec<Vec<u8>>,
 }
 
 #[derive(Clone, RuntimeDebug, Encode, Decode, PartialEq, Eq, TypeInfo)]
-pub struct DipCommitmentStateProof<const MAX_LEAVE_COUNT: u32, const MAX_LEAVE_SIZE: u32>(
-	pub(crate) BoundedVec<BoundedVec<u8, ConstU32<MAX_LEAVE_SIZE>>, ConstU32<MAX_LEAVE_COUNT>>,
-);
+pub struct DipCommitmentStateProof(pub(crate) Vec<Vec<u8>>);
 
 #[derive(Clone, RuntimeDebug, Encode, Decode, PartialEq, Eq, TypeInfo)]
 pub struct DidMerkleProof<
@@ -59,12 +57,9 @@ pub struct DidMerkleProof<
 	ProviderBlockNumber,
 	ProviderWeb3Name,
 	ProviderLinkableAccountId,
-	const MAX_BLINDED_LEAVE_COUNT: u32,
-	const MAX_BLINDED_LEAVE_SIZE: u32,
-	const MAX_LEAVES_REVEALED: u32,
 > {
-	pub(crate) blinded: BoundedVec<BoundedVec<u8, ConstU32<MAX_BLINDED_LEAVE_SIZE>>, ConstU32<MAX_BLINDED_LEAVE_COUNT>>,
-	pub(crate) revealed: BoundedVec<
+	pub(crate) blinded: Vec<Vec<u8>>,
+	pub(crate) revealed: Vec<
 		RevealedDidMerkleProofLeaf<
 			ProviderDidKeyId,
 			ProviderAccountId,
@@ -72,7 +67,6 @@ pub struct DidMerkleProof<
 			ProviderWeb3Name,
 			ProviderLinkableAccountId,
 		>,
-		ConstU32<MAX_LEAVES_REVEALED>,
 	>,
 }
 
@@ -132,32 +126,12 @@ pub struct RelayDipDidProof<
 	KiltBlockNumber,
 	KiltWeb3Name,
 	KiltLinkableAccountId,
-	const MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT: u32 = 10,
-	const MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE: u32 = 128,
-	const MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT: u32 = 10,
-	const MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE: u32 = 128,
-	const MAX_DID_MERKLE_PROOF_LEAVE_COUNT: u32 = 10,
-	const MAX_DID_MERKLE_PROOF_LEAVE_SIZE: u32 = 128,
-	const MAX_DID_MERKLE_LEAVES_REVEALED: u32 = 10,
 > {
 	pub(crate) relay_header: Header<RelayBlockNumber, RelayBlockHasher>,
-	pub(crate) provider_head_proof: ProviderHeadStateProof<
-		RelayBlockNumber,
-		MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT,
-		MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE,
-	>,
-	pub(crate) dip_commitment_proof:
-		DipCommitmentStateProof<MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT, MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE>,
-	pub(crate) dip_proof: DidMerkleProof<
-		KiltDidKeyId,
-		KiltAccountId,
-		KiltBlockNumber,
-		KiltWeb3Name,
-		KiltLinkableAccountId,
-		MAX_DID_MERKLE_PROOF_LEAVE_COUNT,
-		MAX_DID_MERKLE_PROOF_LEAVE_SIZE,
-		MAX_DID_MERKLE_LEAVES_REVEALED,
-	>,
+	pub(crate) provider_head_proof: ProviderHeadStateProof<RelayBlockNumber>,
+	pub(crate) dip_commitment_proof: DipCommitmentStateProof,
+	pub(crate) dip_proof:
+		DidMerkleProof<KiltDidKeyId, KiltAccountId, KiltBlockNumber, KiltWeb3Name, KiltLinkableAccountId>,
 	pub(crate) signature: TimeBoundDidSignature<RelayBlockNumber>,
 }
 
@@ -199,7 +173,7 @@ impl<
 		self,
 		block_hash: &OutputOf<RelayBlockHasher>,
 	) -> Result<
-		RelayHeaderVerifiedParachainDipDidProof<
+		DipDidProofWithVerifiedRelayStateRoot<
 			RelayBlockHasher,
 			RelayBlockNumber,
 			KiltDidKeyId,
@@ -221,7 +195,7 @@ impl<
 			return Err(Error::InvalidRelayHeader);
 		}
 
-		Ok(RelayHeaderVerifiedParachainDipDidProof {
+		Ok(DipDidProofWithVerifiedRelayStateRoot {
 			relay_state_root: self.relay_header.state_root,
 			provider_head_proof: self.provider_head_proof,
 			dip_commitment_proof: self.dip_commitment_proof,
@@ -234,7 +208,7 @@ impl<
 	pub fn verify_relay_header<RelayHashStore>(
 		self,
 	) -> Result<
-		RelayHeaderVerifiedParachainDipDidProof<
+		DipDidProofWithVerifiedRelayStateRoot<
 			RelayBlockHasher,
 			RelayBlockNumber,
 			KiltDidKeyId,
@@ -260,7 +234,7 @@ impl<
 	}
 }
 
-pub struct RelayHeaderVerifiedParachainDipDidProof<
+pub struct DipDidProofWithVerifiedRelayStateRoot<
 	RelayHasher: Hash,
 	RelayBlockNumber,
 	KiltDidKeyId,
@@ -268,13 +242,13 @@ pub struct RelayHeaderVerifiedParachainDipDidProof<
 	KiltBlockNumber,
 	KiltWeb3Name,
 	KiltLinkableAccountId,
-	const MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT: u32 = 10,
-	const MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE: u32 = 128,
-	const MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT: u32 = 10,
-	const MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE: u32 = 128,
-	const MAX_DID_MERKLE_PROOF_LEAVE_COUNT: u32 = 10,
-	const MAX_DID_MERKLE_PROOF_LEAVE_SIZE: u32 = 128,
-	const MAX_DID_MERKLE_LEAVES_REVEALED: u32 = 10,
+	const MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT: u32,
+	const MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE: u32,
+	const MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT: u32,
+	const MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE: u32,
+	const MAX_DID_MERKLE_PROOF_LEAVE_COUNT: u32,
+	const MAX_DID_MERKLE_PROOF_LEAVE_SIZE: u32,
+	const MAX_DID_MERKLE_LEAVES_REVEALED: u32,
 > {
 	pub(crate) relay_state_root: OutputOf<RelayHasher>,
 	pub(crate) provider_head_proof: ProviderHeadStateProof<
@@ -313,7 +287,7 @@ impl<
 		const MAX_DID_MERKLE_PROOF_LEAVE_SIZE: u32,
 		const MAX_DID_MERKLE_LEAVES_REVEALED: u32,
 	>
-	RelayHeaderVerifiedParachainDipDidProof<
+	DipDidProofWithVerifiedRelayStateRoot<
 		RelayHasher,
 		RelayBlockNumber,
 		KiltDidKeyId,
@@ -335,7 +309,7 @@ impl<
 		self,
 		provider_para_id: u32,
 	) -> Result<
-		RelayVerifiedDipProof<
+		DipDidProofWithoutRelayProof<
 			OutputOf<ProviderHeader::Hashing>,
 			KiltDidKeyId,
 			KiltAccountId,
@@ -377,13 +351,13 @@ pub struct ParachainDipDidProof<
 	KiltWeb3Name,
 	KiltLinkableAccountId,
 	ConsumerBlockNumber,
-	const MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT: u32 = 10,
-	const MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE: u32 = 128,
-	const MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT: u32 = 10,
-	const MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE: u32 = 128,
-	const MAX_DID_MERKLE_PROOF_LEAVE_COUNT: u32 = 10,
-	const MAX_DID_MERKLE_PROOF_LEAVE_SIZE: u32 = 128,
-	const MAX_DID_MERKLE_LEAVES_REVEALED: u32 = 10,
+	const MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT: u32,
+	const MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE: u32,
+	const MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT: u32,
+	const MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE: u32,
+	const MAX_DID_MERKLE_PROOF_LEAVE_COUNT: u32,
+	const MAX_DID_MERKLE_PROOF_LEAVE_SIZE: u32,
+	const MAX_DID_MERKLE_LEAVES_REVEALED: u32,
 > {
 	pub(crate) provider_head_proof: ProviderHeadStateProof<
 		RelayBlockNumber,
@@ -444,7 +418,7 @@ impl<
 		provider_para_id: u32,
 		relay_state_root: &OutputOf<RelayHasher>,
 	) -> Result<
-		RelayVerifiedDipProof<
+		DipDidProofWithoutRelayProof<
 			OutputOf<ProviderHeader::Hashing>,
 			KiltDidKeyId,
 			KiltAccountId,
@@ -471,7 +445,7 @@ impl<
 			self.provider_head_proof.proof.into_iter().map(|i| i.into()),
 		)
 		.map_err(Error::ParaHeadMerkleProof)?;
-		Ok(RelayVerifiedDipProof {
+		Ok(DipDidProofWithoutRelayProof {
 			state_root: *provider_header.state_root(),
 			dip_commitment_proof: self.dip_commitment_proof,
 			dip_proof: self.dip_proof,
@@ -484,7 +458,7 @@ impl<
 		self,
 		provider_para_id: u32,
 	) -> Result<
-		RelayVerifiedDipProof<
+		DipDidProofWithoutRelayProof<
 			OutputOf<ProviderHeader::Hashing>,
 			KiltDidKeyId,
 			KiltAccountId,
@@ -514,7 +488,7 @@ impl<
 	}
 }
 
-pub struct RelayVerifiedDipProof<
+pub struct DipDidProofWithoutRelayProof<
 	StateRoot,
 	KiltDidKeyId,
 	KiltAccountId,
@@ -522,11 +496,11 @@ pub struct RelayVerifiedDipProof<
 	KiltWeb3Name,
 	KiltLinkableAccountId,
 	ConsumerBlockNumber,
-	const MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT: u32 = 10,
-	const MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE: u32 = 128,
-	const MAX_DID_MERKLE_PROOF_LEAVE_COUNT: u32 = 10,
-	const MAX_DID_MERKLE_PROOF_LEAVE_SIZE: u32 = 128,
-	const MAX_DID_MERKLE_LEAVES_REVEALED: u32 = 10,
+	const MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT: u32,
+	const MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE: u32,
+	const MAX_DID_MERKLE_PROOF_LEAVE_COUNT: u32,
+	const MAX_DID_MERKLE_PROOF_LEAVE_SIZE: u32,
+	const MAX_DID_MERKLE_LEAVES_REVEALED: u32,
 > {
 	pub(crate) state_root: StateRoot,
 	pub(crate) dip_commitment_proof:
@@ -558,7 +532,7 @@ impl<
 		const MAX_DID_MERKLE_PROOF_LEAVE_SIZE: u32,
 		const MAX_DID_MERKLE_LEAVES_REVEALED: u32,
 	>
-	RelayVerifiedDipProof<
+	DipDidProofWithoutRelayProof<
 		StateRoot,
 		KiltDidKeyId,
 		KiltAccountId,
@@ -578,7 +552,7 @@ impl<
 		self,
 		subject: &ProviderRuntime::Identifier,
 	) -> Result<
-		CommitmentVerifiedProof<
+		DipDidProofWithVerifiedCommitment<
 			Commitment,
 			KiltDidKeyId,
 			KiltAccountId,
@@ -607,7 +581,7 @@ impl<
 			self.dip_commitment_proof.0.into_iter().map(|i| i.into()),
 		)
 		.map_err(Error::DipCommitmentMerkleProof)?;
-		Ok(CommitmentVerifiedProof {
+		Ok(DipDidProofWithVerifiedCommitment {
 			dip_commitment,
 			dip_proof: self.dip_proof,
 			signature: self.signature,
@@ -615,7 +589,7 @@ impl<
 	}
 }
 
-pub struct CommitmentVerifiedProof<
+pub struct DipDidProofWithVerifiedCommitment<
 	Commitment,
 	KiltDidKeyId,
 	KiltAccountId,
@@ -623,9 +597,9 @@ pub struct CommitmentVerifiedProof<
 	KiltWeb3Name,
 	KiltLinkableAccountId,
 	ConsumerBlockNumber,
-	const MAX_DID_MERKLE_PROOF_LEAVE_COUNT: u32 = 10,
-	const MAX_DID_MERKLE_PROOF_LEAVE_SIZE: u32 = 128,
-	const MAX_DID_MERKLE_LEAVES_REVEALED: u32 = 10,
+	const MAX_DID_MERKLE_PROOF_LEAVE_COUNT: u32,
+	const MAX_DID_MERKLE_PROOF_LEAVE_SIZE: u32,
+	const MAX_DID_MERKLE_LEAVES_REVEALED: u32,
 > {
 	pub(crate) dip_commitment: Commitment,
 	pub(crate) dip_proof: DidMerkleProof<
@@ -653,7 +627,7 @@ impl<
 		const MAX_DID_MERKLE_PROOF_LEAVE_SIZE: u32,
 		const MAX_DID_MERKLE_LEAVES_REVEALED: u32,
 	>
-	CommitmentVerifiedProof<
+	DipDidProofWithVerifiedCommitment<
 		Commitment,
 		KiltDidKeyId,
 		KiltAccountId,
@@ -674,7 +648,7 @@ impl<
 	pub fn verify_dip_proof<MerkleHasher>(
 		self,
 	) -> Result<
-		DipVerifiedProof<
+		DipDetailsAndUnverifiedDidSignatureTime<
 			KiltDidKeyId,
 			KiltAccountId,
 			KiltBlockNumber,
@@ -714,21 +688,21 @@ impl<
 		)
 		.map_err(|_| Error::InvalidDidMerkleProof)?;
 
-		Ok(DipVerifiedProof {
+		Ok(DipDetailsAndUnverifiedDidSignatureTime {
 			revealed_leaves: self.dip_proof.revealed,
 			signature: self.signature,
 		})
 	}
 }
 
-pub struct DipVerifiedProof<
+pub struct DipDetailsAndUnverifiedDidSignatureTime<
 	KiltDidKeyId,
 	KiltAccountId,
 	KiltBlockNumber,
 	KiltWeb3Name,
 	KiltLinkableAccountId,
 	ConsumerBlockNumber,
-	const MAX_DID_MERKLE_LEAVES_REVEALED: u32 = 10,
+	const MAX_DID_MERKLE_LEAVES_REVEALED: u32,
 > {
 	pub(crate) revealed_leaves: BoundedVec<
 		RevealedDidMerkleProofLeaf<KiltDidKeyId, KiltAccountId, KiltBlockNumber, KiltWeb3Name, KiltLinkableAccountId>,
@@ -746,7 +720,7 @@ impl<
 		ConsumerBlockNumber,
 		const MAX_DID_MERKLE_LEAVES_REVEALED: u32,
 	>
-	DipVerifiedProof<
+	DipDetailsAndUnverifiedDidSignatureTime<
 		KiltDidKeyId,
 		KiltAccountId,
 		KiltBlockNumber,
@@ -761,7 +735,7 @@ impl<
 		self,
 		block_number: &ConsumerBlockNumber,
 	) -> Result<
-		DipSignatureTimeVerifiedProof<
+		DipDetailsAndUnverifiedDidSignaturePayload<
 			KiltDidKeyId,
 			KiltAccountId,
 			KiltBlockNumber,
@@ -772,20 +746,20 @@ impl<
 		Error,
 	> {
 		ensure!(self.signature.valid_until >= *block_number, Error::InvalidSignatureTime);
-		Ok(DipSignatureTimeVerifiedProof {
+		Ok(DipDetailsAndUnverifiedDidSignaturePayload {
 			revealed_leaves: self.revealed_leaves,
 			signature: self.signature.signature,
 		})
 	}
 }
 
-pub struct DipSignatureTimeVerifiedProof<
+pub struct DipDetailsAndUnverifiedDidSignaturePayload<
 	KiltDidKeyId,
 	KiltAccountId,
 	KiltBlockNumber,
 	KiltWeb3Name,
 	KiltLinkableAccountId,
-	const MAX_DID_MERKLE_LEAVES_REVEALED: u32 = 10,
+	const MAX_DID_MERKLE_LEAVES_REVEALED: u32,
 > {
 	pub(crate) revealed_leaves: BoundedVec<
 		RevealedDidMerkleProofLeaf<KiltDidKeyId, KiltAccountId, KiltBlockNumber, KiltWeb3Name, KiltLinkableAccountId>,
@@ -802,7 +776,7 @@ impl<
 		KiltLinkableAccountId,
 		const MAX_DID_MERKLE_LEAVES_REVEALED: u32,
 	>
-	DipSignatureTimeVerifiedProof<
+	DipDetailsAndUnverifiedDidSignaturePayload<
 		KiltDidKeyId,
 		KiltAccountId,
 		KiltBlockNumber,
@@ -815,7 +789,7 @@ impl<
 		self,
 		payload: &[u8],
 	) -> Result<
-		DipSignatureVerifiedInfo<
+		DipVerifiedInfo<
 			KiltDidKeyId,
 			KiltAccountId,
 			KiltBlockNumber,
@@ -852,7 +826,7 @@ impl<
 			})
 			.ok_or(Error::InvalidDidKeyRevealed)?;
 
-		Ok(DipSignatureVerifiedInfo {
+		Ok(DipVerifiedInfo {
 			revealed_leaves: self.revealed_leaves,
 			signing_leaf_index: index.saturated_into(),
 		})
@@ -860,13 +834,13 @@ impl<
 }
 
 #[derive(Clone, RuntimeDebug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
-pub struct DipSignatureVerifiedInfo<
+pub struct DipVerifiedInfo<
 	KiltDidKeyId,
 	KiltAccountId,
 	KiltBlockNumber,
 	KiltWeb3Name,
 	KiltLinkableAccountId,
-	const MAX_DID_MERKLE_LEAVES_REVEALED: u32 = 10,
+	const MAX_DID_MERKLE_LEAVES_REVEALED: u32,
 > {
 	revealed_leaves: BoundedVec<
 		RevealedDidMerkleProofLeaf<KiltDidKeyId, KiltAccountId, KiltBlockNumber, KiltWeb3Name, KiltLinkableAccountId>,
@@ -883,7 +857,7 @@ impl<
 		KiltLinkableAccountId,
 		const MAX_DID_MERKLE_LEAVES_REVEALED: u32,
 	>
-	DipSignatureVerifiedInfo<
+	DipVerifiedInfo<
 		KiltDidKeyId,
 		KiltAccountId,
 		KiltBlockNumber,
@@ -892,6 +866,19 @@ impl<
 		MAX_DID_MERKLE_LEAVES_REVEALED,
 	>
 {
+	pub fn iter_leaves(
+		&self,
+	) -> impl Iterator<
+		Item = &RevealedDidMerkleProofLeaf<
+			KiltDidKeyId,
+			KiltAccountId,
+			KiltBlockNumber,
+			KiltWeb3Name,
+			KiltLinkableAccountId,
+		>,
+	> {
+		self.revealed_leaves.iter()
+	}
 	pub fn get_signing_leaf(&self) -> Result<&RevealedDidKey<KiltDidKeyId, KiltBlockNumber, KiltAccountId>, Error> {
 		let RevealedDidMerkleProofLeaf::DidKey(did_key) =
 			&self.revealed_leaves[usize::saturated_from(self.signing_leaf_index)]
