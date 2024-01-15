@@ -16,9 +16,6 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-/// Verification logic to integrate a child chain as a DIP provider.
-// pub mod relaychain;
-pub(crate) mod common;
 /// Verification logic to integrate a sibling chain as a DIP provider.
 pub mod parachain;
 /// Verification logic to integrate a child chain as a DIP provider.
@@ -32,5 +29,5 @@ pub use relaychain::{
 };
 
 pub mod latest {
-	pub use super::{common::latest::*, parachain::latest::*, relaychain::latest::*};
+	pub use super::{parachain::latest::*, relaychain::latest::*};
 }

@@ -26,16 +26,16 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-pub mod did;
 pub mod merkle;
 pub mod state_proofs;
 pub mod traits;
 pub mod utils;
-pub mod verifier;
+// pub mod verifier;
 
-mod test;
-
-pub use merkle::RevealedDidMerkleProofLeaf;
+pub use merkle::{
+	DidKeyRelationship, DidMerkleProof, DipCommitmentProof, Error, ParachainDipDidProof, ProviderHeadProof,
+	RelayDipDidProof, RevealedAccountId, RevealedDidKey, RevealedDidMerkleProofLeaf, RevealedWeb3Name,
+	TimeBoundDidSignature,
+};
 pub use traits::RelayStateRootsViaRelayStorePallet;
-pub use utils::BoundedBlindedValue;
-pub use verifier::*;
+// pub use verifier::*;
