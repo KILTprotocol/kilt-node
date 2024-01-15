@@ -47,13 +47,6 @@ pub enum VersionedDipParachainStateProof<
 	KiltBlockNumber,
 	KiltLinkableAccountId,
 	ConsumerBlockNumber,
-	const MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT: u32,
-	const MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE: u32,
-	const MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT: u32,
-	const MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE: u32,
-	const MAX_DID_MERKLE_PROOF_LEAVE_COUNT: u32,
-	const MAX_DID_MERKLE_PROOF_LEAVE_SIZE: u32,
-	const MAX_DID_MERKLE_LEAVES_REVEALED: u32,
 > {
 	V0(
 		crate::merkle::v0::ParachainDipDidProof<
@@ -64,13 +57,6 @@ pub enum VersionedDipParachainStateProof<
 			KiltBlockNumber,
 			KiltLinkableAccountId,
 			ConsumerBlockNumber,
-			MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT,
-			MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE,
-			MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT,
-			MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE,
-			MAX_DID_MERKLE_PROOF_LEAVE_COUNT,
-			MAX_DID_MERKLE_PROOF_LEAVE_SIZE,
-			MAX_DID_MERKLE_LEAVES_REVEALED,
 		>,
 	),
 }
@@ -219,13 +205,6 @@ impl<
 		Web3NameOf<KiltRuntime>,
 		LinkableAccountId,
 		BlockNumberFor<ConsumerRuntime>,
-		MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT,
-		MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE,
-		MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT,
-		MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE,
-		MAX_DID_MERKLE_PROOF_LEAVE_COUNT,
-		MAX_DID_MERKLE_PROOF_LEAVE_SIZE,
-		MAX_DID_MERKLE_LEAVES_REVEALED,
 	>;
 	type VerificationResult = DipVerifiedInfo<
 		KeyIdOf<KiltRuntime>,
@@ -233,7 +212,6 @@ impl<
 		BlockNumberFor<KiltRuntime>,
 		Web3NameOf<KiltRuntime>,
 		LinkableAccountId,
-		MAX_DID_MERKLE_LEAVES_REVEALED,
 	>;
 
 	fn verify_proof_for_call_against_details(
@@ -251,7 +229,6 @@ impl<
 				KiltRuntime,
 				DidCallVerifier,
 				SignedExtra,
-				MAX_LEAVES_REVEALED,
 			> as IdentityProofVerifier<ConsumerRuntime>>::verify_proof_for_call_against_details(
 				call,
 				subject,
@@ -278,7 +255,13 @@ pub mod v0 {
 		KiltRuntime,
 		DidCallVerifier,
 		SignedExtra,
-		const MAX_LEAVES_REVEALED: u32,
+		const MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT: u32,
+		const MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE: u32,
+		const MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT: u32,
+		const MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE: u32,
+		const MAX_DID_MERKLE_PROOF_LEAVE_COUNT: u32,
+		const MAX_DID_MERKLE_PROOF_LEAVE_SIZE: u32,
+		const MAX_DID_MERKLE_LEAVES_REVEALED: u32,
 	>(
 		PhantomData<(
 			RelaychainRuntime,
@@ -297,7 +280,13 @@ pub mod v0 {
 			KiltRuntime,
 			DidCallVerifier,
 			SignedExtra,
-			const MAX_LEAVES_REVEALED: u32,
+			const MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT: u32,
+			const MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE: u32,
+			const MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT: u32,
+			const MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE: u32,
+			const MAX_DID_MERKLE_PROOF_LEAVE_COUNT: u32,
+			const MAX_DID_MERKLE_PROOF_LEAVE_SIZE: u32,
+			const MAX_DID_MERKLE_LEAVES_REVEALED: u32,
 		> IdentityProofVerifier<ConsumerRuntime>
 		for ParachainVerifier<
 			RelaychainRuntime,
@@ -306,7 +295,13 @@ pub mod v0 {
 			KiltRuntime,
 			DidCallVerifier,
 			SignedExtra,
-			MAX_LEAVES_REVEALED,
+			MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT,
+			MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE,
+			MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT,
+			MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE,
+			MAX_DID_MERKLE_PROOF_LEAVE_COUNT,
+			MAX_DID_MERKLE_PROOF_LEAVE_SIZE,
+			MAX_DID_MERKLE_LEAVES_REVEALED,
 		> where
 		ConsumerRuntime: pallet_dip_consumer::Config<Identifier = KiltRuntime::Identifier>,
 		ConsumerRuntime::LocalIdentityInfo: Incrementable + Default,
@@ -350,6 +345,8 @@ pub mod v0 {
 			proof: Self::Proof,
 		) -> Result<Self::VerificationResult, Self::Error> {
 			// 1. Verify parachain state is finalized by relay chain and fresh.
+			// TODO: Enforce limits passed by the const generics for each step.
+			proof.provider_head_proof.proof
 			let proof_without_relaychain = proof
 				.verify_provider_head_proof::<RelaychainRuntime::Hashing, RelaychainStateRootStore, HeaderFor<KiltRuntime>>(
 					KILT_PARA_ID,
