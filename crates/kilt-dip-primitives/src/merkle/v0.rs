@@ -325,6 +325,7 @@ impl<
 	/// given para ID.
 	///
 	/// The generic types indicate the following:
+	/// * `RelayHasher`: The head data hashing algorithm used by the relaychain.
 	/// * `ProviderHeader`: The type of the parachain header to be revealed in
 	///   the state proof.
 	#[allow(clippy::type_complexity)]
@@ -415,6 +416,11 @@ impl<
 {
 	/// Verifies the head data of the state proof for the provider with the
 	/// given para ID and relaychain state root.
+	///
+	/// The generic types indicate the following:
+	/// * `RelayHasher`: The head data hashing algorithm used by the relaychain.
+	/// * `ProviderHeader`: The type of the parachain header to be revealed in
+	///   the state proof.
 	#[allow(clippy::type_complexity)]
 	pub fn verify_provider_head_proof_with_state_root<RelayHasher, ProviderHeader>(
 		self,

@@ -82,34 +82,8 @@ where
 	}
 }
 
-/// Proof verifier configured given a specific KILT runtime implementation.
-///
-/// The generic types
-/// indicate the following:
-/// * `RelaychainRuntime`: The relaychain runtime definition.
-/// * `RelaychainStateRootStore`: A type providing state roots for relaychain
-///   blocks.
-/// * `KILT_PARA_ID`: The ID of the specific KILT parachain instance.
-/// * `KiltRuntime`: A KILT runtime definition.
-/// * `DidCallVerifier`: Logic to map `RuntimeCall`s to a specific DID key
-///   relationship. This information is used once the Merkle proof is verified,
-///   to filter only the revealed keys that match the provided relationship.
-/// * `SignedExtra`: Any additional information that must be signed by the DID
-///   subject in the cross-chain operation.
-/// * `MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT`: The maximum number of leaves that
-///   can be revealed as part of the parachain head storage proof.
-/// * `MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE`: The maximum size of each leaf
-///   revealed as part of the parachain head storage proof.
-/// * `MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT`: The maximum number of leaves that
-///   can be revealed as part of the DIP commitment storage proof.
-/// * `MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE`: The maximum size of each leaf
-///   revealed as part of the DIP commitment storage proof.
-/// * `MAX_DID_MERKLE_PROOF_LEAVE_COUNT`: The maximum number of *blinded* leaves
-///   that can be revealed as part of the DID Merkle proof.
-/// * `MAX_DID_MERKLE_PROOF_LEAVE_SIZE`: The maximum size of each *blinded* leaf
-///   revealed as part of the DID Merkle proof.
-/// * `MAX_DID_MERKLE_PROOF_LEAVE_SIZE`: The maximum number of leaves that can
-///   be revealed as part of the DID Merkle proof.
+/// Versioned proof verifier. For version-specific description, refer to each
+/// verifier's documentation.
 pub struct KiltVersionedParachainVerifier<
 	RelaychainRuntime,
 	RelaychainStateRootStore,
@@ -244,6 +218,35 @@ pub mod v0 {
 
 	use crate::merkle::v0::ParachainDipDidProof;
 
+	/// Proof verifier configured given a specific KILT runtime implementation.
+	///
+	/// The generic types
+	/// indicate the following:
+	/// * `RelaychainRuntime`: The relaychain runtime definition.
+	/// * `RelaychainStateRootStore`: A type providing state roots for
+	///   relaychain blocks.
+	/// * `KILT_PARA_ID`: The ID of the specific KILT parachain instance.
+	/// * `KiltRuntime`: A KILT runtime definition.
+	/// * `DidCallVerifier`: Logic to map `RuntimeCall`s to a specific DID key
+	///   relationship. This information is used once the Merkle proof is
+	///   verified, to filter only the revealed keys that match the provided
+	///   relationship.
+	/// * `SignedExtra`: Any additional information that must be signed by the
+	///   DID subject in the cross-chain operation.
+	/// * `MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT`: The maximum number of leaves
+	///   that can be revealed as part of the parachain head storage proof.
+	/// * `MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE`: The maximum size of each leaf
+	///   revealed as part of the parachain head storage proof.
+	/// * `MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT`: The maximum number of leaves
+	///   that can be revealed as part of the DIP commitment storage proof.
+	/// * `MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE`: The maximum size of each leaf
+	///   revealed as part of the DIP commitment storage proof.
+	/// * `MAX_DID_MERKLE_PROOF_LEAVE_COUNT`: The maximum number of *blinded*
+	///   leaves that can be revealed as part of the DID Merkle proof.
+	/// * `MAX_DID_MERKLE_PROOF_LEAVE_SIZE`: The maximum size of each *blinded*
+	///   leaf revealed as part of the DID Merkle proof.
+	/// * `MAX_DID_MERKLE_PROOF_LEAVE_SIZE`: The maximum number of leaves that
+	///   can be revealed as part of the DID Merkle proof.
 	pub struct ParachainVerifier<
 		RelaychainRuntime,
 		RelaychainStateRootStore,
