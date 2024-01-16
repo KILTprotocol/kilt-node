@@ -253,7 +253,7 @@ pub mod v0 {
 	use frame_system::pallet_prelude::HeaderFor;
 	use sp_runtime::traits::Zero;
 
-	use crate::merkle::v0::{DipVerifiedInfo, ParachainDipDidProof};
+	use crate::merkle::v0::ParachainDipDidProof;
 
 	pub struct ParachainVerifier<
 		RelaychainRuntime,
