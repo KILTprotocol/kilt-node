@@ -157,7 +157,7 @@ impl From<Error> for u8 {
 ///
 /// The generic types indicate the following:
 /// * `RelayBlockNumber`: The `BlockNumber` definition of the relaychain.
-/// * `RelayBlockHasher`: The hashing algorithm used by the relaychain.
+/// * `RelayHasher`: The hashing algorithm used by the relaychain.
 /// * `KiltDidKeyId`: The DID key ID type configured by the KILT chain.
 /// * `KiltAccountId`: The `AccountId` type configured by the KILT chain.
 /// * `KiltBlockNumber`: The `BlockNumber` type configured by the KILT chain.
@@ -167,7 +167,7 @@ impl From<Error> for u8 {
 #[derive(Clone, RuntimeDebug, Encode, Decode, PartialEq, Eq, TypeInfo)]
 pub struct RelayDipDidProof<
 	RelayBlockNumber: Copy + Into<U256> + TryFrom<U256>,
-	RelayBlockHasher: Hash,
+	RelayHasher: Hash,
 	KiltDidKeyId,
 	KiltAccountId,
 	KiltBlockNumber,
@@ -176,7 +176,7 @@ pub struct RelayDipDidProof<
 > {
 	/// The relaychain header for the relaychain block specified in the
 	/// `provider_head_proof`.
-	pub(crate) relay_header: Header<RelayBlockNumber, RelayBlockHasher>,
+	pub(crate) relay_header: Header<RelayBlockNumber, RelayHasher>,
 	/// The state proof for the given parachain head.
 	pub(crate) provider_head_proof: ProviderHeadStateProof<RelayBlockNumber>,
 	/// The raw state proof for the DIP commitment of the given subject.
@@ -190,7 +190,7 @@ pub struct RelayDipDidProof<
 
 impl<
 		RelayBlockNumber: Member + sp_std::hash::Hash + Copy + MaybeDisplay + AtLeast32BitUnsigned + Codec + Into<U256> + TryFrom<U256>,
-		RelayBlockHasher: Hash,
+		RelayHasher: Hash,
 		KiltDidKeyId,
 		KiltAccountId,
 		KiltBlockNumber,
@@ -199,7 +199,7 @@ impl<
 	>
 	RelayDipDidProof<
 		RelayBlockNumber,
-		RelayBlockHasher,
+		RelayHasher,
 		KiltDidKeyId,
 		KiltAccountId,
 		KiltBlockNumber,
@@ -212,10 +212,10 @@ impl<
 	#[allow(clippy::type_complexity)]
 	pub fn verify_relay_header_with_block_hash(
 		self,
-		block_hash: &OutputOf<RelayBlockHasher>,
+		block_hash: &OutputOf<RelayHasher>,
 	) -> Result<
 		DipDidProofWithVerifiedRelayStateRoot<
-			RelayBlockHasher,
+			OutputOf<RelayHasher>,
 			RelayBlockNumber,
 			KiltDidKeyId,
 			KiltAccountId,
@@ -249,7 +249,7 @@ impl<
 		self,
 	) -> Result<
 		DipDidProofWithVerifiedRelayStateRoot<
-			RelayBlockHasher,
+			OutputOf<RelayHasher>,
 			RelayBlockNumber,
 			KiltDidKeyId,
 			KiltAccountId,
@@ -260,7 +260,7 @@ impl<
 		Error,
 	>
 	where
-		RelayHashStore: GetWithArg<RelayBlockNumber, Result = Option<OutputOf<RelayBlockHasher>>>,
+		RelayHashStore: GetWithArg<RelayBlockNumber, Result = Option<OutputOf<RelayHasher>>>,
 	{
 		let relay_block_hash = RelayHashStore::get(&self.relay_header.number).ok_or(Error::RelayBlockNotFound)?;
 		self.verify_relay_header_with_block_hash(&relay_block_hash)
@@ -271,7 +271,7 @@ impl<
 /// verified against a given block hash.
 ///
 /// The generic types indicate the following:
-/// * `RelayBlockHasher`: The hashing algorithm used by the relaychain.
+/// * `StateRoot`: The type of the state root used by the relaychain.
 /// * `RelayBlockNumber`: The `BlockNumber` definition of the relaychain.
 /// * `KiltDidKeyId`: The DID key ID type configured by the KILT chain.
 /// * `KiltAccountId`: The `AccountId` type configured by the KILT chain.
@@ -280,7 +280,7 @@ impl<
 /// * `KiltLinkableAccountId`: The linkable account ID type configured by the
 ///   KILT chain.
 pub struct DipDidProofWithVerifiedRelayStateRoot<
-	RelayHasher: Hash,
+	StateRoot,
 	RelayBlockNumber,
 	KiltDidKeyId,
 	KiltAccountId,
@@ -290,7 +290,7 @@ pub struct DipDidProofWithVerifiedRelayStateRoot<
 > {
 	/// The verified state root for the relaychain at the block specified in the
 	/// proof.
-	pub(crate) relay_state_root: OutputOf<RelayHasher>,
+	pub(crate) relay_state_root: StateRoot,
 	/// The state proof for the given parachain head.
 	pub(crate) provider_head_proof: ProviderHeadStateProof<RelayBlockNumber>,
 	/// The raw state proof for the DIP commitment of the given subject.
@@ -303,7 +303,7 @@ pub struct DipDidProofWithVerifiedRelayStateRoot<
 }
 
 impl<
-		RelayHasher: Hash,
+		StateRoot,
 		RelayBlockNumber,
 		KiltDidKeyId,
 		KiltAccountId,
@@ -312,7 +312,7 @@ impl<
 		KiltLinkableAccountId,
 	>
 	DipDidProofWithVerifiedRelayStateRoot<
-		RelayHasher,
+		StateRoot,
 		RelayBlockNumber,
 		KiltDidKeyId,
 		KiltAccountId,
@@ -328,12 +328,12 @@ impl<
 	/// * `ProviderHeader`: The type of the parachain header to be revealed in
 	///   the state proof.
 	#[allow(clippy::type_complexity)]
-	pub fn verify_provider_head_proof<ProviderHeader>(
+	pub fn verify_provider_head_proof<RelayHasher, ProviderHeader>(
 		self,
 		provider_para_id: u32,
 	) -> Result<
 		DipDidProofWithoutRelayProof<
-			OutputOf<ProviderHeader::Hashing>,
+			OutputOf<RelayHasher>,
 			KiltDidKeyId,
 			KiltAccountId,
 			KiltBlockNumber,
@@ -344,7 +344,8 @@ impl<
 		Error,
 	>
 	where
-		ProviderHeader: Decode + HeaderT,
+		RelayHasher: Hash<Output = StateRoot>,
+		ProviderHeader: Decode + HeaderT<Hash = OutputOf<RelayHasher>>,
 	{
 		let parachain_dip_proof = ParachainDipDidProof {
 			provider_head_proof: self.provider_head_proof,
@@ -421,7 +422,7 @@ impl<
 		relay_state_root: &OutputOf<RelayHasher>,
 	) -> Result<
 		DipDidProofWithoutRelayProof<
-			OutputOf<ProviderHeader::Hashing>,
+			OutputOf<RelayHasher>,
 			KiltDidKeyId,
 			KiltAccountId,
 			KiltBlockNumber,
@@ -433,7 +434,7 @@ impl<
 	>
 	where
 		RelayHasher: Hash,
-		ProviderHeader: Decode + HeaderT,
+		ProviderHeader: Decode + HeaderT<Hash = OutputOf<RelayHasher>>,
 	{
 		let provider_head_storage_key = calculate_parachain_head_storage_key(provider_para_id);
 		let provider_header = verify_storage_value_proof::<_, RelayHasher, ProviderHeader>(
@@ -467,7 +468,7 @@ impl<
 		provider_para_id: u32,
 	) -> Result<
 		DipDidProofWithoutRelayProof<
-			OutputOf<ProviderHeader::Hashing>,
+			OutputOf<RelayHasher>,
 			KiltDidKeyId,
 			KiltAccountId,
 			KiltBlockNumber,
@@ -480,7 +481,7 @@ impl<
 	where
 		RelayHasher: Hash,
 		StateRootStore: GetWithArg<RelayBlockNumber, Result = Option<OutputOf<RelayHasher>>>,
-		ProviderHeader: Decode + HeaderT,
+		ProviderHeader: Decode + HeaderT<Hash = OutputOf<RelayHasher>>,
 	{
 		let relay_state_root =
 			StateRootStore::get(&self.provider_head_proof.relay_block_number).ok_or(Error::RelayStateRootNotFound)?;
@@ -547,18 +548,16 @@ impl<
 	/// the given identifier.
 	///
 	/// The generic types indicate the following:
-	/// * `MerkleHasher`: The hashing algorithm used to generate the identity
-	///   commitment.
+	/// * `ParachainHasher`: The hashing algorithm used to hash storage on the
+	///   parachain.
 	/// * `ProviderRuntime`: The provider runtime definition.
-	/// * `Commitment`: The provider definition of an identity commitment.
 	#[allow(clippy::type_complexity)]
-	// TODO: Refactor this.
-	pub fn verify_dip_commitment_proof_for_subject<MerkleHasher, ProviderRuntime, Commitment>(
+	pub fn verify_dip_commitment_proof_for_subject<ParachainHasher, ProviderRuntime>(
 		self,
 		subject: &ProviderRuntime::Identifier,
 	) -> Result<
 		DipDidProofWithVerifiedCommitment<
-			Commitment,
+			IdentityCommitmentOf<ProviderRuntime>,
 			KiltDidKeyId,
 			KiltAccountId,
 			KiltBlockNumber,
@@ -569,17 +568,15 @@ impl<
 		Error,
 	>
 	where
-		MerkleHasher: Hash,
-		StateRoot: Into<OutputOf<MerkleHasher>>,
+		StateRoot: Ord,
+		ParachainHasher: Hash<Output = StateRoot>,
 		ProviderRuntime: pallet_dip_provider::Config,
-		Commitment: Decode,
-		OutputOf<MerkleHasher>: Into<Commitment>,
 	{
 		let dip_commitment_storage_key =
 			calculate_dip_identity_commitment_storage_key_for_runtime::<ProviderRuntime>(subject, 0);
-		let dip_commitment = verify_storage_value_proof::<_, MerkleHasher, Commitment>(
+		let dip_commitment = verify_storage_value_proof::<_, ParachainHasher, IdentityCommitmentOf<ProviderRuntime>>(
 			&dip_commitment_storage_key,
-			self.state_root.into(),
+			self.state_root,
 			self.dip_commitment_proof.0,
 		)
 		.map_err(Error::DipCommitmentMerkleProof)?;
@@ -650,9 +647,9 @@ impl<
 	/// Verifies the Merkle proof of the subject's DID details.
 	///
 	/// The generic types indicate the following:
-	/// * `MerkleHasher`: The hashing algorithm used to merkleize the DID
+	/// * `DidMerkleHasher`: The hashing algorithm used to merkleize the DID
 	///   details.
-	pub fn verify_dip_proof<MerkleHasher>(
+	pub fn verify_dip_proof<DidMerkleHasher>(
 		self,
 	) -> Result<
 		DipDetailsAndUnverifiedDidSignatureTime<
@@ -666,7 +663,7 @@ impl<
 		Error,
 	>
 	where
-		MerkleHasher: Hash<Output = Commitment>,
+		DidMerkleHasher: Hash<Output = Commitment>,
 	{
 		let proof_leaves_key_value_pairs: Vec<(Vec<u8>, Option<Vec<u8>>)> = self
 			.dip_proof
@@ -676,7 +673,7 @@ impl<
 			.map(|revealed_leaf| (revealed_leaf.encoded_key(), Some(revealed_leaf.encoded_value())))
 			.collect();
 
-		verify_trie_proof::<LayoutV1<MerkleHasher>, _, _, _>(
+		verify_trie_proof::<LayoutV1<DidMerkleHasher>, _, _, _>(
 			&self.dip_commitment,
 			self.dip_proof.blinded.as_slice(),
 			&proof_leaves_key_value_pairs,

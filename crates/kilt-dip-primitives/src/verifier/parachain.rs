@@ -20,7 +20,7 @@ use did::KeyIdOf;
 use frame_system::pallet_prelude::BlockNumberFor;
 use pallet_did_lookup::linkable_account::LinkableAccountId;
 use pallet_dip_consumer::{traits::IdentityProofVerifier, RuntimeCallOf};
-use pallet_dip_provider::IdentityCommitmentOf;
+use pallet_dip_provider::traits::IdentityCommitmentGenerator;
 use pallet_web3_names::Web3NameOf;
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
@@ -170,8 +170,13 @@ impl<
 	RelaychainRuntime: frame_system::Config,
 	RelaychainStateRootStore:
 		GetWithArg<BlockNumberFor<RelaychainRuntime>, Result = Option<OutputOf<RelaychainRuntime::Hashing>>>,
-	KiltRuntime: pallet_dip_provider::Config + did::Config + pallet_web3_names::Config + pallet_did_lookup::Config,
-	IdentityCommitmentOf<KiltRuntime>: Into<KiltRuntime::Hash>,
+	KiltRuntime: frame_system::Config<Hash = RelaychainRuntime::Hash>
+		+ pallet_dip_provider::Config
+		+ did::Config
+		+ pallet_web3_names::Config
+		+ pallet_did_lookup::Config,
+	KiltRuntime::IdentityCommitmentGenerator:
+		IdentityCommitmentGenerator<KiltRuntime, Output = RelaychainRuntime::Hash>,
 	SignedExtra: GetWithoutArg,
 	SignedExtra::Result: Encode,
 	DidCallVerifier: DipCallOriginFilter<
@@ -299,8 +304,13 @@ pub mod v0 {
 		RelaychainRuntime: frame_system::Config,
 		RelaychainStateRootStore:
 			GetWithArg<BlockNumberFor<RelaychainRuntime>, Result = Option<OutputOf<RelaychainRuntime::Hashing>>>,
-		KiltRuntime: pallet_dip_provider::Config + did::Config + pallet_web3_names::Config + pallet_did_lookup::Config,
-		IdentityCommitmentOf<KiltRuntime>: Into<KiltRuntime::Hash>,
+		KiltRuntime: frame_system::Config<Hash = RelaychainRuntime::Hash>
+			+ pallet_dip_provider::Config
+			+ did::Config
+			+ pallet_web3_names::Config
+			+ pallet_did_lookup::Config,
+		KiltRuntime::IdentityCommitmentGenerator:
+			IdentityCommitmentGenerator<KiltRuntime, Output = RelaychainRuntime::Hash>,
 		SignedExtra: GetWithoutArg,
 		SignedExtra::Result: Encode,
 		DidCallVerifier: DipCallOriginFilter<

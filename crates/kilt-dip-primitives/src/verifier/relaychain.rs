@@ -20,7 +20,7 @@ use did::KeyIdOf;
 use frame_system::pallet_prelude::BlockNumberFor;
 use pallet_did_lookup::linkable_account::LinkableAccountId;
 use pallet_dip_consumer::{traits::IdentityProofVerifier, RuntimeCallOf};
-use pallet_dip_provider::IdentityCommitmentOf;
+use pallet_dip_provider::{traits::IdentityCommitmentGenerator, IdentityCommitmentOf};
 use pallet_web3_names::Web3NameOf;
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
@@ -176,8 +176,12 @@ impl<
 	BlockNumberFor<ConsumerRuntime>: Into<U256> + TryFrom<U256>,
 	ConsumerBlockHashStore:
 		GetWithArg<BlockNumberFor<ConsumerRuntime>, Result = Option<OutputOf<ConsumerRuntime::Hashing>>>,
-	KiltRuntime: pallet_dip_provider::Config + did::Config + pallet_web3_names::Config + pallet_did_lookup::Config,
-	IdentityCommitmentOf<KiltRuntime>: Into<KiltRuntime::Hash>,
+	KiltRuntime: frame_system::Config<Hash = ConsumerRuntime::Hash>
+		+ pallet_dip_provider::Config
+		+ did::Config
+		+ pallet_web3_names::Config
+		+ pallet_did_lookup::Config,
+	KiltRuntime::IdentityCommitmentGenerator: IdentityCommitmentGenerator<KiltRuntime, Output = ConsumerRuntime::Hash>,
 	SignedExtra: GetWithoutArg,
 	SignedExtra::Result: Encode,
 	DidCallVerifier: DipCallOriginFilter<
@@ -364,7 +368,13 @@ pub mod v0 {
 		BlockNumberFor<ConsumerRuntime>: Into<U256> + TryFrom<U256>,
 		ConsumerBlockHashStore:
 			GetWithArg<BlockNumberFor<ConsumerRuntime>, Result = Option<OutputOf<ConsumerRuntime::Hashing>>>,
-		KiltRuntime: pallet_dip_provider::Config + did::Config + pallet_web3_names::Config + pallet_did_lookup::Config,
+		KiltRuntime: frame_system::Config<Hash = ConsumerRuntime::Hash>
+			+ pallet_dip_provider::Config
+			+ did::Config
+			+ pallet_web3_names::Config
+			+ pallet_did_lookup::Config,
+		KiltRuntime::IdentityCommitmentGenerator:
+			IdentityCommitmentGenerator<KiltRuntime, Output = ConsumerRuntime::Hash>,
 		IdentityCommitmentOf<KiltRuntime>: Into<KiltRuntime::Hash>,
 		SignedExtra: GetWithoutArg,
 		SignedExtra::Result: Encode,
@@ -406,12 +416,12 @@ pub mod v0 {
 
 			// 2. Verify parachain state is finalized by relay chain and fresh.
 			let proof_without_relaychain = proof_without_header
-				.verify_provider_head_proof::<HeaderFor<KiltRuntime>>(KILT_PARA_ID)
+				.verify_provider_head_proof::<ConsumerRuntime::Hashing, HeaderFor<KiltRuntime>>(KILT_PARA_ID)
 				.map_err(DipRelaychainStateProofVerifierError::ProofVerification)?;
 
 			// 3. Verify commitment is included in provider parachain state.
 			let proof_without_parachain = proof_without_relaychain
-				.verify_dip_commitment_proof_for_subject::<KiltRuntime::Hashing, KiltRuntime, _>(subject)
+				.verify_dip_commitment_proof_for_subject::<KiltRuntime::Hashing, KiltRuntime>(subject)
 				.map_err(DipRelaychainStateProofVerifierError::ProofVerification)?;
 
 			// 4. Verify DIP Merkle proof.
