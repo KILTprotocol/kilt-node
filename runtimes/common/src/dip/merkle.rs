@@ -18,7 +18,7 @@
 use did::{DidVerificationKeyRelationship, KeyIdOf};
 use frame_support::RuntimeDebug;
 use frame_system::pallet_prelude::BlockNumberFor;
-use kilt_dip_primitives::RevealedDidMerkleProofLeaf;
+use kilt_dip_primitives::DidMerkleProof;
 use pallet_did_lookup::linkable_account::LinkableAccountId;
 use pallet_dip_provider::{
 	traits::{IdentityCommitmentGenerator, IdentityProvider},
@@ -31,29 +31,9 @@ use sp_trie::{generate_trie_proof, LayoutV1, MemoryDB, TrieDBMutBuilder, TrieHas
 
 use crate::dip::did::LinkedDidInfoOf;
 
-#[derive(Clone, RuntimeDebug, Encode, Decode, PartialEq, Eq, TypeInfo)]
-pub struct UnboundDidMerkleProof<
-	ProviderDidKeyId,
-	ProviderAccountId,
-	ProviderBlockNumber,
-	ProviderWeb3Name,
-	ProviderLinkableAccountId,
-> {
-	pub(crate) blinded: Vec<Vec<u8>>,
-	pub(crate) revealed: Vec<
-		RevealedDidMerkleProofLeaf<
-			ProviderDidKeyId,
-			ProviderAccountId,
-			ProviderBlockNumber,
-			ProviderWeb3Name,
-			ProviderLinkableAccountId,
-		>,
-	>,
-}
-
 /// Type of the Merkle proof revealing parts of the DIP identity of a given DID
 /// subject.
-pub type DidMerkleProofOf<T> = UnboundDidMerkleProof<
+pub type DidMerkleProofOf<T> = DidMerkleProof<
 	KeyIdOf<T>,
 	<T as frame_system::Config>::AccountId,
 	BlockNumberFor<T>,
@@ -95,20 +75,135 @@ impl From<DidMerkleProofError> for u16 {
 }
 
 pub mod v0 {
+	use did::did_details::DidDetails;
 	use kilt_dip_primitives::{
 		DidKeyRelationship, RevealedAccountId, RevealedDidKey, RevealedDidMerkleProofLeaf, RevealedWeb3Name,
 	};
+	use pallet_web3_names::Web3NameOf;
+
+	use crate::dip::did::Web3OwnershipOf;
 
 	use super::*;
 
-	/// Type of a Merkle leaf revealed as part of a DIP Merkle proof.
-	type ProofLeafOf<T> = RevealedDidMerkleProofLeaf<
-		KeyIdOf<T>,
-		<T as frame_system::Config>::AccountId,
-		BlockNumberFor<T>,
-		<T as pallet_web3_names::Config>::Web3Name,
-		LinkableAccountId,
-	>;
+	fn get_auth_leaves<Runtime>(
+		did_details: &DidDetails<Runtime>,
+	) -> Result<
+		impl Iterator<Item = RevealedDidKey<KeyIdOf<Runtime>, BlockNumberFor<Runtime>, Runtime::AccountId>>,
+		DidMerkleProofError,
+	>
+	where
+		Runtime: did::Config,
+	{
+		let auth_key_details = did_details
+			.public_keys
+			.get(&did_details.authentication_key)
+			.ok_or_else(|| {
+				log::error!("Authentication key should be part of the public keys.");
+				DidMerkleProofError::Internal
+			})?;
+		Ok([RevealedDidKey {
+			id: did_details.authentication_key,
+			relationship: DidVerificationKeyRelationship::Authentication.into(),
+			details: auth_key_details.clone(),
+		}]
+		.into_iter())
+	}
+
+	fn get_att_leaves<Runtime>(
+		did_details: &DidDetails<Runtime>,
+	) -> Result<
+		impl Iterator<Item = RevealedDidKey<KeyIdOf<Runtime>, BlockNumberFor<Runtime>, Runtime::AccountId>>,
+		DidMerkleProofError,
+	>
+	where
+		Runtime: did::Config,
+	{
+		let Some(att_key_id) = did_details.attestation_key else {
+			return Ok(vec![].into_iter());
+		};
+		let att_key_details = did_details.public_keys.get(&att_key_id).ok_or_else(|| {
+			log::error!("Attestation key should be part of the public keys.");
+			DidMerkleProofError::Internal
+		})?;
+		Ok(vec![RevealedDidKey {
+			id: att_key_id,
+			relationship: DidVerificationKeyRelationship::AssertionMethod.into(),
+			details: att_key_details.clone(),
+		}]
+		.into_iter())
+	}
+
+	fn get_del_leaves<Runtime>(
+		did_details: &DidDetails<Runtime>,
+	) -> Result<
+		impl Iterator<Item = RevealedDidKey<KeyIdOf<Runtime>, BlockNumberFor<Runtime>, Runtime::AccountId>>,
+		DidMerkleProofError,
+	>
+	where
+		Runtime: did::Config,
+	{
+		let Some(del_key_id) = did_details.delegation_key else {
+			return Ok(vec![].into_iter());
+		};
+		let del_key_details = did_details.public_keys.get(&del_key_id).ok_or_else(|| {
+			log::error!("Delegation key should be part of the public keys.");
+			DidMerkleProofError::Internal
+		})?;
+		Ok(vec![RevealedDidKey {
+			id: del_key_id,
+			relationship: DidVerificationKeyRelationship::CapabilityDelegation.into(),
+			details: del_key_details.clone(),
+		}]
+		.into_iter())
+	}
+
+	fn get_enc_leaves<Runtime>(
+		did_details: &DidDetails<Runtime>,
+	) -> Result<
+		impl Iterator<Item = RevealedDidKey<KeyIdOf<Runtime>, BlockNumberFor<Runtime>, Runtime::AccountId>>,
+		DidMerkleProofError,
+	>
+	where
+		Runtime: did::Config,
+	{
+		let keys = did_details
+			.key_agreement_keys
+			.iter()
+			.map(|id| {
+				let key_agreement_details = did_details.public_keys.get(id).ok_or_else(|| {
+					log::error!("Key agreement key should be part of the public keys.");
+					DidMerkleProofError::Internal
+				})?;
+				Ok(RevealedDidKey {
+					id: *id,
+					relationship: DidKeyRelationship::Encryption,
+					details: key_agreement_details.clone(),
+				})
+			})
+			.collect::<Result<Vec<_>, _>>()?;
+		Ok(keys.into_iter())
+	}
+
+	fn get_linked_account_leaves(
+		linked_accounts: &[LinkableAccountId],
+	) -> impl Iterator<Item = RevealedAccountId<LinkableAccountId>> {
+		let leaves = linked_accounts
+			.iter()
+			.map(|linked_account| RevealedAccountId(linked_account.clone()));
+		leaves.collect::<Vec<_>>().into_iter()
+	}
+
+	fn get_web3name_leaf<Runtime>(
+		web3name_details: &Web3OwnershipOf<Runtime>,
+	) -> RevealedWeb3Name<Web3NameOf<Runtime>, BlockNumberFor<Runtime>>
+	where
+		Runtime: pallet_web3_names::Config,
+	{
+		RevealedWeb3Name {
+			web3_name: web3name_details.web3_name.clone(),
+			claimed_at: web3name_details.claimed_at,
+		}
+	}
 
 	/// Given the provided DID info, it calculates the Merkle commitment (root)
 	/// using the provided in-memory DB.
@@ -127,135 +222,41 @@ pub mod v0 {
 		let mut trie = TrieHash::<LayoutV1<Runtime::Hashing>>::default();
 		let mut trie_builder = TrieDBMutBuilder::<LayoutV1<Runtime::Hashing>>::new(db, &mut trie).build();
 
-		// Authentication key
-		let auth_key_details = did_details
-			.public_keys
-			.get(&did_details.authentication_key)
-			.ok_or_else(|| {
-				log::error!("Authentication key should be part of the public keys.");
-				DidMerkleProofError::Internal
-			})?;
-		let auth_leaf = ProofLeafOf::<Runtime>::from(RevealedDidKey {
-			id: did_details.authentication_key,
-			relationship: DidVerificationKeyRelationship::Authentication.into(),
-			details: auth_key_details.clone(),
-		});
-		trie_builder
-			.insert(auth_leaf.encoded_key().as_slice(), auth_leaf.encoded_value().as_slice())
-			.map_err(|_| {
-				log::error!(
-					"Failed to insert authentication key in the trie builder. Authentication leaf: {:#?}",
-					auth_leaf
-				);
-				DidMerkleProofError::Internal
-			})?;
-		// Attestation key, if present
-		if let Some(att_key_id) = did_details.attestation_key {
-			let att_key_details = did_details.public_keys.get(&att_key_id).ok_or_else(|| {
-				log::error!("Attestation key should be part of the public keys.");
-				DidMerkleProofError::Internal
-			})?;
-			let att_leaf = ProofLeafOf::<Runtime>::from(RevealedDidKey {
-				id: att_key_id,
-				relationship: DidVerificationKeyRelationship::AssertionMethod.into(),
-				details: att_key_details.clone(),
-			});
-			trie_builder
-				.insert(att_leaf.encoded_key().as_slice(), att_leaf.encoded_value().as_slice())
-				.map_err(|_| {
-					log::error!(
-						"Failed to insert attestation key in the trie builder. Attestation leaf: {:#?}",
-						att_leaf
-					);
-					DidMerkleProofError::Internal
-				})?;
-		};
-		// Delegation key, if present
-		if let Some(del_key_id) = did_details.delegation_key {
-			let del_key_details = did_details.public_keys.get(&del_key_id).ok_or_else(|| {
-				log::error!("Delegation key should be part of the public keys.");
-				DidMerkleProofError::Internal
-			})?;
-			let del_leaf = ProofLeafOf::<Runtime>::from(RevealedDidKey {
-				id: del_key_id,
-				relationship: DidVerificationKeyRelationship::CapabilityDelegation.into(),
-				details: del_key_details.clone(),
-			});
-			trie_builder
-				.insert(del_leaf.encoded_key().as_slice(), del_leaf.encoded_value().as_slice())
-				.map_err(|_| {
-					log::error!(
-						"Failed to insert delegation key in the trie builder. Delegation leaf: {:#?}",
-						del_leaf
-					);
-					DidMerkleProofError::Internal
-				})?;
-		};
-		// Key agreement keys
-		did_details
-			.key_agreement_keys
-			.iter()
-			.try_for_each(|id| -> Result<(), DidMerkleProofError> {
-				let key_agreement_details = did_details.public_keys.get(id).ok_or_else(|| {
-					log::error!("Key agreement key should be part of the public keys.");
-					DidMerkleProofError::Internal
-				})?;
-				let enc_leaf = ProofLeafOf::<Runtime>::from(RevealedDidKey {
-					id: *id,
-					relationship: DidKeyRelationship::Encryption,
-					details: key_agreement_details.clone(),
-				});
-				trie_builder
-					.insert(enc_leaf.encoded_key().as_slice(), enc_leaf.encoded_value().as_slice())
-					.map_err(|_| {
-						log::error!(
-							"Failed to insert key agreement key in the trie builder. Key agreement leaf: {:#?}",
-							enc_leaf
-						);
-						DidMerkleProofError::Internal
-					})?;
-				Ok(())
-			})?;
+		// Authentication key.
+		let auth_leaves = get_auth_leaves(did_details)?;
+		// Attestation key, if present.
+		let att_leaves = get_att_leaves(did_details)?;
+		// Delegation key, if present.
+		let del_leaves = get_del_leaves(did_details)?;
+		// Key agreement keys.
+		let enc_leaves = get_enc_leaves(did_details)?;
+		// Linked accounts.
+		let linked_accounts = get_linked_account_leaves(linked_accounts);
+		// Web3name.
+		let web3_name = web3_name_details.as_ref().map(get_web3name_leaf::<Runtime>);
 
-		// Linked accounts
-		linked_accounts
-			.iter()
-			.try_for_each(|linked_account| -> Result<(), DidMerkleProofError> {
-				let linked_account_leaf = ProofLeafOf::<Runtime>::from(RevealedAccountId(linked_account.clone()));
-				trie_builder
-					.insert(
-						linked_account_leaf.encoded_key().as_slice(),
-						linked_account_leaf.encoded_value().as_slice(),
-					)
-					.map_err(|_| {
-						log::error!(
-							"Failed to insert linked account in the trie builder. Linked account leaf: {:#?}",
-							linked_account_leaf
-						);
-						DidMerkleProofError::Internal
-					})?;
-				Ok(())
-			})?;
+		// Add all leaves to the proof builder.
+		let keys = auth_leaves
+			.chain(att_leaves)
+			.chain(del_leaves)
+			.chain(enc_leaves)
+			.map(RevealedDidMerkleProofLeaf::from);
+		let linked_accounts = linked_accounts.map(RevealedDidMerkleProofLeaf::from);
+		let web3_names = web3_name
+			.map(|n| vec![n])
+			.unwrap_or(vec![])
+			.into_iter()
+			.map(RevealedDidMerkleProofLeaf::from);
 
-		// Web3name, if present
-		if let Some(web3name_details) = web3_name_details {
-			let web3_name_leaf = ProofLeafOf::<Runtime>::from(RevealedWeb3Name {
-				web3_name: web3name_details.web3_name.clone(),
-				claimed_at: web3name_details.claimed_at,
-			});
+		keys.chain(linked_accounts).chain(web3_names).try_for_each(|leaf| {
 			trie_builder
-				.insert(
-					web3_name_leaf.encoded_key().as_slice(),
-					web3_name_leaf.encoded_value().as_slice(),
-				)
+				.insert(leaf.encoded_key().as_slice(), leaf.encoded_value().as_slice())
 				.map_err(|_| {
-					log::error!(
-						"Failed to insert web3name in the trie builder. Web3name leaf: {:#?}",
-						web3_name_leaf
-					);
+					log::error!("Failed to insert leaf in the trie builder. Leaf: {:#?}", leaf);
 					DidMerkleProofError::Internal
 				})?;
-		}
+			Ok(())
+		})?;
 
 		trie_builder.commit();
 		Ok(trie_builder.root().to_owned())
@@ -347,10 +348,7 @@ pub mod v0 {
 
 		Ok(CompleteMerkleProof {
 			root,
-			proof: DidMerkleProofOf::<Runtime> {
-				blinded: proof,
-				revealed: leaves,
-			},
+			proof: DidMerkleProofOf::<Runtime>::new(proof, leaves),
 		})
 	}
 

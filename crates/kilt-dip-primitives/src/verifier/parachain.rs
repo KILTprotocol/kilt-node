@@ -229,6 +229,13 @@ impl<
 				KiltRuntime,
 				DidCallVerifier,
 				SignedExtra,
+				MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT,
+				MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE,
+				MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT,
+				MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE,
+				MAX_DID_MERKLE_PROOF_LEAVE_COUNT,
+				MAX_DID_MERKLE_PROOF_LEAVE_SIZE,
+				MAX_DID_MERKLE_LEAVES_REVEALED,
 			> as IdentityProofVerifier<ConsumerRuntime>>::verify_proof_for_call_against_details(
 				call,
 				subject,
@@ -346,7 +353,6 @@ pub mod v0 {
 		) -> Result<Self::VerificationResult, Self::Error> {
 			// 1. Verify parachain state is finalized by relay chain and fresh.
 			// TODO: Enforce limits passed by the const generics for each step.
-			proof.provider_head_proof.proof
 			let proof_without_relaychain = proof
 				.verify_provider_head_proof::<RelaychainRuntime::Hashing, RelaychainStateRootStore, HeaderFor<KiltRuntime>>(
 					KILT_PARA_ID,

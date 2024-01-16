@@ -70,6 +70,25 @@ pub struct DidMerkleProof<
 	>,
 }
 
+impl<ProviderDidKeyId, ProviderAccountId, ProviderBlockNumber, ProviderWeb3Name, ProviderLinkableAccountId>
+	DidMerkleProof<ProviderDidKeyId, ProviderAccountId, ProviderBlockNumber, ProviderWeb3Name, ProviderLinkableAccountId>
+{
+	pub fn new(
+		blinded: Vec<Vec<u8>>,
+		revealed: Vec<
+			RevealedDidMerkleProofLeaf<
+				ProviderDidKeyId,
+				ProviderAccountId,
+				ProviderBlockNumber,
+				ProviderWeb3Name,
+				ProviderLinkableAccountId,
+			>,
+		>,
+	) -> Self {
+		Self { blinded, revealed }
+	}
+}
+
 /// A DID signature anchored to a specific block height.
 #[derive(Clone, RuntimeDebug, Encode, Decode, PartialEq, Eq, TypeInfo)]
 pub struct TimeBoundDidSignature<BlockNumber> {
@@ -152,6 +171,7 @@ impl<
 		KiltLinkableAccountId,
 	>
 {
+	#[allow(clippy::type_complexity)]
 	pub fn verify_relay_header_with_block_hash(
 		self,
 		block_hash: &OutputOf<RelayBlockHasher>,
@@ -180,6 +200,7 @@ impl<
 		})
 	}
 
+	#[allow(clippy::type_complexity)]
 	pub fn verify_relay_header<RelayHashStore>(
 		self,
 	) -> Result<
@@ -238,6 +259,7 @@ impl<
 		KiltLinkableAccountId,
 	>
 {
+	#[allow(clippy::type_complexity)]
 	pub fn verify_provider_head_proof<ProviderHeader>(
 		self,
 		provider_para_id: u32,
@@ -306,6 +328,7 @@ impl<
 		ConsumerBlockNumber,
 	>
 {
+	#[allow(clippy::type_complexity)]
 	pub fn verify_provider_head_proof_with_state_root<RelayHasher, ProviderHeader>(
 		self,
 		provider_para_id: u32,
@@ -330,7 +353,7 @@ impl<
 		let provider_header = verify_storage_value_proof::<_, RelayHasher, ProviderHeader>(
 			&provider_head_storage_key,
 			*relay_state_root,
-			self.provider_head_proof.proof.into_iter().map(|i| i.into()),
+			self.provider_head_proof.proof,
 		)
 		.map_err(Error::ParaHeadMerkleProof)?;
 		Ok(DipDidProofWithoutRelayProof {
@@ -341,6 +364,7 @@ impl<
 		})
 	}
 
+	#[allow(clippy::type_complexity)]
 	pub fn verify_provider_head_proof<RelayHasher, StateRootStore, ProviderHeader>(
 		self,
 		provider_para_id: u32,
@@ -405,6 +429,7 @@ impl<
 		ConsumerBlockNumber,
 	>
 {
+	#[allow(clippy::type_complexity)]
 	pub fn verify_dip_commitment_proof_for_subject<MerkleHasher, ProviderRuntime, Commitment>(
 		self,
 		subject: &ProviderRuntime::Identifier,
@@ -432,7 +457,7 @@ impl<
 		let dip_commitment = verify_storage_value_proof::<_, MerkleHasher, Commitment>(
 			&dip_commitment_storage_key,
 			self.state_root.into(),
-			self.dip_commitment_proof.0.into_iter().map(|i| i.into()),
+			self.dip_commitment_proof.0,
 		)
 		.map_err(Error::DipCommitmentMerkleProof)?;
 		Ok(DipDidProofWithVerifiedCommitment {
@@ -498,24 +523,17 @@ impl<
 	where
 		MerkleHasher: Hash<Output = Commitment>,
 	{
-		let mut revealed_keys = self.dip_proof.revealed.iter();
-
-		// If there are more keys than MAX_LEAVES_REVEALED, bail out.
-		ensure!(revealed_keys.next().is_none(), Error::TooManyDidLeaves,);
-
-		let proof_leaves_key_value_pairs: Vec<(Vec<u8>, Option<Vec<u8>>)> = revealed_keys
+		let proof_leaves_key_value_pairs: Vec<(Vec<u8>, Option<Vec<u8>>)> = self
+			.dip_proof
+			.revealed
+			.iter()
 			.by_ref()
 			.map(|revealed_leaf| (revealed_leaf.encoded_key(), Some(revealed_leaf.encoded_value())))
 			.collect();
 
 		verify_trie_proof::<LayoutV1<MerkleHasher>, _, _, _>(
 			&self.dip_commitment,
-			self.dip_proof
-				.blinded
-				.into_iter()
-				.map(|l| l.into_inner())
-				.collect::<Vec<_>>()
-				.as_slice(),
+			self.dip_proof.blinded.as_slice(),
 			&proof_leaves_key_value_pairs,
 		)
 		.map_err(|_| Error::InvalidDidMerkleProof)?;
