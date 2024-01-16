@@ -57,12 +57,20 @@ pub trait DipCallOriginFilter<Call> {
 	fn check_call_origin_info(call: &Call, info: &Self::OriginInfo) -> Result<Self::Success, Self::Error>;
 }
 
+/// A trait similar in functionality to the [`frame_support::traits::Get`], but
+/// with an input argument and an associated return type.
 pub trait GetWithArg<Arg> {
 	type Result;
 
 	fn get(arg: &Arg) -> Self::Result;
 }
 
+/// Implementor of the [`GetWithArg`] trait that return the state
+/// root of a relaychain block with a given number by retrieving it from the
+/// [`pallet_relay_store::Pallet`] pallet storage. It hardcodes the
+/// relaychain `BlockNumber`, `Hasher`, `StorageKey`, and `ParaId` to the
+/// ones used by Polkadot-based relaychains. This type cannot be used with
+/// relaychains that adopt a different definition for any on those types.
 pub struct RelayStateRootsViaRelayStorePallet<Runtime>(PhantomData<Runtime>);
 
 impl<Runtime> GetWithArg<u32> for RelayStateRootsViaRelayStorePallet<Runtime>
@@ -77,6 +85,8 @@ where
 	}
 }
 
+/// A trait similar in functionality to the [`frame_support::traits::Get`], but
+/// with an associated return type.
 pub trait GetWithoutArg {
 	type Result;
 

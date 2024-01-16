@@ -84,48 +84,32 @@ where
 
 /// Proof verifier configured given a specific KILT runtime implementation.
 ///
-/// It is a specialization of the
-/// [`GenericVersionedParachainVerifier`] type, with
-/// configurations derived from the provided KILT runtime.
-///
 /// The generic types
 /// indicate the following:
+/// * `RelaychainRuntime`: The relaychain runtime definition.
+/// * `RelaychainStateRootStore`: A type providing state roots for relaychain
+///   blocks.
+/// * `KILT_PARA_ID`: The ID of the specific KILT parachain instance.
 /// * `KiltRuntime`: A KILT runtime definition.
-/// * `KiltParachainId`: The ID of the specific KILT parachain instance.
-/// * `RelayChainInfo`: The type providing information about the relaychain.
-/// * `KiltDipMerkleHasher`: The hashing algorithm used by the KILT parachain
-///   for the generation of the DIP identity commitment.
-/// * `LocalDidCallVerifier`: Logic to map `RuntimeCall`s to a specific DID key
+/// * `DidCallVerifier`: Logic to map `RuntimeCall`s to a specific DID key
 ///   relationship. This information is used once the Merkle proof is verified,
 ///   to filter only the revealed keys that match the provided relationship.
-/// * `MAX_REVEALED_KEYS_COUNT`: **OPTIONAL** Max number of DID keys that the
-///   verifier will accept revealed as part of the DIP identity proof. It
-///   defaults to **10**.
-/// * `MAX_REVEALED_ACCOUNTS_COUNT`: **OPTIONAL** Max number of linked accounts
-///   that the verifier will accept revealed as part of the DIP identity proof.
-///   It defaults to **10**.
-/// * `MAX_DID_SIGNATURE_DURATION`: **OPTIONAL** Max number of blocks a
-///   cross-chain DID signature is considered fresh. It defaults to **50**.
-///
-/// It specializes the [`GenericVersionedParachainVerifier`]
-/// type by using the following types for its generics:
-/// * `RelayChainInfo`: The provided `RelayChainInfo`.
-/// * `ChildProviderParachainId`: The provided `KiltParachainId`.
-/// * `ChildProviderStateInfo`: The
-///   [`ProviderParachainStateInfoViaProviderPallet`] type configured with the
-///   provided `KiltRuntime`.
-/// * `ProviderDipMerkleHasher`: The provided `KiltDipMerkleHasher`.
-/// * `ProviderDidKeyId`: The [`KeyIdOf`] type configured with the provided
-///   `KiltRuntime`.
-/// * `KiltAccountId`: The `KiltRuntime::AccountId` type.
-/// * `KiltWeb3Name`: The `KiltRuntime::Web3Name` type.
-/// * `KiltLinkableAccountId`: The [`LinkableAccountId`] type.
-/// * `MAX_REVEALED_KEYS_COUNT`: The provided `MAX_REVEALED_KEYS_COUNT`.
-/// * `MAX_REVEALED_ACCOUNTS_COUNT`: The provided `MAX_REVEALED_ACCOUNTS_COUNT`.
-/// * `LocalContextProvider`: The [`FrameSystemDidSignatureContext`] type
-///   configured with the provided `KiltRuntime` and
-///   `MAX_DID_SIGNATURE_DURATION`.
-/// * `LocalDidCallVerifier`: The provided `LocalDidCallVerifier`.
+/// * `SignedExtra`: Any additional information that must be signed by the DID
+///   subject in the cross-chain operation.
+/// * `MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT`: The maximum number of leaves that
+///   can be revealed as part of the parachain head storage proof.
+/// * `MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE`: The maximum size of each leaf
+///   revealed as part of the parachain head storage proof.
+/// * `MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT`: The maximum number of leaves that
+///   can be revealed as part of the DIP commitment storage proof.
+/// * `MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE`: The maximum size of each leaf
+///   revealed as part of the DIP commitment storage proof.
+/// * `MAX_DID_MERKLE_PROOF_LEAVE_COUNT`: The maximum number of *blinded* leaves
+///   that can be revealed as part of the DID Merkle proof.
+/// * `MAX_DID_MERKLE_PROOF_LEAVE_SIZE`: The maximum size of each *blinded* leaf
+///   revealed as part of the DID Merkle proof.
+/// * `MAX_DID_MERKLE_PROOF_LEAVE_SIZE`: The maximum number of leaves that can
+///   be revealed as part of the DID Merkle proof.
 pub struct KiltVersionedParachainVerifier<
 	RelaychainRuntime,
 	RelaychainStateRootStore,
@@ -361,7 +345,7 @@ pub mod v0 {
 
 			// 2. Verify commitment is included in provider parachain state.
 			let proof_without_parachain = proof_without_relaychain
-				.verify_dip_commitment_proof_for_subject::<KiltRuntime::Hashing, KiltRuntime, _>(subject)
+				.verify_dip_commitment_proof_for_subject::<KiltRuntime::Hashing, KiltRuntime>(subject)
 				.map_err(DipParachainStateProofVerifierError::ProofVerification)?;
 
 			// 3. Verify DIP Merkle proof.

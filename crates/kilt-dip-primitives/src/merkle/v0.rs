@@ -22,6 +22,7 @@ use did::{
 	DidSignature, DidVerificationKeyRelationship,
 };
 use frame_support::{ensure, RuntimeDebug};
+use pallet_dip_provider::IdentityCommitmentOf;
 use parity_scale_codec::{Codec, Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_core::U256;
@@ -41,15 +42,29 @@ use crate::{
 	},
 };
 
+/// The state proof for a parachain head.
+///
+/// The generic types indicate the following:
+/// * `RelayBlockNumber`: The `BlockNumber` definition of the relaychain.
 #[derive(Clone, RuntimeDebug, Encode, Decode, PartialEq, Eq, TypeInfo)]
 pub struct ProviderHeadStateProof<RelayBlockNumber> {
 	pub(crate) relay_block_number: RelayBlockNumber,
 	pub(crate) proof: Vec<Vec<u8>>,
 }
 
+/// The state proof for a DIP commitment.
 #[derive(Clone, RuntimeDebug, Encode, Decode, PartialEq, Eq, TypeInfo)]
 pub struct DipCommitmentStateProof(pub(crate) Vec<Vec<u8>>);
 
+/// The Merkle proof for a KILT DID.
+///
+/// The generic types indicate the following:
+/// * `ProviderDidKeyId`: The DID key ID type configured by the provider.
+/// * `ProviderAccountId`: The `AccountId` type configured by the provider.
+/// * `ProviderBlockNumber`: The `BlockNumber` type configured by the provider.
+/// * `ProviderWeb3Name`: The web3name type configured by the provider.
+/// * `ProviderLinkableAccountId`: The linkable account ID type configured by
+///   the provider.
 #[derive(Clone, RuntimeDebug, Encode, Decode, PartialEq, Eq, TypeInfo)]
 pub struct DidMerkleProof<
 	ProviderDidKeyId,
@@ -90,6 +105,10 @@ impl<ProviderDidKeyId, ProviderAccountId, ProviderBlockNumber, ProviderWeb3Name,
 }
 
 /// A DID signature anchored to a specific block height.
+///
+/// The generic types indicate the following:
+/// * `BlockNumber`: The `BlockNumber` definition of the chain consuming (i.e.,
+///   validating) this signature.
 #[derive(Clone, RuntimeDebug, Encode, Decode, PartialEq, Eq, TypeInfo)]
 pub struct TimeBoundDidSignature<BlockNumber> {
 	/// The signature.
@@ -134,6 +153,17 @@ impl From<Error> for u8 {
 	}
 }
 
+/// A DIP proof submitted to a relaychain consumer.
+///
+/// The generic types indicate the following:
+/// * `RelayBlockNumber`: The `BlockNumber` definition of the relaychain.
+/// * `RelayBlockHasher`: The hashing algorithm used by the relaychain.
+/// * `KiltDidKeyId`: The DID key ID type configured by the KILT chain.
+/// * `KiltAccountId`: The `AccountId` type configured by the KILT chain.
+/// * `KiltBlockNumber`: The `BlockNumber` type configured by the KILT chain.
+/// * `KiltWeb3Name`: The web3name type configured by the KILT chain.
+/// * `KiltLinkableAccountId`: The linkable account ID type configured by the
+///   KILT chain.
 #[derive(Clone, RuntimeDebug, Encode, Decode, PartialEq, Eq, TypeInfo)]
 pub struct RelayDipDidProof<
 	RelayBlockNumber: Copy + Into<U256> + TryFrom<U256>,
@@ -144,11 +174,17 @@ pub struct RelayDipDidProof<
 	KiltWeb3Name,
 	KiltLinkableAccountId,
 > {
+	/// The relaychain header for the relaychain block specified in the
+	/// `provider_head_proof`.
 	pub(crate) relay_header: Header<RelayBlockNumber, RelayBlockHasher>,
+	/// The state proof for the given parachain head.
 	pub(crate) provider_head_proof: ProviderHeadStateProof<RelayBlockNumber>,
+	/// The raw state proof for the DIP commitment of the given subject.
 	pub(crate) dip_commitment_proof: DipCommitmentStateProof,
+	/// The Merkle proof of the subject's DID details.
 	pub(crate) dip_proof:
 		DidMerkleProof<KiltDidKeyId, KiltAccountId, KiltBlockNumber, KiltWeb3Name, KiltLinkableAccountId>,
+	/// The cross-chain DID signature.
 	pub(crate) signature: TimeBoundDidSignature<RelayBlockNumber>,
 }
 
@@ -171,6 +207,8 @@ impl<
 		KiltLinkableAccountId,
 	>
 {
+	/// Verifies the relaychain part of the state proof using the provided block
+	/// hash.
 	#[allow(clippy::type_complexity)]
 	pub fn verify_relay_header_with_block_hash(
 		self,
@@ -200,6 +238,12 @@ impl<
 		})
 	}
 
+	/// Verifies the relaychain part of the state proof using the block hash
+	/// returned by the provided implementation.
+	///
+	/// The generic types indicate the following:
+	/// * `RelayHashStore`: The type that returns a relaychain block hash given
+	///   a relaychain block number.
 	#[allow(clippy::type_complexity)]
 	pub fn verify_relay_header<RelayHashStore>(
 		self,
@@ -223,6 +267,18 @@ impl<
 	}
 }
 
+/// A DIP proof submitted to a relaychain consumer that has had the proof header
+/// verified against a given block hash.
+///
+/// The generic types indicate the following:
+/// * `RelayBlockHasher`: The hashing algorithm used by the relaychain.
+/// * `RelayBlockNumber`: The `BlockNumber` definition of the relaychain.
+/// * `KiltDidKeyId`: The DID key ID type configured by the KILT chain.
+/// * `KiltAccountId`: The `AccountId` type configured by the KILT chain.
+/// * `KiltBlockNumber`: The `BlockNumber` type configured by the KILT chain.
+/// * `KiltWeb3Name`: The web3name type configured by the KILT chain.
+/// * `KiltLinkableAccountId`: The linkable account ID type configured by the
+///   KILT chain.
 pub struct DipDidProofWithVerifiedRelayStateRoot<
 	RelayHasher: Hash,
 	RelayBlockNumber,
@@ -232,11 +288,17 @@ pub struct DipDidProofWithVerifiedRelayStateRoot<
 	KiltWeb3Name,
 	KiltLinkableAccountId,
 > {
+	/// The verified state root for the relaychain at the block specified in the
+	/// proof.
 	pub(crate) relay_state_root: OutputOf<RelayHasher>,
+	/// The state proof for the given parachain head.
 	pub(crate) provider_head_proof: ProviderHeadStateProof<RelayBlockNumber>,
+	/// The raw state proof for the DIP commitment of the given subject.
 	pub(crate) dip_commitment_proof: DipCommitmentStateProof,
+	/// The Merkle proof of the subject's DID details.
 	pub(crate) dip_proof:
 		DidMerkleProof<KiltDidKeyId, KiltAccountId, KiltBlockNumber, KiltWeb3Name, KiltLinkableAccountId>,
+	/// The cross-chain DID signature.
 	pub(crate) signature: TimeBoundDidSignature<RelayBlockNumber>,
 }
 
@@ -259,6 +321,12 @@ impl<
 		KiltLinkableAccountId,
 	>
 {
+	/// Verifies the head data of the state proof for the provider with the
+	/// given para ID.
+	///
+	/// The generic types indicate the following:
+	/// * `ProviderHeader`: The type of the parachain header to be revealed in
+	///   the state proof.
 	#[allow(clippy::type_complexity)]
 	pub fn verify_provider_head_proof<ProviderHeader>(
 		self,
@@ -292,6 +360,18 @@ impl<
 	}
 }
 
+/// A DIP proof submitted to a parachain consumer.
+///
+/// The generic types indicate the following:
+/// * `RelayBlockNumber`: The `BlockNumber` definition of the relaychain.
+/// * `KiltDidKeyId`: The DID key ID type configured by the KILT chain.
+/// * `KiltAccountId`: The `AccountId` type configured by the KILT chain.
+/// * `KiltBlockNumber`: The `BlockNumber` type configured by the KILT chain.
+/// * `KiltWeb3Name`: The web3name type configured by the KILT chain.
+/// * `KiltLinkableAccountId`: The linkable account ID type configured by the
+///   KILT chain.
+/// * `ConsumerBlockNumber`: The `BlockNumber` definition of the consumer
+///   parachain.
 #[derive(Clone, RuntimeDebug, Encode, Decode, PartialEq, Eq, TypeInfo)]
 pub struct ParachainDipDidProof<
 	RelayBlockNumber,
@@ -302,10 +382,14 @@ pub struct ParachainDipDidProof<
 	KiltLinkableAccountId,
 	ConsumerBlockNumber,
 > {
+	/// The state proof for the given parachain head.
 	pub(crate) provider_head_proof: ProviderHeadStateProof<RelayBlockNumber>,
+	/// The raw state proof for the DIP commitment of the given subject.
 	pub(crate) dip_commitment_proof: DipCommitmentStateProof,
+	/// The Merkle proof of the subject's DID details.
 	pub(crate) dip_proof:
 		DidMerkleProof<KiltDidKeyId, KiltAccountId, KiltBlockNumber, KiltWeb3Name, KiltLinkableAccountId>,
+	/// The cross-chain DID signature.
 	pub(crate) signature: TimeBoundDidSignature<ConsumerBlockNumber>,
 }
 
@@ -328,6 +412,8 @@ impl<
 		ConsumerBlockNumber,
 	>
 {
+	/// Verifies the head data of the state proof for the provider with the
+	/// given para ID and relaychain state root.
 	#[allow(clippy::type_complexity)]
 	pub fn verify_provider_head_proof_with_state_root<RelayHasher, ProviderHeader>(
 		self,
@@ -364,6 +450,17 @@ impl<
 		})
 	}
 
+	/// Verifies the head data of the state proof for the provider with the
+	/// given para ID using the state root returned by the provided
+	/// implementation.
+	///
+	/// The generic types indicate the following:
+	/// * `RelayHasher`: The hashing algorithm used on the relaychain to
+	///   generate the parachains head data.
+	/// * `StateRootStore`: The type that returns a relaychain state root given
+	///   a relaychain block number.
+	/// * `ProviderHeader`: The type of the parachain header to be revealed in
+	///   the state proof.
 	#[allow(clippy::type_complexity)]
 	pub fn verify_provider_head_proof<RelayHasher, StateRootStore, ProviderHeader>(
 		self,
@@ -394,6 +491,19 @@ impl<
 	}
 }
 
+/// A DIP proof that has had the proof header and the relaychain state verified
+/// for the provided relaychain block number.
+///
+/// The generic types indicate the following:
+/// * `StateRoot`: The type of the relaychain state root.
+/// * `KiltDidKeyId`: The DID key ID type configured by the KILT chain.
+/// * `KiltAccountId`: The `AccountId` type configured by the KILT chain.
+/// * `KiltBlockNumber`: The `BlockNumber` type configured by the KILT chain.
+/// * `KiltWeb3Name`: The web3name type configured by the KILT chain.
+/// * `KiltLinkableAccountId`: The linkable account ID type configured by the
+///   KILT chain.
+/// * `ConsumerBlockNumber`: The `BlockNumber` definition of the consumer
+///   parachain.
 pub struct DipDidProofWithoutRelayProof<
 	StateRoot,
 	KiltDidKeyId,
@@ -403,10 +513,14 @@ pub struct DipDidProofWithoutRelayProof<
 	KiltLinkableAccountId,
 	ConsumerBlockNumber,
 > {
+	/// The relaychain state root for the block specified in the DIP proof.
 	pub(crate) state_root: StateRoot,
+	/// The raw state proof for the DIP commitment of the given subject.
 	pub(crate) dip_commitment_proof: DipCommitmentStateProof,
+	/// The Merkle proof of the subject's DID details.
 	pub(crate) dip_proof:
 		DidMerkleProof<KiltDidKeyId, KiltAccountId, KiltBlockNumber, KiltWeb3Name, KiltLinkableAccountId>,
+	/// The cross-chain DID signature.
 	pub(crate) signature: TimeBoundDidSignature<ConsumerBlockNumber>,
 }
 
@@ -429,7 +543,16 @@ impl<
 		ConsumerBlockNumber,
 	>
 {
+	/// Verifies the DIP commitment part of the state proof for the subject with
+	/// the given identifier.
+	///
+	/// The generic types indicate the following:
+	/// * `MerkleHasher`: The hashing algorithm used to generate the identity
+	///   commitment.
+	/// * `ProviderRuntime`: The provider runtime definition.
+	/// * `Commitment`: The provider definition of an identity commitment.
 	#[allow(clippy::type_complexity)]
+	// TODO: Refactor this.
 	pub fn verify_dip_commitment_proof_for_subject<MerkleHasher, ProviderRuntime, Commitment>(
 		self,
 		subject: &ProviderRuntime::Identifier,
@@ -468,6 +591,20 @@ impl<
 	}
 }
 
+/// A DIP proof that has had the relaychain state and the DIP commitment
+/// verified for the provided relaychain block number.
+///
+/// The generic types indicate the following:
+/// * `Commitment`: The DIP identity commitment type configured by the KILT
+///   chain.
+/// * `KiltDidKeyId`: The DID key ID type configured by the KILT chain.
+/// * `KiltAccountId`: The `AccountId` type configured by the KILT chain.
+/// * `KiltBlockNumber`: The `BlockNumber` type configured by the KILT chain.
+/// * `KiltWeb3Name`: The web3name type configured by the KILT chain.
+/// * `KiltLinkableAccountId`: The linkable account ID type configured by the
+///   KILT chain.
+/// * `ConsumerBlockNumber`: The `BlockNumber` definition of the consumer
+///   parachain.
 pub struct DipDidProofWithVerifiedCommitment<
 	Commitment,
 	KiltDidKeyId,
@@ -477,9 +614,12 @@ pub struct DipDidProofWithVerifiedCommitment<
 	KiltLinkableAccountId,
 	ConsumerBlockNumber,
 > {
+	/// The verified DIP identity commitment.
 	pub(crate) dip_commitment: Commitment,
+	/// The Merkle proof of the subject's DID details.
 	pub(crate) dip_proof:
 		DidMerkleProof<KiltDidKeyId, KiltAccountId, KiltBlockNumber, KiltWeb3Name, KiltLinkableAccountId>,
+	/// The cross-chain DID signature.
 	pub(crate) signature: TimeBoundDidSignature<ConsumerBlockNumber>,
 }
 
@@ -507,6 +647,11 @@ impl<
 	KiltWeb3Name: Encode,
 	KiltLinkableAccountId: Encode,
 {
+	/// Verifies the Merkle proof of the subject's DID details.
+	///
+	/// The generic types indicate the following:
+	/// * `MerkleHasher`: The hashing algorithm used to merkleize the DID
+	///   details.
 	pub fn verify_dip_proof<MerkleHasher>(
 		self,
 	) -> Result<
@@ -545,6 +690,18 @@ impl<
 	}
 }
 
+/// A DIP proof whose information has been verified but that contains a
+/// cross-chain [`TimeBoundDidSignature`] that still needs verification.
+///
+/// The generic types indicate the following:
+/// * `KiltDidKeyId`: The DID key ID type configured by the KILT chain.
+/// * `KiltAccountId`: The `AccountId` type configured by the KILT chain.
+/// * `KiltBlockNumber`: The `BlockNumber` type configured by the KILT chain.
+/// * `KiltWeb3Name`: The web3name type configured by the KILT chain.
+/// * `KiltLinkableAccountId`: The linkable account ID type configured by the
+///   KILT chain.
+/// * `ConsumerBlockNumber`: The `BlockNumber` definition of the consumer
+///   parachain.
 pub struct DipDetailsAndUnverifiedDidSignatureTime<
 	KiltDidKeyId,
 	KiltAccountId,
@@ -553,9 +710,11 @@ pub struct DipDetailsAndUnverifiedDidSignatureTime<
 	KiltLinkableAccountId,
 	ConsumerBlockNumber,
 > {
+	/// The parts of the subject's DID details revealed in the DIP proof.
 	pub(crate) revealed_leaves: Vec<
 		RevealedDidMerkleProofLeaf<KiltDidKeyId, KiltAccountId, KiltBlockNumber, KiltWeb3Name, KiltLinkableAccountId>,
 	>,
+	/// The cross-chain DID signature.
 	pub(crate) signature: TimeBoundDidSignature<ConsumerBlockNumber>,
 }
 
@@ -570,6 +729,8 @@ impl<KiltDidKeyId, KiltAccountId, KiltBlockNumber, KiltWeb3Name, KiltLinkableAcc
 	> where
 	ConsumerBlockNumber: PartialOrd,
 {
+	/// Verifies that the DIP proof signature is anchored to a block that has
+	/// not passed on the consumer chain.
 	pub fn verify_signature_time(
 		self,
 		block_number: &ConsumerBlockNumber,
@@ -591,6 +752,17 @@ impl<KiltDidKeyId, KiltAccountId, KiltBlockNumber, KiltWeb3Name, KiltLinkableAcc
 	}
 }
 
+/// A DIP proof whose information has been verified and whose signature has been
+/// verified not to be expired, but that yet does not contain information as to
+/// which of the revealed keys has generated the signature.
+///
+/// The generic types indicate the following:
+/// * `KiltDidKeyId`: The DID key ID type configured by the KILT chain.
+/// * `KiltAccountId`: The `AccountId` type configured by the KILT chain.
+/// * `KiltBlockNumber`: The `BlockNumber` type configured by the KILT chain.
+/// * `KiltWeb3Name`: The web3name type configured by the KILT chain.
+/// * `KiltLinkableAccountId`: The linkable account ID type configured by the
+///   KILT chain.
 pub struct DipDetailsAndUnverifiedDidSignaturePayload<
 	KiltDidKeyId,
 	KiltAccountId,
@@ -598,9 +770,11 @@ pub struct DipDetailsAndUnverifiedDidSignaturePayload<
 	KiltWeb3Name,
 	KiltLinkableAccountId,
 > {
+	/// The parts of the subject's DID details revealed in the DIP proof.
 	pub(crate) revealed_leaves: Vec<
 		RevealedDidMerkleProofLeaf<KiltDidKeyId, KiltAccountId, KiltBlockNumber, KiltWeb3Name, KiltLinkableAccountId>,
 	>,
+	/// The cross-chain DID signature without time information.
 	pub(crate) signature: DidSignature,
 }
 
@@ -613,6 +787,8 @@ impl<KiltDidKeyId, KiltAccountId, KiltBlockNumber, KiltWeb3Name, KiltLinkableAcc
 		KiltLinkableAccountId,
 	>
 {
+	/// Iterates over the revealed DID leafs to find the one that generated a
+	/// valid signature for the provided payload.
 	pub fn retrieve_signing_leaf_for_payload(
 		self,
 		payload: &[u8],
@@ -652,17 +828,22 @@ impl<KiltDidKeyId, KiltAccountId, KiltBlockNumber, KiltWeb3Name, KiltLinkableAcc
 	}
 }
 
+/// Information, available as an origin, after the whole DIP proof has been
+/// verified.
 #[derive(Clone, RuntimeDebug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub struct DipVerifiedInfo<KiltDidKeyId, KiltAccountId, KiltBlockNumber, KiltWeb3Name, KiltLinkableAccountId> {
+	/// The parts of the subject's DID details revealed in the DIP proof.
 	revealed_leaves: Vec<
 		RevealedDidMerkleProofLeaf<KiltDidKeyId, KiltAccountId, KiltBlockNumber, KiltWeb3Name, KiltLinkableAccountId>,
 	>,
+	/// The index of the signing leaf from the vector above,
 	signing_leaf_index: u32,
 }
 
 impl<KiltDidKeyId, KiltAccountId, KiltBlockNumber, KiltWeb3Name, KiltLinkableAccountId>
 	DipVerifiedInfo<KiltDidKeyId, KiltAccountId, KiltBlockNumber, KiltWeb3Name, KiltLinkableAccountId>
 {
+	/// Returns an iterator over the revealed DID leaves.
 	pub fn iter_leaves(
 		&self,
 	) -> impl Iterator<
@@ -676,6 +857,10 @@ impl<KiltDidKeyId, KiltAccountId, KiltBlockNumber, KiltWeb3Name, KiltLinkableAcc
 	> {
 		self.revealed_leaves.iter()
 	}
+
+	/// Returns a reference to the leaf that signed the cross-chain operation.
+	/// This operation should never fail, so the only error it returns is an
+	/// `Error::Internal` which, anyway, should never happen.
 	pub fn get_signing_leaf(&self) -> Result<&RevealedDidKey<KiltDidKeyId, KiltBlockNumber, KiltAccountId>, Error> {
 		let RevealedDidMerkleProofLeaf::DidKey(did_key) =
 			&self.revealed_leaves[usize::saturated_from(self.signing_leaf_index)]
