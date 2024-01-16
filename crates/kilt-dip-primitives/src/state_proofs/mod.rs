@@ -69,8 +69,6 @@ where
 	let revealed_leaves = read_proof_check::<MerkleHasher, _>(state_root, storage_proof, [storage_key].iter())
 		.map_err(|_| MerkleProofError::InvalidProof)?;
 
-	#[cfg(feature)]
-
 	debug_assert!(
 		revealed_leaves.len() == 1usize,
 		"Only a single leaf is expected to be revealed in the storage proof."
