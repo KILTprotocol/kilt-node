@@ -16,3 +16,5 @@
 .vscode
 
 **/__pycache__
+
+zombienet/node_modules/**

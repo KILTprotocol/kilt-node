@@ -1,0 +1,6 @@
+{
+  "name": "zombienet",
+  "devDependencies": {
+    "@zombienet/cli": "1.3.85"
+  }
+}

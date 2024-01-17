@@ -1,51 +1,35 @@
+[settings]
+enable_tracing = false
+provider = "kubernetes"
+# 18000 seconds -> 300 minutes -> 5 hours
+timeout = 18000
+
 [relaychain]
 chain = "rococo-local"
-default_args = ["-lparachain=debug"]
-default_command = "polkadot"
-default_image = "docker.io/parity/polkadot:latest"
+default_image = "parity/polkadot:v1.0.0"
+default_substrate_cli_args_version = 1
 
-[[relaychain.nodes]]
-name = "alice"
-validator = true
+  [[relaychain.nodes]]
+  name = "relay-alice"
+  rpc_port = "50001"
 
-[[relaychain.nodes]]
-name = "bob"
-validator = true
+  [[relaychain.nodes]]
+  name = "relay-bob"
+
+  [[relaychain.nodes]]
+  name = "relay-charlie"
 
 [[parachains]]
 id = 2000
 
-[[parachains.collators]]
-command_with_args = """node-executable \
-        --chain=dev \
-        --dave \
-        --runtime=peregrine \
-        --rpc-port=9933 \
-        --rpc-cors=all \
-        --rpc-external \
-        --ws-external \
-        --execution=wasm \
-        --pruning archive \
-        -- \
-        --chain=/cfg/rococo-local.json \
-        --execution=wasm"""
-image = "kiltprotocol/kilt-node:latest"
-name = "kilt-node-dave"
+  [[parachains.collators]]
+  command = "node-executable"
+  name = "kilt-node-alice"
+  image = "kiltprotocol/kilt-node:latest"
+  rpc_port = "50011"
 
-[[parachains.collators]]
-command_with_args = """node-executable \
-        --chain=dev \
-        --alice \
-        --runtime=peregrine \
-        --rpc-port=9933 \
-        --rpc-cors=all \
-        --rpc-external \
-        --ws-external \
-        --force-authoring \
-        --execution=wasm \
-        --pruning archive \
-        -- \
-        --chain=/cfg/rococo-local.json \
-        --execution=wasm"""
-image = "kiltprotocol/kilt-node:latest"
-name = "kilt-node-alice"
+  [[parachains.collators]]
+  command = "node-executable"
+  name = "kilt-node-bob"
+  image = "kiltprotocol/kilt-node:latest"
+  rpc_port = "50012"
