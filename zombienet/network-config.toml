@@ -1,9 +1,8 @@
 [relaychain]
+chain = "rococo-local"
 default_args = ["-lparachain=debug"]
 default_command = "polkadot"
-default_image = "{{RELAY_NODE_IMAGE}}"
-
-chain = "rococo-local"
+default_image = "docker.io/parity/polkadot:latest"
 
 [[relaychain.nodes]]
 name = "alice"
@@ -25,13 +24,12 @@ command_with_args = """node-executable \
         --rpc-cors=all \
         --rpc-external \
         --ws-external \
-        --force-authoring \
         --execution=wasm \
         --pruning archive \
         -- \
         --chain=/cfg/rococo-local.json \
         --execution=wasm"""
-image = "{{KILT_NODE_IMAGE}}"
+image = "kiltprotocol/kilt-node:latest"
 name = "kilt-node-dave"
 
 [[parachains.collators]]
@@ -49,41 +47,5 @@ command_with_args = """node-executable \
         -- \
         --chain=/cfg/rococo-local.json \
         --execution=wasm"""
-image = "{{KILT_NODE_IMAGE}}"
+image = "kiltprotocol/kilt-node:latest"
 name = "kilt-node-alice"
-
-[[parachains.collators]]
-command_with_args = """node-executable \
-        --chain=dev \
-        --bob \
-        --runtime=peregrine \
-        --rpc-port=9933 \
-        --rpc-cors=all \
-        --rpc-external \
-        --ws-external \
-        --force-authoring \
-        --execution=wasm \
-        --pruning archive \
-        -- \
-        --chain=/cfg/rococo-local.json \
-        --execution=wasm"""
-image = "{{KILT_NODE_IMAGE}}"
-name = "kilt-node-bob"
-
-[[parachains.collators]]
-command_with_args = """node-executable \
-        --chain=dev \
-        --charlie \
-        --runtime=peregrine \
-        --rpc-port=9933 \
-        --rpc-cors=all \
-        --rpc-external \
-        --ws-external \
-        --force-authoring \
-        --execution=wasm \
-        --pruning archive \
-        -- \
-        --chain=/cfg/rococo-local.json \
-        --execution=wasm"""
-image = "{{KILT_NODE_IMAGE}}"
-name = "kilt-node-charlie"
