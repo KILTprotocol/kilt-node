@@ -98,3 +98,15 @@ impl GetWithoutArg for () {
 
 	fn get() -> Self::Result {}
 }
+
+// Marker trait that requires a type to implement `Default` only for benchmarks.
+// Avoids code duplication.
+#[cfg(not(feature = "runtime-benchmarks"))]
+pub trait BenchmarkDefault {}
+#[cfg(not(feature = "runtime-benchmarks"))]
+impl<T> BenchmarkDefault for T {}
+
+#[cfg(feature = "runtime-benchmarks")]
+pub trait BenchmarkDefault: Default {}
+#[cfg(feature = "runtime-benchmarks")]
+impl<T: Default> BenchmarkDefault for T {}
