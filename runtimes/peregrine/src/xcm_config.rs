@@ -23,15 +23,16 @@ use super::{
 
 use frame_support::{
 	parameter_types,
-	traits::{Contains, Nothing},
+	traits::{Contains, Everything, Nothing},
 };
 use frame_system::EnsureRoot;
 use pallet_xcm::XcmPassthrough;
 use sp_core::ConstU32;
 use xcm::v3::prelude::*;
 use xcm_builder::{
-	AllowTopLevelPaidExecutionFrom, EnsureXcmOrigin, FixedWeightBounds, RelayChainAsNative, SiblingParachainAsNative,
-	SignedAccountId32AsNative, SignedToAccountId32, SovereignSignedViaLocation, UsingComponents, WithComputedOrigin,
+	AllowTopLevelPaidExecutionFrom, EnsureXcmOrigin, FixedWeightBounds, NativeAsset, RelayChainAsNative,
+	SiblingParachainAsNative, SignedAccountId32AsNative, SignedToAccountId32, SovereignSignedViaLocation,
+	TakeWeightCredit, UsingComponents, WithComputedOrigin,
 };
 use xcm_executor::{traits::WithOriginFilter, XcmExecutor};
 
@@ -72,20 +73,23 @@ pub type XcmOriginToTransactDispatchOrigin = (
 	XcmPassthrough<RuntimeOrigin>,
 );
 
-/// Explicitly deny ReserveTransfer to the relay chain. Allow calls from the
-/// relay chain governance.
+pub type XcmBarrier = TakeWeightCredit;
 pub type XcmBarrier = DenyThenTry<
 	DenyReserveTransferToRelayChain,
-	WithComputedOrigin<
-		(
-			// We allow everything from the relay chain if it was sent by the relay chain legislative (i.e., democracy
-			// vote). Since the relaychain doesn't own KILTs and missing fees shouldn't prevent calls from the
-			// relaychain legislative, we allow unpaid execution.
-			AllowTopLevelPaidExecutionFrom<ParentLegislative>,
-		),
-		UniversalLocation,
-		ConstU32<8>,
-	>,
+	// For local XCM execution (i.e., for pallet_xcm::reserve_asset_transfer)
+	(
+		TakeWeightCredit,
+		WithComputedOrigin<
+			(
+				// We allow everything from the relay chain if it was sent by the relay chain legislative (i.e.,
+				// democracy vote). Since the relaychain doesn't own KILTs and missing fees shouldn't prevent calls
+				// from the relaychain legislative, we allow unpaid execution.
+				AllowTopLevelPaidExecutionFrom<ParentLegislative>,
+			),
+			UniversalLocation,
+			ConstU32<8>,
+		>,
+	),
 >;
 
 /// A call filter for the XCM Transact instruction. This is a temporary measure
@@ -163,17 +167,22 @@ parameter_types! {
 }
 
 impl pallet_xcm::Config for Runtime {
-	type MaxRemoteLockConsumers = ConstU32<10>;
-	type RemoteLockConsumerIdentifier = [u8; 8];
+	type MaxRemoteLockConsumers = ConstU32<0>;
+	type RemoteLockConsumerIdentifier = ();
 	type RuntimeEvent = RuntimeEvent;
+	// Allows anyone to send XCM messages. For regular origins, a `DescendOrigin` is
+	// prepended to the message.
 	type SendXcmOrigin = EnsureXcmOrigin<RuntimeOrigin, LocalOriginToLocation>;
 	type XcmRouter = XcmRouter;
+	// We allow execution of XCM programs because it is required by the
+	// `reserve_transfer_assets` operation.
 	type ExecuteXcmOrigin = EnsureXcmOrigin<RuntimeOrigin, LocalOriginToLocation>;
-	// Disable dispatchable execution on the XCM pallet.
+	// Disable calls to pallet_xcm::execute(), by still allowing the other
+	// extrinsics to be called.
 	// NOTE: For local testing this needs to be `Everything`.
 	type XcmExecuteFilter = Nothing;
 	type XcmTeleportFilter = Nothing;
-	type XcmReserveTransferFilter = Nothing;
+	type XcmReserveTransferFilter = Everything;
 	type AdminOrigin = EnsureRoot<AccountId>;
 	type XcmExecutor = XcmExecutor<XcmConfig>;
 	type Weigher = FixedWeightBounds<UnitWeightCost, RuntimeCall, MaxInstructions>;
