@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use super::{
+use crate::{
 	AccountId, AllPalletsWithSystem, Balances, ParachainInfo, ParachainSystem, PolkadotXcm, Runtime, RuntimeCall,
 	RuntimeEvent, RuntimeOrigin, Treasury, WeightToFee, XcmpQueue,
 };
@@ -30,9 +30,9 @@ use pallet_xcm::XcmPassthrough;
 use sp_core::ConstU32;
 use xcm::v3::prelude::*;
 use xcm_builder::{
-	AllowTopLevelPaidExecutionFrom, EnsureXcmOrigin, FixedWeightBounds, NativeAsset, RelayChainAsNative,
-	SiblingParachainAsNative, SignedAccountId32AsNative, SignedToAccountId32, SovereignSignedViaLocation,
-	TakeWeightCredit, UsingComponents, WithComputedOrigin,
+	AllowTopLevelPaidExecutionFrom, EnsureXcmOrigin, FixedWeightBounds, RelayChainAsNative, SiblingParachainAsNative,
+	SignedAccountId32AsNative, SignedToAccountId32, SovereignSignedViaLocation, TakeWeightCredit, UsingComponents,
+	WithComputedOrigin,
 };
 use xcm_executor::{traits::WithOriginFilter, XcmExecutor};
 
@@ -73,7 +73,6 @@ pub type XcmOriginToTransactDispatchOrigin = (
 	XcmPassthrough<RuntimeOrigin>,
 );
 
-pub type XcmBarrier = TakeWeightCredit;
 pub type XcmBarrier = DenyThenTry<
 	DenyReserveTransferToRelayChain,
 	// For local XCM execution (i.e., for pallet_xcm::reserve_asset_transfer)

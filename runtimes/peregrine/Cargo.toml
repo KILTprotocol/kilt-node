@@ -14,7 +14,16 @@ version.workspace = true
 substrate-wasm-builder.workspace = true
 
 [dev-dependencies]
+polkadot-parachain.workspace = true
+polkadot-primitives.workspace = true
+polkadot-runtime-parachains.workspace = true
+rococo-runtime.workspace = true
+rococo-runtime-constants.workspace = true
 sp-io.workspace = true
+sp-tracing.workspace = true
+xcm.workspace = true
+xcm-emulator.workspace = true
+xcm-simulator.workspace = true
 
 [dependencies]
 # External dependencies
