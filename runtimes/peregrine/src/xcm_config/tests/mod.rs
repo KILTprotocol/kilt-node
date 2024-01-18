@@ -15,11 +15,11 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 mod peregrine;
-mod rococo;
+mod relaychain;
 
 use peregrine::Runtime as PeregrineRuntime;
 use polkadot_primitives::{AccountId, Balance};
-use rococo::Runtime as RococoRuntime;
+use relaychain::Runtime as RococoRuntime;
 use sp_core::{sr25519, Get};
 use xcm::prelude::*;
 use xcm_emulator::{decl_test_networks, BridgeMessageHandler, Parachain, RelayChain, TestExt};
