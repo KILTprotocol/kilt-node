@@ -16,10 +16,13 @@
 
 mod peregrine;
 mod relaychain;
+mod utils;
 
-use peregrine::Runtime as PeregrineRuntime;
+use crate::PolkadotXcm as PeregrineXcm;
+use frame_system::RawOrigin;
+use peregrine::{Runtime as PeregrineRuntime, System as PeregrineSystem};
 use polkadot_primitives::{AccountId, Balance};
-use relaychain::Runtime as RococoRuntime;
+use relaychain::{Runtime as RococoRuntime, System as RococoSystem};
 use sp_core::{sr25519, Get};
 use xcm::prelude::*;
 use xcm_emulator::{decl_test_networks, BridgeMessageHandler, Parachain, RelayChain, TestExt};
@@ -33,4 +36,30 @@ decl_test_networks! {
 		],
 		bridge = ()
 	}
+}
+
+#[test]
+fn example() {
+	env_logger::init();
+	let parent_location: MultiLocation = Parent.into();
+	let message: Xcm<()> = vec![
+		Instruction::WithdrawAsset((Here, 2_000_000).into()),
+		Instruction::BuyExecution {
+			fees: (Here, 2_000_000).into(),
+			weight_limit: WeightLimit::Unlimited,
+		},
+	]
+	.into();
+	PeregrineRuntime::execute_with(|| {
+		let res = PeregrineXcm::send(
+			RawOrigin::Root.into(),
+			Box::new(parent_location.into()),
+			Box::new(VersionedXcm::from(message)),
+		);
+		println!("{:?}", res);
+		println!("{:?}", PeregrineSystem::events());
+	});
+	RococoRuntime::execute_with(|| {
+		println!("{:?}", RococoSystem::events());
+	})
 }

@@ -14,12 +14,17 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use crate::{
-	xcm_config::RelayNetworkId, Balances, DmpQueue, ParachainInfo, ParachainInfoConfig, ParachainSystem, PolkadotXcm,
-	PolkadotXcmConfig, Runtime as PeregrineRuntime, RuntimeCall, RuntimeEvent, RuntimeGenesisConfig, RuntimeOrigin,
-	System, SystemConfig, XcmpQueue, WASM_BINARY,
+pub(crate) use crate::{
+	xcm_config::{
+		tests::utils::{get_account_id_from_seed, get_from_seed},
+		RelayNetworkId,
+	},
+	AuthorityId, Balances, DmpQueue, ParachainInfo, ParachainInfoConfig, ParachainSystem, PolkadotXcmConfig,
+	Runtime as PeregrineRuntime, RuntimeCall, RuntimeEvent, RuntimeGenesisConfig, RuntimeOrigin, SessionConfig,
+	SessionKeys, System, SystemConfig, XcmpQueue, WASM_BINARY,
 };
-use runtime_common::xcm_config::LocationToAccountId;
+use runtime_common::{xcm_config::LocationToAccountId, AccountPublic};
+use sp_core::sr25519;
 use sp_runtime::{BuildStorage, Storage};
 use xcm_emulator::{decl_test_parachains, BridgeMessageHandler, Parachain, TestExt};
 
@@ -41,6 +46,15 @@ fn genesis() -> Storage {
 		polkadot_xcm: PolkadotXcmConfig {
 			safe_xcm_version: Some(SAFE_XCM_VERSION),
 			..Default::default()
+		},
+		session: SessionConfig {
+			keys: vec![(
+				get_account_id_from_seed::<AccountPublic, sr25519::Public>("Alice"),
+				get_from_seed::<AuthorityId>("Alice"),
+			)]
+			.iter()
+			.map(|(acc, key)| (acc.clone(), acc.clone(), SessionKeys { aura: key.clone() }))
+			.collect::<Vec<_>>(),
 		},
 		..Default::default()
 	}
@@ -65,8 +79,6 @@ decl_test_parachains! {
 			ParachainSystem: ParachainSystem,
 			ParachainInfo: ParachainInfo,
 		},
-		pallets_extra = {
-			PolkadotXcm: PolkadotXcm,
-		}
+		pallets_extra = {}
 	}
 }

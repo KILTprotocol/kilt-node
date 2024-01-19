@@ -14,11 +14,18 @@ version.workspace = true
 substrate-wasm-builder.workspace = true
 
 [dev-dependencies]
+env_logger.workspace = true
+pallet-im-online.workspace = true
 polkadot-parachain.workspace = true
 polkadot-primitives.workspace = true
 polkadot-runtime-parachains.workspace = true
+polkadot-service.workspace = true
 rococo-runtime.workspace = true
 rococo-runtime-constants.workspace = true
+sc-consensus-grandpa.workspace = true
+sp-authority-discovery.workspace = true
+sp-consensus-babe.workspace = true
+sp-consensus-beefy.workspace = true
 sp-io.workspace = true
 sp-tracing.workspace = true
 xcm.workspace = true

@@ -121,6 +121,7 @@ pallet-collective = {git = "https://github.com/paritytech/substrate", default-fe
 pallet-collator-selection = {git = "https://github.com/paritytech/cumulus", default-features = false, branch = "polkadot-v1.0.0"}
 pallet-democracy = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v1.0.0"}
 pallet-grandpa = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v1.0.0"}
+pallet-im-online = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v1.0.0"}
 pallet-indices = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v1.0.0"}
 pallet-membership = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v1.0.0"}
 pallet-preimage = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v1.0.0"}
@@ -137,8 +138,10 @@ pallet-utility = {git = "https://github.com/paritytech/substrate", default-featu
 pallet-vesting = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v1.0.0"}
 pallet-multisig = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v1.0.0"}
 sp-api = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v1.0.0"}
+sp-authority-discovery = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v1.0.0"}
 sp-block-builder = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v1.0.0"}
 sp-consensus-aura = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v1.0.0"}
+sp-consensus-babe = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v1.0.0"}
 sp-core = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v1.0.0"}
 sp-inherents = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v1.0.0"}
 sp-io = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v1.0.0"}
@@ -187,9 +190,9 @@ sc-cli = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v1
 sc-client-api = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v1.0.0"}
 sc-consensus = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v1.0.0"}
 sc-consensus-aura = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v1.0.0"}
+sc-consensus-grandpa = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v1.0.0"}
 sc-executor = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v1.0.0"}
 sc-offchain = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v1.0.0" }
-sc-consensus-grandpa = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v1.0.0"}
 sc-keystore = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v1.0.0"}
 sc-network = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v1.0.0"}
 sc-network-sync = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v1.0.0"}
@@ -202,6 +205,7 @@ sc-transaction-pool = {git = "https://github.com/paritytech/substrate", branch =
 sc-transaction-pool-api = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v1.0.0"}
 sp-blockchain = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v1.0.0"}
 sp-consensus = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v1.0.0"}
+sp-consensus-beefy = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v1.0.0"}
 sp-consensus-grandpa = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v1.0.0"}
 sp-keyring = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v1.0.0"}
 sp-keystore = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v1.0.0"}
