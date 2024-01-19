@@ -16,6 +16,7 @@ substrate-wasm-builder.workspace = true
 [dev-dependencies]
 env_logger.workspace = true
 pallet-im-online.workspace = true
+pallet-message-queue.workspace = true
 polkadot-parachain.workspace = true
 polkadot-primitives.workspace = true
 polkadot-runtime-parachains.workspace = true

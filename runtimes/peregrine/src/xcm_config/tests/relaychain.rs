@@ -15,14 +15,15 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use crate::xcm_config::tests::utils::get_from_seed;
+use frame_support::traits::{fungible::Mutate, Currency};
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
-use polkadot_primitives::{AccountId, AssignmentId, BlockNumber, ValidatorId, LOWEST_PUBLIC_ID};
+use polkadot_primitives::{AccountId, AssignmentId, Balance, BlockNumber, ValidatorId, LOWEST_PUBLIC_ID};
 use polkadot_runtime_parachains::configuration::HostConfiguration;
 use polkadot_service::chain_spec::get_authority_keys_from_seed_no_beefy;
 pub(crate) use rococo_runtime::{
 	xcm_config::{LocationConverter, XcmConfig},
 	BabeConfig, Balances, ConfigurationConfig, MessageQueue, RegistrarConfig, Runtime as RococoRuntime, RuntimeCall,
-	RuntimeEvent, RuntimeGenesisConfig, RuntimeOrigin, SessionConfig, SessionKeys, System, SystemConfig, XcmPallet,
+	RuntimeEvent, RuntimeGenesisConfig, RuntimeOrigin, SessionConfig, SessionKeys, System, SystemConfig,
 	BABE_GENESIS_EPOCH_CONFIG, WASM_BINARY,
 };
 use sc_consensus_grandpa::AuthorityId as GrandpaId;
@@ -119,6 +120,12 @@ fn genesis() -> Storage {
 	.unwrap()
 }
 
+pub(crate) fn set_free_balance((account_id, balance): (AccountId, Balance)) {
+	Runtime::execute_with(|| {
+		<Balances as Currency<AccountId>>::make_free_balance_be(&account_id, balance);
+	});
+}
+
 decl_test_relay_chains! {
 	#[api_version(5)]
 	pub struct Runtime {
@@ -135,8 +142,6 @@ decl_test_relay_chains! {
 			System: System,
 			Balances: Balances,
 		},
-		pallets_extra = {
-			XcmPallet: XcmPallet,
-		}
+		pallets_extra = {}
 	}
 }

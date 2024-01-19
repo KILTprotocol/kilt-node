@@ -124,6 +124,7 @@ pallet-grandpa = {git = "https://github.com/paritytech/substrate", default-featu
 pallet-im-online = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v1.0.0"}
 pallet-indices = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v1.0.0"}
 pallet-membership = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v1.0.0"}
+pallet-message-queue = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v1.0.0"}
 pallet-preimage = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v1.0.0"}
 pallet-proxy = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v1.0.0"}
 pallet-scheduler = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v1.0.0"}

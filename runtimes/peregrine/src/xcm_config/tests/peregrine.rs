@@ -19,11 +19,12 @@ pub(crate) use crate::{
 		tests::utils::{get_account_id_from_seed, get_from_seed},
 		RelayNetworkId,
 	},
-	AuthorityId, Balances, DmpQueue, ParachainInfo, ParachainInfoConfig, ParachainSystem, PolkadotXcmConfig,
-	Runtime as PeregrineRuntime, RuntimeCall, RuntimeEvent, RuntimeGenesisConfig, RuntimeOrigin, SessionConfig,
-	SessionKeys, System, SystemConfig, XcmpQueue, WASM_BINARY,
+	AccountId, AuthorityId, Balance, Balances, DmpQueue, ParachainInfo, ParachainInfoConfig, ParachainSystem,
+	PolkadotXcmConfig, Runtime as PeregrineRuntime, RuntimeCall, RuntimeEvent, RuntimeGenesisConfig, RuntimeOrigin,
+	SessionConfig, SessionKeys, System, SystemConfig, XcmpQueue, WASM_BINARY,
 };
-use runtime_common::{xcm_config::LocationToAccountId, AccountPublic};
+use frame_support::traits::fungible::Mutate;
+pub(crate) use runtime_common::{xcm_config::LocationToAccountId, AccountPublic};
 use sp_core::sr25519;
 use sp_runtime::{BuildStorage, Storage};
 use xcm_emulator::{decl_test_parachains, BridgeMessageHandler, Parachain, TestExt};

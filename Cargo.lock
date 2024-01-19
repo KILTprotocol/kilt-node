@@ -8042,6 +8042,7 @@ dependencies = [
  "pallet-indices",
  "pallet-inflation",
  "pallet-membership",
+ "pallet-message-queue",
  "pallet-migration",
  "pallet-multisig",
  "pallet-preimage",
