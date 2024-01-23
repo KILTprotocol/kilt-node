@@ -17,7 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use did::KeyIdOf;
-use frame_system::pallet_prelude::{BlockNumberFor, HeaderFor};
+use frame_system::pallet_prelude::BlockNumberFor;
 use pallet_did_lookup::linkable_account::LinkableAccountId;
 use pallet_dip_consumer::{traits::IdentityProofVerifier, RuntimeCallOf};
 use pallet_dip_provider::{traits::IdentityCommitmentGenerator, IdentityCommitmentOf};
@@ -30,7 +30,7 @@ use sp_std::marker::PhantomData;
 
 use crate::{
 	merkle::v0::RevealedDidKey,
-	traits::{BenchmarkDefault, DipCallOriginFilter, GetWithArg, GetWithoutArg, Incrementable},
+	traits::{DipCallOriginFilter, GetWithArg, GetWithoutArg, Incrementable},
 	utils::OutputOf,
 	DipVerifiedInfo, Error,
 };
@@ -146,7 +146,6 @@ impl<
 		+ pallet_web3_names::Config
 		+ pallet_did_lookup::Config,
 	KiltRuntime::IdentityCommitmentGenerator: IdentityCommitmentGenerator<KiltRuntime, Output = ConsumerRuntime::Hash>,
-	HeaderFor<KiltRuntime>: BenchmarkDefault,
 	SignedExtra: GetWithoutArg,
 	SignedExtra::Result: Encode,
 	DidCallVerifier: DipCallOriginFilter<
@@ -301,7 +300,6 @@ pub mod v0 {
 			+ pallet_did_lookup::Config,
 		KiltRuntime::IdentityCommitmentGenerator:
 			IdentityCommitmentGenerator<KiltRuntime, Output = ConsumerRuntime::Hash>,
-		HeaderFor<KiltRuntime>: BenchmarkDefault,
 		IdentityCommitmentOf<KiltRuntime>: Into<KiltRuntime::Hash>,
 		SignedExtra: GetWithoutArg,
 		SignedExtra::Result: Encode,

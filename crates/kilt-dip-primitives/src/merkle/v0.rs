@@ -386,7 +386,8 @@ impl<
 		KiltBlockNumber,
 		KiltWeb3Name,
 		KiltLinkableAccountId,
-	>
+	> where
+	KiltBlockNumber: BenchmarkDefault,
 {
 	/// Verifies the head data of the state proof for the provider with the
 	/// given para ID.
@@ -413,7 +414,7 @@ impl<
 	>
 	where
 		RelayHasher: Hash<Output = StateRoot>,
-		ProviderHeader: Decode + HeaderT<Hash = OutputOf<RelayHasher>> + BenchmarkDefault,
+		ProviderHeader: Decode + HeaderT<Hash = OutputOf<RelayHasher>, Number = KiltBlockNumber>,
 	{
 		let parachain_dip_proof = ParachainDipDidProof {
 			provider_head_proof: self.provider_head_proof,
@@ -518,7 +519,8 @@ impl<
 		KiltWeb3Name,
 		KiltLinkableAccountId,
 		ConsumerBlockNumber,
-	>
+	> where
+	KiltBlockNumber: BenchmarkDefault,
 {
 	/// Verifies the head data of the state proof for the provider with the
 	/// given para ID and relaychain state root.
@@ -546,7 +548,7 @@ impl<
 	>
 	where
 		RelayHasher: Hash,
-		ProviderHeader: Decode + HeaderT<Hash = OutputOf<RelayHasher>> + BenchmarkDefault,
+		ProviderHeader: Decode + HeaderT<Hash = OutputOf<RelayHasher>, Number = KiltBlockNumber>,
 	{
 		let provider_head_storage_key = calculate_parachain_head_storage_key(provider_para_id);
 		let provider_header_result = verify_storage_value_proof::<_, RelayHasher, ProviderHeader>(
@@ -556,7 +558,7 @@ impl<
 		);
 		cfg_if::cfg_if! {
 			if #[cfg(feature = "runtime-benchmarks")] {
-				let provider_header = provider_header_result.unwrap_or_default();
+				let provider_header = provider_header_result.unwrap_or_else(|_| ProviderHeader::new(<ProviderHeader as HeaderT>::Number::default(), <ProviderHeader as HeaderT>::Hash::default(), <ProviderHeader as HeaderT>::Hash::default(), <ProviderHeader as HeaderT>::Hash::default(), sp_runtime::Digest::default()));
 			} else {
 				let provider_header = provider_header_result.map_err(Error::ParaHeadMerkleProof)?;
 			}
@@ -599,7 +601,7 @@ impl<
 	where
 		RelayHasher: Hash,
 		StateRootStore: GetWithArg<RelayBlockNumber, Result = Option<OutputOf<RelayHasher>>>,
-		ProviderHeader: Decode + HeaderT<Hash = OutputOf<RelayHasher>> + BenchmarkDefault,
+		ProviderHeader: Decode + HeaderT<Hash = OutputOf<RelayHasher>, Number = KiltBlockNumber>,
 	{
 		let relay_state_root =
 			StateRootStore::get(&self.provider_head_proof.relay_block_number).ok_or(Error::RelayStateRootNotFound)?;
@@ -1010,20 +1012,7 @@ impl<
 		} else {
 			cfg_if::cfg_if! {
 				if #[cfg(feature = "runtime-benchmarks")] {
-					let default_keys = sp_std::vec![
-						RevealedDidKey {
-							id: KiltDidKeyId::default(),
-							details: DidPublicKeyDetails {
-								key: did::did_details::DidVerificationKey::Ed25519(sp_core::ed25519::Public::from_raw([0u8; 32])).into(),
-								block_number: KiltBlockNumber::default()
-							},
-							relationship: DidVerificationKeyRelationship::Authentication.into()
-						}.into()];
-					let bounded_keys = default_keys.try_into().map_err(|_| {
-						log::error!("Should not fail to convert single element to a BoundedVec.");
-						Error::Internal
-					})?;
-					(bounded_keys, 0u32)
+						return Ok(DipVerifiedInfo::default());
 				} else {
 					return Err(Error::InvalidDidKeyRevealed);
 				}
@@ -1105,6 +1094,49 @@ impl<
 			return Err(Error::Internal);
 		};
 		Ok(did_key)
+	}
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+impl<
+		KiltDidKeyId,
+		KiltAccountId,
+		KiltBlockNumber,
+		KiltWeb3Name,
+		KiltLinkableAccountId,
+		const MAX_REVEALED_LEAVES_COUNT: u32,
+	> Default
+	for DipVerifiedInfo<
+		KiltDidKeyId,
+		KiltAccountId,
+		KiltBlockNumber,
+		KiltWeb3Name,
+		KiltLinkableAccountId,
+		MAX_REVEALED_LEAVES_COUNT,
+	> where
+	KiltDidKeyId: BenchmarkDefault,
+	KiltBlockNumber: BenchmarkDefault,
+{
+	fn default() -> Self {
+		let default_keys = sp_std::vec![RevealedDidKey {
+			id: KiltDidKeyId::default(),
+			details: DidPublicKeyDetails {
+				key: did::did_details::DidVerificationKey::Ed25519(sp_core::ed25519::Public::from_raw([0u8; 32]))
+					.into(),
+				block_number: KiltBlockNumber::default()
+			},
+			relationship: DidVerificationKeyRelationship::Authentication.into()
+		}
+		.into()];
+		let bounded_keys = default_keys
+			.try_into()
+			// To avoid requiring types to implement `Debug`.
+			.map_err(|_| "Should not fail to convert single element to a BoundedVec.")
+			.unwrap();
+		Self {
+			revealed_leaves: bounded_keys,
+			signing_leaf_index: 0u32,
+		}
 	}
 }
 

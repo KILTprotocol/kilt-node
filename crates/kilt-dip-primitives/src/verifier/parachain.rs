@@ -29,7 +29,7 @@ use sp_std::marker::PhantomData;
 
 use crate::{
 	merkle::v0::RevealedDidKey,
-	traits::{BenchmarkDefault, DipCallOriginFilter, GetWithArg, GetWithoutArg, Incrementable},
+	traits::{DipCallOriginFilter, GetWithArg, GetWithoutArg, Incrementable},
 	utils::OutputOf,
 	DipVerifiedInfo, Error,
 };
@@ -43,8 +43,8 @@ pub enum VersionedDipParachainStateProof<
 	RelayBlockNumber,
 	KiltDidKeyId,
 	KiltAccountId,
-	KiltWeb3Name,
 	KiltBlockNumber,
+	KiltWeb3Name,
 	KiltLinkableAccountId,
 	ConsumerBlockNumber,
 > {
@@ -53,12 +53,46 @@ pub enum VersionedDipParachainStateProof<
 			RelayBlockNumber,
 			KiltDidKeyId,
 			KiltAccountId,
-			KiltWeb3Name,
 			KiltBlockNumber,
+			KiltWeb3Name,
 			KiltLinkableAccountId,
 			ConsumerBlockNumber,
 		>,
 	),
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+impl<
+		RelayBlockNumber,
+		KiltDidKeyId,
+		KiltAccountId,
+		KiltBlockNumber,
+		KiltWeb3Name,
+		KiltLinkableAccountId,
+		ConsumerBlockNumber,
+		Context,
+	> kilt_support::traits::GetWorstCase<Context>
+	for VersionedDipParachainStateProof<
+		RelayBlockNumber,
+		KiltDidKeyId,
+		KiltAccountId,
+		KiltBlockNumber,
+		KiltWeb3Name,
+		KiltLinkableAccountId,
+		ConsumerBlockNumber,
+	> where
+	RelayBlockNumber: Default,
+	KiltDidKeyId: Default + Clone,
+	KiltAccountId: Clone,
+	KiltBlockNumber: Default + Clone,
+	KiltWeb3Name: Clone,
+	KiltLinkableAccountId: Clone,
+	ConsumerBlockNumber: Default,
+	Context: Clone,
+{
+	fn worst_case(context: Context) -> Self {
+		Self::V0(crate::merkle::v0::ParachainDipDidProof::worst_case(context))
+	}
 }
 
 pub enum DipParachainStateProofVerifierError<DidOriginError> {
@@ -157,7 +191,6 @@ impl<
 		+ pallet_did_lookup::Config,
 	KiltRuntime::IdentityCommitmentGenerator:
 		IdentityCommitmentGenerator<KiltRuntime, Output = RelaychainRuntime::Hash>,
-	HeaderFor<KiltRuntime>: BenchmarkDefault,
 	SignedExtra: GetWithoutArg,
 	SignedExtra::Result: Encode,
 	DidCallVerifier: DipCallOriginFilter<
@@ -322,7 +355,6 @@ pub mod v0 {
 			+ pallet_did_lookup::Config,
 		KiltRuntime::IdentityCommitmentGenerator:
 			IdentityCommitmentGenerator<KiltRuntime, Output = RelaychainRuntime::Hash>,
-		HeaderFor<KiltRuntime>: BenchmarkDefault,
 		SignedExtra: GetWithoutArg,
 		SignedExtra::Result: Encode,
 		DidCallVerifier: DipCallOriginFilter<
