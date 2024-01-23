@@ -19,7 +19,7 @@
 use did::did_details::DidDetails;
 use frame_support::ensure;
 use frame_system::pallet_prelude::BlockNumberFor;
-use kilt_dip_primitives::merkle::RevealedWeb3Name;
+use kilt_dip_primitives::RevealedWeb3Name;
 use pallet_did_lookup::linkable_account::LinkableAccountId;
 use pallet_dip_provider::traits::IdentityProvider;
 use parity_scale_codec::{Decode, Encode};

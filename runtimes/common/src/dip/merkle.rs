@@ -186,11 +186,8 @@ pub mod v0 {
 
 	fn get_linked_account_leaves(
 		linked_accounts: &[LinkableAccountId],
-	) -> impl Iterator<Item = RevealedAccountId<LinkableAccountId>> {
-		let leaves = linked_accounts
-			.iter()
-			.map(|linked_account| RevealedAccountId(linked_account.clone()));
-		leaves.collect::<Vec<_>>().into_iter()
+	) -> impl Iterator<Item = RevealedAccountId<LinkableAccountId>> + '_ {
+		linked_accounts.iter().cloned().map(RevealedAccountId)
 	}
 
 	fn get_web3name_leaf<Runtime>(
@@ -244,7 +241,7 @@ pub mod v0 {
 		let linked_accounts = linked_accounts.map(RevealedDidMerkleProofLeaf::from);
 		let web3_names = web3_name
 			.map(|n| vec![n])
-			.unwrap_or(vec![])
+			.unwrap_or_default()
 			.into_iter()
 			.map(RevealedDidMerkleProofLeaf::from);
 
@@ -348,7 +345,7 @@ pub mod v0 {
 
 		Ok(CompleteMerkleProof {
 			root,
-			proof: DidMerkleProofOf::<Runtime>::new(proof, leaves),
+			proof: DidMerkleProofOf::<Runtime>::new(proof.into_iter().into(), leaves),
 		})
 	}
 
