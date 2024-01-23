@@ -16,8 +16,6 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-//! Module to deal with cross-chain state proofs.
-
 use parity_scale_codec::Decode;
 use sp_runtime::traits::Hash;
 use sp_std::vec::Vec;

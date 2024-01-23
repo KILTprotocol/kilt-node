@@ -17,7 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use did::KeyIdOf;
-use frame_system::pallet_prelude::BlockNumberFor;
+use frame_system::pallet_prelude::{BlockNumberFor, HeaderFor};
 use pallet_did_lookup::linkable_account::LinkableAccountId;
 use pallet_dip_consumer::{traits::IdentityProofVerifier, RuntimeCallOf};
 use pallet_dip_provider::traits::IdentityCommitmentGenerator;
@@ -29,7 +29,7 @@ use sp_std::marker::PhantomData;
 
 use crate::{
 	merkle::v0::RevealedDidKey,
-	traits::{DipCallOriginFilter, GetWithArg, GetWithoutArg, Incrementable},
+	traits::{BenchmarkDefault, DipCallOriginFilter, GetWithArg, GetWithoutArg, Incrementable},
 	utils::OutputOf,
 	DipVerifiedInfo, Error,
 };
@@ -63,6 +63,7 @@ pub enum VersionedDipParachainStateProof<
 
 pub enum DipParachainStateProofVerifierError<DidOriginError> {
 	UnsupportedVersion,
+	ProofComponentTooLarge(u8),
 	ProofVerification(Error),
 	DidOriginError(DidOriginError),
 	Internal,
@@ -75,8 +76,13 @@ where
 	fn from(value: DipParachainStateProofVerifierError<DidOriginError>) -> Self {
 		match value {
 			DipParachainStateProofVerifierError::UnsupportedVersion => 1,
-			DipParachainStateProofVerifierError::ProofVerification(error) => u8::MAX as u16 + u8::from(error) as u16,
-			DipParachainStateProofVerifierError::DidOriginError(error) => u8::MAX as u16 * 2 + error.into() as u16,
+			DipParachainStateProofVerifierError::ProofComponentTooLarge(component_id) => {
+				u8::MAX as u16 + component_id as u16
+			}
+			DipParachainStateProofVerifierError::ProofVerification(error) => {
+				u8::MAX as u16 * 2 + u8::from(error) as u16
+			}
+			DipParachainStateProofVerifierError::DidOriginError(error) => u8::MAX as u16 * 3 + error.into() as u16,
 			DipParachainStateProofVerifierError::Internal => u16::MAX,
 		}
 	}
@@ -151,6 +157,7 @@ impl<
 		+ pallet_did_lookup::Config,
 	KiltRuntime::IdentityCommitmentGenerator:
 		IdentityCommitmentGenerator<KiltRuntime, Output = RelaychainRuntime::Hash>,
+	HeaderFor<KiltRuntime>: BenchmarkDefault,
 	SignedExtra: GetWithoutArg,
 	SignedExtra::Result: Encode,
 	DidCallVerifier: DipCallOriginFilter<
@@ -175,6 +182,7 @@ impl<
 		BlockNumberFor<KiltRuntime>,
 		Web3NameOf<KiltRuntime>,
 		LinkableAccountId,
+		MAX_DID_MERKLE_LEAVES_REVEALED,
 	>;
 
 	fn verify_proof_for_call_against_details(
@@ -213,8 +221,8 @@ impl<
 pub mod v0 {
 	use super::*;
 
-	use frame_system::pallet_prelude::HeaderFor;
-	use sp_runtime::traits::Zero;
+	use frame_support::ensure;
+	use sp_runtime::{traits::Zero, SaturatedConversion};
 
 	use crate::merkle::v0::ParachainDipDidProof;
 
@@ -245,7 +253,7 @@ pub mod v0 {
 	///   leaves that can be revealed as part of the DID Merkle proof.
 	/// * `MAX_DID_MERKLE_PROOF_LEAVE_SIZE`: The maximum size of each *blinded*
 	///   leaf revealed as part of the DID Merkle proof.
-	/// * `MAX_DID_MERKLE_PROOF_LEAVE_SIZE`: The maximum number of leaves that
+	/// * `MAX_DID_MERKLE_LEAVES_REVEALED`: The maximum number of leaves that
 	///   can be revealed as part of the DID Merkle proof.
 	pub struct ParachainVerifier<
 		RelaychainRuntime,
@@ -314,6 +322,7 @@ pub mod v0 {
 			+ pallet_did_lookup::Config,
 		KiltRuntime::IdentityCommitmentGenerator:
 			IdentityCommitmentGenerator<KiltRuntime, Output = RelaychainRuntime::Hash>,
+		HeaderFor<KiltRuntime>: BenchmarkDefault,
 		SignedExtra: GetWithoutArg,
 		SignedExtra::Result: Encode,
 		DidCallVerifier: DipCallOriginFilter<
@@ -339,6 +348,7 @@ pub mod v0 {
 			BlockNumberFor<KiltRuntime>,
 			Web3NameOf<KiltRuntime>,
 			LinkableAccountId,
+			MAX_DID_MERKLE_LEAVES_REVEALED,
 		>;
 
 		fn verify_proof_for_call_against_details(
@@ -349,7 +359,18 @@ pub mod v0 {
 			proof: Self::Proof,
 		) -> Result<Self::VerificationResult, Self::Error> {
 			// 1. Verify parachain state is finalized by relay chain and fresh.
-			// TODO: Enforce limits passed by the const generics for each step.
+			ensure!(
+				proof.provider_head_proof.proof.len() <= MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT.saturated_into(),
+				DipParachainStateProofVerifierError::ProofComponentTooLarge(0)
+			);
+			ensure!(
+				proof
+					.provider_head_proof
+					.proof
+					.iter()
+					.all(|l| l.len() <= MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE.saturated_into()),
+				DipParachainStateProofVerifierError::ProofComponentTooLarge(1)
+			);
 			let proof_without_relaychain = proof
 				.verify_provider_head_proof::<RelaychainRuntime::Hashing, RelaychainStateRootStore, HeaderFor<KiltRuntime>>(
 					KILT_PARA_ID,
@@ -357,13 +378,38 @@ pub mod v0 {
 				.map_err(DipParachainStateProofVerifierError::ProofVerification)?;
 
 			// 2. Verify commitment is included in provider parachain state.
+			ensure!(
+				proof_without_relaychain.dip_commitment_proof.0.len()
+					<= MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT.saturated_into(),
+				DipParachainStateProofVerifierError::ProofComponentTooLarge(2)
+			);
+			ensure!(
+				proof_without_relaychain
+					.dip_commitment_proof
+					.0
+					.iter()
+					.all(|l| l.len() <= MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE.saturated_into()),
+				DipParachainStateProofVerifierError::ProofComponentTooLarge(3)
+			);
 			let proof_without_parachain = proof_without_relaychain
 				.verify_dip_commitment_proof_for_subject::<KiltRuntime::Hashing, KiltRuntime>(subject)
 				.map_err(DipParachainStateProofVerifierError::ProofVerification)?;
 
 			// 3. Verify DIP Merkle proof.
+			ensure!(
+				proof_without_parachain.dip_proof.blinded.len() <= MAX_DID_MERKLE_PROOF_LEAVE_COUNT.saturated_into(),
+				DipParachainStateProofVerifierError::ProofComponentTooLarge(4)
+			);
+			ensure!(
+				proof_without_parachain
+					.dip_proof
+					.blinded
+					.iter()
+					.all(|l| l.len() <= MAX_DID_MERKLE_PROOF_LEAVE_SIZE.saturated_into()),
+				DipParachainStateProofVerifierError::ProofComponentTooLarge(5)
+			);
 			let proof_without_dip_merkle = proof_without_parachain
-				.verify_dip_proof::<KiltRuntime::Hashing>()
+				.verify_dip_proof::<KiltRuntime::Hashing, MAX_DID_MERKLE_LEAVES_REVEALED>()
 				.map_err(DipParachainStateProofVerifierError::ProofVerification)?;
 
 			// 4. Verify call is signed by one of the DID keys revealed in the proof
