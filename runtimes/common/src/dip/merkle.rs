@@ -80,6 +80,7 @@ pub mod v0 {
 		DidKeyRelationship, RevealedAccountId, RevealedDidKey, RevealedDidMerkleProofLeaf, RevealedWeb3Name,
 	};
 	use pallet_web3_names::Web3NameOf;
+	use sp_std::vec;
 
 	use crate::dip::did::Web3OwnershipOf;
 

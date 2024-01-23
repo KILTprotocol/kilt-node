@@ -1010,7 +1010,7 @@ impl<
 		} else {
 			cfg_if::cfg_if! {
 				if #[cfg(feature = "runtime-benchmarks")] {
-					let default_keys = vec![
+					let default_keys = sp_std::vec![
 						RevealedDidKey {
 							id: KiltDidKeyId::default(),
 							details: DidPublicKeyDetails {
@@ -1019,7 +1019,11 @@ impl<
 							},
 							relationship: DidVerificationKeyRelationship::Authentication.into()
 						}.into()];
-					(default_keys, 0u32)
+					let bounded_keys = default_keys.try_into().map_err(|_| {
+						log::error!("Should not fail to convert single element to a BoundedVec.");
+						Error::Internal
+					})?;
+					(bounded_keys, 0u32)
 				} else {
 					return Err(Error::InvalidDidKeyRevealed);
 				}
