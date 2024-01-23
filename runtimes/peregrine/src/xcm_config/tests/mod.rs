@@ -50,8 +50,9 @@ decl_test_networks! {
 use crate::Balances;
 
 #[test]
-fn test_ump_message_from_regular_account() {
+fn test_reserve_asset_transfer_from_regular_account() {
 	env_logger::init();
+	RococoNetwork::reset();
 	let rococo_universal_location = RococoUniversalLocation::get();
 
 	let account_id_on_peregrine = get_account_id_from_seed::<sr25519::Public>("Alice");
@@ -65,16 +66,8 @@ fn test_ump_message_from_regular_account() {
 	})
 	.into_location();
 
-	let message: Xcm<_> = vec![
-		WithdrawAsset((Here, 100).into()),
-		BuyExecution {
-			fees: (Here, 100).into(),
-			weight_limit: WeightLimit::Unlimited,
-		},
-	]
-	.into();
 	PeregrineRuntime::execute_with(|| {
-		assert_ok!(PeregrineXcm::send(
+		assert_ok!(PeregrineXcm::reserve_transfer_assets(
 			RawOrigin::Signed(account_id_on_peregrine).into(),
 			Box::new(Parent.into()),
 			Box::new(VersionedXcm::from(message)),
@@ -94,6 +87,7 @@ fn test_ump_message_from_regular_account() {
 #[test]
 fn test_ump_message_from_parachain_account() {
 	env_logger::init();
+	RococoNetwork::reset();
 	let rococo_universal_location = RococoUniversalLocation::get();
 
 	let peregrine_universal_location =
