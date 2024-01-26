@@ -16,6 +16,7 @@ substrate-wasm-builder.workspace = true
 [dependencies]
 parity-scale-codec = {workspace = true, features = ["derive"]}
 scale-info = {workspace = true, features = ["derive"]}
+cfg-if.workspace = true
 
 # DIP
 dip-provider-runtime-template.workspace = true

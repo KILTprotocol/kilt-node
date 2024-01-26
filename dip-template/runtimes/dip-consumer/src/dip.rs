@@ -97,6 +97,8 @@ impl Contains<RuntimeCall> for PreliminaryDipOriginFilter {
 fn derive_verification_key_relationship(call: &RuntimeCall) -> Option<DidVerificationKeyRelationship> {
 	match call {
 		RuntimeCall::PostIt { .. } => Some(DidVerificationKeyRelationship::Authentication),
+		#[cfg(feature = "runtime-benchmarks")]
+		RuntimeCall::System(frame_system::Call::remark { .. }) => Some(DidVerificationKeyRelationship::Authentication),
 		RuntimeCall::Utility(pallet_utility::Call::batch { calls }) => single_key_relationship(calls.iter()).ok(),
 		RuntimeCall::Utility(pallet_utility::Call::batch_all { calls }) => single_key_relationship(calls.iter()).ok(),
 		RuntimeCall::Utility(pallet_utility::Call::force_batch { calls }) => single_key_relationship(calls.iter()).ok(),
