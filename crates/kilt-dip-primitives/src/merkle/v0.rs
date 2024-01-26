@@ -603,8 +603,14 @@ impl<
 		StateRootStore: GetWithArg<RelayBlockNumber, Result = Option<OutputOf<RelayHasher>>>,
 		ProviderHeader: Decode + HeaderT<Hash = OutputOf<RelayHasher>, Number = KiltBlockNumber>,
 	{
-		let relay_state_root =
-			StateRootStore::get(&self.provider_head_proof.relay_block_number).ok_or(Error::RelayStateRootNotFound)?;
+		let relay_state_root = StateRootStore::get(&self.provider_head_proof.relay_block_number);
+		cfg_if::cfg_if! {
+			if #[cfg(feature = "runtime-benchmarks")] {
+				let relay_state_root = relay_state_root.unwrap_or_default();
+			} else {
+				let relay_state_root = relay_state_root.ok_or(Error::RelayStateRootNotFound)?;
+			}
+		}
 		self.verify_provider_head_proof_with_state_root::<RelayHasher, ProviderHeader>(
 			provider_para_id,
 			&relay_state_root,
@@ -796,35 +802,39 @@ impl<
 	where
 		DidMerkleHasher: Hash<Output = Commitment>,
 	{
-		let mut max_revealed_leaves_iter = self
-			.dip_proof
-			.revealed
-			.iter()
-			.take(MAX_REVEALED_LEAVES_COUNT.saturated_into());
+		log::debug!(target: "dip-provider", "91");
+		let mut revealed_leaves_iter = self.dip_proof.revealed.iter();
 		// If more than `max_revealed_leaves_count` are revealed, return an error.
-		ensure!(max_revealed_leaves_iter.next().is_none(), Error::TooManyLeavesRevealed);
+		ensure!(
+			revealed_leaves_iter.by_ref().count() <= MAX_REVEALED_LEAVES_COUNT.saturated_into(),
+			Error::TooManyLeavesRevealed
+		);
+		log::debug!(target: "dip-provider", "92");
 
-		let proof_leaves_key_value_pairs: Vec<(Vec<u8>, Option<Vec<u8>>)> = max_revealed_leaves_iter
-			.by_ref()
+		let proof_leaves_key_value_pairs: Vec<(Vec<u8>, Option<Vec<u8>>)> = revealed_leaves_iter
 			.map(|revealed_leaf| (revealed_leaf.encoded_key(), Some(revealed_leaf.encoded_value())))
 			.collect();
+		log::debug!(target: "dip-provider", "94");
 		let proof_verification_result = verify_trie_proof::<LayoutV1<DidMerkleHasher>, _, _, _>(
 			&self.dip_commitment,
 			self.dip_proof.blinded.as_slice(),
 			&proof_leaves_key_value_pairs,
 		);
+		log::debug!(target: "dip-provider", "95");
 
 		cfg_if::cfg_if! {
 			if #[cfg(feature = "runtime-benchmarks")] {
-				proof_verification_result.map_err(|_| Error::InvalidDidMerkleProof)?;
-			} else {
 				drop(proof_verification_result);
+			} else {
+				proof_verification_result.map_err(|_| Error::InvalidDidMerkleProof)?;
 			}
 		}
+		log::debug!(target: "dip-provider", "96");
 		let revealed_leaves = BoundedVec::try_from(self.dip_proof.revealed).map_err(|_| {
 			log::error!("Should not fail to construct BoundedVec since bounds were checked before.");
 			Error::Internal
 		})?;
+		log::debug!(target: "dip-provider", "97");
 
 		Ok(DipDetailsAndUnverifiedDidSignatureTime {
 			revealed_leaves,
