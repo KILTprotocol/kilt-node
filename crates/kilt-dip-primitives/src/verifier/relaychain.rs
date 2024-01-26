@@ -97,13 +97,13 @@ pub struct KiltVersionedRelaychainVerifier<
 	KiltRuntime,
 	DidCallVerifier,
 	SignedExtra = (),
-	const MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT: u32 = 10,
+	const MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT: u32 = 64,
 	const MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE: u32 = 128,
-	const MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT: u32 = 10,
+	const MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT: u32 = 64,
 	const MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE: u32 = 128,
-	const MAX_DID_MERKLE_PROOF_LEAVE_COUNT: u32 = 10,
+	const MAX_DID_MERKLE_PROOF_LEAVE_COUNT: u32 = 64,
 	const MAX_DID_MERKLE_PROOF_LEAVE_SIZE: u32 = 128,
-	const MAX_DID_MERKLE_LEAVES_REVEALED: u32 = 10,
+	const MAX_DID_MERKLE_LEAVES_REVEALED: u32 = 64,
 >(#[allow(clippy::type_complexity)] PhantomData<(ConsumerBlockHashStore, KiltRuntime, DidCallVerifier, SignedExtra)>);
 
 impl<
@@ -208,8 +208,9 @@ impl<
 pub mod v0 {
 	use super::*;
 
+	use frame_support::ensure;
 	use frame_system::pallet_prelude::HeaderFor;
-	use sp_runtime::traits::Zero;
+	use sp_runtime::{traits::Zero, SaturatedConversion};
 
 	use crate::RelayDipDidProof;
 
@@ -341,16 +342,54 @@ pub mod v0 {
 				.map_err(DipRelaychainStateProofVerifierError::ProofVerification)?;
 
 			// 2. Verify parachain state is finalized by relay chain and fresh.
+			ensure!(
+				proof_without_header.provider_head_proof.proof.len()
+					<= MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT.saturated_into(),
+				DipRelaychainStateProofVerifierError::ProofComponentTooLarge(0)
+			);
+			ensure!(
+				proof_without_header
+					.provider_head_proof
+					.proof
+					.iter()
+					.all(|l| l.len() <= MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE.saturated_into()),
+				DipRelaychainStateProofVerifierError::ProofComponentTooLarge(1)
+			);
 			let proof_without_relaychain = proof_without_header
 				.verify_provider_head_proof::<ConsumerRuntime::Hashing, HeaderFor<KiltRuntime>>(KILT_PARA_ID)
 				.map_err(DipRelaychainStateProofVerifierError::ProofVerification)?;
 
 			// 3. Verify commitment is included in provider parachain state.
+			ensure!(
+				proof_without_relaychain.dip_commitment_proof.0.len()
+					<= MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT.saturated_into(),
+				DipRelaychainStateProofVerifierError::ProofComponentTooLarge(2)
+			);
+			ensure!(
+				proof_without_relaychain
+					.dip_commitment_proof
+					.0
+					.iter()
+					.all(|l| l.len() <= MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE.saturated_into()),
+				DipRelaychainStateProofVerifierError::ProofComponentTooLarge(3)
+			);
 			let proof_without_parachain = proof_without_relaychain
 				.verify_dip_commitment_proof_for_subject::<KiltRuntime::Hashing, KiltRuntime>(subject)
 				.map_err(DipRelaychainStateProofVerifierError::ProofVerification)?;
 
 			// 4. Verify DIP Merkle proof.
+			ensure!(
+				proof_without_parachain.dip_proof.blinded.len() <= MAX_DID_MERKLE_PROOF_LEAVE_COUNT.saturated_into(),
+				DipRelaychainStateProofVerifierError::ProofComponentTooLarge(4)
+			);
+			ensure!(
+				proof_without_parachain
+					.dip_proof
+					.blinded
+					.iter()
+					.all(|l| l.len() <= MAX_DID_MERKLE_PROOF_LEAVE_SIZE.saturated_into()),
+				DipRelaychainStateProofVerifierError::ProofComponentTooLarge(5)
+			);
 			let proof_without_dip_merkle = proof_without_parachain
 				.verify_dip_proof::<KiltRuntime::Hashing, MAX_DID_MERKLE_LEAVES_REVEALED>()
 				.map_err(DipRelaychainStateProofVerifierError::ProofVerification)?;
