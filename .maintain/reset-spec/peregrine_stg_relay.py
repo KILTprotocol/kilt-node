@@ -29,7 +29,7 @@ def update_spec(input: typing.Dict):
             ]
         ]
     })
-    input["genesis"]["runtime"]["balances"]["balances"] = [
+    input["genesis"]["runtimeGenesis"]["patch"]["balances"]["balances"] = [
         [
             acc_alice,
             1000000000000000000
@@ -55,83 +55,84 @@ def update_spec(input: typing.Dict):
             1000000000000000000
         ],
     ]
-    input["genesis"]["runtime"]["session"]["keys"] = [
+    input["genesis"]["runtimeGenesis"]["patch"]["session"]["keys"] = [
         [
             acc_alice,
             acc_alice,
             {
-                "grandpa": "5H7KYuAdFtXTjdSeWjEKidoHGLCDuRe3vWpVK5pxEux1ysrU",
-                "babe": "5F7iGThj9n28FdQUzBfrWRALMqLvELEndVbXQ1e9DatM23Rz",
-                "im_online": "5F7iGThj9n28FdQUzBfrWRALMqLvELEndVbXQ1e9DatM23Rz",
-                "para_validator": "5F7iGThj9n28FdQUzBfrWRALMqLvELEndVbXQ1e9DatM23Rz",
-                "para_assignment": "5F7iGThj9n28FdQUzBfrWRALMqLvELEndVbXQ1e9DatM23Rz",
-                "authority_discovery": "5F7iGThj9n28FdQUzBfrWRALMqLvELEndVbXQ1e9DatM23Rz"
+                "beefy": "KW4eVXdGVk5uK8GeucUxXmyHyUbLJu7Uoge7qHryUud3UzTRk",
+                "grandpa": "5CivBtb51w9YRUFosRuriWCJDxke7ePPzHfVsQv4xCFWB3cW",
+                "babe": "5DLN2JrTfFw3gz6fowJwNzVZ6eqY17Y4cRa3McZHRPtcbbGp",
+                "para_validator": "5DLN2JrTfFw3gz6fowJwNzVZ6eqY17Y4cRa3McZHRPtcbbGp",
+                "para_assignment": "5DLN2JrTfFw3gz6fowJwNzVZ6eqY17Y4cRa3McZHRPtcbbGp",
+                "authority_discovery": "5DLN2JrTfFw3gz6fowJwNzVZ6eqY17Y4cRa3McZHRPtcbbGp"
             }
         ],
         [
             acc_bob,
             acc_bob,
             {
-                "grandpa": "5H25SYu7RHgvNrJbcpHKdRv5gjeKYxfn4wvAD3hpu2cbhRyW",
-                "babe": "5CGQvLkqjGb1v5ptKoeQdtXJXQkEXmfhB9CFDLSS8MUYkDg2",
-                "im_online": "5CGQvLkqjGb1v5ptKoeQdtXJXQkEXmfhB9CFDLSS8MUYkDg2",
-                "para_validator": "5CGQvLkqjGb1v5ptKoeQdtXJXQkEXmfhB9CFDLSS8MUYkDg2",
-                "para_assignment": "5CGQvLkqjGb1v5ptKoeQdtXJXQkEXmfhB9CFDLSS8MUYkDg2",
-                "authority_discovery": "5CGQvLkqjGb1v5ptKoeQdtXJXQkEXmfhB9CFDLSS8MUYkDg2"
+                "beefy": "KW3zUEVDPjM9xc1DMbVNe2GbSFWZN35x264VrnUFJk5KLKRs8",
+                "grandpa": "5HG2xP1NVfDnYFpzZghNWp19zmrFdmcidS8ijW3eHyVgDarW",
+                "babe": "5Fbhgb2YW52EjYn5eyUa22dTLFPv3rhmzujrkcfGxXZieSnD",
+                "para_validator": "5Fbhgb2YW52EjYn5eyUa22dTLFPv3rhmzujrkcfGxXZieSnD",
+                "para_assignment": "5Fbhgb2YW52EjYn5eyUa22dTLFPv3rhmzujrkcfGxXZieSnD",
+                "authority_discovery": "5Fbhgb2YW52EjYn5eyUa22dTLFPv3rhmzujrkcfGxXZieSnD"
             }
         ],
         [
             acc_charlie,
             acc_charlie,
             {
-                "grandpa": "5FBpVyAAB4E9woWhgg19LWiKDqUdMMkCZ41b6wTFVLR3qfxS",
-                "babe": "5Cz484xJRDU1MzbdC853TomhfPbuwVftTefAraaqReWZhaMu",
-                "im_online": "5Cz484xJRDU1MzbdC853TomhfPbuwVftTefAraaqReWZhaMu",
-                "para_validator": "5Cz484xJRDU1MzbdC853TomhfPbuwVftTefAraaqReWZhaMu",
-                "para_assignment": "5Cz484xJRDU1MzbdC853TomhfPbuwVftTefAraaqReWZhaMu",
-                "authority_discovery": "5Cz484xJRDU1MzbdC853TomhfPbuwVftTefAraaqReWZhaMu"
+                "beefy": "KW87Cp6e4x17zyBJ9dxmet3EJMYNZLtTUFxgKDDsiEJCaPKht",
+                "grandpa": "5FKEiJd9D8CEDdmMNWTuxqQUxQGdXoFdLUpnZwjiRxUM8Q2J",
+                "babe": "5EZikizy2cNFQPioevi2JxL2VsqWJMWfL4BtnDPK7mds8v7T",
+                "para_validator": "5EZikizy2cNFQPioevi2JxL2VsqWJMWfL4BtnDPK7mds8v7T",
+                "para_assignment": "5EZikizy2cNFQPioevi2JxL2VsqWJMWfL4BtnDPK7mds8v7T",
+                "authority_discovery": "5EZikizy2cNFQPioevi2JxL2VsqWJMWfL4BtnDPK7mds8v7T"
             }
         ],
         [
             acc_dave,
             acc_dave,
             {
-                "grandpa": "5CEDZib61ec64jfRpZUe7Q78Yh4oAmzMwkr519rYWBkH8hGZ",
-                "babe": "5FxM6yYBFvMeX3C2QrQDXJ8LhhzG5sPjgUtX77cX1wihHhVq",
-                "im_online": "5FxM6yYBFvMeX3C2QrQDXJ8LhhzG5sPjgUtX77cX1wihHhVq",
-                "para_validator": "5FxM6yYBFvMeX3C2QrQDXJ8LhhzG5sPjgUtX77cX1wihHhVq",
-                "para_assignment": "5FxM6yYBFvMeX3C2QrQDXJ8LhhzG5sPjgUtX77cX1wihHhVq",
-                "authority_discovery": "5FxM6yYBFvMeX3C2QrQDXJ8LhhzG5sPjgUtX77cX1wihHhVq"
+                "beefy": "KWBtBmKhK629mhDtTVhZwRXgVVEyFqzSkUEdVzyW5vrBWE1H9",
+                "grandpa": "5HMx5YbAjzv715hkCQwpcqedvWFU82ytsWj9n4sobhBQv8Dc",
+                "babe": "5Hj5gZH93HZZyj7Lo8zPvBWLFufwtP6qXy2NUKepsXjYKgMR",
+                "para_validator": "5Hj5gZH93HZZyj7Lo8zPvBWLFufwtP6qXy2NUKepsXjYKgMR",
+                "para_assignment": "5Hj5gZH93HZZyj7Lo8zPvBWLFufwtP6qXy2NUKepsXjYKgMR",
+                "authority_discovery": "5Hj5gZH93HZZyj7Lo8zPvBWLFufwtP6qXy2NUKepsXjYKgMR"
             }
         ],
         [
             acc_eve,
             acc_eve,
             {
-                "grandpa": "5GKaEkaA8NVdpsruRcnpeLBNGzMcFsEfwEY3Jq7Vmw9brztR",
-                "babe": "5GnPNFKvLRy9FF8N1G9YjGmjJA4cUsUC7WgEx3rDeMFnZsXk",
-                "im_online": "5GnPNFKvLRy9FF8N1G9YjGmjJA4cUsUC7WgEx3rDeMFnZsXk",
-                "para_validator": "5GnPNFKvLRy9FF8N1G9YjGmjJA4cUsUC7WgEx3rDeMFnZsXk",
-                "para_assignment": "5GnPNFKvLRy9FF8N1G9YjGmjJA4cUsUC7WgEx3rDeMFnZsXk",
-                "authority_discovery": "5GnPNFKvLRy9FF8N1G9YjGmjJA4cUsUC7WgEx3rDeMFnZsXk"
+                "authority_discovery": "5H6Vwmomuc9mProwMz1uj64rwqcwAReC3guXTJdWutjATZ5o",
+                "babe": "5H6Vwmomuc9mProwMz1uj64rwqcwAReC3guXTJdWutjATZ5o",
+                "beefy": "KW4zpcJ1b1op86FtyKXuomJzzHrMaeMFhLtZHTGnao2HdgoXr",
+                "grandpa": "5HZQiPE7pN7BWv94vPbBmMeuTL5maxp2op4VeftBSaGVuqRA",
+                "para_assignment": "5H6Vwmomuc9mProwMz1uj64rwqcwAReC3guXTJdWutjATZ5o",
+                "para_validator": "5H6Vwmomuc9mProwMz1uj64rwqcwAReC3guXTJdWutjATZ5o"
             }
         ],
         [
             acc_ferdie,
             acc_ferdie,
             {
-                "grandpa": "5CSYQMyi7iGVuHLgLNDXcpPXZgvWWrP7mqd1sHdBUSeafXf5",
-                "babe": "5CPW6uFwdjoHTj14C1VWiK96Cj2sJBALbC964zHaGAni3J2S",
-                "im_online": "5CPW6uFwdjoHTj14C1VWiK96Cj2sJBALbC964zHaGAni3J2S",
-                "para_validator": "5CPW6uFwdjoHTj14C1VWiK96Cj2sJBALbC964zHaGAni3J2S",
-                "para_assignment": "5CPW6uFwdjoHTj14C1VWiK96Cj2sJBALbC964zHaGAni3J2S",
-                "authority_discovery": "5CPW6uFwdjoHTj14C1VWiK96Cj2sJBALbC964zHaGAni3J2S"
+                "authority_discovery": "5DcY86VRU8V68theAJwCVubsBbbz5fGDyq9XuCfkexzN5FEi",
+                "babe": "5DcY86VRU8V68theAJwCVubsBbbz5fGDyq9XuCfkexzN5FEi",
+                "beefy": "KW4gMUL2VVYejMyhJQTjPVHveWfNf3NznvWCLLGzVDDR3qpee",
+                "grandpa": "5EXkVwaWd4bKKLVyW2G5K6ZfhvFyJUpf5qoFvyJvEYrxchsF",
+                "para_assignment": "5DcY86VRU8V68theAJwCVubsBbbz5fGDyq9XuCfkexzN5FEi",
+                "para_validator": "5DcY86VRU8V68theAJwCVubsBbbz5fGDyq9XuCfkexzN5FEi"
             }
         ]
     ]
-    input["genesis"]["runtime"]["sudo"]["key"] = acc_alice
-    input["genesis"]["runtime"]["staking"].update({
+    input["genesis"]["runtimeGenesis"]["patch"]["sudo"]["key"] = acc_alice
+    input["genesis"]["runtimeGenesis"]["patch"]["staking"].update({
         "validatorCount": 6,
+        "invulnerables":[acc_alice, acc_bob],
         "stakers": [
             [
                 acc_alice,
@@ -171,51 +172,66 @@ def update_spec(input: typing.Dict):
             ]
         ]
     })
-    input["genesis"]["runtime"]["configuration"]["config"].update(
+    input["genesis"]["runtimeGenesis"]["patch"]["configuration"]["config"].update(
         {
-            "max_code_size": 3145728,
-            "max_head_data_size": 32768,
-            "max_upward_queue_count": 8,
-            "max_upward_queue_size": 1048576,
-            "max_upward_message_size": 1048576,
-            "max_upward_message_num_per_candidate": 5,
-            "hrmp_max_message_num_per_candidate": 5,
-            "validation_upgrade_cooldown": 20,
-            "validation_upgrade_delay": 10,
-            "max_pov_size": 5242880,
-            "max_downward_message_size": 1048576,
-            "ump_service_total_weight": 100000000000,
-            "hrmp_max_parachain_outbound_channels": 4,
-            "hrmp_max_parathread_outbound_channels": 4,
-            "hrmp_sender_deposit": 0,
-            "hrmp_recipient_deposit": 0,
-            "hrmp_channel_max_capacity": 8,
-            "hrmp_channel_max_total_size": 8192,
-            "hrmp_max_parachain_inbound_channels": 4,
-            "hrmp_max_parathread_inbound_channels": 4,
-            "hrmp_channel_max_message_size": 1048576,
+            "approval_voting_params": {
+              "max_approval_coalesce_count": 1
+            },
+            "async_backing_params": {
+              "allowed_ancestry_len": 0,
+              "max_candidate_depth": 0
+            },
             "code_retention_period": 1200,
-            "parathread_cores": 0,
-            "parathread_retries": 0,
-            "group_rotation_frequency": 20,
-            "chain_availability_period": 4,
-            "thread_availability_period": 4,
-            "scheduling_lookahead": 0,
-            "max_validators_per_core": None,
-            "max_validators": None,
+            "coretime_cores": 0,
             "dispute_period": 6,
             "dispute_post_conclusion_acceptance_period": 100,
-            "dispute_max_spam_slots": 2,
-            "dispute_conclusion_by_time_out_period": 200,
-            "no_show_slots": 2,
+            "executor_params": [],
+            "group_rotation_frequency": 20,
+            "hrmp_channel_max_capacity": 8,
+            "hrmp_channel_max_message_size": 1048576,
+            "hrmp_channel_max_total_size": 8192,
+            "hrmp_max_message_num_per_candidate": 5,
+            "hrmp_max_parachain_inbound_channels": 4,
+            "hrmp_max_parachain_outbound_channels": 4,
+            "hrmp_recipient_deposit": 0,
+            "hrmp_sender_deposit": 0,
+            "max_code_size": 3145728,
+            "max_downward_message_size": 1048576,
+            "max_head_data_size": 32768,
+            "max_pov_size": 5242880,
+            "max_upward_message_num_per_candidate": 5,
+            "max_upward_message_size": 51200,
+            "max_upward_queue_count": 8,
+            "max_upward_queue_size": 1048576,
+            "max_validators": 200,
+            "max_validators_per_core": 5,
+            "minimum_backing_votes": 2,
+            "minimum_validation_upgrade_delay": 5,
             "n_delay_tranches": 25,
-            "zeroth_delay_tranche_width": 0,
             "needed_approvals": 2,
-            "relay_vrf_modulo_samples": 2,
-            "ump_max_individual_weight": 20000000000,
-            "pvf_checking_enabled": False,
+            "no_show_slots": 2,
+            "node_features": {
+              "bits": 0,
+              "data": [],
+              "head": {
+                "index": 0,
+                "width": 8
+              },
+              "order": "bitvec::order::Lsb0"
+            },
+            "on_demand_base_fee": 10000000,
+            "on_demand_fee_variability": 30000000,
+            "on_demand_queue_max_size": 10000,
+            "on_demand_retries": 0,
+            "on_demand_target_queue_utilization": 250000000,
+            "on_demand_ttl": 5,
+            "paras_availability_period": 4,
             "pvf_voting_ttl": 2,
-            "minimum_validation_upgrade_delay": 5
+            "relay_vrf_modulo_samples": 2,
+            "scheduling_lookahead": 1,
+            "validation_upgrade_cooldown": 2,
+            "validation_upgrade_delay": 2,
+            "zeroth_delay_tranche_width": 0
         }
     )
 
