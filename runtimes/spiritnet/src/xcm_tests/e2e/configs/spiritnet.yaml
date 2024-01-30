@@ -1,0 +1,3 @@
+endpoint: wss://spiritnet.kilt.io
+# mock-signature-host: true
+db: out/spiritnet/db.sqlite

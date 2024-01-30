@@ -55,23 +55,33 @@ fn test_reserve_asset_transfer_from_regular_account() {
 	RococoNetwork::reset();
 	let rococo_universal_location = RococoUniversalLocation::get();
 
-	let account_id_on_peregrine = get_account_id_from_seed::<sr25519::Public>("Alice");
-	let account_id_universal_location = PeregrineRuntime::execute_with(|| {
+	let alice_account_id_on_peregrine = get_account_id_from_seed::<sr25519::Public>("Alice");
+	let alice_account_id_universal_location = PeregrineRuntime::execute_with(|| {
 		PeregrineUniversalLocation::get()
 			.pushed_with(AccountId32 {
 				network: None,
-				id: account_id_on_peregrine.clone().into(),
+				id: alice_account_id_on_peregrine.clone().into(),
 			})
 			.expect("Should not fail to create absolute account ID.")
 	})
 	.into_location();
 
 	PeregrineRuntime::execute_with(|| {
-		assert_ok!(PeregrineXcm::reserve_transfer_assets(
-			RawOrigin::Signed(account_id_on_peregrine).into(),
+		assert_ok!(PeregrineXcm::limited_reserve_transfer_assets(
+			RawOrigin::Signed(alice_account_id_on_peregrine.clone()).into(),
 			Box::new(Parent.into()),
-			Box::new(VersionedXcm::from(message)),
+			Box::new(
+				X1(AccountId32 {
+					network: None,
+					id: alice_account_id_on_peregrine.into()
+				})
+				.into()
+			),
+			Box::new((Here, 1_000_000).into()),
+			0,
+			WeightLimit::Unlimited,
 		));
+		println!("AAAAA {:?}", PeregrineSystem::events());
 	});
 	// Regular parachain accounts cannot be translated to account IDs, hence the
 	// conversion in `WithdrawAsset` should fail.
