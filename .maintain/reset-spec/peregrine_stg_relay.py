@@ -10,24 +10,12 @@ def update_spec(input: typing.Dict):
     acc_ferdie = "5G6ThxmfSbHVt2u8WmZmTH3xeKBckFFDGA69E6cSXtYPaiwT"
 
     input.update({
-        "bootNodes": [
-            "/dns4/eyrie-1.kilt.io/tcp/30380/p2p/12D3KooWMJvZTCSNc2t8DKPSJH1LBqLrAWK5yxENfSJ3WPj1UMnP",
-            "/dns4/eyrie-1.kilt.io/tcp/30381/p2p/12D3KooWPkTuR4PFgYAXA5UPRkXJRLrE7t45AXM3obwrweNUUfuR",
-            "/dns4/eyrie-2.kilt.io/tcp/30382/p2p/12D3KooWEPScFexvmgxesjbwqzsVEuYYYf8t9wUnFK2U6SnPNWMY",
-            "/dns4/eyrie-2.kilt.io/tcp/30383/p2p/12D3KooWFYzkpamEy3M415hd93W7iNLt81kuqzhLKMdvTGmq9zuV",
-            "/dns4/eyrie-3.kilt.io/tcp/30384/p2p/12D3KooWSa1TqsrBuB32fMcGWfS3aZDT1NicsSVs7egPNXtsD5Am",
-            "/dns4/eyrie-3.kilt.io/tcp/30385/p2p/12D3KooWQNXPgLttsQLKA1PAEWNHzJBLQShPx1tUaMoJew4d3yke",
-        ],
+        "bootNodes": [],
         "chainType": "Live",
         "name": "Peregrine-stg Westend-Relay",
         "id": "westend_peregrine_stg_relay",
         "protocolId": "Rkilt4",
-        "telemetryEndpoints": [
-            [
-                "/dns/telemetry-backend.kilt.io/tcp/8080/x-parity-wss/%2Fsubmit",
-                0
-            ]
-        ]
+        "telemetryEndpoints": None
     })
     input["genesis"]["runtimeGenesis"]["patch"]["balances"]["balances"] = [
         [
