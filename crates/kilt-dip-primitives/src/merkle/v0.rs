@@ -220,6 +220,12 @@ impl From<Error> for u8 {
 	}
 }
 
+//TODO: steps:
+// 1. Create a DID with a web3name and the maximum number of allowed linked
+//    accounts
+// 2. Create an identity commitment
+// 3. Call the cross-chain operation, and take not of the generated proof.
+
 /// A DIP proof submitted to a relaychain consumer.
 ///
 /// The generic types indicate the following:

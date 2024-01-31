@@ -449,7 +449,15 @@ pub mod v0 {
 			let consumer_genesis_hash =
 				frame_system::Pallet::<ConsumerRuntime>::block_hash(BlockNumberFor::<ConsumerRuntime>::zero());
 			let signed_extra = SignedExtra::get();
-			let encoded_payload = (call, &identity_details, submitter, consumer_genesis_hash, signed_extra).encode();
+			let encoded_payload = (
+				call,
+				&identity_details,
+				submitter,
+				proof_without_dip_merkle.signature.valid_until,
+				consumer_genesis_hash,
+				signed_extra,
+			)
+				.encode();
 			let revealed_did_info = proof_without_dip_merkle
 				.verify_signature_time(&current_block_number)
 				.and_then(|p| p.retrieve_signing_leaf_for_payload(&encoded_payload[..]))
