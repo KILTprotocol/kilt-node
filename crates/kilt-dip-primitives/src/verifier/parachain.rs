@@ -132,11 +132,11 @@ pub struct KiltVersionedParachainVerifier<
 	DidCallVerifier,
 	SignedExtra = (),
 	const MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT: u32 = 64,
-	const MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE: u32 = 128,
+	const MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE: u32 = 1024,
 	const MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT: u32 = 64,
-	const MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE: u32 = 128,
+	const MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE: u32 = 1024,
 	const MAX_DID_MERKLE_PROOF_LEAVE_COUNT: u32 = 64,
-	const MAX_DID_MERKLE_PROOF_LEAVE_SIZE: u32 = 128,
+	const MAX_DID_MERKLE_PROOF_LEAVE_SIZE: u32 = 1024,
 	const MAX_DID_MERKLE_LEAVES_REVEALED: u32 = 64,
 >(
 	PhantomData<(
@@ -391,10 +391,12 @@ pub mod v0 {
 			proof: Self::Proof,
 		) -> Result<Self::VerificationResult, Self::Error> {
 			// 1. Verify parachain state is finalized by relay chain and fresh.
+			log::debug!(target: "dip-consumer", "AAAAA");
 			ensure!(
 				proof.provider_head_proof.proof.len() <= MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT.saturated_into(),
 				DipParachainStateProofVerifierError::ProofComponentTooLarge(0)
 			);
+			log::debug!(target: "dip-consumer", "BBBBB");
 			ensure!(
 				proof
 					.provider_head_proof
@@ -403,11 +405,14 @@ pub mod v0 {
 					.all(|l| l.len() <= MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE.saturated_into()),
 				DipParachainStateProofVerifierError::ProofComponentTooLarge(1)
 			);
+			log::debug!(target: "dip-consumer", "CCCCC");
+
 			let proof_without_relaychain = proof
 				.verify_provider_head_proof::<RelaychainRuntime::Hashing, RelaychainStateRootStore, HeaderFor<KiltRuntime>>(
 					KILT_PARA_ID,
 				)
 				.map_err(DipParachainStateProofVerifierError::ProofVerification)?;
+			log::debug!(target: "dip-consumer", "DDDDD");
 
 			// 2. Verify commitment is included in provider parachain state.
 			ensure!(
@@ -415,6 +420,7 @@ pub mod v0 {
 					<= MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT.saturated_into(),
 				DipParachainStateProofVerifierError::ProofComponentTooLarge(2)
 			);
+			log::debug!(target: "dip-consumer", "EEEEE");
 			ensure!(
 				proof_without_relaychain
 					.dip_commitment_proof
@@ -423,15 +429,18 @@ pub mod v0 {
 					.all(|l| l.len() <= MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE.saturated_into()),
 				DipParachainStateProofVerifierError::ProofComponentTooLarge(3)
 			);
+			log::debug!(target: "dip-consumer", "FFFFF");
 			let proof_without_parachain = proof_without_relaychain
 				.verify_dip_commitment_proof_for_subject::<KiltRuntime::Hashing, KiltRuntime>(subject)
 				.map_err(DipParachainStateProofVerifierError::ProofVerification)?;
+			log::debug!(target: "dip-consumer", "GGGGG");
 
 			// 3. Verify DIP Merkle proof.
 			ensure!(
 				proof_without_parachain.dip_proof.blinded.len() <= MAX_DID_MERKLE_PROOF_LEAVE_COUNT.saturated_into(),
 				DipParachainStateProofVerifierError::ProofComponentTooLarge(4)
 			);
+			log::debug!(target: "dip-consumer", "HHHHH");
 			ensure!(
 				proof_without_parachain
 					.dip_proof
@@ -440,9 +449,11 @@ pub mod v0 {
 					.all(|l| l.len() <= MAX_DID_MERKLE_PROOF_LEAVE_SIZE.saturated_into()),
 				DipParachainStateProofVerifierError::ProofComponentTooLarge(5)
 			);
+			log::debug!(target: "dip-consumer", "IIIII");
 			let proof_without_dip_merkle = proof_without_parachain
 				.verify_dip_proof::<KiltRuntime::Hashing, MAX_DID_MERKLE_LEAVES_REVEALED>()
 				.map_err(DipParachainStateProofVerifierError::ProofVerification)?;
+			log::debug!(target: "dip-consumer", "JJJJJ");
 
 			// 4. Verify call is signed by one of the DID keys revealed in the proof
 			let current_block_number = frame_system::Pallet::<ConsumerRuntime>::block_number();
@@ -462,13 +473,16 @@ pub mod v0 {
 				.verify_signature_time(&current_block_number)
 				.and_then(|p| p.retrieve_signing_leaf_for_payload(&encoded_payload[..]))
 				.map_err(DipParachainStateProofVerifierError::ProofVerification)?;
+			log::debug!(target: "dip-consumer", "KKKKK");
 
 			// 5. Verify the signing key fulfills the requirements
 			let signing_key = revealed_did_info
 				.get_signing_leaf()
 				.map_err(DipParachainStateProofVerifierError::ProofVerification)?;
+			log::debug!(target: "dip-consumer", "LLLLL");
 			DidCallVerifier::check_call_origin_info(call, signing_key)
 				.map_err(DipParachainStateProofVerifierError::DidOriginError)?;
+			log::debug!(target: "dip-consumer", "MMMMM");
 
 			// 6. Increment the local details
 			if let Some(details) = identity_details {
