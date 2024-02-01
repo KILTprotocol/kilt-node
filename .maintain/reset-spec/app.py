@@ -61,7 +61,7 @@ def make_custom_spec(tmp_dir, docker_img, plain_file, out_file, update_spec, spe
 
     if args.debug:
         with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", suffix=".json", delete=False) as tf:
-            json.dump(in_json, tf, indent="  ")
+            json.dump(in_json, tf, indent=2)
             tf_name = tf.name
         logger.debug("Writing unmodified spec to '%s'", tf_name)
 
@@ -82,7 +82,7 @@ def make_custom_spec(tmp_dir, docker_img, plain_file, out_file, update_spec, spe
 
     logger.debug("writing updated intermediate plain spec to %s", plain_path)
     with open(plain_path, "w") as f:
-        json.dump(in_json, f)
+        json.dump(in_json, f, indent=2)
 
     cmd_raw_spec = base_docker_run_cmd() + ["-v", f"{tmp_dir}:/data/", docker_img, "build-spec",
                                             "--chain", os.path.join("/data/", plain_custom_file), "--disable-default-bootnode", "--raw"]
