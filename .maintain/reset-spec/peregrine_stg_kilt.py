@@ -4,49 +4,35 @@ import typing
 def update_spec(input: typing.Dict):
     acc_col_1 = "5HVf8YPXPzp4vTF9dRNh9yLQHemNc4wASoyvFCc2pPz1pbWq"
     acc_col_2 = "5FxhtaNtvGWTUQzmqq8NbKVVvz8AiXvaXxnSs8WbfBXYs79M"
-    # not an initial collator
     acc_col_3 = "5CvmyN8kLcPKNg98A6nMmrPDqoNN8hJrmFfoYyCesCmfd3se"
+    acc_col_4 = "5ERtZS91N73sQoHkNkuVcmhCK2jSys3cDhh6U4uUUGMGksCr"
     para_id = 2000
 
     input.update({
-        "bootNodes": [
-            "/dns4/eyrie-1.kilt.io/tcp/30340/p2p/12D3KooWDRzUz3SenRC737aFrY1aPAVbiioqVMUL7otbupWtuk3B",
-            "/dns4/eyrie-2.kilt.io/tcp/30341/p2p/12D3KooWLSzt9LjJwvQrZmM3AW6cR5ypVFHpmYJCRKs4HWFmTj5a",
-        ],
+        "bootNodes": [],
         "chainType": "Live",
         "name": "KILT Peregrine Stagenet",
         "id": "peregrine_stg_kilt",
         "protocolId": "pkilt4",
         "para_id": para_id,
-        "telemetryEndpoints": [
-            [
-                "/dns/telemetry-backend.kilt.io/tcp/8080/x-parity-wss/%2Fsubmit",
-                0
-            ]
-        ]
+        "telemetryEndpoints": None
     })
     input["properties"]["tokenSymbol"] = "PILT"
     input["genesis"]["runtime"]["parachainInfo"]["parachainId"] = para_id
     input["genesis"]["runtime"]["sudo"]["key"] = acc_col_1
-    input["genesis"]["runtime"]["parachainStaking"]["stakers"] = [
+    input["genesis"]["runtime"]["parachainStaking"]["stakers"] = [ 
         [
-            acc_col_1,
-            None,
-            100000000000000000000
-        ], [
             acc_col_2,
             None,
             100000000000000000000
-        ]
+        ],
+        [
+            acc_col_3,
+            None,
+            100000000000000000000
+        ],
     ]
     input["genesis"]["runtime"]["session"]["keys"] = [
-        [
-            acc_col_1,
-            acc_col_1,
-            {
-                "aura": "5DSMMuNSVxc6Jz3n8AK4PLEBQQjKSAtRcQXq9MTrAEHpdGDL"
-            }
-        ],
         [
             acc_col_2,
             acc_col_2,
@@ -62,7 +48,8 @@ def update_spec(input: typing.Dict):
             }
         ]
     ]
-    input["genesis"]["runtime"]["balances"]["balances"] += [
+    input["genesis"]["runtime"]["vesting"]["vesting"]= []
+    input["genesis"]["runtime"]["balances"]["balances"] = [
         [
             acc_col_1,
             10000000000000000000000000000
@@ -74,7 +61,12 @@ def update_spec(input: typing.Dict):
         [
             acc_col_3,
             10000000000000000000000000000
+        ],
+        [
+            acc_col_4,
+            10000000000000000000000000000
         ]
+
     ]
 
 
