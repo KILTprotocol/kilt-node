@@ -410,7 +410,7 @@ pub mod v0 {
 					KILT_PARA_ID,
 				)
 				.map_err(DipParachainStateProofVerifierError::ProofVerification)?;
-			log::trace!(target: "dip-consumer::ParachainVerifier", "Relaychain proof verified with state root {:#04x?}", proof_without_relaychain.state_root);
+			log::trace!(target: "dip-consumer::ParachainVerifier", "Relaychain proof verified, revealing parachain state root {:#04x?}", proof_without_relaychain.state_root);
 
 			// 2. Verify commitment is included in provider parachain state.
 			ensure!(

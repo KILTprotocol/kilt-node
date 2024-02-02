@@ -68,6 +68,7 @@ where
 	let storage_proof = StorageProof::new(state_proof);
 	let revealed_leaves = read_proof_check::<MerkleHasher, _>(state_root, storage_proof, [storage_key].iter())
 		.map_err(|_| MerkleProofError::InvalidProof)?;
+	log::trace!(target: "dip-consumer::verify_storage_value_proof", "Revealed leaves from proof: {:#?}", revealed_leaves);
 
 	debug_assert!(
 		revealed_leaves.len() == 1usize,
@@ -78,17 +79,11 @@ where
 		"Proof does not include the expected storage key."
 	);
 
-	// TODO: Resume from here.
-	log::debug!(target: "dip-consumer", "Before leaf decoding. Revealed leaves: {:#?}. Storage key: {:#?}", revealed_leaves, storage_key.as_ref());
 	let Some(Some(encoded_revealed_leaf)) = revealed_leaves.get(storage_key.as_ref()) else {
 		return Err(MerkleProofError::RequiredLeafNotRevealed);
 	};
-	log::debug!(target: "dip-consumer", "Before leaf decoding 2.");
 
-	Success::decode(&mut &encoded_revealed_leaf[..]).map_err(|_| {
-		log::debug!(target: "dip-consumer", "Error decoding.");
-		MerkleProofError::ResultDecoding
-	})
+	Success::decode(&mut &encoded_revealed_leaf[..]).map_err(|_| MerkleProofError::ResultDecoding)
 }
 
 // TODO: Find a more elegant way to achieve the same. I failed using a variety
@@ -108,6 +103,7 @@ where
 	let storage_proof = StorageProof::new(state_proof);
 	let revealed_leaves = read_proof_check::<MerkleHasher, _>(state_root, storage_proof, [storage_key].iter())
 		.map_err(|_| MerkleProofError::InvalidProof)?;
+	log::trace!(target: "dip-consumer::verify_storage_value_proof_by_trimming_result", "Revealed leaves from proof: {:#?}", revealed_leaves);
 
 	debug_assert!(
 		revealed_leaves.len() == 1usize,
@@ -118,11 +114,9 @@ where
 		"Proof does not include the expected storage key."
 	);
 
-	log::debug!(target: "dip-consumer", "Before 2nd leaf decoding.");
 	let Some(Some(encoded_revealed_leaf)) = revealed_leaves.get(storage_key.as_ref()) else {
 		return Err(MerkleProofError::RequiredLeafNotRevealed);
 	};
-	log::debug!(target: "dip-consumer", "Before 2nd leaf decoding 2.");
 
 	if encoded_revealed_leaf.len() < result_skipped_bytes {
 		return Err(MerkleProofError::InputTooShort);
@@ -135,10 +129,7 @@ where
 		.skip(result_skipped_bytes)
 		.collect::<Vec<_>>();
 
-	Success::decode(&mut &input[..]).map_err(|_| {
-		log::debug!(target: "dip-consumer", "Error 2nd decoding.");
-		MerkleProofError::ResultDecoding
-	})
+	Success::decode(&mut &input[..]).map_err(|_| MerkleProofError::ResultDecoding)
 }
 
 #[cfg(test)]

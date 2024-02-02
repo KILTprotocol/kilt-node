@@ -571,6 +571,7 @@ impl<
 				let provider_header = provider_header_result.unwrap_or_else(|_| ProviderHeader::new(<ProviderHeader as HeaderT>::Number::default(), <ProviderHeader as HeaderT>::Hash::default(), <ProviderHeader as HeaderT>::Hash::default(), <ProviderHeader as HeaderT>::Hash::default(), sp_runtime::Digest::default()));
 			} else {
 				let provider_header = provider_header_result.map_err(Error::ParaHeadMerkleProof)?;
+				log::trace!(target: "dip-consumer::ParachainDipDidProof::verify_provider_head_proof_with_state_root", "Parachain header verified: {:#?}", provider_header);
 			}
 		}
 		Ok(DipDidProofWithoutRelayProof {
@@ -619,6 +620,7 @@ impl<
 				let relay_state_root = relay_state_root.unwrap_or_default();
 			} else {
 				let relay_state_root = relay_state_root.ok_or(Error::RelayStateRootNotFound)?;
+				log::trace!(target: "dip-consumer::ParachainDipDidProof::verify_provider_head_proof", "Relay root retrieved for provided proof height: {:#04x?}", relay_state_root);
 			}
 		}
 		self.verify_provider_head_proof_with_state_root::<RelayHasher, ProviderHeader>(
@@ -722,6 +724,7 @@ impl<
 				let dip_commitment = dip_commitment_result.unwrap_or_default();
 			} else {
 				let dip_commitment = dip_commitment_result.map_err(Error::DipCommitmentMerkleProof)?;
+				log::trace!(target: "dip-consumer::DipDidProofWithoutRelayProof::verify_dip_commitment_proof_for_subject", "DIP commitment retrieved from provided proof: {:#?}", dip_commitment);
 			}
 		}
 		Ok(DipDidProofWithVerifiedCommitment {
