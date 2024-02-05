@@ -343,6 +343,17 @@ pub mod v0 {
 				);
 				DidMerkleProofError::Internal
 			})?;
+		// TODO: Remove
+		let revealed = &encoded_keys
+			.iter()
+			.zip(leaves.iter().map(|l| Some(l.encoded_value())))
+			.collect::<Vec<_>>()[..];
+		assert!(
+			sp_trie::verify_trie_proof::<LayoutV1<Runtime::Hashing>, _, _, _>(&root, &proof[..], revealed).is_ok(),
+			"Failed to verify proof just generated."
+		);
+		log::trace!(target: "runtime_common", "Generated proof: root = {:#?} - blinded = {:#02x?} - revealed: {:#02x?}", root, proof, revealed);
+		log::trace!(target: "runtime_common", "Generated trie proof could be verified.");
 
 		Ok(CompleteMerkleProof {
 			root,
