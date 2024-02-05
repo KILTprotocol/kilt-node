@@ -1235,8 +1235,15 @@ impl<
 		Error,
 	>
 	where
+		KiltDidKeyId: sp_std::fmt::Debug,
+		KiltAccountId: sp_std::fmt::Debug,
+		KiltBlockNumber: sp_std::fmt::Debug,
+		KiltWeb3Name: sp_std::fmt::Debug,
+		KiltLinkableAccountId: sp_std::fmt::Debug,
+		Commitment: sp_std::fmt::Debug,
 		DidMerkleHasher: Hash<Output = Commitment>,
 	{
+		log::trace!(target: "dip-consumer::DipDidProofWithVerifiedCommitment::verify_dip_proof", "Blinded input proof: {:#?} - Revealed input proof: {:#?} - Commitment: {:#?}", self.dip_proof.blinded, self.dip_proof.revealed, self.dip_commitment);
 		let mut revealed_leaves_iter = self.dip_proof.revealed.iter();
 		// If more than `max_revealed_leaves_count` are revealed, return an error.
 		ensure!(

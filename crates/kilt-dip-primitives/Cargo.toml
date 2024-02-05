@@ -38,6 +38,7 @@ sp-runtime.workspace = true
 sp-state-machine.workspace = true
 sp-std.workspace = true
 sp-trie.workspace = true
+sp-debug-derive = {git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v1.0.0", features = ["force-debug"]}
 
 # Polkadot dependencies
 rococo-runtime.workspace = true

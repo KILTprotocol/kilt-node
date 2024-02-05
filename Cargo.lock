@@ -4634,6 +4634,7 @@ dependencies = [
  "rococo-runtime",
  "scale-info",
  "sp-core",
+ "sp-debug-derive",
  "sp-io",
  "sp-runtime",
  "sp-state-machine",
