@@ -52,6 +52,7 @@ parachain-info.workspace = true
 
 [dev-dependencies]
 hex-literal.workspace = true
+peregrine-runtime = { workspace = true, features = ["std"] }
 sp-io = { workspace = true, features = ["std"] }
 
 [features]

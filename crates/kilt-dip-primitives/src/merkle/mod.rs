@@ -18,6 +18,9 @@
 
 pub mod v0;
 
+#[cfg(test)]
+mod tmp_fixture;
+
 pub mod latest {
 	pub use super::v0::*;
 }

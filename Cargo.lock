@@ -4631,6 +4631,7 @@ dependencies = [
  "pallet-web3-names",
  "parachain-info",
  "parity-scale-codec",
+ "peregrine-runtime",
  "rococo-runtime",
  "scale-info",
  "sp-core",
