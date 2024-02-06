@@ -1,9 +1,5 @@
 // KILT Blockchain – https://botlabs.org
-<<<<<<< HEAD
-// Copyright (C) 2019-2023 BOTLabs GmbH
-=======
 // Copyright (C) 2019-2024 BOTLabs GmbH
->>>>>>> 9b6b9da7... chore: add weightinfo to runtime (#606)
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
