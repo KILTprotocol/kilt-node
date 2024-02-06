@@ -866,6 +866,7 @@ impl<
 ///   parachain.
 /// * `MAX_REVEALED_LEAVES_COUNT`: The maximum number of leaves revealable in
 ///   the proof.
+#[derive(Debug)]
 pub struct DipDetailsAndUnverifiedDidSignatureTime<
 	KiltDidKeyId,
 	KiltAccountId,

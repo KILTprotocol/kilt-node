@@ -313,3 +313,192 @@ fn test_derive_did_verification_relation_empty() {
 		Err(did::RelationshipDeriveError::InvalidCallParameter)
 	);
 }
+
+mod dip_provider {
+	use super::*;
+	use did::{DidRawOrigin, EnsureDidOrigin};
+	use frame_support::{construct_runtime, parameter_types, traits::Everything};
+	use frame_system::{EnsureRoot, EnsureSigned};
+	use pallet_dip_provider::NoopHooks;
+	use runtime_common::{
+		constants::{self, EXISTENTIAL_DEPOSIT},
+		dip::{did::LinkedDidInfoProvider, merkle::DidMerkleRootGenerator},
+		Balance, BlockHashCount, BlockLength, BlockWeights, DidIdentifier, Hash, Nonce,
+	};
+	use sp_core::ConstU32;
+	use sp_runtime::traits::{AccountIdLookup, BlakeTwo256};
+
+	construct_runtime!(
+		pub struct TestRuntime {
+			System: frame_system,
+			Balances: pallet_balances,
+			Did: did,
+			DidLookup: pallet_did_lookup,
+			Web3Names: pallet_web3_names,
+			DipProvider: pallet_dip_provider,
+		}
+	);
+
+	impl frame_system::Config for TestRuntime {
+		type AccountId = AccountId;
+		type RuntimeCall = RuntimeCall;
+		type Lookup = AccountIdLookup<AccountId, ()>;
+		type Nonce = Nonce;
+		type Block = frame_system::mocking::MockBlock<TestRuntime>;
+		type Hash = Hash;
+		type Hashing = BlakeTwo256;
+		type RuntimeEvent = RuntimeEvent;
+		type RuntimeOrigin = RuntimeOrigin;
+		type BlockHashCount = BlockHashCount;
+		type Version = ();
+		type PalletInfo = PalletInfo;
+		type AccountData = pallet_balances::AccountData<Balance>;
+		type OnNewAccount = ();
+		type OnKilledAccount = ();
+		type DbWeight = ();
+		type BaseCallFilter = Everything;
+		type SystemWeightInfo = ();
+		type BlockWeights = BlockWeights;
+		type BlockLength = BlockLength;
+		type SS58Prefix = ();
+		type OnSetCode = ();
+		type MaxConsumers = ConstU32<16>;
+	}
+
+	parameter_types! {
+		pub const ExistentialDeposit: u128 = EXISTENTIAL_DEPOSIT;
+		pub const MaxLocks: u32 = 50;
+		pub const MaxReserves: u32 = 50;
+		pub const MaxHolds: u32 = 50;
+		pub const MaxFreezes: u32 = 50;
+	}
+
+	impl pallet_balances::Config for TestRuntime {
+		type Balance = Balance;
+		type FreezeIdentifier = RuntimeFreezeReason;
+		type RuntimeHoldReason = RuntimeHoldReason;
+		type MaxFreezes = MaxFreezes;
+		type MaxHolds = MaxHolds;
+
+		/// The ubiquitous event type.
+		type RuntimeEvent = RuntimeEvent;
+		type DustRemoval = ();
+		type ExistentialDeposit = ExistentialDeposit;
+		type AccountStore = System;
+		type WeightInfo = ();
+		type MaxLocks = MaxLocks;
+		type MaxReserves = MaxReserves;
+		type ReserveIdentifier = [u8; 8];
+	}
+
+	impl did::Config for TestRuntime {
+		type RuntimeEvent = RuntimeEvent;
+		type RuntimeCall = RuntimeCall;
+		type RuntimeHoldReason = RuntimeHoldReason;
+		type RuntimeOrigin = RuntimeOrigin;
+		type Currency = Balances;
+		type DidIdentifier = DidIdentifier;
+		type KeyDeposit = constants::did::KeyDeposit;
+		type ServiceEndpointDeposit = constants::did::ServiceEndpointDeposit;
+		type BaseDeposit = constants::did::DidBaseDeposit;
+		type Fee = constants::did::DidFee;
+		type FeeCollector = ();
+
+		#[cfg(not(feature = "runtime-benchmarks"))]
+		type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
+		#[cfg(not(feature = "runtime-benchmarks"))]
+		type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
+
+		#[cfg(feature = "runtime-benchmarks")]
+		type EnsureOrigin = EnsureSigned<DidIdentifier>;
+		#[cfg(feature = "runtime-benchmarks")]
+		type OriginSuccess = DidIdentifier;
+
+		type MaxNewKeyAgreementKeys = constants::did::MaxNewKeyAgreementKeys;
+		type MaxTotalKeyAgreementKeys = constants::did::MaxTotalKeyAgreementKeys;
+		type MaxPublicKeysPerDid = constants::did::MaxPublicKeysPerDid;
+		type MaxBlocksTxValidity = constants::did::MaxBlocksTxValidity;
+		type MaxNumberOfServicesPerDid = constants::did::MaxNumberOfServicesPerDid;
+		type MaxServiceIdLength = constants::did::MaxServiceIdLength;
+		type MaxServiceTypeLength = constants::did::MaxServiceTypeLength;
+		type MaxServiceUrlLength = constants::did::MaxServiceUrlLength;
+		type MaxNumberOfTypesPerService = constants::did::MaxNumberOfTypesPerService;
+		type MaxNumberOfUrlsPerService = constants::did::MaxNumberOfUrlsPerService;
+		type WeightInfo = ();
+		type BalanceMigrationManager = ();
+	}
+
+	impl pallet_did_lookup::Config for TestRuntime {
+		type RuntimeHoldReason = RuntimeHoldReason;
+		type RuntimeEvent = RuntimeEvent;
+
+		type DidIdentifier = DidIdentifier;
+
+		type Currency = Balances;
+		type Deposit = constants::did_lookup::DidLookupDeposit;
+
+		type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
+		type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
+
+		type WeightInfo = ();
+		type BalanceMigrationManager = ();
+	}
+
+	impl pallet_web3_names::Config for TestRuntime {
+		type RuntimeHoldReason = RuntimeHoldReason;
+		type BanOrigin = EnsureRoot<AccountId>;
+		type OwnerOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
+		type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
+		type Currency = Balances;
+		type Deposit = constants::web3_names::Web3NameDeposit;
+		type RuntimeEvent = RuntimeEvent;
+		type MaxNameLength = constants::web3_names::MaxNameLength;
+		type MinNameLength = constants::web3_names::MinNameLength;
+		type Web3Name = pallet_web3_names::web3_name::AsciiWeb3Name<TestRuntime>;
+		type Web3NameOwner = DidIdentifier;
+		type WeightInfo = ();
+		type BalanceMigrationManager = ();
+	}
+
+	impl pallet_dip_provider::Config for TestRuntime {
+		type CommitOriginCheck = EnsureDidOrigin<DidIdentifier, AccountId>;
+		type CommitOrigin = DidRawOrigin<DidIdentifier, AccountId>;
+		type Identifier = DidIdentifier;
+		type IdentityCommitmentGenerator = DidMerkleRootGenerator<TestRuntime>;
+		type IdentityProvider = LinkedDidInfoProvider<20>;
+		type ProviderHooks = NoopHooks;
+		type RuntimeEvent = RuntimeEvent;
+		type WeightInfo = ();
+	}
+
+	impl did::DeriveDidCallAuthorizationVerificationKeyRelationship for RuntimeCall {
+		fn derive_verification_key_relationship(&self) -> did::DeriveDidCallKeyRelationshipResult {
+			match self {
+				RuntimeCall::DipProvider { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
+				// DID creation is not allowed through the DID proxy.
+				RuntimeCall::Did(did::Call::create { .. }) => Err(did::RelationshipDeriveError::NotCallableByDid),
+				RuntimeCall::Did { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
+				RuntimeCall::Web3Names { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
+				RuntimeCall::DidLookup { .. } => Ok(did::DidVerificationKeyRelationship::Authentication),
+				#[cfg(not(feature = "runtime-benchmarks"))]
+				_ => Err(did::RelationshipDeriveError::NotCallableByDid),
+				// By default, returns the authentication key
+				#[cfg(feature = "runtime-benchmarks")]
+				_ => Ok(did::DidVerificationKeyRelationship::Authentication),
+			}
+		}
+
+		// Always return a System::remark() extrinsic call
+		#[cfg(feature = "runtime-benchmarks")]
+		fn get_call_for_did_call_benchmark() -> Self {
+			RuntimeCall::System(frame_system::Call::remark { remark: vec![] })
+		}
+	}
+
+	// TODO: Set up unit test so that it generates the same proof that fails to
+	// verify in the kilt-dip-primitive benchmarking fixture.
+	#[test]
+	fn test_dip_proof_generation() {
+		println!("Ok");
+	}
+}
