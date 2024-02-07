@@ -51,6 +51,7 @@ cumulus-primitives-core.workspace = true
 parachain-info.workspace = true
 
 [dev-dependencies]
+env_logger.workspace = true
 hex-literal.workspace = true
 peregrine-runtime = { workspace = true, features = ["std"] }
 sp-io = { workspace = true, features = ["std"] }

@@ -352,9 +352,8 @@ pub mod v0 {
 			sp_trie::verify_trie_proof::<LayoutV1<Runtime::Hashing>, _, _, _>(&root, &proof[..], revealed).is_ok(),
 			"Failed to verify proof just generated."
 		);
-		log::trace!(target: "runtime_common", "Generated proof: root = {:#?} - blinded = {:#02x?} - revealed: {:#02x?}", root, proof, revealed);
-		log::trace!(target: "runtime_common", "Generated trie proof could be verified.");
-
+		log::trace!(target: "runtime_common", "Generated proof: root = {:#?} - blinded count = {:#?} - revealed count: {:#?}", root, proof.len(), revealed.len());
+		log::trace!(target: "runtime_common", "Blinded first and last = ({:#02x?}, {:#02x?}) - revealed first and last: ({:#?}, {:#?})", proof.first().unwrap(), proof.iter().last().unwrap(), revealed.iter().next(), revealed.iter().last());
 		Ok(CompleteMerkleProof {
 			root,
 			proof: DidMerkleProofOf::<Runtime>::new(proof.into_iter().into(), leaves),

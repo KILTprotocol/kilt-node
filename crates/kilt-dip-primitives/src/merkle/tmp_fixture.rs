@@ -223,6 +223,7 @@ pub(crate) fn test_parachain_proof(
 
 #[test]
 fn test() {
+	env_logger::init();
 	let proof = test_parachain_proof();
 	let proof_1 = proof
 		.verify_provider_head_proof_with_state_root::<BlakeTwo256, Header<u64, BlakeTwo256>>(

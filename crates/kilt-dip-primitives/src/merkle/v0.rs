@@ -168,6 +168,12 @@ pub struct TimeBoundDidSignature<BlockNumber> {
 	pub(crate) valid_until: BlockNumber,
 }
 
+impl<BlockNumber> TimeBoundDidSignature<BlockNumber> {
+	pub fn new(signature: DidSignature, valid_until: BlockNumber) -> Self {
+		Self { signature, valid_until }
+	}
+}
+
 #[cfg(feature = "runtime-benchmarks")]
 impl<BlockNumber, Context> kilt_support::traits::GetWorstCase<Context> for TimeBoundDidSignature<BlockNumber>
 where
@@ -779,6 +785,38 @@ impl<
 		KiltWeb3Name,
 		KiltLinkableAccountId,
 		ConsumerBlockNumber,
+	>
+{
+	pub fn new(
+		dip_commitment: Commitment,
+		dip_proof: DidMerkleProof<KiltDidKeyId, KiltAccountId, KiltBlockNumber, KiltWeb3Name, KiltLinkableAccountId>,
+		signature: TimeBoundDidSignature<ConsumerBlockNumber>,
+	) -> Self {
+		Self {
+			dip_commitment,
+			dip_proof,
+			signature,
+		}
+	}
+}
+
+impl<
+		Commitment,
+		KiltDidKeyId,
+		KiltAccountId,
+		KiltBlockNumber,
+		KiltWeb3Name,
+		KiltLinkableAccountId,
+		ConsumerBlockNumber,
+	>
+	DipDidProofWithVerifiedCommitment<
+		Commitment,
+		KiltDidKeyId,
+		KiltAccountId,
+		KiltBlockNumber,
+		KiltWeb3Name,
+		KiltLinkableAccountId,
+		ConsumerBlockNumber,
 	> where
 	KiltDidKeyId: Encode,
 	KiltAccountId: Encode,
@@ -816,17 +854,18 @@ impl<
 		Commitment: sp_std::fmt::Debug,
 		DidMerkleHasher: Hash<Output = Commitment>,
 	{
-		log::trace!(target: "dip-consumer::DipDidProofWithVerifiedCommitment::verify_dip_proof", "Blinded input proof: {:#?} - Revealed input proof: {:#?} - Commitment: {:#?}", self.dip_proof.blinded, self.dip_proof.revealed, self.dip_commitment);
-		let mut revealed_leaves_iter = self.dip_proof.revealed.iter();
-		// If more than `max_revealed_leaves_count` are revealed, return an error.
+		let revealed_leaves = self.dip_proof.revealed;
 		ensure!(
-			revealed_leaves_iter.by_ref().count() <= MAX_REVEALED_LEAVES_COUNT.saturated_into(),
+			revealed_leaves.len() <= MAX_REVEALED_LEAVES_COUNT.saturated_into(),
 			Error::TooManyLeavesRevealed
 		);
+		log::trace!(target: "dip-consumer::DipDidProofWithVerifiedCommitment::verify_dip_proof", "Proof: root = {:#?} - blinded count = {:#?} - revealed count: {:#?}", self.dip_commitment, self.dip_proof.blinded.len(), revealed_leaves.len());
 
-		let proof_leaves_key_value_pairs: Vec<(Vec<u8>, Option<Vec<u8>>)> = revealed_leaves_iter
+		let proof_leaves_key_value_pairs: Vec<(Vec<u8>, Option<Vec<u8>>)> = revealed_leaves
+			.iter()
 			.map(|revealed_leaf| (revealed_leaf.encoded_key(), Some(revealed_leaf.encoded_value())))
 			.collect();
+		log::trace!(target: "runtime_common", "Blinded first and last = ({:#02x?}, {:#02x?}) - revealed first and last: ({:#?}, {:#?})", self.dip_proof.blinded.first().unwrap(), self.dip_proof.blinded.iter().last().unwrap(), proof_leaves_key_value_pairs.first(), proof_leaves_key_value_pairs.iter().last());
 		let proof_verification_result = verify_trie_proof::<LayoutV1<DidMerkleHasher>, _, _, _>(
 			&self.dip_commitment,
 			&self.dip_proof.blinded[..],
@@ -840,7 +879,7 @@ impl<
 				proof_verification_result.map_err(|_| Error::InvalidDidMerkleProof)?;
 			}
 		}
-		let revealed_leaves = BoundedVec::try_from(self.dip_proof.revealed).map_err(|_| {
+		let revealed_leaves = BoundedVec::try_from(revealed_leaves).map_err(|_| {
 			log::error!("Should not fail to construct BoundedVec since bounds were checked before.");
 			Error::Internal
 		})?;

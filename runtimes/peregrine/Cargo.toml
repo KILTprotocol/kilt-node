@@ -14,7 +14,11 @@ version.workspace = true
 substrate-wasm-builder.workspace = true
 
 [dev-dependencies]
+env_logger.workspace = true
+kilt-dip-primitives.workspace = true
 sp-io.workspace = true
+hex.workspace = true
+hex-literal.workspace = true
 
 [dependencies]
 # External dependencies
