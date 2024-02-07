@@ -35,7 +35,7 @@ use sp_std::vec::Vec;
 use sp_trie::{verify_trie_proof, LayoutV1};
 
 use crate::{
-	state_proofs::{verify_storage_value_proof, verify_storage_value_proof_by_trimming_result, MerkleProofError},
+	state_proofs::{verify_storage_value_proof, verify_with_closure, MerkleProofError},
 	traits::{BenchmarkDefault, GetWithArg},
 	utils::{
 		calculate_dip_identity_commitment_storage_key_for_runtime, calculate_parachain_head_storage_key,
@@ -216,13 +216,11 @@ impl From<Error> for u8 {
 				MerkleProofError::InvalidProof => 11,
 				MerkleProofError::RequiredLeafNotRevealed => 12,
 				MerkleProofError::ResultDecoding => 13,
-				MerkleProofError::InputTooShort => 14,
 			},
 			Error::DipCommitmentMerkleProof(error) => match error {
 				MerkleProofError::InvalidProof => 21,
 				MerkleProofError::RequiredLeafNotRevealed => 22,
 				MerkleProofError::ResultDecoding => 23,
-				MerkleProofError::InputTooShort => 24,
 			},
 			Error::Internal => u8::MAX,
 		}
@@ -561,11 +559,18 @@ impl<
 	{
 		let provider_head_storage_key = calculate_parachain_head_storage_key(provider_para_id);
 		// TODO: Figure out why RPC call returns 2 bytes in front which we don't need
-		let provider_header_result = verify_storage_value_proof_by_trimming_result::<_, RelayHasher, ProviderHeader>(
+		let provider_header_result = verify_with_closure::<_, RelayHasher, ProviderHeader>(
 			&provider_head_storage_key,
 			*relay_state_root,
 			self.provider_head_proof.proof,
-			2,
+			|input| {
+				if input.len() < 2 {
+					log::trace!(target: "dip-consumer::ParachainDipDidProof::verify_provider_head_proof_with_state_root", "Revealed parachain haeder is not at least 2 bytes long, hence decoding has failed.");
+					return None;
+				}
+				let mut trimmed_input = &input[2..];
+				ProviderHeader::decode(&mut trimmed_input).ok()
+			},
 		);
 		cfg_if::cfg_if! {
 			if #[cfg(feature = "runtime-benchmarks")] {

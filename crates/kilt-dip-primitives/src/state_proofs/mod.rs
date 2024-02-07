@@ -33,7 +33,6 @@ pub enum MerkleProofError {
 	InvalidProof,
 	RequiredLeafNotRevealed,
 	ResultDecoding,
-	InputTooShort,
 }
 
 impl From<MerkleProofError> for u8 {
@@ -42,7 +41,6 @@ impl From<MerkleProofError> for u8 {
 			MerkleProofError::InvalidProof => 1,
 			MerkleProofError::RequiredLeafNotRevealed => 2,
 			MerkleProofError::ResultDecoding => 3,
-			MerkleProofError::InputTooShort => 4,
 		}
 	}
 }
@@ -65,43 +63,24 @@ where
 	OutputOf<MerkleHasher>: Ord,
 	Success: Decode,
 {
-	let storage_proof = StorageProof::new(state_proof);
-	let revealed_leaves = read_proof_check::<MerkleHasher, _>(state_root, storage_proof, [storage_key].iter())
-		.map_err(|_| MerkleProofError::InvalidProof)?;
-	log::trace!(target: "dip-consumer::verify_storage_value_proof", "Revealed leaves from proof: {:#?}", revealed_leaves);
-
-	debug_assert!(
-		revealed_leaves.len() == 1usize,
-		"Only a single leaf is expected to be revealed in the storage proof."
-	);
-	debug_assert!(
-		revealed_leaves.contains_key(storage_key.as_ref()),
-		"Proof does not include the expected storage key."
-	);
-
-	let Some(Some(encoded_revealed_leaf)) = revealed_leaves.get(storage_key.as_ref()) else {
-		return Err(MerkleProofError::RequiredLeafNotRevealed);
-	};
-
-	Success::decode(&mut &encoded_revealed_leaf[..]).map_err(|_| MerkleProofError::ResultDecoding)
+	verify_with_closure::<_, MerkleHasher, _>(storage_key, state_root, state_proof, |input| {
+		Success::decode(input).ok()
+	})
 }
 
-// TODO: Find a more elegant way to achieve the same. I failed using a variety
-// of different approaches.
-pub fn verify_storage_value_proof_by_trimming_result<StorageKey, MerkleHasher, Success>(
+pub fn verify_with_closure<StorageKey, MerkleHasher, TransformResult>(
 	storage_key: &StorageKey,
 	state_root: OutputOf<MerkleHasher>,
 	state_proof: impl IntoIterator<Item = Vec<u8>>,
-	result_skipped_bytes: usize,
-) -> Result<Success, MerkleProofError>
+	mut transform: impl FnMut(&mut &[u8]) -> Option<TransformResult>,
+) -> Result<TransformResult, MerkleProofError>
 where
 	StorageKey: AsRef<[u8]>,
 	MerkleHasher: Hash,
 	OutputOf<MerkleHasher>: Ord,
-	Success: Decode,
 {
 	let storage_proof = StorageProof::new(state_proof);
-	let revealed_leaves = read_proof_check::<MerkleHasher, _>(state_root, storage_proof, [storage_key].iter())
+	let mut revealed_leaves = read_proof_check::<MerkleHasher, _>(state_root, storage_proof, [storage_key].iter())
 		.map_err(|_| MerkleProofError::InvalidProof)?;
 	log::trace!(target: "dip-consumer::verify_storage_value_proof_by_trimming_result", "Revealed leaves from proof: {:#?}", revealed_leaves);
 
@@ -114,22 +93,12 @@ where
 		"Proof does not include the expected storage key."
 	);
 
-	let Some(Some(encoded_revealed_leaf)) = revealed_leaves.get(storage_key.as_ref()) else {
+	let Some(Some(encoded_revealed_leaf)) = revealed_leaves.get_mut(storage_key.as_ref()) else {
 		return Err(MerkleProofError::RequiredLeafNotRevealed);
 	};
 
-	if encoded_revealed_leaf.len() < result_skipped_bytes {
-		return Err(MerkleProofError::InputTooShort);
-	}
-
-	// TODO: Avoid collecting by using the iterator directly, if there is a way.
-	let input = encoded_revealed_leaf
-		.iter()
-		.copied()
-		.skip(result_skipped_bytes)
-		.collect::<Vec<_>>();
-
-	Success::decode(&mut &input[..]).map_err(|_| MerkleProofError::ResultDecoding)
+	let input = &mut &encoded_revealed_leaf[..];
+	transform(input).ok_or(MerkleProofError::ResultDecoding)
 }
 
 #[cfg(test)]
