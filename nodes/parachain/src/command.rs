@@ -33,6 +33,7 @@ use sc_cli::{
 	ChainSpec, CliConfiguration, DefaultConfigurationValues, ImportParams, KeystoreParams, NetworkParams, Result,
 	RuntimeVersion, SharedParams, SubstrateCli,
 };
+use sc_executor::NativeExecutionDispatch;
 use sc_service::config::{BasePath, PrometheusConfig};
 use sp_core::hexdisplay::HexDisplay;
 use sp_runtime::traits::{AccountIdConversion, Block as BlockT, Zero};
@@ -78,18 +79,25 @@ fn load_spec(id: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, St
 	log::info!("The following runtime was chosen based on the spec id: {}", runtime);
 
 	match (id, runtime) {
-		("dev", _) => Ok(Box::new(chain_spec::peregrine::make_dev_spec()?)),
+		("dev", _) => Ok(Box::new(chain_spec::peregrine::get_chain_spec_dev()?)),
 		("spiritnet-dev", _) => Ok(Box::new(chain_spec::spiritnet::get_chain_spec_dev()?)),
 		("peregrine-new", _) => Ok(Box::new(chain_spec::peregrine::make_new_spec()?)),
-		("wilt-new", _) => Ok(Box::new(chain_spec::spiritnet::get_chain_spec_wilt()?)),
-		("rilt-new", _) => Ok(Box::new(chain_spec::spiritnet::get_chain_spec_rilt()?)),
-		("rilt", _) => Ok(Box::new(chain_spec::spiritnet::load_rilt_spec()?)),
+		("rilt-new", _) => Ok(Box::new(chain_spec::peregrine::get_chain_spec_rilt()?)),
+		("rilt", _) => Ok(Box::new(chain_spec::peregrine::load_rilt_spec()?)),
 		("spiritnet", _) => Ok(Box::new(chain_spec::spiritnet::load_spiritnet_spec()?)),
 		("", "spiritnet") => Ok(Box::new(chain_spec::spiritnet::get_chain_spec_dev()?)),
-		("", "peregrine") => Ok(Box::new(chain_spec::peregrine::make_dev_spec()?)),
+		("", "peregrine") => Ok(Box::new(chain_spec::peregrine::get_chain_spec_dev()?)),
 		(path, "spiritnet") => Ok(Box::new(chain_spec::spiritnet::ChainSpec::from_json_file(path.into())?)),
 		(path, "peregrine") => Ok(Box::new(chain_spec::peregrine::ChainSpec::from_json_file(path.into())?)),
 		_ => Err("Unknown KILT parachain spec".to_owned()),
+	}
+}
+
+fn native_runtime_version(is_spiritnet: bool) -> &'static RuntimeVersion {
+	if is_spiritnet {
+		&spiritnet_runtime::VERSION
+	} else {
+		&peregrine_runtime::VERSION
 	}
 }
 
@@ -127,14 +135,6 @@ impl SubstrateCli for Cli {
 	fn load_spec(&self, id: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
 		load_spec(id)
 	}
-
-	fn native_runtime_version(spec: &Box<dyn ChainSpec>) -> &'static RuntimeVersion {
-		if spec.is_spiritnet() {
-			&spiritnet_runtime::VERSION
-		} else {
-			&peregrine_runtime::VERSION
-		}
-	}
 }
 
 impl SubstrateCli for RelayChainCli {
@@ -168,10 +168,6 @@ impl SubstrateCli for RelayChainCli {
 
 	fn load_spec(&self, id: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
 		polkadot_cli::Cli::from_iter([RelayChainCli::executable_name()].iter()).load_spec(id)
-	}
-
-	fn native_runtime_version(chain_spec: &Box<dyn ChainSpec>) -> &'static RuntimeVersion {
-		polkadot_cli::Cli::native_runtime_version(chain_spec)
 	}
 }
 
@@ -255,10 +251,22 @@ pub fn run() -> Result<()> {
 		}
 		Some(Subcommand::ExportGenesisState(cmd)) => {
 			let runner = cli.create_runner(cmd)?;
-			runner.sync_run(|_config| {
+			runner.sync_run(|config| {
 				let spec = cli.load_spec(&cmd.shared_params.chain.clone().unwrap_or_default())?;
-				let state_version = Cli::native_runtime_version(&spec).state_version();
-				cmd.run::<Block>(&*spec, state_version)
+
+				if spec.is_spiritnet() {
+					let partials = new_partial::<spiritnet_runtime::RuntimeApi, SpiritnetRuntimeExecutor, _>(
+						&config,
+						crate::service::build_import_queue,
+					)?;
+					cmd.run::<Block>(&*spec, &*partials.client)
+				} else {
+					let partials = new_partial::<peregrine_runtime::RuntimeApi, PeregrineRuntimeExecutor, _>(
+						&config,
+						crate::service::build_import_queue,
+					)?;
+					cmd.run::<Block>(&*spec, &*partials.client)
+				}
 			})
 		}
 		Some(Subcommand::ExportGenesisWasm(cmd)) => {
@@ -276,8 +284,12 @@ pub fn run() -> Result<()> {
 				(BenchmarkCmd::Pallet(cmd), runtime) => {
 					if cfg!(feature = "runtime-benchmarks") {
 						match runtime {
-							"spiritnet" => runner.sync_run(|config| cmd.run::<Block, SpiritnetRuntimeExecutor>(config)),
-							"peregrine" => runner.sync_run(|config| cmd.run::<Block, PeregrineRuntimeExecutor>(config)),
+							"spiritnet" => runner.sync_run(|config| {
+								cmd.run::<Block, <SpiritnetRuntimeExecutor as NativeExecutionDispatch>::ExtendHostFunctions>(config)
+							}),
+							"peregrine" => runner.sync_run(|config| {
+								cmd.run::<Block, <PeregrineRuntimeExecutor as NativeExecutionDispatch>::ExtendHostFunctions>(config)
+							}),
 							_ => Err("Unknown parachain runtime".into()),
 						}
 					} else {
@@ -344,7 +356,7 @@ pub fn run() -> Result<()> {
 		#[cfg(feature = "try-runtime")]
 		Some(Subcommand::TryRuntime(cmd)) => {
 			use runtime_common::constants::MILLISECS_PER_BLOCK;
-			use sc_executor::{sp_wasm_interface::ExtendedHostFunctions, NativeExecutionDispatch};
+			use sc_executor::sp_wasm_interface::ExtendedHostFunctions;
 			use try_runtime_cli::block_building_info::timestamp_with_aura_info;
 
 			let runner = cli.create_runner(cmd)?;
@@ -409,7 +421,7 @@ pub fn run() -> Result<()> {
 				let parachain_account =
 					AccountIdConversion::<polkadot_primitives::AccountId>::into_account_truncating(&id);
 
-				let state_version = Cli::native_runtime_version(&config.chain_spec).state_version();
+				let state_version = native_runtime_version(config.chain_spec.is_spiritnet()).state_version();
 				let block: Block =
 					generate_genesis_block(&*config.chain_spec, state_version).map_err(|e| format!("{:?}", e))?;
 				let genesis_state = format!("0x{:?}", HexDisplay::from(&block.header().encode()));
@@ -465,12 +477,8 @@ impl DefaultConfigurationValues for RelayChainCli {
 		30334
 	}
 
-	fn rpc_ws_listen_port() -> u16 {
+	fn rpc_listen_port() -> u16 {
 		9945
-	}
-
-	fn rpc_http_listen_port() -> u16 {
-		9934
 	}
 
 	fn prometheus_listen_port() -> u16 {
@@ -502,16 +510,8 @@ impl CliConfiguration<Self> for RelayChainCli {
 			.or_else(|| self.base_path.clone().map(Into::into)))
 	}
 
-	fn rpc_http(&self, default_listen_port: u16) -> Result<Option<SocketAddr>> {
-		self.base.base.rpc_http(default_listen_port)
-	}
-
-	fn rpc_ipc(&self) -> Result<Option<String>> {
-		self.base.base.rpc_ipc()
-	}
-
-	fn rpc_ws(&self, default_listen_port: u16) -> Result<Option<SocketAddr>> {
-		self.base.base.rpc_ws(default_listen_port)
+	fn rpc_addr(&self, default_listen_port: u16) -> Result<Option<SocketAddr>> {
+		self.base.base.rpc_addr(default_listen_port)
 	}
 
 	fn prometheus_config(
@@ -561,8 +561,8 @@ impl CliConfiguration<Self> for RelayChainCli {
 		self.base.base.rpc_methods()
 	}
 
-	fn rpc_ws_max_connections(&self) -> Result<Option<usize>> {
-		self.base.base.rpc_ws_max_connections()
+	fn rpc_max_connections(&self) -> Result<u32> {
+		self.base.base.rpc_max_connections()
 	}
 
 	fn rpc_cors(&self, is_dev: bool) -> Result<Option<Vec<String>>> {

@@ -74,24 +74,26 @@
 //!   creation or update operation is bounded by `MaxNewKeyAgreementKeys`.
 //! - After it is generated and signed by a client, a DID-authorised operation
 //!   can be submitted for evaluation anytime between the time the operation is
-//!   created and [MaxBlocksTxValidity] blocks after that. After this time has
-//!   elapsed, the operation is considered invalid.
+//!   created and [`Config::MaxBlocksTxValidity`] blocks after that. After this
+//!   time has elapsed, the operation is considered invalid.
 
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::unused_unit)]
-
-pub mod default_weights;
-pub mod did_details;
-pub mod errors;
-pub mod origin;
-pub mod service_endpoints;
+#![recursion_limit = "256"]
 
 #[cfg(feature = "runtime-benchmarks")]
 pub mod benchmarking;
+pub mod default_weights;
+pub mod did_details;
+pub mod errors;
+pub mod migrations;
+pub mod origin;
+pub mod service_endpoints;
+
 #[cfg(test)]
 mod mock;
-#[cfg(any(feature = "runtime-benchmarks", test))]
-mod mock_utils;
+#[cfg(any(feature = "runtime-benchmarks", test, feature = "mock"))]
+pub mod mock_utils;
 #[cfg(test)]
 mod tests;
 
@@ -119,7 +121,7 @@ use frame_support::{
 	dispatch::{DispatchError, DispatchResult, Dispatchable, GetDispatchInfo, PostDispatchInfo},
 	ensure,
 	storage::types::StorageMap,
-	traits::{Get, OnUnbalanced, WithdrawReasons},
+	traits::{Get, OnUnbalanced},
 	Parameter,
 };
 use frame_system::ensure_signed;
@@ -136,26 +138,29 @@ use frame_system::RawOrigin;
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
-	use crate::service_endpoints::utils as service_endpoints_utils;
 	use did_details::DidCreationDetails;
 	use frame_support::{
 		pallet_prelude::*,
-		traits::{Currency, ExistenceRequirement, Imbalance, ReservableCurrency, StorageVersion},
+		traits::{
+			fungible::{Balanced, Credit, Inspect, MutateHold},
+			tokens::{Fortitude, Precision, Preservation},
+			StorageVersion,
+		},
 	};
 	use frame_system::pallet_prelude::*;
 	use kilt_support::{
-		deposit::Deposit,
-		traits::{CallSources, StorageDepositCollector},
+		traits::{BalanceMigrationManager, CallSources, StorageDepositCollector},
+		Deposit,
 	};
 	use service_endpoints::DidEndpoint;
-	use sp_runtime::traits::BadOrigin;
+	use sp_runtime::traits::{BadOrigin, IdentifyAccount};
 
 	use crate::{
 		did_details::{
 			DeriveDidCallAuthorizationVerificationKeyRelationship, DidAuthorizedCallOperation, DidDetails,
 			DidEncryptionKey, DidSignature, DidVerifiableIdentifier, DidVerificationKey, RelationshipDeriveError,
 		},
-		service_endpoints::ServiceEndpointId,
+		service_endpoints::{utils as service_endpoints_utils, ServiceEndpointId},
 	};
 
 	/// The current storage version.
@@ -173,9 +178,6 @@ pub mod pallet {
 	/// Type for a Kilt account identifier.
 	pub type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 
-	/// Type for a block number.
-	pub type BlockNumberOf<T> = <T as frame_system::Config>::BlockNumber;
-
 	/// Type for a runtime extrinsic callable under DID-based authorisation.
 	pub type DidCallableOf<T> = <T as Config>::RuntimeCall;
 
@@ -183,15 +185,20 @@ pub mod pallet {
 	#[pallet::origin]
 	pub type Origin<T> = DidRawOrigin<DidIdentifierOf<T>, AccountIdOf<T>>;
 
-	pub type BalanceOf<T> = <CurrencyOf<T> as Currency<AccountIdOf<T>>>::Balance;
+	pub type BalanceOf<T> = <CurrencyOf<T> as Inspect<AccountIdOf<T>>>::Balance;
 	pub(crate) type CurrencyOf<T> = <T as Config>::Currency;
-	pub(crate) type NegativeImbalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::NegativeImbalance;
+	pub(crate) type CreditOf<T> = Credit<<T as frame_system::Config>::AccountId, <T as Config>::Currency>;
+
+	#[pallet::composite_enum]
+	pub enum HoldReason {
+		Deposit,
+	}
 
 	pub(crate) type DidCreationDetailsOf<T> =
 		DidCreationDetails<DidIdentifierOf<T>, AccountIdOf<T>, <T as Config>::MaxNewKeyAgreementKeys, DidEndpoint<T>>;
 
 	pub(crate) type DidAuthorizedCallOperationOf<T> =
-		DidAuthorizedCallOperation<DidIdentifierOf<T>, DidCallableOf<T>, BlockNumberOf<T>, AccountIdOf<T>, u64>;
+		DidAuthorizedCallOperation<DidIdentifierOf<T>, DidCallableOf<T>, BlockNumberFor<T>, AccountIdOf<T>, u64>;
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config + Debug {
@@ -203,7 +210,10 @@ pub mod pallet {
 			+ DeriveDidCallAuthorizationVerificationKeyRelationship;
 
 		/// Type for a DID subject identifier.
-		type DidIdentifier: Parameter + DidVerifiableIdentifier + MaxEncodedLen;
+		type DidIdentifier: Parameter
+			+ DidVerifiableIdentifier<AccountIdOf<Self>>
+			+ MaxEncodedLen
+			+ From<AccountIdOf<Self>>;
 
 		/// Origin type expected by the proxied dispatchable calls.
 		#[cfg(not(feature = "runtime-benchmarks"))]
@@ -223,8 +233,10 @@ pub mod pallet {
 		/// Overarching event type.
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
+		type RuntimeHoldReason: From<HoldReason>;
+
 		/// The currency that is used to reserve funds for each did.
-		type Currency: ReservableCurrency<AccountIdOf<Self>>;
+		type Currency: Balanced<AccountIdOf<Self>> + MutateHold<AccountIdOf<Self>, Reason = Self::RuntimeHoldReason>;
 
 		/// The amount of balance that will be taken for each DID as a deposit
 		/// to incentivise fair use of the on chain storage. The deposits
@@ -252,7 +264,7 @@ pub mod pallet {
 		type Fee: Get<BalanceOf<Self>>;
 
 		/// The logic for handling the fee.
-		type FeeCollector: OnUnbalanced<NegativeImbalanceOf<Self>>;
+		type FeeCollector: OnUnbalanced<CreditOf<Self>>;
 
 		/// Maximum number of total public keys which can be stored per DID key
 		/// identifier. This includes the ones currently used for
@@ -275,7 +287,7 @@ pub mod pallet {
 		/// The maximum number of blocks a DID-authorized operation is
 		/// considered valid after its creation.
 		#[pallet::constant]
-		type MaxBlocksTxValidity: Get<BlockNumberOf<Self>>;
+		type MaxBlocksTxValidity: Get<BlockNumberFor<Self>>;
 
 		/// The maximum number of services that can be stored under a DID.
 		#[pallet::constant]
@@ -303,6 +315,9 @@ pub mod pallet {
 
 		/// Weight information for extrinsics in this pallet.
 		type WeightInfo: WeightInfo;
+
+		/// Migration manager to handle new created entries
+		type BalanceMigrationManager: BalanceMigrationManager<AccountIdOf<Self>, BalanceOf<Self>>;
 	}
 
 	#[pallet::pallet]
@@ -488,13 +503,16 @@ pub mod pallet {
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
 		#[cfg(feature = "try-runtime")]
-		fn try_state(_n: BlockNumberFor<T>) -> Result<(), &'static str> {
+		fn try_state(_n: BlockNumberFor<T>) -> Result<(), sp_runtime::TryRuntimeError> {
 			crate::try_state::do_try_state::<T>()
 		}
 	}
 
 	#[pallet::call]
-	impl<T: Config> Pallet<T> {
+	impl<T: Config> Pallet<T>
+	where
+		T::AccountId: AsRef<[u8; 32]> + From<[u8; 32]>,
+	{
 		/// Store a new DID on chain, after verifying that the creation
 		/// operation has been signed by the KILT account associated with the
 		/// identifier of the DID being created and that a DID with the same
@@ -553,21 +571,9 @@ pub mod pallet {
 			signature: DidSignature,
 		) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
-
-			ensure!(sender == details.submitter, BadOrigin);
 			let did_identifier = details.did.clone();
 
-			// Make sure that DIDs cannot be created again after they have been deleted.
-			ensure!(
-				!DidBlacklist::<T>::contains_key(&did_identifier),
-				Error::<T>::AlreadyDeleted
-			);
-
-			// There has to be no other DID with the same identifier already saved on chain,
-			// otherwise generate a AlreadyExists error.
-			ensure!(!Did::<T>::contains_key(&did_identifier), Error::<T>::AlreadyExists);
-
-			log::debug!("Creating DID {:?}", &did_identifier);
+			ensure!(sender == details.submitter, BadOrigin);
 
 			let account_did_auth_key = did_identifier
 				.verify_and_recover_signature(&details.encode(), &signature)
@@ -583,22 +589,14 @@ pub mod pallet {
 			});
 			DidEndpointsCount::<T>::insert(&did_identifier, input_service_endpoints.len().saturated_into::<u32>());
 
-			let did_entry = DidDetails::from_creation_details(*details, account_did_auth_key, &did_identifier)
-				.map_err(Error::<T>::from)?;
+			let mut did_entry =
+				DidDetails::new_with_creation_details(*details, account_did_auth_key).map_err(Error::<T>::from)?;
+			did_entry.deposit.amount =
+				did_entry.calculate_deposit(input_service_endpoints.len().saturated_into::<u32>());
 
-			Did::<T>::insert(&did_identifier, did_entry.clone());
+			log::debug!("Creating DID {:?}", &did_identifier);
 
-			// Withdraw the fee. We made sure that enough balance is available. But if this
-			// fails, we don't withdraw anything.
-			let imbalance = <T::Currency as Currency<AccountIdOf<T>>>::withdraw(
-				&did_entry.deposit.owner,
-				T::Fee::get(),
-				WithdrawReasons::FEE,
-				ExistenceRequirement::AllowDeath,
-			)
-			.unwrap_or_else(|_| NegativeImbalanceOf::<T>::zero());
-			T::FeeCollector::on_unbalanced(imbalance);
-			Self::deposit_event(Event::DidCreated(sender, did_identifier));
+			Self::try_insert_did(did_identifier, did_entry, sender)?;
 
 			Ok(())
 		}
@@ -621,7 +619,10 @@ pub mod pallet {
 		/// # </weight>
 		#[pallet::call_index(1)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::set_ed25519_authentication_key().max(<T as pallet::Config>::WeightInfo::set_sr25519_authentication_key()).max(<T as pallet::Config>::WeightInfo::set_ecdsa_authentication_key()))]
-		pub fn set_authentication_key(origin: OriginFor<T>, new_key: DidVerificationKey) -> DispatchResult {
+		pub fn set_authentication_key(
+			origin: OriginFor<T>,
+			new_key: DidVerificationKey<AccountIdOf<T>>,
+		) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
 			let mut did_details = Did::<T>::get(&did_subject).ok_or(Error::<T>::NotFound)?;
 
@@ -635,8 +636,7 @@ pub mod pallet {
 				.update_authentication_key(new_key, frame_system::Pallet::<T>::block_number())
 				.map_err(Error::<T>::from)?;
 
-			did_details.update_deposit(&did_subject)?;
-			Did::<T>::insert(&did_subject, did_details);
+			Self::try_update_did(&did_subject, did_details)?;
 			log::debug!("Authentication key set");
 
 			Self::deposit_event(Event::DidUpdated(did_subject));
@@ -661,7 +661,7 @@ pub mod pallet {
 		/// # </weight>
 		#[pallet::call_index(2)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::set_ed25519_delegation_key().max(<T as pallet::Config>::WeightInfo::set_sr25519_delegation_key()).max(<T as pallet::Config>::WeightInfo::set_ecdsa_delegation_key()))]
-		pub fn set_delegation_key(origin: OriginFor<T>, new_key: DidVerificationKey) -> DispatchResult {
+		pub fn set_delegation_key(origin: OriginFor<T>, new_key: DidVerificationKey<AccountIdOf<T>>) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
 			let mut did_details = Did::<T>::get(&did_subject).ok_or(Error::<T>::NotFound)?;
 
@@ -670,8 +670,7 @@ pub mod pallet {
 				.update_delegation_key(new_key, frame_system::Pallet::<T>::block_number())
 				.map_err(Error::<T>::from)?;
 
-			did_details.update_deposit(&did_subject)?;
-			Did::<T>::insert(&did_subject, did_details);
+			Self::try_update_did(&did_subject, did_details)?;
 			log::debug!("Delegation key set");
 
 			Self::deposit_event(Event::DidUpdated(did_subject));
@@ -702,8 +701,7 @@ pub mod pallet {
 			log::debug!("Removing delegation key for DID {:?}", &did_subject);
 			did_details.remove_delegation_key().map_err(Error::<T>::from)?;
 
-			did_details.update_deposit(&did_subject)?;
-			Did::<T>::insert(&did_subject, did_details);
+			Self::try_update_did(&did_subject, did_details)?;
 			log::debug!("Delegation key removed");
 
 			Self::deposit_event(Event::DidUpdated(did_subject));
@@ -728,7 +726,10 @@ pub mod pallet {
 		/// # </weight>
 		#[pallet::call_index(4)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::set_ed25519_attestation_key().max(<T as pallet::Config>::WeightInfo::set_sr25519_attestation_key()).max(<T as pallet::Config>::WeightInfo::set_ecdsa_attestation_key()))]
-		pub fn set_attestation_key(origin: OriginFor<T>, new_key: DidVerificationKey) -> DispatchResult {
+		pub fn set_attestation_key(
+			origin: OriginFor<T>,
+			new_key: DidVerificationKey<AccountIdOf<T>>,
+		) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
 			let mut did_details = Did::<T>::get(&did_subject).ok_or(Error::<T>::NotFound)?;
 
@@ -737,8 +738,7 @@ pub mod pallet {
 				.update_attestation_key(new_key, frame_system::Pallet::<T>::block_number())
 				.map_err(Error::<T>::from)?;
 
-			did_details.update_deposit(&did_subject)?;
-			Did::<T>::insert(&did_subject, did_details);
+			Self::try_update_did(&did_subject, did_details)?;
 			log::debug!("Attestation key set");
 
 			Self::deposit_event(Event::DidUpdated(did_subject));
@@ -769,8 +769,7 @@ pub mod pallet {
 			log::debug!("Removing attestation key for DID {:?}", &did_subject);
 			did_details.remove_attestation_key().map_err(Error::<T>::from)?;
 
-			did_details.update_deposit(&did_subject)?;
-			Did::<T>::insert(&did_subject, did_details);
+			Self::try_update_did(&did_subject, did_details)?;
 			log::debug!("Attestation key removed");
 
 			Self::deposit_event(Event::DidUpdated(did_subject));
@@ -802,8 +801,7 @@ pub mod pallet {
 				.add_key_agreement_key(new_key, frame_system::Pallet::<T>::block_number())
 				.map_err(Error::<T>::from)?;
 
-			did_details.update_deposit(&did_subject)?;
-			Did::<T>::insert(&did_subject, did_details);
+			Self::try_update_did(&did_subject, did_details)?;
 			log::debug!("Key agreement key set");
 
 			Self::deposit_event(Event::DidUpdated(did_subject));
@@ -832,8 +830,7 @@ pub mod pallet {
 			log::debug!("Removing key agreement key for DID {:?}", &did_subject);
 			did_details.remove_key_agreement_key(key_id).map_err(Error::<T>::from)?;
 
-			did_details.update_deposit(&did_subject)?;
-			Did::<T>::insert(&did_subject, did_details);
+			Self::try_update_did(&did_subject, did_details)?;
 			log::debug!("Key agreement key removed");
 
 			Self::deposit_event(Event::DidUpdated(did_subject));
@@ -862,7 +859,7 @@ pub mod pallet {
 				.map_err(Error::<T>::from)?;
 
 			// Verify that the DID is present.
-			let mut did = Did::<T>::get(&did_subject).ok_or(Error::<T>::NotFound)?;
+			let did_details = Did::<T>::get(&did_subject).ok_or(Error::<T>::NotFound)?;
 
 			let currently_stored_endpoints_count = DidEndpointsCount::<T>::get(&did_subject);
 
@@ -882,9 +879,8 @@ pub mod pallet {
 				},
 			)?;
 			DidEndpointsCount::<T>::insert(&did_subject, currently_stored_endpoints_count.saturating_add(1));
-			did.update_deposit(&did_subject)?;
 
-			Did::<T>::insert(&did_subject, did);
+			Self::try_update_did(&did_subject, did_details)?;
 
 			Self::deposit_event(Event::DidUpdated(did_subject));
 
@@ -908,7 +904,7 @@ pub mod pallet {
 		pub fn remove_service_endpoint(origin: OriginFor<T>, service_id: ServiceEndpointId<T>) -> DispatchResult {
 			let did_subject = T::EnsureOrigin::ensure_origin(origin)?.subject();
 
-			let mut did_details = Did::<T>::get(&did_subject).ok_or(Error::<T>::NotFound)?;
+			let did_details = Did::<T>::get(&did_subject).ok_or(Error::<T>::NotFound)?;
 
 			ensure!(
 				ServiceEndpoints::<T>::take(&did_subject, &service_id).is_some(),
@@ -925,8 +921,7 @@ pub mod pallet {
 				}
 			});
 
-			did_details.update_deposit(&did_subject)?;
-			Did::<T>::insert(&did_subject, did_details);
+			Self::try_update_did(&did_subject, did_details)?;
 
 			Self::deposit_event(Event::DidUpdated(did_subject));
 
@@ -1110,7 +1105,7 @@ pub mod pallet {
 			let subject = source.subject();
 			let sender = source.sender();
 
-			DidDepositCollector::<T>::change_deposit_owner(&subject, sender)?;
+			DidDepositCollector::<T>::change_deposit_owner::<<T as Config>::BalanceMigrationManager>(&subject, sender)?;
 
 			Ok(())
 		}
@@ -1122,24 +1117,238 @@ pub mod pallet {
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::update_deposit())]
 		pub fn update_deposit(origin: OriginFor<T>, did: DidIdentifierOf<T>) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
-			let mut did_entry = Did::<T>::get(&did).ok_or(Error::<T>::NotFound)?;
+			let did_entry = Did::<T>::get(&did).ok_or(Error::<T>::NotFound)?;
 			ensure!(did_entry.deposit.owner == sender, Error::<T>::BadDidOrigin);
-			did_entry.update_deposit(&did)?;
-			Did::<T>::insert(&did, did_entry);
+
+			Self::try_update_did(&did, did_entry)?;
+			Ok(())
+		}
+
+		/// Proxy a dispatchable call of another runtime extrinsic that
+		/// supports a DID origin.
+		///
+		/// The referenced DID identifier must be present on chain before the
+		/// operation is dispatched.
+		///
+		/// A call submitted through this extrinsic must be signed with the
+		/// right DID key, depending on the call. In contrast to the
+		/// `submit_did_call` extrinsic, this call doesn't separate the sender
+		/// from the DID subject. The key that must be used for this DID call
+		/// is required to also be a valid account with enough balance to pay
+		/// for fees.
+		///
+		/// The dispatch origin must be a KILT account with enough funds to
+		/// execute the extrinsic and must correspond to the required DID
+		/// Verification Key.
+		///
+		/// Emits `DidCallDispatched`.
+		#[allow(clippy::boxed_local)]
+		#[pallet::call_index(15)]
+		#[pallet::weight({
+			let dispatch_info = call.get_dispatch_info();
+
+			(<T as pallet::Config>::WeightInfo::dispatch_as().saturating_add(dispatch_info.weight), dispatch_info.class)
+		})]
+		pub fn dispatch_as(
+			origin: OriginFor<T>,
+			did_identifier: DidIdentifierOf<T>,
+			call: Box<DidCallableOf<T>>,
+		) -> DispatchResultWithPostInfo {
+			let who = ensure_signed(origin)?;
+
+			let verification_key_relationship =
+				call.derive_verification_key_relationship().map_err(Error::<T>::from)?;
+
+			Pallet::<T>::verify_account_authorization(&did_identifier, &who, verification_key_relationship)
+				.map_err(Error::<T>::from)?;
+
+			log::debug!("Dispatch call from DID {:?}", did_identifier);
+
+			#[cfg(not(feature = "runtime-benchmarks"))]
+			let result = call.dispatch(
+				DidRawOrigin {
+					id: did_identifier.clone(),
+					submitter: who,
+				}
+				.into(),
+			);
+			#[cfg(feature = "runtime-benchmarks")]
+			let result = call.dispatch(RawOrigin::Signed(did_identifier.clone()).into());
+
+			let dispatch_event_payload = result.map(|_| ()).map_err(|e| e.error);
+
+			Self::deposit_event(Event::DidCallDispatched(did_identifier, dispatch_event_payload));
+
+			result
+		}
+
+		/// Store a new DID on chain.
+		///
+		/// The DID identifier is derived from the account ID that submits this
+		/// call. The authentication key must correspond to the account ID that
+		/// submitted this call. For accounts that use the ed25519 and sr25519
+		/// schema, the authentication key must be of the
+		/// `DidVerificationKey::Ed25519` or `DidVerificationKey::Sr25519`
+		/// variant and contains the public key. For Ecdsa accounts, the
+		/// `DidVerificationKey::Ecdsa` variant is calculated by hashing the
+		/// Ecdsa public key.
+		///
+		/// If this call is dispatched by an account id that doesn't correspond
+		/// to a public private key pair, the `DidVerificationKey::Account`
+		/// variant shall be used (Multisig, Pure Proxy, Governance origins).
+		/// The resulting DID can NOT be used for signing data and is therefore
+		/// limited to onchain activities.
+		///
+		/// There must be no DID information stored on chain under the same DID
+		/// identifier. This call will fail if there exists a DID with the same
+		/// identifier or if a DID with the same identifier existed and was
+		/// deleted.
+		///
+		/// The origin for this account must be funded and provide the required
+		/// deposit and fee.
+		///
+		/// Emits `DidCreated`.
+		#[pallet::call_index(16)]
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::create_from_account())]
+		pub fn create_from_account(
+			origin: OriginFor<T>,
+			authentication_key: DidVerificationKey<AccountIdOf<T>>,
+		) -> DispatchResult {
+			let sender = ensure_signed(origin)?;
+			let did_identifier: DidIdentifierOf<T> = sender.clone().into();
+
+			log::debug!("Creating DID {:?}", &did_identifier);
+
+			let current_block_number = frame_system::Pallet::<T>::block_number();
+			let did_entry =
+				DidDetails::new(authentication_key, current_block_number, sender.clone()).map_err(Error::<T>::from)?;
+
+			Self::try_insert_did(did_identifier, did_entry, sender)?;
+
 			Ok(())
 		}
 	}
 
-	impl<T: Config> Pallet<T> {
+	impl<T: Config> Pallet<T>
+	where
+		T::AccountId: AsRef<[u8; 32]> + From<[u8; 32]>,
+	{
+		/// Try creating a DID.
+		///
+		/// # Errors
+		///
+		/// * When the DID was deleted, this function returns a `AlreadyDeleted`
+		///   error.
+		/// * When the DID already exists, this function returns a
+		///   `AlreadyExists` error.
+		/// * When the `sender` doesn't have enough free balance, this function
+		///   returns a `UnableToPayFees` error.
+		pub fn try_insert_did(
+			did_identifier: DidIdentifierOf<T>,
+			did_entry: DidDetails<T>,
+			sender: AccountIdOf<T>,
+		) -> DispatchResult {
+			// Make sure that DIDs cannot be created again after they have been deleted.
+			ensure!(
+				!DidBlacklist::<T>::contains_key(&did_identifier),
+				Error::<T>::AlreadyDeleted
+			);
+
+			// There has to be no other DID with the same identifier already saved on chain,
+			// otherwise generate a AlreadyExists error.
+			ensure!(!Did::<T>::contains_key(&did_identifier), Error::<T>::AlreadyExists);
+
+			// Collect fee
+			let imbalance: CreditOf<T> = <T::Currency as Balanced<AccountIdOf<T>>>::withdraw(
+				&did_entry.deposit.owner,
+				T::Fee::get(),
+				Precision::Exact,
+				Preservation::Preserve,
+				Fortitude::Polite,
+			)
+			.map_err(|_| Error::<T>::UnableToPayFees)?;
+			T::FeeCollector::on_unbalanced(imbalance);
+
+			DidDepositCollector::<T>::create_deposit(sender.clone(), did_entry.deposit.amount)
+				.map_err(|_| Error::<T>::UnableToPayFees)?;
+
+			<T as Config>::BalanceMigrationManager::exclude_key_from_migration(&Did::<T>::hashed_key_for(
+				&did_identifier,
+			));
+
+			Did::<T>::insert(&did_identifier, did_entry);
+
+			Pallet::<T>::deposit_event(Event::DidCreated(sender, did_identifier));
+
+			Ok(())
+		}
+
+		/// Try updating the DID.
+		///
+		/// # Errors
+		///
+		/// This can fail when the deposit owner doesn't have enough free
+		/// balance.
+		pub fn try_update_did(did_identifier: &DidIdentifierOf<T>, mut did_details: DidDetails<T>) -> DispatchResult {
+			Self::try_update_deposit(&mut did_details, did_identifier)?;
+			Did::<T>::insert(did_identifier, did_details);
+
+			Ok(())
+		}
+
+		fn try_update_deposit(did_details: &mut DidDetails<T>, did_subject: &DidIdentifierOf<T>) -> DispatchResult {
+			let endpoint_count = DidEndpointsCount::<T>::get(did_subject);
+			let new_required_deposit = did_details.calculate_deposit(endpoint_count);
+			let hashed_key = Did::<T>::hashed_key_for(did_subject);
+
+			let is_key_migrated = <T as Config>::BalanceMigrationManager::is_key_migrated(&hashed_key);
+
+			match new_required_deposit.cmp(&did_details.deposit.amount) {
+				core::cmp::Ordering::Greater => {
+					let deposit_to_reserve = new_required_deposit.saturating_sub(did_details.deposit.amount);
+
+					if is_key_migrated {
+						DidDepositCollector::<T>::create_deposit(
+							did_details.deposit.clone().owner,
+							deposit_to_reserve,
+						)?;
+						did_details.deposit.amount = did_details.deposit.amount.saturating_add(deposit_to_reserve);
+					} else {
+						<T as Config>::BalanceMigrationManager::release_reserved_deposit(
+							&did_details.deposit.owner,
+							&did_details.deposit.amount,
+						);
+						DidDepositCollector::<T>::create_deposit(
+							did_details.deposit.clone().owner,
+							new_required_deposit,
+						)?;
+						<T as Config>::BalanceMigrationManager::exclude_key_from_migration(&hashed_key);
+						did_details.deposit.amount = new_required_deposit;
+					}
+				}
+				core::cmp::Ordering::Less => {
+					let deposit_to_release = did_details.deposit.amount.saturating_sub(new_required_deposit);
+					if is_key_migrated {
+						DidDepositCollector::<T>::free_deposit(Deposit {
+							owner: did_details.deposit.owner.clone(),
+							amount: deposit_to_release,
+						})?;
+					} else {
+						<T as Config>::BalanceMigrationManager::release_reserved_deposit(
+							&did_details.deposit.owner,
+							&deposit_to_release,
+						);
+					}
+					did_details.deposit.amount = did_details.deposit.amount.saturating_sub(deposit_to_release);
+				}
+				_ => (),
+			};
+			Ok(())
+		}
+
 		/// Verify the validity (i.e., nonce, signature and mortality) of a
 		/// DID-authorized operation and, if valid, update the DID state with
 		/// the latest nonce.
-		///
-		/// # <weight>
-		/// Weight: O(1)
-		/// - Reads: Did
-		/// - Writes: Did
-		/// # </weight>
 		pub fn verify_did_operation_signature_and_increase_nonce(
 			operation: &DidAuthorizedCallOperationWithVerificationRelationship<T>,
 			signature: &DidSignature,
@@ -1166,11 +1375,41 @@ pub mod pallet {
 			Ok(())
 		}
 
+		/// Verify that `account` is authorized to dispatch DID calls on behave
+		/// of `did_identifier`.
+		///
+		/// # Errors
+		///
+		/// This function returns an error if the did was not found, the
+		/// verification key was not found or the account didn't match the
+		/// verification key.
+		pub fn verify_account_authorization(
+			did_identifier: &DidIdentifierOf<T>,
+			submitter_account: &AccountIdOf<T>,
+			verification_key_relationship: DidVerificationKeyRelationship,
+		) -> Result<(), DidError> {
+			let did_details = Did::<T>::get(did_identifier).ok_or(StorageError::NotFound(errors::NotFoundKind::Did))?;
+
+			let verification_key = did_details
+				.get_verification_key_for_key_type(verification_key_relationship)
+				.ok_or_else(|| {
+					DidError::Storage(StorageError::NotFound(errors::NotFoundKind::Key(
+						verification_key_relationship.into(),
+					)))
+				})?;
+
+			if submitter_account == &verification_key.clone().into_account() {
+				Ok(())
+			} else {
+				Err(DidError::Signature(SignatureError::InvalidData))
+			}
+		}
+
 		/// Check if the provided block number is valid,
 		/// i.e., if the current blockchain block is in the inclusive range
 		/// [operation_block_number, operation_block_number +
 		/// MaxBlocksTxValidity].
-		fn validate_block_number_value(block_number: BlockNumberOf<T>) -> Result<(), DidError> {
+		fn validate_block_number_value(block_number: BlockNumberFor<T>) -> Result<(), DidError> {
 			let current_block_number = frame_system::Pallet::<T>::block_number();
 			let allowed_range = block_number..=block_number.saturating_add(T::MaxBlocksTxValidity::get());
 
@@ -1224,7 +1463,7 @@ pub mod pallet {
 		/// Deletes DID details from storage, including its linked service
 		/// endpoints, adds the identifier to the blacklisted DIDs and frees the
 		/// deposit.
-		fn delete_did(did_subject: DidIdentifierOf<T>, endpoints_to_remove: u32) -> DispatchResult {
+		pub(crate) fn delete_did(did_subject: DidIdentifierOf<T>, endpoints_to_remove: u32) -> DispatchResult {
 			let current_endpoints_count = DidEndpointsCount::<T>::get(&did_subject);
 			ensure!(
 				current_endpoints_count <= endpoints_to_remove,
@@ -1247,7 +1486,17 @@ pub mod pallet {
 			let did_entry = Did::<T>::take(&did_subject).ok_or(Error::<T>::NotFound)?;
 
 			DidEndpointsCount::<T>::remove(&did_subject);
-			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&did_entry.deposit);
+
+			let is_key_migrated =
+				<T as Config>::BalanceMigrationManager::is_key_migrated(&Did::<T>::hashed_key_for(did_subject.clone()));
+			if is_key_migrated {
+				DidDepositCollector::<T>::free_deposit(did_entry.deposit)?;
+			} else {
+				<T as Config>::BalanceMigrationManager::release_reserved_deposit(
+					&did_entry.deposit.owner,
+					&did_entry.deposit.amount,
+				)
+			}
 			// Mark as deleted to prevent potential replay-attacks of re-adding a previously
 			// deleted DID.
 			DidBlacklist::<T>::insert(&did_subject, ());
@@ -1260,21 +1509,35 @@ pub mod pallet {
 		}
 	}
 
-	struct DidDepositCollector<T: Config>(PhantomData<T>);
-	impl<T: Config> StorageDepositCollector<AccountIdOf<T>, DidIdentifierOf<T>> for DidDepositCollector<T> {
-		type Currency = T::Currency;
+	pub(crate) struct DidDepositCollector<T: Config>(PhantomData<T>);
+	impl<T: Config> StorageDepositCollector<AccountIdOf<T>, DidIdentifierOf<T>, T::RuntimeHoldReason>
+		for DidDepositCollector<T>
+	{
+		type Currency = <T as Config>::Currency;
+		type Reason = HoldReason;
+
+		fn reason() -> Self::Reason {
+			HoldReason::Deposit
+		}
+
+		fn get_hashed_key(key: &DidIdentifierOf<T>) -> Result<sp_std::vec::Vec<u8>, DispatchError> {
+			Ok(Did::<T>::hashed_key_for(key))
+		}
 
 		fn deposit(
 			key: &DidIdentifierOf<T>,
-		) -> Result<Deposit<AccountIdOf<T>, <Self::Currency as Currency<AccountIdOf<T>>>::Balance>, DispatchError> {
+		) -> Result<Deposit<AccountIdOf<T>, <Self::Currency as Inspect<AccountIdOf<T>>>::Balance>, DispatchError> {
 			let did_entry = Did::<T>::get(key).ok_or(Error::<T>::NotFound)?;
 			Ok(did_entry.deposit)
 		}
 
-		fn deposit_amount(key: &DidIdentifierOf<T>) -> <Self::Currency as Currency<AccountIdOf<T>>>::Balance {
+		fn deposit_amount(key: &DidIdentifierOf<T>) -> <Self::Currency as Inspect<AccountIdOf<T>>>::Balance {
 			let did_entry = Did::<T>::get(key);
 			match did_entry {
-				Some(entry) => entry.calculate_deposit(key),
+				Some(entry) => {
+					let endpoint_count = DidEndpointsCount::<T>::get(key);
+					entry.calculate_deposit(endpoint_count)
+				}
 				// If there is no entry return 0
 				_ => Zero::zero(),
 			}
@@ -1282,7 +1545,7 @@ pub mod pallet {
 
 		fn store_deposit(
 			key: &DidIdentifierOf<T>,
-			deposit: Deposit<AccountIdOf<T>, <Self::Currency as Currency<AccountIdOf<T>>>::Balance>,
+			deposit: Deposit<AccountIdOf<T>, <Self::Currency as Inspect<AccountIdOf<T>>>::Balance>,
 		) -> Result<(), DispatchError> {
 			let did_entry = Did::<T>::get(key).ok_or(Error::<T>::NotFound)?;
 			Did::<T>::insert(key, DidDetails { deposit, ..did_entry });

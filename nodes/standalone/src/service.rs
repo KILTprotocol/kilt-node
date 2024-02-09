@@ -19,18 +19,19 @@
 //! Service and ServiceFactory implementation. Specialized wrapper over
 //! substrate service.
 
-use sc_client_api::BlockBackend;
+use futures::FutureExt;
+use sc_client_api::{Backend, BlockBackend};
 use sc_consensus_aura::{ImportQueueParams, SlotProportion, StartAuraParams};
 use sc_consensus_grandpa::SharedVoterState;
 pub use sc_executor::NativeElseWasmExecutor;
-use sc_keystore::LocalKeystore;
 use sc_service::{error::Error as ServiceError, Configuration, TaskManager, WarpSyncParams};
 use sc_telemetry::{Telemetry, TelemetryWorker};
+use sc_transaction_pool_api::OffchainTransactionPoolFactory;
 use sp_consensus_aura::ed25519::AuthorityPair as AuraPair;
 
 use std::{sync::Arc, time::Duration};
 
-use mashnet_node_runtime::{self, opaque::Block, RuntimeApi};
+use kestrel_runtime::{self, opaque::Block, RuntimeApi};
 
 // Our native executor instance.
 pub struct ExecutorDispatch;
@@ -39,11 +40,11 @@ impl sc_executor::NativeExecutionDispatch for ExecutorDispatch {
 	type ExtendHostFunctions = frame_benchmarking::benchmarking::HostFunctions;
 
 	fn dispatch(method: &str, data: &[u8]) -> Option<Vec<u8>> {
-		mashnet_node_runtime::api::dispatch(method, data)
+		kestrel_runtime::api::dispatch(method, data)
 	}
 
 	fn native_version() -> sc_executor::NativeVersion {
-		mashnet_node_runtime::native_version()
+		kestrel_runtime::native_version()
 	}
 }
 
@@ -65,10 +66,6 @@ type PartialComponents = sc_service::PartialComponents<
 >;
 
 pub fn new_partial(config: &Configuration) -> Result<PartialComponents, ServiceError> {
-	if config.keystore_remote.is_some() {
-		return Err(ServiceError::Other("Remote Keystores are not supported.".to_string()));
-	}
-
 	let telemetry = config
 		.telemetry_endpoints
 		.clone()
@@ -80,12 +77,7 @@ pub fn new_partial(config: &Configuration) -> Result<PartialComponents, ServiceE
 		})
 		.transpose()?;
 
-	let executor = NativeElseWasmExecutor::<ExecutorDispatch>::new(
-		config.wasm_method,
-		config.default_heap_pages,
-		config.max_runtime_instances,
-		config.runtime_cache_size,
-	);
+	let executor = sc_service::new_native_or_wasm_executor(config);
 
 	let (client, backend, keystore_container, task_manager) = sc_service::new_full_parts::<Block, RuntimeApi, _>(
 		config,
@@ -151,48 +143,30 @@ pub fn new_partial(config: &Configuration) -> Result<PartialComponents, ServiceE
 	})
 }
 
-fn remote_keystore(_url: &str) -> Result<Arc<LocalKeystore>, &'static str> {
-	// FIXME: here would the concrete keystore be built,
-	//        must return a concrete type (NOT `LocalKeystore`) that
-	//        implements `CryptoStore` and `SyncCryptoStore`
-	Err("Remote Keystore not supported.")
-}
-
 /// Builds a new service for a full client.
-pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> {
+pub fn new_full(config: Configuration) -> Result<TaskManager, ServiceError> {
 	let sc_service::PartialComponents {
 		client,
 		backend,
 		mut task_manager,
 		import_queue,
-		mut keystore_container,
+		keystore_container,
 		select_chain,
 		transaction_pool,
 		other: (block_import, grandpa_link, mut telemetry),
 	} = new_partial(&config)?;
 
-	if let Some(url) = &config.keystore_remote {
-		match remote_keystore(url) {
-			Ok(k) => keystore_container.set_remote_keystore(k),
-			Err(e) => {
-				return Err(ServiceError::Other(format!(
-					"Error hooking up remote keystore for {}: {}",
-					url, e
-				)))
-			}
-		};
-	}
 	let grandpa_protocol_name = sc_consensus_grandpa::protocol_standard_name(
 		&client.block_hash(0).ok().flatten().expect("Genesis block exists; qed"),
 		&config.chain_spec,
 	);
 
-	config
-		.network
-		.extra_sets
-		.push(sc_consensus_grandpa::grandpa_peers_set_config(
-			grandpa_protocol_name.clone(),
-		));
+	let mut net_config = sc_network::config::FullNetworkConfiguration::new(&config.network);
+
+	net_config.add_notification_protocol(sc_consensus_grandpa::grandpa_peers_set_config(
+		grandpa_protocol_name.clone(),
+	));
+
 	let warp_sync = Arc::new(sc_consensus_grandpa::warp_proof::NetworkProvider::new(
 		backend.clone(),
 		grandpa_link.shared_authority_set().clone(),
@@ -203,6 +177,7 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
 		sc_service::build_network(sc_service::BuildNetworkParams {
 			config: &config,
 			client: client.clone(),
+			net_config,
 			transaction_pool: transaction_pool.clone(),
 			spawn_handle: task_manager.spawn_handle(),
 			block_announce_validator_builder: None,
@@ -211,7 +186,22 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
 		})?;
 
 	if config.offchain_worker.enabled {
-		sc_service::build_offchain_workers(&config, task_manager.spawn_handle(), client.clone(), network.clone());
+		task_manager.spawn_handle().spawn(
+			"offchain-workers-runner",
+			"offchain-worker",
+			sc_offchain::OffchainWorkers::new(sc_offchain::OffchainWorkerOptions {
+				runtime_api_provider: client.clone(),
+				is_validator: config.role.is_authority(),
+				keystore: Some(keystore_container.keystore()),
+				offchain_db: backend.offchain_storage(),
+				transaction_pool: Some(OffchainTransactionPoolFactory::new(transaction_pool.clone())),
+				network_provider: network.clone(),
+				enable_http_requests: true,
+				custom_extensions: |_| vec![],
+			})
+			.run(client.clone(), task_manager.spawn_handle())
+			.boxed(),
+		);
 	}
 
 	let role = config.role.clone();
@@ -239,7 +229,7 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
 		network: network.clone(),
 		client: client.clone(),
 		sync_service: sync.clone(),
-		keystore: keystore_container.sync_keystore(),
+		keystore: keystore_container.keystore(),
 		task_manager: &mut task_manager,
 		transaction_pool: transaction_pool.clone(),
 		rpc_builder: rpc_extensions_builder,
@@ -254,7 +244,7 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
 		let proposer_factory = sc_basic_authorship::ProposerFactory::new(
 			task_manager.spawn_handle(),
 			client.clone(),
-			transaction_pool,
+			transaction_pool.clone(),
 			prometheus_registry.as_ref(),
 			telemetry.as_ref().map(|x| x.handle()),
 		);
@@ -279,7 +269,7 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
 			},
 			force_authoring,
 			backoff_authoring_blocks,
-			keystore: keystore_container.sync_keystore(),
+			keystore: keystore_container.keystore(),
 			sync_oracle: sync.clone(),
 			justification_sync_link: sync.clone(),
 			block_proposal_slot_portion: SlotProportion::new(2f32 / 3f32),
@@ -299,7 +289,7 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
 		// if the node isn't actively participating in consensus then it doesn't
 		// need a keystore, regardless of which protocol we use below.
 		let keystore = if role.is_authority() {
-			Some(keystore_container.sync_keystore())
+			Some(keystore_container.keystore())
 		} else {
 			None
 		};
@@ -330,6 +320,7 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
 			voting_rule: sc_consensus_grandpa::VotingRulesBuilder::default().build(),
 			prometheus_registry,
 			shared_voter_state: SharedVoterState::empty(),
+			offchain_tx_pool_factory: OffchainTransactionPoolFactory::new(transaction_pool),
 			telemetry: telemetry.as_ref().map(|x| x.handle()),
 		};
 

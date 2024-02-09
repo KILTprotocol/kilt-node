@@ -17,20 +17,19 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use super::*;
-
-use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite, Zero};
+use frame_benchmarking::{account, benchmarks, Zero};
 use frame_support::{
 	assert_ok,
-	traits::{Currency, ReservableCurrency},
+	traits::fungible::{Inspect, Mutate, MutateHold},
 };
-use frame_system::RawOrigin;
+use frame_system::{pallet_prelude::BlockNumberFor, RawOrigin};
 use parity_scale_codec::Encode;
 use sp_core::{crypto::KeyTypeId, ecdsa, ed25519, sr25519};
 use sp_io::crypto::{ecdsa_generate, ecdsa_sign, ed25519_generate, ed25519_sign, sr25519_generate, sr25519_sign};
 use sp_runtime::{traits::IdentifyAccount, AccountId32, MultiSigner};
 use sp_std::{convert::TryInto, vec::Vec};
 
-use kilt_support::{deposit::Deposit, signature::VerifySignature};
+use kilt_support::{signature::VerifySignature, Deposit};
 
 use crate::{
 	did_details::{
@@ -42,7 +41,7 @@ use crate::{
 	},
 	service_endpoints::DidEndpoint,
 	signature::DidSignatureVerify,
-	AccountIdOf, DidAuthorizedCallOperationOf, DidIdentifierOf,
+	AccountIdOf, DidAuthorizedCallOperationOf, DidIdentifierOf, HoldReason,
 };
 
 const DEFAULT_ACCOUNT_ID: &str = "tx_submitter";
@@ -53,7 +52,7 @@ const DELEGATION_KEY_ID: KeyTypeId = KeyTypeId(*b"0002");
 const UNUSED_KEY_ID: KeyTypeId = KeyTypeId(*b"1111");
 const MAX_PAYLOAD_BYTE_LENGTH: u32 = 5 * 1024 * 1024;
 
-fn get_ed25519_public_authentication_key() -> ed25519::Public {
+pub fn get_ed25519_public_authentication_key() -> ed25519::Public {
 	ed25519_generate(AUTHENTICATION_KEY_ID, None)
 }
 
@@ -89,13 +88,16 @@ fn get_ecdsa_public_delegation_key() -> ecdsa::Public {
 	ecdsa_generate(DELEGATION_KEY_ID, None)
 }
 
-fn make_free_for_did<T: Config>(account: &AccountIdOf<T>) {
-	let balance = <CurrencyOf<T> as Currency<AccountIdOf<T>>>::minimum_balance()
+fn make_free_for_did<T: Config>(account: &AccountIdOf<T>)
+where
+	<T as Config>::Currency: Mutate<T::AccountId>,
+{
+	let balance = <CurrencyOf<T> as Inspect<AccountIdOf<T>>>::minimum_balance()
 		+ <T as Config>::BaseDeposit::get()
 		+ <T as Config>::BaseDeposit::get()
 		+ <T as Config>::BaseDeposit::get()
 		+ <T as Config>::Fee::get();
-	<CurrencyOf<T> as Currency<AccountIdOf<T>>>::make_free_balance_be(account, balance);
+	<CurrencyOf<T> as Mutate<AccountIdOf<T>>>::set_balance(account, balance);
 }
 
 // Must always be dispatched with the DID authentication key
@@ -109,7 +111,7 @@ fn generate_base_did_call_operation<T: Config>(
 		did,
 		call: test_call,
 		tx_counter: 1u64,
-		block_number: T::BlockNumber::default(),
+		block_number: BlockNumberFor::<T>::default(),
 		submitter,
 	}
 }
@@ -127,6 +129,8 @@ benchmarks! {
 		T::DidIdentifier: From<AccountId32>,
 		<T as frame_system::Config>::RuntimeOrigin: From<RawOrigin<T::DidIdentifier>>,
 		<T as frame_system::Config>::AccountId: From<AccountId32>,
+		<T as Config>::Currency: Mutate<T::AccountId>,
+		T::AccountId: AsRef<[u8; 32]> + From<[u8; 32]>,
 	}
 
 	/* create extrinsic */
@@ -339,7 +343,9 @@ benchmarks! {
 		let did_public_auth_key = get_ed25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(did_public_auth_key).into_account().into();
 
-		let did_details = generate_base_did_details::<T>(DidVerificationKey::from(did_public_auth_key), None);
+		let mut did_details = generate_base_did_details::<T>(DidVerificationKey::from(did_public_auth_key), None);
+		did_details.deposit.amount = did_details.calculate_deposit(c);
+
 		let service_endpoints = get_service_endpoints::<T>(
 			c,
 			T::MaxServiceIdLength::get(),
@@ -349,7 +355,10 @@ benchmarks! {
 			T::MaxServiceUrlLength::get(),
 		);
 
-		Did::<T>::insert(&did_subject, did_details);
+		let deposit_owner = did_details.deposit.owner.clone();
+		make_free_for_did::<T>(&deposit_owner);
+		Pallet::<T>::try_insert_did(did_subject.clone(), did_details, deposit_owner).expect("DID should be created!");
+
 		save_service_endpoints(&did_subject, &service_endpoints);
 		let origin = RawOrigin::Signed(did_subject.clone());
 	}: _(origin, c)
@@ -372,7 +381,8 @@ benchmarks! {
 		let did_public_auth_key = get_ed25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(did_public_auth_key).into_account().into();
 
-		let did_details = generate_base_did_details::<T>(DidVerificationKey::from(did_public_auth_key), None);
+		let mut did_details = generate_base_did_details::<T>(DidVerificationKey::from(did_public_auth_key), None);
+		did_details.deposit.amount = did_details.calculate_deposit(c);
 		let service_endpoints = get_service_endpoints::<T>(
 			c,
 			T::MaxServiceIdLength::get(),
@@ -382,7 +392,10 @@ benchmarks! {
 			T::MaxServiceUrlLength::get(),
 		);
 
-		Did::<T>::insert(&did_subject, did_details.clone());
+		let deposit_owner = did_details.deposit.owner.clone();
+		make_free_for_did::<T>(&deposit_owner);
+		Pallet::<T>::try_insert_did(did_subject.clone(), did_details.clone(), deposit_owner).expect("DID should be created!");
+
 		save_service_endpoints(&did_subject, &service_endpoints);
 		let origin = RawOrigin::Signed(did_details.deposit.owner);
 		let subject_clone = did_subject.clone();
@@ -451,7 +464,7 @@ benchmarks! {
 
 	/* set_authentication_key extrinsic */
 	set_ed25519_authentication_key {
-		let block_number = T::BlockNumber::zero();
+		let block_number = BlockNumberFor::<T>::zero();
 		let old_did_public_auth_key = get_ed25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(old_did_public_auth_key).into_account().into();
 		let did_account: AccountIdOf<T> = MultiSigner::from(old_did_public_auth_key).into_account().into();
@@ -475,7 +488,7 @@ benchmarks! {
 	}
 
 	set_sr25519_authentication_key {
-		let block_number = T::BlockNumber::zero();
+		let block_number = BlockNumberFor::<T>::zero();
 		let old_did_public_auth_key = get_sr25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(old_did_public_auth_key).into_account().into();
 		let did_account: AccountIdOf<T> = MultiSigner::from(old_did_public_auth_key).into_account().into();
@@ -499,7 +512,7 @@ benchmarks! {
 	}
 
 	set_ecdsa_authentication_key {
-		let block_number = T::BlockNumber::zero();
+		let block_number = BlockNumberFor::<T>::zero();
 		let old_did_public_auth_key = get_ecdsa_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(old_did_public_auth_key).into_account().into();
 		let did_account: AccountIdOf<T> = MultiSigner::from(old_did_public_auth_key).into_account().into();
@@ -524,7 +537,7 @@ benchmarks! {
 
 	/* set_delegation_key extrinsic */
 	set_ed25519_delegation_key {
-		let block_number = T::BlockNumber::zero();
+		let block_number = BlockNumberFor::<T>::zero();
 		let public_auth_key = get_ed25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(public_auth_key).into_account().into();
 		let did_account: AccountIdOf<T> = MultiSigner::from(public_auth_key).into_account().into();
@@ -548,7 +561,7 @@ benchmarks! {
 	}
 
 	set_sr25519_delegation_key {
-		let block_number = T::BlockNumber::zero();
+		let block_number = BlockNumberFor::<T>::zero();
 		let public_auth_key = get_sr25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(public_auth_key).into_account().into();
 		let old_delegation_key = get_sr25519_public_delegation_key();
@@ -572,7 +585,7 @@ benchmarks! {
 	}
 
 	set_ecdsa_delegation_key {
-		let block_number = T::BlockNumber::zero();
+		let block_number = BlockNumberFor::<T>::zero();
 		let public_auth_key = get_ecdsa_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(public_auth_key).into_account().into();
 		let did_account: AccountIdOf<T> = MultiSigner::from(public_auth_key).into_account().into();
@@ -591,14 +604,14 @@ benchmarks! {
 		let origin = RawOrigin::Signed(did_subject.clone());
 		let cloned_new_delegation_key = new_delegation_key.clone();
 	}: set_delegation_key(origin, cloned_new_delegation_key)
-		verify {
+	verify {
 		let new_delegation_key_id = utils::calculate_key_id::<T>(&DidPublicKey::from(new_delegation_key));
 		assert_eq!(Did::<T>::get(&did_subject).unwrap().delegation_key, Some(new_delegation_key_id));
 	}
 
 	/* remove_delegation_key extrinsic */
 	remove_ed25519_delegation_key {
-		let block_number = T::BlockNumber::zero();
+		let block_number = BlockNumberFor::<T>::zero();
 		let public_auth_key = get_ed25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(public_auth_key).into_account().into();
 		let did_account: AccountIdOf<T> = MultiSigner::from(public_auth_key).into_account().into();
@@ -622,7 +635,7 @@ benchmarks! {
 	}
 
 	remove_sr25519_delegation_key {
-		let block_number = T::BlockNumber::zero();
+		let block_number = BlockNumberFor::<T>::zero();
 		let public_auth_key = get_sr25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(public_auth_key).into_account().into();
 		let did_account: AccountIdOf<T> = MultiSigner::from(public_auth_key).into_account().into();
@@ -646,7 +659,7 @@ benchmarks! {
 	}
 
 	remove_ecdsa_delegation_key {
-		let block_number = T::BlockNumber::zero();
+		let block_number = BlockNumberFor::<T>::zero();
 		let public_auth_key = get_ecdsa_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(public_auth_key).into_account().into();
 		let did_account: AccountIdOf<T> = MultiSigner::from(public_auth_key).into_account().into();
@@ -671,7 +684,7 @@ benchmarks! {
 
 	/* set_attestation_key extrinsic */
 	set_ed25519_attestation_key {
-		let block_number = T::BlockNumber::zero();
+		let block_number = BlockNumberFor::<T>::zero();
 		let public_auth_key = get_ed25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(public_auth_key).into_account().into();
 		let did_account: AccountIdOf<T> = MultiSigner::from(public_auth_key).into_account().into();
@@ -695,7 +708,7 @@ benchmarks! {
 	}
 
 	set_sr25519_attestation_key {
-		let block_number = T::BlockNumber::zero();
+		let block_number = BlockNumberFor::<T>::zero();
 		let public_auth_key = get_sr25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(public_auth_key).into_account().into();
 		let did_account: AccountIdOf<T> = MultiSigner::from(public_auth_key).into_account().into();
@@ -719,7 +732,7 @@ benchmarks! {
 	}
 
 	set_ecdsa_attestation_key {
-		let block_number = T::BlockNumber::zero();
+		let block_number = BlockNumberFor::<T>::zero();
 		let public_auth_key = get_ecdsa_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(public_auth_key).into_account().into();
 		let did_account: AccountIdOf<T> = MultiSigner::from(public_auth_key).into_account().into();
@@ -744,7 +757,7 @@ benchmarks! {
 
 	/* remove_attestation_key extrinsic */
 	remove_ed25519_attestation_key {
-		let block_number = T::BlockNumber::zero();
+		let block_number = BlockNumberFor::<T>::zero();
 		let public_auth_key = get_ed25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(public_auth_key).into_account().into();
 		let did_account: AccountIdOf<T> = MultiSigner::from(public_auth_key).into_account().into();
@@ -768,7 +781,7 @@ benchmarks! {
 	}
 
 	remove_sr25519_attestation_key {
-		let block_number = T::BlockNumber::zero();
+		let block_number = BlockNumberFor::<T>::zero();
 		let public_auth_key = get_sr25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(public_auth_key).into_account().into();
 		let did_account: AccountIdOf<T> = MultiSigner::from(public_auth_key).into_account().into();
@@ -792,7 +805,7 @@ benchmarks! {
 	}
 
 	remove_ecdsa_attestation_key {
-		let block_number = T::BlockNumber::zero();
+		let block_number = BlockNumberFor::<T>::zero();
 		let public_auth_key = get_ecdsa_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(public_auth_key).into_account().into();
 		let did_account: AccountIdOf<T> = MultiSigner::from(public_auth_key).into_account().into();
@@ -817,7 +830,7 @@ benchmarks! {
 
 	/* add_key_agreement_keys extrinsic */
 	add_ed25519_key_agreement_key {
-		let block_number = T::BlockNumber::zero();
+		let block_number = BlockNumberFor::<T>::zero();
 		let public_auth_key = get_ed25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(public_auth_key).into_account().into();
 		let did_account: AccountIdOf<T> = MultiSigner::from(public_auth_key).into_account().into();
@@ -843,7 +856,7 @@ benchmarks! {
 	}
 
 	add_sr25519_key_agreement_key {
-		let block_number = T::BlockNumber::zero();
+		let block_number = BlockNumberFor::<T>::zero();
 		let public_auth_key = get_sr25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(public_auth_key).into_account().into();
 		let mut key_agreement_keys = get_key_agreement_keys::<T>(T::MaxNewKeyAgreementKeys::get());
@@ -869,7 +882,7 @@ benchmarks! {
 	}
 
 	add_ecdsa_key_agreement_key {
-		let block_number = T::BlockNumber::zero();
+		let block_number = BlockNumberFor::<T>::zero();
 		let public_auth_key = get_ecdsa_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(public_auth_key).into_account().into();
 		let did_account: AccountIdOf<T> = MultiSigner::from(public_auth_key).into_account().into();
@@ -896,7 +909,7 @@ benchmarks! {
 
 	/* remove_key_agreement_keys extrinsic */
 	remove_ed25519_key_agreement_key {
-		let block_number = T::BlockNumber::zero();
+		let block_number = BlockNumberFor::<T>::zero();
 		let public_auth_key = get_ed25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(public_auth_key).into_account().into();
 		let did_account: AccountIdOf<T> = MultiSigner::from(public_auth_key).into_account().into();
@@ -921,7 +934,7 @@ benchmarks! {
 	}
 
 	remove_sr25519_key_agreement_key {
-		let block_number = T::BlockNumber::zero();
+		let block_number = BlockNumberFor::<T>::zero();
 		let public_auth_key = get_sr25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(public_auth_key).into_account().into();
 		let did_account: AccountIdOf<T> = MultiSigner::from(public_auth_key).into_account().into();
@@ -946,7 +959,7 @@ benchmarks! {
 	}
 
 	remove_ecdsa_key_agreement_key {
-		let block_number = T::BlockNumber::zero();
+		let block_number = BlockNumberFor::<T>::zero();
 		let public_auth_key = get_ecdsa_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(public_auth_key).into_account().into();
 		let did_account: AccountIdOf<T> = MultiSigner::from(public_auth_key).into_account().into();
@@ -1039,7 +1052,7 @@ benchmarks! {
 		let origin = RawOrigin::Signed(did_subject.clone());
 		let cloned_endpoint_id = endpoint_id.clone();
 	}: _(origin, cloned_endpoint_id)
-		verify {
+	verify {
 		assert!(
 			ServiceEndpoints::<T>::get(&did_subject, &endpoint_id).is_none()
 		);
@@ -1057,7 +1070,7 @@ benchmarks! {
 		let l in 1 .. MAX_PAYLOAD_BYTE_LENGTH;
 
 		let payload: Vec<u8> = (0u8..u8::MAX).cycle().take(l.try_into().unwrap()).collect();
-		let block_number = T::BlockNumber::zero();
+		let block_number = BlockNumberFor::<T>::zero();
 
 		let public_auth_key = get_sr25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(public_auth_key).into_account().into();
@@ -1079,12 +1092,12 @@ benchmarks! {
 	}: {
 		DidSignatureVerify::<T>::verify(&did_subject, &payload, &did_signature).expect("should verify");
 	}
-	verify {}
+
 	signature_verification_ed25519 {
 		let l in 1 .. MAX_PAYLOAD_BYTE_LENGTH;
 
 		let payload: Vec<u8> = (0u8..u8::MAX).cycle().take(l.try_into().unwrap()).collect();
-		let block_number = T::BlockNumber::zero();
+		let block_number = BlockNumberFor::<T>::zero();
 
 		let public_auth_key = get_ed25519_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(public_auth_key).into_account().into();
@@ -1106,12 +1119,12 @@ benchmarks! {
 	}: {
 		DidSignatureVerify::<T>::verify(&did_subject, &payload, &did_signature).expect("should verify");
 	}
-	verify {}
+
 	signature_verification_ecdsa {
 		let l in 1 .. MAX_PAYLOAD_BYTE_LENGTH;
 
 		let payload: Vec<u8> = (0u8..u8::MAX).cycle().take(l.try_into().unwrap()).collect();
-		let block_number = T::BlockNumber::zero();
+		let block_number = BlockNumberFor::<T>::zero();
 
 		let public_auth_key = get_ecdsa_public_authentication_key();
 		let did_subject: DidIdentifierOf<T> = MultiSigner::from(public_auth_key).into_account().into();
@@ -1133,7 +1146,6 @@ benchmarks! {
 	}: {
 		DidSignatureVerify::<T>::verify(&did_subject, &payload, &did_signature).expect("should verify");
 	}
-	verify {}
 
 	change_deposit_owner {
 		let did_public_auth_key = get_ed25519_public_authentication_key();
@@ -1145,7 +1157,7 @@ benchmarks! {
 		did_details.deposit.owner = did_account.clone();
 
 		make_free_for_did::<T>(&did_account);
-		CurrencyOf::<T>::reserve(&did_account, did_details.deposit.amount).expect("should reserve currency");
+		CurrencyOf::<T>::hold(&HoldReason::Deposit.into(), &did_account, did_details.deposit.amount).expect("should reserve currency");
 		Did::<T>::insert(&did_subject, did_details);
 
 		let origin = RawOrigin::Signed(did_subject.clone());
@@ -1171,7 +1183,7 @@ benchmarks! {
 
 		Did::<T>::insert(&did_subject, did_details.clone());
 		make_free_for_did::<T>(&did_account);
-		CurrencyOf::<T>::reserve(&did_account, did_details.deposit.amount).expect("should reserve currency");
+		CurrencyOf::<T>::hold(&HoldReason::Deposit.into(), &did_account, did_details.deposit.amount).expect("should reserve currency");
 
 		let origin = RawOrigin::Signed(did_subject.clone());
 		let did_to_update = did_subject.clone();
@@ -1185,10 +1197,40 @@ benchmarks! {
 			},
 		)
 	}
-}
 
-impl_benchmark_test_suite! {
-	Pallet,
-	crate::mock::ExtBuilder::default().build_with_keystore(),
-	crate::mock::Test
+	dispatch_as {
+		// ecdsa keys are the most expensive since they require an additional hashing step
+		let did_public_auth_key = get_ecdsa_public_authentication_key();
+		let did_subject: DidIdentifierOf<T> = MultiSigner::from(did_public_auth_key).into_account().into();
+		let did_account: AccountIdOf<T> = MultiSigner::from(did_public_auth_key).into_account().into();
+
+		let did_details = generate_base_did_details::<T>(DidVerificationKey::from(did_public_auth_key), None);
+
+		Did::<T>::insert(&did_subject, did_details.clone());
+		make_free_for_did::<T>(&did_account);
+		CurrencyOf::<T>::hold(&HoldReason::Deposit.into(), &did_account, did_details.deposit.amount).expect("should reserve currency");
+
+		let test_call = <T as Config>::RuntimeCall::get_call_for_did_call_benchmark();
+		let origin = RawOrigin::Signed(did_subject.clone());
+	}: _(origin, did_subject, Box::new(test_call))
+
+	create_from_account {
+		// ecdsa keys are the most expensive since they require an additional hashing step
+		let did_public_auth_key = get_ecdsa_public_authentication_key();
+		let did_subject: DidIdentifierOf<T> = MultiSigner::from(did_public_auth_key).into_account().into();
+		let did_account: AccountIdOf<T> = MultiSigner::from(did_public_auth_key).into_account().into();
+
+		let authentication_key = DidVerificationKey::from(did_public_auth_key);
+		make_free_for_did::<T>(&did_account);
+		let origin = RawOrigin::Signed(did_subject.clone());
+	}: _(origin, authentication_key)
+	verify {
+			Did::<T>::get(&did_subject).expect("DID entry should be created");
+	}
+
+	impl_benchmark_test_suite!(
+		Pallet,
+		crate::mock::ExtBuilder::default().build_with_keystore(),
+		crate::mock::Test
+	)
 }

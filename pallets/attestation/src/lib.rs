@@ -63,6 +63,7 @@
 
 pub mod attestations;
 pub mod default_weights;
+pub mod migrations;
 
 #[cfg(any(feature = "mock", test))]
 pub mod mock;
@@ -84,17 +85,21 @@ pub use crate::{
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
+
 	use frame_support::{
 		dispatch::{DispatchResult, DispatchResultWithPostInfo},
 		pallet_prelude::*,
-		traits::{Currency, Get, ReservableCurrency, StorageVersion},
+		traits::{
+			fungible::{Inspect, MutateHold},
+			Get, StorageVersion,
+		},
 	};
 	use frame_system::pallet_prelude::*;
 
 	use ctype::CtypeHashOf;
 	use kilt_support::{
-		deposit::Deposit,
-		traits::{CallSources, StorageDepositCollector},
+		traits::{BalanceMigrationManager, CallSources, StorageDepositCollector},
+		Deposit,
 	};
 
 	/// The current storage version.
@@ -104,19 +109,28 @@ pub mod pallet {
 	pub type ClaimHashOf<T> = <T as frame_system::Config>::Hash;
 
 	/// Type of an attester identifier.
-	pub(crate) type AttesterOf<T> = <T as Config>::AttesterId;
+	pub type AttesterOf<T> = <T as Config>::AttesterId;
 
 	/// Authorization id type
 	pub(crate) type AuthorizationIdOf<T> = <T as Config>::AuthorizationId;
 
 	pub(crate) type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 
-	pub(crate) type BalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::Balance;
+	pub(crate) type BalanceOf<T> = <<T as Config>::Currency as Inspect<AccountIdOf<T>>>::Balance;
 
 	pub(crate) type CurrencyOf<T> = <T as Config>::Currency;
 
+	pub(crate) type HoldReasonOf<T> = <T as Config>::RuntimeHoldReason;
+
+	pub(crate) type BalanceMigrationManagerOf<T> = <T as Config>::BalanceMigrationManager;
+
 	pub type AttestationDetailsOf<T> =
 		AttestationDetails<CtypeHashOf<T>, AttesterOf<T>, AuthorizationIdOf<T>, AccountIdOf<T>, BalanceOf<T>>;
+
+	#[pallet::composite_enum]
+	pub enum HoldReason {
+		Deposit,
+	}
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config + ctype::Config {
@@ -128,8 +142,10 @@ pub mod pallet {
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 		type WeightInfo: WeightInfo;
 
-		/// The currency that is used to reserve funds for each attestation.
-		type Currency: ReservableCurrency<AccountIdOf<Self>>;
+		type RuntimeHoldReason: From<HoldReason>;
+
+		/// The currency that is used to hold funds for each attestation.
+		type Currency: MutateHold<AccountIdOf<Self>, Reason = HoldReasonOf<Self>>;
 
 		/// The deposit that is required for storing an attestation.
 		#[pallet::constant]
@@ -146,6 +162,9 @@ pub mod pallet {
 
 		type AccessControl: Parameter
 			+ AttestationAccessControl<Self::AttesterId, Self::AuthorizationId, CtypeHashOf<Self>, ClaimHashOf<Self>>;
+
+		/// Migration manager to handle new created entries
+		type BalanceMigrationManager: BalanceMigrationManager<AccountIdOf<Self>, BalanceOf<Self>>;
 	}
 
 	#[pallet::pallet]
@@ -155,7 +174,7 @@ pub mod pallet {
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
 		#[cfg(feature = "try-runtime")]
-		fn try_state(_n: BlockNumberFor<T>) -> Result<(), &'static str> {
+		fn try_state(_n: BlockNumberFor<T>) -> Result<(), sp_runtime::TryRuntimeError> {
 			crate::try_state::do_try_state::<T>()
 		}
 	}
@@ -272,7 +291,10 @@ pub mod pallet {
 				.transpose()?;
 			let authorization_id = authorization.as_ref().map(|ac| ac.authorization_id());
 
-			let deposit = kilt_support::reserve_deposit::<AccountIdOf<T>, CurrencyOf<T>>(payer, deposit_amount)?;
+			let deposit = AttestationStorageDepositCollector::<T>::create_deposit(payer, deposit_amount)?;
+			<T as Config>::BalanceMigrationManager::exclude_key_from_migration(&Attestations::<T>::hashed_key_for(
+				claim_hash,
+			));
 
 			log::debug!("insert Attestation");
 
@@ -397,7 +419,7 @@ pub mod pallet {
 
 			log::debug!("removing Attestation");
 
-			Self::remove_attestation(attestation, claim_hash);
+			Self::remove_attestation(attestation, claim_hash)?;
 			Self::deposit_event(Event::AttestationRemoved(who, claim_hash));
 
 			Ok(Some(<T as pallet::Config>::WeightInfo::remove()).into())
@@ -422,7 +444,7 @@ pub mod pallet {
 
 			log::debug!("removing Attestation");
 
-			Self::remove_attestation(attestation, claim_hash);
+			Self::remove_attestation(attestation, claim_hash)?;
 			Self::deposit_event(Event::DepositReclaimed(who, claim_hash));
 
 			Ok(())
@@ -445,7 +467,10 @@ pub mod pallet {
 			let attestation = Attestations::<T>::get(claim_hash).ok_or(Error::<T>::NotFound)?;
 			ensure!(attestation.attester == subject, Error::<T>::NotAuthorized);
 
-			AttestationStorageDepositCollector::<T>::change_deposit_owner(&claim_hash, sender)?;
+			AttestationStorageDepositCollector::<T>::change_deposit_owner::<BalanceMigrationManagerOf<T>>(
+				&claim_hash,
+				sender,
+			)?;
 
 			Ok(())
 		}
@@ -461,40 +486,62 @@ pub mod pallet {
 			let attestation = Attestations::<T>::get(claim_hash).ok_or(Error::<T>::NotFound)?;
 			ensure!(attestation.deposit.owner == sender, Error::<T>::NotAuthorized);
 
-			AttestationStorageDepositCollector::<T>::update_deposit(&claim_hash)?;
+			AttestationStorageDepositCollector::<T>::update_deposit::<BalanceMigrationManagerOf<T>>(&claim_hash)?;
 
 			Ok(())
 		}
 	}
 
 	impl<T: Config> Pallet<T> {
-		fn remove_attestation(attestation: AttestationDetailsOf<T>, claim_hash: ClaimHashOf<T>) {
-			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&attestation.deposit);
+		fn remove_attestation(attestation: AttestationDetailsOf<T>, claim_hash: ClaimHashOf<T>) -> DispatchResult {
+			let is_key_migrated =
+				<T as Config>::BalanceMigrationManager::is_key_migrated(&Attestations::<T>::hashed_key_for(claim_hash));
+			if is_key_migrated {
+				AttestationStorageDepositCollector::<T>::free_deposit(attestation.deposit)?;
+			} else {
+				<T as Config>::BalanceMigrationManager::release_reserved_deposit(
+					&attestation.deposit.owner,
+					&attestation.deposit.amount,
+				)
+			}
+
 			Attestations::<T>::remove(claim_hash);
 			if let Some(authorization_id) = &attestation.authorization_id {
 				ExternalAttestations::<T>::remove(authorization_id, claim_hash);
 			}
+			Ok(())
 		}
 	}
 
-	struct AttestationStorageDepositCollector<T: Config>(PhantomData<T>);
-	impl<T: Config> StorageDepositCollector<AccountIdOf<T>, ClaimHashOf<T>> for AttestationStorageDepositCollector<T> {
+	pub(crate) struct AttestationStorageDepositCollector<T: Config>(PhantomData<T>);
+	impl<T: Config> StorageDepositCollector<AccountIdOf<T>, ClaimHashOf<T>, T::RuntimeHoldReason>
+		for AttestationStorageDepositCollector<T>
+	{
 		type Currency = <T as Config>::Currency;
+		type Reason = HoldReason;
+
+		fn reason() -> Self::Reason {
+			HoldReason::Deposit
+		}
+
+		fn get_hashed_key(key: &ClaimHashOf<T>) -> Result<sp_std::vec::Vec<u8>, DispatchError> {
+			Ok(Attestations::<T>::hashed_key_for(key))
+		}
 
 		fn deposit(
 			key: &ClaimHashOf<T>,
-		) -> Result<Deposit<AccountIdOf<T>, <Self::Currency as Currency<AccountIdOf<T>>>::Balance>, DispatchError> {
+		) -> Result<Deposit<AccountIdOf<T>, <Self::Currency as Inspect<AccountIdOf<T>>>::Balance>, DispatchError> {
 			let attestation = Attestations::<T>::get(key).ok_or(Error::<T>::NotFound)?;
 			Ok(attestation.deposit)
 		}
 
-		fn deposit_amount(_key: &ClaimHashOf<T>) -> <Self::Currency as Currency<AccountIdOf<T>>>::Balance {
+		fn deposit_amount(_key: &ClaimHashOf<T>) -> <Self::Currency as Inspect<AccountIdOf<T>>>::Balance {
 			T::Deposit::get()
 		}
 
 		fn store_deposit(
 			key: &ClaimHashOf<T>,
-			deposit: Deposit<AccountIdOf<T>, <Self::Currency as Currency<AccountIdOf<T>>>::Balance>,
+			deposit: Deposit<AccountIdOf<T>, <Self::Currency as Inspect<AccountIdOf<T>>>::Balance>,
 		) -> Result<(), DispatchError> {
 			let attestation = Attestations::<T>::get(key).ok_or(Error::<T>::NotFound)?;
 			Attestations::<T>::insert(key, AttestationDetails { deposit, ..attestation });

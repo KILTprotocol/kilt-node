@@ -36,11 +36,15 @@ attestation.workspace = true
 ctype.workspace = true
 delegation.workspace = true
 did.workspace = true
+kilt-runtime-api-dip-provider.workspace = true
 kilt-support.workspace = true
 pallet-configuration.workspace = true
+pallet-deposit-storage.workspace = true
 pallet-did-lookup.workspace = true
+pallet-dip-provider.workspace = true
 pallet-inflation.workspace = true
 pallet-web3-names.workspace = true
+pallet-migration.workspace = true
 parachain-staking.workspace = true
 public-credentials.workspace = true
 runtime-common.workspace = true
@@ -128,11 +132,15 @@ runtime-benchmarks = [
   "pallet-collective/runtime-benchmarks",
   "pallet-configuration/runtime-benchmarks",
   "pallet-democracy/runtime-benchmarks",
+  "pallet-deposit-storage/runtime-benchmarks",
   "pallet-did-lookup/runtime-benchmarks",
+  "pallet-dip-provider/runtime-benchmarks",
   "pallet-indices/runtime-benchmarks",
   "pallet-inflation/runtime-benchmarks",
   "pallet-membership/runtime-benchmarks",
+  "pallet-sudo/runtime-benchmarks",
   "pallet-multisig/runtime-benchmarks",
+  "pallet-migration/runtime-benchmarks",
   "pallet-preimage/runtime-benchmarks",
   "pallet-proxy/runtime-benchmarks",
   "pallet-scheduler/runtime-benchmarks",
@@ -152,7 +160,6 @@ runtime-benchmarks = [
 ]
 std = [
   "attestation/std",
-  "parity-scale-codec/std",
   "ctype/std",
   "cumulus-pallet-aura-ext/std",
   "cumulus-pallet-dmp-queue/std",
@@ -173,6 +180,7 @@ std = [
   "frame-system/std",
   "frame-try-runtime?/std",
   "kilt-runtime-api-did/std",
+  "kilt-runtime-api-dip-provider/std",
   "kilt-runtime-api-public-credentials/std",
   "kilt-runtime-api-staking/std",
   "kilt-support/std",
@@ -184,11 +192,14 @@ std = [
   "pallet-collective/std",
   "pallet-configuration/std",
   "pallet-democracy/std",
+  "pallet-deposit-storage/std",
   "pallet-did-lookup/std",
+  "pallet-dip-provider/std",
   "pallet-indices/std",
   "pallet-inflation/std",
   "pallet-membership/std",
   "pallet-multisig/std",
+  "pallet-migration/std",
   "pallet-preimage/std",
   "pallet-proxy/std",
   "pallet-scheduler/std",
@@ -205,6 +216,7 @@ std = [
   "pallet-xcm/std",
   "parachain-info/std",
   "parachain-staking/std",
+  "parity-scale-codec/std",
   "public-credentials/std",
   "runtime-common/std",
   "scale-info/std",
@@ -245,11 +257,14 @@ try-runtime = [
   "pallet-collective/try-runtime",
   "pallet-configuration/try-runtime",
   "pallet-democracy/try-runtime",
+  "pallet-deposit-storage/try-runtime",
   "pallet-did-lookup/try-runtime",
+  "pallet-dip-provider/try-runtime",
   "pallet-indices/try-runtime",
   "pallet-inflation/try-runtime",
   "pallet-membership/try-runtime",
   "pallet-multisig/try-runtime",
+  "pallet-migration/try-runtime",
   "pallet-preimage/try-runtime",
   "pallet-proxy/try-runtime",
   "pallet-scheduler/try-runtime",
@@ -270,5 +285,5 @@ try-runtime = [
 ]
 with-tracing = [
   "frame-executive/with-tracing",
-  "sp-io/with-tracing"
+  "sp-io/with-tracing",
 ]

@@ -24,8 +24,8 @@
 //!
 //! ## Assumptions
 //!
-//! - The minting of rewards after [InitialPeriodLength] many blocks is handled
-//!   by another pallet, e.g., ParachainStaking.
+//! - The minting of rewards after [`Config::InitialPeriodLength`] many blocks
+//!   is handled by another pallet, e.g., ParachainStaking.
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -47,26 +47,29 @@ pub mod pallet {
 	use super::WeightInfo;
 	use frame_support::{
 		pallet_prelude::*,
-		traits::{Currency, OnUnbalanced, StorageVersion},
+		traits::{
+			fungible::{Balanced, Credit, Inspect},
+			OnUnbalanced, StorageVersion,
+		},
 	};
 	use frame_system::pallet_prelude::*;
 
 	pub(crate) type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
-	pub(crate) type BalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::Balance;
-	pub(crate) type NegativeImbalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::NegativeImbalance;
+	pub(crate) type BalanceOf<T> = <<T as Config>::Currency as Inspect<AccountIdOf<T>>>::Balance;
+	pub(crate) type CreditOf<T> = Credit<<T as frame_system::Config>::AccountId, <T as Config>::Currency>;
 
 	pub const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
 		/// Currency type.
-		type Currency: Currency<AccountIdOf<Self>>;
+		type Currency: Balanced<AccountIdOf<Self>>;
 
 		/// The length of the initial period in which the constant reward is
 		/// minted. Once the current block exceeds this, rewards are no further
 		/// issued.
 		#[pallet::constant]
-		type InitialPeriodLength: Get<<Self as frame_system::Config>::BlockNumber>;
+		type InitialPeriodLength: Get<BlockNumberFor<Self>>;
 
 		/// The amount of newly issued tokens per block during the initial
 		/// period.
@@ -74,7 +77,7 @@ pub mod pallet {
 		type InitialPeriodReward: Get<BalanceOf<Self>>;
 
 		/// The beneficiary to receive the rewards.
-		type Beneficiary: OnUnbalanced<NegativeImbalanceOf<Self>>;
+		type Beneficiary: OnUnbalanced<CreditOf<Self>>;
 
 		/// Weight information for extrinsics in this pallet.
 		type WeightInfo: WeightInfo;
@@ -86,7 +89,7 @@ pub mod pallet {
 
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
-		fn on_initialize(now: T::BlockNumber) -> Weight {
+		fn on_initialize(now: BlockNumberFor<T>) -> Weight {
 			// The complement of this is handled in ParachainStaking.
 			if now <= T::InitialPeriodLength::get() {
 				let reward = T::Currency::issue(T::InitialPeriodReward::get());

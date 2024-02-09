@@ -166,6 +166,22 @@ pub mod delegation {
 	}
 }
 
+pub mod deposit_storage {
+	// Keys is an enum with a single variant (DidIdentifier,
+	// IdentityCommitmentVersion) which is 32 + 2 = 34 bytes. Adding the
+	// discriminant byte, it totals to 35 bytes.
+	pub const MAX_DEPOSIT_PALLET_KEY_LENGTH: u32 = 35;
+}
+
+pub mod dip_provider {
+	use super::*;
+
+	pub const MAX_LINKED_ACCOUNTS: u32 = 10;
+	// Commitment are 32-byte hashes.
+	pub const MAX_COMMITMENT_BYTE_LENGTH: u32 = 32;
+	pub const COMMITMENT_DEPOSIT: Balance = deposit(1, MAX_COMMITMENT_BYTE_LENGTH);
+}
+
 pub mod staking {
 	use super::*;
 
@@ -282,12 +298,12 @@ pub mod governance {
 	#[cfg(feature = "fast-gov")]
 	pub const COUNCIL_MOTION_DURATION: BlockNumber = 4 * MINUTES;
 	#[cfg(not(feature = "fast-gov"))]
-	pub const COUNCIL_MOTION_DURATION: BlockNumber = 3 * DAYS;
+	pub const COUNCIL_MOTION_DURATION: BlockNumber = 7 * DAYS;
 
 	#[cfg(feature = "fast-gov")]
 	pub const TECHNICAL_MOTION_DURATION: BlockNumber = 4 * MINUTES;
 	#[cfg(not(feature = "fast-gov"))]
-	pub const TECHNICAL_MOTION_DURATION: BlockNumber = 3 * DAYS;
+	pub const TECHNICAL_MOTION_DURATION: BlockNumber = 7 * DAYS;
 
 	parameter_types! {
 		// Democracy Pallet
@@ -317,6 +333,14 @@ pub mod multisig {
 		pub const MaxSignitors: u32 = 64;
 		pub const DepositBase: Balance = DEPOSIT_STORAGE_ITEM;
 		pub const DepositFactor: Balance = DEPOSIT_STORAGE_BYTE;
+	}
+}
+
+pub mod pallet_migration {
+	use super::*;
+
+	parameter_types! {
+		pub const  MaxMigrationsPerPallet: u32 = 100;
 	}
 }
 

@@ -17,8 +17,8 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_support::storage::bounded_btree_set::BoundedBTreeSet;
-use kilt_support::deposit::Deposit;
-use sp_runtime::{traits::Zero, AccountId32, SaturatedConversion};
+use frame_system::pallet_prelude::BlockNumberFor;
+use sp_runtime::{AccountId32, SaturatedConversion};
 use sp_std::{
 	collections::btree_set::BTreeSet,
 	convert::{TryFrom, TryInto},
@@ -29,7 +29,7 @@ use sp_std::{
 use crate::{
 	did_details::{DidCreationDetails, DidDetails, DidEncryptionKey, DidNewKeyAgreementKeySet, DidVerificationKey},
 	service_endpoints::DidEndpoint,
-	AccountIdOf, BlockNumberOf, Config, DidCreationDetailsOf, DidIdentifierOf,
+	AccountIdOf, Config, DidCreationDetailsOf, DidIdentifierOf,
 };
 
 pub(crate) type DidNewKeyAgreementKeySetOf<T> = DidNewKeyAgreementKeySet<<T as Config>::MaxNewKeyAgreementKeys>;
@@ -98,7 +98,7 @@ pub fn generate_base_did_creation_details<T: Config>(
 }
 
 pub fn generate_base_did_details<T>(
-	authentication_key: DidVerificationKey,
+	authentication_key: DidVerificationKey<AccountIdOf<T>>,
 	deposit_owner: Option<AccountIdOf<T>>,
 ) -> DidDetails<T>
 where
@@ -107,11 +107,8 @@ where
 {
 	DidDetails::new(
 		authentication_key,
-		BlockNumberOf::<T>::default(),
-		Deposit {
-			owner: deposit_owner.unwrap_or(AccountId32::new([0u8; 32]).into()),
-			amount: Zero::zero(),
-		},
+		BlockNumberFor::<T>::default(),
+		deposit_owner.unwrap_or(AccountId32::new([0u8; 32]).into()),
 	)
 	.expect("Failed to generate new DidDetails from auth_key due to BoundedBTreeSet bound")
 }

@@ -18,7 +18,7 @@
 
 use frame_support::{
 	dispatch::DispatchClass,
-	traits::{Currency, Get, Imbalance, OnUnbalanced},
+	traits::{fungible::Balanced, Currency, Get, Imbalance, OnUnbalanced},
 	weights::{
 		Weight, WeightToFee as WeightToFeeT, WeightToFeeCoefficient, WeightToFeeCoefficients, WeightToFeePolynomial,
 	},
@@ -28,7 +28,7 @@ use pallet_transaction_payment::OnChargeTransaction;
 use smallvec::smallvec;
 use sp_runtime::Perbill;
 
-use crate::{constants::MILLI_KILT, AccountId, Balance, NegativeImbalanceOf};
+use crate::{constants::MILLI_KILT, AccountId, Balance, CreditOf, NegativeImbalanceOf};
 
 /// Split two Imbalances between two unbalanced handlers.
 /// The first Imbalance will be split according to the given ratio. The second
@@ -74,6 +74,22 @@ where
 	fn on_nonzero_unbalanced(amount: NegativeImbalanceOf<R>) {
 		if let Some(author) = <pallet_authorship::Pallet<R>>::author() {
 			<pallet_balances::Pallet<R>>::resolve_creating(&author, amount);
+		}
+	}
+}
+
+pub struct ToAuthorCredit<R>(sp_std::marker::PhantomData<R>);
+impl<R> OnUnbalanced<CreditOf<R>> for ToAuthorCredit<R>
+where
+	R: pallet_balances::Config + pallet_authorship::Config,
+	<R as frame_system::Config>::AccountId: From<AccountId>,
+	<R as frame_system::Config>::AccountId: Into<AccountId>,
+	<R as pallet_balances::Config>::Balance: Into<u128>,
+{
+	fn on_nonzero_unbalanced(amount: CreditOf<R>) {
+		if let Some(author) = <pallet_authorship::Pallet<R>>::author() {
+			let result = pallet_balances::Pallet::<R>::resolve(&author, amount);
+			debug_assert!(result.is_ok(), "The whole credit cannot be countered");
 		}
 	}
 }
@@ -139,25 +155,20 @@ mod tests {
 	};
 	use frame_support::{dispatch::DispatchClass, parameter_types, traits::FindAuthor};
 	use frame_system::limits;
-	use sp_core::H256;
+	use sp_core::{ConstU64, H256};
 	use sp_runtime::{
-		testing::Header,
 		traits::{BlakeTwo256, IdentityLookup},
-		Perbill,
+		BuildStorage, Perbill,
 	};
 
-	type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 	type Block = frame_system::mocking::MockBlock<Test>;
 
 	frame_support::construct_runtime!(
-		pub enum Test where
-			Block = Block,
-			NodeBlock = Block,
-			UncheckedExtrinsic = UncheckedExtrinsic,
+		pub enum Test
 		{
-			System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
-			Authorship: pallet_authorship::{Pallet, Storage},
-			Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
+			System: frame_system,
+			Authorship: pallet_authorship,
+			Balances: pallet_balances,
 		}
 	);
 
@@ -189,14 +200,14 @@ mod tests {
 	impl frame_system::Config for Test {
 		type BaseCallFilter = frame_support::traits::Everything;
 		type RuntimeOrigin = RuntimeOrigin;
-		type Index = u64;
-		type BlockNumber = u64;
+		type Block = Block;
+		type Nonce = u64;
+
 		type RuntimeCall = RuntimeCall;
 		type Hash = H256;
 		type Hashing = BlakeTwo256;
 		type AccountId = AccountId;
 		type Lookup = IdentityLookup<Self::AccountId>;
-		type Header = Header;
 		type RuntimeEvent = RuntimeEvent;
 		type BlockHashCount = BlockHashCount;
 		type BlockLength = BlockLength;
@@ -215,9 +226,13 @@ mod tests {
 
 	impl pallet_balances::Config for Test {
 		type Balance = u64;
+		type FreezeIdentifier = ();
+		type RuntimeHoldReason = ();
+		type MaxFreezes = ();
+		type MaxHolds = ();
 		type RuntimeEvent = RuntimeEvent;
 		type DustRemoval = ();
-		type ExistentialDeposit = ();
+		type ExistentialDeposit = ConstU64<1>;
 		type AccountStore = System;
 		type MaxLocks = ();
 		type MaxReserves = ();
@@ -251,7 +266,7 @@ mod tests {
 	}
 
 	pub fn new_test_ext() -> sp_io::TestExternalities {
-		let mut t = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
+		let mut t = frame_system::GenesisConfig::<Test>::default().build_storage().unwrap();
 		// We use default for brevity, but you can configure as desired if needed.
 		pallet_balances::GenesisConfig::<Test>::default()
 			.assimilate_storage(&mut t)
@@ -266,8 +281,8 @@ mod tests {
 	#[test]
 	fn test_fees_and_tip_split() {
 		new_test_ext().execute_with(|| {
-			let fee = Balances::issue(10);
-			let tip = Balances::issue(20);
+			let fee = <Balances as Currency<<Test as frame_system::Config>::AccountId>>::issue(10);
+			let tip = <Balances as Currency<<Test as frame_system::Config>::AccountId>>::issue(20);
 
 			assert_eq!(Balances::free_balance(TREASURY_ACC), 0);
 			assert_eq!(Balances::free_balance(AUTHOR_ACC), 0);

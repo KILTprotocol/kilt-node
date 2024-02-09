@@ -31,10 +31,7 @@ use crate::{Config, Error};
 #[derive(Encode, Decode, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 #[scale_info(skip_type_params(T, MinLength, MaxLength))]
 #[codec(mel_bound())]
-pub struct AsciiWeb3Name<T: Config>(
-	pub(crate) BoundedVec<u8, T::MaxNameLength>,
-	PhantomData<(T, T::MinNameLength)>,
-);
+pub struct AsciiWeb3Name<T: Config>(pub BoundedVec<u8, T::MaxNameLength>, PhantomData<(T, T::MinNameLength)>);
 
 impl<T: Config> Deref for AsciiWeb3Name<T> {
 	type Target = BoundedVec<u8, T::MaxNameLength>;
@@ -47,6 +44,12 @@ impl<T: Config> Deref for AsciiWeb3Name<T> {
 impl<T: Config> From<AsciiWeb3Name<T>> for Vec<u8> {
 	fn from(name: AsciiWeb3Name<T>) -> Self {
 		name.0.into_inner()
+	}
+}
+
+impl<T: Config> AsRef<[u8]> for AsciiWeb3Name<T> {
+	fn as_ref(&self) -> &[u8] {
+		self.0.as_ref()
 	}
 }
 
@@ -75,17 +78,51 @@ fn is_valid_web3_name(input: &[u8]) -> bool {
 		.all(|c| matches!(c, b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_'))
 }
 
-// FIXME: did not find a way to automatically implement this.
+// FIXME: did not find a way to automatically implement this. Runtime would need
+// to implement PartialEq.
 impl<T: Config> PartialEq for AsciiWeb3Name<T> {
 	fn eq(&self, other: &Self) -> bool {
 		self.0 == other.0
 	}
 }
 
-// FIXME: did not find a way to automatically implement this.
+// FIXME: did not find a way to automatically implement this. Runtime would need
+// to implement Eq.
+impl<T: Config> Eq for AsciiWeb3Name<T> {
+	fn assert_receiver_is_total_eq(&self) {
+		self.0.assert_receiver_is_total_eq()
+	}
+}
+
+// FIXME: did not find a way to automatically implement this. Runtime would need
+// to implement PartialOrd.
+impl<T: Config> PartialOrd for AsciiWeb3Name<T> {
+	fn partial_cmp(&self, other: &Self) -> Option<sp_std::cmp::Ordering> {
+		self.0.as_slice().partial_cmp(other.as_slice())
+	}
+}
+
+// FIXME: did not find a way to automatically implement this. Runtime would need
+// to implement Ord.
+impl<T: Config> Ord for AsciiWeb3Name<T> {
+	fn cmp(&self, other: &Self) -> sp_std::cmp::Ordering {
+		self.0.cmp(&other.0)
+	}
+}
+
+// FIXME: did not find a way to automatically implement this. Runtime would need
+// to implement Clone.
 impl<T: Config> Clone for AsciiWeb3Name<T> {
 	fn clone(&self) -> Self {
 		Self(self.0.clone(), self.1)
+	}
+}
+
+// FIXME: did not find a way to automatically implement this. Runtime would need
+// to implement Default.
+impl<T: Config> Default for AsciiWeb3Name<T> {
+	fn default() -> Self {
+		Self(BoundedVec::default(), PhantomData)
 	}
 }
 

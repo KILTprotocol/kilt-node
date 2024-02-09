@@ -69,6 +69,7 @@ pub(crate) enum Subcommand {
 
 /// Command for building the genesis state of the parachain
 #[derive(Debug, Parser)]
+#[group(skip)]
 pub(crate) struct BuildSpecCmd {
 	#[command(flatten)]
 	pub(crate) inner_args: sc_cli::BuildSpecCmd,
@@ -139,7 +140,7 @@ impl RelayChainCli {
 	) -> Self {
 		let extension = crate::chain_spec::Extensions::try_get(&*para_config.chain_spec);
 		let chain_id = extension.map(|e| e.relay_chain.clone());
-		let base_path = para_config.base_path.as_ref().map(|x| x.path().join("polkadot"));
+		let base_path = Some(para_config.base_path.path().join("polkadot"));
 		Self {
 			base_path,
 			chain_id,

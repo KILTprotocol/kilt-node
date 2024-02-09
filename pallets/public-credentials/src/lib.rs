@@ -33,12 +33,13 @@
 mod access_control;
 pub mod credentials;
 pub mod default_weights;
+pub mod migrations;
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 
-#[cfg(any(test, feature = "runtime-benchmarks"))]
-mod mock;
+#[cfg(any(test, feature = "runtime-benchmarks", feature = "mock"))]
+pub mod mock;
 
 #[cfg(test)]
 mod tests;
@@ -56,17 +57,24 @@ pub mod pallet {
 
 	use frame_support::{
 		pallet_prelude::*,
-		traits::{Currency, IsType, ReservableCurrency, StorageVersion},
+		traits::{
+			fungible::{Inspect, MutateHold},
+			IsType, StorageVersion,
+		},
 		Parameter,
 	};
 	use frame_system::pallet_prelude::*;
-	use sp_runtime::traits::{Hash, SaturatedConversion};
+	use kilt_support::traits::BalanceMigrationManager;
+	use sp_runtime::{
+		traits::{Hash, SaturatedConversion},
+		DispatchError,
+	};
 	use sp_std::{boxed::Box, vec::Vec};
 
 	pub use ctype::CtypeHashOf;
 	use kilt_support::{
-		deposit::Deposit,
 		traits::{CallSources, StorageDepositCollector},
+		Deposit,
 	};
 
 	/// The current storage version.
@@ -80,17 +88,16 @@ pub mod pallet {
 	pub(crate) type CurrencyOf<T> = <T as Config>::Currency;
 
 	/// The type of the credential subject input. It is bound in max length.
-	/// It is transformed inside the `add` operation into a [<T as
-	/// Config>::SubjectId].
+	/// It is transformed inside the `add` operation into a
+	/// [`Config::SubjectId`].
 	pub type InputSubjectIdOf<T> = BoundedVec<u8, <T as Config>::MaxSubjectIdLength>;
 	/// The type of the credential subject input. It is bound in max length.
 	pub type InputClaimsContentOf<T> = BoundedVec<u8, <T as Config>::MaxEncodedClaimsLength>;
 	pub type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
-	pub type BlockNumberOf<T> = <T as frame_system::Config>::BlockNumber;
 	pub type CredentialEntryOf<T> = CredentialEntry<
 		CtypeHashOf<T>,
 		AttesterOf<T>,
-		BlockNumberOf<T>,
+		BlockNumberFor<T>,
 		AccountIdOf<T>,
 		BalanceOf<T>,
 		AuthorizationIdOf<T>,
@@ -98,13 +105,21 @@ pub mod pallet {
 	/// Type of an attester identifier.
 	pub type AttesterOf<T> = <T as Config>::AttesterId;
 	/// The type of account's balances.
-	pub type BalanceOf<T> = <CurrencyOf<T> as Currency<AccountIdOf<T>>>::Balance;
+	pub type BalanceOf<T> = <CurrencyOf<T> as Inspect<AccountIdOf<T>>>::Balance;
+	pub(crate) type BalanceMigrationManagerOf<T> = <T as Config>::BalanceMigrationManager;
 	pub(crate) type AuthorizationIdOf<T> = <T as Config>::AuthorizationId;
 	pub type CredentialIdOf<T> = <<T as Config>::CredentialHash as sp_runtime::traits::Hash>::Output;
 
 	/// The type of a public credential as the pallet expects it.
 	pub type InputCredentialOf<T> =
 		Credential<CtypeHashOf<T>, InputSubjectIdOf<T>, InputClaimsContentOf<T>, <T as Config>::AccessControl>;
+
+	pub type SubjectIdOf<T> = <T as Config>::SubjectId;
+
+	#[pallet::composite_enum]
+	pub enum HoldReason {
+		Deposit,
+	}
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config + ctype::Config {
@@ -116,6 +131,8 @@ pub mod pallet {
 				CtypeHashOf<Self>,
 				CredentialIdOf<Self>,
 			>;
+
+		type RuntimeHoldReason: From<HoldReason>;
 		/// The identifier of the credential attester.
 		type AttesterId: Parameter + MaxEncodedLen;
 		/// The identifier of the authorization info to perform access control
@@ -131,7 +148,7 @@ pub mod pallet {
 		/// The type of a credential identifier.
 		type CredentialId: Parameter + MaxEncodedLen;
 		/// The currency that is used to reserve funds for each credential.
-		type Currency: ReservableCurrency<AccountIdOf<Self>>;
+		type Currency: MutateHold<AccountIdOf<Self>, Reason = Self::RuntimeHoldReason>;
 		/// The type of the origin when successfully converted from the outer
 		/// origin.
 		type OriginSuccess: CallSources<Self::AccountId, AttesterOf<Self>>;
@@ -154,6 +171,9 @@ pub mod pallet {
 		/// identifier.
 		#[pallet::constant]
 		type MaxSubjectIdLength: Get<u32>;
+
+		/// Migration manager to handle new created entries
+		type BalanceMigrationManager: BalanceMigrationManager<AccountIdOf<Self>, BalanceOf<Self>>;
 	}
 
 	#[pallet::pallet]
@@ -165,14 +185,8 @@ pub mod pallet {
 	/// details of the credential.
 	#[pallet::storage]
 	#[pallet::getter(fn get_credential_info)]
-	pub type Credentials<T> = StorageDoubleMap<
-		_,
-		Twox64Concat,
-		<T as Config>::SubjectId,
-		Blake2_128Concat,
-		CredentialIdOf<T>,
-		CredentialEntryOf<T>,
-	>;
+	pub type Credentials<T> =
+		StorageDoubleMap<_, Twox64Concat, SubjectIdOf<T>, Blake2_128Concat, CredentialIdOf<T>, CredentialEntryOf<T>>;
 
 	/// A reverse index mapping from credential ID to the subject the credential
 	/// was issued to.
@@ -180,7 +194,7 @@ pub mod pallet {
 	/// It it used to perform efficient lookup of credentials given their ID.
 	#[pallet::storage]
 	#[pallet::getter(fn get_credential_subject)]
-	pub type CredentialSubjects<T> = StorageMap<_, Blake2_128Concat, CredentialIdOf<T>, <T as Config>::SubjectId>;
+	pub type CredentialSubjects<T> = StorageMap<_, Blake2_128Concat, CredentialIdOf<T>, SubjectIdOf<T>>;
 
 	/// The events generated by this pallet.
 	#[pallet::event]
@@ -234,7 +248,7 @@ pub mod pallet {
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
 		#[cfg(feature = "try-runtime")]
-		fn try_state(_n: BlockNumberFor<T>) -> Result<(), &'static str> {
+		fn try_state(_n: BlockNumberFor<T>) -> Result<(), sp_runtime::TryRuntimeError> {
 			crate::try_state::do_try_state::<T>()
 		}
 	}
@@ -295,8 +309,13 @@ pub mod pallet {
 				Error::<T>::AlreadyAttested
 			);
 
-			let deposit = kilt_support::reserve_deposit::<T::AccountId, CurrencyOf<T>>(payer, deposit_amount)
+			let deposit = PublicCredentialDepositCollector::<T>::create_deposit(payer, deposit_amount)
 				.map_err(|_| Error::<T>::UnableToPayFees)?;
+
+			<T as Config>::BalanceMigrationManager::exclude_key_from_migration(&Credentials::<T>::hashed_key_for(
+				&subject,
+				&credential_id,
+			));
 
 			let block_number = frame_system::Pallet::<T>::block_number();
 
@@ -454,7 +473,7 @@ pub mod pallet {
 
 			// Removes the credential from storage and generates a `CredentialRemoved`
 			// event.
-			Self::remove_credential_entry(credential_subject, credential_id, credential_entry);
+			Self::remove_credential_entry(credential_subject, credential_id, credential_entry)?;
 
 			Ok(Some(<T as Config>::WeightInfo::remove().saturating_add(ac_weight_used)).into())
 		}
@@ -488,7 +507,7 @@ pub mod pallet {
 
 			// Removes the credential from storage and generates a `CredentialRemoved`
 			// event.
-			Self::remove_credential_entry(credential_subject, credential_id, credential_entry);
+			Self::remove_credential_entry(credential_subject, credential_id, credential_entry)?;
 
 			Ok(())
 		}
@@ -510,7 +529,10 @@ pub mod pallet {
 
 			ensure!(subject == credential_entry.attester, Error::<T>::NotAuthorized);
 
-			PublicCredentialDepositCollector::<T>::change_deposit_owner(&credential_id, source.sender())?;
+			PublicCredentialDepositCollector::<T>::change_deposit_owner::<BalanceMigrationManagerOf<T>>(
+				&credential_id,
+				source.sender(),
+			)?;
 
 			Ok(())
 		}
@@ -526,7 +548,7 @@ pub mod pallet {
 
 			ensure!(source == credential_entry.deposit.owner, Error::<T>::NotAuthorized);
 
-			PublicCredentialDepositCollector::<T>::update_deposit(&credential_id)?;
+			PublicCredentialDepositCollector::<T>::update_deposit::<BalanceMigrationManagerOf<T>>(&credential_id)?;
 
 			Ok(())
 		}
@@ -539,15 +561,27 @@ pub mod pallet {
 			credential_subject: T::SubjectId,
 			credential_id: CredentialIdOf<T>,
 			credential: CredentialEntryOf<T>,
-		) {
-			kilt_support::free_deposit::<T::AccountId, CurrencyOf<T>>(&credential.deposit);
-			Credentials::<T>::remove(&credential_subject, &credential_id);
+		) -> DispatchResult {
+			let details = Credentials::<T>::take(&credential_subject, &credential_id).ok_or(Error::<T>::NotFound)?;
 			CredentialSubjects::<T>::remove(&credential_id);
+
+			let is_key_migrated = <T as Config>::BalanceMigrationManager::is_key_migrated(
+				&Credentials::<T>::hashed_key_for(&credential_subject, &credential_id),
+			);
+			if is_key_migrated {
+				PublicCredentialDepositCollector::<T>::free_deposit(credential.deposit)?;
+			} else {
+				<T as Config>::BalanceMigrationManager::release_reserved_deposit(
+					&details.deposit.owner,
+					&details.deposit.amount,
+				);
+			}
 
 			Self::deposit_event(Event::CredentialRemoved {
 				subject_id: credential_subject,
 				credential_id,
 			});
+			Ok(())
 		}
 
 		fn retrieve_credential_entry(
@@ -597,24 +631,36 @@ pub mod pallet {
 		}
 	}
 
-	struct PublicCredentialDepositCollector<T: Config>(PhantomData<T>);
-	impl<T: Config> StorageDepositCollector<AccountIdOf<T>, CredentialIdOf<T>> for PublicCredentialDepositCollector<T> {
+	pub(crate) struct PublicCredentialDepositCollector<T: Config>(PhantomData<T>);
+	impl<T: Config> StorageDepositCollector<AccountIdOf<T>, CredentialIdOf<T>, T::RuntimeHoldReason>
+		for PublicCredentialDepositCollector<T>
+	{
 		type Currency = <T as Config>::Currency;
+		type Reason = HoldReason;
+
+		fn reason() -> Self::Reason {
+			HoldReason::Deposit
+		}
+
+		fn get_hashed_key(credential_id: &CredentialIdOf<T>) -> Result<sp_std::vec::Vec<u8>, DispatchError> {
+			let credential_subject = CredentialSubjects::<T>::get(credential_id).ok_or(Error::<T>::NotFound)?;
+			Ok(Credentials::<T>::hashed_key_for(&credential_subject, credential_id))
+		}
 
 		fn deposit(
 			credential_id: &CredentialIdOf<T>,
-		) -> Result<Deposit<AccountIdOf<T>, <Self::Currency as Currency<AccountIdOf<T>>>::Balance>, DispatchError> {
+		) -> Result<Deposit<AccountIdOf<T>, <Self::Currency as Inspect<AccountIdOf<T>>>::Balance>, DispatchError> {
 			let (_, credential_entry) = Pallet::<T>::retrieve_credential_entry(credential_id)?;
 			Ok(credential_entry.deposit)
 		}
 
-		fn deposit_amount(_credential_id: &CredentialIdOf<T>) -> <Self::Currency as Currency<AccountIdOf<T>>>::Balance {
+		fn deposit_amount(_credential_id: &CredentialIdOf<T>) -> <Self::Currency as Inspect<AccountIdOf<T>>>::Balance {
 			T::Deposit::get()
 		}
 
 		fn store_deposit(
 			credential_id: &CredentialIdOf<T>,
-			deposit: Deposit<AccountIdOf<T>, <Self::Currency as Currency<AccountIdOf<T>>>::Balance>,
+			deposit: Deposit<AccountIdOf<T>, <Self::Currency as Inspect<AccountIdOf<T>>>::Balance>,
 		) -> Result<(), DispatchError> {
 			let credential_subject = CredentialSubjects::<T>::get(credential_id).ok_or(Error::<T>::NotFound)?;
 			Credentials::<T>::try_mutate(&credential_subject, credential_id, |credential_entry| {

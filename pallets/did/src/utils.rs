@@ -22,12 +22,12 @@ use scale_info::prelude::format;
 use sp_runtime::traits::Hash;
 use sp_std::vec::Vec;
 
-use crate::{did_details::DidPublicKey, Config, KeyIdOf};
+use crate::{did_details::DidPublicKey, AccountIdOf, Config, KeyIdOf};
 
 // URI base used to test validity of provided service IDs (URI fragments).
 const TEST_URI_BASE: &str = "did:kilt:test-did";
 
-pub fn calculate_key_id<T: Config>(key: &DidPublicKey) -> KeyIdOf<T> {
+pub fn calculate_key_id<T: Config>(key: &DidPublicKey<AccountIdOf<T>>) -> KeyIdOf<T> {
 	let hashed_values: Vec<u8> = key.encode();
 	T::Hashing::hash(&hashed_values)
 }
@@ -85,11 +85,16 @@ fn check_is_valid_uri() {
 		("kilt.io", true),
 		("super.long.domain.com:12345/path/to/directory#fragment?arg=value", true),
 		("super.long.domain.com:12345/path/to/directory/file.txt", true),
+		// Will fail because '[' it's an invalid character for a fragment (after the '#' symbol).
 		("domain.with.only.valid.characters.:/?#[]@!$&'()*+,;=-._~", false),
+		// Will fail because 'â' is an invalid URI character.
 		("invalid.châracter.domain.org", false),
+		// Will fail because 'â' is an invalid URI character.
 		("âinvalid.character.domain.org", false),
+		// Will fail because 'â' is an invalid URI character.
 		("invalid.character.domain.orgâ", false),
 		("", true),
+		// Will fail because chinese symbols are not valid URI characters.
 		("例子.領域.cn", false),
 		("kilt.io/%3Ctag%3E/encoded_upper_case_ascii.com", true),
 		("kilt.io/%3ctag%3e/encoded_lower_case_ascii.com", true),
@@ -110,16 +115,22 @@ fn check_is_valid_uri() {
 fn check_is_valid_uri_fragment_string() {
 	let test_cases = [
 		("kilt.io", true),
+		// Will fail because a fragment cannot have a '#' inside it.
 		(
 			"super.long.domain.com:12345/path/to/directory#fragment?arg=value",
 			false,
 		),
 		("super.long.domain.com:12345/path/to/directory/file.txt", true),
+		// Will fail because a fragment cannot have a '#' inside it.
 		("domain.with.only.valid.characters.:/?#[]@!$&'()*+,;=-._~", false),
+		// Will fail because a fragment cannot have a 'â' inside it.
 		("invalid.châracter.domain.org", false),
+		// Will fail because a fragment cannot have a 'â' inside it.
 		("âinvalid.character.domain.org", false),
+		// Will fail because a fragment cannot have a 'â' inside it.
 		("invalid.character.domain.orgâ", false),
 		("", true),
+		// Will fail because chinese symbols are not valid URI fragments.
 		("例子.領域.cn", false),
 		("kilt.io/%3Ctag%3E/encoded_upper_case_ascii.com", true),
 		("kilt.io/%3ctag%3e/encoded_lower_case_ascii.com", true),

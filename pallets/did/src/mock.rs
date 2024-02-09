@@ -16,20 +16,26 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+#[cfg(not(feature = "runtime-benchmarks"))]
+use crate::{DidRawOrigin, EnsureDidOrigin};
+
 use frame_support::{
 	parameter_types,
-	traits::{Currency, OnUnbalanced, ReservableCurrency},
+	traits::{
+		fungible::{Balanced, Credit, MutateHold},
+		OnUnbalanced,
+	},
 	weights::constants::RocksDbWeight,
 };
 use frame_system::EnsureSigned;
-use pallet_balances::NegativeImbalance;
+use pallet_balances::Pallet as PalletBalance;
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
 use sp_core::{ecdsa, ed25519, sr25519, Pair};
 use sp_runtime::{
-	testing::{Header, H256},
+	testing::H256,
 	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
-	MultiSignature, MultiSigner, SaturatedConversion,
+	BuildStorage, MultiSignature, MultiSigner, SaturatedConversion,
 };
 use sp_std::vec::Vec;
 
@@ -42,21 +48,17 @@ use crate::{
 		RelationshipDeriveError,
 	},
 	service_endpoints::DidEndpoint,
-	utils as crate_utils, AccountIdOf, Config, CurrencyOf, DidBlacklist, DidEndpointsCount, KeyIdOf, ServiceEndpoints,
+	utils as crate_utils, AccountIdOf, Config, CurrencyOf, DidBlacklist, DidEndpointsCount, HoldReason, KeyIdOf,
+	ServiceEndpoints,
 };
-#[cfg(not(feature = "runtime-benchmarks"))]
-use crate::{DidRawOrigin, EnsureDidOrigin};
 
-pub(crate) type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 pub(crate) type Block = frame_system::mocking::MockBlock<Test>;
 pub(crate) type Hash = sp_core::H256;
 pub(crate) type Balance = u128;
 pub(crate) type Signature = MultiSignature;
 pub(crate) type AccountPublic = <Signature as Verify>::Signer;
 pub(crate) type AccountId = <AccountPublic as IdentifyAccount>::AccountId;
-pub(crate) type Index = u64;
-pub(crate) type BlockNumber = u64;
-
+type CreditOf<T> = Credit<<T as frame_system::Config>::AccountId, PalletBalance<T, ()>>;
 pub(crate) type DidIdentifier = AccountId;
 pub(crate) type CtypeHash = Hash;
 
@@ -65,15 +67,12 @@ const MILLI_KILT: Balance = 10u128.pow(12);
 const KILT: Balance = 10u128.pow(15);
 
 frame_support::construct_runtime!(
-	pub enum Test where
-		Block = Block,
-		NodeBlock = Block,
-		UncheckedExtrinsic = UncheckedExtrinsic,
+	pub enum Test
 	{
-		Did: did::{Pallet, Call, Storage, Event<T>, Origin<T>},
-		Ctype: ctype::{Pallet, Call, Storage, Event<T>},
-		Balances: pallet_balances::{Pallet, Call, Storage, Event<T>},
-		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
+		Did: did,
+		Ctype: ctype,
+		Balances: pallet_balances,
+		System: frame_system,
 	}
 );
 
@@ -85,18 +84,16 @@ parameter_types! {
 impl frame_system::Config for Test {
 	type RuntimeOrigin = RuntimeOrigin;
 	type RuntimeCall = RuntimeCall;
-	type Index = Index;
-	type BlockNumber = BlockNumber;
+	type Block = Block;
+	type Nonce = u64;
 	type Hash = Hash;
 	type Hashing = BlakeTwo256;
 	type AccountId = <<Signature as Verify>::Signer as IdentifyAccount>::AccountId;
 	type Lookup = IdentityLookup<Self::AccountId>;
-	type Header = Header;
 	type RuntimeEvent = ();
 	type BlockHashCount = BlockHashCount;
 	type DbWeight = RocksDbWeight;
 	type Version = ();
-
 	type PalletInfo = PalletInfo;
 	type AccountData = pallet_balances::AccountData<Balance>;
 	type OnNewAccount = ();
@@ -133,24 +130,33 @@ parameter_types! {
 
 pub struct ToAccount<R>(sp_std::marker::PhantomData<R>);
 
-impl<R> OnUnbalanced<NegativeImbalance<R>> for ToAccount<R>
+impl<R> OnUnbalanced<CreditOf<R>> for ToAccount<R>
 where
 	R: pallet_balances::Config,
 	<R as frame_system::Config>::AccountId: From<AccountId>,
 {
-	fn on_nonzero_unbalanced(amount: NegativeImbalance<R>) {
-		pallet_balances::Pallet::<R>::resolve_creating(&ACCOUNT_FEE.into(), amount);
+	fn on_nonzero_unbalanced(amount: CreditOf<R>) {
+		let _ = pallet_balances::Pallet::<R>::resolve(&ACCOUNT_FEE.into(), amount);
 	}
 }
 
 impl Config for Test {
+	#[cfg(feature = "runtime-benchmarks")]
+	type EnsureOrigin = EnsureSigned<DidIdentifier>;
+	#[cfg(feature = "runtime-benchmarks")]
+	type OriginSuccess = AccountId;
+
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	type EnsureOrigin = EnsureDidOrigin<DidIdentifier, AccountId>;
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	type OriginSuccess = DidRawOrigin<AccountId, DidIdentifier>;
+
 	type DidIdentifier = DidIdentifier;
 	type RuntimeOrigin = RuntimeOrigin;
 	type RuntimeCall = RuntimeCall;
-	type EnsureOrigin = EnsureSigned<DidIdentifier>;
 	type KeyDeposit = KeyDeposit;
+	type RuntimeHoldReason = RuntimeHoldReason;
 	type ServiceEndpointDeposit = KeyDeposit;
-	type OriginSuccess = AccountId;
 	type RuntimeEvent = ();
 	type Currency = Balances;
 	type BaseDeposit = BaseDeposit;
@@ -167,15 +173,22 @@ impl Config for Test {
 	type MaxServiceUrlLength = MaxServiceUrlLength;
 	type MaxNumberOfTypesPerService = MaxNumberOfTypesPerService;
 	type MaxNumberOfUrlsPerService = MaxNumberOfUrlsPerService;
+	type BalanceMigrationManager = ();
 }
 
 parameter_types! {
 	pub const ExistentialDeposit: Balance = 500;
 	pub const MaxLocks: u32 = 50;
 	pub const MaxReserves: u32 = 50;
+	pub const MaxHolds: u32 = 50;
+	pub const MaxFreezes: u32 = 50;
 }
 
 impl pallet_balances::Config for Test {
+	type FreezeIdentifier = RuntimeFreezeReason;
+	type RuntimeHoldReason = RuntimeHoldReason;
+	type MaxFreezes = MaxFreezes;
+	type MaxHolds = MaxHolds;
 	type Balance = Balance;
 	type DustRemoval = ();
 	type RuntimeEvent = ();
@@ -215,16 +228,17 @@ pub(crate) const DEFAULT_BALANCE: Balance = 10 * KILT;
 
 pub(crate) const ACCOUNT_00: AccountId = AccountId::new([1u8; 32]);
 pub(crate) const ACCOUNT_01: AccountId = AccountId::new([2u8; 32]);
+pub(crate) const ACCOUNT_02: AccountId = AccountId::new([3u8; 32]);
 pub(crate) const ACCOUNT_FEE: AccountId = AccountId::new([u8::MAX; 32]);
 
-const DEFAULT_AUTH_SEED: [u8; 32] = [4u8; 32];
-const ALTERNATIVE_AUTH_SEED: [u8; 32] = [40u8; 32];
-const DEFAULT_ENC_SEED: [u8; 32] = [254u8; 32];
-const ALTERNATIVE_ENC_SEED: [u8; 32] = [255u8; 32];
-const DEFAULT_ATT_SEED: [u8; 32] = [6u8; 32];
-const ALTERNATIVE_ATT_SEED: [u8; 32] = [60u8; 32];
-const DEFAULT_DEL_SEED: [u8; 32] = [7u8; 32];
-const ALTERNATIVE_DEL_SEED: [u8; 32] = [70u8; 32];
+pub(crate) const AUTH_SEED_0: [u8; 32] = [4u8; 32];
+pub(crate) const AUTH_SEED_1: [u8; 32] = [40u8; 32];
+pub(crate) const ENC_SEED_0: [u8; 32] = [254u8; 32];
+pub(crate) const ENC_SEED_1: [u8; 32] = [255u8; 32];
+pub(crate) const ATT_SEED_0: [u8; 32] = [6u8; 32];
+pub(crate) const ATT_SEED_1: [u8; 32] = [60u8; 32];
+pub(crate) const DEL_SEED_0: [u8; 32] = [7u8; 32];
+pub(crate) const DEL_SEED_1: [u8; 32] = [70u8; 32];
 
 /// Solely used to fill public keys in unit tests to check for correct error
 /// throws. Thus, it does not matter whether the correct key types get added
@@ -257,87 +271,47 @@ pub fn get_did_identifier_from_ecdsa_key(public_key: ecdsa::Public) -> DidIdenti
 	MultiSigner::from(public_key).into_account()
 }
 
-pub fn get_ed25519_authentication_key(default: bool) -> ed25519::Pair {
-	if default {
-		ed25519::Pair::from_seed(&DEFAULT_AUTH_SEED)
-	} else {
-		ed25519::Pair::from_seed(&ALTERNATIVE_AUTH_SEED)
-	}
+pub fn get_ed25519_authentication_key(seed: &[u8; 32]) -> ed25519::Pair {
+	ed25519::Pair::from_seed(seed)
 }
 
-pub fn get_sr25519_authentication_key(default: bool) -> sr25519::Pair {
-	if default {
-		sr25519::Pair::from_seed(&DEFAULT_AUTH_SEED)
-	} else {
-		sr25519::Pair::from_seed(&ALTERNATIVE_AUTH_SEED)
-	}
+pub fn get_sr25519_authentication_key(seed: &[u8; 32]) -> sr25519::Pair {
+	sr25519::Pair::from_seed(seed)
 }
 
-pub fn get_ecdsa_authentication_key(default: bool) -> ecdsa::Pair {
-	if default {
-		ecdsa::Pair::from_seed(&DEFAULT_AUTH_SEED)
-	} else {
-		ecdsa::Pair::from_seed(&ALTERNATIVE_AUTH_SEED)
-	}
+pub fn get_ecdsa_authentication_key(seed: &[u8; 32]) -> ecdsa::Pair {
+	ecdsa::Pair::from_seed(seed)
 }
 
-pub fn get_x25519_encryption_key(default: bool) -> DidEncryptionKey {
-	if default {
-		DidEncryptionKey::X25519(DEFAULT_ENC_SEED)
-	} else {
-		DidEncryptionKey::X25519(ALTERNATIVE_ENC_SEED)
-	}
+pub fn get_x25519_encryption_key(seed: &[u8; 32]) -> DidEncryptionKey {
+	DidEncryptionKey::X25519(*seed)
 }
 
-pub fn get_ed25519_attestation_key(default: bool) -> ed25519::Pair {
-	if default {
-		ed25519::Pair::from_seed(&DEFAULT_ATT_SEED)
-	} else {
-		ed25519::Pair::from_seed(&ALTERNATIVE_ATT_SEED)
-	}
+pub fn get_ed25519_attestation_key(seed: &[u8; 32]) -> ed25519::Pair {
+	ed25519::Pair::from_seed(seed)
 }
 
-pub fn get_sr25519_attestation_key(default: bool) -> sr25519::Pair {
-	if default {
-		sr25519::Pair::from_seed(&DEFAULT_ATT_SEED)
-	} else {
-		sr25519::Pair::from_seed(&ALTERNATIVE_ATT_SEED)
-	}
+pub fn get_sr25519_attestation_key(seed: &[u8; 32]) -> sr25519::Pair {
+	sr25519::Pair::from_seed(seed)
 }
 
-pub fn get_ecdsa_attestation_key(default: bool) -> ecdsa::Pair {
-	if default {
-		ecdsa::Pair::from_seed(&DEFAULT_ATT_SEED)
-	} else {
-		ecdsa::Pair::from_seed(&ALTERNATIVE_ATT_SEED)
-	}
+pub fn get_ecdsa_attestation_key(seed: &[u8; 32]) -> ecdsa::Pair {
+	ecdsa::Pair::from_seed(seed)
 }
 
-pub fn get_ed25519_delegation_key(default: bool) -> ed25519::Pair {
-	if default {
-		ed25519::Pair::from_seed(&DEFAULT_DEL_SEED)
-	} else {
-		ed25519::Pair::from_seed(&ALTERNATIVE_DEL_SEED)
-	}
+pub fn get_ed25519_delegation_key(seed: &[u8; 32]) -> ed25519::Pair {
+	ed25519::Pair::from_seed(seed)
 }
 
-pub fn get_sr25519_delegation_key(default: bool) -> sr25519::Pair {
-	if default {
-		sr25519::Pair::from_seed(&DEFAULT_DEL_SEED)
-	} else {
-		sr25519::Pair::from_seed(&ALTERNATIVE_DEL_SEED)
-	}
+pub fn get_sr25519_delegation_key(seed: &[u8; 32]) -> sr25519::Pair {
+	sr25519::Pair::from_seed(seed)
 }
 
-pub fn get_ecdsa_delegation_key(default: bool) -> ecdsa::Pair {
-	if default {
-		ecdsa::Pair::from_seed(&DEFAULT_DEL_SEED)
-	} else {
-		ecdsa::Pair::from_seed(&ALTERNATIVE_DEL_SEED)
-	}
+pub fn get_ecdsa_delegation_key(seed: &[u8; 32]) -> ecdsa::Pair {
+	ecdsa::Pair::from_seed(seed)
 }
 
-pub fn generate_key_id(key: &DidPublicKey) -> KeyIdOf<Test> {
+pub fn generate_key_id(key: &DidPublicKey<AccountId>) -> KeyIdOf<Test> {
 	crate_utils::calculate_key_id::<Test>(key)
 }
 
@@ -372,6 +346,16 @@ pub(crate) fn get_none_key_call() -> RuntimeCall {
 	RuntimeCall::Ctype(ctype::Call::add {
 		ctype: get_none_key_test_input(),
 	})
+}
+
+#[cfg(not(feature = "runtime-benchmarks"))]
+pub(crate) fn build_test_origin(account: AccountId, did: DidIdentifier) -> RuntimeOrigin {
+	crate::DidRawOrigin::new(account, did).into()
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+pub(crate) fn build_test_origin(account: AccountId, _did: DidIdentifier) -> RuntimeOrigin {
+	RuntimeOrigin::signed(account)
 }
 
 impl DeriveDidCallAuthorizationVerificationKeyRelationship for RuntimeCall {
@@ -471,7 +455,7 @@ impl ExtBuilder {
 		let mut ext = if let Some(ext) = ext {
 			ext
 		} else {
-			let mut storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
+			let mut storage = frame_system::GenesisConfig::<Test>::default().build_storage().unwrap();
 			pallet_balances::GenesisConfig::<Test> {
 				balances: self.balances.clone(),
 			}
@@ -493,7 +477,7 @@ impl ExtBuilder {
 
 			for did in self.dids_stored.iter() {
 				did::Did::<Test>::insert(&did.0, did.1.clone());
-				CurrencyOf::<Test>::reserve(&did.1.deposit.owner, did.1.deposit.amount)
+				CurrencyOf::<Test>::hold(&HoldReason::Deposit.into(), &did.1.deposit.owner, did.1.deposit.amount)
 					.expect("Deposit owner should have enough balance");
 			}
 			for did in self.deleted_dids.iter() {
@@ -521,7 +505,7 @@ impl ExtBuilder {
 	pub fn build_with_keystore(self) -> sp_io::TestExternalities {
 		let mut ext = self.build(None);
 
-		let keystore = sp_keystore::testing::KeyStore::new();
+		let keystore = sp_keystore::testing::MemoryKeystore::new();
 		ext.register_extension(sp_keystore::KeystoreExt(sp_std::sync::Arc::new(keystore)));
 
 		ext

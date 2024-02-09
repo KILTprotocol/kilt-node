@@ -32,7 +32,7 @@ use crate::{authorization::AuthorizationId, AccountId, Balance, BlockNumber, Has
 pub use benchmarks::*;
 
 /// Thin wrapper around the `AssetDid` type, that implements the required
-/// TryFrom<Vec<u8>> trait.
+/// `TryFrom<Vec<u8>>` trait.
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
 pub struct AssetDid(AssetIdentifier);
 
@@ -104,8 +104,8 @@ mod benchmarks {
 		}
 	}
 
-	impl kilt_support::traits::GetWorstCase for AssetDid {
-		fn worst_case() -> Self {
+	impl<Context> kilt_support::traits::GetWorstCase<Context> for AssetDid {
+		fn worst_case(_context: Context) -> Self {
 			// Returns the worst case for an AssetDID, which is represented by the longest
 			// identifier according to the spec.
 			Self::try_from(

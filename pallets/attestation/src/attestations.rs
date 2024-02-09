@@ -15,7 +15,8 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
-use kilt_support::deposit::Deposit;
+
+use kilt_support::Deposit;
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 
@@ -67,7 +68,7 @@ mod tests {
 	fn test_no_need_to_migrate_if_none() {
 		let old = OldAttestationDetailsOf::<Test> {
 			ctype_hash: claim_hash_from_seed(CLAIM_HASH_SEED_01),
-			attester: sr25519_did_from_seed(&ALICE_SEED),
+			attester: sr25519_did_from_public_key(&ALICE_SEED),
 			delegation_id: None,
 			revoked: true,
 			deposit: Deposit {
@@ -82,7 +83,7 @@ mod tests {
 			new,
 			Ok(AttestationDetailsOf::<Test> {
 				ctype_hash: claim_hash_from_seed(CLAIM_HASH_SEED_01),
-				attester: sr25519_did_from_seed(&ALICE_SEED),
+				attester: sr25519_did_from_public_key(&ALICE_SEED),
 				authorization_id: None,
 				revoked: true,
 				deposit: Deposit {

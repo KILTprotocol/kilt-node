@@ -31,14 +31,14 @@ use frame_support::{
 	traits::{ConstU32, EitherOfDiverse, Everything, InstanceFilter, PrivilegeCmp},
 	weights::{ConstantMultiplier, Weight},
 };
-use frame_system::{EnsureRoot, EnsureSigned};
+use frame_system::{pallet_prelude::BlockNumberFor, EnsureRoot, EnsureSigned};
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 
 #[cfg(feature = "try-runtime")]
 use frame_try_runtime::UpgradeCheckSelect;
 
 use sp_api::impl_runtime_apis;
-use sp_core::OpaqueMetadata;
+use sp_core::{ConstBool, OpaqueMetadata};
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
 	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto, OpaqueKeys},
@@ -62,7 +62,7 @@ use runtime_common::{
 	errors::PublicCredentialsApiError,
 	fees::{ToAuthor, WeightToFee},
 	pallet_id, AccountId, AuthorityId, Balance, BlockHashCount, BlockLength, BlockNumber, BlockWeights, DidIdentifier,
-	FeeSplit, Hash, Header, Index, Signature, SlowAdjustingFeeUpdate,
+	FeeSplit, Hash, Header, Nonce, Signature, SlowAdjustingFeeUpdate,
 };
 
 use crate::xcm_config::{XcmConfig, XcmOriginToTransactDispatchOrigin};
@@ -93,10 +93,10 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("kilt-spiritnet"),
 	impl_name: create_runtime_str!("kilt-spiritnet"),
 	authoring_version: 1,
-	spec_version: 11110,
+	spec_version: 11210,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
-	transaction_version: 7,
+	transaction_version: 8,
 	state_version: 0,
 };
 
@@ -123,16 +123,14 @@ impl frame_system::Config for Runtime {
 	/// The lookup mechanism to get account ID from whatever is passed in
 	/// dispatchers.
 	type Lookup = AccountIdLookup<AccountId, ()>;
-	/// The index type for storing how many extrinsics an account has signed.
-	type Index = Index;
-	/// The index type for blocks.
-	type BlockNumber = BlockNumber;
+	/// The nonce type for storing how many extrinsics an account has signed.
+	type Nonce = Nonce;
+	/// The block type as expected in this runtime
+	type Block = Block;
 	/// The type for hashing blocks and tries.
 	type Hash = Hash;
 	/// The hashing algorithm used.
 	type Hashing = BlakeTwo256;
-	/// The header type.
-	type Header = runtime_common::Header;
 	/// The ubiquitous event type.
 	type RuntimeEvent = RuntimeEvent;
 	/// The ubiquitous origin type.
@@ -174,6 +172,8 @@ parameter_types! {
 	pub const ExistentialDeposit: u128 = EXISTENTIAL_DEPOSIT;
 	pub const MaxLocks: u32 = 50;
 	pub const MaxReserves: u32 = 50;
+	pub const MaxHolds: u32 = 50;
+	pub const MaxFreezes: u32 = 50;
 }
 
 impl pallet_multisig::Config for Runtime {
@@ -186,8 +186,14 @@ impl pallet_multisig::Config for Runtime {
 	type WeightInfo = weights::pallet_multisig::WeightInfo<Runtime>;
 }
 
+impl pallet_migration::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type Currency = Balances;
+	type MaxMigrationsPerPallet = constants::pallet_migration::MaxMigrationsPerPallet;
+	type WeightInfo = weights::pallet_migration::WeightInfo<Runtime>;
+}
 impl pallet_indices::Config for Runtime {
-	type AccountIndex = Index;
+	type AccountIndex = Nonce;
 	type Currency = pallet_balances::Pallet<Runtime>;
 	type Deposit = constants::IndicesDeposit;
 	type RuntimeEvent = RuntimeEvent;
@@ -197,9 +203,14 @@ impl pallet_indices::Config for Runtime {
 impl pallet_balances::Config for Runtime {
 	/// The type for recording an account's balance.
 	type Balance = Balance;
+	type FreezeIdentifier = RuntimeFreezeReason;
+	type RuntimeHoldReason = RuntimeHoldReason;
+	type MaxFreezes = MaxFreezes;
+	type MaxHolds = MaxHolds;
+
 	/// The ubiquitous event type.
 	type RuntimeEvent = RuntimeEvent;
-	type DustRemoval = Treasury;
+	type DustRemoval = runtime_common::SendDustAndFeesToTreasury<Runtime>;
 	type ExistentialDeposit = ExistentialDeposit;
 	type AccountStore = System;
 	type WeightInfo = weights::pallet_balances::WeightInfo<Runtime>;
@@ -266,6 +277,7 @@ impl pallet_aura::Config for Runtime {
 	//TODO: handle disabled validators
 	type DisabledValidators = ();
 	type MaxAuthorities = MaxAuthorities;
+	type AllowMultipleBlocksPerSlot = ConstBool<false>;
 }
 
 parameter_types! {
@@ -426,6 +438,7 @@ parameter_types! {
 	pub const SpendPeriod: BlockNumber = constants::governance::SPEND_PERIOD;
 	pub const Burn: Permill = Permill::zero();
 	pub const MaxApprovals: u32 = 100;
+	pub MaxProposalWeight: Weight = Perbill::from_percent(50) * BlockWeights::get().max_block;
 }
 
 type ApproveOrigin = EitherOfDiverse<
@@ -462,6 +475,7 @@ impl pallet_collective::Config<CouncilCollective> for Runtime {
 	type RuntimeOrigin = RuntimeOrigin;
 	type Proposal = RuntimeCall;
 	type RuntimeEvent = RuntimeEvent;
+	type MaxProposalWeight = MaxProposalWeight;
 	type MotionDuration = constants::governance::CouncilMotionDuration;
 	type MaxProposals = constants::governance::CouncilMaxProposals;
 	type MaxMembers = constants::governance::CouncilMaxMembers;
@@ -473,6 +487,7 @@ impl pallet_collective::Config<CouncilCollective> for Runtime {
 type TechnicalCollective = pallet_collective::Instance2;
 impl pallet_collective::Config<TechnicalCollective> for Runtime {
 	type RuntimeOrigin = RuntimeOrigin;
+	type MaxProposalWeight = MaxProposalWeight;
 	type Proposal = RuntimeCall;
 	type RuntimeEvent = RuntimeEvent;
 	type MotionDuration = constants::governance::TechnicalMotionDuration;
@@ -525,7 +540,7 @@ impl pallet_tips::Config for Runtime {
 impl attestation::Config for Runtime {
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
-
+	type RuntimeHoldReason = RuntimeHoldReason;
 	type RuntimeEvent = RuntimeEvent;
 	type WeightInfo = weights::attestation::WeightInfo<Runtime>;
 
@@ -535,6 +550,7 @@ impl attestation::Config for Runtime {
 	type AttesterId = DidIdentifier;
 	type AuthorizationId = AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>;
 	type AccessControl = PalletAuthorize<DelegationAc<Runtime>>;
+	type BalanceMigrationManager = Migration;
 }
 
 impl delegation::Config for Runtime {
@@ -555,6 +571,7 @@ impl delegation::Config for Runtime {
 	type DelegationSignatureVerification = AlwaysVerify<AccountId, Vec<u8>, Self::Signature>;
 
 	type RuntimeEvent = RuntimeEvent;
+	type RuntimeHoldReason = RuntimeHoldReason;
 	type MaxSignatureByteLength = constants::delegation::MaxSignatureByteLength;
 	type MaxParentChecks = constants::delegation::MaxParentChecks;
 	type MaxRevocations = constants::delegation::MaxRevocations;
@@ -563,13 +580,14 @@ impl delegation::Config for Runtime {
 	type WeightInfo = weights::delegation::WeightInfo<Runtime>;
 	type Currency = Balances;
 	type Deposit = constants::delegation::DelegationDeposit;
+	type BalanceMigrationManager = Migration;
 }
 
 impl ctype::Config for Runtime {
 	type CtypeCreatorId = AccountId;
 	type Currency = Balances;
 	type Fee = constants::CtypeFee;
-	type FeeCollector = Treasury;
+	type FeeCollector = runtime_common::SendDustAndFeesToTreasury<Runtime>;
 
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
@@ -582,6 +600,7 @@ impl ctype::Config for Runtime {
 impl did::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeCall = RuntimeCall;
+	type RuntimeHoldReason = RuntimeHoldReason;
 	type RuntimeOrigin = RuntimeOrigin;
 	type Currency = Balances;
 	type DidIdentifier = DidIdentifier;
@@ -589,7 +608,7 @@ impl did::Config for Runtime {
 	type ServiceEndpointDeposit = constants::did::ServiceEndpointDeposit;
 	type BaseDeposit = constants::did::DidBaseDeposit;
 	type Fee = constants::did::DidFee;
-	type FeeCollector = Treasury;
+	type FeeCollector = runtime_common::SendDustAndFeesToTreasury<Runtime>;
 
 	#[cfg(not(feature = "runtime-benchmarks"))]
 	type EnsureOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
@@ -612,9 +631,11 @@ impl did::Config for Runtime {
 	type MaxNumberOfTypesPerService = constants::did::MaxNumberOfTypesPerService;
 	type MaxNumberOfUrlsPerService = constants::did::MaxNumberOfUrlsPerService;
 	type WeightInfo = weights::did::WeightInfo<Runtime>;
+	type BalanceMigrationManager = Migration;
 }
 
 impl pallet_did_lookup::Config for Runtime {
+	type RuntimeHoldReason = RuntimeHoldReason;
 	type RuntimeEvent = RuntimeEvent;
 
 	type DidIdentifier = DidIdentifier;
@@ -626,9 +647,11 @@ impl pallet_did_lookup::Config for Runtime {
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
 
 	type WeightInfo = weights::pallet_did_lookup::WeightInfo<Runtime>;
+	type BalanceMigrationManager = Migration;
 }
 
 impl pallet_web3_names::Config for Runtime {
+	type RuntimeHoldReason = RuntimeHoldReason;
 	type BanOrigin = EnsureRoot<AccountId>;
 	type OwnerOrigin = did::EnsureDidOrigin<DidIdentifier, AccountId>;
 	type OriginSuccess = did::DidRawOrigin<AccountId, DidIdentifier>;
@@ -640,13 +663,14 @@ impl pallet_web3_names::Config for Runtime {
 	type Web3Name = pallet_web3_names::web3_name::AsciiWeb3Name<Runtime>;
 	type Web3NameOwner = DidIdentifier;
 	type WeightInfo = weights::pallet_web3_names::WeightInfo<Runtime>;
+	type BalanceMigrationManager = Migration;
 }
 
 impl pallet_inflation::Config for Runtime {
 	type Currency = Balances;
 	type InitialPeriodLength = constants::treasury::InitialPeriodLength;
 	type InitialPeriodReward = constants::treasury::InitialPeriodReward;
-	type Beneficiary = Treasury;
+	type Beneficiary = runtime_common::SendDustAndFeesToTreasury<Runtime>;
 	type WeightInfo = weights::pallet_inflation::WeightInfo<Runtime>;
 }
 
@@ -654,7 +678,7 @@ impl parachain_staking::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type Currency = Balances;
 	type CurrencyBalance = Balance;
-
+	type FreezeIdentifier = RuntimeFreezeReason;
 	type MinBlocksPerRound = constants::staking::MinBlocksPerRound;
 	type DefaultBlocksPerRound = constants::staking::DefaultBlocksPerRound;
 	type StakeDuration = constants::staking::StakeDuration;
@@ -670,10 +694,10 @@ impl parachain_staking::Config for Runtime {
 	type MaxUnstakeRequests = constants::staking::MaxUnstakeRequests;
 	type NetworkRewardRate = constants::staking::NetworkRewardRate;
 	type NetworkRewardStart = constants::staking::NetworkRewardStart;
-	type NetworkRewardBeneficiary = Treasury;
+	type NetworkRewardBeneficiary = runtime_common::SendDustAndFeesToTreasury<Runtime>;
 	type WeightInfo = weights::parachain_staking::WeightInfo<Runtime>;
 
-	const BLOCKS_PER_YEAR: Self::BlockNumber = constants::BLOCKS_PER_YEAR;
+	const BLOCKS_PER_YEAR: BlockNumberFor<Self> = constants::BLOCKS_PER_YEAR;
 }
 
 impl pallet_utility::Config for Runtime {
@@ -684,6 +708,7 @@ impl pallet_utility::Config for Runtime {
 }
 
 impl public_credentials::Config for Runtime {
+	type RuntimeHoldReason = RuntimeHoldReason;
 	type AccessControl = PalletAuthorize<DelegationAc<Runtime>>;
 	type AttesterId = DidIdentifier;
 	type AuthorizationId = AuthorizationId<<Runtime as delegation::Config>::DelegationNodeId>;
@@ -698,6 +723,7 @@ impl public_credentials::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type SubjectId = runtime_common::assets::AssetDid;
 	type WeightInfo = weights::public_credentials::WeightInfo<Runtime>;
+	type BalanceMigrationManager = Migration;
 }
 
 /// The type used to represent the kinds of proxying allowed.
@@ -907,18 +933,15 @@ impl pallet_proxy::Config for Runtime {
 }
 
 construct_runtime! {
-	pub enum Runtime where
-		Block = Block,
-		NodeBlock = runtime_common::Block,
-		UncheckedExtrinsic = UncheckedExtrinsic,
+	pub enum Runtime
 	{
 		System: frame_system = 0,
 		// DELETED: RandomnessCollectiveFlip: pallet_insecure_randomness_collective_flip = 1,
 
 		Timestamp: pallet_timestamp = 2,
-		Indices: pallet_indices::{Pallet, Call, Storage, Event<T>} = 5,
+		Indices: pallet_indices exclude_parts { Config } = 5,
 		Balances: pallet_balances = 6,
-		TransactionPayment: pallet_transaction_payment::{Pallet, Storage, Event<T>} = 7,
+		TransactionPayment: pallet_transaction_payment exclude_parts { Config } = 7,
 
 		// Consensus support.
 		// The following order MUST NOT be changed: Aura -> Session -> Staking -> Authorship -> AuraExt
@@ -926,7 +949,7 @@ construct_runtime! {
 		Aura: pallet_aura = 23,
 		Session: pallet_session = 22,
 		ParachainStaking: parachain_staking = 21,
-		Authorship: pallet_authorship::{Pallet, Storage} = 20,
+		Authorship: pallet_authorship = 20,
 		AuraExt: cumulus_pallet_aura_ext = 24,
 
 		Democracy: pallet_democracy = 30,
@@ -935,7 +958,7 @@ construct_runtime! {
 		// reserved: parachain council election = 33,
 		TechnicalMembership: pallet_membership::<Instance1> = 34,
 		Treasury: pallet_treasury = 35,
-		// DELETED: RelayMigration: pallet_relay_migration::{Pallet, Call, Storage, Event<T>} = 36,
+		// DELETED: RelayMigration: pallet_relay_migration = 36,
 		// DELETED: DynFilter: pallet_dyn_filter = 37,
 
 		// A stateless pallet with helper extrinsics (batch extrinsics, send from different origins, ...)
@@ -944,17 +967,17 @@ construct_runtime! {
 		// Vesting. Usable initially, but removed once all vesting is finished.
 		Vesting: pallet_vesting = 41,
 
-		Scheduler: pallet_scheduler::{Pallet, Call, Storage, Event<T>} = 42,
+		Scheduler: pallet_scheduler = 42,
 
 		// Allowing accounts to give permission to other accounts to dispatch types of calls from their signed origin
-		Proxy: pallet_proxy::{Pallet, Call, Storage, Event<T>} = 43,
+		Proxy: pallet_proxy = 43,
 
 		// Preimage pallet allows the storage of large bytes blob
-		Preimage: pallet_preimage::{Pallet, Call, Storage, Event<T>} = 44,
+		Preimage: pallet_preimage = 44,
 
 		// Tips module to reward contributions to the ecosystem with small amount of KILTs.
 		TipsMembership: pallet_membership::<Instance2> = 45,
-		Tips: pallet_tips::{Pallet, Call, Storage, Event<T>} = 46,
+		Tips: pallet_tips = 46,
 
 		Multisig: pallet_multisig = 47,
 
@@ -969,20 +992,21 @@ construct_runtime! {
 		DidLookup: pallet_did_lookup = 67,
 		Web3Names: pallet_web3_names = 68,
 		PublicCredentials: public_credentials = 69,
+		Migration: pallet_migration = 70,
 
 		// Parachains pallets. Start indices at 80 to leave room.
 
 		// Among others: Send and receive DMP and XCMP messages.
 		ParachainSystem: cumulus_pallet_parachain_system = 80,
-		ParachainInfo: parachain_info::{Pallet, Storage, Config} = 81,
+		ParachainInfo: parachain_info = 81,
 		// Wrap and unwrap XCMP messages to send and receive them. Queue them for later processing.
-		XcmpQueue: cumulus_pallet_xcmp_queue::{Pallet, Call, Storage, Event<T>} = 82,
+		XcmpQueue: cumulus_pallet_xcmp_queue = 82,
 		// Build XCM scripts.
-		PolkadotXcm: pallet_xcm::{Pallet, Call, Event<T>, Origin, Config} = 83,
+		PolkadotXcm: pallet_xcm = 83,
 		// Does nothing cool, just provides an origin.
-		CumulusXcm: cumulus_pallet_xcm::{Pallet, Event<T>, Origin} = 84,
+		CumulusXcm: cumulus_pallet_xcm exclude_parts { Call } = 84,
 		// Queue and pass DMP messages on to be executed.
-		DmpQueue: cumulus_pallet_dmp_queue::{Pallet, Call, Storage, Event<T>} = 85,
+		DmpQueue: cumulus_pallet_dmp_queue = 85,
 	}
 }
 
@@ -1069,8 +1093,9 @@ pub type Executive = frame_executive::Executive<
 	// Executes pallet hooks in the order of definition in construct_runtime
 	AllPalletsWithSystem,
 	(
-		pallet_did_lookup::migrations::CleanupMigration<Runtime>,
-		runtime_common::migrations::RemoveInsecureRandomnessPallet<Runtime>,
+		runtime_common::migrations::BumpStorageVersion<Runtime>,
+		parachain_staking::migrations::BalanceMigration<Runtime>,
+		pallet_xcm::migration::v1::MigrateToV1<Runtime>,
 	),
 >;
 
@@ -1104,6 +1129,7 @@ mod benches {
 		[pallet_web3_names, Web3Names]
 		[public_credentials, PublicCredentials]
 		[pallet_xcm, PolkadotXcm]
+		[pallet_migration, Migration]
 		[frame_benchmarking::baseline, Baseline::<Runtime>]
 	);
 }
@@ -1127,10 +1153,18 @@ impl_runtime_apis! {
 		fn metadata() -> OpaqueMetadata {
 			OpaqueMetadata::new(Runtime::metadata().into())
 		}
+
+		fn metadata_at_version(version: u32) -> Option<OpaqueMetadata> {
+			Runtime::metadata_at_version(version)
+		}
+
+		fn metadata_versions() -> sp_std::vec::Vec<u32> {
+			Runtime::metadata_versions()
+		}
 	}
 
-	impl frame_system_rpc_runtime_api::AccountNonceApi<Block, AccountId, Index> for Runtime {
-		fn account_nonce(account: AccountId) -> Index {
+	impl frame_system_rpc_runtime_api::AccountNonceApi<Block, AccountId, Nonce> for Runtime {
+		fn account_nonce(account: AccountId) -> Nonce {
 			frame_system::Pallet::<Runtime>::account_nonce(account)
 		}
 	}

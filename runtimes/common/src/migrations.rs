@@ -17,53 +17,42 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_support::{
-	storage::unhashed::clear_prefix, traits::OnRuntimeUpgrade, weights::Weight, StorageHasher, Twox128,
+	traits::{GetStorageVersion, OnRuntimeUpgrade},
+	weights::Weight,
 };
+
+use pallet_membership::Instance2;
 use sp_core::Get;
-use sp_io::MultiRemovalResults;
 use sp_std::marker::PhantomData;
 
-const PALLET_RUNTIME_NAME: &[u8] = b"RandomnessCollectiveFlip";
-#[cfg(feature = "try-runtime")]
-const PALLET_STORAGE_NAME: &[u8] = b"RandomMaterial";
+/// There are some pallets without a storage version.
+/// Based on the changes in the PR <https://github.com/paritytech/substrate/pull/13417>,
+/// pallets without a storage version or with a wrong version throw an error
+/// in the try state tests.
+pub struct BumpStorageVersion<T>(PhantomData<T>);
 
-pub struct RemoveInsecureRandomnessPallet<T>(PhantomData<T>);
-
-impl<T> OnRuntimeUpgrade for RemoveInsecureRandomnessPallet<T>
+impl<T> OnRuntimeUpgrade for BumpStorageVersion<T>
 where
 	T: frame_system::Config,
+	T: pallet_tips::Config,
+	T: pallet_multisig::Config,
+	T: cumulus_pallet_parachain_system::Config,
+	T: pallet_membership::Config<Instance2>,
+	T: cumulus_pallet_xcmp_queue::Config,
+	T: cumulus_pallet_dmp_queue::Config,
 {
-	#[cfg(feature = "try-runtime")]
-	fn pre_upgrade() -> Result<sp_std::vec::Vec<u8>, &'static str> {
-		log::info!("RemoveInsecureRandomnessPallet::pre_upgrade() checks 🔎");
-		if frame_support::migration::have_storage_value(PALLET_RUNTIME_NAME, PALLET_STORAGE_NAME, b"") {
-			Ok(sp_std::vec::Vec::default())
-		} else {
-			Err("Storage in pallet_insecure_randomness_collective_flip is already empty before migration.")
-		}
-	}
-
 	fn on_runtime_upgrade() -> Weight {
-		let MultiRemovalResults { unique, .. } = clear_prefix(
-			&Twox128::hash(PALLET_RUNTIME_NAME),
-			// Storage version and `RandomMaterial` vector.
-			Some(2),
-			None,
-		);
-		log::info!(
-			"Deleted {} elements from the pallet_insecure_randomness_collective_flip pallet storage.",
-			unique
-		);
-		T::DbWeight::get().writes(unique.into())
-	}
+		log::info!("BumpStorageVersion: Initiating migration");
 
-	#[cfg(feature = "try-runtime")]
-	fn post_upgrade(_state: sp_std::vec::Vec<u8>) -> Result<(), &'static str> {
-		log::info!("RemoveInsecureRandomnessPallet::post_upgrade() checks 🔍");
-		if frame_support::migration::have_storage_value(PALLET_RUNTIME_NAME, PALLET_STORAGE_NAME, b"") {
-			Err("Storage in pallet_insecure_randomness_collective_flip is not empty after migration.")
-		} else {
-			Ok(())
-		}
+		pallet_tips::Pallet::<T>::current_storage_version().put::<pallet_tips::Pallet<T>>();
+		cumulus_pallet_parachain_system::Pallet::<T>::current_storage_version()
+			.put::<cumulus_pallet_parachain_system::Pallet<T>>();
+		cumulus_pallet_xcmp_queue::Pallet::<T>::current_storage_version().put::<cumulus_pallet_xcmp_queue::Pallet<T>>();
+		pallet_membership::Pallet::<T, Instance2>::current_storage_version()
+			.put::<pallet_membership::Pallet<T, Instance2>>();
+		cumulus_pallet_dmp_queue::Pallet::<T>::current_storage_version().put::<cumulus_pallet_dmp_queue::Pallet<T>>();
+		pallet_multisig::Pallet::<T>::current_storage_version().put::<pallet_multisig::Pallet<T>>();
+
+		<T as frame_system::Config>::DbWeight::get().writes(6)
 	}
 }

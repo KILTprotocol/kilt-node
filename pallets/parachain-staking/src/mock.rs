@@ -20,23 +20,23 @@
 #![allow(clippy::from_over_into)]
 
 use super::*;
-use crate::{self as stake, types::NegativeImbalanceOf};
+use crate::{self as stake, types::CreditOf};
 use frame_support::{
 	assert_ok, construct_runtime, parameter_types,
-	traits::{Currency, GenesisBuild, OnFinalize, OnInitialize, OnUnbalanced},
+	traits::{fungible::Balanced, OnFinalize, OnInitialize, OnUnbalanced},
 };
+use frame_system::pallet_prelude::BlockNumberFor;
 use pallet_authorship::EventHandler;
 use sp_consensus_aura::sr25519::AuthorityId;
-use sp_core::H256;
+use sp_core::{ConstBool, H256};
 use sp_runtime::{
 	impl_opaque_keys,
-	testing::{Header, UintAuthorityId},
+	testing::UintAuthorityId,
 	traits::{BlakeTwo256, ConvertInto, IdentityLookup, OpaqueKeys},
-	Perbill, Perquintill,
+	BuildStorage, Perbill, Perquintill,
 };
 use sp_std::fmt::Debug;
 
-pub(crate) type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 pub(crate) type Block = frame_system::mocking::MockBlock<Test>;
 pub(crate) type Balance = u128;
 pub(crate) type AccountId = u64;
@@ -50,17 +50,14 @@ pub(crate) const TREASURY_ACC: AccountId = u64::MAX;
 
 // Configure a mock runtime to test the pallet.
 construct_runtime!(
-	pub enum Test where
-		Block = Block,
-		NodeBlock = Block,
-		UncheckedExtrinsic = UncheckedExtrinsic,
+	pub enum Test
 	{
-		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
-		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
-		Aura: pallet_aura::{Pallet, Storage},
-		Session: pallet_session::{Pallet, Call, Storage, Event, Config<T>},
-		StakePallet: stake::{Pallet, Call, Storage, Config<T>, Event<T>},
-		Authorship: pallet_authorship::{Pallet, Storage},
+		System: frame_system,
+		Balances: pallet_balances,
+		Aura: pallet_aura,
+		Session: pallet_session,
+		StakePallet: stake,
+		Authorship: pallet_authorship,
 	}
 );
 
@@ -75,14 +72,13 @@ impl frame_system::Config for Test {
 	type BaseCallFilter = frame_support::traits::Everything;
 	type DbWeight = ();
 	type RuntimeOrigin = RuntimeOrigin;
-	type Index = u64;
-	type BlockNumber = BlockNumber;
+	type Block = Block;
+	type Nonce = u64;
 	type RuntimeCall = RuntimeCall;
 	type Hash = H256;
 	type Hashing = BlakeTwo256;
 	type AccountId = AccountId;
 	type Lookup = IdentityLookup<Self::AccountId>;
-	type Header = Header;
 	type RuntimeEvent = RuntimeEvent;
 	type BlockHashCount = BlockHashCount;
 	type Version = ();
@@ -99,9 +95,15 @@ impl frame_system::Config for Test {
 }
 parameter_types! {
 	pub const ExistentialDeposit: Balance = 1;
+	pub const MaxFreezes : u32 = 50;
+	pub const MaxHolds : u32 = 50;
 }
 
 impl pallet_balances::Config for Test {
+	type FreezeIdentifier = RuntimeFreezeReason;
+	type RuntimeHoldReason = RuntimeHoldReason;
+	type MaxFreezes = MaxFreezes;
+	type MaxHolds = MaxHolds;
 	type MaxLocks = ();
 	type MaxReserves = ();
 	type ReserveIdentifier = [u8; 8];
@@ -117,6 +119,7 @@ impl pallet_aura::Config for Test {
 	type AuthorityId = AuthorityId;
 	type DisabledValidators = ();
 	type MaxAuthorities = MaxCollatorCandidates;
+	type AllowMultipleBlocksPerSlot = ConstBool<false>;
 }
 
 impl pallet_authorship::Config for Test {
@@ -143,10 +146,10 @@ parameter_types! {
 }
 
 pub struct ToBeneficiary();
-impl OnUnbalanced<NegativeImbalanceOf<Test>> for ToBeneficiary {
-	fn on_nonzero_unbalanced(amount: NegativeImbalanceOf<Test>) {
+impl OnUnbalanced<CreditOf<Test>> for ToBeneficiary {
+	fn on_nonzero_unbalanced(amount: CreditOf<Test>) {
 		// Must resolve into existing but better to be safe.
-		<Test as Config>::Currency::resolve_creating(&TREASURY_ACC, amount);
+		let _ = <Test as Config>::Currency::resolve(&TREASURY_ACC, amount);
 	}
 }
 
@@ -171,7 +174,8 @@ impl Config for Test {
 	type NetworkRewardStart = NetworkRewardStart;
 	type NetworkRewardBeneficiary = ToBeneficiary;
 	type WeightInfo = ();
-	const BLOCKS_PER_YEAR: Self::BlockNumber = 5 * 60 * 24 * 36525 / 100;
+	type FreezeIdentifier = RuntimeFreezeReason;
+	const BLOCKS_PER_YEAR: BlockNumberFor<Test> = 5 * 60 * 24 * 36525 / 100;
 }
 
 impl_opaque_keys! {
@@ -285,8 +289,8 @@ impl ExtBuilder {
 	}
 
 	pub(crate) fn build(self) -> sp_io::TestExternalities {
-		let mut t = frame_system::GenesisConfig::default()
-			.build_storage::<Test>()
+		let mut t = frame_system::GenesisConfig::<Test>::default()
+			.build_storage()
 			.expect("Frame system builds valid default genesis config");
 
 		pallet_balances::GenesisConfig::<Test> {

@@ -25,9 +25,10 @@ use frame_support::{
 	parameter_types,
 	traits::{Contains, Nothing},
 };
+use frame_system::EnsureRoot;
 use pallet_xcm::XcmPassthrough;
 use sp_core::ConstU32;
-use xcm::latest::prelude::*;
+use xcm::v3::prelude::*;
 use xcm_builder::{
 	AllowTopLevelPaidExecutionFrom, EnsureXcmOrigin, FixedWeightBounds, RelayChainAsNative, SiblingParachainAsNative,
 	SignedAccountId32AsNative, SignedToAccountId32, UsingComponents, WithComputedOrigin,
@@ -137,6 +138,7 @@ impl xcm_executor::Config for XcmConfig {
 	type UniversalAliases = Nothing;
 	type CallDispatcher = WithOriginFilter<SafeCallFilter>;
 	type SafeCallFilter = SafeCallFilter;
+	type Aliasers = Nothing;
 }
 
 /// Allows only local `Signed` origins to be converted into `MultiLocation`s by
@@ -158,6 +160,8 @@ parameter_types! {
 }
 
 impl pallet_xcm::Config for Runtime {
+	type MaxRemoteLockConsumers = ConstU32<10>;
+	type RemoteLockConsumerIdentifier = [u8; 8];
 	type RuntimeEvent = RuntimeEvent;
 	type SendXcmOrigin = EnsureXcmOrigin<RuntimeOrigin, LocalOriginToLocation>;
 	type XcmRouter = XcmRouter;
@@ -167,6 +171,7 @@ impl pallet_xcm::Config for Runtime {
 	type XcmExecuteFilter = Nothing;
 	type XcmTeleportFilter = Nothing;
 	type XcmReserveTransferFilter = Nothing;
+	type AdminOrigin = EnsureRoot<AccountId>;
 	type XcmExecutor = XcmExecutor<XcmConfig>;
 	type Weigher = FixedWeightBounds<UnitWeightCost, RuntimeCall, MaxInstructions>;
 	type RuntimeOrigin = RuntimeOrigin;

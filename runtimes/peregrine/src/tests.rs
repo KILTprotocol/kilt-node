@@ -17,6 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use frame_support::{traits::Currency, BoundedVec};
+use pallet_dip_provider::IdentityCommitmentOf;
 use parity_scale_codec::MaxEncodedLen;
 
 use did::DeriveDidCallAuthorizationVerificationKeyRelationship;
@@ -26,14 +27,18 @@ use pallet_web3_names::{Web3NameOf, Web3OwnershipOf};
 use runtime_common::{
 	constants::{
 		attestation::MAX_ATTESTATION_BYTE_LENGTH,
+		deposit_storage::MAX_DEPOSIT_PALLET_KEY_LENGTH,
 		did::{MAX_KEY_LENGTH, MAX_SERVICE_ENDPOINT_BYTE_LENGTH},
 		did_lookup::MAX_CONNECTION_BYTE_LENGTH,
+		dip_provider::MAX_COMMITMENT_BYTE_LENGTH,
 		public_credentials::MAX_PUBLIC_CREDENTIAL_STORAGE_LENGTH,
 		web3_names::MAX_NAME_BYTE_LENGTH,
 		MAX_INDICES_BYTE_LENGTH,
 	},
 	AccountId, BlockNumber,
 };
+
+use crate::dip::deposit::DepositKey;
 
 use super::{Runtime, RuntimeCall};
 
@@ -68,7 +73,7 @@ fn did_storage_sizes() {
 	assert_eq!(max_did_endpoint_size, MAX_SERVICE_ENDPOINT_BYTE_LENGTH as usize);
 
 	// DID key
-	let max_did_key_size = did::did_details::DidPublicKey::max_encoded_len();
+	let max_did_key_size = did::did_details::DidPublicKey::<AccountId>::max_encoded_len();
 	assert_eq!(max_did_key_size, MAX_KEY_LENGTH as usize);
 }
 
@@ -115,6 +120,19 @@ fn public_credentials_storage_sizes() {
 	assert_eq!(
 		credential_entry_max_size + subject_id_max_size,
 		MAX_PUBLIC_CREDENTIAL_STORAGE_LENGTH as usize
+	)
+}
+
+#[test]
+fn pallet_deposit_storage_max_key_length() {
+	assert_eq!(DepositKey::max_encoded_len(), MAX_DEPOSIT_PALLET_KEY_LENGTH as usize)
+}
+
+#[test]
+fn pallet_dip_provider_commitment_max_length() {
+	assert_eq!(
+		IdentityCommitmentOf::<Runtime>::max_encoded_len(),
+		MAX_COMMITMENT_BYTE_LENGTH as usize
 	)
 }
 

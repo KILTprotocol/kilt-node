@@ -39,7 +39,7 @@ pub struct DidLinkedInfo<
 	Url,
 	Balance,
 	Key: Ord,
-	BlockNumber: MaxEncodedLen,
+	BlockNumber,
 > {
 	pub identifier: DidIdentifier,
 	pub accounts: Vec<LinkableAccountId>,
@@ -67,11 +67,11 @@ pub type RawDidLinkedInfo<DidIdentifier, AccountId, LinkableAccountId, Balance, 
 
 sp_api::decl_runtime_apis! {
 	#[api_version(2)]
-	pub trait Did<DidIdentifier, AccountId, LinkableAccountId, Balance, Key: Ord, BlockNumber> where
+	pub trait Did<DidIdentifier, AccountId, LinkableAccountId, Balance, Key: Ord, BlockNumber: MaxEncodedLen> where
 		DidIdentifier: Codec,
 		AccountId: Codec,
 		LinkableAccountId: Codec,
-		BlockNumber: Codec + MaxEncodedLen,
+		BlockNumber: Codec,
 		Key: Codec,
 		Balance: Codec,
 	{

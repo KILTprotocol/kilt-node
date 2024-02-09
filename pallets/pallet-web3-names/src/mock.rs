@@ -15,23 +15,23 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
+use frame_support::traits::fungible::MutateHold;
+use frame_system::pallet_prelude::BlockNumberFor;
+use kilt_support::Deposit;
 
-use frame_support::traits::ReservableCurrency;
-
-use kilt_support::deposit::Deposit;
-
-use crate::{AccountIdOf, BalanceOf, Config, CurrencyOf, Names, Owner, Web3NameOf, Web3NameOwnerOf, Web3OwnershipOf};
-
-pub(crate) type BlockNumberOf<T> = <T as frame_system::Config>::BlockNumber;
+use crate::{
+	AccountIdOf, BalanceOf, Config, CurrencyOf, HoldReason, Names, Owner, Web3NameOf, Web3NameOwnerOf, Web3OwnershipOf,
+};
 
 pub(crate) fn insert_raw_w3n<T: Config>(
 	payer: AccountIdOf<T>,
 	owner: Web3NameOwnerOf<T>,
 	name: Web3NameOf<T>,
-	block_number: BlockNumberOf<T>,
+	block_number: BlockNumberFor<T>,
 	deposit: BalanceOf<T>,
 ) {
-	CurrencyOf::<T>::reserve(&payer, deposit).expect("Payer should have enough funds for deposit");
+	CurrencyOf::<T>::hold(&HoldReason::Deposit.into(), &payer, deposit)
+		.expect("Payer should have enough funds for deposit");
 
 	Names::<T>::insert(&owner, name.clone());
 	Owner::<T>::insert(
@@ -57,14 +57,12 @@ pub(crate) mod runtime {
 	use frame_system::EnsureRoot;
 	use kilt_support::mock::{mock_origin, SubjectId};
 	use sp_runtime::{
-		testing::Header,
 		traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
-		MultiSignature,
+		BuildStorage, MultiSignature,
 	};
 
 	use crate::{self as pallet_web3_names, web3_name::AsciiWeb3Name};
 
-	type Index = u64;
 	type BlockNumber = u64;
 	pub(crate) type Balance = u128;
 
@@ -73,19 +71,15 @@ pub(crate) mod runtime {
 	type AccountPublic = <Signature as Verify>::Signer;
 	type AccountId = <AccountPublic as IdentifyAccount>::AccountId;
 
-	type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 	type Block = frame_system::mocking::MockBlock<Test>;
 
 	frame_support::construct_runtime!(
-		pub enum Test where
-			Block = Block,
-			NodeBlock = Block,
-			UncheckedExtrinsic = UncheckedExtrinsic,
+		pub enum Test
 		{
-			System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
-			Balances: pallet_balances::{Pallet, Call, Storage, Event<T>},
-			Web3Names: pallet_web3_names::{Pallet, Storage, Call, Event<T>},
-			MockOrigin: mock_origin::{Pallet, Origin<T>},
+			System: frame_system,
+			Balances: pallet_balances,
+			Web3Names: pallet_web3_names,
+			MockOrigin: mock_origin,
 		}
 	);
 
@@ -99,15 +93,14 @@ pub(crate) mod runtime {
 		type BlockWeights = ();
 		type BlockLength = ();
 		type DbWeight = ();
+		type Block = Block;
+		type Nonce = u64;
 		type RuntimeOrigin = RuntimeOrigin;
 		type RuntimeCall = RuntimeCall;
-		type Index = Index;
-		type BlockNumber = BlockNumber;
 		type Hash = Hash;
 		type Hashing = BlakeTwo256;
 		type AccountId = AccountId;
 		type Lookup = IdentityLookup<Self::AccountId>;
-		type Header = Header;
 		type RuntimeEvent = RuntimeEvent;
 		type BlockHashCount = BlockHashCount;
 		type Version = ();
@@ -125,9 +118,15 @@ pub(crate) mod runtime {
 		pub const ExistentialDeposit: Balance = 10;
 		pub const MaxLocks: u32 = 50;
 		pub const MaxReserves: u32 = 50;
+		pub const MaxHolds: u32 = 50;
+		pub const MaxFreezes: u32 = 50;
 	}
 
 	impl pallet_balances::Config for Test {
+		type FreezeIdentifier = RuntimeFreezeReason;
+		type RuntimeHoldReason = RuntimeHoldReason;
+		type MaxFreezes = MaxFreezes;
+		type MaxHolds = MaxHolds;
 		type Balance = Balance;
 		type DustRemoval = ();
 		type RuntimeEvent = RuntimeEvent;
@@ -158,6 +157,7 @@ pub(crate) mod runtime {
 		type OwnerOrigin = TestOwnerOrigin;
 		type OriginSuccess = TestOriginSuccess;
 		type Currency = Balances;
+		type RuntimeHoldReason = RuntimeHoldReason;
 		type Deposit = Web3NameDeposit;
 		type RuntimeEvent = RuntimeEvent;
 		type MaxNameLength = MaxNameLength;
@@ -165,6 +165,7 @@ pub(crate) mod runtime {
 		type Web3Name = TestWeb3Name;
 		type Web3NameOwner = TestWeb3NameOwner;
 		type WeightInfo = ();
+		type BalanceMigrationManager = ();
 	}
 
 	impl mock_origin::Config for Test {
@@ -214,7 +215,7 @@ pub(crate) mod runtime {
 		}
 
 		pub fn build(self) -> sp_io::TestExternalities {
-			let mut storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
+			let mut storage = frame_system::GenesisConfig::<Test>::default().build_storage().unwrap();
 			pallet_balances::GenesisConfig::<Test> {
 				balances: self.balances.clone(),
 			}
@@ -224,7 +225,8 @@ pub(crate) mod runtime {
 
 			ext.execute_with(|| {
 				for (owner, web3_name, payer) in self.claimed_web3_names {
-					pallet_web3_names::Pallet::<Test>::register_name(web3_name, owner, payer);
+					pallet_web3_names::Pallet::<Test>::register_name(web3_name, owner, payer)
+						.expect("Could not register name");
 				}
 
 				for web3_name in self.banned_web3_names {
@@ -246,7 +248,7 @@ pub(crate) mod runtime {
 		pub fn build_with_keystore(self) -> sp_io::TestExternalities {
 			let mut ext = self.build();
 
-			let keystore = sp_keystore::testing::KeyStore::new();
+			let keystore = sp_keystore::testing::MemoryKeystore::new();
 			ext.register_extension(sp_keystore::KeystoreExt(std::sync::Arc::new(keystore)));
 
 			ext

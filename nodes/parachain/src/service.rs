@@ -37,12 +37,12 @@ use sc_network_sync::SyncingService;
 use sc_service::{Configuration, TFullBackend, TFullClient, TaskManager};
 use sc_telemetry::{Telemetry, TelemetryHandle, TelemetryWorker, TelemetryWorkerHandle};
 use sp_api::ConstructRuntimeApi;
-use sp_keystore::SyncCryptoStorePtr;
+use sp_keystore::KeystorePtr;
 use sp_runtime::traits::BlakeTwo256;
 use std::{sync::Arc, time::Duration};
 use substrate_prometheus_endpoint::Registry;
 
-use runtime_common::{AccountId, AuthorityId, Balance, BlockNumber, Index};
+use runtime_common::{AccountId, AuthorityId, Balance, BlockNumber, Nonce};
 
 type Header = sp_runtime::generic::Header<BlockNumber, sp_runtime::traits::BlakeTwo256>;
 
@@ -146,12 +146,7 @@ where
 		})
 		.transpose()?;
 
-	let executor = sc_executor::NativeElseWasmExecutor::<Executor>::new(
-		config.wasm_method,
-		config.default_heap_pages,
-		config.max_runtime_instances,
-		config.runtime_cache_size,
-	);
+	let executor = sc_service::new_native_or_wasm_executor(config);
 
 	let (client, backend, keystore_container, task_manager) = sc_service::new_full_parts::<Block, RuntimeApi, _>(
 		config,
@@ -251,7 +246,7 @@ where
 		+ sp_block_builder::BlockBuilder<Block>
 		+ cumulus_primitives_core::CollectCollationInfo<Block>
 		+ pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>
-		+ substrate_frame_rpc_system::AccountNonceApi<Block, AccountId, Index>,
+		+ substrate_frame_rpc_system::AccountNonceApi<Block, AccountId, Nonce>,
 	sc_client_api::StateBackendFor<TFullBackend<Block>, Block>: sp_api::StateBackend<BlakeTwo256>,
 	Executor: sc_executor::NativeExecutionDispatch + 'static,
 	RB: FnOnce(
@@ -278,7 +273,7 @@ where
 		Arc<dyn RelayChainInterface>,
 		Arc<sc_transaction_pool::FullPool<Block, ParachainClient<RuntimeApi, Executor>>>,
 		Arc<SyncingService<Block>>,
-		SyncCryptoStorePtr,
+		KeystorePtr,
 		bool,
 		ParaId,
 	) -> Result<Box<dyn ParachainConsensus<Block>>, sc_service::Error>,
@@ -308,12 +303,14 @@ where
 	let prometheus_registry = parachain_config.prometheus_registry().cloned();
 	let transaction_pool = params.transaction_pool.clone();
 	let import_queue_service = params.import_queue.service();
+	let net_config = sc_network::config::FullNetworkConfiguration::new(&parachain_config.network);
 	let (network, system_rpc_tx, tx_handler_controller, start_network, sync_service) =
 		cumulus_client_service::build_network(cumulus_client_service::BuildNetworkParams {
 			parachain_config: &parachain_config,
 			client: client.clone(),
 			transaction_pool: transaction_pool.clone(),
 			para_id: id,
+			net_config,
 			spawn_handle: task_manager.spawn_handle(),
 			relay_chain_interface: relay_chain_interface.clone(),
 			import_queue: params.import_queue,
@@ -342,7 +339,7 @@ where
 		transaction_pool: transaction_pool.clone(),
 		task_manager: &mut task_manager,
 		config: parachain_config,
-		keystore: params.keystore_container.sync_keystore(),
+		keystore: params.keystore_container.keystore(),
 		backend: backend.clone(),
 		network: network.clone(),
 		system_rpc_tx,
@@ -383,8 +380,8 @@ where
 			&task_manager,
 			relay_chain_interface.clone(),
 			transaction_pool,
-			sync_service,
-			params.keystore_container.sync_keystore(),
+			sync_service.clone(),
+			params.keystore_container.keystore(),
 			force_authoring,
 			id,
 		)?;
@@ -397,6 +394,7 @@ where
 			client: client.clone(),
 			task_manager: &mut task_manager,
 			relay_chain_interface,
+			sync_service: sync_service.clone(),
 			spawner,
 			parachain_consensus,
 			import_queue: import_queue_service,
@@ -413,6 +411,7 @@ where
 			task_manager: &mut task_manager,
 			para_id: id,
 			relay_chain_interface,
+			sync_service,
 			relay_chain_slot_duration,
 			import_queue: import_queue_service,
 			recovery_handle: Box::new(overseer_handle),
@@ -447,7 +446,7 @@ where
 		+ sp_api::ApiExt<Block, StateBackend = sc_client_api::StateBackendFor<TFullBackend<Block>, Block>>
 		+ sp_offchain::OffchainWorkerApi<Block>
 		+ sp_block_builder::BlockBuilder<Block>
-		+ substrate_frame_rpc_system::AccountNonceApi<Block, AccountId, Index>
+		+ substrate_frame_rpc_system::AccountNonceApi<Block, AccountId, Nonce>
 		+ pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>
 		+ sp_consensus_aura::AuraApi<Block, AuthorityId>
 		+ cumulus_primitives_core::CollectCollationInfo<Block>,
@@ -494,7 +493,7 @@ where
 		+ sp_api::ApiExt<Block, StateBackend = sc_client_api::StateBackendFor<TFullBackend<Block>, Block>>
 		+ sp_offchain::OffchainWorkerApi<Block>
 		+ sp_block_builder::BlockBuilder<Block>
-		+ substrate_frame_rpc_system::AccountNonceApi<Block, AccountId, Index>
+		+ substrate_frame_rpc_system::AccountNonceApi<Block, AccountId, Nonce>
 		+ pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>
 		+ sp_consensus_aura::AuraApi<Block, AuthorityId>
 		+ cumulus_primitives_core::CollectCollationInfo<Block>,
@@ -523,7 +522,7 @@ fn build_consensus<RE, API>(
 	relay_chain_interface: Arc<dyn RelayChainInterface>,
 	transaction_pool: Arc<sc_transaction_pool::FullPool<Block, ParachainClient<API, RE>>>,
 	sync_oracle: Arc<SyncingService<Block>>,
-	keystore: SyncCryptoStorePtr,
+	keystore: KeystorePtr,
 	force_authoring: bool,
 	id: ParaId,
 ) -> Result<Box<dyn ParachainConsensus<Block>>, sc_service::Error>
@@ -536,7 +535,7 @@ where
 		+ sp_api::ApiExt<Block, StateBackend = sc_client_api::StateBackendFor<TFullBackend<Block>, Block>>
 		+ sp_offchain::OffchainWorkerApi<Block>
 		+ sp_block_builder::BlockBuilder<Block>
-		+ substrate_frame_rpc_system::AccountNonceApi<Block, AccountId, Index>
+		+ substrate_frame_rpc_system::AccountNonceApi<Block, AccountId, Nonce>
 		+ pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>
 		+ sp_consensus_aura::AuraApi<Block, AuthorityId>
 		+ cumulus_primitives_core::CollectCollationInfo<Block>,

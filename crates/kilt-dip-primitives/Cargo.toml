@@ -1,0 +1,90 @@
+[package]
+authors.workspace = true
+description = "Primitive types, traits, and functions for the KILT Decentralized Identity Provider (DIP) functionality as implemented by the KILT blockchain."
+documentation.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license-file.workspace = true
+name = "kilt-dip-primitives"
+readme.workspace = true
+repository.workspace = true
+version.workspace = true
+
+[dependencies]
+# External dependencies
+hash-db.workspace = true
+log.workspace = true
+cfg-if.workspace = true
+
+# Internal dependencies
+did.workspace = true
+kilt-support = {workspace = true, optional = true}
+pallet-did-lookup.workspace = true
+pallet-dip-consumer.workspace = true
+pallet-dip-provider.workspace = true
+pallet-relay-store.workspace = true
+pallet-web3-names.workspace = true
+
+# Parity dependencies
+parity-scale-codec = {workspace = true, features = ["derive"]}
+scale-info = {workspace = true, features = ["derive"]}
+
+# Substrate dependencies
+frame-system.workspace = true
+frame-support.workspace = true
+sp-core.workspace = true
+sp-io.workspace = true
+sp-runtime.workspace = true
+sp-state-machine.workspace = true
+sp-std.workspace = true
+sp-trie.workspace = true
+
+# Polkadot dependencies
+rococo-runtime.workspace = true
+xcm.workspace = true
+xcm-executor.workspace = true
+
+# Cumulus dependencies
+cumulus-pallet-parachain-system.workspace = true
+cumulus-primitives-core.workspace = true
+parachain-info.workspace = true
+
+[dev-dependencies]
+hex-literal.workspace = true
+sp-io = { workspace = true, features = ["std"] }
+
+[features]
+default = ["std"]
+std = [
+  "hash-db/std",
+  "log/std",
+  "did/std",
+  "kilt-support?/std",
+  "pallet-did-lookup/std",
+  "pallet-dip-consumer/std",
+  "pallet-dip-provider/std",
+  "pallet-relay-store/std",
+  "pallet-web3-names/std",
+  "parity-scale-codec/std",
+  "scale-info/std",
+  "frame-system/std",
+  "frame-support/std",
+  "sp-core/std",
+  "sp-io/std",
+  "sp-runtime/std",
+  "sp-state-machine/std",
+  "sp-std/std",
+  "sp-trie/std",
+  "rococo-runtime/std",
+  "xcm/std",
+  "xcm-executor/std",
+  "cumulus-pallet-parachain-system/std",
+  "cumulus-primitives-core/std",
+  "parachain-info/std",
+]
+runtime-benchmarks = [
+  "kilt-support/runtime-benchmarks",
+  "pallet-dip-consumer/runtime-benchmarks",
+  "pallet-dip-provider/runtime-benchmarks",
+  "rococo-runtime/runtime-benchmarks"
+]

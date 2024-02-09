@@ -66,7 +66,7 @@
 mod access_control;
 pub mod default_weights;
 pub mod delegation_hierarchy;
-
+pub mod migrations;
 #[cfg(any(feature = "mock", test))]
 pub mod mock;
 
@@ -81,13 +81,8 @@ mod try_state;
 
 pub use crate::{access_control::DelegationAc, default_weights::WeightInfo, delegation_hierarchy::*, pallet::*};
 
-use frame_support::{
-	dispatch::DispatchResult,
-	ensure,
-	pallet_prelude::Weight,
-	traits::{Get, ReservableCurrency},
-};
-use kilt_support::traits::StorageDepositCollector;
+use frame_support::{dispatch::DispatchResult, ensure, pallet_prelude::Weight, traits::Get};
+use kilt_support::traits::{BalanceMigrationManager, StorageDepositCollector};
 use parity_scale_codec::Encode;
 use sp_runtime::{traits::Hash, DispatchError};
 use sp_std::{marker::PhantomData, vec::Vec};
@@ -98,13 +93,16 @@ pub mod pallet {
 	use super::*;
 	use frame_support::{
 		pallet_prelude::*,
-		traits::{Currency, StorageVersion},
+		traits::{
+			fungible::{Inspect, MutateHold},
+			StorageVersion,
+		},
 	};
 	use frame_system::pallet_prelude::*;
 	use kilt_support::{
-		deposit::Deposit,
 		signature::{SignatureVerificationError, VerifySignature},
 		traits::CallSources,
+		Deposit,
 	};
 	use scale_info::TypeInfo;
 
@@ -129,19 +127,26 @@ pub mod pallet {
 
 	pub(crate) type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 
-	pub(crate) type BalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::Balance;
+	pub(crate) type BalanceOf<T> = <<T as Config>::Currency as Inspect<AccountIdOf<T>>>::Balance;
 
 	pub(crate) type CurrencyOf<T> = <T as Config>::Currency;
 
 	pub(crate) type DelegationDetailsOf<T> = DelegationDetails<DelegatorIdOf<T>>;
 
-	pub(crate) type DelegationNodeOf<T> = DelegationNode<
+	pub(crate) type BalanceMigrationManagerOf<T> = <T as Config>::BalanceMigrationManager;
+
+	pub type DelegationNodeOf<T> = DelegationNode<
 		DelegationNodeIdOf<T>,
 		<T as Config>::MaxChildren,
 		DelegationDetailsOf<T>,
 		AccountIdOf<T>,
 		BalanceOf<T>,
 	>;
+
+	#[pallet::composite_enum]
+	pub enum HoldReason {
+		Deposit,
+	}
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config + ctype::Config {
@@ -160,9 +165,10 @@ pub mod pallet {
 		type OriginSuccess: CallSources<AccountIdOf<Self>, DelegatorIdOf<Self>>;
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 		type WeightInfo: WeightInfo;
+		type RuntimeHoldReason: From<HoldReason>;
 
 		/// The currency that is used to reserve funds for each delegation.
-		type Currency: ReservableCurrency<AccountIdOf<Self>>;
+		type Currency: MutateHold<AccountIdOf<Self>, Reason = Self::RuntimeHoldReason>;
 
 		/// The deposit that is required for storing a delegation.
 		#[pallet::constant]
@@ -189,6 +195,9 @@ pub mod pallet {
 		/// `2 ^ MaxParentChecks`.
 		#[pallet::constant]
 		type MaxChildren: Get<u32> + Clone + TypeInfo;
+
+		/// Migration manager to handle new created entries
+		type BalanceMigrationManager: BalanceMigrationManager<AccountIdOf<Self>, BalanceOf<Self>>;
 	}
 
 	#[pallet::pallet]
@@ -301,7 +310,7 @@ pub mod pallet {
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
 		#[cfg(feature = "try-runtime")]
-		fn try_state(_n: BlockNumberFor<T>) -> Result<(), &'static str> {
+		fn try_state(_n: BlockNumberFor<T>) -> Result<(), sp_runtime::TryRuntimeError> {
 			crate::try_state::do_try_state::<T>()
 		}
 	}
@@ -684,7 +693,10 @@ pub mod pallet {
 			// parent or another ancestor.
 			ensure!(delegation.details.owner == source.subject(), Error::<T>::AccessDenied);
 
-			DelegationDepositCollector::<T>::change_deposit_owner(&delegation_id, source.sender())
+			DelegationDepositCollector::<T>::change_deposit_owner::<BalanceMigrationManagerOf<T>>(
+				&delegation_id,
+				source.sender(),
+			)
 		}
 
 		/// Updates the deposit amount to the current deposit rate.
@@ -701,7 +713,7 @@ pub mod pallet {
 			// parent or another ancestor.
 			ensure!(delegation.deposit.owner == sender, Error::<T>::AccessDenied);
 
-			DelegationDepositCollector::<T>::update_deposit(&delegation_id)?;
+			DelegationDepositCollector::<T>::update_deposit::<BalanceMigrationManagerOf<T>>(&delegation_id)?;
 
 			Ok(())
 		}
@@ -714,7 +726,7 @@ pub mod pallet {
 		/// # <weight>
 		/// Weight: O(1)
 		/// # </weight>
-		pub(crate) fn calculate_delegation_creation_hash(
+		pub fn calculate_delegation_creation_hash(
 			delegation_id: &DelegationNodeIdOf<T>,
 			root_id: &DelegationNodeIdOf<T>,
 			parent_id: &DelegationNodeIdOf<T>,
@@ -738,7 +750,10 @@ pub mod pallet {
 			hierarchy_owner: DelegatorIdOf<T>,
 			deposit_owner: AccountIdOf<T>,
 		) -> DispatchResult {
-			CurrencyOf::<T>::reserve(&deposit_owner, <T as Config>::Deposit::get())?;
+			DelegationDepositCollector::<T>::create_deposit(deposit_owner.clone(), <T as Config>::Deposit::get())?;
+			<T as Config>::BalanceMigrationManager::exclude_key_from_migration(&DelegationNodes::<T>::hashed_key_for(
+				root_id,
+			));
 
 			let root_node = DelegationNode::new_root_node(
 				root_id,
@@ -765,7 +780,10 @@ pub mod pallet {
 			mut parent_node: DelegationNodeOf<T>,
 			deposit_owner: AccountIdOf<T>,
 		) -> DispatchResult {
-			CurrencyOf::<T>::reserve(&deposit_owner, <T as Config>::Deposit::get())?;
+			DelegationDepositCollector::<T>::create_deposit(deposit_owner, <T as Config>::Deposit::get())?;
+			<T as Config>::BalanceMigrationManager::exclude_key_from_migration(&DelegationNodes::<T>::hashed_key_for(
+				delegation_id,
+			));
 
 			// Add the new node as a child of that node
 			parent_node
@@ -978,7 +996,17 @@ pub mod pallet {
 			// We can clear storage now that all children have been removed
 			DelegationNodes::<T>::remove(*delegation);
 
-			kilt_support::free_deposit::<AccountIdOf<T>, CurrencyOf<T>>(&delegation_node.deposit);
+			let is_key_migrated = <T as Config>::BalanceMigrationManager::is_key_migrated(
+				&DelegationNodes::<T>::hashed_key_for(delegation),
+			);
+			if is_key_migrated {
+				DelegationDepositCollector::<T>::free_deposit(delegation_node.clone().deposit)?;
+			} else {
+				<T as Config>::BalanceMigrationManager::release_reserved_deposit(
+					&delegation_node.deposit.owner,
+					&delegation_node.deposit.amount,
+				);
+			}
 
 			consumed_weight = consumed_weight.saturating_add(T::DbWeight::get().reads_writes(1, 2));
 
@@ -990,23 +1018,34 @@ pub mod pallet {
 	}
 
 	struct DelegationDepositCollector<T: Config>(PhantomData<T>);
-	impl<T: Config> StorageDepositCollector<AccountIdOf<T>, DelegationNodeIdOf<T>> for DelegationDepositCollector<T> {
+	impl<T: Config> StorageDepositCollector<AccountIdOf<T>, DelegationNodeIdOf<T>, T::RuntimeHoldReason>
+		for DelegationDepositCollector<T>
+	{
 		type Currency = <T as Config>::Currency;
+		type Reason = HoldReason;
+
+		fn get_hashed_key(key: &DelegationNodeIdOf<T>) -> Result<sp_std::vec::Vec<u8>, DispatchError> {
+			Ok(DelegationNodes::<T>::hashed_key_for(key))
+		}
+
+		fn reason() -> Self::Reason {
+			HoldReason::Deposit
+		}
 
 		fn deposit(
 			key: &DelegationNodeIdOf<T>,
-		) -> Result<Deposit<AccountIdOf<T>, <Self::Currency as Currency<AccountIdOf<T>>>::Balance>, DispatchError> {
+		) -> Result<Deposit<AccountIdOf<T>, <Self::Currency as Inspect<AccountIdOf<T>>>::Balance>, DispatchError> {
 			let delegation_node = DelegationNodes::<T>::get(key).ok_or(Error::<T>::DelegationNotFound)?;
 			Ok(delegation_node.deposit)
 		}
 
-		fn deposit_amount(_key: &DelegationNodeIdOf<T>) -> <Self::Currency as Currency<AccountIdOf<T>>>::Balance {
+		fn deposit_amount(_key: &DelegationNodeIdOf<T>) -> <Self::Currency as Inspect<AccountIdOf<T>>>::Balance {
 			<T as Config>::Deposit::get()
 		}
 
 		fn store_deposit(
 			key: &DelegationNodeIdOf<T>,
-			deposit: Deposit<AccountIdOf<T>, <Self::Currency as Currency<AccountIdOf<T>>>::Balance>,
+			deposit: Deposit<AccountIdOf<T>, <Self::Currency as Inspect<AccountIdOf<T>>>::Balance>,
 		) -> Result<(), DispatchError> {
 			let delegation_node = DelegationNodes::<T>::get(key).ok_or(Error::<T>::DelegationNotFound)?;
 			DelegationNodes::<T>::insert(

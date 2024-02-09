@@ -1,0 +1,77 @@
+[package]
+authors.workspace = true
+documentation.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license-file.workspace = true
+readme.workspace = true
+repository.workspace = true
+version.workspace = true
+name = "dip-consumer-node-template"
+description = "Node template for the KILT Decentralized Identity Provider (DIP) consumer."
+build = "build.rs"
+
+[dependencies]
+clap = {workspace = true, features = ["std", "derive"]}
+futures = { workspace = true }
+log = { workspace = true, features = ["std"] }
+parity-scale-codec = { workspace = true, features = ["std"] }
+serde = {workspace = true, features = ["std", "derive"]}
+jsonrpsee = {workspace = true, features = ["server"]}
+
+# Internal dependencies
+dip-consumer-runtime-template = { workspace = true, features = ["std"] }
+
+# Substrate
+frame-benchmarking.workspace = true
+frame-benchmarking-cli.workspace = true
+pallet-transaction-payment-rpc.workspace = true
+sc-basic-authorship.workspace = true
+sc-chain-spec.workspace = true
+sc-cli.workspace = true
+sc-client-api.workspace = true
+sc-consensus.workspace = true
+sc-executor.workspace = true
+sc-network.workspace = true
+sc-network-sync.workspace = true
+sc-offchain.workspace = true
+sc-rpc-api.workspace = true
+sc-service.workspace = true
+sc-sysinfo.workspace = true
+sc-telemetry.workspace = true
+sc-tracing.workspace = true
+sc-transaction-pool.workspace = true
+sc-transaction-pool-api.workspace = true
+sp-api = { workspace = true, features = ["std"] }
+sp-block-builder = { workspace = true, features = ["std"] }
+sp-blockchain.workspace = true
+sp-consensus-aura = { workspace = true, features = ["std"] }
+sp-core = { workspace = true, features = ["std"] }
+sp-keystore = { workspace = true, features = ["std"] }
+sp-runtime = { workspace = true, features = ["std"] }
+sp-timestamp = { workspace = true, features = ["std"] }
+substrate-frame-rpc-system.workspace = true
+substrate-prometheus-endpoint.workspace = true
+
+# Polkadot
+polkadot-cli.workspace = true
+polkadot-primitives = { workspace = true, features = ["std"] }
+
+# Cumulus
+cumulus-client-cli.workspace = true
+cumulus-client-consensus-aura.workspace = true
+cumulus-client-consensus-common.workspace = true
+cumulus-client-service.workspace = true
+cumulus-primitives-core = { workspace = true, features = ["std"] }
+cumulus-primitives-parachain-inherent = { workspace = true, features = ["std"] }
+cumulus-relay-chain-interface.workspace = true
+
+[build-dependencies]
+substrate-build-script-utils.workspace = true
+
+[features]
+default = []
+runtime-benchmarks = [
+  "frame-benchmarking-cli/runtime-benchmarks",
+  "dip-consumer-runtime-template/runtime-benchmarks",
+]

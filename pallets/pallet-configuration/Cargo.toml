@@ -21,7 +21,6 @@ sp-keystore = {workspace = true, features = ["std"]}
 pallet-balances = {workspace = true}
 
 [dependencies]
-
 # Substrate dependencies
 parity-scale-codec = {workspace = true, features = ["derive"]}
 scale-info = {workspace = true, features = ["derive"]}

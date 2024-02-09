@@ -20,13 +20,10 @@
 use crate::{pallet::Config, types::BalanceOf};
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
+use serde::{Deserialize, Serialize};
 use sp_runtime::{traits::Saturating, Perquintill, RuntimeDebug};
 
-#[cfg(feature = "std")]
-use serde::{Deserialize, Serialize};
-
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Eq, PartialEq, Clone, Encode, Decode, Default, RuntimeDebug, TypeInfo)]
+#[derive(Eq, PartialEq, Clone, Encode, Decode, Default, RuntimeDebug, TypeInfo, Deserialize, Serialize)]
 pub struct RewardRate {
 	pub annual: Perquintill,
 	pub per_block: Perquintill,
@@ -54,8 +51,8 @@ impl RewardRate {
 }
 
 /// Staking info (staking rate and reward rate) for collators and delegators.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Eq, PartialEq, Clone, Encode, Decode, Default, RuntimeDebug, TypeInfo)]
+
+#[derive(Eq, PartialEq, Clone, Encode, Decode, Default, RuntimeDebug, TypeInfo, Serialize, Deserialize)]
 pub struct StakingInfo {
 	/// Maximum staking rate.
 	pub max_rate: Perquintill,
@@ -98,8 +95,9 @@ impl StakingInfo {
 	}
 }
 
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Eq, PartialEq, Clone, Encode, Decode, Default, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[derive(
+	Eq, PartialEq, Clone, Encode, Decode, Default, RuntimeDebug, TypeInfo, MaxEncodedLen, Serialize, Deserialize,
+)]
 pub struct InflationInfo {
 	pub collator: StakingInfo,
 	pub delegator: StakingInfo,

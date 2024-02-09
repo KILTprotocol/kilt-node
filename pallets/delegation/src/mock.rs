@@ -16,14 +16,16 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use ctype::{mock as ctype_mock, CtypeHashOf};
 use frame_support::{
 	storage::bounded_btree_set::BoundedBTreeSet,
-	traits::{Currency, Get},
+	traits::{
+		fungible::{Inspect, Mutate},
+		Get,
+	},
 };
+use kilt_support::Deposit;
 use sp_core::H256;
-
-use ctype::{mock as ctype_mock, CtypeHashOf};
-use kilt_support::deposit::Deposit;
 
 use crate::{
 	self as delegation, AccountIdOf, Config, CurrencyOf, DelegationDetails, DelegationHierarchyDetails, DelegationNode,
@@ -73,20 +75,17 @@ pub fn initialize_pallet<T>(
 	delegation_hierarchies: DelegationHierarchyInitialization<T>,
 ) where
 	T: Config,
+	<T as Config>::Currency: Mutate<AccountIdOf<T>>,
 {
 	for (root_id, details, hierarchy_owner, deposit_owner) in delegation_hierarchies {
 		// manually mint to enable deposit reserving
-		let balance = CurrencyOf::<T>::free_balance(&deposit_owner);
-		CurrencyOf::<T>::make_free_balance_be(&deposit_owner, balance + <T as Config>::Deposit::get());
+
+		let balance = CurrencyOf::<T>::balance(&deposit_owner);
+		CurrencyOf::<T>::set_balance(&deposit_owner, balance + <T as Config>::Deposit::get());
 
 		// reserve deposit and store
-		delegation::Pallet::<T>::create_and_store_new_hierarchy(
-			root_id,
-			details,
-			hierarchy_owner,
-			deposit_owner.clone(),
-		)
-		.expect("Each deposit owner should have sufficient balance to create a hierarchy");
+		delegation::Pallet::<T>::create_and_store_new_hierarchy(root_id, details, hierarchy_owner, deposit_owner)
+			.expect("Should not exceed max children");
 	}
 
 	for del in delegations {
@@ -98,16 +97,17 @@ pub fn initialize_pallet<T>(
 
 		// manually mint to enable deposit reserving
 		let deposit_owner = del.1.deposit.owner.clone();
-		let balance = CurrencyOf::<T>::free_balance(&deposit_owner.clone());
-		CurrencyOf::<T>::make_free_balance_be(&deposit_owner.clone(), balance + <T as Config>::Deposit::get());
+		let balance = CurrencyOf::<T>::balance(&deposit_owner);
+		CurrencyOf::<T>::set_balance(&deposit_owner, balance + <T as Config>::Deposit::get());
 
 		// reserve deposit and store
+
 		delegation::Pallet::<T>::store_delegation_under_parent(
 			del.0,
 			del.1.clone(),
 			parent_node_id,
 			parent_node.clone(),
-			deposit_owner,
+			deposit_owner.clone(),
 		)
 		.expect("Should not exceed max children");
 	}
@@ -181,9 +181,8 @@ pub(crate) mod runtime {
 	use scale_info::TypeInfo;
 	use sp_core::{ed25519, sr25519, Pair};
 	use sp_runtime::{
-		testing::Header,
 		traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
-		MultiSignature, MultiSigner,
+		BuildStorage, MultiSignature, MultiSigner,
 	};
 
 	use attestation::{mock::insert_attestation, AttestationDetailsOf, ClaimHashOf};
@@ -193,7 +192,6 @@ pub(crate) mod runtime {
 		signature::EqualVerify,
 	};
 
-	pub(crate) type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 	pub(crate) type Block = frame_system::mocking::MockBlock<Test>;
 
 	pub(crate) type Hash = sp_core::H256;
@@ -207,14 +205,10 @@ pub(crate) mod runtime {
 	pub(crate) const ATTESTATION_DEPOSIT: Balance = 10 * MILLI_UNIT;
 
 	frame_support::construct_runtime!(
-		pub enum Test where
-			Block = Block,
-			NodeBlock = Block,
-			UncheckedExtrinsic = UncheckedExtrinsic,
+		pub enum Test
 		{
-			System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
-			Balances: pallet_balances::{Pallet, Call, Storage, Event<T>},
-
+			System: frame_system,
+			Balances: pallet_balances,
 			Attestation: attestation,
 			Ctype: ctype,
 			Delegation: delegation,
@@ -230,13 +224,14 @@ pub(crate) mod runtime {
 	impl frame_system::Config for Test {
 		type RuntimeOrigin = RuntimeOrigin;
 		type RuntimeCall = RuntimeCall;
-		type Index = u64;
-		type BlockNumber = u64;
+		type Block = Block;
+		type Nonce = u64;
+
 		type Hash = Hash;
 		type Hashing = BlakeTwo256;
 		type AccountId = AccountId;
 		type Lookup = IdentityLookup<Self::AccountId>;
-		type Header = Header;
+
 		type RuntimeEvent = ();
 		type BlockHashCount = BlockHashCount;
 		type DbWeight = RocksDbWeight;
@@ -256,12 +251,18 @@ pub(crate) mod runtime {
 	}
 
 	parameter_types! {
-		pub const ExistentialDeposit: Balance = 0;
+		pub const ExistentialDeposit: Balance = 1;
 		pub const MaxLocks: u32 = 50;
 		pub const MaxReserves: u32 = 50;
+		pub const MaxHolds: u32 = 50;
+		pub const MaxFreezes: u32 = 50;
 	}
 
 	impl pallet_balances::Config for Test {
+		type FreezeIdentifier = RuntimeFreezeReason;
+		type RuntimeHoldReason = RuntimeHoldReason;
+		type MaxFreezes = MaxFreezes;
+		type MaxHolds = MaxHolds;
 		type Balance = Balance;
 		type DustRemoval = ();
 		type RuntimeEvent = ();
@@ -304,6 +305,7 @@ pub(crate) mod runtime {
 	impl attestation::Config for Test {
 		type EnsureOrigin = mock_origin::EnsureDoubleOrigin<AccountId, DelegatorIdOf<Self>>;
 		type OriginSuccess = mock_origin::DoubleOrigin<AccountId, DelegatorIdOf<Self>>;
+		type RuntimeHoldReason = RuntimeHoldReason;
 		type RuntimeEvent = ();
 		type WeightInfo = ();
 
@@ -313,6 +315,7 @@ pub(crate) mod runtime {
 		type AttesterId = SubjectId;
 		type AuthorizationId = DelegationNodeIdOf<Self>;
 		type AccessControl = DelegationAc<Self>;
+		type BalanceMigrationManager = ();
 	}
 
 	parameter_types! {
@@ -320,13 +323,14 @@ pub(crate) mod runtime {
 		pub const MaxParentChecks: u32 = 5;
 		pub const MaxRevocations: u32 = 5;
 		pub const MaxRemovals: u32 = 5;
-		#[derive(Clone, TypeInfo)]
+		#[derive(Clone, TypeInfo, PartialEq, Debug)]
 		pub const MaxChildren: u32 = 1000;
 		pub const DepositMock: Balance = DELEGATION_DEPOSIT;
 	}
 
 	impl Config for Test {
 		type Signature = (SubjectId, Vec<u8>);
+		type RuntimeHoldReason = RuntimeHoldReason;
 		type DelegationSignatureVerification = EqualVerify<Self::DelegationEntityId, Vec<u8>>;
 		type DelegationEntityId = SubjectId;
 		type DelegationNodeId = Hash;
@@ -341,6 +345,7 @@ pub(crate) mod runtime {
 		type Currency = Balances;
 		type Deposit = DepositMock;
 		type WeightInfo = ();
+		type BalanceMigrationManager = ();
 	}
 
 	pub(crate) const ACCOUNT_00: AccountId = AccountId::new([1u8; 32]);
@@ -489,7 +494,7 @@ pub(crate) mod runtime {
 		}
 
 		pub fn build(self) -> sp_io::TestExternalities {
-			let mut storage = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
+			let mut storage = frame_system::GenesisConfig::<Test>::default().build_storage().unwrap();
 			pallet_balances::GenesisConfig::<Test> {
 				balances: self.balances.clone(),
 			}
@@ -530,7 +535,7 @@ pub(crate) mod runtime {
 		pub fn build_with_keystore(self) -> sp_io::TestExternalities {
 			let mut ext = self.build();
 
-			let keystore = sp_keystore::testing::KeyStore::new();
+			let keystore = sp_keystore::testing::MemoryKeystore::new();
 			ext.register_extension(sp_keystore::KeystoreExt(sp_std::sync::Arc::new(keystore)));
 
 			ext

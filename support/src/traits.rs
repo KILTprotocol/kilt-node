@@ -16,10 +16,14 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::traits::{Currency, ReservableCurrency};
+use frame_support::traits::{
+	fungible::hold::Mutate,
+	tokens::fungible::{Inspect, MutateHold},
+};
 use sp_runtime::DispatchError;
+use sp_std::vec::Vec;
 
-use crate::{deposit::Deposit, free_deposit};
+use crate::deposit::{free_deposit, reserve_deposit, Deposit};
 
 /// The sources of a call struct.
 ///
@@ -77,8 +81,36 @@ pub trait GenerateBenchmarkOrigin<OuterOrigin, AccountId, SubjectId> {
 /// Trait that allows types to implement a worst case value for a type,
 /// only when running benchmarks.
 #[cfg(feature = "runtime-benchmarks")]
-pub trait GetWorstCase {
-	fn worst_case() -> Self;
+pub trait GetWorstCase<Context = ()> {
+	fn worst_case(context: Context) -> Self;
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+impl<T> GetWorstCase<T> for u32 {
+	fn worst_case(_context: T) -> Self {
+		u32::MAX
+	}
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+impl<T> GetWorstCase<T> for () {
+	fn worst_case(_context: T) -> Self {}
+}
+
+/// Trait that allows instanciating multiple instances of a type.
+#[cfg(feature = "runtime-benchmarks")]
+pub trait Instanciate {
+	fn new(instance: u32) -> Self;
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+impl Instanciate for sp_runtime::AccountId32 {
+	fn new(instance: u32) -> Self {
+		use sp_runtime::traits::Hash;
+		sp_runtime::AccountId32::from(<[u8; 32]>::from(sp_runtime::traits::BlakeTwo256::hash(
+			&instance.to_be_bytes(),
+		)))
+	}
 }
 
 /// Generic filter.
@@ -86,42 +118,105 @@ pub trait ItemFilter<Item> {
 	fn should_include(&self, credential: &Item) -> bool;
 }
 
-pub trait StorageDepositCollector<AccountId, Key> {
-	type Currency: ReservableCurrency<AccountId>;
+pub trait BalanceMigrationManager<AccountId, Balance> {
+	fn release_reserved_deposit(user: &AccountId, balance: &Balance);
+
+	fn exclude_key_from_migration(key: &[u8]);
+
+	fn is_key_migrated(key: &[u8]) -> bool;
+}
+
+impl<AccountId, Balance> BalanceMigrationManager<AccountId, Balance> for () {
+	fn exclude_key_from_migration(_key: &[u8]) {}
+
+	fn is_key_migrated(_key: &[u8]) -> bool {
+		true
+	}
+
+	fn release_reserved_deposit(_user: &AccountId, _balance: &Balance) {}
+}
+
+pub trait StorageDepositCollector<AccountId, Key, RuntimeHoldReason> {
+	type Currency: MutateHold<AccountId, Reason = RuntimeHoldReason>;
+	// TODO: This could also be replaced with a `Borrow<RuntimeHoldReason>` or an
+	// `AsRef<RuntimeHoldReason>`, but not sure what trait the runtime composite
+	// enum implements.
+	type Reason: Into<RuntimeHoldReason> + Clone;
+
+	/// Returns the hold reason for deposits taken by the deposit collector;
+	fn reason() -> Self::Reason;
 
 	/// Returns the deposit of the storage entry that is stored behind the key.
-	fn deposit(
-		key: &Key,
-	) -> Result<Deposit<AccountId, <Self::Currency as Currency<AccountId>>::Balance>, DispatchError>;
+	fn deposit(key: &Key)
+		-> Result<Deposit<AccountId, <Self::Currency as Inspect<AccountId>>::Balance>, DispatchError>;
 
 	/// Returns the deposit amount that should be reserved for the storage entry
 	/// behind the key.
 	///
 	/// This value can differ from the actual deposit that is reserved at the
 	/// time, since the deposit can be changed.
-	fn deposit_amount(key: &Key) -> <Self::Currency as Currency<AccountId>>::Balance;
+	fn deposit_amount(key: &Key) -> <Self::Currency as Inspect<AccountId>>::Balance;
+
+	/// Get the storage key used to fetch a value corresponding to a specific
+	/// key.
+	fn get_hashed_key(key: &Key) -> Result<Vec<u8>, DispatchError>;
 
 	/// Store the new deposit information in the storage entry behind the key.
 	fn store_deposit(
 		key: &Key,
-		deposit: Deposit<AccountId, <Self::Currency as Currency<AccountId>>::Balance>,
+		deposit: Deposit<AccountId, <Self::Currency as Inspect<AccountId>>::Balance>,
 	) -> Result<(), DispatchError>;
+
+	/// Release the deposit.
+	fn free_deposit(
+		deposit: Deposit<AccountId, <Self::Currency as Inspect<AccountId>>::Balance>,
+	) -> Result<<Self::Currency as Inspect<AccountId>>::Balance, DispatchError> {
+		free_deposit::<AccountId, Self::Currency>(&deposit, &Self::reason().into())
+	}
+
+	/// Creates a new deposit for user.
+	///
+	/// # Errors
+	/// Can fail if the user has not enough balance.
+	fn create_deposit(
+		who: AccountId,
+		amount: <Self::Currency as Inspect<AccountId>>::Balance,
+	) -> Result<Deposit<AccountId, <Self::Currency as Inspect<AccountId>>::Balance>, DispatchError> {
+		let reason = Self::reason();
+		reserve_deposit::<AccountId, Self::Currency>(who, amount, &reason.into())
+	}
 
 	/// Change the deposit owner.
 	///
 	/// The deposit balance of the current owner will be freed, while the
 	/// deposit balance of the new owner will get reserved. The deposit amount
 	/// will not change even if the required byte and item fees were updated.
-	fn change_deposit_owner(key: &Key, new_owner: AccountId) -> Result<(), DispatchError> {
+	fn change_deposit_owner<DepositBalanceMigrationManager>(
+		key: &Key,
+		new_owner: AccountId,
+	) -> Result<(), DispatchError>
+	where
+		DepositBalanceMigrationManager:
+			BalanceMigrationManager<AccountId, <Self::Currency as Inspect<AccountId>>::Balance>,
+	{
+		let hashed_key = Self::get_hashed_key(key)?;
+		let is_key_migrated = DepositBalanceMigrationManager::is_key_migrated(&hashed_key);
 		let deposit = Self::deposit(key)?;
+		let reason = Self::reason();
 
-		free_deposit::<AccountId, Self::Currency>(&deposit);
+		if is_key_migrated {
+			free_deposit::<AccountId, Self::Currency>(&deposit, &reason.clone().into())?;
+		} else {
+			DepositBalanceMigrationManager::release_reserved_deposit(&deposit.owner, &deposit.amount);
+			DepositBalanceMigrationManager::exclude_key_from_migration(&hashed_key);
+		}
 
 		let deposit = Deposit {
 			owner: new_owner,
 			..deposit
 		};
-		Self::Currency::reserve(&deposit.owner, deposit.amount)?;
+
+		Self::Currency::hold(&reason.into(), &deposit.owner, deposit.amount)?;
 
 		Self::store_deposit(key, deposit)?;
 
@@ -134,16 +229,28 @@ pub trait StorageDepositCollector<AccountId, Key> {
 	/// updates the deposit amount. It either frees parts of the reserved
 	/// balance in case the deposit was lowered or reserves more balance when
 	/// the deposit was raised.
-	fn update_deposit(key: &Key) -> Result<(), DispatchError> {
+	fn update_deposit<DepositBalanceMigrationManager>(key: &Key) -> Result<(), DispatchError>
+	where
+		DepositBalanceMigrationManager:
+			BalanceMigrationManager<AccountId, <Self::Currency as Inspect<AccountId>>::Balance>,
+	{
 		let deposit = Self::deposit(key)?;
+		let reason = Self::reason();
+		let hashed_key = Self::get_hashed_key(key)?;
+		let is_key_migrated = DepositBalanceMigrationManager::is_key_migrated(&hashed_key);
 
-		free_deposit::<AccountId, Self::Currency>(&deposit);
+		if is_key_migrated {
+			free_deposit::<AccountId, Self::Currency>(&deposit, &reason.clone().into())?;
+		} else {
+			DepositBalanceMigrationManager::release_reserved_deposit(&deposit.owner, &deposit.amount);
+			DepositBalanceMigrationManager::exclude_key_from_migration(&hashed_key);
+		}
 
 		let deposit = Deposit {
 			amount: Self::deposit_amount(key),
 			..deposit
 		};
-		Self::Currency::reserve(&deposit.owner, deposit.amount)?;
+		Self::Currency::hold(&reason.into(), &deposit.owner, deposit.amount)?;
 
 		Self::store_deposit(key, deposit)?;
 
