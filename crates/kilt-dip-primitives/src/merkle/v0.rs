@@ -808,20 +808,21 @@ impl<
 	where
 		DidMerkleHasher: Hash<Output = Commitment>,
 	{
-		let mut revealed_leaves_iter = self.dip_proof.revealed.iter();
-		// If more than `max_revealed_leaves_count` are revealed, return an error.
 		ensure!(
-			revealed_leaves_iter.by_ref().count() <= MAX_REVEALED_LEAVES_COUNT.saturated_into(),
+			self.dip_proof.revealed.len() <= MAX_REVEALED_LEAVES_COUNT.saturated_into(),
 			Error::TooManyLeavesRevealed
 		);
 
-		let proof_leaves_key_value_pairs: Vec<(Vec<u8>, Option<Vec<u8>>)> = revealed_leaves_iter
+		let proof_leaves_key_value_pairs = self
+			.dip_proof
+			.revealed
+			.iter()
 			.map(|revealed_leaf| (revealed_leaf.encoded_key(), Some(revealed_leaf.encoded_value())))
-			.collect();
+			.collect::<Vec<_>>();
 		let proof_verification_result = verify_trie_proof::<LayoutV1<DidMerkleHasher>, _, _, _>(
 			&self.dip_commitment,
 			self.dip_proof.blinded.as_slice(),
-			&proof_leaves_key_value_pairs,
+			proof_leaves_key_value_pairs.as_slice(),
 		);
 
 		cfg_if::cfg_if! {
