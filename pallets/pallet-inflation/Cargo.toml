@@ -17,6 +17,7 @@ targets = ["x86_64-unknown-linux-gnu"]
 pallet-balances = {workspace = true, features = ["std"]}
 sp-core = {workspace = true, features = ["std"]}
 sp-io = {workspace = true, features = ["std"]}
+sp-runtime = {workspace = true, features = ["std"]}
 
 [dependencies]
 # External dependencies
@@ -29,7 +30,7 @@ frame-benchmarking = {workspace = true, optional = true}
 # Substrate dependencies
 frame-support.workspace = true
 frame-system.workspace = true
-sp-runtime.workspace = true
+sp-runtime = {workspace = true, optional = true}
 sp-std.workspace = true
 
 [features]
@@ -38,7 +39,7 @@ runtime-benchmarks = [
   "frame-benchmarking",
   "frame-support/runtime-benchmarks",
   "frame-system/runtime-benchmarks",
-  "sp-runtime/runtime-benchmarks",
+  "sp-runtime?/runtime-benchmarks",
 ]
 std = [
   "frame-benchmarking?/std",
@@ -46,7 +47,7 @@ std = [
   "frame-system/std",
   "parity-scale-codec/std",
   "scale-info/std",
-  "sp-runtime/std",
+  "sp-runtime?/std",
   "sp-std/std",
 ]
 try-runtime = [
