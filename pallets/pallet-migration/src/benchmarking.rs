@@ -71,7 +71,7 @@ benchmarks! {
 		<T as frame_system::Config>::AccountId: From<AccountId32>,
 		<T as public_credentials::Config>::EnsureOrigin: GenerateBenchmarkOrigin<<T as frame_system::Config>::RuntimeOrigin, T::AccountId, <T as public_credentials::Config>::AttesterId>,
 		BlockNumberFor<T>: From<u64>,
-		<T as public_credentials:: Config>::SubjectId: GetWorstCase + sp_std::fmt::Debug + Into<Vec<u8>> ,
+		<T as public_credentials:: Config>::SubjectId: GetWorstCase<(), Output = <T as public_credentials:: Config>::SubjectId> + sp_std::fmt::Debug + Into<Vec<u8>> ,
 		T: ctype::Config<CtypeCreatorId = <T as attestation::Config>::AttesterId>,
 		<T as delegation::Config>::DelegationNodeId: From<T::Hash>,
 		<T as delegation::Config>::DelegationEntityId: From<sr25519::Public>,

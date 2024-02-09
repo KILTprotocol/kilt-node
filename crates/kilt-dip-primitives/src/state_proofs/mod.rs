@@ -82,7 +82,6 @@ where
 	let storage_proof = StorageProof::new(state_proof);
 	let mut revealed_leaves = read_proof_check::<MerkleHasher, _>(state_root, storage_proof, [storage_key].iter())
 		.map_err(|_| MerkleProofError::InvalidProof)?;
-	log::trace!(target: "dip-consumer::verify_storage_value_proof_by_trimming_result", "Revealed leaves from proof: {:#?}", revealed_leaves);
 
 	debug_assert!(
 		revealed_leaves.len() == 1usize,

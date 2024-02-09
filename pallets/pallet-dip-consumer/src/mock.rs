@@ -79,6 +79,8 @@ impl crate::Config for TestRuntime {
 	type DispatchOriginCheck = EnsureSigned<Self::Identifier>;
 	type DipCallOriginFilter = CallFilter;
 	type WeightInfo = ();
+	#[cfg(feature = "runtime-benchmarks")]
+	type ProofWorstCase = ();
 }
 
 #[derive(Default)]

@@ -31,212 +31,230 @@ use sp_core::{crypto::Ss58Codec, ed25519, sr25519, ConstU32, H256};
 use sp_runtime::{generic::Header, traits::BlakeTwo256, AccountId32, BoundedVec};
 
 // Pre-generated fixture for:
-// * DID subject = `5F7Q4Tv8A2Wob14H6V7eGqhhcFEXzjZXSDptYrhxdxATe5qV`
+// * DID subject = `5GRFonySFTkU7pNbdG48ZFLpFdJVfxPMFtd5DqpNohEWshMB`
 // * Provider para ID = `2_000`
 // * Call = `system.remark("Hello, world!")`
 // * Relay state root =
-//   `0x4a8c971e646cee7c5bc37b1568acfdc5efd4c7ee5dd449946eddc43b86ad44e3`
+//   `0xd9abcc76ff142acfb4bd44cc99fabd1f121b15df699b1c91bc1cf6e35afd48fe`
+// * Consumer genesis hash =
+//   `0x9776c2a6921124e360d8d444113d596077a7e9eab629458f8af8a92c54287577`
+// * Submitter account = `5HQuQWj2YHu9jNxQSBnn4SYWdnB6WenNP4UDAC5pJktHj7gK`
 pub(crate) fn test_parachain_proof(
 ) -> ParachainDipDidProof<u32, H256, AccountId32, u64, BoundedVec<u8, ConstU32<32>>, LinkableAccountId, u64> {
 	ParachainDipDidProof {
 		provider_head_proof: ProviderHeadStateProof {
 			relay_block_number: 133,
 			proof: vec![
-				hex!("3703f5a4efb16ffa83d007000093d85e0dad808ee5f36da4db4b3121b2a86ef1f8a5a733f115aaf31ae9a9af70").to_vec(),
-				hex!("7d0382df17ef0c3f7c9655c0a27b80381bfec6b4c5f9d2a5ec6c2921abb537d996327c350abbed7b44e2ee1c4346a59527379271d362c111019fc54e7dbbd00ded18b53ee8d614c30e4ec7a2d5ff38b594ce53d713e13f5c524a193dd0754e74e8cc980c0661757261206cd27a0800000000045250535288ddaee22afbac7e7203eb2fa2ea527c1bd4a949876726edb58f2c9303c15f3fe50d0205617572610101b89407654c769f5841d62a07c7d64beaff531cf4b257bf66175b3181cd6d7653c1562f734b6772fccb9c2e1de9846ddad1051212a8f6e4712f538993d668db87").to_vec(),
-				hex!("8004648031b60c9237ed343094831987f2bec10b211621255ad0b440cf161fa820d30db480f6f6801e4b41e2e6d8ec194dba122bfb9eb33feb2545ef5144cea79551f7cc52804decd4c93c57d7947b88e0d4f24c20a9972752e5823006b0b30cc5767b46028c80aab0134e3fd3141b21dc8bf5742be1bf3d02b897fd9d972635698bf628a79728").to_vec(),
-				hex!("80ffff80992aa1d896c4dbe65d1129ef0330779cf1c9f048d3ca12ab5576417c4386df8a80c81755b3ea602b9fad21a5baa5b7e4ca0fe40cd51f1eeec330006d8c937426d78055849a7cbcb04b9f84b7de948a20c0524d33a4811b83fe1d3070279b54abe9a8805d6d97510801ae466ce026f778864148268b4a9aebd01fd7dce5e4cc0967efa48043615615d8cc32d5c71c0a68a0669134f9f9a7506e052f2f5b39e8eccc5f29e7809d5725dd1de5192503a7153fbc0329782b87a28032983160e5b56d3f67d4b7a5802c01fe7da5c29dfff1a668f85f54a5cb721ac5dd805dafcfce180cd967a09eeb805b682132c52908705526057f73ab7fccab4af6d72a9805634dd8d3cc53f130d180c2d44d371e5fc1f50227d7491ad65ad049630361cefb4ab1844831237609f08380532fb6cf30d0ecda87f1af18123a8d80efc9749940066fb2e99d9afa930d925a803190111ca643947166119ace77ccee2c6310d653e77c8b18e85838519612a6dc80400f26558d8e918f6fd14ac5b07cf998aa0a693cdb5bf01778ae8ff2a703379c8008df63d899d47defd0619ed1f16e2ea7d25e25a26e8eeefc582f4ed00f37318b808d76109701165927974dd013a53869bfb3f5f948558a2aa7d7a7579040bd25a8806bfdbbf0e0bedcb993b65c9cea1e929a56d78a3b7bc53d1b7ca6fc488e2295ee8039e62a01279cafb588bacecc9e810508588cdf5a4bf654b8e8089d00d8ebde22").to_vec(),
-				hex!("9e710b30bd2eab0352ddcc26417aa1945f43803b3441f15daa8a53147d69c48eac75356fab581febbb8030520b248c5942a14880759320262d01a41b11b13b2198b3fc53ef6c0eeb71df226ac6c44fced8d9e059802e2e0716043a02f2f29fdd52922704af194b98545ce5ca832255e8ec41bcdb64800785fa7e4a70b078743c377104d989829614b9298a806fec65095c96460c02bd505f0e7b9012096b41c4eb3aaf947f6ea4290800004c5f03c716fb8fff3de61a883bb76adb34a204008045eb3b829726ba0c40216213fe4552c294095cd1f060d9828ef4b9defd9101de4c5f0f4993f016e2d2f8e5f43be7bb259486040080cf12f7bfee9584ae9324a8773f19f6bc6c16b881d05ffdc19d00f345e82a689e").to_vec(),
-				hex!("9f0b3c252fcb29d88eff4f3de5de4476c35000800cbdde632eeb04dbf9b1628fb1b4fa8bcf40f321cdf41b6547563f5012e277ea80f14a31f821270aa703562af1584d60aba2c6d482a8f56793933ce493152f00ef").to_vec(),
-				hex!("9e710b30bd2eab0352ddcc26417aa1945f43803b3441f15daa8a53147d69c48eac75356fab581febbb8030520b248c5942a14880759320262d01a41b11b13b2198b3fc53ef6c0eeb71df226ac6c44fced8d9e059802e2e0716043a02f2f29fdd52922704af194b98545ce5ca832255e8ec41bcdb64800785fa7e4a70b078743c377104d989829614b9298a806fec65095c96460c02bd505f0e7b9012096b41c4eb3aaf947f6ea4290800004c5f03c716fb8fff3de61a883bb76adb34a204008045eb3b829726ba0c40216213fe4552c294095cd1f060d9828ef4b9defd9101de4c5f0f4993f016e2d2f8e5f43be7bb259486040080cf12f7bfee9584ae9324a8773f19f6bc6c16b881d05ffdc19d00f345e82a689e").to_vec(),
-				hex!("9e710b30bd2eab0352ddcc26417aa1945f43803b3441f15daa8a53147d69c48eac75356fab581febbb8030520b248c5942a14880759320262d01a41b11b13b2198b3fc53ef6c0eeb71df226ac6c44fced8d9e059802e2e0716043a02f2f29fdd52922704af194b98545ce5ca832255e8ec41bcdb64800785fa7e4a70b078743c377104d989829614b9298a806fec65095c96460c02bd505f0e7b9012096b41c4eb3aaf947f6ea4290800004c5f03c716fb8fff3de61a883bb76adb34a204008045eb3b829726ba0c40216213fe4552c294095cd1f060d9828ef4b9defd9101de4c5f0f4993f016e2d2f8e5f43be7bb259486040080cf12f7bfee9584ae9324a8773f19f6bc6c16b881d05ffdc19d00f345e82a689e").to_vec(),
-				hex!("9e710b30bd2eab0352ddcc26417aa1945f43803b3441f15daa8a53147d69c48eac75356fab581febbb8030520b248c5942a14880759320262d01a41b11b13b2198b3fc53ef6c0eeb71df226ac6c44fced8d9e059802e2e0716043a02f2f29fdd52922704af194b98545ce5ca832255e8ec41bcdb64800785fa7e4a70b078743c377104d989829614b9298a806fec65095c96460c02bd505f0e7b9012096b41c4eb3aaf947f6ea4290800004c5f03c716fb8fff3de61a883bb76adb34a204008045eb3b829726ba0c40216213fe4552c294095cd1f060d9828ef4b9defd9101de4c5f0f4993f016e2d2f8e5f43be7bb259486040080cf12f7bfee9584ae9324a8773f19f6bc6c16b881d05ffdc19d00f345e82a689e").to_vec(),
+				hex!("3703f5a4efb16ffa83d0070000b51fa6ac4aec5888d5a7651de99c69e8987c508c53209dbb33bdf3f7be1106be").to_vec(),
+				hex!("7d037a8ecd5c1d9617d6414ebe12c8649ee2439382ce07c8c684d325b5fbebbfc02a70350f54b9ee737200d6438f75bb06727211c703b6896df29ba3282e29831cd5cbcdc1d866ce99a8ef8429bd54455dc747855c3b18892c15112fffce0eef94e8e10c066175726120f2257b0800000000045250535288aa1110c539e09aa145befd11e66635086372f219346346c6cd1a5fe60cada4449d0205617572610101c0a8361b59bd92bef5f0ea940450e49fb2422fe8f8c34bb3cc0e6d111894e42a3980b3b9ffb1de6abcd7ae4a8b0c5ed63bd549deceb917bf11d93a1050c75a82").to_vec(),
+				hex!("8004648031b60c9237ed343094831987f2bec10b211621255ad0b440cf161fa820d30db480f6f6801e4b41e2e6d8ec194dba122bfb9eb33feb2545ef5144cea79551f7cc52801187a2c514af5fa677badbf02127d966ae26d909b38ae7c9459d9e807c18358c80b2b9f1cfbb40aca8faba1ac21adaf0724248ff6a212a11e9e336b8cb569574b1").to_vec(),
+				hex!("80ffff80e89fa0ab954678f9793f6ecc78b508c11dd51a747716c850eb4c3007ed8e9d718018b40545390cadf65df6925d9b606ee7a96bd9c0276d6740a1f82e890348d821809f691b831c41bce1ce43b19888655d1c4484e86c8e93af0a7062c6406a39dea180c1ed537d90117b0fd7ece97455cb1e1a340bd627b9e3a3688a3e087b7b99138480ed071b9268ef5729178f35fb1187840de04a839ef132bb52b6ad679eff40bcb18096880c322e10e912229d47be232e0e959782d22c632413d44b7fa40f0a86689980c6ba3c6f9640dc8392b4cab48947087e243b9cf35b01c030659cfde882791922805b682132c52908705526057f73ab7fccab4af6d72a9805634dd8d3cc53f130d180c2d44d371e5fc1f50227d7491ad65ad049630361cefb4ab1844831237609f083805dbbd7345c705dc69aeeea3753cae5fc602d77270eaf912335ab6aef8e586cb780219ef48ff0042bb3bca7870d722f46e3c6ce61aa4dedbb8453fe507d2a87891d807e335564da75bd7790c854fd3a03088feba837c136539ba9432e848e48670494807ce7eb9130cc38c3b19e0336ce70178f60fdb8e9cdbca7e90286f8810e781dce80ed1ddd4ad533bcf9a0e20b7a34da2a0363b56f5c7d5a73661a7847886b0b740d806bfdbbf0e0bedcb993b65c9cea1e929a56d78a3b7bc53d1b7ca6fc488e2295ee801865df2e2c93dd0c04ee5ac7a78cfb0a60e604bbde616d48ea4eb29833c2b8f9").to_vec(),
+				hex!("9e710b30bd2eab0352ddcc26417aa1945f43803b3441f15daa8a53147d69c48eac75356fab581febbb8030520b248c5942a14880a7f64483d6f6ad9988a5f70d7f800442f8f0c67f3464d605f652ecf16e50afcd802e2e0716043a02f2f29fdd52922704af194b98545ce5ca832255e8ec41bcdb6480324c78e69e086156698b29bd28dcc399bf27680664083596530c8fe3d8f6376b505f0e7b9012096b41c4eb3aaf947f6ea4290800004c5f03c716fb8fff3de61a883bb76adb34a20400808a3fa1efcb88075c83f538ff451258b189c1f035f25b7110c2ec1c83172649334c5f0f4993f016e2d2f8e5f43be7bb25948604008068d9a540d50271d637cc8ef5c1e7823740ff69c98397c07bfb285c4f6ea1d4e8").to_vec(),
+				hex!("9f0b3c252fcb29d88eff4f3de5de4476c350008017df15222a818ac59c79fcd326bf4171d990673367e8e2dd3a535ae30c96a21e8041f5957e9832dadd679619862823fbb20923948873485de7a4d384d35d8565c7").to_vec(),
 			].into_iter().into(),
 		},
 		dip_commitment_proof: DipCommitmentStateProof(vec![
-			hex!("7f440bf19e4ed2927982e234d989e812f3f34654cc5e40e6060086c2871ed4042fc2a4c1399619c4ca17b7c9585768d90b77376045a39d9a702f01a12dfa1fa4ab9a00008030abd7efa72c7cbdb7967be6423b4ac91cf2d2e16b09a92865d21942d7104a81").to_vec(),
-			hex!("800c8080da28793d083b197f8d92fc3e77f5064436f1d8eea0fbea56ddb936aba6544500809a8c60b0711d522d3b2a45eaf025e3cde78d1e58f7f790df1ab0b5d0457abb5f8079390a5c412f5df194b86134c8e9b467fda78227f2c86bc52a8edaebc613d2b1").to_vec(),
-			hex!("80ffff80353e4d164b13c87910044f1b4e76277e404a0ab46a7cd6c33a65aaadc2375ba88007b1390da34b4dce1328430fd924a6e193517a8148dd70a912c0dc2f7f8d2d4c803b71030515390857c36a33ae72e31365f66aa173d3fce3febd495234b7d0c02e80a303de001167a8ee485de6e2ca02dd28fe7ca0f93f1a17e407d05666766fce4080e97bf24c29677b139d5e68ca3d63ee2ad354badaf8f04b9736f58658f2894ac780687d05beac9e00b21f9703b6de6c09717b56f39aa8a3758f5d9b9651ff56a43c8014e3e0704c9a07636322335a3c663ec9fd9df8b7bf71d6e8183fefecfbfe0e50800f85b4ce0ddce489b4d71597ea06b5367d373381c17227dace2d957ef9d0d98880a5a428d4eeb23d9ef89919c96f6a9062f9733f74e49344122bd16fa928d51123805a7b3e628e3ae6c62e450ad1a3263d600f8950e27f060e2607ea8197cabfa22980debf2fbad7b225ccb8baa0290925169230acda383eb1dce6790270623fdd5e08802e1fb6e72d49c002a378f3a21fbc5e77b4da4defed0cccc7a82e14ca9462cdfc80143fa131937e1df9bf669d09c8f230596638cca865ffefdd94f7ec14098adf9780f395b7003a2eb1e39c624b9a707a6cb58c3cb6997932fc80662ae19c785a91f580b5e5172489541dfc581e116554b63de15fddf38ffed2b109394749c20b8f6ce38067518d32b11790b8ee713aa7181dc4d3e1a17bcb44cd3ed082c9a069a21f8044").to_vec(),
-			hex!("9e75edf06348b4330d1e88564111cb3d3000505f0e7b9012096b41c4eb3aaf947f6ea42908000080b2203fb94fc21b7a3e319f23c6d18cfa9c1eaeba945166035b6c85f97381dec7").to_vec(),
+			hex!("7f2400244c8b3698a0afc09d6588e8de09af934b06737ea1784caa3c69c2e7f0f30448a3daad2830627301a12dfa1fa4ab9a00008052972e60958a47cfb74c1c3c8b9de35d69bbb0583a74f6b13ff12dc52df45b27").to_vec(),
+			hex!("800c8080da28793d083b197f8d92fc3e77f5064436f1d8eea0fbea56ddb936aba6544500803fffbd930653861eb1eea7be762a5be6211cad9f366994a7bcb6c6e7f9bafc1b806715ebb6fea7a99de30d1e97f3baa0ace8c1023f6f89eeeb84764e3def519674").to_vec(),
+			hex!("80ffff80353e4d164b13c87910044f1b4e76277e404a0ab46a7cd6c33a65aaadc2375ba88007b1390da34b4dce1328430fd924a6e193517a8148dd70a912c0dc2f7f8d2d4c80ef04a3d3232df9064e2e1533591f55b8958129f4237f6b08301add3c882c5dcd80a1a190ebe1f962278b83152848f385b6cf334755c2bb5a85ed786827d962bee2807e3e49dd79670d895cffa69ddff9b4288cb359b10580130dc2b33bd60a8d18d580b83404aef4d469d23f8486b14cf20c6b5836e64938aa71416aa4a7699fecbfea8014e3e0704c9a07636322335a3c663ec9fd9df8b7bf71d6e8183fefecfbfe0e508006747e15a9ef418580b513a49e6e34a34817b510aaa7a5b06d479110a9f555ea80c58caf2059aa913d0d96e92baf6bbd5d1fc749d5d74fdfdf6705752264f884fa8022aa27a91d5c76901df3b14d21903e700f049a30a7c007e5deef99673fe9994b80d2a22db0f118e6eb30d4be956c44427cc4c6b7b75ae12b43a71dde3365c7ec34802cd11c6aa6b488df14310dabf7f76d54b695dd47d2602c47a82b9f723961bfc880c2881f1acff032edb4b7bf0d1608edd1808092944b255fea7eaa44343ee4f44480f395b7003a2eb1e39c624b9a707a6cb58c3cb6997932fc80662ae19c785a91f580b5e5172489541dfc581e116554b63de15fddf38ffed2b109394749c20b8f6ce380a84d800e9df2587c3bc0da5d4eae41f204b9a8ba74abdde8aba5c24874a365e1").to_vec(),
+			hex!("9e75edf06348b4330d1e88564111cb3d3000505f0e7b9012096b41c4eb3aaf947f6ea4290800008090d625a34d8b3e81c50c42bedd620de00c65a136d924e73b4ee04681dd99c5e3").to_vec(),
+			hex!("9f0bf19e4ed2927982e234d989e812f3f328008019b4e6d1acb76af7407575df6e2fef3d0dde23d810972faf7eda5c0f0271ec1c80e134dcac81b7b98a2a8f96ac17874dc271cd7d647db7865cca3b9f7f0e20afd9").to_vec(),
 		].into_iter().into()),
 		dip_proof: DidMerkleProof {
 			blinded: vec![
-				hex!("80ab93000000000000000000").to_vec(),
-				hex!("8012000000").to_vec(),
-				hex!("80294700000000000000").to_vec(),
-				hex!("7f000753e95eac51474dc20653d86195cd11657b3af8f9af52d03f6b42a6cbe78efa00").to_vec(),
-				hex!("7f0006dfc8d778b1b15835d8bc7953b1d782b38aee53ef7785340ec451a1dcc0cdc100").to_vec(),
-				hex!("7f000f97e76eefbd998e4886319066e29d7646f7de9b812cef5654536b6a39e257a200").to_vec(),
-				hex!("7f0008dd8180874f51ca369e5a970fc2d09789af161a8ae187df94ff1658884441a400").to_vec(),
-				hex!("7f0008812f5ef930d26a12e8ebcef5b5ce6f5458af9028694d49902172d969e8373800").to_vec(),
-				hex!("7f00036777a228a2e0651764c7de0be063f9a1cc0281aedececc12cfdc69e048b7cf00").to_vec(),
-				hex!("80430100000000").to_vec(),
-				hex!("7ee591ff4d23b8b5cc3655e59aa140c600565c1c21f27960cfb980a4c74b6b0300").to_vec(),
-				hex!("7e54fe906fd0c0227be2967528a972215ceac09ede6167421a761507cea3f1b700").to_vec(),
-				hex!("7e0b14479bb4cee4f526ae31541bd3dbc79f541d01cf0a9691c1dbb1bfeb42d400").to_vec(),
-				hex!("7e08d3d3fe19d0fd336cff473acbc2cf93074c9e163a5d04a9ea33a918e8910500").to_vec(),
-				hex!("7f016171527563d8e98a5222de4a9b4141b088da96377e8efc3388c0538a36fe680000").to_vec(),
-				hex!("7f040b4f12a6cc3a3d8c3d2d508aadbfa6b71edbb9ac7ec3da2f0448ca8035f95c22010100").to_vec(),
-				hex!("7f02023486d437a096fd79ff975506e5829beace1e88d0348d6e25a6e465a8b89ab60000").to_vec(),
-				hex!("6f0c623064383332663863396231343561343535333765383600").to_vec(),
-				hex!("8080200000").to_vec(),
-				hex!("7f03d0160b28ad4d2f5db38e2192867914fec04eff50dd860bc46df10b36bf3b7b010300").to_vec(),
-				hex!("7f018c9f4a66a0e93717dddcadba70889c4424f338f589d09714f239043591440d0000").to_vec(),
-				hex!("810c00110000").to_vec(),
-				hex!("7f0006c882487160789d32d32e697b2d8e520f1563cb1e4164225753aa28a5ab2f0000").to_vec(),
-				hex!("7f0001078ba56113813991934ae0ffabbd5cb562cb6a2fc699f9bb8b4aabb8f6160000").to_vec(),
-				hex!("8001040000").to_vec(),
-				hex!("7f01fd143d81ddef983d62ce1aa1639168489ff5da0f6702efd258da6c55b0777e0000").to_vec(),
-				hex!("7f01eeb6b118090da14b14065df0bfa29a394e3c57574c2cf72fec38027953f2ca0000").to_vec(),
-				hex!("800181000000").to_vec(),
-				hex!("7f01339da5d721ecf5a599e588a74363db45688e2356ad15bf80f226017bd102480000").to_vec(),
-				hex!("7f03585a08f8de24ca2fe9ac237846bfa50ae0be99bc8d1dcd1bbf2d5dcb5469de010000").to_vec(),
-				hex!("7f01dcf6e5989bdee27413af55c187c96387dfd2e4f3cde973b250acfac6af6cad0000").to_vec(),
-				hex!("7f020da35a39cce44fbfb012b0f6a0a1dfa0b866b0ed8a2f7efb3c7bc944b8b494930000").to_vec(),
+				hex!("806bcb00000000000000000000").to_vec(),
+				hex!("8002040000").to_vec(),
+				hex!("807365000000000000000000").to_vec(),
+				hex!("7f000edf371f2d1333fba36905e56733d1e7d9f5ac73eb12257f2b9e8b7df5088f0200").to_vec(),
+				hex!("7f00045e18ea7dd30548dfe9cbb26d07a3dd1f6faea96bb22387a8d28dddcab71beb00").to_vec(),
+				hex!("7f0001d65495de3c1b11fe30c19213685b496c37a9df8a526fcfde19eb80ed4ad70300").to_vec(),
+				hex!("7f000f95383fa0bd7e353aff4e15b7b6c9a0cdb20d07c2fb00fe92add21cfdc55f4c00").to_vec(),
+				hex!("8000140000").to_vec(),
+				hex!("7ea7f6ac2a8c0161b6ae25369d39daefde60f76db6c9f82c64f4eb5b3a9c330500").to_vec(),
+				hex!("7ee629184f476a03d41408d498638a5b80bca30185e04d0bed2d9a8a918e962000").to_vec(),
+				hex!("7f0002cdec26932b726664108a9c7692a3518954643248b69663e25c4a9588c880a600").to_vec(),
+				hex!("7f000c1712527b9c708576151bca932dee7448755179d71d0083679b353783022f3500").to_vec(),
+				hex!("7f000ba03a30eb82f99dc4f3c5e2a31cec7e123c17c9edd76a374e1606098ab44af800").to_vec(),
+				hex!("7f000408ba21b9ab08cdd79903073ceb8eaab0e270e6926a6055da6396431628e65500").to_vec(),
+				hex!("7f0119831adb0c05a7f02340336e05237a6123eb5a801e700b05ec96e414c1d4310000").to_vec(),
+				hex!("8080800000").to_vec(),
+				hex!("7f015b6b8922a34836cc6133b1382342934cb9f66939dbcc8003b24c520112efb40000").to_vec(),
+				hex!("7f033754f2a5612de4843170fd452e274002cdff2dfc103c348d829e0aa25a2e1f010000").to_vec(),
+				hex!("7f02051e3e18823728847b6bdeb7b3f852e33153db8774a156ccd642c2da8cb1694a0000").to_vec(),
+				hex!("6f0c303463393337386438373637653631363436626666323800").to_vec(),
+				hex!("8080010000").to_vec(),
+				hex!("7f01418bc51fbfa1b1b7d1dda00a85e31b5b32b7f90a168155ae95b2bd03dfc3270000").to_vec(),
+				hex!("8002020000").to_vec(),
+				hex!("7f00023c7ea51367ac69cf4ec1c65d3d173a869b1eb4b1909ca48785ab5bfb9dff0000").to_vec(),
+				hex!("7f000eacf997d73c52a8fc1822c043bf8e9277e1c5214c1c8fcfb90241b995fc120000").to_vec(),
+				hex!("7f020667d7743ecf128174c23fa8f9abd5ff2091ccfd89ae5f63b863d14f98a150070000").to_vec(),
+				hex!("8004800000").to_vec(),
+				hex!("7f033e1923acaee602c41d48354b82af0e7953b06f4f0fac7a306f0320e9ec2618010100").to_vec(),
+				hex!("7f019ecaba66c7fbd269060e32deeedce9da662b9b079149dde9291a78841c2c820000").to_vec(),
+				hex!("7f040437840b0bdbf4b53b930ee023fd2f9b3cbd52665034ab5297ff71aee7d3a274010300").to_vec(),
+				hex!("7f020d227568bd1c86d3d227d7c510b76025a624cbcb2eaad82f0f6707d1164df73d0000").to_vec(),
+				hex!("7f020a552bf8d89287ecfda14cb43eb6ec112c1d161b96a3921d6b3f0923d3c30ef10000").to_vec(),
 			].into_iter().into(),
 			revealed: vec![
 				RevealedDidKey {
-					id: hex!("c8585a08f8de24ca2fe9ac237846bfa50ae0be99bc8d1dcd1bbf2d5dcb5469de").into(),
+					id: hex!("1f3754f2a5612de4843170fd452e274002cdff2dfc103c348d829e0aa25a2e1f").into(),
 					relationship: DidVerificationKeyRelationship::Authentication.into(),
 					details: DidPublicKeyDetails {
-						key: DidPublicKey::PublicVerificationKey(DidVerificationKey::Sr25519(sr25519::Public(hex!("86c2871ed4042fc2a4c1399619c4ca17b7c9585768d90b77376045a39d9a702f")))),
-						block_number: 30
+						key: DidPublicKey::PublicVerificationKey(DidVerificationKey::Sr25519(sr25519::Public(hex!("c09d6588e8de09af934b06737ea1784caa3c69c2e7f0f30448a3daad28306273")))),
+						block_number: 26
 					}
 				}.into(),
 				RevealedDidKey {
-					id: hex!("046171527563d8e98a5222de4a9b4141b088da96377e8efc3388c0538a36fe68").into(),
+					id: hex!("0a19831adb0c05a7f02340336e05237a6123eb5a801e700b05ec96e414c1d431").into(),
 					relationship: crate::DidKeyRelationship::Encryption,
 					details: DidPublicKeyDetails {
-						key: DidPublicKey::PublicEncryptionKey(DidEncryptionKey::X25519(hex!("fe2070c665fa802a3263fc8a89321321184918e584b9499cb84fa38911d11f7f"))),
-						block_number: 30
+						key: DidPublicKey::PublicEncryptionKey(DidEncryptionKey::X25519(hex!("b432ae5e381e5184c39184b19461427677bd65b1215080b831d46e6fc2d9fc71"))),
+						block_number: 26
 					}
 				}.into(),
 				RevealedDidKey {
-					id: hex!("323486d437a096fd79ff975506e5829beace1e88d0348d6e25a6e465a8b89ab6").into(),
+					id: hex!("175b6b8922a34836cc6133b1382342934cb9f66939dbcc8003b24c520112efb4").into(),
 					relationship: crate::DidKeyRelationship::Encryption,
 					details: DidPublicKeyDetails {
-						key: DidPublicKey::PublicEncryptionKey(DidEncryptionKey::X25519(hex!("142d0e8808dd5a1287256cbbd64d06aef686606d872e824cf56b492902000a79"))),
-						block_number: 30
+						key: DidPublicKey::PublicEncryptionKey(DidEncryptionKey::X25519(hex!("c2ee634220b3f9dea971fceb8c26a8dd5bced0b5be38809253f71d2f03d92f15"))),
+						block_number: 26
 					}
 				}.into(),
 				RevealedDidKey {
-					id: hex!("7d8c9f4a66a0e93717dddcadba70889c4424f338f589d09714f239043591440d").into(),
+					id: hex!("351e3e18823728847b6bdeb7b3f852e33153db8774a156ccd642c2da8cb1694a").into(),
 					relationship: crate::DidKeyRelationship::Encryption,
 					details: DidPublicKeyDetails {
-						key: DidPublicKey::PublicEncryptionKey(DidEncryptionKey::X25519(hex!("4c0aa2e8f3cf029e08759e8b61d244a6192a2271642bb5da7b5d29990b5da00b"))),
-						block_number: 30
+						key: DidPublicKey::PublicEncryptionKey(DidEncryptionKey::X25519(hex!("25b17375dbe706f2a6d40b6c3d52c2e2c910feb1491540d5c161e0248ac95b2a"))),
+						block_number: 26
 					}
 				}.into(),
 				RevealedDidKey {
-					id: hex!("8c86c882487160789d32d32e697b2d8e520f1563cb1e4164225753aa28a5ab2f").into(),
+					id: hex!("67418bc51fbfa1b1b7d1dda00a85e31b5b32b7f90a168155ae95b2bd03dfc327").into(),
 					relationship: crate::DidKeyRelationship::Encryption,
 					details: DidPublicKeyDetails {
-						key: DidPublicKey::PublicEncryptionKey(DidEncryptionKey::X25519(hex!("9f97d434ca3cb7b727928beb46cf49f27da871b63ae5447e3ec3b5abb08c9c0e"))),
-						block_number: 30
+						key: DidPublicKey::PublicEncryptionKey(DidEncryptionKey::X25519(hex!("8bfe06f78bdbae17cae9c8168aa893c248bf835223c623f3ab57720fa29f5a60"))),
+						block_number: 26
 					}
 				}.into(),
 				RevealedDidKey {
-					id: hex!("8cc1078ba56113813991934ae0ffabbd5cb562cb6a2fc699f9bb8b4aabb8f616").into(),
+					id: hex!("68123c7ea51367ac69cf4ec1c65d3d173a869b1eb4b1909ca48785ab5bfb9dff").into(),
 					relationship: crate::DidKeyRelationship::Encryption,
 					details: DidPublicKeyDetails {
-						key: DidPublicKey::PublicEncryptionKey(DidEncryptionKey::X25519(hex!("024b98aac3d5ec1b786293c2a50e7b3ac993919c492f4da5a93f94f0f9cdb241"))),
-						block_number: 30
+						key: DidPublicKey::PublicEncryptionKey(DidEncryptionKey::X25519(hex!("4b33d1675f3d004aad2a6196f02f6f7ab6fe87d851824b5e107dada61fc22031"))),
+						block_number: 26
 					}
 				}.into(),
 				RevealedDidKey {
-					id: hex!("90fd143d81ddef983d62ce1aa1639168489ff5da0f6702efd258da6c55b0777e").into(),
+					id: hex!("689eacf997d73c52a8fc1822c043bf8e9277e1c5214c1c8fcfb90241b995fc12").into(),
 					relationship: crate::DidKeyRelationship::Encryption,
 					details: DidPublicKeyDetails {
-						key: DidPublicKey::PublicEncryptionKey(DidEncryptionKey::X25519(hex!("4a53daee31bc9cdce8896026c31d7621ad90854bdec56f077c2b135aa36f7a18"))),
-						block_number: 30
+						key: DidPublicKey::PublicEncryptionKey(DidEncryptionKey::X25519(hex!("f4954dc22dba1b26dc7f2606d7e3714386ee5e0e026dd96ff62d17944d93f327"))),
+						block_number: 26
 					}
 				}.into(),
 				RevealedDidKey {
-					id: hex!("9aeeb6b118090da14b14065df0bfa29a394e3c57574c2cf72fec38027953f2ca").into(),
+					id: hex!("8667d7743ecf128174c23fa8f9abd5ff2091ccfd89ae5f63b863d14f98a15007").into(),
 					relationship: crate::DidKeyRelationship::Encryption,
 					details: DidPublicKeyDetails {
-						key: DidPublicKey::PublicEncryptionKey(DidEncryptionKey::X25519(hex!("d523029cf92cbf98206572e11d2c315f9750cf467f7be745034776c8c7552e6f"))),
-						block_number: 30
+						key: DidPublicKey::PublicEncryptionKey(DidEncryptionKey::X25519(hex!("bfa563dd933e3319a062b38271549c09b5584b67b971d60000194f3725197c45"))),
+						block_number: 26
 					}
 				}.into(),
 				RevealedDidKey {
-					id: hex!("c0339da5d721ecf5a599e588a74363db45688e2356ad15bf80f226017bd10248").into(),
+					id: hex!("9f9ecaba66c7fbd269060e32deeedce9da662b9b079149dde9291a78841c2c82").into(),
 					relationship: crate::DidKeyRelationship::Encryption,
 					details: DidPublicKeyDetails {
-						key: DidPublicKey::PublicEncryptionKey(DidEncryptionKey::X25519(hex!("4ac14eed420bc9f97db98b198133d094dd9c2ebcbe00cc6dd4576b4da6515c65"))),
-						block_number: 30
+						key: DidPublicKey::PublicEncryptionKey(DidEncryptionKey::X25519(hex!("e88eee2b1b0d6abec878c6b6dca75b9a7323e5b9fafcb9e3d21a92e3e28d8174"))),
+						block_number: 26
 					}
 				}.into(),
 				RevealedDidKey {
-					id: hex!("cfdcf6e5989bdee27413af55c187c96387dfd2e4f3cde973b250acfac6af6cad").into(),
+					id: hex!("ed227568bd1c86d3d227d7c510b76025a624cbcb2eaad82f0f6707d1164df73d").into(),
 					relationship: crate::DidKeyRelationship::Encryption,
 					details: DidPublicKeyDetails {
-						key: DidPublicKey::PublicEncryptionKey(DidEncryptionKey::X25519(hex!("cabf0743ea77e7a4aec9ab7135700482079a9b4eff89a46add7608192680a413"))),
-						block_number: 30
+						key: DidPublicKey::PublicEncryptionKey(DidEncryptionKey::X25519(hex!("42ac6e9563af67b3e8c43dad68ed174776f1f5862bd80aad54f8bcb90f188e66"))),
+						block_number: 26
 					}
 				}.into(),
 				RevealedDidKey {
-					id: hex!("fda35a39cce44fbfb012b0f6a0a1dfa0b866b0ed8a2f7efb3c7bc944b8b49493").into(),
+					id: hex!("fa552bf8d89287ecfda14cb43eb6ec112c1d161b96a3921d6b3f0923d3c30ef1").into(),
 					relationship: crate::DidKeyRelationship::Encryption,
 					details: DidPublicKeyDetails {
-						key: DidPublicKey::PublicEncryptionKey(DidEncryptionKey::X25519(hex!("fe1eb53fd59a1a27b893f0d663df84cc33fc5923d146c26eb57d8158480c7e52"))),
-						block_number: 30
+						key: DidPublicKey::PublicEncryptionKey(DidEncryptionKey::X25519(hex!("915924b791c34a7d063d26672aef12ad05d78f1e1bacfda49fb630d36f487f00"))),
+						block_number: 26
 					}
 				}.into(),
 				RevealedDidKey {
-					id: hex!("1b4f12a6cc3a3d8c3d2d508aadbfa6b71edbb9ac7ec3da2f0448ca8035f95c22").into(),
+					id: hex!("923e1923acaee602c41d48354b82af0e7953b06f4f0fac7a306f0320e9ec2618").into(),
 					relationship: DidVerificationKeyRelationship::CapabilityDelegation.into(),
 					details: DidPublicKeyDetails {
-						key: DidPublicKey::PublicVerificationKey(DidVerificationKey::Ed25519(ed25519::Public(hex!("61d5bd79fe0095640a7bb05e791cae4317d4575e817f41628648fc4ff5271f2d")))),
-						block_number: 30
+						key: DidPublicKey::PublicVerificationKey(DidVerificationKey::Ed25519(ed25519::Public(hex!("693af6db28b33940820bf2d52605c873c374e555a5fe7af515f8923788b7eca0")))),
+						block_number: 26
 					}
 				}.into(),
 				RevealedDidKey {
-					id: hex!("77d0160b28ad4d2f5db38e2192867914fec04eff50dd860bc46df10b36bf3b7b").into(),
+					id: hex!("b437840b0bdbf4b53b930ee023fd2f9b3cbd52665034ab5297ff71aee7d3a274").into(),
 					relationship: DidVerificationKeyRelationship::AssertionMethod.into(),
 					details: DidPublicKeyDetails {
-						key: DidPublicKey::PublicVerificationKey(DidVerificationKey::Ed25519(ed25519::Public(hex!("34c4685c61e5d6a7ff4e42d1594735285f6c116f1c6e8f70f12a3942655a7c34")))),
-						block_number: 30
+						key: DidPublicKey::PublicVerificationKey(DidVerificationKey::Ed25519(ed25519::Public(hex!("9f32c15d8eb12a4a5a8e76100e17c8f2801f2ca782e59e779543c4315c6eefcc")))),
+						block_number: 26
 					}
 				}.into(),
 
-				RevealedAccountId(LinkableAccountId::AccountId32(hex!("a36777a228a2e0651764c7de0be063f9a1cc0281aedececc12cfdc69e048b7cf").into())).into(),
-				RevealedAccountId(LinkableAccountId::AccountId32(hex!("0753e95eac51474dc20653d86195cd11657b3af8f9af52d03f6b42a6cbe78efa").into())).into(),
-				RevealedAccountId(LinkableAccountId::AccountId32(hex!("e154fe906fd0c0227be2967528a972215ceac09ede6167421a761507cea3f1b7").into())).into(),
-				RevealedAccountId(LinkableAccountId::AccountId32(hex!("e0e591ff4d23b8b5cc3655e59aa140c600565c1c21f27960cfb980a4c74b6b03").into())).into(),
-				RevealedAccountId(LinkableAccountId::AccountId32(hex!("98812f5ef930d26a12e8ebcef5b5ce6f5458af9028694d49902172d969e83738").into())).into(),
-				RevealedAccountId(LinkableAccountId::AccountId32(hex!("e60b14479bb4cee4f526ae31541bd3dbc79f541d01cf0a9691c1dbb1bfeb42d4").into())).into(),
-				RevealedAccountId(LinkableAccountId::AccountId32(hex!("36dfc8d778b1b15835d8bc7953b1d782b38aee53ef7785340ec451a1dcc0cdc1").into())).into(),
-				RevealedAccountId(LinkableAccountId::AccountId32(hex!("e808d3d3fe19d0fd336cff473acbc2cf93074c9e163a5d04a9ea33a918e89105").into())).into(),
-				RevealedAccountId(LinkableAccountId::AccountId32(hex!("88dd8180874f51ca369e5a970fc2d09789af161a8ae187df94ff1658884441a4").into())).into(),
-				RevealedAccountId(LinkableAccountId::AccountId32(hex!("5f97e76eefbd998e4886319066e29d7646f7de9b812cef5654536b6a39e257a2").into())).into(),
+				RevealedAccountId(LinkableAccountId::AccountId32(hex!("82cdec26932b726664108a9c7692a3518954643248b69663e25c4a9588c880a6").into())).into(),
+				RevealedAccountId(LinkableAccountId::AccountId32(hex!("e408ba21b9ab08cdd79903073ceb8eaab0e270e6926a6055da6396431628e655").into())).into(),
+				RevealedAccountId(LinkableAccountId::AccountId32(hex!("145e18ea7dd30548dfe9cbb26d07a3dd1f6faea96bb22387a8d28dddcab71beb").into())).into(),
+				RevealedAccountId(LinkableAccountId::AccountId32(hex!("0edf371f2d1333fba36905e56733d1e7d9f5ac73eb12257f2b9e8b7df5088f02").into())).into(),
+				RevealedAccountId(LinkableAccountId::AccountId32(hex!("6aa7f6ac2a8c0161b6ae25369d39daefde60f76db6c9f82c64f4eb5b3a9c3305").into())).into(),
+				RevealedAccountId(LinkableAccountId::AccountId32(hex!("dba03a30eb82f99dc4f3c5e2a31cec7e123c17c9edd76a374e1606098ab44af8").into())).into(),
+				RevealedAccountId(LinkableAccountId::AccountId32(hex!("6ce629184f476a03d41408d498638a5b80bca30185e04d0bed2d9a8a918e9620").into())).into(),
+				RevealedAccountId(LinkableAccountId::AccountId32(hex!("41d65495de3c1b11fe30c19213685b496c37a9df8a526fcfde19eb80ed4ad703").into())).into(),
+				RevealedAccountId(LinkableAccountId::AccountId32(hex!("ac1712527b9c708576151bca932dee7448755179d71d0083679b353783022f35").into())).into(),
+				RevealedAccountId(LinkableAccountId::AccountId32(hex!("5f95383fa0bd7e353aff4e15b7b6c9a0cdb20d07c2fb00fe92add21cfdc55f4c").into())).into(),
 
-				RevealedWeb3Name { web3_name: b"b0d832f8c9b145a45537e86".to_vec().try_into().unwrap(), claimed_at: 30 }.into()
+				RevealedWeb3Name { web3_name: b"04c9378d8767e61646bff28".to_vec().try_into().unwrap(), claimed_at: 26 }.into()
 			]
 		},
 		signature: TimeBoundDidSignature {
-			signature: sr25519::Signature(hex!("d061cf97e661c4f3e51e42e38973580f0076393a225781bd063a3476fb98dd03d55ca49b20caa18dd62cb88af4da81fc05b9299ed3b243bdbe92881ec31f2182")).into(),
-			valid_until: 82
+			signature: sr25519::Signature(hex!("ea3cc9d5980fe498b350ed0de15d3ab54288c12c03ca2441bb80f997cf8e0858cd2e86e82b636bbb9f97fa5ed47c6e48c1f3aba1bbf0cf65c0fa25371870fe89")).into(),
+			valid_until: 81
 		}
 	}
 }
 
 #[test]
 fn test() {
+	use parity_scale_codec::Encode;
+
 	env_logger::init();
 	let proof = test_parachain_proof();
 	let proof_1 = proof
 		.verify_provider_head_proof_with_state_root::<BlakeTwo256, Header<u64, BlakeTwo256>>(
 			2_000,
-			&hex!("4a8c971e646cee7c5bc37b1568acfdc5efd4c7ee5dd449946eddc43b86ad44e3").into(),
+			&hex!("d9abcc76ff142acfb4bd44cc99fabd1f121b15df699b1c91bc1cf6e35afd48fe").into(),
 		)
 		.expect("Should not fail to verify relay state.");
 	let proof_2 = proof_1
 		.verify_dip_commitment_proof_for_subject::<BlakeTwo256, PeregrineRuntime>(
-			&AccountId32::from_ss58check("5F7Q4Tv8A2Wob14H6V7eGqhhcFEXzjZXSDptYrhxdxATe5qV").unwrap(),
+			&AccountId32::from_ss58check("5GRFonySFTkU7pNbdG48ZFLpFdJVfxPMFtd5DqpNohEWshMB").unwrap(),
 		)
 		.expect("Should not fail to verify DIP commitment value.");
 	let proof_3 = proof_2.verify_dip_proof::<BlakeTwo256, 50>();
 	println!("{:#?}", proof_3);
 	let proof_3 = proof_3.expect("Should not fail to verify DIP DID proof.");
+	let proof_4 = proof_3.verify_signature_time(&33).unwrap();
+	let payload = (
+		frame_system::Call::<PeregrineRuntime>::remark {
+			remark: b"Hello, world!".to_vec(),
+		},
+		&Option::<u128>::None,
+		AccountId32::from_ss58check("5HQuQWj2YHu9jNxQSBnn4SYWdnB6WenNP4UDAC5pJktHj7gK").unwrap(),
+		81,
+		hex!("9776c2a6921124e360d8d444113d596077a7e9eab629458f8af8a92c54287577"),
+		(),
+	);
+	let proof_5 = proof_4
+		.retrieve_signing_leaf_for_payload(&payload.encode()[..])
+		.unwrap();
+	println!("{:#?}", proof_5);
 }

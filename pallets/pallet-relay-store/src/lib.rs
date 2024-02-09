@@ -24,7 +24,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 mod default_weights;
-mod relay;
+pub mod relay;
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
@@ -50,15 +50,14 @@ pub mod pallet {
 	/// including the state root.
 	#[pallet::storage]
 	#[pallet::getter(fn latest_relay_head_for_block)]
-	pub(crate) type LatestRelayHeads<T: Config> = StorageMap<_, Twox64Concat, u32, RelayParentInfo<H256>>;
+	pub type LatestRelayHeads<T: Config> = StorageMap<_, Twox64Concat, u32, RelayParentInfo<H256>>;
 
 	// TODO: Replace this with a fixed-length array once support for const generics
 	// is fully supported in Substrate.
 	/// Storage value complimentary to [`LatestRelayHeads`] implementing a FIFO
 	/// queue of the last N relay chain blocks info.
 	#[pallet::storage]
-	pub(crate) type LatestBlockHeights<T: Config> =
-		StorageValue<_, BoundedVec<u32, T::MaxRelayBlocksStored>, ValueQuery>;
+	pub type LatestBlockHeights<T: Config> = StorageValue<_, BoundedVec<u32, T::MaxRelayBlocksStored>, ValueQuery>;
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {

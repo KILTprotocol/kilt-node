@@ -49,8 +49,8 @@ use crate::{
 /// * `RelayBlockNumber`: The `BlockNumber` definition of the relaychain.
 #[derive(Clone, RuntimeDebug, Encode, Decode, PartialEq, Eq, TypeInfo)]
 pub struct ProviderHeadStateProof<RelayBlockNumber> {
-	pub(crate) relay_block_number: RelayBlockNumber,
-	pub(crate) proof: BoundedBlindedValue<u8>,
+	pub relay_block_number: RelayBlockNumber,
+	pub proof: BoundedBlindedValue<u8>,
 }
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -58,7 +58,8 @@ impl<RelayBlockNumber, Context> kilt_support::traits::GetWorstCase<Context> for 
 where
 	RelayBlockNumber: Default,
 {
-	fn worst_case(context: Context) -> Self {
+	type Output = Self;
+	fn worst_case(context: Context) -> Self::Output {
 		Self {
 			relay_block_number: RelayBlockNumber::default(),
 			proof: BoundedBlindedValue::worst_case(context),
@@ -68,11 +69,12 @@ where
 
 /// The state proof for a DIP commitment.
 #[derive(Clone, RuntimeDebug, Encode, Decode, PartialEq, Eq, TypeInfo)]
-pub struct DipCommitmentStateProof(pub(crate) BoundedBlindedValue<u8>);
+pub struct DipCommitmentStateProof(pub BoundedBlindedValue<u8>);
 
 #[cfg(feature = "runtime-benchmarks")]
 impl<Context> kilt_support::traits::GetWorstCase<Context> for DipCommitmentStateProof {
-	fn worst_case(context: Context) -> Self {
+	type Output = Self;
+	fn worst_case(context: Context) -> Self::Output {
 		Self(BoundedBlindedValue::worst_case(context))
 	}
 }
@@ -94,8 +96,8 @@ pub struct DidMerkleProof<
 	ProviderWeb3Name,
 	ProviderLinkableAccountId,
 > {
-	pub(crate) blinded: BoundedBlindedValue<u8>,
-	pub(crate) revealed: Vec<
+	pub blinded: BoundedBlindedValue<u8>,
+	pub revealed: Vec<
 		RevealedDidMerkleProofLeaf<
 			ProviderDidKeyId,
 			ProviderAccountId,
@@ -147,7 +149,8 @@ impl<
 	ProviderWeb3Name: Clone,
 	ProviderLinkableAccountId: Clone,
 {
-	fn worst_case(context: Context) -> Self {
+	type Output = Self;
+	fn worst_case(context: Context) -> Self::Output {
 		Self {
 			blinded: BoundedBlindedValue::worst_case(context),
 			revealed: sp_std::vec![RevealedDidMerkleProofLeaf::default(); 64],
@@ -163,9 +166,9 @@ impl<
 #[derive(Clone, RuntimeDebug, Encode, Decode, PartialEq, Eq, TypeInfo)]
 pub struct TimeBoundDidSignature<BlockNumber> {
 	/// The signature.
-	pub(crate) signature: DidSignature,
+	pub signature: DidSignature,
 	/// The block number until the signature is to be considered valid.
-	pub(crate) valid_until: BlockNumber,
+	pub valid_until: BlockNumber,
 }
 
 impl<BlockNumber> TimeBoundDidSignature<BlockNumber> {
@@ -177,10 +180,11 @@ impl<BlockNumber> TimeBoundDidSignature<BlockNumber> {
 #[cfg(feature = "runtime-benchmarks")]
 impl<BlockNumber, Context> kilt_support::traits::GetWorstCase<Context> for TimeBoundDidSignature<BlockNumber>
 where
-	DidSignature: kilt_support::traits::GetWorstCase<Context>,
+	DidSignature: kilt_support::traits::GetWorstCase<Context, Output = DidSignature>,
 	BlockNumber: Default,
 {
-	fn worst_case(context: Context) -> Self {
+	type Output = Self;
+	fn worst_case(context: Context) -> Self::Output {
 		Self {
 			signature: DidSignature::worst_case(context),
 			valid_until: BlockNumber::default(),
@@ -460,14 +464,13 @@ pub struct ParachainDipDidProof<
 	ConsumerBlockNumber,
 > {
 	/// The state proof for the given parachain head.
-	pub(crate) provider_head_proof: ProviderHeadStateProof<RelayBlockNumber>,
+	pub provider_head_proof: ProviderHeadStateProof<RelayBlockNumber>,
 	/// The raw state proof for the DIP commitment of the given subject.
-	pub(crate) dip_commitment_proof: DipCommitmentStateProof,
+	pub dip_commitment_proof: DipCommitmentStateProof,
 	/// The Merkle proof of the subject's DID details.
-	pub(crate) dip_proof:
-		DidMerkleProof<KiltDidKeyId, KiltAccountId, KiltBlockNumber, KiltWeb3Name, KiltLinkableAccountId>,
+	pub dip_proof: DidMerkleProof<KiltDidKeyId, KiltAccountId, KiltBlockNumber, KiltWeb3Name, KiltLinkableAccountId>,
 	/// The cross-chain DID signature.
-	pub(crate) signature: TimeBoundDidSignature<ConsumerBlockNumber>,
+	pub signature: TimeBoundDidSignature<ConsumerBlockNumber>,
 }
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -499,7 +502,8 @@ impl<
 	ConsumerBlockNumber: Default,
 	Context: Clone,
 {
-	fn worst_case(context: Context) -> Self {
+	type Output = Self;
+	fn worst_case(context: Context) -> Self::Output {
 		Self {
 			provider_head_proof: ProviderHeadStateProof::worst_case(context.clone()),
 			dip_commitment_proof: DipCommitmentStateProof::worst_case(context.clone()),
@@ -572,14 +576,19 @@ impl<
 				ProviderHeader::decode(&mut trimmed_input).ok()
 			},
 		);
-		cfg_if::cfg_if! {
-			if #[cfg(feature = "runtime-benchmarks")] {
-				let provider_header = provider_header_result.unwrap_or_else(|_| ProviderHeader::new(<ProviderHeader as HeaderT>::Number::default(), <ProviderHeader as HeaderT>::Hash::default(), <ProviderHeader as HeaderT>::Hash::default(), <ProviderHeader as HeaderT>::Hash::default(), sp_runtime::Digest::default()));
-			} else {
-				let provider_header = provider_header_result.map_err(Error::ParaHeadMerkleProof)?;
-				log::trace!(target: "dip-consumer::ParachainDipDidProof::verify_provider_head_proof_with_state_root", "Parachain header verified: {:#?}", provider_header);
-			}
-		}
+		let provider_header = provider_header_result.map_err(Error::ParaHeadMerkleProof)?;
+		// cfg_if::cfg_if! {
+		// 	if #[cfg(feature = "runtime-benchmarks")] {
+		// 		let provider_header = provider_header_result.unwrap_or_else(|_|
+		// ProviderHeader::new(<ProviderHeader as HeaderT>::Number::default(),
+		// <ProviderHeader as HeaderT>::Hash::default(), <ProviderHeader as
+		// HeaderT>::Hash::default(), <ProviderHeader as HeaderT>::Hash::default(),
+		// sp_runtime::Digest::default())); 	} else {
+		// 		let provider_header =
+		// provider_header_result.map_err(Error::ParaHeadMerkleProof)?; 		log::trace!
+		// (target: "dip-consumer::ParachainDipDidProof::verify_provider_head_proof_with_state_root"
+		// , "Parachain header verified: {:#?}", provider_header); 	}
+		// }
 		Ok(DipDidProofWithoutRelayProof {
 			state_root: *provider_header.state_root(),
 			dip_commitment_proof: self.dip_commitment_proof,
@@ -621,14 +630,16 @@ impl<
 		ProviderHeader: Decode + HeaderT<Hash = OutputOf<RelayHasher>, Number = KiltBlockNumber>,
 	{
 		let relay_state_root = StateRootStore::get(&self.provider_head_proof.relay_block_number);
-		cfg_if::cfg_if! {
-			if #[cfg(feature = "runtime-benchmarks")] {
-				let relay_state_root = relay_state_root.unwrap_or_default();
-			} else {
-				let relay_state_root = relay_state_root.ok_or(Error::RelayStateRootNotFound)?;
-				log::trace!(target: "dip-consumer::ParachainDipDidProof::verify_provider_head_proof", "Relay root retrieved for provided proof height: {:#04x?}", relay_state_root);
-			}
-		}
+		let relay_state_root = relay_state_root.ok_or(Error::RelayStateRootNotFound)?;
+		// cfg_if::cfg_if! {
+		// 	if #[cfg(feature = "runtime-benchmarks")] {
+		// 		let relay_state_root = relay_state_root.unwrap_or_default();
+		// 	} else {
+		// 		let relay_state_root =
+		// relay_state_root.ok_or(Error::RelayStateRootNotFound)?; 		log::trace!(target:
+		// "dip-consumer::ParachainDipDidProof::verify_provider_head_proof", "Relay root
+		// retrieved for provided proof height: {:#04x?}", relay_state_root); 	}
+		// }
 		self.verify_provider_head_proof_with_state_root::<RelayHasher, ProviderHeader>(
 			provider_para_id,
 			&relay_state_root,
@@ -725,14 +736,17 @@ impl<
 				self.state_root,
 				self.dip_commitment_proof.0,
 			);
-		cfg_if::cfg_if! {
-			if #[cfg(feature = "runtime-benchmarks")] {
-				let dip_commitment = dip_commitment_result.unwrap_or_default();
-			} else {
-				let dip_commitment = dip_commitment_result.map_err(Error::DipCommitmentMerkleProof)?;
-				log::trace!(target: "dip-consumer::DipDidProofWithoutRelayProof::verify_dip_commitment_proof_for_subject", "DIP commitment retrieved from provided proof: {:#?}", dip_commitment);
-			}
-		}
+		let dip_commitment = dip_commitment_result.map_err(Error::DipCommitmentMerkleProof)?;
+		log::trace!(target: "dip-consumer::DipDidProofWithoutRelayProof::verify_dip_commitment_proof_for_subject", "DIP commitment retrieved from provided proof: {:#?}", dip_commitment);
+		// cfg_if::cfg_if! {
+		// 	if #[cfg(feature = "runtime-benchmarks")] {
+		// 		let dip_commitment = dip_commitment_result.unwrap_or_default();
+		// 	} else {
+		// 		let dip_commitment =
+		// dip_commitment_result.map_err(Error::DipCommitmentMerkleProof)?; 		log::trace!
+		// (target: "dip-consumer::DipDidProofWithoutRelayProof::verify_dip_commitment_proof_for_subject"
+		// , "DIP commitment retrieved from provided proof: {:#?}", dip_commitment); 	}
+		// }
 		Ok(DipDidProofWithVerifiedCommitment {
 			dip_commitment,
 			dip_proof: self.dip_proof,
@@ -877,13 +891,14 @@ impl<
 			&proof_leaves_key_value_pairs[..],
 		);
 
-		cfg_if::cfg_if! {
-			if #[cfg(feature = "runtime-benchmarks")] {
-				drop(proof_verification_result);
-			} else {
-				proof_verification_result.map_err(|_| Error::InvalidDidMerkleProof)?;
-			}
-		}
+		proof_verification_result.map_err(|_| Error::InvalidDidMerkleProof)?;
+		// cfg_if::cfg_if! {
+		// 	if #[cfg(feature = "runtime-benchmarks")] {
+		// 		drop(proof_verification_result);
+		// 	} else {
+		// 		proof_verification_result.map_err(|_| Error::InvalidDidMerkleProof)?;
+		// 	}
+		// }
 		let revealed_leaves = BoundedVec::try_from(revealed_leaves).map_err(|_| {
 			log::error!("Should not fail to construct BoundedVec since bounds were checked before.");
 			Error::Internal
@@ -965,13 +980,14 @@ impl<
 		>,
 		Error,
 	> {
-		cfg_if::cfg_if! {
-			if #[cfg(feature = "runtime-benchmarks")] {
-				let _ = self.signature.valid_until >= *block_number;
-			} else {
-				frame_support::ensure!(self.signature.valid_until >= *block_number, Error::InvalidSignatureTime);
-			}
-		}
+		frame_support::ensure!(self.signature.valid_until >= *block_number, Error::InvalidSignatureTime);
+		// cfg_if::cfg_if! {
+		// 	if #[cfg(feature = "runtime-benchmarks")] {
+		// 		let _ = self.signature.valid_until >= *block_number;
+		// 	} else {
+		// 		frame_support::ensure!(self.signature.valid_until >= *block_number,
+		// Error::InvalidSignatureTime); 	}
+		// }
 		Ok(DipDetailsAndUnverifiedDidSignaturePayload {
 			revealed_leaves: self.revealed_leaves,
 			signature: self.signature.signature,
@@ -1074,13 +1090,14 @@ impl<
 		let signing_key_entry = if let Some(index) = maybe_signing_key_index {
 			(self.revealed_leaves, index)
 		} else {
-			cfg_if::cfg_if! {
-				if #[cfg(feature = "runtime-benchmarks")] {
-						return Ok(DipVerifiedInfo::default());
-				} else {
-					return Err(Error::InvalidDidKeyRevealed);
-				}
-			}
+			return Err(Error::InvalidDidKeyRevealed);
+			// cfg_if::cfg_if! {
+			// 	if #[cfg(feature = "runtime-benchmarks")] {
+			// 			return Ok(DipVerifiedInfo::default());
+			// 	} else {
+			// 		return Err(Error::InvalidDidKeyRevealed);
+			// 	}
+			// }
 		};
 
 		Ok(DipVerifiedInfo {

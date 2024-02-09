@@ -67,7 +67,8 @@ impl<Context, T> kilt_support::traits::GetWorstCase<Context> for BoundedBlindedV
 where
 	T: Default + Clone,
 {
-	fn worst_case(_context: Context) -> Self {
+	type Output = Self;
+	fn worst_case(_context: Context) -> Self::Output {
 		Self(sp_std::vec![sp_std::vec![T::default(); 128]; 64])
 	}
 }

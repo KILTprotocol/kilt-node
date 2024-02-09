@@ -90,7 +90,8 @@ impl<
 	ConsumerBlockNumber: Default,
 	Context: Clone,
 {
-	fn worst_case(context: Context) -> Self {
+	type Output = Self;
+	fn worst_case(context: Context) -> Self::Output {
 		Self::V0(crate::merkle::v0::ParachainDipDidProof::worst_case(context))
 	}
 }
@@ -390,7 +391,6 @@ pub mod v0 {
 			identity_details: &mut Option<<ConsumerRuntime as pallet_dip_consumer::Config>::LocalIdentityInfo>,
 			proof: Self::Proof,
 		) -> Result<Self::VerificationResult, Self::Error> {
-			log::trace!(target: "dip-consumer::ParachainVerifier", "Incoming proof. Call = {:#?} - Subject = {:#?} - Submitter = {:#?} - Proof: {:#?}", call, subject, submitter, proof);
 			// 1. Verify parachain state is finalized by relay chain and fresh.
 			ensure!(
 				proof.provider_head_proof.proof.len() <= MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT.saturated_into(),

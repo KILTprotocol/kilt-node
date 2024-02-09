@@ -44,6 +44,7 @@ pub mod pallet {
 		Twox64Concat,
 	};
 	use frame_system::pallet_prelude::*;
+	use kilt_support::{benchmark::IdentityContext, traits::GetWorstCase};
 	use parity_scale_codec::{FullCodec, MaxEncodedLen};
 	use scale_info::TypeInfo;
 	use sp_std::boxed::Box;
@@ -100,6 +101,11 @@ pub mod pallet {
 		/// by this pallet.
 		type RuntimeOrigin: From<Origin<Self>> + From<<Self as frame_system::Config>::RuntimeOrigin>;
 		type WeightInfo: WeightInfo;
+		#[cfg(feature = "runtime-benchmarks")]
+		type ProofWorstCase: GetWorstCase<
+			IdentityContext<Self::Identifier, Self::AccountId>,
+			Output = <Self::ProofVerifier as IdentityProofVerifier<Self>>::Proof,
+		>;
 	}
 
 	/// The pallet contains a single storage element, the `IdentityEntries` map.

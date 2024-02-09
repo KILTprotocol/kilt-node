@@ -105,7 +105,8 @@ mod benchmarks {
 	}
 
 	impl<Context> kilt_support::traits::GetWorstCase<Context> for AssetDid {
-		fn worst_case(_context: Context) -> Self {
+		type Output = Self;
+		fn worst_case(_context: Context) -> Self::Output {
 			// Returns the worst case for an AssetDID, which is represented by the longest
 			// identifier according to the spec.
 			Self::try_from(

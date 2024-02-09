@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use crate::{traits::IdentityProofVerifier, Call, Config, IdentityEntries, Pallet};
+use crate::{Call, Config, IdentityEntries, Pallet};
 use frame_benchmarking::v2::*;
 use frame_system::RawOrigin;
 use kilt_support::{
@@ -28,15 +28,11 @@ use kilt_support::{
 	where
 		T::AccountId: Instanciate,
 		T::Identifier: Instanciate,
-        <<T as Config>::ProofVerifier as IdentityProofVerifier<T>>::Proof: GetWorstCase<IdentityContext<T::Identifier, T::AccountId>>,
         <T as Config>::RuntimeCall: From<frame_system::Call<T>>,
 )]
 mod benchmarks {
 
 	use super::*;
-
-	type IdentityContextOf<Runtime> =
-		IdentityContext<<Runtime as Config>::Identifier, <Runtime as frame_system::Config>::AccountId>;
 
 	#[benchmark]
 	fn dispatch_as() {
@@ -56,9 +52,7 @@ mod benchmarks {
 
 		let boxed_call = Box::from(call);
 
-		let proof = <<<T as Config>::ProofVerifier as IdentityProofVerifier<T>>::Proof as GetWorstCase<
-			IdentityContextOf<T>,
-		>>::worst_case(context);
+		let proof = T::ProofWorstCase::worst_case(context);
 
 		let origin = <T as frame_system::Config>::RuntimeOrigin::from(origin);
 
