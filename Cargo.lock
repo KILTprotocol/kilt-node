@@ -1052,7 +1052,7 @@ checksum = "702fc72eb24e5a1e48ce58027a675bc24edd52096d5397d4aea7c6dd9eca0bd1"
 
 [[package]]
 name = "clone-runtime"
-version = "1.12.0-dev"
+version = "1.13.0-dev"
 dependencies = [
  "cumulus-pallet-aura-ext",
  "cumulus-pallet-dmp-queue",
@@ -2431,7 +2431,7 @@ dependencies = [
 
 [[package]]
 name = "dip-consumer-node-template"
-version = "1.12.0-dev"
+version = "1.13.0-dev"
 dependencies = [
  "clap",
  "cumulus-client-cli",
@@ -2483,7 +2483,7 @@ dependencies = [
 
 [[package]]
 name = "dip-consumer-runtime-template"
-version = "1.12.0-dev"
+version = "1.13.0-dev"
 dependencies = [
  "cumulus-pallet-aura-ext",
  "cumulus-pallet-dmp-queue",
@@ -2537,7 +2537,7 @@ dependencies = [
 
 [[package]]
 name = "dip-provider-node-template"
-version = "1.12.0-dev"
+version = "1.13.0-dev"
 dependencies = [
  "clap",
  "cumulus-client-cli",
@@ -2589,7 +2589,7 @@ dependencies = [
 
 [[package]]
 name = "dip-provider-runtime-template"
-version = "1.12.0-dev"
+version = "1.13.0-dev"
 dependencies = [
  "cumulus-pallet-aura-ext",
  "cumulus-pallet-dmp-queue",
@@ -4611,7 +4611,7 @@ dependencies = [
 
 [[package]]
 name = "kilt-dip-primitives"
-version = "1.12.0-dev"
+version = "1.13.0-dev"
 dependencies = [
  "cfg-if",
  "cumulus-pallet-parachain-system",
@@ -4721,7 +4721,7 @@ dependencies = [
 
 [[package]]
 name = "kilt-runtime-api-dip-provider"
-version = "1.12.0-dev"
+version = "1.13.0-dev"
 dependencies = [
  "parity-scale-codec",
  "sp-api",
@@ -6545,7 +6545,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-deposit-storage"
-version = "1.12.0-dev"
+version = "1.13.0-dev"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -6591,7 +6591,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-dip-consumer"
-version = "1.12.0-dev"
+version = "1.13.0-dev"
 dependencies = [
  "cfg-if",
  "frame-benchmarking",
@@ -6609,7 +6609,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-dip-provider"
-version = "1.12.0-dev"
+version = "1.13.0-dev"
 dependencies = [
  "did",
  "frame-benchmarking",
@@ -6999,7 +6999,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-postit"
-version = "1.12.0-dev"
+version = "1.13.0-dev"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -7095,7 +7095,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-relay-store"
-version = "1.12.0-dev"
+version = "1.13.0-dev"
 dependencies = [
  "cumulus-pallet-parachain-system",
  "cumulus-primitives-core",
