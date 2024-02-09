@@ -18,14 +18,14 @@
 
 use frame_support::{
 	construct_runtime,
-	sp_runtime::{
-		testing::H256,
-		traits::{BlakeTwo256, IdentityLookup},
-		AccountId32,
-	},
 	traits::{ConstU16, ConstU32, ConstU64, Contains, Everything},
 };
 use frame_system::{mocking::MockBlock, EnsureSigned};
+use sp_runtime::{
+	testing::H256,
+	traits::{BlakeTwo256, IdentityLookup},
+	AccountId32,
+};
 
 use crate::traits::SuccessfulProofVerifier;
 

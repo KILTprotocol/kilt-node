@@ -13,39 +13,46 @@ version.workspace = true
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
 
+[dev-dependencies]
+log = { workspace = true, features = ["std"] }
+
 [dependencies]
 # External dependencies
 parity-scale-codec = { workspace = true, features = ["derive"] }
 scale-info = { workspace = true, features = ["derive"] }
-log = { workspace = true }
+log = { workspace = true, optional = true }
 
 # Substrate dependencies
 frame-support.workspace = true
-frame-system.workspace = true
-sp-core.workspace = true
+frame-system = {workspace = true, optional = true}
+sp-core = {workspace = true, optional = true}
 sp-runtime.workspace = true
 sp-std.workspace = true
-pallet-balances.workspace = true
+pallet-balances = {workspace = true, optional = true}
 
 # std dependencies
 serde = { workspace = true, features = ["derive"] }
 
 [features]
 default = ["std"]
-mock = []
+mock = ["frame-system", "pallet-balances", "sp-core"]
 runtime-benchmarks = [
   "frame-support/runtime-benchmarks",
   "frame-system/runtime-benchmarks",
+  "pallet-balances",
+  "sp-core",
   "sp-runtime/runtime-benchmarks",
 ]
 std = [
   "frame-support/std",
-  "frame-system/std",
+  "frame-system?/std",
+  "log?/std",
+  "pallet-balances?/std",
   "parity-scale-codec/std",
   "scale-info/std",
   "serde/std",
-  "sp-core/std",
+  "sp-core?/std",
   "sp-runtime/std",
   "sp-std/std",
 ]
-try-runtime = ["frame-support/try-runtime"]
+try-runtime = ["log", "frame-support/try-runtime"]

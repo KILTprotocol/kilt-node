@@ -14,19 +14,15 @@ version.workspace = true
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dev-dependencies]
-env_logger.workspace = true
 kilt-support = {workspace = true, features = ["mock", "try-runtime"]}
 frame-benchmarking = {workspace = true, features = ["std"]}
-pallet-aura = {workspace = true, features = ["std"]}
-pallet-timestamp = {workspace = true, features = ["std"]}
-sp-consensus-aura = {workspace = true, features = ["std"]}
 sp-keystore = {workspace = true, features = ["std"]}
-pallet-session = {workspace = true, features = ["std"]}
-attestation = {workspace = true, features = ["mock"]}
-ctype = {workspace = true, features = ["mock"]}
-delegation = {workspace = true, features = ["mock"]}
-did = {workspace = true, features = ["mock"]}
-public-credentials = {workspace = true, features = ["mock"]}
+attestation = {workspace = true, features = ["std", "mock"]}
+ctype = {workspace = true, features = ["std", "mock"]}
+delegation = {workspace = true, features = ["std", "mock"]}
+did = {workspace = true, features = ["std", "mock"]}
+public-credentials = {workspace = true, features = ["std", "mock"]}
+sp-io = {workspace = true, features = ["std"]}
 
 [dependencies]
 # Internal dependencies
@@ -35,7 +31,6 @@ delegation.workspace = true
 did.workspace = true
 pallet-did-lookup.workspace = true
 pallet-web3-names.workspace = true
-parachain-staking.workspace = true
 public-credentials.workspace = true
 runtime-common.workspace = true
 kilt-support.workspace = true
@@ -49,13 +44,11 @@ pallet-balances = {workspace = true, optional = true}
 parity-scale-codec = {workspace = true, features = ["derive"]}
 scale-info = {workspace = true, features = ["derive"]}
 sp-core.workspace = true
-sp-io.workspace = true
 sp-runtime.workspace = true
 sp-std.workspace = true
 
 # Benchmarking dependencies
 frame-benchmarking = {workspace = true, optional = true}
-sp-keystore = {workspace = true, optional = true}
 
 [features]
 default = ["std"]
@@ -68,7 +61,6 @@ runtime-benchmarks = [
   "delegation/runtime-benchmarks",
   "pallet-did-lookup/runtime-benchmarks",
   "pallet-web3-names/runtime-benchmarks",
-  "parachain-staking/runtime-benchmarks",
   "public-credentials/runtime-benchmarks",
   "runtime-common/runtime-benchmarks",
   "ctype/runtime-benchmarks",
@@ -83,7 +75,6 @@ std = [
   "frame-system/std",
   "scale-info/std",
   "sp-core/std",
-  "sp-io/std",
   "sp-runtime/std",
   "sp-std/std",
   "did/std",
@@ -91,7 +82,6 @@ std = [
   "delegation/std",
   "pallet-did-lookup/std",
   "pallet-web3-names/std",
-  "parachain-staking/std",
   "public-credentials/std",
   "runtime-common/std",
   "ctype/std",
@@ -106,7 +96,6 @@ try-runtime = [
   "delegation/try-runtime",
   "pallet-did-lookup/try-runtime",
   "pallet-web3-names/try-runtime",
-  "parachain-staking/try-runtime",
   "public-credentials/try-runtime",
   "runtime-common/try-runtime",
   "ctype/try-runtime",

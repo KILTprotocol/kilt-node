@@ -6,7 +6,7 @@ clippy-and-docs:
   image: paritytech/ci-unified:bullseye-1.70.0
   stage: test
   script:
-    - cargo clippy --all-features --all-targets --locked -- -D warnings
+    - cargo clippy --all-features --all-targets --locked -- -D warnings -D unused_crate_dependencies
     - RUSTDOCFLAGS='-D warnings' cargo doc --all-features --no-deps --locked
 
 fmt:

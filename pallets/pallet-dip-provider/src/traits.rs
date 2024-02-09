@@ -17,7 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use did::DidRawOrigin;
-use frame_support::sp_runtime::AccountId32;
+use sp_runtime::AccountId32;
 
 use crate::{Config, IdentityCommitmentOf, IdentityCommitmentVersion};
 
