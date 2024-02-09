@@ -13,9 +13,6 @@ version.workspace = true
 [build-dependencies]
 substrate-wasm-builder.workspace = true
 
-[dev-dependencies]
-sp-io.workspace = true
-
 [dependencies]
 # External dependencies
 log.workspace = true
@@ -176,5 +173,4 @@ try-runtime = [
 ]
 with-tracing = [
   "frame-executive/with-tracing",
-  "sp-io/with-tracing",
 ]
