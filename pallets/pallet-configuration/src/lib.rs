@@ -30,7 +30,7 @@
 pub mod configuration;
 pub mod default_weights;
 
-#[cfg(any(feature = "mock", test))]
+#[cfg(test)]
 pub mod mock;
 
 #[cfg(feature = "runtime-benchmarks")]

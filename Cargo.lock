@@ -481,7 +481,6 @@ dependencies = [
  "pallet-balances",
  "parity-scale-codec",
  "scale-info",
- "serde",
  "sp-core",
  "sp-io",
  "sp-keystore",
@@ -6500,7 +6499,6 @@ dependencies = [
  "pallet-balances",
  "parity-scale-codec",
  "scale-info",
- "serde",
  "sp-core",
  "sp-io",
  "sp-keystore",
@@ -6568,7 +6566,6 @@ version = "1.12.0-dev"
 dependencies = [
  "base58",
  "blake2",
- "env_logger 0.10.1",
  "frame-benchmarking",
  "frame-support",
  "frame-system",
@@ -6586,7 +6583,6 @@ dependencies = [
  "sp-keystore",
  "sp-runtime",
  "sp-std",
- "test-log",
 ]
 
 [[package]]
@@ -6600,7 +6596,6 @@ dependencies = [
  "kilt-support",
  "parity-scale-codec",
  "scale-info",
- "sp-core",
  "sp-io",
  "sp-keystore",
  "sp-runtime",
@@ -7406,7 +7401,6 @@ dependencies = [
  "frame-support",
  "frame-system",
  "kilt-support",
- "log",
  "pallet-balances",
  "parity-scale-codec",
  "scale-info",
@@ -9389,7 +9383,6 @@ dependencies = [
  "frame-support",
  "frame-system",
  "kilt-support",
- "log",
  "pallet-balances",
  "parity-scale-codec",
  "scale-info",
@@ -12956,17 +12949,6 @@ name = "termtree"
 version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3369f5ac52d5eb6ab48c6b4ffdc8efbcad6b89c765749064ba298f2c68a16a76"
-
-[[package]]
-name = "test-log"
-version = "0.2.13"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f66edd6b6cd810743c0c71e1d085e92b01ce6a72782032e3f794c8284fe4bcdd"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.39",
-]
 
 [[package]]
 name = "thiserror"

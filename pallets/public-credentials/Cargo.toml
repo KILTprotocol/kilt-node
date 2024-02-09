@@ -15,6 +15,7 @@ ctype = {workspace = true, features = ["mock"]}
 kilt-support = {workspace = true, features = ["mock", "try-runtime"]}
 
 pallet-balances = {workspace = true, features = ["std"]}
+sp-core = {workspace = true, features = ["std"]}
 sp-io = {workspace = true, features = ["std"]}
 sp-keystore = {workspace = true, features = ["std"]}
 
@@ -22,7 +23,6 @@ sp-keystore = {workspace = true, features = ["std"]}
 # External dependencies
 parity-scale-codec = {workspace = true, features = ["derive"]}
 scale-info = {workspace = true, features = ["derive"]}
-log.workspace = true
 
 # Internal dependencies
 ctype.workspace = true
@@ -32,9 +32,6 @@ kilt-support.workspace = true
 frame-benchmarking = {workspace = true, optional = true}
 frame-support.workspace = true
 frame-system.workspace = true
-sp-core.workspace = true
-sp-io = {workspace = true, optional = true}
-sp-keystore = {workspace = true, optional = true}
 sp-runtime.workspace = true
 sp-std.workspace = true
 
@@ -55,11 +52,8 @@ std = [
   "frame-benchmarking?/std",
   "frame-support/std",
   "frame-system/std",
-  "sp-core/std",
-  "sp-io/std",
   "sp-runtime/std",
-  "sp-std/std",
-  "log/std"
+  "sp-std/std"
 ]
 try-runtime = [
   "frame-support/try-runtime",

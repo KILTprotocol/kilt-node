@@ -14,21 +14,19 @@ version.workspace = true
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dev-dependencies]
-env_logger.workspace = true
 kilt-support = {workspace = true, features = ["mock", "try-runtime"]}
+hex.workspace = true
 
 pallet-balances = {workspace = true, features = ["std"]}
 sp-core = {workspace = true, features = ["std"]}
 sp-io = {workspace = true, features = ["std"]}
 sp-keystore = {workspace = true, features = ["std"]}
-test-log = "0.2.11"
 
 [dependencies]
 # External dependencies
 base58.workspace = true
 blake2 = {version = "0.10.6", default-features = false}
 serde = {workspace = true, default-features= false, features=["derive"]}
-hex.workspace = true
 libsecp256k1 = {workspace = true, features = ["hmac"]}
 log.workspace = true
 parity-scale-codec = {workspace = true, features = ["derive"]}
@@ -63,7 +61,6 @@ std = [
   "frame-benchmarking?/std",
   "frame-support/std",
   "frame-system/std",
-  "hex/std",
   "kilt-support/std",
   "log/std",
   "libsecp256k1/std",
