@@ -35,7 +35,7 @@ use sp_std::vec::Vec;
 use sp_trie::{verify_trie_proof, LayoutV1};
 
 use crate::{
-	state_proofs::{verify_storage_value_proof, MerkleProofError},
+	state_proofs::{verify_storage_value_proof, verify_storage_value_proof_with_decoder, MerkleProofError},
 	traits::{BenchmarkDefault, GetWithArg},
 	utils::{
 		calculate_dip_identity_commitment_storage_key_for_runtime, calculate_parachain_head_storage_key,
@@ -557,10 +557,18 @@ impl<
 		ProviderHeader: Decode + HeaderT<Hash = OutputOf<RelayHasher>, Number = KiltBlockNumber>,
 	{
 		let provider_head_storage_key = calculate_parachain_head_storage_key(provider_para_id);
-		let provider_header_result = verify_storage_value_proof::<_, RelayHasher, ProviderHeader>(
+		// TODO: Figure out why RPC call returns 2 bytes in front which we don't need
+		let provider_header_result = verify_storage_value_proof_with_decoder::<_, RelayHasher, ProviderHeader>(
 			&provider_head_storage_key,
 			*relay_state_root,
 			self.provider_head_proof.proof,
+			|input| {
+				if input.len() < 2 {
+					return None;
+				}
+				let mut trimmed_input = &input[2..];
+				ProviderHeader::decode(&mut trimmed_input).ok()
+			},
 		);
 		cfg_if::cfg_if! {
 			if #[cfg(feature = "runtime-benchmarks")] {

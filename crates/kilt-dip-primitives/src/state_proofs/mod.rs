@@ -63,8 +63,34 @@ where
 	OutputOf<MerkleHasher>: Ord,
 	Success: Decode,
 {
+	verify_storage_value_proof_with_decoder::<_, MerkleHasher, _>(storage_key, state_root, state_proof, |input| {
+		Success::decode(input).ok()
+	})
+}
+
+/// Verify a Merkle-based storage proof for a given storage key according to the
+/// provided state root. The generic types indicate the following:
+/// * `StorageKey`: defines the type of the storage key included in the proof.
+/// * `MerkleHasher`: defines the hashing algorithm used to calculate the Merkle
+///   root.
+/// * `TransformResult`: the type returned by the provided decoding function, if
+///   successful. The `None` result is interpreted as an error, so it is not possible to return a type for which `None` would be a correct decoding, for now. See https://github.com/rust-lang/rust/issues/103765 for more details.
+pub fn verify_storage_value_proof_with_decoder<StorageKey, MerkleHasher, TransformResult>(
+	storage_key: &StorageKey,
+	state_root: OutputOf<MerkleHasher>,
+	state_proof: impl IntoIterator<Item = Vec<u8>>,
+	// TODO: Switch to `Error` from `Option` for the closure.
+	// `Error` is not yet available in core.
+	// It was merged recently and will be stabilized at some point. See https://github.com/rust-lang/rust/issues/103765 for more.
+	mut transform: impl FnMut(&mut &[u8]) -> Option<TransformResult>,
+) -> Result<TransformResult, MerkleProofError>
+where
+	StorageKey: AsRef<[u8]>,
+	MerkleHasher: Hash,
+	OutputOf<MerkleHasher>: Ord,
+{
 	let storage_proof = StorageProof::new(state_proof);
-	let revealed_leaves = read_proof_check::<MerkleHasher, _>(state_root, storage_proof, [storage_key].iter())
+	let mut revealed_leaves = read_proof_check::<MerkleHasher, _>(state_root, storage_proof, [storage_key].iter())
 		.map_err(|_| MerkleProofError::InvalidProof)?;
 
 	debug_assert!(
@@ -76,11 +102,12 @@ where
 		"Proof does not include the expected storage key."
 	);
 
-	let Some(Some(encoded_revealed_leaf)) = revealed_leaves.get(storage_key.as_ref()) else {
+	let Some(Some(encoded_revealed_leaf)) = revealed_leaves.get_mut(storage_key.as_ref()) else {
 		return Err(MerkleProofError::RequiredLeafNotRevealed);
 	};
 
-	Success::decode(&mut &encoded_revealed_leaf[..]).map_err(|_| MerkleProofError::ResultDecoding)
+	let input = &mut &encoded_revealed_leaf[..];
+	transform(input).ok_or(MerkleProofError::ResultDecoding)
 }
 
 #[cfg(test)]
