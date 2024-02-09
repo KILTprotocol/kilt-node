@@ -21,7 +21,7 @@ use did::{
 	did_details::{DidPublicKey, DidPublicKeyDetails},
 	DidSignature, DidVerificationKeyRelationship,
 };
-use frame_support::{ensure, RuntimeDebug};
+use frame_support::ensure;
 use pallet_dip_provider::IdentityCommitmentOf;
 use parity_scale_codec::{Codec, Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
@@ -31,7 +31,7 @@ use sp_runtime::{
 	traits::{AtLeast32BitUnsigned, Hash, Header as HeaderT, MaybeDisplay, Member},
 	BoundedVec, SaturatedConversion,
 };
-use sp_std::vec::Vec;
+use sp_std::{fmt::Debug, vec::Vec};
 use sp_trie::{verify_trie_proof, LayoutV1};
 
 use crate::{
@@ -47,7 +47,7 @@ use crate::{
 ///
 /// The generic types indicate the following:
 /// * `RelayBlockNumber`: The `BlockNumber` definition of the relaychain.
-#[derive(Clone, RuntimeDebug, Encode, Decode, PartialEq, Eq, TypeInfo)]
+#[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo)]
 pub struct ProviderHeadStateProof<RelayBlockNumber> {
 	pub(crate) relay_block_number: RelayBlockNumber,
 	pub(crate) proof: BoundedBlindedValue<u8>,
@@ -67,7 +67,7 @@ where
 }
 
 /// The state proof for a DIP commitment.
-#[derive(Clone, RuntimeDebug, Encode, Decode, PartialEq, Eq, TypeInfo)]
+#[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo)]
 pub struct DipCommitmentStateProof(pub(crate) BoundedBlindedValue<u8>);
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -86,7 +86,7 @@ impl<Context> kilt_support::traits::GetWorstCase<Context> for DipCommitmentState
 /// * `ProviderWeb3Name`: The web3name type configured by the provider.
 /// * `ProviderLinkableAccountId`: The linkable account ID type configured by
 ///   the provider.
-#[derive(Clone, RuntimeDebug, Encode, Decode, PartialEq, Eq, TypeInfo)]
+#[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo)]
 pub struct DidMerkleProof<
 	ProviderDidKeyId,
 	ProviderAccountId,
@@ -160,7 +160,7 @@ impl<
 /// The generic types indicate the following:
 /// * `BlockNumber`: The `BlockNumber` definition of the chain consuming (i.e.,
 ///   validating) this signature.
-#[derive(Clone, RuntimeDebug, Encode, Decode, PartialEq, Eq, TypeInfo)]
+#[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo)]
 pub struct TimeBoundDidSignature<BlockNumber> {
 	/// The signature.
 	pub(crate) signature: DidSignature,
@@ -182,6 +182,7 @@ where
 	}
 }
 
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, TypeInfo)]
 pub enum Error {
 	InvalidRelayHeader,
 	RelayBlockNotFound,
@@ -220,12 +221,6 @@ impl From<Error> for u8 {
 	}
 }
 
-//TODO: steps:
-// 1. Create a DID with a web3name and the maximum number of allowed linked
-//    accounts
-// 2. Create an identity commitment
-// 3. Call the cross-chain operation, and take not of the generated proof.
-
 /// A DIP proof submitted to a relaychain consumer.
 ///
 /// The generic types indicate the following:
@@ -237,7 +232,7 @@ impl From<Error> for u8 {
 /// * `KiltWeb3Name`: The web3name type configured by the KILT chain.
 /// * `KiltLinkableAccountId`: The linkable account ID type configured by the
 ///   KILT chain.
-#[derive(Clone, RuntimeDebug, Encode, Decode, PartialEq, Eq, TypeInfo)]
+#[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo)]
 pub struct RelayDipDidProof<
 	RelayBlockNumber: Copy + Into<U256> + TryFrom<U256>,
 	RelayHasher: Hash,
@@ -352,6 +347,7 @@ impl<
 /// * `KiltWeb3Name`: The web3name type configured by the KILT chain.
 /// * `KiltLinkableAccountId`: The linkable account ID type configured by the
 ///   KILT chain.
+#[derive(Debug)]
 pub struct DipDidProofWithVerifiedRelayStateRoot<
 	StateRoot,
 	RelayBlockNumber,
@@ -448,7 +444,7 @@ impl<
 ///   KILT chain.
 /// * `ConsumerBlockNumber`: The `BlockNumber` definition of the consumer
 ///   parachain.
-#[derive(Clone, RuntimeDebug, Encode, Decode, PartialEq, Eq, TypeInfo)]
+#[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo)]
 pub struct ParachainDipDidProof<
 	RelayBlockNumber,
 	KiltDidKeyId,
@@ -645,6 +641,7 @@ impl<
 ///   KILT chain.
 /// * `ConsumerBlockNumber`: The `BlockNumber` definition of the consumer
 ///   parachain.
+#[derive(Debug)]
 pub struct DipDidProofWithoutRelayProof<
 	StateRoot,
 	KiltDidKeyId,
@@ -750,6 +747,7 @@ impl<
 ///   KILT chain.
 /// * `ConsumerBlockNumber`: The `BlockNumber` definition of the consumer
 ///   parachain.
+#[derive(Debug)]
 pub struct DipDidProofWithVerifiedCommitment<
 	Commitment,
 	KiltDidKeyId,
@@ -866,6 +864,7 @@ impl<
 ///   parachain.
 /// * `MAX_REVEALED_LEAVES_COUNT`: The maximum number of leaves revealable in
 ///   the proof.
+#[derive(Debug)]
 pub struct DipDetailsAndUnverifiedDidSignatureTime<
 	KiltDidKeyId,
 	KiltAccountId,
@@ -947,6 +946,7 @@ impl<
 ///   KILT chain.
 /// * `MAX_REVEALED_LEAVES_COUNT`: The maximum number of leaves revealable in
 ///   the proof.
+#[derive(Debug)]
 pub struct DipDetailsAndUnverifiedDidSignaturePayload<
 	KiltDidKeyId,
 	KiltAccountId,
@@ -1047,7 +1047,7 @@ impl<
 
 /// Information, available as an origin, after the whole DIP proof has been
 /// verified.
-#[derive(Clone, RuntimeDebug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
+#[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub struct DipVerifiedInfo<
 	KiltDidKeyId,
 	KiltAccountId,
@@ -1160,7 +1160,7 @@ impl<
 }
 
 /// Relationship of a key to a DID Document.
-#[derive(Clone, Copy, RuntimeDebug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
+#[derive(Clone, Copy, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub enum DidKeyRelationship {
 	Encryption,
 	Verification(DidVerificationKeyRelationship),
@@ -1186,7 +1186,7 @@ impl TryFrom<DidKeyRelationship> for DidVerificationKeyRelationship {
 
 /// All possible Merkle leaf types that can be revealed as part of a DIP
 /// identity Merkle proof.
-#[derive(Clone, Encode, Decode, PartialEq, Eq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[derive(Clone, Copy, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub enum RevealedDidMerkleProofLeaf<KeyId, AccountId, BlockNumber, Web3Name, LinkedAccountId> {
 	DidKey(RevealedDidKey<KeyId, BlockNumber, AccountId>),
 	Web3Name(RevealedWeb3Name<Web3Name, BlockNumber>),
@@ -1271,7 +1271,7 @@ where
 
 /// The details of a DID key after it has been successfully verified in a Merkle
 /// proof.
-#[derive(Clone, Encode, Decode, PartialEq, MaxEncodedLen, Eq, RuntimeDebug, TypeInfo)]
+#[derive(Clone, Copy, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub struct RevealedDidKey<KeyId, BlockNumber, AccountId> {
 	/// The key ID, according to the provider's definition.
 	pub id: KeyId,
@@ -1284,7 +1284,7 @@ pub struct RevealedDidKey<KeyId, BlockNumber, AccountId> {
 
 /// The details of a web3name after it has been successfully verified in a
 /// Merkle proof.
-#[derive(Clone, Encode, Decode, PartialEq, MaxEncodedLen, Eq, RuntimeDebug, TypeInfo)]
+#[derive(Clone, Copy, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub struct RevealedWeb3Name<Web3Name, BlockNumber> {
 	/// The web3name.
 	pub web3_name: Web3Name,
@@ -1295,5 +1295,5 @@ pub struct RevealedWeb3Name<Web3Name, BlockNumber> {
 
 /// The details of an account after it has been successfully verified in a
 /// Merkle proof.
-#[derive(Clone, Encode, Decode, PartialEq, MaxEncodedLen, Eq, RuntimeDebug, TypeInfo)]
+#[derive(Clone, Copy, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub struct RevealedAccountId<AccountId>(pub AccountId);

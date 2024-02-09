@@ -24,9 +24,9 @@ use pallet_dip_provider::{traits::IdentityCommitmentGenerator, IdentityCommitmen
 use pallet_web3_names::Web3NameOf;
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
-use sp_core::{RuntimeDebug, U256};
+use sp_core::U256;
 use sp_runtime::traits::Hash;
-use sp_std::marker::PhantomData;
+use sp_std::{fmt::Debug, marker::PhantomData};
 
 use crate::{
 	merkle::v0::RevealedDidKey,
@@ -39,7 +39,7 @@ use crate::{
 /// versioning.
 ///
 /// For more info, refer to the version-specific proofs.
-#[derive(Encode, Decode, PartialEq, Eq, RuntimeDebug, TypeInfo, Clone)]
+#[derive(Encode, Decode, PartialEq, Eq, Debug, TypeInfo, Clone)]
 pub enum VersionedRelaychainStateProof<
 	ConsumerBlockNumber: Copy + Into<U256> + TryFrom<U256>,
 	ConsumerBlockHasher: Hash,

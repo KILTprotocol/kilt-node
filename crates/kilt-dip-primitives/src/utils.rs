@@ -19,15 +19,15 @@
 use pallet_dip_provider::IdentityCommitmentVersion;
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
-use sp_core::{storage::StorageKey, RuntimeDebug};
-use sp_std::vec::Vec;
+use sp_core::storage::StorageKey;
+use sp_std::{fmt::Debug, vec::Vec};
 
 /// The output of a type implementing the [`sp_runtime::traits::Hash`] trait.
 pub type OutputOf<Hasher> = <Hasher as sp_runtime::traits::Hash>::Output;
 
 /// The vector of vectors that implements a statically-configured maximum length
 /// without requiring const generics, used in benchmarking worst cases.
-#[derive(Encode, Decode, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, TypeInfo, Clone)]
+#[derive(Encode, Decode, PartialEq, Eq, PartialOrd, Ord, Debug, TypeInfo, Clone)]
 pub struct BoundedBlindedValue<T>(Vec<Vec<T>>);
 
 impl<T> BoundedBlindedValue<T> {

@@ -17,6 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use parity_scale_codec::Decode;
+use scale_info::TypeInfo;
 use sp_runtime::traits::Hash;
 use sp_std::vec::Vec;
 use sp_trie::StorageProof;
@@ -28,7 +29,7 @@ use crate::{state_proofs::substrate_no_std_port::read_proof_check, utils::Output
 // kept up-to-date with upstream.
 mod substrate_no_std_port;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, TypeInfo)]
 pub enum MerkleProofError {
 	InvalidProof,
 	RequiredLeafNotRevealed,
