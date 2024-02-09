@@ -1,0 +1,147 @@
+[package]
+authors.workspace = true
+description = "Parachain runtime template for the KILT Decentralized Identity Provider (DIP) provider."
+documentation.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license-file.workspace = true
+name = "dip-provider-runtime-template"
+readme.workspace = true
+repository.workspace = true
+version.workspace = true
+
+[build-dependencies]
+substrate-wasm-builder.workspace = true
+
+[dependencies]
+log.workspace = true
+parity-scale-codec = {workspace = true, features = ["derive"]}
+scale-info = {workspace = true, features = ["derive"]}
+
+# DIP
+did.workspace = true
+kilt-support.workspace = true
+kilt-dip-primitives.workspace = true
+kilt-runtime-api-did.workspace = true
+kilt-runtime-api-dip-provider.workspace = true
+pallet-deposit-storage.workspace = true
+pallet-did-lookup.workspace = true
+pallet-dip-provider.workspace = true
+pallet-web3-names.workspace = true
+runtime-common.workspace = true
+
+# Substrate
+frame-executive.workspace = true
+frame-support.workspace = true
+frame-system.workspace = true
+frame-system-rpc-runtime-api.workspace = true
+pallet-aura.workspace = true
+pallet-authorship.workspace = true
+pallet-balances.workspace = true
+pallet-session.workspace = true
+pallet-sudo.workspace = true
+pallet-timestamp.workspace = true
+pallet-transaction-payment.workspace = true
+pallet-transaction-payment-rpc-runtime-api.workspace = true
+pallet-utility.workspace = true
+sp-api.workspace = true
+sp-block-builder.workspace = true
+sp-consensus-aura.workspace = true
+sp-core.workspace = true
+sp-inherents.workspace = true
+sp-offchain.workspace = true
+sp-runtime.workspace = true
+sp-session.workspace = true
+sp-std.workspace = true
+sp-transaction-pool.workspace = true
+sp-version.workspace = true
+sp-weights.workspace = true
+
+# Cumulus
+cumulus-pallet-aura-ext.workspace = true
+cumulus-pallet-dmp-queue.workspace = true
+cumulus-pallet-parachain-system.workspace = true
+cumulus-primitives-core.workspace = true
+cumulus-primitives-timestamp.workspace = true
+cumulus-primitives-utility.workspace = true
+pallet-collator-selection.workspace = true
+parachain-info.workspace = true
+
+# Benchmarks
+frame-benchmarking = {workspace = true, optional = true}
+frame-system-benchmarking = {workspace = true, optional = true}
+hex-literal = {workspace = true, optional = true}
+
+[features]
+default = [
+	"std",
+]
+std = [
+  "log/std",
+	"parity-scale-codec/std",
+	"scale-info/std",
+  "did/std",
+  "kilt-support/std",
+  "kilt-dip-primitives/std",
+  "kilt-runtime-api-did/std",
+  "kilt-runtime-api-dip-provider/std",
+  "pallet-deposit-storage/std",
+  "pallet-did-lookup/std",
+  "pallet-dip-provider/std",
+  "pallet-web3-names/std",
+  "runtime-common/std",
+	"frame-executive/std",
+	"frame-support/std",
+	"frame-system/std",
+	"frame-system-rpc-runtime-api/std",
+	"pallet-aura/std",
+	"pallet-authorship/std",
+	"pallet-balances/std",
+	"pallet-session/std",
+	"pallet-sudo/std",
+	"pallet-timestamp/std",
+	"pallet-transaction-payment/std",
+	"pallet-transaction-payment-rpc-runtime-api/std",
+  "pallet-utility/std",
+	"sp-api/std",
+	"sp-block-builder/std",
+	"sp-consensus-aura/std",
+	"sp-core/std",
+	"sp-inherents/std",
+	"sp-offchain/std",
+	"sp-runtime/std",
+	"sp-session/std",
+	"sp-std/std",
+	"sp-transaction-pool/std",
+	"sp-version/std",
+  "sp-weights/std",
+  "cumulus-pallet-aura-ext/std",
+	"cumulus-pallet-dmp-queue/std",
+	"cumulus-pallet-parachain-system/std",
+	"cumulus-primitives-core/std",
+	"cumulus-primitives-timestamp/std",
+	"cumulus-primitives-utility/std",
+  "pallet-collator-selection/std",
+  "parachain-info/std",
+  "frame-benchmarking?/std",
+]
+runtime-benchmarks = [
+  "did/runtime-benchmarks",
+  "kilt-dip-primitives/runtime-benchmarks",
+  "pallet-deposit-storage/runtime-benchmarks",
+  "pallet-did-lookup/runtime-benchmarks",
+  "pallet-dip-provider/runtime-benchmarks",
+  "pallet-web3-names/runtime-benchmarks",
+  "runtime-common/runtime-benchmarks",
+  "frame-system/runtime-benchmarks",
+  "frame-support/runtime-benchmarks",
+  "pallet-balances/runtime-benchmarks",
+  "pallet-collator-selection/runtime-benchmarks",
+  "pallet-sudo/runtime-benchmarks",
+  "pallet-timestamp/runtime-benchmarks",
+  "pallet-utility/runtime-benchmarks",
+  "sp-runtime/runtime-benchmarks",
+  "frame-benchmarking/runtime-benchmarks",
+  "frame-system-benchmarking/runtime-benchmarks",
+  "hex-literal"
+]

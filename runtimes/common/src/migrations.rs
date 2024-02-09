@@ -1,5 +1,5 @@
 // KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2023 BOTLabs GmbH
+// Copyright (C) 2019-2024 BOTLabs GmbH
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@ use sp_core::Get;
 use sp_std::marker::PhantomData;
 
 /// There are some pallets without a storage version.
-/// Based on the changes in the PR (https://github.com/paritytech/substrate/pull/13417),
+/// Based on the changes in the PR <https://github.com/paritytech/substrate/pull/13417>,
 /// pallets without a storage version or with a wrong version throw an error
 /// in the try state tests.
 pub struct BumpStorageVersion<T>(PhantomData<T>);

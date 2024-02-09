@@ -1,5 +1,5 @@
 // KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2023 BOTLabs GmbH
+// Copyright (C) 2019-2024 BOTLabs GmbH
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -96,7 +96,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_version: 11300,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
-	transaction_version: 6,
+	transaction_version: 8,
 	state_version: 0,
 };
 
@@ -1092,7 +1092,15 @@ pub type Executive = frame_executive::Executive<
 	Runtime,
 	// Executes pallet hooks in the order of definition in construct_runtime
 	AllPalletsWithSystem,
+<<<<<<< HEAD
 	(),
+=======
+	(
+		runtime_common::migrations::BumpStorageVersion<Runtime>,
+		parachain_staking::migrations::BalanceMigration<Runtime>,
+		pallet_xcm::migration::v1::MigrateToV1<Runtime>,
+	),
+>>>>>>> develop
 >;
 
 #[cfg(feature = "runtime-benchmarks")]

@@ -1,5 +1,5 @@
 // KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2023 BOTLabs GmbH
+// Copyright (C) 2019-2024 BOTLabs GmbH
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -88,8 +88,8 @@ pub mod pallet {
 	pub(crate) type CurrencyOf<T> = <T as Config>::Currency;
 
 	/// The type of the credential subject input. It is bound in max length.
-	/// It is transformed inside the `add` operation into a [<T as
-	/// Config>::SubjectId].
+	/// It is transformed inside the `add` operation into a
+	/// [`Config::SubjectId`].
 	pub type InputSubjectIdOf<T> = BoundedVec<u8, <T as Config>::MaxSubjectIdLength>;
 	/// The type of the credential subject input. It is bound in max length.
 	pub type InputClaimsContentOf<T> = BoundedVec<u8, <T as Config>::MaxEncodedClaimsLength>;

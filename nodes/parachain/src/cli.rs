@@ -1,5 +1,5 @@
 // KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2023 BOTLabs GmbH
+// Copyright (C) 2019-2024 BOTLabs GmbH
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -69,6 +69,7 @@ pub(crate) enum Subcommand {
 
 /// Command for building the genesis state of the parachain
 #[derive(Debug, Parser)]
+#[group(skip)]
 pub(crate) struct BuildSpecCmd {
 	#[command(flatten)]
 	pub(crate) inner_args: sc_cli::BuildSpecCmd,

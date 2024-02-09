@@ -1,5 +1,5 @@
 // KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2023 BOTLabs GmbH
+// Copyright (C) 2019-2024 BOTLabs GmbH
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -292,7 +292,8 @@ fn check_attempt_to_migrate_already_migrated_keys() {
 				requested_migrations.clone()
 			));
 
-			// Since the keys are already migrated, a second attempt should have not affect to the storage.
+			// Since the keys are already migrated, a second attempt should have not affect
+			// to the storage.
 			assert_storage_noop!(
 				Migration::update_balance(RuntimeOrigin::signed(ACCOUNT_00), requested_migrations)
 					.expect("Update balance should not panic")

@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 WILT_KILT = "dev-specs/kilt-parachain/kilt-westend.json"
 SPIRITNET_KILT = "nodes/parachain/res/spiritnet.json"
+RILT_KILT = "nodes/parachain/res/rilt.json"
 
 PERE_DEV_KILT = "dev-specs/kilt-parachain/peregrine-dev-kilt.json"
 PERE_DEV_RELAY = "dev-specs/kilt-parachain/peregrine-dev-relay.json"
@@ -60,7 +61,7 @@ def make_custom_spec(tmp_dir, docker_img, plain_file, out_file, update_spec, spe
 
     if args.debug:
         with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", suffix=".json", delete=False) as tf:
-            json.dump(in_json, tf, indent="  ")
+            json.dump(in_json, tf, indent=2)
             tf_name = tf.name
         logger.debug("Writing unmodified spec to '%s'", tf_name)
 
@@ -81,7 +82,7 @@ def make_custom_spec(tmp_dir, docker_img, plain_file, out_file, update_spec, spe
 
     logger.debug("writing updated intermediate plain spec to %s", plain_path)
     with open(plain_path, "w") as f:
-        json.dump(in_json, f)
+        json.dump(in_json, f, indent=2)
 
     cmd_raw_spec = base_docker_run_cmd() + ["-v", f"{tmp_dir}:/data/", docker_img, "build-spec",
                                             "--chain", os.path.join("/data/", plain_custom_file), "--disable-default-bootnode", "--raw"]
@@ -144,12 +145,15 @@ if __name__ == "__main__":
     parser.add_argument("--wilt", "-w", action="store_true", dest="wilt",
                         help="reset the wilt (westend) chainspec")
 
+    parser.add_argument("--rilt", "-r", action="store_true", dest="rilt",
+                        help="reset the rilt (rococo) chainspec")
+
     parser.add_argument("--spiritnet", "-s", action="store_true", dest="spiritnet",
                         help="reset the spiritnet chainspec")
 
     parser.add_argument("--peregrine", "-p", action="store_true", dest="peregrine",
                         help="reset the peregrine chainspec")
-    parser.add_argument("--peregrine-relay", "-r", action="store_true", dest="peregrine_relay",
+    parser.add_argument("--peregrine-relay", action="store_true", dest="peregrine_relay",
                         help="reset the peregrine relaychain chainspec")
 
     parser.add_argument("--peregrine-stg", action="store_true", dest="peregrine_stg",
@@ -163,6 +167,7 @@ if __name__ == "__main__":
                         help="reset the peregrine staging chainspec")
 
     args = parser.parse_args()
+    tmpdirname = None
 
     if args.verbose > 0:
         logging.getLogger().setLevel(logging.DEBUG)
@@ -171,6 +176,9 @@ if __name__ == "__main__":
 
     if args.wilt:
         make_native(args.image, WILT_KILT, "wilt-new", "spiritnet")
+
+    if args.rilt:
+        make_native(args.image, RILT_KILT, "rilt-new", "peregrine")
 
     if args.spiritnet:
         make_native(args.image, SPIRITNET_KILT, "spiritnet-new", "spiritnet")

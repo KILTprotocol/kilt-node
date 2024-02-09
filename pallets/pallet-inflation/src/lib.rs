@@ -1,5 +1,5 @@
 // KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2023 BOTLabs GmbH
+// Copyright (C) 2019-2024 BOTLabs GmbH
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,8 +24,8 @@
 //!
 //! ## Assumptions
 //!
-//! - The minting of rewards after [InitialPeriodLength] many blocks is handled
-//!   by another pallet, e.g., ParachainStaking.
+//! - The minting of rewards after [`Config::InitialPeriodLength`] many blocks
+//!   is handled by another pallet, e.g., ParachainStaking.
 
 #![cfg_attr(not(feature = "std"), no_std)]
 

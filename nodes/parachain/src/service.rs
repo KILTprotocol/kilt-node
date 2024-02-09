@@ -1,5 +1,5 @@
 // KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2023 BOTLabs GmbH
+// Copyright (C) 2019-2024 BOTLabs GmbH
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -100,6 +100,21 @@ impl sc_executor::NativeExecutionDispatch for PeregrineRuntimeExecutor {
 
 	fn native_version() -> sc_executor::NativeVersion {
 		peregrine_runtime::native_version()
+	}
+}
+
+/// Native Peregrine executor instance.
+pub struct CloneRuntimeExecutor;
+
+impl sc_executor::NativeExecutionDispatch for CloneRuntimeExecutor {
+	type ExtendHostFunctions = frame_benchmarking::benchmarking::HostFunctions;
+
+	fn dispatch(method: &str, data: &[u8]) -> Option<Vec<u8>> {
+		clone_runtime::api::dispatch(method, data)
+	}
+
+	fn native_version() -> sc_executor::NativeVersion {
+		clone_runtime::native_version()
 	}
 }
 

@@ -1,5 +1,5 @@
 // KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2023 BOTLabs GmbH
+// Copyright (C) 2019-2024 BOTLabs GmbH
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -42,7 +42,7 @@ use crate::{
 ///    * sender delegation node is equal to OR parent of the delegation node
 ///      stored in the attestation
 ///
-/// Can remove attestations if <the same as revoke>
+/// Can remove attestations if (the same as revoke)
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub struct DelegationAc<T: Config> {
 	pub(crate) subject_node_id: DelegationNodeIdOf<T>,

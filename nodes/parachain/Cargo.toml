@@ -32,6 +32,7 @@ serde_json.workspace = true
 peregrine-runtime = {workspace = true, features = ["std"]}
 runtime-common = {workspace = true, features = ["std"]}
 spiritnet-runtime = {workspace = true, features = ["std"]}
+clone-runtime = {workspace = true, features = ["std"]}
 
 # Substrate dependencies
 sc-basic-authorship.workspace = true
@@ -71,7 +72,6 @@ substrate-frame-rpc-system.workspace = true
 cumulus-client-cli.workspace = true
 cumulus-client-consensus-aura.workspace = true
 cumulus-client-consensus-common.workspace = true
-cumulus-client-network.workspace = true
 cumulus-client-service.workspace = true
 cumulus-primitives-core = {workspace = true, features = ["std"]}
 cumulus-primitives-parachain-inherent = {workspace = true, features = ["std"]}

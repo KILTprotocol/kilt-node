@@ -1,5 +1,5 @@
 // KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2023 BOTLabs GmbH
+// Copyright (C) 2019-2024 BOTLabs GmbH
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -203,7 +203,7 @@ benchmarks! {
 		let sender: AccountIdOf<T> = account("sender", 0, SEED);
 		let attester: <T as public_credentials::Config>::AttesterId = account("attester", 0, SEED);
 		let ctype_hash: T::Hash = T::Hash::default();
-		let subject_id = <T as public_credentials::Config>::SubjectId::worst_case();
+		let subject_id = <T as public_credentials::Config>::SubjectId::worst_case(());
 		let contents = BoundedVec::try_from(vec![0; <T as public_credentials::Config>::MaxEncodedClaimsLength::get() as usize]).expect("Contents should not fail.");
 		let origin = <T as public_credentials::Config>::EnsureOrigin::generate_origin(sender.clone(), attester.clone());
 

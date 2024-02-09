@@ -1,5 +1,5 @@
 // KILT Blockchain – https://botlabs.org
-// Copyright (C) 2019-2023 BOTLabs GmbH
+// Copyright (C) 2019-2024 BOTLabs GmbH
 
 // The KILT Blockchain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -39,8 +39,7 @@ pub mod pallet {
 		traits::{fungible::Inspect, Currency, ReservableCurrency},
 	};
 	use frame_system::pallet_prelude::*;
-	use sp_runtime::traits::Hash;
-	use sp_runtime::SaturatedConversion;
+	use sp_runtime::{traits::Hash, SaturatedConversion};
 
 	use attestation::{Attestations, ClaimHashOf};
 	use delegation::{DelegationNodeIdOf, DelegationNodes};
@@ -103,7 +102,7 @@ pub mod pallet {
 		KeyParse,
 	}
 
-	const STORAGE_VERSION: StorageVersion = StorageVersion::new(4);
+	const STORAGE_VERSION: StorageVersion = StorageVersion::new(0);
 
 	#[pallet::pallet]
 	#[pallet::storage_version(STORAGE_VERSION)]
