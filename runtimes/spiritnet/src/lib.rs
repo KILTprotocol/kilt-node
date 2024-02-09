@@ -1092,10 +1092,7 @@ pub type Executive = frame_executive::Executive<
 	Runtime,
 	// Executes pallet hooks in the order of definition in construct_runtime
 	AllPalletsWithSystem,
-	(
-		runtime_common::migrations::BumpStorageVersion<Runtime>,
-		parachain_staking::migrations::BalanceMigration<Runtime>,
-	),
+	(),
 >;
 
 #[cfg(feature = "runtime-benchmarks")]

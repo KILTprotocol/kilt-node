@@ -312,7 +312,6 @@ pub struct DelegationCounter {
 	pub counter: u32,
 }
 
-pub type CurrencyOf<T> = <T as Config>::Currency;
 pub type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 pub type BalanceOf<T> = <<T as Config>::Currency as Inspect<AccountIdOf<T>>>::Balance;
 pub type CandidateOf<T, S> = Candidate<AccountIdOf<T>, BalanceOf<T>, S>;
