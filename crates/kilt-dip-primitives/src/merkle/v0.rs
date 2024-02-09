@@ -282,7 +282,7 @@ impl<
 		self,
 		block_hash: &OutputOf<RelayHasher>,
 	) -> Result<
-		DipDidProofWithVerifiedRelayStateRoot<
+		RelayDipDidProofWithVerifiedRelayStateRoot<
 			OutputOf<RelayHasher>,
 			RelayBlockNumber,
 			KiltDidKeyId,
@@ -297,7 +297,7 @@ impl<
 			return Err(Error::InvalidRelayHeader);
 		}
 
-		Ok(DipDidProofWithVerifiedRelayStateRoot {
+		Ok(RelayDipDidProofWithVerifiedRelayStateRoot {
 			relay_state_root: self.relay_header.state_root,
 			provider_head_proof: self.provider_head_proof,
 			dip_commitment_proof: self.dip_commitment_proof,
@@ -316,7 +316,7 @@ impl<
 	pub fn verify_relay_header<RelayHashStore>(
 		self,
 	) -> Result<
-		DipDidProofWithVerifiedRelayStateRoot<
+		RelayDipDidProofWithVerifiedRelayStateRoot<
 			OutputOf<RelayHasher>,
 			RelayBlockNumber,
 			KiltDidKeyId,
@@ -348,7 +348,7 @@ impl<
 /// * `KiltLinkableAccountId`: The linkable account ID type configured by the
 ///   KILT chain.
 #[derive(Debug)]
-pub struct DipDidProofWithVerifiedRelayStateRoot<
+pub struct RelayDipDidProofWithVerifiedRelayStateRoot<
 	StateRoot,
 	RelayBlockNumber,
 	KiltDidKeyId,
@@ -380,7 +380,7 @@ impl<
 		KiltWeb3Name,
 		KiltLinkableAccountId,
 	>
-	DipDidProofWithVerifiedRelayStateRoot<
+	RelayDipDidProofWithVerifiedRelayStateRoot<
 		StateRoot,
 		RelayBlockNumber,
 		KiltDidKeyId,
@@ -403,7 +403,7 @@ impl<
 		self,
 		provider_para_id: u32,
 	) -> Result<
-		DipDidProofWithoutRelayProof<
+		DipDidProofWithVerifiedRelayStateRoot<
 			OutputOf<RelayHasher>,
 			KiltDidKeyId,
 			KiltAccountId,
@@ -537,7 +537,7 @@ impl<
 		provider_para_id: u32,
 		relay_state_root: &OutputOf<RelayHasher>,
 	) -> Result<
-		DipDidProofWithoutRelayProof<
+		DipDidProofWithVerifiedRelayStateRoot<
 			OutputOf<RelayHasher>,
 			KiltDidKeyId,
 			KiltAccountId,
@@ -573,7 +573,7 @@ impl<
 				let provider_header = provider_header_result.map_err(Error::ParaHeadMerkleProof)?;
 			}
 		}
-		Ok(DipDidProofWithoutRelayProof {
+		Ok(DipDidProofWithVerifiedRelayStateRoot {
 			state_root: *provider_header.state_root(),
 			dip_commitment_proof: self.dip_commitment_proof,
 			dip_proof: self.dip_proof,
@@ -597,7 +597,7 @@ impl<
 		self,
 		provider_para_id: u32,
 	) -> Result<
-		DipDidProofWithoutRelayProof<
+		DipDidProofWithVerifiedRelayStateRoot<
 			OutputOf<RelayHasher>,
 			KiltDidKeyId,
 			KiltAccountId,
@@ -642,7 +642,7 @@ impl<
 /// * `ConsumerBlockNumber`: The `BlockNumber` definition of the consumer
 ///   parachain.
 #[derive(Debug)]
-pub struct DipDidProofWithoutRelayProof<
+pub struct DipDidProofWithVerifiedRelayStateRoot<
 	StateRoot,
 	KiltDidKeyId,
 	KiltAccountId,
@@ -671,7 +671,7 @@ impl<
 		KiltLinkableAccountId,
 		ConsumerBlockNumber,
 	>
-	DipDidProofWithoutRelayProof<
+	DipDidProofWithVerifiedRelayStateRoot<
 		StateRoot,
 		KiltDidKeyId,
 		KiltAccountId,
@@ -693,7 +693,7 @@ impl<
 		self,
 		subject: &ProviderRuntime::Identifier,
 	) -> Result<
-		DipDidProofWithVerifiedCommitment<
+		DipDidProofWithVerifiedSubjectCommitment<
 			IdentityCommitmentOf<ProviderRuntime>,
 			KiltDidKeyId,
 			KiltAccountId,
@@ -725,7 +725,7 @@ impl<
 				let dip_commitment = dip_commitment_result.map_err(Error::DipCommitmentMerkleProof)?;
 			}
 		}
-		Ok(DipDidProofWithVerifiedCommitment {
+		Ok(DipDidProofWithVerifiedSubjectCommitment {
 			dip_commitment,
 			dip_proof: self.dip_proof,
 			signature: self.signature,
@@ -748,7 +748,7 @@ impl<
 /// * `ConsumerBlockNumber`: The `BlockNumber` definition of the consumer
 ///   parachain.
 #[derive(Debug)]
-pub struct DipDidProofWithVerifiedCommitment<
+pub struct DipDidProofWithVerifiedSubjectCommitment<
 	Commitment,
 	KiltDidKeyId,
 	KiltAccountId,
@@ -775,7 +775,7 @@ impl<
 		KiltLinkableAccountId,
 		ConsumerBlockNumber,
 	>
-	DipDidProofWithVerifiedCommitment<
+	DipDidProofWithVerifiedSubjectCommitment<
 		Commitment,
 		KiltDidKeyId,
 		KiltAccountId,
@@ -800,7 +800,7 @@ impl<
 	pub fn verify_dip_proof<DidMerkleHasher, const MAX_REVEALED_LEAVES_COUNT: u32>(
 		self,
 	) -> Result<
-		DipDetailsAndUnverifiedDidSignatureTime<
+		DipRevealedDetailsAndUnverifiedDidSignature<
 			KiltDidKeyId,
 			KiltAccountId,
 			KiltBlockNumber,
@@ -843,7 +843,7 @@ impl<
 			Error::Internal
 		})?;
 
-		Ok(DipDetailsAndUnverifiedDidSignatureTime {
+		Ok(DipRevealedDetailsAndUnverifiedDidSignature {
 			revealed_leaves,
 			signature: self.signature,
 		})
@@ -865,7 +865,7 @@ impl<
 /// * `MAX_REVEALED_LEAVES_COUNT`: The maximum number of leaves revealable in
 ///   the proof.
 #[derive(Debug)]
-pub struct DipDetailsAndUnverifiedDidSignatureTime<
+pub struct DipRevealedDetailsAndUnverifiedDidSignature<
 	KiltDidKeyId,
 	KiltAccountId,
 	KiltBlockNumber,
@@ -892,7 +892,7 @@ impl<
 		ConsumerBlockNumber,
 		const MAX_REVEALED_LEAVES_COUNT: u32,
 	>
-	DipDetailsAndUnverifiedDidSignatureTime<
+	DipRevealedDetailsAndUnverifiedDidSignature<
 		KiltDidKeyId,
 		KiltAccountId,
 		KiltBlockNumber,
@@ -909,7 +909,7 @@ impl<
 		self,
 		block_number: &ConsumerBlockNumber,
 	) -> Result<
-		DipDetailsAndUnverifiedDidSignaturePayload<
+		DipRevealedDetailsAndVerifiedDidSignatureFreshness<
 			KiltDidKeyId,
 			KiltAccountId,
 			KiltBlockNumber,
@@ -926,7 +926,7 @@ impl<
 				frame_support::ensure!(self.signature.valid_until >= *block_number, Error::InvalidSignatureTime);
 			}
 		}
-		Ok(DipDetailsAndUnverifiedDidSignaturePayload {
+		Ok(DipRevealedDetailsAndVerifiedDidSignatureFreshness {
 			revealed_leaves: self.revealed_leaves,
 			signature: self.signature.signature,
 		})
@@ -947,7 +947,7 @@ impl<
 /// * `MAX_REVEALED_LEAVES_COUNT`: The maximum number of leaves revealable in
 ///   the proof.
 #[derive(Debug)]
-pub struct DipDetailsAndUnverifiedDidSignaturePayload<
+pub struct DipRevealedDetailsAndVerifiedDidSignatureFreshness<
 	KiltDidKeyId,
 	KiltAccountId,
 	KiltBlockNumber,
@@ -972,7 +972,7 @@ impl<
 		KiltLinkableAccountId,
 		const MAX_REVEALED_LEAVES_COUNT: u32,
 	>
-	DipDetailsAndUnverifiedDidSignaturePayload<
+	DipRevealedDetailsAndVerifiedDidSignatureFreshness<
 		KiltDidKeyId,
 		KiltAccountId,
 		KiltBlockNumber,
@@ -989,7 +989,7 @@ impl<
 		self,
 		payload: &[u8],
 	) -> Result<
-		DipVerifiedInfo<
+		DipOriginInfo<
 			KiltDidKeyId,
 			KiltAccountId,
 			KiltBlockNumber,
@@ -1031,14 +1031,14 @@ impl<
 		} else {
 			cfg_if::cfg_if! {
 				if #[cfg(feature = "runtime-benchmarks")] {
-						return Ok(DipVerifiedInfo::default());
+						return Ok(DipOriginInfo::default());
 				} else {
 					return Err(Error::InvalidDidKeyRevealed);
 				}
 			}
 		};
 
-		Ok(DipVerifiedInfo {
+		Ok(DipOriginInfo {
 			revealed_leaves: signing_key_entry.0,
 			signing_leaf_index: signing_key_entry.1,
 		})
@@ -1048,7 +1048,7 @@ impl<
 /// Information, available as an origin, after the whole DIP proof has been
 /// verified.
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
-pub struct DipVerifiedInfo<
+pub struct DipOriginInfo<
 	KiltDidKeyId,
 	KiltAccountId,
 	KiltBlockNumber,
@@ -1073,7 +1073,7 @@ impl<
 		KiltLinkableAccountId,
 		const MAX_REVEALED_LEAVES_COUNT: u32,
 	>
-	DipVerifiedInfo<
+	DipOriginInfo<
 		KiltDidKeyId,
 		KiltAccountId,
 		KiltBlockNumber,
@@ -1125,7 +1125,7 @@ impl<
 		KiltLinkableAccountId,
 		const MAX_REVEALED_LEAVES_COUNT: u32,
 	> Default
-	for DipVerifiedInfo<
+	for DipOriginInfo<
 		KiltDidKeyId,
 		KiltAccountId,
 		KiltBlockNumber,

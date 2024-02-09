@@ -24,14 +24,13 @@ use pallet_dip_provider::traits::IdentityCommitmentGenerator;
 use pallet_web3_names::Web3NameOf;
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
-use sp_std::fmt::Debug;
-use sp_std::marker::PhantomData;
+use sp_std::{fmt::Debug, marker::PhantomData};
 
 use crate::{
 	merkle::v0::RevealedDidKey,
 	traits::{DipCallOriginFilter, GetWithArg, GetWithoutArg, Incrementable},
 	utils::OutputOf,
-	DipVerifiedInfo, Error,
+	DipOriginInfo, Error,
 };
 
 /// A KILT-specific DIP identity proof for a sibling consumer that supports
@@ -209,7 +208,7 @@ impl<
 		LinkableAccountId,
 		BlockNumberFor<ConsumerRuntime>,
 	>;
-	type VerificationResult = DipVerifiedInfo<
+	type VerificationResult = DipOriginInfo<
 		KeyIdOf<KiltRuntime>,
 		KiltRuntime::AccountId,
 		BlockNumberFor<KiltRuntime>,
@@ -374,7 +373,7 @@ pub mod v0 {
 			BlockNumberFor<ConsumerRuntime>,
 		>;
 
-		type VerificationResult = DipVerifiedInfo<
+		type VerificationResult = DipOriginInfo<
 			KeyIdOf<KiltRuntime>,
 			KiltRuntime::AccountId,
 			BlockNumberFor<KiltRuntime>,
