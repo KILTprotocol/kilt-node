@@ -29,7 +29,10 @@ use frame_support::{
 use frame_system::mocking::MockBlock;
 use kilt_support::mock::mock_origin::{self as mock_origin, DoubleOrigin, EnsureDoubleOrigin};
 
-use crate::{DefaultIdentityCommitmentGenerator, DefaultIdentityProvider, NoopHooks};
+use crate::{
+	traits::{IdentityCommitmentGenerator, IdentityProvider},
+	DefaultIdentityCommitmentGenerator, DefaultIdentityProvider, IdentityCommitmentOf, IdentityCommitmentVersion,
+};
 
 construct_runtime!(
 	pub struct TestRuntime {
@@ -71,7 +74,7 @@ impl crate::Config for TestRuntime {
 	type Identifier = AccountId32;
 	type IdentityCommitmentGenerator = DefaultIdentityCommitmentGenerator<u32>;
 	type IdentityProvider = DefaultIdentityProvider<u32>;
-	type ProviderHooks = NoopHooks;
+	type ProviderHooks = ();
 	type RuntimeEvent = RuntimeEvent;
 	type WeightInfo = ();
 }
@@ -82,17 +85,61 @@ impl mock_origin::Config for TestRuntime {
 	type SubjectId = <Self as crate::Config>::Identifier;
 }
 
+pub(crate) const ACCOUNT_ID: AccountId32 = AccountId32::new([100u8; 32]);
+pub(crate) const DID: AccountId32 = AccountId32::new([100u8; 32]);
+
+pub(crate) fn get_expected_commitment_for(
+	subject: &<TestRuntime as crate::Config>::Identifier,
+	version: IdentityCommitmentVersion,
+) -> IdentityCommitmentOf<TestRuntime> {
+	let expected_identity_details =
+		<<TestRuntime as crate::Config>::IdentityProvider as IdentityProvider<TestRuntime>>::retrieve(subject)
+			.expect("Should not fail to generate identity details for the provided DID.");
+	<<TestRuntime as crate::Config>::IdentityCommitmentGenerator as IdentityCommitmentGenerator<TestRuntime>>::generate_commitment(
+				subject,
+				&expected_identity_details,
+				version,
+			)
+			.expect("Should not fail to generate identity commitment for the provided DID.")
+}
+
 #[derive(Default)]
-pub(crate) struct ExtBuilder;
+pub(crate) struct ExtBuilder(
+	Vec<(
+		AccountId32,
+		IdentityCommitmentVersion,
+		IdentityCommitmentOf<TestRuntime>,
+	)>,
+);
 
 impl ExtBuilder {
-	pub fn _build(self) -> sp_io::TestExternalities {
-		sp_io::TestExternalities::default()
+	pub(crate) fn with_commitments(
+		mut self,
+		commitments: Vec<(
+			AccountId32,
+			IdentityCommitmentVersion,
+			IdentityCommitmentOf<TestRuntime>,
+		)>,
+	) -> Self {
+		self.0 = commitments;
+		self
+	}
+
+	pub(crate) fn build(self) -> sp_io::TestExternalities {
+		let mut ext = sp_io::TestExternalities::default();
+
+		ext.execute_with(|| {
+			for (subject, commitment_version, commitment) in self.0 {
+				crate::pallet::IdentityCommitments::<TestRuntime>::insert(subject, commitment_version, commitment);
+			}
+		});
+
+		ext
 	}
 
 	#[cfg(feature = "runtime-benchmarks")]
-	pub fn build_with_keystore(self) -> sp_io::TestExternalities {
-		let mut ext = self._build();
+	pub(crate) fn build_with_keystore(self) -> sp_io::TestExternalities {
+		let mut ext = self.build();
 		let keystore = sp_keystore::testing::MemoryKeystore::new();
 		ext.register_extension(sp_keystore::KeystoreExt(sp_std::sync::Arc::new(keystore)));
 		ext
