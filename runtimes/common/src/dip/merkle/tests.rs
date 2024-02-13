@@ -15,3 +15,23 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
+
+use did::did_details::DidVerificationKey;
+use frame_support::assert_noop;
+
+use crate::{
+	constants::dip_provider::MAX_LINKED_ACCOUNTS,
+	dip::{
+		merkle::{DidMerkleProofError, DidMerkleRootGenerator},
+		mock::{create_linked_info, TestRuntime, ACCOUNT},
+	},
+};
+
+#[test]
+fn generate_commitment_unsupported_version() {
+	let linked_info = create_linked_info(DidVerificationKey::Account(ACCOUNT), true, MAX_LINKED_ACCOUNTS);
+	assert_noop!(
+		DidMerkleRootGenerator::<TestRuntime>::generate_proof(&linked_info, 1, [].into_iter(), false, [].into_iter()),
+		DidMerkleProofError::UnsupportedVersion
+	);
+}

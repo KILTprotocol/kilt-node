@@ -31,14 +31,19 @@ use crate::{
 #[test]
 fn linked_did_info_provider_retrieve_max_capacity() {
 	let auth_key = DidVerificationKey::Account(ACCOUNT);
-	let (did_details, web3_name, linked_accounts) = create_linked_info(auth_key, true, MAX_LINKED_ACCOUNTS);
+	let LinkedDidInfoOf {
+		did_details,
+		web3_name_details,
+		linked_accounts,
+	} = create_linked_info(auth_key, true, MAX_LINKED_ACCOUNTS);
+	let web3_name = web3_name_details.map(|n| n.web3_name);
 
 	ExtBuilder::default()
 		.with_dids(vec![(
 			DID_IDENTIFIER,
 			did_details.clone(),
 			web3_name.clone(),
-			linked_accounts.clone(),
+			linked_accounts.clone().into_inner(),
 			SUBMITTER,
 		)])
 		.build()
@@ -62,7 +67,7 @@ fn linked_did_info_provider_retrieve_max_capacity() {
 #[test]
 fn linked_did_info_provider_retrieve_only_did_details() {
 	let auth_key = DidVerificationKey::Account(ACCOUNT);
-	let (did_details, _, _) = create_linked_info(auth_key, false, 0);
+	let LinkedDidInfoOf { did_details, .. } = create_linked_info(auth_key, false, 0);
 
 	ExtBuilder::default()
 		.with_dids(vec![(DID_IDENTIFIER, did_details.clone(), None, vec![], SUBMITTER)])
@@ -104,14 +109,19 @@ fn linked_did_info_provider_retrieve_did_not_found() {
 #[test]
 fn linked_did_info_provider_retrieve_too_many_linked_accounts() {
 	let auth_key = DidVerificationKey::Account(ACCOUNT);
-	let (did_details, web3_name, linked_accounts) = create_linked_info(auth_key, true, MAX_LINKED_ACCOUNTS + 1);
+	let LinkedDidInfoOf {
+		did_details,
+		web3_name_details,
+		linked_accounts,
+	} = create_linked_info(auth_key, true, MAX_LINKED_ACCOUNTS + 1);
+	let web3_name = web3_name_details.map(|n| n.web3_name);
 
 	ExtBuilder::default()
 		.with_dids(vec![(
 			DID_IDENTIFIER,
 			did_details,
 			web3_name,
-			linked_accounts,
+			linked_accounts.into_inner(),
 			SUBMITTER,
 		)])
 		.build()

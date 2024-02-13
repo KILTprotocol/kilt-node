@@ -25,11 +25,15 @@ use frame_support::{
 	construct_runtime,
 	traits::{Currency, Everything},
 };
-use frame_system::{mocking::MockBlock, EnsureRoot, EnsureSigned};
+use frame_system::{mocking::MockBlock, pallet_prelude::BlockNumberFor, EnsureRoot, EnsureSigned};
+use kilt_dip_primitives::RevealedWeb3Name;
 use pallet_did_lookup::{account::AccountId20, linkable_account::LinkableAccountId};
 use pallet_web3_names::{web3_name::AsciiWeb3Name, Web3NameOf};
 use sp_core::{ConstU128, ConstU16, ConstU32, ConstU64};
-use sp_runtime::{traits::IdentityLookup, AccountId32};
+use sp_runtime::{
+	traits::{BlockNumberProvider, IdentityLookup},
+	AccountId32, BoundedVec,
+};
 
 use crate::{
 	constants::{
@@ -42,7 +46,10 @@ use crate::{
 		web3_names::{MaxNameLength, MinNameLength},
 		KILT,
 	},
-	dip::{did::LinkedDidInfoProvider, merkle::DidMerkleRootGenerator},
+	dip::{
+		did::{LinkedDidInfoOf, LinkedDidInfoProvider},
+		merkle::DidMerkleRootGenerator,
+	},
 	AccountId, Balance, BlockHashCount, BlockLength, BlockWeights, DidIdentifier, Hash, Hasher, Nonce,
 };
 
@@ -185,18 +192,17 @@ pub(crate) fn create_linked_info(
 	auth_key: DidVerificationKey<AccountId>,
 	include_web3_name: bool,
 	linked_accounts: u32,
-) -> (
-	DidDetails<TestRuntime>,
-	Option<Web3NameOf<TestRuntime>>,
-	Vec<LinkableAccountId>,
-) {
+) -> LinkedDidInfoOf<TestRuntime, MAX_LINKED_ACCOUNTS> {
 	let did_details: DidDetails<TestRuntime> = generate_base_did_details(auth_key, Some(SUBMITTER));
-	let web3_name: Option<Web3NameOf<TestRuntime>> = if include_web3_name {
-		Some(b"ntn_x2".to_vec().try_into().unwrap())
+	let web3_name: Option<RevealedWeb3Name<Web3NameOf<TestRuntime>, BlockNumberFor<TestRuntime>>> = if include_web3_name
+	{
+		let web3_name: Web3NameOf<TestRuntime> = b"ntn_x2".to_vec().try_into().unwrap();
+		let claimed_at = frame_system::Pallet::<TestRuntime>::current_block_number();
+		Some(RevealedWeb3Name { web3_name, claimed_at })
 	} else {
 		None
 	};
-	let linked_accounts = (0..linked_accounts)
+	let linked_accounts: BoundedVec<LinkableAccountId, ConstU32<MAX_LINKED_ACCOUNTS>> = (0..linked_accounts)
 		.map(|i| {
 			let bytes = i.to_be_bytes();
 			if i % 2 == 0 {
@@ -209,8 +215,14 @@ pub(crate) fn create_linked_info(
 				LinkableAccountId::AccountId32(AccountId32::new(buffer))
 			}
 		})
-		.collect::<Vec<_>>();
-	(did_details, web3_name, linked_accounts)
+		.collect::<Vec<_>>()
+		.try_into()
+		.expect("Cannot cast generated vector of linked accounts to BoundedVec with max limit.");
+	LinkedDidInfoOf {
+		did_details,
+		web3_name_details: web3_name,
+		linked_accounts,
+	}
 }
 
 #[derive(Default)]
