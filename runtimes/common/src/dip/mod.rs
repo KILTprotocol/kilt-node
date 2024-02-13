@@ -22,3 +22,6 @@
 pub mod did;
 /// Logic for generating Merkle commitments of a KILT DID identity.
 pub mod merkle;
+
+#[cfg(test)]
+mod mock;
