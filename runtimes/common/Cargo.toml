@@ -11,6 +11,7 @@ repository.workspace = true
 version.workspace = true
 
 [dev-dependencies]
+did = {workspace = true, features = ["std", "mock"]}
 sp-io = {workspace = true, features = ["std"]}
 
 [dependencies]

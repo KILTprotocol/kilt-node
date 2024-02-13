@@ -26,12 +26,17 @@ use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
 use sp_core::ConstU32;
 use sp_runtime::{BoundedVec, SaturatedConversion};
-use sp_std::vec::Vec;
+use sp_std::{fmt::Debug, vec::Vec};
 
 #[cfg(feature = "runtime-benchmarks")]
 use kilt_support::{benchmark::IdentityContext, traits::GetWorstCase};
 
-#[derive(Encode, Decode, TypeInfo, Debug)]
+#[cfg(test)]
+mod mock;
+#[cfg(test)]
+mod tests;
+
+#[derive(Encode, Decode, TypeInfo, Debug, PartialEq, Eq)]
 pub enum LinkedDidInfoProviderError {
 	DidNotFound,
 	DidDeleted,
@@ -59,6 +64,7 @@ pub type Web3OwnershipOf<Runtime> =
 
 /// Identity information related to a KILT DID relevant for cross-chain
 /// transactions via the DIP protocol.
+#[derive(Debug, Clone, PartialEq)]
 pub struct LinkedDidInfoOf<Runtime, const MAX_LINKED_ACCOUNTS: u32>
 where
 	Runtime: did::Config + pallet_web3_names::Config,
