@@ -32,8 +32,6 @@ use sp_std::{fmt::Debug, vec::Vec};
 use kilt_support::{benchmark::IdentityContext, traits::GetWorstCase};
 
 #[cfg(test)]
-mod mock;
-#[cfg(test)]
 mod tests;
 
 #[derive(Encode, Decode, TypeInfo, Debug, PartialEq, Eq)]

@@ -23,11 +23,8 @@ use pallet_dip_provider::traits::IdentityProvider;
 use crate::{
 	constants::dip_provider::MAX_LINKED_ACCOUNTS,
 	dip::{
-		did::{
-			mock::{create_linked_info, ExtBuilder, ACCOUNT, DID_IDENTIFIER, SUBMITTER},
-			LinkedDidInfoOf, LinkedDidInfoProvider, LinkedDidInfoProviderError, Web3OwnershipOf,
-		},
-		mock::TestRuntime,
+		did::{LinkedDidInfoOf, LinkedDidInfoProvider, LinkedDidInfoProviderError, Web3OwnershipOf},
+		mock::{create_linked_info, ExtBuilder, TestRuntime, ACCOUNT, DID_IDENTIFIER, SUBMITTER},
 	},
 };
 

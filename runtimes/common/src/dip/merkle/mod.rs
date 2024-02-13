@@ -33,6 +33,9 @@ use crate::dip::did::LinkedDidInfoOf;
 
 pub mod v0;
 
+#[cfg(test)]
+mod tests;
+
 /// Type of the Merkle proof revealing parts of the DIP identity of a given DID
 /// subject.
 pub type DidMerkleProofOf<T> = DidMerkleProof<
