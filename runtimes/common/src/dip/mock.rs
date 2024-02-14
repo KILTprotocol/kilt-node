@@ -187,7 +187,7 @@ pub(crate) const SUBMITTER: AccountId = AccountId::new([150u8; 32]);
 
 pub(crate) fn create_linked_info(
 	auth_key: DidVerificationKey<AccountId>,
-	include_web3_name: bool,
+	web3_name: Option<impl AsRef<[u8]>>,
 	linked_accounts: u32,
 ) -> LinkedDidInfoOf<TestRuntime, MAX_LINKED_ACCOUNTS> {
 	let did_details = {
@@ -209,10 +209,12 @@ pub(crate) fn create_linked_info(
 		});
 		details
 	};
-	let web3_name = if include_web3_name {
-		let web3_name: Web3NameOf<TestRuntime> = b"ntn_x2".to_vec().try_into().unwrap();
+	let web3_name = if let Some(web3_name) = web3_name {
 		let claimed_at = BlockNumberFor::<TestRuntime>::default();
-		Some(RevealedWeb3Name { web3_name, claimed_at })
+		Some(RevealedWeb3Name {
+			web3_name: web3_name.as_ref().to_vec().try_into().unwrap(),
+			claimed_at,
+		})
 	} else {
 		None
 	};

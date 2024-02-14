@@ -30,7 +30,11 @@ use crate::{
 
 #[test]
 fn generate_commitment_unsupported_version() {
-	let linked_info = create_linked_info(DidVerificationKey::Account(ACCOUNT), true, MAX_LINKED_ACCOUNTS);
+	let linked_info = create_linked_info(
+		DidVerificationKey::Account(ACCOUNT),
+		Some(b"ntn_x2"),
+		MAX_LINKED_ACCOUNTS,
+	);
 	ExtBuilder::default().build().execute_with(|| {
 		assert_noop!(
 			DidMerkleRootGenerator::<TestRuntime>::generate_commitment(&DID_IDENTIFIER, &linked_info, 1,),
@@ -41,7 +45,11 @@ fn generate_commitment_unsupported_version() {
 
 #[test]
 fn generate_proof_unsupported_version() {
-	let linked_info = create_linked_info(DidVerificationKey::Account(ACCOUNT), true, MAX_LINKED_ACCOUNTS);
+	let linked_info = create_linked_info(
+		DidVerificationKey::Account(ACCOUNT),
+		Some(b"ntn_x2"),
+		MAX_LINKED_ACCOUNTS,
+	);
 	ExtBuilder::default().build().execute_with(|| {
 		assert_noop!(
 			DidMerkleRootGenerator::<TestRuntime>::generate_proof(
