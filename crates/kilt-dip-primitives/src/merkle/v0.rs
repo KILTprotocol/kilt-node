@@ -168,6 +168,12 @@ pub struct TimeBoundDidSignature<BlockNumber> {
 	pub(crate) valid_until: BlockNumber,
 }
 
+impl<BlockNumber> TimeBoundDidSignature<BlockNumber> {
+	pub fn new(signature: DidSignature, valid_until: BlockNumber) -> Self {
+		Self { signature, valid_until }
+	}
+}
+
 #[cfg(feature = "runtime-benchmarks")]
 impl<BlockNumber, Context> kilt_support::traits::GetWorstCase<Context> for TimeBoundDidSignature<BlockNumber>
 where
@@ -768,6 +774,38 @@ pub struct DipDidProofWithVerifiedSubjectCommitment<
 		DidMerkleProof<KiltDidKeyId, KiltAccountId, KiltBlockNumber, KiltWeb3Name, KiltLinkableAccountId>,
 	/// The cross-chain DID signature.
 	pub(crate) signature: TimeBoundDidSignature<ConsumerBlockNumber>,
+}
+
+impl<
+		Commitment,
+		KiltDidKeyId,
+		KiltAccountId,
+		KiltBlockNumber,
+		KiltWeb3Name,
+		KiltLinkableAccountId,
+		ConsumerBlockNumber,
+	>
+	DipDidProofWithVerifiedSubjectCommitment<
+		Commitment,
+		KiltDidKeyId,
+		KiltAccountId,
+		KiltBlockNumber,
+		KiltWeb3Name,
+		KiltLinkableAccountId,
+		ConsumerBlockNumber,
+	>
+{
+	pub fn new(
+		dip_commitment: Commitment,
+		dip_proof: DidMerkleProof<KiltDidKeyId, KiltAccountId, KiltBlockNumber, KiltWeb3Name, KiltLinkableAccountId>,
+		signature: TimeBoundDidSignature<ConsumerBlockNumber>,
+	) -> Self {
+		Self {
+			dip_commitment,
+			dip_proof,
+			signature,
+		}
+	}
 }
 
 impl<

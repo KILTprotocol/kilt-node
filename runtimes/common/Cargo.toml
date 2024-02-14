@@ -11,6 +11,7 @@ repository.workspace = true
 version.workspace = true
 
 [dev-dependencies]
+kilt-dip-primitives = { workspace = true, features = ["std"] }
 did = {workspace = true, features = ["std", "mock"]}
 sp-io = {workspace = true, features = ["std"]}
 

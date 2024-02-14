@@ -24,12 +24,13 @@ use did::{
 use frame_support::{
 	construct_runtime,
 	traits::{Currency, Everything},
+	Hashable,
 };
 use frame_system::{mocking::MockBlock, pallet_prelude::BlockNumberFor, EnsureRoot, EnsureSigned};
 use kilt_dip_primitives::RevealedWeb3Name;
 use pallet_did_lookup::{account::AccountId20, linkable_account::LinkableAccountId};
 use pallet_web3_names::{web3_name::AsciiWeb3Name, Web3NameOf};
-use sp_core::{ConstU128, ConstU16, ConstU32, ConstU64};
+use sp_core::{sr25519, ConstU128, ConstU16, ConstU32, ConstU64};
 use sp_runtime::{traits::IdentityLookup, AccountId32, BoundedVec};
 
 use crate::{
@@ -192,11 +193,13 @@ pub(crate) fn create_linked_info(
 ) -> LinkedDidInfoOf<TestRuntime, MAX_LINKED_ACCOUNTS> {
 	let did_details = {
 		let mut details = generate_base_did_details(auth_key.clone(), Some(SUBMITTER));
+		let att_key = DidVerificationKey::Sr25519(sr25519::Public(auth_key.blake2_256()));
+		let del_key = DidVerificationKey::Account(SUBMITTER);
 		details
-			.update_attestation_key(auth_key.clone(), BlockNumberFor::<TestRuntime>::default())
+			.update_attestation_key(att_key, BlockNumberFor::<TestRuntime>::default())
 			.expect("Should not fail to add attestation key to DID.");
 		details
-			.update_delegation_key(auth_key, BlockNumberFor::<TestRuntime>::default())
+			.update_delegation_key(del_key, BlockNumberFor::<TestRuntime>::default())
 			.expect("Should not fail to add delegation key to DID.");
 		(0..MAX_KEY_AGREEMENT_KEYS).for_each(|i| {
 			let bytes = i.to_be_bytes();
