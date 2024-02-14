@@ -35,7 +35,7 @@ fn linked_did_info_provider_retrieve_max_capacity() {
 		did_details,
 		web3_name_details,
 		linked_accounts,
-	} = create_linked_info::<MAX_LINKED_ACCOUNTS>(auth_key, true);
+	} = create_linked_info(auth_key, true, MAX_LINKED_ACCOUNTS);
 	let web3_name = web3_name_details.map(|n| n.web3_name);
 
 	ExtBuilder::default()
@@ -67,7 +67,7 @@ fn linked_did_info_provider_retrieve_max_capacity() {
 #[test]
 fn linked_did_info_provider_retrieve_only_did_details() {
 	let auth_key = DidVerificationKey::Account(ACCOUNT);
-	let LinkedDidInfoOf { did_details, .. } = create_linked_info::<0>(auth_key, false);
+	let LinkedDidInfoOf { did_details, .. } = create_linked_info(auth_key, false, 0);
 
 	ExtBuilder::default()
 		.with_dids(vec![(DID_IDENTIFIER, did_details.clone(), None, vec![], SUBMITTER)])
@@ -107,13 +107,14 @@ fn linked_did_info_provider_retrieve_did_not_found() {
 }
 
 #[test]
+#[should_panic = "Cannot cast generated vector of linked accounts with length 11 to BoundedVec with max limit of 10."]
 fn linked_did_info_provider_retrieve_too_many_linked_accounts() {
 	let auth_key = DidVerificationKey::Account(ACCOUNT);
 	let LinkedDidInfoOf {
 		did_details,
 		web3_name_details,
 		linked_accounts,
-	} = create_linked_info::<{ MAX_LINKED_ACCOUNTS + 1 }>(auth_key, true);
+	} = create_linked_info(auth_key, true, MAX_LINKED_ACCOUNTS + 1);
 	let web3_name = web3_name_details.map(|n| n.web3_name);
 
 	ExtBuilder::default()

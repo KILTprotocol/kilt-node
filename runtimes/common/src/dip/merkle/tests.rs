@@ -18,18 +18,30 @@
 
 use did::did_details::DidVerificationKey;
 use frame_support::assert_noop;
+use pallet_dip_provider::traits::IdentityCommitmentGenerator;
 
 use crate::{
 	constants::dip_provider::MAX_LINKED_ACCOUNTS,
 	dip::{
 		merkle::{DidMerkleProofError, DidMerkleRootGenerator},
-		mock::{create_linked_info, ExtBuilder, TestRuntime, ACCOUNT},
+		mock::{create_linked_info, ExtBuilder, TestRuntime, ACCOUNT, DID_IDENTIFIER},
 	},
 };
 
 #[test]
 fn generate_commitment_unsupported_version() {
-	let linked_info = create_linked_info::<MAX_LINKED_ACCOUNTS>(DidVerificationKey::Account(ACCOUNT), true);
+	let linked_info = create_linked_info(DidVerificationKey::Account(ACCOUNT), true, MAX_LINKED_ACCOUNTS);
+	ExtBuilder::default().build().execute_with(|| {
+		assert_noop!(
+			DidMerkleRootGenerator::<TestRuntime>::generate_commitment(&DID_IDENTIFIER, &linked_info, 1,),
+			DidMerkleProofError::UnsupportedVersion
+		);
+	});
+}
+
+#[test]
+fn generate_proof_unsupported_version() {
+	let linked_info = create_linked_info(DidVerificationKey::Account(ACCOUNT), true, MAX_LINKED_ACCOUNTS);
 	ExtBuilder::default().build().execute_with(|| {
 		assert_noop!(
 			DidMerkleRootGenerator::<TestRuntime>::generate_proof(

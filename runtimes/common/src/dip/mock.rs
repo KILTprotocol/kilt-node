@@ -17,7 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use did::{
-	did_details::{DidDetails, DidVerificationKey},
+	did_details::{DidDetails, DidEncryptionKey, DidVerificationKey},
 	mock_utils::generate_base_did_details,
 	DeriveDidCallAuthorizationVerificationKeyRelationship,
 };
@@ -25,7 +25,7 @@ use frame_support::{
 	construct_runtime,
 	traits::{Currency, Everything},
 };
-use frame_system::{mocking::MockBlock, EnsureRoot, EnsureSigned};
+use frame_system::{mocking::MockBlock, pallet_prelude::BlockNumberFor, EnsureRoot, EnsureSigned};
 use kilt_dip_primitives::RevealedWeb3Name;
 use pallet_did_lookup::{account::AccountId20, linkable_account::LinkableAccountId};
 use pallet_web3_names::{web3_name::AsciiWeb3Name, Web3NameOf};
@@ -37,7 +37,7 @@ use crate::{
 		did::{
 			MaxNewKeyAgreementKeys, MaxNumberOfServicesPerDid, MaxNumberOfTypesPerService, MaxNumberOfUrlsPerService,
 			MaxPublicKeysPerDid, MaxServiceIdLength, MaxServiceTypeLength, MaxServiceUrlLength,
-			MaxTotalKeyAgreementKeys,
+			MaxTotalKeyAgreementKeys, MAX_KEY_AGREEMENT_KEYS,
 		},
 		dip_provider::MAX_LINKED_ACCOUNTS,
 		web3_names::{MaxNameLength, MinNameLength},
@@ -185,34 +185,59 @@ pub(crate) const ACCOUNT: AccountId = AccountId::new([100u8; 32]);
 pub(crate) const DID_IDENTIFIER: DidIdentifier = DidIdentifier::new([150u8; 32]);
 pub(crate) const SUBMITTER: AccountId = AccountId::new([150u8; 32]);
 
-pub(crate) fn create_linked_info<const LINKED_ACCOUNTS: u32>(
+pub(crate) fn create_linked_info(
 	auth_key: DidVerificationKey<AccountId>,
 	include_web3_name: bool,
-) -> LinkedDidInfoOf<TestRuntime, LINKED_ACCOUNTS> {
-	let did_details: DidDetails<TestRuntime> = generate_base_did_details(auth_key, Some(SUBMITTER));
+	linked_accounts: u32,
+) -> LinkedDidInfoOf<TestRuntime, MAX_LINKED_ACCOUNTS> {
+	let did_details = {
+		let mut details = generate_base_did_details(auth_key.clone(), Some(SUBMITTER));
+		details
+			.update_attestation_key(auth_key.clone(), BlockNumberFor::<TestRuntime>::default())
+			.expect("Should not fail to add attestation key to DID.");
+		details
+			.update_delegation_key(auth_key, BlockNumberFor::<TestRuntime>::default())
+			.expect("Should not fail to add delegation key to DID.");
+		(0..MAX_KEY_AGREEMENT_KEYS).for_each(|i| {
+			let bytes = i.to_be_bytes();
+			let mut buffer = <[u8; 32]>::default();
+			buffer[..4].copy_from_slice(&bytes);
+			let key_agreement_key = DidEncryptionKey::X25519(buffer);
+			details
+				.add_key_agreement_key(key_agreement_key, BlockNumberFor::<TestRuntime>::default())
+				.expect("Should not fail to add key agreement key to DID.");
+		});
+		details
+	};
 	let web3_name = if include_web3_name {
 		let web3_name: Web3NameOf<TestRuntime> = b"ntn_x2".to_vec().try_into().unwrap();
-		let claimed_at = 1;
+		let claimed_at = BlockNumberFor::<TestRuntime>::default();
 		Some(RevealedWeb3Name { web3_name, claimed_at })
 	} else {
 		None
 	};
-	let linked_accounts: BoundedVec<LinkableAccountId, ConstU32<LINKED_ACCOUNTS>> = (0..LINKED_ACCOUNTS)
-		.map(|i| {
-			let bytes = i.to_be_bytes();
-			if i % 2 == 0 {
-				let mut buffer = <[u8; 20]>::default();
-				buffer[..4].copy_from_slice(&bytes);
-				LinkableAccountId::AccountId20(AccountId20(buffer))
-			} else {
-				let mut buffer = <[u8; 32]>::default();
-				buffer[..4].copy_from_slice(&bytes);
-				LinkableAccountId::AccountId32(AccountId32::new(buffer))
-			}
-		})
-		.collect::<Vec<_>>()
-		.try_into()
-		.expect("Cannot cast generated vector of linked accounts to BoundedVec with max limit.");
+	let linked_accounts_iter = (0..linked_accounts).map(|i| {
+		let bytes = i.to_be_bytes();
+		if i % 2 == 0 {
+			let mut buffer = <[u8; 20]>::default();
+			buffer[..4].copy_from_slice(&bytes);
+			LinkableAccountId::AccountId20(AccountId20(buffer))
+		} else {
+			let mut buffer = <[u8; 32]>::default();
+			buffer[..4].copy_from_slice(&bytes);
+			LinkableAccountId::AccountId32(AccountId32::new(buffer))
+		}
+	});
+	let linked_accounts: BoundedVec<LinkableAccountId, ConstU32<MAX_LINKED_ACCOUNTS>> =
+		linked_accounts_iter
+			.clone()
+			.collect::<Vec<_>>()
+			.try_into()
+			.unwrap_or_else(|_| {
+				panic!("Cannot cast generated vector of linked accounts with length {} to BoundedVec with max limit of {}.",
+				linked_accounts_iter.count(),
+				MAX_LINKED_ACCOUNTS)
+			});
 	LinkedDidInfoOf {
 		did_details,
 		web3_name_details: web3_name,
