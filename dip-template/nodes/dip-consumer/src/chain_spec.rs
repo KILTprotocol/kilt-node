@@ -120,7 +120,7 @@ pub fn development_config() -> ChainSpec {
 			testnet_genesis(
 				vec![(
 					get_account_id_from_seed::<sr25519::Public>("Alice"),
-					get_from_seed("Alice"),
+					get_collator_keys_from_seed("Alice"),
 				)],
 				vec![
 					get_account_id_from_seed::<sr25519::Public>("Alice"),
