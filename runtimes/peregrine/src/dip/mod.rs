@@ -27,7 +27,7 @@ use sp_core::ConstU32;
 
 use crate::{
 	dip::deposit::{DepositCollectorHooks, DepositHooks, DepositNamespace},
-	Balances, Runtime, RuntimeEvent, RuntimeHoldReason,
+	weights, Balances, Runtime, RuntimeEvent, RuntimeHoldReason,
 };
 
 pub(crate) mod deposit;
@@ -47,8 +47,7 @@ impl pallet_dip_provider::Config for Runtime {
 	type IdentityProvider = LinkedDidInfoProvider<MAX_LINKED_ACCOUNTS>;
 	type ProviderHooks = DepositCollectorHooks;
 	type RuntimeEvent = RuntimeEvent;
-	// TODO: Change after benchmarks
-	type WeightInfo = ();
+	type WeightInfo = weights::pallet_dip_provider::WeightInfo<Runtime>;
 }
 
 impl pallet_deposit_storage::Config for Runtime {
@@ -64,6 +63,5 @@ impl pallet_deposit_storage::Config for Runtime {
 	type Namespace = DepositNamespace;
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeHoldReason = RuntimeHoldReason;
-	// TODO: Change after benchmarks
-	type WeightInfo = ();
+	type WeightInfo = weights::pallet_deposit_storage::WeightInfo<Runtime>;
 }
