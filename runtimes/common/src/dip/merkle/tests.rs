@@ -23,15 +23,23 @@ use crate::{
 	constants::dip_provider::MAX_LINKED_ACCOUNTS,
 	dip::{
 		merkle::{DidMerkleProofError, DidMerkleRootGenerator},
-		mock::{create_linked_info, TestRuntime, ACCOUNT},
+		mock::{create_linked_info, ExtBuilder, TestRuntime, ACCOUNT},
 	},
 };
 
 #[test]
 fn generate_commitment_unsupported_version() {
-	let linked_info = create_linked_info(DidVerificationKey::Account(ACCOUNT), true, MAX_LINKED_ACCOUNTS);
-	assert_noop!(
-		DidMerkleRootGenerator::<TestRuntime>::generate_proof(&linked_info, 1, [].into_iter(), false, [].into_iter()),
-		DidMerkleProofError::UnsupportedVersion
-	);
+	let linked_info = create_linked_info::<MAX_LINKED_ACCOUNTS>(DidVerificationKey::Account(ACCOUNT), true);
+	ExtBuilder::default().build().execute_with(|| {
+		assert_noop!(
+			DidMerkleRootGenerator::<TestRuntime>::generate_proof(
+				&linked_info,
+				1,
+				[].into_iter(),
+				false,
+				[].into_iter()
+			),
+			DidMerkleProofError::UnsupportedVersion
+		);
+	});
 }

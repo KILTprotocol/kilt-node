@@ -25,15 +25,12 @@ use frame_support::{
 	construct_runtime,
 	traits::{Currency, Everything},
 };
-use frame_system::{mocking::MockBlock, pallet_prelude::BlockNumberFor, EnsureRoot, EnsureSigned};
+use frame_system::{mocking::MockBlock, EnsureRoot, EnsureSigned};
 use kilt_dip_primitives::RevealedWeb3Name;
 use pallet_did_lookup::{account::AccountId20, linkable_account::LinkableAccountId};
 use pallet_web3_names::{web3_name::AsciiWeb3Name, Web3NameOf};
 use sp_core::{ConstU128, ConstU16, ConstU32, ConstU64};
-use sp_runtime::{
-	traits::{BlockNumberProvider, IdentityLookup},
-	AccountId32, BoundedVec,
-};
+use sp_runtime::{traits::IdentityLookup, AccountId32, BoundedVec};
 
 use crate::{
 	constants::{
@@ -188,21 +185,19 @@ pub(crate) const ACCOUNT: AccountId = AccountId::new([100u8; 32]);
 pub(crate) const DID_IDENTIFIER: DidIdentifier = DidIdentifier::new([150u8; 32]);
 pub(crate) const SUBMITTER: AccountId = AccountId::new([150u8; 32]);
 
-pub(crate) fn create_linked_info(
+pub(crate) fn create_linked_info<const LINKED_ACCOUNTS: u32>(
 	auth_key: DidVerificationKey<AccountId>,
 	include_web3_name: bool,
-	linked_accounts: u32,
-) -> LinkedDidInfoOf<TestRuntime, MAX_LINKED_ACCOUNTS> {
+) -> LinkedDidInfoOf<TestRuntime, LINKED_ACCOUNTS> {
 	let did_details: DidDetails<TestRuntime> = generate_base_did_details(auth_key, Some(SUBMITTER));
-	let web3_name: Option<RevealedWeb3Name<Web3NameOf<TestRuntime>, BlockNumberFor<TestRuntime>>> = if include_web3_name
-	{
+	let web3_name = if include_web3_name {
 		let web3_name: Web3NameOf<TestRuntime> = b"ntn_x2".to_vec().try_into().unwrap();
-		let claimed_at = frame_system::Pallet::<TestRuntime>::current_block_number();
+		let claimed_at = 1;
 		Some(RevealedWeb3Name { web3_name, claimed_at })
 	} else {
 		None
 	};
-	let linked_accounts: BoundedVec<LinkableAccountId, ConstU32<MAX_LINKED_ACCOUNTS>> = (0..linked_accounts)
+	let linked_accounts: BoundedVec<LinkableAccountId, ConstU32<LINKED_ACCOUNTS>> = (0..LINKED_ACCOUNTS)
 		.map(|i| {
 			let bytes = i.to_be_bytes();
 			if i % 2 == 0 {
