@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use crate::xcm_config::tests::utils::get_from_seed;
-use frame_support::traits::{fungible::Mutate, Currency};
+use frame_support::traits::Currency;
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use polkadot_primitives::{AccountId, AssignmentId, Balance, BlockNumber, ValidatorId, LOWEST_PUBLIC_ID};
 use polkadot_runtime_parachains::configuration::HostConfiguration;
@@ -121,14 +121,14 @@ fn genesis() -> Storage {
 }
 
 pub(crate) fn set_free_balance((account_id, balance): (AccountId, Balance)) {
-	Runtime::execute_with(|| {
+	Rococo::execute_with(|| {
 		<Balances as Currency<AccountId>>::make_free_balance_be(&account_id, balance);
 	});
 }
 
 decl_test_relay_chains! {
 	#[api_version(5)]
-	pub struct Runtime {
+	pub struct Rococo {
 		genesis = genesis(),
 		on_init = (),
 		runtime = {

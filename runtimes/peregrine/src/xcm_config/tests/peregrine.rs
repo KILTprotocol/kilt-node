@@ -64,7 +64,7 @@ fn genesis() -> Storage {
 }
 
 decl_test_parachains! {
-	pub struct Runtime {
+	pub struct Peregrine {
 		genesis = genesis(),
 		on_init = (),
 		runtime = {

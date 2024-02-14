@@ -19,19 +19,18 @@ mod relaychain;
 mod utils;
 
 use crate::{xcm_config::UniversalLocation as PeregrineUniversalLocation, PolkadotXcm as PeregrineXcm};
-use frame_support::{assert_ok, traits::fungible::Inspect};
+use frame_support::assert_ok;
 use frame_system::RawOrigin;
 use parity_scale_codec::Encode;
-use peregrine::{Runtime as PeregrineRuntime, RuntimeEvent as PeregrineRuntimeEvent, System as PeregrineSystem};
+use peregrine::{Peregrine, RuntimeEvent as PeregrineRuntimeEvent, System as PeregrineSystem};
 use polkadot_primitives::{AccountId, Balance};
 use polkadot_service::chain_spec::get_account_id_from_seed;
 use relaychain::{
-	set_free_balance as set_rococo_free_balance, LocationConverter as RococoLocationConverter,
-	Runtime as RococoRuntime, RuntimeEvent as RococoRuntimeEvent, System as RococoSystem,
+	set_free_balance as set_rococo_free_balance, LocationConverter as RococoLocationConverter, Rococo,
+	System as RococoSystem,
 };
 use rococo_runtime::xcm_config::UniversalLocation as RococoUniversalLocation;
 use rococo_runtime_constants::currency::UNITS;
-use runtime_common::constants::KILT;
 use sp_core::{sr25519, Get};
 use xcm::prelude::*;
 use xcm_emulator::{decl_test_networks, BridgeMessageHandler, Parachain, RelayChain, TestExt};
@@ -39,32 +38,23 @@ use xcm_executor::traits::ConvertLocation;
 
 decl_test_networks! {
 	pub struct RococoNetwork {
-		relay_chain = RococoRuntime,
+		relay_chain = Rococo,
 		parachains = vec![
-			PeregrineRuntime,
+			Peregrine,
 		],
 		bridge = ()
 	}
 }
 
-/// Test that a reserved transfer to the relaychain is failing. We don't want to allow transfers to the relaychain since the funds might be lost.
+/// Test that a reserved transfer to the relaychain is failing. We don't want to
+/// allow transfers to the relaychain since the funds might be lost.
 #[test]
 fn test_reserve_asset_transfer_from_regular_account_to_relay() {
 	RococoNetwork::reset();
-	let rococo_universal_location = RococoUniversalLocation::get();
 
 	let alice_account_id_on_peregrine = get_account_id_from_seed::<sr25519::Public>("Alice");
-	let alice_account_id_universal_location = PeregrineRuntime::execute_with(|| {
-		PeregrineUniversalLocation::get()
-			.pushed_with(AccountId32 {
-				network: None,
-				id: alice_account_id_on_peregrine.clone().into(),
-			})
-			.expect("Should not fail to create absolute account ID.")
-	})
-	.into_location();
 
-	PeregrineRuntime::execute_with(|| {
+	Peregrine::execute_with(|| {
 		assert_ok!(PeregrineXcm::limited_reserve_transfer_assets(
 			RawOrigin::Signed(alice_account_id_on_peregrine.clone()).into(),
 			Box::new(Parent.into()),
@@ -91,7 +81,7 @@ fn test_reserve_asset_transfer_from_regular_account_to_relay() {
 		));
 	});
 	// No message should reach the relaychain.
-	RococoRuntime::execute_with(|| {
+	Rococo::execute_with(|| {
 		assert_eq!(RococoSystem::events().len(), 0);
 	})
 }
@@ -101,8 +91,7 @@ fn test_ump_message_from_parachain_account() {
 	RococoNetwork::reset();
 	let rococo_universal_location = RococoUniversalLocation::get();
 
-	let peregrine_universal_location =
-		PeregrineRuntime::execute_with(|| PeregrineUniversalLocation::get()).into_location();
+	let peregrine_universal_location = Peregrine::execute_with(|| PeregrineUniversalLocation::get()).into_location();
 	let peregrine_account_id_on_rococo = RococoLocationConverter::convert_location(&peregrine_universal_location)
 		.expect("Should not fail to convert parachain location to Rococo account ID.");
 	println!("Account ID: {:#?}", &peregrine_account_id_on_rococo);
@@ -120,7 +109,7 @@ fn test_ump_message_from_parachain_account() {
 		Transact {
 			origin_kind: OriginKind::Native,
 			require_weight_at_most: weight,
-			call: RococoRuntime::execute_with(|| {
+			call: Rococo::execute_with(|| {
 				rococo_runtime::RuntimeCall::System(frame_system::Call::remark_with_event {
 					remark: message.to_vec(),
 				})
@@ -135,7 +124,7 @@ fn test_ump_message_from_parachain_account() {
 		},
 	]
 	.into();
-	PeregrineRuntime::execute_with(|| {
+	Peregrine::execute_with(|| {
 		assert_ok!(PeregrineXcm::send(
 			RawOrigin::Root.into(),
 			Box::new(Parent.into()),
