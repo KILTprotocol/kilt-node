@@ -22,7 +22,7 @@ use crate::{xcm_config::UniversalLocation as PeregrineUniversalLocation, Polkado
 use frame_support::{assert_ok, traits::fungible::Inspect};
 use frame_system::RawOrigin;
 use parity_scale_codec::Encode;
-use peregrine::{Runtime as PeregrineRuntime, System as PeregrineSystem};
+use peregrine::{Runtime as PeregrineRuntime, RuntimeEvent as PeregrineRuntimeEvent, System as PeregrineSystem};
 use polkadot_primitives::{AccountId, Balance};
 use polkadot_service::chain_spec::get_account_id_from_seed;
 use relaychain::{
@@ -47,11 +47,9 @@ decl_test_networks! {
 	}
 }
 
-use crate::Balances;
-
+/// Test that a reserved transfer to the relaychain is failing. We don't want to allow transfers to the relaychain since the funds might be lost.
 #[test]
-fn test_reserve_asset_transfer_from_regular_account() {
-	env_logger::init();
+fn test_reserve_asset_transfer_from_regular_account_to_relay() {
 	RococoNetwork::reset();
 	let rococo_universal_location = RococoUniversalLocation::get();
 
@@ -82,21 +80,24 @@ fn test_reserve_asset_transfer_from_regular_account() {
 			WeightLimit::Unlimited,
 		));
 		println!("AAAAA {:?}", PeregrineSystem::events());
-	});
-	// Regular parachain accounts cannot be translated to account IDs, hence the
-	// conversion in `WithdrawAsset` should fail.
-	RococoRuntime::execute_with(|| {
-		assert_eq!(RococoSystem::events().len(), 1);
 		assert!(matches!(
-			RococoSystem::events().first().unwrap().event,
-			RococoRuntimeEvent::MessageQueue(pallet_message_queue::Event::Processed { success: false, .. })
+			PeregrineSystem::events()
+				.first()
+				.expect("An event should be emitted when sending an XCM message.")
+				.event,
+			PeregrineRuntimeEvent::PolkadotXcm(pallet_xcm::Event::Attempted {
+				outcome: xcm::latest::Outcome::Error(xcm::latest::Error::Barrier)
+			})
 		));
+	});
+	// No message should reach the relaychain.
+	RococoRuntime::execute_with(|| {
+		assert_eq!(RococoSystem::events().len(), 0);
 	})
 }
 
 #[test]
 fn test_ump_message_from_parachain_account() {
-	env_logger::init();
 	RococoNetwork::reset();
 	let rococo_universal_location = RococoUniversalLocation::get();
 

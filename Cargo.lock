@@ -8014,7 +8014,6 @@ dependencies = [
  "cumulus-primitives-utility",
  "delegation",
  "did",
- "env_logger 0.10.1",
  "frame-benchmarking",
  "frame-executive",
  "frame-support",
