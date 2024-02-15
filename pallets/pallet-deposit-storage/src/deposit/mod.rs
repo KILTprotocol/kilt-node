@@ -32,6 +32,11 @@ use sp_std::marker::PhantomData;
 
 use crate::{BalanceOf, Config, Error, HoldReason, Pallet};
 
+#[cfg(test)]
+mod mock;
+#[cfg(test)]
+mod tests;
+
 /// Details associated to an on-chain deposit.
 #[derive(Clone, Debug, Encode, Decode, Eq, PartialEq, Ord, PartialOrd, TypeInfo, MaxEncodedLen)]
 pub struct DepositEntry<AccountId, Balance, Reason> {
