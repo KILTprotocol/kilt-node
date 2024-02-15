@@ -30,7 +30,7 @@ use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_runtime::RuntimeDebug;
 
-use crate::{self as storage_deposit_pallet, NoopDepositStorageHooks};
+use crate::{self as storage_deposit_pallet};
 
 pub(crate) type Balance = u128;
 
@@ -101,7 +101,7 @@ impl pallet_balances::Config for TestRuntime {
 impl crate::Config for TestRuntime {
 	type CheckOrigin = EnsureSigned<Self::AccountId>;
 	type Currency = Balances;
-	type DepositHooks = NoopDepositStorageHooks;
+	type DepositHooks = ();
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeHoldReason = RuntimeHoldReason;
 	type MaxKeyLength = ConstU32<256>;

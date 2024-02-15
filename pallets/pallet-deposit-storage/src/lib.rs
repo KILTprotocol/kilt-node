@@ -35,10 +35,7 @@ mod mock;
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 
-pub use crate::{
-	default_weights::WeightInfo, deposit::FixedDepositCollectorViaDepositsPallet, pallet::*,
-	traits::NoopDepositStorageHooks,
-};
+pub use crate::{default_weights::WeightInfo, deposit::FixedDepositCollectorViaDepositsPallet, pallet::*};
 
 #[frame_support::pallet]
 pub mod pallet {
