@@ -17,14 +17,14 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use did::did_details::DidVerificationKey;
-use frame_support::assert_noop;
+use frame_support::assert_err;
 use pallet_dip_provider::traits::IdentityCommitmentGenerator;
 
 use crate::{
 	constants::dip_provider::MAX_LINKED_ACCOUNTS,
 	dip::{
 		merkle::{DidMerkleProofError, DidMerkleRootGenerator},
-		mock::{create_linked_info, ExtBuilder, TestRuntime, ACCOUNT, DID_IDENTIFIER},
+		mock::{create_linked_info, TestRuntime, ACCOUNT, DID_IDENTIFIER},
 	},
 };
 
@@ -35,12 +35,10 @@ fn generate_commitment_unsupported_version() {
 		Some(b"ntn_x2"),
 		MAX_LINKED_ACCOUNTS,
 	);
-	ExtBuilder::default().build().execute_with(|| {
-		assert_noop!(
-			DidMerkleRootGenerator::<TestRuntime>::generate_commitment(&DID_IDENTIFIER, &linked_info, 1,),
-			DidMerkleProofError::UnsupportedVersion
-		);
-	});
+	assert_err!(
+		DidMerkleRootGenerator::<TestRuntime>::generate_commitment(&DID_IDENTIFIER, &linked_info, 1,),
+		DidMerkleProofError::UnsupportedVersion
+	);
 }
 
 #[test]
@@ -50,16 +48,8 @@ fn generate_proof_unsupported_version() {
 		Some(b"ntn_x2"),
 		MAX_LINKED_ACCOUNTS,
 	);
-	ExtBuilder::default().build().execute_with(|| {
-		assert_noop!(
-			DidMerkleRootGenerator::<TestRuntime>::generate_proof(
-				&linked_info,
-				1,
-				[].into_iter(),
-				false,
-				[].into_iter()
-			),
-			DidMerkleProofError::UnsupportedVersion
-		);
-	});
+	assert_err!(
+		DidMerkleRootGenerator::<TestRuntime>::generate_proof(&linked_info, 1, [].into_iter(), false, [].into_iter()),
+		DidMerkleProofError::UnsupportedVersion
+	);
 }

@@ -17,6 +17,7 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use did::{did_details::DidDetails, DidVerificationKeyRelationship, KeyIdOf};
+use frame_support::ensure;
 use frame_system::pallet_prelude::BlockNumberFor;
 use kilt_dip_primitives::{
 	DidKeyRelationship, RevealedAccountId, RevealedDidKey, RevealedDidMerkleProofLeaf, RevealedWeb3Name,
@@ -234,48 +235,67 @@ where
 	let mut db = MemoryDB::default();
 	let root = calculate_root_with_db(identity, &mut db)?;
 
-	let mut leaves = key_ids
-		.map(|key_id| -> Result<_, DidMerkleProofError> {
-			let key_details = did_details
-				.public_keys
-				.get(key_id)
-				.ok_or(DidMerkleProofError::KeyNotFound)?;
-			// Create the merkle leaf key depending on the relationship of the key to the
-			// DID document.
-			let key_relationship = if *key_id == did_details.authentication_key {
-				Ok(DidVerificationKeyRelationship::Authentication.into())
-			} else if Some(*key_id) == did_details.attestation_key {
-				Ok(DidVerificationKeyRelationship::AssertionMethod.into())
-			} else if Some(*key_id) == did_details.delegation_key {
-				Ok(DidVerificationKeyRelationship::CapabilityDelegation.into())
-			} else if did_details.key_agreement_keys.contains(key_id) {
-				Ok(DidKeyRelationship::Encryption)
+	let did_key_leaves_iter = key_ids.map(|key_id| -> Result<_, DidMerkleProofError> {
+		let key_details = did_details
+			.public_keys
+			.get(key_id)
+			.ok_or(DidMerkleProofError::KeyNotFound)?;
+		let key_relationships = {
+			if did_details.key_agreement_keys.contains(key_id) {
+				Ok(vec![DidKeyRelationship::Encryption])
 			} else {
-				log::error!("Unknown key ID {:#?} retrieved from DID details.", key_id);
-				Err(DidMerkleProofError::Internal)
-			}?;
-			Ok(RevealedDidMerkleProofLeaf::from(RevealedDidKey {
-				id: *key_id,
-				relationship: key_relationship,
-				details: key_details.clone(),
-			}))
-		})
-		.chain(account_ids.map(|account_id| -> Result<_, DidMerkleProofError> {
-			if linked_accounts.contains(account_id) {
-				Ok(RevealedDidMerkleProofLeaf::from(RevealedAccountId(account_id.clone())))
-			} else {
-				Err(DidMerkleProofError::LinkedAccountNotFound)
+				let mut key_relationships = Vec::<DidKeyRelationship>::with_capacity(3);
+				if *key_id == did_details.authentication_key {
+					key_relationships.push(DidVerificationKeyRelationship::Authentication.into());
+				}
+				if Some(*key_id) == did_details.attestation_key {
+					key_relationships.push(DidVerificationKeyRelationship::AssertionMethod.into());
+				}
+				if Some(*key_id) == did_details.delegation_key {
+					key_relationships.push(DidVerificationKeyRelationship::CapabilityDelegation.into());
+				}
+				if key_relationships.is_empty() {
+					log::error!("Unknown key ID {:#?} retrieved from DID details.", key_id);
+					Err(DidMerkleProofError::Internal)
+				} else {
+					Ok(key_relationships)
+				}
 			}
-		}))
+		}?;
+		let leaves_for_key = key_relationships
+			.into_iter()
+			.map(|relationship| {
+				RevealedDidMerkleProofLeaf::from(RevealedDidKey {
+					id: *key_id,
+					relationship,
+					details: key_details.clone(),
+				})
+			})
+			.collect::<Vec<_>>();
+		Ok(leaves_for_key)
+	});
+
+	let linked_accounts_iter = account_ids.map(|account_id| -> Result<_, DidMerkleProofError> {
+		if linked_accounts.contains(account_id) {
+			Ok(vec![RevealedDidMerkleProofLeaf::from(RevealedAccountId(
+				account_id.clone(),
+			))])
+		} else {
+			Err(DidMerkleProofError::LinkedAccountNotFound)
+		}
+	});
+
+	let mut leaves = did_key_leaves_iter
+		.chain(linked_accounts_iter)
 		.collect::<Result<Vec<_>, _>>()?;
 
 	match (should_include_web3_name, web3_name_details) {
 		// If web3name should be included and it exists, add to the leaves to be revealed...
 		(true, Some(web3name_details)) => {
-			leaves.push(RevealedDidMerkleProofLeaf::from(RevealedWeb3Name {
+			leaves.push(vec![RevealedDidMerkleProofLeaf::from(RevealedWeb3Name {
 				web3_name: web3name_details.web3_name.clone(),
 				claimed_at: web3name_details.claimed_at,
-			}));
+			})]);
 		}
 		// ...else if web3name should be included and it DOES NOT exist, return an error...
 		(true, None) => return Err(DidMerkleProofError::Web3NameNotFound),
@@ -283,7 +303,7 @@ where
 		(false, _) => {}
 	};
 
-	let encoded_keys: Vec<Vec<u8>> = leaves.iter().map(|l| l.encoded_key()).collect();
+	let encoded_keys: Vec<Vec<u8>> = leaves.iter().flatten().map(|l| l.encoded_key()).collect();
 	let proof = generate_trie_proof::<LayoutV1<Runtime::Hashing>, _, _, _>(&db, root, &encoded_keys).map_err(|_| {
 		log::error!(
 			"Failed to generate a merkle proof for the encoded keys: {:#?}",
@@ -294,7 +314,10 @@ where
 
 	Ok(CompleteMerkleProof {
 		root,
-		proof: DidMerkleProofOf::<Runtime>::new(proof.into_iter().into(), leaves),
+		proof: DidMerkleProofOf::<Runtime>::new(
+			proof.into_iter().into(),
+			leaves.into_iter().flatten().collect::<Vec<_>>(),
+		),
 	})
 }
 

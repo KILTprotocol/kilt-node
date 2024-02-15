@@ -1202,7 +1202,7 @@ impl<
 }
 
 /// Relationship of a key to a DID Document.
-#[derive(Clone, Copy, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
+#[derive(Clone, Copy, Debug, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, TypeInfo, MaxEncodedLen)]
 pub enum DidKeyRelationship {
 	Encryption,
 	Verification(DidVerificationKeyRelationship),
@@ -1313,7 +1313,7 @@ where
 
 /// The details of a DID key after it has been successfully verified in a Merkle
 /// proof.
-#[derive(Clone, Copy, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
+#[derive(Clone, Copy, Debug, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, TypeInfo, MaxEncodedLen)]
 pub struct RevealedDidKey<KeyId, BlockNumber, AccountId> {
 	/// The key ID, according to the provider's definition.
 	pub id: KeyId,
@@ -1326,7 +1326,7 @@ pub struct RevealedDidKey<KeyId, BlockNumber, AccountId> {
 
 /// The details of a web3name after it has been successfully verified in a
 /// Merkle proof.
-#[derive(Clone, Copy, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
+#[derive(Clone, Copy, Debug, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, TypeInfo, MaxEncodedLen)]
 pub struct RevealedWeb3Name<Web3Name, BlockNumber> {
 	/// The web3name.
 	pub web3_name: Web3Name,
@@ -1337,5 +1337,5 @@ pub struct RevealedWeb3Name<Web3Name, BlockNumber> {
 
 /// The details of an account after it has been successfully verified in a
 /// Merkle proof.
-#[derive(Clone, Copy, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
+#[derive(Clone, Copy, Debug, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, TypeInfo, MaxEncodedLen)]
 pub struct RevealedAccountId<AccountId>(pub AccountId);
