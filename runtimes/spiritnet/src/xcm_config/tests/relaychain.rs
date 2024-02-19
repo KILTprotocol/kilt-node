@@ -16,27 +16,20 @@
 
 use crate::xcm_config::tests::utils::get_from_seed;
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
-use polkadot_primitives::{AccountId, AssignmentId, Balance, BlockNumber, ValidatorId, LOWEST_PUBLIC_ID};
-pub(crate) use polkadot_runtime::{
-	xcm_config::XcmConfig, BabeConfig, Balances, ConfigurationConfig, MessageQueue, Runtime as PolkadotRuntime,
-	RuntimeCall, RuntimeEvent, RuntimeGenesisConfig, RuntimeOrigin, SessionConfig, SessionKeys, System, SystemConfig,
-	BABE_GENESIS_EPOCH_CONFIG, WASM_BINARY,
-};
+use polkadot_primitives::{AccountId, AssignmentId, Balance, BlockNumber, ValidatorId};
+pub(crate) use polkadot_runtime::System;
 use polkadot_runtime_parachains::configuration::HostConfiguration;
 use polkadot_runtime_parachains::paras::{ParaGenesisArgs, ParaKind};
 use polkadot_service::chain_spec::get_authority_keys_from_seed_no_beefy;
 use sc_consensus_grandpa::AuthorityId as GrandpaId;
 use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use sp_consensus_babe::AuthorityId as BabeId;
-use sp_consensus_beefy::crypto::AuthorityId as BeefyId;
 use sp_core::{sr25519, storage::Storage, Pair, Public};
 use sp_runtime::{
 	traits::{IdentifyAccount, Verify},
 	BuildStorage, MultiSignature, Perbill,
 };
 use xcm_emulator::{decl_test_relay_chains, RelayChain, TestExt, XcmHash};
-
-const STASH: u128 = 100 * polkadot_runtime_constants::currency::UNITS;
 
 type AccountPublic = <MultiSignature as Verify>::Signer;
 const SAFE_XCM_VERSION: u32 = xcm::prelude::XCM_VERSION;
@@ -135,7 +128,7 @@ pub mod accounts {
 pub mod collators {
 	use asset_hub_polkadot_runtime::common::{AssetHubPolkadotAuraId, AuraId};
 
-use super::*;
+	use super::*;
 
 	pub fn invulnerables_asset_hub_polkadot() -> Vec<(AccountId, AssetHubPolkadotAuraId)> {
 		vec![
@@ -156,7 +149,10 @@ use super::*;
 				get_account_id_from_seed::<sr25519::Public>("Alice"),
 				get_from_seed::<AuraId>("Alice"),
 			),
-			(get_account_id_from_seed::<sr25519::Public>("Bob"), get_from_seed::<AuraId>("Bob")),
+			(
+				get_account_id_from_seed::<sr25519::Public>("Bob"),
+				get_from_seed::<AuraId>("Bob"),
+			),
 		]
 	}
 }
@@ -181,7 +177,7 @@ pub mod validators {
 pub mod polkadot {
 	use polkadot_primitives::{HeadData, ValidationCode};
 
-use super::*;
+	use super::*;
 	pub const ED: Balance = polkadot_runtime_constants::currency::EXISTENTIAL_DEPOSIT;
 	const STASH: u128 = 100 * polkadot_runtime_constants::currency::UNITS;
 
@@ -259,13 +255,15 @@ use super::*;
 				stakers: validators::initial_authorities()
 					.iter()
 					.map(|x| {
-						(x.0.clone(), x.1.clone(), STASH, polkadot_runtime::StakerStatus::Validator)
+						(
+							x.0.clone(),
+							x.1.clone(),
+							STASH,
+							polkadot_runtime::StakerStatus::Validator,
+						)
 					})
 					.collect(),
-				invulnerables: validators::initial_authorities()
-					.iter()
-					.map(|x| x.0.clone())
-					.collect(),
+				invulnerables: validators::initial_authorities().iter().map(|x| x.0.clone()).collect(),
 				force_era: pallet_staking::Forcing::ForceNone,
 				slash_reward_fraction: Perbill::from_percent(10),
 				..Default::default()
@@ -275,20 +273,18 @@ use super::*;
 				epoch_config: Some(polkadot_runtime::BABE_GENESIS_EPOCH_CONFIG),
 				..Default::default()
 			},
-			configuration: polkadot_runtime::ConfigurationConfig { config: get_host_config() },
+			configuration: polkadot_runtime::ConfigurationConfig {
+				config: get_host_config(),
+			},
 			paras: polkadot_runtime::ParasConfig {
-				paras: vec![
-					(
-						asset_hub_polkadot::PARA_ID.into(),
-						ParaGenesisArgs {
-							genesis_head: HeadData::default(),
-							validation_code: ValidationCode(
-								asset_hub_polkadot_runtime::WASM_BINARY.unwrap().to_vec(),
-							),
-							para_kind: ParaKind::Parachain,
-						},
-					),
-				],
+				paras: vec![(
+					asset_hub_polkadot::PARA_ID.into(),
+					ParaGenesisArgs {
+						genesis_head: HeadData::default(),
+						validation_code: ValidationCode(asset_hub_polkadot_runtime::WASM_BINARY.unwrap().to_vec()),
+						para_kind: ParaKind::Parachain,
+					},
+				)],
 				..Default::default()
 			},
 			..Default::default()
@@ -324,7 +320,7 @@ decl_test_relay_chains! {
 pub mod asset_hub_polkadot {
 	use runtime_common::constants::EXISTENTIAL_DEPOSIT;
 
-use super::*;
+	use super::*;
 	pub const PARA_ID: u32 = 1000;
 	pub const ED: Balance = EXISTENTIAL_DEPOSIT;
 

@@ -14,21 +14,18 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-mod peregrine;
 mod relaychain;
+mod spiritnet;
 mod utils;
 
 use crate::xcm_config::tests::relaychain::{Polkadot, System as PolkadotSystem};
-use crate::{xcm_config::UniversalLocation as PeregrineUniversalLocation, PolkadotXcm as PeregrineXcm};
+use crate::PolkadotXcm as SpiritnetXcm;
 use frame_support::assert_ok;
 use frame_system::RawOrigin;
-use parity_scale_codec::Encode;
-use peregrine::{Peregrine, RuntimeEvent as PeregrineRuntimeEvent, System as PeregrineSystem};
 use polkadot_primitives::{AccountId, Balance};
-use polkadot_runtime::xcm_config::UniversalLocation as RococoUniversalLocation;
-use polkadot_runtime_constants::currency::UNITS;
 use polkadot_service::chain_spec::get_account_id_from_seed;
 use sp_core::{sr25519, Get};
+use spiritnet::{Peregrine, RuntimeEvent as PeregrineRuntimeEvent, System as PeregrineSystem};
 use xcm::prelude::*;
 use xcm_emulator::{decl_test_networks, BridgeMessageHandler, Parachain, RelayChain, TestExt};
 use xcm_executor::traits::ConvertLocation;
@@ -52,7 +49,7 @@ fn test_reserve_asset_transfer_from_regular_account_to_relay() {
 	let alice_account_id_on_peregrine = get_account_id_from_seed::<sr25519::Public>("Alice");
 
 	Peregrine::execute_with(|| {
-		assert_ok!(PeregrineXcm::limited_reserve_transfer_assets(
+		assert_ok!(SpiritnetXcm::limited_reserve_transfer_assets(
 			RawOrigin::Signed(alice_account_id_on_peregrine.clone()).into(),
 			Box::new(Parent.into()),
 			Box::new(
@@ -66,7 +63,6 @@ fn test_reserve_asset_transfer_from_regular_account_to_relay() {
 			0,
 			WeightLimit::Unlimited,
 		));
-		println!("AAAAA {:?}", PeregrineSystem::events());
 		assert!(matches!(
 			PeregrineSystem::events()
 				.first()
