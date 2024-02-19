@@ -110,6 +110,10 @@ pub mod pallet {
 		/// The origin was not authorized to perform the operation on the
 		/// specified deposit entry.
 		Unauthorized,
+		/// The origin did not have enough fund to pay for the deposit.
+		FailedToHold,
+		/// Error when trying to release a previously-reserved deposit.
+		FailedToRelease,
 		/// The external hook failed.
 		Hook(u16),
 	}
@@ -181,7 +185,8 @@ pub mod pallet {
 						entry.deposit.owner.clone(),
 						entry.deposit.amount,
 						&entry.reason,
-					)?;
+					)
+					.map_err(|_| Error::<T>::FailedToHold)?;
 					Self::deposit_event(Event::<T>::DepositAdded {
 						namespace: namespace.clone(),
 						key: key.clone(),
@@ -211,7 +216,8 @@ pub mod pallet {
 					Error::<T>::Unauthorized
 				);
 			}
-			free_deposit::<AccountIdOf<T>, T::Currency>(&existing_entry.deposit, &existing_entry.reason)?;
+			free_deposit::<AccountIdOf<T>, T::Currency>(&existing_entry.deposit, &existing_entry.reason)
+				.map_err(|_| Error::<T>::FailedToRelease)?;
 			Self::deposit_event(Event::<T>::DepositReclaimed {
 				namespace: namespace.clone(),
 				key: key.clone(),

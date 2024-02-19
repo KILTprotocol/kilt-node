@@ -16,5 +16,118 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use frame_support::{assert_noop, assert_ok, traits::Get};
+use kilt_support::Deposit;
+use pallet_dip_provider::{traits::ProviderHooks, IdentityCommitmentOf, IdentityCommitmentVersion};
+use parity_scale_codec::Encode;
+use sp_runtime::traits::Zero;
+
+use crate::{
+	deposit::{
+		mock::{DepositCollectorHook, DepositNamespaces, ExtBuilder, TestRuntime, SUBJECT, SUBMITTER},
+		DepositEntry, FixedDepositCollectorViaDepositsPalletError,
+	},
+	DepositKeyOf, HoldReason, Pallet,
+};
+
 #[test]
-fn on_identity_committed_successful() {}
+fn on_identity_committed_successful() {
+	ExtBuilder::default()
+		.with_balances(vec![(SUBMITTER, 100_000)])
+		.build()
+		.execute_with(|| {
+			let namespace = DepositNamespaces::get();
+			let key: DepositKeyOf<TestRuntime> = (SUBJECT, SUBMITTER, 0 as IdentityCommitmentVersion)
+				.encode()
+				.try_into()
+				.unwrap();
+
+			assert!(Pallet::<TestRuntime>::deposits(&namespace, &key).is_none(),);
+			assert!(pallet_balances::Pallet::<TestRuntime>::reserved_balance(SUBMITTER).is_zero());
+
+			assert_ok!(
+				<DepositCollectorHook::<TestRuntime> as ProviderHooks<TestRuntime>>::on_identity_committed(
+					&SUBJECT,
+					&SUBMITTER,
+					&IdentityCommitmentOf::<TestRuntime>::default(),
+					0
+				)
+			);
+
+			assert_eq!(
+				Pallet::<TestRuntime>::deposits(namespace, key),
+				Some(DepositEntry {
+					reason: HoldReason::Deposit.into(),
+					deposit: Deposit {
+						amount: 1_000,
+						owner: SUBMITTER
+					}
+				})
+			);
+			assert_eq!(
+				pallet_balances::Pallet::<TestRuntime>::reserved_balance(SUBMITTER),
+				1_000
+			);
+		});
+}
+
+#[test]
+fn on_identity_committed_existing_deposit() {
+	let key: DepositKeyOf<TestRuntime> = (SUBJECT, SUBMITTER, 0 as IdentityCommitmentVersion)
+		.encode()
+		.try_into()
+		.unwrap();
+	ExtBuilder::default()
+		.with_deposits(vec![(
+			key,
+			DepositEntry {
+				reason: HoldReason::Deposit.into(),
+				deposit: Deposit {
+					amount: 1_000,
+					owner: SUBMITTER,
+				},
+			},
+		)])
+		.build()
+		.execute_with(|| {
+			assert_noop!(
+				<DepositCollectorHook::<TestRuntime> as ProviderHooks<TestRuntime>>::on_identity_committed(
+					&SUBJECT,
+					&SUBMITTER,
+					&IdentityCommitmentOf::<TestRuntime>::default(),
+					0
+				),
+				FixedDepositCollectorViaDepositsPalletError::DepositAlreadyTaken
+			);
+		});
+}
+
+#[test]
+fn on_identity_committed_insufficient_balance() {
+	ExtBuilder::default().build().execute_with(|| {
+		assert_noop!(
+			<DepositCollectorHook::<TestRuntime> as ProviderHooks<TestRuntime>>::on_identity_committed(
+				&SUBJECT,
+				&SUBMITTER,
+				&IdentityCommitmentOf::<TestRuntime>::default(),
+				0
+			),
+			FixedDepositCollectorViaDepositsPalletError::FailedToHold,
+		);
+	});
+}
+
+#[test]
+fn on_commitment_removed_successful() {
+	unimplemented!()
+}
+
+#[test]
+fn on_commitment_removed_deposit_not_found() {
+	unimplemented!()
+}
+
+#[test]
+fn on_commitment_removed_unauthorized() {
+	unimplemented!()
+}

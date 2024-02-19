@@ -116,6 +116,9 @@ where
 			pallet_error if pallet_error == DispatchError::from(Error::<Runtime>::DepositExisting) => {
 				FixedDepositCollectorViaDepositsPalletError::DepositAlreadyTaken
 			}
+			pallet_error if pallet_error == DispatchError::from(Error::<Runtime>::FailedToHold) => {
+				FixedDepositCollectorViaDepositsPalletError::FailedToHold
+			}
 			_ => {
 				log::error!(
 					"Error {:#?} should not be generated inside `on_identity_committed` hook.",
@@ -148,6 +151,9 @@ where
 		Pallet::<Runtime>::remove_deposit(&namespace, &key, None).map_err(|e| match e {
 			pallet_error if pallet_error == DispatchError::from(Error::<Runtime>::DepositNotFound) => {
 				FixedDepositCollectorViaDepositsPalletError::DepositNotFound
+			}
+			pallet_error if pallet_error == DispatchError::from(Error::<Runtime>::FailedToRelease) => {
+				FixedDepositCollectorViaDepositsPalletError::FailedToRelease
 			}
 			_ => {
 				log::error!(

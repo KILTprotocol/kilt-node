@@ -23,7 +23,7 @@ use frame_support::{
 		traits::{BlakeTwo256, IdentityLookup},
 		AccountId32,
 	},
-	traits::{ConstU128, ConstU16, ConstU32, ConstU64, Everything},
+	traits::{ConstU128, ConstU16, ConstU32, ConstU64, Currency, Everything, Get},
 };
 use frame_system::{mocking::MockBlock, EnsureSigned};
 use pallet_dip_provider::{DefaultIdentityCommitmentGenerator, DefaultIdentityProvider, IdentityCommitmentVersion};
@@ -31,7 +31,9 @@ use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_runtime::RuntimeDebug;
 
-use crate::{self as storage_deposit_pallet, FixedDepositCollectorViaDepositsPallet};
+use crate::{
+	self as storage_deposit_pallet, DepositEntryOf, DepositKeyOf, FixedDepositCollectorViaDepositsPallet, Pallet,
+};
 
 pub(crate) type Balance = u128;
 
@@ -55,6 +57,9 @@ construct_runtime!(
 		StorageDepositPallet: storage_deposit_pallet,
 	}
 );
+
+pub(crate) const SUBJECT: AccountId32 = AccountId32::new([100u8; 32]);
+pub(crate) const SUBMITTER: AccountId32 = AccountId32::new([200u8; 32]);
 
 impl frame_system::Config for TestRuntime {
 	type AccountData = pallet_balances::AccountData<Balance>;
@@ -98,17 +103,23 @@ impl pallet_balances::Config for TestRuntime {
 	type ReserveIdentifier = [u8; 8];
 }
 
+pub(crate) type DepositCollectorHook<Runtime> = FixedDepositCollectorViaDepositsPallet<
+	DepositNamespaces,
+	ConstU128<1_000>,
+	(
+		<Runtime as pallet_dip_provider::Config>::Identifier,
+		AccountId32,
+		IdentityCommitmentVersion,
+	),
+>;
+
 impl pallet_dip_provider::Config for TestRuntime {
 	type CommitOrigin = AccountId32;
 	type CommitOriginCheck = EnsureSigned<AccountId32>;
 	type Identifier = AccountId32;
 	type IdentityCommitmentGenerator = DefaultIdentityCommitmentGenerator<u32>;
 	type IdentityProvider = DefaultIdentityProvider<u32>;
-	type ProviderHooks = FixedDepositCollectorViaDepositsPallet<
-		DepositNamespaces,
-		ConstU128<1_000>,
-		(Self::Identifier, AccountId32, IdentityCommitmentVersion),
-	>;
+	type ProviderHooks = DepositCollectorHook<Self>;
 	type RuntimeEvent = RuntimeEvent;
 	type WeightInfo = ();
 }
@@ -127,18 +138,40 @@ impl crate::Config for TestRuntime {
 }
 
 #[derive(Default)]
-pub(crate) struct ExtBuilder;
+pub(crate) struct ExtBuilder(
+	Vec<(AccountId32, Balance)>,
+	Vec<(DepositKeyOf<TestRuntime>, DepositEntryOf<TestRuntime>)>,
+);
 
 impl ExtBuilder {
-	pub fn _build(self) -> sp_io::TestExternalities {
-		sp_io::TestExternalities::default()
+	pub(crate) fn with_balances(mut self, balances: Vec<(AccountId32, Balance)>) -> Self {
+		self.0 = balances;
+		self
 	}
 
-	#[cfg(feature = "runtime-benchmarks")]
-	pub fn build_with_keystore(self) -> sp_io::TestExternalities {
-		let mut ext = self._build();
-		let keystore = sp_keystore::testing::MemoryKeystore::new();
-		ext.register_extension(sp_keystore::KeystoreExt(sp_std::sync::Arc::new(keystore)));
+	pub(crate) fn with_deposits(
+		mut self,
+		deposits: Vec<(DepositKeyOf<TestRuntime>, DepositEntryOf<TestRuntime>)>,
+	) -> Self {
+		self.1 = deposits;
+		self
+	}
+
+	pub(crate) fn build(self) -> sp_io::TestExternalities {
+		let mut ext = sp_io::TestExternalities::default();
+
+		ext.execute_with(|| {
+			for (account, balance) in self.0 {
+				Balances::make_free_balance_be(&account, balance);
+			}
+
+			for (deposit_key, deposit_entry) in self.1 {
+				// Add existential deposit + deposit amount.
+				Balances::make_free_balance_be(&deposit_entry.deposit.owner, 500 + deposit_entry.deposit.amount);
+				Pallet::<TestRuntime>::add_deposit(DepositNamespaces::get(), deposit_key, deposit_entry).unwrap();
+			}
+		});
+
 		ext
 	}
 }
