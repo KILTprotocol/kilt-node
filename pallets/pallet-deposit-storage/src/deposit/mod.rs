@@ -148,6 +148,9 @@ where
 				);
 				FixedDepositCollectorViaDepositsPalletError::Internal
 			})?;
+		// We don't set any expected owner for the deposit on purpose, since this hook
+		// assumes the dip-provider pallet has performed all the access control logic
+		// necessary.
 		Pallet::<Runtime>::remove_deposit(&namespace, &key, None).map_err(|e| match e {
 			pallet_error if pallet_error == DispatchError::from(Error::<Runtime>::DepositNotFound) => {
 				FixedDepositCollectorViaDepositsPalletError::DepositNotFound
@@ -186,6 +189,8 @@ pub(crate) fn free_deposit<Account, Currency: Mutate<Account>>(
 	reason: &Currency::Reason,
 ) -> Result<<Currency as Inspect<Account>>::Balance, DispatchError> {
 	let result = Currency::release(reason, &deposit.owner, deposit.amount, Precision::BestEffort);
+	// We want to test for this case in unit tests.
+	#[cfg(not(test))]
 	debug_assert!(
 		result == Ok(deposit.amount),
 		"Released deposit amount does not match with expected amount. Expected: {:?}, Released amount: {:?}  Error: {:?}",
@@ -193,5 +198,8 @@ pub(crate) fn free_deposit<Account, Currency: Mutate<Account>>(
 		result.ok(),
 		result.err(),
 	);
+	// Needed because result is not used elsewhere when testing, triggering a
+	// Clippy warning.
+	#[allow(clippy::let_and_return)]
 	result
 }

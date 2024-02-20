@@ -16,7 +16,10 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::{assert_noop, assert_ok, traits::Get};
+use frame_support::{
+	assert_err, assert_noop, assert_ok,
+	traits::{Get, ReservableCurrency},
+};
 use kilt_support::Deposit;
 use pallet_dip_provider::{traits::ProviderHooks, IdentityCommitmentOf, IdentityCommitmentVersion};
 use parity_scale_codec::Encode;
@@ -24,7 +27,7 @@ use sp_runtime::traits::Zero;
 
 use crate::{
 	deposit::{
-		mock::{DepositCollectorHook, DepositNamespaces, ExtBuilder, TestRuntime, SUBJECT, SUBMITTER},
+		mock::{Balances, DepositCollectorHook, DepositNamespaces, ExtBuilder, TestRuntime, SUBJECT, SUBMITTER},
 		DepositEntry, FixedDepositCollectorViaDepositsPalletError,
 	},
 	DepositKeyOf, HoldReason, Pallet,
@@ -119,15 +122,144 @@ fn on_identity_committed_insufficient_balance() {
 
 #[test]
 fn on_commitment_removed_successful() {
-	unimplemented!()
+	let namespace = DepositNamespaces::get();
+	let key: DepositKeyOf<TestRuntime> = (SUBJECT, SUBMITTER, 0 as IdentityCommitmentVersion)
+		.encode()
+		.try_into()
+		.unwrap();
+	ExtBuilder::default()
+		.with_deposits(vec![(
+			key.clone(),
+			DepositEntry {
+				deposit: Deposit {
+					amount: 1_000,
+					owner: SUBMITTER,
+				},
+				reason: HoldReason::Deposit.into(),
+			},
+		)])
+		.build()
+		.execute_with(|| {
+			assert_eq!(
+				Pallet::<TestRuntime>::deposits(&namespace, &key),
+				Some(DepositEntry {
+					reason: HoldReason::Deposit.into(),
+					deposit: Deposit {
+						amount: 1_000,
+						owner: SUBMITTER
+					}
+				})
+			);
+			assert_eq!(
+				pallet_balances::Pallet::<TestRuntime>::reserved_balance(SUBMITTER),
+				1_000
+			);
+
+			assert_ok!(
+				<DepositCollectorHook::<TestRuntime> as ProviderHooks<TestRuntime>>::on_commitment_removed(
+					&SUBJECT,
+					&SUBMITTER,
+					&IdentityCommitmentOf::<TestRuntime>::default(),
+					0
+				),
+			);
+
+			assert!(Pallet::<TestRuntime>::deposits(&namespace, &key).is_none(),);
+			assert!(pallet_balances::Pallet::<TestRuntime>::reserved_balance(SUBMITTER).is_zero());
+		});
+}
+
+#[test]
+fn on_commitment_different_owner_successful() {
+	let namespace = DepositNamespaces::get();
+	let key: DepositKeyOf<TestRuntime> = (SUBJECT, SUBMITTER, 0 as IdentityCommitmentVersion)
+		.encode()
+		.try_into()
+		.unwrap();
+	ExtBuilder::default()
+		.with_deposits(vec![(
+			key.clone(),
+			DepositEntry {
+				deposit: Deposit {
+					amount: 1_000,
+					owner: SUBJECT,
+				},
+				reason: HoldReason::Deposit.into(),
+			},
+		)])
+		.build()
+		.execute_with(|| {
+			assert_eq!(
+				Pallet::<TestRuntime>::deposits(&namespace, &key),
+				Some(DepositEntry {
+					reason: HoldReason::Deposit.into(),
+					deposit: Deposit {
+						amount: 1_000,
+						owner: SUBJECT
+					}
+				})
+			);
+			assert_eq!(pallet_balances::Pallet::<TestRuntime>::reserved_balance(SUBJECT), 1_000);
+
+			assert_ok!(
+				<DepositCollectorHook::<TestRuntime> as ProviderHooks<TestRuntime>>::on_commitment_removed(
+					&SUBJECT,
+					&SUBMITTER,
+					&IdentityCommitmentOf::<TestRuntime>::default(),
+					0
+				)
+			);
+
+			assert!(Pallet::<TestRuntime>::deposits(&namespace, &key).is_none(),);
+			assert!(pallet_balances::Pallet::<TestRuntime>::reserved_balance(SUBJECT).is_zero());
+		});
 }
 
 #[test]
 fn on_commitment_removed_deposit_not_found() {
-	unimplemented!()
+	ExtBuilder::default().build().execute_with(|| {
+		assert_noop!(
+			<DepositCollectorHook::<TestRuntime> as ProviderHooks<TestRuntime>>::on_commitment_removed(
+				&SUBJECT,
+				&SUBMITTER,
+				&IdentityCommitmentOf::<TestRuntime>::default(),
+				0
+			),
+			FixedDepositCollectorViaDepositsPalletError::DepositNotFound
+		);
+	});
 }
 
 #[test]
-fn on_commitment_removed_unauthorized() {
-	unimplemented!()
+fn on_commitment_removed_failed_to_release() {
+	let key: DepositKeyOf<TestRuntime> = (SUBJECT, SUBMITTER, 0 as IdentityCommitmentVersion)
+		.encode()
+		.try_into()
+		.unwrap();
+	ExtBuilder::default()
+		.with_deposits(vec![(
+			key,
+			DepositEntry {
+				deposit: Deposit {
+					amount: 1_000,
+					owner: SUBMITTER,
+				},
+				reason: HoldReason::Deposit.into(),
+			},
+		)])
+		.build()
+		.execute_with(|| {
+			// Slash reserved balance for deposit account.
+			assert!(Balances::slash_reserved(&SUBMITTER, 1_000).1.is_zero());
+			assert_err!(
+				<DepositCollectorHook::<TestRuntime> as ProviderHooks<TestRuntime>>::on_commitment_removed(
+					&SUBJECT,
+					&SUBMITTER,
+					&IdentityCommitmentOf::<TestRuntime>::default(),
+					0
+				),
+				FixedDepositCollectorViaDepositsPalletError::FailedToRelease
+			);
+			assert!(Balances::reserved_balance(&SUBMITTER).is_zero());
+		});
 }
