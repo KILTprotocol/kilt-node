@@ -37,6 +37,10 @@ match_types! {
 	pub type ParentLegislative: impl Contains<MultiLocation> = {
 		MultiLocation { parents: 1, interior: X1(Plurality { id: BodyId::Legislative, .. }) }
 	};
+	pub type ParentOrSiblings: impl Contains<MultiLocation> = {
+		MultiLocation { parents: 1, interior: Here } |
+		MultiLocation { parents: 1, interior: X1(_) }
+	};
 }
 
 // Note: This might move to polkadot's xcm module.
