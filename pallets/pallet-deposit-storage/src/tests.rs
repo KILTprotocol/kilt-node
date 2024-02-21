@@ -16,24 +16,107 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
+use frame_support::{assert_err, assert_noop, assert_ok, traits::ReservableCurrency};
+use frame_system::RawOrigin;
+use kilt_support::Deposit;
+use sp_runtime::traits::Zero;
+
+use crate::{
+	mock::{Balances, DepositNamespace, ExtBuilder, TestRuntime, OTHER_ACCOUNT, OWNER},
+	DepositEntryOf, DepositKeyOf, Error, HoldReason, Pallet,
+};
+
 #[test]
 fn reclaim_deposit_successful() {
-	unimplemented!()
+	let deposit = DepositEntryOf::<TestRuntime> {
+		reason: HoldReason::Deposit.into(),
+		deposit: Deposit {
+			amount: 10_000,
+			owner: OWNER,
+		},
+	};
+	let namespace = DepositNamespace::ExampleNamespace;
+	let key = DepositKeyOf::<TestRuntime>::default();
+	ExtBuilder::default()
+		.with_deposits(vec![(namespace.clone(), key.clone(), deposit)])
+		.build()
+		.execute_with(|| {
+			assert!(Pallet::<TestRuntime>::deposits(&namespace, &key).is_some());
+			assert_eq!(Balances::reserved_balance(OWNER), 10_000);
+
+			assert_ok!(Pallet::<TestRuntime>::reclaim_deposit(
+				RawOrigin::Signed(OWNER).into(),
+				namespace.clone(),
+				key.clone()
+			));
+
+			assert!(Pallet::<TestRuntime>::deposits(&namespace, &key).is_none());
+			assert!(Balances::reserved_balance(OWNER).is_zero());
+		});
 }
 
 #[test]
 fn reclaim_deposit_not_found() {
-	unimplemented!()
+	ExtBuilder::default().build().execute_with(|| {
+		assert_noop!(
+			Pallet::<TestRuntime>::reclaim_deposit(
+				RawOrigin::Signed(OWNER).into(),
+				DepositNamespace::ExampleNamespace,
+				DepositKeyOf::<TestRuntime>::default()
+			),
+			Error::<TestRuntime>::DepositNotFound
+		);
+	});
 }
 
 #[test]
 fn reclaim_deposit_unauthorized() {
-	unimplemented!()
+	let deposit = DepositEntryOf::<TestRuntime> {
+		reason: HoldReason::Deposit.into(),
+		deposit: Deposit {
+			amount: 10_000,
+			owner: OWNER,
+		},
+	};
+	let namespace = DepositNamespace::ExampleNamespace;
+	let key = DepositKeyOf::<TestRuntime>::default();
+	ExtBuilder::default()
+		.with_deposits(vec![(namespace.clone(), key.clone(), deposit)])
+		.build()
+		.execute_with(|| {
+			assert_noop!(
+				Pallet::<TestRuntime>::reclaim_deposit(
+					RawOrigin::Signed(OTHER_ACCOUNT).into(),
+					namespace.clone(),
+					key.clone()
+				),
+				Error::<TestRuntime>::Unauthorized
+			);
+		});
 }
 
 #[test]
 fn reclaim_deposit_failed_to_release() {
-	unimplemented!()
+	let deposit = DepositEntryOf::<TestRuntime> {
+		reason: HoldReason::Deposit.into(),
+		deposit: Deposit {
+			amount: 10_000,
+			owner: OWNER,
+		},
+	};
+	let namespace = DepositNamespace::ExampleNamespace;
+	let key = DepositKeyOf::<TestRuntime>::default();
+	ExtBuilder::default()
+		.with_deposits(vec![(namespace.clone(), key.clone(), deposit)])
+		.build()
+		.execute_with(|| {
+			// Slash reserved balance for deposit account.
+			assert!(Balances::slash_reserved(&OWNER, 10_000).1.is_zero());
+			assert_err!(
+				Pallet::<TestRuntime>::reclaim_deposit(RawOrigin::Signed(OWNER).into(), namespace.clone(), key.clone()),
+				Error::<TestRuntime>::FailedToRelease
+			);
+		});
 }
 
 #[test]
