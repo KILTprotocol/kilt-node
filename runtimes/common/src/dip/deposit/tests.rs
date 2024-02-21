@@ -16,120 +16,15 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::{assert_noop, assert_ok, construct_runtime, traits::Everything};
-use frame_system::{mocking::MockBlock, EnsureSigned, RawOrigin};
+use frame_support::{assert_noop, assert_ok};
 use kilt_support::Deposit;
 use pallet_deposit_storage::{traits::DepositStorageHooks, DepositEntryOf, DepositKeyOf, HoldReason};
-use pallet_dip_provider::{DefaultIdentityCommitmentGenerator, DefaultIdentityProvider, IdentityCommitmentVersion};
 use parity_scale_codec::Encode;
-use sp_core::{ConstU128, ConstU32};
-use sp_runtime::traits::IdentityLookup;
 
-use crate::{
-	constants::{deposit_storage::MAX_DEPOSIT_PALLET_KEY_LENGTH, KILT},
-	dip::deposit::{CommitmentDepositRemovalHookError, DepositHooks, DepositKey, DepositNamespace},
-	AccountId, Balance, BlockHashCount, BlockLength, BlockWeights, Hash, Hasher, Nonce,
+use crate::dip::deposit::{
+	mock::{DipProvider, ExtBuilder, TestRuntime, SUBJECT, SUBMITTER},
+	CommitmentDepositRemovalHookError, DepositKey, DepositNamespace,
 };
-
-construct_runtime!(
-	pub struct TestRuntime {
-		System: frame_system,
-		Balances: pallet_balances,
-		DipProvider: pallet_dip_provider,
-		StorageDepositPallet: pallet_deposit_storage,
-	}
-);
-
-pub(crate) const SUBJECT: AccountId = AccountId::new([100u8; 32]);
-pub(crate) const SUBMITTER: AccountId = AccountId::new([200u8; 32]);
-
-impl frame_system::Config for TestRuntime {
-	type AccountData = pallet_balances::AccountData<Balance>;
-	type AccountId = AccountId;
-	type BaseCallFilter = Everything;
-	type Block = MockBlock<TestRuntime>;
-	type BlockHashCount = BlockHashCount;
-	type BlockLength = BlockLength;
-	type BlockWeights = BlockWeights;
-	type DbWeight = ();
-	type Hash = Hash;
-	type Hashing = Hasher;
-	type Lookup = IdentityLookup<Self::AccountId>;
-	type MaxConsumers = ConstU32<16>;
-	type Nonce = Nonce;
-	type OnKilledAccount = ();
-	type OnNewAccount = ();
-	type OnSetCode = ();
-	type PalletInfo = PalletInfo;
-	type RuntimeCall = RuntimeCall;
-	type RuntimeEvent = RuntimeEvent;
-	type RuntimeOrigin = RuntimeOrigin;
-	type SS58Prefix = ();
-	type SystemWeightInfo = ();
-	type Version = ();
-}
-
-impl pallet_balances::Config for TestRuntime {
-	type FreezeIdentifier = RuntimeFreezeReason;
-	type RuntimeHoldReason = RuntimeHoldReason;
-	type MaxFreezes = ConstU32<10>;
-	type MaxHolds = ConstU32<10>;
-	type Balance = Balance;
-	type DustRemoval = ();
-	type RuntimeEvent = RuntimeEvent;
-	type ExistentialDeposit = ConstU128<KILT>;
-	type AccountStore = System;
-	type WeightInfo = ();
-	type MaxLocks = ConstU32<10>;
-	type MaxReserves = ConstU32<10>;
-	type ReserveIdentifier = [u8; 8];
-}
-
-impl pallet_dip_provider::Config for TestRuntime {
-	type CommitOrigin = AccountId;
-	type CommitOriginCheck = EnsureSigned<AccountId>;
-	type Identifier = AccountId;
-	type IdentityCommitmentGenerator = DefaultIdentityCommitmentGenerator<u32>;
-	type IdentityProvider = DefaultIdentityProvider<u32>;
-	type ProviderHooks = ();
-	type RuntimeEvent = RuntimeEvent;
-	type WeightInfo = ();
-}
-
-impl pallet_deposit_storage::Config for TestRuntime {
-	type CheckOrigin = EnsureSigned<Self::AccountId>;
-	type Currency = Balances;
-	type DepositHooks = DepositHooks;
-	type RuntimeEvent = RuntimeEvent;
-	type RuntimeHoldReason = RuntimeHoldReason;
-	type MaxKeyLength = ConstU32<MAX_DEPOSIT_PALLET_KEY_LENGTH>;
-	type Namespace = DepositNamespace;
-	#[cfg(feature = "runtime-benchmarks")]
-	type BenchmarkHooks = ();
-	type WeightInfo = ();
-}
-
-#[derive(Default)]
-struct ExtBuilder(Vec<(AccountId, IdentityCommitmentVersion, AccountId)>);
-
-impl ExtBuilder {
-	fn with_commitments(mut self, commitments: Vec<(AccountId, IdentityCommitmentVersion, AccountId)>) -> Self {
-		self.0 = commitments;
-		self
-	}
-
-	fn build(self) -> sp_io::TestExternalities {
-		let mut ext = sp_io::TestExternalities::default();
-
-		ext.execute_with(|| {
-			for (subject, version, submitter) in self.0 {
-				DipProvider::commit_identity(RawOrigin::Signed(submitter).into(), subject, Some(version)).unwrap();
-			}
-		});
-
-		ext
-	}
-}
 
 #[test]
 fn on_deposit_reclaimed_successful() {

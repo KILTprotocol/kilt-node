@@ -28,6 +28,8 @@ use sp_core::{ConstU128, RuntimeDebug};
 use crate::{constants::dip_provider::COMMITMENT_DEPOSIT, AccountId, DidIdentifier};
 
 #[cfg(test)]
+mod mock;
+#[cfg(test)]
 mod tests;
 
 #[derive(Encode, Decode, MaxEncodedLen, TypeInfo, Clone, PartialEq, Eq, RuntimeDebug)]
