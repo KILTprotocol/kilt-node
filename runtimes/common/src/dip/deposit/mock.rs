@@ -16,18 +16,15 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::{assert_noop, assert_ok, construct_runtime, traits::Everything};
+use frame_support::{construct_runtime, traits::Everything};
 use frame_system::{mocking::MockBlock, EnsureSigned, RawOrigin};
-use kilt_support::Deposit;
-use pallet_deposit_storage::{traits::DepositStorageHooks, DepositEntryOf, DepositKeyOf, HoldReason};
 use pallet_dip_provider::{DefaultIdentityCommitmentGenerator, DefaultIdentityProvider, IdentityCommitmentVersion};
-use parity_scale_codec::Encode;
 use sp_core::{ConstU128, ConstU32};
 use sp_runtime::traits::IdentityLookup;
 
 use crate::{
 	constants::{deposit_storage::MAX_DEPOSIT_PALLET_KEY_LENGTH, KILT},
-	dip::deposit::{CommitmentDepositRemovalHookError, DepositHooks, DepositKey, DepositNamespace},
+	dip::deposit::{DepositHooks, DepositNamespace},
 	AccountId, Balance, BlockHashCount, BlockLength, BlockWeights, Hash, Hasher, Nonce,
 };
 

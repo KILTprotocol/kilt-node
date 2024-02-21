@@ -16,7 +16,7 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use frame_support::{assert_err, assert_noop, assert_ok, traits::ReservableCurrency};
+use frame_support::{assert_noop, assert_ok, traits::fungible::InspectHold};
 use frame_system::RawOrigin;
 use kilt_support::Deposit;
 use sp_runtime::traits::Zero;
@@ -42,7 +42,7 @@ fn reclaim_deposit_successful() {
 		.build()
 		.execute_with(|| {
 			assert!(Pallet::<TestRuntime>::deposits(&namespace, &key).is_some());
-			assert_eq!(Balances::reserved_balance(OWNER), 10_000);
+			assert_eq!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &OWNER), 10_000);
 
 			assert_ok!(Pallet::<TestRuntime>::reclaim_deposit(
 				RawOrigin::Signed(OWNER).into(),
@@ -51,7 +51,7 @@ fn reclaim_deposit_successful() {
 			));
 
 			assert!(Pallet::<TestRuntime>::deposits(&namespace, &key).is_none());
-			assert!(Balances::reserved_balance(OWNER).is_zero());
+			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &OWNER).is_zero());
 		});
 }
 
@@ -96,30 +96,6 @@ fn reclaim_deposit_unauthorized() {
 }
 
 #[test]
-fn reclaim_deposit_failed_to_release() {
-	let deposit = DepositEntryOf::<TestRuntime> {
-		reason: HoldReason::Deposit.into(),
-		deposit: Deposit {
-			amount: 10_000,
-			owner: OWNER,
-		},
-	};
-	let namespace = DepositNamespace::ExampleNamespace;
-	let key = DepositKeyOf::<TestRuntime>::default();
-	ExtBuilder::default()
-		.with_deposits(vec![(namespace.clone(), key.clone(), deposit)])
-		.build()
-		.execute_with(|| {
-			// Slash reserved balance for deposit account.
-			assert!(Balances::slash_reserved(&OWNER, 10_000).1.is_zero());
-			assert_err!(
-				Pallet::<TestRuntime>::reclaim_deposit(RawOrigin::Signed(OWNER).into(), namespace.clone(), key.clone()),
-				Error::<TestRuntime>::FailedToRelease
-			);
-		});
-}
-
-#[test]
 fn add_deposit_new() {
 	ExtBuilder::default()
 		//	Deposit amount + existential deposit
@@ -137,7 +113,7 @@ fn add_deposit_new() {
 			let key = DepositKeyOf::<TestRuntime>::default();
 
 			assert!(Pallet::<TestRuntime>::deposits(&namespace, &key).is_none());
-			assert!(Balances::reserved_balance(OWNER).is_zero());
+			assert!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &OWNER).is_zero());
 
 			assert_ok!(Pallet::<TestRuntime>::add_deposit(
 				namespace.clone(),
@@ -146,7 +122,7 @@ fn add_deposit_new() {
 			));
 
 			assert_eq!(Pallet::<TestRuntime>::deposits(&namespace, &key), Some(deposit));
-			assert_eq!(Balances::reserved_balance(OWNER), 10_000);
+			assert_eq!(Balances::balance_on_hold(&HoldReason::Deposit.into(), &OWNER), 10_000);
 		});
 }
 
