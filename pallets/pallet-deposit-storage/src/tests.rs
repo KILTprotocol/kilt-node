@@ -121,15 +121,75 @@ fn reclaim_deposit_failed_to_release() {
 
 #[test]
 fn add_deposit_new() {
-	unimplemented!()
+	ExtBuilder::default()
+		//	Deposit amount + existential deposit
+		.with_balances(vec![(OWNER, 500 + 10_000)])
+		.build()
+		.execute_with(|| {
+			let deposit = DepositEntryOf::<TestRuntime> {
+				reason: HoldReason::Deposit.into(),
+				deposit: Deposit {
+					amount: 10_000,
+					owner: OWNER,
+				},
+			};
+			let namespace = DepositNamespace::ExampleNamespace;
+			let key = DepositKeyOf::<TestRuntime>::default();
+
+			assert!(Pallet::<TestRuntime>::deposits(&namespace, &key).is_none());
+			assert!(Balances::reserved_balance(OWNER).is_zero());
+
+			assert_ok!(Pallet::<TestRuntime>::add_deposit(
+				namespace.clone(),
+				key.clone(),
+				deposit.clone()
+			));
+
+			assert_eq!(Pallet::<TestRuntime>::deposits(&namespace, &key), Some(deposit));
+			assert_eq!(Balances::reserved_balance(OWNER), 10_000);
+		});
 }
 
 #[test]
 fn add_deposit_existing() {
-	unimplemented!()
+	let deposit = DepositEntryOf::<TestRuntime> {
+		reason: HoldReason::Deposit.into(),
+		deposit: Deposit {
+			amount: 10_000,
+			owner: OWNER,
+		},
+	};
+	let namespace = DepositNamespace::ExampleNamespace;
+	let key = DepositKeyOf::<TestRuntime>::default();
+	ExtBuilder::default()
+		.with_deposits(vec![(namespace.clone(), key.clone(), deposit.clone())])
+		.build()
+		.execute_with(|| {
+			assert_noop!(
+				Pallet::<TestRuntime>::add_deposit(namespace.clone(), key.clone(), deposit),
+				Error::<TestRuntime>::DepositExisting
+			);
+		});
 }
 
 #[test]
 fn add_deposit_failed_to_hold() {
-	unimplemented!()
+	ExtBuilder::default().build().execute_with(|| {
+		let deposit = DepositEntryOf::<TestRuntime> {
+			reason: HoldReason::Deposit.into(),
+			deposit: Deposit {
+				amount: 10_000,
+				owner: OWNER,
+			},
+		};
+
+		assert_noop!(
+			Pallet::<TestRuntime>::add_deposit(
+				DepositNamespace::ExampleNamespace,
+				DepositKeyOf::<TestRuntime>::default(),
+				deposit
+			),
+			Error::<TestRuntime>::FailedToHold
+		);
+	});
 }

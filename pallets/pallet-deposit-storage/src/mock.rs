@@ -115,14 +115,22 @@ pub(crate) const OWNER: AccountId32 = AccountId32::new([100u8; 32]);
 pub(crate) const OTHER_ACCOUNT: AccountId32 = AccountId32::new([101u8; 32]);
 
 #[derive(Default)]
-pub(crate) struct ExtBuilder(Vec<(DepositNamespace, DepositKeyOf<TestRuntime>, DepositEntryOf<TestRuntime>)>);
+pub(crate) struct ExtBuilder(
+	Vec<(AccountId32, Balance)>,
+	Vec<(DepositNamespace, DepositKeyOf<TestRuntime>, DepositEntryOf<TestRuntime>)>,
+);
 
 impl ExtBuilder {
+	pub(crate) fn with_balances(mut self, balances: Vec<(AccountId32, Balance)>) -> Self {
+		self.0 = balances;
+		self
+	}
+
 	pub(crate) fn with_deposits(
 		mut self,
 		deposits: Vec<(DepositNamespace, DepositKeyOf<TestRuntime>, DepositEntryOf<TestRuntime>)>,
 	) -> Self {
-		self.0 = deposits;
+		self.1 = deposits;
 		self
 	}
 
@@ -130,7 +138,11 @@ impl ExtBuilder {
 		let mut ext = sp_io::TestExternalities::default();
 
 		ext.execute_with(|| {
-			for (namespace, key, entry) in self.0 {
+			for (account_id, amount) in self.0 {
+				Balances::make_free_balance_be(&account_id, amount);
+			}
+
+			for (namespace, key, entry) in self.1 {
 				// Fund each account with ED + deposit amount
 				Balances::make_free_balance_be(&entry.deposit.owner, 500 + entry.deposit.amount);
 				Pallet::<TestRuntime>::add_deposit(namespace, key, entry).unwrap();
