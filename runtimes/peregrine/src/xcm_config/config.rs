@@ -30,9 +30,9 @@ use pallet_xcm::XcmPassthrough;
 use sp_core::ConstU32;
 use xcm::v3::prelude::*;
 use xcm_builder::{
-	AllowTopLevelPaidExecutionFrom, EnsureXcmOrigin, FixedWeightBounds, RelayChainAsNative, SiblingParachainAsNative,
-	SignedAccountId32AsNative, SignedToAccountId32, SovereignSignedViaLocation, TakeWeightCredit, UsingComponents,
-	WithComputedOrigin,
+	AllowTopLevelPaidExecutionFrom, EnsureXcmOrigin, FixedWeightBounds, NativeAsset, RelayChainAsNative,
+	SiblingParachainAsNative, SignedAccountId32AsNative, SignedToAccountId32, SovereignSignedViaLocation,
+	TakeWeightCredit, UsingComponents, WithComputedOrigin,
 };
 use xcm_executor::{traits::WithOriginFilter, XcmExecutor};
 
@@ -44,8 +44,9 @@ use runtime_common::xcm_config::{
 parameter_types! {
 	pub RelayChainOrigin: RuntimeOrigin = cumulus_pallet_xcm::Origin::Relay.into();
 	pub Ancestry: MultiLocation = Parachain(ParachainInfo::parachain_id().into()).into();
-	// TODO: This needs to be updated once we deploy Peregrine on Rococo
+	// TODO: This needs to be updated once we deploy Peregrine on Rococo/Paseo
 	pub const RelayNetworkId: Option<NetworkId> = None;
+	// TODO: This needs to be updated once we deploy Peregrine on Rococo/Paseo.
 	pub UniversalLocation: InteriorMultiLocation =
 		Parachain(ParachainInfo::parachain_id().into()).into();
 }
@@ -115,7 +116,7 @@ impl xcm_executor::Config for XcmConfig {
 	type AssetTransactor = LocalAssetTransactor<Balances, RelayNetworkId>;
 	type OriginConverter = XcmOriginToTransactDispatchOrigin;
 	// Reserving is disabled.
-	type IsReserve = ();
+	type IsReserve = NativeAsset;
 	// Teleporting is disabled.
 	type IsTeleporter = ();
 	type UniversalLocation = UniversalLocation;

@@ -23,7 +23,7 @@ use crate::{
 
 use frame_support::{
 	parameter_types,
-	traits::{Contains, Nothing},
+	traits::{Contains, Everything, Nothing},
 };
 use frame_system::EnsureRoot;
 use pallet_xcm::XcmPassthrough;
@@ -43,9 +43,8 @@ use runtime_common::xcm_config::{
 parameter_types! {
 	pub RelayChainOrigin: RuntimeOrigin = cumulus_pallet_xcm::Origin::Relay.into();
 	pub Ancestry: MultiLocation = Parachain(ParachainInfo::parachain_id().into()).into();
-	pub const RelayNetworkId: Option<NetworkId> = Some(NetworkId::Polkadot);
-	pub UniversalLocation: InteriorMultiLocation =
-		Parachain(ParachainInfo::parachain_id().into()).into();
+	pub const RelayNetworkId: NetworkId = NetworkId::Polkadot;
+	pub UniversalLocation: InteriorMultiLocation = X2(GlobalConsensus(RelayNetworkId::get()), Parachain(ParachainInfo::parachain_id().into()));
 }
 
 /// This is the type we use to convert an (incoming) XCM origin into a local
@@ -170,7 +169,7 @@ impl pallet_xcm::Config for Runtime {
 	// NOTE: For local testing this needs to be `Everything`.
 	type XcmExecuteFilter = Nothing;
 	type XcmTeleportFilter = Nothing;
-	type XcmReserveTransferFilter = Nothing;
+	type XcmReserveTransferFilter = Everything;
 	type AdminOrigin = EnsureRoot<AccountId>;
 	type XcmExecutor = XcmExecutor<XcmConfig>;
 	type Weigher = FixedWeightBounds<UnitWeightCost, RuntimeCall, MaxInstructions>;
