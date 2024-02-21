@@ -62,8 +62,86 @@ fn genesis() -> Storage {
 	.unwrap()
 }
 
+pub mod asset_hub_polkadot {
+	use crate::xcm_config::tests::relaychain::{accounts, collators, polkadot::ED};
+
+	use super::*;
+	pub const PARA_ID: u32 = 1000;
+
+	pub fn genesis() -> Storage {
+		let genesis_config = asset_hub_polkadot_runtime::RuntimeGenesisConfig {
+			system: asset_hub_polkadot_runtime::SystemConfig {
+				code: asset_hub_polkadot_runtime::WASM_BINARY
+					.expect("WASM binary was not build, please build it!")
+					.to_vec(),
+				..Default::default()
+			},
+			balances: asset_hub_polkadot_runtime::BalancesConfig {
+				balances: accounts::init_balances()
+					.iter()
+					.cloned()
+					.map(|k| (k, ED * 4096))
+					.collect(),
+			},
+			parachain_info: asset_hub_polkadot_runtime::ParachainInfoConfig {
+				parachain_id: PARA_ID.into(),
+				..Default::default()
+			},
+			collator_selection: asset_hub_polkadot_runtime::CollatorSelectionConfig {
+				invulnerables: collators::invulnerables_asset_hub_polkadot()
+					.iter()
+					.cloned()
+					.map(|(acc, _)| acc)
+					.collect(),
+				candidacy_bond: ED * 16,
+				..Default::default()
+			},
+			session: asset_hub_polkadot_runtime::SessionConfig {
+				keys: collators::invulnerables_asset_hub_polkadot()
+					.into_iter()
+					.map(|(acc, aura)| {
+						(
+							acc.clone(),                                      // account id
+							acc,                                              // validator id
+							asset_hub_polkadot_runtime::SessionKeys { aura }, // session keys
+						)
+					})
+					.collect(),
+			},
+			polkadot_xcm: asset_hub_polkadot_runtime::PolkadotXcmConfig {
+				safe_xcm_version: Some(SAFE_XCM_VERSION),
+				..Default::default()
+			},
+			..Default::default()
+		};
+
+		genesis_config.build_storage().unwrap()
+	}
+}
+
 decl_test_parachains! {
-	pub struct Peregrine {
+	pub struct AssetHubPolkadot {
+		genesis = asset_hub_polkadot::genesis(),
+		on_init = (),
+		runtime = {
+			Runtime: asset_hub_polkadot_runtime::Runtime,
+			RuntimeOrigin: asset_hub_polkadot_runtime::RuntimeOrigin,
+			RuntimeCall: asset_hub_polkadot_runtime::RuntimeCall,
+			RuntimeEvent: asset_hub_polkadot_runtime::RuntimeEvent,
+			XcmpMessageHandler: asset_hub_polkadot_runtime::XcmpQueue,
+			DmpMessageHandler: asset_hub_polkadot_runtime::DmpQueue,
+			LocationToAccountId: asset_hub_polkadot_runtime::xcm_config::LocationToAccountId,
+			System: asset_hub_polkadot_runtime::System,
+			Balances: asset_hub_polkadot_runtime::Balances,
+			ParachainSystem: asset_hub_polkadot_runtime::ParachainSystem,
+			ParachainInfo: asset_hub_polkadot_runtime::ParachainInfo,
+		},
+		pallets_extra = {
+			PolkadotXcm: asset_hub_polkadot_runtime::PolkadotXcm,
+			Assets: asset_hub_polkadot_runtime::Assets,
+		}
+	},
+	pub struct SpiritnetPolkadot {
 		genesis = genesis(),
 		on_init = (),
 		runtime = {

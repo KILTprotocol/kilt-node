@@ -18,8 +18,10 @@ use crate::xcm_config::tests::utils::get_from_seed;
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use polkadot_primitives::{AccountId, AssignmentId, Balance, BlockNumber, ValidatorId};
 pub(crate) use polkadot_runtime::System;
-use polkadot_runtime_parachains::configuration::HostConfiguration;
-use polkadot_runtime_parachains::paras::{ParaGenesisArgs, ParaKind};
+use polkadot_runtime_parachains::{
+	configuration::HostConfiguration,
+	paras::{ParaGenesisArgs, ParaKind},
+};
 use polkadot_service::chain_spec::get_authority_keys_from_seed_no_beefy;
 use sc_consensus_grandpa::AuthorityId as GrandpaId;
 use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
@@ -177,6 +179,8 @@ pub mod validators {
 pub mod polkadot {
 	use polkadot_primitives::{HeadData, ValidationCode};
 
+	use crate::xcm_config::tests::parachains::asset_hub_polkadot;
+
 	use super::*;
 	pub const ED: Balance = polkadot_runtime_constants::currency::EXISTENTIAL_DEPOSIT;
 	const STASH: u128 = 100 * polkadot_runtime_constants::currency::UNITS;
@@ -313,64 +317,5 @@ decl_test_relay_chains! {
 		pallets_extra = {
 			XcmPallet: polkadot_runtime::XcmPallet,
 		}
-	}
-}
-
-// Asset Hub Polkadot
-pub mod asset_hub_polkadot {
-	use runtime_common::constants::EXISTENTIAL_DEPOSIT;
-
-	use super::*;
-	pub const PARA_ID: u32 = 1000;
-	pub const ED: Balance = EXISTENTIAL_DEPOSIT;
-
-	pub fn genesis() -> Storage {
-		let genesis_config = asset_hub_polkadot_runtime::RuntimeGenesisConfig {
-			system: asset_hub_polkadot_runtime::SystemConfig {
-				code: asset_hub_polkadot_runtime::WASM_BINARY
-					.expect("WASM binary was not build, please build it!")
-					.to_vec(),
-				..Default::default()
-			},
-			balances: asset_hub_polkadot_runtime::BalancesConfig {
-				balances: accounts::init_balances()
-					.iter()
-					.cloned()
-					.map(|k| (k, ED * 4096))
-					.collect(),
-			},
-			parachain_info: asset_hub_polkadot_runtime::ParachainInfoConfig {
-				parachain_id: PARA_ID.into(),
-				..Default::default()
-			},
-			collator_selection: asset_hub_polkadot_runtime::CollatorSelectionConfig {
-				invulnerables: collators::invulnerables_asset_hub_polkadot()
-					.iter()
-					.cloned()
-					.map(|(acc, _)| acc)
-					.collect(),
-				candidacy_bond: ED * 16,
-				..Default::default()
-			},
-			session: asset_hub_polkadot_runtime::SessionConfig {
-				keys: collators::invulnerables_asset_hub_polkadot()
-					.into_iter()
-					.map(|(acc, aura)| {
-						(
-							acc.clone(),                                      // account id
-							acc,                                              // validator id
-							asset_hub_polkadot_runtime::SessionKeys { aura }, // session keys
-						)
-					})
-					.collect(),
-			},
-			polkadot_xcm: asset_hub_polkadot_runtime::PolkadotXcmConfig {
-				safe_xcm_version: Some(SAFE_XCM_VERSION),
-				..Default::default()
-			},
-			..Default::default()
-		};
-
-		genesis_config.build_storage().unwrap()
 	}
 }

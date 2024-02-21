@@ -14,27 +14,35 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+mod parachains;
 mod relaychain;
-mod spiritnet;
 mod utils;
 
-use crate::xcm_config::tests::relaychain::{Polkadot, System as PolkadotSystem};
-use crate::PolkadotXcm as SpiritnetXcm;
+use crate::{
+	xcm_config::tests::{
+		parachains::AssetHubPolkadot,
+		relaychain::{Polkadot, System as PolkadotSystem},
+	},
+	PolkadotXcm as SpiritnetXcm,
+};
 use frame_support::assert_ok;
 use frame_system::RawOrigin;
+use parachains::{RuntimeEvent as PeregrineRuntimeEvent, SpiritnetPolkadot, System as PeregrineSystem};
 use polkadot_primitives::{AccountId, Balance};
 use polkadot_service::chain_spec::get_account_id_from_seed;
 use sp_core::{sr25519, Get};
-use spiritnet::{Peregrine, RuntimeEvent as PeregrineRuntimeEvent, System as PeregrineSystem};
 use xcm::prelude::*;
 use xcm_emulator::{decl_test_networks, BridgeMessageHandler, Parachain, RelayChain, TestExt};
 use xcm_executor::traits::ConvertLocation;
+
+use self::relaychain::accounts::ALICE;
 
 decl_test_networks! {
 	pub struct PolkadotNetwork {
 		relay_chain = Polkadot,
 		parachains = vec![
-			Peregrine,
+			SpiritnetPolkadot,
+			AssetHubPolkadot,
 		],
 		bridge = ()
 	}
@@ -46,9 +54,9 @@ decl_test_networks! {
 fn test_reserve_asset_transfer_from_regular_account_to_relay() {
 	PolkadotNetwork::reset();
 
-	let alice_account_id_on_peregrine = get_account_id_from_seed::<sr25519::Public>("Alice");
+	let alice_account_id_on_peregrine = get_account_id_from_seed::<sr25519::Public>(ALICE);
 
-	Peregrine::execute_with(|| {
+	SpiritnetPolkadot::execute_with(|| {
 		assert_ok!(SpiritnetXcm::limited_reserve_transfer_assets(
 			RawOrigin::Signed(alice_account_id_on_peregrine.clone()).into(),
 			Box::new(Parent.into()),
@@ -72,6 +80,50 @@ fn test_reserve_asset_transfer_from_regular_account_to_relay() {
 				outcome: xcm::latest::Outcome::Error(xcm::latest::Error::Barrier)
 			})
 		));
+	});
+	// No message should reach the relaychain.
+	Polkadot::execute_with(|| {
+		assert_eq!(PolkadotSystem::events().len(), 0);
+	})
+}
+
+/// Test that a reserved transfer to the relaychain is failing. We don't want to
+/// allow transfers to the relaychain since the funds might be lost.
+#[test]
+fn test_reserve_asset_transfer_from_regular_account_to_asset_hub() {
+	PolkadotNetwork::reset();
+
+	let alice_account_id = get_account_id_from_seed::<sr25519::Public>(ALICE);
+
+	SpiritnetPolkadot::execute_with(|| {
+
+		assert_ok!(SpiritnetXcm::limited_reserve_transfer_assets(
+			RawOrigin::Signed(alice_account_id.clone()).into(),
+			Box::new(ParentThen(Junctions::X1(Junction::Parachain(1000))).into()),
+			Box::new(
+				X1(AccountId32 {
+					network: None,
+					id: alice_account_id.into()
+				})
+				.into()
+			),
+			Box::new((Here, 1).into()),
+			0,
+			WeightLimit::Unlimited,
+		));
+		assert!(
+			matches!(
+				PeregrineSystem::events()
+					.first()
+					.expect("An event should be emitted when sending an XCM message.")
+					.event,
+				PeregrineRuntimeEvent::PolkadotXcm(pallet_xcm::Event::Attempted {
+					outcome: xcm::latest::Outcome::Complete(_)
+				})
+			),
+			"Didn't match {:?}",
+			PeregrineSystem::events()
+		);
 	});
 	// No message should reach the relaychain.
 	Polkadot::execute_with(|| {
