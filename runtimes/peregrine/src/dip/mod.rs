@@ -20,17 +20,17 @@ use did::{DidRawOrigin, EnsureDidOrigin};
 use frame_system::EnsureSigned;
 use runtime_common::{
 	constants::{deposit_storage::MAX_DEPOSIT_PALLET_KEY_LENGTH, dip_provider::MAX_LINKED_ACCOUNTS},
-	dip::{did::LinkedDidInfoProvider, merkle::DidMerkleRootGenerator},
+	dip::{
+		deposit::{DepositCollectorHooks, DepositHooks, DepositNamespace},
+		did::LinkedDidInfoProvider,
+		merkle::DidMerkleRootGenerator,
+	},
 	AccountId, DidIdentifier,
 };
 use sp_core::ConstU32;
 
-use crate::{
-	dip::deposit::{DepositCollectorHooks, DepositHooks, DepositNamespace},
-	weights, Balances, Runtime, RuntimeEvent, RuntimeHoldReason,
-};
+use crate::{weights, Balances, Runtime, RuntimeEvent, RuntimeHoldReason};
 
-pub(crate) mod deposit;
 pub(crate) mod runtime_api;
 
 impl pallet_dip_provider::Config for Runtime {

@@ -79,7 +79,7 @@ fn commit_identity_override_same_version_commitment() {
 }
 
 #[test]
-fn delete_identity_commitments() {
+fn delete_identity_commitment_multiple_versions() {
 	ExtBuilder::default()
 		.with_commitments(vec![(DID, 0, u32::MAX), (DID, 1, u32::MAX - 1)])
 		.build()
@@ -106,7 +106,7 @@ fn delete_identity_commitments() {
 }
 
 #[test]
-fn delete_identity_not_found() {
+fn delete_identity_commitment_not_found() {
 	ExtBuilder::default().build().execute_with(|| {
 		assert_noop!(
 			DipProvider::delete_identity_commitment(DoubleOrigin(ACCOUNT_ID, DID).into(), DID, Some(0),),

@@ -17,7 +17,6 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use did::{did_details::DidDetails, DidVerificationKeyRelationship, KeyIdOf};
-use frame_support::ensure;
 use frame_system::pallet_prelude::BlockNumberFor;
 use kilt_dip_primitives::{
 	DidKeyRelationship, RevealedAccountId, RevealedDidKey, RevealedDidMerkleProofLeaf, RevealedWeb3Name,
@@ -25,7 +24,7 @@ use kilt_dip_primitives::{
 use pallet_did_lookup::linkable_account::LinkableAccountId;
 use pallet_dip_provider::{traits::IdentityProvider, IdentityOf};
 use pallet_web3_names::Web3NameOf;
-use sp_std::vec;
+use sp_std::{prelude::ToOwned, vec, vec::Vec};
 use sp_trie::{generate_trie_proof, LayoutV1, MemoryDB, TrieDBMutBuilder, TrieHash, TrieMut};
 
 use crate::dip::{
