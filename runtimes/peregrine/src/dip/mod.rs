@@ -52,7 +52,7 @@ impl pallet_dip_provider::Config for Runtime {
 
 impl pallet_deposit_storage::Config for Runtime {
 	#[cfg(feature = "runtime-benchmarks")]
-	type BenchmarkHooks = deposit::PalletDepositStorageBenchmarkHooks;
+	type BenchmarkHooks = runtime_common::dip::deposit::PalletDepositStorageBenchmarkHooks;
 	// Any signed origin can submit the tx, which will go through only if the
 	// deposit payer matches the signed origin.
 	type CheckOrigin = EnsureSigned<AccountId>;
