@@ -30,14 +30,15 @@ use pallet_xcm::XcmPassthrough;
 use sp_core::ConstU32;
 use xcm::v3::prelude::*;
 use xcm_builder::{
-	AllowTopLevelPaidExecutionFrom, EnsureXcmOrigin, FixedWeightBounds, RelayChainAsNative, SiblingParachainAsNative,
-	SignedAccountId32AsNative, SignedToAccountId32, UsingComponents, WithComputedOrigin,
+	AllowKnownQueryResponses, AllowSubscriptionsFrom, AllowTopLevelPaidExecutionFrom, EnsureXcmOrigin,
+	FixedWeightBounds, RelayChainAsNative, SiblingParachainAsNative, SignedAccountId32AsNative, SignedToAccountId32,
+	TakeWeightCredit, TrailingSetTopicAsId, UsingComponents, WithComputedOrigin,
 };
 use xcm_executor::{traits::WithOriginFilter, XcmExecutor};
 
 use runtime_common::xcm_config::{
 	DenyReserveTransferToRelayChain, DenyThenTry, HereLocation, LocalAssetTransactor, LocationToAccountId,
-	MaxAssetsIntoHolding, MaxInstructions, ParentLegislative, UnitWeightCost,
+	MaxAssetsIntoHolding, MaxInstructions, ParentOrSiblings, UnitWeightCost,
 };
 
 parameter_types! {
@@ -70,17 +71,26 @@ pub type XcmOriginToTransactDispatchOrigin = (
 
 /// Explicitly deny ReserveTransfer to the relay chain. Allow calls from the
 /// relay chain governance.
-pub type XcmBarrier = DenyThenTry<
-	DenyReserveTransferToRelayChain,
-	WithComputedOrigin<
+pub type XcmBarrier = TrailingSetTopicAsId<
+	DenyThenTry<
+		DenyReserveTransferToRelayChain,
 		(
-			// We allow everything from the relay chain if it was sent by the relay chain legislative (i.e., democracy
-			// vote). Since the relaychain doesn't own KILTs and missing fees shouldn't prevent calls from the
-			// relaychain legislative, we allow unpaid execution.
-			AllowTopLevelPaidExecutionFrom<ParentLegislative>,
+			// For local extrinsics. Takes credit from already paid extrinsic fee. This is outside the computed origin
+			// since local accounts don't have a computed origin (the message isn't send by any router etc.)
+			TakeWeightCredit,
+			// If we request a response we should also allow it to execute.
+			AllowKnownQueryResponses<PolkadotXcm>,
+			WithComputedOrigin<
+				(
+					// Allow paid execution.
+					AllowTopLevelPaidExecutionFrom<Everything>,
+					// Subscriptions for XCM version are OK from the relaychain and other parachains.
+					AllowSubscriptionsFrom<ParentOrSiblings>,
+				),
+				UniversalLocation,
+				ConstU32<8>,
+			>,
 		),
-		UniversalLocation,
-		ConstU32<8>,
 	>,
 >;
 
