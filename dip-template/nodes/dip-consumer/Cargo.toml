@@ -15,7 +15,6 @@ build = "build.rs"
 clap = {workspace = true, features = ["std", "derive"]}
 futures = { workspace = true }
 log = { workspace = true, features = ["std"] }
-parity-scale-codec = { workspace = true, features = ["std"] }
 serde = {workspace = true, features = ["std", "derive"]}
 jsonrpsee = {workspace = true, features = ["server"]}
 
