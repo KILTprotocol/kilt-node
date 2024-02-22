@@ -113,7 +113,7 @@ std = [
   "parachain-info/std",
   "rococo-runtime/std",
   "frame-benchmarking/std",
-  "frame-system-benchmarking/std",
+  "frame-system-benchmarking?/std",
 ]
 
 runtime-benchmarks = [

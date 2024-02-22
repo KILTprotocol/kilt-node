@@ -115,6 +115,7 @@ std = [
   "pallet-collator-selection/std",
   "parachain-info/std",
   "frame-benchmarking?/std",
+  "frame-system-benchmarking?/std",
 ]
 runtime-benchmarks = [
   "did/runtime-benchmarks",
