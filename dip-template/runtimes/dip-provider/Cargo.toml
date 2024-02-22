@@ -20,8 +20,6 @@ scale-info = {workspace = true, features = ["derive"]}
 
 # DIP
 did.workspace = true
-kilt-support.workspace = true
-kilt-dip-primitives.workspace = true
 kilt-runtime-api-did.workspace = true
 kilt-runtime-api-dip-provider.workspace = true
 pallet-deposit-storage.workspace = true
@@ -59,18 +57,15 @@ sp-weights.workspace = true
 
 # Cumulus
 cumulus-pallet-aura-ext.workspace = true
-cumulus-pallet-dmp-queue.workspace = true
 cumulus-pallet-parachain-system.workspace = true
 cumulus-primitives-core.workspace = true
 cumulus-primitives-timestamp.workspace = true
-cumulus-primitives-utility.workspace = true
 pallet-collator-selection.workspace = true
 parachain-info.workspace = true
 
 # Benchmarks
 frame-benchmarking = {workspace = true, optional = true}
 frame-system-benchmarking = {workspace = true, optional = true}
-hex-literal = {workspace = true, optional = true}
 
 [features]
 default = [
@@ -81,8 +76,6 @@ std = [
 	"parity-scale-codec/std",
 	"scale-info/std",
   "did/std",
-  "kilt-support/std",
-  "kilt-dip-primitives/std",
   "kilt-runtime-api-did/std",
   "kilt-runtime-api-dip-provider/std",
   "pallet-deposit-storage/std",
@@ -116,18 +109,16 @@ std = [
 	"sp-version/std",
   "sp-weights/std",
   "cumulus-pallet-aura-ext/std",
-	"cumulus-pallet-dmp-queue/std",
 	"cumulus-pallet-parachain-system/std",
 	"cumulus-primitives-core/std",
 	"cumulus-primitives-timestamp/std",
-	"cumulus-primitives-utility/std",
   "pallet-collator-selection/std",
   "parachain-info/std",
   "frame-benchmarking?/std",
+  "frame-system-benchmarking?/std",
 ]
 runtime-benchmarks = [
   "did/runtime-benchmarks",
-  "kilt-dip-primitives/runtime-benchmarks",
   "pallet-deposit-storage/runtime-benchmarks",
   "pallet-did-lookup/runtime-benchmarks",
   "pallet-dip-provider/runtime-benchmarks",
@@ -143,5 +134,4 @@ runtime-benchmarks = [
   "sp-runtime/runtime-benchmarks",
   "frame-benchmarking/runtime-benchmarks",
   "frame-system-benchmarking/runtime-benchmarks",
-  "hex-literal"
 ]

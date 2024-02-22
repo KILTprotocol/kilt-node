@@ -26,7 +26,6 @@ frame-system.workspace = true
 kilt-support.workspace = true
 parity-scale-codec = {workspace = true, features = ["derive"]}
 scale-info = {workspace = true, features = ["derive"]}
-sp-core.workspace = true
 sp-std.workspace = true
 
 # Benchmarks
@@ -51,10 +50,9 @@ std = [
 	"kilt-support/std",
 	"parity-scale-codec/std",
 	"scale-info/std",
-	"sp-core/std",
 	"sp-std/std",
   "frame-benchmarking?/std",
   "sp-runtime?/std",
 ]
 
-try-runtime = [ "did/try-runtime", "kilt-support/try-runtime" ]
+try-runtime = [ "did/try-runtime", "frame-support/try-runtime", "kilt-support/try-runtime" ]
