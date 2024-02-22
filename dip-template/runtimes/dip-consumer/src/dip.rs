@@ -31,7 +31,7 @@ use sp_std::marker::PhantomData;
 use crate::{weights, AccountId, DidIdentifier, Runtime, RuntimeCall, RuntimeOrigin};
 
 pub type MerkleProofVerifierOutput = <ProofVerifier as IdentityProofVerifier<Runtime>>::VerificationResult;
-/// The verifier logic assumes the provider is a sibling KILT parachain, and
+/// The verifier logic assumes the provider is a sibling KILT parachain, the relaychain is a Rococo relaychain, and
 /// that a KILT subject can provide DIP proof that reveal at most 10 DID keys
 /// and 10 linked accounts (defaults provided by the
 /// `KiltVersionedParachainVerifier` type). Calls that do not pass the
