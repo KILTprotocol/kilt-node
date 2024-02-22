@@ -385,7 +385,7 @@ pub mod did {
 	pub const MAX_SERVICE_ID_LENGTH: u32 = 50;
 	pub const MAX_SERVICE_TYPE_LENGTH: u32 = 50;
 	pub const MAX_NUMBER_OF_TYPES_PER_SERVICE: u32 = 1;
-	pub const MAX_SERVICE_URL_LENGTH: u32 = 200;
+	pub const MAX_SERVICE_URL_LENGTH: u32 = 2_000;
 	pub const MAX_NUMBER_OF_URLS_PER_SERVICE: u32 = 2;
 
 	parameter_types! {
