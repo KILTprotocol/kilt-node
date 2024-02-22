@@ -65,7 +65,7 @@ pub trait GetWithArg<Arg> {
 	fn get(arg: &Arg) -> Self::Result;
 }
 
-/// Implementor of the [`GetWithArg`] trait that return the state
+/// Implementer of the [`GetWithArg`] trait that return the state
 /// root of a relaychain block with a given number by retrieving it from the
 /// [`pallet_relay_store::Pallet`] pallet storage. It hardcodes the
 /// relaychain `BlockNumber`, `Hasher`, `StorageKey`, and `ParaId` to the
