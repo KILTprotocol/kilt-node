@@ -14,15 +14,17 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+use crate::xcm_config::tests::relaychain::{accounts, collators, polkadot::ED};
 pub(crate) use crate::{
 	xcm_config::{
 		tests::utils::{get_account_id_from_seed, get_from_seed},
 		RelayNetworkId,
 	},
-	AuthorityId, Balances, DmpQueue, ParachainInfo, ParachainInfoConfig, ParachainSystem, PolkadotXcmConfig,
-	Runtime as PeregrineRuntime, RuntimeCall, RuntimeEvent, RuntimeGenesisConfig, RuntimeOrigin, SessionConfig,
-	SessionKeys, System, SystemConfig, XcmpQueue, WASM_BINARY,
+	AuthorityId, Balances, BalancesConfig, DmpQueue, ParachainInfo, ParachainInfoConfig, ParachainSystem,
+	PolkadotXcmConfig, Runtime as PeregrineRuntime, RuntimeCall, RuntimeEvent, RuntimeGenesisConfig, RuntimeOrigin,
+	SessionConfig, SessionKeys, System, SystemConfig, XcmpQueue, WASM_BINARY,
 };
+use runtime_common::constants::EXISTENTIAL_DEPOSIT;
 pub(crate) use runtime_common::{xcm_config::LocationToAccountId, AccountPublic};
 use sp_core::sr25519;
 use sp_runtime::{BuildStorage, Storage};
@@ -56,6 +58,13 @@ fn genesis() -> Storage {
 			.map(|(acc, key)| (acc.clone(), acc.clone(), SessionKeys { aura: key.clone() }))
 			.collect::<Vec<_>>(),
 		},
+		balances: BalancesConfig {
+			balances: accounts::init_balances()
+				.iter()
+				.cloned()
+				.map(|k| (k, EXISTENTIAL_DEPOSIT * 4096))
+				.collect(),
+		},
 		..Default::default()
 	}
 	.build_storage()
@@ -63,7 +72,6 @@ fn genesis() -> Storage {
 }
 
 pub mod asset_hub_polkadot {
-	use crate::xcm_config::tests::relaychain::{accounts, collators, polkadot::ED};
 
 	use super::*;
 	pub const PARA_ID: u32 = 1000;

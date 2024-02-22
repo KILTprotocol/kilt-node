@@ -21,21 +21,24 @@ mod utils;
 use crate::{
 	xcm_config::tests::{
 		parachains::AssetHubPolkadot,
-		relaychain::{Polkadot, System as PolkadotSystem},
+		relaychain::{polkadot::ED, Polkadot, System as PolkadotSystem},
 	},
 	PolkadotXcm as SpiritnetXcm,
 };
+use asset_hub_polkadot_runtime::{RuntimeEvent as AssetHubRuntimeEvent, System as AssetHubSystem};
+use cumulus_pallet_xcmp_queue::Event as XcmpQueueEvent;
 use frame_support::assert_ok;
 use frame_system::RawOrigin;
 use parachains::{RuntimeEvent as PeregrineRuntimeEvent, SpiritnetPolkadot, System as PeregrineSystem};
 use polkadot_primitives::{AccountId, Balance};
 use polkadot_service::chain_spec::get_account_id_from_seed;
+use runtime_common::constants::EXISTENTIAL_DEPOSIT;
 use sp_core::{sr25519, Get};
 use xcm::prelude::*;
 use xcm_emulator::{decl_test_networks, BridgeMessageHandler, Parachain, RelayChain, TestExt};
 use xcm_executor::traits::ConvertLocation;
 
-use self::relaychain::accounts::ALICE;
+use self::relaychain::accounts::{ALICE, BOB};
 
 decl_test_networks! {
 	pub struct PolkadotNetwork {
@@ -94,27 +97,28 @@ fn test_reserve_asset_transfer_from_regular_account_to_asset_hub() {
 	PolkadotNetwork::reset();
 
 	let alice_account_id = get_account_id_from_seed::<sr25519::Public>(ALICE);
+	let bob_account_id = get_account_id_from_seed::<sr25519::Public>(BOB);
 
 	SpiritnetPolkadot::execute_with(|| {
-
 		assert_ok!(SpiritnetXcm::limited_reserve_transfer_assets(
 			RawOrigin::Signed(alice_account_id.clone()).into(),
 			Box::new(ParentThen(Junctions::X1(Junction::Parachain(1000))).into()),
 			Box::new(
 				X1(AccountId32 {
 					network: None,
-					id: alice_account_id.into()
+					id: bob_account_id.into()
 				})
 				.into()
 			),
-			Box::new((Here, 1).into()),
+			Box::new((Here, 1000 * EXISTENTIAL_DEPOSIT).into()),
 			0,
 			WeightLimit::Unlimited,
 		));
+
 		assert!(
 			matches!(
 				PeregrineSystem::events()
-					.first()
+					.last()
 					.expect("An event should be emitted when sending an XCM message.")
 					.event,
 				PeregrineRuntimeEvent::PolkadotXcm(pallet_xcm::Event::Attempted {
@@ -122,11 +126,25 @@ fn test_reserve_asset_transfer_from_regular_account_to_asset_hub() {
 				})
 			),
 			"Didn't match {:?}",
-			PeregrineSystem::events()
+			PeregrineSystem::events().last()
 		);
 	});
-	// No message should reach the relaychain.
+	// No event on the relaychain (message is meant for asset hub)
 	Polkadot::execute_with(|| {
 		assert_eq!(PolkadotSystem::events().len(), 0);
-	})
+	});
+	// Fails on AsssetHub since spiritnet is not a trusted registrar.
+	AssetHubPolkadot::execute_with(|| {
+		assert!(
+			matches!(
+				AssetHubSystem::events()
+					.last()
+					.expect("An event should be emitted when sending an XCM message.")
+					.event,
+				AssetHubRuntimeEvent::XcmpQueue(XcmpQueueEvent::Fail {..})
+			),
+			"Didn't match {:?}",
+			AssetHubSystem::events().last()
+		);
+	});
 }
