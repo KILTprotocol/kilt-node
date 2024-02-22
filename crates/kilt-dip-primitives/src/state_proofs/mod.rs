@@ -24,7 +24,8 @@ use sp_trie::StorageProof;
 
 use crate::{state_proofs::substrate_no_std_port::read_proof_check, utils::OutputOf};
 
-// Ported from https://github.com/paritytech/substrate/blob/b27c470eaff379f512d1dec052aff5d551ed3b03/primitives/state-machine/src/lib.rs#L1076
+// Ported and adapted from [https://github.com/paritytech/substrate/blob/polkadot-v1.0.0/primitives/state-machine/src/lib.rs](https://github.com/paritytech/substrate/blob/polkadot-v1.0.0/primitives/state-machine/src/lib.rs).
+// Refer to the original source file for full license details.
 // Needs to be replaced with its runtime-friendly version when available, or be
 // kept up-to-date with upstream.
 mod substrate_no_std_port;
