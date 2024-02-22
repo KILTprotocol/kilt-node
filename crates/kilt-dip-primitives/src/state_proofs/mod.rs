@@ -24,7 +24,7 @@ use sp_trie::StorageProof;
 
 use crate::{state_proofs::substrate_no_std_port::read_proof_check, utils::OutputOf};
 
-// Ported and adapted from [https://github.com/paritytech/substrate/blob/polkadot-v1.0.0/primitives/state-machine/src/lib.rs](https://github.com/paritytech/substrate/blob/polkadot-v1.0.0/primitives/state-machine/src/lib.rs).
+// Ported and adapted from <https://github.com/paritytech/substrate/blob/polkadot-v1.0.0/primitives/state-machine/src/lib.rs>.
 // Refer to the original source file for full license details.
 // Needs to be replaced with its runtime-friendly version when available, or be
 // kept up-to-date with upstream.
@@ -80,7 +80,7 @@ where
 /// * `MerkleHasher`: defines the hashing algorithm used to calculate the Merkle
 ///   root.
 /// * `TransformResult`: the type returned by the provided decoding function, if
-///   successful. The `None` result is interpreted as an error, so it is not possible to return a type for which `None` would be a correct decoding, for now. See https://github.com/rust-lang/rust/issues/103765 for more details.
+///   successful. The `None` result is interpreted as an error, so it is not possible to return a type for which `None` would be a correct decoding, for now. See <https://github.com/rust-lang/rust/issues/103765> for more details.
 pub fn verify_storage_value_proof_with_decoder<StorageKey, MerkleHasher, TransformResult>(
 	storage_key: &StorageKey,
 	state_root: OutputOf<MerkleHasher>,
