@@ -132,6 +132,10 @@ pub enum DipCallFilterError {
 impl From<DipCallFilterError> for u8 {
 	fn from(value: DipCallFilterError) -> Self {
 		match value {
+			// DO NOT USE 0
+			// Errors of different sub-parts are separated by a `u8::MAX`.
+			// A value of 0 would make it confusing whether it's the previous sub-part error (u8::MAX)
+			// or the new sub-part error (u8::MAX + 0).
 			DipCallFilterError::BadOrigin => 1,
 			DipCallFilterError::WrongVerificationRelationship => 2,
 		}

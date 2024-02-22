@@ -42,6 +42,10 @@ pub enum LinkedDidInfoProviderError {
 impl From<LinkedDidInfoProviderError> for u16 {
 	fn from(value: LinkedDidInfoProviderError) -> Self {
 		match value {
+			// DO NOT USE 0
+			// Errors of different sub-parts are separated by a `u8::MAX`.
+			// A value of 0 would make it confusing whether it's the previous sub-part error (u8::MAX)
+			// or the new sub-part error (u8::MAX + 0).
 			LinkedDidInfoProviderError::DidNotFound => 1,
 			LinkedDidInfoProviderError::DidDeleted => 2,
 			LinkedDidInfoProviderError::TooManyLinkedAccounts => 3,

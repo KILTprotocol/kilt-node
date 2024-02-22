@@ -199,6 +199,10 @@ pub enum Error {
 impl From<Error> for u8 {
 	fn from(value: Error) -> Self {
 		match value {
+			// DO NOT USE 0
+			// Errors of different sub-parts are separated by a `u8::MAX`.
+			// A value of 0 would make it confusing whether it's the previous sub-part error (u8::MAX)
+			// or the new sub-part error (u8::MAX + 0).
 			Error::InvalidRelayHeader => 1,
 			Error::RelayBlockNotFound => 2,
 			Error::RelayStateRootNotFound => 3,

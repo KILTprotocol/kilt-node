@@ -59,6 +59,10 @@ pub enum FixedDepositCollectorViaDepositsPalletError {
 impl From<FixedDepositCollectorViaDepositsPalletError> for u16 {
 	fn from(value: FixedDepositCollectorViaDepositsPalletError) -> Self {
 		match value {
+			// DO NOT USE 0
+			// Errors of different sub-parts are separated by a `u8::MAX`.
+			// A value of 0 would make it confusing whether it's the previous sub-part error (u8::MAX)
+			// or the new sub-part error (u8::MAX + 0).
 			FixedDepositCollectorViaDepositsPalletError::DepositAlreadyTaken => 1,
 			FixedDepositCollectorViaDepositsPalletError::DepositNotFound => 2,
 			FixedDepositCollectorViaDepositsPalletError::FailedToHold => 3,
