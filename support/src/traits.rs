@@ -97,6 +97,13 @@ impl<T> GetWorstCase<T> for () {
 	fn worst_case(_context: T) -> Self {}
 }
 
+#[cfg(feature = "runtime-benchmarks")]
+impl<T> GetWorstCase<T> for bool {
+	fn worst_case(_context: T) -> Self {
+		true
+	}
+}
+
 /// Trait that allows instanciating multiple instances of a type.
 #[cfg(feature = "runtime-benchmarks")]
 pub trait Instanciate {

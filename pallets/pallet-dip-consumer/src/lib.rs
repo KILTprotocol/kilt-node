@@ -24,7 +24,10 @@ pub mod traits;
 mod default_weights;
 
 #[cfg(test)]
-pub mod mock;
+mod mock;
+
+#[cfg(test)]
+mod tests;
 
 #[cfg(feature = "runtime-benchmarks")]
 pub mod benchmarking;

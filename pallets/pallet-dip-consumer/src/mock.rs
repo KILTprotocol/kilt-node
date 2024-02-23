@@ -23,21 +23,27 @@ use frame_support::{
 		traits::{BlakeTwo256, IdentityLookup},
 		AccountId32,
 	},
-	traits::{ConstU16, ConstU32, ConstU64, Contains, Everything},
+	traits::{ConstU16, ConstU32, ConstU64, Contains, Currency, Everything},
 };
 use frame_system::{mocking::MockBlock, EnsureSigned};
 
-use crate::traits::SuccessfulProofVerifier;
+use crate::{traits::IdentityProofVerifier, Config, DipOrigin, EnsureDipOrigin, RuntimeCallOf};
 
+// This mock is used both for benchmarks and unit tests.
+// For benchmarks, the `system::remark` call must be allowed to be dispatched,
+// while for the unit tests we use the `pallet_did_lookup` as an example pallet
+// consuming the generated DIP origin.
 construct_runtime!(
 	pub struct TestRuntime {
 		System: frame_system,
+		Balances: pallet_balances,
+		DidLookup: pallet_did_lookup,
 		DipConsumer: crate,
 	}
 );
 
 impl frame_system::Config for TestRuntime {
-	type AccountData = ();
+	type AccountData = pallet_balances::AccountData<u64>;
 	type AccountId = AccountId32;
 	type BaseCallFilter = Everything;
 	type Block = MockBlock<TestRuntime>;
@@ -62,36 +68,107 @@ impl frame_system::Config for TestRuntime {
 	type Version = ();
 }
 
-pub struct CallFilter;
+impl pallet_balances::Config for TestRuntime {
+	type AccountStore = System;
+	type Balance = u64;
+	type DustRemoval = ();
+	type ExistentialDeposit = ConstU64<1>;
+	type FreezeIdentifier = [u8; 8];
+	type MaxFreezes = ConstU32<10>;
+	type MaxHolds = ConstU32<10>;
+	type MaxLocks = ConstU32<10>;
+	type MaxReserves = ConstU32<10>;
+	type ReserveIdentifier = [u8; 8];
+	type RuntimeEvent = RuntimeEvent;
+	type RuntimeHoldReason = RuntimeHoldReason;
+	type WeightInfo = ();
+}
 
-impl Contains<RuntimeCall> for CallFilter {
+impl pallet_did_lookup::Config for TestRuntime {
+	type BalanceMigrationManager = ();
+	type Currency = Balances;
+	type Deposit = ConstU64<1>;
+	type DidIdentifier = AccountId32;
+	type EnsureOrigin = EnsureDipOrigin<AccountId32, AccountId32, ()>;
+	type OriginSuccess = DipOrigin<AccountId32, AccountId32, ()>;
+	type RuntimeEvent = RuntimeEvent;
+	type RuntimeHoldReason = RuntimeHoldReason;
+	type WeightInfo = ();
+}
+
+pub struct OnlySystemRemarksWithoutEventsAndDidLookupCalls;
+
+impl Contains<RuntimeCall> for OnlySystemRemarksWithoutEventsAndDidLookupCalls {
 	fn contains(t: &RuntimeCall) -> bool {
-		matches!(t, RuntimeCall::System { .. })
+		matches!(
+			t,
+			// Required by the benchmarking logic
+			RuntimeCall::System(frame_system::Call::remark { .. }) |
+			// Used in these tests
+			RuntimeCall::DidLookup { .. }
+		)
+	}
+}
+
+pub struct BooleanProofVerifier;
+impl IdentityProofVerifier<TestRuntime> for BooleanProofVerifier {
+	type Error = u16;
+	type Proof = bool;
+	type VerificationResult = ();
+
+	fn verify_proof_for_call_against_details(
+		_call: &RuntimeCallOf<TestRuntime>,
+		_subject: &<TestRuntime as Config>::Identifier,
+		_submitter: &<TestRuntime as frame_system::Config>::AccountId,
+		_identity_details: &mut Option<<TestRuntime as Config>::LocalIdentityInfo>,
+		proof: Self::Proof,
+	) -> Result<Self::VerificationResult, Self::Error> {
+		if proof {
+			Ok(())
+		} else {
+			Err(1)
+		}
 	}
 }
 
 impl crate::Config for TestRuntime {
 	type RuntimeOrigin = RuntimeOrigin;
 	type RuntimeCall = RuntimeCall;
-	type ProofVerifier = SuccessfulProofVerifier;
+	type ProofVerifier = BooleanProofVerifier;
 	type LocalIdentityInfo = u128;
 	type Identifier = AccountId32;
 	type DispatchOriginCheck = EnsureSigned<Self::Identifier>;
-	type DipCallOriginFilter = CallFilter;
+	type DipCallOriginFilter = OnlySystemRemarksWithoutEventsAndDidLookupCalls;
 	type WeightInfo = ();
 }
 
+pub(crate) const SUBMITTER: AccountId32 = AccountId32::new([100u8; 32]);
+pub(crate) const SUBJECT: AccountId32 = AccountId32::new([200u8; 32]);
+
 #[derive(Default)]
-pub(crate) struct ExtBuilder;
+pub(crate) struct ExtBuilder(Vec<(AccountId32, u64)>);
 
 impl ExtBuilder {
-	pub fn _build(self) -> sp_io::TestExternalities {
-		sp_io::TestExternalities::default()
+	pub(crate) fn with_balances(mut self, balances: Vec<(AccountId32, u64)>) -> Self {
+		self.0 = balances;
+		self
+	}
+
+	pub(crate) fn build(self) -> sp_io::TestExternalities {
+		let mut ext = sp_io::TestExternalities::default();
+
+		ext.execute_with(|| {
+			for (account_id, balance) in self.0 {
+				Balances::make_free_balance_be(&account_id, balance);
+			}
+		});
+
+		ext
 	}
 
 	#[cfg(feature = "runtime-benchmarks")]
-	pub fn build_with_keystore(self) -> sp_io::TestExternalities {
-		let mut ext = self._build();
+	pub(crate) fn build_with_keystore(self) -> sp_io::TestExternalities {
+		let mut ext = self.build();
 		let keystore = sp_keystore::testing::MemoryKeystore::new();
 		ext.register_extension(sp_keystore::KeystoreExt(sp_std::sync::Arc::new(keystore)));
 		ext
