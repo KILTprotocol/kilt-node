@@ -18,6 +18,7 @@ cumulus-primitives-core = { workspace = true, features = ["std"] }
 sp-io = {workspace = true, features = ["std"]}
 sp-keystore = {workspace = true, features = ["std"]}
 sp-runtime = {workspace = true, features = ["std"]}
+sp-trie = {workspace = true, features = ["std"]}
 
 [dependencies]
 cumulus-pallet-parachain-system.workspace = true
@@ -53,4 +54,7 @@ runtime-benchmarks = [
   "frame-benchmarking",
   "sp-runtime/runtime-benchmarks",
 ]
-try-runtime = []
+try-runtime = [
+  "frame-support/try-runtime",
+  "frame-system/try-runtime",
+]

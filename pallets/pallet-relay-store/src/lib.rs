@@ -32,12 +32,16 @@ mod benchmarking;
 #[cfg(test)]
 mod mock;
 
+#[cfg(test)]
+mod tests;
+
 pub use crate::{default_weights::WeightInfo, pallet::*};
 
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
 
+	use cumulus_primitives_core::PersistedValidationData;
 	use frame_support::{pallet_prelude::*, BoundedVec};
 	use frame_system::pallet_prelude::*;
 	use sp_core::H256;
@@ -97,6 +101,10 @@ pub mod pallet {
 			let Some(new_validation_data) = cumulus_pallet_parachain_system::Pallet::<T>::validation_data() else {
 				return;
 			};
+			Self::store_new_validation_data(new_validation_data)
+		}
+
+		pub(crate) fn store_new_validation_data(validation_data: PersistedValidationData) {
 			let mut latest_block_heights = LatestBlockHeights::<T>::get();
 			// Remove old relay block from both storage entries.
 			if latest_block_heights.is_full() {
@@ -108,11 +116,11 @@ pub mod pallet {
 				);
 			}
 			// Set the new relay block in storage.
-			let relay_block_height = new_validation_data.relay_parent_number;
+			let relay_block_height = validation_data.relay_parent_number;
 			log::trace!(
 				"Adding new relay block with state root {:#02x?} and number {:?}",
-				new_validation_data.relay_parent_storage_root,
-				new_validation_data.relay_parent_number,
+				validation_data.relay_parent_storage_root,
+				validation_data.relay_parent_number,
 			);
 			let push_res = latest_block_heights.try_push(relay_block_height);
 			if let Err(err) = push_res {
@@ -125,7 +133,7 @@ pub mod pallet {
 				LatestRelayHeads::<T>::insert(
 					relay_block_height,
 					RelayParentInfo {
-						relay_parent_storage_root: new_validation_data.relay_parent_storage_root,
+						relay_parent_storage_root: validation_data.relay_parent_storage_root,
 					},
 				);
 			}
