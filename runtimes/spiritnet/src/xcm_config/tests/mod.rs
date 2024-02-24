@@ -20,12 +20,12 @@ mod utils;
 
 use crate::{
 	xcm_config::tests::{
-		parachains::{AssetHubPolkadot,PenpalPolkadot,RuntimeEvent as PeregrineRuntimeEvent, SpiritnetPolkadot, System as PeregrineSystem},
+		parachains::{AssetHubPolkadot, SpiritnetPolkadot},
 		relaychain::{Polkadot, System as PolkadotSystem},
 	},
-	PolkadotXcm as SpiritnetXcm,
+	PolkadotXcm as SpiritnetXcm, RuntimeEvent as SpiritnetRuntimeEvent, System as SpiritnetSystem,
 };
-use asset_hub_polkadot_runtime::{RuntimeEvent as AssetHubRuntimeEvent, System as AssetHubSystem};
+use asset_hub_polkadot_runtime::System as AssetHubSystem;
 use cumulus_pallet_xcmp_queue::Event as XcmpQueueEvent;
 use frame_support::{assert_err, assert_ok};
 use frame_system::RawOrigin;
@@ -49,7 +49,6 @@ decl_test_networks! {
 		parachains = vec![
 			SpiritnetPolkadot,
 			AssetHubPolkadot,
-			PenpalPolkadot,
 		],
 		bridge = ()
 	}
@@ -79,11 +78,11 @@ fn test_reserve_asset_transfer_from_regular_account_to_relay() {
 			WeightLimit::Unlimited,
 		));
 		assert!(matches!(
-			PeregrineSystem::events()
+			SpiritnetSystem::events()
 				.first()
 				.expect("An event should be emitted when sending an XCM message.")
 				.event,
-			PeregrineRuntimeEvent::PolkadotXcm(pallet_xcm::Event::Attempted {
+			SpiritnetRuntimeEvent::PolkadotXcm(pallet_xcm::Event::Attempted {
 				outcome: xcm::latest::Outcome::Error(xcm::latest::Error::Barrier)
 			})
 		));
@@ -97,7 +96,7 @@ fn test_reserve_asset_transfer_from_regular_account_to_relay() {
 /// Test that a reserved transfer to the relaychain is failing. We don't want to
 /// allow transfers to the relaychain since the funds might be lost.
 #[test]
-fn test_reserve_asset_transfer_from_regular_account_to_asset_hub() {
+fn test_reserve_asset_transfer_from_regular_account_to_penpal() {
 	PolkadotNetwork::reset();
 
 	let alice_account_id = get_account_id_from_seed::<sr25519::Public>(ALICE);
@@ -106,7 +105,7 @@ fn test_reserve_asset_transfer_from_regular_account_to_asset_hub() {
 	SpiritnetPolkadot::execute_with(|| {
 		assert_ok!(SpiritnetXcm::limited_reserve_transfer_assets(
 			RawOrigin::Signed(alice_account_id.clone()).into(),
-			Box::new(ParentThen(Junctions::X1(Junction::Parachain(asset_hub_polkadot::PARA_ID))).into()),
+			Box::new(ParentThen(Junctions::X1(Junction::Parachain(penpal::PARA_ID))).into()),
 			Box::new(
 				X1(AccountId32 {
 					network: None,
@@ -121,16 +120,16 @@ fn test_reserve_asset_transfer_from_regular_account_to_asset_hub() {
 
 		assert!(
 			matches!(
-				PeregrineSystem::events()
+				SpiritnetSystem::events()
 					.last()
 					.expect("An event should be emitted when sending an XCM message.")
 					.event,
-				PeregrineRuntimeEvent::PolkadotXcm(pallet_xcm::Event::Attempted {
+				SpiritnetRuntimeEvent::PolkadotXcm(pallet_xcm::Event::Attempted {
 					outcome: xcm::latest::Outcome::Complete(_)
 				})
 			),
 			"Didn't match {:?}",
-			PeregrineSystem::events().last()
+			SpiritnetSystem::events().last()
 		);
 	});
 	// No event on the relaychain (message is meant for asset hub)

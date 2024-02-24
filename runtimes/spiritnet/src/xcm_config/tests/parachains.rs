@@ -15,7 +15,10 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use crate::{
-	xcm_config::tests::relaychain::{accounts, collators, polkadot::ED},
+	xcm_config::tests::{
+		relaychain::{accounts, collators, polkadot::ED},
+		ALICE,
+	},
 	AccountId, Balance,
 };
 pub(crate) use crate::{
@@ -23,8 +26,8 @@ pub(crate) use crate::{
 		tests::utils::{get_account_id_from_seed, get_from_seed},
 		RelayNetworkId,
 	},
-	AuthorityId, BalancesConfig, ParachainInfoConfig, PolkadotXcmConfig, RuntimeEvent, RuntimeGenesisConfig,
-	SessionConfig, SessionKeys, System, SystemConfig, WASM_BINARY,
+	AuthorityId, BalancesConfig, ParachainInfoConfig, PolkadotXcmConfig, RuntimeGenesisConfig,
+	SessionConfig, SessionKeys, SystemConfig, WASM_BINARY,
 };
 use asset_hub_polkadot_runtime::Runtime;
 use cumulus_primitives_core::MultiLocation;
@@ -35,7 +38,6 @@ use sp_core::sr25519;
 use sp_runtime::{BuildStorage, Storage};
 use xcm::DoubleEncoded;
 use xcm_emulator::{decl_test_parachains, BridgeMessageHandler, Parachain, TestExt};
-use crate::xcm_config::tests::ALICE;
 
 const SAFE_XCM_VERSION: u32 = xcm::prelude::XCM_VERSION;
 
@@ -156,65 +158,6 @@ pub mod asset_hub_polkadot {
 	}
 }
 
-pub mod penpal {
-	use super::*;
-	pub const PARA_ID: u32 = 2000;
-	pub const ED: Balance = penpal_runtime::EXISTENTIAL_DEPOSIT;
-
-	pub fn genesis(para_id: u32) -> Storage {
-		let genesis_config = penpal_runtime::RuntimeGenesisConfig {
-			system: penpal_runtime::SystemConfig {
-				code: penpal_runtime::WASM_BINARY
-					.expect("WASM binary was not build, please build it!")
-					.to_vec(),
-				..Default::default()
-			},
-			balances: penpal_runtime::BalancesConfig {
-				balances: accounts::init_balances()
-					.iter()
-					.cloned()
-					.map(|k| (k, ED * 4096))
-					.collect(),
-			},
-			parachain_info: penpal_runtime::ParachainInfoConfig {
-				parachain_id: para_id.into(),
-				..Default::default()
-			},
-			collator_selection: penpal_runtime::CollatorSelectionConfig {
-				invulnerables: collators::invulnerables()
-					.iter()
-					.cloned()
-					.map(|(acc, _)| acc)
-					.collect(),
-				candidacy_bond: ED * 16,
-				..Default::default()
-			},
-			session: penpal_runtime::SessionConfig {
-				keys: collators::invulnerables()
-					.into_iter()
-					.map(|(acc, aura)| {
-						(
-							acc.clone(),                          // account id
-							acc,                                  // validator id
-							penpal_runtime::SessionKeys { aura }, // session keys
-						)
-					})
-					.collect(),
-			},
-			polkadot_xcm: penpal_runtime::PolkadotXcmConfig {
-				safe_xcm_version: Some(SAFE_XCM_VERSION),
-				..Default::default()
-			},
-			sudo: penpal_runtime::SudoConfig {
-				key: Some(get_account_id_from_seed::<AccountPublic, sr25519::Public>(ALICE)),
-			},
-			..Default::default()
-		};
-
-		genesis_config.build_storage().unwrap()
-	}
-}
-
 decl_test_parachains! {
 	pub struct AssetHubPolkadot {
 		genesis = asset_hub_polkadot::genesis(),
@@ -254,26 +197,5 @@ decl_test_parachains! {
 			ParachainInfo: crate::ParachainInfo,
 		},
 		pallets_extra = {}
-	},
-	pub struct PenpalPolkadot {
-		genesis = penpal::genesis(penpal::PARA_ID),
-		on_init = (),
-		runtime = {
-			Runtime: penpal_runtime::Runtime,
-			RuntimeOrigin: penpal_runtime::RuntimeOrigin,
-			RuntimeCall: penpal_runtime::RuntimeCall,
-			RuntimeEvent: penpal_runtime::RuntimeEvent,
-			XcmpMessageHandler: penpal_runtime::XcmpQueue,
-			DmpMessageHandler: penpal_runtime::DmpQueue,
-			LocationToAccountId: penpal_runtime::xcm_config::LocationToAccountId,
-			System: penpal_runtime::System,
-			Balances: penpal_runtime::Balances,
-			ParachainSystem: penpal_runtime::ParachainSystem,
-			ParachainInfo: penpal_runtime::ParachainInfo,
-		},
-		pallets_extra = {
-			PolkadotXcm: penpal_runtime::PolkadotXcm,
-			Assets: penpal_runtime::Assets,
-		}
 	}
 }
