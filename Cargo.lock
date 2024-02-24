@@ -13133,6 +13133,7 @@ dependencies = [
  "kilt-runtime-api-staking",
  "kilt-support",
  "log",
+ "pallet-assets",
  "pallet-aura",
  "pallet-authorship",
  "pallet-balances",

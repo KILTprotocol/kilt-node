@@ -14,66 +14,79 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use crate::xcm_config::tests::relaychain::{accounts, collators, polkadot::ED};
+use crate::{
+	xcm_config::tests::relaychain::{accounts, collators, polkadot::ED},
+	AccountId, Balance,
+};
 pub(crate) use crate::{
 	xcm_config::{
 		tests::utils::{get_account_id_from_seed, get_from_seed},
 		RelayNetworkId,
 	},
 	AuthorityId, Balances, BalancesConfig, DmpQueue, ParachainInfo, ParachainInfoConfig, ParachainSystem,
-	PolkadotXcmConfig, Runtime as PeregrineRuntime, RuntimeCall, RuntimeEvent, RuntimeGenesisConfig, RuntimeOrigin,
-	SessionConfig, SessionKeys, System, SystemConfig, XcmpQueue, WASM_BINARY,
+	PolkadotXcmConfig, RuntimeEvent, RuntimeGenesisConfig, RuntimeOrigin, SessionConfig, SessionKeys, System,
+	SystemConfig, XcmpQueue, WASM_BINARY,
 };
+use asset_hub_polkadot_runtime::Runtime;
+use cumulus_primitives_core::MultiLocation;
+use parity_scale_codec::Encode;
 use runtime_common::constants::EXISTENTIAL_DEPOSIT;
 pub(crate) use runtime_common::{xcm_config::LocationToAccountId, AccountPublic};
 use sp_core::sr25519;
 use sp_runtime::{BuildStorage, Storage};
+use xcm::DoubleEncoded;
 use xcm_emulator::{decl_test_parachains, BridgeMessageHandler, Parachain, TestExt};
 
-const PARA_ID: u32 = 2_000;
 const SAFE_XCM_VERSION: u32 = xcm::prelude::XCM_VERSION;
 
-fn genesis() -> Storage {
-	RuntimeGenesisConfig {
-		system: SystemConfig {
-			code: WASM_BINARY
-				.expect("WASM binary was not build, please build it!")
-				.to_vec(),
-			..Default::default()
-		},
-		parachain_info: ParachainInfoConfig {
-			parachain_id: PARA_ID.into(),
-			..Default::default()
-		},
-		polkadot_xcm: PolkadotXcmConfig {
-			safe_xcm_version: Some(SAFE_XCM_VERSION),
-			..Default::default()
-		},
-		session: SessionConfig {
-			keys: vec![(
-				get_account_id_from_seed::<AccountPublic, sr25519::Public>("Alice"),
-				get_from_seed::<AuthorityId>("Alice"),
-			)]
-			.iter()
-			.map(|(acc, key)| (acc.clone(), acc.clone(), SessionKeys { aura: key.clone() }))
-			.collect::<Vec<_>>(),
-		},
-		balances: BalancesConfig {
-			balances: accounts::init_balances()
+pub mod spiritnet {
+	use super::*;
+
+	pub const PARA_ID: u32 = 2_000;
+
+	pub fn genesis() -> Storage {
+		RuntimeGenesisConfig {
+			system: SystemConfig {
+				code: WASM_BINARY
+					.expect("WASM binary was not build, please build it!")
+					.to_vec(),
+				..Default::default()
+			},
+			parachain_info: ParachainInfoConfig {
+				parachain_id: PARA_ID.into(),
+				..Default::default()
+			},
+			polkadot_xcm: PolkadotXcmConfig {
+				safe_xcm_version: Some(SAFE_XCM_VERSION),
+				..Default::default()
+			},
+			session: SessionConfig {
+				keys: vec![(
+					get_account_id_from_seed::<AccountPublic, sr25519::Public>("Alice"),
+					get_from_seed::<AuthorityId>("Alice"),
+				)]
 				.iter()
-				.cloned()
-				.map(|k| (k, EXISTENTIAL_DEPOSIT * 4096))
-				.collect(),
-		},
-		..Default::default()
+				.map(|(acc, key)| (acc.clone(), acc.clone(), SessionKeys { aura: key.clone() }))
+				.collect::<Vec<_>>(),
+			},
+			balances: BalancesConfig {
+				balances: accounts::init_balances()
+					.iter()
+					.cloned()
+					.map(|k| (k, EXISTENTIAL_DEPOSIT * 4096))
+					.collect(),
+			},
+			..Default::default()
+		}
+		.build_storage()
+		.unwrap()
 	}
-	.build_storage()
-	.unwrap()
 }
 
 pub mod asset_hub_polkadot {
-
 	use super::*;
+	use asset_hub_polkadot_runtime::RuntimeCall;
+
 	pub const PARA_ID: u32 = 1000;
 
 	pub fn genesis() -> Storage {
@@ -125,6 +138,22 @@ pub mod asset_hub_polkadot {
 
 		genesis_config.build_storage().unwrap()
 	}
+
+	pub fn force_create_asset_call(
+		asset_id: MultiLocation,
+		owner: AccountId,
+		is_sufficient: bool,
+		min_balance: Balance,
+	) -> DoubleEncoded<()> {
+		RuntimeCall::ForeignAssets(pallet_assets::Call::<Runtime, pallet_assets::Instance2>::force_create {
+			id: asset_id.into(),
+			owner: owner.into(),
+			is_sufficient,
+			min_balance,
+		})
+		.encode()
+		.into()
+	}
 }
 
 decl_test_parachains! {
@@ -150,20 +179,20 @@ decl_test_parachains! {
 		}
 	},
 	pub struct SpiritnetPolkadot {
-		genesis = genesis(),
+		genesis = spiritnet::genesis(),
 		on_init = (),
 		runtime = {
-			Runtime: PeregrineRuntime,
-			RuntimeOrigin: RuntimeOrigin,
-			RuntimeCall: RuntimeCall,
-			RuntimeEvent: RuntimeEvent,
-			XcmpMessageHandler: XcmpQueue,
-			DmpMessageHandler: DmpQueue,
+			Runtime: crate::Runtime,
+			RuntimeOrigin: crate::RuntimeOrigin,
+			RuntimeCall: crate::RuntimeCall,
+			RuntimeEvent: crate::RuntimeEvent,
+			XcmpMessageHandler: crate::XcmpQueue,
+			DmpMessageHandler: crate::DmpQueue,
 			LocationToAccountId: LocationToAccountId<RelayNetworkId>,
-			System: System,
-			Balances: Balances,
-			ParachainSystem: ParachainSystem,
-			ParachainInfo: ParachainInfo,
+			System: crate::System,
+			Balances: crate::Balances,
+			ParachainSystem: crate::ParachainSystem,
+			ParachainInfo: crate::ParachainInfo,
 		},
 		pallets_extra = {}
 	}
