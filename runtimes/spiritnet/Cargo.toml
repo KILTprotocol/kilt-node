@@ -27,6 +27,7 @@ polkadot-runtime = {workspace=true, default-features = true}
 polkadot-runtime-constants = {workspace=true, default-features = true}
 pallet-staking = {workspace=true, default-features = true}
 pallet-assets = {workspace=true, default-features = true}
+penpal-runtime = {workspace=true, default-features = true}
 sc-consensus-grandpa.workspace = true
 sp-authority-discovery.workspace = true
 sp-consensus-babe.workspace = true

@@ -20,8 +20,8 @@ mod utils;
 
 use crate::{
 	xcm_config::tests::{
-		parachains::AssetHubPolkadot,
-		relaychain::{polkadot::ED, Polkadot, System as PolkadotSystem},
+		parachains::{AssetHubPolkadot,PenpalPolkadot,RuntimeEvent as PeregrineRuntimeEvent, SpiritnetPolkadot, System as PeregrineSystem},
+		relaychain::{Polkadot, System as PolkadotSystem},
 	},
 	PolkadotXcm as SpiritnetXcm,
 };
@@ -29,8 +29,6 @@ use asset_hub_polkadot_runtime::{RuntimeEvent as AssetHubRuntimeEvent, System as
 use cumulus_pallet_xcmp_queue::Event as XcmpQueueEvent;
 use frame_support::{assert_err, assert_ok};
 use frame_system::RawOrigin;
-use parachains::{RuntimeEvent as PeregrineRuntimeEvent, SpiritnetPolkadot, System as PeregrineSystem};
-use polkadot_parachain::primitives::Sibling;
 use polkadot_primitives::{AccountId, Balance};
 use polkadot_service::chain_spec::get_account_id_from_seed;
 use runtime_common::constants::EXISTENTIAL_DEPOSIT;
@@ -51,6 +49,7 @@ decl_test_networks! {
 		parachains = vec![
 			SpiritnetPolkadot,
 			AssetHubPolkadot,
+			PenpalPolkadot,
 		],
 		bridge = ()
 	}
