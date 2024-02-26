@@ -108,7 +108,7 @@ mod test {
 	use crate::state_proofs::verify_storage_value_proof;
 
 	#[test]
-	fn spiritnet_system_event_count() {
+	fn verify_storage_value_proof_spiritnet_system_event_count() {
 		// As of RPC state_getReadProof("
 		// 0x26aa394eea5630e07c48ae0c9558cef70a98fdbe9ce6c55837576c60c7af3850",
 		// "0x2c0746e7e9ccc6e4d27bcb4118cb6821ae53ae9bf372f4f49ac28d8598f9bed5")
@@ -137,7 +137,7 @@ mod test {
 	}
 
 	#[test]
-	fn polkadot_parahead_proof_for_spiritnet() {
+	fn verify_storage_value_proof_polkadot_parahead_proof_for_spiritnet() {
 		// As of RPC state_getReadProof("0xcd710b30bd2eab0352ddcc26417aa1941b3c252fcb29d88eff4f3de5de4476c32c0cfd6c23b92a7826080000", "0x18e90e9aa8e3b063f60386ba1b0415111798e72d01de58b1438d620d42f58e39")
 		let spiritnet_head_storage_key = StorageKey(
 			[
