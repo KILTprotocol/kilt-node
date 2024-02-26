@@ -115,6 +115,19 @@ impl<
 	}
 }
 
+#[cfg(test)]
+mod dip_revealed_details_and_unverified_did_signature {
+	#[test]
+	fn verify_signature_time_successful() {
+		unimplemented!()
+	}
+
+	#[test]
+	fn verify_signature_time_too_old() {
+		unimplemented!()
+	}
+}
+
 /// A DIP proof whose information has been verified and whose signature has been
 /// verified not to be expired, but that yet does not contain information as to
 /// which of the revealed keys has generated the signature.
@@ -224,5 +237,18 @@ impl<
 			revealed_leaves: signing_key_entry.0,
 			signing_leaf_index: signing_key_entry.1,
 		})
+	}
+}
+
+#[cfg(test)]
+mod dip_revealed_details_and_verified_did_signature_freshness {
+	#[test]
+	fn retrieve_signing_leaf_for_payload_successful() {
+		unimplemented!()
+	}
+
+	#[test]
+	fn retrieve_signing_leaf_for_payload_no_key_present() {
+		unimplemented!()
 	}
 }

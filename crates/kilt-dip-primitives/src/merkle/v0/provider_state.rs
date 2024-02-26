@@ -236,6 +236,36 @@ impl<
 	}
 }
 
+#[cfg(test)]
+mod parachain_dip_did_proof {
+	#[test]
+	fn verify_provider_head_proof_with_state_root_successful() {
+		unimplemented!()
+	}
+
+	#[test]
+	fn verify_provider_head_proof_with_state_root_wrong_relay_hasher() {
+		unimplemented!()
+	}
+
+	#[test]
+	fn verify_provider_head_proof_with_state_root_wrong_provider_header_type() {
+		unimplemented!()
+	}
+
+	#[test]
+	fn verify_provider_head_proof_with_state_root_different_storage_key() {
+		// Valid proof but on a different storage key than the expected one
+		unimplemented!()
+	}
+
+	#[test]
+	fn verify_provider_head_proof_with_state_root_invalid_proof() {
+		// Invalid proof for the given storage key
+		unimplemented!()
+	}
+}
+
 /// A DIP proof that has had the proof header and the relaychain state verified
 /// for the provided relaychain block number.
 ///
@@ -338,6 +368,36 @@ impl<
 			dip_proof: self.dip_proof,
 			signature: self.signature,
 		})
+	}
+}
+
+#[cfg(test)]
+mod dip_did_proof_with_verified_relay_state_root {
+	#[test]
+	fn verify_dip_commitment_proof_for_subject_successful() {
+		unimplemented!()
+	}
+
+	#[test]
+	fn verify_dip_commitment_proof_for_subject_successful_wrong_provider_hasher() {
+		unimplemented!()
+	}
+
+	#[test]
+	fn verify_dip_commitment_proof_for_subject_successful_wrong_provider_runtime() {
+		unimplemented!()
+	}
+
+	#[test]
+	fn verify_dip_commitment_proof_for_subject_different_storage_key() {
+		// Valid proof but on a different storage key than the expected one
+		unimplemented!()
+	}
+
+	#[test]
+	fn verify_dip_commitment_proof_for_subject_invalid_proof() {
+		// Invalid proof for the given storage key
+		unimplemented!()
 	}
 }
 
@@ -487,5 +547,28 @@ impl<
 			revealed_leaves,
 			signature: self.signature,
 		})
+	}
+}
+
+#[cfg(test)]
+mod dip_did_proof_with_verified_subject_commitment {
+	#[test]
+	fn verify_dip_proof_successful() {
+		unimplemented!()
+	}
+
+	#[test]
+	fn verify_dip_proof_wrong_merkle_hasher() {
+		unimplemented!()
+	}
+
+	#[test]
+	fn verify_dip_proof_too_many_leaves() {
+		unimplemented!()
+	}
+
+	#[test]
+	fn verify_dip_proof_invalid_proof() {
+		unimplemented!()
 	}
 }
