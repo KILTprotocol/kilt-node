@@ -30,7 +30,7 @@ use crate::{
 	merkle::v0::RevealedDidKey,
 	traits::{DipCallOriginFilter, GetWithArg, GetWithoutArg, Incrementable},
 	utils::OutputOf,
-	DipOriginInfo,
+	DipOriginInfo, ParachainDipDidProof,
 };
 
 pub mod v0;
@@ -53,7 +53,7 @@ pub enum VersionedDipParachainStateProof<
 	ConsumerBlockNumber,
 > {
 	V0(
-		crate::merkle::v0::ParachainDipDidProof<
+		ParachainDipDidProof<
 			RelayBlockNumber,
 			KiltDidKeyId,
 			KiltAccountId,
@@ -95,7 +95,7 @@ impl<
 	Context: Clone,
 {
 	fn worst_case(context: Context) -> Self {
-		Self::V0(crate::merkle::v0::ParachainDipDidProof::worst_case(context))
+		Self::V0(ParachainDipDidProof::worst_case(context))
 	}
 }
 
