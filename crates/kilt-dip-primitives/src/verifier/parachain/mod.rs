@@ -30,8 +30,11 @@ use crate::{
 	merkle::v0::RevealedDidKey,
 	traits::{DipCallOriginFilter, GetWithArg, GetWithoutArg, Incrementable},
 	utils::OutputOf,
-	DipOriginInfo, Error,
+	DipOriginInfo,
 };
+
+mod error;
+pub use error::*;
 
 /// A KILT-specific DIP identity proof for a sibling consumer that supports
 /// versioning.
@@ -91,37 +94,6 @@ impl<
 {
 	fn worst_case(context: Context) -> Self {
 		Self::V0(crate::merkle::v0::ParachainDipDidProof::worst_case(context))
-	}
-}
-
-pub enum DipParachainStateProofVerifierError<DidOriginError> {
-	UnsupportedVersion,
-	ProofComponentTooLarge(u8),
-	ProofVerification(Error),
-	DidOriginError(DidOriginError),
-	Internal,
-}
-
-impl<DidOriginError> From<DipParachainStateProofVerifierError<DidOriginError>> for u16
-where
-	DidOriginError: Into<u8>,
-{
-	fn from(value: DipParachainStateProofVerifierError<DidOriginError>) -> Self {
-		match value {
-			// DO NOT USE 0
-			// Errors of different sub-parts are separated by a `u8::MAX`.
-			// A value of 0 would make it confusing whether it's the previous sub-part error (u8::MAX)
-			// or the new sub-part error (u8::MAX + 0).
-			DipParachainStateProofVerifierError::UnsupportedVersion => 1,
-			DipParachainStateProofVerifierError::ProofComponentTooLarge(component_id) => {
-				u8::MAX as u16 + component_id as u16
-			}
-			DipParachainStateProofVerifierError::ProofVerification(error) => {
-				u8::MAX as u16 * 2 + u8::from(error) as u16
-			}
-			DipParachainStateProofVerifierError::DidOriginError(error) => u8::MAX as u16 * 3 + error.into() as u16,
-			DipParachainStateProofVerifierError::Internal => u16::MAX,
-		}
 	}
 }
 

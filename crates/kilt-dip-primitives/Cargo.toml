@@ -43,6 +43,7 @@ sp-trie.workspace = true
 cumulus-primitives-core.workspace = true
 
 [dev-dependencies]
+enum-iterator.workspace = true
 hex-literal.workspace = true
 sp-io = { workspace = true, features = ["std"] }
 

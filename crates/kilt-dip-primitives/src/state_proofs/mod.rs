@@ -17,7 +17,6 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 use parity_scale_codec::Decode;
-use scale_info::TypeInfo;
 use sp_runtime::traits::Hash;
 use sp_std::vec::Vec;
 use sp_trie::StorageProof;
@@ -30,26 +29,8 @@ use crate::{state_proofs::substrate_no_std_port::read_proof_check, utils::Output
 // kept up-to-date with upstream.
 mod substrate_no_std_port;
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, TypeInfo)]
-pub enum MerkleProofError {
-	InvalidProof,
-	RequiredLeafNotRevealed,
-	ResultDecoding,
-}
-
-impl From<MerkleProofError> for u8 {
-	fn from(value: MerkleProofError) -> Self {
-		match value {
-			// DO NOT USE 0
-			// Errors of different sub-parts are separated by a `u8::MAX`.
-			// A value of 0 would make it confusing whether it's the previous sub-part error (u8::MAX)
-			// or the new sub-part error (u8::MAX + 0).
-			MerkleProofError::InvalidProof => 1,
-			MerkleProofError::RequiredLeafNotRevealed => 2,
-			MerkleProofError::ResultDecoding => 3,
-		}
-	}
-}
+mod error;
+pub use error::*;
 
 /// Verify a Merkle-based storage proof for a given storage key according to the
 /// provided state root. The generic types indicate the following:
