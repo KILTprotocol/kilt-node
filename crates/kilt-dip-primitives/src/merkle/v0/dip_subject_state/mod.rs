@@ -50,6 +50,7 @@ mod tests;
 /// * `MAX_REVEALED_LEAVES_COUNT`: The maximum number of leaves revealable in
 ///   the proof.
 #[derive(Debug)]
+#[cfg_attr(test, derive(Clone))]
 pub struct DipRevealedDetailsAndUnverifiedDidSignature<
 	KiltDidKeyId,
 	KiltAccountId,
@@ -118,6 +119,43 @@ impl<
 	}
 }
 
+#[cfg(test)]
+impl<
+		KiltDidKeyId,
+		KiltAccountId,
+		KiltBlockNumber,
+		KiltWeb3Name,
+		KiltLinkableAccountId,
+		ConsumerBlockNumber,
+		const MAX_REVEALED_LEAVES_COUNT: u32,
+	>
+	DipRevealedDetailsAndUnverifiedDidSignature<
+		KiltDidKeyId,
+		KiltAccountId,
+		KiltBlockNumber,
+		KiltWeb3Name,
+		KiltLinkableAccountId,
+		ConsumerBlockNumber,
+		MAX_REVEALED_LEAVES_COUNT,
+	> where
+	KiltDidKeyId: Default,
+	KiltAccountId: Default,
+	KiltBlockNumber: Default,
+	KiltWeb3Name: Default,
+	KiltLinkableAccountId: Default,
+	ConsumerBlockNumber: Default,
+{
+	pub(crate) fn with_signature_time(valid_until: ConsumerBlockNumber) -> Self {
+		Self {
+			signature: TimeBoundDidSignature {
+				valid_until,
+				..Default::default()
+			},
+			revealed_leaves: Default::default(),
+		}
+	}
+}
+
 /// A DIP proof whose information has been verified and whose signature has been
 /// verified not to be expired, but that yet does not contain information as to
 /// which of the revealed keys has generated the signature.
@@ -131,7 +169,7 @@ impl<
 ///   KILT chain.
 /// * `MAX_REVEALED_LEAVES_COUNT`: The maximum number of leaves revealable in
 ///   the proof.
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct DipRevealedDetailsAndVerifiedDidSignatureFreshness<
 	KiltDidKeyId,
 	KiltAccountId,

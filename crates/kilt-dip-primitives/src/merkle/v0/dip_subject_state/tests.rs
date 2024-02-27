@@ -17,14 +17,29 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 mod dip_revealed_details_and_unverified_did_signature {
+	use frame_support::{assert_err, assert_ok};
+
+	use crate::{DipRevealedDetailsAndUnverifiedDidSignature, Error};
+
 	#[test]
 	fn verify_signature_time_successful() {
-		unimplemented!()
+		let signature =
+			DipRevealedDetailsAndUnverifiedDidSignature::<(), (), (), (), (), _, 1>::with_signature_time(10u32);
+		assert_ok!(signature.clone().verify_signature_time(&0));
+		assert_ok!(signature.clone().verify_signature_time(&1));
+		assert_ok!(signature.clone().verify_signature_time(&9));
+		assert_ok!(signature.verify_signature_time(&10));
 	}
 
 	#[test]
 	fn verify_signature_time_too_old() {
-		unimplemented!()
+		let signature =
+			DipRevealedDetailsAndUnverifiedDidSignature::<(), (), (), (), (), _, 1>::with_signature_time(10u32);
+		assert_err!(
+			signature.clone().verify_signature_time(&11),
+			Error::InvalidSignatureTime
+		);
+		assert_err!(signature.verify_signature_time(&u32::MAX), Error::InvalidSignatureTime);
 	}
 }
 
