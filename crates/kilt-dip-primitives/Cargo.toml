@@ -45,6 +45,7 @@ cumulus-primitives-core.workspace = true
 [dev-dependencies]
 enum-iterator.workspace = true
 hex-literal.workspace = true
+spiritnet-runtime = { workspace = true, features = ["std"] }
 sp-io = { workspace = true, features = ["std"] }
 
 [features]

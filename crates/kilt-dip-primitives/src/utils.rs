@@ -72,7 +72,7 @@ where
 	}
 }
 
-#[cfg(feature = "runtime-benchmarks")]
+#[cfg(any(test, feature = "runtime-benchmarks"))]
 impl<T> Default for BoundedBlindedValue<T>
 where
 	T: Default + Clone,

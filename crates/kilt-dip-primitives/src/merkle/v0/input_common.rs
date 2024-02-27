@@ -28,6 +28,7 @@ use crate::{merkle::v0::output_common::RevealedDidMerkleProofLeaf, utils::Bounde
 /// The generic types indicate the following:
 /// * `RelayBlockNumber`: The `BlockNumber` definition of the relaychain.
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo)]
+#[cfg_attr(test, derive(Default))]
 pub struct ProviderHeadStateProof<RelayBlockNumber> {
 	pub(crate) relay_block_number: RelayBlockNumber,
 	pub(crate) proof: BoundedBlindedValue<u8>,
@@ -48,6 +49,7 @@ where
 
 /// The state proof for a DIP commitment.
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo)]
+#[cfg_attr(test, derive(Default))]
 pub struct DipCommitmentStateProof(pub(crate) BoundedBlindedValue<u8>);
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -67,6 +69,7 @@ impl<Context> kilt_support::traits::GetWorstCase<Context> for DipCommitmentState
 /// * `ProviderLinkableAccountId`: The linkable account ID type configured by
 ///   the provider.
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo)]
+#[cfg_attr(test, derive(Default))]
 pub struct DidMerkleProof<
 	ProviderDidKeyId,
 	ProviderAccountId,
@@ -151,6 +154,19 @@ pub struct TimeBoundDidSignature<BlockNumber> {
 impl<BlockNumber> TimeBoundDidSignature<BlockNumber> {
 	pub fn new(signature: DidSignature, valid_until: BlockNumber) -> Self {
 		Self { signature, valid_until }
+	}
+}
+
+#[cfg(test)]
+impl<BlockNumber> Default for TimeBoundDidSignature<BlockNumber>
+where
+	BlockNumber: Default,
+{
+	fn default() -> Self {
+		Self {
+			signature: DidSignature::Ed25519(sp_core::ed25519::Signature([0u8; 64])),
+			valid_until: BlockNumber::default(),
+		}
 	}
 }
 

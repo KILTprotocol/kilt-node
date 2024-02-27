@@ -148,7 +148,7 @@ impl<
 		provider_para_id: u32,
 		relay_state_root: &OutputOf<RelayHasher>,
 	) -> Result<
-		DipDidProofWithVerifiedRelayStateRoot<
+		DipDidProofWithVerifiedStateRoot<
 			OutputOf<RelayHasher>,
 			KiltDidKeyId,
 			KiltAccountId,
@@ -177,6 +177,8 @@ impl<
 				ProviderHeader::decode(&mut trimmed_input).ok()
 			},
 		);
+		#[cfg(feature = "std")]
+		println!("{:#?}", provider_header_result);
 		cfg_if::cfg_if! {
 			if #[cfg(feature = "runtime-benchmarks")] {
 				let provider_header = provider_header_result.unwrap_or_else(|_| ProviderHeader::new(<ProviderHeader as HeaderT>::Number::default(), <ProviderHeader as HeaderT>::Hash::default(), <ProviderHeader as HeaderT>::Hash::default(), <ProviderHeader as HeaderT>::Hash::default(), sp_runtime::Digest::default()));
@@ -184,7 +186,7 @@ impl<
 				let provider_header = provider_header_result.map_err(Error::ParaHeadMerkleProof)?;
 			}
 		}
-		Ok(DipDidProofWithVerifiedRelayStateRoot {
+		Ok(DipDidProofWithVerifiedStateRoot {
 			state_root: *provider_header.state_root(),
 			dip_commitment_proof: self.dip_commitment_proof,
 			dip_proof: self.dip_proof,
@@ -208,7 +210,7 @@ impl<
 		self,
 		provider_para_id: u32,
 	) -> Result<
-		DipDidProofWithVerifiedRelayStateRoot<
+		DipDidProofWithVerifiedStateRoot<
 			OutputOf<RelayHasher>,
 			KiltDidKeyId,
 			KiltAccountId,
@@ -252,8 +254,8 @@ impl<
 ///   KILT chain.
 /// * `ConsumerBlockNumber`: The `BlockNumber` definition of the consumer
 ///   parachain.
-#[derive(Debug)]
-pub struct DipDidProofWithVerifiedRelayStateRoot<
+#[derive(Debug, PartialEq, Eq)]
+pub struct DipDidProofWithVerifiedStateRoot<
 	StateRoot,
 	KiltDidKeyId,
 	KiltAccountId,
@@ -262,7 +264,7 @@ pub struct DipDidProofWithVerifiedRelayStateRoot<
 	KiltLinkableAccountId,
 	ConsumerBlockNumber,
 > {
-	/// The relaychain state root for the block specified in the DIP proof.
+	/// The provider state root for the block specified in the DIP proof.
 	pub(crate) state_root: StateRoot,
 	/// The raw state proof for the DIP commitment of the given subject.
 	pub(crate) dip_commitment_proof: DipCommitmentStateProof,
@@ -282,7 +284,7 @@ impl<
 		KiltLinkableAccountId,
 		ConsumerBlockNumber,
 	>
-	DipDidProofWithVerifiedRelayStateRoot<
+	DipDidProofWithVerifiedStateRoot<
 		StateRoot,
 		KiltDidKeyId,
 		KiltAccountId,

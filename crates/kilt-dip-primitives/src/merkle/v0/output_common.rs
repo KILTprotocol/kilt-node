@@ -197,7 +197,7 @@ impl<KeyId, AccountId, BlockNumber, Web3Name, LinkedAccountId> From<RevealedAcco
 	}
 }
 
-#[cfg(feature = "runtime-benchmarks")]
+#[cfg(any(test, feature = "runtime-benchmarks"))]
 impl<KeyId, AccountId, BlockNumber, Web3Name, LinkedAccountId> Default
 	for RevealedDidMerkleProofLeaf<KeyId, AccountId, BlockNumber, Web3Name, LinkedAccountId>
 where
