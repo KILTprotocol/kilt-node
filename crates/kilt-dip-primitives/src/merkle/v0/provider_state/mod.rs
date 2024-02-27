@@ -115,6 +115,42 @@ impl<
 	}
 }
 
+#[cfg(test)]
+impl<
+		RelayBlockNumber,
+		KiltDidKeyId,
+		KiltAccountId,
+		KiltBlockNumber,
+		KiltWeb3Name,
+		KiltLinkableAccountId,
+		ConsumerBlockNumber,
+	>
+	ParachainDipDidProof<
+		RelayBlockNumber,
+		KiltDidKeyId,
+		KiltAccountId,
+		KiltBlockNumber,
+		KiltWeb3Name,
+		KiltLinkableAccountId,
+		ConsumerBlockNumber,
+	> where
+	KiltDidKeyId: Default,
+	KiltAccountId: Default,
+	KiltBlockNumber: Default,
+	KiltWeb3Name: Default,
+	KiltLinkableAccountId: Default,
+	ConsumerBlockNumber: Default,
+{
+	pub(crate) fn with_provider_head_proof(provider_head_proof: ProviderHeadStateProof<RelayBlockNumber>) -> Self {
+		Self {
+			provider_head_proof,
+			dip_commitment_proof: Default::default(),
+			dip_proof: Default::default(),
+			signature: Default::default(),
+		}
+	}
+}
+
 impl<
 		RelayBlockNumber,
 		KiltDidKeyId,
