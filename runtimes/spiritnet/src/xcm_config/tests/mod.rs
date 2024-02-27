@@ -25,7 +25,7 @@ use crate::{
 	},
 	PolkadotXcm as SpiritnetXcm, RuntimeEvent as SpiritnetRuntimeEvent, System as SpiritnetSystem,
 };
-use asset_hub_polkadot_runtime::System as AssetHubSystem;
+use asset_hub_polkadot_runtime::{System as AssetHubSystem, RuntimeEvent as AssetHubRuntimeEvent};
 use cumulus_pallet_xcmp_queue::Event as XcmpQueueEvent;
 use frame_support::{assert_err, assert_ok};
 use frame_system::RawOrigin;
@@ -96,7 +96,7 @@ fn test_reserve_asset_transfer_from_regular_account_to_relay() {
 /// Test that a reserved transfer to the relaychain is failing. We don't want to
 /// allow transfers to the relaychain since the funds might be lost.
 #[test]
-fn test_reserve_asset_transfer_from_regular_account_to_penpal() {
+fn test_reserve_asset_transfer_from_regular_account_to_asset_hub() {
 	PolkadotNetwork::reset();
 
 	let alice_account_id = get_account_id_from_seed::<sr25519::Public>(ALICE);
@@ -105,7 +105,7 @@ fn test_reserve_asset_transfer_from_regular_account_to_penpal() {
 	SpiritnetPolkadot::execute_with(|| {
 		assert_ok!(SpiritnetXcm::limited_reserve_transfer_assets(
 			RawOrigin::Signed(alice_account_id.clone()).into(),
-			Box::new(ParentThen(Junctions::X1(Junction::Parachain(penpal::PARA_ID))).into()),
+			Box::new(ParentThen(Junctions::X1(Junction::Parachain(asset_hub_polkadot::PARA_ID))).into()),
 			Box::new(
 				X1(AccountId32 {
 					network: None,
