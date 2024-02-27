@@ -34,6 +34,9 @@ use crate::{
 	Error,
 };
 
+#[cfg(test)]
+mod tests;
+
 /// A DIP proof submitted to a relaychain consumer.
 ///
 /// The generic types indicate the following:
@@ -148,24 +151,6 @@ impl<
 	}
 }
 
-#[cfg(test)]
-mod relay_did_dip_proof {
-	#[test]
-	fn verify_relay_header_with_block_hash_successful() {
-		unimplemented!()
-	}
-
-	#[test]
-	fn verify_relay_header_with_block_hash_wrong_hash() {
-		unimplemented!()
-	}
-
-	#[test]
-	fn verify_relay_header_with_block_hash_wrong_header() {
-		unimplemented!()
-	}
-}
-
 /// A DIP proof submitted to a relaychain consumer that has had the proof header
 /// verified against a given block hash.
 ///
@@ -260,23 +245,5 @@ impl<
 			provider_para_id,
 			&self.relay_state_root,
 		)
-	}
-}
-
-#[cfg(test)]
-mod relay_dip_did_proof_with_verified_relay_state_root {
-	#[test]
-	fn verify_provider_head_proof_successful() {
-		unimplemented!()
-	}
-
-	#[test]
-	fn verify_provider_head_proof_wrong_hasher() {
-		unimplemented!()
-	}
-
-	#[test]
-	fn verify_provider_head_proof_wrong_header_type() {
-		unimplemented!()
 	}
 }

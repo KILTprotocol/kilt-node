@@ -32,6 +32,9 @@ use crate::{
 	Error,
 };
 
+#[cfg(test)]
+mod tests;
+
 /// A DIP proof whose information has been verified but that contains a
 /// cross-chain [`TimeBoundDidSignature`] that still needs verification.
 ///
@@ -112,19 +115,6 @@ impl<
 			revealed_leaves: self.revealed_leaves,
 			signature: self.signature.signature,
 		})
-	}
-}
-
-#[cfg(test)]
-mod dip_revealed_details_and_unverified_did_signature {
-	#[test]
-	fn verify_signature_time_successful() {
-		unimplemented!()
-	}
-
-	#[test]
-	fn verify_signature_time_too_old() {
-		unimplemented!()
 	}
 }
 
@@ -237,18 +227,5 @@ impl<
 			revealed_leaves: signing_key_entry.0,
 			signing_leaf_index: signing_key_entry.1,
 		})
-	}
-}
-
-#[cfg(test)]
-mod dip_revealed_details_and_verified_did_signature_freshness {
-	#[test]
-	fn retrieve_signing_leaf_for_payload_successful() {
-		unimplemented!()
-	}
-
-	#[test]
-	fn retrieve_signing_leaf_for_payload_no_key_present() {
-		unimplemented!()
 	}
 }
