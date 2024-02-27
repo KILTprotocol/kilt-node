@@ -44,13 +44,74 @@ mod dip_revealed_details_and_unverified_did_signature {
 }
 
 mod dip_revealed_details_and_verified_did_signature_freshness {
+	use did::{
+		did_details::{DidPublicKeyDetails, DidVerificationKey},
+		DidVerificationKeyRelationship,
+	};
+	use frame_support::assert_err;
+	use parity_scale_codec::Encode;
+	use sp_core::{ed25519, ConstU32, Pair};
+	use sp_runtime::{AccountId32, BoundedVec};
+
+	use crate::{
+		DipOriginInfo, DipRevealedDetailsAndVerifiedDidSignatureFreshness, Error, RevealedDidKey,
+		RevealedDidMerkleProofLeaf,
+	};
+
 	#[test]
 	fn retrieve_signing_leaf_for_payload_successful() {
-		unimplemented!()
+		let payload = b"Hello, world!";
+		let (did_key_pair, _) = ed25519::Pair::generate();
+		let did_auth_key: DidVerificationKey<AccountId32> = did_key_pair.public().into();
+		let revealed_leaves: BoundedVec<RevealedDidMerkleProofLeaf<u32, AccountId32, u32, (), ()>, ConstU32<1>> =
+			vec![RevealedDidKey::<u32, u32, AccountId32> {
+				id: 0u32,
+				relationship: DidVerificationKeyRelationship::Authentication.into(),
+				details: DidPublicKeyDetails {
+					key: did_auth_key.into(),
+					block_number: 0u32,
+				},
+			}
+			.into()]
+			.try_into()
+			.unwrap();
+		let revealed_details: DipRevealedDetailsAndVerifiedDidSignatureFreshness<_, _, _, _, _, 1> =
+			DipRevealedDetailsAndVerifiedDidSignatureFreshness {
+				revealed_leaves: revealed_leaves.clone(),
+				signature: did_key_pair.sign(&payload.encode()).into(),
+			};
+		assert_eq!(
+			revealed_details.retrieve_signing_leaf_for_payload(&payload.encode()),
+			Ok(DipOriginInfo {
+				signing_leaf_index: 0,
+				revealed_leaves,
+			})
+		);
 	}
 
 	#[test]
 	fn retrieve_signing_leaf_for_payload_no_key_present() {
-		unimplemented!()
+		let did_auth_key: DidVerificationKey<AccountId32> = ed25519::Public([0u8; 32]).into();
+		let revealed_leaves: BoundedVec<RevealedDidMerkleProofLeaf<u32, AccountId32, u32, (), ()>, ConstU32<1>> =
+			vec![RevealedDidKey::<u32, u32, AccountId32> {
+				id: 0u32,
+				relationship: DidVerificationKeyRelationship::Authentication.into(),
+				details: DidPublicKeyDetails {
+					key: did_auth_key.into(),
+					block_number: 0u32,
+				},
+			}
+			.into()]
+			.try_into()
+			.unwrap();
+		let revealed_details: DipRevealedDetailsAndVerifiedDidSignatureFreshness<_, _, _, _, _, 1> =
+			DipRevealedDetailsAndVerifiedDidSignatureFreshness {
+				revealed_leaves,
+				signature: ed25519::Signature([100u8; 64]).into(),
+			};
+		assert_err!(
+			revealed_details.retrieve_signing_leaf_for_payload(&().encode()),
+			Error::InvalidDidKeyRevealed
+		);
 	}
 }
