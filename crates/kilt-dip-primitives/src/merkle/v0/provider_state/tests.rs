@@ -23,17 +23,17 @@ mod parachain_dip_did_proof {
 	}
 
 	#[test]
+	fn verify_provider_head_proof_with_state_root_multi_storage() {
+		unimplemented!()
+	}
+
+	#[test]
 	fn verify_provider_head_proof_with_state_root_wrong_relay_hasher() {
 		unimplemented!()
 	}
 
 	#[test]
-	fn verify_provider_head_proof_with_state_root_wrong_provider_header_type() {
-		unimplemented!()
-	}
-
-	#[test]
-	fn verify_provider_head_proof_with_state_root_different_storage_key() {
+	fn verify_provider_head_proof_with_state_root_wrong_para_id() {
 		// Valid proof but on a different storage key than the expected one
 		unimplemented!()
 	}
@@ -52,17 +52,22 @@ mod dip_did_proof_with_verified_relay_state_root {
 	}
 
 	#[test]
-	fn verify_dip_commitment_proof_for_subject_successful_wrong_provider_hasher() {
+	fn verify_dip_commitment_proof_for_subject_multi_storage() {
 		unimplemented!()
 	}
 
 	#[test]
-	fn verify_dip_commitment_proof_for_subject_successful_wrong_provider_runtime() {
+	fn verify_dip_commitment_proof_for_subject_wrong_provider_hasher() {
 		unimplemented!()
 	}
 
 	#[test]
-	fn verify_dip_commitment_proof_for_subject_different_storage_key() {
+	fn verify_dip_commitment_proof_for_subject_wrong_provider_runtime() {
+		unimplemented!()
+	}
+
+	#[test]
+	fn verify_dip_commitment_proof_for_subject_different_subject() {
 		// Valid proof but on a different storage key than the expected one
 		unimplemented!()
 	}

@@ -204,4 +204,10 @@ mod relay_dip_did_proof_with_verified_relay_state_root {
 			Error::ParaHeadMerkleProof(MerkleProofError::InvalidProof)
 		);
 	}
+
+	#[test]
+	fn verify_provider_head_proof_invalid_proof() {
+		// Invalid proof for the given storage key
+		unimplemented!()
+	}
 }

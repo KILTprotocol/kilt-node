@@ -177,8 +177,6 @@ impl<
 				ProviderHeader::decode(&mut trimmed_input).ok()
 			},
 		);
-		#[cfg(feature = "std")]
-		println!("{:#?}", provider_header_result);
 		cfg_if::cfg_if! {
 			if #[cfg(feature = "runtime-benchmarks")] {
 				let provider_header = provider_header_result.unwrap_or_else(|_| ProviderHeader::new(<ProviderHeader as HeaderT>::Number::default(), <ProviderHeader as HeaderT>::Hash::default(), <ProviderHeader as HeaderT>::Hash::default(), <ProviderHeader as HeaderT>::Hash::default(), sp_runtime::Digest::default()));
