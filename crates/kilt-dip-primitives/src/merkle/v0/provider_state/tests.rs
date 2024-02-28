@@ -398,9 +398,53 @@ mod dip_did_proof_with_verified_relay_state_root {
 }
 
 mod dip_did_proof_with_verified_subject_commitment {
+	use did::{
+		did_details::{DidPublicKeyDetails, DidVerificationKey},
+		DidVerificationKeyRelationship,
+	};
+	use frame_support::assert_err;
+	use hex_literal::hex;
+	use pallet_did_lookup::linkable_account::LinkableAccountId;
+	use sp_core::{sr25519, ConstU32, H256};
+	use sp_runtime::{traits::BlakeTwo256, AccountId32, BoundedVec};
+
+	use crate::{
+		DidMerkleProof, DipDidProofWithVerifiedSubjectCommitment, Error, RevealedDidKey, RevealedDidMerkleProofLeaf,
+	};
+
+	// TODO: Generate a valid DIP proof, and use it here.
 	#[test]
 	fn verify_dip_proof_successful() {
-		unimplemented!()
+		// DIP proof generated on Peregrine via the runtime API.
+		let dip_commitment: H256 = hex!("847b89ef194a872c33bd706e5c0d191bda75f6e3c4964c8531db25e7f0d895e5").into();
+		let revealed_leaf: RevealedDidMerkleProofLeaf<_, _, _, BoundedVec<u8, ConstU32<32>>, LinkableAccountId> =
+			RevealedDidKey::<H256, u64, AccountId32> {
+				id: hex!("56d7c1e546d4ea7d8f46f3ec7e51892d71a6fc6054b2b7e7d0a32a171f733a59").into(),
+				relationship: DidVerificationKeyRelationship::Authentication.into(),
+				details: DidPublicKeyDetails {
+					key: DidVerificationKey::Sr25519(sr25519::Public(hex!(
+						"b8e290a7a36f138469957fda2fc7cfa395460fcbdc17f3bf4e5ec41266ee8d00"
+					)))
+					.into(),
+					block_number: 3,
+				},
+			}
+			.into();
+		let dip_proof = DidMerkleProof {
+			blinded: vec![hex!("7f0556d7c1e546d4ea7d8f46f3ec7e51892d71a6fc6054b2b7e7d0a32a171f733a59010000").to_vec()]
+				.into_iter()
+				.into(),
+			revealed: vec![revealed_leaf.clone()],
+		};
+		let proof = DipDidProofWithVerifiedSubjectCommitment::<_, _, _, _, _, _, ()>::with_commitment_and_dip_proof(
+			dip_commitment,
+			dip_proof,
+		);
+		let proof_verification_result = proof.verify_dip_proof::<BlakeTwo256, 1>().unwrap();
+		assert_eq!(
+			proof_verification_result.revealed_leaves.into_inner(),
+			vec![revealed_leaf]
+		);
 	}
 
 	#[test]
@@ -415,6 +459,14 @@ mod dip_did_proof_with_verified_subject_commitment {
 
 	#[test]
 	fn verify_dip_proof_invalid_proof() {
-		unimplemented!()
+		let proof =
+			DipDidProofWithVerifiedSubjectCommitment::<_, (), (), (), (), (), ()>::with_commitment_and_dip_proof(
+				H256::default(),
+				DidMerkleProof {
+					blinded: Default::default(),
+					revealed: Default::default(),
+				},
+			);
+		assert_err!(proof.verify_dip_proof::<BlakeTwo256, 1>(), Error::InvalidDidMerkleProof);
 	}
 }

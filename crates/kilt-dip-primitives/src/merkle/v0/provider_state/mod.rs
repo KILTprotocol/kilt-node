@@ -567,3 +567,36 @@ impl<
 		})
 	}
 }
+
+#[cfg(test)]
+impl<
+		Commitment,
+		KiltDidKeyId,
+		KiltAccountId,
+		KiltBlockNumber,
+		KiltWeb3Name,
+		KiltLinkableAccountId,
+		ConsumerBlockNumber,
+	>
+	DipDidProofWithVerifiedSubjectCommitment<
+		Commitment,
+		KiltDidKeyId,
+		KiltAccountId,
+		KiltBlockNumber,
+		KiltWeb3Name,
+		KiltLinkableAccountId,
+		ConsumerBlockNumber,
+	> where
+	ConsumerBlockNumber: Default,
+{
+	pub(crate) fn with_commitment_and_dip_proof(
+		commitment: Commitment,
+		dip_proof: DidMerkleProof<KiltDidKeyId, KiltAccountId, KiltBlockNumber, KiltWeb3Name, KiltLinkableAccountId>,
+	) -> Self {
+		Self {
+			dip_commitment: commitment,
+			dip_proof,
+			signature: TimeBoundDidSignature::default(),
+		}
+	}
+}

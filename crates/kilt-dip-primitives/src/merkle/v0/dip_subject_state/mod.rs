@@ -49,7 +49,7 @@ mod tests;
 ///   parachain.
 /// * `MAX_REVEALED_LEAVES_COUNT`: The maximum number of leaves revealable in
 ///   the proof.
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 #[cfg_attr(test, derive(Clone))]
 pub struct DipRevealedDetailsAndUnverifiedDidSignature<
 	KiltDidKeyId,
