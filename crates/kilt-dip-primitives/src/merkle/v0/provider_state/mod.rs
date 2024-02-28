@@ -380,6 +380,45 @@ impl<
 	}
 }
 
+#[cfg(test)]
+impl<
+		StateRoot,
+		KiltDidKeyId,
+		KiltAccountId,
+		KiltBlockNumber,
+		KiltWeb3Name,
+		KiltLinkableAccountId,
+		ConsumerBlockNumber,
+	>
+	DipDidProofWithVerifiedStateRoot<
+		StateRoot,
+		KiltDidKeyId,
+		KiltAccountId,
+		KiltBlockNumber,
+		KiltWeb3Name,
+		KiltLinkableAccountId,
+		ConsumerBlockNumber,
+	> where
+	KiltDidKeyId: Default,
+	KiltAccountId: Default,
+	KiltBlockNumber: Default,
+	KiltWeb3Name: Default,
+	KiltLinkableAccountId: Default,
+	ConsumerBlockNumber: Default,
+{
+	pub(crate) fn with_state_root_and_dip_commitment_proof(
+		provider_state_root: StateRoot,
+		dip_commitment_proof: DipCommitmentStateProof,
+	) -> Self {
+		Self {
+			state_root: provider_state_root,
+			dip_commitment_proof,
+			dip_proof: Default::default(),
+			signature: Default::default(),
+		}
+	}
+}
+
 /// A DIP proof that has had the relaychain state and the DIP commitment
 /// verified for the provided relaychain block number.
 ///
@@ -394,7 +433,7 @@ impl<
 ///   KILT chain.
 /// * `ConsumerBlockNumber`: The `BlockNumber` definition of the consumer
 ///   parachain.
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct DipDidProofWithVerifiedSubjectCommitment<
 	Commitment,
 	KiltDidKeyId,
