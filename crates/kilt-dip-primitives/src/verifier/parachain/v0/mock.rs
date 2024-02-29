@@ -118,6 +118,13 @@ impl DipCallOriginFilter<RuntimeCall> for FilterNothing {
 	}
 }
 
+pub(crate) const MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT: u32 = 64;
+pub(crate) const MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE: u32 = 1024;
+pub(crate) const MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT: u32 = 64;
+pub(crate) const MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE: u32 = 1024;
+pub(crate) const MAX_DID_MERKLE_PROOF_LEAVE_COUNT: u32 = 64;
+pub(crate) const MAX_DID_MERKLE_PROOF_LEAVE_SIZE: u32 = 1024;
+pub(crate) const MAX_DID_MERKLE_LEAVES_REVEALED: u32 = 64;
 pub type Verifier = ParachainVerifier<
 	RococoRuntime,
 	RelayStateRootsViaRelayStorePallet<TestRuntime>,
@@ -125,13 +132,13 @@ pub type Verifier = ParachainVerifier<
 	PeregrineRuntime,
 	FilterNothing,
 	(),
-	64,
-	1024,
-	64,
-	1024,
-	64,
-	1024,
-	64,
+	MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT,
+	MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE,
+	MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT,
+	MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE,
+	MAX_DID_MERKLE_PROOF_LEAVE_COUNT,
+	MAX_DID_MERKLE_PROOF_LEAVE_SIZE,
+	MAX_DID_MERKLE_LEAVES_REVEALED,
 >;
 impl pallet_dip_consumer::Config for TestRuntime {
 	type DipCallOriginFilter = Everything;
@@ -149,7 +156,7 @@ impl pallet_dip_consumer::Config for TestRuntime {
 // 4qbGXy3VNCxRywCooPHBCiqqC8eBCi8R61FhKMhQgfe6Pi7M, 56,
 // 0xfe0821e1c03846bdff40df39019205b2dce56dd0ccbff6f042d68832a56d358f, ())
 #[allow(clippy::type_complexity)]
-pub(crate) fn cross_chain_proof() -> ParachainDipDidProof<
+pub(crate) fn correct_cross_chain_proof() -> ParachainDipDidProof<
 	BlockNumberFor<RococoRuntime>,
 	KeyIdOf<PeregrineRuntime>,
 	<PeregrineRuntime as frame_system::Config>::AccountId,

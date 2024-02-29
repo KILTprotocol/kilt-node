@@ -53,6 +53,12 @@ impl<T> sp_std::ops::Deref for BoundedBlindedValue<T> {
 	}
 }
 
+impl<T> sp_std::ops::DerefMut for BoundedBlindedValue<T> {
+	fn deref_mut(&mut self) -> &mut Self::Target {
+		&mut self.0
+	}
+}
+
 impl<T> IntoIterator for BoundedBlindedValue<T> {
 	type IntoIter = <Vec<Vec<T>> as IntoIterator>::IntoIter;
 	type Item = <Vec<Vec<T>> as IntoIterator>::Item;
