@@ -405,8 +405,11 @@ mod dip_did_proof_with_verified_subject_commitment {
 	use frame_support::assert_err;
 	use hex_literal::hex;
 	use pallet_did_lookup::linkable_account::LinkableAccountId;
-	use sp_core::{sr25519, ConstU32, H256};
-	use sp_runtime::{traits::BlakeTwo256, AccountId32, BoundedVec};
+	use sp_core::{ed25519, ConstU32, H256};
+	use sp_runtime::{
+		traits::{BlakeTwo256, Keccak256},
+		AccountId32, BoundedVec,
+	};
 
 	use crate::{
 		DidMerkleProof, DipDidProofWithVerifiedSubjectCommitment, Error, RevealedDidKey, RevealedDidMerkleProofLeaf,
@@ -415,25 +418,38 @@ mod dip_did_proof_with_verified_subject_commitment {
 	// TODO: Generate a valid DIP proof, and use it here.
 	#[test]
 	fn verify_dip_proof_successful() {
-		// DIP proof generated on Peregrine via the runtime API.
-		let dip_commitment: H256 = hex!("847b89ef194a872c33bd706e5c0d191bda75f6e3c4964c8531db25e7f0d895e5").into();
+		// DIP proof generated on Peregrine via the `dipProvider::generateProof` runtime
+		// API.
+		let dip_commitment: H256 = hex!("1997d38bec607be35cab175edc55e2119e0138976021e1f938942c10f9f7b329").into();
 		let revealed_leaf: RevealedDidMerkleProofLeaf<_, _, _, BoundedVec<u8, ConstU32<32>>, LinkableAccountId> =
 			RevealedDidKey::<H256, u64, AccountId32> {
-				id: hex!("56d7c1e546d4ea7d8f46f3ec7e51892d71a6fc6054b2b7e7d0a32a171f733a59").into(),
+				id: hex!("50da6646d21f19b4d7d9f80d5beb103fbef7f4bb95eb94e0c02552175b1bff3a").into(),
 				relationship: DidVerificationKeyRelationship::Authentication.into(),
 				details: DidPublicKeyDetails {
-					key: DidVerificationKey::Sr25519(sr25519::Public(hex!(
-						"b8e290a7a36f138469957fda2fc7cfa395460fcbdc17f3bf4e5ec41266ee8d00"
+					key: DidVerificationKey::Ed25519(ed25519::Public(hex!(
+						"43a72e714401762df66b68c26dfbdf2682aaec9f2474eca4613e424a0fbafd3c"
 					)))
 					.into(),
-					block_number: 3,
+					block_number: 0,
 				},
 			}
 			.into();
 		let dip_proof = DidMerkleProof {
-			blinded: vec![hex!("7f0556d7c1e546d4ea7d8f46f3ec7e51892d71a6fc6054b2b7e7d0a32a171f733a59010000").to_vec()]
-				.into_iter()
-				.into(),
+			blinded: vec![
+				hex!(
+					"8027f4809d06d6e9516f8bcbe97b3e1fa94f294b2606a11d00f1162c90bbdbaa0cbc77d480421f140adb34
+								53138eb8c4512f9cff60ee9a62502cbb0ddd30355235c12dbd318001ba7e874784b7c79fdc37d1584ff254
+								efb6d167087dcb1227c704fd9f6c21d40080a92c5bdfcfbb286551bc43fb263980bc9148f3645f6bc0743c
+								4292b88dc4039f8011e7fd2693a380b14bd3dd83736bec3bbcb7f70c7b7e0aaf30a03d2bbf96bd3b80c5a2
+								1afb7e16c0f8869ca44efbafddef083c89104fe153d0a77698a5aa1eef7d808cf84bd4fa37829f7229d507
+								3cbb504832fc88766def7b06930c5c27f7bf12a080dab6661eac3da9d306e8bbfdffb8ccc901239d8c1664
+								220062a4384224babea0"
+				)
+				.to_vec(),
+				hex!("7f0400da6646d21f19b4d7d9f80d5beb103fbef7f4bb95eb94e0c02552175b1bff3a010000").to_vec(),
+			]
+			.into_iter()
+			.into(),
 			revealed: vec![revealed_leaf.clone()],
 		};
 		let proof = DipDidProofWithVerifiedSubjectCommitment::<_, _, _, _, _, _, ()>::with_commitment_and_dip_proof(
@@ -449,12 +465,90 @@ mod dip_did_proof_with_verified_subject_commitment {
 
 	#[test]
 	fn verify_dip_proof_wrong_merkle_hasher() {
-		unimplemented!()
+		// DIP proof generated on Peregrine via the `dipProvider::generateProof` runtime
+		// API.
+		let dip_commitment: H256 = hex!("1997d38bec607be35cab175edc55e2119e0138976021e1f938942c10f9f7b329").into();
+		let revealed_leaf: RevealedDidMerkleProofLeaf<_, _, _, BoundedVec<u8, ConstU32<32>>, LinkableAccountId> =
+			RevealedDidKey::<H256, u64, AccountId32> {
+				id: hex!("50da6646d21f19b4d7d9f80d5beb103fbef7f4bb95eb94e0c02552175b1bff3a").into(),
+				relationship: DidVerificationKeyRelationship::Authentication.into(),
+				details: DidPublicKeyDetails {
+					key: DidVerificationKey::Ed25519(ed25519::Public(hex!(
+						"43a72e714401762df66b68c26dfbdf2682aaec9f2474eca4613e424a0fbafd3c"
+					)))
+					.into(),
+					block_number: 0,
+				},
+			}
+			.into();
+		let dip_proof = DidMerkleProof {
+			blinded: vec![
+				hex!(
+					"8027f4809d06d6e9516f8bcbe97b3e1fa94f294b2606a11d00f1162c90bbdbaa0cbc77d480421f140adb34
+								53138eb8c4512f9cff60ee9a62502cbb0ddd30355235c12dbd318001ba7e874784b7c79fdc37d1584ff254
+								efb6d167087dcb1227c704fd9f6c21d40080a92c5bdfcfbb286551bc43fb263980bc9148f3645f6bc0743c
+								4292b88dc4039f8011e7fd2693a380b14bd3dd83736bec3bbcb7f70c7b7e0aaf30a03d2bbf96bd3b80c5a2
+								1afb7e16c0f8869ca44efbafddef083c89104fe153d0a77698a5aa1eef7d808cf84bd4fa37829f7229d507
+								3cbb504832fc88766def7b06930c5c27f7bf12a080dab6661eac3da9d306e8bbfdffb8ccc901239d8c1664
+								220062a4384224babea0"
+				)
+				.to_vec(),
+				hex!("7f0400da6646d21f19b4d7d9f80d5beb103fbef7f4bb95eb94e0c02552175b1bff3a010000").to_vec(),
+			]
+			.into_iter()
+			.into(),
+			revealed: vec![revealed_leaf],
+		};
+		let proof = DipDidProofWithVerifiedSubjectCommitment::<_, _, _, _, _, _, ()>::with_commitment_and_dip_proof(
+			dip_commitment,
+			dip_proof,
+		);
+		// Different hasher used for verification
+		assert_err!(proof.verify_dip_proof::<Keccak256, 1>(), Error::InvalidDidMerkleProof);
 	}
 
 	#[test]
 	fn verify_dip_proof_too_many_leaves() {
-		unimplemented!()
+		// DIP proof generated on Peregrine via the `dipProvider::generateProof` runtime
+		// API.
+		let dip_commitment: H256 = hex!("1997d38bec607be35cab175edc55e2119e0138976021e1f938942c10f9f7b329").into();
+		let revealed_leaf: RevealedDidMerkleProofLeaf<_, _, _, BoundedVec<u8, ConstU32<32>>, LinkableAccountId> =
+			RevealedDidKey::<H256, u64, AccountId32> {
+				id: hex!("50da6646d21f19b4d7d9f80d5beb103fbef7f4bb95eb94e0c02552175b1bff3a").into(),
+				relationship: DidVerificationKeyRelationship::Authentication.into(),
+				details: DidPublicKeyDetails {
+					key: DidVerificationKey::Ed25519(ed25519::Public(hex!(
+						"43a72e714401762df66b68c26dfbdf2682aaec9f2474eca4613e424a0fbafd3c"
+					)))
+					.into(),
+					block_number: 0,
+				},
+			}
+			.into();
+		let dip_proof = DidMerkleProof {
+			blinded: vec![
+				hex!(
+					"8027f4809d06d6e9516f8bcbe97b3e1fa94f294b2606a11d00f1162c90bbdbaa0cbc77d480421f140adb34
+								53138eb8c4512f9cff60ee9a62502cbb0ddd30355235c12dbd318001ba7e874784b7c79fdc37d1584ff254
+								efb6d167087dcb1227c704fd9f6c21d40080a92c5bdfcfbb286551bc43fb263980bc9148f3645f6bc0743c
+								4292b88dc4039f8011e7fd2693a380b14bd3dd83736bec3bbcb7f70c7b7e0aaf30a03d2bbf96bd3b80c5a2
+								1afb7e16c0f8869ca44efbafddef083c89104fe153d0a77698a5aa1eef7d808cf84bd4fa37829f7229d507
+								3cbb504832fc88766def7b06930c5c27f7bf12a080dab6661eac3da9d306e8bbfdffb8ccc901239d8c1664
+								220062a4384224babea0"
+				)
+				.to_vec(),
+				hex!("7f0400da6646d21f19b4d7d9f80d5beb103fbef7f4bb95eb94e0c02552175b1bff3a010000").to_vec(),
+			]
+			.into_iter()
+			.into(),
+			revealed: vec![revealed_leaf],
+		};
+		let proof = DipDidProofWithVerifiedSubjectCommitment::<_, _, _, _, _, _, ()>::with_commitment_and_dip_proof(
+			dip_commitment,
+			dip_proof,
+		);
+		// We set 0 as the maximum limit.
+		assert_err!(proof.verify_dip_proof::<BlakeTwo256, 0>(), Error::TooManyLeavesRevealed);
 	}
 
 	#[test]
