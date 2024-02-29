@@ -1,3 +1,3 @@
 pub mod network;
-pub mod parachains;
-pub mod utils;
+pub mod para_chains;
+pub mod relay_chains;

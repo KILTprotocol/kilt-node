@@ -1,6 +1,9 @@
-use crate::mock::{
-	network::{MockNetwork, Polkadot},
-	parachains::{AssetHub, Spiritnet},
+use crate::{
+	mock::{
+		network::MockNetwork,
+		para_chains::{AssetHub, Spiritnet},
+		relay_chains::Polkadot,
+	},
 	utils::get_account_id_from_seed,
 };
 use asset_hub_polkadot_runtime::{RuntimeEvent as AssetHubRuntimeEvent, System as AssetHubSystem};

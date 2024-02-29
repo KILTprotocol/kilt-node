@@ -15,7 +15,6 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use integration_tests_common::constants::{accounts, asset_hub_polkadot, polkadot::ED};
-use polkadot_primitives::AccountPublic;
 use runtime_common::{xcm_config::LocationToAccountId, AuthorityId};
 use sp_core::sr25519;
 use sp_runtime::{BuildStorage, Storage};
@@ -25,7 +24,7 @@ use spiritnet_runtime::{
 };
 use xcm_emulator::{decl_test_parachains, BridgeMessageHandler, Parachain, TestExt};
 
-use crate::mock::utils::{get_account_id_from_seed, get_from_seed};
+use crate::utils::{get_account_id_from_seed, get_from_seed};
 
 const SAFE_XCM_VERSION: u32 = xcm::prelude::XCM_VERSION;
 
