@@ -201,6 +201,7 @@ impl<
 	{
 		let provider_head_storage_key = calculate_parachain_head_storage_key(provider_para_id);
 		// TODO: Figure out why RPC call returns 2 bytes in front which we don't need
+		//This could be the reason (and the solution): https://substrate.stackexchange.com/a/1891/1795
 		let provider_header_result = verify_storage_value_proof_with_decoder::<_, RelayHasher, ProviderHeader>(
 			&provider_head_storage_key,
 			*relay_state_root,

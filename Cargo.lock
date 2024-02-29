@@ -4622,6 +4622,7 @@ name = "kilt-dip-primitives"
 version = "1.12.0-dev"
 dependencies = [
  "cfg-if",
+ "cumulus-pallet-parachain-system",
  "cumulus-primitives-core",
  "did",
  "enum-iterator",
@@ -4637,6 +4638,8 @@ dependencies = [
  "pallet-relay-store",
  "pallet-web3-names",
  "parity-scale-codec",
+ "peregrine-runtime",
+ "rococo-runtime",
  "scale-info",
  "sp-core",
  "sp-io",

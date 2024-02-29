@@ -34,6 +34,12 @@ use crate::{
 	DipOriginInfo, DipParachainStateProofVerifierError, RevealedDidKey,
 };
 
+#[cfg(test)]
+mod mock;
+
+#[cfg(test)]
+mod tests;
+
 /// Proof verifier configured given a specific KILT runtime implementation.
 ///
 /// The generic types

@@ -35,7 +35,7 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
-pub use crate::{default_weights::WeightInfo, pallet::*};
+pub use crate::{default_weights::WeightInfo, pallet::*, relay::*};
 
 #[frame_support::pallet]
 pub mod pallet {

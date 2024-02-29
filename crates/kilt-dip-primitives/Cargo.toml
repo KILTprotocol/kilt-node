@@ -43,8 +43,11 @@ sp-trie.workspace = true
 cumulus-primitives-core.workspace = true
 
 [dev-dependencies]
+cumulus-pallet-parachain-system = { workspace = true, features = ["std"] }
 enum-iterator.workspace = true
 hex-literal.workspace = true
+peregrine-runtime = { workspace = true, features = ["std"] }
+rococo-runtime = { workspace = true, features = ["std"] }
 spiritnet-runtime = { workspace = true, features = ["std"] }
 sp-io = { workspace = true, features = ["std"] }
 
