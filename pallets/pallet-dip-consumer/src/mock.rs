@@ -27,7 +27,7 @@ use frame_support::{
 };
 use frame_system::{mocking::MockBlock, EnsureSigned};
 
-use crate::{traits::IdentityProofVerifier, Config, DipOrigin, EnsureDipOrigin, RuntimeCallOf};
+use crate::{traits::IdentityProofVerifier, Config, DipOrigin, EnsureDipOrigin, IdentityEntries, RuntimeCallOf};
 
 // This mock is used both for benchmarks and unit tests.
 // For benchmarks, the `system::remark` call must be allowed to be dispatched,
@@ -110,6 +110,8 @@ impl Contains<RuntimeCall> for OnlySystemRemarksWithoutEventsAndDidLookupCalls {
 	}
 }
 
+// Returns success if `Proof` is `true`, and bumps the identity details by one,
+// or instanciates them to `Default` if they're `None`.
 pub struct BooleanProofVerifier;
 impl IdentityProofVerifier<TestRuntime> for BooleanProofVerifier {
 	type Error = u16;
@@ -120,10 +122,11 @@ impl IdentityProofVerifier<TestRuntime> for BooleanProofVerifier {
 		_call: &RuntimeCallOf<TestRuntime>,
 		_subject: &<TestRuntime as Config>::Identifier,
 		_submitter: &<TestRuntime as frame_system::Config>::AccountId,
-		_identity_details: &mut Option<<TestRuntime as Config>::LocalIdentityInfo>,
+		identity_details: &mut Option<<TestRuntime as Config>::LocalIdentityInfo>,
 		proof: Self::Proof,
 	) -> Result<Self::VerificationResult, Self::Error> {
 		if proof {
+			*identity_details = identity_details.map(|d| Some(d + 1)).unwrap_or(Some(u128::default()));
 			Ok(())
 		} else {
 			Err(1)
@@ -146,11 +149,15 @@ pub(crate) const SUBMITTER: AccountId32 = AccountId32::new([100u8; 32]);
 pub(crate) const SUBJECT: AccountId32 = AccountId32::new([200u8; 32]);
 
 #[derive(Default)]
-pub(crate) struct ExtBuilder(Vec<(AccountId32, u64)>);
+pub(crate) struct ExtBuilder(Vec<(AccountId32, u64)>, Vec<(AccountId32, u128)>);
 
 impl ExtBuilder {
 	pub(crate) fn with_balances(mut self, balances: Vec<(AccountId32, u64)>) -> Self {
 		self.0 = balances;
+		self
+	}
+	pub(crate) fn with_identity_details(mut self, details: Vec<(AccountId32, u128)>) -> Self {
+		self.1 = details;
 		self
 	}
 
@@ -160,6 +167,9 @@ impl ExtBuilder {
 		ext.execute_with(|| {
 			for (account_id, balance) in self.0 {
 				Balances::make_free_balance_be(&account_id, balance);
+			}
+			for (subject, details) in self.1 {
+				IdentityEntries::<TestRuntime>::insert(subject, details)
 			}
 		});
 
