@@ -16501,11 +16501,13 @@ version = "1.12.0-dev"
 dependencies = [
  "asset-hub-polkadot-runtime",
  "cumulus-primitives-core",
+ "frame-support",
  "integration-tests-common",
  "pallet-assets",
  "pallet-im-online",
  "pallet-message-queue",
  "pallet-staking",
+ "pallet-xcm",
  "parity-scale-codec",
  "polkadot-parachain",
  "polkadot-primitives",

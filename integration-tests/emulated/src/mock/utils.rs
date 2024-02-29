@@ -14,8 +14,14 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+use polkadot_primitives::AccountId;
 use sp_core::{Pair, Public};
-use sp_runtime::traits::IdentifyAccount;
+use sp_runtime::{
+	traits::{IdentifyAccount, Verify},
+	MultiSignature,
+};
+
+type AccountPublic = <MultiSignature as Verify>::Signer;
 
 /// Helper function to generate a crypto pair from seed
 pub(crate) fn get_from_seed<TPublic>(seed: &str) -> <TPublic::Pair as Pair>::Public
@@ -27,11 +33,9 @@ where
 		.public()
 }
 
-/// Helper function to generate an account ID from seed.
-pub(crate) fn get_account_id_from_seed<AccountPublic, TPublic>(seed: &str) -> AccountPublic::AccountId
+pub(crate) fn get_account_id_from_seed<TPublic: Public>(seed: &str) -> AccountId
 where
-	AccountPublic: From<<TPublic::Pair as Pair>::Public> + IdentifyAccount,
-	TPublic: Public,
+	AccountPublic: From<<TPublic::Pair as Pair>::Public>,
 {
 	AccountPublic::from(get_from_seed::<TPublic>(seed)).into_account()
 }

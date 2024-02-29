@@ -52,7 +52,7 @@ pub mod spiritnet {
 			},
 			session: SessionConfig {
 				keys: vec![(
-					get_account_id_from_seed::<AccountPublic, sr25519::Public>("Alice"),
+					get_account_id_from_seed::<sr25519::Public>("Alice"),
 					get_from_seed::<AuthorityId>("Alice"),
 				)]
 				.iter()

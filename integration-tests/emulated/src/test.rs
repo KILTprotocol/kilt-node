@@ -1,11 +1,21 @@
 use crate::mock::{
-	network::MockNetwork,
+	network::{MockNetwork, Polkadot},
 	parachains::{AssetHub, Spiritnet},
+	utils::get_account_id_from_seed,
 };
-use asset_hub_polkadot_runtime::System as AssetHubSystem;
+use asset_hub_polkadot_runtime::{RuntimeEvent as AssetHubRuntimeEvent, System as AssetHubSystem};
+use frame_support::dispatch::RawOrigin;
+use frame_support::{assert_err, assert_ok};
+use integration_tests_common::{asset_hub_polkadot, polkadot::ED, ALICE, BOB};
 use polkadot_runtime::System as PolkadotSystem;
+use sp_core::sr25519;
+use sp_runtime::{DispatchError, ModuleError};
 use spiritnet_runtime::{
 	PolkadotXcm as SpiritnetXcm, RuntimeEvent as SpiritnetRuntimeEvent, System as SpiritnetSystem,
+};
+use xcm::v3::WeightLimit;
+use xcm_emulator::{
+	cumulus_pallet_xcmp_queue::Event as XcmpQueueEvent, Here, Junction, Junctions, Parent, ParentThen, TestExt, X1,
 };
 
 #[test]
@@ -19,7 +29,7 @@ fn test_reserve_asset_transfer_from_regular_account_to_relay() {
 			RawOrigin::Signed(alice_account_id_on_peregrine.clone()).into(),
 			Box::new(Parent.into()),
 			Box::new(
-				X1(AccountId32 {
+				X1(Junction::AccountId32 {
 					network: None,
 					id: alice_account_id_on_peregrine.into()
 				})
@@ -59,13 +69,13 @@ fn test_reserve_asset_transfer_from_regular_account_to_asset_hub() {
 			RawOrigin::Signed(alice_account_id.clone()).into(),
 			Box::new(ParentThen(Junctions::X1(Junction::Parachain(asset_hub_polkadot::PARA_ID))).into()),
 			Box::new(
-				X1(AccountId32 {
+				X1(Junction::AccountId32 {
 					network: None,
 					id: bob_account_id.into()
 				})
 				.into()
 			),
-			Box::new((Here, 1000 * EXISTENTIAL_DEPOSIT).into()),
+			Box::new((Here, 1000 * ED).into()),
 			0,
 			WeightLimit::Unlimited,
 		));
@@ -111,26 +121,19 @@ fn test_teleport_asset_from_regular_account_to_asset_hub() {
 	let alice_account_id = get_account_id_from_seed::<sr25519::Public>(ALICE);
 	let bob_account_id = get_account_id_from_seed::<sr25519::Public>(BOB);
 
-	asset_hub_polkadot::force_create_asset_call(
-		ParentThen(Junctions::X1(Junction::Parachain(PARA_ID))).into(),
-		alice_account_id.clone(),
-		true,
-		0,
-	);
-
 	Spiritnet::execute_with(|| {
 		assert_err!(
 			SpiritnetXcm::limited_teleport_assets(
 				RawOrigin::Signed(alice_account_id.clone()).into(),
 				Box::new(ParentThen(Junctions::X1(Junction::Parachain(asset_hub_polkadot::PARA_ID))).into()),
 				Box::new(
-					X1(AccountId32 {
+					X1(Junction::AccountId32 {
 						network: None,
 						id: bob_account_id.into()
 					})
 					.into()
 				),
-				Box::new((Here, 1000 * EXISTENTIAL_DEPOSIT).into()),
+				Box::new((Here, 1000 * ED).into()),
 				0,
 				WeightLimit::Unlimited,
 			),
@@ -150,3 +153,8 @@ fn test_teleport_asset_from_regular_account_to_asset_hub() {
 		assert_eq!(AssetHubSystem::events().len(), 0);
 	});
 }
+
+// TODO: Receive funds from assetHub
+// TODO: Disallow root calls from other chains.
+// TODO: create a DID from another chain
+// TODO: use a DID (e.g. CType creation)
