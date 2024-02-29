@@ -1,0 +1,43 @@
+[package]
+authors.workspace = true
+description = "Emulated integration tests for XCM config"
+documentation.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license-file.workspace = true
+name = "xcm-integration-tests"
+readme.workspace = true
+repository.workspace = true
+version.workspace = true
+
+[dependencies]
+
+asset-hub-polkadot-runtime = {workspace = true, default-features = true}
+# integration-tests-common.workspace = true
+cumulus-primitives-core.workspace = true
+integration-tests-common.workspace = true
+pallet-assets = {workspace = true, default-features = true}
+pallet-im-online.workspace = true
+pallet-message-queue.workspace = true
+pallet-staking = {workspace = true, default-features = true}
+parity-scale-codec = {workspace = true, features = ["derive"]}
+polkadot-parachain = {workspace = true, default-features = true}
+polkadot-primitives = {workspace = true, default-features = true}
+polkadot-runtime = {workspace = true, default-features = true}
+polkadot-runtime-constants = {workspace = true, default-features = true}
+polkadot-runtime-parachains = {workspace = true, default-features = true}
+polkadot-service = {workspace = true, default-features = true}
+runtime-common.workspace = true
+sc-consensus-grandpa.workspace = true
+sp-authority-discovery.workspace = true
+sp-consensus-babe.workspace = true
+sp-consensus-beefy.workspace = true
+sp-core.workspace = true
+sp-io.workspace = true
+sp-runtime.workspace = true
+sp-tracing.workspace = true
+spiritnet-runtime = {workspace = true, default-features = true}
+xcm-emulator.workspace = true
+xcm-executor.workspace = true
+xcm-simulator.workspace = true
+xcm.workspace = true

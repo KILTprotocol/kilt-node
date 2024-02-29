@@ -26,8 +26,8 @@ pub(crate) use crate::{
 		tests::utils::{get_account_id_from_seed, get_from_seed},
 		RelayNetworkId,
 	},
-	AuthorityId, BalancesConfig, ParachainInfoConfig, PolkadotXcmConfig, RuntimeGenesisConfig,
-	SessionConfig, SessionKeys, SystemConfig, WASM_BINARY,
+	AuthorityId, BalancesConfig, ParachainInfoConfig, PolkadotXcmConfig, RuntimeGenesisConfig, SessionConfig,
+	SessionKeys, SystemConfig, WASM_BINARY,
 };
 use asset_hub_polkadot_runtime::Runtime;
 use cumulus_primitives_core::MultiLocation;
