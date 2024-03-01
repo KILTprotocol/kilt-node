@@ -112,7 +112,7 @@ std = [
   "pallet-collator-selection/std",
   "parachain-info/std",
   "rococo-runtime/std",
-  "frame-benchmarking/std",
+  "frame-benchmarking?/std",
   "frame-system-benchmarking?/std",
 ]
 

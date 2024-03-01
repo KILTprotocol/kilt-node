@@ -35,10 +35,9 @@ use runtime_common::{
 		web3_names::MAX_NAME_BYTE_LENGTH,
 		MAX_INDICES_BYTE_LENGTH,
 	},
+	dip::deposit::DepositKey,
 	AccountId, BlockNumber,
 };
-
-use crate::dip::deposit::DepositKey;
 
 use super::{Runtime, RuntimeCall};
 

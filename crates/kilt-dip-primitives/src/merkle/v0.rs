@@ -168,6 +168,12 @@ pub struct TimeBoundDidSignature<BlockNumber> {
 	pub(crate) valid_until: BlockNumber,
 }
 
+impl<BlockNumber> TimeBoundDidSignature<BlockNumber> {
+	pub fn new(signature: DidSignature, valid_until: BlockNumber) -> Self {
+		Self { signature, valid_until }
+	}
+}
+
 #[cfg(feature = "runtime-benchmarks")]
 impl<BlockNumber, Context> kilt_support::traits::GetWorstCase<Context> for TimeBoundDidSignature<BlockNumber>
 where
@@ -787,6 +793,38 @@ impl<
 		KiltWeb3Name,
 		KiltLinkableAccountId,
 		ConsumerBlockNumber,
+	>
+{
+	pub fn new(
+		dip_commitment: Commitment,
+		dip_proof: DidMerkleProof<KiltDidKeyId, KiltAccountId, KiltBlockNumber, KiltWeb3Name, KiltLinkableAccountId>,
+		signature: TimeBoundDidSignature<ConsumerBlockNumber>,
+	) -> Self {
+		Self {
+			dip_commitment,
+			dip_proof,
+			signature,
+		}
+	}
+}
+
+impl<
+		Commitment,
+		KiltDidKeyId,
+		KiltAccountId,
+		KiltBlockNumber,
+		KiltWeb3Name,
+		KiltLinkableAccountId,
+		ConsumerBlockNumber,
+	>
+	DipDidProofWithVerifiedSubjectCommitment<
+		Commitment,
+		KiltDidKeyId,
+		KiltAccountId,
+		KiltBlockNumber,
+		KiltWeb3Name,
+		KiltLinkableAccountId,
+		ConsumerBlockNumber,
 	> where
 	KiltDidKeyId: Encode,
 	KiltAccountId: Encode,
@@ -1164,7 +1202,7 @@ impl<
 }
 
 /// Relationship of a key to a DID Document.
-#[derive(Clone, Copy, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
+#[derive(Clone, Copy, Debug, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, TypeInfo, MaxEncodedLen)]
 pub enum DidKeyRelationship {
 	Encryption,
 	Verification(DidVerificationKeyRelationship),
@@ -1275,7 +1313,7 @@ where
 
 /// The details of a DID key after it has been successfully verified in a Merkle
 /// proof.
-#[derive(Clone, Copy, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
+#[derive(Clone, Copy, Debug, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, TypeInfo, MaxEncodedLen)]
 pub struct RevealedDidKey<KeyId, BlockNumber, AccountId> {
 	/// The key ID, according to the provider's definition.
 	pub id: KeyId,
@@ -1288,7 +1326,7 @@ pub struct RevealedDidKey<KeyId, BlockNumber, AccountId> {
 
 /// The details of a web3name after it has been successfully verified in a
 /// Merkle proof.
-#[derive(Clone, Copy, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
+#[derive(Clone, Copy, Debug, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, TypeInfo, MaxEncodedLen)]
 pub struct RevealedWeb3Name<Web3Name, BlockNumber> {
 	/// The web3name.
 	pub web3_name: Web3Name,
@@ -1299,5 +1337,5 @@ pub struct RevealedWeb3Name<Web3Name, BlockNumber> {
 
 /// The details of an account after it has been successfully verified in a
 /// Merkle proof.
-#[derive(Clone, Copy, Debug, Encode, Decode, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
+#[derive(Clone, Copy, Debug, Encode, Decode, PartialEq, Eq, PartialOrd, Ord, TypeInfo, MaxEncodedLen)]
 pub struct RevealedAccountId<AccountId>(pub AccountId);
