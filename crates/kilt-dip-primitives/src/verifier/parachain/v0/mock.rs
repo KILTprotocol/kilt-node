@@ -20,7 +20,7 @@ use cumulus_pallet_parachain_system::{ParachainSetCode, RelayNumberStrictlyIncre
 use cumulus_primitives_core::ParaId;
 use did::{
 	did_details::{DidPublicKeyDetails, DidVerificationKey},
-	DidVerificationKeyRelationship, KeyIdOf,
+	DidIdentifierOf, DidVerificationKeyRelationship, KeyIdOf,
 };
 use frame_support::{
 	construct_runtime, pallet_prelude::ValueQuery, parameter_types, storage_alias, traits::Everything, Twox64Concat,
@@ -32,7 +32,7 @@ use pallet_relay_store::RelayParentInfo;
 use pallet_web3_names::Web3NameOf;
 use peregrine_runtime::Runtime as PeregrineRuntime;
 use rococo_runtime::Runtime as RococoRuntime;
-use sp_core::{sr25519, ConstU16, ConstU32, ConstU64, H256};
+use sp_core::{crypto::Ss58Codec, sr25519, ConstU16, ConstU32, ConstU64, H256};
 use sp_runtime::{
 	traits::{BlakeTwo256, IdentityLookup},
 	AccountId32, BoundedVec,
@@ -151,12 +151,41 @@ impl pallet_dip_consumer::Config for TestRuntime {
 	type WeightInfo = ();
 }
 
-// It assumes the DID signature is generated over the following payload:
-// (system.remark("Hello, world!"), None,
-// 4qbGXy3VNCxRywCooPHBCiqqC8eBCi8R61FhKMhQgfe6Pi7M, 56,
-// 0xfe0821e1c03846bdff40df39019205b2dce56dd0ccbff6f042d68832a56d358f, ())
+pub(crate) const RELAY_BLOCK: u32 = 21;
+pub(crate) const RELAY_STATE_ROOT: H256 =
+	H256(hex!("23ed6624753dfc87f0721c867abfa77361636314a60d24e8e85b44072b89c3f6"));
+pub(crate) const GENESIS_HASH: H256 = H256(hex!("fe0821e1c03846bdff40df39019205b2dce56dd0ccbff6f042d68832a56d358f"));
+pub(crate) const WRONG_GENESIS_HASH: H256 = H256([0; 32]);
+pub(crate) const IDENTITY_DETAILS: Option<u32> = None;
+pub(crate) const WRONG_IDENTITY_DETAILS: Option<u32> = Some(u32::MAX);
+pub(crate) const SIGNATURE_VALID_UNTIL: BlockNumberFor<TestRuntime> = 56;
+pub(crate) const WRONG_SIGNATURE_VALID_UNTIL: BlockNumberFor<TestRuntime> = 55;
+
+pub(crate) fn submitter() -> AccountId32 {
+	AccountId32::from_ss58check("4qbGXy3VNCxRywCooPHBCiqqC8eBCi8R61FhKMhQgfe6Pi7M").unwrap()
+}
+pub(crate) fn wrong_submitter() -> AccountId32 {
+	AccountId32::from_ss58check("4pnAJ41mGHGDKCGBGY2zzu1hfvPasPkGAKDgPeprSkxnUmGM").unwrap()
+}
+
+pub(crate) fn subject() -> DidIdentifierOf<PeregrineRuntime> {
+	DidIdentifierOf::<PeregrineRuntime>::from_ss58check("4p9S4FrPp4HATybUu6FoBaveQynGWzp8oTpJ5KYyfmYZ9RH4").unwrap()
+}
+
+pub(crate) fn call() -> RuntimeCall {
+	RuntimeCall::System(frame_system::Call::remark {
+		remark: b"Hello, world!".to_vec(),
+	})
+}
+pub(crate) fn wrong_call() -> RuntimeCall {
+	RuntimeCall::System(frame_system::Call::remark {
+		remark: b"Wrong payload!".to_vec(),
+	})
+}
+
+// Cross-chain proof generated over the details exported above.
 #[allow(clippy::type_complexity)]
-pub(crate) fn correct_cross_chain_proof() -> ParachainDipDidProof<
+pub(crate) fn cross_chain_proof_with_authentication_key_and_web3_name() -> ParachainDipDidProof<
 	BlockNumberFor<RococoRuntime>,
 	KeyIdOf<PeregrineRuntime>,
 	<PeregrineRuntime as frame_system::Config>::AccountId,
@@ -165,7 +194,7 @@ pub(crate) fn correct_cross_chain_proof() -> ParachainDipDidProof<
 	LinkableAccountId,
 	BlockNumberFor<TestConsumerRuntime>,
 > {
-	ParachainDipDidProof { provider_head_proof: ProviderHeadStateProof { relay_block_number: 21, proof: vec![
+	ParachainDipDidProof { provider_head_proof: ProviderHeadStateProof { relay_block_number: RELAY_BLOCK, proof: vec![
 		hex!("3703f5a4efb16ffa83d00700005c5197306d02680fa1d14a3b19ba0fa41b17e8949911dda103b1b0476bfc980e").to_vec(),
 		hex!("790309fd7e1fbcde7136109a7c9d435fac9bd912d8857a7eb6b5a02ada5eef14effd14c9d5f469ad91a7ce17998925ed087b1b0e82d2b213eacdf87eda9bd14bafc7bbbdcd2a3423d2648d844f668a1de5f409dbfbe1c529b6fdf8efa5b8b94c919dcd0c0661757261201d607d080000000004525053528484b480424aa62b5ec40d592c52a3f36bc06afa6b1e8fcf6806dd50c6147304944c05617572610101f4a4dc233d8ddd805ae2e53f987926dd55609fce234019e60bb2b0cd8b70805c5888f3f408cd7c5e39385adef76223445e2473ddeb23760b1863d592281c7182").to_vec(),
 		hex!("80046480a1736fb82eeef3ae99c2d1dfc79ca72de61d32d379e5accb53bf99203c9c3b2880f6f6801e4b41e2e6d8ec194dba122bfb9eb33feb2545ef5144cea79551f7cc5280d8416fa071a12a1632a04f2cfe01cd9c7beeacc9d90f647cb93d235dd8870e73808c2f1b77b9294abc1a55fc8432f862b4abfa90f9af3a47f138e4d8dfdfee9468").to_vec(),
@@ -194,7 +223,7 @@ pub(crate) fn correct_cross_chain_proof() -> ParachainDipDidProof<
 			web3_name: b"b9d729af0bce4fd07816098".to_vec().try_into().unwrap(),
 			claimed_at: 4
 		}.into()
-	] }, signature: TimeBoundDidSignature::new(did::DidSignature::Sr25519(sr25519::Signature(hex!("faf3508b0075d8570bb1a79f7aeba4b08e9ae88f16bb9fc44eaf6f203bad842f75dfc17b114e015c7ccdaa672c359bb066961ba2cbaccf3308dc44e0fee3b28c"))), 56) }
+	] }, signature: TimeBoundDidSignature::new(did::DidSignature::Sr25519(sr25519::Signature(hex!("faf3508b0075d8570bb1a79f7aeba4b08e9ae88f16bb9fc44eaf6f203bad842f75dfc17b114e015c7ccdaa672c359bb066961ba2cbaccf3308dc44e0fee3b28c"))), SIGNATURE_VALID_UNTIL) }
 }
 
 // Aliases requires because the pallet does not expose anything public.
