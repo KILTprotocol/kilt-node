@@ -9906,6 +9906,7 @@ dependencies = [
  "log",
  "pallet-authorship",
  "pallet-balances",
+ "pallet-deposit-storage",
  "pallet-did-lookup",
  "pallet-dip-provider",
  "pallet-membership",
