@@ -20,6 +20,7 @@ members = [
   "runtimes/*",
   "support",
 ]
+resolver = "2"
 
 [profile.release]
 lto = "fat"

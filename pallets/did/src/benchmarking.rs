@@ -16,7 +16,6 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use super::*;
 use frame_benchmarking::{account, benchmarks, Zero};
 use frame_support::{
 	assert_ok,
@@ -24,10 +23,9 @@ use frame_support::{
 };
 use frame_system::{pallet_prelude::BlockNumberFor, RawOrigin};
 use parity_scale_codec::Encode;
-use sp_core::{crypto::KeyTypeId, ecdsa, ed25519, sr25519};
+use sp_core::{crypto::KeyTypeId, ecdsa, ed25519, sr25519, Get};
 use sp_io::crypto::{ecdsa_generate, ecdsa_sign, ed25519_generate, ed25519_sign, sr25519_generate, sr25519_sign};
-use sp_runtime::{traits::IdentifyAccount, AccountId32, MultiSigner};
-use sp_std::{convert::TryInto, vec::Vec};
+use sp_runtime::{traits::IdentifyAccount, AccountId32, MultiSigner, SaturatedConversion};
 
 use kilt_support::{signature::VerifySignature, Deposit};
 
@@ -41,7 +39,8 @@ use crate::{
 	},
 	service_endpoints::DidEndpoint,
 	signature::DidSignatureVerify,
-	AccountIdOf, DidAuthorizedCallOperationOf, DidIdentifierOf, HoldReason,
+	utils, AccountIdOf, Call, Config, CurrencyOf, Did, DidAuthorizedCallOperationOf, DidEndpointsCount,
+	DidIdentifierOf, HoldReason, Pallet, ServiceEndpoints,
 };
 
 const DEFAULT_ACCOUNT_ID: &str = "tx_submitter";

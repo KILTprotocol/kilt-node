@@ -19,12 +19,7 @@
 use frame_support::storage::bounded_btree_set::BoundedBTreeSet;
 use frame_system::pallet_prelude::BlockNumberFor;
 use sp_runtime::{AccountId32, SaturatedConversion};
-use sp_std::{
-	collections::btree_set::BTreeSet,
-	convert::{TryFrom, TryInto},
-	vec,
-	vec::Vec,
-};
+use sp_std::{collections::btree_set::BTreeSet, vec};
 
 use crate::{
 	did_details::{DidCreationDetails, DidDetails, DidEncryptionKey, DidNewKeyAgreementKeySet, DidVerificationKey},

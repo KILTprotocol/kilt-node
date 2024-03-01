@@ -21,7 +21,6 @@ use frame_support::traits::{
 	tokens::fungible::{Inspect, MutateHold},
 };
 use sp_runtime::DispatchError;
-use sp_std::vec::Vec;
 
 use crate::deposit::{free_deposit, reserve_deposit, Deposit};
 
@@ -159,7 +158,7 @@ pub trait StorageDepositCollector<AccountId, Key, RuntimeHoldReason> {
 
 	/// Get the storage key used to fetch a value corresponding to a specific
 	/// key.
-	fn get_hashed_key(key: &Key) -> Result<Vec<u8>, DispatchError>;
+	fn get_hashed_key(key: &Key) -> Result<sp_std::vec::Vec<u8>, DispatchError>;
 
 	/// Store the new deposit information in the storage entry behind the key.
 	fn store_deposit(

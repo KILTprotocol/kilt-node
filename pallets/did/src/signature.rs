@@ -19,7 +19,10 @@
 use frame_support::dispatch;
 use kilt_support::signature::{SignatureVerificationError, SignatureVerificationResult, VerifySignature};
 use sp_runtime::SaturatedConversion;
-use sp_std::{marker::PhantomData, vec::Vec};
+use sp_std::marker::PhantomData;
+
+#[cfg(not(feature = "std"))]
+use sp_std::vec::Vec;
 
 use crate::{
 	did_details::{DidSignature, DidVerificationKeyRelationship},

@@ -31,7 +31,9 @@ use sp_runtime::{
 	traits::{IdentifyAccount, Verify, Zero},
 	MultiSignature, SaturatedConversion, Saturating,
 };
-use sp_std::{convert::TryInto, vec::Vec};
+
+#[cfg(not(feature = "std"))]
+use sp_std::vec::Vec;
 
 use crate::{
 	errors::{self, DidError},

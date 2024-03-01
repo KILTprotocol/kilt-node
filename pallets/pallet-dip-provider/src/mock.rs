@@ -26,6 +26,9 @@ use frame_support::{
 	traits::{ConstU16, ConstU32, ConstU64, Everything},
 };
 
+#[cfg(not(feature = "std"))]
+use {scale_info::prelude::string::String, sp_std::boxed::Box};
+
 use frame_system::mocking::MockBlock;
 use kilt_support::mock::mock_origin::{self as mock_origin, DoubleOrigin, EnsureDoubleOrigin};
 

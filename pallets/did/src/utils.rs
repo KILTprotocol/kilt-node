@@ -20,6 +20,8 @@ use fluent_uri::Uri;
 use parity_scale_codec::Encode;
 use scale_info::prelude::format;
 use sp_runtime::traits::Hash;
+
+#[cfg(not(feature = "std"))]
 use sp_std::vec::Vec;
 
 use crate::{did_details::DidPublicKey, AccountIdOf, Config, KeyIdOf};
