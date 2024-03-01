@@ -172,10 +172,7 @@ where
 	) -> Result<(), Self::Error>;
 }
 
-/// Implement the [`ProviderHooks`] trait with noops.
-pub struct NoopHooks;
-
-impl<Runtime> ProviderHooks<Runtime> for NoopHooks
+impl<Runtime> ProviderHooks<Runtime> for ()
 where
 	Runtime: Config,
 {
