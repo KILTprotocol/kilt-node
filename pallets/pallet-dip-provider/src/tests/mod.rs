@@ -17,3 +17,4 @@
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
 mod commit_identity;
+mod delete_identity_commitment;
