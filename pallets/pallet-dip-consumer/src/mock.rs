@@ -111,7 +111,7 @@ impl Contains<RuntimeCall> for OnlySystemRemarksWithoutEventsAndDidLookupCalls {
 }
 
 // Returns success if `Proof` is `true`, and bumps the identity details by one,
-// or instanciates them to `Default` if they're `None`.
+// or instantiates them to `Default` if they're `None`.
 pub struct BooleanProofVerifier;
 impl IdentityProofVerifier<TestRuntime> for BooleanProofVerifier {
 	type Error = u16;
