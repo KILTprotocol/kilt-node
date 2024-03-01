@@ -46,6 +46,9 @@ pub mod test {
 	};
 	use sp_runtime::traits::Zero;
 
+	#[cfg(not(feature = "std"))]
+	use sp_std::vec;
+
 	use crate::{
 		migrations::update_balance_for_attestation, mock::*, AccountIdOf, Attestations, AttesterOf, Config, Error,
 		HoldReason,

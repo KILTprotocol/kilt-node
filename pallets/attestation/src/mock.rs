@@ -185,12 +185,17 @@ pub(crate) mod runtime {
 
 	use sp_core::{ed25519, Pair};
 	use sp_runtime::{
-		traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
-		BuildStorage, MultiSignature, MultiSigner,
+		traits::{BlakeTwo256, IdentityLookup, Verify},
+		BuildStorage, MultiSignature,
+	};
+	#[cfg(not(feature = "std"))]
+	use {
+		scale_info::prelude::string::String,
+		sp_std::{boxed::Box, vec, vec::Vec},
 	};
 
 	use ctype::{CtypeCreatorOf, CtypeEntryOf};
-	use kilt_support::mock::{mock_origin, SubjectId};
+	use kilt_support::mock::mock_origin;
 
 	use crate::{self as attestation, Event};
 
@@ -311,7 +316,7 @@ pub(crate) mod runtime {
 
 	parameter_types! {
 		pub const MaxDelegatedAttestations: u32 = 1000;
-		pub const Deposit: Balance = ATTESTATION_DEPOSIT;
+		pub const AttestationDeposit: Balance = ATTESTATION_DEPOSIT;
 	}
 
 	impl Config for Test {
@@ -321,7 +326,7 @@ pub(crate) mod runtime {
 		type WeightInfo = ();
 		type RuntimeHoldReason = RuntimeHoldReason;
 		type Currency = Balances;
-		type Deposit = Deposit;
+		type Deposit = AttestationDeposit;
 		type MaxDelegatedAttestations = MaxDelegatedAttestations;
 		type AttesterId = SubjectId;
 		type AuthorizationId = SubjectId;

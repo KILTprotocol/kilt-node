@@ -1,5 +1,6 @@
-cargo +nightly udeps --target wasm32-unknown-unknown --no-default-features -p <crate>
-cargo +nightly udeps --all-targets -p <crate>
-cargo +nightly udeps --all-targets --features runtime-benchmarks -p <crate>
-cargo +nightly udeps --all-targets --features mock -p <crate>
-cargo +nightly udeps --all-targets --features try-runtime -p <crate>
+cargo +nightly udeps -p <crate> --target wasm32-unknown-unknown --no-default-features
+cargo +nightly udeps -p <crate> --all-targets
+cargo +nightly udeps -p <crate> --all-targets --no-default-features
+cargo +nightly udeps -p <crate> --all-targets --features runtime-benchmarks
+cargo +nightly udeps -p <crate> --all-targets --features mock
+cargo +nightly udeps -p <crate> --all-targets --features try-runtime

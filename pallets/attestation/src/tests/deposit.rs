@@ -20,6 +20,9 @@ use frame_support::{assert_noop, assert_ok, traits::fungible::InspectHold};
 use kilt_support::{mock::mock_origin::DoubleOrigin, Deposit};
 use sp_runtime::{traits::Zero, TokenError};
 
+#[cfg(not(feature = "std"))]
+use sp_std::{vec, vec::Vec};
+
 use crate::{self as attestation, mock::*, AttesterOf, Config, Error, Event, HoldReason};
 
 #[test]

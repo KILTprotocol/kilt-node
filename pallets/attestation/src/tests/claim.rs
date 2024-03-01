@@ -21,6 +21,9 @@ use frame_support::{assert_noop, assert_ok};
 use kilt_support::mock::mock_origin::DoubleOrigin;
 use sp_runtime::DispatchError;
 
+#[cfg(not(feature = "std"))]
+use sp_std::{vec, vec::Vec};
+
 use crate::{self as attestation, mock::*, AttestationAccessControl, AttesterOf, Config, Event};
 
 #[test]
