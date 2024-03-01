@@ -86,7 +86,7 @@ impl mock_origin::Config for TestRuntime {
 }
 
 pub(crate) const ACCOUNT_ID: AccountId32 = AccountId32::new([100u8; 32]);
-pub(crate) const DID: AccountId32 = AccountId32::new([100u8; 32]);
+pub(crate) const DID: AccountId32 = AccountId32::new([200u8; 32]);
 
 pub(crate) fn get_expected_commitment_for(
 	subject: &<TestRuntime as crate::Config>::Identifier,
