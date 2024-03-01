@@ -69,7 +69,6 @@ impl<Context> kilt_support::traits::GetWorstCase<Context> for DipCommitmentState
 /// * `ProviderLinkableAccountId`: The linkable account ID type configured by
 ///   the provider.
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo)]
-#[cfg_attr(test, derive(Default))]
 pub struct DidMerkleProof<
 	ProviderDidKeyId,
 	ProviderAccountId,
@@ -134,6 +133,26 @@ impl<
 		Self {
 			blinded: BoundedBlindedValue::worst_case(context),
 			revealed: sp_std::vec![RevealedDidMerkleProofLeaf::default(); 64],
+		}
+	}
+}
+
+#[cfg(test)]
+impl<ProviderDidKeyId, ProviderAccountId, ProviderBlockNumber, ProviderWeb3Name, ProviderLinkableAccountId> Default
+	for DidMerkleProof<
+		ProviderDidKeyId,
+		ProviderAccountId,
+		ProviderBlockNumber,
+		ProviderWeb3Name,
+		ProviderLinkableAccountId,
+	> where
+	ProviderDidKeyId: Default,
+	ProviderBlockNumber: Default,
+{
+	fn default() -> Self {
+		Self {
+			revealed: Default::default(),
+			blinded: Default::default(),
 		}
 	}
 }

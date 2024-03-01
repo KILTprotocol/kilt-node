@@ -139,10 +139,7 @@ impl<
 		MAX_REVEALED_LEAVES_COUNT,
 	> where
 	KiltDidKeyId: Default,
-	KiltAccountId: Default,
 	KiltBlockNumber: Default,
-	KiltWeb3Name: Default,
-	KiltLinkableAccountId: Default,
 	ConsumerBlockNumber: Default,
 {
 	pub(crate) fn with_signature_time(valid_until: ConsumerBlockNumber) -> Self {

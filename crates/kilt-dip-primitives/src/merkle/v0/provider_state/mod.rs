@@ -135,10 +135,7 @@ impl<
 		ConsumerBlockNumber,
 	> where
 	KiltDidKeyId: Default,
-	KiltAccountId: Default,
 	KiltBlockNumber: Default,
-	KiltWeb3Name: Default,
-	KiltLinkableAccountId: Default,
 	ConsumerBlockNumber: Default,
 {
 	pub(crate) fn with_provider_head_proof(provider_head_proof: ProviderHeadStateProof<RelayBlockNumber>) -> Self {
@@ -401,10 +398,7 @@ impl<
 		ConsumerBlockNumber,
 	> where
 	KiltDidKeyId: Default,
-	KiltAccountId: Default,
 	KiltBlockNumber: Default,
-	KiltWeb3Name: Default,
-	KiltLinkableAccountId: Default,
 	ConsumerBlockNumber: Default,
 {
 	pub(crate) fn with_state_root_and_dip_commitment_proof(

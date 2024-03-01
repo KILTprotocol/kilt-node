@@ -172,10 +172,7 @@ impl<
 	> where
 	RelayBlockNumber: Default,
 	KiltDidKeyId: Default,
-	KiltAccountId: Default,
 	KiltBlockNumber: Default,
-	KiltWeb3Name: Default,
-	KiltLinkableAccountId: Default,
 {
 	pub(crate) fn with_header(header: Header<RelayBlockNumber, RelayHasher>) -> Self {
 		Self {
@@ -306,10 +303,7 @@ impl<
 	> where
 	RelayBlockNumber: Default,
 	KiltDidKeyId: Default,
-	KiltAccountId: Default,
 	KiltBlockNumber: Default,
-	KiltWeb3Name: Default,
-	KiltLinkableAccountId: Default,
 {
 	pub(crate) fn with_relay_state_root_and_provider_head_proof(
 		relay_state_root: StateRoot,
