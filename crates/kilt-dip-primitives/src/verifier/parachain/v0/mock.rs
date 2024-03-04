@@ -106,10 +106,12 @@ pub struct FilterNothing;
 
 impl DipCallOriginFilter<RuntimeCall> for FilterNothing {
 	type Error = u8;
-	type OriginInfo = RevealedDidKey<
-		KeyIdOf<PeregrineRuntime>,
-		BlockNumberFor<PeregrineRuntime>,
-		<PeregrineRuntime as frame_system::Config>::AccountId,
+	type OriginInfo = Vec<
+		RevealedDidKey<
+			KeyIdOf<PeregrineRuntime>,
+			BlockNumberFor<PeregrineRuntime>,
+			<PeregrineRuntime as frame_system::Config>::AccountId,
+		>,
 	>;
 	type Success = ();
 

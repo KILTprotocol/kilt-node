@@ -24,7 +24,7 @@ use pallet_dip_provider::traits::IdentityCommitmentGenerator;
 use pallet_web3_names::Web3NameOf;
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
-use sp_std::{fmt::Debug, marker::PhantomData};
+use sp_std::{fmt::Debug, marker::PhantomData, vec::Vec};
 
 use crate::{
 	merkle::v0::RevealedDidKey,
@@ -172,7 +172,7 @@ impl<
 	SignedExtra::Result: Encode,
 	DidCallVerifier: DipCallOriginFilter<
 		RuntimeCallOf<ConsumerRuntime>,
-		OriginInfo = RevealedDidKey<KeyIdOf<KiltRuntime>, BlockNumberFor<KiltRuntime>, KiltRuntime::AccountId>,
+		OriginInfo = Vec<RevealedDidKey<KeyIdOf<KiltRuntime>, BlockNumberFor<KiltRuntime>, KiltRuntime::AccountId>>,
 	>,
 	DidCallVerifier::Error: Into<u8>,
 {

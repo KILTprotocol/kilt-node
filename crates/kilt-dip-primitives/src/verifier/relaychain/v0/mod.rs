@@ -26,7 +26,7 @@ use pallet_web3_names::Web3NameOf;
 use parity_scale_codec::Encode;
 use sp_core::U256;
 use sp_runtime::{traits::Zero, SaturatedConversion};
-use sp_std::marker::PhantomData;
+use sp_std::{marker::PhantomData, vec::Vec};
 
 use crate::{
 	traits::{DipCallOriginFilter, GetWithArg, GetWithoutArg, Incrementable},
@@ -121,7 +121,7 @@ impl<
 	SignedExtra::Result: Encode,
 	DidCallVerifier: DipCallOriginFilter<
 		RuntimeCallOf<ConsumerRuntime>,
-		OriginInfo = RevealedDidKey<KeyIdOf<KiltRuntime>, BlockNumberFor<KiltRuntime>, KiltRuntime::AccountId>,
+		OriginInfo = Vec<RevealedDidKey<KeyIdOf<KiltRuntime>, BlockNumberFor<KiltRuntime>, KiltRuntime::AccountId>>,
 	>,
 	DidCallVerifier::Error: Into<u8>,
 {
@@ -221,10 +221,10 @@ impl<
 			.map_err(DipRelaychainStateProofVerifierError::ProofVerification)?;
 
 		// 6. Verify the signing key fulfills the requirements
-		let signing_key = revealed_did_info
-			.get_signing_leaf()
+		let signing_keys = revealed_did_info
+			.get_signing_leaves()
 			.map_err(DipRelaychainStateProofVerifierError::ProofVerification)?;
-		DidCallVerifier::check_call_origin_info(call, signing_key)
+		DidCallVerifier::check_call_origin_info(call, &signing_keys.cloned().collect::<Vec<_>>())
 			.map_err(DipRelaychainStateProofVerifierError::DidOriginError)?;
 
 		// 7. Increment the local details

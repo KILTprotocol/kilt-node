@@ -59,7 +59,7 @@ mod dip_revealed_details_and_verified_did_signature_freshness {
 	};
 
 	#[test]
-	fn retrieve_signing_leaf_for_payload_successful() {
+	fn retrieve_signing_leaf_for_payload_single_leaf_successful() {
 		let payload = b"Hello, world!";
 		let (did_key_pair, _) = ed25519::Pair::generate();
 		let did_auth_key: DidVerificationKey<AccountId32> = did_key_pair.public().into();
@@ -83,7 +83,48 @@ mod dip_revealed_details_and_verified_did_signature_freshness {
 		assert_eq!(
 			revealed_details.retrieve_signing_leaf_for_payload(&payload.encode()),
 			Ok(DipOriginInfo {
-				signing_leaf_index: 0,
+				signing_leaves_indices: vec![0].try_into().unwrap(),
+				revealed_leaves,
+			})
+		);
+	}
+
+	#[test]
+	fn retrieve_signing_leaf_for_payload_multiple_leaves_successful() {
+		let payload = b"Hello, world!";
+		let (did_key_pair, _) = ed25519::Pair::generate();
+		let did_auth_key: DidVerificationKey<AccountId32> = did_key_pair.public().into();
+		let revealed_leaves: BoundedVec<RevealedDidMerkleProofLeaf<u32, AccountId32, u32, (), ()>, ConstU32<2>> = vec![
+			RevealedDidKey::<u32, u32, AccountId32> {
+				id: 0u32,
+				relationship: DidVerificationKeyRelationship::Authentication.into(),
+				details: DidPublicKeyDetails {
+					key: did_auth_key.clone().into(),
+					block_number: 0u32,
+				},
+			}
+			.into(),
+			RevealedDidKey::<u32, u32, AccountId32> {
+				id: 0u32,
+				relationship: DidVerificationKeyRelationship::AssertionMethod.into(),
+				details: DidPublicKeyDetails {
+					key: did_auth_key.into(),
+					block_number: 0u32,
+				},
+			}
+			.into(),
+		]
+		.try_into()
+		.unwrap();
+		let revealed_details: DipRevealedDetailsAndVerifiedDidSignatureFreshness<_, _, _, _, _, 2> =
+			DipRevealedDetailsAndVerifiedDidSignatureFreshness {
+				revealed_leaves: revealed_leaves.clone(),
+				signature: did_key_pair.sign(&payload.encode()).into(),
+			};
+		assert_eq!(
+			revealed_details.retrieve_signing_leaf_for_payload(&payload.encode()),
+			Ok(DipOriginInfo {
+				signing_leaves_indices: vec![0, 1].try_into().unwrap(),
 				revealed_leaves,
 			})
 		);

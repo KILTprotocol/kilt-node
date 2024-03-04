@@ -22,6 +22,7 @@ use did::{
 };
 use sp_core::ConstU32;
 use sp_runtime::{traits::SaturatedConversion, BoundedVec};
+use sp_std::vec::Vec;
 
 use crate::{
 	merkle::v0::{
@@ -228,9 +229,9 @@ impl<
 				})
 			)
 		});
-		let maybe_signing_key_index = revealed_verification_keys
+		let signing_leaves_indices = revealed_verification_keys
 			.enumerate()
-			.find(|(_, revealed_verification_key)| {
+			.filter(|(_, revealed_verification_key)| {
 				let RevealedDidMerkleProofLeaf::DidKey(RevealedDidKey {
 					details:
 						DidPublicKeyDetails {
@@ -244,11 +245,10 @@ impl<
 				};
 				verification_key.verify_signature(payload, &self.signature).is_ok()
 			})
-			.map(|(index, _)| u32::saturated_from(index));
+			.map(|(index, _)| u32::saturated_from(index))
+			.collect::<Vec<_>>();
 
-		let signing_key_entry = if let Some(index) = maybe_signing_key_index {
-			(self.revealed_leaves, index)
-		} else {
+		if signing_leaves_indices.is_empty() {
 			cfg_if::cfg_if! {
 				if #[cfg(feature = "runtime-benchmarks")] {
 						return Ok(DipOriginInfo::default());
@@ -256,11 +256,16 @@ impl<
 					return Err(Error::InvalidDidKeyRevealed);
 				}
 			}
-		};
+		}
+
+		let signing_leaves_indices_vector = signing_leaves_indices.try_into().map_err(|_| {
+			log::error!("Should never fail to convert vector of signing leaf indices into BoundedVec.");
+			Error::Internal
+		})?;
 
 		Ok(DipOriginInfo {
-			revealed_leaves: signing_key_entry.0,
-			signing_leaf_index: signing_key_entry.1,
+			revealed_leaves: self.revealed_leaves,
+			signing_leaves_indices: signing_leaves_indices_vector,
 		})
 	}
 }

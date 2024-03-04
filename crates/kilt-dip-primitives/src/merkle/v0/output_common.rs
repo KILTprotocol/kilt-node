@@ -41,8 +41,8 @@ pub struct DipOriginInfo<
 		RevealedDidMerkleProofLeaf<KiltDidKeyId, KiltAccountId, KiltBlockNumber, KiltWeb3Name, KiltLinkableAccountId>,
 		ConstU32<MAX_REVEALED_LEAVES_COUNT>,
 	>,
-	/// The index of the signing leaf from the vector above,
-	pub(crate) signing_leaf_index: u32,
+	/// The index of the signing leaves from the vector above.
+	pub(crate) signing_leaves_indices: BoundedVec<u32, ConstU32<MAX_REVEALED_LEAVES_COUNT>>,
 }
 
 impl<
@@ -80,19 +80,25 @@ impl<
 	/// Returns a reference to the leaf that signed the cross-chain operation.
 	/// This operation should never fail, so the only error it returns is an
 	/// `Error::Internal` which, anyway, should never happen.
-	pub fn get_signing_leaf(&self) -> Result<&RevealedDidKey<KiltDidKeyId, KiltBlockNumber, KiltAccountId>, Error> {
-		let leaf = &self
-			.revealed_leaves
-			.get(usize::saturated_from(self.signing_leaf_index))
-			.ok_or_else(|| {
-				log::error!("Should never fail to retrieve the signing leaf.");
-				Error::Internal
-			})?;
-		let RevealedDidMerkleProofLeaf::DidKey(did_key) = leaf else {
-			log::error!("Should never fail to convert the signing leaf to a DID Key leaf.");
-			return Err(Error::Internal);
-		};
-		Ok(did_key)
+	pub fn get_signing_leaves(
+		&self,
+	) -> Result<impl Iterator<Item = &RevealedDidKey<KiltDidKeyId, KiltBlockNumber, KiltAccountId>>, Error> {
+		let leaves = self
+			.signing_leaves_indices
+			.iter()
+			.map(|index| {
+				let leaf = self.revealed_leaves.get(usize::saturated_from(*index)).ok_or_else(|| {
+					log::error!("Should never fail to retrieve the signing leaf at index {:#?}.", index);
+					Error::Internal
+				})?;
+				let RevealedDidMerkleProofLeaf::DidKey(did_key) = leaf else {
+					log::error!("Should never fail to convert the signing leaf to a DID Key leaf.");
+					return Err(Error::Internal);
+				};
+				Ok(did_key)
+			})
+			.collect::<Result<Vec<_>, _>>()?;
+		Ok(leaves.into_iter())
 	}
 }
 
@@ -134,7 +140,7 @@ impl<
 			.unwrap();
 		Self {
 			revealed_leaves: bounded_keys,
-			signing_leaf_index: 0u32,
+			signing_leaves_indices: Default::default(),
 		}
 	}
 }
