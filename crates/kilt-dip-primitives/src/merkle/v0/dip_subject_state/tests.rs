@@ -94,12 +94,23 @@ mod dip_revealed_details_and_verified_did_signature_freshness {
 		let payload = b"Hello, world!";
 		let (did_key_pair, _) = ed25519::Pair::generate();
 		let did_auth_key: DidVerificationKey<AccountId32> = did_key_pair.public().into();
-		let revealed_leaves: BoundedVec<RevealedDidMerkleProofLeaf<u32, AccountId32, u32, (), ()>, ConstU32<2>> = vec![
+		let revealed_leaves: BoundedVec<RevealedDidMerkleProofLeaf<u32, AccountId32, u32, (), ()>, ConstU32<3>> = vec![
 			RevealedDidKey::<u32, u32, AccountId32> {
 				id: 0u32,
 				relationship: DidVerificationKeyRelationship::Authentication.into(),
 				details: DidPublicKeyDetails {
 					key: did_auth_key.clone().into(),
+					block_number: 0u32,
+				},
+			}
+			.into(),
+			RevealedDidKey::<u32, u32, AccountId32> {
+				id: 0u32,
+				relationship: DidVerificationKeyRelationship::CapabilityDelegation.into(),
+				details: DidPublicKeyDetails {
+					// This key should be filtered out from the result, since it does not verify successfully for the
+					// provided payload and signature.
+					key: DidVerificationKey::from(ed25519::Public([100; 32])).into(),
 					block_number: 0u32,
 				},
 			}
@@ -116,7 +127,7 @@ mod dip_revealed_details_and_verified_did_signature_freshness {
 		]
 		.try_into()
 		.unwrap();
-		let revealed_details: DipRevealedDetailsAndVerifiedDidSignatureFreshness<_, _, _, _, _, 2> =
+		let revealed_details: DipRevealedDetailsAndVerifiedDidSignatureFreshness<_, _, _, _, _, 3> =
 			DipRevealedDetailsAndVerifiedDidSignatureFreshness {
 				revealed_leaves: revealed_leaves.clone(),
 				signature: did_key_pair.sign(&payload.encode()).into(),
@@ -124,7 +135,7 @@ mod dip_revealed_details_and_verified_did_signature_freshness {
 		assert_eq!(
 			revealed_details.retrieve_signing_leaf_for_payload(&payload.encode()),
 			Ok(DipOriginInfo {
-				signing_leaves_indices: vec![0, 1].try_into().unwrap(),
+				signing_leaves_indices: vec![0, 2].try_into().unwrap(),
 				revealed_leaves,
 			})
 		);
