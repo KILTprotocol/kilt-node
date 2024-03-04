@@ -76,7 +76,7 @@ pub struct ParachainDipDidProof<
 	pub(crate) signature: TimeBoundDidSignature<ConsumerBlockNumber>,
 }
 
-#[cfg(feature = "runtime-benchmarks")]
+#[cfg(test)]
 impl<
 		RelayBlockNumber,
 		KiltDidKeyId,
@@ -85,9 +85,8 @@ impl<
 		KiltWeb3Name,
 		KiltLinkableAccountId,
 		ConsumerBlockNumber,
-		Context,
-	> kilt_support::traits::GetWorstCase<Context>
-	for ParachainDipDidProof<
+	>
+	ParachainDipDidProof<
 		RelayBlockNumber,
 		KiltDidKeyId,
 		KiltAccountId,
@@ -96,23 +95,16 @@ impl<
 		KiltLinkableAccountId,
 		ConsumerBlockNumber,
 	> where
-	RelayBlockNumber: Default,
-	KiltDidKeyId: Default + Clone,
-	KiltAccountId: Clone,
-	KiltBlockNumber: Default + Clone,
-	KiltWeb3Name: Clone,
-	KiltLinkableAccountId: Clone,
+	KiltDidKeyId: Default,
+	KiltBlockNumber: Default,
 	ConsumerBlockNumber: Default,
-	Context: Clone,
 {
-	type Output = Self;
-
-	fn worst_case(context: Context) -> Self::Output {
+	pub(crate) fn with_provider_head_proof(provider_head_proof: ProviderHeadStateProof<RelayBlockNumber>) -> Self {
 		Self {
-			provider_head_proof: ProviderHeadStateProof::worst_case(context.clone()),
-			dip_commitment_proof: DipCommitmentStateProof::worst_case(context.clone()),
-			dip_proof: DidMerkleProof::worst_case(context.clone()),
-			signature: TimeBoundDidSignature::worst_case(context),
+			provider_head_proof,
+			dip_commitment_proof: Default::default(),
+			dip_proof: Default::default(),
+			signature: Default::default(),
 		}
 	}
 }

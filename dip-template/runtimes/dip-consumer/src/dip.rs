@@ -38,6 +38,7 @@ pub type MerkleProofVerifierOutput = <ProofVerifier as IdentityProofVerifier<Run
 /// pass the [`DipCallFilter`] will be discarded early on in the verification
 /// process.
 pub type ProofVerifier = KiltVersionedParachainVerifier<
+	Runtime,
 	RelaychainRuntime,
 	RelayStateRootsViaRelayStorePallet<Runtime>,
 	2_000,

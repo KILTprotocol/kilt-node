@@ -21,7 +21,7 @@ use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
 use sp_std::vec::Vec;
 
-use crate::{merkle_proofs::v0::output_common::RevealedDidMerkleProofLeaf, utils::BoundedBlindedValue};
+use crate::merkle_proofs::v0::output_common::RevealedDidMerkleProofLeaf;
 
 /// The state proof for a parachain head.
 ///
@@ -31,37 +31,13 @@ use crate::{merkle_proofs::v0::output_common::RevealedDidMerkleProofLeaf, utils:
 #[cfg_attr(test, derive(Default))]
 pub struct ProviderHeadStateProof<RelayBlockNumber> {
 	pub(crate) relay_block_number: RelayBlockNumber,
-	pub(crate) proof: BoundedBlindedValue<u8>,
-}
-
-#[cfg(feature = "runtime-benchmarks")]
-impl<RelayBlockNumber, Context> kilt_support::traits::GetWorstCase<Context> for ProviderHeadStateProof<RelayBlockNumber>
-where
-	RelayBlockNumber: Default,
-{
-	type Output = Self;
-
-	fn worst_case(context: Context) -> Self::Output {
-		Self {
-			relay_block_number: RelayBlockNumber::default(),
-			proof: BoundedBlindedValue::worst_case(context),
-		}
-	}
+	pub(crate) proof: Vec<Vec<u8>>,
 }
 
 /// The state proof for a DIP commitment.
 #[derive(Clone, Debug, Encode, Decode, PartialEq, Eq, TypeInfo)]
 #[cfg_attr(test, derive(Default))]
-pub struct DipCommitmentStateProof(pub(crate) BoundedBlindedValue<u8>);
-
-#[cfg(feature = "runtime-benchmarks")]
-impl<Context> kilt_support::traits::GetWorstCase<Context> for DipCommitmentStateProof {
-	type Output = Self;
-
-	fn worst_case(context: Context) -> Self::Output {
-		Self(BoundedBlindedValue::worst_case(context))
-	}
-}
+pub struct DipCommitmentStateProof(pub(crate) Vec<Vec<u8>>);
 
 /// The Merkle proof for a KILT DID.
 ///
@@ -80,7 +56,7 @@ pub struct DidMerkleProof<
 	ProviderWeb3Name,
 	ProviderLinkableAccountId,
 > {
-	pub(crate) blinded: BoundedBlindedValue<u8>,
+	pub(crate) blinded: Vec<Vec<u8>>,
 	pub(crate) revealed: Vec<
 		RevealedDidMerkleProofLeaf<
 			ProviderDidKeyId,
@@ -96,7 +72,7 @@ impl<ProviderDidKeyId, ProviderAccountId, ProviderBlockNumber, ProviderWeb3Name,
 	DidMerkleProof<ProviderDidKeyId, ProviderAccountId, ProviderBlockNumber, ProviderWeb3Name, ProviderLinkableAccountId>
 {
 	pub fn new(
-		blinded: BoundedBlindedValue<u8>,
+		blinded: Vec<Vec<u8>>,
 		revealed: Vec<
 			RevealedDidMerkleProofLeaf<
 				ProviderDidKeyId,
@@ -108,38 +84,6 @@ impl<ProviderDidKeyId, ProviderAccountId, ProviderBlockNumber, ProviderWeb3Name,
 		>,
 	) -> Self {
 		Self { blinded, revealed }
-	}
-}
-
-#[cfg(feature = "runtime-benchmarks")]
-impl<
-		ProviderDidKeyId,
-		ProviderAccountId,
-		ProviderBlockNumber,
-		ProviderWeb3Name,
-		ProviderLinkableAccountId,
-		Context,
-	> kilt_support::traits::GetWorstCase<Context>
-	for DidMerkleProof<
-		ProviderDidKeyId,
-		ProviderAccountId,
-		ProviderBlockNumber,
-		ProviderWeb3Name,
-		ProviderLinkableAccountId,
-	> where
-	ProviderDidKeyId: Default + Clone,
-	ProviderAccountId: Clone,
-	ProviderBlockNumber: Default + Clone,
-	ProviderWeb3Name: Clone,
-	ProviderLinkableAccountId: Clone,
-{
-	type Output = Self;
-
-	fn worst_case(context: Context) -> Self::Output {
-		Self {
-			blinded: BoundedBlindedValue::worst_case(context),
-			revealed: sp_std::vec![RevealedDidMerkleProofLeaf::default(); 64],
-		}
 	}
 }
 

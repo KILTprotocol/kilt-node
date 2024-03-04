@@ -63,6 +63,7 @@ use crate::{
 /// * `MAX_DID_MERKLE_PROOF_LEAVE_SIZE`: The maximum number of leaves that can
 ///   be revealed as part of the DID Merkle proof.
 pub struct RelaychainVerifier<
+	ConsumerRuntime,
 	ConsumerBlockHashStore,
 	const KILT_PARA_ID: u32,
 	KiltRuntime,
@@ -75,7 +76,16 @@ pub struct RelaychainVerifier<
 	const MAX_DID_MERKLE_PROOF_LEAVE_COUNT: u32,
 	const MAX_DID_MERKLE_PROOF_LEAVE_SIZE: u32,
 	const MAX_DID_MERKLE_LEAVES_REVEALED: u32,
->(#[allow(clippy::type_complexity)] PhantomData<(ConsumerBlockHashStore, KiltRuntime, DidCallVerifier, SignedExtra)>);
+>(
+	#[allow(clippy::type_complexity)]
+	PhantomData<(
+		ConsumerRuntime,
+		ConsumerBlockHashStore,
+		KiltRuntime,
+		DidCallVerifier,
+		SignedExtra,
+	)>,
+);
 
 impl<
 		ConsumerRuntime,
@@ -93,6 +103,7 @@ impl<
 		const MAX_DID_MERKLE_LEAVES_REVEALED: u32,
 	> IdentityProofVerifier<ConsumerRuntime>
 	for RelaychainVerifier<
+		ConsumerRuntime,
 		ConsumerBlockHashStore,
 		KILT_PARA_ID,
 		KiltRuntime,
@@ -248,5 +259,46 @@ impl<
 		};
 
 		Ok(revealed_did_info)
+	}
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+impl<
+		ConsumerRuntime,
+		ConsumerBlockHashStore,
+		const KILT_PARA_ID: u32,
+		KiltRuntime,
+		DidCallVerifier,
+		SignedExtra,
+		const MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT: u32,
+		const MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE: u32,
+		const MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT: u32,
+		const MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE: u32,
+		const MAX_DID_MERKLE_PROOF_LEAVE_COUNT: u32,
+		const MAX_DID_MERKLE_PROOF_LEAVE_SIZE: u32,
+		const MAX_DID_MERKLE_LEAVES_REVEALED: u32,
+	> kilt_support::traits::GetWorstCase
+	for RelaychainVerifier<
+		ConsumerRuntime,
+		ConsumerBlockHashStore,
+		KILT_PARA_ID,
+		KiltRuntime,
+		DidCallVerifier,
+		SignedExtra,
+		MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT,
+		MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE,
+		MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT,
+		MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE,
+		MAX_DID_MERKLE_PROOF_LEAVE_COUNT,
+		MAX_DID_MERKLE_PROOF_LEAVE_SIZE,
+		MAX_DID_MERKLE_LEAVES_REVEALED,
+	> where
+	ConsumerRuntime: pallet_dip_consumer::Config<ProofVerifier = Self>,
+{
+	type Output = pallet_dip_consumer::benchmarking::WorstCaseOf<ConsumerRuntime>;
+
+	// TODO: Change with proper proof.
+	fn worst_case(context: ()) -> Self::Output {
+		unimplemented!()
 	}
 }

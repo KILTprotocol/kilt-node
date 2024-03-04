@@ -16,76 +16,8 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use parity_scale_codec::{Decode, Encode};
-use scale_info::TypeInfo;
-use sp_std::{fmt::Debug, vec::Vec};
-
 /// The output of a type implementing the [`sp_runtime::traits::Hash`] trait.
 pub type OutputOf<Hasher> = <Hasher as sp_runtime::traits::Hash>::Output;
-
-/// The vector of vectors that implements a statically-configured maximum length
-/// without requiring const generics, used in benchmarking worst cases.
-#[derive(Encode, Decode, PartialEq, Eq, PartialOrd, Ord, Debug, TypeInfo, Clone)]
-pub struct BoundedBlindedValue<T>(Vec<Vec<T>>);
-
-impl<T> BoundedBlindedValue<T> {
-	pub fn into_inner(self) -> Vec<Vec<T>> {
-		self.0
-	}
-}
-
-impl<C, T> From<C> for BoundedBlindedValue<T>
-where
-	C: Iterator<Item = Vec<T>>,
-{
-	fn from(value: C) -> Self {
-		Self(value.into_iter().collect())
-	}
-}
-
-impl<T> sp_std::ops::Deref for BoundedBlindedValue<T> {
-	type Target = Vec<Vec<T>>;
-
-	fn deref(&self) -> &Self::Target {
-		&self.0
-	}
-}
-
-impl<T> sp_std::ops::DerefMut for BoundedBlindedValue<T> {
-	fn deref_mut(&mut self) -> &mut Self::Target {
-		&mut self.0
-	}
-}
-
-impl<T> IntoIterator for BoundedBlindedValue<T> {
-	type IntoIter = <Vec<Vec<T>> as IntoIterator>::IntoIter;
-	type Item = <Vec<Vec<T>> as IntoIterator>::Item;
-
-	fn into_iter(self) -> Self::IntoIter {
-		self.0.into_iter()
-	}
-}
-
-#[cfg(feature = "runtime-benchmarks")]
-impl<Context, T> kilt_support::traits::GetWorstCase<Context> for BoundedBlindedValue<T>
-where
-	T: Default + Clone,
-{
-	type Output = Self;
-	fn worst_case(_context: Context) -> Self::Output {
-		Self(sp_std::vec![sp_std::vec![T::default(); 128]; 64])
-	}
-}
-
-#[cfg(any(test, feature = "runtime-benchmarks"))]
-impl<T> Default for BoundedBlindedValue<T>
-where
-	T: Default + Clone,
-{
-	fn default() -> Self {
-		Self(sp_std::vec![sp_std::vec![T::default(); 128]; 64])
-	}
-}
 
 pub(crate) use calculate_parachain_head_storage_key::*;
 mod calculate_parachain_head_storage_key {
