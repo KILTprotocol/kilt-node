@@ -26,8 +26,12 @@ use frame_support::{
 	traits::{ConstU16, ConstU32, ConstU64, Contains, Currency, Everything},
 };
 use frame_system::{mocking::MockBlock, EnsureSigned};
+use kilt_support::traits::GetWorstCase;
 
-use crate::{traits::IdentityProofVerifier, Config, DipOrigin, EnsureDipOrigin, IdentityEntries, RuntimeCallOf};
+use crate::{
+	benchmarking::WorstCaseOf, traits::IdentityProofVerifier, Config, DipOrigin, EnsureDipOrigin, IdentityEntries,
+	RuntimeCallOf,
+};
 
 // This mock is used both for benchmarks and unit tests.
 // For benchmarks, the `system::remark` call must be allowed to be dispatched,
@@ -130,6 +134,23 @@ impl IdentityProofVerifier<TestRuntime> for BooleanProofVerifier {
 			Ok(())
 		} else {
 			Err(1)
+		}
+	}
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+impl GetWorstCase for BooleanProofVerifier {
+	type Output = WorstCaseOf<TestRuntime>;
+
+	fn worst_case(_context: ()) -> Self::Output {
+		WorstCaseOf {
+			call: frame_system::Call::remark {
+				remark: b"Hello!".to_vec(),
+			}
+			.into(),
+			proof: true,
+			subject: AccountId32::new([100; 32]),
+			submitter: AccountId32::new([200; 32]),
 		}
 	}
 }

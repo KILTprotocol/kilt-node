@@ -16,49 +16,41 @@
 
 // If you feel like getting in touch with us, you can do so at info@botlabs.org
 
-use crate::{traits::IdentityProofVerifier, Call, Config, IdentityEntries, Pallet};
+use crate::{Config, IdentityProofOf, RuntimeCallOf};
 use frame_benchmarking::v2::*;
-use frame_system::RawOrigin;
-use kilt_support::{
-	benchmark::IdentityContext,
-	traits::{GetWorstCase, Instanciate},
-};
+
+pub struct WorstCaseOf<T: Config> {
+	pub submitter: T::AccountId,
+	pub subject: T::Identifier,
+	pub proof: IdentityProofOf<T>,
+	pub call: RuntimeCallOf<T>,
+}
 
 #[benchmarks(
 	where
-		T::AccountId: Instanciate,
-		T::Identifier: Instanciate,
-        <<T as Config>::ProofVerifier as IdentityProofVerifier<T>>::Proof: GetWorstCase<IdentityContext<T::Identifier, T::AccountId>, Output = <<T as Config>::ProofVerifier as IdentityProofVerifier<T>>::Proof>,
-        <T as Config>::RuntimeCall: From<frame_system::Call<T>>,
+        T::ProofVerifier: GetWorstCase<Output = WorstCaseOf<T>>,
+		<T as Config>::RuntimeCall: From<frame_system::Call<T>>,
 )]
 mod benchmarks {
+	use frame_system::RawOrigin;
+	use kilt_support::traits::GetWorstCase;
+	use sp_std::{boxed::Box, vec};
 
-	use super::*;
-
-	type IdentityContextOf<Runtime> =
-		IdentityContext<<Runtime as Config>::Identifier, <Runtime as frame_system::Config>::AccountId>;
+	use crate::{benchmarking::WorstCaseOf, Call, Config, IdentityEntries, Pallet};
 
 	#[benchmark]
 	fn dispatch_as() {
-		let submitter = T::AccountId::new(1);
-		let subject = T::Identifier::new(1);
-
-		let context = IdentityContext::<T::Identifier, T::AccountId> {
-			did: subject.clone(),
-			submitter: submitter.clone(),
-		};
+		let WorstCaseOf {
+			submitter,
+			subject,
+			proof,
+			call,
+		} = <T::ProofVerifier as GetWorstCase>::worst_case(());
 
 		assert!(IdentityEntries::<T>::get(&subject).is_none());
 
 		let origin = RawOrigin::Signed(submitter);
-
-		let call: <T as Config>::RuntimeCall = frame_system::Call::<T>::remark { remark: vec![] }.into();
-
 		let boxed_call = Box::from(call);
-
-		let proof = <<<T as Config>::ProofVerifier as IdentityProofVerifier<T>>::Proof as GetWorstCase<
-			IdentityContextOf<T>,
-		>>::worst_case(context);
 
 		let origin = <T as frame_system::Config>::RuntimeOrigin::from(origin);
 
