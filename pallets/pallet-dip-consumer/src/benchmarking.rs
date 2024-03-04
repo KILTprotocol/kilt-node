@@ -28,7 +28,7 @@ use kilt_support::{
 	where
 		T::AccountId: Instanciate,
 		T::Identifier: Instanciate,
-        <<T as Config>::ProofVerifier as IdentityProofVerifier<T>>::Proof: GetWorstCase<IdentityContext<T::Identifier, T::AccountId>>,
+        <<T as Config>::ProofVerifier as IdentityProofVerifier<T>>::Proof: GetWorstCase<IdentityContext<T::Identifier, T::AccountId>, Output = <<T as Config>::ProofVerifier as IdentityProofVerifier<T>>::Proof>,
         <T as Config>::RuntimeCall: From<frame_system::Call<T>>,
 )]
 mod benchmarks {

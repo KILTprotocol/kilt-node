@@ -105,7 +105,9 @@ impl<
 	ConsumerBlockNumber: Default,
 	Context: Clone,
 {
-	fn worst_case(context: Context) -> Self {
+	type Output = Self;
+
+	fn worst_case(context: Context) -> Self::Output {
 		Self {
 			provider_head_proof: ProviderHeadStateProof::worst_case(context.clone()),
 			dip_commitment_proof: DipCommitmentStateProof::worst_case(context.clone()),

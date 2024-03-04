@@ -94,7 +94,9 @@ impl<
 	ConsumerBlockNumber: Default,
 	Context: Clone,
 {
-	fn worst_case(context: Context) -> Self {
+	type Output = Self;
+
+	fn worst_case(context: Context) -> Self::Output {
 		Self::V0(ParachainDipDidProof::worst_case(context))
 	}
 }

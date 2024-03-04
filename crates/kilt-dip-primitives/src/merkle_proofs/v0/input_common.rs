@@ -39,7 +39,9 @@ impl<RelayBlockNumber, Context> kilt_support::traits::GetWorstCase<Context> for 
 where
 	RelayBlockNumber: Default,
 {
-	fn worst_case(context: Context) -> Self {
+	type Output = Self;
+
+	fn worst_case(context: Context) -> Self::Output {
 		Self {
 			relay_block_number: RelayBlockNumber::default(),
 			proof: BoundedBlindedValue::worst_case(context),
@@ -54,7 +56,9 @@ pub struct DipCommitmentStateProof(pub(crate) BoundedBlindedValue<u8>);
 
 #[cfg(feature = "runtime-benchmarks")]
 impl<Context> kilt_support::traits::GetWorstCase<Context> for DipCommitmentStateProof {
-	fn worst_case(context: Context) -> Self {
+	type Output = Self;
+
+	fn worst_case(context: Context) -> Self::Output {
 		Self(BoundedBlindedValue::worst_case(context))
 	}
 }
@@ -129,7 +133,9 @@ impl<
 	ProviderWeb3Name: Clone,
 	ProviderLinkableAccountId: Clone,
 {
-	fn worst_case(context: Context) -> Self {
+	type Output = Self;
+
+	fn worst_case(context: Context) -> Self::Output {
 		Self {
 			blinded: BoundedBlindedValue::worst_case(context),
 			revealed: sp_std::vec![RevealedDidMerkleProofLeaf::default(); 64],
@@ -192,10 +198,12 @@ where
 #[cfg(feature = "runtime-benchmarks")]
 impl<BlockNumber, Context> kilt_support::traits::GetWorstCase<Context> for TimeBoundDidSignature<BlockNumber>
 where
-	DidSignature: kilt_support::traits::GetWorstCase<Context>,
+	DidSignature: kilt_support::traits::GetWorstCase<Context, Output = DidSignature>,
 	BlockNumber: Default,
 {
-	fn worst_case(context: Context) -> Self {
+	type Output = Self;
+
+	fn worst_case(context: Context) -> Self::Output {
 		Self {
 			signature: DidSignature::worst_case(context),
 			valid_until: BlockNumber::default(),
