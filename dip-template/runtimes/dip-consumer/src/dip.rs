@@ -26,7 +26,7 @@ use kilt_dip_primitives::{
 use pallet_dip_consumer::traits::IdentityProofVerifier;
 use rococo_runtime::Runtime as RelaychainRuntime;
 use sp_core::ConstU32;
-use sp_std::marker::PhantomData;
+use sp_std::{marker::PhantomData, vec::Vec};
 
 use crate::{weights, AccountId, DidIdentifier, Runtime, RuntimeCall, RuntimeOrigin};
 
@@ -154,18 +154,18 @@ impl<ProviderDidKeyId, ProviderBlockNumber, ProviderAccountId> DipCallOriginFilt
 	for DipCallFilter<ProviderDidKeyId, ProviderBlockNumber, ProviderAccountId>
 {
 	type Error = DipCallFilterError;
-	type OriginInfo = RevealedDidKey<ProviderDidKeyId, ProviderBlockNumber, ProviderAccountId>;
+	type OriginInfo = Vec<RevealedDidKey<ProviderDidKeyId, ProviderBlockNumber, ProviderAccountId>>;
 	type Success = ();
 
 	// Accepts only a DipOrigin for the DidLookup pallet calls.
 	fn check_call_origin_info(call: &RuntimeCall, info: &Self::OriginInfo) -> Result<Self::Success, Self::Error> {
-		let revealed_key_relationship: DidVerificationKeyRelationship = info
-			.relationship
-			.try_into()
-			.map_err(|_| DipCallFilterError::WrongVerificationRelationship)?;
 		let expected_key_relationship =
 			single_key_relationship([call].into_iter()).map_err(|_| DipCallFilterError::BadOrigin)?;
-		if revealed_key_relationship == expected_key_relationship {
+		// If any of the keys revealed is of the right relationship, it's ok.
+		if info
+			.iter()
+			.any(|did_key| did_key.relationship == expected_key_relationship.into())
+		{
 			Ok(())
 		} else {
 			Err(DipCallFilterError::WrongVerificationRelationship)
