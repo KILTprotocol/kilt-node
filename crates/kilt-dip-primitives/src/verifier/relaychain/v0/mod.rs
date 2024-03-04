@@ -217,7 +217,7 @@ impl<
 		let encoded_payload = (call, &identity_details, submitter, consumer_genesis_hash, signed_extra).encode();
 		let revealed_did_info = proof_without_dip_merkle
 			.verify_signature_time(&current_block_number)
-			.and_then(|p| p.retrieve_signing_leaf_for_payload(&encoded_payload[..]))
+			.and_then(|p| p.retrieve_signing_leaves_for_payload(&encoded_payload[..]))
 			.map_err(DipRelaychainStateProofVerifierError::ProofVerification)?;
 
 		// 6. Verify the signing key fulfills the requirements

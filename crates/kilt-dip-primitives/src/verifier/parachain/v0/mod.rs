@@ -240,7 +240,7 @@ impl<
 			.encode();
 		let revealed_did_info = proof_without_dip_merkle
 			.verify_signature_time(&current_block_number)
-			.and_then(|p| p.retrieve_signing_leaf_for_payload(&encoded_payload[..]))
+			.and_then(|p| p.retrieve_signing_leaves_for_payload(&encoded_payload[..]))
 			.map_err(DipParachainStateProofVerifierError::ProofVerification)?;
 
 		// 5. Verify the signing key fulfills the requirements

@@ -59,7 +59,7 @@ mod dip_revealed_details_and_verified_did_signature_freshness {
 	};
 
 	#[test]
-	fn retrieve_signing_leaf_for_payload_single_leaf_successful() {
+	fn retrieve_signing_leaves_for_payload_single_leaf_successful() {
 		let payload = b"Hello, world!";
 		let (did_key_pair, _) = ed25519::Pair::generate();
 		let did_auth_key: DidVerificationKey<AccountId32> = did_key_pair.public().into();
@@ -81,7 +81,7 @@ mod dip_revealed_details_and_verified_did_signature_freshness {
 				signature: did_key_pair.sign(&payload.encode()).into(),
 			};
 		assert_eq!(
-			revealed_details.retrieve_signing_leaf_for_payload(&payload.encode()),
+			revealed_details.retrieve_signing_leaves_for_payload(&payload.encode()),
 			Ok(DipOriginInfo {
 				signing_leaves_indices: vec![0].try_into().unwrap(),
 				revealed_leaves,
@@ -90,7 +90,7 @@ mod dip_revealed_details_and_verified_did_signature_freshness {
 	}
 
 	#[test]
-	fn retrieve_signing_leaf_for_payload_multiple_leaves_successful() {
+	fn retrieve_signing_leaves_for_payload_multiple_leaves_successful() {
 		let payload = b"Hello, world!";
 		let (did_key_pair, _) = ed25519::Pair::generate();
 		let did_auth_key: DidVerificationKey<AccountId32> = did_key_pair.public().into();
@@ -133,7 +133,7 @@ mod dip_revealed_details_and_verified_did_signature_freshness {
 				signature: did_key_pair.sign(&payload.encode()).into(),
 			};
 		assert_eq!(
-			revealed_details.retrieve_signing_leaf_for_payload(&payload.encode()),
+			revealed_details.retrieve_signing_leaves_for_payload(&payload.encode()),
 			Ok(DipOriginInfo {
 				signing_leaves_indices: vec![0, 2].try_into().unwrap(),
 				revealed_leaves,
@@ -142,7 +142,7 @@ mod dip_revealed_details_and_verified_did_signature_freshness {
 	}
 
 	#[test]
-	fn retrieve_signing_leaf_for_payload_no_key_present() {
+	fn retrieve_signing_leaves_for_payload_no_key_present() {
 		let did_auth_key: DidVerificationKey<AccountId32> = ed25519::Public([0u8; 32]).into();
 		let revealed_leaves: BoundedVec<RevealedDidMerkleProofLeaf<u32, AccountId32, u32, (), ()>, ConstU32<1>> =
 			vec![RevealedDidKey::<u32, u32, AccountId32> {
@@ -162,7 +162,7 @@ mod dip_revealed_details_and_verified_did_signature_freshness {
 				signature: ed25519::Signature([100u8; 64]).into(),
 			};
 		assert_err!(
-			revealed_details.retrieve_signing_leaf_for_payload(&().encode()),
+			revealed_details.retrieve_signing_leaves_for_payload(&().encode()),
 			Error::InvalidDidKeyRevealed
 		);
 	}

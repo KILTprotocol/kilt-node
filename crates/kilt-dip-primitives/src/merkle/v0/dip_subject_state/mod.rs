@@ -204,9 +204,9 @@ impl<
 	KiltDidKeyId: BenchmarkDefault,
 	KiltBlockNumber: BenchmarkDefault,
 {
-	/// Iterates over the revealed DID leafs to find the one that generated a
+	/// Iterates over the revealed DID leaves to find the ones that generated a
 	/// valid signature for the provided payload.
-	pub fn retrieve_signing_leaf_for_payload(
+	pub fn retrieve_signing_leaves_for_payload(
 		self,
 		payload: &[u8],
 	) -> Result<

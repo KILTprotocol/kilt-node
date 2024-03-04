@@ -77,7 +77,22 @@ impl<
 		self.revealed_leaves.iter()
 	}
 
-	/// Returns a reference to the leaf that signed the cross-chain operation.
+	/// Returns an owned iterator over the revealed DID leaves.
+	pub fn into_iter_leaves(
+		self,
+	) -> impl Iterator<
+		Item = RevealedDidMerkleProofLeaf<
+			KiltDidKeyId,
+			KiltAccountId,
+			KiltBlockNumber,
+			KiltWeb3Name,
+			KiltLinkableAccountId,
+		>,
+	> {
+		self.revealed_leaves.into_iter()
+	}
+
+	/// Returns a reference to the leaves that signed the cross-chain operation.
 	/// This operation should never fail, so the only error it returns is an
 	/// `Error::Internal` which, anyway, should never happen.
 	pub fn get_signing_leaves(
