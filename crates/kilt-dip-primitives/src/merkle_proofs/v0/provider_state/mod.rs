@@ -33,7 +33,7 @@ use crate::{
 		input_common::{DidMerkleProof, DipCommitmentStateProof, ProviderHeadStateProof, TimeBoundDidSignature},
 	},
 	state_proofs::{verify_storage_value_proof, verify_storage_value_proof_with_decoder},
-	traits::{BenchmarkDefault, GetWithArg},
+	traits::GetWithArg,
 	utils::{
 		calculate_dip_identity_commitment_storage_key_for_runtime, calculate_parachain_head_storage_key, OutputOf,
 	},
@@ -178,8 +178,7 @@ impl<
 		KiltWeb3Name,
 		KiltLinkableAccountId,
 		ConsumerBlockNumber,
-	> where
-	KiltBlockNumber: BenchmarkDefault,
+	>
 {
 	/// Verifies the head data of the state proof for the provider with the
 	/// given para ID and relaychain state root.
@@ -354,7 +353,6 @@ impl<
 		StateRoot: Ord,
 		ParachainHasher: Hash<Output = StateRoot>,
 		ProviderRuntime: pallet_dip_provider::Config,
-		IdentityCommitmentOf<ProviderRuntime>: BenchmarkDefault,
 	{
 		let dip_commitment_storage_key =
 			calculate_dip_identity_commitment_storage_key_for_runtime::<ProviderRuntime>(subject, 0);

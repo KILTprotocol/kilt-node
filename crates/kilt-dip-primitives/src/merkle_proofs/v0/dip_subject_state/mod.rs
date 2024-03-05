@@ -30,7 +30,6 @@ use crate::{
 		input_common::TimeBoundDidSignature,
 		output_common::{DidKeyRelationship, DipOriginInfo, RevealedDidKey, RevealedDidMerkleProofLeaf},
 	},
-	traits::BenchmarkDefault,
 	Error,
 };
 
@@ -161,9 +160,7 @@ impl<
 		KiltWeb3Name,
 		KiltLinkableAccountId,
 		MAX_REVEALED_LEAVES_COUNT,
-	> where
-	KiltDidKeyId: BenchmarkDefault,
-	KiltBlockNumber: BenchmarkDefault,
+	>
 {
 	/// Iterates over the revealed DID leaves to find the ones that generated a
 	/// valid signature for the provided payload.

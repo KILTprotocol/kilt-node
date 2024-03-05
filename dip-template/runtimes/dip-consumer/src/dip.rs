@@ -21,8 +21,8 @@ use did::{
 	DidSignature, DidVerificationKeyRelationship, KeyIdOf,
 };
 use dip_provider_runtime_template::{
-	AccountId as ProviderAccountId, MaxTotalKeyAgreementKeys, Runtime as ProviderRuntime,
-	MAX_REVEALABLE_LINKED_ACCOUNTS,
+	AccountId as ProviderAccountId, Runtime as ProviderRuntime, MAX_REVEALABLE_LINKED_ACCOUNTS,
+	MAX_TOTAL_KEY_AGREEMENT_KEYS,
 };
 use frame_support::{pallet_prelude::ValueQuery, storage_alias, traits::Contains};
 use frame_system::{pallet_prelude::BlockNumberFor, EnsureSigned};
@@ -48,7 +48,7 @@ use crate::{weights, AccountId, DidIdentifier, Runtime, RuntimeCall, RuntimeOrig
 
 // 3 is the attestation, delegation, and authentication key.
 // 1 is the web3name.
-const MAX_PROVIDER_REVEALABLE_KEYS_COUNT: u32 = MaxTotalKeyAgreementKeys + 3 + 1 + MAX_REVEALABLE_LINKED_ACCOUNTS;
+const MAX_PROVIDER_REVEALABLE_KEYS_COUNT: u32 = MAX_TOTAL_KEY_AGREEMENT_KEYS + 3 + 1 + MAX_REVEALABLE_LINKED_ACCOUNTS;
 
 /// The verifier logic is tied to the provider template runtime definition.
 pub type ProviderTemplateProofVerifier = KiltVersionedParachainVerifier<
@@ -403,11 +403,11 @@ impl kilt_support::traits::GetWorstCase for ProviderTemplateProofVerifierWrapper
 
 #[cfg(all(test, feature = "runtime-benchmarks"))]
 mod worst_case_tests {
-	use kilt_dip_primitives::{parachain::DEFAULT_MAX_DID_MERKLE_LEAVES_REVEALED, VersionedDipParachainStateProof};
+	use kilt_dip_primitives::VersionedDipParachainStateProof;
 	use kilt_support::traits::GetWorstCase;
 	use pallet_dip_consumer::benchmarking::WorstCaseOf;
 
-	use crate::ProviderTemplateProofVerifierWrapper;
+	use crate::{dip::MAX_PROVIDER_REVEALABLE_KEYS_COUNT, ProviderTemplateProofVerifierWrapper};
 
 	#[test]
 	fn worst_case_max_limits() {
@@ -420,7 +420,7 @@ mod worst_case_tests {
 			sp_io::TestExternalities::default().execute_with(|| {
 				assert_eq!(
 					proof.dip_proof().revealed().len(),
-					MAX_PROVIDER_REVEALABLE_KEYS as usize
+					MAX_PROVIDER_REVEALABLE_KEYS_COUNT as usize
 				);
 			});
 		});
