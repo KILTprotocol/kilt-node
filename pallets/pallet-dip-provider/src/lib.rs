@@ -87,6 +87,11 @@ pub mod pallet {
 	/// double map. Its first key is the `Identifier` of subjects, while the
 	/// second key is the commitment version. The values are identity
 	/// commitments.
+	// SAFETY of Twox64Concat:
+	// The identifier MUST not be freely choosable. This must be ensured by the
+	// Config::IdentityProvider.
+	// The commitment version is a u16 and has only very limited value space
+	// which doesn't to exploit any collisions.
 	#[pallet::storage]
 	#[pallet::getter(fn identity_commitments)]
 	pub type IdentityCommitments<T> = StorageDoubleMap<

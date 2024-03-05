@@ -334,6 +334,10 @@ pub mod pallet {
 	/// Service endpoints associated with DIDs.
 	///
 	/// It maps from (DID identifier, service ID) to the service details.
+	// SAFETY of Twox64Concat:
+	// The DID Identifier must be registered on chain first. To register a DID
+	// Identifier, you must provide a valid signature for the identifier or
+	// control the origin that corresponds to the identifier.
 	#[pallet::storage]
 	#[pallet::getter(fn get_service_endpoints)]
 	pub type ServiceEndpoints<T> =

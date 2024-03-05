@@ -167,6 +167,19 @@ pub fn insert_attestation<T: Config>(claim_hash: ClaimHashOf<T>, details: Attest
 	}
 }
 
+pub fn insert_attestation_v1<T: Config>(claim_hash: ClaimHashOf<T>, details: AttestationDetailsOf<T>) {
+	crate::AttestationStorageDepositCollector::<T>::create_deposit(
+		details.deposit.owner.clone(),
+		details.deposit.amount,
+	)
+	.expect("Should have balance");
+
+	crate::Attestations::<T>::insert(claim_hash, details.clone());
+	if let Some(delegation_id) = details.authorization_id.as_ref() {
+		crate::migrations::v1::ExternalAttestations::<T>::insert(delegation_id, claim_hash, true)
+	}
+}
+
 pub fn sr25519_did_from_public_key(public_key: &[u8; 32]) -> SubjectId {
 	MultiSigner::from(sr25519::Public(*public_key)).into_account().into()
 }
@@ -352,6 +365,7 @@ pub(crate) mod runtime {
 		/// endowed accounts with balances
 		balances: Vec<(AccountIdOf<Test>, BalanceOf<Test>)>,
 		attestations: Vec<(ClaimHashOf<Test>, AttestationDetailsOf<Test>)>,
+		attestations_v1: Vec<(ClaimHashOf<Test>, AttestationDetailsOf<Test>)>,
 	}
 
 	impl ExtBuilder {
@@ -370,6 +384,15 @@ pub(crate) mod runtime {
 		#[must_use]
 		pub fn with_attestations(mut self, attestations: Vec<(ClaimHashOf<Test>, AttestationDetailsOf<Test>)>) -> Self {
 			self.attestations = attestations;
+			self
+		}
+
+		#[must_use]
+		pub fn with_attestations_v1(
+			mut self,
+			attestations: Vec<(ClaimHashOf<Test>, AttestationDetailsOf<Test>)>,
+		) -> Self {
+			self.attestations_v1 = attestations;
 			self
 		}
 
@@ -400,6 +423,10 @@ pub(crate) mod runtime {
 
 				for (claim_hash, details) in self.attestations {
 					insert_attestation::<Test>(claim_hash, details);
+				}
+
+				for (claim_hash, details) in self.attestations_v1 {
+					insert_attestation_v1::<Test>(claim_hash, details);
 				}
 			});
 

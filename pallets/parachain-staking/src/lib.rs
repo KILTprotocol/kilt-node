@@ -552,6 +552,9 @@ pub mod pallet {
 	///
 	/// It maps from an account to the number of delegations in the last
 	/// session in which they (re-)delegated.
+	// SAFETY of Twox64Concat:
+	// The AccountId cannot be chosen freely since it's the signed origin of
+	// `join_delegators`.
 	#[pallet::storage]
 	#[pallet::getter(fn last_delegation)]
 	pub(crate) type LastDelegation<T: Config> =
@@ -560,6 +563,9 @@ pub mod pallet {
 	/// Delegation staking information.
 	///
 	/// It maps from an account to its delegation details.
+	// SAFETY of Twox64Concat:
+	// The AccountId cannot be chosen freely since it's the signed origin of
+	// `join_delegators`.
 	#[pallet::storage]
 	#[pallet::getter(fn delegator_state)]
 	pub(crate) type DelegatorState<T: Config> =
@@ -569,6 +575,9 @@ pub mod pallet {
 	///
 	/// It maps from an account to its information.
 	/// Moreover, it counts the number of candidates.
+	// SAFETY of Twox64Concat:
+	// The AccountId cannot be chosen freely since it's the signed origin of
+	// `join_candidates`.
 	#[pallet::storage]
 	#[pallet::getter(fn candidate_pool)]
 	pub(crate) type CandidatePool<T: Config> = CountedStorageMap<
@@ -612,6 +621,9 @@ pub mod pallet {
 	///
 	/// It maps from accounts to all the funds addressed to them in the future
 	/// blocks.
+	// SAFETY of Twox64Concat:
+	// The AccountId is either the Collator or Delegator account and therefore
+	// needs to be a valid signed origin. The key cannot be chosen arbitrarily.
 	#[pallet::storage]
 	#[pallet::getter(fn unstaking)]
 	pub(crate) type Unstaking<T: Config> = StorageMap<
@@ -638,6 +650,9 @@ pub mod pallet {
 
 	/// The number of authored blocks for collators. It is updated via the
 	/// `note_author` hook when authoring a block .
+	// SAFETY of Twox64Concat:
+	// The Account Id is the Id of a collator. It can only be set to a valid
+	// signed origin and cannot be chosen arbitrarily.
 	#[pallet::storage]
 	#[pallet::getter(fn blocks_authored)]
 	pub(crate) type BlocksAuthored<T: Config> =
@@ -652,6 +667,9 @@ pub mod pallet {
 	/// For delegators, this can be at most BlocksAuthored of the collator.It is
 	/// updated when incrementing delegator rewards, either when calling
 	/// `inc_delegator_rewards` or updating the `InflationInfo`.
+	// SAFETY of Twox64Concat:
+	// The Account Id is the Id of a collator. It can only be set to a valid
+	// signed origin and cannot be chosen arbitrarily.
 	#[pallet::storage]
 	#[pallet::getter(fn blocks_rewarded)]
 	pub(crate) type BlocksRewarded<T: Config> =
@@ -660,6 +678,9 @@ pub mod pallet {
 	/// The accumulated rewards for collator candidates and delegators.
 	///
 	/// It maps from accounts to their total rewards since the last payout.
+	// SAFETY of Twox64Concat:
+	// The Account Id is the Id of a collator or delegator. It can only be set
+	// to a valid signed origin and cannot be chosen arbitrarily.
 	#[pallet::storage]
 	#[pallet::getter(fn rewards)]
 	pub(crate) type Rewards<T: Config> = StorageMap<_, Twox64Concat, T::AccountId, BalanceOf<T>, ValueQuery>;
