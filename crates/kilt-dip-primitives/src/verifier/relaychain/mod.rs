@@ -230,7 +230,7 @@ impl<
 {
 	type Output = pallet_dip_consumer::benchmarking::WorstCaseOf<ConsumerRuntime>;
 
-	fn worst_case(context: ()) -> Self::Output {
+	fn worst_case(_context: ()) -> Self::Output {
 		// TODO: Update this.
 		unimplemented!()
 	}

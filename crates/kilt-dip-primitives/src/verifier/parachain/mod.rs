@@ -65,42 +65,6 @@ pub enum VersionedDipParachainStateProof<
 	),
 }
 
-#[cfg(feature = "runtime-benchmarks")]
-impl<
-		RelayBlockNumber,
-		KiltDidKeyId,
-		KiltAccountId,
-		KiltBlockNumber,
-		KiltWeb3Name,
-		KiltLinkableAccountId,
-		ConsumerBlockNumber,
-		Context,
-	> kilt_support::traits::GetWorstCase<Context>
-	for VersionedDipParachainStateProof<
-		RelayBlockNumber,
-		KiltDidKeyId,
-		KiltAccountId,
-		KiltBlockNumber,
-		KiltWeb3Name,
-		KiltLinkableAccountId,
-		ConsumerBlockNumber,
-	> where
-	RelayBlockNumber: Default,
-	KiltDidKeyId: Default + Clone,
-	KiltAccountId: Clone,
-	KiltBlockNumber: Default + Clone,
-	KiltWeb3Name: Clone,
-	KiltLinkableAccountId: Clone,
-	ConsumerBlockNumber: Default,
-	Context: Clone,
-{
-	type Output = Self;
-
-	fn worst_case(context: Context) -> Self::Output {
-		Self::V0(ParachainDipDidProof::worst_case(context))
-	}
-}
-
 /// Versioned proof verifier. For version-specific description, refer to each
 /// verifier's documentation.
 pub struct KiltVersionedParachainVerifier<
@@ -271,7 +235,7 @@ impl<
 {
 	type Output = pallet_dip_consumer::benchmarking::WorstCaseOf<ConsumerRuntime>;
 
-	fn worst_case(context: ()) -> Self::Output {
+	fn worst_case(_context: ()) -> Self::Output {
 		// TODO: Update this.
 		unimplemented!()
 	}

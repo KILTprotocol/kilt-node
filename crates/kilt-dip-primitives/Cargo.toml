@@ -14,7 +14,6 @@ version.workspace = true
 # External dependencies
 hash-db.workspace = true
 log.workspace = true
-cfg-if.workspace = true
 
 # Internal dependencies
 did.workspace = true
