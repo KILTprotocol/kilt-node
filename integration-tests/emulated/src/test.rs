@@ -1,12 +1,12 @@
 use crate::{
 	mock::{
 		network::MockNetwork,
-		para_chains::{AssetHub, Spiritnet},
+		para_chains::{spiritnet, AssetHub, AssetHubPallet, Spiritnet},
 		relay_chains::{Polkadot, PolkadotPallet},
 	},
 	utils::get_account_id_from_seed,
 };
-use asset_hub_polkadot_runtime::{RuntimeEvent as AssetHubRuntimeEvent, System as AssetHubSystem};
+use asset_hub_polkadot_runtime::System as AssetHubSystem;
 use frame_support::dispatch::RawOrigin;
 use frame_support::{assert_err, assert_ok};
 use integration_tests_common::{asset_hub_polkadot, polkadot::ED, ALICE, BOB};
@@ -14,9 +14,7 @@ use parity_scale_codec::Encode;
 use polkadot_runtime::System as PolkadotSystem;
 use sp_core::sr25519;
 use sp_runtime::{DispatchError, ModuleError};
-use spiritnet_runtime::{
-	PolkadotXcm as SpiritnetXcm, RuntimeEvent as SpiritnetRuntimeEvent, System as SpiritnetSystem,
-};
+use spiritnet_runtime::PolkadotXcm as SpiritnetXcm;
 use xcm::{v3::WeightLimit, DoubleEncoded, VersionedMultiLocation, VersionedXcm};
 use xcm_emulator::{
 	assert_expected_events,
@@ -26,6 +24,8 @@ use xcm_emulator::{
 	Junction, Junctions, OriginKind, Parachain, Parent, ParentThen, RelayChain, TestExt, Weight, Xcm, X1,
 };
 
+/// Test that a reserved transfer to the relaychain is failing. We don't want to
+/// allow transfers to the relaychain since the funds might be lost.
 #[test]
 fn test_reserve_asset_transfer_from_regular_account_to_relay() {
 	MockNetwork::reset();
@@ -47,15 +47,15 @@ fn test_reserve_asset_transfer_from_regular_account_to_relay() {
 			0,
 			WeightLimit::Unlimited,
 		));
-		assert!(matches!(
-			SpiritnetSystem::events()
-				.first()
-				.expect("An event should be emitted when sending an XCM message.")
-				.event,
-			SpiritnetRuntimeEvent::PolkadotXcm(pallet_xcm::Event::Attempted {
+
+		type RuntimeEvent = <Spiritnet as Parachain>::RuntimeEvent;
+
+		assert_expected_events!(
+			Spiritnet,
+			vec![RuntimeEvent::PolkadotXcm(pallet_xcm::Event::Attempted {
 				outcome: xcm::latest::Outcome::Error(xcm::latest::Error::Barrier)
-			})
-		));
+			}) => {},]
+		);
 	});
 	// No message should reach the relaychain.
 	Polkadot::execute_with(|| {
@@ -63,10 +63,8 @@ fn test_reserve_asset_transfer_from_regular_account_to_relay() {
 	})
 }
 
-/// Test that a reserved transfer to the relaychain is failing. We don't want to
-/// allow transfers to the relaychain since the funds might be lost.
 #[test]
-fn test_reserve_asset_transfer_from_regular_account_to_asset_hub() {
+fn test_reserve_asset_transfer_from_spiritnet_to_asset_hub() {
 	MockNetwork::reset();
 
 	let alice_account_id = get_account_id_from_seed::<sr25519::Public>(ALICE);
@@ -88,36 +86,27 @@ fn test_reserve_asset_transfer_from_regular_account_to_asset_hub() {
 			WeightLimit::Unlimited,
 		));
 
-		assert!(
-			matches!(
-				SpiritnetSystem::events()
-					.last()
-					.expect("An event should be emitted when sending an XCM message.")
-					.event,
-				SpiritnetRuntimeEvent::PolkadotXcm(pallet_xcm::Event::Attempted {
-					outcome: xcm::latest::Outcome::Complete(_)
-				})
-			),
-			"Didn't match {:?}",
-			SpiritnetSystem::events().last()
+		type RuntimeEvent = <Spiritnet as Parachain>::RuntimeEvent;
+
+		assert_expected_events!(
+			Spiritnet,
+			vec![RuntimeEvent::PolkadotXcm(pallet_xcm::Event::Attempted {
+				outcome: xcm::latest::Outcome::Complete(_)
+			}) => {},
+			]
 		);
 	});
-	// No event on the relaychain (message is meant for asset hub)
+	// No event on the relaychain (message is meant for asset hub
 	Polkadot::execute_with(|| {
 		assert_eq!(PolkadotSystem::events().len(), 0);
 	});
-	// Fails on AsssetHub since spiritnet is not a trusted registrar.
+	// Fails on AssetHub since spiritnet is not a trusted registrar
 	AssetHub::execute_with(|| {
-		assert!(
-			matches!(
-				AssetHubSystem::events()
-					.last()
-					.expect("An event should be emitted when sending an XCM message.")
-					.event,
-				AssetHubRuntimeEvent::XcmpQueue(XcmpQueueEvent::Fail { .. })
-			),
-			"Didn't match {:?}",
-			AssetHubSystem::events().last()
+		type RuntimeEvent = <AssetHub as Parachain>::RuntimeEvent;
+
+		assert_expected_events!(
+			AssetHub,
+			vec![RuntimeEvent::XcmpQueue(XcmpQueueEvent::Fail { .. }) => {},]
 		);
 	});
 }
@@ -190,7 +179,6 @@ fn test_sudo_call_from_relay_chain_to_spiritnet() {
 	]));
 
 	//Send XCM message from relay chain
-
 	Polkadot::execute_with(|| {
 		assert_ok!(<Polkadot as PolkadotPallet>::XcmPallet::send(
 			sudo_origin,
@@ -209,19 +197,87 @@ fn test_sudo_call_from_relay_chain_to_spiritnet() {
 	});
 
 	Spiritnet::execute_with(|| {
-		assert!(matches!(
-			SpiritnetSystem::events()
-				.first()
-				.expect("An event should be emitted when sending an XCM message.")
-				.event,
-			SpiritnetRuntimeEvent::PolkadotXcm(pallet_xcm::Event::Attempted {
-				outcome: xcm::latest::Outcome::Error(xcm::latest::Error::Barrier)
-			})
+		type SpiritnetRuntimeEvent = <Spiritnet as Parachain>::RuntimeEvent;
+
+		assert_expected_events!(
+			Spiritnet,
+			vec![
+				SpiritnetRuntimeEvent::DmpQueue(cumulus_pallet_dmp_queue::Event::ExecutedDownward {
+					outcome: xcm::v3::Outcome::Error(xcm::v3::Error::Barrier),
+					..
+				}) => {},
+			]
+		);
+	});
+
+	// No event on the AssetHub message is meant for relay chain
+	AssetHub::execute_with(|| {
+		assert_eq!(AssetHubSystem::events().len(), 0);
+	});
+}
+
+#[test]
+fn test_sudo_call_from_asset_hub_to_spiritnet() {
+	let code = vec![];
+
+	let call: DoubleEncoded<()> = <Spiritnet as Parachain>::RuntimeCall::System(frame_system::Call::set_code { code })
+		.encode()
+		.into();
+	let sudo_origin = <AssetHub as Parachain>::RuntimeOrigin::root();
+	let parachain_destination: VersionedMultiLocation =
+		ParentThen(Junctions::X1(Junction::Parachain(spiritnet::PARA_ID))).into();
+
+	let weight_limit = WeightLimit::Unlimited;
+	let require_weight_at_most = Weight::from_parts(1000000000, 200000);
+	let origin_kind = OriginKind::Superuser;
+	let check_origin = None;
+
+	let xcm = VersionedXcm::from(Xcm(vec![
+		UnpaidExecution {
+			weight_limit,
+			check_origin,
+		},
+		Transact {
+			origin_kind,
+			require_weight_at_most,
+			call,
+		},
+	]));
+
+	//Send XCM message from AssetHub
+	AssetHub::execute_with(|| {
+		assert_ok!(<AssetHub as AssetHubPallet>::PolkadotXcm::send(
+			sudo_origin,
+			Box::new(parachain_destination),
+			Box::new(xcm)
 		));
-	})
+
+		type RuntimeEvent = <AssetHub as Parachain>::RuntimeEvent;
+
+		assert_expected_events!(
+			AssetHub,
+			vec![
+				RuntimeEvent::PolkadotXcm(pallet_xcm::Event::Sent { .. }) => {},
+			]
+		);
+	});
+
+	Spiritnet::execute_with(|| {
+		type SpiritnetRuntimeEvent = <Spiritnet as Parachain>::RuntimeEvent;
+		assert_expected_events!(
+			Spiritnet,
+			vec![
+				SpiritnetRuntimeEvent::XcmpQueue(cumulus_pallet_xcmp_queue::Event::Fail {  error: xcm::v3::Error::Barrier, ..  }) => {},
+			]
+		);
+	});
+
+	// No event on the relaychain (message is meant for asset hub)
+	Polkadot::execute_with(|| {
+		assert_eq!(PolkadotSystem::events().len(), 0);
+	});
 }
 
 // TODO: Receive funds from assetHub
-// TODO: Disallow root calls from other chains.
 // TODO: create a DID from another chain
 // TODO: use a DID (e.g. CType creation)
