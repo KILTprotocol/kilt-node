@@ -108,6 +108,24 @@ impl<
 			signature,
 		}
 	}
+
+	pub fn provider_head_proof(&self) -> &ProviderHeadStateProof<RelayBlockNumber> {
+		&self.provider_head_proof
+	}
+
+	pub fn dip_commitment_proof(&self) -> &DipCommitmentStateProof {
+		&self.dip_commitment_proof
+	}
+
+	pub fn dip_proof(
+		&self,
+	) -> &DidMerkleProof<KiltDidKeyId, KiltAccountId, KiltBlockNumber, KiltWeb3Name, KiltLinkableAccountId> {
+		&self.dip_proof
+	}
+
+	pub fn signature(&self) -> &TimeBoundDidSignature<ConsumerBlockNumber> {
+		&self.signature
+	}
 }
 
 #[cfg(test)]

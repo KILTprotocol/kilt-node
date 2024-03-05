@@ -20,13 +20,22 @@ use did::{
 	did_details::{DidEncryptionKey, DidPublicKeyDetails, DidVerificationKey},
 	DidSignature, DidVerificationKeyRelationship, KeyIdOf,
 };
-use dip_provider_runtime_template::{AccountId as ProviderAccountId, Runtime as ProviderRuntime};
+use dip_provider_runtime_template::{
+	AccountId as ProviderAccountId, MaxTotalKeyAgreementKeys, Runtime as ProviderRuntime,
+	MAX_REVEALABLE_LINKED_ACCOUNTS,
+};
 use frame_support::{pallet_prelude::ValueQuery, storage_alias, traits::Contains};
 use frame_system::{pallet_prelude::BlockNumberFor, EnsureSigned};
 use kilt_dip_primitives::{
-	traits::DipCallOriginFilter, DidKeyRelationship, DidMerkleProof, DipCommitmentStateProof,
-	KiltVersionedParachainVerifier, ParachainDipDidProof, ProviderHeadStateProof, RelayStateRootsViaRelayStorePallet,
-	RevealedAccountId, RevealedDidKey, RevealedWeb3Name, TimeBoundDidSignature,
+	parachain::{
+		DEFAULT_MAX_DID_MERKLE_PROOF_LEAVE_COUNT, DEFAULT_MAX_DID_MERKLE_PROOF_LEAVE_SIZE,
+		DEFAULT_MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT, DEFAULT_MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE,
+		DEFAULT_MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT, DEFAULT_MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE,
+	},
+	traits::DipCallOriginFilter,
+	DidKeyRelationship, DidMerkleProof, DipCommitmentStateProof, KiltVersionedParachainVerifier, ParachainDipDidProof,
+	ProviderHeadStateProof, RelayStateRootsViaRelayStorePallet, RevealedAccountId, RevealedDidKey, RevealedWeb3Name,
+	TimeBoundDidSignature,
 };
 use pallet_dip_consumer::{benchmarking::WorstCaseOf, traits::IdentityProofVerifier};
 use pallet_relay_store::RelayParentInfo;
@@ -37,6 +46,10 @@ use sp_std::{marker::PhantomData, vec::Vec};
 
 use crate::{weights, AccountId, DidIdentifier, Runtime, RuntimeCall, RuntimeOrigin};
 
+// 3 is the attestation, delegation, and authentication key.
+// 1 is the web3name.
+const MAX_PROVIDER_REVEALABLE_KEYS_COUNT: u32 = MaxTotalKeyAgreementKeys + 3 + 1 + MAX_REVEALABLE_LINKED_ACCOUNTS;
+
 /// The verifier logic is tied to the provider template runtime definition.
 pub type ProviderTemplateProofVerifier = KiltVersionedParachainVerifier<
 	RelaychainRuntime,
@@ -44,6 +57,14 @@ pub type ProviderTemplateProofVerifier = KiltVersionedParachainVerifier<
 	2_000,
 	ProviderRuntime,
 	DipCallFilter<KeyIdOf<ProviderRuntime>, BlockNumberFor<ProviderRuntime>, ProviderAccountId>,
+	(),
+	DEFAULT_MAX_PROVIDER_HEAD_PROOF_LEAVE_COUNT,
+	DEFAULT_MAX_PROVIDER_HEAD_PROOF_LEAVE_SIZE,
+	DEFAULT_MAX_DIP_COMMITMENT_PROOF_LEAVE_COUNT,
+	DEFAULT_MAX_DIP_COMMITMENT_PROOF_LEAVE_SIZE,
+	DEFAULT_MAX_DID_MERKLE_PROOF_LEAVE_COUNT,
+	DEFAULT_MAX_DID_MERKLE_PROOF_LEAVE_SIZE,
+	MAX_PROVIDER_REVEALABLE_KEYS_COUNT,
 >;
 pub type MerkleProofVerifierInput = <ProviderTemplateProofVerifier as IdentityProofVerifier<Runtime>>::Proof;
 pub type MerkleProofVerifierOutput =
@@ -377,6 +398,32 @@ impl kilt_support::traits::GetWorstCase for ProviderTemplateProofVerifierWrapper
 			// 4pMywUEABML35y2feheNsQDJFqYVTrUZbCww7XLRMkZxfmbm
 			submitter: AccountId::new(hex!("40002ce6270685b06ea56b9f5594efc9422ae8e498ee202ef3d886d84c4b343e")),
 		}
+	}
+}
+
+#[cfg(all(test, feature = "runtime-benchmarks"))]
+mod worst_case_tests {
+	use kilt_dip_primitives::{parachain::DEFAULT_MAX_DID_MERKLE_LEAVES_REVEALED, VersionedDipParachainStateProof};
+	use kilt_support::traits::GetWorstCase;
+	use pallet_dip_consumer::benchmarking::WorstCaseOf;
+
+	use crate::ProviderTemplateProofVerifierWrapper;
+
+	#[test]
+	fn worst_case_max_limits() {
+		sp_io::TestExternalities::default().execute_with(|| {
+			let WorstCaseOf { proof, .. } = <ProviderTemplateProofVerifierWrapper as GetWorstCase>::worst_case(());
+			let VersionedDipParachainStateProof::V0(proof) = proof;
+			// We test that the worst case reveals the maximum number of leaves revealable.
+			// This is required since the worst case is generated elsewhere and used here as
+			// a fixture.
+			sp_io::TestExternalities::default().execute_with(|| {
+				assert_eq!(
+					proof.dip_proof().revealed().len(),
+					MAX_PROVIDER_REVEALABLE_KEYS as usize
+				);
+			});
+		});
 	}
 }
 

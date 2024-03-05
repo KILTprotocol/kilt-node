@@ -100,6 +100,18 @@ impl<ProviderDidKeyId, ProviderAccountId, ProviderBlockNumber, ProviderWeb3Name,
 	) -> Self {
 		Self { blinded, revealed }
 	}
+
+	pub fn revealed(
+		&self,
+	) -> &[RevealedDidMerkleProofLeaf<
+		ProviderDidKeyId,
+		ProviderAccountId,
+		ProviderBlockNumber,
+		ProviderWeb3Name,
+		ProviderLinkableAccountId,
+	>] {
+		self.revealed.as_ref()
+	}
 }
 
 #[cfg(test)]
